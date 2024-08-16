@@ -63,6 +63,7 @@ func PlayerActions(g *Game) {
 	oldTile := g.gameMap.Tiles[index]
 
 	if !nextTile.Blocked {
+		g.gameMap.PlayerVisible.Compute(g.gameMap, g.playerData.position.X, g.playerData.position.Y, 8)
 		g.playerData.position.X = nextPosition.X
 		g.playerData.position.Y = nextPosition.Y
 		nextTile.Blocked = true

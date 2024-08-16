@@ -73,6 +73,7 @@ type Tile struct {
 	Image        *ebiten.Image
 	tileContents TileContents
 	TileType     TileType
+	IsRevealed   bool
 }
 
 // Holds any entities that are on a tile, whether it's items, creatures, etc.
@@ -164,11 +165,31 @@ func (gameMap *GameMap) DrawLevel(screen *ebiten.Image) {
 	for x := 0; x < gd.ScreenWidth; x++ {
 		for y := 0; y < gd.ScreenHeight; y++ {
 
-			tile := gameMap.Tiles[GetIndexFromXY(x, y)]
-			op := &ebiten.DrawImageOptions{}
+			idx := GetIndexFromXY(x, y)
+			tile := gameMap.Tiles[idx]
+			isVis := gameMap.PlayerVisible.IsVisible(x, y)
 
-			op.GeoM.Translate(float64(tile.PixelX), float64(tile.PixelY))
-			screen.DrawImage(tile.Image, op)
+			if isVis {
+				op := &ebiten.DrawImageOptions{}
+				op.GeoM.Translate(float64(tile.PixelX), float64(tile.PixelY))
+				screen.DrawImage(tile.Image, op)
+				gameMap.Tiles[idx].IsRevealed = true
+			} else if tile.IsRevealed == true {
+				op := &ebiten.DrawImageOptions{}
+				op.GeoM.Translate(float64(tile.PixelX), float64(tile.PixelY))
+				op.ColorM.Translate(100, 100, 100, 0.35)
+				screen.DrawImage(tile.Image, op)
+			}
+
+			/*
+				if gameMap.PlayerVisible.IsVisible(x, y) {
+					tile := gameMap.Tiles[GetIndexFromXY(x, y)]
+					op := &ebiten.DrawImageOptions{}
+					op.GeoM.Translate(float64(tile.PixelX), float64(tile.PixelY))
+					screen.DrawImage(tile.Image, op)
+
+				}
+			*/
 		}
 	}
 }
@@ -183,11 +204,12 @@ func (gameMap *GameMap) createTiles() []*Tile {
 			index = GetIndexFromXY(x, y)
 
 			tile := Tile{
-				PixelX:   x * gd.TileWidth,
-				PixelY:   y * gd.TileHeight,
-				Blocked:  true,
-				Image:    wall,
-				TileType: WALL,
+				PixelX:     x * gd.TileWidth,
+				PixelY:     y * gd.TileHeight,
+				Blocked:    true,
+				Image:      wall,
+				TileType:   WALL,
+				IsRevealed: false,
 			}
 			tiles[index] = &tile
 		}
@@ -320,5 +342,5 @@ func (gameMap GameMap) InBounds(x, y int) bool {
 // TODO: Change this to check for WALL, not blocked
 func (gameMap GameMap) IsOpaque(x, y int) bool {
 	idx := GetIndexFromXY(x, y)
-	return gameMap.Tiles[idx].Blocked
+	return gameMap.Tiles[idx].TileType == WALL
 }
