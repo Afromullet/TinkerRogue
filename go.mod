@@ -3,11 +3,11 @@ module game_main
 go 1.22.5
 
 require (
-	github.com/RAshkettle/rrogue v0.0.19
 	github.com/bytearena/ecs v1.0.0
 	github.com/ebitenui/ebitenui v0.5.8
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0
 	github.com/hajimehoshi/ebiten/v2 v2.7.8
+	github.com/norendren/go-fov v1.0.1
 	golang.org/x/image v0.18.0
 )
 
@@ -19,5 +19,4 @@ require (
 	golang.org/x/exp v0.0.0-20240222234643-814bf88cf225 // indirect
 	golang.org/x/sync v0.7.0 // indirect
 	golang.org/x/sys v0.20.0 // indirect
-	golang.org/x/text v0.16.0 // indirect
 )

@@ -64,3 +64,7 @@ func (item *Item) GetPropertyNames() []string {
 	return names
 
 }
+
+type Weapon struct {
+	damage int
+}

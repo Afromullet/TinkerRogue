@@ -58,6 +58,7 @@ func NewGame() *Game {
 
 	CreateTestItems(g.World, g.WorldTags, &g.gameMap)
 	CreateTestMonsters(g.World, &g.gameMap)
+	SetupPlayerForTesting(g)
 	UpdateContentsForTest(g)
 
 	return g

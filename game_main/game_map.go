@@ -7,6 +7,7 @@ import (
 	"github.com/bytearena/ecs"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
+	"github.com/norendren/go-fov/fov"
 )
 
 type ValidPositions struct {
@@ -32,6 +33,32 @@ var floor *ebiten.Image = nil
 var wall *ebiten.Image = nil
 var validPositions ValidPositions
 
+type Rect struct {
+	X1 int
+	X2 int
+	Y1 int
+	Y2 int
+}
+
+func NewRect(x int, y int, width int, height int) Rect {
+	return Rect{
+		X1: x,
+		Y1: y,
+		X2: x + width,
+		Y2: y + height,
+	}
+}
+
+func (r *Rect) Center() (int, int) {
+	centerX := (r.X1 + r.X2) / 2
+	centerY := (r.Y1 + r.Y2) / 2
+	return centerX, centerY
+}
+
+func (r *Rect) Intersect(other Rect) bool {
+	return (r.X1 <= other.X2 && r.X2 >= other.X1 && r.Y1 <= other.Y1 && r.Y2 >= other.Y1)
+}
+
 type TileType int
 
 const (
@@ -55,8 +82,9 @@ type TileContents struct {
 
 // Holds the Map Information
 type GameMap struct {
-	Tiles []*Tile
-	Rooms []Rect
+	Tiles         []*Tile
+	Rooms         []Rect
+	PlayerVisible *fov.View
 }
 
 // Creating a new Map
@@ -69,6 +97,7 @@ func NewGameMap() GameMap {
 	g := GameMap{}
 	g.Tiles = g.createTiles()
 	g.Rooms = make([]Rect, 0)
+	g.PlayerVisible = fov.New()
 	g.GenerateLevelTiles()
 
 	return g
@@ -215,37 +244,6 @@ func (gameMap *GameMap) GenerateLevelTiles() {
 	}
 }
 
-// GenerateLevelTiles creates a new Dungeon Level Map.
-func (gameMap *GameMap) GenerateLevelTiles2() {
-	MIN_SIZE := 6
-	MAX_SIZE := 10
-	MAX_ROOMS := 30
-
-	gd := NewScreenData()
-	tiles := gameMap.createTiles()
-	gameMap.Tiles = tiles
-
-	for idx := 0; idx < MAX_ROOMS; idx++ {
-		w := GetRandomBetween(MIN_SIZE, MAX_SIZE)
-		h := GetRandomBetween(MIN_SIZE, MAX_SIZE)
-		x := GetDiceRoll(gd.ScreenWidth-w-1) - 1
-		y := GetDiceRoll(gd.ScreenHeight-h-1) - 1
-
-		new_room := NewRect(x, y, w, h)
-		okToAdd := true
-		for _, otherRoom := range gameMap.Rooms {
-			if new_room.Intersect(otherRoom) {
-				okToAdd = false
-				break
-			}
-		}
-		if okToAdd {
-			gameMap.createRoom(new_room)
-			gameMap.Rooms = append(gameMap.Rooms, new_room)
-		}
-	}
-}
-
 func (gameMap *GameMap) createRoom(room Rect) {
 	for y := room.Y1 + 1; y < room.Y2; y++ {
 		for x := room.X1 + 1; x < room.X2; x++ {
@@ -309,4 +307,18 @@ func loadTileImages() {
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+
+func (gameMap GameMap) InBounds(x, y int) bool {
+	gd := NewScreenData()
+	if x < 0 || x > gd.ScreenWidth || y < 0 || y > gd.ScreenHeight {
+		return false
+	}
+	return true
+}
+
+// TODO: Change this to check for WALL, not blocked
+func (gameMap GameMap) IsOpaque(x, y int) bool {
+	idx := GetIndexFromXY(x, y)
+	return gameMap.Tiles[idx].Blocked
 }

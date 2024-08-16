@@ -8,6 +8,12 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 )
 
+func SetupPlayerForTesting(g *Game) {
+	w := CreateWeapon(g.World, "Weapon 1", *g.playerData.position, "assets/items/sword.png", 1)
+	g.playerData.playerWeapon = w
+
+}
+
 func CreateTestItems(manager *ecs.Manager, tags map[string]ecs.Tag, gameMap *GameMap) {
 
 	swordImg, _, err := ebitenutil.NewImageFromFile("assets/items/sword.png")
@@ -26,6 +32,8 @@ func CreateTestItems(manager *ecs.Manager, tags map[string]ecs.Tag, gameMap *Gam
 
 }
 
+var defendingMonsterTestPosition *Position = &Position{}
+
 func CreateTestMonsters(manager *ecs.Manager, gameMap *GameMap) {
 
 	elfImg, _, err := ebitenutil.NewImageFromFile("assets/creatures/elf.png")
@@ -33,8 +41,30 @@ func CreateTestMonsters(manager *ecs.Manager, gameMap *GameMap) {
 		log.Fatal(err)
 	}
 
+	x, y := gameMap.Rooms[0].Center()
+	pos := Position{
+		X: x + 1,
+		Y: y + 1}
+
+	defendingMonsterTestPosition.X = pos.X
+	defendingMonsterTestPosition.Y = pos.Y
+
+	manager.NewEntity().
+		AddComponent(creature, &Creature{
+			path: make([]Position, 0),
+		}).
+		AddComponent(renderable, &Renderable{
+			Image:   elfImg,
+			visible: true,
+		}).
+		AddComponent(position, &pos).
+		AddComponent(simpleWander, &NoMovement{}).
+		AddComponent(healthComponent, &Health{
+			MaxHealth:     5,
+			CurrentHealth: 5})
+
 	//Don't create a creature in the starting room
-	for _, r := range gameMap.Rooms[0:3] {
+	for _, r := range gameMap.Rooms[1:3] {
 
 		x, y := r.Center()
 		pos := Position{
@@ -50,7 +80,10 @@ func CreateTestMonsters(manager *ecs.Manager, gameMap *GameMap) {
 				visible: true,
 			}).
 			AddComponent(position, &pos).
-			AddComponent(simpleWander, &SimpleWander{})
+			AddComponent(simpleWander, &SimpleWander{}).
+			AddComponent(healthComponent, &Health{
+				MaxHealth:     5,
+				CurrentHealth: 5})
 	}
 
 	//Don't create a creature in the starting room
@@ -68,7 +101,10 @@ func CreateTestMonsters(manager *ecs.Manager, gameMap *GameMap) {
 				visible: true,
 			}).
 			AddComponent(position, &pos).
-			AddComponent(noMove, &NoMovement{})
+			AddComponent(noMove, &NoMovement{}).
+			AddComponent(healthComponent, &Health{
+				MaxHealth:     5,
+				CurrentHealth: 5})
 	}
 
 	//Don't create a creature in the starting room
@@ -86,7 +122,10 @@ func CreateTestMonsters(manager *ecs.Manager, gameMap *GameMap) {
 				visible: true,
 			}).
 			AddComponent(position, &pos).
-			AddComponent(goToPlayer, &GoToPlayerMovement{})
+			AddComponent(goToPlayer, &GoToPlayerMovement{}).
+			AddComponent(healthComponent, &Health{
+				MaxHealth:     5,
+				CurrentHealth: 5})
 	}
 
 }

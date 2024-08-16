@@ -14,13 +14,14 @@ type Player struct {
 // There's only one player, so we can store frequently used component data in PlayerData
 type PlayerData struct {
 	playerEntity *ecs.Entity
+	playerWeapon *ecs.Entity
 	position     *Position
 	inventory    *Inventory
 }
 
 // Helper function to make it less tedious to get the inventory
 func (playerData *PlayerData) GetPlayerInventory() *Inventory {
-	inv, err := playerData.playerEntity.GetComponentData(inventoryComponent)
+	inv, err := playerData.playerEntity.GetComponentData(InventoryComponent)
 
 	if !err {
 		// Handle the error (e.g., log it, return nil, or handle accordingly)

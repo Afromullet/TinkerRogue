@@ -1,6 +1,8 @@
 package main
 
 import (
+	"log"
+
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
@@ -36,6 +38,8 @@ func PlayerActions(g *Game) {
 
 	if ebiten.IsKeyPressed(ebiten.KeyG) {
 
+		log.Print("Press G")
+
 		itemFromTile, _ := g.gameMap.GrabItemFromTile(0, g.playerData.position)
 
 		if itemFromTile != nil {
@@ -47,15 +51,37 @@ func PlayerActions(g *Game) {
 		turntaken = true
 	}
 
-	index := GetIndexFromXY(g.playerData.position.X+x, g.playerData.position.Y+y)
-	tile := g.gameMap.Tiles[index]
+	nextPosition := Position{
+		X: g.playerData.position.X + x,
+		Y: g.playerData.position.Y + y,
+	}
 
-	if !tile.Blocked {
-		g.playerData.position.X += x
-		g.playerData.position.Y += y
+	index := GetIndexFromXY(nextPosition.X, nextPosition.Y)
+	nextTile := g.gameMap.Tiles[index]
+
+	index = GetIndexFromXY(g.playerData.position.X, g.playerData.position.Y)
+	oldTile := g.gameMap.Tiles[index]
+
+	if !nextTile.Blocked {
+		g.playerData.position.X = nextPosition.X
+		g.playerData.position.Y = nextPosition.Y
+		nextTile.Blocked = true
+		oldTile.Blocked = false
+
+	} else {
+		//Determine if the tyle is blocked because there's a creature
+
+		c := GetCreatureAtPosition(g, &nextPosition)
+
+		if c != nil {
+			log.Print("Creature here")
+			AttackSystem(g, g.playerData.position, &nextPosition)
+		}
 
 	}
 
+	//AttackSystem(g, g.playerData.position, defendingMonsterTestPosition)
+	//AttackSystem(g, defendingMonsterTestPosition, g.playerData.position)
 	if x != 0 || y != 0 || turntaken {
 		g.Turn = GetNextState(g.Turn)
 		g.TurnCounter = 0
