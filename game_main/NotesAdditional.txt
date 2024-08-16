@@ -1,0 +1,47 @@
+Learning GO with this project. Some files are in heavy need of refactoring in the future, since I'm learning both GoLang
+And how to implemnent things in an ECS. The files I'm most actively using are below. Those are the ones I'm continually updating that,
+while still having to be refactored, are going to be part of the final product. 
+
+GameComponents.go
+GameMap.Go
+InventoryManager.go
+ui.go
+uitil.go
+ItemProperties.go
+
+Other changes that will have to happen
+
+main.go: Choosing how I want to initialize everyhting
+player_movement.go 
+world.go : Initialization of the entities needed at game startup once I add more stuff to the game
+
+
+The follolwing will be thrown away:
+
+test_Data.go
+
+These will change significantly:
+
+player_movement.go
+
+_______________
+
+I wondered why addComponent uses a pointer for the component. I thought, "Wouldn't that lead to everything have the same properties?
+
+	itemEntity := manager.NewEntity().
+		AddComponent(renderable, &Renderable{
+			Image:   img,
+			visible: true,
+		}).
+		AddComponent(position, &Position{}).
+		AddComponent(ItemComponent, &Item{}).
+		AddComponent(nameComponent, &Name{
+			NameStr: name})
+
+That's not the case, because AddComponent copies over the ComponentData
+
+
+func (entity *Entity) AddComponent(component *Component, componentdata interface{}) *Entity {
+	component.datalock.Lock()
+	component.data[entity.ID] = componentdata
+	component.datalock.Unlock()
