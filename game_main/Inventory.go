@@ -26,28 +26,23 @@ var inventorySize = 20 //todo get rid of this
 
 func (inventory *Inventory) AddItemToInventory(entityToAdd *ecs.Entity) {
 	// Dereference the slice pointer and use append
-
-	newItemName, _ := entityToAdd.GetComponentData(nameComponent)
-	newItemName = newItemName.(*Name).NameStr
+	newItemName := GetComponentStruct[*Name](entityToAdd, nameComponent).NameStr
 	exists := false
 
 	for _, entity := range *inventory.InventoryContent {
 
-		itemName, _ := entity.GetComponentData(nameComponent)
-		itemName = itemName.(*Name).NameStr
+		itemName := GetComponentStruct[*Name](&entity, nameComponent).NameStr
 
 		if itemName == newItemName {
 			exists = true
-			itemComp, _ := entity.GetComponentData(ItemComponent)
-			itemComp.(*Item).IncrementCount()
+			GetComponentStruct[*Item](&entity, ItemComponent).IncrementCount()
 			break
 		}
 	}
 
 	if !exists {
-		itemComp, _ := entityToAdd.GetComponentData(ItemComponent)
-		itemComp.(*Item).count = 1
-
+		itemComp := GetComponentStruct[*Item](entityToAdd, ItemComponent)
+		itemComp.count = 1
 		*inventory.InventoryContent = append(*inventory.InventoryContent, *entityToAdd)
 
 	}
@@ -63,14 +58,14 @@ func (inv *Inventory) GetPropertyNames(index int) ([]string, error) {
 		return nil, fmt.Errorf("failed to get item by index: %w", err)
 	}
 
-	itemComp, ok := entity.GetComponentData(ItemComponent)
+	itemComp := GetComponentStruct[*Item](entity, ItemComponent)
 
-	if !ok {
+	if itemComp == nil {
 		return nil, fmt.Errorf("failed to get component data: %w", err)
 
 	}
 
-	return itemComp.(*Item).GetPropertyNames(), nil
+	return itemComp.GetPropertyNames(), nil
 
 }
 
@@ -85,30 +80,37 @@ func (inv *Inventory) GetItemByIndex(index int) (*ecs.Entity, error) {
 // If indicesSelected is empty, it returns the entire inventory.
 // Otherwise it returns the items specified by the indicesToSelect slice
 // Figure out how to do this in an MVC way. Should this be handled by the controller?
-func (inventory *Inventory) GetInventoryForDisplay(indicesToSelect []int) []any {
+func (inventory *Inventory) GetInventoryForDisplay(indicesToSelect []int, itemPropertiesFilter ...ItemProperty) []any {
 
 	inventoryItems := make([]any, 0, inventorySize)
 
 	if len(indicesToSelect) == 0 {
 		for index, entity := range *inventory.InventoryContent {
-			itemName, _ := entity.GetComponentData(nameComponent)
-			itemComp, _ := entity.GetComponentData(ItemComponent)
 
-			inventoryItems = append(inventoryItems, InventoryListEntry{
-				index,
-				itemName.(*Name).NameStr,
-				itemComp.(*Item).count})
+			itemName := GetComponentStruct[*Name](&entity, nameComponent)
+			itemComp := GetComponentStruct[*Item](&entity, ItemComponent)
+
+			if itemComp.HasAllProperties(itemPropertiesFilter...) {
+
+				inventoryItems = append(inventoryItems, InventoryListEntry{
+					index,
+					itemName.NameStr,
+					itemComp.count})
+			}
 
 		}
 	} else {
 		for _, index := range indicesToSelect {
 			entity := (*inventory.InventoryContent)[index]
-			itemName, _ := entity.GetComponentData(nameComponent)
-			itemComp, _ := entity.GetComponentData(ItemComponent)
-			inventoryItems = append(inventoryItems, InventoryListEntry{
-				index,
-				itemName.(*Name).NameStr,
-				itemComp.(*Item).count})
+			itemName := GetComponentStruct[*Name](&entity, nameComponent)
+			itemComp := GetComponentStruct[*Item](&entity, ItemComponent)
+
+			if itemComp.HasAllProperties(itemPropertiesFilter...) {
+				inventoryItems = append(inventoryItems, InventoryListEntry{
+					index,
+					itemName.NameStr,
+					itemComp.count})
+			}
 
 		}
 

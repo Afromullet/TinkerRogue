@@ -28,6 +28,9 @@ func CreateTestItems(manager *ecs.Manager, tags map[string]ecs.Tag, gameMap *Gam
 
 	startingPos := gameMap.GetStartingPosition()
 	CreateItem(manager, "Item"+strconv.Itoa(1), Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc, NewBurning(1, 1))
+	CreateItem(manager, "Item"+strconv.Itoa(1), Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc, NewBurning(1, 1))
+	CreateItem(manager, "Item"+strconv.Itoa(2), Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc, NewBurning(1, 1), NewFreezing(1, 2))
+	CreateItem(manager, "Throwable Item"+strconv.Itoa(1), Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc, NewThrowable(1, 5, 3))
 	//CreateItem(manager, "Item"+strconv.Itoa(2), Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc, NewBurning(1, 1), NewFreezing(1, 2))
 
 }
@@ -61,7 +64,10 @@ func CreateTestMonsters(manager *ecs.Manager, gameMap *GameMap) {
 		AddComponent(simpleWander, &NoMovement{}).
 		AddComponent(healthComponent, &Health{
 			MaxHealth:     5,
-			CurrentHealth: 5})
+			CurrentHealth: 5}).AddComponent(userMessage, &UserMessage{
+		AttackMessage:    "",
+		GameStateMessage: "",
+	})
 
 	//Don't create a creature in the starting room
 	for _, r := range gameMap.Rooms[1:3] {
@@ -83,7 +89,10 @@ func CreateTestMonsters(manager *ecs.Manager, gameMap *GameMap) {
 			AddComponent(simpleWander, &SimpleWander{}).
 			AddComponent(healthComponent, &Health{
 				MaxHealth:     5,
-				CurrentHealth: 5})
+				CurrentHealth: 5}).AddComponent(userMessage, &UserMessage{
+			AttackMessage:    "",
+			GameStateMessage: "",
+		})
 	}
 
 	//Don't create a creature in the starting room
@@ -104,7 +113,10 @@ func CreateTestMonsters(manager *ecs.Manager, gameMap *GameMap) {
 			AddComponent(noMove, &NoMovement{}).
 			AddComponent(healthComponent, &Health{
 				MaxHealth:     5,
-				CurrentHealth: 5})
+				CurrentHealth: 5}).AddComponent(userMessage, &UserMessage{
+			AttackMessage:    "",
+			GameStateMessage: "",
+		})
 	}
 
 	//Don't create a creature in the starting room
@@ -125,7 +137,10 @@ func CreateTestMonsters(manager *ecs.Manager, gameMap *GameMap) {
 			AddComponent(goToPlayer, &GoToPlayerMovement{}).
 			AddComponent(healthComponent, &Health{
 				MaxHealth:     5,
-				CurrentHealth: 5})
+				CurrentHealth: 5}).AddComponent(userMessage, &UserMessage{
+			AttackMessage:    "",
+			GameStateMessage: "",
+		})
 	}
 
 }

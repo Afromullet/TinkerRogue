@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/bytearena/ecs"
@@ -36,50 +37,42 @@ func AttackSystem(g *Game, attackerPos *Position, defenderPos *Position) {
 
 	var attacker *ecs.Entity = nil
 	var defender *ecs.Entity = nil
+	var attackerMessage *UserMessage = nil
 
-	var weaponComponent any
+	//var weaponComponent any
+	var weapon *Weapon = nil
 
 	if g.playerData.position.IsEqual(attackerPos) {
 		attacker = g.playerData.playerEntity
 		defender = GetCreatureAtPosition(g, defenderPos)
+		weapon = g.playerData.GetPlayerWeapon()
 
-		weaponComponent, _ = g.playerData.playerWeapon.GetComponentData(WeaponComponent)
 	} else {
 		attacker = GetCreatureAtPosition(g, defenderPos)
 		defender = g.playerData.playerEntity
 
-		weaponComponent, _ = attacker.GetComponentData(WeaponComponent)
+		weapon = GetComponentStruct[*Weapon](attacker, WeaponComponent)
+
 	}
 
-	//Todo add safety checks
-	weapon := weaponComponent.(*Weapon)
+	attackerMessage = GetComponentStruct[*UserMessage](attacker, userMessage)
+	log.Print(attackerMessage)
 
 	if weapon != nil {
 
-		var defenderHealth *Health = nil
-
-		if h, healthOK := defender.GetComponentData(healthComponent); healthOK {
-			defenderHealth = h.(*Health)
-
-			defenderHealth.CurrentHealth -= 1
+		defenderHealth := GetComponentStruct[*Health](defender, healthComponent)
+		if defenderHealth != nil {
+			defenderHealth.CurrentHealth -= weapon.damage
+			attackerMessage.AttackMessage = fmt.Sprintf("Damage Done: %d\n", weapon.damage)
 
 			if defenderHealth.CurrentHealth <= 0 {
-
 				//Todo removing an entity is really closely coupled to teh map right now.
 				//Do it differently in the future
 				index := GetIndexFromXY(defenderPos.X, defenderPos.Y)
 
 				g.gameMap.Tiles[index].Blocked = false
 				g.World.DisposeEntity(defender)
-
 			}
-
-		}
-
-		if defenderHealth != nil {
-
-		} else {
-			log.Print("Error. Defender does not have a health component")
 		}
 
 	} else {

@@ -40,11 +40,9 @@ func GetMovementComponentType(e *ecs.Entity) MoveType {
 // Build a new path when arriving at the location
 func SimpleWanderAction(g *Game, e *ecs.Entity) {
 
-	pos, _ := e.GetComponentData(position)
-	c, _ := e.GetComponentData(creature)
+	creature := GetComponentStruct[*Creature](e, creature)
 
-	creature := c.(*Creature)
-	creaturePosition := pos.(*Position)
+	creaturePosition := GetComponentStruct[*Position](e, position)
 
 	randomPos := GetRandomBetween(0, len(validPositions.positions))
 	endPos := validPositions.Get(randomPos)
@@ -67,11 +65,8 @@ func NoMoveAction(g *Game, e *ecs.Entity) {
 
 func GoToPlayerMoveAction(g *Game, e *ecs.Entity) {
 
-	pos, _ := e.GetComponentData(position)
-	c, _ := e.GetComponentData(creature)
-
-	creature := c.(*Creature)
-	creaturePosition := pos.(*Position)
+	creature := GetComponentStruct[*Creature](e, creature)
+	creaturePosition := GetComponentStruct[*Position](e, position)
 
 	creature.BuildPathToPlayer(g, creaturePosition)
 

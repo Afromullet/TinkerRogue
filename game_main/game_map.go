@@ -163,7 +163,8 @@ func (gameMap *GameMap) DrawLevel(screen *ebiten.Image) {
 	gd := NewScreenData()
 
 	for x := 0; x < gd.ScreenWidth; x++ {
-		for y := 0; y < gd.ScreenHeight; y++ {
+		//for y := 0; y < gd.ScreenHeight; y++ {
+		for y := 0; y < levelHeight; y++ {
 
 			idx := GetIndexFromXY(x, y)
 			tile := gameMap.Tiles[idx]
@@ -197,10 +198,10 @@ func (gameMap *GameMap) DrawLevel(screen *ebiten.Image) {
 // createTiles creates a map of all walls as a baseline for carving out a level.
 func (gameMap *GameMap) createTiles() []*Tile {
 	gd := NewScreenData()
-	tiles := make([]*Tile, gd.ScreenHeight*gd.ScreenWidth)
+	tiles := make([]*Tile, levelHeight*gd.ScreenWidth)
 	index := 0
 	for x := 0; x < gd.ScreenWidth; x++ {
-		for y := 0; y < gd.ScreenHeight; y++ {
+		for y := 0; y < levelHeight; y++ {
 			index = GetIndexFromXY(x, y)
 
 			tile := Tile{
@@ -224,6 +225,7 @@ func (gameMap *GameMap) GenerateLevelTiles() {
 	MAX_ROOMS := 30
 
 	gd := NewScreenData()
+	levelHeight = gd.ScreenHeight - gd.UIHeight
 	tiles := gameMap.createTiles()
 	gameMap.Tiles = tiles
 	contains_rooms := false
@@ -232,7 +234,7 @@ func (gameMap *GameMap) GenerateLevelTiles() {
 		w := GetRandomBetween(MIN_SIZE, MAX_SIZE)
 		h := GetRandomBetween(MIN_SIZE, MAX_SIZE)
 		x := GetDiceRoll(gd.ScreenWidth - w - 1)
-		y := GetDiceRoll(gd.ScreenHeight - h - 1)
+		y := GetDiceRoll(levelHeight - h - 1)
 		new_room := NewRect(x, y, w, h)
 
 		okToAdd := true
@@ -283,7 +285,7 @@ func (gameMap *GameMap) createHorizontalTunnel(x1 int, x2 int, y int) {
 	gd := NewScreenData()
 	for x := min(x1, x2); x < max(x1, x2)+1; x++ {
 		index := GetIndexFromXY(x, y)
-		if index > 0 && index < gd.ScreenWidth*gd.ScreenHeight {
+		if index > 0 && index < gd.ScreenWidth*levelHeight {
 			gameMap.Tiles[index].Blocked = false
 			gameMap.Tiles[index].TileType = FLOOR
 
@@ -298,7 +300,7 @@ func (gameMap *GameMap) createVerticalTunnel(y1 int, y2 int, x int) {
 	for y := min(y1, y2); y < max(y1, y2)+1; y++ {
 		index := GetIndexFromXY(x, y)
 
-		if index > 0 && index < gd.ScreenWidth*gd.ScreenHeight {
+		if index > 0 && index < gd.ScreenWidth*levelHeight {
 			gameMap.Tiles[index].Blocked = false
 			gameMap.Tiles[index].TileType = FLOOR
 			gameMap.Tiles[index].Image = floor
@@ -333,7 +335,7 @@ func loadTileImages() {
 
 func (gameMap GameMap) InBounds(x, y int) bool {
 	gd := NewScreenData()
-	if x < 0 || x > gd.ScreenWidth || y < 0 || y > gd.ScreenHeight {
+	if x < 0 || x > gd.ScreenWidth || y < 0 || y > levelHeight {
 		return false
 	}
 	return true

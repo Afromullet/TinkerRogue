@@ -38,7 +38,7 @@ type Game struct {
 	mainPlayerInterface *ebitenui.UI
 
 	playerData PlayerData
-	craftingUI PlayerCraftingUI
+	craftingUI PlayerItemsUI
 }
 
 // NewGame creates a new Game Object and initializes the data
@@ -91,7 +91,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	g.gameMap.DrawLevel(screen)
 	ProcessRenderables(g, g.gameMap, screen)
 	g.mainPlayerInterface.Draw(screen)
-	//ProcessUserLog(g, screen)
+	ProcessUserLog(g, screen)
 }
 
 // Layout will return the screen dimensions.

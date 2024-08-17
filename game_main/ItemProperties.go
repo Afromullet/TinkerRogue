@@ -7,11 +7,13 @@ import (
 const BURNING_NAME = "Burning"
 const FREEZING_NAME = "Freezing"
 const STICKY_NAME = "Sticky"
+const THROWABLE_NAME = "Throwable"
 
 var ItemComponent *ecs.Component
 var StickyComponent *ecs.Component
 var BurningComponent *ecs.Component
 var FreezingComponent *ecs.Component
+var ThrowableComponent *ecs.Component
 
 /*
 The AllItemProperties makes it easier to query an Item for all of its Properties.
@@ -128,5 +130,61 @@ func NewFreezing(dur int, t int) freezing {
 		},
 		Thickness: t,
 	}
+
+}
+
+type throwable struct {
+	CommonItemProperties
+	throwingRange int //How many tiles it can be thrown
+	damage        int
+}
+
+func (t throwable) GetPropertyComponent() *ecs.Component {
+	return ThrowableComponent
+}
+
+func (t throwable) GetPropertyName() string {
+	return t.CommonItemProperties.Name
+
+}
+
+func NewThrowable(dur int, throwRange int, dam int) throwable {
+
+	return throwable{
+		CommonItemProperties: CommonItemProperties{
+			Name:     THROWABLE_NAME,
+			Duration: dur,
+		},
+		throwingRange: throwRange,
+		damage:        dam,
+	}
+
+}
+
+func InitializeItemComponents(manager *ecs.Manager, tags map[string]ecs.Tag) {
+
+	ItemComponent = manager.NewComponent()
+	StickyComponent = manager.NewComponent()
+	BurningComponent = manager.NewComponent()
+	FreezingComponent = manager.NewComponent()
+	WeaponComponent = manager.NewComponent()
+	ThrowableComponent = manager.NewComponent()
+
+	AllItemProperties = append(AllItemProperties, StickyComponent)
+	AllItemProperties = append(AllItemProperties, BurningComponent)
+	AllItemProperties = append(AllItemProperties, FreezingComponent)
+	AllItemProperties = append(AllItemProperties, ThrowableComponent)
+
+	items := ecs.BuildTag(ItemComponent, position) //todo add all the tags
+	tags["items"] = items
+
+	sticking := ecs.BuildTag(StickyComponent)
+	tags["sticking"] = sticking
+
+	burning := ecs.BuildTag(BurningComponent)
+	tags["burning"] = burning
+
+	freezing := ecs.BuildTag(FreezingComponent)
+	tags["freezing"] = freezing
 
 }

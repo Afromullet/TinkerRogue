@@ -24,6 +24,7 @@ var goToPlayer *ecs.Component
 
 var WeaponComponent *ecs.Component
 var InventoryComponent *ecs.Component
+var userMessage *ecs.Component
 
 type Carryable struct{}
 
@@ -59,7 +60,8 @@ type Name struct {
 }
 
 type UserMessage struct {
-	BasicMessage string
+	AttackMessage    string
+	GameStateMessage string
 }
 
 type SimpleWander struct {
@@ -85,10 +87,11 @@ func InitializeECS(g *Game) {
 	renderable = manager.NewComponent()
 
 	nameComponent = manager.NewComponent()
-	userMessage := manager.NewComponent()
+
 	InventoryComponent = manager.NewComponent()
 
 	healthComponent = manager.NewComponent()
+	userMessage = manager.NewComponent()
 
 	renderables := ecs.BuildTag(renderable, position)
 	tags["renderables"] = renderables
@@ -113,32 +116,6 @@ func InitializeCreatureComponents(manager *ecs.Manager, tags map[string]ecs.Tag)
 
 	creatures := ecs.BuildTag(creature, position)
 	tags["monsters"] = creatures
-
-}
-
-func InitializeItemComponents(manager *ecs.Manager, tags map[string]ecs.Tag) {
-
-	ItemComponent = manager.NewComponent()
-	StickyComponent = manager.NewComponent()
-	BurningComponent = manager.NewComponent()
-	FreezingComponent = manager.NewComponent()
-	WeaponComponent = manager.NewComponent()
-
-	AllItemProperties = append(AllItemProperties, StickyComponent)
-	AllItemProperties = append(AllItemProperties, BurningComponent)
-	AllItemProperties = append(AllItemProperties, FreezingComponent)
-
-	items := ecs.BuildTag(ItemComponent, position) //todo add all the tags
-	tags["items"] = items
-
-	sticking := ecs.BuildTag(StickyComponent)
-	tags["sticking"] = sticking
-
-	burning := ecs.BuildTag(BurningComponent)
-	tags["burning"] = burning
-
-	freezing := ecs.BuildTag(FreezingComponent)
-	tags["freezing"] = freezing
 
 }
 
@@ -167,7 +144,10 @@ func InitializePlayerData(g *Game) {
 		AddComponent(healthComponent, &Health{
 			MaxHealth:     5,
 			CurrentHealth: 5,
-		})
+		}).AddComponent(userMessage, &UserMessage{
+		AttackMessage:    "",
+		GameStateMessage: "",
+	})
 
 	players := ecs.BuildTag(player, position, InventoryComponent)
 	g.WorldTags["players"] = players
@@ -178,64 +158,13 @@ func InitializePlayerData(g *Game) {
 
 	//Don't want to Query for the player position every time, so we're storing it
 
-	pos, _ := g.playerData.playerEntity.GetComponentData(position)
-	startPos := pos.(*Position)
+	startPos := GetComponentStruct[*Position](g.playerData.playerEntity, position)
 	startPos.X = g.gameMap.GetStartingPosition().X
 	startPos.Y = g.gameMap.GetStartingPosition().Y
 
-	inv, _ := g.playerData.playerEntity.GetComponentData(InventoryComponent)
-	inventory := inv.(*Inventory)
+	inventory := GetComponentStruct[*Inventory](g.playerData.playerEntity, InventoryComponent)
 
 	g.playerData.position = startPos
 	g.playerData.inventory = inventory
-
-}
-
-// Create an item with any number of Properties. ItemProperty is a wrapper around an ecs.Component to make
-// Manipulating it easier
-func CreateItem(manager *ecs.Manager, name string, pos Position, imagePath string, properties ...ItemProperty) *ecs.Entity {
-
-	img, _, err := ebitenutil.NewImageFromFile(imagePath)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	item := &Item{count: 1, properties: manager.NewEntity()}
-
-	for _, prop := range properties {
-		item.properties.AddComponent(prop.GetPropertyComponent(), &prop)
-
-	}
-
-	itemEntity := manager.NewEntity().
-		AddComponent(renderable, &Renderable{
-			Image:   img,
-			visible: true,
-		}).
-		AddComponent(position, &Position{
-			X: pos.X,
-			Y: pos.Y,
-		}).
-		AddComponent(nameComponent, &Name{
-			NameStr: name,
-		}).
-		AddComponent(ItemComponent, item)
-
-		//TODO where shoudl I add the tags?
-
-	return itemEntity
-
-}
-
-// A weapon is an Item with a weapon component
-func CreateWeapon(manager *ecs.Manager, name string, pos Position, imagePath string, dam int, properties ...ItemProperty) *ecs.Entity {
-
-	weapon := CreateItem(manager, name, pos, imagePath, properties...)
-
-	weapon.AddComponent(WeaponComponent, &Weapon{
-		damage: dam,
-	})
-
-	return weapon
 
 }

@@ -4,8 +4,10 @@ import (
 	"log"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/inpututil"
 )
 
+// todo replace the keypressed with iskeyreleased
 func PlayerActions(g *Game) {
 
 	turntaken := false
@@ -36,7 +38,8 @@ func PlayerActions(g *Game) {
 
 	}
 
-	if ebiten.IsKeyPressed(ebiten.KeyG) {
+	if inpututil.IsKeyJustReleased(ebiten.KeyG) {
+		//if ebiten.IsKeyPressed(ebiten.KeyG) {
 
 		log.Print("Press G")
 
@@ -49,6 +52,10 @@ func PlayerActions(g *Game) {
 	}
 	if ebiten.IsKeyPressed(ebiten.KeySpace) {
 		turntaken = true
+	}
+
+	if inpututil.IsMouseButtonJustReleased(ebiten.MouseButton0) {
+		log.Print("Throwing stuff")
 	}
 
 	nextPosition := Position{

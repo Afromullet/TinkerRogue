@@ -16,24 +16,17 @@ var face, _ = loadFont(20)
 var buttonImage, _ = loadButtonImage()
 
 /*
-rootContainer: The main container used for displaying all crafting related widgets
-rootWindow: The window that all of it is displayed in
-itemDisplayContainer: Displays the items the player can use for crafting
-itemSelectedContainer: Displays the items selected for crafting the current item
-inventoryDisplayList: Contains the list for the things that will be displayed to the itemDisplayContainer
+The rootContainer contains buttons that open different window.
 
-The player crafting UI is nested as follows:
+The different windows show a filtered version of the inventory to the user
 
-Window With the Following Content:
-
-	RootContainer with GridLaout
-		-ItemDisplayContainer
-		-ItemsSelectedContainer
+All windows use hte same Item Selected Containers
 */
 
-type PlayerCraftingUI struct {
+type PlayerItemsUI struct {
 	rootContainer              *widget.Container //The main for the inventory window
-	rootWindow                 *widget.Window
+	rootCraftingWindow         *widget.Window
+	rootThrowableWindow        *widget.Window
 	ItemDisplayContainer       *widget.Container //Displays the items the user CAN select for crafting
 	ItemsSelectedContainer     *widget.Container //Displays the items the user HAS selected for crafitng
 	ItemsSelectedPropContainer *widget.Container //Container to hold the widget that displays the proeprties of the selected item
@@ -50,7 +43,7 @@ type PlayerCraftingUI struct {
 
 // Called whenever the inventory is displayed to the user.
 // This updates the GUI elements in PlayerCraftingUI
-func (ui *PlayerCraftingUI) UpdateCraftingInventory(g *Game) {
+func (ui *PlayerItemsUI) UpdateCraftingInventory(g *Game) {
 
 	ui.UpdateInventoryDisplaylist(&g.playerData)
 
@@ -59,7 +52,7 @@ func (ui *PlayerCraftingUI) UpdateCraftingInventory(g *Game) {
 }
 
 // Gets a list widget for displaying the inventory
-func (PlayerCraftingUI *PlayerCraftingUI) GetInventoryListWidget(entries []any) *widget.List {
+func (PlayerCraftingUI *PlayerItemsUI) GetInventoryListWidget(entries []any) *widget.List {
 	li := widget.NewList(
 
 		// Set how wide the list should be
@@ -127,7 +120,7 @@ func (PlayerCraftingUI *PlayerCraftingUI) GetInventoryListWidget(entries []any) 
 
 // This updates the PlayerCraftingUI inventoryDisplayList with the slice passed as a parameter.
 // A player can select an item by clicking it. It will then be added to the "Selected Item" container
-func (playerCraftingUI *PlayerCraftingUI) UpdateInventoryDisplaylist(playerData *PlayerData) {
+func (playerCraftingUI *PlayerItemsUI) UpdateInventoryDisplaylist(playerData *PlayerData) {
 
 	// Nested function to add a selected item
 	addSelectedItem := func(index int) {
@@ -182,9 +175,8 @@ func (playerCraftingUI *PlayerCraftingUI) UpdateInventoryDisplaylist(playerData 
 
 }
 
-// Creating the button that opens the crafting menu.
-// Doing it inside a function makes the code easier to follow
-func (playerCraftingUI *PlayerCraftingUI) CreateCraftingMenuButtons(g *Game) {
+// Creating the buttons that reside in the crafting menu.
+func (playerCraftingUI *PlayerItemsUI) CreateCraftingMenuButtons(g *Game) {
 	// construct a button
 	button := widget.NewButton(
 		// set general widget options
@@ -256,7 +248,27 @@ func (playerCraftingUI *PlayerCraftingUI) CreateCraftingMenuButtons(g *Game) {
 func (g *Game) CreatePlayerUI() *ebitenui.UI {
 
 	ui := ebitenui.UI{}
-	CreateCraftingUI(g)
+
+	// Main container that will hold the container for available items and the items selected
+	g.craftingUI.rootContainer = widget.NewContainer(
+		widget.ContainerOpts.BackgroundImage(e_image.NewNineSliceColor(color.NRGBA{100, 100, 100, 255})),
+		widget.ContainerOpts.Layout(widget.NewGridLayout(
+			// It is using a GridLayout with a single column
+			widget.GridLayoutOpts.Columns(3),
+
+			widget.GridLayoutOpts.Stretch([]bool{true, true, true}, []bool{true, true, true}),
+			// Padding defines how much space to put around the outside of the grid.
+			widget.GridLayoutOpts.Padding(widget.Insets{
+				Top:    50,
+				Bottom: 50,
+			}),
+			// Spacing defines how much space to put between each column and row
+			widget.GridLayoutOpts.Spacing(0, 20))),
+	)
+
+	CreateItemManagementUI(g)
+
+	CreateItemContainers(g)
 
 	//This creates the root container for this UI.
 	rootContainer := widget.NewContainer(
@@ -273,7 +285,8 @@ func (g *Game) CreatePlayerUI() *ebitenui.UI {
 			widget.GridLayoutOpts.Spacing(0, 20))),
 	)
 
-	rootContainer.AddChild(CreateMainGUIButtons(g, &ui))
+	rootContainer.AddChild(CreateOpenCraftingButton(g, &ui))
+	rootContainer.AddChild(CreateOpenThrowablesButton(g, &ui))
 
 	ui.Container = rootContainer
 
@@ -281,9 +294,8 @@ func (g *Game) CreatePlayerUI() *ebitenui.UI {
 
 }
 
-// Creating the button that opens the crafting menu. Other buttons will be added
-// Doing it inside a function makes the code easier to follow
-func CreateMainGUIButtons(g *Game, ui *ebitenui.UI) *widget.Button {
+// Creating the button that opens the crafting menu.
+func CreateOpenCraftingButton(g *Game, ui *ebitenui.UI) *widget.Button {
 	// construct a button
 	button := widget.NewButton(
 		// set general widget options
@@ -309,12 +321,67 @@ func CreateMainGUIButtons(g *Game, ui *ebitenui.UI) *widget.Button {
 
 		// add a handler that reacts to clicking the button
 		widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
-			x, y := g.craftingUI.rootWindow.Contents.PreferredSize()
+			x, y := g.craftingUI.rootCraftingWindow.Contents.PreferredSize()
+
+			g.craftingUI.ClearSelectedItemsButton.GetWidget().Visibility = widget.Visibility_Show
+			g.craftingUI.ItemsSelectedPropContainer.GetWidget().Visibility = widget.Visibility_Show
+			g.craftingUI.ItemsSelectedPropTextArea.GetWidget().Visibility = widget.Visibility_Show
+			g.craftingUI.ItemsSelectedContainer.GetWidget().Visibility = widget.Visibility_Show
+
 			r := image.Rect(0, 0, x, y)
 			r = r.Add(image.Point{200, 50})
-			g.craftingUI.rootWindow.SetLocation(r)
+			g.craftingUI.rootCraftingWindow.SetLocation(r)
 			g.craftingUI.UpdateCraftingInventory(g)
-			ui.AddWindow(g.craftingUI.rootWindow)
+			ui.AddWindow(g.craftingUI.rootCraftingWindow)
+
+		}),
+	)
+
+	return button
+
+}
+
+// Creating the button that opens the crafting menu. Other buttons will be added
+// Doing it inside a function makes the code easier to follow
+func CreateOpenThrowablesButton(g *Game, ui *ebitenui.UI) *widget.Button {
+	// construct a button
+	button := widget.NewButton(
+		// set general widget options
+		widget.ButtonOpts.WidgetOpts(
+			// instruct the container's anchor layout to center the button both horizontally and vertically
+			widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{
+				HorizontalPosition: widget.AnchorLayoutPositionCenter,
+				VerticalPosition:   widget.AnchorLayoutPositionCenter,
+			}),
+		),
+
+		widget.ButtonOpts.Image(buttonImage),
+		widget.ButtonOpts.Text("Throwables", face, &widget.ButtonTextColor{
+			Idle: color.NRGBA{0xdf, 0xf4, 0xff, 0xff},
+		}),
+
+		widget.ButtonOpts.TextPadding(widget.Insets{
+			Left:   30,
+			Right:  30,
+			Top:    5,
+			Bottom: 5,
+		}),
+
+		// add a handler that reacts to clicking the button
+		widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+
+			g.craftingUI.ClearSelectedItemsButton.GetWidget().Visibility = widget.Visibility_Hide
+			g.craftingUI.ItemsSelectedPropContainer.GetWidget().Visibility = widget.Visibility_Hide
+			g.craftingUI.ItemsSelectedPropTextArea.GetWidget().Visibility = widget.Visibility_Hide
+			g.craftingUI.ItemsSelectedContainer.GetWidget().Visibility = widget.Visibility_Hide
+
+			x, y := g.craftingUI.rootThrowableWindow.Contents.PreferredSize()
+			r := image.Rect(0, 0, x, y)
+			r = r.Add(image.Point{200, 50})
+			g.craftingUI.rootThrowableWindow.SetLocation(r)
+
+			g.craftingUI.UpdateCraftingInventory(g)
+			ui.AddWindow(g.craftingUI.rootThrowableWindow)
 
 		}),
 	)
@@ -380,7 +447,9 @@ func CreateItemPropertyTextArea() *widget.TextArea {
 	return textarea
 }
 
-func CreateCraftingUI(g *Game) {
+//For creating a window that the Item Display related containers are shown in
+
+func CreateInventoryDisplayWindow(g *Game, title string) *widget.Window {
 
 	g.craftingUI.ItemsSelectedIndices = make([]int, 0)
 	// load button text font
@@ -394,31 +463,51 @@ func CreateCraftingUI(g *Game) {
 		widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
 	)
 	titleContainer.AddChild(widget.NewText(
-		widget.TextOpts.Text("Crafting Window", titleFace, color.NRGBA{254, 255, 255, 255}),
+		widget.TextOpts.Text(title, titleFace, color.NRGBA{254, 255, 255, 255}),
 		widget.TextOpts.WidgetOpts(widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{
 			HorizontalPosition: widget.AnchorLayoutPositionCenter,
 			VerticalPosition:   widget.AnchorLayoutPositionCenter,
 		})),
 	))
 
-	// Main container that will hold the container for available items and the items selected
-	g.craftingUI.rootContainer = widget.NewContainer(
-		widget.ContainerOpts.BackgroundImage(e_image.NewNineSliceColor(color.NRGBA{100, 100, 100, 255})),
-		widget.ContainerOpts.Layout(widget.NewGridLayout(
-			// It is using a GridLayout with a single column
-			widget.GridLayoutOpts.Columns(3),
+	window := widget.NewWindow(
 
-			widget.GridLayoutOpts.Stretch([]bool{true, true, true}, []bool{true, true, true}),
-			// Padding defines how much space to put around the outside of the grid.
-			widget.GridLayoutOpts.Padding(widget.Insets{
-				Top:    50,
-				Bottom: 50,
-			}),
-			// Spacing defines how much space to put between each column and row
-			widget.GridLayoutOpts.Spacing(0, 20))),
+		widget.WindowOpts.Contents(g.craftingUI.rootContainer),
+
+		widget.WindowOpts.TitleBar(titleContainer, 25),
+		widget.WindowOpts.Modal(),
+		widget.WindowOpts.CloseMode(widget.CLICK_OUT),
+		widget.WindowOpts.Draggable(),
+		widget.WindowOpts.Resizeable(),
+		widget.WindowOpts.MinSize(200, 100),
+
+		//widget.WindowOpts.MaxSize(300, 300),
+
+		widget.WindowOpts.MoveHandler(func(args *widget.WindowChangedEventArgs) {
+			fmt.Println("Window Moving")
+		}),
+		//Set the callback that triggers when a resize is complete
+		widget.WindowOpts.ResizeHandler(func(args *widget.WindowChangedEventArgs) {
+			fmt.Println("Window Resized")
+		}),
 	)
 
+	return window
+
+}
+
+func CreateItemManagementUI(g *Game) {
+
+	g.craftingUI.rootCraftingWindow = CreateInventoryDisplayWindow(g, "Crafting Window")
 	g.craftingUI.CreateCraftingMenuButtons(g)
+
+	g.craftingUI.rootThrowableWindow = CreateInventoryDisplayWindow(g, "Throwing Window")
+
+}
+
+// Creates the containers that display the items.
+// This is shared amongst all GUI elements that display the inventory
+func CreateItemContainers(g *Game) {
 
 	// Used for holding the items prior to selecting them for crafting
 	g.craftingUI.ItemDisplayContainer = widget.NewContainer(
@@ -444,34 +533,12 @@ func CreateCraftingUI(g *Game) {
 
 	g.craftingUI.rootContainer.AddChild(g.craftingUI.ItemDisplayContainer)
 	g.craftingUI.rootContainer.AddChild(g.craftingUI.ItemsSelectedContainer)
-	g.craftingUI.rootContainer.AddChild(g.craftingUI.ItemsSelectedPropContainer)
 
 	g.craftingUI.ItemsSelectedPropTextArea = CreateItemPropertyTextArea()
 	g.craftingUI.ItemsSelectedPropContainer.AddChild(g.craftingUI.ItemsSelectedPropTextArea)
 	g.craftingUI.ItemsSelectedContainer.AddChild(g.craftingUI.ClearSelectedItemsButton)
 	g.craftingUI.ItemsSelectedPropContainer.AddChild(g.craftingUI.ItemsSelectedPropTextArea)
 	g.craftingUI.ItemsSelectedPropContainer.AddChild(g.craftingUI.CraftItemsButton)
-
-	g.craftingUI.rootWindow = widget.NewWindow(
-
-		widget.WindowOpts.Contents(g.craftingUI.rootContainer),
-
-		widget.WindowOpts.TitleBar(titleContainer, 25),
-		widget.WindowOpts.Modal(),
-		widget.WindowOpts.CloseMode(widget.CLICK_OUT),
-		widget.WindowOpts.Draggable(),
-		widget.WindowOpts.Resizeable(),
-		widget.WindowOpts.MinSize(200, 100),
-
-		//widget.WindowOpts.MaxSize(300, 300),
-
-		widget.WindowOpts.MoveHandler(func(args *widget.WindowChangedEventArgs) {
-			fmt.Println("Window Moving")
-		}),
-		//Set the callback that triggers when a resize is complete
-		widget.WindowOpts.ResizeHandler(func(args *widget.WindowChangedEventArgs) {
-			fmt.Println("Window Resized")
-		}),
-	)
+	g.craftingUI.rootContainer.AddChild(g.craftingUI.ItemsSelectedPropContainer)
 
 }

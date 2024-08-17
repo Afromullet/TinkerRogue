@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-
 	"github.com/bytearena/ecs"
 )
 
@@ -21,14 +19,16 @@ type PlayerData struct {
 
 // Helper function to make it less tedious to get the inventory
 func (playerData *PlayerData) GetPlayerInventory() *Inventory {
-	inv, err := playerData.playerEntity.GetComponentData(InventoryComponent)
 
-	if !err {
-		// Handle the error (e.g., log it, return nil, or handle accordingly)
-		fmt.Println("Error getting player inventory:", err)
-		return nil // Return nil if you can't get the inventory
-	}
+	playerInventory := GetComponentStruct[*Inventory](playerData.playerEntity, InventoryComponent)
 
-	playerInventory := inv.(*Inventory)
 	return playerInventory
+}
+
+// Helper function to make it less tedious to get the inventory
+func (playerData *PlayerData) GetPlayerWeapon() *Weapon {
+
+	weapon := GetComponentStruct[*Weapon](playerData.playerWeapon, WeaponComponent)
+
+	return weapon
 }

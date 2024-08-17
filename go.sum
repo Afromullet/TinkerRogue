@@ -1,3 +1,5 @@
+github.com/RAshkettle/rrogue v0.0.19 h1:bMoIDboXKBlj3VDMMiR5GuA+69ohfhYi4xG8XqcIAkI=
+github.com/RAshkettle/rrogue v0.0.19/go.mod h1:pT/rtWcs8/U2r3ydrVx4waac6TYRLwVWAowgJRV1+xg=
 github.com/bytearena/ecs v1.0.0 h1:azwCN52dJZz2KwPoyqU4s1MMw9J9rD+65B30D4qVSj4=
 github.com/bytearena/ecs v1.0.0/go.mod h1:RDqayRmo2imxvASJif+btnZpjbMovNlsBTctJv5dWRQ=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=

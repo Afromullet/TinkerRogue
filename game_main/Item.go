@@ -1,7 +1,10 @@
 package main
 
 import (
+	"log"
+
 	ecs "github.com/bytearena/ecs"
+	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 )
 
 /*
@@ -65,6 +68,91 @@ func (item *Item) GetPropertyNames() []string {
 
 }
 
+// Not the best way to check if an item has all propeties, but it will work for now
+func (item *Item) HasAllProperties(propsToCheck ...ItemProperty) bool {
+
+	if len(propsToCheck) == 0 {
+		return true
+	}
+
+	for _, prop := range propsToCheck {
+
+		if !item.HasProperty(prop) {
+			return false
+		}
+
+	}
+
+	return true
+
+}
+func (item *Item) HasProperty(propToCheck ItemProperty) bool {
+
+	names := item.GetPropertyNames()
+	comp := propToCheck.GetPropertyName()
+
+	for _, n := range names {
+
+		if n == comp {
+			return true
+
+		}
+
+	}
+
+	return false
+
+}
+
 type Weapon struct {
 	damage int
+}
+
+// Create an item with any number of Properties. ItemProperty is a wrapper around an ecs.Component to make
+// Manipulating it easier
+func CreateItem(manager *ecs.Manager, name string, pos Position, imagePath string, properties ...ItemProperty) *ecs.Entity {
+
+	img, _, err := ebitenutil.NewImageFromFile(imagePath)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	item := &Item{count: 1, properties: manager.NewEntity()}
+
+	for _, prop := range properties {
+		item.properties.AddComponent(prop.GetPropertyComponent(), &prop)
+
+	}
+
+	itemEntity := manager.NewEntity().
+		AddComponent(renderable, &Renderable{
+			Image:   img,
+			visible: true,
+		}).
+		AddComponent(position, &Position{
+			X: pos.X,
+			Y: pos.Y,
+		}).
+		AddComponent(nameComponent, &Name{
+			NameStr: name,
+		}).
+		AddComponent(ItemComponent, item)
+
+		//TODO where shoudl I add the tags?
+
+	return itemEntity
+
+}
+
+// A weapon is an Item with a weapon component
+func CreateWeapon(manager *ecs.Manager, name string, pos Position, imagePath string, dam int, properties ...ItemProperty) *ecs.Entity {
+
+	weapon := CreateItem(manager, name, pos, imagePath, properties...)
+
+	weapon.AddComponent(WeaponComponent, &Weapon{
+		damage: dam,
+	})
+
+	return weapon
+
 }
