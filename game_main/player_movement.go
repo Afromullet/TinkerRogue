@@ -54,9 +54,9 @@ func PlayerActions(g *Game) {
 		turntaken = true
 	}
 
-	if inpututil.IsMouseButtonJustReleased(ebiten.MouseButton0) {
-		log.Print("Throwing stuff")
-	}
+	//if inpututil.IsMouseButtonJustReleased(ebiten.MouseButton0) {
+	//log.Print("Throwing stuff")
+	//}
 
 	nextPosition := Position{
 		X: g.playerData.position.X + x,
