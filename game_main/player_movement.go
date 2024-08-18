@@ -34,7 +34,7 @@ func PlayerActions(g *Game) {
 
 	if ebiten.IsKeyPressed(ebiten.KeyI) {
 
-		g.craftingUI.UpdateCraftingInventory(g)
+		//g.craftingUI.UpdateCraftingInventory(g)
 
 	}
 
