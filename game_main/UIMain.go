@@ -28,16 +28,16 @@ type ItemUIWindowsState struct {
 	throwingWIndowOpen bool
 }
 
+// Anything that displays the inventory will have to use this struct through composition.
+// Originally I ran into problems with having multiple windows due to the ItemDisplayCOntain
 type ItemDisplay struct {
-	rootContainer              *widget.Container //
-	rootWindow                 *widget.Window
-	ItemDisplayContainer       *widget.Container
-	ItemsSelectedContainer     *widget.Container //Displays the items the user HAS selected for crafitng
-	ItemsSelectedPropContainer *widget.Container //Container to hold the widget that displays the proeprties of the selected item
-	ItemsSelectedPropTextArea  *widget.TextArea  //Displays the properties of the selected items
-	InventoryDisplaylist       *widget.List
-	ItemsSelectedList          *widget.List
-	ItemsSelectedIndices       []int //The indices in inventoryDisplayList of the items the user selected
+	rootContainer        *widget.Container //
+	rootWindow           *widget.Window
+	ItemDisplayContainer *widget.Container
+
+	InventoryDisplaylist *widget.List
+	ItemsSelectedList    *widget.List
+	ItemsSelectedIndices []int //The indices in inventoryDisplayList of the items the user selected
 
 }
 
@@ -108,73 +108,12 @@ func (ItemDisplay *ItemDisplay) GetInventoryListWidget(entries []any) *widget.Li
 	return li
 }
 
-// This updates the PlayerCraftingUI inventoryDisplayList with the slice passed as a parameter.
-// A player can select an item by clicking it. It will then be added to the "Selected Item" container
-func (itemDisplay *ItemDisplay) UpdateInventoryDisplaylist(playerData *PlayerData, propFilters ...ItemProperty) {
-
-	// Nested function to add a selected item
-	addSelectedItem := func(index int) {
-
-		for _, itemIndex := range itemDisplay.ItemsSelectedIndices {
-			if itemIndex == index {
-				return
-			}
-		}
-		itemDisplay.ItemsSelectedIndices = append(itemDisplay.ItemsSelectedIndices, index)
-	}
-
-	inv := playerData.GetPlayerInventory().GetInventoryForDisplay([]int{}, propFilters...)
-	itemDisplay.InventoryDisplaylist = itemDisplay.GetInventoryListWidget(inv)
-
-	itemDisplay.InventoryDisplaylist.EntrySelectedEvent.AddHandler(func(args interface{}) {
-
-		//So that we don't append to the container
-
-		itemDisplay.ItemsSelectedContainer.RemoveChild(itemDisplay.ItemsSelectedList)
-
-		a := args.(*widget.ListEntrySelectedEventArgs)
-		entry := a.Entry.(InventoryListEntry)
-
-		addSelectedItem(entry.index)
-
-		names, _ := playerData.GetPlayerInventory().GetPropertyNames(entry.index)
-
-		playerData.GetPlayerInventory().GetPropertyNames(100)
-
-		sel := playerData.GetPlayerInventory().GetInventoryForDisplay(itemDisplay.ItemsSelectedIndices)
-
-		itemDisplay.ItemsSelectedList = itemDisplay.GetInventoryListWidget(sel)
-
-		if itemDisplay.ItemsSelectedList != nil {
-			itemDisplay.ItemsSelectedContainer.AddChild(itemDisplay.ItemsSelectedList)
-
-			names, _ := playerData.GetPlayerInventory().GetPropertyNames(entry.index)
-
-			for _, n := range names {
-				itemDisplay.ItemsSelectedPropTextArea.AppendText(n)
-
-			}
-
-		}
-
-		fmt.Println("Entry Selected: ", entry)
-		fmt.Println("Printing Item Properties: ", names)
-		fmt.Println("Items Selected ", itemDisplay.ItemsSelectedIndices)
-		//log.Print(playerData.GetPlayerInventory().GetInventoryForDispl
-
-	})
-
-}
-
 func (itemDisplay *ItemDisplay) CreateInventoryDisplayWindow(title string) {
 
 	itemDisplay.ItemsSelectedIndices = make([]int, 0)
-	// load button text font
-	//face, _ := loadFont(20)
-	// load the font for the window title
+
 	titleFace, _ := loadFont(12)
 
-	// Create the titlebar for the window
 	titleContainer := widget.NewContainer(
 		widget.ContainerOpts.BackgroundImage(e_image.NewNineSliceColor(color.NRGBA{150, 150, 150, 255})),
 		widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
@@ -198,8 +137,6 @@ func (itemDisplay *ItemDisplay) CreateInventoryDisplayWindow(title string) {
 		widget.WindowOpts.Resizeable(),
 		widget.WindowOpts.MinSize(200, 100),
 
-		//widget.WindowOpts.MaxSize(300, 300),
-
 		widget.WindowOpts.MoveHandler(func(args *widget.WindowChangedEventArgs) {
 			fmt.Println("Window Moving")
 		}),
@@ -212,7 +149,6 @@ func (itemDisplay *ItemDisplay) CreateInventoryDisplayWindow(title string) {
 }
 
 // Creates the containers that display the items.
-// This is shared amongst all GUI elements that display the inventory
 func (itemDisplay *ItemDisplay) CreateItemContainers(g *Game) {
 
 	// Main container that will hold the container for available items and the items selected
@@ -238,8 +174,75 @@ func (itemDisplay *ItemDisplay) CreateItemContainers(g *Game) {
 		widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
 	)
 
+	itemDisplay.rootContainer.AddChild(itemDisplay.ItemDisplayContainer)
+
+}
+
+type CraftingItemDisplay struct {
+	itemDisplay                ItemDisplay
+	ItemsSelectedContainer     *widget.Container //Displays the items the user HAS selected for crafitng
+	ItemsSelectedPropContainer *widget.Container //Container to hold the widget that displays the proeprties of the selected item
+	ItemsSelectedPropTextArea  *widget.TextArea  //Displays the properties of the selected items
+
+}
+
+// This updates the PlayerCraftingUI inventoryDisplayList with the slice passed as a parameter.
+// A player can select an item by clicking it. It will then be added to the "Selected Item" container
+func (craftingItemDisplay *CraftingItemDisplay) UpdateInventoryDisplaylist(playerData *PlayerData, propFilters ...ItemProperty) {
+
+	// Nested function to add a selected item
+	addSelectedItem := func(index int) {
+
+		for _, itemIndex := range craftingItemDisplay.itemDisplay.ItemsSelectedIndices {
+			if itemIndex == index {
+				return
+			}
+		}
+		craftingItemDisplay.itemDisplay.ItemsSelectedIndices = append(craftingItemDisplay.itemDisplay.ItemsSelectedIndices, index)
+	}
+
+	inv := playerData.GetPlayerInventory().GetInventoryForDisplay([]int{}, propFilters...)
+	craftingItemDisplay.itemDisplay.InventoryDisplaylist = craftingItemDisplay.itemDisplay.GetInventoryListWidget(inv)
+
+	craftingItemDisplay.itemDisplay.InventoryDisplaylist.EntrySelectedEvent.AddHandler(func(args interface{}) {
+
+		//So that we don't append to the container
+
+		craftingItemDisplay.ItemsSelectedContainer.RemoveChild(craftingItemDisplay.itemDisplay.ItemsSelectedList)
+
+		a := args.(*widget.ListEntrySelectedEventArgs)
+		entry := a.Entry.(InventoryListEntry)
+
+		addSelectedItem(entry.index)
+
+		//names, _ := playerData.GetPlayerInventory().GetPropertyNames(entry.index)
+
+		playerData.GetPlayerInventory().GetPropertyNames(100)
+
+		sel := playerData.GetPlayerInventory().GetInventoryForDisplay(craftingItemDisplay.itemDisplay.ItemsSelectedIndices)
+
+		craftingItemDisplay.itemDisplay.ItemsSelectedList = craftingItemDisplay.itemDisplay.GetInventoryListWidget(sel)
+
+		if craftingItemDisplay.itemDisplay.ItemsSelectedList != nil {
+			craftingItemDisplay.ItemsSelectedContainer.AddChild(craftingItemDisplay.itemDisplay.ItemsSelectedList)
+
+			names, _ := playerData.GetPlayerInventory().GetPropertyNames(entry.index)
+
+			for _, n := range names {
+				craftingItemDisplay.ItemsSelectedPropTextArea.AppendText(n)
+
+			}
+
+		}
+
+	})
+
+}
+
+func (craftingItemDisplay *CraftingItemDisplay) CreateCraftingContainers() {
+
 	//Holds the widget that displays the selected items to the player
-	itemDisplay.ItemsSelectedContainer = widget.NewContainer(
+	craftingItemDisplay.ItemsSelectedContainer = widget.NewContainer(
 		widget.ContainerOpts.BackgroundImage(e_image.NewNineSliceColor(color.NRGBA{100, 100, 100, 255})),
 		widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
 		widget.ContainerOpts.Layout(widget.NewRowLayout(
@@ -248,34 +251,29 @@ func (itemDisplay *ItemDisplay) CreateItemContainers(g *Game) {
 		)))
 
 	//Holds the window that will display item properties
-	itemDisplay.ItemsSelectedPropContainer = widget.NewContainer(
+	craftingItemDisplay.ItemsSelectedPropContainer = widget.NewContainer(
 
 		widget.ContainerOpts.BackgroundImage(e_image.NewNineSliceColor(color.NRGBA{100, 100, 100, 255})),
 		widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
 	)
+	craftingItemDisplay.itemDisplay.rootContainer.AddChild(craftingItemDisplay.ItemsSelectedContainer)
 
-	itemDisplay.rootContainer.AddChild(itemDisplay.ItemDisplayContainer)
-	itemDisplay.rootContainer.AddChild(itemDisplay.ItemsSelectedContainer)
-
-	itemDisplay.ItemsSelectedPropTextArea = CreateItemPropertyTextArea()
-	itemDisplay.ItemsSelectedPropContainer.AddChild(itemDisplay.ItemsSelectedPropTextArea)
+	craftingItemDisplay.ItemsSelectedPropTextArea = CreateItemPropertyTextArea()
+	craftingItemDisplay.ItemsSelectedPropContainer.AddChild(craftingItemDisplay.ItemsSelectedPropTextArea)
 	//itemDisplay.ItemsSelectedContainer.AddChild(g.craftingUI.ClearSelectedItemsButton)
-	itemDisplay.ItemsSelectedPropContainer.AddChild(itemDisplay.ItemsSelectedPropTextArea)
+	craftingItemDisplay.ItemsSelectedPropContainer.AddChild(craftingItemDisplay.ItemsSelectedPropTextArea)
 	//itemDisplay.ItemsSelectedPropContainer.AddChild(itemDisplay.CraftItemsButton)
-	itemDisplay.rootContainer.AddChild(itemDisplay.ItemsSelectedPropContainer)
+	craftingItemDisplay.itemDisplay.rootContainer.AddChild(craftingItemDisplay.ItemsSelectedPropContainer)
 
 }
 
 type PlayerItemsUI struct {
-	rootContainer        *widget.Container //The main for the inventory window
-	rootCraftingWindow   *widget.Window
-	rootThrowableWindow  *widget.Window
-	ItemDisplayContainer *widget.Container //Displays the items the user CAN select for crafting
+	rootContainer *widget.Container //The main for the inventory window
 
 	ClearSelectedItemsButton *widget.Button
 	CraftItemsButton         *widget.Button
 
-	craftingItemDisplay  ItemDisplay
+	craftingItemDisplay  CraftingItemDisplay
 	throwableItemDIsplay ItemDisplay
 
 	windowState ItemUIWindowsState
@@ -283,12 +281,13 @@ type PlayerItemsUI struct {
 
 // Called whenever the inventory is displayed to the user.
 // This updates the GUI elements in PlayerCraftingUI
-func (ui *PlayerItemsUI) UpdateCraftingInventory(itemDisplay ItemDisplay, g *Game, propFilters ...ItemProperty) {
+func (ui *PlayerItemsUI) UpdateCraftingInventory(g *Game, propFilters ...ItemProperty) {
 
-	itemDisplay.UpdateInventoryDisplaylist(&g.playerData, propFilters...)
+	ui.craftingItemDisplay.UpdateInventoryDisplaylist(&g.playerData, propFilters...)
+	//itemDisplay.UpdateInventoryDisplaylist(&g.playerData, propFilters...)
 	////ui.UpdateInventoryDisplaylist(&g.playerData, propFilters...)
 
-	itemDisplay.ItemDisplayContainer.AddChild(itemDisplay.InventoryDisplaylist)
+	ui.craftingItemDisplay.itemDisplay.ItemDisplayContainer.AddChild(ui.craftingItemDisplay.itemDisplay.InventoryDisplaylist)
 
 }
 
@@ -443,14 +442,15 @@ func CreateOpenCraftingButton(g *Game, ui *ebitenui.UI) *widget.Button {
 
 			//g.craftingUI.craftingItemDisplay.CreateInventoryDisplayWindow("Crafting")
 
-			x, y := g.craftingUI.craftingItemDisplay.rootWindow.Contents.PreferredSize()
+			x, y := g.craftingUI.craftingItemDisplay.itemDisplay.rootWindow.Contents.PreferredSize()
 
 			r := image.Rect(0, 0, x, y)
 			r = r.Add(image.Point{200, 50})
-			g.craftingUI.craftingItemDisplay.rootWindow.SetLocation(r)
+			g.craftingUI.craftingItemDisplay.itemDisplay.rootWindow.SetLocation(r)
+			g.craftingUI.UpdateCraftingInventory(g)
 			//g.craftingUI.UpdateCraftingInventory(g)
-			g.craftingUI.UpdateCraftingInventory(g.craftingUI.craftingItemDisplay, g)
-			ui.AddWindow(g.craftingUI.craftingItemDisplay.rootWindow)
+			//g.craftingUI.UpdateCraftingInventory(g.craftingUI.craftingItemDisplay, g)
+			ui.AddWindow(g.craftingUI.craftingItemDisplay.itemDisplay.rootWindow)
 
 		}),
 	)
@@ -494,7 +494,7 @@ func CreateOpenThrowablesButton(g *Game, ui *ebitenui.UI) *widget.Button {
 			r = r.Add(image.Point{200, 50})
 			g.craftingUI.throwableItemDIsplay.rootWindow.SetLocation(r)
 			//g.craftingUI.UpdateCraftingInventory(g)
-			g.craftingUI.UpdateCraftingInventory(g.craftingUI.throwableItemDIsplay, g, NewThrowable(0, 0, 0))
+			//g.craftingUI.UpdateCraftingInventory(g.craftingUI.throwableItemDIsplay, g, NewThrowable(0, 0, 0))
 			ui.AddWindow(g.craftingUI.throwableItemDIsplay.rootWindow)
 			//g.craftingUI.UpdateCraftingInventory(g, NewThrowable(0, 0, 0)) //New Throwable params doesn't matter. Just need the type to search
 			//ui.AddWindow(g.craftingUI.rootThrowableWindow)
@@ -567,11 +567,12 @@ func CreateItemPropertyTextArea() *widget.TextArea {
 
 func CreateItemManagementUI(g *Game) {
 
-	g.craftingUI.craftingItemDisplay.CreateItemContainers(g)
-	g.craftingUI.craftingItemDisplay.CreateInventoryDisplayWindow("Crafting Window")
+	g.craftingUI.craftingItemDisplay.itemDisplay.CreateItemContainers(g)
+	g.craftingUI.craftingItemDisplay.CreateCraftingContainers()
+	g.craftingUI.craftingItemDisplay.itemDisplay.CreateInventoryDisplayWindow("Crafting Window")
 
 	g.craftingUI.throwableItemDIsplay.CreateItemContainers(g)
-	g.craftingUI.throwableItemDIsplay.CreateInventoryDisplayWindow("Crafting Window")
+	g.craftingUI.throwableItemDIsplay.CreateInventoryDisplayWindow("Throwing Window")
 	//g.craftingUI.CreateCraftingMenuButtons(g)
 
 	//g.craftingUI.rootThrowableWindow = CreateInventoryDisplayWindow(g, "Throwing Window")
