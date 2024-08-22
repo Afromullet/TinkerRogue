@@ -23,12 +23,6 @@ func (v *ValidPositions) Get(index int) *Position {
 	return &v.positions[index]
 }
 
-func (v *ValidPositions) getEnd() *Position {
-
-	return &v.positions[len(v.positions)-1]
-
-}
-
 var floor *ebiten.Image = nil
 var wall *ebiten.Image = nil
 var validPositions ValidPositions
@@ -175,7 +169,7 @@ func (gameMap *GameMap) DrawLevel(screen *ebiten.Image) {
 				op.GeoM.Translate(float64(tile.PixelX), float64(tile.PixelY))
 				screen.DrawImage(tile.Image, op)
 				gameMap.Tiles[idx].IsRevealed = true
-			} else if tile.IsRevealed == true {
+			} else if tile.IsRevealed {
 				op := &ebiten.DrawImageOptions{}
 				op.GeoM.Translate(float64(tile.PixelX), float64(tile.PixelY))
 				op.ColorM.Translate(100, 100, 100, 0.35)
@@ -314,6 +308,38 @@ func (gameMap *GameMap) createVerticalTunnel(y1 int, y2 int, x int) {
 func GetIndexFromXY(x int, y int) int {
 	gd := NewScreenData()
 	return (y * gd.ScreenWidth) + x
+}
+
+func GetIndexFromPixels(pixelX, pixelY int) int {
+
+	gd := NewScreenData()
+
+	gridX := pixelX / gd.TileWidth
+	gridY := pixelY / gd.TileHeight
+
+	idx := GetIndexFromXY(gridX, gridY)
+
+	return idx
+}
+
+// Gets a square of size N with a pixel input.
+func GetSquareIndicesFromPixels(pixelX, pixelY, n int) []int {
+
+	gd := NewScreenData()
+	halfSize := n / 2
+	squareIndices := make([]int, 0)
+
+	pixelX = pixelX / gd.TileWidth
+	pixelY = pixelY / gd.TileHeight
+
+	for y := pixelY - halfSize; y <= pixelY+halfSize; y++ {
+		for x := pixelX - halfSize; x <= pixelX+halfSize; x++ {
+			index := GetIndexFromXY(x, y)
+			squareIndices = append(squareIndices, index)
+		}
+	}
+
+	return squareIndices
 }
 
 func loadTileImages() {

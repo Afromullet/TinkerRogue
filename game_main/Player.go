@@ -32,3 +32,11 @@ func (playerData *PlayerData) GetPlayerWeapon() *Weapon {
 
 	return weapon
 }
+
+func (playerData *PlayerData) GetPixelsFromPosition(gameMap *GameMap) []int {
+
+	ind := GetIndexFromXY(playerData.position.X, playerData.position.Y)
+
+	return []int{gameMap.Tiles[ind].PixelX, gameMap.Tiles[ind].PixelY}
+
+}

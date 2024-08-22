@@ -41,8 +41,6 @@ type ItemDisplay struct {
 func (ItemDisplay *ItemDisplay) GetInventoryListWidget(entries []any) *widget.List {
 	li := widget.NewList(
 
-		// Set how wide the list should be
-
 		widget.ListOpts.ContainerOpts(widget.ContainerOpts.WidgetOpts(
 			widget.WidgetOpts.MinSize(150, 0),
 			widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{

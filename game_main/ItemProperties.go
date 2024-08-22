@@ -137,6 +137,7 @@ type throwable struct {
 	CommonItemProperties
 	throwingRange int //How many tiles it can be thrown
 	damage        int
+	area          int //The area is the number of squares
 }
 
 func (t throwable) GetPropertyComponent() *ecs.Component {

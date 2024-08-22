@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+	"image/color"
 	"log"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -32,12 +34,6 @@ func PlayerActions(g *Game) {
 		x = 1
 	}
 
-	if ebiten.IsKeyPressed(ebiten.KeyI) {
-
-		//g.craftingUI.UpdateCraftingInventory(g)
-
-	}
-
 	if inpututil.IsKeyJustReleased(ebiten.KeyG) {
 		//if ebiten.IsKeyPressed(ebiten.KeyG) {
 
@@ -54,9 +50,41 @@ func PlayerActions(g *Game) {
 		turntaken = true
 	}
 
-	//if inpututil.IsMouseButtonJustReleased(ebiten.MouseButton0) {
-	//log.Print("Throwing stuff")
-	//}
+	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButton2) {
+		log.Print("Get button")
+		fmt.Printf("Player Possition %d %d\n", g.playerData.position.X, g.playerData.position.Y)
+
+		cursorX, cursorY := ebiten.CursorPosition()
+
+		linePos := g.playerData.GetPixelsFromPosition(&g.gameMap)
+
+		l := NewRenderableLine(float32(linePos[0]), float32(linePos[1]), float32(cursorX), float32(cursorY), 1, color.White)
+		log.Print(g.playerData.position)
+		log.Print(l)
+		AddShapeToDraw(l)
+
+		//NewRenderableLine(g.playerData.posi tion.X, g.playerData.position.Y, cursorX, cursorY, 5,color.White)
+
+		//index := GetIndexFromPixels(cursorX, cursorY)
+
+		//indices := GetSquareIndicesFromPixels(cursorX, cursorY, 10)
+
+		//for i := 0; i < len(indices); i++ {
+		//	g.gameMap.Tiles[indices[i]].IsRevealed = true
+
+		//}
+
+		/*
+			log.Print(indices)
+			if index != -1 {
+
+				fmt.Printf("Tile map Length %d", len(g.gameMap.Tiles))
+				fmt.Printf("Printing INdex %d", index)
+				g.gameMap.Tiles[index].IsRevealed = true
+			}
+		*/
+
+	}
 
 	nextPosition := Position{
 		X: g.playerData.position.X + x,
