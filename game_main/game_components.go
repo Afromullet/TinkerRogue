@@ -46,7 +46,7 @@ func (p *Position) GetManhattanDistance(other *Position) int {
 func (p *Position) BuildPath(g *Game, other *Position) []Position {
 
 	astar := AStar{}
-	return astar.GetPath(g.gameMap, p, other)
+	return astar.GetPath(g.gameMap, p, other, false)
 
 }
 

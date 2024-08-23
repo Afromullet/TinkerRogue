@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"image/color"
 	"log"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -56,33 +55,14 @@ func PlayerActions(g *Game) {
 
 		cursorX, cursorY := ebiten.CursorPosition()
 
-		linePos := g.playerData.GetPixelsFromPosition(&g.gameMap)
+		s := NewSquareAtPixel(cursorX, cursorY, 10)
+		//indices := s.GetIndices()
 
-		l := NewRenderableLine(float32(linePos[0]), float32(linePos[1]), float32(cursorX), float32(cursorY), 1, color.White)
-		log.Print(g.playerData.position)
-		log.Print(l)
-		AddShapeToDraw(l)
+		playerPixels := g.playerData.GetPixelsFromPosition(&g.gameMap)
+		l := NewLineToPixel(playerPixels[0], playerPixels[1], cursorX, cursorY, &g.gameMap)
 
-		//NewRenderableLine(g.playerData.posi tion.X, g.playerData.position.Y, cursorX, cursorY, 5,color.White)
-
-		//index := GetIndexFromPixels(cursorX, cursorY)
-
-		//indices := GetSquareIndicesFromPixels(cursorX, cursorY, 10)
-
-		//for i := 0; i < len(indices); i++ {
-		//	g.gameMap.Tiles[indices[i]].IsRevealed = true
-
-		//}
-
-		/*
-			log.Print(indices)
-			if index != -1 {
-
-				fmt.Printf("Tile map Length %d", len(g.gameMap.Tiles))
-				fmt.Printf("Printing INdex %d", index)
-				g.gameMap.Tiles[index].IsRevealed = true
-			}
-		*/
+		AddTileShapeToDraw(s)
+		AddTileShapeToDraw(l)
 
 	}
 

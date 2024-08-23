@@ -51,7 +51,7 @@ func SimpleWanderAction(g *Game, e *ecs.Entity) {
 	if len(creature.path) == 0 {
 
 		astar := AStar{}
-		creature.path = astar.GetPath(g.gameMap, creaturePosition, endPos)
+		creature.path = astar.GetPath(g.gameMap, creaturePosition, endPos, false)
 
 	}
 

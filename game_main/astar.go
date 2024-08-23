@@ -60,7 +60,7 @@ type AStar struct{}
 
 // GetPath takes a level, the starting position and an ending position (the goal) and returns
 // a list of Positions which is the path between the points.
-func (as AStar) GetPath(gameMap GameMap, start *Position, end *Position) []Position {
+func (as AStar) GetPath(gameMap GameMap, start *Position, end *Position, ignoreWalls bool) []Position {
 	gd := NewScreenData()
 
 	openList := make([]*node, 0)
@@ -121,7 +121,7 @@ func (as AStar) GetPath(gameMap GameMap, start *Position, end *Position) []Posit
 		//Note:  If you wish to add Diagonal movement, you can do so by getting all 8 positions
 		if currentNode.Position.Y > 0 {
 			tile := gameMap.Tiles[GetIndexFromXY(currentNode.Position.X, currentNode.Position.Y-1)]
-			if tile.TileType != WALL {
+			if ignoreWalls || tile.TileType != WALL {
 				//The location is in the map bounds and is walkable
 				upNodePosition := Position{
 					X: currentNode.Position.X,
@@ -135,7 +135,7 @@ func (as AStar) GetPath(gameMap GameMap, start *Position, end *Position) []Posit
 		}
 		if currentNode.Position.Y < gd.ScreenHeight {
 			tile := gameMap.Tiles[GetIndexFromXY(currentNode.Position.X, currentNode.Position.Y+1)]
-			if tile.TileType != WALL {
+			if ignoreWalls || tile.TileType != WALL {
 				//The location is in the map bounds and is walkable
 				downNodePosition := Position{
 					X: currentNode.Position.X,
@@ -149,7 +149,7 @@ func (as AStar) GetPath(gameMap GameMap, start *Position, end *Position) []Posit
 		}
 		if currentNode.Position.X > 0 {
 			tile := gameMap.Tiles[GetIndexFromXY(currentNode.Position.X-1, currentNode.Position.Y)]
-			if tile.TileType != WALL {
+			if ignoreWalls || tile.TileType != WALL {
 				//The location is in the map bounds and is walkable
 				leftNodePosition := Position{
 					X: currentNode.Position.X - 1,
@@ -163,7 +163,7 @@ func (as AStar) GetPath(gameMap GameMap, start *Position, end *Position) []Posit
 		}
 		if currentNode.Position.X < gd.ScreenWidth {
 			tile := gameMap.Tiles[GetIndexFromXY(currentNode.Position.X+1, currentNode.Position.Y)]
-			if tile.TileType != WALL {
+			if ignoreWalls && tile.TileType != WALL {
 				//The location is in the map bounds and is walkable
 				rightNodePosition := Position{
 					X: currentNode.Position.X + 1,

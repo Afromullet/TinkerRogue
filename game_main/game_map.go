@@ -172,6 +172,7 @@ func (gameMap *GameMap) DrawLevel(screen *ebiten.Image) {
 			} else if tile.IsRevealed {
 				op := &ebiten.DrawImageOptions{}
 				op.GeoM.Translate(float64(tile.PixelX), float64(tile.PixelY))
+
 				op.ColorM.Translate(100, 100, 100, 0.35)
 				screen.DrawImage(tile.Image, op)
 			}
@@ -322,24 +323,15 @@ func GetIndexFromPixels(pixelX, pixelY int) int {
 	return idx
 }
 
-// Gets a square of size N with a pixel input.
-func GetSquareIndicesFromPixels(pixelX, pixelY, n int) []int {
+func GetPositionFromPixels(pixelX, pixelY int) Position {
 
 	gd := NewScreenData()
-	halfSize := n / 2
-	squareIndices := make([]int, 0)
 
-	pixelX = pixelX / gd.TileWidth
-	pixelY = pixelY / gd.TileHeight
-
-	for y := pixelY - halfSize; y <= pixelY+halfSize; y++ {
-		for x := pixelX - halfSize; x <= pixelX+halfSize; x++ {
-			index := GetIndexFromXY(x, y)
-			squareIndices = append(squareIndices, index)
-		}
+	return Position{
+		X: pixelX / gd.TileWidth,
+		Y: pixelY / gd.TileHeight,
 	}
 
-	return squareIndices
 }
 
 func loadTileImages() {
