@@ -5,9 +5,14 @@ while still having to be refactored, are going to be part of the final product.
 GameComponents.go
 GameMap.Go
 InventoryManager.go
-ui.go
+UIMaub.go
 uitil.go
 ItemProperties.go
+ShapeDrawing
+Creature
+REALLY need to refactor game_map
+
+
 
 Other changes that will have to happen
 

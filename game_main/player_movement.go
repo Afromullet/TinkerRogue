@@ -55,8 +55,12 @@ func PlayerActions(g *Game) {
 
 		cursorX, cursorY := ebiten.CursorPosition()
 
-		s := NewSquareAtPixel(cursorX, cursorY, 10)
-		//indices := s.GetIndices()
+		s := NewSquareAtPixel(cursorX, cursorY, 3)
+
+		scaleCM := ColorMatrix{0, 1, 0, 1, true}
+		indices := s.GetIndices()
+
+		g.gameMap.ApplyScaleColorMatrix(indices, scaleCM)
 
 		playerPixels := g.playerData.GetPixelsFromPosition(&g.gameMap)
 		l := NewLineToPixel(playerPixels[0], playerPixels[1], cursorX, cursorY, &g.gameMap)

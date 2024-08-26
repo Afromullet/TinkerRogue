@@ -6,6 +6,7 @@ import (
 
 	"github.com/bytearena/ecs"
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/colorm"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 	"github.com/norendren/go-fov/fov"
 )
@@ -53,6 +54,18 @@ func (r *Rect) Intersect(other Rect) bool {
 	return (r.X1 <= other.X2 && r.X2 >= other.X1 && r.Y1 <= other.Y1 && r.Y2 >= other.Y1)
 }
 
+// This is used to make it easier to apply color transformations
+// When calling ColorM.DrawImage
+// The applyMatrix boolean tells us whether or not we actually want to apply it when
+// Calling DrawImage
+type ColorMatrix struct {
+	r           float64
+	g           float64
+	b           float64
+	a           float64
+	ApplyMatrix bool
+}
+
 type TileType int
 
 const (
@@ -61,13 +74,19 @@ const (
 )
 
 type Tile struct {
-	PixelX       int
-	PixelY       int
-	Blocked      bool
-	Image        *ebiten.Image
-	tileContents TileContents
-	TileType     TileType
-	IsRevealed   bool
+	PixelX           int
+	PixelY           int
+	Blocked          bool
+	Image            *ebiten.Image
+	tileContents     TileContents
+	TileType         TileType
+	IsRevealed       bool
+	ScaleColorMatrix ColorMatrix
+}
+
+func (t *Tile) SetScaleColorMatrix(c ColorMatrix) {
+
+	t.ScaleColorMatrix = c
 }
 
 // Holds any entities that are on a tile, whether it's items, creatures, etc.
@@ -164,28 +183,29 @@ func (gameMap *GameMap) DrawLevel(screen *ebiten.Image) {
 			tile := gameMap.Tiles[idx]
 			isVis := gameMap.PlayerVisible.IsVisible(x, y)
 
+			var cm colorm.ColorM
+
+			op := colorm.DrawImageOptions{}
+
 			if isVis {
-				op := &ebiten.DrawImageOptions{}
 				op.GeoM.Translate(float64(tile.PixelX), float64(tile.PixelY))
-				screen.DrawImage(tile.Image, op)
 				gameMap.Tiles[idx].IsRevealed = true
 			} else if tile.IsRevealed {
-				op := &ebiten.DrawImageOptions{}
-				op.GeoM.Translate(float64(tile.PixelX), float64(tile.PixelY))
 
-				op.ColorM.Translate(100, 100, 100, 0.35)
-				screen.DrawImage(tile.Image, op)
+				op.GeoM.Translate(float64(tile.PixelX), float64(tile.PixelY))
+				//cm.Translate(100, 100, 100, 0.35)
+
 			}
 
-			/*
-				if gameMap.PlayerVisible.IsVisible(x, y) {
-					tile := gameMap.Tiles[GetIndexFromXY(x, y)]
-					op := &ebiten.DrawImageOptions{}
-					op.GeoM.Translate(float64(tile.PixelX), float64(tile.PixelY))
-					screen.DrawImage(tile.Image, op)
+			//cm.Translate(0, 1.0, 0, 0)
 
-				}
-			*/
+			if tile.ScaleColorMatrix.ApplyMatrix {
+				cm.Scale(tile.ScaleColorMatrix.r, tile.ScaleColorMatrix.g,
+					tile.ScaleColorMatrix.b, tile.ScaleColorMatrix.a)
+			}
+
+			colorm.DrawImage(screen, tile.Image, cm, &op)
+
 		}
 	}
 }
@@ -206,6 +226,13 @@ func (gameMap *GameMap) createTiles() []*Tile {
 				Image:      wall,
 				TileType:   WALL,
 				IsRevealed: false,
+				ScaleColorMatrix: ColorMatrix{
+					r:           0,
+					g:           0,
+					b:           0,
+					a:           0,
+					ApplyMatrix: false,
+				},
 			}
 			tiles[index] = &tile
 		}
@@ -302,6 +329,16 @@ func (gameMap *GameMap) createVerticalTunnel(y1 int, y2 int, x int) {
 			validPositions.Add(x, y)
 		}
 	}
+}
+
+// Applies the scaling ColorMatrix to the tiles at the Indices
+func (gameMap *GameMap) ApplyScaleColorMatrix(indices []int, m ColorMatrix) {
+
+	for _, ind := range indices {
+
+		gameMap.Tiles[ind].SetScaleColorMatrix(m)
+	}
+
 }
 
 // GetIndexFromXY gets the index of the map array from a given X,Y TILE coordinate.
