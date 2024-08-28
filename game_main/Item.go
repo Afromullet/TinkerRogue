@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 
 	ecs "github.com/bytearena/ecs"
@@ -8,7 +9,10 @@ import (
 )
 
 /*
-An Items property is an Entity. That helps us track the components
+Propeties is an Entity. That helps us track the components
+
+Everything that's a property implements the ItemProperty interface. There's
+nothing to enforce this at compile time.
 
 # So an Items Properties could look like this for Example
 
@@ -18,9 +22,6 @@ Item
 --Burning Component
 ...
 --Other COmponents
-
-All properties are structs that implement the ItemProperty interface, which implements
-GetPropertyComonent to get the associated component.
 
 Each Item Property also has a CommonItemProperties, where the "name" is common between
 all components of a specific type.const
@@ -65,6 +66,28 @@ func (item *Item) GetPropertyNames() []string {
 		}
 	}
 	return names
+
+}
+
+// Searches by the property name - the constants in ItemProperties.go
+func (item *Item) GetItemPropComponent(propName string) *ecs.Component {
+
+	for _, c := range AllItemProperties {
+		data, ok := item.properties.GetComponentData(c)
+		if ok {
+			print(data)
+
+			d := data.(*ItemProperty)
+			if GetPropertyName(d) == propName {
+				fmt.Println("Found")
+				return GetPropertyComponent(d)
+			}
+
+		}
+
+	}
+
+	return nil
 
 }
 
@@ -138,7 +161,7 @@ func CreateItem(manager *ecs.Manager, name string, pos Position, imagePath strin
 		}).
 		AddComponent(ItemComponent, item)
 
-		//TODO where shoudl I add the tags?
+	//TODO where shoudl I add the tags?
 
 	return itemEntity
 

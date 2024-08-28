@@ -38,7 +38,18 @@ type Game struct {
 	mainPlayerInterface *ebitenui.UI
 
 	playerData PlayerData
-	craftingUI PlayerItemsUI
+	itemsUI    PlayerItemsUI
+}
+
+// Throwing an item will show a square to represent the AOE of the throwable.
+// Right now it's a function of Game until I separate the UI more.
+// Not going to try to generalize/abstract this until I figure out how I want to handle this
+// The impression I get now is that this will take a "state machine" since the throwable window closes
+// Once I click out of it
+func (g *Game) ThrowableItemSelected() bool {
+
+	return g.itemsUI.throwableItemDisplay.throwableItemSelected
+
 }
 
 // NewGame creates a new Game Object and initializes the data

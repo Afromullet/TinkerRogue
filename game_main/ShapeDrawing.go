@@ -95,20 +95,7 @@ func DrawTileShapes(gameMap *GameMap, screen *ebiten.Image) {
 
 		for i := 0; i < len(indices); i++ {
 
-			//pixelX := gameMap.Tiles[indices[i]].PixelX
-			//pixelY := gameMap.Tiles[indices[i]].PixelY
-
-			//op := colorm.DrawImageOptions{}
-
-			//var cm colorm.ColorM
-			//cm.Scale(1.0, 0.50, 0.125, 1.0)
-			//cm.Scale(0.0, 0.0, 0.0, 0.0)
-
-			//op.GeoM.Translate(float64(pixelX), float64(pixelY))
-
-			//colorm.DrawImage(screen, gameMap.Tiles[indices[i]].Image, cm, &op)
-
-			gameMap.Tiles[indices[i]].IsRevealed = true
+			//gameMap.Tiles[indices[i]].IsRevealed = true
 
 		}
 
@@ -116,6 +103,7 @@ func DrawTileShapes(gameMap *GameMap, screen *ebiten.Image) {
 
 }
 
+// Backup of the original
 func DrawTileShapes2(gameMap *GameMap, screen *ebiten.Image) {
 
 	for _, s := range TileShapesToDraw {

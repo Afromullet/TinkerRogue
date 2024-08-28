@@ -22,8 +22,6 @@ type Inventory struct {
 var inventorySize = 20 //todo get rid of this
 
 // AddItemToInventory adds an entity to the inventory
-//todo, search the inventory to see if the item already exists. If it does, increase the count by 1
-
 func (inventory *Inventory) AddItemToInventory(entityToAdd *ecs.Entity) {
 	// Dereference the slice pointer and use append
 	newItemName := GetComponentStruct[*Name](entityToAdd, nameComponent).NameStr
@@ -76,10 +74,9 @@ func (inv *Inventory) GetItemByIndex(index int) (*ecs.Entity, error) {
 	return &(*inv.InventoryContent)[index], nil
 }
 
-// Used for displaying the inventory to the player
-// If indicesSelected is empty, it returns the entire inventory.
-// Otherwise it returns the items specified by the indicesToSelect slice
-// Figure out how to do this in an MVC way. Should this be handled by the controller?
+// Used for displaying the inventory to the player by returning a list for the ebitneui list widget
+// Returns a slice of InventoryListEntries, which contain the inventory index, name, and item count
+// If indicesSelected is empty, it returns the entire inventory. Otherwise it returns the items specified by the indicesToSelect slice
 func (inventory *Inventory) GetInventoryForDisplay(indicesToSelect []int, itemPropertiesFilter ...ItemProperty) []any {
 
 	inventoryItems := make([]any, 0, inventorySize)

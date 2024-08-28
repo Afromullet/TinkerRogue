@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/bytearena/ecs"
 )
 
@@ -10,32 +12,48 @@ type Player struct {
 }
 
 // There's only one player, so we can store frequently used component data in PlayerData
+// Throwing items is a big part of the game, so we store the selected throwable item here
 type PlayerData struct {
-	playerEntity *ecs.Entity
-	playerWeapon *ecs.Entity
-	position     *Position
-	inventory    *Inventory
+	playerEntity           *ecs.Entity
+	playerWeapon           *ecs.Entity
+	position               *Position
+	inventory              *Inventory
+	selectedThrowable      *ecs.Entity
+	throwableComponentData *throwable
 }
 
 // Helper function to make it less tedious to get the inventory
-func (playerData *PlayerData) GetPlayerInventory() *Inventory {
+func (pl *PlayerData) GetPlayerInventory() *Inventory {
 
-	playerInventory := GetComponentStruct[*Inventory](playerData.playerEntity, InventoryComponent)
+	playerInventory := GetComponentStruct[*Inventory](pl.playerEntity, InventoryComponent)
 
 	return playerInventory
 }
 
-// Helper function to make it less tedious to get the inventory
-func (playerData *PlayerData) GetPlayerWeapon() *Weapon {
+func (pl *PlayerData) PrepareThrowable(itemEntity *ecs.Entity) {
 
-	weapon := GetComponentStruct[*Weapon](playerData.playerWeapon, WeaponComponent)
+	pl.selectedThrowable = itemEntity
+	compData := GetComponentStruct[*Item](pl.selectedThrowable, ItemComponent)
+	c := compData.GetItemPropComponent(THROWABLE_NAME)
+
+	//GetComponentStruct[*throwable](c, ThrowableComponent)
+
+	fmt.Println("Inside PlayerData ", compData.properties)
+	fmt.Println("Prop Stuff ", c)
+
+}
+
+// Helper function to make it less tedious to get the inventory
+func (pl *PlayerData) GetPlayerWeapon() *Weapon {
+
+	weapon := GetComponentStruct[*Weapon](pl.playerWeapon, WeaponComponent)
 
 	return weapon
 }
 
-func (playerData *PlayerData) GetPixelsFromPosition(gameMap *GameMap) []int {
+func (pl *PlayerData) GetPixelsFromPosition(gameMap *GameMap) []int {
 
-	ind := GetIndexFromXY(playerData.position.X, playerData.position.Y)
+	ind := GetIndexFromXY(pl.position.X, pl.position.Y)
 
 	return []int{gameMap.Tiles[ind].PixelX, gameMap.Tiles[ind].PixelY}
 

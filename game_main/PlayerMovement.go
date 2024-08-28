@@ -8,6 +8,8 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 )
 
+var prevCursorX, prevCursorY int
+
 // todo replace the keypressed with iskeyreleased
 func PlayerActions(g *Game) {
 
@@ -34,7 +36,6 @@ func PlayerActions(g *Game) {
 	}
 
 	if inpututil.IsKeyJustReleased(ebiten.KeyG) {
-		//if ebiten.IsKeyPressed(ebiten.KeyG) {
 
 		log.Print("Press G")
 
@@ -45,30 +46,76 @@ func PlayerActions(g *Game) {
 		}
 
 	}
+
+	if inpututil.IsKeyJustReleased(ebiten.KeyT) {
+
+		fmt.Println("Is window open ", g.mainPlayerInterface.IsWindowOpen(g.itemsUI.throwableItemDisplay.itemDisplay.rootWindow))
+		//g.itemsUI.rootContainer.
+		//g.itemsUI.throwableItemDisplay.itemDisplay.rootWindow
+
+	}
 	if ebiten.IsKeyPressed(ebiten.KeySpace) {
 		turntaken = true
 	}
 
 	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButton2) {
-		log.Print("Get button")
-		fmt.Printf("Player Possition %d %d\n", g.playerData.position.X, g.playerData.position.Y)
 
-		cursorX, cursorY := ebiten.CursorPosition()
+		if g.ThrowableItemSelected() {
 
-		s := NewSquareAtPixel(cursorX, cursorY, 3)
+			cursorX, cursorY := ebiten.CursorPosition()
+			fmt.Println("Current and previous", cursorX, cursorY, prevCursorX, prevCursorY)
 
-		scaleCM := ColorMatrix{0, 1, 0, 1, true}
-		indices := s.GetIndices()
+			s := NewSquareAtPixel(cursorX, cursorY, 3)
+			indices := s.GetIndices()
 
-		g.gameMap.ApplyScaleColorMatrix(indices, scaleCM)
+			if cursorX != prevCursorX || cursorY != prevCursorY {
+				// Clear the previous square
+				if prevCursorX != 0 && prevCursorY != 0 {
 
-		playerPixels := g.playerData.GetPixelsFromPosition(&g.gameMap)
-		l := NewLineToPixel(playerPixels[0], playerPixels[1], cursorX, cursorY, &g.gameMap)
+					prevIndices := NewSquareAtPixel(prevCursorX, prevCursorY, 3).GetIndices()
+					g.gameMap.ApplyColorMatrix(prevIndices, NewEmptyMatrix())
 
-		AddTileShapeToDraw(s)
-		AddTileShapeToDraw(l)
+				}
+
+			}
+
+			cm := ColorMatrix{0, 1, 0, 1, true}
+
+			g.gameMap.ApplyColorMatrix(indices, cm)
+
+			playerPixels := g.playerData.GetPixelsFromPosition(&g.gameMap)
+			l := NewLineToPixel(playerPixels[0], playerPixels[1], cursorX, cursorY, &g.gameMap)
+
+			AddTileShapeToDraw(s)
+			AddTileShapeToDraw(l)
+			prevCursorX, prevCursorY = cursorX, cursorY
+
+		}
 
 	}
+
+	/*
+		if g.ThrowableItemSelected() {
+			log.Print("Get button")
+			fmt.Printf("Player Possition %d %d\n", g.playerData.position.X, g.playerData.position.Y)
+
+			cursorX, cursorY := ebiten.CursorPosition()
+
+			s := NewSquareAtPixel(cursorX, cursorY, 3)
+
+			scaleCM := ColorMatrix{0, 1, 0, 1, true}
+			indices := s.GetIndices()
+
+			g.gameMap.ApplyScaleColorMatrix(indices, scaleCM)
+
+			playerPixels := g.playerData.GetPixelsFromPosition(&g.gameMap)
+			l := NewLineToPixel(playerPixels[0], playerPixels[1], cursorX, cursorY, &g.gameMap)
+
+			AddTileShapeToDraw(s)
+			AddTileShapeToDraw(l)
+		}
+
+	*/
 
 	nextPosition := Position{
 		X: g.playerData.position.X + x,
