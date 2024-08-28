@@ -78,6 +78,19 @@ type Health struct {
 	CurrentHealth int
 }
 
+// I don't want to keep on calling GetComponentData due to it being annoying syntax
+func GetComponentStruct[T any](entity *ecs.Entity, component *ecs.Component) T {
+
+	if c, ok := entity.GetComponentData(component); ok {
+		return c.(T)
+
+	} else {
+		var nilValue T
+		return nilValue
+	}
+
+}
+
 // todo Will be refactored. Don't get distracted by this at the moment.
 // ALl of the initialziation will have to be handled differently - since
 func InitializeECS(g *Game) {

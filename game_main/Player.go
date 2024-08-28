@@ -34,12 +34,13 @@ func (pl *PlayerData) PrepareThrowable(itemEntity *ecs.Entity) {
 
 	pl.selectedThrowable = itemEntity
 	compData := GetComponentStruct[*Item](pl.selectedThrowable, ItemComponent)
-	c := compData.GetItemPropComponent(THROWABLE_NAME)
+	//comp := compData.GetItemPropComponent(THROWABLE_NAME)
+	//t := (*Item).comp
 
 	//GetComponentStruct[*throwable](c, ThrowableComponent)
 
 	fmt.Println("Inside PlayerData ", compData.properties)
-	fmt.Println("Prop Stuff ", c)
+	//fmt.Println("Prop Stuff ", c)
 
 }
 

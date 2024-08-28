@@ -103,7 +103,6 @@ func (item *Item) HasAllProperties(propsToCheck ...ItemProperty) bool {
 		if !item.HasProperty(prop) {
 			return false
 		}
-
 	}
 
 	return true

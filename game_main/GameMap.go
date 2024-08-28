@@ -5,7 +5,6 @@ import (
 
 	"github.com/bytearena/ecs"
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/colorm"
 	"github.com/norendren/go-fov/fov"
 )
 
@@ -177,6 +176,50 @@ func (gameMap *GameMap) DrawLevel(screen *ebiten.Image) {
 			tile := gameMap.Tiles[idx]
 			isVis := gameMap.PlayerVisible.IsVisible(x, y)
 
+			op := &ebiten.DrawImageOptions{}
+
+			if isVis {
+				op.GeoM.Translate(float64(tile.PixelX), float64(tile.PixelY))
+				gameMap.Tiles[idx].IsRevealed = true
+			} else if tile.IsRevealed {
+
+				op.GeoM.Translate(float64(tile.PixelX), float64(tile.PixelY))
+
+			}
+
+			if !tile.colorMatrix.IsEmpty() {
+
+				var cs = ebiten.ColorScale{}
+				cs.A()
+				cs.SetR(tile.colorMatrix.r)
+				cs.SetG(tile.colorMatrix.g)
+				cs.SetB(tile.colorMatrix.b)
+				cs.SetA(tile.colorMatrix.a)
+
+				op.ColorScale.ScaleWithColorScale(cs)
+
+			}
+
+			screen.DrawImage(tile.Image, op)
+
+		}
+	}
+}
+
+// Using ColorM
+
+/*
+func (gameMap *GameMap) DrawLevel2(screen *ebiten.Image) {
+	gd := NewScreenData()
+
+	for x := 0; x < gd.ScreenWidth; x++ {
+		//for y := 0; y < gd.ScreenHeight; y++ {
+		for y := 0; y < levelHeight; y++ {
+
+			idx := GetIndexFromXY(x, y)
+			tile := gameMap.Tiles[idx]
+			isVis := gameMap.PlayerVisible.IsVisible(x, y)
+
 			var cm colorm.ColorM
 
 			op := colorm.DrawImageOptions{}
@@ -204,6 +247,7 @@ func (gameMap *GameMap) DrawLevel(screen *ebiten.Image) {
 		}
 	}
 }
+*/
 
 // createTiles creates a map of all walls as a baseline for carving out a level.
 func (gameMap *GameMap) createTiles() []*Tile {
