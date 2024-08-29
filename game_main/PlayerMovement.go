@@ -40,12 +40,19 @@ func HandleThrowable(g *Game) {
 	if g.ThrowableItemSelected() {
 
 		DrawThrowableAOE(g)
-		if inpututil.IsMouseButtonJustPressed(ebiten.MouseButton2) {
 
-			DrawThrowableAOE(g)
+		//Press middle mouse button to throw
+		if inpututil.IsMouseButtonJustPressed(ebiten.MouseButton1) {
+
+			//log.Println("Removing throwable")
+			//g.gameMap.ApplyColorMatrix(previousIndices, NewEmptyMatrix())
+			//g.SetThrowableItemSelected(false)
+			////HandleThrowable(g)
 
 		}
-		if inpututil.IsMouseButtonJustPressed(ebiten.MouseButton0) {
+
+		//Cancel throwing
+		if inpututil.IsMouseButtonJustPressed(ebiten.MouseButton2) {
 
 			log.Println("Removing throwable")
 			g.gameMap.ApplyColorMatrix(previousIndices, NewEmptyMatrix())
@@ -89,7 +96,7 @@ func PlayerActions(g *Game) {
 		itemFromTile, _ := g.gameMap.GrabItemFromTile(0, g.playerData.position)
 
 		if itemFromTile != nil {
-			g.playerData.inventory.AddItemToInventory(itemFromTile)
+			g.playerData.inventory.AddItem(itemFromTile)
 		}
 
 	}

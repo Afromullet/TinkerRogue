@@ -29,13 +29,13 @@ func (throwingItemDisplay *ThrowingItemDisplay) CreateInventoryList(playerData *
 		a := args.(*widget.ListEntrySelectedEventArgs)
 		entry := a.Entry.(InventoryListEntry)
 
-		it, err := playerData.inventory.GetItemByIndex(entry.index)
+		it, err := playerData.inventory.GetItem(entry.index)
 
 		//throwableComponentData := GetComponentStruct[*Item](it, ItemComponent)
 		//	fmt.Println("Printing throwable ", throwableComponentData)
 
 		if err == nil {
-			playerData.PrepareThrowable(it)
+			playerData.PrepareThrowable(it, entry.index)
 		}
 
 		throwingItemDisplay.throwableItemSelected = true

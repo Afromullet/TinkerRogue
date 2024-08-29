@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/bytearena/ecs"
 )
@@ -21,13 +22,13 @@ type Inventory struct {
 
 var inventorySize = 20 //todo get rid of this
 
-// AddItemToInventory adds an entity to the inventory
-func (inventory *Inventory) AddItemToInventory(entityToAdd *ecs.Entity) {
+// AddItem adds an entity to the inventory
+func (inv *Inventory) AddItem(entityToAdd *ecs.Entity) {
 	// Dereference the slice pointer and use append
 	newItemName := GetComponentStruct[*Name](entityToAdd, nameComponent).NameStr
 	exists := false
 
-	for _, entity := range *inventory.InventoryContent {
+	for _, entity := range *inv.InventoryContent {
 
 		itemName := GetComponentStruct[*Name](&entity, nameComponent).NameStr
 
@@ -41,16 +42,37 @@ func (inventory *Inventory) AddItemToInventory(entityToAdd *ecs.Entity) {
 	if !exists {
 		itemComp := GetComponentStruct[*Item](entityToAdd, ItemComponent)
 		itemComp.count = 1
-		*inventory.InventoryContent = append(*inventory.InventoryContent, *entityToAdd)
+		*inv.InventoryContent = append(*inv.InventoryContent, *entityToAdd)
 
 	}
 
 }
 
+func (inv *Inventory) RemoveItem(index int) {
+
+	item, err := inv.GetItem(index)
+
+	if err != nil {
+		fmt.Errorf("index out of range when trying to move item")
+	}
+
+	itemComp := GetComponentStruct[*Item](item, ItemComponent)
+
+	itemComp.DecrementCount()
+
+	if itemComp.count <= 0 {
+
+		//inv.InventoryContent = append(*inv.InventoryContent[:index], itemComp)
+
+	}
+
+	log.Print(item)
+}
+
 // Returns a slice of strings of the Item Component names. These come from the CommonProperties
 func (inv *Inventory) GetPropertyNames(index int) ([]string, error) {
 
-	entity, err := inv.GetItemByIndex(index)
+	entity, err := inv.GetItem(index)
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to get item by index: %w", err)
@@ -67,7 +89,7 @@ func (inv *Inventory) GetPropertyNames(index int) ([]string, error) {
 
 }
 
-func (inv *Inventory) GetItemByIndex(index int) (*ecs.Entity, error) {
+func (inv *Inventory) GetItem(index int) (*ecs.Entity, error) {
 	if index < 0 || index >= len(*inv.InventoryContent) {
 		return nil, fmt.Errorf("index out of range")
 	}
@@ -77,12 +99,12 @@ func (inv *Inventory) GetItemByIndex(index int) (*ecs.Entity, error) {
 // Used for displaying the inventory to the player by returning a list for the ebitneui list widget
 // Returns a slice of InventoryListEntries, which contain the inventory index, name, and item count
 // If indicesSelected is empty, it returns the entire inventory. Otherwise it returns the items specified by the indicesToSelect slice
-func (inventory *Inventory) GetInventoryForDisplay(indicesToSelect []int, itemPropertiesFilter ...ItemProperty) []any {
+func (inv *Inventory) GetInventoryForDisplay(indicesToSelect []int, itemPropertiesFilter ...ItemProperty) []any {
 
 	inventoryItems := make([]any, 0, inventorySize)
 
 	if len(indicesToSelect) == 0 {
-		for index, entity := range *inventory.InventoryContent {
+		for index, entity := range *inv.InventoryContent {
 
 			itemName := GetComponentStruct[*Name](&entity, nameComponent)
 			itemComp := GetComponentStruct[*Item](&entity, ItemComponent)
@@ -98,7 +120,7 @@ func (inventory *Inventory) GetInventoryForDisplay(indicesToSelect []int, itemPr
 		}
 	} else {
 		for _, index := range indicesToSelect {
-			entity := (*inventory.InventoryContent)[index]
+			entity := (*inv.InventoryContent)[index]
 			itemName := GetComponentStruct[*Name](&entity, nameComponent)
 			itemComp := GetComponentStruct[*Item](&entity, ItemComponent)
 
