@@ -52,24 +52,24 @@ type CommonItemProperties struct {
 	Name     string
 }
 
-type sticky struct {
+type Sticky struct {
 	CommonItemProperties
 	Spread int //Sticky effects can spread
 
 }
 
-func (s sticky) GetPropertyComponent() *ecs.Component {
+func (s Sticky) GetPropertyComponent() *ecs.Component {
 	return StickyComponent
 }
 
-func (s sticky) GetPropertyName() string {
+func (s Sticky) GetPropertyName() string {
 	return s.CommonItemProperties.Name
 
 }
 
-func NewSticky(dur int, spr int) sticky {
+func NewSticky(dur int, spr int) Sticky {
 
-	return sticky{
+	return Sticky{
 		CommonItemProperties: CommonItemProperties{
 			Name:     STICKY_NAME,
 			Duration: dur,
@@ -79,24 +79,24 @@ func NewSticky(dur int, spr int) sticky {
 
 }
 
-type burning struct {
+type Burning struct {
 	CommonItemProperties
 
 	Temperature int
 }
 
-func (b burning) GetPropertyComponent() *ecs.Component {
+func (b Burning) GetPropertyComponent() *ecs.Component {
 	return BurningComponent
 }
 
-func (b burning) GetPropertyName() string {
+func (b Burning) GetPropertyName() string {
 	return b.CommonItemProperties.Name
 
 }
 
-func NewBurning(dur int, temp int) burning {
+func NewBurning(dur int, temp int) Burning {
 
-	return burning{
+	return Burning{
 		CommonItemProperties: CommonItemProperties{
 			Name:     BURNING_NAME,
 			Duration: dur,
@@ -106,24 +106,24 @@ func NewBurning(dur int, temp int) burning {
 
 }
 
-type freezing struct {
+type Freezing struct {
 	CommonItemProperties
 	Thickness int //How thick the ice is.
 
 }
 
-func (f freezing) GetPropertyComponent() *ecs.Component {
+func (f Freezing) GetPropertyComponent() *ecs.Component {
 	return FreezingComponent
 }
 
-func (f freezing) GetPropertyName() string {
+func (f Freezing) GetPropertyName() string {
 	return f.CommonItemProperties.Name
 
 }
 
-func NewFreezing(dur int, t int) freezing {
+func NewFreezing(dur int, t int) Freezing {
 
-	return freezing{
+	return Freezing{
 		CommonItemProperties: CommonItemProperties{
 			Name:     FREEZING_NAME,
 			Duration: dur,
@@ -133,25 +133,25 @@ func NewFreezing(dur int, t int) freezing {
 
 }
 
-type throwable struct {
+type Throwable struct {
 	CommonItemProperties
 	throwingRange int //How many tiles it can be thrown
 	damage        int
 	shape         TileBasedShape
 }
 
-func (t throwable) GetPropertyComponent() *ecs.Component {
+func (t Throwable) GetPropertyComponent() *ecs.Component {
 	return ThrowableComponent
 }
 
-func (t throwable) GetPropertyName() string {
+func (t Throwable) GetPropertyName() string {
 	return t.CommonItemProperties.Name
 
 }
 
-func NewThrowable(dur, throwRange, dam int, shape TileBasedShape) throwable {
+func NewThrowable(dur, throwRange, dam int, shape TileBasedShape) Throwable {
 
-	return throwable{
+	return Throwable{
 		CommonItemProperties: CommonItemProperties{
 			Name:     THROWABLE_NAME,
 			Duration: dur,

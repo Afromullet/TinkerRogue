@@ -50,7 +50,7 @@ func (item *Item) DecrementCount() {
 	item.count -= 1
 }
 
-// Returns the name of this items properties.
+// Returns the names of this items properties.
 func (item *Item) GetPropertyNames() []string {
 
 	names := make([]string, 0)
@@ -159,7 +159,7 @@ func CreateItem(manager *ecs.Manager, name string, pos Position, imagePath strin
 	itemEntity := manager.NewEntity().
 		AddComponent(renderable, &Renderable{
 			Image:   img,
-			visible: true,
+			Visible: true,
 		}).
 		AddComponent(position, &Position{
 			X: pos.X,

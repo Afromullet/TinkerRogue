@@ -14,7 +14,6 @@ var previousIndices []int
 func DrawThrowableAOE(g *Game) {
 
 	cursorX, cursorY := ebiten.CursorPosition()
-	fmt.Println("Current and previous", cursorX, cursorY, prevCursorX, prevCursorY)
 
 	s := g.playerData.shape
 	var indices []int
@@ -37,7 +36,7 @@ func DrawThrowableAOE(g *Game) {
 }
 func HandleThrowable(g *Game) {
 
-	if g.ThrowableItemSelected() {
+	if g.IsThrowableItemSelected() {
 
 		DrawThrowableAOE(g)
 
@@ -48,6 +47,8 @@ func HandleThrowable(g *Game) {
 			//g.gameMap.ApplyColorMatrix(previousIndices, NewEmptyMatrix())
 			//g.SetThrowableItemSelected(false)
 			////HandleThrowable(g)
+
+			g.playerData.ThrowPreparedItem()
 
 		}
 
@@ -93,7 +94,7 @@ func PlayerActions(g *Game) {
 
 		log.Print("Press G")
 
-		itemFromTile, _ := g.gameMap.GrabItemFromTile(0, g.playerData.position)
+		itemFromTile, _ := g.gameMap.RemoveItemFromTile(0, g.playerData.position)
 
 		if itemFromTile != nil {
 			g.playerData.inventory.AddItem(itemFromTile)
@@ -140,7 +141,7 @@ func PlayerActions(g *Game) {
 		c := GetCreatureAtPosition(g, &nextPosition)
 
 		if c != nil {
-			log.Print("Creature here")
+
 			AttackSystem(g, g.playerData.position, &nextPosition)
 		}
 

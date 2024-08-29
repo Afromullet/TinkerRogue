@@ -183,7 +183,7 @@ func (as AStar) GetPath(gameMap GameMap, start *Position, end *Position, ignoreW
 			}
 
 			edge.g = currentNode.g + 1
-			edge.h = edge.Position.GetManhattanDistance(endNodePlaceholder.Position)
+			edge.h = edge.Position.ManhattanDistance(endNodePlaceholder.Position)
 			edge.f = edge.g + edge.h
 
 			if isInSlice(openList, edge) {

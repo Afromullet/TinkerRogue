@@ -9,6 +9,12 @@ import (
 	"github.com/norendren/go-fov/fov"
 )
 
+var floor *ebiten.Image = nil
+var wall *ebiten.Image = nil
+var validPositions ValidPositions
+
+// ValidPosition stores the position of anything that a player or creature can move onto
+// Todo determine whether we really need this
 type ValidPositions struct {
 	positions []Position
 }
@@ -22,10 +28,7 @@ func (v *ValidPositions) Get(index int) *Position {
 	return &v.positions[index]
 }
 
-var floor *ebiten.Image = nil
-var wall *ebiten.Image = nil
-var validPositions ValidPositions
-
+// A rect is used to create rooms on the map
 type Rect struct {
 	X1 int
 	X2 int
@@ -59,7 +62,6 @@ type GameMap struct {
 	PlayerVisible *fov.View
 }
 
-// Creating a new Map
 func NewGameMap() GameMap {
 	loadTileImages()
 	validPositions = ValidPositions{
@@ -75,14 +77,14 @@ func NewGameMap() GameMap {
 	return g
 }
 
-func (gameMap *GameMap) GetTile(pos *Position) *Tile {
+func (gameMap *GameMap) Tile(pos *Position) *Tile {
 
 	index := GetIndexFromXY(pos.X, pos.Y)
 	return gameMap.Tiles[index]
 
 }
 
-func (gameMap *GameMap) GetStartingPosition() Position {
+func (gameMap *GameMap) StartingPosition() Position {
 	x, y := gameMap.Rooms[0].Center()
 
 	return Position{
@@ -91,12 +93,11 @@ func (gameMap *GameMap) GetStartingPosition() Position {
 	}
 }
 
-// This pointer to the entity Parameter is shared with wherever it is passed from.
-// Mainly, it's there because the entity manager has to keep track of all entities
-// We do not want to remove it from the manager when it's on a tile
+// The Entity Manager continues to track an entity when it is added to a tile.
+// Since a tile has a position, we use the pos parameter to determine which tile to add it to
 func (gameMap *GameMap) AddEntityToTile(entity *ecs.Entity, pos *Position) {
 
-	tile := gameMap.GetTile(pos)
+	tile := gameMap.Tile(pos)
 
 	if tile.tileContents.entities == nil {
 		tile.tileContents.entities = new([]ecs.Entity)
@@ -106,12 +107,13 @@ func (gameMap *GameMap) AddEntityToTile(entity *ecs.Entity, pos *Position) {
 }
 
 // This removes the item at the specified index from the tile.
-// Removes the entity from the tile and returns it. It still exists in the manager
-// DANGER - The caller will have to store the entity somewhere else. Although is still exists in the manager,
-// It will be gone from the tile when this is called.
-func (gameMap *GameMap) GrabItemFromTile(index int, pos *Position) (*ecs.Entity, error) {
+// Right now it's just used for the inventory
+// The item is removed from the tile but still exists in the entity manager.
+// Since this removes the item from tile.tileContents, the caller will have to store it somewhere
+// Otherwise, it'll only exist in the entity manager
+func (gameMap *GameMap) RemoveItemFromTile(index int, pos *Position) (*ecs.Entity, error) {
 
-	tile := gameMap.GetTile(pos)
+	tile := gameMap.Tile(pos)
 
 	if tile.tileContents.entities == nil {
 		return nil, errors.New("entities slice is nil")
@@ -130,6 +132,8 @@ func (gameMap *GameMap) GrabItemFromTile(index int, pos *Position) (*ecs.Entity,
 	return &entity, nil
 }
 
+// The color matrix draws on tiles.
+// Right now it's only used for showing the AOE of throwable items
 func (gameMap *GameMap) DrawLevel(screen *ebiten.Image) {
 	gd := NewScreenData()
 
@@ -174,7 +178,6 @@ func (gameMap *GameMap) DrawLevel(screen *ebiten.Image) {
 	}
 }
 
-// createTiles creates a map of all walls as a baseline for carving out a level.
 func (gameMap *GameMap) createTiles() []*Tile {
 	gd := NewScreenData()
 	tiles := make([]*Tile, levelHeight*gd.ScreenWidth)
@@ -191,7 +194,6 @@ func (gameMap *GameMap) createTiles() []*Tile {
 	return tiles
 }
 
-// GenerateLevelTiles creates a new Dungeon Level Map.
 func (gameMap *GameMap) GenerateLevelTiles() {
 	MIN_SIZE := 6
 	MAX_SIZE := 10

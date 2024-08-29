@@ -9,9 +9,9 @@ var player *ecs.Component
 type Player struct {
 }
 
-// There's only one player, so we can store frequently used component data in PlayerData
-// Throwing items is a big part of the game, so we store the selected throwable item here
-// Also storing the index so we can remove it from the inventory once it's thrown
+// Used to keep track of frequently accessed player information.
+// Throwing items is an important part of the game, so we store additional information related
+// TO throwing
 type PlayerData struct {
 	playerEntity       *ecs.Entity
 	playerWeapon       *ecs.Entity
@@ -25,17 +25,20 @@ type PlayerData struct {
 // Helper function to make it less tedious to get the inventory
 func (pl *PlayerData) GetPlayerInventory() *Inventory {
 
-	playerInventory := GetComponentStruct[*Inventory](pl.playerEntity, InventoryComponent)
+	playerInventory := GetComponentType[*Inventory](pl.playerEntity, InventoryComponent)
 
 	return playerInventory
 }
 
+// Handles all conversions necessary for updating item throwing information
+// The index lets us remove an item one it's thrown
+// The shape lets us draw it on the screen
 func (pl *PlayerData) PrepareThrowable(itemEntity *ecs.Entity, index int) {
 
 	pl.selectedThrowable = itemEntity
-	item := GetComponentStruct[*Item](pl.selectedThrowable, ItemComponent)
+	item := GetComponentType[*Item](pl.selectedThrowable, ItemComponent)
 
-	t := item.GetItemProperty(THROWABLE_NAME).(throwable)
+	t := item.GetItemProperty(THROWABLE_NAME).(Throwable)
 	pl.throwableItemIndex = index
 
 	pl.shape = t.shape
@@ -44,20 +47,14 @@ func (pl *PlayerData) PrepareThrowable(itemEntity *ecs.Entity, index int) {
 
 func (pl *PlayerData) ThrowPreparedItem() {
 
+	pl.inventory.RemoveItem(pl.throwableItemIndex)
+
 }
 
 // Helper function to make it less tedious to get the inventory
 func (pl *PlayerData) GetPlayerWeapon() *Weapon {
 
-	weapon := GetComponentStruct[*Weapon](pl.playerWeapon, WeaponComponent)
+	weapon := GetComponentType[*Weapon](pl.playerWeapon, WeaponComponent)
 
 	return weapon
-}
-
-func (pl *PlayerData) GetPixelsFromPosition(gameMap *GameMap) []int {
-
-	ind := GetIndexFromXY(pl.position.X, pl.position.Y)
-
-	return []int{gameMap.Tiles[ind].PixelX, gameMap.Tiles[ind].PixelY}
-
 }

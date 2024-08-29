@@ -46,7 +46,7 @@ type Game struct {
 // Not going to try to generalize/abstract this until I figure out how I want to handle this
 // The impression I get now is that this will take a "state machine" since the throwable window closes
 // Once I click out of it
-func (g *Game) ThrowableItemSelected() bool {
+func (g *Game) IsThrowableItemSelected() bool {
 
 	return g.itemsUI.throwableItemDisplay.throwableItemSelected
 

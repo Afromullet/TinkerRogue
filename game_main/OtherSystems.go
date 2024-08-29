@@ -51,16 +51,16 @@ func AttackSystem(g *Game, attackerPos *Position, defenderPos *Position) {
 		attacker = GetCreatureAtPosition(g, defenderPos)
 		defender = g.playerData.playerEntity
 
-		weapon = GetComponentStruct[*Weapon](attacker, WeaponComponent)
+		weapon = GetComponentType[*Weapon](attacker, WeaponComponent)
 
 	}
 
-	attackerMessage = GetComponentStruct[*UserMessage](attacker, userMessage)
+	attackerMessage = GetComponentType[*UserMessage](attacker, userMessage)
 	log.Print(attackerMessage)
 
 	if weapon != nil {
 
-		defenderHealth := GetComponentStruct[*Health](defender, healthComponent)
+		defenderHealth := GetComponentType[*Health](defender, healthComponent)
 		if defenderHealth != nil {
 			defenderHealth.CurrentHealth -= weapon.damage
 			attackerMessage.AttackMessage = fmt.Sprintf("Damage Done: %d\n", weapon.damage)

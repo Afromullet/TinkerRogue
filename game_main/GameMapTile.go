@@ -6,8 +6,8 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/colorm"
 )
 
-// Used to apply rgba color transformations to a tile
-// ApplyMatrix tells us whether we want to apply the transformation
+// The ColorMatrix lets us track what RGBA transformations we want to apply to a tile
+// It either scales a color or draws a color
 type ColorMatrix struct {
 	r           float32
 	g           float32

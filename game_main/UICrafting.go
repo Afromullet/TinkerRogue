@@ -7,6 +7,8 @@ import (
 	"github.com/ebitenui/ebitenui/widget"
 )
 
+// The CraftingItemDisplay tracks the items selected for crafting and their properties.
+// Each uses a
 type CraftingItemDisplay struct {
 	itemDisplay                ItemDisplay
 	ItemsSelectedContainer     *widget.Container //Displays the items the user HAS selected for crafitng
@@ -17,8 +19,9 @@ type CraftingItemDisplay struct {
 
 }
 
-// Selects an item and adds it to the ItemsSelectedContainer container, which are the items chosen for crafting.
-// Also updates the ItemsSelectedPropContainer with the properties of tehs elected items
+// Selects an item and adds it to the ItemsSelectedContainer container and ItemsSelectedPropContainer
+// ItemSeleced container tells us which items we're crafting with
+// ItemsSelectedPropContainer tells which properties the items have
 func (craftingItemDisplay *CraftingItemDisplay) CreateInventoryList(playerData *PlayerData, propFilters ...ItemProperty) {
 
 	// Nested function to add a selected item
@@ -37,16 +40,12 @@ func (craftingItemDisplay *CraftingItemDisplay) CreateInventoryList(playerData *
 
 	craftingItemDisplay.itemDisplay.InventoryDisplaylist.EntrySelectedEvent.AddHandler(func(args interface{}) {
 
-		//So that we don't append to the container
-
 		craftingItemDisplay.ItemsSelectedContainer.RemoveChild(craftingItemDisplay.itemDisplay.ItemsSelectedList)
 
 		a := args.(*widget.ListEntrySelectedEventArgs)
 		entry := a.Entry.(InventoryListEntry)
 
 		addSelectedItem(entry.index)
-
-		//names, _ := playerData.GetPlayerInventory().GetPropertyNames(entry.index)
 
 		sel := playerData.GetPlayerInventory().GetInventoryForDisplay(craftingItemDisplay.itemDisplay.ItemsSelectedIndices)
 
@@ -70,6 +69,7 @@ func (craftingItemDisplay *CraftingItemDisplay) CreateInventoryList(playerData *
 
 }
 
+// Used by the Clicked Handler of the Crafting Button. Displays the inventory
 func (craftingItemDisplay *CraftingItemDisplay) DisplayInventory(g *Game) {
 
 	craftingItemDisplay.CreateInventoryList(&g.playerData)

@@ -1,48 +1,15 @@
 package main
 
 import (
-	"fmt"
-
 	"github.com/bytearena/ecs"
 )
 
-// Using the MoveType enum so that we only have to query creatures once for the movement types
-type MoveType int
-
-const (
-	SimpleWanderType = iota
-	NoMovementType
-	GoToPlayerMoveType
-	InvalidMovementType
-)
-
-func GetMovementComponentType(e *ecs.Entity) MoveType {
-
-	var ok bool
-
-	if _, ok = e.GetComponentData(simpleWander); ok {
-		return SimpleWanderType
-	}
-
-	if _, ok = e.GetComponentData(noMove); ok {
-		return NoMovementType
-	}
-
-	if _, ok = e.GetComponentData(goToPlayer); ok {
-		return GoToPlayerMoveType
-	}
-
-	return InvalidMovementType
-
-}
-
-// Select a random spot to wander to.
-// Build a new path when arriving at the location
+// Select a random spot to wander to and builds a new path when arriving at the position
 func SimpleWanderAction(g *Game, e *ecs.Entity) {
 
-	creature := GetComponentStruct[*Creature](e, creature)
+	creature := GetComponentType[*Creature](e, creature)
 
-	creaturePosition := GetComponentStruct[*Position](e, position)
+	creaturePosition := GetComponentType[*Position](e, position)
 
 	randomPos := GetRandomBetween(0, len(validPositions.positions))
 	endPos := validPositions.Get(randomPos)
@@ -55,7 +22,7 @@ func SimpleWanderAction(g *Game, e *ecs.Entity) {
 
 	}
 
-	creature.MoveToNextPosition(g, creaturePosition)
+	creature.UpdatePosition(g, creaturePosition)
 
 }
 
@@ -65,31 +32,35 @@ func NoMoveAction(g *Game, e *ecs.Entity) {
 
 func GoToPlayerMoveAction(g *Game, e *ecs.Entity) {
 
-	creature := GetComponentStruct[*Creature](e, creature)
-	creaturePosition := GetComponentStruct[*Position](e, position)
+	creature := GetComponentType[*Creature](e, creature)
+	creaturePosition := GetComponentType[*Position](e, position)
 
 	creature.BuildPathToPlayer(g, creaturePosition)
 
-	creature.MoveToNextPosition(g, creaturePosition)
+	creature.UpdatePosition(g, creaturePosition)
 
 }
 
+// Gets called in the Game Loop.
+// Creature movement follows a path, which is a slice of Position Type. Each movement function calls
+// UpdatePosition, which...updates the creatures position The movement type functions determine
+// How a path is created
 func MovementSystem(g *Game) {
 
 	for _, c := range g.World.Query(g.WorldTags["monsters"]) {
 
-		movType := GetMovementComponentType(c.Entity)
+		var ok bool
 
-		switch movType {
-		case SimpleWanderType:
+		if _, ok = c.Entity.GetComponentData(simpleWander); ok {
 			SimpleWanderAction(g, c.Entity)
-		case NoMovementType:
-			NoMoveAction(g, c.Entity)
-		case GoToPlayerMoveType:
-			GoToPlayerMoveAction(g, c.Entity)
-		case InvalidMovementType:
-			fmt.Print("Error Finding movement type")
+		}
 
+		if _, ok = c.Entity.GetComponentData(noMove); ok {
+			NoMoveAction(g, c.Entity)
+		}
+
+		if _, ok = c.Entity.GetComponentData(goToPlayer); ok {
+			GoToPlayerMoveAction(g, c.Entity)
 		}
 
 	}

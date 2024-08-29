@@ -1,5 +1,16 @@
 package main
 
+// This type helps us identify which direction to draw some shapes in
+// I.E, lines and cones go into a direction
+type ShapeDirection int
+
+const (
+	LineUp = iota
+	LineDown
+	LineRight
+	LineLeft
+)
+
 // Currently a duplicate of the one found in GameMap. Don't want to pass the GameMap parameter to the shapes here
 func InBounds(x, y int) bool {
 	gd := NewScreenData()
@@ -9,30 +20,33 @@ func InBounds(x, y int) bool {
 	return true
 }
 
-// Interfaces shapes which are drawn over tiles
-// Get Indices returns the indices of the tiles we want to draw ove r
+// Interfaces for a Type that draws a shape on the map
+// GetIndices returns the indices the shape covers.
+// UpdatePositions updates the starting position of the shape.
+// Each shape will have to determine how to draw the shape using indices
+// This does not handle the ColorMatrix..DrawLevel currently applies teh ColorMatrix
 type TileBasedShape interface {
 	GetIndices() []int
 	UpdatePosition(pixelX int, pixelY int)
 }
 
-// Draws a tile Map based square of specified size at the pixel position.
+// The square is drawn around (PixelX,PixelY)
 type TileSquare struct {
-	pixelX int
-	pixelY int
-	size   int
+	PixelX int
+	PixelY int
+	Size   int
 }
 
 func (s TileSquare) GetIndices() []int {
 	gd := NewScreenData()
-	halfSize := s.size / 2
+	halfSize := s.Size / 2
 	indices := make([]int, 0)
 
-	s.pixelX = s.pixelX / gd.TileWidth
-	s.pixelY = s.pixelY / gd.TileHeight
+	s.PixelX = s.PixelX / gd.TileWidth
+	s.PixelY = s.PixelY / gd.TileHeight
 
-	for y := s.pixelY - halfSize; y <= s.pixelY+halfSize; y++ {
-		for x := s.pixelX - halfSize; x <= s.pixelX+halfSize; x++ {
+	for y := s.PixelY - halfSize; y <= s.PixelY+halfSize; y++ {
+		for x := s.PixelX - halfSize; x <= s.PixelX+halfSize; x++ {
 			if InBounds(x, y) {
 				index := GetIndexFromXY(x, y)
 				indices = append(indices, index)
@@ -45,29 +59,20 @@ func (s TileSquare) GetIndices() []int {
 }
 
 func (s *TileSquare) UpdatePosition(pixelX int, pixelY int) {
-	s.pixelX = pixelX
-	s.pixelY = pixelY
+	s.PixelX = pixelX
+	s.PixelY = pixelY
 
 }
 
 func NewTileSquare(pixelX, pixelY, size int) TileSquare {
 
 	return TileSquare{
-		pixelX: pixelX,
-		pixelY: pixelY,
-		size:   size,
+		PixelX: pixelX,
+		PixelY: pixelY,
+		Size:   size,
 	}
 
 }
-
-type ShapeDirection int
-
-const (
-	LineUp = iota
-	LineDown
-	LineRight
-	LineLeft
-)
 
 type TileLine struct {
 	pixelX    int

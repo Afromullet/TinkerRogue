@@ -37,12 +37,13 @@ func (p *Position) IsEqual(other *Position) bool {
 	return (p.X == other.X && p.Y == other.Y)
 }
 
-func (p *Position) GetManhattanDistance(other *Position) int {
+func (p *Position) ManhattanDistance(other *Position) int {
 	xDist := math.Abs(float64(p.X - other.X))
 	yDist := math.Abs(float64(p.Y - other.Y))
 	return int(xDist) + int(yDist)
 }
 
+// Creates a slice of Positions which represent a path build with A-Star
 func (p *Position) BuildPath(g *Game, other *Position) []Position {
 
 	astar := AStar{}
@@ -52,7 +53,7 @@ func (p *Position) BuildPath(g *Game, other *Position) []Position {
 
 type Renderable struct {
 	Image   *ebiten.Image
-	visible bool
+	Visible bool
 }
 
 type Name struct {
@@ -78,8 +79,8 @@ type Health struct {
 	CurrentHealth int
 }
 
-// I don't want to keep on calling GetComponentData due to it being annoying syntax
-func GetComponentStruct[T any](entity *ecs.Entity, component *ecs.Component) T {
+// A wrapper around the ECS libraries GetComponentData.
+func GetComponentType[T any](entity *ecs.Entity, component *ecs.Component) T {
 
 	if c, ok := entity.GetComponentData(component); ok {
 		return c.(T)
@@ -119,7 +120,6 @@ func InitializeECS(g *Game) {
 	g.World = manager
 }
 
-// Don't need tags for the movement types because we're not searching by tag.
 func InitializeCreatureComponents(manager *ecs.Manager, tags map[string]ecs.Tag) {
 
 	creature = manager.NewComponent()
@@ -145,14 +145,14 @@ func InitializePlayerData(g *Game) {
 		AddComponent(player, &Player{}).
 		AddComponent(renderable, &Renderable{
 			Image:   playerImg,
-			visible: true,
+			Visible: true,
 		}).
 		AddComponent(position, &Position{
 			X: 40,
 			Y: 45,
 		}).
 		AddComponent(InventoryComponent, &Inventory{
-			InventoryContent: new([]ecs.Entity),
+			InventoryContent: make([]*ecs.Entity, 0),
 		}).
 		AddComponent(healthComponent, &Health{
 			MaxHealth:     5,
@@ -171,11 +171,11 @@ func InitializePlayerData(g *Game) {
 
 	//Don't want to Query for the player position every time, so we're storing it
 
-	startPos := GetComponentStruct[*Position](g.playerData.playerEntity, position)
-	startPos.X = g.gameMap.GetStartingPosition().X
-	startPos.Y = g.gameMap.GetStartingPosition().Y
+	startPos := GetComponentType[*Position](g.playerData.playerEntity, position)
+	startPos.X = g.gameMap.StartingPosition().X
+	startPos.Y = g.gameMap.StartingPosition().Y
 
-	inventory := GetComponentStruct[*Inventory](g.playerData.playerEntity, InventoryComponent)
+	inventory := GetComponentType[*Inventory](g.playerData.playerEntity, InventoryComponent)
 
 	g.playerData.position = startPos
 	g.playerData.inventory = inventory
