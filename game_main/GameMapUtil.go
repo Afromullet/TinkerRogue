@@ -69,12 +69,12 @@ func loadTileImages() {
 	}
 	var err error
 
-	floor, _, err = ebitenutil.NewImageFromFile("assets//tiles/floor.png")
+	floor, _, err = ebitenutil.NewImageFromFile("assets//tiles/marble_floor5.png")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	wall, _, err = ebitenutil.NewImageFromFile("assets//tiles/wall.png")
+	wall, _, err = ebitenutil.NewImageFromFile("assets//tiles/marble_wall1.png")
 	if err != nil {
 		log.Fatal(err)
 	}

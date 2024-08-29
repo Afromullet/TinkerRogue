@@ -9,6 +9,53 @@ import (
 )
 
 var prevCursorX, prevCursorY int
+var previousIndices []int
+
+func DrawThrowableAOE(g *Game) {
+
+	cursorX, cursorY := ebiten.CursorPosition()
+	fmt.Println("Current and previous", cursorX, cursorY, prevCursorX, prevCursorY)
+
+	s := g.playerData.shape
+	var indices []int
+	if cursorX != prevCursorX || cursorY != prevCursorY {
+
+		if prevCursorX != 0 && prevCursorY != 0 {
+			g.gameMap.ApplyColorMatrix(previousIndices, NewEmptyMatrix())
+
+		}
+
+	}
+
+	s.UpdatePosition(cursorX, cursorY)
+	indices = s.GetIndices()
+	cm := ColorMatrix{1, 0, 0, 0.5, true}
+	g.gameMap.ApplyColorMatrix(indices, cm)
+	prevCursorX, prevCursorY = cursorX, cursorY
+	previousIndices = indices
+
+}
+func HandleThrowable(g *Game) {
+
+	if g.ThrowableItemSelected() {
+
+		DrawThrowableAOE(g)
+		if inpututil.IsMouseButtonJustPressed(ebiten.MouseButton2) {
+
+			DrawThrowableAOE(g)
+
+		}
+		if inpututil.IsMouseButtonJustPressed(ebiten.MouseButton0) {
+
+			log.Println("Removing throwable")
+			g.gameMap.ApplyColorMatrix(previousIndices, NewEmptyMatrix())
+			g.SetThrowableItemSelected(false)
+			////HandleThrowable(g)
+
+		}
+	}
+
+}
 
 // todo replace the keypressed with iskeyreleased
 func PlayerActions(g *Game) {
@@ -50,8 +97,6 @@ func PlayerActions(g *Game) {
 	if inpututil.IsKeyJustReleased(ebiten.KeyT) {
 
 		fmt.Println("Is window open ", g.mainPlayerInterface.IsWindowOpen(g.itemsUI.throwableItemDisplay.itemDisplay.rootWindow))
-		//g.itemsUI.rootContainer.
-		//g.itemsUI.throwableItemDisplay.itemDisplay.rootWindow
 
 	}
 	if ebiten.IsKeyPressed(ebiten.KeySpace) {
@@ -60,45 +105,9 @@ func PlayerActions(g *Game) {
 
 	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButton2) {
 
-		if g.ThrowableItemSelected() {
-
-			cursorX, cursorY := ebiten.CursorPosition()
-			fmt.Println("Current and previous", cursorX, cursorY, prevCursorX, prevCursorY)
-
-			//s := NewSquareAtPixel(cursorX, cursorY, 3)
-			//l := NewTileCone(cursorX, cursorY, 3, LineRight)
-			//indices := s.GetIndices()
-			//lineIndices := l.GetIndices()
-
-			s := g.playerData.shape
-			var indices []int
-
-			if cursorX != prevCursorX || cursorY != prevCursorY {
-				// Clear the previous square
-				if prevCursorX != 0 && prevCursorY != 0 {
-
-					s.UpdatePosition(prevCursorX, prevCursorY)
-					indices = s.GetIndices()
-
-					g.gameMap.ApplyColorMatrix(indices, NewEmptyMatrix())
-
-				}
-
-			}
-
-			s.UpdatePosition(cursorX, cursorY)
-			indices = s.GetIndices()
-
-			cm := ColorMatrix{0, 1, 0, 1, true}
-
-			//g.gameMap.ApplyColorMatrix(lineIndices, cm)
-			g.gameMap.ApplyColorMatrix(indices, cm)
-
-			prevCursorX, prevCursorY = cursorX, cursorY
-
-		}
-
 	}
+
+	HandleThrowable(g)
 
 	nextPosition := Position{
 		X: g.playerData.position.X + x,

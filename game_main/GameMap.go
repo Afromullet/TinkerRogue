@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"image/color"
 
 	"github.com/bytearena/ecs"
 	"github.com/hajimehoshi/ebiten/v2"
@@ -132,6 +133,8 @@ func (gameMap *GameMap) GrabItemFromTile(index int, pos *Position) (*ecs.Entity,
 func (gameMap *GameMap) DrawLevel(screen *ebiten.Image) {
 	gd := NewScreenData()
 
+	var cs = ebiten.ColorScale{}
+
 	for x := 0; x < gd.ScreenWidth; x++ {
 		//for y := 0; y < gd.ScreenHeight; y++ {
 		for y := 0; y < levelHeight; y++ {
@@ -149,11 +152,12 @@ func (gameMap *GameMap) DrawLevel(screen *ebiten.Image) {
 
 				op.GeoM.Translate(float64(tile.PixelX), float64(tile.PixelY))
 
+				//Blackening out tiles that are out of Fov
+				op.ColorScale.ScaleWithColor(color.RGBA{1, 1, 1, 1})
+
 			}
 
 			if !tile.colorMatrix.IsEmpty() {
-
-				var cs = ebiten.ColorScale{}
 
 				cs.SetR(tile.colorMatrix.r)
 				cs.SetG(tile.colorMatrix.g)

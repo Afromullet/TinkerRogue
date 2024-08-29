@@ -27,19 +27,31 @@ func CreateTestItems(manager *ecs.Manager, tags map[string]ecs.Tag, gameMap *Gam
 	//todo add testing location back
 
 	startingPos := gameMap.GetStartingPosition()
-	sq := NewTileSquare(0, 0, 3)
+	s := NewTileSquare(0, 0, 3)
 	//CreateItem(manager, "Throwable Item"+strconv.Itoa(1), Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
 	//NewThrowable(1, 5, 3, NewTileSquare(0, 0, 3)), NewBurning(1, 1))
-	CreateItem(manager, "Throwable Item"+strconv.Itoa(1), Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
-		NewThrowable(1, 5, 3, &sq), NewBurning(1, 1))
+	CreateItem(manager, "T0"+strconv.Itoa(1), Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
+		NewThrowable(1, 5, 3, &s), NewBurning(1, 1))
+
+	l := NewTileLine(0, 0, 5, LineDown)
+	CreateItem(manager, "T1"+strconv.Itoa(1), Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
+		NewThrowable(1, 5, 3, &l))
+
+	c := NewTileCone(0, 0, 5, LineDown)
+	CreateItem(manager, "T2"+strconv.Itoa(1), Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
+		NewThrowable(1, 5, 3, &c))
+
+	ci := NewTileCircle(0, 0, 2)
+	CreateItem(manager, "T3"+strconv.Itoa(1), Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
+		NewThrowable(1, 5, 3, &ci))
+
+	re := NewTileRectangle(0, 0, 2, 3)
+	CreateItem(manager, "T4"+strconv.Itoa(1), Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
+		NewThrowable(1, 5, 3, &re))
 
 	CreateItem(manager, "Item"+strconv.Itoa(1), Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc, NewBurning(1, 1))
 	CreateItem(manager, "Item"+strconv.Itoa(1), Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc, NewBurning(1, 1))
 	CreateItem(manager, "Item"+strconv.Itoa(2), Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc, NewBurning(1, 1), NewFreezing(1, 2))
-
-	l := NewTileLine(0, 0, 5, LineDown)
-	CreateItem(manager, "T2"+strconv.Itoa(1), Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
-		NewThrowable(1, 5, 3, &l))
 
 	//CreateItem(manager, "Item"+strconv.Itoa(2), Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc, NewBurning(1, 1), NewFreezing(1, 2))
 

@@ -52,6 +52,12 @@ func (g *Game) ThrowableItemSelected() bool {
 
 }
 
+func (g *Game) SetThrowableItemSelected(selected bool) {
+
+	g.itemsUI.throwableItemDisplay.throwableItemSelected = selected
+
+}
+
 // NewGame creates a new Game Object and initializes the data
 // This is a pretty solid refactor candidate for later
 func NewGame() *Game {

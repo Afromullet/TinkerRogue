@@ -80,11 +80,9 @@ func (l TileLine) GetIndices() []int {
 	indices := make([]int, 0)
 	gd := NewScreenData()
 
-	// Convert pixel coordinates to grid coordinates
 	gridX := l.pixelX / gd.TileWidth
 	gridY := l.pixelY / gd.TileHeight
 
-	// Add indices based on the direction of the line
 	for i := 0; i < l.length; i++ {
 		var x, y int
 
@@ -99,7 +97,6 @@ func (l TileLine) GetIndices() []int {
 			x, y = gridX-i, gridY
 		}
 
-		// Ensure the calculated coordinates are within bounds
 		if InBounds(x, y) {
 			index := GetIndexFromXY(x, y)
 			indices = append(indices, index)
@@ -137,7 +134,6 @@ func (c TileCone) GetIndices() []int {
 	indices := make([]int, 0)
 	gd := NewScreenData()
 
-	// Convert pixel coordinates to grid coordinates
 	gridX := c.pixelX / gd.TileWidth
 	gridY := c.pixelY / gd.TileHeight
 
@@ -195,6 +191,95 @@ func NewTileCone(pixelX, pixelY, length int, direction ShapeDirection) TileCone 
 		pixelY:    pixelY,
 		length:    length,
 		direction: direction,
+	}
+
+}
+
+type TileCircle struct {
+	pixelX int
+	pixelY int
+	radius int
+}
+
+func (c TileCircle) GetIndices() []int {
+	indices := make([]int, 0)
+	gd := NewScreenData()
+
+	centerX := c.pixelX / gd.TileWidth
+	centerY := c.pixelY / gd.TileHeight
+
+	for y := centerY - c.radius; y <= centerY+c.radius; y++ {
+		for x := centerX - c.radius; x <= centerX+c.radius; x++ {
+			// Check if the point (x, y) is within the circle
+			if (x-centerX)*(x-centerX)+(y-centerY)*(y-centerY) <= c.radius*c.radius {
+				if InBounds(x, y) {
+					index := GetIndexFromXY(x, y)
+					indices = append(indices, index)
+				}
+			}
+		}
+	}
+
+	return indices
+}
+
+func (c *TileCircle) UpdatePosition(pixelX, pixelY int) {
+	c.pixelX = pixelX
+	c.pixelY = pixelY
+
+}
+
+func NewTileCircle(pixelX, pixelY, radius int) TileCircle {
+
+	return TileCircle{
+		pixelX: pixelX,
+		pixelY: pixelY,
+		radius: radius,
+	}
+
+}
+
+type TileRectangle struct {
+	pixelX int
+	pixelY int
+	width  int
+	height int
+}
+
+func (r TileRectangle) GetIndices() []int {
+	indices := make([]int, 0)
+
+	// Convert pixel coordinates to grid coordinates (if necessary)
+	gd := NewScreenData()
+	pixelX := r.pixelX / gd.TileWidth
+	pixelY := r.pixelY / gd.TileHeight
+
+	// Iterate through the width and height of the rectangle
+	for y := pixelY; y < pixelY+r.height; y++ {
+		for x := pixelX; x < pixelX+r.width; x++ {
+			if InBounds(x, y) {
+				index := GetIndexFromXY(x, y)
+				indices = append(indices, index)
+			}
+		}
+	}
+
+	return indices
+}
+
+func (c *TileRectangle) UpdatePosition(pixelX, pixelY int) {
+	c.pixelX = pixelX
+	c.pixelY = pixelY
+
+}
+
+func NewTileRectangle(pixelX, pixelY, width, height int) TileRectangle {
+
+	return TileRectangle{
+		pixelX: pixelX,
+		pixelY: pixelY,
+		width:  width,
+		height: height,
 	}
 
 }
