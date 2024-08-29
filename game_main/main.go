@@ -72,8 +72,6 @@ func NewGame() *Game {
 	SetupPlayerForTesting(g)
 	UpdateContentsForTest(g)
 
-	ShapesToDraw = make([]RenderableShape, 0)
-
 	return g
 
 }
@@ -106,11 +104,6 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	g.mainPlayerInterface.Draw(screen)
 	ProcessUserLog(g, screen)
 
-	DrawTileShapes(&g.gameMap, screen)
-
-	for _, s := range ShapesToDraw {
-		s.DrawShape(screen)
-	}
 }
 
 // Layout will return the screen dimensions.

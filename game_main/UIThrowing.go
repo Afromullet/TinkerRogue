@@ -49,7 +49,11 @@ func (throwingItemDisplay *ThrowingItemDisplay) CreateInventoryList(playerData *
 func (throwingItemDisplay *ThrowingItemDisplay) DisplayInventory(g *Game) {
 
 	//Passing a zero value throwable for the propFIlter
-	throwingItemDisplay.CreateInventoryList(&g.playerData, NewThrowable(0, 0, 0, NewSquareAtPixel(0, 0, 0)))
+
+	s := NewTileSquare(0, 0, 0)
+
+	//throwingItemDisplay.CreateInventoryList(&g.playerData, NewThrowable(0, 0, 0, NewTileSquare(0, 0, 0)))
+	throwingItemDisplay.CreateInventoryList(&g.playerData, NewThrowable(0, 0, 0, &s))
 
 }
 

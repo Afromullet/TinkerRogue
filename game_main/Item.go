@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 
 	ecs "github.com/bytearena/ecs"
@@ -69,26 +68,37 @@ func (item *Item) GetPropertyNames() []string {
 
 }
 
-// Searches by the property name - the constants in ItemProperties.go
-func (item *Item) GetItemPropComponent(propName string) *ecs.Component {
+/*
+I didn't understand Go Interfaces well enough when implementing item properties
+So accessing Item Properties takes some extra work
+
+Takes the component identifying string as input and returns the
+struct that represents the property
+
+Here's an example of how it's used:
+
+item := GetComponentStruct[*Item](itemEntity, ItemComponent)
+t := item.GetItemProperty(THROWABLE_NAME).(throwable)
+fmt.Println(t.shape)
+*/
+func (item *Item) GetItemProperty(propName string) any {
 
 	for _, c := range AllItemProperties {
 		data, ok := item.properties.GetComponentData(c)
 		if ok {
 			print(data)
 
-			d := data.(*ItemProperty)
-			if GetPropertyName(d) == propName {
-				fmt.Println("Found")
-				return GetPropertyComponent(d)
+			d := *data.(*ItemProperty)
+			if GetPropertyName(&d) == propName {
+
+				p := d.(any)
+				return p
+
 			}
 
 		}
-
 	}
-
 	return nil
-
 }
 
 // Not the best way to check if an item has all propeties, but it will work for now

@@ -65,57 +65,40 @@ func PlayerActions(g *Game) {
 			cursorX, cursorY := ebiten.CursorPosition()
 			fmt.Println("Current and previous", cursorX, cursorY, prevCursorX, prevCursorY)
 
-			s := NewSquareAtPixel(cursorX, cursorY, 3)
-			indices := s.GetIndices()
+			//s := NewSquareAtPixel(cursorX, cursorY, 3)
+			//l := NewTileCone(cursorX, cursorY, 3, LineRight)
+			//indices := s.GetIndices()
+			//lineIndices := l.GetIndices()
+
+			s := g.playerData.shape
+			var indices []int
 
 			if cursorX != prevCursorX || cursorY != prevCursorY {
 				// Clear the previous square
 				if prevCursorX != 0 && prevCursorY != 0 {
 
-					prevIndices := NewSquareAtPixel(prevCursorX, prevCursorY, 3).GetIndices()
-					g.gameMap.ApplyColorMatrix(prevIndices, NewEmptyMatrix())
+					s.UpdatePosition(prevCursorX, prevCursorY)
+					indices = s.GetIndices()
+
+					g.gameMap.ApplyColorMatrix(indices, NewEmptyMatrix())
 
 				}
 
 			}
 
+			s.UpdatePosition(cursorX, cursorY)
+			indices = s.GetIndices()
+
 			cm := ColorMatrix{0, 1, 0, 1, true}
 
+			//g.gameMap.ApplyColorMatrix(lineIndices, cm)
 			g.gameMap.ApplyColorMatrix(indices, cm)
 
-			playerPixels := g.playerData.GetPixelsFromPosition(&g.gameMap)
-			l := NewLineToPixel(playerPixels[0], playerPixels[1], cursorX, cursorY, &g.gameMap)
-
-			AddTileShapeToDraw(s)
-			AddTileShapeToDraw(l)
 			prevCursorX, prevCursorY = cursorX, cursorY
 
 		}
 
 	}
-
-	/*
-		if g.ThrowableItemSelected() {
-			log.Print("Get button")
-			fmt.Printf("Player Possition %d %d\n", g.playerData.position.X, g.playerData.position.Y)
-
-			cursorX, cursorY := ebiten.CursorPosition()
-
-			s := NewSquareAtPixel(cursorX, cursorY, 3)
-
-			scaleCM := ColorMatrix{0, 1, 0, 1, true}
-			indices := s.GetIndices()
-
-			g.gameMap.ApplyScaleColorMatrix(indices, scaleCM)
-
-			playerPixels := g.playerData.GetPixelsFromPosition(&g.gameMap)
-			l := NewLineToPixel(playerPixels[0], playerPixels[1], cursorX, cursorY, &g.gameMap)
-
-			AddTileShapeToDraw(s)
-			AddTileShapeToDraw(l)
-		}
-
-	*/
 
 	nextPosition := Position{
 		X: g.playerData.position.X + x,

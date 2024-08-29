@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-
 	"github.com/bytearena/ecs"
 )
 
@@ -20,6 +18,8 @@ type PlayerData struct {
 	inventory              *Inventory
 	selectedThrowable      *ecs.Entity
 	throwableComponentData *throwable
+	throwIndices           []int
+	shape                  TileBasedShape
 }
 
 // Helper function to make it less tedious to get the inventory
@@ -33,14 +33,11 @@ func (pl *PlayerData) GetPlayerInventory() *Inventory {
 func (pl *PlayerData) PrepareThrowable(itemEntity *ecs.Entity) {
 
 	pl.selectedThrowable = itemEntity
-	compData := GetComponentStruct[*Item](pl.selectedThrowable, ItemComponent)
-	//comp := compData.GetItemPropComponent(THROWABLE_NAME)
-	//t := (*Item).comp
+	item := GetComponentStruct[*Item](pl.selectedThrowable, ItemComponent)
 
-	//GetComponentStruct[*throwable](c, ThrowableComponent)
+	t := item.GetItemProperty(THROWABLE_NAME).(throwable)
 
-	fmt.Println("Inside PlayerData ", compData.properties)
-	//fmt.Println("Prop Stuff ", c)
+	pl.shape = t.shape
 
 }
 

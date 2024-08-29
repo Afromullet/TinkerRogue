@@ -4,19 +4,6 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-func RenderShapes(screen *ebiten.Image) {
-
-	if len(ShapesToDraw) <= 0 {
-		return
-
-	}
-	for _, s := range ShapesToDraw {
-
-		s.DrawShape(screen)
-
-	}
-}
-
 func ProcessRenderables(g *Game, gameMap GameMap, screen *ebiten.Image) {
 	for _, result := range g.World.Query(g.WorldTags["renderables"]) {
 		pos := result.Components[position].(*Position)

@@ -129,42 +129,6 @@ func (gameMap *GameMap) GrabItemFromTile(index int, pos *Position) (*ecs.Entity,
 	return &entity, nil
 }
 
-func (gameMap *GameMap) DrawLevelOriginal(screen *ebiten.Image) {
-	gd := NewScreenData()
-
-	for x := 0; x < gd.ScreenWidth; x++ {
-		//for y := 0; y < gd.ScreenHeight; y++ {
-		for y := 0; y < levelHeight; y++ {
-
-			idx := GetIndexFromXY(x, y)
-			tile := gameMap.Tiles[idx]
-			isVis := gameMap.PlayerVisible.IsVisible(x, y)
-			op := &ebiten.DrawImageOptions{}
-			if isVis {
-
-				op.GeoM.Translate(float64(tile.PixelX), float64(tile.PixelY))
-				screen.DrawImage(tile.Image, op)
-				gameMap.Tiles[idx].IsRevealed = true
-			} else if tile.IsRevealed {
-
-				op.GeoM.Translate(float64(tile.PixelX), float64(tile.PixelY))
-				op.ColorM.Translate(100, 100, 100, 0.35) //Not having this line is why the new DrawLevel is not showing the tiles that are out of fov
-				screen.DrawImage(tile.Image, op)
-			}
-
-			/*
-				if gameMap.PlayerVisible.IsVisible(x, y) {
-					tile := gameMap.Tiles[GetIndexFromXY(x, y)]
-					op := &ebiten.DrawImageOptions{}
-					op.GeoM.Translate(float64(tile.PixelX), float64(tile.PixelY))
-					screen.DrawImage(tile.Image, op)
-
-				}
-			*/
-		}
-	}
-}
-
 func (gameMap *GameMap) DrawLevel(screen *ebiten.Image) {
 	gd := NewScreenData()
 
@@ -190,7 +154,7 @@ func (gameMap *GameMap) DrawLevel(screen *ebiten.Image) {
 			if !tile.colorMatrix.IsEmpty() {
 
 				var cs = ebiten.ColorScale{}
-				cs.A()
+
 				cs.SetR(tile.colorMatrix.r)
 				cs.SetG(tile.colorMatrix.g)
 				cs.SetB(tile.colorMatrix.b)
@@ -205,49 +169,6 @@ func (gameMap *GameMap) DrawLevel(screen *ebiten.Image) {
 		}
 	}
 }
-
-// Using ColorM
-
-/*
-func (gameMap *GameMap) DrawLevel2(screen *ebiten.Image) {
-	gd := NewScreenData()
-
-	for x := 0; x < gd.ScreenWidth; x++ {
-		//for y := 0; y < gd.ScreenHeight; y++ {
-		for y := 0; y < levelHeight; y++ {
-
-			idx := GetIndexFromXY(x, y)
-			tile := gameMap.Tiles[idx]
-			isVis := gameMap.PlayerVisible.IsVisible(x, y)
-
-			var cm colorm.ColorM
-
-			op := colorm.DrawImageOptions{}
-
-			if isVis {
-				op.GeoM.Translate(float64(tile.PixelX), float64(tile.PixelY))
-				gameMap.Tiles[idx].IsRevealed = true
-			} else if tile.IsRevealed {
-
-				op.GeoM.Translate(float64(tile.PixelX), float64(tile.PixelY))
-
-			}
-
-			if !tile.colorMatrix.IsEmpty() {
-
-				cm.Scale(tile.colorMatrix.r, tile.colorMatrix.g,
-					tile.colorMatrix.b, tile.colorMatrix.a)
-
-			}
-
-			colorm.DrawImage(screen, tile.Image, cm, &op)
-
-			//screen.DrawImage(tile.Image, op2)
-
-		}
-	}
-}
-*/
 
 // createTiles creates a map of all walls as a baseline for carving out a level.
 func (gameMap *GameMap) createTiles() []*Tile {

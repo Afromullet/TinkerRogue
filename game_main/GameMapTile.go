@@ -9,10 +9,10 @@ import (
 // Used to apply rgba color transformations to a tile
 // ApplyMatrix tells us whether we want to apply the transformation
 type ColorMatrix struct {
-	r           float64
-	g           float64
-	b           float64
-	a           float64
+	r           float32
+	g           float32
+	b           float32
+	a           float32
 	ApplyMatrix bool
 }
 
