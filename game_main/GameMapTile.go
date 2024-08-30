@@ -44,12 +44,14 @@ const (
 // Holds any entities that are on a tile, whether it's items, creatures, etc.
 // Currently only used for holding items.
 type TileContents struct {
-	entities *[]ecs.Entity
+	entities []*ecs.Entity
 }
 
+// TileCords keeps track of the x,y coordinates in the TileMap
 type Tile struct {
 	PixelX        int
 	PixelY        int
+	TileCords     Position
 	Blocked       bool
 	Image         *ebiten.Image
 	tileContents  TileContents
@@ -59,7 +61,7 @@ type Tile struct {
 	OriginalImage *ebiten.Image
 }
 
-func NewTile(pixelX, pixelY int, blocked bool, img *ebiten.Image, tileType TileType, isRevealed bool) Tile {
+func NewTile(pixelX, pixelY int, tileCords Position, blocked bool, img *ebiten.Image, tileType TileType, isRevealed bool) Tile {
 
 	var cm colorm.ColorM
 	cm.Reset()
@@ -67,6 +69,7 @@ func NewTile(pixelX, pixelY int, blocked bool, img *ebiten.Image, tileType TileT
 	tile := Tile{
 		PixelX:     pixelX,
 		PixelY:     pixelY,
+		TileCords:  tileCords,
 		Blocked:    true,
 		Image:      img,
 		TileType:   WALL,

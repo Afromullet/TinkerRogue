@@ -49,6 +49,7 @@ func HandleThrowable(g *Game) {
 			////HandleThrowable(g)
 
 			g.playerData.ThrowPreparedItem()
+			ApplyThrowable(g, g.playerData.throwableItem)
 
 		}
 

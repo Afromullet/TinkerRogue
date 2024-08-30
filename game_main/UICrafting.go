@@ -106,7 +106,7 @@ func (craftingItemDisplay *CraftingItemDisplay) CreateContainers() {
 
 	craftingItemDisplay.itemDisplay.rootContainer.AddChild(craftingItemDisplay.itemDisplay.ItemDisplayContainer)
 
-	//Holds the widget that displays the selected items to the player
+	// Holds the widget that displays the selected items to the player
 	craftingItemDisplay.ItemsSelectedContainer = widget.NewContainer(
 		widget.ContainerOpts.BackgroundImage(e_image.NewNineSliceColor(color.NRGBA{100, 100, 100, 255})),
 		widget.ContainerOpts.Layout(widget.NewAnchorLayout()),

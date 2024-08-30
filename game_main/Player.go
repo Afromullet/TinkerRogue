@@ -20,6 +20,7 @@ type PlayerData struct {
 	selectedThrowable  *ecs.Entity
 	shape              TileBasedShape
 	throwableItemIndex int
+	throwableItem      *Item
 }
 
 // Helper function to make it less tedious to get the inventory
@@ -37,6 +38,7 @@ func (pl *PlayerData) PrepareThrowable(itemEntity *ecs.Entity, index int) {
 
 	pl.selectedThrowable = itemEntity
 	item := GetComponentType[*Item](pl.selectedThrowable, ItemComponent)
+	pl.throwableItem = item
 
 	t := item.GetItemProperty(THROWABLE_NAME).(Throwable)
 	pl.throwableItemIndex = index

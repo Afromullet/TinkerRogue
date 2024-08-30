@@ -40,6 +40,15 @@ func GetIndexFromXY(x int, y int) int {
 	return (y * gd.ScreenWidth) + x
 }
 
+func GetXYFromIndex(i int) Position {
+	gd := NewScreenData()
+	return Position{
+		X: i % gd.ScreenWidth,
+		Y: i / gd.ScreenWidth,
+	}
+
+}
+
 func loadTileImages() {
 	if floor != nil && wall != nil {
 		return

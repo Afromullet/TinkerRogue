@@ -1,3 +1,16 @@
+TODOS
+
+Passing around Game and GameMap to so many places. Especialyl Game. That needs to be broken down better
+
+
+
+
+
+
+______________
+
+
+
 Learning GO with this project. Some files are in heavy need of refactoring in the future, since I'm learning both GoLang
 And how to implemnent things in an ECS. The files I'm most actively using are below. Those are the ones I'm continually updating that,
 while still having to be refactored, are going to be part of the final product. 

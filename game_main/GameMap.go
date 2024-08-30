@@ -14,7 +14,7 @@ var wall *ebiten.Image = nil
 var validPositions ValidPositions
 
 // ValidPosition stores the position of anything that a player or creature can move onto
-// Todo determine whether we really need this
+// Todo determine whether we really need this. Figure otu why you have ValidPOsitions and solve it a better way
 type ValidPositions struct {
 	positions []Position
 }
@@ -100,10 +100,11 @@ func (gameMap *GameMap) AddEntityToTile(entity *ecs.Entity, pos *Position) {
 	tile := gameMap.Tile(pos)
 
 	if tile.tileContents.entities == nil {
-		tile.tileContents.entities = new([]ecs.Entity)
+
+		tile.tileContents.entities = make([]*ecs.Entity, 0)
 	}
 
-	*tile.tileContents.entities = append(*tile.tileContents.entities, *entity)
+	tile.tileContents.entities = append(tile.tileContents.entities, entity)
 }
 
 // This removes the item at the specified index from the tile.
@@ -119,7 +120,7 @@ func (gameMap *GameMap) RemoveItemFromTile(index int, pos *Position) (*ecs.Entit
 		return nil, errors.New("entities slice is nil")
 	}
 
-	entities := *tile.tileContents.entities
+	entities := tile.tileContents.entities
 
 	if index < 0 || index >= len(entities) {
 		return nil, errors.New("index out of range")
@@ -127,9 +128,9 @@ func (gameMap *GameMap) RemoveItemFromTile(index int, pos *Position) (*ecs.Entit
 
 	entity := entities[index]
 
-	*tile.tileContents.entities = append(entities[:index], entities[index+1:]...)
+	tile.tileContents.entities = append(entities[:index], entities[index+1:]...)
 
-	return &entity, nil
+	return entity, nil
 }
 
 // The color matrix draws on tiles.
@@ -186,7 +187,8 @@ func (gameMap *GameMap) createTiles() []*Tile {
 		for y := 0; y < levelHeight; y++ {
 			index = GetIndexFromXY(x, y)
 
-			tile := NewTile(x*gd.TileWidth, y*gd.TileHeight, true, wall, WALL, false)
+			pos := Position{x, y}
+			tile := NewTile(x*gd.TileWidth, y*gd.TileHeight, pos, true, wall, WALL, false)
 
 			tiles[index] = &tile
 		}

@@ -30,11 +30,30 @@ type TileBasedShape interface {
 	UpdatePosition(pixelX int, pixelY int)
 }
 
+// A TileBasedShape returns indices that correspond to the elements in the gamemaps Tiles slice
+// This returns the X,Y positions since we handle player and creature location through Position
+func GetTilePositions(ts TileBasedShape) []Position {
+
+	indices := ts.GetIndices()
+
+	pos := make([]Position, len(indices))
+
+	for i, inds := range indices {
+
+		pos[i] = GetXYFromIndex(inds)
+
+	}
+
+	return pos
+
+}
+
 // The square is drawn around (PixelX,PixelY)
 type TileSquare struct {
 	PixelX int
 	PixelY int
 	Size   int
+	pos    Position
 }
 
 func (s TileSquare) GetIndices() []int {

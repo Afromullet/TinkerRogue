@@ -33,8 +33,18 @@ func CreateTestItems(manager *ecs.Manager, tags map[string]ecs.Tag, gameMap *Gam
 	CreateItem(manager, "T0"+strconv.Itoa(1), Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
 		NewThrowable(1, 5, 3, &s), NewBurning(1, 1))
 
+	s = NewTileSquare(0, 0, 2)
+	//CreateItem(manager, "Throwable Item"+strconv.Itoa(1), Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
+	//NewThrowable(1, 5, 3, NewTileSquare(0, 0, 3)), NewBurning(1, 1))
+	CreateItem(manager, "T7"+strconv.Itoa(1), Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
+		NewThrowable(1, 5, 3, &s), NewBurning(1, 1))
+
 	l := NewTileLine(0, 0, 5, LineDown)
 	CreateItem(manager, "T1"+strconv.Itoa(1), Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
+		NewThrowable(1, 5, 3, &l))
+
+	l = NewTileLine(0, 0, 2, LineDown)
+	CreateItem(manager, "T9"+strconv.Itoa(1), Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
 		NewThrowable(1, 5, 3, &l))
 
 	c := NewTileCone(0, 0, 5, LineDown)
@@ -61,6 +71,19 @@ var defendingMonsterTestPosition *Position = &Position{}
 
 func CreateTestMonsters(manager *ecs.Manager, gameMap *GameMap) {
 
+	x, y := gameMap.Rooms[0].Center()
+
+	CreateMonster(manager, gameMap, x, y+1)
+	CreateMonster(manager, gameMap, x+1, y)
+	CreateMonster(manager, gameMap, x+1, y+1)
+	CreateMonster(manager, gameMap, x+1, y+2)
+	CreateMonster(manager, gameMap, x+2, y+1)
+	CreateMonster(manager, gameMap, x+2, y+2)
+
+}
+
+func CreateMoreTestMonsters(manager *ecs.Manager, gameMap *GameMap) {
+
 	elfImg, _, err := ebitenutil.NewImageFromFile("assets/creatures/elf.png")
 	if err != nil {
 		log.Fatal(err)
@@ -83,7 +106,7 @@ func CreateTestMonsters(manager *ecs.Manager, gameMap *GameMap) {
 			Visible: true,
 		}).
 		AddComponent(position, &pos).
-		AddComponent(simpleWander, &NoMovement{}).
+		AddComponent(noMove, &NoMovement{}).
 		AddComponent(healthComponent, &Health{
 			MaxHealth:     5,
 			CurrentHealth: 5}).AddComponent(userMessage, &UserMessage{
@@ -166,6 +189,35 @@ func CreateTestMonsters(manager *ecs.Manager, gameMap *GameMap) {
 			})
 		}
 	*/
+
+}
+
+func CreateMonster(manager *ecs.Manager, gameMap *GameMap, x, y int) {
+
+	elfImg, _, err := ebitenutil.NewImageFromFile("assets/creatures/elf.png")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	manager.NewEntity().
+		AddComponent(creature, &Creature{
+			path: make([]Position, 0),
+		}).
+		AddComponent(renderable, &Renderable{
+			Image:   elfImg,
+			Visible: true,
+		}).
+		AddComponent(position, &Position{
+			X: x,
+			Y: y,
+		}).
+		AddComponent(noMove, &NoMovement{}).
+		AddComponent(healthComponent, &Health{
+			MaxHealth:     5,
+			CurrentHealth: 5}).AddComponent(userMessage, &UserMessage{
+		AttackMessage:    "",
+		GameStateMessage: "",
+	})
 
 }
 
