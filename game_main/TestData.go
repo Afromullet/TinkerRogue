@@ -179,6 +179,9 @@ func CreateMonster(manager *ecs.Manager, gameMap *GameMap, x, y int) {
 		log.Fatal(err)
 	}
 
+	ind := GetIndexFromXY(x, y)
+	gameMap.Tiles[ind].Blocked = true
+
 	manager.NewEntity().
 		AddComponent(creature, &Creature{
 			path: make([]Position, 0),

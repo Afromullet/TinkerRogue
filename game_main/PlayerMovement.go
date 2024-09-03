@@ -53,7 +53,9 @@ func PlayerActions(g *Game) {
 		fmt.Println("Is window open ", g.mainPlayerInterface.IsWindowOpen(g.itemsUI.throwableItemDisplay.itemDisplay.rootWindow))
 
 	}
-	if ebiten.IsKeyPressed(ebiten.KeySpace) {
+
+	if inpututil.IsKeyJustReleased(ebiten.KeySpace) {
+
 		turntaken = true
 	}
 

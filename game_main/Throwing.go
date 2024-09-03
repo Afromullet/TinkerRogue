@@ -10,7 +10,7 @@ import (
 // Applies the throwable
 func ApplyThrowable(g *Game, item *Item) {
 
-	t := item.GetItemEffect(THROWABLE_NAME).(Throwable)
+	t := item.GetItemEffect(THROWABLE_NAME).(*Throwable)
 
 	pos := GetTilePositions(t.shape)
 

@@ -24,8 +24,7 @@ type Creature struct {
 func (c *Creature) AddEffects(effects *ecs.Entity) {
 
 	e := GetEffect(effects)
-
-	c.EffectsToApply = append(c.EffectsToApply, e.(Effects))
+	c.EffectsToApply = append(c.EffectsToApply, e.(Effects).Copy())
 
 }
 
@@ -79,8 +78,14 @@ func MonsterActions(g *Game) {
 
 	for _, c := range g.World.Query(g.WorldTags["monsters"]) {
 
+		creature := c.Components[creature].(*Creature)
+
+		for _, eff := range creature.EffectsToApply {
+			eff.ApplyToCreature(creature)
+
+		}
+
 		MovementSystem(c, g)
-		CreatureEffectSystem(c)
 
 	}
 

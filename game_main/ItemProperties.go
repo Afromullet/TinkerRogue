@@ -35,12 +35,15 @@ want to modify the ECS library, so this is a workaround.
 Each Effects implements GetPropertyComponent and GetPropertyName,
 Which is called by the generic GetPropertyName and GetPropertyComponent functions.const
 
+# Copy() implementation must return a shallow copy
+
 That lets us get the components and name without having to assert it to a specfic type.
 */
 type Effects interface {
 	GetEffectComponent() *ecs.Component
 	GetEffectName() string
 	ApplyToCreature(c *Creature)
+	Copy() Effects
 }
 
 func GetEffectName[T Effects](prop *T) string {
@@ -83,23 +86,31 @@ type Sticky struct {
 
 }
 
-func (s Sticky) GetEffectComponent() *ecs.Component {
+func (s *Sticky) GetEffectComponent() *ecs.Component {
 	return StickyComponent
 }
 
-func (s Sticky) GetEffectName() string {
+func (s *Sticky) GetEffectName() string {
 	return s.MainProps.Name
 
 }
 
-func (s Sticky) ApplyToCreature(c *Creature) {
+func (s *Sticky) Copy() Effects {
+	return &Sticky{
+		MainProps: s.MainProps,
+		Spread:    s.Spread,
+	}
+}
+
+func (s *Sticky) ApplyToCreature(c *Creature) {
 	fmt.Println("Applying ", s, " To Creature")
+	s.MainProps.Duration -= 1
 
 }
 
-func NewSticky(dur int, spr int) Sticky {
+func NewSticky(dur int, spr int) *Sticky {
 
-	return Sticky{
+	return &Sticky{
 		MainProps: CommonItemProperties{
 			Name:     STICKY_NAME,
 			Duration: dur,
@@ -115,22 +126,31 @@ type Burning struct {
 	Temperature int
 }
 
-func (b Burning) GetEffectComponent() *ecs.Component {
+func (b *Burning) GetEffectComponent() *ecs.Component {
 	return BurningComponent
 }
 
-func (b Burning) GetEffectName() string {
+func (b *Burning) GetEffectName() string {
 	return b.MainProps.Name
 }
 
-func (b Burning) ApplyToCreature(c *Creature) {
-	fmt.Println("Applying ", b, " To Creature")
-
+func (b *Burning) Copy() Effects {
+	return &Burning{
+		MainProps:   b.MainProps,
+		Temperature: b.Temperature,
+	}
 }
 
-func NewBurning(dur int, temp int) Burning {
+func (b *Burning) ApplyToCreature(c *Creature) {
 
-	return Burning{
+	b.MainProps.Duration -= 1
+
+	fmt.Println("Remaining duration ", b.MainProps.Duration)
+}
+
+func NewBurning(dur int, temp int) *Burning {
+
+	return &Burning{
 		MainProps: CommonItemProperties{
 			Name:     BURNING_NAME,
 			Duration: dur,
@@ -146,23 +166,31 @@ type Freezing struct {
 
 }
 
-func (f Freezing) GetEffectComponent() *ecs.Component {
+func (f *Freezing) GetEffectComponent() *ecs.Component {
 	return FreezingComponent
 }
 
-func (f Freezing) GetEffectName() string {
+func (f *Freezing) GetEffectName() string {
 	return f.MainProps.Name
 
 }
 
-func (f Freezing) ApplyToCreature(c *Creature) {
+func (f *Freezing) Copy() Effects {
+	return &Freezing{
+		MainProps: f.MainProps,
+		Thickness: f.Thickness,
+	}
+}
+
+func (f *Freezing) ApplyToCreature(c *Creature) {
 	fmt.Println("Applying ", f, " To Creature")
+	f.MainProps.Duration -= 1
 
 }
 
-func NewFreezing(dur int, t int) Freezing {
+func NewFreezing(dur int, t int) *Freezing {
 
-	return Freezing{
+	return &Freezing{
 		MainProps: CommonItemProperties{
 			Name:     FREEZING_NAME,
 			Duration: dur,
@@ -184,23 +212,32 @@ type Throwable struct {
 	shape         TileBasedShape
 }
 
-func (t Throwable) GetEffectComponent() *ecs.Component {
+func (t *Throwable) GetEffectComponent() *ecs.Component {
 	return ThrowableComponent
 }
 
-func (t Throwable) GetEffectName() string {
+func (t *Throwable) GetEffectName() string {
 	return t.MainProps.Name
 
 }
 
-func (t Throwable) ApplyToCreature(c *Creature) {
+func (t *Throwable) Copy() Effects {
+	return &Throwable{
+		MainProps:     t.MainProps,
+		throwingRange: t.throwingRange,
+		damage:        t.damage,
+		shape:         t.shape,
+	}
+}
+
+func (t *Throwable) ApplyToCreature(c *Creature) {
 	fmt.Println("Applying ", t, " To Creature")
 
 }
 
-func NewThrowable(dur, throwRange, dam int, shape TileBasedShape) Throwable {
+func NewThrowable(dur, throwRange, dam int, shape TileBasedShape) *Throwable {
 
-	return Throwable{
+	return &Throwable{
 		MainProps: CommonItemProperties{
 			Name:     THROWABLE_NAME,
 			Duration: dur,

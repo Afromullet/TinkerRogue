@@ -81,6 +81,7 @@ item := GetComponentStruct[*Item](itemEntity, ItemComponent)
 t := item.GetItemEffect(THROWABLE_NAME).(throwable)
 fmt.Println(t.shape)
 */
+
 func (item *Item) GetItemEffect(effectName string) any {
 
 	for _, c := range AllItemEffects {
