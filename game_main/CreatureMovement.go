@@ -34,9 +34,7 @@ func GoToPlayerMoveAction(g *Game, e *ecs.Entity) {
 
 	creature := GetComponentType[*Creature](e, creature)
 	creaturePosition := GetComponentType[*Position](e, position)
-
-	creature.BuildPathToPlayer(g, creaturePosition)
-
+	creature.path = creaturePosition.BuildPath(g, g.playerData.position)
 	creature.UpdatePosition(g, creaturePosition)
 
 }
@@ -45,24 +43,20 @@ func GoToPlayerMoveAction(g *Game, e *ecs.Entity) {
 // Creature movement follows a path, which is a slice of Position Type. Each movement function calls
 // UpdatePosition, which...updates the creatures position The movement type functions determine
 // How a path is created
-func MovementSystem(g *Game) {
+func MovementSystem(c *ecs.QueryResult, g *Game) {
 
-	for _, c := range g.World.Query(g.WorldTags["monsters"]) {
+	var ok bool
 
-		var ok bool
+	if _, ok = c.Entity.GetComponentData(simpleWander); ok {
+		SimpleWanderAction(g, c.Entity)
+	}
 
-		if _, ok = c.Entity.GetComponentData(simpleWander); ok {
-			SimpleWanderAction(g, c.Entity)
-		}
+	if _, ok = c.Entity.GetComponentData(noMove); ok {
+		NoMoveAction(g, c.Entity)
+	}
 
-		if _, ok = c.Entity.GetComponentData(noMove); ok {
-			NoMoveAction(g, c.Entity)
-		}
-
-		if _, ok = c.Entity.GetComponentData(goToPlayer); ok {
-			GoToPlayerMoveAction(g, c.Entity)
-		}
-
+	if _, ok = c.Entity.GetComponentData(goToPlayer); ok {
+		GoToPlayerMoveAction(g, c.Entity)
 	}
 
 }

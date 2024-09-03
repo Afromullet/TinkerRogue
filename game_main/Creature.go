@@ -1,11 +1,34 @@
 package main
 
 import (
-	"log"
+	"github.com/bytearena/ecs"
 )
 
+// OLD COMMENTS
+// EffectsToApply are the "components" that will be applied to a creature
+// Currently these are : Itemcomponents and damage
+
+// NEW COMMENTS
+// EffectsOnCreature is an Entity so that we can access the underlying
+// Effect Components. The Effect Components are ItemProperties such as
+// Burning, Sticky, Freezing, ETC
+// Note that because we're copying over the ItemProperties
+// We're also copying some properties that don't mean anything to the creature
+// We will worry about that later
 type Creature struct {
-	path []Position
+	path              []Position
+	EffectsOnCreature *ecs.Entity
+
+	//EffectTracker map[]
+}
+
+// Only add the component if it doesn't exist
+// Maybe add some filtering here so that we only add the effects
+// That actually matter to a creature
+func (c *Creature) AddEffects(effects *ecs.Entity) {
+
+	c.EffectsOnCreature = effects
+
 }
 
 // Get the next position on the path and pops the position from the path.
@@ -44,18 +67,14 @@ func (c *Creature) UpdatePosition(g *Game, currentPosition *Position) {
 
 }
 
-// Build a path to the player. Accesses the position playerData
-func (c *Creature) BuildPathToPlayer(g *Game, curPos *Position) {
-
-	c.path = curPos.BuildPath(g, g.playerData.position)
-
-}
-
-// Currently only handles the movement
 func MonsterActions(g *Game) {
 
-	log.Print("Monster moving")
-	MovementSystem(g)
+	for _, c := range g.World.Query(g.WorldTags["monsters"]) {
+
+		MovementSystem(c, g)
+		CreatureEffectSystem(c)
+
+	}
 
 	g.Turn = PlayerTurn
 

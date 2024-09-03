@@ -101,6 +101,29 @@ func (item *Item) GetItemProperty(propName string) any {
 	return nil
 }
 
+// Sometimes we need to access the component itself rather than the item property.
+// Such as when we want to know which effects to apply to a creature
+// Storing the "ItemProperty" in the creature does not make sense.
+func (item *Item) GetPropertyComponents() []*ecs.Component {
+
+	comps := make([]*ecs.Component, 0)
+
+	for _, c := range AllItemProperties {
+		data, ok := item.properties.GetComponentData(c)
+		if ok {
+			print(data)
+
+			d := *data.(*ItemProperty)
+
+			comps = append(comps, d.GetPropertyComponent())
+
+		}
+	}
+
+	return comps
+
+}
+
 // Not the best way to check if an item has all propeties, but it will work for now
 func (item *Item) HasAllProperties(propsToCheck ...ItemProperty) bool {
 
@@ -118,6 +141,7 @@ func (item *Item) HasAllProperties(propsToCheck ...ItemProperty) bool {
 	return true
 
 }
+
 func (item *Item) HasProperty(propToCheck ItemProperty) bool {
 
 	names := item.GetPropertyNames()
@@ -134,10 +158,6 @@ func (item *Item) HasProperty(propToCheck ItemProperty) bool {
 
 	return false
 
-}
-
-type Weapon struct {
-	damage int
 }
 
 // Create an item with any number of Properties. ItemProperty is a wrapper around an ecs.Component to make

@@ -9,6 +9,8 @@ const FREEZING_NAME = "Freezing"
 const STICKY_NAME = "Sticky"
 const THROWABLE_NAME = "Throwable"
 
+var PropertyNames = []string{BURNING_NAME, FREEZING_NAME, STICKY_NAME, THROWABLE_NAME}
+
 var ItemComponent *ecs.Component
 var StickyComponent *ecs.Component
 var BurningComponent *ecs.Component
@@ -53,8 +55,8 @@ type CommonItemProperties struct {
 }
 
 type Sticky struct {
-	CommonItemProperties
-	Spread int //Sticky effects can spread
+	MainProps CommonItemProperties
+	Spread    int //Sticky effects can spread
 
 }
 
@@ -63,14 +65,14 @@ func (s Sticky) GetPropertyComponent() *ecs.Component {
 }
 
 func (s Sticky) GetPropertyName() string {
-	return s.CommonItemProperties.Name
+	return s.MainProps.Name
 
 }
 
 func NewSticky(dur int, spr int) Sticky {
 
 	return Sticky{
-		CommonItemProperties: CommonItemProperties{
+		MainProps: CommonItemProperties{
 			Name:     STICKY_NAME,
 			Duration: dur,
 		},
@@ -80,7 +82,7 @@ func NewSticky(dur int, spr int) Sticky {
 }
 
 type Burning struct {
-	CommonItemProperties
+	MainProps CommonItemProperties
 
 	Temperature int
 }
@@ -90,14 +92,14 @@ func (b Burning) GetPropertyComponent() *ecs.Component {
 }
 
 func (b Burning) GetPropertyName() string {
-	return b.CommonItemProperties.Name
+	return b.MainProps.Name
 
 }
 
 func NewBurning(dur int, temp int) Burning {
 
 	return Burning{
-		CommonItemProperties: CommonItemProperties{
+		MainProps: CommonItemProperties{
 			Name:     BURNING_NAME,
 			Duration: dur,
 		},
@@ -107,7 +109,7 @@ func NewBurning(dur int, temp int) Burning {
 }
 
 type Freezing struct {
-	CommonItemProperties
+	MainProps CommonItemProperties
 	Thickness int //How thick the ice is.
 
 }
@@ -117,14 +119,14 @@ func (f Freezing) GetPropertyComponent() *ecs.Component {
 }
 
 func (f Freezing) GetPropertyName() string {
-	return f.CommonItemProperties.Name
+	return f.MainProps.Name
 
 }
 
 func NewFreezing(dur int, t int) Freezing {
 
 	return Freezing{
-		CommonItemProperties: CommonItemProperties{
+		MainProps: CommonItemProperties{
 			Name:     FREEZING_NAME,
 			Duration: dur,
 		},
@@ -134,7 +136,7 @@ func NewFreezing(dur int, t int) Freezing {
 }
 
 type Throwable struct {
-	CommonItemProperties
+	MainProps     CommonItemProperties
 	throwingRange int //How many tiles it can be thrown
 	damage        int
 	shape         TileBasedShape
@@ -145,14 +147,14 @@ func (t Throwable) GetPropertyComponent() *ecs.Component {
 }
 
 func (t Throwable) GetPropertyName() string {
-	return t.CommonItemProperties.Name
+	return t.MainProps.Name
 
 }
 
 func NewThrowable(dur, throwRange, dam int, shape TileBasedShape) Throwable {
 
 	return Throwable{
-		CommonItemProperties: CommonItemProperties{
+		MainProps: CommonItemProperties{
 			Name:     THROWABLE_NAME,
 			Duration: dur,
 		},
@@ -179,6 +181,8 @@ func InitializeItemComponents(manager *ecs.Manager, tags map[string]ecs.Tag) {
 
 	items := ecs.BuildTag(ItemComponent, position) //todo add all the tags
 	tags["items"] = items
+
+	//Can I use this instead of the AllItemproperties slice? Todo see later if you ran replace it
 
 	sticking := ecs.BuildTag(StickyComponent)
 	tags["sticking"] = sticking

@@ -53,7 +53,6 @@ type TileSquare struct {
 	PixelX int
 	PixelY int
 	Size   int
-	pos    Position
 }
 
 func (s TileSquare) GetIndices() []int {

@@ -27,11 +27,15 @@ func CreateTestItems(manager *ecs.Manager, tags map[string]ecs.Tag, gameMap *Gam
 	//todo add testing location back
 
 	startingPos := gameMap.StartingPosition()
+
+	b := NewBurning(1, 1)
+	b.MainProps.Duration = 5
+
 	s := NewTileSquare(0, 0, 3)
 	//CreateItem(manager, "Throwable Item"+strconv.Itoa(1), Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
 	//NewThrowable(1, 5, 3, NewTileSquare(0, 0, 3)), NewBurning(1, 1))
 	CreateItem(manager, "T0"+strconv.Itoa(1), Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
-		NewThrowable(1, 5, 3, &s), NewBurning(1, 1))
+		NewThrowable(1, 5, 3, &s), b)
 
 	s = NewTileSquare(0, 0, 2)
 	//CreateItem(manager, "Throwable Item"+strconv.Itoa(1), Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
@@ -67,8 +71,6 @@ func CreateTestItems(manager *ecs.Manager, tags map[string]ecs.Tag, gameMap *Gam
 
 }
 
-var defendingMonsterTestPosition *Position = &Position{}
-
 func CreateTestMonsters(manager *ecs.Manager, gameMap *GameMap) {
 
 	x, y := gameMap.Rooms[0].Center()
@@ -80,6 +82,8 @@ func CreateTestMonsters(manager *ecs.Manager, gameMap *GameMap) {
 	CreateMonster(manager, gameMap, x+2, y+1)
 	CreateMonster(manager, gameMap, x+2, y+2)
 
+	CreateMoreTestMonsters(manager, gameMap)
+
 }
 
 func CreateMoreTestMonsters(manager *ecs.Manager, gameMap *GameMap) {
@@ -89,33 +93,8 @@ func CreateMoreTestMonsters(manager *ecs.Manager, gameMap *GameMap) {
 		log.Fatal(err)
 	}
 
-	x, y := gameMap.Rooms[0].Center()
-	pos := Position{
-		X: x + 1,
-		Y: y + 1}
-
-	defendingMonsterTestPosition.X = pos.X
-	defendingMonsterTestPosition.Y = pos.Y
-
-	manager.NewEntity().
-		AddComponent(creature, &Creature{
-			path: make([]Position, 0),
-		}).
-		AddComponent(renderable, &Renderable{
-			Image:   elfImg,
-			Visible: true,
-		}).
-		AddComponent(position, &pos).
-		AddComponent(noMove, &NoMovement{}).
-		AddComponent(healthComponent, &Health{
-			MaxHealth:     5,
-			CurrentHealth: 5}).AddComponent(userMessage, &UserMessage{
-		AttackMessage:    "",
-		GameStateMessage: "",
-	})
-
 	//Don't create a creature in the starting room
-	for _, r := range gameMap.Rooms[1:3] {
+	for _, r := range gameMap.Rooms[1:9] {
 
 		x, y := r.Center()
 		pos := Position{
@@ -131,7 +110,7 @@ func CreateMoreTestMonsters(manager *ecs.Manager, gameMap *GameMap) {
 				Visible: true,
 			}).
 			AddComponent(position, &pos).
-			AddComponent(simpleWander, &SimpleWander{}).
+			AddComponent(goToPlayer, &GoToPlayerMovement{}).
 			AddComponent(healthComponent, &Health{
 				MaxHealth:     5,
 				CurrentHealth: 5}).AddComponent(userMessage, &UserMessage{
@@ -140,30 +119,31 @@ func CreateMoreTestMonsters(manager *ecs.Manager, gameMap *GameMap) {
 		})
 	}
 
-	//Don't create a creature in the starting room
-	for _, r := range gameMap.Rooms[3:4] {
+	/*
+		//Don't create a creature in the starting room
+		for _, r := range gameMap.Rooms[3:4] {
 
-		x, y := r.Center()
-		pos := Position{
-			X: x,
-			Y: y}
+			x, y := r.Center()
+			pos := Position{
+				X: x,
+				Y: y}
 
-		manager.NewEntity().
-			AddComponent(creature, &Creature{}).
-			AddComponent(renderable, &Renderable{
-				Image:   elfImg,
-				Visible: true,
-			}).
-			AddComponent(position, &pos).
-			AddComponent(noMove, &NoMovement{}).
-			AddComponent(healthComponent, &Health{
-				MaxHealth:     5,
-				CurrentHealth: 5}).AddComponent(userMessage, &UserMessage{
-			AttackMessage:    "",
-			GameStateMessage: "",
-		})
-	}
-
+			manager.NewEntity().
+				AddComponent(creature, &Creature{}).
+				AddComponent(renderable, &Renderable{
+					Image:   elfImg,
+					Visible: true,
+				}).
+				AddComponent(position, &pos).
+				AddComponent(noMove, &NoMovement{}).
+				AddComponent(healthComponent, &Health{
+					MaxHealth:     5,
+					CurrentHealth: 5}).AddComponent(userMessage, &UserMessage{
+				AttackMessage:    "",
+				GameStateMessage: "",
+			})
+		}
+	*/
 	/*
 		//Don't create a creature in the starting room
 		for _, r := range gameMap.Rooms[4:] {

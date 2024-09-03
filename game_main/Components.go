@@ -79,6 +79,10 @@ type Health struct {
 	CurrentHealth int
 }
 
+type Weapon struct {
+	damage int
+}
+
 // A wrapper around the ECS libraries GetComponentData.
 func GetComponentType[T any](entity *ecs.Entity, component *ecs.Component) T {
 
