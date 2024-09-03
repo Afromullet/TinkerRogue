@@ -1,0 +1,15 @@
+Implement Throwing Range
+
+Add Creature Speed so sticky effect works
+
+Decouple functions which take g *Game as input
+
+Fix bug that causes a creature to teleport if it tries to move into a blocked spot
+
+Item and Creature Spawning
+
+Effect Stacking
+
+Removing Effects when duration <= 0
+
+Fix out of bounds issue for shapes. Game crashes when drawable shapes move outside bounds

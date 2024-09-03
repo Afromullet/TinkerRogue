@@ -7,18 +7,18 @@ import (
 // Select a random spot to wander to and builds a new path when arriving at the position
 func SimpleWanderAction(g *Game, e *ecs.Entity) {
 
-	creature := GetComponentType[*Creature](e, creature)
+	creature := ComponentType[*Creature](e, creature)
 
-	creaturePosition := GetComponentType[*Position](e, position)
+	creaturePosition := ComponentType[*Position](e, position)
 
 	randomPos := GetRandomBetween(0, len(validPositions.positions))
 	endPos := validPositions.Get(randomPos)
 
 	//Only create a new path if one doesn't exist yet.
-	if len(creature.path) == 0 {
+	if len(creature.Path) == 0 {
 
 		astar := AStar{}
-		creature.path = astar.GetPath(g.gameMap, creaturePosition, endPos, false)
+		creature.Path = astar.GetPath(g.gameMap, creaturePosition, endPos, false)
 
 	}
 
@@ -32,9 +32,9 @@ func NoMoveAction(g *Game, e *ecs.Entity) {
 
 func GoToPlayerMoveAction(g *Game, e *ecs.Entity) {
 
-	creature := GetComponentType[*Creature](e, creature)
-	creaturePosition := GetComponentType[*Position](e, position)
-	creature.path = creaturePosition.BuildPath(g, g.playerData.position)
+	creature := ComponentType[*Creature](e, creature)
+	creaturePosition := ComponentType[*Position](e, position)
+	creature.Path = creaturePosition.BuildPath(g, g.playerData.position)
 	creature.UpdatePosition(g, creaturePosition)
 
 }

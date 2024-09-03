@@ -10,7 +10,7 @@ import (
 /*
 Propeties is an Entity. That helps us track the components
 
-Everything that's a property implements the ItemProperty interface. There's
+Everything that's a property implements the Effects interface. There's
 nothing to enforce this at compile time.
 
 # So an Items Properties could look like this for Example
@@ -27,10 +27,7 @@ all components of a specific type.const
 
 I.E, burning will always have BURNING_NAME, freezing has FREEZING_NAME, and so on
 
-That's so we have an easy time displaying the property to the player. It may change later.
-
-Since all components of a type have the same name, the struct is "private", with the construcotr
-Used to create a component of that type.
+That's so we have an easy time displaying the Effect to the player. It may change later.
 
 Two examples below of how we'd create an item
 
@@ -38,16 +35,16 @@ Two examples below of how we'd create an item
 	CreateItem(manager, "Item"+strconv.Itoa(2), Position{X: 40, Y: 25}, itemImageLoc, NewBurning(1, 1), NewFreezing(1, 2))
 */
 type Item struct {
-	properties *ecs.Entity
-	count      int
+	Properties *ecs.Entity
+	Count      int
 }
 
 func (item *Item) IncrementCount() {
-	item.count += 1
+	item.Count += 1
 }
 
 func (item *Item) DecrementCount() {
-	item.count -= 1
+	item.Count -= 1
 }
 
 // Returns the names of this items properties.
@@ -56,12 +53,12 @@ func (item *Item) GetEffectNames() []string {
 	names := make([]string, 0)
 
 	for _, c := range AllItemEffects {
-		data, ok := item.properties.GetComponentData(c)
+		data, ok := item.Properties.GetComponentData(c)
 		if ok {
 			print(data)
 
 			d := data.(*Effects)
-			names = append(names, GetEffectName(d))
+			names = append(names, EffectName(d))
 		}
 	}
 	return names
@@ -82,21 +79,18 @@ t := item.GetItemEffect(THROWABLE_NAME).(throwable)
 fmt.Println(t.shape)
 */
 
-func (item *Item) GetItemEffect(effectName string) any {
+func (item *Item) ItemEffect(effectName string) any {
 
 	for _, c := range AllItemEffects {
-		data, ok := item.properties.GetComponentData(c)
+		data, ok := item.Properties.GetComponentData(c)
 		if ok {
 			print(data)
 
 			d := *data.(*Effects)
-			if GetEffectName(&d) == effectName {
-
+			if EffectName(&d) == effectName {
 				p := d.(any)
 				return p
-
 			}
-
 		}
 	}
 	return nil
@@ -147,10 +141,10 @@ func CreateItem(manager *ecs.Manager, name string, pos Position, imagePath strin
 		log.Fatal(err)
 	}
 
-	item := &Item{count: 1, properties: manager.NewEntity()}
+	item := &Item{Count: 1, Properties: manager.NewEntity()}
 
 	for _, prop := range effects {
-		item.properties.AddComponent(prop.GetEffectComponent(), &prop)
+		item.Properties.AddComponent(prop.GetEffectComponent(), &prop)
 
 	}
 
@@ -180,7 +174,7 @@ func CreateWeapon(manager *ecs.Manager, name string, pos Position, imagePath str
 	weapon := CreateItem(manager, name, pos, imagePath, properties...)
 
 	weapon.AddComponent(WeaponComponent, &Weapon{
-		damage: dam,
+		Damage: dam,
 	})
 
 	return weapon

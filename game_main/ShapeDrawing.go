@@ -40,7 +40,7 @@ func GetTilePositions(ts TileBasedShape) []Position {
 
 	for i, inds := range indices {
 
-		pos[i] = GetXYFromIndex(inds)
+		pos[i] = XYFromIndex(inds)
 
 	}
 
@@ -66,7 +66,7 @@ func (s TileSquare) GetIndices() []int {
 	for y := s.PixelY - halfSize; y <= s.PixelY+halfSize; y++ {
 		for x := s.PixelX - halfSize; x <= s.PixelX+halfSize; x++ {
 			if InBounds(x, y) {
-				index := GetIndexFromXY(x, y)
+				index := IndexFromXY(x, y)
 				indices = append(indices, index)
 			}
 		}
@@ -121,7 +121,7 @@ func (l TileLine) GetIndices() []int {
 		}
 
 		if InBounds(x, y) {
-			index := GetIndexFromXY(x, y)
+			index := IndexFromXY(x, y)
 			indices = append(indices, index)
 		}
 	}
@@ -167,7 +167,7 @@ func (c TileCone) GetIndices() []int {
 			for j := -i; j <= i; j++ { // Widening cone
 				x, y := gridX+j, gridY-i
 				if InBounds(x, y) {
-					index := GetIndexFromXY(x, y)
+					index := IndexFromXY(x, y)
 					indices = append(indices, index)
 				}
 			}
@@ -175,7 +175,7 @@ func (c TileCone) GetIndices() []int {
 			for j := -i; j <= i; j++ {
 				x, y := gridX+j, gridY+i
 				if InBounds(x, y) {
-					index := GetIndexFromXY(x, y)
+					index := IndexFromXY(x, y)
 					indices = append(indices, index)
 				}
 			}
@@ -183,7 +183,7 @@ func (c TileCone) GetIndices() []int {
 			for j := -i; j <= i; j++ {
 				x, y := gridX+i, gridY+j
 				if InBounds(x, y) {
-					index := GetIndexFromXY(x, y)
+					index := IndexFromXY(x, y)
 					indices = append(indices, index)
 				}
 			}
@@ -191,7 +191,7 @@ func (c TileCone) GetIndices() []int {
 			for j := -i; j <= i; j++ {
 				x, y := gridX-i, gridY+j
 				if InBounds(x, y) {
-					index := GetIndexFromXY(x, y)
+					index := IndexFromXY(x, y)
 					indices = append(indices, index)
 				}
 			}
@@ -236,7 +236,7 @@ func (c TileCircle) GetIndices() []int {
 			// Check if the point (x, y) is within the circle
 			if (x-centerX)*(x-centerX)+(y-centerY)*(y-centerY) <= c.radius*c.radius {
 				if InBounds(x, y) {
-					index := GetIndexFromXY(x, y)
+					index := IndexFromXY(x, y)
 					indices = append(indices, index)
 				}
 			}
@@ -281,7 +281,7 @@ func (r TileRectangle) GetIndices() []int {
 	for y := pixelY; y < pixelY+r.height; y++ {
 		for x := pixelX; x < pixelX+r.width; x++ {
 			if InBounds(x, y) {
-				index := GetIndexFromXY(x, y)
+				index := IndexFromXY(x, y)
 				indices = append(indices, index)
 			}
 		}

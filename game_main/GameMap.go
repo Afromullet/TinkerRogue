@@ -79,7 +79,7 @@ func NewGameMap() GameMap {
 
 func (gameMap *GameMap) Tile(pos *Position) *Tile {
 
-	index := GetIndexFromXY(pos.X, pos.Y)
+	index := IndexFromXY(pos.X, pos.Y)
 	return gameMap.Tiles[index]
 
 }
@@ -144,7 +144,7 @@ func (gameMap *GameMap) DrawLevel(screen *ebiten.Image) {
 		//for y := 0; y < gd.ScreenHeight; y++ {
 		for y := 0; y < levelHeight; y++ {
 
-			idx := GetIndexFromXY(x, y)
+			idx := IndexFromXY(x, y)
 			tile := gameMap.Tiles[idx]
 			isVis := gameMap.PlayerVisible.IsVisible(x, y)
 
@@ -162,12 +162,12 @@ func (gameMap *GameMap) DrawLevel(screen *ebiten.Image) {
 
 			}
 
-			if !tile.colorMatrix.IsEmpty() {
+			if !tile.cm.IsEmpty() {
 
-				cs.SetR(tile.colorMatrix.r)
-				cs.SetG(tile.colorMatrix.g)
-				cs.SetB(tile.colorMatrix.b)
-				cs.SetA(tile.colorMatrix.a)
+				cs.SetR(tile.cm.r)
+				cs.SetG(tile.cm.g)
+				cs.SetB(tile.cm.b)
+				cs.SetA(tile.cm.a)
 
 				op.ColorScale.ScaleWithColorScale(cs)
 
@@ -185,7 +185,7 @@ func (gameMap *GameMap) createTiles() []*Tile {
 	index := 0
 	for x := 0; x < gd.ScreenWidth; x++ {
 		for y := 0; y < levelHeight; y++ {
-			index = GetIndexFromXY(x, y)
+			index = IndexFromXY(x, y)
 
 			pos := Position{x, y}
 			tile := NewTile(x*gd.TileWidth, y*gd.TileHeight, pos, true, wall, WALL, false)
@@ -249,7 +249,7 @@ func (gameMap *GameMap) createRoom(room Rect) {
 	for y := room.Y1 + 1; y < room.Y2; y++ {
 		for x := room.X1 + 1; x < room.X2; x++ {
 
-			index := GetIndexFromXY(x, y)
+			index := IndexFromXY(x, y)
 			gameMap.Tiles[index].Blocked = false
 			gameMap.Tiles[index].TileType = FLOOR
 			gameMap.Tiles[index].Image = floor
@@ -263,7 +263,7 @@ func (gameMap *GameMap) createRoom(room Rect) {
 func (gameMap *GameMap) createHorizontalTunnel(x1 int, x2 int, y int) {
 	gd := NewScreenData()
 	for x := min(x1, x2); x < max(x1, x2)+1; x++ {
-		index := GetIndexFromXY(x, y)
+		index := IndexFromXY(x, y)
 		if index > 0 && index < gd.ScreenWidth*levelHeight {
 			gameMap.Tiles[index].Blocked = false
 			gameMap.Tiles[index].TileType = FLOOR
@@ -278,7 +278,7 @@ func (gameMap *GameMap) createHorizontalTunnel(x1 int, x2 int, y int) {
 func (gameMap *GameMap) createVerticalTunnel(y1 int, y2 int, x int) {
 	gd := NewScreenData()
 	for y := min(y1, y2); y < max(y1, y2)+1; y++ {
-		index := GetIndexFromXY(x, y)
+		index := IndexFromXY(x, y)
 
 		if index > 0 && index < gd.ScreenWidth*levelHeight {
 			gameMap.Tiles[index].Blocked = false
@@ -310,6 +310,6 @@ func (gameMap GameMap) InBounds(x, y int) bool {
 
 // TODO: Change this to check for WALL, not blocked
 func (gameMap GameMap) IsOpaque(x, y int) bool {
-	idx := GetIndexFromXY(x, y)
+	idx := IndexFromXY(x, y)
 	return gameMap.Tiles[idx].TileType == WALL
 }

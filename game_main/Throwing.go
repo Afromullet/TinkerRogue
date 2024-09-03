@@ -10,9 +10,9 @@ import (
 // Applies the throwable
 func ApplyThrowable(g *Game, item *Item) {
 
-	t := item.GetItemEffect(THROWABLE_NAME).(*Throwable)
+	t := item.ItemEffect(THROWABLE_NAME).(*Throwable)
 
-	pos := GetTilePositions(t.shape)
+	pos := GetTilePositions(t.Shape)
 
 	//TODO, this will be slow in case there are a lot of creatures
 	for _, c := range g.World.Query(g.WorldTags["monsters"]) {
@@ -22,7 +22,7 @@ func ApplyThrowable(g *Game, item *Item) {
 
 		for _, p := range pos {
 			if curPos.IsEqual(&p) {
-				crea.AddEffects(item.properties)
+				crea.AddEffects(item.Properties)
 			}
 		}
 
@@ -33,7 +33,7 @@ func DrawThrowableAOE(g *Game) {
 
 	cursorX, cursorY := ebiten.CursorPosition()
 
-	s := g.playerData.shape
+	s := g.playerData.Shape
 	var indices []int
 	if cursorX != prevCursorX || cursorY != prevCursorY {
 
@@ -70,7 +70,7 @@ func HandleThrowable(g *Game) {
 			////HandleThrowable(g)
 
 			g.playerData.ThrowPreparedItem()
-			ApplyThrowable(g, g.playerData.throwableItem)
+			ApplyThrowable(g, g.playerData.ThrowableItem)
 
 		}
 

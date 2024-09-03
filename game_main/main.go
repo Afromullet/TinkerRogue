@@ -48,13 +48,13 @@ type Game struct {
 // Once I click out of it
 func (g *Game) IsThrowableItemSelected() bool {
 
-	return g.itemsUI.throwableItemDisplay.throwableItemSelected
+	return g.itemsUI.throwableItemDisplay.ThrowableItemSelected
 
 }
 
 func (g *Game) SetThrowableItemSelected(selected bool) {
 
-	g.itemsUI.throwableItemDisplay.throwableItemSelected = selected
+	g.itemsUI.throwableItemDisplay.ThrowableItemSelected = selected
 
 }
 

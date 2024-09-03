@@ -10,7 +10,7 @@ func ProcessRenderables(g *Game, gameMap GameMap, screen *ebiten.Image) {
 		img := result.Components[renderable].(*Renderable).Image
 
 		if gameMap.PlayerVisible.IsVisible(pos.X, pos.Y) {
-			index := GetIndexFromXY(pos.X, pos.Y)
+			index := IndexFromXY(pos.X, pos.Y)
 			tile := gameMap.Tiles[index]
 			op := &ebiten.DrawImageOptions{}
 			op.GeoM.Translate(float64(tile.PixelX), float64(tile.PixelY))

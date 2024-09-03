@@ -59,10 +59,6 @@ func PlayerActions(g *Game) {
 		turntaken = true
 	}
 
-	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButton2) {
-
-	}
-
 	HandleThrowable(g)
 
 	nextPosition := Position{
@@ -70,10 +66,10 @@ func PlayerActions(g *Game) {
 		Y: g.playerData.position.Y + y,
 	}
 
-	index := GetIndexFromXY(nextPosition.X, nextPosition.Y)
+	index := IndexFromXY(nextPosition.X, nextPosition.Y)
 	nextTile := g.gameMap.Tiles[index]
 
-	index = GetIndexFromXY(g.playerData.position.X, g.playerData.position.Y)
+	index = IndexFromXY(g.playerData.position.X, g.playerData.position.Y)
 	oldTile := g.gameMap.Tiles[index]
 
 	if !nextTile.Blocked {

@@ -120,7 +120,7 @@ func (as AStar) GetPath(gameMap GameMap, start *Position, end *Position, ignoreW
 		//Now we get each node in the four cardinal directions
 		//Note:  If you wish to add Diagonal movement, you can do so by getting all 8 positions
 		if currentNode.Position.Y > 0 {
-			tile := gameMap.Tiles[GetIndexFromXY(currentNode.Position.X, currentNode.Position.Y-1)]
+			tile := gameMap.Tiles[IndexFromXY(currentNode.Position.X, currentNode.Position.Y-1)]
 			if ignoreWalls || tile.TileType != WALL {
 				//The location is in the map bounds and is walkable
 				upNodePosition := Position{
@@ -134,7 +134,7 @@ func (as AStar) GetPath(gameMap GameMap, start *Position, end *Position, ignoreW
 
 		}
 		if currentNode.Position.Y < gd.ScreenHeight {
-			tile := gameMap.Tiles[GetIndexFromXY(currentNode.Position.X, currentNode.Position.Y+1)]
+			tile := gameMap.Tiles[IndexFromXY(currentNode.Position.X, currentNode.Position.Y+1)]
 			if ignoreWalls || tile.TileType != WALL {
 				//The location is in the map bounds and is walkable
 				downNodePosition := Position{
@@ -148,7 +148,7 @@ func (as AStar) GetPath(gameMap GameMap, start *Position, end *Position, ignoreW
 
 		}
 		if currentNode.Position.X > 0 {
-			tile := gameMap.Tiles[GetIndexFromXY(currentNode.Position.X-1, currentNode.Position.Y)]
+			tile := gameMap.Tiles[IndexFromXY(currentNode.Position.X-1, currentNode.Position.Y)]
 			if ignoreWalls || tile.TileType != WALL {
 				//The location is in the map bounds and is walkable
 				leftNodePosition := Position{
@@ -162,7 +162,7 @@ func (as AStar) GetPath(gameMap GameMap, start *Position, end *Position, ignoreW
 
 		}
 		if currentNode.Position.X < gd.ScreenWidth {
-			tile := gameMap.Tiles[GetIndexFromXY(currentNode.Position.X+1, currentNode.Position.Y)]
+			tile := gameMap.Tiles[IndexFromXY(currentNode.Position.X+1, currentNode.Position.Y)]
 			if ignoreWalls && tile.TileType != WALL {
 				//The location is in the map bounds and is walkable
 				rightNodePosition := Position{

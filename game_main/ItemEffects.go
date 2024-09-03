@@ -28,33 +28,33 @@ to keep track of all proeprties an item might have
 var AllItemEffects []*ecs.Component
 
 /*
-Quasi-Polymorphism that tries to make Item Properties interchangable.
-The ECS library makes it tedious to access component data. I don't
-want to modify the ECS library, so this is a workaround.
-
 Each Effects implements GetPropertyComponent and GetPropertyName,
 Which is called by the generic GetPropertyName and GetPropertyComponent functions.const
 
 # Copy() implementation must return a shallow copy
+
+ApplyToCreature() takes a query result. The implementing method will define how the effect changes components.
 
 That lets us get the components and name without having to assert it to a specfic type.
 */
 type Effects interface {
 	GetEffectComponent() *ecs.Component
 	GetEffectName() string
-	ApplyToCreature(c *Creature)
+	ApplyToCreature(c *ecs.QueryResult)
 	Copy() Effects
 }
 
-func GetEffectName[T Effects](prop *T) string {
+func EffectName[T Effects](prop *T) string {
 	return (*prop).GetEffectName()
 }
 
-func GetEffectComponent[T Effects](prop *T) *ecs.Component {
+func EffectComponent[T Effects](prop *T) *ecs.Component {
 	return (*prop).GetEffectComponent()
 }
 
-func GetEffect(effects *ecs.Entity) any {
+func AllEffects(effects *ecs.Entity) []Effects {
+
+	eff := make([]Effects, 0)
 
 	for _, e := range AllItemEffects {
 
@@ -63,14 +63,14 @@ func GetEffect(effects *ecs.Entity) any {
 		if ok {
 
 			d := *data.(*Effects)
-			p := d.(any)
-			return p
+			//p := d.(any) originally added tis to eff = append.
+			eff = append(eff, d.Copy())
 
 		}
 
 	}
 
-	return nil
+	return eff
 
 }
 
@@ -102,9 +102,10 @@ func (s *Sticky) Copy() Effects {
 	}
 }
 
-func (s *Sticky) ApplyToCreature(c *Creature) {
+func (s *Sticky) ApplyToCreature(c *ecs.QueryResult) {
 	fmt.Println("Applying ", s, " To Creature")
 	s.MainProps.Duration -= 1
+	fmt.Println("Remaining duration ", s.MainProps.Duration)
 
 }
 
@@ -141,9 +142,15 @@ func (b *Burning) Copy() Effects {
 	}
 }
 
-func (b *Burning) ApplyToCreature(c *Creature) {
+func (b *Burning) ApplyToCreature(c *ecs.QueryResult) {
 
 	b.MainProps.Duration -= 1
+
+	h := ComponentType[*Health](c.Entity, healthComponent)
+
+	h.CurrentHealth -= b.Temperature
+
+	fmt.Println(h)
 
 	fmt.Println("Remaining duration ", b.MainProps.Duration)
 }
@@ -182,9 +189,10 @@ func (f *Freezing) Copy() Effects {
 	}
 }
 
-func (f *Freezing) ApplyToCreature(c *Creature) {
+func (f *Freezing) ApplyToCreature(c *ecs.QueryResult) {
 	fmt.Println("Applying ", f, " To Creature")
 	f.MainProps.Duration -= 1
+	fmt.Println("Remaining duration ", f.MainProps.Duration)
 
 }
 
@@ -207,9 +215,9 @@ func NewFreezing(dur int, t int) *Freezing {
 // But it works for now...
 type Throwable struct {
 	MainProps     CommonItemProperties
-	throwingRange int //How many tiles it can be thrown
-	damage        int
-	shape         TileBasedShape
+	ThrowingRange int //How many tiles it can be thrown
+	Damage        int
+	Shape         TileBasedShape
 }
 
 func (t *Throwable) GetEffectComponent() *ecs.Component {
@@ -224,13 +232,13 @@ func (t *Throwable) GetEffectName() string {
 func (t *Throwable) Copy() Effects {
 	return &Throwable{
 		MainProps:     t.MainProps,
-		throwingRange: t.throwingRange,
-		damage:        t.damage,
-		shape:         t.shape,
+		ThrowingRange: t.ThrowingRange,
+		Damage:        t.Damage,
+		Shape:         t.Shape,
 	}
 }
 
-func (t *Throwable) ApplyToCreature(c *Creature) {
+func (t *Throwable) ApplyToCreature(c *ecs.QueryResult) {
 	fmt.Println("Applying ", t, " To Creature")
 
 }
@@ -242,9 +250,9 @@ func NewThrowable(dur, throwRange, dam int, shape TileBasedShape) *Throwable {
 			Name:     THROWABLE_NAME,
 			Duration: dur,
 		},
-		throwingRange: throwRange,
-		damage:        dam,
-		shape:         shape,
+		ThrowingRange: throwRange,
+		Damage:        dam,
+		Shape:         shape,
 	}
 
 }

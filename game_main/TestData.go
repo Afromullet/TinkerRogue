@@ -10,7 +10,7 @@ import (
 
 func SetupPlayerForTesting(g *Game) {
 	w := CreateWeapon(g.World, "Weapon 1", *g.playerData.position, "assets/items/sword.png", 1)
-	g.playerData.playerWeapon = w
+	g.playerData.PlayerWeapon = w
 
 }
 
@@ -28,20 +28,24 @@ func CreateTestItems(manager *ecs.Manager, tags map[string]ecs.Tag, gameMap *Gam
 
 	startingPos := gameMap.StartingPosition()
 
-	b := NewBurning(1, 1)
-	b.MainProps.Duration = 5
+	b := NewBurning(5, 1)
+
+	f := NewFreezing(3, 5)
+	f.MainProps.Duration = 10
+
+	st := NewSticky(9, 2)
 
 	s := NewTileSquare(0, 0, 3)
 	//CreateItem(manager, "Throwable Item"+strconv.Itoa(1), Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
 	//NewThrowable(1, 5, 3, NewTileSquare(0, 0, 3)), NewBurning(1, 1))
 	CreateItem(manager, "T0"+strconv.Itoa(1), Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
-		NewThrowable(1, 5, 3, &s), b)
+		NewThrowable(1, 5, 3, &s), b, f)
 
 	s = NewTileSquare(0, 0, 2)
 	//CreateItem(manager, "Throwable Item"+strconv.Itoa(1), Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
 	//NewThrowable(1, 5, 3, NewTileSquare(0, 0, 3)), NewBurning(1, 1))
 	CreateItem(manager, "T7"+strconv.Itoa(1), Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
-		NewThrowable(1, 5, 3, &s), NewBurning(1, 1))
+		NewThrowable(1, 5, 3, &s), NewBurning(1, 1), st, f)
 
 	l := NewTileLine(0, 0, 5, LineDown)
 	CreateItem(manager, "T1"+strconv.Itoa(1), Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
@@ -103,7 +107,7 @@ func CreateMoreTestMonsters(manager *ecs.Manager, gameMap *GameMap) {
 
 		manager.NewEntity().
 			AddComponent(creature, &Creature{
-				path: make([]Position, 0),
+				Path: make([]Position, 0),
 			}).
 			AddComponent(renderable, &Renderable{
 				Image:   elfImg,
@@ -179,12 +183,12 @@ func CreateMonster(manager *ecs.Manager, gameMap *GameMap, x, y int) {
 		log.Fatal(err)
 	}
 
-	ind := GetIndexFromXY(x, y)
+	ind := IndexFromXY(x, y)
 	gameMap.Tiles[ind].Blocked = true
 
 	manager.NewEntity().
 		AddComponent(creature, &Creature{
-			path: make([]Position, 0),
+			Path: make([]Position, 0),
 		}).
 		AddComponent(renderable, &Renderable{
 			Image:   elfImg,

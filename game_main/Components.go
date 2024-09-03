@@ -26,8 +26,6 @@ var WeaponComponent *ecs.Component
 var InventoryComponent *ecs.Component
 var userMessage *ecs.Component
 
-type Carryable struct{}
-
 type Position struct {
 	X int
 	Y int
@@ -80,11 +78,11 @@ type Health struct {
 }
 
 type Weapon struct {
-	damage int
+	Damage int
 }
 
 // A wrapper around the ECS libraries GetComponentData.
-func GetComponentType[T any](entity *ecs.Entity, component *ecs.Component) T {
+func ComponentType[T any](entity *ecs.Entity, component *ecs.Component) T {
 
 	if c, ok := entity.GetComponentData(component); ok {
 		return c.(T)
@@ -171,15 +169,15 @@ func InitializePlayerData(g *Game) {
 
 	g.playerData = PlayerData{}
 
-	g.playerData.playerEntity = playerEntity
+	g.playerData.PlayerEntity = playerEntity
 
 	//Don't want to Query for the player position every time, so we're storing it
 
-	startPos := GetComponentType[*Position](g.playerData.playerEntity, position)
+	startPos := ComponentType[*Position](g.playerData.PlayerEntity, position)
 	startPos.X = g.gameMap.StartingPosition().X
 	startPos.Y = g.gameMap.StartingPosition().Y
 
-	inventory := GetComponentType[*Inventory](g.playerData.playerEntity, InventoryComponent)
+	inventory := ComponentType[*Inventory](g.playerData.PlayerEntity, InventoryComponent)
 
 	g.playerData.position = startPos
 	g.playerData.inventory = inventory

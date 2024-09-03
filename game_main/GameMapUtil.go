@@ -33,14 +33,14 @@ func NewScreenData() ScreenData {
 	return g
 }
 
-// GetIndexFromXY gets the index of the map array from a given X,Y TILE coordinate.
+// IndexFromXY gets the index of the map array from a given X,Y TILE coordinate.
 // This coordinate is logical tiles, not pixels.
-func GetIndexFromXY(x int, y int) int {
+func IndexFromXY(x int, y int) int {
 	gd := NewScreenData()
 	return (y * gd.ScreenWidth) + x
 }
 
-func GetXYFromIndex(i int) Position {
+func XYFromIndex(i int) Position {
 	gd := NewScreenData()
 	return Position{
 		X: i % gd.ScreenWidth,

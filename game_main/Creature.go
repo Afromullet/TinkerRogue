@@ -16,21 +16,27 @@ import (
 // We're also copying some properties that don't mean anything to the creature
 // We will worry about that later
 type Creature struct {
-	path []Position
-
+	Path           []Position
 	EffectsToApply []Effects
 }
 
+// TODO stack the effects if they're of the same kind
+// Add stuff together and keep the longest duration
 func (c *Creature) AddEffects(effects *ecs.Entity) {
 
-	e := GetEffect(effects)
-	c.EffectsToApply = append(c.EffectsToApply, e.(Effects).Copy())
+	e := AllEffects(effects)
+	c.EffectsToApply = append(c.EffectsToApply, e...)
 
 }
 
-func ApplyEffects(c *Creature) {
+// The effect takes an ecs.QueryResult and chooses how the Effect
+// impacts the Components. For example, the Burning Effect uses the query rtesult
+// To get the creatures health and apply DOT damage.
+func ApplyEffects(c *ecs.QueryResult) {
 
-	for _, eff := range c.EffectsToApply {
+	creature := c.Components[creature].(*Creature)
+
+	for _, eff := range creature.EffectsToApply {
 
 		eff.ApplyToCreature(c)
 
@@ -46,20 +52,20 @@ func (c *Creature) UpdatePosition(g *Game, currentPosition *Position) {
 
 	p := currentPosition
 
-	index := GetIndexFromXY(p.X, p.Y)
+	index := IndexFromXY(p.X, p.Y)
 	oldTile := g.gameMap.Tiles[index]
 
-	if len(c.path) > 1 {
-		p = &c.path[1]
-		c.path = c.path[2:]
+	if len(c.Path) > 1 {
+		p = &c.Path[1]
+		c.Path = c.Path[2:]
 
-	} else if len(c.path) == 1 {
+	} else if len(c.Path) == 1 {
 
 		//If there's just one entry left, then that's the current position
-		c.path = c.path[:0]
+		c.Path = c.Path[:0]
 	}
 
-	index = GetIndexFromXY(p.X, p.Y)
+	index = IndexFromXY(p.X, p.Y)
 
 	nextTile := g.gameMap.Tiles[index]
 
@@ -78,11 +84,12 @@ func MonsterActions(g *Game) {
 
 	for _, c := range g.World.Query(g.WorldTags["monsters"]) {
 
-		creature := c.Components[creature].(*Creature)
+		ApplyEffects(c)
 
-		for _, eff := range creature.EffectsToApply {
-			eff.ApplyToCreature(creature)
+		h := ComponentType[*Health](c.Entity, healthComponent)
 
+		if h.CurrentHealth <= 0 {
+			g.World.DisposeEntity(c.Entity)
 		}
 
 		MovementSystem(c, g)

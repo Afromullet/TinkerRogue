@@ -14,8 +14,8 @@ type CraftingItemDisplay struct {
 	ItemsSelectedContainer     *widget.Container //Displays the items the user HAS selected for crafitng
 	ItemsSelectedPropContainer *widget.Container //Container to hold the widget that displays the proeprties of the selected item
 	ItemsSelectedPropTextArea  *widget.TextArea  //Displays the properties of the selected items
-	craftItemsButton           *widget.Button    //Craft with the selected items
-	clearItemsButton           *widget.Button    //Clear the selected items
+	CraftItemsButton           *widget.Button    //Craft with the selected items
+	ClearItemsButton           *widget.Button    //Clear the selected items
 
 }
 
@@ -54,7 +54,7 @@ func (craftingItemDisplay *CraftingItemDisplay) CreateInventoryList(playerData *
 		if craftingItemDisplay.itemDisplay.ItemsSelectedList != nil {
 			craftingItemDisplay.ItemsSelectedContainer.AddChild(craftingItemDisplay.itemDisplay.ItemsSelectedList)
 
-			names, _ := playerData.GetPlayerInventory().GetEffectNames(entry.index)
+			names, _ := playerData.GetPlayerInventory().EffectNames(entry.index)
 
 			for _, n := range names {
 				craftingItemDisplay.ItemsSelectedPropTextArea.AppendText(n)
@@ -124,9 +124,9 @@ func (craftingItemDisplay *CraftingItemDisplay) CreateContainers() {
 	craftingItemDisplay.itemDisplay.rootContainer.AddChild(craftingItemDisplay.ItemsSelectedContainer)
 
 	craftingItemDisplay.ItemsSelectedPropContainer.AddChild(craftingItemDisplay.ItemsSelectedPropTextArea)
-	craftingItemDisplay.ItemsSelectedContainer.AddChild(craftingItemDisplay.clearItemsButton)
+	craftingItemDisplay.ItemsSelectedContainer.AddChild(craftingItemDisplay.ClearItemsButton)
 	craftingItemDisplay.ItemsSelectedPropContainer.AddChild(craftingItemDisplay.ItemsSelectedPropTextArea)
-	craftingItemDisplay.ItemsSelectedPropContainer.AddChild(craftingItemDisplay.craftItemsButton)
+	craftingItemDisplay.ItemsSelectedPropContainer.AddChild(craftingItemDisplay.CraftItemsButton)
 	craftingItemDisplay.itemDisplay.rootContainer.AddChild(craftingItemDisplay.ItemsSelectedPropContainer)
 
 }
@@ -165,7 +165,7 @@ func (craftingItemDisplay *CraftingItemDisplay) CreateCraftingMenuButtons() {
 		}),
 	)
 
-	craftingItemDisplay.clearItemsButton = button
+	craftingItemDisplay.ClearItemsButton = button
 
 	// construct a button
 	button = widget.NewButton(
@@ -196,7 +196,7 @@ func (craftingItemDisplay *CraftingItemDisplay) CreateCraftingMenuButtons() {
 		}),
 	)
 
-	craftingItemDisplay.craftItemsButton = button
+	craftingItemDisplay.CraftItemsButton = button
 
 }
 

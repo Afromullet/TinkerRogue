@@ -13,7 +13,7 @@ type ThrowingItemDisplay struct {
 	ItemsSelectedContainer     *widget.Container //Displays the items the user HAS selected for crafitng
 	ItemsSelectedPropContainer *widget.Container //Container to hold the widget that displays the proeprties of the selected item
 	ItemsSelectedPropTextArea  *widget.TextArea  //Displays the properties of the selected items
-	throwableItemSelected      bool
+	ThrowableItemSelected      bool
 }
 
 // Todo modify this to make it compatible with THrowable Display actions on list item click
@@ -38,7 +38,7 @@ func (throwingItemDisplay *ThrowingItemDisplay) CreateInventoryList(playerData *
 			playerData.PrepareThrowable(it, entry.index)
 		}
 
-		throwingItemDisplay.throwableItemSelected = true
+		throwingItemDisplay.ThrowableItemSelected = true
 
 	})
 

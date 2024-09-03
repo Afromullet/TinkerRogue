@@ -13,20 +13,20 @@ type Player struct {
 // Throwing items is an important part of the game, so we store additional information related
 // TO throwing
 type PlayerData struct {
-	playerEntity       *ecs.Entity
-	playerWeapon       *ecs.Entity
+	PlayerEntity       *ecs.Entity
+	PlayerWeapon       *ecs.Entity
 	position           *Position
 	inventory          *Inventory
-	selectedThrowable  *ecs.Entity
-	shape              TileBasedShape
-	throwableItemIndex int
-	throwableItem      *Item
+	SelectedThrowable  *ecs.Entity
+	Shape              TileBasedShape
+	ThrowableItemIndex int
+	ThrowableItem      *Item
 }
 
 // Helper function to make it less tedious to get the inventory
 func (pl *PlayerData) GetPlayerInventory() *Inventory {
 
-	playerInventory := GetComponentType[*Inventory](pl.playerEntity, InventoryComponent)
+	playerInventory := ComponentType[*Inventory](pl.PlayerEntity, InventoryComponent)
 
 	return playerInventory
 }
@@ -36,27 +36,27 @@ func (pl *PlayerData) GetPlayerInventory() *Inventory {
 // The shape lets us draw it on the screen
 func (pl *PlayerData) PrepareThrowable(itemEntity *ecs.Entity, index int) {
 
-	pl.selectedThrowable = itemEntity
-	item := GetComponentType[*Item](pl.selectedThrowable, ItemComponent)
-	pl.throwableItem = item
+	pl.SelectedThrowable = itemEntity
+	item := ComponentType[*Item](pl.SelectedThrowable, ItemComponent)
+	pl.ThrowableItem = item
 
-	t := item.GetItemEffect(THROWABLE_NAME).(*Throwable)
-	pl.throwableItemIndex = index
+	t := item.ItemEffect(THROWABLE_NAME).(*Throwable)
+	pl.ThrowableItemIndex = index
 
-	pl.shape = t.shape
+	pl.Shape = t.Shape
 
 }
 
 func (pl *PlayerData) ThrowPreparedItem() {
 
-	pl.inventory.RemoveItem(pl.throwableItemIndex)
+	pl.inventory.RemoveItem(pl.ThrowableItemIndex)
 
 }
 
 // Helper function to make it less tedious to get the inventory
 func (pl *PlayerData) GetPlayerWeapon() *Weapon {
 
-	weapon := GetComponentType[*Weapon](pl.playerWeapon, WeaponComponent)
+	weapon := ComponentType[*Weapon](pl.PlayerWeapon, WeaponComponent)
 
 	return weapon
 }

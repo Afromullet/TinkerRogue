@@ -57,7 +57,7 @@ type Tile struct {
 	tileContents  TileContents
 	TileType      TileType
 	IsRevealed    bool
-	colorMatrix   ColorMatrix
+	cm            ColorMatrix
 	OriginalImage *ebiten.Image
 }
 
@@ -74,7 +74,7 @@ func NewTile(pixelX, pixelY int, tileCords Position, blocked bool, img *ebiten.I
 		Image:      img,
 		TileType:   WALL,
 		IsRevealed: false,
-		colorMatrix: ColorMatrix{
+		cm: ColorMatrix{
 			r:           0,
 			g:           0,
 			b:           0,
@@ -88,5 +88,5 @@ func NewTile(pixelX, pixelY int, tileCords Position, blocked bool, img *ebiten.I
 
 func (t *Tile) SetColorMatrix(c ColorMatrix) {
 
-	t.colorMatrix = c
+	t.cm = c
 }

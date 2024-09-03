@@ -43,32 +43,32 @@ func AttackSystem(g *Game, attackerPos *Position, defenderPos *Position) {
 	var weapon *Weapon = nil
 
 	if g.playerData.position.IsEqual(attackerPos) {
-		attacker = g.playerData.playerEntity
+		attacker = g.playerData.PlayerEntity
 		defender = GetCreatureAtPosition(g, defenderPos)
 		weapon = g.playerData.GetPlayerWeapon()
 
 	} else {
 		attacker = GetCreatureAtPosition(g, defenderPos)
-		defender = g.playerData.playerEntity
+		defender = g.playerData.PlayerEntity
 
-		weapon = GetComponentType[*Weapon](attacker, WeaponComponent)
+		weapon = ComponentType[*Weapon](attacker, WeaponComponent)
 
 	}
 
-	attackerMessage = GetComponentType[*UserMessage](attacker, userMessage)
+	attackerMessage = ComponentType[*UserMessage](attacker, userMessage)
 	log.Print(attackerMessage)
 
 	if weapon != nil {
 
-		defenderHealth := GetComponentType[*Health](defender, healthComponent)
+		defenderHealth := ComponentType[*Health](defender, healthComponent)
 		if defenderHealth != nil {
-			defenderHealth.CurrentHealth -= weapon.damage
-			attackerMessage.AttackMessage = fmt.Sprintf("Damage Done: %d\n", weapon.damage)
+			defenderHealth.CurrentHealth -= weapon.Damage
+			attackerMessage.AttackMessage = fmt.Sprintf("Damage Done: %d\n", weapon.Damage)
 
 			if defenderHealth.CurrentHealth <= 0 {
 				//Todo removing an entity is really closely coupled to teh map right now.
 				//Do it differently in the future
-				index := GetIndexFromXY(defenderPos.X, defenderPos.Y)
+				index := IndexFromXY(defenderPos.X, defenderPos.Y)
 
 				g.gameMap.Tiles[index].Blocked = false
 				g.World.DisposeEntity(defender)
