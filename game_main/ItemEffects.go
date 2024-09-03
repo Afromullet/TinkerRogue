@@ -38,18 +38,19 @@ ApplyToCreature() takes a query result. The implementing method will define how 
 That lets us get the components and name without having to assert it to a specfic type.
 */
 type Effects interface {
-	GetEffectComponent() *ecs.Component
-	GetEffectName() string
+	EffectComponent() *ecs.Component
+	EffectName() string
+	Duration() int
 	ApplyToCreature(c *ecs.QueryResult)
 	Copy() Effects
 }
 
 func EffectName[T Effects](prop *T) string {
-	return (*prop).GetEffectName()
+	return (*prop).EffectName()
 }
 
 func EffectComponent[T Effects](prop *T) *ecs.Component {
-	return (*prop).GetEffectComponent()
+	return (*prop).EffectComponent()
 }
 
 func AllEffects(effects *ecs.Entity) []Effects {
@@ -86,12 +87,18 @@ type Sticky struct {
 
 }
 
-func (s *Sticky) GetEffectComponent() *ecs.Component {
+func (s *Sticky) EffectComponent() *ecs.Component {
 	return StickyComponent
 }
 
-func (s *Sticky) GetEffectName() string {
+func (s *Sticky) EffectName() string {
 	return s.MainProps.Name
+
+}
+
+func (s Sticky) Duration() int {
+
+	return s.MainProps.Duration
 
 }
 
@@ -127,12 +134,18 @@ type Burning struct {
 	Temperature int
 }
 
-func (b *Burning) GetEffectComponent() *ecs.Component {
+func (b *Burning) EffectComponent() *ecs.Component {
 	return BurningComponent
 }
 
-func (b *Burning) GetEffectName() string {
+func (b *Burning) EffectName() string {
 	return b.MainProps.Name
+}
+
+func (b Burning) Duration() int {
+
+	return b.MainProps.Duration
+
 }
 
 func (b *Burning) Copy() Effects {
@@ -173,12 +186,18 @@ type Freezing struct {
 
 }
 
-func (f *Freezing) GetEffectComponent() *ecs.Component {
+func (f *Freezing) EffectComponent() *ecs.Component {
 	return FreezingComponent
 }
 
-func (f *Freezing) GetEffectName() string {
+func (f *Freezing) EffectName() string {
 	return f.MainProps.Name
+
+}
+
+func (f Freezing) Duration() int {
+
+	return f.MainProps.Duration
 
 }
 
@@ -220,12 +239,18 @@ type Throwable struct {
 	Shape         TileBasedShape
 }
 
-func (t *Throwable) GetEffectComponent() *ecs.Component {
+func (t *Throwable) EffectComponent() *ecs.Component {
 	return ThrowableComponent
 }
 
-func (t *Throwable) GetEffectName() string {
+func (t *Throwable) EffectName() string {
 	return t.MainProps.Name
+
+}
+
+func (t Throwable) Duration() int {
+
+	return t.MainProps.Duration
 
 }
 

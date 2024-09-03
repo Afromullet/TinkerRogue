@@ -117,7 +117,7 @@ func (item *Item) HasAllEffects(effectsToCheck ...Effects) bool {
 func (item *Item) HasEffect(effectToCheck Effects) bool {
 
 	names := item.GetEffectNames()
-	comp := effectToCheck.GetEffectName()
+	comp := effectToCheck.EffectName()
 
 	for _, n := range names {
 
@@ -144,7 +144,7 @@ func CreateItem(manager *ecs.Manager, name string, pos Position, imagePath strin
 	item := &Item{Count: 1, Properties: manager.NewEntity()}
 
 	for _, prop := range effects {
-		item.Properties.AddComponent(prop.GetEffectComponent(), &prop)
+		item.Properties.AddComponent(prop.EffectComponent(), &prop)
 
 	}
 

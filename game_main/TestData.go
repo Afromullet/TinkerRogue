@@ -28,7 +28,7 @@ func CreateTestItems(manager *ecs.Manager, tags map[string]ecs.Tag, gameMap *Gam
 
 	startingPos := gameMap.StartingPosition()
 
-	b := NewBurning(5, 1)
+	b := NewBurning(1, 1)
 
 	f := NewFreezing(3, 5)
 	f.MainProps.Duration = 10

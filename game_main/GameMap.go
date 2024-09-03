@@ -295,7 +295,9 @@ func (gameMap *GameMap) ApplyColorMatrix(indices []int, m ColorMatrix) {
 
 	for _, ind := range indices {
 
-		gameMap.Tiles[ind].SetColorMatrix(m)
+		if ind <= len(gameMap.Tiles) {
+			gameMap.Tiles[ind].SetColorMatrix(m)
+		}
 	}
 
 }

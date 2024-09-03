@@ -1,4 +1,4 @@
-Implement Throwing Range
+Implement Throwing Range. The player needs some sort of indication of how far they can throw
 
 Add Creature Speed so sticky effect works
 
@@ -10,6 +10,8 @@ Item and Creature Spawning
 
 Effect Stacking
 
-Removing Effects when duration <= 0
+Removing Effects when duration <= 0 - Done
 
-Fix out of bounds issue for shapes. Game crashes when drawable shapes move outside bounds
+Out of bound shape issue - Done
+
+Allow creatures to attack

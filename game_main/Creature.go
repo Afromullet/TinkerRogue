@@ -35,12 +35,30 @@ func (c *Creature) AddEffects(effects *ecs.Entity) {
 func ApplyEffects(c *ecs.QueryResult) {
 
 	creature := c.Components[creature].(*Creature)
+	num_effects := len(creature.EffectsToApply)
+
+	if num_effects == 0 {
+		return
+	}
+
+	effects_to_keep := make([]Effects, 0)
 
 	for _, eff := range creature.EffectsToApply {
 
-		eff.ApplyToCreature(c)
+		if eff.Duration() >= 1 {
+			eff.ApplyToCreature(c)
+		}
+
+		//ApplyToCreature changes the duration, so we need to check again before
+		//Deciding whether to keep the effect
+		if eff.Duration() > 0 {
+			effects_to_keep = append(effects_to_keep, eff)
+
+		}
 
 	}
+
+	creature.EffectsToApply = effects_to_keep
 
 }
 
