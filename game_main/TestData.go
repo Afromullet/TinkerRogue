@@ -82,7 +82,7 @@ func CreateTestMonsters(manager *ecs.Manager, gameMap *GameMap) {
 	CreateMonster(manager, gameMap, x+2, y+1)
 	CreateMonster(manager, gameMap, x+2, y+2)
 
-	CreateMoreTestMonsters(manager, gameMap)
+	//CreateMoreTestMonsters(manager, gameMap)
 
 }
 

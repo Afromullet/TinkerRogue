@@ -23,14 +23,14 @@ uitil.go
 ItemProperties.go
 ShapeDrawing
 Creature
-REALLY need to refactor game_map
+
 
 
 
 Other changes that will have to happen
 
 main.go: Choosing how I want to initialize everyhting
-player_movement.go 
+player_movement.go - break this apart more
 world.go : Initialization of the entities needed at game startup once I add more stuff to the game
 
 

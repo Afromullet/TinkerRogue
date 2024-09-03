@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/bytearena/ecs"
 )
 
@@ -9,7 +11,7 @@ const FREEZING_NAME = "Freezing"
 const STICKY_NAME = "Sticky"
 const THROWABLE_NAME = "Throwable"
 
-var PropertyNames = []string{BURNING_NAME, FREEZING_NAME, STICKY_NAME, THROWABLE_NAME}
+var EffectNames = []string{BURNING_NAME, FREEZING_NAME, STICKY_NAME, THROWABLE_NAME}
 
 var ItemComponent *ecs.Component
 var StickyComponent *ecs.Component
@@ -18,34 +20,55 @@ var FreezingComponent *ecs.Component
 var ThrowableComponent *ecs.Component
 
 /*
-The AllItemProperties makes it easier to query an Item for all of its Properties.
+The AllItemEffects makes it easier to query an Item for all of its Properties.
 
-entity.GetComponentData takes a component as input, so we use AllItemProperties
+entity.GetComponentData takes a component as input, so we use AllItemEffects
 to keep track of all proeprties an item might have
 */
-var AllItemProperties []*ecs.Component
+var AllItemEffects []*ecs.Component
 
 /*
 Quasi-Polymorphism that tries to make Item Properties interchangable.
 The ECS library makes it tedious to access component data. I don't
 want to modify the ECS library, so this is a workaround.
 
-Each ItemProperty implements GetPropertyComponent and GetPropertyName,
+Each Effects implements GetPropertyComponent and GetPropertyName,
 Which is called by the generic GetPropertyName and GetPropertyComponent functions.const
 
 That lets us get the components and name without having to assert it to a specfic type.
 */
-type ItemProperty interface {
-	GetPropertyComponent() *ecs.Component
-	GetPropertyName() string
+type Effects interface {
+	GetEffectComponent() *ecs.Component
+	GetEffectName() string
+	ApplyToCreature(c *Creature)
 }
 
-func GetPropertyName[T ItemProperty](prop *T) string {
-	return (*prop).GetPropertyName()
+func GetEffectName[T Effects](prop *T) string {
+	return (*prop).GetEffectName()
 }
 
-func GetPropertyComponent[T ItemProperty](prop *T) *ecs.Component {
-	return (*prop).GetPropertyComponent()
+func GetEffectComponent[T Effects](prop *T) *ecs.Component {
+	return (*prop).GetEffectComponent()
+}
+
+func GetEffect(effects *ecs.Entity) any {
+
+	for _, e := range AllItemEffects {
+
+		data, ok := effects.GetComponentData(e)
+
+		if ok {
+
+			d := *data.(*Effects)
+			p := d.(any)
+			return p
+
+		}
+
+	}
+
+	return nil
+
 }
 
 // Item Properties
@@ -60,12 +83,17 @@ type Sticky struct {
 
 }
 
-func (s Sticky) GetPropertyComponent() *ecs.Component {
+func (s Sticky) GetEffectComponent() *ecs.Component {
 	return StickyComponent
 }
 
-func (s Sticky) GetPropertyName() string {
+func (s Sticky) GetEffectName() string {
 	return s.MainProps.Name
+
+}
+
+func (s Sticky) ApplyToCreature(c *Creature) {
+	fmt.Println("Applying ", s, " To Creature")
 
 }
 
@@ -87,12 +115,16 @@ type Burning struct {
 	Temperature int
 }
 
-func (b Burning) GetPropertyComponent() *ecs.Component {
+func (b Burning) GetEffectComponent() *ecs.Component {
 	return BurningComponent
 }
 
-func (b Burning) GetPropertyName() string {
+func (b Burning) GetEffectName() string {
 	return b.MainProps.Name
+}
+
+func (b Burning) ApplyToCreature(c *Creature) {
+	fmt.Println("Applying ", b, " To Creature")
 
 }
 
@@ -114,12 +146,17 @@ type Freezing struct {
 
 }
 
-func (f Freezing) GetPropertyComponent() *ecs.Component {
+func (f Freezing) GetEffectComponent() *ecs.Component {
 	return FreezingComponent
 }
 
-func (f Freezing) GetPropertyName() string {
+func (f Freezing) GetEffectName() string {
 	return f.MainProps.Name
+
+}
+
+func (f Freezing) ApplyToCreature(c *Creature) {
+	fmt.Println("Applying ", f, " To Creature")
 
 }
 
@@ -135,6 +172,11 @@ func NewFreezing(dur int, t int) Freezing {
 
 }
 
+// Throwable doesn't work like any other effects,
+// So treating it as an "Effect" does not make much sense because we
+// Have to implement methods that do not apply to it such as
+// ApplyToCreature. MainProps.duration also doesn't mean much for this
+// But it works for now...
 type Throwable struct {
 	MainProps     CommonItemProperties
 	throwingRange int //How many tiles it can be thrown
@@ -142,12 +184,17 @@ type Throwable struct {
 	shape         TileBasedShape
 }
 
-func (t Throwable) GetPropertyComponent() *ecs.Component {
+func (t Throwable) GetEffectComponent() *ecs.Component {
 	return ThrowableComponent
 }
 
-func (t Throwable) GetPropertyName() string {
+func (t Throwable) GetEffectName() string {
 	return t.MainProps.Name
+
+}
+
+func (t Throwable) ApplyToCreature(c *Creature) {
+	fmt.Println("Applying ", t, " To Creature")
 
 }
 
@@ -174,10 +221,10 @@ func InitializeItemComponents(manager *ecs.Manager, tags map[string]ecs.Tag) {
 	WeaponComponent = manager.NewComponent()
 	ThrowableComponent = manager.NewComponent()
 
-	AllItemProperties = append(AllItemProperties, StickyComponent)
-	AllItemProperties = append(AllItemProperties, BurningComponent)
-	AllItemProperties = append(AllItemProperties, FreezingComponent)
-	AllItemProperties = append(AllItemProperties, ThrowableComponent)
+	AllItemEffects = append(AllItemEffects, StickyComponent)
+	AllItemEffects = append(AllItemEffects, BurningComponent)
+	AllItemEffects = append(AllItemEffects, FreezingComponent)
+	AllItemEffects = append(AllItemEffects, ThrowableComponent)
 
 	items := ecs.BuildTag(ItemComponent, position) //todo add all the tags
 	tags["items"] = items

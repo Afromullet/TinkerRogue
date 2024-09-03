@@ -16,18 +16,26 @@ import (
 // We're also copying some properties that don't mean anything to the creature
 // We will worry about that later
 type Creature struct {
-	path              []Position
-	EffectsOnCreature *ecs.Entity
+	path []Position
 
-	//EffectTracker map[]
+	EffectsToApply []Effects
 }
 
-// Only add the component if it doesn't exist
-// Maybe add some filtering here so that we only add the effects
-// That actually matter to a creature
 func (c *Creature) AddEffects(effects *ecs.Entity) {
 
-	c.EffectsOnCreature = effects
+	e := GetEffect(effects)
+
+	c.EffectsToApply = append(c.EffectsToApply, e.(Effects))
+
+}
+
+func ApplyEffects(c *Creature) {
+
+	for _, eff := range c.EffectsToApply {
+
+		eff.ApplyToCreature(c)
+
+	}
 
 }
 

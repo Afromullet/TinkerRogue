@@ -131,7 +131,7 @@ func InitializeCreatureComponents(manager *ecs.Manager, tags map[string]ecs.Tag)
 	noMove = manager.NewComponent()
 	goToPlayer = manager.NewComponent()
 
-	creatures := ecs.BuildTag(creature, position)
+	creatures := ecs.BuildTag(creature, position, healthComponent)
 	tags["monsters"] = creatures
 
 }

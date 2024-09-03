@@ -40,7 +40,7 @@ func (pl *PlayerData) PrepareThrowable(itemEntity *ecs.Entity, index int) {
 	item := GetComponentType[*Item](pl.selectedThrowable, ItemComponent)
 	pl.throwableItem = item
 
-	t := item.GetItemProperty(THROWABLE_NAME).(Throwable)
+	t := item.GetItemEffect(THROWABLE_NAME).(Throwable)
 	pl.throwableItemIndex = index
 
 	pl.shape = t.shape

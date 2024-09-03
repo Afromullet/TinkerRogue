@@ -22,7 +22,7 @@ type CraftingItemDisplay struct {
 // Selects an item and adds it to the ItemsSelectedContainer container and ItemsSelectedPropContainer
 // ItemSeleced container tells us which items we're crafting with
 // ItemsSelectedPropContainer tells which properties the items have
-func (craftingItemDisplay *CraftingItemDisplay) CreateInventoryList(playerData *PlayerData, propFilters ...ItemProperty) {
+func (craftingItemDisplay *CraftingItemDisplay) CreateInventoryList(playerData *PlayerData, propFilters ...Effects) {
 
 	// Nested function to add a selected item
 	addSelectedItem := func(index int) {
@@ -54,7 +54,7 @@ func (craftingItemDisplay *CraftingItemDisplay) CreateInventoryList(playerData *
 		if craftingItemDisplay.itemDisplay.ItemsSelectedList != nil {
 			craftingItemDisplay.ItemsSelectedContainer.AddChild(craftingItemDisplay.itemDisplay.ItemsSelectedList)
 
-			names, _ := playerData.GetPlayerInventory().GetPropertyNames(entry.index)
+			names, _ := playerData.GetPlayerInventory().GetEffectNames(entry.index)
 
 			for _, n := range names {
 				craftingItemDisplay.ItemsSelectedPropTextArea.AppendText(n)

@@ -17,7 +17,7 @@ type ThrowingItemDisplay struct {
 }
 
 // Todo modify this to make it compatible with THrowable Display actions on list item click
-func (throwingItemDisplay *ThrowingItemDisplay) CreateInventoryList(playerData *PlayerData, propFilters ...ItemProperty) {
+func (throwingItemDisplay *ThrowingItemDisplay) CreateInventoryList(playerData *PlayerData, propFilters ...Effects) {
 
 	inv := playerData.GetPlayerInventory().GetInventoryForDisplay([]int{}, propFilters...)
 	throwingItemDisplay.itemDisplay.InventoryDisplaylist = throwingItemDisplay.itemDisplay.GetInventoryListWidget(inv)

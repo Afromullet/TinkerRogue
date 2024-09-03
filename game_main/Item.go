@@ -51,17 +51,17 @@ func (item *Item) DecrementCount() {
 }
 
 // Returns the names of this items properties.
-func (item *Item) GetPropertyNames() []string {
+func (item *Item) GetEffectNames() []string {
 
 	names := make([]string, 0)
 
-	for _, c := range AllItemProperties {
+	for _, c := range AllItemEffects {
 		data, ok := item.properties.GetComponentData(c)
 		if ok {
 			print(data)
 
-			d := data.(*ItemProperty)
-			names = append(names, GetPropertyName(d))
+			d := data.(*Effects)
+			names = append(names, GetEffectName(d))
 		}
 	}
 	return names
@@ -78,18 +78,18 @@ struct that represents the property
 Here's an example of how it's used:
 
 item := GetComponentStruct[*Item](itemEntity, ItemComponent)
-t := item.GetItemProperty(THROWABLE_NAME).(throwable)
+t := item.GetItemEffect(THROWABLE_NAME).(throwable)
 fmt.Println(t.shape)
 */
-func (item *Item) GetItemProperty(propName string) any {
+func (item *Item) GetItemEffect(effectName string) any {
 
-	for _, c := range AllItemProperties {
+	for _, c := range AllItemEffects {
 		data, ok := item.properties.GetComponentData(c)
 		if ok {
 			print(data)
 
-			d := *data.(*ItemProperty)
-			if GetPropertyName(&d) == propName {
+			d := *data.(*Effects)
+			if GetEffectName(&d) == effectName {
 
 				p := d.(any)
 				return p
@@ -101,39 +101,16 @@ func (item *Item) GetItemProperty(propName string) any {
 	return nil
 }
 
-// Sometimes we need to access the component itself rather than the item property.
-// Such as when we want to know which effects to apply to a creature
-// Storing the "ItemProperty" in the creature does not make sense.
-func (item *Item) GetPropertyComponents() []*ecs.Component {
-
-	comps := make([]*ecs.Component, 0)
-
-	for _, c := range AllItemProperties {
-		data, ok := item.properties.GetComponentData(c)
-		if ok {
-			print(data)
-
-			d := *data.(*ItemProperty)
-
-			comps = append(comps, d.GetPropertyComponent())
-
-		}
-	}
-
-	return comps
-
-}
-
 // Not the best way to check if an item has all propeties, but it will work for now
-func (item *Item) HasAllProperties(propsToCheck ...ItemProperty) bool {
+func (item *Item) HasAllEffects(effectsToCheck ...Effects) bool {
 
-	if len(propsToCheck) == 0 {
+	if len(effectsToCheck) == 0 {
 		return true
 	}
 
-	for _, prop := range propsToCheck {
+	for _, eff := range effectsToCheck {
 
-		if !item.HasProperty(prop) {
+		if !item.HasEffect(eff) {
 			return false
 		}
 	}
@@ -142,10 +119,10 @@ func (item *Item) HasAllProperties(propsToCheck ...ItemProperty) bool {
 
 }
 
-func (item *Item) HasProperty(propToCheck ItemProperty) bool {
+func (item *Item) HasEffect(effectToCheck Effects) bool {
 
-	names := item.GetPropertyNames()
-	comp := propToCheck.GetPropertyName()
+	names := item.GetEffectNames()
+	comp := effectToCheck.GetEffectName()
 
 	for _, n := range names {
 
@@ -160,9 +137,9 @@ func (item *Item) HasProperty(propToCheck ItemProperty) bool {
 
 }
 
-// Create an item with any number of Properties. ItemProperty is a wrapper around an ecs.Component to make
+// Create an item with any number of Effects. ItemEffect is a wrapper around an ecs.Component to make
 // Manipulating it easier
-func CreateItem(manager *ecs.Manager, name string, pos Position, imagePath string, properties ...ItemProperty) *ecs.Entity {
+func CreateItem(manager *ecs.Manager, name string, pos Position, imagePath string, effects ...Effects) *ecs.Entity {
 
 	img, _, err := ebitenutil.NewImageFromFile(imagePath)
 	if err != nil {
@@ -171,8 +148,8 @@ func CreateItem(manager *ecs.Manager, name string, pos Position, imagePath strin
 
 	item := &Item{count: 1, properties: manager.NewEntity()}
 
-	for _, prop := range properties {
-		item.properties.AddComponent(prop.GetPropertyComponent(), &prop)
+	for _, prop := range effects {
+		item.properties.AddComponent(prop.GetEffectComponent(), &prop)
 
 	}
 
@@ -197,7 +174,7 @@ func CreateItem(manager *ecs.Manager, name string, pos Position, imagePath strin
 }
 
 // A weapon is an Item with a weapon component
-func CreateWeapon(manager *ecs.Manager, name string, pos Position, imagePath string, dam int, properties ...ItemProperty) *ecs.Entity {
+func CreateWeapon(manager *ecs.Manager, name string, pos Position, imagePath string, dam int, properties ...Effects) *ecs.Entity {
 
 	weapon := CreateItem(manager, name, pos, imagePath, properties...)
 

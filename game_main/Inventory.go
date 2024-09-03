@@ -74,9 +74,9 @@ func (inv *Inventory) RemoveItem(index int) {
 
 }
 
-// Returns the names of the Item Properties
-// This is used for displaying the item properties to the player.
-func (inv *Inventory) GetPropertyNames(index int) ([]string, error) {
+// Returns the names of the Item Effects
+// This is used for displaying the item effects to the player.
+func (inv *Inventory) GetEffectNames(index int) ([]string, error) {
 
 	entity, err := inv.GetItem(index)
 
@@ -91,13 +91,13 @@ func (inv *Inventory) GetPropertyNames(index int) ([]string, error) {
 
 	}
 
-	return itemComp.GetPropertyNames(), nil
+	return itemComp.GetEffectNames(), nil
 
 }
 
 // Used for displaying the inventory to the player. Returns a list the ebitenui list widgets expects
 // The list contains the index in the inventory, the name, and the count of the item.
-func (inv *Inventory) GetInventoryForDisplay(indicesToSelect []int, itemPropertiesFilter ...ItemProperty) []any {
+func (inv *Inventory) GetInventoryForDisplay(indicesToSelect []int, itemPropertiesFilter ...Effects) []any {
 
 	inventoryItems := make([]any, 0, inventorySize)
 
@@ -107,7 +107,7 @@ func (inv *Inventory) GetInventoryForDisplay(indicesToSelect []int, itemProperti
 			itemName := GetComponentType[*Name](entity, nameComponent)
 			itemComp := GetComponentType[*Item](entity, ItemComponent)
 
-			if itemComp.HasAllProperties(itemPropertiesFilter...) {
+			if itemComp.HasAllEffects(itemPropertiesFilter...) {
 
 				inventoryItems = append(inventoryItems, InventoryListEntry{
 					index,
@@ -122,7 +122,7 @@ func (inv *Inventory) GetInventoryForDisplay(indicesToSelect []int, itemProperti
 			itemName := GetComponentType[*Name](entity, nameComponent)
 			itemComp := GetComponentType[*Item](entity, ItemComponent)
 
-			if itemComp.HasAllProperties(itemPropertiesFilter...) {
+			if itemComp.HasAllEffects(itemPropertiesFilter...) {
 				inventoryItems = append(inventoryItems, InventoryListEntry{
 					index,
 					itemName.NameStr,
