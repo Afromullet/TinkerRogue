@@ -9,7 +9,7 @@ import (
 )
 
 func SetupPlayerForTesting(g *Game) {
-	w := CreateWeapon(g.World, "Weapon 1", *g.playerData.position, "assets/items/sword.png", 1)
+	w := CreateWeapon(g.World, "Weapon 1", *g.playerData.position, "assets/items/sword.png", 5, 10)
 	g.playerData.PlayerWeapon = w
 
 }
@@ -28,7 +28,7 @@ func CreateTestItems(manager *ecs.Manager, tags map[string]ecs.Tag, gameMap *Gam
 
 	startingPos := gameMap.StartingPosition()
 
-	b := NewBurning(1, 1)
+	b := NewBurning(1, 7)
 
 	f := NewFreezing(3, 5)
 	f.MainProps.Duration = 10
@@ -115,9 +115,7 @@ func CreateMoreTestMonsters(manager *ecs.Manager, gameMap *GameMap) {
 			}).
 			AddComponent(position, &pos).
 			AddComponent(goToPlayer, &GoToPlayerMovement{}).
-			AddComponent(healthComponent, &Health{
-				MaxHealth:     5,
-				CurrentHealth: 5}).AddComponent(userMessage, &UserMessage{
+			AddComponent(attributeComponent, &Attributes{MaxHealth: 5, CurrentHealth: 5}).AddComponent(userMessage, &UserMessage{
 			AttackMessage:    "",
 			GameStateMessage: "",
 		})
@@ -185,8 +183,8 @@ func CreateMonster(manager *ecs.Manager, gameMap *GameMap, x, y int) {
 
 	ind := IndexFromXY(x, y)
 	gameMap.Tiles[ind].Blocked = true
-
-	manager.NewEntity().
+	armor := NewArmor(15, 3, 30)
+	ent := manager.NewEntity().
 		AddComponent(creature, &Creature{
 			Path: make([]Position, 0),
 		}).
@@ -199,12 +197,13 @@ func CreateMonster(manager *ecs.Manager, gameMap *GameMap, x, y int) {
 			Y: y,
 		}).
 		AddComponent(noMove, &NoMovement{}).
-		AddComponent(healthComponent, &Health{
-			MaxHealth:     5,
-			CurrentHealth: 5}).AddComponent(userMessage, &UserMessage{
-		AttackMessage:    "",
-		GameStateMessage: "",
-	})
+		AddComponent(attributeComponent, &Attributes{MaxHealth: 500, CurrentHealth: 500}).
+		AddComponent(userMessage, &UserMessage{
+			AttackMessage:    "",
+			GameStateMessage: "",
+		}).AddComponent(ArmorComponent, &armor)
+
+	UpdateAttributes(ent)
 
 }
 

@@ -169,12 +169,13 @@ func CreateItem(manager *ecs.Manager, name string, pos Position, imagePath strin
 }
 
 // A weapon is an Item with a weapon component
-func CreateWeapon(manager *ecs.Manager, name string, pos Position, imagePath string, dam int, properties ...Effects) *ecs.Entity {
+func CreateWeapon(manager *ecs.Manager, name string, pos Position, imagePath string, MinDamage int, MaxDamage int, properties ...Effects) *ecs.Entity {
 
 	weapon := CreateItem(manager, name, pos, imagePath, properties...)
 
 	weapon.AddComponent(WeaponComponent, &Weapon{
-		Damage: dam,
+		MinDamage: MinDamage,
+		MaxDamage: MaxDamage,
 	})
 
 	return weapon

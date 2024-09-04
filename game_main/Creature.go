@@ -104,7 +104,7 @@ func MonsterActions(g *Game) {
 
 		ApplyEffects(c)
 
-		h := ComponentType[*Health](c.Entity, healthComponent)
+		h := GetComponentType[*Attributes](c.Entity, attributeComponent)
 
 		if h.CurrentHealth <= 0 {
 			g.World.DisposeEntity(c.Entity)

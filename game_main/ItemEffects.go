@@ -159,13 +159,14 @@ func (b *Burning) ApplyToCreature(c *ecs.QueryResult) {
 
 	b.MainProps.Duration -= 1
 
-	h := ComponentType[*Health](c.Entity, healthComponent)
+	h := GetComponentType[*Attributes](c.Entity, attributeComponent)
 
 	h.CurrentHealth -= b.Temperature
 
 	fmt.Println(h)
 
 	fmt.Println("Remaining duration ", b.MainProps.Duration)
+	fmt.Println("Remaining health ", h.CurrentHealth)
 }
 
 func NewBurning(dur int, temp int) *Burning {
@@ -288,7 +289,7 @@ func InitializeItemComponents(manager *ecs.Manager, tags map[string]ecs.Tag) {
 	StickyComponent = manager.NewComponent()
 	BurningComponent = manager.NewComponent()
 	FreezingComponent = manager.NewComponent()
-	WeaponComponent = manager.NewComponent()
+
 	ThrowableComponent = manager.NewComponent()
 
 	AllItemEffects = append(AllItemEffects, StickyComponent)

@@ -23,22 +23,22 @@ type Inventory struct {
 // the Item type stores a "count" which is incremented if the item exists in the inventory
 func (inv *Inventory) AddItem(entityToAdd *ecs.Entity) {
 	// Dereference the slice pointer and use append
-	newItemName := ComponentType[*Name](entityToAdd, nameComponent).NameStr
+	newItemName := GetComponentType[*Name](entityToAdd, nameComponent).NameStr
 	exists := false
 
 	for _, entity := range inv.InventoryContent {
 
-		itemName := ComponentType[*Name](entity, nameComponent).NameStr
+		itemName := GetComponentType[*Name](entity, nameComponent).NameStr
 
 		if itemName == newItemName {
 			exists = true
-			ComponentType[*Item](entity, ItemComponent).IncrementCount()
+			GetComponentType[*Item](entity, ItemComponent).IncrementCount()
 			break
 		}
 	}
 
 	if !exists {
-		itemComp := ComponentType[*Item](entityToAdd, ItemComponent)
+		itemComp := GetComponentType[*Item](entityToAdd, ItemComponent)
 		itemComp.Count = 1
 		inv.InventoryContent = append(inv.InventoryContent, entityToAdd)
 
@@ -61,7 +61,7 @@ func (inv *Inventory) RemoveItem(index int) {
 
 	if err == nil {
 
-		itemComp := ComponentType[*Item](item, ItemComponent)
+		itemComp := GetComponentType[*Item](item, ItemComponent)
 
 		itemComp.DecrementCount()
 
@@ -84,7 +84,7 @@ func (inv *Inventory) EffectNames(index int) ([]string, error) {
 		return nil, fmt.Errorf("failed to get item by index: %w", err)
 	}
 
-	itemComp := ComponentType[*Item](entity, ItemComponent)
+	itemComp := GetComponentType[*Item](entity, ItemComponent)
 
 	if itemComp == nil {
 		return nil, fmt.Errorf("failed to get component data: %w", err)
@@ -104,8 +104,8 @@ func (inv *Inventory) GetInventoryForDisplay(indicesToSelect []int, itemProperti
 	if len(indicesToSelect) == 0 {
 		for index, entity := range inv.InventoryContent {
 
-			itemName := ComponentType[*Name](entity, nameComponent)
-			itemComp := ComponentType[*Item](entity, ItemComponent)
+			itemName := GetComponentType[*Name](entity, nameComponent)
+			itemComp := GetComponentType[*Item](entity, ItemComponent)
 
 			if itemComp.HasAllEffects(itemPropertiesFilter...) {
 
@@ -119,8 +119,8 @@ func (inv *Inventory) GetInventoryForDisplay(indicesToSelect []int, itemProperti
 	} else {
 		for _, index := range indicesToSelect {
 			entity := inv.InventoryContent[index]
-			itemName := ComponentType[*Name](entity, nameComponent)
-			itemComp := ComponentType[*Item](entity, ItemComponent)
+			itemName := GetComponentType[*Name](entity, nameComponent)
+			itemComp := GetComponentType[*Item](entity, ItemComponent)
 
 			if itemComp.HasAllEffects(itemPropertiesFilter...) {
 				inventoryItems = append(inventoryItems, InventoryListEntry{

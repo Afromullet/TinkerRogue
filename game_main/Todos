@@ -1,17 +1,70 @@
-Implement Throwing Range. The player needs some sort of indication of how far they can throw
 
-Add Creature Speed so sticky effect works
+
+___Throwing___
+
+* Implement Throwing Range. Player needs indication of how far they can throw
+
+* Miss chance - tile isn't always hit
+
+
+
+___Movement___
+
+* Create creatures with different sprites to make it easier to test movement.
+
+* Add Movement Speed so that sticky effect works
+
+* Add Keep Distance movement - Move within N Square
+
+* Add Pack Movement - Only approach if N mothers are within r distance to the player
+
+* Hit and Run - Attack then flee
+
+* Fix bug that causes a creature to teleport if it tries to move into a blocked spot
+
+___Monster Bevavior____
+
+* Allow creatures to attack
+
+* Monster can chose to melee attack, range attack, or throw
+
+___Randomness___
+
+* Item Spawning - Determine where to spawn items and spawn with random properties
+
+* Creature Spawning - Spawn during map gen and when out of 
+
+* Damage - Attack damage does damage within a range rather than one set number
+
+
+___Combat___
+
+* Add dodge, protection, and AC to armor
+
+* Roll to attack
+
+* Add ranged attacks
+
+
+___Component___
+
+* Better organization of components and compontent initializaiton. Currently it's littered through the files
+
+___Weapon and Armor___
+
+* Determine whether I want to treat weapon and armor as an Item or have them as their own thing
+
+___Ranged Weapons___
+
+* Create ranged weapons
+* Allow player to select targets
+
+___Other___
 
 Decouple functions which take g *Game as input
 
-Fix bug that causes a creature to teleport if it tries to move into a blocked spot
-
-Item and Creature Spawning
 
 Effect Stacking
 
-Removing Effects when duration <= 0 - Done
 
-Out of bound shape issue - Done
 
-Allow creatures to attack

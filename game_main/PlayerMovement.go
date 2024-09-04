@@ -36,6 +36,10 @@ func PlayerActions(g *Game) {
 		x = 1
 	}
 
+	if inpututil.IsKeyJustReleased(ebiten.KeyK) {
+		UpdateAttributes(g.playerData.PlayerEntity)
+	}
+
 	if inpututil.IsKeyJustReleased(ebiten.KeyG) {
 
 		log.Print("Press G")

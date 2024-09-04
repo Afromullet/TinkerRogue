@@ -4,12 +4,25 @@ import (
 	"github.com/bytearena/ecs"
 )
 
+var simpleWander *ecs.Component
+var noMove *ecs.Component
+var goToPlayer *ecs.Component
+
+type SimpleWander struct {
+}
+
+type NoMovement struct {
+}
+
+type GoToPlayerMovement struct {
+}
+
 // Select a random spot to wander to and builds a new path when arriving at the position
 func SimpleWanderAction(g *Game, e *ecs.Entity) {
 
-	creature := ComponentType[*Creature](e, creature)
+	creature := GetComponentType[*Creature](e, creature)
 
-	creaturePosition := ComponentType[*Position](e, position)
+	creaturePosition := GetComponentType[*Position](e, position)
 
 	randomPos := GetRandomBetween(0, len(validPositions.positions))
 	endPos := validPositions.Get(randomPos)
@@ -32,8 +45,8 @@ func NoMoveAction(g *Game, e *ecs.Entity) {
 
 func GoToPlayerMoveAction(g *Game, e *ecs.Entity) {
 
-	creature := ComponentType[*Creature](e, creature)
-	creaturePosition := ComponentType[*Position](e, position)
+	creature := GetComponentType[*Creature](e, creature)
+	creaturePosition := GetComponentType[*Position](e, position)
 	creature.Path = creaturePosition.BuildPath(g, g.playerData.position)
 	creature.UpdatePosition(g, creaturePosition)
 

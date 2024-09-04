@@ -1,12 +1,11 @@
 package main
 
 import (
-	"log"
+	"fmt"
 	"math"
 
 	"github.com/bytearena/ecs"
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 )
 
 /*
@@ -16,13 +15,11 @@ var position *ecs.Component
 var renderable *ecs.Component
 var nameComponent *ecs.Component
 
-var healthComponent *ecs.Component
+var attributeComponent *ecs.Component
 var creature *ecs.Component
-var simpleWander *ecs.Component
-var noMove *ecs.Component
-var goToPlayer *ecs.Component
 
 var WeaponComponent *ecs.Component
+var ArmorComponent *ecs.Component
 var InventoryComponent *ecs.Component
 var userMessage *ecs.Component
 
@@ -63,26 +60,72 @@ type UserMessage struct {
 	GameStateMessage string
 }
 
-type SimpleWander struct {
-}
-
-type NoMovement struct {
-}
-
-type GoToPlayerMovement struct {
-}
-
-type Health struct {
-	MaxHealth     int
-	CurrentHealth int
-}
-
 type Weapon struct {
-	Damage int
+	MinDamage int
+	MaxDamage int
+}
+
+func (w Weapon) CalculateDamage() int {
+
+	return GetRandomBetween(w.MinDamage, w.MaxDamage)
+
+}
+
+type Armor struct {
+	ArmorClass  int
+	Protection  int
+	DodgeChance float32
+}
+
+func NewArmor(ac, prot int, dodge float32) Armor {
+
+	return Armor{
+		ArmorClass:  ac,
+		Protection:  prot,
+		DodgeChance: dodge,
+	}
+
+}
+
+type Attributes struct {
+	MaxHealth        int
+	CurrentHealth    int
+	AttackBonus      int
+	BaseArmorClass   int
+	BaseProteciton   int
+	BaseDodgeChange  float32
+	TotalArmorClass  int
+	TotalProtection  int
+	TotalDodgeChance float32
+}
+
+func UpdateAttributes(e *ecs.Entity) {
+
+	attr := GetComponentType[*Attributes](e, attributeComponent)
+
+	armor := GetComponentType[*Armor](e, ArmorComponent)
+
+	if armor != nil {
+		attr.TotalArmorClass = attr.BaseArmorClass + armor.ArmorClass
+		attr.TotalProtection = attr.BaseProteciton + armor.Protection
+		attr.TotalDodgeChance = attr.BaseDodgeChange + armor.DodgeChance
+
+	}
+
+	fmt.Println("Printing attr", attr.TotalArmorClass, attr.TotalProtection, attr.TotalDodgeChance)
+
 }
 
 // A wrapper around the ECS libraries GetComponentData.
-func ComponentType[T any](entity *ecs.Entity, component *ecs.Component) T {
+func GetComponentType[T any](entity *ecs.Entity, component *ecs.Component) T {
+
+	defer func() {
+		if r := recover(); r != nil {
+
+			fmt.Println("Error in passing the component type. Component type must match struct.")
+
+		}
+	}()
 
 	if c, ok := entity.GetComponentData(component); ok {
 		return c.(T)
@@ -106,8 +149,11 @@ func InitializeECS(g *Game) {
 
 	InventoryComponent = manager.NewComponent()
 
-	healthComponent = manager.NewComponent()
+	attributeComponent = manager.NewComponent()
 	userMessage = manager.NewComponent()
+
+	WeaponComponent = manager.NewComponent()
+	ArmorComponent = manager.NewComponent()
 
 	renderables := ecs.BuildTag(renderable, position)
 	tags["renderables"] = renderables
@@ -129,57 +175,7 @@ func InitializeCreatureComponents(manager *ecs.Manager, tags map[string]ecs.Tag)
 	noMove = manager.NewComponent()
 	goToPlayer = manager.NewComponent()
 
-	creatures := ecs.BuildTag(creature, position, healthComponent)
+	creatures := ecs.BuildTag(creature, position, attributeComponent)
 	tags["monsters"] = creatures
-
-}
-
-func InitializePlayerData(g *Game) {
-
-	player = g.World.NewComponent()
-
-	playerImg, _, err := ebitenutil.NewImageFromFile("assets/creatures/player1.png")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	playerEntity := g.World.NewEntity().
-		AddComponent(player, &Player{}).
-		AddComponent(renderable, &Renderable{
-			Image:   playerImg,
-			Visible: true,
-		}).
-		AddComponent(position, &Position{
-			X: 40,
-			Y: 45,
-		}).
-		AddComponent(InventoryComponent, &Inventory{
-			InventoryContent: make([]*ecs.Entity, 0),
-		}).
-		AddComponent(healthComponent, &Health{
-			MaxHealth:     5,
-			CurrentHealth: 5,
-		}).AddComponent(userMessage, &UserMessage{
-		AttackMessage:    "",
-		GameStateMessage: "",
-	})
-
-	players := ecs.BuildTag(player, position, InventoryComponent)
-	g.WorldTags["players"] = players
-
-	g.playerData = PlayerData{}
-
-	g.playerData.PlayerEntity = playerEntity
-
-	//Don't want to Query for the player position every time, so we're storing it
-
-	startPos := ComponentType[*Position](g.playerData.PlayerEntity, position)
-	startPos.X = g.gameMap.StartingPosition().X
-	startPos.Y = g.gameMap.StartingPosition().Y
-
-	inventory := ComponentType[*Inventory](g.playerData.PlayerEntity, InventoryComponent)
-
-	g.playerData.position = startPos
-	g.playerData.inventory = inventory
 
 }
