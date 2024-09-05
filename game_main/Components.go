@@ -11,12 +11,12 @@ import (
 /*
  */
 
-var position *ecs.Component
-var renderable *ecs.Component
+var PositionComponent *ecs.Component
+var RenderableComponent *ecs.Component
 var nameComponent *ecs.Component
 
-var attributeComponent *ecs.Component
-var creature *ecs.Component
+var AttributeComponent *ecs.Component
+var CreatureComponent *ecs.Component
 
 var WeaponComponent *ecs.Component
 var RangedWeaponComponent *ecs.Component
@@ -48,7 +48,7 @@ func (p *Position) InRange(other *Position, distance int) bool {
 
 }
 
-// Creates a slice of Positions which represent a path build with A-Star
+// Creates a slice of Positions from p to other. Uses AStar to build the path
 func (p *Position) BuildPath(g *Game, other *Position) []Position {
 
 	astar := AStar{}
@@ -106,7 +106,7 @@ func (r RangedWeapon) GetTargets(g *Game) []*ecs.Entity {
 	//TODO, this will be slow in case there are a lot of creatures
 	for _, c := range g.World.Query(g.WorldTags["monsters"]) {
 
-		curPos := c.Components[position].(*Position)
+		curPos := c.Components[PositionComponent].(*Position)
 
 		for _, p := range pos {
 			if curPos.IsEqual(&p) {
@@ -126,16 +126,6 @@ type Armor struct {
 	DodgeChance float32
 }
 
-func NewArmor(ac, prot int, dodge float32) Armor {
-
-	return Armor{
-		ArmorClass:  ac,
-		Protection:  prot,
-		DodgeChance: dodge,
-	}
-
-}
-
 type Attributes struct {
 	MaxHealth        int
 	CurrentHealth    int
@@ -150,7 +140,7 @@ type Attributes struct {
 
 func UpdateAttributes(e *ecs.Entity) {
 
-	attr := GetComponentType[*Attributes](e, attributeComponent)
+	attr := GetComponentType[*Attributes](e, AttributeComponent)
 
 	armor := GetComponentType[*Armor](e, ArmorComponent)
 
@@ -160,8 +150,6 @@ func UpdateAttributes(e *ecs.Entity) {
 		attr.TotalDodgeChance = attr.BaseDodgeChange + armor.DodgeChance
 
 	}
-
-	fmt.Println("Printing attr", attr.TotalArmorClass, attr.TotalProtection, attr.TotalDodgeChance)
 
 }
 
@@ -186,26 +174,36 @@ func GetComponentType[T any](entity *ecs.Entity, component *ecs.Component) T {
 
 }
 
+// The functions which are a GetComponentType wrapper get called frequency
+func GetPosition(e *ecs.Entity) *Position {
+	return GetComponentType[*Position](e, PositionComponent)
+}
+
+// This gets called so often that it might as well be a function
+func GetItem(e *ecs.Entity) *Item {
+	return GetComponentType[*Item](e, ItemComponent)
+}
+
 // todo Will be refactored. Don't get distracted by this at the moment.
 // ALl of the initialziation will have to be handled differently - since
 func InitializeECS(g *Game) {
 	tags := make(map[string]ecs.Tag)
 	manager := ecs.NewManager()
-	position = manager.NewComponent()
-	renderable = manager.NewComponent()
+	PositionComponent = manager.NewComponent()
+	RenderableComponent = manager.NewComponent()
 
 	nameComponent = manager.NewComponent()
 
 	InventoryComponent = manager.NewComponent()
 
-	attributeComponent = manager.NewComponent()
+	AttributeComponent = manager.NewComponent()
 	userMessage = manager.NewComponent()
 
 	WeaponComponent = manager.NewComponent()
 	RangedWeaponComponent = manager.NewComponent()
 	ArmorComponent = manager.NewComponent()
 
-	renderables := ecs.BuildTag(renderable, position)
+	renderables := ecs.BuildTag(RenderableComponent, PositionComponent)
 	tags["renderables"] = renderables
 
 	messengers := ecs.BuildTag(userMessage)
@@ -220,12 +218,15 @@ func InitializeECS(g *Game) {
 
 func InitializeCreatureComponents(manager *ecs.Manager, tags map[string]ecs.Tag) {
 
-	creature = manager.NewComponent()
+	CreatureComponent = manager.NewComponent()
 	simpleWander = manager.NewComponent()
 	noMove = manager.NewComponent()
-	goToPlayer = manager.NewComponent()
+	goToEntity = manager.NewComponent()
 
-	creatures := ecs.BuildTag(creature, position, attributeComponent)
+	approachAndAttack = manager.NewComponent()
+	creatureRangedAttack = manager.NewComponent()
+
+	creatures := ecs.BuildTag(CreatureComponent, PositionComponent, AttributeComponent)
 	tags["monsters"] = creatures
 
 }

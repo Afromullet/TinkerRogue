@@ -74,7 +74,7 @@ func NewGame() *Game {
 	//g.craftingUI.SetCraftingWindowLocation(g.screenData.screenWidth/2, g.screenData.screenWidth/2)
 
 	CreateTestItems(g.World, g.WorldTags, &g.gameMap)
-	CreateTestMonsters(g.World, &g.gameMap)
+	CreateTestMonsters(g, g.World, &g.gameMap)
 	SetupPlayerForTesting(g)
 	UpdateContentsForTest(g)
 
@@ -96,7 +96,7 @@ func (g *Game) Update() error {
 		PlayerActions(g)
 	}
 	if g.Turn == MonsterTurn {
-		MonsterActions(g)
+		MonsterSystems(g)
 	}
 
 	return nil

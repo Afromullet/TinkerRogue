@@ -80,16 +80,17 @@ func CreateTestItems(manager *ecs.Manager, tags map[string]ecs.Tag, gameMap *Gam
 
 }
 
-func CreateTestMonsters(manager *ecs.Manager, gameMap *GameMap) {
+func CreateTestMonsters(g *Game, manager *ecs.Manager, gameMap *GameMap) {
 
 	x, y := gameMap.Rooms[0].Center()
 
-	CreateMonster(manager, gameMap, x, y+1)
-	CreateMonster(manager, gameMap, x+1, y)
-	CreateMonster(manager, gameMap, x+1, y+1)
-	CreateMonster(manager, gameMap, x+1, y+2)
-	CreateMonster(manager, gameMap, x+2, y+1)
-	CreateMonster(manager, gameMap, x+2, y+2)
+	c := CreateMonster(g, manager, gameMap, x, y+1)
+	c.AddComponent(approachAndAttack, &ApproachAndAttack{})
+	CreateMonster(g, manager, gameMap, x+1, y)
+	CreateMonster(g, manager, gameMap, x+1, y+1)
+	CreateMonster(g, manager, gameMap, x+1, y+2)
+	CreateMonster(g, manager, gameMap, x+2, y+1)
+	CreateMonster(g, manager, gameMap, x+2, y+2)
 
 	//CreateMoreTestMonsters(manager, gameMap)
 
@@ -111,75 +112,24 @@ func CreateMoreTestMonsters(manager *ecs.Manager, gameMap *GameMap) {
 			Y: y}
 
 		manager.NewEntity().
-			AddComponent(creature, &Creature{
+			AddComponent(CreatureComponent, &Creature{
 				Path: make([]Position, 0),
 			}).
-			AddComponent(renderable, &Renderable{
+			AddComponent(RenderableComponent, &Renderable{
 				Image:   elfImg,
 				Visible: true,
 			}).
-			AddComponent(position, &pos).
-			AddComponent(goToPlayer, &GoToPlayerMovement{}).
-			AddComponent(attributeComponent, &Attributes{MaxHealth: 5, CurrentHealth: 5}).AddComponent(userMessage, &UserMessage{
+			AddComponent(PositionComponent, &pos).
+			AddComponent(goToEntity, &GoToEntityMovement{}).
+			AddComponent(AttributeComponent, &Attributes{MaxHealth: 5, CurrentHealth: 5}).AddComponent(userMessage, &UserMessage{
 			AttackMessage:    "",
 			GameStateMessage: "",
 		})
 	}
 
-	/*
-		//Don't create a creature in the starting room
-		for _, r := range gameMap.Rooms[3:4] {
-
-			x, y := r.Center()
-			pos := Position{
-				X: x,
-				Y: y}
-
-			manager.NewEntity().
-				AddComponent(creature, &Creature{}).
-				AddComponent(renderable, &Renderable{
-					Image:   elfImg,
-					Visible: true,
-				}).
-				AddComponent(position, &pos).
-				AddComponent(noMove, &NoMovement{}).
-				AddComponent(healthComponent, &Health{
-					MaxHealth:     5,
-					CurrentHealth: 5}).AddComponent(userMessage, &UserMessage{
-				AttackMessage:    "",
-				GameStateMessage: "",
-			})
-		}
-	*/
-	/*
-		//Don't create a creature in the starting room
-		for _, r := range gameMap.Rooms[4:] {
-
-			x, y := r.Center()
-			pos := Position{
-				X: x,
-				Y: y}
-
-			manager.NewEntity().
-				AddComponent(creature, &Creature{}).
-				AddComponent(renderable, &Renderable{
-					Image:   elfImg,
-					Visible: true,
-				}).
-				AddComponent(position, &pos).
-				AddComponent(goToPlayer, &GoToPlayerMovement{}).
-				AddComponent(healthComponent, &Health{
-					MaxHealth:     5,
-					CurrentHealth: 5}).AddComponent(userMessage, &UserMessage{
-				AttackMessage:    "",
-				GameStateMessage: "",
-			})
-		}
-	*/
-
 }
 
-func CreateMonster(manager *ecs.Manager, gameMap *GameMap, x, y int) *ecs.Entity {
+func CreateMonster(g *Game, manager *ecs.Manager, gameMap *GameMap, x, y int) *ecs.Entity {
 
 	elfImg, _, err := ebitenutil.NewImageFromFile("assets/creatures/elf.png")
 	if err != nil {
@@ -188,24 +138,29 @@ func CreateMonster(manager *ecs.Manager, gameMap *GameMap, x, y int) *ecs.Entity
 
 	ind := IndexFromXY(x, y)
 	gameMap.Tiles[ind].Blocked = true
-	armor := NewArmor(15, 3, 30)
+
 	ent := manager.NewEntity().
-		AddComponent(creature, &Creature{
+		AddComponent(CreatureComponent, &Creature{
 			Path: make([]Position, 0),
 		}).
-		AddComponent(renderable, &Renderable{
+		AddComponent(RenderableComponent, &Renderable{
 			Image:   elfImg,
 			Visible: true,
 		}).
-		AddComponent(position, &Position{
+		AddComponent(PositionComponent, &Position{
 			X: x,
 			Y: y,
 		}).
-		AddComponent(attributeComponent, &Attributes{MaxHealth: 5, CurrentHealth: 5}).
+		AddComponent(AttributeComponent, &Attributes{MaxHealth: 5, CurrentHealth: 5}).
 		AddComponent(userMessage, &UserMessage{
 			AttackMessage:    "",
 			GameStateMessage: "",
-		}).AddComponent(ArmorComponent, &armor)
+		}).
+		AddComponent(ArmorComponent, &Armor{15, 3, 30}).
+		AddComponent(WeaponComponent, &Weapon{
+			MinDamage: 3,
+			MaxDamage: 5,
+		})
 
 	UpdateAttributes(ent)
 
@@ -217,7 +172,7 @@ func UpdateContentsForTest(g *Game) {
 
 	for _, item := range g.World.Query(g.WorldTags["items"]) {
 
-		item_pos := item.Components[position].(*Position)
+		item_pos := item.Components[PositionComponent].(*Position)
 
 		g.gameMap.AddEntityToTile(item.Entity, item_pos)
 		log.Print("Item Pos: \n")
@@ -231,7 +186,7 @@ func GetTileInfo(g *Game, pos *Position, player *Player) {
 
 	for _, item := range g.World.Query(g.WorldTags["items"]) {
 
-		item_pos := item.Components[position].(*Position)
+		item_pos := item.Components[PositionComponent].(*Position)
 		log.Print("Item Pos: \n")
 		log.Print(item_pos)
 

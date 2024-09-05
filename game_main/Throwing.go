@@ -17,8 +17,8 @@ func ApplyThrowable(g *Game, item *Item, throwerPos *Position) {
 	//TODO, this will be slow in case there are a lot of creatures
 	for _, c := range g.World.Query(g.WorldTags["monsters"]) {
 
-		curPos := c.Components[position].(*Position)
-		crea := c.Components[creature].(*Creature)
+		curPos := c.Components[PositionComponent].(*Position)
+		crea := c.Components[CreatureComponent].(*Creature)
 
 		for _, p := range pos {
 			if curPos.IsEqual(&p) && curPos.InRange(throwerPos, t.ThrowingRange) {
@@ -72,30 +72,6 @@ func DrawThrowableAOE(g *Game) {
 
 }
 
-// Old function that uses only one color
-func DrawThrowableAOE2(g *Game) {
-
-	cursorX, cursorY := ebiten.CursorPosition()
-
-	s := g.playerData.ThrowingAOEShape
-	var indices []int
-	if cursorX != prevCursorX || cursorY != prevCursorY {
-
-		if prevCursorX != 0 && prevCursorY != 0 {
-			g.gameMap.ApplyColorMatrix(PrevThrowInds, NewEmptyMatrix())
-
-		}
-
-	}
-
-	s.UpdatePosition(cursorX, cursorY)
-	indices = s.GetIndices()
-	cm := ColorMatrix{0, 1, 0, 0.5, true}
-	g.gameMap.ApplyColorMatrix(indices, cm)
-	prevCursorX, prevCursorY = cursorX, cursorY
-	PrevThrowInds = indices
-
-}
 func HandlePlayerThrowable(g *Game) {
 
 	if g.IsThrowableItemSelected() {
@@ -108,10 +84,6 @@ func HandlePlayerThrowable(g *Game) {
 		if inpututil.IsKeyJustReleased(ebiten.KeyT) {
 
 			log.Println("Throwing item")
-			//log.Println("Removing throwable")
-			//g.gameMap.ApplyColorMatrix(previousIndices, NewEmptyMatrix())
-			//g.SetThrowableItemSelected(false)
-			////HandleThrowable(g)
 
 			g.playerData.ThrowPreparedItem()
 
@@ -125,7 +97,6 @@ func HandlePlayerThrowable(g *Game) {
 			log.Println("Removing throwable")
 			g.gameMap.ApplyColorMatrix(PrevThrowInds, NewEmptyMatrix())
 			g.SetThrowableItemSelected(false)
-			////HandleThrowable(g)
 
 		}
 	}

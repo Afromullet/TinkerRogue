@@ -46,7 +46,8 @@ func (pl *PlayerData) GetPlayerInventory() *Inventory {
 func (pl *PlayerData) PrepareThrowable(itemEntity *ecs.Entity, index int) {
 
 	pl.SelectedThrowable = itemEntity
-	item := GetComponentType[*Item](pl.SelectedThrowable, ItemComponent)
+
+	item := GetItem(pl.SelectedThrowable)
 	pl.ThrowableItem = item
 
 	t := item.ItemEffect(THROWABLE_NAME).(*Throwable)
@@ -99,28 +100,28 @@ func InitializePlayerData(g *Game) {
 	attr.CurrentHealth = 5
 	attr.AttackBonus = 5
 
-	armor := NewArmor(1, 5, 50)
+	armor := Armor{1, 5, 50}
 
 	playerEntity := g.World.NewEntity().
 		AddComponent(player, &Player{}).
-		AddComponent(renderable, &Renderable{
+		AddComponent(RenderableComponent, &Renderable{
 			Image:   playerImg,
 			Visible: true,
 		}).
-		AddComponent(position, &Position{
+		AddComponent(PositionComponent, &Position{
 			X: 40,
 			Y: 45,
 		}).
 		AddComponent(InventoryComponent, &Inventory{
 			InventoryContent: make([]*ecs.Entity, 0),
 		}).
-		AddComponent(attributeComponent, &attr).
+		AddComponent(AttributeComponent, &attr).
 		AddComponent(userMessage, &UserMessage{
 			AttackMessage:    "",
 			GameStateMessage: "",
 		}).AddComponent(ArmorComponent, &armor)
 
-	players := ecs.BuildTag(player, position, InventoryComponent)
+	players := ecs.BuildTag(player, PositionComponent, InventoryComponent)
 	g.WorldTags["players"] = players
 
 	g.playerData = PlayerData{}
@@ -129,7 +130,7 @@ func InitializePlayerData(g *Game) {
 
 	//Don't want to Query for the player position every time, so we're storing it
 
-	startPos := GetComponentType[*Position](g.playerData.PlayerEntity, position)
+	startPos := GetComponentType[*Position](g.playerData.PlayerEntity, PositionComponent)
 	startPos.X = g.gameMap.StartingPosition().X
 	startPos.Y = g.gameMap.StartingPosition().Y
 

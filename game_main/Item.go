@@ -148,11 +148,11 @@ func CreateItem(manager *ecs.Manager, name string, pos Position, imagePath strin
 	}
 
 	itemEntity := manager.NewEntity().
-		AddComponent(renderable, &Renderable{
+		AddComponent(RenderableComponent, &Renderable{
 			Image:   img,
 			Visible: true,
 		}).
-		AddComponent(position, &Position{
+		AddComponent(PositionComponent, &Position{
 			X: pos.X,
 			Y: pos.Y,
 		}).

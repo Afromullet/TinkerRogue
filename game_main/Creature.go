@@ -4,17 +4,7 @@ import (
 	"github.com/bytearena/ecs"
 )
 
-// OLD COMMENTS
-// EffectsToApply are the "components" that will be applied to a creature
-// Currently these are : Itemcomponents and damage
-
-// NEW COMMENTS
-// EffectsOnCreature is an Entity so that we can access the underlying
-// Effect Components. The Effect Components are ItemProperties such as
-// Burning, Sticky, Freezing, ETC
-// Note that because we're copying over the ItemProperties
-// We're also copying some properties that don't mean anything to the creature
-// We will worry about that later
+// EffectsToApply trigger every turn
 type Creature struct {
 	Path           []Position
 	EffectsToApply []Effects
@@ -29,12 +19,11 @@ func (c *Creature) AddEffects(effects *ecs.Entity) {
 
 }
 
-// The effect takes an ecs.QueryResult and chooses how the Effect
-// impacts the Components. For example, the Burning Effect uses the query rtesult
-// To get the creatures health and apply DOT damage.
+// Gets called in MonsterSystems, which queries the ECS manager and returns query results containing all monsters
+// Querying returns an ecs.queryResult, hence the parameter.
 func ApplyEffects(c *ecs.QueryResult) {
 
-	creature := c.Components[creature].(*Creature)
+	creature := c.Components[CreatureComponent].(*Creature)
 	num_effects := len(creature.EffectsToApply)
 
 	if num_effects == 0 {
@@ -65,7 +54,6 @@ func ApplyEffects(c *ecs.QueryResult) {
 // Get the next position on the path and pops the position from the path.
 // Passing currentPosition so we can stand in place when there is no path
 // TODO needs to be improved. This will cause a creature to "teleport" if the path is blocked
-// Since we're removing the position from the path without any conditions
 func (c *Creature) UpdatePosition(g *Game, currentPosition *Position) {
 
 	p := currentPosition
@@ -98,13 +86,13 @@ func (c *Creature) UpdatePosition(g *Game, currentPosition *Position) {
 
 }
 
-func MonsterActions(g *Game) {
+func MonsterSystems(g *Game) {
 
 	for _, c := range g.World.Query(g.WorldTags["monsters"]) {
 
 		ApplyEffects(c)
-
-		h := GetComponentType[*Attributes](c.Entity, attributeComponent)
+		CreatureAttackSystem(c, g)
+		h := GetComponentType[*Attributes](c.Entity, AttributeComponent)
 
 		if h.CurrentHealth <= 0 {
 			g.World.DisposeEntity(c.Entity)

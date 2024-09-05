@@ -49,6 +49,9 @@ ___Weapon and Armor___
 
 * Equipping weapons and armor
 
+___Consumables___
+
+* Add consumables
 
 
 ___Other___
@@ -70,7 +73,7 @@ Might need to index instead
 
 * Throwing and shooting passes around lots of state. Refactor it. Especially in the way we use PlayerData. Also anything related to the drawing
 
-
+* Create Shorter names for types and functions with long names
 
 
 
@@ -119,5 +122,5 @@ ___Other___
 * The targeting AOE changes color if something is out of range. If the center of the shape is in range, then everything is considered in range. Determine
 If that's something you want to change - Done. 
 
-
+* Rename components and component structs. Hard to determine which type is what since in some cases the component and struct are too close in name - Done
 

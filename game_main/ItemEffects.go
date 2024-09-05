@@ -159,7 +159,7 @@ func (b *Burning) ApplyToCreature(c *ecs.QueryResult) {
 
 	b.MainProps.Duration -= 1
 
-	h := GetComponentType[*Attributes](c.Entity, attributeComponent)
+	h := GetComponentType[*Attributes](c.Entity, AttributeComponent)
 
 	h.CurrentHealth -= b.Temperature
 
@@ -297,7 +297,7 @@ func InitializeItemComponents(manager *ecs.Manager, tags map[string]ecs.Tag) {
 	AllItemEffects = append(AllItemEffects, FreezingComponent)
 	AllItemEffects = append(AllItemEffects, ThrowableComponent)
 
-	items := ecs.BuildTag(ItemComponent, position) //todo add all the tags
+	items := ecs.BuildTag(ItemComponent, PositionComponent) //todo add all the tags
 	tags["items"] = items
 
 	//Can I use this instead of the AllItemproperties slice? Todo see later if you ran replace it

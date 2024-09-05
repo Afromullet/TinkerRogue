@@ -6,8 +6,8 @@ import (
 
 func ProcessRenderables(g *Game, gameMap GameMap, screen *ebiten.Image) {
 	for _, result := range g.World.Query(g.WorldTags["renderables"]) {
-		pos := result.Components[position].(*Position)
-		img := result.Components[renderable].(*Renderable).Image
+		pos := result.Components[PositionComponent].(*Position)
+		img := result.Components[RenderableComponent].(*Renderable).Image
 
 		if gameMap.PlayerVisible.IsVisible(pos.X, pos.Y) {
 			index := IndexFromXY(pos.X, pos.Y)

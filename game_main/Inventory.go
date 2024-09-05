@@ -32,13 +32,15 @@ func (inv *Inventory) AddItem(entityToAdd *ecs.Entity) {
 
 		if itemName == newItemName {
 			exists = true
-			GetComponentType[*Item](entity, ItemComponent).IncrementCount()
+
+			GetItem(entity).IncrementCount()
+
 			break
 		}
 	}
 
 	if !exists {
-		itemComp := GetComponentType[*Item](entityToAdd, ItemComponent)
+		itemComp := GetItem(entityToAdd)
 		itemComp.Count = 1
 		inv.InventoryContent = append(inv.InventoryContent, entityToAdd)
 
@@ -61,7 +63,7 @@ func (inv *Inventory) RemoveItem(index int) {
 
 	if err == nil {
 
-		itemComp := GetComponentType[*Item](item, ItemComponent)
+		itemComp := GetItem(item)
 
 		itemComp.DecrementCount()
 
@@ -84,7 +86,7 @@ func (inv *Inventory) EffectNames(index int) ([]string, error) {
 		return nil, fmt.Errorf("failed to get item by index: %w", err)
 	}
 
-	itemComp := GetComponentType[*Item](entity, ItemComponent)
+	itemComp := GetItem(entity)
 
 	if itemComp == nil {
 		return nil, fmt.Errorf("failed to get component data: %w", err)
@@ -99,13 +101,13 @@ func (inv *Inventory) EffectNames(index int) ([]string, error) {
 // The list contains the index in the inventory, the name, and the count of the item.
 func (inv *Inventory) GetInventoryForDisplay(indicesToSelect []int, itemPropertiesFilter ...Effects) []any {
 
-	inventoryItems := make([]any, 0, 0)
+	inventoryItems := make([]any, 0)
 
 	if len(indicesToSelect) == 0 {
 		for index, entity := range inv.InventoryContent {
 
 			itemName := GetComponentType[*Name](entity, nameComponent)
-			itemComp := GetComponentType[*Item](entity, ItemComponent)
+			itemComp := GetItem(entity)
 
 			if itemComp.HasAllEffects(itemPropertiesFilter...) {
 
@@ -120,7 +122,7 @@ func (inv *Inventory) GetInventoryForDisplay(indicesToSelect []int, itemProperti
 		for _, index := range indicesToSelect {
 			entity := inv.InventoryContent[index]
 			itemName := GetComponentType[*Name](entity, nameComponent)
-			itemComp := GetComponentType[*Item](entity, ItemComponent)
+			itemComp := GetItem(entity)
 
 			if itemComp.HasAllEffects(itemPropertiesFilter...) {
 				inventoryItems = append(inventoryItems, InventoryListEntry{

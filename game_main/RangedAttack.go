@@ -58,9 +58,6 @@ func HandlePlayerRangedAttack(g *Game) {
 			g.playerData.isTargeting = false
 			g.gameMap.ApplyColorMatrix(PrevRangedAttInds, NewEmptyMatrix())
 			//log.Println("Removing throwable")
-			//g.gameMap.ApplyColorMatrix(PrevThrowInds, NewEmptyMatrix())
-			//g.SetThrowableItemSelected(false)
-			////HandleThrowable(g)
 
 		}
 

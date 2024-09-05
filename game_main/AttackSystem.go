@@ -39,8 +39,8 @@ func MeleeAttackSystem(g *Game, attackerPos *Position, defenderPos *Position) {
 
 	}
 
-	attAttr := GetComponentType[*Attributes](attacker, attributeComponent)
-	defAttr := GetComponentType[*Attributes](defender, attributeComponent)
+	attAttr := GetComponentType[*Attributes](attacker, AttributeComponent)
+	defAttr := GetComponentType[*Attributes](defender, AttributeComponent)
 
 	if weapon != nil && attAttr != nil && defAttr != nil {
 
@@ -70,9 +70,14 @@ func PerformAttack(g *Game, damage int, defender *ecs.Entity, defenderPos *Posit
 			}
 
 			defAttr.CurrentHealth -= totalDamage
+			fmt.Println("Remaining health ", defAttr.CurrentHealth)
 
+		} else {
+			fmt.Println("Dodged")
 		}
 
+	} else {
+		fmt.Println("Missed")
 	}
 
 	RemoveDeadEntity(g, defender, defAttr, defenderPos)
@@ -98,7 +103,7 @@ func RangedAttackSystem(g *Game, attackerPos *Position) {
 		weapon = g.playerData.GetPlayerRangedWeapon()
 	}
 
-	attAttr := GetComponentType[*Attributes](attacker, attributeComponent)
+	attAttr := GetComponentType[*Attributes](attacker, AttributeComponent)
 
 	if weapon != nil {
 
@@ -107,11 +112,11 @@ func RangedAttackSystem(g *Game, attackerPos *Position) {
 		var defAttr *Attributes
 		for _, t := range targets {
 
-			defenderPos := GetComponentType[*Position](t, position)
+			defenderPos := GetPosition(t)
 			if attackerPos.InRange(defenderPos, weapon.ShootingRange) {
 				fmt.Println("Shooting")
 
-				defAttr = GetComponentType[*Attributes](t, attributeComponent)
+				defAttr = GetComponentType[*Attributes](t, AttributeComponent)
 				PerformAttack(g, weapon.CalculateDamage(), t, defenderPos, attAttr, defAttr)
 			} else {
 				fmt.Println("Out of range")
@@ -126,8 +131,12 @@ func RangedAttackSystem(g *Game, attackerPos *Position) {
 }
 
 // Todo need to handle player death differently
+// TOdo can also just call GetPosition instead of passing defenderPos
 func RemoveDeadEntity(g *Game, defender *ecs.Entity, defAttr *Attributes, defenderPos *Position) {
-	if defAttr.CurrentHealth <= 0 {
+
+	if g.playerData.position.IsEqual(defenderPos) {
+		fmt.Println("Player dead")
+	} else if defAttr.CurrentHealth <= 0 {
 		//Todo removing an entity is really closely coupled to teh map right now.
 		//Do it differently in the future
 		index := IndexFromXY(defenderPos.X, defenderPos.Y)
@@ -143,7 +152,7 @@ func GetCreatureAtPosition(g *Game, pos *Position) *ecs.Entity {
 	var e *ecs.Entity = nil
 	for _, c := range g.World.Query(g.WorldTags["monsters"]) {
 
-		curPos := c.Components[position].(*Position)
+		curPos := c.Components[PositionComponent].(*Position)
 
 		if pos.IsEqual(curPos) {
 			e = c.Entity
