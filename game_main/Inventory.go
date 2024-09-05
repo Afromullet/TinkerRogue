@@ -99,7 +99,7 @@ func (inv *Inventory) EffectNames(index int) ([]string, error) {
 // The list contains the index in the inventory, the name, and the count of the item.
 func (inv *Inventory) GetInventoryForDisplay(indicesToSelect []int, itemPropertiesFilter ...Effects) []any {
 
-	inventoryItems := make([]any, 0, inventorySize)
+	inventoryItems := make([]any, 0, 0)
 
 	if len(indicesToSelect) == 0 {
 		for index, entity := range inv.InventoryContent {

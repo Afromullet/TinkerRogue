@@ -19,9 +19,13 @@ var attributeComponent *ecs.Component
 var creature *ecs.Component
 
 var WeaponComponent *ecs.Component
+var RangedWeaponComponent *ecs.Component
 var ArmorComponent *ecs.Component
 var InventoryComponent *ecs.Component
 var userMessage *ecs.Component
+
+// The ECS library returns pointers to the struct when querying it for components, so the Position methods take a pointer as input
+// Other than that, there's no reason for using pointers for the functions below.
 
 type Position struct {
 	X int
@@ -36,6 +40,12 @@ func (p *Position) ManhattanDistance(other *Position) int {
 	xDist := math.Abs(float64(p.X - other.X))
 	yDist := math.Abs(float64(p.Y - other.Y))
 	return int(xDist) + int(yDist)
+}
+
+func (p *Position) InRange(other *Position, distance int) bool {
+
+	return p.ManhattanDistance(other) <= distance
+
 }
 
 // Creates a slice of Positions which represent a path build with A-Star
@@ -69,6 +79,45 @@ func (w Weapon) CalculateDamage() int {
 
 	return GetRandomBetween(w.MinDamage, w.MaxDamage)
 
+}
+
+// TargetArea is the area the weapon covers
+// I.E, a pistol is just a 1 by 1 rectangle, a shotgun uses a cone, and so on
+type RangedWeapon struct {
+	MinDamage     int
+	MaxDamage     int
+	ShootingRange int
+	TargetArea    TileBasedShape
+}
+
+// todo add ammo to this
+func (r RangedWeapon) CalculateDamage() int {
+
+	return GetRandomBetween(r.MinDamage, r.MaxDamage)
+
+}
+
+// Gets all of the targets in the weapons AOE
+func (r RangedWeapon) GetTargets(g *Game) []*ecs.Entity {
+
+	pos := GetTilePositions(r.TargetArea)
+	targets := make([]*ecs.Entity, 0)
+
+	//TODO, this will be slow in case there are a lot of creatures
+	for _, c := range g.World.Query(g.WorldTags["monsters"]) {
+
+		curPos := c.Components[position].(*Position)
+
+		for _, p := range pos {
+			if curPos.IsEqual(&p) {
+				targets = append(targets, c.Entity)
+
+			}
+		}
+
+	}
+
+	return targets
 }
 
 type Armor struct {
@@ -153,6 +202,7 @@ func InitializeECS(g *Game) {
 	userMessage = manager.NewComponent()
 
 	WeaponComponent = manager.NewComponent()
+	RangedWeaponComponent = manager.NewComponent()
 	ArmorComponent = manager.NewComponent()
 
 	renderables := ecs.BuildTag(renderable, position)

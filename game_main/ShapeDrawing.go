@@ -40,7 +40,7 @@ func GetTilePositions(ts TileBasedShape) []Position {
 
 	for i, inds := range indices {
 
-		pos[i] = XYFromIndex(inds)
+		pos[i] = PositionFromIndex(inds)
 
 	}
 
@@ -56,15 +56,14 @@ type TileSquare struct {
 }
 
 func (s TileSquare) GetIndices() []int {
-	gd := NewScreenData()
+
 	halfSize := s.Size / 2
 	indices := make([]int, 0)
 
-	s.PixelX = s.PixelX / gd.TileWidth
-	s.PixelY = s.PixelY / gd.TileHeight
+	gridX, gridY := GridXYFromPixels(s.PixelX, s.PixelY)
 
-	for y := s.PixelY - halfSize; y <= s.PixelY+halfSize; y++ {
-		for x := s.PixelX - halfSize; x <= s.PixelX+halfSize; x++ {
+	for y := gridY - halfSize; y <= gridY+halfSize; y++ {
+		for x := gridX - halfSize; x <= gridX+halfSize; x++ {
 			if InBounds(x, y) {
 				index := IndexFromXY(x, y)
 				indices = append(indices, index)
@@ -101,10 +100,8 @@ type TileLine struct {
 
 func (l TileLine) GetIndices() []int {
 	indices := make([]int, 0)
-	gd := NewScreenData()
 
-	gridX := l.pixelX / gd.TileWidth
-	gridY := l.pixelY / gd.TileHeight
+	gridX, gridY := GridXYFromPixels(l.pixelX, l.pixelY)
 
 	for i := 0; i < l.length; i++ {
 		var x, y int
@@ -155,10 +152,8 @@ type TileCone struct {
 
 func (c TileCone) GetIndices() []int {
 	indices := make([]int, 0)
-	gd := NewScreenData()
 
-	gridX := c.pixelX / gd.TileWidth
-	gridY := c.pixelY / gd.TileHeight
+	gridX, gridY := GridXYFromPixels(c.pixelX, c.pixelY)
 
 	// Loop through each step of the cone's length
 	for i := 0; i < c.length; i++ {
@@ -226,10 +221,8 @@ type TileCircle struct {
 
 func (c TileCircle) GetIndices() []int {
 	indices := make([]int, 0)
-	gd := NewScreenData()
 
-	centerX := c.pixelX / gd.TileWidth
-	centerY := c.pixelY / gd.TileHeight
+	centerX, centerY := GridXYFromPixels(c.pixelX, c.pixelY)
 
 	for y := centerY - c.radius; y <= centerY+c.radius; y++ {
 		for x := centerX - c.radius; x <= centerX+c.radius; x++ {
@@ -273,13 +266,12 @@ func (r TileRectangle) GetIndices() []int {
 	indices := make([]int, 0)
 
 	// Convert pixel coordinates to grid coordinates (if necessary)
-	gd := NewScreenData()
-	pixelX := r.pixelX / gd.TileWidth
-	pixelY := r.pixelY / gd.TileHeight
+
+	gridX, gridY := GridXYFromPixels(r.pixelX, r.pixelY)
 
 	// Iterate through the width and height of the rectangle
-	for y := pixelY; y < pixelY+r.height; y++ {
-		for x := pixelX; x < pixelX+r.width; x++ {
+	for y := gridY; y < gridY+r.height; y++ {
+		for x := gridX; x < gridX+r.width; x++ {
 			if InBounds(x, y) {
 				index := IndexFromXY(x, y)
 				indices = append(indices, index)

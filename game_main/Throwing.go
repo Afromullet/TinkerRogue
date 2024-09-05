@@ -8,7 +8,7 @@ import (
 )
 
 // Applies the throwable
-func ApplyThrowable(g *Game, item *Item) {
+func ApplyThrowable(g *Game, item *Item, throwerPos *Position) {
 
 	t := item.ItemEffect(THROWABLE_NAME).(*Throwable)
 
@@ -21,7 +21,7 @@ func ApplyThrowable(g *Game, item *Item) {
 		crea := c.Components[creature].(*Creature)
 
 		for _, p := range pos {
-			if curPos.IsEqual(&p) {
+			if curPos.IsEqual(&p) && curPos.InRange(throwerPos, t.ThrowingRange) {
 				crea.AddEffects(item.Properties)
 			}
 		}
@@ -33,12 +33,56 @@ func DrawThrowableAOE(g *Game) {
 
 	cursorX, cursorY := ebiten.CursorPosition()
 
-	s := g.playerData.Shape
+	s := g.playerData.ThrowingAOEShape
 	var indices []int
 	if cursorX != prevCursorX || cursorY != prevCursorY {
 
 		if prevCursorX != 0 && prevCursorY != 0 {
-			g.gameMap.ApplyColorMatrix(previousIndices, NewEmptyMatrix())
+			g.gameMap.ApplyColorMatrix(PrevThrowInds, NewEmptyMatrix())
+
+		}
+
+	}
+
+	throwable := g.playerData.ThrowableItem.ItemEffect(THROWABLE_NAME).(*Throwable)
+
+	s.UpdatePosition(cursorX, cursorY)
+	indices = s.GetIndices()
+
+	inRangeCM := ColorMatrix{0, 1, 0, 0.5, true}
+	outOfRangeCM := ColorMatrix{1, 0, 0, 0.5, true}
+
+	for _, i := range indices {
+
+		pos := PositionFromIndex(i)
+
+		if pos.InRange(g.playerData.position, throwable.ThrowingRange) {
+			g.gameMap.ApplyColorMatrixToIndex(i, inRangeCM)
+
+		} else {
+
+			g.gameMap.ApplyColorMatrixToIndex(i, outOfRangeCM)
+
+		}
+
+	}
+
+	prevCursorX, prevCursorY = cursorX, cursorY
+	PrevThrowInds = indices
+
+}
+
+// Old function that uses only one color
+func DrawThrowableAOE2(g *Game) {
+
+	cursorX, cursorY := ebiten.CursorPosition()
+
+	s := g.playerData.ThrowingAOEShape
+	var indices []int
+	if cursorX != prevCursorX || cursorY != prevCursorY {
+
+		if prevCursorX != 0 && prevCursorY != 0 {
+			g.gameMap.ApplyColorMatrix(PrevThrowInds, NewEmptyMatrix())
 
 		}
 
@@ -46,13 +90,13 @@ func DrawThrowableAOE(g *Game) {
 
 	s.UpdatePosition(cursorX, cursorY)
 	indices = s.GetIndices()
-	cm := ColorMatrix{1, 0, 0, 0.5, true}
+	cm := ColorMatrix{0, 1, 0, 0.5, true}
 	g.gameMap.ApplyColorMatrix(indices, cm)
 	prevCursorX, prevCursorY = cursorX, cursorY
-	previousIndices = indices
+	PrevThrowInds = indices
 
 }
-func HandleThrowable(g *Game) {
+func HandlePlayerThrowable(g *Game) {
 
 	if g.IsThrowableItemSelected() {
 
@@ -70,7 +114,8 @@ func HandleThrowable(g *Game) {
 			////HandleThrowable(g)
 
 			g.playerData.ThrowPreparedItem()
-			ApplyThrowable(g, g.playerData.ThrowableItem)
+
+			ApplyThrowable(g, g.playerData.ThrowableItem, g.playerData.position)
 
 		}
 
@@ -78,7 +123,7 @@ func HandleThrowable(g *Game) {
 		if inpututil.IsMouseButtonJustPressed(ebiten.MouseButton2) {
 
 			log.Println("Removing throwable")
-			g.gameMap.ApplyColorMatrix(previousIndices, NewEmptyMatrix())
+			g.gameMap.ApplyColorMatrix(PrevThrowInds, NewEmptyMatrix())
 			g.SetThrowableItemSelected(false)
 			////HandleThrowable(g)
 

@@ -14,16 +14,22 @@ type Player struct {
 
 // Used to keep track of frequently accessed player information.
 // Throwing items is an important part of the game, so we store additional information related
-// TO throwing
+// ThrowingAOEShape is the shape that highlights the AOE of the thrown item
+// isTargeting is a bool that indicates whether the player is currently selecting a ranged target
 type PlayerData struct {
-	PlayerEntity       *ecs.Entity
-	PlayerWeapon       *ecs.Entity
-	position           *Position
-	inventory          *Inventory
-	SelectedThrowable  *ecs.Entity
-	Shape              TileBasedShape
-	ThrowableItemIndex int
-	ThrowableItem      *Item
+	PlayerEntity            *ecs.Entity
+	PlayerWeapon            *ecs.Entity
+	PlayerRangedWeapon      *ecs.Entity
+	RangedWeaponMaxDistance int
+	RangedWeaponAOEShape    TileBasedShape
+	position                *Position
+	inventory               *Inventory
+	SelectedThrowable       *ecs.Entity
+	ThrowingAOEShape        TileBasedShape
+	ThrowableItemIndex      int
+	ThrowableItem           *Item
+
+	isTargeting bool
 }
 
 // Helper function to make it less tedious to get the inventory
@@ -46,7 +52,7 @@ func (pl *PlayerData) PrepareThrowable(itemEntity *ecs.Entity, index int) {
 	t := item.ItemEffect(THROWABLE_NAME).(*Throwable)
 	pl.ThrowableItemIndex = index
 
-	pl.Shape = t.Shape
+	pl.ThrowingAOEShape = t.Shape
 
 }
 
@@ -56,10 +62,25 @@ func (pl *PlayerData) ThrowPreparedItem() {
 
 }
 
+func (pl *PlayerData) PrepareRangedAttack() {
+	wep := GetComponentType[*RangedWeapon](pl.PlayerRangedWeapon, RangedWeaponComponent)
+	pl.RangedWeaponAOEShape = wep.TargetArea
+	pl.RangedWeaponMaxDistance = wep.ShootingRange
+
+}
+
 // Helper function to make it less tedious to get the inventory
 func (pl *PlayerData) GetPlayerWeapon() *Weapon {
 
 	weapon := GetComponentType[*Weapon](pl.PlayerWeapon, WeaponComponent)
+
+	return weapon
+}
+
+// Helper function to make it less tedious to get the inventory
+func (pl *PlayerData) GetPlayerRangedWeapon() *RangedWeapon {
+
+	weapon := GetComponentType[*RangedWeapon](pl.PlayerRangedWeapon, RangedWeaponComponent)
 
 	return weapon
 }
@@ -74,12 +95,12 @@ func InitializePlayerData(g *Game) {
 	}
 
 	attr := Attributes{}
-
 	attr.MaxHealth = 5
 	attr.CurrentHealth = 5
 	attr.AttackBonus = 5
 
 	armor := NewArmor(1, 5, 50)
+
 	playerEntity := g.World.NewEntity().
 		AddComponent(player, &Player{}).
 		AddComponent(renderable, &Renderable{

@@ -10,7 +10,12 @@ import (
 
 func SetupPlayerForTesting(g *Game) {
 	w := CreateWeapon(g.World, "Weapon 1", *g.playerData.position, "assets/items/sword.png", 5, 10)
+
+	wepArea := NewTileRectangle(0, 0, 3, 3)
+	r := CreatedRangedWeapon(g.World, "Ranged Weapon 1", "assets/items/sword.png", *g.playerData.position, 5, 10, 3, &wepArea)
+
 	g.playerData.PlayerWeapon = w
+	g.playerData.PlayerRangedWeapon = r
 
 }
 
@@ -28,7 +33,7 @@ func CreateTestItems(manager *ecs.Manager, tags map[string]ecs.Tag, gameMap *Gam
 
 	startingPos := gameMap.StartingPosition()
 
-	b := NewBurning(1, 7)
+	b := NewBurning(5, 2)
 
 	f := NewFreezing(3, 5)
 	f.MainProps.Duration = 10
@@ -39,17 +44,17 @@ func CreateTestItems(manager *ecs.Manager, tags map[string]ecs.Tag, gameMap *Gam
 	//CreateItem(manager, "Throwable Item"+strconv.Itoa(1), Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
 	//NewThrowable(1, 5, 3, NewTileSquare(0, 0, 3)), NewBurning(1, 1))
 	CreateItem(manager, "T0"+strconv.Itoa(1), Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
-		NewThrowable(1, 5, 3, &s), b, f)
+		NewThrowable(1, 2, 3, &s), b, f)
 
 	s = NewTileSquare(0, 0, 2)
 	//CreateItem(manager, "Throwable Item"+strconv.Itoa(1), Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
 	//NewThrowable(1, 5, 3, NewTileSquare(0, 0, 3)), NewBurning(1, 1))
 	CreateItem(manager, "T7"+strconv.Itoa(1), Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
-		NewThrowable(1, 5, 3, &s), NewBurning(1, 1), st, f)
+		NewThrowable(1, 3, 3, &s), NewBurning(1, 1), st, f)
 
 	l := NewTileLine(0, 0, 5, LineDown)
 	CreateItem(manager, "T1"+strconv.Itoa(1), Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
-		NewThrowable(1, 5, 3, &l))
+		NewThrowable(1, 2, 3, &l))
 
 	l = NewTileLine(0, 0, 2, LineDown)
 	CreateItem(manager, "T9"+strconv.Itoa(1), Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
@@ -174,7 +179,7 @@ func CreateMoreTestMonsters(manager *ecs.Manager, gameMap *GameMap) {
 
 }
 
-func CreateMonster(manager *ecs.Manager, gameMap *GameMap, x, y int) {
+func CreateMonster(manager *ecs.Manager, gameMap *GameMap, x, y int) *ecs.Entity {
 
 	elfImg, _, err := ebitenutil.NewImageFromFile("assets/creatures/elf.png")
 	if err != nil {
@@ -196,14 +201,15 @@ func CreateMonster(manager *ecs.Manager, gameMap *GameMap, x, y int) {
 			X: x,
 			Y: y,
 		}).
-		AddComponent(noMove, &NoMovement{}).
-		AddComponent(attributeComponent, &Attributes{MaxHealth: 500, CurrentHealth: 500}).
+		AddComponent(attributeComponent, &Attributes{MaxHealth: 5, CurrentHealth: 5}).
 		AddComponent(userMessage, &UserMessage{
 			AttackMessage:    "",
 			GameStateMessage: "",
 		}).AddComponent(ArmorComponent, &armor)
 
 	UpdateAttributes(ent)
+
+	return ent
 
 }
 

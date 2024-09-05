@@ -9,7 +9,8 @@ import (
 )
 
 var prevCursorX, prevCursorY int
-var previousIndices []int
+var PrevThrowInds []int
+var PrevRangedAttInds []int
 
 // todo replace the keypressed with iskeyreleased
 func PlayerActions(g *Game) {
@@ -40,6 +41,14 @@ func PlayerActions(g *Game) {
 		UpdateAttributes(g.playerData.PlayerEntity)
 	}
 
+	if inpututil.IsKeyJustReleased(ebiten.KeyF) {
+
+		g.playerData.isTargeting = true
+		g.playerData.PrepareRangedAttack()
+		DrawRangedAttackAOE(g)
+
+	}
+
 	if inpututil.IsKeyJustReleased(ebiten.KeyG) {
 
 		log.Print("Press G")
@@ -63,7 +72,8 @@ func PlayerActions(g *Game) {
 		turntaken = true
 	}
 
-	HandleThrowable(g)
+	HandlePlayerThrowable(g)
+	HandlePlayerRangedAttack(g)
 
 	nextPosition := Position{
 		X: g.playerData.position.X + x,
@@ -90,7 +100,7 @@ func PlayerActions(g *Game) {
 
 		if c != nil {
 
-			AttackSystem(g, g.playerData.position, &nextPosition)
+			MeleeAttackSystem(g, g.playerData.position, &nextPosition)
 		}
 
 	}

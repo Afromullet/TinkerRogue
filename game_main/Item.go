@@ -84,7 +84,6 @@ func (item *Item) ItemEffect(effectName string) any {
 	for _, c := range AllItemEffects {
 		data, ok := item.Properties.GetComponentData(c)
 		if ok {
-			print(data)
 
 			d := *data.(*Effects)
 			if EffectName(&d) == effectName {
@@ -176,6 +175,20 @@ func CreateWeapon(manager *ecs.Manager, name string, pos Position, imagePath str
 	weapon.AddComponent(WeaponComponent, &Weapon{
 		MinDamage: MinDamage,
 		MaxDamage: MaxDamage,
+	})
+
+	return weapon
+
+}
+
+func CreatedRangedWeapon(manager *ecs.Manager, name string, imagePath string, pos Position, minDamage int, maxDamage int, shootingRange int, TargetArea TileBasedShape) *ecs.Entity {
+
+	weapon := CreateItem(manager, name, pos, imagePath)
+	weapon.AddComponent(RangedWeaponComponent, &RangedWeapon{
+		MinDamage:     minDamage,
+		MaxDamage:     maxDamage,
+		ShootingRange: shootingRange,
+		TargetArea:    TargetArea,
 	})
 
 	return weapon

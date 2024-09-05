@@ -302,6 +302,13 @@ func (gameMap *GameMap) ApplyColorMatrix(indices []int, m ColorMatrix) {
 
 }
 
+// Applies the scaling ColorMatrix to the tiles at the Indices
+func (gameMap *GameMap) ApplyColorMatrixToIndex(index int, m ColorMatrix) {
+
+	gameMap.Tiles[index].SetColorMatrix(m)
+
+}
+
 func (gameMap GameMap) InBounds(x, y int) bool {
 	gd := NewScreenData()
 	if x < 0 || x > gd.ScreenWidth || y < 0 || y > levelHeight {

@@ -2,7 +2,6 @@
 
 ___Throwing___
 
-* Implement Throwing Range. Player needs indication of how far they can throw
 
 * Miss chance - tile isn't always hit
 
@@ -34,16 +33,10 @@ ___Randomness___
 
 * Creature Spawning - Spawn during map gen and when out of 
 
-* Damage - Attack damage does damage within a range rather than one set number
 
+___Levels___
 
-___Combat___
-
-* Add dodge, protection, and AC to armor
-
-* Roll to attack
-
-* Add ranged attacks
+Add multiple levels
 
 
 ___Component___
@@ -52,19 +45,79 @@ ___Component___
 
 ___Weapon and Armor___
 
-* Determine whether I want to treat weapon and armor as an Item or have them as their own thing
+* Determine whether I want to treat weapon and armor as an Item or have them as their own thing - Done. They're items
 
-___Ranged Weapons___
+* Equipping weapons and armor
 
-* Create ranged weapons
-* Allow player to select targets
+
 
 ___Other___
 
-Decouple functions which take g *Game as input
+* Decouple functions which take g *Game as input
+
+* Better organization of files
 
 
-Effect Stacking
+* Effect Stacking
+
+
+* Check on calls to make where slice is initialized with a size greater than 0. See if it works as intended, where we're just adding to it. Using append.
+Might need to index instead
+
+* Clean up all functions and methods which use a large number of parameters
+
+* Add information, such as attack hits, misses, and damage done to the UI
+
+* Throwing and shooting passes around lots of state. Refactor it. Especially in the way we use PlayerData. Also anything related to the drawing
+
+
+
+
+
+_______________________________________
+
+Done
+
+___Throwing___
+
+* Implement Throwing Range. Player needs indication of how far they can throw 
+
+
+
+___Monster Bevavior____
+
+* Allow creatures to attack
+
+* Monster can chose to melee attack, range attack, or throw
+
+___Randomness___
+
+
+* Damage - Attack damage does damage within a range rather than one set number- Done
+
+
+___Combat___
+
+
+* Add ranged attacks - DOne
+
+
+
+___Weapon and Armor___
+
+* Determine whether I want to treat weapon and armor as an Item or have them as their own thing - Done. They're items
+
+
+___Ranged Weapons___
+
+* Create ranged weapons - Done
+* Allow player to select targets - Done
+
+___Other___
+
+
+* The targeting AOE changes color if something is out of range. If the center of the shape is in range, then everything is considered in range. Determine
+If that's something you want to change - Done. 
 
 
 

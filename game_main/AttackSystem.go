@@ -10,7 +10,7 @@ import (
 // Rolls 1d20+AttackBonus and compares it to defenders armorclass. Has to be greater than or equal to the armor class to hit
 // Then the defender does a dodge roll. If the dodge roll is greater than or equal to its dodge value, the attack hits
 // If the attacker hits, subtract the Defenders protection value from the damage
-func AttackSystem(g *Game, attackerPos *Position, defenderPos *Position) {
+func MeleeAttackSystem(g *Game, attackerPos *Position, defenderPos *Position) {
 
 	//var attacker *ecs.QueryResult = nil
 	//log.Print(attacker)
@@ -19,19 +19,21 @@ func AttackSystem(g *Game, attackerPos *Position, defenderPos *Position) {
 
 	var attacker *ecs.Entity = nil
 	var defender *ecs.Entity = nil
-	var attackerMessage *UserMessage = nil
+	//var attackerMessage *UserMessage = nil
 
 	//var weaponComponent any
 	var weapon *Weapon = nil
 
 	if g.playerData.position.IsEqual(attackerPos) {
+		fmt.Println("Player is attacking")
 		attacker = g.playerData.PlayerEntity
 		defender = GetCreatureAtPosition(g, defenderPos)
 		weapon = g.playerData.GetPlayerWeapon()
 
 	} else {
-		attacker = GetCreatureAtPosition(g, defenderPos)
+		attacker = GetCreatureAtPosition(g, attackerPos) //todo I think this will cause an issue. Should be attackerPos. Worry about this when allowing monsters to attack
 		defender = g.playerData.PlayerEntity
+		fmt.Println("Monster is attacking")
 
 		weapon = GetComponentType[*Weapon](attacker, WeaponComponent)
 
@@ -39,55 +41,99 @@ func AttackSystem(g *Game, attackerPos *Position, defenderPos *Position) {
 
 	attAttr := GetComponentType[*Attributes](attacker, attributeComponent)
 	defAttr := GetComponentType[*Attributes](defender, attributeComponent)
-	attackerMessage = GetComponentType[*UserMessage](attacker, userMessage)
-
-	fmt.Println("Defender AC, Prot, Dodge, and Health ", defAttr.TotalArmorClass, defAttr.TotalProtection,
-		defAttr.TotalDodgeChance, defAttr.CurrentHealth)
 
 	if weapon != nil && attAttr != nil && defAttr != nil {
 
-		damage := weapon.CalculateDamage()
-
-		attackRoll := GetDiceRoll(20) + attAttr.AttackBonus
-
-		fmt.Println("Attack Roll vs AC", attackRoll, defAttr.TotalArmorClass)
-
-		if attackRoll >= defAttr.TotalArmorClass {
-
-			dodgeRoll := GetRandomBetween(0, 100)
-
-			fmt.Println("Dodge Roll Result ", dodgeRoll)
-
-			if dodgeRoll >= int(defAttr.TotalDodgeChance) {
-
-				totalDamage := damage - defAttr.TotalProtection
-
-				if totalDamage < 0 {
-					totalDamage = 0
-				}
-
-				fmt.Println("Damage Roll", damage)
-				fmt.Println("Actual  Damage", totalDamage)
-
-				defAttr.CurrentHealth -= totalDamage
-
-			}
-
-			attackerMessage.AttackMessage = fmt.Sprintf("Damage Done: %d\n", damage)
-
-		}
-
-		if defAttr.CurrentHealth <= 0 {
-			//Todo removing an entity is really closely coupled to teh map right now.
-			//Do it differently in the future
-			index := IndexFromXY(defenderPos.X, defenderPos.Y)
-
-			g.gameMap.Tiles[index].Blocked = false
-			g.World.DisposeEntity(defender)
-		}
+		PerformAttack(g, weapon.CalculateDamage(), defender, defenderPos, attAttr, defAttr)
 
 	} else {
 		log.Print("Failed to attack. No weapon")
+	}
+
+}
+
+func PerformAttack(g *Game, damage int, defender *ecs.Entity, defenderPos *Position, attAttr *Attributes, defAttr *Attributes) {
+
+	attackRoll := GetDiceRoll(20) + attAttr.AttackBonus
+
+	if attackRoll >= defAttr.TotalArmorClass {
+
+		dodgeRoll := GetRandomBetween(0, 100)
+
+		if dodgeRoll >= int(defAttr.TotalDodgeChance) {
+
+			fmt.Println("Hit")
+			totalDamage := damage - defAttr.TotalProtection
+
+			if totalDamage < 0 {
+				totalDamage = 0
+			}
+
+			defAttr.CurrentHealth -= totalDamage
+
+		}
+
+	}
+
+	RemoveDeadEntity(g, defender, defAttr, defenderPos)
+
+}
+
+func RangedAttackSystem(g *Game, attackerPos *Position) {
+
+	//var attacker *ecs.QueryResult = nil
+	//log.Print(attacker)
+
+	//Determine if the player is the attacker or defender
+
+	var attacker *ecs.Entity = nil
+	//var defender *ecs.Entity = nil
+	//var attackerMessage *UserMessage = nil
+
+	//var weaponComponent any
+	var weapon *RangedWeapon = nil
+
+	if g.playerData.position.IsEqual(attackerPos) {
+		attacker = g.playerData.PlayerEntity
+		weapon = g.playerData.GetPlayerRangedWeapon()
+	}
+
+	attAttr := GetComponentType[*Attributes](attacker, attributeComponent)
+
+	if weapon != nil {
+
+		targets := weapon.GetTargets(g)
+
+		var defAttr *Attributes
+		for _, t := range targets {
+
+			defenderPos := GetComponentType[*Position](t, position)
+			if attackerPos.InRange(defenderPos, weapon.ShootingRange) {
+				fmt.Println("Shooting")
+
+				defAttr = GetComponentType[*Attributes](t, attributeComponent)
+				PerformAttack(g, weapon.CalculateDamage(), t, defenderPos, attAttr, defAttr)
+			} else {
+				fmt.Println("Out of range")
+			}
+
+		}
+
+	} else {
+		log.Print("Failed to attack. No ranged weapon")
+	}
+
+}
+
+// Todo need to handle player death differently
+func RemoveDeadEntity(g *Game, defender *ecs.Entity, defAttr *Attributes, defenderPos *Position) {
+	if defAttr.CurrentHealth <= 0 {
+		//Todo removing an entity is really closely coupled to teh map right now.
+		//Do it differently in the future
+		index := IndexFromXY(defenderPos.X, defenderPos.Y)
+
+		g.gameMap.Tiles[index].Blocked = false
+		g.World.DisposeEntity(defender)
 	}
 
 }
