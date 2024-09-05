@@ -39,12 +39,9 @@ func MeleeAttackSystem(g *Game, attackerPos *Position, defenderPos *Position) {
 
 	}
 
-	attAttr := GetComponentType[*Attributes](attacker, AttributeComponent)
-	defAttr := GetComponentType[*Attributes](defender, AttributeComponent)
+	if weapon != nil {
 
-	if weapon != nil && attAttr != nil && defAttr != nil {
-
-		PerformAttack(g, weapon.CalculateDamage(), defender, defenderPos, attAttr, defAttr)
+		PerformAttack(g, weapon.CalculateDamage(), attacker, defender)
 
 	} else {
 		log.Print("Failed to attack. No weapon")
@@ -52,7 +49,12 @@ func MeleeAttackSystem(g *Game, attackerPos *Position, defenderPos *Position) {
 
 }
 
-func PerformAttack(g *Game, damage int, defender *ecs.Entity, defenderPos *Position, attAttr *Attributes, defAttr *Attributes) {
+// Passing the damage rather than the weapon so that Melee and Ranged Attacks can use the same function
+// Currently Melee and Ranged Weapons are different types without a common interface
+func PerformAttack(g *Game, damage int, attacker *ecs.Entity, defender *ecs.Entity) {
+
+	attAttr := GetAttributes(attacker)
+	defAttr := GetAttributes(defender)
 
 	attackRoll := GetDiceRoll(20) + attAttr.AttackBonus
 
@@ -80,22 +82,13 @@ func PerformAttack(g *Game, damage int, defender *ecs.Entity, defenderPos *Posit
 		fmt.Println("Missed")
 	}
 
-	RemoveDeadEntity(g, defender, defAttr, defenderPos)
+	RemoveDeadEntity(g, defender)
 
 }
 
 func RangedAttackSystem(g *Game, attackerPos *Position) {
 
-	//var attacker *ecs.QueryResult = nil
-	//log.Print(attacker)
-
-	//Determine if the player is the attacker or defender
-
 	var attacker *ecs.Entity = nil
-	//var defender *ecs.Entity = nil
-	//var attackerMessage *UserMessage = nil
-
-	//var weaponComponent any
 	var weapon *RangedWeapon = nil
 
 	if g.playerData.position.IsEqual(attackerPos) {
@@ -103,21 +96,17 @@ func RangedAttackSystem(g *Game, attackerPos *Position) {
 		weapon = g.playerData.GetPlayerRangedWeapon()
 	}
 
-	attAttr := GetComponentType[*Attributes](attacker, AttributeComponent)
-
 	if weapon != nil {
 
 		targets := weapon.GetTargets(g)
 
-		var defAttr *Attributes
 		for _, t := range targets {
 
 			defenderPos := GetPosition(t)
 			if attackerPos.InRange(defenderPos, weapon.ShootingRange) {
 				fmt.Println("Shooting")
 
-				defAttr = GetComponentType[*Attributes](t, AttributeComponent)
-				PerformAttack(g, weapon.CalculateDamage(), t, defenderPos, attAttr, defAttr)
+				PerformAttack(g, weapon.CalculateDamage(), attacker, t)
 			} else {
 				fmt.Println("Out of range")
 			}
@@ -131,9 +120,12 @@ func RangedAttackSystem(g *Game, attackerPos *Position) {
 }
 
 // Todo need to handle player death differently
+// Todo if it attacks the player, it removes the attacking creature
 // TOdo can also just call GetPosition instead of passing defenderPos
-func RemoveDeadEntity(g *Game, defender *ecs.Entity, defAttr *Attributes, defenderPos *Position) {
+func RemoveDeadEntity(g *Game, defender *ecs.Entity) {
 
+	defenderPos := GetPosition(defender)
+	defAttr := GetAttributes(defender)
 	if g.playerData.position.IsEqual(defenderPos) {
 		fmt.Println("Player dead")
 	} else if defAttr.CurrentHealth <= 0 {

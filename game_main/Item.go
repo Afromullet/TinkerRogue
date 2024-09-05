@@ -1,10 +1,7 @@
 package main
 
 import (
-	"log"
-
 	ecs "github.com/bytearena/ecs"
-	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 )
 
 /*
@@ -128,69 +125,5 @@ func (item *Item) HasEffect(effectToCheck Effects) bool {
 	}
 
 	return false
-
-}
-
-// Create an item with any number of Effects. ItemEffect is a wrapper around an ecs.Component to make
-// Manipulating it easier
-func CreateItem(manager *ecs.Manager, name string, pos Position, imagePath string, effects ...Effects) *ecs.Entity {
-
-	img, _, err := ebitenutil.NewImageFromFile(imagePath)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	item := &Item{Count: 1, Properties: manager.NewEntity()}
-
-	for _, prop := range effects {
-		item.Properties.AddComponent(prop.EffectComponent(), &prop)
-
-	}
-
-	itemEntity := manager.NewEntity().
-		AddComponent(RenderableComponent, &Renderable{
-			Image:   img,
-			Visible: true,
-		}).
-		AddComponent(PositionComponent, &Position{
-			X: pos.X,
-			Y: pos.Y,
-		}).
-		AddComponent(nameComponent, &Name{
-			NameStr: name,
-		}).
-		AddComponent(ItemComponent, item)
-
-	//TODO where shoudl I add the tags?
-
-	return itemEntity
-
-}
-
-// A weapon is an Item with a weapon component
-func CreateWeapon(manager *ecs.Manager, name string, pos Position, imagePath string, MinDamage int, MaxDamage int, properties ...Effects) *ecs.Entity {
-
-	weapon := CreateItem(manager, name, pos, imagePath, properties...)
-
-	weapon.AddComponent(WeaponComponent, &Weapon{
-		MinDamage: MinDamage,
-		MaxDamage: MaxDamage,
-	})
-
-	return weapon
-
-}
-
-func CreatedRangedWeapon(manager *ecs.Manager, name string, imagePath string, pos Position, minDamage int, maxDamage int, shootingRange int, TargetArea TileBasedShape) *ecs.Entity {
-
-	weapon := CreateItem(manager, name, pos, imagePath)
-	weapon.AddComponent(RangedWeaponComponent, &RangedWeapon{
-		MinDamage:     minDamage,
-		MaxDamage:     maxDamage,
-		ShootingRange: shootingRange,
-		TargetArea:    TargetArea,
-	})
-
-	return weapon
 
 }

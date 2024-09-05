@@ -184,6 +184,11 @@ func GetItem(e *ecs.Entity) *Item {
 	return GetComponentType[*Item](e, ItemComponent)
 }
 
+// This gets called so often that it might as well be a function
+func GetAttributes(e *ecs.Entity) *Attributes {
+	return GetComponentType[*Attributes](e, AttributeComponent)
+}
+
 // todo Will be refactored. Don't get distracted by this at the moment.
 // ALl of the initialziation will have to be handled differently - since
 func InitializeECS(g *Game) {

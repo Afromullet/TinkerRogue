@@ -14,8 +14,6 @@ type InventoryListEntry struct {
 	count int
 }
 
-var inventorySize = 20 //todo get rid of this
-
 type Inventory struct {
 	InventoryContent []*ecs.Entity
 }

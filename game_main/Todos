@@ -75,6 +75,9 @@ Might need to index instead
 
 * Create Shorter names for types and functions with long names
 
+* game struct needs improvement. It tracks a lot.
+
+* player struct needs improvement. It tracks a lot
 
 
 _______________________________________
