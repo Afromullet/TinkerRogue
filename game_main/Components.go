@@ -11,18 +11,20 @@ import (
 /*
  */
 
-var PositionComponent *ecs.Component
-var RenderableComponent *ecs.Component
-var nameComponent *ecs.Component
+var (
+	PositionComponent   *ecs.Component
+	RenderableComponent *ecs.Component
+	nameComponent       *ecs.Component
 
-var AttributeComponent *ecs.Component
-var CreatureComponent *ecs.Component
+	AttributeComponent *ecs.Component
+	CreatureComponent  *ecs.Component
 
-var WeaponComponent *ecs.Component
-var RangedWeaponComponent *ecs.Component
-var ArmorComponent *ecs.Component
-var InventoryComponent *ecs.Component
-var userMessage *ecs.Component
+	WeaponComponent       *ecs.Component
+	RangedWeaponComponent *ecs.Component
+	ArmorComponent        *ecs.Component
+	InventoryComponent    *ecs.Component
+	userMessage           *ecs.Component
+)
 
 // The ECS library returns pointers to the struct when querying it for components, so the Position methods take a pointer as input
 // Other than that, there's no reason for using pointers for the functions below.

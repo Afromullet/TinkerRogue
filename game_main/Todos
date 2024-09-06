@@ -21,10 +21,7 @@ __Movement__
 
 * Fix bug that causes a creature to teleport if it tries to move into a blocked spot
 
-* Add a function to add a movement component to a creature. The function checks if there are any existing movement components and
-then removes them before adding the new one
 
-* Make it easier to add new movement types
 
 __Monster Bevavior__
 
@@ -99,6 +96,7 @@ Might need to index instead
 
 * Create Shorter names for types and functions with long names
 
+* Need a better way to create items, creatures, etc for testing and gameplay
 
 
 * Do I want to add collision handling? Could make it easier to choose what tile to move to for creature movement
@@ -109,6 +107,8 @@ Might need to index instead
 * player struct needs improvement. It tracks a lot
 
 --- State Handlers End--- 
+
+Create packages to break things apart more
 
 
 _______________________________________

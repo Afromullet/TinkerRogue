@@ -8,8 +8,10 @@ import (
 
 // TODO, when a creature is attacking, remove the Movement component so the movement and attacking don't conflict
 
-var approachAndAttack *ecs.Component
-var distanceRangeAttack *ecs.Component
+var (
+	approachAndAttack   *ecs.Component
+	distanceRangeAttack *ecs.Component
+)
 
 type ApproachAndAttack struct {
 }

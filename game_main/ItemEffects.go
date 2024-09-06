@@ -6,10 +6,22 @@ import (
 	"github.com/bytearena/ecs"
 )
 
-const BURNING_NAME = "Burning"
-const FREEZING_NAME = "Freezing"
-const STICKY_NAME = "Sticky"
-const THROWABLE_NAME = "Throwable"
+/*
+To create a new item property:
+
+1) Create a const string containing the component name. All components use the same name.
+2) Add the name to the EffectNames slice.
+3) Create the component type
+4) Create the struct associated with the component
+5) In InitializeItemComponents, initialize the component
+6) In InitializeItemComponents, add the component to the AllItemEffects slice.
+*/
+const (
+	BURNING_NAME   = "Burning"
+	FREEZING_NAME  = "Freezing"
+	STICKY_NAME    = "Sticky"
+	THROWABLE_NAME = "Throwable"
+)
 
 var (
 	EffectNames = []string{BURNING_NAME, FREEZING_NAME, STICKY_NAME, THROWABLE_NAME}
@@ -294,23 +306,9 @@ func InitializeItemComponents(manager *ecs.Manager, tags map[string]ecs.Tag) {
 
 	ThrowableComponent = manager.NewComponent()
 
-	AllItemEffects = append(AllItemEffects, StickyComponent)
-	AllItemEffects = append(AllItemEffects, BurningComponent)
-	AllItemEffects = append(AllItemEffects, FreezingComponent)
-	AllItemEffects = append(AllItemEffects, ThrowableComponent)
+	AllItemEffects = append(AllItemEffects, StickyComponent, BurningComponent, FreezingComponent, ThrowableComponent)
 
 	items := ecs.BuildTag(ItemComponent, PositionComponent) //todo add all the tags
 	tags["items"] = items
-
-	//Can I use this instead of the AllItemproperties slice? Todo see later if you ran replace it
-
-	sticking := ecs.BuildTag(StickyComponent)
-	tags["sticking"] = sticking
-
-	burning := ecs.BuildTag(BurningComponent)
-	tags["burning"] = burning
-
-	freezing := ecs.BuildTag(FreezingComponent)
-	tags["freezing"] = freezing
 
 }

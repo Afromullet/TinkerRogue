@@ -6,6 +6,17 @@ import (
 	"github.com/bytearena/ecs"
 )
 
+/*
+To create a new Movement Type do the following:
+
+1) Create the movement component. See where simpleWanderComp, noMoveComp and the rest are declare.d
+2) Created the associated struct as we do for the ECS library we're using.
+3) Create the function that handles the movement. The function updates the path of the entity that's moving
+4) In InitializeMovementComponents, initialize the component created in step 1
+5) In InitializeMovementComponents, append the component to MovementTypes
+6) Add the function to the MovementActions map
+
+*/
 // movementAction is a map that will make it easier to call the movement functions.
 // so that we no not have to add a conditional for every movement type in the MovementSystem
 type MovementFunction func(g *Game, mover *ecs.Entity)

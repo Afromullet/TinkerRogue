@@ -125,9 +125,12 @@ func RangedAttackSystem(g *Game, attackerPos *Position) {
 func RangedAttackDrawnigPlaceHolder(attackerPos *Position, defenderPos *Position) {
 
 	attX, attY := PixelsFromPosition(attackerPos)
-	defX, defY := PixelsFromPosition(defenderPos)
-	arr := NewArrow(attX, attY, defX, defY)
-	AddVisualEffect(arr)
+	//defX, defY := PixelsFromPosition(defenderPos)
+	//arr := NewProjectile(attX, attY, defX, defY)
+
+	arr := NewFireEffect(attX, attY, 1, 5, 1, 0.5)
+
+	vxHandler.AddVisualEffect(arr)
 
 }
 
