@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"math"
 	"math/rand/v2"
 	"time"
@@ -70,9 +69,11 @@ func (vis VisualEffectHandler) DrawVisualEffects(screen *ebiten.Image) {
 
 }
 
+// Applies the Visual Effect to the positions at the indices
+// The indices are used to get a position on the game map
 type VisualEffectArea struct {
 	indices []int
-	VisualEffect
+	//VisualEffect vx
 }
 
 type VisualEffect interface {
@@ -210,7 +211,6 @@ func (f *FireEffect) UpdateVisualEffect() {
 
 	// Increment flicker timer
 	f.flickerTimer++
-	fmt.Println("Flicker timer ", f.flickerTimer)
 
 	// Randomly change the scale slightly to simulate flickering
 	f.scale = 0.95 + 0.1*rand.Float64()

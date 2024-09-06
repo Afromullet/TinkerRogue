@@ -21,6 +21,7 @@ __Movement__
 
 * Fix bug that causes a creature to teleport if it tries to move into a blocked spot
 
+* Consider using a different distance metric. There's implications to using Manhattan distance that I don't understand yet - especially in how it relates to diagonals
 
 
 __Monster Bevavior__
@@ -84,6 +85,8 @@ ___Other__
 
 * Effect Stacking
 
+
+* There's a bug that doesn't clear the AOE visual area when pressing F to fire while a throwable is selected
 
 * Check on calls to make where slice is initialized with a size greater than 0. See if it works as intended, where we're just adding to it. Using append.
 Might need to index instead

@@ -46,18 +46,10 @@ type EntityFollow struct {
 	target *ecs.Entity
 }
 
-type WithinRadius struct {
-	target   *ecs.Entity
-	distance int
-}
-
-type WithinRange struct {
-	target   *ecs.Entity
-	distance int
-}
-
-// Flee until greater than or equal to the distance
-type FleeMovement struct {
+// Todo need a better name for this. This is the kind of movement that does something in relation to the
+// Target Entity, such as staying within a radius, fleeing from it, etc.
+// Anything that uses DistanceToEntityMovement determines its movement in relation ot the target
+type DistanceToEntityMovement struct {
 	target   *ecs.Entity
 	distance int
 }
@@ -109,7 +101,7 @@ func WithinRadiusMoveAction(g *Game, mover *ecs.Entity) {
 
 	creature := GetCreature(mover)
 	creaturePosition := GetPosition(mover)
-	withinRange := GetComponentType[*WithinRadius](mover, withinRadiusComp)
+	withinRange := GetComponentType[*DistanceToEntityMovement](mover, withinRadiusComp)
 
 	if withinRange.target != nil {
 		targetPos := GetComponentType[*Position](withinRange.target, PositionComponent)
@@ -165,7 +157,7 @@ func WithinRangeMoveAction(g *Game, mover *ecs.Entity) {
 
 	creature := GetCreature(mover)
 	creaturePosition := GetPosition(mover)
-	within := GetComponentType[*WithinRange](mover, withinRangeComponent)
+	within := GetComponentType[*DistanceToEntityMovement](mover, withinRangeComponent)
 
 	if within.target != nil {
 		targetPos := GetComponentType[*Position](within.target, PositionComponent)
@@ -184,7 +176,7 @@ func WithinRangeMoveAction(g *Game, mover *ecs.Entity) {
 
 // Also needs improvement
 func FleeFromEntityMovementAction(g *Game, mover *ecs.Entity) {
-	fleeMov := GetComponentType[*FleeMovement](mover, fleeComp)
+	fleeMov := GetComponentType[*DistanceToEntityMovement](mover, fleeComp)
 	creature := GetCreature(mover)
 	creaturePosition := GetPosition(mover)
 

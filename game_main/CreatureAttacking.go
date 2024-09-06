@@ -6,8 +6,6 @@ import (
 	"github.com/bytearena/ecs"
 )
 
-// TODO, when a creature is attacking, remove the Movement component so the movement and attacking don't conflict
-
 var (
 	approachAndAttack   *ecs.Component
 	distanceRangeAttack *ecs.Component
@@ -53,7 +51,7 @@ func StayDistantRangedAttackAction(g *Game, c *ecs.QueryResult, target *ecs.Enti
 		if GetPosition(c.Entity).InRange(GetPosition(target), RangedWeapon.ShootingRange) {
 			fmt.Println("In range")
 		} else {
-			c.Entity.AddComponent(withinRadiusComp, &WithinRadius{distance: rangeToKeep, target: target})
+			c.Entity.AddComponent(withinRadiusComp, &DistanceToEntityMovement{distance: rangeToKeep, target: target})
 
 		}
 

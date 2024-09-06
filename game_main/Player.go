@@ -12,38 +12,31 @@ var player *ecs.Component
 type Player struct {
 }
 
-// Used to keep track of frequently accessed player information.
-// Throwing items is an important part of the game, so we store additional information related
-// ThrowingAOEShape is the shape that highlights the AOE of the thrown item
-// isTargeting is a bool that indicates whether the player is currently selecting a ranged target
-type PlayerData struct {
-	PlayerEntity            *ecs.Entity
+type PlayerEquipment struct {
 	PlayerWeapon            *ecs.Entity
 	PlayerRangedWeapon      *ecs.Entity
 	RangedWeaponMaxDistance int
 	RangedWeaponAOEShape    TileBasedShape
-	position                *Position
-	inventory               *Inventory
-	SelectedThrowable       *ecs.Entity
-	ThrowingAOEShape        TileBasedShape
-	ThrowableItemIndex      int
-	ThrowableItem           *Item
-
-	isTargeting bool
 }
 
-// Helper function to make it less tedious to get the inventory
-func (pl *PlayerData) GetPlayerInventory() *Inventory {
+func (pl *PlayerEquipment) PrepareRangedAttack() {
+	wep := GetComponentType[*RangedWeapon](pl.PlayerRangedWeapon, RangedWeaponComponent)
+	pl.RangedWeaponAOEShape = wep.TargetArea
+	pl.RangedWeaponMaxDistance = wep.ShootingRange
 
-	playerInventory := GetComponentType[*Inventory](pl.PlayerEntity, InventoryComponent)
+}
 
-	return playerInventory
+type PlayerThrowable struct {
+	SelectedThrowable  *ecs.Entity
+	ThrowingAOEShape   TileBasedShape
+	ThrowableItemIndex int
+	ThrowableItem      *Item
 }
 
 // Handles all conversions necessary for updating item throwing information
 // The index lets us remove an item one it's thrown
 // The shape lets us draw it on the screen
-func (pl *PlayerData) PrepareThrowable(itemEntity *ecs.Entity, index int) {
+func (pl *PlayerThrowable) PrepareThrowable(itemEntity *ecs.Entity, index int) {
 
 	pl.SelectedThrowable = itemEntity
 
@@ -57,21 +50,14 @@ func (pl *PlayerData) PrepareThrowable(itemEntity *ecs.Entity, index int) {
 
 }
 
-func (pl *PlayerData) ThrowPreparedItem() {
+func (pl *PlayerThrowable) ThrowPreparedItem(inv *Inventory) {
 
-	pl.inventory.RemoveItem(pl.ThrowableItemIndex)
-
-}
-
-func (pl *PlayerData) PrepareRangedAttack() {
-	wep := GetComponentType[*RangedWeapon](pl.PlayerRangedWeapon, RangedWeaponComponent)
-	pl.RangedWeaponAOEShape = wep.TargetArea
-	pl.RangedWeaponMaxDistance = wep.ShootingRange
+	inv.RemoveItem(pl.ThrowableItemIndex)
 
 }
 
 // Helper function to make it less tedious to get the inventory
-func (pl *PlayerData) GetPlayerWeapon() *Weapon {
+func (pl *PlayerEquipment) GetPlayerWeapon() *Weapon {
 
 	weapon := GetComponentType[*Weapon](pl.PlayerWeapon, WeaponComponent)
 
@@ -84,6 +70,30 @@ func (pl *PlayerData) GetPlayerRangedWeapon() *RangedWeapon {
 	weapon := GetComponentType[*RangedWeapon](pl.PlayerRangedWeapon, RangedWeaponComponent)
 
 	return weapon
+}
+
+// Used to keep track of frequently accessed player information.
+// Throwing items is an important part of the game, so we store additional information related
+// ThrowingAOEShape is the shape that highlights the AOE of the thrown item
+// isTargeting is a bool that indicates whether the player is currently selecting a ranged target
+type PlayerData struct {
+	PlayerEquipment
+	PlayerThrowable
+
+	PlayerEntity *ecs.Entity
+
+	position  *Position
+	inventory *Inventory
+
+	isTargeting bool
+}
+
+// Helper function to make it less tedious to get the inventory
+func (pl *PlayerData) GetPlayerInventory() *Inventory {
+
+	playerInventory := GetComponentType[*Inventory](pl.PlayerEntity, InventoryComponent)
+
+	return playerInventory
 }
 
 func InitializePlayerData(g *Game) {

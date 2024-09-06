@@ -109,10 +109,10 @@ func CreateTestMonsters(g *Game, manager *ecs.Manager, gameMap *GameMap) {
 	c.AddComponent(entityFollowComp, &EntityFollow{target: g.playerData.PlayerEntity})
 
 	c = CreateMonster(g, manager, gameMap, x+1, y+2, "assets/creatures/ancient_lich.png")
-	c.AddComponent(withinRadiusComp, &WithinRadius{target: g.playerData.PlayerEntity, distance: 3})
+	c.AddComponent(withinRadiusComp, &DistanceToEntityMovement{target: g.playerData.PlayerEntity, distance: 3})
 
 	c = CreateMonster(g, manager, gameMap, x+2, y+1, "assets/creatures/starcursed_mass.png")
-	c.AddComponent(withinRangeComponent, &WithinRange{distance: 2, target: g.playerData.PlayerEntity})
+	c.AddComponent(withinRangeComponent, &DistanceToEntityMovement{distance: 2, target: g.playerData.PlayerEntity})
 	//CreateMonster(g, manager, gameMap, x+2, y+2, "assets/creatures/balrug.png")
 
 	CreateMoreTestMonsters(manager, gameMap)
