@@ -7,11 +7,21 @@ import (
 	"github.com/bytearena/ecs"
 )
 
-var simpleWander *ecs.Component
-var noMove *ecs.Component
-var entityFollowComponent *ecs.Component
-var stayWithinRangeComponent *ecs.Component
-var fleeComponent *ecs.Component
+// movementAction is a map that will make it easier to call the movement functions.
+// so that we no not have to add a conditional for every movement type in the MovementSystem
+type MovementFunction func(g *Game, mover *ecs.Entity)
+
+var (
+	simpleWander             *ecs.Component
+	noMove                   *ecs.Component
+	entityFollowComponent    *ecs.Component
+	stayWithinRangeComponent *ecs.Component
+	fleeComponent            *ecs.Component
+
+	MovementTypes []*ecs.Component
+
+	MovementActions = map[*ecs.Component]MovementFunction{}
+)
 
 // Todo considering adding an interface with "BuildPath" m
 
@@ -66,7 +76,7 @@ func NoMoveAction(g *Game, mover *ecs.Entity) {
 
 }
 
-func GoToEntityMoveAction(g *Game, mover *ecs.Entity) {
+func EntityFollowMoveAction(g *Game, mover *ecs.Entity) {
 
 	creature := GetComponentType[*Creature](mover, CreatureComponent)
 	creaturePosition := GetPosition(mover)
@@ -195,26 +205,17 @@ func FleeFromEntityMovementAction(g *Game, mover *ecs.Entity) {
 // How a path is created
 func MovementSystem(c *ecs.QueryResult, g *Game) {
 
-	var ok bool
+	//var ok bool
 
-	if _, ok = c.Entity.GetComponentData(simpleWander); ok {
-		SimpleWanderAction(g, c.Entity)
-	}
+	for _, comp := range MovementTypes {
 
-	if _, ok = c.Entity.GetComponentData(noMove); ok {
-		NoMoveAction(g, c.Entity)
-	}
+		if c.Entity.HasComponent(comp) {
 
-	if _, ok = c.Entity.GetComponentData(entityFollowComponent); ok {
-		GoToEntityMoveAction(g, c.Entity)
-	}
+			if movementFunc, exists := MovementActions[comp]; exists {
+				movementFunc(g, c.Entity) // Call the function
+			}
+		}
 
-	if _, ok = c.Entity.GetComponentData(stayWithinRangeComponent); ok {
-		StayWithinRangeMoveAction(g, c.Entity)
-	}
-
-	if _, ok = c.Entity.GetComponentData(fleeComponent); ok {
-		FleeFromEntityMovementAction(g, c.Entity)
 	}
 
 }
@@ -223,25 +224,12 @@ func RemoveMovementComponent(c *ecs.QueryResult) {
 
 	var ok bool
 
-	if _, ok = c.Entity.GetComponentData(simpleWander); ok {
-		c.Entity.RemoveComponent(simpleWander)
+	for _, m := range MovementTypes {
+		if _, ok = c.Entity.GetComponentData(m); ok {
+			c.Entity.RemoveComponent(m)
 
-	}
+		}
 
-	if _, ok = c.Entity.GetComponentData(noMove); ok {
-		c.Entity.RemoveComponent(noMove)
-	}
-
-	if _, ok = c.Entity.GetComponentData(entityFollowComponent); ok {
-		c.Entity.RemoveComponent(entityFollowComponent)
-	}
-
-	if _, ok = c.Entity.GetComponentData(stayWithinRangeComponent); ok {
-		c.Entity.RemoveComponent(stayWithinRangeComponent)
-	}
-
-	if _, ok = c.Entity.GetComponentData(fleeComponent); ok {
-		c.Entity.RemoveComponent(fleeComponent)
 	}
 
 }
@@ -254,4 +242,11 @@ func InitializeMovementComponents(manager *ecs.Manager, tags map[string]ecs.Tag)
 	stayWithinRangeComponent = manager.NewComponent()
 	fleeComponent = manager.NewComponent()
 
+	MovementTypes = append(MovementTypes, noMove, entityFollowComponent, stayWithinRangeComponent, fleeComponent, simpleWander)
+
+	MovementActions[simpleWander] = SimpleWanderAction
+	MovementActions[noMove] = NoMoveAction
+	MovementActions[entityFollowComponent] = EntityFollowMoveAction
+	MovementActions[stayWithinRangeComponent] = StayWithinRangeMoveAction
+	MovementActions[fleeComponent] = FleeFromEntityMovementAction
 }

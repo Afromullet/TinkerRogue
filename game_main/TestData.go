@@ -89,13 +89,20 @@ func CreateTestMonsters(g *Game, manager *ecs.Manager, gameMap *GameMap) {
 	x, y := gameMap.Rooms[0].Center()
 
 	c := CreateMonster(g, manager, gameMap, x, y+1, "assets/creatures/elf.png")
+
 	c.AddComponent(distanceRangeAttack, &DistanceRangedAttack{distance: 2})
 
-	CreateMonster(g, manager, gameMap, x+1, y, "assets/creatures/elf.png")
-	CreateMonster(g, manager, gameMap, x+1, y+1, "assets/creatures/elf.png")
-	CreateMonster(g, manager, gameMap, x+1, y+2, "assets/creatures/elf.png")
-	CreateMonster(g, manager, gameMap, x+2, y+1, "assets/creatures/elf.png")
-	CreateMonster(g, manager, gameMap, x+2, y+2, "assets/creatures/elf.png")
+	c = CreateMonster(g, manager, gameMap, x+1, y, "assets/creatures/unseen_horror.png")
+	c.AddComponent(simpleWander, &SimpleWander{})
+
+	c = CreateMonster(g, manager, gameMap, x+1, y+1, "assets/creatures/angel.png")
+	c.AddComponent(entityFollowComponent, &EntityFollow{target: g.playerData.PlayerEntity})
+
+	c = CreateMonster(g, manager, gameMap, x+1, y+2, "assets/creatures/ancient_lich.png")
+	c.AddComponent(stayWithinRangeComponent, &StayWithinRange{target: g.playerData.PlayerEntity, distance: 3})
+
+	//CreateMonster(g, manager, gameMap, x+2, y+1, "assets/creatures/starcursed_mass.png")
+	//CreateMonster(g, manager, gameMap, x+2, y+2, "assets/creatures/balrug.png")
 
 	CreateMoreTestMonsters(manager, gameMap)
 

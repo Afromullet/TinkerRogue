@@ -11,13 +11,15 @@ const FREEZING_NAME = "Freezing"
 const STICKY_NAME = "Sticky"
 const THROWABLE_NAME = "Throwable"
 
-var EffectNames = []string{BURNING_NAME, FREEZING_NAME, STICKY_NAME, THROWABLE_NAME}
+var (
+	EffectNames = []string{BURNING_NAME, FREEZING_NAME, STICKY_NAME, THROWABLE_NAME}
 
-var ItemComponent *ecs.Component
-var StickyComponent *ecs.Component
-var BurningComponent *ecs.Component
-var FreezingComponent *ecs.Component
-var ThrowableComponent *ecs.Component
+	ItemComponent      *ecs.Component
+	StickyComponent    *ecs.Component
+	BurningComponent   *ecs.Component
+	FreezingComponent  *ecs.Component
+	ThrowableComponent *ecs.Component
+)
 
 /*
 The AllItemEffects makes it easier to query an Item for all of its Properties.

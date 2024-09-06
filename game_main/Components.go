@@ -214,9 +214,9 @@ func InitializeECS(g *Game) {
 	messengers := ecs.BuildTag(userMessage)
 	tags["messengers"] = messengers
 
+	InitializeMovementComponents(manager, tags)
 	InitializeItemComponents(manager, tags)
 	InitializeCreatureComponents(manager, tags)
-	InitializeMovementComponents(manager, tags)
 
 	g.WorldTags = tags
 	g.World = manager

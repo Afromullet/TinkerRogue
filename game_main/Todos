@@ -1,15 +1,15 @@
 
 
-___Throwing___
+__Throwing__
 
 
 * Miss chance - tile isn't always hit
 
 
 
-___Movement___
+__Movement__
 
-* Create creatures with different sprites to make it easier to test movement.
+
 
 * Add Movement Speed so that sticky effect works
 
@@ -26,7 +26,7 @@ then removes them before adding the new one
 
 * Make it easier to add new movement types
 
-___Monster Bevavior____
+__Monster Bevavior__
 
 
 
@@ -36,14 +36,14 @@ ___Monster Bevavior____
 
 * Allow creature to choose its target. Currently the attacks use the PlayerData
 
-___Randomness___
+__Randomness__
 
 * Item Spawning - Determine where to spawn items and spawn with random properties
 
 * Creature Spawning - Spawn during map gen and when out of 
 
 
-___Levels___
+__Levels__
 
 Add multiple levels
 
@@ -61,21 +61,24 @@ Not very complicated, but it will do for now.
 - - - - - - 
 
 
-___Component___
+__Component__
 
 * Better organization of components and compontent initializaiton. Currently it's littered through the files
 
-___Weapon and Armor___
+___Weapon and Armor__
 
 
 * Equipping weapons and armor
 
-___Consumables___
+___Consumables__
 
 * Add consumables
 
+__Animations__
 
-___Other___
+Add shooting and throwing animations
+
+___Other__
 
 * Decouple functions which take g *Game as input
 
@@ -112,48 +115,52 @@ _______________________________________
 
 Done
 
-___Throwing___
+___Throwing__
 
 * Implement Throwing Range. Player needs indication of how far they can throw 
 
 
 
-___Monster Bevavior____
+__Monster Bevavior__
 
 * Allow creatures to melee attack
 
 
-___Movement___
+___Movement__
 
 
 
 * Add Keep Distance movement - Move within N Square - Done. Needs improvement
 
+* Create creatures with different sprites to make it easier to test movement.
 
-___Randomness___
+
+___Randomness__
 
 
 * Damage - Attack damage does damage within a range rather than one set number- Done
 
 
-___Combat___
+___Combat__
 
 
 * Add ranged attacks - DOne
 
 
 
-___Weapon and Armor___
+___Weapon and Armor__
 
 * Determine whether I want to treat weapon and armor as an Item or have them as their own thing - Done. They're items
 
 
-___Ranged Weapons___
+
+
+___Ranged Weapons__
 
 * Create ranged weapons - Done
 * Allow player to select targets - Done
 
-___Other___
+___Other__
 
 
 * The targeting AOE changes color if something is out of range. If the center of the shape is in range, then everything is considered in range. Determine
