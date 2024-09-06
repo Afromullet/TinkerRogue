@@ -1,10 +1,16 @@
 package main
 
 import (
-	"log"
+	"fmt"
+	"os"
 
+	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 )
+
+var floorImgs = make([]*ebiten.Image, 0)
+var wallImgs = make([]*ebiten.Image, 0)
+var decorationImgs = make([]*ebiten.Image, 0)
 
 // Contains the data we need to render the map
 type ScreenData struct {
@@ -49,6 +55,11 @@ func PositionFromIndex(i int) Position {
 
 }
 
+func PixelsFromPosition(pos *Position) (int, int) {
+	gd := NewScreenData()
+	return pos.X * gd.TileWidth, pos.Y * gd.TileHeight
+}
+
 // Return the Grid X,Y coordinates from pixel positions
 func GridXYFromPixels(x, y int) (int, int) {
 	gd := NewScreenData()
@@ -65,18 +76,49 @@ func GridPositionFromPixels(x, y int) Position {
 }
 
 func loadTileImages() {
-	if floor != nil && wall != nil {
-		return
-	}
-	var err error
 
-	floor, _, err = ebitenutil.NewImageFromFile("assets//tiles/marble_floor5.png")
-	if err != nil {
-		log.Fatal(err)
+	// Not doing any error checking here. Just want something quick to test so that the map looks more varied
+
+	dir := "assets//tiles/floors/limestone"
+	files, _ := os.ReadDir(dir)
+
+	for _, file := range files {
+		if !file.IsDir() { // Ensure it's a file, not a subdirectory
+			fmt.Println(file.Name())
+
+			floor, _, _ := ebitenutil.NewImageFromFile(dir + "/" + file.Name())
+
+			floorImgs = append(floorImgs, floor)
+		}
+
 	}
 
-	wall, _, err = ebitenutil.NewImageFromFile("assets//tiles/marble_wall1.png")
-	if err != nil {
-		log.Fatal(err)
+	dir = "assets//tiles/walls/marble"
+	files, _ = os.ReadDir(dir)
+
+	for _, file := range files {
+		if !file.IsDir() { // Ensure it's a file, not a subdirectory
+			fmt.Println(file.Name())
+
+			wall, _, _ := ebitenutil.NewImageFromFile(dir + "/" + file.Name())
+
+			wallImgs = append(wallImgs, wall)
+		}
+
 	}
+
+	dir = "assets//tiles/walls/marble"
+	files, _ = os.ReadDir(dir)
+
+	for _, file := range files {
+		if !file.IsDir() { // Ensure it's a file, not a subdirectory
+			fmt.Println(file.Name())
+
+			wall, _, _ := ebitenutil.NewImageFromFile(dir + "/" + file.Name())
+
+			wallImgs = append(wallImgs, wall)
+		}
+
+	}
+
 }

@@ -23,19 +23,16 @@ func DrawRangedAttackAOE(g *Game) {
 	s.UpdatePosition(cursorX, cursorY)
 	indices = s.GetIndices()
 
-	inRangeCM := ColorMatrix{0, 1, 0, 0.5, true}
-	outOfRangeCM := ColorMatrix{1, 0, 0, 0.5, true}
-
 	for _, i := range indices {
 
 		pos := PositionFromIndex(i)
 
 		if pos.InRange(g.playerData.position, g.playerData.RangedWeaponMaxDistance) {
-			g.gameMap.ApplyColorMatrixToIndex(i, inRangeCM)
+			g.gameMap.ApplyColorMatrixToIndex(i, GreenColorMatrix)
 
 		} else {
 
-			g.gameMap.ApplyColorMatrixToIndex(i, outOfRangeCM)
+			g.gameMap.ApplyColorMatrixToIndex(i, RedColorMatrix)
 
 		}
 
@@ -50,6 +47,9 @@ func HandlePlayerRangedAttack(g *Game) {
 
 	if g.playerData.isTargeting {
 
+		msg := GetComponentType[*UserMessage](g.playerData.PlayerEntity, userMessage)
+
+		msg.GameStateMessage = "Shooting"
 		DrawRangedAttackAOE(g)
 
 		//Cancel throwing

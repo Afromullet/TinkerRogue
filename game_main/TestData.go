@@ -46,6 +46,10 @@ func CreateTestItems(manager *ecs.Manager, tags map[string]ecs.Tag, gameMap *Gam
 	CreateItem(manager, "T0"+strconv.Itoa(1), Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
 		NewThrowable(1, 2, 3, &s), b, f)
 
+	sout := NewTileCircleOutline(0, 0, 2)
+	CreateItem(manager, "T8"+strconv.Itoa(1), Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
+		NewThrowable(1, 2, 3, &sout), b, f)
+
 	s = NewTileSquare(0, 0, 2)
 	//CreateItem(manager, "Throwable Item"+strconv.Itoa(1), Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
 	//NewThrowable(1, 5, 3, NewTileSquare(0, 0, 3)), NewBurning(1, 1))
@@ -84,13 +88,16 @@ func CreateTestMonsters(g *Game, manager *ecs.Manager, gameMap *GameMap) {
 
 	x, y := gameMap.Rooms[0].Center()
 
-	c := CreateMonster(g, manager, gameMap, x, y+1)
-	c.AddComponent(approachAndAttack, &ApproachAndAttack{})
-	CreateMonster(g, manager, gameMap, x+1, y)
-	CreateMonster(g, manager, gameMap, x+1, y+1)
-	CreateMonster(g, manager, gameMap, x+1, y+2)
-	CreateMonster(g, manager, gameMap, x+2, y+1)
-	CreateMonster(g, manager, gameMap, x+2, y+2)
+	c := CreateMonster(g, manager, gameMap, x, y+1, "assets/creatures/elf.png")
+	c.AddComponent(distanceRangeAttack, &DistanceRangedAttack{distance: 2})
+
+	CreateMonster(g, manager, gameMap, x+1, y, "assets/creatures/elf.png")
+	CreateMonster(g, manager, gameMap, x+1, y+1, "assets/creatures/elf.png")
+	CreateMonster(g, manager, gameMap, x+1, y+2, "assets/creatures/elf.png")
+	CreateMonster(g, manager, gameMap, x+2, y+1, "assets/creatures/elf.png")
+	CreateMonster(g, manager, gameMap, x+2, y+2, "assets/creatures/elf.png")
+
+	CreateMoreTestMonsters(manager, gameMap)
 
 	//CreateMoreTestMonsters(manager, gameMap)
 
@@ -120,7 +127,7 @@ func CreateMoreTestMonsters(manager *ecs.Manager, gameMap *GameMap) {
 				Visible: true,
 			}).
 			AddComponent(PositionComponent, &pos).
-			AddComponent(goToEntity, &GoToEntityMovement{}).
+			AddComponent(entityFollowComponent, &EntityFollow{}).
 			AddComponent(AttributeComponent, &Attributes{MaxHealth: 5, CurrentHealth: 5}).AddComponent(userMessage, &UserMessage{
 			AttackMessage:    "",
 			GameStateMessage: "",
@@ -129,9 +136,9 @@ func CreateMoreTestMonsters(manager *ecs.Manager, gameMap *GameMap) {
 
 }
 
-func CreateMonster(g *Game, manager *ecs.Manager, gameMap *GameMap, x, y int) *ecs.Entity {
+func CreateMonster(g *Game, manager *ecs.Manager, gameMap *GameMap, x, y int, img string) *ecs.Entity {
 
-	elfImg, _, err := ebitenutil.NewImageFromFile("assets/creatures/elf.png")
+	elfImg, _, err := ebitenutil.NewImageFromFile(img)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -175,8 +182,6 @@ func UpdateContentsForTest(g *Game) {
 		item_pos := item.Components[PositionComponent].(*Position)
 
 		g.gameMap.AddEntityToTile(item.Entity, item_pos)
-		log.Print("Item Pos: \n")
-		log.Print(item_pos)
 
 	}
 

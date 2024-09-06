@@ -49,16 +49,15 @@ type TileContents struct {
 
 // TileCords keeps track of the x,y coordinates in the TileMap
 type Tile struct {
-	PixelX        int
-	PixelY        int
-	TileCords     Position
-	Blocked       bool
-	Image         *ebiten.Image
-	tileContents  TileContents
-	TileType      TileType
-	IsRevealed    bool
-	cm            ColorMatrix
-	OriginalImage *ebiten.Image
+	PixelX       int
+	PixelY       int
+	TileCords    Position
+	Blocked      bool
+	Image        *ebiten.Image
+	tileContents TileContents
+	TileType     TileType
+	IsRevealed   bool
+	cm           ColorMatrix
 }
 
 func NewTile(pixelX, pixelY int, tileCords Position, blocked bool, img *ebiten.Image, tileType TileType, isRevealed bool) Tile {
@@ -80,8 +79,7 @@ func NewTile(pixelX, pixelY int, tileCords Position, blocked bool, img *ebiten.I
 			b:           0,
 			a:           0,
 			ApplyMatrix: false,
-		},
-		OriginalImage: img}
+		}}
 
 	return tile
 }

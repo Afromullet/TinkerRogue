@@ -9,8 +9,6 @@ import (
 	"github.com/norendren/go-fov/fov"
 )
 
-var floor *ebiten.Image = nil
-var wall *ebiten.Image = nil
 var validPositions ValidPositions
 
 // ValidPosition stores the position of anything that a player or creature can move onto
@@ -188,7 +186,9 @@ func (gameMap *GameMap) createTiles() []*Tile {
 			index = IndexFromXY(x, y)
 
 			pos := Position{x, y}
-			tile := NewTile(x*gd.TileWidth, y*gd.TileHeight, pos, true, wall, WALL, false)
+			wallImg := wallImgs[GetRandomBetween(0, len(wallImgs)-1)]
+			//tile := NewTile(x*gd.TileWidth, y*gd.TileHeight, pos, true, wall, WALL, false)
+			tile := NewTile(x*gd.TileWidth, y*gd.TileHeight, pos, true, wallImg, WALL, false)
 
 			tiles[index] = &tile
 		}
@@ -252,8 +252,9 @@ func (gameMap *GameMap) createRoom(room Rect) {
 			index := IndexFromXY(x, y)
 			gameMap.Tiles[index].Blocked = false
 			gameMap.Tiles[index].TileType = FLOOR
-			gameMap.Tiles[index].Image = floor
-			gameMap.Tiles[index].OriginalImage = floor
+
+			//Select a random tile png
+			gameMap.Tiles[index].Image = floorImgs[GetRandomBetween(0, len(floorImgs)-1)]
 
 			validPositions.Add(x, y)
 		}
@@ -268,8 +269,8 @@ func (gameMap *GameMap) createHorizontalTunnel(x1 int, x2 int, y int) {
 			gameMap.Tiles[index].Blocked = false
 			gameMap.Tiles[index].TileType = FLOOR
 
-			gameMap.Tiles[index].Image = floor
-			gameMap.Tiles[index].OriginalImage = floor
+			gameMap.Tiles[index].Image = floorImgs[GetRandomBetween(0, len(floorImgs)-1)]
+
 			validPositions.Add(x, y)
 		}
 	}
@@ -283,8 +284,8 @@ func (gameMap *GameMap) createVerticalTunnel(y1 int, y2 int, x int) {
 		if index > 0 && index < gd.ScreenWidth*levelHeight {
 			gameMap.Tiles[index].Blocked = false
 			gameMap.Tiles[index].TileType = FLOOR
-			gameMap.Tiles[index].Image = floor
-			gameMap.Tiles[index].OriginalImage = floor
+			gameMap.Tiles[index].Image = floorImgs[GetRandomBetween(0, len(floorImgs)-1)]
+
 			validPositions.Add(x, y)
 		}
 	}

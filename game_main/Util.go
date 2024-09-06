@@ -7,6 +7,9 @@ import (
 	"github.com/bytearena/ecs"
 )
 
+var GreenColorMatrix = ColorMatrix{0, 1, 0, 1, true}
+var RedColorMatrix = ColorMatrix{0, 1, 0, 1, true}
+
 var levelHeight int = 0
 
 func DistanceBetween(e1 *ecs.Entity, e2 *ecs.Entity) int {
@@ -50,4 +53,21 @@ func min(x, y int) int {
 		return y
 	}
 	return x
+}
+
+// Todo this can be removed later. Currently using it for debugging
+func ApplyColorToMap(g *Game, indices []int) {
+
+	for _, ind := range indices {
+
+		g.gameMap.ApplyColorMatrixToIndex(ind, GreenColorMatrix)
+
+	}
+
+}
+
+// Todo this can be removed later. Currently using it for debugging
+func ApplyColorToInd(g *Game, index int) {
+	g.gameMap.ApplyColorMatrixToIndex(index, GreenColorMatrix)
+
 }

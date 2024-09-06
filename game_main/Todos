@@ -21,11 +21,20 @@ ___Movement___
 
 * Fix bug that causes a creature to teleport if it tries to move into a blocked spot
 
+* Add a function to add a movement component to a creature. The function checks if there are any existing movement components and
+then removes them before adding the new one
+
+* Make it easier to add new movement types
+
 ___Monster Bevavior____
 
-* Allow creatures to attack
+
+
+* Allow Creatures to do ranged attacks
 
 * Monster can chose to melee attack, range attack, or throw
+
+* Allow creature to choose its target. Currently the attacks use the PlayerData
 
 ___Randomness___
 
@@ -38,6 +47,19 @@ ___Levels___
 
 Add multiple levels
 
+Add more variety to the levels, including placeable items and tile variety
+
+
+
+- - - - - - 
+
+....Note....
+
+Currently I create two slices of images. One from assets/tiles/walls and another from assets/tiles/floors.  The GameMap chooses a random tile to draw.  Also loading images from assets/tiles/decorations to add a small amount of flair. 
+Not very complicated, but it will do for now. 
+
+- - - - - - 
+
 
 ___Component___
 
@@ -45,7 +67,6 @@ ___Component___
 
 ___Weapon and Armor___
 
-* Determine whether I want to treat weapon and armor as an Item or have them as their own thing - Done. They're items
 
 * Equipping weapons and armor
 
@@ -75,9 +96,16 @@ Might need to index instead
 
 * Create Shorter names for types and functions with long names
 
+
+
+* Do I want to add collision handling? Could make it easier to choose what tile to move to for creature movement
+
+--- State Handlers --- 
 * game struct needs improvement. It tracks a lot.
 
 * player struct needs improvement. It tracks a lot
+
+--- State Handlers End--- 
 
 
 _______________________________________
@@ -92,9 +120,15 @@ ___Throwing___
 
 ___Monster Bevavior____
 
-* Allow creatures to attack
+* Allow creatures to melee attack
 
-* Monster can chose to melee attack, range attack, or throw
+
+___Movement___
+
+
+
+* Add Keep Distance movement - Move within N Square - Done. Needs improvement
+
 
 ___Randomness___
 
@@ -126,4 +160,3 @@ ___Other___
 If that's something you want to change - Done. 
 
 * Rename components and component structs. Hard to determine which type is what since in some cases the component and struct are too close in name - Done
-

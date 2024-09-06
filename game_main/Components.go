@@ -216,6 +216,7 @@ func InitializeECS(g *Game) {
 
 	InitializeItemComponents(manager, tags)
 	InitializeCreatureComponents(manager, tags)
+	InitializeMovementComponents(manager, tags)
 
 	g.WorldTags = tags
 	g.World = manager
@@ -224,12 +225,9 @@ func InitializeECS(g *Game) {
 func InitializeCreatureComponents(manager *ecs.Manager, tags map[string]ecs.Tag) {
 
 	CreatureComponent = manager.NewComponent()
-	simpleWander = manager.NewComponent()
-	noMove = manager.NewComponent()
-	goToEntity = manager.NewComponent()
 
 	approachAndAttack = manager.NewComponent()
-	creatureRangedAttack = manager.NewComponent()
+	distanceRangeAttack = manager.NewComponent()
 
 	creatures := ecs.BuildTag(CreatureComponent, PositionComponent, AttributeComponent)
 	tags["monsters"] = creatures

@@ -224,16 +224,65 @@ func (c TileCircle) GetIndices() []int {
 
 	centerX, centerY := GridXYFromPixels(c.pixelX, c.pixelY)
 
-	for y := centerY - c.radius; y <= centerY+c.radius; y++ {
-		for x := centerX - c.radius; x <= centerX+c.radius; x++ {
-			// Check if the point (x, y) is within the circle
-			if (x-centerX)*(x-centerX)+(y-centerY)*(y-centerY) <= c.radius*c.radius {
-				if InBounds(x, y) {
-					index := IndexFromXY(x, y)
-					indices = append(indices, index)
-				}
+	x := 0
+	y := c.radius
+	d := 1 - c.radius
+
+	// Helper function to add points in all octants of the circle and fill horizontally between them
+	addAndFillCirclePoints := func(x, y int) {
+		// Add points in all octants
+		points := []struct{ X, Y int }{
+			{centerX + x, centerY + y},
+			{centerX - x, centerY + y},
+			{centerX + x, centerY - y},
+			{centerX - x, centerY - y},
+			{centerX + y, centerY + x},
+			{centerX - y, centerY + x},
+			{centerX + y, centerY - x},
+			{centerX - y, centerY - x},
+		}
+		for _, p := range points {
+			if InBounds(p.X, p.Y) {
+				index := IndexFromXY(p.X, p.Y)
+				indices = append(indices, index)
 			}
 		}
+
+		// Fill horizontal lines between the points
+		// Fill between (centerX - x, centerY + y) and (centerX + x, centerY + y)
+		for fillX := centerX - x; fillX <= centerX+x; fillX++ {
+			if InBounds(fillX, centerY+y) {
+				index := IndexFromXY(fillX, centerY+y)
+				indices = append(indices, index)
+			}
+			if InBounds(fillX, centerY-y) {
+				index := IndexFromXY(fillX, centerY-y)
+				indices = append(indices, index)
+			}
+		}
+		// Fill between (centerX - y, centerY + x) and (centerX + y, centerY + x)
+		for fillX := centerX - y; fillX <= centerX+y; fillX++ {
+			if InBounds(fillX, centerY+x) {
+				index := IndexFromXY(fillX, centerY+x)
+				indices = append(indices, index)
+			}
+			if InBounds(fillX, centerY-x) {
+				index := IndexFromXY(fillX, centerY-x)
+				indices = append(indices, index)
+			}
+		}
+	}
+
+	// Midpoint circle algorithm to generate the points and fill
+	for x <= y {
+		addAndFillCirclePoints(x, y)
+		if d < 0 {
+			d += 2*x + 3
+		} else {
+			d += 2*(x-y) + 5
+			y--
+		}
+		x++
 	}
 
 	return indices
@@ -248,6 +297,71 @@ func (c *TileCircle) UpdatePosition(pixelX, pixelY int) {
 func NewTileCircle(pixelX, pixelY, radius int) TileCircle {
 
 	return TileCircle{
+		pixelX: pixelX,
+		pixelY: pixelY,
+		radius: radius,
+	}
+
+}
+
+type TileCircleOutline struct {
+	pixelX int
+	pixelY int
+	radius int
+}
+
+func (c TileCircleOutline) GetIndices() []int {
+	indices := make([]int, 0)
+
+	centerX, centerY := GridXYFromPixels(c.pixelX, c.pixelY)
+
+	x := 0
+	y := c.radius
+	d := 1 - c.radius
+
+	// Helper function to add points in all octants of the circle
+	addCirclePoints := func(x, y int) {
+		points := []struct{ X, Y int }{
+			{centerX + x, centerY + y},
+			{centerX - x, centerY + y},
+			{centerX + x, centerY - y},
+			{centerX - x, centerY - y},
+			{centerX + y, centerY + x},
+			{centerX - y, centerY + x},
+			{centerX + y, centerY - x},
+			{centerX - y, centerY - x},
+		}
+		for _, p := range points {
+			if InBounds(p.X, p.Y) {
+				index := IndexFromXY(p.X, p.Y)
+				indices = append(indices, index)
+			}
+		}
+	}
+
+	// Midpoint circle algorithm to generate the points
+	for x <= y {
+		addCirclePoints(x, y)
+		if d < 0 {
+			d += 2*x + 3
+		} else {
+			d += 2*(x-y) + 5
+			y--
+		}
+		x++
+	}
+	return indices
+}
+
+func (c *TileCircleOutline) UpdatePosition(pixelX, pixelY int) {
+	c.pixelX = pixelX
+	c.pixelY = pixelY
+
+}
+
+func NewTileCircleOutline(pixelX, pixelY, radius int) TileCircleOutline {
+
+	return TileCircleOutline{
 		pixelX: pixelX,
 		pixelY: pixelY,
 		radius: radius,
@@ -295,6 +409,64 @@ func NewTileRectangle(pixelX, pixelY, width, height int) TileRectangle {
 		pixelY: pixelY,
 		width:  width,
 		height: height,
+	}
+
+}
+
+// This shape has only the outer edges of a square.
+type TileSquareOutline struct {
+	PixelX int
+	PixelY int
+	Size   int
+}
+
+func (s TileSquareOutline) GetIndices() []int {
+
+	halfSize := s.Size / 2
+	indices := make([]int, 0)
+
+	gridX, gridY := GridXYFromPixels(s.PixelX, s.PixelY)
+
+	// Top and bottom edges
+	for x := gridX - halfSize; x <= gridX+halfSize; x++ {
+		if InBounds(x, gridY-halfSize) {
+			index := IndexFromXY(x, gridY-halfSize)
+			indices = append(indices, index)
+		}
+		if InBounds(x, gridY+halfSize) {
+			index := IndexFromXY(x, gridY+halfSize)
+			indices = append(indices, index)
+		}
+	}
+
+	// Left and right edges (excluding corners already handled by top/bottom)
+	for y := gridY - halfSize + 1; y <= gridY+halfSize-1; y++ {
+		if InBounds(gridX-halfSize, y) {
+			index := IndexFromXY(gridX-halfSize, y)
+			indices = append(indices, index)
+		}
+		if InBounds(gridX+halfSize, y) {
+			index := IndexFromXY(gridX+halfSize, y)
+			indices = append(indices, index)
+		}
+	}
+
+	return indices
+
+}
+
+func (s *TileSquareOutline) UpdatePosition(pixelX int, pixelY int) {
+	s.PixelX = pixelX
+	s.PixelY = pixelY
+
+}
+
+func NewTileSquareOutline(pixelX, pixelY, size int) TileSquareOutline {
+
+	return TileSquareOutline{
+		PixelX: pixelX,
+		PixelY: pixelY,
+		Size:   size,
 	}
 
 }
