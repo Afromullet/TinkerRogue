@@ -107,6 +107,9 @@ func RangedAttackSystem(g *Game, attackerPos *Position) {
 				fmt.Println("Shooting")
 
 				PerformAttack(g, weapon.CalculateDamage(), attacker, t)
+
+				RangedAttackDrawnigPlaceHolder(attackerPos, defenderPos)
+
 			} else {
 				fmt.Println("Out of range")
 			}
@@ -116,6 +119,15 @@ func RangedAttackSystem(g *Game, attackerPos *Position) {
 	} else {
 		log.Print("Failed to attack. No ranged weapon")
 	}
+
+}
+
+func RangedAttackDrawnigPlaceHolder(attackerPos *Position, defenderPos *Position) {
+
+	attX, attY := PixelsFromPosition(attackerPos)
+	defX, defY := PixelsFromPosition(defenderPos)
+	arr := NewArrow(attX, attY, defX, defY)
+	AddVisualEffect(arr)
 
 }
 

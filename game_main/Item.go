@@ -54,8 +54,8 @@ func (item *Item) GetEffectNames() []string {
 		if ok {
 			print(data)
 
-			d := data.(*Effects)
-			names = append(names, EffectName(d))
+			d := data.(*StatusEffects)
+			names = append(names, StatusEffectName(d))
 		}
 	}
 	return names
@@ -82,8 +82,8 @@ func (item *Item) ItemEffect(effectName string) any {
 		data, ok := item.Properties.GetComponentData(c)
 		if ok {
 
-			d := *data.(*Effects)
-			if EffectName(&d) == effectName {
+			d := *data.(*StatusEffects)
+			if StatusEffectName(&d) == effectName {
 				p := d.(any)
 				return p
 			}
@@ -93,7 +93,7 @@ func (item *Item) ItemEffect(effectName string) any {
 }
 
 // Not the best way to check if an item has all propeties, but it will work for now
-func (item *Item) HasAllEffects(effectsToCheck ...Effects) bool {
+func (item *Item) HasAllEffects(effectsToCheck ...StatusEffects) bool {
 
 	if len(effectsToCheck) == 0 {
 		return true
@@ -110,10 +110,10 @@ func (item *Item) HasAllEffects(effectsToCheck ...Effects) bool {
 
 }
 
-func (item *Item) HasEffect(effectToCheck Effects) bool {
+func (item *Item) HasEffect(effectToCheck StatusEffects) bool {
 
 	names := item.GetEffectNames()
-	comp := effectToCheck.EffectName()
+	comp := effectToCheck.StatusEffectName()
 
 	for _, n := range names {
 

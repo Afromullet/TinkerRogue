@@ -18,9 +18,9 @@ var buttonImage, _ = loadButtonImage()
 // Every window that displays the inventory to teh user will be a struct that contains ItemDisplay
 // And implements the ItemDisplayer interface
 type ItemDisplayer interface {
-	CreateContainers()                                                  //For creating the containers
-	CreateInventoryList(playerData *PlayerData, propFilters ...Effects) //For getting the inventory from the player and adding on click event handlers
-	DisplayInventory(g *Game)                                           //Really just there for calling CreateInventoryList with ItemProperty filters for the specific kind of window
+	CreateContainers()                                                        //For creating the containers
+	CreateInventoryList(playerData *PlayerData, propFilters ...StatusEffects) //For getting the inventory from the player and adding on click event handlers
+	DisplayInventory(g *Game)                                                 //Really just there for calling CreateInventoryList with ItemProperty filters for the specific kind of window
 }
 
 // Anything that displays the inventory will have to use this struct through composition.

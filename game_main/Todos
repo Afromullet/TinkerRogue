@@ -13,7 +13,7 @@ __Movement__
 
 * Add Movement Speed so that sticky effect works
 
-* Add Keep Distance movement - Move within N Square
+* Movement is wonky. Sometimes creatures don't follow
 
 * Add Pack Movement - Only approach if N mothers are within r distance to the player
 
@@ -113,57 +113,3 @@ Might need to index instead
 
 _______________________________________
 
-Done
-
-___Throwing__
-
-* Implement Throwing Range. Player needs indication of how far they can throw 
-
-
-
-__Monster Bevavior__
-
-* Allow creatures to melee attack
-
-
-___Movement__
-
-
-
-* Add Keep Distance movement - Move within N Square - Done. Needs improvement
-
-* Create creatures with different sprites to make it easier to test movement.
-
-
-___Randomness__
-
-
-* Damage - Attack damage does damage within a range rather than one set number- Done
-
-
-___Combat__
-
-
-* Add ranged attacks - DOne
-
-
-
-___Weapon and Armor__
-
-* Determine whether I want to treat weapon and armor as an Item or have them as their own thing - Done. They're items
-
-
-
-
-___Ranged Weapons__
-
-* Create ranged weapons - Done
-* Allow player to select targets - Done
-
-___Other__
-
-
-* The targeting AOE changes color if something is out of range. If the center of the shape is in range, then everything is considered in range. Determine
-If that's something you want to change - Done. 
-
-* Rename components and component structs. Hard to determine which type is what since in some cases the component and struct are too close in name - Done

@@ -97,7 +97,7 @@ func (inv *Inventory) EffectNames(index int) ([]string, error) {
 
 // Used for displaying the inventory to the player. Returns a list the ebitenui list widgets expects
 // The list contains the index in the inventory, the name, and the count of the item.
-func (inv *Inventory) GetInventoryForDisplay(indicesToSelect []int, itemPropertiesFilter ...Effects) []any {
+func (inv *Inventory) GetInventoryForDisplay(indicesToSelect []int, itemPropertiesFilter ...StatusEffects) []any {
 
 	inventoryItems := make([]any, 0)
 

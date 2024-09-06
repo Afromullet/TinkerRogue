@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"math"
 
 	"github.com/bytearena/ecs"
@@ -12,11 +11,12 @@ import (
 type MovementFunction func(g *Game, mover *ecs.Entity)
 
 var (
-	simpleWander             *ecs.Component
-	noMove                   *ecs.Component
-	entityFollowComponent    *ecs.Component
-	stayWithinRangeComponent *ecs.Component
-	fleeComponent            *ecs.Component
+	simpleWanderComp     *ecs.Component
+	noMoveComp           *ecs.Component
+	entityFollowComp     *ecs.Component
+	withinRadiusComp     *ecs.Component
+	withinRangeComponent *ecs.Component
+	fleeComp             *ecs.Component
 
 	MovementTypes []*ecs.Component
 
@@ -35,7 +35,12 @@ type EntityFollow struct {
 	target *ecs.Entity
 }
 
-type StayWithinRange struct {
+type WithinRadius struct {
+	target   *ecs.Entity
+	distance int
+}
+
+type WithinRange struct {
 	target   *ecs.Entity
 	distance int
 }
@@ -53,8 +58,7 @@ type FleeMovement struct {
 // Select a random spot to wander to and builds a new path when arriving at the position
 func SimpleWanderAction(g *Game, mover *ecs.Entity) {
 
-	creature := GetComponentType[*Creature](mover, CreatureComponent)
-
+	creature := GetCreature(mover)
 	creaturePosition := GetPosition(mover)
 
 	randomPos := GetRandomBetween(0, len(validPositions.positions))
@@ -68,8 +72,6 @@ func SimpleWanderAction(g *Game, mover *ecs.Entity) {
 
 	}
 
-	creature.UpdatePosition(g, creaturePosition)
-
 }
 
 func NoMoveAction(g *Game, mover *ecs.Entity) {
@@ -78,9 +80,9 @@ func NoMoveAction(g *Game, mover *ecs.Entity) {
 
 func EntityFollowMoveAction(g *Game, mover *ecs.Entity) {
 
-	creature := GetComponentType[*Creature](mover, CreatureComponent)
+	creature := GetCreature(mover)
 	creaturePosition := GetPosition(mover)
-	goToEnt := GetComponentType[*EntityFollow](mover, entityFollowComponent)
+	goToEnt := GetComponentType[*EntityFollow](mover, entityFollowComp)
 
 	if goToEnt.target != nil {
 		targetPos := GetComponentType[*Position](goToEnt.target, PositionComponent)
@@ -89,16 +91,14 @@ func EntityFollowMoveAction(g *Game, mover *ecs.Entity) {
 
 	}
 
-	creature.UpdatePosition(g, creaturePosition)
-
 }
 
 // Sort of works but needs improvement
-func StayWithinRangeMoveAction(g *Game, mover *ecs.Entity) {
+func WithinRadiusMoveAction(g *Game, mover *ecs.Entity) {
 
-	creature := GetComponentType[*Creature](mover, CreatureComponent)
+	creature := GetCreature(mover)
 	creaturePosition := GetPosition(mover)
-	withinRange := GetComponentType[*StayWithinRange](mover, stayWithinRangeComponent)
+	withinRange := GetComponentType[*WithinRadius](mover, withinRadiusComp)
 
 	if withinRange.target != nil {
 		targetPos := GetComponentType[*Position](withinRange.target, PositionComponent)
@@ -122,8 +122,7 @@ func StayWithinRangeMoveAction(g *Game, mover *ecs.Entity) {
 		}
 
 		creature.Path = path
-		creature.UpdatePosition(g, creaturePosition)
-		fmt.Println("Printing path ", creature.Path)
+
 	}
 
 	//fmt.Println(pos)
@@ -132,10 +131,12 @@ func StayWithinRangeMoveAction(g *Game, mover *ecs.Entity) {
 func GetUnblockedTile(gameMap *GameMap, indices []int) (int, bool) {
 
 	unblocked_tiles := make([]int, 0)
-	for _, ind := range indices {
+	for i, ind := range indices {
 
-		if !gameMap.Tiles[ind].Blocked {
-			unblocked_tiles = append(unblocked_tiles, ind)
+		if i < len(indices) {
+			if !gameMap.Tiles[ind].Blocked {
+				unblocked_tiles = append(unblocked_tiles, ind)
+			}
 		}
 	}
 
@@ -148,10 +149,32 @@ func GetUnblockedTile(gameMap *GameMap, indices []int) (int, bool) {
 
 }
 
+// Clears the path once within range
+func WithinRangeMoveAction(g *Game, mover *ecs.Entity) {
+
+	creature := GetCreature(mover)
+	creaturePosition := GetPosition(mover)
+	within := GetComponentType[*WithinRange](mover, withinRangeComponent)
+
+	if within.target != nil {
+		targetPos := GetComponentType[*Position](within.target, PositionComponent)
+
+		if targetPos.InRange(creaturePosition, within.distance) {
+			creature.Path = creature.Path[:0]
+
+		} else {
+			creature.Path = creaturePosition.BuildPath(g, targetPos)
+
+		}
+
+	}
+
+}
+
 // Also needs improvement
 func FleeFromEntityMovementAction(g *Game, mover *ecs.Entity) {
-	fleeMov := GetComponentType[*FleeMovement](mover, fleeComponent)
-	creature := GetComponentType[*Creature](mover, CreatureComponent)
+	fleeMov := GetComponentType[*FleeMovement](mover, fleeComp)
+	creature := GetCreature(mover)
 	creaturePosition := GetPosition(mover)
 
 	if fleeMov.target != nil {
@@ -181,8 +204,7 @@ func FleeFromEntityMovementAction(g *Game, mover *ecs.Entity) {
 						// Set the path to the flee destination
 						path := creaturePosition.BuildPath(g, &fleePosition)
 						creature.Path = path
-						fmt.Println(path)
-						creature.UpdatePosition(g, creaturePosition)
+
 						return
 					}
 				}
@@ -197,12 +219,9 @@ func FleeFromEntityMovementAction(g *Game, mover *ecs.Entity) {
 }
 
 // Used for Stay Within Range movement. Selects a random unblocked tile to move to
-
 // Gets called in MonsterSystems, which queries the ECS manager and returns query results containing all monsters
+// A movmeent function builds a path for a creature to follow, and UpdatePosition lets a creature move on the path
 
-// Creature movement follows a path, which is a slice of Position Type. Each movement function calls
-// UpdatePosition, which...updates the creatures position The movement type functions determine
-// How a path is created
 func MovementSystem(c *ecs.QueryResult, g *Game) {
 
 	//var ok bool
@@ -211,8 +230,11 @@ func MovementSystem(c *ecs.QueryResult, g *Game) {
 
 		if c.Entity.HasComponent(comp) {
 
+			creature := GetComponentType[*Creature](c.Entity, CreatureComponent)
+			creaturePosition := GetComponentType[*Position](c.Entity, PositionComponent)
 			if movementFunc, exists := MovementActions[comp]; exists {
 				movementFunc(g, c.Entity) // Call the function
+				creature.UpdatePosition(g, creaturePosition)
 			}
 		}
 
@@ -236,17 +258,20 @@ func RemoveMovementComponent(c *ecs.QueryResult) {
 
 func InitializeMovementComponents(manager *ecs.Manager, tags map[string]ecs.Tag) {
 
-	simpleWander = manager.NewComponent()
-	noMove = manager.NewComponent()
-	entityFollowComponent = manager.NewComponent()
-	stayWithinRangeComponent = manager.NewComponent()
-	fleeComponent = manager.NewComponent()
+	simpleWanderComp = manager.NewComponent()
+	noMoveComp = manager.NewComponent()
+	entityFollowComp = manager.NewComponent()
+	withinRadiusComp = manager.NewComponent()
+	withinRangeComponent = manager.NewComponent()
+	fleeComp = manager.NewComponent()
 
-	MovementTypes = append(MovementTypes, noMove, entityFollowComponent, stayWithinRangeComponent, fleeComponent, simpleWander)
+	MovementTypes = append(MovementTypes, simpleWanderComp, noMoveComp, entityFollowComp, withinRadiusComp, withinRangeComponent, fleeComp)
 
-	MovementActions[simpleWander] = SimpleWanderAction
-	MovementActions[noMove] = NoMoveAction
-	MovementActions[entityFollowComponent] = EntityFollowMoveAction
-	MovementActions[stayWithinRangeComponent] = StayWithinRangeMoveAction
-	MovementActions[fleeComponent] = FleeFromEntityMovementAction
+	MovementActions[simpleWanderComp] = SimpleWanderAction
+	MovementActions[noMoveComp] = NoMoveAction
+	MovementActions[entityFollowComp] = EntityFollowMoveAction
+	MovementActions[withinRadiusComp] = WithinRadiusMoveAction
+	MovementActions[withinRangeComponent] = WithinRangeMoveAction
+	MovementActions[fleeComp] = FleeFromEntityMovementAction
+
 }

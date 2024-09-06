@@ -7,14 +7,14 @@ import (
 // EffectsToApply trigger every turn
 type Creature struct {
 	Path           []Position
-	EffectsToApply []Effects
+	EffectsToApply []StatusEffects
 }
 
 // TODO stack the effects if they're of the same kind
 // Add stuff together and keep the longest duration
 func (c *Creature) AddEffects(effects *ecs.Entity) {
 
-	e := AllEffects(effects)
+	e := AllStatusEffects(effects)
 	c.EffectsToApply = append(c.EffectsToApply, e...)
 
 }
@@ -30,7 +30,7 @@ func ApplyEffects(c *ecs.QueryResult) {
 		return
 	}
 
-	effects_to_keep := make([]Effects, 0)
+	effects_to_keep := make([]StatusEffects, 0)
 
 	for _, eff := range creature.EffectsToApply {
 

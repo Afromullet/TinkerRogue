@@ -30,7 +30,7 @@ to keep track of all proeprties an item might have
 var AllItemEffects []*ecs.Component
 
 /*
-Each Effects implements GetPropertyComponent and GetPropertyName,
+Each StatusEffects implements GetPropertyComponent and GetPropertyName,
 Which is called by the generic GetPropertyName and GetPropertyComponent functions.const
 
 # Copy() implementation must return a shallow copy
@@ -39,25 +39,25 @@ ApplyToCreature() takes a query result. The implementing method will define how 
 
 That lets us get the components and name without having to assert it to a specfic type.
 */
-type Effects interface {
-	EffectComponent() *ecs.Component
-	EffectName() string
+type StatusEffects interface {
+	StatusEffectComponent() *ecs.Component
+	StatusEffectName() string
 	Duration() int
 	ApplyToCreature(c *ecs.QueryResult)
-	Copy() Effects
+	Copy() StatusEffects
 }
 
-func EffectName[T Effects](prop *T) string {
-	return (*prop).EffectName()
+func StatusEffectName[T StatusEffects](prop *T) string {
+	return (*prop).StatusEffectName()
 }
 
-func EffectComponent[T Effects](prop *T) *ecs.Component {
-	return (*prop).EffectComponent()
+func StatusEffectComponent[T StatusEffects](prop *T) *ecs.Component {
+	return (*prop).StatusEffectComponent()
 }
 
-func AllEffects(effects *ecs.Entity) []Effects {
+func AllStatusEffects(effects *ecs.Entity) []StatusEffects {
 
-	eff := make([]Effects, 0)
+	eff := make([]StatusEffects, 0)
 
 	for _, e := range AllItemEffects {
 
@@ -65,7 +65,7 @@ func AllEffects(effects *ecs.Entity) []Effects {
 
 		if ok {
 
-			d := *data.(*Effects)
+			d := *data.(*StatusEffects)
 			//p := d.(any) originally added tis to eff = append.
 			eff = append(eff, d.Copy())
 
@@ -89,11 +89,11 @@ type Sticky struct {
 
 }
 
-func (s *Sticky) EffectComponent() *ecs.Component {
+func (s *Sticky) StatusEffectComponent() *ecs.Component {
 	return StickyComponent
 }
 
-func (s *Sticky) EffectName() string {
+func (s *Sticky) StatusEffectName() string {
 	return s.MainProps.Name
 
 }
@@ -104,7 +104,7 @@ func (s Sticky) Duration() int {
 
 }
 
-func (s *Sticky) Copy() Effects {
+func (s *Sticky) Copy() StatusEffects {
 	return &Sticky{
 		MainProps: s.MainProps,
 		Spread:    s.Spread,
@@ -136,11 +136,11 @@ type Burning struct {
 	Temperature int
 }
 
-func (b *Burning) EffectComponent() *ecs.Component {
+func (b *Burning) StatusEffectComponent() *ecs.Component {
 	return BurningComponent
 }
 
-func (b *Burning) EffectName() string {
+func (b *Burning) StatusEffectName() string {
 	return b.MainProps.Name
 }
 
@@ -150,7 +150,7 @@ func (b Burning) Duration() int {
 
 }
 
-func (b *Burning) Copy() Effects {
+func (b *Burning) Copy() StatusEffects {
 	return &Burning{
 		MainProps:   b.MainProps,
 		Temperature: b.Temperature,
@@ -189,11 +189,11 @@ type Freezing struct {
 
 }
 
-func (f *Freezing) EffectComponent() *ecs.Component {
+func (f *Freezing) StatusEffectComponent() *ecs.Component {
 	return FreezingComponent
 }
 
-func (f *Freezing) EffectName() string {
+func (f *Freezing) StatusEffectName() string {
 	return f.MainProps.Name
 
 }
@@ -204,7 +204,7 @@ func (f Freezing) Duration() int {
 
 }
 
-func (f *Freezing) Copy() Effects {
+func (f *Freezing) Copy() StatusEffects {
 	return &Freezing{
 		MainProps: f.MainProps,
 		Thickness: f.Thickness,
@@ -242,11 +242,11 @@ type Throwable struct {
 	Shape         TileBasedShape
 }
 
-func (t *Throwable) EffectComponent() *ecs.Component {
+func (t *Throwable) StatusEffectComponent() *ecs.Component {
 	return ThrowableComponent
 }
 
-func (t *Throwable) EffectName() string {
+func (t *Throwable) StatusEffectName() string {
 	return t.MainProps.Name
 
 }
@@ -257,7 +257,7 @@ func (t Throwable) Duration() int {
 
 }
 
-func (t *Throwable) Copy() Effects {
+func (t *Throwable) Copy() StatusEffects {
 	return &Throwable{
 		MainProps:     t.MainProps,
 		ThrowingRange: t.ThrowingRange,

@@ -86,6 +86,7 @@ func NewGame() *Game {
 func (g *Game) Update() error {
 
 	g.mainPlayerInterface.Update()
+	UpdateVisualEffects()
 	// Update the Label text to indicate if the ui is currently being hovered over or not
 	//g.headerLbl.Label = fmt.Sprintf("Game Demo!\nUI is hovered: %t", input.UIHovered)
 
@@ -109,6 +110,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	ProcessRenderables(g, g.gameMap, screen)
 	g.mainPlayerInterface.Draw(screen)
 	ProcessUserLog(g, screen)
+	DrawVisualEffects(screen)
 
 }
 

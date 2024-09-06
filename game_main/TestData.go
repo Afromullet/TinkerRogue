@@ -88,20 +88,31 @@ func CreateTestMonsters(g *Game, manager *ecs.Manager, gameMap *GameMap) {
 
 	x, y := gameMap.Rooms[0].Center()
 
+	wepArea := NewTileRectangle(0, 0, 1, 1)
+
+	wep := RangedWeapon{
+		MinDamage:     3,
+		MaxDamage:     5,
+		ShootingRange: 5,
+		TargetArea:    &wepArea,
+	}
+
 	c := CreateMonster(g, manager, gameMap, x, y+1, "assets/creatures/elf.png")
 
-	c.AddComponent(distanceRangeAttack, &DistanceRangedAttack{distance: 2})
+	c.AddComponent(distanceRangeAttack, &DistanceRangedAttack{})
+	c.AddComponent(RangedWeaponComponent, &wep)
 
 	c = CreateMonster(g, manager, gameMap, x+1, y, "assets/creatures/unseen_horror.png")
-	c.AddComponent(simpleWander, &SimpleWander{})
+	c.AddComponent(simpleWanderComp, &SimpleWander{})
 
 	c = CreateMonster(g, manager, gameMap, x+1, y+1, "assets/creatures/angel.png")
-	c.AddComponent(entityFollowComponent, &EntityFollow{target: g.playerData.PlayerEntity})
+	c.AddComponent(entityFollowComp, &EntityFollow{target: g.playerData.PlayerEntity})
 
 	c = CreateMonster(g, manager, gameMap, x+1, y+2, "assets/creatures/ancient_lich.png")
-	c.AddComponent(stayWithinRangeComponent, &StayWithinRange{target: g.playerData.PlayerEntity, distance: 3})
+	c.AddComponent(withinRadiusComp, &WithinRadius{target: g.playerData.PlayerEntity, distance: 3})
 
-	//CreateMonster(g, manager, gameMap, x+2, y+1, "assets/creatures/starcursed_mass.png")
+	c = CreateMonster(g, manager, gameMap, x+2, y+1, "assets/creatures/starcursed_mass.png")
+	c.AddComponent(withinRangeComponent, &WithinRange{distance: 2, target: g.playerData.PlayerEntity})
 	//CreateMonster(g, manager, gameMap, x+2, y+2, "assets/creatures/balrug.png")
 
 	CreateMoreTestMonsters(manager, gameMap)
@@ -134,7 +145,7 @@ func CreateMoreTestMonsters(manager *ecs.Manager, gameMap *GameMap) {
 				Visible: true,
 			}).
 			AddComponent(PositionComponent, &pos).
-			AddComponent(entityFollowComponent, &EntityFollow{}).
+			AddComponent(entityFollowComp, &EntityFollow{}).
 			AddComponent(AttributeComponent, &Attributes{MaxHealth: 5, CurrentHealth: 5}).AddComponent(userMessage, &UserMessage{
 			AttackMessage:    "",
 			GameStateMessage: "",
@@ -212,7 +223,7 @@ func GetTileInfo(g *Game, pos *Position, player *Player) {
 
 // Create an item with any number of Effects. ItemEffect is a wrapper around an ecs.Component to make
 // Manipulating it easier
-func CreateItem(manager *ecs.Manager, name string, pos Position, imagePath string, effects ...Effects) *ecs.Entity {
+func CreateItem(manager *ecs.Manager, name string, pos Position, imagePath string, effects ...StatusEffects) *ecs.Entity {
 
 	img, _, err := ebitenutil.NewImageFromFile(imagePath)
 	if err != nil {
@@ -222,7 +233,7 @@ func CreateItem(manager *ecs.Manager, name string, pos Position, imagePath strin
 	item := &Item{Count: 1, Properties: manager.NewEntity()}
 
 	for _, prop := range effects {
-		item.Properties.AddComponent(prop.EffectComponent(), &prop)
+		item.Properties.AddComponent(prop.StatusEffectComponent(), &prop)
 
 	}
 
@@ -247,7 +258,7 @@ func CreateItem(manager *ecs.Manager, name string, pos Position, imagePath strin
 }
 
 // A weapon is an Item with a weapon component
-func CreateWeapon(manager *ecs.Manager, name string, pos Position, imagePath string, MinDamage int, MaxDamage int, properties ...Effects) *ecs.Entity {
+func CreateWeapon(manager *ecs.Manager, name string, pos Position, imagePath string, MinDamage int, MaxDamage int, properties ...StatusEffects) *ecs.Entity {
 
 	weapon := CreateItem(manager, name, pos, imagePath, properties...)
 
