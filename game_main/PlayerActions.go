@@ -96,6 +96,15 @@ func HandlePlayerThrowable(g *Game) {
 			g.playerData.ThrowPreparedItem(g.playerData.inventory)
 
 			ApplyThrowable(g, g.playerData.ThrowableItem, g.playerData.position)
+			vxArea := GetComponentType[*VXArea](g.playerData.SelectedThrowable, vxAreaComponent)
+
+			vxArea.visualEffectArea.shape = g.playerData.ThrowingAOEShape
+
+			eff := NewFireEffect(0, 0, 1, 5, 1, 0.5)
+			ar := NewVisualEffectArea(g.playerData.ThrowingAOEShape, eff)
+			AddVXArea(ar)
+			//AddVXArea(vxArea.visualEffectArea)
+			//AddEntityAreaVX(g.playerData.SelectedThrowable)
 
 		}
 

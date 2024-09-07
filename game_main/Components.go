@@ -24,6 +24,7 @@ var (
 	ArmorComponent        *ecs.Component
 	InventoryComponent    *ecs.Component
 	userMessage           *ecs.Component
+	vxAreaComponent       *ecs.Component
 )
 
 // The ECS library returns pointers to the struct when querying it for components, so the Position methods take a pointer as input
@@ -140,6 +141,10 @@ type Attributes struct {
 	TotalDodgeChance float32
 }
 
+type VXArea struct {
+	visualEffectArea VisualEffectArea
+}
+
 func UpdateAttributes(e *ecs.Entity) {
 
 	attr := GetComponentType[*Attributes](e, AttributeComponent)
@@ -214,6 +219,8 @@ func InitializeECS(g *Game) {
 	WeaponComponent = manager.NewComponent()
 	RangedWeaponComponent = manager.NewComponent()
 	ArmorComponent = manager.NewComponent()
+
+	vxAreaComponent = manager.NewComponent()
 
 	renderables := ecs.BuildTag(RenderableComponent, PositionComponent)
 	tags["renderables"] = renderables

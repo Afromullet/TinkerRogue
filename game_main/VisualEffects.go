@@ -1,12 +1,12 @@
 package main
 
 import (
-	"fmt"
 	"image/color"
 	"math"
 	"math/rand/v2"
 	"time"
 
+	"github.com/bytearena/ecs"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 	"github.com/hajimehoshi/ebiten/v2/vector"
@@ -114,6 +114,30 @@ func (visArea *VisualEffectArea) IsCompleted() bool {
 type VisualEffectHandler struct {
 	vx     []VisualEffect
 	vxArea []VisualEffectArea
+}
+
+func AddEntityAreaVX(e *ecs.Entity) {
+	vxHandler.AddEntityAreaVX(e)
+
+}
+
+// Modifying the global vxHandler
+func AddVX(a VisualEffect) {
+	vxHandler.AddVisualEffect(a)
+}
+
+func AddVXArea(a VisualEffectArea) {
+	vxHandler.AddVisualEffecArea(a)
+}
+
+func (vis *VisualEffectHandler) AddEntityAreaVX(e *ecs.Entity) {
+
+	visualEffect := GetComponentType[*VXArea](e, vxAreaComponent)
+
+	if visualEffect != nil {
+		vis.AddVisualEffecArea(visualEffect.visualEffectArea)
+	}
+
 }
 
 func (vis *VisualEffectHandler) AddVisualEffect(a VisualEffect) {
@@ -334,8 +358,6 @@ func (f *FireEffect) DrawVisualEffect(screen *ebiten.Image) {
 
 	// Set the scale for flickering size
 	opts.GeoM.Scale(f.scale, f.scale)
-
-	fmt.Println("Drawing flame at ", f.startX, f.startY)
 
 	// Set the position
 	opts.GeoM.Translate(f.startX, f.startY)
@@ -660,6 +682,110 @@ func (c *CloudEffect) Copy() VisualEffect {
 		duration:       c.duration,
 		completed:      c.completed,
 		puffinessPhase: c.puffinessPhase,
+	}
+}
+
+type ElectricityEffectNoImage struct {
+	startX, startY float64
+	segments       []lineSegment
+	color          color.RGBA
+	startTime      time.Time
+	duration       int
+	completed      bool
+}
+
+type lineSegment struct {
+	x1, y1, x2, y2 float64
+}
+
+func NewElectricityEffectNoImage(startX, startY int, duration int, numSegments int) *ElectricityEffectNoImage {
+	segments := make([]lineSegment, numSegments)
+	currentX, currentY := float64(startX), float64(startY)
+
+	for i := 0; i < numSegments; i++ {
+		nextX := currentX + -10 + 20*rand.Float64() // Random horizontal displacement
+		nextY := currentY + -10 + 20*rand.Float64() // Random vertical displacement
+
+		segments[i] = lineSegment{
+			x1: currentX,
+			y1: currentY,
+			x2: nextX,
+			y2: nextY,
+		}
+
+		currentX, currentY = nextX, nextY
+	}
+
+	// Random bright color for the electricity
+	color := color.RGBA{
+		R: uint8(200 + GetDiceRoll(55)),
+		G: uint8(200 + GetDiceRoll(55)),
+		B: 255,
+		A: 255,
+	}
+
+	return &ElectricityEffectNoImage{
+		startX:    float64(startX),
+		startY:    float64(startY),
+		segments:  segments,
+		color:     color,
+		startTime: time.Now(),
+		duration:  duration,
+		completed: false,
+	}
+}
+func (elec *ElectricityEffectNoImage) UpdateVisualEffect() {
+	elapsed := time.Since(elec.startTime).Seconds()
+
+	// Regenerate line segments to simulate flickering
+	for i := range elec.segments {
+		elec.segments[i].x2 += -5 + 10*rand.Float64() // Jitter x
+		elec.segments[i].y2 += -5 + 10*rand.Float64() // Jitter y
+	}
+
+	// Slightly adjust the color to simulate electrical surges
+	elec.color.R = uint8(200 + GetDiceRoll(55))
+	elec.color.G = uint8(200 + GetDiceRoll(55))
+	elec.color.B = 255
+
+	// Check if the effect has lasted for the specified duration
+	if int(elapsed) >= elec.duration {
+		elec.completed = true
+	}
+}
+
+func (elec *ElectricityEffectNoImage) DrawVisualEffect(screen *ebiten.Image) {
+	for _, segment := range elec.segments {
+		ebitenutil.DrawLine(screen, segment.x1, segment.y1, segment.x2, segment.y2, elec.color)
+	}
+}
+
+func (elec *ElectricityEffectNoImage) IsCompleted() bool {
+	return elec.completed
+}
+
+func (elec *ElectricityEffectNoImage) SetVXCommon(x, y int, img *ebiten.Image) {
+	elec.startX = float64(x)
+	elec.startY = float64(y)
+	//elec.img = img
+}
+
+func (elec *ElectricityEffectNoImage) VXImg() *ebiten.Image {
+	return nil
+}
+
+func (elec *ElectricityEffectNoImage) Copy() VisualEffect {
+	copiedSegments := make([]lineSegment, len(elec.segments))
+	copy(copiedSegments, elec.segments)
+
+	return &ElectricityEffectNoImage{
+		startX:    elec.startX,
+		startY:    elec.startY,
+		segments:  copiedSegments,
+		color:     elec.color,
+		startTime: elec.startTime,
+		duration:  elec.duration,
+		completed: elec.completed,
 	}
 }
 

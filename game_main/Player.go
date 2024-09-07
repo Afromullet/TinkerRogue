@@ -31,6 +31,7 @@ type PlayerThrowable struct {
 	ThrowingAOEShape   TileBasedShape
 	ThrowableItemIndex int
 	ThrowableItem      *Item
+	currentLocation    []int
 }
 
 // Handles all conversions necessary for updating item throwing information

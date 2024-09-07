@@ -108,7 +108,7 @@ func RangedAttackSystem(g *Game, attackerPos *Position) {
 
 				PerformAttack(g, weapon.CalculateDamage(), attacker, t)
 
-				//RangedAttackDrawnigPlaceHolder(attackerPos, defenderPos, weapon)
+				RangedAttackDrawnigPlaceHolder(attackerPos, defenderPos, weapon)
 
 			} else {
 				fmt.Println("Out of range")
@@ -116,7 +116,7 @@ func RangedAttackSystem(g *Game, attackerPos *Position) {
 
 		}
 
-		RangedAttackAreaDrawnigPlaceHolder(attackerPos, weapon)
+		//RangedAttackAreaDrawnigPlaceHolder(attackerPos, weapon)
 
 	} else {
 		log.Print("Failed to attack. No ranged weapon")
@@ -130,9 +130,9 @@ func RangedAttackDrawnigPlaceHolder(attackerPos *Position, defenderPos *Position
 	defX, defY := PixelsFromPosition(defenderPos)
 
 	//arr := NewFireEffect(attX, attY, 1, 5, 1, 0.5)
-	arr := NewElectricArc(attX, attY, defX, defY, 5)
-
-	vxHandler.AddVisualEffect(arr)
+	arr := NewProjectile(attX, attY, defX, defY)
+	//arr := NewElectricArc(attX, attY, defX, defY, 5)
+	AddVX(arr)
 
 }
 
@@ -141,12 +141,9 @@ func RangedAttackAreaDrawnigPlaceHolder(attackerPos *Position, weapon *RangedWea
 	attX, attY := PixelsFromPosition(attackerPos)
 	//defX, defY := PixelsFromPosition(defenderPos)
 
-	//arr := NewFireEffect(attX, attY, 1, 5, 1, 0.5)
-	arr := NewElectricityEffect(attX, attY, 5)
-	area := NewVisualEffectArea(weapon.TargetArea, arr)
-	vxHandler.AddVisualEffecArea(area)
+	arr := NewFireEffect(attX, attY, 1, 5, 1, 0.5)
 
-	//vxHandler.AddVisualEffect(arr)
+	AddVXArea(NewVisualEffectArea(weapon.TargetArea, arr))
 
 }
 

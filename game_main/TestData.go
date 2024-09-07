@@ -41,10 +41,17 @@ func CreateTestItems(manager *ecs.Manager, tags map[string]ecs.Tag, gameMap *Gam
 	st := NewSticky(9, 2)
 
 	s := NewTileSquare(0, 0, 3)
+	t := NewThrowable(1, 2, 3, &s)
+
 	//CreateItem(manager, "Throwable Item"+strconv.Itoa(1), Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
 	//NewThrowable(1, 5, 3, NewTileSquare(0, 0, 3)), NewBurning(1, 1))
-	CreateItem(manager, "T0"+strconv.Itoa(1), Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
-		NewThrowable(1, 2, 3, &s), b, f)
+	it := CreateItem(manager, "T0"+strconv.Itoa(1), Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
+		t, b, f)
+
+	eff := NewFireEffect(0, 0, 1, 5, 1, 0.5)
+	it.AddComponent(vxAreaComponent, &VXArea{
+		visualEffectArea: NewVisualEffectArea(&s, eff),
+	})
 
 	sout := NewTileCircleOutline(0, 0, 2)
 	CreateItem(manager, "T8"+strconv.Itoa(1), Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
