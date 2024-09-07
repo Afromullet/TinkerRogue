@@ -72,9 +72,12 @@ ___Consumables__
 
 * Add consumables
 
-__Animations__
 
-Add shooting and throwing animations
+___Visual Effects__
+
+* The VisualEffects.go file needs refactoring
+
+* Add shooting and throwing animations
 
 ___Other__
 
@@ -112,6 +115,12 @@ Might need to index instead
 --- State Handlers End--- 
 
 Create packages to break things apart more
+
+Preallocate sizes of slices when possible
+
+Need a better way to handle coordinate conversions
+
+
 
 
 _______________________________________

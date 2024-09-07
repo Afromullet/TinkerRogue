@@ -55,9 +55,20 @@ func PositionFromIndex(i int) Position {
 
 }
 
+func XYFromIndex(i int) (int, int) {
+	gd := NewScreenData()
+	return i % gd.ScreenWidth, i / gd.ScreenWidth
+}
+
 func PixelsFromPosition(pos *Position) (int, int) {
 	gd := NewScreenData()
 	return pos.X * gd.TileWidth, pos.Y * gd.TileHeight
+}
+
+func PixelsFromIndex(i int) (int, int) {
+	gd := NewScreenData()
+	x, y := XYFromIndex(i)
+	return x * gd.TileWidth, y * gd.TileHeight
 }
 
 // Return the Grid X,Y coordinates from pixel positions
