@@ -15,6 +15,21 @@ import (
 var face, _ = loadFont(20)
 var buttonImage, _ = loadButtonImage()
 
+/*
+It's painful to add a new container to display items in. Here are the steps:
+
+1) Create a struct containing an ItemDisplay. This struct must also contain at least one container to hold the items to display
+2) In that struct, create CreateInventoryList(playerData *PlayerData, propFilters ...StatusEffects) func. The propFilters are optional for filtering by a Status Effect
+3) Create the DisplayInventory(g *Game) function. This calls itemDisplay.CreateInventoryList(...) that was implemented in step 2
+4) Create a  CreateContainers() function which creates all of the containers in the Item Display
+5) Add the type to PlayerItemsUI
+6) Create an CreateOpenxxxgButton function that creates the button and adds the window to the ItemDisplay for displaying the items
+7) Create the containers and window in CreateItemManagementUI
+8) Add the button to the root container in CreatePlayerUI
+
+
+*/
+
 // Every window that displays the inventory to teh user will be a struct that contains ItemDisplay
 // And implements the ItemDisplayer interface
 type ItemDisplayer interface {
@@ -129,7 +144,7 @@ func (itemDisplay *ItemDisplay) CreateInventoryDisplayWindow(title string) {
 		widget.WindowOpts.CloseMode(widget.CLICK_OUT),
 		widget.WindowOpts.Draggable(),
 		widget.WindowOpts.Resizeable(),
-		widget.WindowOpts.MinSize(200, 100),
+		widget.WindowOpts.MinSize(500, 500),
 
 		widget.WindowOpts.MoveHandler(func(args *widget.WindowChangedEventArgs) {
 			fmt.Println("Window Moving")
@@ -147,6 +162,7 @@ type PlayerItemsUI struct {
 
 	craftingItemDisplay  CraftingItemDisplay
 	throwableItemDisplay ThrowingItemDisplay
+	equipmentDisplay     EquipmentItemDisplay
 }
 
 // Creates the main UI that allows the player to view the inventory, craft, and see equipment
@@ -188,6 +204,7 @@ func (g *Game) CreatePlayerUI() *ebitenui.UI {
 
 	rootContainer.AddChild(CreateOpenCraftingButton(g, &ui))
 	rootContainer.AddChild(CreateOpenThrowablesButton(g, &ui))
+	rootContainer.AddChild(CreateOpenEquipmentButton(g, &ui))
 
 	CreateItemManagementUI(g)
 
@@ -284,6 +301,50 @@ func CreateOpenThrowablesButton(g *Game, ui *ebitenui.UI) *widget.Button {
 
 }
 
+// Creating the button that opens the crafting menu. Other buttons will be added
+// Doing it inside a function makes the code easier to follow
+func CreateOpenEquipmentButton(g *Game, ui *ebitenui.UI) *widget.Button {
+	// construct a button
+	button := widget.NewButton(
+		// set general widget options
+		widget.ButtonOpts.WidgetOpts(
+			// instruct the container's anchor layout to center the button both horizontally and vertically
+			widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{
+				HorizontalPosition: widget.AnchorLayoutPositionCenter,
+				VerticalPosition:   widget.AnchorLayoutPositionCenter,
+			}),
+		),
+
+		widget.ButtonOpts.Image(buttonImage),
+		widget.ButtonOpts.Text("Equipment", face, &widget.ButtonTextColor{
+			Idle: color.NRGBA{0xdf, 0xf4, 0xff, 0xff},
+		}),
+
+		widget.ButtonOpts.TextPadding(widget.Insets{
+			Left:   30,
+			Right:  30,
+			Top:    5,
+			Bottom: 5,
+		}),
+
+		// add a handler that reacts to clicking the button
+		widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+
+			x, y := g.itemsUI.equipmentDisplay.itemDisplay.rootWindow.Contents.PreferredSize()
+
+			r := image.Rect(0, 0, x, y)
+			r = r.Add(image.Point{200, 50})
+			g.itemsUI.equipmentDisplay.itemDisplay.rootWindow.SetLocation(r)
+			g.itemsUI.equipmentDisplay.DisplayInventory(g)
+			ui.AddWindow(g.itemsUI.equipmentDisplay.itemDisplay.rootWindow)
+
+		}),
+	)
+
+	return button
+
+}
+
 //For creating a window that the Item Display related containers are shown in
 
 func CreateItemManagementUI(g *Game) {
@@ -293,5 +354,8 @@ func CreateItemManagementUI(g *Game) {
 
 	g.itemsUI.throwableItemDisplay.CreateContainers()
 	g.itemsUI.throwableItemDisplay.itemDisplay.CreateInventoryDisplayWindow("Throwing Window")
+
+	g.itemsUI.equipmentDisplay.CreateContainers()
+	g.itemsUI.equipmentDisplay.itemDisplay.CreateInventoryDisplayWindow("Equipment Window")
 
 }

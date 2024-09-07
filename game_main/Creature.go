@@ -4,7 +4,9 @@ import (
 	"github.com/bytearena/ecs"
 )
 
-// EffectsToApply trigger every turn
+// EffectsToApply trigger every turn in MonsterSystems
+// The only thing applying an Effect Right now are throwable.
+// The Path is updated by a Movement Component
 type Creature struct {
 	Path           []Position
 	EffectsToApply []StatusEffects

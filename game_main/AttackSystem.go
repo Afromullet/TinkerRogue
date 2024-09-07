@@ -12,14 +12,8 @@ import (
 // If the attacker hits, subtract the Defenders protection value from the damage
 func MeleeAttackSystem(g *Game, attackerPos *Position, defenderPos *Position) {
 
-	//var attacker *ecs.QueryResult = nil
-	//log.Print(attacker)
-
-	//Determine if the player is the attacker or defender
-
 	var attacker *ecs.Entity = nil
 	var defender *ecs.Entity = nil
-	//var attackerMessage *UserMessage = nil
 
 	//var weaponComponent any
 	var weapon *Weapon = nil
@@ -31,10 +25,9 @@ func MeleeAttackSystem(g *Game, attackerPos *Position, defenderPos *Position) {
 		weapon = g.playerData.GetPlayerWeapon()
 
 	} else {
-		attacker = GetCreatureAtPosition(g, attackerPos) //todo I think this will cause an issue. Should be attackerPos. Worry about this when allowing monsters to attack
+		attacker = GetCreatureAtPosition(g, attackerPos)
 		defender = g.playerData.PlayerEntity
 		fmt.Println("Monster is attacking")
-
 		weapon = GetComponentType[*Weapon](attacker, WeaponComponent)
 
 	}
@@ -105,7 +98,7 @@ func RangedAttackSystem(g *Game, attackerPos *Position) {
 	} else {
 		attacker = GetCreatureAtPosition(g, attackerPos) //todo I think this will cause an issue. Should be attackerPos. Worry about this when allowing monsters to attack
 
-		fmt.Println("Monster is attacking")
+		fmt.Println("Monster is shooting")
 
 		weapon = GetComponentType[*RangedWeapon](attacker, RangedWeaponComponent)
 		targets = append(targets, g.playerData.PlayerEntity)

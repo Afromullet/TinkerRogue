@@ -8,6 +8,20 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 )
 
+var TestSquare = NewTileSquare(0, 0, 3)
+var TestLine = NewTileLine(0, 0, 2, LineDown)
+var TestCone = NewTileCone(0, 0, 5, LineDown)
+var TestCircle = NewTileCircle(0, 0, 2)
+var TestRect = NewTileRectangle(0, 0, 2, 3)
+var TestBurning = NewBurning(5, 2)
+var TestSticky = NewSticky(9, 2)
+var TestFreezing = NewFreezing(3, 5)
+
+var TestFireEffect = NewFireEffect(0, 0, 1, 5, 1, 0.5)
+var TestCloudEffect = NewCloudEffect(0, 0, 5)
+var TestIceEffect = NewIceEffect(0, 0, 5)
+var TestElectricEffect = NewElectricityEffect(0, 0, 5)
+
 func SetupPlayerForTesting(g *Game) {
 	w := CreateWeapon(g.World, "Weapon 1", *g.playerData.position, "assets/items/sword.png", 5, 10)
 
@@ -17,6 +31,13 @@ func SetupPlayerForTesting(g *Game) {
 	g.playerData.PlayerWeapon = w
 	g.playerData.PlayerRangedWeapon = r
 
+}
+
+func CreateTestThrowable(shape TileBasedShape, vx VisualEffect) *Throwable {
+
+	t := NewThrowable(1, 2, 3, shape)
+	t.vx = vx
+	return t
 }
 
 func CreateTestItems(manager *ecs.Manager, tags map[string]ecs.Tag, gameMap *GameMap) {
@@ -33,64 +54,34 @@ func CreateTestItems(manager *ecs.Manager, tags map[string]ecs.Tag, gameMap *Gam
 
 	startingPos := gameMap.StartingPosition()
 
-	b := NewBurning(5, 2)
+	TestBurning.MainProps.Duration = 10
+	TestFreezing.MainProps.Duration = 10
+	TestSticky.MainProps.Duration = 10
 
-	f := NewFreezing(3, 5)
-	f.MainProps.Duration = 10
+	throwItem := CreateTestThrowable(&TestSquare, TestFireEffect)
 
-	st := NewSticky(9, 2)
+	CreateItem(manager, "SquareThrow"+strconv.Itoa(1), Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
+		throwItem, TestBurning, TestFreezing)
 
-	tileSq := NewTileSquare(0, 0, 3)
-	throwItem := NewThrowable(1, 2, 3, &tileSq)
+	throwItem = CreateTestThrowable(&TestCircle, TestIceEffect)
 
-	throwItem.vx = NewFireEffect(0, 0, 1, 5, 1, 0.5)
+	CreateItem(manager, "CircleThrow"+strconv.Itoa(1), Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
+		throwItem, TestBurning, TestFreezing)
 
-	//CreateItem(manager, "Throwable Item"+strconv.Itoa(1), Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
-	//NewThrowable(1, 5, 3, NewTileSquare(0, 0, 3)), NewBurning(1, 1))
-	CreateItem(manager, "T0"+strconv.Itoa(1), Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
-		throwItem, b, f)
+	throwItem = CreateTestThrowable(&TestLine, TestCloudEffect)
 
-	sout := NewTileCircleOutline(0, 0, 2)
-	throwItem = NewThrowable(1, 2, 3, &sout)
-	throwItem.vx = NewIceEffect(0, 0, 5)
+	CreateItem(manager, "LineThrow"+strconv.Itoa(1), Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
+		throwItem, TestBurning, TestFreezing)
 
-	CreateItem(manager, "T8"+strconv.Itoa(1), Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
-		throwItem, b, f)
+	throwItem = CreateTestThrowable(&TestRect, TestElectricEffect)
 
-	tileSq = NewTileSquare(0, 0, 2)
-	throwItem = NewThrowable(1, 3, 3, &tileSq)
-	throwItem.vx = NewCloudEffect(0, 0, 5)
+	CreateItem(manager, "RectThrow"+strconv.Itoa(1), Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
+		throwItem, TestBurning, TestFreezing)
 
-	//CreateItem(manager, "Throwable Item"+strconv.Itoa(1), Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
-	//NewThrowable(1, 5, 3, NewTileSquare(0, 0, 3)), NewBurning(1, 1))
-	CreateItem(manager, "T7"+strconv.Itoa(1), Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
-		throwItem, NewBurning(1, 1), st, f)
+	throwItem = CreateTestThrowable(&TestCone, TestFireEffect)
 
-	l := NewTileLine(0, 0, 5, LineDown)
-	throwItem = NewThrowable(1, 3, 3, &l)
-
-	CreateItem(manager, "T1"+strconv.Itoa(1), Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
-		throwItem)
-
-	l = NewTileLine(0, 0, 2, LineDown)
-	CreateItem(manager, "T9"+strconv.Itoa(1), Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
-		NewThrowable(1, 5, 3, &l))
-
-	c := NewTileCone(0, 0, 5, LineDown)
-	CreateItem(manager, "T2"+strconv.Itoa(1), Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
-		NewThrowable(1, 5, 3, &c))
-
-	ci := NewTileCircle(0, 0, 2)
-	CreateItem(manager, "T3"+strconv.Itoa(1), Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
-		NewThrowable(1, 5, 3, &ci))
-
-	re := NewTileRectangle(0, 0, 2, 3)
-	CreateItem(manager, "T4"+strconv.Itoa(1), Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
-		NewThrowable(1, 5, 3, &re))
-
-	CreateItem(manager, "Item"+strconv.Itoa(1), Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc, NewBurning(1, 1))
-	CreateItem(manager, "Item"+strconv.Itoa(1), Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc, NewBurning(1, 1))
-	CreateItem(manager, "Item"+strconv.Itoa(2), Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc, NewBurning(1, 1), NewFreezing(1, 2))
+	CreateItem(manager, "ConeThrow"+strconv.Itoa(1), Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
+		throwItem, TestBurning, TestFreezing)
 
 	//CreateItem(manager, "Item"+strconv.Itoa(2), Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc, NewBurning(1, 1), NewFreezing(1, 2))
 

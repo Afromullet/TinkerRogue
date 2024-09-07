@@ -75,7 +75,6 @@ func (throwingItemDisplay *ThrowingItemDisplay) CreateContainers() {
 			widget.GridLayoutOpts.Spacing(0, 20))),
 	)
 
-	// Used for holding the items prior to selecting them for crafting
 	throwingItemDisplay.itemDisplay.ItemDisplayContainer = widget.NewContainer(
 		widget.ContainerOpts.BackgroundImage(e_image.NewNineSliceColor(color.NRGBA{100, 100, 100, 255})),
 		widget.ContainerOpts.Layout(widget.NewAnchorLayout()),

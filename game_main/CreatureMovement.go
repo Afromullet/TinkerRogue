@@ -57,7 +57,6 @@ type DistanceToEntityMovement struct {
 // Each Movement function implementation choses how to build a path.
 // They also handle walking on the path by calling reature.UpdatePosition
 // Movement functions get called by MovementSystem which determines what movement component a creature has.
-
 // Select a random spot to wander to and builds a new path when arriving at the position
 func SimpleWanderAction(g *Game, mover *ecs.Entity) {
 

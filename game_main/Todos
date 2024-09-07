@@ -34,7 +34,7 @@ __Monster Bevavior__
 
 
 
-* Allow Creatures to do ranged attacks
+
 
 * Monster can chose to melee attack, range attack, or throw
 
@@ -82,6 +82,14 @@ ___Consumables__
 ___Visual Effects__
 
 * The VisualEffects.go file needs refactoring
+
+* Rotating shapes which have a direction
+
+___Refactoring__
+
+PlayerMovement
+Anything UI
+Map Drawing
 
 
 ___Other__

@@ -95,6 +95,45 @@ func (inv *Inventory) EffectNames(index int) ([]string, error) {
 
 }
 
+// Gets all Melee Weapons, Ranged Weapons, and Armor for displaying
+func (inv *Inventory) GetEquipmentForDisplay(indicesToSelect []int) []any {
+
+	inventoryItems := make([]any, 0)
+
+	for index, entity := range inv.InventoryContent {
+
+		itemName := GetComponentType[*Name](entity, nameComponent)
+		itemComp := GetItem(entity)
+
+		if entity.HasComponent(ArmorComponent) {
+
+			inventoryItems = append(inventoryItems, InventoryListEntry{
+				index,
+				itemName.NameStr,
+				itemComp.Count})
+
+		} else if entity.HasComponent(RangedWeaponComponent) {
+
+			inventoryItems = append(inventoryItems, InventoryListEntry{
+				index,
+				itemName.NameStr,
+				itemComp.Count})
+
+		} else if entity.HasComponent(WeaponComponent) {
+
+			inventoryItems = append(inventoryItems, InventoryListEntry{
+				index,
+				itemName.NameStr,
+				itemComp.Count})
+
+		}
+
+	}
+
+	return inventoryItems
+
+}
+
 // Used for displaying the inventory to the player. Returns a list the ebitenui list widgets expects
 // The list contains the index in the inventory, the name, and the count of the item.
 func (inv *Inventory) GetInventoryForDisplay(indicesToSelect []int, itemPropertiesFilter ...StatusEffects) []any {

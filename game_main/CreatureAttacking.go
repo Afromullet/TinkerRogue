@@ -6,6 +6,17 @@ import (
 	"github.com/bytearena/ecs"
 )
 
+/*
+To Implement a new type of attack:
+
+1) Create the component
+2) Create the struct assocaited with the component
+3) Implement the function that handles the attack. Curently the function removes the existing movement component
+And then adds a new one, which determines how to approach the creature that's attacking
+4) Call the function in CreatureAttackSystem
+
+*/
+
 var (
 	approachAndAttack   *ecs.Component
 	distanceRangeAttack *ecs.Component

@@ -23,12 +23,6 @@ func ApplyThrowable(g *Game, item *Item, shape TileBasedShape, throwerPos *Posit
 
 	t := item.ItemEffect(THROWABLE_NAME).(*Throwable)
 
-	//eff := NewIceEffect(0, 0, 5)
-	//ar := NewVisualEffectArea(t.Shape, eff)
-	//ar := NewVisualEffectArea(t.Shape, t.vx.Copy())
-	//AddVXArea(ar)
-	//AddVXArea(ar)
-
 	if t.vx != nil {
 
 		t.vx.ResetVX()
