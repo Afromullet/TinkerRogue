@@ -1047,3 +1047,115 @@ func (e *ElectricArc) Copy() VisualEffect {
 		completed:        e.completed,
 	}
 }
+
+type StickyGroundEffect struct {
+	startX, startY   float64
+	scale            float64
+	opacity          float64
+	startTime        time.Time
+	duration         int
+	originalDuration int
+	completed        bool
+	waveOffset       float64     // For slow-moving "sticky" animation
+	color            color.Color // The base color for the sticky effect
+}
+
+// Constructor for StickyGroundEffect
+func NewStickyGroundEffect(startX, startY int, duration int) *StickyGroundEffect {
+	return &StickyGroundEffect{
+		startX:           float64(startX),
+		startY:           float64(startY),
+		scale:            1.0, // Initial scale
+		opacity:          1.0, // Initial opacity
+		startTime:        time.Now(),
+		duration:         duration,
+		originalDuration: duration,
+		completed:        false,
+		waveOffset:       0.0,
+		color:            color.RGBA{0x90, 0xEE, 0x90, 0xFF}, // Example: dark green for a sticky effect
+	}
+}
+
+// Update logic for StickyGroundEffect
+func (s *StickyGroundEffect) UpdateVisualEffect() {
+	elapsed := time.Since(s.startTime).Seconds()
+
+	// Slowly move the "sticky" shapes to simulate gooey movement
+	s.waveOffset += 0.01
+
+	// Slight modulation of opacity to simulate depth or thickness
+	s.opacity = 0.8 + 0.2*math.Sin(s.waveOffset)
+
+	// Check if the effect has lasted for the specified duration
+	if int(elapsed) >= s.duration {
+		s.completed = true
+	}
+}
+
+// Draw logic for StickyGroundEffect
+func (s *StickyGroundEffect) DrawVisualEffect(screen *ebiten.Image) {
+	// Create a color-based sticky ground effect
+	for i := 0; i < 5; i++ {
+		opts := &ebiten.DrawImageOptions{}
+
+		// Create some basic shapes to represent the sticky ground
+		radius := 10 + 5*math.Sin(s.waveOffset+float64(i)) // Vary the radius slightly
+		x := s.startX + 20*math.Cos(float64(i)+s.waveOffset)
+		y := s.startY + 20*math.Sin(float64(i)+s.waveOffset)
+
+		// Generate an offscreen image to represent the shape (circle here)
+		circleImage := ebiten.NewImage(int(2*radius), int(2*radius))
+		circleImage.Fill(s.color)
+
+		// Apply scaling and position transformations
+		opts.GeoM.Translate(-radius, -radius) // Center the circle
+		opts.GeoM.Translate(x, y)
+		opts.GeoM.Scale(s.scale, s.scale)
+
+		// Apply opacity modulation
+		opts.ColorM.Scale(1, 1, 1, s.opacity)
+
+		// Draw the shape on the screen
+		screen.DrawImage(circleImage, opts)
+	}
+}
+
+// Copy method for StickyGroundEffect
+func (s *StickyGroundEffect) Copy() VisualEffect {
+	return &StickyGroundEffect{
+		startX:           s.startX,
+		startY:           s.startY,
+		scale:            s.scale,
+		opacity:          s.opacity,
+		startTime:        s.startTime,
+		duration:         s.duration,
+		originalDuration: s.originalDuration,
+		completed:        s.completed,
+		waveOffset:       s.waveOffset,
+		color:            s.color,
+	}
+}
+
+// Other required interface methods
+func (s *StickyGroundEffect) IsCompleted() bool {
+	return s.completed
+}
+
+func (s *StickyGroundEffect) SetVXCommon(x, y int, img *ebiten.Image) {
+	s.startX = float64(x)
+	s.startY = float64(y)
+	// img is unused since we're using color-based shapes
+}
+
+// Projectile does not have a duration but we still need the function to implement the interface
+func (s *StickyGroundEffect) ResetVX() {
+
+	s.startTime = time.Now()
+	s.completed = false
+	s.duration = s.originalDuration
+
+}
+
+func (s *StickyGroundEffect) VXImg() *ebiten.Image {
+	return nil // No image since we're drawing directly with colors
+}

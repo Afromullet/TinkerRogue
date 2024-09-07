@@ -289,7 +289,7 @@ func CreateOpenThrowablesButton(g *Game, ui *ebitenui.UI) *widget.Button {
 			x, y := g.itemsUI.throwableItemDisplay.itemDisplay.rootWindow.Contents.PreferredSize()
 
 			r := image.Rect(0, 0, x, y)
-			r = r.Add(image.Point{200, 50})
+			r = r.Add(image.Point{200, 200})
 			g.itemsUI.throwableItemDisplay.itemDisplay.rootWindow.SetLocation(r)
 			g.itemsUI.throwableItemDisplay.DisplayInventory(g)
 			ui.AddWindow(g.itemsUI.throwableItemDisplay.itemDisplay.rootWindow)

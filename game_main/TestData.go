@@ -10,7 +10,7 @@ import (
 
 var TestSquare = NewTileSquare(0, 0, 3)
 var TestLine = NewTileLine(0, 0, 2, LineDown)
-var TestCone = NewTileCone(0, 0, 5, LineDown)
+var TestCone = NewTileCone(0, 0, 3, LineRight)
 var TestCircle = NewTileCircle(0, 0, 2)
 var TestRect = NewTileRectangle(0, 0, 2, 3)
 var TestBurning = NewBurning(5, 2)
@@ -21,6 +21,7 @@ var TestFireEffect = NewFireEffect(0, 0, 1, 5, 1, 0.5)
 var TestCloudEffect = NewCloudEffect(0, 0, 5)
 var TestIceEffect = NewIceEffect(0, 0, 5)
 var TestElectricEffect = NewElectricityEffect(0, 0, 5)
+var TestStickyEffect = NewStickyGroundEffect(0, 0, 5)
 
 func SetupPlayerForTesting(g *Game) {
 	w := CreateWeapon(g.World, "Weapon 1", *g.playerData.position, "assets/items/sword.png", 5, 10)
@@ -78,7 +79,7 @@ func CreateTestItems(manager *ecs.Manager, tags map[string]ecs.Tag, gameMap *Gam
 	CreateItem(manager, "RectThrow"+strconv.Itoa(1), Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
 		throwItem, TestBurning, TestFreezing)
 
-	throwItem = CreateTestThrowable(&TestCone, TestFireEffect)
+	throwItem = CreateTestThrowable(&TestCone, TestStickyEffect)
 
 	CreateItem(manager, "ConeThrow"+strconv.Itoa(1), Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
 		throwItem, TestBurning, TestFreezing)
