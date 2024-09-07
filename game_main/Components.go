@@ -24,7 +24,6 @@ var (
 	ArmorComponent        *ecs.Component
 	InventoryComponent    *ecs.Component
 	userMessage           *ecs.Component
-	vxAreaComponent       *ecs.Component
 )
 
 // The ECS library returns pointers to the struct when querying it for components, so the Position methods take a pointer as input
@@ -86,11 +85,13 @@ func (w Weapon) CalculateDamage() int {
 
 // TargetArea is the area the weapon covers
 // I.E, a pistol is just a 1 by 1 rectangle, a shotgun uses a cone, and so on
+// ShootingVX is the visual effect that is drawn when the weapon shoots
 type RangedWeapon struct {
 	MinDamage     int
 	MaxDamage     int
 	ShootingRange int
 	TargetArea    TileBasedShape
+	ShootingVX    *Projectile
 }
 
 // todo add ammo to this
@@ -123,6 +124,17 @@ func (r RangedWeapon) GetTargets(g *Game) []*ecs.Entity {
 	return targets
 }
 
+// Adds the Ranged Weapons VisuaLEffect to the VisualEffectHandler. It will be drawn.
+func (r *RangedWeapon) DisplayShootingVX(attackerPos *Position, defenderPos *Position) {
+
+	attX, attY := PixelsFromPosition(attackerPos)
+	defX, defY := PixelsFromPosition(defenderPos)
+
+	arr := NewProjectile(attX, attY, defX, defY)
+
+	AddVX(arr)
+}
+
 type Armor struct {
 	ArmorClass  int
 	Protection  int
@@ -139,10 +151,6 @@ type Attributes struct {
 	TotalArmorClass  int
 	TotalProtection  int
 	TotalDodgeChance float32
-}
-
-type VXArea struct {
-	visualEffectArea VisualEffectArea
 }
 
 func UpdateAttributes(e *ecs.Entity) {
@@ -219,8 +227,6 @@ func InitializeECS(g *Game) {
 	WeaponComponent = manager.NewComponent()
 	RangedWeaponComponent = manager.NewComponent()
 	ArmorComponent = manager.NewComponent()
-
-	vxAreaComponent = manager.NewComponent()
 
 	renderables := ecs.BuildTag(RenderableComponent, PositionComponent)
 	tags["renderables"] = renderables

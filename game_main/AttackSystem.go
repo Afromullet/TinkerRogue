@@ -86,19 +86,33 @@ func PerformAttack(g *Game, damage int, attacker *ecs.Entity, defender *ecs.Enti
 
 }
 
+// A monster doing a ranged attack is simple right now.
+// It ignores the weapons AOE and selects only the player as the target
 func RangedAttackSystem(g *Game, attackerPos *Position) {
 
 	var attacker *ecs.Entity = nil
+
 	var weapon *RangedWeapon = nil
+
+	var targets []*ecs.Entity
 
 	if g.playerData.position.IsEqual(attackerPos) {
 		attacker = g.playerData.PlayerEntity
 		weapon = g.playerData.GetPlayerRangedWeapon()
+		if weapon != nil {
+			targets = weapon.GetTargets(g)
+		}
+	} else {
+		attacker = GetCreatureAtPosition(g, attackerPos) //todo I think this will cause an issue. Should be attackerPos. Worry about this when allowing monsters to attack
+
+		fmt.Println("Monster is attacking")
+
+		weapon = GetComponentType[*RangedWeapon](attacker, RangedWeaponComponent)
+		targets = append(targets, g.playerData.PlayerEntity)
 	}
 
+	// Todo I could return from the function when checking if weapon is not nill above
 	if weapon != nil {
-
-		targets := weapon.GetTargets(g)
 
 		for _, t := range targets {
 
@@ -107,8 +121,7 @@ func RangedAttackSystem(g *Game, attackerPos *Position) {
 				fmt.Println("Shooting")
 
 				PerformAttack(g, weapon.CalculateDamage(), attacker, t)
-
-				RangedAttackDrawnigPlaceHolder(attackerPos, defenderPos, weapon)
+				weapon.DisplayShootingVX(attackerPos, defenderPos)
 
 			} else {
 				fmt.Println("Out of range")
@@ -116,34 +129,9 @@ func RangedAttackSystem(g *Game, attackerPos *Position) {
 
 		}
 
-		//RangedAttackAreaDrawnigPlaceHolder(attackerPos, weapon)
-
 	} else {
 		log.Print("Failed to attack. No ranged weapon")
 	}
-
-}
-
-func RangedAttackDrawnigPlaceHolder(attackerPos *Position, defenderPos *Position, weapon *RangedWeapon) {
-
-	attX, attY := PixelsFromPosition(attackerPos)
-	defX, defY := PixelsFromPosition(defenderPos)
-
-	//arr := NewFireEffect(attX, attY, 1, 5, 1, 0.5)
-	arr := NewProjectile(attX, attY, defX, defY)
-	//arr := NewElectricArc(attX, attY, defX, defY, 5)
-	AddVX(arr)
-
-}
-
-func RangedAttackAreaDrawnigPlaceHolder(attackerPos *Position, weapon *RangedWeapon) {
-
-	attX, attY := PixelsFromPosition(attackerPos)
-	//defX, defY := PixelsFromPosition(defenderPos)
-
-	arr := NewFireEffect(attX, attY, 1, 5, 1, 0.5)
-
-	AddVXArea(NewVisualEffectArea(weapon.TargetArea, arr))
 
 }
 

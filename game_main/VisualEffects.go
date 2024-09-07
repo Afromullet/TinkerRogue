@@ -6,7 +6,6 @@ import (
 	"math/rand/v2"
 	"time"
 
-	"github.com/bytearena/ecs"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 	"github.com/hajimehoshi/ebiten/v2/vector"
@@ -25,6 +24,7 @@ type VisualEffect interface {
 	SetVXCommon(x, y int, img *ebiten.Image)
 	IsCompleted() bool
 	VXImg() *ebiten.Image
+	ResetVX()
 	Copy() VisualEffect
 }
 
@@ -66,9 +66,11 @@ func NewVisualEffectArea(shape TileBasedShape, vx VisualEffect) VisualEffectArea
 	for _, ind := range indices {
 		x, y := PixelsFromIndex(ind)
 
-		vx.SetVXCommon(x, y, vx.VXImg())
+		if vx != nil {
+			vx.SetVXCommon(x, y, vx.VXImg())
 
-		visEffects = append(visEffects, vx.Copy())
+			visEffects = append(visEffects, vx.Copy())
+		}
 
 	}
 
@@ -116,11 +118,6 @@ type VisualEffectHandler struct {
 	vxArea []VisualEffectArea
 }
 
-func AddEntityAreaVX(e *ecs.Entity) {
-	vxHandler.AddEntityAreaVX(e)
-
-}
-
 // Modifying the global vxHandler
 func AddVX(a VisualEffect) {
 	vxHandler.AddVisualEffect(a)
@@ -128,16 +125,6 @@ func AddVX(a VisualEffect) {
 
 func AddVXArea(a VisualEffectArea) {
 	vxHandler.AddVisualEffecArea(a)
-}
-
-func (vis *VisualEffectHandler) AddEntityAreaVX(e *ecs.Entity) {
-
-	visualEffect := GetComponentType[*VXArea](e, vxAreaComponent)
-
-	if visualEffect != nil {
-		vis.AddVisualEffecArea(visualEffect.visualEffectArea)
-	}
-
 }
 
 func (vis *VisualEffectHandler) AddVisualEffect(a VisualEffect) {
@@ -284,6 +271,11 @@ func (a *Projectile) VXImg() *ebiten.Image {
 	return a.img
 }
 
+// Projectile does not have a duration but we still need the function to implement the interface
+func (a *Projectile) ResetVX() {
+
+}
+
 func (s *Projectile) Copy() VisualEffect {
 
 	return &Projectile{
@@ -298,10 +290,10 @@ func (s *Projectile) Copy() VisualEffect {
 
 type FireEffect struct {
 	VXCommon
-	startTime              time.Time
-	flickerTimer, duration int     // Timer for flickering
-	scale                  float64 // Scale of the fire (for flickering size)
-	opacity                float64 // Opacity of the fire (for flickering brightness)
+	startTime                                time.Time
+	flickerTimer, duration, originalDuration int     // Timer for flickering
+	scale                                    float64 // Scale of the fire (for flickering size)
+	opacity                                  float64 // Opacity of the fire (for flickering brightness)
 
 }
 
@@ -316,11 +308,12 @@ func NewFireEffect(startX, startY, flickerTimer, duration int, scale, opacity fl
 			startX:    float64(startX),
 			startY:    float64(startY),
 		},
-		flickerTimer: flickerTimer,
-		startTime:    time.Now(),
-		duration:     duration,
-		scale:        scale,
-		opacity:      opacity,
+		flickerTimer:     flickerTimer,
+		startTime:        time.Now(),
+		duration:         duration,
+		originalDuration: duration,
+		scale:            scale,
+		opacity:          opacity,
 	}
 
 	return pro
@@ -386,42 +379,53 @@ func (f *FireEffect) VXImg() *ebiten.Image {
 	return f.img
 }
 
+// Projectile does not have a duration but we still need the function to implement the interface
+func (f *FireEffect) ResetVX() {
+
+	f.startTime = time.Now()
+	f.completed = false
+	f.duration = f.originalDuration
+
+}
+
 func (f *FireEffect) Copy() VisualEffect {
 
 	return &FireEffect{
-		VXCommon:     f.VXCommon,
-		startTime:    f.startTime,
-		flickerTimer: f.flickerTimer,
-		duration:     f.duration,
-		scale:        f.scale,
-		opacity:      f.opacity,
+		VXCommon:         f.VXCommon,
+		startTime:        f.startTime,
+		flickerTimer:     f.flickerTimer,
+		duration:         f.duration,
+		originalDuration: f.originalDuration,
+		scale:            f.scale,
+		opacity:          f.opacity,
 	}
 
 }
 
 type IceEffect struct {
-	img            *ebiten.Image // Your ice image
-	startX, startY float64
-	scale          float64
-	opacity        float64
-	startTime      time.Time
-	duration       int
-	completed      bool
-	colorShift     float64
+	img                        *ebiten.Image // Your ice image
+	startX, startY             float64
+	scale                      float64
+	opacity                    float64
+	startTime                  time.Time
+	duration, originalDuration int
+	completed                  bool
+	colorShift                 float64
 }
 
 func NewIceEffect(startX, startY int, duration int) *IceEffect {
 
 	vxImg, _, _ := ebitenutil.NewImageFromFile("assets/effects/frost0.png")
 	return &IceEffect{
-		img:       vxImg,
-		startX:    float64(startX),
-		startY:    float64(startY),
-		scale:     1.0, // Initial scale
-		opacity:   1.0, // Initial opacity
-		startTime: time.Now(),
-		duration:  duration,
-		completed: false,
+		img:              vxImg,
+		startX:           float64(startX),
+		startY:           float64(startY),
+		scale:            1.0, // Initial scale
+		opacity:          1.0, // Initial opacity
+		startTime:        time.Now(),
+		duration:         duration,
+		originalDuration: duration,
+		completed:        false,
 	}
 }
 
@@ -469,33 +473,44 @@ func (i *IceEffect) IsCompleted() bool {
 	return i.completed
 }
 
-func (s *IceEffect) VXImg() *ebiten.Image {
-	return s.img
+func (i *IceEffect) VXImg() *ebiten.Image {
+	return i.img
+}
+
+// Projectile does not have a duration but we still need the function to implement the interface
+func (i *IceEffect) ResetVX() {
+
+	i.startTime = time.Now()
+	i.completed = false
+	i.duration = i.originalDuration
+
 }
 
 func (ice *IceEffect) Copy() VisualEffect {
 	return &IceEffect{
-		img:        ice.img,
-		startX:     ice.startX,
-		startY:     ice.startY,
-		scale:      ice.scale,
-		opacity:    ice.opacity,
-		startTime:  ice.startTime,
-		duration:   ice.duration,
-		completed:  ice.completed,
-		colorShift: ice.colorShift,
+		img:              ice.img,
+		startX:           ice.startX,
+		startY:           ice.startY,
+		scale:            ice.scale,
+		opacity:          ice.opacity,
+		startTime:        ice.startTime,
+		duration:         ice.duration,
+		originalDuration: ice.duration,
+		completed:        ice.completed,
+		colorShift:       ice.colorShift,
 	}
 }
 
 type IceEffect2 struct {
-	img          *ebiten.Image
-	startX       float64
-	startY       float64
-	startTime    time.Time
-	duration     int
-	completed    bool
-	shimmerPhase float64
-	scale        float64
+	img              *ebiten.Image
+	startX           float64
+	startY           float64
+	startTime        time.Time
+	duration         int
+	originalDuration int
+	completed        bool
+	shimmerPhase     float64
+	scale            float64
 }
 
 func NewIceEffect2(x, y int, duration int) *IceEffect2 {
@@ -503,12 +518,13 @@ func NewIceEffect2(x, y int, duration int) *IceEffect2 {
 	vxImg, _, _ := ebitenutil.NewImageFromFile("assets/effects/frost0.png")
 
 	return &IceEffect2{
-		img:       vxImg,
-		startX:    float64(x),
-		startY:    float64(y),
-		startTime: time.Now(),
-		duration:  duration,
-		scale:     1.0,
+		img:              vxImg,
+		startX:           float64(x),
+		startY:           float64(y),
+		startTime:        time.Now(),
+		duration:         duration,
+		originalDuration: duration,
+		scale:            1.0,
 	}
 }
 
@@ -561,42 +577,54 @@ func (s *IceEffect2) VXImg() *ebiten.Image {
 	return s.img
 }
 
+// Projectile does not have a duration but we still need the function to implement the interface
+func (i *IceEffect2) ResetVX() {
+
+	i.startTime = time.Now()
+	i.completed = false
+	i.duration = i.originalDuration
+
+}
+
 func (s *IceEffect2) Copy() VisualEffect {
 	return &IceEffect2{
-		img:          s.img,
-		startX:       float64(s.startX),
-		startY:       float64(s.startY),
-		startTime:    s.startTime,
-		duration:     s.duration,
-		completed:    s.completed,
-		shimmerPhase: s.shimmerPhase,
-		scale:        s.scale,
+		img:              s.img,
+		startX:           float64(s.startX),
+		startY:           float64(s.startY),
+		startTime:        s.startTime,
+		duration:         s.duration,
+		originalDuration: s.duration,
+		completed:        s.completed,
+		shimmerPhase:     s.shimmerPhase,
+		scale:            s.scale,
 	}
 }
 
 type CloudEffect struct {
-	img            *ebiten.Image
-	startX, startY float64
-	scale          float64
-	opacity        float64
-	startTime      time.Time
-	duration       int
-	completed      bool
-	puffinessPhase float64
+	img              *ebiten.Image
+	startX, startY   float64
+	scale            float64
+	opacity          float64
+	startTime        time.Time
+	duration         int
+	originalDuration int
+	completed        bool
+	puffinessPhase   float64
 }
 
 func NewCloudEffect(startX, startY int, duration int) *CloudEffect {
 	vxImg, _, _ := ebitenutil.NewImageFromFile("assets/effects/cloud_poison0.png")
 	return &CloudEffect{
-		img:            vxImg,
-		startX:         float64(startX),
-		startY:         float64(startY),
-		scale:          1.0,
-		opacity:        0.8,
-		startTime:      time.Now(),
-		duration:       duration,
-		completed:      false,
-		puffinessPhase: 0,
+		img:              vxImg,
+		startX:           float64(startX),
+		startY:           float64(startY),
+		scale:            1.0,
+		opacity:          0.8,
+		startTime:        time.Now(),
+		duration:         duration,
+		originalDuration: duration,
+		completed:        false,
+		puffinessPhase:   0,
 	}
 }
 
@@ -671,27 +699,38 @@ func (c *CloudEffect) VXImg() *ebiten.Image {
 	return c.img
 }
 
+// Projectile does not have a duration but we still need the function to implement the interface
+func (c *CloudEffect) ResetVX() {
+
+	c.startTime = time.Now()
+	c.completed = false
+	c.duration = c.originalDuration
+
+}
+
 func (c *CloudEffect) Copy() VisualEffect {
 	return &CloudEffect{
-		img:            c.img,
-		startX:         c.startX,
-		startY:         c.startY,
-		scale:          c.scale,
-		opacity:        c.opacity,
-		startTime:      c.startTime,
-		duration:       c.duration,
-		completed:      c.completed,
-		puffinessPhase: c.puffinessPhase,
+		img:              c.img,
+		startX:           c.startX,
+		startY:           c.startY,
+		scale:            c.scale,
+		opacity:          c.opacity,
+		startTime:        c.startTime,
+		duration:         c.duration,
+		originalDuration: c.duration,
+		completed:        c.completed,
+		puffinessPhase:   c.puffinessPhase,
 	}
 }
 
 type ElectricityEffectNoImage struct {
-	startX, startY float64
-	segments       []lineSegment
-	color          color.RGBA
-	startTime      time.Time
-	duration       int
-	completed      bool
+	startX, startY   float64
+	segments         []lineSegment
+	color            color.RGBA
+	startTime        time.Time
+	duration         int
+	originalDuration int
+	completed        bool
 }
 
 type lineSegment struct {
@@ -725,13 +764,14 @@ func NewElectricityEffectNoImage(startX, startY int, duration int, numSegments i
 	}
 
 	return &ElectricityEffectNoImage{
-		startX:    float64(startX),
-		startY:    float64(startY),
-		segments:  segments,
-		color:     color,
-		startTime: time.Now(),
-		duration:  duration,
-		completed: false,
+		startX:           float64(startX),
+		startY:           float64(startY),
+		segments:         segments,
+		color:            color,
+		startTime:        time.Now(),
+		duration:         duration,
+		originalDuration: duration,
+		completed:        false,
 	}
 }
 func (elec *ElectricityEffectNoImage) UpdateVisualEffect() {
@@ -774,42 +814,54 @@ func (elec *ElectricityEffectNoImage) VXImg() *ebiten.Image {
 	return nil
 }
 
+// Projectile does not have a duration but we still need the function to implement the interface
+func (elec *ElectricityEffectNoImage) ResetVX() {
+
+	elec.startTime = time.Now()
+	elec.completed = false
+	elec.duration = elec.originalDuration
+
+}
+
 func (elec *ElectricityEffectNoImage) Copy() VisualEffect {
 	copiedSegments := make([]lineSegment, len(elec.segments))
 	copy(copiedSegments, elec.segments)
 
 	return &ElectricityEffectNoImage{
-		startX:    elec.startX,
-		startY:    elec.startY,
-		segments:  copiedSegments,
-		color:     elec.color,
-		startTime: elec.startTime,
-		duration:  elec.duration,
-		completed: elec.completed,
+		startX:           elec.startX,
+		startY:           elec.startY,
+		segments:         copiedSegments,
+		color:            elec.color,
+		startTime:        elec.startTime,
+		duration:         elec.duration,
+		originalDuration: elec.originalDuration,
+		completed:        elec.completed,
 	}
 }
 
 type ElectricityEffect struct {
-	img            *ebiten.Image // Your electricity image
-	startX, startY float64
-	scale          float64
-	brightness     float64
-	startTime      time.Time
-	duration       int
-	completed      bool
+	img              *ebiten.Image // Your electricity image
+	startX, startY   float64
+	scale            float64
+	brightness       float64
+	startTime        time.Time
+	duration         int
+	originalDuration int
+	completed        bool
 }
 
 func NewElectricityEffect(startX, startY int, duration int) *ElectricityEffect {
 	vxImg, _, _ := ebitenutil.NewImageFromFile("assets/effects/zap0.png") // Load your electricity image here
 	return &ElectricityEffect{
-		img:        vxImg,
-		startX:     float64(startX),
-		startY:     float64(startY),
-		scale:      1.0, // Initial scale
-		brightness: 1.0, // Initial brightness
-		startTime:  time.Now(),
-		duration:   duration,
-		completed:  false,
+		img:              vxImg,
+		startX:           float64(startX),
+		startY:           float64(startY),
+		scale:            1.0, // Initial scale
+		brightness:       1.0, // Initial brightness
+		startTime:        time.Now(),
+		duration:         duration,
+		originalDuration: duration,
+		completed:        false,
 	}
 }
 
@@ -862,43 +914,55 @@ func (elec *ElectricityEffect) VXImg() *ebiten.Image {
 	return elec.img
 }
 
+// Projectile does not have a duration but we still need the function to implement the interface
+func (elec *ElectricityEffect) ResetVX() {
+
+	elec.startTime = time.Now()
+	elec.completed = false
+	elec.duration = elec.originalDuration
+
+}
+
 func (elec *ElectricityEffect) Copy() VisualEffect {
 	return &ElectricityEffect{
-		img:        elec.img,
-		startX:     elec.startX,
-		startY:     elec.startY,
-		scale:      elec.scale,
-		brightness: elec.brightness,
-		startTime:  elec.startTime,
-		duration:   elec.duration,
-		completed:  elec.completed,
+		img:              elec.img,
+		startX:           elec.startX,
+		startY:           elec.startY,
+		scale:            elec.scale,
+		brightness:       elec.brightness,
+		startTime:        elec.startTime,
+		duration:         elec.duration,
+		originalDuration: elec.duration,
+		completed:        elec.completed,
 	}
 }
 
 // Todo does not work fix later
 type ElectricArc struct {
-	startX, startY float64
-	endX, endY     float64
-	segments       [][]float64
-	color          color.RGBA
-	thickness      float32
-	startTime      time.Time
-	duration       int
-	completed      bool
+	startX, startY   float64
+	endX, endY       float64
+	segments         [][]float64
+	color            color.RGBA
+	thickness        float32
+	startTime        time.Time
+	duration         int
+	originalDuration int
+	completed        bool
 }
 
 func NewElectricArc(startX, startY, endX, endY int, duration int) *ElectricArc {
 	return &ElectricArc{
-		startX:    float64(startX),
-		startY:    float64(startY),
-		endX:      float64(endX),
-		endY:      float64(endY),
-		segments:  make([][]float64, 0),
-		color:     color.RGBA{0, 191, 255, 255}, // Light blue color
-		thickness: 2,
-		startTime: time.Now(),
-		duration:  duration,
-		completed: false,
+		startX:           float64(startX),
+		startY:           float64(startY),
+		endX:             float64(endX),
+		endY:             float64(endY),
+		segments:         make([][]float64, 0),
+		color:            color.RGBA{0, 191, 255, 255}, // Light blue color
+		thickness:        2,
+		startTime:        time.Now(),
+		duration:         duration,
+		originalDuration: duration,
+		completed:        false,
 	}
 }
 
@@ -944,21 +1008,6 @@ func (e *ElectricArc) generateSegments() {
 	e.segments = append(e.segments, []float64{e.endX, e.endY})
 }
 
-func (e *ElectricArc) Copy() VisualEffect {
-	return &ElectricArc{
-		startX:    e.startX,
-		startY:    e.startY,
-		endX:      e.endX,
-		endY:      e.endY,
-		segments:  make([][]float64, len(e.segments)),
-		color:     e.color,
-		thickness: e.thickness,
-		startTime: e.startTime,
-		duration:  e.duration,
-		completed: e.completed,
-	}
-}
-
 func (e *ElectricArc) IsCompleted() bool {
 	return e.completed
 }
@@ -972,4 +1021,29 @@ func (e *ElectricArc) SetVXCommon(x, y int, img *ebiten.Image) {
 func (e *ElectricArc) VXImg() *ebiten.Image {
 	// This effect doesn't use an image, so we return nil
 	return nil
+}
+
+// Projectile does not have a duration but we still need the function to implement the interface
+func (e *ElectricArc) ResetVX() {
+
+	e.startTime = time.Now()
+	e.completed = false
+	e.duration = e.originalDuration
+
+}
+
+func (e *ElectricArc) Copy() VisualEffect {
+	return &ElectricArc{
+		startX:           e.startX,
+		startY:           e.startY,
+		endX:             e.endX,
+		endY:             e.endY,
+		segments:         make([][]float64, len(e.segments)),
+		color:            e.color,
+		thickness:        e.thickness,
+		startTime:        e.startTime,
+		duration:         e.duration,
+		originalDuration: e.duration,
+		completed:        e.completed,
+	}
 }

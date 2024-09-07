@@ -49,6 +49,7 @@ func StayDistantRangedAttackAction(g *Game, c *ecs.QueryResult, target *ecs.Enti
 		fmt.Println("Printing distance. Range On Attack", distance, RangedWeapon.ShootingRange)
 
 		if GetPosition(c.Entity).InRange(GetPosition(target), RangedWeapon.ShootingRange) {
+			RangedAttackSystem(g, GetPosition(c.Entity))
 			fmt.Println("In range")
 		} else {
 			c.Entity.AddComponent(withinRadiusComp, &DistanceToEntityMovement{distance: rangeToKeep, target: target})

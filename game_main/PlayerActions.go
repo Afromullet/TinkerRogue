@@ -19,10 +19,24 @@ That's what this file is for
 */
 
 // Applies the throwable
-func ApplyThrowable(g *Game, item *Item, throwerPos *Position) {
+func ApplyThrowable(g *Game, item *Item, shape TileBasedShape, throwerPos *Position) {
 
 	t := item.ItemEffect(THROWABLE_NAME).(*Throwable)
 
+	//eff := NewIceEffect(0, 0, 5)
+	//ar := NewVisualEffectArea(t.Shape, eff)
+	//ar := NewVisualEffectArea(t.Shape, t.vx.Copy())
+	//AddVXArea(ar)
+	//AddVXArea(ar)
+
+	if t.vx != nil {
+
+		t.vx.ResetVX()
+		AddVXArea(NewVisualEffectArea(t.Shape, t.vx))
+
+	}
+
+	//t.ReadyThrowAreaVX()
 	pos := GetTilePositions(t.Shape)
 
 	//TODO, this will be slow in case there are a lot of creatures
@@ -95,16 +109,7 @@ func HandlePlayerThrowable(g *Game) {
 
 			g.playerData.ThrowPreparedItem(g.playerData.inventory)
 
-			ApplyThrowable(g, g.playerData.ThrowableItem, g.playerData.position)
-			vxArea := GetComponentType[*VXArea](g.playerData.SelectedThrowable, vxAreaComponent)
-
-			vxArea.visualEffectArea.shape = g.playerData.ThrowingAOEShape
-
-			eff := NewFireEffect(0, 0, 1, 5, 1, 0.5)
-			ar := NewVisualEffectArea(g.playerData.ThrowingAOEShape, eff)
-			AddVXArea(ar)
-			//AddVXArea(vxArea.visualEffectArea)
-			//AddEntityAreaVX(g.playerData.SelectedThrowable)
+			ApplyThrowable(g, g.playerData.ThrowableItem, g.playerData.ThrowingAOEShape, g.playerData.position)
 
 		}
 

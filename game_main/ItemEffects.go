@@ -247,11 +247,13 @@ func NewFreezing(dur int, t int) *Freezing {
 // Have to implement methods that do not apply to it such as
 // ApplyToCreature. MainProps.duration also doesn't mean much for this
 // But it works for now...
+// vx is the VisualEffect which will be drawn in the AOE Shape
 type Throwable struct {
 	MainProps     CommonItemProperties
 	ThrowingRange int //How many tiles it can be thrown
 	Damage        int
 	Shape         TileBasedShape
+	vx            VisualEffect
 }
 
 func (t *Throwable) StatusEffectComponent() *ecs.Component {
@@ -280,6 +282,13 @@ func (t *Throwable) Copy() StatusEffects {
 
 func (t *Throwable) ApplyToCreature(c *ecs.QueryResult) {
 	fmt.Println("Applying ", t, " To Creature")
+
+}
+
+// Adds the Throwing Weapons VisualEffectArea to the VisualEffectHandler. It will be drawn.
+func (t *Throwable) ReadyThrowAreaVX() {
+
+	//AddVXArea(t.vxArea)
 
 }
 

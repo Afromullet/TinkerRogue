@@ -40,32 +40,37 @@ func CreateTestItems(manager *ecs.Manager, tags map[string]ecs.Tag, gameMap *Gam
 
 	st := NewSticky(9, 2)
 
-	s := NewTileSquare(0, 0, 3)
-	t := NewThrowable(1, 2, 3, &s)
+	tileSq := NewTileSquare(0, 0, 3)
+	throwItem := NewThrowable(1, 2, 3, &tileSq)
+
+	throwItem.vx = NewFireEffect(0, 0, 1, 5, 1, 0.5)
 
 	//CreateItem(manager, "Throwable Item"+strconv.Itoa(1), Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
 	//NewThrowable(1, 5, 3, NewTileSquare(0, 0, 3)), NewBurning(1, 1))
-	it := CreateItem(manager, "T0"+strconv.Itoa(1), Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
-		t, b, f)
-
-	eff := NewFireEffect(0, 0, 1, 5, 1, 0.5)
-	it.AddComponent(vxAreaComponent, &VXArea{
-		visualEffectArea: NewVisualEffectArea(&s, eff),
-	})
+	CreateItem(manager, "T0"+strconv.Itoa(1), Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
+		throwItem, b, f)
 
 	sout := NewTileCircleOutline(0, 0, 2)
-	CreateItem(manager, "T8"+strconv.Itoa(1), Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
-		NewThrowable(1, 2, 3, &sout), b, f)
+	throwItem = NewThrowable(1, 2, 3, &sout)
+	throwItem.vx = NewIceEffect(0, 0, 5)
 
-	s = NewTileSquare(0, 0, 2)
+	CreateItem(manager, "T8"+strconv.Itoa(1), Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
+		throwItem, b, f)
+
+	tileSq = NewTileSquare(0, 0, 2)
+	throwItem = NewThrowable(1, 3, 3, &tileSq)
+	throwItem.vx = NewCloudEffect(0, 0, 5)
+
 	//CreateItem(manager, "Throwable Item"+strconv.Itoa(1), Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
 	//NewThrowable(1, 5, 3, NewTileSquare(0, 0, 3)), NewBurning(1, 1))
 	CreateItem(manager, "T7"+strconv.Itoa(1), Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
-		NewThrowable(1, 3, 3, &s), NewBurning(1, 1), st, f)
+		throwItem, NewBurning(1, 1), st, f)
 
 	l := NewTileLine(0, 0, 5, LineDown)
+	throwItem = NewThrowable(1, 3, 3, &l)
+
 	CreateItem(manager, "T1"+strconv.Itoa(1), Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
-		NewThrowable(1, 2, 3, &l))
+		throwItem)
 
 	l = NewTileLine(0, 0, 2, LineDown)
 	CreateItem(manager, "T9"+strconv.Itoa(1), Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
@@ -286,6 +291,7 @@ func CreatedRangedWeapon(manager *ecs.Manager, name string, imagePath string, po
 		MaxDamage:     maxDamage,
 		ShootingRange: shootingRange,
 		TargetArea:    TargetArea,
+		ShootingVX:    NewProjectile(0, 0, 0, 0),
 	})
 
 	return weapon
