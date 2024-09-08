@@ -2,6 +2,7 @@ package main
 
 import (
 	"game_main/ecshelper"
+	"game_main/equipment"
 	"game_main/graphics"
 
 	"github.com/bytearena/ecs"
@@ -16,11 +17,10 @@ var (
 
 	CreatureComponent *ecs.Component
 
-	WeaponComponent       *ecs.Component
 	RangedWeaponComponent *ecs.Component
-	ArmorComponent        *ecs.Component
-	InventoryComponent    *ecs.Component
-	userMessage           *ecs.Component
+
+	InventoryComponent *ecs.Component
+	userMessage        *ecs.Component
 )
 
 // The ECS library returns pointers to the struct when querying it for components, so the Position methods take a pointer as input
@@ -34,17 +34,6 @@ type Renderable struct {
 type UserMessage struct {
 	AttackMessage    string
 	GameStateMessage string
-}
-
-type Weapon struct {
-	MinDamage int
-	MaxDamage int
-}
-
-func (w Weapon) CalculateDamage() int {
-
-	return GetRandomBetween(w.MinDamage, w.MaxDamage)
-
 }
 
 // TargetArea is the area the weapon covers
@@ -99,12 +88,6 @@ func (r *RangedWeapon) DisplayShootingVX(attackerPos *ecshelper.Position, defend
 	graphics.AddVX(arr)
 }
 
-type Armor struct {
-	ArmorClass  int
-	Protection  int
-	DodgeChance float32
-}
-
 // The functions which are a GetComponentType wrapper get called frequency
 func GetPosition(e *ecs.Entity) *ecshelper.Position {
 	return ecshelper.GetComponentType[*ecshelper.Position](e, ecshelper.PositionComponent)
@@ -135,9 +118,9 @@ func InitializeECS(g *Game) {
 	ecshelper.AttributeComponent = manager.NewComponent()
 	userMessage = manager.NewComponent()
 
-	WeaponComponent = manager.NewComponent()
+	equipment.WeaponComponent = manager.NewComponent()
 	RangedWeaponComponent = manager.NewComponent()
-	ArmorComponent = manager.NewComponent()
+	equipment.ArmorComponent = manager.NewComponent()
 
 	renderables := ecs.BuildTag(RenderableComponent, ecshelper.PositionComponent)
 	tags["renderables"] = renderables

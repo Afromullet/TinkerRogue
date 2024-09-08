@@ -2,6 +2,7 @@ package main
 
 import (
 	"game_main/ecshelper"
+	"game_main/equipment"
 	"game_main/graphics"
 	"log"
 	"strconv"
@@ -169,6 +170,7 @@ func CreateMonster(g *Game, manager *ecs.Manager, gameMap *GameMap, x, y int, im
 
 	ind := graphics.IndexFromXY(x, y)
 	gameMap.Tiles[ind].Blocked = true
+	testArmor := equipment.Armor{15, 3, 30}
 
 	ent := manager.NewEntity().
 		AddComponent(CreatureComponent, &Creature{
@@ -187,13 +189,14 @@ func CreateMonster(g *Game, manager *ecs.Manager, gameMap *GameMap, x, y int, im
 			AttackMessage:    "",
 			GameStateMessage: "",
 		}).
-		AddComponent(ArmorComponent, &Armor{15, 3, 30}).
-		AddComponent(WeaponComponent, &Weapon{
+		AddComponent(equipment.ArmorComponent, &testArmor).
+		AddComponent(equipment.WeaponComponent, &equipment.MeleeWeapon{
 			MinDamage: 3,
 			MaxDamage: 5,
 		})
 
-	//ecshelper.UpdateAttributes(ent) todo uncomment
+	armor := equipment.GetArmor(ent)
+	ecshelper.UpdateAttributes(ent, armor.ArmorClass, armor.Protection, armor.DodgeChance)
 
 	return ent
 
@@ -268,7 +271,7 @@ func CreateWeapon(manager *ecs.Manager, name string, pos ecshelper.Position, ima
 
 	weapon := CreateItem(manager, name, pos, imagePath, properties...)
 
-	weapon.AddComponent(WeaponComponent, &Weapon{
+	weapon.AddComponent(equipment.WeaponComponent, &equipment.MeleeWeapon{
 		MinDamage: MinDamage,
 		MaxDamage: MaxDamage,
 	})

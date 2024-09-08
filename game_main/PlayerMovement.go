@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"game_main/ecshelper"
+	"game_main/equipment"
 	"game_main/graphics"
 	"log"
 
@@ -40,7 +41,9 @@ func PlayerActions(g *Game) {
 	}
 
 	if inpututil.IsKeyJustReleased(ebiten.KeyK) {
-		//UpdateAttributes(g.playerData.PlayerEntity) todo uncomment once you move equipment to its own file
+
+		armor := equipment.GetArmor(g.playerData.PlayerEntity)
+		ecshelper.UpdateAttributes(g.playerData.PlayerEntity, armor.ArmorClass, armor.Protection, armor.DodgeChance)
 	}
 
 	if inpututil.IsKeyJustReleased(ebiten.KeyF) {

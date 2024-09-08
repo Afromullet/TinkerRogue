@@ -2,6 +2,7 @@ package main
 
 import (
 	"game_main/ecshelper"
+	"game_main/equipment"
 	"game_main/graphics"
 	"log"
 
@@ -59,9 +60,9 @@ func (pl *PlayerThrowable) ThrowPreparedItem(inv *Inventory) {
 }
 
 // Helper function to make it less tedious to get the inventory
-func (pl *PlayerEquipment) GetPlayerWeapon() *Weapon {
+func (pl *PlayerEquipment) GetPlayerWeapon() *equipment.MeleeWeapon {
 
-	weapon := ecshelper.GetComponentType[*Weapon](pl.PlayerWeapon, WeaponComponent)
+	weapon := ecshelper.GetComponentType[*equipment.MeleeWeapon](pl.PlayerWeapon, equipment.WeaponComponent)
 
 	return weapon
 }
@@ -112,7 +113,7 @@ func InitializePlayerData(g *Game) {
 	attr.CurrentHealth = 5
 	attr.AttackBonus = 5
 
-	armor := Armor{1, 5, 50}
+	armor := equipment.Armor{1, 5, 50}
 
 	playerEntity := g.World.NewEntity().
 		AddComponent(player, &Player{}).
@@ -131,7 +132,7 @@ func InitializePlayerData(g *Game) {
 		AddComponent(userMessage, &UserMessage{
 			AttackMessage:    "",
 			GameStateMessage: "",
-		}).AddComponent(ArmorComponent, &armor)
+		}).AddComponent(equipment.ArmorComponent, &armor)
 
 	players := ecs.BuildTag(player, ecshelper.PositionComponent, InventoryComponent)
 	g.WorldTags["players"] = players

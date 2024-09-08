@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"game_main/ecshelper"
+	"game_main/equipment"
 	"game_main/graphics"
 	"log"
 
@@ -18,7 +19,7 @@ func MeleeAttackSystem(g *Game, attackerPos *ecshelper.Position, defenderPos *ec
 	var defender *ecs.Entity = nil
 
 	//var weaponComponent any
-	var weapon *Weapon = nil
+	var weapon *equipment.MeleeWeapon = nil
 
 	if g.playerData.position.IsEqual(attackerPos) {
 		fmt.Println("Player is attacking")
@@ -30,7 +31,7 @@ func MeleeAttackSystem(g *Game, attackerPos *ecshelper.Position, defenderPos *ec
 		attacker = GetCreatureAtPosition(g, attackerPos)
 		defender = g.playerData.PlayerEntity
 		fmt.Println("Monster is attacking")
-		weapon = ecshelper.GetComponentType[*Weapon](attacker, WeaponComponent)
+		weapon = ecshelper.GetComponentType[*equipment.MeleeWeapon](attacker, equipment.WeaponComponent)
 
 	}
 

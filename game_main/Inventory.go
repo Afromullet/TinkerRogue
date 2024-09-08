@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"game_main/ecshelper"
+	"game_main/equipment"
 
 	"github.com/bytearena/ecs"
 )
@@ -106,7 +107,7 @@ func (inv *Inventory) GetEquipmentForDisplay(indicesToSelect []int) []any {
 		itemName := ecshelper.GetComponentType[*ecshelper.Name](entity, ecshelper.NameComponent)
 		itemComp := GetItem(entity)
 
-		if entity.HasComponent(ArmorComponent) {
+		if entity.HasComponent(equipment.ArmorComponent) {
 
 			inventoryItems = append(inventoryItems, InventoryListEntry{
 				index,
@@ -120,7 +121,7 @@ func (inv *Inventory) GetEquipmentForDisplay(indicesToSelect []int) []any {
 				itemName.NameStr,
 				itemComp.Count})
 
-		} else if entity.HasComponent(WeaponComponent) {
+		} else if entity.HasComponent(equipment.WeaponComponent) {
 
 			inventoryItems = append(inventoryItems, InventoryListEntry{
 				index,
