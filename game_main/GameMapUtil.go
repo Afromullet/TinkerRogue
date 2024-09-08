@@ -2,8 +2,6 @@ package main
 
 import (
 	"fmt"
-	"game_main/ecshelper"
-	"game_main/graphics"
 	"os"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -13,28 +11,6 @@ import (
 var floorImgs = make([]*ebiten.Image, 0)
 var wallImgs = make([]*ebiten.Image, 0)
 var decorationImgs = make([]*ebiten.Image, 0)
-
-func PixelsFromPosition(pos *ecshelper.Position) (int, int) {
-	gd := graphics.NewScreenData()
-	return pos.X * gd.TileWidth, pos.Y * gd.TileHeight
-}
-
-func PositionFromIndex(i int) ecshelper.Position {
-	gd := graphics.NewScreenData()
-	return ecshelper.Position{
-		X: i % gd.ScreenWidth,
-		Y: i / gd.ScreenWidth,
-	}
-
-}
-
-func GridPositionFromPixels(x, y int) ecshelper.Position {
-	gd := graphics.NewScreenData()
-	return ecshelper.Position{
-		X: x / gd.TileWidth,
-		Y: y / gd.TileHeight,
-	}
-}
 
 func loadTileImages() {
 

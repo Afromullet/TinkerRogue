@@ -1,6 +1,7 @@
 package ecshelper
 
 import (
+	"game_main/graphics"
 	"math"
 
 	"github.com/bytearena/ecs"
@@ -38,6 +39,28 @@ func (p *Position) InRange(other *Position, distance int) bool {
 // The functions which are a GetComponentType wrapper get called frequency
 func GetPosition(e *ecs.Entity) *Position {
 	return GetComponentType[*Position](e, PositionComponent)
+}
+
+func PixelsFromPosition(pos *Position, tileWidth, tileHeight int) (int, int) {
+
+	return pos.X * tileWidth, pos.Y * tileHeight
+}
+
+func PositionFromIndex(i, screenWidth, screenHeight int) Position {
+
+	return Position{
+		X: i % screenWidth,
+		Y: i / screenHeight,
+	}
+
+}
+
+func GridPositionFromPixels(x, y int) Position {
+	gd := graphics.NewScreenData()
+	return Position{
+		X: x / gd.TileWidth,
+		Y: y / gd.TileHeight,
+	}
 }
 
 type Attributes struct {

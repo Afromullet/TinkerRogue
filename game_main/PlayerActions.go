@@ -53,6 +53,7 @@ func ApplyThrowable(g *Game, item *equipment.Item, shape graphics.TileBasedShape
 
 func DrawThrowableAOE(g *Game) {
 
+	gd := graphics.NewScreenData()
 	cursorX, cursorY := ebiten.CursorPosition()
 
 	s := g.playerData.ThrowingAOEShape
@@ -73,7 +74,7 @@ func DrawThrowableAOE(g *Game) {
 
 	for _, i := range indices {
 
-		pos := PositionFromIndex(i)
+		pos := ecshelper.PositionFromIndex(i, gd.ScreenWidth, gd.ScreenHeight)
 
 		if pos.InRange(g.playerData.position, throwable.ThrowingRange) {
 			g.gameMap.ApplyColorMatrixToIndex(i, graphics.GreenColorMatrix)
@@ -124,6 +125,7 @@ func HandlePlayerThrowable(g *Game) {
 
 func DrawRangedAttackAOE(g *Game) {
 
+	gd := graphics.NewScreenData()
 	cursorX, cursorY := ebiten.CursorPosition()
 
 	s := g.playerData.RangedWeaponAOEShape
@@ -142,7 +144,7 @@ func DrawRangedAttackAOE(g *Game) {
 
 	for _, i := range indices {
 
-		pos := PositionFromIndex(i)
+		pos := ecshelper.PositionFromIndex(i, gd.ScreenWidth, gd.ScreenHeight)
 
 		if pos.InRange(g.playerData.position, g.playerData.RangedWeaponMaxDistance) {
 			g.gameMap.ApplyColorMatrixToIndex(i, graphics.GreenColorMatrix)

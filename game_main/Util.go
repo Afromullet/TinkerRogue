@@ -13,13 +13,14 @@ import (
 // This returns the X,Y positions since we handle player and creature location through Position
 func GetTilePositions(ts graphics.TileBasedShape) []ecshelper.Position {
 
+	gd := graphics.NewScreenData()
 	indices := ts.GetIndices()
 
 	pos := make([]ecshelper.Position, len(indices))
 
 	for i, inds := range indices {
 
-		pos[i] = PositionFromIndex(inds)
+		pos[i] = ecshelper.PositionFromIndex(inds, gd.ScreenWidth, gd.ScreenHeight)
 
 	}
 

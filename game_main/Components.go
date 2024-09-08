@@ -77,8 +77,10 @@ func (r RangedWeapon) GetTargets(g *Game) []*ecs.Entity {
 // Adds the Ranged Weapons VisuaLEffect to the VisualEffectHandler. It will be drawn.
 func (r *RangedWeapon) DisplayShootingVX(attackerPos *ecshelper.Position, defenderPos *ecshelper.Position) {
 
-	attX, attY := PixelsFromPosition(attackerPos)
-	defX, defY := PixelsFromPosition(defenderPos)
+	gd := graphics.NewScreenData()
+
+	attX, attY := ecshelper.PixelsFromPosition(attackerPos, gd.TileWidth, gd.TileHeight)
+	defX, defY := ecshelper.PixelsFromPosition(defenderPos, gd.TileWidth, gd.TileHeight)
 
 	arr := graphics.NewProjectile(attX, attY, defX, defY)
 

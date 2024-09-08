@@ -100,6 +100,7 @@ func EntityFollowMoveAction(g *Game, mover *ecs.Entity) {
 // Sort of works but needs improvement
 func WithinRadiusMoveAction(g *Game, mover *ecs.Entity) {
 
+	gd := graphics.NewScreenData()
 	creature := GetCreature(mover)
 	creaturePosition := ecshelper.GetPosition(mover)
 	withinRange := ecshelper.GetComponentType[*DistanceToEntityMovement](mover, withinRadiusComp)
@@ -107,7 +108,7 @@ func WithinRadiusMoveAction(g *Game, mover *ecs.Entity) {
 	if withinRange.target != nil {
 		targetPos := ecshelper.GetComponentType[*ecshelper.Position](withinRange.target, ecshelper.PositionComponent)
 
-		pixelX, pixelY := PixelsFromPosition(targetPos)
+		pixelX, pixelY := ecshelper.PixelsFromPosition(targetPos, gd.TileWidth, gd.TileHeight)
 		distance := withinRange.distance
 
 		var path []ecshelper.Position
@@ -117,7 +118,7 @@ func WithinRadiusMoveAction(g *Game, mover *ecs.Entity) {
 			ind, ok := GetUnblockedTile(&g.gameMap, indices)
 			if ok {
 
-				finalPos := PositionFromIndex(ind)
+				finalPos := ecshelper.PositionFromIndex(ind, gd.ScreenWidth, gd.ScreenHeight)
 				path = BuildPath(g, creaturePosition, &finalPos)
 				break
 			}
