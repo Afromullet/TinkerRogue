@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"game_main/equipment"
 	"game_main/graphics"
 	"image/color"
 
@@ -18,7 +19,7 @@ type ThrowingItemDisplay struct {
 }
 
 // Todo modify this to make it compatible with THrowable Display actions on list item click
-func (throwingItemDisplay *ThrowingItemDisplay) CreateInventoryList(playerData *PlayerData, propFilters ...StatusEffects) {
+func (throwingItemDisplay *ThrowingItemDisplay) CreateInventoryList(playerData *PlayerData, propFilters ...equipment.StatusEffects) {
 
 	inv := playerData.GetPlayerInventory().GetInventoryForDisplay([]int{}, propFilters...)
 	throwingItemDisplay.itemDisplay.InventoryDisplaylist = throwingItemDisplay.itemDisplay.GetInventoryListWidget(inv)
@@ -28,15 +29,15 @@ func (throwingItemDisplay *ThrowingItemDisplay) CreateInventoryList(playerData *
 		fmt.Print("Throwable Item Selected")
 
 		a := args.(*widget.ListEntrySelectedEventArgs)
-		entry := a.Entry.(InventoryListEntry)
+		entry := a.Entry.(equipment.InventoryListEntry)
 
-		it, err := playerData.inventory.GetItem(entry.index)
+		it, err := playerData.inventory.GetItem(entry.Index)
 
 		//throwableComponentData := GetComponentStruct[*Item](it, ItemComponent)
 		//	fmt.Println("Printing throwable ", throwableComponentData)
 
 		if err == nil {
-			playerData.PrepareThrowable(it, entry.index)
+			playerData.PrepareThrowable(it, entry.Index)
 		}
 
 		throwingItemDisplay.ThrowableItemSelected = true
@@ -54,7 +55,7 @@ func (throwingItemDisplay *ThrowingItemDisplay) DisplayInventory(g *Game) {
 	s := graphics.NewTileSquare(0, 0, 0)
 
 	//throwingItemDisplay.CreateInventoryList(&g.playerData, NewThrowable(0, 0, 0, NewTileSquare(0, 0, 0)))
-	throwingItemDisplay.CreateInventoryList(&g.playerData, NewThrowable(0, 0, 0, &s))
+	throwingItemDisplay.CreateInventoryList(&g.playerData, equipment.NewThrowable(0, 0, 0, &s))
 
 }
 

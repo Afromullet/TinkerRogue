@@ -17,10 +17,7 @@ var (
 
 	CreatureComponent *ecs.Component
 
-	RangedWeaponComponent *ecs.Component
-
-	InventoryComponent *ecs.Component
-	userMessage        *ecs.Component
+	userMessage *ecs.Component
 )
 
 // The ECS library returns pointers to the struct when querying it for components, so the Position methods take a pointer as input
@@ -88,16 +85,6 @@ func (r *RangedWeapon) DisplayShootingVX(attackerPos *ecshelper.Position, defend
 	graphics.AddVX(arr)
 }
 
-// The functions which are a GetComponentType wrapper get called frequency
-func GetPosition(e *ecs.Entity) *ecshelper.Position {
-	return ecshelper.GetComponentType[*ecshelper.Position](e, ecshelper.PositionComponent)
-}
-
-// This gets called so often that it might as well be a function
-func GetItem(e *ecs.Entity) *Item {
-	return ecshelper.GetComponentType[*Item](e, ItemComponent)
-}
-
 // This gets called so often that it might as well be a function
 func GetCreature(e *ecs.Entity) *Creature {
 	return ecshelper.GetComponentType[*Creature](e, CreatureComponent)
@@ -113,13 +100,13 @@ func InitializeECS(g *Game) {
 
 	ecshelper.NameComponent = manager.NewComponent()
 
-	InventoryComponent = manager.NewComponent()
+	equipment.InventoryComponent = manager.NewComponent()
 
 	ecshelper.AttributeComponent = manager.NewComponent()
 	userMessage = manager.NewComponent()
 
 	equipment.WeaponComponent = manager.NewComponent()
-	RangedWeaponComponent = manager.NewComponent()
+	equipment.RangedWeaponComponent = manager.NewComponent()
 	equipment.ArmorComponent = manager.NewComponent()
 
 	renderables := ecs.BuildTag(RenderableComponent, ecshelper.PositionComponent)
@@ -129,7 +116,7 @@ func InitializeECS(g *Game) {
 	tags["messengers"] = messengers
 
 	InitializeMovementComponents(manager, tags)
-	InitializeItemComponents(manager, tags)
+	equipment.InitializeItemComponents(manager, tags)
 	InitializeCreatureComponents(manager, tags)
 
 	g.WorldTags = tags

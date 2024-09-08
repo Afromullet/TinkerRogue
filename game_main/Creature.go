@@ -2,6 +2,7 @@ package main
 
 import (
 	"game_main/ecshelper"
+	"game_main/equipment"
 	"game_main/graphics"
 
 	"github.com/bytearena/ecs"
@@ -12,14 +13,14 @@ import (
 // The Path is updated by a Movement Component
 type Creature struct {
 	Path           []ecshelper.Position
-	EffectsToApply []StatusEffects
+	EffectsToApply []equipment.StatusEffects
 }
 
 // TODO stack the effects if they're of the same kind
 // Add stuff together and keep the longest duration
 func (c *Creature) AddEffects(effects *ecs.Entity) {
 
-	e := AllStatusEffects(effects)
+	e := equipment.AllStatusEffects(effects)
 	c.EffectsToApply = append(c.EffectsToApply, e...)
 
 }
@@ -35,7 +36,7 @@ func ApplyEffects(c *ecs.QueryResult) {
 		return
 	}
 
-	effects_to_keep := make([]StatusEffects, 0)
+	effects_to_keep := make([]equipment.StatusEffects, 0)
 
 	for _, eff := range creature.EffectsToApply {
 

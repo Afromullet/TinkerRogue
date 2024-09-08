@@ -1,6 +1,7 @@
 package main
 
 import (
+	"game_main/equipment"
 	"image/color"
 
 	e_image "github.com/ebitenui/ebitenui/image"
@@ -22,7 +23,7 @@ type CraftingItemDisplay struct {
 // Selects an item and adds it to the ItemsSelectedContainer container and ItemsSelectedPropContainer
 // ItemSeleced container tells us which items we're crafting with
 // ItemsSelectedPropContainer tells which properties the items have
-func (craftingItemDisplay *CraftingItemDisplay) CreateInventoryList(playerData *PlayerData, propFilters ...StatusEffects) {
+func (craftingItemDisplay *CraftingItemDisplay) CreateInventoryList(playerData *PlayerData, propFilters ...equipment.StatusEffects) {
 
 	// Nested function to add a selected item
 	addSelectedItem := func(index int) {
@@ -43,9 +44,9 @@ func (craftingItemDisplay *CraftingItemDisplay) CreateInventoryList(playerData *
 		craftingItemDisplay.ItemsSelectedContainer.RemoveChild(craftingItemDisplay.itemDisplay.ItemsSelectedList)
 
 		a := args.(*widget.ListEntrySelectedEventArgs)
-		entry := a.Entry.(InventoryListEntry)
+		entry := a.Entry.(equipment.InventoryListEntry)
 
-		addSelectedItem(entry.index)
+		addSelectedItem(entry.Index)
 
 		sel := playerData.GetPlayerInventory().GetInventoryForDisplay(craftingItemDisplay.itemDisplay.ItemsSelectedIndices)
 
@@ -54,7 +55,7 @@ func (craftingItemDisplay *CraftingItemDisplay) CreateInventoryList(playerData *
 		if craftingItemDisplay.itemDisplay.ItemsSelectedList != nil {
 			craftingItemDisplay.ItemsSelectedContainer.AddChild(craftingItemDisplay.itemDisplay.ItemsSelectedList)
 
-			names, _ := playerData.GetPlayerInventory().EffectNames(entry.index)
+			names, _ := playerData.GetPlayerInventory().EffectNames(entry.Index)
 
 			for _, n := range names {
 				craftingItemDisplay.ItemsSelectedPropTextArea.AppendText(n)

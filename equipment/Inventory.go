@@ -1,9 +1,8 @@
-package main
+package equipment
 
 import (
 	"fmt"
 	"game_main/ecshelper"
-	"game_main/equipment"
 
 	"github.com/bytearena/ecs"
 )
@@ -11,9 +10,9 @@ import (
 // This is used to display the inventory inside of windows for the UI
 // TODO later replace this with the item information
 type InventoryListEntry struct {
-	index int
+	Index int
 	Name  string
-	count int
+	Count int
 }
 
 type Inventory struct {
@@ -107,7 +106,7 @@ func (inv *Inventory) GetEquipmentForDisplay(indicesToSelect []int) []any {
 		itemName := ecshelper.GetComponentType[*ecshelper.Name](entity, ecshelper.NameComponent)
 		itemComp := GetItem(entity)
 
-		if entity.HasComponent(equipment.ArmorComponent) {
+		if entity.HasComponent(ArmorComponent) {
 
 			inventoryItems = append(inventoryItems, InventoryListEntry{
 				index,
@@ -121,7 +120,7 @@ func (inv *Inventory) GetEquipmentForDisplay(indicesToSelect []int) []any {
 				itemName.NameStr,
 				itemComp.Count})
 
-		} else if entity.HasComponent(equipment.WeaponComponent) {
+		} else if entity.HasComponent(WeaponComponent) {
 
 			inventoryItems = append(inventoryItems, InventoryListEntry{
 				index,

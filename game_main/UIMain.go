@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"game_main/equipment"
 	"image"
 	"image/color"
 	_ "image/png"
@@ -33,9 +34,9 @@ It's painful to add a new container to display items in. Here are the steps:
 // Every window that displays the inventory to teh user will be a struct that contains ItemDisplay
 // And implements the ItemDisplayer interface
 type ItemDisplayer interface {
-	CreateContainers()                                                        //For creating the containers
-	CreateInventoryList(playerData *PlayerData, propFilters ...StatusEffects) //For getting the inventory from the player and adding on click event handlers
-	DisplayInventory(g *Game)                                                 //Really just there for calling CreateInventoryList with ItemProperty filters for the specific kind of window
+	CreateContainers()                                                                  //For creating the containers
+	CreateInventoryList(playerData *PlayerData, propFilters ...equipment.StatusEffects) //For getting the inventory from the player and adding on click event handlers
+	DisplayInventory(g *Game)                                                           //Really just there for calling CreateInventoryList with ItemProperty filters for the specific kind of window
 }
 
 // Anything that displays the inventory will have to use this struct through composition.
@@ -104,7 +105,7 @@ func (ItemDisplay *ItemDisplay) GetInventoryListWidget(entries []any) *widget.Li
 		}),
 		// This required function returns the string displayed in the list
 		widget.ListOpts.EntryLabelFunc(func(e interface{}) string {
-			return e.(InventoryListEntry).Name + " x" + strconv.Itoa(e.(InventoryListEntry).count)
+			return e.(equipment.InventoryListEntry).Name + " x" + strconv.Itoa(e.(equipment.InventoryListEntry).Count)
 		}),
 		// Padding for each entry
 		widget.ListOpts.EntryTextPadding(widget.NewInsetsSimple(5)),

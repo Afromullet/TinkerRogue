@@ -29,8 +29,8 @@ func GetTilePositions(ts graphics.TileBasedShape) []ecshelper.Position {
 
 func DistanceBetween(e1 *ecs.Entity, e2 *ecs.Entity) int {
 
-	pos1 := GetPosition(e1)
-	pos2 := GetPosition(e2)
+	pos1 := ecshelper.GetPosition(e1)
+	pos2 := ecshelper.GetPosition(e2)
 
 	return pos1.ManhattanDistance(pos2)
 

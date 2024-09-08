@@ -2,6 +2,7 @@ package main
 
 import (
 	"game_main/ecshelper"
+	"game_main/equipment"
 	"game_main/graphics"
 	"log"
 
@@ -21,14 +22,14 @@ That's what this file is for
 */
 
 // Applies the throwable
-func ApplyThrowable(g *Game, item *Item, shape graphics.TileBasedShape, throwerPos *ecshelper.Position) {
+func ApplyThrowable(g *Game, item *equipment.Item, shape graphics.TileBasedShape, throwerPos *ecshelper.Position) {
 
-	t := item.ItemEffect(THROWABLE_NAME).(*Throwable)
+	t := item.ItemEffect(equipment.THROWABLE_NAME).(*equipment.Throwable)
 
-	if t.vx != nil {
+	if t.VX != nil {
 
-		t.vx.ResetVX()
-		graphics.AddVXArea(graphics.NewVisualEffectArea(t.Shape, t.vx))
+		t.VX.ResetVX()
+		graphics.AddVXArea(graphics.NewVisualEffectArea(t.Shape, t.VX))
 
 	}
 
@@ -65,7 +66,7 @@ func DrawThrowableAOE(g *Game) {
 
 	}
 
-	throwable := g.playerData.ThrowableItem.ItemEffect(THROWABLE_NAME).(*Throwable)
+	throwable := g.playerData.ThrowableItem.ItemEffect(equipment.THROWABLE_NAME).(*equipment.Throwable)
 
 	s.UpdatePosition(cursorX, cursorY)
 	indices = s.GetIndices()

@@ -63,7 +63,7 @@ type DistanceToEntityMovement struct {
 func SimpleWanderAction(g *Game, mover *ecs.Entity) {
 
 	creature := GetCreature(mover)
-	creaturePosition := GetPosition(mover)
+	creaturePosition := ecshelper.GetPosition(mover)
 
 	randomPos := GetRandomBetween(0, len(validPositions.positions))
 	endPos := validPositions.Get(randomPos)
@@ -85,7 +85,7 @@ func NoMoveAction(g *Game, mover *ecs.Entity) {
 func EntityFollowMoveAction(g *Game, mover *ecs.Entity) {
 
 	creature := GetCreature(mover)
-	creaturePosition := GetPosition(mover)
+	creaturePosition := ecshelper.GetPosition(mover)
 	goToEnt := ecshelper.GetComponentType[*EntityFollow](mover, entityFollowComp)
 
 	if goToEnt.target != nil {
@@ -101,7 +101,7 @@ func EntityFollowMoveAction(g *Game, mover *ecs.Entity) {
 func WithinRadiusMoveAction(g *Game, mover *ecs.Entity) {
 
 	creature := GetCreature(mover)
-	creaturePosition := GetPosition(mover)
+	creaturePosition := ecshelper.GetPosition(mover)
 	withinRange := ecshelper.GetComponentType[*DistanceToEntityMovement](mover, withinRadiusComp)
 
 	if withinRange.target != nil {
@@ -157,7 +157,7 @@ func GetUnblockedTile(gameMap *GameMap, indices []int) (int, bool) {
 func WithinRangeMoveAction(g *Game, mover *ecs.Entity) {
 
 	creature := GetCreature(mover)
-	creaturePosition := GetPosition(mover)
+	creaturePosition := ecshelper.GetPosition(mover)
 	within := ecshelper.GetComponentType[*DistanceToEntityMovement](mover, withinRangeComponent)
 
 	if within.target != nil {
@@ -179,7 +179,7 @@ func WithinRangeMoveAction(g *Game, mover *ecs.Entity) {
 func FleeFromEntityMovementAction(g *Game, mover *ecs.Entity) {
 	fleeMov := ecshelper.GetComponentType[*DistanceToEntityMovement](mover, fleeComp)
 	creature := GetCreature(mover)
-	creaturePosition := GetPosition(mover)
+	creaturePosition := ecshelper.GetPosition(mover)
 
 	if fleeMov.target != nil {
 		targetPosition := ecshelper.GetComponentType[*ecshelper.Position](fleeMov.target, ecshelper.PositionComponent)

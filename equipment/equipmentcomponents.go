@@ -29,9 +29,16 @@ func GetRandomBetween(low int, high int) int {
 }
 
 var (
-	ArmorComponent  *ecs.Component
-	WeaponComponent *ecs.Component
+	ArmorComponent        *ecs.Component
+	WeaponComponent       *ecs.Component
+	InventoryComponent    *ecs.Component
+	RangedWeaponComponent *ecs.Component
 )
+
+// This gets called so often that it might as well be a function
+func GetItem(e *ecs.Entity) *Item {
+	return ecshelper.GetComponentType[*Item](e, ItemComponent)
+}
 
 type Armor struct {
 	ArmorClass  int

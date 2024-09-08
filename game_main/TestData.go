@@ -16,9 +16,9 @@ var TestLine = graphics.NewTileLine(0, 0, 2, graphics.LineDown)
 var TestCone = graphics.NewTileCone(0, 0, 3, graphics.LineRight)
 var TestCircle = graphics.NewTileCircle(0, 0, 2)
 var TestRect = graphics.NewTileRectangle(0, 0, 2, 3)
-var TestBurning = NewBurning(5, 2)
-var TestSticky = NewSticky(9, 2)
-var TestFreezing = NewFreezing(3, 5)
+var TestBurning = equipment.NewBurning(5, 2)
+var TestSticky = equipment.NewSticky(9, 2)
+var TestFreezing = equipment.NewFreezing(3, 5)
 
 var TestFireEffect = graphics.NewFireEffect(0, 0, 1, 5, 1, 0.5)
 var TestCloudEffect = graphics.NewCloudEffect(0, 0, 5)
@@ -37,10 +37,10 @@ func SetupPlayerForTesting(g *Game) {
 
 }
 
-func CreateTestThrowable(shape graphics.TileBasedShape, vx graphics.VisualEffect) *Throwable {
+func CreateTestThrowable(shape graphics.TileBasedShape, vx graphics.VisualEffect) *equipment.Throwable {
 
-	t := NewThrowable(1, 2, 3, shape)
-	t.vx = vx
+	t := equipment.NewThrowable(1, 2, 3, shape)
+	t.VX = vx
 	return t
 }
 
@@ -107,7 +107,7 @@ func CreateTestMonsters(g *Game, manager *ecs.Manager, gameMap *GameMap) {
 	c := CreateMonster(g, manager, gameMap, x, y+1, "assets/creatures/elf.png")
 
 	c.AddComponent(distanceRangeAttack, &DistanceRangedAttack{})
-	c.AddComponent(RangedWeaponComponent, &wep)
+	c.AddComponent(equipment.RangedWeaponComponent, &wep)
 
 	c = CreateMonster(g, manager, gameMap, x+1, y, "assets/creatures/unseen_horror.png")
 	c.AddComponent(simpleWanderComp, &SimpleWander{})
@@ -232,14 +232,14 @@ func GetTileInfo(g *Game, pos *ecshelper.Position, player *Player) {
 
 // Create an item with any number of Effects. ItemEffect is a wrapper around an ecs.Component to make
 // Manipulating it easier
-func CreateItem(manager *ecs.Manager, name string, pos ecshelper.Position, imagePath string, effects ...StatusEffects) *ecs.Entity {
+func CreateItem(manager *ecs.Manager, name string, pos ecshelper.Position, imagePath string, effects ...equipment.StatusEffects) *ecs.Entity {
 
 	img, _, err := ebitenutil.NewImageFromFile(imagePath)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	item := &Item{Count: 1, Properties: manager.NewEntity()}
+	item := &equipment.Item{Count: 1, Properties: manager.NewEntity()}
 
 	for _, prop := range effects {
 		item.Properties.AddComponent(prop.StatusEffectComponent(), &prop)
@@ -258,7 +258,7 @@ func CreateItem(manager *ecs.Manager, name string, pos ecshelper.Position, image
 		AddComponent(ecshelper.NameComponent, &ecshelper.Name{
 			NameStr: name,
 		}).
-		AddComponent(ItemComponent, item)
+		AddComponent(equipment.ItemComponent, item)
 
 	//TODO where shoudl I add the tags?
 
@@ -267,7 +267,7 @@ func CreateItem(manager *ecs.Manager, name string, pos ecshelper.Position, image
 }
 
 // A weapon is an Item with a weapon component
-func CreateWeapon(manager *ecs.Manager, name string, pos ecshelper.Position, imagePath string, MinDamage int, MaxDamage int, properties ...StatusEffects) *ecs.Entity {
+func CreateWeapon(manager *ecs.Manager, name string, pos ecshelper.Position, imagePath string, MinDamage int, MaxDamage int, properties ...equipment.StatusEffects) *ecs.Entity {
 
 	weapon := CreateItem(manager, name, pos, imagePath, properties...)
 
@@ -283,7 +283,7 @@ func CreateWeapon(manager *ecs.Manager, name string, pos ecshelper.Position, ima
 func CreatedRangedWeapon(manager *ecs.Manager, name string, imagePath string, pos ecshelper.Position, minDamage int, maxDamage int, shootingRange int, TargetArea graphics.TileBasedShape) *ecs.Entity {
 
 	weapon := CreateItem(manager, name, pos, imagePath)
-	weapon.AddComponent(RangedWeaponComponent, &RangedWeapon{
+	weapon.AddComponent(equipment.RangedWeaponComponent, &RangedWeapon{
 		MinDamage:     minDamage,
 		MaxDamage:     maxDamage,
 		ShootingRange: shootingRange,

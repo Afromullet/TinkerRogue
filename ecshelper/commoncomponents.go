@@ -35,6 +35,11 @@ func (p *Position) InRange(other *Position, distance int) bool {
 
 }
 
+// The functions which are a GetComponentType wrapper get called frequency
+func GetPosition(e *ecs.Entity) *Position {
+	return GetComponentType[*Position](e, PositionComponent)
+}
+
 type Attributes struct {
 	MaxHealth        int
 	CurrentHealth    int

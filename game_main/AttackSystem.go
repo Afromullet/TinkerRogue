@@ -103,7 +103,7 @@ func RangedAttackSystem(g *Game, attackerPos *ecshelper.Position) {
 
 		fmt.Println("Monster is shooting")
 
-		weapon = ecshelper.GetComponentType[*RangedWeapon](attacker, RangedWeaponComponent)
+		weapon = ecshelper.GetComponentType[*RangedWeapon](attacker, equipment.RangedWeaponComponent)
 		targets = append(targets, g.playerData.PlayerEntity)
 	}
 
@@ -112,7 +112,7 @@ func RangedAttackSystem(g *Game, attackerPos *ecshelper.Position) {
 
 		for _, t := range targets {
 
-			defenderPos := GetPosition(t)
+			defenderPos := ecshelper.GetPosition(t)
 			if attackerPos.InRange(defenderPos, weapon.ShootingRange) {
 				fmt.Println("Shooting")
 
@@ -136,7 +136,7 @@ func RangedAttackSystem(g *Game, attackerPos *ecshelper.Position) {
 // TOdo can also just call GetPosition instead of passing defenderPos
 func RemoveDeadEntity(g *Game, defender *ecs.Entity) {
 
-	defenderPos := GetPosition(defender)
+	defenderPos := ecshelper.GetPosition(defender)
 	defAttr := ecshelper.GetAttributes(defender)
 	if g.playerData.position.IsEqual(defenderPos) {
 		fmt.Println("Player dead")

@@ -1,4 +1,4 @@
-package main
+package equipment
 
 import (
 	"fmt"
@@ -255,7 +255,7 @@ type Throwable struct {
 	ThrowingRange int //How many tiles it can be thrown
 	Damage        int
 	Shape         graphics.TileBasedShape
-	vx            graphics.VisualEffect
+	VX            graphics.VisualEffect
 }
 
 func (t *Throwable) StatusEffectComponent() *ecs.Component {
@@ -290,6 +290,7 @@ func (t *Throwable) ApplyToCreature(c *ecs.QueryResult) {
 // Adds the Throwing Weapons VisualEffectArea to the VisualEffectHandler. It will be drawn.
 func (t *Throwable) ReadyThrowAreaVX() {
 
+	//TOdo I don't think this is needed anymore
 	//AddVXArea(t.vxArea)
 
 }

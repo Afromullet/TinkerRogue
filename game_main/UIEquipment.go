@@ -1,6 +1,7 @@
 package main
 
 import (
+	"game_main/equipment"
 	"image/color"
 
 	e_image "github.com/ebitenui/ebitenui/image"
@@ -18,7 +19,7 @@ type EquipmentItemDisplay struct {
 // Selects an item and adds it to the ItemsSelectedContainer container and ItemsSelectedPropContainer
 // ItemSeleced container tells us which items we're crafting with
 // ItemsSelectedPropContainer tells which properties the items have
-func (equipmentDisplay *EquipmentItemDisplay) CreateInventoryList(playerData *PlayerData, propFilters ...StatusEffects) {
+func (equipmentDisplay *EquipmentItemDisplay) CreateInventoryList(playerData *PlayerData, propFilters ...equipment.StatusEffects) {
 
 	inv := playerData.GetPlayerInventory().GetEquipmentForDisplay([]int{})
 	equipmentDisplay.itemDisplay.InventoryDisplaylist = equipmentDisplay.itemDisplay.GetInventoryListWidget(inv)
