@@ -8,9 +8,6 @@ import (
 	"github.com/bytearena/ecs"
 )
 
-var GreenColorMatrix = ColorMatrix{0, 1, 0, 1, true}
-var RedColorMatrix = ColorMatrix{1, 0, 0, 1, true}
-
 // A TileBasedShape returns indices that correspond to the elements in the gamemaps Tiles slice
 // This returns the X,Y positions since we handle player and creature location through Position
 func GetTilePositions(ts graphics.TileBasedShape) []Position {
@@ -77,7 +74,7 @@ func ApplyColorToMap(g *Game, indices []int) {
 
 	for _, ind := range indices {
 
-		g.gameMap.ApplyColorMatrixToIndex(ind, GreenColorMatrix)
+		g.gameMap.ApplyColorMatrixToIndex(ind, graphics.GreenColorMatrix)
 
 	}
 
@@ -85,6 +82,6 @@ func ApplyColorToMap(g *Game, indices []int) {
 
 // Todo this can be removed later. Currently using it for debugging
 func ApplyColorToInd(g *Game, index int) {
-	g.gameMap.ApplyColorMatrixToIndex(index, GreenColorMatrix)
+	g.gameMap.ApplyColorMatrixToIndex(index, graphics.GreenColorMatrix)
 
 }

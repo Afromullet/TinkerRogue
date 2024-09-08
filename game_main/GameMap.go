@@ -163,10 +163,10 @@ func (gameMap *GameMap) DrawLevel(screen *ebiten.Image) {
 
 			if !tile.cm.IsEmpty() {
 
-				cs.SetR(tile.cm.r)
-				cs.SetG(tile.cm.g)
-				cs.SetB(tile.cm.b)
-				cs.SetA(tile.cm.a)
+				cs.SetR(tile.cm.R)
+				cs.SetG(tile.cm.G)
+				cs.SetB(tile.cm.B)
+				cs.SetA(tile.cm.A)
 
 				op.ColorScale.ScaleWithColorScale(cs)
 
@@ -293,7 +293,7 @@ func (gameMap *GameMap) createVerticalTunnel(y1 int, y2 int, x int) {
 }
 
 // Applies the scaling ColorMatrix to the tiles at the Indices
-func (gameMap *GameMap) ApplyColorMatrix(indices []int, m ColorMatrix) {
+func (gameMap *GameMap) ApplyColorMatrix(indices []int, m graphics.ColorMatrix) {
 
 	for _, ind := range indices {
 
@@ -305,7 +305,7 @@ func (gameMap *GameMap) ApplyColorMatrix(indices []int, m ColorMatrix) {
 }
 
 // Applies the scaling ColorMatrix to the tiles at the Indices
-func (gameMap *GameMap) ApplyColorMatrixToIndex(index int, m ColorMatrix) {
+func (gameMap *GameMap) ApplyColorMatrixToIndex(index int, m graphics.ColorMatrix) {
 
 	gameMap.Tiles[index].SetColorMatrix(m)
 

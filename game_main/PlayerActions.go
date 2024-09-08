@@ -58,7 +58,7 @@ func DrawThrowableAOE(g *Game) {
 	if cursorX != prevCursorX || cursorY != prevCursorY {
 
 		if prevCursorX != 0 && prevCursorY != 0 {
-			g.gameMap.ApplyColorMatrix(PrevThrowInds, NewEmptyMatrix())
+			g.gameMap.ApplyColorMatrix(PrevThrowInds, graphics.NewEmptyMatrix())
 
 		}
 
@@ -74,11 +74,11 @@ func DrawThrowableAOE(g *Game) {
 		pos := PositionFromIndex(i)
 
 		if pos.InRange(g.playerData.position, throwable.ThrowingRange) {
-			g.gameMap.ApplyColorMatrixToIndex(i, GreenColorMatrix)
+			g.gameMap.ApplyColorMatrixToIndex(i, graphics.GreenColorMatrix)
 
 		} else {
 
-			g.gameMap.ApplyColorMatrixToIndex(i, RedColorMatrix)
+			g.gameMap.ApplyColorMatrixToIndex(i, graphics.RedColorMatrix)
 
 		}
 
@@ -112,7 +112,7 @@ func HandlePlayerThrowable(g *Game) {
 		if inpututil.IsMouseButtonJustPressed(ebiten.MouseButton2) {
 
 			log.Println("Removing throwable")
-			g.gameMap.ApplyColorMatrix(PrevThrowInds, NewEmptyMatrix())
+			g.gameMap.ApplyColorMatrix(PrevThrowInds, graphics.NewEmptyMatrix())
 			g.SetThrowableItemSelected(false)
 
 		}
@@ -129,7 +129,7 @@ func DrawRangedAttackAOE(g *Game) {
 	if cursorX != prevCursorX || cursorY != prevCursorY {
 
 		if prevCursorX != 0 && prevCursorY != 0 {
-			g.gameMap.ApplyColorMatrix(PrevRangedAttInds, NewEmptyMatrix())
+			g.gameMap.ApplyColorMatrix(PrevRangedAttInds, graphics.NewEmptyMatrix())
 
 		}
 
@@ -143,11 +143,11 @@ func DrawRangedAttackAOE(g *Game) {
 		pos := PositionFromIndex(i)
 
 		if pos.InRange(g.playerData.position, g.playerData.RangedWeaponMaxDistance) {
-			g.gameMap.ApplyColorMatrixToIndex(i, GreenColorMatrix)
+			g.gameMap.ApplyColorMatrixToIndex(i, graphics.GreenColorMatrix)
 
 		} else {
 
-			g.gameMap.ApplyColorMatrixToIndex(i, RedColorMatrix)
+			g.gameMap.ApplyColorMatrixToIndex(i, graphics.RedColorMatrix)
 
 		}
 
@@ -171,7 +171,7 @@ func HandlePlayerRangedAttack(g *Game) {
 		if inpututil.IsMouseButtonJustPressed(ebiten.MouseButton2) {
 
 			g.playerData.isTargeting = false
-			g.gameMap.ApplyColorMatrix(PrevRangedAttInds, NewEmptyMatrix())
+			g.gameMap.ApplyColorMatrix(PrevRangedAttInds, graphics.NewEmptyMatrix())
 			//log.Println("Removing throwable")
 
 		}

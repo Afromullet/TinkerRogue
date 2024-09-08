@@ -1,38 +1,12 @@
 package main
 
 import (
+	"game_main/graphics"
+
 	"github.com/bytearena/ecs"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/colorm"
 )
-
-// The ColorMatrix lets us track what RGBA transformations we want to apply to a tile
-// It either scales a color or draws a color
-type ColorMatrix struct {
-	r           float32
-	g           float32
-	b           float32
-	a           float32
-	ApplyMatrix bool
-}
-
-func NewEmptyMatrix() ColorMatrix {
-	return ColorMatrix{
-		r:           0,
-		g:           0,
-		b:           0,
-		a:           0,
-		ApplyMatrix: true,
-	}
-}
-
-func (c ColorMatrix) IsEmpty() bool {
-	if c.r == 0 && c.g == 0 && c.b == 0 && c.a == 0 {
-		return true
-	}
-
-	return false
-}
 
 type TileType int
 
@@ -57,7 +31,7 @@ type Tile struct {
 	tileContents TileContents
 	TileType     TileType
 	IsRevealed   bool
-	cm           ColorMatrix
+	cm           graphics.ColorMatrix
 }
 
 func NewTile(pixelX, pixelY int, tileCords Position, blocked bool, img *ebiten.Image, tileType TileType, isRevealed bool) Tile {
@@ -73,18 +47,18 @@ func NewTile(pixelX, pixelY int, tileCords Position, blocked bool, img *ebiten.I
 		Image:      img,
 		TileType:   WALL,
 		IsRevealed: false,
-		cm: ColorMatrix{
-			r:           0,
-			g:           0,
-			b:           0,
-			a:           0,
+		cm: graphics.ColorMatrix{
+			R:           0,
+			G:           0,
+			B:           0,
+			A:           0,
 			ApplyMatrix: false,
 		}}
 
 	return tile
 }
 
-func (t *Tile) SetColorMatrix(c ColorMatrix) {
+func (t *Tile) SetColorMatrix(c graphics.ColorMatrix) {
 
 	t.cm = c
 }

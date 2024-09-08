@@ -44,7 +44,7 @@ func PlayerActions(g *Game) {
 
 	if inpututil.IsKeyJustReleased(ebiten.KeyF) {
 
-		g.gameMap.ApplyColorMatrix(PrevRangedAttInds, NewEmptyMatrix())
+		g.gameMap.ApplyColorMatrix(PrevRangedAttInds, graphics.NewEmptyMatrix())
 
 		g.playerData.isTargeting = true
 		g.playerData.PrepareRangedAttack()
