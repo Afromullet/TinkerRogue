@@ -1,6 +1,7 @@
 package main
 
 import (
+	"game_main/ecshelper"
 	"game_main/graphics"
 
 	"github.com/bytearena/ecs"
@@ -25,7 +26,7 @@ type TileContents struct {
 type Tile struct {
 	PixelX       int
 	PixelY       int
-	TileCords    Position
+	TileCords    ecshelper.Position
 	Blocked      bool
 	Image        *ebiten.Image
 	tileContents TileContents
@@ -34,7 +35,7 @@ type Tile struct {
 	cm           graphics.ColorMatrix
 }
 
-func NewTile(pixelX, pixelY int, tileCords Position, blocked bool, img *ebiten.Image, tileType TileType, isRevealed bool) Tile {
+func NewTile(pixelX, pixelY int, tileCords ecshelper.Position, blocked bool, img *ebiten.Image, tileType TileType, isRevealed bool) Tile {
 
 	var cm colorm.ColorM
 	cm.Reset()

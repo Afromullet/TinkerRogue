@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"game_main/ecshelper"
 
 	"github.com/bytearena/ecs"
 )
@@ -21,12 +22,12 @@ type Inventory struct {
 // the Item type stores a "count" which is incremented if the item exists in the inventory
 func (inv *Inventory) AddItem(entityToAdd *ecs.Entity) {
 	// Dereference the slice pointer and use append
-	newItemName := GetComponentType[*Name](entityToAdd, nameComponent).NameStr
+	newItemName := ecshelper.GetComponentType[*Name](entityToAdd, nameComponent).NameStr
 	exists := false
 
 	for _, entity := range inv.InventoryContent {
 
-		itemName := GetComponentType[*Name](entity, nameComponent).NameStr
+		itemName := ecshelper.GetComponentType[*Name](entity, nameComponent).NameStr
 
 		if itemName == newItemName {
 			exists = true
@@ -102,7 +103,7 @@ func (inv *Inventory) GetEquipmentForDisplay(indicesToSelect []int) []any {
 
 	for index, entity := range inv.InventoryContent {
 
-		itemName := GetComponentType[*Name](entity, nameComponent)
+		itemName := ecshelper.GetComponentType[*Name](entity, nameComponent)
 		itemComp := GetItem(entity)
 
 		if entity.HasComponent(ArmorComponent) {
@@ -143,7 +144,7 @@ func (inv *Inventory) GetInventoryForDisplay(indicesToSelect []int, itemProperti
 	if len(indicesToSelect) == 0 {
 		for index, entity := range inv.InventoryContent {
 
-			itemName := GetComponentType[*Name](entity, nameComponent)
+			itemName := ecshelper.GetComponentType[*Name](entity, nameComponent)
 			itemComp := GetItem(entity)
 
 			if itemComp.HasAllEffects(itemPropertiesFilter...) {
@@ -158,7 +159,7 @@ func (inv *Inventory) GetInventoryForDisplay(indicesToSelect []int, itemProperti
 	} else {
 		for _, index := range indicesToSelect {
 			entity := inv.InventoryContent[index]
-			itemName := GetComponentType[*Name](entity, nameComponent)
+			itemName := ecshelper.GetComponentType[*Name](entity, nameComponent)
 			itemComp := GetItem(entity)
 
 			if itemComp.HasAllEffects(itemPropertiesFilter...) {

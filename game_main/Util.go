@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto/rand"
+	"game_main/ecshelper"
 	"game_main/graphics"
 	"math/big"
 
@@ -10,11 +11,11 @@ import (
 
 // A TileBasedShape returns indices that correspond to the elements in the gamemaps Tiles slice
 // This returns the X,Y positions since we handle player and creature location through Position
-func GetTilePositions(ts graphics.TileBasedShape) []Position {
+func GetTilePositions(ts graphics.TileBasedShape) []ecshelper.Position {
 
 	indices := ts.GetIndices()
 
-	pos := make([]Position, len(indices))
+	pos := make([]ecshelper.Position, len(indices))
 
 	for i, inds := range indices {
 

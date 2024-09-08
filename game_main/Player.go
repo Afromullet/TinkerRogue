@@ -1,6 +1,7 @@
 package main
 
 import (
+	"game_main/ecshelper"
 	"game_main/graphics"
 	"log"
 
@@ -21,7 +22,7 @@ type PlayerEquipment struct {
 }
 
 func (pl *PlayerEquipment) PrepareRangedAttack() {
-	wep := GetComponentType[*RangedWeapon](pl.PlayerRangedWeapon, RangedWeaponComponent)
+	wep := ecshelper.GetComponentType[*RangedWeapon](pl.PlayerRangedWeapon, RangedWeaponComponent)
 	pl.RangedWeaponAOEShape = wep.TargetArea
 	pl.RangedWeaponMaxDistance = wep.ShootingRange
 
@@ -60,7 +61,7 @@ func (pl *PlayerThrowable) ThrowPreparedItem(inv *Inventory) {
 // Helper function to make it less tedious to get the inventory
 func (pl *PlayerEquipment) GetPlayerWeapon() *Weapon {
 
-	weapon := GetComponentType[*Weapon](pl.PlayerWeapon, WeaponComponent)
+	weapon := ecshelper.GetComponentType[*Weapon](pl.PlayerWeapon, WeaponComponent)
 
 	return weapon
 }
@@ -68,7 +69,7 @@ func (pl *PlayerEquipment) GetPlayerWeapon() *Weapon {
 // Helper function to make it less tedious to get the inventory
 func (pl *PlayerData) GetPlayerRangedWeapon() *RangedWeapon {
 
-	weapon := GetComponentType[*RangedWeapon](pl.PlayerRangedWeapon, RangedWeaponComponent)
+	weapon := ecshelper.GetComponentType[*RangedWeapon](pl.PlayerRangedWeapon, RangedWeaponComponent)
 
 	return weapon
 }
@@ -83,7 +84,7 @@ type PlayerData struct {
 
 	PlayerEntity *ecs.Entity
 
-	position  *Position
+	position  *ecshelper.Position
 	inventory *Inventory
 
 	isTargeting bool
@@ -92,7 +93,7 @@ type PlayerData struct {
 // Helper function to make it less tedious to get the inventory
 func (pl *PlayerData) GetPlayerInventory() *Inventory {
 
-	playerInventory := GetComponentType[*Inventory](pl.PlayerEntity, InventoryComponent)
+	playerInventory := ecshelper.GetComponentType[*Inventory](pl.PlayerEntity, InventoryComponent)
 
 	return playerInventory
 }
@@ -119,7 +120,7 @@ func InitializePlayerData(g *Game) {
 			Image:   playerImg,
 			Visible: true,
 		}).
-		AddComponent(PositionComponent, &Position{
+		AddComponent(ecshelper.PositionComponent, &ecshelper.Position{
 			X: 40,
 			Y: 45,
 		}).
@@ -132,7 +133,7 @@ func InitializePlayerData(g *Game) {
 			GameStateMessage: "",
 		}).AddComponent(ArmorComponent, &armor)
 
-	players := ecs.BuildTag(player, PositionComponent, InventoryComponent)
+	players := ecs.BuildTag(player, ecshelper.PositionComponent, InventoryComponent)
 	g.WorldTags["players"] = players
 
 	g.playerData = PlayerData{}
@@ -141,11 +142,11 @@ func InitializePlayerData(g *Game) {
 
 	//Don't want to Query for the player position every time, so we're storing it
 
-	startPos := GetComponentType[*Position](g.playerData.PlayerEntity, PositionComponent)
+	startPos := ecshelper.GetComponentType[*ecshelper.Position](g.playerData.PlayerEntity, ecshelper.PositionComponent)
 	startPos.X = g.gameMap.StartingPosition().X
 	startPos.Y = g.gameMap.StartingPosition().Y
 
-	inventory := GetComponentType[*Inventory](g.playerData.PlayerEntity, InventoryComponent)
+	inventory := ecshelper.GetComponentType[*Inventory](g.playerData.PlayerEntity, InventoryComponent)
 
 	g.playerData.position = startPos
 	g.playerData.inventory = inventory

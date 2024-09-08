@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"game_main/ecshelper"
 	"game_main/graphics"
 	"log"
 
@@ -78,7 +79,7 @@ func PlayerActions(g *Game) {
 	HandlePlayerThrowable(g)
 	HandlePlayerRangedAttack(g)
 
-	nextPosition := Position{
+	nextPosition := ecshelper.Position{
 		X: g.playerData.position.X + x,
 		Y: g.playerData.position.Y + y,
 	}

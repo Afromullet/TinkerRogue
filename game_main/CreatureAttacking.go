@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"game_main/ecshelper"
 
 	"github.com/bytearena/ecs"
 )
@@ -37,7 +38,7 @@ func ApproachAndAttackAction(g *Game, c *ecs.QueryResult, target *ecs.Entity) {
 
 	c.Entity.AddComponent(entityFollowComp, &EntityFollow{target: target})
 
-	defenderPos := GetComponentType[*Position](target, PositionComponent)
+	defenderPos := ecshelper.GetComponentType[*ecshelper.Position](target, ecshelper.PositionComponent)
 	if DistanceBetween(c.Entity, target) == 1 {
 		MeleeAttackSystem(g, GetPosition(c.Entity), defenderPos)
 
@@ -50,7 +51,7 @@ func StayDistantRangedAttackAction(g *Game, c *ecs.QueryResult, target *ecs.Enti
 
 	RemoveMovementComponent(c)
 
-	RangedWeapon := GetComponentType[*RangedWeapon](c.Entity, RangedWeaponComponent)
+	RangedWeapon := ecshelper.GetComponentType[*RangedWeapon](c.Entity, RangedWeaponComponent)
 
 	if RangedWeapon != nil {
 

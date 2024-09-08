@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"game_main/ecshelper"
 	"game_main/graphics"
 	"log"
 
@@ -11,7 +12,7 @@ import (
 // Rolls 1d20+AttackBonus and compares it to defenders armorclass. Has to be greater than or equal to the armor class to hit
 // Then the defender does a dodge roll. If the dodge roll is greater than or equal to its dodge value, the attack hits
 // If the attacker hits, subtract the Defenders protection value from the damage
-func MeleeAttackSystem(g *Game, attackerPos *Position, defenderPos *Position) {
+func MeleeAttackSystem(g *Game, attackerPos *ecshelper.Position, defenderPos *ecshelper.Position) {
 
 	var attacker *ecs.Entity = nil
 	var defender *ecs.Entity = nil
@@ -29,7 +30,7 @@ func MeleeAttackSystem(g *Game, attackerPos *Position, defenderPos *Position) {
 		attacker = GetCreatureAtPosition(g, attackerPos)
 		defender = g.playerData.PlayerEntity
 		fmt.Println("Monster is attacking")
-		weapon = GetComponentType[*Weapon](attacker, WeaponComponent)
+		weapon = ecshelper.GetComponentType[*Weapon](attacker, WeaponComponent)
 
 	}
 
@@ -82,7 +83,7 @@ func PerformAttack(g *Game, damage int, attacker *ecs.Entity, defender *ecs.Enti
 
 // A monster doing a ranged attack is simple right now.
 // It ignores the weapons AOE and selects only the player as the target
-func RangedAttackSystem(g *Game, attackerPos *Position) {
+func RangedAttackSystem(g *Game, attackerPos *ecshelper.Position) {
 
 	var attacker *ecs.Entity = nil
 
@@ -101,7 +102,7 @@ func RangedAttackSystem(g *Game, attackerPos *Position) {
 
 		fmt.Println("Monster is shooting")
 
-		weapon = GetComponentType[*RangedWeapon](attacker, RangedWeaponComponent)
+		weapon = ecshelper.GetComponentType[*RangedWeapon](attacker, RangedWeaponComponent)
 		targets = append(targets, g.playerData.PlayerEntity)
 	}
 
@@ -149,12 +150,12 @@ func RemoveDeadEntity(g *Game, defender *ecs.Entity) {
 
 }
 
-func GetCreatureAtPosition(g *Game, pos *Position) *ecs.Entity {
+func GetCreatureAtPosition(g *Game, pos *ecshelper.Position) *ecs.Entity {
 
 	var e *ecs.Entity = nil
 	for _, c := range g.World.Query(g.WorldTags["monsters"]) {
 
-		curPos := c.Components[PositionComponent].(*Position)
+		curPos := c.Components[ecshelper.PositionComponent].(*ecshelper.Position)
 
 		if pos.IsEqual(curPos) {
 			e = c.Entity

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"game_main/ecshelper"
 	"game_main/graphics"
 	"log"
 
@@ -20,7 +21,7 @@ That's what this file is for
 */
 
 // Applies the throwable
-func ApplyThrowable(g *Game, item *Item, shape graphics.TileBasedShape, throwerPos *Position) {
+func ApplyThrowable(g *Game, item *Item, shape graphics.TileBasedShape, throwerPos *ecshelper.Position) {
 
 	t := item.ItemEffect(THROWABLE_NAME).(*Throwable)
 
@@ -37,7 +38,7 @@ func ApplyThrowable(g *Game, item *Item, shape graphics.TileBasedShape, throwerP
 	//TODO, this will be slow in case there are a lot of creatures
 	for _, c := range g.World.Query(g.WorldTags["monsters"]) {
 
-		curPos := c.Components[PositionComponent].(*Position)
+		curPos := c.Components[ecshelper.PositionComponent].(*ecshelper.Position)
 		crea := c.Components[CreatureComponent].(*Creature)
 
 		for _, p := range pos {
@@ -162,7 +163,7 @@ func HandlePlayerRangedAttack(g *Game) {
 
 	if g.playerData.isTargeting {
 
-		msg := GetComponentType[*UserMessage](g.playerData.PlayerEntity, userMessage)
+		msg := ecshelper.GetComponentType[*UserMessage](g.playerData.PlayerEntity, userMessage)
 
 		msg.GameStateMessage = "Shooting"
 		DrawRangedAttackAOE(g)

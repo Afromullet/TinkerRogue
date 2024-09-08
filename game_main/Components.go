@@ -1,9 +1,8 @@
 package main
 
 import (
-	"fmt"
+	"game_main/ecshelper"
 	"game_main/graphics"
-	"math"
 
 	"github.com/bytearena/ecs"
 	"github.com/hajimehoshi/ebiten/v2"
@@ -13,7 +12,6 @@ import (
  */
 
 var (
-	PositionComponent   *ecs.Component
 	RenderableComponent *ecs.Component
 	nameComponent       *ecs.Component
 
@@ -29,35 +27,6 @@ var (
 
 // The ECS library returns pointers to the struct when querying it for components, so the Position methods take a pointer as input
 // Other than that, there's no reason for using pointers for the functions below.
-
-type Position struct {
-	X int
-	Y int
-}
-
-func (p *Position) IsEqual(other *Position) bool {
-	return (p.X == other.X && p.Y == other.Y)
-}
-
-func (p *Position) ManhattanDistance(other *Position) int {
-	xDist := math.Abs(float64(p.X - other.X))
-	yDist := math.Abs(float64(p.Y - other.Y))
-	return int(xDist) + int(yDist)
-}
-
-func (p *Position) InRange(other *Position, distance int) bool {
-
-	return p.ManhattanDistance(other) <= distance
-
-}
-
-// Creates a slice of Positions from p to other. Uses AStar to build the path
-func (p *Position) BuildPath(g *Game, other *Position) []Position {
-
-	astar := AStar{}
-	return astar.GetPath(g.gameMap, p, other, false)
-
-}
 
 type Renderable struct {
 	Image   *ebiten.Image
@@ -111,7 +80,7 @@ func (r RangedWeapon) GetTargets(g *Game) []*ecs.Entity {
 	//TODO, this will be slow in case there are a lot of creatures
 	for _, c := range g.World.Query(g.WorldTags["monsters"]) {
 
-		curPos := c.Components[PositionComponent].(*Position)
+		curPos := c.Components[ecshelper.PositionComponent].(*ecshelper.Position)
 
 		for _, p := range pos {
 			if curPos.IsEqual(&p) {
@@ -126,7 +95,7 @@ func (r RangedWeapon) GetTargets(g *Game) []*ecs.Entity {
 }
 
 // Adds the Ranged Weapons VisuaLEffect to the VisualEffectHandler. It will be drawn.
-func (r *RangedWeapon) DisplayShootingVX(attackerPos *Position, defenderPos *Position) {
+func (r *RangedWeapon) DisplayShootingVX(attackerPos *ecshelper.Position, defenderPos *ecshelper.Position) {
 
 	attX, attY := PixelsFromPosition(attackerPos)
 	defX, defY := PixelsFromPosition(defenderPos)
@@ -156,9 +125,9 @@ type Attributes struct {
 
 func UpdateAttributes(e *ecs.Entity) {
 
-	attr := GetComponentType[*Attributes](e, AttributeComponent)
+	attr := ecshelper.GetComponentType[*Attributes](e, AttributeComponent)
 
-	armor := GetComponentType[*Armor](e, ArmorComponent)
+	armor := ecshelper.GetComponentType[*Armor](e, ArmorComponent)
 
 	if armor != nil {
 		attr.TotalArmorClass = attr.BaseArmorClass + armor.ArmorClass
@@ -169,45 +138,24 @@ func UpdateAttributes(e *ecs.Entity) {
 
 }
 
-// A wrapper around the ECS libraries GetComponentData.
-func GetComponentType[T any](entity *ecs.Entity, component *ecs.Component) T {
-
-	defer func() {
-		if r := recover(); r != nil {
-
-			fmt.Println("Error in passing the component type. Component type must match struct.")
-
-		}
-	}()
-
-	if c, ok := entity.GetComponentData(component); ok {
-		return c.(T)
-
-	} else {
-		var nilValue T
-		return nilValue
-	}
-
-}
-
 // The functions which are a GetComponentType wrapper get called frequency
-func GetPosition(e *ecs.Entity) *Position {
-	return GetComponentType[*Position](e, PositionComponent)
+func GetPosition(e *ecs.Entity) *ecshelper.Position {
+	return ecshelper.GetComponentType[*ecshelper.Position](e, ecshelper.PositionComponent)
 }
 
 // This gets called so often that it might as well be a function
 func GetItem(e *ecs.Entity) *Item {
-	return GetComponentType[*Item](e, ItemComponent)
+	return ecshelper.GetComponentType[*Item](e, ItemComponent)
 }
 
 // This gets called so often that it might as well be a function
 func GetAttributes(e *ecs.Entity) *Attributes {
-	return GetComponentType[*Attributes](e, AttributeComponent)
+	return ecshelper.GetComponentType[*Attributes](e, AttributeComponent)
 }
 
 // This gets called so often that it might as well be a function
 func GetCreature(e *ecs.Entity) *Creature {
-	return GetComponentType[*Creature](e, CreatureComponent)
+	return ecshelper.GetComponentType[*Creature](e, CreatureComponent)
 }
 
 // todo Will be refactored. Don't get distracted by this at the moment.
@@ -215,7 +163,7 @@ func GetCreature(e *ecs.Entity) *Creature {
 func InitializeECS(g *Game) {
 	tags := make(map[string]ecs.Tag)
 	manager := ecs.NewManager()
-	PositionComponent = manager.NewComponent()
+	ecshelper.PositionComponent = manager.NewComponent()
 	RenderableComponent = manager.NewComponent()
 
 	nameComponent = manager.NewComponent()
@@ -229,7 +177,7 @@ func InitializeECS(g *Game) {
 	RangedWeaponComponent = manager.NewComponent()
 	ArmorComponent = manager.NewComponent()
 
-	renderables := ecs.BuildTag(RenderableComponent, PositionComponent)
+	renderables := ecs.BuildTag(RenderableComponent, ecshelper.PositionComponent)
 	tags["renderables"] = renderables
 
 	messengers := ecs.BuildTag(userMessage)
@@ -250,7 +198,15 @@ func InitializeCreatureComponents(manager *ecs.Manager, tags map[string]ecs.Tag)
 	approachAndAttack = manager.NewComponent()
 	distanceRangeAttack = manager.NewComponent()
 
-	creatures := ecs.BuildTag(CreatureComponent, PositionComponent, AttributeComponent)
+	creatures := ecs.BuildTag(CreatureComponent, ecshelper.PositionComponent, AttributeComponent)
 	tags["monsters"] = creatures
+
+}
+
+// Creates a slice of Positions from p to other. Uses AStar to build the path
+func BuildPath(g *Game, start *ecshelper.Position, other *ecshelper.Position) []ecshelper.Position {
+
+	astar := AStar{}
+	return astar.GetPath(g.gameMap, start, other, false)
 
 }
