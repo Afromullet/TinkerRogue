@@ -4,6 +4,7 @@ import (
 	"errors"
 	"game_main/ecshelper"
 	"game_main/graphics"
+	"game_main/worldmap"
 	"reflect"
 )
 
@@ -62,7 +63,7 @@ type AStar struct{}
 
 // GetPath takes a level, the starting position and an ending position (the goal) and returns
 // a list of Positions which is the path between the points.
-func (as AStar) GetPath(gameMap GameMap, start *ecshelper.Position, end *ecshelper.Position, ignoreWalls bool) []ecshelper.Position {
+func (as AStar) GetPath(gameMap worldmap.GameMap, start *ecshelper.Position, end *ecshelper.Position, ignoreWalls bool) []ecshelper.Position {
 	gd := graphics.NewScreenData()
 
 	openList := make([]*node, 0)
@@ -123,7 +124,7 @@ func (as AStar) GetPath(gameMap GameMap, start *ecshelper.Position, end *ecshelp
 		//Note:  If you wish to add Diagonal movement, you can do so by getting all 8 positions
 		if currentNode.Position.Y > 0 {
 			tile := gameMap.Tiles[graphics.IndexFromXY(currentNode.Position.X, currentNode.Position.Y-1)]
-			if ignoreWalls || tile.TileType != WALL {
+			if ignoreWalls || tile.TileType != worldmap.WALL {
 				//The location is in the map bounds and is walkable
 				upNodePosition := ecshelper.Position{
 					X: currentNode.Position.X,
@@ -137,7 +138,7 @@ func (as AStar) GetPath(gameMap GameMap, start *ecshelper.Position, end *ecshelp
 		}
 		if currentNode.Position.Y < gd.ScreenHeight {
 			tile := gameMap.Tiles[graphics.IndexFromXY(currentNode.Position.X, currentNode.Position.Y+1)]
-			if ignoreWalls || tile.TileType != WALL {
+			if ignoreWalls || tile.TileType != worldmap.WALL {
 				//The location is in the map bounds and is walkable
 				downNodePosition := ecshelper.Position{
 					X: currentNode.Position.X,
@@ -151,7 +152,7 @@ func (as AStar) GetPath(gameMap GameMap, start *ecshelper.Position, end *ecshelp
 		}
 		if currentNode.Position.X > 0 {
 			tile := gameMap.Tiles[graphics.IndexFromXY(currentNode.Position.X-1, currentNode.Position.Y)]
-			if ignoreWalls || tile.TileType != WALL {
+			if ignoreWalls || tile.TileType != worldmap.WALL {
 				//The location is in the map bounds and is walkable
 				leftNodePosition := ecshelper.Position{
 					X: currentNode.Position.X - 1,
@@ -165,7 +166,7 @@ func (as AStar) GetPath(gameMap GameMap, start *ecshelper.Position, end *ecshelp
 		}
 		if currentNode.Position.X < gd.ScreenWidth {
 			tile := gameMap.Tiles[graphics.IndexFromXY(currentNode.Position.X+1, currentNode.Position.Y)]
-			if ignoreWalls && tile.TileType != WALL {
+			if ignoreWalls && tile.TileType != worldmap.WALL {
 				//The location is in the map bounds and is walkable
 				rightNodePosition := ecshelper.Position{
 					X: currentNode.Position.X + 1,

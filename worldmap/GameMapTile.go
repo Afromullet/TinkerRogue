@@ -1,4 +1,4 @@
-package main
+package worldmap
 
 import (
 	"game_main/ecshelper"

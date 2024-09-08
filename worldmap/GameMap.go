@@ -1,31 +1,52 @@
-package main
+package worldmap
 
 import (
+	cryptorand "crypto/rand"
 	"errors"
 	"game_main/ecshelper"
 	"game_main/graphics"
 	"image/color"
+	"math/big"
 
 	"github.com/bytearena/ecs"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/norendren/go-fov/fov"
 )
 
-var validPositions ValidPositions
+// Todo remove later once you change teh random number generation. The same function is in another aprt of the code
+func GetDiceRoll(num int) int {
+	x, _ := cryptorand.Int(cryptorand.Reader, big.NewInt(int64(num)))
+	return int(x.Int64()) + 1
+
+}
+
+// Todo remove later once you change teh random number generation. The same function is in another aprt of the code
+func GetRandomBetween(low int, high int) int {
+	var randy int = -1
+	for {
+		randy = GetDiceRoll(high)
+		if randy >= low {
+			break
+		}
+	}
+	return randy
+}
+
+var ValidPos ValidPositions
 
 // ValidPosition stores the position of anything that a player or creature can move onto
 // Todo determine whether we really need this. Figure otu why you have ValidPOsitions and solve it a better way
 type ValidPositions struct {
-	positions []ecshelper.Position
+	Pos []ecshelper.Position
 }
 
 func (v *ValidPositions) Add(x int, y int) {
 
-	v.positions = append(v.positions, ecshelper.Position{x, y})
+	v.Pos = append(v.Pos, ecshelper.Position{x, y})
 }
 
 func (v *ValidPositions) Get(index int) *ecshelper.Position {
-	return &v.positions[index]
+	return &v.Pos[index]
 }
 
 // A rect is used to create rooms on the map
@@ -64,8 +85,8 @@ type GameMap struct {
 
 func NewGameMap() GameMap {
 	loadTileImages()
-	validPositions = ValidPositions{
-		positions: make([]ecshelper.Position, 0),
+	ValidPos = ValidPositions{
+		Pos: make([]ecshelper.Position, 0),
 	}
 
 	g := GameMap{}
@@ -258,7 +279,7 @@ func (gameMap *GameMap) createRoom(room Rect) {
 			//Select a random tile png
 			gameMap.Tiles[index].Image = floorImgs[GetRandomBetween(0, len(floorImgs)-1)]
 
-			validPositions.Add(x, y)
+			ValidPos.Add(x, y)
 		}
 	}
 }
@@ -273,7 +294,7 @@ func (gameMap *GameMap) createHorizontalTunnel(x1 int, x2 int, y int) {
 
 			gameMap.Tiles[index].Image = floorImgs[GetRandomBetween(0, len(floorImgs)-1)]
 
-			validPositions.Add(x, y)
+			ValidPos.Add(x, y)
 		}
 	}
 }
@@ -288,7 +309,7 @@ func (gameMap *GameMap) createVerticalTunnel(y1 int, y2 int, x int) {
 			gameMap.Tiles[index].TileType = FLOOR
 			gameMap.Tiles[index].Image = floorImgs[GetRandomBetween(0, len(floorImgs)-1)]
 
-			validPositions.Add(x, y)
+			ValidPos.Add(x, y)
 		}
 	}
 }

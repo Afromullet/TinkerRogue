@@ -3,11 +3,12 @@ package main
 import (
 	"game_main/ecshelper"
 	"game_main/graphics"
+	"game_main/worldmap"
 
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-func ProcessRenderables(g *Game, gameMap GameMap, screen *ebiten.Image) {
+func ProcessRenderables(g *Game, gameMap worldmap.GameMap, screen *ebiten.Image) {
 	for _, result := range g.World.Query(g.WorldTags["renderables"]) {
 		pos := result.Components[ecshelper.PositionComponent].(*ecshelper.Position)
 		img := result.Components[RenderableComponent].(*Renderable).Image

@@ -4,6 +4,7 @@ import (
 	"game_main/ecshelper"
 	"game_main/equipment"
 	"game_main/graphics"
+	"game_main/worldmap"
 	"log"
 	"strconv"
 
@@ -44,7 +45,7 @@ func CreateTestThrowable(shape graphics.TileBasedShape, vx graphics.VisualEffect
 	return t
 }
 
-func CreateTestItems(manager *ecs.Manager, tags map[string]ecs.Tag, gameMap *GameMap) {
+func CreateTestItems(manager *ecs.Manager, tags map[string]ecs.Tag, gameMap *worldmap.GameMap) {
 
 	swordImg, _, err := ebitenutil.NewImageFromFile("assets/items/sword.png")
 	if err != nil {
@@ -91,7 +92,7 @@ func CreateTestItems(manager *ecs.Manager, tags map[string]ecs.Tag, gameMap *Gam
 
 }
 
-func CreateTestMonsters(g *Game, manager *ecs.Manager, gameMap *GameMap) {
+func CreateTestMonsters(g *Game, manager *ecs.Manager, gameMap *worldmap.GameMap) {
 
 	x, y := gameMap.Rooms[0].Center()
 
@@ -128,7 +129,7 @@ func CreateTestMonsters(g *Game, manager *ecs.Manager, gameMap *GameMap) {
 
 }
 
-func CreateMoreTestMonsters(manager *ecs.Manager, gameMap *GameMap) {
+func CreateMoreTestMonsters(manager *ecs.Manager, gameMap *worldmap.GameMap) {
 
 	elfImg, _, err := ebitenutil.NewImageFromFile("assets/creatures/elf.png")
 	if err != nil {
@@ -161,7 +162,7 @@ func CreateMoreTestMonsters(manager *ecs.Manager, gameMap *GameMap) {
 
 }
 
-func CreateMonster(g *Game, manager *ecs.Manager, gameMap *GameMap, x, y int, img string) *ecs.Entity {
+func CreateMonster(g *Game, manager *ecs.Manager, gameMap *worldmap.GameMap, x, y int, img string) *ecs.Entity {
 
 	elfImg, _, err := ebitenutil.NewImageFromFile(img)
 	if err != nil {

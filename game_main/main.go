@@ -17,6 +17,7 @@ import (
 
 import (
 	"game_main/graphics"
+	"game_main/worldmap"
 	_ "image/png"
 	"log"
 
@@ -30,7 +31,7 @@ import (
 //Of what the code is doing as I'm learning GoLang
 
 type Game struct {
-	gameMap             GameMap
+	gameMap             worldmap.GameMap
 	screenData          graphics.ScreenData
 	World               *ecs.Manager
 	WorldTags           map[string]ecs.Tag
@@ -63,7 +64,7 @@ func (g *Game) SetThrowableItemSelected(selected bool) {
 // This is a pretty solid refactor candidate for later
 func NewGame() *Game {
 	g := &Game{}
-	g.gameMap = NewGameMap()
+	g.gameMap = worldmap.NewGameMap()
 	g.playerData = PlayerData{}
 	InitializeECS(g)
 	InitializePlayerData(g)

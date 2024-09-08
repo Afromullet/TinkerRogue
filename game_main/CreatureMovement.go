@@ -3,6 +3,7 @@ package main
 import (
 	"game_main/ecshelper"
 	"game_main/graphics"
+	"game_main/worldmap"
 	"math"
 
 	"github.com/bytearena/ecs"
@@ -65,8 +66,8 @@ func SimpleWanderAction(g *Game, mover *ecs.Entity) {
 	creature := GetCreature(mover)
 	creaturePosition := ecshelper.GetPosition(mover)
 
-	randomPos := GetRandomBetween(0, len(validPositions.positions))
-	endPos := validPositions.Get(randomPos)
+	randomPos := GetRandomBetween(0, len(worldmap.ValidPos.Pos))
+	endPos := worldmap.ValidPos.Get(randomPos)
 
 	//Only create a new path if one doesn't exist yet.
 	if len(creature.Path) == 0 {
@@ -133,7 +134,7 @@ func WithinRadiusMoveAction(g *Game, mover *ecs.Entity) {
 	//fmt.Println(pos)
 
 }
-func GetUnblockedTile(gameMap *GameMap, indices []int) (int, bool) {
+func GetUnblockedTile(gameMap *worldmap.GameMap, indices []int) (int, bool) {
 
 	unblocked_tiles := make([]int, 0)
 	for i, ind := range indices {
