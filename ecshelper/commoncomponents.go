@@ -8,7 +8,11 @@ import (
 
 // This file contains
 
-var PositionComponent *ecs.Component
+var (
+	PositionComponent  *ecs.Component
+	NameComponent      *ecs.Component
+	AttributeComponent *ecs.Component
+)
 
 type Position struct {
 	X int
@@ -29,4 +33,30 @@ func (p *Position) InRange(other *Position, distance int) bool {
 
 	return p.ManhattanDistance(other) <= distance
 
+}
+
+type Attributes struct {
+	MaxHealth        int
+	CurrentHealth    int
+	AttackBonus      int
+	BaseArmorClass   int
+	BaseProteciton   int
+	BaseDodgeChange  float32
+	TotalArmorClass  int
+	TotalProtection  int
+	TotalDodgeChance float32
+}
+
+func UpdateAttributes(e *ecs.Entity, armorClass, protection int, dodgechance float32) {
+
+	attr := GetComponentType[*Attributes](e, AttributeComponent)
+
+	attr.TotalArmorClass = attr.BaseArmorClass + armorClass
+	attr.TotalProtection = attr.BaseProteciton + protection
+	attr.TotalDodgeChance = attr.BaseDodgeChange + dodgechance
+
+}
+
+type Name struct {
+	NameStr string
 }

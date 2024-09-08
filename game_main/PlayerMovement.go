@@ -40,7 +40,7 @@ func PlayerActions(g *Game) {
 	}
 
 	if inpututil.IsKeyJustReleased(ebiten.KeyK) {
-		UpdateAttributes(g.playerData.PlayerEntity)
+		//UpdateAttributes(g.playerData.PlayerEntity) todo uncomment once you move equipment to its own file
 	}
 
 	if inpututil.IsKeyJustReleased(ebiten.KeyF) {

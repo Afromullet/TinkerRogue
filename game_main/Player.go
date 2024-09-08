@@ -107,7 +107,7 @@ func InitializePlayerData(g *Game) {
 		log.Fatal(err)
 	}
 
-	attr := Attributes{}
+	attr := ecshelper.Attributes{}
 	attr.MaxHealth = 5
 	attr.CurrentHealth = 5
 	attr.AttackBonus = 5
@@ -127,7 +127,7 @@ func InitializePlayerData(g *Game) {
 		AddComponent(InventoryComponent, &Inventory{
 			InventoryContent: make([]*ecs.Entity, 0),
 		}).
-		AddComponent(AttributeComponent, &attr).
+		AddComponent(ecshelper.AttributeComponent, &attr).
 		AddComponent(userMessage, &UserMessage{
 			AttackMessage:    "",
 			GameStateMessage: "",

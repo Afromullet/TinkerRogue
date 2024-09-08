@@ -48,8 +48,8 @@ func MeleeAttackSystem(g *Game, attackerPos *ecshelper.Position, defenderPos *ec
 // Currently Melee and Ranged Weapons are different types without a common interface
 func PerformAttack(g *Game, damage int, attacker *ecs.Entity, defender *ecs.Entity) {
 
-	attAttr := GetAttributes(attacker)
-	defAttr := GetAttributes(defender)
+	attAttr := ecshelper.GetAttributes(attacker)
+	defAttr := ecshelper.GetAttributes(defender)
 
 	attackRoll := GetDiceRoll(20) + attAttr.AttackBonus
 
@@ -136,7 +136,7 @@ func RangedAttackSystem(g *Game, attackerPos *ecshelper.Position) {
 func RemoveDeadEntity(g *Game, defender *ecs.Entity) {
 
 	defenderPos := GetPosition(defender)
-	defAttr := GetAttributes(defender)
+	defAttr := ecshelper.GetAttributes(defender)
 	if g.playerData.position.IsEqual(defenderPos) {
 		fmt.Println("Player dead")
 	} else if defAttr.CurrentHealth <= 0 {

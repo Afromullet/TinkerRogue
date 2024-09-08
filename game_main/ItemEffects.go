@@ -175,7 +175,7 @@ func (b *Burning) ApplyToCreature(c *ecs.QueryResult) {
 
 	b.MainProps.Duration -= 1
 
-	h := ecshelper.GetComponentType[*Attributes](c.Entity, AttributeComponent)
+	h := ecshelper.GetComponentType[*ecshelper.Attributes](c.Entity, ecshelper.AttributeComponent)
 
 	h.CurrentHealth -= b.Temperature
 

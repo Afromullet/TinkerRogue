@@ -13,10 +13,8 @@ import (
 
 var (
 	RenderableComponent *ecs.Component
-	nameComponent       *ecs.Component
 
-	AttributeComponent *ecs.Component
-	CreatureComponent  *ecs.Component
+	CreatureComponent *ecs.Component
 
 	WeaponComponent       *ecs.Component
 	RangedWeaponComponent *ecs.Component
@@ -31,10 +29,6 @@ var (
 type Renderable struct {
 	Image   *ebiten.Image
 	Visible bool
-}
-
-type Name struct {
-	NameStr string
 }
 
 type UserMessage struct {
@@ -111,33 +105,6 @@ type Armor struct {
 	DodgeChance float32
 }
 
-type Attributes struct {
-	MaxHealth        int
-	CurrentHealth    int
-	AttackBonus      int
-	BaseArmorClass   int
-	BaseProteciton   int
-	BaseDodgeChange  float32
-	TotalArmorClass  int
-	TotalProtection  int
-	TotalDodgeChance float32
-}
-
-func UpdateAttributes(e *ecs.Entity) {
-
-	attr := ecshelper.GetComponentType[*Attributes](e, AttributeComponent)
-
-	armor := ecshelper.GetComponentType[*Armor](e, ArmorComponent)
-
-	if armor != nil {
-		attr.TotalArmorClass = attr.BaseArmorClass + armor.ArmorClass
-		attr.TotalProtection = attr.BaseProteciton + armor.Protection
-		attr.TotalDodgeChance = attr.BaseDodgeChange + armor.DodgeChance
-
-	}
-
-}
-
 // The functions which are a GetComponentType wrapper get called frequency
 func GetPosition(e *ecs.Entity) *ecshelper.Position {
 	return ecshelper.GetComponentType[*ecshelper.Position](e, ecshelper.PositionComponent)
@@ -146,11 +113,6 @@ func GetPosition(e *ecs.Entity) *ecshelper.Position {
 // This gets called so often that it might as well be a function
 func GetItem(e *ecs.Entity) *Item {
 	return ecshelper.GetComponentType[*Item](e, ItemComponent)
-}
-
-// This gets called so often that it might as well be a function
-func GetAttributes(e *ecs.Entity) *Attributes {
-	return ecshelper.GetComponentType[*Attributes](e, AttributeComponent)
 }
 
 // This gets called so often that it might as well be a function
@@ -166,11 +128,11 @@ func InitializeECS(g *Game) {
 	ecshelper.PositionComponent = manager.NewComponent()
 	RenderableComponent = manager.NewComponent()
 
-	nameComponent = manager.NewComponent()
+	ecshelper.NameComponent = manager.NewComponent()
 
 	InventoryComponent = manager.NewComponent()
 
-	AttributeComponent = manager.NewComponent()
+	ecshelper.AttributeComponent = manager.NewComponent()
 	userMessage = manager.NewComponent()
 
 	WeaponComponent = manager.NewComponent()
@@ -198,7 +160,7 @@ func InitializeCreatureComponents(manager *ecs.Manager, tags map[string]ecs.Tag)
 	approachAndAttack = manager.NewComponent()
 	distanceRangeAttack = manager.NewComponent()
 
-	creatures := ecs.BuildTag(CreatureComponent, ecshelper.PositionComponent, AttributeComponent)
+	creatures := ecs.BuildTag(CreatureComponent, ecshelper.PositionComponent, ecshelper.AttributeComponent)
 	tags["monsters"] = creatures
 
 }

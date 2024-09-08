@@ -152,7 +152,7 @@ func CreateMoreTestMonsters(manager *ecs.Manager, gameMap *GameMap) {
 			}).
 			AddComponent(ecshelper.PositionComponent, &pos).
 			AddComponent(entityFollowComp, &EntityFollow{}).
-			AddComponent(AttributeComponent, &Attributes{MaxHealth: 5, CurrentHealth: 5}).AddComponent(userMessage, &UserMessage{
+			AddComponent(ecshelper.AttributeComponent, &ecshelper.Attributes{MaxHealth: 5, CurrentHealth: 5}).AddComponent(userMessage, &UserMessage{
 			AttackMessage:    "",
 			GameStateMessage: "",
 		})
@@ -182,7 +182,7 @@ func CreateMonster(g *Game, manager *ecs.Manager, gameMap *GameMap, x, y int, im
 			X: x,
 			Y: y,
 		}).
-		AddComponent(AttributeComponent, &Attributes{MaxHealth: 5, CurrentHealth: 5}).
+		AddComponent(ecshelper.AttributeComponent, &ecshelper.Attributes{MaxHealth: 5, CurrentHealth: 5}).
 		AddComponent(userMessage, &UserMessage{
 			AttackMessage:    "",
 			GameStateMessage: "",
@@ -193,7 +193,7 @@ func CreateMonster(g *Game, manager *ecs.Manager, gameMap *GameMap, x, y int, im
 			MaxDamage: 5,
 		})
 
-	UpdateAttributes(ent)
+	//ecshelper.UpdateAttributes(ent) todo uncomment
 
 	return ent
 
@@ -252,7 +252,7 @@ func CreateItem(manager *ecs.Manager, name string, pos ecshelper.Position, image
 			X: pos.X,
 			Y: pos.Y,
 		}).
-		AddComponent(nameComponent, &Name{
+		AddComponent(ecshelper.NameComponent, &ecshelper.Name{
 			NameStr: name,
 		}).
 		AddComponent(ItemComponent, item)

@@ -26,3 +26,8 @@ func GetComponentType[T any](entity *ecs.Entity, component *ecs.Component) T {
 	}
 
 }
+
+// This gets called so often that it might as well be a function
+func GetAttributes(e *ecs.Entity) *Attributes {
+	return GetComponentType[*Attributes](e, AttributeComponent)
+}

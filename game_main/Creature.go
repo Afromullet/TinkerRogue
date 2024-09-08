@@ -97,7 +97,7 @@ func MonsterSystems(g *Game) {
 
 		ApplyEffects(c)
 		CreatureAttackSystem(c, g)
-		h := ecshelper.GetComponentType[*Attributes](c.Entity, AttributeComponent)
+		h := ecshelper.GetComponentType[*ecshelper.Attributes](c.Entity, ecshelper.AttributeComponent)
 
 		if h.CurrentHealth <= 0 {
 			g.World.DisposeEntity(c.Entity)
