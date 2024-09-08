@@ -16,6 +16,7 @@ import (
 )*/
 
 import (
+	"game_main/graphics"
 	_ "image/png"
 	"log"
 
@@ -30,7 +31,7 @@ import (
 
 type Game struct {
 	gameMap             GameMap
-	screenData          ScreenData
+	screenData          graphics.ScreenData
 	World               *ecs.Manager
 	WorldTags           map[string]ecs.Tag
 	Turn                TurnState
@@ -69,7 +70,7 @@ func NewGame() *Game {
 
 	g.Turn = PlayerTurn
 	g.TurnCounter = 0
-	g.screenData = NewScreenData() //todo change all calls to screendata to reference this one
+	g.screenData = graphics.NewScreenData() //todo change all calls to screendata to reference this one
 
 	//g.craftingUI.SetCraftingWindowLocation(g.screenData.screenWidth/2, g.screenData.screenWidth/2)
 
@@ -87,7 +88,7 @@ func (g *Game) Update() error {
 
 	g.mainPlayerInterface.Update()
 
-	vxHandler.UpdateVisualEffects()
+	graphics.VXHandler.UpdateVisualEffects()
 	// Update the Label text to indicate if the ui is currently being hovered over or not
 	//g.headerLbl.Label = fmt.Sprintf("Game Demo!\nUI is hovered: %t", input.UIHovered)
 
@@ -112,13 +113,13 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	g.mainPlayerInterface.Draw(screen)
 	ProcessUserLog(g, screen)
 
-	vxHandler.DrawVisualEffects(screen)
+	graphics.VXHandler.DrawVisualEffects(screen)
 
 }
 
 // Layout will return the screen dimensions.
 func (g *Game) Layout(w, h int) (int, int) {
-	gd := NewScreenData()
+	gd := graphics.NewScreenData()
 	return gd.TileWidth * gd.ScreenWidth, gd.TileHeight * gd.ScreenHeight
 
 }

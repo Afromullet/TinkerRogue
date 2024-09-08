@@ -1,6 +1,7 @@
 package main
 
 import (
+	"game_main/graphics"
 	"log"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -19,14 +20,14 @@ That's what this file is for
 */
 
 // Applies the throwable
-func ApplyThrowable(g *Game, item *Item, shape TileBasedShape, throwerPos *Position) {
+func ApplyThrowable(g *Game, item *Item, shape graphics.TileBasedShape, throwerPos *Position) {
 
 	t := item.ItemEffect(THROWABLE_NAME).(*Throwable)
 
 	if t.vx != nil {
 
 		t.vx.ResetVX()
-		AddVXArea(NewVisualEffectArea(t.Shape, t.vx))
+		graphics.AddVXArea(graphics.NewVisualEffectArea(t.Shape, t.vx))
 
 	}
 

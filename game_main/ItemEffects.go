@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"game_main/graphics"
 
 	"github.com/bytearena/ecs"
 )
@@ -252,8 +253,8 @@ type Throwable struct {
 	MainProps     CommonItemProperties
 	ThrowingRange int //How many tiles it can be thrown
 	Damage        int
-	Shape         TileBasedShape
-	vx            VisualEffect
+	Shape         graphics.TileBasedShape
+	vx            graphics.VisualEffect
 }
 
 func (t *Throwable) StatusEffectComponent() *ecs.Component {
@@ -292,7 +293,7 @@ func (t *Throwable) ReadyThrowAreaVX() {
 
 }
 
-func NewThrowable(dur, throwRange, dam int, shape TileBasedShape) *Throwable {
+func NewThrowable(dur, throwRange, dam int, shape graphics.TileBasedShape) *Throwable {
 
 	return &Throwable{
 		MainProps: CommonItemProperties{

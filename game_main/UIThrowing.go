@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"game_main/graphics"
 	"image/color"
 
 	e_image "github.com/ebitenui/ebitenui/image"
@@ -50,7 +51,7 @@ func (throwingItemDisplay *ThrowingItemDisplay) DisplayInventory(g *Game) {
 
 	//Passing a zero value throwable for the propFIlter
 
-	s := NewTileSquare(0, 0, 0)
+	s := graphics.NewTileSquare(0, 0, 0)
 
 	//throwingItemDisplay.CreateInventoryList(&g.playerData, NewThrowable(0, 0, 0, NewTileSquare(0, 0, 0)))
 	throwingItemDisplay.CreateInventoryList(&g.playerData, NewThrowable(0, 0, 0, &s))

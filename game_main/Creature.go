@@ -1,6 +1,8 @@
 package main
 
 import (
+	"game_main/graphics"
+
 	"github.com/bytearena/ecs"
 )
 
@@ -60,7 +62,7 @@ func (c *Creature) UpdatePosition(g *Game, currentPosition *Position) {
 
 	p := currentPosition
 
-	index := IndexFromXY(p.X, p.Y)
+	index := graphics.IndexFromXY(p.X, p.Y)
 	oldTile := g.gameMap.Tiles[index]
 
 	if len(c.Path) > 1 {
@@ -73,7 +75,7 @@ func (c *Creature) UpdatePosition(g *Game, currentPosition *Position) {
 		c.Path = c.Path[:0]
 	}
 
-	index = IndexFromXY(p.X, p.Y)
+	index = graphics.IndexFromXY(p.X, p.Y)
 
 	nextTile := g.gameMap.Tiles[index]
 

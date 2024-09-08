@@ -1,4 +1,4 @@
-package main
+package graphics
 
 // This type helps us identify which direction to draw some shapes in
 // I.E, lines and cones go into a direction
@@ -14,7 +14,7 @@ const (
 // Currently a duplicate of the one found in GameMap. Don't want to pass the GameMap parameter to the shapes here
 func InBounds(x, y int) bool {
 	gd := NewScreenData()
-	if x < 0 || x > gd.ScreenWidth || y < 0 || y > levelHeight {
+	if x < 0 || x > gd.ScreenWidth || y < 0 || y > LevelHeight {
 		return false
 	}
 	return true
@@ -28,24 +28,6 @@ func InBounds(x, y int) bool {
 type TileBasedShape interface {
 	GetIndices() []int
 	UpdatePosition(pixelX int, pixelY int)
-}
-
-// A TileBasedShape returns indices that correspond to the elements in the gamemaps Tiles slice
-// This returns the X,Y positions since we handle player and creature location through Position
-func GetTilePositions(ts TileBasedShape) []Position {
-
-	indices := ts.GetIndices()
-
-	pos := make([]Position, len(indices))
-
-	for i, inds := range indices {
-
-		pos[i] = PositionFromIndex(inds)
-
-	}
-
-	return pos
-
 }
 
 // The square is drawn around (PixelX,PixelY)

@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto/rand"
+	"game_main/graphics"
 	"math/big"
 
 	"github.com/bytearena/ecs"
@@ -10,7 +11,23 @@ import (
 var GreenColorMatrix = ColorMatrix{0, 1, 0, 1, true}
 var RedColorMatrix = ColorMatrix{1, 0, 0, 1, true}
 
-var levelHeight int = 0
+// A TileBasedShape returns indices that correspond to the elements in the gamemaps Tiles slice
+// This returns the X,Y positions since we handle player and creature location through Position
+func GetTilePositions(ts graphics.TileBasedShape) []Position {
+
+	indices := ts.GetIndices()
+
+	pos := make([]Position, len(indices))
+
+	for i, inds := range indices {
+
+		pos[i] = PositionFromIndex(inds)
+
+	}
+
+	return pos
+
+}
 
 func DistanceBetween(e1 *ecs.Entity, e2 *ecs.Entity) int {
 

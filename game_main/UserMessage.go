@@ -1,6 +1,7 @@
 package main
 
 import (
+	"game_main/graphics"
 	"image/color"
 	"log"
 
@@ -40,7 +41,7 @@ func ProcessUserLog(g *Game, screen *ebiten.Image) {
 			log.Fatal(err)
 		}
 	}
-	gd := NewScreenData()
+	gd := graphics.NewScreenData()
 
 	uiLocation := (gd.ScreenHeight - gd.UIHeight) * gd.TileHeight
 	var fontX = 16

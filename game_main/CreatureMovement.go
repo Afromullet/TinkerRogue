@@ -1,6 +1,7 @@
 package main
 
 import (
+	"game_main/graphics"
 	"math"
 
 	"github.com/bytearena/ecs"
@@ -110,7 +111,7 @@ func WithinRadiusMoveAction(g *Game, mover *ecs.Entity) {
 
 		var path []Position
 		for distance >= 0 {
-			indices := NewTileCircleOutline(pixelX, pixelY, distance).GetIndices()
+			indices := graphics.NewTileCircleOutline(pixelX, pixelY, distance).GetIndices()
 
 			ind, ok := GetUnblockedTile(&g.gameMap, indices)
 			if ok {
@@ -198,8 +199,8 @@ func FleeFromEntityMovementAction(g *Game, mover *ecs.Entity) {
 
 			fleePosition := Position{X: fleeTargetX, Y: fleeTargetY}
 
-			if InBounds(fleeTargetX, fleeTargetY) {
-				targetIndex := IndexFromXY(fleeTargetX, fleeTargetY)
+			if graphics.InBounds(fleeTargetX, fleeTargetY) {
+				targetIndex := graphics.IndexFromXY(fleeTargetX, fleeTargetY)
 				if !g.gameMap.Tiles[targetIndex].Blocked {
 					// Use InRange to check if the flee position is within the desired range
 					if creaturePosition.InRange(&fleePosition, fleeMov.distance) {

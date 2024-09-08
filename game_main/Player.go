@@ -1,6 +1,7 @@
 package main
 
 import (
+	"game_main/graphics"
 	"log"
 
 	"github.com/bytearena/ecs"
@@ -16,7 +17,7 @@ type PlayerEquipment struct {
 	PlayerWeapon            *ecs.Entity
 	PlayerRangedWeapon      *ecs.Entity
 	RangedWeaponMaxDistance int
-	RangedWeaponAOEShape    TileBasedShape
+	RangedWeaponAOEShape    graphics.TileBasedShape
 }
 
 func (pl *PlayerEquipment) PrepareRangedAttack() {
@@ -28,7 +29,7 @@ func (pl *PlayerEquipment) PrepareRangedAttack() {
 
 type PlayerThrowable struct {
 	SelectedThrowable  *ecs.Entity
-	ThrowingAOEShape   TileBasedShape
+	ThrowingAOEShape   graphics.TileBasedShape
 	ThrowableItemIndex int
 	ThrowableItem      *Item
 }

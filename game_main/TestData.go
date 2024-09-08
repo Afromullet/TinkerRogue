@@ -1,6 +1,7 @@
 package main
 
 import (
+	"game_main/graphics"
 	"log"
 	"strconv"
 
@@ -8,25 +9,25 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 )
 
-var TestSquare = NewTileSquare(0, 0, 3)
-var TestLine = NewTileLine(0, 0, 2, LineDown)
-var TestCone = NewTileCone(0, 0, 3, LineRight)
-var TestCircle = NewTileCircle(0, 0, 2)
-var TestRect = NewTileRectangle(0, 0, 2, 3)
+var TestSquare = graphics.NewTileSquare(0, 0, 3)
+var TestLine = graphics.NewTileLine(0, 0, 2, graphics.LineDown)
+var TestCone = graphics.NewTileCone(0, 0, 3, graphics.LineRight)
+var TestCircle = graphics.NewTileCircle(0, 0, 2)
+var TestRect = graphics.NewTileRectangle(0, 0, 2, 3)
 var TestBurning = NewBurning(5, 2)
 var TestSticky = NewSticky(9, 2)
 var TestFreezing = NewFreezing(3, 5)
 
-var TestFireEffect = NewFireEffect(0, 0, 1, 5, 1, 0.5)
-var TestCloudEffect = NewCloudEffect(0, 0, 5)
-var TestIceEffect = NewIceEffect(0, 0, 5)
-var TestElectricEffect = NewElectricityEffect(0, 0, 5)
-var TestStickyEffect = NewStickyGroundEffect(0, 0, 5)
+var TestFireEffect = graphics.NewFireEffect(0, 0, 1, 5, 1, 0.5)
+var TestCloudEffect = graphics.NewCloudEffect(0, 0, 5)
+var TestIceEffect = graphics.NewIceEffect(0, 0, 5)
+var TestElectricEffect = graphics.NewElectricityEffect(0, 0, 5)
+var TestStickyEffect = graphics.NewStickyGroundEffect(0, 0, 5)
 
 func SetupPlayerForTesting(g *Game) {
 	w := CreateWeapon(g.World, "Weapon 1", *g.playerData.position, "assets/items/sword.png", 5, 10)
 
-	wepArea := NewTileRectangle(0, 0, 3, 3)
+	wepArea := graphics.NewTileRectangle(0, 0, 3, 3)
 	r := CreatedRangedWeapon(g.World, "Ranged Weapon 1", "assets/items/sword.png", *g.playerData.position, 5, 10, 3, &wepArea)
 
 	g.playerData.PlayerWeapon = w
@@ -34,7 +35,7 @@ func SetupPlayerForTesting(g *Game) {
 
 }
 
-func CreateTestThrowable(shape TileBasedShape, vx VisualEffect) *Throwable {
+func CreateTestThrowable(shape graphics.TileBasedShape, vx graphics.VisualEffect) *Throwable {
 
 	t := NewThrowable(1, 2, 3, shape)
 	t.vx = vx
@@ -92,7 +93,7 @@ func CreateTestMonsters(g *Game, manager *ecs.Manager, gameMap *GameMap) {
 
 	x, y := gameMap.Rooms[0].Center()
 
-	wepArea := NewTileRectangle(0, 0, 1, 1)
+	wepArea := graphics.NewTileRectangle(0, 0, 1, 1)
 
 	wep := RangedWeapon{
 		MinDamage:     3,
@@ -165,7 +166,7 @@ func CreateMonster(g *Game, manager *ecs.Manager, gameMap *GameMap, x, y int, im
 		log.Fatal(err)
 	}
 
-	ind := IndexFromXY(x, y)
+	ind := graphics.IndexFromXY(x, y)
 	gameMap.Tiles[ind].Blocked = true
 
 	ent := manager.NewEntity().
@@ -275,7 +276,7 @@ func CreateWeapon(manager *ecs.Manager, name string, pos Position, imagePath str
 
 }
 
-func CreatedRangedWeapon(manager *ecs.Manager, name string, imagePath string, pos Position, minDamage int, maxDamage int, shootingRange int, TargetArea TileBasedShape) *ecs.Entity {
+func CreatedRangedWeapon(manager *ecs.Manager, name string, imagePath string, pos Position, minDamage int, maxDamage int, shootingRange int, TargetArea graphics.TileBasedShape) *ecs.Entity {
 
 	weapon := CreateItem(manager, name, pos, imagePath)
 	weapon.AddComponent(RangedWeaponComponent, &RangedWeapon{
@@ -283,7 +284,7 @@ func CreatedRangedWeapon(manager *ecs.Manager, name string, imagePath string, po
 		MaxDamage:     maxDamage,
 		ShootingRange: shootingRange,
 		TargetArea:    TargetArea,
-		ShootingVX:    NewProjectile(0, 0, 0, 0),
+		ShootingVX:    graphics.NewProjectile(0, 0, 0, 0),
 	})
 
 	return weapon

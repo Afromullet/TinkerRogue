@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"game_main/graphics"
 	"log"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -82,10 +83,10 @@ func PlayerActions(g *Game) {
 		Y: g.playerData.position.Y + y,
 	}
 
-	index := IndexFromXY(nextPosition.X, nextPosition.Y)
+	index := graphics.IndexFromXY(nextPosition.X, nextPosition.Y)
 	nextTile := g.gameMap.Tiles[index]
 
-	index = IndexFromXY(g.playerData.position.X, g.playerData.position.Y)
+	index = graphics.IndexFromXY(g.playerData.position.X, g.playerData.position.Y)
 	oldTile := g.gameMap.Tiles[index]
 
 	if !nextTile.Blocked {

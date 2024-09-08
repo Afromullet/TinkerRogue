@@ -1,8 +1,10 @@
-package main
+package graphics
 
 import (
+	cryptorand "crypto/rand"
 	"image/color"
 	"math"
+	"math/big"
 	"math/rand/v2"
 	"time"
 
@@ -11,7 +13,14 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/vector"
 )
 
-var vxHandler VisualEffectHandler
+var VXHandler VisualEffectHandler
+
+// Todo remove later once you change teh random number generation. The same function is in another aprt of the code
+func GetDiceRoll(num int) int {
+	x, _ := cryptorand.Int(cryptorand.Reader, big.NewInt(int64(num)))
+	return int(x.Int64()) + 1
+
+}
 
 // There is VisualEffectArea and VisualEffectArea
 // VisualEffectArea contains a VisualEffect and a TileBasedShape. The effects are drawn in the shape
@@ -120,11 +129,11 @@ type VisualEffectHandler struct {
 
 // Modifying the global vxHandler
 func AddVX(a VisualEffect) {
-	vxHandler.AddVisualEffect(a)
+	VXHandler.AddVisualEffect(a)
 }
 
 func AddVXArea(a VisualEffectArea) {
-	vxHandler.AddVisualEffecArea(a)
+	VXHandler.AddVisualEffecArea(a)
 }
 
 func (vis *VisualEffectHandler) AddVisualEffect(a VisualEffect) {

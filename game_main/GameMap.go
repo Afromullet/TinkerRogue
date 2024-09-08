@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"game_main/graphics"
 	"image/color"
 
 	"github.com/bytearena/ecs"
@@ -77,7 +78,7 @@ func NewGameMap() GameMap {
 
 func (gameMap *GameMap) Tile(pos *Position) *Tile {
 
-	index := IndexFromXY(pos.X, pos.Y)
+	index := graphics.IndexFromXY(pos.X, pos.Y)
 	return gameMap.Tiles[index]
 
 }
@@ -134,15 +135,15 @@ func (gameMap *GameMap) RemoveItemFromTile(index int, pos *Position) (*ecs.Entit
 // The color matrix draws on tiles.
 // Right now it's only used for showing the AOE of throwable items
 func (gameMap *GameMap) DrawLevel(screen *ebiten.Image) {
-	gd := NewScreenData()
+	gd := graphics.NewScreenData()
 
 	var cs = ebiten.ColorScale{}
 
 	for x := 0; x < gd.ScreenWidth; x++ {
 		//for y := 0; y < gd.ScreenHeight; y++ {
-		for y := 0; y < levelHeight; y++ {
+		for y := 0; y < graphics.LevelHeight; y++ {
 
-			idx := IndexFromXY(x, y)
+			idx := graphics.IndexFromXY(x, y)
 			tile := gameMap.Tiles[idx]
 			isVis := gameMap.PlayerVisible.IsVisible(x, y)
 
@@ -178,12 +179,12 @@ func (gameMap *GameMap) DrawLevel(screen *ebiten.Image) {
 }
 
 func (gameMap *GameMap) createTiles() []*Tile {
-	gd := NewScreenData()
-	tiles := make([]*Tile, levelHeight*gd.ScreenWidth)
+	gd := graphics.NewScreenData()
+	tiles := make([]*Tile, graphics.LevelHeight*gd.ScreenWidth)
 	index := 0
 	for x := 0; x < gd.ScreenWidth; x++ {
-		for y := 0; y < levelHeight; y++ {
-			index = IndexFromXY(x, y)
+		for y := 0; y < graphics.LevelHeight; y++ {
+			index = graphics.IndexFromXY(x, y)
 
 			pos := Position{x, y}
 			wallImg := wallImgs[GetRandomBetween(0, len(wallImgs)-1)]
@@ -201,8 +202,8 @@ func (gameMap *GameMap) GenerateLevelTiles() {
 	MAX_SIZE := 10
 	MAX_ROOMS := 30
 
-	gd := NewScreenData()
-	levelHeight = gd.ScreenHeight - gd.UIHeight
+	gd := graphics.NewScreenData()
+	graphics.LevelHeight = gd.ScreenHeight - gd.UIHeight
 	tiles := gameMap.createTiles()
 	gameMap.Tiles = tiles
 	contains_rooms := false
@@ -211,7 +212,7 @@ func (gameMap *GameMap) GenerateLevelTiles() {
 		w := GetRandomBetween(MIN_SIZE, MAX_SIZE)
 		h := GetRandomBetween(MIN_SIZE, MAX_SIZE)
 		x := GetDiceRoll(gd.ScreenWidth - w - 1)
-		y := GetDiceRoll(levelHeight - h - 1)
+		y := GetDiceRoll(graphics.LevelHeight - h - 1)
 		new_room := NewRect(x, y, w, h)
 
 		okToAdd := true
@@ -249,7 +250,7 @@ func (gameMap *GameMap) createRoom(room Rect) {
 	for y := room.Y1 + 1; y < room.Y2; y++ {
 		for x := room.X1 + 1; x < room.X2; x++ {
 
-			index := IndexFromXY(x, y)
+			index := graphics.IndexFromXY(x, y)
 			gameMap.Tiles[index].Blocked = false
 			gameMap.Tiles[index].TileType = FLOOR
 
@@ -262,10 +263,10 @@ func (gameMap *GameMap) createRoom(room Rect) {
 }
 
 func (gameMap *GameMap) createHorizontalTunnel(x1 int, x2 int, y int) {
-	gd := NewScreenData()
+	gd := graphics.NewScreenData()
 	for x := min(x1, x2); x < max(x1, x2)+1; x++ {
-		index := IndexFromXY(x, y)
-		if index > 0 && index < gd.ScreenWidth*levelHeight {
+		index := graphics.IndexFromXY(x, y)
+		if index > 0 && index < gd.ScreenWidth*graphics.LevelHeight {
 			gameMap.Tiles[index].Blocked = false
 			gameMap.Tiles[index].TileType = FLOOR
 
@@ -277,11 +278,11 @@ func (gameMap *GameMap) createHorizontalTunnel(x1 int, x2 int, y int) {
 }
 
 func (gameMap *GameMap) createVerticalTunnel(y1 int, y2 int, x int) {
-	gd := NewScreenData()
+	gd := graphics.NewScreenData()
 	for y := min(y1, y2); y < max(y1, y2)+1; y++ {
-		index := IndexFromXY(x, y)
+		index := graphics.IndexFromXY(x, y)
 
-		if index > 0 && index < gd.ScreenWidth*levelHeight {
+		if index > 0 && index < gd.ScreenWidth*graphics.LevelHeight {
 			gameMap.Tiles[index].Blocked = false
 			gameMap.Tiles[index].TileType = FLOOR
 			gameMap.Tiles[index].Image = floorImgs[GetRandomBetween(0, len(floorImgs)-1)]
@@ -311,8 +312,8 @@ func (gameMap *GameMap) ApplyColorMatrixToIndex(index int, m ColorMatrix) {
 }
 
 func (gameMap GameMap) InBounds(x, y int) bool {
-	gd := NewScreenData()
-	if x < 0 || x > gd.ScreenWidth || y < 0 || y > levelHeight {
+	gd := graphics.NewScreenData()
+	if x < 0 || x > gd.ScreenWidth || y < 0 || y > graphics.LevelHeight {
 		return false
 	}
 	return true
@@ -320,6 +321,6 @@ func (gameMap GameMap) InBounds(x, y int) bool {
 
 // TODO: Change this to check for WALL, not blocked
 func (gameMap GameMap) IsOpaque(x, y int) bool {
-	idx := IndexFromXY(x, y)
+	idx := graphics.IndexFromXY(x, y)
 	return gameMap.Tiles[idx].TileType == WALL
 }

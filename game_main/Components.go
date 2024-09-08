@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"game_main/graphics"
 	"math"
 
 	"github.com/bytearena/ecs"
@@ -90,8 +91,8 @@ type RangedWeapon struct {
 	MinDamage     int
 	MaxDamage     int
 	ShootingRange int
-	TargetArea    TileBasedShape
-	ShootingVX    *Projectile
+	TargetArea    graphics.TileBasedShape
+	ShootingVX    *graphics.Projectile
 }
 
 // todo add ammo to this
@@ -130,9 +131,9 @@ func (r *RangedWeapon) DisplayShootingVX(attackerPos *Position, defenderPos *Pos
 	attX, attY := PixelsFromPosition(attackerPos)
 	defX, defY := PixelsFromPosition(defenderPos)
 
-	arr := NewProjectile(attX, attY, defX, defY)
+	arr := graphics.NewProjectile(attX, attY, defX, defY)
 
-	AddVX(arr)
+	graphics.AddVX(arr)
 }
 
 type Armor struct {

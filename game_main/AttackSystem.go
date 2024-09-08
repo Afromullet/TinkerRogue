@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"game_main/graphics"
 	"log"
 
 	"github.com/bytearena/ecs"
@@ -140,7 +141,7 @@ func RemoveDeadEntity(g *Game, defender *ecs.Entity) {
 	} else if defAttr.CurrentHealth <= 0 {
 		//Todo removing an entity is really closely coupled to teh map right now.
 		//Do it differently in the future
-		index := IndexFromXY(defenderPos.X, defenderPos.Y)
+		index := graphics.IndexFromXY(defenderPos.X, defenderPos.Y)
 
 		g.gameMap.Tiles[index].Blocked = false
 		g.World.DisposeEntity(defender)
