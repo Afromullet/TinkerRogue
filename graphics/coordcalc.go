@@ -34,11 +34,13 @@ func IndexFromXY(x int, y int) int {
 	return (y * gd.ScreenWidth) + x
 }
 
+// Gets XY coordinates from the map tile index
 func XYFromIndex(i int) (int, int) {
 	gd := NewScreenData()
 	return i % gd.ScreenWidth, i / gd.ScreenWidth
 }
 
+// Gets the pixels from the index
 func PixelsFromIndex(i int) (int, int) {
 	gd := NewScreenData()
 	x, y := XYFromIndex(i)
@@ -46,7 +48,7 @@ func PixelsFromIndex(i int) (int, int) {
 }
 
 // Return the Grid X,Y coordinates from pixel positions
-func GridXYFromPixels(x, y int) (int, int) {
+func XYFromPixels(x, y int) (int, int) {
 	gd := NewScreenData()
 	return x / gd.TileWidth, y / gd.TileHeight
 

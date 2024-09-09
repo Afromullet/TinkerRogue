@@ -65,9 +65,6 @@ Not very complicated, but it will do for now.
 - - - - - - 
 
 
-__Component__
-
-* Better organization of components and compontent initializaiton. Currently it's littered through the files
 
 ___Weapon and Armor__
 
@@ -81,14 +78,14 @@ ___Consumables__
 
 ___Visual Effects__
 
-* The VisualEffects.go file needs refactoring
+
 
 * Rotating shapes which have a direction
 
 ___Refactoring__
 
 PlayerMovement
-Anything UI
+
 Map Drawing
 
 
@@ -99,9 +96,7 @@ ___GUI__
 
 ___Other__
 
-* Decouple functions which take g *Game as input
 
-* Better organization of files
 
 
 * Effect Stacking
@@ -125,14 +120,9 @@ Might need to index instead
 
 * Do I want to add collision handling? Could make it easier to choose what tile to move to for creature movement
 
---- State Handlers --- 
-* game struct needs improvement. It tracks a lot.
 
 
 
---- State Handlers End--- 
-
-Create packages to break things apart more
 
 Preallocate sizes of slices when possible
 
@@ -141,5 +131,4 @@ Need a better way to handle coordinate conversions
 
 
 
-_______________________________________
 

@@ -42,7 +42,7 @@ func (s TileSquare) GetIndices() []int {
 	halfSize := s.Size / 2
 	indices := make([]int, 0)
 
-	gridX, gridY := GridXYFromPixels(s.PixelX, s.PixelY)
+	gridX, gridY := XYFromPixels(s.PixelX, s.PixelY)
 
 	for y := gridY - halfSize; y <= gridY+halfSize; y++ {
 		for x := gridX - halfSize; x <= gridX+halfSize; x++ {
@@ -83,7 +83,7 @@ type TileLine struct {
 func (l TileLine) GetIndices() []int {
 	indices := make([]int, 0)
 
-	gridX, gridY := GridXYFromPixels(l.pixelX, l.pixelY)
+	gridX, gridY := XYFromPixels(l.pixelX, l.pixelY)
 
 	for i := 0; i < l.length; i++ {
 		var x, y int
@@ -135,7 +135,7 @@ type TileCone struct {
 func (c TileCone) GetIndices() []int {
 	indices := make([]int, 0)
 
-	gridX, gridY := GridXYFromPixels(c.pixelX, c.pixelY)
+	gridX, gridY := XYFromPixels(c.pixelX, c.pixelY)
 
 	// Loop through each step of the cone's length
 	for i := 0; i < c.length; i++ {
@@ -204,7 +204,7 @@ type TileCircle struct {
 func (c TileCircle) GetIndices() []int {
 	indices := make([]int, 0)
 
-	centerX, centerY := GridXYFromPixels(c.pixelX, c.pixelY)
+	centerX, centerY := XYFromPixels(c.pixelX, c.pixelY)
 
 	x := 0
 	y := c.radius
@@ -295,7 +295,7 @@ type TileCircleOutline struct {
 func (c TileCircleOutline) GetIndices() []int {
 	indices := make([]int, 0)
 
-	centerX, centerY := GridXYFromPixels(c.pixelX, c.pixelY)
+	centerX, centerY := XYFromPixels(c.pixelX, c.pixelY)
 
 	x := 0
 	y := c.radius
@@ -363,7 +363,7 @@ func (r TileRectangle) GetIndices() []int {
 
 	// Convert pixel coordinates to grid coordinates (if necessary)
 
-	gridX, gridY := GridXYFromPixels(r.pixelX, r.pixelY)
+	gridX, gridY := XYFromPixels(r.pixelX, r.pixelY)
 
 	// Iterate through the width and height of the rectangle
 	for y := gridY; y < gridY+r.height; y++ {
@@ -407,7 +407,7 @@ func (s TileSquareOutline) GetIndices() []int {
 	halfSize := s.Size / 2
 	indices := make([]int, 0)
 
-	gridX, gridY := GridXYFromPixels(s.PixelX, s.PixelY)
+	gridX, gridY := XYFromPixels(s.PixelX, s.PixelY)
 
 	// Top and bottom edges
 	for x := gridX - halfSize; x <= gridX+halfSize; x++ {

@@ -22,6 +22,7 @@ It's painful to add a new container to display items in. Here are the steps:
 
 1) Create a struct containing an ItemDisplay. This struct must also contain at least one container to hold the items to display
 2) In that struct, create CreateInventoryList(playerData *avatar.PlayerData, propFilters ...StatusEffects) func. The propFilters are optional for filtering by a Status Effect
+   CreateInventoryList also adds on click handler for what happens when the item is selected
 3) Create the DisplayInventory(pl *avatar.PlayerData) function. This calls itemDisplay.CreateInventoryList(...) that was implemented in step 2
 4) Create a  CreateContainers() function which creates all of the containers in the Item Display
 5) Add the type to PlayerItemsUI
@@ -47,6 +48,22 @@ type ItemDisplay struct {
 	InventoryDisplaylist *widget.List      //Holds all of the items
 	ItemsSelectedList    *widget.List      //Holds only the items the player selects
 	ItemsSelectedIndices []int             //The indices in inventoryDisplayList of the items the user selected
+
+}
+
+// Returns a widget.list containing the selected
+func (itemDisplay *ItemDisplay) GetSelectedItems(index int, pl *avatar.PlayerData) *widget.List {
+
+	for _, itemIndex := range itemDisplay.ItemsSelectedIndices {
+		if itemIndex == index {
+			return nil
+		}
+	}
+
+	itemDisplay.ItemsSelectedIndices = append(itemDisplay.ItemsSelectedIndices, index)
+	sel := pl.GetPlayerInventory().GetInventoryForDisplay(itemDisplay.ItemsSelectedIndices)
+
+	return itemDisplay.GetInventoryListWidget(sel)
 
 }
 

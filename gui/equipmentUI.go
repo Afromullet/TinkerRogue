@@ -10,11 +10,11 @@ import (
 )
 
 type EquipmentItemDisplay struct {
-	ItmDisplay                 ItemDisplay
-	ItemsSelectedContainer     *widget.Container //Displays the items the user HAS selected for crafitng
-	ItemsSelectedPropContainer *widget.Container //Container to hold the widget that displays the proeprties of the selected item
-	ItemsSelectedPropTextArea  *widget.TextArea  //Displays the properties of the selected items
-	ThrowableItemSelected      bool
+	ItmDisplay                ItemDisplay
+	ItemSelectedContainer     *widget.Container //Displays the items the user HAS selected for crafitng
+	ItemSelectedStats         *widget.Container //Container the stats of the selected item
+	ItemsSelectedPropTextArea *widget.TextArea  //Displays the properties of the selected items
+	ThrowableItemSelected     bool
 }
 
 // Selects an item and adds it to the ItemsSelectedContainer container and ItemsSelectedPropContainer
@@ -27,7 +27,17 @@ func (equipmentDisplay *EquipmentItemDisplay) CreateInventoryList(playerData *av
 
 	equipmentDisplay.ItmDisplay.InventoryDisplaylist.EntrySelectedEvent.AddHandler(func(args interface{}) {
 
-		//Click Handler code goes here
+		equipmentDisplay.ItemSelectedContainer.RemoveChild(equipmentDisplay.ItmDisplay.ItemsSelectedList)
+
+		a := args.(*widget.ListEntrySelectedEventArgs)
+		entry := a.Entry.(equipment.InventoryListEntry)
+
+		equipmentDisplay.ItmDisplay.ItemsSelectedList = equipmentDisplay.ItmDisplay.GetSelectedItems(entry.Index, playerData)
+
+		if equipmentDisplay.ItmDisplay.ItemsSelectedList != nil {
+			equipmentDisplay.ItemSelectedContainer.AddChild(equipmentDisplay.ItmDisplay.ItemsSelectedList)
+
+		}
 
 	})
 
@@ -59,10 +69,20 @@ func (equipmentDisplay *EquipmentItemDisplay) CreateContainers() {
 			widget.GridLayoutOpts.Spacing(0, 20))),
 	)
 
+	// Holds the widget that displays the selected items to the player
+	equipmentDisplay.ItemSelectedContainer = widget.NewContainer(
+		widget.ContainerOpts.BackgroundImage(e_image.NewNineSliceColor(color.NRGBA{100, 100, 100, 255})),
+		widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
+		widget.ContainerOpts.Layout(widget.NewRowLayout(
+			widget.RowLayoutOpts.Direction(widget.DirectionVertical),
+			widget.RowLayoutOpts.Spacing(10),
+		)))
+
 	equipmentDisplay.ItmDisplay.ItemDisplayContainer = widget.NewContainer(
 		widget.ContainerOpts.BackgroundImage(e_image.NewNineSliceColor(color.NRGBA{100, 100, 100, 255})),
 		widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
 	)
 
 	equipmentDisplay.ItmDisplay.RootContainer.AddChild(equipmentDisplay.ItmDisplay.ItemDisplayContainer)
+	equipmentDisplay.ItmDisplay.RootContainer.AddChild(equipmentDisplay.ItemSelectedContainer)
 }

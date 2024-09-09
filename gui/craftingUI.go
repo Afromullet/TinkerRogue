@@ -26,17 +26,6 @@ type CraftingItemDisplay struct {
 // ItemsSelectedPropContainer tells which properties the items have
 func (craftingItemDisplay *CraftingItemDisplay) CreateInventoryList(playerData *avatar.PlayerData, propFilters ...equipment.StatusEffects) {
 
-	// Nested function to add a selected item
-	addSelectedItem := func(index int) {
-
-		for _, itemIndex := range craftingItemDisplay.ItmDisplay.ItemsSelectedIndices {
-			if itemIndex == index {
-				return
-			}
-		}
-		craftingItemDisplay.ItmDisplay.ItemsSelectedIndices = append(craftingItemDisplay.ItmDisplay.ItemsSelectedIndices, index)
-	}
-
 	inv := playerData.GetPlayerInventory().GetInventoryForDisplay([]int{}, propFilters...)
 	craftingItemDisplay.ItmDisplay.InventoryDisplaylist = craftingItemDisplay.ItmDisplay.GetInventoryListWidget(inv)
 
@@ -47,11 +36,7 @@ func (craftingItemDisplay *CraftingItemDisplay) CreateInventoryList(playerData *
 		a := args.(*widget.ListEntrySelectedEventArgs)
 		entry := a.Entry.(equipment.InventoryListEntry)
 
-		addSelectedItem(entry.Index)
-
-		sel := playerData.GetPlayerInventory().GetInventoryForDisplay(craftingItemDisplay.ItmDisplay.ItemsSelectedIndices)
-
-		craftingItemDisplay.ItmDisplay.ItemsSelectedList = craftingItemDisplay.ItmDisplay.GetInventoryListWidget(sel)
+		craftingItemDisplay.ItmDisplay.ItemsSelectedList = craftingItemDisplay.ItmDisplay.GetSelectedItems(entry.Index, playerData)
 
 		if craftingItemDisplay.ItmDisplay.ItemsSelectedList != nil {
 			craftingItemDisplay.ItemsSelectedContainer.AddChild(craftingItemDisplay.ItmDisplay.ItemsSelectedList)

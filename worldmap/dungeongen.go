@@ -2,6 +2,7 @@ package worldmap
 
 import (
 	"errors"
+	"fmt"
 	"game_main/common"
 	"game_main/graphics"
 
@@ -63,6 +64,7 @@ type GameMap struct {
 	Tiles         []*Tile
 	Rooms         []Rect
 	PlayerVisible *fov.View
+	NumTiles      int
 }
 
 func NewGameMap() GameMap {
@@ -71,13 +73,15 @@ func NewGameMap() GameMap {
 		Pos: make([]common.Position, 0),
 	}
 
-	g := GameMap{}
-	g.Tiles = g.createTiles()
-	g.Rooms = make([]Rect, 0)
-	g.PlayerVisible = fov.New()
-	g.GenerateLevelTiles()
+	dungeonMap := GameMap{}
+	dungeonMap.Tiles = dungeonMap.createTiles()
+	dungeonMap.Rooms = make([]Rect, 0)
+	dungeonMap.PlayerVisible = fov.New()
+	dungeonMap.NumTiles = len(dungeonMap.Tiles)
+	fmt.Println("Num Tiles", dungeonMap.NumTiles)
+	dungeonMap.GenerateLevelTiles()
 
-	return g
+	return dungeonMap
 }
 
 func (gameMap *GameMap) Tile(pos *common.Position) *Tile {
@@ -311,7 +315,9 @@ func (gameMap *GameMap) ApplyColorMatrix(indices []int, m graphics.ColorMatrix) 
 // Applies the scaling ColorMatrix to the tiles at the Indices
 func (gameMap *GameMap) ApplyColorMatrixToIndex(index int, m graphics.ColorMatrix) {
 
-	gameMap.Tiles[index].SetColorMatrix(m)
+	if index < gameMap.NumTiles {
+		gameMap.Tiles[index].SetColorMatrix(m)
+	}
 
 }
 
