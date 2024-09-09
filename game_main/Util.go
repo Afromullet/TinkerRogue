@@ -23,20 +23,3 @@ func GetTilePositions(ts graphics.TileBasedShape) []common.Position {
 	return pos
 
 }
-
-// Todo this can be removed later. Currently using it for debugging
-func ApplyColorToMap(g *Game, indices []int) {
-
-	for _, ind := range indices {
-
-		g.gameMap.ApplyColorMatrixToIndex(ind, graphics.GreenColorMatrix)
-
-	}
-
-}
-
-// Todo this can be removed later. Currently using it for debugging
-func ApplyColorToInd(g *Game, index int) {
-	g.gameMap.ApplyColorMatrixToIndex(index, graphics.GreenColorMatrix)
-
-}

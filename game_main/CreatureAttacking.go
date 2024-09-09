@@ -76,10 +76,6 @@ func StayDistantRangedAttackAction(ecsmanger *common.EntityManager, pl *PlayerDa
 
 }
 
-func SelectPlayerAsTarget(g *Game, c *ecs.QueryResult) {
-
-}
-
 // Gets called in the MonsterSystems loop
 // Todo change logic to allow any entity to be targetted rather than just the player
 func CreatureAttackSystem(ecsmanger *common.EntityManager, pl *PlayerData, gm *worldmap.GameMap, c *ecs.QueryResult) {

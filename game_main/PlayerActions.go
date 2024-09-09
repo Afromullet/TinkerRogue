@@ -96,9 +96,9 @@ func DrawThrowableAOE(pl *PlayerData, gm *worldmap.GameMap) {
 }
 
 // todo remove game type from function params
-func HandlePlayerThrowable(ecsmanager *common.EntityManager, pl *PlayerData, gm *worldmap.GameMap, g *Game) {
+func HandlePlayerThrowable(ecsmanager *common.EntityManager, pl *PlayerData, gm *worldmap.GameMap, playerUI *PlayerUI) {
 
-	if g.IsThrowableItemSelected() {
+	if playerUI.IsThrowableItemSelected() {
 
 		DrawThrowableAOE(pl, gm)
 
@@ -120,7 +120,7 @@ func HandlePlayerThrowable(ecsmanager *common.EntityManager, pl *PlayerData, gm 
 
 			log.Println("Removing throwable")
 			gm.ApplyColorMatrix(PrevThrowInds, graphics.NewEmptyMatrix())
-			g.SetThrowableItemSelected(false) //TOdo this is a problem
+			playerUI.SetThrowableItemSelected(false) //TOdo this is a problem
 
 		}
 	}

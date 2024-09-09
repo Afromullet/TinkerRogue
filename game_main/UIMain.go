@@ -21,7 +21,7 @@ It's painful to add a new container to display items in. Here are the steps:
 
 1) Create a struct containing an ItemDisplay. This struct must also contain at least one container to hold the items to display
 2) In that struct, create CreateInventoryList(playerData *PlayerData, propFilters ...StatusEffects) func. The propFilters are optional for filtering by a Status Effect
-3) Create the DisplayInventory(g *Game) function. This calls itemDisplay.CreateInventoryList(...) that was implemented in step 2
+3) Create the DisplayInventory(pl *PlayerData) function. This calls itemDisplay.CreateInventoryList(...) that was implemented in step 2
 4) Create a  CreateContainers() function which creates all of the containers in the Item Display
 5) Add the type to PlayerItemsUI
 6) Create an CreateOpenxxxgButton function that creates the button and adds the window to the ItemDisplay for displaying the items
@@ -34,7 +34,7 @@ It's painful to add a new container to display items in. Here are the steps:
 type ItemDisplayer interface {
 	CreateContainers()                                                                  //For creating the containers
 	CreateInventoryList(playerData *PlayerData, propFilters ...equipment.StatusEffects) //For getting the inventory from the player and adding on click event handlers
-	DisplayInventory(g *Game)                                                           //Really just there for calling CreateInventoryList with ItemProperty filters for the specific kind of window
+	DisplayInventory(pl *PlayerData)                                                    //Really just there for calling CreateInventoryList with ItemProperty filters for the specific kind of window
 }
 
 // Anything that displays the inventory will have to use this struct through composition.
@@ -165,12 +165,12 @@ type PlayerItemsUI struct {
 }
 
 // Creates the main UI that allows the player to view the inventory, craft, and see equipment
-func CreatePlayerUI(g *Game) *ebitenui.UI {
+func CreatePlayerUI(playerUI *PlayerUI, pl *PlayerData) *ebitenui.UI {
 
 	ui := ebitenui.UI{}
 
 	// Main container that will hold the container for available items and the items selected
-	g.itemsUI.rootContainer = widget.NewContainer(
+	playerUI.itemsUI.rootContainer = widget.NewContainer(
 		widget.ContainerOpts.BackgroundImage(e_image.NewNineSliceColor(color.NRGBA{100, 100, 100, 255})),
 		widget.ContainerOpts.Layout(widget.NewGridLayout(
 			// It is using a GridLayout with a single column
@@ -201,11 +201,11 @@ func CreatePlayerUI(g *Game) *ebitenui.UI {
 			widget.GridLayoutOpts.Spacing(0, 20))),
 	)
 
-	rootContainer.AddChild(CreateOpenCraftingButton(&g.PlayerUI, &g.playerData, &ui))
-	rootContainer.AddChild(CreateOpenThrowablesButton(&g.PlayerUI, &g.playerData, &ui))
-	rootContainer.AddChild(CreateOpenEquipmentButton(&g.PlayerUI, &g.playerData, &ui))
+	rootContainer.AddChild(CreateOpenCraftingButton(playerUI, pl, &ui))
+	rootContainer.AddChild(CreateOpenThrowablesButton(playerUI, pl, &ui))
+	rootContainer.AddChild(CreateOpenEquipmentButton(playerUI, pl, &ui))
 
-	CreateItemManagementUI(g)
+	CreateItemManagementUI(playerUI)
 
 	ui.Container = rootContainer
 
@@ -346,15 +346,15 @@ func CreateOpenEquipmentButton(playerUI *PlayerUI, pl *PlayerData, ui *ebitenui.
 
 //For creating a window that the Item Display related containers are shown in
 
-func CreateItemManagementUI(g *Game) {
+func CreateItemManagementUI(playerUI *PlayerUI) {
 
-	g.itemsUI.craftingItemDisplay.CreateContainers()
-	g.itemsUI.craftingItemDisplay.itemDisplay.CreateInventoryDisplayWindow("Crafting Window")
+	playerUI.itemsUI.craftingItemDisplay.CreateContainers()
+	playerUI.itemsUI.craftingItemDisplay.itemDisplay.CreateInventoryDisplayWindow("Crafting Window")
 
-	g.itemsUI.throwableItemDisplay.CreateContainers()
-	g.itemsUI.throwableItemDisplay.itemDisplay.CreateInventoryDisplayWindow("Throwing Window")
+	playerUI.itemsUI.throwableItemDisplay.CreateContainers()
+	playerUI.itemsUI.throwableItemDisplay.itemDisplay.CreateInventoryDisplayWindow("Throwing Window")
 
-	g.itemsUI.equipmentDisplay.CreateContainers()
-	g.itemsUI.equipmentDisplay.itemDisplay.CreateInventoryDisplayWindow("Equipment Window")
+	playerUI.itemsUI.equipmentDisplay.CreateContainers()
+	playerUI.itemsUI.equipmentDisplay.itemDisplay.CreateInventoryDisplayWindow("Equipment Window")
 
 }

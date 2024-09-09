@@ -74,7 +74,7 @@ func (g *Game) Update() error {
 
 	if g.Turn == common.PlayerTurn && g.TurnCounter > 20 {
 
-		PlayerActions(g)
+		PlayerActions(&g.EntityManager, &g.playerData, &g.gameMap, &g.PlayerUI, &g.TimeSystem)
 	}
 	if g.Turn == common.MonsterTurn {
 		MonsterSystems(&g.EntityManager, &g.playerData, &g.gameMap, &g.TimeSystem)
@@ -106,7 +106,7 @@ func main() {
 
 	g := NewGame()
 
-	g.mainPlayerInterface = CreatePlayerUI(g)
+	g.mainPlayerInterface = CreatePlayerUI(&g.PlayerUI, &g.playerData)
 
 	ebiten.SetWindowResizable(true)
 

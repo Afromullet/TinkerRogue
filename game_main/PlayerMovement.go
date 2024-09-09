@@ -5,6 +5,7 @@ import (
 	"game_main/common"
 	"game_main/equipment"
 	"game_main/graphics"
+	"game_main/worldmap"
 	"log"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -16,7 +17,7 @@ var PrevThrowInds []int
 var PrevRangedAttInds []int
 
 // todo replace the keypressed with iskeyreleased
-func PlayerActions(g *Game) {
+func PlayerActions(ecsmanager *common.EntityManager, pl *PlayerData, gm *worldmap.GameMap, playerUI *PlayerUI, tm *common.TimeSystem) {
 
 	turntaken := false
 	//players := g.WorldTags["players"]
@@ -42,17 +43,17 @@ func PlayerActions(g *Game) {
 
 	if inpututil.IsKeyJustReleased(ebiten.KeyK) {
 
-		armor := equipment.GetArmor(g.playerData.PlayerEntity)
-		common.UpdateAttributes(g.playerData.PlayerEntity, armor.ArmorClass, armor.Protection, armor.DodgeChance)
+		armor := equipment.GetArmor(pl.PlayerEntity)
+		common.UpdateAttributes(pl.PlayerEntity, armor.ArmorClass, armor.Protection, armor.DodgeChance)
 	}
 
 	if inpututil.IsKeyJustReleased(ebiten.KeyF) {
 
-		g.gameMap.ApplyColorMatrix(PrevRangedAttInds, graphics.NewEmptyMatrix())
+		gm.ApplyColorMatrix(PrevRangedAttInds, graphics.NewEmptyMatrix())
 
-		g.playerData.isTargeting = true
-		g.playerData.PrepareRangedAttack()
-		DrawRangedAttackAOE(&g.playerData, &g.gameMap)
+		pl.isTargeting = true
+		pl.PrepareRangedAttack()
+		DrawRangedAttackAOE(pl, gm)
 
 	}
 
@@ -60,17 +61,17 @@ func PlayerActions(g *Game) {
 
 		log.Print("Press G")
 
-		itemFromTile, _ := g.gameMap.RemoveItemFromTile(0, g.playerData.position)
+		itemFromTile, _ := gm.RemoveItemFromTile(0, pl.position)
 
 		if itemFromTile != nil {
-			g.playerData.inventory.AddItem(itemFromTile)
+			pl.inventory.AddItem(itemFromTile)
 		}
 
 	}
 
 	if inpututil.IsKeyJustReleased(ebiten.KeyT) {
 
-		fmt.Println("Is window open ", g.mainPlayerInterface.IsWindowOpen(g.itemsUI.throwableItemDisplay.itemDisplay.rootWindow))
+		fmt.Println("Is window open ", playerUI.mainPlayerInterface.IsWindowOpen(playerUI.itemsUI.throwableItemDisplay.itemDisplay.rootWindow))
 
 	}
 
@@ -79,43 +80,43 @@ func PlayerActions(g *Game) {
 		turntaken = true
 	}
 
-	HandlePlayerThrowable(&g.EntityManager, &g.playerData, &g.gameMap, g)
-	HandlePlayerRangedAttack(&g.EntityManager, &g.playerData, &g.gameMap)
+	HandlePlayerThrowable(ecsmanager, pl, gm, playerUI)
+	HandlePlayerRangedAttack(ecsmanager, pl, gm)
 
 	nextPosition := common.Position{
-		X: g.playerData.position.X + x,
-		Y: g.playerData.position.Y + y,
+		X: pl.position.X + x,
+		Y: pl.position.Y + y,
 	}
 
 	index := graphics.IndexFromXY(nextPosition.X, nextPosition.Y)
-	nextTile := g.gameMap.Tiles[index]
+	nextTile := gm.Tiles[index]
 
-	index = graphics.IndexFromXY(g.playerData.position.X, g.playerData.position.Y)
-	oldTile := g.gameMap.Tiles[index]
+	index = graphics.IndexFromXY(pl.position.X, pl.position.Y)
+	oldTile := gm.Tiles[index]
 
 	if !nextTile.Blocked {
-		g.gameMap.PlayerVisible.Compute(g.gameMap, g.playerData.position.X, g.playerData.position.Y, 8)
-		g.playerData.position.X = nextPosition.X
-		g.playerData.position.Y = nextPosition.Y
+		gm.PlayerVisible.Compute(gm, pl.position.X, pl.position.Y, 8)
+		pl.position.X = nextPosition.X
+		pl.position.Y = nextPosition.Y
 		nextTile.Blocked = true
 		oldTile.Blocked = false
 
 	} else {
 		//Determine if the tyle is blocked because there's a creature
 
-		c := GetCreatureAtPosition(&g.EntityManager, &nextPosition)
+		c := GetCreatureAtPosition(ecsmanager, &nextPosition)
 
 		if c != nil {
 
-			MeleeAttackSystem(&g.EntityManager, &g.playerData, &g.gameMap, g.playerData.position, &nextPosition)
+			MeleeAttackSystem(ecsmanager, pl, gm, pl.position, &nextPosition)
 		}
 
 	}
 
-	//AttackSystem(g, g.playerData.position, defendingMonsterTestPosition)
-	//AttackSystem(g, defendingMonsterTestPosition, g.playerData.position)
+	//AttackSystem(g, pl.position, defendingMonsterTestPosition)
+	//AttackSystem(g, defendingMonsterTestPosition, pl.position)
 	if x != 0 || y != 0 || turntaken {
-		g.Turn = common.GetNextState(g.Turn)
-		g.TurnCounter = 0
+		tm.Turn = common.GetNextState(tm.Turn)
+		tm.TurnCounter = 0
 	}
 }
