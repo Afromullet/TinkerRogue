@@ -53,7 +53,7 @@ func StayDistantRangedAttackAction(ecsmanger *common.EntityManager, pl *PlayerDa
 
 	RemoveMovementComponent(c)
 
-	RangedWeapon := common.GetComponentType[*RangedWeapon](c.Entity, equipment.RangedWeaponComponent)
+	RangedWeapon := common.GetComponentType[*equipment.RangedWeapon](c.Entity, equipment.RangedWeaponComponent)
 
 	if RangedWeapon != nil {
 

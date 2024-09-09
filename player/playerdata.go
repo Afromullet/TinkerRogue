@@ -24,7 +24,7 @@ type PlayerEquipment struct {
 }
 
 func (pl *PlayerEquipment) PrepareRangedAttack() {
-	wep := common.GetComponentType[*equipment.RangedWeapon](pl.PlayerRangedWeapon, equipment.RangedWeaponComponent)
+	wep := common.GetComponentType[*RangedWeapon](pl.PlayerRangedWeapon, equipment.RangedWeaponComponent)
 	pl.RangedWeaponAOEShape = wep.TargetArea
 	pl.RangedWeaponMaxDistance = wep.ShootingRange
 
@@ -69,9 +69,9 @@ func (pl *PlayerEquipment) GetPlayerWeapon() *equipment.MeleeWeapon {
 }
 
 // Helper function to make it less tedious to get the inventory
-func (pl *PlayerData) GetPlayerRangedWeapon() *equipment.RangedWeapon {
+func (pl *PlayerData) GetPlayerRangedWeapon() *RangedWeapon {
 
-	weapon := common.GetComponentType[*equipment.RangedWeapon](pl.PlayerRangedWeapon, equipment.RangedWeaponComponent)
+	weapon := common.GetComponentType[*RangedWeapon](pl.PlayerRangedWeapon, equipment.RangedWeaponComponent)
 
 	return weapon
 }

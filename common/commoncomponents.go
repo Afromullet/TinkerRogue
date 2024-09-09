@@ -63,6 +63,24 @@ func GridPositionFromPixels(x, y int) Position {
 	}
 }
 
+// A TileBasedShape returns indices that correspond to the elements in the gamemaps Tiles slice
+// This returns the X,Y positions since we handle player and creature location through Position
+func GetTilePositions(indices []int) []Position {
+
+	gd := graphics.NewScreenData()
+
+	pos := make([]Position, len(indices))
+
+	for i, inds := range indices {
+
+		pos[i] = PositionFromIndex(inds, gd.ScreenWidth)
+
+	}
+
+	return pos
+
+}
+
 type Attributes struct {
 	MaxHealth        int
 	CurrentHealth    int

@@ -36,7 +36,7 @@ func ApplyThrowable(ecsmanager *common.EntityManager, item *equipment.Item, shap
 	}
 
 	//t.ReadyThrowAreaVX()
-	pos := GetTilePositions(t.Shape)
+	pos := common.GetTilePositions(t.Shape.GetIndices())
 
 	//TODO, this will be slow in case there are a lot of creatures
 	for _, c := range ecsmanager.World.Query(ecsmanager.WorldTags["monsters"]) {

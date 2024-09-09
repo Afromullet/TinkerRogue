@@ -89,7 +89,7 @@ func RangedAttackSystem(ecsmanager *common.EntityManager, pl *PlayerData, gm *wo
 
 	var attacker *ecs.Entity = nil
 
-	var weapon *RangedWeapon = nil
+	var weapon *equipment.RangedWeapon = nil
 
 	var targets []*ecs.Entity
 
@@ -104,7 +104,7 @@ func RangedAttackSystem(ecsmanager *common.EntityManager, pl *PlayerData, gm *wo
 
 		fmt.Println("Monster is shooting")
 
-		weapon = common.GetComponentType[*RangedWeapon](attacker, equipment.RangedWeaponComponent)
+		weapon = common.GetComponentType[*equipment.RangedWeapon](attacker, equipment.RangedWeaponComponent)
 		targets = append(targets, pl.PlayerEntity)
 	}
 

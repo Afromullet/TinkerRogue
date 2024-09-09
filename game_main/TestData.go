@@ -98,7 +98,7 @@ func CreateTestMonsters(g *Game, manager *ecs.Manager, gameMap *worldmap.GameMap
 
 	wepArea := graphics.NewTileRectangle(0, 0, 1, 1)
 
-	wep := RangedWeapon{
+	wep := equipment.RangedWeapon{
 		MinDamage:     3,
 		MaxDamage:     5,
 		ShootingRange: 5,
@@ -286,7 +286,7 @@ func CreateWeapon(manager *ecs.Manager, name string, pos common.Position, imageP
 func CreatedRangedWeapon(manager *ecs.Manager, name string, imagePath string, pos common.Position, minDamage int, maxDamage int, shootingRange int, TargetArea graphics.TileBasedShape) *ecs.Entity {
 
 	weapon := CreateItem(manager, name, pos, imagePath)
-	weapon.AddComponent(equipment.RangedWeaponComponent, &RangedWeapon{
+	weapon.AddComponent(equipment.RangedWeaponComponent, &equipment.RangedWeapon{
 		MinDamage:     minDamage,
 		MaxDamage:     maxDamage,
 		ShootingRange: shootingRange,
