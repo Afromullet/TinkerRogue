@@ -23,6 +23,7 @@ import (
 	"game_main/input"
 	"game_main/monsters"
 	"game_main/rendering"
+	"game_main/testing"
 	"game_main/worldmap"
 	_ "image/png"
 	"log"
@@ -57,10 +58,10 @@ func NewGame() *Game {
 
 	//g.craftingUI.SetCraftingWindowLocation(g.screenData.screenWidth/2, g.screenData.screenWidth/2)
 
-	CreateTestItems(g.World, g.WorldTags, &g.gameMap)
-	CreateTestMonsters(g, g.World, &g.gameMap)
-	SetupPlayerForTesting(g)
-	UpdateContentsForTest(g)
+	testing.CreateTestItems(g.World, g.WorldTags, &g.gameMap)
+	testing.CreateTestMonsters(g.World, &g.playerData, &g.gameMap)
+	testing.SetupPlayerForTesting(&g.EntityManager, &g.playerData)
+	testing.UpdateContentsForTest(&g.EntityManager, &g.gameMap)
 
 	return g
 

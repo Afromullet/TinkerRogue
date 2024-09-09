@@ -1,4 +1,4 @@
-package main
+package testing
 
 import (
 	"game_main/avatar"
@@ -30,14 +30,14 @@ var TestIceEffect = graphics.NewIceEffect(0, 0, 5)
 var TestElectricEffect = graphics.NewElectricityEffect(0, 0, 5)
 var TestStickyEffect = graphics.NewStickyGroundEffect(0, 0, 5)
 
-func SetupPlayerForTesting(g *Game) {
-	w := CreateWeapon(g.World, "Weapon 1", *g.playerData.Pos, "assets/items/sword.png", 5, 10)
+func SetupPlayerForTesting(ecsmanager *common.EntityManager, pl *avatar.PlayerData) {
+	w := CreateWeapon(ecsmanager.World, "Weapon 1", *pl.Pos, "assets/items/sword.png", 5, 10)
 
 	wepArea := graphics.NewTileRectangle(0, 0, 3, 3)
-	r := CreatedRangedWeapon(g.World, "Ranged Weapon 1", "assets/items/sword.png", *g.playerData.Pos, 5, 10, 3, &wepArea)
+	r := CreatedRangedWeapon(ecsmanager.World, "Ranged Weapon 1", "assets/items/sword.png", *pl.Pos, 5, 10, 3, &wepArea)
 
-	g.playerData.PlayerWeapon = w
-	g.playerData.PlayerRangedWeapon = r
+	pl.PlayerWeapon = w
+	pl.PlayerRangedWeapon = r
 
 }
 
@@ -95,7 +95,7 @@ func CreateTestItems(manager *ecs.Manager, tags map[string]ecs.Tag, gameMap *wor
 
 }
 
-func CreateTestMonsters(g *Game, manager *ecs.Manager, gameMap *worldmap.GameMap) {
+func CreateTestMonsters(manager *ecs.Manager, pl *avatar.PlayerData, gameMap *worldmap.GameMap) {
 
 	x, y := gameMap.Rooms[0].Center()
 
@@ -108,24 +108,24 @@ func CreateTestMonsters(g *Game, manager *ecs.Manager, gameMap *worldmap.GameMap
 		TargetArea:    &wepArea,
 	}
 
-	c := CreateMonster(g, manager, gameMap, x, y+1, "assets/creatures/elf.png")
+	c := CreateMonster(manager, gameMap, x, y+1, "assets/creatures/elf.png")
 
 	//c.AddComponent(approachAndAttack, &ApproachAndAttack{})
 	c.AddComponent(monsters.DistanceRangeAttackComp, &monsters.DistanceRangedAttack{})
 	c.AddComponent(equipment.RangedWeaponComponent, &wep)
 
-	c = CreateMonster(g, manager, gameMap, x+1, y, "assets/creatures/unseen_horror.png")
+	c = CreateMonster(manager, gameMap, x+1, y, "assets/creatures/unseen_horror.png")
 	c.AddComponent(monsters.SimpleWanderComp, &monsters.SimpleWander{})
 	//c.AddComponent(approachAndAttack, &ApproachAndAttack{})
 
-	c = CreateMonster(g, manager, gameMap, x+1, y+1, "assets/creatures/angel.png")
-	c.AddComponent(monsters.EntityFollowComp, &monsters.EntityFollow{Target: g.playerData.PlayerEntity})
+	c = CreateMonster(manager, gameMap, x+1, y+1, "assets/creatures/angel.png")
+	c.AddComponent(monsters.EntityFollowComp, &monsters.EntityFollow{Target: pl.PlayerEntity})
 
-	c = CreateMonster(g, manager, gameMap, x+1, y+2, "assets/creatures/ancient_lich.png")
-	c.AddComponent(monsters.WithinRadiusComp, &monsters.DistanceToEntityMovement{Target: g.playerData.PlayerEntity, Distance: 3})
+	c = CreateMonster(manager, gameMap, x+1, y+2, "assets/creatures/ancient_lich.png")
+	c.AddComponent(monsters.WithinRadiusComp, &monsters.DistanceToEntityMovement{Target: pl.PlayerEntity, Distance: 3})
 
-	c = CreateMonster(g, manager, gameMap, x+2, y+1, "assets/creatures/starcursed_mass.png")
-	c.AddComponent(monsters.WithinRangeComponent, &monsters.DistanceToEntityMovement{Distance: 2, Target: g.playerData.PlayerEntity})
+	c = CreateMonster(manager, gameMap, x+2, y+1, "assets/creatures/starcursed_mass.png")
+	c.AddComponent(monsters.WithinRangeComponent, &monsters.DistanceToEntityMovement{Distance: 2, Target: pl.PlayerEntity})
 	//CreateMonster(g, manager, gameMap, x+2, y+2, "assets/creatures/balrug.png")
 
 	CreateMoreTestMonsters(manager, gameMap)
@@ -164,7 +164,7 @@ func CreateMoreTestMonsters(manager *ecs.Manager, gameMap *worldmap.GameMap) {
 
 }
 
-func CreateMonster(g *Game, manager *ecs.Manager, gameMap *worldmap.GameMap, x, y int, img string) *ecs.Entity {
+func CreateMonster(manager *ecs.Manager, gameMap *worldmap.GameMap, x, y int, img string) *ecs.Entity {
 
 	elfImg, _, err := ebitenutil.NewImageFromFile(img)
 	if err != nil {
@@ -201,21 +201,21 @@ func CreateMonster(g *Game, manager *ecs.Manager, gameMap *worldmap.GameMap, x, 
 
 }
 
-func UpdateContentsForTest(g *Game) {
+func UpdateContentsForTest(ecsmanager *common.EntityManager, gm *worldmap.GameMap) {
 
-	for _, item := range g.World.Query(g.WorldTags["items"]) {
+	for _, item := range ecsmanager.World.Query(ecsmanager.WorldTags["items"]) {
 
 		item_pos := item.Components[common.PositionComponent].(*common.Position)
 
-		g.gameMap.AddEntityToTile(item.Entity, item_pos)
+		gm.AddEntityToTile(item.Entity, item_pos)
 
 	}
 
 }
 
-func GetTileInfo(g *Game, pos *common.Position, player *avatar.Player) {
+func GetTileInfo(ecsmanager *common.EntityManager, pos *common.Position, player *avatar.Player) {
 
-	for _, item := range g.World.Query(g.WorldTags["items"]) {
+	for _, item := range ecsmanager.World.Query(ecsmanager.WorldTags["items"]) {
 
 		item_pos := item.Components[common.PositionComponent].(*common.Position)
 		log.Print("Item Pos: \n")
