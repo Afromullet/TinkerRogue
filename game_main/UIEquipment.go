@@ -34,9 +34,9 @@ func (equipmentDisplay *EquipmentItemDisplay) CreateInventoryList(playerData *Pl
 
 }
 
-func (equipmentDisplay *EquipmentItemDisplay) DisplayInventory() {
+func (equipmentDisplay *EquipmentItemDisplay) DisplayInventory(pl *PlayerData) {
 
-	equipmentDisplay.CreateInventoryList(&g.playerData)
+	equipmentDisplay.CreateInventoryList(pl)
 
 }
 

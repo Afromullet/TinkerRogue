@@ -165,7 +165,7 @@ type PlayerItemsUI struct {
 }
 
 // Creates the main UI that allows the player to view the inventory, craft, and see equipment
-func (g *Game) CreatePlayerUI() *ebitenui.UI {
+func CreatePlayerUI(g *Game) *ebitenui.UI {
 
 	ui := ebitenui.UI{}
 
@@ -201,9 +201,9 @@ func (g *Game) CreatePlayerUI() *ebitenui.UI {
 			widget.GridLayoutOpts.Spacing(0, 20))),
 	)
 
-	rootContainer.AddChild(CreateOpenCraftingButton(g, &ui))
-	rootContainer.AddChild(CreateOpenThrowablesButton(g, &ui))
-	rootContainer.AddChild(CreateOpenEquipmentButton(g, &ui))
+	rootContainer.AddChild(CreateOpenCraftingButton(&g.PlayerUI, &g.playerData, &ui))
+	rootContainer.AddChild(CreateOpenThrowablesButton(&g.PlayerUI, &g.playerData, &ui))
+	rootContainer.AddChild(CreateOpenEquipmentButton(&g.PlayerUI, &g.playerData, &ui))
 
 	CreateItemManagementUI(g)
 
@@ -214,7 +214,7 @@ func (g *Game) CreatePlayerUI() *ebitenui.UI {
 }
 
 // Creating the button that opens the crafting menu.
-func CreateOpenCraftingButton(g *Game, ui *ebitenui.UI) *widget.Button {
+func CreateOpenCraftingButton(playerUI *PlayerUI, pl *PlayerData, ui *ebitenui.UI) *widget.Button {
 	// construct a button
 	button := widget.NewButton(
 		// set general widget options
@@ -241,13 +241,13 @@ func CreateOpenCraftingButton(g *Game, ui *ebitenui.UI) *widget.Button {
 		// add a handler that reacts to clicking the button
 		widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
 
-			x, y := g.itemsUI.craftingItemDisplay.itemDisplay.rootWindow.Contents.PreferredSize()
+			x, y := playerUI.itemsUI.craftingItemDisplay.itemDisplay.rootWindow.Contents.PreferredSize()
 
 			r := image.Rect(0, 0, x, y)
 			r = r.Add(image.Point{200, 50})
-			g.itemsUI.craftingItemDisplay.itemDisplay.rootWindow.SetLocation(r)
-			g.itemsUI.craftingItemDisplay.DisplayInventory(g)
-			ui.AddWindow(g.itemsUI.craftingItemDisplay.itemDisplay.rootWindow)
+			playerUI.itemsUI.craftingItemDisplay.itemDisplay.rootWindow.SetLocation(r)
+			playerUI.itemsUI.craftingItemDisplay.DisplayInventory(pl)
+			ui.AddWindow(playerUI.itemsUI.craftingItemDisplay.itemDisplay.rootWindow)
 
 		}),
 	)
@@ -258,7 +258,7 @@ func CreateOpenCraftingButton(g *Game, ui *ebitenui.UI) *widget.Button {
 
 // Creating the button that opens the crafting menu. Other buttons will be added
 // Doing it inside a function makes the code easier to follow
-func CreateOpenThrowablesButton(g *Game, ui *ebitenui.UI) *widget.Button {
+func CreateOpenThrowablesButton(playerUI *PlayerUI, pl *PlayerData, ui *ebitenui.UI) *widget.Button {
 	// construct a button
 	button := widget.NewButton(
 		// set general widget options
@@ -285,13 +285,13 @@ func CreateOpenThrowablesButton(g *Game, ui *ebitenui.UI) *widget.Button {
 		// add a handler that reacts to clicking the button
 		widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
 
-			x, y := g.itemsUI.throwableItemDisplay.itemDisplay.rootWindow.Contents.PreferredSize()
+			x, y := playerUI.itemsUI.throwableItemDisplay.itemDisplay.rootWindow.Contents.PreferredSize()
 
 			r := image.Rect(0, 0, x, y)
 			r = r.Add(image.Point{200, 200})
-			g.itemsUI.throwableItemDisplay.itemDisplay.rootWindow.SetLocation(r)
-			g.itemsUI.throwableItemDisplay.DisplayInventory(g)
-			ui.AddWindow(g.itemsUI.throwableItemDisplay.itemDisplay.rootWindow)
+			playerUI.itemsUI.throwableItemDisplay.itemDisplay.rootWindow.SetLocation(r)
+			playerUI.itemsUI.throwableItemDisplay.DisplayInventory(pl)
+			ui.AddWindow(playerUI.itemsUI.throwableItemDisplay.itemDisplay.rootWindow)
 
 		}),
 	)
@@ -302,7 +302,7 @@ func CreateOpenThrowablesButton(g *Game, ui *ebitenui.UI) *widget.Button {
 
 // Creating the button that opens the crafting menu. Other buttons will be added
 // Doing it inside a function makes the code easier to follow
-func CreateOpenEquipmentButton(g *Game, ui *ebitenui.UI) *widget.Button {
+func CreateOpenEquipmentButton(playerUI *PlayerUI, pl *PlayerData, ui *ebitenui.UI) *widget.Button {
 	// construct a button
 	button := widget.NewButton(
 		// set general widget options
@@ -329,13 +329,13 @@ func CreateOpenEquipmentButton(g *Game, ui *ebitenui.UI) *widget.Button {
 		// add a handler that reacts to clicking the button
 		widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
 
-			x, y := g.itemsUI.equipmentDisplay.itemDisplay.rootWindow.Contents.PreferredSize()
+			x, y := playerUI.itemsUI.equipmentDisplay.itemDisplay.rootWindow.Contents.PreferredSize()
 
 			r := image.Rect(0, 0, x, y)
 			r = r.Add(image.Point{200, 50})
-			g.itemsUI.equipmentDisplay.itemDisplay.rootWindow.SetLocation(r)
-			g.itemsUI.equipmentDisplay.DisplayInventory(g)
-			ui.AddWindow(g.itemsUI.equipmentDisplay.itemDisplay.rootWindow)
+			playerUI.itemsUI.equipmentDisplay.itemDisplay.rootWindow.SetLocation(r)
+			playerUI.itemsUI.equipmentDisplay.DisplayInventory(pl)
+			ui.AddWindow(playerUI.itemsUI.equipmentDisplay.itemDisplay.rootWindow)
 
 		}),
 	)

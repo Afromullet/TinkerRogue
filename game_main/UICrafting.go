@@ -71,9 +71,9 @@ func (craftingItemDisplay *CraftingItemDisplay) CreateInventoryList(playerData *
 }
 
 // Used by the Clicked Handler of the Crafting Button. Displays the inventory
-func (craftingItemDisplay *CraftingItemDisplay) DisplayInventory(g *Game) {
+func (craftingItemDisplay *CraftingItemDisplay) DisplayInventory(pl *PlayerData) {
 
-	craftingItemDisplay.CreateInventoryList(&g.playerData)
+	craftingItemDisplay.CreateInventoryList(pl)
 
 }
 
