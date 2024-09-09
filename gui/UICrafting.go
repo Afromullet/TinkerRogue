@@ -1,4 +1,4 @@
-package main
+package gui
 
 import (
 	"game_main/avatar"
@@ -12,7 +12,7 @@ import (
 // The CraftingItemDisplay tracks the items selected for crafting and their properties.
 // Each uses a
 type CraftingItemDisplay struct {
-	itemDisplay                ItemDisplay
+	ItmDisplay                 ItemDisplay
 	ItemsSelectedContainer     *widget.Container //Displays the items the user HAS selected for crafitng
 	ItemsSelectedPropContainer *widget.Container //Container to hold the widget that displays the proeprties of the selected item
 	ItemsSelectedPropTextArea  *widget.TextArea  //Displays the properties of the selected items
@@ -29,32 +29,32 @@ func (craftingItemDisplay *CraftingItemDisplay) CreateInventoryList(playerData *
 	// Nested function to add a selected item
 	addSelectedItem := func(index int) {
 
-		for _, itemIndex := range craftingItemDisplay.itemDisplay.ItemsSelectedIndices {
+		for _, itemIndex := range craftingItemDisplay.ItmDisplay.ItemsSelectedIndices {
 			if itemIndex == index {
 				return
 			}
 		}
-		craftingItemDisplay.itemDisplay.ItemsSelectedIndices = append(craftingItemDisplay.itemDisplay.ItemsSelectedIndices, index)
+		craftingItemDisplay.ItmDisplay.ItemsSelectedIndices = append(craftingItemDisplay.ItmDisplay.ItemsSelectedIndices, index)
 	}
 
 	inv := playerData.GetPlayerInventory().GetInventoryForDisplay([]int{}, propFilters...)
-	craftingItemDisplay.itemDisplay.InventoryDisplaylist = craftingItemDisplay.itemDisplay.GetInventoryListWidget(inv)
+	craftingItemDisplay.ItmDisplay.InventoryDisplaylist = craftingItemDisplay.ItmDisplay.GetInventoryListWidget(inv)
 
-	craftingItemDisplay.itemDisplay.InventoryDisplaylist.EntrySelectedEvent.AddHandler(func(args interface{}) {
+	craftingItemDisplay.ItmDisplay.InventoryDisplaylist.EntrySelectedEvent.AddHandler(func(args interface{}) {
 
-		craftingItemDisplay.ItemsSelectedContainer.RemoveChild(craftingItemDisplay.itemDisplay.ItemsSelectedList)
+		craftingItemDisplay.ItemsSelectedContainer.RemoveChild(craftingItemDisplay.ItmDisplay.ItemsSelectedList)
 
 		a := args.(*widget.ListEntrySelectedEventArgs)
 		entry := a.Entry.(equipment.InventoryListEntry)
 
 		addSelectedItem(entry.Index)
 
-		sel := playerData.GetPlayerInventory().GetInventoryForDisplay(craftingItemDisplay.itemDisplay.ItemsSelectedIndices)
+		sel := playerData.GetPlayerInventory().GetInventoryForDisplay(craftingItemDisplay.ItmDisplay.ItemsSelectedIndices)
 
-		craftingItemDisplay.itemDisplay.ItemsSelectedList = craftingItemDisplay.itemDisplay.GetInventoryListWidget(sel)
+		craftingItemDisplay.ItmDisplay.ItemsSelectedList = craftingItemDisplay.ItmDisplay.GetInventoryListWidget(sel)
 
-		if craftingItemDisplay.itemDisplay.ItemsSelectedList != nil {
-			craftingItemDisplay.ItemsSelectedContainer.AddChild(craftingItemDisplay.itemDisplay.ItemsSelectedList)
+		if craftingItemDisplay.ItmDisplay.ItemsSelectedList != nil {
+			craftingItemDisplay.ItemsSelectedContainer.AddChild(craftingItemDisplay.ItmDisplay.ItemsSelectedList)
 
 			names, _ := playerData.GetPlayerInventory().EffectNames(entry.Index)
 
@@ -67,7 +67,7 @@ func (craftingItemDisplay *CraftingItemDisplay) CreateInventoryList(playerData *
 
 	})
 
-	craftingItemDisplay.itemDisplay.ItemDisplayContainer.AddChild(craftingItemDisplay.itemDisplay.InventoryDisplaylist)
+	craftingItemDisplay.ItmDisplay.ItemDisplayContainer.AddChild(craftingItemDisplay.ItmDisplay.InventoryDisplaylist)
 
 }
 
@@ -84,7 +84,7 @@ func (craftingItemDisplay *CraftingItemDisplay) CreateContainers() {
 	craftingItemDisplay.CreateItemPropertyTextArea()
 
 	// Main container that will hold the container for available items and the items selected
-	craftingItemDisplay.itemDisplay.rootContainer = widget.NewContainer(
+	craftingItemDisplay.ItmDisplay.RootContainer = widget.NewContainer(
 		widget.ContainerOpts.BackgroundImage(e_image.NewNineSliceColor(color.NRGBA{100, 100, 100, 255})),
 		widget.ContainerOpts.Layout(widget.NewGridLayout(
 			// It is using a GridLayout with a single column
@@ -101,12 +101,12 @@ func (craftingItemDisplay *CraftingItemDisplay) CreateContainers() {
 	)
 
 	// Used for holding the items prior to selecting them for crafting
-	craftingItemDisplay.itemDisplay.ItemDisplayContainer = widget.NewContainer(
+	craftingItemDisplay.ItmDisplay.ItemDisplayContainer = widget.NewContainer(
 		widget.ContainerOpts.BackgroundImage(e_image.NewNineSliceColor(color.NRGBA{100, 100, 100, 255})),
 		widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
 	)
 
-	craftingItemDisplay.itemDisplay.rootContainer.AddChild(craftingItemDisplay.itemDisplay.ItemDisplayContainer)
+	craftingItemDisplay.ItmDisplay.RootContainer.AddChild(craftingItemDisplay.ItmDisplay.ItemDisplayContainer)
 
 	// Holds the widget that displays the selected items to the player
 	craftingItemDisplay.ItemsSelectedContainer = widget.NewContainer(
@@ -123,13 +123,13 @@ func (craftingItemDisplay *CraftingItemDisplay) CreateContainers() {
 		widget.ContainerOpts.BackgroundImage(e_image.NewNineSliceColor(color.NRGBA{100, 100, 100, 255})),
 		widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
 	)
-	craftingItemDisplay.itemDisplay.rootContainer.AddChild(craftingItemDisplay.ItemsSelectedContainer)
+	craftingItemDisplay.ItmDisplay.RootContainer.AddChild(craftingItemDisplay.ItemsSelectedContainer)
 
 	craftingItemDisplay.ItemsSelectedPropContainer.AddChild(craftingItemDisplay.ItemsSelectedPropTextArea)
 	craftingItemDisplay.ItemsSelectedContainer.AddChild(craftingItemDisplay.ClearItemsButton)
 	craftingItemDisplay.ItemsSelectedPropContainer.AddChild(craftingItemDisplay.ItemsSelectedPropTextArea)
 	craftingItemDisplay.ItemsSelectedPropContainer.AddChild(craftingItemDisplay.CraftItemsButton)
-	craftingItemDisplay.itemDisplay.rootContainer.AddChild(craftingItemDisplay.ItemsSelectedPropContainer)
+	craftingItemDisplay.ItmDisplay.RootContainer.AddChild(craftingItemDisplay.ItemsSelectedPropContainer)
 
 }
 

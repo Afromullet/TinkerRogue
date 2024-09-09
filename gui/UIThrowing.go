@@ -1,4 +1,4 @@
-package main
+package gui
 
 import (
 	"fmt"
@@ -12,7 +12,7 @@ import (
 )
 
 type ThrowingItemDisplay struct {
-	itemDisplay                ItemDisplay
+	ItmDisp                    ItemDisplay
 	ItemsSelectedContainer     *widget.Container //Displays the items the user HAS selected for crafitng
 	ItemsSelectedPropContainer *widget.Container //Container to hold the widget that displays the proeprties of the selected item
 	ItemsSelectedPropTextArea  *widget.TextArea  //Displays the properties of the selected items
@@ -23,9 +23,9 @@ type ThrowingItemDisplay struct {
 func (throwingItemDisplay *ThrowingItemDisplay) CreateInventoryList(playerData *avatar.PlayerData, propFilters ...equipment.StatusEffects) {
 
 	inv := playerData.GetPlayerInventory().GetInventoryForDisplay([]int{}, propFilters...)
-	throwingItemDisplay.itemDisplay.InventoryDisplaylist = throwingItemDisplay.itemDisplay.GetInventoryListWidget(inv)
+	throwingItemDisplay.ItmDisp.InventoryDisplaylist = throwingItemDisplay.ItmDisp.GetInventoryListWidget(inv)
 
-	throwingItemDisplay.itemDisplay.InventoryDisplaylist.EntrySelectedEvent.AddHandler(func(args interface{}) {
+	throwingItemDisplay.ItmDisp.InventoryDisplaylist.EntrySelectedEvent.AddHandler(func(args interface{}) {
 
 		fmt.Print("Throwable Item Selected")
 
@@ -45,7 +45,7 @@ func (throwingItemDisplay *ThrowingItemDisplay) CreateInventoryList(playerData *
 
 	})
 
-	throwingItemDisplay.itemDisplay.ItemDisplayContainer.AddChild(throwingItemDisplay.itemDisplay.InventoryDisplaylist)
+	throwingItemDisplay.ItmDisp.ItemDisplayContainer.AddChild(throwingItemDisplay.ItmDisp.InventoryDisplaylist)
 
 }
 
@@ -62,7 +62,7 @@ func (throwingItemDisplay *ThrowingItemDisplay) DisplayInventory(pl *avatar.Play
 
 func (throwingItemDisplay *ThrowingItemDisplay) CreateContainers() {
 	// Main container that will hold the container for available items and the items selected
-	throwingItemDisplay.itemDisplay.rootContainer = widget.NewContainer(
+	throwingItemDisplay.ItmDisp.RootContainer = widget.NewContainer(
 		widget.ContainerOpts.BackgroundImage(e_image.NewNineSliceColor(color.NRGBA{100, 100, 100, 255})),
 		widget.ContainerOpts.Layout(widget.NewGridLayout(
 			// It is using a GridLayout with a single column
@@ -78,10 +78,10 @@ func (throwingItemDisplay *ThrowingItemDisplay) CreateContainers() {
 			widget.GridLayoutOpts.Spacing(0, 20))),
 	)
 
-	throwingItemDisplay.itemDisplay.ItemDisplayContainer = widget.NewContainer(
+	throwingItemDisplay.ItmDisp.ItemDisplayContainer = widget.NewContainer(
 		widget.ContainerOpts.BackgroundImage(e_image.NewNineSliceColor(color.NRGBA{100, 100, 100, 255})),
 		widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
 	)
 
-	throwingItemDisplay.itemDisplay.rootContainer.AddChild(throwingItemDisplay.itemDisplay.ItemDisplayContainer)
+	throwingItemDisplay.ItmDisp.RootContainer.AddChild(throwingItemDisplay.ItmDisp.ItemDisplayContainer)
 }

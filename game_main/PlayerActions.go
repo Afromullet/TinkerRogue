@@ -6,6 +6,7 @@ import (
 	"game_main/common"
 	"game_main/equipment"
 	"game_main/graphics"
+	"game_main/gui"
 	"game_main/worldmap"
 	"log"
 
@@ -97,7 +98,7 @@ func DrawThrowableAOE(pl *avatar.PlayerData, gm *worldmap.GameMap) {
 }
 
 // todo remove game type from function params
-func HandlePlayerThrowable(ecsmanager *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap, playerUI *PlayerUI) {
+func HandlePlayerThrowable(ecsmanager *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap, playerUI *gui.PlayerUI) {
 
 	if playerUI.IsThrowableItemSelected() {
 

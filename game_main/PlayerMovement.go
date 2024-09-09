@@ -6,6 +6,7 @@ import (
 	"game_main/common"
 	"game_main/equipment"
 	"game_main/graphics"
+	"game_main/gui"
 	"game_main/worldmap"
 	"log"
 
@@ -18,7 +19,7 @@ var PrevThrowInds []int
 var PrevRangedAttInds []int
 
 // todo replace the keypressed with iskeyreleased
-func PlayerActions(ecsmanager *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap, playerUI *PlayerUI, tm *common.TimeSystem) {
+func PlayerActions(ecsmanager *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap, playerUI *gui.PlayerUI, tm *common.TimeSystem) {
 
 	turntaken := false
 	//players := g.WorldTags["players"]
@@ -72,7 +73,7 @@ func PlayerActions(ecsmanager *common.EntityManager, pl *avatar.PlayerData, gm *
 
 	if inpututil.IsKeyJustReleased(ebiten.KeyT) {
 
-		fmt.Println("Is window open ", playerUI.mainPlayerInterface.IsWindowOpen(playerUI.itemsUI.throwableItemDisplay.itemDisplay.rootWindow))
+		fmt.Println("Is window open ", playerUI.MainPlayerInterface.IsWindowOpen(playerUI.ItemsUI.ThrowableItemDisplay.ItmDisp.RooWindow))
 
 	}
 

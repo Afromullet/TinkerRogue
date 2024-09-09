@@ -1,4 +1,4 @@
-package main
+package gui
 
 import (
 	"game_main/avatar"
@@ -8,8 +8,8 @@ import (
 
 type PlayerUI struct {
 	playerData          avatar.PlayerData
-	itemsUI             PlayerItemsUI
-	mainPlayerInterface *ebitenui.UI
+	ItemsUI             PlayerItemsUI
+	MainPlayerInterface *ebitenui.UI
 }
 
 // Throwing an item will show a square to represent the AOE of the throwable.
@@ -19,12 +19,12 @@ type PlayerUI struct {
 // Once I click out of it
 func (p *PlayerUI) IsThrowableItemSelected() bool {
 
-	return p.itemsUI.throwableItemDisplay.ThrowableItemSelected
+	return p.ItemsUI.ThrowableItemDisplay.ThrowableItemSelected
 
 }
 
 func (p *PlayerUI) SetThrowableItemSelected(selected bool) {
 
-	p.itemsUI.throwableItemDisplay.ThrowableItemSelected = selected
+	p.ItemsUI.ThrowableItemDisplay.ThrowableItemSelected = selected
 
 }

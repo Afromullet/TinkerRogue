@@ -19,6 +19,7 @@ import (
 	"game_main/avatar"
 	"game_main/common"
 	"game_main/graphics"
+	"game_main/gui"
 	"game_main/worldmap"
 	_ "image/png"
 	"log"
@@ -32,7 +33,7 @@ import (
 
 type Game struct {
 	common.EntityManager
-	PlayerUI
+	gameUI     gui.PlayerUI
 	playerData avatar.PlayerData
 	gameMap    worldmap.GameMap
 
@@ -66,7 +67,7 @@ func NewGame() *Game {
 // todo still need to remove game
 func (g *Game) Update() error {
 
-	g.mainPlayerInterface.Update()
+	g.gameUI.MainPlayerInterface.Update()
 
 	graphics.VXHandler.UpdateVisualEffects()
 	// Update the Label text to indicate if the ui is currently being hovered over or not
@@ -76,7 +77,7 @@ func (g *Game) Update() error {
 
 	if g.Turn == common.PlayerTurn && g.TurnCounter > 20 {
 
-		PlayerActions(&g.EntityManager, &g.playerData, &g.gameMap, &g.PlayerUI, &g.TimeSystem)
+		PlayerActions(&g.EntityManager, &g.playerData, &g.gameMap, &g.gameUI, &g.TimeSystem)
 	}
 	if g.Turn == common.MonsterTurn {
 		MonsterSystems(&g.EntityManager, &g.playerData, &g.gameMap, &g.TimeSystem)
@@ -90,7 +91,7 @@ func (g *Game) Update() error {
 func (g *Game) Draw(screen *ebiten.Image) {
 	g.gameMap.DrawLevel(screen)
 	ProcessRenderables(&g.EntityManager, g.gameMap, screen)
-	g.mainPlayerInterface.Draw(screen)
+	g.gameUI.MainPlayerInterface.Draw(screen)
 	ProcessUserLog(g, screen)
 
 	graphics.VXHandler.DrawVisualEffects(screen)
@@ -108,7 +109,7 @@ func main() {
 
 	g := NewGame()
 
-	g.mainPlayerInterface = CreatePlayerUI(&g.PlayerUI, &g.playerData)
+	g.gameUI.MainPlayerInterface = gui.CreatePlayerUI(&g.gameUI, &g.playerData)
 
 	ebiten.SetWindowResizable(true)
 
