@@ -4,6 +4,7 @@ import (
 	"errors"
 	"game_main/common"
 	"game_main/graphics"
+
 	"game_main/randgen"
 	"image/color"
 

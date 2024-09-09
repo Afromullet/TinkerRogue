@@ -22,6 +22,7 @@ import (
 	"game_main/gui"
 	"game_main/input"
 	"game_main/monsters"
+	"game_main/rendering"
 	"game_main/worldmap"
 	_ "image/png"
 	"log"
@@ -92,7 +93,7 @@ func (g *Game) Update() error {
 // Draw is called each draw cycle and is where we will blit.
 func (g *Game) Draw(screen *ebiten.Image) {
 	g.gameMap.DrawLevel(screen)
-	ProcessRenderables(&g.EntityManager, g.gameMap, screen)
+	rendering.ProcessRenderables(&g.EntityManager, g.gameMap, screen)
 	g.gameUI.MainPlayerInterface.Draw(screen)
 	ProcessUserLog(g, screen)
 

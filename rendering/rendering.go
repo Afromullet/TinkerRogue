@@ -1,4 +1,4 @@
-package main
+package rendering
 
 import (
 	"game_main/common"
