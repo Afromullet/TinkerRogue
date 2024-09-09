@@ -150,7 +150,7 @@ func CreateMoreTestMonsters(manager *ecs.Manager, gameMap *worldmap.GameMap) {
 			AddComponent(CreatureComponent, &Creature{
 				Path: make([]common.Position, 0),
 			}).
-			AddComponent(RenderableComponent, &Renderable{
+			AddComponent(common.RenderableComponent, &common.Renderable{
 				Image:   elfImg,
 				Visible: true,
 			}).
@@ -179,7 +179,7 @@ func CreateMonster(g *Game, manager *ecs.Manager, gameMap *worldmap.GameMap, x, 
 		AddComponent(CreatureComponent, &Creature{
 			Path: make([]common.Position, 0),
 		}).
-		AddComponent(RenderableComponent, &Renderable{
+		AddComponent(common.RenderableComponent, &common.Renderable{
 			Image:   elfImg,
 			Visible: true,
 		}).
@@ -250,7 +250,7 @@ func CreateItem(manager *ecs.Manager, name string, pos common.Position, imagePat
 	}
 
 	itemEntity := manager.NewEntity().
-		AddComponent(RenderableComponent, &Renderable{
+		AddComponent(common.RenderableComponent, &common.Renderable{
 			Image:   img,
 			Visible: true,
 		}).

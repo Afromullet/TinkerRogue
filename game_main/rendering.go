@@ -11,7 +11,7 @@ import (
 func ProcessRenderables(ecsmanager *common.EntityManager, gameMap worldmap.GameMap, screen *ebiten.Image) {
 	for _, result := range ecsmanager.World.Query(ecsmanager.WorldTags["renderables"]) {
 		pos := result.Components[common.PositionComponent].(*common.Position)
-		img := result.Components[RenderableComponent].(*Renderable).Image
+		img := result.Components[common.RenderableComponent].(*common.Renderable).Image
 
 		if gameMap.PlayerVisible.IsVisible(pos.X, pos.Y) {
 			index := graphics.IndexFromXY(pos.X, pos.Y)

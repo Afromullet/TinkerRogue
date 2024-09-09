@@ -32,7 +32,8 @@ import (
 type Game struct {
 	common.EntityManager
 	PlayerUI
-	gameMap worldmap.GameMap
+	playerData PlayerData
+	gameMap    worldmap.GameMap
 
 	common.TimeSystem
 }

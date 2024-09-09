@@ -5,14 +5,16 @@ import (
 	"math"
 
 	"github.com/bytearena/ecs"
+	"github.com/hajimehoshi/ebiten/v2"
 )
 
 // This file contains
 
 var (
-	PositionComponent  *ecs.Component
-	NameComponent      *ecs.Component
-	AttributeComponent *ecs.Component
+	PositionComponent   *ecs.Component
+	NameComponent       *ecs.Component
+	AttributeComponent  *ecs.Component
+	RenderableComponent *ecs.Component //Putting this here for now rather than in graphics
 )
 
 type Position struct {
@@ -105,4 +107,9 @@ func UpdateAttributes(e *ecs.Entity, armorClass, protection int, dodgechance flo
 
 type Name struct {
 	NameStr string
+}
+
+type Renderable struct {
+	Image   *ebiten.Image
+	Visible bool
 }

@@ -6,15 +6,12 @@ import (
 	"game_main/worldmap"
 
 	"github.com/bytearena/ecs"
-	"github.com/hajimehoshi/ebiten/v2"
 )
 
 /*
  */
 
 var (
-	RenderableComponent *ecs.Component
-
 	CreatureComponent *ecs.Component
 
 	userMessage *ecs.Component
@@ -22,11 +19,6 @@ var (
 
 // The ECS library returns pointers to the struct when querying it for components, so the Position methods take a pointer as input
 // Other than that, there's no reason for using pointers for the functions below.
-
-type Renderable struct {
-	Image   *ebiten.Image
-	Visible bool
-}
 
 type UserMessage struct {
 	AttackMessage    string
@@ -44,7 +36,7 @@ func InitializeECS(ecsmanager *common.EntityManager) {
 	tags := make(map[string]ecs.Tag)
 	manager := ecs.NewManager()
 	common.PositionComponent = manager.NewComponent()
-	RenderableComponent = manager.NewComponent()
+	common.RenderableComponent = manager.NewComponent()
 
 	common.NameComponent = manager.NewComponent()
 
@@ -57,7 +49,7 @@ func InitializeECS(ecsmanager *common.EntityManager) {
 	equipment.RangedWeaponComponent = manager.NewComponent()
 	equipment.ArmorComponent = manager.NewComponent()
 
-	renderables := ecs.BuildTag(RenderableComponent, common.PositionComponent)
+	renderables := ecs.BuildTag(common.RenderableComponent, common.PositionComponent)
 	tags["renderables"] = renderables
 
 	messengers := ecs.BuildTag(userMessage)

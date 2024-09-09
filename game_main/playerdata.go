@@ -123,7 +123,7 @@ func InitializePlayerData(ecsmanager *common.EntityManager, pl *PlayerData, gm *
 
 	playerEntity := ecsmanager.World.NewEntity().
 		AddComponent(player, &Player{}).
-		AddComponent(RenderableComponent, &Renderable{
+		AddComponent(common.RenderableComponent, &common.Renderable{
 			Image:   playerImg,
 			Visible: true,
 		}).
