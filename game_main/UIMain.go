@@ -27,8 +27,6 @@ It's painful to add a new container to display items in. Here are the steps:
 6) Create an CreateOpenxxxgButton function that creates the button and adds the window to the ItemDisplay for displaying the items
 7) Create the containers and window in CreateItemManagementUI
 8) Add the button to the root container in CreatePlayerUI
-
-
 */
 
 // Every window that displays the inventory to teh user will be a struct that contains ItemDisplay

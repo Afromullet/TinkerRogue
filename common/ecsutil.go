@@ -40,3 +40,8 @@ func DistanceBetween(e1 *ecs.Entity, e2 *ecs.Entity) int {
 	return pos1.ManhattanDistance(pos2)
 
 }
+
+type EntityManager struct {
+	World     *ecs.Manager
+	WorldTags map[string]ecs.Tag
+}

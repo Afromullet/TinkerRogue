@@ -16,13 +16,12 @@ import (
 )*/
 
 import (
+	"game_main/common"
 	"game_main/graphics"
 	"game_main/worldmap"
 	_ "image/png"
 	"log"
 
-	"github.com/bytearena/ecs"
-	"github.com/ebitenui/ebitenui"
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
@@ -31,33 +30,11 @@ import (
 //Of what the code is doing as I'm learning GoLang
 
 type Game struct {
-	gameMap             worldmap.GameMap
-	screenData          graphics.ScreenData
-	World               *ecs.Manager
-	WorldTags           map[string]ecs.Tag
-	Turn                TurnState
-	TurnCounter         int
-	mainPlayerInterface *ebitenui.UI
+	common.EntityManager
+	PlayerUI
+	gameMap worldmap.GameMap
 
-	playerData PlayerData
-	itemsUI    PlayerItemsUI
-}
-
-// Throwing an item will show a square to represent the AOE of the throwable.
-// Right now it's a function of Game until I separate the UI more.
-// Not going to try to generalize/abstract this until I figure out how I want to handle this
-// The impression I get now is that this will take a "state machine" since the throwable window closes
-// Once I click out of it
-func (g *Game) IsThrowableItemSelected() bool {
-
-	return g.itemsUI.throwableItemDisplay.ThrowableItemSelected
-
-}
-
-func (g *Game) SetThrowableItemSelected(selected bool) {
-
-	g.itemsUI.throwableItemDisplay.ThrowableItemSelected = selected
-
+	common.TimeSystem
 }
 
 // NewGame creates a new Game Object and initializes the data
@@ -69,9 +46,8 @@ func NewGame() *Game {
 	InitializeECS(g)
 	InitializePlayerData(g)
 
-	g.Turn = PlayerTurn
+	g.Turn = common.PlayerTurn
 	g.TurnCounter = 0
-	g.screenData = graphics.NewScreenData() //todo change all calls to screendata to reference this one
 
 	//g.craftingUI.SetCraftingWindowLocation(g.screenData.screenWidth/2, g.screenData.screenWidth/2)
 
@@ -95,11 +71,11 @@ func (g *Game) Update() error {
 
 	g.TurnCounter++
 
-	if g.Turn == PlayerTurn && g.TurnCounter > 20 {
+	if g.Turn == common.PlayerTurn && g.TurnCounter > 20 {
 
 		PlayerActions(g)
 	}
-	if g.Turn == MonsterTurn {
+	if g.Turn == common.MonsterTurn {
 		MonsterSystems(g)
 	}
 

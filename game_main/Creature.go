@@ -108,6 +108,6 @@ func MonsterSystems(g *Game) {
 
 	}
 
-	g.Turn = PlayerTurn
+	g.Turn = common.PlayerTurn
 
 }

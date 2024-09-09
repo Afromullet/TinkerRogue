@@ -3,8 +3,6 @@ package main
 import (
 	"game_main/common"
 	"game_main/graphics"
-
-	"github.com/bytearena/ecs"
 )
 
 // A TileBasedShape returns indices that correspond to the elements in the gamemaps Tiles slice
@@ -25,16 +23,6 @@ func GetTilePositions(ts graphics.TileBasedShape) []common.Position {
 	return pos
 
 }
-
-func DistanceBetween(e1 *ecs.Entity, e2 *ecs.Entity) int {
-
-	pos1 := common.GetPosition(e1)
-	pos2 := common.GetPosition(e2)
-
-	return pos1.ManhattanDistance(pos2)
-
-}
-
 
 // Todo this can be removed later. Currently using it for debugging
 func ApplyColorToMap(g *Game, indices []int) {

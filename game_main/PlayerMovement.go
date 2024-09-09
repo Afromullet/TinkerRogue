@@ -115,7 +115,7 @@ func PlayerActions(g *Game) {
 	//AttackSystem(g, g.playerData.position, defendingMonsterTestPosition)
 	//AttackSystem(g, defendingMonsterTestPosition, g.playerData.position)
 	if x != 0 || y != 0 || turntaken {
-		g.Turn = GetNextState(g.Turn)
+		g.Turn = common.GetNextState(g.Turn)
 		g.TurnCounter = 0
 	}
 }
