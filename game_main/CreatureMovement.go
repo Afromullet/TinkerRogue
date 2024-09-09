@@ -1,7 +1,7 @@
 package main
 
 import (
-	"game_main/ecshelper"
+	"game_main/common"
 	"game_main/graphics"
 	"game_main/worldmap"
 	"math"
@@ -64,7 +64,7 @@ type DistanceToEntityMovement struct {
 func SimpleWanderAction(g *Game, mover *ecs.Entity) {
 
 	creature := GetCreature(mover)
-	creaturePosition := ecshelper.GetPosition(mover)
+	creaturePosition := common.GetPosition(mover)
 
 	randomPos := GetRandomBetween(0, len(worldmap.ValidPos.Pos))
 	endPos := worldmap.ValidPos.Get(randomPos)
@@ -86,11 +86,11 @@ func NoMoveAction(g *Game, mover *ecs.Entity) {
 func EntityFollowMoveAction(g *Game, mover *ecs.Entity) {
 
 	creature := GetCreature(mover)
-	creaturePosition := ecshelper.GetPosition(mover)
-	goToEnt := ecshelper.GetComponentType[*EntityFollow](mover, entityFollowComp)
+	creaturePosition := common.GetPosition(mover)
+	goToEnt := common.GetComponentType[*EntityFollow](mover, entityFollowComp)
 
 	if goToEnt.target != nil {
-		targetPos := ecshelper.GetComponentType[*ecshelper.Position](goToEnt.target, ecshelper.PositionComponent)
+		targetPos := common.GetComponentType[*common.Position](goToEnt.target, common.PositionComponent)
 
 		creature.Path = BuildPath(g, creaturePosition, targetPos)
 
@@ -103,23 +103,23 @@ func WithinRadiusMoveAction(g *Game, mover *ecs.Entity) {
 
 	gd := graphics.NewScreenData()
 	creature := GetCreature(mover)
-	creaturePosition := ecshelper.GetPosition(mover)
-	withinRange := ecshelper.GetComponentType[*DistanceToEntityMovement](mover, withinRadiusComp)
+	creaturePosition := common.GetPosition(mover)
+	withinRange := common.GetComponentType[*DistanceToEntityMovement](mover, withinRadiusComp)
 
 	if withinRange.target != nil {
-		targetPos := ecshelper.GetComponentType[*ecshelper.Position](withinRange.target, ecshelper.PositionComponent)
+		targetPos := common.GetComponentType[*common.Position](withinRange.target, common.PositionComponent)
 
-		pixelX, pixelY := ecshelper.PixelsFromPosition(targetPos, gd.TileWidth, gd.TileHeight)
+		pixelX, pixelY := common.PixelsFromPosition(targetPos, gd.TileWidth, gd.TileHeight)
 		distance := withinRange.distance
 
-		var path []ecshelper.Position
+		var path []common.Position
 		for distance >= 0 {
 			indices := graphics.NewTileCircleOutline(pixelX, pixelY, distance).GetIndices()
 
 			ind, ok := GetUnblockedTile(&g.gameMap, indices)
 			if ok {
 
-				finalPos := ecshelper.PositionFromIndex(ind, gd.ScreenWidth, gd.ScreenHeight)
+				finalPos := common.PositionFromIndex(ind, gd.ScreenWidth)
 				path = BuildPath(g, creaturePosition, &finalPos)
 				break
 			}
@@ -159,11 +159,11 @@ func GetUnblockedTile(gameMap *worldmap.GameMap, indices []int) (int, bool) {
 func WithinRangeMoveAction(g *Game, mover *ecs.Entity) {
 
 	creature := GetCreature(mover)
-	creaturePosition := ecshelper.GetPosition(mover)
-	within := ecshelper.GetComponentType[*DistanceToEntityMovement](mover, withinRangeComponent)
+	creaturePosition := common.GetPosition(mover)
+	within := common.GetComponentType[*DistanceToEntityMovement](mover, withinRangeComponent)
 
 	if within.target != nil {
-		targetPos := ecshelper.GetComponentType[*ecshelper.Position](within.target, ecshelper.PositionComponent)
+		targetPos := common.GetComponentType[*common.Position](within.target, common.PositionComponent)
 
 		if targetPos.InRange(creaturePosition, within.distance) {
 			creature.Path = creature.Path[:0]
@@ -179,12 +179,12 @@ func WithinRangeMoveAction(g *Game, mover *ecs.Entity) {
 
 // Also needs improvement
 func FleeFromEntityMovementAction(g *Game, mover *ecs.Entity) {
-	fleeMov := ecshelper.GetComponentType[*DistanceToEntityMovement](mover, fleeComp)
+	fleeMov := common.GetComponentType[*DistanceToEntityMovement](mover, fleeComp)
 	creature := GetCreature(mover)
-	creaturePosition := ecshelper.GetPosition(mover)
+	creaturePosition := common.GetPosition(mover)
 
 	if fleeMov.target != nil {
-		targetPosition := ecshelper.GetComponentType[*ecshelper.Position](fleeMov.target, ecshelper.PositionComponent)
+		targetPosition := common.GetComponentType[*common.Position](fleeMov.target, common.PositionComponent)
 
 		fleeVectorX := creaturePosition.X - targetPosition.X
 		fleeVectorY := creaturePosition.Y - targetPosition.Y
@@ -200,7 +200,7 @@ func FleeFromEntityMovementAction(g *Game, mover *ecs.Entity) {
 			fleeTargetX := creaturePosition.X + int(normalizedX*float64(fleeMov.distance)*math.Cos(angleOffset)) - int(normalizedY*float64(fleeMov.distance)*math.Sin(angleOffset))
 			fleeTargetY := creaturePosition.Y + int(normalizedX*float64(fleeMov.distance)*math.Sin(angleOffset)) + int(normalizedY*float64(fleeMov.distance)*math.Cos(angleOffset))
 
-			fleePosition := ecshelper.Position{X: fleeTargetX, Y: fleeTargetY}
+			fleePosition := common.Position{X: fleeTargetX, Y: fleeTargetY}
 
 			if graphics.InBounds(fleeTargetX, fleeTargetY) {
 				targetIndex := graphics.IndexFromXY(fleeTargetX, fleeTargetY)
@@ -236,8 +236,8 @@ func MovementSystem(c *ecs.QueryResult, g *Game) {
 
 		if c.Entity.HasComponent(comp) {
 
-			creature := ecshelper.GetComponentType[*Creature](c.Entity, CreatureComponent)
-			creaturePosition := ecshelper.GetComponentType[*ecshelper.Position](c.Entity, ecshelper.PositionComponent)
+			creature := common.GetComponentType[*Creature](c.Entity, CreatureComponent)
+			creaturePosition := common.GetComponentType[*common.Position](c.Entity, common.PositionComponent)
 			if movementFunc, exists := MovementActions[comp]; exists {
 				movementFunc(g, c.Entity) // Call the function
 				creature.UpdatePosition(g, creaturePosition)

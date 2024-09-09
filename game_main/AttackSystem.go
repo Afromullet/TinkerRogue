@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"game_main/ecshelper"
+	"game_main/common"
 	"game_main/equipment"
 	"game_main/graphics"
 	"log"
@@ -13,7 +13,7 @@ import (
 // Rolls 1d20+AttackBonus and compares it to defenders armorclass. Has to be greater than or equal to the armor class to hit
 // Then the defender does a dodge roll. If the dodge roll is greater than or equal to its dodge value, the attack hits
 // If the attacker hits, subtract the Defenders protection value from the damage
-func MeleeAttackSystem(g *Game, attackerPos *ecshelper.Position, defenderPos *ecshelper.Position) {
+func MeleeAttackSystem(g *Game, attackerPos *common.Position, defenderPos *common.Position) {
 
 	var attacker *ecs.Entity = nil
 	var defender *ecs.Entity = nil
@@ -31,7 +31,7 @@ func MeleeAttackSystem(g *Game, attackerPos *ecshelper.Position, defenderPos *ec
 		attacker = GetCreatureAtPosition(g, attackerPos)
 		defender = g.playerData.PlayerEntity
 		fmt.Println("Monster is attacking")
-		weapon = ecshelper.GetComponentType[*equipment.MeleeWeapon](attacker, equipment.WeaponComponent)
+		weapon = common.GetComponentType[*equipment.MeleeWeapon](attacker, equipment.WeaponComponent)
 
 	}
 
@@ -49,8 +49,8 @@ func MeleeAttackSystem(g *Game, attackerPos *ecshelper.Position, defenderPos *ec
 // Currently Melee and Ranged Weapons are different types without a common interface
 func PerformAttack(g *Game, damage int, attacker *ecs.Entity, defender *ecs.Entity) {
 
-	attAttr := ecshelper.GetAttributes(attacker)
-	defAttr := ecshelper.GetAttributes(defender)
+	attAttr := common.GetAttributes(attacker)
+	defAttr := common.GetAttributes(defender)
 
 	attackRoll := GetDiceRoll(20) + attAttr.AttackBonus
 
@@ -84,7 +84,7 @@ func PerformAttack(g *Game, damage int, attacker *ecs.Entity, defender *ecs.Enti
 
 // A monster doing a ranged attack is simple right now.
 // It ignores the weapons AOE and selects only the player as the target
-func RangedAttackSystem(g *Game, attackerPos *ecshelper.Position) {
+func RangedAttackSystem(g *Game, attackerPos *common.Position) {
 
 	var attacker *ecs.Entity = nil
 
@@ -103,7 +103,7 @@ func RangedAttackSystem(g *Game, attackerPos *ecshelper.Position) {
 
 		fmt.Println("Monster is shooting")
 
-		weapon = ecshelper.GetComponentType[*RangedWeapon](attacker, equipment.RangedWeaponComponent)
+		weapon = common.GetComponentType[*RangedWeapon](attacker, equipment.RangedWeaponComponent)
 		targets = append(targets, g.playerData.PlayerEntity)
 	}
 
@@ -112,7 +112,7 @@ func RangedAttackSystem(g *Game, attackerPos *ecshelper.Position) {
 
 		for _, t := range targets {
 
-			defenderPos := ecshelper.GetPosition(t)
+			defenderPos := common.GetPosition(t)
 			if attackerPos.InRange(defenderPos, weapon.ShootingRange) {
 				fmt.Println("Shooting")
 
@@ -136,8 +136,8 @@ func RangedAttackSystem(g *Game, attackerPos *ecshelper.Position) {
 // TOdo can also just call GetPosition instead of passing defenderPos
 func RemoveDeadEntity(g *Game, defender *ecs.Entity) {
 
-	defenderPos := ecshelper.GetPosition(defender)
-	defAttr := ecshelper.GetAttributes(defender)
+	defenderPos := common.GetPosition(defender)
+	defAttr := common.GetAttributes(defender)
 	if g.playerData.position.IsEqual(defenderPos) {
 		fmt.Println("Player dead")
 	} else if defAttr.CurrentHealth <= 0 {
@@ -151,12 +151,12 @@ func RemoveDeadEntity(g *Game, defender *ecs.Entity) {
 
 }
 
-func GetCreatureAtPosition(g *Game, pos *ecshelper.Position) *ecs.Entity {
+func GetCreatureAtPosition(g *Game, pos *common.Position) *ecs.Entity {
 
 	var e *ecs.Entity = nil
 	for _, c := range g.World.Query(g.WorldTags["monsters"]) {
 
-		curPos := c.Components[ecshelper.PositionComponent].(*ecshelper.Position)
+		curPos := c.Components[common.PositionComponent].(*common.Position)
 
 		if pos.IsEqual(curPos) {
 			e = c.Entity

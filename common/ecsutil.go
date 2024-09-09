@@ -1,4 +1,4 @@
-package ecshelper
+package common
 
 import (
 	"fmt"

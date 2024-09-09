@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"game_main/ecshelper"
+	"game_main/common"
 	"game_main/equipment"
 
 	"github.com/bytearena/ecs"
@@ -39,9 +39,9 @@ func ApproachAndAttackAction(g *Game, c *ecs.QueryResult, target *ecs.Entity) {
 
 	c.Entity.AddComponent(entityFollowComp, &EntityFollow{target: target})
 
-	defenderPos := ecshelper.GetComponentType[*ecshelper.Position](target, ecshelper.PositionComponent)
+	defenderPos := common.GetComponentType[*common.Position](target, common.PositionComponent)
 	if DistanceBetween(c.Entity, target) == 1 {
-		MeleeAttackSystem(g, ecshelper.GetPosition(c.Entity), defenderPos)
+		MeleeAttackSystem(g, common.GetPosition(c.Entity), defenderPos)
 
 	}
 
@@ -52,17 +52,17 @@ func StayDistantRangedAttackAction(g *Game, c *ecs.QueryResult, target *ecs.Enti
 
 	RemoveMovementComponent(c)
 
-	RangedWeapon := ecshelper.GetComponentType[*RangedWeapon](c.Entity, equipment.RangedWeaponComponent)
+	RangedWeapon := common.GetComponentType[*RangedWeapon](c.Entity, equipment.RangedWeaponComponent)
 
 	if RangedWeapon != nil {
 
 		rangeToKeep := RangedWeapon.ShootingRange
 
-		distance := ecshelper.GetPosition(c.Entity).ManhattanDistance(ecshelper.GetPosition(target))
+		distance := common.GetPosition(c.Entity).ManhattanDistance(common.GetPosition(target))
 		fmt.Println("Printing distance. Range On Attack", distance, RangedWeapon.ShootingRange)
 
-		if ecshelper.GetPosition(c.Entity).InRange(ecshelper.GetPosition(target), RangedWeapon.ShootingRange) {
-			RangedAttackSystem(g, ecshelper.GetPosition(c.Entity))
+		if common.GetPosition(c.Entity).InRange(common.GetPosition(target), RangedWeapon.ShootingRange) {
+			RangedAttackSystem(g, common.GetPosition(c.Entity))
 			fmt.Println("In range")
 		} else {
 			c.Entity.AddComponent(withinRadiusComp, &DistanceToEntityMovement{distance: rangeToKeep, target: target})

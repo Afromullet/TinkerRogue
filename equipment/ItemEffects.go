@@ -2,7 +2,7 @@ package equipment
 
 import (
 	"fmt"
-	"game_main/ecshelper"
+	"game_main/common"
 	"game_main/graphics"
 
 	"github.com/bytearena/ecs"
@@ -175,7 +175,7 @@ func (b *Burning) ApplyToCreature(c *ecs.QueryResult) {
 
 	b.MainProps.Duration -= 1
 
-	h := ecshelper.GetComponentType[*ecshelper.Attributes](c.Entity, ecshelper.AttributeComponent)
+	h := common.GetComponentType[*common.Attributes](c.Entity, common.AttributeComponent)
 
 	h.CurrentHealth -= b.Temperature
 
@@ -320,7 +320,7 @@ func InitializeItemComponents(manager *ecs.Manager, tags map[string]ecs.Tag) {
 
 	AllItemEffects = append(AllItemEffects, StickyComponent, BurningComponent, FreezingComponent, ThrowableComponent)
 
-	items := ecs.BuildTag(ItemComponent, ecshelper.PositionComponent) //todo add all the tags
+	items := ecs.BuildTag(ItemComponent, common.PositionComponent) //todo add all the tags
 	tags["items"] = items
 
 }

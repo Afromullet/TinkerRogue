@@ -1,7 +1,7 @@
 package main
 
 import (
-	"game_main/ecshelper"
+	"game_main/common"
 	"game_main/equipment"
 	"game_main/graphics"
 	"game_main/worldmap"
@@ -65,30 +65,30 @@ func CreateTestItems(manager *ecs.Manager, tags map[string]ecs.Tag, gameMap *wor
 
 	throwItem := CreateTestThrowable(&TestSquare, TestFireEffect)
 
-	CreateItem(manager, "SquareThrow"+strconv.Itoa(1), ecshelper.Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
+	CreateItem(manager, "SquareThrow"+strconv.Itoa(1), common.Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
 		throwItem, TestBurning, TestFreezing)
 
 	throwItem = CreateTestThrowable(&TestCircle, TestIceEffect)
 
-	CreateItem(manager, "CircleThrow"+strconv.Itoa(1), ecshelper.Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
+	CreateItem(manager, "CircleThrow"+strconv.Itoa(1), common.Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
 		throwItem, TestBurning, TestFreezing)
 
 	throwItem = CreateTestThrowable(&TestLine, TestCloudEffect)
 
-	CreateItem(manager, "LineThrow"+strconv.Itoa(1), ecshelper.Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
+	CreateItem(manager, "LineThrow"+strconv.Itoa(1), common.Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
 		throwItem, TestBurning, TestFreezing)
 
 	throwItem = CreateTestThrowable(&TestRect, TestElectricEffect)
 
-	CreateItem(manager, "RectThrow"+strconv.Itoa(1), ecshelper.Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
+	CreateItem(manager, "RectThrow"+strconv.Itoa(1), common.Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
 		throwItem, TestBurning, TestFreezing)
 
 	throwItem = CreateTestThrowable(&TestCone, TestStickyEffect)
 
-	CreateItem(manager, "ConeThrow"+strconv.Itoa(1), ecshelper.Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
+	CreateItem(manager, "ConeThrow"+strconv.Itoa(1), common.Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
 		throwItem, TestBurning, TestFreezing)
 
-	//CreateItem(manager, "Item"+strconv.Itoa(2), ecshelper.Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc, NewBurning(1, 1), NewFreezing(1, 2))
+	//CreateItem(manager, "Item"+strconv.Itoa(2), common.Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc, NewBurning(1, 1), NewFreezing(1, 2))
 
 }
 
@@ -107,7 +107,7 @@ func CreateTestMonsters(g *Game, manager *ecs.Manager, gameMap *worldmap.GameMap
 
 	c := CreateMonster(g, manager, gameMap, x, y+1, "assets/creatures/elf.png")
 
-	c.AddComponent(distanceRangeAttack, &DistanceRangedAttack{})
+	//c.AddComponent(distanceRangeAttack, &DistanceRangedAttack{})
 	c.AddComponent(equipment.RangedWeaponComponent, &wep)
 
 	c = CreateMonster(g, manager, gameMap, x+1, y, "assets/creatures/unseen_horror.png")
@@ -140,21 +140,21 @@ func CreateMoreTestMonsters(manager *ecs.Manager, gameMap *worldmap.GameMap) {
 	for _, r := range gameMap.Rooms[1:9] {
 
 		x, y := r.Center()
-		pos := ecshelper.Position{
+		pos := common.Position{
 			X: x,
 			Y: y}
 
 		manager.NewEntity().
 			AddComponent(CreatureComponent, &Creature{
-				Path: make([]ecshelper.Position, 0),
+				Path: make([]common.Position, 0),
 			}).
 			AddComponent(RenderableComponent, &Renderable{
 				Image:   elfImg,
 				Visible: true,
 			}).
-			AddComponent(ecshelper.PositionComponent, &pos).
+			AddComponent(common.PositionComponent, &pos).
 			AddComponent(entityFollowComp, &EntityFollow{}).
-			AddComponent(ecshelper.AttributeComponent, &ecshelper.Attributes{MaxHealth: 5, CurrentHealth: 5}).AddComponent(userMessage, &UserMessage{
+			AddComponent(common.AttributeComponent, &common.Attributes{MaxHealth: 5, CurrentHealth: 5}).AddComponent(userMessage, &UserMessage{
 			AttackMessage:    "",
 			GameStateMessage: "",
 		})
@@ -175,17 +175,17 @@ func CreateMonster(g *Game, manager *ecs.Manager, gameMap *worldmap.GameMap, x, 
 
 	ent := manager.NewEntity().
 		AddComponent(CreatureComponent, &Creature{
-			Path: make([]ecshelper.Position, 0),
+			Path: make([]common.Position, 0),
 		}).
 		AddComponent(RenderableComponent, &Renderable{
 			Image:   elfImg,
 			Visible: true,
 		}).
-		AddComponent(ecshelper.PositionComponent, &ecshelper.Position{
+		AddComponent(common.PositionComponent, &common.Position{
 			X: x,
 			Y: y,
 		}).
-		AddComponent(ecshelper.AttributeComponent, &ecshelper.Attributes{MaxHealth: 5, CurrentHealth: 5}).
+		AddComponent(common.AttributeComponent, &common.Attributes{MaxHealth: 5, CurrentHealth: 5}).
 		AddComponent(userMessage, &UserMessage{
 			AttackMessage:    "",
 			GameStateMessage: "",
@@ -197,7 +197,7 @@ func CreateMonster(g *Game, manager *ecs.Manager, gameMap *worldmap.GameMap, x, 
 		})
 
 	armor := equipment.GetArmor(ent)
-	ecshelper.UpdateAttributes(ent, armor.ArmorClass, armor.Protection, armor.DodgeChance)
+	common.UpdateAttributes(ent, armor.ArmorClass, armor.Protection, armor.DodgeChance)
 
 	return ent
 
@@ -207,7 +207,7 @@ func UpdateContentsForTest(g *Game) {
 
 	for _, item := range g.World.Query(g.WorldTags["items"]) {
 
-		item_pos := item.Components[ecshelper.PositionComponent].(*ecshelper.Position)
+		item_pos := item.Components[common.PositionComponent].(*common.Position)
 
 		g.gameMap.AddEntityToTile(item.Entity, item_pos)
 
@@ -215,11 +215,11 @@ func UpdateContentsForTest(g *Game) {
 
 }
 
-func GetTileInfo(g *Game, pos *ecshelper.Position, player *Player) {
+func GetTileInfo(g *Game, pos *common.Position, player *Player) {
 
 	for _, item := range g.World.Query(g.WorldTags["items"]) {
 
-		item_pos := item.Components[ecshelper.PositionComponent].(*ecshelper.Position)
+		item_pos := item.Components[common.PositionComponent].(*common.Position)
 		log.Print("Item Pos: \n")
 		log.Print(item_pos)
 
@@ -233,7 +233,7 @@ func GetTileInfo(g *Game, pos *ecshelper.Position, player *Player) {
 
 // Create an item with any number of Effects. ItemEffect is a wrapper around an ecs.Component to make
 // Manipulating it easier
-func CreateItem(manager *ecs.Manager, name string, pos ecshelper.Position, imagePath string, effects ...equipment.StatusEffects) *ecs.Entity {
+func CreateItem(manager *ecs.Manager, name string, pos common.Position, imagePath string, effects ...equipment.StatusEffects) *ecs.Entity {
 
 	img, _, err := ebitenutil.NewImageFromFile(imagePath)
 	if err != nil {
@@ -252,11 +252,11 @@ func CreateItem(manager *ecs.Manager, name string, pos ecshelper.Position, image
 			Image:   img,
 			Visible: true,
 		}).
-		AddComponent(ecshelper.PositionComponent, &ecshelper.Position{
+		AddComponent(common.PositionComponent, &common.Position{
 			X: pos.X,
 			Y: pos.Y,
 		}).
-		AddComponent(ecshelper.NameComponent, &ecshelper.Name{
+		AddComponent(common.NameComponent, &common.Name{
 			NameStr: name,
 		}).
 		AddComponent(equipment.ItemComponent, item)
@@ -268,7 +268,7 @@ func CreateItem(manager *ecs.Manager, name string, pos ecshelper.Position, image
 }
 
 // A weapon is an Item with a weapon component
-func CreateWeapon(manager *ecs.Manager, name string, pos ecshelper.Position, imagePath string, MinDamage int, MaxDamage int, properties ...equipment.StatusEffects) *ecs.Entity {
+func CreateWeapon(manager *ecs.Manager, name string, pos common.Position, imagePath string, MinDamage int, MaxDamage int, properties ...equipment.StatusEffects) *ecs.Entity {
 
 	weapon := CreateItem(manager, name, pos, imagePath, properties...)
 
@@ -281,7 +281,7 @@ func CreateWeapon(manager *ecs.Manager, name string, pos ecshelper.Position, ima
 
 }
 
-func CreatedRangedWeapon(manager *ecs.Manager, name string, imagePath string, pos ecshelper.Position, minDamage int, maxDamage int, shootingRange int, TargetArea graphics.TileBasedShape) *ecs.Entity {
+func CreatedRangedWeapon(manager *ecs.Manager, name string, imagePath string, pos common.Position, minDamage int, maxDamage int, shootingRange int, TargetArea graphics.TileBasedShape) *ecs.Entity {
 
 	weapon := CreateItem(manager, name, pos, imagePath)
 	weapon.AddComponent(equipment.RangedWeaponComponent, &RangedWeapon{

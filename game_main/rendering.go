@@ -1,7 +1,7 @@
 package main
 
 import (
-	"game_main/ecshelper"
+	"game_main/common"
 	"game_main/graphics"
 	"game_main/worldmap"
 
@@ -10,7 +10,7 @@ import (
 
 func ProcessRenderables(g *Game, gameMap worldmap.GameMap, screen *ebiten.Image) {
 	for _, result := range g.World.Query(g.WorldTags["renderables"]) {
-		pos := result.Components[ecshelper.PositionComponent].(*ecshelper.Position)
+		pos := result.Components[common.PositionComponent].(*common.Position)
 		img := result.Components[RenderableComponent].(*Renderable).Image
 
 		if gameMap.PlayerVisible.IsVisible(pos.X, pos.Y) {

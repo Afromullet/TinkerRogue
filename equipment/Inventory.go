@@ -2,7 +2,7 @@ package equipment
 
 import (
 	"fmt"
-	"game_main/ecshelper"
+	"game_main/common"
 
 	"github.com/bytearena/ecs"
 )
@@ -22,12 +22,12 @@ type Inventory struct {
 // the Item type stores a "count" which is incremented if the item exists in the inventory
 func (inv *Inventory) AddItem(entityToAdd *ecs.Entity) {
 	// Dereference the slice pointer and use append
-	newItemName := ecshelper.GetComponentType[*ecshelper.Name](entityToAdd, ecshelper.NameComponent).NameStr
+	newItemName := common.GetComponentType[*common.Name](entityToAdd, common.NameComponent).NameStr
 	exists := false
 
 	for _, entity := range inv.InventoryContent {
 
-		itemName := ecshelper.GetComponentType[*ecshelper.Name](entity, ecshelper.NameComponent).NameStr
+		itemName := common.GetComponentType[*common.Name](entity, common.NameComponent).NameStr
 
 		if itemName == newItemName {
 			exists = true
@@ -103,7 +103,7 @@ func (inv *Inventory) GetEquipmentForDisplay(indicesToSelect []int) []any {
 
 	for index, entity := range inv.InventoryContent {
 
-		itemName := ecshelper.GetComponentType[*ecshelper.Name](entity, ecshelper.NameComponent)
+		itemName := common.GetComponentType[*common.Name](entity, common.NameComponent)
 		itemComp := GetItem(entity)
 
 		if entity.HasComponent(ArmorComponent) {
@@ -144,7 +144,7 @@ func (inv *Inventory) GetInventoryForDisplay(indicesToSelect []int, itemProperti
 	if len(indicesToSelect) == 0 {
 		for index, entity := range inv.InventoryContent {
 
-			itemName := ecshelper.GetComponentType[*ecshelper.Name](entity, ecshelper.NameComponent)
+			itemName := common.GetComponentType[*common.Name](entity, common.NameComponent)
 			itemComp := GetItem(entity)
 
 			if itemComp.HasAllEffects(itemPropertiesFilter...) {
@@ -159,7 +159,7 @@ func (inv *Inventory) GetInventoryForDisplay(indicesToSelect []int, itemProperti
 	} else {
 		for _, index := range indicesToSelect {
 			entity := inv.InventoryContent[index]
-			itemName := ecshelper.GetComponentType[*ecshelper.Name](entity, ecshelper.NameComponent)
+			itemName := common.GetComponentType[*common.Name](entity, common.NameComponent)
 			itemComp := GetItem(entity)
 
 			if itemComp.HasAllEffects(itemPropertiesFilter...) {

@@ -1,7 +1,8 @@
 package main
 
 import (
-	"game_main/ecshelper"
+	"fmt"
+	"game_main/common"
 	"game_main/equipment"
 	"game_main/graphics"
 	"log"
@@ -22,7 +23,7 @@ That's what this file is for
 */
 
 // Applies the throwable
-func ApplyThrowable(g *Game, item *equipment.Item, shape graphics.TileBasedShape, throwerPos *ecshelper.Position) {
+func ApplyThrowable(g *Game, item *equipment.Item, shape graphics.TileBasedShape, throwerPos *common.Position) {
 
 	t := item.ItemEffect(equipment.THROWABLE_NAME).(*equipment.Throwable)
 
@@ -39,10 +40,11 @@ func ApplyThrowable(g *Game, item *equipment.Item, shape graphics.TileBasedShape
 	//TODO, this will be slow in case there are a lot of creatures
 	for _, c := range g.World.Query(g.WorldTags["monsters"]) {
 
-		curPos := c.Components[ecshelper.PositionComponent].(*ecshelper.Position)
+		curPos := c.Components[common.PositionComponent].(*common.Position)
 		crea := c.Components[CreatureComponent].(*Creature)
-
+		fmt.Println("Throwing range ", t.ThrowingRange)
 		for _, p := range pos {
+
 			if curPos.IsEqual(&p) && curPos.InRange(throwerPos, t.ThrowingRange) {
 				crea.AddEffects(item.Properties)
 			}
@@ -74,7 +76,7 @@ func DrawThrowableAOE(g *Game) {
 
 	for _, i := range indices {
 
-		pos := ecshelper.PositionFromIndex(i, gd.ScreenWidth, gd.ScreenHeight)
+		pos := common.PositionFromIndex(i, gd.ScreenWidth)
 
 		if pos.InRange(g.playerData.position, throwable.ThrowingRange) {
 			g.gameMap.ApplyColorMatrixToIndex(i, graphics.GreenColorMatrix)
@@ -144,7 +146,7 @@ func DrawRangedAttackAOE(g *Game) {
 
 	for _, i := range indices {
 
-		pos := ecshelper.PositionFromIndex(i, gd.ScreenWidth, gd.ScreenHeight)
+		pos := common.PositionFromIndex(i, gd.ScreenWidth)
 
 		if pos.InRange(g.playerData.position, g.playerData.RangedWeaponMaxDistance) {
 			g.gameMap.ApplyColorMatrixToIndex(i, graphics.GreenColorMatrix)
@@ -166,7 +168,7 @@ func HandlePlayerRangedAttack(g *Game) {
 
 	if g.playerData.isTargeting {
 
-		msg := ecshelper.GetComponentType[*UserMessage](g.playerData.PlayerEntity, userMessage)
+		msg := common.GetComponentType[*UserMessage](g.playerData.PlayerEntity, userMessage)
 
 		msg.GameStateMessage = "Shooting"
 		DrawRangedAttackAOE(g)

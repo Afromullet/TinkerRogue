@@ -1,7 +1,7 @@
 package equipment
 
 import (
-	"game_main/ecshelper"
+	"game_main/common"
 	"math/big"
 
 	cryptorand "crypto/rand"
@@ -37,7 +37,7 @@ var (
 
 // This gets called so often that it might as well be a function
 func GetItem(e *ecs.Entity) *Item {
-	return ecshelper.GetComponentType[*Item](e, ItemComponent)
+	return common.GetComponentType[*Item](e, ItemComponent)
 }
 
 type Armor struct {
@@ -48,7 +48,7 @@ type Armor struct {
 
 // This gets called so often that it might as well be a function
 func GetArmor(e *ecs.Entity) *Armor {
-	return ecshelper.GetComponentType[*Armor](e, ArmorComponent)
+	return common.GetComponentType[*Armor](e, ArmorComponent)
 }
 
 type MeleeWeapon struct {

@@ -1,7 +1,7 @@
 package main
 
 import (
-	"game_main/ecshelper"
+	"game_main/common"
 	"game_main/equipment"
 	"game_main/graphics"
 
@@ -60,7 +60,7 @@ func (r RangedWeapon) GetTargets(g *Game) []*ecs.Entity {
 	//TODO, this will be slow in case there are a lot of creatures
 	for _, c := range g.World.Query(g.WorldTags["monsters"]) {
 
-		curPos := c.Components[ecshelper.PositionComponent].(*ecshelper.Position)
+		curPos := c.Components[common.PositionComponent].(*common.Position)
 
 		for _, p := range pos {
 			if curPos.IsEqual(&p) {
@@ -75,12 +75,12 @@ func (r RangedWeapon) GetTargets(g *Game) []*ecs.Entity {
 }
 
 // Adds the Ranged Weapons VisuaLEffect to the VisualEffectHandler. It will be drawn.
-func (r *RangedWeapon) DisplayShootingVX(attackerPos *ecshelper.Position, defenderPos *ecshelper.Position) {
+func (r *RangedWeapon) DisplayShootingVX(attackerPos *common.Position, defenderPos *common.Position) {
 
 	gd := graphics.NewScreenData()
 
-	attX, attY := ecshelper.PixelsFromPosition(attackerPos, gd.TileWidth, gd.TileHeight)
-	defX, defY := ecshelper.PixelsFromPosition(defenderPos, gd.TileWidth, gd.TileHeight)
+	attX, attY := common.PixelsFromPosition(attackerPos, gd.TileWidth, gd.TileHeight)
+	defX, defY := common.PixelsFromPosition(defenderPos, gd.TileWidth, gd.TileHeight)
 
 	arr := graphics.NewProjectile(attX, attY, defX, defY)
 
@@ -89,7 +89,7 @@ func (r *RangedWeapon) DisplayShootingVX(attackerPos *ecshelper.Position, defend
 
 // This gets called so often that it might as well be a function
 func GetCreature(e *ecs.Entity) *Creature {
-	return ecshelper.GetComponentType[*Creature](e, CreatureComponent)
+	return common.GetComponentType[*Creature](e, CreatureComponent)
 }
 
 // todo Will be refactored. Don't get distracted by this at the moment.
@@ -97,21 +97,21 @@ func GetCreature(e *ecs.Entity) *Creature {
 func InitializeECS(g *Game) {
 	tags := make(map[string]ecs.Tag)
 	manager := ecs.NewManager()
-	ecshelper.PositionComponent = manager.NewComponent()
+	common.PositionComponent = manager.NewComponent()
 	RenderableComponent = manager.NewComponent()
 
-	ecshelper.NameComponent = manager.NewComponent()
+	common.NameComponent = manager.NewComponent()
 
 	equipment.InventoryComponent = manager.NewComponent()
 
-	ecshelper.AttributeComponent = manager.NewComponent()
+	common.AttributeComponent = manager.NewComponent()
 	userMessage = manager.NewComponent()
 
 	equipment.WeaponComponent = manager.NewComponent()
 	equipment.RangedWeaponComponent = manager.NewComponent()
 	equipment.ArmorComponent = manager.NewComponent()
 
-	renderables := ecs.BuildTag(RenderableComponent, ecshelper.PositionComponent)
+	renderables := ecs.BuildTag(RenderableComponent, common.PositionComponent)
 	tags["renderables"] = renderables
 
 	messengers := ecs.BuildTag(userMessage)
@@ -132,13 +132,13 @@ func InitializeCreatureComponents(manager *ecs.Manager, tags map[string]ecs.Tag)
 	approachAndAttack = manager.NewComponent()
 	distanceRangeAttack = manager.NewComponent()
 
-	creatures := ecs.BuildTag(CreatureComponent, ecshelper.PositionComponent, ecshelper.AttributeComponent)
+	creatures := ecs.BuildTag(CreatureComponent, common.PositionComponent, common.AttributeComponent)
 	tags["monsters"] = creatures
 
 }
 
 // Creates a slice of Positions from p to other. Uses AStar to build the path
-func BuildPath(g *Game, start *ecshelper.Position, other *ecshelper.Position) []ecshelper.Position {
+func BuildPath(g *Game, start *common.Position, other *common.Position) []common.Position {
 
 	astar := AStar{}
 	return astar.GetPath(g.gameMap, start, other, false)

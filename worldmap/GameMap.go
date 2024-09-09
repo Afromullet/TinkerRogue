@@ -3,7 +3,7 @@ package worldmap
 import (
 	cryptorand "crypto/rand"
 	"errors"
-	"game_main/ecshelper"
+	"game_main/common"
 	"game_main/graphics"
 	"image/color"
 	"math/big"
@@ -37,15 +37,16 @@ var ValidPos ValidPositions
 // ValidPosition stores the position of anything that a player or creature can move onto
 // Todo determine whether we really need this. Figure otu why you have ValidPOsitions and solve it a better way
 type ValidPositions struct {
-	Pos []ecshelper.Position
+	Pos []common.Position
 }
 
 func (v *ValidPositions) Add(x int, y int) {
 
-	v.Pos = append(v.Pos, ecshelper.Position{x, y})
+	newpos := common.Position{X: x, Y: y}
+	v.Pos = append(v.Pos, newpos)
 }
 
-func (v *ValidPositions) Get(index int) *ecshelper.Position {
+func (v *ValidPositions) Get(index int) *common.Position {
 	return &v.Pos[index]
 }
 
@@ -86,7 +87,7 @@ type GameMap struct {
 func NewGameMap() GameMap {
 	loadTileImages()
 	ValidPos = ValidPositions{
-		Pos: make([]ecshelper.Position, 0),
+		Pos: make([]common.Position, 0),
 	}
 
 	g := GameMap{}
@@ -98,17 +99,17 @@ func NewGameMap() GameMap {
 	return g
 }
 
-func (gameMap *GameMap) Tile(pos *ecshelper.Position) *Tile {
+func (gameMap *GameMap) Tile(pos *common.Position) *Tile {
 
 	index := graphics.IndexFromXY(pos.X, pos.Y)
 	return gameMap.Tiles[index]
 
 }
 
-func (gameMap *GameMap) StartingPosition() ecshelper.Position {
+func (gameMap *GameMap) StartingPosition() common.Position {
 	x, y := gameMap.Rooms[0].Center()
 
-	return ecshelper.Position{
+	return common.Position{
 		X: x,
 		Y: y,
 	}
@@ -116,7 +117,7 @@ func (gameMap *GameMap) StartingPosition() ecshelper.Position {
 
 // The Entity Manager continues to track an entity when it is added to a tile.
 // Since a tile has a position, we use the pos parameter to determine which tile to add it to
-func (gameMap *GameMap) AddEntityToTile(entity *ecs.Entity, pos *ecshelper.Position) {
+func (gameMap *GameMap) AddEntityToTile(entity *ecs.Entity, pos *common.Position) {
 
 	tile := gameMap.Tile(pos)
 
@@ -133,7 +134,7 @@ func (gameMap *GameMap) AddEntityToTile(entity *ecs.Entity, pos *ecshelper.Posit
 // The item is removed from the tile but still exists in the entity manager.
 // Since this removes the item from tile.tileContents, the caller will have to store it somewhere
 // Otherwise, it'll only exist in the entity manager
-func (gameMap *GameMap) RemoveItemFromTile(index int, pos *ecshelper.Position) (*ecs.Entity, error) {
+func (gameMap *GameMap) RemoveItemFromTile(index int, pos *common.Position) (*ecs.Entity, error) {
 
 	tile := gameMap.Tile(pos)
 
@@ -208,7 +209,7 @@ func (gameMap *GameMap) createTiles() []*Tile {
 		for y := 0; y < graphics.LevelHeight; y++ {
 			index = graphics.IndexFromXY(x, y)
 
-			pos := ecshelper.Position{x, y}
+			pos := common.Position{X: x, Y: y}
 			wallImg := wallImgs[GetRandomBetween(0, len(wallImgs)-1)]
 			//tile := NewTile(x*gd.TileWidth, y*gd.TileHeight, pos, true, wall, WALL, false)
 			tile := NewTile(x*gd.TileWidth, y*gd.TileHeight, pos, true, wallImg, WALL, false)

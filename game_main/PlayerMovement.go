@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"game_main/ecshelper"
+	"game_main/common"
 	"game_main/equipment"
 	"game_main/graphics"
 	"log"
@@ -43,7 +43,7 @@ func PlayerActions(g *Game) {
 	if inpututil.IsKeyJustReleased(ebiten.KeyK) {
 
 		armor := equipment.GetArmor(g.playerData.PlayerEntity)
-		ecshelper.UpdateAttributes(g.playerData.PlayerEntity, armor.ArmorClass, armor.Protection, armor.DodgeChance)
+		common.UpdateAttributes(g.playerData.PlayerEntity, armor.ArmorClass, armor.Protection, armor.DodgeChance)
 	}
 
 	if inpututil.IsKeyJustReleased(ebiten.KeyF) {
@@ -82,7 +82,7 @@ func PlayerActions(g *Game) {
 	HandlePlayerThrowable(g)
 	HandlePlayerRangedAttack(g)
 
-	nextPosition := ecshelper.Position{
+	nextPosition := common.Position{
 		X: g.playerData.position.X + x,
 		Y: g.playerData.position.Y + y,
 	}

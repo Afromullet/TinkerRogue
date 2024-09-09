@@ -1,4 +1,4 @@
-package ecshelper
+package common
 
 import (
 	"game_main/graphics"
@@ -46,11 +46,11 @@ func PixelsFromPosition(pos *Position, tileWidth, tileHeight int) (int, int) {
 	return pos.X * tileWidth, pos.Y * tileHeight
 }
 
-func PositionFromIndex(i, screenWidth, screenHeight int) Position {
+func PositionFromIndex(i, screenWidth int) Position {
 
 	return Position{
 		X: i % screenWidth,
-		Y: i / screenHeight,
+		Y: i / screenWidth,
 	}
 
 }

@@ -1,7 +1,7 @@
 package main
 
 import (
-	"game_main/ecshelper"
+	"game_main/common"
 	"game_main/equipment"
 	"game_main/graphics"
 
@@ -12,7 +12,7 @@ import (
 // The only thing applying an Effect Right now are throwable.
 // The Path is updated by a Movement Component
 type Creature struct {
-	Path           []ecshelper.Position
+	Path           []common.Position
 	EffectsToApply []equipment.StatusEffects
 }
 
@@ -60,7 +60,7 @@ func ApplyEffects(c *ecs.QueryResult) {
 // Get the next position on the path and pops the position from the path.
 // Passing currentPosition so we can stand in place when there is no path
 // TODO needs to be improved. This will cause a creature to "teleport" if the path is blocked
-func (c *Creature) UpdatePosition(g *Game, currentPosition *ecshelper.Position) {
+func (c *Creature) UpdatePosition(g *Game, currentPosition *common.Position) {
 
 	p := currentPosition
 
@@ -98,7 +98,7 @@ func MonsterSystems(g *Game) {
 
 		ApplyEffects(c)
 		CreatureAttackSystem(c, g)
-		h := ecshelper.GetComponentType[*ecshelper.Attributes](c.Entity, ecshelper.AttributeComponent)
+		h := common.GetComponentType[*common.Attributes](c.Entity, common.AttributeComponent)
 
 		if h.CurrentHealth <= 0 {
 			g.World.DisposeEntity(c.Entity)

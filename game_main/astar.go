@@ -2,7 +2,7 @@ package main
 
 import (
 	"errors"
-	"game_main/ecshelper"
+	"game_main/common"
 	"game_main/graphics"
 	"game_main/worldmap"
 	"reflect"
@@ -14,7 +14,7 @@ import (
 // f is the total value of the node (g + h)
 type node struct {
 	Parent   *node
-	Position *ecshelper.Position
+	Position *common.Position
 	g        int
 	h        int
 	f        int
@@ -24,7 +24,7 @@ func (n *node) isEqual(other *node) bool {
 	return n.Position.IsEqual(other.Position)
 }
 
-func newNode(parent *node, position *ecshelper.Position) *node {
+func newNode(parent *node, position *common.Position) *node {
 	n := node{}
 	n.Parent = parent
 	n.Position = position
@@ -63,7 +63,7 @@ type AStar struct{}
 
 // GetPath takes a level, the starting position and an ending position (the goal) and returns
 // a list of Positions which is the path between the points.
-func (as AStar) GetPath(gameMap worldmap.GameMap, start *ecshelper.Position, end *ecshelper.Position, ignoreWalls bool) []ecshelper.Position {
+func (as AStar) GetPath(gameMap worldmap.GameMap, start *common.Position, end *common.Position, ignoreWalls bool) []common.Position {
 	gd := graphics.NewScreenData()
 
 	openList := make([]*node, 0)
@@ -103,7 +103,7 @@ func (as AStar) GetPath(gameMap worldmap.GameMap, start *ecshelper.Position, end
 		//Check to see if we reached our end
 		//If so, we are done here
 		if currentNode.isEqual(endNodePlaceholder) {
-			path := make([]ecshelper.Position, 0)
+			path := make([]common.Position, 0)
 			current := currentNode
 			for {
 				if current == nil {
@@ -126,7 +126,7 @@ func (as AStar) GetPath(gameMap worldmap.GameMap, start *ecshelper.Position, end
 			tile := gameMap.Tiles[graphics.IndexFromXY(currentNode.Position.X, currentNode.Position.Y-1)]
 			if ignoreWalls || tile.TileType != worldmap.WALL {
 				//The location is in the map bounds and is walkable
-				upNodePosition := ecshelper.Position{
+				upNodePosition := common.Position{
 					X: currentNode.Position.X,
 					Y: currentNode.Position.Y - 1,
 				}
@@ -140,7 +140,7 @@ func (as AStar) GetPath(gameMap worldmap.GameMap, start *ecshelper.Position, end
 			tile := gameMap.Tiles[graphics.IndexFromXY(currentNode.Position.X, currentNode.Position.Y+1)]
 			if ignoreWalls || tile.TileType != worldmap.WALL {
 				//The location is in the map bounds and is walkable
-				downNodePosition := ecshelper.Position{
+				downNodePosition := common.Position{
 					X: currentNode.Position.X,
 					Y: currentNode.Position.Y + 1,
 				}
@@ -154,7 +154,7 @@ func (as AStar) GetPath(gameMap worldmap.GameMap, start *ecshelper.Position, end
 			tile := gameMap.Tiles[graphics.IndexFromXY(currentNode.Position.X-1, currentNode.Position.Y)]
 			if ignoreWalls || tile.TileType != worldmap.WALL {
 				//The location is in the map bounds and is walkable
-				leftNodePosition := ecshelper.Position{
+				leftNodePosition := common.Position{
 					X: currentNode.Position.X - 1,
 					Y: currentNode.Position.Y,
 				}
@@ -168,7 +168,7 @@ func (as AStar) GetPath(gameMap worldmap.GameMap, start *ecshelper.Position, end
 			tile := gameMap.Tiles[graphics.IndexFromXY(currentNode.Position.X+1, currentNode.Position.Y)]
 			if ignoreWalls && tile.TileType != worldmap.WALL {
 				//The location is in the map bounds and is walkable
-				rightNodePosition := ecshelper.Position{
+				rightNodePosition := common.Position{
 					X: currentNode.Position.X + 1,
 					Y: currentNode.Position.Y,
 				}

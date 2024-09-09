@@ -10,7 +10,6 @@ import (
 
 var floorImgs = make([]*ebiten.Image, 0)
 var wallImgs = make([]*ebiten.Image, 0)
-var decorationImgs = make([]*ebiten.Image, 0)
 
 func loadTileImages() {
 

@@ -2,7 +2,7 @@ package main
 
 import (
 	"crypto/rand"
-	"game_main/ecshelper"
+	"game_main/common"
 	"game_main/graphics"
 	"math/big"
 
@@ -11,16 +11,16 @@ import (
 
 // A TileBasedShape returns indices that correspond to the elements in the gamemaps Tiles slice
 // This returns the X,Y positions since we handle player and creature location through Position
-func GetTilePositions(ts graphics.TileBasedShape) []ecshelper.Position {
+func GetTilePositions(ts graphics.TileBasedShape) []common.Position {
 
 	gd := graphics.NewScreenData()
 	indices := ts.GetIndices()
 
-	pos := make([]ecshelper.Position, len(indices))
+	pos := make([]common.Position, len(indices))
 
 	for i, inds := range indices {
 
-		pos[i] = ecshelper.PositionFromIndex(inds, gd.ScreenWidth, gd.ScreenHeight)
+		pos[i] = common.PositionFromIndex(inds, gd.ScreenWidth)
 
 	}
 
@@ -30,8 +30,8 @@ func GetTilePositions(ts graphics.TileBasedShape) []ecshelper.Position {
 
 func DistanceBetween(e1 *ecs.Entity, e2 *ecs.Entity) int {
 
-	pos1 := ecshelper.GetPosition(e1)
-	pos2 := ecshelper.GetPosition(e2)
+	pos1 := common.GetPosition(e1)
+	pos2 := common.GetPosition(e2)
 
 	return pos1.ManhattanDistance(pos2)
 
