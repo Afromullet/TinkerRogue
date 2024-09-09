@@ -1,6 +1,7 @@
 package main
 
 import (
+	"game_main/avatar"
 	"game_main/common"
 	"game_main/equipment"
 	"game_main/graphics"
@@ -28,10 +29,10 @@ var TestElectricEffect = graphics.NewElectricityEffect(0, 0, 5)
 var TestStickyEffect = graphics.NewStickyGroundEffect(0, 0, 5)
 
 func SetupPlayerForTesting(g *Game) {
-	w := CreateWeapon(g.World, "Weapon 1", *g.playerData.position, "assets/items/sword.png", 5, 10)
+	w := CreateWeapon(g.World, "Weapon 1", *g.playerData.Pos, "assets/items/sword.png", 5, 10)
 
 	wepArea := graphics.NewTileRectangle(0, 0, 3, 3)
-	r := CreatedRangedWeapon(g.World, "Ranged Weapon 1", "assets/items/sword.png", *g.playerData.position, 5, 10, 3, &wepArea)
+	r := CreatedRangedWeapon(g.World, "Ranged Weapon 1", "assets/items/sword.png", *g.playerData.Pos, 5, 10, 3, &wepArea)
 
 	g.playerData.PlayerWeapon = w
 	g.playerData.PlayerRangedWeapon = r
@@ -155,11 +156,8 @@ func CreateMoreTestMonsters(manager *ecs.Manager, gameMap *worldmap.GameMap) {
 				Visible: true,
 			}).
 			AddComponent(common.PositionComponent, &pos).
-			AddComponent(entityFollowComp, &EntityFollow{}).
-			AddComponent(common.AttributeComponent, &common.Attributes{MaxHealth: 5, CurrentHealth: 5}).AddComponent(userMessage, &UserMessage{
-			AttackMessage:    "",
-			GameStateMessage: "",
-		})
+			AddComponent(entityFollowComp, &EntityFollow{})
+
 	}
 
 }
@@ -188,10 +186,6 @@ func CreateMonster(g *Game, manager *ecs.Manager, gameMap *worldmap.GameMap, x, 
 			Y: y,
 		}).
 		AddComponent(common.AttributeComponent, &common.Attributes{MaxHealth: 5, CurrentHealth: 5}).
-		AddComponent(userMessage, &UserMessage{
-			AttackMessage:    "",
-			GameStateMessage: "",
-		}).
 		AddComponent(equipment.ArmorComponent, &testArmor).
 		AddComponent(equipment.WeaponComponent, &equipment.MeleeWeapon{
 			MinDamage: 3,
@@ -217,7 +211,7 @@ func UpdateContentsForTest(g *Game) {
 
 }
 
-func GetTileInfo(g *Game, pos *common.Position, player *Player) {
+func GetTileInfo(g *Game, pos *common.Position, player *avatar.Player) {
 
 	for _, item := range g.World.Query(g.WorldTags["items"]) {
 

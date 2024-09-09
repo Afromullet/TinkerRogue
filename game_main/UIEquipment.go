@@ -1,6 +1,7 @@
 package main
 
 import (
+	"game_main/avatar"
 	"game_main/equipment"
 	"image/color"
 
@@ -19,7 +20,7 @@ type EquipmentItemDisplay struct {
 // Selects an item and adds it to the ItemsSelectedContainer container and ItemsSelectedPropContainer
 // ItemSeleced container tells us which items we're crafting with
 // ItemsSelectedPropContainer tells which properties the items have
-func (equipmentDisplay *EquipmentItemDisplay) CreateInventoryList(playerData *PlayerData, propFilters ...equipment.StatusEffects) {
+func (equipmentDisplay *EquipmentItemDisplay) CreateInventoryList(playerData *avatar.PlayerData, propFilters ...equipment.StatusEffects) {
 
 	inv := playerData.GetPlayerInventory().GetEquipmentForDisplay([]int{})
 	equipmentDisplay.itemDisplay.InventoryDisplaylist = equipmentDisplay.itemDisplay.GetInventoryListWidget(inv)
@@ -34,7 +35,7 @@ func (equipmentDisplay *EquipmentItemDisplay) CreateInventoryList(playerData *Pl
 
 }
 
-func (equipmentDisplay *EquipmentItemDisplay) DisplayInventory(pl *PlayerData) {
+func (equipmentDisplay *EquipmentItemDisplay) DisplayInventory(pl *avatar.PlayerData) {
 
 	equipmentDisplay.CreateInventoryList(pl)
 

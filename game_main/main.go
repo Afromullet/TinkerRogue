@@ -16,6 +16,7 @@ import (
 )*/
 
 import (
+	"game_main/avatar"
 	"game_main/common"
 	"game_main/graphics"
 	"game_main/worldmap"
@@ -32,7 +33,7 @@ import (
 type Game struct {
 	common.EntityManager
 	PlayerUI
-	playerData PlayerData
+	playerData avatar.PlayerData
 	gameMap    worldmap.GameMap
 
 	common.TimeSystem
@@ -43,9 +44,9 @@ type Game struct {
 func NewGame() *Game {
 	g := &Game{}
 	g.gameMap = worldmap.NewGameMap()
-	g.playerData = PlayerData{}
+	g.playerData = avatar.PlayerData{}
 	InitializeECS(&g.EntityManager)
-	InitializePlayerData(&g.EntityManager, &g.playerData, &g.gameMap, g)
+	avatar.InitializePlayerData(&g.EntityManager, &g.playerData, &g.gameMap)
 
 	g.Turn = common.PlayerTurn
 	g.TurnCounter = 0

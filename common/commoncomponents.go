@@ -15,6 +15,7 @@ var (
 	NameComponent       *ecs.Component
 	AttributeComponent  *ecs.Component
 	RenderableComponent *ecs.Component //Putting this here for now rather than in graphics
+	UsrMsg              *ecs.Component //I can probably remove this later
 )
 
 type Position struct {
@@ -112,4 +113,9 @@ type Name struct {
 type Renderable struct {
 	Image   *ebiten.Image
 	Visible bool
+}
+
+type UserMessage struct {
+	AttackMessage    string
+	GameStateMessage string
 }

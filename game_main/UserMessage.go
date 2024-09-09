@@ -1,6 +1,7 @@
 package main
 
 import (
+	"game_main/common"
 	"game_main/graphics"
 	"image/color"
 	"log"
@@ -53,7 +54,7 @@ func ProcessUserLog(g *Game, screen *ebiten.Image) {
 	anyMessages := false
 
 	for _, m := range g.World.Query(g.WorldTags["messengers"]) {
-		messages := m.Components[userMessage].(*UserMessage)
+		messages := m.Components[common.UsrMsg].(*common.UserMessage)
 		if messages.AttackMessage != "" {
 			tmpMessages = append(tmpMessages, messages.AttackMessage)
 			anyMessages = true
@@ -62,7 +63,7 @@ func ProcessUserLog(g *Game, screen *ebiten.Image) {
 		}
 	}
 	for _, m := range g.World.Query(g.WorldTags["messengers"]) {
-		messages := m.Components[userMessage].(*UserMessage)
+		messages := m.Components[common.UsrMsg].(*common.UserMessage)
 
 		if messages.GameStateMessage != "" {
 			tmpMessages = append(tmpMessages, messages.GameStateMessage)

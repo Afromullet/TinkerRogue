@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"game_main/avatar"
 	"game_main/common"
 	"game_main/equipment"
 	"game_main/graphics"
@@ -15,7 +16,7 @@ import (
 // Rolls 1d20+AttackBonus and compares it to defenders armorclass. Has to be greater than or equal to the armor class to hit
 // Then the defender does a dodge roll. If the dodge roll is greater than or equal to its dodge value, the attack hits
 // If the attacker hits, subtract the Defenders protection value from the damage
-func MeleeAttackSystem(ecsmanager *common.EntityManager, pl *PlayerData, gm *worldmap.GameMap, attackerPos *common.Position, defenderPos *common.Position) {
+func MeleeAttackSystem(ecsmanager *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap, attackerPos *common.Position, defenderPos *common.Position) {
 
 	var attacker *ecs.Entity = nil
 	var defender *ecs.Entity = nil
@@ -23,7 +24,7 @@ func MeleeAttackSystem(ecsmanager *common.EntityManager, pl *PlayerData, gm *wor
 	//var weaponComponent any
 	var weapon *equipment.MeleeWeapon = nil
 
-	if pl.position.IsEqual(attackerPos) {
+	if pl.Pos.IsEqual(attackerPos) {
 		fmt.Println("Player is attacking")
 		attacker = pl.PlayerEntity
 		defender = GetCreatureAtPosition(ecsmanager, defenderPos)
@@ -49,7 +50,7 @@ func MeleeAttackSystem(ecsmanager *common.EntityManager, pl *PlayerData, gm *wor
 
 // Passing the damage rather than the weapon so that Melee and Ranged Attacks can use the same function
 // Currently Melee and Ranged Weapons are different types without a common interface
-func PerformAttack(ecsmanagr *common.EntityManager, pl *PlayerData, gm *worldmap.GameMap, damage int, attacker *ecs.Entity, defender *ecs.Entity) {
+func PerformAttack(ecsmanagr *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap, damage int, attacker *ecs.Entity, defender *ecs.Entity) {
 
 	attAttr := common.GetAttributes(attacker)
 	defAttr := common.GetAttributes(defender)
@@ -85,7 +86,7 @@ func PerformAttack(ecsmanagr *common.EntityManager, pl *PlayerData, gm *worldmap
 
 // A monster doing a ranged attack is simple right now.
 // It ignores the weapons AOE and selects only the player as the target
-func RangedAttackSystem(ecsmanager *common.EntityManager, pl *PlayerData, gm *worldmap.GameMap, attackerPos *common.Position) {
+func RangedAttackSystem(ecsmanager *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap, attackerPos *common.Position) {
 
 	var attacker *ecs.Entity = nil
 
@@ -93,7 +94,7 @@ func RangedAttackSystem(ecsmanager *common.EntityManager, pl *PlayerData, gm *wo
 
 	var targets []*ecs.Entity
 
-	if pl.position.IsEqual(attackerPos) {
+	if pl.Pos.IsEqual(attackerPos) {
 		attacker = pl.PlayerEntity
 		weapon = pl.GetPlayerRangedWeapon()
 		if weapon != nil {
@@ -135,11 +136,11 @@ func RangedAttackSystem(ecsmanager *common.EntityManager, pl *PlayerData, gm *wo
 // Todo need to handle player death differently
 // Todo if it attacks the player, it removes the attacking creature
 // TOdo can also just call GetPosition instead of passing defenderPos
-func RemoveDeadEntity(ecsmnager *common.EntityManager, pl *PlayerData, gm *worldmap.GameMap, defender *ecs.Entity) {
+func RemoveDeadEntity(ecsmnager *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap, defender *ecs.Entity) {
 
 	defenderPos := common.GetPosition(defender)
 	defAttr := common.GetAttributes(defender)
-	if pl.position.IsEqual(defenderPos) {
+	if pl.Pos.IsEqual(defenderPos) {
 		fmt.Println("Player dead")
 	} else if defAttr.CurrentHealth <= 0 {
 		//Todo removing an entity is really closely coupled to teh map right now.

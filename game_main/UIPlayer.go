@@ -1,9 +1,13 @@
 package main
 
-import "github.com/ebitenui/ebitenui"
+import (
+	"game_main/avatar"
+
+	"github.com/ebitenui/ebitenui"
+)
 
 type PlayerUI struct {
-	playerData          PlayerData
+	playerData          avatar.PlayerData
 	itemsUI             PlayerItemsUI
 	mainPlayerInterface *ebitenui.UI
 }

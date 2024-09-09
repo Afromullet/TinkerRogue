@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"game_main/avatar"
 	"game_main/common"
 	"game_main/equipment"
 	"game_main/graphics"
@@ -54,7 +55,7 @@ func ApplyThrowable(ecsmanager *common.EntityManager, item *equipment.Item, shap
 	}
 }
 
-func DrawThrowableAOE(pl *PlayerData, gm *worldmap.GameMap) {
+func DrawThrowableAOE(pl *avatar.PlayerData, gm *worldmap.GameMap) {
 
 	gd := graphics.NewScreenData()
 	cursorX, cursorY := ebiten.CursorPosition()
@@ -79,7 +80,7 @@ func DrawThrowableAOE(pl *PlayerData, gm *worldmap.GameMap) {
 
 		pos := common.PositionFromIndex(i, gd.ScreenWidth)
 
-		if pos.InRange(pl.position, throwable.ThrowingRange) {
+		if pos.InRange(pl.Pos, throwable.ThrowingRange) {
 			gm.ApplyColorMatrixToIndex(i, graphics.GreenColorMatrix)
 
 		} else {
@@ -96,7 +97,7 @@ func DrawThrowableAOE(pl *PlayerData, gm *worldmap.GameMap) {
 }
 
 // todo remove game type from function params
-func HandlePlayerThrowable(ecsmanager *common.EntityManager, pl *PlayerData, gm *worldmap.GameMap, playerUI *PlayerUI) {
+func HandlePlayerThrowable(ecsmanager *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap, playerUI *PlayerUI) {
 
 	if playerUI.IsThrowableItemSelected() {
 
@@ -109,9 +110,9 @@ func HandlePlayerThrowable(ecsmanager *common.EntityManager, pl *PlayerData, gm 
 
 			log.Println("Throwing item")
 
-			pl.ThrowPreparedItem(pl.inventory)
+			pl.ThrowPreparedItem(pl.Inv)
 
-			ApplyThrowable(ecsmanager, pl.ThrowableItem, pl.ThrowingAOEShape, pl.position)
+			ApplyThrowable(ecsmanager, pl.ThrowableItem, pl.ThrowingAOEShape, pl.Pos)
 
 		}
 
@@ -127,7 +128,7 @@ func HandlePlayerThrowable(ecsmanager *common.EntityManager, pl *PlayerData, gm 
 
 }
 
-func DrawRangedAttackAOE(pl *PlayerData, gm *worldmap.GameMap) {
+func DrawRangedAttackAOE(pl *avatar.PlayerData, gm *worldmap.GameMap) {
 
 	gd := graphics.NewScreenData()
 	cursorX, cursorY := ebiten.CursorPosition()
@@ -150,7 +151,7 @@ func DrawRangedAttackAOE(pl *PlayerData, gm *worldmap.GameMap) {
 
 		pos := common.PositionFromIndex(i, gd.ScreenWidth)
 
-		if pos.InRange(pl.position, pl.RangedWeaponMaxDistance) {
+		if pos.InRange(pl.Pos, pl.RangedWeaponMaxDistance) {
 			gm.ApplyColorMatrixToIndex(i, graphics.GreenColorMatrix)
 
 		} else {
@@ -166,11 +167,11 @@ func DrawRangedAttackAOE(pl *PlayerData, gm *worldmap.GameMap) {
 
 }
 
-func HandlePlayerRangedAttack(ecsmanager *common.EntityManager, pl *PlayerData, gm *worldmap.GameMap) {
+func HandlePlayerRangedAttack(ecsmanager *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap) {
 
-	if pl.isTargeting {
+	if pl.Targeting {
 
-		msg := common.GetComponentType[*UserMessage](pl.PlayerEntity, userMessage)
+		msg := common.GetComponentType[*common.UserMessage](pl.PlayerEntity, common.UsrMsg)
 
 		msg.GameStateMessage = "Shooting"
 		DrawRangedAttackAOE(pl, gm)
@@ -178,7 +179,7 @@ func HandlePlayerRangedAttack(ecsmanager *common.EntityManager, pl *PlayerData, 
 		//Cancel throwing
 		if inpututil.IsMouseButtonJustPressed(ebiten.MouseButton2) {
 
-			pl.isTargeting = false
+			pl.Targeting = false
 			gm.ApplyColorMatrix(PrevRangedAttInds, graphics.NewEmptyMatrix())
 			//log.Println("Removing throwable")
 
@@ -186,7 +187,7 @@ func HandlePlayerRangedAttack(ecsmanager *common.EntityManager, pl *PlayerData, 
 
 		if inpututil.IsMouseButtonJustPressed(ebiten.MouseButton1) {
 
-			RangedAttackSystem(ecsmanager, pl, gm, pl.position)
+			RangedAttackSystem(ecsmanager, pl, gm, pl.Pos)
 
 		}
 

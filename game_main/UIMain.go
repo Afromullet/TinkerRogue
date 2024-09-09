@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"game_main/avatar"
 	"game_main/equipment"
 	"image"
 	"image/color"
@@ -20,8 +21,8 @@ var buttonImage, _ = loadButtonImage()
 It's painful to add a new container to display items in. Here are the steps:
 
 1) Create a struct containing an ItemDisplay. This struct must also contain at least one container to hold the items to display
-2) In that struct, create CreateInventoryList(playerData *PlayerData, propFilters ...StatusEffects) func. The propFilters are optional for filtering by a Status Effect
-3) Create the DisplayInventory(pl *PlayerData) function. This calls itemDisplay.CreateInventoryList(...) that was implemented in step 2
+2) In that struct, create CreateInventoryList(playerData *avatar.PlayerData, propFilters ...StatusEffects) func. The propFilters are optional for filtering by a Status Effect
+3) Create the DisplayInventory(pl *avatar.PlayerData) function. This calls itemDisplay.CreateInventoryList(...) that was implemented in step 2
 4) Create a  CreateContainers() function which creates all of the containers in the Item Display
 5) Add the type to PlayerItemsUI
 6) Create an CreateOpenxxxgButton function that creates the button and adds the window to the ItemDisplay for displaying the items
@@ -32,9 +33,9 @@ It's painful to add a new container to display items in. Here are the steps:
 // Every window that displays the inventory to teh user will be a struct that contains ItemDisplay
 // And implements the ItemDisplayer interface
 type ItemDisplayer interface {
-	CreateContainers()                                                                  //For creating the containers
-	CreateInventoryList(playerData *PlayerData, propFilters ...equipment.StatusEffects) //For getting the inventory from the player and adding on click event handlers
-	DisplayInventory(pl *PlayerData)                                                    //Really just there for calling CreateInventoryList with ItemProperty filters for the specific kind of window
+	CreateContainers()                                                                         //For creating the containers
+	CreateInventoryList(playerData *avatar.PlayerData, propFilters ...equipment.StatusEffects) //For getting the inventory from the player and adding on click event handlers
+	DisplayInventory(pl *avatar.PlayerData)                                                    //Really just there for calling CreateInventoryList with ItemProperty filters for the specific kind of window
 }
 
 // Anything that displays the inventory will have to use this struct through composition.
@@ -165,7 +166,7 @@ type PlayerItemsUI struct {
 }
 
 // Creates the main UI that allows the player to view the inventory, craft, and see equipment
-func CreatePlayerUI(playerUI *PlayerUI, pl *PlayerData) *ebitenui.UI {
+func CreatePlayerUI(playerUI *PlayerUI, pl *avatar.PlayerData) *ebitenui.UI {
 
 	ui := ebitenui.UI{}
 
@@ -214,7 +215,7 @@ func CreatePlayerUI(playerUI *PlayerUI, pl *PlayerData) *ebitenui.UI {
 }
 
 // Creating the button that opens the crafting menu.
-func CreateOpenCraftingButton(playerUI *PlayerUI, pl *PlayerData, ui *ebitenui.UI) *widget.Button {
+func CreateOpenCraftingButton(playerUI *PlayerUI, pl *avatar.PlayerData, ui *ebitenui.UI) *widget.Button {
 	// construct a button
 	button := widget.NewButton(
 		// set general widget options
@@ -258,7 +259,7 @@ func CreateOpenCraftingButton(playerUI *PlayerUI, pl *PlayerData, ui *ebitenui.U
 
 // Creating the button that opens the crafting menu. Other buttons will be added
 // Doing it inside a function makes the code easier to follow
-func CreateOpenThrowablesButton(playerUI *PlayerUI, pl *PlayerData, ui *ebitenui.UI) *widget.Button {
+func CreateOpenThrowablesButton(playerUI *PlayerUI, pl *avatar.PlayerData, ui *ebitenui.UI) *widget.Button {
 	// construct a button
 	button := widget.NewButton(
 		// set general widget options
@@ -302,7 +303,7 @@ func CreateOpenThrowablesButton(playerUI *PlayerUI, pl *PlayerData, ui *ebitenui
 
 // Creating the button that opens the crafting menu. Other buttons will be added
 // Doing it inside a function makes the code easier to follow
-func CreateOpenEquipmentButton(playerUI *PlayerUI, pl *PlayerData, ui *ebitenui.UI) *widget.Button {
+func CreateOpenEquipmentButton(playerUI *PlayerUI, pl *avatar.PlayerData, ui *ebitenui.UI) *widget.Button {
 	// construct a button
 	button := widget.NewButton(
 		// set general widget options

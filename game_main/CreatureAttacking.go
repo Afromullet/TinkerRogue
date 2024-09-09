@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"game_main/avatar"
 	"game_main/common"
 	"game_main/equipment"
 	"game_main/worldmap"
@@ -33,7 +34,7 @@ type DistanceRangedAttack struct {
 
 // Build a path to the player and attack once within range
 
-func ApproachAndAttackAction(ecsmanger *common.EntityManager, pl *PlayerData, gm *worldmap.GameMap, c *ecs.QueryResult, target *ecs.Entity) {
+func ApproachAndAttackAction(ecsmanger *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap, c *ecs.QueryResult, target *ecs.Entity) {
 
 	// Clear any existing movement if the creature attacks so there's no conflict
 	RemoveMovementComponent(c)
@@ -49,7 +50,7 @@ func ApproachAndAttackAction(ecsmanger *common.EntityManager, pl *PlayerData, gm
 }
 
 // Stay within Ranged Attack Distance with the movement
-func StayDistantRangedAttackAction(ecsmanger *common.EntityManager, pl *PlayerData, gm *worldmap.GameMap, c *ecs.QueryResult, target *ecs.Entity) {
+func StayDistantRangedAttackAction(ecsmanger *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap, c *ecs.QueryResult, target *ecs.Entity) {
 
 	RemoveMovementComponent(c)
 
@@ -78,7 +79,7 @@ func StayDistantRangedAttackAction(ecsmanger *common.EntityManager, pl *PlayerDa
 
 // Gets called in the MonsterSystems loop
 // Todo change logic to allow any entity to be targetted rather than just the player
-func CreatureAttackSystem(ecsmanger *common.EntityManager, pl *PlayerData, gm *worldmap.GameMap, c *ecs.QueryResult) {
+func CreatureAttackSystem(ecsmanger *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap, c *ecs.QueryResult) {
 
 	var ok bool
 

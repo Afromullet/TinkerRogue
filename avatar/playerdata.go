@@ -1,4 +1,4 @@
-package main
+package avatar
 
 import (
 	"game_main/common"
@@ -24,7 +24,7 @@ type PlayerEquipment struct {
 }
 
 func (pl *PlayerEquipment) PrepareRangedAttack() {
-	wep := common.GetComponentType[*RangedWeapon](pl.PlayerRangedWeapon, equipment.RangedWeaponComponent)
+	wep := common.GetComponentType[*equipment.RangedWeapon](pl.PlayerRangedWeapon, equipment.RangedWeaponComponent)
 	pl.RangedWeaponAOEShape = wep.TargetArea
 	pl.RangedWeaponMaxDistance = wep.ShootingRange
 
@@ -69,9 +69,9 @@ func (pl *PlayerEquipment) GetPlayerWeapon() *equipment.MeleeWeapon {
 }
 
 // Helper function to make it less tedious to get the inventory
-func (pl *PlayerData) GetPlayerRangedWeapon() *RangedWeapon {
+func (pl *PlayerData) GetPlayerRangedWeapon() *equipment.RangedWeapon {
 
-	weapon := common.GetComponentType[*RangedWeapon](pl.PlayerRangedWeapon, equipment.RangedWeaponComponent)
+	weapon := common.GetComponentType[*equipment.RangedWeapon](pl.PlayerRangedWeapon, equipment.RangedWeaponComponent)
 
 	return weapon
 }
@@ -86,10 +86,10 @@ type PlayerData struct {
 
 	PlayerEntity *ecs.Entity
 
-	position  *common.Position
-	inventory *equipment.Inventory
+	Pos *common.Position
+	Inv *equipment.Inventory
 
-	isTargeting bool
+	Targeting bool
 }
 
 func NewPlayerData() PlayerData {
@@ -105,7 +105,7 @@ func (pl *PlayerData) GetPlayerInventory() *equipment.Inventory {
 }
 
 // todo remove game after handling player data init
-func InitializePlayerData(ecsmanager *common.EntityManager, pl *PlayerData, gm *worldmap.GameMap, g *Game) {
+func InitializePlayerData(ecsmanager *common.EntityManager, pl *PlayerData, gm *worldmap.GameMap) {
 
 	player = ecsmanager.World.NewComponent()
 
@@ -123,7 +123,7 @@ func InitializePlayerData(ecsmanager *common.EntityManager, pl *PlayerData, gm *
 
 	playerEntity := ecsmanager.World.NewEntity().
 		AddComponent(player, &Player{}).
-		AddComponent(RenderableComponent, &Renderable{
+		AddComponent(common.RenderableComponent, &common.Renderable{
 			Image:   playerImg,
 			Visible: true,
 		}).
@@ -135,7 +135,7 @@ func InitializePlayerData(ecsmanager *common.EntityManager, pl *PlayerData, gm *
 			InventoryContent: make([]*ecs.Entity, 0),
 		}).
 		AddComponent(common.AttributeComponent, &attr).
-		AddComponent(userMessage, &UserMessage{
+		AddComponent(common.UsrMsg, &common.UserMessage{
 			AttackMessage:    "",
 			GameStateMessage: "",
 		}).AddComponent(equipment.ArmorComponent, &armor)
@@ -143,7 +143,7 @@ func InitializePlayerData(ecsmanager *common.EntityManager, pl *PlayerData, gm *
 	players := ecs.BuildTag(player, common.PositionComponent, equipment.InventoryComponent)
 	ecsmanager.WorldTags["players"] = players
 
-	g.playerData = PlayerData{}
+	//g.playerData = PlayerData{}
 
 	pl.PlayerEntity = playerEntity
 
@@ -155,7 +155,7 @@ func InitializePlayerData(ecsmanager *common.EntityManager, pl *PlayerData, gm *
 
 	inventory := common.GetComponentType[*equipment.Inventory](pl.PlayerEntity, equipment.InventoryComponent)
 
-	pl.position = startPos
-	pl.inventory = inventory
+	pl.Pos = startPos
+	pl.Inv = inventory
 
 }

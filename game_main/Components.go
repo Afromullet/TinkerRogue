@@ -13,17 +13,10 @@ import (
 
 var (
 	CreatureComponent *ecs.Component
-
-	userMessage *ecs.Component
 )
 
 // The ECS library returns pointers to the struct when querying it for components, so the Position methods take a pointer as input
 // Other than that, there's no reason for using pointers for the functions below.
-
-type UserMessage struct {
-	AttackMessage    string
-	GameStateMessage string
-}
 
 // This gets called so often that it might as well be a function
 func GetCreature(e *ecs.Entity) *Creature {
@@ -43,7 +36,7 @@ func InitializeECS(ecsmanager *common.EntityManager) {
 	equipment.InventoryComponent = manager.NewComponent()
 
 	common.AttributeComponent = manager.NewComponent()
-	userMessage = manager.NewComponent()
+	common.UsrMsg = manager.NewComponent()
 
 	equipment.WeaponComponent = manager.NewComponent()
 	equipment.RangedWeaponComponent = manager.NewComponent()
@@ -52,7 +45,7 @@ func InitializeECS(ecsmanager *common.EntityManager) {
 	renderables := ecs.BuildTag(common.RenderableComponent, common.PositionComponent)
 	tags["renderables"] = renderables
 
-	messengers := ecs.BuildTag(userMessage)
+	messengers := ecs.BuildTag(common.UsrMsg)
 	tags["messengers"] = messengers
 
 	InitializeMovementComponents(manager, tags)

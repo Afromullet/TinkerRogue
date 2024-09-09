@@ -1,6 +1,7 @@
 package main
 
 import (
+	"game_main/avatar"
 	"game_main/equipment"
 	"image/color"
 
@@ -23,7 +24,7 @@ type CraftingItemDisplay struct {
 // Selects an item and adds it to the ItemsSelectedContainer container and ItemsSelectedPropContainer
 // ItemSeleced container tells us which items we're crafting with
 // ItemsSelectedPropContainer tells which properties the items have
-func (craftingItemDisplay *CraftingItemDisplay) CreateInventoryList(playerData *PlayerData, propFilters ...equipment.StatusEffects) {
+func (craftingItemDisplay *CraftingItemDisplay) CreateInventoryList(playerData *avatar.PlayerData, propFilters ...equipment.StatusEffects) {
 
 	// Nested function to add a selected item
 	addSelectedItem := func(index int) {
@@ -71,7 +72,7 @@ func (craftingItemDisplay *CraftingItemDisplay) CreateInventoryList(playerData *
 }
 
 // Used by the Clicked Handler of the Crafting Button. Displays the inventory
-func (craftingItemDisplay *CraftingItemDisplay) DisplayInventory(pl *PlayerData) {
+func (craftingItemDisplay *CraftingItemDisplay) DisplayInventory(pl *avatar.PlayerData) {
 
 	craftingItemDisplay.CreateInventoryList(pl)
 

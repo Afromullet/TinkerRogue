@@ -1,6 +1,7 @@
 package main
 
 import (
+	"game_main/avatar"
 	"game_main/common"
 	"game_main/equipment"
 	"game_main/graphics"
@@ -94,7 +95,7 @@ func (c *Creature) UpdatePosition(gm *worldmap.GameMap, currentPosition *common.
 }
 
 // todo still need to remove game
-func MonsterSystems(ecsmanger *common.EntityManager, pl *PlayerData, gm *worldmap.GameMap, ts *common.TimeSystem) {
+func MonsterSystems(ecsmanger *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap, ts *common.TimeSystem) {
 
 	for _, c := range ecsmanger.World.Query(ecsmanger.WorldTags["monsters"]) {
 

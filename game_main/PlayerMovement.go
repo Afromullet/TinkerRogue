@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"game_main/avatar"
 	"game_main/common"
 	"game_main/equipment"
 	"game_main/graphics"
@@ -17,7 +18,7 @@ var PrevThrowInds []int
 var PrevRangedAttInds []int
 
 // todo replace the keypressed with iskeyreleased
-func PlayerActions(ecsmanager *common.EntityManager, pl *PlayerData, gm *worldmap.GameMap, playerUI *PlayerUI, tm *common.TimeSystem) {
+func PlayerActions(ecsmanager *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap, playerUI *PlayerUI, tm *common.TimeSystem) {
 
 	turntaken := false
 	//players := g.WorldTags["players"]
@@ -51,7 +52,7 @@ func PlayerActions(ecsmanager *common.EntityManager, pl *PlayerData, gm *worldma
 
 		gm.ApplyColorMatrix(PrevRangedAttInds, graphics.NewEmptyMatrix())
 
-		pl.isTargeting = true
+		pl.Targeting = true
 		pl.PrepareRangedAttack()
 		DrawRangedAttackAOE(pl, gm)
 
@@ -61,10 +62,10 @@ func PlayerActions(ecsmanager *common.EntityManager, pl *PlayerData, gm *worldma
 
 		log.Print("Press G")
 
-		itemFromTile, _ := gm.RemoveItemFromTile(0, pl.position)
+		itemFromTile, _ := gm.RemoveItemFromTile(0, pl.Pos)
 
 		if itemFromTile != nil {
-			pl.inventory.AddItem(itemFromTile)
+			pl.Inv.AddItem(itemFromTile)
 		}
 
 	}
@@ -84,20 +85,20 @@ func PlayerActions(ecsmanager *common.EntityManager, pl *PlayerData, gm *worldma
 	HandlePlayerRangedAttack(ecsmanager, pl, gm)
 
 	nextPosition := common.Position{
-		X: pl.position.X + x,
-		Y: pl.position.Y + y,
+		X: pl.Pos.X + x,
+		Y: pl.Pos.Y + y,
 	}
 
 	index := graphics.IndexFromXY(nextPosition.X, nextPosition.Y)
 	nextTile := gm.Tiles[index]
 
-	index = graphics.IndexFromXY(pl.position.X, pl.position.Y)
+	index = graphics.IndexFromXY(pl.Pos.X, pl.Pos.Y)
 	oldTile := gm.Tiles[index]
 
 	if !nextTile.Blocked {
-		gm.PlayerVisible.Compute(gm, pl.position.X, pl.position.Y, 8)
-		pl.position.X = nextPosition.X
-		pl.position.Y = nextPosition.Y
+		gm.PlayerVisible.Compute(gm, pl.Pos.X, pl.Pos.Y, 8)
+		pl.Pos.X = nextPosition.X
+		pl.Pos.Y = nextPosition.Y
 		nextTile.Blocked = true
 		oldTile.Blocked = false
 
@@ -108,7 +109,7 @@ func PlayerActions(ecsmanager *common.EntityManager, pl *PlayerData, gm *worldma
 
 		if c != nil {
 
-			MeleeAttackSystem(ecsmanager, pl, gm, pl.position, &nextPosition)
+			MeleeAttackSystem(ecsmanager, pl, gm, pl.Pos, &nextPosition)
 		}
 
 	}
