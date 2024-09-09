@@ -23,7 +23,7 @@ To create a new Movement Type do the following:
 */
 // movementAction is a map that will make it easier to call the movement functions.
 // so that we no not have to add a conditional for every movement type in the MovementSystem
-type MovementFunction func(g *Game, mover *ecs.Entity)
+type MovementFunction func(ecsmanager *common.EntityManager, gm *worldmap.GameMap, mover *ecs.Entity)
 
 var (
 	simpleWanderComp     *ecs.Component
@@ -62,7 +62,7 @@ type DistanceToEntityMovement struct {
 // They also handle walking on the path by calling reature.UpdatePosition
 // Movement functions get called by MovementSystem which determines what movement component a creature has.
 // Select a random spot to wander to and builds a new path when arriving at the position
-func SimpleWanderAction(g *Game, mover *ecs.Entity) {
+func SimpleWanderAction(ecsmanager *common.EntityManager, gm *worldmap.GameMap, mover *ecs.Entity) {
 
 	creature := GetCreature(mover)
 	creaturePosition := common.GetPosition(mover)
@@ -74,17 +74,17 @@ func SimpleWanderAction(g *Game, mover *ecs.Entity) {
 	if len(creature.Path) == 0 {
 
 		astar := AStar{}
-		creature.Path = astar.GetPath(g.gameMap, creaturePosition, endPos, false)
+		creature.Path = astar.GetPath(*gm, creaturePosition, endPos, false)
 
 	}
 
 }
 
-func NoMoveAction(g *Game, mover *ecs.Entity) {
+func NoMoveAction(ecsmanager *common.EntityManager, gm *worldmap.GameMap, mover *ecs.Entity) {
 
 }
 
-func EntityFollowMoveAction(g *Game, mover *ecs.Entity) {
+func EntityFollowMoveAction(ecsmanager *common.EntityManager, gm *worldmap.GameMap, mover *ecs.Entity) {
 
 	creature := GetCreature(mover)
 	creaturePosition := common.GetPosition(mover)
@@ -93,14 +93,14 @@ func EntityFollowMoveAction(g *Game, mover *ecs.Entity) {
 	if goToEnt.target != nil {
 		targetPos := common.GetComponentType[*common.Position](goToEnt.target, common.PositionComponent)
 
-		creature.Path = BuildPath(&g.gameMap, creaturePosition, targetPos)
+		creature.Path = BuildPath(gm, creaturePosition, targetPos)
 
 	}
 
 }
 
 // Sort of works but needs improvement
-func WithinRadiusMoveAction(g *Game, mover *ecs.Entity) {
+func WithinRadiusMoveAction(ecsmanager *common.EntityManager, gm *worldmap.GameMap, mover *ecs.Entity) {
 
 	gd := graphics.NewScreenData()
 	creature := GetCreature(mover)
@@ -117,11 +117,11 @@ func WithinRadiusMoveAction(g *Game, mover *ecs.Entity) {
 		for distance >= 0 {
 			indices := graphics.NewTileCircleOutline(pixelX, pixelY, distance).GetIndices()
 
-			ind, ok := GetUnblockedTile(&g.gameMap, indices)
+			ind, ok := GetUnblockedTile(gm, indices)
 			if ok {
 
 				finalPos := common.PositionFromIndex(ind, gd.ScreenWidth)
-				path = BuildPath(&g.gameMap, creaturePosition, &finalPos)
+				path = BuildPath(gm, creaturePosition, &finalPos)
 				break
 			}
 			// Decrease distance and try again
@@ -157,7 +157,7 @@ func GetUnblockedTile(gameMap *worldmap.GameMap, indices []int) (int, bool) {
 }
 
 // Clears the path once within range
-func WithinRangeMoveAction(g *Game, mover *ecs.Entity) {
+func WithinRangeMoveAction(ecsmanager *common.EntityManager, gm *worldmap.GameMap, mover *ecs.Entity) {
 
 	creature := GetCreature(mover)
 	creaturePosition := common.GetPosition(mover)
@@ -170,7 +170,7 @@ func WithinRangeMoveAction(g *Game, mover *ecs.Entity) {
 			creature.Path = creature.Path[:0]
 
 		} else {
-			creature.Path = BuildPath(&g.gameMap, creaturePosition, targetPos)
+			creature.Path = BuildPath(gm, creaturePosition, targetPos)
 
 		}
 
@@ -179,7 +179,7 @@ func WithinRangeMoveAction(g *Game, mover *ecs.Entity) {
 }
 
 // Also needs improvement
-func FleeFromEntityMovementAction(g *Game, mover *ecs.Entity) {
+func FleeFromEntityMovementAction(ecsmanager *common.EntityManager, gm *worldmap.GameMap, mover *ecs.Entity) {
 	fleeMov := common.GetComponentType[*DistanceToEntityMovement](mover, fleeComp)
 	creature := GetCreature(mover)
 	creaturePosition := common.GetPosition(mover)
@@ -205,11 +205,11 @@ func FleeFromEntityMovementAction(g *Game, mover *ecs.Entity) {
 
 			if graphics.InBounds(fleeTargetX, fleeTargetY) {
 				targetIndex := graphics.IndexFromXY(fleeTargetX, fleeTargetY)
-				if !g.gameMap.Tiles[targetIndex].Blocked {
+				if !gm.Tiles[targetIndex].Blocked {
 					// Use InRange to check if the flee position is within the desired range
 					if creaturePosition.InRange(&fleePosition, fleeMov.distance) {
 						// Set the path to the flee destination
-						path := BuildPath(&g.gameMap, creaturePosition, &fleePosition)
+						path := BuildPath(gm, creaturePosition, &fleePosition)
 						creature.Path = path
 
 						return
@@ -229,7 +229,7 @@ func FleeFromEntityMovementAction(g *Game, mover *ecs.Entity) {
 // Gets called in MonsterSystems, which queries the ECS manager and returns query results containing all monsters
 // A movmeent function builds a path for a creature to follow, and UpdatePosition lets a creature move on the path
 
-func MovementSystem(c *ecs.QueryResult, g *Game) {
+func MovementSystem(ecsmanager *common.EntityManager, gm *worldmap.GameMap, c *ecs.QueryResult) {
 
 	//var ok bool
 
@@ -240,8 +240,8 @@ func MovementSystem(c *ecs.QueryResult, g *Game) {
 			creature := common.GetComponentType[*Creature](c.Entity, CreatureComponent)
 			creaturePosition := common.GetComponentType[*common.Position](c.Entity, common.PositionComponent)
 			if movementFunc, exists := MovementActions[comp]; exists {
-				movementFunc(g, c.Entity) // Call the function
-				creature.UpdatePosition(&g.gameMap, creaturePosition)
+				movementFunc(ecsmanager, gm, c.Entity) // Call the function
+				creature.UpdatePosition(gm, creaturePosition)
 			}
 		}
 

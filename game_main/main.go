@@ -77,7 +77,7 @@ func (g *Game) Update() error {
 		PlayerActions(g)
 	}
 	if g.Turn == common.MonsterTurn {
-		MonsterSystems(&g.EntityManager, &g.playerData, &g.gameMap, g)
+		MonsterSystems(&g.EntityManager, &g.playerData, &g.gameMap, &g.TimeSystem)
 	}
 
 	return nil

@@ -94,9 +94,9 @@ func (c *Creature) UpdatePosition(gm *worldmap.GameMap, currentPosition *common.
 }
 
 // todo still need to remove game
-func MonsterSystems(ecsmanger *common.EntityManager, pl *PlayerData, gm *worldmap.GameMap, g *Game) {
+func MonsterSystems(ecsmanger *common.EntityManager, pl *PlayerData, gm *worldmap.GameMap, ts *common.TimeSystem) {
 
-	for _, c := range ecsmanger.World.Query(g.WorldTags["monsters"]) {
+	for _, c := range ecsmanger.World.Query(ecsmanger.WorldTags["monsters"]) {
 
 		ApplyEffects(c)
 		CreatureAttackSystem(ecsmanger, pl, gm, c)
@@ -106,10 +106,10 @@ func MonsterSystems(ecsmanger *common.EntityManager, pl *PlayerData, gm *worldma
 			ecsmanger.World.DisposeEntity(c.Entity)
 		}
 
-		MovementSystem(c, g)
+		MovementSystem(ecsmanger, gm, c)
 
 	}
 
-	g.Turn = common.PlayerTurn
+	ts.Turn = common.PlayerTurn
 
 }
