@@ -31,10 +31,10 @@ var TestElectricEffect = graphics.NewElectricityEffect(0, 0, 5)
 var TestStickyEffect = graphics.NewStickyGroundEffect(0, 0, 5)
 
 func SetupPlayerForTesting(ecsmanager *common.EntityManager, pl *avatar.PlayerData) {
-	w := CreateWeapon(ecsmanager.World, "Weapon 1", *pl.Pos, "assets/items/sword.png", 5, 10)
+	w := CreateWeapon(ecsmanager.World, "Weapon 1", *pl.Pos, "../assets/items/sword.png", 5, 10)
 
 	wepArea := graphics.NewTileRectangle(0, 0, 3, 3)
-	r := CreatedRangedWeapon(ecsmanager.World, "Ranged Weapon 1", "assets/items/sword.png", *pl.Pos, 5, 10, 3, &wepArea)
+	r := CreatedRangedWeapon(ecsmanager.World, "Ranged Weapon 1", "../assets/items/sword.png", *pl.Pos, 5, 10, 3, &wepArea)
 
 	pl.PlayerWeapon = w
 	pl.PlayerRangedWeapon = r
@@ -50,13 +50,13 @@ func CreateTestThrowable(shape graphics.TileBasedShape, vx graphics.VisualEffect
 
 func CreateTestItems(manager *ecs.Manager, tags map[string]ecs.Tag, gameMap *worldmap.GameMap) {
 
-	swordImg, _, err := ebitenutil.NewImageFromFile("assets/items/sword.png")
+	swordImg, _, err := ebitenutil.NewImageFromFile("../assets/items/sword.png")
 	if err != nil {
 		log.Fatal(err)
 	}
 	log.Print(swordImg)
 
-	itemImageLoc := "assets/items/sword.png"
+	itemImageLoc := "../assets/items/sword.png"
 
 	//todo add testing location back
 
@@ -108,25 +108,25 @@ func CreateTestMonsters(manager *ecs.Manager, pl *avatar.PlayerData, gameMap *wo
 		TargetArea:    &wepArea,
 	}
 
-	c := CreateMonster(manager, gameMap, x, y+1, "assets/creatures/elf.png")
+	c := CreateMonster(manager, gameMap, x, y+1, "../assets/creatures/elf.png")
 
 	//c.AddComponent(approachAndAttack, &ApproachAndAttack{})
 	c.AddComponent(monsters.DistanceRangeAttackComp, &monsters.DistanceRangedAttack{})
 	c.AddComponent(equipment.RangedWeaponComponent, &wep)
 
-	c = CreateMonster(manager, gameMap, x+1, y, "assets/creatures/unseen_horror.png")
+	c = CreateMonster(manager, gameMap, x+1, y, "../assets/creatures/unseen_horror.png")
 	c.AddComponent(monsters.SimpleWanderComp, &monsters.SimpleWander{})
 	//c.AddComponent(approachAndAttack, &ApproachAndAttack{})
 
-	c = CreateMonster(manager, gameMap, x+1, y+1, "assets/creatures/angel.png")
+	c = CreateMonster(manager, gameMap, x+1, y+1, "../assets/creatures/angel.png")
 	c.AddComponent(monsters.EntityFollowComp, &monsters.EntityFollow{Target: pl.PlayerEntity})
 
-	c = CreateMonster(manager, gameMap, x+1, y+2, "assets/creatures/ancient_lich.png")
+	c = CreateMonster(manager, gameMap, x+1, y+2, "../assets/creatures/ancient_lich.png")
 	c.AddComponent(monsters.WithinRadiusComp, &monsters.DistanceToEntityMovement{Target: pl.PlayerEntity, Distance: 3})
 
-	c = CreateMonster(manager, gameMap, x+2, y+1, "assets/creatures/starcursed_mass.png")
+	c = CreateMonster(manager, gameMap, x+2, y+1, "../assets/creatures/starcursed_mass.png")
 	c.AddComponent(monsters.WithinRangeComponent, &monsters.DistanceToEntityMovement{Distance: 2, Target: pl.PlayerEntity})
-	//CreateMonster(g, manager, gameMap, x+2, y+2, "assets/creatures/balrug.png")
+	//CreateMonster(g, manager, gameMap, x+2, y+2, "../assets/creatures/balrug.png")
 
 	CreateMoreTestMonsters(manager, gameMap)
 
@@ -136,7 +136,7 @@ func CreateTestMonsters(manager *ecs.Manager, pl *avatar.PlayerData, gameMap *wo
 
 func CreateMoreTestMonsters(manager *ecs.Manager, gameMap *worldmap.GameMap) {
 
-	elfImg, _, err := ebitenutil.NewImageFromFile("assets/creatures/elf.png")
+	elfImg, _, err := ebitenutil.NewImageFromFile("../assets/creatures/elf.png")
 	if err != nil {
 		log.Fatal(err)
 	}

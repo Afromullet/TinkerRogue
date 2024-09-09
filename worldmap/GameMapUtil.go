@@ -15,7 +15,7 @@ func loadTileImages() {
 
 	// Not doing any error checking here. Just want something quick to test so that the map looks more varied
 
-	dir := "assets//tiles/floors/limestone"
+	dir := "../assets//tiles/floors/limestone"
 	files, _ := os.ReadDir(dir)
 
 	for _, file := range files {
@@ -29,7 +29,7 @@ func loadTileImages() {
 
 	}
 
-	dir = "assets//tiles/walls/marble"
+	dir = "../assets//tiles/walls/marble"
 	files, _ = os.ReadDir(dir)
 
 	for _, file := range files {
@@ -43,7 +43,7 @@ func loadTileImages() {
 
 	}
 
-	dir = "assets//tiles/walls/marble"
+	dir = "../assets//tiles/walls/marble"
 	files, _ = os.ReadDir(dir)
 
 	for _, file := range files {

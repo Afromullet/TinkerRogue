@@ -203,7 +203,7 @@ type Projectile struct {
 
 func NewProjectile(startX, startY, endX, endY int) *Projectile {
 
-	vxCom := NewVXCommon("assets/effects/arrow3.png", startX, startY)
+	vxCom := NewVXCommon("../assets/effects/arrow3.png", startX, startY)
 	pro := &Projectile{
 		VXCommon: vxCom,
 
@@ -301,7 +301,7 @@ type FireEffect struct {
 
 func NewFireEffect(startX, startY, flickerTimer, duration int, scale, opacity float64) *FireEffect {
 
-	vxImg, _, _ := ebitenutil.NewImageFromFile("assets/effects/cloud_fire2.png")
+	vxImg, _, _ := ebitenutil.NewImageFromFile("../assets/effects/cloud_fire2.png")
 
 	pro := &FireEffect{
 		VXCommon: VXCommon{
@@ -417,7 +417,7 @@ type IceEffect struct {
 
 func NewIceEffect(startX, startY int, duration int) *IceEffect {
 
-	vxImg, _, _ := ebitenutil.NewImageFromFile("assets/effects/frost0.png")
+	vxImg, _, _ := ebitenutil.NewImageFromFile("../assets/effects/frost0.png")
 	return &IceEffect{
 		img:              vxImg,
 		startX:           float64(startX),
@@ -517,7 +517,7 @@ type IceEffect2 struct {
 
 func NewIceEffect2(x, y int, duration int) *IceEffect2 {
 
-	vxImg, _, _ := ebitenutil.NewImageFromFile("assets/effects/frost0.png")
+	vxImg, _, _ := ebitenutil.NewImageFromFile("../assets/effects/frost0.png")
 
 	return &IceEffect2{
 		img:              vxImg,
@@ -615,7 +615,7 @@ type CloudEffect struct {
 }
 
 func NewCloudEffect(startX, startY int, duration int) *CloudEffect {
-	vxImg, _, _ := ebitenutil.NewImageFromFile("assets/effects/cloud_poison0.png")
+	vxImg, _, _ := ebitenutil.NewImageFromFile("../assets/effects/cloud_poison0.png")
 	return &CloudEffect{
 		img:              vxImg,
 		startX:           float64(startX),
@@ -853,7 +853,7 @@ type ElectricityEffect struct {
 }
 
 func NewElectricityEffect(startX, startY int, duration int) *ElectricityEffect {
-	vxImg, _, _ := ebitenutil.NewImageFromFile("assets/effects/zap0.png") // Load your electricity image here
+	vxImg, _, _ := ebitenutil.NewImageFromFile("../assets/effects/zap0.png") // Load your electricity image here
 	return &ElectricityEffect{
 		img:              vxImg,
 		startX:           float64(startX),

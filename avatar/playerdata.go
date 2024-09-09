@@ -109,7 +109,7 @@ func InitializePlayerData(ecsmanager *common.EntityManager, pl *PlayerData, gm *
 
 	player = ecsmanager.World.NewComponent()
 
-	playerImg, _, err := ebitenutil.NewImageFromFile("assets/creatures/player1.png")
+	playerImg, _, err := ebitenutil.NewImageFromFile("../assets/creatures/player1.png")
 	if err != nil {
 		log.Fatal(err)
 	}

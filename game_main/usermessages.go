@@ -21,7 +21,7 @@ var lastText []string = make([]string, 0, 5)
 
 func ProcessUserLog(g *Game, screen *ebiten.Image) {
 	if userLogImg == nil {
-		userLogImg, _, err = ebitenutil.NewImageFromFile("assets/UIPanel.png")
+		userLogImg, _, err = ebitenutil.NewImageFromFile("../assets/UIPanel.png")
 		if err != nil {
 			log.Fatal(err)
 		}
