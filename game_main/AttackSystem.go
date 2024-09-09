@@ -5,6 +5,7 @@ import (
 	"game_main/common"
 	"game_main/equipment"
 	"game_main/graphics"
+	"game_main/randgen"
 	"log"
 
 	"github.com/bytearena/ecs"
@@ -52,11 +53,11 @@ func PerformAttack(g *Game, damage int, attacker *ecs.Entity, defender *ecs.Enti
 	attAttr := common.GetAttributes(attacker)
 	defAttr := common.GetAttributes(defender)
 
-	attackRoll := GetDiceRoll(20) + attAttr.AttackBonus
+	attackRoll := randgen.GetDiceRoll(20) + attAttr.AttackBonus
 
 	if attackRoll >= defAttr.TotalArmorClass {
 
-		dodgeRoll := GetRandomBetween(0, 100)
+		dodgeRoll := randgen.GetRandomBetween(0, 100)
 
 		if dodgeRoll >= int(defAttr.TotalDodgeChance) {
 

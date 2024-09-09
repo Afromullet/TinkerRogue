@@ -3,6 +3,7 @@ package main
 import (
 	"game_main/common"
 	"game_main/graphics"
+	"game_main/randgen"
 	"game_main/worldmap"
 	"math"
 
@@ -66,7 +67,7 @@ func SimpleWanderAction(g *Game, mover *ecs.Entity) {
 	creature := GetCreature(mover)
 	creaturePosition := common.GetPosition(mover)
 
-	randomPos := GetRandomBetween(0, len(worldmap.ValidPos.Pos))
+	randomPos := randgen.GetRandomBetween(0, len(worldmap.ValidPos.Pos))
 	endPos := worldmap.ValidPos.Get(randomPos)
 
 	//Only create a new path if one doesn't exist yet.
@@ -150,7 +151,7 @@ func GetUnblockedTile(gameMap *worldmap.GameMap, indices []int) (int, bool) {
 		return -1, false
 	}
 
-	random_tile := GetRandomBetween(0, len(unblocked_tiles)-1)
+	random_tile := randgen.GetRandomBetween(0, len(unblocked_tiles)-1)
 	return unblocked_tiles[random_tile], true
 
 }

@@ -1,10 +1,10 @@
 package graphics
 
 import (
-	cryptorand "crypto/rand"
+	"game_main/randgen"
 	"image/color"
 	"math"
-	"math/big"
+
 	"math/rand/v2"
 	"time"
 
@@ -14,13 +14,6 @@ import (
 )
 
 var VXHandler VisualEffectHandler
-
-// Todo remove later once you change teh random number generation. The same function is in another aprt of the code
-func GetDiceRoll(num int) int {
-	x, _ := cryptorand.Int(cryptorand.Reader, big.NewInt(int64(num)))
-	return int(x.Int64()) + 1
-
-}
 
 // There is VisualEffectArea and VisualEffectArea
 // VisualEffectArea contains a VisualEffect and a TileBasedShape. The effects are drawn in the shape
@@ -766,8 +759,8 @@ func NewElectricityEffectNoImage(startX, startY int, duration int, numSegments i
 
 	// Random bright color for the electricity
 	color := color.RGBA{
-		R: uint8(200 + GetDiceRoll(55)),
-		G: uint8(200 + GetDiceRoll(55)),
+		R: uint8(200 + randgen.GetDiceRoll(55)),
+		G: uint8(200 + randgen.GetDiceRoll(55)),
 		B: 255,
 		A: 255,
 	}
@@ -793,8 +786,8 @@ func (elec *ElectricityEffectNoImage) UpdateVisualEffect() {
 	}
 
 	// Slightly adjust the color to simulate electrical surges
-	elec.color.R = uint8(200 + GetDiceRoll(55))
-	elec.color.G = uint8(200 + GetDiceRoll(55))
+	elec.color.R = uint8(200 + randgen.GetDiceRoll(55))
+	elec.color.G = uint8(200 + randgen.GetDiceRoll(55))
 	elec.color.B = 255
 
 	// Check if the effect has lasted for the specified duration
@@ -983,9 +976,9 @@ func (e *ElectricArc) UpdateVisualEffect() {
 
 	// Randomly adjust color and thickness for visual variety
 
-	e.color.R = uint8(GetDiceRoll(50))
-	e.color.G = uint8(200 + GetDiceRoll(55))
-	e.color.B = uint8(200 + GetDiceRoll(55))
+	e.color.R = uint8(randgen.GetDiceRoll(50))
+	e.color.G = uint8(200 + randgen.GetDiceRoll(55))
+	e.color.B = uint8(200 + randgen.GetDiceRoll(55))
 	e.thickness = float32(1.5 + rand.Float32())
 
 	// Check if the effect has lasted for the specified duration

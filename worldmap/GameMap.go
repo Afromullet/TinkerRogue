@@ -1,36 +1,16 @@
 package worldmap
 
 import (
-	cryptorand "crypto/rand"
 	"errors"
 	"game_main/common"
 	"game_main/graphics"
+	"game_main/randgen"
 	"image/color"
-	"math/big"
 
 	"github.com/bytearena/ecs"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/norendren/go-fov/fov"
 )
-
-// Todo remove later once you change teh random number generation. The same function is in another aprt of the code
-func GetDiceRoll(num int) int {
-	x, _ := cryptorand.Int(cryptorand.Reader, big.NewInt(int64(num)))
-	return int(x.Int64()) + 1
-
-}
-
-// Todo remove later once you change teh random number generation. The same function is in another aprt of the code
-func GetRandomBetween(low int, high int) int {
-	var randy int = -1
-	for {
-		randy = GetDiceRoll(high)
-		if randy >= low {
-			break
-		}
-	}
-	return randy
-}
 
 var ValidPos ValidPositions
 
@@ -210,7 +190,7 @@ func (gameMap *GameMap) createTiles() []*Tile {
 			index = graphics.IndexFromXY(x, y)
 
 			pos := common.Position{X: x, Y: y}
-			wallImg := wallImgs[GetRandomBetween(0, len(wallImgs)-1)]
+			wallImg := wallImgs[randgen.GetRandomBetween(0, len(wallImgs)-1)]
 			//tile := NewTile(x*gd.TileWidth, y*gd.TileHeight, pos, true, wall, WALL, false)
 			tile := NewTile(x*gd.TileWidth, y*gd.TileHeight, pos, true, wallImg, WALL, false)
 
@@ -232,10 +212,10 @@ func (gameMap *GameMap) GenerateLevelTiles() {
 	contains_rooms := false
 
 	for idx := 0; idx < MAX_ROOMS; idx++ {
-		w := GetRandomBetween(MIN_SIZE, MAX_SIZE)
-		h := GetRandomBetween(MIN_SIZE, MAX_SIZE)
-		x := GetDiceRoll(gd.ScreenWidth - w - 1)
-		y := GetDiceRoll(graphics.LevelHeight - h - 1)
+		w := randgen.GetRandomBetween(MIN_SIZE, MAX_SIZE)
+		h := randgen.GetRandomBetween(MIN_SIZE, MAX_SIZE)
+		x := randgen.GetDiceRoll(gd.ScreenWidth - w - 1)
+		y := randgen.GetDiceRoll(graphics.LevelHeight - h - 1)
 		new_room := NewRect(x, y, w, h)
 
 		okToAdd := true
@@ -251,7 +231,7 @@ func (gameMap *GameMap) GenerateLevelTiles() {
 			if contains_rooms {
 				newX, newY := new_room.Center()
 				prevX, prevY := gameMap.Rooms[len(gameMap.Rooms)-1].Center()
-				coinflip := GetDiceRoll(2)
+				coinflip := randgen.GetDiceRoll(2)
 				if coinflip == 2 {
 					gameMap.createHorizontalTunnel(prevX, newX, prevY)
 					gameMap.createVerticalTunnel(prevY, newY, newX)
@@ -278,7 +258,7 @@ func (gameMap *GameMap) createRoom(room Rect) {
 			gameMap.Tiles[index].TileType = FLOOR
 
 			//Select a random tile png
-			gameMap.Tiles[index].Image = floorImgs[GetRandomBetween(0, len(floorImgs)-1)]
+			gameMap.Tiles[index].Image = floorImgs[randgen.GetRandomBetween(0, len(floorImgs)-1)]
 
 			ValidPos.Add(x, y)
 		}
@@ -293,7 +273,7 @@ func (gameMap *GameMap) createHorizontalTunnel(x1 int, x2 int, y int) {
 			gameMap.Tiles[index].Blocked = false
 			gameMap.Tiles[index].TileType = FLOOR
 
-			gameMap.Tiles[index].Image = floorImgs[GetRandomBetween(0, len(floorImgs)-1)]
+			gameMap.Tiles[index].Image = floorImgs[randgen.GetRandomBetween(0, len(floorImgs)-1)]
 
 			ValidPos.Add(x, y)
 		}
@@ -308,7 +288,7 @@ func (gameMap *GameMap) createVerticalTunnel(y1 int, y2 int, x int) {
 		if index > 0 && index < gd.ScreenWidth*graphics.LevelHeight {
 			gameMap.Tiles[index].Blocked = false
 			gameMap.Tiles[index].TileType = FLOOR
-			gameMap.Tiles[index].Image = floorImgs[GetRandomBetween(0, len(floorImgs)-1)]
+			gameMap.Tiles[index].Image = floorImgs[randgen.GetRandomBetween(0, len(floorImgs)-1)]
 
 			ValidPos.Add(x, y)
 		}

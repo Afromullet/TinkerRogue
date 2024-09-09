@@ -40,7 +40,7 @@ func ApproachAndAttackAction(g *Game, c *ecs.QueryResult, target *ecs.Entity) {
 	c.Entity.AddComponent(entityFollowComp, &EntityFollow{target: target})
 
 	defenderPos := common.GetComponentType[*common.Position](target, common.PositionComponent)
-	if DistanceBetween(c.Entity, target) == 1 {
+	if common.DistanceBetween(c.Entity, target) == 1 {
 		MeleeAttackSystem(g, common.GetPosition(c.Entity), defenderPos)
 
 	}

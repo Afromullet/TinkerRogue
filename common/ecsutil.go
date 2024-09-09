@@ -31,3 +31,12 @@ func GetComponentType[T any](entity *ecs.Entity, component *ecs.Component) T {
 func GetAttributes(e *ecs.Entity) *Attributes {
 	return GetComponentType[*Attributes](e, AttributeComponent)
 }
+
+func DistanceBetween(e1 *ecs.Entity, e2 *ecs.Entity) int {
+
+	pos1 := GetPosition(e1)
+	pos2 := GetPosition(e2)
+
+	return pos1.ManhattanDistance(pos2)
+
+}

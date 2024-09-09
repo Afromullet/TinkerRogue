@@ -4,6 +4,7 @@ import (
 	"game_main/common"
 	"game_main/equipment"
 	"game_main/graphics"
+	"game_main/randgen"
 
 	"github.com/bytearena/ecs"
 	"github.com/hajimehoshi/ebiten/v2"
@@ -47,7 +48,7 @@ type RangedWeapon struct {
 // todo add ammo to this
 func (r RangedWeapon) CalculateDamage() int {
 
-	return GetRandomBetween(r.MinDamage, r.MaxDamage)
+	return randgen.GetRandomBetween(r.MinDamage, r.MaxDamage)
 
 }
 
