@@ -20,6 +20,7 @@ import (
 	"game_main/common"
 	"game_main/graphics"
 	"game_main/gui"
+	"game_main/monsters"
 	"game_main/worldmap"
 	_ "image/png"
 	"log"
@@ -80,7 +81,7 @@ func (g *Game) Update() error {
 		PlayerActions(&g.EntityManager, &g.playerData, &g.gameMap, &g.gameUI, &g.TimeSystem)
 	}
 	if g.Turn == common.MonsterTurn {
-		MonsterSystems(&g.EntityManager, &g.playerData, &g.gameMap, &g.TimeSystem)
+		monsters.MonsterSystems(&g.EntityManager, &g.playerData, &g.gameMap, &g.TimeSystem)
 	}
 
 	return nil

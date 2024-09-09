@@ -3,26 +3,13 @@ package main
 import (
 	"game_main/common"
 	"game_main/equipment"
-	"game_main/pathfinding"
-	"game_main/worldmap"
+	"game_main/monsters"
 
 	"github.com/bytearena/ecs"
 )
 
 /*
  */
-
-var (
-	CreatureComponent *ecs.Component
-)
-
-// The ECS library returns pointers to the struct when querying it for components, so the Position methods take a pointer as input
-// Other than that, there's no reason for using pointers for the functions below.
-
-// This gets called so often that it might as well be a function
-func GetCreature(e *ecs.Entity) *Creature {
-	return common.GetComponentType[*Creature](e, CreatureComponent)
-}
 
 // todo Will be refactored. Don't get distracted by this at the moment.
 // ALl of the initialziation will have to be handled differently - since
@@ -49,7 +36,7 @@ func InitializeECS(ecsmanager *common.EntityManager) {
 	messengers := ecs.BuildTag(common.UsrMsg)
 	tags["messengers"] = messengers
 
-	InitializeMovementComponents(manager, tags)
+	monsters.InitializeMovementComponents(manager, tags)
 	equipment.InitializeItemComponents(manager, tags)
 	InitializeCreatureComponents(manager, tags)
 
@@ -59,20 +46,12 @@ func InitializeECS(ecsmanager *common.EntityManager) {
 
 func InitializeCreatureComponents(manager *ecs.Manager, tags map[string]ecs.Tag) {
 
-	CreatureComponent = manager.NewComponent()
+	monsters.CreatureComponent = manager.NewComponent()
 
-	approachAndAttack = manager.NewComponent()
-	distanceRangeAttack = manager.NewComponent()
+	monsters.ApproachAndAttackComp = manager.NewComponent()
+	monsters.DistanceRangeAttackComp = manager.NewComponent()
 
-	creatures := ecs.BuildTag(CreatureComponent, common.PositionComponent, common.AttributeComponent)
+	creatures := ecs.BuildTag(monsters.CreatureComponent, common.PositionComponent, common.AttributeComponent)
 	tags["monsters"] = creatures
-
-}
-
-// Creates a slice of Positions from p to other. Uses AStar to build the path
-func BuildPath(gm *worldmap.GameMap, start *common.Position, other *common.Position) []common.Position {
-
-	astar := pathfinding.AStar{}
-	return astar.GetPath(*gm, start, other, false)
 
 }

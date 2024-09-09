@@ -1,4 +1,4 @@
-package main
+package monsters
 
 import (
 	"fmt"
@@ -23,8 +23,8 @@ And then adds a new one, which determines how to approach the creature that's at
 */
 
 var (
-	approachAndAttack   *ecs.Component
-	distanceRangeAttack *ecs.Component
+	ApproachAndAttackComp   *ecs.Component
+	DistanceRangeAttackComp *ecs.Component
 )
 
 type ApproachAndAttack struct {
@@ -40,7 +40,7 @@ func ApproachAndAttackAction(ecsmanger *common.EntityManager, pl *avatar.PlayerD
 	// Clear any existing movement if the creature attacks so there's no conflict
 	RemoveMovementComponent(c)
 
-	c.Entity.AddComponent(entityFollowComp, &EntityFollow{target: target})
+	c.Entity.AddComponent(EntityFollowComp, &EntityFollow{Target: target})
 
 	defenderPos := common.GetComponentType[*common.Position](target, common.PositionComponent)
 	if common.DistanceBetween(c.Entity, target) == 1 {
@@ -68,7 +68,7 @@ func StayDistantRangedAttackAction(ecsmanger *common.EntityManager, pl *avatar.P
 			combat.RangedAttackSystem(ecsmanger, pl, gm, common.GetPosition(c.Entity))
 			fmt.Println("In range")
 		} else {
-			c.Entity.AddComponent(withinRadiusComp, &DistanceToEntityMovement{distance: rangeToKeep, target: target})
+			c.Entity.AddComponent(WithinRadiusComp, &DistanceToEntityMovement{Distance: rangeToKeep, Target: target})
 
 		}
 
@@ -84,14 +84,14 @@ func CreatureAttackSystem(ecsmanger *common.EntityManager, pl *avatar.PlayerData
 
 	var ok bool
 
-	if _, ok = c.Entity.GetComponentData(approachAndAttack); ok {
+	if _, ok = c.Entity.GetComponentData(ApproachAndAttackComp); ok {
 
 		ApproachAndAttackAction(ecsmanger, pl, gm, c, pl.PlayerEntity)
 
 	}
 
 	// Todo need to avoid friendly fire
-	if _, ok = c.Entity.GetComponentData(distanceRangeAttack); ok {
+	if _, ok = c.Entity.GetComponentData(DistanceRangeAttackComp); ok {
 		StayDistantRangedAttackAction(ecsmanger, pl, gm, c, pl.PlayerEntity)
 	}
 

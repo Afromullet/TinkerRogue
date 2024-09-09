@@ -1,4 +1,4 @@
-package main
+package monsters
 
 import (
 	"game_main/avatar"
@@ -10,12 +10,19 @@ import (
 	"github.com/bytearena/ecs"
 )
 
+var CreatureComponent *ecs.Component
+
 // EffectsToApply trigger every turn in MonsterSystems
 // The only thing applying an Effect Right now are throwable.
 // The Path is updated by a Movement Component
 type Creature struct {
 	Path           []common.Position
 	EffectsToApply []equipment.StatusEffects
+}
+
+// This gets called so often that it might as well be a function
+func GetCreature(e *ecs.Entity) *Creature {
+	return common.GetComponentType[*Creature](e, CreatureComponent)
 }
 
 // TODO stack the effects if they're of the same kind

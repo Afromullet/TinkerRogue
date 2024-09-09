@@ -5,6 +5,8 @@ import (
 	"game_main/common"
 	"game_main/equipment"
 	"game_main/graphics"
+	"game_main/monsters"
+	monster "game_main/monsters"
 	"game_main/worldmap"
 	"log"
 	"strconv"
@@ -109,21 +111,21 @@ func CreateTestMonsters(g *Game, manager *ecs.Manager, gameMap *worldmap.GameMap
 	c := CreateMonster(g, manager, gameMap, x, y+1, "assets/creatures/elf.png")
 
 	//c.AddComponent(approachAndAttack, &ApproachAndAttack{})
-	c.AddComponent(distanceRangeAttack, &DistanceRangedAttack{})
+	c.AddComponent(monsters.DistanceRangeAttackComp, &monsters.DistanceRangedAttack{})
 	c.AddComponent(equipment.RangedWeaponComponent, &wep)
 
 	c = CreateMonster(g, manager, gameMap, x+1, y, "assets/creatures/unseen_horror.png")
-	c.AddComponent(simpleWanderComp, &SimpleWander{})
+	c.AddComponent(monsters.SimpleWanderComp, &monsters.SimpleWander{})
 	//c.AddComponent(approachAndAttack, &ApproachAndAttack{})
 
 	c = CreateMonster(g, manager, gameMap, x+1, y+1, "assets/creatures/angel.png")
-	c.AddComponent(entityFollowComp, &EntityFollow{target: g.playerData.PlayerEntity})
+	c.AddComponent(monsters.EntityFollowComp, &monsters.EntityFollow{Target: g.playerData.PlayerEntity})
 
 	c = CreateMonster(g, manager, gameMap, x+1, y+2, "assets/creatures/ancient_lich.png")
-	c.AddComponent(withinRadiusComp, &DistanceToEntityMovement{target: g.playerData.PlayerEntity, distance: 3})
+	c.AddComponent(monsters.WithinRadiusComp, &monsters.DistanceToEntityMovement{Target: g.playerData.PlayerEntity, Distance: 3})
 
 	c = CreateMonster(g, manager, gameMap, x+2, y+1, "assets/creatures/starcursed_mass.png")
-	c.AddComponent(withinRangeComponent, &DistanceToEntityMovement{distance: 2, target: g.playerData.PlayerEntity})
+	c.AddComponent(monsters.WithinRangeComponent, &monsters.DistanceToEntityMovement{Distance: 2, Target: g.playerData.PlayerEntity})
 	//CreateMonster(g, manager, gameMap, x+2, y+2, "assets/creatures/balrug.png")
 
 	CreateMoreTestMonsters(manager, gameMap)
@@ -148,7 +150,7 @@ func CreateMoreTestMonsters(manager *ecs.Manager, gameMap *worldmap.GameMap) {
 			Y: y}
 
 		manager.NewEntity().
-			AddComponent(CreatureComponent, &Creature{
+			AddComponent(monster.CreatureComponent, &monster.Creature{
 				Path: make([]common.Position, 0),
 			}).
 			AddComponent(common.RenderableComponent, &common.Renderable{
@@ -156,7 +158,7 @@ func CreateMoreTestMonsters(manager *ecs.Manager, gameMap *worldmap.GameMap) {
 				Visible: true,
 			}).
 			AddComponent(common.PositionComponent, &pos).
-			AddComponent(entityFollowComp, &EntityFollow{})
+			AddComponent(monsters.EntityFollowComp, &monsters.EntityFollow{})
 
 	}
 
@@ -174,7 +176,7 @@ func CreateMonster(g *Game, manager *ecs.Manager, gameMap *worldmap.GameMap, x, 
 	testArmor := equipment.Armor{15, 3, 30}
 
 	ent := manager.NewEntity().
-		AddComponent(CreatureComponent, &Creature{
+		AddComponent(monster.CreatureComponent, &monster.Creature{
 			Path: make([]common.Position, 0),
 		}).
 		AddComponent(common.RenderableComponent, &common.Renderable{

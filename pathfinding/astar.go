@@ -212,3 +212,11 @@ func (as AStar) GetPath(gameMap worldmap.GameMap, start *common.Position, end *c
 
 	return nil
 }
+
+// Creates a slice of Positions from p to other. Uses AStar to build the path
+func BuildPath(gm *worldmap.GameMap, start *common.Position, other *common.Position) []common.Position {
+
+	astar := AStar{}
+	return astar.GetPath(*gm, start, other, false)
+
+}

@@ -8,6 +8,7 @@ import (
 	"game_main/equipment"
 	"game_main/graphics"
 	"game_main/gui"
+	"game_main/monsters"
 	"game_main/worldmap"
 	"log"
 
@@ -45,7 +46,7 @@ func ApplyThrowable(ecsmanager *common.EntityManager, item *equipment.Item, shap
 	for _, c := range ecsmanager.World.Query(ecsmanager.WorldTags["monsters"]) {
 
 		curPos := c.Components[common.PositionComponent].(*common.Position)
-		crea := c.Components[CreatureComponent].(*Creature)
+		crea := c.Components[monsters.CreatureComponent].(*monsters.Creature)
 		fmt.Println("Throwing range ", t.ThrowingRange)
 		for _, p := range pos {
 
