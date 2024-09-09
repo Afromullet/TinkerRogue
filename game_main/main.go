@@ -113,7 +113,7 @@ func main() {
 
 	g := NewGame()
 
-	g.gameUI.MainPlayerInterface = gui.CreatePlayerUI(&g.gameUI, &g.playerData)
+	g.gameUI.MainPlayerInterface = gui.CreatePlayerUI(&g.gameUI, g.playerData.Inv, &g.playerData)
 
 	ebiten.SetWindowResizable(true)
 

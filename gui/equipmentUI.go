@@ -1,7 +1,6 @@
 package gui
 
 import (
-	"game_main/avatar"
 	"game_main/equipment"
 	"image/color"
 
@@ -20,9 +19,9 @@ type EquipmentItemDisplay struct {
 // Selects an item and adds it to the ItemsSelectedContainer container and ItemsSelectedPropContainer
 // ItemSeleced container tells us which items we're crafting with
 // ItemsSelectedPropContainer tells which properties the items have
-func (equipmentDisplay *EquipmentItemDisplay) CreateInventoryList(playerData *avatar.PlayerData, propFilters ...equipment.StatusEffects) {
+func (equipmentDisplay *EquipmentItemDisplay) CreateInventoryList(inventory *equipment.Inventory, propFilters ...equipment.StatusEffects) {
 
-	inv := playerData.GetPlayerInventory().GetEquipmentForDisplay([]int{})
+	inv := inventory.GetEquipmentForDisplay([]int{})
 	equipmentDisplay.ItmDisplay.InventoryDisplaylist = equipmentDisplay.ItmDisplay.GetInventoryListWidget(inv)
 
 	equipmentDisplay.ItmDisplay.InventoryDisplaylist.EntrySelectedEvent.AddHandler(func(args interface{}) {
@@ -32,7 +31,7 @@ func (equipmentDisplay *EquipmentItemDisplay) CreateInventoryList(playerData *av
 		a := args.(*widget.ListEntrySelectedEventArgs)
 		entry := a.Entry.(equipment.InventoryListEntry)
 
-		equipmentDisplay.ItmDisplay.ItemsSelectedList = equipmentDisplay.ItmDisplay.GetSelectedItems(entry.Index, playerData)
+		equipmentDisplay.ItmDisplay.ItemsSelectedList = equipmentDisplay.ItmDisplay.GetSelectedItems(entry.Index, inventory)
 
 		if equipmentDisplay.ItmDisplay.ItemsSelectedList != nil {
 			equipmentDisplay.ItemSelectedContainer.AddChild(equipmentDisplay.ItmDisplay.ItemsSelectedList)
@@ -45,9 +44,9 @@ func (equipmentDisplay *EquipmentItemDisplay) CreateInventoryList(playerData *av
 
 }
 
-func (equipmentDisplay *EquipmentItemDisplay) DisplayInventory(pl *avatar.PlayerData) {
+func (equipmentDisplay *EquipmentItemDisplay) DisplayInventory(inventory *equipment.Inventory) {
 
-	equipmentDisplay.CreateInventoryList(pl)
+	equipmentDisplay.CreateInventoryList(inventory)
 
 }
 

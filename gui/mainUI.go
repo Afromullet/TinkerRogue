@@ -34,9 +34,9 @@ It's painful to add a new container to display items in. Here are the steps:
 // Every window that displays the inventory to teh user will be a struct that contains ItemDisplay
 // And implements the ItemDisplayer interface
 type ItemDisplayer interface {
-	CreateContainers()                                                                         //For creating the containers
-	CreateInventoryList(playerData *avatar.PlayerData, propFilters ...equipment.StatusEffects) //For getting the inventory from the player and adding on click event handlers
-	DisplayInventory(pl *avatar.PlayerData)                                                    //Really just there for calling CreateInventoryList with ItemProperty filters for the specific kind of window
+	CreateContainers()                                                                          //For creating the containers
+	CreateInventoryList(inventory *equipment.Inventory, propFilters ...equipment.StatusEffects) //For getting the inventory from the player and adding on click event handlers
+	DisplayInventory(inventory *equipment.Inventory)                                            //Really just there for calling CreateInventoryList with ItemProperty filters for the specific kind of window
 }
 
 // Anything that displays the inventory will have to use this struct through composition.
@@ -52,7 +52,7 @@ type ItemDisplay struct {
 }
 
 // Returns a widget.list containing the selected
-func (itemDisplay *ItemDisplay) GetSelectedItems(index int, pl *avatar.PlayerData) *widget.List {
+func (itemDisplay *ItemDisplay) GetSelectedItems(index int, inv *equipment.Inventory) *widget.List {
 
 	for _, itemIndex := range itemDisplay.ItemsSelectedIndices {
 		if itemIndex == index {
@@ -61,7 +61,7 @@ func (itemDisplay *ItemDisplay) GetSelectedItems(index int, pl *avatar.PlayerDat
 	}
 
 	itemDisplay.ItemsSelectedIndices = append(itemDisplay.ItemsSelectedIndices, index)
-	sel := pl.GetPlayerInventory().GetInventoryForDisplay(itemDisplay.ItemsSelectedIndices)
+	sel := inv.GetInventoryForDisplay(itemDisplay.ItemsSelectedIndices)
 
 	return itemDisplay.GetInventoryListWidget(sel)
 
@@ -183,7 +183,8 @@ type PlayerItemsUI struct {
 }
 
 // Creates the main UI that allows the player to view the inventory, craft, and see equipment
-func CreatePlayerUI(playerUI *PlayerUI, pl *avatar.PlayerData) *ebitenui.UI {
+// Throwing needs access to player data, so I am passing it here
+func CreatePlayerUI(playerUI *PlayerUI, inv *equipment.Inventory, pl *avatar.PlayerData) *ebitenui.UI {
 
 	ui := ebitenui.UI{}
 
@@ -219,9 +220,11 @@ func CreatePlayerUI(playerUI *PlayerUI, pl *avatar.PlayerData) *ebitenui.UI {
 			widget.GridLayoutOpts.Spacing(0, 20))),
 	)
 
-	rootContainer.AddChild(CreateOpenCraftingButton(playerUI, pl, &ui))
-	rootContainer.AddChild(CreateOpenThrowablesButton(playerUI, pl, &ui))
-	rootContainer.AddChild(CreateOpenEquipmentButton(playerUI, pl, &ui))
+	rootContainer.AddChild(CreateOpenCraftingButton(playerUI, inv, &ui))
+	rootContainer.AddChild(CreateOpenThrowablesButton(playerUI, inv, &ui))
+	rootContainer.AddChild(CreateOpenEquipmentButton(playerUI, inv, &ui))
+
+	playerUI.ItemsUI.ThrowableItemDisplay.playerData = pl
 
 	CreateItemManagementUI(playerUI)
 
@@ -232,7 +235,7 @@ func CreatePlayerUI(playerUI *PlayerUI, pl *avatar.PlayerData) *ebitenui.UI {
 }
 
 // Creating the button that opens the crafting menu.
-func CreateOpenCraftingButton(playerUI *PlayerUI, pl *avatar.PlayerData, ui *ebitenui.UI) *widget.Button {
+func CreateOpenCraftingButton(playerUI *PlayerUI, inv *equipment.Inventory, ui *ebitenui.UI) *widget.Button {
 	// construct a button
 	button := widget.NewButton(
 		// set general widget options
@@ -264,7 +267,7 @@ func CreateOpenCraftingButton(playerUI *PlayerUI, pl *avatar.PlayerData, ui *ebi
 			r := image.Rect(0, 0, x, y)
 			r = r.Add(image.Point{200, 50})
 			playerUI.ItemsUI.CraftingItemDisplay.ItmDisplay.RooWindow.SetLocation(r)
-			playerUI.ItemsUI.CraftingItemDisplay.DisplayInventory(pl)
+			playerUI.ItemsUI.CraftingItemDisplay.DisplayInventory(inv)
 			ui.AddWindow(playerUI.ItemsUI.CraftingItemDisplay.ItmDisplay.RooWindow)
 
 		}),
@@ -276,7 +279,7 @@ func CreateOpenCraftingButton(playerUI *PlayerUI, pl *avatar.PlayerData, ui *ebi
 
 // Creating the button that opens the crafting menu. Other buttons will be added
 // Doing it inside a function makes the code easier to follow
-func CreateOpenThrowablesButton(playerUI *PlayerUI, pl *avatar.PlayerData, ui *ebitenui.UI) *widget.Button {
+func CreateOpenThrowablesButton(playerUI *PlayerUI, inv *equipment.Inventory, ui *ebitenui.UI) *widget.Button {
 	// construct a button
 	button := widget.NewButton(
 		// set general widget options
@@ -308,7 +311,7 @@ func CreateOpenThrowablesButton(playerUI *PlayerUI, pl *avatar.PlayerData, ui *e
 			r := image.Rect(0, 0, x, y)
 			r = r.Add(image.Point{200, 200})
 			playerUI.ItemsUI.ThrowableItemDisplay.ItmDisp.RooWindow.SetLocation(r)
-			playerUI.ItemsUI.ThrowableItemDisplay.DisplayInventory(pl)
+			playerUI.ItemsUI.ThrowableItemDisplay.DisplayInventory(inv)
 			ui.AddWindow(playerUI.ItemsUI.ThrowableItemDisplay.ItmDisp.RooWindow)
 
 		}),
@@ -320,7 +323,7 @@ func CreateOpenThrowablesButton(playerUI *PlayerUI, pl *avatar.PlayerData, ui *e
 
 // Creating the button that opens the crafting menu. Other buttons will be added
 // Doing it inside a function makes the code easier to follow
-func CreateOpenEquipmentButton(playerUI *PlayerUI, pl *avatar.PlayerData, ui *ebitenui.UI) *widget.Button {
+func CreateOpenEquipmentButton(playerUI *PlayerUI, inv *equipment.Inventory, ui *ebitenui.UI) *widget.Button {
 	// construct a button
 	button := widget.NewButton(
 		// set general widget options
@@ -352,7 +355,7 @@ func CreateOpenEquipmentButton(playerUI *PlayerUI, pl *avatar.PlayerData, ui *eb
 			r := image.Rect(0, 0, x, y)
 			r = r.Add(image.Point{200, 50})
 			playerUI.ItemsUI.EquipmentDisplay.ItmDisplay.RooWindow.SetLocation(r)
-			playerUI.ItemsUI.EquipmentDisplay.DisplayInventory(pl)
+			playerUI.ItemsUI.EquipmentDisplay.DisplayInventory(inv)
 			ui.AddWindow(playerUI.ItemsUI.EquipmentDisplay.ItmDisplay.RooWindow)
 
 		}),

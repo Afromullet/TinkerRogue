@@ -1,7 +1,6 @@
 package gui
 
 import (
-	"game_main/avatar"
 	"game_main/equipment"
 	"image/color"
 
@@ -24,9 +23,9 @@ type CraftingItemDisplay struct {
 // Selects an item and adds it to the ItemsSelectedContainer container and ItemsSelectedPropContainer
 // ItemSeleced container tells us which items we're crafting with
 // ItemsSelectedPropContainer tells which properties the items have
-func (craftingItemDisplay *CraftingItemDisplay) CreateInventoryList(playerData *avatar.PlayerData, propFilters ...equipment.StatusEffects) {
+func (craftingItemDisplay *CraftingItemDisplay) CreateInventoryList(inventory *equipment.Inventory, propFilters ...equipment.StatusEffects) {
 
-	inv := playerData.GetPlayerInventory().GetInventoryForDisplay([]int{}, propFilters...)
+	inv := inventory.GetInventoryForDisplay([]int{}, propFilters...)
 	craftingItemDisplay.ItmDisplay.InventoryDisplaylist = craftingItemDisplay.ItmDisplay.GetInventoryListWidget(inv)
 
 	craftingItemDisplay.ItmDisplay.InventoryDisplaylist.EntrySelectedEvent.AddHandler(func(args interface{}) {
@@ -36,12 +35,12 @@ func (craftingItemDisplay *CraftingItemDisplay) CreateInventoryList(playerData *
 		a := args.(*widget.ListEntrySelectedEventArgs)
 		entry := a.Entry.(equipment.InventoryListEntry)
 
-		craftingItemDisplay.ItmDisplay.ItemsSelectedList = craftingItemDisplay.ItmDisplay.GetSelectedItems(entry.Index, playerData)
+		craftingItemDisplay.ItmDisplay.ItemsSelectedList = craftingItemDisplay.ItmDisplay.GetSelectedItems(entry.Index, inventory)
 
 		if craftingItemDisplay.ItmDisplay.ItemsSelectedList != nil {
 			craftingItemDisplay.ItemsSelectedContainer.AddChild(craftingItemDisplay.ItmDisplay.ItemsSelectedList)
 
-			names, _ := playerData.GetPlayerInventory().EffectNames(entry.Index)
+			names, _ := inventory.EffectNames(entry.Index)
 
 			for _, n := range names {
 				craftingItemDisplay.ItemsSelectedPropTextArea.AppendText(n)
@@ -57,9 +56,9 @@ func (craftingItemDisplay *CraftingItemDisplay) CreateInventoryList(playerData *
 }
 
 // Used by the Clicked Handler of the Crafting Button. Displays the inventory
-func (craftingItemDisplay *CraftingItemDisplay) DisplayInventory(pl *avatar.PlayerData) {
+func (craftingItemDisplay *CraftingItemDisplay) DisplayInventory(inventory *equipment.Inventory) {
 
-	craftingItemDisplay.CreateInventoryList(pl)
+	craftingItemDisplay.CreateInventoryList(inventory)
 
 }
 

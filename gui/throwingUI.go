@@ -17,12 +17,13 @@ type ThrowingItemDisplay struct {
 	ItemsSelectedPropContainer *widget.Container //Container to hold the widget that displays the proeprties of the selected item
 	ItemsSelectedPropTextArea  *widget.TextArea  //Displays the properties of the selected items
 	ThrowableItemSelected      bool
+	playerData                 *avatar.PlayerData
 }
 
 // Todo modify this to make it compatible with THrowable Display actions on list item click
-func (throwingItemDisplay *ThrowingItemDisplay) CreateInventoryList(playerData *avatar.PlayerData, propFilters ...equipment.StatusEffects) {
+func (throwingItemDisplay *ThrowingItemDisplay) CreateInventoryList(inventory *equipment.Inventory, propFilters ...equipment.StatusEffects) {
 
-	inv := playerData.GetPlayerInventory().GetInventoryForDisplay([]int{}, propFilters...)
+	inv := inventory.GetInventoryForDisplay([]int{}, propFilters...)
 	throwingItemDisplay.ItmDisp.InventoryDisplaylist = throwingItemDisplay.ItmDisp.GetInventoryListWidget(inv)
 
 	throwingItemDisplay.ItmDisp.InventoryDisplaylist.EntrySelectedEvent.AddHandler(func(args interface{}) {
@@ -32,13 +33,13 @@ func (throwingItemDisplay *ThrowingItemDisplay) CreateInventoryList(playerData *
 		a := args.(*widget.ListEntrySelectedEventArgs)
 		entry := a.Entry.(equipment.InventoryListEntry)
 
-		it, err := playerData.Inv.GetItem(entry.Index)
+		it, err := inventory.GetItem(entry.Index)
 
 		//throwableComponentData := GetComponentStruct[*Item](it, ItemComponent)
 		//	fmt.Println("Printing throwable ", throwableComponentData)
 
 		if err == nil {
-			playerData.PrepareThrowable(it, entry.Index)
+			throwingItemDisplay.playerData.PrepareThrowable(it, entry.Index)
 		}
 
 		throwingItemDisplay.ThrowableItemSelected = true
@@ -49,14 +50,14 @@ func (throwingItemDisplay *ThrowingItemDisplay) CreateInventoryList(playerData *
 
 }
 
-func (throwingItemDisplay *ThrowingItemDisplay) DisplayInventory(pl *avatar.PlayerData) {
+func (throwingItemDisplay *ThrowingItemDisplay) DisplayInventory(inventory *equipment.Inventory) {
 
 	//Passing a zero value throwable for the propFIlter
 
 	s := graphics.NewTileSquare(0, 0, 0)
 
 	//throwingItemDisplay.CreateInventoryList(&g.playerData, NewThrowable(0, 0, 0, NewTileSquare(0, 0, 0)))
-	throwingItemDisplay.CreateInventoryList(pl, equipment.NewThrowable(0, 0, 0, &s))
+	throwingItemDisplay.CreateInventoryList(inventory, equipment.NewThrowable(0, 0, 0, &s))
 
 }
 
