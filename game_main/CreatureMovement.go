@@ -3,6 +3,7 @@ package main
 import (
 	"game_main/common"
 	"game_main/graphics"
+	"game_main/pathfinding"
 	"game_main/randgen"
 	"game_main/worldmap"
 	"math"
@@ -73,7 +74,7 @@ func SimpleWanderAction(ecsmanager *common.EntityManager, gm *worldmap.GameMap, 
 	//Only create a new path if one doesn't exist yet.
 	if len(creature.Path) == 0 {
 
-		astar := AStar{}
+		astar := pathfinding.AStar{}
 		creature.Path = astar.GetPath(*gm, creaturePosition, endPos, false)
 
 	}

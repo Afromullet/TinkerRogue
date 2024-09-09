@@ -3,6 +3,7 @@ package main
 import (
 	"game_main/common"
 	"game_main/equipment"
+	"game_main/pathfinding"
 	"game_main/worldmap"
 
 	"github.com/bytearena/ecs"
@@ -71,7 +72,7 @@ func InitializeCreatureComponents(manager *ecs.Manager, tags map[string]ecs.Tag)
 // Creates a slice of Positions from p to other. Uses AStar to build the path
 func BuildPath(gm *worldmap.GameMap, start *common.Position, other *common.Position) []common.Position {
 
-	astar := AStar{}
+	astar := pathfinding.AStar{}
 	return astar.GetPath(*gm, start, other, false)
 
 }
