@@ -6,6 +6,7 @@ import (
 	"game_main/equipment"
 	"game_main/graphics"
 	"game_main/randgen"
+	"game_main/worldmap"
 	"log"
 
 	"github.com/bytearena/ecs"
@@ -14,7 +15,7 @@ import (
 // Rolls 1d20+AttackBonus and compares it to defenders armorclass. Has to be greater than or equal to the armor class to hit
 // Then the defender does a dodge roll. If the dodge roll is greater than or equal to its dodge value, the attack hits
 // If the attacker hits, subtract the Defenders protection value from the damage
-func MeleeAttackSystem(g *Game, attackerPos *common.Position, defenderPos *common.Position) {
+func MeleeAttackSystem(ecsmanager *common.EntityManager, pl *PlayerData, gm *worldmap.GameMap, attackerPos *common.Position, defenderPos *common.Position) {
 
 	var attacker *ecs.Entity = nil
 	var defender *ecs.Entity = nil
@@ -22,15 +23,15 @@ func MeleeAttackSystem(g *Game, attackerPos *common.Position, defenderPos *commo
 	//var weaponComponent any
 	var weapon *equipment.MeleeWeapon = nil
 
-	if g.playerData.position.IsEqual(attackerPos) {
+	if pl.position.IsEqual(attackerPos) {
 		fmt.Println("Player is attacking")
-		attacker = g.playerData.PlayerEntity
-		defender = GetCreatureAtPosition(g, defenderPos)
-		weapon = g.playerData.GetPlayerWeapon()
+		attacker = pl.PlayerEntity
+		defender = GetCreatureAtPosition(ecsmanager, defenderPos)
+		weapon = pl.GetPlayerWeapon()
 
 	} else {
-		attacker = GetCreatureAtPosition(g, attackerPos)
-		defender = g.playerData.PlayerEntity
+		attacker = GetCreatureAtPosition(ecsmanager, attackerPos)
+		defender = pl.PlayerEntity
 		fmt.Println("Monster is attacking")
 		weapon = common.GetComponentType[*equipment.MeleeWeapon](attacker, equipment.WeaponComponent)
 
@@ -38,7 +39,7 @@ func MeleeAttackSystem(g *Game, attackerPos *common.Position, defenderPos *commo
 
 	if weapon != nil {
 
-		PerformAttack(g, weapon.CalculateDamage(), attacker, defender)
+		PerformAttack(ecsmanager, pl, gm, weapon.CalculateDamage(), attacker, defender)
 
 	} else {
 		log.Print("Failed to attack. No weapon")
@@ -48,7 +49,7 @@ func MeleeAttackSystem(g *Game, attackerPos *common.Position, defenderPos *commo
 
 // Passing the damage rather than the weapon so that Melee and Ranged Attacks can use the same function
 // Currently Melee and Ranged Weapons are different types without a common interface
-func PerformAttack(g *Game, damage int, attacker *ecs.Entity, defender *ecs.Entity) {
+func PerformAttack(ecsmanagr *common.EntityManager, pl *PlayerData, gm *worldmap.GameMap, damage int, attacker *ecs.Entity, defender *ecs.Entity) {
 
 	attAttr := common.GetAttributes(attacker)
 	defAttr := common.GetAttributes(defender)
@@ -79,13 +80,12 @@ func PerformAttack(g *Game, damage int, attacker *ecs.Entity, defender *ecs.Enti
 		fmt.Println("Missed")
 	}
 
-	RemoveDeadEntity(g, defender)
-
+	RemoveDeadEntity(ecsmanagr, pl, gm, defender)
 }
 
 // A monster doing a ranged attack is simple right now.
 // It ignores the weapons AOE and selects only the player as the target
-func RangedAttackSystem(g *Game, attackerPos *common.Position) {
+func RangedAttackSystem(ecsmanager *common.EntityManager, pl *PlayerData, gm *worldmap.GameMap, attackerPos *common.Position) {
 
 	var attacker *ecs.Entity = nil
 
@@ -93,19 +93,19 @@ func RangedAttackSystem(g *Game, attackerPos *common.Position) {
 
 	var targets []*ecs.Entity
 
-	if g.playerData.position.IsEqual(attackerPos) {
-		attacker = g.playerData.PlayerEntity
-		weapon = g.playerData.GetPlayerRangedWeapon()
+	if pl.position.IsEqual(attackerPos) {
+		attacker = pl.PlayerEntity
+		weapon = pl.GetPlayerRangedWeapon()
 		if weapon != nil {
-			targets = weapon.GetTargets(g)
+			targets = weapon.GetTargets(ecsmanager)
 		}
 	} else {
-		attacker = GetCreatureAtPosition(g, attackerPos) //todo I think this will cause an issue. Should be attackerPos. Worry about this when allowing monsters to attack
+		attacker = GetCreatureAtPosition(ecsmanager, attackerPos) //todo I think this will cause an issue. Should be attackerPos. Worry about this when allowing monsters to attack
 
 		fmt.Println("Monster is shooting")
 
 		weapon = common.GetComponentType[*RangedWeapon](attacker, equipment.RangedWeaponComponent)
-		targets = append(targets, g.playerData.PlayerEntity)
+		targets = append(targets, pl.PlayerEntity)
 	}
 
 	// Todo I could return from the function when checking if weapon is not nill above
@@ -117,7 +117,7 @@ func RangedAttackSystem(g *Game, attackerPos *common.Position) {
 			if attackerPos.InRange(defenderPos, weapon.ShootingRange) {
 				fmt.Println("Shooting")
 
-				PerformAttack(g, weapon.CalculateDamage(), attacker, t)
+				PerformAttack(ecsmanager, pl, gm, weapon.CalculateDamage(), attacker, t)
 				weapon.DisplayShootingVX(attackerPos, defenderPos)
 
 			} else {
@@ -135,27 +135,27 @@ func RangedAttackSystem(g *Game, attackerPos *common.Position) {
 // Todo need to handle player death differently
 // Todo if it attacks the player, it removes the attacking creature
 // TOdo can also just call GetPosition instead of passing defenderPos
-func RemoveDeadEntity(g *Game, defender *ecs.Entity) {
+func RemoveDeadEntity(ecsmnager *common.EntityManager, pl *PlayerData, gm *worldmap.GameMap, defender *ecs.Entity) {
 
 	defenderPos := common.GetPosition(defender)
 	defAttr := common.GetAttributes(defender)
-	if g.playerData.position.IsEqual(defenderPos) {
+	if pl.position.IsEqual(defenderPos) {
 		fmt.Println("Player dead")
 	} else if defAttr.CurrentHealth <= 0 {
 		//Todo removing an entity is really closely coupled to teh map right now.
 		//Do it differently in the future
 		index := graphics.IndexFromXY(defenderPos.X, defenderPos.Y)
 
-		g.gameMap.Tiles[index].Blocked = false
-		g.World.DisposeEntity(defender)
+		gm.Tiles[index].Blocked = false
+		ecsmnager.World.DisposeEntity(defender)
 	}
 
 }
 
-func GetCreatureAtPosition(g *Game, pos *common.Position) *ecs.Entity {
+func GetCreatureAtPosition(ecsmnager *common.EntityManager, pos *common.Position) *ecs.Entity {
 
 	var e *ecs.Entity = nil
-	for _, c := range g.World.Query(g.WorldTags["monsters"]) {
+	for _, c := range ecsmnager.World.Query(ecsmnager.WorldTags["monsters"]) {
 
 		curPos := c.Components[common.PositionComponent].(*common.Position)
 

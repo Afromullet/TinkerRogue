@@ -5,6 +5,7 @@ import (
 	"game_main/equipment"
 	"game_main/graphics"
 	"game_main/randgen"
+	"game_main/worldmap"
 
 	"github.com/bytearena/ecs"
 	"github.com/hajimehoshi/ebiten/v2"
@@ -53,13 +54,13 @@ func (r RangedWeapon) CalculateDamage() int {
 }
 
 // Gets all of the targets in the weapons AOE
-func (r RangedWeapon) GetTargets(g *Game) []*ecs.Entity {
+func (r RangedWeapon) GetTargets(ecsmanger *common.EntityManager) []*ecs.Entity {
 
 	pos := GetTilePositions(r.TargetArea)
 	targets := make([]*ecs.Entity, 0)
 
 	//TODO, this will be slow in case there are a lot of creatures
-	for _, c := range g.World.Query(g.WorldTags["monsters"]) {
+	for _, c := range ecsmanger.World.Query(ecsmanger.WorldTags["monsters"]) {
 
 		curPos := c.Components[common.PositionComponent].(*common.Position)
 
@@ -95,7 +96,7 @@ func GetCreature(e *ecs.Entity) *Creature {
 
 // todo Will be refactored. Don't get distracted by this at the moment.
 // ALl of the initialziation will have to be handled differently - since
-func InitializeECS(g *Game) {
+func InitializeECS(ecsmanager *common.EntityManager) {
 	tags := make(map[string]ecs.Tag)
 	manager := ecs.NewManager()
 	common.PositionComponent = manager.NewComponent()
@@ -122,8 +123,8 @@ func InitializeECS(g *Game) {
 	equipment.InitializeItemComponents(manager, tags)
 	InitializeCreatureComponents(manager, tags)
 
-	g.WorldTags = tags
-	g.World = manager
+	ecsmanager.WorldTags = tags
+	ecsmanager.World = manager
 }
 
 func InitializeCreatureComponents(manager *ecs.Manager, tags map[string]ecs.Tag) {
@@ -139,9 +140,9 @@ func InitializeCreatureComponents(manager *ecs.Manager, tags map[string]ecs.Tag)
 }
 
 // Creates a slice of Positions from p to other. Uses AStar to build the path
-func BuildPath(g *Game, start *common.Position, other *common.Position) []common.Position {
+func BuildPath(gm *worldmap.GameMap, start *common.Position, other *common.Position) []common.Position {
 
 	astar := AStar{}
-	return astar.GetPath(g.gameMap, start, other, false)
+	return astar.GetPath(*gm, start, other, false)
 
 }

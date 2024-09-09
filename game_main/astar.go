@@ -63,6 +63,7 @@ type AStar struct{}
 
 // GetPath takes a level, the starting position and an ending position (the goal) and returns
 // a list of Positions which is the path between the points.
+// TOdo gameMap should be a poitner?
 func (as AStar) GetPath(gameMap worldmap.GameMap, start *common.Position, end *common.Position, ignoreWalls bool) []common.Position {
 	gd := graphics.NewScreenData()
 

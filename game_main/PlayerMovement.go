@@ -52,7 +52,7 @@ func PlayerActions(g *Game) {
 
 		g.playerData.isTargeting = true
 		g.playerData.PrepareRangedAttack()
-		DrawRangedAttackAOE(g)
+		DrawRangedAttackAOE(&g.playerData, &g.gameMap)
 
 	}
 
@@ -79,8 +79,8 @@ func PlayerActions(g *Game) {
 		turntaken = true
 	}
 
-	HandlePlayerThrowable(g)
-	HandlePlayerRangedAttack(g)
+	HandlePlayerThrowable(&g.EntityManager, &g.playerData, &g.gameMap, g)
+	HandlePlayerRangedAttack(&g.EntityManager, &g.playerData, &g.gameMap)
 
 	nextPosition := common.Position{
 		X: g.playerData.position.X + x,
@@ -103,11 +103,11 @@ func PlayerActions(g *Game) {
 	} else {
 		//Determine if the tyle is blocked because there's a creature
 
-		c := GetCreatureAtPosition(g, &nextPosition)
+		c := GetCreatureAtPosition(&g.EntityManager, &nextPosition)
 
 		if c != nil {
 
-			MeleeAttackSystem(g, g.playerData.position, &nextPosition)
+			MeleeAttackSystem(&g.EntityManager, &g.playerData, &g.gameMap, g.playerData.position, &nextPosition)
 		}
 
 	}

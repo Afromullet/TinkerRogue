@@ -8,8 +8,8 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-func ProcessRenderables(g *Game, gameMap worldmap.GameMap, screen *ebiten.Image) {
-	for _, result := range g.World.Query(g.WorldTags["renderables"]) {
+func ProcessRenderables(ecsmanager *common.EntityManager, gameMap worldmap.GameMap, screen *ebiten.Image) {
+	for _, result := range ecsmanager.World.Query(ecsmanager.WorldTags["renderables"]) {
 		pos := result.Components[common.PositionComponent].(*common.Position)
 		img := result.Components[RenderableComponent].(*Renderable).Image
 

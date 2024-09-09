@@ -43,8 +43,8 @@ func NewGame() *Game {
 	g := &Game{}
 	g.gameMap = worldmap.NewGameMap()
 	g.playerData = PlayerData{}
-	InitializeECS(g)
-	InitializePlayerData(g)
+	InitializeECS(&g.EntityManager)
+	InitializePlayerData(&g.EntityManager, &g.playerData, &g.gameMap, g)
 
 	g.Turn = common.PlayerTurn
 	g.TurnCounter = 0
@@ -61,6 +61,7 @@ func NewGame() *Game {
 }
 
 // Update is called each tic.
+// todo still need to remove game
 func (g *Game) Update() error {
 
 	g.mainPlayerInterface.Update()
@@ -76,7 +77,7 @@ func (g *Game) Update() error {
 		PlayerActions(g)
 	}
 	if g.Turn == common.MonsterTurn {
-		MonsterSystems(g)
+		MonsterSystems(&g.EntityManager, &g.playerData, &g.gameMap, g)
 	}
 
 	return nil
@@ -86,7 +87,7 @@ func (g *Game) Update() error {
 // Draw is called each draw cycle and is where we will blit.
 func (g *Game) Draw(screen *ebiten.Image) {
 	g.gameMap.DrawLevel(screen)
-	ProcessRenderables(g, g.gameMap, screen)
+	ProcessRenderables(&g.EntityManager, g.gameMap, screen)
 	g.mainPlayerInterface.Draw(screen)
 	ProcessUserLog(g, screen)
 

@@ -107,12 +107,13 @@ func CreateTestMonsters(g *Game, manager *ecs.Manager, gameMap *worldmap.GameMap
 
 	c := CreateMonster(g, manager, gameMap, x, y+1, "assets/creatures/elf.png")
 
-	c.AddComponent(approachAndAttack, &ApproachAndAttack{})
-	//c.AddComponent(distanceRangeAttack, &DistanceRangedAttack{})
+	//c.AddComponent(approachAndAttack, &ApproachAndAttack{})
+	c.AddComponent(distanceRangeAttack, &DistanceRangedAttack{})
 	c.AddComponent(equipment.RangedWeaponComponent, &wep)
 
 	c = CreateMonster(g, manager, gameMap, x+1, y, "assets/creatures/unseen_horror.png")
 	c.AddComponent(simpleWanderComp, &SimpleWander{})
+	//c.AddComponent(approachAndAttack, &ApproachAndAttack{})
 
 	c = CreateMonster(g, manager, gameMap, x+1, y+1, "assets/creatures/angel.png")
 	c.AddComponent(entityFollowComp, &EntityFollow{target: g.playerData.PlayerEntity})

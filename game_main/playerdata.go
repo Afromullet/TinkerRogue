@@ -4,6 +4,7 @@ import (
 	"game_main/common"
 	"game_main/equipment"
 	"game_main/graphics"
+	"game_main/worldmap"
 	"log"
 
 	"github.com/bytearena/ecs"
@@ -91,6 +92,10 @@ type PlayerData struct {
 	isTargeting bool
 }
 
+func NewPlayerData() PlayerData {
+	return PlayerData{}
+}
+
 // Helper function to make it less tedious to get the inventory
 func (pl *PlayerData) GetPlayerInventory() *equipment.Inventory {
 
@@ -99,9 +104,10 @@ func (pl *PlayerData) GetPlayerInventory() *equipment.Inventory {
 	return playerInventory
 }
 
-func InitializePlayerData(g *Game) {
+// todo remove game after handling player data init
+func InitializePlayerData(ecsmanager *common.EntityManager, pl *PlayerData, gm *worldmap.GameMap, g *Game) {
 
-	player = g.World.NewComponent()
+	player = ecsmanager.World.NewComponent()
 
 	playerImg, _, err := ebitenutil.NewImageFromFile("assets/creatures/player1.png")
 	if err != nil {
@@ -115,7 +121,7 @@ func InitializePlayerData(g *Game) {
 
 	armor := equipment.Armor{1, 5, 50}
 
-	playerEntity := g.World.NewEntity().
+	playerEntity := ecsmanager.World.NewEntity().
 		AddComponent(player, &Player{}).
 		AddComponent(RenderableComponent, &Renderable{
 			Image:   playerImg,
@@ -135,21 +141,21 @@ func InitializePlayerData(g *Game) {
 		}).AddComponent(equipment.ArmorComponent, &armor)
 
 	players := ecs.BuildTag(player, common.PositionComponent, equipment.InventoryComponent)
-	g.WorldTags["players"] = players
+	ecsmanager.WorldTags["players"] = players
 
 	g.playerData = PlayerData{}
 
-	g.playerData.PlayerEntity = playerEntity
+	pl.PlayerEntity = playerEntity
 
 	//Don't want to Query for the player position every time, so we're storing it
 
-	startPos := common.GetComponentType[*common.Position](g.playerData.PlayerEntity, common.PositionComponent)
-	startPos.X = g.gameMap.StartingPosition().X
-	startPos.Y = g.gameMap.StartingPosition().Y
+	startPos := common.GetComponentType[*common.Position](pl.PlayerEntity, common.PositionComponent)
+	startPos.X = gm.StartingPosition().X
+	startPos.Y = gm.StartingPosition().Y
 
-	inventory := common.GetComponentType[*equipment.Inventory](g.playerData.PlayerEntity, equipment.InventoryComponent)
+	inventory := common.GetComponentType[*equipment.Inventory](pl.PlayerEntity, equipment.InventoryComponent)
 
-	g.playerData.position = startPos
-	g.playerData.inventory = inventory
+	pl.position = startPos
+	pl.inventory = inventory
 
 }

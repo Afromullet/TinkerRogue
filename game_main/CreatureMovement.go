@@ -93,7 +93,7 @@ func EntityFollowMoveAction(g *Game, mover *ecs.Entity) {
 	if goToEnt.target != nil {
 		targetPos := common.GetComponentType[*common.Position](goToEnt.target, common.PositionComponent)
 
-		creature.Path = BuildPath(g, creaturePosition, targetPos)
+		creature.Path = BuildPath(&g.gameMap, creaturePosition, targetPos)
 
 	}
 
@@ -121,7 +121,7 @@ func WithinRadiusMoveAction(g *Game, mover *ecs.Entity) {
 			if ok {
 
 				finalPos := common.PositionFromIndex(ind, gd.ScreenWidth)
-				path = BuildPath(g, creaturePosition, &finalPos)
+				path = BuildPath(&g.gameMap, creaturePosition, &finalPos)
 				break
 			}
 			// Decrease distance and try again
@@ -170,7 +170,7 @@ func WithinRangeMoveAction(g *Game, mover *ecs.Entity) {
 			creature.Path = creature.Path[:0]
 
 		} else {
-			creature.Path = BuildPath(g, creaturePosition, targetPos)
+			creature.Path = BuildPath(&g.gameMap, creaturePosition, targetPos)
 
 		}
 
@@ -209,7 +209,7 @@ func FleeFromEntityMovementAction(g *Game, mover *ecs.Entity) {
 					// Use InRange to check if the flee position is within the desired range
 					if creaturePosition.InRange(&fleePosition, fleeMov.distance) {
 						// Set the path to the flee destination
-						path := BuildPath(g, creaturePosition, &fleePosition)
+						path := BuildPath(&g.gameMap, creaturePosition, &fleePosition)
 						creature.Path = path
 
 						return
@@ -241,7 +241,7 @@ func MovementSystem(c *ecs.QueryResult, g *Game) {
 			creaturePosition := common.GetComponentType[*common.Position](c.Entity, common.PositionComponent)
 			if movementFunc, exists := MovementActions[comp]; exists {
 				movementFunc(g, c.Entity) // Call the function
-				creature.UpdatePosition(g, creaturePosition)
+				creature.UpdatePosition(&g.gameMap, creaturePosition)
 			}
 		}
 

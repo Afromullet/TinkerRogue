@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"game_main/common"
 	"game_main/equipment"
+	"game_main/worldmap"
 
 	"github.com/bytearena/ecs"
 )
@@ -32,7 +33,7 @@ type DistanceRangedAttack struct {
 
 // Build a path to the player and attack once within range
 
-func ApproachAndAttackAction(g *Game, c *ecs.QueryResult, target *ecs.Entity) {
+func ApproachAndAttackAction(ecsmanger *common.EntityManager, pl *PlayerData, gm *worldmap.GameMap, c *ecs.QueryResult, target *ecs.Entity) {
 
 	// Clear any existing movement if the creature attacks so there's no conflict
 	RemoveMovementComponent(c)
@@ -41,14 +42,14 @@ func ApproachAndAttackAction(g *Game, c *ecs.QueryResult, target *ecs.Entity) {
 
 	defenderPos := common.GetComponentType[*common.Position](target, common.PositionComponent)
 	if common.DistanceBetween(c.Entity, target) == 1 {
-		MeleeAttackSystem(g, common.GetPosition(c.Entity), defenderPos)
+		MeleeAttackSystem(ecsmanger, pl, gm, common.GetPosition(c.Entity), defenderPos)
 
 	}
 
 }
 
 // Stay within Ranged Attack Distance with the movement
-func StayDistantRangedAttackAction(g *Game, c *ecs.QueryResult, target *ecs.Entity) {
+func StayDistantRangedAttackAction(ecsmanger *common.EntityManager, pl *PlayerData, gm *worldmap.GameMap, c *ecs.QueryResult, target *ecs.Entity) {
 
 	RemoveMovementComponent(c)
 
@@ -62,7 +63,7 @@ func StayDistantRangedAttackAction(g *Game, c *ecs.QueryResult, target *ecs.Enti
 		fmt.Println("Printing distance. Range On Attack", distance, RangedWeapon.ShootingRange)
 
 		if common.GetPosition(c.Entity).InRange(common.GetPosition(target), RangedWeapon.ShootingRange) {
-			RangedAttackSystem(g, common.GetPosition(c.Entity))
+			RangedAttackSystem(ecsmanger, pl, gm, common.GetPosition(c.Entity))
 			fmt.Println("In range")
 		} else {
 			c.Entity.AddComponent(withinRadiusComp, &DistanceToEntityMovement{distance: rangeToKeep, target: target})
@@ -81,19 +82,19 @@ func SelectPlayerAsTarget(g *Game, c *ecs.QueryResult) {
 
 // Gets called in the MonsterSystems loop
 // Todo change logic to allow any entity to be targetted rather than just the player
-func CreatureAttackSystem(c *ecs.QueryResult, g *Game) {
+func CreatureAttackSystem(ecsmanger *common.EntityManager, pl *PlayerData, gm *worldmap.GameMap, c *ecs.QueryResult) {
 
 	var ok bool
 
 	if _, ok = c.Entity.GetComponentData(approachAndAttack); ok {
 
-		ApproachAndAttackAction(g, c, g.playerData.PlayerEntity)
+		ApproachAndAttackAction(ecsmanger, pl, gm, c, pl.PlayerEntity)
 
 	}
 
 	// Todo need to avoid friendly fire
 	if _, ok = c.Entity.GetComponentData(distanceRangeAttack); ok {
-		StayDistantRangedAttackAction(g, c, g.playerData.PlayerEntity)
+		StayDistantRangedAttackAction(ecsmanger, pl, gm, c, pl.PlayerEntity)
 	}
 
 }

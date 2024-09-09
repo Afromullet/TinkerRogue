@@ -4,6 +4,7 @@ import (
 	"game_main/common"
 	"game_main/equipment"
 	"game_main/graphics"
+	"game_main/worldmap"
 
 	"github.com/bytearena/ecs"
 )
@@ -60,12 +61,12 @@ func ApplyEffects(c *ecs.QueryResult) {
 // Get the next position on the path and pops the position from the path.
 // Passing currentPosition so we can stand in place when there is no path
 // TODO needs to be improved. This will cause a creature to "teleport" if the path is blocked
-func (c *Creature) UpdatePosition(g *Game, currentPosition *common.Position) {
+func (c *Creature) UpdatePosition(gm *worldmap.GameMap, currentPosition *common.Position) {
 
 	p := currentPosition
 
 	index := graphics.IndexFromXY(p.X, p.Y)
-	oldTile := g.gameMap.Tiles[index]
+	oldTile := gm.Tiles[index]
 
 	if len(c.Path) > 1 {
 		p = &c.Path[1]
@@ -79,7 +80,7 @@ func (c *Creature) UpdatePosition(g *Game, currentPosition *common.Position) {
 
 	index = graphics.IndexFromXY(p.X, p.Y)
 
-	nextTile := g.gameMap.Tiles[index]
+	nextTile := gm.Tiles[index]
 
 	if !nextTile.Blocked {
 
@@ -92,16 +93,17 @@ func (c *Creature) UpdatePosition(g *Game, currentPosition *common.Position) {
 
 }
 
-func MonsterSystems(g *Game) {
+// todo still need to remove game
+func MonsterSystems(ecsmanger *common.EntityManager, pl *PlayerData, gm *worldmap.GameMap, g *Game) {
 
-	for _, c := range g.World.Query(g.WorldTags["monsters"]) {
+	for _, c := range ecsmanger.World.Query(g.WorldTags["monsters"]) {
 
 		ApplyEffects(c)
-		CreatureAttackSystem(c, g)
+		CreatureAttackSystem(ecsmanger, pl, gm, c)
 		h := common.GetComponentType[*common.Attributes](c.Entity, common.AttributeComponent)
 
 		if h.CurrentHealth <= 0 {
-			g.World.DisposeEntity(c.Entity)
+			ecsmanger.World.DisposeEntity(c.Entity)
 		}
 
 		MovementSystem(c, g)
