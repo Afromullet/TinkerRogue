@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"game_main/avatar"
+	"game_main/combat"
 	"game_main/common"
 	"game_main/equipment"
 	"game_main/worldmap"
@@ -43,7 +44,7 @@ func ApproachAndAttackAction(ecsmanger *common.EntityManager, pl *avatar.PlayerD
 
 	defenderPos := common.GetComponentType[*common.Position](target, common.PositionComponent)
 	if common.DistanceBetween(c.Entity, target) == 1 {
-		MeleeAttackSystem(ecsmanger, pl, gm, common.GetPosition(c.Entity), defenderPos)
+		combat.MeleeAttackSystem(ecsmanger, pl, gm, common.GetPosition(c.Entity), defenderPos)
 
 	}
 
@@ -64,7 +65,7 @@ func StayDistantRangedAttackAction(ecsmanger *common.EntityManager, pl *avatar.P
 		fmt.Println("Printing distance. Range On Attack", distance, RangedWeapon.ShootingRange)
 
 		if common.GetPosition(c.Entity).InRange(common.GetPosition(target), RangedWeapon.ShootingRange) {
-			RangedAttackSystem(ecsmanger, pl, gm, common.GetPosition(c.Entity))
+			combat.RangedAttackSystem(ecsmanger, pl, gm, common.GetPosition(c.Entity))
 			fmt.Println("In range")
 		} else {
 			c.Entity.AddComponent(withinRadiusComp, &DistanceToEntityMovement{distance: rangeToKeep, target: target})

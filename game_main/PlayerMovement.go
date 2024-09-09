@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"game_main/avatar"
+	"game_main/combat"
 	"game_main/common"
 	"game_main/equipment"
 	"game_main/graphics"
@@ -106,11 +107,11 @@ func PlayerActions(ecsmanager *common.EntityManager, pl *avatar.PlayerData, gm *
 	} else {
 		//Determine if the tyle is blocked because there's a creature
 
-		c := GetCreatureAtPosition(ecsmanager, &nextPosition)
+		c := combat.GetCreatureAtPosition(ecsmanager, &nextPosition)
 
 		if c != nil {
 
-			MeleeAttackSystem(ecsmanager, pl, gm, pl.Pos, &nextPosition)
+			combat.MeleeAttackSystem(ecsmanager, pl, gm, pl.Pos, &nextPosition)
 		}
 
 	}

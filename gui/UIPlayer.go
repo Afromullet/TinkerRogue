@@ -1,13 +1,10 @@
 package gui
 
 import (
-	"game_main/avatar"
-
 	"github.com/ebitenui/ebitenui"
 )
 
 type PlayerUI struct {
-	playerData          avatar.PlayerData
 	ItemsUI             PlayerItemsUI
 	MainPlayerInterface *ebitenui.UI
 }

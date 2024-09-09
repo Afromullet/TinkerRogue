@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"game_main/avatar"
+	"game_main/combat"
 	"game_main/common"
 	"game_main/equipment"
 	"game_main/graphics"
@@ -188,7 +189,7 @@ func HandlePlayerRangedAttack(ecsmanager *common.EntityManager, pl *avatar.Playe
 
 		if inpututil.IsMouseButtonJustPressed(ebiten.MouseButton1) {
 
-			RangedAttackSystem(ecsmanager, pl, gm, pl.Pos)
+			combat.RangedAttackSystem(ecsmanager, pl, gm, pl.Pos)
 
 		}
 
