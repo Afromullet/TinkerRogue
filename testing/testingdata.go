@@ -120,19 +120,18 @@ func CreateTestMonsters(manager *ecs.Manager, pl *avatar.PlayerData, gameMap *wo
 	//c.AddComponent(monsters.SimpleWanderComp, &monsters.SimpleWander{})
 	//c.AddComponent(approachAndAttack, &ApproachAndAttack{})
 
-	/*
-		c = CreateMonster(manager, gameMap, x+1, y+1, "../assets/creatures/angel.png")
-		c.AddComponent(monsters.EntityFollowComp, &monsters.EntityFollow{Target: pl.PlayerEntity})
+	c = CreateMonster(manager, gameMap, x+1, y+1, "../assets/creatures/angel.png")
+	c.AddComponent(monsters.EntityFollowComp, &monsters.EntityFollow{Target: pl.PlayerEntity})
 
-		c = CreateMonster(manager, gameMap, x+1, y+2, "../assets/creatures/ancient_lich.png")
-		c.AddComponent(monsters.WithinRadiusComp, &monsters.DistanceToEntityMovement{Target: pl.PlayerEntity, Distance: 3})
+	c = CreateMonster(manager, gameMap, x+1, y+2, "../assets/creatures/ancient_lich.png")
+	c.AddComponent(monsters.WithinRadiusComp, &monsters.DistanceToEntityMovement{Target: pl.PlayerEntity, Distance: 3})
 
-		c = CreateMonster(manager, gameMap, x+2, y+1, "../assets/creatures/starcursed_mass.png")
-		c.AddComponent(monsters.WithinRangeComponent, &monsters.DistanceToEntityMovement{Distance: 2, Target: pl.PlayerEntity})
-		//CreateMonster(g, manager, gameMap, x+2, y+2, "../assets/creatures/balrug.png")
+	c = CreateMonster(manager, gameMap, x+2, y+1, "../assets/creatures/starcursed_mass.png")
+	c.AddComponent(monsters.WithinRangeComponent, &monsters.DistanceToEntityMovement{Distance: 2, Target: pl.PlayerEntity})
+	//CreateMonster(g, manager, gameMap, x+2, y+2, "../assets/creatures/balrug.png")
 
-		CreateMoreTestMonsters(manager, gameMap)
-	*/
+	CreateMoreTestMonsters(manager, gameMap)
+
 	//CreateMoreTestMonsters(manager, gameMap)
 
 }
@@ -196,7 +195,7 @@ func CreateMonster(manager *ecs.Manager, gameMap *worldmap.GameMap, x, y int, im
 			MinDamage: 3,
 			MaxDamage: 5,
 		}).
-		AddComponent(actionmanager.ActionComponent, &actionmanager.Actions{})
+		AddComponent(actionmanager.ActionComponent, &actionmanager.ActionQueue{})
 
 	armor := equipment.GetArmor(ent)
 	common.UpdateAttributes(ent, armor.ArmorClass, armor.Protection, armor.DodgeChance)

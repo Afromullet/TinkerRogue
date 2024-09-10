@@ -104,21 +104,17 @@ func (c *Creature) UpdatePosition(gm *worldmap.GameMap, currentPosition *common.
 
 }
 
-// todo still need to remove game
+// Currently executes all actions just as it did before, this time only doing it through the AllActions queue
+// Will change later once the time system is implemented. Still want things to behave the same while implementing the time system
 func MonsterSystems(ecsmanger *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap, ts *timesystem.GameTurn) {
 
-	a := actionmanager.Actions{}
+	a := actionmanager.ActionQueue{}
 	fmt.Println(a)
 	for _, c := range ecsmanger.World.Query(ecsmanger.WorldTags["monsters"]) {
 
 		ApplyEffects(c)
 
-		retFunc := CreatureAttackSystem(ecsmanger, pl, gm, c)
-
-		if retFunc != nil {
-
-			a.AddAttackAction(retFunc, ecsmanger, pl, gm, c, pl.PlayerEntity)
-		}
+		a.AddAction(CreatureAttackSystem(ecsmanger, pl, gm, c))
 
 		h := common.GetComponentType[*common.Attributes](c.Entity, common.AttributeComponent)
 
@@ -126,13 +122,13 @@ func MonsterSystems(ecsmanger *common.EntityManager, pl *avatar.PlayerData, gm *
 			ecsmanger.World.DisposeEntity(c.Entity)
 		}
 
-		CreatureMovementSystem(ecsmanger, gm, c)
+		a.AddAction(CreatureMovementSystem(ecsmanger, gm, c))
 
 	}
 
 	for _, acts := range a.AllActions {
 
-		acts()
+		acts.Execute()
 
 	}
 

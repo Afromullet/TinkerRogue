@@ -2,6 +2,7 @@ package monsters
 
 import (
 	"fmt"
+	"game_main/actionmanager"
 	"game_main/avatar"
 	"game_main/combat"
 	"game_main/common"
@@ -14,11 +15,14 @@ import (
 /*
 To Implement a new type of attack:
 
+Actions are stored in a Queue. This requires some more steps after creating the component
+
 1) Create the component
-2) Create the struct assocaited with the component
+2) Create the struct associated with the component
 3) Implement the function that handles the attack. Curently the function removes the existing movement component
 And then adds a new one, which determines how to approach the creature that's attacking
-4) Call the function in CreatureAttackSystem
+4) In the Action package, create a wrapper for the function. See the comments in the actionmanager on how to do that.
+5) Return the wrapper in the CreatureAttackSystem
 
 */
 
@@ -80,22 +84,33 @@ func StayDistantRangedAttackAction(ecsmanger *common.EntityManager, pl *avatar.P
 
 // Gets called in the MonsterSystems loop
 // Todo change logic to allow any entity to be targetted rather than just the player
-func CreatureAttackSystem(ecsmanger *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap, c *ecs.QueryResult) func(em *common.EntityManager, p *avatar.PlayerData, gm *worldmap.GameMap, q *ecs.QueryResult, e *ecs.Entity) {
+func CreatureAttackSystem(ecsmanger *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap, c *ecs.QueryResult) actionmanager.Action {
 
 	var ok bool
 
 	if _, ok = c.Entity.GetComponentData(ApproachAndAttackComp); ok {
 
-		return func(em *common.EntityManager, p *avatar.PlayerData, gm *worldmap.GameMap, q *ecs.QueryResult, e *ecs.Entity) {
-			ApproachAndAttackAction(ecsmanger, pl, gm, c, pl.PlayerEntity)
+		return &actionmanager.OneTargetAttack{
+			Func:   ApproachAndAttackAction,
+			Param1: ecsmanger,
+			Param2: pl,
+			Param3: gm,
+			Param4: c,
+			Param5: pl.PlayerEntity,
 		}
 
 	}
 
 	// Todo need to avoid friendly fire
 	if _, ok = c.Entity.GetComponentData(DistanceRangeAttackComp); ok {
-		return func(em *common.EntityManager, p *avatar.PlayerData, gm *worldmap.GameMap, q *ecs.QueryResult, e *ecs.Entity) {
-			StayDistantRangedAttackAction(ecsmanger, pl, gm, c, pl.PlayerEntity)
+
+		return &actionmanager.OneTargetAttack{
+			Func:   StayDistantRangedAttackAction,
+			Param1: ecsmanger,
+			Param2: pl,
+			Param3: gm,
+			Param4: c,
+			Param5: pl.PlayerEntity,
 		}
 	}
 

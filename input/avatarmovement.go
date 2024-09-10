@@ -24,7 +24,7 @@ var PrevRangedAttInds []int
 // todo replace the keypressed with iskeyreleased
 func PlayerActions(ecsmanager *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap, playerUI *gui.PlayerUI, tm *timesystem.GameTurn) {
 
-	a := actionmanager.Actions{}
+	a := actionmanager.ActionQueue{}
 	fmt.Println(a)
 
 	turntaken := false

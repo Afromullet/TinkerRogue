@@ -1,6 +1,7 @@
 package monsters
 
 import (
+	"game_main/actionmanager"
 	"game_main/common"
 	"game_main/graphics"
 	"game_main/pathfinding"
@@ -12,14 +13,12 @@ import (
 )
 
 /*
-To create a new Movement Type do the following:
+1) Create the component
+2) Create the struct associated with the component
+3) Implement the function that handles the movement.
+4) In the Action package, create a wrapper for the function. See the comments in the actionmanager on how to do that.
+5) Return the wrapper in the CreatureAttackSystem
 
-1) Create the movement component. See where simpleWanderComp, noMoveComp and the rest are declare.d
-2) Created the associated struct as we do for the ECS library we're using.
-3) Create the function that handles the movement. The function updates the path of the entity that's moving
-4) In InitializeMovementComponents, initialize the component created in step 1
-5) In InitializeMovementComponents, append the component to MovementTypes
-6) Add the function to the MovementActions map
 
 */
 // movementAction is a map that will make it easier to call the movement functions.
@@ -35,8 +34,6 @@ var (
 	FleeComp             *ecs.Component
 
 	MovementTypes []*ecs.Component
-
-	MovementActions = map[*ecs.Component]MovementFunction{}
 )
 
 // Todo considering adding an interface with "BuildPath" m
@@ -79,6 +76,8 @@ func SimpleWanderAction(ecsmanager *common.EntityManager, gm *worldmap.GameMap, 
 
 	}
 
+	creature.UpdatePosition(gm, creaturePosition)
+
 }
 
 func NoMoveAction(ecsmanager *common.EntityManager, gm *worldmap.GameMap, mover *ecs.Entity) {
@@ -97,6 +96,8 @@ func EntityFollowMoveAction(ecsmanager *common.EntityManager, gm *worldmap.GameM
 		creature.Path = pathfinding.BuildPath(gm, creaturePosition, targetPos)
 
 	}
+
+	creature.UpdatePosition(gm, creaturePosition)
 
 }
 
@@ -132,6 +133,8 @@ func WithinRadiusMoveAction(ecsmanager *common.EntityManager, gm *worldmap.GameM
 		creature.Path = path
 
 	}
+
+	creature.UpdatePosition(gm, creaturePosition)
 
 	//fmt.Println(pos)
 
@@ -176,6 +179,8 @@ func WithinRangeMoveAction(ecsmanager *common.EntityManager, gm *worldmap.GameMa
 		}
 
 	}
+
+	creature.UpdatePosition(gm, creaturePosition)
 
 }
 
@@ -224,28 +229,47 @@ func FleeFromEntityMovementAction(ecsmanager *common.EntityManager, gm *worldmap
 
 		// If no valid flee destination was found, you can add additional fallback logic here if necessary
 	}
+
+	creature.UpdatePosition(gm, creaturePosition)
 }
 
 // Used for Stay Within Range movement. Selects a random unblocked tile to move to
 // Gets called in MonsterSystems, which queries the ECS manager and returns query results containing all monsters
 // A movmeent function builds a path for a creature to follow, and UpdatePosition lets a creature move on the path
 
-func CreatureMovementSystem(ecsmanager *common.EntityManager, gm *worldmap.GameMap, c *ecs.QueryResult) MovementFunction {
+func CreatureMovementSystem(ecsmanager *common.EntityManager, gm *worldmap.GameMap, c *ecs.QueryResult) actionmanager.Action {
 
 	//var ok bool
+	var ok bool
 
-	for _, comp := range MovementTypes {
+	// Todo need to avoid friendly fire
 
-		if c.Entity.HasComponent(comp) {
+	if _, ok = c.Entity.GetComponentData(SimpleWanderComp); ok {
+		return actionmanager.NewEntityMover(SimpleWanderAction, ecsmanager, gm, c.Entity)
+	}
 
-			creature := common.GetComponentType[*Creature](c.Entity, CreatureComponent)
-			creaturePosition := common.GetComponentType[*common.Position](c.Entity, common.PositionComponent)
-			if movementFunc, exists := MovementActions[comp]; exists {
-				movementFunc(ecsmanager, gm, c.Entity) // Call the function
-				creature.UpdatePosition(gm, creaturePosition)
-				return movementFunc
-			}
-		}
+	if _, ok = c.Entity.GetComponentData(NoMoveComp); ok {
+		return actionmanager.NewEntityMover(NoMoveAction, ecsmanager, gm, c.Entity)
+
+	}
+
+	if _, ok = c.Entity.GetComponentData(EntityFollowComp); ok {
+		return actionmanager.NewEntityMover(EntityFollowMoveAction, ecsmanager, gm, c.Entity)
+
+	}
+
+	if _, ok = c.Entity.GetComponentData(WithinRadiusComp); ok {
+		return actionmanager.NewEntityMover(WithinRadiusMoveAction, ecsmanager, gm, c.Entity)
+
+	}
+
+	if _, ok = c.Entity.GetComponentData(WithinRangeComponent); ok {
+		return actionmanager.NewEntityMover(WithinRangeMoveAction, ecsmanager, gm, c.Entity)
+
+	}
+
+	if _, ok = c.Entity.GetComponentData(FleeComp); ok {
+		return actionmanager.NewEntityMover(FleeFromEntityMovementAction, ecsmanager, gm, c.Entity)
 
 	}
 
@@ -277,12 +301,5 @@ func InitializeMovementComponents(manager *ecs.Manager, tags map[string]ecs.Tag)
 	FleeComp = manager.NewComponent()
 
 	MovementTypes = append(MovementTypes, SimpleWanderComp, NoMoveComp, EntityFollowComp, WithinRadiusComp, WithinRangeComponent, FleeComp)
-
-	MovementActions[SimpleWanderComp] = SimpleWanderAction
-	MovementActions[NoMoveComp] = NoMoveAction
-	MovementActions[EntityFollowComp] = EntityFollowMoveAction
-	MovementActions[WithinRadiusComp] = WithinRadiusMoveAction
-	MovementActions[WithinRangeComponent] = WithinRangeMoveAction
-	MovementActions[FleeComp] = FleeFromEntityMovementAction
 
 }
