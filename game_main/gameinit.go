@@ -50,7 +50,7 @@ func InitializePlayerData(ecsmanager *common.EntityManager, pl *avatar.PlayerDat
 			AttackMessage:    "",
 			GameStateMessage: "",
 		}).AddComponent(equipment.ArmorComponent, &armor).
-		AddComponent(actionmanager.ActionComponent, &actionmanager.ActionQueue{})
+		AddComponent(actionmanager.ActionQueueComponent, &actionmanager.ActionQueue{})
 
 	players := ecs.BuildTag(avatar.PlayerComponent, common.PositionComponent, equipment.InventoryComponent)
 	ecsmanager.WorldTags["players"] = players

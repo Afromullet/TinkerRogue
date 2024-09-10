@@ -39,7 +39,7 @@ func InitializeECS(ecsmanager *common.EntityManager) {
 
 	monsters.InitializeMovementComponents(manager, tags)
 	equipment.InitializeItemComponents(manager, tags)
-	actionmanager.ActionComponent = manager.NewComponent()
+	actionmanager.ActionQueueComponent = manager.NewComponent()
 
 	InitializeCreatureComponents(manager, tags)
 

@@ -195,7 +195,7 @@ func CreateMonster(manager *ecs.Manager, gameMap *worldmap.GameMap, x, y int, im
 			MinDamage: 3,
 			MaxDamage: 5,
 		}).
-		AddComponent(actionmanager.ActionComponent, &actionmanager.ActionQueue{})
+		AddComponent(actionmanager.ActionQueueComponent, &actionmanager.ActionQueue{})
 
 	armor := equipment.GetArmor(ent)
 	common.UpdateAttributes(ent, armor.ArmorClass, armor.Protection, armor.DodgeChance)

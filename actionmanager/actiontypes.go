@@ -65,7 +65,7 @@ The CreatureAttackSystem returns the appropriate wrapper. I.Econst
 
 */
 
-var ActionComponent *ecs.Component
+var ActionQueueComponent *ecs.Component
 
 type Action interface {
 	Execute()

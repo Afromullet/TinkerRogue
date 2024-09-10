@@ -1,7 +1,6 @@
 package monsters
 
 import (
-	"fmt"
 	"game_main/actionmanager"
 	"game_main/avatar"
 	"game_main/common"
@@ -108,13 +107,15 @@ func (c *Creature) UpdatePosition(gm *worldmap.GameMap, currentPosition *common.
 // Will change later once the time system is implemented. Still want things to behave the same while implementing the time system
 func MonsterSystems(ecsmanger *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap, ts *timesystem.GameTurn) {
 
-	a := actionmanager.ActionQueue{}
-	fmt.Println(a)
 	for _, c := range ecsmanger.World.Query(ecsmanger.WorldTags["monsters"]) {
+
+		actionQueue := common.GetComponentType[*actionmanager.ActionQueue](c.Entity, actionmanager.ActionQueueComponent)
 
 		ApplyEffects(c)
 
-		a.AddAction(CreatureAttackSystem(ecsmanger, pl, gm, c))
+		if actionQueue != nil {
+			actionQueue.AddAction(CreatureAttackSystem(ecsmanger, pl, gm, c))
+		}
 
 		h := common.GetComponentType[*common.Attributes](c.Entity, common.AttributeComponent)
 
@@ -122,14 +123,21 @@ func MonsterSystems(ecsmanger *common.EntityManager, pl *avatar.PlayerData, gm *
 			ecsmanger.World.DisposeEntity(c.Entity)
 		}
 
-		a.AddAction(CreatureMovementSystem(ecsmanger, gm, c))
+		if actionQueue != nil {
+			actionQueue.AddAction(CreatureMovementSystem(ecsmanger, gm, c))
+		}
 
 	}
 
-	for _, acts := range a.AllActions {
+	// A placeholder for continuing to execute actions in the same way
+	for _, c := range ecsmanger.World.Query(ecsmanger.WorldTags["monsters"]) {
+		actionQueue := common.GetComponentType[*actionmanager.ActionQueue](c.Entity, actionmanager.ActionQueueComponent)
 
-		acts.Execute()
+		for _, acts := range actionQueue.AllActions {
 
+			acts.Execute()
+
+		}
 	}
 
 	ts.Turn = timesystem.PlayerTurn
