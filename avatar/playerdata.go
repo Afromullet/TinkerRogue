@@ -4,14 +4,11 @@ import (
 	"game_main/common"
 	"game_main/equipment"
 	"game_main/graphics"
-	"game_main/worldmap"
-	"log"
 
 	"github.com/bytearena/ecs"
-	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 )
 
-var player *ecs.Component
+var PlayerComponent *ecs.Component
 
 type Player struct {
 }
@@ -102,60 +99,4 @@ func (pl *PlayerData) GetPlayerInventory() *equipment.Inventory {
 	playerInventory := common.GetComponentType[*equipment.Inventory](pl.PlayerEntity, equipment.InventoryComponent)
 
 	return playerInventory
-}
-
-// todo remove game after handling player data init
-func InitializePlayerData(ecsmanager *common.EntityManager, pl *PlayerData, gm *worldmap.GameMap) {
-
-	player = ecsmanager.World.NewComponent()
-
-	playerImg, _, err := ebitenutil.NewImageFromFile("../assets/creatures/player1.png")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	attr := common.Attributes{}
-	attr.MaxHealth = 5
-	attr.CurrentHealth = 5
-	attr.AttackBonus = 5
-
-	armor := equipment.Armor{1, 5, 50}
-
-	playerEntity := ecsmanager.World.NewEntity().
-		AddComponent(player, &Player{}).
-		AddComponent(common.RenderableComponent, &common.Renderable{
-			Image:   playerImg,
-			Visible: true,
-		}).
-		AddComponent(common.PositionComponent, &common.Position{
-			X: 40,
-			Y: 45,
-		}).
-		AddComponent(equipment.InventoryComponent, &equipment.Inventory{
-			InventoryContent: make([]*ecs.Entity, 0),
-		}).
-		AddComponent(common.AttributeComponent, &attr).
-		AddComponent(common.UsrMsg, &common.UserMessage{
-			AttackMessage:    "",
-			GameStateMessage: "",
-		}).AddComponent(equipment.ArmorComponent, &armor)
-
-	players := ecs.BuildTag(player, common.PositionComponent, equipment.InventoryComponent)
-	ecsmanager.WorldTags["players"] = players
-
-	//g.playerData = PlayerData{}
-
-	pl.PlayerEntity = playerEntity
-
-	//Don't want to Query for the player position every time, so we're storing it
-
-	startPos := common.GetComponentType[*common.Position](pl.PlayerEntity, common.PositionComponent)
-	startPos.X = gm.StartingPosition().X
-	startPos.Y = gm.StartingPosition().Y
-
-	inventory := common.GetComponentType[*equipment.Inventory](pl.PlayerEntity, equipment.InventoryComponent)
-
-	pl.Pos = startPos
-	pl.Inv = inventory
-
 }

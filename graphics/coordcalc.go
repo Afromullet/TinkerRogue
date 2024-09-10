@@ -11,7 +11,7 @@ type ScreenData struct {
 
 func NewScreenData() ScreenData {
 	g := ScreenData{
-		ScreenWidth:  80,
+		ScreenWidth:  50,
 		ScreenHeight: 50,
 		TileWidth:    32,
 		TileHeight:   32,

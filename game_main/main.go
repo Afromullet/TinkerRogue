@@ -24,6 +24,7 @@ import (
 	"game_main/monsters"
 	"game_main/rendering"
 	"game_main/testing"
+	"game_main/timesystem"
 	"game_main/worldmap"
 	_ "image/png"
 	"log"
@@ -41,7 +42,7 @@ type Game struct {
 	playerData avatar.PlayerData
 	gameMap    worldmap.GameMap
 
-	common.TimeSystem
+	ts timesystem.GameTurn
 }
 
 // NewGame creates a new Game Object and initializes the data
@@ -51,10 +52,10 @@ func NewGame() *Game {
 	g.gameMap = worldmap.NewGameMap()
 	g.playerData = avatar.PlayerData{}
 	InitializeECS(&g.EntityManager)
-	avatar.InitializePlayerData(&g.EntityManager, &g.playerData, &g.gameMap)
+	InitializePlayerData(&g.EntityManager, &g.playerData, &g.gameMap)
 
-	g.Turn = common.PlayerTurn
-	g.TurnCounter = 0
+	g.ts.Turn = timesystem.PlayerTurn
+	g.ts.TurnCounter = 0
 
 	//g.craftingUI.SetCraftingWindowLocation(g.screenData.screenWidth/2, g.screenData.screenWidth/2)
 
@@ -77,14 +78,14 @@ func (g *Game) Update() error {
 	// Update the Label text to indicate if the ui is currently being hovered over or not
 	//g.headerLbl.Label = fmt.Sprintf("Game Demo!\nUI is hovered: %t", input.UIHovered)
 
-	g.TurnCounter++
+	g.ts.TurnCounter++
 
-	if g.Turn == common.PlayerTurn && g.TurnCounter > 20 {
+	if g.ts.Turn == timesystem.PlayerTurn && g.ts.TurnCounter > 20 {
 
-		input.PlayerActions(&g.EntityManager, &g.playerData, &g.gameMap, &g.gameUI, &g.TimeSystem)
+		input.PlayerActions(&g.EntityManager, &g.playerData, &g.gameMap, &g.gameUI, &g.ts)
 	}
-	if g.Turn == common.MonsterTurn {
-		monsters.MonsterSystems(&g.EntityManager, &g.playerData, &g.gameMap, &g.TimeSystem)
+	if g.ts.Turn == timesystem.MonsterTurn {
+		monsters.MonsterSystems(&g.EntityManager, &g.playerData, &g.gameMap, &g.ts)
 	}
 
 	return nil

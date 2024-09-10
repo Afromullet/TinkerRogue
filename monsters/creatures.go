@@ -1,10 +1,13 @@
 package monsters
 
 import (
+	"fmt"
+	"game_main/actionmanager"
 	"game_main/avatar"
 	"game_main/common"
 	"game_main/equipment"
 	"game_main/graphics"
+	"game_main/timesystem"
 	"game_main/worldmap"
 
 	"github.com/bytearena/ecs"
@@ -102,22 +105,37 @@ func (c *Creature) UpdatePosition(gm *worldmap.GameMap, currentPosition *common.
 }
 
 // todo still need to remove game
-func MonsterSystems(ecsmanger *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap, ts *common.TimeSystem) {
+func MonsterSystems(ecsmanger *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap, ts *timesystem.GameTurn) {
 
+	a := actionmanager.Actions{}
+	fmt.Println(a)
 	for _, c := range ecsmanger.World.Query(ecsmanger.WorldTags["monsters"]) {
 
 		ApplyEffects(c)
-		CreatureAttackSystem(ecsmanger, pl, gm, c)
+
+		retFunc := CreatureAttackSystem(ecsmanger, pl, gm, c)
+
+		if retFunc != nil {
+
+			a.AddAttackAction(retFunc, ecsmanger, pl, gm, c, pl.PlayerEntity)
+		}
+
 		h := common.GetComponentType[*common.Attributes](c.Entity, common.AttributeComponent)
 
 		if h.CurrentHealth <= 0 {
 			ecsmanger.World.DisposeEntity(c.Entity)
 		}
 
-		MovementSystem(ecsmanger, gm, c)
+		CreatureMovementSystem(ecsmanger, gm, c)
 
 	}
 
-	ts.Turn = common.PlayerTurn
+	for _, acts := range a.AllActions {
+
+		acts()
+
+	}
+
+	ts.Turn = timesystem.PlayerTurn
 
 }

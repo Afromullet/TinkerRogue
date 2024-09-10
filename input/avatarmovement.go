@@ -2,12 +2,14 @@ package input
 
 import (
 	"fmt"
+	"game_main/actionmanager"
 	"game_main/avatar"
 	"game_main/combat"
 	"game_main/common"
 	"game_main/equipment"
 	"game_main/graphics"
 	"game_main/gui"
+	"game_main/timesystem"
 	"game_main/worldmap"
 	"log"
 
@@ -20,7 +22,10 @@ var PrevThrowInds []int
 var PrevRangedAttInds []int
 
 // todo replace the keypressed with iskeyreleased
-func PlayerActions(ecsmanager *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap, playerUI *gui.PlayerUI, tm *common.TimeSystem) {
+func PlayerActions(ecsmanager *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap, playerUI *gui.PlayerUI, tm *timesystem.GameTurn) {
+
+	a := actionmanager.Actions{}
+	fmt.Println(a)
 
 	turntaken := false
 	//players := g.WorldTags["players"]
@@ -119,7 +124,7 @@ func PlayerActions(ecsmanager *common.EntityManager, pl *avatar.PlayerData, gm *
 	//AttackSystem(g, pl.position, defendingMonsterTestPosition)
 	//AttackSystem(g, defendingMonsterTestPosition, pl.position)
 	if x != 0 || y != 0 || turntaken {
-		tm.Turn = common.GetNextState(tm.Turn)
+		tm.Turn = timesystem.GetNextState(tm.Turn)
 		tm.TurnCounter = 0
 	}
 }

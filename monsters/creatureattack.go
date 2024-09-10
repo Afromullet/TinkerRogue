@@ -80,19 +80,25 @@ func StayDistantRangedAttackAction(ecsmanger *common.EntityManager, pl *avatar.P
 
 // Gets called in the MonsterSystems loop
 // Todo change logic to allow any entity to be targetted rather than just the player
-func CreatureAttackSystem(ecsmanger *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap, c *ecs.QueryResult) {
+func CreatureAttackSystem(ecsmanger *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap, c *ecs.QueryResult) func(em *common.EntityManager, p *avatar.PlayerData, gm *worldmap.GameMap, q *ecs.QueryResult, e *ecs.Entity) {
 
 	var ok bool
 
 	if _, ok = c.Entity.GetComponentData(ApproachAndAttackComp); ok {
 
-		ApproachAndAttackAction(ecsmanger, pl, gm, c, pl.PlayerEntity)
+		return func(em *common.EntityManager, p *avatar.PlayerData, gm *worldmap.GameMap, q *ecs.QueryResult, e *ecs.Entity) {
+			ApproachAndAttackAction(ecsmanger, pl, gm, c, pl.PlayerEntity)
+		}
 
 	}
 
 	// Todo need to avoid friendly fire
 	if _, ok = c.Entity.GetComponentData(DistanceRangeAttackComp); ok {
-		StayDistantRangedAttackAction(ecsmanger, pl, gm, c, pl.PlayerEntity)
+		return func(em *common.EntityManager, p *avatar.PlayerData, gm *worldmap.GameMap, q *ecs.QueryResult, e *ecs.Entity) {
+			StayDistantRangedAttackAction(ecsmanger, pl, gm, c, pl.PlayerEntity)
+		}
 	}
+
+	return nil
 
 }

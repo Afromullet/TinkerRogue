@@ -1,4 +1,4 @@
-package common
+package timesystem
 
 type TurnState int
 
@@ -8,7 +8,7 @@ const (
 	MonsterTurn
 )
 
-type TimeSystem struct {
+type GameTurn struct {
 	Turn        TurnState
 	TurnCounter int
 }

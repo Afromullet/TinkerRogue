@@ -230,7 +230,7 @@ func FleeFromEntityMovementAction(ecsmanager *common.EntityManager, gm *worldmap
 // Gets called in MonsterSystems, which queries the ECS manager and returns query results containing all monsters
 // A movmeent function builds a path for a creature to follow, and UpdatePosition lets a creature move on the path
 
-func MovementSystem(ecsmanager *common.EntityManager, gm *worldmap.GameMap, c *ecs.QueryResult) {
+func CreatureMovementSystem(ecsmanager *common.EntityManager, gm *worldmap.GameMap, c *ecs.QueryResult) MovementFunction {
 
 	//var ok bool
 
@@ -243,10 +243,13 @@ func MovementSystem(ecsmanager *common.EntityManager, gm *worldmap.GameMap, c *e
 			if movementFunc, exists := MovementActions[comp]; exists {
 				movementFunc(ecsmanager, gm, c.Entity) // Call the function
 				creature.UpdatePosition(gm, creaturePosition)
+				return movementFunc
 			}
 		}
 
 	}
+
+	return nil
 
 }
 

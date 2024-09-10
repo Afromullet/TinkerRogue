@@ -1,6 +1,7 @@
 package testing
 
 import (
+	"game_main/actionmanager"
 	"game_main/avatar"
 	"game_main/common"
 	"game_main/equipment"
@@ -24,11 +25,11 @@ var TestBurning = equipment.NewBurning(5, 2)
 var TestSticky = equipment.NewSticky(9, 2)
 var TestFreezing = equipment.NewFreezing(3, 5)
 
-var TestFireEffect = graphics.NewFireEffect(0, 0, 1, 5, 1, 0.5)
-var TestCloudEffect = graphics.NewCloudEffect(0, 0, 5)
-var TestIceEffect = graphics.NewIceEffect(0, 0, 5)
-var TestElectricEffect = graphics.NewElectricityEffect(0, 0, 5)
-var TestStickyEffect = graphics.NewStickyGroundEffect(0, 0, 5)
+var TestFireEffect = graphics.NewFireEffect(0, 0, 1, 2, 1, 0.5)
+var TestCloudEffect = graphics.NewCloudEffect(0, 0, 2)
+var TestIceEffect = graphics.NewIceEffect(0, 0, 2)
+var TestElectricEffect = graphics.NewElectricityEffect(0, 0, 2)
+var TestStickyEffect = graphics.NewStickyGroundEffect(0, 0, 2)
 
 func SetupPlayerForTesting(ecsmanager *common.EntityManager, pl *avatar.PlayerData) {
 	w := CreateWeapon(ecsmanager.World, "Weapon 1", *pl.Pos, "../assets/items/sword.png", 5, 10)
@@ -115,21 +116,23 @@ func CreateTestMonsters(manager *ecs.Manager, pl *avatar.PlayerData, gameMap *wo
 	c.AddComponent(equipment.RangedWeaponComponent, &wep)
 
 	c = CreateMonster(manager, gameMap, x+1, y, "../assets/creatures/unseen_horror.png")
-	c.AddComponent(monsters.SimpleWanderComp, &monsters.SimpleWander{})
+	c.AddComponent(monsters.ApproachAndAttackComp, &monsters.ApproachAndAttack{})
+	//c.AddComponent(monsters.SimpleWanderComp, &monsters.SimpleWander{})
 	//c.AddComponent(approachAndAttack, &ApproachAndAttack{})
 
-	c = CreateMonster(manager, gameMap, x+1, y+1, "../assets/creatures/angel.png")
-	c.AddComponent(monsters.EntityFollowComp, &monsters.EntityFollow{Target: pl.PlayerEntity})
+	/*
+		c = CreateMonster(manager, gameMap, x+1, y+1, "../assets/creatures/angel.png")
+		c.AddComponent(monsters.EntityFollowComp, &monsters.EntityFollow{Target: pl.PlayerEntity})
 
-	c = CreateMonster(manager, gameMap, x+1, y+2, "../assets/creatures/ancient_lich.png")
-	c.AddComponent(monsters.WithinRadiusComp, &monsters.DistanceToEntityMovement{Target: pl.PlayerEntity, Distance: 3})
+		c = CreateMonster(manager, gameMap, x+1, y+2, "../assets/creatures/ancient_lich.png")
+		c.AddComponent(monsters.WithinRadiusComp, &monsters.DistanceToEntityMovement{Target: pl.PlayerEntity, Distance: 3})
 
-	c = CreateMonster(manager, gameMap, x+2, y+1, "../assets/creatures/starcursed_mass.png")
-	c.AddComponent(monsters.WithinRangeComponent, &monsters.DistanceToEntityMovement{Distance: 2, Target: pl.PlayerEntity})
-	//CreateMonster(g, manager, gameMap, x+2, y+2, "../assets/creatures/balrug.png")
+		c = CreateMonster(manager, gameMap, x+2, y+1, "../assets/creatures/starcursed_mass.png")
+		c.AddComponent(monsters.WithinRangeComponent, &monsters.DistanceToEntityMovement{Distance: 2, Target: pl.PlayerEntity})
+		//CreateMonster(g, manager, gameMap, x+2, y+2, "../assets/creatures/balrug.png")
 
-	CreateMoreTestMonsters(manager, gameMap)
-
+		CreateMoreTestMonsters(manager, gameMap)
+	*/
 	//CreateMoreTestMonsters(manager, gameMap)
 
 }
@@ -192,7 +195,8 @@ func CreateMonster(manager *ecs.Manager, gameMap *worldmap.GameMap, x, y int, im
 		AddComponent(equipment.WeaponComponent, &equipment.MeleeWeapon{
 			MinDamage: 3,
 			MaxDamage: 5,
-		})
+		}).
+		AddComponent(actionmanager.ActionComponent, &actionmanager.Actions{})
 
 	armor := equipment.GetArmor(ent)
 	common.UpdateAttributes(ent, armor.ArmorClass, armor.Protection, armor.DodgeChance)

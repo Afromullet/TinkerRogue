@@ -1,6 +1,7 @@
 package main
 
 import (
+	"game_main/actionmanager"
 	"game_main/common"
 	"game_main/equipment"
 	"game_main/monsters"
@@ -38,6 +39,8 @@ func InitializeECS(ecsmanager *common.EntityManager) {
 
 	monsters.InitializeMovementComponents(manager, tags)
 	equipment.InitializeItemComponents(manager, tags)
+	actionmanager.ActionComponent = manager.NewComponent()
+
 	InitializeCreatureComponents(manager, tags)
 
 	ecsmanager.WorldTags = tags
