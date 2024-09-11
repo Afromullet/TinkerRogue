@@ -108,7 +108,7 @@ func (c *Creature) UpdatePosition(gm *worldmap.GameMap, currentPosition *common.
 // Will change later once the time system is implemented. Still want things to behave the same while implementing the time system
 func MonsterSystems(ecsmanger *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap, ts *timesystem.GameTurn) {
 
-	fmt.Println("Starting monster actions")
+
 	//TODO do I need to make sure the same action can't be added twice?
 	for _, c := range ecsmanger.World.Query(ecsmanger.WorldTags["monsters"]) {
 
@@ -135,7 +135,5 @@ func MonsterSystems(ecsmanger *common.EntityManager, pl *avatar.PlayerData, gm *
 		}
 
 	}
-
-	ts.Turn = timesystem.PlayerTurn
 
 }

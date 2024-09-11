@@ -107,7 +107,7 @@ func CreateTestMonsters(manager *ecs.Manager, pl *avatar.PlayerData, gameMap *wo
 		MaxDamage:     5,
 		ShootingRange: 5,
 		TargetArea:    &wepArea,
-		AttackSpeed:   3,
+		AttackSpeed:   20,
 	}
 
 	c := CreateMonster(manager, gameMap, x, y+1, "../assets/creatures/elf.png")
@@ -118,7 +118,7 @@ func CreateTestMonsters(manager *ecs.Manager, pl *avatar.PlayerData, gameMap *wo
 
 	c = CreateMonster(manager, gameMap, x+1, y, "../assets/creatures/unseen_horror.png")
 
-	c.AddComponent(monsters.SimpleWanderComp, &monsters.SimpleWander{})
+	c.AddComponent(monsters.SimpleWanderComp, &monsters.EntityFollow{Target: pl.PlayerEntity})
 	//c.AddComponent(approachAndAttack, &ApproachAndAttack{})
 
 	/*
@@ -192,12 +192,12 @@ func CreateMonster(manager *ecs.Manager, gameMap *worldmap.GameMap, x, y int, im
 			X: x,
 			Y: y,
 		}).
-		AddComponent(common.AttributeComponent, &common.Attributes{MaxHealth: 5, CurrentHealth: 5, TotalAttackSpeed: 10, TotalMovementSpeed: 5}).
+		AddComponent(common.AttributeComponent, &common.Attributes{MaxHealth: 5, CurrentHealth: 5, TotalAttackSpeed: 10, TotalMovementSpeed: 30}).
 		AddComponent(equipment.ArmorComponent, &testArmor).
 		AddComponent(equipment.WeaponComponent, &equipment.MeleeWeapon{
 			MinDamage:   3,
 			MaxDamage:   5,
-			AttackSpeed: 3,
+			AttackSpeed: 30,
 		}).
 		AddComponent(actionmanager.ActionQueueComponent, &actionmanager.ActionQueue{TotalActionPoints: 100})
 

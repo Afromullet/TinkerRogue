@@ -1,8 +1,6 @@
 package actionmanager
 
 import (
-	"fmt"
-
 	"github.com/bytearena/ecs"
 )
 
@@ -42,7 +40,6 @@ type ActionQueue struct {
 // Removes the first action in the queue.
 func (a *ActionQueue) pop() {
 	if len(a.AllActions) > 0 {
-
 		a.AllActions = a.AllActions[1:]
 	}
 }
@@ -51,20 +48,16 @@ func (a *ActionQueue) pop() {
 // Don't allow the same kind of action to be added twice
 func (a *ActionQueue) AddAction(action ActionWrapper, actionPointCost int, kindOfAction KindOfAction) {
 
+	if actionPointCost <= 0 {
+		panic("Action points must be greater than or equal to 0")
+	}
+
 	for _, act := range a.AllActions {
 
 		if act.kindOfAction == kindOfAction {
 			return
 		}
 
-	}
-
-	if actionPointCost <= 0 {
-		panic("Action points must be greater than or equal to 0")
-	}
-
-	if len(a.AllActions) == 0 {
-		fmt.Println("Breha ")
 	}
 
 	if action != nil {
@@ -75,7 +68,7 @@ func (a *ActionQueue) AddAction(action ActionWrapper, actionPointCost int, kindO
 // Executes the first action
 func (a *ActionQueue) ExecuteAction() {
 	if len(a.AllActions) > 0 {
-		fmt.Println("Printing cost ", a.AllActions[0].Cost)
+
 		a.TotalActionPoints -= a.AllActions[0].Cost
 		a.AllActions[0].ActWrapper.Execute(a)
 		a.pop()

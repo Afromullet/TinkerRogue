@@ -6,6 +6,7 @@ const (
 	BeforePlayerAction = iota
 	PlayerTurn
 	MonsterTurn
+	ExecuteActions
 )
 
 type GameTurn struct {

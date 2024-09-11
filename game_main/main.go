@@ -16,6 +16,7 @@ import (
 )*/
 
 import (
+	"fmt"
 	"game_main/actionmanager"
 	"game_main/avatar"
 	"game_main/common"
@@ -81,14 +82,34 @@ func (g *Game) Update() error {
 	// Update the Label text to indicate if the ui is currently being hovered over or not
 	//g.headerLbl.Label = fmt.Sprintf("Game Demo!\nUI is hovered: %t", input.UIHovered)
 
-	g.ts.TurnCounter++
+	keyPressed := false
+	if g.ts.Turn == timesystem.PlayerTurn && !keyPressed {
 
-	if g.ts.Turn == timesystem.PlayerTurn && g.ts.TurnCounter > 20 {
+		keyPressed = input.PlayerActions(&g.em, &g.playerData, &g.gameMap, &g.gameUI, &g.ts)
+		if keyPressed {
 
-		input.PlayerActions(&g.em, &g.playerData, &g.gameMap, &g.gameUI, &g.ts)
+			g.ts.Turn = timesystem.MonsterTurn
+		}
+
+		//input.HandlePlayerThrowable(&g.em, &g.playerData, &g.gameMap, &g.gameUI)
+
+		//input.HandlePlayerRangedAttack(&g.em, &g.playerData, &g.gameMap)
+
 	}
-	if g.ts.Turn == timesystem.MonsterTurn {
+	if g.ts.Turn == timesystem.MonsterTurn && keyPressed {
 		monsters.MonsterSystems(&g.em, &g.playerData, &g.gameMap, &g.ts)
+		g.ts.Turn = timesystem.ExecuteActions
+	}
+
+	if g.ts.Turn == timesystem.ExecuteActions && keyPressed {
+
+		actionmanager.ActionDispatcher.ExecuteFirst()
+		//actionmanager.ActionDispatcher.CleanController()
+		g.ts.Turn = timesystem.PlayerTurn
+		actionmanager.ActionDispatcher.DebugOutput()
+		fmt.Println("Exectugin actions")
+		keyPressed = false
+
 	}
 
 	return nil
