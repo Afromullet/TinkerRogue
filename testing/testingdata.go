@@ -1,13 +1,13 @@
 package testing
 
 import (
-	"game_main/actionmanager"
 	"game_main/avatar"
 	"game_main/common"
 	"game_main/equipment"
 	"game_main/graphics"
 	"game_main/monsters"
 	monster "game_main/monsters"
+	"game_main/timesystem"
 	"game_main/worldmap"
 	"log"
 	"strconv"
@@ -192,14 +192,14 @@ func CreateMonster(manager *ecs.Manager, gameMap *worldmap.GameMap, x, y int, im
 			X: x,
 			Y: y,
 		}).
-		AddComponent(common.AttributeComponent, &common.Attributes{MaxHealth: 5, CurrentHealth: 5, TotalAttackSpeed: 10, TotalMovementSpeed: 30}).
+		AddComponent(common.AttributeComponent, &common.Attributes{MaxHealth: 5, CurrentHealth: 5, TotalAttackSpeed: 10, TotalMovementSpeed: 10}).
 		AddComponent(equipment.ArmorComponent, &testArmor).
 		AddComponent(equipment.WeaponComponent, &equipment.MeleeWeapon{
 			MinDamage:   3,
 			MaxDamage:   5,
 			AttackSpeed: 30,
 		}).
-		AddComponent(actionmanager.ActionQueueComponent, &actionmanager.ActionQueue{TotalActionPoints: 100})
+		AddComponent(timesystem.ActionQueueComponent, &timesystem.ActionQueue{TotalActionPoints: 100})
 
 	armor := equipment.GetArmor(ent)
 	common.UpdateAttributes(ent, armor.ArmorClass, armor.Protection, armor.DodgeChance)
@@ -303,15 +303,15 @@ func CreatedRangedWeapon(manager *ecs.Manager, name string, imagePath string, po
 
 }
 
-func InitTestActionManager(ecsmanager *common.EntityManager, pl *avatar.PlayerData, ac *actionmanager.ActionController) {
+func InitTestActionManager(ecsmanager *common.EntityManager, pl *avatar.PlayerData, ac *timesystem.ActionManager) {
 
-	actionQueue := common.GetComponentType[*actionmanager.ActionQueue](pl.PlayerEntity, actionmanager.ActionQueueComponent)
+	actionQueue := common.GetComponentType[*timesystem.ActionQueue](pl.PlayerEntity, timesystem.ActionQueueComponent)
 
 	ac.AddActionQueue(actionQueue)
 
 	for _, c := range ecsmanager.World.Query(ecsmanager.WorldTags["monsters"]) {
 
-		actionQueue = common.GetComponentType[*actionmanager.ActionQueue](c.Entity, actionmanager.ActionQueueComponent)
+		actionQueue = common.GetComponentType[*timesystem.ActionQueue](c.Entity, timesystem.ActionQueueComponent)
 
 		ac.AddActionQueue(actionQueue)
 

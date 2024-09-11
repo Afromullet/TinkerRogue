@@ -2,11 +2,12 @@ package monsters
 
 import (
 	"fmt"
-	"game_main/actionmanager"
+
 	"game_main/avatar"
 	"game_main/combat"
 	"game_main/common"
 	"game_main/equipment"
+	"game_main/timesystem"
 	"game_main/worldmap"
 
 	"github.com/bytearena/ecs"
@@ -84,13 +85,13 @@ func StayDistantRangedAttackAction(ecsmanger *common.EntityManager, pl *avatar.P
 
 // Gets called in the MonsterSystems loop
 // Todo change logic to allow any entity to be targetted rather than just the player
-func CreatureAttackSystem(ecsmanger *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap, c *ecs.QueryResult) actionmanager.ActionWrapper {
+func CreatureAttackSystem(ecsmanger *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap, c *ecs.QueryResult) timesystem.ActionWrapper {
 
 	var ok bool
 
 	if _, ok = c.Entity.GetComponentData(ApproachAndAttackComp); ok {
 
-		return &actionmanager.OneTargetAttack{
+		return &timesystem.OneTargetAttack{
 			Func:   ApproachAndAttackAction,
 			Param1: ecsmanger,
 			Param2: pl,
@@ -104,7 +105,7 @@ func CreatureAttackSystem(ecsmanger *common.EntityManager, pl *avatar.PlayerData
 	// Todo need to avoid friendly fire
 	if _, ok = c.Entity.GetComponentData(DistanceRangeAttackComp); ok {
 
-		return &actionmanager.OneTargetAttack{
+		return &timesystem.OneTargetAttack{
 			Func:   StayDistantRangedAttackAction,
 			Param1: ecsmanger,
 			Param2: pl,

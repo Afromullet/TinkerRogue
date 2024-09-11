@@ -1,10 +1,10 @@
 package main
 
 import (
-	"game_main/actionmanager"
 	"game_main/avatar"
 	"game_main/common"
 	"game_main/equipment"
+	"game_main/timesystem"
 	"game_main/worldmap"
 	"log"
 
@@ -26,7 +26,7 @@ func InitializePlayerData(ecsmanager *common.EntityManager, pl *avatar.PlayerDat
 	attr.MaxHealth = 5
 	attr.CurrentHealth = 5
 	attr.AttackBonus = 5
-	attr.TotalMovementSpeed = 3
+	attr.TotalMovementSpeed = 5
 
 	armor := equipment.Armor{
 		ArmorClass:  1,
@@ -51,7 +51,7 @@ func InitializePlayerData(ecsmanager *common.EntityManager, pl *avatar.PlayerDat
 			AttackMessage:    "",
 			GameStateMessage: "",
 		}).AddComponent(equipment.ArmorComponent, &armor).
-		AddComponent(actionmanager.ActionQueueComponent, &actionmanager.ActionQueue{TotalActionPoints: 100})
+		AddComponent(timesystem.ActionQueueComponent, &timesystem.ActionQueue{TotalActionPoints: 100})
 
 	players := ecs.BuildTag(avatar.PlayerComponent, common.PositionComponent, equipment.InventoryComponent)
 	ecsmanager.WorldTags["players"] = players

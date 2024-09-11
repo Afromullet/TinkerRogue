@@ -2,7 +2,7 @@ package monsters
 
 import (
 	"fmt"
-	"game_main/actionmanager"
+
 	"game_main/avatar"
 	"game_main/common"
 	"game_main/equipment"
@@ -108,11 +108,10 @@ func (c *Creature) UpdatePosition(gm *worldmap.GameMap, currentPosition *common.
 // Will change later once the time system is implemented. Still want things to behave the same while implementing the time system
 func MonsterSystems(ecsmanger *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap, ts *timesystem.GameTurn) {
 
-
 	//TODO do I need to make sure the same action can't be added twice?
 	for _, c := range ecsmanger.World.Query(ecsmanger.WorldTags["monsters"]) {
 
-		actionQueue := common.GetComponentType[*actionmanager.ActionQueue](c.Entity, actionmanager.ActionQueueComponent)
+		actionQueue := common.GetComponentType[*timesystem.ActionQueue](c.Entity, timesystem.ActionQueueComponent)
 		h := common.GetComponentType[*common.Attributes](c.Entity, common.AttributeComponent)
 
 		rangedWep := common.GetComponentType[*equipment.RangedWeapon](c.Entity, equipment.RangedWeaponComponent)
@@ -123,7 +122,7 @@ func MonsterSystems(ecsmanger *common.EntityManager, pl *avatar.PlayerData, gm *
 
 		//todo need to distinguish between ranged and melee attacks
 		if actionQueue != nil {
-			actionQueue.AddAction(CreatureAttackSystem(ecsmanger, pl, gm, c), h.TotalAttackSpeed, actionmanager.AttackKind)
+			actionQueue.AddAction(CreatureAttackSystem(ecsmanger, pl, gm, c), h.TotalAttackSpeed, timesystem.AttackKind)
 		}
 
 		if h.CurrentHealth <= 0 {
@@ -131,7 +130,7 @@ func MonsterSystems(ecsmanger *common.EntityManager, pl *avatar.PlayerData, gm *
 		}
 
 		if actionQueue != nil {
-			actionQueue.AddAction(CreatureMovementSystem(ecsmanger, gm, c), h.TotalMovementSpeed, actionmanager.MovementKind)
+			actionQueue.AddAction(CreatureMovementSystem(ecsmanger, gm, c), h.TotalMovementSpeed, timesystem.MovementKind)
 		}
 
 	}

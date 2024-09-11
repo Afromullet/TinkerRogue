@@ -1,9 +1,9 @@
 package input
 
 import (
-	"game_main/actionmanager"
 	"game_main/avatar"
 	"game_main/common"
+	"game_main/timesystem"
 	"game_main/worldmap"
 )
 
@@ -18,14 +18,14 @@ const (
 )
 
 // Also returns teh action
-func GetSimplePlayerAction(act PlayerAction, pl *avatar.PlayerData, gm *worldmap.GameMap) (actionmanager.ActionWrapper, int) {
+func GetSimplePlayerAction(act PlayerAction, pl *avatar.PlayerData, gm *worldmap.GameMap) (timesystem.ActionWrapper, int) {
 
 	switch act {
 
 	case PlayerSelRanged:
-		return actionmanager.NewSimplePlayerActions(PlayerSelectRangedTarget, pl, gm), 1
+		return timesystem.NewSimplePlayerActions(PlayerSelectRangedTarget, pl, gm), 1
 	case PlayerPickupFromFloor:
-		return actionmanager.NewSimplePlayerActions(PlayerPickupItem, pl, gm), 1
+		return timesystem.NewSimplePlayerActions(PlayerPickupItem, pl, gm), 1
 	default:
 		return nil, 0
 	}
@@ -34,14 +34,14 @@ func GetSimplePlayerAction(act PlayerAction, pl *avatar.PlayerData, gm *worldmap
 
 func GetPlayerMoveAction(act PlayerAction, ecsmanager *common.EntityManager,
 	pl *avatar.PlayerData,
-	gm *worldmap.GameMap, xOffset, yOffset int) (actionmanager.ActionWrapper, int) {
+	gm *worldmap.GameMap, xOffset, yOffset int) (timesystem.ActionWrapper, int) {
 
 	attr := common.GetComponentType[*common.Attributes](pl.PlayerEntity, common.AttributeComponent)
 
 	switch act {
 
 	case PlayerMoveAction:
-		return actionmanager.NewPlayerMoveAction(MovePlayer, ecsmanager,
+		return timesystem.NewPlayerMoveAction(MovePlayer, ecsmanager,
 			pl, gm, xOffset, yOffset), attr.TotalMovementSpeed
 
 	default:
@@ -50,16 +50,16 @@ func GetPlayerMoveAction(act PlayerAction, ecsmanager *common.EntityManager,
 
 }
 
-func AddPlayerAction(simpleAction actionmanager.ActionWrapper, pl *avatar.PlayerData, cost int, kindofAction actionmanager.KindOfAction) {
+func AddPlayerAction(simpleAction timesystem.ActionWrapper, pl *avatar.PlayerData, cost int, kindofAction timesystem.KindOfAction) {
 
-	actionQueue := common.GetComponentType[*actionmanager.ActionQueue](pl.PlayerEntity, actionmanager.ActionQueueComponent)
+	actionQueue := common.GetComponentType[*timesystem.ActionQueue](pl.PlayerEntity, timesystem.ActionQueueComponent)
 	actionQueue.AddAction(simpleAction, cost, kindofAction)
 
 }
 
 // Perform the first action in the queue
 func PerformPlayerAction(pl *avatar.PlayerData) {
-	actionQueue := common.GetComponentType[*actionmanager.ActionQueue](pl.PlayerEntity, actionmanager.ActionQueueComponent)
+	actionQueue := common.GetComponentType[*timesystem.ActionQueue](pl.PlayerEntity, timesystem.ActionQueueComponent)
 
 	if len(actionQueue.AllActions) > 0 {
 		//actionQueue.AllActions[0].Execute(actionQueue)

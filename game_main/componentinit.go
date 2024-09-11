@@ -1,10 +1,10 @@
 package main
 
 import (
-	"game_main/actionmanager"
 	"game_main/common"
 	"game_main/equipment"
 	"game_main/monsters"
+	"game_main/timesystem"
 
 	"github.com/bytearena/ecs"
 )
@@ -39,7 +39,7 @@ func InitializeECS(ecsmanager *common.EntityManager) {
 
 	monsters.InitializeMovementComponents(manager, tags)
 	equipment.InitializeItemComponents(manager, tags)
-	actionmanager.ActionQueueComponent = manager.NewComponent()
+	timesystem.ActionQueueComponent = manager.NewComponent()
 
 	InitializeCreatureComponents(manager, tags)
 

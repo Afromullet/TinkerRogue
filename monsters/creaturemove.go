@@ -1,11 +1,11 @@
 package monsters
 
 import (
-	"game_main/actionmanager"
 	"game_main/common"
 	"game_main/graphics"
 	"game_main/pathfinding"
 	"game_main/randgen"
+	"game_main/timesystem"
 	"game_main/worldmap"
 	"math"
 
@@ -236,7 +236,7 @@ func FleeFromEntityMovementAction(ecsmanager *common.EntityManager, gm *worldmap
 // Used for Stay Within Range movement. Selects a random unblocked tile to move to
 // Gets called in MonsterSystems, which queries the ECS manager and returns query results containing all monsters
 // A movmeent function builds a path for a creature to follow, and UpdatePosition lets a creature move on the path
-func CreatureMovementSystem(ecsmanager *common.EntityManager, gm *worldmap.GameMap, c *ecs.QueryResult) actionmanager.ActionWrapper {
+func CreatureMovementSystem(ecsmanager *common.EntityManager, gm *worldmap.GameMap, c *ecs.QueryResult) timesystem.ActionWrapper {
 
 	//var ok bool
 	var ok bool
@@ -244,31 +244,31 @@ func CreatureMovementSystem(ecsmanager *common.EntityManager, gm *worldmap.GameM
 	// Todo need to avoid friendly fire
 
 	if _, ok = c.Entity.GetComponentData(SimpleWanderComp); ok {
-		return actionmanager.NewEntityMover(SimpleWanderAction, ecsmanager, gm, c.Entity)
+		return timesystem.NewEntityMover(SimpleWanderAction, ecsmanager, gm, c.Entity)
 	}
 
 	if _, ok = c.Entity.GetComponentData(NoMoveComp); ok {
-		return actionmanager.NewEntityMover(NoMoveAction, ecsmanager, gm, c.Entity)
+		return timesystem.NewEntityMover(NoMoveAction, ecsmanager, gm, c.Entity)
 
 	}
 
 	if _, ok = c.Entity.GetComponentData(EntityFollowComp); ok {
-		return actionmanager.NewEntityMover(EntityFollowMoveAction, ecsmanager, gm, c.Entity)
+		return timesystem.NewEntityMover(EntityFollowMoveAction, ecsmanager, gm, c.Entity)
 
 	}
 
 	if _, ok = c.Entity.GetComponentData(WithinRadiusComp); ok {
-		return actionmanager.NewEntityMover(WithinRadiusMoveAction, ecsmanager, gm, c.Entity)
+		return timesystem.NewEntityMover(WithinRadiusMoveAction, ecsmanager, gm, c.Entity)
 
 	}
 
 	if _, ok = c.Entity.GetComponentData(WithinRangeComponent); ok {
-		return actionmanager.NewEntityMover(WithinRangeMoveAction, ecsmanager, gm, c.Entity)
+		return timesystem.NewEntityMover(WithinRangeMoveAction, ecsmanager, gm, c.Entity)
 
 	}
 
 	if _, ok = c.Entity.GetComponentData(FleeComp); ok {
-		return actionmanager.NewEntityMover(FleeFromEntityMovementAction, ecsmanager, gm, c.Entity)
+		return timesystem.NewEntityMover(FleeFromEntityMovementAction, ecsmanager, gm, c.Entity)
 
 	}
 

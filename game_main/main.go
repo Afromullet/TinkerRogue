@@ -17,7 +17,7 @@ import (
 
 import (
 	"fmt"
-	"game_main/actionmanager"
+
 	"game_main/avatar"
 	"game_main/common"
 	"game_main/graphics"
@@ -66,7 +66,7 @@ func NewGame() *Game {
 	testing.SetupPlayerForTesting(&g.em, &g.playerData)
 	testing.UpdateContentsForTest(&g.em, &g.gameMap)
 
-	testing.InitTestActionManager(&g.em, &g.playerData, &actionmanager.ActionDispatcher)
+	testing.InitTestActionManager(&g.em, &g.playerData, &timesystem.ActionDispatcher)
 
 	return g
 
@@ -92,7 +92,6 @@ func (g *Game) Update() error {
 		}
 
 		//input.HandlePlayerThrowable(&g.em, &g.playerData, &g.gameMap, &g.gameUI)
-
 		//input.HandlePlayerRangedAttack(&g.em, &g.playerData, &g.gameMap)
 
 	}
@@ -103,12 +102,13 @@ func (g *Game) Update() error {
 
 	if g.ts.Turn == timesystem.ExecuteActions && keyPressed {
 
-		actionmanager.ActionDispatcher.ExecuteFirst()
-		//actionmanager.ActionDispatcher.CleanController()
-		g.ts.Turn = timesystem.PlayerTurn
-		actionmanager.ActionDispatcher.DebugOutput()
+		timesystem.ActionDispatcher.ExecuteFirst()
+		timesystem.ActionDispatcher.DebugOutput()
+		timesystem.ActionDispatcher.ReorderActions()
 		fmt.Println("Exectugin actions")
 		keyPressed = false
+
+		g.ts.Turn = timesystem.PlayerTurn
 
 	}
 

@@ -1,4 +1,4 @@
-package actionmanager
+package timesystem
 
 import (
 	"game_main/avatar"

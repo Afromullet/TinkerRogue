@@ -2,7 +2,7 @@ package input
 
 import (
 	"fmt"
-	"game_main/actionmanager"
+
 	"game_main/avatar"
 	"game_main/common"
 	"game_main/equipment"
@@ -26,7 +26,7 @@ var TurnTaken bool
 // todo replace the keypressed with iskeyreleased
 func PlayerActions(ecsmanager *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap, playerUI *gui.PlayerUI, tm *timesystem.GameTurn) bool {
 
-	actionQueue := common.GetComponentType[*actionmanager.ActionQueue](pl.PlayerEntity, actionmanager.ActionQueueComponent)
+	actionQueue := common.GetComponentType[*timesystem.ActionQueue](pl.PlayerEntity, timesystem.ActionQueueComponent)
 
 	// Should throw a panic here since the game can't proceed without the player having an action querue
 	if actionQueue == nil {
@@ -42,7 +42,7 @@ func PlayerActions(ecsmanager *common.EntityManager, pl *avatar.PlayerData, gm *
 		y = -1
 
 		act, cost := GetPlayerMoveAction(PlayerMoveAction, ecsmanager, pl, gm, x, y)
-		AddPlayerAction(act, pl, cost, actionmanager.MovementKind)
+		AddPlayerAction(act, pl, cost, timesystem.MovementKind)
 		keyPressed = true
 
 	}
@@ -50,7 +50,7 @@ func PlayerActions(ecsmanager *common.EntityManager, pl *avatar.PlayerData, gm *
 	if inpututil.IsKeyJustReleased(ebiten.KeyS) {
 		y = 1
 		act, cost := GetPlayerMoveAction(PlayerMoveAction, ecsmanager, pl, gm, x, y)
-		AddPlayerAction(act, pl, cost, actionmanager.MovementKind)
+		AddPlayerAction(act, pl, cost, timesystem.MovementKind)
 		keyPressed = true
 
 	}
@@ -58,7 +58,7 @@ func PlayerActions(ecsmanager *common.EntityManager, pl *avatar.PlayerData, gm *
 	if inpututil.IsKeyJustReleased(ebiten.KeyA) {
 		x = -1
 		act, cost := GetPlayerMoveAction(PlayerMoveAction, ecsmanager, pl, gm, x, y)
-		AddPlayerAction(act, pl, cost, actionmanager.MovementKind)
+		AddPlayerAction(act, pl, cost, timesystem.MovementKind)
 		keyPressed = true
 
 	}
@@ -66,7 +66,7 @@ func PlayerActions(ecsmanager *common.EntityManager, pl *avatar.PlayerData, gm *
 	if inpututil.IsKeyJustReleased(ebiten.KeyD) {
 		x = 1
 		act, cost := GetPlayerMoveAction(PlayerMoveAction, ecsmanager, pl, gm, x, y)
-		AddPlayerAction(act, pl, cost, actionmanager.MovementKind)
+		AddPlayerAction(act, pl, cost, timesystem.MovementKind)
 		keyPressed = true
 
 	}
@@ -82,7 +82,7 @@ func PlayerActions(ecsmanager *common.EntityManager, pl *avatar.PlayerData, gm *
 	if inpututil.IsKeyJustReleased(ebiten.KeyF) {
 
 		act, cost := GetSimplePlayerAction(PlayerSelRanged, pl, gm)
-		AddPlayerAction(act, pl, cost, actionmanager.RangedAttackKind)
+		AddPlayerAction(act, pl, cost, timesystem.RangedAttackKind)
 		keyPressed = true
 
 	}
@@ -91,7 +91,7 @@ func PlayerActions(ecsmanager *common.EntityManager, pl *avatar.PlayerData, gm *
 
 		act, cost := GetSimplePlayerAction(PlayerPickupFromFloor, pl, gm)
 
-		AddPlayerAction(act, pl, cost, actionmanager.PickupItemKind)
+		AddPlayerAction(act, pl, cost, timesystem.PickupItemKind)
 		keyPressed = true
 
 	}
