@@ -26,6 +26,7 @@ func InitializePlayerData(ecsmanager *common.EntityManager, pl *avatar.PlayerDat
 	attr.MaxHealth = 5
 	attr.CurrentHealth = 5
 	attr.AttackBonus = 5
+	attr.TotalMovementSpeed = 5
 
 	armor := equipment.Armor{
 		ArmorClass:  1,
@@ -50,7 +51,7 @@ func InitializePlayerData(ecsmanager *common.EntityManager, pl *avatar.PlayerDat
 			AttackMessage:    "",
 			GameStateMessage: "",
 		}).AddComponent(equipment.ArmorComponent, &armor).
-		AddComponent(actionmanager.ActionQueueComponent, &actionmanager.ActionQueue{})
+		AddComponent(actionmanager.ActionQueueComponent, &actionmanager.ActionQueue{TotalActionPoints: 100})
 
 	players := ecs.BuildTag(avatar.PlayerComponent, common.PositionComponent, equipment.InventoryComponent)
 	ecsmanager.WorldTags["players"] = players

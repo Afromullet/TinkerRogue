@@ -197,3 +197,57 @@ func HandlePlayerRangedAttack(ecsmanager *common.EntityManager, pl *avatar.Playe
 	}
 
 }
+
+func MovePlayer(ecsmanager *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap, xOffset, yOffset int) {
+
+	nextPosition := common.Position{
+		X: pl.Pos.X + xOffset,
+		Y: pl.Pos.Y + yOffset,
+	}
+
+	index := graphics.IndexFromXY(nextPosition.X, nextPosition.Y)
+	nextTile := gm.Tiles[index]
+
+	index = graphics.IndexFromXY(pl.Pos.X, pl.Pos.Y)
+	oldTile := gm.Tiles[index]
+
+	if !nextTile.Blocked {
+		gm.PlayerVisible.Compute(gm, pl.Pos.X, pl.Pos.Y, 8)
+		pl.Pos.X = nextPosition.X
+		pl.Pos.Y = nextPosition.Y
+		nextTile.Blocked = true
+		oldTile.Blocked = false
+
+	} else {
+		//Determine if the tyle is blocked because there's a creature
+
+		c := combat.GetCreatureAtPosition(ecsmanager, &nextPosition)
+
+		if c != nil {
+
+			combat.MeleeAttackSystem(ecsmanager, pl, gm, pl.Pos, &nextPosition)
+		}
+
+	}
+
+}
+
+func PlayerPickupItem(pl *avatar.PlayerData, gm *worldmap.GameMap) {
+
+	itemFromTile, _ := gm.RemoveItemFromTile(0, pl.Pos)
+
+	if itemFromTile != nil {
+		pl.Inv.AddItem(itemFromTile)
+	}
+
+}
+
+func PlayerSelectRangedTarget(pl *avatar.PlayerData, gm *worldmap.GameMap) {
+
+	gm.ApplyColorMatrix(PrevRangedAttInds, graphics.NewEmptyMatrix())
+
+	pl.Targeting = true
+	pl.PrepareRangedAttack()
+	DrawRangedAttackAOE(pl, gm)
+
+}

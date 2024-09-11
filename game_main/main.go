@@ -16,6 +16,7 @@ import (
 )*/
 
 import (
+	"game_main/actionmanager"
 	"game_main/avatar"
 	"game_main/common"
 	"game_main/graphics"
@@ -37,7 +38,7 @@ import (
 //Of what the code is doing as I'm learning GoLang
 
 type Game struct {
-	common.EntityManager
+	em         common.EntityManager
 	gameUI     gui.PlayerUI
 	playerData avatar.PlayerData
 	gameMap    worldmap.GameMap
@@ -51,18 +52,20 @@ func NewGame() *Game {
 	g := &Game{}
 	g.gameMap = worldmap.NewGameMap()
 	g.playerData = avatar.PlayerData{}
-	InitializeECS(&g.EntityManager)
-	InitializePlayerData(&g.EntityManager, &g.playerData, &g.gameMap)
+	InitializeECS(&g.em)
+	InitializePlayerData(&g.em, &g.playerData, &g.gameMap)
 
 	g.ts.Turn = timesystem.PlayerTurn
 	g.ts.TurnCounter = 0
 
 	//g.craftingUI.SetCraftingWindowLocation(g.screenData.screenWidth/2, g.screenData.screenWidth/2)
 
-	testing.CreateTestItems(g.World, g.WorldTags, &g.gameMap)
-	testing.CreateTestMonsters(g.World, &g.playerData, &g.gameMap)
-	testing.SetupPlayerForTesting(&g.EntityManager, &g.playerData)
-	testing.UpdateContentsForTest(&g.EntityManager, &g.gameMap)
+	testing.CreateTestItems(g.em.World, g.em.WorldTags, &g.gameMap)
+	testing.CreateTestMonsters(g.em.World, &g.playerData, &g.gameMap)
+	testing.SetupPlayerForTesting(&g.em, &g.playerData)
+	testing.UpdateContentsForTest(&g.em, &g.gameMap)
+
+	testing.InitTestActionManager(&g.em, &g.playerData, &actionmanager.ActionDispatcher)
 
 	return g
 
@@ -82,10 +85,10 @@ func (g *Game) Update() error {
 
 	if g.ts.Turn == timesystem.PlayerTurn && g.ts.TurnCounter > 20 {
 
-		input.PlayerActions(&g.EntityManager, &g.playerData, &g.gameMap, &g.gameUI, &g.ts)
+		input.PlayerActions(&g.em, &g.playerData, &g.gameMap, &g.gameUI, &g.ts)
 	}
 	if g.ts.Turn == timesystem.MonsterTurn {
-		monsters.MonsterSystems(&g.EntityManager, &g.playerData, &g.gameMap, &g.ts)
+		monsters.MonsterSystems(&g.em, &g.playerData, &g.gameMap, &g.ts)
 	}
 
 	return nil
@@ -95,7 +98,7 @@ func (g *Game) Update() error {
 // Draw is called each draw cycle and is where we will blit.
 func (g *Game) Draw(screen *ebiten.Image) {
 	g.gameMap.DrawLevel(screen)
-	rendering.ProcessRenderables(&g.EntityManager, g.gameMap, screen)
+	rendering.ProcessRenderables(&g.em, g.gameMap, screen)
 	g.gameUI.MainPlayerInterface.Draw(screen)
 	ProcessUserLog(g, screen)
 

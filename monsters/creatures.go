@@ -1,6 +1,7 @@
 package monsters
 
 import (
+	"fmt"
 	"game_main/actionmanager"
 	"game_main/avatar"
 	"game_main/common"
@@ -107,37 +108,32 @@ func (c *Creature) UpdatePosition(gm *worldmap.GameMap, currentPosition *common.
 // Will change later once the time system is implemented. Still want things to behave the same while implementing the time system
 func MonsterSystems(ecsmanger *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap, ts *timesystem.GameTurn) {
 
+	fmt.Println("Starting monster actions")
+	//TODO do I need to make sure the same action can't be added twice?
 	for _, c := range ecsmanger.World.Query(ecsmanger.WorldTags["monsters"]) {
 
 		actionQueue := common.GetComponentType[*actionmanager.ActionQueue](c.Entity, actionmanager.ActionQueueComponent)
+		h := common.GetComponentType[*common.Attributes](c.Entity, common.AttributeComponent)
+
+		rangedWep := common.GetComponentType[*equipment.RangedWeapon](c.Entity, equipment.RangedWeaponComponent)
+		meleeWep := common.GetComponentType[*equipment.MeleeWeapon](c.Entity, equipment.WeaponComponent)
+		fmt.Println(rangedWep, meleeWep)
 
 		ApplyEffects(c)
 
+		//todo need to distinguish between ranged and melee attacks
 		if actionQueue != nil {
-			actionQueue.AddAction(CreatureAttackSystem(ecsmanger, pl, gm, c))
+			actionQueue.AddAction(CreatureAttackSystem(ecsmanger, pl, gm, c), h.TotalAttackSpeed, actionmanager.AttackKind)
 		}
-
-		h := common.GetComponentType[*common.Attributes](c.Entity, common.AttributeComponent)
 
 		if h.CurrentHealth <= 0 {
 			ecsmanger.World.DisposeEntity(c.Entity)
 		}
 
 		if actionQueue != nil {
-			actionQueue.AddAction(CreatureMovementSystem(ecsmanger, gm, c))
+			actionQueue.AddAction(CreatureMovementSystem(ecsmanger, gm, c), h.TotalMovementSpeed, actionmanager.MovementKind)
 		}
 
-	}
-
-	// A placeholder for continuing to execute actions in the same way
-	for _, c := range ecsmanger.World.Query(ecsmanger.WorldTags["monsters"]) {
-		actionQueue := common.GetComponentType[*actionmanager.ActionQueue](c.Entity, actionmanager.ActionQueueComponent)
-
-		for _, acts := range actionQueue.AllActions {
-
-			acts.Execute()
-
-		}
 	}
 
 	ts.Turn = timesystem.PlayerTurn

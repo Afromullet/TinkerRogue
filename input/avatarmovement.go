@@ -4,14 +4,11 @@ import (
 	"fmt"
 	"game_main/actionmanager"
 	"game_main/avatar"
-	"game_main/combat"
 	"game_main/common"
 	"game_main/equipment"
-	"game_main/graphics"
 	"game_main/gui"
 	"game_main/timesystem"
 	"game_main/worldmap"
-	"log"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
@@ -21,110 +18,131 @@ var prevCursorX, prevCursorY int
 var PrevThrowInds []int
 var PrevRangedAttInds []int
 
+var prevPosX = -1
+var prevPosY = -1
+
+var TurnTaken bool
+
 // todo replace the keypressed with iskeyreleased
 func PlayerActions(ecsmanager *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap, playerUI *gui.PlayerUI, tm *timesystem.GameTurn) {
 
-	a := actionmanager.ActionQueue{}
-	fmt.Println(a)
+	actionQueue := common.GetComponentType[*actionmanager.ActionQueue](pl.PlayerEntity, actionmanager.ActionQueueComponent)
 
-	turntaken := false
-	//players := g.WorldTags["players"]
+	// Should throw a panic here since the game can't proceed without the player having an action querue
+	if actionQueue == nil {
+		fmt.Println("No action queue for player")
+	}
+
+	TurnTaken = false
 
 	x := 0
 	y := 0
 
 	if ebiten.IsKeyPressed(ebiten.KeyW) {
 		y = -1
+		TurnTaken = true
 	}
 
 	if ebiten.IsKeyPressed(ebiten.KeyS) {
 		y = 1
+		TurnTaken = true
 	}
 
 	if ebiten.IsKeyPressed(ebiten.KeyA) {
 		x = -1
+		TurnTaken = true
 	}
 
 	if ebiten.IsKeyPressed(ebiten.KeyD) {
 		x = 1
+		TurnTaken = true
 	}
 
 	if inpututil.IsKeyJustReleased(ebiten.KeyK) {
 
 		armor := equipment.GetArmor(pl.PlayerEntity)
 		common.UpdateAttributes(pl.PlayerEntity, armor.ArmorClass, armor.Protection, armor.DodgeChance)
+		TurnTaken = true
 	}
 
 	if inpututil.IsKeyJustReleased(ebiten.KeyF) {
 
-		gm.ApplyColorMatrix(PrevRangedAttInds, graphics.NewEmptyMatrix())
-
-		pl.Targeting = true
-		pl.PrepareRangedAttack()
-		DrawRangedAttackAOE(pl, gm)
+		act, cost := GetSimplePlayerAction(PlayerSelRanged, pl, gm)
+		AddPlayerAction(act, pl, cost, actionmanager.RangedAttackKind)
+		TurnTaken = true
 
 	}
 
 	if inpututil.IsKeyJustReleased(ebiten.KeyG) {
 
-		log.Print("Press G")
+		act, cost := GetSimplePlayerAction(PlayerPickupFromFloor, pl, gm)
 
-		itemFromTile, _ := gm.RemoveItemFromTile(0, pl.Pos)
-
-		if itemFromTile != nil {
-			pl.Inv.AddItem(itemFromTile)
-		}
-
-	}
-
-	if inpututil.IsKeyJustReleased(ebiten.KeyT) {
-
-		fmt.Println("Is window open ", playerUI.MainPlayerInterface.IsWindowOpen(playerUI.ItemsUI.ThrowableItemDisplay.ItmDisp.RooWindow))
+		AddPlayerAction(act, pl, cost, actionmanager.PickupItemKind)
+		TurnTaken = true
 
 	}
 
 	if inpututil.IsKeyJustReleased(ebiten.KeySpace) {
 
-		turntaken = true
+		TurnTaken = true
+	}
+
+	if x != prevPosX || y != prevPosY {
+
+		act, cost := GetPlayerMoveAction(PlayerMoveAction, ecsmanager, pl, gm, x, y)
+		prevPosX = x
+		prevPosY = y
+		TurnTaken = true
+		AddPlayerAction(act, pl, cost, actionmanager.MovementKind)
+
 	}
 
 	HandlePlayerThrowable(ecsmanager, pl, gm, playerUI)
+
 	HandlePlayerRangedAttack(ecsmanager, pl, gm)
 
-	nextPosition := common.Position{
-		X: pl.Pos.X + x,
-		Y: pl.Pos.Y + y,
+	PerformAllActions(ecsmanager, pl, tm, x, y)
+
+}
+
+// A placeholder for testing the action queue
+func PerformAllActions2(ecsmanager *common.EntityManager, pl *avatar.PlayerData, tm *timesystem.GameTurn, x, y int) {
+
+	//turntaken = false
+
+	if x != 0 || y != 0 || TurnTaken {
+		//tm.Turn = timesystem.GetNextState(tm.Turn)
+		//tm.TurnCounter = 0
+		actionmanager.ActionDispatcher.DebugOutput()
+		actionmanager.ActionDispatcher.CleanController()
+		actionmanager.ActionDispatcher.ExecuteFirst()
 	}
 
-	index := graphics.IndexFromXY(nextPosition.X, nextPosition.Y)
-	nextTile := gm.Tiles[index]
+}
 
-	index = graphics.IndexFromXY(pl.Pos.X, pl.Pos.Y)
-	oldTile := gm.Tiles[index]
+// A placeholder for testing the action queue
+func PerformAllActions(ecsmanager *common.EntityManager, pl *avatar.PlayerData, tm *timesystem.GameTurn, x, y int) {
 
-	if !nextTile.Blocked {
-		gm.PlayerVisible.Compute(gm, pl.Pos.X, pl.Pos.Y, 8)
-		pl.Pos.X = nextPosition.X
-		pl.Pos.Y = nextPosition.Y
-		nextTile.Blocked = true
-		oldTile.Blocked = false
+	for _, c := range ecsmanager.World.Query(ecsmanager.WorldTags["monsters"]) {
+		actionQueue := common.GetComponentType[*actionmanager.ActionQueue](c.Entity, actionmanager.ActionQueueComponent)
 
-	} else {
-		//Determine if the tyle is blocked because there's a creature
+		for _, acts := range actionQueue.AllActions {
 
-		c := combat.GetCreatureAtPosition(ecsmanager, &nextPosition)
+			acts.ActWrapper.Execute(actionQueue)
 
-		if c != nil {
-
-			combat.MeleeAttackSystem(ecsmanager, pl, gm, pl.Pos, &nextPosition)
 		}
-
 	}
 
-	//AttackSystem(g, pl.position, defendingMonsterTestPosition)
-	//AttackSystem(g, defendingMonsterTestPosition, pl.position)
-	if x != 0 || y != 0 || turntaken {
+	actionQueue := common.GetComponentType[*actionmanager.ActionQueue](pl.PlayerEntity, actionmanager.ActionQueueComponent)
+
+	for _, acts := range actionQueue.AllActions {
+		acts.ActWrapper.Execute(actionQueue)
+	}
+
+	if x != 0 || y != 0 || TurnTaken {
 		tm.Turn = timesystem.GetNextState(tm.Turn)
 		tm.TurnCounter = 0
+		actionmanager.ActionDispatcher.DebugOutput()
 	}
+
 }

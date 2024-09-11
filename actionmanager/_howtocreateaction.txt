@@ -1,0 +1,46 @@
+
+/*
+Here's an example for how it's done for attacking by adding a struct for attacking one target. We have:
+
+ApproachAndAttackAction(ecsmanger *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap, c *ecs.QueryResult, target *ecs.Entity)
+StayDistantRangedAttackAction(ecsmanger *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap, c *ecs.QueryResult, target *ecs.Entity)
+
+The OneTargetAttack struct contains the function signature and one field for each parameter and implements execute.
+
+type OneTargetAttack struct {
+	fn      func(*common.EntityManager, *avatar.PlayerData, *worldmap.GameMap, *ecs.QueryResult, *ecs.Entity)
+	params1 *common.EntityManager
+	params2 *avatar.PlayerData
+	params3 *worldmap.GameMap
+	params4 *ecs.QueryResult
+	params5 *ecs.Entity
+}
+
+
+func (a *OneTargetAttack) Execute() {
+	a.fn(a.params1, a.params2, a.params3, a.params4, a.params5)
+}
+
+
+The system which calls these functions has to return actionmanager.Action, so we get this:
+
+func CreatureAttackSystem(ecsmanger *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap, c *ecs.QueryResult) actionmanager.Action
+
+The CreatureAttackSystem returns the appropriate wrapper. I.Econst
+
+
+	if _, ok = c.Entity.GetComponentData(ApproachAndAttackComp); ok {
+
+		return &actionmanager.OneTargetAttack{
+			Func:   ApproachAndAttackAction,
+			Param1: ecsmanger,
+			Param2: pl,
+			Param3: gm,
+			Param4: c,
+			Param5: pl.PlayerEntity,
+		}
+
+	}
+
+
+*/

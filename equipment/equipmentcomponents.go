@@ -32,8 +32,9 @@ func GetArmor(e *ecs.Entity) *Armor {
 }
 
 type MeleeWeapon struct {
-	MinDamage int
-	MaxDamage int
+	MinDamage   int
+	MaxDamage   int
+	AttackSpeed int
 }
 
 func (w MeleeWeapon) CalculateDamage() int {
@@ -51,6 +52,7 @@ type RangedWeapon struct {
 	ShootingRange int
 	TargetArea    graphics.TileBasedShape
 	ShootingVX    *graphics.Projectile
+	AttackSpeed   int
 }
 
 // todo add ammo to this

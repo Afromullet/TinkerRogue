@@ -53,7 +53,7 @@ func ProcessUserLog(g *Game, screen *ebiten.Image) {
 	tmpMessages := make([]string, 0, 5)
 	anyMessages := false
 
-	for _, m := range g.World.Query(g.WorldTags["messengers"]) {
+	for _, m := range g.em.World.Query(g.em.WorldTags["messengers"]) {
 		messages := m.Components[common.UsrMsg].(*common.UserMessage)
 		if messages.AttackMessage != "" {
 			tmpMessages = append(tmpMessages, messages.AttackMessage)
@@ -62,7 +62,7 @@ func ProcessUserLog(g *Game, screen *ebiten.Image) {
 			messages.AttackMessage = ""
 		}
 	}
-	for _, m := range g.World.Query(g.WorldTags["messengers"]) {
+	for _, m := range g.em.World.Query(g.em.WorldTags["messengers"]) {
 		messages := m.Components[common.UsrMsg].(*common.UserMessage)
 
 		if messages.GameStateMessage != "" {

@@ -107,6 +107,7 @@ func CreateTestMonsters(manager *ecs.Manager, pl *avatar.PlayerData, gameMap *wo
 		MaxDamage:     5,
 		ShootingRange: 5,
 		TargetArea:    &wepArea,
+		AttackSpeed:   3,
 	}
 
 	c := CreateMonster(manager, gameMap, x, y+1, "../assets/creatures/elf.png")
@@ -116,23 +117,25 @@ func CreateTestMonsters(manager *ecs.Manager, pl *avatar.PlayerData, gameMap *wo
 	c.AddComponent(equipment.RangedWeaponComponent, &wep)
 
 	c = CreateMonster(manager, gameMap, x+1, y, "../assets/creatures/unseen_horror.png")
-	c.AddComponent(monsters.ApproachAndAttackComp, &monsters.ApproachAndAttack{})
-	//c.AddComponent(monsters.SimpleWanderComp, &monsters.SimpleWander{})
+
+	c.AddComponent(monsters.SimpleWanderComp, &monsters.SimpleWander{})
 	//c.AddComponent(approachAndAttack, &ApproachAndAttack{})
 
-	c = CreateMonster(manager, gameMap, x+1, y+1, "../assets/creatures/angel.png")
-	c.AddComponent(monsters.EntityFollowComp, &monsters.EntityFollow{Target: pl.PlayerEntity})
+	/*
+		c = CreateMonster(manager, gameMap, x+1, y+1, "../assets/creatures/angel.png")
+		c.AddComponent(monsters.EntityFollowComp, &monsters.EntityFollow{Target: pl.PlayerEntity})
 
-	c = CreateMonster(manager, gameMap, x+1, y+2, "../assets/creatures/ancient_lich.png")
-	c.AddComponent(monsters.WithinRadiusComp, &monsters.DistanceToEntityMovement{Target: pl.PlayerEntity, Distance: 3})
+		c = CreateMonster(manager, gameMap, x+1, y+2, "../assets/creatures/ancient_lich.png")
+		c.AddComponent(monsters.WithinRadiusComp, &monsters.DistanceToEntityMovement{Target: pl.PlayerEntity, Distance: 3})
 
-	c = CreateMonster(manager, gameMap, x+2, y+1, "../assets/creatures/starcursed_mass.png")
-	c.AddComponent(monsters.WithinRangeComponent, &monsters.DistanceToEntityMovement{Distance: 2, Target: pl.PlayerEntity})
-	//CreateMonster(g, manager, gameMap, x+2, y+2, "../assets/creatures/balrug.png")
+		c = CreateMonster(manager, gameMap, x+2, y+1, "../assets/creatures/starcursed_mass.png")
+		c.AddComponent(monsters.WithinRangeComponent, &monsters.DistanceToEntityMovement{Distance: 2, Target: pl.PlayerEntity})
+		//CreateMonster(g, manager, gameMap, x+2, y+2, "../assets/creatures/balrug.png")
 
-	CreateMoreTestMonsters(manager, gameMap)
+		CreateMoreTestMonsters(manager, gameMap)
 
-	//CreateMoreTestMonsters(manager, gameMap)
+		//CreateMoreTestMonsters(manager, gameMap)
+	*/
 
 }
 
@@ -189,13 +192,14 @@ func CreateMonster(manager *ecs.Manager, gameMap *worldmap.GameMap, x, y int, im
 			X: x,
 			Y: y,
 		}).
-		AddComponent(common.AttributeComponent, &common.Attributes{MaxHealth: 5, CurrentHealth: 5}).
+		AddComponent(common.AttributeComponent, &common.Attributes{MaxHealth: 5, CurrentHealth: 5, TotalAttackSpeed: 10, TotalMovementSpeed: 5}).
 		AddComponent(equipment.ArmorComponent, &testArmor).
 		AddComponent(equipment.WeaponComponent, &equipment.MeleeWeapon{
-			MinDamage: 3,
-			MaxDamage: 5,
+			MinDamage:   3,
+			MaxDamage:   5,
+			AttackSpeed: 3,
 		}).
-		AddComponent(actionmanager.ActionQueueComponent, &actionmanager.ActionQueue{})
+		AddComponent(actionmanager.ActionQueueComponent, &actionmanager.ActionQueue{TotalActionPoints: 100})
 
 	armor := equipment.GetArmor(ent)
 	common.UpdateAttributes(ent, armor.ArmorClass, armor.Protection, armor.DodgeChance)
@@ -274,8 +278,9 @@ func CreateWeapon(manager *ecs.Manager, name string, pos common.Position, imageP
 	weapon := CreateItem(manager, name, pos, imagePath, properties...)
 
 	weapon.AddComponent(equipment.WeaponComponent, &equipment.MeleeWeapon{
-		MinDamage: MinDamage,
-		MaxDamage: MaxDamage,
+		MinDamage:   MinDamage,
+		MaxDamage:   MaxDamage,
+		AttackSpeed: 3,
 	})
 
 	return weapon
@@ -291,8 +296,25 @@ func CreatedRangedWeapon(manager *ecs.Manager, name string, imagePath string, po
 		ShootingRange: shootingRange,
 		TargetArea:    TargetArea,
 		ShootingVX:    graphics.NewProjectile(0, 0, 0, 0),
+		AttackSpeed:   3,
 	})
 
 	return weapon
+
+}
+
+func InitTestActionManager(ecsmanager *common.EntityManager, pl *avatar.PlayerData, ac *actionmanager.ActionController) {
+
+	actionQueue := common.GetComponentType[*actionmanager.ActionQueue](pl.PlayerEntity, actionmanager.ActionQueueComponent)
+
+	ac.AddActionQueue(actionQueue)
+
+	for _, c := range ecsmanager.World.Query(ecsmanager.WorldTags["monsters"]) {
+
+		actionQueue = common.GetComponentType[*actionmanager.ActionQueue](c.Entity, actionmanager.ActionQueueComponent)
+
+		ac.AddActionQueue(actionQueue)
+
+	}
 
 }

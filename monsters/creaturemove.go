@@ -236,8 +236,7 @@ func FleeFromEntityMovementAction(ecsmanager *common.EntityManager, gm *worldmap
 // Used for Stay Within Range movement. Selects a random unblocked tile to move to
 // Gets called in MonsterSystems, which queries the ECS manager and returns query results containing all monsters
 // A movmeent function builds a path for a creature to follow, and UpdatePosition lets a creature move on the path
-
-func CreatureMovementSystem(ecsmanager *common.EntityManager, gm *worldmap.GameMap, c *ecs.QueryResult) actionmanager.Action {
+func CreatureMovementSystem(ecsmanager *common.EntityManager, gm *worldmap.GameMap, c *ecs.QueryResult) actionmanager.ActionWrapper {
 
 	//var ok bool
 	var ok bool

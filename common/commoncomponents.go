@@ -85,15 +85,17 @@ func GetTilePositions(indices []int) []Position {
 }
 
 type Attributes struct {
-	MaxHealth        int
-	CurrentHealth    int
-	AttackBonus      int
-	BaseArmorClass   int
-	BaseProteciton   int
-	BaseDodgeChange  float32
-	TotalArmorClass  int
-	TotalProtection  int
-	TotalDodgeChance float32
+	MaxHealth          int
+	CurrentHealth      int
+	AttackBonus        int
+	BaseArmorClass     int
+	BaseProteciton     int
+	BaseDodgeChange    float32
+	TotalArmorClass    int
+	TotalProtection    int
+	TotalDodgeChance   float32
+	TotalMovementSpeed int
+	TotalAttackSpeed   int
 }
 
 func UpdateAttributes(e *ecs.Entity, armorClass, protection int, dodgechance float32) {
