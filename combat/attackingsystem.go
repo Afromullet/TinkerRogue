@@ -63,7 +63,6 @@ func PerformAttack(ecsmanagr *common.EntityManager, pl *avatar.PlayerData, gm *w
 
 		if dodgeRoll >= int(defAttr.TotalDodgeChance) {
 
-			fmt.Println("Hit")
 			totalDamage := damage - defAttr.TotalProtection
 
 			if totalDamage < 0 {
@@ -71,7 +70,7 @@ func PerformAttack(ecsmanagr *common.EntityManager, pl *avatar.PlayerData, gm *w
 			}
 
 			defAttr.CurrentHealth -= totalDamage
-			fmt.Println("Remaining health ", defAttr.CurrentHealth)
+		
 
 		} else {
 			fmt.Println("Dodged")
@@ -84,14 +83,14 @@ func PerformAttack(ecsmanagr *common.EntityManager, pl *avatar.PlayerData, gm *w
 	RemoveDeadEntity(ecsmanagr, pl, gm, defender)
 }
 
-// A monster doing a ranged attack is simple right now.
+// A monster performing a ranged attack is simple right now.
 // It ignores the weapons AOE and selects only the player as the target
+// Todo add nill check for when there is no weapon for a player or monster attacker
 func RangedAttackSystem(ecsmanager *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap, attackerPos *common.Position) {
 
 	var attacker *ecs.Entity = nil
 
 	var weapon *equipment.RangedWeapon = nil
-
 	var targets []*ecs.Entity
 
 	if pl.Pos.IsEqual(attackerPos) {
@@ -101,28 +100,23 @@ func RangedAttackSystem(ecsmanager *common.EntityManager, pl *avatar.PlayerData,
 			targets = weapon.GetTargets(ecsmanager)
 		}
 	} else {
-		attacker = GetCreatureAtPosition(ecsmanager, attackerPos) //todo I think this will cause an issue. Should be attackerPos. Worry about this when allowing monsters to attack
-
-		fmt.Println("Monster is shooting")
-
+		attacker = GetCreatureAtPosition(ecsmanager, attackerPos)
 		weapon = common.GetComponentType[*equipment.RangedWeapon](attacker, equipment.RangedWeaponComponent)
 		targets = append(targets, pl.PlayerEntity)
 	}
 
-	// Todo I could return from the function when checking if weapon is not nill above
 	if weapon != nil {
 
 		for _, t := range targets {
 
 			defenderPos := common.GetPosition(t)
 			if attackerPos.InRange(defenderPos, weapon.ShootingRange) {
-				fmt.Println("Shooting")
 
 				PerformAttack(ecsmanager, pl, gm, weapon.CalculateDamage(), attacker, t)
 				weapon.DisplayShootingVX(attackerPos, defenderPos)
 
 			} else {
-				fmt.Println("Out of range")
+
 			}
 
 		}
@@ -133,15 +127,13 @@ func RangedAttackSystem(ecsmanager *common.EntityManager, pl *avatar.PlayerData,
 
 }
 
-// Todo need to handle player death differently
-// Todo if it attacks the player, it removes the attacking creature
-// TOdo can also just call GetPosition instead of passing defenderPos
+// Todo if it attacks the player, it removes the attacking creatured
 func RemoveDeadEntity(ecsmnager *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap, defender *ecs.Entity) {
 
 	defenderPos := common.GetPosition(defender)
 	defAttr := common.GetAttributes(defender)
 	if pl.Pos.IsEqual(defenderPos) {
-		fmt.Println("Player dead")
+		graphics.IndexFromXY(defenderPos.X, defenderPos.Y) //Just here as a placeholder. Does nothing.
 	} else if defAttr.CurrentHealth <= 0 {
 		//Todo removing an entity is really closely coupled to teh map right now.
 		//Do it differently in the future

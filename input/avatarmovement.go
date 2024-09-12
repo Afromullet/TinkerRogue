@@ -23,7 +23,7 @@ var prevPosY = -1
 
 var TurnTaken bool
 
-// todo replace the keypressed with iskeyreleased
+// todo replace the keypressed with iskeyreleasedPlayerI
 func PlayerActions(ecsmanager *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap, playerUI *gui.PlayerUI, tm *timesystem.GameTurn) bool {
 
 	actionQueue := common.GetComponentType[*timesystem.ActionQueue](pl.PlayerEntity, timesystem.ActionQueueComponent)
@@ -33,73 +33,61 @@ func PlayerActions(ecsmanager *common.EntityManager, pl *avatar.PlayerData, gm *
 		fmt.Println("No action queue for player")
 	}
 
-	keyPressed := false
-
 	x := 0
 	y := 0
 
 	if inpututil.IsKeyJustReleased(ebiten.KeyW) {
 		y = -1
-
 		act, cost := GetPlayerMoveAction(PlayerMoveAction, ecsmanager, pl, gm, x, y)
 		AddPlayerAction(act, pl, cost, timesystem.MovementKind)
-		keyPressed = true
-
+		pl.HasKeyInput = true
 	}
 
 	if inpututil.IsKeyJustReleased(ebiten.KeyS) {
 		y = 1
 		act, cost := GetPlayerMoveAction(PlayerMoveAction, ecsmanager, pl, gm, x, y)
 		AddPlayerAction(act, pl, cost, timesystem.MovementKind)
-		keyPressed = true
-
+		pl.HasKeyInput = true
 	}
 
 	if inpututil.IsKeyJustReleased(ebiten.KeyA) {
 		x = -1
 		act, cost := GetPlayerMoveAction(PlayerMoveAction, ecsmanager, pl, gm, x, y)
 		AddPlayerAction(act, pl, cost, timesystem.MovementKind)
-		keyPressed = true
-
+		pl.HasKeyInput = true
 	}
 
 	if inpututil.IsKeyJustReleased(ebiten.KeyD) {
 		x = 1
 		act, cost := GetPlayerMoveAction(PlayerMoveAction, ecsmanager, pl, gm, x, y)
 		AddPlayerAction(act, pl, cost, timesystem.MovementKind)
-		keyPressed = true
-
+		pl.HasKeyInput = true
 	}
 
 	if inpututil.IsKeyJustReleased(ebiten.KeyK) {
 
 		armor := equipment.GetArmor(pl.PlayerEntity)
 		common.UpdateAttributes(pl.PlayerEntity, armor.ArmorClass, armor.Protection, armor.DodgeChance)
-		keyPressed = true
-
+		pl.HasKeyInput = true
 	}
 
 	if inpututil.IsKeyJustReleased(ebiten.KeyF) {
 
 		act, cost := GetSimplePlayerAction(PlayerSelRanged, pl, gm)
 		AddPlayerAction(act, pl, cost, timesystem.RangedAttackKind)
-		keyPressed = true
-
+		pl.HasKeyInput = true
 	}
 
 	if inpututil.IsKeyJustReleased(ebiten.KeyG) {
-
 		act, cost := GetSimplePlayerAction(PlayerPickupFromFloor, pl, gm)
-
 		AddPlayerAction(act, pl, cost, timesystem.PickupItemKind)
-		keyPressed = true
-
+		pl.HasKeyInput = true
 	}
 
 	if inpututil.IsKeyJustReleased(ebiten.KeySpace) {
 
 	}
 
-	return keyPressed
+	return pl.HasKeyInput
 
 }

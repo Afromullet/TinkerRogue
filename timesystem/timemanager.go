@@ -2,29 +2,42 @@ package timesystem
 
 import (
 	"fmt"
+	"game_main/avatar"
 	"sort"
 )
 
-/*
-Each entity has an ActionQueue, which contains the Total Energy and a list of actions the entity has queued up.
-
-The ActionManager is a slice of all entity queues. It's sorted from highest to lowest Total Energy, meaning that the creature
-with the highest energy is in front of the queue.
-
-Whenever an entity performs an action, the action is added to its own queue. After the player and the entities act, the actions begin to execute.
-The actions only execute after the player and all monsters submitted their action.
-
-The part I don't have yet is energy recovery. I need to break the time management system down into more discrete units, so that after x amount of time
-every entity recovers energy. I don't want to base this on "actual" time - it has to be every so many action cycles.
-
-
-*/
-
-var ActionDispatcher ActionManager
+// The ActionManager contains a slice of all ActionQueues and executes the actions for all entities
+// Pushes an action to the back of the slice once it's been performed
 
 // Each Queue are all the queued actions by an Entity
 type ActionManager struct {
 	EntityActions []*ActionQueue
+}
+
+// Runs through the queue once and performs the actions until we reach the players action
+// Doing in that manner so that we can handle player input without lag
+func (am *ActionManager) ExecuteActionsUntilPlayer(pl *avatar.PlayerData) bool {
+
+	executedActions := make([]*ActionQueue, 0)
+	//playerFound := false
+	for i, act := range am.EntityActions {
+
+		if act.Entity == pl.PlayerEntity {
+
+			am.EntityActions = append(am.EntityActions[i:], executedActions...)
+			return true
+		}
+
+		act.ExecuteAction()
+
+		executedActions = append(executedActions, act)
+
+	}
+
+	am.EntityActions = append(am.EntityActions[len(executedActions):], executedActions...)
+
+	return false
+
 }
 
 func (am *ActionManager) AddActionQueue(aq *ActionQueue) {
@@ -55,6 +68,14 @@ func (am *ActionManager) CleanController() {
 
 }
 
+func (am *ActionManager) ResetActionManager() {
+	for _, act := range am.EntityActions {
+		act.ResetQueue()
+
+	}
+
+}
+
 func (am *ActionManager) ReorderActions() {
 	sort.Slice(am.EntityActions, func(i, j int) bool {
 		// Sort by TotalActionPoints in descending order
@@ -67,14 +88,24 @@ func (am *ActionManager) ReorderActions() {
 }
 
 // Todo handle case where there ius no action in the first Action queue
+// Executes the action and moves the queue to the end of the manager
 func (am *ActionManager) ExecuteFirst() {
 
 	if len(am.EntityActions) > 0 {
 
 		am.EntityActions[0].ExecuteAction()
+		firstAction := am.EntityActions[0]
+		am.EntityActions = append(am.EntityActions[1:], firstAction)
 
 	}
 
+}
+
+func (am ActionManager) ResetActionPoints() {
+
+	for _, q := range am.EntityActions {
+		q.ResetActionPoints()
+	}
 }
 
 func (am *ActionManager) containsActionQueue(aq *ActionQueue) bool {

@@ -4,15 +4,6 @@ import (
 	"github.com/bytearena/ecs"
 )
 
-/*
-The timesystem requires actions to be stored so that they can be called in different orders.
-
-Different actions have different parameters.
-
-There will be a wrapper struct for each set of parameters that implements the Action interface
-*/
-
-// Anything that adds an action to an ActionQueue does it through the ActionWrapper.
 // Todo add comments on why and how the ActionWrapper is used
 type ActionWrapper interface {
 	Execute(q *ActionQueue)
@@ -38,11 +29,13 @@ type Action struct {
 	kindOfAction KindOfAction
 }
 
-// Contains a slice of Actions an entity has queued up to perform.
-// The MonsterSystem and Player Input handler adds actions to the queue.
+// Every entity has an ActionQueue. Whenever an entity wants to perform an action, it's added to its ActionQueue.
+// An action needs an ActionWrapper to add to the Queue.
+// ExecuteAction performs the first action in the queue and removes it.
 type ActionQueue struct {
 	TotalActionPoints int
 	AllActions        []Action
+	Entity            *ecs.Entity //Entity associated with the queue
 }
 
 // Removes the first action in the queue.
@@ -52,9 +45,11 @@ func (a *ActionQueue) pop() {
 	}
 }
 
-// The actionPointCost is how much the action...costs to perform
-// Don't want allow the same kind of action to be added twice, which is why there's a kindOfAction parameter
-// Does not distinguish between melee and ranged attacks yet
+func (a *ActionQueue) ResetActionPoints() {
+	a.TotalActionPoints = 100
+}
+
+// Only allow the same kind of action to be added once.
 func (a *ActionQueue) AddAction(action ActionWrapper, actionPointCost int, kindOfAction KindOfAction) {
 
 	if actionPointCost <= 0 {
@@ -86,4 +81,9 @@ func (a *ActionQueue) ExecuteAction() {
 
 func (a *ActionQueue) NumOfActions() int {
 	return len(a.AllActions)
+}
+
+func (a *ActionQueue) ResetQueue() {
+	a.AllActions = nil
+	a.AllActions = make([]Action, 0)
 }

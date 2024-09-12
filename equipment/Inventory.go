@@ -8,7 +8,6 @@ import (
 )
 
 // This is used to display the inventory inside of windows for the UI
-// TODO later replace this with the item information
 type InventoryListEntry struct {
 	Index int
 	Name  string
@@ -19,7 +18,7 @@ type Inventory struct {
 	InventoryContent []*ecs.Entity
 }
 
-// the Item type stores a "count" which is incremented if the item exists in the inventory
+// Decrements the count if there's more than one of the item. Otherwise, removes it from the inventory.
 func (inv *Inventory) AddItem(entityToAdd *ecs.Entity) {
 	// Dereference the slice pointer and use append
 	newItemName := common.GetComponentType[*common.Name](entityToAdd, common.NameComponent).NameStr

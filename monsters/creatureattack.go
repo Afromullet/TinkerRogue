@@ -66,12 +66,9 @@ func StayDistantRangedAttackAction(ecsmanger *common.EntityManager, pl *avatar.P
 
 		rangeToKeep := RangedWeapon.ShootingRange
 
-		distance := common.GetPosition(c.Entity).ManhattanDistance(common.GetPosition(target))
-		fmt.Println("Printing distance. Range On Attack", distance, RangedWeapon.ShootingRange)
-
 		if common.GetPosition(c.Entity).InRange(common.GetPosition(target), RangedWeapon.ShootingRange) {
 			combat.RangedAttackSystem(ecsmanger, pl, gm, common.GetPosition(c.Entity))
-			fmt.Println("In range")
+
 		} else {
 			c.Entity.AddComponent(WithinRadiusComp, &DistanceToEntityMovement{Distance: rangeToKeep, Target: target})
 

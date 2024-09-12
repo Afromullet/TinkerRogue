@@ -118,7 +118,7 @@ func CreateTestMonsters(manager *ecs.Manager, pl *avatar.PlayerData, gameMap *wo
 
 	c = CreateMonster(manager, gameMap, x+1, y, "../assets/creatures/unseen_horror.png")
 
-	c.AddComponent(monsters.SimpleWanderComp, &monsters.EntityFollow{Target: pl.PlayerEntity})
+	c.AddComponent(monsters.SimpleWanderComp, &monsters.SimpleWander{})
 	//c.AddComponent(approachAndAttack, &ApproachAndAttack{})
 
 	/*
@@ -192,7 +192,7 @@ func CreateMonster(manager *ecs.Manager, gameMap *worldmap.GameMap, x, y int, im
 			X: x,
 			Y: y,
 		}).
-		AddComponent(common.AttributeComponent, &common.Attributes{MaxHealth: 5, CurrentHealth: 5, TotalAttackSpeed: 10, TotalMovementSpeed: 10}).
+		AddComponent(common.AttributeComponent, &common.Attributes{MaxHealth: 5, CurrentHealth: 5, TotalAttackSpeed: 30, TotalMovementSpeed: 1}).
 		AddComponent(equipment.ArmorComponent, &testArmor).
 		AddComponent(equipment.WeaponComponent, &equipment.MeleeWeapon{
 			MinDamage:   3,
@@ -303,17 +303,19 @@ func CreatedRangedWeapon(manager *ecs.Manager, name string, imagePath string, po
 
 }
 
-func InitTestActionManager(ecsmanager *common.EntityManager, pl *avatar.PlayerData, ac *timesystem.ActionManager) {
+func InitTestActionManager(ecsmanager *common.EntityManager, pl *avatar.PlayerData, ts *timesystem.GameTurn) {
 
 	actionQueue := common.GetComponentType[*timesystem.ActionQueue](pl.PlayerEntity, timesystem.ActionQueueComponent)
+	actionQueue.Entity = pl.PlayerEntity
 
-	ac.AddActionQueue(actionQueue)
+	ts.ActionDispatcher.AddActionQueue(actionQueue)
 
 	for _, c := range ecsmanager.World.Query(ecsmanager.WorldTags["monsters"]) {
 
 		actionQueue = common.GetComponentType[*timesystem.ActionQueue](c.Entity, timesystem.ActionQueueComponent)
+		actionQueue.Entity = c.Entity
 
-		ac.AddActionQueue(actionQueue)
+		ts.ActionDispatcher.AddActionQueue(actionQueue)
 
 	}
 

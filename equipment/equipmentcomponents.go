@@ -15,11 +15,6 @@ var (
 	RangedWeaponComponent *ecs.Component
 )
 
-// This gets called so often that it might as well be a function
-func GetItem(e *ecs.Entity) *Item {
-	return common.GetComponentType[*Item](e, ItemComponent)
-}
-
 type Armor struct {
 	ArmorClass  int
 	Protection  int
@@ -63,6 +58,8 @@ func (r RangedWeapon) CalculateDamage() int {
 }
 
 // Gets all of the targets in the weapons AOE
+// Todo need a function that gets all of the targets in a TileBasedShape
+// Not much reason to have this as its own function
 func (r RangedWeapon) GetTargets(ecsmanger *common.EntityManager) []*ecs.Entity {
 
 	pos := common.GetTilePositions(r.TargetArea.GetIndices())
@@ -85,7 +82,8 @@ func (r RangedWeapon) GetTargets(ecsmanger *common.EntityManager) []*ecs.Entity 
 	return targets
 }
 
-// Adds the Ranged Weapons VisuaLEffect to the VisualEffectHandler. It will be drawn.
+// Adds the Ranged Weapons VisuaLEffect to the VisualEffectHandler.
+// Todo determine whether this can be moved to the graphics package
 func (r *RangedWeapon) DisplayShootingVX(attackerPos *common.Position, defenderPos *common.Position) {
 
 	gd := graphics.NewScreenData()
@@ -96,4 +94,8 @@ func (r *RangedWeapon) DisplayShootingVX(attackerPos *common.Position, defenderP
 	arr := graphics.NewProjectile(attX, attY, defX, defY)
 
 	graphics.AddVX(arr)
+}
+
+func GetItem(e *ecs.Entity) *Item {
+	return common.GetComponentType[*Item](e, ItemComponent)
 }

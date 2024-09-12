@@ -16,8 +16,6 @@ import (
 )*/
 
 import (
-	"fmt"
-
 	"game_main/avatar"
 	"game_main/common"
 	"game_main/graphics"
@@ -66,9 +64,53 @@ func NewGame() *Game {
 	testing.SetupPlayerForTesting(&g.em, &g.playerData)
 	testing.UpdateContentsForTest(&g.em, &g.gameMap)
 
-	testing.InitTestActionManager(&g.em, &g.playerData, &timesystem.ActionDispatcher)
+	testing.InitTestActionManager(&g.em, &g.playerData, &g.ts)
+	g.ts.ActionDispatcher.ResetActionManager()
 
 	return g
+
+}
+
+// Once the player performs an action, the Action Manager adds Monster actions to the queue.
+// Performs all of the actions. Then it reorders them.
+// When the Turn Counter hits 0, we reset all action points. That's our "unit of time"
+func ManageTurn(g *Game) {
+
+	if g.ts.Turn == timesystem.PlayerTurn && !g.playerData.HasKeyInput {
+
+		input.PlayerActions(&g.em, &g.playerData, &g.gameMap, &g.gameUI, &g.ts)
+		if g.playerData.HasKeyInput {
+
+			g.ts.Turn = timesystem.MonsterTurn
+
+		}
+
+		// The drawing and throwing still work after changing the way the input and actions work
+		// Uncommented now because we need to figure out how to implement this in the Action Energy based ystem
+		input.HandlePlayerThrowable(&g.em, &g.playerData, &g.gameMap, &g.gameUI)
+		input.HandlePlayerRangedAttack(&g.em, &g.playerData, &g.gameMap)
+
+	}
+	if g.ts.Turn == timesystem.MonsterTurn && g.playerData.HasKeyInput {
+		monsters.MonsterSystems(&g.em, &g.playerData, &g.gameMap, &g.ts)
+
+		// Returns true if the next action is the player. So execute it
+		if g.ts.ActionDispatcher.ExecuteActionsUntilPlayer(&g.playerData) {
+
+			g.ts.ActionDispatcher.ExecuteFirst()
+
+		}
+
+		g.ts.ActionDispatcher.ReorderActions()
+		g.ts.UpdateTurnCounter()
+		if g.ts.TurnCounter == 0 {
+			g.ts.ActionDispatcher.ResetActionPoints()
+		}
+
+		g.playerData.HasKeyInput = false
+		g.ts.Turn = timesystem.PlayerTurn
+
+	}
 
 }
 
@@ -81,36 +123,7 @@ func (g *Game) Update() error {
 	graphics.VXHandler.UpdateVisualEffects()
 	// Update the Label text to indicate if the ui is currently being hovered over or not
 	//g.headerLbl.Label = fmt.Sprintf("Game Demo!\nUI is hovered: %t", input.UIHovered)
-
-	keyPressed := false
-	if g.ts.Turn == timesystem.PlayerTurn && !keyPressed {
-
-		keyPressed = input.PlayerActions(&g.em, &g.playerData, &g.gameMap, &g.gameUI, &g.ts)
-		if keyPressed {
-
-			g.ts.Turn = timesystem.MonsterTurn
-		}
-
-		//input.HandlePlayerThrowable(&g.em, &g.playerData, &g.gameMap, &g.gameUI)
-		//input.HandlePlayerRangedAttack(&g.em, &g.playerData, &g.gameMap)
-
-	}
-	if g.ts.Turn == timesystem.MonsterTurn && keyPressed {
-		monsters.MonsterSystems(&g.em, &g.playerData, &g.gameMap, &g.ts)
-		g.ts.Turn = timesystem.ExecuteActions
-	}
-
-	if g.ts.Turn == timesystem.ExecuteActions && keyPressed {
-
-		timesystem.ActionDispatcher.ExecuteFirst()
-		timesystem.ActionDispatcher.DebugOutput()
-		timesystem.ActionDispatcher.ReorderActions()
-		fmt.Println("Exectugin actions")
-		keyPressed = false
-
-		g.ts.Turn = timesystem.PlayerTurn
-
-	}
+	ManageTurn(g)
 
 	return nil
 

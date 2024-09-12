@@ -13,6 +13,12 @@ var PlayerComponent *ecs.Component
 type Player struct {
 }
 
+type PlayerInputStates struct {
+	IsThrowing  bool
+	IsShooting  bool
+	HasKeyInput bool //Tells us whether the player pressed a key in the avatarmovement
+}
+
 type PlayerEquipment struct {
 	PlayerWeapon            *ecs.Entity
 	PlayerRangedWeapon      *ecs.Entity
@@ -27,6 +33,7 @@ func (pl *PlayerEquipment) PrepareRangedAttack() {
 
 }
 
+// Let's us modify the visual cue for the throwing weapons AOE and change the inventory once the item is thrown
 type PlayerThrowable struct {
 	SelectedThrowable  *ecs.Entity
 	ThrowingAOEShape   graphics.TileBasedShape
@@ -34,9 +41,7 @@ type PlayerThrowable struct {
 	ThrowableItem      *equipment.Item
 }
 
-// Handles all conversions necessary for updating item throwing information
-// The index lets us remove an item one it's thrown
-// The shape lets us draw it on the screen
+// Throwing items needs to both display information to the user and use the players inventory
 func (pl *PlayerThrowable) PrepareThrowable(itemEntity *ecs.Entity, index int) {
 
 	pl.SelectedThrowable = itemEntity
@@ -57,29 +62,15 @@ func (pl *PlayerThrowable) ThrowPreparedItem(inv *equipment.Inventory) {
 
 }
 
-// Helper function to make it less tedious to get the inventory
-func (pl *PlayerEquipment) GetPlayerWeapon() *equipment.MeleeWeapon {
-
-	weapon := common.GetComponentType[*equipment.MeleeWeapon](pl.PlayerWeapon, equipment.WeaponComponent)
-
-	return weapon
-}
-
-// Helper function to make it less tedious to get the inventory
-func (pl *PlayerData) GetPlayerRangedWeapon() *equipment.RangedWeapon {
-
-	weapon := common.GetComponentType[*equipment.RangedWeapon](pl.PlayerRangedWeapon, equipment.RangedWeaponComponent)
-
-	return weapon
-}
-
-// Used to keep track of frequently accessed player information.
-// Throwing items is an important part of the game, so we store additional information related
-// ThrowingAOEShape is the shape that highlights the AOE of the thrown item
-// isTargeting is a bool that indicates whether the player is currently selecting a ranged target
+// All of the player information needs to be easily accessible.
+// Everything that needs the PlayerData currently does it through a parameter rather than acecssing it globally.
+// A global could probably work and reduce the number of parameters a lot of the functions take
+// But for now, this works.
+// Maybe it's a good use case for a Singleton, but I will worry about that later.
 type PlayerData struct {
 	PlayerEquipment
 	PlayerThrowable
+	PlayerInputStates
 
 	PlayerEntity *ecs.Entity
 
@@ -93,10 +84,23 @@ func NewPlayerData() PlayerData {
 	return PlayerData{}
 }
 
-// Helper function to make it less tedious to get the inventory
 func (pl *PlayerData) GetPlayerInventory() *equipment.Inventory {
 
 	playerInventory := common.GetComponentType[*equipment.Inventory](pl.PlayerEntity, equipment.InventoryComponent)
 
 	return playerInventory
+}
+
+func (pl *PlayerData) GetPlayerRangedWeapon() *equipment.RangedWeapon {
+
+	weapon := common.GetComponentType[*equipment.RangedWeapon](pl.PlayerRangedWeapon, equipment.RangedWeaponComponent)
+
+	return weapon
+}
+
+func (pl *PlayerEquipment) GetPlayerWeapon() *equipment.MeleeWeapon {
+
+	weapon := common.GetComponentType[*equipment.MeleeWeapon](pl.PlayerWeapon, equipment.WeaponComponent)
+
+	return weapon
 }

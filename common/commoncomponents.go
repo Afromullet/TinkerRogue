@@ -8,16 +8,6 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-// This file contains
-
-var (
-	PositionComponent   *ecs.Component
-	NameComponent       *ecs.Component
-	AttributeComponent  *ecs.Component
-	RenderableComponent *ecs.Component //Putting this here for now rather than in graphics
-	UsrMsg              *ecs.Component //I can probably remove this later
-)
-
 type Position struct {
 	X int
 	Y int
@@ -37,11 +27,6 @@ func (p *Position) InRange(other *Position, distance int) bool {
 
 	return p.ManhattanDistance(other) <= distance
 
-}
-
-// The functions which are a GetComponentType wrapper get called frequency
-func GetPosition(e *ecs.Entity) *Position {
-	return GetComponentType[*Position](e, PositionComponent)
 }
 
 func PixelsFromPosition(pos *Position, tileWidth, tileHeight int) (int, int) {
@@ -66,8 +51,8 @@ func GridPositionFromPixels(x, y int) Position {
 	}
 }
 
-// A TileBasedShape returns indices that correspond to the elements in the gamemaps Tiles slice
-// This returns the X,Y positions since we handle player and creature location through Position
+// A TileBasedShape returns indices that correspond to the tiles on the GameMap
+// The caller of this function has to decide what to do with the positions.
 func GetTilePositions(indices []int) []Position {
 
 	gd := graphics.NewScreenData()
