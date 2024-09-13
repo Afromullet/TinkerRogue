@@ -112,7 +112,15 @@ func MonsterSystems(ecsmanger *common.EntityManager, pl *avatar.PlayerData, gm *
 	for _, c := range ecsmanger.World.Query(ecsmanger.WorldTags["monsters"]) {
 
 		actionQueue := common.GetComponentType[*timesystem.ActionQueue](c.Entity, timesystem.ActionQueueComponent)
-		h := common.GetComponentType[*common.Attributes](c.Entity, common.AttributeComponent)
+
+		attr := common.GetComponentType[*common.Attributes](c.Entity, common.AttributeComponent)
+
+		if attr == nil {
+			fmt.Println("Somethign went really wrong here. This should never be nill")
+			p := common.GetComponentType[*common.Name](c.Entity, common.NameComponent)
+			fmt.Println(p)
+			continue
+		}
 
 		rangedWep := common.GetComponentType[*equipment.RangedWeapon](c.Entity, equipment.RangedWeaponComponent)
 		meleeWep := common.GetComponentType[*equipment.MeleeWeapon](c.Entity, equipment.WeaponComponent)
@@ -120,17 +128,25 @@ func MonsterSystems(ecsmanger *common.EntityManager, pl *avatar.PlayerData, gm *
 
 		ApplyEffects(c)
 
+		if actionQueue != nil {
+
+			act := CreatureMovementSystem(ecsmanger, gm, c)
+			if act != nil {
+				actionQueue.AddAction(act, attr.TotalMovementSpeed, timesystem.MovementKind)
+			}
+		}
+
 		//todo need to distinguish between ranged and melee attacks
 		if actionQueue != nil {
-			actionQueue.AddAction(CreatureAttackSystem(ecsmanger, pl, gm, c), h.TotalAttackSpeed, timesystem.AttackKind)
+			act := CreatureAttackSystem(ecsmanger, pl, gm, c)
+
+			if act != nil {
+				actionQueue.AddAction(act, attr.TotalAttackSpeed, timesystem.AttackKind)
+			}
 		}
 
-		if h.CurrentHealth <= 0 {
+		if attr.CurrentHealth <= 0 {
 			ecsmanger.World.DisposeEntity(c.Entity)
-		}
-
-		if actionQueue != nil {
-			actionQueue.AddAction(CreatureMovementSystem(ecsmanger, gm, c), h.TotalMovementSpeed, timesystem.MovementKind)
 		}
 
 	}

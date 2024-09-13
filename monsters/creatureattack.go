@@ -45,7 +45,13 @@ func ApproachAndAttackAction(ecsmanger *common.EntityManager, pl *avatar.PlayerD
 	// Clear any existing movement if the creature attacks so there's no conflict
 	RemoveMovementComponent(c)
 
-	c.Entity.AddComponent(EntityFollowComp, &EntityFollow{Target: target})
+	fmt.Println("Distance to target ", common.DistanceBetween(c.Entity, target))
+	if common.DistanceBetween(c.Entity, target) > 1 {
+		c.Entity.AddComponent(EntityFollowComp, &EntityFollow{Target: target})
+		fmt.Println("Moving closer")
+	} else if common.DistanceBetween(c.Entity, target) == 1 {
+		fmt.Println("Arrived")
+	}
 
 	defenderPos := common.GetComponentType[*common.Position](target, common.PositionComponent)
 	if common.DistanceBetween(c.Entity, target) == 1 {
@@ -58,22 +64,14 @@ func ApproachAndAttackAction(ecsmanger *common.EntityManager, pl *avatar.PlayerD
 // Stay within Ranged Attack Distance with the movement
 func StayDistantRangedAttackAction(ecsmanger *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap, c *ecs.QueryResult, target *ecs.Entity) {
 
-	RemoveMovementComponent(c)
-
 	RangedWeapon := common.GetComponentType[*equipment.RangedWeapon](c.Entity, equipment.RangedWeaponComponent)
 
 	if RangedWeapon != nil {
 
-		rangeToKeep := RangedWeapon.ShootingRange
-
 		if common.GetPosition(c.Entity).InRange(common.GetPosition(target), RangedWeapon.ShootingRange) {
 			combat.RangedAttackSystem(ecsmanger, pl, gm, common.GetPosition(c.Entity))
 
-		} else {
-			c.Entity.AddComponent(WithinRadiusComp, &DistanceToEntityMovement{Distance: rangeToKeep, Target: target})
-
 		}
-
 	} else {
 		fmt.Println("No ranged weapon")
 	}

@@ -3,6 +3,7 @@ package testing
 import (
 	"game_main/avatar"
 	"game_main/common"
+	entitytemplates "game_main/datareader"
 	"game_main/equipment"
 	"game_main/graphics"
 	"game_main/monsters"
@@ -97,75 +98,30 @@ func CreateTestItems(manager *ecs.Manager, tags map[string]ecs.Tag, gameMap *wor
 }
 
 func CreateTestMonsters(manager *ecs.Manager, pl *avatar.PlayerData, gameMap *worldmap.GameMap) {
-
 	x, y := gameMap.Rooms[0].Center()
 
 	wepArea := graphics.NewTileRectangle(0, 0, 1, 1)
-
 	wep := equipment.RangedWeapon{
 		MinDamage:     3,
 		MaxDamage:     5,
 		ShootingRange: 5,
 		TargetArea:    &wepArea,
-		AttackSpeed:   20,
+		AttackSpeed:   5,
 	}
 
-	c := CreateMonster(manager, gameMap, x, y+1, "../assets/creatures/elf.png")
+	ent := entitytemplates.CreateCreatureFromTemplate(manager, entitytemplates.MonsterTemplates[0], gameMap, x+1, y)
 
-	//c.AddComponent(approachAndAttack, &ApproachAndAttack{})
-	c.AddComponent(monsters.DistanceRangeAttackComp, &monsters.DistanceRangedAttack{})
-	c.AddComponent(equipment.RangedWeaponComponent, &wep)
+	ent.AddComponent(monsters.DistanceRangeAttackComp, &monsters.DistanceRangedAttack{})
+	ent.AddComponent(equipment.RangedWeaponComponent, &wep)
 
-	c = CreateMonster(manager, gameMap, x+1, y, "../assets/creatures/unseen_horror.png")
+	ent = entitytemplates.CreateCreatureFromTemplate(manager, entitytemplates.MonsterTemplates[0], gameMap, x+1, y)
+	ent.AddComponent(monster.WithinRangeComponent, &monsters.DistanceToEntityMovement{Target: pl.PlayerEntity, Distance: 3})
 
-	c.AddComponent(monsters.SimpleWanderComp, &monsters.SimpleWander{})
-	//c.AddComponent(approachAndAttack, &ApproachAndAttack{})
+	ent = entitytemplates.CreateCreatureFromTemplate(manager, entitytemplates.MonsterTemplates[0], gameMap, x+2, y)
+	ent.AddComponent(monsters.WithinRangeComponent, &monsters.DistanceToEntityMovement{Distance: 5, Target: pl.PlayerEntity})
 
-	/*
-		c = CreateMonster(manager, gameMap, x+1, y+1, "../assets/creatures/angel.png")
-		c.AddComponent(monsters.EntityFollowComp, &monsters.EntityFollow{Target: pl.PlayerEntity})
-
-		c = CreateMonster(manager, gameMap, x+1, y+2, "../assets/creatures/ancient_lich.png")
-		c.AddComponent(monsters.WithinRadiusComp, &monsters.DistanceToEntityMovement{Target: pl.PlayerEntity, Distance: 3})
-
-		c = CreateMonster(manager, gameMap, x+2, y+1, "../assets/creatures/starcursed_mass.png")
-		c.AddComponent(monsters.WithinRangeComponent, &monsters.DistanceToEntityMovement{Distance: 2, Target: pl.PlayerEntity})
-		//CreateMonster(g, manager, gameMap, x+2, y+2, "../assets/creatures/balrug.png")
-
-		CreateMoreTestMonsters(manager, gameMap)
-
-		//CreateMoreTestMonsters(manager, gameMap)
-	*/
-
-}
-
-func CreateMoreTestMonsters(manager *ecs.Manager, gameMap *worldmap.GameMap) {
-
-	elfImg, _, err := ebitenutil.NewImageFromFile("../assets/creatures/elf.png")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	//Don't create a creature in the starting room
-	for _, r := range gameMap.Rooms[1:9] {
-
-		x, y := r.Center()
-		pos := common.Position{
-			X: x,
-			Y: y}
-
-		manager.NewEntity().
-			AddComponent(monster.CreatureComponent, &monster.Creature{
-				Path: make([]common.Position, 0),
-			}).
-			AddComponent(common.RenderableComponent, &common.Renderable{
-				Image:   elfImg,
-				Visible: true,
-			}).
-			AddComponent(common.PositionComponent, &pos).
-			AddComponent(monsters.EntityFollowComp, &monsters.EntityFollow{})
-
-	}
+	ent = entitytemplates.CreateCreatureFromTemplate(manager, entitytemplates.MonsterTemplates[0], gameMap, x+3, y)
+	ent.AddComponent(monsters.EntityFollowComp, &monsters.EntityFollow{Target: pl.PlayerEntity})
 
 }
 
@@ -215,22 +171,6 @@ func UpdateContentsForTest(ecsmanager *common.EntityManager, gm *worldmap.GameMa
 		item_pos := item.Components[common.PositionComponent].(*common.Position)
 
 		gm.AddEntityToTile(item.Entity, item_pos)
-
-	}
-
-}
-
-func GetTileInfo(ecsmanager *common.EntityManager, pos *common.Position, player *avatar.Player) {
-
-	for _, item := range ecsmanager.World.Query(ecsmanager.WorldTags["items"]) {
-
-		item_pos := item.Components[common.PositionComponent].(*common.Position)
-		log.Print("Item Pos: \n")
-		log.Print(item_pos)
-
-		if pos.IsEqual(item_pos) {
-			log.Print("here\n")
-		}
 
 	}
 
@@ -313,9 +253,12 @@ func InitTestActionManager(ecsmanager *common.EntityManager, pl *avatar.PlayerDa
 	for _, c := range ecsmanager.World.Query(ecsmanager.WorldTags["monsters"]) {
 
 		actionQueue = common.GetComponentType[*timesystem.ActionQueue](c.Entity, timesystem.ActionQueueComponent)
-		actionQueue.Entity = c.Entity
 
-		ts.ActionDispatcher.AddActionQueue(actionQueue)
+		if actionQueue != nil {
+			actionQueue.Entity = c.Entity
+			ts.ActionDispatcher.AddActionQueue(actionQueue)
+
+		}
 
 	}
 

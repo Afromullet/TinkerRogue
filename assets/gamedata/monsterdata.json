@@ -1,0 +1,42 @@
+{
+  "monsters": [
+    {
+      "name": "Goblin",
+	  "imgname": "ancient_lich.png",
+      "attributes": {
+        "MaxHealth": 20,
+        "AttackBonus": 2,
+        "BaseArmorClass": 10,
+        "BaseProtection": 0,
+        "BaseDodgeChance": 0.1,
+        "BaseMovementSpeed": 1
+      },
+      "armor": {
+        "ArmorClass": 5,
+        "Protection": 2,
+        "DodgeChance": 0.05
+      },
+      "meleeWeapon": {
+        "MinDamage": 3,
+        "MaxDamage": 6,
+        "AttackSpeed": 3
+      }
+      
+    },
+    {
+      "name": "Slime",
+	  "imgname": "balrug.png",
+      "attributes": {
+        "MaxHealth": 10,
+        "AttackBonus": 1,
+        "BaseArmorClass": 8,
+        "BaseProtection": 1,
+        "BaseDodgeChance": 0.05,
+        "BaseMovementSpeed": 1
+      },
+      "armor": null,
+      "meleeWeapon": null
+  
+    }
+  ]
+}

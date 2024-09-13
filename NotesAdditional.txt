@@ -1,48 +1,6 @@
-TODOS
-
-Passing around Game and GameMap to so many places. Especialyl Game. That needs to be broken down better
 
 
 
-
-
-
-______________
-
-
-
-Learning GO with this project. Some files are in heavy need of refactoring in the future, since I'm learning both GoLang
-And how to implemnent things in an ECS. The files I'm most actively using are below. Those are the ones I'm continually updating that,
-while still having to be refactored, are going to be part of the final product. 
-
-GameComponents.go
-GameMap.Go
-InventoryManager.go
-UIMaub.go
-uitil.go
-ItemProperties.go
-ShapeDrawing
-Creature
-
-
-
-
-Other changes that will have to happen
-
-main.go: Choosing how I want to initialize everyhting
-player_movement.go - break this apart more
-world.go : Initialization of the entities needed at game startup once I add more stuff to the game
-
-
-The follolwing will be thrown away:
-
-test_Data.go
-
-These will change significantly:
-
-player_movement.go
-
-_______________
 
 I wondered why addComponent uses a pointer for the component. I thought, "Wouldn't that lead to everything have the same properties?
 

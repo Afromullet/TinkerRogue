@@ -75,12 +75,25 @@ type Attributes struct {
 	AttackBonus        int
 	BaseArmorClass     int
 	BaseProteciton     int
+	BaseMovementSpeed  int
 	BaseDodgeChange    float32
 	TotalArmorClass    int
 	TotalProtection    int
 	TotalDodgeChance   float32
 	TotalMovementSpeed int
 	TotalAttackSpeed   int
+}
+
+func NewBaseAttributes(maxHealth, attackBonus, baseAC, baseProt, baseMovSpeed int, dodge float32) Attributes {
+	return Attributes{
+		MaxHealth:         maxHealth,
+		CurrentHealth:     maxHealth,
+		AttackBonus:       attackBonus,
+		BaseArmorClass:    baseAC,
+		BaseProteciton:    baseProt,
+		BaseDodgeChange:   dodge,
+		BaseMovementSpeed: baseMovSpeed,
+	}
 }
 
 func UpdateAttributes(e *ecs.Entity, armorClass, protection int, dodgechance float32) {

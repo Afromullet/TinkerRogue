@@ -18,6 +18,7 @@ import (
 import (
 	"game_main/avatar"
 	"game_main/common"
+	entitytemplates "game_main/datareader"
 	"game_main/graphics"
 	"game_main/gui"
 	"game_main/input"
@@ -51,6 +52,7 @@ func NewGame() *Game {
 	g := &Game{}
 	g.gameMap = worldmap.NewGameMap()
 	g.playerData = avatar.PlayerData{}
+	entitytemplates.ReadGameData()
 	InitializeECS(&g.em)
 	InitializePlayerData(&g.em, &g.playerData, &g.gameMap)
 
@@ -60,8 +62,10 @@ func NewGame() *Game {
 	//g.craftingUI.SetCraftingWindowLocation(g.screenData.screenWidth/2, g.screenData.screenWidth/2)
 
 	testing.CreateTestItems(g.em.World, g.em.WorldTags, &g.gameMap)
+
 	testing.CreateTestMonsters(g.em.World, &g.playerData, &g.gameMap)
 	testing.SetupPlayerForTesting(&g.em, &g.playerData)
+
 	testing.UpdateContentsForTest(&g.em, &g.gameMap)
 
 	testing.InitTestActionManager(&g.em, &g.playerData, &g.ts)
@@ -94,9 +98,10 @@ func ManageTurn(g *Game) {
 	if g.ts.Turn == timesystem.MonsterTurn && g.playerData.HasKeyInput {
 		monsters.MonsterSystems(&g.em, &g.playerData, &g.gameMap, &g.ts)
 
-		// Returns true if the next action is the player. So execute it
+		// Returns true if the next action is the player.
 		if g.ts.ActionDispatcher.ExecuteActionsUntilPlayer(&g.playerData) {
 
+			//Perform the players action
 			g.ts.ActionDispatcher.ExecuteFirst()
 
 		}
@@ -131,8 +136,10 @@ func (g *Game) Update() error {
 
 // Draw is called each draw cycle and is where we will blit.
 func (g *Game) Draw(screen *ebiten.Image) {
-	g.gameMap.DrawLevel(screen)
+
+	g.gameMap.DrawLevel(screen, true)
 	rendering.ProcessRenderables(&g.em, g.gameMap, screen)
+
 	g.gameUI.MainPlayerInterface.Draw(screen)
 	ProcessUserLog(g, screen)
 

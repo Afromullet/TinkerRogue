@@ -142,7 +142,7 @@ func (gameMap *GameMap) RemoveItemFromTile(index int, pos *common.Position) (*ec
 
 // The color matrix draws on tiles.
 // Right now it's only used for showing the AOE of throwable items
-func (gameMap *GameMap) DrawLevel(screen *ebiten.Image) {
+func (gameMap *GameMap) DrawLevel(screen *ebiten.Image, revealAllTiles bool) {
 	gd := graphics.NewScreenData()
 
 	var cs = ebiten.ColorScale{}
@@ -154,6 +154,10 @@ func (gameMap *GameMap) DrawLevel(screen *ebiten.Image) {
 			idx := graphics.IndexFromXY(x, y)
 			tile := gameMap.Tiles[idx]
 			isVis := gameMap.PlayerVisible.IsVisible(x, y)
+
+			if revealAllTiles {
+				isVis = true
+			}
 
 			op := &ebiten.DrawImageOptions{}
 

@@ -1,0 +1,1 @@
+The imagename in monsterdata.json has to exist in assets/creatures
