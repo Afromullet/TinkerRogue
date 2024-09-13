@@ -28,8 +28,8 @@ And then adds a new one, which determines how to approach the creature that's at
 */
 
 var (
-	ApproachAndAttackComp   *ecs.Component
-	DistanceRangeAttackComp *ecs.Component
+	ChargeAttackComp        *ecs.Component
+	RangeAttackBehaviorComp *ecs.Component
 )
 
 type ApproachAndAttack struct {
@@ -38,20 +38,15 @@ type ApproachAndAttack struct {
 type DistanceRangedAttack struct {
 }
 
+type AttackBehavior struct {
+}
+
+type ChargeAttackBehavior struct {
+}
+
 // Build a path to the player and attack once within range
 
-func ApproachAndAttackAction(ecsmanger *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap, c *ecs.QueryResult, target *ecs.Entity) {
-
-	// Clear any existing movement if the creature attacks so there's no conflict
-	RemoveMovementComponent(c)
-
-	fmt.Println("Distance to target ", common.DistanceBetween(c.Entity, target))
-	if common.DistanceBetween(c.Entity, target) > 1 {
-		c.Entity.AddComponent(EntityFollowComp, &EntityFollow{Target: target})
-		fmt.Println("Moving closer")
-	} else if common.DistanceBetween(c.Entity, target) == 1 {
-		fmt.Println("Arrived")
-	}
+func MeleeAttackAction(ecsmanger *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap, c *ecs.QueryResult, target *ecs.Entity) {
 
 	defenderPos := common.GetComponentType[*common.Position](target, common.PositionComponent)
 	if common.DistanceBetween(c.Entity, target) == 1 {
@@ -62,7 +57,7 @@ func ApproachAndAttackAction(ecsmanger *common.EntityManager, pl *avatar.PlayerD
 }
 
 // Stay within Ranged Attack Distance with the movement
-func StayDistantRangedAttackAction(ecsmanger *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap, c *ecs.QueryResult, target *ecs.Entity) {
+func RangedAttackAction(ecsmanger *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap, c *ecs.QueryResult, target *ecs.Entity) {
 
 	RangedWeapon := common.GetComponentType[*equipment.RangedWeapon](c.Entity, equipment.RangedWeaponComponent)
 
@@ -78,36 +73,64 @@ func StayDistantRangedAttackAction(ecsmanger *common.EntityManager, pl *avatar.P
 
 }
 
+func RangedAttackFromDistance(ecsmanger *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap, c *ecs.QueryResult, t *ecs.Entity) timesystem.ActionWrapper {
+
+	wep := common.GetComponentType[*equipment.RangedWeapon](c.Entity, equipment.RangedWeaponComponent)
+
+	if wep == nil {
+		return nil
+	}
+
+	if common.DistanceBetween(c.Entity, t) < wep.ShootingRange {
+		fmt.Println("Shooting")
+		return timesystem.NewOneTargetAttack(RangedAttackAction, ecsmanger, pl, gm, c, pl.PlayerEntity)
+
+	} else {
+		fmt.Println("Moving")
+		c.Entity.AddComponent(WithinRangeComponent, &DistanceToEntityMovement{Target: t, Distance: wep.ShootingRange})
+
+		return timesystem.NewEntityMover(WithinRangeMoveAction, ecsmanger, gm, c.Entity)
+	}
+
+}
+
+func ChargeAndAttack(ecsmanger *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap, c *ecs.QueryResult, t *ecs.Entity) timesystem.ActionWrapper {
+
+	wep := common.GetComponentType[*equipment.MeleeWeapon](c.Entity, equipment.WeaponComponent)
+
+	if wep == nil {
+		return nil
+	}
+
+	fmt.Println("Distance between ", common.DistanceBetween(c.Entity, t))
+	if common.DistanceBetween(c.Entity, t) == 1 {
+		fmt.Println("Attacking")
+		return timesystem.NewOneTargetAttack(MeleeAttackAction, ecsmanger, pl, gm, c, pl.PlayerEntity)
+
+	} else {
+		fmt.Println("Moving")
+
+		c.Entity.AddComponent(EntityFollowComp, &EntityFollow{Target: t})
+
+		return timesystem.NewEntityMover(EntityFollowMoveAction, ecsmanger, gm, c.Entity)
+	}
+
+}
+
 // Gets called in the MonsterSystems loop
 // Todo change logic to allow any entity to be targetted rather than just the player
 func CreatureAttackSystem(ecsmanger *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap, c *ecs.QueryResult) timesystem.ActionWrapper {
 
 	var ok bool
 
-	if _, ok = c.Entity.GetComponentData(ApproachAndAttackComp); ok {
-
-		return &timesystem.OneTargetAttack{
-			Func:   ApproachAndAttackAction,
-			Param1: ecsmanger,
-			Param2: pl,
-			Param3: gm,
-			Param4: c,
-			Param5: pl.PlayerEntity,
-		}
+	if _, ok = c.Entity.GetComponentData(RangeAttackBehaviorComp); ok {
+		return RangedAttackFromDistance(ecsmanger, pl, gm, c, pl.PlayerEntity)
 
 	}
 
-	// Todo need to avoid friendly fire
-	if _, ok = c.Entity.GetComponentData(DistanceRangeAttackComp); ok {
+	if _, ok = c.Entity.GetComponentData(ChargeAttackComp); ok {
 
-		return &timesystem.OneTargetAttack{
-			Func:   StayDistantRangedAttackAction,
-			Param1: ecsmanger,
-			Param2: pl,
-			Param3: gm,
-			Param4: c,
-			Param5: pl.PlayerEntity,
-		}
+		return ChargeAndAttack(ecsmanger, pl, gm, c, pl.PlayerEntity)
 	}
 
 	return nil

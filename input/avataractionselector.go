@@ -53,7 +53,7 @@ func GetPlayerMoveAction(act PlayerAction, ecsmanager *common.EntityManager,
 func AddPlayerAction(simpleAction timesystem.ActionWrapper, pl *avatar.PlayerData, cost int, kindofAction timesystem.KindOfAction) {
 
 	actionQueue := common.GetComponentType[*timesystem.ActionQueue](pl.PlayerEntity, timesystem.ActionQueueComponent)
-	actionQueue.AddAction(simpleAction, cost, kindofAction)
+	actionQueue.AddPlayerAction(simpleAction, cost, kindofAction)
 
 }
 

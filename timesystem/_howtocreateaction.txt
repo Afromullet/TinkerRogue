@@ -1,3 +1,7 @@
+Every action returns a bool. True if the action succeeded. False if it failed.
+
+Failure does not mean the action truly failed. For example, WithinRangeMoveAction returns false if the entity is already in range
+
 
 /*
 Here's an example for how it's done for attacking by adding a struct for attacking one target. We have:

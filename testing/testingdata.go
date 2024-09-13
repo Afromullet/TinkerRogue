@@ -6,7 +6,6 @@ import (
 	entitytemplates "game_main/datareader"
 	"game_main/equipment"
 	"game_main/graphics"
-	"game_main/monsters"
 	monster "game_main/monsters"
 	"game_main/timesystem"
 	"game_main/worldmap"
@@ -111,17 +110,21 @@ func CreateTestMonsters(manager *ecs.Manager, pl *avatar.PlayerData, gameMap *wo
 
 	ent := entitytemplates.CreateCreatureFromTemplate(manager, entitytemplates.MonsterTemplates[0], gameMap, x+1, y)
 
-	ent.AddComponent(monsters.DistanceRangeAttackComp, &monsters.DistanceRangedAttack{})
+	//ent.AddComponent(monsters.DistanceRangeAttackComp, &monsters.DistanceRangedAttack{})
 	ent.AddComponent(equipment.RangedWeaponComponent, &wep)
-
-	ent = entitytemplates.CreateCreatureFromTemplate(manager, entitytemplates.MonsterTemplates[0], gameMap, x+1, y)
-	ent.AddComponent(monster.WithinRangeComponent, &monsters.DistanceToEntityMovement{Target: pl.PlayerEntity, Distance: 3})
+	//ent.AddComponent(monster.WithinRangeComponent, &monsters.DistanceToEntityMovement{Target: pl.PlayerEntity, Distance: 3})
+	ent.AddComponent(monster.RangeAttackBehaviorComp, &monster.AttackBehavior{})
 
 	ent = entitytemplates.CreateCreatureFromTemplate(manager, entitytemplates.MonsterTemplates[0], gameMap, x+2, y)
-	ent.AddComponent(monsters.WithinRangeComponent, &monsters.DistanceToEntityMovement{Distance: 5, Target: pl.PlayerEntity})
 
-	ent = entitytemplates.CreateCreatureFromTemplate(manager, entitytemplates.MonsterTemplates[0], gameMap, x+3, y)
-	ent.AddComponent(monsters.EntityFollowComp, &monsters.EntityFollow{Target: pl.PlayerEntity})
+	ent.AddComponent(monster.ChargeAttackComp, &monster.AttackBehavior{})
+	/*
+		ent = entitytemplates.CreateCreatureFromTemplate(manager, entitytemplates.MonsterTemplates[0], gameMap, x+2, y)
+		ent.AddComponent(monsters.WithinRangeComponent, &monsters.DistanceToEntityMovement{Distance: 5, Target: pl.PlayerEntity})
+
+		ent = entitytemplates.CreateCreatureFromTemplate(manager, entitytemplates.MonsterTemplates[0], gameMap, x+3, y)
+		ent.AddComponent(monsters.EntityFollowComp, &monsters.EntityFollow{Target: pl.PlayerEntity})
+	*/
 
 }
 

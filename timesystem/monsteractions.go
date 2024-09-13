@@ -18,6 +18,24 @@ type OneTargetAttack struct {
 	Param5 *ecs.Entity
 }
 
+func NewOneTargetAttack(
+	fn func(*common.EntityManager, *avatar.PlayerData, *worldmap.GameMap, *ecs.QueryResult, *ecs.Entity),
+	param1 *common.EntityManager,
+	param2 *avatar.PlayerData,
+	param3 *worldmap.GameMap,
+	param4 *ecs.QueryResult,
+	param5 *ecs.Entity) *OneTargetAttack {
+
+	return &OneTargetAttack{
+		Func:   fn,
+		Param1: param1,
+		Param2: param2,
+		Param3: param3,
+		Param4: param4,
+		Param5: param5}
+
+}
+
 func (a *OneTargetAttack) Execute(q *ActionQueue) {
 	a.Func(a.Param1, a.Param2, a.Param3, a.Param4, a.Param5)
 	q.pop()
@@ -32,7 +50,8 @@ type EntityMover struct {
 }
 
 // NewEntityMover creates a new EntityMover with the provided parameters.
-func NewEntityMover(fn func(*common.EntityManager, *worldmap.GameMap, *ecs.Entity),
+func NewEntityMover(
+	fn func(*common.EntityManager, *worldmap.GameMap, *ecs.Entity),
 	param1 *common.EntityManager,
 	param2 *worldmap.GameMap,
 	param3 *ecs.Entity) *EntityMover {

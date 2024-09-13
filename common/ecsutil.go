@@ -48,7 +48,7 @@ func DistanceBetween(e1 *ecs.Entity, e2 *ecs.Entity) int {
 	pos1 := GetPosition(e1)
 	pos2 := GetPosition(e2)
 
-	return pos1.ManhattanDistance(pos2)
+	return pos1.ChebyshevDistance(pos2)
 
 }
 

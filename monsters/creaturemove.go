@@ -27,9 +27,7 @@ type MovementFunction func(ecsmanager *common.EntityManager, gm *worldmap.GameMa
 
 var (
 	SimpleWanderComp     *ecs.Component
-	NoMoveComp           *ecs.Component
 	EntityFollowComp     *ecs.Component
-	WithinRadiusComp     *ecs.Component
 	WithinRangeComponent *ecs.Component
 	FleeComp             *ecs.Component
 
@@ -101,65 +99,6 @@ func EntityFollowMoveAction(ecsmanager *common.EntityManager, gm *worldmap.GameM
 
 }
 
-// Sort of works but needs improvement
-func WithinRadiusMoveAction(ecsmanager *common.EntityManager, gm *worldmap.GameMap, mover *ecs.Entity) {
-
-	gd := graphics.NewScreenData()
-	creature := GetCreature(mover)
-	creaturePosition := common.GetPosition(mover)
-	withinRange := common.GetComponentType[*DistanceToEntityMovement](mover, WithinRadiusComp)
-
-	if withinRange.Target != nil {
-		targetPos := common.GetComponentType[*common.Position](withinRange.Target, common.PositionComponent)
-
-		pixelX, pixelY := common.PixelsFromPosition(targetPos, gd.TileWidth, gd.TileHeight)
-		distance := withinRange.Distance
-
-		var path []common.Position
-		for distance >= 0 {
-			indices := graphics.NewTileCircleOutline(pixelX, pixelY, distance).GetIndices()
-
-			ind, ok := GetUnblockedTile(gm, indices)
-			if ok {
-
-				finalPos := common.PositionFromIndex(ind, gd.ScreenWidth)
-				path = pathfinding.BuildPath(gm, creaturePosition, &finalPos)
-				break
-			}
-			// Decrease distance and try again
-			distance--
-		}
-
-		creature.Path = path
-
-	}
-
-	creature.UpdatePosition(gm, creaturePosition)
-
-	//fmt.Println(pos)
-
-}
-func GetUnblockedTile(gameMap *worldmap.GameMap, indices []int) (int, bool) {
-
-	unblocked_tiles := make([]int, 0)
-	for i, ind := range indices {
-
-		if i < len(indices) {
-			if !gameMap.Tiles[ind].Blocked {
-				unblocked_tiles = append(unblocked_tiles, ind)
-			}
-		}
-	}
-
-	if len(unblocked_tiles) == 0 {
-		return -1, false
-	}
-
-	random_tile := randgen.GetRandomBetween(0, len(unblocked_tiles)-1)
-	return unblocked_tiles[random_tile], true
-
-}
-
 // Clears the path once within range
 func WithinRangeMoveAction(ecsmanager *common.EntityManager, gm *worldmap.GameMap, mover *ecs.Entity) {
 
@@ -167,7 +106,7 @@ func WithinRangeMoveAction(ecsmanager *common.EntityManager, gm *worldmap.GameMa
 	creaturePosition := common.GetPosition(mover)
 	within := common.GetComponentType[*DistanceToEntityMovement](mover, WithinRangeComponent)
 
-	if within.Target != nil {
+	if within != nil && within.Target != nil {
 		targetPos := common.GetComponentType[*common.Position](within.Target, common.PositionComponent)
 
 		if targetPos.InRange(creaturePosition, within.Distance) {
@@ -247,18 +186,8 @@ func CreatureMovementSystem(ecsmanager *common.EntityManager, gm *worldmap.GameM
 		return timesystem.NewEntityMover(SimpleWanderAction, ecsmanager, gm, c.Entity)
 	}
 
-	if _, ok = c.Entity.GetComponentData(NoMoveComp); ok {
-		return timesystem.NewEntityMover(NoMoveAction, ecsmanager, gm, c.Entity)
-
-	}
-
 	if _, ok = c.Entity.GetComponentData(EntityFollowComp); ok {
 		return timesystem.NewEntityMover(EntityFollowMoveAction, ecsmanager, gm, c.Entity)
-
-	}
-
-	if _, ok = c.Entity.GetComponentData(WithinRadiusComp); ok {
-		return timesystem.NewEntityMover(WithinRadiusMoveAction, ecsmanager, gm, c.Entity)
 
 	}
 
@@ -293,12 +222,12 @@ func RemoveMovementComponent(c *ecs.QueryResult) {
 func InitializeMovementComponents(manager *ecs.Manager, tags map[string]ecs.Tag) {
 
 	SimpleWanderComp = manager.NewComponent()
-	NoMoveComp = manager.NewComponent()
+
 	EntityFollowComp = manager.NewComponent()
-	WithinRadiusComp = manager.NewComponent()
+
 	WithinRangeComponent = manager.NewComponent()
 	FleeComp = manager.NewComponent()
 
-	MovementTypes = append(MovementTypes, SimpleWanderComp, NoMoveComp, EntityFollowComp, WithinRadiusComp, WithinRangeComponent, FleeComp)
+	MovementTypes = append(MovementTypes, SimpleWanderComp, EntityFollowComp, WithinRangeComponent, FleeComp)
 
 }

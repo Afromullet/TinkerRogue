@@ -9,7 +9,7 @@
         "BaseArmorClass": 10,
         "BaseProtection": 0,
         "BaseDodgeChance": 0.1,
-        "BaseMovementSpeed": 1
+        "BaseMovementSpeed": 5
       },
       "armor": {
         "ArmorClass": 5,

@@ -51,8 +51,8 @@ func InitializeCreatureComponents(manager *ecs.Manager, tags map[string]ecs.Tag)
 
 	monsters.CreatureComponent = manager.NewComponent()
 
-	monsters.ApproachAndAttackComp = manager.NewComponent()
-	monsters.DistanceRangeAttackComp = manager.NewComponent()
+	monsters.ChargeAttackComp = manager.NewComponent()
+	monsters.RangeAttackBehaviorComp = manager.NewComponent()
 
 	creatures := ecs.BuildTag(monsters.CreatureComponent, common.PositionComponent, common.AttributeComponent)
 	tags["monsters"] = creatures

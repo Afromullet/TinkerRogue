@@ -20,6 +20,25 @@ const (
 	PickupItemKind
 )
 
+func GetActionPriority(kind KindOfAction) int {
+
+	switch kind {
+	case AttackKind:
+		return 5
+	case MeleeAttackInd:
+		return 4
+	case RangedAttackKind:
+		return 2
+	case MovementKind:
+		return 2
+	case PickupItemKind:
+		return 1
+	default:
+		return 1
+	}
+
+}
+
 var ActionQueueComponent *ecs.Component
 
 // Cost is substracted from the ActionQueues TotalEnergy when an entity peforms an action
@@ -27,6 +46,7 @@ type Action struct {
 	ActWrapper   ActionWrapper
 	Cost         int
 	kindOfAction KindOfAction
+	priority     int
 }
 
 // Every entity has an ActionQueue. Whenever an entity wants to perform an action, it's added to its ActionQueue.
@@ -49,8 +69,64 @@ func (a *ActionQueue) ResetActionPoints() {
 	a.TotalActionPoints = 100
 }
 
+// Player Queue does not use priority
 // Only allow the same kind of action to be added once.
-func (a *ActionQueue) AddAction(action ActionWrapper, actionPointCost int, kindOfAction KindOfAction) {
+func (a *ActionQueue) AddPlayerAction(action ActionWrapper, actionPointCost int, kindOfAction KindOfAction) {
+
+	if actionPointCost <= 0 {
+		panic("Action points must be greater than or equal to 0")
+	}
+
+	for _, act := range a.AllActions {
+
+		if act.kindOfAction == kindOfAction {
+			return
+		}
+
+	}
+
+	if action != nil {
+		a.AllActions = append(a.AllActions, Action{ActWrapper: action, Cost: actionPointCost, kindOfAction: kindOfAction})
+	}
+}
+
+func (a *ActionQueue) AddMonsterAction(action ActionWrapper, actionPointCost int, kindOfAction KindOfAction) {
+
+	if actionPointCost <= 0 {
+		panic("Action points must be greater than or equal to 0")
+	}
+
+	// Ensure the action is unique (no duplicate actions of the same type)
+	for _, act := range a.AllActions {
+		if act.kindOfAction == kindOfAction {
+			return
+		}
+	}
+
+	// Create the new action
+	newAction := Action{ActWrapper: action, Cost: actionPointCost, kindOfAction: kindOfAction}
+	newActionPriority := GetActionPriority(kindOfAction)
+
+	// Insert the new action in priority order
+	inserted := false
+	for i, act := range a.AllActions {
+		existingActionPriority := GetActionPriority(act.kindOfAction)
+		if newActionPriority > existingActionPriority {
+			// Insert new action at the correct position
+			a.AllActions = append(a.AllActions[:i], append([]Action{newAction}, a.AllActions[i:]...)...)
+			inserted = true
+			break
+		}
+	}
+
+	// If the new action has the lowest priority, append it to the end of the queue
+	if !inserted {
+		a.AllActions = append(a.AllActions, newAction)
+	}
+}
+
+// Monster ActionQueue uses a priority so one action does not always take precedence
+func (a *ActionQueue) AddMonsterActionOld(action ActionWrapper, actionPointCost int, kindOfAction KindOfAction) {
 
 	if actionPointCost <= 0 {
 		panic("Action points must be greater than or equal to 0")
@@ -75,6 +151,7 @@ func (a *ActionQueue) ExecuteAction() {
 
 		a.TotalActionPoints -= a.AllActions[0].Cost
 		a.AllActions[0].ActWrapper.Execute(a)
+
 		a.pop()
 	}
 }
