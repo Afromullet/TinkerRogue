@@ -6,6 +6,7 @@ import (
 	entitytemplates "game_main/datareader"
 	"game_main/equipment"
 	"game_main/graphics"
+	"game_main/monsters"
 	monster "game_main/monsters"
 	"game_main/timesystem"
 	"game_main/worldmap"
@@ -35,7 +36,7 @@ func SetupPlayerForTesting(ecsmanager *common.EntityManager, pl *avatar.PlayerDa
 	w := CreateWeapon(ecsmanager.World, "Weapon 1", *pl.Pos, "../assets/items/sword.png", 5, 10)
 
 	wepArea := graphics.NewTileRectangle(0, 0, 3, 3)
-	r := CreatedRangedWeapon(ecsmanager.World, "Ranged Weapon 1", "../assets/items/sword.png", *pl.Pos, 5, 10, 3, &wepArea)
+	r := CreatedRangedWeapon(ecsmanager.World, "Ranged Weapon 1", "../assets/items/sword.png", *pl.Pos, 5, 10, 3, wepArea)
 
 	pl.PlayerWeapon = w
 	pl.PlayerRangedWeapon = r
@@ -67,27 +68,27 @@ func CreateTestItems(manager *ecs.Manager, tags map[string]ecs.Tag, gameMap *wor
 	TestFreezing.MainProps.Duration = 10
 	TestSticky.MainProps.Duration = 10
 
-	throwItem := CreateTestThrowable(&TestSquare, TestFireEffect)
+	throwItem := CreateTestThrowable(TestSquare, TestFireEffect)
 
 	CreateItem(manager, "SquareThrow"+strconv.Itoa(1), common.Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
 		throwItem, TestBurning, TestFreezing)
 
-	throwItem = CreateTestThrowable(&TestCircle, TestIceEffect)
+	throwItem = CreateTestThrowable(TestCircle, TestIceEffect)
 
 	CreateItem(manager, "CircleThrow"+strconv.Itoa(1), common.Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
 		throwItem, TestBurning, TestFreezing)
 
-	throwItem = CreateTestThrowable(&TestLine, TestCloudEffect)
+	throwItem = CreateTestThrowable(TestLine, TestCloudEffect)
 
 	CreateItem(manager, "LineThrow"+strconv.Itoa(1), common.Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
 		throwItem, TestBurning, TestFreezing)
 
-	throwItem = CreateTestThrowable(&TestRect, TestElectricEffect)
+	throwItem = CreateTestThrowable(TestRect, TestElectricEffect)
 
 	CreateItem(manager, "RectThrow"+strconv.Itoa(1), common.Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
 		throwItem, TestBurning, TestFreezing)
 
-	throwItem = CreateTestThrowable(&TestCone, TestStickyEffect)
+	throwItem = CreateTestThrowable(TestCone, TestStickyEffect)
 
 	CreateItem(manager, "ConeThrow"+strconv.Itoa(1), common.Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
 		throwItem, TestBurning, TestFreezing)
@@ -96,7 +97,7 @@ func CreateTestItems(manager *ecs.Manager, tags map[string]ecs.Tag, gameMap *wor
 
 }
 
-func CreateTestMonsters(manager *ecs.Manager, pl *avatar.PlayerData, gameMap *worldmap.GameMap) {
+func CreateTestMonsters(em common.EntityManager, pl *avatar.PlayerData, gameMap *worldmap.GameMap) {
 	x, y := gameMap.Rooms[0].Center()
 
 	wepArea := graphics.NewTileRectangle(0, 0, 1, 1)
@@ -104,24 +105,25 @@ func CreateTestMonsters(manager *ecs.Manager, pl *avatar.PlayerData, gameMap *wo
 		MinDamage:     3,
 		MaxDamage:     5,
 		ShootingRange: 5,
-		TargetArea:    &wepArea,
+		TargetArea:    wepArea,
 		AttackSpeed:   5,
 	}
 
-	ent := entitytemplates.CreateCreatureFromTemplate(manager, entitytemplates.MonsterTemplates[0], gameMap, x+1, y)
+	ent := entitytemplates.CreateCreatureFromTemplate(em, entitytemplates.MonsterTemplates[0], gameMap, x+1, y)
 
 	//ent.AddComponent(monsters.DistanceRangeAttackComp, &monsters.DistanceRangedAttack{})
 	ent.AddComponent(equipment.RangedWeaponComponent, &wep)
 	//ent.AddComponent(monster.WithinRangeComponent, &monsters.DistanceToEntityMovement{Target: pl.PlayerEntity, Distance: 3})
 	ent.AddComponent(monster.RangeAttackBehaviorComp, &monster.AttackBehavior{})
 
-	ent = entitytemplates.CreateCreatureFromTemplate(manager, entitytemplates.MonsterTemplates[0], gameMap, x+2, y)
+	ent = entitytemplates.CreateCreatureFromTemplate(em, entitytemplates.MonsterTemplates[0], gameMap, x+2, y)
 
 	ent.AddComponent(monster.ChargeAttackComp, &monster.AttackBehavior{})
-	/*
-		ent = entitytemplates.CreateCreatureFromTemplate(manager, entitytemplates.MonsterTemplates[0], gameMap, x+2, y)
-		ent.AddComponent(monsters.WithinRangeComponent, &monsters.DistanceToEntityMovement{Distance: 5, Target: pl.PlayerEntity})
 
+	ent = entitytemplates.CreateCreatureFromTemplate(em, entitytemplates.MonsterTemplates[1], gameMap, x+3, y)
+	ent.AddComponent(monsters.WithinRangeComponent, &monsters.DistanceToEntityMovement{Distance: 5, Target: pl.PlayerEntity})
+
+	/*
 		ent = entitytemplates.CreateCreatureFromTemplate(manager, entitytemplates.MonsterTemplates[0], gameMap, x+3, y)
 		ent.AddComponent(monsters.EntityFollowComp, &monsters.EntityFollow{Target: pl.PlayerEntity})
 	*/
@@ -153,7 +155,7 @@ func CreateMonster(manager *ecs.Manager, gameMap *worldmap.GameMap, x, y int, im
 		}).
 		AddComponent(common.AttributeComponent, &common.Attributes{MaxHealth: 5, CurrentHealth: 5, TotalAttackSpeed: 30, TotalMovementSpeed: 1}).
 		AddComponent(equipment.ArmorComponent, &testArmor).
-		AddComponent(equipment.WeaponComponent, &equipment.MeleeWeapon{
+		AddComponent(equipment.MeleeWeaponComponent, &equipment.MeleeWeapon{
 			MinDamage:   3,
 			MaxDamage:   5,
 			AttackSpeed: 30,
@@ -220,7 +222,7 @@ func CreateWeapon(manager *ecs.Manager, name string, pos common.Position, imageP
 
 	weapon := CreateItem(manager, name, pos, imagePath, properties...)
 
-	weapon.AddComponent(equipment.WeaponComponent, &equipment.MeleeWeapon{
+	weapon.AddComponent(equipment.MeleeWeaponComponent, &equipment.MeleeWeapon{
 		MinDamage:   MinDamage,
 		MaxDamage:   MaxDamage,
 		AttackSpeed: 3,

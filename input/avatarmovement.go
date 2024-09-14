@@ -86,6 +86,7 @@ func PlayerActions(ecsmanager *common.EntityManager, pl *avatar.PlayerData, gm *
 
 	if inpututil.IsKeyJustReleased(ebiten.KeySpace) {
 
+		worldmap.GoDownStairs(gm)
 	}
 
 	return pl.HasKeyInput

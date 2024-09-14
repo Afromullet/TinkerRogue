@@ -100,7 +100,7 @@ func (pl *PlayerData) GetPlayerRangedWeapon() *equipment.RangedWeapon {
 
 func (pl *PlayerEquipment) GetPlayerWeapon() *equipment.MeleeWeapon {
 
-	weapon := common.GetComponentType[*equipment.MeleeWeapon](pl.PlayerWeapon, equipment.WeaponComponent)
+	weapon := common.GetComponentType[*equipment.MeleeWeapon](pl.PlayerWeapon, equipment.MeleeWeaponComponent)
 
 	return weapon
 }

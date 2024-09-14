@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"game_main/avatar"
 	"sort"
+
+	"github.com/bytearena/ecs"
 )
 
 // The ActionManager contains a slice of all ActionQueues and executes the actions for all entities
@@ -105,6 +107,16 @@ func (am ActionManager) ResetActionPoints() {
 
 	for _, q := range am.EntityActions {
 		q.ResetActionPoints()
+	}
+}
+
+func (am *ActionManager) RemoveActionQueueForEntity(entity *ecs.Entity) {
+	for i, actionQueue := range am.EntityActions {
+		if actionQueue.Entity == entity {
+
+			am.EntityActions = append(am.EntityActions[:i], am.EntityActions[i+1:]...)
+			return
+		}
 	}
 }
 

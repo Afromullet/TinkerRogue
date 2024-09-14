@@ -34,7 +34,7 @@ func MeleeAttackSystem(ecsmanager *common.EntityManager, pl *avatar.PlayerData, 
 		attacker = GetCreatureAtPosition(ecsmanager, attackerPos)
 		defender = pl.PlayerEntity
 		fmt.Println("Monster is attacking")
-		weapon = common.GetComponentType[*equipment.MeleeWeapon](attacker, equipment.WeaponComponent)
+		weapon = common.GetComponentType[*equipment.MeleeWeapon](attacker, equipment.MeleeWeaponComponent)
 
 	}
 
@@ -70,7 +70,6 @@ func PerformAttack(ecsmanagr *common.EntityManager, pl *avatar.PlayerData, gm *w
 			}
 
 			defAttr.CurrentHealth -= totalDamage
-		
 
 		} else {
 			fmt.Println("Dodged")
@@ -80,7 +79,7 @@ func PerformAttack(ecsmanagr *common.EntityManager, pl *avatar.PlayerData, gm *w
 		fmt.Println("Missed")
 	}
 
-	RemoveDeadEntity(ecsmanagr, pl, gm, defender)
+	//RemoveDeadEntity(ecsmanagr, pl, gm, defender)
 }
 
 // A monster performing a ranged attack is simple right now.

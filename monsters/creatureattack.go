@@ -32,16 +32,7 @@ var (
 	RangeAttackBehaviorComp *ecs.Component
 )
 
-type ApproachAndAttack struct {
-}
-
-type DistanceRangedAttack struct {
-}
-
 type AttackBehavior struct {
-}
-
-type ChargeAttackBehavior struct {
 }
 
 // Build a path to the player and attack once within range
@@ -82,11 +73,11 @@ func RangedAttackFromDistance(ecsmanger *common.EntityManager, pl *avatar.Player
 	}
 
 	if common.DistanceBetween(c.Entity, t) < wep.ShootingRange {
-		fmt.Println("Shooting")
+
 		return timesystem.NewOneTargetAttack(RangedAttackAction, ecsmanger, pl, gm, c, pl.PlayerEntity)
 
 	} else {
-		fmt.Println("Moving")
+		
 		c.Entity.AddComponent(WithinRangeComponent, &DistanceToEntityMovement{Target: t, Distance: wep.ShootingRange})
 
 		return timesystem.NewEntityMover(WithinRangeMoveAction, ecsmanger, gm, c.Entity)
@@ -96,19 +87,17 @@ func RangedAttackFromDistance(ecsmanger *common.EntityManager, pl *avatar.Player
 
 func ChargeAndAttack(ecsmanger *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap, c *ecs.QueryResult, t *ecs.Entity) timesystem.ActionWrapper {
 
-	wep := common.GetComponentType[*equipment.MeleeWeapon](c.Entity, equipment.WeaponComponent)
+	wep := common.GetComponentType[*equipment.MeleeWeapon](c.Entity, equipment.MeleeWeaponComponent)
 
 	if wep == nil {
 		return nil
 	}
 
-	fmt.Println("Distance between ", common.DistanceBetween(c.Entity, t))
 	if common.DistanceBetween(c.Entity, t) == 1 {
-		fmt.Println("Attacking")
+
 		return timesystem.NewOneTargetAttack(MeleeAttackAction, ecsmanger, pl, gm, c, pl.PlayerEntity)
 
 	} else {
-		fmt.Println("Moving")
 
 		c.Entity.AddComponent(EntityFollowComp, &EntityFollow{Target: t})
 

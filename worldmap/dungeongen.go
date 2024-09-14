@@ -74,14 +74,30 @@ func NewGameMap() GameMap {
 	}
 
 	dungeonMap := GameMap{}
-	dungeonMap.Tiles = dungeonMap.createTiles()
+	dungeonMap.Tiles = dungeonMap.CreateTiles()
 	dungeonMap.Rooms = make([]Rect, 0)
 	dungeonMap.PlayerVisible = fov.New()
 	dungeonMap.NumTiles = len(dungeonMap.Tiles)
 	fmt.Println("Num Tiles", dungeonMap.NumTiles)
 	dungeonMap.GenerateLevelTiles()
+	dungeonMap.PlaceStairs()
 
 	return dungeonMap
+}
+
+// Todo need to add
+// 1) Check to make sure we are at stairs
+// 2) Clear all old entities. Store them somewhere else
+// 3) Place the player in the starting room of the next map
+// 4) Need to add Up Stairs function too
+// 5) Figure out what else you have to add
+func GoDownStairs(gm *GameMap) {
+
+	//Need to remove all entities from the old map
+	fmt.Println("Changing map")
+	newGameMap := NewGameMap()
+
+	*gm = newGameMap
 }
 
 func (gameMap *GameMap) Tile(pos *common.Position) *Tile {
@@ -184,13 +200,13 @@ func (gameMap *GameMap) DrawLevel(screen *ebiten.Image, revealAllTiles bool) {
 
 			}
 
-			screen.DrawImage(tile.Image, op)
+			screen.DrawImage(tile.image, op)
 
 		}
 	}
 }
 
-func (gameMap *GameMap) createTiles() []*Tile {
+func (gameMap *GameMap) CreateTiles() []*Tile {
 	gd := graphics.NewScreenData()
 	tiles := make([]*Tile, graphics.LevelHeight*gd.ScreenWidth)
 	index := 0
@@ -216,7 +232,7 @@ func (gameMap *GameMap) GenerateLevelTiles() {
 
 	gd := graphics.NewScreenData()
 	graphics.LevelHeight = gd.ScreenHeight - gd.UIHeight
-	tiles := gameMap.createTiles()
+	tiles := gameMap.CreateTiles()
 	gameMap.Tiles = tiles
 	contains_rooms := false
 
@@ -267,7 +283,7 @@ func (gameMap *GameMap) createRoom(room Rect) {
 			gameMap.Tiles[index].TileType = FLOOR
 
 			//Select a random tile png
-			gameMap.Tiles[index].Image = floorImgs[randgen.GetRandomBetween(0, len(floorImgs)-1)]
+			gameMap.Tiles[index].image = floorImgs[randgen.GetRandomBetween(0, len(floorImgs)-1)]
 
 			ValidPos.Add(x, y)
 		}
@@ -282,7 +298,7 @@ func (gameMap *GameMap) createHorizontalTunnel(x1 int, x2 int, y int) {
 			gameMap.Tiles[index].Blocked = false
 			gameMap.Tiles[index].TileType = FLOOR
 
-			gameMap.Tiles[index].Image = floorImgs[randgen.GetRandomBetween(0, len(floorImgs)-1)]
+			gameMap.Tiles[index].image = floorImgs[randgen.GetRandomBetween(0, len(floorImgs)-1)]
 
 			ValidPos.Add(x, y)
 		}
@@ -297,11 +313,26 @@ func (gameMap *GameMap) createVerticalTunnel(y1 int, y2 int, x int) {
 		if index > 0 && index < gd.ScreenWidth*graphics.LevelHeight {
 			gameMap.Tiles[index].Blocked = false
 			gameMap.Tiles[index].TileType = FLOOR
-			gameMap.Tiles[index].Image = floorImgs[randgen.GetRandomBetween(0, len(floorImgs)-1)]
+			gameMap.Tiles[index].image = floorImgs[randgen.GetRandomBetween(0, len(floorImgs)-1)]
 
 			ValidPos.Add(x, y)
 		}
 	}
+}
+
+// Plce the stairs in the center of a randoom room.
+// The center of the room SHOULD not be blocked.
+// Even if it is, that's not something to worry about now, since this is a short term approach
+func (gm *GameMap) PlaceStairs() {
+
+	randRoom := randgen.GetRandomBetween(0, len(gm.Rooms)-1)
+
+	x, y := gm.Rooms[randRoom].Center()
+
+	ind := graphics.IndexFromXY(x, y)
+
+	gm.Tiles[ind].image = stairs
+
 }
 
 // Applies the scaling ColorMatrix to the tiles at the Indices

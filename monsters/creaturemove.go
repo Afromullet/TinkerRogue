@@ -39,9 +39,6 @@ var (
 type SimpleWander struct {
 }
 
-type NoMovement struct {
-}
-
 type EntityFollow struct {
 	Target *ecs.Entity
 }
@@ -205,26 +202,10 @@ func CreatureMovementSystem(ecsmanager *common.EntityManager, gm *worldmap.GameM
 
 }
 
-func RemoveMovementComponent(c *ecs.QueryResult) {
-
-	var ok bool
-
-	for _, m := range MovementTypes {
-		if _, ok = c.Entity.GetComponentData(m); ok {
-			c.Entity.RemoveComponent(m)
-
-		}
-
-	}
-
-}
-
 func InitializeMovementComponents(manager *ecs.Manager, tags map[string]ecs.Tag) {
 
 	SimpleWanderComp = manager.NewComponent()
-
 	EntityFollowComp = manager.NewComponent()
-
 	WithinRangeComponent = manager.NewComponent()
 	FleeComp = manager.NewComponent()
 

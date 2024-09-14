@@ -8,17 +8,27 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-func ProcessRenderables(ecsmanager *common.EntityManager, gameMap worldmap.GameMap, screen *ebiten.Image) {
+// revealEverything
+func ProcessRenderables(ecsmanager *common.EntityManager, gameMap worldmap.GameMap, screen *ebiten.Image, debugMode bool) {
 	for _, result := range ecsmanager.World.Query(ecsmanager.WorldTags["renderables"]) {
 		pos := result.Components[common.PositionComponent].(*common.Position)
 		img := result.Components[common.RenderableComponent].(*common.Renderable).Image
 
-		if gameMap.PlayerVisible.IsVisible(pos.X, pos.Y) {
+		if debugMode {
+
+			index := graphics.IndexFromXY(pos.X, pos.Y)
+			tile := gameMap.Tiles[index]
+			op := &ebiten.DrawImageOptions{}
+			op.GeoM.Translate(float64(tile.PixelX), float64(tile.PixelY))
+			screen.DrawImage(img, op)
+
+		} else if gameMap.PlayerVisible.IsVisible(pos.X, pos.Y) {
 			index := graphics.IndexFromXY(pos.X, pos.Y)
 			tile := gameMap.Tiles[index]
 			op := &ebiten.DrawImageOptions{}
 			op.GeoM.Translate(float64(tile.PixelX), float64(tile.PixelY))
 			screen.DrawImage(img, op)
 		}
+
 	}
 }

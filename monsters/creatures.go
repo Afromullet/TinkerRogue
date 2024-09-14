@@ -11,6 +11,8 @@ import (
 	"github.com/bytearena/ecs"
 )
 
+var NumMonstersOnMap int
+
 var CreatureComponent *ecs.Component
 
 // EffectsToApply trigger every turn in MonsterSystems
@@ -106,6 +108,7 @@ func (c *Creature) UpdatePosition(gm *worldmap.GameMap, currentPosition *common.
 // Will change later once the time system is implemented. Still want things to behave the same while implementing the time system
 func MonsterSystems(ecsmanger *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap, ts *timesystem.GameTurn) {
 
+	NumMonstersOnMap = 0
 	//TODO do I need to make sure the same action can't be added twice?
 	for _, c := range ecsmanger.World.Query(ecsmanger.WorldTags["monsters"]) {
 
@@ -130,9 +133,19 @@ func MonsterSystems(ecsmanger *common.EntityManager, pl *avatar.PlayerData, gm *
 
 		}
 
-		if attr.CurrentHealth <= 0 {
-			ecsmanger.World.DisposeEntity(c.Entity)
-		}
+		NumMonstersOnMap++
+
+		/*
+			if attr.CurrentHealth <= 0 {
+
+				ecsmanger.World.DisposeEntity(c.Entity)
+				NumMonstersOnMap--
+
+				if NumMonstersOnMap == -1 {
+					NumMonstersOnMap = 0
+				}
+			}
+		*/
 
 	}
 

@@ -37,7 +37,7 @@ type TileSquare struct {
 	Size   int
 }
 
-func (s TileSquare) GetIndices() []int {
+func (s *TileSquare) GetIndices() []int {
 
 	halfSize := s.Size / 2
 	indices := make([]int, 0)
@@ -63,9 +63,9 @@ func (s *TileSquare) UpdatePosition(pixelX int, pixelY int) {
 
 }
 
-func NewTileSquare(pixelX, pixelY, size int) TileSquare {
+func NewTileSquare(pixelX, pixelY, size int) *TileSquare {
 
-	return TileSquare{
+	return &TileSquare{
 		PixelX: pixelX,
 		PixelY: pixelY,
 		Size:   size,
@@ -80,7 +80,7 @@ type TileLine struct {
 	direction ShapeDirection
 }
 
-func (l TileLine) GetIndices() []int {
+func (l *TileLine) GetIndices() []int {
 	indices := make([]int, 0)
 
 	gridX, gridY := XYFromPixels(l.pixelX, l.pixelY)
@@ -114,9 +114,9 @@ func (l *TileLine) UpdatePosition(pixelX, pixelY int) {
 
 }
 
-func NewTileLine(pixelX, pixelY, length int, direction ShapeDirection) TileLine {
+func NewTileLine(pixelX, pixelY, length int, direction ShapeDirection) *TileLine {
 
-	return TileLine{
+	return &TileLine{
 		pixelX:    pixelX,
 		pixelY:    pixelY,
 		length:    length,
@@ -132,7 +132,7 @@ type TileCone struct {
 	direction ShapeDirection
 }
 
-func (c TileCone) GetIndices() []int {
+func (c *TileCone) GetIndices() []int {
 	indices := make([]int, 0)
 
 	gridX, gridY := XYFromPixels(c.pixelX, c.pixelY)
@@ -184,9 +184,9 @@ func (c *TileCone) UpdatePosition(pixelX, pixelY int) {
 
 }
 
-func NewTileCone(pixelX, pixelY, length int, direction ShapeDirection) TileCone {
+func NewTileCone(pixelX, pixelY, length int, direction ShapeDirection) *TileCone {
 
-	return TileCone{
+	return &TileCone{
 		pixelX:    pixelX,
 		pixelY:    pixelY,
 		length:    length,
@@ -201,7 +201,7 @@ type TileCircle struct {
 	radius int
 }
 
-func (c TileCircle) GetIndices() []int {
+func (c *TileCircle) GetIndices() []int {
 	indices := make([]int, 0)
 
 	centerX, centerY := XYFromPixels(c.pixelX, c.pixelY)
@@ -276,9 +276,9 @@ func (c *TileCircle) UpdatePosition(pixelX, pixelY int) {
 
 }
 
-func NewTileCircle(pixelX, pixelY, radius int) TileCircle {
+func NewTileCircle(pixelX, pixelY, radius int) *TileCircle {
 
-	return TileCircle{
+	return &TileCircle{
 		pixelX: pixelX,
 		pixelY: pixelY,
 		radius: radius,
@@ -292,7 +292,7 @@ type TileCircleOutline struct {
 	radius int
 }
 
-func (c TileCircleOutline) GetIndices() []int {
+func (c *TileCircleOutline) GetIndices() []int {
 	indices := make([]int, 0)
 
 	centerX, centerY := XYFromPixels(c.pixelX, c.pixelY)
@@ -358,7 +358,7 @@ type TileRectangle struct {
 	height int
 }
 
-func (r TileRectangle) GetIndices() []int {
+func (r *TileRectangle) GetIndices() []int {
 	indices := make([]int, 0)
 
 	// Convert pixel coordinates to grid coordinates (if necessary)
@@ -384,9 +384,9 @@ func (c *TileRectangle) UpdatePosition(pixelX, pixelY int) {
 
 }
 
-func NewTileRectangle(pixelX, pixelY, width, height int) TileRectangle {
+func NewTileRectangle(pixelX, pixelY, width, height int) *TileRectangle {
 
-	return TileRectangle{
+	return &TileRectangle{
 		pixelX: pixelX,
 		pixelY: pixelY,
 		width:  width,
@@ -402,7 +402,7 @@ type TileSquareOutline struct {
 	Size   int
 }
 
-func (s TileSquareOutline) GetIndices() []int {
+func (s *TileSquareOutline) GetIndices() []int {
 
 	halfSize := s.Size / 2
 	indices := make([]int, 0)
@@ -443,9 +443,9 @@ func (s *TileSquareOutline) UpdatePosition(pixelX int, pixelY int) {
 
 }
 
-func NewTileSquareOutline(pixelX, pixelY, size int) TileSquareOutline {
+func NewTileSquareOutline(pixelX, pixelY, size int) *TileSquareOutline {
 
-	return TileSquareOutline{
+	return &TileSquareOutline{
 		PixelX: pixelX,
 		PixelY: pixelY,
 		Size:   size,

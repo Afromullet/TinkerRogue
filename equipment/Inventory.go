@@ -119,7 +119,7 @@ func (inv *Inventory) GetEquipmentForDisplay(indicesToSelect []int) []any {
 				itemName.NameStr,
 				itemComp.Count})
 
-		} else if entity.HasComponent(WeaponComponent) {
+		} else if entity.HasComponent(MeleeWeaponComponent) {
 
 			inventoryItems = append(inventoryItems, InventoryListEntry{
 				index,

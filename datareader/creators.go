@@ -14,7 +14,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 )
 
-func CreateCreatureFromTemplate(manager *ecs.Manager, m JSONMonster, gm *worldmap.GameMap, xPos, yPos int) *ecs.Entity {
+func CreateCreatureFromTemplate(manager common.EntityManager, m JSONMonster, gm *worldmap.GameMap, xPos, yPos int) *ecs.Entity {
 
 	fpath := filepath.Join("../assets/creatures/", m.ImageName)
 
@@ -23,7 +23,7 @@ func CreateCreatureFromTemplate(manager *ecs.Manager, m JSONMonster, gm *worldma
 		log.Fatal(err)
 	}
 
-	ent := manager.NewEntity()
+	ent := manager.World.NewEntity()
 
 	ent.AddComponent(common.NameComponent, &common.Name{NameStr: m.Name})
 
@@ -69,12 +69,101 @@ func CreateCreatureFromTemplate(manager *ecs.Manager, m JSONMonster, gm *worldma
 			AttackSpeed: m.MeleeWeapon.AttackSpeed,
 		}
 
-		ent.AddComponent(equipment.WeaponComponent, &weapon)
+		ent.AddComponent(equipment.MeleeWeaponComponent, &weapon)
+
+	}
+
+	if m.RangedWeapon != nil {
+
+		weapon := equipment.RangedWeapon{
+			MinDamage:     m.RangedWeapon.MinDamage,
+			MaxDamage:     m.RangedWeapon.MaxDamage,
+			ShootingRange: m.RangedWeapon.ShootingRange,
+		}
+
+		ent.AddComponent(equipment.RangedWeaponComponent, &weapon)
 
 	}
 
 	ent.AddComponent(timesystem.ActionQueueComponent, &timesystem.ActionQueue{TotalActionPoints: 100})
 
 	return ent
+
+}
+
+func CreateMeleeWepFromTemplate(manager common.EntityManager, w JSONMeleeWeapon) *ecs.Entity {
+
+	fpath := filepath.Join("../assets/items/", w.ImgName)
+
+	img, _, err := ebitenutil.NewImageFromFile(fpath)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	it := manager.World.NewEntity()
+
+	it.AddComponent(common.RenderableComponent, &common.Renderable{
+		Image:   img,
+		Visible: false,
+	})
+
+	it.AddComponent(equipment.ItemComponent, &equipment.Item{Count: 1})
+	it.AddComponent(common.NameComponent, &common.Name{
+		NameStr: w.Name,
+	})
+
+	it.AddComponent(common.PositionComponent, &common.Position{
+		X: 0,
+		Y: 0,
+	})
+
+	it.AddComponent(equipment.MeleeWeaponComponent, &equipment.MeleeWeapon{
+		MinDamage:   w.MinDamage,
+		MaxDamage:   w.MaxDamage,
+		AttackSpeed: w.AttackSpeed,
+	})
+
+	return it
+
+}
+
+// Todo add shooting VX
+func CreateRangedWepFromTemplate(manager common.EntityManager, w JSONRangedWeapon) *ecs.Entity {
+
+	fpath := filepath.Join("../assets/items/", w.ImgName)
+
+	img, _, err := ebitenutil.NewImageFromFile(fpath)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	it := manager.World.NewEntity()
+
+	it.AddComponent(common.RenderableComponent, &common.Renderable{
+		Image:   img,
+		Visible: false,
+	})
+
+	it.AddComponent(equipment.ItemComponent, &equipment.Item{Count: 1})
+	it.AddComponent(common.NameComponent, &common.Name{
+		NameStr: w.Name,
+	})
+
+	it.AddComponent(common.PositionComponent, &common.Position{
+		X: 0,
+		Y: 0,
+	})
+
+	ranged := equipment.RangedWeapon{
+		MinDamage:     w.MinDamage,
+		MaxDamage:     w.MaxDamage,
+		ShootingRange: w.ShootingRange,
+		AttackSpeed:   w.AttackSpeed}
+
+	ranged.TargetArea = CreateTargetArea(w.TargetArea)
+
+	it.AddComponent(equipment.RangedWeaponComponent, &ranged)
+
+	return it
 
 }

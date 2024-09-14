@@ -1,42 +1,222 @@
 {
   "monsters": [
     {
-      "name": "Goblin",
+      "name": "MeleeAttacker",
 	  "imgname": "ancient_lich.png",
       "attributes": {
-        "MaxHealth": 20,
-        "AttackBonus": 2,
-        "BaseArmorClass": 10,
-        "BaseProtection": 0,
-        "BaseDodgeChance": 0.1,
-        "BaseMovementSpeed": 5
+        "maxHealth": 20,
+        "attackBonus": 2,
+        "baseArmorClass": 10,
+        "baseProtection": 0,
+        "baseDodgeChance": 0.1,
+        "baseMovementSpeed": 5
       },
       "armor": {
-        "ArmorClass": 5,
-        "Protection": 2,
-        "DodgeChance": 0.05
+        "armorClass": 5,
+        "protection": 2,
+        "dodgeChance": 0.05
       },
       "meleeWeapon": {
-        "MinDamage": 3,
-        "MaxDamage": 6,
-        "AttackSpeed": 3
-      }
+        "minDamage": 3,
+        "maxDamage": 6,
+        "attackSpeed": 3
+      },
+	  "rangedWeapon": null
       
     },
+	
     {
-      "name": "Slime",
+      "name": "RangedAttacker",
 	  "imgname": "balrug.png",
       "attributes": {
-        "MaxHealth": 10,
-        "AttackBonus": 1,
-        "BaseArmorClass": 8,
-        "BaseProtection": 1,
-        "BaseDodgeChance": 0.05,
-        "BaseMovementSpeed": 1
+        "maxHealth": 10,
+        "attackBonus": 1,
+        "baseArmorClass": 8,
+        "baseProtection": 1,
+        "baseDodgeChance": 0.05,
+        "baseMovementSpeed": 1
+      },
+	    "rangedWeapon": {
+		"shootingVX": "arrow3.png",
+        "minDamage": 3,
+        "maxDamage": 6,
+        "attackSpeed": 3,
+		"shootingRange": 3,
+		 "targetArea": {
+         "type": "Cone",
+          "length": 5
+        }
+      },
+      "armor": null,
+      "meleeWeapon": null
+  
+    },
+	
+	    {
+      "name": "RangedAttacker2",
+	  "imgname": "balrug.png",
+      "attributes": {
+        "maxHealth": 10,
+        "attackBonus": 1,
+        "baseArmorClass": 8,
+        "baseProtection": 1,
+        "baseDodgeChance": 0.05,
+        "baseMovementSpeed": 1
+      },
+	    "rangedWeapon": {
+		"shootingVX": "arrow3.png",
+        "minDamage": 3,
+        "maxDamage": 6,
+        "attackSpeed": 3,
+		"shootingRange": 3,
+		 "targetArea": {
+          "type": "Rectangle",
+          "width": 2,
+          "height": 4
+        }
+      },
+      "armor": null,
+      "meleeWeapon": null
+  
+    },
+	
+		    {
+      "name": "RangedAttacker3",
+	  "imgname": "balrug.png",
+      "attributes": {
+        "maxHealth": 10,
+        "attackBonus": 1,
+        "baseArmorClass": 8,
+        "baseProtection": 1,
+        "baseDodgeChance": 0.05,
+        "baseMovementSpeed": 1
+      },
+	    "rangedWeapon": {
+		"shootingVX": "arrow3.png",
+        "minDamage": 3,
+        "maxDamage": 6,
+        "attackSpeed": 3,
+		"shootingRange": 3,
+		 "targetArea": {
+          "type": "Square",
+          "size": 2
+        }
+      },
+      "armor": null,
+      "meleeWeapon": null
+  
+    },
+	
+	
+		 {
+      "name": "RangedAttacker4",
+	  "imgname": "balrug.png",
+      "attributes": {
+	   
+        "maxHealth": 10,
+        "attackBonus": 1,
+        "baseArmorClass": 8,
+        "baseProtection": 1,
+        "baseDodgeChance": 0.05,
+        "baseMovementSpeed": 1
+      },
+	    "rangedWeapon": {
+		
+		"shootingVX": "arrow3.png",
+        "minDamage": 3,
+        "maxDamage": 6,
+        "attackSpeed": 3,
+		"shootingRange": 3,
+		 "targetArea": {
+          "type": "Line",
+          "length": 2
+        }
+      },
+      "armor": null,
+      "meleeWeapon": null
+  
+    },
+	
+			 {
+      "name": "RangedAttacker5",
+	  "imgname": "balrug.png",
+      "attributes": {
+        "maxHealth": 10,
+        "attackBonus": 1,
+        "baseArmorClass": 8,
+        "baseProtection": 1,
+        "baseDodgeChance": 0.05,
+        "baseMovementSpeed": 1
+      },
+	    "rangedWeapon": {
+		"shootingVX": "arrow3.png",
+        "minDamage": 3,
+        "maxDamage": 6,
+        "attackSpeed": 3,
+		"shootingRange": 3,
+		 "targetArea": {
+          "type": "Circle",
+          "radius": 2
+        }
+      },
+      "armor": null,
+      "meleeWeapon": null
+  
+    },
+	
+			 {
+      "name": "RangedAttacker6",
+	  "imgname": "balrug.png",
+      "attributes": {
+        "maxHealth": 10,
+        "attackBonus": 1,
+        "baseArmorClass": 8,
+        "baseProtection": 1,
+        "baseDodgeChance": 0.05,
+        "baseMovementSpeed": 1
+      },
+	    "rangedWeapon": {
+
+		"shootingVX": "arrow3.png",
+        "minDamage": 3,
+        "maxDamage": 6,
+        "attackSpeed": 3,
+		"shootingRange": 3,
+		 "targetArea": {
+          "type": "Line",
+          "length": 2
+        }
+      },
+      "armor": null,
+      "meleeWeapon": null
+  
+    },
+	
+	
+			 {
+      "name": "RangedAttacker7",
+	  "imgname": "balrug.png",
+      "attributes": {
+        "maxHealth": 10,
+        "attackBonus": 1,
+        "baseArmorClass": 8,
+        "baseProtection": 1,
+        "baseDodgeChance": 0.05,
+        "baseMovementSpeed": 1
+      },
+	    "rangedWeapon": {
+		"shootingVX": "arrow3.png",
+        "minDamage": 3,
+        "maxDamage": 6,
+        "attackSpeed": 3,
+		"shootingRange": 3,
+		 "targetArea": null
       },
       "armor": null,
       "meleeWeapon": null
   
     }
+	
+	
   ]
 }

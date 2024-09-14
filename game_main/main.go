@@ -16,6 +16,7 @@ import (
 )*/
 
 import (
+	"fmt"
 	"game_main/avatar"
 	"game_main/common"
 	entitytemplates "game_main/datareader"
@@ -24,6 +25,7 @@ import (
 	"game_main/input"
 	"game_main/monsters"
 	"game_main/rendering"
+	"game_main/spawning"
 	"game_main/testing"
 	"game_main/timesystem"
 	"game_main/worldmap"
@@ -33,9 +35,10 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-//Using https://www.fatoldyeti.com/categories/roguelike-tutorial/ as a starting point.
-//Copying some of the code with modification. Whenever I change a name, it's to help me build a better mental model
-//Of what the code is doing as I'm learning GoLang
+// Using https://www.fatoldyeti.com/categories/roguelike-tutorial/ as a starting point.
+// Copying some of the code with modification. Whenever I change a name, it's to help me build a better mental model
+// Of what the code is doing as I'm learning GoLang
+var DEBUG_MODE = true
 
 type Game struct {
 	em         common.EntityManager
@@ -63,12 +66,13 @@ func NewGame() *Game {
 
 	testing.CreateTestItems(g.em.World, g.em.WorldTags, &g.gameMap)
 
-	testing.CreateTestMonsters(g.em.World, &g.playerData, &g.gameMap)
+	testing.CreateTestMonsters(g.em, &g.playerData, &g.gameMap)
 	testing.SetupPlayerForTesting(&g.em, &g.playerData)
 
 	testing.UpdateContentsForTest(&g.em, &g.gameMap)
 
 	testing.InitTestActionManager(&g.em, &g.playerData, &g.ts)
+
 	g.ts.ActionDispatcher.ResetActionManager()
 
 	return g
@@ -115,8 +119,41 @@ func ManageTurn(g *Game) {
 		g.playerData.HasKeyInput = false
 		g.ts.Turn = timesystem.PlayerTurn
 
+		if g.ts.TotalNumTurns%10 == 0 {
+			fmt.Println("Spawning")
+			spawning.SpawnMonster(g.em, &g.gameMap)
+		}
+
+		RemoveDeadEntities(&g.em, g.ts.ActionDispatcher, &g.gameMap)
+
 	}
 
+}
+
+func RemoveDeadEntities(ecsmanager *common.EntityManager, am timesystem.ActionManager, gm *worldmap.GameMap) {
+	for _, c := range ecsmanager.World.Query(ecsmanager.WorldTags["monsters"]) {
+		attr := common.GetComponentType[*common.Attributes](c.Entity, common.AttributeComponent)
+
+		if attr.CurrentHealth <= 0 {
+
+			if attr.CurrentHealth <= 0 {
+
+				pos := common.GetPosition(c.Entity)
+				ind := graphics.IndexFromXY(pos.X, pos.Y)
+				gm.Tiles[ind].Blocked = false
+
+				am.RemoveActionQueueForEntity(c.Entity)
+
+				ecsmanager.World.DisposeEntity(c.Entity)
+				monsters.NumMonstersOnMap--
+
+				if monsters.NumMonstersOnMap == -1 {
+					monsters.NumMonstersOnMap = 0
+				}
+			}
+
+		}
+	}
 }
 
 // Update is called each tic.
@@ -137,8 +174,8 @@ func (g *Game) Update() error {
 // Draw is called each draw cycle and is where we will blit.
 func (g *Game) Draw(screen *ebiten.Image) {
 
-	g.gameMap.DrawLevel(screen, true)
-	rendering.ProcessRenderables(&g.em, g.gameMap, screen)
+	g.gameMap.DrawLevel(screen, DEBUG_MODE)
+	rendering.ProcessRenderables(&g.em, g.gameMap, screen, DEBUG_MODE)
 
 	g.gameUI.MainPlayerInterface.Draw(screen)
 	ProcessUserLog(g, screen)

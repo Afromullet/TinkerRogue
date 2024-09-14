@@ -14,6 +14,7 @@ type TileType int
 const (
 	WALL TileType = iota
 	FLOOR
+	STAIRS
 )
 
 // Holds any entities that are on a tile, whether it's items, creatures, etc.
@@ -28,7 +29,7 @@ type Tile struct {
 	PixelY       int
 	TileCords    common.Position
 	Blocked      bool
-	Image        *ebiten.Image
+	image        *ebiten.Image
 	tileContents TileContents
 	TileType     TileType
 	IsRevealed   bool
@@ -45,7 +46,7 @@ func NewTile(pixelX, pixelY int, tileCords common.Position, blocked bool, img *e
 		PixelY:     pixelY,
 		TileCords:  tileCords,
 		Blocked:    true,
-		Image:      img,
+		image:      img,
 		TileType:   WALL,
 		IsRevealed: false,
 		cm: graphics.ColorMatrix{

@@ -3,14 +3,16 @@ package equipment
 import (
 	"game_main/common"
 	"game_main/graphics"
-	"game_main/randgen"
+	"math/big"
+
+	cryptorand "crypto/rand"
 
 	"github.com/bytearena/ecs"
 )
 
 var (
 	ArmorComponent        *ecs.Component
-	WeaponComponent       *ecs.Component
+	MeleeWeaponComponent  *ecs.Component
 	InventoryComponent    *ecs.Component
 	RangedWeaponComponent *ecs.Component
 )
@@ -34,7 +36,7 @@ type MeleeWeapon struct {
 
 func (w MeleeWeapon) CalculateDamage() int {
 
-	return randgen.GetRandomBetween(w.MinDamage, w.MaxDamage)
+	return GetRandomBetween(w.MinDamage, w.MaxDamage)
 
 }
 
@@ -53,7 +55,7 @@ type RangedWeapon struct {
 // todo add ammo to this
 func (r RangedWeapon) CalculateDamage() int {
 
-	return randgen.GetRandomBetween(r.MinDamage, r.MaxDamage)
+	return GetRandomBetween(r.MinDamage, r.MaxDamage)
 
 }
 
@@ -98,4 +100,23 @@ func (r *RangedWeapon) DisplayShootingVX(attackerPos *common.Position, defenderP
 
 func GetItem(e *ecs.Entity) *Item {
 	return common.GetComponentType[*Item](e, ItemComponent)
+}
+
+// Todo remove later once you change teh random number generation. The same function is in another aprt of the code
+func GetRandomBetween(low int, high int) int {
+	var randy int = -1
+	for {
+		randy = GetDiceRoll(high)
+		if randy >= low {
+			break
+		}
+	}
+	return randy
+}
+
+// Todo remove later once you change teh random number generation. The same function is in another aprt of the code
+func GetDiceRoll(num int) int {
+	x, _ := cryptorand.Int(cryptorand.Reader, big.NewInt(int64(num)))
+	return int(x.Int64()) + 1
+
 }

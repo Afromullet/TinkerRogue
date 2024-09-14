@@ -2,10 +2,9 @@
 
 ___Energy/Time System__
 
-* Add Movement Speed so that sticky effect works
 
-* Throwing and shooting also take time
 
+* Throwing action needs to take time
 
 __Throwing__
 
@@ -19,7 +18,6 @@ __Movement__
 
 
 
-* Movement is wonky. Sometimes creatures don't follow
 
 * Add Pack Movement - Only approach if N mothers are within r distance to the player
 
@@ -84,7 +82,7 @@ ___Visual Effects__
 
 ___Refactoring__
 
-PlayerMovement
+
 
 Map Drawing
 
@@ -115,11 +113,11 @@ Might need to index instead
 
 * Create Shorter names for types and functions with long names
 
-* Need a better way to create items, creatures, etc for testing and gameplay
+* Need a better way to create items for testing
 
 
-* Do I want to add collision handling? Could make it easier to choose what tile to move to for creature movement
 
+* Make sure there are no memory leaks when removing entities and slicing slices to remove data
 
 
 

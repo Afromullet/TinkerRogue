@@ -57,7 +57,7 @@ func (throwingItemDisplay *ThrowingItemDisplay) DisplayInventory(inventory *equi
 	s := graphics.NewTileSquare(0, 0, 0)
 
 	//throwingItemDisplay.CreateInventoryList(&g.playerData, NewThrowable(0, 0, 0, NewTileSquare(0, 0, 0)))
-	throwingItemDisplay.CreateInventoryList(inventory, equipment.NewThrowable(0, 0, 0, &s))
+	throwingItemDisplay.CreateInventoryList(inventory, equipment.NewThrowable(0, 0, 0, s))
 
 }
 

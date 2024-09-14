@@ -27,7 +27,7 @@ func InitializeECS(ecsmanager *common.EntityManager) {
 	common.AttributeComponent = manager.NewComponent()
 	common.UsrMsg = manager.NewComponent()
 
-	equipment.WeaponComponent = manager.NewComponent()
+	equipment.MeleeWeaponComponent = manager.NewComponent()
 	equipment.RangedWeaponComponent = manager.NewComponent()
 	equipment.ArmorComponent = manager.NewComponent()
 
