@@ -15,9 +15,6 @@ ___Shooting__
 
 For Cone, rectangle, and line shape, let it rotate around the player only when shooting 
 
-___Shapes__
-
-Get Diagonals of Cones and lines
 
 __Movement__
 
@@ -35,9 +32,6 @@ __Movement__
 
 
 __Monster Bevavior__
-
-
-
 
 
 * Monster can chose to melee attack, range attack, or throw
@@ -93,10 +87,6 @@ ___Refactoring__
 Map Drawing
 
 
-___GUI__
-
-* The throwable window removes things when thrown. This causes an issue when throwing multiple things in a row since
-* THe player might access something that is no longer there
 
 ___Other__
 

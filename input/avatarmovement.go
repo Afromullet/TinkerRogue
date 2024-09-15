@@ -23,18 +23,15 @@ var prevPosY = -1
 
 var TurnTaken bool
 
-// todo replace the keypressed with iskeyreleasedPlayerI
-func PlayerActions(ecsmanager *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap, playerUI *gui.PlayerUI, tm *timesystem.GameTurn) bool {
+func MovementControls(ecsmanager *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap) {
 
+	x := 0
+	y := 0
 	actionQueue := common.GetComponentType[*timesystem.ActionQueue](pl.PlayerEntity, timesystem.ActionQueueComponent)
-
 	// Should throw a panic here since the game can't proceed without the player having an action querue
 	if actionQueue == nil {
 		fmt.Println("No action queue for player")
 	}
-
-	x := 0
-	y := 0
 
 	if inpututil.IsKeyJustReleased(ebiten.KeyW) {
 		y = -1
@@ -64,6 +61,58 @@ func PlayerActions(ecsmanager *common.EntityManager, pl *avatar.PlayerData, gm *
 		pl.HasKeyInput = true
 	}
 
+	//Diagonal movement
+	if inpututil.IsKeyJustReleased(ebiten.KeyQ) {
+		y = -1
+		x = -1
+		act, cost := GetPlayerMoveAction(PlayerMoveAction, ecsmanager, pl, gm, x, y)
+		AddPlayerAction(act, pl, cost, timesystem.MovementKind)
+		pl.HasKeyInput = true
+	}
+
+	if inpututil.IsKeyJustReleased(ebiten.KeyE) {
+		y = -1
+		x = +1
+		act, cost := GetPlayerMoveAction(PlayerMoveAction, ecsmanager, pl, gm, x, y)
+		AddPlayerAction(act, pl, cost, timesystem.MovementKind)
+		pl.HasKeyInput = true
+	}
+
+	if inpututil.IsKeyJustReleased(ebiten.KeyZ) {
+		y = +1
+		x = -1
+		act, cost := GetPlayerMoveAction(PlayerMoveAction, ecsmanager, pl, gm, x, y)
+		AddPlayerAction(act, pl, cost, timesystem.MovementKind)
+		pl.HasKeyInput = true
+	}
+
+	if inpututil.IsKeyJustReleased(ebiten.KeyC) {
+		y = +1
+		x = +1
+		act, cost := GetPlayerMoveAction(PlayerMoveAction, ecsmanager, pl, gm, x, y)
+		AddPlayerAction(act, pl, cost, timesystem.MovementKind)
+		pl.HasKeyInput = true
+	}
+
+	if inpututil.IsKeyJustReleased(ebiten.KeySpace) {
+
+		worldmap.GoDownStairs(gm)
+	}
+
+}
+
+// todo replace the keypressed with iskeyreleasedPlayerI
+func PlayerActions(ecsmanager *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap, playerUI *gui.PlayerUI, tm *timesystem.GameTurn) bool {
+
+	actionQueue := common.GetComponentType[*timesystem.ActionQueue](pl.PlayerEntity, timesystem.ActionQueueComponent)
+
+	// Should throw a panic here since the game can't proceed without the player having an action querue
+	if actionQueue == nil {
+		fmt.Println("No action queue for player")
+	}
+
+	MovementControls(ecsmanager, pl, gm)
+
 	if inpututil.IsKeyJustReleased(ebiten.KeyK) {
 
 		armor := equipment.GetArmor(pl.PlayerEntity)
@@ -82,11 +131,6 @@ func PlayerActions(ecsmanager *common.EntityManager, pl *avatar.PlayerData, gm *
 		act, cost := GetSimplePlayerAction(PlayerPickupFromFloor, pl, gm)
 		AddPlayerAction(act, pl, cost, timesystem.PickupItemKind)
 		pl.HasKeyInput = true
-	}
-
-	if inpututil.IsKeyJustReleased(ebiten.KeySpace) {
-
-		worldmap.GoDownStairs(gm)
 	}
 
 	return pl.HasKeyInput

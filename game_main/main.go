@@ -19,8 +19,9 @@ import (
 	"fmt"
 	"game_main/avatar"
 	"game_main/common"
-	entitytemplates "game_main/datareader"
+	"game_main/entitytemplates"
 	"game_main/graphics"
+
 	"game_main/gui"
 	"game_main/input"
 	"game_main/monsters"
@@ -47,10 +48,6 @@ type Game struct {
 	gameMap    worldmap.GameMap
 
 	ts timesystem.GameTurn
-}
-
-func LookTableTesting(){
-	table spawning.ProbabilityTable
 }
 
 // NewGame creates a new Game Object and initializes the data

@@ -2,7 +2,7 @@ package spawning
 
 import (
 	"game_main/common"
-	entitytemplates "game_main/datareader"
+	"game_main/entitytemplates"
 	"game_main/graphics"
 
 	//"game_main/entitytemplates"
@@ -15,7 +15,7 @@ import (
 
 type ProbabilityEntry[T any] struct {
 	entry  T
-	weight float32
+	weight int
 }
 
 // totalWeight is the sum of all probabilities.
@@ -23,7 +23,7 @@ type ProbabilityEntry[T any] struct {
 // sum of the weights
 type ProbabilityTable[T any] struct {
 	table       []ProbabilityEntry[T]
-	totalWeight float32
+	totalWeight int
 }
 
 // Function to return a ProbabilityTable
@@ -37,7 +37,7 @@ func NewProbabilityTable[T any]() ProbabilityTable[T] {
 }
 
 // Keeps a running sum of the probability
-func (lootTable *ProbabilityTable[T]) AddEntry(entry T, chance float32) {
+func (lootTable *ProbabilityTable[T]) AddEntry(entry T, chance int) {
 
 	lootEntry := ProbabilityEntry[T]{
 		entry:  entry,
@@ -51,20 +51,23 @@ func (lootTable *ProbabilityTable[T]) AddEntry(entry T, chance float32) {
 // Todo, this algorithm is from the internet. I don't really understand how works
 // I need to understand how it works to see if it does what it claims to do
 // Returns a false for the boolean parameter if an entry cannot be found for wahtever reason
-func (looktTable *ProbabilityTable[T]) GetRandomEntry() (T, bool) {
+func (lootTable *ProbabilityTable[T]) GetRandomEntry() (T, bool) {
 
 	var zerovalue T
-	randVal := rand.Float32() * looktTable.totalWeight
+	randVal := rand.Intn(lootTable.totalWeight)
 
-	for _, e := range looktTable.table {
+	cursor := 0
+	for _, e := range lootTable.table {
+		cursor += e.weight
 
-		if randVal < e.weight {
-			return e.entry, false
+		if cursor >= randVal {
+			return e.entry, true
+
 		}
-		randVal -= e.weight
+
 	}
 
-	return zerovalue, true
+	return zerovalue, false
 
 }
 

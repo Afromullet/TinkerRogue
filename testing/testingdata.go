@@ -3,7 +3,7 @@ package testing
 import (
 	"game_main/avatar"
 	"game_main/common"
-	entitytemplates "game_main/datareader"
+	"game_main/entitytemplates"
 	"game_main/equipment"
 	"game_main/graphics"
 	"game_main/monsters"
@@ -18,8 +18,8 @@ import (
 )
 
 var TestSquare = graphics.NewTileSquare(0, 0, 3)
-var TestLine = graphics.NewTileLine(0, 0, 2, graphics.LineDown)
-var TestCone = graphics.NewTileCone(0, 0, 3, graphics.LineRight)
+var TestLine = graphics.NewTileLine(0, 0, 2, graphics.LinedDiagonalDownLeft)
+var TestCone = graphics.NewTileCone(0, 0, 3, graphics.LineDiagonalUpRight)
 var TestCircle = graphics.NewTileCircle(0, 0, 2)
 var TestRect = graphics.NewTileRectangle(0, 0, 2, 3)
 var TestBurning = equipment.NewBurning(5, 2)

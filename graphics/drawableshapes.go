@@ -1,7 +1,8 @@
 package graphics
 
 // This type helps us identify which direction to draw some shapes in
-// I.E, lines and cones go into a direction
+// lines and cones have a direction. Cones look weird since we're basic the coordinates of X,Y tiles
+// Not worrying about that for now
 type ShapeDirection int
 
 const (
@@ -9,6 +10,10 @@ const (
 	LineDown
 	LineRight
 	LineLeft
+	LineDiagonalUpRight
+	LineDiagonalDownRight
+	LineDiagonalUpLeft
+	LinedDiagonalDownLeft
 )
 
 // Currently a duplicate of the one found in GameMap. Don't want to pass the GameMap parameter to the shapes here
@@ -97,6 +102,15 @@ func (l *TileLine) GetIndices() []int {
 			x, y = gridX+i, gridY
 		case LineLeft:
 			x, y = gridX-i, gridY
+		case LineDiagonalUpRight:
+			x, y = gridX+i, gridY-i
+		case LineDiagonalDownRight:
+			x, y = gridX+i, gridY+i
+		case LineDiagonalUpLeft:
+			x, y = gridX-i, gridY-i
+		case LinedDiagonalDownLeft:
+			x, y = gridX-i, gridY+i
+
 		}
 
 		if InBounds(x, y) {
@@ -167,6 +181,38 @@ func (c *TileCone) GetIndices() []int {
 		case LineLeft:
 			for j := -i; j <= i; j++ {
 				x, y := gridX-i, gridY+j
+				if InBounds(x, y) {
+					index := IndexFromXY(x, y)
+					indices = append(indices, index)
+				}
+			}
+		case LineDiagonalUpRight:
+			for j := -i; j <= i; j++ {
+				x, y := gridX+i, gridY-i+j // Move diagonally up-right
+				if InBounds(x, y) {
+					index := IndexFromXY(x, y)
+					indices = append(indices, index)
+				}
+			}
+		case LineDiagonalDownRight:
+			for j := -i; j <= i; j++ {
+				x, y := gridX+i, gridY+i-j // Move diagonally down-right
+				if InBounds(x, y) {
+					index := IndexFromXY(x, y)
+					indices = append(indices, index)
+				}
+			}
+		case LineDiagonalUpLeft:
+			for j := -i; j <= i; j++ {
+				x, y := gridX-i, gridY-i+j // Move diagonally up-left
+				if InBounds(x, y) {
+					index := IndexFromXY(x, y)
+					indices = append(indices, index)
+				}
+			}
+		case LinedDiagonalDownLeft:
+			for j := -i; j <= i; j++ {
+				x, y := gridX-i, gridY+i-j // Move diagonally down-left
 				if InBounds(x, y) {
 					index := IndexFromXY(x, y)
 					indices = append(indices, index)

@@ -1,7 +1,6 @@
 package input
 
 import (
-	"fmt"
 	"game_main/avatar"
 	"game_main/combat"
 	"game_main/common"
@@ -47,7 +46,7 @@ func ApplyThrowable(ecsmanager *common.EntityManager, item *equipment.Item, shap
 
 		curPos := c.Components[common.PositionComponent].(*common.Position)
 		crea := c.Components[monsters.CreatureComponent].(*monsters.Creature)
-		fmt.Println("Throwing range ", t.ThrowingRange)
+
 		for _, p := range pos {
 
 			if curPos.IsEqual(&p) && curPos.InRange(throwerPos, t.ThrowingRange) {
@@ -116,6 +115,7 @@ func HandlePlayerThrowable(ecsmanager *common.EntityManager, pl *avatar.PlayerDa
 			pl.ThrowPreparedItem(pl.Inv)
 
 			ApplyThrowable(ecsmanager, pl.ThrowableItem, pl.ThrowingAOEShape, pl.Pos)
+			playerUI.ItemsUI.ThrowableItemDisplay.DisplayInventory(pl.Inv)
 
 		}
 
