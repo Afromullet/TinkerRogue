@@ -115,7 +115,9 @@ Might need to index instead
 
 * Make sure there are no memory leaks when removing entities and slicing slices to remove data
 
+* The way playerData and the UI interact. There's a lot of state being passed around and manipualted. Anything in input nees to be looked at too
 
+* Make it simpler to call all the functions that take a lot of paramters
 
 
 Preallocate sizes of slices when possible

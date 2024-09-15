@@ -27,7 +27,7 @@ That's what this file is for
 */
 
 // Applies the throwable
-func ApplyThrowable(ecsmanager *common.EntityManager, item *equipment.Item, shape graphics.TileBasedShape, throwerPos *common.Position) {
+func ApplyThrowable(ecsmanager *common.EntityManager, item *equipment.Item, pl *avatar.PlayerData, shape graphics.TileBasedShape, playerUI *gui.PlayerUI, throwerPos *common.Position) {
 
 	t := item.ItemEffect(equipment.THROWABLE_NAME).(*equipment.Throwable)
 
@@ -51,10 +51,12 @@ func ApplyThrowable(ecsmanager *common.EntityManager, item *equipment.Item, shap
 
 			if curPos.IsEqual(&p) && curPos.InRange(throwerPos, t.ThrowingRange) {
 				crea.AddEffects(item.Properties)
+				pl.IsThrowing = false //Hit at least one target. Once returning, we can clear GUI elements by checking this far
 			}
 		}
 
 	}
+
 }
 
 func DrawThrowableAOE(pl *avatar.PlayerData, gm *worldmap.GameMap) {
@@ -63,6 +65,7 @@ func DrawThrowableAOE(pl *avatar.PlayerData, gm *worldmap.GameMap) {
 	cursorX, cursorY := ebiten.CursorPosition()
 
 	s := pl.ThrowingAOEShape
+
 	var indices []int
 	if cursorX != prevCursorX || cursorY != prevCursorY {
 
@@ -98,10 +101,45 @@ func DrawThrowableAOE(pl *avatar.PlayerData, gm *worldmap.GameMap) {
 
 }
 
+// Handle rotation if the shape has a direction
+func UpdateDirection(throwable *equipment.Throwable, updater *graphics.ShapeUpdater) {
+
+	newDir := graphics.GetDirection(throwable.Shape)
+	if newDir != graphics.NoDirection {
+
+		if inpututil.IsKeyJustReleased(ebiten.KeyDigit1) {
+
+			newDir := graphics.GetDirection(throwable.Shape)
+			newDir = graphics.RotateLeft(newDir)
+			updater.Direction = newDir
+
+		} else if inpututil.IsKeyJustReleased(ebiten.KeyDigit2) {
+			newDir := graphics.GetDirection(throwable.Shape)
+			newDir = graphics.RotateRight(newDir)
+			updater.Direction = newDir
+		}
+
+	}
+}
+
 // todo remove game type from function params
+// This changes a lot of state in different parts. Todo refactor
 func HandlePlayerThrowable(ecsmanager *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap, playerUI *gui.PlayerUI) {
 
-	if playerUI.IsThrowableItemSelected() {
+	if pl.IsShooting {
+		return
+	}
+
+	if pl.IsThrowing {
+
+		throwable := pl.ThrowableItem.ItemEffect(equipment.THROWABLE_NAME).(*equipment.Throwable)
+
+		updater := graphics.ExtractShapeParams(throwable.Shape)
+		UpdateDirection(throwable, &updater)
+
+		gm.ApplyColorMatrix(PrevThrowInds, graphics.NewEmptyMatrix()) //Clears previously applied rotation if there is any
+
+		throwable.Shape.UpdateShape(updater)
 
 		DrawThrowableAOE(pl, gm)
 
@@ -110,12 +148,21 @@ func HandlePlayerThrowable(ecsmanager *common.EntityManager, pl *avatar.PlayerDa
 		//if inpututil.IsMouseButtonJustPressed(ebiten.MouseButton1)
 		if inpututil.IsKeyJustReleased(ebiten.KeyT) {
 
-			log.Println("Throwing item")
+			indices := throwable.Shape.GetIndices()
 
 			pl.ThrowPreparedItem(pl.Inv)
 
-			ApplyThrowable(ecsmanager, pl.ThrowableItem, pl.ThrowingAOEShape, pl.Pos)
+			ApplyThrowable(ecsmanager, pl.ThrowableItem, pl, pl.ThrowingAOEShape, playerUI, pl.Pos)
+
 			playerUI.ItemsUI.ThrowableItemDisplay.DisplayInventory(pl.Inv)
+
+			//Todo does not work to clear throwing GUI elements
+			if !pl.IsThrowing {
+				gm.ApplyColorMatrix(PrevThrowInds, graphics.NewEmptyMatrix())
+				gm.ApplyColorMatrix(indices, graphics.NewEmptyMatrix())
+				playerUI.SetThrowableItemSelected(false) //TOdo this is a problem
+
+			}
 
 		}
 
@@ -125,6 +172,7 @@ func HandlePlayerThrowable(ecsmanager *common.EntityManager, pl *avatar.PlayerDa
 			log.Println("Removing throwable")
 			gm.ApplyColorMatrix(PrevThrowInds, graphics.NewEmptyMatrix())
 			playerUI.SetThrowableItemSelected(false) //TOdo this is a problem
+			pl.IsThrowing = false
 
 		}
 	}
@@ -172,7 +220,7 @@ func DrawRangedAttackAOE(pl *avatar.PlayerData, gm *worldmap.GameMap) {
 
 func HandlePlayerRangedAttack(ecsmanager *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap) {
 
-	if pl.Targeting {
+	if pl.IsShooting {
 
 		msg := common.GetComponentType[*common.UserMessage](pl.PlayerEntity, common.UsrMsg)
 
@@ -182,7 +230,7 @@ func HandlePlayerRangedAttack(ecsmanager *common.EntityManager, pl *avatar.Playe
 		//Cancel throwing
 		if inpututil.IsMouseButtonJustPressed(ebiten.MouseButton2) {
 
-			pl.Targeting = false
+			pl.IsShooting = false
 			gm.ApplyColorMatrix(PrevRangedAttInds, graphics.NewEmptyMatrix())
 			//log.Println("Removing throwable")
 
@@ -246,7 +294,7 @@ func PlayerSelectRangedTarget(pl *avatar.PlayerData, gm *worldmap.GameMap) {
 
 	gm.ApplyColorMatrix(PrevRangedAttInds, graphics.NewEmptyMatrix())
 
-	pl.Targeting = true
+	pl.IsShooting = true
 	pl.PrepareRangedAttack()
 	DrawRangedAttackAOE(pl, gm)
 

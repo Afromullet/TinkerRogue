@@ -96,6 +96,13 @@ func ManageTurn(g *Game) {
 
 		// The drawing and throwing still work after changing the way the input and actions work
 		// Uncommented now because we need to figure out how to implement this in the Action Energy based ystem
+
+		if g.gameUI.IsThrowableItemSelected() {
+			g.playerData.IsThrowing = true
+
+		} else {
+			g.playerData.IsThrowing = false
+		}
 		input.HandlePlayerThrowable(&g.em, &g.playerData, &g.gameMap, &g.gameUI)
 		input.HandlePlayerRangedAttack(&g.em, &g.playerData, &g.gameMap)
 

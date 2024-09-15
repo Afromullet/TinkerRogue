@@ -18,7 +18,7 @@ import (
 )
 
 var TestSquare = graphics.NewTileSquare(0, 0, 3)
-var TestLine = graphics.NewTileLine(0, 0, 2, graphics.LinedDiagonalDownLeft)
+var TestLine = graphics.NewTileLine(0, 0, 5, graphics.LinedDiagonalDownLeft)
 var TestCone = graphics.NewTileCone(0, 0, 3, graphics.LineDiagonalUpRight)
 var TestCircle = graphics.NewTileCircle(0, 0, 2)
 var TestRect = graphics.NewTileRectangle(0, 0, 2, 3)
@@ -78,7 +78,7 @@ func CreateTestItems(manager *ecs.Manager, tags map[string]ecs.Tag, gameMap *wor
 	CreateItem(manager, "CircleThrow"+strconv.Itoa(1), common.Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
 		throwItem, TestBurning, TestFreezing)
 
-	throwItem = CreateTestThrowable(TestLine, TestCloudEffect)
+	throwItem = CreateTestThrowable(TestLine, TestFireEffect)
 
 	CreateItem(manager, "LineThrow"+strconv.Itoa(1), common.Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
 		throwItem, TestBurning, TestFreezing)

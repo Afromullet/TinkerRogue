@@ -1,5 +1,24 @@
 package graphics
 
+/*
+Lots of steps in adding a new shape. It's clunky, but there shouldn't be too many more shapes.
+
+To add a new shape:
+
+1) Implement the TileBasedShape interface. GetIndices returns the indices of the TileMap.
+UpdatePosition updates the shape with the new X and Y
+UpdateShape updates the parametes with the params a shape needs.
+
+2) ShapeUpdater also requires an update...
+
+Add the type to ExtractShapeParams to get a ShapeUpdater.
+If the shape uses a direction, add an additional case to HasDirection
+
+
+
+
+*/
+
 // This type helps us identify which direction to draw some shapes in
 // lines and cones have a direction. Cones look weird since we're basic the coordinates of X,Y tiles
 // Not worrying about that for now
@@ -14,7 +33,59 @@ const (
 	LineDiagonalDownRight
 	LineDiagonalUpLeft
 	LinedDiagonalDownLeft
+	NoDirection
 )
+
+// Used for rotating directions. Does not contain NoDirection since that's not used for rotating
+// The other matters here since we'll be incrementing through this slice to change direction
+var AllDirections = []ShapeDirection{
+	LineUp,
+	LineDiagonalUpRight,
+	LineRight,
+	LineDiagonalDownRight,
+	LineDown,
+	LinedDiagonalDownLeft,
+	LineLeft,
+	LineDiagonalUpLeft,
+}
+
+func RotateRight(dir ShapeDirection) ShapeDirection {
+
+	newDir := 0
+	for i, direction := range AllDirections {
+
+		if direction == dir {
+			newDir = i + 1
+			//Wrap around
+			if newDir >= len(AllDirections) {
+				newDir = 0
+			}
+			break
+
+		}
+	}
+
+	return AllDirections[newDir]
+}
+
+func RotateLeft(dir ShapeDirection) ShapeDirection {
+
+	newDir := 0
+	for i, direction := range AllDirections {
+
+		if direction == dir {
+			newDir = i - 1
+			//Wrap around
+			if newDir < 0 {
+				newDir = len(AllDirections) - 1
+			}
+			break
+
+		}
+	}
+
+	return AllDirections[newDir]
+}
 
 // Currently a duplicate of the one found in GameMap. Don't want to pass the GameMap parameter to the shapes here
 func InBounds(x, y int) bool {
@@ -33,6 +104,7 @@ func InBounds(x, y int) bool {
 type TileBasedShape interface {
 	GetIndices() []int
 	UpdatePosition(pixelX int, pixelY int)
+	UpdateShape(updater ShapeUpdater)
 }
 
 // The square is drawn around (PixelX,PixelY)
@@ -65,6 +137,14 @@ func (s *TileSquare) GetIndices() []int {
 func (s *TileSquare) UpdatePosition(pixelX int, pixelY int) {
 	s.PixelX = pixelX
 	s.PixelY = pixelY
+
+}
+
+func (s *TileSquare) UpdateShape(updater ShapeUpdater) {
+
+	s.PixelX = updater.PixelX
+	s.PixelY = updater.PixelY
+	s.Size = updater.Size
 
 }
 
@@ -125,6 +205,14 @@ func (l *TileLine) GetIndices() []int {
 func (l *TileLine) UpdatePosition(pixelX, pixelY int) {
 	l.pixelX = pixelX
 	l.pixelY = pixelY
+
+}
+
+func (l *TileLine) UpdateShape(updater ShapeUpdater) {
+
+	l.pixelX = updater.PixelX
+	l.pixelY = updater.PixelY
+	l.direction = updater.Direction
 
 }
 
@@ -230,6 +318,15 @@ func (c *TileCone) UpdatePosition(pixelX, pixelY int) {
 
 }
 
+func (c *TileCone) UpdateShape(updater ShapeUpdater) {
+
+	c.pixelX = updater.PixelX
+	c.pixelY = updater.PixelY
+	c.length = updater.Length
+	c.direction = updater.Direction
+
+}
+
 func NewTileCone(pixelX, pixelY, length int, direction ShapeDirection) *TileCone {
 
 	return &TileCone{
@@ -322,12 +419,72 @@ func (c *TileCircle) UpdatePosition(pixelX, pixelY int) {
 
 }
 
+func (c *TileCircle) UpdateShape(updater ShapeUpdater) {
+
+	c.pixelX = updater.PixelX
+	c.pixelY = updater.PixelY
+	c.radius = updater.Radius
+}
+
 func NewTileCircle(pixelX, pixelY, radius int) *TileCircle {
 
 	return &TileCircle{
 		pixelX: pixelX,
 		pixelY: pixelY,
 		radius: radius,
+	}
+
+}
+
+type TileRectangle struct {
+	pixelX int
+	pixelY int
+	width  int
+	height int
+}
+
+func (r *TileRectangle) GetIndices() []int {
+	indices := make([]int, 0)
+
+	// Convert pixel coordinates to grid coordinates (if necessary)
+
+	gridX, gridY := XYFromPixels(r.pixelX, r.pixelY)
+
+	// Iterate through the width and height of the rectangle
+	for y := gridY; y < gridY+r.height; y++ {
+		for x := gridX; x < gridX+r.width; x++ {
+			if InBounds(x, y) {
+				index := IndexFromXY(x, y)
+				indices = append(indices, index)
+			}
+		}
+	}
+
+	return indices
+}
+
+func (r *TileRectangle) UpdatePosition(pixelX, pixelY int) {
+	r.pixelX = pixelX
+	r.pixelY = pixelY
+
+}
+
+func (r *TileRectangle) UpdateShape(updater ShapeUpdater) {
+
+	r.pixelX = updater.PixelX
+	r.pixelY = updater.PixelY
+	r.width = updater.Width
+	r.height = updater.height
+
+}
+
+func NewTileRectangle(pixelX, pixelY, width, height int) *TileRectangle {
+
+	return &TileRectangle{
+		pixelX: pixelX,
+		pixelY: pixelY,
+		width:  width,
+		height: height,
 	}
 
 }
@@ -387,56 +544,20 @@ func (c *TileCircleOutline) UpdatePosition(pixelX, pixelY int) {
 
 }
 
+func (c *TileCircleOutline) UpdateShape(updater ShapeUpdater) {
+
+	c.pixelX = updater.PixelX
+	c.pixelY = updater.PixelY
+	c.radius = updater.Radius
+
+}
+
 func NewTileCircleOutline(pixelX, pixelY, radius int) TileCircleOutline {
 
 	return TileCircleOutline{
 		pixelX: pixelX,
 		pixelY: pixelY,
 		radius: radius,
-	}
-
-}
-
-type TileRectangle struct {
-	pixelX int
-	pixelY int
-	width  int
-	height int
-}
-
-func (r *TileRectangle) GetIndices() []int {
-	indices := make([]int, 0)
-
-	// Convert pixel coordinates to grid coordinates (if necessary)
-
-	gridX, gridY := XYFromPixels(r.pixelX, r.pixelY)
-
-	// Iterate through the width and height of the rectangle
-	for y := gridY; y < gridY+r.height; y++ {
-		for x := gridX; x < gridX+r.width; x++ {
-			if InBounds(x, y) {
-				index := IndexFromXY(x, y)
-				indices = append(indices, index)
-			}
-		}
-	}
-
-	return indices
-}
-
-func (c *TileRectangle) UpdatePosition(pixelX, pixelY int) {
-	c.pixelX = pixelX
-	c.pixelY = pixelY
-
-}
-
-func NewTileRectangle(pixelX, pixelY, width, height int) *TileRectangle {
-
-	return &TileRectangle{
-		pixelX: pixelX,
-		pixelY: pixelY,
-		width:  width,
-		height: height,
 	}
 
 }
@@ -486,6 +607,14 @@ func (s *TileSquareOutline) GetIndices() []int {
 func (s *TileSquareOutline) UpdatePosition(pixelX int, pixelY int) {
 	s.PixelX = pixelX
 	s.PixelY = pixelY
+
+}
+
+func (s *TileSquareOutline) UpdateShape(updater ShapeUpdater) {
+
+	s.PixelX = updater.PixelX
+	s.PixelY = updater.PixelY
+	s.Size = updater.Size
 
 }
 

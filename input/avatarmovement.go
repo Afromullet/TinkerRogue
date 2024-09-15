@@ -122,9 +122,12 @@ func PlayerActions(ecsmanager *common.EntityManager, pl *avatar.PlayerData, gm *
 
 	if inpututil.IsKeyJustReleased(ebiten.KeyF) {
 
-		act, cost := GetSimplePlayerAction(PlayerSelRanged, pl, gm)
-		AddPlayerAction(act, pl, cost, timesystem.RangedAttackKind)
-		pl.HasKeyInput = true
+		if !pl.IsThrowing {
+
+			act, cost := GetSimplePlayerAction(PlayerSelRanged, pl, gm)
+			AddPlayerAction(act, pl, cost, timesystem.RangedAttackKind)
+			pl.HasKeyInput = true
+		}
 	}
 
 	if inpututil.IsKeyJustReleased(ebiten.KeyG) {

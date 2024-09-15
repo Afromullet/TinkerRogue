@@ -76,8 +76,6 @@ type PlayerData struct {
 
 	Pos *common.Position
 	Inv *equipment.Inventory
-
-	Targeting bool
 }
 
 func NewPlayerData() PlayerData {
