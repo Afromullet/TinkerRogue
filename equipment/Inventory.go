@@ -8,19 +8,22 @@ import (
 )
 
 // This is used to display the inventory inside of windows for the UI
+// EbitenUI needs to build a list for display - this holds the list elements
 type InventoryListEntry struct {
 	Index int
 	Name  string
 	Count int
 }
 
+// Items are stored as entities so that we can add Status Effects/Properties
 type Inventory struct {
 	InventoryContent []*ecs.Entity
 }
 
-// Decrements the count if there's more than one of the item. Otherwise, removes it from the inventory.
+// If the item already exists, it increments the count by 1.
+// Otherwise it just sets the count to one
 func (inv *Inventory) AddItem(entityToAdd *ecs.Entity) {
-	// Dereference the slice pointer and use append
+
 	newItemName := common.GetComponentType[*common.Name](entityToAdd, common.NameComponent).NameStr
 	exists := false
 

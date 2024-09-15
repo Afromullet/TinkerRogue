@@ -41,11 +41,13 @@ func (p *Position) InRange(other *Position, distance int) bool {
 
 }
 
+// Gets the Pixel X,Y, not the tile XY
 func PixelsFromPosition(pos *Position, tileWidth, tileHeight int) (int, int) {
 
 	return pos.X * tileWidth, pos.Y * tileHeight
 }
 
+// Get the Tile X,Y from the Pixels
 func PositionFromIndex(i, screenWidth int) Position {
 
 	return Position{

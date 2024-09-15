@@ -11,7 +11,13 @@ __Throwing__
 
 * Miss chance - tile isn't always hit
 
+___Shooting__
 
+For Cone, rectangle, and line shape, let it rotate around the player only when shooting 
+
+___Shapes__
+
+Get Diagonals of Cones and lines
 
 __Movement__
 
@@ -115,7 +121,7 @@ Might need to index instead
 
 * Need a better way to create items for testing
 
-
+* Make things that are private...private. 
 
 * Make sure there are no memory leaks when removing entities and slicing slices to remove data
 

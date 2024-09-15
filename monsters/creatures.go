@@ -135,18 +135,6 @@ func MonsterSystems(ecsmanger *common.EntityManager, pl *avatar.PlayerData, gm *
 
 		NumMonstersOnMap++
 
-		/*
-			if attr.CurrentHealth <= 0 {
-
-				ecsmanger.World.DisposeEntity(c.Entity)
-				NumMonstersOnMap--
-
-				if NumMonstersOnMap == -1 {
-					NumMonstersOnMap = 0
-				}
-			}
-		*/
-
 	}
 
 }

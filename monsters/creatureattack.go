@@ -35,8 +35,8 @@ var (
 type AttackBehavior struct {
 }
 
-// Build a path to the player and attack once within range
-
+// Used by Actions which perform a melee attack
+// This is not an Action itself. Used as a helper to perform attack as part of an action.
 func MeleeAttackAction(ecsmanger *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap, c *ecs.QueryResult, target *ecs.Entity) {
 
 	defenderPos := common.GetComponentType[*common.Position](target, common.PositionComponent)
@@ -47,7 +47,9 @@ func MeleeAttackAction(ecsmanger *common.EntityManager, pl *avatar.PlayerData, g
 
 }
 
-// Stay within Ranged Attack Distance with the movement
+// Todo remove the "Action" part of the function name since it's misleading.
+// Used by Actions which perform a ranged attack.
+// This is not an Action itself. Used as a helper to perform attack as part of an action.
 func RangedAttackAction(ecsmanger *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap, c *ecs.QueryResult, target *ecs.Entity) {
 
 	RangedWeapon := common.GetComponentType[*equipment.RangedWeapon](c.Entity, equipment.RangedWeaponComponent)
@@ -64,6 +66,7 @@ func RangedAttackAction(ecsmanger *common.EntityManager, pl *avatar.PlayerData, 
 
 }
 
+// This action keeps the entity at the weapons range and attacks once within that range.
 func RangedAttackFromDistance(ecsmanger *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap, c *ecs.QueryResult, t *ecs.Entity) timesystem.ActionWrapper {
 
 	wep := common.GetComponentType[*equipment.RangedWeapon](c.Entity, equipment.RangedWeaponComponent)
@@ -77,7 +80,7 @@ func RangedAttackFromDistance(ecsmanger *common.EntityManager, pl *avatar.Player
 		return timesystem.NewOneTargetAttack(RangedAttackAction, ecsmanger, pl, gm, c, pl.PlayerEntity)
 
 	} else {
-		
+
 		c.Entity.AddComponent(WithinRangeComponent, &DistanceToEntityMovement{Target: t, Distance: wep.ShootingRange})
 
 		return timesystem.NewEntityMover(WithinRangeMoveAction, ecsmanger, gm, c.Entity)
@@ -85,6 +88,7 @@ func RangedAttackFromDistance(ecsmanger *common.EntityManager, pl *avatar.Player
 
 }
 
+// Action with which the entity charges at another entity and performs a melee attack
 func ChargeAndAttack(ecsmanger *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap, c *ecs.QueryResult, t *ecs.Entity) timesystem.ActionWrapper {
 
 	wep := common.GetComponentType[*equipment.MeleeWeapon](c.Entity, equipment.MeleeWeaponComponent)

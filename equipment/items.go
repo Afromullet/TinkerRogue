@@ -44,7 +44,7 @@ func (item *Item) DecrementCount() {
 	item.Count -= 1
 }
 
-// Returns the names of this items properties.
+// Returns the names of every property the item has
 func (item *Item) GetEffectNames() []string {
 
 	names := make([]string, 0)
@@ -110,6 +110,7 @@ func (item *Item) HasAllEffects(effectsToCheck ...StatusEffects) bool {
 
 }
 
+// Check for an effect by name.
 func (item *Item) HasEffect(effectToCheck StatusEffects) bool {
 
 	names := item.GetEffectNames()

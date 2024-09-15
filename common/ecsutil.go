@@ -42,7 +42,7 @@ func GetComponentType[T any](entity *ecs.Entity, component *ecs.Component) T {
 
 }
 
-// Calculate the Manhattan distance between two entities. Both entities need a position component
+// Calculate the Chebshev distance between two entities. Both entities need a position component
 func DistanceBetween(e1 *ecs.Entity, e2 *ecs.Entity) int {
 
 	pos1 := GetPosition(e1)
@@ -52,6 +52,7 @@ func DistanceBetween(e1 *ecs.Entity, e2 *ecs.Entity) int {
 
 }
 
+// Getters for components which are referenced frequently.
 func GetAttributes(e *ecs.Entity) *Attributes {
 	return GetComponentType[*Attributes](e, AttributeComponent)
 }

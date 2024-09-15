@@ -30,6 +30,7 @@ type VisualEffect interface {
 	Copy() VisualEffect
 }
 
+// completed tells us whether the VX is done displaying
 type VXCommon struct {
 	completed      bool
 	startX, startY float64

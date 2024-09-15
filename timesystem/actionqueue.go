@@ -90,6 +90,7 @@ func (a *ActionQueue) AddPlayerAction(action ActionWrapper, actionPointCost int,
 	}
 }
 
+// Monster actions have a priority.
 func (a *ActionQueue) AddMonsterAction(action ActionWrapper, actionPointCost int, kindOfAction KindOfAction) {
 
 	if actionPointCost <= 0 {

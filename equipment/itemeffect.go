@@ -69,6 +69,8 @@ func StatusEffectComponent[T StatusEffects](prop *T) *ecs.Component {
 	return (*prop).StatusEffectComponent()
 }
 
+// Status Effects are stored as components in Items. The item is an entity.
+// This gets the structs from the items components.
 func AllStatusEffects(effects *ecs.Entity) []StatusEffects {
 
 	eff := make([]StatusEffects, 0)
@@ -91,7 +93,7 @@ func AllStatusEffects(effects *ecs.Entity) []StatusEffects {
 
 }
 
-// Item Properties
+// Every status effect/property has a Duration and a name
 type CommonItemProperties struct {
 	Duration int
 	Name     string
@@ -126,10 +128,7 @@ func (s *Sticky) Copy() StatusEffects {
 }
 
 func (s *Sticky) ApplyToCreature(c *ecs.QueryResult) {
-	fmt.Println("Applying ", s, " To Creature")
 	s.MainProps.Duration -= 1
-	fmt.Println("Remaining duration ", s.MainProps.Duration)
-
 }
 
 func NewSticky(dur int, spr int) *Sticky {
@@ -145,8 +144,7 @@ func NewSticky(dur int, spr int) *Sticky {
 }
 
 type Burning struct {
-	MainProps CommonItemProperties
-
+	MainProps   CommonItemProperties
 	Temperature int
 }
 
@@ -178,11 +176,6 @@ func (b *Burning) ApplyToCreature(c *ecs.QueryResult) {
 	h := common.GetComponentType[*common.Attributes](c.Entity, common.AttributeComponent)
 
 	h.CurrentHealth -= b.Temperature
-
-	fmt.Println(h)
-
-	fmt.Println("Remaining duration ", b.MainProps.Duration)
-	fmt.Println("Remaining health ", h.CurrentHealth)
 }
 
 func NewBurning(dur int, temp int) *Burning {
@@ -226,10 +219,7 @@ func (f *Freezing) Copy() StatusEffects {
 }
 
 func (f *Freezing) ApplyToCreature(c *ecs.QueryResult) {
-	fmt.Println("Applying ", f, " To Creature")
 	f.MainProps.Duration -= 1
-	fmt.Println("Remaining duration ", f.MainProps.Duration)
-
 }
 
 func NewFreezing(dur int, t int) *Freezing {

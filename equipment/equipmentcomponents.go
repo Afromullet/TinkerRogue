@@ -40,7 +40,7 @@ func (w MeleeWeapon) CalculateDamage() int {
 
 }
 
-// TargetArea is the area the weapon covers
+// TargetArea is the area the weapon covers, defined by a TileShape
 // I.E, a pistol is just a 1 by 1 rectangle, a shotgun uses a cone, and so on
 // ShootingVX is the visual effect that is drawn when the weapon shoots
 type RangedWeapon struct {
@@ -59,9 +59,8 @@ func (r RangedWeapon) CalculateDamage() int {
 
 }
 
-// Gets all of the targets in the weapons AOE
-// Todo need a function that gets all of the targets in a TileBasedShape
-// Not much reason to have this as its own function
+// Gets all of the targets in the weapons AOE by accessing the TileBasedShape
+// of the ranged weapon
 func (r RangedWeapon) GetTargets(ecsmanger *common.EntityManager) []*ecs.Entity {
 
 	pos := common.GetTilePositions(r.TargetArea.GetIndices())
@@ -103,6 +102,7 @@ func GetItem(e *ecs.Entity) *Item {
 }
 
 // Todo remove later once you change teh random number generation. The same function is in another aprt of the code
+// Here to avoid circular inclusions of randgen
 func GetRandomBetween(low int, high int) int {
 	var randy int = -1
 	for {
@@ -115,6 +115,7 @@ func GetRandomBetween(low int, high int) int {
 }
 
 // Todo remove later once you change teh random number generation. The same function is in another aprt of the code
+// Here to avoid circular inclusions of randgen
 func GetDiceRoll(num int) int {
 	x, _ := cryptorand.Int(cryptorand.Reader, big.NewInt(int64(num)))
 	return int(x.Int64()) + 1

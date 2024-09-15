@@ -50,6 +50,8 @@ func NewJSONMeleeWeapon(minDamage, maxDamage, attackSpeed int, name, imgname str
 	}
 }
 
+// Different TileShapes require different parameters
+// The JSONTargetArea struct contains optional fields for all of the options
 type JSONTargetArea struct {
 	Type   string `json:"type"`
 	Size   int    `json:"size,omitempty"`
@@ -139,6 +141,8 @@ func NewJSONMonster(name string, imgname string, attr JSONAttributes, armor *JSO
 }
 
 // Intermediate struct for reading data from weapondata.json
+// The json file contains both melee and ranged weapons, which
+// Is why we have optional fields.
 type Weapon struct {
 	Type          string          `json:"type"` // Can be "MeleeWeapon" or "RangedWeapon"
 	Name          string          `json:"name"` // Weapon name

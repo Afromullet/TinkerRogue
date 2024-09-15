@@ -14,6 +14,8 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 )
 
+// Creates a creature entity from data read from the JSON files
+// All of the creatures read from the JSON file are stored in MonsterTemplates
 func CreateCreatureFromTemplate(manager common.EntityManager, m JSONMonster, gm *worldmap.GameMap, xPos, yPos int) *ecs.Entity {
 
 	fpath := filepath.Join("../assets/creatures/", m.ImageName)
@@ -91,6 +93,8 @@ func CreateCreatureFromTemplate(manager common.EntityManager, m JSONMonster, gm 
 
 }
 
+// Creates a melee weapon entity from data read from the JSON files
+// All of the melee weapons read from the JSON file are stored in MeleeWeaponTemplates
 func CreateMeleeWepFromTemplate(manager common.EntityManager, w JSONMeleeWeapon) *ecs.Entity {
 
 	fpath := filepath.Join("../assets/items/", w.ImgName)
