@@ -1,0 +1,5 @@
+* Think about how things will be broken down into packages from the get-go. Including
+1) What should be private
+2) What data it oeprates on
+
+* Be more careful with when to use a pointer receiver

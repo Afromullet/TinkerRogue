@@ -102,24 +102,27 @@ func DrawThrowableAOE(pl *avatar.PlayerData, gm *worldmap.GameMap) {
 }
 
 // Handle rotation if the shape has a direction
-func UpdateDirection(throwable *equipment.Throwable, updater *graphics.ShapeUpdater) {
+func UpdateDirection(shape *graphics.TileBasedShape) graphics.ShapeUpdater {
 
-	newDir := graphics.GetDirection(throwable.Shape)
+	updater := graphics.ExtractShapeParams(*shape)
+	newDir := graphics.GetDirection(*shape)
 	if newDir != graphics.NoDirection {
 
 		if inpututil.IsKeyJustReleased(ebiten.KeyDigit1) {
 
-			newDir := graphics.GetDirection(throwable.Shape)
+			newDir := graphics.GetDirection(*shape)
 			newDir = graphics.RotateLeft(newDir)
 			updater.Direction = newDir
 
 		} else if inpututil.IsKeyJustReleased(ebiten.KeyDigit2) {
-			newDir := graphics.GetDirection(throwable.Shape)
+			newDir := graphics.GetDirection(*shape)
 			newDir = graphics.RotateRight(newDir)
 			updater.Direction = newDir
 		}
 
 	}
+
+	return updater
 }
 
 // todo remove game type from function params
@@ -134,13 +137,11 @@ func HandlePlayerThrowable(ecsmanager *common.EntityManager, pl *avatar.PlayerDa
 
 		throwable := pl.ThrowableItem.ItemEffect(equipment.THROWABLE_NAME).(*equipment.Throwable)
 
-		updater := graphics.ExtractShapeParams(throwable.Shape)
-		UpdateDirection(throwable, &updater)
-
-		gm.ApplyColorMatrix(PrevThrowInds, graphics.NewEmptyMatrix()) //Clears previously applied rotation if there is any
+		updater := UpdateDirection(&throwable.Shape)
 
 		throwable.Shape.UpdateShape(updater)
 
+		gm.ApplyColorMatrix(PrevThrowInds, graphics.NewEmptyMatrix()) //Clears previously applied rotation if there is any
 		DrawThrowableAOE(pl, gm)
 
 		//Press middle mouse button to throw
@@ -185,6 +186,13 @@ func DrawRangedAttackAOE(pl *avatar.PlayerData, gm *worldmap.GameMap) {
 	cursorX, cursorY := ebiten.CursorPosition()
 
 	s := pl.RangedWeaponAOEShape
+
+	rangedWep := common.GetComponentType[*equipment.RangedWeapon](pl.PlayerRangedWeapon, equipment.RangedWeaponComponent)
+
+	updater := UpdateDirection(&rangedWep.TargetArea)
+	rangedWep.TargetArea.UpdateShape(updater)
+	gm.ApplyColorMatrix(PrevRangedAttInds, graphics.NewEmptyMatrix()) //Clears previously applied rotation if there is any
+
 	var indices []int
 	if cursorX != prevCursorX || cursorY != prevCursorY {
 

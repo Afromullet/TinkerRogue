@@ -35,8 +35,7 @@ var TestStickyEffect = graphics.NewStickyGroundEffect(0, 0, 2)
 func SetupPlayerForTesting(ecsmanager *common.EntityManager, pl *avatar.PlayerData) {
 	w := CreateWeapon(ecsmanager.World, "Weapon 1", *pl.Pos, "../assets/items/sword.png", 5, 10)
 
-	wepArea := graphics.NewTileRectangle(0, 0, 3, 3)
-	r := CreatedRangedWeapon(ecsmanager.World, "Ranged Weapon 1", "../assets/items/sword.png", *pl.Pos, 5, 10, 3, wepArea)
+	r := CreatedRangedWeapon(ecsmanager.World, "Ranged Weapon 1", "../assets/items/sword.png", *pl.Pos, 5, 10, 3, TestCone)
 
 	pl.PlayerWeapon = w
 	pl.PlayerRangedWeapon = r
