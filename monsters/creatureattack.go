@@ -36,8 +36,7 @@ type AttackBehavior struct {
 }
 
 // Used by Actions which perform a melee attack
-// This is not an Action itself. Used as a helper to perform attack as part of an action.
-func MeleeAttackAction(ecsmanger *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap, c *ecs.QueryResult, target *ecs.Entity) {
+func MeleeAttackHelper(ecsmanger *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap, c *ecs.QueryResult, target *ecs.Entity) {
 
 	defenderPos := common.GetComponentType[*common.Position](target, common.PositionComponent)
 	if common.DistanceBetween(c.Entity, target) == 1 {
@@ -47,10 +46,8 @@ func MeleeAttackAction(ecsmanger *common.EntityManager, pl *avatar.PlayerData, g
 
 }
 
-// Todo remove the "Action" part of the function name since it's misleading.
 // Used by Actions which perform a ranged attack.
-// This is not an Action itself. Used as a helper to perform attack as part of an action.
-func RangedAttackAction(ecsmanger *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap, c *ecs.QueryResult, target *ecs.Entity) {
+func RangedAttackHelper(ecsmanger *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap, c *ecs.QueryResult, target *ecs.Entity) {
 
 	RangedWeapon := common.GetComponentType[*equipment.RangedWeapon](c.Entity, equipment.RangedWeaponComponent)
 
@@ -77,7 +74,7 @@ func RangedAttackFromDistance(ecsmanger *common.EntityManager, pl *avatar.Player
 
 	if common.DistanceBetween(c.Entity, t) < wep.ShootingRange {
 
-		return timesystem.NewOneTargetAttack(RangedAttackAction, ecsmanger, pl, gm, c, pl.PlayerEntity)
+		return timesystem.NewOneTargetAttack(RangedAttackHelper, ecsmanger, pl, gm, c, pl.PlayerEntity)
 
 	} else {
 
@@ -99,7 +96,7 @@ func ChargeAndAttack(ecsmanger *common.EntityManager, pl *avatar.PlayerData, gm 
 
 	if common.DistanceBetween(c.Entity, t) == 1 {
 
-		return timesystem.NewOneTargetAttack(MeleeAttackAction, ecsmanger, pl, gm, c, pl.PlayerEntity)
+		return timesystem.NewOneTargetAttack(MeleeAttackHelper, ecsmanger, pl, gm, c, pl.PlayerEntity)
 
 	} else {
 

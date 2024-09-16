@@ -11,12 +11,12 @@ import (
 	"github.com/bytearena/ecs"
 )
 
+// Currently used for determining whether to spawn a new monster
 var NumMonstersOnMap int
 
 var CreatureComponent *ecs.Component
 
 // EffectsToApply trigger every turn in MonsterSystems
-// The only thing applying an Effect Right now are throwable.
 // The Path is updated by a Movement Component
 type Creature struct {
 	Path           []common.Position
@@ -37,8 +37,8 @@ func (c *Creature) AddEffects(effects *ecs.Entity) {
 
 }
 
-// Gets called in MonsterSystems, which queries the ECS manager and returns query results containing all monsters
-// Querying returns an ecs.queryResult, hence the parameter.
+// Gets called once per turn. Applies all status effects to the creature
+// Each effect implements the ApplyToCreature effect that determines...the kind of effect
 func ApplyEffects(c *ecs.QueryResult) {
 
 	creature := c.Components[CreatureComponent].(*Creature)
@@ -139,6 +139,7 @@ func MonsterSystems(ecsmanger *common.EntityManager, pl *avatar.PlayerData, gm *
 
 }
 
+// Todo clear action queues too
 func ClearAllCreatures(ecsmanger *common.EntityManager) {
 	for _, c := range ecsmanger.World.Query(ecsmanger.WorldTags["monsters"]) {
 

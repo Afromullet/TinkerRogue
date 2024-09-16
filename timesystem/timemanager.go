@@ -9,15 +9,14 @@ import (
 )
 
 // The ActionManager contains a slice of all ActionQueues and executes the actions for all entities
-// Pushes an action to the back of the slice once it's been performed
+// Pushes an action to the back of the slice once it's been performed. The action continues to be
+// Performed unless there's a reason to stop doing it.
 
-// Each Queue are all the queued actions by an Entity
 type ActionManager struct {
 	EntityActions []*ActionQueue
 }
 
 // Runs through the queue once and performs the actions until we reach the players action
-// Doing in that manner so that we can handle player input without lag
 func (am *ActionManager) ExecuteActionsUntilPlayer(pl *avatar.PlayerData) bool {
 
 	executedActions := make([]*ActionQueue, 0)
@@ -70,6 +69,7 @@ func (am *ActionManager) CleanController() {
 
 }
 
+// Clears all actions
 func (am *ActionManager) ResetActionManager() {
 	for _, act := range am.EntityActions {
 		act.ResetQueue()
@@ -78,6 +78,7 @@ func (am *ActionManager) ResetActionManager() {
 
 }
 
+// Sorts the actionqueues in priority order.
 func (am *ActionManager) ReorderActions() {
 	sort.Slice(am.EntityActions, func(i, j int) bool {
 		// Sort by TotalActionPoints in descending order
@@ -89,8 +90,6 @@ func (am *ActionManager) ReorderActions() {
 	})
 }
 
-// Todo handle case where there ius no action in the first Action queue
-// Executes the action and moves the queue to the end of the manager
 func (am *ActionManager) ExecuteFirst() {
 
 	if len(am.EntityActions) > 0 {
@@ -98,11 +97,11 @@ func (am *ActionManager) ExecuteFirst() {
 		am.EntityActions[0].ExecuteAction()
 		firstAction := am.EntityActions[0]
 		am.EntityActions = append(am.EntityActions[1:], firstAction)
-
 	}
 
 }
 
+// Action points get reset every n number of turns.
 func (am ActionManager) ResetActionPoints() {
 
 	for _, q := range am.EntityActions {

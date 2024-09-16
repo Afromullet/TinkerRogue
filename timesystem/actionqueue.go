@@ -9,7 +9,8 @@ type ActionWrapper interface {
 	Execute(q *ActionQueue)
 }
 
-// KindOfAction is used so that an action can be added to the ActionQueue only once
+// KindOfAction is used so that an action can be added to the ActionQueue only once.
+// There's probably a better way to do it, but for now we just need something that works
 type KindOfAction int
 
 const (
@@ -20,6 +21,7 @@ const (
 	PickupItemKind
 )
 
+// Only monsters use priority
 func GetActionPriority(kind KindOfAction) int {
 
 	switch kind {
@@ -50,7 +52,7 @@ type Action struct {
 }
 
 // Every entity has an ActionQueue. Whenever an entity wants to perform an action, it's added to its ActionQueue.
-// An action needs an ActionWrapper to add to the Queue.
+// The ActionManager handles the queues of all entities
 // ExecuteAction performs the first action in the queue and removes it.
 type ActionQueue struct {
 	TotalActionPoints int
@@ -58,7 +60,7 @@ type ActionQueue struct {
 	Entity            *ecs.Entity //Entity associated with the queue
 }
 
-// Removes the first action in the queue.
+// Removes the first action in the queue. Used after executing the action.
 func (a *ActionQueue) pop() {
 	if len(a.AllActions) > 0 {
 		a.AllActions = a.AllActions[1:]
@@ -90,7 +92,7 @@ func (a *ActionQueue) AddPlayerAction(action ActionWrapper, actionPointCost int,
 	}
 }
 
-// Monster actions have a priority.
+// Monster actions have a priority, so that's why it's a separate function
 func (a *ActionQueue) AddMonsterAction(action ActionWrapper, actionPointCost int, kindOfAction KindOfAction) {
 
 	if actionPointCost <= 0 {
@@ -126,27 +128,7 @@ func (a *ActionQueue) AddMonsterAction(action ActionWrapper, actionPointCost int
 	}
 }
 
-// Monster ActionQueue uses a priority so one action does not always take precedence
-func (a *ActionQueue) AddMonsterActionOld(action ActionWrapper, actionPointCost int, kindOfAction KindOfAction) {
-
-	if actionPointCost <= 0 {
-		panic("Action points must be greater than or equal to 0")
-	}
-
-	for _, act := range a.AllActions {
-
-		if act.kindOfAction == kindOfAction {
-			return
-		}
-
-	}
-
-	if action != nil {
-		a.AllActions = append(a.AllActions, Action{ActWrapper: action, Cost: actionPointCost, kindOfAction: kindOfAction})
-	}
-}
-
-// Executes the first action
+// Executes the first action and removes it from the queue
 func (a *ActionQueue) ExecuteAction() {
 	if len(a.AllActions) > 0 {
 

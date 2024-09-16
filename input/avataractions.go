@@ -152,7 +152,7 @@ func HandlePlayerThrowable(ecsmanager *common.EntityManager, pl *avatar.PlayerDa
 
 			indices := throwable.Shape.GetIndices()
 
-			pl.ThrowPreparedItem(pl.Inv)
+			pl.RemoveThrownItem(pl.Inv)
 
 			ApplyThrowable(ecsmanager, pl.ThrowableItem, pl, pl.ThrowingAOEShape, playerUI, pl.Pos)
 

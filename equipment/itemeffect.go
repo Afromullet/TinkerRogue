@@ -43,16 +43,13 @@ to keep track of all proeprties an item might have
 */
 var AllItemEffects []*ecs.Component
 
-/*
-Each StatusEffects implements GetPropertyComponent and GetPropertyName,
-Which is called by the generic GetPropertyName and GetPropertyComponent functions.const
-
-# Copy() implementation must return a shallow copy
-
-ApplyToCreature() takes a query result. The implementing method will define how the effect changes components.
-
-That lets us get the components and name without having to assert it to a specfic type.
-*/
+// StatusEffectComponent returns the underlying component
+// StatusEffectNames returns the name from the Common Properties
+// Duration returns the duration from the common properties
+// ApplyToCreature decides what the effect does to the creature
+// Copy creates a shallow copy
+// Even though all of them have the name and duration in the common properties,
+// we have it as a method of the interface so that we can access it without type assertions
 type StatusEffects interface {
 	StatusEffectComponent() *ecs.Component
 	StatusEffectName() string
@@ -69,8 +66,8 @@ func StatusEffectComponent[T StatusEffects](prop *T) *ecs.Component {
 	return (*prop).StatusEffectComponent()
 }
 
-// Status Effects are stored as components in Items. The item is an entity.
-// This gets the structs from the items components.
+// Status Effects are stored as entity components in Items.
+// This function converts the component to the struct
 func AllStatusEffects(effects *ecs.Entity) []StatusEffects {
 
 	eff := make([]StatusEffects, 0)
@@ -234,12 +231,7 @@ func NewFreezing(dur int, t int) *Freezing {
 
 }
 
-// Throwable doesn't work like any other effects,
-// So treating it as an "Effect" does not make much sense because we
-// Have to implement methods that do not apply to it such as
-// ApplyToCreature. MainProps.duration also doesn't mean much for this
-// But it works for now...
-// vx is the VisualEffect which will be drawn in the AOE Shape
+// Throwable doesn't work like any other effects, so treating it as an "Effect" does not make much sense because we
 type Throwable struct {
 	MainProps     CommonItemProperties
 	ThrowingRange int //How many tiles it can be thrown
@@ -274,14 +266,6 @@ func (t *Throwable) Copy() StatusEffects {
 
 func (t *Throwable) ApplyToCreature(c *ecs.QueryResult) {
 	fmt.Println("Applying ", t, " To Creature")
-
-}
-
-// Adds the Throwing Weapons VisualEffectArea to the VisualEffectHandler. It will be drawn.
-func (t *Throwable) ReadyThrowAreaVX() {
-
-	//TOdo I don't think this is needed anymore
-	//AddVXArea(t.vxArea)
 
 }
 

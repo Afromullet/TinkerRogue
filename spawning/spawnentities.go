@@ -13,20 +13,19 @@ import (
 	"time"
 )
 
+// todo add comments on how to setup and use the probability table
 type ProbabilityEntry[T any] struct {
 	entry  T
 	weight int
 }
 
-// totalWeight is the sum of all probabilities.
-// Only add to this through addEntry, since that keeps a running
-// sum of the weights
+// totalWeight is the sum of all probabilities. Used for discrete random selection.
+// AddEntry updates the totalWeight when a new entry is added.
 type ProbabilityTable[T any] struct {
 	table       []ProbabilityEntry[T]
 	totalWeight int
 }
 
-// Function to return a ProbabilityTable
 func NewProbabilityTable[T any]() ProbabilityTable[T] {
 
 	return ProbabilityTable[T]{

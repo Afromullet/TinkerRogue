@@ -69,13 +69,10 @@ func GridPositionFromPixels(x, y int) Position {
 func GetTilePositions(indices []int) []Position {
 
 	gd := graphics.NewScreenData()
-
 	pos := make([]Position, len(indices))
 
 	for i, inds := range indices {
-
 		pos[i] = PositionFromIndex(inds, gd.ScreenWidth)
-
 	}
 
 	return pos

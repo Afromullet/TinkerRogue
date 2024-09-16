@@ -16,7 +16,7 @@ type Renderable struct {
 	Visible bool
 }
 
-// revealEverything
+// Draw everything with a renderable component that's visible
 func ProcessRenderables(ecsmanager *common.EntityManager, gameMap worldmap.GameMap, screen *ebiten.Image, debugMode bool) {
 	for _, result := range ecsmanager.World.Query(ecsmanager.WorldTags["renderables"]) {
 		pos := result.Components[common.PositionComponent].(*common.Position)

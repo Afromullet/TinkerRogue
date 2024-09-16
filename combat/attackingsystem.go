@@ -25,7 +25,6 @@ func MeleeAttackSystem(ecsmanager *common.EntityManager, pl *avatar.PlayerData, 
 	var weapon *equipment.MeleeWeapon = nil
 
 	if pl.Pos.IsEqual(attackerPos) {
-		fmt.Println("Player is attacking")
 		attacker = pl.PlayerEntity
 		defender = GetCreatureAtPosition(ecsmanager, defenderPos)
 		weapon = pl.GetPlayerWeapon()
@@ -33,7 +32,6 @@ func MeleeAttackSystem(ecsmanager *common.EntityManager, pl *avatar.PlayerData, 
 	} else {
 		attacker = GetCreatureAtPosition(ecsmanager, attackerPos)
 		defender = pl.PlayerEntity
-		fmt.Println("Monster is attacking")
 		weapon = common.GetComponentType[*equipment.MeleeWeapon](attacker, equipment.MeleeWeaponComponent)
 
 	}
@@ -114,10 +112,7 @@ func RangedAttackSystem(ecsmanager *common.EntityManager, pl *avatar.PlayerData,
 				PerformAttack(ecsmanager, pl, gm, weapon.CalculateDamage(), attacker, t)
 				weapon.DisplayShootingVX(attackerPos, defenderPos)
 
-			} else {
-
 			}
-
 		}
 
 	} else {
@@ -126,7 +121,7 @@ func RangedAttackSystem(ecsmanager *common.EntityManager, pl *avatar.PlayerData,
 
 }
 
-// Todo if it attacks the player, it removes the attacking creatured
+// Does not remove the player if they die.
 func RemoveDeadEntity(ecsmnager *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap, defender *ecs.Entity) {
 
 	defenderPos := common.GetPosition(defender)
@@ -134,8 +129,6 @@ func RemoveDeadEntity(ecsmnager *common.EntityManager, pl *avatar.PlayerData, gm
 	if pl.Pos.IsEqual(defenderPos) {
 		graphics.IndexFromXY(defenderPos.X, defenderPos.Y) //Just here as a placeholder. Does nothing.
 	} else if defAttr.CurrentHealth <= 0 {
-		//Todo removing an entity is really closely coupled to teh map right now.
-		//Do it differently in the future
 		index := graphics.IndexFromXY(defenderPos.X, defenderPos.Y)
 
 		gm.Tiles[index].Blocked = false
@@ -149,7 +142,7 @@ func GetCreatureAtPosition(ecsmnager *common.EntityManager, pos *common.Position
 	var e *ecs.Entity = nil
 	for _, c := range ecsmnager.World.Query(ecsmnager.WorldTags["monsters"]) {
 
-		curPos := c.Components[common.PositionComponent].(*common.Position)
+		curPos := common.GetPosition(c.Entity)
 
 		if pos.IsEqual(curPos) {
 			e = c.Entity

@@ -52,9 +52,10 @@ type DistanceToEntityMovement struct {
 }
 
 // Each Movement function implementation choses how to build a path.
-// They also handle walking on the path by calling reature.UpdatePosition
-// Movement functions get called by MovementSystem which determines what movement component a creature has.
-// Select a random spot to wander to and builds a new path when arriving at the position
+// Must handle how the path updates every turn
+// Be sure to call UpdatePosition
+
+// Wander to a random position. Build a new path once arrived.
 func SimpleWanderAction(ecsmanager *common.EntityManager, gm *worldmap.GameMap, mover *ecs.Entity) {
 
 	creature := GetCreature(mover)
@@ -169,9 +170,6 @@ func FleeFromEntityMovementAction(ecsmanager *common.EntityManager, gm *worldmap
 	creature.UpdatePosition(gm, creaturePosition)
 }
 
-// Used for Stay Within Range movement. Selects a random unblocked tile to move to
-// Gets called in MonsterSystems, which queries the ECS manager and returns query results containing all monsters
-// A movmeent function builds a path for a creature to follow, and UpdatePosition lets a creature move on the path
 func CreatureMovementSystem(ecsmanager *common.EntityManager, gm *worldmap.GameMap, c *ecs.QueryResult) timesystem.ActionWrapper {
 
 	//var ok bool

@@ -9,9 +9,6 @@ const (
 	ExecuteActions
 )
 
-// TotalNumTurns resets every 10000 turns.
-// That number is arbitrarily chosen. Don't think the upper bounds of an int will ever be hit
-// But I will reset it just in case
 type GameTurn struct {
 	Turn             TurnState
 	TurnCounter      int

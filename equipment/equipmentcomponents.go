@@ -23,9 +23,12 @@ type Armor struct {
 	DodgeChance float32
 }
 
-// This gets called so often that it might as well be a function
 func GetArmor(e *ecs.Entity) *Armor {
 	return common.GetComponentType[*Armor](e, ArmorComponent)
+}
+
+func GetItem(e *ecs.Entity) *Item {
+	return common.GetComponentType[*Item](e, ItemComponent)
 }
 
 type MeleeWeapon struct {
@@ -69,7 +72,7 @@ func (r RangedWeapon) GetTargets(ecsmanger *common.EntityManager) []*ecs.Entity 
 	//TODO, this will be slow in case there are a lot of creatures
 	for _, c := range ecsmanger.World.Query(ecsmanger.WorldTags["monsters"]) {
 
-		curPos := c.Components[common.PositionComponent].(*common.Position)
+		curPos := common.GetPosition(c.Entity)
 
 		for _, p := range pos {
 			if curPos.IsEqual(&p) {
@@ -95,10 +98,6 @@ func (r *RangedWeapon) DisplayShootingVX(attackerPos *common.Position, defenderP
 	arr := graphics.NewProjectile(attX, attY, defX, defY)
 
 	graphics.AddVX(arr)
-}
-
-func GetItem(e *ecs.Entity) *Item {
-	return common.GetComponentType[*Item](e, ItemComponent)
 }
 
 // Todo remove later once you change teh random number generation. The same function is in another aprt of the code

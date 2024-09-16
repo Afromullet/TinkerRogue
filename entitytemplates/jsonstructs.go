@@ -5,6 +5,8 @@ import (
 	"game_main/graphics"
 )
 
+// All structs for unmarshalling JSON data
+
 type JSONAttributes struct {
 	MaxHealth         int     `json:"MaxHealth"`
 	AttackBonus       int     `json:"AttackBonus"`
@@ -61,6 +63,7 @@ type JSONTargetArea struct {
 	Radius int    `json:"radius,omitempty"`
 }
 
+// For creating the TileBasedShape from JSON data
 func CreateTargetArea(area *JSONTargetArea) graphics.TileBasedShape {
 
 	var s graphics.TileBasedShape

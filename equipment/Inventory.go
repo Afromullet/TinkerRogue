@@ -49,6 +49,7 @@ func (inv *Inventory) AddItem(entityToAdd *ecs.Entity) {
 
 }
 
+// Does not remove the item from the inventory
 func (inv *Inventory) GetItem(index int) (*ecs.Entity, error) {
 	if index < 0 || index >= len(inv.InventoryContent) {
 		return nil, fmt.Errorf("index out of range")
@@ -78,7 +79,7 @@ func (inv *Inventory) RemoveItem(index int) {
 }
 
 // Returns the names of the Item Effects
-// This is used for displaying the item effects to the player.
+// This is as part of creating the list we need to display item data to the player
 func (inv *Inventory) EffectNames(index int) ([]string, error) {
 
 	entity, err := inv.GetItem(index)
@@ -137,8 +138,9 @@ func (inv *Inventory) GetEquipmentForDisplay(indicesToSelect []int) []any {
 
 }
 
-// Used for displaying the inventory to the player. Returns a list the ebitenui list widgets expects
-// The list contains the index in the inventory, the name, and the count of the item.
+// Builds the list that's needed for displaying the inventory to the player
+// itemPropertiesFilter StatusEffects lets us filter. When originally writing the function,
+// I didn't consider filtering any other item types. We need them now, but it's not somethingw worth changing now
 func (inv *Inventory) GetInventoryForDisplay(indicesToSelect []int, itemPropertiesFilter ...StatusEffects) []any {
 
 	inventoryItems := make([]any, 0)

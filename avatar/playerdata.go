@@ -13,10 +13,11 @@ var PlayerComponent *ecs.Component
 type Player struct {
 }
 
+// Tracks state for user input handling.
 type PlayerInputStates struct {
 	IsThrowing  bool
 	IsShooting  bool
-	HasKeyInput bool //Tells us whether the player pressed a key in the avatarmovement
+	HasKeyInput bool //Tells us whether the player pressed any key.
 }
 
 type PlayerEquipment struct {
@@ -56,7 +57,7 @@ func (pl *PlayerThrowable) PrepareThrowable(itemEntity *ecs.Entity, index int) {
 
 }
 
-func (pl *PlayerThrowable) ThrowPreparedItem(inv *equipment.Inventory) {
+func (pl *PlayerThrowable) RemoveThrownItem(inv *equipment.Inventory) {
 
 	inv.RemoveItem(pl.ThrowableItemIndex)
 
@@ -78,10 +79,7 @@ type PlayerData struct {
 	Inv *equipment.Inventory
 }
 
-func NewPlayerData() PlayerData {
-	return PlayerData{}
-}
-
+// Handles the conversions from the component type to the struct type
 func (pl *PlayerData) GetPlayerInventory() *equipment.Inventory {
 
 	playerInventory := common.GetComponentType[*equipment.Inventory](pl.PlayerEntity, equipment.InventoryComponent)

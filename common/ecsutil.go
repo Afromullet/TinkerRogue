@@ -10,18 +10,17 @@ var (
 	PositionComponent  *ecs.Component
 	NameComponent      *ecs.Component
 	AttributeComponent *ecs.Component
-
-	UsrMsg *ecs.Component //I can probably remove this later
+	UsrMsg             *ecs.Component //I can probably remove this later
 )
 
+// Wrapper around the ECS libraries manager and rags.
 type EntityManager struct {
 	World     *ecs.Manager
 	WorldTags map[string]ecs.Tag
 }
 
 // A wrapper around the ECS libraries GetComponentData.
-// Sometimes I make decisions to implement somethign to reduce typing, which isn't always a good idea as I've learned
-// Using this until I realize it's a bad idea
+// It makes it a littel bit less tedious to get the struct assocaited with a component
 func GetComponentType[T any](entity *ecs.Entity, component *ecs.Component) T {
 
 	defer func() {

@@ -123,6 +123,7 @@ Might need to index instead
 
 * Make it simpler to call all the functions that take a lot of paramters
 
+* Remove a dead creature once it dies rather than next turn
 
 Preallocate sizes of slices when possible
 
@@ -137,3 +138,11 @@ ________________
 Major need for refacting
 
 Everything in the main
+
+IN the future, maybe decouple anything that passes data to the VX Handler
+
+Everything in the input package
+
+Everything in the worldmap package
+
+Everything GUI related

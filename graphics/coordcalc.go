@@ -1,6 +1,6 @@
 package graphics
 
-// Contains the data we need to render the map
+// Contains the data we need to render the map. Also used for coordinate conversions
 type ScreenData struct {
 	ScreenWidth  int
 	ScreenHeight int
@@ -19,10 +19,6 @@ func NewScreenData() ScreenData {
 	}
 
 	LevelHeight = g.ScreenHeight - g.UIHeight
-
-	//Todo refactor this. Only doing this here at the moment due to hwo we use NewScreenData in the code whenever
-	//We want to access the parameters. Done that way because it was originally intended to eb stateless.
-	//Probably do not need it to be stateless.
 
 	return g
 }
