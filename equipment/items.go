@@ -49,6 +49,10 @@ func (item *Item) GetEffectNames() []string {
 
 	names := make([]string, 0)
 
+	if item.Properties == nil {
+		return names
+	}
+
 	for _, c := range AllItemEffects {
 		data, ok := item.Properties.GetComponentData(c)
 		if ok {

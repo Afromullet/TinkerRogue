@@ -5,7 +5,6 @@ import (
 	"math"
 
 	"github.com/bytearena/ecs"
-	"github.com/hajimehoshi/ebiten/v2"
 )
 
 type Position struct {
@@ -122,11 +121,6 @@ func UpdateAttributes(e *ecs.Entity, armorClass, protection int, dodgechance flo
 
 type Name struct {
 	NameStr string
-}
-
-type Renderable struct {
-	Image   *ebiten.Image
-	Visible bool
 }
 
 type UserMessage struct {

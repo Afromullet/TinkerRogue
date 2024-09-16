@@ -40,6 +40,28 @@ type Rect struct {
 	Y2 int
 }
 
+func (r Rect) IsInRoom(x, y int) bool {
+	if x >= r.X1 && x <= r.X2 {
+		if y >= r.Y1 && y <= r.Y2 {
+			return true
+		}
+	}
+	return false
+}
+
+func (r Rect) GetCoordinates() []common.Position {
+
+	//Adding +1 and
+	pos := make([]common.Position, 0)
+	for y := r.Y1 + 1; y <= r.Y2-1; y++ {
+		for x := r.X1 + 1; x <= r.X2-1; x++ {
+			pos = append(pos, common.Position{X: x, Y: y})
+		}
+	}
+
+	return pos
+}
+
 func NewRect(x int, y int, width int, height int) Rect {
 	return Rect{
 		X1: x,
@@ -96,6 +118,12 @@ func GoDownStairs(gm *GameMap) {
 	//Need to remove all entities from the old map
 	fmt.Println("Changing map")
 	newGameMap := NewGameMap()
+
+	//Not letting players go back up for now
+	//startX, startY := newGameMap.Rooms[0].Center()
+	//ind := graphics.IndexFromXY(startX, startY)
+	//newGameMap.Tiles[ind].TileType = STAIRS_DOWN
+	//newGameMap.Tiles[ind].image = stairs_down
 
 	*gm = newGameMap
 }
@@ -180,6 +208,7 @@ func (gameMap *GameMap) DrawLevel(screen *ebiten.Image, revealAllTiles bool) {
 			if isVis {
 				op.GeoM.Translate(float64(tile.PixelX), float64(tile.PixelY))
 				gameMap.Tiles[idx].IsRevealed = true
+
 			} else if tile.IsRevealed {
 
 				op.GeoM.Translate(float64(tile.PixelX), float64(tile.PixelY))
@@ -325,13 +354,16 @@ func (gameMap *GameMap) createVerticalTunnel(y1 int, y2 int, x int) {
 // Even if it is, that's not something to worry about now, since this is a short term approach
 func (gm *GameMap) PlaceStairs() {
 
-	randRoom := randgen.GetRandomBetween(0, len(gm.Rooms)-1)
+	//Starts at 1 so we don't create stairs in the starting room
+	randRoom := randgen.GetRandomBetween(1, len(gm.Rooms)-1)
 
 	x, y := gm.Rooms[randRoom].Center()
 
 	ind := graphics.IndexFromXY(x, y)
 
-	gm.Tiles[ind].image = stairs
+	gm.Tiles[ind].TileType = STAIRS_DOWN
+
+	gm.Tiles[ind].image = stairs_down
 
 }
 

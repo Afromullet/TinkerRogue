@@ -39,7 +39,7 @@ import (
 // Using https://www.fatoldyeti.com/categories/roguelike-tutorial/ as a starting point.
 // Copying some of the code with modification. Whenever I change a name, it's to help me build a better mental model
 // Of what the code is doing as I'm learning GoLang
-var DEBUG_MODE = false
+var DEBUG_MODE = true
 
 type Game struct {
 	em         common.EntityManager
@@ -63,18 +63,14 @@ func NewGame() *Game {
 	g.ts.Turn = timesystem.PlayerTurn
 	g.ts.TurnCounter = 0
 
-	//g.craftingUI.SetCraftingWindowLocation(g.screenData.screenWidth/2, g.screenData.screenWidth/2)
-
 	testing.CreateTestItems(g.em.World, g.em.WorldTags, &g.gameMap)
-
 	testing.CreateTestMonsters(g.em, &g.playerData, &g.gameMap)
 	testing.SetupPlayerForTesting(&g.em, &g.playerData)
-
 	testing.UpdateContentsForTest(&g.em, &g.gameMap)
-
 	testing.InitTestActionManager(&g.em, &g.playerData, &g.ts)
-
 	g.ts.ActionDispatcher.ResetActionManager()
+
+	spawning.SpawnStartingLoot(g.em, &g.gameMap)
 
 	return g
 
@@ -171,6 +167,8 @@ func (g *Game) Update() error {
 	g.gameUI.MainPlayerInterface.Update()
 
 	graphics.VXHandler.UpdateVisualEffects()
+
+	input.PlayerDebugActions(&g.playerData)
 	// Update the Label text to indicate if the ui is currently being hovered over or not
 	//g.headerLbl.Label = fmt.Sprintf("Game Demo!\nUI is hovered: %t", input.UIHovered)
 	ManageTurn(g)
@@ -183,6 +181,7 @@ func (g *Game) Update() error {
 func (g *Game) Draw(screen *ebiten.Image) {
 
 	g.gameMap.DrawLevel(screen, DEBUG_MODE)
+
 	rendering.ProcessRenderables(&g.em, g.gameMap, screen, DEBUG_MODE)
 
 	g.gameUI.MainPlayerInterface.Draw(screen)

@@ -5,6 +5,7 @@ import (
 	"game_main/equipment"
 	"game_main/graphics"
 	"game_main/monsters"
+	"game_main/rendering"
 	"game_main/timesystem"
 	"game_main/worldmap"
 	"log"
@@ -29,7 +30,7 @@ func CreateCreatureFromTemplate(manager common.EntityManager, m JSONMonster, gm 
 
 	ent.AddComponent(common.NameComponent, &common.Name{NameStr: m.Name})
 
-	ent.AddComponent(common.RenderableComponent, &common.Renderable{
+	ent.AddComponent(rendering.RenderableComponent, &rendering.Renderable{
 		Image:   creatureImg,
 		Visible: true,
 	})
@@ -106,7 +107,7 @@ func CreateMeleeWepFromTemplate(manager common.EntityManager, w JSONMeleeWeapon)
 
 	it := manager.World.NewEntity()
 
-	it.AddComponent(common.RenderableComponent, &common.Renderable{
+	it.AddComponent(rendering.RenderableComponent, &rendering.Renderable{
 		Image:   img,
 		Visible: false,
 	})
@@ -143,7 +144,7 @@ func CreateRangedWepFromTemplate(manager common.EntityManager, w JSONRangedWeapo
 
 	it := manager.World.NewEntity()
 
-	it.AddComponent(common.RenderableComponent, &common.Renderable{
+	it.AddComponent(rendering.RenderableComponent, &rendering.Renderable{
 		Image:   img,
 		Visible: false,
 	})

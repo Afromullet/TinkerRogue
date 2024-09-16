@@ -8,6 +8,7 @@ import (
 	"game_main/graphics"
 	"game_main/gui"
 	"game_main/monsters"
+	"game_main/rendering"
 	"game_main/worldmap"
 	"log"
 
@@ -293,6 +294,9 @@ func PlayerPickupItem(pl *avatar.PlayerData, gm *worldmap.GameMap) {
 	itemFromTile, _ := gm.RemoveItemFromTile(0, pl.Pos)
 
 	if itemFromTile != nil {
+
+		renderable := common.GetComponentType[*rendering.Renderable](itemFromTile, rendering.RenderableComponent)
+		renderable.Visible = false
 		pl.Inv.AddItem(itemFromTile)
 	}
 

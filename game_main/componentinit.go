@@ -4,6 +4,7 @@ import (
 	"game_main/common"
 	"game_main/equipment"
 	"game_main/monsters"
+	"game_main/rendering"
 	"game_main/timesystem"
 
 	"github.com/bytearena/ecs"
@@ -18,7 +19,7 @@ func InitializeECS(ecsmanager *common.EntityManager) {
 	tags := make(map[string]ecs.Tag)
 	manager := ecs.NewManager()
 	common.PositionComponent = manager.NewComponent()
-	common.RenderableComponent = manager.NewComponent()
+	rendering.RenderableComponent = manager.NewComponent()
 
 	common.NameComponent = manager.NewComponent()
 
@@ -31,7 +32,7 @@ func InitializeECS(ecsmanager *common.EntityManager) {
 	equipment.RangedWeaponComponent = manager.NewComponent()
 	equipment.ArmorComponent = manager.NewComponent()
 
-	renderables := ecs.BuildTag(common.RenderableComponent, common.PositionComponent)
+	renderables := ecs.BuildTag(rendering.RenderableComponent, common.PositionComponent)
 	tags["renderables"] = renderables
 
 	messengers := ecs.BuildTag(common.UsrMsg)

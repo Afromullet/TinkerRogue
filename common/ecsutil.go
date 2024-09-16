@@ -7,11 +7,11 @@ import (
 )
 
 var (
-	PositionComponent   *ecs.Component
-	NameComponent       *ecs.Component
-	AttributeComponent  *ecs.Component
-	RenderableComponent *ecs.Component //Putting this here for now rather than in graphics
-	UsrMsg              *ecs.Component //I can probably remove this later
+	PositionComponent  *ecs.Component
+	NameComponent      *ecs.Component
+	AttributeComponent *ecs.Component
+
+	UsrMsg *ecs.Component //I can probably remove this later
 )
 
 type EntityManager struct {

@@ -138,3 +138,11 @@ func MonsterSystems(ecsmanger *common.EntityManager, pl *avatar.PlayerData, gm *
 	}
 
 }
+
+func ClearAllCreatures(ecsmanger *common.EntityManager) {
+	for _, c := range ecsmanger.World.Query(ecsmanger.WorldTags["monsters"]) {
+
+		ecsmanger.World.DisposeEntity(c.Entity)
+
+	}
+}

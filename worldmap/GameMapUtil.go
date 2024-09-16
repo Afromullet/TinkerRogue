@@ -10,7 +10,7 @@ import (
 
 var floorImgs = make([]*ebiten.Image, 0)
 var wallImgs = make([]*ebiten.Image, 0)
-var stairs *ebiten.Image
+var stairs_down *ebiten.Image
 
 func loadTileImages() {
 
@@ -61,6 +61,6 @@ func loadTileImages() {
 	fn := "../assets//tiles/stairs1.png"
 
 	s, _, _ := ebitenutil.NewImageFromFile(fn)
-	stairs = s
+	stairs_down = s
 
 }

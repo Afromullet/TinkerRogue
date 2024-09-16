@@ -5,14 +5,26 @@ import (
 	"game_main/graphics"
 	"game_main/worldmap"
 
+	"github.com/bytearena/ecs"
 	"github.com/hajimehoshi/ebiten/v2"
 )
+
+var RenderableComponent *ecs.Component //Putting this here for now rather than in graphics
+
+type Renderable struct {
+	Image   *ebiten.Image
+	Visible bool
+}
 
 // revealEverything
 func ProcessRenderables(ecsmanager *common.EntityManager, gameMap worldmap.GameMap, screen *ebiten.Image, debugMode bool) {
 	for _, result := range ecsmanager.World.Query(ecsmanager.WorldTags["renderables"]) {
 		pos := result.Components[common.PositionComponent].(*common.Position)
-		img := result.Components[common.RenderableComponent].(*common.Renderable).Image
+		img := result.Components[RenderableComponent].(*Renderable).Image
+
+		if !result.Components[RenderableComponent].(*Renderable).Visible {
+			continue
+		}
 
 		if debugMode {
 

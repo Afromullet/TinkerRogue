@@ -8,6 +8,7 @@ import (
 	"game_main/graphics"
 	"game_main/monsters"
 	monster "game_main/monsters"
+	"game_main/rendering"
 	"game_main/timesystem"
 	"game_main/worldmap"
 	"log"
@@ -144,7 +145,7 @@ func CreateMonster(manager *ecs.Manager, gameMap *worldmap.GameMap, x, y int, im
 		AddComponent(monster.CreatureComponent, &monster.Creature{
 			Path: make([]common.Position, 0),
 		}).
-		AddComponent(common.RenderableComponent, &common.Renderable{
+		AddComponent(rendering.RenderableComponent, &rendering.Renderable{
 			Image:   elfImg,
 			Visible: true,
 		}).
@@ -197,7 +198,7 @@ func CreateItem(manager *ecs.Manager, name string, pos common.Position, imagePat
 	}
 
 	itemEntity := manager.NewEntity().
-		AddComponent(common.RenderableComponent, &common.Renderable{
+		AddComponent(rendering.RenderableComponent, &rendering.Renderable{
 			Image:   img,
 			Visible: true,
 		}).

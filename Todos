@@ -1,4 +1,6 @@
+___ActionQueue___
 
+* Clear ActionQueue is the entity no longer exists
 
 ___Energy/Time System__
 
@@ -48,6 +50,8 @@ __Randomness__
 __Levels__
 
 Add multiple levels
+
+Clear entities on previous level unless they are in the room with the stairs. Need to store them 
 
 Add more variety to the levels, including placeable items and tile variety
 
@@ -128,3 +132,8 @@ Need a better way to handle coordinate conversions
 
 
 
+________________
+
+Major need for refacting
+
+Everything in the main

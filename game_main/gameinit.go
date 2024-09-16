@@ -4,6 +4,7 @@ import (
 	"game_main/avatar"
 	"game_main/common"
 	"game_main/equipment"
+	"game_main/rendering"
 	"game_main/timesystem"
 	"game_main/worldmap"
 	"log"
@@ -35,7 +36,7 @@ func InitializePlayerData(ecsmanager *common.EntityManager, pl *avatar.PlayerDat
 
 	playerEntity := ecsmanager.World.NewEntity().
 		AddComponent(avatar.PlayerComponent, &avatar.Player{}).
-		AddComponent(common.RenderableComponent, &common.Renderable{
+		AddComponent(rendering.RenderableComponent, &rendering.Renderable{
 			Image:   playerImg,
 			Visible: true,
 		}).

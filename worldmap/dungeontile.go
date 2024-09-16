@@ -14,7 +14,8 @@ type TileType int
 const (
 	WALL TileType = iota
 	FLOOR
-	STAIRS
+	STAIRS_DOWN
+	//STAIRS_UP
 )
 
 // Holds any entities that are on a tile, whether it's items, creatures, etc.
