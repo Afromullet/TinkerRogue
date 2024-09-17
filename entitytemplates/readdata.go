@@ -13,7 +13,7 @@ type MonstersData struct {
 
 // WeaponList struct to hold all weapons
 type WeaponData struct {
-	Weps []Weapon `json:"weapons"` // List of weapons
+	Weps []JSONWeapon `json:"weapons"` // List of weapons
 }
 
 type MeleeWeapons struct {
@@ -22,6 +22,10 @@ type MeleeWeapons struct {
 
 type RangedWeapons struct {
 	Weapons []JSONRangedWeapon
+}
+
+type ConsumableData struct {
+	Consumables []JSONAttributeModifier
 }
 
 func ReadMonsterData() {
@@ -44,7 +48,7 @@ func ReadMonsterData() {
 		if monster.RangedWeapon != nil {
 			CreateTargetArea(monster.RangedWeapon.TargetArea)
 		}
-		MonsterTemplates = append(MonsterTemplates, NewJSONMonster(monster.Name, monster.ImageName, monster.Attributes, monster.Armor, monster.MeleeWeapon, monster.RangedWeapon))
+		MonsterTemplates = append(MonsterTemplates, NewJSONMonster(monster))
 
 	}
 
@@ -70,17 +74,41 @@ func ReadWeaponData() {
 		fmt.Println(w)
 
 		if w.Type == "MeleeWeapon" {
-			wep := NewJSONMeleeWeapon(w.MinDamage, w.MaxDamage, w.AttackSpeed, w.Name, w.ImgName)
+			wep := NewJSONMeleeWeapon(w)
 			MeleeWeaponTemplates = append(MeleeWeaponTemplates, wep)
 
 		} else if w.Type == "RangedWeapon" {
 
-			wep := NewJSONRangedWeapon(w.Name, w.ShootingVX, w.ImgName, w.MinDamage, w.MaxDamage, w.ShootingRange, w.AttackSpeed, w.TargetArea)
+			wep := NewJSONRangedWeapon(w)
 			RangedWeaponTemplates = append(RangedWeaponTemplates, wep)
 
 		} else {
 			fmt.Println("Error in JSON weapon file")
 		}
+	}
+
+}
+
+func ReadConsumableData() {
+	data, err := os.ReadFile("../assets//gamedata/consumabledata.json")
+	if err != nil {
+		panic(err)
+	}
+
+	// Parse JSON
+	var consumables ConsumableData
+	err = json.Unmarshal(data, &consumables)
+
+	if err != nil {
+		panic(err)
+	}
+
+	// Iterate over monsters
+	for _, c := range consumables.Consumables {
+		fmt.Println(c)
+
+		ConsumableTemplates = append(ConsumableTemplates, NewJSONAttributeModifier(c))
+
 	}
 
 }

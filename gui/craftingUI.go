@@ -1,7 +1,7 @@
 package gui
 
 import (
-	"game_main/equipment"
+	"game_main/gear"
 	"image/color"
 
 	e_image "github.com/ebitenui/ebitenui/image"
@@ -23,9 +23,9 @@ type CraftingItemDisplay struct {
 // Selects an item and adds it to the ItemsSelectedContainer container and ItemsSelectedPropContainer
 // ItemSeleced container tells us which items we're crafting with
 // ItemsSelectedPropContainer tells which properties the items have
-func (craftingItemDisplay *CraftingItemDisplay) CreateInventoryList(inventory *equipment.Inventory, propFilters ...equipment.StatusEffects) {
+func (craftingItemDisplay *CraftingItemDisplay) CreateInventoryList(propFilters ...gear.StatusEffects) {
 
-	inv := inventory.GetInventoryForDisplay([]int{}, propFilters...)
+	inv := craftingItemDisplay.ItmDisplay.GetInventory().GetInventoryForDisplay([]int{}, propFilters...)
 	craftingItemDisplay.ItmDisplay.InventoryDisplaylist = craftingItemDisplay.ItmDisplay.GetInventoryListWidget(inv)
 
 	craftingItemDisplay.ItmDisplay.InventoryDisplaylist.EntrySelectedEvent.AddHandler(func(args interface{}) {
@@ -33,14 +33,14 @@ func (craftingItemDisplay *CraftingItemDisplay) CreateInventoryList(inventory *e
 		craftingItemDisplay.ItemsSelectedContainer.RemoveChild(craftingItemDisplay.ItmDisplay.ItemsSelectedList)
 
 		a := args.(*widget.ListEntrySelectedEventArgs)
-		entry := a.Entry.(equipment.InventoryListEntry)
+		entry := a.Entry.(gear.InventoryListEntry)
 
-		craftingItemDisplay.ItmDisplay.ItemsSelectedList = craftingItemDisplay.ItmDisplay.GetSelectedItems(entry.Index, inventory)
+		craftingItemDisplay.ItmDisplay.ItemsSelectedList = craftingItemDisplay.ItmDisplay.GetSelectedItems(entry.Index, craftingItemDisplay.ItmDisplay.GetInventory())
 
 		if craftingItemDisplay.ItmDisplay.ItemsSelectedList != nil {
 			craftingItemDisplay.ItemsSelectedContainer.AddChild(craftingItemDisplay.ItmDisplay.ItemsSelectedList)
 
-			names, _ := inventory.EffectNames(entry.Index)
+			names, _ := craftingItemDisplay.ItmDisplay.GetInventory().EffectNames(entry.Index)
 
 			for _, n := range names {
 				craftingItemDisplay.ItemsSelectedPropTextArea.AppendText(n)
@@ -56,9 +56,9 @@ func (craftingItemDisplay *CraftingItemDisplay) CreateInventoryList(inventory *e
 }
 
 // Used by the Clicked Handler of the Crafting Button. Displays the inventory
-func (craftingItemDisplay *CraftingItemDisplay) DisplayInventory(inventory *equipment.Inventory) {
+func (craftingItemDisplay *CraftingItemDisplay) DisplayInventory(inventory *gear.Inventory) {
 
-	craftingItemDisplay.CreateInventoryList(inventory)
+	craftingItemDisplay.CreateInventoryList()
 
 }
 
@@ -107,11 +107,12 @@ func (craftingItemDisplay *CraftingItemDisplay) CreateContainers() {
 		widget.ContainerOpts.BackgroundImage(e_image.NewNineSliceColor(color.NRGBA{100, 100, 100, 255})),
 		widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
 	)
+
 	craftingItemDisplay.ItmDisplay.RootContainer.AddChild(craftingItemDisplay.ItemsSelectedContainer)
 
 	craftingItemDisplay.ItemsSelectedPropContainer.AddChild(craftingItemDisplay.ItemsSelectedPropTextArea)
 	craftingItemDisplay.ItemsSelectedContainer.AddChild(craftingItemDisplay.ClearItemsButton)
-	craftingItemDisplay.ItemsSelectedPropContainer.AddChild(craftingItemDisplay.ItemsSelectedPropTextArea)
+	craftingItemDisplay.ItemsSelectedPropContainer.AddChild(craftingItemDisplay.ItemsSelectedPropTextArea) //Why did I add this twice todo
 	craftingItemDisplay.ItemsSelectedPropContainer.AddChild(craftingItemDisplay.CraftItemsButton)
 	craftingItemDisplay.ItmDisplay.RootContainer.AddChild(craftingItemDisplay.ItemsSelectedPropContainer)
 

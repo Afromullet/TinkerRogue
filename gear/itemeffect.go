@@ -1,4 +1,4 @@
-package equipment
+package gear
 
 import (
 	"fmt"
@@ -284,6 +284,8 @@ func NewThrowable(dur, throwRange, dam int, shape graphics.TileBasedShape) *Thro
 }
 
 func InitializeItemComponents(manager *ecs.Manager, tags map[string]ecs.Tag) {
+
+	InitializeConsumableComponents(manager, tags)
 
 	ItemComponent = manager.NewComponent()
 	StickyComponent = manager.NewComponent()

@@ -1,4 +1,4 @@
-package equipment
+package gear
 
 import (
 	"fmt"
@@ -124,6 +124,31 @@ func (inv *Inventory) GetEquipmentForDisplay(indicesToSelect []int) []any {
 				itemComp.Count})
 
 		} else if entity.HasComponent(MeleeWeaponComponent) {
+
+			inventoryItems = append(inventoryItems, InventoryListEntry{
+				index,
+				itemName.NameStr,
+				itemComp.Count})
+
+		}
+
+	}
+
+	return inventoryItems
+
+}
+
+// Gets all Melee Weapons, Ranged Weapons, and Armor for displaying
+func (inv *Inventory) GetConsumablesForDisplay(indicesToSelect []int) []any {
+
+	inventoryItems := make([]any, 0)
+
+	for index, entity := range inv.InventoryContent {
+
+		itemName := common.GetComponentType[*common.Name](entity, common.NameComponent)
+		itemComp := GetItem(entity)
+
+		if entity.HasComponent(ConsumableComponent) {
 
 			inventoryItems = append(inventoryItems, InventoryListEntry{
 				index,

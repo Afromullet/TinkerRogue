@@ -4,7 +4,7 @@ import (
 	"game_main/avatar"
 	"game_main/common"
 	"game_main/entitytemplates"
-	"game_main/equipment"
+	"game_main/gear"
 	"game_main/graphics"
 	"game_main/monsters"
 	monster "game_main/monsters"
@@ -23,9 +23,9 @@ var TestLine = graphics.NewTileLine(0, 0, 5, graphics.LinedDiagonalDownLeft)
 var TestCone = graphics.NewTileCone(0, 0, 3, graphics.LineDiagonalUpRight)
 var TestCircle = graphics.NewTileCircle(0, 0, 2)
 var TestRect = graphics.NewTileRectangle(0, 0, 2, 3)
-var TestBurning = equipment.NewBurning(5, 2)
-var TestSticky = equipment.NewSticky(9, 2)
-var TestFreezing = equipment.NewFreezing(3, 5)
+var TestBurning = gear.NewBurning(5, 2)
+var TestSticky = gear.NewSticky(9, 2)
+var TestFreezing = gear.NewFreezing(3, 5)
 
 var TestFireEffect = graphics.NewFireEffect(0, 0, 1, 2, 1, 0.5)
 var TestCloudEffect = graphics.NewCloudEffect(0, 0, 2)
@@ -43,9 +43,28 @@ func SetupPlayerForTesting(ecsmanager *common.EntityManager, pl *avatar.PlayerDa
 
 }
 
-func CreateTestThrowable(shape graphics.TileBasedShape, vx graphics.VisualEffect) *equipment.Throwable {
+func CreateTestConsumables(ecsmanager *common.EntityManager, gm *worldmap.GameMap) {
+	ent := entitytemplates.CreateConsumableFromTemplate(*ecsmanager, entitytemplates.ConsumableTemplates[0])
+	pos := common.GetPosition(ent)
+	rend := common.GetComponentType[*rendering.Renderable](ent, rendering.RenderableComponent)
+	rend.Visible = true
+	pos.X = gm.StartingPosition().X + 1
+	pos.Y = gm.StartingPosition().Y + 2
+	gm.AddEntityToTile(ent, &common.Position{X: pos.X, Y: pos.Y})
 
-	t := equipment.NewThrowable(1, 2, 3, shape)
+	ent = entitytemplates.CreateConsumableFromTemplate(*ecsmanager, entitytemplates.ConsumableTemplates[1])
+	pos = common.GetPosition(ent)
+	rend = common.GetComponentType[*rendering.Renderable](ent, rendering.RenderableComponent)
+	rend.Visible = true
+	pos.X = gm.StartingPosition().X + 1
+	pos.Y = gm.StartingPosition().Y + 2
+
+	gm.AddEntityToTile(ent, &common.Position{X: pos.X, Y: pos.Y})
+}
+
+func CreateTestThrowable(shape graphics.TileBasedShape, vx graphics.VisualEffect) *gear.Throwable {
+
+	t := gear.NewThrowable(1, 2, 3, shape)
 	t.VX = vx
 	return t
 }
@@ -101,7 +120,7 @@ func CreateTestMonsters(em common.EntityManager, pl *avatar.PlayerData, gameMap 
 	x, y := gameMap.Rooms[0].Center()
 
 	wepArea := graphics.NewTileRectangle(0, 0, 1, 1)
-	wep := equipment.RangedWeapon{
+	wep := gear.RangedWeapon{
 		MinDamage:     3,
 		MaxDamage:     5,
 		ShootingRange: 5,
@@ -112,7 +131,7 @@ func CreateTestMonsters(em common.EntityManager, pl *avatar.PlayerData, gameMap 
 	ent := entitytemplates.CreateCreatureFromTemplate(em, entitytemplates.MonsterTemplates[0], gameMap, x+1, y)
 
 	//ent.AddComponent(monsters.DistanceRangeAttackComp, &monsters.DistanceRangedAttack{})
-	ent.AddComponent(equipment.RangedWeaponComponent, &wep)
+	ent.AddComponent(gear.RangedWeaponComponent, &wep)
 	//ent.AddComponent(monster.WithinRangeComponent, &monsters.DistanceToEntityMovement{Target: pl.PlayerEntity, Distance: 3})
 	ent.AddComponent(monster.RangeAttackBehaviorComp, &monster.AttackBehavior{})
 
@@ -139,7 +158,7 @@ func CreateMonster(manager *ecs.Manager, gameMap *worldmap.GameMap, x, y int, im
 
 	ind := graphics.IndexFromXY(x, y)
 	gameMap.Tiles[ind].Blocked = true
-	testArmor := equipment.Armor{15, 3, 30}
+	testArmor := gear.Armor{15, 3, 30}
 
 	ent := manager.NewEntity().
 		AddComponent(monster.CreatureComponent, &monster.Creature{
@@ -154,15 +173,15 @@ func CreateMonster(manager *ecs.Manager, gameMap *worldmap.GameMap, x, y int, im
 			Y: y,
 		}).
 		AddComponent(common.AttributeComponent, &common.Attributes{MaxHealth: 5, CurrentHealth: 5, TotalAttackSpeed: 30, TotalMovementSpeed: 1}).
-		AddComponent(equipment.ArmorComponent, &testArmor).
-		AddComponent(equipment.MeleeWeaponComponent, &equipment.MeleeWeapon{
+		AddComponent(gear.ArmorComponent, &testArmor).
+		AddComponent(gear.MeleeWeaponComponent, &gear.MeleeWeapon{
 			MinDamage:   3,
 			MaxDamage:   5,
 			AttackSpeed: 30,
 		}).
 		AddComponent(timesystem.ActionQueueComponent, &timesystem.ActionQueue{TotalActionPoints: 100})
 
-	armor := equipment.GetArmor(ent)
+	armor := gear.GetArmor(ent)
 	common.UpdateAttributes(ent, armor.ArmorClass, armor.Protection, armor.DodgeChance)
 
 	return ent
@@ -183,14 +202,14 @@ func UpdateContentsForTest(ecsmanager *common.EntityManager, gm *worldmap.GameMa
 
 // Create an item with any number of Effects. ItemEffect is a wrapper around an ecs.Component to make
 // Manipulating it easier
-func CreateItem(manager *ecs.Manager, name string, pos common.Position, imagePath string, effects ...equipment.StatusEffects) *ecs.Entity {
+func CreateItem(manager *ecs.Manager, name string, pos common.Position, imagePath string, effects ...gear.StatusEffects) *ecs.Entity {
 
 	img, _, err := ebitenutil.NewImageFromFile(imagePath)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	item := &equipment.Item{Count: 1, Properties: manager.NewEntity()}
+	item := &gear.Item{Count: 1, Properties: manager.NewEntity()}
 
 	for _, prop := range effects {
 		item.Properties.AddComponent(prop.StatusEffectComponent(), &prop)
@@ -209,7 +228,7 @@ func CreateItem(manager *ecs.Manager, name string, pos common.Position, imagePat
 		AddComponent(common.NameComponent, &common.Name{
 			NameStr: name,
 		}).
-		AddComponent(equipment.ItemComponent, item)
+		AddComponent(gear.ItemComponent, item)
 
 	//TODO where shoudl I add the tags?
 
@@ -218,11 +237,11 @@ func CreateItem(manager *ecs.Manager, name string, pos common.Position, imagePat
 }
 
 // A weapon is an Item with a weapon component
-func CreateWeapon(manager *ecs.Manager, name string, pos common.Position, imagePath string, MinDamage int, MaxDamage int, properties ...equipment.StatusEffects) *ecs.Entity {
+func CreateWeapon(manager *ecs.Manager, name string, pos common.Position, imagePath string, MinDamage int, MaxDamage int, properties ...gear.StatusEffects) *ecs.Entity {
 
 	weapon := CreateItem(manager, name, pos, imagePath, properties...)
 
-	weapon.AddComponent(equipment.MeleeWeaponComponent, &equipment.MeleeWeapon{
+	weapon.AddComponent(gear.MeleeWeaponComponent, &gear.MeleeWeapon{
 		MinDamage:   MinDamage,
 		MaxDamage:   MaxDamage,
 		AttackSpeed: 3,
@@ -235,7 +254,7 @@ func CreateWeapon(manager *ecs.Manager, name string, pos common.Position, imageP
 func CreatedRangedWeapon(manager *ecs.Manager, name string, imagePath string, pos common.Position, minDamage int, maxDamage int, shootingRange int, TargetArea graphics.TileBasedShape) *ecs.Entity {
 
 	weapon := CreateItem(manager, name, pos, imagePath)
-	weapon.AddComponent(equipment.RangedWeaponComponent, &equipment.RangedWeapon{
+	weapon.AddComponent(gear.RangedWeaponComponent, &gear.RangedWeapon{
 		MinDamage:     minDamage,
 		MaxDamage:     maxDamage,
 		ShootingRange: shootingRange,

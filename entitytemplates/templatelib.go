@@ -4,10 +4,12 @@ package entitytemplates
 var MonsterTemplates []JSONMonster
 var MeleeWeaponTemplates []JSONMeleeWeapon
 var RangedWeaponTemplates []JSONRangedWeapon
+var ConsumableTemplates []JSONAttributeModifier
 
 func ReadGameData() {
 
 	ReadMonsterData()
 	ReadWeaponData()
+	ReadConsumableData()
 
 }

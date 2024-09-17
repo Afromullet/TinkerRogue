@@ -4,7 +4,7 @@ import (
 	"game_main/avatar"
 	"game_main/combat"
 	"game_main/common"
-	"game_main/equipment"
+	"game_main/gear"
 	"game_main/graphics"
 	"game_main/gui"
 	"game_main/monsters"
@@ -28,9 +28,9 @@ That's what this file is for
 */
 
 // Applies the throwable
-func ApplyThrowable(ecsmanager *common.EntityManager, item *equipment.Item, pl *avatar.PlayerData, shape graphics.TileBasedShape, playerUI *gui.PlayerUI, throwerPos *common.Position) {
+func ApplyThrowable(ecsmanager *common.EntityManager, item *gear.Item, pl *avatar.PlayerData, shape graphics.TileBasedShape, playerUI *gui.PlayerUI, throwerPos *common.Position) {
 
-	t := item.ItemEffect(equipment.THROWABLE_NAME).(*equipment.Throwable)
+	t := item.ItemEffect(gear.THROWABLE_NAME).(*gear.Throwable)
 
 	if t.VX != nil {
 
@@ -77,7 +77,7 @@ func DrawThrowableAOE(pl *avatar.PlayerData, gm *worldmap.GameMap) {
 
 	}
 
-	throwable := pl.ThrowableItem.ItemEffect(equipment.THROWABLE_NAME).(*equipment.Throwable)
+	throwable := pl.ThrowableItem.ItemEffect(gear.THROWABLE_NAME).(*gear.Throwable)
 
 	s.UpdatePosition(cursorX, cursorY)
 	indices = s.GetIndices()
@@ -136,7 +136,7 @@ func HandlePlayerThrowable(ecsmanager *common.EntityManager, pl *avatar.PlayerDa
 
 	if pl.IsThrowing {
 
-		throwable := pl.ThrowableItem.ItemEffect(equipment.THROWABLE_NAME).(*equipment.Throwable)
+		throwable := pl.ThrowableItem.ItemEffect(gear.THROWABLE_NAME).(*gear.Throwable)
 
 		updater := UpdateDirection(&throwable.Shape)
 
@@ -156,7 +156,7 @@ func HandlePlayerThrowable(ecsmanager *common.EntityManager, pl *avatar.PlayerDa
 
 			ApplyThrowable(ecsmanager, pl.ThrowableItem, pl, pl.ThrowingAOEShape, playerUI, pl.Pos)
 
-			playerUI.ItemsUI.ThrowableItemDisplay.DisplayInventory(pl.Inv)
+			playerUI.ItemsUI.ThrowableItemDisplay.DisplayInventory()
 
 			//Todo does not work to clear throwing GUI elements
 			if !pl.IsThrowing {
@@ -188,7 +188,7 @@ func DrawRangedAttackAOE(pl *avatar.PlayerData, gm *worldmap.GameMap) {
 
 	s := pl.RangedWeaponAOEShape
 
-	rangedWep := common.GetComponentType[*equipment.RangedWeapon](pl.PlayerRangedWeapon, equipment.RangedWeaponComponent)
+	rangedWep := common.GetComponentType[*gear.RangedWeapon](pl.PlayerRangedWeapon, gear.RangedWeaponComponent)
 
 	updater := UpdateDirection(&rangedWep.TargetArea)
 	rangedWep.TargetArea.UpdateShape(updater)

@@ -3,7 +3,7 @@ package main
 import (
 	"game_main/avatar"
 	"game_main/common"
-	"game_main/equipment"
+	"game_main/gear"
 	"game_main/rendering"
 	"game_main/timesystem"
 	"game_main/worldmap"
@@ -29,7 +29,7 @@ func InitializePlayerData(ecsmanager *common.EntityManager, pl *avatar.PlayerDat
 	attr.AttackBonus = 5
 	attr.TotalMovementSpeed = 2
 
-	armor := equipment.Armor{
+	armor := gear.Armor{
 		ArmorClass:  1,
 		Protection:  5,
 		DodgeChance: 50}
@@ -44,17 +44,17 @@ func InitializePlayerData(ecsmanager *common.EntityManager, pl *avatar.PlayerDat
 			X: 40,
 			Y: 45,
 		}).
-		AddComponent(equipment.InventoryComponent, &equipment.Inventory{
+		AddComponent(gear.InventoryComponent, &gear.Inventory{
 			InventoryContent: make([]*ecs.Entity, 0),
 		}).
 		AddComponent(common.AttributeComponent, &attr).
 		AddComponent(common.UsrMsg, &common.UserMessage{
 			AttackMessage:    "",
 			GameStateMessage: "",
-		}).AddComponent(equipment.ArmorComponent, &armor).
+		}).AddComponent(gear.ArmorComponent, &armor).
 		AddComponent(timesystem.ActionQueueComponent, &timesystem.ActionQueue{TotalActionPoints: 100})
 
-	players := ecs.BuildTag(avatar.PlayerComponent, common.PositionComponent, equipment.InventoryComponent)
+	players := ecs.BuildTag(avatar.PlayerComponent, common.PositionComponent, gear.InventoryComponent)
 	ecsmanager.WorldTags["players"] = players
 
 	//g.playerData = PlayerData{}
@@ -67,7 +67,7 @@ func InitializePlayerData(ecsmanager *common.EntityManager, pl *avatar.PlayerDat
 	startPos.X = gm.StartingPosition().X
 	startPos.Y = gm.StartingPosition().Y
 
-	inventory := common.GetComponentType[*equipment.Inventory](pl.PlayerEntity, equipment.InventoryComponent)
+	inventory := common.GetComponentType[*gear.Inventory](pl.PlayerEntity, gear.InventoryComponent)
 
 	pl.Pos = startPos
 	pl.Inv = inventory

@@ -1,4 +1,4 @@
-package equipment
+package gear
 
 import (
 	ecs "github.com/bytearena/ecs"

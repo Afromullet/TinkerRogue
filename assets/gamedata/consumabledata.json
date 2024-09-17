@@ -1,0 +1,47 @@
+
+{
+  "consumables": [
+  
+    {
+      "name": "Basic Healing Potion",
+	   "imgname": "frost0.png",
+	     "attackBonus" : 0,
+	  "maxHealth" : 0,
+	  "currentHealth" : 10,
+	  "baseArmorClass" : 0,
+	  "baseProtection" : 0,
+	  "baseMovementSpeed" :0,
+	  "baseDodgeChance" : 0
+    },
+	
+	    {
+      "name": "Moderate Healing Potion",
+	     "imgname": "frost0.png",
+		   "attackBonus" : 0,
+	  "maxHealth" : 0,
+	  "currentHealth" : 20,
+	  "baseArmorClass" : 0,
+	  "baseProtection" : 0,
+	  "baseMovementSpeed" :0,
+	  "baseDodgeChance" : 0
+    },
+	
+	    {
+      "name": "Basic Speed Potion",
+	     "imgname": "frost0.png",
+		   "attackBonus" : 0,
+	  "maxHealth" : 0,
+	  "currentHealth" : 0,
+	  "baseArmorClass" : 0,
+	  "baseProtection" : 0,
+	  "baseMovementSpeed" : 5,
+	  "baseDodgeChance" : 0
+    }
+	
+
+
+	
+
+   
+  ]
+}

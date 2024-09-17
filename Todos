@@ -100,7 +100,7 @@ ___Other__
 * Effect Stacking
 
 
-* There's a bug that doesn't clear the AOE visual area when pressing F to fire while a throwable is selected
+* 
 
 * Check on calls to make where slice is initialized with a size greater than 0. See if it works as intended, where we're just adding to it. Using append.
 Might need to index instead
@@ -113,7 +113,7 @@ Might need to index instead
 
 * Create Shorter names for types and functions with long names
 
-* Need a better way to create items for testing
+
 
 * Make things that are private...private. 
 

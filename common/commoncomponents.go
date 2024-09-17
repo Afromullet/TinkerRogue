@@ -84,9 +84,9 @@ type Attributes struct {
 	CurrentHealth      int
 	AttackBonus        int
 	BaseArmorClass     int
-	BaseProteciton     int
+	BaseProtection     int
 	BaseMovementSpeed  int
-	BaseDodgeChange    float32
+	BaseDodgeChance    float32
 	TotalArmorClass    int
 	TotalProtection    int
 	TotalDodgeChance   float32
@@ -100,8 +100,8 @@ func NewBaseAttributes(maxHealth, attackBonus, baseAC, baseProt, baseMovSpeed in
 		CurrentHealth:     maxHealth,
 		AttackBonus:       attackBonus,
 		BaseArmorClass:    baseAC,
-		BaseProteciton:    baseProt,
-		BaseDodgeChange:   dodge,
+		BaseProtection:    baseProt,
+		BaseDodgeChance:   dodge,
 		BaseMovementSpeed: baseMovSpeed,
 	}
 }
@@ -111,8 +111,8 @@ func UpdateAttributes(e *ecs.Entity, armorClass, protection int, dodgechance flo
 	attr := GetComponentType[*Attributes](e, AttributeComponent)
 
 	attr.TotalArmorClass = attr.BaseArmorClass + armorClass
-	attr.TotalProtection = attr.BaseProteciton + protection
-	attr.TotalDodgeChance = attr.BaseDodgeChange + dodgechance
+	attr.TotalProtection = attr.BaseProtection + protection
+	attr.TotalDodgeChance = attr.BaseDodgeChance + dodgechance
 
 }
 

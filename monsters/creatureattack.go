@@ -6,7 +6,7 @@ import (
 	"game_main/avatar"
 	"game_main/combat"
 	"game_main/common"
-	"game_main/equipment"
+	"game_main/gear"
 	"game_main/timesystem"
 	"game_main/worldmap"
 
@@ -49,7 +49,7 @@ func MeleeAttackHelper(ecsmanger *common.EntityManager, pl *avatar.PlayerData, g
 // Used by Actions which perform a ranged attack.
 func RangedAttackHelper(ecsmanger *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap, c *ecs.QueryResult, target *ecs.Entity) {
 
-	RangedWeapon := common.GetComponentType[*equipment.RangedWeapon](c.Entity, equipment.RangedWeaponComponent)
+	RangedWeapon := common.GetComponentType[*gear.RangedWeapon](c.Entity, gear.RangedWeaponComponent)
 
 	if RangedWeapon != nil {
 
@@ -66,7 +66,7 @@ func RangedAttackHelper(ecsmanger *common.EntityManager, pl *avatar.PlayerData, 
 // This action keeps the entity at the weapons range and attacks once within that range.
 func RangedAttackFromDistance(ecsmanger *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap, c *ecs.QueryResult, t *ecs.Entity) timesystem.ActionWrapper {
 
-	wep := common.GetComponentType[*equipment.RangedWeapon](c.Entity, equipment.RangedWeaponComponent)
+	wep := common.GetComponentType[*gear.RangedWeapon](c.Entity, gear.RangedWeaponComponent)
 
 	if wep == nil {
 		return nil
@@ -88,7 +88,7 @@ func RangedAttackFromDistance(ecsmanger *common.EntityManager, pl *avatar.Player
 // Action with which the entity charges at another entity and performs a melee attack
 func ChargeAndAttack(ecsmanger *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap, c *ecs.QueryResult, t *ecs.Entity) timesystem.ActionWrapper {
 
-	wep := common.GetComponentType[*equipment.MeleeWeapon](c.Entity, equipment.MeleeWeaponComponent)
+	wep := common.GetComponentType[*gear.MeleeWeapon](c.Entity, gear.MeleeWeaponComponent)
 
 	if wep == nil {
 		return nil

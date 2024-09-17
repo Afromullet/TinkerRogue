@@ -1,7 +1,7 @@
 package gui
 
 import (
-	"game_main/equipment"
+	"game_main/gear"
 	"image/color"
 
 	e_image "github.com/ebitenui/ebitenui/image"
@@ -19,9 +19,9 @@ type EquipmentItemDisplay struct {
 // Selects an item and adds it to the ItemsSelectedContainer container and ItemsSelectedPropContainer
 // ItemSeleced container tells us which items we're crafting with
 // ItemsSelectedPropContainer tells which properties the items have
-func (equipmentDisplay *EquipmentItemDisplay) CreateInventoryList(inventory *equipment.Inventory, propFilters ...equipment.StatusEffects) {
+func (equipmentDisplay *EquipmentItemDisplay) CreateInventoryList(propFilters ...gear.StatusEffects) {
 
-	inv := inventory.GetEquipmentForDisplay([]int{})
+	inv := equipmentDisplay.ItmDisplay.GetInventory().GetEquipmentForDisplay([]int{})
 	equipmentDisplay.ItmDisplay.InventoryDisplaylist = equipmentDisplay.ItmDisplay.GetInventoryListWidget(inv)
 
 	equipmentDisplay.ItmDisplay.InventoryDisplaylist.EntrySelectedEvent.AddHandler(func(args interface{}) {
@@ -29,9 +29,9 @@ func (equipmentDisplay *EquipmentItemDisplay) CreateInventoryList(inventory *equ
 		equipmentDisplay.ItemSelectedContainer.RemoveChild(equipmentDisplay.ItmDisplay.ItemsSelectedList)
 
 		a := args.(*widget.ListEntrySelectedEventArgs)
-		entry := a.Entry.(equipment.InventoryListEntry)
+		entry := a.Entry.(gear.InventoryListEntry)
 
-		equipmentDisplay.ItmDisplay.ItemsSelectedList = equipmentDisplay.ItmDisplay.GetSelectedItems(entry.Index, inventory)
+		equipmentDisplay.ItmDisplay.ItemsSelectedList = equipmentDisplay.ItmDisplay.GetSelectedItems(entry.Index, equipmentDisplay.ItmDisplay.GetInventory())
 
 		if equipmentDisplay.ItmDisplay.ItemsSelectedList != nil {
 			equipmentDisplay.ItemSelectedContainer.AddChild(equipmentDisplay.ItmDisplay.ItemsSelectedList)
@@ -44,9 +44,9 @@ func (equipmentDisplay *EquipmentItemDisplay) CreateInventoryList(inventory *equ
 
 }
 
-func (equipmentDisplay *EquipmentItemDisplay) DisplayInventory(inventory *equipment.Inventory) {
+func (equipmentDisplay *EquipmentItemDisplay) DisplayInventory(inventory *gear.Inventory) {
 
-	equipmentDisplay.CreateInventoryList(inventory)
+	equipmentDisplay.CreateInventoryList()
 
 }
 

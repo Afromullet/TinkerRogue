@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"game_main/avatar"
 	"game_main/common"
-	"game_main/equipment"
+	"game_main/gear"
 	"game_main/graphics"
 	"game_main/randgen"
 	"game_main/worldmap"
@@ -22,7 +22,7 @@ func MeleeAttackSystem(ecsmanager *common.EntityManager, pl *avatar.PlayerData, 
 	var defender *ecs.Entity = nil
 
 	//var weaponComponent any
-	var weapon *equipment.MeleeWeapon = nil
+	var weapon *gear.MeleeWeapon = nil
 
 	if pl.Pos.IsEqual(attackerPos) {
 		attacker = pl.PlayerEntity
@@ -32,7 +32,7 @@ func MeleeAttackSystem(ecsmanager *common.EntityManager, pl *avatar.PlayerData, 
 	} else {
 		attacker = GetCreatureAtPosition(ecsmanager, attackerPos)
 		defender = pl.PlayerEntity
-		weapon = common.GetComponentType[*equipment.MeleeWeapon](attacker, equipment.MeleeWeaponComponent)
+		weapon = common.GetComponentType[*gear.MeleeWeapon](attacker, gear.MeleeWeaponComponent)
 
 	}
 
@@ -87,7 +87,7 @@ func RangedAttackSystem(ecsmanager *common.EntityManager, pl *avatar.PlayerData,
 
 	var attacker *ecs.Entity = nil
 
-	var weapon *equipment.RangedWeapon = nil
+	var weapon *gear.RangedWeapon = nil
 	var targets []*ecs.Entity
 
 	if pl.Pos.IsEqual(attackerPos) {
@@ -98,7 +98,7 @@ func RangedAttackSystem(ecsmanager *common.EntityManager, pl *avatar.PlayerData,
 		}
 	} else {
 		attacker = GetCreatureAtPosition(ecsmanager, attackerPos)
-		weapon = common.GetComponentType[*equipment.RangedWeapon](attacker, equipment.RangedWeaponComponent)
+		weapon = common.GetComponentType[*gear.RangedWeapon](attacker, gear.RangedWeaponComponent)
 		targets = append(targets, pl.PlayerEntity)
 	}
 

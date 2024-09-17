@@ -3,7 +3,7 @@ package monsters
 import (
 	"game_main/avatar"
 	"game_main/common"
-	"game_main/equipment"
+	"game_main/gear"
 	"game_main/graphics"
 	"game_main/timesystem"
 	"game_main/worldmap"
@@ -20,7 +20,7 @@ var CreatureComponent *ecs.Component
 // The Path is updated by a Movement Component
 type Creature struct {
 	Path           []common.Position
-	EffectsToApply []equipment.StatusEffects
+	EffectsToApply []gear.StatusEffects
 }
 
 // This gets called so often that it might as well be a function
@@ -32,7 +32,7 @@ func GetCreature(e *ecs.Entity) *Creature {
 // Add stuff together and keep the longest duration
 func (c *Creature) AddEffects(effects *ecs.Entity) {
 
-	e := equipment.AllStatusEffects(effects)
+	e := gear.AllStatusEffects(effects)
 	c.EffectsToApply = append(c.EffectsToApply, e...)
 
 }
@@ -48,7 +48,7 @@ func ApplyEffects(c *ecs.QueryResult) {
 		return
 	}
 
-	effects_to_keep := make([]equipment.StatusEffects, 0)
+	effects_to_keep := make([]gear.StatusEffects, 0)
 
 	for _, eff := range creature.EffectsToApply {
 

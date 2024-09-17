@@ -5,7 +5,7 @@ import (
 
 	"game_main/avatar"
 	"game_main/common"
-	"game_main/equipment"
+	"game_main/gear"
 	"game_main/graphics"
 	"game_main/gui"
 	"game_main/monsters"
@@ -128,7 +128,7 @@ func PlayerActions(ecsmanager *common.EntityManager, pl *avatar.PlayerData, gm *
 
 	if inpututil.IsKeyJustReleased(ebiten.KeyK) {
 
-		armor := equipment.GetArmor(pl.PlayerEntity)
+		armor := gear.GetArmor(pl.PlayerEntity)
 		common.UpdateAttributes(pl.PlayerEntity, armor.ArmorClass, armor.Protection, armor.DodgeChance)
 		pl.HasKeyInput = true
 	}

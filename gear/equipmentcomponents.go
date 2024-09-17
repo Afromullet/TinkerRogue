@@ -1,4 +1,4 @@
-package equipment
+package gear
 
 import (
 	"game_main/common"

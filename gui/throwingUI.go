@@ -3,7 +3,7 @@ package gui
 import (
 	"fmt"
 	"game_main/avatar"
-	"game_main/equipment"
+	"game_main/gear"
 	"game_main/graphics"
 	"image/color"
 
@@ -21,9 +21,9 @@ type ThrowingItemDisplay struct {
 }
 
 // Todo modify this to make it compatible with THrowable Display actions on list item click
-func (throwingItemDisplay *ThrowingItemDisplay) CreateInventoryList(inventory *equipment.Inventory, propFilters ...equipment.StatusEffects) {
+func (throwingItemDisplay *ThrowingItemDisplay) CreateInventoryList(propFilters ...gear.StatusEffects) {
 
-	inv := inventory.GetInventoryForDisplay([]int{}, propFilters...)
+	inv := throwingItemDisplay.ItmDisp.GetInventory().GetInventoryForDisplay([]int{}, propFilters...)
 	throwingItemDisplay.ItmDisp.InventoryDisplaylist = throwingItemDisplay.ItmDisp.GetInventoryListWidget(inv)
 
 	throwingItemDisplay.ItmDisp.InventoryDisplaylist.EntrySelectedEvent.AddHandler(func(args interface{}) {
@@ -31,9 +31,9 @@ func (throwingItemDisplay *ThrowingItemDisplay) CreateInventoryList(inventory *e
 		fmt.Print("Throwable Item Selected")
 
 		a := args.(*widget.ListEntrySelectedEventArgs)
-		entry := a.Entry.(equipment.InventoryListEntry)
+		entry := a.Entry.(gear.InventoryListEntry)
 
-		it, err := inventory.GetItem(entry.Index)
+		it, err := throwingItemDisplay.ItmDisp.GetInventory().GetItem(entry.Index)
 
 		//throwableComponentData := GetComponentStruct[*Item](it, ItemComponent)
 		//	fmt.Println("Printing throwable ", throwableComponentData)
@@ -50,14 +50,14 @@ func (throwingItemDisplay *ThrowingItemDisplay) CreateInventoryList(inventory *e
 
 }
 
-func (throwingItemDisplay *ThrowingItemDisplay) DisplayInventory(inventory *equipment.Inventory) {
+func (throwingItemDisplay *ThrowingItemDisplay) DisplayInventory() {
 
 	//Passing a zero value throwable for the propFIlter
 
 	s := graphics.NewTileSquare(0, 0, 0)
 
 	//throwingItemDisplay.CreateInventoryList(&g.playerData, NewThrowable(0, 0, 0, NewTileSquare(0, 0, 0)))
-	throwingItemDisplay.CreateInventoryList(inventory, equipment.NewThrowable(0, 0, 0, s))
+	throwingItemDisplay.CreateInventoryList(gear.NewThrowable(0, 0, 0, s))
 
 }
 

@@ -2,7 +2,7 @@ package avatar
 
 import (
 	"game_main/common"
-	"game_main/equipment"
+	"game_main/gear"
 	"game_main/graphics"
 
 	"github.com/bytearena/ecs"
@@ -28,7 +28,7 @@ type PlayerEquipment struct {
 }
 
 func (pl *PlayerEquipment) PrepareRangedAttack() {
-	wep := common.GetComponentType[*equipment.RangedWeapon](pl.PlayerRangedWeapon, equipment.RangedWeaponComponent)
+	wep := common.GetComponentType[*gear.RangedWeapon](pl.PlayerRangedWeapon, gear.RangedWeaponComponent)
 	pl.RangedWeaponAOEShape = wep.TargetArea
 	pl.RangedWeaponMaxDistance = wep.ShootingRange
 
@@ -39,7 +39,7 @@ type PlayerThrowable struct {
 	SelectedThrowable  *ecs.Entity
 	ThrowingAOEShape   graphics.TileBasedShape
 	ThrowableItemIndex int
-	ThrowableItem      *equipment.Item
+	ThrowableItem      *gear.Item
 }
 
 // Throwing items needs to both display information to the user and use the players inventory
@@ -47,17 +47,17 @@ func (pl *PlayerThrowable) PrepareThrowable(itemEntity *ecs.Entity, index int) {
 
 	pl.SelectedThrowable = itemEntity
 
-	item := equipment.GetItem(pl.SelectedThrowable)
+	item := gear.GetItem(pl.SelectedThrowable)
 	pl.ThrowableItem = item
 
-	t := item.ItemEffect(equipment.THROWABLE_NAME).(*equipment.Throwable)
+	t := item.ItemEffect(gear.THROWABLE_NAME).(*gear.Throwable)
 	pl.ThrowableItemIndex = index
 
 	pl.ThrowingAOEShape = t.Shape
 
 }
 
-func (pl *PlayerThrowable) RemoveThrownItem(inv *equipment.Inventory) {
+func (pl *PlayerThrowable) RemoveThrownItem(inv *gear.Inventory) {
 
 	inv.RemoveItem(pl.ThrowableItemIndex)
 
@@ -76,27 +76,27 @@ type PlayerData struct {
 	PlayerEntity *ecs.Entity
 
 	Pos *common.Position
-	Inv *equipment.Inventory
+	Inv *gear.Inventory
 }
 
 // Handles the conversions from the component type to the struct type
-func (pl *PlayerData) GetPlayerInventory() *equipment.Inventory {
+func (pl *PlayerData) GetPlayerInventory() *gear.Inventory {
 
-	playerInventory := common.GetComponentType[*equipment.Inventory](pl.PlayerEntity, equipment.InventoryComponent)
+	playerInventory := common.GetComponentType[*gear.Inventory](pl.PlayerEntity, gear.InventoryComponent)
 
 	return playerInventory
 }
 
-func (pl *PlayerData) GetPlayerRangedWeapon() *equipment.RangedWeapon {
+func (pl *PlayerData) GetPlayerRangedWeapon() *gear.RangedWeapon {
 
-	weapon := common.GetComponentType[*equipment.RangedWeapon](pl.PlayerRangedWeapon, equipment.RangedWeaponComponent)
+	weapon := common.GetComponentType[*gear.RangedWeapon](pl.PlayerRangedWeapon, gear.RangedWeaponComponent)
 
 	return weapon
 }
 
-func (pl *PlayerEquipment) GetPlayerWeapon() *equipment.MeleeWeapon {
+func (pl *PlayerEquipment) GetPlayerWeapon() *gear.MeleeWeapon {
 
-	weapon := common.GetComponentType[*equipment.MeleeWeapon](pl.PlayerWeapon, equipment.MeleeWeaponComponent)
+	weapon := common.GetComponentType[*gear.MeleeWeapon](pl.PlayerWeapon, gear.MeleeWeaponComponent)
 
 	return weapon
 }

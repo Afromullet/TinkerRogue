@@ -66,8 +66,11 @@ func NewGame() *Game {
 	testing.CreateTestItems(g.em.World, g.em.WorldTags, &g.gameMap)
 	testing.CreateTestMonsters(g.em, &g.playerData, &g.gameMap)
 	testing.SetupPlayerForTesting(&g.em, &g.playerData)
+
 	testing.UpdateContentsForTest(&g.em, &g.gameMap)
+	testing.CreateTestConsumables(&g.em, &g.gameMap)
 	testing.InitTestActionManager(&g.em, &g.playerData, &g.ts)
+
 	g.ts.ActionDispatcher.ResetActionManager()
 
 	spawning.SpawnStartingLoot(g.em, &g.gameMap)
@@ -184,10 +187,10 @@ func (g *Game) Draw(screen *ebiten.Image) {
 
 	rendering.ProcessRenderables(&g.em, g.gameMap, screen, DEBUG_MODE)
 
-	g.gameUI.MainPlayerInterface.Draw(screen)
 	ProcessUserLog(g, screen)
 
 	graphics.VXHandler.DrawVisualEffects(screen)
+	g.gameUI.MainPlayerInterface.Draw(screen)
 
 }
 
@@ -202,7 +205,8 @@ func main() {
 
 	g := NewGame()
 
-	g.gameUI.MainPlayerInterface = gui.CreatePlayerUI(&g.gameUI, g.playerData.Inv, &g.playerData)
+	//g.gameUI.MainPlayerInterface = gui.CreatePlayerItemsUI(&g.gameUI, g.playerData.Inv, &g.playerData)
+	g.gameUI.CreatePlayerUI(&g.playerData)
 
 	ebiten.SetWindowResizable(true)
 

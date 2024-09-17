@@ -42,13 +42,13 @@ type JSONMeleeWeapon struct {
 	AttackSpeed int    `json:"attackSpeed"`
 }
 
-func NewJSONMeleeWeapon(minDamage, maxDamage, attackSpeed int, name, imgname string) JSONMeleeWeapon {
+func NewJSONMeleeWeapon(w JSONWeapon) JSONMeleeWeapon {
 	return JSONMeleeWeapon{
-		ImgName:     imgname,
-		Name:        name,
-		MinDamage:   minDamage,
-		MaxDamage:   maxDamage,
-		AttackSpeed: attackSpeed,
+		ImgName:     w.ImgName,
+		Name:        w.Name,
+		MinDamage:   w.MinDamage,
+		MaxDamage:   w.MaxDamage,
+		AttackSpeed: w.AttackSpeed,
 	}
 }
 
@@ -108,17 +108,18 @@ type JSONRangedWeapon struct {
 	TargetArea      *JSONTargetArea `json:"targetArea"`
 }
 
-func NewJSONRangedWeapon(name, shootingVXName, imgname string, minDamage, maxDamage, shootingRange, attackSpeed int, area *JSONTargetArea) JSONRangedWeapon {
+func NewJSONRangedWeapon(r JSONWeapon) JSONRangedWeapon {
 
 	return JSONRangedWeapon{
-		Name:            name,
-		ShootingVXXName: shootingVXName,
-		ImgName:         imgname,
-		MinDamage:       minDamage,
-		MaxDamage:       maxDamage,
-		ShootingRange:   shootingRange,
-		AttackSpeed:     attackSpeed,
-		TargetArea:      area,
+
+		Name:            r.Name,
+		ShootingVXXName: r.ShootingVX,
+		ImgName:         r.ImgName,
+		MinDamage:       r.MinDamage,
+		MaxDamage:       r.MaxDamage,
+		ShootingRange:   r.ShootingRange,
+		AttackSpeed:     r.AttackSpeed,
+		TargetArea:      r.TargetArea,
 	}
 
 }
@@ -132,21 +133,22 @@ type JSONMonster struct {
 	RangedWeapon *JSONRangedWeapon `json:"rangedWeapon"`
 }
 
-func NewJSONMonster(name string, imgname string, attr JSONAttributes, armor *JSONArmor, meleeWeapon *JSONMeleeWeapon, rangedWeapon *JSONRangedWeapon) JSONMonster {
+func NewJSONMonster(m JSONMonster) JSONMonster {
 	return JSONMonster{
-		Name:         name,
-		ImageName:    imgname,
-		Attributes:   attr,
-		Armor:        armor,
-		MeleeWeapon:  meleeWeapon,
-		RangedWeapon: rangedWeapon,
+
+		Name:         m.Name,
+		ImageName:    m.ImageName,
+		Attributes:   m.Attributes,
+		Armor:        m.Armor,
+		MeleeWeapon:  m.MeleeWeapon,
+		RangedWeapon: m.RangedWeapon,
 	}
 }
 
 // Intermediate struct for reading data from weapondata.json
 // The json file contains both melee and ranged weapons, which
 // Is why we have optional fields.
-type Weapon struct {
+type JSONWeapon struct {
 	Type          string          `json:"type"` // Can be "MeleeWeapon" or "RangedWeapon"
 	Name          string          `json:"name"` // Weapon name
 	ImgName       string          `json:"imgname"`
@@ -157,4 +159,41 @@ type Weapon struct {
 	AmmoType      string          `json:"ammoType,omitempty"`      // For ranged weapons only
 	ShootingVX    string          `json:"shootingvx,omitempty"`
 	TargetArea    *JSONTargetArea `json:"targetArea"`
+}
+
+type JSONAttributeModifier struct {
+	Name              string  `json:"name"`
+	ImgName           string  `json:"imgname"`
+	AttackBonus       int     `json:"attackBonus"`
+	MaxHealth         int     `json:"maxHealth"`
+	CurrentHealth     int     `json:"currentHealth"`
+	BaseArmorClass    int     `json:"baseArmorClass"`
+	BaseProtection    int     `json:"baseProtection"`
+	BaseMovementSpeed int     `json:"baseMovementSpeed"`
+	BaseDodgeChance   float32 `json:"baseDodgeChance"`
+}
+
+func NewJSONAttributeModifier(a JSONAttributeModifier) JSONAttributeModifier {
+	return JSONAttributeModifier{
+		Name:              a.Name,
+		ImgName:           a.ImgName,
+		MaxHealth:         a.MaxHealth,
+		CurrentHealth:     a.CurrentHealth,
+		BaseArmorClass:    a.BaseArmorClass,
+		BaseProtection:    a.BaseProtection,
+		BaseMovementSpeed: a.BaseMovementSpeed,
+		BaseDodgeChance:   a.BaseDodgeChance,
+	}
+}
+
+func CreateAttributesFromJSON(a JSONAttributeModifier) common.Attributes {
+	return common.Attributes{
+		MaxHealth:         a.MaxHealth,
+		CurrentHealth:     a.CurrentHealth,
+		AttackBonus:       a.AttackBonus,
+		BaseArmorClass:    a.BaseArmorClass,
+		BaseProtection:    a.BaseProtection,
+		BaseDodgeChance:   a.BaseDodgeChance,
+		BaseMovementSpeed: a.BaseMovementSpeed,
+	}
 }
