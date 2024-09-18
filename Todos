@@ -10,6 +10,11 @@ Fix bug that allows items in the inventory to be used multiple times (you can th
 Effect stacking
 
 
+The Action Queue does not seem to work correctly - creatures still only act once per turn even if the player is slower. I think this is because
+We perform all of the actions and don't resort the queue, meaning that only the first time actions are added will they be in energy order
+
+Properly handle player move action. Currently, it always uses the movement cost because of how closely coupled MovePlayer is with attacking
+
 
 ___Energy/Time System__
 
@@ -85,16 +90,14 @@ ___Weapon and Armor__
 
 * Equipping weapons and armor
 
+* Allow StatusEffects n weapons to apply on hit
+
 ___Consumables__
 
 * Add consumables
 
 
-___Visual Effects__
-
-
-
-* Rotating shapes which have a direction
+_n
 
 ___Refactoring__
 

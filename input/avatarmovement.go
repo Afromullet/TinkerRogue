@@ -38,28 +38,28 @@ func MovementControls(ecsmanager *common.EntityManager, pl *avatar.PlayerData, g
 		y = -1
 		act, cost := GetPlayerMoveAction(PlayerMoveAction, ecsmanager, pl, gm, x, y)
 		AddPlayerAction(act, pl, cost, timesystem.MovementKind)
-		pl.HasKeyInput = true
+		pl.InputStates.HasKeyInput = true
 	}
 
 	if inpututil.IsKeyJustReleased(ebiten.KeyS) {
 		y = 1
 		act, cost := GetPlayerMoveAction(PlayerMoveAction, ecsmanager, pl, gm, x, y)
 		AddPlayerAction(act, pl, cost, timesystem.MovementKind)
-		pl.HasKeyInput = true
+		pl.InputStates.HasKeyInput = true
 	}
 
 	if inpututil.IsKeyJustReleased(ebiten.KeyA) {
 		x = -1
 		act, cost := GetPlayerMoveAction(PlayerMoveAction, ecsmanager, pl, gm, x, y)
 		AddPlayerAction(act, pl, cost, timesystem.MovementKind)
-		pl.HasKeyInput = true
+		pl.InputStates.HasKeyInput = true
 	}
 
 	if inpututil.IsKeyJustReleased(ebiten.KeyD) {
 		x = 1
 		act, cost := GetPlayerMoveAction(PlayerMoveAction, ecsmanager, pl, gm, x, y)
 		AddPlayerAction(act, pl, cost, timesystem.MovementKind)
-		pl.HasKeyInput = true
+		pl.InputStates.HasKeyInput = true
 	}
 
 	//Diagonal movement
@@ -68,7 +68,7 @@ func MovementControls(ecsmanager *common.EntityManager, pl *avatar.PlayerData, g
 		x = -1
 		act, cost := GetPlayerMoveAction(PlayerMoveAction, ecsmanager, pl, gm, x, y)
 		AddPlayerAction(act, pl, cost, timesystem.MovementKind)
-		pl.HasKeyInput = true
+		pl.InputStates.HasKeyInput = true
 	}
 
 	if inpututil.IsKeyJustReleased(ebiten.KeyE) {
@@ -76,7 +76,7 @@ func MovementControls(ecsmanager *common.EntityManager, pl *avatar.PlayerData, g
 		x = +1
 		act, cost := GetPlayerMoveAction(PlayerMoveAction, ecsmanager, pl, gm, x, y)
 		AddPlayerAction(act, pl, cost, timesystem.MovementKind)
-		pl.HasKeyInput = true
+		pl.InputStates.HasKeyInput = true
 	}
 
 	if inpututil.IsKeyJustReleased(ebiten.KeyZ) {
@@ -84,7 +84,7 @@ func MovementControls(ecsmanager *common.EntityManager, pl *avatar.PlayerData, g
 		x = -1
 		act, cost := GetPlayerMoveAction(PlayerMoveAction, ecsmanager, pl, gm, x, y)
 		AddPlayerAction(act, pl, cost, timesystem.MovementKind)
-		pl.HasKeyInput = true
+		pl.InputStates.HasKeyInput = true
 	}
 
 	if inpututil.IsKeyJustReleased(ebiten.KeyC) {
@@ -92,7 +92,7 @@ func MovementControls(ecsmanager *common.EntityManager, pl *avatar.PlayerData, g
 		x = +1
 		act, cost := GetPlayerMoveAction(PlayerMoveAction, ecsmanager, pl, gm, x, y)
 		AddPlayerAction(act, pl, cost, timesystem.MovementKind)
-		pl.HasKeyInput = true
+		pl.InputStates.HasKeyInput = true
 	}
 
 	if inpututil.IsKeyJustReleased(ebiten.KeySpace) {
@@ -127,20 +127,20 @@ func PlayerActions(ecsmanager *common.EntityManager, pl *avatar.PlayerData, gm *
 
 	if inpututil.IsKeyJustReleased(ebiten.KeyF) {
 
-		if !pl.IsThrowing {
+		if !pl.InputStates.IsThrowing {
 
 			act, cost := GetSimplePlayerAction(PlayerSelRanged, pl, gm)
 			AddPlayerAction(act, pl, cost, timesystem.RangedAttackKind)
-			pl.HasKeyInput = true
+			pl.InputStates.HasKeyInput = true
 		}
 	}
 
 	if inpututil.IsKeyJustReleased(ebiten.KeyG) {
 		act, cost := GetSimplePlayerAction(PlayerPickupFromFloor, pl, gm)
 		AddPlayerAction(act, pl, cost, timesystem.PickupItemKind)
-		pl.HasKeyInput = true
+		pl.InputStates.HasKeyInput = true
 	}
 
-	return pl.HasKeyInput
+	return pl.InputStates.HasKeyInput
 
 }

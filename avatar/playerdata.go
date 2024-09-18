@@ -71,7 +71,7 @@ func (pl *PlayerThrowable) RemoveThrownItem(inv *gear.Inventory) {
 type PlayerData struct {
 	PlayerEquipment
 	PlayerThrowable
-	PlayerInputStates
+	InputStates PlayerInputStates
 
 	PlayerEntity *ecs.Entity
 

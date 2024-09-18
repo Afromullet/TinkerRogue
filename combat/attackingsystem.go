@@ -137,6 +137,8 @@ func RemoveDeadEntity(ecsmnager *common.EntityManager, pl *avatar.PlayerData, gm
 
 }
 
+// Todo need a better way to handle this rather than searching all monsters
+// This also should not really be in attackingSystem
 func GetCreatureAtPosition(ecsmnager *common.EntityManager, pos *common.Position) *ecs.Entity {
 
 	var e *ecs.Entity = nil

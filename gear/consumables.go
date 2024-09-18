@@ -22,9 +22,10 @@ type Consumable struct {
 	Duration     int
 }
 
-// Non health effects are applied every turn. Others only once
+// Every effect except health boosts are applied every turn, so we have a separate function for
+// CurrentHealth and MaxHealth.
 func (c *Consumable) ApplyEffect(baseAttr *common.Attributes) {
-	baseAttr.MaxHealth += c.AttrModifier.MaxHealth
+
 	baseAttr.AttackBonus += c.AttrModifier.AttackBonus
 	baseAttr.BaseArmorClass += c.AttrModifier.BaseArmorClass
 	baseAttr.BaseMovementSpeed = c.AttrModifier.BaseMovementSpeed //Set the movement speed to the value. Adding it makes us slower
@@ -35,10 +36,11 @@ func (c *Consumable) ApplyEffect(baseAttr *common.Attributes) {
 
 func (c *Consumable) ApplyHealingEffect(baseAttr *common.Attributes) {
 	baseAttr.CurrentHealth += c.AttrModifier.CurrentHealth
+	baseAttr.MaxHealth += c.AttrModifier.MaxHealth
 
 }
 
-// Gets a string representing the consumable effects
+// For displaying consumable info in the GUI
 func (c Consumable) ConsumableInfo() string {
 	s := ""
 
@@ -76,7 +78,8 @@ func (c Consumable) ConsumableInfo() string {
 
 }
 
-// Applies the ConsumableEffect to the entity
+// ConsumableEffect tracks the duration of an effect.
+// Used by the ConsumableEffectTracker
 type ConsumableEffect struct {
 	currentDuration int
 	Effect          Consumable
@@ -84,8 +87,9 @@ type ConsumableEffect struct {
 
 func (eff *ConsumableEffect) Apply(e *ecs.Entity) {
 	baseAttr := common.GetComponentType[*common.Attributes](e, common.AttributeComponent)
-	//Healing is applied every turn.
-	//Everything else only at the start. Otherwise we'd keep on increasing the base attributes
+
+	//Non-health consumables are applied only once. Health consumable are applied at the
+	//Start, and last until the end of the duration. (I.E, a regeneration potion)
 	if eff.currentDuration == 0 {
 		eff.Effect.ApplyEffect(baseAttr)
 		eff.Effect.ApplyHealingEffect(baseAttr)
@@ -105,7 +109,7 @@ func (eff ConsumableEffect) IsDone() bool {
 
 }
 
-// An entity can have more than once consumable effect
+// Used to track all Consumables that are in effect.
 type ConsumableEffectTracker struct {
 	effects []ConsumableEffect
 }
@@ -130,8 +134,7 @@ func (ce *ConsumableEffectTracker) ApplyEffects(ent *ecs.Entity) {
 
 		} else {
 
-			//eff.RestoreAttributes(ent)
-
+			//Restore everything to the original state except CurrentHealth.
 			attr.AttackBonus -= eff.Effect.AttrModifier.AttackBonus
 			attr.MaxHealth -= eff.Effect.AttrModifier.MaxHealth
 			attr.BaseArmorClass -= eff.Effect.AttrModifier.BaseArmorClass
@@ -150,7 +153,7 @@ func (ce *ConsumableEffectTracker) ApplyEffects(ent *ecs.Entity) {
 	ce.effects = remainingEffects
 }
 
-func (ce *ConsumableEffectTracker) HasEffects() bool {
+func (ce *ConsumableEffectTracker) hasEffects() bool {
 	return len(ce.effects) > 0
 }
 func AddEffectToTracker(ent *ecs.Entity, cons Consumable) {
@@ -176,10 +179,11 @@ func AddEffectToTracker(ent *ecs.Entity, cons Consumable) {
 
 }
 
+// Called in the game loop. Currently only used for player. MonsterSystems will call it too if monsters ever use consumables
 func RunEffectTracker(ent *ecs.Entity) {
 	tracker := common.GetComponentType[*ConsumableEffectTracker](ent, ConsEffectTrackerComponent)
 
-	if tracker != nil && tracker.HasEffects() {
+	if tracker != nil && tracker.hasEffects() {
 		tracker.ApplyEffects(ent)
 	}
 
@@ -188,6 +192,7 @@ func RunEffectTracker(ent *ecs.Entity) {
 }
 
 // Does not fit in the common package because referencing gear will cause a circular inclusion issue
+// Consumables change the base attributes, so the TotalNNN stats need to be updated.
 func UpdateEntityAttributes(e *ecs.Entity) {
 
 	armor := common.GetComponentType[*Armor](e, ArmorComponent)

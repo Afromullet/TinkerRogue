@@ -87,13 +87,13 @@ func NewGame() *Game {
 func ManageTurn(g *Game) {
 
 	g.gameUI.StatsUI.StatsTextArea.SetText(g.playerData.GetPlayerAttributes().AttributeText())
-	if g.ts.Turn == timesystem.PlayerTurn && !g.playerData.HasKeyInput {
+	if g.ts.Turn == timesystem.PlayerTurn && !g.playerData.InputStates.HasKeyInput {
 
 		//Apply Consumabl Effects at beginning of player turn
 		//gear.ConsumableEffectApplier(g.playerData.PlayerEntity)
 
 		input.PlayerActions(&g.em, &g.playerData, &g.gameMap, &g.gameUI, &g.ts)
-		if g.playerData.HasKeyInput {
+		if g.playerData.InputStates.HasKeyInput {
 
 			gear.RunEffectTracker(g.playerData.PlayerEntity)
 
@@ -105,19 +105,20 @@ func ManageTurn(g *Game) {
 		// The drawing and throwing still work after changing the way the input and actions work
 		// Uncommented now because we need to figure out how to implement this in the Action Energy based ystem
 		if g.gameUI.IsThrowableItemSelected() {
-			g.playerData.IsThrowing = true
+			g.playerData.InputStates.IsThrowing = true
 
 		} else {
-			g.playerData.IsThrowing = false
+			g.playerData.InputStates.IsThrowing = false
 		}
 		input.HandlePlayerThrowable(&g.em, &g.playerData, &g.gameMap, &g.gameUI)
 		input.HandlePlayerRangedAttack(&g.em, &g.playerData, &g.gameMap)
 
 	}
-	if g.ts.Turn == timesystem.MonsterTurn && g.playerData.HasKeyInput {
+	if g.ts.Turn == timesystem.MonsterTurn && g.playerData.InputStates.HasKeyInput {
 		monsters.MonsterSystems(&g.em, &g.playerData, &g.gameMap, &g.ts)
 
 		// Returns true if the next action is the player.
+
 		if g.ts.ActionDispatcher.ExecuteActionsUntilPlayer(&g.playerData) {
 
 			//Perform the players action
@@ -131,12 +132,12 @@ func ManageTurn(g *Game) {
 			g.ts.ActionDispatcher.ResetActionPoints()
 		}
 
-		g.playerData.HasKeyInput = false
+		g.playerData.InputStates.HasKeyInput = false
 		g.ts.Turn = timesystem.PlayerTurn
 
 		if g.ts.TotalNumTurns%10 == 0 {
 
-			//spawning.SpawnMonster(g.em, &g.gameMap)
+			spawning.SpawnMonster(g.em, &g.gameMap)
 		}
 
 		RemoveDeadEntities(&g.em, g.ts.ActionDispatcher, &g.gameMap)

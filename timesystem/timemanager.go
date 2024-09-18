@@ -17,6 +17,8 @@ type ActionManager struct {
 }
 
 // Runs through the queue once and performs the actions until we reach the players action
+// This does not work as intended because it removes the action from the queue.
+// It needs to execute the action and then place it in the correct place in the queue
 func (am *ActionManager) ExecuteActionsUntilPlayer(pl *avatar.PlayerData) bool {
 
 	executedActions := make([]*ActionQueue, 0)

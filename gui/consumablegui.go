@@ -192,12 +192,16 @@ func (consDisplay *ConsumableItemDisplay) CreateUseConsumableButton() *widget.Bu
 
 			inv := consDisplay.ItmDisplay.GetInventory()
 
-			item, _ := inv.GetItem(consDisplay.ItmDisplay.ItemsSelectedIndices[0])
-			consumable := common.GetComponentType[*gear.Consumable](item, gear.ConsumableComponent)
-			gear.AddEffectToTracker(consDisplay.ItmDisplay.playerEntity, *consumable)
+			if len(consDisplay.ItmDisplay.ItemsSelectedIndices) > 0 {
+				item, _ := inv.GetItem(consDisplay.ItmDisplay.ItemsSelectedIndices[0])
+				consumable := common.GetComponentType[*gear.Consumable](item, gear.ConsumableComponent)
+				gear.AddEffectToTracker(consDisplay.ItmDisplay.playerEntity, *consumable)
 
-			inv.RemoveItem(consDisplay.ItmDisplay.ItemsSelectedIndices[0])
-			consDisplay.DisplayInventory()
+				inv.RemoveItem(consDisplay.ItmDisplay.ItemsSelectedIndices[0])
+				consDisplay.DisplayInventory()
+			}
+
+			consDisplay.ItmDisplay.ItemsSelectedIndices = consDisplay.ItmDisplay.ItemsSelectedIndices[:0]
 
 			//consumable.ApplyEffect(consDisplay.playerAttributes)
 

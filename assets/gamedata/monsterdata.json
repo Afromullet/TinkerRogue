@@ -89,7 +89,7 @@
         "shootingVX": "arrow.png",
         "minDamage": 3,
         "maxDamage": 7,
-        "attackSpeed": 3,
+        "attackSpeed": 1,
         "shootingRange": 5,
         "targetArea": {
           "type": "Line",
@@ -114,7 +114,7 @@
         "shootingVX": "bolt.png",
         "minDamage": 3,
         "maxDamage": 6,
-        "attackSpeed": 2,
+        "attackSpeed": 1,
         "shootingRange": 6,
         "targetArea": {
           "type": "Square",
@@ -139,7 +139,7 @@
         "shootingVX": "fireball.png",
         "minDamage": 6,
         "maxDamage": 10,
-        "attackSpeed": 4,
+        "attackSpeed": 1,
         "shootingRange": 4,
         "targetArea": {
           "type": "Circle",

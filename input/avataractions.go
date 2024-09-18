@@ -1,6 +1,7 @@
 package input
 
 import (
+	"fmt"
 	"game_main/avatar"
 	"game_main/combat"
 	"game_main/common"
@@ -52,7 +53,7 @@ func ApplyThrowable(ecsmanager *common.EntityManager, item *gear.Item, pl *avata
 
 			if curPos.IsEqual(&p) && curPos.InRange(throwerPos, t.ThrowingRange) {
 				crea.AddEffects(item.Properties)
-				pl.IsThrowing = false //Hit at least one target. Once returning, we can clear GUI elements by checking this far
+				pl.InputStates.IsThrowing = false //Hit at least one target. Once returning, we can clear GUI elements by checking this far
 			}
 		}
 
@@ -130,11 +131,11 @@ func UpdateDirection(shape *graphics.TileBasedShape) graphics.ShapeUpdater {
 // This changes a lot of state in different parts. Todo refactor
 func HandlePlayerThrowable(ecsmanager *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap, playerUI *gui.PlayerUI) {
 
-	if pl.IsShooting {
+	if pl.InputStates.IsShooting {
 		return
 	}
 
-	if pl.IsThrowing {
+	if pl.InputStates.IsThrowing {
 
 		throwable := pl.ThrowableItem.ItemEffect(gear.THROWABLE_NAME).(*gear.Throwable)
 
@@ -152,6 +153,9 @@ func HandlePlayerThrowable(ecsmanager *common.EntityManager, pl *avatar.PlayerDa
 
 			indices := throwable.Shape.GetIndices()
 
+			//todo add check here that only lets someone throw if the area is in range. TileBasedShapes
+			//Need a "getorigin" or "getstart" function
+
 			pl.RemoveThrownItem(pl.Inv)
 
 			ApplyThrowable(ecsmanager, pl.ThrowableItem, pl, pl.ThrowingAOEShape, playerUI, pl.Pos)
@@ -160,7 +164,8 @@ func HandlePlayerThrowable(ecsmanager *common.EntityManager, pl *avatar.PlayerDa
 			playerUI.ItemsUI.ThrowableItemDisplay.DisplayInventory()
 
 			//Todo does not work to clear throwing GUI elements
-			if !pl.IsThrowing {
+
+			if !pl.InputStates.IsThrowing {
 				gm.ApplyColorMatrix(PrevThrowInds, graphics.NewEmptyMatrix())
 				gm.ApplyColorMatrix(indices, graphics.NewEmptyMatrix())
 				playerUI.SetThrowableItemSelected(false) //TOdo this is a problem
@@ -175,7 +180,7 @@ func HandlePlayerThrowable(ecsmanager *common.EntityManager, pl *avatar.PlayerDa
 			log.Println("Removing throwable")
 			gm.ApplyColorMatrix(PrevThrowInds, graphics.NewEmptyMatrix())
 			playerUI.SetThrowableItemSelected(false) //TOdo this is a problem
-			pl.IsThrowing = false
+			pl.InputStates.IsThrowing = false
 
 		}
 	}
@@ -230,7 +235,7 @@ func DrawRangedAttackAOE(pl *avatar.PlayerData, gm *worldmap.GameMap) {
 
 func HandlePlayerRangedAttack(ecsmanager *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap) {
 
-	if pl.IsShooting {
+	if pl.InputStates.IsShooting {
 
 		msg := common.GetComponentType[*common.UserMessage](pl.PlayerEntity, common.UsrMsg)
 
@@ -240,7 +245,7 @@ func HandlePlayerRangedAttack(ecsmanager *common.EntityManager, pl *avatar.Playe
 		//Cancel throwing
 		if inpututil.IsMouseButtonJustPressed(ebiten.MouseButton2) {
 
-			pl.IsShooting = false
+			pl.InputStates.IsShooting = false
 			gm.ApplyColorMatrix(PrevRangedAttInds, graphics.NewEmptyMatrix())
 			//log.Println("Removing throwable")
 
@@ -253,6 +258,22 @@ func HandlePlayerRangedAttack(ecsmanager *common.EntityManager, pl *avatar.Playe
 		}
 
 	}
+
+}
+
+// Not making this a function of worldmap.GameMap since right now only the player uses it
+func IsCreatureOnTile(ecsmanager *common.EntityManager, pos *common.Position, gm *worldmap.GameMap) bool {
+
+	index := graphics.IndexFromXY(pos.X, pos.Y)
+
+	nextTile := gm.Tiles[index]
+
+	if nextTile.Blocked && combat.GetCreatureAtPosition(ecsmanager, pos) != nil {
+		return true
+
+	}
+
+	return false
 
 }
 
@@ -275,14 +296,12 @@ func MovePlayer(ecsmanager *common.EntityManager, pl *avatar.PlayerData, gm *wor
 		pl.Pos.Y = nextPosition.Y
 		nextTile.Blocked = true
 		oldTile.Blocked = false
+		fmt.Println("Moving")
 
 	} else {
-		//Determine if the tyle is blocked because there's a creature
-
-		c := combat.GetCreatureAtPosition(ecsmanager, &nextPosition)
-
-		if c != nil {
-
+		//Determine if the tile is blocked because there's a creature
+		if combat.GetCreatureAtPosition(ecsmanager, &nextPosition) != nil {
+			fmt.Println("Attacking")
 			combat.MeleeAttackSystem(ecsmanager, pl, gm, pl.Pos, &nextPosition)
 		}
 
@@ -307,7 +326,7 @@ func PlayerSelectRangedTarget(pl *avatar.PlayerData, gm *worldmap.GameMap) {
 
 	gm.ApplyColorMatrix(PrevRangedAttInds, graphics.NewEmptyMatrix())
 
-	pl.IsShooting = true
+	pl.InputStates.IsShooting = true
 	pl.PrepareRangedAttack()
 	DrawRangedAttackAOE(pl, gm)
 

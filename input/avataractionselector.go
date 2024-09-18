@@ -2,7 +2,9 @@ package input
 
 import (
 	"game_main/avatar"
+	"game_main/combat"
 	"game_main/common"
+	"game_main/graphics"
 	"game_main/timesystem"
 	"game_main/worldmap"
 )
@@ -32,17 +34,38 @@ func GetSimplePlayerAction(act PlayerAction, pl *avatar.PlayerData, gm *worldmap
 
 }
 
+// Although I could break this down further to separate between attacking and moving,
+// The actions aren't complex enough to justify the modularity.
+// Selects the action cost based on whether or nto to attack
+
 func GetPlayerMoveAction(act PlayerAction, ecsmanager *common.EntityManager,
 	pl *avatar.PlayerData,
 	gm *worldmap.GameMap, xOffset, yOffset int) (timesystem.ActionWrapper, int) {
 
 	attr := common.GetComponentType[*common.Attributes](pl.PlayerEntity, common.AttributeComponent)
 
+	nextPosition := common.Position{
+		X: pl.Pos.X + xOffset,
+		Y: pl.Pos.Y + yOffset,
+	}
+
+	nextTile := gm.Tiles[graphics.IndexFromXY(nextPosition.X, nextPosition.Y)]
+
+	actionCost := attr.TotalMovementSpeed
+	if nextTile.Blocked {
+		if combat.GetCreatureAtPosition(ecsmanager, &nextPosition) != nil {
+			actionCost = attr.TotalAttackSpeed
+
+		}
+
+	}
+
 	switch act {
 
 	case PlayerMoveAction:
+
 		return timesystem.NewPlayerMoveAction(MovePlayer, ecsmanager,
-			pl, gm, xOffset, yOffset), attr.TotalMovementSpeed
+			pl, gm, xOffset, yOffset), actionCost
 
 	default:
 		return nil, 0
