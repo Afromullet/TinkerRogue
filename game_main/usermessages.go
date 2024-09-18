@@ -58,7 +58,7 @@ func ProcessUserLog(g *Game, screen *ebiten.Image) {
 		if messages.AttackMessage != "" {
 			tmpMessages = append(tmpMessages, messages.AttackMessage)
 			anyMessages = true
-			//fmt.Printf(messages.AttackMessage)
+			
 			messages.AttackMessage = ""
 		}
 	}

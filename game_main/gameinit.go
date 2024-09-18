@@ -24,16 +24,16 @@ func InitializePlayerData(ecsmanager *common.EntityManager, pl *avatar.PlayerDat
 	}
 
 	attr := common.Attributes{}
-	attr.MaxHealth = 5
-	attr.CurrentHealth = 5
+	attr.MaxHealth = 50
+	attr.CurrentHealth = 50
 	attr.AttackBonus = 5
-	attr.TotalMovementSpeed = 2
+	attr.TotalMovementSpeed = 1
 	attr.BaseMovementSpeed = 1
 
 	armor := gear.Armor{
 		ArmorClass:  1,
 		Protection:  5,
-		DodgeChance: 50}
+		DodgeChance: 1}
 
 	playerEntity := ecsmanager.World.NewEntity().
 		AddComponent(avatar.PlayerComponent, &avatar.Player{}).

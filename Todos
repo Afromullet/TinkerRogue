@@ -1,12 +1,13 @@
 MAJOR
 
-Check what negative movement speed does
-Better Item Spawning
-Better Creature spawning
+
+
 Room Decoration (maybe)
-Add varied enough creature for play
+Larger map
 Add equipping and removing items
-Implement movement speed potions correctly. Currently they set it to a speed value rather than imprinv it
+Fix throwing bugs (Throwing out of range)
+Fix bug that allows items in the inventory to be used multiple times (you can throw multiple times in a row or use a consumable multiple times)
+Effect stacking
 
 
 
@@ -28,6 +29,7 @@ ___Shooting__
 
 For Cone, rectangle, and line shape, let it rotate around the player only when shooting 
 
+Load shooting VX from JSON data
 
 __Movement__
 
@@ -47,7 +49,7 @@ __Movement__
 __Monster Bevavior__
 
 
-* Monster can chose to melee attack, range attack, or throw
+* Monster with melee and ranged weapons should choose which attack to use 
 
 * Allow creature to choose its target. Currently the attacks use the PlayerData
 
@@ -162,5 +164,7 @@ Everything in the input package
 Everything in the worldmap package
 
 Everything GUI related
+
+Action Queue needs to have fewer redundant methods
 
 PlayerData

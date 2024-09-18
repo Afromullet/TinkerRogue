@@ -1,0 +1,77 @@
+
+{
+  "weapons": [
+    {
+      "type": "MeleeWeapon",
+      "name": "Sword",
+	  "imgname": "sword.png",
+      "minDamage": 5,
+      "maxDamage": 10,
+      "attackSpeed": 3
+    },
+	
+	 {
+      "type": "MeleeWeapon",
+      "name": "Dagger",
+	  "imgname": "sword.png",
+      "minDamage": 6,
+      "maxDamage": 12,
+      "attackSpeed": 2
+    },
+	
+	
+	 {
+      "type": "MeleeWeapon",
+      "name": "Axe",
+	  "imgname": "sword.png",
+      "minDamage": 6,
+      "maxDamage": 12,
+      "attackSpeed": 6
+    },
+	
+    {
+      "type": "RangedWeapon",
+      "name": "Shotgun",
+	  "imgname": "sword.png",
+	   "shootingVX": "arrow3.png",
+        "minDamage": 3,
+        "maxDamage": 6,
+        "attackSpeed": 3,
+		"shootingRange": 3,
+	   "targetArea":  {
+          "type": "Square",
+          "size": 2
+        }
+    },
+	
+	
+	  {
+      "type": "RangedWeapon",
+      "name": "AssaultRifle",
+	  "imgname": "sword.png",
+	   "shootingVX": "arrow3.png",
+        "minDamage": 3,
+        "maxDamage": 6,
+        "attackSpeed": 3,
+		"shootingRange": 3,
+	   "targetArea": null
+    },
+	
+	
+	
+	  {
+      "type": "RangedWeapon",
+      "name": "Pistol",
+	  "imgname": "sword.png",
+	   "shootingVX": "arrow3.png",
+        "minDamage": 3,
+        "maxDamage": 6,
+        "attackSpeed": 3,
+		"shootingRange": 3,
+	   "targetArea": null
+    }
+	
+	
+   
+  ]
+}

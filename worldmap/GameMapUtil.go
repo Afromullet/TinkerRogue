@@ -21,7 +21,7 @@ func loadTileImages() {
 
 	for _, file := range files {
 		if !file.IsDir() { // Ensure it's a file, not a subdirectory
-			fmt.Println(file.Name())
+			
 
 			floor, _, _ := ebitenutil.NewImageFromFile(dir + "/" + file.Name())
 

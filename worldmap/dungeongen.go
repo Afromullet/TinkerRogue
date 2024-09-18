@@ -51,7 +51,7 @@ func (r Rect) IsInRoom(x, y int) bool {
 
 func (r Rect) GetCoordinates() []common.Position {
 
-	//Adding +1 and
+	//Adding +1 and -1 so we don't get teh walls
 	pos := make([]common.Position, 0)
 	for y := r.Y1 + 1; y <= r.Y2-1; y++ {
 		for x := r.X1 + 1; x <= r.X2-1; x++ {
@@ -62,6 +62,31 @@ func (r Rect) GetCoordinates() []common.Position {
 	return pos
 }
 
+// Here temporarily for doing some basic monster spawning in the spawning package
+// Do not want to spawn monsters in the center of the room
+func (r Rect) GetCoordinatesWithoutCenter() []common.Position {
+
+	//Adding +1 and -1 so we don't get teh walls
+	pos := make([]common.Position, 0)
+	for y := r.Y1 + 1; y <= r.Y2-1; y++ {
+		for x := r.X1 + 1; x <= r.X2-1; x++ {
+			centerX, centerY := r.Center()
+
+			if centerX != x && centerY != y {
+				pos = append(pos, common.Position{X: x, Y: y})
+			}
+		}
+	}
+
+	return pos
+}
+
+func (r *Rect) Center() (int, int) {
+	centerX := (r.X1 + r.X2) / 2
+	centerY := (r.Y1 + r.Y2) / 2
+	return centerX, centerY
+}
+
 func NewRect(x int, y int, width int, height int) Rect {
 	return Rect{
 		X1: x,
@@ -69,12 +94,6 @@ func NewRect(x int, y int, width int, height int) Rect {
 		X2: x + width,
 		Y2: y + height,
 	}
-}
-
-func (r *Rect) Center() (int, int) {
-	centerX := (r.X1 + r.X2) / 2
-	centerY := (r.Y1 + r.Y2) / 2
-	return centerX, centerY
 }
 
 func (r *Rect) Intersect(other Rect) bool {
@@ -100,7 +119,7 @@ func NewGameMap() GameMap {
 	dungeonMap.Rooms = make([]Rect, 0)
 	dungeonMap.PlayerVisible = fov.New()
 	dungeonMap.NumTiles = len(dungeonMap.Tiles)
-	fmt.Println("Num Tiles", dungeonMap.NumTiles)
+
 	dungeonMap.GenerateLevelTiles()
 	dungeonMap.PlaceStairs()
 

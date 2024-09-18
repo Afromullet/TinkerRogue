@@ -202,6 +202,7 @@ type Projectile struct {
 	speed              float64
 }
 
+// Todo, every projectile currently uses the same VX
 func NewProjectile(startX, startY, endX, endY int) *Projectile {
 
 	vxCom := NewVXCommon("../assets/effects/arrow3.png", startX, startY)

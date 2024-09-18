@@ -80,11 +80,12 @@ func CreateTestThrowable(shape graphics.TileBasedShape, vx graphics.VisualEffect
 
 func CreateTestItems(manager *ecs.Manager, tags map[string]ecs.Tag, gameMap *worldmap.GameMap) {
 
-	swordImg, _, err := ebitenutil.NewImageFromFile("../assets/items/sword.png")
-	if err != nil {
-		log.Fatal(err)
-	}
-	log.Print(swordImg)
+	/*
+		swordImg, _, err := ebitenutil.NewImageFromFile("../assets/items/sword.png")
+		if err != nil {
+			log.Fatal(err)
+		}
+	*/
 
 	itemImageLoc := "../assets/items/sword.png"
 
@@ -128,28 +129,34 @@ func CreateTestItems(manager *ecs.Manager, tags map[string]ecs.Tag, gameMap *wor
 func CreateTestMonsters(em common.EntityManager, pl *avatar.PlayerData, gameMap *worldmap.GameMap) {
 	x, y := gameMap.Rooms[0].Center()
 
-	wepArea := graphics.NewTileRectangle(0, 0, 1, 1)
-	wep := gear.RangedWeapon{
-		MinDamage:     3,
-		MaxDamage:     5,
-		ShootingRange: 5,
-		TargetArea:    wepArea,
-		AttackSpeed:   5,
-	}
+	/*
+		wepArea := graphics.NewTileRectangle(0, 0, 1, 1)
+		wep := gear.RangedWeapon{
+			MinDamage:     3,
+			MaxDamage:     5,
+			ShootingRange: 5,
+			TargetArea:    wepArea,
+			AttackSpeed:   5,
+		}
+	*/
 
-	ent := entitytemplates.CreateCreatureFromTemplate(em, entitytemplates.MonsterTemplates[0], gameMap, x+1, y)
+	ent := entitytemplates.CreateCreatureFromTemplate(em, entitytemplates.MonsterTemplates[5], gameMap, x+1, y)
+	monsters.BehaviorSelector(ent, pl)
 
-	//ent.AddComponent(monsters.DistanceRangeAttackComp, &monsters.DistanceRangedAttack{})
-	ent.AddComponent(gear.RangedWeaponComponent, &wep)
+	//ent = entitytemplates.CreateCreatureFromTemplate(em, entitytemplates.MonsterTemplates[1], gameMap, x+1, y)
+	//ent.AddComponent(monsters.EntityFollowComp, &monsters.EntityFollow{Target: pl.PlayerEntity})
+	//ent.AddComponent(gear.RangedWeaponComponent, &wep)
 	//ent.AddComponent(monster.WithinRangeComponent, &monsters.DistanceToEntityMovement{Target: pl.PlayerEntity, Distance: 3})
-	ent.AddComponent(monster.RangeAttackBehaviorComp, &monster.AttackBehavior{})
+	//ent.AddComponent(monster.RangeAttackBehaviorComp, &monster.AttackBehavior{})
 
-	ent = entitytemplates.CreateCreatureFromTemplate(em, entitytemplates.MonsterTemplates[0], gameMap, x+2, y)
+	/*
+		ent = entitytemplates.CreateCreatureFromTemplate(em, entitytemplates.MonsterTemplates[0], gameMap, x+2, y)
 
-	ent.AddComponent(monster.ChargeAttackComp, &monster.AttackBehavior{})
+		ent.AddComponent(monster.ChargeAttackComp, &monster.AttackBehavior{})
 
-	ent = entitytemplates.CreateCreatureFromTemplate(em, entitytemplates.MonsterTemplates[1], gameMap, x+3, y)
-	ent.AddComponent(monsters.WithinRangeComponent, &monsters.DistanceToEntityMovement{Distance: 5, Target: pl.PlayerEntity})
+		ent = entitytemplates.CreateCreatureFromTemplate(em, entitytemplates.MonsterTemplates[1], gameMap, x+3, y)
+		ent.AddComponent(monsters.WithinRangeComponent, &monsters.DistanceToEntityMovement{Distance: 5, Target: pl.PlayerEntity})
+	*/
 
 	/*
 		ent = entitytemplates.CreateCreatureFromTemplate(manager, entitytemplates.MonsterTemplates[0], gameMap, x+3, y)

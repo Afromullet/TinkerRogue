@@ -75,7 +75,7 @@ func (a *ActionQueue) ResetActionPoints() {
 // Only allow the same kind of action to be added once.
 func (a *ActionQueue) AddPlayerAction(action ActionWrapper, actionPointCost int, kindOfAction KindOfAction) {
 
-	if actionPointCost <= 0 {
+	if actionPointCost == 0 {
 		panic("Action points must be greater than or equal to 0")
 	}
 
@@ -146,4 +146,9 @@ func (a *ActionQueue) NumOfActions() int {
 func (a *ActionQueue) ResetQueue() {
 	a.AllActions = nil
 	a.AllActions = make([]Action, 0)
+}
+
+// Currently, the monster attack actions decide between moving and attacking.
+func CorrectMultiActionCost(ent *ecs.Entity, q *ActionQueue) {
+
 }

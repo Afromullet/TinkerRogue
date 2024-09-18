@@ -109,6 +109,7 @@ func (c *Creature) UpdatePosition(gm *worldmap.GameMap, currentPosition *common.
 func MonsterSystems(ecsmanger *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap, ts *timesystem.GameTurn) {
 
 	NumMonstersOnMap = 0
+	actionCost := 0
 	//TODO do I need to make sure the same action can't be added twice?
 	for _, c := range ecsmanger.World.Query(ecsmanger.WorldTags["monsters"]) {
 
@@ -126,10 +127,11 @@ func MonsterSystems(ecsmanger *common.EntityManager, pl *avatar.PlayerData, gm *
 				actionQueue.AddMonsterAction(act, attr.TotalMovementSpeed, timesystem.MovementKind)
 			}
 
-			act = CreatureAttackSystem(ecsmanger, pl, gm, c)
+			act, actionCost = CreatureAttackSystem(ecsmanger, pl, gm, c)
 
 			if act != nil {
-				actionQueue.AddMonsterAction(act, attr.TotalAttackSpeed, timesystem.AttackKind)
+
+				actionQueue.AddMonsterAction(act, actionCost, timesystem.AttackKind)
 			}
 
 		}

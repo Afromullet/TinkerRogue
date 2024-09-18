@@ -16,7 +16,6 @@ import (
 )*/
 
 import (
-	"fmt"
 	"game_main/avatar"
 	"game_main/common"
 	"game_main/entitytemplates"
@@ -69,12 +68,14 @@ func NewGame() *Game {
 	testing.SetupPlayerForTesting(&g.em, &g.playerData)
 
 	testing.UpdateContentsForTest(&g.em, &g.gameMap)
+	spawning.SpawnStartingCreatures(10, &g.em, &g.gameMap, &g.playerData)
 	testing.CreateTestConsumables(&g.em, &g.gameMap)
 	testing.InitTestActionManager(&g.em, &g.playerData, &g.ts)
 
 	g.ts.ActionDispatcher.ResetActionManager()
 
-	spawning.SpawnStartingLoot(g.em, &g.gameMap)
+	//spawning.SpawnStartingLoot(g.em, &g.gameMap)
+	spawning.SpawnStartingEquipment(&g.em, &g.gameMap, &g.playerData)
 
 	return g
 
@@ -94,9 +95,8 @@ func ManageTurn(g *Game) {
 		input.PlayerActions(&g.em, &g.playerData, &g.gameMap, &g.gameUI, &g.ts)
 		if g.playerData.HasKeyInput {
 
-			fmt.Println("Printing attributes ")
 			gear.RunEffectTracker(g.playerData.PlayerEntity)
-			fmt.Println(g.playerData.GetPlayerAttributes().AttributeText())
+
 			g.gameUI.StatsUI.StatsTextArea.SetText(g.playerData.GetPlayerAttributes().AttributeText())
 			g.ts.Turn = timesystem.MonsterTurn
 
@@ -104,7 +104,6 @@ func ManageTurn(g *Game) {
 
 		// The drawing and throwing still work after changing the way the input and actions work
 		// Uncommented now because we need to figure out how to implement this in the Action Energy based ystem
-
 		if g.gameUI.IsThrowableItemSelected() {
 			g.playerData.IsThrowing = true
 
@@ -136,8 +135,8 @@ func ManageTurn(g *Game) {
 		g.ts.Turn = timesystem.PlayerTurn
 
 		if g.ts.TotalNumTurns%10 == 0 {
-			fmt.Println("Spawning")
-			spawning.SpawnMonster(g.em, &g.gameMap)
+
+			//spawning.SpawnMonster(g.em, &g.gameMap)
 		}
 
 		RemoveDeadEntities(&g.em, g.ts.ActionDispatcher, &g.gameMap)
@@ -181,8 +180,7 @@ func (g *Game) Update() error {
 	graphics.VXHandler.UpdateVisualEffects()
 
 	input.PlayerDebugActions(&g.playerData)
-	// Update the Label text to indicate if the ui is currently being hovered over or not
-	//g.headerLbl.Label = fmt.Sprintf("Game Demo!\nUI is hovered: %t", input.UIHovered)
+
 	ManageTurn(g)
 
 	return nil
@@ -214,7 +212,6 @@ func main() {
 
 	g := NewGame()
 
-	//g.gameUI.MainPlayerInterface = gui.CreatePlayerItemsUI(&g.gameUI, g.playerData.Inv, &g.playerData)
 	g.gameUI.CreatePlayerUI(&g.playerData)
 
 	ebiten.SetWindowResizable(true)

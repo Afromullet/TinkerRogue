@@ -71,7 +71,7 @@ func ReadWeaponData() {
 	// Iterate over monsters
 	for _, w := range weaponData.Weps {
 
-		fmt.Println(w)
+		
 
 		if w.Type == "MeleeWeapon" {
 			wep := NewJSONMeleeWeapon(w)
@@ -105,7 +105,7 @@ func ReadConsumableData() {
 
 	// Iterate over monsters
 	for _, c := range consumables.Consumables {
-		fmt.Println(c)
+		
 
 		ConsumableTemplates = append(ConsumableTemplates, NewJSONAttributeModifier(c))
 

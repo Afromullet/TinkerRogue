@@ -18,16 +18,13 @@ import (
 func InitializeECS(ecsmanager *common.EntityManager) {
 	tags := make(map[string]ecs.Tag)
 	manager := ecs.NewManager()
+
 	common.PositionComponent = manager.NewComponent()
 	rendering.RenderableComponent = manager.NewComponent()
-
 	common.NameComponent = manager.NewComponent()
-
 	gear.InventoryComponent = manager.NewComponent()
-
 	common.AttributeComponent = manager.NewComponent()
 	common.UsrMsg = manager.NewComponent()
-
 	gear.MeleeWeaponComponent = manager.NewComponent()
 	gear.RangedWeaponComponent = manager.NewComponent()
 	gear.ArmorComponent = manager.NewComponent()
@@ -40,6 +37,7 @@ func InitializeECS(ecsmanager *common.EntityManager) {
 
 	monsters.InitializeMovementComponents(manager, tags)
 	gear.InitializeItemComponents(manager, tags)
+
 	timesystem.ActionQueueComponent = manager.NewComponent()
 
 	InitializeCreatureComponents(manager, tags)

@@ -1,77 +1,116 @@
-
 {
   "weapons": [
     {
       "type": "MeleeWeapon",
       "name": "Sword",
-	  "imgname": "sword.png",
+      "imgname": "long_sword1.png",
       "minDamage": 5,
       "maxDamage": 10,
       "attackSpeed": 3
     },
-	
-	 {
+    {
       "type": "MeleeWeapon",
       "name": "Dagger",
-	  "imgname": "sword.png",
+      "imgname": "dagger.png",
       "minDamage": 6,
       "maxDamage": 12,
       "attackSpeed": 2
     },
-	
-	
-	 {
+    {
       "type": "MeleeWeapon",
       "name": "Axe",
-	  "imgname": "sword.png",
+      "imgname": "hand_axe1.png",
       "minDamage": 6,
       "maxDamage": 12,
       "attackSpeed": 6
     },
-	
+    {
+      "type": "MeleeWeapon",
+      "name": "Hammer",
+      "imgname": "flail1.png",
+      "minDamage": 8,
+      "maxDamage": 15,
+      "attackSpeed": 5
+    },
+    {
+      "type": "MeleeWeapon",
+      "name": "Mace",
+      "imgname": "mace1.png",
+      "minDamage": 7,
+      "maxDamage": 13,
+      "attackSpeed": 4
+    },
+    {
+      "type": "MeleeWeapon",
+      "name": "Spear",
+      "imgname": "spear1.png",
+      "minDamage": 4,
+      "maxDamage": 9,
+      "attackSpeed": 3
+    },
     {
       "type": "RangedWeapon",
       "name": "Shotgun",
-	  "imgname": "sword.png",
-	   "shootingVX": "arrow3.png",
-        "minDamage": 3,
-        "maxDamage": 6,
-        "attackSpeed": 3,
-		"shootingRange": 3,
-	   "targetArea":  {
-          "type": "Square",
-          "size": 2
-        }
+      "imgname": "longbow1.png",
+      "shootingVX": "arrow3.png",
+      "minDamage": 3,
+      "maxDamage": 6,
+      "attackSpeed": 3,
+      "shootingRange": 3,
+      "targetArea": {
+        "type": "Square",
+        "size": 1
+      }
     },
-	
-	
-	  {
+    {
       "type": "RangedWeapon",
       "name": "AssaultRifle",
-	  "imgname": "sword.png",
-	   "shootingVX": "arrow3.png",
-        "minDamage": 3,
-        "maxDamage": 6,
-        "attackSpeed": 3,
-		"shootingRange": 3,
-	   "targetArea": null
+      "imgname": "longbow1.png",
+      "shootingVX": "arrow3.png",
+      "minDamage": 3,
+      "maxDamage": 6,
+      "attackSpeed": 3,
+      "shootingRange": 3,
+      "targetArea": null
     },
-	
-	
-	
-	  {
+    {
       "type": "RangedWeapon",
       "name": "Pistol",
-	  "imgname": "sword.png",
-	   "shootingVX": "arrow3.png",
-        "minDamage": 3,
-        "maxDamage": 6,
-        "attackSpeed": 3,
-		"shootingRange": 3,
-	   "targetArea": null
+      "imgname": "longbow1.png",
+      "shootingVX": "arrow3.png",
+      "minDamage": 3,
+      "maxDamage": 6,
+      "attackSpeed": 3,
+      "shootingRange": 3,
+      "targetArea": null
+    },
+    {
+      "type": "RangedWeapon",
+      "name": "Bow",
+      "imgname": "longbow1.png",
+      "shootingVX": "arrow3.png",
+      "minDamage": 2,
+      "maxDamage": 8,
+      "attackSpeed": 2,
+      "shootingRange": 5,
+      "targetArea": {
+        "type": "Line",
+        "size": 1
+      }
+    },
+    {
+      "type": "RangedWeapon",
+      "name": "Crossbow",
+      "imgname": "longbow1.png",
+      "shootingVX": "arrow3.png",
+      "minDamage": 4,
+      "maxDamage": 9,
+      "attackSpeed": 4,
+      "shootingRange": 4,
+      "targetArea": {
+        "type": "Square",
+        "size": 1
+      }
     }
-	
-	
-   
   ]
 }
