@@ -1,12 +1,23 @@
-___ActionQueue___
+MAJOR
 
-* Clear ActionQueue is the entity no longer exists
+Check what negative movement speed does
+Better Item Spawning
+Better Creature spawning
+Room Decoration (maybe)
+Add varied enough creature for play
+Add equipping and removing items
+Implement movement speed potions correctly. Currently they set it to a speed value rather than imprinv it
+
+
 
 ___Energy/Time System__
 
 
 
 * Throwing action needs to take time
+
+* Clear ActionQueue if the entity no longer exists
+
 
 __Throwing__
 
@@ -49,7 +60,6 @@ __Randomness__
 
 __Levels__
 
-Add multiple levels
 
 Clear entities on previous level unless they are in the room with the stairs. Need to store them 
 
@@ -90,6 +100,12 @@ ___Refactoring__
 
 Map Drawing
 
+___GUI___
+
+* Show player stats
+
+* There's an issue when an item is thrown/consuable used that still contains the selected state. I.E, throwing the same object multiple
+times in a row or using the same consumable multiple times in a row
 
 
 ___Other__
@@ -146,3 +162,5 @@ Everything in the input package
 Everything in the worldmap package
 
 Everything GUI related
+
+PlayerData

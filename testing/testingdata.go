@@ -60,6 +60,15 @@ func CreateTestConsumables(ecsmanager *common.EntityManager, gm *worldmap.GameMa
 	pos.Y = gm.StartingPosition().Y + 2
 
 	gm.AddEntityToTile(ent, &common.Position{X: pos.X, Y: pos.Y})
+
+	ent = entitytemplates.CreateConsumableFromTemplate(*ecsmanager, entitytemplates.ConsumableTemplates[2])
+	pos = common.GetPosition(ent)
+	rend = common.GetComponentType[*rendering.Renderable](ent, rendering.RenderableComponent)
+	rend.Visible = true
+	pos.X = gm.StartingPosition().X + 1
+	pos.Y = gm.StartingPosition().Y + 2
+
+	gm.AddEntityToTile(ent, &common.Position{X: pos.X, Y: pos.Y})
 }
 
 func CreateTestThrowable(shape graphics.TileBasedShape, vx graphics.VisualEffect) *gear.Throwable {
@@ -181,8 +190,10 @@ func CreateMonster(manager *ecs.Manager, gameMap *worldmap.GameMap, x, y int, im
 		}).
 		AddComponent(timesystem.ActionQueueComponent, &timesystem.ActionQueue{TotalActionPoints: 100})
 
-	armor := gear.GetArmor(ent)
-	common.UpdateAttributes(ent, armor.ArmorClass, armor.Protection, armor.DodgeChance)
+	//armor := gear.GetArmor(ent)
+	//common.UpdateAttributes(ent, armor.ArmorClass, armor.Protection, armor.DodgeChance)
+
+	gear.UpdateEntityAttributes(ent)
 
 	return ent
 

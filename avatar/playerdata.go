@@ -87,6 +87,14 @@ func (pl *PlayerData) GetPlayerInventory() *gear.Inventory {
 	return playerInventory
 }
 
+// Handles the conversions from the component type to the struct type
+func (pl *PlayerData) GetPlayerAttributes() *common.Attributes {
+
+	attr := common.GetComponentType[*common.Attributes](pl.PlayerEntity, common.AttributeComponent)
+
+	return attr
+}
+
 func (pl *PlayerData) GetPlayerRangedWeapon() *gear.RangedWeapon {
 
 	weapon := common.GetComponentType[*gear.RangedWeapon](pl.PlayerRangedWeapon, gear.RangedWeaponComponent)

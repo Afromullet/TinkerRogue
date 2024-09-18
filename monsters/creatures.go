@@ -39,16 +39,16 @@ func (c *Creature) AddEffects(effects *ecs.Entity) {
 
 // Gets called once per turn. Applies all status effects to the creature
 // Each effect implements the ApplyToCreature effect that determines...the kind of effect
-func ApplyEffects(c *ecs.QueryResult) {
+func ApplyStatusEffects(c *ecs.QueryResult) {
 
 	creature := c.Components[CreatureComponent].(*Creature)
-	num_effects := len(creature.EffectsToApply)
+	num_status_effects := len(creature.EffectsToApply)
 
-	if num_effects == 0 {
+	if num_status_effects == 0 {
 		return
 	}
 
-	effects_to_keep := make([]gear.StatusEffects, 0)
+	status_effects_to_keep := make([]gear.StatusEffects, 0)
 
 	for _, eff := range creature.EffectsToApply {
 
@@ -59,13 +59,13 @@ func ApplyEffects(c *ecs.QueryResult) {
 		//ApplyToCreature changes the duration, so we need to check again before
 		//Deciding whether to keep the effect
 		if eff.Duration() > 0 {
-			effects_to_keep = append(effects_to_keep, eff)
+			status_effects_to_keep = append(status_effects_to_keep, eff)
 
 		}
 
 	}
 
-	creature.EffectsToApply = effects_to_keep
+	creature.EffectsToApply = status_effects_to_keep
 
 }
 
@@ -116,7 +116,8 @@ func MonsterSystems(ecsmanger *common.EntityManager, pl *avatar.PlayerData, gm *
 
 		attr := common.GetComponentType[*common.Attributes](c.Entity, common.AttributeComponent)
 
-		ApplyEffects(c)
+		ApplyStatusEffects(c)
+		//gear.ConsumableEffectApplier(c.Entity)
 
 		if actionQueue != nil {
 

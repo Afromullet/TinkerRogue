@@ -204,6 +204,7 @@ func CreateConsumableFromTemplate(manager common.EntityManager, c JSONAttributeM
 	it.AddComponent(gear.ConsumableComponent, &gear.Consumable{
 		Name:         c.Name,
 		AttrModifier: CreateAttributesFromJSON(c),
+		Duration:     c.Duration,
 	})
 
 	/*

@@ -171,6 +171,7 @@ type JSONAttributeModifier struct {
 	BaseProtection    int     `json:"baseProtection"`
 	BaseMovementSpeed int     `json:"baseMovementSpeed"`
 	BaseDodgeChance   float32 `json:"baseDodgeChance"`
+	Duration          int     `json:"duration"`
 }
 
 func NewJSONAttributeModifier(a JSONAttributeModifier) JSONAttributeModifier {
@@ -183,6 +184,7 @@ func NewJSONAttributeModifier(a JSONAttributeModifier) JSONAttributeModifier {
 		BaseProtection:    a.BaseProtection,
 		BaseMovementSpeed: a.BaseMovementSpeed,
 		BaseDodgeChance:   a.BaseDodgeChance,
+		Duration:          a.Duration,
 	}
 }
 

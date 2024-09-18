@@ -3,8 +3,7 @@ package common
 import (
 	"game_main/graphics"
 	"math"
-
-	"github.com/bytearena/ecs"
+	"strconv"
 )
 
 type Position struct {
@@ -106,13 +105,39 @@ func NewBaseAttributes(maxHealth, attackBonus, baseAC, baseProt, baseMovSpeed in
 	}
 }
 
-func UpdateAttributes(e *ecs.Entity, armorClass, protection int, dodgechance float32) {
+/*
+func (a *Attributes) UpdateEntityAttributes(e *ecs.Entity) {
 
-	attr := GetComponentType[*Attributes](e, AttributeComponent)
+	armor := GetComponentType[*gear.Armor](e, gear.ArmorComponent)
 
-	attr.TotalArmorClass = attr.BaseArmorClass + armorClass
-	attr.TotalProtection = attr.BaseProtection + protection
-	attr.TotalDodgeChance = attr.BaseDodgeChance + dodgechance
+	ac := 0
+	prot := 0
+	dodge := float32(0.0)
+
+	if armor != nil {
+
+		ac = armor.ArmorClass
+		prot = armor.Protection
+		dodge = float32(armor.DodgeChance)
+	}
+
+	a.TotalArmorClass = a.BaseArmorClass + ac
+	a.TotalProtection = a.BaseProtection + prot
+	a.TotalDodgeChance = a.BaseDodgeChance + dodge
+
+}
+*/
+
+func (a Attributes) AttributeText() string {
+	s := ""
+	s += "HP: " + strconv.Itoa(a.CurrentHealth) + "/" + strconv.Itoa(a.MaxHealth) + "\n"
+	s += "Armor Class: " + strconv.Itoa(a.TotalArmorClass) + "\n"
+	s += "Protection: " + strconv.Itoa(a.TotalProtection) + "\n"
+	s += "Dodge: " + strconv.FormatFloat(float64(a.TotalDodgeChance), 'f', 2, 32) + "\n"
+	s += "Movement Speed: " + strconv.Itoa(a.TotalMovementSpeed) + "\n"
+	s += "Attack Speed: " + strconv.Itoa(a.TotalAttackSpeed) + "\n"
+
+	return s
 
 }
 

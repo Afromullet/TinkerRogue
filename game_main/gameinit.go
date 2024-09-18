@@ -28,6 +28,7 @@ func InitializePlayerData(ecsmanager *common.EntityManager, pl *avatar.PlayerDat
 	attr.CurrentHealth = 5
 	attr.AttackBonus = 5
 	attr.TotalMovementSpeed = 2
+	attr.BaseMovementSpeed = 1
 
 	armor := gear.Armor{
 		ArmorClass:  1,

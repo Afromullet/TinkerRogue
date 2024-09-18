@@ -1,7 +1,6 @@
 package gui
 
 import (
-	"fmt"
 	"game_main/common"
 	"game_main/gear"
 	"image/color"
@@ -11,6 +10,7 @@ import (
 )
 
 type ConsumableItemDisplay struct {
+	playerAttributes          *common.Attributes
 	ItmDisplay                ItemDisplay
 	ItemSelectedContainer     *widget.Container //Displays the items the user HAS selected for crafitng
 	ItemSelectedStatsTextArea *widget.TextArea  //Displays the properties of the selected items
@@ -54,7 +54,7 @@ func (consDisplay *ConsumableItemDisplay) CreateInventoryList(propFilters ...gea
 
 }
 
-func (consDisplay *ConsumableItemDisplay) DisplayInventory(inventory *gear.Inventory) {
+func (consDisplay *ConsumableItemDisplay) DisplayInventory() {
 
 	consDisplay.CreateInventoryList()
 
@@ -190,7 +190,16 @@ func (consDisplay *ConsumableItemDisplay) CreateUseConsumableButton() *widget.Bu
 		// add a handler that reacts to clicking the button
 		widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
 
-			fmt.Println("Using consumable ", consDisplay.ItmDisplay.ItemsSelectedIndices)
+			inv := consDisplay.ItmDisplay.GetInventory()
+
+			item, _ := inv.GetItem(consDisplay.ItmDisplay.ItemsSelectedIndices[0])
+			consumable := common.GetComponentType[*gear.Consumable](item, gear.ConsumableComponent)
+			gear.AddEffectToTracker(consDisplay.ItmDisplay.playerEntity, *consumable)
+
+			inv.RemoveItem(consDisplay.ItmDisplay.ItemsSelectedIndices[0])
+			consDisplay.DisplayInventory()
+
+			//consumable.ApplyEffect(consDisplay.playerAttributes)
 
 		}),
 	)

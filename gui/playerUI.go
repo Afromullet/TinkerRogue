@@ -34,7 +34,7 @@ func (playerUI *PlayerUI) CreatePlayerUI(playerData *avatar.PlayerData) {
 
 	//playerUI.MainPlayerInterface = &ebitenui.UI{}
 
-	playerUI.MainPlayerInterface = CreatePlayerItemsUI(playerUI, playerData.Inv, playerData)
+	playerUI.MainPlayerInterface = CreatePlayerUI(playerUI, playerData.Inv, playerData)
 	//playerUI.MainPlayerInterface.Container.AddChild(playerUI.StatsUI.rootContainer)
 
 	//playerUI.SecondInterface.Container.AddChild(playerUI.StatsUI.rootContainer)

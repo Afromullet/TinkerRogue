@@ -20,6 +20,7 @@ import (
 	"game_main/avatar"
 	"game_main/common"
 	"game_main/entitytemplates"
+	"game_main/gear"
 	"game_main/graphics"
 
 	"game_main/gui"
@@ -84,11 +85,19 @@ func NewGame() *Game {
 // When the Turn Counter hits 0, we reset all action points. That's our "unit of time"
 func ManageTurn(g *Game) {
 
+	g.gameUI.StatsUI.StatsTextArea.SetText(g.playerData.GetPlayerAttributes().AttributeText())
 	if g.ts.Turn == timesystem.PlayerTurn && !g.playerData.HasKeyInput {
+
+		//Apply Consumabl Effects at beginning of player turn
+		//gear.ConsumableEffectApplier(g.playerData.PlayerEntity)
 
 		input.PlayerActions(&g.em, &g.playerData, &g.gameMap, &g.gameUI, &g.ts)
 		if g.playerData.HasKeyInput {
 
+			fmt.Println("Printing attributes ")
+			gear.RunEffectTracker(g.playerData.PlayerEntity)
+			fmt.Println(g.playerData.GetPlayerAttributes().AttributeText())
+			g.gameUI.StatsUI.StatsTextArea.SetText(g.playerData.GetPlayerAttributes().AttributeText())
 			g.ts.Turn = timesystem.MonsterTurn
 
 		}

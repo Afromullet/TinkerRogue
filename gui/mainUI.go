@@ -3,12 +3,14 @@ package gui
 import (
 	"fmt"
 	"game_main/avatar"
+	"game_main/common"
 	"game_main/gear"
 	"image"
 	"image/color"
 	_ "image/png"
 	"strconv"
 
+	"github.com/bytearena/ecs"
 	"github.com/ebitenui/ebitenui"
 	e_image "github.com/ebitenui/ebitenui/image"
 	"github.com/ebitenui/ebitenui/widget"
@@ -42,7 +44,8 @@ type ItemDisplayer interface {
 // Anything that displays the inventory will have to use this struct through composition.
 // Originally I ran into problems with having multiple windows due to the ItemDisplayCOntain
 type ItemDisplay struct {
-	inventory            *gear.Inventory   //Makes everything easier if every ItemDisplay has a pointer to the inventory
+	inventory            *gear.Inventory //Makes everything easier if every ItemDisplay has a pointer to the inventory
+	playerEntity         *ecs.Entity
 	RootContainer        *widget.Container //Holds all of the GUI elements
 	RooWindow            *widget.Window    //Window to hold the root container content
 	ItemDisplayContainer *widget.Container //Container that holds the items to be displayed
@@ -219,14 +222,14 @@ func CreateItemContainers(playerUI *PlayerUI, inv *gear.Inventory, pl *avatar.Pl
 
 	playerUI.ItemsUI.ThrowableItemDisplay.playerData = pl
 
-	CreateItemManagementUI(playerUI, pl.Inv)
+	CreateItemManagementUI(playerUI, pl.Inv, pl.GetPlayerAttributes(), pl.PlayerEntity)
 
 	return itemDisplayOptionsContainer
 
 }
 
 // Creates the main UI container
-func CreatePlayerItemsUI(playerUI *PlayerUI, inv *gear.Inventory, pl *avatar.PlayerData) *ebitenui.UI {
+func CreatePlayerUI(playerUI *PlayerUI, inv *gear.Inventory, pl *avatar.PlayerData) *ebitenui.UI {
 
 	ui := ebitenui.UI{}
 
@@ -252,32 +255,15 @@ func CreatePlayerItemsUI(playerUI *PlayerUI, inv *gear.Inventory, pl *avatar.Pla
 		),
 	)
 
-	statsAnchorContainer := widget.NewContainer(
-		widget.ContainerOpts.WidgetOpts(
-			widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{
-				HorizontalPosition: widget.AnchorLayoutPositionCenter,
-				VerticalPosition:   widget.AnchorLayoutPositionEnd,
-				StretchHorizontal:  true,
-				StretchVertical:    true,
-			}),
-			widget.WidgetOpts.MinSize(400, 300), // Adjust as necessary
-		),
-	)
+	rootContainer.AddChild(inventoryAnchorContainer)
 
 	itemDisplayOptionsContainer := CreateItemContainers(playerUI, inv, pl, &ui)
 
-	//playerUI.StatsUI.CreateStatsUI()
+	playerUI.StatsUI.CreateStatsUI()
+	playerUI.StatsUI.StatsTextArea.SetText(pl.GetPlayerAttributes().AttributeText())
 	inventoryAnchorContainer.AddChild(itemDisplayOptionsContainer)
 
-	debugLabel := widget.NewText(
-		widget.TextOpts.Text("Label 1 (NewText)", face, color.White),
-	)
-	//Set the
-
-	statsAnchorContainer.AddChild(debugLabel) //debug why this does nt show up
-
-	rootContainer.AddChild(inventoryAnchorContainer)
-	rootContainer.AddChild(statsAnchorContainer)
+	rootContainer.AddChild(playerUI.StatsUI.StatsTextArea)
 
 	ui.Container = rootContainer
 
@@ -418,7 +404,7 @@ func CreateOpenConsumablesButton(playerUI *PlayerUI, inv *gear.Inventory, ui *eb
 			r := image.Rect(0, 0, x, y)
 			r = r.Add(image.Point{200, 50})
 			playerUI.ItemsUI.ConsumableDisplay.ItmDisplay.RooWindow.SetLocation(r)
-			playerUI.ItemsUI.ConsumableDisplay.DisplayInventory(inv)
+			playerUI.ItemsUI.ConsumableDisplay.DisplayInventory() //Remove the item from display
 			ui.AddWindow(playerUI.ItemsUI.ConsumableDisplay.ItmDisplay.RooWindow)
 
 		}),
@@ -430,12 +416,19 @@ func CreateOpenConsumablesButton(playerUI *PlayerUI, inv *gear.Inventory, ui *eb
 
 //For creating a window that the Item Display related containers are shown in
 
-func CreateItemManagementUI(playerUI *PlayerUI, playerInventory *gear.Inventory) {
+func CreateItemManagementUI(playerUI *PlayerUI, playerInventory *gear.Inventory, playerAttributes *common.Attributes, playerEnt *ecs.Entity) {
 
 	playerUI.ItemsUI.CraftingItemDisplay.ItmDisplay.inventory = playerInventory
 	playerUI.ItemsUI.ThrowableItemDisplay.ItmDisp.inventory = playerInventory
 	playerUI.ItemsUI.EquipmentDisplay.ItmDisplay.inventory = playerInventory
 	playerUI.ItemsUI.ConsumableDisplay.ItmDisplay.inventory = playerInventory
+
+	playerUI.ItemsUI.CraftingItemDisplay.ItmDisplay.playerEntity = playerEnt
+	playerUI.ItemsUI.ThrowableItemDisplay.ItmDisp.playerEntity = playerEnt
+	playerUI.ItemsUI.EquipmentDisplay.ItmDisplay.playerEntity = playerEnt
+	playerUI.ItemsUI.ConsumableDisplay.ItmDisplay.playerEntity = playerEnt
+
+	playerUI.ItemsUI.ConsumableDisplay.playerAttributes = playerAttributes
 
 	playerUI.ItemsUI.CraftingItemDisplay.CreateContainers()
 	playerUI.ItemsUI.CraftingItemDisplay.ItmDisplay.CreateInventoryDisplayWindow("Crafting Window")

@@ -156,6 +156,7 @@ func HandlePlayerThrowable(ecsmanager *common.EntityManager, pl *avatar.PlayerDa
 
 			ApplyThrowable(ecsmanager, pl.ThrowableItem, pl, pl.ThrowingAOEShape, playerUI, pl.Pos)
 
+			// Calling this again removes the item for the GUI
 			playerUI.ItemsUI.ThrowableItemDisplay.DisplayInventory()
 
 			//Todo does not work to clear throwing GUI elements
