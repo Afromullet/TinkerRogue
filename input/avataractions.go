@@ -151,21 +151,21 @@ func HandlePlayerThrowable(ecsmanager *common.EntityManager, pl *avatar.PlayerDa
 		//if inpututil.IsMouseButtonJustPressed(ebiten.MouseButton1)
 		if inpututil.IsKeyJustReleased(ebiten.KeyT) {
 
-			indices := throwable.Shape.GetIndices()
+			if throwable.InRange(pl.Pos) {
+				indices := throwable.Shape.GetIndices()
 
-			//todo add check here that only lets someone throw if the area is in range. TileBasedShapes
-			//Need a "getorigin" or "getstart" function
+				//todo add check here that only lets someone throw if the area is in range. TileBasedShapes
+				//Need a "getorigin" or "getstart" function
 
-			pl.RemoveThrownItem(pl.Inv)
+				pl.RemoveThrownItem(pl.Inv)
 
-			ApplyThrowable(ecsmanager, pl.ThrowableItem, pl, pl.ThrowingAOEShape, playerUI, pl.Pos)
+				ApplyThrowable(ecsmanager, pl.ThrowableItem, pl, pl.ThrowingAOEShape, playerUI, pl.Pos)
 
-			// Calling this again removes the item for the GUI
-			playerUI.ItemsUI.ThrowableItemDisplay.DisplayInventory()
+				// Calling this again removes the item for the GUI
+				playerUI.ItemsUI.ThrowableItemDisplay.DisplayInventory()
 
-			//Todo does not work to clear throwing GUI elements
+				//Todo does not work to clear throwing GUI elements
 
-			if !pl.InputStates.IsThrowing {
 				gm.ApplyColorMatrix(PrevThrowInds, graphics.NewEmptyMatrix())
 				gm.ApplyColorMatrix(indices, graphics.NewEmptyMatrix())
 				playerUI.SetThrowableItemSelected(false) //TOdo this is a problem

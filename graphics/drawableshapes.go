@@ -1,5 +1,7 @@
 package graphics
 
+//...There has to be a way to make this less repetitive.
+
 /*
 Lots of steps in adding a new shape. It's clunky, but there shouldn't be too many more shapes.
 
@@ -99,12 +101,14 @@ func InBounds(x, y int) bool {
 // Interfaces for a Type that draws a shape on the map
 // GetIndices returns the indices the shape covers.
 // UpdatePositions updates the starting position of the shape.
+// GetStartPosition returns the Position of the coordinates the drawing starts at
 // Each shape will have to determine how to draw the shape using indices
 // This does not handle the ColorMatrix..DrawLevel currently applies teh ColorMatrix
 type TileBasedShape interface {
 	GetIndices() []int
 	UpdatePosition(pixelX int, pixelY int)
 	UpdateShape(updater ShapeUpdater)
+	StartPosition() (int, int)
 }
 
 // The square is drawn around (PixelX,PixelY)
@@ -145,6 +149,12 @@ func (s *TileSquare) UpdateShape(updater ShapeUpdater) {
 	s.PixelX = updater.PixelX
 	s.PixelY = updater.PixelY
 	s.Size = updater.Size
+
+}
+
+func (s *TileSquare) StartPosition() (int, int) {
+
+	return s.PixelX, s.PixelY
 
 }
 
@@ -213,6 +223,12 @@ func (l *TileLine) UpdateShape(updater ShapeUpdater) {
 	l.pixelX = updater.PixelX
 	l.pixelY = updater.PixelY
 	l.direction = updater.Direction
+
+}
+
+func (l *TileLine) StartPosition() (int, int) {
+
+	return l.pixelX, l.pixelY
 
 }
 
@@ -327,6 +343,12 @@ func (c *TileCone) UpdateShape(updater ShapeUpdater) {
 
 }
 
+func (c *TileCone) StartPosition() (int, int) {
+
+	return c.pixelX, c.pixelY
+
+}
+
 func NewTileCone(pixelX, pixelY, length int, direction ShapeDirection) *TileCone {
 
 	return &TileCone{
@@ -426,6 +448,11 @@ func (c *TileCircle) UpdateShape(updater ShapeUpdater) {
 	c.radius = updater.Radius
 }
 
+func (c *TileCircle) StartPosition() (int, int) {
+
+	return c.pixelX, c.pixelY
+}
+
 func NewTileCircle(pixelX, pixelY, radius int) *TileCircle {
 
 	return &TileCircle{
@@ -475,6 +502,12 @@ func (r *TileRectangle) UpdateShape(updater ShapeUpdater) {
 	r.pixelY = updater.PixelY
 	r.width = updater.Width
 	r.height = updater.height
+
+}
+
+func (r *TileRectangle) StartPosition() (int, int) {
+
+	return r.pixelX, r.pixelY
 
 }
 

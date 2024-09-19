@@ -39,7 +39,7 @@ import (
 // Using https://www.fatoldyeti.com/categories/roguelike-tutorial/ as a starting point.
 // Copying some of the code with modification. Whenever I change a name, it's to help me build a better mental model
 // Of what the code is doing as I'm learning GoLang
-var DEBUG_MODE = true
+var DEBUG_MODE = false
 
 type Game struct {
 	em         common.EntityManager
