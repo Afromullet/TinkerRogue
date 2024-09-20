@@ -101,3 +101,32 @@ func CreateTextArea() *widget.TextArea {
 	)
 
 }
+
+func CreateButton(text string) *widget.Button {
+	// construct a button
+	button := widget.NewButton(
+		// set general widget options
+		widget.ButtonOpts.WidgetOpts(
+			// instruct the container's anchor layout to center the button both horizontally and vertically
+			widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{
+				HorizontalPosition: widget.AnchorLayoutPositionCenter,
+				VerticalPosition:   widget.AnchorLayoutPositionCenter,
+			}),
+		),
+
+		widget.ButtonOpts.Image(buttonImage),
+		widget.ButtonOpts.Text(text, face, &widget.ButtonTextColor{
+			Idle: color.NRGBA{0xdf, 0xf4, 0xff, 0xff},
+		}),
+
+		widget.ButtonOpts.TextPadding(widget.Insets{
+			Left:   30,
+			Right:  30,
+			Top:    30,
+			Bottom: 30,
+		}),
+	)
+
+	return button
+
+}

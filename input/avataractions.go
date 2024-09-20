@@ -157,7 +157,7 @@ func HandlePlayerThrowable(ecsmanager *common.EntityManager, pl *avatar.PlayerDa
 				//todo add check here that only lets someone throw if the area is in range. TileBasedShapes
 				//Need a "getorigin" or "getstart" function
 
-				pl.RemoveThrownItem(pl.Inv)
+				pl.RemoveThrownItem(pl.Inventory)
 
 				ApplyThrowable(ecsmanager, pl.ThrowableItem, pl, pl.ThrowingAOEShape, playerUI, pl.Pos)
 
@@ -317,7 +317,7 @@ func PlayerPickupItem(pl *avatar.PlayerData, gm *worldmap.GameMap) {
 
 		renderable := common.GetComponentType[*rendering.Renderable](itemFromTile, rendering.RenderableComponent)
 		renderable.Visible = false
-		pl.Inv.AddItem(itemFromTile)
+		pl.Inventory.AddItem(itemFromTile)
 	}
 
 }

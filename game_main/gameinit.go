@@ -27,8 +27,8 @@ func InitializePlayerData(ecsmanager *common.EntityManager, pl *avatar.PlayerDat
 	attr.MaxHealth = 50
 	attr.CurrentHealth = 50
 	attr.AttackBonus = 5
-	attr.TotalMovementSpeed = 50
-	attr.BaseMovementSpeed = 50
+	attr.TotalMovementSpeed = 1
+	attr.BaseMovementSpeed = 1
 	attr.TotalAttackSpeed = 1
 
 	playerEntity := ecsmanager.World.NewEntity().
@@ -68,6 +68,6 @@ func InitializePlayerData(ecsmanager *common.EntityManager, pl *avatar.PlayerDat
 	inventory := common.GetComponentType[*gear.Inventory](pl.PlayerEntity, gear.InventoryComponent)
 
 	pl.Pos = startPos
-	pl.Inv = inventory
+	pl.Inventory = inventory
 
 }

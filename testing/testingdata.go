@@ -40,8 +40,11 @@ func SetupPlayerForTesting(ecsmanager *common.EntityManager, pl *avatar.PlayerDa
 
 	r := CreatedRangedWeapon(ecsmanager.World, "Ranged Weapon 1", "../assets/items/sword.png", *pl.Pos, 5, 10, 3, TestCone)
 
+	a := CreateArmor(ecsmanager.World, "Armor 1", *pl.Pos, "../assets/items/sword.png", 1, 5, 1)
+
 	pl.Equipment.PlayerMeleeWeapon = w
 	pl.Equipment.PlayerRangedWeapon = r
+	pl.Equipment.PlArmor = a
 
 	armor := gear.Armor{
 		ArmorClass:  1,
@@ -238,6 +241,20 @@ func CreateWeapon(manager *ecs.Manager, name string, pos common.Position, imageP
 	})
 
 	return weapon
+
+}
+
+func CreateArmor(manager *ecs.Manager, name string, pos common.Position, imagePath string, ac int, prot int, dodge float32) *ecs.Entity {
+
+	armor := CreateItem(manager, name, pos, imagePath)
+
+	armor.AddComponent(gear.MeleeWeaponComponent, &gear.Armor{
+		ArmorClass:  ac,
+		Protection:  prot,
+		DodgeChance: dodge,
+	})
+
+	return armor
 
 }
 

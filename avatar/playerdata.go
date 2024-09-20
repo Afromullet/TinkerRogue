@@ -27,6 +27,8 @@ type PlayerEquipment struct {
 	RangedWeaponMaxDistance int
 	RangedWeaponAOEShape    graphics.TileBasedShape
 	PlayerArmor             *gear.Armor
+
+	PlArmor *ecs.Entity //Will call this PlayerArmor soon. Replacing the gear.armor type gradually
 }
 
 func (pl *PlayerEquipment) GetPlayerRangedWeapon() *gear.RangedWeapon {
@@ -96,8 +98,29 @@ type PlayerData struct {
 
 	PlayerEntity *ecs.Entity
 
-	Pos *common.Position
-	Inv *gear.Inventory
+	Pos       *common.Position
+	Inventory *gear.Inventory
+}
+
+func (pl *PlayerData) UnequipMeleeWeapon() {
+
+	pl.Inventory.AddItem(pl.Equipment.PlayerMeleeWeapon)
+	pl.Equipment.PlayerMeleeWeapon = nil
+
+}
+
+func (pl *PlayerData) UnequipRangedWeapon() {
+
+	pl.Inventory.AddItem(pl.Equipment.PlayerRangedWeapon)
+	pl.Equipment.PlayerRangedWeapon = nil
+
+}
+
+func (pl *PlayerData) UnequipArmor() {
+
+	//pl.Inventory.AddItem(pl.Equipment.PlayerMeleeWeapon)
+	//pl.Equipment.PlayerMeleeWeapon = nil
+
 }
 
 // Handles the conversions from the component type to the struct type

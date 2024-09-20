@@ -82,39 +82,20 @@ func (consDisplay *ConsumableItemDisplay) SetupContainers() {
 
 	consDisplay.ConsumableEffectText = CreateTextArea()
 	consDisplay.ItmDisplay.RootContainer.AddChild(consDisplay.ItmDisplay.ItemDisplayContainer)
-	button := consDisplay.CreateUseConsumableButton()
+
 	consDisplay.ItmDisplay.ItemSelectedContainer.AddChild(consDisplay.ConsumableEffectText)
-	consDisplay.ItmDisplay.ItemSelectedContainer.AddChild(button)
+	consDisplay.ItmDisplay.ItemSelectedContainer.AddChild(consDisplay.CreateUseConsumableButton())
 	consDisplay.ItmDisplay.RootContainer.AddChild(consDisplay.ItmDisplay.ItemSelectedContainer)
 
 }
 
 // Creating the button that lets use a consumable
 func (consDisplay *ConsumableItemDisplay) CreateUseConsumableButton() *widget.Button {
+
 	// construct a button
-	button := widget.NewButton(
-		// set general widget options
-		widget.ButtonOpts.WidgetOpts(
-			// instruct the container's anchor layout to center the button both horizontally and vertically
-			widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{
-				HorizontalPosition: widget.AnchorLayoutPositionCenter,
-				VerticalPosition:   widget.AnchorLayoutPositionCenter,
-			}),
-		),
+	button := CreateButton("Use")
 
-		widget.ButtonOpts.Image(buttonImage),
-		widget.ButtonOpts.Text("Use Consumable", face, &widget.ButtonTextColor{
-			Idle: color.NRGBA{0xdf, 0xf4, 0xff, 0xff},
-		}),
-
-		widget.ButtonOpts.TextPadding(widget.Insets{
-			Left:   30,
-			Right:  30,
-			Top:    5,
-			Bottom: 5,
-		}),
-
-		// add a handler that reacts to clicking the button
+	button.Configure( // add a handler that reacts to clicking the button
 		widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
 
 			inv := consDisplay.ItmDisplay.GetInventory()
@@ -132,8 +113,7 @@ func (consDisplay *ConsumableItemDisplay) CreateUseConsumableButton() *widget.Bu
 
 			//consumable.ApplyEffect(consDisplay.playerAttributes)
 
-		}),
-	)
+		}))
 
 	return button
 

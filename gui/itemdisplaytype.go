@@ -190,5 +190,5 @@ func (ItemDisplay *ItemDisplay) GetInventoryListWidget(entries []any) *widget.Li
 }
 
 func (itemDisplay *ItemDisplay) GetInventory() *gear.Inventory {
-	return itemDisplay.playerData.Inv
+	return itemDisplay.playerData.Inventory
 }
