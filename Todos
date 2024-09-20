@@ -5,15 +5,16 @@ MAJOR
 Room Decoration (maybe)
 Larger map
 Add equipping and removing items
-Fix throwing bugs (Throwing out of range)
-Fix bug that allows items in the inventory to be used multiple times (you can throw multiple times in a row or use a consumable multiple times)
 Effect stacking
+Correctly calculate player attributes once equipment is done. 
+Add a text box that displays game info (Attacking, missing, etc)
 
 
-The Action Queue does not seem to work correctly - creatures still only act once per turn even if the player is slower. I think this is because
-We perform all of the actions and don't resort the queue, meaning that only the first time actions are added will they be in energy order
+When a creature is one square away from the player, it does not approach for whatever reason. I think this is related to how queeing actions works
+Need better filling of actions on the action queue
 
-Properly handle player move action. Currently, it always uses the movement cost because of how closely coupled MovePlayer is with attacking
+
+
 
 
 ___Energy/Time System__
@@ -171,3 +172,15 @@ Everything GUI related
 Action Queue needs to have fewer redundant methods
 
 PlayerData
+
+________________
+
+Problem with energy system - this is what someone described on discord that may help me discover issues with my current implemenation
+
+In an energy system you generally want to treat everyone the same, and not really have an action queue per se
+What you want is a list of all actors instead
+You get through all of them, replenish energy based on speed, and then run a decision process
+If the actor is a player then you break the turn processing and wait for the UI
+If it's a mob then it should decide what it wants to do, and either it does the thing if it has energy, or does nothing
+Then it'll decide again on the next go around
+Even if you're doing complex behaviours you should just keep the state on the mob somehow, and break it down into single actions during the turn processing

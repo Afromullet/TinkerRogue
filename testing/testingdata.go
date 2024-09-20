@@ -6,7 +6,6 @@ import (
 	"game_main/entitytemplates"
 	"game_main/gear"
 	"game_main/graphics"
-	"game_main/monsters"
 	monster "game_main/monsters"
 	"game_main/rendering"
 	"game_main/timesystem"
@@ -33,13 +32,25 @@ var TestIceEffect = graphics.NewIceEffect(0, 0, 2)
 var TestElectricEffect = graphics.NewElectricityEffect(0, 0, 2)
 var TestStickyEffect = graphics.NewStickyGroundEffect(0, 0, 2)
 
+// Some extra steps taken to set the player weapons up for testing.
+// Need to update both the pointers in playerData and add the actual components
+// This is temporary
 func SetupPlayerForTesting(ecsmanager *common.EntityManager, pl *avatar.PlayerData) {
 	w := CreateWeapon(ecsmanager.World, "Weapon 1", *pl.Pos, "../assets/items/sword.png", 5, 10)
 
 	r := CreatedRangedWeapon(ecsmanager.World, "Ranged Weapon 1", "../assets/items/sword.png", *pl.Pos, 5, 10, 3, TestCone)
 
-	pl.PlayerWeapon = w
-	pl.PlayerRangedWeapon = r
+	pl.Equipment.PlayerMeleeWeapon = w
+	pl.Equipment.PlayerRangedWeapon = r
+
+	armor := gear.Armor{
+		ArmorClass:  1,
+		Protection:  5,
+		DodgeChance: 1}
+
+	pl.PlayerEntity.AddComponent(gear.ArmorComponent, &armor)
+
+	pl.Equipment.PlayerArmor = common.GetComponentType[*gear.Armor](pl.PlayerEntity, gear.ArmorComponent)
 
 }
 
@@ -123,45 +134,6 @@ func CreateTestItems(manager *ecs.Manager, tags map[string]ecs.Tag, gameMap *wor
 		throwItem, TestBurning, TestFreezing)
 
 	//CreateItem(manager, "Item"+strconv.Itoa(2), common.Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc, NewBurning(1, 1), NewFreezing(1, 2))
-
-}
-
-func CreateTestMonsters(em common.EntityManager, pl *avatar.PlayerData, gameMap *worldmap.GameMap) {
-	x, y := gameMap.Rooms[0].Center()
-
-	/*
-		wepArea := graphics.NewTileRectangle(0, 0, 1, 1)
-		wep := gear.RangedWeapon{
-			MinDamage:     3,
-			MaxDamage:     5,
-			ShootingRange: 5,
-			TargetArea:    wepArea,
-			AttackSpeed:   5,
-		}
-	*/
-
-	ent := entitytemplates.CreateCreatureFromTemplate(em, entitytemplates.MonsterTemplates[5], gameMap, x+1, y)
-	monsters.BehaviorSelector(ent, pl)
-
-	//ent = entitytemplates.CreateCreatureFromTemplate(em, entitytemplates.MonsterTemplates[1], gameMap, x+1, y)
-	//ent.AddComponent(monsters.EntityFollowComp, &monsters.EntityFollow{Target: pl.PlayerEntity})
-	//ent.AddComponent(gear.RangedWeaponComponent, &wep)
-	//ent.AddComponent(monster.WithinRangeComponent, &monsters.DistanceToEntityMovement{Target: pl.PlayerEntity, Distance: 3})
-	//ent.AddComponent(monster.RangeAttackBehaviorComp, &monster.AttackBehavior{})
-
-	/*
-		ent = entitytemplates.CreateCreatureFromTemplate(em, entitytemplates.MonsterTemplates[0], gameMap, x+2, y)
-
-		ent.AddComponent(monster.ChargeAttackComp, &monster.AttackBehavior{})
-
-		ent = entitytemplates.CreateCreatureFromTemplate(em, entitytemplates.MonsterTemplates[1], gameMap, x+3, y)
-		ent.AddComponent(monsters.WithinRangeComponent, &monsters.DistanceToEntityMovement{Distance: 5, Target: pl.PlayerEntity})
-	*/
-
-	/*
-		ent = entitytemplates.CreateCreatureFromTemplate(manager, entitytemplates.MonsterTemplates[0], gameMap, x+3, y)
-		ent.AddComponent(monsters.EntityFollowComp, &monsters.EntityFollow{Target: pl.PlayerEntity})
-	*/
 
 }
 

@@ -1,7 +1,6 @@
-package main
+package common
 
 import (
-	"game_main/common"
 	"game_main/graphics"
 	"image/color"
 	"log"
@@ -19,7 +18,7 @@ var err error = nil
 var mplusNormalFont font.Face = nil
 var lastText []string = make([]string, 0, 5)
 
-func ProcessUserLog(g *Game, screen *ebiten.Image) {
+func ProcessUserLog(ecsmanager EntityManager, screen *ebiten.Image) {
 	if userLogImg == nil {
 		userLogImg, _, err = ebitenutil.NewImageFromFile("../assets/UIPanel.png")
 		if err != nil {
@@ -53,17 +52,17 @@ func ProcessUserLog(g *Game, screen *ebiten.Image) {
 	tmpMessages := make([]string, 0, 5)
 	anyMessages := false
 
-	for _, m := range g.em.World.Query(g.em.WorldTags["messengers"]) {
-		messages := m.Components[common.UsrMsg].(*common.UserMessage)
+	for _, m := range ecsmanager.World.Query(ecsmanager.WorldTags["messengers"]) {
+		messages := m.Components[UserMsgComponent].(*UserMessage)
 		if messages.AttackMessage != "" {
 			tmpMessages = append(tmpMessages, messages.AttackMessage)
 			anyMessages = true
-			
+
 			messages.AttackMessage = ""
 		}
 	}
-	for _, m := range g.em.World.Query(g.em.WorldTags["messengers"]) {
-		messages := m.Components[common.UsrMsg].(*common.UserMessage)
+	for _, m := range ecsmanager.World.Query(ecsmanager.WorldTags["messengers"]) {
+		messages := m.Components[UserMsgComponent].(*UserMessage)
 
 		if messages.GameStateMessage != "" {
 			tmpMessages = append(tmpMessages, messages.GameStateMessage)

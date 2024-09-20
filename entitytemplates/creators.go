@@ -42,17 +42,16 @@ func CreateCreatureFromTemplate(manager common.EntityManager, m JSONMonster, gm 
 	ind := graphics.IndexFromXY(xPos, yPos)
 	gm.Tiles[ind].Blocked = true
 
-	ent.AddComponent(common.AttributeComponent,
-		&common.Attributes{
-			MaxHealth:          m.Attributes.MaxHealth,
-			CurrentHealth:      m.Attributes.MaxHealth,
-			AttackBonus:        m.Attributes.AttackBonus,
-			BaseArmorClass:     m.Attributes.BaseArmorClass,
-			BaseProtection:     m.Attributes.BaseProtection,
-			BaseDodgeChance:    m.Attributes.BaseDodgeChance,
-			BaseMovementSpeed:  m.Attributes.BaseMovementSpeed,
-			TotalMovementSpeed: m.Attributes.BaseMovementSpeed,
-			TotalAttackSpeed:   3})
+	attr := common.Attributes{
+		MaxHealth:          m.Attributes.MaxHealth,
+		CurrentHealth:      m.Attributes.MaxHealth,
+		AttackBonus:        m.Attributes.AttackBonus,
+		BaseArmorClass:     m.Attributes.BaseArmorClass,
+		BaseProtection:     m.Attributes.BaseProtection,
+		BaseDodgeChance:    m.Attributes.BaseDodgeChance,
+		BaseMovementSpeed:  m.Attributes.BaseMovementSpeed,
+		TotalMovementSpeed: m.Attributes.BaseMovementSpeed,
+		TotalAttackSpeed:   1}
 
 	if m.Armor != nil {
 
@@ -72,6 +71,8 @@ func CreateCreatureFromTemplate(manager common.EntityManager, m JSONMonster, gm 
 			AttackSpeed: m.MeleeWeapon.AttackSpeed,
 		}
 
+		attr.TotalAttackSpeed = weapon.AttackSpeed
+
 		ent.AddComponent(gear.MeleeWeaponComponent, &weapon)
 
 	}
@@ -84,10 +85,17 @@ func CreateCreatureFromTemplate(manager common.EntityManager, m JSONMonster, gm 
 			ShootingRange: m.RangedWeapon.ShootingRange,
 		}
 
+		attr.TotalAttackSpeed = weapon.AttackSpeed
+
 		ent.AddComponent(gear.RangedWeaponComponent, &weapon)
 
 	}
 
+	if attr.TotalAttackSpeed <= 0 {
+		attr.TotalAttackSpeed = 1
+	}
+
+	ent.AddComponent(common.AttributeComponent, &attr)
 	ent.AddComponent(timesystem.ActionQueueComponent, &timesystem.ActionQueue{TotalActionPoints: 100})
 
 	return ent

@@ -64,11 +64,12 @@ func NewGame() *Game {
 	g.ts.TurnCounter = 0
 
 	testing.CreateTestItems(g.em.World, g.em.WorldTags, &g.gameMap)
-	testing.CreateTestMonsters(g.em, &g.playerData, &g.gameMap)
+
 	testing.SetupPlayerForTesting(&g.em, &g.playerData)
 
 	testing.UpdateContentsForTest(&g.em, &g.gameMap)
 	spawning.SpawnStartingCreatures(10, &g.em, &g.gameMap, &g.playerData)
+
 	testing.CreateTestConsumables(&g.em, &g.gameMap)
 	testing.InitTestActionManager(&g.em, &g.playerData, &g.ts)
 
@@ -119,25 +120,24 @@ func ManageTurn(g *Game) {
 
 		// Returns true if the next action is the player.
 
-		if g.ts.ActionDispatcher.ExecuteActionsUntilPlayer(&g.playerData) {
+		//ExecuteActionsUntilPlayer2 places the queue back in priority order. The old function executes each action only once
+		// untilk the player
+		if g.ts.ActionDispatcher.ExecuteActionsUntilPlayer2(&g.playerData) {
 
 			//Perform the players action
 			g.ts.ActionDispatcher.ExecuteFirst()
 
 		}
 
-		g.ts.ActionDispatcher.ReorderActions()
+		g.ts.ActionDispatcher.ReorderActions() // If executefirst inserts in priority order I won't need this
 		g.ts.UpdateTurnCounter()
-		if g.ts.TurnCounter == 0 {
-			g.ts.ActionDispatcher.ResetActionPoints()
-		}
 
 		g.playerData.InputStates.HasKeyInput = false
 		g.ts.Turn = timesystem.PlayerTurn
 
 		if g.ts.TotalNumTurns%10 == 0 {
 
-			spawning.SpawnMonster(g.em, &g.gameMap)
+			//addspawning.SpawnMonster(g.em, &g.gameMap)
 		}
 
 		RemoveDeadEntities(&g.em, g.ts.ActionDispatcher, &g.gameMap)
@@ -195,7 +195,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 
 	rendering.ProcessRenderables(&g.em, g.gameMap, screen, DEBUG_MODE)
 
-	ProcessUserLog(g, screen)
+	common.ProcessUserLog(g.em, screen)
 
 	graphics.VXHandler.DrawVisualEffects(screen)
 	g.gameUI.MainPlayerInterface.Draw(screen)

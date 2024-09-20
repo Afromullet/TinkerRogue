@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"game_main/avatar"
 	"game_main/gear"
 	"image/color"
 
@@ -13,7 +14,10 @@ type EquipmentItemDisplay struct {
 	ItemSelectedContainer     *widget.Container //Displays the items the user HAS selected for crafitng
 	ItemSelectedStats         *widget.Container //Container the stats of the selected item
 	ItemsSelectedPropTextArea *widget.TextArea  //Displays the properties of the selected items
-	ThrowableItemSelected     bool
+	MeleeWepText              *widget.TextArea  //Displays the properties of the selected items
+	RangeWepText              *widget.TextArea  //Displays the properties of the selected items
+	ArmorText                 *widget.TextArea  //Displays the properties of the selected items
+	playerEq                  *avatar.PlayerEquipment
 }
 
 // Selects an item and adds it to the ItemsSelectedContainer container and ItemsSelectedPropContainer
@@ -56,9 +60,10 @@ func (equipmentDisplay *EquipmentItemDisplay) CreateContainers() {
 		widget.ContainerOpts.BackgroundImage(e_image.NewNineSliceColor(color.NRGBA{100, 100, 100, 255})),
 		widget.ContainerOpts.Layout(widget.NewGridLayout(
 			// It is using a GridLayout with a single column
-			widget.GridLayoutOpts.Columns(3),
+			widget.GridLayoutOpts.Columns(5),
+			widget.GridLayoutOpts.Stretch([]bool{true, true, true, true, true}, []bool{true, true, true, true, true}),
 
-			widget.GridLayoutOpts.Stretch([]bool{true, true, true}, []bool{true, true, true}),
+			//widget.GridLayoutOpts.Stretch([]bool{true, true, true}, []bool{true, true, true}),
 			// Padding defines how much space to put around the outside of the grid.
 			widget.GridLayoutOpts.Padding(widget.Insets{
 				Top:    50,
@@ -82,6 +87,35 @@ func (equipmentDisplay *EquipmentItemDisplay) CreateContainers() {
 		widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
 	)
 
+	equipmentDisplay.MeleeWepText = CreateTextArea()
+	equipmentDisplay.RangeWepText = CreateTextArea()
+	equipmentDisplay.ArmorText = CreateTextArea()
+
 	equipmentDisplay.ItmDisplay.RootContainer.AddChild(equipmentDisplay.ItmDisplay.ItemDisplayContainer)
 	equipmentDisplay.ItmDisplay.RootContainer.AddChild(equipmentDisplay.ItemSelectedContainer)
+	equipmentDisplay.ItmDisplay.RootContainer.AddChild(equipmentDisplay.MeleeWepText)
+	equipmentDisplay.ItmDisplay.RootContainer.AddChild(equipmentDisplay.RangeWepText)
+	equipmentDisplay.ItmDisplay.RootContainer.AddChild(equipmentDisplay.ArmorText)
+
+}
+
+func (equipmentDisplay *EquipmentItemDisplay) UpdateEquipmentDisplayText() {
+
+	//pl := equipmentDisplay.ItmDisplay.playerEntity
+
+	//armor := common.GetComponentType[*gear.Armor](pl, gear.ArmorComponent)
+
+	if equipmentDisplay.playerEq.PlayerMeleeWeapon != nil {
+
+		equipmentDisplay.MeleeWepText.SetText(equipmentDisplay.playerEq.GetPlayerMeleeWeapon().WeaponString())
+	}
+
+	if equipmentDisplay.playerEq.PlayerRangedWeapon != nil {
+		equipmentDisplay.RangeWepText.SetText(equipmentDisplay.playerEq.GetPlayerRangedWeapon().WeaponString())
+	}
+
+	if equipmentDisplay.playerEq.PlayerArmor != nil {
+		equipmentDisplay.ArmorText.SetText(equipmentDisplay.playerEq.PlayerArmor.ArmorString())
+	}
+
 }

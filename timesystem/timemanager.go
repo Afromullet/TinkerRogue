@@ -43,6 +43,42 @@ func (am *ActionManager) ExecuteActionsUntilPlayer(pl *avatar.PlayerData) bool {
 
 }
 
+// Does not work as intended. ExecuteActionsUntilPlayer executes each action only once until we reach the player
+// This intends to fix it by inserting the queue back in priority order so that the time system works as intended
+func (am *ActionManager) ExecuteActionsUntilPlayer2(pl *avatar.PlayerData) bool {
+	for {
+		if am.EntityActions[0].Entity == pl.PlayerEntity {
+			return true
+		}
+
+		// Execute the action for the entity with the highest TotalActionPoints
+		am.EntityActions[0].ExecuteActionWithoutRemoving()
+
+		// Check if the entity has enough TotalActionPoints to continue acting
+		if am.EntityActions[0].TotalActionPoints > 0 {
+			// Move the action queue to the correct position
+			act := am.EntityActions[0]
+			am.EntityActions = am.EntityActions[1:]                 // Remove from the front
+			am.EntityActions = insertInOrder(am.EntityActions, act) // Reinsert in the correct order
+		} else {
+			// No more action points, simply move to the back of the queue
+			am.EntityActions = append(am.EntityActions[1:], am.EntityActions[0])
+		}
+	}
+}
+
+// Helper function to insert an ActionQueue back into the slice in the correct order
+func insertInOrder(actions []*ActionQueue, act *ActionQueue) []*ActionQueue {
+	index := sort.Search(len(actions), func(i int) bool {
+		if actions[i].TotalActionPoints == act.TotalActionPoints {
+			return i < len(actions)-1 // Ensures stable order for equal points
+		}
+		return actions[i].TotalActionPoints < act.TotalActionPoints
+	})
+	actions = append(actions[:index], append([]*ActionQueue{act}, actions[index:]...)...)
+	return actions
+}
+
 func (am *ActionManager) AddActionQueue(aq *ActionQueue) {
 
 	if !am.containsActionQueue(aq) {
@@ -97,8 +133,8 @@ func (am *ActionManager) ExecuteFirst() {
 	if len(am.EntityActions) > 0 {
 
 		am.EntityActions[0].ExecuteAction()
-		firstAction := am.EntityActions[0]
-		am.EntityActions = append(am.EntityActions[1:], firstAction)
+		//firstAction := am.EntityActions[0]
+		//am.EntityActions = append(am.EntityActions[1:], firstAction)
 	}
 
 }

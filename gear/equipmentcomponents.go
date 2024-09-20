@@ -4,6 +4,7 @@ import (
 	"game_main/common"
 	"game_main/graphics"
 	"math/big"
+	"strconv"
 
 	cryptorand "crypto/rand"
 
@@ -23,6 +24,17 @@ type Armor struct {
 	DodgeChance float32
 }
 
+func (a *Armor) ArmorString() string {
+
+	s := ""
+	s += "Armor Class: " + strconv.Itoa(a.ArmorClass) + "\n"
+	s += "Protection: " + strconv.Itoa(a.Protection) + "\n"
+	s += "Dodge: " + strconv.FormatFloat(float64(a.DodgeChance), 'f', 2, 32) + "\n"
+
+	return s
+
+}
+
 func GetArmor(e *ecs.Entity) *Armor {
 	return common.GetComponentType[*Armor](e, ArmorComponent)
 }
@@ -35,6 +47,17 @@ type MeleeWeapon struct {
 	MinDamage   int
 	MaxDamage   int
 	AttackSpeed int
+}
+
+func (w *MeleeWeapon) WeaponString() string {
+
+	s := ""
+	s += "Min Damage: " + strconv.Itoa(w.MinDamage) + "\n"
+	s += "Max Damage: " + strconv.Itoa(w.MaxDamage) + "\n"
+	s += "AttackSpeed: " + strconv.Itoa(w.AttackSpeed) + "\n"
+
+	return s
+
 }
 
 func (w MeleeWeapon) CalculateDamage() int {
@@ -53,6 +76,18 @@ type RangedWeapon struct {
 	TargetArea    graphics.TileBasedShape
 	ShootingVX    *graphics.Projectile
 	AttackSpeed   int
+}
+
+func (w *RangedWeapon) WeaponString() string {
+
+	s := ""
+	s += "Min Damage: " + strconv.Itoa(w.MinDamage) + "\n"
+	s += "Max Damage: " + strconv.Itoa(w.MaxDamage) + "\n"
+	s += "Attack Speed: " + strconv.Itoa(w.AttackSpeed) + "\n"
+	s += "Range: " + strconv.Itoa(w.ShootingRange) + "\n"
+
+	return s
+
 }
 
 // todo add ammo to this

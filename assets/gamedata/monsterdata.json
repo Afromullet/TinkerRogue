@@ -42,7 +42,7 @@
       "meleeWeapon": {
         "minDamage": 6,
         "maxDamage": 12,
-        "attackSpeed": 2
+        "attackSpeed": 1
       },
       "rangedWeapon": null
     },
@@ -65,7 +65,7 @@
       "meleeWeapon": {
         "minDamage": 5,
         "maxDamage": 9,
-        "attackSpeed": 3
+        "attackSpeed": 1
       },
       "rangedWeapon": null
     },

@@ -50,24 +50,30 @@ func SpawnStartingCreatures(MaxNumCreatures int, em *common.EntityManager, gm *w
 
 	//Spawn 1 random creature in every room except the starting room
 
-	randCreature := 0
-	for _, room := range gm.Rooms[1:] {
+	x, y := gm.Rooms[0].Center()
+	ent := entitytemplates.CreateCreatureFromTemplate(*em, entitytemplates.MonsterTemplates[0], gm, x+3, y)
+	monsters.BehaviorSelector(ent, pl)
 
-		x, y := room.Center()
-		randCreature = rand.Intn(len(entitytemplates.MonsterTemplates))
-		ent := entitytemplates.CreateCreatureFromTemplate(*em, entitytemplates.MonsterTemplates[randCreature], gm, x, y)
-		monsters.BehaviorSelector(ent, pl)
+	/*
+		randCreature := 0
+		for _, room := range gm.Rooms[1:] {
 
-	}
+			x, y := room.Center()
+			randCreature = rand.Intn(len(entitytemplates.MonsterTemplates))
+			ent := entitytemplates.CreateCreatureFromTemplate(*em, entitytemplates.MonsterTemplates[randCreature], gm, x, y)
+			monsters.BehaviorSelector(ent, pl)
 
-	for range MaxNumCreatures {
+		}
 
-		randCreature = rand.Intn(len(entitytemplates.MonsterTemplates))
-		indices := gm.Rooms[rand.Intn(len(gm.Rooms))].GetCoordinatesWithoutCenter()
-		randomPos := indices[rand.Intn(len(indices))]
+		for range MaxNumCreatures {
 
-		ent := entitytemplates.CreateCreatureFromTemplate(*em, entitytemplates.MonsterTemplates[randCreature], gm, randomPos.X, randomPos.Y)
-		monsters.BehaviorSelector(ent, pl)
-	}
+			randCreature = rand.Intn(len(entitytemplates.MonsterTemplates))
+			indices := gm.Rooms[rand.Intn(len(gm.Rooms))].GetCoordinatesWithoutCenter()
+			randomPos := indices[rand.Intn(len(indices))]
+
+			ent := entitytemplates.CreateCreatureFromTemplate(*em, entitytemplates.MonsterTemplates[randCreature], gm, randomPos.X, randomPos.Y)
+			monsters.BehaviorSelector(ent, pl)
+		}
+	*/
 
 }

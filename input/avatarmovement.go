@@ -35,6 +35,7 @@ func MovementControls(ecsmanager *common.EntityManager, pl *avatar.PlayerData, g
 	}
 
 	if inpututil.IsKeyJustReleased(ebiten.KeyW) {
+
 		y = -1
 		act, cost := GetPlayerMoveAction(PlayerMoveAction, ecsmanager, pl, gm, x, y)
 		AddPlayerAction(act, pl, cost, timesystem.MovementKind)

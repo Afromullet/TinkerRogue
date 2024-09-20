@@ -20,11 +20,32 @@ type PlayerInputStates struct {
 	HasKeyInput bool //Tells us whether the player pressed any key.
 }
 
+// Armor is not an entity at the moment
 type PlayerEquipment struct {
-	PlayerWeapon            *ecs.Entity
+	PlayerMeleeWeapon       *ecs.Entity
 	PlayerRangedWeapon      *ecs.Entity
 	RangedWeaponMaxDistance int
 	RangedWeaponAOEShape    graphics.TileBasedShape
+	PlayerArmor             *gear.Armor
+}
+
+func (pl *PlayerEquipment) GetPlayerRangedWeapon() *gear.RangedWeapon {
+
+	weapon := common.GetComponentType[*gear.RangedWeapon](pl.PlayerRangedWeapon, gear.RangedWeaponComponent)
+
+	return weapon
+}
+
+func (pl *PlayerEquipment) GetPlayerMeleeWeapon() *gear.MeleeWeapon {
+
+	weapon := common.GetComponentType[*gear.MeleeWeapon](pl.PlayerMeleeWeapon, gear.MeleeWeaponComponent)
+
+	return weapon
+}
+
+func (pl *PlayerEquipment) GetPlayerArmor() *gear.Armor {
+
+	return pl.PlayerArmor
 }
 
 func (pl *PlayerEquipment) PrepareRangedAttack() {
@@ -69,7 +90,7 @@ func (pl *PlayerThrowable) RemoveThrownItem(inv *gear.Inventory) {
 // But for now, this works.
 // Maybe it's a good use case for a Singleton, but I will worry about that later.
 type PlayerData struct {
-	PlayerEquipment
+	Equipment PlayerEquipment
 	PlayerThrowable
 	InputStates PlayerInputStates
 
@@ -93,18 +114,4 @@ func (pl *PlayerData) GetPlayerAttributes() *common.Attributes {
 	attr := common.GetComponentType[*common.Attributes](pl.PlayerEntity, common.AttributeComponent)
 
 	return attr
-}
-
-func (pl *PlayerData) GetPlayerRangedWeapon() *gear.RangedWeapon {
-
-	weapon := common.GetComponentType[*gear.RangedWeapon](pl.PlayerRangedWeapon, gear.RangedWeaponComponent)
-
-	return weapon
-}
-
-func (pl *PlayerEquipment) GetPlayerWeapon() *gear.MeleeWeapon {
-
-	weapon := common.GetComponentType[*gear.MeleeWeapon](pl.PlayerWeapon, gear.MeleeWeaponComponent)
-
-	return weapon
 }

@@ -36,9 +36,10 @@ func NewOneTargetAttack(
 
 }
 
+// Removed the q.pop since we're not inserting things into the ActionQueue back in priority order.
 func (a *OneTargetAttack) Execute(q *ActionQueue) {
 	a.Func(a.Param1, a.Param2, a.Param3, a.Param4, a.Param5)
-	q.pop()
+	//q.pop()
 }
 
 // Wrapper around functions which move the *ecs.entity
@@ -63,7 +64,8 @@ func NewEntityMover(
 	}
 }
 
+// Removed the q.pop since we're not inserting things into the ActionQueue back in priority order.
 func (a *EntityMover) Execute(q *ActionQueue) {
 	a.Func(a.Param1, a.Param2, a.Param3)
-	q.pop()
+	//q.pop()
 }

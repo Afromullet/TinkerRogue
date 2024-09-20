@@ -140,17 +140,15 @@ func (a *ActionQueue) ExecuteAction() {
 }
 
 // Executes the first action without removing it from the queue.
-// WIP for getting the actionqueue working as intended.
-// The problem with ExecuteACtion is that it's removed from the queue,
-// Meaning that the next action won't be performed until the players next turn
-// That makes the action cost not work as intended
-func (a *ActionQueue) ExecuteActionWithoutRemovng() {
+
+func (a *ActionQueue) ExecuteActionWithoutRemoving() {
 	if len(a.AllActions) > 0 {
 
 		a.TotalActionPoints -= a.AllActions[0].Cost
 		a.AllActions[0].ActWrapper.Execute(a)
 
 	}
+
 }
 
 func (a *ActionQueue) NumOfActions() int {

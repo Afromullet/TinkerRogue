@@ -10,7 +10,7 @@ var (
 	PositionComponent  *ecs.Component
 	NameComponent      *ecs.Component
 	AttributeComponent *ecs.Component
-	UsrMsg             *ecs.Component //I can probably remove this later
+	UserMsgComponent   *ecs.Component //I can probably remove this later
 )
 
 // Wrapper around the ECS libraries manager and rags.

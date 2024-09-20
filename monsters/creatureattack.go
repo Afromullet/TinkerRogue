@@ -112,7 +112,7 @@ func ChargeAndAttack(ecsmanger *common.EntityManager, pl *avatar.PlayerData, gm 
 
 		return timesystem.NewOneTargetAttack(MeleeAttackHelper, ecsmanger, pl, gm, c, pl.PlayerEntity), attr.TotalAttackSpeed
 
-	} else if common.DistanceBetween(c.Entity, t) > 10 {
+	} else if common.DistanceBetween(c.Entity, t) > 30 {
 
 		return timesystem.NewEntityMover(NoMoveAction, ecsmanger, gm, c.Entity), attr.TotalMovementSpeed
 

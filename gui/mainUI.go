@@ -223,6 +223,7 @@ func CreateItemContainers(playerUI *PlayerUI, inv *gear.Inventory, pl *avatar.Pl
 	playerUI.ItemsUI.ThrowableItemDisplay.playerData = pl
 
 	CreateItemManagementUI(playerUI, pl.Inv, pl.GetPlayerAttributes(), pl.PlayerEntity)
+	UpdateEquipmentUI(playerUI, pl)
 
 	return itemDisplayOptionsContainer
 
@@ -370,6 +371,7 @@ func CreateOpenEquipmentButton(playerUI *PlayerUI, inv *gear.Inventory, ui *ebit
 			playerUI.ItemsUI.EquipmentDisplay.ItmDisplay.RooWindow.SetLocation(r)
 			playerUI.ItemsUI.EquipmentDisplay.DisplayInventory(inv)
 			ui.AddWindow(playerUI.ItemsUI.EquipmentDisplay.ItmDisplay.RooWindow)
+			playerUI.ItemsUI.EquipmentDisplay.UpdateEquipmentDisplayText()
 
 		}),
 	)
@@ -416,6 +418,12 @@ func CreateOpenConsumablesButton(playerUI *PlayerUI, inv *gear.Inventory, ui *eb
 
 //For creating a window that the Item Display related containers are shown in
 
+func UpdateEquipmentUI(playerUI *PlayerUI, pl *avatar.PlayerData) {
+
+	playerUI.ItemsUI.EquipmentDisplay.playerEq = &pl.Equipment
+
+}
+
 func CreateItemManagementUI(playerUI *PlayerUI, playerInventory *gear.Inventory, playerAttributes *common.Attributes, playerEnt *ecs.Entity) {
 
 	playerUI.ItemsUI.CraftingItemDisplay.ItmDisplay.inventory = playerInventory
@@ -423,6 +431,7 @@ func CreateItemManagementUI(playerUI *PlayerUI, playerInventory *gear.Inventory,
 	playerUI.ItemsUI.EquipmentDisplay.ItmDisplay.inventory = playerInventory
 	playerUI.ItemsUI.ConsumableDisplay.ItmDisplay.inventory = playerInventory
 
+	//This should really be at a higher level...
 	playerUI.ItemsUI.CraftingItemDisplay.ItmDisplay.playerEntity = playerEnt
 	playerUI.ItemsUI.ThrowableItemDisplay.ItmDisp.playerEntity = playerEnt
 	playerUI.ItemsUI.EquipmentDisplay.ItmDisplay.playerEntity = playerEnt

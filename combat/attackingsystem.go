@@ -20,14 +20,14 @@ func MeleeAttackSystem(ecsmanager *common.EntityManager, pl *avatar.PlayerData, 
 
 	var attacker *ecs.Entity = nil
 	var defender *ecs.Entity = nil
-
-	//var weaponComponent any
 	var weapon *gear.MeleeWeapon = nil
+	attackSuccess := false
 
 	if pl.Pos.IsEqual(attackerPos) {
 		attacker = pl.PlayerEntity
 		defender = GetCreatureAtPosition(ecsmanager, defenderPos)
-		weapon = pl.GetPlayerWeapon()
+
+		weapon = pl.Equipment.GetPlayerMeleeWeapon()
 
 	} else {
 		attacker = GetCreatureAtPosition(ecsmanager, attackerPos)
@@ -38,17 +38,65 @@ func MeleeAttackSystem(ecsmanager *common.EntityManager, pl *avatar.PlayerData, 
 
 	if weapon != nil {
 
-		PerformAttack(ecsmanager, pl, gm, weapon.CalculateDamage(), attacker, defender)
+		attackSuccess = PerformAttack(ecsmanager, pl, gm, weapon.CalculateDamage(), attacker, defender)
 
 	} else {
 		log.Print("Failed to attack. No weapon")
 	}
 
+	fmt.Println(attackSuccess)
+
+}
+
+// A monster performing a ranged attack is simple right now.
+// It ignores the weapons AOE and selects only the player as the target
+// Todo add nill check for when there is no weapon for a player or monster attacker
+func RangedAttackSystem(ecsmanager *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap, attackerPos *common.Position) {
+
+	var attacker *ecs.Entity = nil
+	var weapon *gear.RangedWeapon = nil
+	var targets []*ecs.Entity
+	attackSuccess := false
+
+	if pl.Pos.IsEqual(attackerPos) {
+		attacker = pl.PlayerEntity
+		weapon = pl.Equipment.GetPlayerRangedWeapon()
+		if weapon != nil {
+			targets = weapon.GetTargets(ecsmanager)
+		}
+	} else {
+		attacker = GetCreatureAtPosition(ecsmanager, attackerPos)
+		weapon = common.GetComponentType[*gear.RangedWeapon](attacker, gear.RangedWeaponComponent)
+		targets = append(targets, pl.PlayerEntity)
+	}
+
+	if weapon != nil {
+
+		for _, t := range targets {
+
+			defenderPos := common.GetPosition(t)
+			if attackerPos.InRange(defenderPos, weapon.ShootingRange) {
+
+				fmt.Println("Attacking")
+				attackSuccess = PerformAttack(ecsmanager, pl, gm, weapon.CalculateDamage(), attacker, t)
+				weapon.DisplayShootingVX(attackerPos, defenderPos)
+
+			}
+		}
+
+	} else {
+		log.Print("Failed to attack. No ranged weapon")
+
+	}
+
+	fmt.Println(attackSuccess)
+
 }
 
 // Passing the damage rather than the weapon so that Melee and Ranged Attacks can use the same function
 // Currently Melee and Ranged Weapons are different types without a common interface
-func PerformAttack(ecsmanagr *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap, damage int, attacker *ecs.Entity, defender *ecs.Entity) {
+// Returns true if attack hits. False otherwise.
+func PerformAttack(ecsmanagr *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap, damage int, attacker *ecs.Entity, defender *ecs.Entity) bool {
 
 	attAttr := common.GetAttributes(attacker)
 	defAttr := common.GetAttributes(defender)
@@ -68,6 +116,7 @@ func PerformAttack(ecsmanagr *common.EntityManager, pl *avatar.PlayerData, gm *w
 			}
 
 			defAttr.CurrentHealth -= totalDamage
+			return true
 
 		} else {
 			fmt.Println("Dodged")
@@ -77,48 +126,8 @@ func PerformAttack(ecsmanagr *common.EntityManager, pl *avatar.PlayerData, gm *w
 		fmt.Println("Missed")
 	}
 
+	return false
 	//RemoveDeadEntity(ecsmanagr, pl, gm, defender)
-}
-
-// A monster performing a ranged attack is simple right now.
-// It ignores the weapons AOE and selects only the player as the target
-// Todo add nill check for when there is no weapon for a player or monster attacker
-func RangedAttackSystem(ecsmanager *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap, attackerPos *common.Position) {
-
-	var attacker *ecs.Entity = nil
-
-	var weapon *gear.RangedWeapon = nil
-	var targets []*ecs.Entity
-
-	if pl.Pos.IsEqual(attackerPos) {
-		attacker = pl.PlayerEntity
-		weapon = pl.GetPlayerRangedWeapon()
-		if weapon != nil {
-			targets = weapon.GetTargets(ecsmanager)
-		}
-	} else {
-		attacker = GetCreatureAtPosition(ecsmanager, attackerPos)
-		weapon = common.GetComponentType[*gear.RangedWeapon](attacker, gear.RangedWeaponComponent)
-		targets = append(targets, pl.PlayerEntity)
-	}
-
-	if weapon != nil {
-
-		for _, t := range targets {
-
-			defenderPos := common.GetPosition(t)
-			if attackerPos.InRange(defenderPos, weapon.ShootingRange) {
-
-				PerformAttack(ecsmanager, pl, gm, weapon.CalculateDamage(), attacker, t)
-				weapon.DisplayShootingVX(attackerPos, defenderPos)
-
-			}
-		}
-
-	} else {
-		log.Print("Failed to attack. No ranged weapon")
-	}
-
 }
 
 // Does not remove the player if they die.

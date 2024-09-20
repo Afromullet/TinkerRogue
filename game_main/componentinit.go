@@ -24,7 +24,7 @@ func InitializeECS(ecsmanager *common.EntityManager) {
 	common.NameComponent = manager.NewComponent()
 	gear.InventoryComponent = manager.NewComponent()
 	common.AttributeComponent = manager.NewComponent()
-	common.UsrMsg = manager.NewComponent()
+	common.UserMsgComponent = manager.NewComponent()
 	gear.MeleeWeaponComponent = manager.NewComponent()
 	gear.RangedWeaponComponent = manager.NewComponent()
 	gear.ArmorComponent = manager.NewComponent()
@@ -32,7 +32,7 @@ func InitializeECS(ecsmanager *common.EntityManager) {
 	renderables := ecs.BuildTag(rendering.RenderableComponent, common.PositionComponent)
 	tags["renderables"] = renderables
 
-	messengers := ecs.BuildTag(common.UsrMsg)
+	messengers := ecs.BuildTag(common.UserMsgComponent)
 	tags["messengers"] = messengers
 
 	monsters.InitializeMovementComponents(manager, tags)

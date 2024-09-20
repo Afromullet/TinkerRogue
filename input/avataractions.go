@@ -192,9 +192,9 @@ func DrawRangedAttackAOE(pl *avatar.PlayerData, gm *worldmap.GameMap) {
 	gd := graphics.NewScreenData()
 	cursorX, cursorY := ebiten.CursorPosition()
 
-	s := pl.RangedWeaponAOEShape
+	s := pl.Equipment.RangedWeaponAOEShape
 
-	rangedWep := common.GetComponentType[*gear.RangedWeapon](pl.PlayerRangedWeapon, gear.RangedWeaponComponent)
+	rangedWep := common.GetComponentType[*gear.RangedWeapon](pl.Equipment.PlayerRangedWeapon, gear.RangedWeaponComponent)
 
 	updater := UpdateDirection(&rangedWep.TargetArea)
 	rangedWep.TargetArea.UpdateShape(updater)
@@ -217,7 +217,7 @@ func DrawRangedAttackAOE(pl *avatar.PlayerData, gm *worldmap.GameMap) {
 
 		pos := common.PositionFromIndex(i, gd.ScreenWidth)
 
-		if pos.InRange(pl.Pos, pl.RangedWeaponMaxDistance) {
+		if pos.InRange(pl.Pos, pl.Equipment.RangedWeaponMaxDistance) {
 			gm.ApplyColorMatrixToIndex(i, graphics.GreenColorMatrix)
 
 		} else {
@@ -237,7 +237,7 @@ func HandlePlayerRangedAttack(ecsmanager *common.EntityManager, pl *avatar.Playe
 
 	if pl.InputStates.IsShooting {
 
-		msg := common.GetComponentType[*common.UserMessage](pl.PlayerEntity, common.UsrMsg)
+		msg := common.GetComponentType[*common.UserMessage](pl.PlayerEntity, common.UserMsgComponent)
 
 		msg.GameStateMessage = "Shooting"
 		DrawRangedAttackAOE(pl, gm)
@@ -327,7 +327,7 @@ func PlayerSelectRangedTarget(pl *avatar.PlayerData, gm *worldmap.GameMap) {
 	gm.ApplyColorMatrix(PrevRangedAttInds, graphics.NewEmptyMatrix())
 
 	pl.InputStates.IsShooting = true
-	pl.PrepareRangedAttack()
+	pl.Equipment.PrepareRangedAttack()
 	DrawRangedAttackAOE(pl, gm)
 
 }
