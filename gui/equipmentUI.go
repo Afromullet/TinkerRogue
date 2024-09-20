@@ -1,7 +1,6 @@
 package gui
 
 import (
-	"game_main/avatar"
 	"game_main/gear"
 	"image/color"
 
@@ -9,20 +8,19 @@ import (
 	"github.com/ebitenui/ebitenui/widget"
 )
 
+// EquipmentItemDisplay shows the currently equipped weapons and armor and lets the player equip other items
+// Several TextAreas display the information the player
 type EquipmentItemDisplay struct {
-	ItmDisplay                ItemDisplay
-	ItemSelectedContainer     *widget.Container //Displays the items the user HAS selected for crafitng
-	ItemSelectedStats         *widget.Container //Container the stats of the selected item
-	ItemsSelectedPropTextArea *widget.TextArea  //Displays the properties of the selected items
-	MeleeWepText              *widget.TextArea  //Displays the properties of the selected items
-	RangeWepText              *widget.TextArea  //Displays the properties of the selected items
-	ArmorText                 *widget.TextArea  //Displays the properties of the selected items
-	playerEq                  *avatar.PlayerEquipment
+	ItmDisplay ItemDisplay
+
+	EquipmentSelectedContainer *widget.Container //Container the stats of the selected item
+	EquipmentSelectedText      *widget.TextArea  //Displays the properties of the selected items
+	MeleeWepText               *widget.TextArea  //Displays the properties of the selected items
+	RangeWepText               *widget.TextArea  //Displays the properties of the selected items
+	ArmorText                  *widget.TextArea  //Displays the properties of the selected items
+
 }
 
-// Selects an item and adds it to the ItemsSelectedContainer container and ItemsSelectedPropContainer
-// ItemSeleced container tells us which items we're crafting with
-// ItemsSelectedPropContainer tells which properties the items have
 func (equipmentDisplay *EquipmentItemDisplay) CreateInventoryList(propFilters ...gear.StatusEffects) {
 
 	inv := equipmentDisplay.ItmDisplay.GetInventory().GetEquipmentForDisplay([]int{})
@@ -30,7 +28,7 @@ func (equipmentDisplay *EquipmentItemDisplay) CreateInventoryList(propFilters ..
 
 	equipmentDisplay.ItmDisplay.InventoryDisplaylist.EntrySelectedEvent.AddHandler(func(args interface{}) {
 
-		equipmentDisplay.ItemSelectedContainer.RemoveChild(equipmentDisplay.ItmDisplay.ItemsSelectedList)
+		equipmentDisplay.ItmDisplay.ItemSelectedContainer.RemoveChild(equipmentDisplay.ItmDisplay.ItemsSelectedList)
 
 		a := args.(*widget.ListEntrySelectedEventArgs)
 		entry := a.Entry.(gear.InventoryListEntry)
@@ -38,7 +36,7 @@ func (equipmentDisplay *EquipmentItemDisplay) CreateInventoryList(propFilters ..
 		equipmentDisplay.ItmDisplay.ItemsSelectedList = equipmentDisplay.ItmDisplay.GetSelectedItems(entry.Index, equipmentDisplay.ItmDisplay.GetInventory())
 
 		if equipmentDisplay.ItmDisplay.ItemsSelectedList != nil {
-			equipmentDisplay.ItemSelectedContainer.AddChild(equipmentDisplay.ItmDisplay.ItemsSelectedList)
+			equipmentDisplay.ItmDisplay.ItemSelectedContainer.AddChild(equipmentDisplay.ItmDisplay.ItemsSelectedList)
 
 		}
 
@@ -54,8 +52,8 @@ func (equipmentDisplay *EquipmentItemDisplay) DisplayInventory(inventory *gear.I
 
 }
 
-func (equipmentDisplay *EquipmentItemDisplay) CreateContainers() {
-	// Main container that will hold the container for available items and the items selected
+func (equipmentDisplay *EquipmentItemDisplay) CreateRootContainer() {
+
 	equipmentDisplay.ItmDisplay.RootContainer = widget.NewContainer(
 		widget.ContainerOpts.BackgroundImage(e_image.NewNineSliceColor(color.NRGBA{100, 100, 100, 255})),
 		widget.ContainerOpts.Layout(widget.NewGridLayout(
@@ -73,26 +71,20 @@ func (equipmentDisplay *EquipmentItemDisplay) CreateContainers() {
 			widget.GridLayoutOpts.Spacing(0, 20))),
 	)
 
-	// Holds the widget that displays the selected items to the player
-	equipmentDisplay.ItemSelectedContainer = widget.NewContainer(
-		widget.ContainerOpts.BackgroundImage(e_image.NewNineSliceColor(color.NRGBA{100, 100, 100, 255})),
-		widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
-		widget.ContainerOpts.Layout(widget.NewRowLayout(
-			widget.RowLayoutOpts.Direction(widget.DirectionVertical),
-			widget.RowLayoutOpts.Spacing(10),
-		)))
+}
 
-	equipmentDisplay.ItmDisplay.ItemDisplayContainer = widget.NewContainer(
-		widget.ContainerOpts.BackgroundImage(e_image.NewNineSliceColor(color.NRGBA{100, 100, 100, 255})),
-		widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
-	)
+func (equipmentDisplay *EquipmentItemDisplay) SetupContainers() {
+
+	// Main container that will hold the container for available items and the items selected
+
+	// Holds the widget that displays the selected items to the player
 
 	equipmentDisplay.MeleeWepText = CreateTextArea()
 	equipmentDisplay.RangeWepText = CreateTextArea()
 	equipmentDisplay.ArmorText = CreateTextArea()
 
 	equipmentDisplay.ItmDisplay.RootContainer.AddChild(equipmentDisplay.ItmDisplay.ItemDisplayContainer)
-	equipmentDisplay.ItmDisplay.RootContainer.AddChild(equipmentDisplay.ItemSelectedContainer)
+	equipmentDisplay.ItmDisplay.RootContainer.AddChild(equipmentDisplay.ItmDisplay.ItemSelectedContainer)
 	equipmentDisplay.ItmDisplay.RootContainer.AddChild(equipmentDisplay.MeleeWepText)
 	equipmentDisplay.ItmDisplay.RootContainer.AddChild(equipmentDisplay.RangeWepText)
 	equipmentDisplay.ItmDisplay.RootContainer.AddChild(equipmentDisplay.ArmorText)
@@ -105,17 +97,19 @@ func (equipmentDisplay *EquipmentItemDisplay) UpdateEquipmentDisplayText() {
 
 	//armor := common.GetComponentType[*gear.Armor](pl, gear.ArmorComponent)
 
-	if equipmentDisplay.playerEq.PlayerMeleeWeapon != nil {
+	playerEquipment := equipmentDisplay.ItmDisplay.playerData.Equipment
 
-		equipmentDisplay.MeleeWepText.SetText(equipmentDisplay.playerEq.GetPlayerMeleeWeapon().WeaponString())
+	if playerEquipment.PlayerMeleeWeapon != nil {
+
+		equipmentDisplay.MeleeWepText.SetText(playerEquipment.GetPlayerMeleeWeapon().WeaponString())
 	}
 
-	if equipmentDisplay.playerEq.PlayerRangedWeapon != nil {
-		equipmentDisplay.RangeWepText.SetText(equipmentDisplay.playerEq.GetPlayerRangedWeapon().WeaponString())
+	if playerEquipment.PlayerRangedWeapon != nil {
+		equipmentDisplay.RangeWepText.SetText(playerEquipment.GetPlayerRangedWeapon().WeaponString())
 	}
 
-	if equipmentDisplay.playerEq.PlayerArmor != nil {
-		equipmentDisplay.ArmorText.SetText(equipmentDisplay.playerEq.PlayerArmor.ArmorString())
+	if playerEquipment.PlayerArmor != nil {
+		equipmentDisplay.ArmorText.SetText(playerEquipment.PlayerArmor.ArmorString())
 	}
 
 }

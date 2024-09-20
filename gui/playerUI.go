@@ -2,8 +2,12 @@ package gui
 
 import (
 	"game_main/avatar"
+	"game_main/gear"
+	"image"
+	"image/color"
 
 	"github.com/ebitenui/ebitenui"
+	"github.com/ebitenui/ebitenui/widget"
 )
 
 type PlayerUI struct {
@@ -30,16 +34,195 @@ func (p *PlayerUI) SetThrowableItemSelected(selected bool) {
 }
 
 // func CreatePlayerItemsUI(playerUI *PlayerUI, inv *gear.Inventory, pl *avatar.PlayerData)
-func (playerUI *PlayerUI) CreatePlayerUI(playerData *avatar.PlayerData) {
-
-	//playerUI.MainPlayerInterface = &ebitenui.UI{}
+func (playerUI *PlayerUI) CreateMainInterface(playerData *avatar.PlayerData) {
 
 	playerUI.MainPlayerInterface = CreatePlayerUI(playerUI, playerData.Inv, playerData)
-	//playerUI.MainPlayerInterface.Container.AddChild(playerUI.StatsUI.rootContainer)
 
-	//playerUI.SecondInterface.Container.AddChild(playerUI.StatsUI.rootContainer)
+}
 
-	//playerUI.StatsUI.CreateStatsUI()
-	//playerUI.MainPlayerInterface.Container.AddChild(playerUI.StatsUI.rootContainer)
+// Creates the main UI container
+func CreatePlayerUI(playerUI *PlayerUI, inv *gear.Inventory, pl *avatar.PlayerData) *ebitenui.UI {
+
+	ui := ebitenui.UI{}
+
+	// construct a new container that serves as the root of the UI hierarchy
+	rootContainer := widget.NewContainer(
+
+		widget.ContainerOpts.Layout(widget.NewAnchorLayout(
+			widget.AnchorLayoutOpts.Padding(widget.NewInsetsSimple(30)),
+		)),
+	)
+
+	inventoryAnchorContainer := widget.NewContainer(
+
+		widget.ContainerOpts.WidgetOpts(
+
+			widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{
+				HorizontalPosition: widget.AnchorLayoutPositionCenter,
+				VerticalPosition:   widget.AnchorLayoutPositionCenter,
+				StretchHorizontal:  true,
+				StretchVertical:    true,
+			}),
+			widget.WidgetOpts.MinSize(100, 100),
+		),
+	)
+
+	rootContainer.AddChild(inventoryAnchorContainer)
+
+	itemDisplayOptionsContainer := CreateInventorySelectionContainer(playerUI, inv, pl, &ui)
+
+	playerUI.StatsUI.CreateStatsUI()
+	playerUI.StatsUI.StatsTextArea.SetText(pl.GetPlayerAttributes().AttributeText())
+	inventoryAnchorContainer.AddChild(itemDisplayOptionsContainer)
+
+	rootContainer.AddChild(playerUI.StatsUI.StatsTextArea)
+
+	ui.Container = rootContainer
+
+	return &ui
+
+}
+
+// Creating the button that opens the crafting menu. Other buttons will be added
+// Doing it inside a function makes the code easier to follow
+func CreateOpenThrowablesButton(playerUI *PlayerUI, inv *gear.Inventory, ui *ebitenui.UI) *widget.Button {
+	// construct a button
+	button := widget.NewButton(
+
+		widget.ButtonOpts.Image(buttonImage),
+		widget.ButtonOpts.Text("Throwables", face, &widget.ButtonTextColor{
+			Idle: color.NRGBA{0xdf, 0xf4, 0xff, 0xff},
+		}),
+
+		widget.ButtonOpts.TextPadding(widget.Insets{
+			Left:   30,
+			Right:  30,
+			Top:    5,
+			Bottom: 5,
+		}),
+
+		// add a handler that reacts to clicking the button
+		widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+
+			x, y := playerUI.ItemsUI.ThrowableItemDisplay.ItemDisplay.RooWindow.Contents.PreferredSize()
+
+			r := image.Rect(0, 0, x, y)
+			r = r.Add(image.Point{200, 200})
+			playerUI.ItemsUI.ThrowableItemDisplay.ItemDisplay.RooWindow.SetLocation(r)
+			playerUI.ItemsUI.ThrowableItemDisplay.DisplayInventory()
+			ui.AddWindow(playerUI.ItemsUI.ThrowableItemDisplay.ItemDisplay.RooWindow)
+
+		}),
+	)
+
+	return button
+
+}
+
+// Creating the button that opens the crafting menu. Other buttons will be added
+// Doing it inside a function makes the code easier to follow
+func CreateOpenEquipmentButton(playerUI *PlayerUI, inv *gear.Inventory, ui *ebitenui.UI) *widget.Button {
+	// construct a button
+	button := widget.NewButton(
+
+		widget.ButtonOpts.Image(buttonImage),
+		widget.ButtonOpts.Text("Equipment", face, &widget.ButtonTextColor{
+			Idle: color.NRGBA{0xdf, 0xf4, 0xff, 0xff},
+		}),
+
+		widget.ButtonOpts.TextPadding(widget.Insets{
+			Left:   30,
+			Right:  30,
+			Top:    5,
+			Bottom: 5,
+		}),
+
+		// add a handler that reacts to clicking the button
+		widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+
+			x, y := playerUI.ItemsUI.EquipmentDisplay.ItmDisplay.RooWindow.Contents.PreferredSize()
+
+			r := image.Rect(0, 0, x, y)
+			r = r.Add(image.Point{200, 50})
+			playerUI.ItemsUI.EquipmentDisplay.ItmDisplay.RooWindow.SetLocation(r)
+			playerUI.ItemsUI.EquipmentDisplay.DisplayInventory(inv)
+			ui.AddWindow(playerUI.ItemsUI.EquipmentDisplay.ItmDisplay.RooWindow)
+			playerUI.ItemsUI.EquipmentDisplay.UpdateEquipmentDisplayText()
+
+		}),
+	)
+
+	return button
+
+}
+
+// Creating the button that opens the crafting menu. Other buttons will be added
+// Doing it inside a function makes the code easier to follow
+func CreateOpenConsumablesButton(playerUI *PlayerUI, inv *gear.Inventory, ui *ebitenui.UI) *widget.Button {
+	// construct a button
+	button := widget.NewButton(
+
+		widget.ButtonOpts.Image(buttonImage),
+		widget.ButtonOpts.Text("Consumables", face, &widget.ButtonTextColor{
+			Idle: color.NRGBA{0xdf, 0xf4, 0xff, 0xff},
+		}),
+
+		widget.ButtonOpts.TextPadding(widget.Insets{
+			Left:   30,
+			Right:  30,
+			Top:    5,
+			Bottom: 5,
+		}),
+
+		// add a handler that reacts to clicking the button
+		widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+
+			x, y := playerUI.ItemsUI.ConsumableDisplay.ItmDisplay.RooWindow.Contents.PreferredSize()
+
+			r := image.Rect(0, 0, x, y)
+			r = r.Add(image.Point{200, 50})
+			playerUI.ItemsUI.ConsumableDisplay.ItmDisplay.RooWindow.SetLocation(r)
+			playerUI.ItemsUI.ConsumableDisplay.DisplayInventory() //Remove the item from display
+			ui.AddWindow(playerUI.ItemsUI.ConsumableDisplay.ItmDisplay.RooWindow)
+
+		}),
+	)
+
+	return button
+
+}
+
+// Creating the button that opens the crafting menu.
+func CreateOpenCraftingButton(playerUI *PlayerUI, inv *gear.Inventory, ui *ebitenui.UI) *widget.Button {
+	// construct a button
+	button := widget.NewButton(
+
+		widget.ButtonOpts.Image(buttonImage),
+		widget.ButtonOpts.Text("Crafting", face, &widget.ButtonTextColor{
+			Idle: color.NRGBA{0xdf, 0xf4, 0xff, 0xff},
+		}),
+
+		widget.ButtonOpts.TextPadding(widget.Insets{
+			Left:   30,
+			Right:  30,
+			Top:    5,
+			Bottom: 5,
+		}),
+
+		// add a handler that reacts to clicking the button
+		widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+
+			x, y := playerUI.ItemsUI.CraftingItemDisplay.ItmDisplay.RooWindow.Contents.PreferredSize()
+
+			r := image.Rect(0, 0, x, y)
+			r = r.Add(image.Point{200, 50})
+			playerUI.ItemsUI.CraftingItemDisplay.ItmDisplay.RooWindow.SetLocation(r)
+			playerUI.ItemsUI.CraftingItemDisplay.DisplayInventory(inv)
+			ui.AddWindow(playerUI.ItemsUI.CraftingItemDisplay.ItmDisplay.RooWindow)
+
+		}),
+	)
+
+	return button
 
 }

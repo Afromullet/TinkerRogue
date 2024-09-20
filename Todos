@@ -8,7 +8,7 @@ Add equipping and removing items
 Effect stacking
 Correctly calculate player attributes once equipment is done. 
 Add a text box that displays game info (Attacking, missing, etc)
-
+Display Throwable Item Text
 
 When a creature is one square away from the player, it does not approach for whatever reason. I think this is related to how queeing actions works
 Need better filling of actions on the action queue

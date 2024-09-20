@@ -2,7 +2,6 @@ package gui
 
 import (
 	"fmt"
-	"game_main/avatar"
 	"game_main/gear"
 	"game_main/graphics"
 	"image/color"
@@ -11,42 +10,42 @@ import (
 	"github.com/ebitenui/ebitenui/widget"
 )
 
+// Todo add additional widgets to display the properties of the selected item
 type ThrowingItemDisplay struct {
-	ItmDisp                    ItemDisplay
-	ItemsSelectedContainer     *widget.Container //Displays the items the user HAS selected for crafitng
-	ItemsSelectedPropContainer *widget.Container //Container to hold the widget that displays the proeprties of the selected item
-	ItemsSelectedPropTextArea  *widget.TextArea  //Displays the properties of the selected items
-	ThrowableItemSelected      bool
-	playerData                 *avatar.PlayerData
+	ItemDisplay ItemDisplay
+
+	ThrowableItemText     *widget.TextArea //Displays the properties of the selected items
+	ThrowableItemSelected bool
 }
 
 // Todo modify this to make it compatible with THrowable Display actions on list item click
 func (throwingItemDisplay *ThrowingItemDisplay) CreateInventoryList(propFilters ...gear.StatusEffects) {
 
-	inv := throwingItemDisplay.ItmDisp.GetInventory().GetInventoryForDisplay([]int{}, propFilters...)
-	throwingItemDisplay.ItmDisp.InventoryDisplaylist = throwingItemDisplay.ItmDisp.GetInventoryListWidget(inv)
+	inv := throwingItemDisplay.ItemDisplay.GetInventory().GetInventoryForDisplay([]int{}, propFilters...)
+	throwingItemDisplay.ItemDisplay.InventoryDisplaylist = throwingItemDisplay.ItemDisplay.GetInventoryListWidget(inv)
 
-	throwingItemDisplay.ItmDisp.InventoryDisplaylist.EntrySelectedEvent.AddHandler(func(args interface{}) {
+	throwingItemDisplay.ItemDisplay.InventoryDisplaylist.EntrySelectedEvent.AddHandler(func(args interface{}) {
 
 		fmt.Print("Throwable Item Selected")
 
 		a := args.(*widget.ListEntrySelectedEventArgs)
 		entry := a.Entry.(gear.InventoryListEntry)
 
-		it, err := throwingItemDisplay.ItmDisp.GetInventory().GetItem(entry.Index)
+		it, err := throwingItemDisplay.ItemDisplay.GetInventory().GetItem(entry.Index)
 
 		//throwableComponentData := GetComponentStruct[*Item](it, ItemComponent)
 		//	fmt.Println("Printing throwable ", throwableComponentData)
 
 		if err == nil {
-			throwingItemDisplay.playerData.PrepareThrowable(it, entry.Index)
+
+			throwingItemDisplay.ItemDisplay.playerData.PrepareThrowable(it, entry.Index)
 		}
 
 		throwingItemDisplay.ThrowableItemSelected = true
 
 	})
 
-	throwingItemDisplay.ItmDisp.ItemDisplayContainer.AddChild(throwingItemDisplay.ItmDisp.InventoryDisplaylist)
+	throwingItemDisplay.ItemDisplay.ItemDisplayContainer.AddChild(throwingItemDisplay.ItemDisplay.InventoryDisplaylist)
 
 }
 
@@ -61,9 +60,9 @@ func (throwingItemDisplay *ThrowingItemDisplay) DisplayInventory() {
 
 }
 
-func (throwingItemDisplay *ThrowingItemDisplay) CreateContainers() {
-	// Main container that will hold the container for available items and the items selected
-	throwingItemDisplay.ItmDisp.RootContainer = widget.NewContainer(
+func (throwingItemDisplay *ThrowingItemDisplay) CreateRootContainer() {
+
+	throwingItemDisplay.ItemDisplay.RootContainer = widget.NewContainer(
 		widget.ContainerOpts.BackgroundImage(e_image.NewNineSliceColor(color.NRGBA{100, 100, 100, 255})),
 		widget.ContainerOpts.Layout(widget.NewGridLayout(
 			// It is using a GridLayout with a single column
@@ -79,10 +78,16 @@ func (throwingItemDisplay *ThrowingItemDisplay) CreateContainers() {
 			widget.GridLayoutOpts.Spacing(0, 20))),
 	)
 
-	throwingItemDisplay.ItmDisp.ItemDisplayContainer = widget.NewContainer(
+}
+
+func (throwingItemDisplay *ThrowingItemDisplay) SetupContainers() {
+
+	// Main container that will hold the container for available items and the items selected
+
+	throwingItemDisplay.ItemDisplay.ItemDisplayContainer = widget.NewContainer(
 		widget.ContainerOpts.BackgroundImage(e_image.NewNineSliceColor(color.NRGBA{100, 100, 100, 255})),
 		widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
 	)
 
-	throwingItemDisplay.ItmDisp.RootContainer.AddChild(throwingItemDisplay.ItmDisp.ItemDisplayContainer)
+	throwingItemDisplay.ItemDisplay.RootContainer.AddChild(throwingItemDisplay.ItemDisplay.ItemDisplayContainer)
 }

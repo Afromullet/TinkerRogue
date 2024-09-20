@@ -12,15 +12,8 @@ import (
 	"golang.org/x/image/font/gofont/goregular"
 )
 
-/*
-EbitenUI does not allow widgets to have a name.
-
-Widgets need to be updated with data from the game, so we create a mechanism by which we can track them
-
-UIElementType is a struct that contains the WindowType and a pointer to the widget.
-
-
-*/
+var face, _ = loadFont(20)
+var buttonImage, _ = loadButtonImage()
 
 func loadButtonImage() (*widget.ButtonImage, error) {
 	idle := e_image.NewNineSliceColor(color.NRGBA{R: 170, G: 170, B: 180, A: 255})

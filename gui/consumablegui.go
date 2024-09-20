@@ -9,17 +9,14 @@ import (
 	"github.com/ebitenui/ebitenui/widget"
 )
 
+// ConsumableItemDisplay allows the user to use consumables
+// ConsumableEffectText displays the effects of the consumable when used
 type ConsumableItemDisplay struct {
-	playerAttributes          *common.Attributes
-	ItmDisplay                ItemDisplay
-	ItemSelectedContainer     *widget.Container //Displays the items the user HAS selected for crafitng
-	ItemSelectedStatsTextArea *widget.TextArea  //Displays the properties of the selected items
+	ItmDisplay           ItemDisplay
+	ConsumableEffectText *widget.TextArea //Displays the consumable ffects
 
 }
 
-// Selects an item and adds it to the ItemsSelectedContainer container and ItemsSelectedPropContainer
-// ItemSeleced container tells us which items we're crafting with
-// ItemsSelectedPropContainer tells which properties the items have
 func (consDisplay *ConsumableItemDisplay) CreateInventoryList(propFilters ...gear.StatusEffects) {
 
 	inv := consDisplay.ItmDisplay.GetInventory().GetConsumablesForDisplay([]int{})
@@ -27,7 +24,7 @@ func (consDisplay *ConsumableItemDisplay) CreateInventoryList(propFilters ...gea
 
 	consDisplay.ItmDisplay.InventoryDisplaylist.EntrySelectedEvent.AddHandler(func(args interface{}) {
 
-		consDisplay.ItemSelectedContainer.RemoveChild(consDisplay.ItmDisplay.ItemsSelectedList)
+		consDisplay.ItmDisplay.ItemSelectedContainer.RemoveChild(consDisplay.ItmDisplay.ItemsSelectedList)
 
 		a := args.(*widget.ListEntrySelectedEventArgs)
 		entry := a.Entry.(gear.InventoryListEntry)
@@ -43,8 +40,8 @@ func (consDisplay *ConsumableItemDisplay) CreateInventoryList(propFilters ...gea
 			item, _ := consDisplay.ItmDisplay.GetInventory().GetItem(entry.Index)
 			cons := common.GetComponentType[*gear.Consumable](item, gear.ConsumableComponent)
 
-			consDisplay.ItemSelectedStatsTextArea.SetText("")
-			consDisplay.ItemSelectedStatsTextArea.AppendText(cons.ConsumableInfo())
+			consDisplay.ConsumableEffectText.SetText("")
+			consDisplay.ConsumableEffectText.AppendText(cons.ConsumableInfo())
 
 		}
 
@@ -60,18 +57,16 @@ func (consDisplay *ConsumableItemDisplay) DisplayInventory() {
 
 }
 
-func (consDisplay *ConsumableItemDisplay) CreateContainers() {
+func (consDisplay *ConsumableItemDisplay) CreateRootContainer() {
 
-	consDisplay.CreateConsumableStatsTextArea()
-
-	// Main container that will hold the container for available items and the items selected
 	consDisplay.ItmDisplay.RootContainer = widget.NewContainer(
 		widget.ContainerOpts.BackgroundImage(e_image.NewNineSliceColor(color.NRGBA{100, 100, 100, 255})),
 		widget.ContainerOpts.Layout(widget.NewGridLayout(
 			// It is using a GridLayout with a single column
-			widget.GridLayoutOpts.Columns(3),
+			widget.GridLayoutOpts.Columns(5),
+			widget.GridLayoutOpts.Stretch([]bool{true, true, true, true, true}, []bool{true, true, true, true, true}),
 
-			widget.GridLayoutOpts.Stretch([]bool{true, true, true}, []bool{true, true, true}),
+			//widget.GridLayoutOpts.Stretch([]bool{true, true, true}, []bool{true, true, true}),
 			// Padding defines how much space to put around the outside of the grid.
 			widget.GridLayoutOpts.Padding(widget.Insets{
 				Top:    50,
@@ -81,88 +76,20 @@ func (consDisplay *ConsumableItemDisplay) CreateContainers() {
 			widget.GridLayoutOpts.Spacing(0, 20))),
 	)
 
-	// Holds the widget that displays the selected items to the player
-	consDisplay.ItemSelectedContainer = widget.NewContainer(
-		widget.ContainerOpts.BackgroundImage(e_image.NewNineSliceColor(color.NRGBA{100, 100, 100, 255})),
-		widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
-		widget.ContainerOpts.Layout(widget.NewRowLayout(
-			widget.RowLayoutOpts.Direction(widget.DirectionVertical),
-			widget.RowLayoutOpts.Spacing(10),
-		)))
+}
 
-	consDisplay.ItmDisplay.ItemDisplayContainer = widget.NewContainer(
-		widget.ContainerOpts.BackgroundImage(e_image.NewNineSliceColor(color.NRGBA{100, 100, 100, 255})),
-		widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
-	)
+func (consDisplay *ConsumableItemDisplay) SetupContainers() {
 
+	consDisplay.ConsumableEffectText = CreateTextArea()
 	consDisplay.ItmDisplay.RootContainer.AddChild(consDisplay.ItmDisplay.ItemDisplayContainer)
-	consDisplay.ItemSelectedContainer.AddChild(consDisplay.ItemSelectedStatsTextArea)
-
 	button := consDisplay.CreateUseConsumableButton()
-	consDisplay.ItemSelectedContainer.AddChild(button)
-	consDisplay.ItmDisplay.RootContainer.AddChild(consDisplay.ItemSelectedContainer)
-
-	//Holds the window that will display item properties
-
-}
-
-// Text window to display the item properties of the selected items to the player
-func (consDisplay *ConsumableItemDisplay) CreateConsumableStatsTextArea() {
-	// construct a textarea
-	consDisplay.ItemSelectedStatsTextArea = widget.NewTextArea(
-		widget.TextAreaOpts.ContainerOpts(
-			widget.ContainerOpts.WidgetOpts(
-				//Set the layout data for the textarea
-				//including a max height to ensure the scroll bar is visible
-				widget.WidgetOpts.LayoutData(widget.RowLayoutData{
-					//Position: widget.RowLayoutPositionCenter,
-					Stretch: true,
-				}),
-				//Set the minimum size for the widget
-				//widget.WidgetOpts.MinSize(300, 100),
-			),
-		),
-		//Set gap between scrollbar and text
-		widget.TextAreaOpts.ControlWidgetSpacing(2),
-		//Tell the textarea to display bbcodes
-		widget.TextAreaOpts.ProcessBBCode(true),
-		//Set the font color
-		widget.TextAreaOpts.FontColor(color.Black),
-		//Set the font face (size) to use
-		widget.TextAreaOpts.FontFace(face),
-
-		//Tell the TextArea to show the vertical scrollbar
-		widget.TextAreaOpts.ShowVerticalScrollbar(),
-		//Set padding between edge of the widget and where the text is drawn
-		widget.TextAreaOpts.TextPadding(widget.NewInsetsSimple(10)),
-		//This sets the background images for the scroll container
-		widget.TextAreaOpts.ScrollContainerOpts(
-			widget.ScrollContainerOpts.Image(&widget.ScrollContainerImage{
-				Idle: e_image.NewNineSliceColor(color.NRGBA{100, 100, 100, 255}),
-				Mask: e_image.NewNineSliceColor(color.NRGBA{100, 100, 100, 255}),
-			}),
-		),
-		//This sets the images to use for the sliders
-		widget.TextAreaOpts.SliderOpts(
-			widget.SliderOpts.Images(
-				// Set the track images
-				&widget.SliderTrackImage{
-					Idle:  e_image.NewNineSliceColor(color.NRGBA{200, 200, 200, 255}),
-					Hover: e_image.NewNineSliceColor(color.NRGBA{200, 200, 200, 255}),
-				},
-				// Set the handle images
-				&widget.ButtonImage{
-					Idle:    e_image.NewNineSliceColor(color.NRGBA{255, 100, 100, 255}),
-					Hover:   e_image.NewNineSliceColor(color.NRGBA{255, 100, 100, 255}),
-					Pressed: e_image.NewNineSliceColor(color.NRGBA{255, 100, 100, 255}),
-				},
-			),
-		),
-	)
+	consDisplay.ItmDisplay.ItemSelectedContainer.AddChild(consDisplay.ConsumableEffectText)
+	consDisplay.ItmDisplay.ItemSelectedContainer.AddChild(button)
+	consDisplay.ItmDisplay.RootContainer.AddChild(consDisplay.ItmDisplay.ItemSelectedContainer)
 
 }
 
-// Creating the button that opens the crafting menu.
+// Creating the button that lets use a consumable
 func (consDisplay *ConsumableItemDisplay) CreateUseConsumableButton() *widget.Button {
 	// construct a button
 	button := widget.NewButton(
@@ -195,7 +122,7 @@ func (consDisplay *ConsumableItemDisplay) CreateUseConsumableButton() *widget.Bu
 			if len(consDisplay.ItmDisplay.ItemsSelectedIndices) > 0 {
 				item, _ := inv.GetItem(consDisplay.ItmDisplay.ItemsSelectedIndices[0])
 				consumable := common.GetComponentType[*gear.Consumable](item, gear.ConsumableComponent)
-				gear.AddEffectToTracker(consDisplay.ItmDisplay.playerEntity, *consumable)
+				gear.AddEffectToTracker(consDisplay.ItmDisplay.playerData.PlayerEntity, *consumable)
 
 				inv.RemoveItem(consDisplay.ItmDisplay.ItemsSelectedIndices[0])
 				consDisplay.DisplayInventory()
