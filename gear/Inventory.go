@@ -24,6 +24,9 @@ type Inventory struct {
 // Otherwise it just sets the count to one
 func (inv *Inventory) AddItem(entityToAdd *ecs.Entity) {
 
+	if entityToAdd == nil {
+		return
+	}
 	newItemName := common.GetComponentType[*common.Name](entityToAdd, common.NameComponent).NameStr
 	exists := false
 

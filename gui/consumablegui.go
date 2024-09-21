@@ -47,7 +47,7 @@ func (consDisplay *ConsumableItemDisplay) CreateInventoryList(propFilters ...gea
 
 	})
 
-	consDisplay.ItmDisplay.ItemDisplayContainer.AddChild(consDisplay.ItmDisplay.InventoryDisplaylist)
+	consDisplay.ItmDisplay.InventoryDisplayContainer.AddChild(consDisplay.ItmDisplay.InventoryDisplaylist)
 
 }
 
@@ -81,7 +81,7 @@ func (consDisplay *ConsumableItemDisplay) CreateRootContainer() {
 func (consDisplay *ConsumableItemDisplay) SetupContainers() {
 
 	consDisplay.ConsumableEffectText = CreateTextArea()
-	consDisplay.ItmDisplay.RootContainer.AddChild(consDisplay.ItmDisplay.ItemDisplayContainer)
+	consDisplay.ItmDisplay.RootContainer.AddChild(consDisplay.ItmDisplay.InventoryDisplayContainer)
 
 	consDisplay.ItmDisplay.ItemSelectedContainer.AddChild(consDisplay.ConsumableEffectText)
 	consDisplay.ItmDisplay.ItemSelectedContainer.AddChild(consDisplay.CreateUseConsumableButton())

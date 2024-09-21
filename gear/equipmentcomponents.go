@@ -3,10 +3,8 @@ package gear
 import (
 	"game_main/common"
 	"game_main/graphics"
-	"math/big"
-	"strconv"
 
-	cryptorand "crypto/rand"
+	"strconv"
 
 	"github.com/bytearena/ecs"
 )
@@ -24,7 +22,7 @@ type Armor struct {
 	DodgeChance float32
 }
 
-func (a *Armor) ArmorString() string {
+func (a *Armor) Stats() string {
 
 	s := ""
 	s += "Armor Class: " + strconv.Itoa(a.ArmorClass) + "\n"
@@ -35,21 +33,13 @@ func (a *Armor) ArmorString() string {
 
 }
 
-func GetArmor(e *ecs.Entity) *Armor {
-	return common.GetComponentType[*Armor](e, ArmorComponent)
-}
-
-func GetItem(e *ecs.Entity) *Item {
-	return common.GetComponentType[*Item](e, ItemComponent)
-}
-
 type MeleeWeapon struct {
 	MinDamage   int
 	MaxDamage   int
 	AttackSpeed int
 }
 
-func (w *MeleeWeapon) WeaponString() string {
+func (w *MeleeWeapon) Stats() string {
 
 	s := ""
 	s += "Min Damage: " + strconv.Itoa(w.MinDamage) + "\n"
@@ -78,7 +68,7 @@ type RangedWeapon struct {
 	AttackSpeed   int
 }
 
-func (w *RangedWeapon) WeaponString() string {
+func (w *RangedWeapon) Stats() string {
 
 	s := ""
 	s += "Min Damage: " + strconv.Itoa(w.MinDamage) + "\n"
@@ -133,25 +123,4 @@ func (r *RangedWeapon) DisplayShootingVX(attackerPos *common.Position, defenderP
 	arr := graphics.NewProjectile(attX, attY, defX, defY)
 
 	graphics.AddVX(arr)
-}
-
-// Todo remove later once you change teh random number generation. The same function is in another aprt of the code
-// Here to avoid circular inclusions of randgen
-func GetRandomBetween(low int, high int) int {
-	var randy int = -1
-	for {
-		randy = GetDiceRoll(high)
-		if randy >= low {
-			break
-		}
-	}
-	return randy
-}
-
-// Todo remove later once you change teh random number generation. The same function is in another aprt of the code
-// Here to avoid circular inclusions of randgen
-func GetDiceRoll(num int) int {
-	x, _ := cryptorand.Int(cryptorand.Reader, big.NewInt(int64(num)))
-	return int(x.Int64()) + 1
-
 }

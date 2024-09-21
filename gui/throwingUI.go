@@ -45,7 +45,7 @@ func (throwingItemDisplay *ThrowingItemDisplay) CreateInventoryList(propFilters 
 
 	})
 
-	throwingItemDisplay.ItemDisplay.ItemDisplayContainer.AddChild(throwingItemDisplay.ItemDisplay.InventoryDisplaylist)
+	throwingItemDisplay.ItemDisplay.InventoryDisplayContainer.AddChild(throwingItemDisplay.ItemDisplay.InventoryDisplaylist)
 
 }
 
@@ -84,10 +84,10 @@ func (throwingItemDisplay *ThrowingItemDisplay) SetupContainers() {
 
 	// Main container that will hold the container for available items and the items selected
 
-	throwingItemDisplay.ItemDisplay.ItemDisplayContainer = widget.NewContainer(
+	throwingItemDisplay.ItemDisplay.InventoryDisplayContainer = widget.NewContainer(
 		widget.ContainerOpts.BackgroundImage(e_image.NewNineSliceColor(color.NRGBA{100, 100, 100, 255})),
 		widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
 	)
 
-	throwingItemDisplay.ItemDisplay.RootContainer.AddChild(throwingItemDisplay.ItemDisplay.ItemDisplayContainer)
+	throwingItemDisplay.ItemDisplay.RootContainer.AddChild(throwingItemDisplay.ItemDisplay.InventoryDisplayContainer)
 }

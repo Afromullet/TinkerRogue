@@ -9,10 +9,11 @@ Effect stacking
 Correctly calculate player attributes once equipment is done. 
 Add a text box that displays game info (Attacking, missing, etc)
 Display Throwable Item Text
-
+Correct update of player attributes for equipped weapon and armor
+Calculate Monster Attributes too, taking armor and weapons into account
 When a creature is one square away from the player, it does not approach for whatever reason. I think this is related to how queeing actions works
 Need better filling of actions on the action queue
-
+Test and make sure attributes are calculated correctly during combat
 
 
 
@@ -93,12 +94,12 @@ ___Weapon and Armor__
 
 * Allow StatusEffects n weapons to apply on hit
 
-___Consumables__
-
-* Add consumables
 
 
-_n
+__Logging and Error Handling__
+
+* Better error loggin
+* Consistent error handling
 
 ___Refactoring__
 

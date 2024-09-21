@@ -51,7 +51,7 @@ func (craftingItemDisplay *CraftingItemDisplay) CreateInventoryList(propFilters 
 
 	})
 
-	craftingItemDisplay.ItmDisplay.ItemDisplayContainer.AddChild(craftingItemDisplay.ItmDisplay.InventoryDisplaylist)
+	craftingItemDisplay.ItmDisplay.InventoryDisplayContainer.AddChild(craftingItemDisplay.ItmDisplay.InventoryDisplaylist)
 
 }
 
@@ -85,12 +85,12 @@ func (craftingItemDisplay *CraftingItemDisplay) CreateContainers() {
 	)
 
 	// Used for holding the items prior to selecting them for crafting
-	craftingItemDisplay.ItmDisplay.ItemDisplayContainer = widget.NewContainer(
+	craftingItemDisplay.ItmDisplay.InventoryDisplayContainer = widget.NewContainer(
 		widget.ContainerOpts.BackgroundImage(e_image.NewNineSliceColor(color.NRGBA{100, 100, 100, 255})),
 		widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
 	)
 
-	craftingItemDisplay.ItmDisplay.RootContainer.AddChild(craftingItemDisplay.ItmDisplay.ItemDisplayContainer)
+	craftingItemDisplay.ItmDisplay.RootContainer.AddChild(craftingItemDisplay.ItmDisplay.InventoryDisplayContainer)
 
 	// Holds the widget that displays the selected items to the player
 	craftingItemDisplay.ItemsSelectedContainer = widget.NewContainer(

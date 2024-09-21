@@ -27,7 +27,7 @@ func MeleeAttackSystem(ecsmanager *common.EntityManager, pl *avatar.PlayerData, 
 		attacker = pl.PlayerEntity
 		defender = GetCreatureAtPosition(ecsmanager, defenderPos)
 
-		weapon = pl.Equipment.GetPlayerMeleeWeapon()
+		weapon = pl.Equipment.MeleeWeapon()
 
 	} else {
 		attacker = GetCreatureAtPosition(ecsmanager, attackerPos)
@@ -60,7 +60,7 @@ func RangedAttackSystem(ecsmanager *common.EntityManager, pl *avatar.PlayerData,
 
 	if pl.Pos.IsEqual(attackerPos) {
 		attacker = pl.PlayerEntity
-		weapon = pl.Equipment.GetPlayerRangedWeapon()
+		weapon = pl.Equipment.RangedWeapon()
 		if weapon != nil {
 			targets = weapon.GetTargets(ecsmanager)
 		}

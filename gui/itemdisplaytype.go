@@ -21,6 +21,7 @@ CreatteRootContainer creates the root container that holds everything for the It
 SetupContainers creates any other containers unique to the implementation and adds them to root
 CreateInventoryList decides how to filter the inventory for display
 DisplayInventory just calls CreateInventoryList. Maybe change it later so it's not a method everyone has to implement, since it's the same for everyone
+
 */
 
 // Every window that displays the inventory to teh user will be a struct that contains ItemDisplay
@@ -37,11 +38,11 @@ type ItemDisplay struct {
 	RootContainer *widget.Container //Holds all of the GUI elements
 	RooWindow     *widget.Window    //Window to hold the root container content
 
-	ItemSelectedContainer *widget.Container
-	ItemDisplayContainer  *widget.Container //Container that holds the items to be displayed
-	InventoryDisplaylist  *widget.List      //Holds all of the items
-	ItemsSelectedList     *widget.List      //Holds only the items the player selects
-	ItemsSelectedIndices  []int             //The indices in inventoryDisplayList of the items the user selected
+	ItemSelectedContainer     *widget.Container
+	InventoryDisplayContainer *widget.Container //Container that holds the items to be displayed
+	InventoryDisplaylist      *widget.List      //Holds all of the items
+	ItemsSelectedList         *widget.List      //Holds only the items the player selects
+	ItemsSelectedIndices      []int             //The indices in inventoryDisplayList of the items the user selected
 
 }
 
@@ -60,7 +61,7 @@ func (itemDisplay *ItemDisplay) createItemSelectedContainer() {
 
 func (itemDisplay *ItemDisplay) createItemDisplayContainer() {
 
-	itemDisplay.ItemDisplayContainer = widget.NewContainer(
+	itemDisplay.InventoryDisplayContainer = widget.NewContainer(
 		widget.ContainerOpts.BackgroundImage(e_image.NewNineSliceColor(color.NRGBA{100, 100, 100, 255})),
 		widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
 	)

@@ -36,24 +36,15 @@ var TestStickyEffect = graphics.NewStickyGroundEffect(0, 0, 2)
 // Need to update both the pointers in playerData and add the actual components
 // This is temporary
 func SetupPlayerForTesting(ecsmanager *common.EntityManager, pl *avatar.PlayerData) {
-	w := CreateWeapon(ecsmanager.World, "Weapon 1", *pl.Pos, "../assets/items/sword.png", 5, 10)
+	w := CreateWeapon(ecsmanager.World, "W1", *pl.Pos, "../assets/items/sword.png", 5, 10)
 
-	r := CreatedRangedWeapon(ecsmanager.World, "Ranged Weapon 1", "../assets/items/sword.png", *pl.Pos, 5, 10, 3, TestCone)
+	r := CreatedRangedWeapon(ecsmanager.World, "R1", "../assets/items/sword.png", *pl.Pos, 5, 10, 3, TestCone)
 
-	a := CreateArmor(ecsmanager.World, "Armor 1", *pl.Pos, "../assets/items/sword.png", 1, 5, 1)
+	a := CreateArmor(ecsmanager.World, "A1", *pl.Pos, "../assets/items/sword.png", 1, 5, 1)
 
-	pl.Equipment.PlayerMeleeWeapon = w
-	pl.Equipment.PlayerRangedWeapon = r
-	pl.Equipment.PlArmor = a
-
-	armor := gear.Armor{
-		ArmorClass:  1,
-		Protection:  5,
-		DodgeChance: 1}
-
-	pl.PlayerEntity.AddComponent(gear.ArmorComponent, &armor)
-
-	pl.Equipment.PlayerArmor = common.GetComponentType[*gear.Armor](pl.PlayerEntity, gear.ArmorComponent)
+	pl.Equipment.EqMeleeWeapon = w
+	pl.Equipment.EqRangedWeapon = r
+	pl.Equipment.EqArmor = a
 
 }
 
@@ -248,7 +239,7 @@ func CreateArmor(manager *ecs.Manager, name string, pos common.Position, imagePa
 
 	armor := CreateItem(manager, name, pos, imagePath)
 
-	armor.AddComponent(gear.MeleeWeaponComponent, &gear.Armor{
+	armor.AddComponent(gear.ArmorComponent, &gear.Armor{
 		ArmorClass:  ac,
 		Protection:  prot,
 		DodgeChance: dodge,

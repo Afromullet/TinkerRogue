@@ -1,6 +1,7 @@
 package avatar
 
 import (
+	"fmt"
 	"game_main/common"
 	"game_main/gear"
 	"game_main/graphics"
@@ -22,36 +23,79 @@ type PlayerInputStates struct {
 
 // Armor is not an entity at the moment
 type PlayerEquipment struct {
-	PlayerMeleeWeapon       *ecs.Entity
-	PlayerRangedWeapon      *ecs.Entity
+	EqMeleeWeapon           *ecs.Entity
+	EqRangedWeapon          *ecs.Entity
 	RangedWeaponMaxDistance int
 	RangedWeaponAOEShape    graphics.TileBasedShape
-	PlayerArmor             *gear.Armor
-
-	PlArmor *ecs.Entity //Will call this PlayerArmor soon. Replacing the gear.armor type gradually
+	EqArmor                 *ecs.Entity //Will call this PlayerArmor soon. Replacing the gear.armor type gradually
 }
 
-func (pl *PlayerEquipment) GetPlayerRangedWeapon() *gear.RangedWeapon {
+func (pl *PlayerEquipment) RangedWeapon() *gear.RangedWeapon {
 
-	weapon := common.GetComponentType[*gear.RangedWeapon](pl.PlayerRangedWeapon, gear.RangedWeaponComponent)
-
-	return weapon
+	return common.GetComponentType[*gear.RangedWeapon](pl.EqRangedWeapon, gear.RangedWeaponComponent)
 }
 
-func (pl *PlayerEquipment) GetPlayerMeleeWeapon() *gear.MeleeWeapon {
+func (pl *PlayerEquipment) MeleeWeapon() *gear.MeleeWeapon {
 
-	weapon := common.GetComponentType[*gear.MeleeWeapon](pl.PlayerMeleeWeapon, gear.MeleeWeaponComponent)
-
-	return weapon
+	return common.GetComponentType[*gear.MeleeWeapon](pl.EqMeleeWeapon, gear.MeleeWeaponComponent)
 }
 
-func (pl *PlayerEquipment) GetPlayerArmor() *gear.Armor {
+func (pl *PlayerEquipment) Armor() *gear.Armor {
 
-	return pl.PlayerArmor
+	return common.GetComponentType[*gear.Armor](pl.EqArmor, gear.ArmorComponent)
 }
+
+// Need to check what kind of equipment it is before setting it
+func (pl *PlayerEquipment) EquipItem(e *ecs.Entity) {
+
+	switch gear.KindOfItem(e) {
+	case gear.ArmorType:
+		pl.EqArmor = e
+	case gear.MeleeWeaponType:
+		pl.EqMeleeWeapon = e
+	case gear.RangedWeaponType:
+		pl.EqRangedWeapon = e
+	default:
+		fmt.Println("Invalid item equipped")
+	}
+
+}
+
+// Remvoes the item and adds it back to the inventory
+func (pl *PlayerEquipment) RemoveItem(e *ecs.Entity) {
+
+	switch gear.KindOfItem(e) {
+	case gear.ArmorType:
+		pl.EqArmor = e
+	case gear.MeleeWeaponType:
+		pl.EqMeleeWeapon = e
+	case gear.RangedWeaponType:
+		pl.EqRangedWeapon = e
+	default:
+		fmt.Println("Invalid item equipped")
+	}
+
+}
+
+/*
+func (pl *PlayerEquipment) EquipItem(eq interface{}) {
+
+	switch eq.(type) {
+	case *gear.MeleeWeapon:
+		pl.EqMeleeWeapon = eq.(*ecs.Entity)
+	case *gear.RangedWeapon:
+		pl.EqMeleeWeapon = eq.(*ecs.Entity)
+	case *gear.Armor:
+		pl.EqMeleeWeapon = eq.(*ecs.Entity)
+	default:
+		fmt.Println("Invalid item equipped")
+	}
+
+}
+*/
 
 func (pl *PlayerEquipment) PrepareRangedAttack() {
-	wep := common.GetComponentType[*gear.RangedWeapon](pl.PlayerRangedWeapon, gear.RangedWeaponComponent)
+	wep := common.GetComponentType[*gear.RangedWeapon](pl.EqRangedWeapon, gear.RangedWeaponComponent)
 	pl.RangedWeaponAOEShape = wep.TargetArea
 	pl.RangedWeaponMaxDistance = wep.ShootingRange
 
@@ -104,22 +148,38 @@ type PlayerData struct {
 
 func (pl *PlayerData) UnequipMeleeWeapon() {
 
-	pl.Inventory.AddItem(pl.Equipment.PlayerMeleeWeapon)
-	pl.Equipment.PlayerMeleeWeapon = nil
+	pl.Inventory.AddItem(pl.Equipment.EqMeleeWeapon)
+	pl.Equipment.EqMeleeWeapon = nil
 
 }
 
 func (pl *PlayerData) UnequipRangedWeapon() {
 
-	pl.Inventory.AddItem(pl.Equipment.PlayerRangedWeapon)
-	pl.Equipment.PlayerRangedWeapon = nil
+	pl.Inventory.AddItem(pl.Equipment.EqRangedWeapon)
+	pl.Equipment.EqRangedWeapon = nil
 
 }
 
 func (pl *PlayerData) UnequipArmor() {
 
-	//pl.Inventory.AddItem(pl.Equipment.PlayerMeleeWeapon)
-	//pl.Equipment.PlayerMeleeWeapon = nil
+	pl.Inventory.AddItem(pl.Equipment.EqArmor)
+	pl.Equipment.EqArmor = nil
+
+}
+
+// Remvoes the item and adds it back to the inventory
+func (pl *PlayerData) RemoveItem(e *ecs.Entity) {
+
+	switch gear.KindOfItem(e) {
+	case gear.ArmorType:
+		pl.UnequipArmor()
+	case gear.MeleeWeaponType:
+		pl.UnequipMeleeWeapon()
+	case gear.RangedWeaponType:
+		pl.UnequipRangedWeapon()
+	default:
+		fmt.Println("Invalid item equipped")
+	}
 
 }
 

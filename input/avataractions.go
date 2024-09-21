@@ -194,7 +194,7 @@ func DrawRangedAttackAOE(pl *avatar.PlayerData, gm *worldmap.GameMap) {
 
 	s := pl.Equipment.RangedWeaponAOEShape
 
-	rangedWep := common.GetComponentType[*gear.RangedWeapon](pl.Equipment.PlayerRangedWeapon, gear.RangedWeaponComponent)
+	rangedWep := common.GetComponentType[*gear.RangedWeapon](pl.Equipment.EqRangedWeapon, gear.RangedWeaponComponent)
 
 	updater := UpdateDirection(&rangedWep.TargetArea)
 	rangedWep.TargetArea.UpdateShape(updater)

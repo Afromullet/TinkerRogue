@@ -4,6 +4,7 @@ import (
 	"game_main/gear"
 	"image/color"
 
+	"github.com/bytearena/ecs"
 	e_image "github.com/ebitenui/ebitenui/image"
 	"github.com/ebitenui/ebitenui/widget"
 )
@@ -13,12 +14,14 @@ import (
 type EquipmentItemDisplay struct {
 	ItmDisplay ItemDisplay
 
+	EquipmentSelectedText *widget.TextArea //Displays the properties of the selected items that can be equipped
+
+	currentItem                *ecs.Entity
+	currentItemIndex           int               // Will make it easier to handle updatng the inventory display list.
 	CurrentlyEquippedContainer *widget.Container // Contains all the widgets related to what's currently equipped
-	EquipmentSelectedContainer *widget.Container //Container the stats of the selected item
-	EquipmentSelectedText      *widget.TextArea  //Displays the properties of the selected items
-	MeleeWepText               *widget.TextArea  //Displays the properties of the selected items
-	RangeWepText               *widget.TextArea  //Displays the properties of the selected items
-	ArmorText                  *widget.TextArea  //Displays the properties of the selected items
+	MeleeWepText               *widget.TextArea  // Shows the stats of the currently equipped melee weapon
+	RangeWepText               *widget.TextArea  // Shows the stats of the currently equipped ranged weapon
+	ArmorText                  *widget.TextArea  // Shows the stats of the currently equipped armor
 
 }
 
@@ -34,16 +37,22 @@ func (equipmentDisplay *EquipmentItemDisplay) CreateInventoryList(propFilters ..
 		a := args.(*widget.ListEntrySelectedEventArgs)
 		entry := a.Entry.(gear.InventoryListEntry)
 
+		//Only allow one item to be selected
+		equipmentDisplay.ItmDisplay.ItemsSelectedIndices = equipmentDisplay.ItmDisplay.ItemsSelectedIndices[:0]
 		equipmentDisplay.ItmDisplay.ItemsSelectedList = equipmentDisplay.ItmDisplay.GetSelectedItems(entry.Index, equipmentDisplay.ItmDisplay.GetInventory())
+		equipmentDisplay.EquipmentSelectedText.SetText("")
 
 		if equipmentDisplay.ItmDisplay.ItemsSelectedList != nil {
-			equipmentDisplay.ItmDisplay.ItemSelectedContainer.AddChild(equipmentDisplay.ItmDisplay.ItemsSelectedList)
+
+			equipmentDisplay.currentItem, _ = equipmentDisplay.ItmDisplay.playerData.Inventory.GetItem(entry.Index)
+			equipmentDisplay.EquipmentSelectedText.SetText(gear.ItemStats(equipmentDisplay.currentItem))
+			equipmentDisplay.currentItemIndex = entry.Index
 
 		}
 
 	})
 
-	equipmentDisplay.ItmDisplay.ItemDisplayContainer.AddChild(equipmentDisplay.ItmDisplay.InventoryDisplaylist)
+	equipmentDisplay.ItmDisplay.InventoryDisplayContainer.AddChild(equipmentDisplay.ItmDisplay.InventoryDisplaylist)
 
 }
 
@@ -74,6 +83,8 @@ func (equipmentDisplay *EquipmentItemDisplay) CreateRootContainer() {
 
 }
 
+// Contains three columns - melee weapon, ranged weapon, and armor
+// Shows the stats of what's currently equipped
 func (equipmentDisplay *EquipmentItemDisplay) SetupCurrentlyEquippedContainer() {
 
 	equipmentDisplay.CurrentlyEquippedContainer = widget.NewContainer(
@@ -94,6 +105,10 @@ func (equipmentDisplay *EquipmentItemDisplay) SetupCurrentlyEquippedContainer() 
 			widget.GridLayoutOpts.Spacing(15, 15))),
 	)
 
+	equipmentDisplay.MeleeWepText = CreateTextArea()
+	equipmentDisplay.RangeWepText = CreateTextArea()
+	equipmentDisplay.ArmorText = CreateTextArea()
+
 }
 
 func (equipmentDisplay *EquipmentItemDisplay) SetupContainers() {
@@ -102,13 +117,34 @@ func (equipmentDisplay *EquipmentItemDisplay) SetupContainers() {
 
 	// Holds the widget that displays the selected items to the player
 
+	equipmentDisplay.EquipmentSelectedText = CreateTextArea()
+	equipmentDisplay.ItmDisplay.ItemSelectedContainer.AddChild(equipmentDisplay.EquipmentSelectedText)
+	equipmentDisplay.EquipmentSelectedText.SetText("asdasdsa")
+
+	button := CreateButton("Equip")
+
+	button.Configure( // add a handler that reacts to clicking the button
+		widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+			if equipmentDisplay.currentItem != nil {
+
+				//Remove the old item and add it back to the inventory. Then add the new item to equipped and remove it from the inventory
+				equipmentDisplay.ItmDisplay.playerData.RemoveItem(equipmentDisplay.currentItem)
+
+				equipmentDisplay.ItmDisplay.playerData.Equipment.EquipItem(equipmentDisplay.currentItem)
+				equipmentDisplay.ItmDisplay.playerData.Inventory.RemoveItem(equipmentDisplay.currentItemIndex)
+				equipmentDisplay.DisplayInventory(equipmentDisplay.ItmDisplay.playerData.Inventory)
+				equipmentDisplay.UpdateEquipmentDisplay()
+			}
+		}))
+
+	equipmentDisplay.ItmDisplay.ItemSelectedContainer.AddChild(button)
+
+	//Todo add the next to display
+	equipmentDisplay.ItmDisplay.RootContainer.AddChild(equipmentDisplay.ItmDisplay.InventoryDisplayContainer)
+
 	equipmentDisplay.SetupCurrentlyEquippedContainer()
 
-	equipmentDisplay.MeleeWepText = CreateTextArea()
-	equipmentDisplay.RangeWepText = CreateTextArea()
-	equipmentDisplay.ArmorText = CreateTextArea()
-
-	equipmentDisplay.ItmDisplay.RootContainer.AddChild(equipmentDisplay.ItmDisplay.ItemDisplayContainer)
+	equipmentDisplay.ItmDisplay.RootContainer.AddChild(equipmentDisplay.ItmDisplay.InventoryDisplayContainer)
 	equipmentDisplay.ItmDisplay.RootContainer.AddChild(equipmentDisplay.ItmDisplay.ItemSelectedContainer)
 	equipmentDisplay.ItmDisplay.RootContainer.AddChild(equipmentDisplay.CurrentlyEquippedContainer)
 
@@ -116,7 +152,7 @@ func (equipmentDisplay *EquipmentItemDisplay) SetupContainers() {
 	equipmentDisplay.CurrentlyEquippedContainer.AddChild(equipmentDisplay.RangeWepText)
 	equipmentDisplay.CurrentlyEquippedContainer.AddChild(equipmentDisplay.ArmorText)
 
-	button := CreateButton("Remove Melee Weapon")
+	button = CreateButton("Remove Melee Weapon")
 
 	button.Configure( // add a handler that reacts to clicking the button
 		widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
@@ -129,18 +165,32 @@ func (equipmentDisplay *EquipmentItemDisplay) SetupContainers() {
 	equipmentDisplay.CurrentlyEquippedContainer.AddChild(button)
 
 	button = CreateButton("Remove Ranged Weapon")
+
+	button.Configure( // add a handler that reacts to clicking the button
+		widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+
+			equipmentDisplay.ItmDisplay.playerData.UnequipRangedWeapon()
+			equipmentDisplay.UpdateEquipmentDisplay()
+
+		}))
+
 	equipmentDisplay.CurrentlyEquippedContainer.AddChild(button)
 
 	button = CreateButton("Remove Armor")
+
+	button.Configure( // add a handler that reacts to clicking the button
+		widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+
+			equipmentDisplay.ItmDisplay.playerData.UnequipArmor()
+			equipmentDisplay.UpdateEquipmentDisplay()
+
+		}))
+
 	equipmentDisplay.CurrentlyEquippedContainer.AddChild(button)
 
 }
 
 func (equipmentDisplay *EquipmentItemDisplay) UpdateEquipmentDisplay() {
-
-	//pl := equipmentDisplay.ItmDisplay.playerEntity
-
-	//armor := common.GetComponentType[*gear.Armor](pl, gear.ArmorComponent)
 
 	playerEquipment := equipmentDisplay.ItmDisplay.playerData.Equipment
 
@@ -148,17 +198,20 @@ func (equipmentDisplay *EquipmentItemDisplay) UpdateEquipmentDisplay() {
 	equipmentDisplay.RangeWepText.SetText("None")
 	equipmentDisplay.ArmorText.SetText("None")
 
-	if playerEquipment.PlayerMeleeWeapon != nil {
+	if playerEquipment.EqMeleeWeapon != nil {
 
-		equipmentDisplay.MeleeWepText.SetText(playerEquipment.GetPlayerMeleeWeapon().WeaponString())
+		equipmentDisplay.MeleeWepText.SetText(gear.ItemStats(playerEquipment.EqMeleeWeapon))
+
 	}
 
-	if playerEquipment.PlayerRangedWeapon != nil {
-		equipmentDisplay.RangeWepText.SetText(playerEquipment.GetPlayerRangedWeapon().WeaponString())
+	if playerEquipment.EqRangedWeapon != nil {
+		equipmentDisplay.RangeWepText.SetText(gear.ItemStats(playerEquipment.EqRangedWeapon))
 	}
 
-	if playerEquipment.PlayerArmor != nil {
-		equipmentDisplay.ArmorText.SetText(playerEquipment.PlayerArmor.ArmorString())
+	if playerEquipment.EqArmor != nil {
+		equipmentDisplay.ArmorText.SetText(gear.ItemStats(playerEquipment.EqArmor))
 	}
+
+	equipmentDisplay.DisplayInventory(equipmentDisplay.ItmDisplay.playerData.Inventory) //To show the added item
 
 }
