@@ -50,7 +50,7 @@ func (itemDisplay *ItemDisplay) createItemSelectedContainer() {
 
 	// Holds the widget that displays the selected items to the player
 	itemDisplay.ItemSelectedContainer = widget.NewContainer(
-		widget.ContainerOpts.BackgroundImage(e_image.NewNineSliceColor(color.NRGBA{100, 100, 100, 255})),
+		widget.ContainerOpts.BackgroundImage(defaultWidgetColor),
 		widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
 		widget.ContainerOpts.Layout(widget.NewRowLayout(
 			widget.RowLayoutOpts.Direction(widget.DirectionVertical),
@@ -62,7 +62,7 @@ func (itemDisplay *ItemDisplay) createItemSelectedContainer() {
 func (itemDisplay *ItemDisplay) createItemDisplayContainer() {
 
 	itemDisplay.InventoryDisplayContainer = widget.NewContainer(
-		widget.ContainerOpts.BackgroundImage(e_image.NewNineSliceColor(color.NRGBA{100, 100, 100, 255})),
+		widget.ContainerOpts.BackgroundImage(defaultWidgetColor),
 		widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
 	)
 }
@@ -74,7 +74,7 @@ func (itemDisplay *ItemDisplay) createInventoryDisplayWindow(title string) {
 	titleFace, _ := loadFont(12)
 
 	titleContainer := widget.NewContainer(
-		widget.ContainerOpts.BackgroundImage(e_image.NewNineSliceColor(color.NRGBA{150, 150, 150, 255})),
+		widget.ContainerOpts.BackgroundImage(defaultWidgetColor),
 		widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
 	)
 	titleContainer.AddChild(widget.NewText(

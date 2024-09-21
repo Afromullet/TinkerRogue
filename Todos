@@ -4,18 +4,18 @@ MAJOR
 
 Room Decoration (maybe)
 Larger map
-Add equipping and removing items
+
 Effect stacking
-Correctly calculate player attributes once equipment is done. 
+
 Add a text box that displays game info (Attacking, missing, etc)
 Display Throwable Item Text
-Correct update of player attributes for equipped weapon and armor
+
 Calculate Monster Attributes too, taking armor and weapons into account
 When a creature is one square away from the player, it does not approach for whatever reason. I think this is related to how queeing actions works
 Need better filling of actions on the action queue
 Test and make sure attributes are calculated correctly during combat
 
-
+Need to remove monsters once they are dead rather than next turnb
 
 
 ___Energy/Time System__
@@ -90,7 +90,7 @@ Not very complicated, but it will do for now.
 ___Weapon and Armor__
 
 
-* Equipping weapons and armor
+
 
 * Allow StatusEffects n weapons to apply on hit
 
@@ -117,7 +117,7 @@ times in a row or using the same consumable multiple times in a row
 
 ___Other__
 
-
+* Add a quick bar
 
 
 * Effect Stacking

@@ -237,9 +237,6 @@ func HandlePlayerRangedAttack(ecsmanager *common.EntityManager, pl *avatar.Playe
 
 	if pl.InputStates.IsShooting {
 
-		msg := common.GetComponentType[*common.UserMessage](pl.PlayerEntity, common.UserMsgComponent)
-
-		msg.GameStateMessage = "Shooting"
 		DrawRangedAttackAOE(pl, gm)
 
 		//Cancel throwing

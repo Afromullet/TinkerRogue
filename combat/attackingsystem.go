@@ -9,6 +9,7 @@ import (
 	"game_main/randgen"
 	"game_main/worldmap"
 	"log"
+	"strconv"
 
 	"github.com/bytearena/ecs"
 )
@@ -22,8 +23,10 @@ func MeleeAttackSystem(ecsmanager *common.EntityManager, pl *avatar.PlayerData, 
 	var defender *ecs.Entity = nil
 	var weapon *gear.MeleeWeapon = nil
 	attackSuccess := false
+	playerAttacking := false
 
 	if pl.Pos.IsEqual(attackerPos) {
+		playerAttacking = true
 		attacker = pl.PlayerEntity
 		defender = GetCreatureAtPosition(ecsmanager, defenderPos)
 
@@ -38,7 +41,9 @@ func MeleeAttackSystem(ecsmanager *common.EntityManager, pl *avatar.PlayerData, 
 
 	if weapon != nil {
 
-		attackSuccess = PerformAttack(ecsmanager, pl, gm, weapon.CalculateDamage(), attacker, defender)
+		damage := weapon.CalculateDamage()
+		attackSuccess = PerformAttack(ecsmanager, pl, gm, damage, attacker, defender)
+		UpdateAttackMessage(attacker, attackSuccess, playerAttacking, damage)
 
 	} else {
 		log.Print("Failed to attack. No weapon")
@@ -57,9 +62,11 @@ func RangedAttackSystem(ecsmanager *common.EntityManager, pl *avatar.PlayerData,
 	var weapon *gear.RangedWeapon = nil
 	var targets []*ecs.Entity
 	attackSuccess := false
+	playerAttacking := false
 
 	if pl.Pos.IsEqual(attackerPos) {
 		attacker = pl.PlayerEntity
+		playerAttacking = true
 		weapon = pl.Equipment.RangedWeapon()
 		if weapon != nil {
 			targets = weapon.GetTargets(ecsmanager)
@@ -77,9 +84,11 @@ func RangedAttackSystem(ecsmanager *common.EntityManager, pl *avatar.PlayerData,
 			defenderPos := common.GetPosition(t)
 			if attackerPos.InRange(defenderPos, weapon.ShootingRange) {
 
-				fmt.Println("Attacking")
+				damage := weapon.CalculateDamage()
+
 				attackSuccess = PerformAttack(ecsmanager, pl, gm, weapon.CalculateDamage(), attacker, t)
 				weapon.DisplayShootingVX(attackerPos, defenderPos)
+				UpdateAttackMessage(attacker, attackSuccess, playerAttacking, damage)
 
 			}
 		}
@@ -163,5 +172,36 @@ func GetCreatureAtPosition(ecsmnager *common.EntityManager, pos *common.Position
 	}
 
 	return e
+
+}
+
+func UpdateAttackMessage(attacker *ecs.Entity, attackSuccess, isPlayerAttacking bool, damage int) {
+
+	attackerMessage := ""
+	msg := common.GetComponentType[*common.UserMessage](attacker, common.UserMsgComponent)
+
+	if isPlayerAttacking && attackSuccess {
+
+		if attackSuccess {
+			attackerMessage = "You hit for " + strconv.Itoa(damage) + " damage"
+		} else {
+			attackerMessage = "Your attack misses"
+		}
+
+	} else {
+		attackerMessage = common.GetComponentType[*common.Name](attacker, common.NameComponent).NameStr + " attacks and "
+
+		if attackSuccess {
+
+			attackerMessage += "hits for " + strconv.Itoa(damage) + " damage"
+
+		} else {
+			attackerMessage = " misses"
+
+		}
+
+	}
+
+	msg.AttackMessage = attackerMessage
 
 }

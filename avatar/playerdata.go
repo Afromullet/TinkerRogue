@@ -198,3 +198,25 @@ func (pl *PlayerData) GetPlayerAttributes() *common.Attributes {
 
 	return attr
 }
+
+func (pl *PlayerData) UpdatePlayerAttributes() {
+
+	attr := pl.GetPlayerAttributes()
+
+	ac := 0
+	prot := 0
+	dodge := float32(0.0)
+
+	if pl.Equipment.EqArmor != nil {
+
+		armor := common.GetComponentType[*gear.Armor](pl.Equipment.EqArmor, gear.ArmorComponent)
+		ac = armor.ArmorClass
+		prot = armor.Protection
+		dodge = float32(armor.DodgeChance)
+	}
+
+	attr.TotalArmorClass = attr.BaseArmorClass + ac
+	attr.TotalProtection = attr.BaseProtection + prot
+	attr.TotalDodgeChance = attr.BaseDodgeChance + dodge
+
+}

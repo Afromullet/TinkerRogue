@@ -3,9 +3,7 @@ package gui
 import (
 	"game_main/common"
 	"game_main/gear"
-	"image/color"
 
-	e_image "github.com/ebitenui/ebitenui/image"
 	"github.com/ebitenui/ebitenui/widget"
 )
 
@@ -60,11 +58,11 @@ func (consDisplay *ConsumableItemDisplay) DisplayInventory() {
 func (consDisplay *ConsumableItemDisplay) CreateRootContainer() {
 
 	consDisplay.ItmDisplay.RootContainer = widget.NewContainer(
-		widget.ContainerOpts.BackgroundImage(e_image.NewNineSliceColor(color.NRGBA{100, 100, 100, 255})),
+		widget.ContainerOpts.BackgroundImage(defaultWidgetColor),
 		widget.ContainerOpts.Layout(widget.NewGridLayout(
 			// It is using a GridLayout with a single column
-			widget.GridLayoutOpts.Columns(5),
-			widget.GridLayoutOpts.Stretch([]bool{true, true, true, true, true}, []bool{true, true, true, true, true}),
+			widget.GridLayoutOpts.Columns(2),
+			widget.GridLayoutOpts.Stretch([]bool{true, true}, []bool{true, true}),
 
 			//widget.GridLayoutOpts.Stretch([]bool{true, true, true}, []bool{true, true, true}),
 			// Padding defines how much space to put around the outside of the grid.

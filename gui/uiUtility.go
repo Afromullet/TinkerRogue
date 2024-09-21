@@ -14,6 +14,7 @@ import (
 
 var face, _ = loadFont(20)
 var buttonImage, _ = loadButtonImage()
+var defaultWidgetColor = e_image.NewNineSliceColor(color.NRGBA{0x13, 0x1a, 0x22, 0xff})
 
 func loadButtonImage() (*widget.ButtonImage, error) {
 	idle := e_image.NewNineSliceColor(color.NRGBA{R: 170, G: 170, B: 180, A: 255})
@@ -67,7 +68,7 @@ func CreateTextArea() *widget.TextArea {
 		//Tell the textarea to display bbcodes
 		widget.TextAreaOpts.ProcessBBCode(true),
 		//Set the font color
-		widget.TextAreaOpts.FontColor(color.Black),
+		widget.TextAreaOpts.FontColor(color.White),
 		//Set the font face (size) to use
 		widget.TextAreaOpts.FontFace(face),
 
@@ -78,8 +79,8 @@ func CreateTextArea() *widget.TextArea {
 		//This sets the background images for the scroll container
 		widget.TextAreaOpts.ScrollContainerOpts(
 			widget.ScrollContainerOpts.Image(&widget.ScrollContainerImage{
-				Idle: e_image.NewNineSliceColor(color.NRGBA{100, 100, 100, 255}),
-				Mask: e_image.NewNineSliceColor(color.NRGBA{100, 100, 100, 255}),
+				Idle: defaultWidgetColor,
+				Mask: defaultWidgetColor,
 			}),
 		),
 		//This sets the images to use for the sliders

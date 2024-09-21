@@ -4,9 +4,7 @@ import (
 	"fmt"
 	"game_main/gear"
 	"game_main/graphics"
-	"image/color"
 
-	e_image "github.com/ebitenui/ebitenui/image"
 	"github.com/ebitenui/ebitenui/widget"
 )
 
@@ -63,7 +61,7 @@ func (throwingItemDisplay *ThrowingItemDisplay) DisplayInventory() {
 func (throwingItemDisplay *ThrowingItemDisplay) CreateRootContainer() {
 
 	throwingItemDisplay.ItemDisplay.RootContainer = widget.NewContainer(
-		widget.ContainerOpts.BackgroundImage(e_image.NewNineSliceColor(color.NRGBA{100, 100, 100, 255})),
+		widget.ContainerOpts.BackgroundImage(defaultWidgetColor),
 		widget.ContainerOpts.Layout(widget.NewGridLayout(
 			// It is using a GridLayout with a single column
 			widget.GridLayoutOpts.Columns(3),
@@ -85,7 +83,7 @@ func (throwingItemDisplay *ThrowingItemDisplay) SetupContainers() {
 	// Main container that will hold the container for available items and the items selected
 
 	throwingItemDisplay.ItemDisplay.InventoryDisplayContainer = widget.NewContainer(
-		widget.ContainerOpts.BackgroundImage(e_image.NewNineSliceColor(color.NRGBA{100, 100, 100, 255})),
+		widget.ContainerOpts.BackgroundImage(defaultWidgetColor),
 		widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
 	)
 

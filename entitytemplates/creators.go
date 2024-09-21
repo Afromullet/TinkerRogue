@@ -95,6 +95,8 @@ func CreateCreatureFromTemplate(manager common.EntityManager, m JSONMonster, gm 
 		attr.TotalAttackSpeed = 1
 	}
 
+	ent.AddComponent(common.UserMsgComponent, &common.UserMessage{})
+
 	ent.AddComponent(common.AttributeComponent, &attr)
 	ent.AddComponent(timesystem.ActionQueueComponent, &timesystem.ActionQueue{TotalActionPoints: 100})
 

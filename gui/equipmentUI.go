@@ -2,10 +2,8 @@ package gui
 
 import (
 	"game_main/gear"
-	"image/color"
 
 	"github.com/bytearena/ecs"
-	e_image "github.com/ebitenui/ebitenui/image"
 	"github.com/ebitenui/ebitenui/widget"
 )
 
@@ -65,7 +63,7 @@ func (equipmentDisplay *EquipmentItemDisplay) DisplayInventory(inventory *gear.I
 func (equipmentDisplay *EquipmentItemDisplay) CreateRootContainer() {
 
 	equipmentDisplay.ItmDisplay.RootContainer = widget.NewContainer(
-		widget.ContainerOpts.BackgroundImage(e_image.NewNineSliceColor(color.NRGBA{100, 100, 100, 255})),
+		widget.ContainerOpts.BackgroundImage(defaultWidgetColor),
 		widget.ContainerOpts.Layout(widget.NewGridLayout(
 			// It is using a GridLayout with a single column
 			widget.GridLayoutOpts.Columns(5),
@@ -88,7 +86,7 @@ func (equipmentDisplay *EquipmentItemDisplay) CreateRootContainer() {
 func (equipmentDisplay *EquipmentItemDisplay) SetupCurrentlyEquippedContainer() {
 
 	equipmentDisplay.CurrentlyEquippedContainer = widget.NewContainer(
-		widget.ContainerOpts.BackgroundImage(e_image.NewNineSliceColor(color.NRGBA{100, 100, 100, 255})),
+		widget.ContainerOpts.BackgroundImage(defaultWidgetColor),
 		widget.ContainerOpts.Layout(widget.NewGridLayout(
 			// It is using a GridLayout with a single column
 			widget.GridLayoutOpts.Columns(3),
