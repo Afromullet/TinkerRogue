@@ -189,7 +189,11 @@ func UpdateAttackMessage(attacker *ecs.Entity, attackSuccess, isPlayerAttacking 
 		}
 
 	} else {
-		attackerMessage = common.GetComponentType[*common.Name](attacker, common.NameComponent).NameStr + " attacks and "
+
+		//Todo, this kept on crashing for some components. Something must not have a name added
+		if attacker.HasComponent(common.NameComponent) {
+			attackerMessage = common.GetComponentType[*common.Name](attacker, common.NameComponent).NameStr + " attacks and "
+		}
 
 		if attackSuccess {
 

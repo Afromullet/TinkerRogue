@@ -3,19 +3,18 @@ MAJOR
 
 
 Room Decoration (maybe)
-Larger map
+
 
 Effect stacking
 
-Add a text box that displays game info (Attacking, missing, etc)
+
 Display Throwable Item Text
 
-Calculate Monster Attributes too, taking armor and weapons into account
-When a creature is one square away from the player, it does not approach for whatever reason. I think this is related to how queeing actions works
-Need better filling of actions on the action queue
 Test and make sure attributes are calculated correctly during combat
 
 Need to remove monsters once they are dead rather than next turnb
+
+Need to only draw player ranged attack when they're actually shooting
 
 
 ___Energy/Time System__
@@ -107,12 +106,8 @@ ___Refactoring__
 
 Map Drawing
 
-___GUI___
 
-* Show player stats
 
-* There's an issue when an item is thrown/consuable used that still contains the selected state. I.E, throwing the same object multiple
-times in a row or using the same consumable multiple times in a row
 
 
 ___Other__
@@ -120,7 +115,6 @@ ___Other__
 * Add a quick bar
 
 
-* Effect Stacking
 
 
 * 
@@ -130,7 +124,7 @@ Might need to index instead
 
 * Clean up all functions and methods which use a large number of parameters
 
-* Add information, such as attack hits, misses, and damage done to the UI
+
 
 * Throwing and shooting passes around lots of state. Refactor it. Especially in the way we use PlayerData. Also anything related to the drawing
 
@@ -144,13 +138,11 @@ Might need to index instead
 
 * The way playerData and the UI interact. There's a lot of state being passed around and manipualted. Anything in input nees to be looked at too
 
-* Make it simpler to call all the functions that take a lot of paramters
 
 * Remove a dead creature once it dies rather than next turn
 
 Preallocate sizes of slices when possible
 
-Need a better way to handle coordinate conversions
 
 
 

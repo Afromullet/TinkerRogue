@@ -41,13 +41,13 @@ func ProcessUserLog(ecsmanager EntityManager, screen *ebiten.Image) {
 			log.Fatal(err)
 		}
 	}
-	gd := graphics.NewScreenData()
 
-	uiLocation := (gd.ScreenHeight - gd.UIHeight) * gd.TileHeight
+	//uiLocation := int(float64(gd.DungeonHeight)*gd.ScaleY) * gd.TileHeight
+
 	var fontX = 16
-	var fontY = uiLocation + 24
+	var fontY = graphics.UILocation + 24
 	op := &ebiten.DrawImageOptions{}
-	op.GeoM.Translate(float64(0.), float64(uiLocation))
+	op.GeoM.Translate(float64(0.), float64(graphics.UILocation))
 	screen.DrawImage(userLogImg, op)
 	tmpMessages := make([]string, 0, 5)
 	anyMessages := false

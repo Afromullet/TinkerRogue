@@ -137,7 +137,7 @@ func (as AStar) GetPath(gameMap worldmap.GameMap, start *common.Position, end *c
 			}
 
 		}
-		if currentNode.Position.Y < gd.ScreenHeight {
+		if currentNode.Position.Y < gd.DungeonHeight {
 			tile := gameMap.Tiles[graphics.IndexFromXY(currentNode.Position.X, currentNode.Position.Y+1)]
 			if ignoreWalls || tile.TileType != worldmap.WALL {
 				//The location is in the map bounds and is walkable
@@ -165,7 +165,7 @@ func (as AStar) GetPath(gameMap worldmap.GameMap, start *common.Position, end *c
 			}
 
 		}
-		if currentNode.Position.X < gd.ScreenWidth {
+		if currentNode.Position.X < gd.DungeonWidth {
 			tile := gameMap.Tiles[graphics.IndexFromXY(currentNode.Position.X+1, currentNode.Position.Y)]
 			if ignoreWalls && tile.TileType != worldmap.WALL {
 				//The location is in the map bounds and is walkable
@@ -187,7 +187,8 @@ func (as AStar) GetPath(gameMap worldmap.GameMap, start *common.Position, end *c
 			}
 
 			edge.g = currentNode.g + 1
-			edge.h = edge.Position.ManhattanDistance(endNodePlaceholder.Position)
+			edge.h = edge.Position.ChebyshevDistance(endNodePlaceholder.Position)
+			//edge.h = edge.Position.ManhattanDistance(endNodePlaceholder.Position) todo see which one oyu want to use
 			edge.f = edge.g + edge.h
 
 			if isInSlice(openList, edge) {

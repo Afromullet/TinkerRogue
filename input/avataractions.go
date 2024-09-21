@@ -85,7 +85,7 @@ func DrawThrowableAOE(pl *avatar.PlayerData, gm *worldmap.GameMap) {
 
 	for _, i := range indices {
 
-		pos := common.PositionFromIndex(i, gd.ScreenWidth)
+		pos := common.PositionFromIndex(i, gd.DungeonWidth)
 
 		if pos.InRange(pl.Pos, throwable.ThrowingRange) {
 			gm.ApplyColorMatrixToIndex(i, graphics.GreenColorMatrix)
@@ -215,7 +215,7 @@ func DrawRangedAttackAOE(pl *avatar.PlayerData, gm *worldmap.GameMap) {
 
 	for _, i := range indices {
 
-		pos := common.PositionFromIndex(i, gd.ScreenWidth)
+		pos := common.PositionFromIndex(i, gd.DungeonWidth)
 
 		if pos.InRange(pl.Pos, pl.Equipment.RangedWeaponMaxDistance) {
 			gm.ApplyColorMatrixToIndex(i, graphics.GreenColorMatrix)

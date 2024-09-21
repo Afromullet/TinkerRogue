@@ -46,11 +46,11 @@ func PixelsFromPosition(pos *Position, tileWidth, tileHeight int) (int, int) {
 }
 
 // Get the Tile X,Y from the Pixels
-func PositionFromIndex(i, screenWidth int) Position {
+func PositionFromIndex(i, dungeonWidth int) Position {
 
 	return Position{
-		X: i % screenWidth,
-		Y: i / screenWidth,
+		X: i % dungeonWidth,
+		Y: i / dungeonWidth,
 	}
 
 }
@@ -71,7 +71,7 @@ func GetTilePositions(indices []int) []Position {
 	pos := make([]Position, len(indices))
 
 	for i, inds := range indices {
-		pos[i] = PositionFromIndex(inds, gd.ScreenWidth)
+		pos[i] = PositionFromIndex(inds, gd.DungeonWidth)
 	}
 
 	return pos

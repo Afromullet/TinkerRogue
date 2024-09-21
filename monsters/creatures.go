@@ -114,9 +114,8 @@ func MonsterSystems(ecsmanger *common.EntityManager, pl *avatar.PlayerData, gm *
 	for _, c := range ecsmanger.World.Query(ecsmanger.WorldTags["monsters"]) {
 
 		actionQueue := common.GetComponentType[*timesystem.ActionQueue](c.Entity, timesystem.ActionQueueComponent)
-
 		attr := common.GetComponentType[*common.Attributes](c.Entity, common.AttributeComponent)
-
+		gear.UpdateEntityAttributes(c.Entity)
 		ApplyStatusEffects(c)
 		//gear.ConsumableEffectApplier(c.Entity)
 

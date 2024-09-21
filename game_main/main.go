@@ -39,7 +39,7 @@ import (
 // Using https://www.fatoldyeti.com/categories/roguelike-tutorial/ as a starting point.
 // Copying some of the code with modification. Whenever I change a name, it's to help me build a better mental model
 // Of what the code is doing as I'm learning GoLang
-var DEBUG_MODE = false
+var DEBUG_MODE = true
 
 type Game struct {
 	em         common.EntityManager
@@ -123,6 +123,9 @@ func ManageTurn(g *Game) {
 
 		//ExecuteActionsUntilPlayer2 places the queue back in priority order. The old function executes each action only once
 		// untilk the player
+
+		RemoveDeadEntities(&g.em, g.ts.ActionDispatcher, &g.gameMap)
+		g.ts.ActionDispatcher.CleanController()
 		if g.ts.ActionDispatcher.ExecuteActionsUntilPlayer2(&g.playerData) {
 
 			//Perform the players action
@@ -206,7 +209,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 // Layout will return the screen dimensions.
 func (g *Game) Layout(w, h int) (int, int) {
 	gd := graphics.NewScreenData()
-	return gd.TileWidth * gd.ScreenWidth, gd.TileHeight * gd.ScreenHeight
+	return gd.TileWidth * gd.DungeonWidth, gd.TileHeight * gd.DungeonHeight
 
 }
 

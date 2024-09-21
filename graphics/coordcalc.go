@@ -1,24 +1,43 @@
 package graphics
 
+var UILocation = 0
+
 // Contains the data we need to render the map. Also used for coordinate conversions
 type ScreenData struct {
 	ScreenWidth  int
 	ScreenHeight int
-	TileWidth    int
-	TileHeight   int
-	UIHeight     int
+
+	TileWidth     int
+	TileHeight    int
+	UIHeight      int
+	DungeonWidth  int
+	DungeonHeight int
+	ScaleX        float64
+	ScaleY        float64
 }
 
+// Todo, need to do less work inside of here because this is called every time we do coordinate conversions
 func NewScreenData() ScreenData {
 	g := ScreenData{
-		ScreenWidth:  50,
-		ScreenHeight: 50,
-		TileWidth:    32,
-		TileHeight:   32,
-		UIHeight:     10,
+		DungeonWidth:  100,
+		DungeonHeight: 80,
+		ScreenWidth:   20,
+		ScreenHeight:  20,
+
+		UIHeight: 10,
 	}
 
-	LevelHeight = g.ScreenHeight - g.UIHeight
+	tileWidthPixels := 64
+	tileHeightPixels := 64
+
+	g.ScaleX = float64(g.ScreenWidth) / float64(g.DungeonWidth)
+	g.ScaleY = float64(g.ScreenHeight-g.UIHeight) / float64(g.DungeonHeight)
+
+	g.TileWidth = int(float64(tileWidthPixels) * g.ScaleX)
+	g.TileHeight = int(float64(tileHeightPixels) * g.ScaleY)
+
+	LevelHeight = int(float64(g.DungeonHeight) * g.ScaleY)
+	UILocation = LevelHeight * g.TileHeight
 
 	return g
 }
@@ -27,13 +46,13 @@ func NewScreenData() ScreenData {
 // This coordinate is logical tiles, not pixels.
 func IndexFromXY(x int, y int) int {
 	gd := NewScreenData()
-	return (y * gd.ScreenWidth) + x
+	return (y * gd.DungeonWidth) + x
 }
 
 // Gets XY coordinates from the map tile index
 func XYFromIndex(i int) (int, int) {
 	gd := NewScreenData()
-	return i % gd.ScreenWidth, i / gd.ScreenWidth
+	return i % gd.DungeonWidth, i / gd.DungeonWidth
 }
 
 // Gets the pixels from the index

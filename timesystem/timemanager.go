@@ -89,14 +89,14 @@ func (am *ActionManager) AddActionQueue(aq *ActionQueue) {
 	}
 }
 
-// Removes any ActionQueue without actions
+// Removes any ActionQueue without an entity
 func (am *ActionManager) CleanController() {
 
 	remainingActions := make([]*ActionQueue, 0)
 
 	for _, act := range am.EntityActions {
 
-		if act.NumOfActions() > 0 {
+		if act.Entity != nil {
 			remainingActions = append(remainingActions, act)
 
 		}
