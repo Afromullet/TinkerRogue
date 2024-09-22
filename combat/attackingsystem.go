@@ -74,6 +74,7 @@ func RangedAttackSystem(ecsmanager *common.EntityManager, pl *avatar.PlayerData,
 	} else {
 		attacker = GetCreatureAtPosition(ecsmanager, attackerPos)
 		weapon = common.GetComponentType[*gear.RangedWeapon](attacker, gear.RangedWeaponComponent)
+
 		targets = append(targets, pl.PlayerEntity)
 	}
 

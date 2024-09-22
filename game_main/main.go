@@ -58,6 +58,7 @@ func NewGame() *Game {
 	g.playerData = avatar.PlayerData{}
 	entitytemplates.ReadGameData()
 	InitializeECS(&g.em)
+
 	InitializePlayerData(&g.em, &g.playerData, &g.gameMap)
 
 	g.ts.Turn = timesystem.PlayerTurn
@@ -65,10 +66,8 @@ func NewGame() *Game {
 
 	testing.CreateTestItems(g.em.World, g.em.WorldTags, &g.gameMap)
 
-	testing.SetupPlayerForTesting(&g.em, &g.playerData)
-
 	testing.UpdateContentsForTest(&g.em, &g.gameMap)
-	spawning.SpawnStartingCreatures(10, &g.em, &g.gameMap, &g.playerData)
+	spawning.SpawnStartingCreatures(0, &g.em, &g.gameMap, &g.playerData)
 
 	testing.CreateTestConsumables(&g.em, &g.gameMap)
 	testing.InitTestActionManager(&g.em, &g.playerData, &g.ts)
@@ -209,6 +208,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 // Layout will return the screen dimensions.
 func (g *Game) Layout(w, h int) (int, int) {
 	gd := graphics.NewScreenData()
+	//return gd.TileWidth * gd.DungeonWidth, gd.TileHeight * gd.DungeonHeight
 	return gd.TileWidth * gd.DungeonWidth, gd.TileHeight * gd.DungeonHeight
 
 }

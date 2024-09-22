@@ -187,6 +187,31 @@ func HandlePlayerThrowable(ecsmanager *common.EntityManager, pl *avatar.PlayerDa
 
 }
 
+func HandlePlayerRangedAttack(ecsmanager *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap) {
+
+	if pl.InputStates.IsShooting {
+
+		DrawRangedAttackAOE(pl, gm)
+
+		//Cancel throwing
+		if inpututil.IsMouseButtonJustPressed(ebiten.MouseButton2) {
+
+			pl.InputStates.IsShooting = false
+			gm.ApplyColorMatrix(PrevRangedAttInds, graphics.NewEmptyMatrix())
+			//log.Println("Removing throwable")
+
+		}
+
+		if inpututil.IsMouseButtonJustPressed(ebiten.MouseButton1) {
+
+			combat.RangedAttackSystem(ecsmanager, pl, gm, pl.Pos)
+
+		}
+
+	}
+
+}
+
 func DrawRangedAttackAOE(pl *avatar.PlayerData, gm *worldmap.GameMap) {
 
 	gd := graphics.NewScreenData()
@@ -230,31 +255,6 @@ func DrawRangedAttackAOE(pl *avatar.PlayerData, gm *worldmap.GameMap) {
 
 	prevCursorX, prevCursorY = cursorX, cursorY
 	PrevRangedAttInds = indices
-
-}
-
-func HandlePlayerRangedAttack(ecsmanager *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap) {
-
-	if pl.InputStates.IsShooting {
-
-		DrawRangedAttackAOE(pl, gm)
-
-		//Cancel throwing
-		if inpututil.IsMouseButtonJustPressed(ebiten.MouseButton2) {
-
-			pl.InputStates.IsShooting = false
-			gm.ApplyColorMatrix(PrevRangedAttInds, graphics.NewEmptyMatrix())
-			//log.Println("Removing throwable")
-
-		}
-
-		if inpututil.IsMouseButtonJustPressed(ebiten.MouseButton1) {
-
-			combat.RangedAttackSystem(ecsmanager, pl, gm, pl.Pos)
-
-		}
-
-	}
 
 }
 

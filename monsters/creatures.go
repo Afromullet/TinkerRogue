@@ -1,6 +1,7 @@
 package monsters
 
 import (
+	"fmt"
 	"game_main/avatar"
 	"game_main/common"
 	"game_main/gear"
@@ -102,6 +103,18 @@ func (c *Creature) UpdatePosition(gm *worldmap.GameMap, currentPosition *common.
 
 	}
 
+}
+
+// Returns a description on the entity to display to the player
+func EntityDescription(e *ecs.Entity) string {
+
+	attr := common.GetAttributes(e)
+	//name := common.GetComponentType[*common.Name](e, common.NameComponent)
+
+	//result := fmt.Sprintf(name.NameStr)
+	result := fmt.Sprintln("Health %i\\%i", attr.CurrentHealth, attr.MaxHealth)
+
+	return result
 }
 
 // Currently executes all actions just as it did before, this time only doing it through the AllActions queue

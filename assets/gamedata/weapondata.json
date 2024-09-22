@@ -6,7 +6,7 @@
       "imgname": "long_sword1.png",
       "minDamage": 5,
       "maxDamage": 10,
-      "attackSpeed": 3
+      "attackSpeed": 10
     },
     {
       "type": "MeleeWeapon",
@@ -14,7 +14,7 @@
       "imgname": "dagger.png",
       "minDamage": 6,
       "maxDamage": 12,
-      "attackSpeed": 2
+      "attackSpeed": 10
     },
     {
       "type": "MeleeWeapon",
@@ -22,7 +22,7 @@
       "imgname": "hand_axe1.png",
       "minDamage": 6,
       "maxDamage": 12,
-      "attackSpeed": 6
+      "attackSpeed": 10
     },
     {
       "type": "MeleeWeapon",
@@ -30,7 +30,7 @@
       "imgname": "flail1.png",
       "minDamage": 8,
       "maxDamage": 15,
-      "attackSpeed": 5
+      "attackSpeed": 10
     },
     {
       "type": "MeleeWeapon",

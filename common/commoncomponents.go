@@ -4,6 +4,8 @@ import (
 	"game_main/graphics"
 	"math"
 	"strconv"
+
+	"github.com/hajimehoshi/ebiten/v2"
 )
 
 type Position struct {
@@ -61,6 +63,14 @@ func GridPositionFromPixels(x, y int) Position {
 		X: x / gd.TileWidth,
 		Y: y / gd.TileHeight,
 	}
+}
+
+// Gets the index in the tilemap from the cursor
+func GetTileIndexFromCursor() int {
+
+	pos := GridPositionFromPixels(ebiten.CursorPosition())
+	return graphics.IndexFromXY(pos.X, pos.Y)
+
 }
 
 // A TileBasedShape returns indices that correspond to the tiles on the GameMap

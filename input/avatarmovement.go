@@ -142,6 +142,13 @@ func PlayerActions(ecsmanager *common.EntityManager, pl *avatar.PlayerData, gm *
 		pl.InputStates.HasKeyInput = true
 	}
 
+	if inpututil.IsKeyJustReleased(ebiten.KeyL) {
+
+		ind := common.GetTileIndexFromCursor()
+		gm.ApplyColorMatrixToIndex(ind, graphics.GreenColorMatrix)
+
+	}
+
 	return pl.InputStates.HasKeyInput
 
 }

@@ -61,39 +61,6 @@ func (pl *PlayerEquipment) EquipItem(e *ecs.Entity) {
 
 }
 
-// Remvoes the item and adds it back to the inventory
-func (pl *PlayerEquipment) RemoveItem(e *ecs.Entity) {
-
-	switch gear.KindOfItem(e) {
-	case gear.ArmorType:
-		pl.EqArmor = e
-	case gear.MeleeWeaponType:
-		pl.EqMeleeWeapon = e
-	case gear.RangedWeaponType:
-		pl.EqRangedWeapon = e
-	default:
-		fmt.Println("Invalid item equipped")
-	}
-
-}
-
-/*
-func (pl *PlayerEquipment) EquipItem(eq interface{}) {
-
-	switch eq.(type) {
-	case *gear.MeleeWeapon:
-		pl.EqMeleeWeapon = eq.(*ecs.Entity)
-	case *gear.RangedWeapon:
-		pl.EqMeleeWeapon = eq.(*ecs.Entity)
-	case *gear.Armor:
-		pl.EqMeleeWeapon = eq.(*ecs.Entity)
-	default:
-		fmt.Println("Invalid item equipped")
-	}
-
-}
-*/
-
 func (pl *PlayerEquipment) PrepareRangedAttack() {
 	wep := common.GetComponentType[*gear.RangedWeapon](pl.EqRangedWeapon, gear.RangedWeaponComponent)
 	pl.RangedWeaponAOEShape = wep.TargetArea

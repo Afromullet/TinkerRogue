@@ -5,6 +5,7 @@ import (
 	"game_main/common"
 	"game_main/gear"
 	"game_main/rendering"
+	"game_main/testing"
 	"game_main/timesystem"
 	"game_main/worldmap"
 	"log"
@@ -66,6 +67,18 @@ func InitializePlayerData(ecsmanager *common.EntityManager, pl *avatar.PlayerDat
 	startPos.Y = gm.StartingPosition().Y
 
 	inventory := common.GetComponentType[*gear.Inventory](pl.PlayerEntity, gear.InventoryComponent)
+
+	a := testing.CreateArmor(ecsmanager.World, "A1", *startPos, "../assets/items/sword.png", 10, 5, 1)
+	w := testing.CreateWeapon(ecsmanager.World, "W1", *startPos, "../assets/items/sword.png", 5, 10)
+	r := testing.CreatedRangedWeapon(ecsmanager.World, "R1", "../assets/items/sword.png", *startPos, 5, 10, 5, testing.TestRect)
+
+	pl.Equipment.EqMeleeWeapon = w
+	pl.Equipment.EqRangedWeapon = r
+	pl.Equipment.EqArmor = a
+
+	armor := common.GetComponentType[*gear.Armor](pl.Equipment.EqArmor, gear.ArmorComponent)
+
+	pl.PlayerEntity.AddComponent(gear.ArmorComponent, armor)
 
 	pl.Pos = startPos
 	pl.Inventory = inventory

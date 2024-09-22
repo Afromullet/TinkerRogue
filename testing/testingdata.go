@@ -6,7 +6,6 @@ import (
 	"game_main/entitytemplates"
 	"game_main/gear"
 	"game_main/graphics"
-	monster "game_main/monsters"
 	"game_main/rendering"
 	"game_main/timesystem"
 	"game_main/worldmap"
@@ -31,22 +30,6 @@ var TestCloudEffect = graphics.NewCloudEffect(0, 0, 2)
 var TestIceEffect = graphics.NewIceEffect(0, 0, 2)
 var TestElectricEffect = graphics.NewElectricityEffect(0, 0, 2)
 var TestStickyEffect = graphics.NewStickyGroundEffect(0, 0, 2)
-
-// Some extra steps taken to set the player weapons up for testing.
-// Need to update both the pointers in playerData and add the actual components
-// This is temporary
-func SetupPlayerForTesting(ecsmanager *common.EntityManager, pl *avatar.PlayerData) {
-	w := CreateWeapon(ecsmanager.World, "W1", *pl.Pos, "../assets/items/sword.png", 5, 10)
-
-	r := CreatedRangedWeapon(ecsmanager.World, "R1", "../assets/items/sword.png", *pl.Pos, 5, 10, 5, TestRect)
-
-	a := CreateArmor(ecsmanager.World, "A1", *pl.Pos, "../assets/items/sword.png", 1, 5, 1)
-
-	pl.Equipment.EqMeleeWeapon = w
-	pl.Equipment.EqRangedWeapon = r
-	pl.Equipment.EqArmor = a
-
-}
 
 func CreateTestConsumables(ecsmanager *common.EntityManager, gm *worldmap.GameMap) {
 	ent := entitytemplates.CreateConsumableFromTemplate(*ecsmanager, entitytemplates.ConsumableTemplates[0])
@@ -128,47 +111,6 @@ func CreateTestItems(manager *ecs.Manager, tags map[string]ecs.Tag, gameMap *wor
 		throwItem, TestBurning, TestFreezing)
 
 	//CreateItem(manager, "Item"+strconv.Itoa(2), common.Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc, NewBurning(1, 1), NewFreezing(1, 2))
-
-}
-
-func CreateMonster(manager *ecs.Manager, gameMap *worldmap.GameMap, x, y int, img string) *ecs.Entity {
-
-	elfImg, _, err := ebitenutil.NewImageFromFile(img)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	ind := graphics.IndexFromXY(x, y)
-	gameMap.Tiles[ind].Blocked = true
-	testArmor := gear.Armor{15, 3, 30}
-
-	ent := manager.NewEntity().
-		AddComponent(monster.CreatureComponent, &monster.Creature{
-			Path: make([]common.Position, 0),
-		}).
-		AddComponent(rendering.RenderableComponent, &rendering.Renderable{
-			Image:   elfImg,
-			Visible: true,
-		}).
-		AddComponent(common.PositionComponent, &common.Position{
-			X: x,
-			Y: y,
-		}).
-		AddComponent(common.AttributeComponent, &common.Attributes{MaxHealth: 5, CurrentHealth: 5, TotalAttackSpeed: 30, TotalMovementSpeed: 1}).
-		AddComponent(gear.ArmorComponent, &testArmor).
-		AddComponent(gear.MeleeWeaponComponent, &gear.MeleeWeapon{
-			MinDamage:   3,
-			MaxDamage:   5,
-			AttackSpeed: 30,
-		}).
-		AddComponent(timesystem.ActionQueueComponent, &timesystem.ActionQueue{TotalActionPoints: 100})
-
-	//armor := gear.GetArmor(ent)
-	//common.UpdateAttributes(ent, armor.ArmorClass, armor.Protection, armor.DodgeChance)
-
-	gear.UpdateEntityAttributes(ent)
-
-	return ent
 
 }
 

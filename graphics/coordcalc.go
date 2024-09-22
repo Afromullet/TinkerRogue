@@ -1,6 +1,8 @@
 package graphics
 
 var UILocation = 0
+var LevelHeight int = 0
+var LevelWidth int = 0
 
 // Contains the data we need to render the map. Also used for coordinate conversions
 type ScreenData struct {
@@ -21,8 +23,8 @@ func NewScreenData() ScreenData {
 	g := ScreenData{
 		DungeonWidth:  100,
 		DungeonHeight: 80,
-		ScreenWidth:   20,
-		ScreenHeight:  20,
+		ScreenWidth:   50,
+		ScreenHeight:  50,
 
 		UIHeight: 10,
 	}
@@ -37,7 +39,9 @@ func NewScreenData() ScreenData {
 	g.TileHeight = int(float64(tileHeightPixels) * g.ScaleY)
 
 	LevelHeight = int(float64(g.DungeonHeight) * g.ScaleY)
-	UILocation = LevelHeight * g.TileHeight
+	LevelWidth = int(float64(g.DungeonWidth) * g.ScaleX)
+
+	UILocation = LevelWidth - g.ScreenWidth*2
 
 	return g
 }
