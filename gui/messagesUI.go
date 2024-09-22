@@ -1,51 +1,27 @@
 package gui
 
 import (
-	"image"
+	"game_main/graphics"
 	"image/color"
-	_ "image/png"
 
 	e_image "github.com/ebitenui/ebitenui/image"
 	"github.com/ebitenui/ebitenui/widget"
-	"github.com/golang/freetype/truetype"
-
-	"golang.org/x/image/font"
-	"golang.org/x/image/font/gofont/goregular"
 )
 
-var face, _ = loadFont(20)
-var buttonImage, _ = loadButtonImage()
-var defaultWidgetColor = e_image.NewNineSliceColor(color.NRGBA{0x13, 0x1a, 0x22, 0xff})
+// Don't think I really need this, since all it has is a text area.
+type playerMessageUI struct {
+	msgUIContainer *widget.Container
+	msgTextArea    *widget.TextArea //Displays the properties of the selected items
 
-func loadButtonImage() (*widget.ButtonImage, error) {
-	idle := e_image.NewNineSliceColor(color.NRGBA{R: 170, G: 170, B: 180, A: 255})
-
-	hover := e_image.NewNineSliceColor(color.NRGBA{R: 130, G: 130, B: 150, A: 255})
-
-	pressed := e_image.NewNineSliceColor(color.NRGBA{R: 100, G: 100, B: 120, A: 255})
-
-	return &widget.ButtonImage{
-		Idle:    idle,
-		Hover:   hover,
-		Pressed: pressed,
-	}, nil
-}
-
-func loadFont(size float64) (font.Face, error) {
-	ttfFont, err := truetype.Parse(goregular.TTF)
-	if err != nil {
-		return nil, err
-	}
-
-	return truetype.NewFace(ttfFont, &truetype.Options{
-		Size:    size,
-		DPI:     72,
-		Hinting: font.HintingFull,
-	}), nil
 }
 
 // Text window to display the item properties of the selected items to the player
-func CreateTextArea() *widget.TextArea {
+func (msgUI *playerMessageUI) CreateMsgTextArea() *widget.TextArea {
+
+	//gd := graphics.NewScreenData()
+
+	xSize := graphics.StatsUIOffset   //Only here for consistency. Used to fill up the X dimension of the GUI part
+	ySize := graphics.LevelHeight / 4 //The GUI takes up 1/4th of the level height
 	// construct a textarea
 	return widget.NewTextArea(
 		widget.TextAreaOpts.ContainerOpts(
@@ -63,7 +39,8 @@ func CreateTextArea() *widget.TextArea {
 				*/
 
 				//Set the minimum size for the widget
-				widget.WidgetOpts.MinSize(300, 100),
+
+				widget.WidgetOpts.MinSize(xSize, ySize),
 			),
 		),
 		//widget.TextAreaOpts.ContainerOpts(),
@@ -107,40 +84,31 @@ func CreateTextArea() *widget.TextArea {
 
 }
 
-func CreateButton(text string) *widget.Button {
-	// construct a button
-	button := widget.NewButton(
-		// set general widget options
-		widget.ButtonOpts.WidgetOpts(
-			// instruct the container's anchor layout to center the button both horizontally and vertically
-			widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{
-				HorizontalPosition: widget.AnchorLayoutPositionCenter,
-				VerticalPosition:   widget.AnchorLayoutPositionCenter,
-			}),
-		),
+func (msgUI *playerMessageUI) CreatMsgUI() {
+	// construct a new container that serves as the root of the UI hierarchy
 
-		widget.ButtonOpts.Image(buttonImage),
-		widget.ButtonOpts.Text(text, face, &widget.ButtonTextColor{
-			Idle: color.NRGBA{0xdf, 0xf4, 0xff, 0xff},
-		}),
+	// construct a new container that serves as the root of the UI hierarchy
+	msgUI.msgUIContainer = widget.NewContainer(
 
-		widget.ButtonOpts.TextPadding(widget.Insets{
-			Left:   30,
-			Right:  30,
-			Top:    30,
-			Bottom: 30,
-		}),
+		//widget.ContainerOpts.WidgetOpts(widget.WidgetOpts.MinSize(3000, 100)),
+
+		widget.ContainerOpts.Layout(widget.NewAnchorLayout(
+			widget.AnchorLayoutOpts.Padding(widget.NewInsetsSimple(30)),
+		)),
 	)
 
-	return button
+	msgUI.msgTextArea = msgUI.CreateMsgTextArea()
 
-}
+	//statsUI.StatsTextArea..
 
-func SetContainerLocation(w *widget.Container, x, y int) {
+	msgUI.msgUIContainer.AddChild(msgUI.msgTextArea)
 
-	r := image.Rect(0, 0, 0, 0)
-	r = r.Add(image.Point{x, y})
+	/*
+		r := image.Rect(500, 500, 500, 500)
+		r = r.Add(image.Point{2000, 2000})
+		statsUI.StatsTextArea.SetLocation(r)
+	*/
 
-	w.SetLocation(r)
+	//statsUI.StatsTextArea2 = CreateTextArea()
 
 }

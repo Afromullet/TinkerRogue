@@ -21,6 +21,7 @@ import (
 	"game_main/entitytemplates"
 	"game_main/gear"
 	"game_main/graphics"
+	"math"
 
 	"game_main/gui"
 	"game_main/input"
@@ -205,11 +206,24 @@ func (g *Game) Draw(screen *ebiten.Image) {
 
 }
 
+/*
 // Layout will return the screen dimensions.
 func (g *Game) Layout(w, h int) (int, int) {
 	gd := graphics.NewScreenData()
 	//return gd.TileWidth * gd.DungeonWidth, gd.TileHeight * gd.DungeonHeight
 	return gd.TileWidth * gd.DungeonWidth, gd.TileHeight * gd.DungeonHeight
+
+}
+*/
+
+// Layout will return the screen dimensions.
+func (g *Game) Layout(w, h int) (int, int) {
+	scale := ebiten.DeviceScaleFactor()
+	gd := graphics.NewScreenData()
+	//return gd.TileWidth * gd.DungeonWidth, gd.TileHeight * gd.DungeonHeight
+	canvasWidth := int(math.Ceil(float64(gd.TileWidth*gd.DungeonWidth) * scale))
+	canvasHeight := int(math.Ceil(float64(gd.TileHeight*gd.DungeonHeight) * scale))
+	return canvasWidth + graphics.StatsUIOffset, canvasHeight
 
 }
 

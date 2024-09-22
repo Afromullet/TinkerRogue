@@ -3,6 +3,7 @@ package gui
 import (
 	"game_main/avatar"
 	"game_main/gear"
+	"game_main/graphics"
 	"image"
 
 	"github.com/ebitenui/ebitenui"
@@ -12,6 +13,7 @@ import (
 type PlayerUI struct {
 	ItemsUI             PlayerItemsUI
 	StatsUI             PlayerStatsUI
+	MsgUI               playerMessageUI
 	MainPlayerInterface *ebitenui.UI
 }
 
@@ -42,39 +44,35 @@ func (playerUI *PlayerUI) CreateMainInterface(playerData *avatar.PlayerData) {
 // Creates the main UI container
 func CreatePlayerUI(playerUI *PlayerUI, inv *gear.Inventory, pl *avatar.PlayerData) *ebitenui.UI {
 
+	gd := graphics.NewScreenData()
+
 	ui := ebitenui.UI{}
 
 	// construct a new container that serves as the root of the UI hierarchy
 	rootContainer := widget.NewContainer(
 
+	/*
 		widget.ContainerOpts.Layout(widget.NewAnchorLayout(
 			widget.AnchorLayoutOpts.Padding(widget.NewInsetsSimple(30)),
 		)),
+	*/
 	)
 
-	inventoryAnchorContainer := widget.NewContainer(
-
-		widget.ContainerOpts.WidgetOpts(
-
-			widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{
-				HorizontalPosition: widget.AnchorLayoutPositionCenter,
-				VerticalPosition:   widget.AnchorLayoutPositionCenter,
-				StretchHorizontal:  true,
-				StretchVertical:    true,
-			}),
-			widget.WidgetOpts.MinSize(100, 100),
-		),
-	)
-
-	rootContainer.AddChild(inventoryAnchorContainer)
-
-	itemDisplayOptionsContainer := CreateInventorySelectionContainer(playerUI, inv, pl, &ui)
+	itemDisplayOptionsContainer := CreateInventorySelectionContainer(playerUI, inv, pl, &ui) //Contains the buttons for opening inventory related windows
 
 	playerUI.StatsUI.CreateStatsUI()
 	playerUI.StatsUI.StatsTextArea.SetText(pl.GetPlayerAttributes().AttributeText())
-	inventoryAnchorContainer.AddChild(itemDisplayOptionsContainer)
 
-	rootContainer.AddChild(playerUI.StatsUI.StatsTextArea)
+	playerUI.MsgUI.CreatMsgUI()
+	playerUI.MsgUI.msgTextArea.SetText("adadsdasdsa") //Placeholder
+
+	rootContainer.AddChild(itemDisplayOptionsContainer)
+	rootContainer.AddChild(playerUI.StatsUI.StatUIContainer)
+	rootContainer.AddChild(playerUI.MsgUI.msgUIContainer)
+
+	SetContainerLocation(itemDisplayOptionsContainer, 0, 0)
+	SetContainerLocation(playerUI.StatsUI.StatUIContainer, gd.GetCanvasWidth(), 0)
+	SetContainerLocation(playerUI.MsgUI.msgUIContainer, gd.GetCanvasWidth(), gd.GetCanvasHeight()/4+gd.TileHeight) //Placing it one tile under the Stats Container
 
 	ui.Container = rootContainer
 

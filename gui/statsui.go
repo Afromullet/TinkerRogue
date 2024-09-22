@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"game_main/graphics"
 	"image/color"
 
 	e_image "github.com/ebitenui/ebitenui/image"
@@ -9,32 +10,37 @@ import (
 
 // Don't think I really need this, since all it has is a text area.
 type PlayerStatsUI struct {
-	StatsTextArea *widget.TextArea //Displays the properties of the selected items
-
-}
-
-func (statsUI *PlayerStatsUI) CreateStatsUI() {
-	statsUI.CreateStatsTextArea()
+	StatUIContainer *widget.Container
+	StatsTextArea   *widget.TextArea //Displays the properties of the selected items
 
 }
 
 // Text window to display the item properties of the selected items to the player
-func (statsUI *PlayerStatsUI) CreateStatsTextArea() {
+func (statsUI *PlayerStatsUI) CreateStatsTextArea() *widget.TextArea {
+
+	//gd := graphics.NewScreenData()
+
+	xSize := graphics.StatsUIOffset   //Only here for consistency. Used to fill up the X dimension of the GUI part
+	ySize := graphics.LevelHeight / 4 //The GUI takes up 1/4th of the level height
 	// construct a textarea
-	statsUI.StatsTextArea = widget.NewTextArea(
+	return widget.NewTextArea(
 		widget.TextAreaOpts.ContainerOpts(
 
 			widget.ContainerOpts.WidgetOpts(
 
-				widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{
-					HorizontalPosition: widget.AnchorLayoutPositionEnd,
-					VerticalPosition:   widget.AnchorLayoutPositionStart,
-					StretchHorizontal:  false,
-					StretchVertical:    false,
-				}),
+				/*
+					Commented out as I'm trying to figure out how to position windows
+						widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{
+							HorizontalPosition: widget.AnchorLayoutPositionEnd,
+							VerticalPosition:   widget.AnchorLayoutPositionStart,
+							StretchHorizontal:  false,
+							StretchVertical:    false,
+						}),
+				*/
 
 				//Set the minimum size for the widget
-				widget.WidgetOpts.MinSize(300, 100),
+
+				widget.WidgetOpts.MinSize(xSize, ySize),
 			),
 		),
 		//widget.TextAreaOpts.ContainerOpts(),
@@ -43,7 +49,7 @@ func (statsUI *PlayerStatsUI) CreateStatsTextArea() {
 		//Tell the textarea to display bbcodes
 		widget.TextAreaOpts.ProcessBBCode(true),
 		//Set the font color
-		widget.TextAreaOpts.FontColor(color.Black),
+		widget.TextAreaOpts.FontColor(color.White),
 		//Set the font face (size) to use
 		widget.TextAreaOpts.FontFace(face),
 
@@ -54,8 +60,8 @@ func (statsUI *PlayerStatsUI) CreateStatsTextArea() {
 		//This sets the background images for the scroll container
 		widget.TextAreaOpts.ScrollContainerOpts(
 			widget.ScrollContainerOpts.Image(&widget.ScrollContainerImage{
-				Idle: e_image.NewNineSliceColor(color.NRGBA{100, 100, 100, 255}),
-				Mask: e_image.NewNineSliceColor(color.NRGBA{100, 100, 100, 255}),
+				Idle: defaultWidgetColor,
+				Mask: defaultWidgetColor,
 			}),
 		),
 		//This sets the images to use for the sliders
@@ -75,5 +81,34 @@ func (statsUI *PlayerStatsUI) CreateStatsTextArea() {
 			),
 		),
 	)
+
+}
+
+func (statsUI *PlayerStatsUI) CreateStatsUI() {
+	// construct a new container that serves as the root of the UI hierarchy
+
+	// construct a new container that serves as the root of the UI hierarchy
+	statsUI.StatUIContainer = widget.NewContainer(
+
+		//widget.ContainerOpts.WidgetOpts(widget.WidgetOpts.MinSize(3000, 100)),
+
+		widget.ContainerOpts.Layout(widget.NewAnchorLayout(
+			widget.AnchorLayoutOpts.Padding(widget.NewInsetsSimple(30)),
+		)),
+	)
+
+	statsUI.StatsTextArea = statsUI.CreateStatsTextArea()
+
+	//statsUI.StatsTextArea..
+
+	statsUI.StatUIContainer.AddChild(statsUI.StatsTextArea)
+
+	/*
+		r := image.Rect(500, 500, 500, 500)
+		r = r.Add(image.Point{2000, 2000})
+		statsUI.StatsTextArea.SetLocation(r)
+	*/
+
+	//statsUI.StatsTextArea2 = CreateTextArea()
 
 }

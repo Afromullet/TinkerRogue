@@ -58,6 +58,7 @@ func (consDisplay *ConsumableItemDisplay) DisplayInventory() {
 func (consDisplay *ConsumableItemDisplay) CreateRootContainer() {
 
 	consDisplay.ItmDisplay.RootContainer = widget.NewContainer(
+
 		widget.ContainerOpts.BackgroundImage(defaultWidgetColor),
 		widget.ContainerOpts.Layout(widget.NewGridLayout(
 			// It is using a GridLayout with a single column
