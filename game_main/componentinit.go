@@ -3,6 +3,7 @@ package main
 import (
 	"game_main/common"
 	"game_main/gear"
+	"game_main/gui"
 	"game_main/monsters"
 	"game_main/rendering"
 	"game_main/timesystem"
@@ -24,7 +25,7 @@ func InitializeECS(ecsmanager *common.EntityManager) {
 	common.NameComponent = manager.NewComponent()
 	gear.InventoryComponent = manager.NewComponent()
 	common.AttributeComponent = manager.NewComponent()
-	common.UserMsgComponent = manager.NewComponent()
+	gui.UserMsgComponent = manager.NewComponent()
 	gear.MeleeWeaponComponent = manager.NewComponent()
 	gear.RangedWeaponComponent = manager.NewComponent()
 	gear.ArmorComponent = manager.NewComponent()
@@ -32,7 +33,7 @@ func InitializeECS(ecsmanager *common.EntityManager) {
 	renderables := ecs.BuildTag(rendering.RenderableComponent, common.PositionComponent)
 	tags["renderables"] = renderables
 
-	messengers := ecs.BuildTag(common.UserMsgComponent)
+	messengers := ecs.BuildTag(gui.UserMsgComponent)
 	tags["messengers"] = messengers
 
 	monsters.InitializeMovementComponents(manager, tags)

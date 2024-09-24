@@ -4,6 +4,7 @@ import (
 	"game_main/common"
 	"game_main/gear"
 	"game_main/graphics"
+	"game_main/gui"
 	"game_main/monsters"
 	"game_main/rendering"
 	"game_main/timesystem"
@@ -95,7 +96,7 @@ func CreateCreatureFromTemplate(manager common.EntityManager, m JSONMonster, gm 
 		attr.TotalAttackSpeed = 1
 	}
 
-	ent.AddComponent(common.UserMsgComponent, &common.UserMessage{})
+	ent.AddComponent(gui.UserMsgComponent, &gui.UserMessage{})
 
 	ent.AddComponent(common.AttributeComponent, &attr)
 	ent.AddComponent(timesystem.ActionQueueComponent, &timesystem.ActionQueue{TotalActionPoints: 100})

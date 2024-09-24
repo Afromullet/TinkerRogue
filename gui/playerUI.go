@@ -13,7 +13,7 @@ import (
 type PlayerUI struct {
 	ItemsUI             PlayerItemsUI
 	StatsUI             PlayerStatsUI
-	MsgUI               playerMessageUI
+	MsgUI               PlayerMessageUI
 	MainPlayerInterface *ebitenui.UI
 }
 

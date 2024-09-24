@@ -4,6 +4,7 @@ import (
 	"game_main/avatar"
 	"game_main/common"
 	"game_main/gear"
+	"game_main/gui"
 	"game_main/rendering"
 	"game_main/testing"
 	"game_main/timesystem"
@@ -46,13 +47,13 @@ func InitializePlayerData(ecsmanager *common.EntityManager, pl *avatar.PlayerDat
 			InventoryContent: make([]*ecs.Entity, 0),
 		}).
 		AddComponent(common.AttributeComponent, &attr).
-		AddComponent(common.UserMsgComponent, &common.UserMessage{
+		AddComponent(gui.UserMsgComponent, &gui.UserMessage{
 			AttackMessage:    "",
 			GameStateMessage: "",
 		}).
 		AddComponent(timesystem.ActionQueueComponent, &timesystem.ActionQueue{TotalActionPoints: 100})
 
-	playerEntity.AddComponent(common.UserMsgComponent, &common.UserMessage{})
+	playerEntity.AddComponent(gui.UserMsgComponent, &gui.UserMessage{})
 	players := ecs.BuildTag(avatar.PlayerComponent, common.PositionComponent, gear.InventoryComponent)
 	ecsmanager.WorldTags["players"] = players
 

@@ -23,22 +23,11 @@ func (statsUI *PlayerStatsUI) CreateStatsTextArea() *widget.TextArea {
 	xSize := graphics.StatsUIOffset   //Only here for consistency. Used to fill up the X dimension of the GUI part
 	ySize := graphics.LevelHeight / 4 //The GUI takes up 1/4th of the level height
 	// construct a textarea
+
 	return widget.NewTextArea(
 		widget.TextAreaOpts.ContainerOpts(
 
 			widget.ContainerOpts.WidgetOpts(
-
-				/*
-					Commented out as I'm trying to figure out how to position windows
-						widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{
-							HorizontalPosition: widget.AnchorLayoutPositionEnd,
-							VerticalPosition:   widget.AnchorLayoutPositionStart,
-							StretchHorizontal:  false,
-							StretchVertical:    false,
-						}),
-				*/
-
-				//Set the minimum size for the widget
 
 				widget.WidgetOpts.MinSize(xSize, ySize),
 			),
@@ -51,7 +40,8 @@ func (statsUI *PlayerStatsUI) CreateStatsTextArea() *widget.TextArea {
 		//Set the font color
 		widget.TextAreaOpts.FontColor(color.White),
 		//Set the font face (size) to use
-		widget.TextAreaOpts.FontFace(face),
+
+		widget.TextAreaOpts.FontFace(largeFace),
 
 		//Tell the TextArea to show the vertical scrollbar
 		widget.TextAreaOpts.ShowVerticalScrollbar(),

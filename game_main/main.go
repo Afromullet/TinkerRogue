@@ -199,7 +199,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 
 	rendering.ProcessRenderables(&g.em, g.gameMap, screen, DEBUG_MODE)
 
-	common.ProcessUserLog(g.em, screen)
+	gui.ProcessUserLog(g.em, screen, &g.gameUI.MsgUI)
 
 	graphics.VXHandler.DrawVisualEffects(screen)
 	g.gameUI.MainPlayerInterface.Draw(screen)

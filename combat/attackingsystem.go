@@ -6,6 +6,7 @@ import (
 	"game_main/common"
 	"game_main/gear"
 	"game_main/graphics"
+	"game_main/gui"
 	"game_main/randgen"
 	"game_main/worldmap"
 	"log"
@@ -179,7 +180,7 @@ func GetCreatureAtPosition(ecsmnager *common.EntityManager, pos *common.Position
 func UpdateAttackMessage(attacker *ecs.Entity, attackSuccess, isPlayerAttacking bool, damage int) {
 
 	attackerMessage := ""
-	msg := common.GetComponentType[*common.UserMessage](attacker, common.UserMsgComponent)
+	msg := common.GetComponentType[*gui.UserMessage](attacker, gui.UserMsgComponent)
 
 	if isPlayerAttacking && attackSuccess {
 

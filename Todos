@@ -117,7 +117,7 @@ ___Other__
 
 * Add a quick bar
 
-
+* Better message display. Currently it clears things too much - every new message clears the MsgUI text Area. It needs to keep a small history
 
 
 * 

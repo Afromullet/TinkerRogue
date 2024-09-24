@@ -154,8 +154,3 @@ func (a Attributes) AttributeText() string {
 type Name struct {
 	NameStr string
 }
-
-type UserMessage struct {
-	AttackMessage    string
-	GameStateMessage string
-}

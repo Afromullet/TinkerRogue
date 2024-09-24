@@ -1,6 +1,5 @@
 package graphics
 
-var UILocationX = 0
 var LevelHeight int = 0
 var LevelWidth int = 0
 var StatsUIOffset int = 1000 //Offset to where the UI starts
@@ -10,9 +9,9 @@ type ScreenData struct {
 	ScreenWidth  int
 	ScreenHeight int
 
-	TileWidth     int
-	TileHeight    int
-	UIHeight      int
+	TileWidth  int
+	TileHeight int
+
 	DungeonWidth  int
 	DungeonHeight int
 	ScaleX        float64
@@ -26,8 +25,6 @@ func NewScreenData() ScreenData {
 	g := ScreenData{
 		DungeonWidth:  100,
 		DungeonHeight: 80,
-
-		UIHeight: 10,
 	}
 	tileWidthPixels := 32
 	tileHeightPixels := 32
@@ -42,8 +39,6 @@ func NewScreenData() ScreenData {
 
 	LevelHeight = int(float64(g.DungeonHeight) * g.ScaleY)
 	LevelWidth = int(float64(g.DungeonWidth) * g.ScaleX)
-
-	UILocationX = LevelWidth / 2
 
 	return g
 }

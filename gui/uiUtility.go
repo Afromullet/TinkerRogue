@@ -14,6 +14,7 @@ import (
 )
 
 var face, _ = loadFont(20)
+var largeFace, _ = loadFont(50)
 var buttonImage, _ = loadButtonImage()
 var defaultWidgetColor = e_image.NewNineSliceColor(color.NRGBA{0x13, 0x1a, 0x22, 0xff})
 
@@ -108,6 +109,7 @@ func CreateTextArea() *widget.TextArea {
 }
 
 func CreateButton(text string) *widget.Button {
+
 	// construct a button
 	button := widget.NewButton(
 		// set general widget options
@@ -120,7 +122,7 @@ func CreateButton(text string) *widget.Button {
 		),
 
 		widget.ButtonOpts.Image(buttonImage),
-		widget.ButtonOpts.Text(text, face, &widget.ButtonTextColor{
+		widget.ButtonOpts.Text(text, largeFace, &widget.ButtonTextColor{
 			Idle: color.NRGBA{0xdf, 0xf4, 0xff, 0xff},
 		}),
 

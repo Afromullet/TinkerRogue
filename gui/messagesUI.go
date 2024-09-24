@@ -9,14 +9,40 @@ import (
 )
 
 // Don't think I really need this, since all it has is a text area.
-type playerMessageUI struct {
-	msgUIContainer *widget.Container
-	msgTextArea    *widget.TextArea //Displays the properties of the selected items
+type PlayerMessageUI struct {
+	msgUIContainer     *widget.Container
+	msgTextArea        *widget.TextArea //Displays the properties of the selected items
+	currentNumMessages int
+}
+
+func (msgUI *PlayerMessageUI) AppendText(s string) {
+
+	msgUI.msgTextArea.AppendText(s)
+
+}
+
+func (msgUI *PlayerMessageUI) SetText(s string) {
+
+	msgUI.msgTextArea.SetText(s)
+
+}
+
+func (msgUI *PlayerMessageUI) SetTextWithArray(msg []string) {
+
+	for _, s := range msg {
+		msgUI.msgTextArea.AppendText(s + "\n")
+	}
+
+}
+
+func (msgUI *PlayerMessageUI) ResetText() {
+
+	msgUI.msgTextArea.SetText("")
 
 }
 
 // Text window to display the item properties of the selected items to the player
-func (msgUI *playerMessageUI) CreateMsgTextArea() *widget.TextArea {
+func (msgUI *PlayerMessageUI) CreateMsgTextArea() *widget.TextArea {
 
 	//gd := graphics.NewScreenData()
 
@@ -51,7 +77,7 @@ func (msgUI *playerMessageUI) CreateMsgTextArea() *widget.TextArea {
 		//Set the font color
 		widget.TextAreaOpts.FontColor(color.White),
 		//Set the font face (size) to use
-		widget.TextAreaOpts.FontFace(face),
+		widget.TextAreaOpts.FontFace(largeFace),
 
 		//Tell the TextArea to show the vertical scrollbar
 		widget.TextAreaOpts.ShowVerticalScrollbar(),
@@ -84,7 +110,7 @@ func (msgUI *playerMessageUI) CreateMsgTextArea() *widget.TextArea {
 
 }
 
-func (msgUI *playerMessageUI) CreatMsgUI() {
+func (msgUI *PlayerMessageUI) CreatMsgUI() {
 	// construct a new container that serves as the root of the UI hierarchy
 
 	// construct a new container that serves as the root of the UI hierarchy
