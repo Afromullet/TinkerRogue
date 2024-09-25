@@ -246,7 +246,8 @@ func main() {
 	widthX := gd.DungeonWidth * 32
 	widthY := gd.DungeonHeight * 32
 
-	g.camera.ZoomFactor = 3
+	//centerX, centerY := common.PixelsFromPosition(g.playerData.Pos, 32, 32)
+	g.camera.ZoomFactor = 1
 	g.camera.Position = f64.Vec2{float64(0), float64(0)}
 	g.camera.ViewPort = f64.Vec2{float64(widthX), float64(widthY)}
 
