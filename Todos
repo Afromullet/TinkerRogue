@@ -5,12 +5,10 @@ MAJOR
 Room Decoration (maybe)
 NEED TO ADD AND REMOVE COMPONENTS WHEN CHANGING ARMOR
 
-Make sure theare are no duplicate getattribute functions
 Check for functions which are not called
 
 Effect stacking
 
-Player attributes not calculated correctly
 Display Throwable Item Text
 
 Test and make sure attributes are calculated correctly during combat
@@ -18,7 +16,7 @@ Test and make sure attributes are calculated correctly during combat
 Need to remove monsters once they are dead rather than next turnb
 
 Need to only draw player ranged attack when they're actually shooting
-
+CALCULATE SCREENDATA STUFF ONLY ONCE. LOOK AT ALL NEWSCREENDATA CALLS
 
 ___Energy/Time System__
 

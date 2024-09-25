@@ -21,12 +21,12 @@ import (
 	"game_main/entitytemplates"
 	"game_main/gear"
 	"game_main/graphics"
+	"game_main/rendering"
 	"math"
 
 	"game_main/gui"
 	"game_main/input"
 	"game_main/monsters"
-	"game_main/rendering"
 	"game_main/spawning"
 	"game_main/testing"
 	"game_main/timesystem"
@@ -35,6 +35,7 @@ import (
 	"log"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	"golang.org/x/image/math/f64"
 )
 
 // Using https://www.fatoldyeti.com/categories/roguelike-tutorial/ as a starting point.
@@ -47,6 +48,7 @@ type Game struct {
 	gameUI     gui.PlayerUI
 	playerData avatar.PlayerData
 	gameMap    worldmap.GameMap
+	camera     graphics.Camera
 
 	ts timesystem.GameTurn
 }
@@ -192,31 +194,30 @@ func (g *Game) Update() error {
 
 }
 
+var screndata = graphics.NewScreenData()
+var world = ebiten.NewImage(4200, 2560)
+
 // Draw is called each draw cycle and is where we will blit.
 func (g *Game) Draw(screen *ebiten.Image) {
 
-	g.gameMap.DrawLevel(screen, DEBUG_MODE)
+	g.gameMap.DrawLevel(world, g.camera.WorldMatrix(), DEBUG_MODE)
 
-	rendering.ProcessRenderables(&g.em, g.gameMap, screen, DEBUG_MODE)
+	rendering.ProcessRenderables(&g.em, g.gameMap, world, g.camera.WorldMatrix(), DEBUG_MODE)
+	g.gameUI.MainPlayerInterface.Draw(screen)
+	g.camera.Render(world, screen)
+
+	//g.gameMap.DrawLevel(screen, DEBUG_MODE)
+	//rendering.ProcessRenderables(&g.em, g.gameMap, screen, DEBUG_MODE)
 
 	gui.ProcessUserLog(g.em, screen, &g.gameUI.MsgUI)
 
 	graphics.VXHandler.DrawVisualEffects(screen)
-	g.gameUI.MainPlayerInterface.Draw(screen)
 
 }
+
+// Layout will return the screen dimensions.
 
 /*
-// Layout will return the screen dimensions.
-func (g *Game) Layout(w, h int) (int, int) {
-	gd := graphics.NewScreenData()
-	//return gd.TileWidth * gd.DungeonWidth, gd.TileHeight * gd.DungeonHeight
-	return gd.TileWidth * gd.DungeonWidth, gd.TileHeight * gd.DungeonHeight
-
-}
-*/
-
-// Layout will return the screen dimensions.
 func (g *Game) Layout(w, h int) (int, int) {
 	scale := ebiten.DeviceScaleFactor()
 	gd := graphics.NewScreenData()
@@ -226,10 +227,28 @@ func (g *Game) Layout(w, h int) (int, int) {
 	return canvasWidth + graphics.StatsUIOffset, canvasHeight
 
 }
+*/
+
+func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
+
+	zoomScale := math.Pow(1.01, float64(10))
+	scaledOffset := graphics.StatsUIOffset * int(zoomScale)
+
+	return int(g.camera.ViewPort[0]) + scaledOffset, int(g.camera.ViewPort[1]) // Set the layout based on the camera's viewport
+}
 
 func main() {
 
 	g := NewGame()
+
+	gd := graphics.NewScreenData()
+
+	widthX := gd.DungeonWidth * 32
+	widthY := gd.DungeonHeight * 32
+
+	g.camera.ZoomFactor = 3
+	g.camera.Position = f64.Vec2{float64(0), float64(0)}
+	g.camera.ViewPort = f64.Vec2{float64(widthX), float64(widthY)}
 
 	g.gameUI.CreateMainInterface(&g.playerData)
 
