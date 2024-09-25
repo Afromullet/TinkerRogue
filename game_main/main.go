@@ -243,13 +243,29 @@ func main() {
 
 	gd := graphics.NewScreenData()
 
-	widthX := gd.DungeonWidth * 32
-	widthY := gd.DungeonHeight * 32
+	widthX := graphics.LevelWidth
+	widthY := graphics.LevelHeight
 
-	//centerX, centerY := common.PixelsFromPosition(g.playerData.Pos, 32, 32)
+	// Apply zoom factor
 	g.camera.ZoomFactor = 1
-	g.camera.Position = f64.Vec2{float64(0), float64(0)}
-	g.camera.ViewPort = f64.Vec2{float64(widthX), float64(widthY)}
+	zoom := math.Pow(1.01, float64(g.camera.ZoomFactor))
+
+	// Adjust ViewPort based on zoom
+	g.camera.ViewPort = f64.Vec2{
+		float64(widthX), // Divide both width and height by zoom
+		float64(widthY),
+	}
+
+	// Get the player's position in pixel coordinates
+	centerX, centerY := common.PixelsFromPosition(g.playerData.Pos, gd.TileWidth, gd.TileWidth)
+
+	// Center the camera on the player
+	centeredX := float64(centerX) - (g.camera.ViewPort[0] * zoom / 2)
+	centeredY := float64(centerY) - (g.camera.ViewPort[1] * zoom / 2)
+
+	// Update camera position to center on the player
+	g.camera.Position = f64.Vec2{centeredX, centeredY}
+	//g.camera.Position = f64.Vec2{0, 0}
 
 	g.gameUI.CreateMainInterface(&g.playerData)
 
