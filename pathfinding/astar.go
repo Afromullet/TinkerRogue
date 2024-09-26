@@ -65,7 +65,7 @@ type AStar struct{}
 // a list of Positions which is the path between the points.
 // TOdo gameMap should be a poitner?
 func (as AStar) GetPath(gameMap worldmap.GameMap, start *common.Position, end *common.Position, ignoreWalls bool) []common.Position {
-	gd := graphics.NewScreenData()
+	
 
 	openList := make([]*node, 0)
 	closedList := make([]*node, 0)
@@ -137,7 +137,7 @@ func (as AStar) GetPath(gameMap worldmap.GameMap, start *common.Position, end *c
 			}
 
 		}
-		if currentNode.Position.Y < gd.DungeonHeight {
+		if currentNode.Position.Y < graphics.ScreenInfo.DungeonHeight {
 			tile := gameMap.Tiles[graphics.IndexFromXY(currentNode.Position.X, currentNode.Position.Y+1)]
 			if ignoreWalls || tile.TileType != worldmap.WALL {
 				//The location is in the map bounds and is walkable
@@ -165,7 +165,7 @@ func (as AStar) GetPath(gameMap worldmap.GameMap, start *common.Position, end *c
 			}
 
 		}
-		if currentNode.Position.X < gd.DungeonWidth {
+		if currentNode.Position.X < graphics.ScreenInfo.DungeonWidth {
 			tile := gameMap.Tiles[graphics.IndexFromXY(currentNode.Position.X+1, currentNode.Position.Y)]
 			if ignoreWalls && tile.TileType != worldmap.WALL {
 				//The location is in the map bounds and is walkable

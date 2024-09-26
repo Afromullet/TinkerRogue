@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"game_main/common"
 	"game_main/graphics"
-	"image/color"
 
 	"game_main/randgen"
+	"image/color"
 
 	"github.com/bytearena/ecs"
 	"github.com/hajimehoshi/ebiten/v2"
@@ -202,16 +202,17 @@ func (gameMap *GameMap) RemoveItemFromTile(index int, pos *common.Position) (*ec
 
 	return entity, nil
 }
-func (gameMap *GameMap) DrawLevel(screen *ebiten.Image, cameraMatrix ebiten.GeoM, revealAllTiles bool) {
-	gd := graphics.NewScreenData()
 
-	// Initialize the color scale
+// The color matrix draws on tiles.
+// Right now it's only used for showing the AOE of throwable items
+func (gameMap *GameMap) DrawLevel(screen *ebiten.Image, revealAllTiles bool) {
+	
+
 	var cs = ebiten.ColorScale{}
 
-	// Get the camera's transformation matrix
-
-	for x := 0; x < gd.DungeonWidth; x++ {
-		for y := 0; y < gd.DungeonHeight; y++ {
+	for x := 0; x < graphics.ScreenInfo.DungeonWidth; x++ {
+		//for y := 0; y < gd.ScreenHeight; y++ {
+		for y := 0; y < graphics.ScreenInfo.DungeonHeight; y++ {
 
 			idx := graphics.IndexFromXY(x, y)
 			tile := gameMap.Tiles[idx]
@@ -223,46 +224,51 @@ func (gameMap *GameMap) DrawLevel(screen *ebiten.Image, cameraMatrix ebiten.GeoM
 
 			op := &ebiten.DrawImageOptions{}
 
-			// Apply camera transformation first
-
 			if isVis {
 				op.GeoM.Translate(float64(tile.PixelX), float64(tile.PixelY))
-				//op.GeoM.Concat(cameraMatrix)
 				gameMap.Tiles[idx].IsRevealed = true
+
 			} else if tile.IsRevealed {
+
 				op.GeoM.Translate(float64(tile.PixelX), float64(tile.PixelY))
-				//op.GeoM.Concat(cameraMatrix)
-				op.ColorScale.ScaleWithColor(color.RGBA{1, 1, 1, 1}) // Blackening out tiles out of FOV
+
+				//Blackening out tiles that are out of Fov
+				op.ColorScale.ScaleWithColor(color.RGBA{1, 1, 1, 1})
+
 			}
 
 			if !tile.cm.IsEmpty() {
+
 				cs.SetR(tile.cm.R)
 				cs.SetG(tile.cm.G)
 				cs.SetB(tile.cm.B)
 				cs.SetA(tile.cm.A)
+
 				op.ColorScale.ScaleWithColorScale(cs)
+
 			}
 
 			screen.DrawImage(tile.image, op)
+
 		}
 	}
 }
 
 func (gameMap *GameMap) CreateTiles() []*Tile {
-	gd := graphics.NewScreenData()
+	
 
-	tiles := make([]*Tile, gd.DungeonWidth*gd.DungeonHeight)
+	tiles := make([]*Tile, graphics.ScreenInfo.DungeonWidth*graphics.ScreenInfo.DungeonHeight)
 	index := 0
 
-	for x := 0; x < gd.DungeonWidth; x++ {
-		for y := 0; y < gd.DungeonHeight; y++ {
+	for x := 0; x < graphics.ScreenInfo.DungeonWidth; x++ {
+		for y := 0; y < graphics.ScreenInfo.DungeonHeight; y++ {
 
 			index = graphics.IndexFromXY(x, y)
 
 			pos := common.Position{X: x, Y: y}
 			wallImg := wallImgs[randgen.GetRandomBetween(0, len(wallImgs)-1)]
-			//tile := NewTile(x*gd.TileWidth, y*gd.TileHeight, pos, true, wall, WALL, false)
-			tile := NewTile(x*gd.TileWidth, y*gd.TileHeight, pos, true, wallImg, WALL, false)
+			//tile := NewTile(x*graphics.ScreenInfo.TileWidth, y*graphics.ScreenInfo.TileHeight, pos, true, wall, WALL, false)
+			tile := NewTile(x*graphics.ScreenInfo.TileWidth, y*graphics.ScreenInfo.TileHeight, pos, true, wallImg, WALL, false)
 
 			tiles[index] = &tile
 		}
@@ -275,7 +281,7 @@ func (gameMap *GameMap) GenerateLevelTiles() {
 	MAX_SIZE := 10
 	MAX_ROOMS := 30
 
-	gd := graphics.NewScreenData()
+	
 
 	tiles := gameMap.CreateTiles()
 	gameMap.Tiles = tiles
@@ -284,8 +290,8 @@ func (gameMap *GameMap) GenerateLevelTiles() {
 	for idx := 0; idx < MAX_ROOMS; idx++ {
 		w := randgen.GetRandomBetween(MIN_SIZE, MAX_SIZE)
 		h := randgen.GetRandomBetween(MIN_SIZE, MAX_SIZE)
-		x := randgen.GetDiceRoll(gd.DungeonWidth - w - 1)
-		y := randgen.GetDiceRoll(gd.DungeonHeight - h - 1)
+		x := randgen.GetDiceRoll(graphics.ScreenInfo.DungeonWidth - w - 1)
+		y := randgen.GetDiceRoll(graphics.ScreenInfo.DungeonHeight - h - 1)
 		new_room := NewRect(x, y, w, h)
 
 		okToAdd := true
@@ -336,10 +342,10 @@ func (gameMap *GameMap) createRoom(room Rect) {
 }
 
 func (gameMap *GameMap) createHorizontalTunnel(x1 int, x2 int, y int) {
-	gd := graphics.NewScreenData()
+	
 	for x := min(x1, x2); x < max(x1, x2)+1; x++ {
 		index := graphics.IndexFromXY(x, y)
-		if index > 0 && index < gd.DungeonWidth*gd.DungeonHeight {
+		if index > 0 && index < graphics.ScreenInfo.DungeonWidth*graphics.ScreenInfo.DungeonHeight {
 			gameMap.Tiles[index].Blocked = false
 			gameMap.Tiles[index].TileType = FLOOR
 
@@ -351,11 +357,11 @@ func (gameMap *GameMap) createHorizontalTunnel(x1 int, x2 int, y int) {
 }
 
 func (gameMap *GameMap) createVerticalTunnel(y1 int, y2 int, x int) {
-	gd := graphics.NewScreenData()
+	
 	for y := min(y1, y2); y < max(y1, y2)+1; y++ {
 		index := graphics.IndexFromXY(x, y)
 
-		if index > 0 && index < gd.DungeonWidth*gd.DungeonHeight {
+		if index > 0 && index < graphics.ScreenInfo.DungeonWidth*graphics.ScreenInfo.DungeonHeight {
 			gameMap.Tiles[index].Blocked = false
 			gameMap.Tiles[index].TileType = FLOOR
 			gameMap.Tiles[index].image = floorImgs[randgen.GetRandomBetween(0, len(floorImgs)-1)]
@@ -405,8 +411,8 @@ func (gameMap *GameMap) ApplyColorMatrixToIndex(index int, m graphics.ColorMatri
 }
 
 func (gameMap GameMap) InBounds(x, y int) bool {
-	gd := graphics.NewScreenData()
-	if x < 0 || x > gd.DungeonWidth || y < 0 || y > gd.DungeonHeight {
+	
+	if x < 0 || x > graphics.ScreenInfo.DungeonWidth || y < 0 || y > graphics.ScreenInfo.DungeonHeight {
 		return false
 	}
 	return true

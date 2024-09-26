@@ -58,10 +58,10 @@ func PositionFromIndex(i, dungeonWidth int) Position {
 }
 
 func GridPositionFromPixels(x, y int) Position {
-	gd := graphics.NewScreenData()
+	
 	return Position{
-		X: x / gd.TileWidth,
-		Y: y / gd.TileHeight,
+		X: x / graphics.ScreenInfo.TileWidth,
+		Y: y / graphics.ScreenInfo.TileHeight,
 	}
 }
 
@@ -77,11 +77,11 @@ func GetTileIndexFromCursor() int {
 // The caller of this function has to decide what to do with the positions.
 func GetTilePositions(indices []int) []Position {
 
-	gd := graphics.NewScreenData()
+	
 	pos := make([]Position, len(indices))
 
 	for i, inds := range indices {
-		pos[i] = PositionFromIndex(inds, gd.DungeonWidth)
+		pos[i] = PositionFromIndex(inds, graphics.ScreenInfo.DungeonWidth)
 	}
 
 	return pos

@@ -63,7 +63,7 @@ func ApplyThrowable(ecsmanager *common.EntityManager, item *gear.Item, pl *avata
 
 func DrawThrowableAOE(pl *avatar.PlayerData, gm *worldmap.GameMap) {
 
-	gd := graphics.NewScreenData()
+	
 	cursorX, cursorY := ebiten.CursorPosition()
 
 	s := pl.ThrowingAOEShape
@@ -85,7 +85,7 @@ func DrawThrowableAOE(pl *avatar.PlayerData, gm *worldmap.GameMap) {
 
 	for _, i := range indices {
 
-		pos := common.PositionFromIndex(i, gd.DungeonWidth)
+		pos := common.PositionFromIndex(i, graphics.ScreenInfo.DungeonWidth)
 
 		if pos.InRange(pl.Pos, throwable.ThrowingRange) {
 			gm.ApplyColorMatrixToIndex(i, graphics.GreenColorMatrix)
@@ -214,7 +214,7 @@ func HandlePlayerRangedAttack(ecsmanager *common.EntityManager, pl *avatar.Playe
 
 func DrawRangedAttackAOE(pl *avatar.PlayerData, gm *worldmap.GameMap) {
 
-	gd := graphics.NewScreenData()
+	
 	cursorX, cursorY := ebiten.CursorPosition()
 
 	s := pl.Equipment.RangedWeaponAOEShape
@@ -240,7 +240,7 @@ func DrawRangedAttackAOE(pl *avatar.PlayerData, gm *worldmap.GameMap) {
 
 	for _, i := range indices {
 
-		pos := common.PositionFromIndex(i, gd.DungeonWidth)
+		pos := common.PositionFromIndex(i, graphics.ScreenInfo.DungeonWidth)
 
 		if pos.InRange(pl.Pos, pl.Equipment.RangedWeaponMaxDistance) {
 			gm.ApplyColorMatrixToIndex(i, graphics.GreenColorMatrix)

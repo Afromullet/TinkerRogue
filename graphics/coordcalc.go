@@ -4,6 +4,8 @@ var LevelHeight int = 0
 var LevelWidth int = 0
 var StatsUIOffset int = 1000 //Offset to where the UI starts
 
+var ScreenInfo = NewScreenData()
+
 // Contains the data we need to render the map. Also used for coordinate conversions
 type ScreenData struct {
 	ScreenWidth  int
@@ -58,26 +60,26 @@ func (s ScreenData) GetCanvasHeight() int {
 // IndexFromXY gets the index of the map array from a given X,Y TILE coordinate.
 // This coordinate is logical tiles, not pixels.
 func IndexFromXY(x int, y int) int {
-	gd := NewScreenData()
-	return (y * gd.DungeonWidth) + x
+
+	return (y * ScreenInfo.DungeonWidth) + x
 }
 
 // Gets XY coordinates from the map tile index
 func XYFromIndex(i int) (int, int) {
-	gd := NewScreenData()
-	return i % gd.DungeonWidth, i / gd.DungeonWidth
+
+	return i % ScreenInfo.DungeonWidth, i / ScreenInfo.DungeonWidth
 }
 
 // Gets the pixels from the index
 func PixelsFromIndex(i int) (int, int) {
-	gd := NewScreenData()
+
 	x, y := XYFromIndex(i)
-	return x * gd.TileWidth, y * gd.TileHeight
+	return x * ScreenInfo.TileWidth, y * ScreenInfo.TileHeight
 }
 
 // Return the Grid X,Y coordinates from pixel positions
 func XYFromPixels(x, y int) (int, int) {
-	gd := NewScreenData()
-	return x / gd.TileWidth, y / gd.TileHeight
+
+	return x / ScreenInfo.TileWidth, y / ScreenInfo.TileHeight
 
 }

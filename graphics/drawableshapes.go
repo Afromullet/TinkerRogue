@@ -91,8 +91,8 @@ func RotateLeft(dir ShapeDirection) ShapeDirection {
 
 // Currently a duplicate of the one found in GameMap. Don't want to pass the GameMap parameter to the shapes here
 func InBounds(x, y int) bool {
-	gd := NewScreenData()
-	if x < 0 || x > gd.DungeonWidth || y < 0 || y > gd.DungeonHeight {
+
+	if x < 0 || x > ScreenInfo.DungeonWidth || y < 0 || y > ScreenInfo.DungeonHeight {
 		return false
 	}
 	return true

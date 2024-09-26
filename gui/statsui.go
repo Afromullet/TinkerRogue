@@ -18,7 +18,7 @@ type PlayerStatsUI struct {
 // Text window to display the item properties of the selected items to the player
 func (statsUI *PlayerStatsUI) CreateStatsTextArea() *widget.TextArea {
 
-	//gd := graphics.NewScreenData()
+	//
 
 	xSize := graphics.StatsUIOffset   //Only here for consistency. Used to fill up the X dimension of the GUI part
 	ySize := graphics.LevelHeight / 4 //The GUI takes up 1/4th of the level height

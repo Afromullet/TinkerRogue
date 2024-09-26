@@ -44,8 +44,6 @@ func (playerUI *PlayerUI) CreateMainInterface(playerData *avatar.PlayerData) {
 // Creates the main UI container
 func CreatePlayerUI(playerUI *PlayerUI, inv *gear.Inventory, pl *avatar.PlayerData) *ebitenui.UI {
 
-	gd := graphics.NewScreenData()
-
 	ui := ebitenui.UI{}
 
 	// construct a new container that serves as the root of the UI hierarchy
@@ -71,8 +69,9 @@ func CreatePlayerUI(playerUI *PlayerUI, inv *gear.Inventory, pl *avatar.PlayerDa
 	rootContainer.AddChild(playerUI.MsgUI.msgUIContainer)
 
 	SetContainerLocation(itemDisplayOptionsContainer, 0, 0)
-	SetContainerLocation(playerUI.StatsUI.StatUIContainer, gd.GetCanvasWidth(), 0)
-	SetContainerLocation(playerUI.MsgUI.msgUIContainer, gd.GetCanvasWidth(), gd.GetCanvasHeight()/4+gd.TileHeight) //Placing it one tile under the Stats Container
+
+	SetContainerLocation(playerUI.StatsUI.StatUIContainer, graphics.ScreenInfo.GetCanvasWidth(), 0)
+	SetContainerLocation(playerUI.MsgUI.msgUIContainer, graphics.ScreenInfo.GetCanvasWidth(), graphics.ScreenInfo.GetCanvasHeight()/4+graphics.ScreenInfo.TileHeight) //Placing it one tile under the Stats Container
 
 	ui.Container = rootContainer
 

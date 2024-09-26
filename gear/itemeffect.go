@@ -271,7 +271,7 @@ func (t *Throwable) ApplyToCreature(c *ecs.QueryResult) {
 
 func (t *Throwable) InRange(endPos *common.Position) bool {
 
-	//gd := graphics.NewScreenData()
+	//
 
 	startPos := common.GridPositionFromPixels(t.Shape.StartPosition())
 

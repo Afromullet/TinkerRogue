@@ -128,7 +128,7 @@ func (equipmentDisplay *EquipmentItemDisplay) SetupContainers() {
 				//Remove the old item and add it back to the inventory. Then add the new item to equipped and remove it from the inventory
 				equipmentDisplay.ItmDisplay.playerData.RemoveItem(equipmentDisplay.currentItem)
 
-				equipmentDisplay.ItmDisplay.playerData.Equipment.EquipItem(equipmentDisplay.currentItem)
+				equipmentDisplay.ItmDisplay.playerData.Equipment.EquipItem(equipmentDisplay.currentItem, equipmentDisplay.ItmDisplay.playerData.PlayerEntity)
 				equipmentDisplay.ItmDisplay.playerData.Inventory.RemoveItem(equipmentDisplay.currentItemIndex)
 				equipmentDisplay.DisplayInventory(equipmentDisplay.ItmDisplay.playerData.Inventory)
 				equipmentDisplay.UpdateEquipmentDisplay()

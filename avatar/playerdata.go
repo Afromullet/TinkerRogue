@@ -46,15 +46,18 @@ func (pl *PlayerEquipment) Armor() *gear.Armor {
 }
 
 // Need to check what kind of equipment it is before setting it
-func (pl *PlayerEquipment) EquipItem(e *ecs.Entity) {
+func (pl *PlayerEquipment) EquipItem(equipment *ecs.Entity, playerEntity *ecs.Entity) {
 
-	switch gear.KindOfItem(e) {
+	switch gear.KindOfItem(equipment) {
 	case gear.ArmorType:
-		pl.EqArmor = e
+		playerEntity.AddComponent(gear.ArmorComponent, equipment)
+		pl.EqArmor = equipment
 	case gear.MeleeWeaponType:
-		pl.EqMeleeWeapon = e
+		playerEntity.AddComponent(gear.MeleeWeaponComponent, equipment)
+		pl.EqMeleeWeapon = equipment
 	case gear.RangedWeaponType:
-		pl.EqRangedWeapon = e
+		playerEntity.AddComponent(gear.RangedWeaponComponent, equipment)
+		pl.EqRangedWeapon = equipment
 	default:
 		fmt.Println("Invalid item equipped")
 	}
@@ -115,6 +118,7 @@ type PlayerData struct {
 
 func (pl *PlayerData) UnequipMeleeWeapon() {
 
+	pl.PlayerEntity.RemoveComponent(gear.MeleeWeaponComponent)
 	pl.Inventory.AddItem(pl.Equipment.EqMeleeWeapon)
 	pl.Equipment.EqMeleeWeapon = nil
 
@@ -122,6 +126,7 @@ func (pl *PlayerData) UnequipMeleeWeapon() {
 
 func (pl *PlayerData) UnequipRangedWeapon() {
 
+	pl.PlayerEntity.RemoveComponent(gear.RangedWeaponComponent)
 	pl.Inventory.AddItem(pl.Equipment.EqRangedWeapon)
 	pl.Equipment.EqRangedWeapon = nil
 
@@ -129,6 +134,7 @@ func (pl *PlayerData) UnequipRangedWeapon() {
 
 func (pl *PlayerData) UnequipArmor() {
 
+	pl.PlayerEntity.RemoveComponent(gear.ArmorComponent)
 	pl.Inventory.AddItem(pl.Equipment.EqArmor)
 	pl.Equipment.EqArmor = nil
 

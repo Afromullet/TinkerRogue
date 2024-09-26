@@ -19,7 +19,7 @@ var TurnsPerMonsterSpawn = 10
 
 // Basic monster spawning function that spawns a monster on a random tile
 func SpawnMonster(ecsmanager common.EntityManager, gm *worldmap.GameMap) {
-	gd := graphics.NewScreenData()
+	
 	rand.Seed(time.Now().UnixNano())
 	if rand.Intn(100) < 30 { // 30% chance to spawn something
 
@@ -29,7 +29,7 @@ func SpawnMonster(ecsmanager common.EntityManager, gm *worldmap.GameMap) {
 			index := randgen.GetRandomBetween(0, len(worldmap.ValidPos.Pos)-1)
 
 			if !gm.Tiles[index].Blocked {
-				pos := common.PositionFromIndex(index, gd.DungeonWidth)
+				pos := common.PositionFromIndex(index, graphics.ScreenInfo.DungeonWidth)
 
 				entitytemplates.CreateCreatureFromTemplate(ecsmanager, entitytemplates.MonsterTemplates[0], gm, pos.X, pos.Y)
 				gm.Tiles[index].Blocked = true
