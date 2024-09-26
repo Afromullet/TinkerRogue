@@ -149,6 +149,18 @@ func PlayerActions(ecsmanager *common.EntityManager, pl *avatar.PlayerData, gm *
 
 	}
 
+	if inpututil.IsKeyJustReleased(ebiten.KeyP) {
+
+		gd := graphics.NewScreenData()
+
+		centerX, centerY := common.PixelsFromPosition(pl.Pos, gd.TileWidth, gd.TileWidth)
+
+		fmt.Println("Print pixels from player ", centerX, centerY)
+		x, y := ebiten.CursorPosition()
+		fmt.Println("CursorXY ", x, y)
+
+	}
+
 	return pl.InputStates.HasKeyInput
 
 }

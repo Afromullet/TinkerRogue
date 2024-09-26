@@ -17,6 +17,45 @@ type Renderable struct {
 }
 
 // Draw everything with a renderable component that's visible
+func ProcessRenderables(ecsmanager *common.EntityManager, gameMap worldmap.GameMap, cameraImg *ebiten.Image, cameraMatrix ebiten.GeoM, debugMode bool) {
+	for _, result := range ecsmanager.World.Query(ecsmanager.WorldTags["renderables"]) {
+		pos := result.Components[common.PositionComponent].(*common.Position)
+		img := result.Components[RenderableComponent].(*Renderable).Image
+
+		if !result.Components[RenderableComponent].(*Renderable).Visible {
+			continue
+		}
+
+		// Get the camera's transformation matrix
+
+		op := &ebiten.DrawImageOptions{}
+
+		if debugMode {
+			index := graphics.IndexFromXY(pos.X, pos.Y)
+			tile := gameMap.Tiles[index]
+
+			// Apply camera transformation
+
+			op.GeoM.Translate(float64(tile.PixelX), float64(tile.PixelY))
+			//op.GeoM.Concat(cameraMatrix)
+			cameraImg.DrawImage(img, op)
+
+		} else if gameMap.PlayerVisible.IsVisible(pos.X, pos.Y) {
+			index := graphics.IndexFromXY(pos.X, pos.Y)
+			tile := gameMap.Tiles[index]
+
+			// Apply camera transformation
+
+			op.GeoM.Translate(float64(tile.PixelX), float64(tile.PixelY))
+			//op.GeoM.Concat(cameraMatrix)
+			//op.GeoM.Concat(cameraMatrix)
+			cameraImg.DrawImage(img, op)
+		}
+	}
+}
+
+/*
+// Draw everything with a renderable component that's visible
 func ProcessRenderables(ecsmanager *common.EntityManager, gameMap worldmap.GameMap, screen *ebiten.Image, debugMode bool) {
 	for _, result := range ecsmanager.World.Query(ecsmanager.WorldTags["renderables"]) {
 		pos := result.Components[common.PositionComponent].(*common.Position)
@@ -44,3 +83,4 @@ func ProcessRenderables(ecsmanager *common.EntityManager, gameMap worldmap.GameM
 
 	}
 }
+*/

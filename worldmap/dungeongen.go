@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"game_main/common"
 	"game_main/graphics"
+	"image/color"
 
 	"game_main/randgen"
-	"image/color"
 
 	"github.com/bytearena/ecs"
 	"github.com/hajimehoshi/ebiten/v2"
@@ -202,16 +202,15 @@ func (gameMap *GameMap) RemoveItemFromTile(index int, pos *common.Position) (*ec
 
 	return entity, nil
 }
-
-// The color matrix draws on tiles.
-// Right now it's only used for showing the AOE of throwable items
-func (gameMap *GameMap) DrawLevel(screen *ebiten.Image, revealAllTiles bool) {
+func (gameMap *GameMap) DrawLevel(screen *ebiten.Image, cameraMatrix ebiten.GeoM, revealAllTiles bool) {
 	gd := graphics.NewScreenData()
 
+	// Initialize the color scale
 	var cs = ebiten.ColorScale{}
 
+	// Get the camera's transformation matrix
+
 	for x := 0; x < gd.DungeonWidth; x++ {
-		//for y := 0; y < gd.ScreenHeight; y++ {
 		for y := 0; y < gd.DungeonHeight; y++ {
 
 			idx := graphics.IndexFromXY(x, y)
@@ -224,32 +223,27 @@ func (gameMap *GameMap) DrawLevel(screen *ebiten.Image, revealAllTiles bool) {
 
 			op := &ebiten.DrawImageOptions{}
 
+			// Apply camera transformation first
+
 			if isVis {
 				op.GeoM.Translate(float64(tile.PixelX), float64(tile.PixelY))
+				//op.GeoM.Concat(cameraMatrix)
 				gameMap.Tiles[idx].IsRevealed = true
-
 			} else if tile.IsRevealed {
-
 				op.GeoM.Translate(float64(tile.PixelX), float64(tile.PixelY))
-
-				//Blackening out tiles that are out of Fov
-				op.ColorScale.ScaleWithColor(color.RGBA{1, 1, 1, 1})
-
+				//op.GeoM.Concat(cameraMatrix)
+				op.ColorScale.ScaleWithColor(color.RGBA{1, 1, 1, 1}) // Blackening out tiles out of FOV
 			}
 
 			if !tile.cm.IsEmpty() {
-
 				cs.SetR(tile.cm.R)
 				cs.SetG(tile.cm.G)
 				cs.SetB(tile.cm.B)
 				cs.SetA(tile.cm.A)
-
 				op.ColorScale.ScaleWithColorScale(cs)
-
 			}
 
 			screen.DrawImage(tile.image, op)
-
 		}
 	}
 }
