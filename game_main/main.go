@@ -21,12 +21,11 @@ import (
 	"game_main/entitytemplates"
 	"game_main/gear"
 	"game_main/graphics"
-	"math"
+	"game_main/rendering"
 
 	"game_main/gui"
 	"game_main/input"
 	"game_main/monsters"
-	"game_main/rendering"
 	"game_main/spawning"
 	"game_main/testing"
 	"game_main/timesystem"
@@ -47,6 +46,7 @@ type Game struct {
 	gameUI     gui.PlayerUI
 	playerData avatar.PlayerData
 	gameMap    worldmap.GameMap
+	camera     graphics.Camera
 
 	ts timesystem.GameTurn
 }
@@ -55,6 +55,7 @@ type Game struct {
 // This is a pretty solid refactor candidate for later
 func NewGame() *Game {
 	g := &Game{}
+	SetupCamera(g)
 	g.gameMap = worldmap.NewGameMap()
 	g.playerData = avatar.PlayerData{}
 	entitytemplates.ReadGameData()
@@ -181,7 +182,7 @@ func RemoveDeadEntities(ecsmanager *common.EntityManager, am timesystem.ActionMa
 func (g *Game) Update() error {
 
 	g.gameUI.MainPlayerInterface.Update()
-
+	UpdateCameraPosition(g)
 	graphics.VXHandler.UpdateVisualEffects()
 
 	input.PlayerDebugActions(&g.playerData)
@@ -195,36 +196,26 @@ func (g *Game) Update() error {
 // Draw is called each draw cycle and is where we will blit.
 func (g *Game) Draw(screen *ebiten.Image) {
 
-	g.gameMap.DrawLevel(screen, DEBUG_MODE)
+	g.gameMap.DrawLevel(world, DEBUG_MODE)
 
-	rendering.ProcessRenderables(&g.em, g.gameMap, screen, DEBUG_MODE)
+	rendering.ProcessRenderables(&g.em, g.gameMap, world, DEBUG_MODE)
+	g.gameUI.MainPlayerInterface.Draw(world)
 
-	gui.ProcessUserLog(g.em, screen, &g.gameUI.MsgUI)
-
-	graphics.VXHandler.DrawVisualEffects(screen)
-	g.gameUI.MainPlayerInterface.Draw(screen)
-
-}
-
-/*
-// Layout will return the screen dimensions.
-func (g *Game) Layout(w, h int) (int, int) {
-	
-	//return graphics.ScreenInfo.TileWidth * graphics.ScreenInfo.DungeonWidth, graphics.ScreenInfo.TileHeight * graphics.ScreenInfo.DungeonHeight
-	return graphics.ScreenInfo.TileWidth * graphics.ScreenInfo.DungeonWidth, graphics.ScreenInfo.TileHeight * graphics.ScreenInfo.DungeonHeight
+	gui.ProcessUserLog(g.em, world, &g.gameUI.MsgUI)
+	graphics.VXHandler.DrawVisualEffects(world)
+	g.gameUI.MainPlayerInterface.Draw(world)
+	g.camera.Render(world, screen)
 
 }
-*/
 
 // Layout will return the screen dimensions.
-func (g *Game) Layout(w, h int) (int, int) {
-	scale := ebiten.DeviceScaleFactor()
-	
-	//return graphics.ScreenInfo.TileWidth * graphics.ScreenInfo.DungeonWidth, graphics.ScreenInfo.TileHeight * graphics.ScreenInfo.DungeonHeight
-	canvasWidth := int(math.Ceil(float64(graphics.ScreenInfo.TileWidth*graphics.ScreenInfo.DungeonWidth) * scale))
-	canvasHeight := int(math.Ceil(float64(graphics.ScreenInfo.TileHeight*graphics.ScreenInfo.DungeonHeight) * scale))
-	return canvasWidth + graphics.StatsUIOffset, canvasHeight
 
+func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
+
+	//zoomScale := math.Pow(1.01, float64(10))
+	//scaledOffset := graphics.StatsUIOffset * int(zoomScale)
+
+	return int(g.camera.ViewPort[0]) + graphics.StatsUIOffset, int(g.camera.ViewPort[1]) // Set the layout based on the camera's viewport
 }
 
 func main() {

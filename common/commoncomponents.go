@@ -44,7 +44,18 @@ func (p *Position) InRange(other *Position, distance int) bool {
 // Gets the Pixel X,Y, not the tile XY
 func PixelsFromPosition(pos *Position, tileWidth, tileHeight int) (int, int) {
 
-	return pos.X * tileWidth, pos.Y * tileHeight
+	// Calculate the base pixel position from the position and tile dimensions.
+	baseX := pos.X * tileWidth
+	baseY := pos.Y * tileHeight
+
+	// Adjust for the camera's zoom factor.
+
+	// Apply the camera's zoom to the position.
+	zoomedX := float64(baseX) * graphics.MainCamera.ZoomLevel
+	zoomedY := float64(baseY) * graphics.MainCamera.ZoomLevel
+
+	// Return the zoomed position as integer pixel coordinates.
+	return int(zoomedX), int(zoomedY)
 }
 
 // Get the Tile X,Y from the Pixels
@@ -58,10 +69,23 @@ func PositionFromIndex(i, dungeonWidth int) Position {
 }
 
 func GridPositionFromPixels(x, y int) Position {
-	
+
+	// First, reverse the camera's zoom transformation.
+
+	worldX := float64(x) / graphics.MainCamera.ZoomLevel
+	worldY := float64(y) / graphics.MainCamera.ZoomLevel
+
+	// Then, apply the camera's position offset (translation) in world space.
+	translatedX := worldX + graphics.MainCamera.Position[0]
+	translatedY := worldY + graphics.MainCamera.Position[1]
+
+	// Convert the translated world position back into a grid position using tile dimensions.
+	tileWidth := graphics.ScreenInfo.TileWidth
+	tileHeight := graphics.ScreenInfo.TileHeight
+
 	return Position{
-		X: x / graphics.ScreenInfo.TileWidth,
-		Y: y / graphics.ScreenInfo.TileHeight,
+		X: int(translatedX) / tileWidth,
+		Y: int(translatedY) / tileHeight,
 	}
 }
 
@@ -77,7 +101,6 @@ func GetTileIndexFromCursor() int {
 // The caller of this function has to decide what to do with the positions.
 func GetTilePositions(indices []int) []Position {
 
-	
 	pos := make([]Position, len(indices))
 
 	for i, inds := range indices {

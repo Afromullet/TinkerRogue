@@ -7,10 +7,13 @@ import (
 	"golang.org/x/image/math/f64"
 )
 
+var MainCamera *Camera
+
 type Camera struct {
 	ViewPort   f64.Vec2
 	Position   f64.Vec2
 	ZoomFactor int
+	ZoomLevel  float64
 	Rotation   int
 }
 
