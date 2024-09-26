@@ -14,6 +14,7 @@ type PlayerUI struct {
 	ItemsUI             PlayerItemsUI
 	StatsUI             PlayerStatsUI
 	MsgUI               PlayerMessageUI
+	InformationUI       InfoUI
 	MainPlayerInterface *ebitenui.UI
 }
 
@@ -68,10 +69,13 @@ func CreatePlayerUI(playerUI *PlayerUI, inv *gear.Inventory, pl *avatar.PlayerDa
 	rootContainer.AddChild(playerUI.StatsUI.StatUIContainer)
 	rootContainer.AddChild(playerUI.MsgUI.msgUIContainer)
 
-	SetContainerLocation(itemDisplayOptionsContainer, 0, 0)
+	originX, originY := graphics.MainCamera.GetOrigin()
+	SetContainerLocation(itemDisplayOptionsContainer, int(originX), int(originY))
 
 	SetContainerLocation(playerUI.StatsUI.StatUIContainer, graphics.ScreenInfo.GetCanvasWidth(), 0)
 	SetContainerLocation(playerUI.MsgUI.msgUIContainer, graphics.ScreenInfo.GetCanvasWidth(), graphics.ScreenInfo.GetCanvasHeight()/4+graphics.ScreenInfo.TileHeight) //Placing it one tile under the Stats Container
+
+	playerUI.InformationUI = CreateInfoUI()
 
 	ui.Container = rootContainer
 
@@ -88,13 +92,13 @@ func CreateOpenThrowablesButton(playerUI *PlayerUI, inv *gear.Inventory, ui *ebi
 	button.Configure( // add a handler that reacts to clicking the button
 		widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
 
-			x, y := playerUI.ItemsUI.ThrowableItemDisplay.ItemDisplay.RooWindow.Contents.PreferredSize()
+			x, y := playerUI.ItemsUI.ThrowableItemDisplay.ItemDisplay.RootWindow.Contents.PreferredSize()
 
 			r := image.Rect(0, 0, x, y)
 			r = r.Add(image.Point{200, 200})
-			playerUI.ItemsUI.ThrowableItemDisplay.ItemDisplay.RooWindow.SetLocation(r)
+			playerUI.ItemsUI.ThrowableItemDisplay.ItemDisplay.RootWindow.SetLocation(r)
 			playerUI.ItemsUI.ThrowableItemDisplay.DisplayInventory()
-			ui.AddWindow(playerUI.ItemsUI.ThrowableItemDisplay.ItemDisplay.RooWindow)
+			ui.AddWindow(playerUI.ItemsUI.ThrowableItemDisplay.ItemDisplay.RootWindow)
 			//consumable.ApplyEffect(consDisplay.playerAttributes)
 
 		}))
@@ -111,13 +115,13 @@ func CreateOpenEquipmentButton(playerUI *PlayerUI, inv *gear.Inventory, ui *ebit
 
 	button.Configure( // add a handler that reacts to clicking the button
 		widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
-			x, y := playerUI.ItemsUI.EquipmentDisplay.ItmDisplay.RooWindow.Contents.PreferredSize()
+			x, y := playerUI.ItemsUI.EquipmentDisplay.ItmDisplay.RootWindow.Contents.PreferredSize()
 
 			r := image.Rect(0, 0, x, y)
 			r = r.Add(image.Point{200, 50})
-			playerUI.ItemsUI.EquipmentDisplay.ItmDisplay.RooWindow.SetLocation(r)
+			playerUI.ItemsUI.EquipmentDisplay.ItmDisplay.RootWindow.SetLocation(r)
 			playerUI.ItemsUI.EquipmentDisplay.DisplayInventory(inv)
-			ui.AddWindow(playerUI.ItemsUI.EquipmentDisplay.ItmDisplay.RooWindow)
+			ui.AddWindow(playerUI.ItemsUI.EquipmentDisplay.ItmDisplay.RootWindow)
 			playerUI.ItemsUI.EquipmentDisplay.UpdateEquipmentDisplay()
 		}))
 
@@ -134,13 +138,13 @@ func CreateOpenConsumablesButton(playerUI *PlayerUI, inv *gear.Inventory, ui *eb
 	button.Configure( // add a handler that reacts to clicking the button
 		widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
 
-			x, y := playerUI.ItemsUI.ConsumableDisplay.ItmDisplay.RooWindow.Contents.PreferredSize()
+			x, y := playerUI.ItemsUI.ConsumableDisplay.ItmDisplay.RootWindow.Contents.PreferredSize()
 
 			r := image.Rect(0, 0, x, y)
 			r = r.Add(image.Point{200, 50})
-			playerUI.ItemsUI.ConsumableDisplay.ItmDisplay.RooWindow.SetLocation(r)
+			playerUI.ItemsUI.ConsumableDisplay.ItmDisplay.RootWindow.SetLocation(r)
 			playerUI.ItemsUI.ConsumableDisplay.DisplayInventory() //Remove the item from display
-			ui.AddWindow(playerUI.ItemsUI.ConsumableDisplay.ItmDisplay.RooWindow)
+			ui.AddWindow(playerUI.ItemsUI.ConsumableDisplay.ItmDisplay.RootWindow)
 
 		}))
 
@@ -156,13 +160,13 @@ func CreateOpenCraftingButton(playerUI *PlayerUI, inv *gear.Inventory, ui *ebite
 	button.Configure( // add a handler that reacts to clicking the button
 		widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
 
-			x, y := playerUI.ItemsUI.CraftingItemDisplay.ItmDisplay.RooWindow.Contents.PreferredSize()
+			x, y := playerUI.ItemsUI.CraftingItemDisplay.ItmDisplay.RootWindow.Contents.PreferredSize()
 
 			r := image.Rect(0, 0, x, y)
 			r = r.Add(image.Point{200, 50})
-			playerUI.ItemsUI.CraftingItemDisplay.ItmDisplay.RooWindow.SetLocation(r)
+			playerUI.ItemsUI.CraftingItemDisplay.ItmDisplay.RootWindow.SetLocation(r)
 			playerUI.ItemsUI.CraftingItemDisplay.DisplayInventory(inv)
-			ui.AddWindow(playerUI.ItemsUI.CraftingItemDisplay.ItmDisplay.RooWindow)
+			ui.AddWindow(playerUI.ItemsUI.CraftingItemDisplay.ItmDisplay.RootWindow)
 
 		}))
 

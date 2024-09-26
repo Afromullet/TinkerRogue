@@ -149,6 +149,16 @@ func PlayerActions(ecsmanager *common.EntityManager, pl *avatar.PlayerData, gm *
 
 	}
 
+	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButton2) {
+
+		cursorX, cursorY := ebiten.CursorPosition()
+		playerUI.InformationUI.InfoSelectionWindow(playerUI.MainPlayerInterface, cursorX, cursorY)
+
+	}
+
+	//Opening the info window. Todo, I need to use some sort of state variable to make sure the right click
+	// Does not overlap with over right clicks such as in the throwing and shooting menu
+
 	return pl.InputStates.HasKeyInput
 
 }

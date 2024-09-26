@@ -19,6 +19,7 @@ type PlayerInputStates struct {
 	IsThrowing  bool
 	IsShooting  bool
 	HasKeyInput bool //Tells us whether the player pressed any key.
+	InfoMeuOpen bool
 }
 
 // Armor is not an entity at the moment

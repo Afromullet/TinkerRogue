@@ -36,7 +36,7 @@ type ItemDisplayer interface {
 type ItemDisplay struct {
 	playerData    *avatar.PlayerData
 	RootContainer *widget.Container //Holds all of the GUI elements
-	RooWindow     *widget.Window    //Window to hold the root container content
+	RootWindow    *widget.Window    //Window to hold the root container content
 
 	ItemSelectedContainer     *widget.Container
 	InventoryDisplayContainer *widget.Container //Container that holds the items to be displayed
@@ -85,7 +85,7 @@ func (itemDisplay *ItemDisplay) createInventoryDisplayWindow(title string) {
 		})),
 	))
 
-	itemDisplay.RooWindow = widget.NewWindow(
+	itemDisplay.RootWindow = widget.NewWindow(
 
 		widget.WindowOpts.Contents(itemDisplay.RootContainer),
 

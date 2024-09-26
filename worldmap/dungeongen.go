@@ -206,7 +206,6 @@ func (gameMap *GameMap) RemoveItemFromTile(index int, pos *common.Position) (*ec
 // The color matrix draws on tiles.
 // Right now it's only used for showing the AOE of throwable items
 func (gameMap *GameMap) DrawLevel(screen *ebiten.Image, revealAllTiles bool) {
-	
 
 	var cs = ebiten.ColorScale{}
 
@@ -255,7 +254,6 @@ func (gameMap *GameMap) DrawLevel(screen *ebiten.Image, revealAllTiles bool) {
 }
 
 func (gameMap *GameMap) CreateTiles() []*Tile {
-	
 
 	tiles := make([]*Tile, graphics.ScreenInfo.DungeonWidth*graphics.ScreenInfo.DungeonHeight)
 	index := 0
@@ -280,8 +278,6 @@ func (gameMap *GameMap) GenerateLevelTiles() {
 	MIN_SIZE := 6
 	MAX_SIZE := 10
 	MAX_ROOMS := 30
-
-	
 
 	tiles := gameMap.CreateTiles()
 	gameMap.Tiles = tiles
@@ -342,7 +338,7 @@ func (gameMap *GameMap) createRoom(room Rect) {
 }
 
 func (gameMap *GameMap) createHorizontalTunnel(x1 int, x2 int, y int) {
-	
+
 	for x := min(x1, x2); x < max(x1, x2)+1; x++ {
 		index := graphics.IndexFromXY(x, y)
 		if index > 0 && index < graphics.ScreenInfo.DungeonWidth*graphics.ScreenInfo.DungeonHeight {
@@ -357,7 +353,7 @@ func (gameMap *GameMap) createHorizontalTunnel(x1 int, x2 int, y int) {
 }
 
 func (gameMap *GameMap) createVerticalTunnel(y1 int, y2 int, x int) {
-	
+
 	for y := min(y1, y2); y < max(y1, y2)+1; y++ {
 		index := graphics.IndexFromXY(x, y)
 
@@ -411,7 +407,7 @@ func (gameMap *GameMap) ApplyColorMatrixToIndex(index int, m graphics.ColorMatri
 }
 
 func (gameMap GameMap) InBounds(x, y int) bool {
-	
+
 	if x < 0 || x > graphics.ScreenInfo.DungeonWidth || y < 0 || y > graphics.ScreenInfo.DungeonHeight {
 		return false
 	}

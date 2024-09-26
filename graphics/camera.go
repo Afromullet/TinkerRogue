@@ -44,6 +44,10 @@ func (c *Camera) Render(world, screen *ebiten.Image) {
 	})
 }
 
+func (c *Camera) GetOrigin() (float64, float64) {
+	return c.Position[0], c.Position[1]
+}
+
 func (c *Camera) ScreenToWorld(posX, posY int) (float64, float64) {
 	inverseMatrix := c.WorldMatrix()
 	if inverseMatrix.IsInvertible() {
