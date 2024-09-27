@@ -29,12 +29,12 @@ func MeleeAttackSystem(ecsmanager *common.EntityManager, pl *avatar.PlayerData, 
 	if pl.Pos.IsEqual(attackerPos) {
 		playerAttacking = true
 		attacker = pl.PlayerEntity
-		defender = GetCreatureAtPosition(ecsmanager, defenderPos)
+		defender = common.GetCreatureAtPosition(ecsmanager, defenderPos)
 
 		weapon = pl.Equipment.MeleeWeapon()
 
 	} else {
-		attacker = GetCreatureAtPosition(ecsmanager, attackerPos)
+		attacker = common.GetCreatureAtPosition(ecsmanager, attackerPos)
 		defender = pl.PlayerEntity
 		weapon = common.GetComponentType[*gear.MeleeWeapon](attacker, gear.MeleeWeaponComponent)
 
@@ -73,7 +73,7 @@ func RangedAttackSystem(ecsmanager *common.EntityManager, pl *avatar.PlayerData,
 			targets = weapon.GetTargets(ecsmanager)
 		}
 	} else {
-		attacker = GetCreatureAtPosition(ecsmanager, attackerPos)
+		attacker = common.GetCreatureAtPosition(ecsmanager, attackerPos)
 		weapon = common.GetComponentType[*gear.RangedWeapon](attacker, gear.RangedWeaponComponent)
 
 		targets = append(targets, pl.PlayerEntity)
@@ -154,26 +154,6 @@ func RemoveDeadEntity(ecsmnager *common.EntityManager, pl *avatar.PlayerData, gm
 		gm.Tiles[index].Blocked = false
 		ecsmnager.World.DisposeEntity(defender)
 	}
-
-}
-
-// Todo need a better way to handle this rather than searching all monsters
-// This also should not really be in attackingSystem
-func GetCreatureAtPosition(ecsmnager *common.EntityManager, pos *common.Position) *ecs.Entity {
-
-	var e *ecs.Entity = nil
-	for _, c := range ecsmnager.World.Query(ecsmnager.WorldTags["monsters"]) {
-
-		curPos := common.GetPosition(c.Entity)
-
-		if pos.IsEqual(curPos) {
-			e = c.Entity
-			break
-		}
-
-	}
-
-	return e
 
 }
 

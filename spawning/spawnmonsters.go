@@ -19,7 +19,7 @@ var TurnsPerMonsterSpawn = 10
 
 // Basic monster spawning function that spawns a monster on a random tile
 func SpawnMonster(ecsmanager common.EntityManager, gm *worldmap.GameMap) {
-	
+
 	rand.Seed(time.Now().UnixNano())
 	if rand.Intn(100) < 30 { // 30% chance to spawn something
 
@@ -51,6 +51,7 @@ func SpawnStartingCreatures(MaxNumCreatures int, em *common.EntityManager, gm *w
 	//Spawn 1 random creature in every room except the starting room
 
 	randCreature := 0
+
 	for _, room := range gm.Rooms[1:] {
 
 		x, y := room.Center()

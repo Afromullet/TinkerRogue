@@ -68,7 +68,7 @@ func PositionFromIndex(i, dungeonWidth int) Position {
 
 }
 
-func GridPositionFromPixels(x, y int) Position {
+func PositionFromPixels(x, y int) Position {
 
 	// First, reverse the camera's zoom transformation.
 
@@ -84,15 +84,15 @@ func GridPositionFromPixels(x, y int) Position {
 	tileHeight := graphics.ScreenInfo.TileHeight
 
 	return Position{
-		X: int(translatedX) / tileWidth,
-		Y: int(translatedY) / tileHeight,
+		X: int(math.Floor(translatedX)) / tileWidth,
+		Y: int(math.Floor(translatedY)) / tileHeight,
 	}
 }
 
 // Gets the index in the tilemap from the cursor
 func GetTileIndexFromCursor() int {
 
-	pos := GridPositionFromPixels(ebiten.CursorPosition())
+	pos := PositionFromPixels(ebiten.CursorPosition())
 	return graphics.IndexFromXY(pos.X, pos.Y)
 
 }

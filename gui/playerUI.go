@@ -2,6 +2,7 @@ package gui
 
 import (
 	"game_main/avatar"
+	"game_main/common"
 	"game_main/gear"
 	"game_main/graphics"
 	"image"
@@ -36,14 +37,14 @@ func (p *PlayerUI) SetThrowableItemSelected(selected bool) {
 }
 
 // func CreatePlayerItemsUI(playerUI *PlayerUI, inv *gear.Inventory, pl *avatar.PlayerData)
-func (playerUI *PlayerUI) CreateMainInterface(playerData *avatar.PlayerData) {
+func (playerUI *PlayerUI) CreateMainInterface(playerData *avatar.PlayerData, ecsmanager *common.EntityManager) {
 
-	playerUI.MainPlayerInterface = CreatePlayerUI(playerUI, playerData.Inventory, playerData)
+	playerUI.MainPlayerInterface = CreatePlayerUI(playerUI, playerData.Inventory, playerData, ecsmanager)
 
 }
 
 // Creates the main UI container
-func CreatePlayerUI(playerUI *PlayerUI, inv *gear.Inventory, pl *avatar.PlayerData) *ebitenui.UI {
+func CreatePlayerUI(playerUI *PlayerUI, inv *gear.Inventory, pl *avatar.PlayerData, ecsmanager *common.EntityManager) *ebitenui.UI {
 
 	ui := ebitenui.UI{}
 
@@ -75,7 +76,7 @@ func CreatePlayerUI(playerUI *PlayerUI, inv *gear.Inventory, pl *avatar.PlayerDa
 	SetContainerLocation(playerUI.StatsUI.StatUIContainer, graphics.ScreenInfo.GetCanvasWidth(), 0)
 	SetContainerLocation(playerUI.MsgUI.msgUIContainer, graphics.ScreenInfo.GetCanvasWidth(), graphics.ScreenInfo.GetCanvasHeight()/4+graphics.ScreenInfo.TileHeight) //Placing it one tile under the Stats Container
 
-	playerUI.InformationUI = CreateInfoUI()
+	playerUI.InformationUI = CreateInfoUI(ecsmanager)
 
 	ui.Container = rootContainer
 

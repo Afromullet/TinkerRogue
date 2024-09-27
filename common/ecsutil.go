@@ -58,3 +58,23 @@ func GetAttributes(e *ecs.Entity) *Attributes {
 func GetPosition(e *ecs.Entity) *Position {
 	return GetComponentType[*Position](e, PositionComponent)
 }
+
+// Todo need a better way to handle this rather than searching all monsters
+// This also should not really be in attackingSystem
+func GetCreatureAtPosition(ecsmnager *EntityManager, pos *Position) *ecs.Entity {
+
+	var e *ecs.Entity = nil
+	for _, c := range ecsmnager.World.Query(ecsmnager.WorldTags["monsters"]) {
+
+		curPos := GetPosition(c.Entity)
+
+		if pos.IsEqual(curPos) {
+			e = c.Entity
+			break
+		}
+
+	}
+
+	return e
+
+}

@@ -2,7 +2,6 @@ package input
 
 import (
 	"game_main/avatar"
-	"game_main/combat"
 	"game_main/common"
 	"game_main/graphics"
 	"game_main/timesystem"
@@ -53,7 +52,7 @@ func GetPlayerMoveAction(act PlayerAction, ecsmanager *common.EntityManager,
 
 	actionCost := attr.TotalMovementSpeed
 	if nextTile.Blocked {
-		if combat.GetCreatureAtPosition(ecsmanager, &nextPosition) != nil {
+		if common.GetCreatureAtPosition(ecsmanager, &nextPosition) != nil {
 			actionCost = attr.TotalAttackSpeed
 
 		}

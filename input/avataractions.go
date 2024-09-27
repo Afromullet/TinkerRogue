@@ -63,7 +63,6 @@ func ApplyThrowable(ecsmanager *common.EntityManager, item *gear.Item, pl *avata
 
 func DrawThrowableAOE(pl *avatar.PlayerData, gm *worldmap.GameMap) {
 
-	
 	cursorX, cursorY := ebiten.CursorPosition()
 
 	s := pl.ThrowingAOEShape
@@ -214,7 +213,6 @@ func HandlePlayerRangedAttack(ecsmanager *common.EntityManager, pl *avatar.Playe
 
 func DrawRangedAttackAOE(pl *avatar.PlayerData, gm *worldmap.GameMap) {
 
-	
 	cursorX, cursorY := ebiten.CursorPosition()
 
 	s := pl.Equipment.RangedWeaponAOEShape
@@ -265,7 +263,7 @@ func IsCreatureOnTile(ecsmanager *common.EntityManager, pos *common.Position, gm
 
 	nextTile := gm.Tiles[index]
 
-	if nextTile.Blocked && combat.GetCreatureAtPosition(ecsmanager, pos) != nil {
+	if nextTile.Blocked && common.GetCreatureAtPosition(ecsmanager, pos) != nil {
 		return true
 
 	}
@@ -297,7 +295,7 @@ func MovePlayer(ecsmanager *common.EntityManager, pl *avatar.PlayerData, gm *wor
 
 	} else {
 		//Determine if the tile is blocked because there's a creature
-		if combat.GetCreatureAtPosition(ecsmanager, &nextPosition) != nil {
+		if common.GetCreatureAtPosition(ecsmanager, &nextPosition) != nil {
 			fmt.Println("Attacking")
 			combat.MeleeAttackSystem(ecsmanager, pl, gm, pl.Pos, &nextPosition)
 		}

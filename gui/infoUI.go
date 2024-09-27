@@ -2,18 +2,44 @@ package gui
 
 import (
 	"fmt"
+	"game_main/common"
 	"image"
+	"image/color"
 
 	"github.com/ebitenui/ebitenui"
+	e_image "github.com/ebitenui/ebitenui/image"
 	"github.com/ebitenui/ebitenui/widget"
 )
 
+var LookAtCreatureOpt = "Look at Creature"
+var LookAtTileOpt = "Look at Tile"
+
 type InfoUI struct {
-	RootContainer *widget.Container //Holds all of the GUI elements
-	RootWindow    *widget.Window    //Window to hold the root container content
+	RootContainer     *widget.Container //Holds all of the GUI elements
+	RootWindow        *widget.Window    //Window to hold the root container content
+	InfoOptionList    *widget.List
+	ecsmnager         *common.EntityManager
+	windowX, windowY  int
+	removeHandlerFunc func()
 }
 
-func CreateInfoUI() InfoUI {
+func (info *InfoUI) InfoSelectionWindow(ui *ebitenui.UI, cursorX, cursorY int) {
+
+	x, y := info.RootWindow.Contents.PreferredSize()
+
+	r := image.Rect(0, 0, x, y)
+	r = r.Add(image.Point{cursorX, cursorY})
+	info.RootWindow.SetLocation(r)
+
+	info.windowX = cursorX
+	info.windowY = cursorY
+
+	ui.AddWindow(info.RootWindow)
+
+	addInfoListHandler(info.InfoOptionList, info.ecsmnager, info)
+}
+
+func CreateInfoUI(ecsmanager *common.EntityManager) InfoUI {
 
 	infoUI := InfoUI{}
 	// Holds the widget that displays the selected items to the player
@@ -25,6 +51,7 @@ func CreateInfoUI() InfoUI {
 			widget.RowLayoutOpts.Spacing(10),
 		)))
 
+	//The window will open whenever a player right clicks on a tile
 	infoUI.RootWindow = widget.NewWindow(
 
 		widget.WindowOpts.Contents(infoUI.RootContainer),
@@ -45,17 +72,111 @@ func CreateInfoUI() InfoUI {
 		}),
 	)
 
+	infoUI.ecsmnager = ecsmanager
+	infoUI.InfoOptionList = createOptionList()
+	//addInfoListHandler(infoUI.InfoOptionList, infoUI.ecsmnager, &infoUI)
+	infoUI.RootContainer.AddChild(infoUI.InfoOptionList)
+
 	return infoUI
 
 }
 
-func (info *InfoUI) InfoSelectionWindow(ui *ebitenui.UI, cursorX, cursorY int) {
+func createOptionList() *widget.List {
 
-	x, y := info.RootWindow.Contents.PreferredSize()
+	infoOptions := make([]any, 0)
+	infoOptions = append(infoOptions, LookAtCreatureOpt)
+	infoOptions = append(infoOptions, LookAtTileOpt)
 
-	r := image.Rect(0, 0, x, y)
-	r = r.Add(image.Point{cursorX, cursorY})
-	info.RootWindow.SetLocation(r)
+	li := widget.NewList(
 
-	ui.AddWindow(info.RootWindow)
+		widget.ListOpts.ContainerOpts(widget.ContainerOpts.WidgetOpts(
+			widget.WidgetOpts.MinSize(150, 0),
+			widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{
+				HorizontalPosition: widget.AnchorLayoutPositionCenter,
+				VerticalPosition:   widget.AnchorLayoutPositionEnd,
+				StretchVertical:    true,
+				Padding:            widget.NewInsetsSimple(50),
+			}),
+		)),
+
+		// Set the entries in the list
+		widget.ListOpts.Entries(infoOptions),
+		widget.ListOpts.ScrollContainerOpts(
+			// Set the background images/color for the list
+			widget.ScrollContainerOpts.Image(&widget.ScrollContainerImage{
+				Idle:     e_image.NewNineSliceColor(color.NRGBA{100, 100, 100, 255}),
+				Disabled: e_image.NewNineSliceColor(color.NRGBA{100, 100, 100, 255}),
+				Mask:     e_image.NewNineSliceColor(color.NRGBA{100, 100, 100, 255}),
+			}),
+		),
+		widget.ListOpts.SliderOpts(
+			// Set the background images/color for the background of the slider track
+			widget.SliderOpts.Images(&widget.SliderTrackImage{
+				Idle:  e_image.NewNineSliceColor(color.NRGBA{100, 100, 100, 255}),
+				Hover: e_image.NewNineSliceColor(color.NRGBA{100, 100, 100, 255}),
+			}, buttonImage),
+			widget.SliderOpts.MinHandleSize(5),
+			// Set how wide the track should be
+			widget.SliderOpts.TrackPadding(widget.NewInsetsSimple(2))),
+		// Hide the horizontal slider
+		widget.ListOpts.HideHorizontalSlider(),
+		// Set the font for the list options
+		widget.ListOpts.EntryFontFace(face),
+		// Set the colors for the list
+		widget.ListOpts.EntryColor(&widget.ListEntryColor{
+			Selected:                   color.NRGBA{R: 0, G: 255, B: 0, A: 255},     // Foreground color for the unfocused selected entry
+			Unselected:                 color.NRGBA{R: 254, G: 255, B: 255, A: 255}, // Foreground color for the unfocused unselected entry
+			SelectedBackground:         color.NRGBA{R: 130, G: 130, B: 200, A: 255}, // Background color for the unfocused selected entry
+			SelectingBackground:        color.NRGBA{R: 130, G: 130, B: 130, A: 255}, // Background color for the unfocused being selected entry
+			SelectingFocusedBackground: color.NRGBA{R: 130, G: 140, B: 170, A: 255}, // Background color for the focused being selected entry
+			SelectedFocusedBackground:  color.NRGBA{R: 130, G: 130, B: 170, A: 255}, // Background color for the focused selected entry
+			FocusedBackground:          color.NRGBA{R: 170, G: 170, B: 180, A: 255}, // Background color for the focused unselected entry
+			DisabledUnselected:         color.NRGBA{R: 100, G: 100, B: 100, A: 255}, // Foreground color for the disabled unselected entry
+			DisabledSelected:           color.NRGBA{R: 100, G: 100, B: 100, A: 255}, // Foreground color for the disabled selected entry
+			DisabledSelectedBackground: color.NRGBA{R: 100, G: 100, B: 100, A: 255}, // Background color for the disabled selected entry
+		}),
+		// This required function returns the string displayed in the list
+		widget.ListOpts.EntryLabelFunc(func(e interface{}) string {
+			return e.(string)
+		}),
+		// Padding for each entry
+		widget.ListOpts.EntryTextPadding(widget.NewInsetsSimple(5)),
+		// Text position for each entry
+		widget.ListOpts.EntryTextPosition(widget.TextPositionStart, widget.TextPositionCenter),
+		// This handler defines what function to run when a list item is selected.
+
+	)
+
+	return li
+
+}
+
+func addInfoListHandler(li *widget.List, em *common.EntityManager, info *InfoUI) {
+
+	if info.removeHandlerFunc != nil {
+		info.removeHandlerFunc()
+	}
+
+	info.removeHandlerFunc = li.EntrySelectedEvent.AddHandler(func(args interface{}) {
+
+		a := args.(*widget.ListEntrySelectedEventArgs)
+		entry := a.Entry
+
+		pos := common.PositionFromPixels(info.windowX, info.windowY)
+		if a.Entry == LookAtCreatureOpt {
+
+			cr := common.GetCreatureAtPosition(em, &pos)
+
+			fmt.Println(pos)
+			fmt.Println(cr)
+
+			fmt.Println("Looking at creature")
+		} else if a.Entry == LookAtTileOpt {
+			fmt.Println("Looking at tile")
+		}
+
+		fmt.Println(entry)
+
+	})
+
 }

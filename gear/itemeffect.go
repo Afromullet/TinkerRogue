@@ -273,7 +273,7 @@ func (t *Throwable) InRange(endPos *common.Position) bool {
 
 	//
 
-	startPos := common.GridPositionFromPixels(t.Shape.StartPosition())
+	startPos := common.PositionFromPixels(t.Shape.StartPosition())
 
 	return endPos.InRange(&startPos, t.ThrowingRange)
 

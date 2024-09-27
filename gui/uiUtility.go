@@ -19,8 +19,7 @@ var buttonImage, _ = loadButtonImage()
 var defaultWidgetColor = e_image.NewNineSliceColor(color.NRGBA{0x13, 0x1a, 0x22, 0xff})
 
 func loadButtonImage() (*widget.ButtonImage, error) {
-	idle := e_image.NewNineSliceColor(color.NRGBA{R: 170, G: 170, B: 180, A: 255})
-
+	idle := defaultWidgetColor
 	hover := e_image.NewNineSliceColor(color.NRGBA{R: 130, G: 130, B: 150, A: 255})
 
 	pressed := e_image.NewNineSliceColor(color.NRGBA{R: 100, G: 100, B: 120, A: 255})
