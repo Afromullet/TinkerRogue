@@ -6,7 +6,6 @@ import (
 	"game_main/common"
 	"game_main/gear"
 	"game_main/graphics"
-	"game_main/gui"
 	"game_main/randgen"
 	"game_main/worldmap"
 	"log"
@@ -161,7 +160,7 @@ func RemoveDeadEntity(ecsmnager *common.EntityManager, pl *avatar.PlayerData, gm
 func UpdateAttackMessage(attacker *ecs.Entity, attackSuccess, isPlayerAttacking bool, damage int) {
 
 	attackerMessage := ""
-	msg := common.GetComponentType[*gui.UserMessage](attacker, gui.UserMsgComponent)
+	msg := common.GetComponentType[*common.UserMessage](attacker, common.UserMsgComponent)
 
 	if isPlayerAttacking && attackSuccess {
 

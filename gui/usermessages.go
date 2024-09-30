@@ -3,18 +3,10 @@ package gui
 import (
 	"game_main/common"
 
-	"github.com/bytearena/ecs"
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-var UserMsgComponent *ecs.Component //I can probably remove this later
-
 var lastText []string = make([]string, 0, 5)
-
-type UserMessage struct {
-	AttackMessage    string
-	GameStateMessage string
-}
 
 func ProcessUserLog(ecsmanager common.EntityManager, screen *ebiten.Image, msgUI *PlayerMessageUI) {
 
@@ -22,7 +14,7 @@ func ProcessUserLog(ecsmanager common.EntityManager, screen *ebiten.Image, msgUI
 	anyMessages := false
 
 	for _, m := range ecsmanager.World.Query(ecsmanager.WorldTags["messengers"]) {
-		messages := m.Components[UserMsgComponent].(*UserMessage)
+		messages := m.Components[common.UserMsgComponent].(*common.UserMessage)
 		if messages.AttackMessage != "" {
 			tmpMessages = append(tmpMessages, messages.AttackMessage)
 			anyMessages = true
@@ -31,7 +23,7 @@ func ProcessUserLog(ecsmanager common.EntityManager, screen *ebiten.Image, msgUI
 		}
 	}
 	for _, m := range ecsmanager.World.Query(ecsmanager.WorldTags["messengers"]) {
-		messages := m.Components[UserMsgComponent].(*UserMessage)
+		messages := m.Components[common.UserMsgComponent].(*common.UserMessage)
 
 		if messages.GameStateMessage != "" {
 			tmpMessages = append(tmpMessages, messages.GameStateMessage)

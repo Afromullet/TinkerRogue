@@ -81,7 +81,6 @@ func DrawThrowableAOE(pl *avatar.PlayerData, gm *worldmap.GameMap) {
 
 	s.UpdatePosition(cursorX, cursorY)
 	indices = s.GetIndices()
-	fmt.Println("Throwing indices ", indices)
 
 	for _, i := range indices {
 

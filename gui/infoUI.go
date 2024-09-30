@@ -3,6 +3,9 @@ package gui
 import (
 	"fmt"
 	"game_main/common"
+	"game_main/graphics"
+	"game_main/monsters"
+
 	"image"
 	"image/color"
 
@@ -15,35 +18,68 @@ var LookAtCreatureOpt = "Look at Creature"
 var LookAtTileOpt = "Look at Tile"
 
 type InfoUI struct {
-	RootContainer     *widget.Container //Holds all of the GUI elements
-	RootWindow        *widget.Window    //Window to hold the root container content
-	InfoOptionList    *widget.List
+	InfoOptionsContainer *widget.Container //Holds all of the GUI elements for displaying the options - Look at Creature, Look at Tile
+	InfoOptionsWindow    *widget.Window    //Window for the InfoOptions container
+	InfoOptionList       *widget.List      //List containiner the options the user can select
+
+	DisplayInfoContainer *widget.Container //Holds all of the GUI elements for displaying the data after selecting the option
+	DisplayInfoWindow    *widget.Window    //Window to hold the root container content
+	DisplayInfoTextArea  *widget.TextArea
+
 	ecsmnager         *common.EntityManager
+	baseContainer     *ebitenui.UI //Ebiten base container
 	windowX, windowY  int
 	removeHandlerFunc func()
 }
 
-func (info *InfoUI) InfoSelectionWindow(ui *ebitenui.UI, cursorX, cursorY int) {
+func (info *InfoUI) InfoSelectionWindow(cursorX, cursorY int) {
 
-	x, y := info.RootWindow.Contents.PreferredSize()
+	x, y := info.InfoOptionsWindow.Contents.PreferredSize()
 
 	r := image.Rect(0, 0, x, y)
-	r = r.Add(image.Point{cursorX, cursorY})
-	info.RootWindow.SetLocation(r)
+
+	//r = r.Add(image.Point{cursorX, cursorY})
+
+	r = r.Add(image.Point{graphics.LevelWidth / 2, graphics.LevelHeight / 2})
+	info.InfoOptionsWindow.SetLocation(r)
 
 	info.windowX = cursorX
 	info.windowY = cursorY
 
-	ui.AddWindow(info.RootWindow)
+	info.baseContainer.AddWindow(info.InfoOptionsWindow)
 
 	addInfoListHandler(info.InfoOptionList, info.ecsmnager, info)
+
 }
 
-func CreateInfoUI(ecsmanager *common.EntityManager) InfoUI {
+func (info *InfoUI) CreatureInfoWindow(cursorX, cursorY int) {
+
+	x, y := info.DisplayInfoWindow.Contents.PreferredSize()
+
+	r := image.Rect(0, 0, x, y)
+	//r = r.Add(image.Point{cursorX + 50, cursorY + 50})
+	r = r.Add(image.Point{graphics.LevelWidth / 2, graphics.LevelHeight / 2})
+	info.DisplayInfoWindow.SetLocation(r)
+
+	info.windowX = cursorX
+	info.windowY = cursorY
+
+	info.baseContainer.AddWindow(info.DisplayInfoWindow)
+
+}
+
+func (info *InfoUI) CloseWindows() {
+
+	info.InfoOptionsWindow.Close()
+	info.DisplayInfoWindow.Close()
+
+}
+
+func CreateInfoUI(ecsmanager *common.EntityManager, ui *ebitenui.UI) InfoUI {
 
 	infoUI := InfoUI{}
 	// Holds the widget that displays the selected items to the player
-	infoUI.RootContainer = widget.NewContainer(
+	infoUI.InfoOptionsContainer = widget.NewContainer(
 		widget.ContainerOpts.BackgroundImage(defaultWidgetColor),
 		widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
 		widget.ContainerOpts.Layout(widget.NewRowLayout(
@@ -52,13 +88,14 @@ func CreateInfoUI(ecsmanager *common.EntityManager) InfoUI {
 		)))
 
 	//The window will open whenever a player right clicks on a tile
-	infoUI.RootWindow = widget.NewWindow(
+	infoUI.InfoOptionsWindow = widget.NewWindow(
 
-		widget.WindowOpts.Contents(infoUI.RootContainer),
+		widget.WindowOpts.Contents(infoUI.InfoOptionsContainer),
 
 		//	widget.WindowOpts.TitleBar(titleContainer, 25),
 		widget.WindowOpts.Modal(),
-		widget.WindowOpts.CloseMode(widget.CLICK_OUT),
+		widget.WindowOpts.CloseMode(widget.NONE),
+		//widget.WindowOpts.CloseMode(widget.CLICK),
 		widget.WindowOpts.Draggable(),
 		widget.WindowOpts.Resizeable(),
 		widget.WindowOpts.MinSize(500, 500),
@@ -72,10 +109,47 @@ func CreateInfoUI(ecsmanager *common.EntityManager) InfoUI {
 		}),
 	)
 
-	infoUI.ecsmnager = ecsmanager
 	infoUI.InfoOptionList = createOptionList()
 	//addInfoListHandler(infoUI.InfoOptionList, infoUI.ecsmnager, &infoUI)
-	infoUI.RootContainer.AddChild(infoUI.InfoOptionList)
+	infoUI.InfoOptionsContainer.AddChild(infoUI.InfoOptionList)
+
+	infoUI.DisplayInfoContainer = widget.NewContainer(
+		widget.ContainerOpts.BackgroundImage(defaultWidgetColor),
+		widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
+		widget.ContainerOpts.Layout(widget.NewRowLayout(
+			widget.RowLayoutOpts.Direction(widget.DirectionVertical),
+			widget.RowLayoutOpts.Spacing(10),
+		)))
+
+	//The window will open whenever a player right clicks on a tile
+	infoUI.DisplayInfoWindow = widget.NewWindow(
+
+		widget.WindowOpts.Contents(infoUI.DisplayInfoContainer),
+
+		//	widget.WindowOpts.TitleBar(titleContainer, 25),
+		widget.WindowOpts.Modal(),
+		widget.WindowOpts.CloseMode(widget.NONE),
+		//widget.WindowOpts.CloseMode(widget.CLICK),
+		widget.WindowOpts.Draggable(),
+		widget.WindowOpts.Resizeable(),
+		widget.WindowOpts.MinSize(500, 500),
+
+		widget.WindowOpts.MoveHandler(func(args *widget.WindowChangedEventArgs) {
+			fmt.Println("Window Moving")
+		}),
+		//Set the callback that triggers when a resize is complete
+		widget.WindowOpts.ResizeHandler(func(args *widget.WindowChangedEventArgs) {
+			fmt.Println("Window Resized")
+		}),
+	)
+
+	infoUI.DisplayInfoTextArea = CreateTextArea()
+
+	infoUI.DisplayInfoContainer.AddChild(infoUI.DisplayInfoTextArea)
+
+	infoUI.ecsmnager = ecsmanager
+
+	infoUI.baseContainer = ui
 
 	return infoUI
 
@@ -166,9 +240,13 @@ func addInfoListHandler(li *widget.List, em *common.EntityManager, info *InfoUI)
 		if a.Entry == LookAtCreatureOpt {
 
 			cr := common.GetCreatureAtPosition(em, &pos)
+			//cr := tracker.CreatureTracker.Get(&pos)
 
-			fmt.Println(pos)
-			fmt.Println(cr)
+			// If it's nil, there's no creature at the position
+			if cr != nil {
+				info.CreatureInfoWindow(info.windowX, info.windowY)
+				info.DisplayInfoTextArea.SetText(monsters.EntityDescription(common.GetCreatureAtPosition(em, &pos)))
+			}
 
 			fmt.Println("Looking at creature")
 		} else if a.Entry == LookAtTileOpt {

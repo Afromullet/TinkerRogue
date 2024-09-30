@@ -13,6 +13,11 @@ type Position struct {
 	Y int
 }
 
+type UserMessage struct {
+	AttackMessage    string
+	GameStateMessage string
+}
+
 func (p *Position) IsEqual(other *Position) bool {
 	return (p.X == other.X && p.Y == other.Y)
 }

@@ -197,7 +197,7 @@ func (g *Game) Update() error {
 // Draw is called each draw cycle and is where we will blit.
 func (g *Game) Draw(screen *ebiten.Image) {
 
-	//g.gameMap.DrawLevel(screen, DEBUG_MODE)
+	g.gameMap.DrawLevel(screen, DEBUG_MODE)
 	g.gameMap.DrawLevelSection(screen, DEBUG_MODE, g.playerData.Pos, 10)
 
 	rendering.ProcessRenderables(&g.em, g.gameMap, screen, DEBUG_MODE)

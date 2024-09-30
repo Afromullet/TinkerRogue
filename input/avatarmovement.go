@@ -151,8 +151,18 @@ func PlayerActions(ecsmanager *common.EntityManager, pl *avatar.PlayerData, gm *
 
 	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButton2) {
 
-		//cursorX, cursorY := ebiten.CursorPosition()
-		//playerUI.InformationUI.InfoSelectionWindow(playerUI.MainPlayerInterface, cursorX, cursorY)
+		cursorX, cursorY := ebiten.CursorPosition()
+		playerUI.InformationUI.InfoSelectionWindow(cursorX, cursorY)
+		pl.InputStates.InfoMeuOpen = true
+
+	}
+
+	if pl.InputStates.InfoMeuOpen {
+
+		if inpututil.IsKeyJustReleased(ebiten.KeyEscape) {
+			playerUI.InformationUI.CloseWindows()
+
+		}
 
 	}
 

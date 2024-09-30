@@ -74,7 +74,7 @@ func CreatePlayerUI(playerUI *PlayerUI, inv *gear.Inventory, pl *avatar.PlayerDa
 	SetContainerLocation(itemDisplayOptionsContainer, 0, 0)
 	SetContainerLocation(playerUI.StatsUI.StatUIContainer, graphics.ScreenInfo.GetCanvasWidth(), 0)
 	SetContainerLocation(playerUI.MsgUI.msgUIContainer, graphics.ScreenInfo.GetCanvasWidth(), graphics.ScreenInfo.GetCanvasHeight()/4+graphics.ScreenInfo.TileHeight) //Placing it one tile under the Stats Container
-	playerUI.InformationUI = CreateInfoUI(ecsmanager)
+	playerUI.InformationUI = CreateInfoUI(ecsmanager, &ui)
 
 	ui.Container = rootContainer
 
