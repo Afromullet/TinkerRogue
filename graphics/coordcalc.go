@@ -72,34 +72,14 @@ func XYFromIndex(i int) (int, int) {
 
 // Gets the pixels from the index
 func PixelsFromIndex(i int) (int, int) {
-	x, y := XYFromIndex(i) // Get the logical tile X, Y coordinates.
 
-	// Convert tile X, Y to pixel coordinates using tile dimensions.
-	basePixelX := x * ScreenInfo.TileWidth
-	basePixelY := y * ScreenInfo.TileHeight
-
-	// Apply camera zoom.
-
-	zoomedX := float64(basePixelX) * MainCamera.ZoomLevel
-	zoomedY := float64(basePixelY) * MainCamera.ZoomLevel
-
-	// Return as integer pixel coordinates.
-	return int(zoomedX), int(zoomedY)
+	x, y := XYFromIndex(i)
+	return x * ScreenInfo.TileWidth, y * ScreenInfo.TileHeight
 }
 
 // Return the Grid X,Y coordinates from pixel positions
 func XYFromPixels(x, y int) (int, int) {
 
-	// First, reverse the camera's zoom transformation.
-
-	worldX := float64(x) / MainCamera.ZoomLevel
-	worldY := float64(y) / MainCamera.ZoomLevel
-
-	// Apply the camera’s position offset (translation).
-	translatedX := worldX + MainCamera.Position[0]
-	translatedY := worldY + MainCamera.Position[1]
-
-	// Convert back to grid X, Y using tile dimensions.
-	return int(translatedX) / ScreenInfo.TileWidth, int(translatedY) / ScreenInfo.TileHeight
+	return x / ScreenInfo.TileWidth, y / ScreenInfo.TileHeight
 
 }

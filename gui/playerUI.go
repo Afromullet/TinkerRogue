@@ -3,8 +3,9 @@ package gui
 import (
 	"game_main/avatar"
 	"game_main/common"
-	"game_main/gear"
 	"game_main/graphics"
+
+	"game_main/gear"
 	"image"
 
 	"github.com/ebitenui/ebitenui"
@@ -70,12 +71,9 @@ func CreatePlayerUI(playerUI *PlayerUI, inv *gear.Inventory, pl *avatar.PlayerDa
 	rootContainer.AddChild(playerUI.StatsUI.StatUIContainer)
 	rootContainer.AddChild(playerUI.MsgUI.msgUIContainer)
 
-	originX, originY := graphics.MainCamera.GetOrigin()
-	SetContainerLocation(itemDisplayOptionsContainer, int(originX), int(originY))
-
+	SetContainerLocation(itemDisplayOptionsContainer, 0, 0)
 	SetContainerLocation(playerUI.StatsUI.StatUIContainer, graphics.ScreenInfo.GetCanvasWidth(), 0)
 	SetContainerLocation(playerUI.MsgUI.msgUIContainer, graphics.ScreenInfo.GetCanvasWidth(), graphics.ScreenInfo.GetCanvasHeight()/4+graphics.ScreenInfo.TileHeight) //Placing it one tile under the Stats Container
-
 	playerUI.InformationUI = CreateInfoUI(ecsmanager)
 
 	ui.Container = rootContainer
