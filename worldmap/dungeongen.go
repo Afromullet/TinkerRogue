@@ -203,6 +203,59 @@ func (gameMap *GameMap) RemoveItemFromTile(index int, pos *common.Position) (*ec
 	return entity, nil
 }
 
+func (gameMap *GameMap) DrawLevelSection(screen *ebiten.Image, revealAllTiles bool, pos *common.Position, size int) {
+
+	x, y := common.PixelsFromPosition(pos, graphics.ScreenInfo.TileWidth, graphics.ScreenInfo.TileWidth)
+	shape := graphics.TileSquare{
+		PixelX: x,
+		PixelY: y,
+		Size:   size,
+	}
+
+	indices := shape.GetIndices()
+
+	var cs = ebiten.ColorScale{}
+
+	for idx := range indices {
+
+		tile := gameMap.Tiles[idx]
+		isVis := gameMap.PlayerVisible.IsVisible(x, y)
+
+		if revealAllTiles {
+			isVis = true
+		}
+
+		op := &ebiten.DrawImageOptions{}
+
+		if isVis {
+			op.GeoM.Translate(float64(tile.PixelX), float64(tile.PixelY))
+			gameMap.Tiles[idx].IsRevealed = true
+
+		} else if tile.IsRevealed {
+
+			op.GeoM.Translate(float64(tile.PixelX), float64(tile.PixelY))
+
+			//Blackening out tiles that are out of Fov
+			op.ColorScale.ScaleWithColor(color.RGBA{1, 1, 1, 1})
+
+		}
+
+		if !tile.cm.IsEmpty() {
+
+			cs.SetR(tile.cm.R)
+			cs.SetG(tile.cm.G)
+			cs.SetB(tile.cm.B)
+			cs.SetA(tile.cm.A)
+
+			op.ColorScale.ScaleWithColorScale(cs)
+
+		}
+
+		screen.DrawImage(tile.image, op)
+
+	}
+}
+
 // The color matrix draws on tiles.
 // Right now it's only used for showing the AOE of throwable items
 func (gameMap *GameMap) DrawLevel(screen *ebiten.Image, revealAllTiles bool) {

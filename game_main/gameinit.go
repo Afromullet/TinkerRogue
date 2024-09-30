@@ -8,6 +8,7 @@ import (
 	"game_main/rendering"
 	"game_main/testing"
 	"game_main/timesystem"
+	tracker "game_main/trackers"
 	"game_main/worldmap"
 	"log"
 
@@ -83,5 +84,15 @@ func InitializePlayerData(ecsmanager *common.EntityManager, pl *avatar.PlayerDat
 
 	pl.Pos = startPos
 	pl.Inventory = inventory
+
+}
+
+func AddCreaturesToTracker(ecsmanger *common.EntityManager) {
+
+	for _, c := range ecsmanger.World.Query(ecsmanger.WorldTags["monsters"]) {
+
+		tracker.CreatureTracker.Add(c.Entity)
+
+	}
 
 }

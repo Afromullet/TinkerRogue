@@ -128,6 +128,7 @@ func (am *ActionManager) ReorderActions() {
 	})
 }
 
+/*
 func (am *ActionManager) ExecuteFirst() {
 
 	if len(am.EntityActions) > 0 {
@@ -137,6 +138,26 @@ func (am *ActionManager) ExecuteFirst() {
 		//am.EntityActions = append(am.EntityActions[1:], firstAction)
 	}
 
+}*/
+
+func (am *ActionManager) ExecuteFirst() {
+	if len(am.EntityActions) == 0 {
+		return
+	}
+
+	// Execute the action for the entity with the highest TotalActionPoints
+	am.EntityActions[0].ExecuteAction()
+
+	// Check if the entity has enough TotalActionPoints to continue acting
+	if am.EntityActions[0].TotalActionPoints > 0 {
+		// If the entity has remaining points, reinsert it in the correct position
+		act := am.EntityActions[0]
+		am.EntityActions = am.EntityActions[1:]                 // Remove from the front
+		am.EntityActions = insertInOrder(am.EntityActions, act) // Reinsert in priority order
+	} else {
+		// No more action points, simply move to the back of the queue
+		am.EntityActions = append(am.EntityActions[1:], am.EntityActions[0])
+	}
 }
 
 // Action points get reset every n number of turns.

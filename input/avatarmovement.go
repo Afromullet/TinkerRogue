@@ -151,8 +151,8 @@ func PlayerActions(ecsmanager *common.EntityManager, pl *avatar.PlayerData, gm *
 
 	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButton2) {
 
-		cursorX, cursorY := ebiten.CursorPosition()
-		playerUI.InformationUI.InfoSelectionWindow(playerUI.MainPlayerInterface, cursorX, cursorY)
+		//cursorX, cursorY := ebiten.CursorPosition()
+		//playerUI.InformationUI.InfoSelectionWindow(playerUI.MainPlayerInterface, cursorX, cursorY)
 
 	}
 

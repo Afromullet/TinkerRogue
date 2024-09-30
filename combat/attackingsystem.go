@@ -30,7 +30,7 @@ func MeleeAttackSystem(ecsmanager *common.EntityManager, pl *avatar.PlayerData, 
 		playerAttacking = true
 		attacker = pl.PlayerEntity
 		defender = common.GetCreatureAtPosition(ecsmanager, defenderPos)
-
+		//defender = trackers.CreatureTracker.Get(defenderPos)
 		weapon = pl.Equipment.MeleeWeapon()
 
 	} else {
@@ -137,6 +137,7 @@ func PerformAttack(ecsmanagr *common.EntityManager, pl *avatar.PlayerData, gm *w
 		fmt.Println("Missed")
 	}
 
+	RemoveDeadEntity(ecsmanagr, pl, gm, defender)
 	return false
 	//RemoveDeadEntity(ecsmanagr, pl, gm, defender)
 }

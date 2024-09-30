@@ -14,7 +14,6 @@ import (
 
 // Currently used for determining whether to spawn a new monster
 var NumMonstersOnMap int
-
 var CreatureComponent *ecs.Component
 
 // EffectsToApply trigger every turn in MonsterSystems

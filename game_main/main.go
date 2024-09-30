@@ -79,6 +79,8 @@ func NewGame() *Game {
 	//spawning.SpawnStartingLoot(g.em, &g.gameMap)
 	spawning.SpawnStartingEquipment(&g.em, &g.gameMap, &g.playerData)
 
+	AddCreaturesToTracker(&g.em)
+
 	return g
 
 }
@@ -134,7 +136,7 @@ func ManageTurn(g *Game) {
 
 		}
 
-		g.ts.ActionDispatcher.ReorderActions() // If executefirst inserts in priority order I won't need this
+		//g.ts.ActionDispatcher.ReorderActions() // If executefirst inserts in priority order I won't need this
 		g.ts.UpdateTurnCounter()
 
 		g.playerData.InputStates.HasKeyInput = false
@@ -197,6 +199,7 @@ func (g *Game) Update() error {
 func (g *Game) Draw(screen *ebiten.Image) {
 
 	g.gameMap.DrawLevel(world, DEBUG_MODE)
+	//g.gameMap.DrawLevelSection(world, DEBUG_MODE, g.playerData.Pos, 10)
 
 	rendering.ProcessRenderables(&g.em, g.gameMap, world, DEBUG_MODE)
 	g.gameUI.MainPlayerInterface.Draw(world)
