@@ -202,6 +202,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	//g.gameMap.DrawLevelSection(world, DEBUG_MODE, g.playerData.Pos, 10)
 
 	rendering.ProcessRenderables(&g.em, g.gameMap, world, DEBUG_MODE)
+
 	g.gameUI.MainPlayerInterface.Draw(world)
 
 	gui.ProcessUserLog(g.em, world, &g.gameUI.MsgUI)

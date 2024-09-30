@@ -216,7 +216,7 @@ func (gameMap *GameMap) DrawLevelSection(screen *ebiten.Image, revealAllTiles bo
 
 	var cs = ebiten.ColorScale{}
 
-	for idx := range indices {
+	for _, idx := range indices {
 
 		tile := gameMap.Tiles[idx]
 		isVis := gameMap.PlayerVisible.IsVisible(x, y)

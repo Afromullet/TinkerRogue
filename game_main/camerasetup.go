@@ -1,6 +1,7 @@
 package main
 
 import (
+	"game_main/common"
 	"game_main/graphics"
 	"math"
 
@@ -17,7 +18,7 @@ func SetupCamera(g *Game) {
 
 	//g.camera.ZoomFactor = 10
 	//zoom := math.Pow(1.01, float64(g.camera.ZoomFactor))
-	zoom := 1.0
+	zoom := 1.5
 	g.camera.ZoomLevel = zoom
 
 	// Adjust ViewPort based on zoom
@@ -37,17 +38,11 @@ func UpdateCameraPosition(g *Game) {
 	//gd := graphics.NewScreenData()
 
 	//Center the camera on the player
-	/*
-			centerX, centerY := common.PixelsFromPosition(g.playerData.Pos, graphics.ScreenInfo.TileWidth, graphics.ScreenInfo.TileWidth)
-			centeredX := float64(centerX) - (g.camera.ViewPort[0] / 2)
-			centeredY := float64(centerY) - (g.camera.ViewPort[1] / 2)
-			g.camera.Position = f64.Vec2{centeredX, centeredY}
-		//g.camera.Position = clampCameraPosition(centeredX, centeredY, g.camera.ViewPort,	//g.camera.Position = clampCameraPosition(centeredX, centeredY, g.camera.ViewPort,
-			//float64(graphics.ScreenInfo.DungeonWidth*graphics.ScreenInfo.TileWidth),
-			//float64(graphics.ScreenInfo.DungeonHeight*graphics.ScreenInfo.TileHeight))
-	*/
 
-	g.camera.Position = f64.Vec2{0, 0}
+	centerX, centerY := common.PixelsFromPosition(g.playerData.Pos, graphics.ScreenInfo.TileWidth, graphics.ScreenInfo.TileWidth)
+	centeredX := float64(centerX) - (g.camera.ViewPort[0] / 2)
+	centeredY := float64(centerY) - (g.camera.ViewPort[1] / 2)
+	g.camera.Position = f64.Vec2{centeredX, centeredY}
 
 }
 
