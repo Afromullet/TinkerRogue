@@ -83,3 +83,55 @@ func XYFromPixels(x, y int) (int, int) {
 	return x / ScreenInfo.TileWidth, y / ScreenInfo.TileHeight
 
 }
+
+// Calculates the offset to the center for an X,Y position
+// Applies to the translate when drawing
+// I.E op.GeoM.Translate(float64(tilePixelX+centerOffsetX), float64(tilePixelY+centerOffsetY))
+func CenterOffset(x, y int) (int, int) {
+	screenCenterX := LevelWidth / 2
+	screenCenterY := LevelHeight / 2
+
+	// Calculate the player's position in pixels
+	pixelX := x * ScreenInfo.TileWidth
+	pixelY := y * ScreenInfo.TileHeight
+
+	return screenCenterX - pixelX, screenCenterY - pixelY
+}
+
+// Gets the startX and startY for a square using logical X,Y, not pixel X,Y
+func SquareStartXY(x, y, size int) (int, int) {
+
+	halfSize := size / 2
+
+	startX := x - halfSize
+	startY := y - halfSize
+
+	if startX < 0 {
+		startX = 0
+	}
+	if startY < 0 {
+		startY = 0
+	}
+
+	return startX, startY
+
+}
+
+// Gets the endX and endX for a square using logical X,Y, not pixel X,Y
+func SquareEndXY(x, y, size int) (int, int) {
+
+	halfSize := size / 2
+
+	endX := x + halfSize
+	endY := y + halfSize
+
+	if endX >= ScreenInfo.DungeonWidth {
+		endX = ScreenInfo.DungeonWidth - 1
+	}
+	if endY >= ScreenInfo.DungeonHeight {
+		endY = ScreenInfo.DungeonHeight - 1
+	}
+
+	return endX, endY
+
+}

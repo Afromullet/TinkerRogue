@@ -144,7 +144,9 @@ func PlayerActions(ecsmanager *common.EntityManager, pl *avatar.PlayerData, gm *
 
 	if inpututil.IsKeyJustReleased(ebiten.KeyL) {
 
-		ind := common.GetTileIndexFromCursor()
+		//ind := common.GetTileIndexFromCursor()
+
+		ind := graphics.IndexFromXY(pl.Pos.X, pl.Pos.Y)
 		gm.ApplyColorMatrixToIndex(ind, graphics.GreenColorMatrix)
 
 	}
@@ -157,7 +159,7 @@ func PlayerActions(ecsmanager *common.EntityManager, pl *avatar.PlayerData, gm *
 
 	}
 
-	if pl.InputStates.InfoMeuOpen {
+	if pl.InputStates.InfoMeuOpen == true {
 
 		if inpututil.IsKeyJustReleased(ebiten.KeyEscape) {
 			playerUI.InformationUI.CloseWindows()

@@ -46,7 +46,8 @@ type Game struct {
 	em         common.EntityManager
 	gameUI     gui.PlayerUI
 	playerData avatar.PlayerData
-	gameMap    worldmap.GameMap
+	gameMap    worldmap.GameMap //Logical map
+	drawingMap worldmap.GameMap //Used only for drawing
 
 	ts timesystem.GameTurn
 }
@@ -56,6 +57,7 @@ type Game struct {
 func NewGame() *Game {
 	g := &Game{}
 	g.gameMap = worldmap.NewGameMap()
+	g.drawingMap = g.gameMap
 	g.playerData = avatar.PlayerData{}
 	entitytemplates.ReadGameData()
 	InitializeECS(&g.em)
@@ -198,9 +200,10 @@ func (g *Game) Update() error {
 func (g *Game) Draw(screen *ebiten.Image) {
 
 	g.gameMap.DrawLevel(screen, DEBUG_MODE)
-	g.gameMap.DrawLevelSection(screen, DEBUG_MODE, g.playerData.Pos, 10)
-
 	rendering.ProcessRenderables(&g.em, g.gameMap, screen, DEBUG_MODE)
+
+	//g.drawingMap.DrawLevelCenteredSquare(screen, g.playerData.Pos, 30, DEBUG_MODE)
+	//rendering.ProcessRenderablesInSquare(&g.em, g.gameMap, screen, g.playerData.Pos, 30, DEBUG_MODE)
 
 	gui.ProcessUserLog(g.em, screen, &g.gameUI.MsgUI)
 

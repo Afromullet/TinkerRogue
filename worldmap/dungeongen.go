@@ -203,56 +203,51 @@ func (gameMap *GameMap) RemoveItemFromTile(index int, pos *common.Position) (*ec
 	return entity, nil
 }
 
-func (gameMap *GameMap) DrawLevelSection(screen *ebiten.Image, revealAllTiles bool, pos *common.Position, size int) {
-
-	x, y := common.PixelsFromPosition(pos, graphics.ScreenInfo.TileWidth, graphics.ScreenInfo.TileWidth)
-	shape := graphics.TileSquare{
-		PixelX: x,
-		PixelY: y,
-		Size:   size,
-	}
-
-	indices := shape.GetIndices()
-
+func (gameMap *GameMap) DrawLevelCenteredSquare(screen *ebiten.Image, playerPos *common.Position, size int, revealAllTiles bool) {
 	var cs = ebiten.ColorScale{}
 
-	for _, idx := range indices {
+	startX, startY := graphics.SquareStartXY(playerPos.X, playerPos.Y, size)
+	endX, endY := graphics.SquareEndXY(playerPos.X, playerPos.Y, size)
+	centerOffsetX, centerOffsetY := graphics.CenterOffset(playerPos.X, playerPos.Y)
 
-		tile := gameMap.Tiles[idx]
-		isVis := gameMap.PlayerVisible.IsVisible(x, y)
+	// Draw the square section centered on the screen
+	for x := startX; x <= endX; x++ {
+		for y := startY; y <= endY; y++ {
+			idx := graphics.IndexFromXY(x, y)
+			tile := gameMap.Tiles[idx]
+			isVis := gameMap.PlayerVisible.IsVisible(x, y)
 
-		if revealAllTiles {
-			isVis = true
+			if revealAllTiles {
+				isVis = true
+			}
+
+			op := &ebiten.DrawImageOptions{}
+
+			// Calculate tile position in pixels
+			tilePixelX := tile.PixelX
+			tilePixelY := tile.PixelY
+
+			// Translate by center offset to place the player's position at the screen center
+
+			op.GeoM.Translate(float64(tilePixelX+centerOffsetX), float64(tilePixelY+centerOffsetY))
+
+			if isVis {
+				tile.IsRevealed = true
+			} else if tile.IsRevealed {
+				// Apply color modification to darken out-of-FOV tiles
+				op.ColorScale.ScaleWithColor(color.RGBA{1, 1, 1, 1})
+			}
+
+			if !tile.cm.IsEmpty() {
+				cs.SetR(tile.cm.R)
+				cs.SetG(tile.cm.G)
+				cs.SetB(tile.cm.B)
+				cs.SetA(tile.cm.A)
+				op.ColorScale.ScaleWithColorScale(cs)
+			}
+
+			screen.DrawImage(tile.image, op)
 		}
-
-		op := &ebiten.DrawImageOptions{}
-
-		if isVis {
-			op.GeoM.Translate(float64(tile.PixelX), float64(tile.PixelY))
-			gameMap.Tiles[idx].IsRevealed = true
-
-		} else if tile.IsRevealed {
-
-			op.GeoM.Translate(float64(tile.PixelX), float64(tile.PixelY))
-
-			//Blackening out tiles that are out of Fov
-			op.ColorScale.ScaleWithColor(color.RGBA{1, 1, 1, 1})
-
-		}
-
-		if !tile.cm.IsEmpty() {
-
-			cs.SetR(tile.cm.R)
-			cs.SetG(tile.cm.G)
-			cs.SetB(tile.cm.B)
-			cs.SetA(tile.cm.A)
-
-			op.ColorScale.ScaleWithColorScale(cs)
-
-		}
-
-		screen.DrawImage(tile.image, op)
-
 	}
 }
 
