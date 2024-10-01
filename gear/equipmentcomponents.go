@@ -115,10 +115,8 @@ func (r RangedWeapon) GetTargets(ecsmanger *common.EntityManager) []*ecs.Entity 
 // Todo determine whether this can be moved to the graphics package
 func (r *RangedWeapon) DisplayShootingVX(attackerPos *common.Position, defenderPos *common.Position) {
 
-	
-
-	attX, attY := common.PixelsFromPosition(attackerPos, graphics.ScreenInfo.TileWidth, graphics.ScreenInfo.TileHeight)
-	defX, defY := common.PixelsFromPosition(defenderPos, graphics.ScreenInfo.TileWidth, graphics.ScreenInfo.TileHeight)
+	attX, attY := graphics.PixelsFromLogicalXY(attackerPos.X, attackerPos.Y, graphics.ScreenInfo.TileWidth, graphics.ScreenInfo.TileHeight)
+	defX, defY := graphics.PixelsFromLogicalXY(defenderPos.X, defenderPos.Y, graphics.ScreenInfo.TileWidth, graphics.ScreenInfo.TileHeight)
 
 	arr := graphics.NewProjectile(attX, attY, defX, defY)
 

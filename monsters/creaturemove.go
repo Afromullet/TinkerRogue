@@ -147,7 +147,7 @@ func FleeFromEntityMovementAction(ecsmanager *common.EntityManager, gm *worldmap
 			fleePosition := common.Position{X: fleeTargetX, Y: fleeTargetY}
 
 			if graphics.InBounds(fleeTargetX, fleeTargetY) {
-				targetIndex := graphics.IndexFromXY(fleeTargetX, fleeTargetY)
+				targetIndex := graphics.IndexFromLogicalXY(fleeTargetX, fleeTargetY)
 				if !gm.Tiles[targetIndex].Blocked {
 					// Use InRange to check if the flee position is within the desired range
 					if creaturePosition.InRange(&fleePosition, fleeMov.Distance) {

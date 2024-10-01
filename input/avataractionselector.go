@@ -48,7 +48,7 @@ func GetPlayerMoveAction(act PlayerAction, ecsmanager *common.EntityManager,
 		Y: pl.Pos.Y + yOffset,
 	}
 
-	nextTile := gm.Tiles[graphics.IndexFromXY(nextPosition.X, nextPosition.Y)]
+	nextTile := gm.Tiles[graphics.IndexFromLogicalXY(nextPosition.X, nextPosition.Y)]
 
 	actionCost := attr.TotalMovementSpeed
 	if nextTile.Blocked {

@@ -149,7 +149,7 @@ func GoDownStairs(gm *GameMap) {
 
 func (gameMap *GameMap) Tile(pos *common.Position) *Tile {
 
-	index := graphics.IndexFromXY(pos.X, pos.Y)
+	index := graphics.IndexFromLogicalXY(pos.X, pos.Y)
 	return gameMap.Tiles[index]
 
 }
@@ -202,8 +202,69 @@ func (gameMap *GameMap) RemoveItemFromTile(index int, pos *common.Position) (*ec
 
 	return entity, nil
 }
-
 func (gameMap *GameMap) DrawLevelCenteredSquare(screen *ebiten.Image, playerPos *common.Position, size int, revealAllTiles bool) {
+	var cs = ebiten.ColorScale{}
+
+	startX, startY := graphics.SquareStartXY(playerPos.X, playerPos.Y, size)
+	endX, endY := graphics.SquareEndXY(playerPos.X, playerPos.Y, size)
+	//centerOffsetX, centerOffsetY := graphics.CenterOffset(playerPos.X, playerPos.Y)
+
+	// Get the dimensions of the screen
+	screenWidth, screenHeight := screen.Bounds().Dx(), screen.Bounds().Dy()
+
+	// Draw the square section centered on the screen
+	for x := startX; x <= endX; x++ {
+		for y := startY; y <= endY; y++ {
+			idx := graphics.IndexFromLogicalXY(x, y)
+			tile := gameMap.Tiles[idx]
+			isVis := gameMap.PlayerVisible.IsVisible(x, y)
+
+			if revealAllTiles {
+				isVis = true
+			}
+
+			op := &ebiten.DrawImageOptions{}
+
+			// Calculate tile position in pixels
+			tilePixelX := tile.PixelX
+			tilePixelY := tile.PixelY
+
+			// Apply scaling first
+			op.GeoM.Scale(float64(graphics.ScaleFactor), float64(graphics.ScaleFactor))
+
+			// Calculate the scaled tile size
+			scaledTileSize := graphics.ScreenInfo.TileWidth * graphics.ScaleFactor
+
+			// Calculate the position to center the scaled map
+			scaledCenterOffsetX := float64(screenWidth)/2 - float64(playerPos.X*scaledTileSize)
+			scaledCenterOffsetY := float64(screenHeight)/2 - float64(playerPos.Y*scaledTileSize)
+
+			// Translate the tile position
+			op.GeoM.Translate(
+				float64(tilePixelX)*float64(graphics.ScaleFactor)+scaledCenterOffsetX,
+				float64(tilePixelY)*float64(graphics.ScaleFactor)+scaledCenterOffsetY,
+			)
+
+			if isVis {
+				tile.IsRevealed = true
+			} else if tile.IsRevealed {
+				// Apply color modification to darken out-of-FOV tiles
+				op.ColorScale.ScaleWithColor(color.RGBA{1, 1, 1, 1})
+			}
+
+			if !tile.cm.IsEmpty() {
+				cs.SetR(tile.cm.R)
+				cs.SetG(tile.cm.G)
+				cs.SetB(tile.cm.B)
+				cs.SetA(tile.cm.A)
+				op.ColorScale.ScaleWithColorScale(cs)
+			}
+
+			screen.DrawImage(tile.image, op)
+		}
+	}
+}
+func (gameMap *GameMap) DrawLevelCenteredSquare2(screen *ebiten.Image, playerPos *common.Position, size int, revealAllTiles bool) {
 	var cs = ebiten.ColorScale{}
 
 	startX, startY := graphics.SquareStartXY(playerPos.X, playerPos.Y, size)
@@ -213,7 +274,7 @@ func (gameMap *GameMap) DrawLevelCenteredSquare(screen *ebiten.Image, playerPos 
 	// Draw the square section centered on the screen
 	for x := startX; x <= endX; x++ {
 		for y := startY; y <= endY; y++ {
-			idx := graphics.IndexFromXY(x, y)
+			idx := graphics.IndexFromLogicalXY(x, y)
 			tile := gameMap.Tiles[idx]
 			isVis := gameMap.PlayerVisible.IsVisible(x, y)
 
@@ -230,6 +291,7 @@ func (gameMap *GameMap) DrawLevelCenteredSquare(screen *ebiten.Image, playerPos 
 			// Translate by center offset to place the player's position at the screen center
 
 			op.GeoM.Translate(float64(tilePixelX+centerOffsetX), float64(tilePixelY+centerOffsetY))
+			//op.GeoM.Scale(float64(graphics.ScaleFactor), float64(graphics.ScaleFactor))
 
 			if isVis {
 				tile.IsRevealed = true
@@ -261,7 +323,7 @@ func (gameMap *GameMap) DrawLevel(screen *ebiten.Image, revealAllTiles bool) {
 		//for y := 0; y < gd.ScreenHeight; y++ {
 		for y := 0; y < graphics.ScreenInfo.DungeonHeight; y++ {
 
-			idx := graphics.IndexFromXY(x, y)
+			idx := graphics.IndexFromLogicalXY(x, y)
 			tile := gameMap.Tiles[idx]
 			isVis := gameMap.PlayerVisible.IsVisible(x, y)
 
@@ -309,7 +371,7 @@ func (gameMap *GameMap) CreateTiles() []*Tile {
 	for x := 0; x < graphics.ScreenInfo.DungeonWidth; x++ {
 		for y := 0; y < graphics.ScreenInfo.DungeonHeight; y++ {
 
-			index = graphics.IndexFromXY(x, y)
+			index = graphics.IndexFromLogicalXY(x, y)
 
 			pos := common.Position{X: x, Y: y}
 			wallImg := wallImgs[randgen.GetRandomBetween(0, len(wallImgs)-1)]
@@ -373,7 +435,7 @@ func (gameMap *GameMap) createRoom(room Rect) {
 	for y := room.Y1 + 1; y < room.Y2; y++ {
 		for x := room.X1 + 1; x < room.X2; x++ {
 
-			index := graphics.IndexFromXY(x, y)
+			index := graphics.IndexFromLogicalXY(x, y)
 			gameMap.Tiles[index].Blocked = false
 			gameMap.Tiles[index].TileType = FLOOR
 
@@ -388,7 +450,7 @@ func (gameMap *GameMap) createRoom(room Rect) {
 func (gameMap *GameMap) createHorizontalTunnel(x1 int, x2 int, y int) {
 
 	for x := min(x1, x2); x < max(x1, x2)+1; x++ {
-		index := graphics.IndexFromXY(x, y)
+		index := graphics.IndexFromLogicalXY(x, y)
 		if index > 0 && index < graphics.ScreenInfo.DungeonWidth*graphics.ScreenInfo.DungeonHeight {
 			gameMap.Tiles[index].Blocked = false
 			gameMap.Tiles[index].TileType = FLOOR
@@ -403,7 +465,7 @@ func (gameMap *GameMap) createHorizontalTunnel(x1 int, x2 int, y int) {
 func (gameMap *GameMap) createVerticalTunnel(y1 int, y2 int, x int) {
 
 	for y := min(y1, y2); y < max(y1, y2)+1; y++ {
-		index := graphics.IndexFromXY(x, y)
+		index := graphics.IndexFromLogicalXY(x, y)
 
 		if index > 0 && index < graphics.ScreenInfo.DungeonWidth*graphics.ScreenInfo.DungeonHeight {
 			gameMap.Tiles[index].Blocked = false
@@ -425,7 +487,7 @@ func (gm *GameMap) PlaceStairs() {
 
 	x, y := gm.Rooms[randRoom].Center()
 
-	ind := graphics.IndexFromXY(x, y)
+	ind := graphics.IndexFromLogicalXY(x, y)
 
 	gm.Tiles[ind].TileType = STAIRS_DOWN
 
@@ -464,6 +526,6 @@ func (gameMap GameMap) InBounds(x, y int) bool {
 
 // TODO: Change this to check for WALL, not blocked
 func (gameMap GameMap) IsOpaque(x, y int) bool {
-	idx := graphics.IndexFromXY(x, y)
+	idx := graphics.IndexFromLogicalXY(x, y)
 	return gameMap.Tiles[idx].TileType == WALL
 }

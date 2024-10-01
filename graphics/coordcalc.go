@@ -1,5 +1,9 @@
 package graphics
 
+import (
+	"github.com/hajimehoshi/ebiten/v2"
+)
+
 var LevelHeight int = 0
 var LevelWidth int = 0
 var StatsUIOffset int = 1000 //Offset to where the UI starts
@@ -59,7 +63,7 @@ func (s ScreenData) GetCanvasHeight() int {
 
 // IndexFromXY gets the index of the map array from a given X,Y TILE coordinate.
 // This coordinate is logical tiles, not pixels.
-func IndexFromXY(x int, y int) int {
+func IndexFromLogicalXY(x int, y int) int {
 
 	return (y * ScreenInfo.DungeonWidth) + x
 }
@@ -70,68 +74,50 @@ func XYFromIndex(i int) (int, int) {
 	return i % ScreenInfo.DungeonWidth, i / ScreenInfo.DungeonWidth
 }
 
+func PixelsFromLogicalXY(x, y, tileWidth, tileHeight int) (int, int) {
+	return x * tileWidth, y * tileHeight
+
+}
+
 // Gets the pixels from the index
 func PixelsFromIndex(i int) (int, int) {
 
-	x, y := XYFromIndex(i)
+	x, y := i%ScreenInfo.DungeonWidth, i/ScreenInfo.DungeonWidth
 	return x * ScreenInfo.TileWidth, y * ScreenInfo.TileHeight
 }
 
 // Return the Grid X,Y coordinates from pixel positions
-func XYFromPixels(x, y int) (int, int) {
+func LogicalXYFromPixels(x, y int) (int, int) {
 
 	return x / ScreenInfo.TileWidth, y / ScreenInfo.TileHeight
 
 }
 
-// Calculates the offset to the center for an X,Y position
-// Applies to the translate when drawing
-// I.E op.GeoM.Translate(float64(tilePixelX+centerOffsetX), float64(tilePixelY+centerOffsetY))
-func CenterOffset(x, y int) (int, int) {
-	screenCenterX := LevelWidth / 2
-	screenCenterY := LevelHeight / 2
+// Helper function to convert screen coordinates to world coordinates
+func ScreenToWorldCoordinates(screenX, screenY, posX, posY int, scaleFactor float64) (int, int) {
+	screenWidth, screenHeight := ebiten.WindowSize()
+	scaledTileSize := float64(ScreenInfo.TileWidth) * scaleFactor
 
-	// Calculate the player's position in pixels
-	pixelX := x * ScreenInfo.TileWidth
-	pixelY := y * ScreenInfo.TileHeight
+	worldX := int(float64(screenX-screenWidth/2)/scaledTileSize) + posX
+	worldY := int(float64(screenY-screenHeight/2)/scaledTileSize) + posY
 
-	return screenCenterX - pixelX, screenCenterY - pixelY
+	return worldX, worldY
 }
 
-// Gets the startX and startY for a square using logical X,Y, not pixel X,Y
-func SquareStartXY(x, y, size int) (int, int) {
+// Helper function to convert screen coordinates to world coordinates
+func ScreenToWorldCoordinates2(screenX, screenY, posX, posY int) (int, int) {
+	screenWidth, screenHeight := ebiten.WindowSize()
 
-	halfSize := size / 2
+	// Calculate the scaled tile size
+	scaledTileSize := float64(ScreenInfo.TileWidth) * float64(ScaleFactor)
 
-	startX := x - halfSize
-	startY := y - halfSize
+	// Calculate the position to center the scaled map
+	scaledCenterOffsetX := float64(screenWidth)/2 - float64(posX)*scaledTileSize
+	scaledCenterOffsetY := float64(screenHeight)/2 - float64(posY)*scaledTileSize
 
-	if startX < 0 {
-		startX = 0
-	}
-	if startY < 0 {
-		startY = 0
-	}
+	// Calculate world coordinates
+	worldX := int((float64(screenX) - scaledCenterOffsetX) / (float64(ScaleFactor) * float64(ScreenInfo.TileWidth)))
+	worldY := int((float64(screenY) - scaledCenterOffsetY) / (float64(ScaleFactor) * float64(ScreenInfo.TileHeight)))
 
-	return startX, startY
-
-}
-
-// Gets the endX and endX for a square using logical X,Y, not pixel X,Y
-func SquareEndXY(x, y, size int) (int, int) {
-
-	halfSize := size / 2
-
-	endX := x + halfSize
-	endY := y + halfSize
-
-	if endX >= ScreenInfo.DungeonWidth {
-		endX = ScreenInfo.DungeonWidth - 1
-	}
-	if endY >= ScreenInfo.DungeonHeight {
-		endY = ScreenInfo.DungeonHeight - 1
-	}
-
-	return endX, endY
-
+	return worldX, worldY
 }

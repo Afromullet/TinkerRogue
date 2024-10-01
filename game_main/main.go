@@ -163,7 +163,7 @@ func RemoveDeadEntities(ecsmanager *common.EntityManager, am timesystem.ActionMa
 			if attr.CurrentHealth <= 0 {
 
 				pos := common.GetPosition(c.Entity)
-				ind := graphics.IndexFromXY(pos.X, pos.Y)
+				ind := graphics.IndexFromLogicalXY(pos.X, pos.Y)
 				gm.Tiles[ind].Blocked = false
 
 				am.RemoveActionQueueForEntity(c.Entity)
@@ -199,11 +199,16 @@ func (g *Game) Update() error {
 // Draw is called each draw cycle and is where we will blit.
 func (g *Game) Draw(screen *ebiten.Image) {
 
-	g.gameMap.DrawLevel(screen, DEBUG_MODE)
-	rendering.ProcessRenderables(&g.em, g.gameMap, screen, DEBUG_MODE)
+	graphics.ScreenBoundsX = screen.Bounds().Dx()
+	graphics.ScreenBoundsY = screen.Bounds().Dy()
 
-	//g.drawingMap.DrawLevelCenteredSquare(screen, g.playerData.Pos, 30, DEBUG_MODE)
-	//rendering.ProcessRenderablesInSquare(&g.em, g.gameMap, screen, g.playerData.Pos, 30, DEBUG_MODE)
+	if graphics.MAP_SCROLLING_ENABLED {
+		g.drawingMap.DrawLevelCenteredSquare(screen, g.playerData.Pos, graphics.ViewableSquareSize, DEBUG_MODE)
+		rendering.ProcessRenderablesInSquare(&g.em, g.gameMap, screen, g.playerData.Pos, graphics.ViewableSquareSize, DEBUG_MODE)
+	} else {
+		g.gameMap.DrawLevel(screen, DEBUG_MODE)
+		rendering.ProcessRenderables(&g.em, g.gameMap, screen, DEBUG_MODE)
+	}
 
 	gui.ProcessUserLog(g.em, screen, &g.gameUI.MsgUI)
 

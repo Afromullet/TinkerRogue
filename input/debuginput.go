@@ -19,7 +19,7 @@ func PlayerDebugActions(pl *avatar.PlayerData) {
 
 		cursorX, cursorY := ebiten.CursorPosition()
 
-		gridX, gridY := graphics.XYFromPixels(cursorX, cursorY)
+		gridX, gridY := graphics.LogicalXYFromPixels(cursorX, cursorY)
 
 		pl.Pos.X = gridX
 		pl.Pos.Y = gridY

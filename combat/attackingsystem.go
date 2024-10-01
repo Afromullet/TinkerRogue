@@ -138,7 +138,7 @@ func PerformAttack(ecsmanagr *common.EntityManager, pl *avatar.PlayerData, gm *w
 
 	RemoveDeadEntity(ecsmanagr, pl, gm, defender)
 	return false
-	//RemoveDeadEntity(ecsmanagr, pl, gm, defender)
+
 }
 
 // Does not remove the player if they die.
@@ -147,9 +147,9 @@ func RemoveDeadEntity(ecsmnager *common.EntityManager, pl *avatar.PlayerData, gm
 	defenderPos := common.GetPosition(defender)
 	defAttr := common.GetAttributes(defender)
 	if pl.Pos.IsEqual(defenderPos) {
-		graphics.IndexFromXY(defenderPos.X, defenderPos.Y) //Just here as a placeholder. Does nothing.
+		graphics.IndexFromLogicalXY(defenderPos.X, defenderPos.Y) //Just here as a placeholder. Does nothing.
 	} else if defAttr.CurrentHealth <= 0 {
-		index := graphics.IndexFromXY(defenderPos.X, defenderPos.Y)
+		index := graphics.IndexFromLogicalXY(defenderPos.X, defenderPos.Y)
 
 		gm.Tiles[index].Blocked = false
 		ecsmnager.World.DisposeEntity(defender)
@@ -157,6 +157,7 @@ func RemoveDeadEntity(ecsmnager *common.EntityManager, pl *avatar.PlayerData, gm
 
 }
 
+// Used to update the messages that will be displayed in the GUI
 func UpdateAttackMessage(attacker *ecs.Entity, attackSuccess, isPlayerAttacking bool, damage int) {
 
 	attackerMessage := ""

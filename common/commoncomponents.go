@@ -4,8 +4,6 @@ import (
 	"game_main/graphics"
 	"math"
 	"strconv"
-
-	"github.com/hajimehoshi/ebiten/v2"
 )
 
 type Position struct {
@@ -46,13 +44,6 @@ func (p *Position) InRange(other *Position, distance int) bool {
 
 }
 
-// Gets the Pixel X,Y, not the tile XY
-func PixelsFromPosition(pos *Position, tileWidth, tileHeight int) (int, int) {
-
-	return pos.X * tileWidth, pos.Y * tileHeight
-
-}
-
 // Get the Tile X,Y from the Pixels
 func PositionFromIndex(i, dungeonWidth int) Position {
 
@@ -69,14 +60,6 @@ func PositionFromPixels(x, y int) Position {
 		X: x / graphics.ScreenInfo.TileWidth,
 		Y: y / graphics.ScreenInfo.TileHeight,
 	}
-
-}
-
-// Gets the index in the tilemap from the cursor
-func GetTileIndexFromCursor() int {
-
-	pos := PositionFromPixels(ebiten.CursorPosition())
-	return graphics.IndexFromXY(pos.X, pos.Y)
 
 }
 
@@ -120,29 +103,6 @@ func NewBaseAttributes(maxHealth, attackBonus, baseAC, baseProt, baseMovSpeed in
 		BaseMovementSpeed: baseMovSpeed,
 	}
 }
-
-/*
-func (a *Attributes) UpdateEntityAttributes(e *ecs.Entity) {
-
-	armor := GetComponentType[*gear.Armor](e, gear.ArmorComponent)
-
-	ac := 0
-	prot := 0
-	dodge := float32(0.0)
-
-	if armor != nil {
-
-		ac = armor.ArmorClass
-		prot = armor.Protection
-		dodge = float32(armor.DodgeChance)
-	}
-
-	a.TotalArmorClass = a.BaseArmorClass + ac
-	a.TotalProtection = a.BaseProtection + prot
-	a.TotalDodgeChance = a.BaseDodgeChance + dodge
-
-}
-*/
 
 func (a Attributes) AttributeText() string {
 	s := ""

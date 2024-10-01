@@ -1,9 +1,8 @@
 MAJOR
 
-
+Change graphics.TIleWidth to grapics.TileSize. Same for height
 
 Room Decoration (maybe)
-NEED TO ADD AND REMOVE COMPONENTS WHEN CHANGING ARMOR
 
 Check for functions which are not called
 
@@ -15,7 +14,11 @@ Test and make sure attributes are calculated correctly during combat
 
 Need to remove monsters once they are dead rather than next turnb
 
-Need to only draw player ranged attack when they're actually shooting
+Need to only draw player ranged attack when they're actually shooting - What did I mean with this?
+
+Make sure ActionManager works as you want it to work
+
+Generation for throwables with properties using the lootable probabilities
 
 
 ___Energy/Time System__

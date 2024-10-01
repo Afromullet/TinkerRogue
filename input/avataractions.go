@@ -65,6 +65,10 @@ func DrawThrowableAOE(pl *avatar.PlayerData, gm *worldmap.GameMap) {
 
 	cursorX, cursorY := ebiten.CursorPosition()
 
+	if graphics.MAP_SCROLLING_ENABLED {
+		cursorX, cursorY = graphics.ScreenToWorldCoordinates2(cursorX, cursorY, pl.Pos.X, pl.Pos.Y)
+	}
+
 	s := pl.ThrowingAOEShape
 
 	var indices []int
@@ -259,7 +263,7 @@ func DrawRangedAttackAOE(pl *avatar.PlayerData, gm *worldmap.GameMap) {
 // Not making this a function of worldmap.GameMap since right now only the player uses it
 func IsCreatureOnTile(ecsmanager *common.EntityManager, pos *common.Position, gm *worldmap.GameMap) bool {
 
-	index := graphics.IndexFromXY(pos.X, pos.Y)
+	index := graphics.IndexFromLogicalXY(pos.X, pos.Y)
 
 	nextTile := gm.Tiles[index]
 
@@ -279,10 +283,10 @@ func MovePlayer(ecsmanager *common.EntityManager, pl *avatar.PlayerData, gm *wor
 		Y: pl.Pos.Y + yOffset,
 	}
 
-	index := graphics.IndexFromXY(nextPosition.X, nextPosition.Y)
+	index := graphics.IndexFromLogicalXY(nextPosition.X, nextPosition.Y)
 	nextTile := gm.Tiles[index]
 
-	index = graphics.IndexFromXY(pl.Pos.X, pl.Pos.Y)
+	index = graphics.IndexFromLogicalXY(pl.Pos.X, pl.Pos.Y)
 	oldTile := gm.Tiles[index]
 
 	if !nextTile.Blocked {
