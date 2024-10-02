@@ -61,20 +61,30 @@ type VisualEffectArea struct {
 	visEffects []VisualEffect
 }
 
-func NewVisualEffectArea(shape TileBasedShape, vx VisualEffect) VisualEffectArea {
-
+func NewVisualEffectArea(centerX, centerY int, shape TileBasedShape, vx VisualEffect) VisualEffectArea {
 	indices := shape.GetIndices()
 	visEffects := make([]VisualEffect, 0)
 
 	for _, ind := range indices {
-		x, y := PixelsFromIndex(ind)
 
-		if vx != nil {
-			vx.SetVXCommon(x, y, vx.VXImg())
-
-			visEffects = append(visEffects, vx.Copy())
+		var x, y = 0, 0
+		if MAP_SCROLLING_ENABLED {
+			x, y = LogicalCoordsFromIndex(ind)
+		} else {
+			x, y = PixelsFromIndex(ind)
 		}
 
+		// Transform logical coordinates to screen coordinates
+		screenX, screenY := OffsetFromCenter(centerX, centerY, x*ScreenInfo.TileSize, y*ScreenInfo.TileSize, ScreenInfo)
+
+		if vx != nil {
+			if MAP_SCROLLING_ENABLED {
+				vx.SetVXCommon(int(screenX), int(screenY), vx.VXImg())
+			} else {
+				vx.SetVXCommon(x, y, vx.VXImg())
+			}
+			visEffects = append(visEffects, vx.Copy())
+		}
 	}
 
 	return VisualEffectArea{

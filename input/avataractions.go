@@ -36,7 +36,7 @@ func ApplyThrowable(ecsmanager *common.EntityManager, item *gear.Item, pl *avata
 	if t.VX != nil {
 
 		t.VX.ResetVX()
-		graphics.AddVXArea(graphics.NewVisualEffectArea(t.Shape, t.VX))
+		graphics.AddVXArea(graphics.NewVisualEffectArea(pl.Pos.X, pl.Pos.Y, t.Shape, t.VX))
 
 	}
 
@@ -68,10 +68,6 @@ func DrawThrowableAOE(pl *avatar.PlayerData, gm *worldmap.GameMap) {
 		cursorX, cursorY = graphics.TransformCursorPosition(cursorX, cursorY, pl.Pos.X, pl.Pos.Y, graphics.ScreenInfo)
 
 	}
-
-	//if graphics.MAP_SCROLLING_ENABLED {
-	//cursorX, cursorY = graphics.ScreenToWorldCoordinates(cursorX, cursorY, pl.Pos.X, pl.Pos.Y)
-	//}
 
 	s := pl.ThrowingAOEShape
 

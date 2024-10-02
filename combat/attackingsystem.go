@@ -88,7 +88,12 @@ func RangedAttackSystem(ecsmanager *common.EntityManager, pl *avatar.PlayerData,
 				damage := weapon.CalculateDamage()
 
 				attackSuccess = PerformAttack(ecsmanager, pl, gm, weapon.CalculateDamage(), attacker, t)
-				weapon.DisplayShootingVX(attackerPos, defenderPos)
+
+				if graphics.MAP_SCROLLING_ENABLED {
+					weapon.DisplayCenteredShootingVX(attackerPos, defenderPos)
+				} else {
+					weapon.DisplayShootingVX(attackerPos, defenderPos)
+				}
 				UpdateAttackMessage(attacker, attackSuccess, playerAttacking, damage)
 
 			}

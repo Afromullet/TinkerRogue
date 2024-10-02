@@ -5,6 +5,7 @@ import (
 	"game_main/avatar"
 	"game_main/common"
 	"game_main/graphics"
+	"math"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
@@ -19,7 +20,15 @@ func PlayerDebugActions(pl *avatar.PlayerData) {
 
 		cursorX, cursorY := ebiten.CursorPosition()
 
-		gridX, gridY := graphics.LogicalXYFromPixels(cursorX, cursorY)
+		var gridX, gridY = 0, 0
+		if graphics.MAP_SCROLLING_ENABLED {
+			logicalX, logicalY := graphics.TransformCursorPosition(cursorX, cursorY, pl.Pos.X, pl.Pos.Y, graphics.ScreenInfo)
+			gridX = int(math.Round(float64(logicalX) / float64(graphics.ScreenInfo.TileSize)))
+			gridY = int(math.Round(float64(logicalY) / float64(graphics.ScreenInfo.TileSize)))
+
+		} else {
+			gridX, gridY = graphics.LogicalXYFromPixels(cursorX, cursorY)
+		}
 
 		pl.Pos.X = gridX
 		pl.Pos.Y = gridY

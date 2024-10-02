@@ -122,3 +122,33 @@ func (r *RangedWeapon) DisplayShootingVX(attackerPos *common.Position, defenderP
 
 	graphics.AddVX(arr)
 }
+
+func (r *RangedWeapon) DisplayCenteredShootingVX(attackerPos *common.Position, defenderPos *common.Position) {
+	// Convert logical coordinates to screen coordinates for attacker
+	attScreenX, attScreenY := graphics.OffsetFromCenter(
+		attackerPos.X,
+		attackerPos.Y,
+		attackerPos.X*graphics.ScreenInfo.TileSize,
+		attackerPos.Y*graphics.ScreenInfo.TileSize,
+		graphics.ScreenInfo,
+	)
+
+	// Convert logical coordinates to screen coordinates for defender
+	defScreenX, defScreenY := graphics.OffsetFromCenter(
+		attackerPos.X, // Use attacker's position as the reference point
+		attackerPos.Y,
+		defenderPos.X*graphics.ScreenInfo.TileSize,
+		defenderPos.Y*graphics.ScreenInfo.TileSize,
+		graphics.ScreenInfo,
+	)
+
+	// Create the projectile using the screen coordinates
+	arr := graphics.NewProjectile(
+		int(attScreenX),
+		int(attScreenY),
+		int(defScreenX),
+		int(defScreenY),
+	)
+
+	graphics.AddVX(arr)
+}

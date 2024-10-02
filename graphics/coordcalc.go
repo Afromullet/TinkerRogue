@@ -1,9 +1,5 @@
 package graphics
 
-import (
-	"github.com/hajimehoshi/ebiten/v2"
-)
-
 var LevelHeight int = 0
 var LevelWidth int = 0
 var StatsUIOffset int = 1000 //Offset to where the UI starts
@@ -94,13 +90,8 @@ func LogicalXYFromPixels(x, y int) (int, int) {
 
 }
 
-// Helper function to convert screen coordinates to world coordinates
-func ScreenToWorldCoordinates(screenX, screenY, posX, posY int, scaleFactor float64) (int, int) {
-	screenWidth, screenHeight := ebiten.WindowSize()
-	scaledTileSize := float64(ScreenInfo.TileSize) * scaleFactor
-
-	worldX := int(float64(screenX-screenWidth/2)/scaledTileSize) + posX
-	worldY := int(float64(screenY-screenHeight/2)/scaledTileSize) + posY
-
-	return worldX, worldY
+// Gets the logical coordinates from the index
+func LogicalCoordsFromIndex(i int) (int, int) {
+	x, y := i%ScreenInfo.DungeonWidth, i/ScreenInfo.DungeonWidth
+	return x, y
 }

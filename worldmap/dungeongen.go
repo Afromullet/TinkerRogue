@@ -227,7 +227,7 @@ func (gameMap *GameMap) DrawLevelCenteredSquare(screen *ebiten.Image, playerPos 
 
 			// Apply scaling first
 			op.GeoM.Scale(float64(graphics.ScreenInfo.ScaleFactor), float64(graphics.ScreenInfo.ScaleFactor))
-			offsetX, offsetY := graphics.OffsetFromPlayer(playerPos.X, playerPos.Y, tile.PixelX, tile.PixelY, graphics.ScreenInfo)
+			offsetX, offsetY := graphics.OffsetFromCenter(playerPos.X, playerPos.Y, tile.PixelX, tile.PixelY, graphics.ScreenInfo)
 			op.GeoM.Translate(offsetX, offsetY)
 
 			if isVis {
