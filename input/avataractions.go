@@ -41,7 +41,7 @@ func ApplyThrowable(ecsmanager *common.EntityManager, item *gear.Item, pl *avata
 	}
 
 	//t.ReadyThrowAreaVX()
-	pos := common.GetTilePositions(t.Shape.GetIndices())
+	pos := common.GetTilePositions(t.Shape.GetIndices(), graphics.ScreenInfo.DungeonWidth)
 
 	//TODO, this will be slow in case there are a lot of creatures
 	for _, c := range ecsmanager.World.Query(ecsmanager.WorldTags["monsters"]) {
@@ -65,7 +65,7 @@ func DrawThrowableAOE(pl *avatar.PlayerData, gm *worldmap.GameMap) {
 
 	cursorX, cursorY := ebiten.CursorPosition()
 	if graphics.MAP_SCROLLING_ENABLED {
-		cursorX, cursorY = graphics.TransformPixelPosition(cursorX, cursorY, pl.Pos.X, pl.Pos.Y, graphics.ScreenInfo)
+		cursorX, cursorY = graphics.TransformPixelPosition(pl.Pos.X, pl.Pos.Y, cursorX, cursorY, graphics.ScreenInfo)
 
 	}
 
@@ -88,7 +88,8 @@ func DrawThrowableAOE(pl *avatar.PlayerData, gm *worldmap.GameMap) {
 
 	for _, i := range indices {
 
-		pos := common.PositionFromIndex(i, graphics.ScreenInfo.DungeonWidth)
+		x, y := graphics.CoordTransformer.LogicalXYFromIndex(i)
+		pos := common.Position{X: x, Y: y}
 
 		if pos.InRange(pl.Pos, throwable.ThrowingRange) {
 			gm.ApplyColorMatrixToIndex(i, graphics.GreenColorMatrix)
@@ -219,7 +220,7 @@ func DrawRangedAttackAOE(pl *avatar.PlayerData, gm *worldmap.GameMap) {
 
 	cursorX, cursorY := ebiten.CursorPosition()
 	if graphics.MAP_SCROLLING_ENABLED {
-		cursorX, cursorY = graphics.TransformPixelPosition(cursorX, cursorY, pl.Pos.X, pl.Pos.Y, graphics.ScreenInfo)
+		cursorX, cursorY = graphics.TransformPixelPosition(pl.Pos.X, pl.Pos.Y, cursorX, cursorY, graphics.ScreenInfo)
 
 	}
 
@@ -246,7 +247,9 @@ func DrawRangedAttackAOE(pl *avatar.PlayerData, gm *worldmap.GameMap) {
 
 	for _, i := range indices {
 
-		pos := common.PositionFromIndex(i, graphics.ScreenInfo.DungeonWidth)
+		//pos := common.PositionFromIndex(i, graphics.ScreenInfo.DungeonWidth)
+		x, y := graphics.CoordTransformer.LogicalXYFromIndex(i)
+		pos := common.Position{X: x, Y: y}
 
 		if pos.InRange(pl.Pos, pl.Equipment.RangedWeaponMaxDistance) {
 			gm.ApplyColorMatrixToIndex(i, graphics.GreenColorMatrix)
@@ -267,7 +270,7 @@ func DrawRangedAttackAOE(pl *avatar.PlayerData, gm *worldmap.GameMap) {
 // Not making this a function of worldmap.GameMap since right now only the player uses it
 func IsCreatureOnTile(ecsmanager *common.EntityManager, pos *common.Position, gm *worldmap.GameMap) bool {
 
-	index := graphics.IndexFromLogicalXY(pos.X, pos.Y)
+	index := graphics.CoordTransformer.IndexFromLogicalXY(pos.X, pos.Y)
 
 	nextTile := gm.Tiles[index]
 
@@ -287,19 +290,15 @@ func MovePlayer(ecsmanager *common.EntityManager, pl *avatar.PlayerData, gm *wor
 		Y: pl.Pos.Y + yOffset,
 	}
 
-	index := graphics.IndexFromLogicalXY(nextPosition.X, nextPosition.Y)
+	index := graphics.CoordTransformer.IndexFromLogicalXY(nextPosition.X, nextPosition.Y)
 	nextTile := gm.Tiles[index]
 
-	index = graphics.IndexFromLogicalXY(pl.Pos.X, pl.Pos.Y)
+	index = graphics.CoordTransformer.IndexFromLogicalXY(pl.Pos.X, pl.Pos.Y)
 	oldTile := gm.Tiles[index]
 
 	if !nextTile.Blocked {
 
-		logicalX := pl.Pos.X - graphics.ScreenInfo.DungeonWidth/2
-		logicalY := pl.Pos.Y - graphics.ScreenInfo.DungeonHeight/2
-		gm.PlayerVisible.Compute(gm, logicalX, logicalY, 8)
-
-		//gm.PlayerVisible.Compute(gm, pl.Pos.X, pl.Pos.Y, 8)
+		gm.PlayerVisible.Compute(gm, pl.Pos.X, pl.Pos.Y, 8)
 
 		pl.Pos.X = nextPosition.X
 		pl.Pos.Y = nextPosition.Y

@@ -152,9 +152,9 @@ func RemoveDeadEntity(ecsmnager *common.EntityManager, pl *avatar.PlayerData, gm
 	defenderPos := common.GetPosition(defender)
 	defAttr := common.GetAttributes(defender)
 	if pl.Pos.IsEqual(defenderPos) {
-		graphics.IndexFromLogicalXY(defenderPos.X, defenderPos.Y) //Just here as a placeholder. Does nothing.
+		graphics.CoordTransformer.IndexFromLogicalXY(defenderPos.X, defenderPos.Y) //Just here as a placeholder. Does nothing.
 	} else if defAttr.CurrentHealth <= 0 {
-		index := graphics.IndexFromLogicalXY(defenderPos.X, defenderPos.Y)
+		index := graphics.CoordTransformer.IndexFromLogicalXY(defenderPos.X, defenderPos.Y)
 
 		gm.Tiles[index].Blocked = false
 		ecsmnager.World.DisposeEntity(defender)

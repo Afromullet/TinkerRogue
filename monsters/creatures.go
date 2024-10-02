@@ -76,7 +76,7 @@ func (c *Creature) UpdatePosition(gm *worldmap.GameMap, currentPosition *common.
 
 	p := currentPosition
 
-	index := graphics.IndexFromLogicalXY(p.X, p.Y)
+	index := graphics.CoordTransformer.IndexFromLogicalXY(p.X, p.Y)
 	oldTile := gm.Tiles[index]
 
 	if len(c.Path) > 1 {
@@ -89,7 +89,7 @@ func (c *Creature) UpdatePosition(gm *worldmap.GameMap, currentPosition *common.
 		c.Path = c.Path[:0]
 	}
 
-	index = graphics.IndexFromLogicalXY(p.X, p.Y)
+	index = graphics.CoordTransformer.IndexFromLogicalXY(p.X, p.Y)
 
 	nextTile := gm.Tiles[index]
 

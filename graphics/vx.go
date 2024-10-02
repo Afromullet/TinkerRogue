@@ -69,9 +69,9 @@ func NewVisualEffectArea(centerX, centerY int, shape TileBasedShape, vx VisualEf
 
 		var x, y = 0, 0
 		if MAP_SCROLLING_ENABLED {
-			x, y = LogicalCoordsFromIndex(ind)
+			x, y = CoordTransformer.LogicalXYFromIndex(ind)
 		} else {
-			x, y = PixelsFromIndex(ind)
+			x, y = CoordTransformer.PixelsFromIndex(ind)
 		}
 
 		// Transform logical coordinates to screen coordinates

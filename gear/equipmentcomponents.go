@@ -91,7 +91,7 @@ func (r RangedWeapon) CalculateDamage() int {
 // of the ranged weapon
 func (r RangedWeapon) GetTargets(ecsmanger *common.EntityManager) []*ecs.Entity {
 
-	pos := common.GetTilePositions(r.TargetArea.GetIndices())
+	pos := common.GetTilePositions(r.TargetArea.GetIndices(), graphics.ScreenInfo.DungeonWidth)
 	targets := make([]*ecs.Entity, 0)
 
 	//TODO, this will be slow in case there are a lot of creatures
@@ -115,8 +115,8 @@ func (r RangedWeapon) GetTargets(ecsmanger *common.EntityManager) []*ecs.Entity 
 // Todo determine whether this can be moved to the graphics package
 func (r *RangedWeapon) DisplayShootingVX(attackerPos *common.Position, defenderPos *common.Position) {
 
-	attX, attY := graphics.PixelsFromLogicalXY(attackerPos.X, attackerPos.Y, graphics.ScreenInfo.TileSize, graphics.ScreenInfo.TileSize)
-	defX, defY := graphics.PixelsFromLogicalXY(defenderPos.X, defenderPos.Y, graphics.ScreenInfo.TileSize, graphics.ScreenInfo.TileSize)
+	attX, attY := graphics.CoordTransformer.PixelsFromLogicalXY(attackerPos.X, attackerPos.Y, graphics.ScreenInfo.TileSize)
+	defX, defY := graphics.CoordTransformer.PixelsFromLogicalXY(defenderPos.X, defenderPos.Y, graphics.ScreenInfo.TileSize)
 
 	arr := graphics.NewProjectile(attX, attY, defX, defY)
 

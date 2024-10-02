@@ -39,7 +39,7 @@ func CreateCreatureFromTemplate(manager common.EntityManager, m JSONMonster, gm 
 
 	ent.AddComponent(common.PositionComponent, &common.Position{X: xPos, Y: yPos})
 
-	ind := graphics.IndexFromLogicalXY(xPos, yPos)
+	ind := graphics.CoordTransformer.IndexFromLogicalXY(xPos, yPos)
 	gm.Tiles[ind].Blocked = true
 
 	attr := common.Attributes{

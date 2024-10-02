@@ -108,7 +108,7 @@ type TileBasedShape interface {
 	GetIndices() []int
 	UpdatePosition(pixelX int, pixelY int)
 	UpdateShape(updater ShapeUpdater)
-	StartPosition() (int, int)
+	StartPositionPixels() (int, int)
 }
 
 // The square is drawn around (PixelX,PixelY)
@@ -123,12 +123,12 @@ func (s *TileSquare) GetIndices() []int {
 	halfSize := s.Size / 2
 	indices := make([]int, 0)
 
-	gridX, gridY := LogicalXYFromPixels(s.PixelX, s.PixelY)
+	gridX, gridY := CoordTransformer.LogicalXYFromPixels(s.PixelX, s.PixelY)
 
 	for y := gridY - halfSize; y <= gridY+halfSize; y++ {
 		for x := gridX - halfSize; x <= gridX+halfSize; x++ {
 			if InBounds(x, y) {
-				index := IndexFromLogicalXY(x, y)
+				index := CoordTransformer.IndexFromLogicalXY(x, y)
 				indices = append(indices, index)
 			}
 		}
@@ -152,7 +152,7 @@ func (s *TileSquare) UpdateShape(updater ShapeUpdater) {
 
 }
 
-func (s *TileSquare) StartPosition() (int, int) {
+func (s *TileSquare) StartPositionPixels() (int, int) {
 
 	return s.PixelX, s.PixelY
 
@@ -178,7 +178,7 @@ type TileLine struct {
 func (l *TileLine) GetIndices() []int {
 	indices := make([]int, 0)
 
-	gridX, gridY := LogicalXYFromPixels(l.pixelX, l.pixelY)
+	gridX, gridY := CoordTransformer.LogicalXYFromPixels(l.pixelX, l.pixelY)
 
 	for i := 0; i < l.length; i++ {
 		var x, y int
@@ -204,7 +204,7 @@ func (l *TileLine) GetIndices() []int {
 		}
 
 		if InBounds(x, y) {
-			index := IndexFromLogicalXY(x, y)
+			index := CoordTransformer.IndexFromLogicalXY(x, y)
 			indices = append(indices, index)
 		}
 	}
@@ -226,7 +226,7 @@ func (l *TileLine) UpdateShape(updater ShapeUpdater) {
 
 }
 
-func (l *TileLine) StartPosition() (int, int) {
+func (l *TileLine) StartPositionPixels() (int, int) {
 
 	return l.pixelX, l.pixelY
 
@@ -253,7 +253,7 @@ type TileCone struct {
 func (c *TileCone) GetIndices() []int {
 	indices := make([]int, 0)
 
-	gridX, gridY := LogicalXYFromPixels(c.pixelX, c.pixelY)
+	gridX, gridY := CoordTransformer.LogicalXYFromPixels(c.pixelX, c.pixelY)
 
 	// Loop through each step of the cone's length
 	for i := 0; i < c.length; i++ {
@@ -262,7 +262,7 @@ func (c *TileCone) GetIndices() []int {
 			for j := -i; j <= i; j++ { // Widening cone
 				x, y := gridX+j, gridY-i
 				if InBounds(x, y) {
-					index := IndexFromLogicalXY(x, y)
+					index := CoordTransformer.IndexFromLogicalXY(x, y)
 					indices = append(indices, index)
 				}
 			}
@@ -270,7 +270,7 @@ func (c *TileCone) GetIndices() []int {
 			for j := -i; j <= i; j++ {
 				x, y := gridX+j, gridY+i
 				if InBounds(x, y) {
-					index := IndexFromLogicalXY(x, y)
+					index := CoordTransformer.IndexFromLogicalXY(x, y)
 					indices = append(indices, index)
 				}
 			}
@@ -278,7 +278,7 @@ func (c *TileCone) GetIndices() []int {
 			for j := -i; j <= i; j++ {
 				x, y := gridX+i, gridY+j
 				if InBounds(x, y) {
-					index := IndexFromLogicalXY(x, y)
+					index := CoordTransformer.IndexFromLogicalXY(x, y)
 					indices = append(indices, index)
 				}
 			}
@@ -286,7 +286,7 @@ func (c *TileCone) GetIndices() []int {
 			for j := -i; j <= i; j++ {
 				x, y := gridX-i, gridY+j
 				if InBounds(x, y) {
-					index := IndexFromLogicalXY(x, y)
+					index := CoordTransformer.IndexFromLogicalXY(x, y)
 					indices = append(indices, index)
 				}
 			}
@@ -294,7 +294,7 @@ func (c *TileCone) GetIndices() []int {
 			for j := -i; j <= i; j++ {
 				x, y := gridX+i, gridY-i+j // Move diagonally up-right
 				if InBounds(x, y) {
-					index := IndexFromLogicalXY(x, y)
+					index := CoordTransformer.IndexFromLogicalXY(x, y)
 					indices = append(indices, index)
 				}
 			}
@@ -302,7 +302,7 @@ func (c *TileCone) GetIndices() []int {
 			for j := -i; j <= i; j++ {
 				x, y := gridX+i, gridY+i-j // Move diagonally down-right
 				if InBounds(x, y) {
-					index := IndexFromLogicalXY(x, y)
+					index := CoordTransformer.IndexFromLogicalXY(x, y)
 					indices = append(indices, index)
 				}
 			}
@@ -310,7 +310,7 @@ func (c *TileCone) GetIndices() []int {
 			for j := -i; j <= i; j++ {
 				x, y := gridX-i, gridY-i+j // Move diagonally up-left
 				if InBounds(x, y) {
-					index := IndexFromLogicalXY(x, y)
+					index := CoordTransformer.IndexFromLogicalXY(x, y)
 					indices = append(indices, index)
 				}
 			}
@@ -318,7 +318,7 @@ func (c *TileCone) GetIndices() []int {
 			for j := -i; j <= i; j++ {
 				x, y := gridX-i, gridY+i-j // Move diagonally down-left
 				if InBounds(x, y) {
-					index := IndexFromLogicalXY(x, y)
+					index := CoordTransformer.IndexFromLogicalXY(x, y)
 					indices = append(indices, index)
 				}
 			}
@@ -343,7 +343,7 @@ func (c *TileCone) UpdateShape(updater ShapeUpdater) {
 
 }
 
-func (c *TileCone) StartPosition() (int, int) {
+func (c *TileCone) StartPositionPixels() (int, int) {
 
 	return c.pixelX, c.pixelY
 
@@ -369,7 +369,7 @@ type TileCircle struct {
 func (c *TileCircle) GetIndices() []int {
 	indices := make([]int, 0)
 
-	centerX, centerY := LogicalXYFromPixels(c.pixelX, c.pixelY)
+	centerX, centerY := CoordTransformer.LogicalXYFromPixels(c.pixelX, c.pixelY)
 
 	x := 0
 	y := c.radius
@@ -390,7 +390,7 @@ func (c *TileCircle) GetIndices() []int {
 		}
 		for _, p := range points {
 			if InBounds(p.X, p.Y) {
-				index := IndexFromLogicalXY(p.X, p.Y)
+				index := CoordTransformer.IndexFromLogicalXY(p.X, p.Y)
 				indices = append(indices, index)
 			}
 		}
@@ -399,22 +399,22 @@ func (c *TileCircle) GetIndices() []int {
 		// Fill between (centerX - x, centerY + y) and (centerX + x, centerY + y)
 		for fillX := centerX - x; fillX <= centerX+x; fillX++ {
 			if InBounds(fillX, centerY+y) {
-				index := IndexFromLogicalXY(fillX, centerY+y)
+				index := CoordTransformer.IndexFromLogicalXY(fillX, centerY+y)
 				indices = append(indices, index)
 			}
 			if InBounds(fillX, centerY-y) {
-				index := IndexFromLogicalXY(fillX, centerY-y)
+				index := CoordTransformer.IndexFromLogicalXY(fillX, centerY-y)
 				indices = append(indices, index)
 			}
 		}
 		// Fill between (centerX - y, centerY + x) and (centerX + y, centerY + x)
 		for fillX := centerX - y; fillX <= centerX+y; fillX++ {
 			if InBounds(fillX, centerY+x) {
-				index := IndexFromLogicalXY(fillX, centerY+x)
+				index := CoordTransformer.IndexFromLogicalXY(fillX, centerY+x)
 				indices = append(indices, index)
 			}
 			if InBounds(fillX, centerY-x) {
-				index := IndexFromLogicalXY(fillX, centerY-x)
+				index := CoordTransformer.IndexFromLogicalXY(fillX, centerY-x)
 				indices = append(indices, index)
 			}
 		}
@@ -448,7 +448,7 @@ func (c *TileCircle) UpdateShape(updater ShapeUpdater) {
 	c.radius = updater.Radius
 }
 
-func (c *TileCircle) StartPosition() (int, int) {
+func (c *TileCircle) StartPositionPixels() (int, int) {
 
 	return c.pixelX, c.pixelY
 }
@@ -475,13 +475,13 @@ func (r *TileRectangle) GetIndices() []int {
 
 	// Convert pixel coordinates to grid coordinates (if necessary)
 
-	gridX, gridY := LogicalXYFromPixels(r.pixelX, r.pixelY)
+	gridX, gridY := CoordTransformer.LogicalXYFromPixels(r.pixelX, r.pixelY)
 
 	// Iterate through the width and height of the rectangle
 	for y := gridY; y < gridY+r.height; y++ {
 		for x := gridX; x < gridX+r.width; x++ {
 			if InBounds(x, y) {
-				index := IndexFromLogicalXY(x, y)
+				index := CoordTransformer.IndexFromLogicalXY(x, y)
 				indices = append(indices, index)
 			}
 		}
@@ -505,7 +505,7 @@ func (r *TileRectangle) UpdateShape(updater ShapeUpdater) {
 
 }
 
-func (r *TileRectangle) StartPosition() (int, int) {
+func (r *TileRectangle) StartPositionPixels() (int, int) {
 
 	return r.pixelX, r.pixelY
 
@@ -531,7 +531,7 @@ type TileCircleOutline struct {
 func (c *TileCircleOutline) GetIndices() []int {
 	indices := make([]int, 0)
 
-	centerX, centerY := LogicalXYFromPixels(c.pixelX, c.pixelY)
+	centerX, centerY := CoordTransformer.LogicalXYFromPixels(c.pixelX, c.pixelY)
 
 	x := 0
 	y := c.radius
@@ -551,7 +551,7 @@ func (c *TileCircleOutline) GetIndices() []int {
 		}
 		for _, p := range points {
 			if InBounds(p.X, p.Y) {
-				index := IndexFromLogicalXY(p.X, p.Y)
+				index := CoordTransformer.IndexFromLogicalXY(p.X, p.Y)
 				indices = append(indices, index)
 			}
 		}
@@ -607,16 +607,16 @@ func (s *TileSquareOutline) GetIndices() []int {
 	halfSize := s.Size / 2
 	indices := make([]int, 0)
 
-	gridX, gridY := LogicalXYFromPixels(s.PixelX, s.PixelY)
+	gridX, gridY := CoordTransformer.LogicalXYFromPixels(s.PixelX, s.PixelY)
 
 	// Top and bottom edges
 	for x := gridX - halfSize; x <= gridX+halfSize; x++ {
 		if InBounds(x, gridY-halfSize) {
-			index := IndexFromLogicalXY(x, gridY-halfSize)
+			index := CoordTransformer.IndexFromLogicalXY(x, gridY-halfSize)
 			indices = append(indices, index)
 		}
 		if InBounds(x, gridY+halfSize) {
-			index := IndexFromLogicalXY(x, gridY+halfSize)
+			index := CoordTransformer.IndexFromLogicalXY(x, gridY+halfSize)
 			indices = append(indices, index)
 		}
 	}
@@ -624,11 +624,11 @@ func (s *TileSquareOutline) GetIndices() []int {
 	// Left and right edges (excluding corners already handled by top/bottom)
 	for y := gridY - halfSize + 1; y <= gridY+halfSize-1; y++ {
 		if InBounds(gridX-halfSize, y) {
-			index := IndexFromLogicalXY(gridX-halfSize, y)
+			index := CoordTransformer.IndexFromLogicalXY(gridX-halfSize, y)
 			indices = append(indices, index)
 		}
 		if InBounds(gridX+halfSize, y) {
-			index := IndexFromLogicalXY(gridX+halfSize, y)
+			index := CoordTransformer.IndexFromLogicalXY(gridX+halfSize, y)
 			indices = append(indices, index)
 		}
 	}

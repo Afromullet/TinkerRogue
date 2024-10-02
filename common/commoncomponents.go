@@ -44,33 +44,18 @@ func (p *Position) InRange(other *Position, distance int) bool {
 
 }
 
-// Get the Tile X,Y from the Pixels
-func PositionFromIndex(i, dungeonWidth int) Position {
-
-	return Position{
-		X: i % dungeonWidth,
-		Y: i / dungeonWidth,
-	}
-
-}
-
-func PositionFromPixels(x, y int) Position {
-
-	return Position{
-		X: x / graphics.ScreenInfo.TileSize,
-		Y: y / graphics.ScreenInfo.TileSize,
-	}
-
-}
-
 // A TileBasedShape returns indices that correspond to the tiles on the GameMap
 // The caller of this function has to decide what to do with the positions.
-func GetTilePositions(indices []int) []Position {
+func GetTilePositions(indices []int, dungeinWidth int) []Position {
 
 	pos := make([]Position, len(indices))
 
-	for i, inds := range indices {
-		pos[i] = PositionFromIndex(inds, graphics.ScreenInfo.DungeonWidth)
+	x, y := 0, 0
+	for i, tileIndex := range indices {
+
+		x, y = graphics.CoordTransformer.LogicalXYFromIndex(tileIndex)
+		pos[i] = Position{X: x, Y: y}
+
 	}
 
 	return pos

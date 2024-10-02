@@ -20,8 +20,8 @@ func (statsUI *PlayerStatsUI) CreateStatsTextArea() *widget.TextArea {
 
 	//
 
-	xSize := graphics.StatsUIOffset   //Only here for consistency. Used to fill up the X dimension of the GUI part
-	ySize := graphics.LevelHeight / 4 //The GUI takes up 1/4th of the level height
+	xSize := graphics.StatsUIOffset              //Only here for consistency. Used to fill up the X dimension of the GUI part
+	ySize := graphics.ScreenInfo.LevelHeight / 4 //The GUI takes up 1/4th of the level height
 	// construct a textarea
 
 	return widget.NewTextArea(

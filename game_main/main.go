@@ -40,7 +40,7 @@ import (
 // Using https://www.fatoldyeti.com/categories/roguelike-tutorial/ as a starting point.
 // Copying some of the code with modification. Whenever I change a name, it's to help me build a better mental model
 // Of what the code is doing as I'm learning GoLang
-var DEBUG_MODE = false
+var DEBUG_MODE = true
 
 type Game struct {
 	em         common.EntityManager
@@ -167,7 +167,7 @@ func RemoveDeadEntities(ecsmanager *common.EntityManager, am timesystem.ActionMa
 			if attr.CurrentHealth <= 0 {
 
 				pos := common.GetPosition(c.Entity)
-				ind := graphics.IndexFromLogicalXY(pos.X, pos.Y)
+				ind := graphics.CoordTransformer.IndexFromLogicalXY(pos.X, pos.Y)
 				gm.Tiles[ind].Blocked = false
 
 				am.RemoveActionQueueForEntity(c.Entity)

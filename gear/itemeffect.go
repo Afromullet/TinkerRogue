@@ -273,7 +273,9 @@ func (t *Throwable) InRange(endPos *common.Position) bool {
 
 	//
 
-	startPos := common.PositionFromPixels(t.Shape.StartPosition())
+	x, y := graphics.CoordTransformer.LogicalXYFromPixels(t.Shape.StartPositionPixels())
+
+	startPos := common.Position{X: x, Y: y}
 
 	return endPos.InRange(&startPos, t.ThrowingRange)
 

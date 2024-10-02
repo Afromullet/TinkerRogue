@@ -54,18 +54,12 @@ Takes place of this in the drawmap
 			)
 */
 //Offset the origin from the center
-func OffsetFromCenter(centerX, centerY, originX, originY int, sc ScreenData) (float64, float64) {
+func OffsetFromCenter(centerX, centerY, pixelX, pixelY int, sc ScreenData) (float64, float64) {
 
-	// Calculate the scaled tile size
-	scaledTileSize := sc.TileSize * sc.ScaleFactor
+	offsetX, offsetY := calculateCenterOffset(centerX, centerY, sc)
 
-	// Calculate the position to center the scaled map
-
-	scaledCenterOffsetX := float64(sc.ScreenWidth)/2 - float64(centerX*scaledTileSize)
-	scaledCenterOffsetY := float64(sc.ScreenHeight)/2 - float64(centerY*scaledTileSize)
-
-	finalX := float64(originX)*float64(sc.ScaleFactor) + scaledCenterOffsetX
-	finalY := float64(originY)*float64(sc.ScaleFactor) + scaledCenterOffsetY
+	finalX := float64(pixelX)*float64(sc.ScaleFactor) + offsetX
+	finalY := float64(pixelY)*float64(sc.ScaleFactor) + offsetY
 
 	return finalX, finalY
 
@@ -73,21 +67,29 @@ func OffsetFromCenter(centerX, centerY, originX, originY int, sc ScreenData) (fl
 
 // Used for when we want to get the cursor position from a centered map
 // centerX and centerY are logical coordinates
-func TransformPixelPosition(pixelX, pixelY int, centerX, centerY int, sc ScreenData) (int, int) {
-	// Calculate the scaled tile size
-	scaledTileSize := sc.TileSize * sc.ScaleFactor
+func TransformPixelPosition(centerX, centerY, pixelX, pixelY int, sc ScreenData) (int, int) {
 
-	// Calculate the position to center the scaled map
-	scaledCenterOffsetX := float64(sc.ScreenWidth)/2 - float64(centerX*scaledTileSize)
-	scaledCenterOffsetY := float64(sc.ScreenHeight)/2 - float64(centerY*scaledTileSize)
+	offsetX, offsetY := calculateCenterOffset(centerX, centerY, sc)
 
 	// Reverse the translation
-	uncenteredX := float64(pixelX) - scaledCenterOffsetX
-	uncenteredY := float64(pixelY) - scaledCenterOffsetY
+	uncenteredX := float64(pixelX) - offsetX
+	uncenteredY := float64(pixelY) - offsetY
 
 	// Reverse the scaling
 	finalX := uncenteredX / float64(sc.ScaleFactor)
 	finalY := uncenteredY / float64(sc.ScaleFactor)
 
 	return int(finalX), int(finalY)
+}
+
+// CalculateCenterOffset returns the offsets needed to center the map based on the given center tile position.
+func calculateCenterOffset(centerX, centerY int, sc ScreenData) (float64, float64) {
+
+	scaledTileSize := sc.TileSize * sc.ScaleFactor
+
+	// Calculate the offset to center the map on the given logical center coordinates
+	offsetX := float64(sc.ScreenWidth)/2 - float64(centerX*scaledTileSize)
+	offsetY := float64(sc.ScreenHeight)/2 - float64(centerY*scaledTileSize)
+
+	return offsetX, offsetY
 }

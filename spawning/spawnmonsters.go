@@ -29,7 +29,9 @@ func SpawnMonster(ecsmanager common.EntityManager, gm *worldmap.GameMap) {
 			index := randgen.GetRandomBetween(0, len(worldmap.ValidPos.Pos)-1)
 
 			if !gm.Tiles[index].Blocked {
-				pos := common.PositionFromIndex(index, graphics.ScreenInfo.DungeonWidth)
+
+				x, y := graphics.CoordTransformer.LogicalXYFromIndex(index)
+				pos := common.Position{X: x, Y: y}
 
 				entitytemplates.CreateCreatureFromTemplate(ecsmanager, entitytemplates.MonsterTemplates[0], gm, pos.X, pos.Y)
 				gm.Tiles[index].Blocked = true

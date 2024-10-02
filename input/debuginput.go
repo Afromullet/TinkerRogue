@@ -22,12 +22,12 @@ func PlayerDebugActions(pl *avatar.PlayerData) {
 
 		var gridX, gridY = 0, 0
 		if graphics.MAP_SCROLLING_ENABLED {
-			logicalX, logicalY := graphics.TransformPixelPosition(cursorX, cursorY, pl.Pos.X, pl.Pos.Y, graphics.ScreenInfo)
+			logicalX, logicalY := graphics.TransformPixelPosition(pl.Pos.X, pl.Pos.Y, cursorX, cursorY, graphics.ScreenInfo)
 			gridX = int(math.Round(float64(logicalX) / float64(graphics.ScreenInfo.TileSize)))
 			gridY = int(math.Round(float64(logicalY) / float64(graphics.ScreenInfo.TileSize)))
 
 		} else {
-			gridX, gridY = graphics.LogicalXYFromPixels(cursorX, cursorY)
+			gridX, gridY = graphics.CoordTransformer.LogicalXYFromPixels(cursorX, cursorY)
 		}
 
 		pl.Pos.X = gridX

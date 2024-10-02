@@ -40,7 +40,7 @@ func (info *InfoUI) InfoSelectionWindow(cursorX, cursorY int) {
 
 	//r = r.Add(image.Point{cursorX, cursorY})
 
-	r = r.Add(image.Point{graphics.LevelWidth / 2, graphics.LevelHeight / 2})
+	r = r.Add(image.Point{graphics.ScreenInfo.LevelWidth / 2, graphics.ScreenInfo.LevelHeight / 2}) //Shouldn't this be level width? todo
 	info.InfoOptionsWindow.SetLocation(r)
 
 	info.windowX = cursorX
@@ -58,7 +58,7 @@ func (info *InfoUI) CreatureInfoWindow(cursorX, cursorY int) {
 
 	r := image.Rect(0, 0, x, y)
 	//r = r.Add(image.Point{cursorX + 50, cursorY + 50})
-	r = r.Add(image.Point{graphics.LevelWidth / 2, graphics.LevelHeight / 2})
+	r = r.Add(image.Point{graphics.ScreenInfo.LevelWidth / 2, graphics.ScreenInfo.LevelHeight / 2}) //Shouldn't this be level width? todo
 	info.DisplayInfoWindow.SetLocation(r)
 
 	info.windowX = cursorX
@@ -236,7 +236,9 @@ func addInfoListHandler(li *widget.List, em *common.EntityManager, info *InfoUI)
 		a := args.(*widget.ListEntrySelectedEventArgs)
 		entry := a.Entry
 
-		pos := common.PositionFromPixels(info.windowX, info.windowY)
+		x, y := graphics.CoordTransformer.LogicalXYFromPixels(info.windowX, info.windowY)
+		pos := common.Position{X: x, Y: y}
+
 		if a.Entry == LookAtCreatureOpt {
 
 			cr := common.GetCreatureAtPosition(em, &pos)

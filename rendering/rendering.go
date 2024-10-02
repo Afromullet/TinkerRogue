@@ -28,14 +28,14 @@ func ProcessRenderables(ecsmanager *common.EntityManager, gameMap worldmap.GameM
 
 		if debugMode {
 
-			index := graphics.IndexFromLogicalXY(pos.X, pos.Y)
+			index := graphics.CoordTransformer.IndexFromLogicalXY(pos.X, pos.Y)
 			tile := gameMap.Tiles[index]
 			op := &ebiten.DrawImageOptions{}
 			op.GeoM.Translate(float64(tile.PixelX), float64(tile.PixelY))
 			screen.DrawImage(img, op)
 
 		} else if gameMap.PlayerVisible.IsVisible(pos.X, pos.Y) {
-			index := graphics.IndexFromLogicalXY(pos.X, pos.Y)
+			index := graphics.CoordTransformer.IndexFromLogicalXY(pos.X, pos.Y)
 			tile := gameMap.Tiles[index]
 			op := &ebiten.DrawImageOptions{}
 			op.GeoM.Translate(float64(tile.PixelX), float64(tile.PixelY))
@@ -71,8 +71,8 @@ func ProcessRenderablesInSquare(ecsmanager *common.EntityManager, gameMap worldm
 		// Check if the entity's position is within the square bounds
 		if pos.X >= sq.StartX && pos.X <= sq.EndX && pos.Y >= sq.StartY && pos.Y <= sq.EndY {
 			// Calculate the tile's pixel position
-			tilePixelX := gameMap.Tiles[graphics.IndexFromLogicalXY(pos.X, pos.Y)].PixelX
-			tilePixelY := gameMap.Tiles[graphics.IndexFromLogicalXY(pos.X, pos.Y)].PixelY
+			tilePixelX := gameMap.Tiles[graphics.CoordTransformer.IndexFromLogicalXY(pos.X, pos.Y)].PixelX
+			tilePixelY := gameMap.Tiles[graphics.CoordTransformer.IndexFromLogicalXY(pos.X, pos.Y)].PixelY
 
 			op := &ebiten.DrawImageOptions{}
 

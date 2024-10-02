@@ -100,7 +100,7 @@ func MovementControls(ecsmanager *common.EntityManager, pl *avatar.PlayerData, g
 
 		playerPos := common.GetPosition(pl.PlayerEntity)
 
-		ind := graphics.IndexFromLogicalXY(playerPos.X, playerPos.Y)
+		ind := graphics.CoordTransformer.IndexFromLogicalXY(playerPos.X, playerPos.Y)
 
 		if gm.Tiles[ind].TileType == worldmap.STAIRS_DOWN {
 
@@ -146,7 +146,7 @@ func PlayerActions(ecsmanager *common.EntityManager, pl *avatar.PlayerData, gm *
 
 		//ind := common.GetTileIndexFromCursor()
 
-		ind := graphics.IndexFromLogicalXY(pl.Pos.X, pl.Pos.Y)
+		ind := graphics.CoordTransformer.IndexFromLogicalXY(pl.Pos.X, pl.Pos.Y)
 		gm.ApplyColorMatrixToIndex(ind, graphics.GreenColorMatrix)
 
 	}
@@ -155,7 +155,7 @@ func PlayerActions(ecsmanager *common.EntityManager, pl *avatar.PlayerData, gm *
 
 		cursorX, cursorY := ebiten.CursorPosition()
 		if graphics.MAP_SCROLLING_ENABLED {
-			cursorX, cursorY = graphics.TransformPixelPosition(cursorX, cursorY, pl.Pos.X, pl.Pos.Y, graphics.ScreenInfo)
+			cursorX, cursorY = graphics.TransformPixelPosition(pl.Pos.X, pl.Pos.Y, cursorX, cursorY, graphics.ScreenInfo)
 
 		}
 
