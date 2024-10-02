@@ -62,6 +62,10 @@ func NewGame() *Game {
 	entitytemplates.ReadGameData()
 	InitializeECS(&g.em)
 
+	graphics.ScreenInfo.ScaleFactor = 1
+	if graphics.MAP_SCROLLING_ENABLED {
+		graphics.ScreenInfo.ScaleFactor = 3
+	}
 	InitializePlayerData(&g.em, &g.playerData, &g.gameMap)
 
 	g.ts.Turn = timesystem.PlayerTurn

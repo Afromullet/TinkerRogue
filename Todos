@@ -5,7 +5,8 @@ Need to scale the visual effects too
 Try to understand how the centering and scaling words. Both for drawmap, drawrenderables, and for the throwing and ranged weapon shapes
 ALso for the VX. Basically anything with MAP_SCROLLING_ENABLED
 
-Change graphics.TIleWidth to grapics.TileSize. Same for height
+FIx the FOV
+
 
 Room Decoration (maybe)
 

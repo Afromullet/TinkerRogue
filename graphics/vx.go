@@ -261,6 +261,7 @@ func (a *Projectile) DrawVisualEffect(screen *ebiten.Image) {
 	angle := math.Atan2(float64(a.endY-a.startY), float64(a.endX-a.startX))
 
 	opts := &ebiten.DrawImageOptions{}
+	opts.GeoM.Scale(float64(ScreenInfo.ScaleFactor), float64(ScreenInfo.ScaleFactor))
 	opts.GeoM.Translate(-float64(a.img.Bounds().Dx())/2, -float64(a.img.Bounds().Dy())/2) // Center the image
 	opts.GeoM.Rotate(angle)
 	opts.GeoM.Translate(a.currentX, a.currentY)
@@ -364,7 +365,7 @@ func (f *FireEffect) DrawVisualEffect(screen *ebiten.Image) {
 	opts := &ebiten.DrawImageOptions{}
 
 	// Set the scale for flickering size
-	opts.GeoM.Scale(f.scale, f.scale)
+	opts.GeoM.Scale(f.scale*float64(ScreenInfo.ScaleFactor), f.scale*float64(ScreenInfo.ScaleFactor))
 
 	// Set the position
 	opts.GeoM.Translate(f.startX, f.startY)
@@ -465,7 +466,7 @@ func (ice *IceEffect) DrawVisualEffect(screen *ebiten.Image) {
 	opts := &ebiten.DrawImageOptions{}
 
 	// Set the scale for the shimmering effect
-	opts.GeoM.Scale(ice.scale, ice.scale)
+	opts.GeoM.Scale(ice.scale*float64(ScreenInfo.ScaleFactor), ice.scale*float64(ScreenInfo.ScaleFactor))
 
 	// Set the position of the ice effect
 	opts.GeoM.Translate(ice.startX, ice.startY)
@@ -561,7 +562,7 @@ func (i *IceEffect2) DrawVisualEffect(screen *ebiten.Image) {
 	opts := &ebiten.DrawImageOptions{}
 
 	// Set the scale
-	opts.GeoM.Scale(i.scale, i.scale)
+	opts.GeoM.Scale(i.scale*float64(ScreenInfo.ScaleFactor), i.scale*float64(ScreenInfo.ScaleFactor))
 
 	// Set the position
 	opts.GeoM.Translate(i.startX, i.startY)
@@ -669,7 +670,7 @@ func (c *CloudEffect) DrawVisualEffect(screen *ebiten.Image) {
 	opts := &ebiten.DrawImageOptions{}
 
 	// Set the scale for the puffiness effect
-	opts.GeoM.Scale(c.scale, c.scale)
+	opts.GeoM.Scale(c.scale*float64(ScreenInfo.ScaleFactor), c.scale*float64(ScreenInfo.ScaleFactor))
 
 	// Adjust position to keep the center of the cloud in place
 	adjustedX := c.startX - (imgWidth * (c.scale - 1) / 2)
@@ -902,7 +903,7 @@ func (elec *ElectricityEffect) DrawVisualEffect(screen *ebiten.Image) {
 	opts := &ebiten.DrawImageOptions{}
 
 	// Set the scale for the flickering effect
-	opts.GeoM.Scale(elec.scale, elec.scale)
+	opts.GeoM.Scale(elec.scale*float64(ScreenInfo.ScaleFactor), elec.scale*float64(ScreenInfo.ScaleFactor))
 
 	// Set the position of the electricity effect
 	opts.GeoM.Translate(elec.startX, elec.startY)
@@ -1124,7 +1125,7 @@ func (s *StickyGroundEffect) DrawVisualEffect(screen *ebiten.Image) {
 		// Apply scaling and position transformations
 		opts.GeoM.Translate(-radius, -radius) // Center the circle
 		opts.GeoM.Translate(x, y)
-		opts.GeoM.Scale(s.scale, s.scale)
+		opts.GeoM.Scale(s.scale*float64(ScreenInfo.ScaleFactor), s.scale*float64(ScreenInfo.ScaleFactor))
 
 		// Apply opacity modulation
 		opts.ColorM.Scale(1, 1, 1, s.opacity)
