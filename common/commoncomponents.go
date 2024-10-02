@@ -57,8 +57,8 @@ func PositionFromIndex(i, dungeonWidth int) Position {
 func PositionFromPixels(x, y int) Position {
 
 	return Position{
-		X: x / graphics.ScreenInfo.TileWidth,
-		Y: y / graphics.ScreenInfo.TileHeight,
+		X: x / graphics.ScreenInfo.TileSize,
+		Y: y / graphics.ScreenInfo.TileSize,
 	}
 
 }

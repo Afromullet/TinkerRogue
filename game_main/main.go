@@ -199,8 +199,9 @@ func (g *Game) Update() error {
 // Draw is called each draw cycle and is where we will blit.
 func (g *Game) Draw(screen *ebiten.Image) {
 
-	graphics.ScreenBoundsX = screen.Bounds().Dx()
-	graphics.ScreenBoundsY = screen.Bounds().Dy()
+	//Not sure how to get the screen outside of the draw function, so I guess I will do it here for now
+	graphics.ScreenInfo.ScreenWidth = screen.Bounds().Dx()
+	graphics.ScreenInfo.ScreenHeight = screen.Bounds().Dy()
 
 	if graphics.MAP_SCROLLING_ENABLED {
 		g.drawingMap.DrawLevelCenteredSquare(screen, g.playerData.Pos, graphics.ViewableSquareSize, DEBUG_MODE)
@@ -232,8 +233,8 @@ func (g *Game) Layout(w, h int) (int, int) {
 	scale := ebiten.DeviceScaleFactor()
 	gd := graphics.NewScreenData()
 	//return gd.TileWidth * gd.DungeonWidth, gd.TileHeight * gd.DungeonHeight
-	canvasWidth := int(math.Ceil(float64(gd.TileWidth*gd.DungeonWidth) * scale))
-	canvasHeight := int(math.Ceil(float64(gd.TileHeight*gd.DungeonHeight) * scale))
+	canvasWidth := int(math.Ceil(float64(gd.TileSize*gd.DungeonWidth) * scale))
+	canvasHeight := int(math.Ceil(float64(gd.TileSize*gd.DungeonHeight) * scale))
 	return canvasWidth + graphics.StatsUIOffset, canvasHeight
 
 }

@@ -202,19 +202,19 @@ func (gameMap *GameMap) RemoveItemFromTile(index int, pos *common.Position) (*ec
 
 	return entity, nil
 }
+
 func (gameMap *GameMap) DrawLevelCenteredSquare(screen *ebiten.Image, playerPos *common.Position, size int, revealAllTiles bool) {
 	var cs = ebiten.ColorScale{}
 
-	startX, startY := graphics.SquareStartXY(playerPos.X, playerPos.Y, size)
-	endX, endY := graphics.SquareEndXY(playerPos.X, playerPos.Y, size)
+	sq := graphics.NewDrawableSection(playerPos.X, playerPos.Y, size)
+
 	//centerOffsetX, centerOffsetY := graphics.CenterOffset(playerPos.X, playerPos.Y)
 
 	// Get the dimensions of the screen
-	screenWidth, screenHeight := screen.Bounds().Dx(), screen.Bounds().Dy()
 
 	// Draw the square section centered on the screen
-	for x := startX; x <= endX; x++ {
-		for y := startY; y <= endY; y++ {
+	for x := sq.StartX; x <= sq.EndX; x++ {
+		for y := sq.StartY; y <= sq.EndY; y++ {
 			idx := graphics.IndexFromLogicalXY(x, y)
 			tile := gameMap.Tiles[idx]
 			isVis := gameMap.PlayerVisible.IsVisible(x, y)
@@ -224,74 +224,11 @@ func (gameMap *GameMap) DrawLevelCenteredSquare(screen *ebiten.Image, playerPos 
 			}
 
 			op := &ebiten.DrawImageOptions{}
-
-			// Calculate tile position in pixels
-			tilePixelX := tile.PixelX
-			tilePixelY := tile.PixelY
 
 			// Apply scaling first
-			op.GeoM.Scale(float64(graphics.ScaleFactor), float64(graphics.ScaleFactor))
-
-			// Calculate the scaled tile size
-			scaledTileSize := graphics.ScreenInfo.TileWidth * graphics.ScaleFactor
-
-			// Calculate the position to center the scaled map
-			scaledCenterOffsetX := float64(screenWidth)/2 - float64(playerPos.X*scaledTileSize)
-			scaledCenterOffsetY := float64(screenHeight)/2 - float64(playerPos.Y*scaledTileSize)
-
-			// Translate the tile position
-			op.GeoM.Translate(
-				float64(tilePixelX)*float64(graphics.ScaleFactor)+scaledCenterOffsetX,
-				float64(tilePixelY)*float64(graphics.ScaleFactor)+scaledCenterOffsetY,
-			)
-
-			if isVis {
-				tile.IsRevealed = true
-			} else if tile.IsRevealed {
-				// Apply color modification to darken out-of-FOV tiles
-				op.ColorScale.ScaleWithColor(color.RGBA{1, 1, 1, 1})
-			}
-
-			if !tile.cm.IsEmpty() {
-				cs.SetR(tile.cm.R)
-				cs.SetG(tile.cm.G)
-				cs.SetB(tile.cm.B)
-				cs.SetA(tile.cm.A)
-				op.ColorScale.ScaleWithColorScale(cs)
-			}
-
-			screen.DrawImage(tile.image, op)
-		}
-	}
-}
-func (gameMap *GameMap) DrawLevelCenteredSquare2(screen *ebiten.Image, playerPos *common.Position, size int, revealAllTiles bool) {
-	var cs = ebiten.ColorScale{}
-
-	startX, startY := graphics.SquareStartXY(playerPos.X, playerPos.Y, size)
-	endX, endY := graphics.SquareEndXY(playerPos.X, playerPos.Y, size)
-	centerOffsetX, centerOffsetY := graphics.CenterOffset(playerPos.X, playerPos.Y)
-
-	// Draw the square section centered on the screen
-	for x := startX; x <= endX; x++ {
-		for y := startY; y <= endY; y++ {
-			idx := graphics.IndexFromLogicalXY(x, y)
-			tile := gameMap.Tiles[idx]
-			isVis := gameMap.PlayerVisible.IsVisible(x, y)
-
-			if revealAllTiles {
-				isVis = true
-			}
-
-			op := &ebiten.DrawImageOptions{}
-
-			// Calculate tile position in pixels
-			tilePixelX := tile.PixelX
-			tilePixelY := tile.PixelY
-
-			// Translate by center offset to place the player's position at the screen center
-
-			op.GeoM.Translate(float64(tilePixelX+centerOffsetX), float64(tilePixelY+centerOffsetY))
-			//op.GeoM.Scale(float64(graphics.ScaleFactor), float64(graphics.ScaleFactor))
+			op.GeoM.Scale(float64(graphics.ScreenInfo.ScaleFactor), float64(graphics.ScreenInfo.ScaleFactor))
+			offsetX, offsetY := graphics.OffsetFromPlayer(playerPos.X, playerPos.Y, tile.PixelX, tile.PixelY, graphics.ScreenInfo)
+			op.GeoM.Translate(offsetX, offsetY)
 
 			if isVis {
 				tile.IsRevealed = true
@@ -376,7 +313,7 @@ func (gameMap *GameMap) CreateTiles() []*Tile {
 			pos := common.Position{X: x, Y: y}
 			wallImg := wallImgs[randgen.GetRandomBetween(0, len(wallImgs)-1)]
 			//tile := NewTile(x*graphics.ScreenInfo.TileWidth, y*graphics.ScreenInfo.TileHeight, pos, true, wall, WALL, false)
-			tile := NewTile(x*graphics.ScreenInfo.TileWidth, y*graphics.ScreenInfo.TileHeight, pos, true, wallImg, WALL, false)
+			tile := NewTile(x*graphics.ScreenInfo.TileSize, y*graphics.ScreenInfo.TileSize, pos, true, wallImg, WALL, false)
 
 			tiles[index] = &tile
 		}

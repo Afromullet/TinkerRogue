@@ -47,14 +47,14 @@ func ProcessRenderables(ecsmanager *common.EntityManager, gameMap worldmap.GameM
 
 func ProcessRenderablesInSquare(ecsmanager *common.EntityManager, gameMap worldmap.GameMap, screen *ebiten.Image, playerPos *common.Position, squareSize int, debugMode bool) {
 	// Calculate the starting and ending coordinates of the square
-	startX, startY := graphics.SquareStartXY(playerPos.X, playerPos.Y, squareSize)
-	endX, endY := graphics.SquareEndXY(playerPos.X, playerPos.Y, squareSize)
+
+	sq := graphics.NewDrawableSection(playerPos.X, playerPos.Y, squareSize)
 
 	// Get the dimensions of the screen
 	screenWidth, screenHeight := screen.Bounds().Dx(), screen.Bounds().Dy()
 
 	// Calculate the scaled tile size
-	scaledTileSize := graphics.ScreenInfo.TileWidth * graphics.ScaleFactor
+	scaledTileSize := graphics.ScreenInfo.TileSize * graphics.ScreenInfo.ScaleFactor
 
 	// Calculate the position to center the scaled map
 	scaledCenterOffsetX := float64(screenWidth)/2 - float64(playerPos.X*scaledTileSize)
@@ -69,7 +69,7 @@ func ProcessRenderablesInSquare(ecsmanager *common.EntityManager, gameMap worldm
 		}
 
 		// Check if the entity's position is within the square bounds
-		if pos.X >= startX && pos.X <= endX && pos.Y >= startY && pos.Y <= endY {
+		if pos.X >= sq.StartX && pos.X <= sq.EndX && pos.Y >= sq.StartY && pos.Y <= sq.EndY {
 			// Calculate the tile's pixel position
 			tilePixelX := gameMap.Tiles[graphics.IndexFromLogicalXY(pos.X, pos.Y)].PixelX
 			tilePixelY := gameMap.Tiles[graphics.IndexFromLogicalXY(pos.X, pos.Y)].PixelY
@@ -77,49 +77,14 @@ func ProcessRenderablesInSquare(ecsmanager *common.EntityManager, gameMap worldm
 			op := &ebiten.DrawImageOptions{}
 
 			// Apply scaling first
-			op.GeoM.Scale(float64(graphics.ScaleFactor), float64(graphics.ScaleFactor))
+
+			op.GeoM.Scale(float64(graphics.ScreenInfo.ScaleFactor), float64(graphics.ScreenInfo.ScaleFactor))
 
 			// Translate the scaled position
 			op.GeoM.Translate(
-				float64(tilePixelX)*float64(graphics.ScaleFactor)+scaledCenterOffsetX,
-				float64(tilePixelY)*float64(graphics.ScaleFactor)+scaledCenterOffsetY,
+				float64(tilePixelX)*float64(graphics.ScreenInfo.ScaleFactor)+scaledCenterOffsetX,
+				float64(tilePixelY)*float64(graphics.ScreenInfo.ScaleFactor)+scaledCenterOffsetY,
 			)
-
-			if debugMode {
-				// In debug mode, we can draw the image directly without visibility checks
-				screen.DrawImage(img, op)
-			} else if gameMap.PlayerVisible.IsVisible(pos.X, pos.Y) {
-				// Only draw if the tile is visible to the player
-				screen.DrawImage(img, op)
-			}
-		}
-	}
-}
-
-func ProcessRenderablesInSquare2(ecsmanager *common.EntityManager, gameMap worldmap.GameMap, screen *ebiten.Image, playerPos *common.Position, squareSize int, debugMode bool) {
-	// Calculate the starting and ending coordinates of the square
-	startX, startY := graphics.SquareStartXY(playerPos.X, playerPos.Y, squareSize)
-	endX, endY := graphics.SquareEndXY(playerPos.X, playerPos.Y, squareSize)
-
-	// Calculate center offset to adjust rendering
-	centerOffsetX, centerOffsetY := graphics.CenterOffset(playerPos.X, playerPos.Y)
-
-	for _, result := range ecsmanager.World.Query(ecsmanager.WorldTags["renderables"]) {
-		pos := result.Components[common.PositionComponent].(*common.Position)
-		img := result.Components[RenderableComponent].(*Renderable).Image
-
-		if !result.Components[RenderableComponent].(*Renderable).Visible {
-			continue
-		}
-
-		// Check if the entity's position is within the square bounds
-		if pos.X >= startX && pos.X <= endX && pos.Y >= startY && pos.Y <= endY {
-			// Calculate the tile's pixel position, adjusted by the center offset
-			tilePixelX := gameMap.Tiles[graphics.IndexFromLogicalXY(pos.X, pos.Y)].PixelX
-			tilePixelY := gameMap.Tiles[graphics.IndexFromLogicalXY(pos.X, pos.Y)].PixelY
-
-			op := &ebiten.DrawImageOptions{}
-			op.GeoM.Translate(float64(tilePixelX+centerOffsetX), float64(tilePixelY+centerOffsetY))
 
 			if debugMode {
 				// In debug mode, we can draw the image directly without visibility checks

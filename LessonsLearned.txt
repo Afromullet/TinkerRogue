@@ -3,3 +3,5 @@
 2) What data it oeprates on
 
 * Be more careful with when to use a pointer receiver
+
+* Don't mix up logical and screen cordinates. There are a lot of conversions going on between grid posititions, indices, and pixel positions

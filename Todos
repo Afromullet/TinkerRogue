@@ -1,5 +1,8 @@
 MAJOR
 
+
+Try to understand how the centering and scaling words. Both for drawmap, drawrenderables, and for the throwing and ranged weapon shapes
+
 Change graphics.TIleWidth to grapics.TileSize. Same for height
 
 Room Decoration (maybe)
@@ -168,7 +171,11 @@ Everything GUI related
 
 Action Queue needs to have fewer redundant methods
 
+Coordinate calculations
+
 PlayerData
+
+All of the coordinate conversion and map tile index references
 
 ________________
 
