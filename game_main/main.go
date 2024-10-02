@@ -40,7 +40,7 @@ import (
 // Using https://www.fatoldyeti.com/categories/roguelike-tutorial/ as a starting point.
 // Copying some of the code with modification. Whenever I change a name, it's to help me build a better mental model
 // Of what the code is doing as I'm learning GoLang
-var DEBUG_MODE = true
+var DEBUG_MODE = false
 
 type Game struct {
 	em         common.EntityManager
@@ -232,13 +232,12 @@ func (g *Game) Layout(w, h int) (int, int) {
 }
 */
 
-// Layout will return the screen dimensions.
 func (g *Game) Layout(w, h int) (int, int) {
 	scale := ebiten.DeviceScaleFactor()
-	gd := graphics.NewScreenData()
+
 	//return gd.TileWidth * gd.DungeonWidth, gd.TileHeight * gd.DungeonHeight
-	canvasWidth := int(math.Ceil(float64(gd.TileSize*gd.DungeonWidth) * scale))
-	canvasHeight := int(math.Ceil(float64(gd.TileSize*gd.DungeonHeight) * scale))
+	canvasWidth := int(math.Ceil(float64(graphics.ScreenInfo.TileSize*graphics.ScreenInfo.DungeonWidth) * scale))
+	canvasHeight := int(math.Ceil(float64(graphics.ScreenInfo.TileSize*graphics.ScreenInfo.DungeonHeight) * scale))
 	return canvasWidth + graphics.StatsUIOffset, canvasHeight
 
 }

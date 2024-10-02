@@ -223,6 +223,12 @@ func (gameMap *GameMap) DrawLevelCenteredSquare(screen *ebiten.Image, playerPos 
 				isVis = true
 			}
 
+			/*
+				logicalX := x - playerPos.X + graphics.ScreenInfo.DungeonWidth/2
+				logicalY := y - playerPos.Y + graphics.ScreenInfo.DungeonHeight/2
+				isVis = gameMap.PlayerVisible.IsVisible(logicalX, logicalY)
+			*/
+
 			op := &ebiten.DrawImageOptions{}
 
 			// Apply scaling first

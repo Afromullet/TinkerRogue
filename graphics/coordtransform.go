@@ -72,7 +72,8 @@ func OffsetFromCenter(centerX, centerY, originX, originY int, sc ScreenData) (fl
 }
 
 // Used for when we want to get the cursor position from a centered map
-func TransformCursorPosition(cursorX, cursorY int, centerX, centerY int, sc ScreenData) (int, int) {
+// centerX and centerY are logical coordinates
+func TransformPixelPosition(pixelX, pixelY int, centerX, centerY int, sc ScreenData) (int, int) {
 	// Calculate the scaled tile size
 	scaledTileSize := sc.TileSize * sc.ScaleFactor
 
@@ -81,8 +82,8 @@ func TransformCursorPosition(cursorX, cursorY int, centerX, centerY int, sc Scre
 	scaledCenterOffsetY := float64(sc.ScreenHeight)/2 - float64(centerY*scaledTileSize)
 
 	// Reverse the translation
-	uncenteredX := float64(cursorX) - scaledCenterOffsetX
-	uncenteredY := float64(cursorY) - scaledCenterOffsetY
+	uncenteredX := float64(pixelX) - scaledCenterOffsetX
+	uncenteredY := float64(pixelY) - scaledCenterOffsetY
 
 	// Reverse the scaling
 	finalX := uncenteredX / float64(sc.ScaleFactor)

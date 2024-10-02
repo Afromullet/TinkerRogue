@@ -65,7 +65,7 @@ func DrawThrowableAOE(pl *avatar.PlayerData, gm *worldmap.GameMap) {
 
 	cursorX, cursorY := ebiten.CursorPosition()
 	if graphics.MAP_SCROLLING_ENABLED {
-		cursorX, cursorY = graphics.TransformCursorPosition(cursorX, cursorY, pl.Pos.X, pl.Pos.Y, graphics.ScreenInfo)
+		cursorX, cursorY = graphics.TransformPixelPosition(cursorX, cursorY, pl.Pos.X, pl.Pos.Y, graphics.ScreenInfo)
 
 	}
 
@@ -219,7 +219,7 @@ func DrawRangedAttackAOE(pl *avatar.PlayerData, gm *worldmap.GameMap) {
 
 	cursorX, cursorY := ebiten.CursorPosition()
 	if graphics.MAP_SCROLLING_ENABLED {
-		cursorX, cursorY = graphics.TransformCursorPosition(cursorX, cursorY, pl.Pos.X, pl.Pos.Y, graphics.ScreenInfo)
+		cursorX, cursorY = graphics.TransformPixelPosition(cursorX, cursorY, pl.Pos.X, pl.Pos.Y, graphics.ScreenInfo)
 
 	}
 
@@ -294,7 +294,13 @@ func MovePlayer(ecsmanager *common.EntityManager, pl *avatar.PlayerData, gm *wor
 	oldTile := gm.Tiles[index]
 
 	if !nextTile.Blocked {
-		gm.PlayerVisible.Compute(gm, pl.Pos.X, pl.Pos.Y, 8)
+
+		logicalX := pl.Pos.X - graphics.ScreenInfo.DungeonWidth/2
+		logicalY := pl.Pos.Y - graphics.ScreenInfo.DungeonHeight/2
+		gm.PlayerVisible.Compute(gm, logicalX, logicalY, 8)
+
+		//gm.PlayerVisible.Compute(gm, pl.Pos.X, pl.Pos.Y, 8)
+
 		pl.Pos.X = nextPosition.X
 		pl.Pos.Y = nextPosition.Y
 		nextTile.Blocked = true

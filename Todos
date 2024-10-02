@@ -1,12 +1,15 @@
 MAJOR
 
-Need to scale the visual effects too
+
+
+Create Wrapper around cursorPosition for when the map is scaled and centered
 
 Try to understand how the centering and scaling words. Both for drawmap, drawrenderables, and for the throwing and ranged weapon shapes
-ALso for the VX. Basically anything with MAP_SCROLLING_ENABLED
+ALso for the VX. Basically anything with MAP_SCROLLING_ENABLED. Transformposition and more
 
 FIx the FOV
 
+Don't allow shooting and throwing through walls
 
 Room Decoration (maybe)
 
@@ -179,6 +182,8 @@ Coordinate calculations
 PlayerData
 
 All of the coordinate conversion and map tile index references
+
+Use either logical or screen cordinates for function that take both - want just one
 
 ________________
 

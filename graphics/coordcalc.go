@@ -2,9 +2,10 @@ package graphics
 
 var LevelHeight int = 0
 var LevelWidth int = 0
-var StatsUIOffset int = 1000 //Offset to where the UI starts
 
 var ScreenInfo = NewScreenData()
+
+var StatsUIOffset int = 1000 //Offset to where the UI starts
 
 // Contains the data we need to render the map. Also used for coordinate conversions
 type ScreenData struct {
@@ -63,12 +64,6 @@ func (s ScreenData) GetCanvasHeight() int {
 func IndexFromLogicalXY(x int, y int) int {
 
 	return (y * ScreenInfo.DungeonWidth) + x
-}
-
-// Gets XY coordinates from the map tile index
-func XYFromIndex(i int) (int, int) {
-
-	return i % ScreenInfo.DungeonWidth, i / ScreenInfo.DungeonWidth
 }
 
 func PixelsFromLogicalXY(x, y, tileWidth, tileHeight int) (int, int) {
