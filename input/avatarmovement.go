@@ -153,11 +153,7 @@ func PlayerActions(ecsmanager *common.EntityManager, pl *avatar.PlayerData, gm *
 
 	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButton2) {
 
-		cursorX, cursorY := ebiten.CursorPosition()
-		if graphics.MAP_SCROLLING_ENABLED {
-			cursorX, cursorY = graphics.TransformPixelPosition(pl.Pos.X, pl.Pos.Y, cursorX, cursorY, graphics.ScreenInfo)
-
-		}
+		cursorX, cursorY := graphics.CursorPosition(pl.Pos.X, pl.Pos.Y)
 
 		playerUI.InformationUI.InfoSelectionWindow(cursorX, cursorY)
 		pl.InputStates.InfoMeuOpen = true

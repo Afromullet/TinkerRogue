@@ -40,14 +40,13 @@ import (
 // Using https://www.fatoldyeti.com/categories/roguelike-tutorial/ as a starting point.
 // Copying some of the code with modification. Whenever I change a name, it's to help me build a better mental model
 // Of what the code is doing as I'm learning GoLang
-var DEBUG_MODE = true
+var DEBUG_MODE = false
 
 type Game struct {
 	em         common.EntityManager
 	gameUI     gui.PlayerUI
 	playerData avatar.PlayerData
 	gameMap    worldmap.GameMap //Logical map
-	drawingMap worldmap.GameMap //Used only for drawing
 
 	ts timesystem.GameTurn
 }
@@ -57,7 +56,7 @@ type Game struct {
 func NewGame() *Game {
 	g := &Game{}
 	g.gameMap = worldmap.NewGameMap()
-	g.drawingMap = g.gameMap
+
 	g.playerData = avatar.PlayerData{}
 	entitytemplates.ReadGameData()
 	InitializeECS(&g.em)
@@ -208,7 +207,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	graphics.ScreenInfo.ScreenHeight = screen.Bounds().Dy()
 
 	if graphics.MAP_SCROLLING_ENABLED {
-		g.drawingMap.DrawLevelCenteredSquare(screen, g.playerData.Pos, graphics.ViewableSquareSize, DEBUG_MODE)
+		g.gameMap.DrawLevelCenteredSquare(screen, g.playerData.Pos, graphics.ViewableSquareSize, DEBUG_MODE)
 		rendering.ProcessRenderablesInSquare(&g.em, g.gameMap, screen, g.playerData.Pos, graphics.ViewableSquareSize, DEBUG_MODE)
 	} else {
 		g.gameMap.DrawLevel(screen, DEBUG_MODE)

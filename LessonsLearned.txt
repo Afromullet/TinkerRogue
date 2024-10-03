@@ -4,4 +4,5 @@
 
 * Be more careful with when to use a pointer receiver
 
-* Don't mix up logical and screen cordinates. There are a lot of conversions going on between grid posititions, indices, and pixel positions
+* Don't mix up logical and world  cordinates. There are a lot of conversions going on between grid posititions, indices, and pixel positions. 
+I did not establish when to use Logical vs World coordinates early on enough, so there was a lot of cleanup after

@@ -2,10 +2,10 @@ MAJOR
 
 
 
-Create Wrapper around cursorPosition for when the map is scaled and centered
 
 Try to understand how the centering and scaling words. Both for drawmap, drawrenderables, and for the throwing and ranged weapon shapes
-ALso for the VX. Basically anything with MAP_SCROLLING_ENABLED. Transformposition and more
+ALso for the VX. Basically anything with MAP_SCROLLING_ENABLED. Transformposition and more. Look at ALL translations etc and understand them. Use this to figure
+out how to apply the transformation to graphics.StatusUIOffset
 
 FIx the FOV
 
@@ -25,9 +25,16 @@ Need to remove monsters once they are dead rather than next turnb
 
 Need to only draw player ranged attack when they're actually shooting - What did I mean with this?
 
-Make sure ActionManager works as you want it to work
+Make sure ActionManager works as you want it to work. Find a way to create debug output
 
 Generation for throwables with properties using the lootable probabilities
+
+Add a Check to make sure that an entity has all the required components. I.E, name component, position, consumabletracker, etc
+
+
+Consider having all of the functions that create strings for displaying things to the user in their own package. Anything that returns a string could be removed to to the "DisplayData" package. Take a look at everything that returns string and determine whether this is a good move forward
+
+Move all of the component getters into their own package - assumign it does not cause circular inckusions
 
 
 ___Energy/Time System__
@@ -184,6 +191,8 @@ PlayerData
 All of the coordinate conversion and map tile index references
 
 Use either logical or screen cordinates for function that take both - want just one
+
+
 
 ________________
 

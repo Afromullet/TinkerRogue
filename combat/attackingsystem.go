@@ -47,6 +47,7 @@ func MeleeAttackSystem(ecsmanager *common.EntityManager, pl *avatar.PlayerData, 
 
 	} else {
 		log.Print("Failed to attack. No weapon")
+		// Todo add a fist attack
 	}
 
 	fmt.Println(attackSuccess)
@@ -100,11 +101,12 @@ func RangedAttackSystem(ecsmanager *common.EntityManager, pl *avatar.PlayerData,
 		}
 
 	} else {
+		// Todo add a panic here, since this should not happen
 		log.Print("Failed to attack. No ranged weapon")
+		//Not adding a default option here since it doesn't make sense to have a default ranged attack.
+		//For melee, the entity can use its fists. For a ranged attack, that does not work
 
 	}
-
-	fmt.Println(attackSuccess)
 
 }
 
@@ -134,11 +136,11 @@ func PerformAttack(ecsmanagr *common.EntityManager, pl *avatar.PlayerData, gm *w
 			return true
 
 		} else {
-			fmt.Println("Dodged")
+			fmt.Println("Dodged") //Todo add something here for debug mode to make testing easier
 		}
 
 	} else {
-		fmt.Println("Missed")
+		fmt.Println("Missed") //Todo add something here for debug mode to make testing easier
 	}
 
 	RemoveDeadEntity(ecsmanagr, pl, gm, defender)
@@ -146,13 +148,13 @@ func PerformAttack(ecsmanagr *common.EntityManager, pl *avatar.PlayerData, gm *w
 
 }
 
-// Does not remove the player if they die.
+// Does not remove the player if they die. Todo
 func RemoveDeadEntity(ecsmnager *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap, defender *ecs.Entity) {
 
 	defenderPos := common.GetPosition(defender)
 	defAttr := common.GetAttributes(defender)
 	if pl.Pos.IsEqual(defenderPos) {
-		graphics.CoordTransformer.IndexFromLogicalXY(defenderPos.X, defenderPos.Y) //Just here as a placeholder. Does nothing.
+		graphics.CoordTransformer.IndexFromLogicalXY(defenderPos.X, defenderPos.Y) //Just here as a placeholder. Does nothing. Intended for the player
 	} else if defAttr.CurrentHealth <= 0 {
 		index := graphics.CoordTransformer.IndexFromLogicalXY(defenderPos.X, defenderPos.Y)
 

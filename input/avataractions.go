@@ -63,11 +63,7 @@ func ApplyThrowable(ecsmanager *common.EntityManager, item *gear.Item, pl *avata
 
 func DrawThrowableAOE(pl *avatar.PlayerData, gm *worldmap.GameMap) {
 
-	cursorX, cursorY := ebiten.CursorPosition()
-	if graphics.MAP_SCROLLING_ENABLED {
-		cursorX, cursorY = graphics.TransformPixelPosition(pl.Pos.X, pl.Pos.Y, cursorX, cursorY, graphics.ScreenInfo)
-
-	}
+	cursorX, cursorY := graphics.CursorPosition(pl.Pos.X, pl.Pos.Y)
 
 	s := pl.ThrowingAOEShape
 
@@ -218,11 +214,7 @@ func HandlePlayerRangedAttack(ecsmanager *common.EntityManager, pl *avatar.Playe
 
 func DrawRangedAttackAOE(pl *avatar.PlayerData, gm *worldmap.GameMap) {
 
-	cursorX, cursorY := ebiten.CursorPosition()
-	if graphics.MAP_SCROLLING_ENABLED {
-		cursorX, cursorY = graphics.TransformPixelPosition(pl.Pos.X, pl.Pos.Y, cursorX, cursorY, graphics.ScreenInfo)
-
-	}
+	cursorX, cursorY := graphics.CursorPosition(pl.Pos.X, pl.Pos.Y)
 
 	s := pl.Equipment.RangedWeaponAOEShape
 

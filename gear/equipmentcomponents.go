@@ -88,7 +88,7 @@ func (r RangedWeapon) CalculateDamage() int {
 }
 
 // Gets all of the targets in the weapons AOE by accessing the TileBasedShape
-// of the ranged weapon
+// Todo, use the PositionTracker so we don't have to itereate through all of the monsters
 func (r RangedWeapon) GetTargets(ecsmanger *common.EntityManager) []*ecs.Entity {
 
 	pos := common.GetTilePositions(r.TargetArea.GetIndices(), graphics.ScreenInfo.DungeonWidth)
@@ -123,6 +123,7 @@ func (r *RangedWeapon) DisplayShootingVX(attackerPos *common.Position, defenderP
 	graphics.AddVX(arr)
 }
 
+// Used for Displaying the VX for a centered and scaled map.
 func (r *RangedWeapon) DisplayCenteredShootingVX(attackerPos *common.Position, defenderPos *common.Position) {
 	// Convert logical coordinates to screen coordinates for attacker
 	attScreenX, attScreenY := graphics.OffsetFromCenter(

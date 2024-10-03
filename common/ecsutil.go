@@ -13,7 +13,7 @@ var (
 	UserMsgComponent   *ecs.Component //I can probably remove this later
 )
 
-// Wrapper around the ECS libraries manager and rags.
+// Wrapper around the ECS libraries manager and tags.
 type EntityManager struct {
 	World     *ecs.Manager
 	WorldTags map[string]ecs.Tag
@@ -61,7 +61,7 @@ func GetPosition(e *ecs.Entity) *Position {
 }
 
 // Todo need a better way to handle this rather than searching all monsters
-// This also should not really be in attackingSystem
+
 func GetCreatureAtPosition(ecsmnager *EntityManager, pos *Position) *ecs.Entity {
 
 	var e *ecs.Entity = nil

@@ -8,6 +8,7 @@ import (
 	"github.com/bytearena/ecs"
 )
 
+// TypeOfItem is a helper type for equipping and unequpping items
 type TypeOfItem int
 
 const (
@@ -65,7 +66,8 @@ func GetItem(e *ecs.Entity) *Item {
 	return common.GetComponentType[*Item](e, ItemComponent)
 }
 
-// Gets the underlying type of an item
+// Gets the underlying type of an item. Todo onl used in PlayeData, so it coud be moved there,
+
 func KindOfItem(e *ecs.Entity) TypeOfItem {
 
 	if item := common.GetComponentType[*Armor](e, ArmorComponent); item != nil {

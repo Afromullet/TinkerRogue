@@ -1,7 +1,5 @@
 package graphics
 
-var StatsUIOffset int = 1000 //Offset to where the UI starts
-
 type CoordinateTransformer struct {
 	dungeonWidth int
 	tileSize     int

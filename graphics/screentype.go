@@ -9,11 +9,10 @@ type ScreenData struct {
 
 	DungeonWidth  int
 	DungeonHeight int
-	ScaleX        float64
-	ScaleY        float64
-	ScaleFactor   int
-	LevelWidth    int
-	LevelHeight   int
+
+	ScaleFactor int
+	LevelWidth  int
+	LevelHeight int
 }
 
 func (s ScreenData) GetCanvasWidth() int {
@@ -36,20 +35,15 @@ func NewScreenData() ScreenData {
 		DungeonWidth:  100,
 		DungeonHeight: 80,
 	}
-	tileWidthPixels := 32
-	tileHeightPixels := 32
+	tilePixels := 32
 
-	// Calculate the scale based on the dungeon dimensions
-
-	g.ScaleX = float64(g.DungeonWidth) * float64(tileWidthPixels) / float64(g.DungeonWidth)
-	g.ScaleY = float64(g.DungeonHeight) * float64(tileHeightPixels) / float64(g.DungeonHeight)
-
-	g.TileSize = int(g.ScaleX)
-
-	g.LevelHeight = int(float64(g.DungeonHeight) * g.ScaleY)
-	g.LevelWidth = int(float64(g.DungeonWidth) * g.ScaleX)
-
+	// Use a single scale value for both X and Y
+	g.TileSize = tilePixels
 	g.ScaleFactor = 3
+
+	// Calculate the level dimensions based on the tile size
+	g.LevelHeight = g.DungeonHeight * g.TileSize
+	g.LevelWidth = g.DungeonWidth * g.TileSize
 
 	return g
 }

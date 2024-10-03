@@ -52,7 +52,7 @@ func (inv *Inventory) AddItem(entityToAdd *ecs.Entity) {
 
 }
 
-// Does not remove the item from the inventory
+// Does not remove the item from the inventory, just returns the entity of the item
 func (inv *Inventory) GetItem(index int) (*ecs.Entity, error) {
 	if index < 0 || index >= len(inv.InventoryContent) {
 		return nil, fmt.Errorf("index out of range")

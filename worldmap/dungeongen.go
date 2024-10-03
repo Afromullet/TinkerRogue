@@ -217,6 +217,7 @@ func (gameMap *GameMap) DrawLevelCenteredSquare(screen *ebiten.Image, playerPos 
 		for y := sq.StartY; y <= sq.EndY; y++ {
 			idx := graphics.CoordTransformer.IndexFromLogicalXY(x, y)
 			tile := gameMap.Tiles[idx]
+
 			isVis := gameMap.PlayerVisible.IsVisible(x, y)
 
 			if revealAllTiles {

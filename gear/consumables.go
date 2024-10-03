@@ -10,11 +10,10 @@ import (
 var ConsumableComponent *ecs.Component
 var ConsEffectTrackerComponent *ecs.Component
 
-// A consumable applies the attrMod to the baseAttr.
-// For example, a Healing Potion would add the attrMod.CurrentHealth to the,
-// or a speed potion would increase the BaseMovementSpeed
-// The other option was to use a ConsumableEffects inteface
-// For now, let's keep it simple
+// A consumable applies the attrMod to the baseAttr. The attrMod is the "buff" the consumable provides
+// For example, a Healing Potion would add to  attrMod.CurrentHealth
+// And a speed potion would increase the BaseMovementSpeed
+//
 
 type Consumable struct {
 	Name         string
@@ -22,8 +21,8 @@ type Consumable struct {
 	Duration     int
 }
 
-// Every effect except health boosts are applied every turn, so we have a separate function for
-// CurrentHealth and MaxHealth.
+// Anything other than health is applied every turn.
+// Todo determine if MaxHealth should be here too. Seems as if ApplyHealingEffect should only add to the currentHealth
 func (c *Consumable) ApplyEffect(baseAttr *common.Attributes) {
 
 	baseAttr.AttackBonus += c.AttrModifier.AttackBonus
@@ -34,6 +33,8 @@ func (c *Consumable) ApplyEffect(baseAttr *common.Attributes) {
 
 }
 
+// TOdo determine whether MaxHealth should also be applied here.
+// Don't want MaxHealth to be boosted every turn
 func (c *Consumable) ApplyHealingEffect(baseAttr *common.Attributes) {
 	baseAttr.CurrentHealth += c.AttrModifier.CurrentHealth
 	baseAttr.MaxHealth += c.AttrModifier.MaxHealth
@@ -85,11 +86,13 @@ type ConsumableEffect struct {
 	Effect          Consumable
 }
 
+// Todo replace baseAttr with GetAttributes from common
 func (eff *ConsumableEffect) Apply(e *ecs.Entity) {
 	baseAttr := common.GetComponentType[*common.Attributes](e, common.AttributeComponent)
 
-	//Non-health consumables are applied only once. Health consumable are applied at the
-	//Start, and last until the end of the duration. (I.E, a regeneration potion)
+	//Non-health consumables are applied only once. Health consumable are applied at the Start, and last until the end of the duration.
+	//(I.E, a regeneration potion would have a duration that lasts over mulitple turns)
+	//
 	if eff.currentDuration == 0 {
 		eff.Effect.ApplyEffect(baseAttr)
 		eff.Effect.ApplyHealingEffect(baseAttr)
@@ -104,12 +107,14 @@ func (eff *ConsumableEffect) Apply(e *ecs.Entity) {
 
 }
 
+// The effect duration expired. Used by the ConsumableEffectTracker
 func (eff ConsumableEffect) IsDone() bool {
 	return eff.currentDuration == eff.Effect.Duration
 
 }
 
-// Used to track all Consumables that are in effect.
+// Every effect on an entity is tracked with the ConsumableEffectTracker.
+// It hnadles applying, adding, and removing effects when they're done.
 type ConsumableEffectTracker struct {
 	effects []ConsumableEffect
 }
@@ -153,9 +158,13 @@ func (ce *ConsumableEffectTracker) ApplyEffects(ent *ecs.Entity) {
 	ce.effects = remainingEffects
 }
 
+// Todo this is only used in one place. The place that calls it can directly be replace with this check
 func (ce *ConsumableEffectTracker) hasEffects() bool {
 	return len(ce.effects) > 0
 }
+
+// Adds a consumable to an entities ConsumableEffectTracker.
+// Anything that can use or be afffected by a consumable will use a ConsumablEffeftTracker
 func AddEffectToTracker(ent *ecs.Entity, cons Consumable) {
 
 	tracker := common.GetComponentType[*ConsumableEffectTracker](ent, ConsEffectTrackerComponent)
@@ -180,6 +189,7 @@ func AddEffectToTracker(ent *ecs.Entity, cons Consumable) {
 }
 
 // Called in the game loop. Currently only used for player. MonsterSystems will call it too if monsters ever use consumables
+// Todo determine if this is being called by the monsters. Comment may be out of date
 func RunEffectTracker(ent *ecs.Entity) {
 	tracker := common.GetComponentType[*ConsumableEffectTracker](ent, ConsEffectTrackerComponent)
 
@@ -193,6 +203,7 @@ func RunEffectTracker(ent *ecs.Entity) {
 
 // Does not fit in the common package because referencing gear will cause a circular inclusion issue
 // Consumables change the base attributes, so the TotalNNN stats need to be updated.
+// Todo, g.playerData.UpdatePlayerAttributes() and UpdateEntityAttributes for monster can probably be the same function
 func UpdateEntityAttributes(e *ecs.Entity) {
 
 	armor := common.GetComponentType[*Armor](e, ArmorComponent)

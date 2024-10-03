@@ -1,8 +1,6 @@
 package graphics
 
-var ViewableSquareSize = 30
-
-var MAP_SCROLLING_ENABLED = true
+import "github.com/hajimehoshi/ebiten/v2"
 
 // Used for drawing only a section of the map.
 // Different from TileSquare. Tilesquare returns indices
@@ -82,8 +80,31 @@ func TransformPixelPosition(centerX, centerY, pixelX, pixelY int, sc ScreenData)
 	return int(finalX), int(finalY)
 }
 
-// CalculateCenterOffset returns the offsets needed to center the map based on the given center tile position.
+// New function for transforming logical coordinates
+func TransformLogicalCoordinates(centerX, centerY, logicalX, logicalY int, sc ScreenData) (int, int) {
+	offsetX, offsetY := calculateCenterOffset(centerX, centerY, sc)
+
+	// Apply scaling
+	scaledX := float64(logicalX) * float64(sc.ScaleFactor)
+	scaledY := float64(logicalY) * float64(sc.ScaleFactor)
+
+	// Apply translation
+	finalX := scaledX + offsetX
+	finalY := scaledY + offsetY
+
+	return int(finalX), int(finalY)
+}
+
 func calculateCenterOffset(centerX, centerY int, sc ScreenData) (float64, float64) {
+	// Calculate the offset to center the map on the given logical center coordinates
+	offsetX := float64(sc.ScreenWidth)/2 - float64(centerX*sc.TileSize)*float64(sc.ScaleFactor)
+	offsetY := float64(sc.ScreenHeight)/2 - float64(centerY*sc.TileSize)*float64(sc.ScaleFactor)
+
+	return offsetX, offsetY
+}
+
+// CalculateCenterOffset returns the offsets needed to center the map based on the given center tile position.
+func calculateCenterOffset2(centerX, centerY int, sc ScreenData) (float64, float64) {
 
 	scaledTileSize := sc.TileSize * sc.ScaleFactor
 
@@ -92,4 +113,15 @@ func calculateCenterOffset(centerX, centerY int, sc ScreenData) (float64, float6
 	offsetY := float64(sc.ScreenHeight)/2 - float64(centerY*scaledTileSize)
 
 	return offsetX, offsetY
+}
+
+func CursorPosition(logicalX, logicalY int) (int, int) {
+
+	cursorX, cursorY := ebiten.CursorPosition()
+	if MAP_SCROLLING_ENABLED {
+		cursorX, cursorY = TransformPixelPosition(logicalX, logicalY, cursorX, cursorY, ScreenInfo)
+
+	}
+
+	return cursorX, cursorY
 }

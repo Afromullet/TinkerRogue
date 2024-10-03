@@ -71,8 +71,10 @@ func ProcessRenderablesInSquare(ecsmanager *common.EntityManager, gameMap worldm
 		// Check if the entity's position is within the square bounds
 		if pos.X >= sq.StartX && pos.X <= sq.EndX && pos.Y >= sq.StartY && pos.Y <= sq.EndY {
 			// Calculate the tile's pixel position
-			tilePixelX := gameMap.Tiles[graphics.CoordTransformer.IndexFromLogicalXY(pos.X, pos.Y)].PixelX
-			tilePixelY := gameMap.Tiles[graphics.CoordTransformer.IndexFromLogicalXY(pos.X, pos.Y)].PixelY
+
+			ind := graphics.CoordTransformer.IndexFromLogicalXY(pos.X, pos.Y)
+			tilePixelX := gameMap.Tiles[ind].PixelX
+			tilePixelY := gameMap.Tiles[ind].PixelY
 
 			op := &ebiten.DrawImageOptions{}
 

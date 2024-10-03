@@ -14,15 +14,14 @@ var PlayerComponent *ecs.Component
 type Player struct {
 }
 
-// Tracks state for user input handling.
+// Used in the input package to determine when button inputs are valid.
 type PlayerInputStates struct {
 	IsThrowing  bool
 	IsShooting  bool
 	HasKeyInput bool //Tells us whether the player pressed any key.
-	InfoMeuOpen bool 
+	InfoMeuOpen bool
 }
 
-// Armor is not an entity at the moment
 type PlayerEquipment struct {
 	EqMeleeWeapon           *ecs.Entity
 	EqRangedWeapon          *ecs.Entity
@@ -46,7 +45,9 @@ func (pl *PlayerEquipment) Armor() *gear.Armor {
 	return common.GetComponentType[*gear.Armor](pl.EqArmor, gear.ArmorComponent)
 }
 
-// Need to check what kind of equipment it is before setting it
+// Does not remove an equipped item. Todo check if the item kind is already equipped, and if it is,
+// Remove it. Low priority. Currently, the part of the GUI that handles this removes the item,
+// But it's something that can be simplified
 func (pl *PlayerEquipment) EquipItem(equipment *ecs.Entity, playerEntity *ecs.Entity) {
 
 	switch gear.KindOfItem(equipment) {
@@ -65,6 +66,7 @@ func (pl *PlayerEquipment) EquipItem(equipment *ecs.Entity, playerEntity *ecs.En
 
 }
 
+// Helper function for displaying the area of effect when the player is selecting a target for a ranged attack
 func (pl *PlayerEquipment) PrepareRangedAttack() {
 	wep := common.GetComponentType[*gear.RangedWeapon](pl.EqRangedWeapon, gear.RangedWeaponComponent)
 	pl.RangedWeaponAOEShape = wep.TargetArea
@@ -72,7 +74,7 @@ func (pl *PlayerEquipment) PrepareRangedAttack() {
 
 }
 
-// Let's us modify the visual cue for the throwing weapons AOE and change the inventory once the item is thrown
+// State and variable tracker for throwing items. Inventory, drawing, and input uses this.
 type PlayerThrowable struct {
 	SelectedThrowable  *ecs.Entity
 	ThrowingAOEShape   graphics.TileBasedShape
@@ -80,7 +82,8 @@ type PlayerThrowable struct {
 	ThrowableItem      *gear.Item
 }
 
-// Throwing items needs to both display information to the user and use the players inventory
+// Updates the throwable item with an item in the players inventory.
+// Todo, need to add additional checks here to make sure that the inventory exists
 func (pl *PlayerThrowable) PrepareThrowable(itemEntity *ecs.Entity, index int) {
 
 	pl.SelectedThrowable = itemEntity
@@ -101,15 +104,12 @@ func (pl *PlayerThrowable) RemoveThrownItem(inv *gear.Inventory) {
 
 }
 
-// All of the player information needs to be easily accessible.
-// Everything that needs the PlayerData currently does it through a parameter rather than acecssing it globally.
-// A global could probably work and reduce the number of parameters a lot of the functions take
-// But for now, this works.
-// Maybe it's a good use case for a Singleton, but I will worry about that later.
+// All of the player information needs to be easily accessible. This may work as a singleton. Todo
+// Inventory and attributes are components, so there are helper functions to get them. It's for convenience
 type PlayerData struct {
-	Equipment PlayerEquipment
-	PlayerThrowable
-	InputStates PlayerInputStates
+	Equipment       PlayerEquipment
+	PlayerThrowable //Todo make this non embedded
+	InputStates     PlayerInputStates
 
 	PlayerEntity *ecs.Entity
 
@@ -141,7 +141,8 @@ func (pl *PlayerData) UnequipArmor() {
 
 }
 
-// Remvoes the item and adds it back to the inventory
+// Remvoes the item and adds it back to the inventory.
+// The UnequipNNN functions add it back to the inventory
 func (pl *PlayerData) RemoveItem(e *ecs.Entity) {
 
 	switch gear.KindOfItem(e) {
@@ -157,7 +158,7 @@ func (pl *PlayerData) RemoveItem(e *ecs.Entity) {
 
 }
 
-// Handles the conversions from the component type to the struct type
+// The inventory is a component of the player entity
 func (pl *PlayerData) GetPlayerInventory() *gear.Inventory {
 
 	playerInventory := common.GetComponentType[*gear.Inventory](pl.PlayerEntity, gear.InventoryComponent)
@@ -173,6 +174,8 @@ func (pl *PlayerData) GetPlayerAttributes() *common.Attributes {
 	return attr
 }
 
+// Called as part of ManageTurn, which is called in the ebiten Update function.
+// Effects can change the attributes, so we have a function dedicated to updating it.
 func (pl *PlayerData) UpdatePlayerAttributes() {
 
 	attr := pl.GetPlayerAttributes()

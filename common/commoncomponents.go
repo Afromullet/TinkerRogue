@@ -26,18 +26,13 @@ func (p *Position) ManhattanDistance(other *Position) int {
 	return int(xDist) + int(yDist)
 }
 
-func (p *Position) EuclidiannDistance(other *Position) int {
-	xDist := float64(p.X - other.X)
-	yDist := float64(p.Y - other.Y)
-	return int(math.Sqrt(xDist*xDist+yDist*yDist)) - 1
-}
-
 func (p *Position) ChebyshevDistance(other *Position) int {
 	xDist := math.Abs(float64(p.X - other.X))
 	yDist := math.Abs(float64(p.Y - other.Y))
 	return int(math.Max(xDist, yDist))
 }
 
+// Todo determine what kind of distance function you want to use
 func (p *Position) InRange(other *Position, distance int) bool {
 
 	return p.ManhattanDistance(other) <= distance
@@ -45,7 +40,7 @@ func (p *Position) InRange(other *Position, distance int) bool {
 }
 
 // A TileBasedShape returns indices that correspond to the tiles on the GameMap
-// The caller of this function has to decide what to do with the positions.
+// The TileBasedShape uses World Coordnates
 func GetTilePositions(indices []int, dungeinWidth int) []Position {
 
 	pos := make([]Position, len(indices))
@@ -89,6 +84,7 @@ func NewBaseAttributes(maxHealth, attackBonus, baseAC, baseProt, baseMovSpeed in
 	}
 }
 
+// For Displaying to the player
 func (a Attributes) AttributeText() string {
 	s := ""
 	s += "HP: " + strconv.Itoa(a.CurrentHealth) + "/" + strconv.Itoa(a.MaxHealth) + "\n"
