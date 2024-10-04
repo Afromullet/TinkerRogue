@@ -97,7 +97,7 @@ func NewGame() *Game {
 func ManageTurn(g *Game) {
 
 	g.playerData.UpdatePlayerAttributes()
-	g.gameUI.StatsUI.StatsTextArea.SetText(g.playerData.GetPlayerAttributes().AttributeText())
+	g.gameUI.StatsUI.StatsTextArea.SetText(g.playerData.GetPlayerAttributes().DisplayString())
 	if g.ts.Turn == timesystem.PlayerTurn && !g.playerData.InputStates.HasKeyInput {
 
 		//Apply Consumabl Effects at beginning of player turn
@@ -108,7 +108,7 @@ func ManageTurn(g *Game) {
 
 			gear.RunEffectTracker(g.playerData.PlayerEntity)
 
-			g.gameUI.StatsUI.StatsTextArea.SetText(g.playerData.GetPlayerAttributes().AttributeText())
+			g.gameUI.StatsUI.StatsTextArea.SetText(g.playerData.GetPlayerAttributes().DisplayString())
 			g.ts.Turn = timesystem.MonsterTurn
 
 		}
@@ -190,6 +190,8 @@ func RemoveDeadEntities(ecsmanager *common.EntityManager, am timesystem.ActionMa
 func (g *Game) Update() error {
 
 	g.gameUI.MainPlayerInterface.Update()
+
+	gui.SetContainerLocation(g.gameUI.StatsUI.StatUIContainer, g.gameMap.RightEdgeX, 0)
 
 	graphics.VXHandler.UpdateVisualEffects()
 

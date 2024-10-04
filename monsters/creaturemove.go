@@ -3,6 +3,7 @@ package monsters
 import (
 	"game_main/common"
 	"game_main/graphics"
+
 	"game_main/pathfinding"
 	"game_main/randgen"
 	"game_main/timesystem"
@@ -174,6 +175,17 @@ func CreatureMovementSystem(ecsmanager *common.EntityManager, gm *worldmap.GameM
 
 	//var ok bool
 	var ok bool
+
+	//creature := common.GetComponentType[*Creature](c.Entity, CreatureComponent)
+
+	/*
+		attr := common.GetComponentType[*common.Attributes](c.Entity, common.AttributeComponent)
+		creature := common.GetComponentType[*Creature](c.Entity, CreatureComponent)
+
+		if !attr.CanMove {
+			creature.Path = creature.Path[:0]
+		}
+	*/
 
 	// Todo need to avoid friendly fire
 

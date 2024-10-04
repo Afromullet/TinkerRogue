@@ -51,7 +51,8 @@ func CreateCreatureFromTemplate(manager common.EntityManager, m JSONMonster, gm 
 		BaseDodgeChance:    m.Attributes.BaseDodgeChance,
 		BaseMovementSpeed:  m.Attributes.BaseMovementSpeed,
 		TotalMovementSpeed: m.Attributes.BaseMovementSpeed,
-		TotalAttackSpeed:   1}
+		TotalAttackSpeed:   1,
+		CanMove:            true}
 
 	if m.Armor != nil {
 

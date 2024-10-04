@@ -106,6 +106,8 @@ type GameMap struct {
 	Rooms         []Rect
 	PlayerVisible *fov.View
 	NumTiles      int
+	RightEdgeX    int
+	RightEdgeY    int
 }
 
 func NewGameMap() GameMap {
@@ -211,7 +213,9 @@ func (gameMap *GameMap) DrawLevelCenteredSquare(screen *ebiten.Image, playerPos 
 	//centerOffsetX, centerOffsetY := graphics.CenterOffset(playerPos.X, playerPos.Y)
 
 	// Get the dimensions of the screen
-
+	gameMap.RightEdgeX = 0
+	gameMap.RightEdgeY = 0
+	// Initialize with smallest possible value
 	// Draw the square section centered on the screen
 	for x := sq.StartX; x <= sq.EndX; x++ {
 		for y := sq.StartY; y <= sq.EndY; y++ {
@@ -231,6 +235,18 @@ func (gameMap *GameMap) DrawLevelCenteredSquare(screen *ebiten.Image, playerPos 
 			offsetX, offsetY := graphics.OffsetFromCenter(playerPos.X, playerPos.Y, tile.PixelX, tile.PixelY, graphics.ScreenInfo)
 			op.GeoM.Translate(offsetX, offsetY)
 
+			// Calculate the right edge of this tile
+			tileRightEdge := int(offsetX + float64(tile.image.Bounds().Dx()*graphics.ScreenInfo.ScaleFactor))
+			if tileRightEdge > gameMap.RightEdgeX {
+				gameMap.RightEdgeX = tileRightEdge
+			}
+
+			// Calculate the top edge of this tile
+			tileTopEdge := int(offsetY)
+			if tileTopEdge < gameMap.RightEdgeY {
+				gameMap.RightEdgeY = tileTopEdge
+			}
+
 			if isVis {
 				tile.IsRevealed = true
 			} else if tile.IsRevealed {
@@ -249,6 +265,7 @@ func (gameMap *GameMap) DrawLevelCenteredSquare(screen *ebiten.Image, playerPos 
 			screen.DrawImage(tile.image, op)
 		}
 	}
+
 }
 
 // The color matrix draws on tiles.

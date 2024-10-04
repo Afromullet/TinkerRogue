@@ -1,6 +1,9 @@
 package trackers
 
-import "game_main/gear"
+import (
+	"fmt"
+	"game_main/gear"
+)
 
 type StatusEffectTracker struct {
 	ActiveEffects map[string]gear.StatusEffects
@@ -27,4 +30,23 @@ func (s *StatusEffectTracker) Add(e gear.StatusEffects) {
 		s.ActiveEffects[e.StatusEffectName()] = e
 	}
 
+}
+
+// Used for displaying the active status effects to the player
+func (s *StatusEffectTracker) ActiveEffectNames() string {
+
+	result := ""
+
+	//The key is the name
+	for k, eff := range s.ActiveEffects {
+
+		if eff.Duration() > 0 {
+			result += fmt.Sprintln(eff.DisplayString())
+		} else {
+			result += fmt.Sprintln(k, " Is done")
+
+		}
+	}
+
+	return result
 }

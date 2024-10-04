@@ -42,7 +42,7 @@ func (c *Consumable) ApplyHealingEffect(baseAttr *common.Attributes) {
 }
 
 // For displaying consumable info in the GUI
-func (c Consumable) ConsumableInfo() string {
+func (c Consumable) DisplayString() string {
 	s := ""
 
 	s += "Name " + c.Name + "\n"

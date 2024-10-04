@@ -84,7 +84,7 @@ func CreateTestItems(manager *ecs.Manager, tags map[string]ecs.Tag, gameMap *wor
 	throwItem := CreateTestThrowable(TestSquare, TestFireEffect)
 
 	CreateItem(manager, "SquareThrow"+strconv.Itoa(1), common.Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
-		throwItem, TestBurning, TestFreezing)
+		throwItem, TestBurning, TestFreezing, TestSticky)
 
 	CreateItem(manager, "SquareThrow"+strconv.Itoa(1), common.Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
 		throwItem, TestBurning)

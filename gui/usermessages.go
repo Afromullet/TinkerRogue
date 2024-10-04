@@ -21,16 +21,13 @@ func ProcessUserLog(ecsmanager common.EntityManager, screen *ebiten.Image, msgUI
 
 			messages.AttackMessage = ""
 		}
-	}
-	for _, m := range ecsmanager.World.Query(ecsmanager.WorldTags["messengers"]) {
-		messages := m.Components[common.UserMsgComponent].(*common.UserMessage)
 
-		if messages.GameStateMessage != "" {
-			tmpMessages = append(tmpMessages, messages.GameStateMessage)
+		if messages.StatusEffectMessage != "" {
+			tmpMessages = append(tmpMessages, messages.StatusEffectMessage)
 			anyMessages = true
-			//No need to clear, it's all over
-		}
 
+			messages.StatusEffectMessage = ""
+		}
 	}
 
 	if anyMessages {

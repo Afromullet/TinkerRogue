@@ -18,11 +18,6 @@ const (
 	InvalidItemType
 )
 
-// Anything that implements this returns a string that dispalys item information to the user
-type ItemStatDisplayer interface {
-	Stats() string
-}
-
 // Todo remove later once you change teh random number generation. The same function is in another aprt of the code
 // Here to avoid circular inclusions of randgen
 func GetRandomBetween(low int, high int) int {
@@ -47,11 +42,11 @@ func GetDiceRoll(num int) int {
 func ItemStats(e *ecs.Entity) string {
 
 	if item := common.GetComponentType[*Armor](e, ArmorComponent); item != nil {
-		return item.Stats()
+		return item.DisplayString()
 	} else if item := common.GetComponentType[*MeleeWeapon](e, MeleeWeaponComponent); item != nil {
-		return item.Stats()
+		return item.DisplayString()
 	} else if item := common.GetComponentType[*RangedWeapon](e, RangedWeaponComponent); item != nil {
-		return item.Stats()
+		return item.DisplayString()
 	} else {
 		return ""
 	}

@@ -12,8 +12,9 @@ type Position struct {
 }
 
 type UserMessage struct {
-	AttackMessage    string
-	GameStateMessage string
+	AttackMessage       string
+	GameStateMessage    string
+	StatusEffectMessage string
 }
 
 func (p *Position) IsEqual(other *Position) bool {
@@ -70,6 +71,7 @@ type Attributes struct {
 	TotalDodgeChance   float32
 	TotalMovementSpeed int
 	TotalAttackSpeed   int
+	CanMove            bool
 }
 
 func NewBaseAttributes(maxHealth, attackBonus, baseAC, baseProt, baseMovSpeed int, dodge float32) Attributes {
@@ -85,7 +87,7 @@ func NewBaseAttributes(maxHealth, attackBonus, baseAC, baseProt, baseMovSpeed in
 }
 
 // For Displaying to the player
-func (a Attributes) AttributeText() string {
+func (a Attributes) DisplayString() string {
 	s := ""
 	s += "HP: " + strconv.Itoa(a.CurrentHealth) + "/" + strconv.Itoa(a.MaxHealth) + "\n"
 	s += "Armor Class: " + strconv.Itoa(a.TotalArmorClass) + "\n"
@@ -100,4 +102,9 @@ func (a Attributes) AttributeText() string {
 
 type Name struct {
 	NameStr string
+}
+
+// Anything that displays text in the GUI implements this interface
+type StringDisplay interface {
+	DisplayString()
 }

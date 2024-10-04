@@ -22,7 +22,7 @@ type Armor struct {
 	DodgeChance float32
 }
 
-func (a *Armor) Stats() string {
+func (a *Armor) DisplayString() string {
 
 	s := ""
 	s += "Armor Class: " + strconv.Itoa(a.ArmorClass) + "\n"
@@ -39,7 +39,7 @@ type MeleeWeapon struct {
 	AttackSpeed int
 }
 
-func (w *MeleeWeapon) Stats() string {
+func (w *MeleeWeapon) DisplayString() string {
 
 	s := ""
 	s += "Min Damage: " + strconv.Itoa(w.MinDamage) + "\n"
@@ -68,7 +68,7 @@ type RangedWeapon struct {
 	AttackSpeed   int
 }
 
-func (w *RangedWeapon) Stats() string {
+func (w *RangedWeapon) DisplayString() string {
 
 	s := ""
 	s += "Min Damage: " + strconv.Itoa(w.MinDamage) + "\n"

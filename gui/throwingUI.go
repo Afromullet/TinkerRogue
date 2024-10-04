@@ -67,9 +67,9 @@ func (throwingItemDisplay *ThrowingItemDisplay) CreateRootContainer() {
 		widget.ContainerOpts.BackgroundImage(defaultWidgetColor),
 		widget.ContainerOpts.Layout(widget.NewGridLayout(
 			// It is using a GridLayout with a single column
-			widget.GridLayoutOpts.Columns(3),
+			widget.GridLayoutOpts.Columns(2),
 
-			widget.GridLayoutOpts.Stretch([]bool{true, true, true}, []bool{true, true, true}),
+			widget.GridLayoutOpts.Stretch([]bool{true, true}, []bool{true, true}),
 			// Padding defines how much space to put around the outside of the grid.
 			widget.GridLayoutOpts.Padding(widget.Insets{
 				Top:    50,

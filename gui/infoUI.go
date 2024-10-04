@@ -241,13 +241,16 @@ func addInfoListHandler(li *widget.List, em *common.EntityManager, info *InfoUI)
 
 		if a.Entry == LookAtCreatureOpt {
 
-			cr := common.GetCreatureAtPosition(em, &pos)
+			ent := common.GetCreatureAtPosition(em, &pos)
 			//cr := tracker.CreatureTracker.Get(&pos)
 
 			// If it's nil, there's no creature at the position
-			if cr != nil {
+			if ent != nil {
 				info.CreatureInfoWindow(info.windowX, info.windowY)
-				info.DisplayInfoTextArea.SetText(monsters.EntityDescription(common.GetCreatureAtPosition(em, &pos)))
+
+				creature := common.GetComponentType[*monsters.Creature](ent, monsters.CreatureComponent)
+
+				info.DisplayInfoTextArea.SetText(creature.DisplayString(ent))
 			}
 
 			fmt.Println("Looking at creature")

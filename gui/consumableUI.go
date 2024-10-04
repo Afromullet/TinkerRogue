@@ -39,7 +39,7 @@ func (consDisplay *ConsumableItemDisplay) CreateInventoryList(propFilters ...gea
 			cons := common.GetComponentType[*gear.Consumable](item, gear.ConsumableComponent)
 
 			consDisplay.ConsumableEffectText.SetText("")
-			consDisplay.ConsumableEffectText.AppendText(cons.ConsumableInfo())
+			consDisplay.ConsumableEffectText.AppendText(cons.DisplayString())
 
 		}
 
@@ -80,11 +80,33 @@ func (consDisplay *ConsumableItemDisplay) CreateRootContainer() {
 func (consDisplay *ConsumableItemDisplay) SetupContainers() {
 
 	consDisplay.ConsumableEffectText = CreateTextArea(500, 300)
-	consDisplay.ItmDisplay.RootContainer.AddChild(consDisplay.ItmDisplay.InventoryDisplayContainer)
 
+	consDisplay.ItmDisplay.ItemSelectedContainer = widget.NewContainer(
+
+		widget.ContainerOpts.BackgroundImage(defaultWidgetColor),
+		widget.ContainerOpts.Layout(widget.NewGridLayout(
+			// It is using a GridLayout with a single column
+			widget.GridLayoutOpts.Columns(1),
+			widget.GridLayoutOpts.Stretch([]bool{true, true}, []bool{true, true}),
+
+			//widget.GridLayoutOpts.Stretch([]bool{true, true, true}, []bool{true, true, true}),
+			// Padding defines how much space to put around the outside of the grid.
+			widget.GridLayoutOpts.Padding(widget.Insets{
+				Top:    50,
+				Bottom: 50,
+			}),
+			// Spacing defines how much space to put between each column and row
+			widget.GridLayoutOpts.Spacing(0, 20))),
+	)
+
+	consDisplay.ItmDisplay.RootContainer.AddChild(consDisplay.ItmDisplay.InventoryDisplayContainer)
+	consDisplay.ItmDisplay.RootContainer.AddChild(consDisplay.ItmDisplay.ItemSelectedContainer)
+
+	//consDisplay.ItmDisplay.RootContainer.AddChild(consDisplay.ConsumableEffectText)
 	consDisplay.ItmDisplay.ItemSelectedContainer.AddChild(consDisplay.ConsumableEffectText)
 	consDisplay.ItmDisplay.ItemSelectedContainer.AddChild(consDisplay.CreateUseConsumableButton())
-	consDisplay.ItmDisplay.RootContainer.AddChild(consDisplay.ItmDisplay.ItemSelectedContainer)
+
+	//consDisplay.ItmDisplay.RootContainer.AddChild(consDisplay.CreateUseConsumableButton())
 
 }
 

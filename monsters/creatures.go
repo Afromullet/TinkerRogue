@@ -61,6 +61,8 @@ func ApplyStatusEffects(c *ecs.QueryResult) {
 
 	creature := c.Components[CreatureComponent].(*Creature)
 
+	msg := common.GetComponentType[*common.UserMessage](c.Entity, common.UserMsgComponent)
+
 	if len(creature.StatEffectTracker.ActiveEffects) == 0 {
 		return
 	}
@@ -69,6 +71,7 @@ func ApplyStatusEffects(c *ecs.QueryResult) {
 
 		if eff.Duration() >= 1 {
 			eff.ApplyToCreature(c)
+
 		}
 
 		//ApplyTodCreature changes the duration, so we need to check again before
@@ -80,6 +83,8 @@ func ApplyStatusEffects(c *ecs.QueryResult) {
 		}
 
 	}
+
+	msg.StatusEffectMessage = creature.StatEffectTracker.ActiveEffectNames()
 
 	fmt.Println("Printing active effects")
 
@@ -127,17 +132,36 @@ func (c *Creature) UpdatePosition(gm *worldmap.GameMap, currentPosition *common.
 }
 
 // Returns a description on the entity to display to the player
-func EntityDescription(e *ecs.Entity) string {
+func (c *Creature) DisplayString(e *ecs.Entity) string {
 
 	attr := common.GetAttributes(e)
 	name := common.GetComponentType[*common.Name](e, common.NameComponent)
+	cr := common.GetComponentType[*Creature](e, CreatureComponent)
 
 	result := fmt.Sprintln("Name ", name.NameStr)
 	result += fmt.Sprintln("Health", attr.CurrentHealth, attr.MaxHealth)
-	result += fmt.Sprintln(attr.AttributeText())
+	result += fmt.Sprintln(attr.DisplayString())
+	result += fmt.Sprintln(cr.StatEffectTracker.ActiveEffectNames())
 
 	return result
 }
+
+/*
+// Returns a description on the entity to display to the player
+func CreatureDescription(e *ecs.Entity) string {
+
+	attr := common.GetAttributes(e)
+	name := common.GetComponentType[*common.Name](e, common.NameComponent)
+	cr := common.GetComponentType[*Creature](e, CreatureComponent)
+
+	result := fmt.Sprintln("Name ", name.NameStr)
+	result += fmt.Sprintln("Health", attr.CurrentHealth, attr.MaxHealth)
+	result += fmt.Sprintln(attr.DisplayString())
+	result += fmt.Sprintln(cr.StatEffectTracker.ActiveEffectNames())
+
+	return result
+}
+*/
 
 // Currently executes all actions just as it did before, this time only doing it through the AllActions queue
 // Will change later once the time system is implemented. Still want things to behave the same while implementing the time system

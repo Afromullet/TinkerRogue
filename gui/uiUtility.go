@@ -13,7 +13,7 @@ import (
 	"golang.org/x/image/font/gofont/goregular"
 )
 
-var face, _ = loadFont(20)
+var face, _ = loadFont(30)
 var largeFace, _ = loadFont(50)
 var buttonImage, _ = loadButtonImage()
 var defaultWidgetColor = e_image.NewNineSliceColor(color.NRGBA{0x13, 0x1a, 0x22, 0xff})
@@ -77,7 +77,7 @@ func CreateTextArea(minSizeX, minSizeY int) *widget.TextArea {
 		widget.TextAreaOpts.FontFace(face),
 
 		//Tell the TextArea to show the vertical scrollbar
-		widget.TextAreaOpts.ShowVerticalScrollbar(),
+		//widget.TextAreaOpts.ShowVerticalScrollbar(),
 		//Set padding between edge of the widget and where the text is drawn
 		widget.TextAreaOpts.TextPadding(widget.NewInsetsSimple(10)),
 		//This sets the background images for the scroll container
@@ -146,4 +146,8 @@ func SetContainerLocation(w *widget.Container, x, y int) {
 
 	w.SetLocation(r)
 
+}
+
+type StringDisplay interface {
+	DisplayString()
 }

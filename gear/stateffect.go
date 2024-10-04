@@ -56,6 +56,7 @@ type StatusEffects interface {
 	StatusEffectName() string
 	Duration() int
 	ApplyToCreature(c *ecs.QueryResult)
+	DisplayString() string
 	StackEffect(eff any)
 	Copy() StatusEffects
 }
@@ -145,8 +146,38 @@ func (s *Sticky) Copy() StatusEffects {
 	}
 }
 
+// Using a closure to track the original movement speed so that we don't have to track that outside of the function
 func (s *Sticky) ApplyToCreature(c *ecs.QueryResult) {
-	s.MainProps.Duration -= 1
+	var originalMovementSpeed int
+	var initialized bool
+
+	applyEffect := func(c *ecs.QueryResult) {
+		attr := common.GetComponentType[*common.Attributes](c.Entity, common.AttributeComponent)
+
+		if !initialized {
+			originalMovementSpeed = attr.TotalMovementSpeed
+			initialized = true
+		}
+
+		attr.TotalMovementSpeed -= 5
+		s.MainProps.Duration--
+
+		if s.MainProps.Duration == 0 {
+			attr.TotalMovementSpeed = originalMovementSpeed
+		}
+	}
+
+	applyEffect(c)
+
+	attr := common.GetComponentType[*common.Attributes](c.Entity, common.AttributeComponent)
+
+	fmt.Println("Printing the attributes ", attr.DisplayString())
+}
+func (s *Sticky) DisplayString() string {
+	result := ""
+	result += fmt.Sprintln("Movement slowed down by stickiness")
+
+	return result
 }
 
 func NewSticky(dur int, spr int) *Sticky {
@@ -205,6 +236,13 @@ func (b *Burning) ApplyToCreature(c *ecs.QueryResult) {
 	h.CurrentHealth -= b.Temperature
 }
 
+func (b *Burning) DisplayString() string {
+	result := ""
+	result += fmt.Sprintln("Burning with a temperature of ", b.Temperature)
+
+	return result
+}
+
 func NewBurning(dur int, temp int) *Burning {
 
 	return &Burning{
@@ -255,7 +293,23 @@ func (f *Freezing) Copy() StatusEffects {
 }
 
 func (f *Freezing) ApplyToCreature(c *ecs.QueryResult) {
+
+	attr := common.GetComponentType[*common.Attributes](c.Entity, common.AttributeComponent)
+
+	if f.MainProps.Duration > 0 {
+		attr.CanMove = false
+	} else {
+		attr.CanMove = true
+	}
+
 	f.MainProps.Duration -= 1
+}
+
+func (f *Freezing) DisplayString() string {
+	result := ""
+	result += fmt.Sprintln("Frozen Effect Active")
+
+	return result
 }
 
 func NewFreezing(dur int, t int) *Freezing {
@@ -297,6 +351,10 @@ func (t Throwable) Duration() int {
 // Does nothing. Only here because Throwale is a StatusEffect. It shouldn't be. Todo change that in the future
 func (t *Throwable) StackEffect(eff any) {
 
+}
+
+func (*Throwable) DisplayString() string {
+	return ""
 }
 
 func (t *Throwable) Copy() StatusEffects {

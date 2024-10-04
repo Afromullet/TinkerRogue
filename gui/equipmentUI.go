@@ -72,11 +72,11 @@ func (equipmentDisplay *EquipmentItemDisplay) CreateRootContainer() {
 			//widget.GridLayoutOpts.Stretch([]bool{true, true, true}, []bool{true, true, true}),
 			// Padding defines how much space to put around the outside of the grid.
 			widget.GridLayoutOpts.Padding(widget.Insets{
-				Top:    150,
-				Bottom: 150,
+				Top:    10,
+				Bottom: 10,
 			}),
 			// Spacing defines how much space to put between each column and row
-			widget.GridLayoutOpts.Spacing(50, 15))),
+			widget.GridLayoutOpts.Spacing(0, 20))),
 	)
 
 }
@@ -116,6 +116,24 @@ func (equipmentDisplay *EquipmentItemDisplay) SetupContainers() {
 
 	// Holds the widget that displays the selected items to the player
 
+	equipmentDisplay.ItmDisplay.ItemSelectedContainer = widget.NewContainer(
+
+		widget.ContainerOpts.BackgroundImage(defaultWidgetColor),
+		widget.ContainerOpts.Layout(widget.NewGridLayout(
+			// It is using a GridLayout with a single column
+			widget.GridLayoutOpts.Columns(1),
+			widget.GridLayoutOpts.Stretch([]bool{true, true}, []bool{true, true}),
+
+			//widget.GridLayoutOpts.Stretch([]bool{true, true, true}, []bool{true, true, true}),
+			// Padding defines how much space to put around the outside of the grid.
+			widget.GridLayoutOpts.Padding(widget.Insets{
+				Top:    50,
+				Bottom: 50,
+			}),
+			// Spacing defines how much space to put between each column and row
+			widget.GridLayoutOpts.Spacing(0, 20))),
+	)
+
 	equipmentDisplay.EquipmentSelectedText = CreateTextArea(300, 300)
 	equipmentDisplay.ItmDisplay.ItemSelectedContainer.AddChild(equipmentDisplay.EquipmentSelectedText)
 	equipmentDisplay.EquipmentSelectedText.SetText("asdasdsa")
@@ -147,11 +165,12 @@ func (equipmentDisplay *EquipmentItemDisplay) SetupContainers() {
 	equipmentDisplay.ItmDisplay.RootContainer.AddChild(equipmentDisplay.ItmDisplay.ItemSelectedContainer)
 	equipmentDisplay.ItmDisplay.RootContainer.AddChild(equipmentDisplay.CurrentlyEquippedContainer)
 
+	//This adds it to the next row
 	equipmentDisplay.CurrentlyEquippedContainer.AddChild(equipmentDisplay.MeleeWepText)
 	equipmentDisplay.CurrentlyEquippedContainer.AddChild(equipmentDisplay.RangeWepText)
 	equipmentDisplay.CurrentlyEquippedContainer.AddChild(equipmentDisplay.ArmorText)
 
-	button = CreateButton("Remove")
+	button = CreateButton("Remove\nMelee")
 
 	button.Configure( // add a handler that reacts to clicking the button
 		widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
@@ -163,7 +182,7 @@ func (equipmentDisplay *EquipmentItemDisplay) SetupContainers() {
 
 	equipmentDisplay.CurrentlyEquippedContainer.AddChild(button)
 
-	button = CreateButton("Remove")
+	button = CreateButton("Remove\nRanged")
 
 	button.Configure( // add a handler that reacts to clicking the button
 		widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
@@ -175,7 +194,7 @@ func (equipmentDisplay *EquipmentItemDisplay) SetupContainers() {
 
 	equipmentDisplay.CurrentlyEquippedContainer.AddChild(button)
 
-	button = CreateButton("Remove")
+	button = CreateButton("Remove\nArmor")
 
 	button.Configure( // add a handler that reacts to clicking the button
 		widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
