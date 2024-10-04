@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"game_main/avatar"
 	"game_main/gear"
+	"game_main/graphics"
 	"image/color"
 	_ "image/png"
 	"strconv"
@@ -49,13 +50,11 @@ type ItemDisplay struct {
 func (itemDisplay *ItemDisplay) createItemSelectedContainer() {
 
 	// Holds the widget that displays the selected items to the player
+	//Todo why are there two layouts here?
 	itemDisplay.ItemSelectedContainer = widget.NewContainer(
 		widget.ContainerOpts.BackgroundImage(defaultWidgetColor),
 		widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
-		widget.ContainerOpts.Layout(widget.NewRowLayout(
-			widget.RowLayoutOpts.Direction(widget.DirectionVertical),
-			widget.RowLayoutOpts.Spacing(10),
-		)))
+	)
 
 }
 
@@ -64,7 +63,9 @@ func (itemDisplay *ItemDisplay) createItemDisplayContainer() {
 	itemDisplay.InventoryDisplayContainer = widget.NewContainer(
 		widget.ContainerOpts.BackgroundImage(defaultWidgetColor),
 		widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
+		//widget.ContainerOpts.WidgetOpts(widget.WidgetOpts.MinSize(5000, 500)),
 	)
+
 }
 
 func (itemDisplay *ItemDisplay) createInventoryDisplayWindow(title string) {
@@ -94,7 +95,7 @@ func (itemDisplay *ItemDisplay) createInventoryDisplayWindow(title string) {
 		widget.WindowOpts.CloseMode(widget.CLICK_OUT),
 		widget.WindowOpts.Draggable(),
 		widget.WindowOpts.Resizeable(),
-		widget.WindowOpts.MinSize(500, 500),
+		widget.WindowOpts.MinSize(graphics.ScreenInfo.GetCanvasWidth(), 500),
 
 		widget.WindowOpts.MoveHandler(func(args *widget.WindowChangedEventArgs) {
 			fmt.Println("Window Moving")

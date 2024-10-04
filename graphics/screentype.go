@@ -10,14 +10,15 @@ type ScreenData struct {
 	DungeonWidth  int
 	DungeonHeight int
 
-	ScaleFactor int
-	LevelWidth  int
-	LevelHeight int
+	ScaleFactor  int
+	LevelWidth   int
+	LevelHeight  int
+	PaddingRight int //Extra padding added to the right ouside of the map
 }
 
 func (s ScreenData) GetCanvasWidth() int {
 
-	return int((float64(s.TileSize * s.DungeonWidth)))
+	return int((float64(s.TileSize * s.DungeonWidth))) + s.PaddingRight
 
 }
 
@@ -44,6 +45,8 @@ func NewScreenData() ScreenData {
 	// Calculate the level dimensions based on the tile size
 	g.LevelHeight = g.DungeonHeight * g.TileSize
 	g.LevelWidth = g.DungeonWidth * g.TileSize
+
+	g.PaddingRight = 500
 
 	return g
 }

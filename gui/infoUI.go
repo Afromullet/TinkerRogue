@@ -143,7 +143,7 @@ func CreateInfoUI(ecsmanager *common.EntityManager, ui *ebitenui.UI) InfoUI {
 		}),
 	)
 
-	infoUI.DisplayInfoTextArea = CreateTextArea()
+	infoUI.DisplayInfoTextArea = CreateTextArea(300, 300)
 
 	infoUI.DisplayInfoContainer.AddChild(infoUI.DisplayInfoTextArea)
 

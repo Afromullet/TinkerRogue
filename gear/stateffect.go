@@ -47,6 +47,7 @@ var AllItemEffects []*ecs.Component
 // StatusEffectNames returns the name from the Common Properties
 // Duration returns the duration from the common properties
 // ApplyToCreature decides what the effect does to the creature
+// StackEffect decides how to stack the effect if it's applied again. Need to do a type assertion on the any.
 // Copy creates a shallow copy
 // Even though all of them have the name and duration in the common properties,
 // we have it as a method of the interface so that we can access it without type assertions
@@ -55,6 +56,7 @@ type StatusEffects interface {
 	StatusEffectName() string
 	Duration() int
 	ApplyToCreature(c *ecs.QueryResult)
+	StackEffect(eff any)
 	Copy() StatusEffects
 }
 
@@ -96,6 +98,13 @@ type CommonItemProperties struct {
 	Name     string
 }
 
+// Adds the duration of the other to the CommonItemProperty
+func (c *CommonItemProperties) AddDuration(other CommonItemProperties) {
+
+	c.Duration += other.Duration
+
+}
+
 type Sticky struct {
 	MainProps CommonItemProperties
 	Spread    int //Sticky effects can spread
@@ -108,6 +117,18 @@ func (s *Sticky) StatusEffectComponent() *ecs.Component {
 
 func (s *Sticky) StatusEffectName() string {
 	return s.MainProps.Name
+
+}
+
+// Takes the larger spread.
+func (s *Sticky) StackEffect(eff any) {
+
+	e := eff.(*Sticky)
+	e.MainProps.AddDuration(e.MainProps)
+
+	if s.Spread < e.Spread {
+		s.Spread = e.Spread
+	}
 
 }
 
@@ -156,6 +177,15 @@ func (b *Burning) StatusEffectName() string {
 func (b Burning) Duration() int {
 
 	return b.MainProps.Duration
+
+}
+
+func (b *Burning) StackEffect(eff any) {
+
+	e := eff.(*Burning)
+	e.MainProps.AddDuration(e.MainProps)
+
+	b.Temperature += e.Temperature
 
 }
 
@@ -208,6 +238,15 @@ func (f Freezing) Duration() int {
 
 }
 
+func (f *Freezing) StackEffect(eff any) {
+
+	e := eff.(*Freezing)
+	e.MainProps.AddDuration(e.MainProps)
+
+	f.Thickness += e.Thickness
+
+}
+
 func (f *Freezing) Copy() StatusEffects {
 	return &Freezing{
 		MainProps: f.MainProps,
@@ -252,6 +291,11 @@ func (t *Throwable) StatusEffectName() string {
 func (t Throwable) Duration() int {
 
 	return t.MainProps.Duration
+
+}
+
+// Does nothing. Only here because Throwale is a StatusEffect. It shouldn't be. Todo change that in the future
+func (t *Throwable) StackEffect(eff any) {
 
 }
 

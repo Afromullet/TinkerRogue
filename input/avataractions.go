@@ -11,7 +11,6 @@ import (
 	"game_main/monsters"
 	"game_main/rendering"
 	"game_main/worldmap"
-	"log"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
@@ -177,7 +176,6 @@ func HandlePlayerThrowable(ecsmanager *common.EntityManager, pl *avatar.PlayerDa
 		//Cancel throwing
 		if inpututil.IsMouseButtonJustPressed(ebiten.MouseButton2) {
 
-			log.Println("Removing throwable")
 			gm.ApplyColorMatrix(PrevThrowInds, graphics.NewEmptyMatrix())
 			playerUI.SetThrowableItemSelected(false) //TOdo this is a problem
 			pl.InputStates.IsThrowing = false
@@ -301,7 +299,7 @@ func MovePlayer(ecsmanager *common.EntityManager, pl *avatar.PlayerData, gm *wor
 	} else {
 		//Determine if the tile is blocked because there's a creature
 		if common.GetCreatureAtPosition(ecsmanager, &nextPosition) != nil {
-			fmt.Println("Attacking")
+
 			combat.MeleeAttackSystem(ecsmanager, pl, gm, pl.Pos, &nextPosition)
 		}
 

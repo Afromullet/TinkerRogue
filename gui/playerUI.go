@@ -71,8 +71,10 @@ func CreatePlayerUI(playerUI *PlayerUI, inv *gear.Inventory, pl *avatar.PlayerDa
 	rootContainer.AddChild(playerUI.StatsUI.StatUIContainer)
 	rootContainer.AddChild(playerUI.MsgUI.msgUIContainer)
 
-	SetContainerLocation(itemDisplayOptionsContainer, 0, 0)
+	SetContainerLocation(itemDisplayOptionsContainer, graphics.ScreenInfo.GetCanvasWidth()/2, 0)
+
 	SetContainerLocation(playerUI.StatsUI.StatUIContainer, graphics.ScreenInfo.GetCanvasWidth(), 0)
+
 	SetContainerLocation(playerUI.MsgUI.msgUIContainer, graphics.ScreenInfo.GetCanvasWidth(), graphics.ScreenInfo.GetCanvasHeight()/4+graphics.ScreenInfo.TileSize) //Placing it one tile under the Stats Container
 	playerUI.InformationUI = CreateInfoUI(ecsmanager, &ui)
 
@@ -94,7 +96,7 @@ func CreateOpenThrowablesButton(playerUI *PlayerUI, inv *gear.Inventory, ui *ebi
 			x, y := playerUI.ItemsUI.ThrowableItemDisplay.ItemDisplay.RootWindow.Contents.PreferredSize()
 
 			r := image.Rect(0, 0, x, y)
-			r = r.Add(image.Point{200, 200})
+			r = r.Add(image.Point{200, 50})
 			playerUI.ItemsUI.ThrowableItemDisplay.ItemDisplay.RootWindow.SetLocation(r)
 			playerUI.ItemsUI.ThrowableItemDisplay.DisplayInventory()
 			ui.AddWindow(playerUI.ItemsUI.ThrowableItemDisplay.ItemDisplay.RootWindow)

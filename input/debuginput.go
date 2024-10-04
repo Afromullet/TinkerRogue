@@ -1,9 +1,7 @@
 package input
 
 import (
-	"fmt"
 	"game_main/avatar"
-	"game_main/common"
 	"game_main/graphics"
 	"math"
 
@@ -32,14 +30,6 @@ func PlayerDebugActions(pl *avatar.PlayerData) {
 
 		pl.Pos.X = gridX
 		pl.Pos.Y = gridY
-
-	}
-
-	//teleport to cursor
-	if inpututil.IsKeyJustReleased(ebiten.KeyU) {
-
-		attr := common.GetComponentType[*common.Attributes](pl.PlayerEntity, common.AttributeComponent)
-		fmt.Println("Printing Current Attributes ", attr)
 
 	}
 

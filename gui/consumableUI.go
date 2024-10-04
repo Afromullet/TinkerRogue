@@ -79,7 +79,7 @@ func (consDisplay *ConsumableItemDisplay) CreateRootContainer() {
 
 func (consDisplay *ConsumableItemDisplay) SetupContainers() {
 
-	consDisplay.ConsumableEffectText = CreateTextArea()
+	consDisplay.ConsumableEffectText = CreateTextArea(500, 300)
 	consDisplay.ItmDisplay.RootContainer.AddChild(consDisplay.ItmDisplay.InventoryDisplayContainer)
 
 	consDisplay.ItmDisplay.ItemSelectedContainer.AddChild(consDisplay.ConsumableEffectText)

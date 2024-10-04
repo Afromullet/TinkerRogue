@@ -2,6 +2,8 @@ MAJOR
 
 
 
+Make private things private
+
 
 Try to understand how the centering and scaling words. Both for drawmap, drawrenderables, and for the throwing and ranged weapon shapes
 ALso for the VX. Basically anything with MAP_SCROLLING_ENABLED. Transformposition and more. Look at ALL translations etc and understand them. Use this to figure
@@ -15,11 +17,11 @@ Room Decoration (maybe)
 
 Check for functions which are not called
 
-Effect stacking
+
 
 Display Throwable Item Text
 
-Test and make sure attributes are calculated correctly during combat
+
 
 Need to remove monsters once they are dead rather than next turnb
 
@@ -32,9 +34,9 @@ Generation for throwables with properties using the lootable probabilities
 Add a Check to make sure that an entity has all the required components. I.E, name component, position, consumabletracker, etc
 
 
-Consider having all of the functions that create strings for displaying things to the user in their own package. Anything that returns a string could be removed to to the "DisplayData" package. Take a look at everything that returns string and determine whether this is a good move forward
-
 Move all of the component getters into their own package - assumign it does not cause circular inckusions
+
+Apply all of the effects - currently the ApplyToCreature is just a placeholder that shows that the effect is being applied, but it does nothing else. Sticky needs to be applied differently since that's a map effect
 
 
 ___Energy/Time System__
@@ -132,6 +134,8 @@ Map Drawing
 
 ___Other__
 
+* Make "throwable" something that isn't a status effect. 
+
 * Add a quick bar
 
 * Better message display. Currently it clears things too much - every new message clears the MsgUI text Area. It needs to keep a small history
@@ -182,15 +186,14 @@ Everything in the worldmap package
 
 Everything GUI related
 
-Action Queue needs to have fewer redundant methods
+Action Queue 
 
-Coordinate calculations
+
 
 PlayerData
 
-All of the coordinate conversion and map tile index references
 
-Use either logical or screen cordinates for function that take both - want just one
+
 
 
 

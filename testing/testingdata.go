@@ -22,7 +22,7 @@ var TestCone = graphics.NewTileCone(0, 0, 3, graphics.LineDiagonalUpRight)
 var TestCircle = graphics.NewTileCircle(0, 0, 2)
 var TestRect = graphics.NewTileRectangle(0, 0, 2, 3)
 var TestBurning = gear.NewBurning(5, 2)
-var TestSticky = gear.NewSticky(9, 2)
+var TestSticky = gear.NewSticky(5, 2)
 var TestFreezing = gear.NewFreezing(3, 5)
 
 var TestFireEffect = graphics.NewFireEffect(0, 0, 1, 2, 1, 0.5)
@@ -81,11 +81,13 @@ func CreateTestItems(manager *ecs.Manager, tags map[string]ecs.Tag, gameMap *wor
 
 	startingPos := gameMap.StartingPosition()
 
-	TestBurning.MainProps.Duration = 10
-	TestFreezing.MainProps.Duration = 10
-	TestSticky.MainProps.Duration = 10
-
 	throwItem := CreateTestThrowable(TestSquare, TestFireEffect)
+
+	CreateItem(manager, "SquareThrow"+strconv.Itoa(1), common.Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
+		throwItem, TestBurning, TestFreezing)
+
+	CreateItem(manager, "SquareThrow"+strconv.Itoa(1), common.Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
+		throwItem, TestBurning)
 
 	CreateItem(manager, "SquareThrow"+strconv.Itoa(1), common.Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
 		throwItem, TestBurning, TestFreezing)

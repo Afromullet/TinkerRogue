@@ -50,8 +50,6 @@ func MeleeAttackSystem(ecsmanager *common.EntityManager, pl *avatar.PlayerData, 
 		// Todo add a fist attack
 	}
 
-	fmt.Println(attackSuccess)
-
 }
 
 // A monster performing a ranged attack is simple right now.
@@ -129,7 +127,7 @@ func PerformAttack(ecsmanagr *common.EntityManager, pl *avatar.PlayerData, gm *w
 			totalDamage := damage - defAttr.TotalProtection
 
 			if totalDamage < 0 {
-				totalDamage = 0
+				totalDamage = 1
 			}
 
 			defAttr.CurrentHealth -= totalDamage

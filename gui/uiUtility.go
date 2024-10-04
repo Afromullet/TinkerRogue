@@ -45,7 +45,7 @@ func loadFont(size float64) (font.Face, error) {
 }
 
 // Text window to display the item properties of the selected items to the player
-func CreateTextArea() *widget.TextArea {
+func CreateTextArea(minSizeX, minSizeY int) *widget.TextArea {
 	// construct a textarea
 	return widget.NewTextArea(
 		widget.TextAreaOpts.ContainerOpts(
@@ -63,7 +63,7 @@ func CreateTextArea() *widget.TextArea {
 				*/
 
 				//Set the minimum size for the widget
-				widget.WidgetOpts.MinSize(300, 100),
+				widget.WidgetOpts.MinSize(minSizeX, minSizeX),
 			),
 		),
 		//widget.TextAreaOpts.ContainerOpts(),
@@ -118,6 +118,8 @@ func CreateButton(text string) *widget.Button {
 				HorizontalPosition: widget.AnchorLayoutPositionCenter,
 				VerticalPosition:   widget.AnchorLayoutPositionCenter,
 			}),
+
+			widget.WidgetOpts.MinSize(100, 100),
 		),
 
 		widget.ButtonOpts.Image(buttonImage),

@@ -9,7 +9,7 @@
         "baseArmorClass": 12,
         "baseProtection": 1,
         "baseDodgeChance": 0.1,
-        "baseMovementSpeed": 1
+        "baseMovementSpeed": 5
       },
       "armor": {
         "armorClass": 4,
@@ -32,7 +32,7 @@
         "baseArmorClass": 10,
         "baseProtection": 2,
         "baseDodgeChance": 0.05,
-        "baseMovementSpeed": 1
+        "baseMovementSpeed": 5
       },
       "armor": {
         "armorClass": 5,
@@ -55,7 +55,7 @@
         "baseArmorClass": 12,
         "baseProtection": 1,
         "baseDodgeChance": 0.08,
-        "baseMovementSpeed": 1
+        "baseMovementSpeed": 5
       },
       "armor": {
         "armorClass": 4,
@@ -78,7 +78,7 @@
         "baseArmorClass": 8,
         "baseProtection": 1,
         "baseDodgeChance": 0.1,
-        "baseMovementSpeed": 1
+        "baseMovementSpeed": 5
       },
       "armor": {
         "armorClass": 3,
@@ -107,7 +107,7 @@
         "baseArmorClass": 9,
         "baseProtection": 1,
         "baseDodgeChance": 0.1,
-        "baseMovementSpeed": 1
+        "baseMovementSpeed": 5
       },
       "armor": null,
       "rangedWeapon": {
@@ -132,7 +132,7 @@
         "baseArmorClass": 7,
         "baseProtection": 0,
         "baseDodgeChance": 0.2,
-        "baseMovementSpeed": 1
+        "baseMovementSpeed": 5
       },
       "armor": null,
       "rangedWeapon": {

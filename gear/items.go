@@ -1,6 +1,8 @@
 package gear
 
 import (
+	"fmt"
+
 	ecs "github.com/bytearena/ecs"
 )
 
@@ -56,7 +58,6 @@ func (item *Item) GetEffectNames() []string {
 	for _, c := range AllItemEffects {
 		data, ok := item.Properties.GetComponentData(c)
 		if ok {
-			print(data)
 
 			d := data.(*StatusEffects)
 			names = append(names, StatusEffectName(d))
@@ -64,6 +65,29 @@ func (item *Item) GetEffectNames() []string {
 	}
 	return names
 
+}
+
+//This will eventually fully replace GetEffectNames.
+
+func (item *Item) GetEffectString() string {
+
+	if item.Properties == nil {
+		return ""
+	}
+
+	result := ""
+
+	for _, c := range AllItemEffects {
+		data, ok := item.Properties.GetComponentData(c)
+		if ok {
+
+			d := data.(*StatusEffects)
+
+			result += fmt.Sprintln(StatusEffectName(d))
+		}
+	}
+
+	return result
 }
 
 /*
@@ -77,7 +101,7 @@ Here's an example of how it's used:
 
 item := GetComponentStruct[*Item](itemEntity, ItemComponent)
 t := item.GetItemEffect(THROWABLE_NAME).(throwable)
-fmt.Println(t.shape)
+
 */
 
 func (item *Item) ItemEffect(effectName string) any {

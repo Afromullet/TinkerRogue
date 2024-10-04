@@ -37,6 +37,9 @@ func (throwingItemDisplay *ThrowingItemDisplay) CreateInventoryList(propFilters 
 		if err == nil {
 
 			throwingItemDisplay.ItemDisplay.playerData.PrepareThrowable(it, entry.Index)
+
+			propNames := throwingItemDisplay.ItemDisplay.playerData.ThrowableItem.GetEffectString()
+			throwingItemDisplay.ThrowableItemText.SetText(propNames)
 		}
 
 		throwingItemDisplay.ThrowableItemSelected = true
@@ -88,4 +91,8 @@ func (throwingItemDisplay *ThrowingItemDisplay) SetupContainers() {
 	)
 
 	throwingItemDisplay.ItemDisplay.RootContainer.AddChild(throwingItemDisplay.ItemDisplay.InventoryDisplayContainer)
+
+	throwingItemDisplay.ThrowableItemText = CreateTextArea(100, 100)
+	throwingItemDisplay.ItemDisplay.RootContainer.AddChild(throwingItemDisplay.ThrowableItemText)
+
 }

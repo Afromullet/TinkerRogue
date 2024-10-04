@@ -7,6 +7,7 @@ import (
 	"game_main/gear"
 	"game_main/graphics"
 	"game_main/timesystem"
+	"game_main/trackers"
 	"game_main/worldmap"
 
 	"github.com/bytearena/ecs"
@@ -19,8 +20,9 @@ var CreatureComponent *ecs.Component
 // EffectsToApply trigger every turn in MonsterSystems
 // The Path is updated by a Movement Component
 type Creature struct {
-	Path           []common.Position
-	EffectsToApply []gear.StatusEffects
+	Path []common.Position
+
+	StatEffectTracker trackers.StatusEffectTracker
 }
 
 // This gets called so often that it might as well be a function
@@ -32,40 +34,60 @@ func GetCreature(e *ecs.Entity) *Creature {
 // Add stuff together and keep the longest duration
 func (c *Creature) AddEffects(effects *ecs.Entity) {
 
-	e := gear.AllStatusEffects(effects)
-	c.EffectsToApply = append(c.EffectsToApply, e...)
+	allEffects := gear.AllStatusEffects(effects)
+
+	for _, e := range allEffects {
+		c.StatEffectTracker.Add(e)
+	}
+
+	fmt.Println("Printing status effects ", c.StatEffectTracker)
 
 }
+
+/*
+func (c Creature) GetEffect(effect *ecs.Entity) {
+
+	for _, e := range c.EffectsToApply {
+
+		if e.StatusEffectName() == effect
+
+	}
+}
+*/
 
 // Gets called once per turn. Applies all status effects to the creature
 // Each effect implements the ApplyToCreature effect that determines...the kind of effect
 func ApplyStatusEffects(c *ecs.QueryResult) {
 
 	creature := c.Components[CreatureComponent].(*Creature)
-	num_status_effects := len(creature.EffectsToApply)
 
-	if num_status_effects == 0 {
+	if len(creature.StatEffectTracker.ActiveEffects) == 0 {
 		return
 	}
 
-	status_effects_to_keep := make([]gear.StatusEffects, 0)
-
-	for _, eff := range creature.EffectsToApply {
+	for key, eff := range creature.StatEffectTracker.ActiveEffects {
 
 		if eff.Duration() >= 1 {
 			eff.ApplyToCreature(c)
 		}
 
-		//ApplyToCreature changes the duration, so we need to check again before
+		//ApplyTodCreature changes the duration, so we need to check again before
 		//Deciding whether to keep the effect
-		if eff.Duration() > 0 {
-			status_effects_to_keep = append(status_effects_to_keep, eff)
+		fmt.Println("Printing duration ", eff.Duration())
+		if eff.Duration() == 0 {
+			delete(creature.StatEffectTracker.ActiveEffects, key)
 
 		}
 
 	}
 
-	creature.EffectsToApply = status_effects_to_keep
+	fmt.Println("Printing active effects")
+
+	for _, eff := range creature.StatEffectTracker.ActiveEffects {
+
+		fmt.Println(eff.StatusEffectName())
+
+	}
 
 }
 
@@ -126,26 +148,28 @@ func MonsterSystems(ecsmanger *common.EntityManager, pl *avatar.PlayerData, gm *
 	//TODO do I need to make sure the same action can't be added twice?
 	for _, c := range ecsmanger.World.Query(ecsmanger.WorldTags["monsters"]) {
 
-		actionQueue := common.GetComponentType[*timesystem.ActionQueue](c.Entity, timesystem.ActionQueueComponent)
-		attr := common.GetComponentType[*common.Attributes](c.Entity, common.AttributeComponent)
-		gear.UpdateEntityAttributes(c.Entity)
-		ApplyStatusEffects(c)
-		//gear.ConsumableEffectApplier(c.Entity)
+		if c.Entity != nil {
+			actionQueue := common.GetComponentType[*timesystem.ActionQueue](c.Entity, timesystem.ActionQueueComponent)
+			attr := common.GetComponentType[*common.Attributes](c.Entity, common.AttributeComponent)
+			gear.UpdateEntityAttributes(c.Entity)
+			ApplyStatusEffects(c)
+			//gear.ConsumableEffectApplier(c.Entity)
 
-		if actionQueue != nil {
+			if actionQueue != nil {
 
-			act := CreatureMovementSystem(ecsmanger, gm, c)
-			if act != nil {
-				actionQueue.AddMonsterAction(act, attr.TotalMovementSpeed, timesystem.MovementKind)
+				act := CreatureMovementSystem(ecsmanger, gm, c)
+				if act != nil {
+					actionQueue.AddMonsterAction(act, attr.TotalMovementSpeed, timesystem.MovementKind)
+				}
+
+				act, actionCost = CreatureAttackSystem(ecsmanger, pl, gm, c)
+
+				if act != nil {
+
+					actionQueue.AddMonsterAction(act, actionCost, timesystem.AttackKind)
+				}
+
 			}
-
-			act, actionCost = CreatureAttackSystem(ecsmanger, pl, gm, c)
-
-			if act != nil {
-
-				actionQueue.AddMonsterAction(act, actionCost, timesystem.AttackKind)
-			}
-
 		}
 
 		NumMonstersOnMap++
