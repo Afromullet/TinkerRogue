@@ -9,7 +9,6 @@ import (
 	_ "image/png"
 	"strconv"
 
-	e_image "github.com/ebitenui/ebitenui/image"
 	"github.com/ebitenui/ebitenui/widget"
 )
 
@@ -75,7 +74,7 @@ func (itemDisplay *ItemDisplay) createInventoryDisplayWindow(title string) {
 	titleFace, _ := loadFont(12)
 
 	titleContainer := widget.NewContainer(
-		widget.ContainerOpts.BackgroundImage(defaultWidgetColor),
+		widget.ContainerOpts.BackgroundImage(PanelRes.titleBar),
 		widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
 	)
 	titleContainer.AddChild(widget.NewText(
@@ -142,46 +141,32 @@ func (ItemDisplay *ItemDisplay) GetInventoryListWidget(entries []any) *widget.Li
 
 		// Set the entries in the list
 		widget.ListOpts.Entries(entries),
+
 		widget.ListOpts.ScrollContainerOpts(
 			// Set the background images/color for the list
-			widget.ScrollContainerOpts.Image(&widget.ScrollContainerImage{
-				Idle:     e_image.NewNineSliceColor(color.NRGBA{100, 100, 100, 255}),
-				Disabled: e_image.NewNineSliceColor(color.NRGBA{100, 100, 100, 255}),
-				Mask:     e_image.NewNineSliceColor(color.NRGBA{100, 100, 100, 255}),
-			}),
+			widget.ScrollContainerOpts.Image(ListRes.image),
 		),
 		widget.ListOpts.SliderOpts(
 			// Set the background images/color for the background of the slider track
-			widget.SliderOpts.Images(&widget.SliderTrackImage{
-				Idle:  e_image.NewNineSliceColor(color.NRGBA{100, 100, 100, 255}),
-				Hover: e_image.NewNineSliceColor(color.NRGBA{100, 100, 100, 255}),
-			}, buttonImage),
-			widget.SliderOpts.MinHandleSize(5),
+			widget.SliderOpts.Images(ListRes.track, ListRes.handle),
+
+			widget.SliderOpts.MinHandleSize(ListRes.handleSize),
 			// Set how wide the track should be
-			widget.SliderOpts.TrackPadding(widget.NewInsetsSimple(2))),
+			widget.SliderOpts.TrackPadding(ListRes.trackPadding)),
 		// Hide the horizontal slider
 		widget.ListOpts.HideHorizontalSlider(),
 		// Set the font for the list options
 		widget.ListOpts.EntryFontFace(smallFace),
 		// Set the colors for the list
-		widget.ListOpts.EntryColor(&widget.ListEntryColor{
-			Selected:                   color.NRGBA{R: 0, G: 255, B: 0, A: 255},     // Foreground color for the unfocused selected entry
-			Unselected:                 color.NRGBA{R: 254, G: 255, B: 255, A: 255}, // Foreground color for the unfocused unselected entry
-			SelectedBackground:         color.NRGBA{R: 130, G: 130, B: 200, A: 255}, // Background color for the unfocused selected entry
-			SelectingBackground:        color.NRGBA{R: 130, G: 130, B: 130, A: 255}, // Background color for the unfocused being selected entry
-			SelectingFocusedBackground: color.NRGBA{R: 130, G: 140, B: 170, A: 255}, // Background color for the focused being selected entry
-			SelectedFocusedBackground:  color.NRGBA{R: 130, G: 130, B: 170, A: 255}, // Background color for the focused selected entry
-			FocusedBackground:          color.NRGBA{R: 170, G: 170, B: 180, A: 255}, // Background color for the focused unselected entry
-			DisabledUnselected:         color.NRGBA{R: 100, G: 100, B: 100, A: 255}, // Foreground color for the disabled unselected entry
-			DisabledSelected:           color.NRGBA{R: 100, G: 100, B: 100, A: 255}, // Foreground color for the disabled selected entry
-			DisabledSelectedBackground: color.NRGBA{R: 100, G: 100, B: 100, A: 255}, // Background color for the disabled selected entry
-		}),
+
+		widget.ListOpts.EntryColor(ListRes.entry),
+
 		// This required function returns the string displayed in the list
 		widget.ListOpts.EntryLabelFunc(func(e interface{}) string {
 			return e.(gear.InventoryListEntry).Name + " x" + strconv.Itoa(e.(gear.InventoryListEntry).Count)
 		}),
 		// Padding for each entry
-		widget.ListOpts.EntryTextPadding(widget.NewInsetsSimple(5)),
+		widget.ListOpts.EntryTextPadding(ListRes.entryPadding),
 		// Text position for each entry
 		widget.ListOpts.EntryTextPosition(widget.TextPositionStart, widget.TextPositionCenter),
 		// This handler defines what function to run when a list item is selected.

@@ -62,7 +62,7 @@ func (consDisplay *ConsumableItemDisplay) CreateRootContainer() {
 		widget.ContainerOpts.BackgroundImage(defaultWidgetColor),
 		widget.ContainerOpts.Layout(widget.NewGridLayout(
 			// It is using a GridLayout with a single column
-			widget.GridLayoutOpts.Columns(2),
+			widget.GridLayoutOpts.Columns(1),
 			widget.GridLayoutOpts.Stretch([]bool{true, true}, []bool{true, true}),
 
 			//widget.GridLayoutOpts.Stretch([]bool{true, true, true}, []bool{true, true, true}),
@@ -102,11 +102,8 @@ func (consDisplay *ConsumableItemDisplay) SetupContainers() {
 	consDisplay.ItmDisplay.RootContainer.AddChild(consDisplay.ItmDisplay.InventoryDisplayContainer)
 	consDisplay.ItmDisplay.RootContainer.AddChild(consDisplay.ItmDisplay.ItemSelectedContainer)
 
-	//consDisplay.ItmDisplay.RootContainer.AddChild(consDisplay.ConsumableEffectText)
 	consDisplay.ItmDisplay.ItemSelectedContainer.AddChild(consDisplay.ConsumableEffectText)
 	consDisplay.ItmDisplay.ItemSelectedContainer.AddChild(consDisplay.CreateUseConsumableButton())
-
-	//consDisplay.ItmDisplay.RootContainer.AddChild(consDisplay.CreateUseConsumableButton())
 
 }
 

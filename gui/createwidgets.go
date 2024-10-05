@@ -5,7 +5,6 @@ import (
 	"image/color"
 	_ "image/png"
 
-	e_image "github.com/ebitenui/ebitenui/image"
 	"github.com/ebitenui/ebitenui/widget"
 )
 
@@ -16,16 +15,6 @@ func CreateTextArea(minSizeX, minSizeY int) *widget.TextArea {
 		widget.TextAreaOpts.ContainerOpts(
 
 			widget.ContainerOpts.WidgetOpts(
-
-				/*
-					Commented out as I'm trying to figure out how to position windows
-						widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{
-							HorizontalPosition: widget.AnchorLayoutPositionEnd,
-							VerticalPosition:   widget.AnchorLayoutPositionStart,
-							StretchHorizontal:  false,
-							StretchVertical:    false,
-						}),
-				*/
 
 				//Set the minimum size for the widget
 				widget.WidgetOpts.MinSize(minSizeX, minSizeX),
@@ -39,34 +28,22 @@ func CreateTextArea(minSizeX, minSizeY int) *widget.TextArea {
 		//Set the font color
 		widget.TextAreaOpts.FontColor(color.White),
 		//Set the font face (size) to use
-		widget.TextAreaOpts.FontFace(smallFace),
+		widget.TextAreaOpts.FontFace(TextAreaRes.face),
 
 		//Tell the TextArea to show the vertical scrollbar
 		//widget.TextAreaOpts.ShowVerticalScrollbar(),
 		//Set padding between edge of the widget and where the text is drawn
-		widget.TextAreaOpts.TextPadding(widget.NewInsetsSimple(10)),
+		widget.TextAreaOpts.TextPadding(TextAreaRes.entryPadding),
 		//This sets the background images for the scroll container
+
 		widget.TextAreaOpts.ScrollContainerOpts(
-			widget.ScrollContainerOpts.Image(&widget.ScrollContainerImage{
-				Idle: PanelRes.image,
-				Mask: PanelRes.image,
-			}),
-		),
+			widget.ScrollContainerOpts.Image(ListRes.image)),
+
 		//This sets the images to use for the sliders
 		widget.TextAreaOpts.SliderOpts(
-			widget.SliderOpts.Images(
-				// Set the track images
-				&widget.SliderTrackImage{
-					Idle:  e_image.NewNineSliceColor(color.NRGBA{200, 200, 200, 255}),
-					Hover: e_image.NewNineSliceColor(color.NRGBA{200, 200, 200, 255}),
-				},
-				// Set the handle images
-				&widget.ButtonImage{
-					Idle:    e_image.NewNineSliceColor(color.NRGBA{255, 100, 100, 255}),
-					Hover:   e_image.NewNineSliceColor(color.NRGBA{255, 100, 100, 255}),
-					Pressed: e_image.NewNineSliceColor(color.NRGBA{255, 100, 100, 255}),
-				},
-			),
+			widget.SliderOpts.Images(ListRes.track, ListRes.handle),
+			widget.SliderOpts.MinHandleSize(ListRes.handleSize),
+			widget.SliderOpts.TrackPadding(ListRes.trackPadding),
 		),
 	)
 
