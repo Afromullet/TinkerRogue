@@ -63,7 +63,8 @@ func (equipmentDisplay *EquipmentItemDisplay) DisplayInventory(inventory *gear.I
 func (equipmentDisplay *EquipmentItemDisplay) CreateRootContainer() {
 
 	equipmentDisplay.ItmDisplay.RootContainer = widget.NewContainer(
-		widget.ContainerOpts.BackgroundImage(defaultWidgetColor),
+		//widget.ContainerOpts.BackgroundImage(defaultWidgetColor),
+		widget.ContainerOpts.BackgroundImage(PanelRes.image),
 		widget.ContainerOpts.Layout(widget.NewGridLayout(
 			// It is using a GridLayout with a single column
 			widget.GridLayoutOpts.Columns(5),

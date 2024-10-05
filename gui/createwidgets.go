@@ -7,42 +7,7 @@ import (
 
 	e_image "github.com/ebitenui/ebitenui/image"
 	"github.com/ebitenui/ebitenui/widget"
-	"github.com/golang/freetype/truetype"
-
-	"golang.org/x/image/font"
-	"golang.org/x/image/font/gofont/goregular"
 )
-
-var face, _ = loadFont(30)
-var largeFace, _ = loadFont(50)
-var buttonImage, _ = loadButtonImage()
-var defaultWidgetColor = e_image.NewNineSliceColor(color.NRGBA{0x13, 0x1a, 0x22, 0xff})
-
-func loadButtonImage() (*widget.ButtonImage, error) {
-	idle := defaultWidgetColor
-	hover := e_image.NewNineSliceColor(color.NRGBA{R: 130, G: 130, B: 150, A: 255})
-
-	pressed := e_image.NewNineSliceColor(color.NRGBA{R: 100, G: 100, B: 120, A: 255})
-
-	return &widget.ButtonImage{
-		Idle:    idle,
-		Hover:   hover,
-		Pressed: pressed,
-	}, nil
-}
-
-func loadFont(size float64) (font.Face, error) {
-	ttfFont, err := truetype.Parse(goregular.TTF)
-	if err != nil {
-		return nil, err
-	}
-
-	return truetype.NewFace(ttfFont, &truetype.Options{
-		Size:    size,
-		DPI:     72,
-		Hinting: font.HintingFull,
-	}), nil
-}
 
 // Text window to display the item properties of the selected items to the player
 func CreateTextArea(minSizeX, minSizeY int) *widget.TextArea {
@@ -74,7 +39,7 @@ func CreateTextArea(minSizeX, minSizeY int) *widget.TextArea {
 		//Set the font color
 		widget.TextAreaOpts.FontColor(color.White),
 		//Set the font face (size) to use
-		widget.TextAreaOpts.FontFace(face),
+		widget.TextAreaOpts.FontFace(smallFace),
 
 		//Tell the TextArea to show the vertical scrollbar
 		//widget.TextAreaOpts.ShowVerticalScrollbar(),
@@ -83,8 +48,8 @@ func CreateTextArea(minSizeX, minSizeY int) *widget.TextArea {
 		//This sets the background images for the scroll container
 		widget.TextAreaOpts.ScrollContainerOpts(
 			widget.ScrollContainerOpts.Image(&widget.ScrollContainerImage{
-				Idle: defaultWidgetColor,
-				Mask: defaultWidgetColor,
+				Idle: PanelRes.image,
+				Mask: PanelRes.image,
 			}),
 		),
 		//This sets the images to use for the sliders

@@ -132,7 +132,7 @@ func (craftingItemDisplay *CraftingItemDisplay) CreateCraftingMenuButtons() {
 		),
 
 		widget.ButtonOpts.Image(buttonImage),
-		widget.ButtonOpts.Text("Clear Items", face, &widget.ButtonTextColor{
+		widget.ButtonOpts.Text("Clear Items", smallFace, &widget.ButtonTextColor{
 			Idle: color.NRGBA{0xdf, 0xf4, 0xff, 0xff},
 		}),
 
@@ -166,7 +166,7 @@ func (craftingItemDisplay *CraftingItemDisplay) CreateCraftingMenuButtons() {
 		),
 
 		widget.ButtonOpts.Image(buttonImage),
-		widget.ButtonOpts.Text("Craft", face, &widget.ButtonTextColor{
+		widget.ButtonOpts.Text("Craft", smallFace, &widget.ButtonTextColor{
 			Idle: color.NRGBA{0xdf, 0xf4, 0xff, 0xff},
 		}),
 
@@ -210,7 +210,7 @@ func (craftingItemDisplay *CraftingItemDisplay) CreateItemPropertyTextArea() {
 		//Set the font color
 		widget.TextAreaOpts.FontColor(color.Black),
 		//Set the font face (size) to use
-		widget.TextAreaOpts.FontFace(face),
+		widget.TextAreaOpts.FontFace(smallFace),
 
 		//Tell the TextArea to show the vertical scrollbar
 		widget.TextAreaOpts.ShowVerticalScrollbar(),

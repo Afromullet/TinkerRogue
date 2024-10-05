@@ -29,12 +29,6 @@ func (t *PositionTracker) Add(e *ecs.Entity) {
 
 }
 
-func (t *PositionTracker) Get(p *common.Position) *ecs.Entity {
-
-	return t.tracker[*p]
-
-}
-
 func NewCreatureTracker() PositionTracker {
 	return PositionTracker{
 		tracker: make(map[common.Position]*ecs.Entity),
