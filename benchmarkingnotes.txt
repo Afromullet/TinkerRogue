@@ -70,3 +70,7 @@ flat  flat%   sum%        cum   cum%
 50ms  50.00%  50.00%      50ms  50.00%  mypackage.myFunc
 30ms  30.00%  80.00%      80ms  80.00%  mypackage.anotherFunc
 Top N:
+
+
+
+(pprof) web for graph

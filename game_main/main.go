@@ -16,13 +16,16 @@ import (
 )*/
 
 import (
+	"fmt"
 	"game_main/avatar"
 	"game_main/common"
 	"game_main/entitytemplates"
 	"game_main/gear"
 	"game_main/graphics"
 	"game_main/rendering"
+	resmanager "game_main/resourcemanager"
 	"math"
+	"runtime"
 
 	"game_main/gui"
 	"game_main/input"
@@ -33,9 +36,11 @@ import (
 	"game_main/worldmap"
 	_ "image/png"
 	"log"
+	_ "net/http/pprof" // Blank import to register pprof handle
 
 	"github.com/hajimehoshi/ebiten/v2"
 
+	"net/http"
 	_ "net/http/pprof" // Blank import to register pprof handlers
 )
 
@@ -43,6 +48,7 @@ import (
 // Copying some of the code with modification. Whenever I change a name, it's to help me build a better mental model
 // Of what the code is doing as I'm learning GoLang
 var DEBUG_MODE = true
+var ENABLE_BENCHMARKING = true
 
 type Game struct {
 	em         common.EntityManager
@@ -161,27 +167,8 @@ func ManageTurn(g *Game) {
 
 func RemoveDeadEntities(ecsmanager *common.EntityManager, am timesystem.ActionManager, gm *worldmap.GameMap) {
 	for _, c := range ecsmanager.World.Query(ecsmanager.WorldTags["monsters"]) {
-		attr := common.GetComponentType[*common.Attributes](c.Entity, common.AttributeComponent)
 
-		if attr.CurrentHealth <= 0 {
-
-			if attr.CurrentHealth <= 0 {
-
-				pos := common.GetPosition(c.Entity)
-				ind := graphics.CoordTransformer.IndexFromLogicalXY(pos.X, pos.Y)
-				gm.Tiles[ind].Blocked = false
-
-				am.RemoveActionQueueForEntity(c.Entity)
-
-				ecsmanager.World.DisposeEntity(c.Entity)
-				monsters.NumMonstersOnMap--
-
-				if monsters.NumMonstersOnMap == -1 {
-					monsters.NumMonstersOnMap = 0
-				}
-			}
-
-		}
+		resmanager.RemoveEntity(ecsmanager.World, gm, c.Entity, &am)
 	}
 }
 
@@ -200,6 +187,22 @@ func (g *Game) Update() error {
 	ManageTurn(g)
 
 	return nil
+
+}
+
+func BenchmarkSetup() {
+
+	if ENABLE_BENCHMARKING {
+
+		go func() {
+			fmt.Println("Running server")
+			http.ListenAndServe("localhost:6060", nil)
+		}()
+
+		runtime.SetCPUProfileRate(1000)
+		runtime.MemProfileRate = 1
+
+	}
 
 }
 
@@ -249,6 +252,7 @@ func main() {
 
 	//log.Println(http.ListenAndServe("localhost:6060", nil))
 
+	BenchmarkSetup()
 	g := NewGame()
 
 	g.gameUI.CreateMainInterface(&g.playerData, &g.em)

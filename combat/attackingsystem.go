@@ -111,7 +111,7 @@ func RangedAttackSystem(ecsmanager *common.EntityManager, pl *avatar.PlayerData,
 // Passing the damage rather than the weapon so that Melee and Ranged Attacks can use the same function
 // Currently Melee and Ranged Weapons are different types without a common interface
 // Returns true if attack hits. False otherwise.
-func PerformAttack(ecsmanagr *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap, damage int, attacker *ecs.Entity, defender *ecs.Entity) bool {
+func PerformAttack(em *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap, damage int, attacker *ecs.Entity, defender *ecs.Entity) bool {
 
 	attAttr := common.GetAttributes(attacker)
 	defAttr := common.GetAttributes(defender)
@@ -141,7 +141,8 @@ func PerformAttack(ecsmanagr *common.EntityManager, pl *avatar.PlayerData, gm *w
 		fmt.Println("Missed") //Todo add something here for debug mode to make testing easier
 	}
 
-	RemoveDeadEntity(ecsmanagr, pl, gm, defender)
+	//resmanager.RemoveEntity(em.World,gm,defender,
+	RemoveDeadEntity(em, pl, gm, defender)
 	return false
 
 }
@@ -149,16 +150,22 @@ func PerformAttack(ecsmanagr *common.EntityManager, pl *avatar.PlayerData, gm *w
 // Does not remove the player if they die. Todo
 func RemoveDeadEntity(ecsmnager *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap, defender *ecs.Entity) {
 
-	defenderPos := common.GetPosition(defender)
-	defAttr := common.GetAttributes(defender)
-	if pl.Pos.IsEqual(defenderPos) {
-		graphics.CoordTransformer.IndexFromLogicalXY(defenderPos.X, defenderPos.Y) //Just here as a placeholder. Does nothing. Intended for the player
-	} else if defAttr.CurrentHealth <= 0 {
-		index := graphics.CoordTransformer.IndexFromLogicalXY(defenderPos.X, defenderPos.Y)
+	/*
+		defenderPos := common.GetPosition(defender)
+		defAttr := common.GetAttributes(defender)
+		if pl.Pos.IsEqual(defenderPos) {
+			graphics.CoordTransformer.IndexFromLogicalXY(defenderPos.X, defenderPos.Y) //Just here as a placeholder. Does nothing. Intended for the player
+		} else if defAttr.CurrentHealth <= 0 {
 
-		gm.Tiles[index].Blocked = false
-		ecsmnager.World.DisposeEntity(defender)
-	}
+			index := graphics.CoordTransformer.IndexFromLogicalXY(defenderPos.X, defenderPos.Y)
+
+			fmt.Println("Starting length ", len(trackers.CreatureTracker.PosTracker))
+			trackers.CreatureTracker.Remove(defender)
+			gm.Tiles[index].Blocked = false
+			ecsmnager.World.DisposeEntity(defender)
+			fmt.Println("Ending length ", len(trackers.CreatureTracker.PosTracker))
+		}
+	*/
 
 }
 

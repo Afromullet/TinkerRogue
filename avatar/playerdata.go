@@ -169,7 +169,11 @@ func (pl *PlayerData) GetPlayerInventory() *gear.Inventory {
 // Handles the conversions from the component type to the struct type
 func (pl *PlayerData) GetPlayerAttributes() *common.Attributes {
 
-	attr := common.GetComponentType[*common.Attributes](pl.PlayerEntity, common.AttributeComponent)
+	attr := &common.Attributes{}
+	if data, ok := pl.PlayerEntity.GetComponentData(common.AttributeComponent); ok {
+		attr = data.(*common.Attributes)
+
+	}
 
 	return attr
 }

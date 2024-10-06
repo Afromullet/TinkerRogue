@@ -32,8 +32,8 @@ func (c CoordinateTransformer) LogicalXYFromIndex(i int) (int, int) {
 	return x, y
 }
 
-func (c CoordinateTransformer) PixelsFromLogicalXY(x, y, tileSize int) (int, int) {
-	return x * tileSize, y * tileSize
+func (c CoordinateTransformer) PixelsFromLogicalXY(x, y int) (int, int) {
+	return x * ScreenInfo.TileSize, y * ScreenInfo.TileSize
 
 }
 

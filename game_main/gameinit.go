@@ -71,7 +71,7 @@ func InitializePlayerData(ecsmanager *common.EntityManager, pl *avatar.PlayerDat
 
 	a := testing.CreateArmor(ecsmanager.World, "A1", *startPos, "../assets/items/sword.png", 10, 5, 1)
 	w := testing.CreateWeapon(ecsmanager.World, "W1", *startPos, "../assets/items/sword.png", 5, 10)
-	r := testing.CreatedRangedWeapon(ecsmanager.World, "R1", "../assets/items/sword.png", *startPos, 5, 10, 5, testing.TestRect)
+	r := testing.CreatedRangedWeapon(ecsmanager.World, "R1", "../assets/items/sword.png", *startPos, 5, 10, 100, testing.TestRect)
 
 	pl.Equipment.EqMeleeWeapon = w
 	pl.Equipment.EqRangedWeapon = r

@@ -1,8 +1,12 @@
 MAJOR
 
-
+Create GUI widgets only once
 
 Make private things private
+
+Only one attribute updating - currently player and monsters use different ones. Only need one
+
+Correct removal of entities - make sure that the trackers and actionqueues are cleared
 
 
 Try to understand how the centering and scaling words. Both for drawmap, drawrenderables, and for the throwing and ranged weapon shapes
