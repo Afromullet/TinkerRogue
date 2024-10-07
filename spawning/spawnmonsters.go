@@ -2,10 +2,10 @@ package spawning
 
 import (
 	"game_main/avatar"
+	"game_main/behavior"
 	"game_main/common"
 	"game_main/entitytemplates"
 	"game_main/graphics"
-	"game_main/monsters"
 
 	//"game_main/entitytemplates"
 
@@ -59,7 +59,7 @@ func SpawnStartingCreatures(MaxNumCreatures int, em *common.EntityManager, gm *w
 		x, y := room.Center()
 		randCreature = rand.Intn(len(entitytemplates.MonsterTemplates))
 		ent := entitytemplates.CreateCreatureFromTemplate(*em, entitytemplates.MonsterTemplates[randCreature], gm, x, y)
-		monsters.BehaviorSelector(ent, pl)
+		behavior.BehaviorSelector(ent, pl)
 
 	}
 
@@ -70,7 +70,7 @@ func SpawnStartingCreatures(MaxNumCreatures int, em *common.EntityManager, gm *w
 		randomPos := indices[rand.Intn(len(indices))]
 
 		ent := entitytemplates.CreateCreatureFromTemplate(*em, entitytemplates.MonsterTemplates[randCreature], gm, randomPos.X, randomPos.Y)
-		monsters.BehaviorSelector(ent, pl)
+		behavior.BehaviorSelector(ent, pl)
 	}
 
 }

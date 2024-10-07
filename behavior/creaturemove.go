@@ -1,8 +1,9 @@
-package monsters
+package behavior
 
 import (
 	"game_main/common"
 	"game_main/graphics"
+	"game_main/monsters"
 
 	"game_main/pathfinding"
 	"game_main/randgen"
@@ -59,7 +60,7 @@ type DistanceToEntityMovement struct {
 // Wander to a random position. Build a new path once arrived.
 func SimpleWanderAction(ecsmanager *common.EntityManager, gm *worldmap.GameMap, mover *ecs.Entity) {
 
-	creature := GetCreature(mover)
+	creature := monsters.GetCreature(mover)
 	creaturePosition := common.GetPosition(mover)
 
 	randomPos := randgen.GetRandomBetween(0, len(worldmap.ValidPos.Pos))
@@ -83,7 +84,7 @@ func NoMoveAction(ecsmanager *common.EntityManager, gm *worldmap.GameMap, mover 
 
 func EntityFollowMoveAction(ecsmanager *common.EntityManager, gm *worldmap.GameMap, mover *ecs.Entity) {
 
-	creature := GetCreature(mover)
+	creature := monsters.GetCreature(mover)
 	creaturePosition := common.GetPosition(mover)
 	goToEnt := common.GetComponentType[*EntityFollow](mover, EntityFollowComp)
 
@@ -101,7 +102,7 @@ func EntityFollowMoveAction(ecsmanager *common.EntityManager, gm *worldmap.GameM
 // Clears the path once within range
 func WithinRangeMoveAction(ecsmanager *common.EntityManager, gm *worldmap.GameMap, mover *ecs.Entity) {
 
-	creature := GetCreature(mover)
+	creature := monsters.GetCreature(mover)
 	creaturePosition := common.GetPosition(mover)
 	within := common.GetComponentType[*DistanceToEntityMovement](mover, WithinRangeComponent)
 
@@ -125,7 +126,7 @@ func WithinRangeMoveAction(ecsmanager *common.EntityManager, gm *worldmap.GameMa
 // Also needs improvement
 func FleeFromEntityMovementAction(ecsmanager *common.EntityManager, gm *worldmap.GameMap, mover *ecs.Entity) {
 	fleeMov := common.GetComponentType[*DistanceToEntityMovement](mover, FleeComp)
-	creature := GetCreature(mover)
+	creature := monsters.GetCreature(mover)
 	creaturePosition := common.GetPosition(mover)
 
 	if fleeMov.Target != nil {

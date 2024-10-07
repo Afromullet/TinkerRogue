@@ -1,4 +1,4 @@
-package monsters
+package behavior
 
 import (
 	"game_main/avatar"

@@ -1,10 +1,11 @@
-package monsters
+package behavior
 
 import (
 	"fmt"
 
 	"game_main/avatar"
 	"game_main/combat"
+
 	"game_main/common"
 	"game_main/gear"
 	"game_main/timesystem"

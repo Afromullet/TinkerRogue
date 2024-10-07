@@ -18,6 +18,7 @@ import (
 import (
 	"fmt"
 	"game_main/avatar"
+	"game_main/behavior"
 	"game_main/common"
 	"game_main/entitytemplates"
 	"game_main/gear"
@@ -29,7 +30,6 @@ import (
 
 	"game_main/gui"
 	"game_main/input"
-	"game_main/monsters"
 	"game_main/spawning"
 	"game_main/testing"
 	"game_main/timesystem"
@@ -133,7 +133,7 @@ func ManageTurn(g *Game) {
 
 	}
 	if g.ts.Turn == timesystem.MonsterTurn && g.playerData.InputStates.HasKeyInput {
-		monsters.MonsterSystems(&g.em, &g.playerData, &g.gameMap, &g.ts)
+		behavior.MonsterSystems(&g.em, &g.playerData, &g.gameMap, &g.ts)
 
 		// Returns true if the next action is the player.
 
