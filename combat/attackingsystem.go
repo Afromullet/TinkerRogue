@@ -7,6 +7,7 @@ import (
 	"game_main/gear"
 	"game_main/graphics"
 	"game_main/randgen"
+	resmanager "game_main/resourcemanager"
 	"game_main/worldmap"
 	"log"
 	"strconv"
@@ -141,6 +142,7 @@ func PerformAttack(em *common.EntityManager, pl *avatar.PlayerData, gm *worldmap
 		fmt.Println("Missed") //Todo add something here for debug mode to make testing easier
 	}
 
+	resmanager.RemoveEntity(em.World, gm, defender)
 	//resmanager.RemoveEntity(em.World,gm,defender,
 	RemoveDeadEntity(em, pl, gm, defender)
 	return false
