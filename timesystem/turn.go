@@ -2,6 +2,9 @@ package timesystem
 
 type TurnState int
 
+// Todo remove later. This is here just for the RemovDeadEntities. Eventually going to simplify function parameters that means we won't need this
+var TurnManager *GameTurn
+
 const (
 	BeforePlayerAction = iota
 	PlayerTurn

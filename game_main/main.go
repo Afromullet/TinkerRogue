@@ -48,7 +48,7 @@ import (
 // Copying some of the code with modification. Whenever I change a name, it's to help me build a better mental model
 // Of what the code is doing as I'm learning GoLang
 var DEBUG_MODE = true
-var ENABLE_BENCHMARKING = true
+var ENABLE_BENCHMARKING = false
 
 type Game struct {
 	em         common.EntityManager
@@ -88,6 +88,7 @@ func NewGame() *Game {
 
 	g.ts.ActionDispatcher.ResetActionManager()
 
+	timesystem.TurnManager = &g.ts
 	//spawning.SpawnStartingLoot(g.em, &g.gameMap)
 	spawning.SpawnStartingEquipment(&g.em, &g.gameMap, &g.playerData)
 
@@ -139,7 +140,9 @@ func ManageTurn(g *Game) {
 		//ExecuteActionsUntilPlayer2 places the queue back in priority order. The old function executes each action only once
 		// untilk the player
 
-		RemoveDeadEntities(&g.em, g.ts.ActionDispatcher, &g.gameMap)
+		//todo why is here twice
+
+		resmanager.RemoveDeadEntities(&g.em, &g.gameMap)
 		g.ts.ActionDispatcher.CleanController()
 		if g.ts.ActionDispatcher.ExecuteActionsUntilPlayer2(&g.playerData) {
 
@@ -159,17 +162,10 @@ func ManageTurn(g *Game) {
 			//addspawning.SpawnMonster(g.em, &g.gameMap)
 		}
 
-		RemoveDeadEntities(&g.em, g.ts.ActionDispatcher, &g.gameMap)
+		resmanager.RemoveDeadEntities(&g.em, &g.gameMap)
 
 	}
 
-}
-
-func RemoveDeadEntities(ecsmanager *common.EntityManager, am timesystem.ActionManager, gm *worldmap.GameMap) {
-	for _, c := range ecsmanager.World.Query(ecsmanager.WorldTags["monsters"]) {
-
-		resmanager.RemoveEntity(ecsmanager.World, gm, c.Entity, &am)
-	}
 }
 
 // Update is called each tic.

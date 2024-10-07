@@ -1,9 +1,9 @@
 package common
 
 import (
+	"fmt"
 	"game_main/graphics"
 	"math"
-	"strconv"
 )
 
 type Position struct {
@@ -88,15 +88,16 @@ func NewBaseAttributes(maxHealth, attackBonus, baseAC, baseProt, baseMovSpeed in
 
 // For Displaying to the player
 func (a Attributes) DisplayString() string {
-	s := ""
-	s += "HP: " + strconv.Itoa(a.CurrentHealth) + "/" + strconv.Itoa(a.MaxHealth) + "\n"
-	s += "Armor Class: " + strconv.Itoa(a.TotalArmorClass) + "\n"
-	s += "Protection: " + strconv.Itoa(a.TotalProtection) + "\n"
-	s += "Dodge: " + strconv.FormatFloat(float64(a.TotalDodgeChance), 'f', 2, 32) + "\n"
-	s += "Movement Speed: " + strconv.Itoa(a.TotalMovementSpeed) + "\n"
-	s += "Attack Speed: " + strconv.Itoa(a.TotalAttackSpeed) + "\n"
 
-	return s
+	res := ""
+	res += fmt.Sprintln("HP ", a.CurrentHealth, "/", a.MaxHealth)
+	res += fmt.Sprintln("AC", a.TotalArmorClass)
+	res += fmt.Sprintln("Prot", a.TotalProtection)
+	res += fmt.Sprintln("Dodge", a.TotalDodgeChance)
+	res += fmt.Sprintln("Move Speed", a.TotalMovementSpeed)
+	res += fmt.Sprintln("Attack Speed", a.TotalAttackSpeed)
+
+	return res
 
 }
 
