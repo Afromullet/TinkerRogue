@@ -142,7 +142,7 @@ func ManageTurn(g *Game) {
 
 		//todo why is here twice
 
-		resmanager.RemoveDeadEntities(&g.em, &g.gameMap)
+		//resmanager.RemoveDeadEntities(&g.em, &g.gameMap)
 		g.ts.ActionDispatcher.CleanController()
 		if g.ts.ActionDispatcher.ExecuteActionsUntilPlayer2(&g.playerData) {
 

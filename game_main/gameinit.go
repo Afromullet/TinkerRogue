@@ -31,6 +31,7 @@ func InitializePlayerData(ecsmanager *common.EntityManager, pl *avatar.PlayerDat
 	attr.AttackBonus = 5
 	attr.TotalMovementSpeed = 5
 	attr.BaseMovementSpeed = 5
+
 	attr.TotalAttackSpeed = 1
 
 	playerEntity := ecsmanager.World.NewEntity().

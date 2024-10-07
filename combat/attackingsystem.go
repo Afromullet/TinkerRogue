@@ -43,7 +43,7 @@ func MeleeAttackSystem(ecsmanager *common.EntityManager, pl *avatar.PlayerData, 
 	if weapon != nil {
 
 		damage := weapon.CalculateDamage()
-		attackSuccess = PerformAttack(ecsmanager, pl, gm, damage, attacker, defender)
+		attackSuccess = PerformAttack(ecsmanager, pl, gm, damage, attacker, defender, playerAttacking)
 		UpdateAttackMessage(attacker, attackSuccess, playerAttacking, damage)
 
 	} else {
@@ -87,7 +87,7 @@ func RangedAttackSystem(ecsmanager *common.EntityManager, pl *avatar.PlayerData,
 
 				damage := weapon.CalculateDamage()
 
-				attackSuccess = PerformAttack(ecsmanager, pl, gm, weapon.CalculateDamage(), attacker, t)
+				attackSuccess = PerformAttack(ecsmanager, pl, gm, weapon.CalculateDamage(), attacker, t, playerAttacking)
 
 				if graphics.MAP_SCROLLING_ENABLED {
 					weapon.DisplayCenteredShootingVX(attackerPos, defenderPos)
@@ -112,7 +112,7 @@ func RangedAttackSystem(ecsmanager *common.EntityManager, pl *avatar.PlayerData,
 // Passing the damage rather than the weapon so that Melee and Ranged Attacks can use the same function
 // Currently Melee and Ranged Weapons are different types without a common interface
 // Returns true if attack hits. False otherwise.
-func PerformAttack(em *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap, damage int, attacker *ecs.Entity, defender *ecs.Entity) bool {
+func PerformAttack(em *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap, damage int, attacker *ecs.Entity, defender *ecs.Entity, isPlayerAttacking bool) bool {
 
 	attAttr := common.GetAttributes(attacker)
 	defAttr := common.GetAttributes(defender)
@@ -142,32 +142,13 @@ func PerformAttack(em *common.EntityManager, pl *avatar.PlayerData, gm *worldmap
 		fmt.Println("Missed") //Todo add something here for debug mode to make testing easier
 	}
 
-	resmanager.RemoveEntity(em.World, gm, defender)
-	//resmanager.RemoveEntity(em.World,gm,defender,
-	RemoveDeadEntity(em, pl, gm, defender)
+	//Only check if it's following a player attack.
+	// Not handling player removal yet
+	if isPlayerAttacking {
+		resmanager.RemoveEntity(em.World, gm, defender)
+	}
+
 	return false
-
-}
-
-// Does not remove the player if they die. Todo
-func RemoveDeadEntity(ecsmnager *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap, defender *ecs.Entity) {
-
-	/*
-		defenderPos := common.GetPosition(defender)
-		defAttr := common.GetAttributes(defender)
-		if pl.Pos.IsEqual(defenderPos) {
-			graphics.CoordTransformer.IndexFromLogicalXY(defenderPos.X, defenderPos.Y) //Just here as a placeholder. Does nothing. Intended for the player
-		} else if defAttr.CurrentHealth <= 0 {
-
-			index := graphics.CoordTransformer.IndexFromLogicalXY(defenderPos.X, defenderPos.Y)
-
-			fmt.Println("Starting length ", len(trackers.CreatureTracker.PosTracker))
-			trackers.CreatureTracker.Remove(defender)
-			gm.Tiles[index].Blocked = false
-			ecsmnager.World.DisposeEntity(defender)
-			fmt.Println("Ending length ", len(trackers.CreatureTracker.PosTracker))
-		}
-	*/
 
 }
 

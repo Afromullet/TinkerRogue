@@ -159,7 +159,12 @@ func (s *Sticky) ApplyToCreature(c *ecs.QueryResult) {
 			initialized = true
 		}
 
+		//Todo make this non constant
 		attr.TotalMovementSpeed -= 5
+
+		if attr.TotalMovementSpeed <= 0 {
+			attr.TotalMovementSpeed = 1
+		}
 		s.MainProps.Duration--
 
 		if s.MainProps.Duration == 0 {

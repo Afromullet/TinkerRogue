@@ -27,9 +27,12 @@ func (c *Consumable) ApplyEffect(baseAttr *common.Attributes) {
 
 	baseAttr.AttackBonus += c.AttrModifier.AttackBonus
 	baseAttr.BaseArmorClass += c.AttrModifier.BaseArmorClass
-	baseAttr.BaseMovementSpeed = c.AttrModifier.BaseMovementSpeed //Set the movement speed to the value. Adding it makes us slower
 	baseAttr.BaseDodgeChance += c.AttrModifier.BaseDodgeChance
 	baseAttr.BaseProtection += c.AttrModifier.BaseProtection
+
+	if c.AttrModifier.BaseMovementSpeed != 0 {
+		baseAttr.BaseMovementSpeed = c.AttrModifier.BaseMovementSpeed
+	}
 
 }
 
