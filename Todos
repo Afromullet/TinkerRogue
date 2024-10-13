@@ -1,5 +1,7 @@
 MAJOR
 
+Make throwable something that's not an item effect
+
 Create GUI widgets only once
 
 Make private things private

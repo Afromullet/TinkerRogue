@@ -97,6 +97,7 @@ func AllStatusEffects(effects *ecs.Entity) []StatusEffects {
 type CommonItemProperties struct {
 	Duration int
 	Name     string
+	Quality  Quality
 }
 
 // Adds the duration of the other to the CommonItemProperty
@@ -104,6 +105,19 @@ func (c *CommonItemProperties) AddDuration(other CommonItemProperties) {
 
 	c.Duration += other.Duration
 
+}
+
+func (c *CommonItemProperties) QualityName() string {
+
+	if c.Quality == LowQuality {
+		return "Low Quality"
+	} else if c.Quality == NormalQuality {
+		return "Medium Quality"
+	} else if c.Quality == HighQuality {
+		return "High Quality"
+	} else {
+		return "Invalid Quality"
+	}
 }
 
 type Sticky struct {

@@ -221,6 +221,10 @@ func UpdateEntityAttributes(e *ecs.Entity) {
 		ac = armor.ArmorClass
 		prot = armor.Protection
 		dodge = float32(armor.DodgeChance)
+	} else {
+		ac = 1
+		prot = 1
+		dodge = 1
 	}
 
 	attr.TotalArmorClass = attr.BaseArmorClass + ac

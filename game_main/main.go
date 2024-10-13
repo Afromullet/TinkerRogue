@@ -47,7 +47,7 @@ import (
 // Using https://www.fatoldyeti.com/categories/roguelike-tutorial/ as a starting point.
 // Copying some of the code with modification. Whenever I change a name, it's to help me build a better mental model
 // Of what the code is doing as I'm learning GoLang
-var DEBUG_MODE = true
+var DEBUG_MODE = false
 var ENABLE_BENCHMARKING = false
 
 type Game struct {
@@ -74,6 +74,7 @@ func NewGame() *Game {
 		graphics.ScreenInfo.ScaleFactor = 3
 	}
 	InitializePlayerData(&g.em, &g.playerData, &g.gameMap)
+	spawning.InitLootSpawnTables()
 
 	g.ts.Turn = timesystem.PlayerTurn
 	g.ts.TurnCounter = 0
@@ -85,6 +86,14 @@ func NewGame() *Game {
 
 	testing.CreateTestConsumables(&g.em, &g.gameMap)
 	testing.InitTestActionManager(&g.em, &g.playerData, &g.ts)
+
+	for _ = range 10 {
+		//sX, sY := g.gameMap.Rooms[0].Center()
+		//sX += 2
+
+		spawning.SpawnThrowableItem()
+
+	}
 
 	g.ts.ActionDispatcher.ResetActionManager()
 
@@ -103,7 +112,8 @@ func NewGame() *Game {
 // When the Turn Counter hits 0, we reset all action points. That's our "unit of time"
 func ManageTurn(g *Game) {
 
-	g.playerData.UpdatePlayerAttributes()
+	gear.UpdateEntityAttributes(g.playerData.PlayerEntity)
+	//g.playerData.UpdatePlayerAttributes()
 	g.gameUI.StatsUI.StatsTextArea.SetText(g.playerData.GetPlayerAttributes().DisplayString())
 	if g.ts.Turn == timesystem.PlayerTurn && !g.playerData.InputStates.HasKeyInput {
 

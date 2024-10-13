@@ -62,14 +62,14 @@ func CreatePlayerUI(playerUI *PlayerUI, inv *gear.Inventory, pl *avatar.PlayerDa
 	itemDisplayOptionsContainer := CreateInventorySelectionContainer(playerUI, inv, pl, &ui) //Contains the buttons for opening inventory related windows
 
 	playerUI.StatsUI.CreateStatsUI()
-	playerUI.StatsUI.StatsTextArea.SetText(pl.GetPlayerAttributes().DisplayString())
+	//playerUI.StatsUI.StatsTextArea.SetText(pl.GetPlayerAttributes().DisplayString())
 
 	playerUI.MsgUI.CreatMsgUI()
-	playerUI.MsgUI.msgTextArea.SetText("adadsdasdsa") //Placeholder
+	//playerUI.MsgUI.msgTextArea.SetText("adadsdasdsa") //Placeholder
 
 	rootContainer.AddChild(itemDisplayOptionsContainer)
-	rootContainer.AddChild(playerUI.StatsUI.StatUIContainer)
-	rootContainer.AddChild(playerUI.MsgUI.msgUIContainer)
+	//rootContainer.AddChild(playerUI.StatsUI.StatUIContainer)
+	//rootContainer.AddChild(playerUI.MsgUI.msgUIContainer)
 
 	SetContainerLocation(itemDisplayOptionsContainer, graphics.ScreenInfo.GetCanvasWidth()/2, 0)
 

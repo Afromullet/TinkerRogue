@@ -21,6 +21,7 @@ var TurnsPerMonsterSpawn = 10
 func SpawnMonster(ecsmanager common.EntityManager, gm *worldmap.GameMap) {
 
 	rand.Seed(time.Now().UnixNano())
+	//Half-open interval - so it includes 0 but not 100. Since it includes 0, we still have 100 possible vlaues
 	if rand.Intn(100) < 30 { // 30% chance to spawn something
 
 		//Try 3 times to spawn something. Only spawn it if the tile is not blocked

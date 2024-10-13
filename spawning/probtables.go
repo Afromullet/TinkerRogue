@@ -39,16 +39,25 @@ func (lootTable *ProbabilityTable[T]) AddEntry(entry T, chance int) {
 // Todo, this algorithm is from the internet. I don't really understand how works
 // I need to understand how it works to see if it does what it claims to do
 // Returns a false for the boolean parameter if an entry cannot be found for wahtever reason
-func (lootTable *ProbabilityTable[T]) GetRandomEntry() (T, bool) {
+// zeroizeWeight is used for when we want to set the weight of the selected item to zero.
+// This is currently used for selecting random status effect properties on an item so
+// That we don't select the same property more than once
+func (lootTable *ProbabilityTable[T]) GetRandomEntry(zeroizeWeight bool) (T, bool) {
 
 	var zerovalue T
 	randVal := rand.Intn(lootTable.totalWeight)
 
 	cursor := 0
-	for _, e := range lootTable.table {
+	for ind, e := range lootTable.table {
 		cursor += e.weight
 
 		if cursor >= randVal {
+
+			if zeroizeWeight {
+				lootTable.table[ind].weight = 0
+				lootTable.totalWeight -= e.weight
+
+			}
 			return e.entry, true
 
 		}
