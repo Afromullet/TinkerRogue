@@ -9,17 +9,21 @@ type ProbabilityEntry[T any] struct {
 }
 
 // totalWeight is the sum of all probabilities. Used for discrete random selection.
-// AddEntry updates the totalWeight when a new entry is added.
+// AddEntry updates the totalWeight and originalWeights when a new entry is added.
+// originalWeights is used for restoring the weights when entries have been zeroized
+// Get GetRandomEntry has the option of not allowing repeats - that's what the zeroizeweights param is for
 type ProbabilityTable[T any] struct {
-	table       []ProbabilityEntry[T]
-	totalWeight int
+	table           []ProbabilityEntry[T]
+	totalWeight     int
+	originalWeights []int
 }
 
 func NewProbabilityTable[T any]() ProbabilityTable[T] {
 
 	return ProbabilityTable[T]{
-		table:       make([]ProbabilityEntry[T], 0),
-		totalWeight: 0,
+		table:           make([]ProbabilityEntry[T], 0),
+		originalWeights: make([]int, 0),
+		totalWeight:     0,
 	}
 
 }
@@ -33,6 +37,7 @@ func (lootTable *ProbabilityTable[T]) AddEntry(entry T, chance int) {
 	}
 	lootTable.table = append(lootTable.table, lootEntry)
 	lootTable.totalWeight += chance
+	lootTable.originalWeights = append(lootTable.originalWeights, chance)
 
 }
 
@@ -66,4 +71,18 @@ func (lootTable *ProbabilityTable[T]) GetRandomEntry(zeroizeWeight bool) (T, boo
 
 	return zerovalue, false
 
+}
+
+// For restoring the original weights when weights have been zeroized
+func (lootTable *ProbabilityTable[T]) RestoreWeights() {
+
+	for i := range len(lootTable.table) {
+
+		if lootTable.table[i].weight == 0 {
+			lootTable.table[i].weight = lootTable.originalWeights[i]
+			lootTable.totalWeight += lootTable.originalWeights[i]
+
+		}
+
+	}
 }

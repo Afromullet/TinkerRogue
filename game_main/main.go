@@ -88,10 +88,12 @@ func NewGame() *Game {
 	testing.InitTestActionManager(&g.em, &g.playerData, &g.ts)
 
 	for _ = range 10 {
-		//sX, sY := g.gameMap.Rooms[0].Center()
-		//sX += 2
+		sX, sY := g.gameMap.Rooms[0].Center()
+		sX += 2
 
-		spawning.SpawnThrowableItem()
+		it := spawning.SpawnThrowableItem(g.em.World, sX, sY)
+
+		g.gameMap.AddEntityToTile(it, &common.Position{X: sX, Y: sY})
 
 	}
 

@@ -59,7 +59,13 @@ type StatusEffects interface {
 	DisplayString() string
 	StackEffect(eff any)
 	Copy() StatusEffects
+	//Todo for the future, figure out if you can make this an interface
+	//Figure out how you have to implement methods for nested interfaces
+
+	CreateWithQuality(q Quality)
 }
+
+// Any item that implements the interface defines the random ranges of the item stats
 
 func StatusEffectName[T StatusEffects](prop *T) string {
 	return (*prop).StatusEffectName()

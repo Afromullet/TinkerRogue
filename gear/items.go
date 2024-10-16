@@ -2,8 +2,12 @@ package gear
 
 import (
 	"fmt"
+	"game_main/common"
+	"game_main/rendering"
+	"log"
 
 	ecs "github.com/bytearena/ecs"
+	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 )
 
 /*
@@ -154,5 +158,40 @@ func (item *Item) HasEffect(effectToCheck StatusEffects) bool {
 	}
 
 	return false
+
+}
+
+// The testing package has the same function. Todo remove the one from testing package
+func CreateItem(manager *ecs.Manager, name string, pos common.Position, imagePath string, effects ...StatusEffects) *ecs.Entity {
+
+	img, _, err := ebitenutil.NewImageFromFile(imagePath)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	item := &Item{Count: 1, Properties: manager.NewEntity()}
+
+	for _, prop := range effects {
+		item.Properties.AddComponent(prop.StatusEffectComponent(), &prop)
+
+	}
+
+	itemEntity := manager.NewEntity().
+		AddComponent(rendering.RenderableComponent, &rendering.Renderable{
+			Image:   img,
+			Visible: true,
+		}).
+		AddComponent(common.PositionComponent, &common.Position{
+			X: pos.X,
+			Y: pos.Y,
+		}).
+		AddComponent(common.NameComponent, &common.Name{
+			NameStr: name,
+		}).
+		AddComponent(ItemComponent, item)
+
+	//TODO where shoudl I add the tags?
+
+	return itemEntity
 
 }

@@ -2,7 +2,11 @@ package spawning
 
 import (
 	"fmt"
+	"game_main/common"
+	"game_main/gear"
 	"math/rand"
+
+	"github.com/bytearena/ecs"
 )
 
 // TODO define some of these parameters in a config file
@@ -12,26 +16,38 @@ import (
 
 // The number of item properties generated for a throwable using the loot tables
 func RandomNumProperties() int {
-	return rand.Intn(len(RandThrowableProps))
+	return rand.Intn(len(RandThrowableOptions))
 }
 
-func SpawnThrowableItem() {
+// T
+func SpawnThrowableItem(manager *ecs.Manager, xPos, yPos int) *ecs.Entity {
 
-	tempSpawner := ThrowableProbTable
+	effects := make([]gear.StatusEffects, 0)
+
+	//numbers := []gear.StatusEffects{1, 2, 3, 4, 5}
+
 	for _ = range RandomNumProperties() {
 
-		if entry, ok := tempSpawner.GetRandomEntry(true); ok {
+		//	var effect gear.StatusEffects // This is just a nil interface for now
 
-			qual, _ := LootQualityTable.GetRandomEntry(false)
+		//eff := gear.StatusEffects{}
+		if entry, ok := ThrowableProbTable.GetRandomEntry(true); ok {
 
-			fmt.Println(qual)
+			qual, qualOK := LootQualityTable.GetRandomEntry(false)
 
-			fmt.Println(entry)
+			if qualOK {
+				entry.CreateWithQuality(qual)
+				effects = append(effects, entry)
+			}
 
 		} else {
 			fmt.Println("Error spawning throwable")
 		}
 
 	}
+
+	ThrowableProbTable.RestoreWeights()
+
+	return gear.CreateItem(manager, "po", common.Position{X: xPos, Y: yPos}, "../assets/items/sword.png", effects...)
 
 }

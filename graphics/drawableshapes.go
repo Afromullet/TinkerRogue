@@ -1,5 +1,14 @@
 package graphics
 
+// This is also in the gear package. Duplicating it is a better option than adding this to its own package
+type Quality int
+
+const (
+	LowQuality = iota
+	NormalQuality
+	HighQuality
+)
+
 //...There has to be a way to make this less repetitive.
 
 /*
@@ -109,6 +118,7 @@ type TileBasedShape interface {
 	UpdatePosition(pixelX int, pixelY int)
 	UpdateShape(updater ShapeUpdater)
 	StartPositionPixels() (int, int)
+	//(q Quality) //This can probably be its own interface, since
 }
 
 // The square is drawn around (PixelX,PixelY)
@@ -155,6 +165,10 @@ func (s *TileSquare) UpdateShape(updater ShapeUpdater) {
 func (s *TileSquare) StartPositionPixels() (int, int) {
 
 	return s.PixelX, s.PixelY
+
+}
+
+func (s *TileSquare) CreateWithQuality() {
 
 }
 
