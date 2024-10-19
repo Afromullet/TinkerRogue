@@ -62,7 +62,21 @@ type StatusEffects interface {
 	//Todo for the future, figure out if you can make this an interface
 	//Figure out how you have to implement methods for nested interfaces
 
-	CreateWithQuality(q Quality)
+	common.Quality
+}
+
+func GetVisualEffect(eff StatusEffects) graphics.VisualEffect {
+	switch eff.(type) {
+	case *Burning: // Check if it's of type Burning
+		return graphics.NewFireEffect(0, 0, 1, 2, 1, 0.5)
+	case *Freezing: // Check if it's of type Freezing
+		return graphics.NewIceEffect(0, 0, 2)
+	case *Sticky: // Check if it's of type Sticky
+		return graphics.NewStickyGroundEffect(0, 0, 2)
+	default:
+		fmt.Println("Invalid status effect")
+		return nil
+	}
 }
 
 // Any item that implements the interface defines the random ranges of the item stats
@@ -103,7 +117,7 @@ func AllStatusEffects(effects *ecs.Entity) []StatusEffects {
 type CommonItemProperties struct {
 	Duration int
 	Name     string
-	Quality  Quality
+	Quality  common.QualityType
 }
 
 // Adds the duration of the other to the CommonItemProperty
@@ -115,11 +129,11 @@ func (c *CommonItemProperties) AddDuration(other CommonItemProperties) {
 
 func (c *CommonItemProperties) QualityName() string {
 
-	if c.Quality == LowQuality {
+	if c.Quality == common.LowQuality {
 		return "Low Quality"
-	} else if c.Quality == NormalQuality {
+	} else if c.Quality == common.NormalQuality {
 		return "Medium Quality"
-	} else if c.Quality == HighQuality {
+	} else if c.Quality == common.HighQuality {
 		return "High Quality"
 	} else {
 		return "Invalid Quality"
@@ -353,7 +367,7 @@ func NewFreezing(dur int, t int) *Freezing {
 type Throwable struct {
 	MainProps     CommonItemProperties
 	ThrowingRange int //How many tiles it can be thrown
-	Damage        int
+	Damage        int //Not used for anythign at the moment
 	Shape         graphics.TileBasedShape
 	VX            graphics.VisualEffect
 }

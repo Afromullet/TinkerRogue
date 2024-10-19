@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"game_main/common"
 	"game_main/gear"
+	"game_main/graphics"
 	"math/rand"
 
 	"github.com/bytearena/ecs"
@@ -16,28 +17,29 @@ import (
 
 // The number of item properties generated for a throwable using the loot tables
 func RandomNumProperties() int {
-	return rand.Intn(len(RandThrowableOptions))
+
+	len := rand.Intn(len(RandThrowableOptions))
+	if len == 0 {
+		len = 1
+	}
+	return len
 }
 
-// T
 func SpawnThrowableItem(manager *ecs.Manager, xPos, yPos int) *ecs.Entity {
 
 	effects := make([]gear.StatusEffects, 0)
 
-	//numbers := []gear.StatusEffects{1, 2, 3, 4, 5}
+	itemName := ""
 
 	for _ = range RandomNumProperties() {
 
-		//	var effect gear.StatusEffects // This is just a nil interface for now
-
-		//eff := gear.StatusEffects{}
-		if entry, ok := ThrowableProbTable.GetRandomEntry(true); ok {
+		if entry, ok := ThrowableEffectStatTable.GetRandomEntry(true); ok {
 
 			qual, qualOK := LootQualityTable.GetRandomEntry(false)
-
 			if qualOK {
 				entry.CreateWithQuality(qual)
 				effects = append(effects, entry)
+				itemName += entry.StatusEffectName() //Todo need better way to create a name
 			}
 
 		} else {
@@ -46,8 +48,43 @@ func SpawnThrowableItem(manager *ecs.Manager, xPos, yPos int) *ecs.Entity {
 
 	}
 
-	ThrowableProbTable.RestoreWeights()
+	aoeShape, shapeOK := ThrowableAOEProbTable.GetRandomEntry(false)
+	qual, qualOK := LootQualityTable.GetRandomEntry(false)
 
-	return gear.CreateItem(manager, "po", common.Position{X: xPos, Y: yPos}, "../assets/items/sword.png", effects...)
+	//Select a random visual effect
+
+	randInd := len(effects)
+
+	var vx graphics.VisualEffect
+	if randInd == 0 {
+
+		vx = gear.GetVisualEffect(effects[0])
+
+	} else {
+		vx = gear.GetVisualEffect(effects[rand.Intn(randInd)])
+
+	}
+
+	throwable := gear.NewThrowable(1, 1, 1, aoeShape)
+	if shapeOK && qualOK {
+
+		throwable.CreateWithQuality(qual)
+
+		//Select a random
+
+		//Need to set this again due to how the CreateWithQuality is implemented.
+		//It's a problem that I have to take the extra step, but it's not something worth worrying about for now.
+		//The problem being that CreateWithQuality takes a reference rather than creating a new type.
+		aoeShape.CreateWithQuality(qual)
+		throwable.Shape = aoeShape
+		throwable.VX = vx
+
+		effects = append(effects, throwable)
+
+	} else {
+		fmt.Println("Problem generating AOE shape")
+	}
+	ThrowableEffectStatTable.RestoreWeights()
+	return gear.CreateItem(manager, itemName, common.Position{X: xPos, Y: yPos}, "../assets/items/grenade.png", effects...)
 
 }

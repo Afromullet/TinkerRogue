@@ -91,7 +91,7 @@ func (r RangedWeapon) CalculateDamage() int {
 // Todo, use the PositionTracker so we don't have to itereate through all of the monsters
 func (r RangedWeapon) GetTargets(ecsmanger *common.EntityManager) []*ecs.Entity {
 
-	pos := common.GetTilePositions(r.TargetArea.GetIndices(), graphics.ScreenInfo.DungeonWidth)
+	pos := graphics.GetTilePositions(r.TargetArea.GetIndices(), graphics.ScreenInfo.DungeonWidth)
 	targets := make([]*ecs.Entity, 0)
 
 	//TODO, this will be slow in case there are a lot of creatures

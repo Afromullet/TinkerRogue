@@ -1,5 +1,7 @@
 package graphics
 
+import "game_main/common"
+
 // This is also in the gear package. Duplicating it is a better option than adding this to its own package
 type Quality int
 
@@ -118,6 +120,8 @@ type TileBasedShape interface {
 	UpdatePosition(pixelX int, pixelY int)
 	UpdateShape(updater ShapeUpdater)
 	StartPositionPixels() (int, int)
+	common.Quality
+	//common.ItemQuality
 	//(q Quality) //This can probably be its own interface, since
 }
 
@@ -165,10 +169,6 @@ func (s *TileSquare) UpdateShape(updater ShapeUpdater) {
 func (s *TileSquare) StartPositionPixels() (int, int) {
 
 	return s.PixelX, s.PixelY
-
-}
-
-func (s *TileSquare) CreateWithQuality() {
 
 }
 

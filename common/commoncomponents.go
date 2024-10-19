@@ -2,7 +2,7 @@ package common
 
 import (
 	"fmt"
-	"game_main/graphics"
+
 	"math"
 )
 
@@ -37,24 +37,6 @@ func (p *Position) ChebyshevDistance(other *Position) int {
 func (p *Position) InRange(other *Position, distance int) bool {
 
 	return p.ManhattanDistance(other) <= distance
-
-}
-
-// A TileBasedShape returns indices that correspond to the tiles on the GameMap
-// The TileBasedShape uses World Coordnates
-func GetTilePositions(indices []int, dungeinWidth int) []Position {
-
-	pos := make([]Position, len(indices))
-
-	x, y := 0, 0
-	for i, tileIndex := range indices {
-
-		x, y = graphics.CoordTransformer.LogicalXYFromIndex(tileIndex)
-		pos[i] = Position{X: x, Y: y}
-
-	}
-
-	return pos
 
 }
 
@@ -109,3 +91,28 @@ type Name struct {
 type StringDisplay interface {
 	DisplayString()
 }
+
+// Not a component, but there's no need to create a source file for just this
+
+// Interface to create an item of a quality. Used for loot generation.
+// Take a look at itemquality.go to see how it's implemented
+// Implementation looks like this
+// //func (t *Throwable) CreateWithQuality(q common.QualityType) {
+// ...}
+// Which means that we are changing a refernece. Not the best implementation, since it
+// Requires us to create an object first. Todo change that in the future. Maybe use a factory?
+type Quality interface {
+	CreateWithQuality(q QualityType)
+}
+
+type QualityType int
+
+var LowQualStr = "Low Quality"
+var NormalQualStr = "Normal Quality"
+var HighQualStr = "High Quality"
+
+const (
+	LowQuality = iota
+	NormalQuality
+	HighQuality
+)

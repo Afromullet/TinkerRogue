@@ -5,10 +5,37 @@ import (
 	"game_main/avatar"
 	"game_main/common"
 	"game_main/entitytemplates"
+	"game_main/gear"
 	"game_main/rendering"
 	"game_main/worldmap"
 	"math/rand"
+	"strconv"
+
+	"github.com/bytearena/ecs"
 )
+
+// TODO better image selection
+func SpawnRangedWeapon(manager *ecs.Manager, xPos, yPos int) *ecs.Entity {
+
+	//TODO better name generation
+	name := "Ranged " + strconv.Itoa(rand.Intn(1000))
+	weapon := gear.CreateItem(manager, name, common.Position{X: xPos, Y: yPos}, "../assets/items/longbow1.png")
+
+	qual, qualOK := LootQualityTable.GetRandomEntry(false)
+	aoeShape, shapeOK := ThrowableAOEProbTable.GetRandomEntry(false)
+
+	if qualOK && shapeOK {
+
+		r := gear.RangedWeapon{}
+		r.CreateWithQuality(qual)
+		r.TargetArea = aoeShape
+		weapon.AddComponent(gear.RangedWeaponComponent, &r)
+		return weapon
+	}
+
+	return nil
+
+}
 
 // Basic spawning to start off with. Has a 30% chance to spawn a consumable in the center
 func SpawnStartingConsumables(em common.EntityManager, gm *worldmap.GameMap) {

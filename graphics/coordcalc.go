@@ -1,5 +1,7 @@
 package graphics
 
+import "game_main/common"
+
 type CoordinateTransformer struct {
 	dungeonWidth int
 	tileSize     int
@@ -42,4 +44,22 @@ func NewCoordTransformer(w, t int) CoordinateTransformer {
 		dungeonWidth: w,
 		tileSize:     t,
 	}
+}
+
+// A TileBasedShape returns indices that correspond to the tiles on the GameMap
+// The TileBasedShape uses World Coordnates
+func GetTilePositions(indices []int, dungeinWidth int) []common.Position {
+
+	pos := make([]common.Position, len(indices))
+
+	x, y := 0, 0
+	for i, tileIndex := range indices {
+
+		x, y = CoordTransformer.LogicalXYFromIndex(tileIndex)
+		pos[i] = common.Position{X: x, Y: y}
+
+	}
+
+	return pos
+
 }

@@ -87,14 +87,23 @@ func NewGame() *Game {
 	testing.CreateTestConsumables(&g.em, &g.gameMap)
 	testing.InitTestActionManager(&g.em, &g.playerData, &g.ts)
 
+	//TODO remove, the spawning functions are here for testing
 	for _ = range 10 {
 		sX, sY := g.gameMap.Rooms[0].Center()
-		sX += 2
+		sX += 3
 
 		it := spawning.SpawnThrowableItem(g.em.World, sX, sY)
 
 		g.gameMap.AddEntityToTile(it, &common.Position{X: sX, Y: sY})
+	}
 
+	for _ = range 5 {
+		sX, sY := g.gameMap.Rooms[0].Center()
+		sX += 2
+
+		it := spawning.SpawnRangedWeapon(g.em.World, sX, sY)
+
+		g.gameMap.AddEntityToTile(it, &common.Position{X: sX, Y: sY})
 	}
 
 	g.ts.ActionDispatcher.ResetActionManager()

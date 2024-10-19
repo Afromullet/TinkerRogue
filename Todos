@@ -25,7 +25,7 @@ Check for functions which are not called
 
 
 
-Display Throwable Item Text
+
 
 
 
@@ -172,6 +172,8 @@ Might need to index instead
 * Remove a dead creature once it dies rather than next turn
 
 Preallocate sizes of slices when possible
+
+* The way items are created based on quality. Several things implement a CreateWithQuality method. That can probably just be an interface.
 
 
 

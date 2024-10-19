@@ -1,32 +1,22 @@
 package gear
 
 import (
+	"game_main/common"
+	"game_main/graphics"
 	"math/rand"
-)
-
-type Quality int
-
-var LowQualStr = "Low Quality"
-var NormalQualStr = "Normal Quality"
-var HighQualStr = "High Quality"
-
-const (
-	LowQuality = iota
-	NormalQuality
-	HighQuality
 )
 
 /*
 func CreateStatEffWithQuality(eff StatusEffects, qual Quality) StatusEffects {
 
-	if qual == LowQuality {
+	if qual == common.LowQuality {
 
 		return eff.CreateLowQual()
 
-	} else if qual == NormalQuality {
+	} else if qual == common.NormalQuality {
 		return eff.CreateNormQual()
 
-	} else if qual == HighQuality {
+	} else if qual == common.HighQuality {
 		return eff.CreateHighQual()
 
 	}
@@ -35,23 +25,23 @@ func CreateStatEffWithQuality(eff StatusEffects, qual Quality) StatusEffects {
 }
 */
 
-func (c CommonItemProperties) CreateWithQuality(q Quality) CommonItemProperties {
+func (c CommonItemProperties) CreateWithQuality(q common.QualityType) CommonItemProperties {
 
 	props := CommonItemProperties{}
-	if q == LowQuality {
-		c.Name = ""
-		c.Duration = rand.Intn(3) + 1
-		c.Quality = LowQuality
+	if q == common.LowQuality {
+		props.Name = ""
+		props.Duration = rand.Intn(3) + 1
+		props.Quality = common.LowQuality
 
-	} else if q == NormalQuality {
-		c.Name = ""
-		c.Duration = rand.Intn(3) + 1
-		c.Quality = NormalQuality
+	} else if q == common.NormalQuality {
+		props.Name = ""
+		props.Duration = rand.Intn(3) + 1
+		props.Quality = common.NormalQuality
 
-	} else if q == HighQuality {
-		c.Name = ""
-		c.Duration = rand.Intn(6) + 1
-		c.Quality = HighQuality
+	} else if q == common.HighQuality {
+		props.Name = ""
+		props.Duration = rand.Intn(6) + 1
+		props.Quality = common.HighQuality
 
 	}
 
@@ -61,18 +51,19 @@ func (c CommonItemProperties) CreateWithQuality(q Quality) CommonItemProperties 
 
 //Todo do these need pointer receivers, since we're returning something?
 
-func (s *Sticky) CreateWithQuality(q Quality) {
+func (s *Sticky) CreateWithQuality(q common.QualityType) {
 
 	s.MainProps = s.MainProps.CreateWithQuality(q)
-	if q == LowQuality {
+	s.MainProps.Name = STICKY_NAME
+	if q == common.LowQuality {
 
 		s.Spread = rand.Intn(2) + 1
 
-	} else if q == NormalQuality {
+	} else if q == common.NormalQuality {
 
 		s.Spread = rand.Intn(4) + 1
 
-	} else if q == HighQuality {
+	} else if q == common.HighQuality {
 
 		s.Spread = rand.Intn(6) + 1
 
@@ -80,33 +71,35 @@ func (s *Sticky) CreateWithQuality(q Quality) {
 
 }
 
-func (b *Burning) CreateWithQuality(q Quality) {
+func (b *Burning) CreateWithQuality(q common.QualityType) {
 
 	b.MainProps = b.MainProps.CreateWithQuality(q)
-	if q == LowQuality {
+	b.MainProps.Name = BURNING_NAME
+	if q == common.LowQuality {
 
 		b.Temperature = rand.Intn(3) + 1
-	} else if q == NormalQuality {
+	} else if q == common.NormalQuality {
 
 		b.Temperature = rand.Intn(5) + 1
-	} else if q == HighQuality {
+	} else if q == common.HighQuality {
 
 		b.Temperature = rand.Intn(7) + 1
 	}
 
 }
 
-func (f *Freezing) CreateWithQuality(q Quality) {
+func (f *Freezing) CreateWithQuality(q common.QualityType) {
 
 	f.MainProps = f.MainProps.CreateWithQuality(q)
-	if q == LowQuality {
+	f.MainProps.Name = FREEZING_NAME
+	if q == common.LowQuality {
 
 		f.Thickness = rand.Intn(3) + 1
-	} else if q == NormalQuality {
+	} else if q == common.NormalQuality {
 
 		f.Thickness = rand.Intn(5) + 1
 
-	} else if q == HighQuality {
+	} else if q == common.HighQuality {
 
 		f.Thickness = rand.Intn(7) + 1
 
@@ -114,20 +107,49 @@ func (f *Freezing) CreateWithQuality(q Quality) {
 
 }
 
-func (t *Throwable) CreateWithQuality(q Quality) {
+func (t *Throwable) CreateWithQuality(q common.QualityType) {
 
 	t.MainProps = t.MainProps.CreateWithQuality(q)
-	if q == LowQuality {
+	t.MainProps.Name = THROWABLE_NAME
+	if q == common.LowQuality {
 
 		t.ThrowingRange = rand.Intn(2) + 1
-	} else if q == NormalQuality {
+
+	} else if q == common.NormalQuality {
 
 		t.ThrowingRange = rand.Intn(5) + 1
 
-	} else if q == HighQuality {
+	} else if q == common.HighQuality {
 
 		t.ThrowingRange = rand.Intn(7) + 1
 
+	}
+
+}
+
+// Selecting the shooting VX in the spawning package
+func (r *RangedWeapon) CreateWithQuality(q common.QualityType) {
+
+	r.ShootingVX = graphics.NewProjectile(0, 0, 0, 0)
+	if q == common.LowQuality {
+
+		r.MinDamage = rand.Intn(2) + 1
+		r.MaxDamage = rand.Intn(5) + 1
+		r.ShootingRange = rand.Intn(3) + 1
+		r.AttackSpeed = rand.Intn(7) + 1
+
+	} else if q == common.NormalQuality {
+		r.MinDamage = rand.Intn(7) + 1
+		r.MaxDamage = rand.Intn(10) + 1
+		r.ShootingRange = rand.Intn(5) + 1
+		r.AttackSpeed = rand.Intn(5) + 1
+
+	} else if q == common.HighQuality {
+
+		r.MinDamage = rand.Intn(10) + 1
+		r.MaxDamage = rand.Intn(15) + 1
+		r.ShootingRange = rand.Intn(7) + 1
+		r.AttackSpeed = rand.Intn(3) + 1
 	}
 
 }
