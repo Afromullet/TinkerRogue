@@ -95,6 +95,12 @@ func NewGame() *Game {
 		it := spawning.SpawnThrowableItem(g.em.World, sX, sY)
 
 		g.gameMap.AddEntityToTile(it, &common.Position{X: sX, Y: sY})
+
+		sX, sY = g.gameMap.Rooms[0].Center()
+		sX += 2
+		it = spawning.SpawnConsumable(g.em.World, sX, sY)
+		g.gameMap.AddEntityToTile(it, &common.Position{X: sX, Y: sY})
+
 	}
 
 	for _ = range 5 {

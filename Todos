@@ -23,8 +23,13 @@ Room Decoration (maybe)
 
 Check for functions which are not called
 
+Determine whether you need the CreatureTracker
 
+Spawning package needs to correctly select the image of the item that is being generated
 
+Better name generation for random item generation
+
+Define spawn probabilities in file
 
 
 
@@ -44,6 +49,14 @@ Move all of the component getters into their own package - assumign it does not 
 
 Apply all of the effects - currently the ApplyToCreature is just a placeholder that shows that the effect is being applied, but it does nothing else. Sticky needs to be applied differently since that's a map effect
 
+
+___Spawning___ (Important)
+
+* Monster spawning
+* Melee Weapon Spawning
+* Ranged Weapon Spawning
+* ARmor SPawning
+* Deciding how to spawn anything the player can pick up
 
 ___Energy/Time System__
 

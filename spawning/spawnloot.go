@@ -14,6 +14,24 @@ import (
 	"github.com/bytearena/ecs"
 )
 
+func SpawnConsumable(manager *ecs.Manager, xPos, yPos int) *ecs.Entity {
+
+	qual, qualOK := LootQualityTable.GetRandomEntry(false)
+
+	if qualOK {
+		c := gear.Consumable{}
+		consType, _ := ConsumableSpawnTable.GetRandomEntry(false)
+		c.CreateConsumable(consType, qual)
+
+		item := gear.CreateItem(manager, c.Name, common.Position{X: xPos, Y: yPos}, "../assets/items/bubbly.png")
+		item.AddComponent(gear.ConsumableComponent, &c)
+		return item
+
+	}
+	return nil
+
+}
+
 // TODO better image selection
 func SpawnRangedWeapon(manager *ecs.Manager, xPos, yPos int) *ecs.Entity {
 

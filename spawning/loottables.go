@@ -6,14 +6,13 @@ import (
 	"game_main/graphics"
 )
 
-var LootQualityTable = NewProbabilityTable[common.QualityType]()
-
-var ThrowableEffectStatTable = NewProbabilityTable[gear.StatusEffects]()
-
 // Used for helping is select n number of properties for the status effect. Not tied to quality.
 var RandThrowableOptions = []gear.StatusEffects{gear.NewBurning(1, 1), gear.NewFreezing(1, 1), gear.NewSticky(1, 1)}
 
+var LootQualityTable = NewProbabilityTable[common.QualityType]()
+var ThrowableEffectStatTable = NewProbabilityTable[gear.StatusEffects]()
 var ThrowableAOEProbTable = NewProbabilityTable[graphics.TileBasedShape]()
+var ConsumableSpawnTable = NewProbabilityTable[gear.ConsumableType]()
 
 func InitLootSpawnTables() {
 
@@ -31,5 +30,9 @@ func InitLootSpawnTables() {
 	ThrowableAOEProbTable.AddEntry(&graphics.TileCircle{}, 10)
 	ThrowableAOEProbTable.AddEntry(&graphics.TileCone{}, 15)
 	ThrowableAOEProbTable.AddEntry(&graphics.TileRectangle{}, 5)
+
+	ConsumableSpawnTable.AddEntry(gear.HealingPotion, 30)
+	ConsumableSpawnTable.AddEntry(gear.ProtectionPotion, 30)
+	ConsumableSpawnTable.AddEntry(gear.SpeedPotion, 30)
 
 }
