@@ -6,12 +6,19 @@ import (
 	"game_main/graphics"
 )
 
+// Type and variables for overall spawn probability of the kinds of items.
+// Spawned every N number of turns
+
+var ConsumableSpawnProb = 30
+var ThrowableSpawnProb = 30
+var RangedWeaponSpawnProb = 10
+
 // Used for helping is select n number of properties for the status effect. Not tied to quality.
 var RandThrowableOptions = []gear.StatusEffects{gear.NewBurning(1, 1), gear.NewFreezing(1, 1), gear.NewSticky(1, 1)}
 
-var LootQualityTable = NewProbabilityTable[common.QualityType]()
-var ThrowableEffectStatTable = NewProbabilityTable[gear.StatusEffects]()
-var ThrowableAOEProbTable = NewProbabilityTable[graphics.TileBasedShape]()
+var LootQualityTable = NewProbabilityTable[common.QualityType]()           //Determining the quality of the item to be generated
+var ThrowableEffectStatTable = NewProbabilityTable[gear.StatusEffects]()   //Determines the status effects of throwables
+var ThrowableAOEProbTable = NewProbabilityTable[graphics.TileBasedShape]() //Determines the AOE of throwables
 var ConsumableSpawnTable = NewProbabilityTable[gear.ConsumableType]()
 
 func InitLootSpawnTables() {
@@ -31,8 +38,8 @@ func InitLootSpawnTables() {
 	ThrowableAOEProbTable.AddEntry(&graphics.TileCone{}, 15)
 	ThrowableAOEProbTable.AddEntry(&graphics.TileRectangle{}, 5)
 
-	ConsumableSpawnTable.AddEntry(gear.HealingPotion, 30)
+	ConsumableSpawnTable.AddEntry(gear.HealingPotion, 50)
 	ConsumableSpawnTable.AddEntry(gear.ProtectionPotion, 30)
-	ConsumableSpawnTable.AddEntry(gear.SpeedPotion, 30)
+	ConsumableSpawnTable.AddEntry(gear.SpeedPotion, 20)
 
 }

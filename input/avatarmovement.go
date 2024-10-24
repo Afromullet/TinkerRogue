@@ -128,7 +128,7 @@ func PlayerActions(ecsmanager *common.EntityManager, pl *avatar.PlayerData, gm *
 
 	if inpututil.IsKeyJustReleased(ebiten.KeyF) {
 
-		if !pl.InputStates.IsThrowing {
+		if !pl.InputStates.IsThrowing && pl.Equipment.EqRangedWeapon != nil {
 
 			act, cost := GetSimplePlayerAction(PlayerSelRanged, pl, gm)
 			AddPlayerAction(act, pl, cost, timesystem.RangedAttackKind)

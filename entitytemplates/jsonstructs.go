@@ -14,6 +14,9 @@ type JSONAttributes struct {
 	BaseProtection    int     `json:"BaseProtection"`
 	BaseDodgeChance   float32 `json:"BaseDodgeChance"`
 	BaseMovementSpeed int     `json:"BaseMovementSpeed"`
+	Strength          int     `json:"Strength"`
+	Dexterity         int     `json:"Dexterity"`
+	Constitution      int     `json:"Constitution"`
 }
 
 func (attr JSONAttributes) NewAttributesFromJson() common.Attributes {
@@ -24,7 +27,11 @@ func (attr JSONAttributes) NewAttributesFromJson() common.Attributes {
 		attr.BaseArmorClass,
 		attr.BaseProtection,
 		attr.BaseMovementSpeed,
-		attr.BaseDodgeChance)
+		attr.BaseDodgeChance,
+		attr.Strength,
+		attr.Dexterity,
+		attr.Constitution,
+	)
 
 }
 

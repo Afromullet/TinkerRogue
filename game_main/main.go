@@ -47,7 +47,7 @@ import (
 // Using https://www.fatoldyeti.com/categories/roguelike-tutorial/ as a starting point.
 // Copying some of the code with modification. Whenever I change a name, it's to help me build a better mental model
 // Of what the code is doing as I'm learning GoLang
-var DEBUG_MODE = false
+var DEBUG_MODE = true
 var ENABLE_BENCHMARKING = false
 
 type Game struct {
@@ -84,33 +84,37 @@ func NewGame() *Game {
 	testing.UpdateContentsForTest(&g.em, &g.gameMap)
 	spawning.SpawnStartingCreatures(0, &g.em, &g.gameMap, &g.playerData)
 
-	testing.CreateTestConsumables(&g.em, &g.gameMap)
 	testing.InitTestActionManager(&g.em, &g.playerData, &g.ts)
 
-	//TODO remove, the spawning functions are here for testing
-	for _ = range 10 {
-		sX, sY := g.gameMap.Rooms[0].Center()
-		sX += 3
+	/*
+		pX, pY := graphics.CoordTransformer.PixelsFromLogicalXY(g.playerData.Pos.X, g.playerData.Pos.Y)
 
-		it := spawning.SpawnThrowableItem(g.em.World, sX, sY)
+		pos := g.gameMap.UnblockedLogicalCoords(pX, pY, 10)
 
-		g.gameMap.AddEntityToTile(it, &common.Position{X: sX, Y: sY})
+		for _, p := range pos {
 
-		sX, sY = g.gameMap.Rooms[0].Center()
-		sX += 2
-		it = spawning.SpawnConsumable(g.em.World, sX, sY)
-		g.gameMap.AddEntityToTile(it, &common.Position{X: sX, Y: sY})
+			it := spawning.SpawnThrowableItem(g.em.World, p.X, p.Y)
 
-	}
+			g.gameMap.AddEntityToTile(it, &common.Position{X: p.X, Y: p.Y})
 
-	for _ = range 5 {
-		sX, sY := g.gameMap.Rooms[0].Center()
-		sX += 2
+		}
 
-		it := spawning.SpawnRangedWeapon(g.em.World, sX, sY)
+			//TODO remove, the spawning functions are here for testing
+			for _ = range 10 {
+				sX, sY := g.gameMap.Rooms[0].Center()
+				sX += 3
 
-		g.gameMap.AddEntityToTile(it, &common.Position{X: sX, Y: sY})
-	}
+				it := spawning.SpawnThrowableItem(g.em.World, sX, sY)
+
+				g.gameMap.AddEntityToTile(it, &common.Position{X: sX, Y: sY})
+
+				sX, sY = g.gameMap.Rooms[0].Center()
+				sX += 2
+				it = spawning.SpawnConsumable(g.em.World, sX, sY)
+				g.gameMap.AddEntityToTile(it, &common.Position{X: sX, Y: sY})
+
+			}
+	*/
 
 	g.ts.ActionDispatcher.ResetActionManager()
 
@@ -188,6 +192,8 @@ func ManageTurn(g *Game) {
 
 			//addspawning.SpawnMonster(g.em, &g.gameMap)
 		}
+
+		spawning.SpawnLootAroundPlayer(g.ts.TotalNumTurns, g.playerData, g.em.World, &g.gameMap)
 
 		resmanager.RemoveDeadEntities(&g.em, &g.gameMap)
 

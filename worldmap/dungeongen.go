@@ -480,7 +480,46 @@ func (gameMap GameMap) InBounds(x, y int) bool {
 }
 
 // TODO: Change this to check for WALL, not blocked
+// Shouldn't this be a pointer?
 func (gameMap GameMap) IsOpaque(x, y int) bool {
 	idx := graphics.CoordTransformer.IndexFromLogicalXY(x, y)
 	return gameMap.Tiles[idx].TileType == WALL
+}
+
+// Gets non blocked indices of a square centered at PixelX and PixelY
+func (gameMap *GameMap) UnblockedIndices(pixelX, pixelY, size int) []int {
+	inds := make([]int, 0)
+
+	sq := graphics.NewTileSquare(pixelX, pixelY, size).GetIndices()
+
+	for _, i := range sq {
+
+		if !gameMap.Tiles[i].Blocked {
+			inds = append(inds, i)
+		}
+
+	}
+
+	return inds
+
+}
+
+func (gameMap *GameMap) UnblockedLogicalCoords(pixelX, pixelY, size int) []common.Position {
+	pos := make([]common.Position, 0)
+
+	sq := graphics.NewTileSquare(pixelX, pixelY, size).GetIndices()
+
+	for _, i := range sq {
+
+		if !gameMap.Tiles[i].Blocked {
+
+			x, y := graphics.CoordTransformer.LogicalXYFromIndex(i)
+			pos = append(pos, common.Position{X: x, Y: y})
+
+		}
+
+	}
+
+	return pos
+
 }

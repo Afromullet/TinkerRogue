@@ -1,5 +1,16 @@
 MAJOR
 
+
+
+Finish implementing consumable ffects
+
+
+
+Figure out a way to determine difficulty of monsters so that you can determine how strong something is to help with spawning
+ Base it off player stats
+
+
+
 Make throwable something that's not an item effect
 
 Create GUI widgets only once
@@ -40,9 +51,8 @@ Need to only draw player ranged attack when they're actually shooting - What did
 
 Make sure ActionManager works as you want it to work. Find a way to create debug output
 
-Generation for throwables with properties using the lootable probabilities
 
-Add a Check to make sure that an entity has all the required components. I.E, name component, position, consumabletracker, etc
+When creating an entity, add a Check to make sure that an entity has all the required components. I.E, name component, position, consumabletracker, etc
 
 
 Move all of the component getters into their own package - assumign it does not cause circular inckusions
@@ -57,6 +67,8 @@ ___Spawning___ (Important)
 * Ranged Weapon Spawning
 * ARmor SPawning
 * Deciding how to spawn anything the player can pick up
+* Add "Spawns per turn" vars to input file too 
+* Add other spawn probabilities to file  - including stuff such as consumablechange etc and turns between spawns
 
 ___Energy/Time System__
 

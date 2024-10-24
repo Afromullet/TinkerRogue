@@ -9,17 +9,20 @@
         "baseArmorClass": 12,
         "baseProtection": 1,
         "baseDodgeChance": 0.1,
-        "baseMovementSpeed": 5
+        "baseMovementSpeed": 5,
+		"strength": 10,
+		"dexterity": 10,
+		"constitution" : 10
       },
       "armor": {
-        "armorClass": 4,
+        "armorClass": 5,
         "protection": 1,
         "dodgeChance": 0.05
       },
       "meleeWeapon": {
-        "minDamage": 4,
-        "maxDamage": 8,
-        "attackSpeed": 1
+        "minDamage": 2,
+        "maxDamage": 3,
+        "attackSpeed": 3
       },
       "rangedWeapon": null
     },
@@ -32,10 +35,13 @@
         "baseArmorClass": 10,
         "baseProtection": 2,
         "baseDodgeChance": 0.05,
-        "baseMovementSpeed": 5
+        "baseMovementSpeed": 5,
+		"strength": 10,
+		"dexterity": 10,
+		"constitution" : 10
       },
       "armor": {
-        "armorClass": 5,
+        "armorClass": 7,
         "protection": 3,
         "dodgeChance": 0.03
       },
@@ -55,7 +61,10 @@
         "baseArmorClass": 12,
         "baseProtection": 1,
         "baseDodgeChance": 0.08,
-        "baseMovementSpeed": 5
+        "baseMovementSpeed": 5,
+		"strength": 10,
+		"dexterity": 10,
+		"constitution" : 10
       },
       "armor": {
         "armorClass": 4,
@@ -78,7 +87,10 @@
         "baseArmorClass": 8,
         "baseProtection": 1,
         "baseDodgeChance": 0.1,
-        "baseMovementSpeed": 5
+        "baseMovementSpeed": 5,
+			"strength": 10,
+		"dexterity": 10,
+		"constitution" : 10
       },
       "armor": {
         "armorClass": 3,
@@ -107,7 +119,10 @@
         "baseArmorClass": 9,
         "baseProtection": 1,
         "baseDodgeChance": 0.1,
-        "baseMovementSpeed": 5
+        "baseMovementSpeed": 5,
+			"strength": 10,
+		"dexterity": 10,
+		"constitution" : 10
       },
       "armor": null,
       "rangedWeapon": {
@@ -132,7 +147,10 @@
         "baseArmorClass": 7,
         "baseProtection": 0,
         "baseDodgeChance": 0.2,
-        "baseMovementSpeed": 5
+        "baseMovementSpeed": 5,
+			"strength": 10,
+		"dexterity": 10,
+		"constitution" : 10
       },
       "armor": null,
       "rangedWeapon": {

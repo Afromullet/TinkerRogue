@@ -6,6 +6,7 @@ import (
 	"game_main/common"
 	"game_main/entitytemplates"
 	"game_main/gear"
+	"game_main/graphics"
 	"game_main/rendering"
 	"game_main/worldmap"
 	"math/rand"
@@ -86,6 +87,7 @@ func SpawnStartingConsumables(em common.EntityManager, gm *worldmap.GameMap) {
 }
 
 // 30 percent chance to spawn either a melee or ranged weapon in a room
+// Todo add these items to the players inventory instead and also add consumables
 func SpawnStartingEquipment(em *common.EntityManager, gm *worldmap.GameMap, pl *avatar.PlayerData) {
 
 	weaponChoice := -1
@@ -125,4 +127,53 @@ func SpawnStartingEquipment(em *common.EntityManager, gm *worldmap.GameMap, pl *
 		}
 
 	}
+}
+
+// Spawns loot in a square of size "size" centered at the position
+// Right now it's used to spawn loot in a square centered around the player
+// Todo, this is just some basic spawning. There's a chacne this can spawn an
+// item in the same room as the player. That will look weird.
+// Add better spawning mechanics later
+//
+
+func SpawnLootAroundPlayer(currentTurnNumber int, playerData avatar.PlayerData, manager *ecs.Manager, gm *worldmap.GameMap) {
+
+	if currentTurnNumber%10 != 0 {
+		return
+	}
+
+	//To get a random position for spawning the item
+	getRandomEntry := func(posSlice []common.Position) common.Position {
+
+		return posSlice[rand.Intn(len(posSlice))]
+
+	}
+
+	playerX, playerY := graphics.CoordTransformer.PixelsFromLogicalXY(playerData.Pos.X, playerData.Pos.Y)
+	spawnPositions := gm.UnblockedLogicalCoords(playerX, playerY, 10)
+	consChance, throwableChance, rangedWepChance := rand.Intn(100), rand.Intn(100), rand.Intn(100)
+
+	if consChance < ConsumableSpawnProb {
+
+		pos := getRandomEntry(spawnPositions)
+		e := SpawnConsumable(manager, pos.X, pos.Y)
+		gm.AddEntityToTile(e, &common.Position{X: pos.X, Y: pos.Y})
+
+	}
+	if throwableChance < ThrowableSpawnProb {
+
+		pos := getRandomEntry(spawnPositions)
+		e := SpawnThrowableItem(manager, pos.X, pos.Y)
+		gm.AddEntityToTile(e, &common.Position{X: pos.X, Y: pos.Y})
+
+	}
+
+	if rangedWepChance < RangedWeaponSpawnProb {
+
+		pos := getRandomEntry(spawnPositions)
+		e := SpawnRangedWeapon(manager, pos.X, pos.Y)
+		gm.AddEntityToTile(e, &common.Position{X: pos.X, Y: pos.Y})
+
+	}
+
 }

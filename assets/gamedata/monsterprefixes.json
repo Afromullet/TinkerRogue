@@ -1,0 +1,77 @@
+{
+  "monsterprefixes": [
+  
+    {
+      "name": "Fast",
+	   "imgname": "brown.png",
+	  "attackBonus" : 0,
+	  "maxHealth" : 0,
+	  "currentHealth" : 0,
+	  "baseArmorClass" : 0,
+	  "baseProtection" : 0,
+	  "baseMovementSpeed" :5,
+	  "baseDodgeChance" : 0,
+	  "strength" : 0,
+	  "dexterity": 0,
+	  "constitution":0
+	
+    },
+	
+	    {
+      "name": "Strong",
+	"attackBonus" : 0,
+	  "maxHealth" : 0,
+	  "currentHealth" : 0,
+	  "baseArmorClass" : 0,
+	  "baseProtection" : 5,
+	  "baseMovementSpeed" :0,
+	  "baseDodgeChance" : 0,
+	   "strength" : 5,
+	  "dexterity": 0,
+	  "constitution":0
+    },
+	
+	{
+      "name": "Elusive",
+	"attackBonus" : 0,
+	  "maxHealth" : 0,
+	  "currentHealth" : 0,
+	  "baseArmorClass" : 0,
+	  "baseProtection" : 5,
+	  "baseMovementSpeed" :0,
+	  "baseDodgeChance" : 0.3,
+	   "strength" : 5,
+	  "dexterity": 0,
+	  "constitution":0
+    },
+	
+	{
+      "name": "dire",
+	  "attackBonus" : 5,
+	  "maxHealth" : 0,
+	  "currentHealth" : 0,
+	  "baseArmorClass" : 5,
+	  "baseProtection" : 5,
+	  "baseMovementSpeed" :5,
+	  "baseDodgeChance" : 0.0,
+	   "strength" : 5,
+	  "dexterity": 5,
+	  "constitution":5
+    },
+	
+	
+		{
+      "name": "sturdy",
+	  "attackBonus" : 0,
+	  "maxHealth" : 0,
+	  "currentHealth" : 0,
+	  "baseArmorClass" : 0,
+	  "baseProtection" : 0,
+	  "baseMovementSpeed" :0,
+	  "baseDodgeChance" : 0.0,
+	   "strength" : 0,
+	  "dexterity": 0,
+	  "constitution":10
+    }
+	]
+	}
