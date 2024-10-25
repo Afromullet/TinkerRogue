@@ -11,9 +11,8 @@ var ConsumableComponent *ecs.Component
 var ConsEffectTrackerComponent *ecs.Component
 
 // A consumable applies the attrMod to the baseAttr. The attrMod is the "buff" the consumable provides
-// For example, a Healing Potion would add to  attrMod.CurrentHealth
+// For example, a Healing Potion would add to attrMod.CurrentHealth
 // And a speed potion would increase the BaseMovementSpeed
-//
 
 type Consumable struct {
 	Name         string
@@ -22,7 +21,6 @@ type Consumable struct {
 }
 
 // Anything other than health is applied every turn.
-// Todo determine if MaxHealth should be here too. Seems as if ApplyHealingEffect should only add to the currentHealth
 func (c *Consumable) ApplyEffect(baseAttr *common.Attributes) {
 
 	baseAttr.AttackBonus += c.AttrModifier.AttackBonus
@@ -36,8 +34,6 @@ func (c *Consumable) ApplyEffect(baseAttr *common.Attributes) {
 
 }
 
-// TOdo determine whether MaxHealth should also be applied here.
-// Don't want MaxHealth to be boosted every turn
 func (c *Consumable) ApplyHealingEffect(baseAttr *common.Attributes) {
 	baseAttr.CurrentHealth += c.AttrModifier.CurrentHealth
 	baseAttr.MaxHealth += c.AttrModifier.MaxHealth
@@ -116,19 +112,19 @@ func (eff ConsumableEffect) IsDone() bool {
 
 }
 
-// Every effect on an entity is tracked with the ConsumableEffectTracker.
+// Every effect on an entity is tracked with the ConsumableEffects.
 // It hnadles applying, adding, and removing effects when they're done.
-type ConsumableEffectTracker struct {
+type ConsumableEffects struct {
 	effects []ConsumableEffect
 }
 
-func (ce *ConsumableEffectTracker) AddEffect(cons ConsumableEffect) {
+func (ce *ConsumableEffects) AddEffect(cons ConsumableEffect) {
 
 	ce.effects = append(ce.effects, cons)
 
 }
 
-func (ce *ConsumableEffectTracker) ApplyEffects(ent *ecs.Entity) {
+func (ce *ConsumableEffects) ApplyEffects(ent *ecs.Entity) {
 
 	remainingEffects := make([]ConsumableEffect, 0)
 	attr := common.GetComponentType[*common.Attributes](ent, common.AttributeComponent)
@@ -149,6 +145,7 @@ func (ce *ConsumableEffectTracker) ApplyEffects(ent *ecs.Entity) {
 			attr.BaseDodgeChance -= eff.Effect.AttrModifier.BaseDodgeChance
 			attr.BaseMovementSpeed -= eff.Effect.AttrModifier.BaseMovementSpeed
 
+			// A 0 movement speed causes issues with the ActionQueue due to the actionmanager not allowing actions with 0 cost
 			if attr.BaseMovementSpeed == 0 {
 				attr.BaseMovementSpeed = 1
 			}
@@ -161,16 +158,11 @@ func (ce *ConsumableEffectTracker) ApplyEffects(ent *ecs.Entity) {
 	ce.effects = remainingEffects
 }
 
-// Todo this is only used in one place. The place that calls it can directly be replace with this check
-func (ce *ConsumableEffectTracker) hasEffects() bool {
-	return len(ce.effects) > 0
-}
-
 // Adds a consumable to an entities ConsumableEffectTracker.
 // Anything that can use or be afffected by a consumable will use a ConsumablEffeftTracker
 func AddEffectToTracker(ent *ecs.Entity, cons Consumable) {
 
-	tracker := common.GetComponentType[*ConsumableEffectTracker](ent, ConsEffectTrackerComponent)
+	tracker := common.GetComponentType[*ConsumableEffects](ent, ConsEffectTrackerComponent)
 
 	eff := ConsumableEffect{
 		currentDuration: 0,
@@ -179,7 +171,7 @@ func AddEffectToTracker(ent *ecs.Entity, cons Consumable) {
 
 	if tracker == nil {
 
-		tracker = &ConsumableEffectTracker{
+		tracker = &ConsumableEffects{
 			effects: make([]ConsumableEffect, 0),
 		}
 
@@ -191,12 +183,13 @@ func AddEffectToTracker(ent *ecs.Entity, cons Consumable) {
 
 }
 
-// Called in the game loop. Currently only used for player. MonsterSystems will call it too if monsters ever use consumables
-// Todo determine if this is being called by the monsters. Comment may be out of date
 func RunEffectTracker(ent *ecs.Entity) {
-	tracker := common.GetComponentType[*ConsumableEffectTracker](ent, ConsEffectTrackerComponent)
 
-	if tracker != nil && tracker.hasEffects() {
+	//To get a random position for spawning the item
+
+	tracker := common.GetComponentType[*ConsumableEffects](ent, ConsEffectTrackerComponent)
+
+	if tracker != nil && len(tracker.effects) > 0 {
 		tracker.ApplyEffects(ent)
 	}
 

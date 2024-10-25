@@ -103,18 +103,6 @@ func calculateCenterOffset(centerX, centerY int, sc ScreenData) (float64, float6
 	return offsetX, offsetY
 }
 
-// CalculateCenterOffset returns the offsets needed to center the map based on the given center tile position.
-func calculateCenterOffset2(centerX, centerY int, sc ScreenData) (float64, float64) {
-
-	scaledTileSize := sc.TileSize * sc.ScaleFactor
-
-	// Calculate the offset to center the map on the given logical center coordinates
-	offsetX := float64(sc.ScreenWidth)/2 - float64(centerX*scaledTileSize)
-	offsetY := float64(sc.ScreenHeight)/2 - float64(centerY*scaledTileSize)
-
-	return offsetX, offsetY
-}
-
 func CursorPosition(logicalX, logicalY int) (int, int) {
 
 	cursorX, cursorY := ebiten.CursorPosition()

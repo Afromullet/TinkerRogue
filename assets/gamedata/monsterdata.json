@@ -5,14 +5,13 @@
       "imgname": "goblin.png",
       "attributes": {
         "maxHealth": 15,
-        "attackBonus": 2,
-        "baseArmorClass": 12,
+        "attackBonus": 1,
+        "baseArmorClass": 10,
         "baseProtection": 1,
         "baseDodgeChance": 0.1,
-        "baseMovementSpeed": 5,
-		"strength": 10,
-		"dexterity": 10,
-		"constitution" : 10
+        "baseMovementSpeed": 3,
+		"damagebonus": 0
+	
       },
       "armor": {
         "armorClass": 5,
@@ -32,13 +31,11 @@
       "attributes": {
         "maxHealth": 25,
         "attackBonus": 3,
-        "baseArmorClass": 10,
+        "baseArmorClass": 12,
         "baseProtection": 2,
         "baseDodgeChance": 0.05,
         "baseMovementSpeed": 5,
-		"strength": 10,
-		"dexterity": 10,
-		"constitution" : 10
+		"damagebonus": 2
       },
       "armor": {
         "armorClass": 7,
@@ -56,15 +53,13 @@
       "name": "SkeletonWarrior",
       "imgname": "skeleton_naga.png",
       "attributes": {
-        "maxHealth": 18,
-        "attackBonus": 1,
-        "baseArmorClass": 12,
+        "maxHealth": 30,
+        "attackBonus": 3,
+        "baseArmorClass": 14,
         "baseProtection": 1,
         "baseDodgeChance": 0.08,
         "baseMovementSpeed": 5,
-		"strength": 10,
-		"dexterity": 10,
-		"constitution" : 10
+		"damagebonus": 3
       },
       "armor": {
         "armorClass": 4,
@@ -83,14 +78,12 @@
       "imgname": "deep_elf_master_archer.png",
       "attributes": {
         "maxHealth": 12,
-        "attackBonus": 1,
+        "attackBonus": 2,
         "baseArmorClass": 8,
         "baseProtection": 1,
         "baseDodgeChance": 0.1,
-        "baseMovementSpeed": 5,
-			"strength": 10,
-		"dexterity": 10,
-		"constitution" : 10
+        "baseMovementSpeed": 6,
+		"damagebonus": 0
       },
       "armor": {
         "armorClass": 3,

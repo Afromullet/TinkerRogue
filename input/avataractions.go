@@ -64,7 +64,7 @@ func DrawThrowableAOE(pl *avatar.PlayerData, gm *worldmap.GameMap) {
 
 	cursorX, cursorY := graphics.CursorPosition(pl.Pos.X, pl.Pos.Y)
 
-	s := pl.ThrowingAOEShape
+	s := pl.Throwables.ThrowingAOEShape
 
 	var indices []int
 	if cursorX != prevCursorX || cursorY != prevCursorY {
@@ -76,7 +76,7 @@ func DrawThrowableAOE(pl *avatar.PlayerData, gm *worldmap.GameMap) {
 
 	}
 
-	throwable := pl.ThrowableItem.ItemEffect(gear.THROWABLE_NAME).(*gear.Throwable)
+	throwable := pl.Throwables.ThrowableItem.ItemEffect(gear.THROWABLE_NAME).(*gear.Throwable)
 
 	s.UpdatePosition(cursorX, cursorY)
 	indices = s.GetIndices()
@@ -136,7 +136,7 @@ func HandlePlayerThrowable(ecsmanager *common.EntityManager, pl *avatar.PlayerDa
 
 	if pl.InputStates.IsThrowing {
 
-		throwable := pl.ThrowableItem.ItemEffect(gear.THROWABLE_NAME).(*gear.Throwable)
+		throwable := pl.Throwables.ThrowableItem.ItemEffect(gear.THROWABLE_NAME).(*gear.Throwable)
 
 		updater := UpdateDirection(&throwable.Shape)
 
@@ -156,9 +156,9 @@ func HandlePlayerThrowable(ecsmanager *common.EntityManager, pl *avatar.PlayerDa
 				//todo add check here that only lets someone throw if the area is in range. TileBasedShapes
 				//Need a "getorigin" or "getstart" function
 
-				pl.RemoveThrownItem(pl.Inventory)
+				pl.Throwables.RemoveThrownItem(pl.Inventory)
 
-				ApplyThrowable(ecsmanager, pl.ThrowableItem, pl, pl.ThrowingAOEShape, playerUI, pl.Pos)
+				ApplyThrowable(ecsmanager, pl.Throwables.ThrowableItem, pl, pl.Throwables.ThrowingAOEShape, playerUI, pl.Pos)
 
 				// Calling this again removes the item for the GUI
 				playerUI.ItemsUI.ThrowableItemDisplay.DisplayInventory()

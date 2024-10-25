@@ -6,25 +6,6 @@ import (
 	"math/rand"
 )
 
-/*
-func CreateStatEffWithQuality(eff StatusEffects, qual Quality) StatusEffects {
-
-	if qual == common.LowQuality {
-
-		return eff.CreateLowQual()
-
-	} else if qual == common.NormalQuality {
-		return eff.CreateNormQual()
-
-	} else if qual == common.HighQuality {
-		return eff.CreateHighQual()
-
-	}
-
-	return nil
-}
-*/
-
 func (c CommonItemProperties) CreateWithQuality(q common.QualityType) CommonItemProperties {
 
 	props := CommonItemProperties{}
@@ -48,8 +29,6 @@ func (c CommonItemProperties) CreateWithQuality(q common.QualityType) CommonItem
 	return props
 
 }
-
-//Todo do these need pointer receivers, since we're returning something?
 
 func (s *Sticky) CreateWithQuality(q common.QualityType) {
 

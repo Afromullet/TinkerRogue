@@ -45,10 +45,13 @@ func (pl *PlayerEquipment) Armor() *gear.Armor {
 	return common.GetComponentType[*gear.Armor](pl.EqArmor, gear.ArmorComponent)
 }
 
-// Does not remove an equipped item. Todo check if the item kind is already equipped, and if it is,
-// Remove it. Low priority. Currently, the part of the GUI that handles this removes the item,
-// But it's something that can be simplified
+// Removes the currently equipped item when equipping something new
 func (pl *PlayerEquipment) EquipItem(equipment *ecs.Entity, playerEntity *ecs.Entity) {
+
+	itemPos := common.GetComponentType[*common.Position](equipment, common.PositionComponent)
+	playerPos := common.GetComponentType[*common.Position](playerEntity, common.PositionComponent)
+	itemPos.X = playerPos.X
+	itemPos.Y = playerPos.Y
 
 	switch gear.KindOfItem(equipment) {
 	case gear.ArmorType:
@@ -83,7 +86,6 @@ type PlayerThrowable struct {
 }
 
 // Updates the throwable item with an item in the players inventory.
-// Todo, need to add additional checks here to make sure that the inventory exists
 func (pl *PlayerThrowable) PrepareThrowable(itemEntity *ecs.Entity, index int) {
 
 	pl.SelectedThrowable = itemEntity
@@ -98,6 +100,8 @@ func (pl *PlayerThrowable) PrepareThrowable(itemEntity *ecs.Entity, index int) {
 
 }
 
+// Removes the item that the player threw.
+// Called in avataractions.go
 func (pl *PlayerThrowable) RemoveThrownItem(inv *gear.Inventory) {
 
 	inv.RemoveItem(pl.ThrowableItemIndex)
@@ -105,16 +109,13 @@ func (pl *PlayerThrowable) RemoveThrownItem(inv *gear.Inventory) {
 }
 
 // All of the player information needs to be easily accessible. This may work as a singleton. Todo
-// Inventory and attributes are components, so there are helper functions to get them. It's for convenience
 type PlayerData struct {
-	Equipment       PlayerEquipment
-	PlayerThrowable //Todo make this non embedded
-	InputStates     PlayerInputStates
-
+	Equipment    PlayerEquipment
+	Throwables   PlayerThrowable //Todo make this non embedded
+	InputStates  PlayerInputStates
 	PlayerEntity *ecs.Entity
-
-	Pos       *common.Position
-	Inventory *gear.Inventory
+	Pos          *common.Position
+	Inventory    *gear.Inventory
 }
 
 func (pl *PlayerData) UnequipMeleeWeapon() {
@@ -159,15 +160,14 @@ func (pl *PlayerData) RemoveItem(e *ecs.Entity) {
 }
 
 // The inventory is a component of the player entity
-func (pl *PlayerData) GetPlayerInventory() *gear.Inventory {
+func (pl *PlayerData) PlayerInventory() *gear.Inventory {
 
 	playerInventory := common.GetComponentType[*gear.Inventory](pl.PlayerEntity, gear.InventoryComponent)
 
 	return playerInventory
 }
 
-// Handles the conversions from the component type to the struct type
-func (pl *PlayerData) GetPlayerAttributes() *common.Attributes {
+func (pl *PlayerData) PlayerAttributes() *common.Attributes {
 
 	attr := &common.Attributes{}
 	if data, ok := pl.PlayerEntity.GetComponentData(common.AttributeComponent); ok {
@@ -182,7 +182,7 @@ func (pl *PlayerData) GetPlayerAttributes() *common.Attributes {
 // Effects can change the attributes, so we have a function dedicated to updating it.
 func (pl *PlayerData) UpdatePlayerAttributes() {
 
-	attr := pl.GetPlayerAttributes()
+	attr := pl.PlayerAttributes()
 
 	ac := 0
 	prot := 0

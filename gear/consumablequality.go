@@ -5,6 +5,7 @@ import (
 	"math/rand"
 )
 
+// ConsumableType helps us tell potions apart.
 type ConsumableType int
 
 const (

@@ -28,6 +28,10 @@ type ConsumableData struct {
 	Consumables []JSONAttributeModifier
 }
 
+type CreatureModifiers struct {
+	CreatureMods []JSONCreatureModifier
+}
+
 func ReadMonsterData() {
 	data, err := os.ReadFile("../assets//gamedata/monsterdata.json")
 	if err != nil {
@@ -71,8 +75,6 @@ func ReadWeaponData() {
 	// Iterate over monsters
 	for _, w := range weaponData.Weps {
 
-		
-
 		if w.Type == "MeleeWeapon" {
 			wep := NewJSONMeleeWeapon(w)
 			MeleeWeaponTemplates = append(MeleeWeaponTemplates, wep)
@@ -105,9 +107,31 @@ func ReadConsumableData() {
 
 	// Iterate over monsters
 	for _, c := range consumables.Consumables {
-		
 
 		ConsumableTemplates = append(ConsumableTemplates, NewJSONAttributeModifier(c))
+
+	}
+
+}
+
+func ReadCreatureModifiers() {
+	data, err := os.ReadFile("../assets//gamedata/creaturemodifiers.json")
+	if err != nil {
+		panic(err)
+	}
+
+	// Parse JSON
+	var mod CreatureModifiers
+	err = json.Unmarshal(data, &mod)
+
+	if err != nil {
+		panic(err)
+	}
+
+	// Iterate over monsters
+	for _, c := range mod.CreatureMods {
+
+		CreatureModifierTemplates = append(CreatureModifierTemplates, CreatureModifierFromJSON(c))
 
 	}
 

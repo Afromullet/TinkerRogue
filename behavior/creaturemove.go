@@ -32,11 +32,7 @@ var (
 	EntityFollowComp     *ecs.Component
 	WithinRangeComponent *ecs.Component
 	FleeComp             *ecs.Component
-
-	MovementTypes []*ecs.Component
 )
-
-// Todo considering adding an interface with "BuildPath" m
 
 type SimpleWander struct {
 }
@@ -174,19 +170,7 @@ func FleeFromEntityMovementAction(ecsmanager *common.EntityManager, gm *worldmap
 
 func CreatureMovementSystem(ecsmanager *common.EntityManager, gm *worldmap.GameMap, c *ecs.QueryResult) timesystem.ActionWrapper {
 
-	//var ok bool
 	var ok bool
-
-	//creature := common.GetComponentType[*Creature](c.Entity, CreatureComponent)
-
-	/*
-		attr := common.GetComponentType[*common.Attributes](c.Entity, common.AttributeComponent)
-		creature := common.GetComponentType[*Creature](c.Entity, CreatureComponent)
-
-		if !attr.CanMove {
-			creature.Path = creature.Path[:0]
-		}
-	*/
 
 	// Todo need to avoid friendly fire
 
@@ -219,7 +203,5 @@ func InitializeMovementComponents(manager *ecs.Manager, tags map[string]ecs.Tag)
 	EntityFollowComp = manager.NewComponent()
 	WithinRangeComponent = manager.NewComponent()
 	FleeComp = manager.NewComponent()
-
-	MovementTypes = append(MovementTypes, SimpleWanderComp, EntityFollowComp, WithinRangeComponent, FleeComp)
 
 }

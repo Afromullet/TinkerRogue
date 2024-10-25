@@ -41,7 +41,7 @@ func CreateInventorySelectionContainer(playerUI *PlayerUI, inv *gear.Inventory, 
 	itemDisplayOptionsContainer.AddChild(CreateOpenEquipmentButton(playerUI, inv, ui))
 	itemDisplayOptionsContainer.AddChild(CreateOpenConsumablesButton(playerUI, inv, ui))
 
-	CreateItemManagementUI(playerUI, pl, pl.Inventory, pl.GetPlayerAttributes(), pl.PlayerEntity)
+	CreateItemManagementUI(playerUI, pl, pl.Inventory, pl.PlayerAttributes(), pl.PlayerEntity)
 
 	return itemDisplayOptionsContainer
 

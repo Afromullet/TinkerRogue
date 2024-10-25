@@ -36,9 +36,9 @@ func (throwingItemDisplay *ThrowingItemDisplay) CreateInventoryList(propFilters 
 
 		if err == nil {
 
-			throwingItemDisplay.ItemDisplay.playerData.PrepareThrowable(it, entry.Index)
+			throwingItemDisplay.ItemDisplay.playerData.Throwables.PrepareThrowable(it, entry.Index)
 
-			propNames := throwingItemDisplay.ItemDisplay.playerData.ThrowableItem.GetEffectString()
+			propNames := throwingItemDisplay.ItemDisplay.playerData.Throwables.ThrowableItem.GetEffectString()
 			throwingItemDisplay.ThrowableItemText.SetText(propNames)
 		}
 

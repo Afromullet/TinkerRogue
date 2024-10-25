@@ -19,8 +19,7 @@ var CreatureComponent *ecs.Component
 // EffectsToApply trigger every turn in MonsterSystems
 // The Path is updated by a Movement Component
 type Creature struct {
-	Path []common.Position
-
+	Path              []common.Position
 	StatEffectTracker trackers.StatusEffectTracker
 }
 
@@ -42,17 +41,6 @@ func (c *Creature) AddEffects(effects *ecs.Entity) {
 	fmt.Println("Printing status effects ", c.StatEffectTracker)
 
 }
-
-/*
-func (c Creature) GetEffect(effect *ecs.Entity) {
-
-	for _, e := range c.EffectsToApply {
-
-		if e.StatusEffectName() == effect
-
-	}
-}
-*/
 
 // Gets called once per turn. Applies all status effects to the creature
 // Each effect implements the ApplyToCreature effect that determines...the kind of effect
@@ -143,32 +131,6 @@ func (c *Creature) DisplayString(e *ecs.Entity) string {
 	result += fmt.Sprintln(cr.StatEffectTracker.ActiveEffectNames())
 
 	return result
-}
-
-/*
-// Returns a description on the entity to display to the player
-func CreatureDescription(e *ecs.Entity) string {
-
-	attr := common.GetAttributes(e)
-	name := common.GetComponentType[*common.Name](e, common.NameComponent)
-	cr := common.GetComponentType[*Creature](e, CreatureComponent)
-
-	result := fmt.Sprintln("Name ", name.NameStr)
-	result += fmt.Sprintln("Health", attr.CurrentHealth, attr.MaxHealth)
-	result += fmt.Sprintln(attr.DisplayString())
-	result += fmt.Sprintln(cr.StatEffectTracker.ActiveEffectNames())
-
-	return result
-}
-*/
-
-// Todo clear action queues too
-func ClearAllCreatures(ecsmanger *common.EntityManager) {
-	for _, c := range ecsmanger.World.Query(ecsmanger.WorldTags["monsters"]) {
-
-		ecsmanger.World.DisposeEntity(c.Entity)
-
-	}
 }
 
 // Todo remove later. This is currently a duplicate - also in resourcemanager

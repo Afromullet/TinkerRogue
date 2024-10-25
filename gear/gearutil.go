@@ -20,6 +20,7 @@ const (
 
 // Todo remove later once you change teh random number generation. The same function is in another aprt of the code
 // Here to avoid circular inclusions of randgen
+// Todo replace with stdlib random num generaiton
 func GetRandomBetween(low int, high int) int {
 	var randy int = -1
 	for {

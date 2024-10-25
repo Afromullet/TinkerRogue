@@ -62,7 +62,7 @@ func CreatePlayerUI(playerUI *PlayerUI, inv *gear.Inventory, pl *avatar.PlayerDa
 	itemDisplayOptionsContainer := CreateInventorySelectionContainer(playerUI, inv, pl, &ui) //Contains the buttons for opening inventory related windows
 
 	playerUI.StatsUI.CreateStatsUI()
-	playerUI.StatsUI.StatsTextArea.SetText(pl.GetPlayerAttributes().DisplayString())
+	playerUI.StatsUI.StatsTextArea.SetText(pl.PlayerAttributes().DisplayString())
 
 	playerUI.MsgUI.CreatMsgUI()
 	//playerUI.MsgUI.msgTextArea.SetText("adadsdasdsa") //Placeholder

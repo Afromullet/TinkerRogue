@@ -30,7 +30,6 @@ func MeleeAttackSystem(ecsmanager *common.EntityManager, pl *avatar.PlayerData, 
 		playerAttacking = true
 		attacker = pl.PlayerEntity
 		defender = common.GetCreatureAtPosition(ecsmanager, defenderPos)
-		//defender = trackers.CreatureTracker.Get(defenderPos)
 		weapon = pl.Equipment.MeleeWeapon()
 
 	} else {

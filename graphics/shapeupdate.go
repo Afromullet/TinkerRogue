@@ -2,7 +2,7 @@ package graphics
 
 import "fmt"
 
-// This is not an elegant way to update the shape, at all. Every TileBasedShape implements an UpdateShape(u ShapeUpdater) method
+// This is not an elegant way to update the shape. At all. Every TileBasedShape implements an UpdateShape(u ShapeUpdater) method
 // ShapeUpdater contains all the parameters of the shapes, and the implemented will use only the parameters it needs to udpate it
 type ShapeUpdater struct {
 	PixelX    int

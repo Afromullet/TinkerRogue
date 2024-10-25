@@ -7,7 +7,6 @@ import (
 	"game_main/common"
 	"game_main/graphics"
 	"game_main/gui"
-	"game_main/monsters"
 	"game_main/timesystem"
 	"game_main/worldmap"
 
@@ -104,7 +103,6 @@ func MovementControls(ecsmanager *common.EntityManager, pl *avatar.PlayerData, g
 
 		if gm.Tiles[ind].TileType == worldmap.STAIRS_DOWN {
 
-			monsters.ClearAllCreatures(ecsmanager)
 			worldmap.GoDownStairs(gm)
 			playerPos.X, playerPos.Y = gm.Rooms[0].Center()
 

@@ -135,7 +135,7 @@ func ManageTurn(g *Game) {
 
 	gear.UpdateEntityAttributes(g.playerData.PlayerEntity)
 	//g.playerData.UpdatePlayerAttributes()
-	g.gameUI.StatsUI.StatsTextArea.SetText(g.playerData.GetPlayerAttributes().DisplayString())
+	g.gameUI.StatsUI.StatsTextArea.SetText(g.playerData.PlayerAttributes().DisplayString())
 	if g.ts.Turn == timesystem.PlayerTurn && !g.playerData.InputStates.HasKeyInput {
 
 		//Apply Consumabl Effects at beginning of player turn
@@ -146,7 +146,7 @@ func ManageTurn(g *Game) {
 
 			gear.RunEffectTracker(g.playerData.PlayerEntity)
 
-			g.gameUI.StatsUI.StatsTextArea.SetText(g.playerData.GetPlayerAttributes().DisplayString())
+			g.gameUI.StatsUI.StatsTextArea.SetText(g.playerData.PlayerAttributes().DisplayString())
 			g.ts.Turn = timesystem.MonsterTurn
 
 		}

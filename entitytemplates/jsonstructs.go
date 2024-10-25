@@ -14,9 +14,7 @@ type JSONAttributes struct {
 	BaseProtection    int     `json:"BaseProtection"`
 	BaseDodgeChance   float32 `json:"BaseDodgeChance"`
 	BaseMovementSpeed int     `json:"BaseMovementSpeed"`
-	Strength          int     `json:"Strength"`
-	Dexterity         int     `json:"Dexterity"`
-	Constitution      int     `json:"Constitution"`
+	DamageBonus       int     `json:"damagebonus"`
 }
 
 func (attr JSONAttributes) NewAttributesFromJson() common.Attributes {
@@ -28,9 +26,7 @@ func (attr JSONAttributes) NewAttributesFromJson() common.Attributes {
 		attr.BaseProtection,
 		attr.BaseMovementSpeed,
 		attr.BaseDodgeChance,
-		attr.Strength,
-		attr.Dexterity,
-		attr.Constitution,
+		attr.DamageBonus,
 	)
 
 }
@@ -204,5 +200,31 @@ func CreateAttributesFromJSON(a JSONAttributeModifier) common.Attributes {
 		BaseProtection:    a.BaseProtection,
 		BaseDodgeChance:   a.BaseDodgeChance,
 		BaseMovementSpeed: a.BaseMovementSpeed,
+	}
+}
+
+type JSONCreatureModifier struct {
+	Name              string  `json:"name"`
+	AttackBonus       int     `json:"attackBonus"`
+	MaxHealth         int     `json:"maxHealth"`
+	CurrentHealth     int     `json:"currentHealth"`
+	BaseArmorClass    int     `json:"baseArmorClass"`
+	BaseProtection    int     `json:"baseProtection"`
+	BaseMovementSpeed int     `json:"baseMovementSpeed"`
+	BaseDodgeChance   float32 `json:"baseDodgeChance"`
+	DamageBonus       int     `json:"damagebonus"`
+}
+
+func CreatureModifierFromJSON(a JSONCreatureModifier) JSONCreatureModifier {
+	return JSONCreatureModifier{
+		Name:              a.Name,
+		MaxHealth:         a.MaxHealth,
+		CurrentHealth:     a.CurrentHealth,
+		AttackBonus:       a.AttackBonus,
+		BaseArmorClass:    a.BaseArmorClass,
+		BaseProtection:    a.BaseProtection,
+		BaseDodgeChance:   a.BaseDodgeChance,
+		BaseMovementSpeed: a.BaseMovementSpeed,
+		DamageBonus:       a.DamageBonus,
 	}
 }

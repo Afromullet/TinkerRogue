@@ -1,6 +1,7 @@
 package behavior
 
 import (
+	"fmt"
 	"game_main/avatar"
 	"game_main/common"
 	"game_main/gear"
@@ -21,14 +22,16 @@ func MonsterSystems(ecsmanger *common.EntityManager, pl *avatar.PlayerData, gm *
 		if c.Entity != nil {
 			actionQueue := common.GetComponentType[*timesystem.ActionQueue](c.Entity, timesystem.ActionQueueComponent)
 			attr := common.GetComponentType[*common.Attributes](c.Entity, common.AttributeComponent)
+
 			gear.UpdateEntityAttributes(c.Entity)
 			monsters.ApplyStatusEffects(c)
 			//gear.ConsumableEffectApplier(c.Entity)
 
-			if actionQueue != nil {
+			if actionQueue != nil && attr.CanAct {
 
 				act := CreatureMovementSystem(ecsmanger, gm, c)
 				if act != nil {
+
 					actionQueue.AddMonsterAction(act, attr.TotalMovementSpeed, timesystem.MovementKind)
 				}
 
@@ -39,6 +42,10 @@ func MonsterSystems(ecsmanger *common.EntityManager, pl *avatar.PlayerData, gm *
 					actionQueue.AddMonsterAction(act, actionCost, timesystem.AttackKind)
 				}
 
+			} else {
+
+				actionQueue.TotalActionPoints = 0
+				fmt.Println("Can't act")
 			}
 		}
 

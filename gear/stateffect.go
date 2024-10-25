@@ -336,9 +336,9 @@ func (f *Freezing) ApplyToCreature(c *ecs.QueryResult) {
 	attr := common.GetComponentType[*common.Attributes](c.Entity, common.AttributeComponent)
 
 	if f.MainProps.Duration > 0 {
-		attr.CanMove = false
+		attr.CanAct = false
 	} else {
-		attr.CanMove = true
+		attr.CanAct = true
 	}
 
 	f.MainProps.Duration -= 1

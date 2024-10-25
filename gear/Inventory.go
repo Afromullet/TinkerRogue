@@ -82,7 +82,7 @@ func (inv *Inventory) RemoveItem(index int) {
 }
 
 // Returns the names of the Item Effects
-// This is as part of creating the list we need to display item data to the player
+// Used for displaying item effects in the GUI
 func (inv *Inventory) EffectNames(index int) ([]string, error) {
 
 	entity, err := inv.GetItem(index)
@@ -103,6 +103,7 @@ func (inv *Inventory) EffectNames(index int) ([]string, error) {
 }
 
 // Gets all Melee Weapons, Ranged Weapons, and Armor for displaying
+// Assumes that indicesToSelect is already filtered
 func (inv *Inventory) GetEquipmentForDisplay(indicesToSelect []int) []any {
 
 	inventoryItems := make([]any, 0)
@@ -142,6 +143,7 @@ func (inv *Inventory) GetEquipmentForDisplay(indicesToSelect []int) []any {
 }
 
 // Gets all Melee Weapons, Ranged Weapons, and Armor for displaying
+// Assumes that indicesToSelect is already filtered
 func (inv *Inventory) GetConsumablesForDisplay(indicesToSelect []int) []any {
 
 	inventoryItems := make([]any, 0)

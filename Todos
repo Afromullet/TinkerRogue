@@ -1,6 +1,6 @@
 MAJOR
 
-
+Fix issue where throwable AOE moves with player after throwing
 
 Finish implementing consumable ffects
 
