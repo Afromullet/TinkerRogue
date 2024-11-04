@@ -206,8 +206,8 @@ func (gameMap *GameMap) RemoveItemFromTile(index int, pos *common.Position) (*ec
 }
 
 func (gameMap *GameMap) DrawLevelCenteredSquare(screen *ebiten.Image, playerPos *common.Position, size int, revealAllTiles bool) {
-	var cs = ebiten.ColorScale{}
 
+	var cs = ebiten.ColorScale{}
 	sq := graphics.NewDrawableSection(playerPos.X, playerPos.Y, size)
 
 	//centerOffsetX, centerOffsetY := graphics.CenterOffset(playerPos.X, playerPos.Y)
@@ -230,28 +230,30 @@ func (gameMap *GameMap) DrawLevelCenteredSquare(screen *ebiten.Image, playerPos 
 
 			op := &ebiten.DrawImageOptions{}
 
-			// Apply scaling first
-			op.GeoM.Scale(float64(graphics.ScreenInfo.ScaleFactor), float64(graphics.ScreenInfo.ScaleFactor))
-			offsetX, offsetY := graphics.OffsetFromCenter(playerPos.X, playerPos.Y, tile.PixelX, tile.PixelY, graphics.ScreenInfo)
-			op.GeoM.Translate(offsetX, offsetY)
-
-			// Calculate the right edge of this tile
-			tileRightEdge := int(offsetX + float64(tile.image.Bounds().Dx()*graphics.ScreenInfo.ScaleFactor))
-			if tileRightEdge > gameMap.RightEdgeX {
-				gameMap.RightEdgeX = tileRightEdge
-			}
-
-			// Calculate the top edge of this tile
-			tileTopEdge := int(offsetY)
-			if tileTopEdge < gameMap.RightEdgeY {
-				gameMap.RightEdgeY = tileTopEdge
-			}
-
 			if isVis {
 				tile.IsRevealed = true
 			} else if tile.IsRevealed {
 				// Apply color modification to darken out-of-FOV tiles
 				op.ColorScale.ScaleWithColor(color.RGBA{1, 1, 1, 1})
+			}
+
+			if isVis || tile.IsRevealed {
+				// Apply scaling first
+				op.GeoM.Scale(float64(graphics.ScreenInfo.ScaleFactor), float64(graphics.ScreenInfo.ScaleFactor))
+				offsetX, offsetY := graphics.OffsetFromCenter(playerPos.X, playerPos.Y, tile.PixelX, tile.PixelY, graphics.ScreenInfo)
+				op.GeoM.Translate(offsetX, offsetY)
+
+				// Calculate the right edge of this tile
+				tileRightEdge := int(offsetX + float64(tile.image.Bounds().Dx()*graphics.ScreenInfo.ScaleFactor))
+				if tileRightEdge > gameMap.RightEdgeX {
+					gameMap.RightEdgeX = tileRightEdge
+				}
+
+				// Calculate the top edge of this tile
+				tileTopEdge := int(offsetY)
+				if tileTopEdge < gameMap.RightEdgeY {
+					gameMap.RightEdgeY = tileTopEdge
+				}
 			}
 
 			if !tile.cm.IsEmpty() {
