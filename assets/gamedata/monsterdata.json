@@ -14,14 +14,14 @@
 	
       },
       "armor": {
-        "armorClass": 5,
+        "armorClass": 2,
         "protection": 1,
         "dodgeChance": 0.05
       },
       "meleeWeapon": {
         "minDamage": 2,
         "maxDamage": 3,
-        "attackSpeed": 3
+        "attackSpeed": 5
       },
       "rangedWeapon": null
     },
@@ -38,14 +38,14 @@
 		"damagebonus": 2
       },
       "armor": {
-        "armorClass": 7,
+        "armorClass": 3,
         "protection": 3,
         "dodgeChance": 0.03
       },
       "meleeWeapon": {
         "minDamage": 6,
         "maxDamage": 12,
-        "attackSpeed": 1
+        "attackSpeed": 7
       },
       "rangedWeapon": null
     },
@@ -62,14 +62,14 @@
 		"damagebonus": 3
       },
       "armor": {
-        "armorClass": 4,
+        "armorClass": 5,
         "protection": 1,
         "dodgeChance": 0.06
       },
       "meleeWeapon": {
-        "minDamage": 5,
-        "maxDamage": 9,
-        "attackSpeed": 1
+        "minDamage": 3,
+        "maxDamage": 5,
+        "attackSpeed": 10
       },
       "rangedWeapon": null
     },
@@ -130,34 +130,7 @@
         }
       },
       "meleeWeapon": null
-    },
-    {
-      "name": "FireMage",
-      "imgname": "formicid.png",
-      "attributes": {
-        "maxHealth": 8,
-        "attackBonus": 2,
-        "baseArmorClass": 7,
-        "baseProtection": 0,
-        "baseDodgeChance": 0.2,
-        "baseMovementSpeed": 5,
-			"strength": 10,
-		"dexterity": 10,
-		"constitution" : 10
-      },
-      "armor": null,
-      "rangedWeapon": {
-        "shootingVX": "fireball.png",
-        "minDamage": 6,
-        "maxDamage": 10,
-        "attackSpeed": 1,
-        "shootingRange": 4,
-        "targetArea": {
-          "type": "Circle",
-          "radius": 2
-        }
-      },
-      "meleeWeapon": null
     }
+    
   ]
 }

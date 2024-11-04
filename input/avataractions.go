@@ -60,72 +60,6 @@ func ApplyThrowable(ecsmanager *common.EntityManager, item *gear.Item, pl *avata
 
 }
 
-func DrawThrowableAOE(pl *avatar.PlayerData, gm *worldmap.GameMap) {
-
-	cursorX, cursorY := graphics.CursorPosition(pl.Pos.X, pl.Pos.Y)
-
-	s := pl.Throwables.ThrowingAOEShape
-
-	var indices []int
-	if cursorX != prevCursorX || cursorY != prevCursorY {
-
-		if prevCursorX != 0 && prevCursorY != 0 {
-			gm.ApplyColorMatrix(PrevThrowInds, graphics.NewEmptyMatrix())
-
-		}
-
-	}
-
-	throwable := pl.Throwables.ThrowableItem.ItemEffect(gear.THROWABLE_NAME).(*gear.Throwable)
-
-	s.UpdatePosition(cursorX, cursorY)
-	indices = s.GetIndices()
-
-	for _, i := range indices {
-
-		x, y := graphics.CoordTransformer.LogicalXYFromIndex(i)
-		pos := common.Position{X: x, Y: y}
-
-		if pos.InRange(pl.Pos, throwable.ThrowingRange) {
-			gm.ApplyColorMatrixToIndex(i, graphics.GreenColorMatrix)
-
-		} else {
-
-			gm.ApplyColorMatrixToIndex(i, graphics.RedColorMatrix)
-
-		}
-
-	}
-
-	prevCursorX, prevCursorY = cursorX, cursorY
-	PrevThrowInds = indices
-
-}
-
-// Handle rotation if the shape has a direction
-func UpdateDirection(shape *graphics.TileBasedShape) graphics.ShapeUpdater {
-
-	updater := graphics.ExtractShapeParams(*shape)
-	newDir := graphics.GetDirection(*shape)
-	if newDir != graphics.NoDirection {
-
-		if inpututil.IsKeyJustReleased(ebiten.KeyDigit1) {
-
-			newDir := graphics.GetDirection(*shape)
-			newDir = graphics.RotateLeft(newDir)
-			updater.Direction = newDir
-
-		} else if inpututil.IsKeyJustReleased(ebiten.KeyDigit2) {
-			newDir := graphics.GetDirection(*shape)
-			newDir = graphics.RotateRight(newDir)
-			updater.Direction = newDir
-		}
-
-	}
-
-	return updater
-}
-
 // todo remove game type from function params
 // This changes a lot of state in different parts. Todo refactor
 func HandlePlayerThrowable(ecsmanager *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap, playerUI *gui.PlayerUI) {
@@ -209,51 +143,13 @@ func HandlePlayerRangedAttack(ecsmanager *common.EntityManager, pl *avatar.Playe
 	}
 
 }
+func PlayerSelectRangedTarget(pl *avatar.PlayerData, gm *worldmap.GameMap) {
 
-func DrawRangedAttackAOE(pl *avatar.PlayerData, gm *worldmap.GameMap) {
+	gm.ApplyColorMatrix(PrevRangedAttInds, graphics.NewEmptyMatrix())
 
-	cursorX, cursorY := graphics.CursorPosition(pl.Pos.X, pl.Pos.Y)
-
-	s := pl.Equipment.RangedWeaponAOEShape
-
-	rangedWep := common.GetComponentType[*gear.RangedWeapon](pl.Equipment.EqRangedWeapon, gear.RangedWeaponComponent)
-
-	updater := UpdateDirection(&rangedWep.TargetArea)
-	rangedWep.TargetArea.UpdateShape(updater)
-	gm.ApplyColorMatrix(PrevRangedAttInds, graphics.NewEmptyMatrix()) //Clears previously applied rotation if there is any
-
-	var indices []int
-	if cursorX != prevCursorX || cursorY != prevCursorY {
-
-		if prevCursorX != 0 && prevCursorY != 0 {
-			gm.ApplyColorMatrix(PrevRangedAttInds, graphics.NewEmptyMatrix())
-
-		}
-
-	}
-
-	s.UpdatePosition(cursorX, cursorY)
-	indices = s.GetIndices()
-
-	for _, i := range indices {
-
-		//pos := common.PositionFromIndex(i, graphics.ScreenInfo.DungeonWidth)
-		x, y := graphics.CoordTransformer.LogicalXYFromIndex(i)
-		pos := common.Position{X: x, Y: y}
-
-		if pos.InRange(pl.Pos, pl.Equipment.RangedWeaponMaxDistance) {
-			gm.ApplyColorMatrixToIndex(i, graphics.GreenColorMatrix)
-
-		} else {
-
-			gm.ApplyColorMatrixToIndex(i, graphics.RedColorMatrix)
-
-		}
-
-	}
-
-	prevCursorX, prevCursorY = cursorX, cursorY
-	PrevRangedAttInds = indices
+	pl.InputStates.IsShooting = true
+	pl.Equipment.PrepareRangedAttack()
+	//DrawRangedAttackAOE(pl, gm) //Leaving this here for now. Not
 
 }
 
@@ -317,15 +213,5 @@ func PlayerPickupItem(pl *avatar.PlayerData, gm *worldmap.GameMap) {
 		renderable.Visible = false
 		pl.Inventory.AddItem(itemFromTile)
 	}
-
-}
-
-func PlayerSelectRangedTarget(pl *avatar.PlayerData, gm *worldmap.GameMap) {
-
-	gm.ApplyColorMatrix(PrevRangedAttInds, graphics.NewEmptyMatrix())
-
-	pl.InputStates.IsShooting = true
-	pl.Equipment.PrepareRangedAttack()
-	DrawRangedAttackAOE(pl, gm)
 
 }

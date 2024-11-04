@@ -2,7 +2,7 @@ MAJOR
 
 Fix issue where throwable AOE moves with player after throwing
 
-Finish implementing consumable ffects
+
 
 
 
@@ -17,7 +17,7 @@ Create GUI widgets only once
 
 Make private things private
 
-Only one attribute updating - currently player and monsters use different ones. Only need one
+
 
 Correct removal of entities - make sure that the trackers and actionqueues are cleared
 
@@ -47,17 +47,14 @@ Define spawn probabilities in file
 
 Need to remove monsters once they are dead rather than next turnb
 
-Need to only draw player ranged attack when they're actually shooting - What did I mean with this?
 
 Make sure ActionManager works as you want it to work. Find a way to create debug output
 
 
-When creating an entity, add a Check to make sure that an entity has all the required components. I.E, name component, position, consumabletracker, etc
 
 
-Move all of the component getters into their own package - assumign it does not cause circular inckusions
 
-Apply all of the effects - currently the ApplyToCreature is just a placeholder that shows that the effect is being applied, but it does nothing else. Sticky needs to be applied differently since that's a map effect
+Apply all of the effects - currently the ApplyToCreature is just a placeholder that shows that the effect is being applied, but it does nothing else. Sticky needs to be applied differently since that's a map effect - what did I mean by this
 
 
 ___Spawning___ (Important)

@@ -27,7 +27,7 @@ type PlayerEquipment struct {
 	EqRangedWeapon          *ecs.Entity
 	RangedWeaponMaxDistance int
 	RangedWeaponAOEShape    graphics.TileBasedShape
-	EqArmor                 *ecs.Entity //Will call this PlayerArmor soon. Replacing the gear.armor type gradually
+	EqArmor                 *ecs.Entity
 }
 
 func (pl *PlayerEquipment) RangedWeapon() *gear.RangedWeapon {

@@ -1,6 +1,9 @@
 package graphics
 
-import "game_main/common"
+import (
+	"game_main/common"
+	"math"
+)
 
 // This is also in the gear package. Duplicating it is a better option than adding this to its own package
 type Quality int
@@ -255,6 +258,82 @@ func NewTileLine(pixelX, pixelY, length int, direction ShapeDirection) *TileLine
 		direction: direction,
 	}
 
+}
+
+type TileLineTo struct {
+	startPixelX int
+	startPixelY int
+	endPixelX   int
+	endPixelY   int
+}
+
+func (l *TileLineTo) GetIndices() []int {
+	indices := make([]int, 0)
+
+	startX, startY := CoordTransformer.LogicalXYFromPixels(l.startPixelX, l.startPixelY)
+	endX, endY := CoordTransformer.LogicalXYFromPixels(l.endPixelX, l.endPixelY)
+
+	// Calculate the difference between start and end points
+	deltaX := endX - startX
+	deltaY := endY - startY
+
+	// Get absolute values of delta to determine step direction
+	stepX := 1
+	if deltaX < 0 {
+		stepX = -1
+	}
+	stepY := 1
+	if deltaY < 0 {
+		stepY = -1
+	}
+
+	// Use Bresenham's algorithm for line drawing
+	deltaX = int(math.Abs(float64(deltaX)))
+	deltaY = int(math.Abs(float64(deltaY)))
+
+	err := deltaX - deltaY
+	x, y := startX, startY
+
+	for {
+		if InBounds(x, y) {
+			index := CoordTransformer.IndexFromLogicalXY(x, y)
+			indices = append(indices, index)
+		}
+		// Break if we’ve reached the end point
+		if x == endX && y == endY {
+			break
+		}
+
+		// Update error and coordinates for next point in the line
+		err2 := 2 * err
+		if err2 > -deltaY {
+			err -= deltaY
+			x += stepX
+		}
+		if err2 < deltaX {
+			err += deltaX
+			y += stepY
+		}
+	}
+
+	return indices
+}
+
+// Update positions of start and end pixels
+func (l *TileLineTo) UpdatePosition(startPixelX, startPixelY, endPixelX, endPixelY int) {
+	l.startPixelX = startPixelX
+	l.startPixelY = startPixelY
+	l.endPixelX = endPixelX
+	l.endPixelY = endPixelY
+}
+
+func NewTileLineTo(startPixelX, startPixelY, endPixelX, endPixelY int) *TileLineTo {
+	return &TileLineTo{
+		startPixelX: startPixelX,
+		startPixelY: startPixelY,
+		endPixelX:   endPixelX,
+		endPixelY:   endPixelY,
+	}
 }
 
 type TileCone struct {
@@ -672,5 +751,15 @@ func NewTileSquareOutline(pixelX, pixelY, size int) *TileSquareOutline {
 		PixelY: pixelY,
 		Size:   size,
 	}
+
+}
+
+func GetLineTo(startPos common.Position, endPos common.Position) []int {
+
+	startX, startY := CoordTransformer.PixelsFromLogicalXY(startPos.X, startPos.Y)
+	endX, endY := CoordTransformer.PixelsFromLogicalXY(endPos.X, endPos.Y)
+
+	indices := NewTileLineTo(startX, startY, endX, endY).GetIndices()
+	return indices
 
 }

@@ -17,6 +17,7 @@ import (
 var prevCursorX, prevCursorY int
 var PrevThrowInds []int
 var PrevRangedAttInds []int
+var PrevTargetLineIndices []int
 
 var prevPosX = -1
 var prevPosY = -1
@@ -151,7 +152,7 @@ func PlayerActions(ecsmanager *common.EntityManager, pl *avatar.PlayerData, gm *
 
 	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButton2) {
 
-		cursorX, cursorY := graphics.CursorPosition(pl.Pos.X, pl.Pos.Y)
+		cursorX, cursorY := graphics.CursorPosition(*pl.Pos)
 
 		playerUI.InformationUI.InfoSelectionWindow(cursorX, cursorY)
 		pl.InputStates.InfoMeuOpen = true

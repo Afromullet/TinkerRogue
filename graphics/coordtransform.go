@@ -1,6 +1,10 @@
 package graphics
 
-import "github.com/hajimehoshi/ebiten/v2"
+import (
+	"game_main/common"
+
+	"github.com/hajimehoshi/ebiten/v2"
+)
 
 // Used for drawing only a section of the map.
 // Different from TileSquare. Tilesquare returns indices
@@ -103,11 +107,13 @@ func calculateCenterOffset(centerX, centerY int, sc ScreenData) (float64, float6
 	return offsetX, offsetY
 }
 
-func CursorPosition(logicalX, logicalY int) (int, int) {
+// Takes the players position as input because the map is centered on the player
+// Which means that the pixel position will have to be transformed
+func CursorPosition(playerPosition common.Position) (int, int) {
 
 	cursorX, cursorY := ebiten.CursorPosition()
 	if MAP_SCROLLING_ENABLED {
-		cursorX, cursorY = TransformPixelPosition(logicalX, logicalY, cursorX, cursorY, ScreenInfo)
+		cursorX, cursorY = TransformPixelPosition(playerPosition.X, playerPosition.Y, cursorX, cursorY, ScreenInfo)
 
 	}
 
