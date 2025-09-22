@@ -1,3 +1,6 @@
+// Package pathfinding implements the A* algorithm for finding optimal paths in the game world.
+// It provides pathfinding capabilities for AI movement, player navigation assistance,
+// and other game mechanics that require shortest-path calculations on the game map.
 package pathfinding
 
 import (

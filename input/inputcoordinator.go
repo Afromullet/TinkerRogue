@@ -1,3 +1,6 @@
+// Package input manages all player input handling including movement, combat, and UI interactions.
+// It coordinates between different input controllers (movement, combat, UI) and processes
+// keyboard input to trigger appropriate game actions and state changes.
 package input
 
 import (

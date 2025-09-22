@@ -1,3 +1,6 @@
+// Package graphics handles all visual rendering, coordinate systems, and drawable shapes.
+// It manages screen coordinates, pixel-to-logical coordinate transformations,
+// visual effects, and provides various geometric shapes for game rendering.
 package graphics
 
 import (

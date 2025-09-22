@@ -1,3 +1,6 @@
+// Package common provides core ECS utilities and shared components for the roguelike game.
+// It includes the EntityManager wrapper, common components like Position and Attributes,
+// and utility functions for type-safe component access and entity management.
 package common
 
 import (

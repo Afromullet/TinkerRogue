@@ -1,3 +1,6 @@
+// Package spawning handles the procedural generation of game entities including monsters,
+// loot, equipment, and consumables. It manages loot tables, quality distributions,
+// and placement algorithms for populating the game world with interactive content.
 package spawning
 
 import (

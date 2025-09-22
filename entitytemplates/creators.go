@@ -1,3 +1,6 @@
+// Package entitytemplates provides template-based entity creation and data loading systems.
+// It handles JSON-based entity definitions, component composition patterns,
+// and factory functions for creating entities from reusable templates.
 package entitytemplates
 
 import (

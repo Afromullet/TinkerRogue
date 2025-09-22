@@ -1,3 +1,6 @@
+// Package main implements the core game loop and initialization for the roguelike game.
+// It uses the Ebiten 2D game engine and manages the ECS (Entity Component System),
+// input handling, rendering, and overall game state coordination.
 package main
 
 /*

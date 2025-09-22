@@ -1,3 +1,6 @@
+// Package worldmap handles game world generation, map management, and spatial operations.
+// It provides dungeon generation algorithms, room management, tile systems,
+// field of view calculations, and map-based entity placement and retrieval.
 package worldmap
 
 import (

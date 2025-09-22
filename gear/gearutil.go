@@ -1,3 +1,6 @@
+// Package gear manages all equipment, items, and inventory systems in the roguelike game.
+// It handles weapons, armor, consumables, item quality, stat effects, and player equipment.
+// The package provides utilities for item creation, management, and effect application.
 package gear
 
 import (

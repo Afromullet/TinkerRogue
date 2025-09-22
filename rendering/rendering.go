@@ -1,3 +1,6 @@
+// Package rendering handles the display and drawing of game entities to the screen.
+// It processes renderable components, manages sprite drawing, and coordinates
+// with the graphics package to render entities at their correct screen positions.
 package rendering
 
 import (
