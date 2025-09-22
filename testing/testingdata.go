@@ -7,7 +7,6 @@ import (
 	"game_main/gear"
 	"game_main/graphics"
 	"game_main/rendering"
-	"game_main/timesystem"
 	"game_main/worldmap"
 	"log"
 	"strconv"
@@ -16,11 +15,11 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 )
 
-var TestSquare = graphics.NewTileSquare(0, 0, 3)
-var TestLine = graphics.NewTileLine(0, 0, 5, graphics.LinedDiagonalDownLeft)
-var TestCone = graphics.NewTileCone(0, 0, 3, graphics.LineDiagonalUpRight)
-var TestCircle = graphics.NewTileCircle(0, 0, 2)
-var TestRect = graphics.NewTileRectangle(0, 0, 2, 3)
+var TestSquare = graphics.NewSquare(0, 0, common.NormalQuality)
+var TestLine = graphics.NewLine(0, 0, graphics.LinedDiagonalDownLeft, common.NormalQuality)
+var TestCone = graphics.NewCone(0, 0, graphics.LineDiagonalUpRight, common.NormalQuality)
+var TestCircle = graphics.NewCircle(0, 0, common.NormalQuality)
+var TestRect = graphics.NewRectangle(0, 0, common.NormalQuality)
 var TestBurning = gear.NewBurning(5, 2)
 var TestSticky = gear.NewSticky(5, 2)
 var TestFreezing = gear.NewFreezing(3, 5)
@@ -59,9 +58,9 @@ func CreateTestConsumables(ecsmanager *common.EntityManager, gm *worldmap.GameMa
 	gm.AddEntityToTile(ent, &common.Position{X: pos.X, Y: pos.Y})
 }
 
-func CreateTestThrowable(shape graphics.TileBasedShape, vx graphics.VisualEffect) *gear.Throwable {
+func CreateTestThrowable(shape graphics.TileBasedShape, vx graphics.VisualEffect) *gear.ThrowableAction {
 
-	t := gear.NewThrowable(1, 2, 3, shape)
+	t := gear.NewThrowableAction(1, 2, 3, shape)
 	t.VX = vx
 	return t
 }
@@ -83,34 +82,34 @@ func CreateTestItems(manager *ecs.Manager, tags map[string]ecs.Tag, gameMap *wor
 
 	throwItem := CreateTestThrowable(TestSquare, TestFireEffect)
 
-	CreateItem(manager, "SquareThrow"+strconv.Itoa(1), common.Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
-		throwItem, TestFreezing)
+	gear.CreateItemWithActions(manager, "SquareThrow"+strconv.Itoa(1), common.Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
+		[]gear.ItemAction{throwItem}, TestFreezing)
 
-	CreateItem(manager, "SquareThrow"+strconv.Itoa(1), common.Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
-		throwItem, TestSticky)
+	gear.CreateItemWithActions(manager, "SquareThrow"+strconv.Itoa(1), common.Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
+		[]gear.ItemAction{throwItem}, TestSticky)
 
-	CreateItem(manager, "SquareThrow"+strconv.Itoa(1), common.Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
-		throwItem, TestBurning, TestFreezing)
+	gear.CreateItemWithActions(manager, "SquareThrow"+strconv.Itoa(1), common.Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
+		[]gear.ItemAction{throwItem}, TestBurning, TestFreezing)
 
 	throwItem = CreateTestThrowable(TestCircle, TestIceEffect)
 
-	CreateItem(manager, "CircleThrow"+strconv.Itoa(1), common.Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
-		throwItem, TestBurning, TestFreezing)
+	gear.CreateItemWithActions(manager, "CircleThrow"+strconv.Itoa(1), common.Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
+		[]gear.ItemAction{throwItem}, TestBurning, TestFreezing)
 
 	throwItem = CreateTestThrowable(TestLine, TestFireEffect)
 
-	CreateItem(manager, "LineThrow"+strconv.Itoa(1), common.Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
-		throwItem, TestBurning, TestFreezing)
+	gear.CreateItemWithActions(manager, "LineThrow"+strconv.Itoa(1), common.Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
+		[]gear.ItemAction{throwItem}, TestBurning, TestFreezing)
 
 	throwItem = CreateTestThrowable(TestRect, TestElectricEffect)
 
-	CreateItem(manager, "RectThrow"+strconv.Itoa(1), common.Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
-		throwItem, TestBurning, TestFreezing)
+	gear.CreateItemWithActions(manager, "RectThrow"+strconv.Itoa(1), common.Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
+		[]gear.ItemAction{throwItem}, TestBurning, TestFreezing)
 
 	throwItem = CreateTestThrowable(TestCone, TestStickyEffect)
 
-	CreateItem(manager, "ConeThrow"+strconv.Itoa(1), common.Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
-		throwItem, TestBurning, TestFreezing)
+	gear.CreateItemWithActions(manager, "ConeThrow"+strconv.Itoa(1), common.Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
+		[]gear.ItemAction{throwItem}, TestBurning, TestFreezing)
 
 	//CreateItem(manager, "Item"+strconv.Itoa(2), common.Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc, NewBurning(1, 1), NewFreezing(1, 2))
 
@@ -209,23 +208,7 @@ func CreatedRangedWeapon(manager *ecs.Manager, name string, imagePath string, po
 
 }
 
-func InitTestActionManager(ecsmanager *common.EntityManager, pl *avatar.PlayerData, ts *timesystem.GameTurn) {
-
-	actionQueue := common.GetComponentType[*timesystem.ActionQueue](pl.PlayerEntity, timesystem.ActionQueueComponent)
-	actionQueue.Entity = pl.PlayerEntity
-
-	ts.ActionDispatcher.AddActionQueue(actionQueue)
-
-	for _, c := range ecsmanager.World.Query(ecsmanager.WorldTags["monsters"]) {
-
-		actionQueue = common.GetComponentType[*timesystem.ActionQueue](c.Entity, timesystem.ActionQueueComponent)
-
-		if actionQueue != nil {
-			actionQueue.Entity = c.Entity
-			ts.ActionDispatcher.AddActionQueue(actionQueue)
-
-		}
-
-	}
-
+// This function is no longer needed since we removed the action queue system
+func InitTestActionManager(ecsmanager *common.EntityManager, pl *avatar.PlayerData) {
+	// No action queue initialization needed anymore
 }

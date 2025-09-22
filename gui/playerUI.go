@@ -153,24 +153,3 @@ func CreateOpenConsumablesButton(playerUI *PlayerUI, inv *gear.Inventory, ui *eb
 
 }
 
-// Creating the button that opens the crafting menu.
-func CreateOpenCraftingButton(playerUI *PlayerUI, inv *gear.Inventory, ui *ebitenui.UI) *widget.Button {
-	// construct a button
-	button := CreateButton("Crafting")
-
-	button.Configure( // add a handler that reacts to clicking the button
-		widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
-
-			x, y := playerUI.ItemsUI.CraftingItemDisplay.ItmDisplay.RootWindow.Contents.PreferredSize()
-
-			r := image.Rect(0, 0, x, y)
-			r = r.Add(image.Point{200, 50})
-			playerUI.ItemsUI.CraftingItemDisplay.ItmDisplay.RootWindow.SetLocation(r)
-			playerUI.ItemsUI.CraftingItemDisplay.DisplayInventory(inv)
-			ui.AddWindow(playerUI.ItemsUI.CraftingItemDisplay.ItmDisplay.RootWindow)
-
-		}))
-
-	return button
-
-}

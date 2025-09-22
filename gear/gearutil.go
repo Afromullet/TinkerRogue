@@ -1,9 +1,7 @@
 package gear
 
 import (
-	cryptorand "crypto/rand"
 	"game_main/common"
-	"math/big"
 
 	"github.com/bytearena/ecs"
 )
@@ -18,28 +16,9 @@ const (
 	InvalidItemType
 )
 
-// Todo remove later once you change teh random number generation. The same function is in another aprt of the code
-// Here to avoid circular inclusions of randgen
-// Todo replace with stdlib random num generaiton
-func GetRandomBetween(low int, high int) int {
-	var randy int = -1
-	for {
-		randy = GetDiceRoll(high)
-		if randy >= low {
-			break
-		}
-	}
-	return randy
-}
 
-// Todo remove later once you change teh random number generation. The same function is in another aprt of the code
-// Here to avoid circular inclusions of randgen
-func GetDiceRoll(num int) int {
-	x, _ := cryptorand.Int(cryptorand.Reader, big.NewInt(int64(num)))
-	return int(x.Int64()) + 1
-
-}
-
+// ItemStats returns a display string for an item's statistics.
+// It checks the entity for armor, melee weapon, or ranged weapon components and returns their display info.
 func ItemStats(e *ecs.Entity) string {
 
 	if item := common.GetComponentType[*Armor](e, ArmorComponent); item != nil {
@@ -54,16 +33,21 @@ func ItemStats(e *ecs.Entity) string {
 
 }
 
+// GetArmor retrieves the Armor component from an entity.
+// Returns nil if the entity doesn't have an armor component.
 func GetArmor(e *ecs.Entity) *Armor {
 	return common.GetComponentType[*Armor](e, ArmorComponent)
 }
 
+// GetItem retrieves the Item component from an entity.
+// Returns nil if the entity doesn't have an item component.
 func GetItem(e *ecs.Entity) *Item {
 	return common.GetComponentType[*Item](e, ItemComponent)
 }
 
-// Gets the underlying type of an item. Todo onl used in PlayeData, so it coud be moved there,
-
+// KindOfItem determines the type of item (armor, melee weapon, ranged weapon) for an entity.
+// Returns InvalidItemType if the entity doesn't match any known item types.
+// TODO: Only used in PlayerData, consider moving there.
 func KindOfItem(e *ecs.Entity) TypeOfItem {
 
 	if item := common.GetComponentType[*Armor](e, ArmorComponent); item != nil {

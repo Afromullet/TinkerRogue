@@ -16,9 +16,7 @@ import (
 )*/
 
 import (
-	"fmt"
 	"game_main/avatar"
-	"game_main/behavior"
 	"game_main/common"
 	"game_main/entitytemplates"
 	"game_main/gear"
@@ -32,7 +30,6 @@ import (
 	"game_main/input"
 	"game_main/spawning"
 	"game_main/testing"
-	"game_main/timesystem"
 	"game_main/worldmap"
 	_ "image/png"
 	"log"
@@ -51,16 +48,15 @@ var DEBUG_MODE = false
 var ENABLE_BENCHMARKING = false
 
 type Game struct {
-	em         common.EntityManager
-	gameUI     gui.PlayerUI
-	playerData avatar.PlayerData
-	gameMap    worldmap.GameMap //Logical map
-
-	ts timesystem.GameTurn
+	em               common.EntityManager
+	gameUI           gui.PlayerUI
+	playerData       avatar.PlayerData
+	gameMap          worldmap.GameMap //Logical map
+	inputCoordinator *input.InputCoordinator
 }
 
-// NewGame creates a new Game Object and initializes the data
-// This is a pretty solid refactor candidate for later
+// NewGame creates and initializes a new Game instance with all necessary components.
+// It sets up the ECS world, player data, game map, spawning systems, and UI.
 func NewGame() *Game {
 	g := &Game{}
 	g.gameMap = worldmap.NewGameMap()
@@ -76,18 +72,17 @@ func NewGame() *Game {
 	InitializePlayerData(&g.em, &g.playerData, &g.gameMap)
 	spawning.InitLootSpawnTables()
 
-	g.ts.Turn = timesystem.PlayerTurn
-	g.ts.TurnCounter = 0
-
 	testing.CreateTestItems(g.em.World, g.em.WorldTags, &g.gameMap)
 
 	testing.UpdateContentsForTest(&g.em, &g.gameMap)
 	spawning.SpawnStartingCreatures(0, &g.em, &g.gameMap, &g.playerData)
 
-	testing.InitTestActionManager(&g.em, &g.playerData, &g.ts)
+	testing.InitTestActionManager(&g.em, &g.playerData)
 
 	/*
-		pX, pY := graphics.CoordTransformer.PixelsFromLogicalXY(g.playerData.Pos.X, g.playerData.Pos.Y)
+		logicalPos := graphics.LogicalPosition{X: g.playerData.Pos.X, Y: g.playerData.Pos.Y}
+		pixelPos := graphics.CoordManager.LogicalToPixel(logicalPos)
+		pX, pY := pixelPos.X, pixelPos.Y
 
 		pos := g.gameMap.UnblockedLogicalCoords(pX, pY, 10)
 
@@ -116,10 +111,6 @@ func NewGame() *Game {
 			}
 	*/
 
-	g.ts.ActionDispatcher.ResetActionManager()
-
-	timesystem.TurnManager = &g.ts
-	//spawning.SpawnStartingLoot(g.em, &g.gameMap)
 	spawning.SpawnStartingEquipment(&g.em, &g.gameMap, &g.playerData)
 
 	AddCreaturesToTracker(&g.em)
@@ -128,81 +119,29 @@ func NewGame() *Game {
 
 }
 
-// Once the player performs an action, the Action Manager adds Monster actions to the queue.
-// Performs all of the actions. Then it reorders them.
-// When the Turn Counter hits 0, we reset all action points. That's our "unit of time"
-func ManageTurn(g *Game) {
+// HandleInput processes all player input and updates game state.
+// It handles movement, combat, UI interactions through the InputCoordinator,
+// updates player stats, processes status effects, and cleans up dead entities.
+func HandleInput(g *Game) {
 
 	gear.UpdateEntityAttributes(g.playerData.PlayerEntity)
-	//g.playerData.UpdatePlayerAttributes()
 	g.gameUI.StatsUI.StatsTextArea.SetText(g.playerData.PlayerAttributes().DisplayString())
-	if g.ts.Turn == timesystem.PlayerTurn && !g.playerData.InputStates.HasKeyInput {
 
-		//Apply Consumabl Effects at beginning of player turn
-		//gear.ConsumableEffectApplier(g.playerData.PlayerEntity)
+	// Handle all input through the InputCoordinator
+	g.inputCoordinator.HandleInput()
 
-		input.PlayerActions(&g.em, &g.playerData, &g.gameMap, &g.gameUI, &g.ts)
-		if g.playerData.InputStates.HasKeyInput {
-
-			gear.RunEffectTracker(g.playerData.PlayerEntity)
-
-			g.gameUI.StatsUI.StatsTextArea.SetText(g.playerData.PlayerAttributes().DisplayString())
-			g.ts.Turn = timesystem.MonsterTurn
-
-		}
-
-		// The drawing and throwing still work after changing the way the input and actions work
-		// Uncommented now because we need to figure out how to implement this in the Action Energy based ystem
-		if g.gameUI.IsThrowableItemSelected() {
-			g.playerData.InputStates.IsThrowing = true
-
-		} else {
-			g.playerData.InputStates.IsThrowing = false
-		}
-		input.HandlePlayerThrowable(&g.em, &g.playerData, &g.gameMap, &g.gameUI)
-		input.HandlePlayerRangedAttack(&g.em, &g.playerData, &g.gameMap)
-
-	}
-	if g.ts.Turn == timesystem.MonsterTurn && g.playerData.InputStates.HasKeyInput {
-		behavior.MonsterSystems(&g.em, &g.playerData, &g.gameMap, &g.ts)
-
-		// Returns true if the next action is the player.
-
-		//ExecuteActionsUntilPlayer2 places the queue back in priority order. The old function executes each action only once
-		// untilk the player
-
-		//todo why is here twice
-
-		//resmanager.RemoveDeadEntities(&g.em, &g.gameMap)
-		g.ts.ActionDispatcher.CleanController()
-		if g.ts.ActionDispatcher.ExecuteActionsUntilPlayer2(&g.playerData) {
-
-			//Perform the players action
-			g.ts.ActionDispatcher.ExecuteFirst()
-
-		}
-
-		//g.ts.ActionDispatcher.ReorderActions() // If executefirst inserts in priority order I won't need this
-		g.ts.UpdateTurnCounter()
-
+	if g.playerData.InputStates.HasKeyInput {
+		gear.RunEffectTracker(g.playerData.PlayerEntity)
+		g.gameUI.StatsUI.StatsTextArea.SetText(g.playerData.PlayerAttributes().DisplayString())
 		g.playerData.InputStates.HasKeyInput = false
-		g.ts.Turn = timesystem.PlayerTurn
-
-		if g.ts.TotalNumTurns%10 == 0 {
-
-			//addspawning.SpawnMonster(g.em, &g.gameMap)
-		}
-
-		spawning.SpawnLootAroundPlayer(g.ts.TotalNumTurns, g.playerData, g.em.World, &g.gameMap)
-
-		resmanager.RemoveDeadEntities(&g.em, &g.gameMap)
-
 	}
 
+	// Clean up dead entities
+	resmanager.RemoveDeadEntities(&g.em, &g.gameMap)
 }
 
-// Update is called each tic.
-// todo still need to remove game
+// Update is called each frame by the Ebiten engine.
+// It processes UI updates, visual effects, debug input, and main game logic.
 func (g *Game) Update() error {
 
 	g.gameUI.MainPlayerInterface.Update()
@@ -213,18 +152,19 @@ func (g *Game) Update() error {
 
 	input.PlayerDebugActions(&g.playerData)
 
-	ManageTurn(g)
+	HandleInput(g)
 
 	return nil
 
 }
 
+// BenchmarkSetup initializes performance profiling tools when benchmarking is enabled.
+// It starts an HTTP server for pprof and configures CPU/memory profiling rates.
 func BenchmarkSetup() {
 
 	if ENABLE_BENCHMARKING {
 
 		go func() {
-			fmt.Println("Running server")
 			http.ListenAndServe("localhost:6060", nil)
 		}()
 
@@ -235,7 +175,8 @@ func BenchmarkSetup() {
 
 }
 
-// Draw is called each draw cycle and is where we will blit.
+// Draw renders the game to the screen buffer.
+// It handles map rendering, entity rendering, UI drawing, and visual effects.
 func (g *Game) Draw(screen *ebiten.Image) {
 
 	//Not sure how to get the screen outside of the draw function, so I guess I will do it here for now
@@ -267,6 +208,8 @@ func (g *Game) Layout(w, h int) (int, int) {
 }
 */
 
+// Layout returns the game's logical screen dimensions.
+// It calculates canvas size based on tile size, dungeon dimensions, and device scale.
 func (g *Game) Layout(w, h int) (int, int) {
 	scale := ebiten.DeviceScaleFactor()
 
@@ -285,6 +228,9 @@ func main() {
 	g := NewGame()
 
 	g.gameUI.CreateMainInterface(&g.playerData, &g.em)
+
+	// Initialize the InputCoordinator after the UI is created
+	g.inputCoordinator = input.NewInputCoordinator(&g.em, &g.playerData, &g.gameMap, &g.gameUI)
 
 	ebiten.SetWindowResizable(true)
 

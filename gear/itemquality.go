@@ -86,25 +86,7 @@ func (f *Freezing) CreateWithQuality(q common.QualityType) {
 
 }
 
-func (t *Throwable) CreateWithQuality(q common.QualityType) {
 
-	t.MainProps = t.MainProps.CreateWithQuality(q)
-	t.MainProps.Name = THROWABLE_NAME
-	if q == common.LowQuality {
-
-		t.ThrowingRange = rand.Intn(2) + 1
-
-	} else if q == common.NormalQuality {
-
-		t.ThrowingRange = rand.Intn(5) + 1
-
-	} else if q == common.HighQuality {
-
-		t.ThrowingRange = rand.Intn(7) + 1
-
-	}
-
-}
 
 // Selecting the shooting VX in the spawning package
 func (r *RangedWeapon) CreateWithQuality(q common.QualityType) {

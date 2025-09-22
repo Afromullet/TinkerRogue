@@ -2,7 +2,7 @@ package worldmap
 
 import (
 	"errors"
-	"fmt"
+
 	"game_main/common"
 	"game_main/graphics"
 
@@ -16,23 +16,25 @@ import (
 
 var ValidPos ValidPositions
 
-// ValidPosition stores the position of anything that a player or creature can move onto
-// Todo determine whether we really need this. Figure otu why you have ValidPOsitions and solve it a better way
+// ValidPositions stores positions where players or creatures can move.
+// TODO: Determine if this is still needed and find a better approach if possible.
 type ValidPositions struct {
 	Pos []common.Position
 }
 
+// Add appends a new position to the valid positions list.
 func (v *ValidPositions) Add(x int, y int) {
 
 	newpos := common.Position{X: x, Y: y}
 	v.Pos = append(v.Pos, newpos)
 }
 
+// Get returns a pointer to the position at the specified index.
 func (v *ValidPositions) Get(index int) *common.Position {
 	return &v.Pos[index]
 }
 
-// A rect is used to create rooms on the map
+// Rect represents a rectangular room or area on the game map.
 type Rect struct {
 	X1 int
 	X2 int
@@ -40,6 +42,7 @@ type Rect struct {
 	Y2 int
 }
 
+// IsInRoom checks if the given coordinates are within this room's boundaries.
 func (r Rect) IsInRoom(x, y int) bool {
 	if x >= r.X1 && x <= r.X2 {
 		if y >= r.Y1 && y <= r.Y2 {
@@ -49,9 +52,10 @@ func (r Rect) IsInRoom(x, y int) bool {
 	return false
 }
 
+// GetCoordinates returns all floor positions within the room (excluding walls).
 func (r Rect) GetCoordinates() []common.Position {
 
-	//Adding +1 and -1 so we don't get teh walls
+	//Adding +1 and -1 so we don't get the walls
 	pos := make([]common.Position, 0)
 	for y := r.Y1 + 1; y <= r.Y2-1; y++ {
 		for x := r.X1 + 1; x <= r.X2-1; x++ {
@@ -62,11 +66,12 @@ func (r Rect) GetCoordinates() []common.Position {
 	return pos
 }
 
-// Here temporarily for doing some basic monster spawning in the spawning package
-// Do not want to spawn monsters in the center of the room
+// GetCoordinatesWithoutCenter returns all floor positions except the center.
+// Used for monster spawning to avoid placing monsters in room centers.
+// TODO: This is a temporary solution for spawning logic.
 func (r Rect) GetCoordinatesWithoutCenter() []common.Position {
 
-	//Adding +1 and -1 so we don't get teh walls
+	//Adding +1 and -1 so we don't get the walls
 	pos := make([]common.Position, 0)
 	for y := r.Y1 + 1; y <= r.Y2-1; y++ {
 		for x := r.X1 + 1; x <= r.X2-1; x++ {
@@ -137,7 +142,6 @@ func NewGameMap() GameMap {
 func GoDownStairs(gm *GameMap) {
 
 	//Need to remove all entities from the old map
-	fmt.Println("Changing map")
 	newGameMap := NewGameMap()
 
 	//Not letting players go back up for now
@@ -151,7 +155,8 @@ func GoDownStairs(gm *GameMap) {
 
 func (gameMap *GameMap) Tile(pos *common.Position) *Tile {
 
-	index := graphics.CoordTransformer.IndexFromLogicalXY(pos.X, pos.Y)
+	logicalPos := graphics.LogicalPosition{X: pos.X, Y: pos.Y}
+	index := graphics.CoordManager.LogicalToIndex(logicalPos)
 	return gameMap.Tiles[index]
 
 }
@@ -219,7 +224,8 @@ func (gameMap *GameMap) DrawLevelCenteredSquare(screen *ebiten.Image, playerPos 
 	// Draw the square section centered on the screen
 	for x := sq.StartX; x <= sq.EndX; x++ {
 		for y := sq.StartY; y <= sq.EndY; y++ {
-			idx := graphics.CoordTransformer.IndexFromLogicalXY(x, y)
+			logicalPos := graphics.LogicalPosition{X: x, Y: y}
+			idx := graphics.CoordManager.LogicalToIndex(logicalPos)
 			tile := gameMap.Tiles[idx]
 
 			isVis := gameMap.PlayerVisible.IsVisible(x, y)
@@ -280,7 +286,8 @@ func (gameMap *GameMap) DrawLevel(screen *ebiten.Image, revealAllTiles bool) {
 		//for y := 0; y < gd.ScreenHeight; y++ {
 		for y := 0; y < graphics.ScreenInfo.DungeonHeight; y++ {
 
-			idx := graphics.CoordTransformer.IndexFromLogicalXY(x, y)
+			logicalPos := graphics.LogicalPosition{X: x, Y: y}
+			idx := graphics.CoordManager.LogicalToIndex(logicalPos)
 			tile := gameMap.Tiles[idx]
 			isVis := gameMap.PlayerVisible.IsVisible(x, y)
 
@@ -328,7 +335,8 @@ func (gameMap *GameMap) CreateTiles() []*Tile {
 	for x := 0; x < graphics.ScreenInfo.DungeonWidth; x++ {
 		for y := 0; y < graphics.ScreenInfo.DungeonHeight; y++ {
 
-			index = graphics.CoordTransformer.IndexFromLogicalXY(x, y)
+			logicalPos := graphics.LogicalPosition{X: x, Y: y}
+			index = graphics.CoordManager.LogicalToIndex(logicalPos)
 
 			pos := common.Position{X: x, Y: y}
 			wallImg := wallImgs[randgen.GetRandomBetween(0, len(wallImgs)-1)]
@@ -392,7 +400,8 @@ func (gameMap *GameMap) createRoom(room Rect) {
 	for y := room.Y1 + 1; y < room.Y2; y++ {
 		for x := room.X1 + 1; x < room.X2; x++ {
 
-			index := graphics.CoordTransformer.IndexFromLogicalXY(x, y)
+			logicalPos := graphics.LogicalPosition{X: x, Y: y}
+			index := graphics.CoordManager.LogicalToIndex(logicalPos)
 			gameMap.Tiles[index].Blocked = false
 			gameMap.Tiles[index].TileType = FLOOR
 
@@ -407,7 +416,8 @@ func (gameMap *GameMap) createRoom(room Rect) {
 func (gameMap *GameMap) createHorizontalTunnel(x1 int, x2 int, y int) {
 
 	for x := min(x1, x2); x < max(x1, x2)+1; x++ {
-		index := graphics.CoordTransformer.IndexFromLogicalXY(x, y)
+		logicalPos := graphics.LogicalPosition{X: x, Y: y}
+		index := graphics.CoordManager.LogicalToIndex(logicalPos)
 		if index > 0 && index < graphics.ScreenInfo.DungeonWidth*graphics.ScreenInfo.DungeonHeight {
 			gameMap.Tiles[index].Blocked = false
 			gameMap.Tiles[index].TileType = FLOOR
@@ -422,7 +432,8 @@ func (gameMap *GameMap) createHorizontalTunnel(x1 int, x2 int, y int) {
 func (gameMap *GameMap) createVerticalTunnel(y1 int, y2 int, x int) {
 
 	for y := min(y1, y2); y < max(y1, y2)+1; y++ {
-		index := graphics.CoordTransformer.IndexFromLogicalXY(x, y)
+		logicalPos := graphics.LogicalPosition{X: x, Y: y}
+		index := graphics.CoordManager.LogicalToIndex(logicalPos)
 
 		if index > 0 && index < graphics.ScreenInfo.DungeonWidth*graphics.ScreenInfo.DungeonHeight {
 			gameMap.Tiles[index].Blocked = false
@@ -434,7 +445,7 @@ func (gameMap *GameMap) createVerticalTunnel(y1 int, y2 int, x int) {
 	}
 }
 
-// Plce the stairs in the center of a randoom room.
+// Place the stairs in the center of a random room.
 // The center of the room SHOULD not be blocked.
 // Even if it is, that's not something to worry about now, since this is a short term approach
 func (gm *GameMap) PlaceStairs() {
@@ -444,7 +455,8 @@ func (gm *GameMap) PlaceStairs() {
 
 	x, y := gm.Rooms[randRoom].Center()
 
-	ind := graphics.CoordTransformer.IndexFromLogicalXY(x, y)
+	logicalPos := graphics.LogicalPosition{X: x, Y: y}
+	ind := graphics.CoordManager.LogicalToIndex(logicalPos)
 
 	gm.Tiles[ind].TileType = STAIRS_DOWN
 
@@ -484,7 +496,8 @@ func (gameMap GameMap) InBounds(x, y int) bool {
 // TODO: Change this to check for WALL, not blocked
 // Shouldn't this be a pointer?
 func (gameMap GameMap) IsOpaque(x, y int) bool {
-	idx := graphics.CoordTransformer.IndexFromLogicalXY(x, y)
+	logicalPos := graphics.LogicalPosition{X: x, Y: y}
+	idx := graphics.CoordManager.LogicalToIndex(logicalPos)
 	return gameMap.Tiles[idx].TileType == WALL
 }
 
@@ -492,7 +505,7 @@ func (gameMap GameMap) IsOpaque(x, y int) bool {
 func (gameMap *GameMap) UnblockedIndices(pixelX, pixelY, size int) []int {
 	inds := make([]int, 0)
 
-	sq := graphics.NewTileSquare(pixelX, pixelY, size).GetIndices()
+	sq := graphics.NewSquare(pixelX, pixelY, common.NormalQuality).GetIndices()
 
 	for _, i := range sq {
 
@@ -509,13 +522,14 @@ func (gameMap *GameMap) UnblockedIndices(pixelX, pixelY, size int) []int {
 func (gameMap *GameMap) UnblockedLogicalCoords(pixelX, pixelY, size int) []common.Position {
 	pos := make([]common.Position, 0)
 
-	sq := graphics.NewTileSquare(pixelX, pixelY, size).GetIndices()
+	sq := graphics.NewSquare(pixelX, pixelY, common.NormalQuality).GetIndices()
 
 	for _, i := range sq {
 
 		if !gameMap.Tiles[i].Blocked {
 
-			x, y := graphics.CoordTransformer.LogicalXYFromIndex(i)
+			logicalPos := graphics.CoordManager.IndexToLogical(i)
+			x, y := logicalPos.X, logicalPos.Y
 			pos = append(pos, common.Position{X: x, Y: y})
 
 		}

@@ -6,7 +6,6 @@ import (
 	"game_main/graphics"
 	"game_main/monsters"
 	"game_main/rendering"
-	"game_main/timesystem"
 	"game_main/worldmap"
 	"log"
 	"path/filepath"
@@ -15,220 +14,160 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 )
 
-// Creates a creature entity from data read from the JSON files
-// All of the creatures read from the JSON file are stored in MonsterTemplates
-func CreateCreatureFromTemplate(manager common.EntityManager, m JSONMonster, gm *worldmap.GameMap, xPos, yPos int) *ecs.Entity {
-
-	fpath := filepath.Join("../assets/creatures/", m.ImageName)
-
-	creatureImg, _, err := ebitenutil.NewImageFromFile(fpath)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	ent := manager.World.NewEntity()
-
-	ent.AddComponent(common.NameComponent, &common.Name{NameStr: m.Name})
-
-	ent.AddComponent(rendering.RenderableComponent, &rendering.Renderable{
-		Image:   creatureImg,
-		Visible: true,
-	})
-
-	ent.AddComponent(monsters.CreatureComponent, &monsters.Creature{Path: make([]common.Position, 0)})
-
-	ent.AddComponent(common.PositionComponent, &common.Position{X: xPos, Y: yPos})
-
-	ind := graphics.CoordTransformer.IndexFromLogicalXY(xPos, yPos)
-	gm.Tiles[ind].Blocked = true
-
-	attr := common.Attributes{
-		MaxHealth:          m.Attributes.MaxHealth,
-		CurrentHealth:      m.Attributes.MaxHealth,
-		AttackBonus:        m.Attributes.AttackBonus,
-		BaseArmorClass:     m.Attributes.BaseArmorClass,
-		BaseProtection:     m.Attributes.BaseProtection,
-		BaseDodgeChance:    m.Attributes.BaseDodgeChance,
-		BaseMovementSpeed:  m.Attributes.BaseMovementSpeed,
-		TotalMovementSpeed: m.Attributes.BaseMovementSpeed,
-		TotalAttackSpeed:   1,
-		CanAct:             true}
-
-	if m.Armor != nil {
-
-		armor := gear.Armor{
-			ArmorClass:  m.Armor.ArmorClass,
-			Protection:  m.Armor.Protection,
-			DodgeChance: m.Armor.DodgeChance,
-		}
-		ent.AddComponent(gear.ArmorComponent, &armor)
-	}
-
-	if m.MeleeWeapon != nil {
-
-		weapon := gear.MeleeWeapon{
-			MinDamage:   m.MeleeWeapon.MinDamage,
-			MaxDamage:   m.MeleeWeapon.MaxDamage,
-			AttackSpeed: m.MeleeWeapon.AttackSpeed,
-		}
-
-		attr.TotalAttackSpeed = weapon.AttackSpeed
-
-		ent.AddComponent(gear.MeleeWeaponComponent, &weapon)
-
-	}
-
-	if m.RangedWeapon != nil {
-
-		weapon := gear.RangedWeapon{
-			MinDamage:     m.RangedWeapon.MinDamage,
-			MaxDamage:     m.RangedWeapon.MaxDamage,
-			ShootingRange: m.RangedWeapon.ShootingRange,
-		}
-
-		attr.TotalAttackSpeed = weapon.AttackSpeed
-
-		ent.AddComponent(gear.RangedWeaponComponent, &weapon)
-
-	}
-
-	if attr.TotalAttackSpeed <= 0 {
-		attr.TotalAttackSpeed = 1
-	}
-
-	ent.AddComponent(common.UserMsgComponent, &common.UserMessage{})
-
-	ent.AddComponent(common.AttributeComponent, &attr)
-	ent.AddComponent(timesystem.ActionQueueComponent, &timesystem.ActionQueue{TotalActionPoints: 100})
-
-	return ent
-
-}
-
-// Creates a melee weapon entity from data read from the JSON files
-// All of the melee weapons read from the JSON file are stored in MeleeWeaponTemplates
-func CreateMeleeWepFromTemplate(manager common.EntityManager, w JSONMeleeWeapon) *ecs.Entity {
-
-	fpath := filepath.Join("../assets/items/", w.ImgName)
-
+// createBaseEntity creates a basic entity with common components (name, renderable, position).
+// It loads the image from the specified path and sets up the fundamental entity structure.
+func createBaseEntity(manager common.EntityManager, name, imagePath, assetDir string, visible bool, pos *common.Position) *ecs.Entity {
+	fpath := filepath.Join(assetDir, imagePath)
 	img, _, err := ebitenutil.NewImageFromFile(fpath)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	it := manager.World.NewEntity()
-
-	it.AddComponent(rendering.RenderableComponent, &rendering.Renderable{
-		Image:   img,
-		Visible: false,
+	entity := manager.World.NewEntity()
+	entity.AddComponent(common.NameComponent, &common.Name{NameStr: name})
+	entity.AddComponent(rendering.RenderableComponent, &rendering.Renderable{
+		Image: img, Visible: visible,
 	})
 
-	it.AddComponent(gear.ItemComponent, &gear.Item{Count: 1})
-	it.AddComponent(common.NameComponent, &common.Name{
-		NameStr: w.Name,
-	})
+	if pos == nil {
+		pos = &common.Position{X: 0, Y: 0}
+	}
+	entity.AddComponent(common.PositionComponent, pos)
 
-	it.AddComponent(common.PositionComponent, &common.Position{
-		X: 0,
-		Y: 0,
-	})
-
-	it.AddComponent(gear.MeleeWeaponComponent, &gear.MeleeWeapon{
-		MinDamage:   w.MinDamage,
-		MaxDamage:   w.MaxDamage,
-		AttackSpeed: w.AttackSpeed,
-	})
-
-	return it
-
+	return entity
 }
 
-// Todo add shooting VX
-func CreateRangedWepFromTemplate(manager common.EntityManager, w JSONRangedWeapon) *ecs.Entity {
+// ComponentAdder is a function type that adds specific components to an entity.
+// Used in the template system to compose entities with different component combinations.
+type ComponentAdder func(entity *ecs.Entity)
 
-	fpath := filepath.Join("../assets/items/", w.ImgName)
+// createFromTemplate creates an entity using a base template and applies additional components.
+// It uses the ComponentAdder pattern to compose entities with varying component sets.
+func createFromTemplate(manager common.EntityManager, name, imagePath, assetDir string, visible bool, pos *common.Position, adders ...ComponentAdder) *ecs.Entity {
+	entity := createBaseEntity(manager, name, imagePath, assetDir, visible, pos)
 
-	img, _, err := ebitenutil.NewImageFromFile(fpath)
-	if err != nil {
-		log.Fatal(err)
+	for _, adder := range adders {
+		adder(entity)
 	}
 
-	it := manager.World.NewEntity()
-
-	it.AddComponent(rendering.RenderableComponent, &rendering.Renderable{
-		Image:   img,
-		Visible: false,
-	})
-
-	it.AddComponent(gear.ItemComponent, &gear.Item{Count: 1})
-	it.AddComponent(common.NameComponent, &common.Name{
-		NameStr: w.Name,
-	})
-
-	it.AddComponent(common.PositionComponent, &common.Position{
-		X: 0,
-		Y: 0,
-	})
-
-	ranged := gear.RangedWeapon{
-		MinDamage:     w.MinDamage,
-		MaxDamage:     w.MaxDamage,
-		ShootingRange: w.ShootingRange,
-		AttackSpeed:   w.AttackSpeed}
-
-	ranged.TargetArea = CreateTargetArea(w.TargetArea)
-
-	it.AddComponent(gear.RangedWeaponComponent, &ranged)
-
-	return it
-
+	return entity
 }
 
-// Todo add shooting VX
-func CreateConsumableFromTemplate(manager common.EntityManager, c JSONAttributeModifier) *ecs.Entity {
-
-	fpath := filepath.Join("../assets/items/", c.ImgName)
-
-	img, _, err := ebitenutil.NewImageFromFile(fpath)
-	if err != nil {
-		log.Fatal(err)
+func addMeleeWeaponComponents(w JSONMeleeWeapon) ComponentAdder {
+	return func(entity *ecs.Entity) {
+		entity.AddComponent(gear.ItemComponent, &gear.Item{Count: 1})
+		entity.AddComponent(gear.MeleeWeaponComponent, &gear.MeleeWeapon{
+			MinDamage:   w.MinDamage,
+			MaxDamage:   w.MaxDamage,
+			AttackSpeed: w.AttackSpeed,
+		})
 	}
+}
 
-	it := manager.World.NewEntity()
+func addRangedWeaponComponents(w JSONRangedWeapon) ComponentAdder {
+	return func(entity *ecs.Entity) {
+		entity.AddComponent(gear.ItemComponent, &gear.Item{Count: 1})
 
-	it.AddComponent(rendering.RenderableComponent, &rendering.Renderable{
-		Image:   img,
-		Visible: false,
-	})
-
-	it.AddComponent(common.PositionComponent, &common.Position{
-		X: 0,
-		Y: 0,
-	})
-
-	it.AddComponent(common.NameComponent, &common.Name{
-		NameStr: c.Name,
-	})
-
-	it.AddComponent(gear.ItemComponent, &gear.Item{Count: 1})
-
-	it.AddComponent(gear.ConsumableComponent, &gear.Consumable{
-		Name:         c.Name,
-		AttrModifier: CreateAttributesFromJSON(c),
-		Duration:     c.Duration,
-	})
-
-	/*
-
-		ranged := gear.Consumable{
-			Name: c.Name
-			AttrModifier: common.NewBaseAttributes(c.),
-
-
+		ranged := gear.RangedWeapon{
+			MinDamage:     w.MinDamage,
+			MaxDamage:     w.MaxDamage,
+			ShootingRange: w.ShootingRange,
+			AttackSpeed:   w.AttackSpeed,
+		}
 		ranged.TargetArea = CreateTargetArea(w.TargetArea)
 
-		it.AddComponent(gear.RangedWeaponComponent, &ranged)
-	*/
-	return it
+		entity.AddComponent(gear.RangedWeaponComponent, &ranged)
+	}
+}
 
+func addConsumableComponents(c JSONAttributeModifier) ComponentAdder {
+	return func(entity *ecs.Entity) {
+		entity.AddComponent(gear.ItemComponent, &gear.Item{Count: 1})
+		entity.AddComponent(gear.ConsumableComponent, &gear.Consumable{
+			Name:         c.Name,
+			AttrModifier: CreateAttributesFromJSON(c),
+			Duration:     c.Duration,
+		})
+	}
+}
+
+func addCreatureComponents(m JSONMonster) ComponentAdder {
+	return func(entity *ecs.Entity) {
+		entity.AddComponent(monsters.CreatureComponent, &monsters.Creature{Path: make([]common.Position, 0)})
+		entity.AddComponent(common.UserMsgComponent, &common.UserMessage{})
+
+		attr := common.Attributes{
+			MaxHealth:          m.Attributes.MaxHealth,
+			CurrentHealth:      m.Attributes.MaxHealth,
+			AttackBonus:        m.Attributes.AttackBonus,
+			BaseArmorClass:     m.Attributes.BaseArmorClass,
+			BaseProtection:     m.Attributes.BaseProtection,
+			BaseDodgeChance:    m.Attributes.BaseDodgeChance,
+			BaseMovementSpeed:  m.Attributes.BaseMovementSpeed,
+			TotalMovementSpeed: m.Attributes.BaseMovementSpeed,
+			TotalAttackSpeed:   1,
+			CanAct:             true,
+		}
+
+		if m.Armor != nil {
+			armor := gear.Armor{
+				ArmorClass:  m.Armor.ArmorClass,
+				Protection:  m.Armor.Protection,
+				DodgeChance: m.Armor.DodgeChance,
+			}
+			entity.AddComponent(gear.ArmorComponent, &armor)
+		}
+
+		if m.MeleeWeapon != nil {
+			weapon := gear.MeleeWeapon{
+				MinDamage:   m.MeleeWeapon.MinDamage,
+				MaxDamage:   m.MeleeWeapon.MaxDamage,
+				AttackSpeed: m.MeleeWeapon.AttackSpeed,
+			}
+			attr.TotalAttackSpeed = weapon.AttackSpeed
+			entity.AddComponent(gear.MeleeWeaponComponent, &weapon)
+		}
+
+		if m.RangedWeapon != nil {
+			weapon := gear.RangedWeapon{
+				MinDamage:     m.RangedWeapon.MinDamage,
+				MaxDamage:     m.RangedWeapon.MaxDamage,
+				ShootingRange: m.RangedWeapon.ShootingRange,
+			}
+			attr.TotalAttackSpeed = weapon.AttackSpeed
+			entity.AddComponent(gear.RangedWeaponComponent, &weapon)
+		}
+
+		if attr.TotalAttackSpeed <= 0 {
+			attr.TotalAttackSpeed = 1
+		}
+
+		entity.AddComponent(common.AttributeComponent, &attr)
+	}
+}
+
+func CreateMeleeWepFromTemplate(manager common.EntityManager, w JSONMeleeWeapon) *ecs.Entity {
+	return createFromTemplate(manager, w.Name, w.ImgName, "../assets/items/", false, nil,
+		addMeleeWeaponComponents(w))
+}
+
+func CreateRangedWepFromTemplate(manager common.EntityManager, w JSONRangedWeapon) *ecs.Entity {
+	return createFromTemplate(manager, w.Name, w.ImgName, "../assets/items/", false, nil,
+		addRangedWeaponComponents(w))
+}
+
+func CreateConsumableFromTemplate(manager common.EntityManager, c JSONAttributeModifier) *ecs.Entity {
+	return createFromTemplate(manager, c.Name, c.ImgName, "../assets/items/", false, nil,
+		addConsumableComponents(c))
+}
+
+func CreateCreatureFromTemplate(manager common.EntityManager, m JSONMonster, gm *worldmap.GameMap, xPos, yPos int) *ecs.Entity {
+	entity := createFromTemplate(manager, m.Name, m.ImageName, "../assets/creatures/", true,
+		&common.Position{X: xPos, Y: yPos}, addCreatureComponents(m))
+
+	logicalPos := graphics.LogicalPosition{X: xPos, Y: yPos}
+	ind := graphics.CoordManager.LogicalToIndex(logicalPos)
+	gm.Tiles[ind].Blocked = true
+
+	return entity
 }

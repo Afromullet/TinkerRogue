@@ -169,8 +169,8 @@ func (inv *Inventory) GetConsumablesForDisplay(indicesToSelect []int) []any {
 }
 
 // Builds the list that's needed for displaying the inventory to the player
-// itemPropertiesFilter StatusEffects lets us filter. When originally writing the function,
-// I didn't consider filtering any other item types. We need them now, but it's not somethingw worth changing now
+// itemPropertiesFilter StatusEffects lets us filter by status effects
+// itemActionFilter string lets us filter by item actions (like "Throwable")
 func (inv *Inventory) GetInventoryForDisplay(indicesToSelect []int, itemPropertiesFilter ...StatusEffects) []any {
 
 	inventoryItems := make([]any, 0)
@@ -209,4 +209,60 @@ func (inv *Inventory) GetInventoryForDisplay(indicesToSelect []int, itemProperti
 
 	return inventoryItems
 
+}
+
+// GetInventoryByAction filters inventory items by their ItemAction capabilities
+// actionName is the name of the action to filter by (e.g., "Throwable")
+func (inv *Inventory) GetInventoryByAction(indicesToSelect []int, actionName string) []any {
+	inventoryItems := make([]any, 0)
+
+	if len(indicesToSelect) == 0 {
+		for index, entity := range inv.InventoryContent {
+			itemName := common.GetComponentType[*common.Name](entity, common.NameComponent)
+			itemComp := GetItem(entity)
+
+			if itemComp.HasAction(actionName) {
+				inventoryItems = append(inventoryItems, InventoryListEntry{
+					index,
+					itemName.NameStr,
+					itemComp.Count})
+			}
+		}
+	} else {
+		for _, index := range indicesToSelect {
+			entity := inv.InventoryContent[index]
+			itemName := common.GetComponentType[*common.Name](entity, common.NameComponent)
+			itemComp := GetItem(entity)
+
+			if itemComp.HasAction(actionName) {
+				inventoryItems = append(inventoryItems, InventoryListEntry{
+					index,
+					itemName.NameStr,
+					itemComp.Count})
+			}
+		}
+	}
+
+	return inventoryItems
+}
+
+// GetThrowableItems returns all items that have throwable actions
+func (inv *Inventory) GetThrowableItems(indicesToSelect []int) []any {
+	return inv.GetInventoryByAction(indicesToSelect, THROWABLE_ACTION_NAME)
+}
+
+// HasItemsWithAction checks if the inventory contains any items with the specified action
+func (inv *Inventory) HasItemsWithAction(actionName string) bool {
+	for _, entity := range inv.InventoryContent {
+		itemComp := GetItem(entity)
+		if itemComp.HasAction(actionName) {
+			return true
+		}
+	}
+	return false
+}
+
+// HasThrowableItems checks if the inventory contains any throwable items
+func (inv *Inventory) HasThrowableItems() bool {
+	return inv.HasItemsWithAction(THROWABLE_ACTION_NAME)
 }

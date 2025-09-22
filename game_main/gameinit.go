@@ -6,7 +6,6 @@ import (
 	"game_main/gear"
 	"game_main/rendering"
 	"game_main/testing"
-	"game_main/timesystem"
 	tracker "game_main/trackers"
 	"game_main/worldmap"
 	"log"
@@ -15,7 +14,8 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 )
 
-// todo remove game after handling player data init
+// InitializePlayerData creates and configures the player entity with all necessary components.
+// It sets up the player's position, attributes, inventory, equipment, and adds them to the ECS world.
 func InitializePlayerData(ecsmanager *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap) {
 
 	avatar.PlayerComponent = ecsmanager.World.NewComponent()
@@ -51,8 +51,7 @@ func InitializePlayerData(ecsmanager *common.EntityManager, pl *avatar.PlayerDat
 		AddComponent(common.UserMsgComponent, &common.UserMessage{
 			AttackMessage:    "",
 			GameStateMessage: "",
-		}).
-		AddComponent(timesystem.ActionQueueComponent, &timesystem.ActionQueue{TotalActionPoints: 100})
+		})
 
 	playerEntity.AddComponent(common.UserMsgComponent, &common.UserMessage{})
 	players := ecs.BuildTag(avatar.PlayerComponent, common.PositionComponent, gear.InventoryComponent)
@@ -87,6 +86,8 @@ func InitializePlayerData(ecsmanager *common.EntityManager, pl *avatar.PlayerDat
 
 }
 
+// AddCreaturesToTracker registers all existing monster entities with the creature tracking system.
+// It queries for all monsters in the ECS world and adds them to the global CreatureTracker.
 func AddCreaturesToTracker(ecsmanger *common.EntityManager) {
 
 	for _, c := range ecsmanger.World.Query(ecsmanger.WorldTags["monsters"]) {

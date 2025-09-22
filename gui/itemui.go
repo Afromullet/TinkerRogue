@@ -11,7 +11,6 @@ import (
 )
 
 type PlayerItemsUI struct {
-	CraftingItemDisplay  CraftingItemDisplay
 	ThrowableItemDisplay ThrowingItemDisplay
 	EquipmentDisplay     EquipmentItemDisplay
 	ConsumableDisplay    ConsumableItemDisplay
@@ -36,7 +35,6 @@ func CreateInventorySelectionContainer(playerUI *PlayerUI, inv *gear.Inventory, 
 			widget.GridLayoutOpts.Spacing(0, 20))),
 	)
 
-	itemDisplayOptionsContainer.AddChild(CreateOpenCraftingButton(playerUI, inv, ui))
 	itemDisplayOptionsContainer.AddChild(CreateOpenThrowablesButton(playerUI, inv, ui))
 	itemDisplayOptionsContainer.AddChild(CreateOpenEquipmentButton(playerUI, inv, ui))
 	itemDisplayOptionsContainer.AddChild(CreateOpenConsumablesButton(playerUI, inv, ui))
@@ -70,9 +68,5 @@ func CreateItemManagementUI(playerUI *PlayerUI, playerData *avatar.PlayerData, p
 	playerUI.ItemsUI.ThrowableItemDisplay.ItemDisplay.SetupItemDisplay("Throwable Window", playerData)
 	playerUI.ItemsUI.ThrowableItemDisplay.SetupContainers()
 
-	//Not worried about the crafting window at the moment..It will change in the future
-	playerUI.ItemsUI.CraftingItemDisplay.ItmDisplay.playerData = playerData
-	playerUI.ItemsUI.CraftingItemDisplay.CreateContainers()
-	playerUI.ItemsUI.CraftingItemDisplay.ItmDisplay.createInventoryDisplayWindow("Crafting Window")
 
 }

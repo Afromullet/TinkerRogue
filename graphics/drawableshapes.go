@@ -2,42 +2,13 @@ package graphics
 
 import (
 	"game_main/common"
-	"math"
+	"math/rand"
 )
 
-// This is also in the gear package. Duplicating it is a better option than adding this to its own package
-type Quality int
+// ============================================================================
+// SHAPE DIRECTION SYSTEM (preserved from original)
+// ============================================================================
 
-const (
-	LowQuality = iota
-	NormalQuality
-	HighQuality
-)
-
-//...There has to be a way to make this less repetitive.
-
-/*
-Lots of steps in adding a new shape. It's clunky, but there shouldn't be too many more shapes.
-
-To add a new shape:
-
-1) Implement the TileBasedShape interface. GetIndices returns the indices of the TileMap.
-UpdatePosition updates the shape with the new X and Y
-UpdateShape updates the parametes with the params a shape needs.
-
-2) ShapeUpdater also requires an update...
-
-Add the type to ExtractShapeParams to get a ShapeUpdater.
-If the shape uses a direction, add an additional case to HasDirection
-
-
-
-
-*/
-
-// This type helps us identify which direction to draw some shapes in
-// lines and cones have a direction. Cones look weird since we're basic the coordinates of X,Y tiles
-// Not worrying about that for now
 type ShapeDirection int
 
 const (
@@ -52,8 +23,6 @@ const (
 	NoDirection
 )
 
-// Used for rotating directions. Does not contain NoDirection since that's not used for rotating
-// The other matters here since we'll be incrementing through this slice to change direction
 var AllDirections = []ShapeDirection{
 	LineUp,
 	LineDiagonalUpRight,
@@ -66,700 +35,353 @@ var AllDirections = []ShapeDirection{
 }
 
 func RotateRight(dir ShapeDirection) ShapeDirection {
-
-	newDir := 0
 	for i, direction := range AllDirections {
-
 		if direction == dir {
-			newDir = i + 1
-			//Wrap around
+			newDir := i + 1
 			if newDir >= len(AllDirections) {
 				newDir = 0
 			}
-			break
-
+			return AllDirections[newDir]
 		}
 	}
-
-	return AllDirections[newDir]
+	return dir
 }
 
 func RotateLeft(dir ShapeDirection) ShapeDirection {
-
-	newDir := 0
 	for i, direction := range AllDirections {
-
 		if direction == dir {
-			newDir = i - 1
-			//Wrap around
+			newDir := i - 1
 			if newDir < 0 {
 				newDir = len(AllDirections) - 1
 			}
-			break
-
+			return AllDirections[newDir]
 		}
 	}
-
-	return AllDirections[newDir]
+	return dir
 }
 
-// Currently a duplicate of the one found in GameMap. Don't want to pass the GameMap parameter to the shapes here
-func InBounds(x, y int) bool {
+// ============================================================================
+// NEW SIMPLIFIED SHAPE SYSTEM
+// ============================================================================
 
-	if x < 0 || x > ScreenInfo.DungeonWidth || y < 0 || y > ScreenInfo.DungeonHeight {
-		return false
-	}
-	return true
+type BasicShapeType int
+
+const (
+	Circular BasicShapeType = iota    // radius-based (Circle types)
+	Rectangular                       // width/height-based (Square/Rectangle types)
+	Linear                           // length/direction-based (Line/Cone types)
+)
+
+type BaseShape struct {
+	Position   PixelPosition
+	Type       BasicShapeType
+	Size       int              // Primary dimension (radius, length, or width)
+	Width      int              // For rectangles only
+	Height     int              // For rectangles only
+	Direction  *ShapeDirection  // nil for non-directional shapes
+	Quality    common.QualityType
 }
 
-// Interfaces for a Type that draws a shape on the map
-// GetIndices returns the indices the shape covers.
-// UpdatePositions updates the starting position of the shape.
-// GetStartPosition returns the Position of the coordinates the drawing starts at
-// Each shape will have to determine how to draw the shape using indices
-// This does not handle the ColorMatrix..DrawLevel currently applies teh ColorMatrix
+// TileBasedShape interface - maintains compatibility with existing code
 type TileBasedShape interface {
 	GetIndices() []int
-	UpdatePosition(pixelX int, pixelY int)
-	UpdateShape(updater ShapeUpdater)
+	UpdatePosition(pixelX, pixelY int)
 	StartPositionPixels() (int, int)
-	common.Quality
-	//common.ItemQuality
-	//(q Quality) //This can probably be its own interface, since
+	GetDirection() ShapeDirection
+	CanRotate() bool
 }
 
-// The square is drawn around (PixelX,PixelY)
-type TileSquare struct {
-	PixelX int
-	PixelY int
-	Size   int
+// ============================================================================
+// INTERFACE IMPLEMENTATION
+// ============================================================================
+
+func (s *BaseShape) GetIndices() []int {
+	logical := CoordManager.PixelToLogical(s.Position)
+
+	switch s.Type {
+	case Circular:
+		return s.calculateCircle(logical.X, logical.Y)
+	case Rectangular:
+		return s.calculateRectangle(logical.X, logical.Y)
+	case Linear:
+		return s.calculateLine(logical.X, logical.Y)
+	}
+	return nil
 }
 
-func (s *TileSquare) GetIndices() []int {
+func (s *BaseShape) UpdatePosition(pixelX, pixelY int) {
+	s.Position = PixelPosition{X: pixelX, Y: pixelY}
+}
 
-	halfSize := s.Size / 2
-	indices := make([]int, 0)
+func (s *BaseShape) StartPositionPixels() (int, int) {
+	return s.Position.X, s.Position.Y
+}
 
-	gridX, gridY := CoordTransformer.LogicalXYFromPixels(s.PixelX, s.PixelY)
+func (s *BaseShape) GetDirection() ShapeDirection {
+	if s.Direction != nil {
+		return *s.Direction
+	}
+	return NoDirection
+}
 
-	for y := gridY - halfSize; y <= gridY+halfSize; y++ {
-		for x := gridX - halfSize; x <= gridX+halfSize; x++ {
-			if InBounds(x, y) {
-				index := CoordTransformer.IndexFromLogicalXY(x, y)
-				indices = append(indices, index)
+func (s *BaseShape) CanRotate() bool {
+	return s.Direction != nil
+}
+
+// ============================================================================
+// FACTORY FUNCTIONS WITH INTEGRATED QUALITY
+// ============================================================================
+
+func NewCircle(pixelX, pixelY int, quality common.QualityType) *BaseShape {
+	var radius int
+	switch quality {
+	case common.LowQuality:
+		radius = rand.Intn(3)      // 0-2 (matches current system)
+	case common.NormalQuality:
+		radius = rand.Intn(4)      // 0-3
+	case common.HighQuality:
+		radius = rand.Intn(9)      // 0-8
+	}
+
+	return &BaseShape{
+		Position: PixelPosition{X: pixelX, Y: pixelY},
+		Type:     Circular,
+		Size:     radius,
+		Quality:  quality,
+	}
+}
+
+func NewSquare(pixelX, pixelY int, quality common.QualityType) *BaseShape {
+	var size int
+	switch quality {
+	case common.LowQuality:
+		size = rand.Intn(2) + 1    // 1-2 (matches current system)
+	case common.NormalQuality:
+		size = rand.Intn(3) + 1    // 1-3
+	case common.HighQuality:
+		size = rand.Intn(4) + 1    // 1-4
+	}
+
+	return &BaseShape{
+		Position: PixelPosition{X: pixelX, Y: pixelY},
+		Type:     Rectangular,
+		Size:     size,
+		Width:    size,    // Square: width = height = size
+		Height:   size,
+		Quality:  quality,
+	}
+}
+
+func NewRectangle(pixelX, pixelY int, quality common.QualityType) *BaseShape {
+	var width, height int
+	switch quality {
+	case common.LowQuality:
+		width = rand.Intn(5)       // 0-4 (matches current system)
+		height = rand.Intn(3)      // 0-2
+	case common.NormalQuality:
+		width = rand.Intn(7)       // 0-6
+		height = rand.Intn(5)      // 0-4
+	case common.HighQuality:
+		width = rand.Intn(9)       // 0-8
+		height = rand.Intn(7)      // 0-6
+	}
+
+	return &BaseShape{
+		Position: PixelPosition{X: pixelX, Y: pixelY},
+		Type:     Rectangular,
+		Size:     width,   // Primary dimension
+		Width:    width,
+		Height:   height,
+		Quality:  quality,
+	}
+}
+
+func NewLine(pixelX, pixelY int, direction ShapeDirection, quality common.QualityType) *BaseShape {
+	var length int
+	switch quality {
+	case common.LowQuality:
+		length = rand.Intn(3) + 1  // 1-3 (matches current system)
+	case common.NormalQuality:
+		length = rand.Intn(5) + 1  // 1-5
+	case common.HighQuality:
+		length = rand.Intn(7) + 1  // 1-7
+	}
+
+	return &BaseShape{
+		Position:  PixelPosition{X: pixelX, Y: pixelY},
+		Type:      Linear,
+		Size:      length,
+		Direction: &direction,
+		Quality:   quality,
+	}
+}
+
+func NewCone(pixelX, pixelY int, direction ShapeDirection, quality common.QualityType) *BaseShape {
+	var length int
+	switch quality {
+	case common.LowQuality:
+		length = rand.Intn(3) + 1  // 1-3
+	case common.NormalQuality:
+		length = rand.Intn(5) + 1  // 1-5
+	case common.HighQuality:
+		length = rand.Intn(7) + 1  // 1-7
+	}
+
+	return &BaseShape{
+		Position:  PixelPosition{X: pixelX, Y: pixelY},
+		Type:      Linear,
+		Size:      length,
+		Direction: &direction,
+		Quality:   quality,
+	}
+}
+
+// ============================================================================
+// UPDATE METHODS (Replace ShapeUpdater pattern)
+// ============================================================================
+
+func (s *BaseShape) UpdateSize(newSize int) {
+	s.Size = newSize
+	if s.Type == Rectangular && s.Width == s.Height {
+		// Square case - update both dimensions
+		s.Width = newSize
+		s.Height = newSize
+	}
+}
+
+func (s *BaseShape) UpdateDimensions(width, height int) {
+	if s.Type == Rectangular {
+		s.Width = width
+		s.Height = height
+		s.Size = width // Primary dimension
+	}
+}
+
+func (s *BaseShape) Rotate() {
+	if s.Direction != nil {
+		*s.Direction = RotateRight(*s.Direction)
+	}
+}
+
+func (s *BaseShape) SetDirection(direction ShapeDirection) {
+	if s.Direction != nil {
+		*s.Direction = direction
+	}
+}
+
+// ============================================================================
+// SHAPE ALGORITHMS
+// ============================================================================
+
+func (s *BaseShape) calculateCircle(centerX, centerY int) []int {
+	var indices []int
+	radius := s.Size
+	for x := -radius; x <= radius; x++ {
+		for y := -radius; y <= radius; y++ {
+			if x*x + y*y <= radius*radius {
+				indices = append(indices, CoordManager.LogicalToIndex(LogicalPosition{X: centerX+x, Y: centerY+y}))
 			}
 		}
 	}
-
 	return indices
-
 }
 
-func (s *TileSquare) UpdatePosition(pixelX int, pixelY int) {
-	s.PixelX = pixelX
-	s.PixelY = pixelY
-
-}
-
-func (s *TileSquare) UpdateShape(updater ShapeUpdater) {
-
-	s.PixelX = updater.PixelX
-	s.PixelY = updater.PixelY
-	s.Size = updater.Size
-
-}
-
-func (s *TileSquare) StartPositionPixels() (int, int) {
-
-	return s.PixelX, s.PixelY
-
-}
-
-func NewTileSquare(pixelX, pixelY, size int) *TileSquare {
-
-	return &TileSquare{
-		PixelX: pixelX,
-		PixelY: pixelY,
-		Size:   size,
-	}
-
-}
-
-type TileLine struct {
-	pixelX    int
-	pixelY    int
-	length    int
-	direction ShapeDirection
-}
-
-func (l *TileLine) GetIndices() []int {
-	indices := make([]int, 0)
-
-	gridX, gridY := CoordTransformer.LogicalXYFromPixels(l.pixelX, l.pixelY)
-
-	for i := 0; i < l.length; i++ {
-		var x, y int
-
-		switch l.direction {
-		case LineUp:
-			x, y = gridX, gridY-i
-		case LineDown:
-			x, y = gridX, gridY+i
-		case LineRight:
-			x, y = gridX+i, gridY
-		case LineLeft:
-			x, y = gridX-i, gridY
-		case LineDiagonalUpRight:
-			x, y = gridX+i, gridY-i
-		case LineDiagonalDownRight:
-			x, y = gridX+i, gridY+i
-		case LineDiagonalUpLeft:
-			x, y = gridX-i, gridY-i
-		case LinedDiagonalDownLeft:
-			x, y = gridX-i, gridY+i
-
-		}
-
-		if InBounds(x, y) {
-			index := CoordTransformer.IndexFromLogicalXY(x, y)
-			indices = append(indices, index)
+func (s *BaseShape) calculateRectangle(centerX, centerY int) []int {
+	var indices []int
+	halfWidth := s.Width / 2
+	halfHeight := s.Height / 2
+	for x := -halfWidth; x <= halfWidth; x++ {
+		for y := -halfHeight; y <= halfHeight; y++ {
+			indices = append(indices, CoordManager.LogicalToIndex(LogicalPosition{X: centerX+x, Y: centerY+y}))
 		}
 	}
-
 	return indices
 }
 
-func (l *TileLine) UpdatePosition(pixelX, pixelY int) {
-	l.pixelX = pixelX
-	l.pixelY = pixelY
+func (s *BaseShape) calculateLine(centerX, centerY int) []int {
+	var indices []int
+	length := s.Size
 
-}
-
-func (l *TileLine) UpdateShape(updater ShapeUpdater) {
-
-	l.pixelX = updater.PixelX
-	l.pixelY = updater.PixelY
-	l.direction = updater.Direction
-
-}
-
-func (l *TileLine) StartPositionPixels() (int, int) {
-
-	return l.pixelX, l.pixelY
-
-}
-
-func NewTileLine(pixelX, pixelY, length int, direction ShapeDirection) *TileLine {
-
-	return &TileLine{
-		pixelX:    pixelX,
-		pixelY:    pixelY,
-		length:    length,
-		direction: direction,
+	if s.Direction == nil {
+		// Fallback: horizontal line
+		for i := 0; i < length; i++ {
+			indices = append(indices, CoordManager.LogicalToIndex(LogicalPosition{X: centerX+i, Y: centerY}))
+		}
+		return indices
 	}
 
-}
-
-type TileLineTo struct {
-	startPixelX int
-	startPixelY int
-	endPixelX   int
-	endPixelY   int
-}
-
-func (l *TileLineTo) GetIndices() []int {
-	indices := make([]int, 0)
-
-	startX, startY := CoordTransformer.LogicalXYFromPixels(l.startPixelX, l.startPixelY)
-	endX, endY := CoordTransformer.LogicalXYFromPixels(l.endPixelX, l.endPixelY)
-
-	// Calculate the difference between start and end points
-	deltaX := endX - startX
-	deltaY := endY - startY
-
-	// Get absolute values of delta to determine step direction
-	stepX := 1
-	if deltaX < 0 {
-		stepX = -1
-	}
-	stepY := 1
-	if deltaY < 0 {
-		stepY = -1
-	}
-
-	// Use Bresenham's algorithm for line drawing
-	deltaX = int(math.Abs(float64(deltaX)))
-	deltaY = int(math.Abs(float64(deltaY)))
-
-	err := deltaX - deltaY
-	x, y := startX, startY
-
-	for {
-		if InBounds(x, y) {
-			index := CoordTransformer.IndexFromLogicalXY(x, y)
-			indices = append(indices, index)
-		}
-		// Break if we’ve reached the end point
-		if x == endX && y == endY {
-			break
-		}
-
-		// Update error and coordinates for next point in the line
-		err2 := 2 * err
-		if err2 > -deltaY {
-			err -= deltaY
-			x += stepX
-		}
-		if err2 < deltaX {
-			err += deltaX
-			y += stepY
-		}
-	}
-
-	return indices
-}
-
-// Update positions of start and end pixels
-func (l *TileLineTo) UpdatePosition(startPixelX, startPixelY, endPixelX, endPixelY int) {
-	l.startPixelX = startPixelX
-	l.startPixelY = startPixelY
-	l.endPixelX = endPixelX
-	l.endPixelY = endPixelY
-}
-
-func NewTileLineTo(startPixelX, startPixelY, endPixelX, endPixelY int) *TileLineTo {
-	return &TileLineTo{
-		startPixelX: startPixelX,
-		startPixelY: startPixelY,
-		endPixelX:   endPixelX,
-		endPixelY:   endPixelY,
-	}
-}
-
-type TileCone struct {
-	pixelX    int
-	pixelY    int
-	length    int
-	direction ShapeDirection
-}
-
-func (c *TileCone) GetIndices() []int {
-	indices := make([]int, 0)
-
-	gridX, gridY := CoordTransformer.LogicalXYFromPixels(c.pixelX, c.pixelY)
-
-	// Loop through each step of the cone's length
-	for i := 0; i < c.length; i++ {
-		switch c.direction {
-		case LineUp:
-			for j := -i; j <= i; j++ { // Widening cone
-				x, y := gridX+j, gridY-i
-				if InBounds(x, y) {
-					index := CoordTransformer.IndexFromLogicalXY(x, y)
-					indices = append(indices, index)
-				}
-			}
-		case LineDown:
-			for j := -i; j <= i; j++ {
-				x, y := gridX+j, gridY+i
-				if InBounds(x, y) {
-					index := CoordTransformer.IndexFromLogicalXY(x, y)
-					indices = append(indices, index)
-				}
-			}
-		case LineRight:
-			for j := -i; j <= i; j++ {
-				x, y := gridX+i, gridY+j
-				if InBounds(x, y) {
-					index := CoordTransformer.IndexFromLogicalXY(x, y)
-					indices = append(indices, index)
-				}
-			}
-		case LineLeft:
-			for j := -i; j <= i; j++ {
-				x, y := gridX-i, gridY+j
-				if InBounds(x, y) {
-					index := CoordTransformer.IndexFromLogicalXY(x, y)
-					indices = append(indices, index)
-				}
-			}
-		case LineDiagonalUpRight:
-			for j := -i; j <= i; j++ {
-				x, y := gridX+i, gridY-i+j // Move diagonally up-right
-				if InBounds(x, y) {
-					index := CoordTransformer.IndexFromLogicalXY(x, y)
-					indices = append(indices, index)
-				}
-			}
-		case LineDiagonalDownRight:
-			for j := -i; j <= i; j++ {
-				x, y := gridX+i, gridY+i-j // Move diagonally down-right
-				if InBounds(x, y) {
-					index := CoordTransformer.IndexFromLogicalXY(x, y)
-					indices = append(indices, index)
-				}
-			}
-		case LineDiagonalUpLeft:
-			for j := -i; j <= i; j++ {
-				x, y := gridX-i, gridY-i+j // Move diagonally up-left
-				if InBounds(x, y) {
-					index := CoordTransformer.IndexFromLogicalXY(x, y)
-					indices = append(indices, index)
-				}
-			}
-		case LinedDiagonalDownLeft:
-			for j := -i; j <= i; j++ {
-				x, y := gridX-i, gridY+i-j // Move diagonally down-left
-				if InBounds(x, y) {
-					index := CoordTransformer.IndexFromLogicalXY(x, y)
-					indices = append(indices, index)
-				}
-			}
-		}
+	// Calculate line based on direction
+	deltaX, deltaY := DirectionToCoords(*s.Direction)
+	for i := 0; i < length; i++ {
+		x := centerX + i*deltaX
+		y := centerY + i*deltaY
+		indices = append(indices, CoordManager.LogicalToIndex(LogicalPosition{X: x, Y: y}))
 	}
 
 	return indices
 }
 
-func (c *TileCone) UpdatePosition(pixelX, pixelY int) {
-	c.pixelX = pixelX
-	c.pixelY = pixelY
-
-}
-
-func (c *TileCone) UpdateShape(updater ShapeUpdater) {
-
-	c.pixelX = updater.PixelX
-	c.pixelY = updater.PixelY
-	c.length = updater.Length
-	c.direction = updater.Direction
-
-}
-
-func (c *TileCone) StartPositionPixels() (int, int) {
-
-	return c.pixelX, c.pixelY
-
-}
-
-func NewTileCone(pixelX, pixelY, length int, direction ShapeDirection) *TileCone {
-
-	return &TileCone{
-		pixelX:    pixelX,
-		pixelY:    pixelY,
-		length:    length,
-		direction: direction,
+// Helper function for direction to coordinates
+func DirectionToCoords(direction ShapeDirection) (int, int) {
+	switch direction {
+	case LineUp:
+		return 0, -1
+	case LineDown:
+		return 0, 1
+	case LineRight:
+		return 1, 0
+	case LineLeft:
+		return -1, 0
+	case LineDiagonalUpRight:
+		return 1, -1
+	case LineDiagonalUpLeft:
+		return -1, -1
+	case LineDiagonalDownRight:
+		return 1, 1
+	case LinedDiagonalDownLeft:
+		return -1, 1
+	default:
+		return 1, 0 // Default to right
 	}
-
 }
 
-type TileCircle struct {
-	pixelX int
-	pixelY int
-	radius int
-}
-
-func (c *TileCircle) GetIndices() []int {
-	indices := make([]int, 0)
-
-	centerX, centerY := CoordTransformer.LogicalXYFromPixels(c.pixelX, c.pixelY)
-
-	x := 0
-	y := c.radius
-	d := 1 - c.radius
-
-	// Helper function to add points in all octants of the circle and fill horizontally between them
-	addAndFillCirclePoints := func(x, y int) {
-		// Add points in all octants
-		points := []struct{ X, Y int }{
-			{centerX + x, centerY + y},
-			{centerX - x, centerY + y},
-			{centerX + x, centerY - y},
-			{centerX - x, centerY - y},
-			{centerX + y, centerY + x},
-			{centerX - y, centerY + x},
-			{centerX + y, centerY - x},
-			{centerX - y, centerY - x},
-		}
-		for _, p := range points {
-			if InBounds(p.X, p.Y) {
-				index := CoordTransformer.IndexFromLogicalXY(p.X, p.Y)
-				indices = append(indices, index)
-			}
-		}
-
-		// Fill horizontal lines between the points
-		// Fill between (centerX - x, centerY + y) and (centerX + x, centerY + y)
-		for fillX := centerX - x; fillX <= centerX+x; fillX++ {
-			if InBounds(fillX, centerY+y) {
-				index := CoordTransformer.IndexFromLogicalXY(fillX, centerY+y)
-				indices = append(indices, index)
-			}
-			if InBounds(fillX, centerY-y) {
-				index := CoordTransformer.IndexFromLogicalXY(fillX, centerY-y)
-				indices = append(indices, index)
-			}
-		}
-		// Fill between (centerX - y, centerY + x) and (centerX + y, centerY + x)
-		for fillX := centerX - y; fillX <= centerX+y; fillX++ {
-			if InBounds(fillX, centerY+x) {
-				index := CoordTransformer.IndexFromLogicalXY(fillX, centerY+x)
-				indices = append(indices, index)
-			}
-			if InBounds(fillX, centerY-x) {
-				index := CoordTransformer.IndexFromLogicalXY(fillX, centerY-x)
-				indices = append(indices, index)
-			}
-		}
-	}
-
-	// Midpoint circle algorithm to generate the points and fill
-	for x <= y {
-		addAndFillCirclePoints(x, y)
-		if d < 0 {
-			d += 2*x + 3
-		} else {
-			d += 2*(x-y) + 5
-			y--
-		}
-		x++
-	}
-
-	return indices
-}
-
-func (c *TileCircle) UpdatePosition(pixelX, pixelY int) {
-	c.pixelX = pixelX
-	c.pixelY = pixelY
-
-}
-
-func (c *TileCircle) UpdateShape(updater ShapeUpdater) {
-
-	c.pixelX = updater.PixelX
-	c.pixelY = updater.PixelY
-	c.radius = updater.Radius
-}
-
-func (c *TileCircle) StartPositionPixels() (int, int) {
-
-	return c.pixelX, c.pixelY
-}
-
-func NewTileCircle(pixelX, pixelY, radius int) *TileCircle {
-
-	return &TileCircle{
-		pixelX: pixelX,
-		pixelY: pixelY,
-		radius: radius,
-	}
-
-}
-
-type TileRectangle struct {
-	pixelX int
-	pixelY int
-	width  int
-	height int
-}
-
-func (r *TileRectangle) GetIndices() []int {
-	indices := make([]int, 0)
-
-	// Convert pixel coordinates to grid coordinates (if necessary)
-
-	gridX, gridY := CoordTransformer.LogicalXYFromPixels(r.pixelX, r.pixelY)
-
-	// Iterate through the width and height of the rectangle
-	for y := gridY; y < gridY+r.height; y++ {
-		for x := gridX; x < gridX+r.width; x++ {
-			if InBounds(x, y) {
-				index := CoordTransformer.IndexFromLogicalXY(x, y)
-				indices = append(indices, index)
-			}
-		}
-	}
-
-	return indices
-}
-
-func (r *TileRectangle) UpdatePosition(pixelX, pixelY int) {
-	r.pixelX = pixelX
-	r.pixelY = pixelY
-
-}
-
-func (r *TileRectangle) UpdateShape(updater ShapeUpdater) {
-
-	r.pixelX = updater.PixelX
-	r.pixelY = updater.PixelY
-	r.width = updater.Width
-	r.height = updater.height
-
-}
-
-func (r *TileRectangle) StartPositionPixels() (int, int) {
-
-	return r.pixelX, r.pixelY
-
-}
-
-func NewTileRectangle(pixelX, pixelY, width, height int) *TileRectangle {
-
-	return &TileRectangle{
-		pixelX: pixelX,
-		pixelY: pixelY,
-		width:  width,
-		height: height,
-	}
-
-}
-
-type TileCircleOutline struct {
-	pixelX int
-	pixelY int
-	radius int
-}
-
-func (c *TileCircleOutline) GetIndices() []int {
-	indices := make([]int, 0)
-
-	centerX, centerY := CoordTransformer.LogicalXYFromPixels(c.pixelX, c.pixelY)
-
-	x := 0
-	y := c.radius
-	d := 1 - c.radius
-
-	// Helper function to add points in all octants of the circle
-	addCirclePoints := func(x, y int) {
-		points := []struct{ X, Y int }{
-			{centerX + x, centerY + y},
-			{centerX - x, centerY + y},
-			{centerX + x, centerY - y},
-			{centerX - x, centerY - y},
-			{centerX + y, centerY + x},
-			{centerX - y, centerY + x},
-			{centerX + y, centerY - x},
-			{centerX - y, centerY - x},
-		}
-		for _, p := range points {
-			if InBounds(p.X, p.Y) {
-				index := CoordTransformer.IndexFromLogicalXY(p.X, p.Y)
-				indices = append(indices, index)
-			}
-		}
-	}
-
-	// Midpoint circle algorithm to generate the points
-	for x <= y {
-		addCirclePoints(x, y)
-		if d < 0 {
-			d += 2*x + 3
-		} else {
-			d += 2*(x-y) + 5
-			y--
-		}
-		x++
-	}
-	return indices
-}
-
-func (c *TileCircleOutline) UpdatePosition(pixelX, pixelY int) {
-	c.pixelX = pixelX
-	c.pixelY = pixelY
-
-}
-
-func (c *TileCircleOutline) UpdateShape(updater ShapeUpdater) {
-
-	c.pixelX = updater.PixelX
-	c.pixelY = updater.PixelY
-	c.radius = updater.Radius
-
-}
-
-func NewTileCircleOutline(pixelX, pixelY, radius int) TileCircleOutline {
-
-	return TileCircleOutline{
-		pixelX: pixelX,
-		pixelY: pixelY,
-		radius: radius,
-	}
-
-}
-
-// This shape has only the outer edges of a square.
-type TileSquareOutline struct {
-	PixelX int
-	PixelY int
-	Size   int
-}
-
-func (s *TileSquareOutline) GetIndices() []int {
-
-	halfSize := s.Size / 2
-	indices := make([]int, 0)
-
-	gridX, gridY := CoordTransformer.LogicalXYFromPixels(s.PixelX, s.PixelY)
-
-	// Top and bottom edges
-	for x := gridX - halfSize; x <= gridX+halfSize; x++ {
-		if InBounds(x, gridY-halfSize) {
-			index := CoordTransformer.IndexFromLogicalXY(x, gridY-halfSize)
-			indices = append(indices, index)
-		}
-		if InBounds(x, gridY+halfSize) {
-			index := CoordTransformer.IndexFromLogicalXY(x, gridY+halfSize)
-			indices = append(indices, index)
-		}
-	}
-
-	// Left and right edges (excluding corners already handled by top/bottom)
-	for y := gridY - halfSize + 1; y <= gridY+halfSize-1; y++ {
-		if InBounds(gridX-halfSize, y) {
-			index := CoordTransformer.IndexFromLogicalXY(gridX-halfSize, y)
-			indices = append(indices, index)
-		}
-		if InBounds(gridX+halfSize, y) {
-			index := CoordTransformer.IndexFromLogicalXY(gridX+halfSize, y)
-			indices = append(indices, index)
-		}
-	}
-
-	return indices
-
-}
-
-func (s *TileSquareOutline) UpdatePosition(pixelX int, pixelY int) {
-	s.PixelX = pixelX
-	s.PixelY = pixelY
-
-}
-
-func (s *TileSquareOutline) UpdateShape(updater ShapeUpdater) {
-
-	s.PixelX = updater.PixelX
-	s.PixelY = updater.PixelY
-	s.Size = updater.Size
-
-}
-
-func NewTileSquareOutline(pixelX, pixelY, size int) *TileSquareOutline {
-
-	return &TileSquareOutline{
-		PixelX: pixelX,
-		PixelY: pixelY,
-		Size:   size,
-	}
-
-}
-
+// GetLineTo creates a line from start position to end position
 func GetLineTo(startPos common.Position, endPos common.Position) []int {
+	startPixelPos := CoordManager.LogicalToPixel(LogicalPosition{X: startPos.X, Y: startPos.Y})
+	endPixelPos := CoordManager.LogicalToPixel(LogicalPosition{X: endPos.X, Y: endPos.Y})
 
-	startX, startY := CoordTransformer.PixelsFromLogicalXY(startPos.X, startPos.Y)
-	endX, endY := CoordTransformer.PixelsFromLogicalXY(endPos.X, endPos.Y)
+	// Calculate direction and length
+	deltaX := endPixelPos.X - startPixelPos.X
+	deltaY := endPixelPos.Y - startPixelPos.Y
 
-	indices := NewTileLineTo(startX, startY, endX, endY).GetIndices()
+	// Simple line drawing using step-based approach
+	var indices []int
+	steps := max(abs(deltaX), abs(deltaY))
+
+	if steps == 0 {
+		return []int{CoordManager.LogicalToIndex(LogicalPosition{X: startPos.X, Y: startPos.Y})}
+	}
+
+	for i := 0; i <= steps; i++ {
+		x := startPixelPos.X + (deltaX*i)/steps
+		y := startPixelPos.Y + (deltaY*i)/steps
+		logical := CoordManager.PixelToLogical(PixelPosition{X: x, Y: y})
+		indices = append(indices, CoordManager.LogicalToIndex(logical))
+	}
+
 	return indices
+}
 
+func abs(x int) int {
+	if x < 0 {
+		return -x
+	}
+	return x
+}
+
+func max(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
 }

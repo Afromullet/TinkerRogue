@@ -2,7 +2,7 @@ package spawning
 
 import (
 	"game_main/avatar"
-	"game_main/behavior"
+
 	"game_main/common"
 	"game_main/entitytemplates"
 	"game_main/graphics"
@@ -31,10 +31,9 @@ func SpawnMonster(ecsmanager common.EntityManager, gm *worldmap.GameMap) {
 
 			if !gm.Tiles[index].Blocked {
 
-				x, y := graphics.CoordTransformer.LogicalXYFromIndex(index)
-				pos := common.Position{X: x, Y: y}
+				logicalPos := graphics.CoordManager.IndexToLogical(index)
 
-				entitytemplates.CreateCreatureFromTemplate(ecsmanager, entitytemplates.MonsterTemplates[0], gm, pos.X, pos.Y)
+				entitytemplates.CreateCreatureFromTemplate(ecsmanager, entitytemplates.MonsterTemplates[0], gm, logicalPos.X, logicalPos.Y)
 				gm.Tiles[index].Blocked = true
 
 				break
@@ -59,8 +58,7 @@ func SpawnStartingCreatures(MaxNumCreatures int, em *common.EntityManager, gm *w
 
 		x, y := room.Center()
 		randCreature = rand.Intn(len(entitytemplates.MonsterTemplates))
-		ent := entitytemplates.CreateCreatureFromTemplate(*em, entitytemplates.MonsterTemplates[randCreature], gm, x, y)
-		behavior.BehaviorSelector(ent, pl)
+		entitytemplates.CreateCreatureFromTemplate(*em, entitytemplates.MonsterTemplates[randCreature], gm, x, y)
 
 	}
 
@@ -70,8 +68,8 @@ func SpawnStartingCreatures(MaxNumCreatures int, em *common.EntityManager, gm *w
 		indices := gm.Rooms[rand.Intn(len(gm.Rooms))].GetCoordinatesWithoutCenter()
 		randomPos := indices[rand.Intn(len(indices))]
 
-		ent := entitytemplates.CreateCreatureFromTemplate(*em, entitytemplates.MonsterTemplates[randCreature], gm, randomPos.X, randomPos.Y)
-		behavior.BehaviorSelector(ent, pl)
+		entitytemplates.CreateCreatureFromTemplate(*em, entitytemplates.MonsterTemplates[randCreature], gm, randomPos.X, randomPos.Y)
+
 	}
 
 }

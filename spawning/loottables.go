@@ -13,12 +13,12 @@ var ConsumableSpawnProb = 30
 var ThrowableSpawnProb = 30
 var RangedWeaponSpawnProb = 10
 
-// Used for helping is select n number of properties for the status effect. Not tied to quality.
+// Used for helping select n number of effects that throwables will apply to targets. Not tied to quality.
 var RandThrowableOptions = []gear.StatusEffects{gear.NewBurning(1, 1), gear.NewFreezing(1, 1), gear.NewSticky(1, 1)}
 
 var LootQualityTable = NewProbabilityTable[common.QualityType]()           //Determining the quality of the item to be generated
-var ThrowableEffectStatTable = NewProbabilityTable[gear.StatusEffects]()   //Determines the status effects of throwables
-var ThrowableAOEProbTable = NewProbabilityTable[graphics.TileBasedShape]() //Determines the AOE of throwables
+var ThrowableEffectStatTable = NewProbabilityTable[gear.StatusEffects]()   //Determines the effects that throwables apply to targets
+var ThrowableAOEProbTable = NewProbabilityTable[graphics.BasicShapeType]() //Determines the AOE of throwables
 var ConsumableSpawnTable = NewProbabilityTable[gear.ConsumableType]()
 
 func InitLootSpawnTables() {
@@ -32,11 +32,11 @@ func InitLootSpawnTables() {
 	LootQualityTable.AddEntry(common.NormalQuality, 40)
 	LootQualityTable.AddEntry(common.HighQuality, 10)
 
-	ThrowableAOEProbTable.AddEntry(&graphics.TileLine{}, 30)
-	ThrowableAOEProbTable.AddEntry(&graphics.TileSquare{}, 20)
-	ThrowableAOEProbTable.AddEntry(&graphics.TileCircle{}, 10)
-	ThrowableAOEProbTable.AddEntry(&graphics.TileCone{}, 15)
-	ThrowableAOEProbTable.AddEntry(&graphics.TileRectangle{}, 5)
+	ThrowableAOEProbTable.AddEntry(graphics.Linear, 30)
+	ThrowableAOEProbTable.AddEntry(graphics.Rectangular, 20)
+	ThrowableAOEProbTable.AddEntry(graphics.Circular, 10)
+	ThrowableAOEProbTable.AddEntry(graphics.Linear, 15)
+	ThrowableAOEProbTable.AddEntry(graphics.Rectangular, 5)
 
 	ConsumableSpawnTable.AddEntry(gear.HealingPotion, 50)
 	ConsumableSpawnTable.AddEntry(gear.ProtectionPotion, 30)

@@ -1,7 +1,6 @@
 package worldmap
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -21,7 +20,6 @@ func loadTileImages() {
 
 	for _, file := range files {
 		if !file.IsDir() { // Ensure it's a file, not a subdirectory
-			
 
 			floor, _, _ := ebitenutil.NewImageFromFile(dir + "/" + file.Name())
 
@@ -35,7 +33,6 @@ func loadTileImages() {
 
 	for _, file := range files {
 		if !file.IsDir() { // Ensure it's a file, not a subdirectory
-			fmt.Println(file.Name())
 
 			wall, _, _ := ebitenutil.NewImageFromFile(dir + "/" + file.Name())
 
@@ -49,7 +46,6 @@ func loadTileImages() {
 
 	for _, file := range files {
 		if !file.IsDir() { // Ensure it's a file, not a subdirectory
-			fmt.Println(file.Name())
 
 			wall, _, _ := ebitenutil.NewImageFromFile(dir + "/" + file.Name())
 

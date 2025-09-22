@@ -1,7 +1,6 @@
 package spawning
 
 import (
-	"fmt"
 	"game_main/avatar"
 	"game_main/common"
 	"game_main/entitytemplates"
@@ -15,6 +14,8 @@ import (
 	"github.com/bytearena/ecs"
 )
 
+// SpawnConsumable creates a consumable item entity at the specified position.
+// It randomly selects item quality and consumable type from loot tables.
 func SpawnConsumable(manager *ecs.Manager, xPos, yPos int) *ecs.Entity {
 
 	qual, qualOK := LootQualityTable.GetRandomEntry(false)
@@ -33,7 +34,9 @@ func SpawnConsumable(manager *ecs.Manager, xPos, yPos int) *ecs.Entity {
 
 }
 
-// TODO better image selection
+// SpawnRangedWeapon creates a ranged weapon entity at the specified position.
+// It randomly generates quality and AOE shape properties from loot tables.
+// TODO: Improve image selection logic.
 func SpawnRangedWeapon(manager *ecs.Manager, xPos, yPos int) *ecs.Entity {
 
 	//TODO better name generation
@@ -47,7 +50,19 @@ func SpawnRangedWeapon(manager *ecs.Manager, xPos, yPos int) *ecs.Entity {
 
 		r := gear.RangedWeapon{}
 		r.CreateWithQuality(qual)
-		r.TargetArea = aoeShape
+
+		// Convert BasicShapeType to actual shape instance
+		var targetShape graphics.TileBasedShape
+		switch aoeShape {
+		case graphics.Circular:
+			targetShape = graphics.NewCircle(0, 0, qual)
+		case graphics.Rectangular:
+			targetShape = graphics.NewSquare(0, 0, qual)
+		case graphics.Linear:
+			targetShape = graphics.NewLine(0, 0, graphics.LineRight, qual)
+		}
+
+		r.TargetArea = targetShape
 		weapon.AddComponent(gear.RangedWeaponComponent, &r)
 		return weapon
 	}
@@ -66,7 +81,6 @@ func SpawnStartingConsumables(em common.EntityManager, gm *worldmap.GameMap) {
 
 		if roll < spawnChance {
 
-			fmt.Println("Spawning")
 			x, y := room.Center()
 
 			randInd := rand.Intn(len(entitytemplates.ConsumableTemplates))
@@ -121,7 +135,7 @@ func SpawnStartingEquipment(em *common.EntityManager, gm *worldmap.GameMap, pl *
 				gm.AddEntityToTile(wep, pos)
 
 			} else {
-				fmt.Println("Error spawning starting equipmen")
+				// TODO: Handle starting equipment spawn error
 			}
 
 		}
@@ -131,7 +145,7 @@ func SpawnStartingEquipment(em *common.EntityManager, gm *worldmap.GameMap, pl *
 
 // Spawns loot in a square of size "size" centered at the position
 // Right now it's used to spawn loot in a square centered around the player
-// Todo, this is just some basic spawning. There's a chacne this can spawn an
+// Todo, this is just some basic spawning. There's a chance this can spawn an
 // item in the same room as the player. That will look weird.
 // Add better spawning mechanics later
 //
@@ -149,7 +163,9 @@ func SpawnLootAroundPlayer(currentTurnNumber int, playerData avatar.PlayerData, 
 
 	}
 
-	playerX, playerY := graphics.CoordTransformer.PixelsFromLogicalXY(playerData.Pos.X, playerData.Pos.Y)
+	logicalPos := graphics.LogicalPosition{X: playerData.Pos.X, Y: playerData.Pos.Y}
+	pixelPos := graphics.CoordManager.LogicalToPixel(logicalPos)
+	playerX, playerY := pixelPos.X, pixelPos.Y
 	spawnPositions := gm.UnblockedLogicalCoords(playerX, playerY, 10)
 	consChance, throwableChance, rangedWepChance := rand.Intn(100), rand.Intn(100), rand.Intn(100)
 

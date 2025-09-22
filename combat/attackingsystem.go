@@ -1,7 +1,6 @@
 package combat
 
 import (
-	"fmt"
 	"game_main/avatar"
 	"game_main/common"
 	"game_main/gear"
@@ -54,7 +53,7 @@ func MeleeAttackSystem(ecsmanager *common.EntityManager, pl *avatar.PlayerData, 
 
 // A monster performing a ranged attack is simple right now.
 // It ignores the weapons AOE and selects only the player as the target
-// Todo add nill check for when there is no weapon for a player or monster attacker
+// Todo add nil check for when there is no weapon for a player or monster attacker
 func RangedAttackSystem(ecsmanager *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap, attackerPos *common.Position) {
 
 	var attacker *ecs.Entity = nil
@@ -134,11 +133,11 @@ func PerformAttack(em *common.EntityManager, pl *avatar.PlayerData, gm *worldmap
 			return true
 
 		} else {
-			fmt.Println("Dodged") //Todo add something here for debug mode to make testing easier
+			//TODO: Add feedback for dodge
 		}
 
 	} else {
-		fmt.Println("Missed") //Todo add something here for debug mode to make testing easier
+		//TODO: Add feedback for miss
 	}
 
 	//Only check if it's following a player attack.

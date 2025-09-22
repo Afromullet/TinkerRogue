@@ -1,9 +1,7 @@
 package gui
 
 import (
-	"fmt"
 	"game_main/gear"
-	"game_main/graphics"
 
 	"github.com/ebitenui/ebitenui/widget"
 )
@@ -24,15 +22,10 @@ func (throwingItemDisplay *ThrowingItemDisplay) CreateInventoryList(propFilters 
 
 	throwingItemDisplay.ItemDisplay.InventoryDisplaylist.EntrySelectedEvent.AddHandler(func(args interface{}) {
 
-		fmt.Print("Throwable Item Selected")
-
 		a := args.(*widget.ListEntrySelectedEventArgs)
 		entry := a.Entry.(gear.InventoryListEntry)
 
 		it, err := throwingItemDisplay.ItemDisplay.GetInventory().GetItem(entry.Index)
-
-		//throwableComponentData := GetComponentStruct[*Item](it, ItemComponent)
-		//	fmt.Println("Printing throwable ", throwableComponentData)
 
 		if err == nil {
 
@@ -54,10 +47,9 @@ func (throwingItemDisplay *ThrowingItemDisplay) DisplayInventory() {
 
 	//Passing a zero value throwable for the propFIlter
 
-	s := graphics.NewTileSquare(0, 0, 0)
-
 	//throwingItemDisplay.CreateInventoryList(&g.playerData, NewThrowable(0, 0, 0, NewTileSquare(0, 0, 0)))
-	throwingItemDisplay.CreateInventoryList(gear.NewThrowable(0, 0, 0, s))
+	// For now, don't filter by throwable properties since they're now actions
+	throwingItemDisplay.CreateInventoryList()
 
 }
 

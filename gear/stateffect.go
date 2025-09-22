@@ -19,14 +19,13 @@ To create a new item property:
 6) In InitializeItemComponents, add the component to the AllItemEffects slice.
 */
 const (
-	BURNING_NAME   = "Burning"
-	FREEZING_NAME  = "Freezing"
-	STICKY_NAME    = "Sticky"
-	THROWABLE_NAME = "Throwable"
+	BURNING_NAME  = "Burning"
+	FREEZING_NAME = "Freezing"
+	STICKY_NAME   = "Sticky"
 )
 
 var (
-	EffectNames = []string{BURNING_NAME, FREEZING_NAME, STICKY_NAME, THROWABLE_NAME}
+	EffectNames = []string{BURNING_NAME, FREEZING_NAME, STICKY_NAME}
 
 	ItemComponent      *ecs.Component
 	StickyComponent    *ecs.Component
@@ -74,7 +73,7 @@ func GetVisualEffect(eff StatusEffects) graphics.VisualEffect {
 	case *Sticky: // Check if it's of type Sticky
 		return graphics.NewStickyGroundEffect(0, 0, 2)
 	default:
-		fmt.Println("Invalid status effect")
+		// Invalid status effect type
 		return nil
 	}
 }
@@ -208,9 +207,6 @@ func (s *Sticky) ApplyToCreature(c *ecs.QueryResult) {
 
 	applyEffect(c)
 
-	attr := common.GetComponentType[*common.Attributes](c.Entity, common.AttributeComponent)
-
-	fmt.Println("Printing the attributes ", attr.DisplayString())
 }
 func (s *Sticky) DisplayString() string {
 	result := ""
@@ -363,78 +359,9 @@ func NewFreezing(dur int, t int) *Freezing {
 
 }
 
-// Throwable doesn't work like any other effects, so treating it as an "Effect" does not make much sense because we
-type Throwable struct {
-	MainProps     CommonItemProperties
-	ThrowingRange int //How many tiles it can be thrown
-	Damage        int //Not used for anythign at the moment
-	Shape         graphics.TileBasedShape
-	VX            graphics.VisualEffect
-}
-
-func (t *Throwable) StatusEffectComponent() *ecs.Component {
-	return ThrowableComponent
-}
-
-func (t *Throwable) StatusEffectName() string {
-	return t.MainProps.Name
-
-}
-
-func (t Throwable) Duration() int {
-
-	return t.MainProps.Duration
-
-}
-
-// Does nothing. Only here because Throwale is a StatusEffect. It shouldn't be. Todo change that in the future
-func (t *Throwable) StackEffect(eff any) {
-
-}
-
-func (*Throwable) DisplayString() string {
-	return ""
-}
-
-func (t *Throwable) Copy() StatusEffects {
-	return &Throwable{
-		MainProps:     t.MainProps,
-		ThrowingRange: t.ThrowingRange,
-		Damage:        t.Damage,
-		Shape:         t.Shape,
-	}
-}
-
-func (t *Throwable) ApplyToCreature(c *ecs.QueryResult) {
-	fmt.Println("Applying ", t, " To Creature")
-
-}
-
-func (t *Throwable) InRange(endPos *common.Position) bool {
-
-	//
-
-	x, y := graphics.CoordTransformer.LogicalXYFromPixels(t.Shape.StartPositionPixels())
-
-	startPos := common.Position{X: x, Y: y}
-
-	return endPos.InRange(&startPos, t.ThrowingRange)
-
-}
-
-func NewThrowable(dur, throwRange, dam int, shape graphics.TileBasedShape) *Throwable {
-
-	return &Throwable{
-		MainProps: CommonItemProperties{
-			Name:     THROWABLE_NAME,
-			Duration: dur,
-		},
-		ThrowingRange: throwRange,
-		Damage:        dam,
-		Shape:         shape,
-	}
-
-}
+// Throwable functionality has been moved to itemactions.go as ThrowableAction
+// This removes the forced coupling between throwables and status effects
+// Use item.GetThrowableAction() instead of string-based lookups
 
 func InitializeItemComponents(manager *ecs.Manager, tags map[string]ecs.Tag) {
 
@@ -448,7 +375,7 @@ func InitializeItemComponents(manager *ecs.Manager, tags map[string]ecs.Tag) {
 	ConsumableComponent = manager.NewComponent()
 	ConsEffectTrackerComponent = manager.NewComponent()
 
-	AllItemEffects = append(AllItemEffects, StickyComponent, BurningComponent, FreezingComponent, ThrowableComponent)
+	AllItemEffects = append(AllItemEffects, StickyComponent, BurningComponent, FreezingComponent)
 
 	items := ecs.BuildTag(ItemComponent, common.PositionComponent) //todo add all the tags
 	tags["items"] = items

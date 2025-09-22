@@ -1,14 +1,24 @@
+* Logical and world coordinates. This was a tedious to deal with. Every entity uses coordinates, but updating those coordinates ended up 
+taking additional effort because I did not establish a common baseline for coordinates for the entities. 
+Sometimes I use logal coordinates. Sometimes pixel cooridinates. That ended up being a pain. 
+
+
+* Don't mix up logical and world  cordinates. There are a lot of conversions going on between grid posititions, indices, and pixel positions. 
+I did not establish when to use Logical vs World coordinates early on enough, so there was a lot of cleanup after
+
+
+
 * Think about how things will be broken down into packages from the get-go. Including
 1) What should be private
 2) What data it oeprates on
 
 * Be more careful with when to use a pointer receiver
 
-* Don't mix up logical and world  cordinates. There are a lot of conversions going on between grid posititions, indices, and pixel positions. 
-I did not establish when to use Logical vs World coordinates early on enough, so there was a lot of cleanup after
-
 * An exampe of something that ended up being a bad abstraction: Consumables. Instead of creating a "Consumable Interface" and implementing 
 * structs such as "Healing potion" and "Protection potion", I created a "Consumable" struct that contains the Attribute Type. The Attribute
 * type determines how the potion changes the creatures stats. This resulted in having to create the StatusEffectTracker type.
 * This ended up being too generalized.
 * It doesn't mesh well with the way we handle other kinds of items. As seen when spawning random loot 
+
+
+* Need to do more planning on how to handle player input. Player input handling got pretty messy. 

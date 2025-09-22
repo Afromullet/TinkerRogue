@@ -8,10 +8,10 @@ import (
 	"reflect"
 )
 
-// Node represents a given point on a map
-// g is the total distance of the node from the start
-// h is the estimated distance of the node from the ending
-// f is the total value of the node (g + h)
+// node represents a point in the A* pathfinding algorithm.
+// g is the total distance from the start node.
+// h is the estimated distance to the goal (heuristic).
+// f is the total cost (g + h).
 type node struct {
 	Parent   *node
 	Position *common.Position
@@ -20,10 +20,13 @@ type node struct {
 	f        int
 }
 
+// isEqual compares two nodes for positional equality.
 func (n *node) isEqual(other *node) bool {
 	return n.Position.IsEqual(other.Position)
 }
 
+// newNode creates a new pathfinding node with the given parent and position.
+// Initializes all cost values to zero.
 func newNode(parent *node, position *common.Position) *node {
 	n := node{}
 	n.Parent = parent
@@ -35,6 +38,8 @@ func newNode(parent *node, position *common.Position) *node {
 	return &n
 }
 
+// reverseSlice reverses any slice in-place using reflection.
+// Panics if the provided data is not a slice.
 func reverseSlice(data interface{}) {
 	value := reflect.ValueOf(data)
 	if value.Kind() != reflect.Slice {
@@ -49,6 +54,8 @@ func reverseSlice(data interface{}) {
 	}
 }
 
+// isInSlice checks if a target node exists in a slice of nodes.
+// Uses position-based equality comparison.
 func isInSlice(s []*node, target *node) bool {
 	for _, n := range s {
 		if n.isEqual(target) {
@@ -58,12 +65,13 @@ func isInSlice(s []*node, target *node) bool {
 	return false
 }
 
-// AStar implements the AStar Algorithm.
+// AStar implements the A* pathfinding algorithm.
 type AStar struct{}
 
-// GetPath takes a level, the starting position and an ending position (the goal) and returns
-// a list of Positions which is the path between the points.
-// TOdo gameMap should be a poitner?
+// GetPath finds the shortest path between start and end positions using A* algorithm.
+// Returns a slice of positions representing the path, or empty slice if no path exists.
+// The ignoreWalls parameter allows pathfinding through walls when true.
+// TODO: gameMap should be a pointer for better performance.
 func (as AStar) GetPath(gameMap worldmap.GameMap, start *common.Position, end *common.Position, ignoreWalls bool) []common.Position {
 
 	openList := make([]*node, 0)
@@ -123,7 +131,8 @@ func (as AStar) GetPath(gameMap worldmap.GameMap, start *common.Position, end *c
 		//Now we get each node in the four cardinal directions
 		//Note:  If you wish to add Diagonal movement, you can do so by getting all 8 positions
 		if currentNode.Position.Y > 0 {
-			tile := gameMap.Tiles[graphics.CoordTransformer.IndexFromLogicalXY(currentNode.Position.X, currentNode.Position.Y-1)]
+			logicalPos := graphics.LogicalPosition{X: currentNode.Position.X, Y: currentNode.Position.Y - 1}
+			tile := gameMap.Tiles[graphics.CoordManager.LogicalToIndex(logicalPos)]
 			if ignoreWalls || tile.TileType != worldmap.WALL {
 				//The location is in the map bounds and is walkable
 				upNodePosition := common.Position{
@@ -137,7 +146,8 @@ func (as AStar) GetPath(gameMap worldmap.GameMap, start *common.Position, end *c
 
 		}
 		if currentNode.Position.Y < graphics.ScreenInfo.DungeonHeight {
-			tile := gameMap.Tiles[graphics.CoordTransformer.IndexFromLogicalXY(currentNode.Position.X, currentNode.Position.Y+1)]
+			logicalPos := graphics.LogicalPosition{X: currentNode.Position.X, Y: currentNode.Position.Y + 1}
+			tile := gameMap.Tiles[graphics.CoordManager.LogicalToIndex(logicalPos)]
 			if ignoreWalls || tile.TileType != worldmap.WALL {
 				//The location is in the map bounds and is walkable
 				downNodePosition := common.Position{
@@ -151,7 +161,8 @@ func (as AStar) GetPath(gameMap worldmap.GameMap, start *common.Position, end *c
 
 		}
 		if currentNode.Position.X > 0 {
-			tile := gameMap.Tiles[graphics.CoordTransformer.IndexFromLogicalXY(currentNode.Position.X-1, currentNode.Position.Y)]
+			logicalPos := graphics.LogicalPosition{X: currentNode.Position.X - 1, Y: currentNode.Position.Y}
+			tile := gameMap.Tiles[graphics.CoordManager.LogicalToIndex(logicalPos)]
 			if ignoreWalls || tile.TileType != worldmap.WALL {
 				//The location is in the map bounds and is walkable
 				leftNodePosition := common.Position{
@@ -165,7 +176,8 @@ func (as AStar) GetPath(gameMap worldmap.GameMap, start *common.Position, end *c
 
 		}
 		if currentNode.Position.X < graphics.ScreenInfo.DungeonWidth {
-			tile := gameMap.Tiles[graphics.CoordTransformer.IndexFromLogicalXY(currentNode.Position.X+1, currentNode.Position.Y)]
+			logicalPos := graphics.LogicalPosition{X: currentNode.Position.X + 1, Y: currentNode.Position.Y}
+			tile := gameMap.Tiles[graphics.CoordManager.LogicalToIndex(logicalPos)]
 			if ignoreWalls && tile.TileType != worldmap.WALL {
 				//The location is in the map bounds and is walkable
 				rightNodePosition := common.Position{

@@ -1,7 +1,6 @@
 package gui
 
 import (
-	"fmt"
 	"game_main/avatar"
 	"game_main/gear"
 	"game_main/graphics"
@@ -24,7 +23,7 @@ DisplayInventory just calls CreateInventoryList. Maybe change it later so it's n
 
 */
 
-// Every window that displays the inventory to teh user will be a struct that contains ItemDisplay
+// Every window that displays the inventory to the user will be a struct that contains ItemDisplay
 // And implements the ItemDisplayer interface
 type ItemDisplayer interface {
 	CreateRootContainer()                                  //Really just there for calling CreateInventoryList with ItemProperty filters for the specific kind of window
@@ -97,11 +96,11 @@ func (itemDisplay *ItemDisplay) createInventoryDisplayWindow(title string) {
 		widget.WindowOpts.MinSize(graphics.ScreenInfo.GetCanvasWidth(), 500),
 
 		widget.WindowOpts.MoveHandler(func(args *widget.WindowChangedEventArgs) {
-			fmt.Println("Window Moving")
+			// Window moved
 		}),
 		//Set the callback that triggers when a resize is complete
 		widget.WindowOpts.ResizeHandler(func(args *widget.WindowChangedEventArgs) {
-			fmt.Println("Window Resized")
+			// Window resized
 		}),
 	)
 

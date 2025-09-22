@@ -1,7 +1,6 @@
 package spawning
 
 import (
-	"fmt"
 	"game_main/common"
 	"game_main/gear"
 	"game_main/graphics"
@@ -27,7 +26,8 @@ func RandomNumProperties() int {
 
 func SpawnThrowableItem(manager *ecs.Manager, xPos, yPos int) *ecs.Entity {
 
-	effects := make([]gear.StatusEffects, 0)
+	// Effects that will be applied when throwable is used (not item properties)
+	effectsToApply := make([]gear.StatusEffects, 0)
 
 	itemName := ""
 
@@ -38,53 +38,48 @@ func SpawnThrowableItem(manager *ecs.Manager, xPos, yPos int) *ecs.Entity {
 			qual, qualOK := LootQualityTable.GetRandomEntry(false)
 			if qualOK {
 				entry.CreateWithQuality(qual)
-				effects = append(effects, entry)
-				itemName += entry.StatusEffectName() //Todo need better way to create a name
+				effectsToApply = append(effectsToApply, entry)
+				itemName += entry.StatusEffectName() // Todo need better way to create a name
 			}
 
 		} else {
-			fmt.Println("Error spawning throwable")
+			// TODO: Handle throwable spawn error
 		}
 
 	}
 
-	aoeShape, shapeOK := ThrowableAOEProbTable.GetRandomEntry(false)
+	shapeType, shapeOK := ThrowableAOEProbTable.GetRandomEntry(false)
 	qual, qualOK := LootQualityTable.GetRandomEntry(false)
 
-	//Select a random visual effect
-
-	randInd := len(effects)
-
+	// Select a random visual effect based on the effects to apply
 	var vx graphics.VisualEffect
-	if randInd == 0 {
-
-		vx = gear.GetVisualEffect(effects[0])
-
-	} else {
-		vx = gear.GetVisualEffect(effects[rand.Intn(randInd)])
-
+	if len(effectsToApply) > 0 {
+		if len(effectsToApply) == 1 {
+			vx = gear.GetVisualEffect(effectsToApply[0])
+		} else {
+			vx = gear.GetVisualEffect(effectsToApply[rand.Intn(len(effectsToApply))])
+		}
 	}
 
-	throwable := gear.NewThrowable(1, 1, 1, aoeShape)
 	if shapeOK && qualOK {
+		// Create throwable action with the effects it will apply to targets
+		throwableAction := gear.NewShapeThrowableAction(1, 1, 1, shapeType, qual, nil, effectsToApply...)
+		throwableAction.VX = vx
 
-		throwable.CreateWithQuality(qual)
+		// Create item with throwable action - no status effects as item properties
+		actions := []gear.ItemAction{throwableAction}
 
-		//Select a random
-
-		//Need to set this again due to how the CreateWithQuality is implemented.
-		//It's a problem that I have to take the extra step, but it's not something worth worrying about for now.
-		//The problem being that CreateWithQuality takes a reference rather than creating a new type.
-		aoeShape.CreateWithQuality(qual)
-		throwable.Shape = aoeShape
-		throwable.VX = vx
-
-		effects = append(effects, throwable)
+		ThrowableEffectStatTable.RestoreWeights()
+		return gear.CreateItemWithActions(manager, itemName, common.Position{X: xPos, Y: yPos}, "../assets/items/grenade.png", actions)
 
 	} else {
-		fmt.Println("Problem generating AOE shape")
+		// TODO: Handle AOE shape generation error
+		ThrowableEffectStatTable.RestoreWeights()
+		// Even in error case, don't create old-style items with effects as properties
+		// Create a basic throwable action instead
+		basicThrowable := gear.NewShapeThrowableAction(1, 3, 1, graphics.Circular, common.NormalQuality, nil, effectsToApply...)
+		actions := []gear.ItemAction{basicThrowable}
+		return gear.CreateItemWithActions(manager, itemName, common.Position{X: xPos, Y: yPos}, "../assets/items/grenade.png", actions)
 	}
-	ThrowableEffectStatTable.RestoreWeights()
-	return gear.CreateItem(manager, itemName, common.Position{X: xPos, Y: yPos}, "../assets/items/grenade.png", effects...)
 
 }

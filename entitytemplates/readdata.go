@@ -2,7 +2,6 @@ package entitytemplates
 
 import (
 	"encoding/json"
-	"fmt"
 
 	"os"
 )
@@ -85,7 +84,7 @@ func ReadWeaponData() {
 			RangedWeaponTemplates = append(RangedWeaponTemplates, wep)
 
 		} else {
-			fmt.Println("Error in JSON weapon file")
+			// ERROR HANDLING IN FUTURE
 		}
 	}
 

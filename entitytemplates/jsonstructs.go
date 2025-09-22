@@ -71,28 +71,28 @@ func CreateTargetArea(area *JSONTargetArea) graphics.TileBasedShape {
 
 	var s graphics.TileBasedShape
 
-	//Default to a 1x1 square if the area is nill
+	//Default to a 1x1 square if the area is nil
 	if area == nil {
-		s = graphics.NewTileSquare(0, 0, 1)
+		s = graphics.NewSquare(0, 0, common.NormalQuality)
 	} else if area.Type == "Rectangle" {
 
-		s = graphics.NewTileRectangle(0, 0, area.Width, area.Height)
+		s = graphics.NewRectangle(0, 0, common.NormalQuality)
 
 	} else if area.Type == "Cone" {
 
-		s = graphics.NewTileCone(0, 0, area.Length, graphics.LineDown)
+		s = graphics.NewCone(0, 0, graphics.LineDown, common.NormalQuality)
 
 	} else if area.Type == "Square" {
 
-		s = graphics.NewTileSquare(0, 0, area.Size)
+		s = graphics.NewSquare(0, 0, common.NormalQuality)
 
 	} else if area.Type == "Line" {
 
-		s = graphics.NewTileLine(0, 0, area.Length, graphics.LineDown)
+		s = graphics.NewLine(0, 0, graphics.LineDown, common.NormalQuality)
 
 	} else if area.Type == "Circle" {
 
-		s = graphics.NewTileCircle(0, 0, area.Radius)
+		s = graphics.NewCircle(0, 0, common.NormalQuality)
 
 	}
 

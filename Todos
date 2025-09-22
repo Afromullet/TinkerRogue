@@ -1,5 +1,9 @@
 MAJOR
 
+
+Stairs placement and going to next floor
+
+
 Fix issue where throwable AOE moves with player after throwing
 
 
@@ -22,12 +26,8 @@ Make private things private
 Correct removal of entities - make sure that the trackers and actionqueues are cleared
 
 
-Try to understand how the centering and scaling words. Both for drawmap, drawrenderables, and for the throwing and ranged weapon shapes
-ALso for the VX. Basically anything with MAP_SCROLLING_ENABLED. Transformposition and more. Look at ALL translations etc and understand them. Use this to figure
-out how to apply the transformation to graphics.StatusUIOffset
 
-FIx the FOV
-
+DW
 Don't allow shooting and throwing through walls
 
 Room Decoration (maybe)

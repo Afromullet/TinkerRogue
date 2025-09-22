@@ -1,7 +1,6 @@
 package avatar
 
 import (
-	"fmt"
 	"game_main/common"
 	"game_main/gear"
 	"game_main/graphics"
@@ -64,7 +63,7 @@ func (pl *PlayerEquipment) EquipItem(equipment *ecs.Entity, playerEntity *ecs.En
 		playerEntity.AddComponent(gear.RangedWeaponComponent, equipment)
 		pl.EqRangedWeapon = equipment
 	default:
-		fmt.Println("Invalid item equipped")
+		// ERROR HANDLING IN FUTURE
 	}
 
 }
@@ -93,10 +92,10 @@ func (pl *PlayerThrowable) PrepareThrowable(itemEntity *ecs.Entity, index int) {
 	item := gear.GetItem(pl.SelectedThrowable)
 	pl.ThrowableItem = item
 
-	t := item.ItemEffect(gear.THROWABLE_NAME).(*gear.Throwable)
-	pl.ThrowableItemIndex = index
-
-	pl.ThrowingAOEShape = t.Shape
+	if t := item.GetThrowableAction(); t != nil {
+		pl.ThrowableItemIndex = index
+		pl.ThrowingAOEShape = t.Shape
+	}
 
 }
 
@@ -142,7 +141,7 @@ func (pl *PlayerData) UnequipArmor() {
 
 }
 
-// Remvoes the item and adds it back to the inventory.
+// Removes the item and adds it back to the inventory.
 // The UnequipNNN functions add it back to the inventory
 func (pl *PlayerData) RemoveItem(e *ecs.Entity) {
 
@@ -154,7 +153,7 @@ func (pl *PlayerData) RemoveItem(e *ecs.Entity) {
 	case gear.RangedWeaponType:
 		pl.UnequipRangedWeapon()
 	default:
-		fmt.Println("Invalid item equipped")
+		// // ERROR HANDLING IN FUTURE
 	}
 
 }

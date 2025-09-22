@@ -5,7 +5,6 @@ import (
 	"game_main/common"
 	"game_main/gear"
 	"game_main/graphics"
-	"game_main/timesystem"
 	"game_main/trackers"
 	"game_main/worldmap"
 
@@ -38,8 +37,6 @@ func (c *Creature) AddEffects(effects *ecs.Entity) {
 		c.StatEffectTracker.Add(e)
 	}
 
-	fmt.Println("Printing status effects ", c.StatEffectTracker)
-
 }
 
 // Gets called once per turn. Applies all status effects to the creature
@@ -63,7 +60,6 @@ func ApplyStatusEffects(c *ecs.QueryResult) {
 
 		//ApplyTodCreature changes the duration, so we need to check again before
 		//Deciding whether to keep the effect
-		fmt.Println("Printing duration ", eff.Duration())
 		if eff.Duration() == 0 {
 			delete(creature.StatEffectTracker.ActiveEffects, key)
 
@@ -72,14 +68,6 @@ func ApplyStatusEffects(c *ecs.QueryResult) {
 	}
 
 	msg.StatusEffectMessage = creature.StatEffectTracker.ActiveEffectNames()
-
-	fmt.Println("Printing active effects")
-
-	for _, eff := range creature.StatEffectTracker.ActiveEffects {
-
-		fmt.Println(eff.StatusEffectName())
-
-	}
 
 }
 
@@ -90,7 +78,8 @@ func (c *Creature) UpdatePosition(gm *worldmap.GameMap, currentPosition *common.
 
 	p := currentPosition
 
-	index := graphics.CoordTransformer.IndexFromLogicalXY(p.X, p.Y)
+	logicalPos := graphics.LogicalPosition{X: p.X, Y: p.Y}
+	index := graphics.CoordManager.LogicalToIndex(logicalPos)
 	oldTile := gm.Tiles[index]
 
 	if len(c.Path) > 1 {
@@ -103,7 +92,8 @@ func (c *Creature) UpdatePosition(gm *worldmap.GameMap, currentPosition *common.
 		c.Path = c.Path[:0]
 	}
 
-	index = graphics.CoordTransformer.IndexFromLogicalXY(p.X, p.Y)
+	logicalPos = graphics.LogicalPosition{X: p.X, Y: p.Y}
+	index = graphics.CoordManager.LogicalToIndex(logicalPos)
 
 	nextTile := gm.Tiles[index]
 
@@ -133,31 +123,3 @@ func (c *Creature) DisplayString(e *ecs.Entity) string {
 	return result
 }
 
-// Todo remove later. This is currently a duplicate - also in resourcemanager
-// Here to avoid circular imports
-func RemoveEntity(world *ecs.Manager, gm *worldmap.GameMap, e *ecs.Entity) {
-
-	attr := common.GetComponentType[*common.Attributes](e, common.AttributeComponent)
-
-	if attr.CurrentHealth > 0 {
-		return
-	}
-
-	pos := common.GetPosition(e) //Todo replace pos with position from pos tracker
-
-	fmt.Println("Starting length ", len(trackers.CreatureTracker.PosTracker))
-	trackers.CreatureTracker.Remove(e)
-
-	ind := graphics.CoordTransformer.IndexFromLogicalXY(pos.X, pos.Y)
-	gm.Tiles[ind].Blocked = false
-
-	timesystem.TurnManager.ActionDispatcher.RemoveActionQueueForEntity(e)
-	world.DisposeEntity(e)
-	NumMonstersOnMap--
-	if NumMonstersOnMap == -1 {
-		NumMonstersOnMap = 0
-	}
-
-	fmt.Println("Ending length ", len(trackers.CreatureTracker.PosTracker))
-
-}

@@ -25,7 +25,9 @@ func PlayerDebugActions(pl *avatar.PlayerData) {
 			gridY = int(math.Round(float64(logicalY) / float64(graphics.ScreenInfo.TileSize)))
 
 		} else {
-			gridX, gridY = graphics.CoordTransformer.LogicalXYFromPixels(cursorX, cursorY)
+			pixelPos := graphics.PixelPosition{X: cursorX, Y: cursorY}
+			logicalPos := graphics.CoordManager.PixelToLogical(pixelPos)
+			gridX, gridY = logicalPos.X, logicalPos.Y
 		}
 
 		pl.Pos.X = gridX

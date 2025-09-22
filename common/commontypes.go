@@ -12,7 +12,7 @@ type StringDisplay interface {
 // Implementation looks like this
 // //func (t *Throwable) CreateWithQuality(q common.QualityType) {
 // ...}
-// Which means that we are changing a refernece. Not the best implementation, since it
+// Which means that we are changing a reference. Not the best implementation, since it
 // Requires us to create an object first. Todo change that in the future. Maybe use a factory?
 type Quality interface {
 	CreateWithQuality(q QualityType)

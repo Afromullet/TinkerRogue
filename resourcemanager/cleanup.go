@@ -1,11 +1,9 @@
 package resmanager
 
 import (
-	"fmt"
 	"game_main/common"
 	"game_main/graphics"
 	"game_main/monsters"
-	"game_main/timesystem"
 	"game_main/trackers"
 	"game_main/worldmap"
 
@@ -22,20 +20,17 @@ func RemoveEntity(world *ecs.Manager, gm *worldmap.GameMap, e *ecs.Entity) {
 
 	pos := common.GetPosition(e) //Todo replace pos with position from pos tracker
 
-	fmt.Println("Starting length ", len(trackers.CreatureTracker.PosTracker))
 	trackers.CreatureTracker.Remove(e)
 
-	ind := graphics.CoordTransformer.IndexFromLogicalXY(pos.X, pos.Y)
+	logicalPos := graphics.LogicalPosition{X: pos.X, Y: pos.Y}
+	ind := graphics.CoordManager.LogicalToIndex(logicalPos)
 	gm.Tiles[ind].Blocked = false
 
-	timesystem.TurnManager.ActionDispatcher.RemoveActionQueueForEntity(e)
 	world.DisposeEntity(e)
 	monsters.NumMonstersOnMap--
 	if monsters.NumMonstersOnMap == -1 {
 		monsters.NumMonstersOnMap = 0
 	}
-
-	fmt.Println("Ending length ", len(trackers.CreatureTracker.PosTracker))
 
 }
 

@@ -1,7 +1,6 @@
 package gui
 
 import (
-	"fmt"
 	"game_main/common"
 	"game_main/graphics"
 	"game_main/monsters"
@@ -101,11 +100,11 @@ func CreateInfoUI(ecsmanager *common.EntityManager, ui *ebitenui.UI) InfoUI {
 		widget.WindowOpts.MinSize(500, 500),
 
 		widget.WindowOpts.MoveHandler(func(args *widget.WindowChangedEventArgs) {
-			fmt.Println("Window Moving")
+			// Window moved
 		}),
 		//Set the callback that triggers when a resize is complete
 		widget.WindowOpts.ResizeHandler(func(args *widget.WindowChangedEventArgs) {
-			fmt.Println("Window Resized")
+			// Window resized
 		}),
 	)
 
@@ -135,11 +134,11 @@ func CreateInfoUI(ecsmanager *common.EntityManager, ui *ebitenui.UI) InfoUI {
 		widget.WindowOpts.MinSize(500, 500),
 
 		widget.WindowOpts.MoveHandler(func(args *widget.WindowChangedEventArgs) {
-			fmt.Println("Window Moving")
+			// Window moved
 		}),
 		//Set the callback that triggers when a resize is complete
 		widget.WindowOpts.ResizeHandler(func(args *widget.WindowChangedEventArgs) {
-			fmt.Println("Window Resized")
+			// Window resized
 		}),
 	)
 
@@ -236,8 +235,9 @@ func addInfoListHandler(li *widget.List, em *common.EntityManager, info *InfoUI)
 		a := args.(*widget.ListEntrySelectedEventArgs)
 		entry := a.Entry
 
-		x, y := graphics.CoordTransformer.LogicalXYFromPixels(info.windowX, info.windowY)
-		pos := common.Position{X: x, Y: y}
+		pixelPos := graphics.PixelPosition{X: info.windowX, Y: info.windowY}
+		logicalPos := graphics.CoordManager.PixelToLogical(pixelPos)
+		pos := common.Position{X: logicalPos.X, Y: logicalPos.Y} // Direct conversion, avoiding compatibility layer
 
 		if a.Entry == LookAtCreatureOpt {
 
@@ -253,12 +253,10 @@ func addInfoListHandler(li *widget.List, em *common.EntityManager, info *InfoUI)
 				info.DisplayInfoTextArea.SetText(creature.DisplayString(ent))
 			}
 
-			fmt.Println("Looking at creature")
-		} else if a.Entry == LookAtTileOpt {
-			fmt.Println("Looking at tile")
+			// Examining creature
+		} else if entry == LookAtTileOpt {
+			// Examining tile
 		}
-
-		fmt.Println(entry)
 
 	})
 

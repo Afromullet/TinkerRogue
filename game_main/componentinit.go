@@ -1,12 +1,10 @@
 package main
 
 import (
-	"game_main/behavior"
 	"game_main/common"
 	"game_main/gear"
 	"game_main/monsters"
 	"game_main/rendering"
-	"game_main/timesystem"
 
 	"github.com/bytearena/ecs"
 )
@@ -36,10 +34,7 @@ func InitializeECS(ecsmanager *common.EntityManager) {
 	messengers := ecs.BuildTag(common.UserMsgComponent)
 	tags["messengers"] = messengers
 
-	behavior.InitializeMovementComponents(manager, tags)
 	gear.InitializeItemComponents(manager, tags)
-
-	timesystem.ActionQueueComponent = manager.NewComponent()
 
 	InitializeCreatureComponents(manager, tags)
 
@@ -50,9 +45,6 @@ func InitializeECS(ecsmanager *common.EntityManager) {
 func InitializeCreatureComponents(manager *ecs.Manager, tags map[string]ecs.Tag) {
 
 	monsters.CreatureComponent = manager.NewComponent()
-
-	behavior.ChargeAttackComp = manager.NewComponent()
-	behavior.RangeAttackBehaviorComp = manager.NewComponent()
 
 	creatures := ecs.BuildTag(monsters.CreatureComponent, common.PositionComponent, common.AttributeComponent)
 	tags["monsters"] = creatures

@@ -1,8 +1,6 @@
 package common
 
 import (
-	"fmt"
-
 	"github.com/bytearena/ecs"
 )
 
@@ -13,20 +11,20 @@ var (
 	UserMsgComponent   *ecs.Component //I can probably remove this later
 )
 
-// Wrapper around the ECS libraries manager and tags.
+// EntityManager wraps the ECS library's manager and provides centralized entity and tag management.
 type EntityManager struct {
 	World     *ecs.Manager
 	WorldTags map[string]ecs.Tag
 }
 
-// A wrapper around the ECS libraries GetComponentData.
-// It makes it a littel bit less tedious to get the struct assocaited with a component
+// GetComponentType retrieves a component of type T from an entity.
+// It provides type-safe component access with panic recovery for missing components.
 func GetComponentType[T any](entity *ecs.Entity, component *ecs.Component) T {
 
 	defer func() {
 		if r := recover(); r != nil {
 
-			fmt.Println("Error in passing the component type. Component type must match struct.")
+			// ERROR HANDLING IN FUTURE
 
 		}
 	}()
@@ -41,7 +39,8 @@ func GetComponentType[T any](entity *ecs.Entity, component *ecs.Component) T {
 
 }
 
-// Calculate the Chebshev distance between two entities. Both entities need a position component
+// DistanceBetween calculates the Chebyshev distance between two entities.
+// Both entities must have position components for this function to work correctly.
 func DistanceBetween(e1 *ecs.Entity, e2 *ecs.Entity) int {
 
 	pos1 := GetPosition(e1)
@@ -51,17 +50,21 @@ func DistanceBetween(e1 *ecs.Entity, e2 *ecs.Entity) int {
 
 }
 
-// Getters for components which are referenced frequently.
+// GetAttributes returns the Attributes component from an entity.
+// This is a convenience function for frequently accessed components.
 func GetAttributes(e *ecs.Entity) *Attributes {
 	return GetComponentType[*Attributes](e, AttributeComponent)
 }
 
+// GetPosition returns the Position component from an entity.
+// This is a convenience function for frequently accessed components.
 func GetPosition(e *ecs.Entity) *Position {
 	return GetComponentType[*Position](e, PositionComponent)
 }
 
-// Todo need a better way to handle this rather than searching all monsters
-
+// GetCreatureAtPosition finds and returns the first monster entity at the specified position.
+// Returns nil if no creature is found at that position.
+// TODO: Optimize this to avoid searching all monsters every time.
 func GetCreatureAtPosition(ecsmnager *EntityManager, pos *Position) *ecs.Entity {
 
 	var e *ecs.Entity = nil

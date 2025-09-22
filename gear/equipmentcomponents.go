@@ -3,6 +3,7 @@ package gear
 import (
 	"game_main/common"
 	"game_main/graphics"
+	"game_main/randgen"
 
 	"strconv"
 
@@ -52,7 +53,7 @@ func (w *MeleeWeapon) DisplayString() string {
 
 func (w MeleeWeapon) CalculateDamage() int {
 
-	return GetRandomBetween(w.MinDamage, w.MaxDamage)
+	return randgen.GetRandomBetween(w.MinDamage, w.MaxDamage)
 
 }
 
@@ -83,15 +84,15 @@ func (w *RangedWeapon) DisplayString() string {
 // todo add ammo to this
 func (r RangedWeapon) CalculateDamage() int {
 
-	return GetRandomBetween(r.MinDamage, r.MaxDamage)
+	return randgen.GetRandomBetween(r.MinDamage, r.MaxDamage)
 
 }
 
 // Gets all of the targets in the weapons AOE by accessing the TileBasedShape
-// Todo, use the PositionTracker so we don't have to itereate through all of the monsters
+// Todo, use the PositionTracker so we don't have to iterate through all of the monsters
 func (r RangedWeapon) GetTargets(ecsmanger *common.EntityManager) []*ecs.Entity {
 
-	pos := graphics.GetTilePositions(r.TargetArea.GetIndices(), graphics.ScreenInfo.DungeonWidth)
+	pos := graphics.CoordManager.GetTilePositionsAsCommon(r.TargetArea.GetIndices())
 	targets := make([]*ecs.Entity, 0)
 
 	//TODO, this will be slow in case there are a lot of creatures
@@ -115,8 +116,12 @@ func (r RangedWeapon) GetTargets(ecsmanger *common.EntityManager) []*ecs.Entity 
 // Todo determine whether this can be moved to the graphics package
 func (r *RangedWeapon) DisplayShootingVX(attackerPos *common.Position, defenderPos *common.Position) {
 
-	attX, attY := graphics.CoordTransformer.PixelsFromLogicalXY(attackerPos.X, attackerPos.Y)
-	defX, defY := graphics.CoordTransformer.PixelsFromLogicalXY(defenderPos.X, defenderPos.Y)
+	attackerLogical := graphics.LogicalPosition{X: attackerPos.X, Y: attackerPos.Y}
+	defenderLogical := graphics.LogicalPosition{X: defenderPos.X, Y: defenderPos.Y}
+	attackerPixel := graphics.CoordManager.LogicalToPixel(attackerLogical)
+	defenderPixel := graphics.CoordManager.LogicalToPixel(defenderLogical)
+	attX, attY := attackerPixel.X, attackerPixel.Y
+	defX, defY := defenderPixel.X, defenderPixel.Y
 
 	arr := graphics.NewProjectile(attX, attY, defX, defY)
 

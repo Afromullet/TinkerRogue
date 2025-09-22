@@ -6,14 +6,14 @@ import (
 	cryptorand "crypto/rand"
 )
 
-// Todo remove later once you change teh random number generation. The same function is in another aprt of the code
+// GetDiceRoll returns a random number between 1 and num (inclusive)
 func GetDiceRoll(num int) int {
 	x, _ := cryptorand.Int(cryptorand.Reader, big.NewInt(int64(num)))
 	return int(x.Int64()) + 1
 
 }
 
-// Todo remove later once you change teh random number generation. The same function is in another aprt of the code
+// GetRandomBetween returns a random number between low and high (inclusive)
 func GetRandomBetween(low int, high int) int {
 	var randy int = -1
 	for {

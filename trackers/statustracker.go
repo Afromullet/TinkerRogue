@@ -10,12 +10,7 @@ type StatusEffectTracker struct {
 }
 
 func (s *StatusEffectTracker) Add(e gear.StatusEffects) {
-
-	// Really don't like the way this is done.
-	// Since Throwable is an effect, we have to check to make sure it isn't added
-	if gear.THROWABLE_NAME == e.StatusEffectName() {
-		return
-	}
+	// Throwables are now actions, not status effects, so no special handling needed
 
 	if s.ActiveEffects == nil {
 
