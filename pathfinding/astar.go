@@ -6,6 +6,7 @@ package pathfinding
 import (
 	"errors"
 	"game_main/common"
+	"game_main/coords"
 	"game_main/graphics"
 	"game_main/worldmap"
 	"reflect"
@@ -17,7 +18,7 @@ import (
 // f is the total cost (g + h).
 type node struct {
 	Parent   *node
-	Position *common.Position
+	Position *coords.LogicalPosition
 	g        int
 	h        int
 	f        int
@@ -30,7 +31,7 @@ func (n *node) isEqual(other *node) bool {
 
 // newNode creates a new pathfinding node with the given parent and position.
 // Initializes all cost values to zero.
-func newNode(parent *node, position *common.Position) *node {
+func newNode(parent *node, position *coords.LogicalPosition) *node {
 	n := node{}
 	n.Parent = parent
 	n.Position = position
@@ -134,8 +135,8 @@ func (as AStar) GetPath(gameMap worldmap.GameMap, start *common.Position, end *c
 		//Now we get each node in the four cardinal directions
 		//Note:  If you wish to add Diagonal movement, you can do so by getting all 8 positions
 		if currentNode.Position.Y > 0 {
-			logicalPos := graphics.LogicalPosition{X: currentNode.Position.X, Y: currentNode.Position.Y - 1}
-			tile := gameMap.Tiles[graphics.CoordManager.LogicalToIndex(logicalPos)]
+			logicalPos := coords.LogicalPosition{X: currentNode.Position.X, Y: currentNode.Position.Y - 1}
+			tile := gameMap.Tiles[coords.CoordManager.LogicalToIndex(logicalPos)]
 			if ignoreWalls || tile.TileType != worldmap.WALL {
 				//The location is in the map bounds and is walkable
 				upNodePosition := common.Position{
@@ -149,8 +150,8 @@ func (as AStar) GetPath(gameMap worldmap.GameMap, start *common.Position, end *c
 
 		}
 		if currentNode.Position.Y < graphics.ScreenInfo.DungeonHeight {
-			logicalPos := graphics.LogicalPosition{X: currentNode.Position.X, Y: currentNode.Position.Y + 1}
-			tile := gameMap.Tiles[graphics.CoordManager.LogicalToIndex(logicalPos)]
+			logicalPos := coords.LogicalPosition{X: currentNode.Position.X, Y: currentNode.Position.Y + 1}
+			tile := gameMap.Tiles[coords.CoordManager.LogicalToIndex(logicalPos)]
 			if ignoreWalls || tile.TileType != worldmap.WALL {
 				//The location is in the map bounds and is walkable
 				downNodePosition := common.Position{
@@ -164,8 +165,8 @@ func (as AStar) GetPath(gameMap worldmap.GameMap, start *common.Position, end *c
 
 		}
 		if currentNode.Position.X > 0 {
-			logicalPos := graphics.LogicalPosition{X: currentNode.Position.X - 1, Y: currentNode.Position.Y}
-			tile := gameMap.Tiles[graphics.CoordManager.LogicalToIndex(logicalPos)]
+			logicalPos := coords.LogicalPosition{X: currentNode.Position.X - 1, Y: currentNode.Position.Y}
+			tile := gameMap.Tiles[coords.CoordManager.LogicalToIndex(logicalPos)]
 			if ignoreWalls || tile.TileType != worldmap.WALL {
 				//The location is in the map bounds and is walkable
 				leftNodePosition := common.Position{
@@ -179,8 +180,8 @@ func (as AStar) GetPath(gameMap worldmap.GameMap, start *common.Position, end *c
 
 		}
 		if currentNode.Position.X < graphics.ScreenInfo.DungeonWidth {
-			logicalPos := graphics.LogicalPosition{X: currentNode.Position.X + 1, Y: currentNode.Position.Y}
-			tile := gameMap.Tiles[graphics.CoordManager.LogicalToIndex(logicalPos)]
+			logicalPos := coords.LogicalPosition{X: currentNode.Position.X + 1, Y: currentNode.Position.Y}
+			tile := gameMap.Tiles[coords.CoordManager.LogicalToIndex(logicalPos)]
 			if ignoreWalls && tile.TileType != worldmap.WALL {
 				//The location is in the map bounds and is walkable
 				rightNodePosition := common.Position{

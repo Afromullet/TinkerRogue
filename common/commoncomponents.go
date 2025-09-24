@@ -2,45 +2,23 @@ package common
 
 import (
 	"fmt"
-	"math"
+	"game_main/coords"
 )
+
+// Position is an alias for coords.LogicalPosition to maintain backward compatibility
+// This allows existing code to continue using common.Position while the coordinate
+// system has been moved to the coords package.
+type Position = coords.LogicalPosition
 
 type Name struct {
 	NameStr string
 }
 
-type Position struct {
-	X int
-	Y int
-}
 
 type UserMessage struct {
 	AttackMessage       string
 	GameStateMessage    string
 	StatusEffectMessage string
-}
-
-func (p *Position) IsEqual(other *Position) bool {
-	return (p.X == other.X && p.Y == other.Y)
-}
-
-func (p *Position) ManhattanDistance(other *Position) int {
-	xDist := math.Abs(float64(p.X - other.X))
-	yDist := math.Abs(float64(p.Y - other.Y))
-	return int(xDist) + int(yDist)
-}
-
-func (p *Position) ChebyshevDistance(other *Position) int {
-	xDist := math.Abs(float64(p.X - other.X))
-	yDist := math.Abs(float64(p.Y - other.Y))
-	return int(math.Max(xDist, yDist))
-}
-
-// Todo determine what kind of distance function you want to use
-func (p *Position) InRange(other *Position, distance int) bool {
-
-	return p.ManhattanDistance(other) <= distance
-
 }
 
 type Attributes struct {

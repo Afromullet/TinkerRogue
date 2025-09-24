@@ -4,8 +4,8 @@ import (
 	"game_main/avatar"
 
 	"game_main/common"
+	"game_main/coords"
 	"game_main/entitytemplates"
-	"game_main/graphics"
 
 	//"game_main/entitytemplates"
 
@@ -31,7 +31,7 @@ func SpawnMonster(ecsmanager common.EntityManager, gm *worldmap.GameMap) {
 
 			if !gm.Tiles[index].Blocked {
 
-				logicalPos := graphics.CoordManager.IndexToLogical(index)
+				logicalPos := coords.CoordManager.IndexToLogical(index)
 
 				entitytemplates.CreateCreatureFromTemplate(ecsmanager, entitytemplates.MonsterTemplates[0], gm, logicalPos.X, logicalPos.Y)
 				gm.Tiles[index].Blocked = true

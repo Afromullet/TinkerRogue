@@ -5,6 +5,7 @@ package rendering
 
 import (
 	"game_main/common"
+	"game_main/coords"
 	"game_main/graphics"
 	"game_main/worldmap"
 
@@ -31,16 +32,16 @@ func ProcessRenderables(ecsmanager *common.EntityManager, gameMap worldmap.GameM
 
 		if debugMode {
 
-			logicalPos := graphics.LogicalPosition{X: pos.X, Y: pos.Y}
-			index := graphics.CoordManager.LogicalToIndex(logicalPos)
+			logicalPos := coords.LogicalPosition{X: pos.X, Y: pos.Y}
+			index := coords.CoordManager.LogicalToIndex(logicalPos)
 			tile := gameMap.Tiles[index]
 			op := &ebiten.DrawImageOptions{}
 			op.GeoM.Translate(float64(tile.PixelX), float64(tile.PixelY))
 			screen.DrawImage(img, op)
 
 		} else if gameMap.PlayerVisible.IsVisible(pos.X, pos.Y) {
-			logicalPos := graphics.LogicalPosition{X: pos.X, Y: pos.Y}
-			index := graphics.CoordManager.LogicalToIndex(logicalPos)
+			logicalPos := coords.LogicalPosition{X: pos.X, Y: pos.Y}
+			index := coords.CoordManager.LogicalToIndex(logicalPos)
 			tile := gameMap.Tiles[index]
 			op := &ebiten.DrawImageOptions{}
 			op.GeoM.Translate(float64(tile.PixelX), float64(tile.PixelY))
@@ -53,7 +54,7 @@ func ProcessRenderables(ecsmanager *common.EntityManager, gameMap worldmap.GameM
 func ProcessRenderablesInSquare(ecsmanager *common.EntityManager, gameMap worldmap.GameMap, screen *ebiten.Image, playerPos *common.Position, squareSize int, debugMode bool) {
 	// Calculate the starting and ending coordinates of the square
 
-	sq := graphics.NewDrawableSection(playerPos.X, playerPos.Y, squareSize)
+	sq := coords.NewDrawableSection(playerPos.X, playerPos.Y, squareSize)
 
 	// Get the dimensions of the screen
 	screenWidth, screenHeight := screen.Bounds().Dx(), screen.Bounds().Dy()
@@ -77,8 +78,8 @@ func ProcessRenderablesInSquare(ecsmanager *common.EntityManager, gameMap worldm
 		if pos.X >= sq.StartX && pos.X <= sq.EndX && pos.Y >= sq.StartY && pos.Y <= sq.EndY {
 			// Calculate the tile's pixel position
 
-			logicalPos := graphics.LogicalPosition{X: pos.X, Y: pos.Y}
-			ind := graphics.CoordManager.LogicalToIndex(logicalPos)
+			logicalPos := coords.LogicalPosition{X: pos.X, Y: pos.Y}
+			ind := coords.CoordManager.LogicalToIndex(logicalPos)
 			tilePixelX := gameMap.Tiles[ind].PixelX
 			tilePixelY := gameMap.Tiles[ind].PixelY
 

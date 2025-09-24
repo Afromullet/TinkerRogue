@@ -4,6 +4,7 @@ import (
 	"game_main/avatar"
 	"game_main/combat"
 	"game_main/common"
+	"game_main/coords"
 	"game_main/gear"
 	"game_main/graphics"
 	"game_main/gui"
@@ -170,10 +171,10 @@ func (cc *CombatController) drawRangedAttackAOE() {
 	indices = s.GetIndices()
 
 	for _, i := range indices {
-		logicalPos := graphics.CoordManager.IndexToLogical(i)
-		playerLogicalPos := graphics.LogicalPosition{X: cc.playerData.Pos.X, Y: cc.playerData.Pos.Y}
+		logicalPos := coords.CoordManager.IndexToLogical(i)
+		playerLogicalPos := coords.LogicalPosition{X: cc.playerData.Pos.X, Y: cc.playerData.Pos.Y}
 
-		if logicalPos.InRange(playerLogicalPos, cc.playerData.Equipment.RangedWeaponMaxDistance) {
+		if logicalPos.InRange(&playerLogicalPos, cc.playerData.Equipment.RangedWeaponMaxDistance) {
 			cc.gameMap.ApplyColorMatrixToIndex(i, graphics.GreenColorMatrix)
 		} else {
 			cc.gameMap.ApplyColorMatrixToIndex(i, graphics.RedColorMatrix)
@@ -205,10 +206,10 @@ func (cc *CombatController) drawThrowableAOE() {
 	indices = s.GetIndices()
 
 	for _, i := range indices {
-		logicalPos := graphics.CoordManager.IndexToLogical(i)
-		playerLogicalPos := graphics.LogicalPosition{X: cc.playerData.Pos.X, Y: cc.playerData.Pos.Y}
+		logicalPos := coords.CoordManager.IndexToLogical(i)
+		playerLogicalPos := coords.LogicalPosition{X: cc.playerData.Pos.X, Y: cc.playerData.Pos.Y}
 
-		if logicalPos.InRange(playerLogicalPos, throwable.ThrowingRange) {
+		if logicalPos.InRange(&playerLogicalPos, throwable.ThrowingRange) {
 			cc.gameMap.ApplyColorMatrixToIndex(i, graphics.GreenColorMatrix)
 		} else {
 			cc.gameMap.ApplyColorMatrixToIndex(i, graphics.RedColorMatrix)
@@ -233,7 +234,7 @@ func (cc *CombatController) applyThrowable(item *gear.Item, shape graphics.TileB
 		curPos := c.Components[common.PositionComponent].(*common.Position)
 		crea := c.Components[monsters.CreatureComponent].(*monsters.Creature)
 
-		pos := graphics.CoordManager.GetTilePositionsAsCommon(t.Shape.GetIndices())
+		pos := coords.CoordManager.GetTilePositionsAsCommon(t.Shape.GetIndices())
 		for _, p := range pos {
 			if curPos.IsEqual(&p) && curPos.InRange(throwerPos, t.ThrowingRange) {
 				// Apply individual effects instead of the entire properties entity

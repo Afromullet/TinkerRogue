@@ -2,6 +2,7 @@ package gear
 
 import (
 	"game_main/common"
+	"game_main/coords"
 	"game_main/graphics"
 	"math/rand"
 
@@ -66,7 +67,7 @@ func (t *ThrowableAction) Execute(targetPos *common.Position, sourcePos *common.
 	}
 
 	// Get positions affected by the shape
-	affectedPositions := graphics.CoordManager.GetTilePositionsAsCommon(t.Shape.GetIndices())
+	affectedPositions := coords.CoordManager.GetTilePositionsAsCommon(t.Shape.GetIndices())
 	appliedEffects := make([]StatusEffects, 0)
 
 	// Apply effects to monsters in affected area
@@ -143,8 +144,8 @@ func (t *ThrowableAction) CreateWithQuality(q common.QualityType) {
 // InRange checks if the action can reach the target position (legacy method for compatibility)
 func (t *ThrowableAction) InRange(endPos *common.Position) bool {
 	pixelX, pixelY := t.Shape.StartPositionPixels()
-	pixelPos := graphics.PixelPosition{X: pixelX, Y: pixelY}
-	logicalPos := graphics.CoordManager.PixelToLogical(pixelPos)
+	pixelPos := coords.PixelPosition{X: pixelX, Y: pixelY}
+	logicalPos := coords.CoordManager.PixelToLogical(pixelPos)
 	startPos := common.Position{X: logicalPos.X, Y: logicalPos.Y}
 
 	return endPos.InRange(&startPos, t.ThrowingRange)

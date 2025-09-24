@@ -2,6 +2,7 @@ package gear
 
 import (
 	"game_main/common"
+	"game_main/coords"
 	"game_main/graphics"
 	"game_main/randgen"
 
@@ -92,7 +93,7 @@ func (r RangedWeapon) CalculateDamage() int {
 // Todo, use the PositionTracker so we don't have to iterate through all of the monsters
 func (r RangedWeapon) GetTargets(ecsmanger *common.EntityManager) []*ecs.Entity {
 
-	pos := graphics.CoordManager.GetTilePositionsAsCommon(r.TargetArea.GetIndices())
+	pos := coords.CoordManager.GetTilePositionsAsCommon(r.TargetArea.GetIndices())
 	targets := make([]*ecs.Entity, 0)
 
 	//TODO, this will be slow in case there are a lot of creatures
@@ -116,10 +117,10 @@ func (r RangedWeapon) GetTargets(ecsmanger *common.EntityManager) []*ecs.Entity 
 // Todo determine whether this can be moved to the graphics package
 func (r *RangedWeapon) DisplayShootingVX(attackerPos *common.Position, defenderPos *common.Position) {
 
-	attackerLogical := graphics.LogicalPosition{X: attackerPos.X, Y: attackerPos.Y}
-	defenderLogical := graphics.LogicalPosition{X: defenderPos.X, Y: defenderPos.Y}
-	attackerPixel := graphics.CoordManager.LogicalToPixel(attackerLogical)
-	defenderPixel := graphics.CoordManager.LogicalToPixel(defenderLogical)
+	attackerLogical := coords.LogicalPosition{X: attackerPos.X, Y: attackerPos.Y}
+	defenderLogical := coords.LogicalPosition{X: defenderPos.X, Y: defenderPos.Y}
+	attackerPixel := coords.CoordManager.LogicalToPixel(attackerLogical)
+	defenderPixel := coords.CoordManager.LogicalToPixel(defenderLogical)
 	attX, attY := attackerPixel.X, attackerPixel.Y
 	defX, defY := defenderPixel.X, defenderPixel.Y
 

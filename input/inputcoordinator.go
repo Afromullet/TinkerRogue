@@ -6,13 +6,13 @@ package input
 import (
 	"game_main/avatar"
 	"game_main/common"
-	"game_main/graphics"
+	"game_main/coords"
 	"game_main/gui"
 	"game_main/worldmap"
 )
 
 type SharedInputState struct {
-	PrevCursor           graphics.PixelPosition
+	PrevCursor           coords.PixelPosition
 	PrevThrowInds        []int
 	PrevRangedAttInds    []int
 	PrevTargetLineInds   []int
@@ -21,7 +21,7 @@ type SharedInputState struct {
 
 func NewSharedInputState() *SharedInputState {
 	return &SharedInputState{
-		PrevCursor:         graphics.PixelPosition{X: -1, Y: -1},
+		PrevCursor:         coords.PixelPosition{X: -1, Y: -1},
 		PrevThrowInds:      make([]int, 0),
 		PrevRangedAttInds:  make([]int, 0),
 		PrevTargetLineInds: make([]int, 0),

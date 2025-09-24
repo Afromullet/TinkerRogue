@@ -2,7 +2,7 @@ package resmanager
 
 import (
 	"game_main/common"
-	"game_main/graphics"
+	"game_main/coords"
 	"game_main/monsters"
 	"game_main/trackers"
 	"game_main/worldmap"
@@ -22,8 +22,8 @@ func RemoveEntity(world *ecs.Manager, gm *worldmap.GameMap, e *ecs.Entity) {
 
 	trackers.CreatureTracker.Remove(e)
 
-	logicalPos := graphics.LogicalPosition{X: pos.X, Y: pos.Y}
-	ind := graphics.CoordManager.LogicalToIndex(logicalPos)
+	logicalPos := coords.LogicalPosition{X: pos.X, Y: pos.Y}
+	ind := coords.CoordManager.LogicalToIndex(logicalPos)
 	gm.Tiles[ind].Blocked = false
 
 	world.DisposeEntity(e)

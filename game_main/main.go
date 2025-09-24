@@ -83,8 +83,8 @@ func NewGame() *Game {
 	testing.InitTestActionManager(&g.em, &g.playerData)
 
 	/*
-		logicalPos := graphics.LogicalPosition{X: g.playerData.Pos.X, Y: g.playerData.Pos.Y}
-		pixelPos := graphics.CoordManager.LogicalToPixel(logicalPos)
+		logicalPos := coords.LogicalPosition{X: g.playerData.Pos.X, Y: g.playerData.Pos.Y}
+		pixelPos := coords.CoordManager.LogicalToPixel(logicalPos)
 		pX, pY := pixelPos.X, pixelPos.Y
 
 		pos := g.gameMap.UnblockedLogicalCoords(pX, pY, 10)
@@ -204,7 +204,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 /*
 // Layout will return the screen dimensions.
 func (g *Game) Layout(w, h int) (int, int) {
-	gd := graphics.NewScreenData()
+	gd := coords.NewScreenData()
 	//return gd.TileWidth * gd.DungeonWidth, gd.TileHeight * gd.DungeonHeight
 	return gd.TileWidth * gd.DungeonWidth, gd.TileHeight * gd.DungeonHeight
 

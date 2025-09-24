@@ -2,6 +2,7 @@ package gui
 
 import (
 	"game_main/common"
+	"game_main/coords"
 	"game_main/graphics"
 	"game_main/monsters"
 
@@ -235,8 +236,8 @@ func addInfoListHandler(li *widget.List, em *common.EntityManager, info *InfoUI)
 		a := args.(*widget.ListEntrySelectedEventArgs)
 		entry := a.Entry
 
-		pixelPos := graphics.PixelPosition{X: info.windowX, Y: info.windowY}
-		logicalPos := graphics.CoordManager.PixelToLogical(pixelPos)
+		pixelPos := coords.PixelPosition{X: info.windowX, Y: info.windowY}
+		logicalPos := coords.CoordManager.PixelToLogical(pixelPos)
 		pos := common.Position{X: logicalPos.X, Y: logicalPos.Y} // Direct conversion, avoiding compatibility layer
 
 		if a.Entry == LookAtCreatureOpt {

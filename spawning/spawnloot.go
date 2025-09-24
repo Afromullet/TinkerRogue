@@ -6,6 +6,7 @@ package spawning
 import (
 	"game_main/avatar"
 	"game_main/common"
+	"game_main/coords"
 	"game_main/entitytemplates"
 	"game_main/gear"
 	"game_main/graphics"
@@ -166,8 +167,8 @@ func SpawnLootAroundPlayer(currentTurnNumber int, playerData avatar.PlayerData, 
 
 	}
 
-	logicalPos := graphics.LogicalPosition{X: playerData.Pos.X, Y: playerData.Pos.Y}
-	pixelPos := graphics.CoordManager.LogicalToPixel(logicalPos)
+	logicalPos := coords.LogicalPosition{X: playerData.Pos.X, Y: playerData.Pos.Y}
+	pixelPos := coords.CoordManager.LogicalToPixel(logicalPos)
 	playerX, playerY := pixelPos.X, pixelPos.Y
 	spawnPositions := gm.UnblockedLogicalCoords(playerX, playerY, 10)
 	consChance, throwableChance, rangedWepChance := rand.Intn(100), rand.Intn(100), rand.Intn(100)

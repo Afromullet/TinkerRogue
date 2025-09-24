@@ -7,6 +7,7 @@ import (
 	"errors"
 
 	"game_main/common"
+	"game_main/coords"
 	"game_main/graphics"
 
 	"game_main/randgen"
@@ -158,8 +159,8 @@ func GoDownStairs(gm *GameMap) {
 
 func (gameMap *GameMap) Tile(pos *common.Position) *Tile {
 
-	logicalPos := graphics.LogicalPosition{X: pos.X, Y: pos.Y}
-	index := graphics.CoordManager.LogicalToIndex(logicalPos)
+	logicalPos := coords.LogicalPosition{X: pos.X, Y: pos.Y}
+	index := coords.CoordManager.LogicalToIndex(logicalPos)
 	return gameMap.Tiles[index]
 
 }
@@ -216,7 +217,7 @@ func (gameMap *GameMap) RemoveItemFromTile(index int, pos *common.Position) (*ec
 func (gameMap *GameMap) DrawLevelCenteredSquare(screen *ebiten.Image, playerPos *common.Position, size int, revealAllTiles bool) {
 
 	var cs = ebiten.ColorScale{}
-	sq := graphics.NewDrawableSection(playerPos.X, playerPos.Y, size)
+	sq := coords.NewDrawableSection(playerPos.X, playerPos.Y, size)
 
 	//centerOffsetX, centerOffsetY := graphics.CenterOffset(playerPos.X, playerPos.Y)
 
@@ -227,8 +228,8 @@ func (gameMap *GameMap) DrawLevelCenteredSquare(screen *ebiten.Image, playerPos 
 	// Draw the square section centered on the screen
 	for x := sq.StartX; x <= sq.EndX; x++ {
 		for y := sq.StartY; y <= sq.EndY; y++ {
-			logicalPos := graphics.LogicalPosition{X: x, Y: y}
-			idx := graphics.CoordManager.LogicalToIndex(logicalPos)
+			logicalPos := coords.LogicalPosition{X: x, Y: y}
+			idx := coords.CoordManager.LogicalToIndex(logicalPos)
 			tile := gameMap.Tiles[idx]
 
 			isVis := gameMap.PlayerVisible.IsVisible(x, y)
@@ -289,8 +290,8 @@ func (gameMap *GameMap) DrawLevel(screen *ebiten.Image, revealAllTiles bool) {
 		//for y := 0; y < gd.ScreenHeight; y++ {
 		for y := 0; y < graphics.ScreenInfo.DungeonHeight; y++ {
 
-			logicalPos := graphics.LogicalPosition{X: x, Y: y}
-			idx := graphics.CoordManager.LogicalToIndex(logicalPos)
+			logicalPos := coords.LogicalPosition{X: x, Y: y}
+			idx := coords.CoordManager.LogicalToIndex(logicalPos)
 			tile := gameMap.Tiles[idx]
 			isVis := gameMap.PlayerVisible.IsVisible(x, y)
 
@@ -338,8 +339,8 @@ func (gameMap *GameMap) CreateTiles() []*Tile {
 	for x := 0; x < graphics.ScreenInfo.DungeonWidth; x++ {
 		for y := 0; y < graphics.ScreenInfo.DungeonHeight; y++ {
 
-			logicalPos := graphics.LogicalPosition{X: x, Y: y}
-			index = graphics.CoordManager.LogicalToIndex(logicalPos)
+			logicalPos := coords.LogicalPosition{X: x, Y: y}
+			index = coords.CoordManager.LogicalToIndex(logicalPos)
 
 			pos := common.Position{X: x, Y: y}
 			wallImg := wallImgs[randgen.GetRandomBetween(0, len(wallImgs)-1)]
@@ -403,8 +404,8 @@ func (gameMap *GameMap) createRoom(room Rect) {
 	for y := room.Y1 + 1; y < room.Y2; y++ {
 		for x := room.X1 + 1; x < room.X2; x++ {
 
-			logicalPos := graphics.LogicalPosition{X: x, Y: y}
-			index := graphics.CoordManager.LogicalToIndex(logicalPos)
+			logicalPos := coords.LogicalPosition{X: x, Y: y}
+			index := coords.CoordManager.LogicalToIndex(logicalPos)
 			gameMap.Tiles[index].Blocked = false
 			gameMap.Tiles[index].TileType = FLOOR
 
@@ -419,8 +420,8 @@ func (gameMap *GameMap) createRoom(room Rect) {
 func (gameMap *GameMap) createHorizontalTunnel(x1 int, x2 int, y int) {
 
 	for x := min(x1, x2); x < max(x1, x2)+1; x++ {
-		logicalPos := graphics.LogicalPosition{X: x, Y: y}
-		index := graphics.CoordManager.LogicalToIndex(logicalPos)
+		logicalPos := coords.LogicalPosition{X: x, Y: y}
+		index := coords.CoordManager.LogicalToIndex(logicalPos)
 		if index > 0 && index < graphics.ScreenInfo.DungeonWidth*graphics.ScreenInfo.DungeonHeight {
 			gameMap.Tiles[index].Blocked = false
 			gameMap.Tiles[index].TileType = FLOOR
@@ -435,8 +436,8 @@ func (gameMap *GameMap) createHorizontalTunnel(x1 int, x2 int, y int) {
 func (gameMap *GameMap) createVerticalTunnel(y1 int, y2 int, x int) {
 
 	for y := min(y1, y2); y < max(y1, y2)+1; y++ {
-		logicalPos := graphics.LogicalPosition{X: x, Y: y}
-		index := graphics.CoordManager.LogicalToIndex(logicalPos)
+		logicalPos := coords.LogicalPosition{X: x, Y: y}
+		index := coords.CoordManager.LogicalToIndex(logicalPos)
 
 		if index > 0 && index < graphics.ScreenInfo.DungeonWidth*graphics.ScreenInfo.DungeonHeight {
 			gameMap.Tiles[index].Blocked = false
@@ -458,8 +459,8 @@ func (gm *GameMap) PlaceStairs() {
 
 	x, y := gm.Rooms[randRoom].Center()
 
-	logicalPos := graphics.LogicalPosition{X: x, Y: y}
-	ind := graphics.CoordManager.LogicalToIndex(logicalPos)
+	logicalPos := coords.LogicalPosition{X: x, Y: y}
+	ind := coords.CoordManager.LogicalToIndex(logicalPos)
 
 	gm.Tiles[ind].TileType = STAIRS_DOWN
 
@@ -499,8 +500,8 @@ func (gameMap GameMap) InBounds(x, y int) bool {
 // TODO: Change this to check for WALL, not blocked
 // Shouldn't this be a pointer?
 func (gameMap GameMap) IsOpaque(x, y int) bool {
-	logicalPos := graphics.LogicalPosition{X: x, Y: y}
-	idx := graphics.CoordManager.LogicalToIndex(logicalPos)
+	logicalPos := coords.LogicalPosition{X: x, Y: y}
+	idx := coords.CoordManager.LogicalToIndex(logicalPos)
 	return gameMap.Tiles[idx].TileType == WALL
 }
 
@@ -531,7 +532,7 @@ func (gameMap *GameMap) UnblockedLogicalCoords(pixelX, pixelY, size int) []commo
 
 		if !gameMap.Tiles[i].Blocked {
 
-			logicalPos := graphics.CoordManager.IndexToLogical(i)
+			logicalPos := coords.CoordManager.IndexToLogical(i)
 			x, y := logicalPos.X, logicalPos.Y
 			pos = append(pos, common.Position{X: x, Y: y})
 

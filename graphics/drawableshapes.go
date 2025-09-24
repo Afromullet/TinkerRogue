@@ -5,6 +5,7 @@ package graphics
 
 import (
 	"game_main/common"
+	"game_main/coords"
 	"math/rand"
 )
 
@@ -76,7 +77,7 @@ const (
 )
 
 type BaseShape struct {
-	Position   PixelPosition
+	Position   coords.PixelPosition
 	Type       BasicShapeType
 	Size       int              // Primary dimension (radius, length, or width)
 	Width      int              // For rectangles only
@@ -99,7 +100,7 @@ type TileBasedShape interface {
 // ============================================================================
 
 func (s *BaseShape) GetIndices() []int {
-	logical := CoordManager.PixelToLogical(s.Position)
+	logical := coords.CoordManager.PixelToLogical(s.Position)
 
 	switch s.Type {
 	case Circular:
@@ -113,7 +114,7 @@ func (s *BaseShape) GetIndices() []int {
 }
 
 func (s *BaseShape) UpdatePosition(pixelX, pixelY int) {
-	s.Position = PixelPosition{X: pixelX, Y: pixelY}
+	s.Position = coords.PixelPosition{X: pixelX, Y: pixelY}
 }
 
 func (s *BaseShape) StartPositionPixels() (int, int) {
@@ -147,7 +148,7 @@ func NewCircle(pixelX, pixelY int, quality common.QualityType) *BaseShape {
 	}
 
 	return &BaseShape{
-		Position: PixelPosition{X: pixelX, Y: pixelY},
+		Position: coords.PixelPosition{X: pixelX, Y: pixelY},
 		Type:     Circular,
 		Size:     radius,
 		Quality:  quality,
@@ -166,7 +167,7 @@ func NewSquare(pixelX, pixelY int, quality common.QualityType) *BaseShape {
 	}
 
 	return &BaseShape{
-		Position: PixelPosition{X: pixelX, Y: pixelY},
+		Position: coords.PixelPosition{X: pixelX, Y: pixelY},
 		Type:     Rectangular,
 		Size:     size,
 		Width:    size,    // Square: width = height = size
@@ -190,7 +191,7 @@ func NewRectangle(pixelX, pixelY int, quality common.QualityType) *BaseShape {
 	}
 
 	return &BaseShape{
-		Position: PixelPosition{X: pixelX, Y: pixelY},
+		Position: coords.PixelPosition{X: pixelX, Y: pixelY},
 		Type:     Rectangular,
 		Size:     width,   // Primary dimension
 		Width:    width,
@@ -211,7 +212,7 @@ func NewLine(pixelX, pixelY int, direction ShapeDirection, quality common.Qualit
 	}
 
 	return &BaseShape{
-		Position:  PixelPosition{X: pixelX, Y: pixelY},
+		Position:  coords.PixelPosition{X: pixelX, Y: pixelY},
 		Type:      Linear,
 		Size:      length,
 		Direction: &direction,
@@ -231,7 +232,7 @@ func NewCone(pixelX, pixelY int, direction ShapeDirection, quality common.Qualit
 	}
 
 	return &BaseShape{
-		Position:  PixelPosition{X: pixelX, Y: pixelY},
+		Position:  coords.PixelPosition{X: pixelX, Y: pixelY},
 		Type:      Linear,
 		Size:      length,
 		Direction: &direction,
@@ -282,7 +283,7 @@ func (s *BaseShape) calculateCircle(centerX, centerY int) []int {
 	for x := -radius; x <= radius; x++ {
 		for y := -radius; y <= radius; y++ {
 			if x*x + y*y <= radius*radius {
-				indices = append(indices, CoordManager.LogicalToIndex(LogicalPosition{X: centerX+x, Y: centerY+y}))
+				indices = append(indices, coords.CoordManager.LogicalToIndex(coords.LogicalPosition{X: centerX+x, Y: centerY+y}))
 			}
 		}
 	}
@@ -295,7 +296,7 @@ func (s *BaseShape) calculateRectangle(centerX, centerY int) []int {
 	halfHeight := s.Height / 2
 	for x := -halfWidth; x <= halfWidth; x++ {
 		for y := -halfHeight; y <= halfHeight; y++ {
-			indices = append(indices, CoordManager.LogicalToIndex(LogicalPosition{X: centerX+x, Y: centerY+y}))
+			indices = append(indices, coords.CoordManager.LogicalToIndex(coords.LogicalPosition{X: centerX+x, Y: centerY+y}))
 		}
 	}
 	return indices
@@ -308,7 +309,7 @@ func (s *BaseShape) calculateLine(centerX, centerY int) []int {
 	if s.Direction == nil {
 		// Fallback: horizontal line
 		for i := 0; i < length; i++ {
-			indices = append(indices, CoordManager.LogicalToIndex(LogicalPosition{X: centerX+i, Y: centerY}))
+			indices = append(indices, coords.CoordManager.LogicalToIndex(coords.LogicalPosition{X: centerX+i, Y: centerY}))
 		}
 		return indices
 	}
@@ -318,7 +319,7 @@ func (s *BaseShape) calculateLine(centerX, centerY int) []int {
 	for i := 0; i < length; i++ {
 		x := centerX + i*deltaX
 		y := centerY + i*deltaY
-		indices = append(indices, CoordManager.LogicalToIndex(LogicalPosition{X: x, Y: y}))
+		indices = append(indices, coords.CoordManager.LogicalToIndex(coords.LogicalPosition{X: x, Y: y}))
 	}
 
 	return indices
@@ -350,8 +351,8 @@ func DirectionToCoords(direction ShapeDirection) (int, int) {
 
 // GetLineTo creates a line from start position to end position
 func GetLineTo(startPos common.Position, endPos common.Position) []int {
-	startPixelPos := CoordManager.LogicalToPixel(LogicalPosition{X: startPos.X, Y: startPos.Y})
-	endPixelPos := CoordManager.LogicalToPixel(LogicalPosition{X: endPos.X, Y: endPos.Y})
+	startPixelPos := coords.CoordManager.LogicalToPixel(coords.LogicalPosition{X: startPos.X, Y: startPos.Y})
+	endPixelPos := coords.CoordManager.LogicalToPixel(coords.LogicalPosition{X: endPos.X, Y: endPos.Y})
 
 	// Calculate direction and length
 	deltaX := endPixelPos.X - startPixelPos.X
@@ -362,14 +363,14 @@ func GetLineTo(startPos common.Position, endPos common.Position) []int {
 	steps := max(abs(deltaX), abs(deltaY))
 
 	if steps == 0 {
-		return []int{CoordManager.LogicalToIndex(LogicalPosition{X: startPos.X, Y: startPos.Y})}
+		return []int{coords.CoordManager.LogicalToIndex(coords.LogicalPosition{X: startPos.X, Y: startPos.Y})}
 	}
 
 	for i := 0; i <= steps; i++ {
 		x := startPixelPos.X + (deltaX*i)/steps
 		y := startPixelPos.Y + (deltaY*i)/steps
-		logical := CoordManager.PixelToLogical(PixelPosition{X: x, Y: y})
-		indices = append(indices, CoordManager.LogicalToIndex(logical))
+		logical := coords.CoordManager.PixelToLogical(coords.PixelPosition{X: x, Y: y})
+		indices = append(indices, coords.CoordManager.LogicalToIndex(logical))
 	}
 
 	return indices

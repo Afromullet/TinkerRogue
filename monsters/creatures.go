@@ -3,8 +3,8 @@ package monsters
 import (
 	"fmt"
 	"game_main/common"
+	"game_main/coords"
 	"game_main/gear"
-	"game_main/graphics"
 	"game_main/trackers"
 	"game_main/worldmap"
 
@@ -78,8 +78,8 @@ func (c *Creature) UpdatePosition(gm *worldmap.GameMap, currentPosition *common.
 
 	p := currentPosition
 
-	logicalPos := graphics.LogicalPosition{X: p.X, Y: p.Y}
-	index := graphics.CoordManager.LogicalToIndex(logicalPos)
+	logicalPos := coords.LogicalPosition{X: p.X, Y: p.Y}
+	index := coords.CoordManager.LogicalToIndex(logicalPos)
 	oldTile := gm.Tiles[index]
 
 	if len(c.Path) > 1 {
@@ -92,8 +92,8 @@ func (c *Creature) UpdatePosition(gm *worldmap.GameMap, currentPosition *common.
 		c.Path = c.Path[:0]
 	}
 
-	logicalPos = graphics.LogicalPosition{X: p.X, Y: p.Y}
-	index = graphics.CoordManager.LogicalToIndex(logicalPos)
+	logicalPos = coords.LogicalPosition{X: p.X, Y: p.Y}
+	index = coords.CoordManager.LogicalToIndex(logicalPos)
 
 	nextTile := gm.Tiles[index]
 

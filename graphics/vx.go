@@ -1,6 +1,7 @@
 package graphics
 
 import (
+	"game_main/coords"
 	"game_main/randgen"
 	"image/color"
 	"math"
@@ -69,10 +70,10 @@ func NewVisualEffectArea(centerX, centerY int, shape TileBasedShape, vx VisualEf
 
 		var x, y = 0, 0
 		if MAP_SCROLLING_ENABLED {
-			logicalPos := CoordManager.IndexToLogical(ind)
+			logicalPos := coords.CoordManager.IndexToLogical(ind)
 			x, y = logicalPos.X, logicalPos.Y
 		} else {
-			pixelPos := CoordManager.IndexToPixel(ind)
+			pixelPos := coords.CoordManager.IndexToPixel(ind)
 			x, y = pixelPos.X, pixelPos.Y
 		}
 

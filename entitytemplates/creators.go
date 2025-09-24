@@ -5,8 +5,8 @@ package entitytemplates
 
 import (
 	"game_main/common"
+	"game_main/coords"
 	"game_main/gear"
-	"game_main/graphics"
 	"game_main/monsters"
 	"game_main/rendering"
 	"game_main/worldmap"
@@ -168,8 +168,8 @@ func CreateCreatureFromTemplate(manager common.EntityManager, m JSONMonster, gm 
 	entity := createFromTemplate(manager, m.Name, m.ImageName, "../assets/creatures/", true,
 		&common.Position{X: xPos, Y: yPos}, addCreatureComponents(m))
 
-	logicalPos := graphics.LogicalPosition{X: xPos, Y: yPos}
-	ind := graphics.CoordManager.LogicalToIndex(logicalPos)
+	logicalPos := coords.LogicalPosition{X: xPos, Y: yPos}
+	ind := coords.CoordManager.LogicalToIndex(logicalPos)
 	gm.Tiles[ind].Blocked = true
 
 	return entity

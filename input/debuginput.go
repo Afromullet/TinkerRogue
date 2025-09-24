@@ -2,6 +2,7 @@ package input
 
 import (
 	"game_main/avatar"
+	"game_main/coords"
 	"game_main/graphics"
 	"math"
 
@@ -25,8 +26,8 @@ func PlayerDebugActions(pl *avatar.PlayerData) {
 			gridY = int(math.Round(float64(logicalY) / float64(graphics.ScreenInfo.TileSize)))
 
 		} else {
-			pixelPos := graphics.PixelPosition{X: cursorX, Y: cursorY}
-			logicalPos := graphics.CoordManager.PixelToLogical(pixelPos)
+			pixelPos := coords.PixelPosition{X: cursorX, Y: cursorY}
+			logicalPos := coords.CoordManager.PixelToLogical(pixelPos)
 			gridX, gridY = logicalPos.X, logicalPos.Y
 		}
 

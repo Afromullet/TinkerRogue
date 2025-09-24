@@ -4,6 +4,7 @@ import (
 	"game_main/avatar"
 	"game_main/combat"
 	"game_main/common"
+	"game_main/coords"
 	"game_main/graphics"
 	"game_main/rendering"
 	"game_main/worldmap"
@@ -124,12 +125,12 @@ func (mc *MovementController) movePlayer(xOffset, yOffset int) {
 		Y: mc.playerData.Pos.Y + yOffset,
 	}
 
-	nextLogicalPos := graphics.LogicalPosition{X: nextPosition.X, Y: nextPosition.Y}
-	index := graphics.CoordManager.LogicalToIndex(nextLogicalPos)
+	nextLogicalPos := coords.LogicalPosition{X: nextPosition.X, Y: nextPosition.Y}
+	index := coords.CoordManager.LogicalToIndex(nextLogicalPos)
 	nextTile := mc.gameMap.Tiles[index]
 
-	currentLogicalPos := graphics.LogicalPosition{X: mc.playerData.Pos.X, Y: mc.playerData.Pos.Y}
-	index = graphics.CoordManager.LogicalToIndex(currentLogicalPos)
+	currentLogicalPos := coords.LogicalPosition{X: mc.playerData.Pos.X, Y: mc.playerData.Pos.Y}
+	index = coords.CoordManager.LogicalToIndex(currentLogicalPos)
 	oldTile := mc.gameMap.Tiles[index]
 
 	if !nextTile.Blocked {
@@ -149,8 +150,8 @@ func (mc *MovementController) movePlayer(xOffset, yOffset int) {
 
 func (mc *MovementController) handleStairsInteraction() bool {
 	playerPos := common.GetPosition(mc.playerData.PlayerEntity)
-	logicalPos := graphics.LogicalPosition{X: playerPos.X, Y: playerPos.Y}
-	ind := graphics.CoordManager.LogicalToIndex(logicalPos)
+	logicalPos := coords.LogicalPosition{X: playerPos.X, Y: playerPos.Y}
+	ind := coords.CoordManager.LogicalToIndex(logicalPos)
 
 	if mc.gameMap.Tiles[ind].TileType == worldmap.STAIRS_DOWN {
 		worldmap.GoDownStairs(mc.gameMap)
@@ -171,7 +172,7 @@ func (mc *MovementController) playerPickupItem() {
 }
 
 func (mc *MovementController) highlightCurrentTile() {
-	logicalPos := graphics.LogicalPosition{X: mc.playerData.Pos.X, Y: mc.playerData.Pos.Y}
-	ind := graphics.CoordManager.LogicalToIndex(logicalPos)
+	logicalPos := coords.LogicalPosition{X: mc.playerData.Pos.X, Y: mc.playerData.Pos.Y}
+	ind := coords.CoordManager.LogicalToIndex(logicalPos)
 	mc.gameMap.ApplyColorMatrixToIndex(ind, graphics.GreenColorMatrix)
 }
