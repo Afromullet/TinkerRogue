@@ -120,7 +120,7 @@ func (mc *MovementController) HandleInput() bool {
 }
 
 func (mc *MovementController) movePlayer(xOffset, yOffset int) {
-	nextPosition := common.Position{
+	nextPosition := coords.LogicalPosition{
 		X: mc.playerData.Pos.X + xOffset,
 		Y: mc.playerData.Pos.Y + yOffset,
 	}

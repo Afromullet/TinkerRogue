@@ -29,7 +29,7 @@ func SpawnConsumable(manager *ecs.Manager, xPos, yPos int) *ecs.Entity {
 		consType, _ := ConsumableSpawnTable.GetRandomEntry(false)
 		c.CreateConsumable(consType, qual)
 
-		item := gear.CreateItem(manager, c.Name, common.Position{X: xPos, Y: yPos}, "../assets/items/bubbly.png")
+		item := gear.CreateItem(manager, c.Name, coords.LogicalPosition{X: xPos, Y: yPos}, "../assets/items/bubbly.png")
 		item.AddComponent(gear.ConsumableComponent, &c)
 		return item
 
@@ -45,7 +45,7 @@ func SpawnRangedWeapon(manager *ecs.Manager, xPos, yPos int) *ecs.Entity {
 
 	//TODO better name generation
 	name := "Ranged " + strconv.Itoa(rand.Intn(1000))
-	weapon := gear.CreateItem(manager, name, common.Position{X: xPos, Y: yPos}, "../assets/items/longbow1.png")
+	weapon := gear.CreateItem(manager, name, coords.LogicalPosition{X: xPos, Y: yPos}, "../assets/items/longbow1.png")
 
 	qual, qualOK := LootQualityTable.GetRandomEntry(false)
 	aoeShape, shapeOK := ThrowableAOEProbTable.GetRandomEntry(false)
@@ -161,7 +161,7 @@ func SpawnLootAroundPlayer(currentTurnNumber int, playerData avatar.PlayerData, 
 	}
 
 	//To get a random position for spawning the item
-	getRandomEntry := func(posSlice []common.Position) common.Position {
+	getRandomEntry := func(posSlice []coords.LogicalPosition) coords.LogicalPosition {
 
 		return posSlice[rand.Intn(len(posSlice))]
 
@@ -177,14 +177,14 @@ func SpawnLootAroundPlayer(currentTurnNumber int, playerData avatar.PlayerData, 
 
 		pos := getRandomEntry(spawnPositions)
 		e := SpawnConsumable(manager, pos.X, pos.Y)
-		gm.AddEntityToTile(e, &common.Position{X: pos.X, Y: pos.Y})
+		gm.AddEntityToTile(e, &coords.LogicalPosition{X: pos.X, Y: pos.Y})
 
 	}
 	if throwableChance < ThrowableSpawnProb {
 
 		pos := getRandomEntry(spawnPositions)
 		e := SpawnThrowableItem(manager, pos.X, pos.Y)
-		gm.AddEntityToTile(e, &common.Position{X: pos.X, Y: pos.Y})
+		gm.AddEntityToTile(e, &coords.LogicalPosition{X: pos.X, Y: pos.Y})
 
 	}
 
@@ -192,7 +192,7 @@ func SpawnLootAroundPlayer(currentTurnNumber int, playerData avatar.PlayerData, 
 
 		pos := getRandomEntry(spawnPositions)
 		e := SpawnRangedWeapon(manager, pos.X, pos.Y)
-		gm.AddEntityToTile(e, &common.Position{X: pos.X, Y: pos.Y})
+		gm.AddEntityToTile(e, &coords.LogicalPosition{X: pos.X, Y: pos.Y})
 
 	}
 

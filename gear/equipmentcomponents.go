@@ -115,7 +115,7 @@ func (r RangedWeapon) GetTargets(ecsmanger *common.EntityManager) []*ecs.Entity 
 
 // Adds the Ranged Weapons VisuaLEffect to the VisualEffectHandler.
 // Todo determine whether this can be moved to the graphics package
-func (r *RangedWeapon) DisplayShootingVX(attackerPos *common.Position, defenderPos *common.Position) {
+func (r *RangedWeapon) DisplayShootingVX(attackerPos *coords.LogicalPosition, defenderPos *coords.LogicalPosition) {
 
 	attackerLogical := coords.LogicalPosition{X: attackerPos.X, Y: attackerPos.Y}
 	defenderLogical := coords.LogicalPosition{X: defenderPos.X, Y: defenderPos.Y}
@@ -130,7 +130,7 @@ func (r *RangedWeapon) DisplayShootingVX(attackerPos *common.Position, defenderP
 }
 
 // Used for Displaying the VX for a centered and scaled map.
-func (r *RangedWeapon) DisplayCenteredShootingVX(attackerPos *common.Position, defenderPos *common.Position) {
+func (r *RangedWeapon) DisplayCenteredShootingVX(attackerPos *coords.LogicalPosition, defenderPos *coords.LogicalPosition) {
 	// Convert logical coordinates to screen coordinates for attacker
 	attScreenX, attScreenY := graphics.OffsetFromCenter(
 		attackerPos.X,

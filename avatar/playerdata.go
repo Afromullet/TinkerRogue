@@ -2,6 +2,7 @@ package avatar
 
 import (
 	"game_main/common"
+	"game_main/coords"
 	"game_main/gear"
 	"game_main/graphics"
 
@@ -47,8 +48,8 @@ func (pl *PlayerEquipment) Armor() *gear.Armor {
 // Removes the currently equipped item when equipping something new
 func (pl *PlayerEquipment) EquipItem(equipment *ecs.Entity, playerEntity *ecs.Entity) {
 
-	itemPos := common.GetComponentType[*common.Position](equipment, common.PositionComponent)
-	playerPos := common.GetComponentType[*common.Position](playerEntity, common.PositionComponent)
+	itemPos := common.GetComponentType[*coords.LogicalPosition](equipment, common.PositionComponent)
+	playerPos := common.GetComponentType[*coords.LogicalPosition](playerEntity, common.PositionComponent)
 	itemPos.X = playerPos.X
 	itemPos.Y = playerPos.Y
 
@@ -113,7 +114,7 @@ type PlayerData struct {
 	Throwables   PlayerThrowable //Todo make this non embedded
 	InputStates  PlayerInputStates
 	PlayerEntity *ecs.Entity
-	Pos          *common.Position
+	Pos          *coords.LogicalPosition
 	Inventory    *gear.Inventory
 }
 

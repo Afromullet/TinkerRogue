@@ -2,18 +2,11 @@ package common
 
 import (
 	"fmt"
-	"game_main/coords"
 )
-
-// Position is an alias for coords.LogicalPosition to maintain backward compatibility
-// This allows existing code to continue using common.Position while the coordinate
-// system has been moved to the coords package.
-type Position = coords.LogicalPosition
 
 type Name struct {
 	NameStr string
 }
-
 
 type UserMessage struct {
 	AttackMessage       string

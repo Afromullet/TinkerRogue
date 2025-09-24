@@ -3,6 +3,7 @@ package testing
 import (
 	"game_main/avatar"
 	"game_main/common"
+	"game_main/coords"
 	"game_main/entitytemplates"
 	"game_main/gear"
 	"game_main/graphics"
@@ -37,7 +38,7 @@ func CreateTestConsumables(ecsmanager *common.EntityManager, gm *worldmap.GameMa
 	rend.Visible = true
 	pos.X = gm.StartingPosition().X + 1
 	pos.Y = gm.StartingPosition().Y + 2
-	gm.AddEntityToTile(ent, &common.Position{X: pos.X, Y: pos.Y})
+	gm.AddEntityToTile(ent, &coords.LogicalPosition{X: pos.X, Y: pos.Y})
 
 	ent = entitytemplates.CreateConsumableFromTemplate(*ecsmanager, entitytemplates.ConsumableTemplates[1])
 	pos = common.GetPosition(ent)
@@ -46,7 +47,7 @@ func CreateTestConsumables(ecsmanager *common.EntityManager, gm *worldmap.GameMa
 	pos.X = gm.StartingPosition().X + 1
 	pos.Y = gm.StartingPosition().Y + 2
 
-	gm.AddEntityToTile(ent, &common.Position{X: pos.X, Y: pos.Y})
+	gm.AddEntityToTile(ent, &coords.LogicalPosition{X: pos.X, Y: pos.Y})
 
 	ent = entitytemplates.CreateConsumableFromTemplate(*ecsmanager, entitytemplates.ConsumableTemplates[2])
 	pos = common.GetPosition(ent)
@@ -55,7 +56,7 @@ func CreateTestConsumables(ecsmanager *common.EntityManager, gm *worldmap.GameMa
 	pos.X = gm.StartingPosition().X + 1
 	pos.Y = gm.StartingPosition().Y + 2
 
-	gm.AddEntityToTile(ent, &common.Position{X: pos.X, Y: pos.Y})
+	gm.AddEntityToTile(ent, &coords.LogicalPosition{X: pos.X, Y: pos.Y})
 }
 
 func CreateTestThrowable(shape graphics.TileBasedShape, vx graphics.VisualEffect) *gear.ThrowableAction {
@@ -82,36 +83,36 @@ func CreateTestItems(manager *ecs.Manager, tags map[string]ecs.Tag, gameMap *wor
 
 	throwItem := CreateTestThrowable(TestSquare, TestFireEffect)
 
-	gear.CreateItemWithActions(manager, "SquareThrow"+strconv.Itoa(1), common.Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
+	gear.CreateItemWithActions(manager, "SquareThrow"+strconv.Itoa(1), coords.LogicalPosition{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
 		[]gear.ItemAction{throwItem}, TestFreezing)
 
-	gear.CreateItemWithActions(manager, "SquareThrow"+strconv.Itoa(1), common.Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
+	gear.CreateItemWithActions(manager, "SquareThrow"+strconv.Itoa(1), coords.LogicalPosition{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
 		[]gear.ItemAction{throwItem}, TestSticky)
 
-	gear.CreateItemWithActions(manager, "SquareThrow"+strconv.Itoa(1), common.Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
+	gear.CreateItemWithActions(manager, "SquareThrow"+strconv.Itoa(1), coords.LogicalPosition{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
 		[]gear.ItemAction{throwItem}, TestBurning, TestFreezing)
 
 	throwItem = CreateTestThrowable(TestCircle, TestIceEffect)
 
-	gear.CreateItemWithActions(manager, "CircleThrow"+strconv.Itoa(1), common.Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
+	gear.CreateItemWithActions(manager, "CircleThrow"+strconv.Itoa(1), coords.LogicalPosition{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
 		[]gear.ItemAction{throwItem}, TestBurning, TestFreezing)
 
 	throwItem = CreateTestThrowable(TestLine, TestFireEffect)
 
-	gear.CreateItemWithActions(manager, "LineThrow"+strconv.Itoa(1), common.Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
+	gear.CreateItemWithActions(manager, "LineThrow"+strconv.Itoa(1), coords.LogicalPosition{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
 		[]gear.ItemAction{throwItem}, TestBurning, TestFreezing)
 
 	throwItem = CreateTestThrowable(TestRect, TestElectricEffect)
 
-	gear.CreateItemWithActions(manager, "RectThrow"+strconv.Itoa(1), common.Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
+	gear.CreateItemWithActions(manager, "RectThrow"+strconv.Itoa(1), coords.LogicalPosition{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
 		[]gear.ItemAction{throwItem}, TestBurning, TestFreezing)
 
 	throwItem = CreateTestThrowable(TestCone, TestStickyEffect)
 
-	gear.CreateItemWithActions(manager, "ConeThrow"+strconv.Itoa(1), common.Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
+	gear.CreateItemWithActions(manager, "ConeThrow"+strconv.Itoa(1), coords.LogicalPosition{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
 		[]gear.ItemAction{throwItem}, TestBurning, TestFreezing)
 
-	//CreateItem(manager, "Item"+strconv.Itoa(2), common.Position{X: startingPos.X, Y: startingPos.Y}, itemImageLoc, NewBurning(1, 1), NewFreezing(1, 2))
+	//CreateItem(manager, "Item"+strconv.Itoa(2), coords.LogicalPosition{X: startingPos.X, Y: startingPos.Y}, itemImageLoc, NewBurning(1, 1), NewFreezing(1, 2))
 
 }
 
@@ -119,7 +120,7 @@ func UpdateContentsForTest(ecsmanager *common.EntityManager, gm *worldmap.GameMa
 
 	for _, item := range ecsmanager.World.Query(ecsmanager.WorldTags["items"]) {
 
-		item_pos := item.Components[common.PositionComponent].(*common.Position)
+		item_pos := item.Components[common.PositionComponent].(*coords.LogicalPosition)
 
 		gm.AddEntityToTile(item.Entity, item_pos)
 
@@ -129,7 +130,7 @@ func UpdateContentsForTest(ecsmanager *common.EntityManager, gm *worldmap.GameMa
 
 // Create an item with any number of Effects. ItemEffect is a wrapper around an ecs.Component to make
 // Manipulating it easier
-func CreateItem(manager *ecs.Manager, name string, pos common.Position, imagePath string, effects ...gear.StatusEffects) *ecs.Entity {
+func CreateItem(manager *ecs.Manager, name string, pos coords.LogicalPosition, imagePath string, effects ...gear.StatusEffects) *ecs.Entity {
 
 	img, _, err := ebitenutil.NewImageFromFile(imagePath)
 	if err != nil {
@@ -148,7 +149,7 @@ func CreateItem(manager *ecs.Manager, name string, pos common.Position, imagePat
 			Image:   img,
 			Visible: true,
 		}).
-		AddComponent(common.PositionComponent, &common.Position{
+		AddComponent(common.PositionComponent, &coords.LogicalPosition{
 			X: pos.X,
 			Y: pos.Y,
 		}).
@@ -164,7 +165,7 @@ func CreateItem(manager *ecs.Manager, name string, pos common.Position, imagePat
 }
 
 // A weapon is an Item with a weapon component
-func CreateWeapon(manager *ecs.Manager, name string, pos common.Position, imagePath string, MinDamage int, MaxDamage int, properties ...gear.StatusEffects) *ecs.Entity {
+func CreateWeapon(manager *ecs.Manager, name string, pos coords.LogicalPosition, imagePath string, MinDamage int, MaxDamage int, properties ...gear.StatusEffects) *ecs.Entity {
 
 	weapon := CreateItem(manager, name, pos, imagePath, properties...)
 
@@ -178,7 +179,7 @@ func CreateWeapon(manager *ecs.Manager, name string, pos common.Position, imageP
 
 }
 
-func CreateArmor(manager *ecs.Manager, name string, pos common.Position, imagePath string, ac int, prot int, dodge float32) *ecs.Entity {
+func CreateArmor(manager *ecs.Manager, name string, pos coords.LogicalPosition, imagePath string, ac int, prot int, dodge float32) *ecs.Entity {
 
 	armor := CreateItem(manager, name, pos, imagePath)
 
@@ -192,7 +193,7 @@ func CreateArmor(manager *ecs.Manager, name string, pos common.Position, imagePa
 
 }
 
-func CreatedRangedWeapon(manager *ecs.Manager, name string, imagePath string, pos common.Position, minDamage int, maxDamage int, shootingRange int, TargetArea graphics.TileBasedShape) *ecs.Entity {
+func CreatedRangedWeapon(manager *ecs.Manager, name string, imagePath string, pos coords.LogicalPosition, minDamage int, maxDamage int, shootingRange int, TargetArea graphics.TileBasedShape) *ecs.Entity {
 
 	weapon := CreateItem(manager, name, pos, imagePath)
 	weapon.AddComponent(gear.RangedWeaponComponent, &gear.RangedWeapon{

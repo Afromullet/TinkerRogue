@@ -205,9 +205,9 @@ func (cm *CoordinateManager) GetTilePositions(indices []int) []LogicalPosition {
 	return positions
 }
 
-// GetTilePositionsAsCommon converts a slice of indices to common.Position slice.
-// This is a compatibility method for legacy code that still uses common.Position.
-// Since common.Position is now an alias to LogicalPosition, this just returns LogicalPosition slice.
+// GetTilePositionsAsCommon converts a slice of indices to coords.LogicalPosition slice.
+// This is a compatibility method for legacy code that still uses coords.LogicalPosition.
+// Since coords.LogicalPosition is now an alias to LogicalPosition, this just returns LogicalPosition slice.
 func (cm *CoordinateManager) GetTilePositionsAsCommon(indices []int) []LogicalPosition {
 	return cm.GetTilePositions(indices)
 }

@@ -4,6 +4,8 @@
 package common
 
 import (
+	"game_main/coords"
+
 	"github.com/bytearena/ecs"
 )
 
@@ -61,14 +63,14 @@ func GetAttributes(e *ecs.Entity) *Attributes {
 
 // GetPosition returns the Position component from an entity.
 // This is a convenience function for frequently accessed components.
-func GetPosition(e *ecs.Entity) *Position {
-	return GetComponentType[*Position](e, PositionComponent)
+func GetPosition(e *ecs.Entity) *coords.LogicalPosition {
+	return GetComponentType[*coords.LogicalPosition](e, PositionComponent)
 }
 
 // GetCreatureAtPosition finds and returns the first monster entity at the specified position.
 // Returns nil if no creature is found at that position.
 // TODO: Optimize this to avoid searching all monsters every time.
-func GetCreatureAtPosition(ecsmnager *EntityManager, pos *Position) *ecs.Entity {
+func GetCreatureAtPosition(ecsmnager *EntityManager, pos *coords.LogicalPosition) *ecs.Entity {
 
 	var e *ecs.Entity = nil
 	for _, c := range ecsmnager.World.Query(ecsmnager.WorldTags["monsters"]) {

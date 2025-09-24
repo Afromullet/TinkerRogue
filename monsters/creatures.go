@@ -18,7 +18,7 @@ var CreatureComponent *ecs.Component
 // EffectsToApply trigger every turn in MonsterSystems
 // The Path is updated by a Movement Component
 type Creature struct {
-	Path              []common.Position
+	Path              []coords.LogicalPosition
 	StatEffectTracker trackers.StatusEffectTracker
 }
 
@@ -74,7 +74,7 @@ func ApplyStatusEffects(c *ecs.QueryResult) {
 // Get the next position on the path and pops the position from the path.
 // Passing currentPosition so we can stand in place when there is no path
 // TODO needs to be improved. This will cause a creature to "teleport" if the path is blocked
-func (c *Creature) UpdatePosition(gm *worldmap.GameMap, currentPosition *common.Position) {
+func (c *Creature) UpdatePosition(gm *worldmap.GameMap, currentPosition *coords.LogicalPosition) {
 
 	p := currentPosition
 

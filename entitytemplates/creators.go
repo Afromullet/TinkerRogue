@@ -19,7 +19,7 @@ import (
 
 // createBaseEntity creates a basic entity with common components (name, renderable, position).
 // It loads the image from the specified path and sets up the fundamental entity structure.
-func createBaseEntity(manager common.EntityManager, name, imagePath, assetDir string, visible bool, pos *common.Position) *ecs.Entity {
+func createBaseEntity(manager common.EntityManager, name, imagePath, assetDir string, visible bool, pos *coords.LogicalPosition) *ecs.Entity {
 	fpath := filepath.Join(assetDir, imagePath)
 	img, _, err := ebitenutil.NewImageFromFile(fpath)
 	if err != nil {
@@ -33,7 +33,7 @@ func createBaseEntity(manager common.EntityManager, name, imagePath, assetDir st
 	})
 
 	if pos == nil {
-		pos = &common.Position{X: 0, Y: 0}
+		pos = &coords.LogicalPosition{X: 0, Y: 0}
 	}
 	entity.AddComponent(common.PositionComponent, pos)
 
@@ -46,7 +46,7 @@ type ComponentAdder func(entity *ecs.Entity)
 
 // createFromTemplate creates an entity using a base template and applies additional components.
 // It uses the ComponentAdder pattern to compose entities with varying component sets.
-func createFromTemplate(manager common.EntityManager, name, imagePath, assetDir string, visible bool, pos *common.Position, adders ...ComponentAdder) *ecs.Entity {
+func createFromTemplate(manager common.EntityManager, name, imagePath, assetDir string, visible bool, pos *coords.LogicalPosition, adders ...ComponentAdder) *ecs.Entity {
 	entity := createBaseEntity(manager, name, imagePath, assetDir, visible, pos)
 
 	for _, adder := range adders {
@@ -96,7 +96,7 @@ func addConsumableComponents(c JSONAttributeModifier) ComponentAdder {
 
 func addCreatureComponents(m JSONMonster) ComponentAdder {
 	return func(entity *ecs.Entity) {
-		entity.AddComponent(monsters.CreatureComponent, &monsters.Creature{Path: make([]common.Position, 0)})
+		entity.AddComponent(monsters.CreatureComponent, &monsters.Creature{Path: make([]coords.LogicalPosition, 0)})
 		entity.AddComponent(common.UserMsgComponent, &common.UserMessage{})
 
 		attr := common.Attributes{
@@ -166,7 +166,7 @@ func CreateConsumableFromTemplate(manager common.EntityManager, c JSONAttributeM
 
 func CreateCreatureFromTemplate(manager common.EntityManager, m JSONMonster, gm *worldmap.GameMap, xPos, yPos int) *ecs.Entity {
 	entity := createFromTemplate(manager, m.Name, m.ImageName, "../assets/creatures/", true,
-		&common.Position{X: xPos, Y: yPos}, addCreatureComponents(m))
+		&coords.LogicalPosition{X: xPos, Y: yPos}, addCreatureComponents(m))
 
 	logicalPos := coords.LogicalPosition{X: xPos, Y: yPos}
 	ind := coords.CoordManager.LogicalToIndex(logicalPos)

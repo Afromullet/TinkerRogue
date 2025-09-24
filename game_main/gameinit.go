@@ -3,6 +3,7 @@ package main
 import (
 	"game_main/avatar"
 	"game_main/common"
+	"game_main/coords"
 	"game_main/gear"
 	"game_main/rendering"
 	"game_main/testing"
@@ -40,7 +41,7 @@ func InitializePlayerData(ecsmanager *common.EntityManager, pl *avatar.PlayerDat
 			Image:   playerImg,
 			Visible: true,
 		}).
-		AddComponent(common.PositionComponent, &common.Position{
+		AddComponent(common.PositionComponent, &coords.LogicalPosition{
 			X: 40,
 			Y: 45,
 		}).
@@ -63,7 +64,7 @@ func InitializePlayerData(ecsmanager *common.EntityManager, pl *avatar.PlayerDat
 
 	//Don't want to Query for the player position every time, so we're storing it
 
-	startPos := common.GetComponentType[*common.Position](pl.PlayerEntity, common.PositionComponent)
+	startPos := common.GetComponentType[*coords.LogicalPosition](pl.PlayerEntity, common.PositionComponent)
 	startPos.X = gm.StartingPosition().X
 	startPos.Y = gm.StartingPosition().Y
 

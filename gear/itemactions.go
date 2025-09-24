@@ -20,10 +20,10 @@ type ItemAction interface {
 	ActionComponent() *ecs.Component
 
 	// Execute performs the action and returns any status effects that should be applied to affected entities
-	Execute(targetPos *common.Position, sourcePos *common.Position, world *ecs.Manager, worldTags map[string]ecs.Tag) []StatusEffects
+	Execute(targetPos *coords.LogicalPosition, sourcePos *coords.LogicalPosition, world *ecs.Manager, worldTags map[string]ecs.Tag) []StatusEffects
 
 	// CanExecute checks if the action can be performed given the target and source positions
-	CanExecute(targetPos *common.Position, sourcePos *common.Position) bool
+	CanExecute(targetPos *coords.LogicalPosition, sourcePos *coords.LogicalPosition) bool
 
 	// GetVisualEffect returns the visual effect associated with this action (if any)
 	GetVisualEffect() graphics.VisualEffect
@@ -59,7 +59,7 @@ func (t *ThrowableAction) ActionComponent() *ecs.Component {
 	return ThrowableComponent
 }
 
-func (t *ThrowableAction) Execute(targetPos *common.Position, sourcePos *common.Position, world *ecs.Manager, worldTags map[string]ecs.Tag) []StatusEffects {
+func (t *ThrowableAction) Execute(targetPos *coords.LogicalPosition, sourcePos *coords.LogicalPosition, world *ecs.Manager, worldTags map[string]ecs.Tag) []StatusEffects {
 	// Start visual effect if present
 	if t.VX != nil {
 		t.VX.ResetVX()
@@ -72,7 +72,7 @@ func (t *ThrowableAction) Execute(targetPos *common.Position, sourcePos *common.
 
 	// Apply effects to monsters in affected area
 	for _, c := range world.Query(worldTags["monsters"]) {
-		monsterPos := c.Components[common.PositionComponent].(*common.Position)
+		monsterPos := c.Components[common.PositionComponent].(*coords.LogicalPosition)
 
 		for _, pos := range affectedPositions {
 			if monsterPos.IsEqual(&pos) && monsterPos.InRange(sourcePos, t.ThrowingRange) {
@@ -87,7 +87,7 @@ func (t *ThrowableAction) Execute(targetPos *common.Position, sourcePos *common.
 	return appliedEffects
 }
 
-func (t *ThrowableAction) CanExecute(targetPos *common.Position, sourcePos *common.Position) bool {
+func (t *ThrowableAction) CanExecute(targetPos *coords.LogicalPosition, sourcePos *coords.LogicalPosition) bool {
 	return targetPos.InRange(sourcePos, t.ThrowingRange)
 }
 
@@ -142,11 +142,11 @@ func (t *ThrowableAction) CreateWithQuality(q common.QualityType) {
 }
 
 // InRange checks if the action can reach the target position (legacy method for compatibility)
-func (t *ThrowableAction) InRange(endPos *common.Position) bool {
+func (t *ThrowableAction) InRange(endPos *coords.LogicalPosition) bool {
 	pixelX, pixelY := t.Shape.StartPositionPixels()
 	pixelPos := coords.PixelPosition{X: pixelX, Y: pixelY}
 	logicalPos := coords.CoordManager.PixelToLogical(pixelPos)
-	startPos := common.Position{X: logicalPos.X, Y: logicalPos.Y}
+	startPos := coords.LogicalPosition{X: logicalPos.X, Y: logicalPos.Y}
 
 	return endPos.InRange(&startPos, t.ThrowingRange)
 }

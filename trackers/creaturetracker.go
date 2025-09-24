@@ -2,6 +2,7 @@ package trackers
 
 import (
 	"game_main/common"
+	"game_main/coords"
 
 	"github.com/bytearena/ecs"
 )
@@ -14,7 +15,7 @@ var CreatureTracker = NewCreatureTracker()
 // Used to quickly look up creature positions. Several parts of the code iterate
 // Over all of the monsters, even when we just need a few
 type PositionTracker struct {
-	PosTracker map[*common.Position]*ecs.Entity
+	PosTracker map[*coords.LogicalPosition]*ecs.Entity
 }
 
 // Todo make sure the same entity can't be added twice
@@ -40,6 +41,6 @@ func (t *PositionTracker) Remove(e *ecs.Entity) {
 
 func NewCreatureTracker() PositionTracker {
 	return PositionTracker{
-		PosTracker: make(map[*common.Position]*ecs.Entity),
+		PosTracker: make(map[*coords.LogicalPosition]*ecs.Entity),
 	}
 }

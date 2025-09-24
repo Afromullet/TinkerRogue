@@ -2,6 +2,7 @@ package spawning
 
 import (
 	"game_main/common"
+	"game_main/coords"
 	"game_main/gear"
 	"game_main/graphics"
 	"math/rand"
@@ -70,7 +71,7 @@ func SpawnThrowableItem(manager *ecs.Manager, xPos, yPos int) *ecs.Entity {
 		actions := []gear.ItemAction{throwableAction}
 
 		ThrowableEffectStatTable.RestoreWeights()
-		return gear.CreateItemWithActions(manager, itemName, common.Position{X: xPos, Y: yPos}, "../assets/items/grenade.png", actions)
+		return gear.CreateItemWithActions(manager, itemName, coords.LogicalPosition{X: xPos, Y: yPos}, "../assets/items/grenade.png", actions)
 
 	} else {
 		// TODO: Handle AOE shape generation error
@@ -79,7 +80,7 @@ func SpawnThrowableItem(manager *ecs.Manager, xPos, yPos int) *ecs.Entity {
 		// Create a basic throwable action instead
 		basicThrowable := gear.NewShapeThrowableAction(1, 3, 1, graphics.Circular, common.NormalQuality, nil, effectsToApply...)
 		actions := []gear.ItemAction{basicThrowable}
-		return gear.CreateItemWithActions(manager, itemName, common.Position{X: xPos, Y: yPos}, "../assets/items/grenade.png", actions)
+		return gear.CreateItemWithActions(manager, itemName, coords.LogicalPosition{X: xPos, Y: yPos}, "../assets/items/grenade.png", actions)
 	}
 
 }

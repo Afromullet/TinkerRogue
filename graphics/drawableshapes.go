@@ -350,7 +350,7 @@ func DirectionToCoords(direction ShapeDirection) (int, int) {
 }
 
 // GetLineTo creates a line from start position to end position
-func GetLineTo(startPos common.Position, endPos common.Position) []int {
+func GetLineTo(startPos coords.LogicalPosition, endPos coords.LogicalPosition) []int {
 	startPixelPos := coords.CoordManager.LogicalToPixel(coords.LogicalPosition{X: startPos.X, Y: startPos.Y})
 	endPixelPos := coords.CoordManager.LogicalToPixel(coords.LogicalPosition{X: endPos.X, Y: endPos.Y})
 

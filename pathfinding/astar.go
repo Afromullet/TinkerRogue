@@ -5,7 +5,6 @@ package pathfinding
 
 import (
 	"errors"
-	"game_main/common"
 	"game_main/coords"
 	"game_main/graphics"
 	"game_main/worldmap"
@@ -76,7 +75,7 @@ type AStar struct{}
 // Returns a slice of positions representing the path, or empty slice if no path exists.
 // The ignoreWalls parameter allows pathfinding through walls when true.
 // TODO: gameMap should be a pointer for better performance.
-func (as AStar) GetPath(gameMap worldmap.GameMap, start *common.Position, end *common.Position, ignoreWalls bool) []common.Position {
+func (as AStar) GetPath(gameMap worldmap.GameMap, start *coords.LogicalPosition, end *coords.LogicalPosition, ignoreWalls bool) []coords.LogicalPosition {
 
 	openList := make([]*node, 0)
 	closedList := make([]*node, 0)
@@ -115,7 +114,7 @@ func (as AStar) GetPath(gameMap worldmap.GameMap, start *common.Position, end *c
 		//Check to see if we reached our end
 		//If so, we are done here
 		if currentNode.isEqual(endNodePlaceholder) {
-			path := make([]common.Position, 0)
+			path := make([]coords.LogicalPosition, 0)
 			current := currentNode
 			for {
 				if current == nil {
@@ -139,7 +138,7 @@ func (as AStar) GetPath(gameMap worldmap.GameMap, start *common.Position, end *c
 			tile := gameMap.Tiles[coords.CoordManager.LogicalToIndex(logicalPos)]
 			if ignoreWalls || tile.TileType != worldmap.WALL {
 				//The location is in the map bounds and is walkable
-				upNodePosition := common.Position{
+				upNodePosition := coords.LogicalPosition{
 					X: currentNode.Position.X,
 					Y: currentNode.Position.Y - 1,
 				}
@@ -154,7 +153,7 @@ func (as AStar) GetPath(gameMap worldmap.GameMap, start *common.Position, end *c
 			tile := gameMap.Tiles[coords.CoordManager.LogicalToIndex(logicalPos)]
 			if ignoreWalls || tile.TileType != worldmap.WALL {
 				//The location is in the map bounds and is walkable
-				downNodePosition := common.Position{
+				downNodePosition := coords.LogicalPosition{
 					X: currentNode.Position.X,
 					Y: currentNode.Position.Y + 1,
 				}
@@ -169,7 +168,7 @@ func (as AStar) GetPath(gameMap worldmap.GameMap, start *common.Position, end *c
 			tile := gameMap.Tiles[coords.CoordManager.LogicalToIndex(logicalPos)]
 			if ignoreWalls || tile.TileType != worldmap.WALL {
 				//The location is in the map bounds and is walkable
-				leftNodePosition := common.Position{
+				leftNodePosition := coords.LogicalPosition{
 					X: currentNode.Position.X - 1,
 					Y: currentNode.Position.Y,
 				}
@@ -184,7 +183,7 @@ func (as AStar) GetPath(gameMap worldmap.GameMap, start *common.Position, end *c
 			tile := gameMap.Tiles[coords.CoordManager.LogicalToIndex(logicalPos)]
 			if ignoreWalls && tile.TileType != worldmap.WALL {
 				//The location is in the map bounds and is walkable
-				rightNodePosition := common.Position{
+				rightNodePosition := coords.LogicalPosition{
 					X: currentNode.Position.X + 1,
 					Y: currentNode.Position.Y,
 				}
@@ -230,7 +229,7 @@ func (as AStar) GetPath(gameMap worldmap.GameMap, start *common.Position, end *c
 }
 
 // Creates a slice of Positions from p to other. Uses AStar to build the path
-func BuildPath(gm *worldmap.GameMap, start *common.Position, other *common.Position) []common.Position {
+func BuildPath(gm *worldmap.GameMap, start *coords.LogicalPosition, other *coords.LogicalPosition) []coords.LogicalPosition {
 
 	astar := AStar{}
 	return astar.GetPath(*gm, start, other, false)

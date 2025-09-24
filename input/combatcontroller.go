@@ -220,7 +220,7 @@ func (cc *CombatController) drawThrowableAOE() {
 	cc.sharedState.PrevThrowInds = indices
 }
 
-func (cc *CombatController) applyThrowable(item *gear.Item, shape graphics.TileBasedShape, throwerPos *common.Position) {
+func (cc *CombatController) applyThrowable(item *gear.Item, shape graphics.TileBasedShape, throwerPos *coords.LogicalPosition) {
 	t := item.GetThrowableAction()
 	if t == nil {
 		return
@@ -231,7 +231,7 @@ func (cc *CombatController) applyThrowable(item *gear.Item, shape graphics.TileB
 
 	// Apply the effects to creatures
 	for _, c := range cc.ecsManager.World.Query(cc.ecsManager.WorldTags["monsters"]) {
-		curPos := c.Components[common.PositionComponent].(*common.Position)
+		curPos := c.Components[common.PositionComponent].(*coords.LogicalPosition)
 		crea := c.Components[monsters.CreatureComponent].(*monsters.Creature)
 
 		pos := coords.CoordManager.GetTilePositionsAsCommon(t.Shape.GetIndices())

@@ -3,6 +3,7 @@ package combat
 import (
 	"game_main/avatar"
 	"game_main/common"
+	"game_main/coords"
 	"game_main/gear"
 	"game_main/graphics"
 	"game_main/randgen"
@@ -17,7 +18,7 @@ import (
 // Rolls 1d20+AttackBonus and compares it to defenders armorclass. Has to be greater than or equal to the armor class to hit
 // Then the defender does a dodge roll. If the dodge roll is greater than or equal to its dodge value, the attack hits
 // If the attacker hits, subtract the Defenders protection value from the damage
-func MeleeAttackSystem(ecsmanager *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap, attackerPos *common.Position, defenderPos *common.Position) {
+func MeleeAttackSystem(ecsmanager *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap, attackerPos *coords.LogicalPosition, defenderPos *coords.LogicalPosition) {
 
 	var attacker *ecs.Entity = nil
 	var defender *ecs.Entity = nil
@@ -54,7 +55,7 @@ func MeleeAttackSystem(ecsmanager *common.EntityManager, pl *avatar.PlayerData, 
 // A monster performing a ranged attack is simple right now.
 // It ignores the weapons AOE and selects only the player as the target
 // Todo add nil check for when there is no weapon for a player or monster attacker
-func RangedAttackSystem(ecsmanager *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap, attackerPos *common.Position) {
+func RangedAttackSystem(ecsmanager *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap, attackerPos *coords.LogicalPosition) {
 
 	var attacker *ecs.Entity = nil
 	var weapon *gear.RangedWeapon = nil

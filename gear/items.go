@@ -3,6 +3,7 @@ package gear
 import (
 	"fmt"
 	"game_main/common"
+	"game_main/coords"
 	"game_main/rendering"
 	"log"
 
@@ -216,7 +217,7 @@ func (item *Item) HasEffect(effectToCheck StatusEffects) bool {
 }
 
 // The testing package has the same function. Todo remove the one from testing package
-func CreateItem(manager *ecs.Manager, name string, pos common.Position, imagePath string, effects ...StatusEffects) *ecs.Entity {
+func CreateItem(manager *ecs.Manager, name string, pos coords.LogicalPosition, imagePath string, effects ...StatusEffects) *ecs.Entity {
 
 	img, _, err := ebitenutil.NewImageFromFile(imagePath)
 	if err != nil {
@@ -235,7 +236,7 @@ func CreateItem(manager *ecs.Manager, name string, pos common.Position, imagePat
 			Image:   img,
 			Visible: true,
 		}).
-		AddComponent(common.PositionComponent, &common.Position{
+		AddComponent(common.PositionComponent, &coords.LogicalPosition{
 			X: pos.X,
 			Y: pos.Y,
 		}).
@@ -251,7 +252,7 @@ func CreateItem(manager *ecs.Manager, name string, pos common.Position, imagePat
 }
 
 // CreateItemWithActions creates an item with both status effects and actions
-func CreateItemWithActions(manager *ecs.Manager, name string, pos common.Position, imagePath string, actions []ItemAction, effects ...StatusEffects) *ecs.Entity {
+func CreateItemWithActions(manager *ecs.Manager, name string, pos coords.LogicalPosition, imagePath string, actions []ItemAction, effects ...StatusEffects) *ecs.Entity {
 
 	img, _, err := ebitenutil.NewImageFromFile(imagePath)
 	if err != nil {
@@ -273,7 +274,7 @@ func CreateItemWithActions(manager *ecs.Manager, name string, pos common.Positio
 			Image:   img,
 			Visible: true,
 		}).
-		AddComponent(common.PositionComponent, &common.Position{
+		AddComponent(common.PositionComponent, &coords.LogicalPosition{
 			X: pos.X,
 			Y: pos.Y,
 		}).

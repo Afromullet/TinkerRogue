@@ -238,7 +238,7 @@ func addInfoListHandler(li *widget.List, em *common.EntityManager, info *InfoUI)
 
 		pixelPos := coords.PixelPosition{X: info.windowX, Y: info.windowY}
 		logicalPos := coords.CoordManager.PixelToLogical(pixelPos)
-		pos := common.Position{X: logicalPos.X, Y: logicalPos.Y} // Direct conversion, avoiding compatibility layer
+		pos := coords.LogicalPosition{X: logicalPos.X, Y: logicalPos.Y} // Direct conversion, avoiding compatibility layer
 
 		if a.Entry == LookAtCreatureOpt {
 
