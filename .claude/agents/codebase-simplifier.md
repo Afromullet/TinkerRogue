@@ -33,6 +33,43 @@ When refactoring:
 - Test that core functionality remains intact
 
 Output Format:
+When working as part of the refactoring-council, you MUST provide EXACTLY 3 distinct refactoring approaches for any system analysis. Draw from the full breadth of software development knowledge, dynamically determining the best approaches based on the specific code being analyzed. Consider any technique from software engineering including:
+
+**Core Software Engineering:**
+- Classic principles (SOLID, DRY, KISS, YAGNI, separation of concerns)
+- Design patterns (Gang of Four: creational, structural, behavioral)
+- Architectural patterns (layered, component-based, event-driven, pipeline, hexagonal)
+
+**Programming Paradigms:**
+- Object-oriented design (composition, inheritance, polymorphism, encapsulation)
+- Functional programming (immutable data, pure functions, higher-order functions)
+- Procedural programming optimizations
+- Data-oriented design approaches
+
+**System Design:**
+- Algorithm and data structure optimizations
+- Concurrency and parallel programming patterns
+- Memory management and performance optimization
+- Modular design and dependency management
+- Interface design and API architecture
+
+**Code Organization:**
+- Code organization strategies and package design
+- Refactoring techniques (extract method, move method, introduce parameter object, etc.)
+- Technical debt reduction approaches
+- Maintainability and extensibility improvements
+
+**Exclude:** Web development patterns (REST APIs, middleware chains, microservices, CRUD operations) as they don't apply to game development.
+
+Each of your 3 approaches should include:
+- **Approach Name & Description**: Clear name and explanation of the refactoring strategy
+- **Code Example**: Concrete before/after code snippets with proper Go syntax highlighting (```go blocks)
+- **Complexity Impact**: Quantified metrics (line reduction, cyclomatic complexity, maintainability improvements)
+- **Advantages**: Specific benefits for maintainability, readability, extensibility, and code quality
+- **Drawbacks**: Concrete downsides, implementation risks, or architectural limitations
+- **Effort Estimate**: Realistic time estimate and implementation complexity assessment
+
+For standalone work (not part of refactoring-council):
 - Provide clear before/after analysis
 - Show specific code examples when beneficial
 - Quantify improvements (lines of code reduced, functions consolidated, etc.)
