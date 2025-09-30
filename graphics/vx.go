@@ -31,6 +31,522 @@ type VisualEffect interface {
 	Copy() VisualEffect
 }
 
+// AnimationState holds animated properties for rendering
+type AnimationState struct {
+	Scale      float64
+	Opacity    float64
+	Brightness float64
+	ColorShift float64
+	OffsetX    float64
+	OffsetY    float64
+}
+
+// Animator interface defines how effect properties change over time
+type Animator interface {
+	Update(effect *BaseEffect, elapsed float64) AnimationState
+	Reset()
+}
+
+// Renderer interface defines how to draw the effect
+type Renderer interface {
+	Draw(screen *ebiten.Image, effect *BaseEffect, state AnimationState)
+}
+
+// BaseEffect handles lifecycle, timing, and position (used by all effects)
+type BaseEffect struct {
+	startX, startY       float64
+	startTime            time.Time
+	duration             int
+	originalDuration     int
+	completed            bool
+	img                  *ebiten.Image
+	animator             Animator
+	renderer             Renderer
+}
+
+// BaseEffect implements VisualEffect interface
+func (e *BaseEffect) UpdateVisualEffect() {
+	if e.completed {
+		return
+	}
+
+	elapsed := time.Since(e.startTime).Seconds()
+	if int(elapsed) >= e.duration {
+		e.completed = true
+		return
+	}
+
+	// Animator will be called in DrawVisualEffect
+}
+
+func (e *BaseEffect) DrawVisualEffect(screen *ebiten.Image) {
+	if e.completed {
+		return
+	}
+
+	elapsed := time.Since(e.startTime).Seconds()
+	state := AnimationState{Scale: 1.0, Opacity: 1.0} // defaults
+	if e.animator != nil {
+		state = e.animator.Update(e, elapsed)
+	}
+
+	if e.renderer != nil {
+		e.renderer.Draw(screen, e, state)
+	}
+}
+
+func (e *BaseEffect) IsCompleted() bool {
+	return e.completed
+}
+
+func (e *BaseEffect) SetVXCommon(x, y int, img *ebiten.Image) {
+	e.startX = float64(x)
+	e.startY = float64(y)
+	e.img = img
+}
+
+func (e *BaseEffect) VXImg() *ebiten.Image {
+	return e.img
+}
+
+func (e *BaseEffect) ResetVX() {
+	e.startTime = time.Now()
+	e.completed = false
+	e.duration = e.originalDuration
+	if e.animator != nil {
+		e.animator.Reset()
+	}
+}
+
+func (e *BaseEffect) Copy() VisualEffect {
+	// Shallow copy - animators and renderers are stateless except for frame counters
+	copy := *e
+	return &copy
+}
+
+// ImageRenderer draws image-based effects
+type ImageRenderer struct{}
+
+func (r *ImageRenderer) Draw(screen *ebiten.Image, effect *BaseEffect, state AnimationState) {
+	if effect.img == nil {
+		return
+	}
+
+	opts := &ebiten.DrawImageOptions{}
+	opts.GeoM.Scale(state.Scale*float64(ScreenInfo.ScaleFactor), state.Scale*float64(ScreenInfo.ScaleFactor))
+	opts.GeoM.Translate(effect.startX+state.OffsetX, effect.startY+state.OffsetY)
+
+	// Apply brightness if set
+	if state.Brightness > 0 {
+		opts.ColorM.Scale(state.Brightness, state.Brightness, state.Brightness, state.Opacity)
+	} else if state.ColorShift > 0 {
+		// Apply color shift if set (for ice effects)
+		opts.ColorM.Scale(state.ColorShift, state.ColorShift, 1.0, state.Opacity)
+	} else {
+		// Default: just apply opacity
+		opts.ColorM.Scale(1, 1, 1, state.Opacity)
+	}
+
+	screen.DrawImage(effect.img, opts)
+}
+
+// ProjectileRenderer draws projectile effects with rotation
+type ProjectileRenderer struct {
+	endX, endY float64
+}
+
+func (r *ProjectileRenderer) Draw(screen *ebiten.Image, effect *BaseEffect, state AnimationState) {
+	if effect.img == nil {
+		return
+	}
+
+	// Calculate the rotation angle based on the direction
+	angle := math.Atan2(r.endY-effect.startY, r.endX-effect.startX)
+
+	opts := &ebiten.DrawImageOptions{}
+	opts.GeoM.Scale(float64(ScreenInfo.ScaleFactor), float64(ScreenInfo.ScaleFactor))
+	opts.GeoM.Translate(-float64(effect.img.Bounds().Dx())/2, -float64(effect.img.Bounds().Dy())/2) // Center the image
+	opts.GeoM.Rotate(angle)
+	opts.GeoM.Translate(effect.startX+state.OffsetX, effect.startY+state.OffsetY)
+
+	screen.DrawImage(effect.img, opts)
+}
+
+// CloudRenderer draws cloud effects with multiple layers for fluffiness
+type CloudRenderer struct{}
+
+func (r *CloudRenderer) Draw(screen *ebiten.Image, effect *BaseEffect, state AnimationState) {
+	if effect.img == nil {
+		return
+	}
+
+	bounds := effect.img.Bounds()
+	imgWidth := float64(bounds.Dx())
+	imgHeight := float64(bounds.Dy())
+
+	// Draw the main cloud image
+	opts := &ebiten.DrawImageOptions{}
+	opts.GeoM.Scale(state.Scale*float64(ScreenInfo.ScaleFactor), state.Scale*float64(ScreenInfo.ScaleFactor))
+
+	// Adjust position to keep the center of the cloud in place
+	adjustedX := effect.startX - (imgWidth * (state.Scale - 1) / 2)
+	adjustedY := effect.startY - (imgHeight * (state.Scale - 1) / 2)
+	opts.GeoM.Translate(adjustedX, adjustedY)
+	opts.ColorM.Scale(1, 1, 1, state.Opacity)
+
+	screen.DrawImage(effect.img, opts)
+
+	// Create a subtle "fluffiness" effect by drawing multiple layers
+	for i := 0; i < 2; i++ {
+		layerOpts := &ebiten.DrawImageOptions{}
+		layerScale := state.Scale * (1.0 - float64(i)*0.1)
+		layerOpts.GeoM.Scale(layerScale, layerScale)
+
+		layerAdjustedX := effect.startX - (imgWidth * (layerScale - 1) / 2)
+		layerAdjustedY := effect.startY - (imgHeight * (layerScale - 1) / 2)
+		layerOpts.GeoM.Translate(layerAdjustedX, layerAdjustedY)
+
+		layerOpts.ColorM.Scale(1, 1, 1, 0.3*state.Opacity)
+		screen.DrawImage(effect.img, layerOpts)
+	}
+}
+
+// LineSegmentRenderer draws line-based electrical effects
+type LineSegmentRenderer struct {
+	segments     []lineSegment
+	color        color.RGBA
+	numSegments  int
+	jitterAmount float64
+}
+
+func NewLineSegmentRenderer(startX, startY int, numSegments int) *LineSegmentRenderer {
+	segments := make([]lineSegment, numSegments)
+	currentX, currentY := float64(startX), float64(startY)
+
+	for i := 0; i < numSegments; i++ {
+		nextX := currentX + -10 + 20*rand.Float64()
+		nextY := currentY + -10 + 20*rand.Float64()
+
+		segments[i] = lineSegment{
+			x1: currentX,
+			y1: currentY,
+			x2: nextX,
+			y2: nextY,
+		}
+
+		currentX, currentY = nextX, nextY
+	}
+
+	return &LineSegmentRenderer{
+		segments:     segments,
+		color:        color.RGBA{200 + uint8(randgen.GetDiceRoll(55)), 200 + uint8(randgen.GetDiceRoll(55)), 255, 255},
+		numSegments:  numSegments,
+		jitterAmount: 5.0,
+	}
+}
+
+func (r *LineSegmentRenderer) Draw(screen *ebiten.Image, effect *BaseEffect, state AnimationState) {
+	// Regenerate line segments to simulate flickering
+	for i := range r.segments {
+		r.segments[i].x2 += -r.jitterAmount + 2*r.jitterAmount*rand.Float64()
+		r.segments[i].y2 += -r.jitterAmount + 2*r.jitterAmount*rand.Float64()
+	}
+
+	// Adjust color for electrical surges
+	r.color.R = 200 + uint8(randgen.GetDiceRoll(55))
+	r.color.G = 200 + uint8(randgen.GetDiceRoll(55))
+	r.color.B = 255
+
+	// Draw all segments
+	for _, segment := range r.segments {
+		ebitenutil.DrawLine(screen, segment.x1, segment.y1, segment.x2, segment.y2, r.color)
+	}
+}
+
+// ElectricArcRenderer draws electric arc effects with multiple segments
+type ElectricArcRenderer struct {
+	endX, endY float64
+	segments   [][]float64
+	color      color.RGBA
+	thickness  float32
+}
+
+func NewElectricArcRenderer(startX, startY, endX, endY int) *ElectricArcRenderer {
+	return &ElectricArcRenderer{
+		endX:      float64(endX),
+		endY:      float64(endY),
+		segments:  make([][]float64, 0),
+		color:     color.RGBA{0, 191, 255, 255},
+		thickness: 2,
+	}
+}
+
+func (r *ElectricArcRenderer) Draw(screen *ebiten.Image, effect *BaseEffect, state AnimationState) {
+	// Generate new segments for the electricity
+	r.generateSegments(effect.startX, effect.startY)
+
+	// Randomly adjust color and thickness
+	r.color.R = uint8(randgen.GetDiceRoll(50))
+	r.color.G = 200 + uint8(randgen.GetDiceRoll(55))
+	r.color.B = 200 + uint8(randgen.GetDiceRoll(55))
+	r.thickness = float32(1.5 + rand.Float32())
+
+	// Draw segments
+	for i := 0; i < len(r.segments)-1; i++ {
+		vector.StrokeLine(screen, float32(r.segments[i][0]), float32(r.segments[i][1]),
+			float32(r.segments[i+1][0]), float32(r.segments[i+1][1]),
+			r.thickness, r.color, false)
+	}
+}
+
+func (r *ElectricArcRenderer) generateSegments(startX, startY float64) {
+	r.segments = make([][]float64, 0)
+	r.segments = append(r.segments, []float64{startX, startY})
+
+	currentX, currentY := startX, startY
+	for i := 0; i < 10; i++ {
+		nextX := currentX + (r.endX-currentX)/float64(10-i) + (rand.Float64()-0.5)*20
+		nextY := currentY + (r.endY-currentY)/float64(10-i) + (rand.Float64()-0.5)*20
+		r.segments = append(r.segments, []float64{nextX, nextY})
+		currentX, currentY = nextX, nextY
+	}
+
+	r.segments = append(r.segments, []float64{r.endX, r.endY})
+}
+
+// ProceduralRenderer draws procedurally generated shapes for sticky ground effects
+type ProceduralRenderer struct {
+	baseColor color.Color
+}
+
+func NewProceduralRenderer(baseColor color.Color) *ProceduralRenderer {
+	return &ProceduralRenderer{
+		baseColor: baseColor,
+	}
+}
+
+func (r *ProceduralRenderer) Draw(screen *ebiten.Image, effect *BaseEffect, state AnimationState) {
+	// Get wave offset from animator state (stored in OffsetX for convenience)
+	// WaveAnimator should set waveOffset somehow - let's use a simple time-based approach
+	waveOffset := time.Since(effect.startTime).Seconds() * 0.1
+
+	// Create a color-based sticky ground effect with multiple circles
+	for i := 0; i < 5; i++ {
+		radius := 10 + 5*math.Sin(waveOffset+float64(i))
+		x := effect.startX + 20*math.Cos(float64(i)+waveOffset)
+		y := effect.startY + 20*math.Sin(float64(i)+waveOffset)
+
+		// Generate an offscreen image to represent the shape (circle here)
+		circleImage := ebiten.NewImage(int(2*radius), int(2*radius))
+		circleImage.Fill(r.baseColor)
+
+		opts := &ebiten.DrawImageOptions{}
+		opts.GeoM.Translate(-radius, -radius) // Center the circle
+		opts.GeoM.Translate(x, y)
+		opts.GeoM.Scale(state.Scale*float64(ScreenInfo.ScaleFactor), state.Scale*float64(ScreenInfo.ScaleFactor))
+		opts.ColorM.Scale(1, 1, 1, state.Opacity)
+
+		screen.DrawImage(circleImage, opts)
+	}
+}
+
+// FlickerAnimator implements flickering behavior (used by fire, electricity, etc.)
+type FlickerAnimator struct {
+	flickerTimer int
+	scaleRange   [2]float64 // min, max scale
+	opacityRange [2]float64 // min, max opacity
+	jitterPos    bool       // whether to jitter position
+}
+
+func (a *FlickerAnimator) Update(effect *BaseEffect, elapsed float64) AnimationState {
+	a.flickerTimer++
+	state := AnimationState{
+		Scale:   a.scaleRange[0] + (a.scaleRange[1]-a.scaleRange[0])*rand.Float64(),
+		Opacity: a.opacityRange[0] + (a.opacityRange[1]-a.opacityRange[0])*rand.Float64(),
+	}
+
+	// Position jitter every 5 frames
+	if a.jitterPos && a.flickerTimer%5 == 0 {
+		state.OffsetX = -0.5 + rand.Float64()
+		state.OffsetY = -0.5 + rand.Float64()
+	}
+
+	return state
+}
+
+func (a *FlickerAnimator) Reset() {
+	a.flickerTimer = 0
+}
+
+// BrightnessFlickerAnimator for effects that flicker with brightness changes (like electricity with image)
+type BrightnessFlickerAnimator struct {
+	scaleRange      [2]float64 // min, max scale
+	brightnessRange [2]float64 // min, max brightness
+	jitterPos       bool       // whether to jitter position
+}
+
+func (a *BrightnessFlickerAnimator) Update(effect *BaseEffect, elapsed float64) AnimationState {
+	state := AnimationState{
+		Scale:      a.scaleRange[0] + (a.scaleRange[1]-a.scaleRange[0])*rand.Float64(),
+		Brightness: a.brightnessRange[0] + (a.brightnessRange[1]-a.brightnessRange[0])*rand.Float64(),
+		Opacity:    1.0,
+	}
+
+	// Position jitter for erratic movement
+	if a.jitterPos {
+		state.OffsetX = -1.0 + 2.0*rand.Float64()
+		state.OffsetY = -1.0 + 2.0*rand.Float64()
+	}
+
+	return state
+}
+
+func (a *BrightnessFlickerAnimator) Reset() {
+	// No state to reset
+}
+
+// ShimmerAnimator implements random shimmering behavior (used by ice effects)
+type ShimmerAnimator struct {
+	scaleRange   [2]float64 // min, max scale
+	opacityRange [2]float64 // min, max opacity
+	colorRange   [2]float64 // min, max color shift
+}
+
+func (a *ShimmerAnimator) Update(effect *BaseEffect, elapsed float64) AnimationState {
+	return AnimationState{
+		Scale:      a.scaleRange[0] + (a.scaleRange[1]-a.scaleRange[0])*rand.Float64(),
+		Opacity:    a.opacityRange[0] + (a.opacityRange[1]-a.opacityRange[0])*rand.Float64(),
+		ColorShift: a.colorRange[0] + (a.colorRange[1]-a.colorRange[0])*rand.Float64(),
+	}
+}
+
+func (a *ShimmerAnimator) Reset() {
+	// No state to reset
+}
+
+// SineShimmerAnimator implements sine-wave based shimmering (used by IceEffect2)
+type SineShimmerAnimator struct {
+	shimmerPhase float64
+	scaleBase    float64
+	scaleAmp     float64
+	shimmerSpeed float64
+}
+
+func (a *SineShimmerAnimator) Update(effect *BaseEffect, elapsed float64) AnimationState {
+	a.shimmerPhase += a.shimmerSpeed
+
+	shimmerIntensity := 0.2 + 0.1*math.Sin(a.shimmerPhase)
+	scale := a.scaleBase + a.scaleAmp*math.Sin(a.shimmerPhase)
+
+	state := AnimationState{
+		Scale:      scale,
+		Opacity:    1.0,
+		ColorShift: 1.0 + shimmerIntensity, // For brightness effect
+	}
+
+	return state
+}
+
+func (a *SineShimmerAnimator) Reset() {
+	a.shimmerPhase = 0
+}
+
+// PulseAnimator implements smooth pulsing behavior (used by cloud effects)
+type PulseAnimator struct {
+	puffinessPhase float64
+	scaleBase      float64
+	scaleAmp       float64
+	opacityBase    float64
+	opacityAmp     float64
+	phaseSpeed     float64
+}
+
+func (a *PulseAnimator) Update(effect *BaseEffect, elapsed float64) AnimationState {
+	a.puffinessPhase += a.phaseSpeed
+
+	return AnimationState{
+		Scale:   a.scaleBase + a.scaleAmp*math.Sin(a.puffinessPhase),
+		Opacity: a.opacityBase + a.opacityAmp*math.Sin(a.puffinessPhase*0.7),
+	}
+}
+
+func (a *PulseAnimator) Reset() {
+	a.puffinessPhase = 0
+}
+
+// MotionAnimator implements linear motion from start to end (used by projectiles)
+type MotionAnimator struct {
+	endX, endY         float64
+	currentX, currentY float64
+	speed              float64
+	completed          bool
+}
+
+func NewMotionAnimator(startX, startY, endX, endY int, speed float64) *MotionAnimator {
+	return &MotionAnimator{
+		endX:      float64(endX),
+		endY:      float64(endY),
+		currentX:  float64(startX),
+		currentY:  float64(startY),
+		speed:     speed,
+		completed: false,
+	}
+}
+
+func (a *MotionAnimator) Update(effect *BaseEffect, elapsed float64) AnimationState {
+	if a.completed {
+		return AnimationState{Scale: 1.0, Opacity: 1.0}
+	}
+
+	dirX := a.endX - effect.startX
+	dirY := a.endY - effect.startY
+
+	length := math.Sqrt(dirX*dirX + dirY*dirY)
+	dirX /= length
+	dirY /= length
+
+	a.currentX += dirX * a.speed
+	a.currentY += dirY * a.speed
+
+	// Check if we've arrived at the target
+	if math.Abs(a.currentX-a.endX) < a.speed && math.Abs(a.currentY-a.endY) < a.speed {
+		a.completed = true
+		effect.completed = true
+	}
+
+	return AnimationState{
+		Scale:   1.0,
+		Opacity: 1.0,
+		OffsetX: a.currentX - effect.startX,
+		OffsetY: a.currentY - effect.startY,
+	}
+}
+
+func (a *MotionAnimator) Reset() {
+	a.currentX = 0
+	a.currentY = 0
+	a.completed = false
+}
+
+// WaveAnimator implements slow wave-based movement (used by sticky ground effects)
+type WaveAnimator struct {
+	waveOffset float64
+	waveSpeed  float64
+}
+
+func (a *WaveAnimator) Update(effect *BaseEffect, elapsed float64) AnimationState {
+	a.waveOffset += a.waveSpeed
+
+	return AnimationState{
+		Scale:   1.0,
+		Opacity: 0.8 + 0.2*math.Sin(a.waveOffset),
+	}
+}
+
+func (a *WaveAnimator) Reset() {
+	a.waveOffset = 0
+}
+
 // completed tells us whether the VX is done displaying
 type VXCommon struct {
 	completed      bool
@@ -207,973 +723,172 @@ func (vis VisualEffectHandler) DrawVisualEffects(screen *ebiten.Image) {
 
 }
 
-type Projectile struct {
-	VXCommon
+// NewProjectile creates a projectile effect using BaseEffect + MotionAnimator + ProjectileRenderer
+func NewProjectile(startX, startY, endX, endY int) VisualEffect {
+	vxImg, _, _ := ebitenutil.NewImageFromFile("../assets/effects/arrow3.png")
 
-	endX, endY         float64
-	currentX, currentY float64
-	speed              float64
-}
-
-// Todo, every projectile currently uses the same VX
-func NewProjectile(startX, startY, endX, endY int) *Projectile {
-
-	vxCom := NewVXCommon("../assets/effects/arrow3.png", startX, startY)
-	pro := &Projectile{
-		VXCommon: vxCom,
-
-		endX:     float64(endX),
-		endY:     float64(endY),
-		currentX: float64(startX),
-		currentY: float64(startY),
-		speed:    5.0,
-	}
-
-	return pro
-}
-
-// Moves the projectile allong the path every time UpdateVisualEffect is called
-// This happens during the Update function in the game loop
-func (a *Projectile) UpdateVisualEffect() {
-	if a.completed {
-		return
-	}
-
-	dirX := float64(a.endX - a.startX)
-	dirY := float64(a.endY - a.startY)
-
-	length := math.Sqrt(dirX*dirX + dirY*dirY)
-	dirX /= length
-	dirY /= length
-
-	a.currentX += dirX * a.speed
-	a.currentY += dirY * a.speed
-
-	// Check if we've arrived at the target
-	if math.Abs(a.currentX-float64(a.endX)) < a.speed && math.Abs(a.currentY-float64(a.endY)) < a.speed {
-		a.completed = true
-	}
-}
-
-func (a *Projectile) DrawVisualEffect(screen *ebiten.Image) {
-	if a.completed {
-		return
-	}
-
-	// Calculate the rotation angle based on the direction
-	angle := math.Atan2(float64(a.endY-a.startY), float64(a.endX-a.startX))
-
-	opts := &ebiten.DrawImageOptions{}
-	opts.GeoM.Scale(float64(ScreenInfo.ScaleFactor), float64(ScreenInfo.ScaleFactor))
-	opts.GeoM.Translate(-float64(a.img.Bounds().Dx())/2, -float64(a.img.Bounds().Dy())/2) // Center the image
-	opts.GeoM.Rotate(angle)
-	opts.GeoM.Translate(a.currentX, a.currentY)
-
-	// Draw the arrow on the screen
-	screen.DrawImage(a.img, opts)
-}
-
-func (a *Projectile) SetVXCommon(x, y int, img *ebiten.Image) {
-	a.startX = float64(x)
-	a.startY = float64(y)
-	a.img = img
-}
-
-func (a *Projectile) IsCompleted() bool {
-
-	return a.isComplete()
-
-}
-
-func (a *Projectile) VXImg() *ebiten.Image {
-	return a.img
-}
-
-// Projectile does not have a duration but we still need the function to implement the interface
-func (a *Projectile) ResetVX() {
-
-}
-
-func (s *Projectile) Copy() VisualEffect {
-
-	return &Projectile{
-		VXCommon: s.VXCommon,
-		endX:     s.endX,
-		endY:     s.endY,
-		currentX: s.currentX,
-		currentY: s.currentY,
-	}
-
-}
-
-type FireEffect struct {
-	VXCommon
-	startTime                                time.Time
-	flickerTimer, duration, originalDuration int     // Timer for flickering
-	scale                                    float64 // Scale of the fire (for flickering size)
-	opacity                                  float64 // Opacity of the fire (for flickering brightness)
-
-}
-
-func NewFireEffect(startX, startY, flickerTimer, duration int, scale, opacity float64) *FireEffect {
-
-	vxImg, _, _ := ebitenutil.NewImageFromFile("../assets/effects/cloud_fire2.png")
-
-	pro := &FireEffect{
-		VXCommon: VXCommon{
-			img:       vxImg,
-			completed: false,
-			startX:    float64(startX),
-			startY:    float64(startY),
-		},
-		flickerTimer:     flickerTimer,
-		startTime:        time.Now(),
-		duration:         duration,
-		originalDuration: duration,
-		scale:            scale,
-		opacity:          opacity,
-	}
-
-	return pro
-}
-
-func (f *FireEffect) UpdateVisualEffect() {
-
-	elapsed := time.Since(f.startTime).Seconds()
-
-	// Increment flicker timer
-	f.flickerTimer++
-
-	// Randomly change the scale slightly to simulate flickering
-	f.scale = 0.95 + 0.1*rand.Float64()
-
-	// Randomly adjust opacity to simulate flickering brightness
-	f.opacity = 0.7 + 0.3*rand.Float64()
-
-	// Vary position slightly to simulate movement
-	if f.flickerTimer%5 == 0 { // Adjust every few frames
-		f.startX += -0.5 + rand.Float64()
-		f.startY += -0.5 + rand.Float64()
-	}
-
-	// Check if the effect has burned for the specified duration
-	if int(elapsed) >= f.duration {
-		f.completed = true
-	}
-
-}
-
-func (f *FireEffect) DrawVisualEffect(screen *ebiten.Image) {
-
-	opts := &ebiten.DrawImageOptions{}
-
-	// Set the scale for flickering size
-	opts.GeoM.Scale(f.scale*float64(ScreenInfo.ScaleFactor), f.scale*float64(ScreenInfo.ScaleFactor))
-
-	// Set the position
-	opts.GeoM.Translate(f.startX, f.startY)
-
-	// Set the opacity (color modulation)
-	opts.ColorM.Scale(1, 1, 1, f.opacity)
-
-	// Draw the fire image on the screen with flickering effect
-	screen.DrawImage(f.img, opts)
-
-}
-
-func (f *FireEffect) SetVXCommon(x, y int, img *ebiten.Image) {
-	f.startX = float64(x)
-	f.startY = float64(y)
-	f.img = img
-}
-
-func (f *FireEffect) IsCompleted() bool {
-
-	return f.isComplete()
-
-}
-
-func (f *FireEffect) VXImg() *ebiten.Image {
-	return f.img
-}
-
-// Projectile does not have a duration but we still need the function to implement the interface
-func (f *FireEffect) ResetVX() {
-
-	f.startTime = time.Now()
-	f.completed = false
-	f.duration = f.originalDuration
-
-}
-
-func (f *FireEffect) Copy() VisualEffect {
-
-	return &FireEffect{
-		VXCommon:         f.VXCommon,
-		startTime:        f.startTime,
-		flickerTimer:     f.flickerTimer,
-		duration:         f.duration,
-		originalDuration: f.originalDuration,
-		scale:            f.scale,
-		opacity:          f.opacity,
-	}
-
-}
-
-type IceEffect struct {
-	img                        *ebiten.Image // Your ice image
-	startX, startY             float64
-	scale                      float64
-	opacity                    float64
-	startTime                  time.Time
-	duration, originalDuration int
-	completed                  bool
-	colorShift                 float64
-}
-
-func NewIceEffect(startX, startY int, duration int) *IceEffect {
-
-	vxImg, _, _ := ebitenutil.NewImageFromFile("../assets/effects/frost0.png")
-	return &IceEffect{
-		img:              vxImg,
+	return &BaseEffect{
 		startX:           float64(startX),
 		startY:           float64(startY),
-		scale:            1.0, // Initial scale
-		opacity:          1.0, // Initial opacity
+		startTime:        time.Now(),
+		duration:         999999, // Projectile completes when it reaches target, not after duration
+		originalDuration: 999999,
+		img:              vxImg,
+		animator:         NewMotionAnimator(startX, startY, endX, endY, 5.0),
+		renderer:         &ProjectileRenderer{endX: float64(endX), endY: float64(endY)},
+	}
+}
+
+// NewFireEffect creates a fire effect using BaseEffect + FlickerAnimator
+// Parameters: startX, startY, flickerTimer (ignored - kept for backward compatibility),
+// duration, scale (ignored - handled by animator), opacity (ignored - handled by animator)
+func NewFireEffect(startX, startY, flickerTimer, duration int, scale, opacity float64) VisualEffect {
+	vxImg, _, _ := ebitenutil.NewImageFromFile("../assets/effects/cloud_fire2.png")
+
+	return &BaseEffect{
+		startX:           float64(startX),
+		startY:           float64(startY),
 		startTime:        time.Now(),
 		duration:         duration,
 		originalDuration: duration,
-		completed:        false,
+		img:              vxImg,
+		animator: &FlickerAnimator{
+			scaleRange:   [2]float64{0.95, 1.05},
+			opacityRange: [2]float64{0.7, 1.0},
+			jitterPos:    true,
+		},
+		renderer: &ImageRenderer{},
 	}
 }
 
-func (ice *IceEffect) UpdateVisualEffect() {
-	elapsed := time.Since(ice.startTime).Seconds()
-
-	// Randomly change the scale slightly to simulate shimmering
-	ice.scale = 0.98 + 0.04*rand.Float64()
-
-	// Randomly adjust opacity to simulate light reflections
-	ice.opacity = 0.85 + 0.15*rand.Float64()
-
-	// Subtle color shifting (optional)
-	ice.colorShift = 0.9 + 0.1*rand.Float64()
-
-	// Check if the effect has lasted for the specified duration
-	if int(elapsed) >= ice.duration {
-		ice.completed = true
-	}
-}
-
-func (ice *IceEffect) DrawVisualEffect(screen *ebiten.Image) {
-	opts := &ebiten.DrawImageOptions{}
-
-	// Set the scale for the shimmering effect
-	opts.GeoM.Scale(ice.scale*float64(ScreenInfo.ScaleFactor), ice.scale*float64(ScreenInfo.ScaleFactor))
-
-	// Set the position of the ice effect
-	opts.GeoM.Translate(ice.startX, ice.startY)
-
-	// Apply the opacity and color shifting to simulate shimmer
-	opts.ColorM.Scale(ice.colorShift, ice.colorShift, 1.0, ice.opacity)
-
-	// Draw the ice image with the shimmering effect
-	screen.DrawImage(ice.img, opts)
-}
-
-func (s *IceEffect) SetVXCommon(x, y int, img *ebiten.Image) {
-	s.startX = float64(x)
-	s.startY = float64(y)
-	s.img = img
-}
-
-func (i *IceEffect) IsCompleted() bool {
-	return i.completed
-}
-
-func (i *IceEffect) VXImg() *ebiten.Image {
-	return i.img
-}
-
-// Projectile does not have a duration but we still need the function to implement the interface
-func (i *IceEffect) ResetVX() {
-
-	i.startTime = time.Now()
-	i.completed = false
-	i.duration = i.originalDuration
-
-}
-
-func (ice *IceEffect) Copy() VisualEffect {
-	return &IceEffect{
-		img:              ice.img,
-		startX:           ice.startX,
-		startY:           ice.startY,
-		scale:            ice.scale,
-		opacity:          ice.opacity,
-		startTime:        ice.startTime,
-		duration:         ice.duration,
-		originalDuration: ice.duration,
-		completed:        ice.completed,
-		colorShift:       ice.colorShift,
-	}
-}
-
-type IceEffect2 struct {
-	img              *ebiten.Image
-	startX           float64
-	startY           float64
-	startTime        time.Time
-	duration         int
-	originalDuration int
-	completed        bool
-	shimmerPhase     float64
-	scale            float64
-}
-
-func NewIceEffect2(x, y int, duration int) *IceEffect2 {
-
+// NewIceEffect creates an ice effect using BaseEffect + ShimmerAnimator
+func NewIceEffect(startX, startY int, duration int) VisualEffect {
 	vxImg, _, _ := ebitenutil.NewImageFromFile("../assets/effects/frost0.png")
 
-	return &IceEffect2{
+	return &BaseEffect{
+		startX:           float64(startX),
+		startY:           float64(startY),
+		startTime:        time.Now(),
+		duration:         duration,
+		originalDuration: duration,
 		img:              vxImg,
+		animator: &ShimmerAnimator{
+			scaleRange:   [2]float64{0.98, 1.02},
+			opacityRange: [2]float64{0.85, 1.0},
+			colorRange:   [2]float64{0.9, 1.0},
+		},
+		renderer: &ImageRenderer{},
+	}
+}
+
+// NewIceEffect2 creates an ice effect with sine-wave shimmering using BaseEffect + SineShimmerAnimator
+func NewIceEffect2(x, y int, duration int) VisualEffect {
+	vxImg, _, _ := ebitenutil.NewImageFromFile("../assets/effects/frost0.png")
+
+	return &BaseEffect{
 		startX:           float64(x),
 		startY:           float64(y),
 		startTime:        time.Now(),
 		duration:         duration,
 		originalDuration: duration,
-		scale:            1.0,
-	}
-}
-
-func (i *IceEffect2) UpdateVisualEffect() {
-	elapsed := time.Since(i.startTime).Seconds()
-
-	// Update shimmer phase
-	i.shimmerPhase += 0.1 // Adjust this value to change shimmer speed
-
-	// Slightly vary scale to simulate ice "growing" or "shrinking"
-	i.scale = 1.0 + 0.05*math.Sin(i.shimmerPhase)
-
-	// Check if the effect has lasted for the specified duration
-	if int(elapsed) >= i.duration {
-		i.completed = true
-	}
-}
-
-func (i *IceEffect2) DrawVisualEffect(screen *ebiten.Image) {
-	opts := &ebiten.DrawImageOptions{}
-
-	// Set the scale
-	opts.GeoM.Scale(i.scale*float64(ScreenInfo.ScaleFactor), i.scale*float64(ScreenInfo.ScaleFactor))
-
-	// Set the position
-	opts.GeoM.Translate(i.startX, i.startY)
-
-	// Create shimmering effect by manipulating color
-	shimmerIntensity := 0.2 + 0.1*math.Sin(i.shimmerPhase)
-	opts.ColorM.Scale(1+shimmerIntensity, 1+shimmerIntensity, 1+shimmerIntensity, 1)
-
-	// Add a slight blue tint
-	opts.ColorM.Translate(0, 0, 0.1, 0)
-
-	// Draw the ice image on the screen with shimmering effect
-	screen.DrawImage(i.img, opts)
-}
-
-func (s *IceEffect2) SetVXCommon(x, y int, img *ebiten.Image) {
-	s.startX = float64(x)
-	s.startY = float64(y)
-	s.img = img
-}
-
-func (i *IceEffect2) IsCompleted() bool {
-	return i.completed
-}
-
-func (s *IceEffect2) VXImg() *ebiten.Image {
-	return s.img
-}
-
-// Projectile does not have a duration but we still need the function to implement the interface
-func (i *IceEffect2) ResetVX() {
-
-	i.startTime = time.Now()
-	i.completed = false
-	i.duration = i.originalDuration
-
-}
-
-func (s *IceEffect2) Copy() VisualEffect {
-	return &IceEffect2{
-		img:              s.img,
-		startX:           float64(s.startX),
-		startY:           float64(s.startY),
-		startTime:        s.startTime,
-		duration:         s.duration,
-		originalDuration: s.duration,
-		completed:        s.completed,
-		shimmerPhase:     s.shimmerPhase,
-		scale:            s.scale,
-	}
-}
-
-type CloudEffect struct {
-	img              *ebiten.Image
-	startX, startY   float64
-	scale            float64
-	opacity          float64
-	startTime        time.Time
-	duration         int
-	originalDuration int
-	completed        bool
-	puffinessPhase   float64
-}
-
-func NewCloudEffect(startX, startY int, duration int) *CloudEffect {
-	vxImg, _, _ := ebitenutil.NewImageFromFile("../assets/effects/cloud_poison0.png")
-	return &CloudEffect{
 		img:              vxImg,
+		animator: &SineShimmerAnimator{
+			scaleBase:    1.0,
+			scaleAmp:     0.05,
+			shimmerSpeed: 0.1,
+		},
+		renderer: &ImageRenderer{},
+	}
+}
+
+// NewCloudEffect creates a cloud effect with pulsing animation using BaseEffect + PulseAnimator + CloudRenderer
+func NewCloudEffect(startX, startY int, duration int) VisualEffect {
+	vxImg, _, _ := ebitenutil.NewImageFromFile("../assets/effects/cloud_poison0.png")
+
+	return &BaseEffect{
 		startX:           float64(startX),
 		startY:           float64(startY),
-		scale:            1.0,
-		opacity:          0.8,
 		startTime:        time.Now(),
 		duration:         duration,
 		originalDuration: duration,
-		completed:        false,
-		puffinessPhase:   0,
+		img:              vxImg,
+		animator: &PulseAnimator{
+			scaleBase:   1.0,
+			scaleAmp:    0.05,
+			opacityBase: 0.7,
+			opacityAmp:  0.2,
+			phaseSpeed:  0.05,
+		},
+		renderer: &CloudRenderer{},
 	}
 }
 
-func (c *CloudEffect) UpdateVisualEffect() {
-	elapsed := time.Since(c.startTime).Seconds()
-
-	// Update puffiness phase
-	c.puffinessPhase += 0.05 // Adjust this value to change the speed of the effect
-
-	// Simulate cloud puffiness by slightly changing scale
-	c.scale = 1.0 + 0.05*math.Sin(c.puffinessPhase)
-
-	// Simulate cloud density changes by adjusting opacity
-	c.opacity = 0.7 + 0.2*math.Sin(c.puffinessPhase*0.7)
-
-	// Check if the effect has lasted for the specified duration
-	if int(elapsed) >= c.duration {
-		c.completed = true
-	}
-}
-
-func (c *CloudEffect) DrawVisualEffect(screen *ebiten.Image) {
-	bounds := c.img.Bounds()
-	imgWidth := float64(bounds.Dx())
-	imgHeight := float64(bounds.Dy())
-
-	// Draw the main cloud image
-	opts := &ebiten.DrawImageOptions{}
-
-	// Set the scale for the puffiness effect
-	opts.GeoM.Scale(c.scale*float64(ScreenInfo.ScaleFactor), c.scale*float64(ScreenInfo.ScaleFactor))
-
-	// Adjust position to keep the center of the cloud in place
-	adjustedX := c.startX - (imgWidth * (c.scale - 1) / 2)
-	adjustedY := c.startY - (imgHeight * (c.scale - 1) / 2)
-
-	// Set the adjusted position of the cloud effect
-	opts.GeoM.Translate(adjustedX, adjustedY)
-
-	// Apply the opacity to simulate density changes
-	opts.ColorM.Scale(1, 1, 1, c.opacity)
-
-	screen.DrawImage(c.img, opts)
-
-	// Create a subtle "fluffiness" effect by drawing multiple layers
-	for i := 0; i < 2; i++ { // Reduced from 3 to 2 layers for less expansion
-		layerOpts := &ebiten.DrawImageOptions{}
-		layerScale := c.scale * (1.0 - float64(i)*0.1) // Slightly smaller for each layer
-		layerOpts.GeoM.Scale(layerScale, layerScale)
-
-		// Adjust position for each layer
-		layerAdjustedX := c.startX - (imgWidth * (layerScale - 1) / 2)
-		layerAdjustedY := c.startY - (imgHeight * (layerScale - 1) / 2)
-		layerOpts.GeoM.Translate(layerAdjustedX, layerAdjustedY)
-
-		layerOpts.ColorM.Scale(1, 1, 1, 0.3*c.opacity) // Adjust opacity for each layer
-		screen.DrawImage(c.img, layerOpts)
-	}
-}
-
-func (c *CloudEffect) IsCompleted() bool {
-	return c.completed
-}
-
-func (c *CloudEffect) SetVXCommon(x, y int, img *ebiten.Image) {
-	c.startX = float64(x)
-	c.startY = float64(y)
-	c.img = img
-}
-
-func (c *CloudEffect) VXImg() *ebiten.Image {
-	return c.img
-}
-
-// Projectile does not have a duration but we still need the function to implement the interface
-func (c *CloudEffect) ResetVX() {
-
-	c.startTime = time.Now()
-	c.completed = false
-	c.duration = c.originalDuration
-
-}
-
-func (c *CloudEffect) Copy() VisualEffect {
-	return &CloudEffect{
-		img:              c.img,
-		startX:           c.startX,
-		startY:           c.startY,
-		scale:            c.scale,
-		opacity:          c.opacity,
-		startTime:        c.startTime,
-		duration:         c.duration,
-		originalDuration: c.duration,
-		completed:        c.completed,
-		puffinessPhase:   c.puffinessPhase,
-	}
-}
-
-type ElectricityEffectNoImage struct {
-	startX, startY   float64
-	segments         []lineSegment
-	color            color.RGBA
-	startTime        time.Time
-	duration         int
-	originalDuration int
-	completed        bool
-}
-
+// lineSegment type used by line-based effects
 type lineSegment struct {
 	x1, y1, x2, y2 float64
 }
 
-func NewElectricityEffectNoImage(startX, startY int, duration int, numSegments int) *ElectricityEffectNoImage {
-	segments := make([]lineSegment, numSegments)
-	currentX, currentY := float64(startX), float64(startY)
-
-	for i := 0; i < numSegments; i++ {
-		nextX := currentX + -10 + 20*rand.Float64() // Random horizontal displacement
-		nextY := currentY + -10 + 20*rand.Float64() // Random vertical displacement
-
-		segments[i] = lineSegment{
-			x1: currentX,
-			y1: currentY,
-			x2: nextX,
-			y2: nextY,
-		}
-
-		currentX, currentY = nextX, nextY
-	}
-
-	// Random bright color for the electricity
-	color := color.RGBA{
-		R: uint8(200 + randgen.GetDiceRoll(55)),
-		G: uint8(200 + randgen.GetDiceRoll(55)),
-		B: 255,
-		A: 255,
-	}
-
-	return &ElectricityEffectNoImage{
+// NewElectricityEffectNoImage creates a line-based electricity effect using BaseEffect + LineSegmentRenderer
+func NewElectricityEffectNoImage(startX, startY int, duration int, numSegments int) VisualEffect {
+	return &BaseEffect{
 		startX:           float64(startX),
 		startY:           float64(startY),
-		segments:         segments,
-		color:            color,
 		startTime:        time.Now(),
 		duration:         duration,
 		originalDuration: duration,
-		completed:        false,
-	}
-}
-func (elec *ElectricityEffectNoImage) UpdateVisualEffect() {
-	elapsed := time.Since(elec.startTime).Seconds()
-
-	// Regenerate line segments to simulate flickering
-	for i := range elec.segments {
-		elec.segments[i].x2 += -5 + 10*rand.Float64() // Jitter x
-		elec.segments[i].y2 += -5 + 10*rand.Float64() // Jitter y
-	}
-
-	// Slightly adjust the color to simulate electrical surges
-	elec.color.R = uint8(200 + randgen.GetDiceRoll(55))
-	elec.color.G = uint8(200 + randgen.GetDiceRoll(55))
-	elec.color.B = 255
-
-	// Check if the effect has lasted for the specified duration
-	if int(elapsed) >= elec.duration {
-		elec.completed = true
+		img:              nil,
+		animator:         nil, // No animator - rendering is stateless
+		renderer:         NewLineSegmentRenderer(startX, startY, numSegments),
 	}
 }
 
-func (elec *ElectricityEffectNoImage) DrawVisualEffect(screen *ebiten.Image) {
-	for _, segment := range elec.segments {
-		ebitenutil.DrawLine(screen, segment.x1, segment.y1, segment.x2, segment.y2, elec.color)
-	}
-}
+// NewElectricityEffect creates an electricity effect using BaseEffect + BrightnessFlickerAnimator
+func NewElectricityEffect(startX, startY int, duration int) VisualEffect {
+	vxImg, _, _ := ebitenutil.NewImageFromFile("../assets/effects/zap0.png")
 
-func (elec *ElectricityEffectNoImage) IsCompleted() bool {
-	return elec.completed
-}
-
-func (elec *ElectricityEffectNoImage) SetVXCommon(x, y int, img *ebiten.Image) {
-	elec.startX = float64(x)
-	elec.startY = float64(y)
-	//elec.img = img
-}
-
-func (elec *ElectricityEffectNoImage) VXImg() *ebiten.Image {
-	return nil
-}
-
-// Projectile does not have a duration but we still need the function to implement the interface
-func (elec *ElectricityEffectNoImage) ResetVX() {
-
-	elec.startTime = time.Now()
-	elec.completed = false
-	elec.duration = elec.originalDuration
-
-}
-
-func (elec *ElectricityEffectNoImage) Copy() VisualEffect {
-	copiedSegments := make([]lineSegment, len(elec.segments))
-	copy(copiedSegments, elec.segments)
-
-	return &ElectricityEffectNoImage{
-		startX:           elec.startX,
-		startY:           elec.startY,
-		segments:         copiedSegments,
-		color:            elec.color,
-		startTime:        elec.startTime,
-		duration:         elec.duration,
-		originalDuration: elec.originalDuration,
-		completed:        elec.completed,
-	}
-}
-
-type ElectricityEffect struct {
-	img              *ebiten.Image // Your electricity image
-	startX, startY   float64
-	scale            float64
-	brightness       float64
-	startTime        time.Time
-	duration         int
-	originalDuration int
-	completed        bool
-}
-
-func NewElectricityEffect(startX, startY int, duration int) *ElectricityEffect {
-	vxImg, _, _ := ebitenutil.NewImageFromFile("../assets/effects/zap0.png") // Load your electricity image here
-	return &ElectricityEffect{
+	return &BaseEffect{
+		startX:           float64(startX),
+		startY:           float64(startY),
+		startTime:        time.Now(),
+		duration:         duration,
+		originalDuration: duration,
 		img:              vxImg,
+		animator: &BrightnessFlickerAnimator{
+			scaleRange:      [2]float64{0.9, 1.1},
+			brightnessRange: [2]float64{1.0, 1.5},
+			jitterPos:       true,
+		},
+		renderer: &ImageRenderer{},
+	}
+}
+
+// NewElectricArc creates an electric arc effect using BaseEffect + ElectricArcRenderer
+func NewElectricArc(startX, startY, endX, endY int, duration int) VisualEffect {
+	return &BaseEffect{
 		startX:           float64(startX),
 		startY:           float64(startY),
-		scale:            1.0, // Initial scale
-		brightness:       1.0, // Initial brightness
 		startTime:        time.Now(),
 		duration:         duration,
 		originalDuration: duration,
-		completed:        false,
+		img:              nil,
+		animator:         nil, // No animator - rendering is stateless
+		renderer:         NewElectricArcRenderer(startX, startY, endX, endY),
 	}
 }
 
-func (elec *ElectricityEffect) UpdateVisualEffect() {
-	elapsed := time.Since(elec.startTime).Seconds()
-
-	// Randomly change the scale to simulate rapid flickering arcs
-	elec.scale = 0.9 + 0.2*rand.Float64()
-
-	// Randomly adjust brightness to simulate electrical surges
-	elec.brightness = 1.0 + 0.5*rand.Float64()
-
-	// Jitter the position slightly to simulate erratic movement
-	elec.startX += -1.0 + 2.0*rand.Float64()
-	elec.startY += -1.0 + 2.0*rand.Float64()
-
-	// Check if the effect has lasted for the specified duration
-	if int(elapsed) >= elec.duration {
-		elec.completed = true
-	}
-}
-
-func (elec *ElectricityEffect) DrawVisualEffect(screen *ebiten.Image) {
-	opts := &ebiten.DrawImageOptions{}
-
-	// Set the scale for the flickering effect
-	opts.GeoM.Scale(elec.scale*float64(ScreenInfo.ScaleFactor), elec.scale*float64(ScreenInfo.ScaleFactor))
-
-	// Set the position of the electricity effect
-	opts.GeoM.Translate(elec.startX, elec.startY)
-
-	// Apply the brightness (color modulation)
-	opts.ColorM.Scale(elec.brightness, elec.brightness, elec.brightness, 1.0)
-
-	// Draw the electricity image with the flickering effect
-	screen.DrawImage(elec.img, opts)
-}
-
-func (elec *ElectricityEffect) IsCompleted() bool {
-	return elec.completed
-}
-
-func (elec *ElectricityEffect) SetVXCommon(x, y int, img *ebiten.Image) {
-	elec.startX = float64(x)
-	elec.startY = float64(y)
-	elec.img = img
-}
-
-func (elec *ElectricityEffect) VXImg() *ebiten.Image {
-	return elec.img
-}
-
-// Projectile does not have a duration but we still need the function to implement the interface
-func (elec *ElectricityEffect) ResetVX() {
-
-	elec.startTime = time.Now()
-	elec.completed = false
-	elec.duration = elec.originalDuration
-
-}
-
-func (elec *ElectricityEffect) Copy() VisualEffect {
-	return &ElectricityEffect{
-		img:              elec.img,
-		startX:           elec.startX,
-		startY:           elec.startY,
-		scale:            elec.scale,
-		brightness:       elec.brightness,
-		startTime:        elec.startTime,
-		duration:         elec.duration,
-		originalDuration: elec.duration,
-		completed:        elec.completed,
-	}
-}
-
-// Todo does not work fix later
-type ElectricArc struct {
-	startX, startY   float64
-	endX, endY       float64
-	segments         [][]float64
-	color            color.RGBA
-	thickness        float32
-	startTime        time.Time
-	duration         int
-	originalDuration int
-	completed        bool
-}
-
-func NewElectricArc(startX, startY, endX, endY int, duration int) *ElectricArc {
-	return &ElectricArc{
+// NewStickyGroundEffect creates a sticky ground effect using BaseEffect + WaveAnimator + ProceduralRenderer
+func NewStickyGroundEffect(startX, startY int, duration int) VisualEffect {
+	return &BaseEffect{
 		startX:           float64(startX),
 		startY:           float64(startY),
-		endX:             float64(endX),
-		endY:             float64(endY),
-		segments:         make([][]float64, 0),
-		color:            color.RGBA{0, 191, 255, 255}, // Light blue color
-		thickness:        2,
 		startTime:        time.Now(),
 		duration:         duration,
 		originalDuration: duration,
-		completed:        false,
+		img:              nil,
+		animator: &WaveAnimator{
+			waveOffset: 0.0,
+			waveSpeed:  0.01,
+		},
+		renderer: NewProceduralRenderer(color.RGBA{0x90, 0xEE, 0x90, 0xFF}),
 	}
-}
-
-func (e *ElectricArc) UpdateVisualEffect() {
-	elapsed := time.Since(e.startTime).Seconds()
-
-	// Generate new segments for the electricity
-	e.generateSegments()
-
-	// Randomly adjust color and thickness for visual variety
-
-	e.color.R = uint8(randgen.GetDiceRoll(50))
-	e.color.G = uint8(200 + randgen.GetDiceRoll(55))
-	e.color.B = uint8(200 + randgen.GetDiceRoll(55))
-	e.thickness = float32(1.5 + rand.Float32())
-
-	// Check if the effect has lasted for the specified duration
-	if int(elapsed) >= e.duration {
-		e.completed = true
-	}
-}
-
-func (e *ElectricArc) DrawVisualEffect(screen *ebiten.Image) {
-	for i := 0; i < len(e.segments)-1; i++ {
-		vector.StrokeLine(screen, float32(e.segments[i][0]), float32(e.segments[i][1]),
-			float32(e.segments[i+1][0]), float32(e.segments[i+1][1]),
-			e.thickness, e.color, false)
-	}
-}
-
-func (e *ElectricArc) generateSegments() {
-	e.segments = make([][]float64, 0)
-	e.segments = append(e.segments, []float64{e.startX, e.startY})
-
-	currentX, currentY := e.startX, e.startY
-	for i := 0; i < 10; i++ { // Adjust the number of segments as needed
-		nextX := currentX + (e.endX-currentX)/float64(10-i) + (rand.Float64()-0.5)*20
-		nextY := currentY + (e.endY-currentY)/float64(10-i) + (rand.Float64()-0.5)*20
-		e.segments = append(e.segments, []float64{nextX, nextY})
-		currentX, currentY = nextX, nextY
-	}
-
-	e.segments = append(e.segments, []float64{e.endX, e.endY})
-}
-
-func (e *ElectricArc) IsCompleted() bool {
-	return e.completed
-}
-
-func (e *ElectricArc) SetVXCommon(x, y int, img *ebiten.Image) {
-	// This effect doesn't use an image, so we'll just update the start position
-	e.startX = float64(x)
-	e.startY = float64(y)
-}
-
-func (e *ElectricArc) VXImg() *ebiten.Image {
-	// This effect doesn't use an image, so we return nil
-	return nil
-}
-
-// Projectile does not have a duration but we still need the function to implement the interface
-func (e *ElectricArc) ResetVX() {
-
-	e.startTime = time.Now()
-	e.completed = false
-	e.duration = e.originalDuration
-
-}
-
-func (e *ElectricArc) Copy() VisualEffect {
-	return &ElectricArc{
-		startX:           e.startX,
-		startY:           e.startY,
-		endX:             e.endX,
-		endY:             e.endY,
-		segments:         make([][]float64, len(e.segments)),
-		color:            e.color,
-		thickness:        e.thickness,
-		startTime:        e.startTime,
-		duration:         e.duration,
-		originalDuration: e.duration,
-		completed:        e.completed,
-	}
-}
-
-type StickyGroundEffect struct {
-	startX, startY   float64
-	scale            float64
-	opacity          float64
-	startTime        time.Time
-	duration         int
-	originalDuration int
-	completed        bool
-	waveOffset       float64     // For slow-moving "sticky" animation
-	color            color.Color // The base color for the sticky effect
-}
-
-// Constructor for StickyGroundEffect
-func NewStickyGroundEffect(startX, startY int, duration int) *StickyGroundEffect {
-	return &StickyGroundEffect{
-		startX:           float64(startX),
-		startY:           float64(startY),
-		scale:            1.0, // Initial scale
-		opacity:          1.0, // Initial opacity
-		startTime:        time.Now(),
-		duration:         duration,
-		originalDuration: duration,
-		completed:        false,
-		waveOffset:       0.0,
-		color:            color.RGBA{0x90, 0xEE, 0x90, 0xFF}, // Example: dark green for a sticky effect
-	}
-}
-
-// Update logic for StickyGroundEffect
-func (s *StickyGroundEffect) UpdateVisualEffect() {
-	elapsed := time.Since(s.startTime).Seconds()
-
-	// Slowly move the "sticky" shapes to simulate gooey movement
-	s.waveOffset += 0.01
-
-	// Slight modulation of opacity to simulate depth or thickness
-	s.opacity = 0.8 + 0.2*math.Sin(s.waveOffset)
-
-	// Check if the effect has lasted for the specified duration
-	if int(elapsed) >= s.duration {
-		s.completed = true
-	}
-}
-
-// Draw logic for StickyGroundEffect
-func (s *StickyGroundEffect) DrawVisualEffect(screen *ebiten.Image) {
-	// Create a color-based sticky ground effect
-	for i := 0; i < 5; i++ {
-		opts := &ebiten.DrawImageOptions{}
-
-		// Create some basic shapes to represent the sticky ground
-		radius := 10 + 5*math.Sin(s.waveOffset+float64(i)) // Vary the radius slightly
-		x := s.startX + 20*math.Cos(float64(i)+s.waveOffset)
-		y := s.startY + 20*math.Sin(float64(i)+s.waveOffset)
-
-		// Generate an offscreen image to represent the shape (circle here)
-		circleImage := ebiten.NewImage(int(2*radius), int(2*radius))
-		circleImage.Fill(s.color)
-
-		// Apply scaling and position transformations
-		opts.GeoM.Translate(-radius, -radius) // Center the circle
-		opts.GeoM.Translate(x, y)
-		opts.GeoM.Scale(s.scale*float64(ScreenInfo.ScaleFactor), s.scale*float64(ScreenInfo.ScaleFactor))
-
-		// Apply opacity modulation
-		opts.ColorM.Scale(1, 1, 1, s.opacity)
-
-		// Draw the shape on the screen
-		screen.DrawImage(circleImage, opts)
-	}
-}
-
-// Copy method for StickyGroundEffect
-func (s *StickyGroundEffect) Copy() VisualEffect {
-	return &StickyGroundEffect{
-		startX:           s.startX,
-		startY:           s.startY,
-		scale:            s.scale,
-		opacity:          s.opacity,
-		startTime:        s.startTime,
-		duration:         s.duration,
-		originalDuration: s.originalDuration,
-		completed:        s.completed,
-		waveOffset:       s.waveOffset,
-		color:            s.color,
-	}
-}
-
-// Other required interface methods
-func (s *StickyGroundEffect) IsCompleted() bool {
-	return s.completed
-}
-
-func (s *StickyGroundEffect) SetVXCommon(x, y int, img *ebiten.Image) {
-	s.startX = float64(x)
-	s.startY = float64(y)
-	// img is unused since we're using color-based shapes
-}
-
-// Projectile does not have a duration but we still need the function to implement the interface
-func (s *StickyGroundEffect) ResetVX() {
-
-	s.startTime = time.Now()
-	s.completed = false
-	s.duration = s.originalDuration
-
-}
-
-func (s *StickyGroundEffect) VXImg() *ebiten.Image {
-	return nil // No image since we're drawing directly with colors
 }

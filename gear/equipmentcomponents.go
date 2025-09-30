@@ -66,7 +66,7 @@ type RangedWeapon struct {
 	MaxDamage     int
 	ShootingRange int
 	TargetArea    graphics.TileBasedShape
-	ShootingVX    *graphics.Projectile
+	ShootingVX    graphics.VisualEffect
 	AttackSpeed   int
 }
 

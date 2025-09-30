@@ -90,7 +90,7 @@ func CreateTestItems(manager *ecs.Manager, tags map[string]ecs.Tag, gameMap *wor
 		[]gear.ItemAction{throwItem}, TestSticky)
 
 	gear.CreateItemWithActions(manager, "SquareThrow"+strconv.Itoa(1), coords.LogicalPosition{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
-		[]gear.ItemAction{throwItem}, TestBurning, TestFreezing)
+		[]gear.ItemAction{throwItem}, TestFreezing, TestFreezing)
 
 	throwItem = CreateTestThrowable(TestCircle, TestIceEffect)
 
@@ -100,12 +100,12 @@ func CreateTestItems(manager *ecs.Manager, tags map[string]ecs.Tag, gameMap *wor
 	throwItem = CreateTestThrowable(TestLine, TestFireEffect)
 
 	gear.CreateItemWithActions(manager, "LineThrow"+strconv.Itoa(1), coords.LogicalPosition{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
-		[]gear.ItemAction{throwItem}, TestBurning, TestFreezing)
+		[]gear.ItemAction{throwItem}, TestFreezing, TestFreezing)
 
 	throwItem = CreateTestThrowable(TestRect, TestElectricEffect)
 
 	gear.CreateItemWithActions(manager, "RectThrow"+strconv.Itoa(1), coords.LogicalPosition{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
-		[]gear.ItemAction{throwItem}, TestBurning, TestFreezing)
+		[]gear.ItemAction{throwItem}, TestSticky, TestFreezing)
 
 	throwItem = CreateTestThrowable(TestCone, TestStickyEffect)
 
