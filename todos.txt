@@ -1,0 +1,51 @@
+__Bugs__
+
+
+*Fix issue where throwable AOE moves with player after throwing
+
+*Ensure that entities are correctly removed upon death. 
+
+*Don't allow shooting and throwing through walls
+
+
+__Balance__
+
+*Figure out a way to determine difficulty of monsters so you can randomize spawning
+
+
+
+__Design__
+
+
+
+*Make private things private - I.E, something that's only used within a package should be accessible only to that package. 
+
+*More interesting dungeon and room generation
+
+*Create a combat system that allows squad building like Nephilim or Sou Nomad. The player will command several squads, and squads can consist of several different types of units. This means attacksystem.go will be reworked.
+
+
+
+___Spawning___ 
+
+* Develop a spawning system. Monsters and equipment. Use probabilities. The spawning package has some parts. I need to review that and figure out how to go forward.
+
+
+__Throwing__
+
+* Thrown items should not always hit the target.
+
+
+__Levels__
+
+
+*Clear entities on previous level unless they are in the room with the stairs. 
+
+*Add more variety to the levels, including placeable items and tile variety
+
+
+
+- - - - - - 
+
+
+

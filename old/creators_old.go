@@ -228,3 +228,56 @@ func CreateEntityFromTemplate(manager common.EntityManager, config EntityConfig,
 	return createFromTemplate(manager, config.Name, config.ImagePath, config.AssetDir,
 		config.Visible, config.Position, adders...)
 }
+
+// Deprecated: Use CreateEntityFromTemplate instead.
+// Legacy wrapper maintained for backward compatibility with existing spawning code.
+func CreateMeleeWepFromTemplate(manager common.EntityManager, w JSONMeleeWeapon) *ecs.Entity {
+	return CreateEntityFromTemplate(manager, EntityConfig{
+		Type:      EntityMeleeWeapon,
+		Name:      w.Name,
+		ImagePath: w.ImgName,
+		AssetDir:  "../assets/items/",
+		Visible:   false,
+		Position:  nil,
+	}, w)
+}
+
+// Deprecated: Use CreateEntityFromTemplate instead.
+// Legacy wrapper maintained for backward compatibility with existing spawning code.
+func CreateRangedWepFromTemplate(manager common.EntityManager, w JSONRangedWeapon) *ecs.Entity {
+	return CreateEntityFromTemplate(manager, EntityConfig{
+		Type:      EntityRangedWeapon,
+		Name:      w.Name,
+		ImagePath: w.ImgName,
+		AssetDir:  "../assets/items/",
+		Visible:   false,
+		Position:  nil,
+	}, w)
+}
+
+// Deprecated: Use CreateEntityFromTemplate instead.
+// Legacy wrapper maintained for backward compatibility with existing spawning code.
+func CreateConsumableFromTemplate(manager common.EntityManager, c JSONAttributeModifier) *ecs.Entity {
+	return CreateEntityFromTemplate(manager, EntityConfig{
+		Type:      EntityConsumable,
+		Name:      c.Name,
+		ImagePath: c.ImgName,
+		AssetDir:  "../assets/items/",
+		Visible:   false,
+		Position:  nil,
+	}, c)
+}
+
+// Deprecated: Use CreateEntityFromTemplate instead.
+// Legacy wrapper maintained for backward compatibility with existing spawning code.
+func CreateCreatureFromTemplate(manager common.EntityManager, m JSONMonster, gm *worldmap.GameMap, xPos, yPos int) *ecs.Entity {
+	return CreateEntityFromTemplate(manager, EntityConfig{
+		Type:      EntityCreature,
+		Name:      m.Name,
+		ImagePath: m.ImageName,
+		AssetDir:  "../assets/creatures/",
+		Visible:   true,
+		Position:  &coords.LogicalPosition{X: xPos, Y: yPos},
+		GameMap:   gm,
+	}, m)
+}

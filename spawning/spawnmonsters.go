@@ -33,7 +33,15 @@ func SpawnMonster(ecsmanager common.EntityManager, gm *worldmap.GameMap) {
 
 				logicalPos := coords.CoordManager.IndexToLogical(index)
 
-				entitytemplates.CreateCreatureFromTemplate(ecsmanager, entitytemplates.MonsterTemplates[0], gm, logicalPos.X, logicalPos.Y)
+				entitytemplates.CreateEntityFromTemplate(ecsmanager, entitytemplates.EntityConfig{
+				Type:      entitytemplates.EntityCreature,
+				Name:      entitytemplates.MonsterTemplates[0].Name,
+				ImagePath: entitytemplates.MonsterTemplates[0].ImageName,
+				AssetDir:  "../assets/creatures/",
+				Visible:   true,
+				Position:  &coords.LogicalPosition{X: logicalPos.X, Y: logicalPos.Y},
+				GameMap:   gm,
+			}, entitytemplates.MonsterTemplates[0])
 				gm.Tiles[index].Blocked = true
 
 				break
@@ -58,7 +66,15 @@ func SpawnStartingCreatures(MaxNumCreatures int, em *common.EntityManager, gm *w
 
 		x, y := room.Center()
 		randCreature = rand.Intn(len(entitytemplates.MonsterTemplates))
-		entitytemplates.CreateCreatureFromTemplate(*em, entitytemplates.MonsterTemplates[randCreature], gm, x, y)
+		entitytemplates.CreateEntityFromTemplate(*em, entitytemplates.EntityConfig{
+			Type:      entitytemplates.EntityCreature,
+			Name:      entitytemplates.MonsterTemplates[randCreature].Name,
+			ImagePath: entitytemplates.MonsterTemplates[randCreature].ImageName,
+			AssetDir:  "../assets/creatures/",
+			Visible:   true,
+			Position:  &coords.LogicalPosition{X: x, Y: y},
+			GameMap:   gm,
+		}, entitytemplates.MonsterTemplates[randCreature])
 
 	}
 
@@ -68,7 +84,15 @@ func SpawnStartingCreatures(MaxNumCreatures int, em *common.EntityManager, gm *w
 		indices := gm.Rooms[rand.Intn(len(gm.Rooms))].GetCoordinatesWithoutCenter()
 		randomPos := indices[rand.Intn(len(indices))]
 
-		entitytemplates.CreateCreatureFromTemplate(*em, entitytemplates.MonsterTemplates[randCreature], gm, randomPos.X, randomPos.Y)
+		entitytemplates.CreateEntityFromTemplate(*em, entitytemplates.EntityConfig{
+			Type:      entitytemplates.EntityCreature,
+			Name:      entitytemplates.MonsterTemplates[randCreature].Name,
+			ImagePath: entitytemplates.MonsterTemplates[randCreature].ImageName,
+			AssetDir:  "../assets/creatures/",
+			Visible:   true,
+			Position:  &coords.LogicalPosition{X: randomPos.X, Y: randomPos.Y},
+			GameMap:   gm,
+		}, entitytemplates.MonsterTemplates[randCreature])
 
 	}
 

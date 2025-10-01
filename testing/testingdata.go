@@ -32,7 +32,14 @@ var TestElectricEffect = graphics.NewElectricityEffect(0, 0, 2)
 var TestStickyEffect = graphics.NewStickyGroundEffect(0, 0, 2)
 
 func CreateTestConsumables(ecsmanager *common.EntityManager, gm *worldmap.GameMap) {
-	ent := entitytemplates.CreateConsumableFromTemplate(*ecsmanager, entitytemplates.ConsumableTemplates[0])
+	ent := entitytemplates.CreateEntityFromTemplate(*ecsmanager, entitytemplates.EntityConfig{
+		Type:      entitytemplates.EntityConsumable,
+		Name:      entitytemplates.ConsumableTemplates[0].Name,
+		ImagePath: entitytemplates.ConsumableTemplates[0].ImgName,
+		AssetDir:  "../assets/items/",
+		Visible:   false,
+		Position:  nil,
+	}, entitytemplates.ConsumableTemplates[0])
 	pos := common.GetPosition(ent)
 	rend := common.GetComponentType[*rendering.Renderable](ent, rendering.RenderableComponent)
 	rend.Visible = true
@@ -40,7 +47,14 @@ func CreateTestConsumables(ecsmanager *common.EntityManager, gm *worldmap.GameMa
 	pos.Y = gm.StartingPosition().Y + 2
 	gm.AddEntityToTile(ent, &coords.LogicalPosition{X: pos.X, Y: pos.Y})
 
-	ent = entitytemplates.CreateConsumableFromTemplate(*ecsmanager, entitytemplates.ConsumableTemplates[1])
+	ent = entitytemplates.CreateEntityFromTemplate(*ecsmanager, entitytemplates.EntityConfig{
+		Type:      entitytemplates.EntityConsumable,
+		Name:      entitytemplates.ConsumableTemplates[1].Name,
+		ImagePath: entitytemplates.ConsumableTemplates[1].ImgName,
+		AssetDir:  "../assets/items/",
+		Visible:   false,
+		Position:  nil,
+	}, entitytemplates.ConsumableTemplates[1])
 	pos = common.GetPosition(ent)
 	rend = common.GetComponentType[*rendering.Renderable](ent, rendering.RenderableComponent)
 	rend.Visible = true
@@ -49,7 +63,14 @@ func CreateTestConsumables(ecsmanager *common.EntityManager, gm *worldmap.GameMa
 
 	gm.AddEntityToTile(ent, &coords.LogicalPosition{X: pos.X, Y: pos.Y})
 
-	ent = entitytemplates.CreateConsumableFromTemplate(*ecsmanager, entitytemplates.ConsumableTemplates[2])
+	ent = entitytemplates.CreateEntityFromTemplate(*ecsmanager, entitytemplates.EntityConfig{
+		Type:      entitytemplates.EntityConsumable,
+		Name:      entitytemplates.ConsumableTemplates[2].Name,
+		ImagePath: entitytemplates.ConsumableTemplates[2].ImgName,
+		AssetDir:  "../assets/items/",
+		Visible:   false,
+		Position:  nil,
+	}, entitytemplates.ConsumableTemplates[2])
 	pos = common.GetPosition(ent)
 	rend = common.GetComponentType[*rendering.Renderable](ent, rendering.RenderableComponent)
 	rend.Visible = true

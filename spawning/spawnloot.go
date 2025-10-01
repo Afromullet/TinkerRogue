@@ -89,7 +89,14 @@ func SpawnStartingConsumables(em common.EntityManager, gm *worldmap.GameMap) {
 
 			randInd := rand.Intn(len(entitytemplates.ConsumableTemplates))
 
-			wep := entitytemplates.CreateConsumableFromTemplate(em, entitytemplates.ConsumableTemplates[randInd])
+			wep := entitytemplates.CreateEntityFromTemplate(em, entitytemplates.EntityConfig{
+				Type:      entitytemplates.EntityConsumable,
+				Name:      entitytemplates.ConsumableTemplates[randInd].Name,
+				ImagePath: entitytemplates.ConsumableTemplates[randInd].ImgName,
+				AssetDir:  "../assets/items/",
+				Visible:   false,
+				Position:  nil,
+			}, entitytemplates.ConsumableTemplates[randInd])
 
 			common.GetComponentType[*rendering.Renderable](wep, rendering.RenderableComponent).Visible = true
 
@@ -121,7 +128,14 @@ func SpawnStartingEquipment(em *common.EntityManager, gm *worldmap.GameMap, pl *
 			if weaponChoice == 0 {
 
 				weaponInd = rand.Intn(len(entitytemplates.MeleeWeaponTemplates))
-				wep := entitytemplates.CreateMeleeWepFromTemplate(*em, entitytemplates.MeleeWeaponTemplates[weaponInd])
+				wep := entitytemplates.CreateEntityFromTemplate(*em, entitytemplates.EntityConfig{
+					Type:      entitytemplates.EntityMeleeWeapon,
+					Name:      entitytemplates.MeleeWeaponTemplates[weaponInd].Name,
+					ImagePath: entitytemplates.MeleeWeaponTemplates[weaponInd].ImgName,
+					AssetDir:  "../assets/items/",
+					Visible:   false,
+					Position:  nil,
+				}, entitytemplates.MeleeWeaponTemplates[weaponInd])
 				common.GetComponentType[*rendering.Renderable](wep, rendering.RenderableComponent).Visible = true
 				pos := common.GetPosition(wep)
 				pos.X = x
@@ -131,7 +145,14 @@ func SpawnStartingEquipment(em *common.EntityManager, gm *worldmap.GameMap, pl *
 			} else if weaponChoice == 1 {
 
 				weaponInd = rand.Intn(len(entitytemplates.RangedWeaponTemplates))
-				wep := entitytemplates.CreateMeleeWepFromTemplate(*em, entitytemplates.MeleeWeaponTemplates[weaponInd])
+				wep := entitytemplates.CreateEntityFromTemplate(*em, entitytemplates.EntityConfig{
+					Type:      entitytemplates.EntityMeleeWeapon,
+					Name:      entitytemplates.MeleeWeaponTemplates[weaponInd].Name,
+					ImagePath: entitytemplates.MeleeWeaponTemplates[weaponInd].ImgName,
+					AssetDir:  "../assets/items/",
+					Visible:   false,
+					Position:  nil,
+				}, entitytemplates.MeleeWeaponTemplates[weaponInd])
 				common.GetComponentType[*rendering.Renderable](wep, rendering.RenderableComponent).Visible = true
 				pos := common.GetPosition(wep)
 				pos.X = x
