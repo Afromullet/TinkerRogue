@@ -10,8 +10,7 @@
         "baseProtection": 1,
         "baseDodgeChance": 0.1,
         "baseMovementSpeed": 3,
-		"damagebonus": 0
-	
+        "damagebonus": 0
       },
       "armor": {
         "armorClass": 2,
@@ -23,7 +22,15 @@
         "maxDamage": 3,
         "attackSpeed": 5
       },
-      "rangedWeapon": null
+      "rangedWeapon": null,
+      "width": 1,
+      "height": 1,
+      "role": "Tank",
+      "targetMode": "row",
+      "targetRows": [0],
+      "isMultiTarget": false,
+      "maxTargets": 1,
+      "targetCells": null
     },
     {
       "name": "OrcBerserker",
@@ -35,7 +42,7 @@
         "baseProtection": 2,
         "baseDodgeChance": 0.05,
         "baseMovementSpeed": 5,
-		"damagebonus": 2
+        "damagebonus": 2
       },
       "armor": {
         "armorClass": 3,
@@ -47,7 +54,15 @@
         "maxDamage": 12,
         "attackSpeed": 7
       },
-      "rangedWeapon": null
+      "rangedWeapon": null,
+      "width": 1,
+      "height": 1,
+      "role": "DPS",
+      "targetMode": "cell",
+      "targetRows": null,
+      "isMultiTarget": false,
+      "maxTargets": 0,
+      "targetCells": [[0, 0], [0, 1]]
     },
     {
       "name": "SkeletonWarrior",
@@ -59,7 +74,7 @@
         "baseProtection": 1,
         "baseDodgeChance": 0.08,
         "baseMovementSpeed": 5,
-		"damagebonus": 3
+        "damagebonus": 3
       },
       "armor": {
         "armorClass": 5,
@@ -71,7 +86,15 @@
         "maxDamage": 5,
         "attackSpeed": 10
       },
-      "rangedWeapon": null
+      "rangedWeapon": null,
+      "width": 1,
+      "height": 1,
+      "role": "Tank",
+      "targetMode": "row",
+      "targetRows": [0],
+      "isMultiTarget": false,
+      "maxTargets": 1,
+      "targetCells": null
     },
     {
       "name": "DarkArcher",
@@ -83,7 +106,7 @@
         "baseProtection": 1,
         "baseDodgeChance": 0.1,
         "baseMovementSpeed": 6,
-		"damagebonus": 0
+        "damagebonus": 0
       },
       "armor": {
         "armorClass": 3,
@@ -101,11 +124,19 @@
           "length": 5
         }
       },
-      "meleeWeapon": null
+      "meleeWeapon": null,
+      "width": 1,
+      "height": 1,
+      "role": "DPS",
+      "targetMode": "row",
+      "targetRows": [2],
+      "isMultiTarget": true,
+      "maxTargets": 0,
+      "targetCells": null
     },
     {
       "name": "GoblinSharpshooter",
-      "imgname": "gnoll_sergeant.png",
+      "imgname": "orc.png",
       "attributes": {
         "maxHealth": 10,
         "attackBonus": 1,
@@ -113,9 +144,7 @@
         "baseProtection": 1,
         "baseDodgeChance": 0.1,
         "baseMovementSpeed": 5,
-			"strength": 10,
-		"dexterity": 10,
-		"constitution" : 10
+        "damagebonus": 0
       },
       "armor": null,
       "rangedWeapon": {
@@ -129,8 +158,401 @@
           "size": 1
         }
       },
-      "meleeWeapon": null
+      "meleeWeapon": null,
+      "width": 1,
+      "height": 1,
+      "role": "Support",
+      "targetMode": "cell",
+      "targetRows": null,
+      "isMultiTarget": false,
+      "maxTargets": 0,
+      "targetCells": [[1, 1]]
+    },
+    {
+      "name": "FireElemental",
+      "imgname": "orc.png",
+      "attributes": {
+        "maxHealth": 18,
+        "attackBonus": 4,
+        "baseArmorClass": 10,
+        "baseProtection": 0,
+        "baseDodgeChance": 0.15,
+        "baseMovementSpeed": 7,
+        "damagebonus": 3
+      },
+      "armor": null,
+      "meleeWeapon": {
+        "minDamage": 4,
+        "maxDamage": 8,
+        "attackSpeed": 4
+      },
+      "rangedWeapon": null,
+      "width": 1,
+      "height": 1,
+      "role": "DPS",
+      "targetMode": "cell",
+      "targetRows": null,
+      "isMultiTarget": false,
+      "maxTargets": 0,
+      "targetCells": [[0, 0], [1, 0], [2, 0]]
+    },
+    {
+      "name": "FrostMage",
+      "imgname": "orc.png",
+      "attributes": {
+        "maxHealth": 14,
+        "attackBonus": 5,
+        "baseArmorClass": 7,
+        "baseProtection": 1,
+        "baseDodgeChance": 0.12,
+        "baseMovementSpeed": 4,
+        "damagebonus": 4
+      },
+      "armor": {
+        "armorClass": 2,
+        "protection": 1,
+        "dodgeChance": 0.08
+      },
+      "meleeWeapon": null,
+      "rangedWeapon": {
+        "shootingVX": "orc.png",
+        "minDamage": 5,
+        "maxDamage": 10,
+        "attackSpeed": 2,
+        "shootingRange": 6,
+        "targetArea": {
+          "type": "Circle",
+          "radius": 2
+        }
+      },
+      "width": 1,
+      "height": 1,
+      "role": "Support",
+      "targetMode": "cell",
+      "targetRows": null,
+      "isMultiTarget": false,
+      "maxTargets": 0,
+      "targetCells": [[0, 0], [0, 1], [0, 2], [1, 0], [1, 1], [1, 2]]
+    },
+    {
+      "name": "NecromancerLord",
+      "imgname": "orc.png",
+      "attributes": {
+        "maxHealth": 20,
+        "attackBonus": 6,
+        "baseArmorClass": 8,
+        "baseProtection": 2,
+        "baseDodgeChance": 0.1,
+        "baseMovementSpeed": 3,
+        "damagebonus": 5
+      },
+      "armor": {
+        "armorClass": 3,
+        "protection": 2,
+        "dodgeChance": 0.05
+      },
+      "meleeWeapon": null,
+      "rangedWeapon": {
+        "shootingVX": "dark_bolt.png",
+        "minDamage": 6,
+        "maxDamage": 12,
+        "attackSpeed": 3,
+        "shootingRange": 7,
+        "targetArea": {
+          "type": "Line",
+          "length": 4
+        }
+      },
+      "width": 1,
+      "height": 1,
+      "role": "Support",
+      "targetMode": "row",
+      "targetRows": [0, 1, 2],
+      "isMultiTarget": true,
+      "maxTargets": 2,
+      "targetCells": null
+    },
+    {
+      "name": "TrollChampion",
+      "imgname": "orc.png",
+      "attributes": {
+        "maxHealth": 45,
+        "attackBonus": 4,
+        "baseArmorClass": 16,
+        "baseProtection": 4,
+        "baseDodgeChance": 0.02,
+        "baseMovementSpeed": 4,
+        "damagebonus": 4
+      },
+      "armor": {
+        "armorClass": 6,
+        "protection": 5,
+        "dodgeChance": 0.02
+      },
+      "meleeWeapon": {
+        "minDamage": 8,
+        "maxDamage": 14,
+        "attackSpeed": 8
+      },
+      "rangedWeapon": null,
+      "width": 2,
+      "height": 1,
+      "role": "Tank",
+      "targetMode": "row",
+      "targetRows": [0],
+      "isMultiTarget": false,
+      "maxTargets": 1,
+      "targetCells": null
+    },
+    {
+      "name": "DragonWhelp",
+      "imgname": "orc.png",
+      "attributes": {
+        "maxHealth": 28,
+        "attackBonus": 5,
+        "baseArmorClass": 13,
+        "baseProtection": 3,
+        "baseDodgeChance": 0.08,
+        "baseMovementSpeed": 6,
+        "damagebonus": 5
+      },
+      "armor": {
+        "armorClass": 5,
+        "protection": 3,
+        "dodgeChance": 0.06
+      },
+      "meleeWeapon": {
+        "minDamage": 5,
+        "maxDamage": 9,
+        "attackSpeed": 6
+      },
+      "rangedWeapon": {
+        "shootingVX": "orc.png",
+        "minDamage": 7,
+        "maxDamage": 13,
+        "attackSpeed": 4,
+        "shootingRange": 4,
+        "targetArea": {
+          "type": "Cone",
+          "length": 3
+        }
+      },
+      "width": 1,
+      "height": 2,
+      "role": "DPS",
+      "targetMode": "cell",
+      "targetRows": null,
+      "isMultiTarget": false,
+      "maxTargets": 0,
+      "targetCells": [[0, 0], [0, 1], [1, 0], [1, 1]]
+    },
+    {
+      "name": "ShadowAssassin",
+      "imgname": "orc.png",
+      "attributes": {
+        "maxHealth": 16,
+        "attackBonus": 6,
+        "baseArmorClass": 11,
+        "baseProtection": 1,
+        "baseDodgeChance": 0.25,
+        "baseMovementSpeed": 8,
+        "damagebonus": 6
+      },
+      "armor": {
+        "armorClass": 3,
+        "protection": 1,
+        "dodgeChance": 0.15
+      },
+      "meleeWeapon": {
+        "minDamage": 8,
+        "maxDamage": 16,
+        "attackSpeed": 3
+      },
+      "rangedWeapon": null,
+      "width": 1,
+      "height": 1,
+      "role": "DPS",
+      "targetMode": "cell",
+      "targetRows": null,
+      "isMultiTarget": false,
+      "maxTargets": 0,
+      "targetCells": [[2, 1]]
+    },
+    {
+      "name": "DwarvenShieldbearer",
+      "imgname": "orc.png",
+      "attributes": {
+        "maxHealth": 38,
+        "attackBonus": 2,
+        "baseArmorClass": 18,
+        "baseProtection": 6,
+        "baseDodgeChance": 0.05,
+        "baseMovementSpeed": 2,
+        "damagebonus": 1
+      },
+      "armor": {
+        "armorClass": 8,
+        "protection": 6,
+        "dodgeChance": 0.03
+      },
+      "meleeWeapon": {
+        "minDamage": 3,
+        "maxDamage": 6,
+        "attackSpeed": 6
+      },
+      "rangedWeapon": null,
+      "width": 1,
+      "height": 1,
+      "role": "Tank",
+      "targetMode": "row",
+      "targetRows": [0],
+      "isMultiTarget": false,
+      "maxTargets": 1,
+      "targetCells": null
+    },
+    {
+      "name": "LightningWizard",
+      "imgname": "orc.png",
+      "attributes": {
+        "maxHealth": 16,
+        "attackBonus": 7,
+        "baseArmorClass": 6,
+        "baseProtection": 0,
+        "baseDodgeChance": 0.14,
+        "baseMovementSpeed": 5,
+        "damagebonus": 7
+      },
+      "armor": {
+        "armorClass": 1,
+        "protection": 0,
+        "dodgeChance": 0.1
+      },
+      "meleeWeapon": null,
+      "rangedWeapon": {
+        "shootingVX": "orc.png",
+        "minDamage": 8,
+        "maxDamage": 15,
+        "attackSpeed": 2,
+        "shootingRange": 8,
+        "targetArea": {
+          "type": "Line",
+          "length": 6
+        }
+      },
+      "width": 1,
+      "height": 1,
+      "role": "Support",
+      "targetMode": "cell",
+      "targetRows": null,
+      "isMultiTarget": false,
+      "maxTargets": 0,
+      "targetCells": [[0, 0], [1, 0], [2, 0]]
+    },
+    {
+      "name": "HolyPaladin",
+      "imgname": "orc.png",
+      "attributes": {
+        "maxHealth": 32,
+        "attackBonus": 4,
+        "baseArmorClass": 15,
+        "baseProtection": 4,
+        "baseDodgeChance": 0.08,
+        "baseMovementSpeed": 4,
+        "damagebonus": 3
+      },
+      "armor": {
+        "armorClass": 6,
+        "protection": 4,
+        "dodgeChance": 0.05
+      },
+      "meleeWeapon": {
+        "minDamage": 5,
+        "maxDamage": 10,
+        "attackSpeed": 5
+      },
+      "rangedWeapon": null,
+      "width": 1,
+      "height": 1,
+      "role": "Tank",
+      "targetMode": "row",
+      "targetRows": [0, 1],
+      "isMultiTarget": true,
+      "maxTargets": 2,
+      "targetCells": null
+    },
+    {
+      "name": "VenomSpider",
+      "imgname": "orc.png",
+      "attributes": {
+        "maxHealth": 20,
+        "attackBonus": 5,
+        "baseArmorClass": 9,
+        "baseProtection": 1,
+        "baseDodgeChance": 0.18,
+        "baseMovementSpeed": 7,
+        "damagebonus": 4
+      },
+      "armor": {
+        "armorClass": 2,
+        "protection": 1,
+        "dodgeChance": 0.12
+      },
+      "meleeWeapon": {
+        "minDamage": 4,
+        "maxDamage": 7,
+        "attackSpeed": 4
+      },
+      "rangedWeapon": {
+        "shootingVX": "orc.png",
+        "minDamage": 3,
+        "maxDamage": 8,
+        "attackSpeed": 2,
+        "shootingRange": 5,
+        "targetArea": {
+          "type": "Square",
+          "size": 1
+        }
+      },
+      "width": 2,
+      "height": 1,
+      "role": "DPS",
+      "targetMode": "cell",
+      "targetRows": null,
+      "isMultiTarget": false,
+      "maxTargets": 0,
+      "targetCells": [[1, 1], [2, 1]]
+    },
+    {
+      "name": "BattlePriest",
+      "imgname": "orc.png",
+      "attributes": {
+        "maxHealth": 24,
+        "attackBonus": 3,
+        "baseArmorClass": 12,
+        "baseProtection": 3,
+        "baseDodgeChance": 0.1,
+        "baseMovementSpeed": 4,
+        "damagebonus": 2
+      },
+      "armor": {
+        "armorClass": 4,
+        "protection": 3,
+        "dodgeChance": 0.07
+      },
+      "meleeWeapon": {
+        "minDamage": 4,
+        "maxDamage": 8,
+        "attackSpeed": 5
+      },
+      "rangedWeapon": null,
+      "width": 1,
+      "height": 1,
+      "role": "Support",
+      "targetMode": "cell",
+      "targetRows": null,
+      "isMultiTarget": false,
+      "maxTargets": 0,
+      "targetCells": [[0, 1], [1, 1], [2, 1]]
     }
-    
   ]
 }

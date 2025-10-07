@@ -128,23 +128,39 @@ func NewJSONRangedWeapon(r JSONWeapon) JSONRangedWeapon {
 }
 
 type JSONMonster struct {
-	Name         string            `json:"name"`
-	ImageName    string            `json:"imgname"`
-	Attributes   JSONAttributes    `json:"attributes"`
-	Armor        *JSONArmor        `json:"armor"`       // Use pointer to allow null values
-	MeleeWeapon  *JSONMeleeWeapon  `json:"meleeWeapon"` // Use pointer to allow null values
-	RangedWeapon *JSONRangedWeapon `json:"rangedWeapon"`
+	Name          string            `json:"name"`
+	ImageName     string            `json:"imgname"`
+	Attributes    JSONAttributes    `json:"attributes"`
+	Armor         *JSONArmor        `json:"armor"`       // Use pointer to allow null values
+	MeleeWeapon   *JSONMeleeWeapon  `json:"meleeWeapon"` // Use pointer to allow null values
+	RangedWeapon  *JSONRangedWeapon `json:"rangedWeapon"`
+	Width         int               `json:"width"`
+	Height        int               `json:"height"`
+	Role          string            `json:"role"`
+	TargetMode    string            `json:"targetMode"`    // "row" or "cell"
+	TargetRows    []int             `json:"targetRows"`    // For row-based targeting
+	IsMultiTarget bool              `json:"isMultiTarget"` // For row-based targeting
+	MaxTargets    int               `json:"maxTargets"`    // For row-based targeting
+	TargetCells   [][2]int          `json:"targetCells"`   // For cell-based targeting
 }
 
 func NewJSONMonster(m JSONMonster) JSONMonster {
 	return JSONMonster{
 
-		Name:         m.Name,
-		ImageName:    m.ImageName,
-		Attributes:   m.Attributes,
-		Armor:        m.Armor,
-		MeleeWeapon:  m.MeleeWeapon,
-		RangedWeapon: m.RangedWeapon,
+		Name:          m.Name,
+		ImageName:     m.ImageName,
+		Attributes:    m.Attributes,
+		Armor:         m.Armor,
+		MeleeWeapon:   m.MeleeWeapon,
+		RangedWeapon:  m.RangedWeapon,
+		Width:         m.Width,
+		Height:        m.Height,
+		Role:          m.Role,
+		TargetMode:    m.TargetMode,
+		TargetRows:    m.TargetRows,
+		IsMultiTarget: m.IsMultiTarget,
+		MaxTargets:    m.MaxTargets,
+		TargetCells:   m.TargetCells,
 	}
 }
 
@@ -204,15 +220,23 @@ func CreateAttributesFromJSON(a JSONAttributeModifier) common.Attributes {
 }
 
 type JSONCreatureModifier struct {
-	Name              string  `json:"name"`
-	AttackBonus       int     `json:"attackBonus"`
-	MaxHealth         int     `json:"maxHealth"`
-	CurrentHealth     int     `json:"currentHealth"`
-	BaseArmorClass    int     `json:"baseArmorClass"`
-	BaseProtection    int     `json:"baseProtection"`
-	BaseMovementSpeed int     `json:"baseMovementSpeed"`
-	BaseDodgeChance   float32 `json:"baseDodgeChance"`
-	DamageBonus       int     `json:"damagebonus"`
+	Name              string     `json:"name"`
+	AttackBonus       int        `json:"attackBonus"`
+	MaxHealth         int        `json:"maxHealth"`
+	CurrentHealth     int        `json:"currentHealth"`
+	BaseArmorClass    int        `json:"baseArmorClass"`
+	BaseProtection    int        `json:"baseProtection"`
+	BaseMovementSpeed int        `json:"baseMovementSpeed"`
+	BaseDodgeChance   float32    `json:"baseDodgeChance"`
+	DamageBonus       int        `json:"damagebonus"`
+	Width             int        `json:"width"`
+	Height            int        `json:"height"`
+	Role              string     `json:"role"`
+	TargetMode        string     `json:"targetMode"`        // "row" or "cell"
+	TargetRows        []int      `json:"targetRows"`        // For row-based targeting
+	IsMultiTarget     bool       `json:"isMultiTarget"`     // For row-based targeting
+	MaxTargets        int        `json:"maxTargets"`        // For row-based targeting
+	TargetCells       [][2]int   `json:"targetCells"`       // For cell-based targeting
 }
 
 func CreatureModifierFromJSON(a JSONCreatureModifier) JSONCreatureModifier {
@@ -226,5 +250,13 @@ func CreatureModifierFromJSON(a JSONCreatureModifier) JSONCreatureModifier {
 		BaseDodgeChance:   a.BaseDodgeChance,
 		BaseMovementSpeed: a.BaseMovementSpeed,
 		DamageBonus:       a.DamageBonus,
+		Width:             a.Width,
+		Height:            a.Height,
+		Role:              a.Role,
+		TargetMode:        a.TargetMode,
+		TargetRows:        a.TargetRows,
+		IsMultiTarget:     a.IsMultiTarget,
+		MaxTargets:        a.MaxTargets,
+		TargetCells:       a.TargetCells,
 	}
 }

@@ -227,21 +227,21 @@ type SquadData struct {
 // FormationType defines squad layout presets
 type FormationType int
 const (
-	FORMATION_BALANCED FormationType = iota  // Mix of roles
-	FORMATION_DEFENSIVE                       // Tank-heavy
-	FORMATION_OFFENSIVE                       // DPS-focused
-	FORMATION_RANGED                          // Back-line heavy
+	FormationBalanced  FormationType = iota  // Mix of roles
+	FormationDefensive                       // Tank-heavy
+	FormationOffensive                       // DPS-focused
+	FormationRanged                          // Back-line heavy
 )
 
 func (f FormationType) String() string {
 	switch f {
-	case FORMATION_BALANCED:
+	case FormationBalanced:
 		return "Balanced"
-	case FORMATION_DEFENSIVE:
+	case FormationDefensive:
 		return "Defensive"
-	case FORMATION_OFFENSIVE:
+	case FormationOffensive:
 		return "Offensive"
-	case FORMATION_RANGED:
+	case FormationRanged:
 		return "Ranged"
 	default:
 		return "Unknown"
@@ -302,18 +302,18 @@ type UnitRoleData struct {
 
 type UnitRole int
 const (
-	ROLE_TANK UnitRole = iota  // Takes hits first, high defense
-	ROLE_DPS                    // High damage output
-	ROLE_SUPPORT                // Buffs, heals, utility
+	RoleTank    UnitRole = iota  // Takes hits first, high defense
+	RoleDPS                      // High damage output
+	RoleSupport                  // Buffs, heals, utility
 )
 
 func (r UnitRole) String() string {
 	switch r {
-	case ROLE_TANK:
+	case RoleTank:
 		return "Tank"
-	case ROLE_DPS:
+	case RoleDPS:
 		return "DPS"
-	case ROLE_SUPPORT:
+	case RoleSupport:
 		return "Support"
 	default:
 		return "Unknown"
@@ -323,8 +323,8 @@ func (r UnitRole) String() string {
 // TargetMode defines how a unit selects targets
 type TargetMode int
 const (
-	TARGET_MODE_ROW_BASED TargetMode = iota  // Target entire row(s)
-	TARGET_MODE_CELL_BASED                    // Target specific grid cells
+	TargetModeRowBased  TargetMode = iota  // Target entire row(s)
+	TargetModeCellBased                    // Target specific grid cells
 )
 
 // TargetRowData defines which enemy cells/rows a unit attacks
@@ -1461,17 +1461,21 @@ import (
 
 // UnitTemplate defines a unit to be created in a squad
 type UnitTemplate struct {
-	EntityType    entitytemplates.EntityType
-	EntityConfig  entitytemplates.EntityConfig
+	Name          string                       // Unit name
+	Attributes    common.Attributes            // HP, Attack, Defense, etc.
+	EntityType    entitytemplates.EntityType   // EntityCreature, etc.
+	EntityConfig  entitytemplates.EntityConfig // Name, ImagePath, etc.
 	EntityData    any                          // JSONMonster, etc.
 	GridRow       int                          // Anchor row (0-2)
 	GridCol       int                          // Anchor col (0-2)
 	GridWidth     int                          // Width in cells (1-3), defaults to 1
 	GridHeight    int                          // Height in cells (1-3), defaults to 1
 	Role          squad.UnitRole               // Tank, DPS, Support
-	TargetRows    []int                        // Which rows to attack
-	IsMultiTarget bool                         // AOE or single-target
-	MaxTargets    int                          // Max targets per row
+	TargetMode    squad.TargetMode             // TargetModeRowBased or TargetModeCellBased
+	TargetRows    []int                        // Which rows to attack (row-based)
+	IsMultiTarget bool                         // AOE or single-target (row-based)
+	MaxTargets    int                          // Max targets per row (row-based)
+	TargetCells   [][2]int                     // Specific cells to target (cell-based)
 	IsLeader      bool                         // Squad leader flag
 }
 
@@ -1574,13 +1578,18 @@ func CreateSquadFromTemplate(
 			Role: template.Role,
 		})
 
-		// Add targeting data (row-based by default, can be cell-based for advanced patterns)
+		// Add targeting data (supports both row-based and cell-based modes)
+		targetMode := squad.TARGET_MODE_ROW_BASED
+		if template.TargetMode == "cell" {
+			targetMode = squad.TARGET_MODE_CELL_BASED
+		}
+
 		unitEntity.AddComponent(squad.TargetRowComponent, &squad.TargetRowData{
-			Mode:          squad.TARGET_MODE_ROW_BASED, // Use TARGET_MODE_CELL_BASED for precise grid targeting
+			Mode:          targetMode,
 			TargetRows:    template.TargetRows,
 			IsMultiTarget: template.IsMultiTarget,
 			MaxTargets:    template.MaxTargets,
-			TargetCells:   nil, // Set to [][2]int{{row,col},...} for cell-based mode
+			TargetCells:   template.TargetCells,
 		})
 
 		// Add leader component if needed
@@ -1613,61 +1622,45 @@ func CreateSquadFromTemplate(
 }
 
 // AddUnitToSquad - ✅ Accepts ecs.EntityID (native type)
+// Creates a unit entity from a UnitTemplate and adds it to the squad at the specified grid position
 func AddUnitToSquad(
 	squadID ecs.EntityID,
-	unitEntityID ecs.EntityID,
+	squadmanager *SquadECSManager,
+	unit UnitTemplate,
 	gridRow, gridCol int,
-	role squad.UnitRole,
-	targetRows []int,
-	isMultiTarget bool,
-	maxTargets int,
-	ecsmanager *common.EntityManager,
 ) error {
 
 	// Validate position
-	if gridRow < 0 || gridRow > 2 || gridCol < 0 || gridCol > 2 {
-		return fmt.Errorf("invalid grid position (%d, %d)", gridRow, gridCol)
+	if unit.GridRow < 0 || unit.GridRow > 2 || unit.GridCol < 0 || unit.GridCol > 2 {
+		return fmt.Errorf("invalid grid position (%d, %d)", unit.GridRow, unit.GridCol)
 	}
 
 	// Check if position occupied
-	existingUnitIDs := GetUnitIDsAtGridPosition(squadID, gridRow, gridCol, ecsmanager)
+	existingUnitIDs := GetUnitIDsAtGridPosition(squadID, gridRow, gridCol, squadmanager)
 	if len(existingUnitIDs) > 0 {
 		return fmt.Errorf("grid position (%d, %d) already occupied", gridRow, gridCol)
 	}
 
-	unitEntity := FindUnitByID(unitEntityID, ecsmanager)
-	if unitEntity == nil {
-		return fmt.Errorf("unit entity not found")
+	// Validate and create unit entity from template
+	unitEntity, err := CreateUnitEntity(squadmanager, unit)
+	if err != nil {
+		return fmt.Errorf("invalid unit for %s: %w", unit.Name, err)
 	}
 
-	// Add components
+	// Add squad membership component
 	unitEntity.AddComponent(squad.SquadMemberComponent, &squad.SquadMemberData{
 		SquadID: squadID,
 	})
 
+	// Add grid position component (using template's grid position)
 	unitEntity.AddComponent(squad.GridPositionComponent, &squad.GridPositionData{
-		Row: gridRow,
-		Col: gridCol,
+		AnchorRow: unit.GridRow,
+		AnchorCol: unit.GridCol,
+		Width:     unit.GridWidth,
+		Height:    unit.GridHeight,
 	})
 
-	unitEntity.AddComponent(squad.UnitRoleComponent, &squad.UnitRoleData{
-		Role: role,
-	})
-
-	// Row-based targeting (simple)
-	unitEntity.AddComponent(squad.TargetRowComponent, &squad.TargetRowData{
-		Mode:          squad.TARGET_MODE_ROW_BASED,
-		TargetRows:    targetRows,
-		IsMultiTarget: isMultiTarget,
-		MaxTargets:    maxTargets,
-		TargetCells:   nil, // Use cell-based mode for precise grid patterns
-	})
-
-	// Example: Cell-based targeting (uncomment to use)
-	// unitEntity.AddComponent(squad.TargetRowComponent, &squad.TargetRowData{
-	//     Mode:        squad.TARGET_MODE_CELL_BASED,
-	//     TargetCells: [][2]int{{0, 0}, {0, 1}}, // 1x2 horizontal cleave
-	// })
+	// Note: CreateUnitEntity already adds UnitRoleComponent and TargetRowComponent from the template
 
 	return nil
 }
@@ -1795,10 +1788,10 @@ type FormationPreset struct {
 }
 
 type FormationPosition struct {
-	Row    int
-	Col    int
-	Role   UnitRole
-	Target []int
+	AnchorRow int
+	AnchorCol int
+	Role      UnitRole
+	Target    []int
 }
 
 // GetFormationPreset returns predefined formation templates
@@ -1807,45 +1800,45 @@ func GetFormationPreset(formation FormationType) FormationPreset {
 	case FORMATION_BALANCED:
 		return FormationPreset{
 			Positions: []FormationPosition{
-				{Row: 0, Col: 0, Role: ROLE_TANK, Target: []int{0}},
-				{Row: 0, Col: 2, Role: ROLE_TANK, Target: []int{0}},
-				{Row: 1, Col: 1, Role: ROLE_SUPPORT, Target: []int{1}},
-				{Row: 2, Col: 0, Role: ROLE_DPS, Target: []int{2}},
-				{Row: 2, Col: 2, Role: ROLE_DPS, Target: []int{2}},
+				{AnchorRow: 0, AnchorCol: 0, Role: ROLE_TANK, Target: []int{0}},
+				{AnchorRow: 0, AnchorCol: 2, Role: ROLE_TANK, Target: []int{0}},
+				{AnchorRow: 1, AnchorCol: 1, Role: ROLE_SUPPORT, Target: []int{1}},
+				{AnchorRow: 2, AnchorCol: 0, Role: ROLE_DPS, Target: []int{2}},
+				{AnchorRow: 2, AnchorCol: 2, Role: ROLE_DPS, Target: []int{2}},
 			},
 		}
 
 	case FORMATION_DEFENSIVE:
 		return FormationPreset{
 			Positions: []FormationPosition{
-				{Row: 0, Col: 0, Role: ROLE_TANK, Target: []int{0}},
-				{Row: 0, Col: 1, Role: ROLE_TANK, Target: []int{0}},
-				{Row: 0, Col: 2, Role: ROLE_TANK, Target: []int{0}},
-				{Row: 1, Col: 1, Role: ROLE_SUPPORT, Target: []int{1}},
-				{Row: 2, Col: 1, Role: ROLE_DPS, Target: []int{2}},
+				{AnchorRow: 0, AnchorCol: 0, Role: ROLE_TANK, Target: []int{0}},
+				{AnchorRow: 0, AnchorCol: 1, Role: ROLE_TANK, Target: []int{0}},
+				{AnchorRow: 0, AnchorCol: 2, Role: ROLE_TANK, Target: []int{0}},
+				{AnchorRow: 1, AnchorCol: 1, Role: ROLE_SUPPORT, Target: []int{1}},
+				{AnchorRow: 2, AnchorCol: 1, Role: ROLE_DPS, Target: []int{2}},
 			},
 		}
 
 	case FORMATION_OFFENSIVE:
 		return FormationPreset{
 			Positions: []FormationPosition{
-				{Row: 0, Col: 1, Role: ROLE_TANK, Target: []int{0}},
-				{Row: 1, Col: 0, Role: ROLE_DPS, Target: []int{1}},
-				{Row: 1, Col: 1, Role: ROLE_DPS, Target: []int{1}},
-				{Row: 1, Col: 2, Role: ROLE_DPS, Target: []int{1}},
-				{Row: 2, Col: 1, Role: ROLE_SUPPORT, Target: []int{2}},
+				{AnchorRow: 0, AnchorCol: 1, Role: ROLE_TANK, Target: []int{0}},
+				{AnchorRow: 1, AnchorCol: 0, Role: ROLE_DPS, Target: []int{1}},
+				{AnchorRow: 1, AnchorCol: 1, Role: ROLE_DPS, Target: []int{1}},
+				{AnchorRow: 1, AnchorCol: 2, Role: ROLE_DPS, Target: []int{1}},
+				{AnchorRow: 2, AnchorCol: 1, Role: ROLE_SUPPORT, Target: []int{2}},
 			},
 		}
 
 	case FORMATION_RANGED:
 		return FormationPreset{
 			Positions: []FormationPosition{
-				{Row: 0, Col: 1, Role: ROLE_TANK, Target: []int{0}},
-				{Row: 1, Col: 0, Role: ROLE_DPS, Target: []int{1, 2}},
-				{Row: 1, Col: 2, Role: ROLE_DPS, Target: []int{1, 2}},
-				{Row: 2, Col: 0, Role: ROLE_DPS, Target: []int{2}},
-				{Row: 2, Col: 1, Role: ROLE_SUPPORT, Target: []int{2}},
-				{Row: 2, Col: 2, Role: ROLE_DPS, Target: []int{2}},
+				{AnchorRow: 0, AnchorCol: 1, Role: ROLE_TANK, Target: []int{0}},
+				{AnchorRow: 1, AnchorCol: 0, Role: ROLE_DPS, Target: []int{1, 2}},
+				{AnchorRow: 1, AnchorCol: 2, Role: ROLE_DPS, Target: []int{1, 2}},
+				{AnchorRow: 2, AnchorCol: 0, Role: ROLE_DPS, Target: []int{2}},
+				{AnchorRow: 2, AnchorCol: 1, Role: ROLE_SUPPORT, Target: []int{2}},
+				{AnchorRow: 2, AnchorCol: 2, Role: ROLE_DPS, Target: []int{2}},
 			},
 		}
 
@@ -2105,14 +2098,15 @@ func SpawnEnemySquad(ecsmanager *common.EntityManager, level int, worldPos coord
 		// Early game: 3-5 weak units
 		templates = []systems.UnitTemplate{
 			{
-				EntityType:   entitytemplates.EntityCreature,
-				EntityConfig: entitytemplates.EntityConfig{Name: "Goblin"},
-				EntityData:   loadMonsterData("Goblin"),
-				GridRow:      0, GridCol: 0,
-				Role:         squad.ROLE_TANK,
-				TargetRows:   []int{0},
+				EntityType:    entitytemplates.EntityCreature,
+				EntityConfig:  entitytemplates.EntityConfig{Name: "Goblin"},
+				EntityData:    loadMonsterData("Goblin"),
+				GridRow:       0, GridCol: 0,
+				Role:          squad.ROLE_TANK,
+				TargetMode:    squad.TargetModeRowBased,
+				TargetRows:    []int{0},
 				IsMultiTarget: false,
-				MaxTargets:   1,
+				MaxTargets:    1,
 			},
 			// ... more units
 		}
@@ -2125,6 +2119,7 @@ func SpawnEnemySquad(ecsmanager *common.EntityManager, level int, worldPos coord
 				EntityData:   loadMonsterData("Orc"),
 				GridRow:      0, GridCol: 1,
 				Role:         squad.ROLE_TANK,
+				TargetMode:   squad.TargetModeRowBased,
 				TargetRows:   []int{0},
 				IsLeader:     true, // Add leader
 			},
@@ -2201,13 +2196,14 @@ func InitializePlayerSquad(ecsmanager *common.EntityManager) ecs.EntityID {
 					BaseMovementSpeed: 5,
 				},
 			},
-			GridRow:      0,
-			GridCol:      1,
-			Role:         squad.ROLE_TANK,
-			TargetRows:   []int{0}, // Attack front row
+			GridRow:       0,
+			GridCol:       1,
+			Role:          squad.ROLE_TANK,
+			TargetMode:    squad.TargetModeRowBased,
+			TargetRows:    []int{0}, // Attack front row
 			IsMultiTarget: false,
-			MaxTargets:   1,
-			IsLeader:     true,
+			MaxTargets:    1,
+			IsLeader:      true,
 		},
 		{
 			EntityType:   entitytemplates.EntityCreature,
@@ -2535,7 +2531,7 @@ func ReorganizeSquad(squadID ecs.EntityID, ecsmanager *common.EntityManager) err
 		roleData := common.GetComponentType[*squad.UnitRoleData](unit, squad.UnitRoleComponent)
 		gridPos := common.GetComponentType[*squad.GridPositionData](unit, squad.GridPositionComponent)
 
-		if roleData.Role == squad.ROLE_DPS && gridPos.Row == 2 {
+		if roleData.Role == squad.ROLE_DPS && gridPos.AnchorRow == 2 {
 			dpsUnitID = unitID
 			break
 		}

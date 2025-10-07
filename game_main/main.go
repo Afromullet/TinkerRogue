@@ -26,6 +26,7 @@ import (
 	"game_main/graphics"
 	"game_main/rendering"
 	resmanager "game_main/resourcemanager"
+	"game_main/squads"
 	"math"
 	"runtime"
 
@@ -117,6 +118,10 @@ func NewGame() *Game {
 	spawning.SpawnStartingEquipment(&g.em, &g.gameMap, &g.playerData)
 
 	AddCreaturesToTracker(&g.em)
+
+	if err := squads.InitializeSquadData(); err != nil {
+		log.Fatalf("Failed to initialize squad system: %v", err)
+	}
 
 	return g
 

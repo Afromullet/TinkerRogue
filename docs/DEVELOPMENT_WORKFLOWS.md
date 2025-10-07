@@ -29,17 +29,14 @@
 | Build new mechanic | Implementation | `implementation-synth` |
 | Pay down technical debt | Refactoring | `refactoring-synth` |
 | Extend existing system | Implementation | `implementation-synth` |
-| Write tests for feature/code | Testing | `go-test-writer` |
 
 ### The Universal Pattern
 
 ```
-┌─────────────────┐      ┌─────────────────┐      ┌─────────────────┐      ┌─────────────────┐
-│  1. ANALYSIS    │ ───> │  2. DECISION     │ ───> │ 3. EXECUTE      │ ───> │ 4. VALIDATE     │
-│  (Agent-driven) │      │  (Human-driven)  │      │ (Collaborative) │      │ (Test-driven)   │
-└─────────────────┘      └─────────────────┘      └─────────────────┘      └─────────────────┘
-                                                                                    │
-                                                                                    └─> Tests Pass ✅
+┌─────────────────┐      ┌─────────────────┐      ┌─────────────────┐
+│  1. ANALYSIS    │ ───> │  2. DECISION     │ ───> │ 3. EXECUTE      │
+│  (Agent-driven) │      │  (Human-driven)  │      │ (Collaborative) │
+└─────────────────┘      └─────────────────┘      └─────────────────┘
 ```
 
 ---
@@ -77,7 +74,7 @@
                     │ Refactor first, then    │
                     │ implement new feature   │
                     └─────────────────────────┘
-```
+```qui
 
 ---
 
@@ -97,16 +94,15 @@ The TinkerRogue project uses **two primary workflows** for systematic developmen
 
 ### Common Pattern
 
-Both workflows follow the same four-phase structure:
+Both workflows follow the same three-phase structure:
 
 | **Phase** | **Who** | **Purpose** | **Output** |
 |-----------|---------|-------------|------------|
 | **1. Analysis** | Agent | Generate comprehensive documentation | Multi-perspective analysis with options |
 | **2. Decision** | Human | Choose best approach | Selected strategy with adjustments |
-| **3. Execution** | Collaborative | Implement the plan | Working code |
-| **4. Validation** | Agent + Tests | Verify correctness and coverage | Comprehensive test suite, all passing |
+| **3. Execution** | Collaborative | Implement the plan | Working, tested code |
 
-> **Key Principle:** Agents provide analysis and options. Humans make decisions. Implementation is collaborative. Testing validates success.
+> **Key Principle:** Agents provide analysis and options. Humans make decisions. Implementation is collaborative.
 
 ---
 
@@ -116,17 +112,17 @@ Both workflows follow the same four-phase structure:
 
 ```
 REFACTORING WORKFLOW
-════════════════════════════════════════════════════════════════════════════
+════════════════════════════════════════════════════════════════════
 
-Step 1              Step 2              Step 3              Step 4              Step 5
-┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
-│  ANALYSIS   │ -> │   REVIEW    │ -> │CREATE PLAN  │ -> │  IMPLEMENT  │ -> │  TESTING    │
-│             │    │             │    │             │    │             │    │             │
-│ Agent-driven│    │Human-driven │    │Agent-driven │    │Collaborative│    │Agent-driven │
-│             │    │             │    │             │    │             │    │             │
-│refactoring- │    │   You       │    │refactoring- │    │   You or    │    │go-test-     │
-│   synth     │    │  decide     │    │implementer  │    │   Agent     │    │  writer     │
-└─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
+Step 1              Step 2              Step 3              Step 4
+┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
+│  ANALYSIS   │ -> │   REVIEW    │ -> │CREATE PLAN  │ -> │  IMPLEMENT  │
+│             │    │             │    │             │    │             │
+│ Agent-driven│    │Human-driven │    │Agent-driven │    │Collaborative│
+│             │    │             │    │             │    │             │
+│refactoring- │    │   You       │    │refactoring- │    │   You or    │
+│   synth     │    │  decide     │    │implementer  │    │   Agent     │
+└─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
 ```
 
 ---
@@ -136,10 +132,10 @@ Step 1              Step 2              Step 3              Step 4              
 | **Aspect** | **Details** |
 |------------|-------------|
 | **Purpose** | Improve code structure without changing functionality |
-| **Primary Agents** | `refactoring-synth` (analysis) + `refactoring-implementer` (planning) + `go-test-writer` (testing) |
-| **Duration** | Varies (analysis: 5-15 min, implementation: hours to days, testing: 10-30 min) |
+| **Primary Agent** | `refactoring-synth` (analysis) + `refactoring-implementer` (planning) |
+| **Duration** | Varies (analysis: 5-15 min, implementation: hours to days) |
 | **Risk Level** | Medium (tests must pass, behavior unchanged) |
-| **Output** | Cleaner, more maintainable code with same functionality and comprehensive tests |
+| **Output** | Cleaner, more maintainable code with same functionality |
 
 ---
 
@@ -388,110 +384,6 @@ PROBLEM DETECTED
 
 ---
 
-### Step 5: Test Verification & Enhancement 🧪
-
-**Agent:** `go-test-writer` | **Role:** Test Suite Generator
-
-#### What Happens
-
-```
-INPUT                    PROCESS                     OUTPUT
-┌──────────────┐        ┌──────────────┐            ┌──────────────┐
-│Refactored    │ ────>  │Generate/     │ ────>      │Comprehensive │
-│Source Files  │        │Update Tests  │            │Test Suite    │
-└──────────────┘        └──────────────┘            └──────────────┘
-                             │
-                             ├─> Table-driven tests
-                             ├─> Edge case coverage
-                             ├─> Benchmark tests
-                             └─> Idiomatic Go patterns
-```
-
-#### Your Actions
-
-1. **Identify** refactored files that need test coverage
-2. **Invoke** the `go-test-writer` agent with target source files
-3. **Review** generated test suites for completeness
-4. **Run** tests to verify refactored code works correctly
-
-#### Agent Process
-
-The go-test-writer analyzes refactored code and generates:
-
-- **Table-Driven Tests:** Comprehensive test cases with multiple scenarios
-- **Edge Cases:** Boundary conditions, error paths, nil/empty handling
-- **Benchmark Tests:** Performance validation for critical paths
-- **Idiomatic Patterns:** Proper Go testing conventions (t.Helper, subtests, etc.)
-- **Test Coverage:** Ensures all public functions have tests
-
-#### Why This Step Matters
-
-**Refactoring without tests is risky:**
-
-| **Without Tests** | **With Tests** |
-|------------------|---------------|
-| ❌ Can't verify behavior unchanged | ✅ Proves functionality preserved |
-| ❌ Regressions undetected | ✅ Catches breaking changes immediately |
-| ❌ Future modifications risky | ✅ Safe to continue refactoring |
-| ❌ No performance baseline | ✅ Benchmarks detect performance regressions |
-
-#### Test Integration Workflow
-
-```
-TESTING PHASE
-┌─────────────────────────────────────────┐
-│ 1. GENERATE  Use go-test-writer        │
-│              Create/update test files   │
-│                                          │
-│ 2. REVIEW    Check test completeness   │
-│              Verify edge cases covered  │
-│                                          │
-│ 3. RUN       Execute: go test ./...    │
-│              All tests must pass        │
-│                                          │
-│ 4. BENCHMARK Run: go test -bench=.     │
-│              Verify performance         │
-│                                          │
-│ 5. COVERAGE  Run: go test -cover       │
-│              Aim for >80% coverage      │
-└─────────────────────────────────────────┘
-     │
-     ├─> ✅ All Pass? → Refactoring complete
-     │
-     └─> ❌ Failures? → Fix refactored code, re-test
-```
-
-#### Best Practices for Test Phase
-
-| **Practice** | **Why** |
-|-------------|---------|
-| ✅ **Generate tests AFTER refactoring** | Ensures tests match final structure |
-| ✅ **Review test quality** | Agent-generated tests need human validation |
-| ✅ **Run full test suite** | Catch integration issues across packages |
-| ✅ **Check benchmarks** | Refactoring shouldn't degrade performance |
-| ✅ **Maintain existing tests** | Update old tests broken by refactoring |
-
-#### When Tests Fail
-
-```
-TEST FAILURES DETECTED
-      │
-      ├─> Test incorrect?
-      │   └─> Update test to match new structure
-      │
-      ├─> Refactoring broke behavior?
-      │   └─> Fix refactored code
-      │       Return to Step 4 (Implementation)
-      │
-      └─> Missing test coverage?
-          └─> Use go-test-writer to add tests
-              Cover the missing scenarios
-```
-
-> 💡 **Success Criterion:** Refactoring is complete when all tests pass AND test coverage is comprehensive.
-
----
-
 ## Workflow 2: Implementation Workflow
 
 > **TL;DR:** Add new features, mechanics, and capabilities. Build new functionality.
@@ -503,12 +395,11 @@ IMPLEMENTATION WORKFLOW
 Step 1              Step 2              Step 3
 ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
 │  ANALYSIS   │ -> │   REVIEW    │ -> │  IMPLEMENT  │
-│             │    │             │    │   + TEST    │
+│             │    │             │    │             │
 │ Agent-driven│    │Human-driven │    │Collaborative│
 │             │    │             │    │             │
-│implementation-   │   You       │    │   You +     │
-│   synth     │    │  decide     │    │go-test-     │
-│             │    │             │    │  writer     │
+│implementation-   │   You       │    │   You or    │
+│   synth     │    │  decide     │    │   Agent     │
 └─────────────┘    └─────────────┘    └─────────────┘
 ```
 
@@ -519,10 +410,10 @@ Step 1              Step 2              Step 3
 | **Aspect** | **Details** |
 |------------|-------------|
 | **Purpose** | Add new features, mechanics, and capabilities |
-| **Primary Agents** | `implementation-synth` (analysis) + `go-test-writer` (testing) |
-| **Duration** | Varies (analysis: 10-30 min, implementation: hours to weeks, testing: integrated) |
+| **Primary Agent** | `implementation-synth` (analysis) |
+| **Duration** | Varies (analysis: 10-30 min, implementation: hours to weeks) |
 | **Risk Level** | Medium-High (new code, integration challenges) |
-| **Output** | New functionality integrated with existing systems, fully tested |
+| **Output** | New functionality integrated with existing systems |
 
 ---
 
@@ -679,31 +570,23 @@ Choose your implementation style:
 #### Recommended Implementation Order
 
 ```
-IMPLEMENTATION PROGRESSION (WITH INTEGRATED TESTING)
+IMPLEMENTATION PROGRESSION
 ┌─────────────────────────────────────────────────────────────┐
 │                                                             │
 │  1. DATA STRUCTURES    Define models, state, interfaces    │
 │                        Foundation for everything else       │
-│                        ↓ Test: Basic struct/interface tests│
 │                                                             │
 │  2. CORE LOGIC         Implement business rules            │
 │                        No UI, pure functionality            │
-│                        ↓ Test: Use go-test-writer for     │
-│                          table-driven tests, edge cases     │
 │                                                             │
 │  3. INTEGRATION        Connect to existing systems         │
 │                        Gradual, tested integration          │
-│                        ↓ Test: Integration tests for       │
-│                          system interactions                │
 │                                                             │
 │  4. UI/UX              Add player-facing elements          │
 │                        Once core logic is stable            │
-│                        ↓ Test: UI interaction tests        │
 │                                                             │
 │  5. POLISH             Edge cases, error handling          │
 │                        Refinement and optimization          │
-│                        ↓ Test: Benchmark tests, coverage   │
-│                          analysis, final validation         │
 │                                                             │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -714,41 +597,28 @@ IMPLEMENTATION PROGRESSION (WITH INTEGRATED TESTING)
 |-------------|---------|-------------|
 | ✅ **Start with data** | Foundation affects everything else | Define structs before methods |
 | ✅ **Build incrementally** | Catch problems early | Implement one feature aspect at a time |
-| ✅ **Test frequently** | Fast feedback loop | Use go-test-writer after each logical component |
+| ✅ **Test frequently** | Fast feedback loop | Test after each logical component |
 | ✅ **Integrate gradually** | Minimize breaking changes | Connect one system at a time |
-| ✅ **Write tests alongside code** | Design driver, catches regressions | Generate tests as you build, not after |
-| ✅ **Use go-test-writer proactively** | Comprehensive coverage from start | Generate tests after core logic complete |
-| ✅ **Commit regularly** | Safe rollback points | Commit each working increment with tests |
+| ✅ **Write tests early** | Design driver, catches regressions | Create tests as you build, not after |
+| ✅ **Commit regularly** | Safe rollback points | Commit each working increment |
 | ✅ **Refer to docs** | Stay aligned with plan | Check implementation analysis when stuck |
 
-#### Development Cycle (Test-Driven)
+#### Development Cycle
 
 ```
 FOR EACH FEATURE COMPONENT:
   ┌─────────────────────────────────────────┐
-  │ 1. DESIGN    Data structures/interfaces│
-  │                                          │
+  │ 1. DESIGN   Data structures/interfaces │
   │ 2. IMPLEMENT Core logic for component  │
-  │                                          │
-  │ 3. TEST      Use go-test-writer to     │
-  │              generate comprehensive     │
-  │              test suite                 │
-  │                                          │
-  │ 4. VERIFY    Run tests: go test ./...  │
-  │              Fix any failures           │
-  │                                          │
-  │ 5. INTEGRATE Connect to existing code  │
-  │                                          │
-  │ 6. VALIDATE  Test integration points   │
-  │              Update tests if needed     │
-  │                                          │
-  │ 7. COMMIT    Save working progress     │
-  │              (code + tests together)    │
+  │ 3. TEST      Verify functionality      │
+  │ 4. INTEGRATE Connect to existing code  │
+  │ 5. VALIDATE  Test integration points   │
+  │ 6. COMMIT    Save working progress     │
   └─────────────────────────────────────────┘
        │
-       ├─> ✅ Tests pass? → Next component
+       ├─> ✅ Works correctly? → Next component
        │
-       └─> ❌ Test failures? → Debug, refine, retry
+       └─> ❌ Problems? → Debug, refine, retry
 ```
 
 #### When Implementation Reveals Issues
@@ -932,17 +802,6 @@ What's your primary goal?
 │  └─> Output: Multi-approach design with integration plan       │
 │  └─> When: Start of implementation workflow                    │
 │                                                                 │
-│  ─────────────────────────────────────────────────────────────  │
-│                                                                 │
-│  🧪 TESTING AGENTS                                              │
-│  ────────────────────────────────────────────────────────────   │
-│                                                                 │
-│  go-test-writer                                                 │
-│  └─> Generates comprehensive Go test suites                    │
-│  └─> Input: Source files or feature descriptions               │
-│  └─> Output: Idiomatic test files with table-driven tests      │
-│  └─> When: After refactoring OR during implementation          │
-│                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -1033,70 +892,6 @@ What's your primary goal?
 - Step 1 of Implementation Workflow
 - Before building new features
 - When you need comprehensive feature design
-
-</details>
-
-<details>
-<summary><strong>go-test-writer</strong> - Go Test Suite Generator</summary>
-
-**Role:** Comprehensive test suite creator specializing in idiomatic Go testing patterns
-
-**What it does:**
-- Analyzes Go source files or feature descriptions
-- Generates complete test files with proper Go testing conventions
-- Creates table-driven tests for comprehensive scenario coverage
-- Adds benchmark tests for performance validation
-- Implements edge case testing (nil values, empty inputs, boundaries)
-- Ensures proper use of testing helpers and subtests
-
-**Input you provide:**
-- Source files that need test coverage (e.g., `package/file.go`)
-- OR feature descriptions for test-first development
-- Optional: Specific testing requirements or edge cases to cover
-
-**Output you receive:**
-- Complete `*_test.go` files with:
-  - Table-driven test functions with multiple test cases
-  - Proper test naming conventions (`TestFunctionName`)
-  - Edge case coverage (nil, empty, boundary conditions)
-  - Benchmark functions (`BenchmarkFunctionName`)
-  - Helper functions with `t.Helper()` when appropriate
-  - Subtests using `t.Run()` for organization
-  - Proper error checking and assertions
-
-**When to use:**
-- **Refactoring Workflow (Step 5):** After refactoring complete, verify behavior preserved
-- **Implementation Workflow (Step 3):** After implementing core logic, before integration
-- **Proactively:** When adding any new package or significant functionality
-- **Maintenance:** When existing code lacks sufficient test coverage
-
-**Example Usage:**
-
-```bash
-# After refactoring graphics/shapes.go
-"Use go-test-writer to generate comprehensive tests for graphics/shapes.go"
-
-# During feature implementation
-"Create tests for the new inventory system in game/inventory.go"
-
-# For existing code without tests
-"Generate test suite for combat/attack.go with focus on edge cases"
-```
-
-**Best Practices:**
-- ✅ **Review generated tests:** Verify they match your domain logic
-- ✅ **Run tests immediately:** `go test ./...` to catch any issues
-- ✅ **Check coverage:** Use `go test -cover` to identify gaps
-- ✅ **Customize as needed:** Adjust test cases for project-specific scenarios
-- ✅ **Commit with code:** Tests and implementation should be committed together
-
-**What makes tests "idiomatic":**
-- Table-driven design for multiple scenarios
-- Descriptive test case names
-- Proper use of `t.Fatal` vs `t.Error`
-- Benchmark tests for performance-critical code
-- No test helpers without `t.Helper()`
-- Subtests for logical grouping
 
 </details>
 
@@ -1298,22 +1093,15 @@ Follow these steps to get started:
 │      Test after each change                                    │
 │      Commit working increments                                 │
 │                                                                 │
-│  ☐ 8. GENERATE TESTS                                           │
-│      Use go-test-writer for comprehensive test coverage       │
-│      Review generated tests for accuracy                       │
-│      Add project-specific test cases if needed                 │
-│                                                                 │
-│  ☐ 9. VALIDATE RESULTS                                         │
-│      All tests pass (go test ./...)                           │
-│      Check coverage (go test -cover)                          │
-│      Run benchmarks for performance validation                 │
+│  ☐ 8. VALIDATE RESULTS                                         │
+│      All tests pass                                            │
 │      Functionality works as expected                           │
 │      Success metrics achieved                                  │
 │                                                                 │
-│  ☐ 10. DOCUMENT OUTCOMES                                       │
-│       Update project documentation                             │
-│       Record lessons learned                                   │
-│       Share insights with team                                 │
+│  ☐ 9. DOCUMENT OUTCOMES                                        │
+│      Update project documentation                              │
+│      Record lessons learned                                    │
+│      Share insights with team                                  │
 │                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -1328,22 +1116,12 @@ Follow these steps to get started:
 2. Review generated analysis
 3. Make decision, invoke refactoring-implementer
 4. Execute plan step-by-step
-5. Invoke go-test-writer to generate/update tests
-6. Run: go test ./... (verify all pass)
 
 # Implementation Workflow
 1. Invoke implementation-synth with feature requirements
 2. Review generated design documentation
 3. Make decision and start implementation
-4. Build incrementally, using go-test-writer after each component
-5. Run: go test ./... frequently (test-driven development)
-
-# Testing Standalone
-1. Invoke go-test-writer with source file(s)
-2. Review generated test suite
-3. Run: go test ./... -v
-4. Check coverage: go test ./... -cover
-5. Benchmark: go test ./... -bench=.
+4. Build incrementally with testing
 ```
 
 ---
@@ -1357,7 +1135,6 @@ Follow these steps to get started:
 - Agents advise, humans decide
 - Review thoroughly before acting
 - Work incrementally with frequent validation
-- Test early, test often (use go-test-writer)
 - Document decisions and outcomes
 - Test continuously, commit regularly
 
@@ -1366,7 +1143,6 @@ Follow these steps to get started:
 - Take time for careful review
 - Choose the simpler approach
 - Break work into smaller steps
-- Generate tests to validate correctness
 - Ask for help or clarification
 
 ---
