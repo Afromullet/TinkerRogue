@@ -294,7 +294,3 @@ func GetAbilityParams(abilityType AbilityType) AbilityParams {
 		return AbilityParams{}
 	}
 }
-
-// ========================================
-// UNIT DATA (Data-Driven)
-// ========================================

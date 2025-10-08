@@ -68,8 +68,8 @@ func AddUnitToSquad(
 }
 
 // RemoveUnitFromSquad - ✅ Accepts ecs.EntityID (native type)
-func RemoveUnitFromSquad(unitEntityID ecs.EntityID, ecsmanager *common.EntityManager) error {
-	unitEntity := FindUnitByID(unitEntityID, ecsmanager)
+func RemoveUnitFromSquad(unitEntityID ecs.EntityID, squadmanager *SquadECSManager) error {
+	unitEntity := FindUnitByID(unitEntityID, squadmanager)
 	if unitEntity == nil {
 		return fmt.Errorf("unit entity not found")
 	}
