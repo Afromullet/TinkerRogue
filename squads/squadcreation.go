@@ -37,9 +37,9 @@ func AddUnitToSquad(
 	unit UnitTemplate,
 	gridRow, gridCol int) error {
 
-	// Validate position
-	if unit.GridRow < 0 || unit.GridRow > 2 || unit.GridCol < 0 || unit.GridCol > 2 {
-		return fmt.Errorf("invalid grid position (%d, %d)", unit.GridRow, unit.GridCol)
+	// Validate position using the provided parameters, not unit template values
+	if gridRow < 0 || gridRow > 2 || gridCol < 0 || gridCol > 2 {
+		return fmt.Errorf("invalid grid position (%d, %d)", gridRow, gridCol)
 	}
 
 	// Check if position occupied
@@ -48,21 +48,21 @@ func AddUnitToSquad(
 		return fmt.Errorf("grid position (%d, %d) already occupied", gridRow, gridCol)
 	}
 
-	// Validate role
+	// Create unit entity (adds GridPositionComponent with default 0,0)
 	unitEntity, err := CreateUnitEntity(squadmanager, unit)
 	if err != nil {
 		return fmt.Errorf("invalid unit for %s: %w", unit.Name, err)
 	}
 
-	// Add components
+	// Add SquadMemberComponent to link unit to squad
 	unitEntity.AddComponent(SquadMemberComponent, &SquadMemberData{
 		SquadID: squadID,
 	})
 
-	unitEntity.AddComponent(GridPositionComponent, &GridPositionData{
-		AnchorRow: unit.GridRow,
-		AnchorCol: unit.GridCol,
-	})
+	// Update GridPositionComponent with actual grid position
+	gridPos := common.GetComponentType[*GridPositionData](unitEntity, GridPositionComponent)
+	gridPos.AnchorRow = gridRow
+	gridPos.AnchorCol = gridCol
 
 	return nil
 }
