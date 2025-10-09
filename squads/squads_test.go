@@ -1,6 +1,7 @@
 package squads
 
 import (
+	"fmt"
 	"game_main/common"
 	"game_main/entitytemplates"
 	"testing"
@@ -18,10 +19,13 @@ func setupTestSquadManager(t *testing.T) *SquadECSManager {
 	InitSquadComponents(*manager)
 	InitSquadTags(*manager)
 
-	// Initialize common.PositionComponent for CreateEmptySquad
-	// (Squad entities need this to track their position on the world map)
+	// Initialize common components for CreateEmptySquad and visualization
+	// (Squad entities need these to track position and unit entities need AttributeComponent)
 	if common.PositionComponent == nil {
 		common.PositionComponent = manager.Manager.NewComponent()
+	}
+	if common.AttributeComponent == nil {
+		common.AttributeComponent = manager.Manager.NewComponent()
 	}
 
 	return manager
@@ -572,4 +576,404 @@ func TestAddUnitToSquad_VerifySquadMemberComponent(t *testing.T) {
 	if memberData.SquadID != squadID {
 		t.Errorf("Expected SquadID %d, got %d", squadID, memberData.SquadID)
 	}
+}
+
+// ========================================
+// VISUALIZATION TESTS
+// ========================================
+
+func TestVisualizeSquad_EmptySquad(t *testing.T) {
+	manager := setupTestSquadManager(t)
+
+	CreateEmptySquad(manager, "Empty Squad")
+
+	var squadID ecs.EntityID
+	for _, result := range manager.Manager.Query(SquadTag) {
+		squadID = result.Entity.GetID()
+		break
+	}
+
+	if squadID == 0 {
+		t.Fatal("Failed to create squad")
+	}
+
+	// Visualize empty squad
+	output := VisualizeSquad(squadID, manager)
+
+	// Verify output contains squad name
+	if !contains(output, "Empty Squad") {
+		t.Errorf("Expected squad name in output, got:\n%s", output)
+	}
+
+	// Verify output indicates no units
+	if !contains(output, "No units in squad") {
+		t.Errorf("Expected 'No units in squad' message, got:\n%s", output)
+	}
+
+	// Verify grid is present (should show all Empty cells)
+	if !contains(output, "Empty") {
+		t.Errorf("Expected empty cells in grid, got:\n%s", output)
+	}
+
+	t.Logf("Empty Squad Visualization:\n%s", output)
+}
+
+func TestVisualizeSquad_SingleUnit_1x1(t *testing.T) {
+	manager := setupTestSquadManager(t)
+
+	CreateEmptySquad(manager, "Single Unit Squad")
+
+	var squadID ecs.EntityID
+	for _, result := range manager.Manager.Query(SquadTag) {
+		squadID = result.Entity.GetID()
+		break
+	}
+
+	// Add single warrior at center
+	jsonMonster := createTestJSONMonster("Warrior", 1, 1, "Tank")
+	unit, err := CreateUnitTemplates(jsonMonster)
+	if err != nil {
+		t.Fatalf("CreateUnitTemplates failed: %v", err)
+	}
+
+	err = AddUnitToSquad(squadID, manager, unit, 1, 1)
+	if err != nil {
+		t.Fatalf("AddUnitToSquad failed: %v", err)
+	}
+
+	// Visualize squad
+	output := VisualizeSquad(squadID, manager)
+
+	// Verify unit appears in grid
+	unitIDs := GetUnitIDsAtGridPosition(squadID, 1, 1, manager)
+	if len(unitIDs) != 1 {
+		t.Fatalf("Expected 1 unit at (1,1), got %d", len(unitIDs))
+	}
+
+	expectedID := fmt.Sprintf("%d", unitIDs[0])
+	if !contains(output, expectedID) {
+		t.Errorf("Expected unit ID %s in output, got:\n%s", expectedID, output)
+	}
+
+	// Verify unit details section
+	if !contains(output, "Unit Details:") {
+		t.Errorf("Expected 'Unit Details:' section, got:\n%s", output)
+	}
+
+	if !contains(output, "Tank") {
+		t.Errorf("Expected role 'Tank' in unit details, got:\n%s", output)
+	}
+
+	t.Logf("Single Unit Visualization:\n%s", output)
+}
+
+func TestVisualizeSquad_MultiCell_2x2_Giant(t *testing.T) {
+	manager := setupTestSquadManager(t)
+
+	CreateEmptySquad(manager, "Giant Squad")
+
+	var squadID ecs.EntityID
+	for _, result := range manager.Manager.Query(SquadTag) {
+		squadID = result.Entity.GetID()
+		break
+	}
+
+	// Add 2x2 giant at top-left
+	jsonMonster := createTestJSONMonster("Giant", 2, 2, "Tank")
+	unit, err := CreateUnitTemplates(jsonMonster)
+	if err != nil {
+		t.Fatalf("CreateUnitTemplates failed: %v", err)
+	}
+
+	err = AddUnitToSquad(squadID, manager, unit, 0, 0)
+	if err != nil {
+		t.Fatalf("AddUnitToSquad failed: %v", err)
+	}
+
+	// Visualize squad
+	output := VisualizeSquad(squadID, manager)
+
+	// Get the unit ID
+	unitIDs := GetUnitIDsAtGridPosition(squadID, 0, 0, manager)
+	if len(unitIDs) != 1 {
+		t.Fatalf("Expected 1 unit at (0,0), got %d", len(unitIDs))
+	}
+
+	expectedID := fmt.Sprintf("%d", unitIDs[0])
+
+	// Verify same ID appears in all 4 cells (0,0), (0,1), (1,0), (1,1)
+	expectedCells := [][2]int{{0, 0}, {0, 1}, {1, 0}, {1, 1}}
+	for _, cell := range expectedCells {
+		ids := GetUnitIDsAtGridPosition(squadID, cell[0], cell[1], manager)
+		if len(ids) != 1 || fmt.Sprintf("%d", ids[0]) != expectedID {
+			t.Errorf("Expected unit ID %s at cell (%d,%d)", expectedID, cell[0], cell[1])
+		}
+	}
+
+	// Verify size info in unit details
+	if !contains(output, "Size 2x2") {
+		t.Errorf("Expected 'Size 2x2' in unit details, got:\n%s", output)
+	}
+
+	t.Logf("2x2 Giant Visualization:\n%s", output)
+}
+
+func TestVisualizeSquad_MultiCell_1x3_Cavalry(t *testing.T) {
+	manager := setupTestSquadManager(t)
+
+	CreateEmptySquad(manager, "Cavalry Squad")
+
+	var squadID ecs.EntityID
+	for _, result := range manager.Manager.Query(SquadTag) {
+		squadID = result.Entity.GetID()
+		break
+	}
+
+	// Add 1x3 cavalry (3 rows tall, 1 col wide)
+	jsonMonster := createTestJSONMonster("Cavalry", 1, 3, "DPS")
+	unit, err := CreateUnitTemplates(jsonMonster)
+	if err != nil {
+		t.Fatalf("CreateUnitTemplates failed: %v", err)
+	}
+
+	err = AddUnitToSquad(squadID, manager, unit, 0, 0)
+	if err != nil {
+		t.Fatalf("AddUnitToSquad failed: %v", err)
+	}
+
+	// Visualize squad
+	output := VisualizeSquad(squadID, manager)
+
+	// Verify unit appears in all 3 rows of left column
+	expectedCells := [][2]int{{0, 0}, {1, 0}, {2, 0}}
+	unitIDs := GetUnitIDsAtGridPosition(squadID, 0, 0, manager)
+	if len(unitIDs) != 1 {
+		t.Fatalf("Expected 1 unit, got %d", len(unitIDs))
+	}
+
+	expectedID := fmt.Sprintf("%d", unitIDs[0])
+	for _, cell := range expectedCells {
+		ids := GetUnitIDsAtGridPosition(squadID, cell[0], cell[1], manager)
+		if len(ids) != 1 || fmt.Sprintf("%d", ids[0]) != expectedID {
+			t.Errorf("Expected unit ID %s at cell (%d,%d)", expectedID, cell[0], cell[1])
+		}
+	}
+
+	// Verify size info
+	if !contains(output, "Size 1x3") {
+		t.Errorf("Expected 'Size 1x3' in unit details, got:\n%s", output)
+	}
+
+	t.Logf("1x3 Cavalry Visualization:\n%s", output)
+}
+
+func TestVisualizeSquad_FullFormation_MixedUnits(t *testing.T) {
+	manager := setupTestSquadManager(t)
+
+	CreateEmptySquad(manager, "Mixed Formation")
+
+	var squadID ecs.EntityID
+	for _, result := range manager.Manager.Query(SquadTag) {
+		squadID = result.Entity.GetID()
+		break
+	}
+
+	// Front row: Tank (0,0), Tank (0,1), Archer (0,2)
+	tankJSON := createTestJSONMonster("Tank", 1, 1, "Tank")
+	tank1, _ := CreateUnitTemplates(tankJSON)
+	AddUnitToSquad(squadID, manager, tank1, 0, 0)
+
+	tank2, _ := CreateUnitTemplates(tankJSON)
+	AddUnitToSquad(squadID, manager, tank2, 0, 1)
+
+	archerJSON := createTestJSONMonster("Archer", 1, 1, "DPS")
+	archer1, _ := CreateUnitTemplates(archerJSON)
+	AddUnitToSquad(squadID, manager, archer1, 0, 2)
+
+	// Middle row: Warrior (1,0), empty, Warrior (1,2)
+	warriorJSON := createTestJSONMonster("Warrior", 1, 1, "DPS")
+	warrior1, _ := CreateUnitTemplates(warriorJSON)
+	AddUnitToSquad(squadID, manager, warrior1, 1, 0)
+
+	warrior2, _ := CreateUnitTemplates(warriorJSON)
+	AddUnitToSquad(squadID, manager, warrior2, 1, 2)
+
+	// Back row: Mage (2,0), Mage (2,1), Mage (2,2)
+	mageJSON := createTestJSONMonster("Mage", 1, 1, "Support")
+	mage1, _ := CreateUnitTemplates(mageJSON)
+	AddUnitToSquad(squadID, manager, mage1, 2, 0)
+
+	mage2, _ := CreateUnitTemplates(mageJSON)
+	AddUnitToSquad(squadID, manager, mage2, 2, 1)
+
+	mage3, _ := CreateUnitTemplates(mageJSON)
+	AddUnitToSquad(squadID, manager, mage3, 2, 2)
+
+	// Visualize squad
+	output := VisualizeSquad(squadID, manager)
+
+	// Verify 8 units present (1 empty cell at 1,1)
+	totalUnits := len(GetUnitIDsInSquad(squadID, manager))
+	if totalUnits != 8 {
+		t.Errorf("Expected 8 units, got %d", totalUnits)
+	}
+
+	// Verify empty cell at (1,1)
+	emptyIDs := GetUnitIDsAtGridPosition(squadID, 1, 1, manager)
+	if len(emptyIDs) != 0 {
+		t.Errorf("Expected empty cell at (1,1), got %d units", len(emptyIDs))
+	}
+
+	// Verify all roles appear
+	if !contains(output, "Tank") {
+		t.Errorf("Expected Tank role in output")
+	}
+	if !contains(output, "DPS") {
+		t.Errorf("Expected DPS role in output")
+	}
+	if !contains(output, "Support") {
+		t.Errorf("Expected Support role in output")
+	}
+
+	t.Logf("Mixed Formation Visualization:\n%s", output)
+}
+
+func TestVisualizeSquad_ComplexFormation_MultiCellUnits(t *testing.T) {
+	manager := setupTestSquadManager(t)
+
+	CreateEmptySquad(manager, "Complex Formation")
+
+	var squadID ecs.EntityID
+	for _, result := range manager.Manager.Query(SquadTag) {
+		squadID = result.Entity.GetID()
+		break
+	}
+
+	// 2x2 giant at top-left (occupies [0,0], [0,1], [1,0], [1,1])
+	giantJSON := createTestJSONMonster("Giant", 2, 2, "Tank")
+	giant, _ := CreateUnitTemplates(giantJSON)
+	AddUnitToSquad(squadID, manager, giant, 0, 0)
+
+	// 1x1 archer at top-right (0,2)
+	archerJSON := createTestJSONMonster("Archer", 1, 1, "DPS")
+	archer, _ := CreateUnitTemplates(archerJSON)
+	AddUnitToSquad(squadID, manager, archer, 0, 2)
+
+	// 1x1 mage at middle-right (1,2)
+	mageJSON := createTestJSONMonster("Mage", 1, 1, "Support")
+	mage, _ := CreateUnitTemplates(mageJSON)
+	AddUnitToSquad(squadID, manager, mage, 1, 2)
+
+	// 3x1 wall at bottom (occupies [2,0], [2,1], [2,2])
+	wallJSON := createTestJSONMonster("Wall", 3, 1, "Tank")
+	wall, _ := CreateUnitTemplates(wallJSON)
+	AddUnitToSquad(squadID, manager, wall, 2, 0)
+
+	// Visualize squad
+	output := VisualizeSquad(squadID, manager)
+
+	// Verify 4 distinct units
+	totalUnits := len(GetUnitIDsInSquad(squadID, manager))
+	if totalUnits != 4 {
+		t.Errorf("Expected 4 units, got %d", totalUnits)
+	}
+
+	// Verify giant occupies 4 cells
+	giantIDs := GetUnitIDsAtGridPosition(squadID, 0, 0, manager)
+	if len(giantIDs) != 1 {
+		t.Fatalf("Expected 1 giant unit")
+	}
+	giantID := giantIDs[0]
+	for r := 0; r < 2; r++ {
+		for c := 0; c < 2; c++ {
+			ids := GetUnitIDsAtGridPosition(squadID, r, c, manager)
+			if len(ids) != 1 || ids[0] != giantID {
+				t.Errorf("Expected giant at (%d,%d)", r, c)
+			}
+		}
+	}
+
+	// Verify wall occupies 3 cells
+	wallIDs := GetUnitIDsAtGridPosition(squadID, 2, 0, manager)
+	if len(wallIDs) != 1 {
+		t.Fatalf("Expected 1 wall unit")
+	}
+	wallID := wallIDs[0]
+	for c := 0; c < 3; c++ {
+		ids := GetUnitIDsAtGridPosition(squadID, 2, c, manager)
+		if len(ids) != 1 || ids[0] != wallID {
+			t.Errorf("Expected wall at (2,%d)", c)
+		}
+	}
+
+	t.Logf("Complex Formation Visualization:\n%s", output)
+}
+
+func TestVisualizeSquad_NonExistentSquad(t *testing.T) {
+	manager := setupTestSquadManager(t)
+
+	// Try to visualize squad that doesn't exist
+	output := VisualizeSquad(999999, manager)
+
+	if !contains(output, "not found") {
+		t.Errorf("Expected 'not found' message for non-existent squad, got:\n%s", output)
+	}
+
+	t.Logf("Non-existent Squad Output:\n%s", output)
+}
+
+func TestVisualizeSquad_GridBoundaries(t *testing.T) {
+	manager := setupTestSquadManager(t)
+
+	CreateEmptySquad(manager, "Boundary Test")
+
+	var squadID ecs.EntityID
+	for _, result := range manager.Manager.Query(SquadTag) {
+		squadID = result.Entity.GetID()
+		break
+	}
+
+	// Test all corner positions
+	corners := [][2]int{{0, 0}, {0, 2}, {2, 0}, {2, 2}}
+	for i, corner := range corners {
+		unitName := fmt.Sprintf("Corner%d", i)
+		jsonMonster := createTestJSONMonster(unitName, 1, 1, "DPS")
+		unit, _ := CreateUnitTemplates(jsonMonster)
+		err := AddUnitToSquad(squadID, manager, unit, corner[0], corner[1])
+		if err != nil {
+			t.Fatalf("Failed to add unit at corner (%d,%d): %v", corner[0], corner[1], err)
+		}
+	}
+
+	// Visualize
+	output := VisualizeSquad(squadID, manager)
+
+	// Verify 4 units
+	totalUnits := len(GetUnitIDsInSquad(squadID, manager))
+	if totalUnits != 4 {
+		t.Errorf("Expected 4 corner units, got %d", totalUnits)
+	}
+
+	// Verify center is empty
+	centerIDs := GetUnitIDsAtGridPosition(squadID, 1, 1, manager)
+	if len(centerIDs) != 0 {
+		t.Errorf("Expected empty center cell, got %d units", len(centerIDs))
+	}
+
+	t.Logf("Grid Boundaries Visualization:\n%s", output)
+}
+
+// Helper function to check if a string contains a substring
+func contains(s, substr string) bool {
+	return len(s) >= len(substr) && (s == substr || len(substr) == 0 ||
+		(len(s) > 0 && len(substr) > 0 && containsHelper(s, substr)))
+}
+
+func containsHelper(s, substr string) bool {
+	for i := 0; i <= len(s)-len(substr); i++ {
+		if s[i:i+len(substr)] == substr {
+			return true
+		}
+	}
+	return false
 }

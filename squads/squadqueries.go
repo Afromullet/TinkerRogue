@@ -52,7 +52,7 @@ func GetUnitIDsInSquad(squadID ecs.EntityID, squadmanager *SquadECSManager) []ec
 
 	for _, result := range squadmanager.Manager.Query(SquadMemberTag) {
 		unitEntity := result.Entity
-		memberData := common.GetComponentType[SquadMemberData](unitEntity, SquadMemberComponent)
+		memberData := common.GetComponentType[*SquadMemberData](unitEntity, SquadMemberComponent)
 
 		if memberData.SquadID == squadID {
 			unitID := unitEntity.GetID() // ✅ Native method!
