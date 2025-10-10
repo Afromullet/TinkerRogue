@@ -1,0 +1,3 @@
+#ExecuteSquadAttack
+
+ - Consider removing IsMultiTarget. Not really sure if it's wort having. Cell based targeting should work

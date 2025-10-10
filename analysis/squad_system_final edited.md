@@ -1,30 +1,6 @@
 # Squad Combat System - Corrected (Uses Native ECS Entity IDs)
-# Removing things from this file as I am adding them to teh code
 
 
-
-
-
-
-```go
-package systems
-
-import (
-	"github.com/bytearena/ecs"
-	"game_main/common"
-	"game_main/squad"
-)
-
-
-
-
-```
-
-
-
-### File: `systems/squadcombat.go`
-
-**Combat system - pure logic, uses native entity IDs**
 
 ```go
 package systems
@@ -79,7 +55,7 @@ func ExecuteSquadAttack(attackerSquadID, defenderSquadID ecs.EntityID, ecsmanage
 		var actualTargetIDs []ecs.EntityID
 
 		// Handle targeting based on mode
-		if targetRowData.Mode == squad.TARGET_MODE_CELL_BASED {
+		if targetRowData.Mode == squad.TargetModeCellBased {
 			// Cell-based targeting: hit specific grid cells
 			for _, cell := range targetRowData.TargetCells {
 				row, col := cell[0], cell[1]
@@ -155,17 +131,26 @@ func calculateUnitDamageByID(attackerID, defenderID ecs.EntityID, ecsmanager *co
 		totalDamage = 1 // Minimum damage
 	}
 
+	// Apply cover (damage reduction from units in front)
+	coverReduction := CalculateTotalCover(defenderID, ecsmanager)
+	if coverReduction > 0.0 {
+		totalDamage = int(float64(totalDamage) * (1.0 - coverReduction))
+		if totalDamage < 1 {
+			totalDamage = 1 // Minimum damage even with cover
+		}
+	}
+
 	return totalDamage
 }
 
 // applyRoleModifier adjusts damage based on unit role
 func applyRoleModifier(damage int, role squad.UnitRole) int {
 	switch role {
-	case squad.ROLE_TANK:
+	case squad.RoleTank:
 		return int(float64(damage) * 0.8) // -20% (tanks don't deal high damage)
-	case squad.ROLE_DPS:
+	case squad.RoleDPS:
 		return int(float64(damage) * 1.3) // +30% (damage dealers)
-	case squad.ROLE_SUPPORT:
+	case squad.RoleSupport:
 		return int(float64(damage) * 0.6) // -40% (support units are weak attackers)
 	default:
 		return damage
@@ -240,161 +225,145 @@ func sumDamageMap(damageMap map[ecs.EntityID]int) int {
 	}
 	return total
 }
-```
 
----
+// ========================================
+// COVER SYSTEM FUNCTIONS
+// ========================================
 
-## Cell-Based Targeting Patterns
+// CalculateTotalCover calculates the total damage reduction from all units providing cover to the defender
+// Cover bonuses stack additively (e.g., 0.25 + 0.15 = 0.40 total reduction)
+// Returns a value between 0.0 (no cover) and 1.0 (100% damage reduction, capped)
+func CalculateTotalCover(defenderID ecs.EntityID, ecsmanager *common.EntityManager) float64 {
+	defenderUnit := FindUnitByID(defenderID, ecsmanager)
+	if defenderUnit == nil {
+		return 0.0
+	}
 
-### Overview
+	// Get defender's position and squad
+	if !defenderUnit.HasComponent(squad.GridPositionComponent) || !defenderUnit.HasComponent(squad.SquadMemberComponent) {
+		return 0.0
+	}
 
-The targeting system supports two modes: **row-based** (simple, targets entire rows) and **cell-based** (complex, targets specific grid cells). Cell-based targeting allows precise control over which cells are hit, enabling patterns like horizontal cleave, vertical pierce, single-target precision, and complex AOE shapes.
+	defenderPos := common.GetComponentType[*squad.GridPositionData](defenderUnit, squad.GridPositionComponent)
+	defenderSquadData := common.GetComponentType[*squad.SquadMemberData](defenderUnit, squad.SquadMemberComponent)
+	defenderSquadID := defenderSquadData.SquadID
 
-### Targeting Mode Comparison
+	// Get all units providing cover
+	coverProviders := GetCoverProvidersFor(defenderID, defenderSquadID, defenderPos, ecsmanager)
 
-| Feature | Row-Based | Cell-Based |
-|---------|-----------|------------|
-| **Complexity** | Simple | Advanced |
-| **Target Selection** | Entire row(s) | Specific grid cells |
-| **Use Cases** | Front-line melee, back-row artillery | Precision attacks, shaped AOE, directional cleave |
-| **Configuration** | `TargetRows []int` | `TargetCells [][2]int` |
-| **Multi-target Logic** | `IsMultiTarget`, `MaxTargets` | Hit all units in specified cells |
+	// Sum all cover bonuses (stacking additively)
+	totalCover := 0.0
+	for _, providerID := range coverProviders {
+		providerUnit := FindUnitByID(providerID, ecsmanager)
+		if providerUnit == nil {
+			continue
+		}
 
-### Common Cell-Based Patterns
+		// Check if provider has cover component
+		if !providerUnit.HasComponent(squad.CoverComponent) {
+			continue
+		}
 
-#### 1x1 (Single Target - Center)
-**Use Case:** Precision single-target attack (assassin, sniper)
-```go
-TargetCells: [][2]int{{1, 1}} // Center cell only
-```
+		coverData := common.GetComponentType[*squad.CoverData](providerUnit, squad.CoverComponent)
 
-#### 1x2 (Horizontal Cleave - Front)
-**Use Case:** Horizontal sword slash hitting two front-line targets
-```go
-TargetCells: [][2]int{{0, 0}, {0, 1}} // Front-left two cells
-```
+		// Check if provider is active (alive and not stunned)
+		isActive := true
+		if coverData.RequiresActive {
+			attr := common.GetAttributes(providerUnit)
+			isActive = attr.CurrentHealth > 0
+			// TODO: Add stun/disable status check when status effects are implemented
+		}
 
-#### 2x1 (Vertical Pierce - Left Column)
-**Use Case:** Spear thrust piercing through left column
-```go
-TargetCells: [][2]int{{0, 0}, {1, 0}} // Left column, top two rows
-```
+		totalCover += coverData.GetCoverBonus(isActive)
+	}
 
-#### 2x2 (Quad Blast - Top-Left)
-**Use Case:** Medium AOE explosion hitting top-left quadrant
-```go
-TargetCells: [][2]int{{0, 0}, {0, 1}, {1, 0}, {1, 1}} // Top-left 2x2 quad
-```
+	// Cap at 100% reduction (though in practice this should be very rare)
+	if totalCover > 1.0 {
+		totalCover = 1.0
+	}
 
-#### 3x3 (Full Grid AOE)
-**Use Case:** Massive AOE spell hitting entire enemy formation
-```go
-TargetCells: [][2]int{
-	{0, 0}, {0, 1}, {0, 2}, // Front row
-	{1, 0}, {1, 1}, {1, 2}, // Middle row
-	{2, 0}, {2, 1}, {2, 2}, // Back row
+	return totalCover
+}
+
+// GetCoverProvidersFor finds all units in the same squad that provide cover to the defender
+// Cover is provided by units in front (lower row number) within the same column(s)
+// Multi-cell units provide cover to all columns they occupy
+func GetCoverProvidersFor(defenderID ecs.EntityID, defenderSquadID ecs.EntityID, defenderPos *squad.GridPositionData, ecsmanager *common.EntityManager) []ecs.EntityID {
+	var providers []ecs.EntityID
+
+	// Get all columns the defender occupies
+	defenderCols := make(map[int]bool)
+	for c := defenderPos.AnchorCol; c < defenderPos.AnchorCol+defenderPos.Width && c < 3; c++ {
+		defenderCols[c] = true
+	}
+
+	// Get all units in the same squad
+	allUnitIDs := GetUnitIDsInSquad(defenderSquadID, ecsmanager)
+
+	for _, unitID := range allUnitIDs {
+		// Don't provide cover to yourself
+		if unitID == defenderID {
+			continue
+		}
+
+		unit := FindUnitByID(unitID, ecsmanager)
+		if unit == nil {
+			continue
+		}
+
+		// Check if unit has cover component
+		if !unit.HasComponent(squad.CoverComponent) {
+			continue
+		}
+
+		coverData := common.GetComponentType[*squad.CoverData](unit, squad.CoverComponent)
+
+		// Get unit's position
+		if !unit.HasComponent(squad.GridPositionComponent) {
+			continue
+		}
+
+		unitPos := common.GetComponentType[*squad.GridPositionData](unit, squad.GridPositionComponent)
+
+		// Check if unit is in front of defender (lower row number)
+		// Unit must be at least 1 row in front to provide cover
+		if unitPos.AnchorRow >= defenderPos.AnchorRow {
+			continue
+		}
+
+		// Check if unit is within cover range
+		rowDistance := defenderPos.AnchorRow - unitPos.AnchorRow
+		if rowDistance > coverData.CoverRange {
+			continue
+		}
+
+		// Check if unit occupies any column the defender is in
+		unitCols := make(map[int]bool)
+		for c := unitPos.AnchorCol; c < unitPos.AnchorCol+unitPos.Width && c < 3; c++ {
+			unitCols[c] = true
+		}
+
+		// Check for column overlap
+		hasOverlap := false
+		for col := range defenderCols {
+			if unitCols[col] {
+				hasOverlap = true
+				break
+			}
+		}
+
+		if hasOverlap {
+			providers = append(providers, unitID)
+		}
+	}
+
+	return providers
 }
 ```
 
-#### Custom L-Shape Pattern
-**Use Case:** Special ability with unique targeting shape
-```go
-TargetCells: [][2]int{{0, 0}, {1, 0}, {2, 0}, {2, 1}} // Left column + bottom-right
-```
-
-### Row-Based vs Cell-Based Examples
-
-#### Row-Based (Simple)
-```go
-// Melee fighter: attack single target in front row
-unitEntity.AddComponent(squad.TargetRowComponent, &squad.TargetRowData{
-	Mode:          squad.TARGET_MODE_ROW_BASED,
-	TargetRows:    []int{0},           // Front row
-	IsMultiTarget: false,               // Single target
-	MaxTargets:    0,                   // N/A
-})
-
-// Archer: attack all units in back row
-unitEntity.AddComponent(squad.TargetRowComponent, &squad.TargetRowData{
-	Mode:          squad.TARGET_MODE_ROW_BASED,
-	TargetRows:    []int{2},           // Back row
-	IsMultiTarget: true,                // Hit all
-	MaxTargets:    0,                   // Unlimited
-})
-```
-
-#### Cell-Based (Advanced)
-```go
-// Assassin: precise single-target to center cell
-unitEntity.AddComponent(squad.TargetRowComponent, &squad.TargetRowData{
-	Mode:        squad.TARGET_MODE_CELL_BASED,
-	TargetCells: [][2]int{{1, 1}},     // Center cell only
-})
-
-// Horizontal Cleave: hit front-left two cells
-unitEntity.AddComponent(squad.TargetRowComponent, &squad.TargetRowData{
-	Mode:        squad.TARGET_MODE_CELL_BASED,
-	TargetCells: [][2]int{{0, 0}, {0, 1}}, // 1x2 horizontal
-})
-
-// Fireball: 2x2 AOE blast
-unitEntity.AddComponent(squad.TargetRowComponent, &squad.TargetRowData{
-	Mode:        squad.TARGET_MODE_CELL_BASED,
-	TargetCells: [][2]int{{0, 0}, {0, 1}, {1, 0}, {1, 1}}, // Top-left quad
-})
-```
-
-### Grid Reference (3x3 Formation)
-
-```
-Col:     0         1         2
-Row 0: [0,0]     [0,1]     [0,2]   <- Front row (closest to enemy)
-Row 1: [1,0]     [1,1]     [1,2]   <- Middle row
-Row 2: [2,0]     [2,1]     [2,2]   <- Back row (furthest from enemy)
-```
-
-### When to Use Each Mode
-
-**Use Row-Based When:**
-- Simple targeting logic (front/middle/back row)
-- Multi-target with max count (hit 2 random units in row)
-- Traditional roguelike row-based combat
-- Targeting logic needs to adapt dynamically (hit all in front row, regardless of positions)
-
-**Use Cell-Based When:**
-- Precise targeting required (specific grid cells)
-- Shaped AOE patterns (L-shape, cross, diagonal)
-- Directional attacks (horizontal cleave, vertical pierce)
-- Complex tactical abilities (corners only, center + adjacent)
-
-### Implementation Notes
-
-1. **Cell-based mode ignores `IsMultiTarget` and `MaxTargets`** - it hits ALL units in specified cells
-2. **Cells are absolute coordinates** - `[row, col]` where both are 0-2
-3. **Empty cells are harmless** - if no unit occupies a targeted cell, nothing happens
-4. **No validation required** - system handles out-of-bounds gracefully (though cells should be 0-2)
-5. **Mixing modes not supported** - each unit uses either row-based OR cell-based, not both
-
 ---
 
-## Automated Leader Abilities
 
-### Design Overview
-
-**Core Concept:** Leader abilities trigger automatically based on conditions (HP thresholds, turn counts, etc.). NO manual player input during combat.
-
-**Trigger System:**
-1. Before each squad's turn, check all ability conditions
-2. If condition met and ability is off cooldown, trigger it automatically
-3. Display ability activation message to player
-4. Apply cooldown
-
-**Condition Types:**
-- `TRIGGER_SQUAD_HP_BELOW`: Squad average HP < threshold (e.g., 50%)
-- `TRIGGER_TURN_COUNT`: Specific turn number (e.g., turn 1, turn 3)
-- `TRIGGER_ENEMY_COUNT`: Number of enemy squads on map
-- `TRIGGER_MORALE_BELOW`: Squad morale < threshold (future)
-- `TRIGGER_COMBAT_START`: First turn of combat (always turn 1)
 
 ### File: `systems/squadabilities.go`
 
@@ -677,23 +646,6 @@ func applyFireballEffect(squadID ecs.EntityID, params squad.AbilityParams, ecsma
 
 ---
 
-## Squad Composition & Formation System
-
-### Design Goals
-
-**Key Requirement:** Support experimentation like Nephilim, Symphony of War, Ogre Battle, Soul Nomad.
-
-**Flexibility Features:**
-1. Variable squad sizes (1-9 units)
-2. No hard role requirements (all tanks, all DPS, etc. are valid)
-3. Empty grid slots allowed (sparse formations)
-4. Leader is optional but recommended
-5. Formation templates for quick setup
-6. Easy unit swapping/rearrangement
-
-### File: `systems/squadcreation.go`
-
-**Squad creation system - uses native entity IDs**
 
 ```go
 package systems
@@ -707,23 +659,6 @@ import (
 	"game_main/squad"
 )
 
-// UnitTemplate defines a unit to be created in a squad
-type UnitTemplate struct {
-	EntityType    entitytemplates.EntityType
-	EntityConfig  entitytemplates.EntityConfig
-	EntityData    any                          // JSONMonster, etc.
-	GridRow       int                          // Anchor row (0-2)
-	GridCol       int                          // Anchor col (0-2)
-	GridWidth     int                          // Width in cells (1-3), defaults to 1
-	GridHeight    int                          // Height in cells (1-3), defaults to 1
-	Role          squad.UnitRole               // Tank, DPS, Support
-	TargetMode    string                       // "row" or "cell"
-	TargetRows    []int                        // Which rows to attack (row-based)
-	IsMultiTarget bool                         // AOE or single-target (row-based)
-	MaxTargets    int                          // Max targets per row (row-based)
-	TargetCells   [][2]int                     // Specific cells to target (cell-based)
-	IsLeader      bool                         // Squad leader flag
-}
 
 // CreateSquadFromTemplate - ✅ Returns ecs.EntityID (native type)
 func CreateSquadFromTemplate(
@@ -825,9 +760,9 @@ func CreateSquadFromTemplate(
 		})
 
 		// Add targeting data (supports both row-based and cell-based modes)
-		targetMode := squad.TARGET_MODE_ROW_BASED
+		targetMode := squad.TargetModeRowBased
 		if template.TargetMode == "cell" {
-			targetMode = squad.TARGET_MODE_CELL_BASED
+			targetMode = squad.TargetModeCellBased
 		}
 
 		unitEntity.AddComponent(squad.TargetRowComponent, &squad.TargetRowData{
@@ -837,6 +772,15 @@ func CreateSquadFromTemplate(
 			MaxTargets:    template.MaxTargets,
 			TargetCells:   template.TargetCells,
 		})
+
+		// Add cover component if unit provides cover
+		if template.CoverValue > 0.0 {
+			unitEntity.AddComponent(squad.CoverComponent, &squad.CoverData{
+				CoverValue:     template.CoverValue,
+				CoverRange:     template.CoverRange,
+				RequiresActive: template.RequiresActive,
+			})
+		}
 
 		// Add leader component if needed
 		if template.IsLeader {
@@ -867,78 +811,9 @@ func CreateSquadFromTemplate(
 	return squadID // ✅ Return native entity ID
 }
 
-// AddUnitToSquad - ✅ Accepts ecs.EntityID (native type)
-func AddUnitToSquad(
-	squadID ecs.EntityID,
-	unitEntityID ecs.EntityID,
-	gridRow, gridCol int,
-	role squad.UnitRole,
-	targetRows []int,
-	isMultiTarget bool,
-	maxTargets int,
-	ecsmanager *common.EntityManager,
-) error {
 
-	// Validate position
-	if gridRow < 0 || gridRow > 2 || gridCol < 0 || gridCol > 2 {
-		return fmt.Errorf("invalid grid position (%d, %d)", gridRow, gridCol)
-	}
 
-	// Check if position occupied
-	existingUnitIDs := GetUnitIDsAtGridPosition(squadID, gridRow, gridCol, ecsmanager)
-	if len(existingUnitIDs) > 0 {
-		return fmt.Errorf("grid position (%d, %d) already occupied", gridRow, gridCol)
-	}
 
-	unitEntity := FindUnitByID(unitEntityID, ecsmanager)
-	if unitEntity == nil {
-		return fmt.Errorf("unit entity not found")
-	}
-
-	// Add components
-	unitEntity.AddComponent(squad.SquadMemberComponent, &squad.SquadMemberData{
-		SquadID: squadID,
-	})
-
-	unitEntity.AddComponent(squad.GridPositionComponent, &squad.GridPositionData{
-		Row: gridRow,
-		Col: gridCol,
-	})
-
-	unitEntity.AddComponent(squad.UnitRoleComponent, &squad.UnitRoleData{
-		Role: role,
-	})
-
-	// Row-based targeting (simple)
-	unitEntity.AddComponent(squad.TargetRowComponent, &squad.TargetRowData{
-		Mode:          squad.TARGET_MODE_ROW_BASED,
-		TargetRows:    targetRows,
-		IsMultiTarget: isMultiTarget,
-		MaxTargets:    maxTargets,
-		TargetCells:   nil, // Use cell-based mode for precise grid patterns
-	})
-
-	return nil
-}
-
-// RemoveUnitFromSquad - ✅ Accepts ecs.EntityID (native type)
-func RemoveUnitFromSquad(unitEntityID ecs.EntityID, ecsmanager *common.EntityManager) error {
-	unitEntity := FindUnitByID(unitEntityID, ecsmanager)
-	if unitEntity == nil {
-		return fmt.Errorf("unit entity not found")
-	}
-
-	if !unitEntity.HasComponent(squad.SquadMemberComponent) {
-		return fmt.Errorf("unit is not in a squad")
-	}
-
-	// In bytearena/ecs, we can't remove components
-	// Workaround: Set SquadID to 0 to mark as "removed"
-	memberData := common.GetComponentType[*squad.SquadMemberData](unitEntity, squad.SquadMemberComponent)
-	memberData.SquadID = 0
-
-	return nil
-}
 
 // EquipAbilityToLeader - ✅ Accepts ecs.EntityID (native type)
 func EquipAbilityToLeader(
@@ -1044,57 +919,57 @@ type FormationPreset struct {
 }
 
 type FormationPosition struct {
-	Row    int
-	Col    int
-	Role   UnitRole
-	Target []int
+	AnchorRow int
+	AnchorCol int
+	Role      UnitRole
+	Target    []int
 }
 
 // GetFormationPreset returns predefined formation templates
 func GetFormationPreset(formation FormationType) FormationPreset {
 	switch formation {
-	case FORMATION_BALANCED:
+	case FormationBalanced:
 		return FormationPreset{
 			Positions: []FormationPosition{
-				{Row: 0, Col: 0, Role: ROLE_TANK, Target: []int{0}},
-				{Row: 0, Col: 2, Role: ROLE_TANK, Target: []int{0}},
-				{Row: 1, Col: 1, Role: ROLE_SUPPORT, Target: []int{1}},
-				{Row: 2, Col: 0, Role: ROLE_DPS, Target: []int{2}},
-				{Row: 2, Col: 2, Role: ROLE_DPS, Target: []int{2}},
+				{AnchorRow: 0, AnchorCol: 0, Role: RoleTank, Target: []int{0}},
+				{AnchorRow: 0, AnchorCol: 2, Role: RoleTank, Target: []int{0}},
+				{AnchorRow: 1, AnchorCol: 1, Role: RoleSupport, Target: []int{1}},
+				{AnchorRow: 2, AnchorCol: 0, Role: RoleDPS, Target: []int{2}},
+				{AnchorRow: 2, AnchorCol: 2, Role: RoleDPS, Target: []int{2}},
 			},
 		}
 
-	case FORMATION_DEFENSIVE:
+	case FormationDefensive:
 		return FormationPreset{
 			Positions: []FormationPosition{
-				{Row: 0, Col: 0, Role: ROLE_TANK, Target: []int{0}},
-				{Row: 0, Col: 1, Role: ROLE_TANK, Target: []int{0}},
-				{Row: 0, Col: 2, Role: ROLE_TANK, Target: []int{0}},
-				{Row: 1, Col: 1, Role: ROLE_SUPPORT, Target: []int{1}},
-				{Row: 2, Col: 1, Role: ROLE_DPS, Target: []int{2}},
+				{AnchorRow: 0, AnchorCol: 0, Role: RoleTank, Target: []int{0}},
+				{AnchorRow: 0, AnchorCol: 1, Role: RoleTank, Target: []int{0}},
+				{AnchorRow: 0, AnchorCol: 2, Role: RoleTank, Target: []int{0}},
+				{AnchorRow: 1, AnchorCol: 1, Role: RoleSupport, Target: []int{1}},
+				{AnchorRow: 2, AnchorCol: 1, Role: RoleDPS, Target: []int{2}},
 			},
 		}
 
-	case FORMATION_OFFENSIVE:
+	case FormationOffensive:
 		return FormationPreset{
 			Positions: []FormationPosition{
-				{Row: 0, Col: 1, Role: ROLE_TANK, Target: []int{0}},
-				{Row: 1, Col: 0, Role: ROLE_DPS, Target: []int{1}},
-				{Row: 1, Col: 1, Role: ROLE_DPS, Target: []int{1}},
-				{Row: 1, Col: 2, Role: ROLE_DPS, Target: []int{1}},
-				{Row: 2, Col: 1, Role: ROLE_SUPPORT, Target: []int{2}},
+				{AnchorRow: 0, AnchorCol: 1, Role: RoleTank, Target: []int{0}},
+				{AnchorRow: 1, AnchorCol: 0, Role: RoleDPS, Target: []int{1}},
+				{AnchorRow: 1, AnchorCol: 1, Role: RoleDPS, Target: []int{1}},
+				{AnchorRow: 1, AnchorCol: 2, Role: RoleDPS, Target: []int{1}},
+				{AnchorRow: 2, AnchorCol: 1, Role: RoleSupport, Target: []int{2}},
 			},
 		}
 
-	case FORMATION_RANGED:
+	case FormationRanged:
 		return FormationPreset{
 			Positions: []FormationPosition{
-				{Row: 0, Col: 1, Role: ROLE_TANK, Target: []int{0}},
-				{Row: 1, Col: 0, Role: ROLE_DPS, Target: []int{1, 2}},
-				{Row: 1, Col: 2, Role: ROLE_DPS, Target: []int{1, 2}},
-				{Row: 2, Col: 0, Role: ROLE_DPS, Target: []int{2}},
-				{Row: 2, Col: 1, Role: ROLE_SUPPORT, Target: []int{2}},
-				{Row: 2, Col: 2, Role: ROLE_DPS, Target: []int{2}},
+				{AnchorRow: 0, AnchorCol: 1, Role: RoleTank, Target: []int{0}},
+				{AnchorRow: 1, AnchorCol: 0, Role: RoleDPS, Target: []int{1, 2}},
+				{AnchorRow: 1, AnchorCol: 2, Role: RoleDPS, Target: []int{1, 2}},
+				{AnchorRow: 2, AnchorCol: 0, Role: RoleDPS, Target: []int{2}},
+				{AnchorRow: 2, AnchorCol: 1, Role: RoleSupport, Target: []int{2}},
+				{AnchorRow: 2, AnchorCol: 2, Role: RoleDPS, Target: []int{2}},
 			},
 		}
 
@@ -1176,7 +1051,7 @@ func TestSquadQueries() {
 ### Phase 3: Row-Based Combat System (8-10 hours)
 
 **Deliverables:**
-- `systems/squadcombat.go` - ExecuteSquadAttack, damage calculation
+- `systems/squadcombat.go` - ExecuteSquadAttack, damage calculation, cover system
 - Row-based targeting logic
 - Integration with existing `PerformAttack()` concepts
 
@@ -1184,15 +1059,23 @@ func TestSquadQueries() {
 1. Implement `ExecuteSquadAttack()` function
 2. Implement `calculateUnitDamageByID()` (adapt existing combat logic)
 3. Implement `applyRoleModifier()` for Tank/DPS/Support
-4. Implement targeting logic (single-target vs multi-target)
-5. Implement helper functions (selectLowestHPTargetID, selectRandomTargetIDs)
-6. Add death tracking and unit removal
+4. Implement `CalculateTotalCover()` and `GetCoverProvidersFor()` for cover system
+5. Integrate cover reduction into damage calculation
+6. Implement targeting logic (single-target vs multi-target)
+7. Implement helper functions (selectLowestHPTargetID, selectRandomTargetIDs)
+8. Add death tracking and unit removal
 
 **Testing:**
 - Create two squads with different roles
 - Execute combat and verify damage distribution
 - Verify row targeting (front row hit first, back row protected)
 - Verify role modifiers apply correctly
+- **Test cover mechanics:**
+  - Verify front-line tanks reduce damage to back-line units
+  - Test stacking cover (multiple units in same column)
+  - Test dead units don't provide cover
+  - Test multi-cell units providing cover to multiple columns
+  - Test cover range limitations
 - Test edge cases (empty rows, all dead, etc.)
 
 ### Phase 4: Automated Ability System (6-8 hours)
@@ -1358,8 +1241,8 @@ func SpawnEnemySquad(ecsmanager *common.EntityManager, level int, worldPos coord
 				EntityConfig:  entitytemplates.EntityConfig{Name: "Goblin"},
 				EntityData:    loadMonsterData("Goblin"),
 				GridRow:       0, GridCol: 0,
-				Role:          squad.ROLE_TANK,
-				TargetMode:    "row",
+				Role:          squad.RoleTank,
+				TargetMode:    squad.TargetModeRowBased,
 				TargetRows:    []int{0},
 				IsMultiTarget: false,
 				MaxTargets:    1,
@@ -1374,8 +1257,8 @@ func SpawnEnemySquad(ecsmanager *common.EntityManager, level int, worldPos coord
 				EntityConfig: entitytemplates.EntityConfig{Name: "Orc Warrior"},
 				EntityData:   loadMonsterData("Orc"),
 				GridRow:      0, GridCol: 1,
-				Role:         squad.ROLE_TANK,
-				TargetMode:   "row",
+				Role:         squad.RoleTank,
+				TargetMode:   squad.TargetModeRowBased,
 				TargetRows:   []int{0},
 				IsLeader:     true, // Add leader
 			},
@@ -1387,7 +1270,7 @@ func SpawnEnemySquad(ecsmanager *common.EntityManager, level int, worldPos coord
 	squadID := systems.CreateSquadFromTemplate(
 		ecsmanager,
 		"Enemy Squad",
-		squad.FORMATION_BALANCED,
+		squad.FormationBalanced,
 		worldPos,
 		templates,
 	)
@@ -1454,12 +1337,15 @@ func InitializePlayerSquad(ecsmanager *common.EntityManager) ecs.EntityID {
 			},
 			GridRow:       0,
 			GridCol:       1,
-			Role:          squad.ROLE_TANK,
-			TargetMode:    "row",
+			Role:          squad.RoleTank,
+			TargetMode:    squad.TargetModeRowBased,
 			TargetRows:    []int{0}, // Attack front row
 			IsMultiTarget: false,
 			MaxTargets:    1,
 			IsLeader:      true,
+			CoverValue:    0.30,        // 30% damage reduction
+			CoverRange:    2,           // Covers mid and back rows
+			RequiresActive: true,       // Dead knights provide no cover
 		},
 		{
 			EntityType:   entitytemplates.EntityCreature,
@@ -1472,10 +1358,13 @@ func InitializePlayerSquad(ecsmanager *common.EntityManager) ecs.EntityID {
 			EntityData: createTankData(40, 4, 16, 6),
 			GridRow:      0,
 			GridCol:      0,
-			Role:         squad.ROLE_TANK,
+			Role:         squad.RoleTank,
 			TargetRows:   []int{0},
 			IsMultiTarget: false,
 			MaxTargets:   1,
+			CoverValue:    0.25,        // 25% damage reduction
+			CoverRange:    2,           // Covers mid and back rows
+			RequiresActive: true,       // Dead shields provide no cover
 		},
 		// Row 1: Mid-line DPS and support
 		{
@@ -1489,10 +1378,13 @@ func InitializePlayerSquad(ecsmanager *common.EntityManager) ecs.EntityID {
 			EntityData: createSupportData(35, 3, 12, 2),
 			GridRow:      1,
 			GridCol:      1,
-			Role:         squad.ROLE_SUPPORT,
+			Role:         squad.RoleSupport,
 			TargetRows:   []int{1},
 			IsMultiTarget: false,
 			MaxTargets:   1,
+			CoverValue:    0.10,        // 10% damage reduction
+			CoverRange:    1,           // Only covers back row
+			RequiresActive: true,       // Dead clerics provide no cover
 		},
 		// Row 2: Back-line ranged DPS
 		{
@@ -1506,10 +1398,11 @@ func InitializePlayerSquad(ecsmanager *common.EntityManager) ecs.EntityID {
 			EntityData: createDPSData(25, 10, 11, 2),
 			GridRow:      2,
 			GridCol:      0,
-			Role:         squad.ROLE_DPS,
+			Role:         squad.RoleDPS,
 			TargetRows:   []int{2}, // Snipe back row
 			IsMultiTarget: false,
 			MaxTargets:   1,
+			// No cover (CoverValue: 0, default) - archers don't provide cover
 		},
 		{
 			EntityType:   entitytemplates.EntityCreature,
@@ -1522,10 +1415,11 @@ func InitializePlayerSquad(ecsmanager *common.EntityManager) ecs.EntityID {
 			EntityData: createDPSData(20, 12, 10, 1),
 			GridRow:      2,
 			GridCol:      2,
-			Role:         squad.ROLE_DPS,
+			Role:         squad.RoleDPS,
 			TargetRows:   []int{2}, // AOE back row
 			IsMultiTarget: true,    // Hits all units in row
 			MaxTargets:   0,        // Unlimited
+			// No cover (CoverValue: 0, default) - mages don't provide cover
 		},
 	}
 
@@ -1533,7 +1427,7 @@ func InitializePlayerSquad(ecsmanager *common.EntityManager) ecs.EntityID {
 	squadID := systems.CreateSquadFromTemplate(
 		ecsmanager,
 		"Player's Legion",
-		squad.FORMATION_BALANCED,
+		squad.FormationBalanced,
 		coords.LogicalPosition{X: 10, Y: 10},
 		templates,
 	)
@@ -1757,7 +1651,7 @@ func RecruitUnitToSquad(squadID ecs.EntityID, unitName string, gridRow, gridCol 
 		unitEntityID,
 		gridRow,
 		gridCol,
-		squad.ROLE_DPS,
+		squad.RoleDPS,
 		[]int{1}, // Target middle row
 		false,    // Single-target
 		1,        // Max 1 target
@@ -1787,7 +1681,7 @@ func ReorganizeSquad(squadID ecs.EntityID, ecsmanager *common.EntityManager) err
 		roleData := common.GetComponentType[*squad.UnitRoleData](unit, squad.UnitRoleComponent)
 		gridPos := common.GetComponentType[*squad.GridPositionData](unit, squad.GridPositionComponent)
 
-		if roleData.Role == squad.ROLE_DPS && gridPos.Row == 2 {
+		if roleData.Role == squad.RoleDPS && gridPos.AnchorRow == 2 {
 			dpsUnitID = unitID
 			break
 		}
@@ -1838,11 +1732,14 @@ func CreateGiantSquad(ecsmanager *common.EntityManager) ecs.EntityID {
 			GridCol:    0,
 			GridWidth:  2,    // ✅ 2 cells wide
 			GridHeight: 2,    // ✅ 2 cells tall
-			Role:       squad.ROLE_TANK,
+			Role:       squad.RoleTank,
 			TargetRows: []int{0, 1}, // Can hit front and mid rows (tall reach)
 			IsMultiTarget: false,
 			MaxTargets:    1,
 			IsLeader:      true,
+			CoverValue:    0.40,        // ✅ 40% cover - large unit provides excellent protection
+			CoverRange:    1,           // Only covers back row (row 2) since giant occupies rows 0-1
+			RequiresActive: true,       // Dead giants provide no cover
 		},
 
 		// 1x1 Archer in front-right
@@ -1859,7 +1756,7 @@ func CreateGiantSquad(ecsmanager *common.EntityManager) ecs.EntityID {
 			GridCol:    2,
 			GridWidth:  1,  // ✅ Standard 1x1
 			GridHeight: 1,
-			Role:       squad.ROLE_DPS,
+			Role:       squad.RoleDPS,
 			TargetRows: []int{2}, // Snipe back row
 			IsMultiTarget: false,
 			MaxTargets:    1,
@@ -1889,7 +1786,7 @@ func CreateGiantSquad(ecsmanager *common.EntityManager) ecs.EntityID {
 			GridCol:    2,    // Can't go in cols 0-1 (giant occupies them)
 			GridWidth:  1,    // ✅ Only 1 cell available in row 1
 			GridHeight: 1,
-			Role:       squad.ROLE_DPS,
+			Role:       squad.RoleDPS,
 			TargetRows: []int{0}, // Charge front row
 			IsMultiTarget: false,
 			MaxTargets:    1,
@@ -1919,7 +1816,7 @@ func CreateGiantSquad(ecsmanager *common.EntityManager) ecs.EntityID {
 			GridCol:    0,
 			GridWidth:  3,    // ✅ Spans entire back row (cols 0-2)
 			GridHeight: 1,
-			Role:       squad.ROLE_DPS,
+			Role:       squad.RoleDPS,
 			TargetRows: []int{0, 1, 2}, // Hits all rows
 			IsMultiTarget: true,  // AOE
 			MaxTargets:    2,     // Max 2 targets per row
@@ -2000,7 +1897,7 @@ func createStandardEnemySquad(ecsmanager *common.EntityManager) ecs.EntityID {
 			EntityData: createDPSData(20, 5, 10, 1),
 			GridRow: 0, GridCol: 0,
 			GridWidth: 1, GridHeight: 1,
-			Role: squad.ROLE_DPS,
+			Role: squad.RoleDPS,
 			TargetRows: []int{0},
 		},
 		{
@@ -2009,7 +1906,7 @@ func createStandardEnemySquad(ecsmanager *common.EntityManager) ecs.EntityID {
 			EntityData: createTankData(40, 6, 13, 4),
 			GridRow: 0, GridCol: 1,
 			GridWidth: 1, GridHeight: 1,
-			Role: squad.ROLE_TANK,
+			Role: squad.RoleTank,
 			TargetRows: []int{0},
 		},
 	}
@@ -2017,7 +1914,7 @@ func createStandardEnemySquad(ecsmanager *common.EntityManager) ecs.EntityID {
 	return systems.CreateSquadFromTemplate(
 		ecsmanager,
 		"Goblin Warband",
-		squad.FORMATION_BALANCED,
+		squad.FormationBalanced,
 		coords.LogicalPosition{X: 25, Y: 20},
 		templates,
 	)
@@ -2032,123 +1929,167 @@ func createStandardEnemySquad(ecsmanager *common.EntityManager) ecs.EntityID {
 4. **Grid constraints enforced** - Cavalry can't fit in cols 0-1 of row 1 (Giant blocks it)
 5. **Full-width units** - Trebuchet spans entire back row (3 cells wide)
 6. **Strategic trade-offs** - Large units are easier to hit but have more HP
+7. **Multi-column cover** - Giant provides 40% cover to both columns 0 and 1 in row 2 (Trebuchet benefits)
 
 ---
 
-## Migration Path
+### Example 5: Cover System Demonstration
 
-### Benefits of Native Entity ID Usage
-
-#### ✅ No Custom Registry Needed
 ```go
-// Before: Custom registry with bidirectional mapping
-common.RegisterEntity(entity)
-common.UnregisterEntity(entity)
-entityID := common.GetEntityID(entity)
+// Demonstrate tactical cover mechanics with stacking bonuses
+func TestCoverMechanics(ecsmanager *common.EntityManager) {
+	// Create a defensive squad with overlapping cover
+	defensiveSquad := createDefensiveSquadWithCover(ecsmanager)
 
-// After: Native entity IDs
-entityID := entity.GetID()  // That's it!
-```
+	// Create attacking enemy squad
+	enemySquad := createStandardEnemySquad(ecsmanager)
 
-#### ✅ Simpler Cleanup
-```go
-// Before: Manual registry cleanup
-common.UnregisterEntity(entity)
-entity.Remove()
+	// Enemy attacks back row - cover should reduce damage
+	fmt.Println("=== Testing Cover Mechanics ===\n")
 
-// After: Just remove the entity
-entity.Remove()
-```
+	// Get back row archer (receives cover from front-line tanks)
+	backRowUnits := systems.GetUnitIDsInRow(defensiveSquad, 2, ecsmanager)
+	archerID := backRowUnits[0]
 
-#### ✅ No Dangling Pointers
-```go
-// IDs remain valid even if entity is deleted
-result.UnitsKilled = []ecs.EntityID{id1, id2}
-if unit := systems.FindUnitByID(id1, ecsmanager); unit != nil {
-    // Entity still exists
+	// Calculate cover for archer
+	coverReduction := systems.CalculateTotalCover(archerID, ecsmanager)
+	fmt.Printf("Archer cover reduction: %.0f%%\n", coverReduction * 100)
+	// Output: Archer cover reduction: 55% (30% from Knight + 25% from Shield Bearer)
+
+	// Execute attack - damage should be reduced by cover
+	result := systems.ExecuteSquadAttack(enemySquad, defensiveSquad, ecsmanager)
+	archerDamage := result.DamageByUnit[archerID]
+	fmt.Printf("Damage to archer (with cover): %d\n", archerDamage)
+
+	// Kill front-line tanks to remove cover
+	knightID := systems.GetUnitIDsAtGridPosition(defensiveSquad, 0, 1, ecsmanager)[0]
+	knightEntity := systems.FindUnitByID(knightID, ecsmanager)
+	knightAttr := common.GetAttributes(knightEntity)
+	knightAttr.CurrentHealth = 0 // Kill knight
+
+	// Cover should now be reduced
+	coverReductionAfterDeath := systems.CalculateTotalCover(archerID, ecsmanager)
+	fmt.Printf("\nArcher cover after knight death: %.0f%%\n", coverReductionAfterDeath * 100)
+	// Output: Archer cover after knight death: 25% (only Shield Bearer alive)
+
+	// Attack again - more damage without full cover
+	result2 := systems.ExecuteSquadAttack(enemySquad, defensiveSquad, ecsmanager)
+	archerDamage2 := result2.DamageByUnit[archerID]
+	fmt.Printf("Damage to archer (reduced cover): %d\n", archerDamage2)
+	fmt.Printf("Damage increase: +%d (%.1f%%)\n",
+		archerDamage2 - archerDamage,
+		float64(archerDamage2 - archerDamage) / float64(archerDamage) * 100)
+}
+
+func createDefensiveSquadWithCover(ecsmanager *common.EntityManager) ecs.EntityID {
+	templates := []systems.UnitTemplate{
+		// Row 0: Heavy front-line tanks providing overlapping cover
+		{
+			EntityType: entitytemplates.EntityCreature,
+			EntityConfig: entitytemplates.EntityConfig{
+				Name: "Knight Captain", ImagePath: "knight.png",
+				AssetDir: "../assets/", Visible: true,
+			},
+			EntityData: createTankData(50, 5, 15, 5),
+			GridRow: 0, GridCol: 1, GridWidth: 1, GridHeight: 1,
+			Role: squad.RoleTank,
+			TargetRows: []int{0},
+			IsMultiTarget: false,
+			MaxTargets: 1,
+			IsLeader: true,
+			CoverValue: 0.30,       // 30% cover
+			CoverRange: 2,          // Covers rows 1 and 2
+			RequiresActive: true,
+		},
+		{
+			EntityType: entitytemplates.EntityCreature,
+			EntityConfig: entitytemplates.EntityConfig{
+				Name: "Shield Bearer", ImagePath: "shield.png",
+				AssetDir: "../assets/", Visible: true,
+			},
+			EntityData: createTankData(40, 4, 16, 6),
+			GridRow: 0, GridCol: 0, GridWidth: 1, GridHeight: 1,
+			Role: squad.RoleTank,
+			TargetRows: []int{0},
+			IsMultiTarget: false,
+			MaxTargets: 1,
+			CoverValue: 0.25,       // 25% cover
+			CoverRange: 2,          // Covers rows 1 and 2
+			RequiresActive: true,
+		},
+
+		// Row 1: Mid-line support with minor cover
+		{
+			EntityType: entitytemplates.EntityCreature,
+			EntityConfig: entitytemplates.EntityConfig{
+				Name: "Battle Cleric", ImagePath: "cleric.png",
+				AssetDir: "../assets/", Visible: true,
+			},
+			EntityData: createSupportData(35, 3, 12, 2),
+			GridRow: 1, GridCol: 1, GridWidth: 1, GridHeight: 1,
+			Role: squad.RoleSupport,
+			TargetRows: []int{1},
+			IsMultiTarget: false,
+			MaxTargets: 1,
+			CoverValue: 0.10,       // 10% cover
+			CoverRange: 1,          // Only covers row 2
+			RequiresActive: true,
+		},
+
+		// Row 2: Back-line archers (receive stacking cover)
+		{
+			EntityType: entitytemplates.EntityCreature,
+			EntityConfig: entitytemplates.EntityConfig{
+				Name: "Longbowman", ImagePath: "archer.png",
+				AssetDir: "../assets/", Visible: true,
+			},
+			EntityData: createDPSData(25, 10, 11, 2),
+			GridRow: 2, GridCol: 0, GridWidth: 1, GridHeight: 1,
+			Role: squad.RoleDPS,
+			TargetRows: []int{2},
+			IsMultiTarget: false,
+			MaxTargets: 1,
+			// No cover provided, but receives cover from Shield Bearer (col 0)
+		},
+		{
+			EntityType: entitytemplates.EntityCreature,
+			EntityConfig: entitytemplates.EntityConfig{
+				Name: "Crossbowman", ImagePath: "archer.png",
+				AssetDir: "../assets/", Visible: true,
+			},
+			EntityData: createDPSData(25, 10, 11, 2),
+			GridRow: 2, GridCol: 1, GridWidth: 1, GridHeight: 1,
+			Role: squad.RoleDPS,
+			TargetRows: []int{2},
+			IsMultiTarget: false,
+			MaxTargets: 1,
+			// No cover provided, but receives STACKING cover:
+			// - 30% from Knight Captain (col 1)
+			// - 25% from Shield Bearer (different column, no overlap)
+			// - 10% from Battle Cleric (col 1)
+			// Total: 40% cover (stacking from Knight + Cleric)
+		},
+	}
+
+	/*
+	Visual Grid Layout (with cover relationships):
+	Row 0: [Shield(25%)_] [Knight(30%)_] [Empty]
+			 |               |
+			 v (col 0)       v (col 1)
+	Row 1: [Empty]        [Cleric(10%)_] [Empty]
+							|
+							v (col 1)
+	Row 2: [Longbow]      [Crossbow]     [Empty]
+		   (25% cover)    (40% cover - stacking!)
+	*/
+
+	return systems.CreateSquadFromTemplate(
+		ecsmanager,
+		"Defensive Phalanx",
+		squad.FormationDefensive,
+		coords.LogicalPosition{X: 10, Y: 10},
+		templates,
+	)
 }
 ```
 
-#### ✅ Serialization Support
-```go
-// Can save/load game state
-type SavedCombatResult struct {
-    UnitsKilled  []ecs.EntityID           // ✅ Can serialize IDs
-    DamageByUnit map[ecs.EntityID]int     // ✅ Can serialize ID maps
-}
-```
-
-#### ✅ Type Safety
-```go
-// ecs.EntityID is a distinct type (uint32)
-// Prevents accidentally mixing up different ID types
-var squadID ecs.EntityID = squad.GetID()
-var unitID ecs.EntityID = unit.GetID()
-```
-
-### Code Size Reduction
-
-**Removed from original design:**
-- ~125 lines of EntityRegistry code (common/entityid.go)
-- All RegisterEntity() calls throughout codebase
-- All UnregisterEntity() cleanup calls
-- Wrapper functions (GetEntityByID, GetEntityID)
-
-**Net reduction:** ~150-200 lines of code removed
-
-### Comparison Table
-
-| **Aspect** | **Original (Custom Registry)** | **Corrected (Native IDs)** |
-|------------|-------------------------------|---------------------------|
-| Entity ID type | `uint64` (custom) | `ecs.EntityID` (uint32, native) |
-| Get entity ID | `common.GetEntityID(entity)` | `entity.GetID()` |
-| Register entity | `common.RegisterEntity(entity)` | Not needed |
-| Cleanup entity | `common.UnregisterEntity(entity)` + `entity.Remove()` | `entity.Remove()` |
-| Find by ID | `common.GetEntityByID(id)` | `FindUnitByID(id, mgr)` (query-based) |
-| Code complexity | +125 lines registry code | Native solution |
-| Memory overhead | Bidirectional map storage | None |
-| Thread safety | Mutex required | Query-based (no locking) |
-
----
-
-## Summary
-
-This corrected document represents the **production-ready, ECS-compliant squad combat system** for TinkerRogue using **native bytearena/ecs entity IDs** with **full multi-cell unit support**.
-
-### Key Features:
-
-✅ **Uses Native Entity IDs** - `entity.GetID()` returns `ecs.EntityID` (uint32)
-✅ **No Custom Registry** - Removed unnecessary EntityRegistry system (~125 LOC)
-✅ **Simpler Entity Lifecycle** - Just `entity.Remove()`, no registration/unregistration
-✅ **Type-Safe IDs** - All `uint64` changed to `ecs.EntityID`
-✅ **Query-Based Lookup** - `FindUnitByID()` uses queries instead of registry
-✅ **Reduced Complexity** - 150-200 fewer lines of code vs original
-✅ **Multi-Cell Unit Support** - Units can occupy 1x1, 1x2, 2x2, 2x1, up to 3x3 grid spaces
-✅ **Smart Row Targeting** - Multi-cell units appear in all rows they occupy with automatic deduplication
-
-### Multi-Cell Unit Capabilities:
-
-- **Large Creatures** - 2x2 giants, 2x3 dragons occupying multiple cells
-- **Wide Formations** - 3x1 cavalry lines spanning entire rows
-- **Tall Units** - 1x3 siege towers spanning multiple rows
-- **Boss Encounters** - 3x3 mega-units occupying entire grid
-- **Mixed Squads** - Combining 1x1 infantry with 2x2 monsters
-- **Strategic Depth** - Large units trade flexibility for HP, easier to target from multiple rows
-
-### Total Implementation Time:
-
-**30-37 hours** (3-6 hours faster than original due to removed registry)
-
-### What This Enables:
-
-- Squad-based tactical combat on roguelike map with variable unit sizes
-- Multiple player-controlled squads with flexible composition
-- Enemy squad spawning with level scaling and multi-cell bosses
-- Leader abilities with automated triggers
-- Formation strategies (defensive, offensive, ranged) supporting mixed unit sizes
-- Dynamic squad composition (add/remove/resize units mid-game)
-- Simple entity lifecycle management
-- Save/load support (via ID serialization)
-- Rich tactical gameplay (large units block more rows, easier to target)
-
-**This design is ready for production implementation with native ECS support and full multi-cell unit capabilities.**

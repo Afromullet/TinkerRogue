@@ -10,22 +10,25 @@ import (
 
 // UnitTemplate defines a unit to be created in a squad
 type UnitTemplate struct {
-	Name          string
-	Attributes    common.Attributes
-	EntityType    entitytemplates.EntityType
-	EntityConfig  entitytemplates.EntityConfig
-	EntityData    any        // JSONMonster, etc.
-	GridRow       int        // Anchor row (0-2)
-	GridCol       int        // Anchor col (0-2)
-	GridWidth     int        // Width in cells (1-3), defaults to 1
-	GridHeight    int        // Height in cells (1-3), defaults to 1
-	Role          UnitRole   // Tank, DPS, Support
-	TargetMode    TargetMode // "row" or "cell"
-	TargetRows    []int      // Which rows to attack (row-based)
-	IsMultiTarget bool       // AOE or single-target (row-based)
-	MaxTargets    int        // Max targets per row (row-based)
-	TargetCells   [][2]int   // Specific cells to target (cell-based)
-	IsLeader      bool       // Squad leader flag
+	Name           string
+	Attributes     common.Attributes
+	EntityType     entitytemplates.EntityType
+	EntityConfig   entitytemplates.EntityConfig
+	EntityData     any        // JSONMonster, etc.
+	GridRow        int        // Anchor row (0-2)
+	GridCol        int        // Anchor col (0-2)
+	GridWidth      int        // Width in cells (1-3), defaults to 1
+	GridHeight     int        // Height in cells (1-3), defaults to 1
+	Role           UnitRole   // Tank, DPS, Support
+	TargetMode     TargetMode // "row" or "cell"
+	TargetRows     []int      // Which rows to attack (row-based)
+	IsMultiTarget  bool       // AOE or single-target (row-based)
+	MaxTargets     int        // Max targets per row (row-based)
+	TargetCells    [][2]int   // Specific cells to target (cell-based)
+	IsLeader       bool       // Squad leader flag
+	CoverValue     float64    // Damage reduction provided (0.0-1.0, 0 = no cover)
+	CoverRange     int        // Rows behind that receive cover (1-3)
+	RequiresActive bool       // If true, dead/stunned units don't provide cover
 }
 
 // Creates the Unit entities used in the Squad
@@ -70,6 +73,9 @@ func CreateUnitTemplates(monsterData entitytemplates.JSONMonster) (UnitTemplate,
 		MaxTargets:    monsterData.MaxTargets,
 		TargetCells:   monsterData.TargetCells,
 		IsLeader:      false,
+		CoverValue:     monsterData.CoverValue,
+		CoverRange:     monsterData.CoverRange,
+		RequiresActive: monsterData.RequiresActive,
 	}
 
 	return unit, nil
@@ -155,6 +161,15 @@ func CreateUnitEntity(squadmanager *SquadECSManager, unit UnitTemplate) (*ecs.En
 		MaxTargets:    unit.MaxTargets,
 		TargetCells:   nil, // Use cell-based mode for precise grid patterns
 	})
+
+	// Add cover component if the unit provides cover (CoverValue > 0)
+	if unit.CoverValue > 0 {
+		unitEntity.AddComponent(CoverComponent, &CoverData{
+			CoverValue:     unit.CoverValue,
+			CoverRange:     unit.CoverRange,
+			RequiresActive: unit.RequiresActive,
+		})
+	}
 
 	return unitEntity, nil
 

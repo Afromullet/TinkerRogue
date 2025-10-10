@@ -18,6 +18,7 @@ var (
 	SquadMemberComponent     *ecs.Component
 	GridPositionComponent    *ecs.Component
 	UnitRoleComponent        *ecs.Component
+	CoverComponent           *ecs.Component
 	LeaderComponent          *ecs.Component
 	TargetRowComponent       *ecs.Component
 	AbilitySlotComponent     *ecs.Component
@@ -141,6 +142,23 @@ func (r UnitRole) String() string {
 	default:
 		return "Unknown"
 	}
+}
+
+// CoverData defines how a unit provides defensive cover to units behind it
+// Cover reduces incoming damage for units in protected columns/rows
+type CoverData struct {
+	CoverValue     float64 // Damage reduction percentage (0.0 to 1.0, e.g., 0.25 = 25% reduction)
+	CoverRange     int     // How many rows behind can receive cover (1 = immediate row, 2 = two rows, etc.)
+	RequiresActive bool    // If true, dead/stunned units don't provide cover (typically true)
+}
+
+// GetCoverBonus returns the cover value if the unit is active, 0 otherwise
+// Systems should call this and check unit health/status before applying cover
+func (c *CoverData) GetCoverBonus(isActive bool) float64 {
+	if c.RequiresActive && !isActive {
+		return 0.0
+	}
+	return c.CoverValue
 }
 
 // TargetMode defines how a unit selects targets

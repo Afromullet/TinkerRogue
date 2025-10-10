@@ -142,6 +142,9 @@ type JSONMonster struct {
 	IsMultiTarget bool              `json:"isMultiTarget"` // For row-based targeting
 	MaxTargets    int               `json:"maxTargets"`    // For row-based targeting
 	TargetCells   [][2]int          `json:"targetCells"`   // For cell-based targeting
+	CoverValue    float64           `json:"coverValue"`    // Damage reduction provided (0.0-1.0)
+	CoverRange    int               `json:"coverRange"`    // Rows behind that receive cover (1-3)
+	RequiresActive bool             `json:"requiresActive"` // If true, dead/stunned units don't provide cover
 }
 
 func NewJSONMonster(m JSONMonster) JSONMonster {
@@ -161,6 +164,9 @@ func NewJSONMonster(m JSONMonster) JSONMonster {
 		IsMultiTarget: m.IsMultiTarget,
 		MaxTargets:    m.MaxTargets,
 		TargetCells:   m.TargetCells,
+		CoverValue:    m.CoverValue,
+		CoverRange:    m.CoverRange,
+		RequiresActive: m.RequiresActive,
 	}
 }
 

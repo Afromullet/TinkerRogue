@@ -1,15 +1,17 @@
 # Squad Combat System - Corrected (Uses Native ECS Entity IDs)
 
-**Version:** 2.2 Cell-Based Targeting
-**Last Updated:** 2025-10-02
-**Status:** Production-Ready, ECS-Compliant, Uses Native bytearena/ecs IDs, Multi-Cell Units, Cell-Based Targeting
-**Purpose:** Comprehensive squad-based combat system with proper ECS architecture, multi-cell unit support, and advanced cell-based targeting patterns
+**Version:** 2.3 Cover System
+**Last Updated:** 2025-10-09
+**Status:** Production-Ready, ECS-Compliant, Uses Native bytearena/ecs IDs, Multi-Cell Units, Cell-Based Targeting, Cover System
+**Purpose:** Comprehensive squad-based combat system with proper ECS architecture, multi-cell unit support, advanced cell-based targeting patterns, and tactical cover mechanics
 
 **CRITICAL CORRECTION:** The original document incorrectly assumed bytearena/ecs doesn't expose entity IDs. This version uses the native `entity.GetID()` method and `ecs.EntityID` type (`uint32`). No custom EntityRegistry needed!
 
 **MULTI-CELL UNIT SUPPORT:** Units can occupy multiple grid cells (e.g., 1x2, 2x2, 2x1, etc.) in the 3x3 squad grid. Large creatures, vehicles, or special units can span multiple rows and columns.
 
 **CELL-BASED TARGETING:** Advanced targeting system supporting both row-based (simple) and cell-based (complex) targeting modes. Cell-based mode enables precise grid cell patterns like 1x1 (single target), 1x2 (horizontal cleave), 2x1 (vertical pierce), 2x2 (quad blast), 3x3 (full AOE), and custom shapes.
+
+**COVER SYSTEM:** Tactical cover mechanics where front-line units provide damage reduction to allies positioned behind them. Features column-based coverage, stacking bonuses, configurable range, and multi-cell unit support. Dead or disabled units do not provide cover.
 
 ---
 
@@ -23,8 +25,9 @@ This document corrects **squad_system_final.md** by:
 - Simplifying entity lifecycle management
 - **NEW:** Adding multi-cell unit support (units can occupy 1x1, 1x2, 2x2, 2x1, etc.)
 - **NEW:** Adding cell-based targeting patterns (precise grid cell targeting with custom shapes)
+- **NEW:** Adding cover system (column-based damage reduction with stacking bonuses)
 
-**Key Achievement:** 100% ECS-compliant design with NO entity pointers, proper separation of concerns, native entity ID usage, and flexible multi-cell unit positioning.
+**Key Achievement:** 100% ECS-compliant design with NO entity pointers, proper separation of concerns, native entity ID usage, flexible multi-cell unit positioning, and tactical depth through positioning-based cover mechanics.
 
 ---
 
@@ -38,12 +41,13 @@ This document corrects **squad_system_final.md** by:
 6. [System Implementations](#system-implementations)
 7. [Row-Based Combat System](#row-based-combat-system)
 8. [Cell-Based Targeting Patterns](#cell-based-targeting-patterns)
-9. [Automated Leader Abilities](#automated-leader-abilities)
-10. [Squad Composition & Formation System](#squad-composition--formation-system)
-11. [Implementation Phases](#implementation-phases)
-12. [Integration Guide](#integration-guide)
-13. [Complete Code Examples](#complete-code-examples)
-14. [Migration Path](#migration-path)
+9. [Cover System](#cover-system)
+10. [Automated Leader Abilities](#automated-leader-abilities)
+11. [Squad Composition & Formation System](#squad-composition--formation-system)
+12. [Implementation Phases](#implementation-phases)
+13. [Integration Guide](#integration-guide)
+14. [Complete Code Examples](#complete-code-examples)
+15. [Migration Path](#migration-path)
 
 ---
 
@@ -189,6 +193,7 @@ var (
 	SquadMemberComponent      *ecs.Component
 	GridPositionComponent     *ecs.Component
 	UnitRoleComponent         *ecs.Component
+	CoverComponent            *ecs.Component
 	LeaderComponent           *ecs.Component
 	TargetRowComponent        *ecs.Component
 	AbilitySlotComponent      *ecs.Component
@@ -202,6 +207,7 @@ func InitSquadComponents(manager *ecs.Manager) {
 	SquadMemberComponent = manager.NewComponent()
 	GridPositionComponent = manager.NewComponent()
 	UnitRoleComponent = manager.NewComponent()
+	CoverComponent = manager.NewComponent()
 	LeaderComponent = manager.NewComponent()
 	TargetRowComponent = manager.NewComponent()
 	AbilitySlotComponent = manager.NewComponent()
@@ -318,6 +324,23 @@ func (r UnitRole) String() string {
 	default:
 		return "Unknown"
 	}
+}
+
+// CoverData defines how a unit provides defensive cover to units behind it
+// Cover reduces incoming damage for units in protected columns/rows
+type CoverData struct {
+	CoverValue      float64  // Damage reduction percentage (0.0 to 1.0, e.g., 0.25 = 25% reduction)
+	CoverRange      int      // How many rows behind can receive cover (1 = immediate row, 2 = two rows, etc.)
+	RequiresActive  bool     // If true, dead/stunned units don't provide cover (typically true)
+}
+
+// GetCoverBonus returns the cover value if the unit is active, 0 otherwise
+// Systems should call this and check unit health/status before applying cover
+func (c *CoverData) GetCoverBonus(isActive bool) float64 {
+	if c.RequiresActive && !isActive {
+		return 0.0
+	}
+	return c.CoverValue
 }
 
 // TargetMode defines how a unit selects targets
@@ -907,6 +930,15 @@ func calculateUnitDamageByID(attackerID, defenderID ecs.EntityID, ecsmanager *co
 		totalDamage = 1 // Minimum damage
 	}
 
+	// Apply cover (damage reduction from units in front)
+	coverReduction := CalculateTotalCover(defenderID, ecsmanager)
+	if coverReduction > 0.0 {
+		totalDamage = int(float64(totalDamage) * (1.0 - coverReduction))
+		if totalDamage < 1 {
+			totalDamage = 1 // Minimum damage even with cover
+		}
+	}
+
 	return totalDamage
 }
 
@@ -991,6 +1023,140 @@ func sumDamageMap(damageMap map[ecs.EntityID]int) int {
 		total += dmg
 	}
 	return total
+}
+
+// ========================================
+// COVER SYSTEM FUNCTIONS
+// ========================================
+
+// CalculateTotalCover calculates the total damage reduction from all units providing cover to the defender
+// Cover bonuses stack additively (e.g., 0.25 + 0.15 = 0.40 total reduction)
+// Returns a value between 0.0 (no cover) and 1.0 (100% damage reduction, capped)
+func CalculateTotalCover(defenderID ecs.EntityID, ecsmanager *common.EntityManager) float64 {
+	defenderUnit := FindUnitByID(defenderID, ecsmanager)
+	if defenderUnit == nil {
+		return 0.0
+	}
+
+	// Get defender's position and squad
+	if !defenderUnit.HasComponent(squad.GridPositionComponent) || !defenderUnit.HasComponent(squad.SquadMemberComponent) {
+		return 0.0
+	}
+
+	defenderPos := common.GetComponentType[*squad.GridPositionData](defenderUnit, squad.GridPositionComponent)
+	defenderSquadData := common.GetComponentType[*squad.SquadMemberData](defenderUnit, squad.SquadMemberComponent)
+	defenderSquadID := defenderSquadData.SquadID
+
+	// Get all units providing cover
+	coverProviders := GetCoverProvidersFor(defenderID, defenderSquadID, defenderPos, ecsmanager)
+
+	// Sum all cover bonuses (stacking additively)
+	totalCover := 0.0
+	for _, providerID := range coverProviders {
+		providerUnit := FindUnitByID(providerID, ecsmanager)
+		if providerUnit == nil {
+			continue
+		}
+
+		// Check if provider has cover component
+		if !providerUnit.HasComponent(squad.CoverComponent) {
+			continue
+		}
+
+		coverData := common.GetComponentType[*squad.CoverData](providerUnit, squad.CoverComponent)
+
+		// Check if provider is active (alive and not stunned)
+		isActive := true
+		if coverData.RequiresActive {
+			attr := common.GetAttributes(providerUnit)
+			isActive = attr.CurrentHealth > 0
+			// TODO: Add stun/disable status check when status effects are implemented
+		}
+
+		totalCover += coverData.GetCoverBonus(isActive)
+	}
+
+	// Cap at 100% reduction (though in practice this should be very rare)
+	if totalCover > 1.0 {
+		totalCover = 1.0
+	}
+
+	return totalCover
+}
+
+// GetCoverProvidersFor finds all units in the same squad that provide cover to the defender
+// Cover is provided by units in front (lower row number) within the same column(s)
+// Multi-cell units provide cover to all columns they occupy
+func GetCoverProvidersFor(defenderID ecs.EntityID, defenderSquadID ecs.EntityID, defenderPos *squad.GridPositionData, ecsmanager *common.EntityManager) []ecs.EntityID {
+	var providers []ecs.EntityID
+
+	// Get all columns the defender occupies
+	defenderCols := make(map[int]bool)
+	for c := defenderPos.AnchorCol; c < defenderPos.AnchorCol+defenderPos.Width && c < 3; c++ {
+		defenderCols[c] = true
+	}
+
+	// Get all units in the same squad
+	allUnitIDs := GetUnitIDsInSquad(defenderSquadID, ecsmanager)
+
+	for _, unitID := range allUnitIDs {
+		// Don't provide cover to yourself
+		if unitID == defenderID {
+			continue
+		}
+
+		unit := FindUnitByID(unitID, ecsmanager)
+		if unit == nil {
+			continue
+		}
+
+		// Check if unit has cover component
+		if !unit.HasComponent(squad.CoverComponent) {
+			continue
+		}
+
+		coverData := common.GetComponentType[*squad.CoverData](unit, squad.CoverComponent)
+
+		// Get unit's position
+		if !unit.HasComponent(squad.GridPositionComponent) {
+			continue
+		}
+
+		unitPos := common.GetComponentType[*squad.GridPositionData](unit, squad.GridPositionComponent)
+
+		// Check if unit is in front of defender (lower row number)
+		// Unit must be at least 1 row in front to provide cover
+		if unitPos.AnchorRow >= defenderPos.AnchorRow {
+			continue
+		}
+
+		// Check if unit is within cover range
+		rowDistance := defenderPos.AnchorRow - unitPos.AnchorRow
+		if rowDistance > coverData.CoverRange {
+			continue
+		}
+
+		// Check if unit occupies any column the defender is in
+		unitCols := make(map[int]bool)
+		for c := unitPos.AnchorCol; c < unitPos.AnchorCol+unitPos.Width && c < 3; c++ {
+			unitCols[c] = true
+		}
+
+		// Check for column overlap
+		hasOverlap := false
+		for col := range defenderCols {
+			if unitCols[col] {
+				hasOverlap = true
+				break
+			}
+		}
+
+		if hasOverlap {
+			providers = append(providers, unitID)
+		}
+	}
+
+	return providers
 }
 ```
 
@@ -1126,6 +1292,191 @@ Row 2: [2,0]     [2,1]     [2,2]   <- Back row (furthest from enemy)
 3. **Empty cells are harmless** - if no unit occupies a targeted cell, nothing happens
 4. **No validation required** - system handles out-of-bounds gracefully (though cells should be 0-2)
 5. **Mixing modes not supported** - each unit uses either row-based OR cell-based, not both
+
+---
+
+## Cover System
+
+### Design Overview
+
+**Core Concept:** Units can provide defensive cover to friendly units positioned behind them in the same column(s). Cover reduces incoming damage by a percentage, creating tactical incentives for front-line positioning and protective formations.
+
+**Cover Mechanics:**
+- **Column-Based Coverage:** A unit provides cover to all friendly units behind it in the columns it occupies
+- **Multi-Cell Units:** Wider units (Width > 1) provide cover to multiple columns
+- **Stacking Bonuses:** Cover bonuses from multiple units stack additively
+- **Range-Based Falloff:** Each unit specifies how many rows behind it receive cover
+- **Active Unit Requirement:** Dead, stunned, or disabled units typically don't provide cover
+
+### Cover Component
+
+```go
+type CoverData struct {
+    CoverValue      float64  // Damage reduction (0.0 to 1.0, e.g., 0.25 = 25% reduction)
+    CoverRange      int      // Rows behind that receive cover (1 = immediate row, 2 = two rows)
+    RequiresActive  bool     // If true, dead/stunned units don't provide cover (typically true)
+}
+```
+
+### Coverage Rules
+
+**1. Column Overlap Requirement**
+- Cover provider must occupy at least ONE column the defender occupies
+- Multi-cell units provide cover to ALL columns they span
+
+**2. Row Distance**
+- Provider must be in a lower row number (closer to front)
+- Distance = DefenderRow - ProviderRow
+- Distance must be ≤ CoverRange
+
+**3. Active Unit Check**
+- If `RequiresActive == true`, provider must have CurrentHealth > 0
+- Future: Check for stun/disable status effects
+
+**4. Stacking**
+- Cover bonuses stack **additively**
+- Example: Two units with 0.25 cover = 0.50 total reduction (50%)
+- Total cover is capped at 1.0 (100% reduction)
+
+### Damage Calculation with Cover
+
+```go
+// In calculateUnitDamageByID():
+
+// 1. Calculate base damage
+baseDamage := attackerAttr.AttackBonus + attackerAttr.DamageBonus
+
+// 2. Apply variance, role modifiers, and defense
+totalDamage := (baseDamage - defenderAttr.TotalProtection)
+
+// 3. Apply cover reduction
+coverReduction := CalculateTotalCover(defenderID, ecsmanager)
+if coverReduction > 0.0 {
+    totalDamage = int(float64(totalDamage) * (1.0 - coverReduction))
+}
+
+// 4. Ensure minimum damage
+if totalDamage < 1 {
+    totalDamage = 1
+}
+```
+
+### Coverage Examples
+
+#### Example 1: Basic Single-Column Cover
+```
+Squad Layout (3x3 grid):
+Row 0: [Tank]    [Empty]   [Empty]
+Row 1: [Archer]  [Empty]   [Empty]
+Row 2: [Mage]    [Empty]   [Empty]
+
+Tank has: CoverData{CoverValue: 0.30, CoverRange: 2, RequiresActive: true}
+
+Coverage:
+- Archer (Row 1, Col 0): 30% damage reduction (1 row behind, same column)
+- Mage (Row 2, Col 0): 30% damage reduction (2 rows behind, same column, within range)
+```
+
+#### Example 2: Multi-Column Cover (2-Wide Unit)
+```
+Squad Layout:
+Row 0: [Giant (2x2)]      [Empty]
+Row 1: [Giant continues]  [Empty]
+Row 2: [Archer] [Mage]    [Empty]
+
+Giant has: Width=2, Height=2, CoverValue: 0.40, CoverRange: 1
+
+Coverage:
+- Archer (Row 2, Col 0): 40% damage reduction (Giant occupies Col 0)
+- Mage (Row 2, Col 1): 40% damage reduction (Giant occupies Col 1)
+- Both units protected because Giant spans columns 0-1
+```
+
+#### Example 3: Stacking Cover
+```
+Squad Layout:
+Row 0: [Knight] [Paladin] [Empty]
+Row 1: [Archer] [Empty]   [Empty]
+Row 2: [Mage]   [Empty]   [Empty]
+
+Knight has: CoverValue: 0.25, CoverRange: 2
+Paladin has: CoverValue: 0.15, CoverRange: 1
+
+Coverage for Archer (Row 1, Col 0):
+- Knight provides 25% (same column, 1 row behind)
+- Paladin provides 0% (different column, no overlap)
+- Total: 25% damage reduction
+
+Coverage for Mage (Row 2, Col 0):
+- Knight provides 25% (same column, 2 rows behind, within range)
+- Paladin provides 0% (different column, no overlap)
+- Total: 25% damage reduction
+```
+
+#### Example 4: Dead Unit Provides No Cover
+```
+Squad Layout:
+Row 0: [Dead Tank] [Empty] [Empty]
+Row 1: [Archer]    [Empty] [Empty]
+
+Dead Tank has: CoverValue: 0.30, RequiresActive: true, CurrentHealth: -10
+
+Coverage for Archer:
+- Tank provides 0% (dead unit, RequiresActive=true)
+- Total: 0% damage reduction
+```
+
+#### Example 5: Range Limitation
+```
+Squad Layout:
+Row 0: [Scout]  [Empty] [Empty]
+Row 1: [Empty]  [Empty] [Empty]
+Row 2: [Mage]   [Empty] [Empty]
+
+Scout has: CoverValue: 0.20, CoverRange: 1 (only covers immediate row)
+
+Coverage for Mage (Row 2):
+- Scout provides 0% (2 rows behind, but CoverRange=1, out of range)
+- Total: 0% damage reduction
+```
+
+### Tactical Implications
+
+**1. Front-Line Value**
+- Tanks and defensive units gain additional value by protecting allies
+- Positioning matters: units in front rows shield back-line damage dealers
+
+**2. Formation Strategy**
+- Wide units (2x2, 1x3) provide cover to more columns
+- Concentrated columns get stacking cover bonuses
+- Spread formations sacrifice cover for positioning flexibility
+
+**3. Focus Fire**
+- Attackers may want to eliminate front-line units to reduce cover
+- Back-line units become vulnerable when front-line falls
+
+**4. Cover Range Diversity**
+- Short-range cover (1 row): Immediate protection only
+- Long-range cover (2-3 rows): Full formation protection
+- Different unit types provide different cover profiles
+
+### Implementation Notes
+
+**Performance:**
+- Cover calculation happens once per damage application
+- O(n) where n = squad size (typically 1-9 units)
+- Column overlap uses hash map lookups (O(1) per column)
+
+**Integration:**
+- Cover is calculated in `calculateUnitDamageByID()` after defense
+- Applied multiplicatively: `damage * (1.0 - coverReduction)`
+- Minimum damage of 1 ensures cover never nullifies damage completely
+
+**Future Enhancements:**
+- Cover penetration stat (ignore X% of cover)
+- Directional cover (only from front, not sides)
+- Cover degradation (cover value decreases with provider health)
+- Cover types (physical cover vs magical cover)
 
 ---
 
@@ -1477,6 +1828,9 @@ type UnitTemplate struct {
 	MaxTargets    int                          // Max targets per row (row-based)
 	TargetCells   [][2]int                     // Specific cells to target (cell-based)
 	IsLeader      bool                         // Squad leader flag
+	CoverValue    float64                      // Damage reduction provided (0.0-1.0, 0 = no cover)
+	CoverRange    int                          // Rows behind that receive cover (1-3)
+	RequiresActive bool                        // If true, dead/stunned units don't provide cover
 }
 
 // CreateSquadFromTemplate - ✅ Returns ecs.EntityID (native type)
@@ -1591,6 +1945,15 @@ func CreateSquadFromTemplate(
 			MaxTargets:    template.MaxTargets,
 			TargetCells:   template.TargetCells,
 		})
+
+		// Add cover component if unit provides cover
+		if template.CoverValue > 0.0 {
+			unitEntity.AddComponent(squad.CoverComponent, &squad.CoverData{
+				CoverValue:     template.CoverValue,
+				CoverRange:     template.CoverRange,
+				RequiresActive: template.RequiresActive,
+			})
+		}
 
 		// Add leader component if needed
 		if template.IsLeader {
@@ -1920,7 +2283,7 @@ func TestSquadQueries() {
 ### Phase 3: Row-Based Combat System (8-10 hours)
 
 **Deliverables:**
-- `systems/squadcombat.go` - ExecuteSquadAttack, damage calculation
+- `systems/squadcombat.go` - ExecuteSquadAttack, damage calculation, cover system
 - Row-based targeting logic
 - Integration with existing `PerformAttack()` concepts
 
@@ -1928,15 +2291,23 @@ func TestSquadQueries() {
 1. Implement `ExecuteSquadAttack()` function
 2. Implement `calculateUnitDamageByID()` (adapt existing combat logic)
 3. Implement `applyRoleModifier()` for Tank/DPS/Support
-4. Implement targeting logic (single-target vs multi-target)
-5. Implement helper functions (selectLowestHPTargetID, selectRandomTargetIDs)
-6. Add death tracking and unit removal
+4. Implement `CalculateTotalCover()` and `GetCoverProvidersFor()` for cover system
+5. Integrate cover reduction into damage calculation
+6. Implement targeting logic (single-target vs multi-target)
+7. Implement helper functions (selectLowestHPTargetID, selectRandomTargetIDs)
+8. Add death tracking and unit removal
 
 **Testing:**
 - Create two squads with different roles
 - Execute combat and verify damage distribution
 - Verify row targeting (front row hit first, back row protected)
 - Verify role modifiers apply correctly
+- **Test cover mechanics:**
+  - Verify front-line tanks reduce damage to back-line units
+  - Test stacking cover (multiple units in same column)
+  - Test dead units don't provide cover
+  - Test multi-cell units providing cover to multiple columns
+  - Test cover range limitations
 - Test edge cases (empty rows, all dead, etc.)
 
 ### Phase 4: Automated Ability System (6-8 hours)
@@ -2204,6 +2575,9 @@ func InitializePlayerSquad(ecsmanager *common.EntityManager) ecs.EntityID {
 			IsMultiTarget: false,
 			MaxTargets:    1,
 			IsLeader:      true,
+			CoverValue:    0.30,        // 30% damage reduction
+			CoverRange:    2,           // Covers mid and back rows
+			RequiresActive: true,       // Dead knights provide no cover
 		},
 		{
 			EntityType:   entitytemplates.EntityCreature,
@@ -2220,6 +2594,9 @@ func InitializePlayerSquad(ecsmanager *common.EntityManager) ecs.EntityID {
 			TargetRows:   []int{0},
 			IsMultiTarget: false,
 			MaxTargets:   1,
+			CoverValue:    0.25,        // 25% damage reduction
+			CoverRange:    2,           // Covers mid and back rows
+			RequiresActive: true,       // Dead shields provide no cover
 		},
 		// Row 1: Mid-line DPS and support
 		{
@@ -2237,6 +2614,9 @@ func InitializePlayerSquad(ecsmanager *common.EntityManager) ecs.EntityID {
 			TargetRows:   []int{1},
 			IsMultiTarget: false,
 			MaxTargets:   1,
+			CoverValue:    0.10,        // 10% damage reduction
+			CoverRange:    1,           // Only covers back row
+			RequiresActive: true,       // Dead clerics provide no cover
 		},
 		// Row 2: Back-line ranged DPS
 		{
@@ -2254,6 +2634,7 @@ func InitializePlayerSquad(ecsmanager *common.EntityManager) ecs.EntityID {
 			TargetRows:   []int{2}, // Snipe back row
 			IsMultiTarget: false,
 			MaxTargets:   1,
+			// No cover (CoverValue: 0, default) - archers don't provide cover
 		},
 		{
 			EntityType:   entitytemplates.EntityCreature,
@@ -2270,6 +2651,7 @@ func InitializePlayerSquad(ecsmanager *common.EntityManager) ecs.EntityID {
 			TargetRows:   []int{2}, // AOE back row
 			IsMultiTarget: true,    // Hits all units in row
 			MaxTargets:   0,        // Unlimited
+			// No cover (CoverValue: 0, default) - mages don't provide cover
 		},
 	}
 
@@ -2587,6 +2969,9 @@ func CreateGiantSquad(ecsmanager *common.EntityManager) ecs.EntityID {
 			IsMultiTarget: false,
 			MaxTargets:    1,
 			IsLeader:      true,
+			CoverValue:    0.40,        // ✅ 40% cover - large unit provides excellent protection
+			CoverRange:    1,           // Only covers back row (row 2) since giant occupies rows 0-1
+			RequiresActive: true,       // Dead giants provide no cover
 		},
 
 		// 1x1 Archer in front-right
@@ -2776,6 +3161,190 @@ func createStandardEnemySquad(ecsmanager *common.EntityManager) ecs.EntityID {
 4. **Grid constraints enforced** - Cavalry can't fit in cols 0-1 of row 1 (Giant blocks it)
 5. **Full-width units** - Trebuchet spans entire back row (3 cells wide)
 6. **Strategic trade-offs** - Large units are easier to hit but have more HP
+7. **Multi-column cover** - Giant provides 40% cover to both columns 0 and 1 in row 2 (Trebuchet benefits)
+
+---
+
+### Example 5: Cover System Demonstration
+
+```go
+// Demonstrate tactical cover mechanics with stacking bonuses
+func TestCoverMechanics(ecsmanager *common.EntityManager) {
+	// Create a defensive squad with overlapping cover
+	defensiveSquad := createDefensiveSquadWithCover(ecsmanager)
+
+	// Create attacking enemy squad
+	enemySquad := createStandardEnemySquad(ecsmanager)
+
+	// Enemy attacks back row - cover should reduce damage
+	fmt.Println("=== Testing Cover Mechanics ===\n")
+
+	// Get back row archer (receives cover from front-line tanks)
+	backRowUnits := systems.GetUnitIDsInRow(defensiveSquad, 2, ecsmanager)
+	archerID := backRowUnits[0]
+
+	// Calculate cover for archer
+	coverReduction := systems.CalculateTotalCover(archerID, ecsmanager)
+	fmt.Printf("Archer cover reduction: %.0f%%\n", coverReduction * 100)
+	// Output: Archer cover reduction: 55% (30% from Knight + 25% from Shield Bearer)
+
+	// Execute attack - damage should be reduced by cover
+	result := systems.ExecuteSquadAttack(enemySquad, defensiveSquad, ecsmanager)
+	archerDamage := result.DamageByUnit[archerID]
+	fmt.Printf("Damage to archer (with cover): %d\n", archerDamage)
+
+	// Kill front-line tanks to remove cover
+	knightID := systems.GetUnitIDsAtGridPosition(defensiveSquad, 0, 1, ecsmanager)[0]
+	knightEntity := systems.FindUnitByID(knightID, ecsmanager)
+	knightAttr := common.GetAttributes(knightEntity)
+	knightAttr.CurrentHealth = 0 // Kill knight
+
+	// Cover should now be reduced
+	coverReductionAfterDeath := systems.CalculateTotalCover(archerID, ecsmanager)
+	fmt.Printf("\nArcher cover after knight death: %.0f%%\n", coverReductionAfterDeath * 100)
+	// Output: Archer cover after knight death: 25% (only Shield Bearer alive)
+
+	// Attack again - more damage without full cover
+	result2 := systems.ExecuteSquadAttack(enemySquad, defensiveSquad, ecsmanager)
+	archerDamage2 := result2.DamageByUnit[archerID]
+	fmt.Printf("Damage to archer (reduced cover): %d\n", archerDamage2)
+	fmt.Printf("Damage increase: +%d (%.1f%%)\n",
+		archerDamage2 - archerDamage,
+		float64(archerDamage2 - archerDamage) / float64(archerDamage) * 100)
+}
+
+func createDefensiveSquadWithCover(ecsmanager *common.EntityManager) ecs.EntityID {
+	templates := []systems.UnitTemplate{
+		// Row 0: Heavy front-line tanks providing overlapping cover
+		{
+			EntityType: entitytemplates.EntityCreature,
+			EntityConfig: entitytemplates.EntityConfig{
+				Name: "Knight Captain", ImagePath: "knight.png",
+				AssetDir: "../assets/", Visible: true,
+			},
+			EntityData: createTankData(50, 5, 15, 5),
+			GridRow: 0, GridCol: 1, GridWidth: 1, GridHeight: 1,
+			Role: squad.RoleTank,
+			TargetRows: []int{0},
+			IsMultiTarget: false,
+			MaxTargets: 1,
+			IsLeader: true,
+			CoverValue: 0.30,       // 30% cover
+			CoverRange: 2,          // Covers rows 1 and 2
+			RequiresActive: true,
+		},
+		{
+			EntityType: entitytemplates.EntityCreature,
+			EntityConfig: entitytemplates.EntityConfig{
+				Name: "Shield Bearer", ImagePath: "shield.png",
+				AssetDir: "../assets/", Visible: true,
+			},
+			EntityData: createTankData(40, 4, 16, 6),
+			GridRow: 0, GridCol: 0, GridWidth: 1, GridHeight: 1,
+			Role: squad.RoleTank,
+			TargetRows: []int{0},
+			IsMultiTarget: false,
+			MaxTargets: 1,
+			CoverValue: 0.25,       // 25% cover
+			CoverRange: 2,          // Covers rows 1 and 2
+			RequiresActive: true,
+		},
+
+		// Row 1: Mid-line support with minor cover
+		{
+			EntityType: entitytemplates.EntityCreature,
+			EntityConfig: entitytemplates.EntityConfig{
+				Name: "Battle Cleric", ImagePath: "cleric.png",
+				AssetDir: "../assets/", Visible: true,
+			},
+			EntityData: createSupportData(35, 3, 12, 2),
+			GridRow: 1, GridCol: 1, GridWidth: 1, GridHeight: 1,
+			Role: squad.RoleSupport,
+			TargetRows: []int{1},
+			IsMultiTarget: false,
+			MaxTargets: 1,
+			CoverValue: 0.10,       // 10% cover
+			CoverRange: 1,          // Only covers row 2
+			RequiresActive: true,
+		},
+
+		// Row 2: Back-line archers (receive stacking cover)
+		{
+			EntityType: entitytemplates.EntityCreature,
+			EntityConfig: entitytemplates.EntityConfig{
+				Name: "Longbowman", ImagePath: "archer.png",
+				AssetDir: "../assets/", Visible: true,
+			},
+			EntityData: createDPSData(25, 10, 11, 2),
+			GridRow: 2, GridCol: 0, GridWidth: 1, GridHeight: 1,
+			Role: squad.RoleDPS,
+			TargetRows: []int{2},
+			IsMultiTarget: false,
+			MaxTargets: 1,
+			// No cover provided, but receives cover from Shield Bearer (col 0)
+		},
+		{
+			EntityType: entitytemplates.EntityCreature,
+			EntityConfig: entitytemplates.EntityConfig{
+				Name: "Crossbowman", ImagePath: "archer.png",
+				AssetDir: "../assets/", Visible: true,
+			},
+			EntityData: createDPSData(25, 10, 11, 2),
+			GridRow: 2, GridCol: 1, GridWidth: 1, GridHeight: 1,
+			Role: squad.RoleDPS,
+			TargetRows: []int{2},
+			IsMultiTarget: false,
+			MaxTargets: 1,
+			// No cover provided, but receives STACKING cover:
+			// - 30% from Knight Captain (col 1)
+			// - 25% from Shield Bearer (different column, no overlap)
+			// - 10% from Battle Cleric (col 1)
+			// Total: 40% cover (stacking from Knight + Cleric)
+		},
+	}
+
+	/*
+	Visual Grid Layout (with cover relationships):
+	Row 0: [Shield(25%)_] [Knight(30%)_] [Empty]
+	         |               |
+	         v (col 0)       v (col 1)
+	Row 1: [Empty]        [Cleric(10%)_] [Empty]
+	                        |
+	                        v (col 1)
+	Row 2: [Longbow]      [Crossbow]     [Empty]
+	       (25% cover)    (40% cover - stacking!)
+	*/
+
+	return systems.CreateSquadFromTemplate(
+		ecsmanager,
+		"Defensive Phalanx",
+		squad.FormationDefensive,
+		coords.LogicalPosition{X: 10, Y: 10},
+		templates,
+	)
+}
+```
+
+**Key Takeaways from Cover Example:**
+
+1. **Column-based coverage** - Units provide cover only to columns they occupy
+2. **Stacking bonuses** - Multiple units in same column = additive cover (30% + 10% = 40%)
+3. **Range matters** - Knight with CoverRange=2 covers both row 1 and row 2
+4. **Active unit requirement** - Dead units stop providing cover (RequiresActive=true)
+5. **Strategic positioning** - Concentrating tanks in one column maximizes cover for that column's back-line
+6. **Trade-offs** - Spread formation sacrifices cover for flexibility
+
+**Cover Calculation for Crossbowman (Row 2, Col 1):**
+- Knight Captain (Row 0, Col 1): ✅ 30% cover (same column, 2 rows back, within range)
+- Shield Bearer (Row 0, Col 0): ❌ 0% cover (different column, no overlap)
+- Battle Cleric (Row 1, Col 1): ✅ 10% cover (same column, 1 row back, within range)
+- **Total: 40% damage reduction** (30% + 10%, stacking additively)
+
+**Cover Calculation for Longbowman (Row 2, Col 0):**
+- Knight Captain (Row 0, Col 1): ❌ 0% cover (different column, no overlap)
+- Shield Bearer (Row 0, Col 0): ✅ 25% cover (same column, 2 rows back, within range)
+- Battle Cleric (Row 1, Col 1): ❌ 0% cover (different column, no overlap)
+- **Total: 25% damage reduction** (only Shield Bearer provides cover)
 
 ---
 

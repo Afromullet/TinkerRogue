@@ -30,7 +30,10 @@
       "targetRows": [0],
       "isMultiTarget": false,
       "maxTargets": 1,
-      "targetCells": null
+      "targetCells": null,
+      "coverValue": 0.20,
+      "coverRange": 1,
+      "requiresActive": true
     },
     {
       "name": "OrcBerserker",
@@ -62,7 +65,10 @@
       "targetRows": null,
       "isMultiTarget": false,
       "maxTargets": 0,
-      "targetCells": [[0, 0], [0, 1]]
+      "targetCells": [[0, 0], [0, 1]],
+      "coverValue": 0.0,
+      "coverRange": 0,
+      "requiresActive": false
     },
     {
       "name": "SkeletonWarrior",
@@ -94,7 +100,10 @@
       "targetRows": [0],
       "isMultiTarget": false,
       "maxTargets": 1,
-      "targetCells": null
+      "targetCells": null,
+      "coverValue": 0.30,
+      "coverRange": 1,
+      "requiresActive": true
     },
     {
       "name": "DarkArcher",
@@ -132,7 +141,10 @@
       "targetRows": [2],
       "isMultiTarget": true,
       "maxTargets": 0,
-      "targetCells": null
+      "targetCells": null,
+      "coverValue": 0.0,
+      "coverRange": 0,
+      "requiresActive": false
     },
     {
       "name": "GoblinSharpshooter",
@@ -166,7 +178,10 @@
       "targetRows": null,
       "isMultiTarget": false,
       "maxTargets": 0,
-      "targetCells": [[1, 1]]
+      "targetCells": [[1, 1]],
+      "coverValue": 0.0,
+      "coverRange": 0,
+      "requiresActive": false
     },
     {
       "name": "FireElemental",
@@ -194,7 +209,10 @@
       "targetRows": null,
       "isMultiTarget": false,
       "maxTargets": 0,
-      "targetCells": [[0, 0], [1, 0], [2, 0]]
+      "targetCells": [[0, 0], [1, 0], [2, 0]],
+      "coverValue": 0.0,
+      "coverRange": 0,
+      "requiresActive": false
     },
     {
       "name": "FrostMage",
@@ -232,7 +250,10 @@
       "targetRows": null,
       "isMultiTarget": false,
       "maxTargets": 0,
-      "targetCells": [[0, 0], [0, 1], [0, 2], [1, 0], [1, 1], [1, 2]]
+      "targetCells": [[0, 0], [0, 1], [0, 2], [1, 0], [1, 1], [1, 2]],
+      "coverValue": 0.15,
+      "coverRange": 1,
+      "requiresActive": true
     },
     {
       "name": "NecromancerLord",
@@ -270,7 +291,10 @@
       "targetRows": [0, 1, 2],
       "isMultiTarget": true,
       "maxTargets": 2,
-      "targetCells": null
+      "targetCells": null,
+      "coverValue": 0.0,
+      "coverRange": 0,
+      "requiresActive": false
     },
     {
       "name": "TrollChampion",
@@ -302,7 +326,10 @@
       "targetRows": [0],
       "isMultiTarget": false,
       "maxTargets": 1,
-      "targetCells": null
+      "targetCells": null,
+      "coverValue": 0.40,
+      "coverRange": 2,
+      "requiresActive": true
     },
     {
       "name": "DragonWhelp",
@@ -344,7 +371,10 @@
       "targetRows": null,
       "isMultiTarget": false,
       "maxTargets": 0,
-      "targetCells": [[0, 0], [0, 1], [1, 0], [1, 1]]
+      "targetCells": [[0, 0], [0, 1], [1, 0], [1, 1]],
+      "coverValue": 0.0,
+      "coverRange": 0,
+      "requiresActive": false
     },
     {
       "name": "ShadowAssassin",
@@ -376,7 +406,10 @@
       "targetRows": null,
       "isMultiTarget": false,
       "maxTargets": 0,
-      "targetCells": [[2, 1]]
+      "targetCells": [[2, 1]],
+      "coverValue": 0.0,
+      "coverRange": 0,
+      "requiresActive": false
     },
     {
       "name": "DwarvenShieldbearer",
@@ -408,7 +441,10 @@
       "targetRows": [0],
       "isMultiTarget": false,
       "maxTargets": 1,
-      "targetCells": null
+      "targetCells": null,
+      "coverValue": 0.50,
+      "coverRange": 2,
+      "requiresActive": true
     },
     {
       "name": "LightningWizard",
@@ -446,7 +482,10 @@
       "targetRows": null,
       "isMultiTarget": false,
       "maxTargets": 0,
-      "targetCells": [[0, 0], [1, 0], [2, 0]]
+      "targetCells": [[0, 0], [1, 0], [2, 0]],
+      "coverValue": 0.0,
+      "coverRange": 0,
+      "requiresActive": false
     },
     {
       "name": "HolyPaladin",
@@ -478,7 +517,10 @@
       "targetRows": [0, 1],
       "isMultiTarget": true,
       "maxTargets": 2,
-      "targetCells": null
+      "targetCells": null,
+      "coverValue": 0.35,
+      "coverRange": 1,
+      "requiresActive": true
     },
     {
       "name": "VenomSpider",
@@ -520,7 +562,10 @@
       "targetRows": null,
       "isMultiTarget": false,
       "maxTargets": 0,
-      "targetCells": [[1, 1], [2, 1]]
+      "targetCells": [[1, 1], [2, 1]],
+      "coverValue": 0.0,
+      "coverRange": 0,
+      "requiresActive": false
     },
     {
       "name": "BattlePriest",
@@ -552,7 +597,10 @@
       "targetRows": null,
       "isMultiTarget": false,
       "maxTargets": 0,
-      "targetCells": [[0, 1], [1, 1], [2, 1]]
+      "targetCells": [[0, 1], [1, 1], [2, 1]],
+      "coverValue": 0.25,
+      "coverRange": 1,
+      "requiresActive": true
     }
   ]
 }

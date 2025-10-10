@@ -32,6 +32,7 @@ func InitSquadComponents(squadManager SquadECSManager) {
 	SquadMemberComponent = squadManager.Manager.NewComponent()
 	GridPositionComponent = squadManager.Manager.NewComponent()
 	UnitRoleComponent = squadManager.Manager.NewComponent()
+	CoverComponent = squadManager.Manager.NewComponent()
 	LeaderComponent = squadManager.Manager.NewComponent()
 	TargetRowComponent = squadManager.Manager.NewComponent()
 	AbilitySlotComponent = squadManager.Manager.NewComponent()
