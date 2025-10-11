@@ -74,12 +74,12 @@ func ApplyStatusEffects(c *ecs.QueryResult) {
 // Get the next position on the path and pops the position from the path.
 // Passing currentPosition so we can stand in place when there is no path
 // TODO needs to be improved. This will cause a creature to "teleport" if the path is blocked
-func (c *Creature) UpdatePosition(gm *worldmap.GameMap, currentPosition *coords.LogicalPosition) {
+func (c *Creature) UpdatePosition(gm *worldmap.GameMap, currentPosition *coords.LogicalPosition, entityID ecs.EntityID) {
 
 	p := currentPosition
 
-	logicalPos := coords.LogicalPosition{X: p.X, Y: p.Y}
-	index := coords.CoordManager.LogicalToIndex(logicalPos)
+	oldLogicalPos := coords.LogicalPosition{X: p.X, Y: p.Y}
+	index := coords.CoordManager.LogicalToIndex(oldLogicalPos)
 	oldTile := gm.Tiles[index]
 
 	if len(c.Path) > 1 {
@@ -92,12 +92,17 @@ func (c *Creature) UpdatePosition(gm *worldmap.GameMap, currentPosition *coords.
 		c.Path = c.Path[:0]
 	}
 
-	logicalPos = coords.LogicalPosition{X: p.X, Y: p.Y}
-	index = coords.CoordManager.LogicalToIndex(logicalPos)
+	newLogicalPos := coords.LogicalPosition{X: p.X, Y: p.Y}
+	index = coords.CoordManager.LogicalToIndex(newLogicalPos)
 
 	nextTile := gm.Tiles[index]
 
 	if !nextTile.Blocked {
+
+		// Update PositionSystem before moving creature
+		if common.GlobalPositionSystem != nil {
+			common.GlobalPositionSystem.MoveEntity(entityID, oldLogicalPos, newLogicalPos)
+		}
 
 		currentPosition.X = p.X
 		currentPosition.Y = p.Y

@@ -136,6 +136,15 @@ func (mc *MovementController) movePlayer(xOffset, yOffset int) {
 	if !nextTile.Blocked {
 		mc.gameMap.PlayerVisible.Compute(mc.gameMap, mc.playerData.Pos.X, mc.playerData.Pos.Y, 8)
 
+		// Update PositionSystem before moving player
+		if common.GlobalPositionSystem != nil {
+			common.GlobalPositionSystem.MoveEntity(
+				mc.playerData.PlayerEntity.GetID(),
+				currentLogicalPos,
+				nextLogicalPos,
+			)
+		}
+
 		mc.playerData.Pos.X = nextPosition.X
 		mc.playerData.Pos.Y = nextPosition.Y
 		nextTile.Blocked = true

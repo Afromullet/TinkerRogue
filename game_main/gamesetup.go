@@ -8,6 +8,7 @@ import (
 	"game_main/input"
 	"game_main/spawning"
 	"game_main/squads"
+	"game_main/systems"
 	"game_main/testing"
 	"game_main/worldmap"
 	"log"
@@ -25,6 +26,9 @@ func SetupNewGame(g *Game) {
 	// 2. Initialize core game systems
 	g.gameMap = worldmap.NewGameMap()
 	InitializeECS(&g.em)
+
+	// 2a. Initialize Position System for O(1) position lookups (Phase 0 - MASTER_ROADMAP)
+	common.GlobalPositionSystem = systems.NewPositionSystem(g.em.World)
 
 	// 3. Configure graphics system
 	graphics.ScreenInfo.ScaleFactor = 1

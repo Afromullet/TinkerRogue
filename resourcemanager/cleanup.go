@@ -18,13 +18,18 @@ func RemoveEntity(world *ecs.Manager, gm *worldmap.GameMap, e *ecs.Entity) {
 		return
 	}
 
-	pos := common.GetPosition(e) //Todo replace pos with position from pos tracker
+	pos := common.GetPosition(e)
 
 	trackers.CreatureTracker.Remove(e)
 
 	logicalPos := coords.LogicalPosition{X: pos.X, Y: pos.Y}
 	ind := coords.CoordManager.LogicalToIndex(logicalPos)
 	gm.Tiles[ind].Blocked = false
+
+	// Remove from PositionSystem
+	if common.GlobalPositionSystem != nil {
+		common.GlobalPositionSystem.RemoveEntity(e.GetID(), logicalPos)
+	}
 
 	world.DisposeEntity(e)
 	monsters.NumMonstersOnMap--

@@ -137,6 +137,15 @@ func CreateEntityFromTemplate(manager common.EntityManager, config EntityConfig,
 			config.GameMap.Tiles[ind].Blocked = true
 		}
 
+		// Register creature with PositionSystem for O(1) position lookups
+		entity := createFromTemplate(manager, config.Name, config.ImagePath, config.AssetDir,
+			config.Visible, config.Position, adders...)
+		if common.GlobalPositionSystem != nil && config.Position != nil {
+			common.GlobalPositionSystem.AddEntity(entity.GetID(), *config.Position)
+			monsters.NumMonstersOnMap++
+		}
+		return entity
+
 	default:
 		log.Fatalf("Unknown entity type: %d", config.Type)
 	}

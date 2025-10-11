@@ -76,15 +76,29 @@ func InitializePlayerData(ecsmanager *common.EntityManager, pl *avatar.PlayerDat
 	pl.Pos = startPos
 	pl.Inventory = inventory
 
+	// Add player to PositionSystem for tracking
+	if common.GlobalPositionSystem != nil {
+		common.GlobalPositionSystem.AddEntity(playerEntity.GetID(), *startPos)
+	}
+
 }
 
 // AddCreaturesToTracker registers all existing monster entities with the creature tracking system.
-// It queries for all monsters in the ECS world and adds them to the global CreatureTracker.
+// It queries for all monsters in the ECS world and adds them to both the global CreatureTracker
+// and the new PositionSystem for O(1) position lookups.
 func AddCreaturesToTracker(ecsmanger *common.EntityManager) {
 
 	for _, c := range ecsmanger.World.Query(ecsmanger.WorldTags["monsters"]) {
 
 		tracker.CreatureTracker.Add(c.Entity)
+
+		// Also add to new PositionSystem for O(1) lookups
+		if common.GlobalPositionSystem != nil {
+			pos := common.GetPosition(c.Entity)
+			if pos != nil {
+				common.GlobalPositionSystem.AddEntity(c.Entity.GetID(), *pos)
+			}
+		}
 
 	}
 
