@@ -1,3 +1,15 @@
 #ExecuteSquadAttack
 
  - Consider removing IsMultiTarget. Not really sure if it's wort having. Cell based targeting should work
+
+#calculateUnitDamageByID
+
+- Make attributes play a larger part in calculating calculateUnitDamageByID
+
+
+
+#Other
+
+- Is there a hit chance?
+- Add leadership attribute to unit. Each unit in a squad  takes x capacity. That capacity is based off the unit power
+Higher leadership = more units

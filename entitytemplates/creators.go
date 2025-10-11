@@ -56,33 +56,6 @@ func createFromTemplate(manager common.EntityManager, name, imagePath, assetDir 
 	return entity
 }
 
-func addMeleeWeaponComponents(w JSONMeleeWeapon) ComponentAdder {
-	return func(entity *ecs.Entity) {
-		entity.AddComponent(gear.ItemComponent, &gear.Item{Count: 1})
-		entity.AddComponent(gear.MeleeWeaponComponent, &gear.MeleeWeapon{
-			MinDamage:   w.MinDamage,
-			MaxDamage:   w.MaxDamage,
-			AttackSpeed: w.AttackSpeed,
-		})
-	}
-}
-
-func addRangedWeaponComponents(w JSONRangedWeapon) ComponentAdder {
-	return func(entity *ecs.Entity) {
-		entity.AddComponent(gear.ItemComponent, &gear.Item{Count: 1})
-
-		ranged := gear.RangedWeapon{
-			MinDamage:     w.MinDamage,
-			MaxDamage:     w.MaxDamage,
-			ShootingRange: w.ShootingRange,
-			AttackSpeed:   w.AttackSpeed,
-		}
-		ranged.TargetArea = CreateTargetArea(w.TargetArea)
-
-		entity.AddComponent(gear.RangedWeaponComponent, &ranged)
-	}
-}
-
 func addConsumableComponents(c JSONAttributeModifier) ComponentAdder {
 	return func(entity *ecs.Entity) {
 		entity.AddComponent(gear.ItemComponent, &gear.Item{Count: 1})
@@ -112,38 +85,7 @@ func addCreatureComponents(m JSONMonster) ComponentAdder {
 			CanAct:             true,
 		}
 
-		if m.Armor != nil {
-			armor := gear.Armor{
-				ArmorClass:  m.Armor.ArmorClass,
-				Protection:  m.Armor.Protection,
-				DodgeChance: m.Armor.DodgeChance,
-			}
-			entity.AddComponent(gear.ArmorComponent, &armor)
-		}
-
-		if m.MeleeWeapon != nil {
-			weapon := gear.MeleeWeapon{
-				MinDamage:   m.MeleeWeapon.MinDamage,
-				MaxDamage:   m.MeleeWeapon.MaxDamage,
-				AttackSpeed: m.MeleeWeapon.AttackSpeed,
-			}
-			attr.TotalAttackSpeed = weapon.AttackSpeed
-			entity.AddComponent(gear.MeleeWeaponComponent, &weapon)
-		}
-
-		if m.RangedWeapon != nil {
-			weapon := gear.RangedWeapon{
-				MinDamage:     m.RangedWeapon.MinDamage,
-				MaxDamage:     m.RangedWeapon.MaxDamage,
-				ShootingRange: m.RangedWeapon.ShootingRange,
-			}
-			attr.TotalAttackSpeed = weapon.AttackSpeed
-			entity.AddComponent(gear.RangedWeaponComponent, &weapon)
-		}
-
-		if attr.TotalAttackSpeed <= 0 {
-			attr.TotalAttackSpeed = 1
-		}
+		// Weapon and armor components removed - will be replaced by squad system
 
 		entity.AddComponent(common.AttributeComponent, &attr)
 	}
@@ -154,9 +96,7 @@ func addCreatureComponents(m JSONMonster) ComponentAdder {
 type EntityType int
 
 const (
-	EntityMeleeWeapon EntityType = iota
-	EntityRangedWeapon
-	EntityConsumable
+	EntityConsumable EntityType = iota
 	EntityCreature
 )
 
@@ -187,20 +127,6 @@ func CreateEntityFromTemplate(manager common.EntityManager, config EntityConfig,
 	var adders []ComponentAdder
 
 	switch config.Type {
-	case EntityMeleeWeapon:
-		w, ok := data.(JSONMeleeWeapon)
-		if !ok {
-			log.Fatalf("Expected JSONMeleeWeapon for EntityMeleeWeapon, got %T", data)
-		}
-		adders = []ComponentAdder{addMeleeWeaponComponents(w)}
-
-	case EntityRangedWeapon:
-		w, ok := data.(JSONRangedWeapon)
-		if !ok {
-			log.Fatalf("Expected JSONRangedWeapon for EntityRangedWeapon, got %T", data)
-		}
-		adders = []ComponentAdder{addRangedWeaponComponents(w)}
-
 	case EntityConsumable:
 		c, ok := data.(JSONAttributeModifier)
 		if !ok {

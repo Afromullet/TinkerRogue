@@ -2,7 +2,6 @@ package input
 
 import (
 	"game_main/avatar"
-	"game_main/combat"
 	"game_main/common"
 	"game_main/coords"
 	"game_main/gear"
@@ -35,7 +34,8 @@ func NewCombatController(ecsManager *common.EntityManager, playerData *avatar.Pl
 }
 
 func (cc *CombatController) CanHandle() bool {
-	return cc.playerData.InputStates.IsThrowing || cc.playerData.InputStates.IsShooting
+	return cc.playerData.InputStates.IsThrowing
+	// Ranged weapon shooting removed - squad system handles combat
 }
 
 func (cc *CombatController) OnActivate() {
@@ -49,51 +49,22 @@ func (cc *CombatController) OnDeactivate() {
 func (cc *CombatController) HandleInput() bool {
 	inputHandled := false
 
-	// Handle ranged attack mode
-	if cc.playerData.InputStates.IsShooting {
-		inputHandled = cc.handleRangedAttack() || inputHandled
-	}
+	// Ranged attack mode removed - squad system handles combat
 
 	// Handle throwing mode
 	if cc.playerData.InputStates.IsThrowing {
 		inputHandled = cc.handleThrowable() || inputHandled
 	}
 
-	// Handle ranged attack initiation
-	if inpututil.IsKeyJustReleased(ebiten.KeyF) {
-		if !cc.playerData.InputStates.IsThrowing && cc.playerData.Equipment.EqRangedWeapon != nil {
-			cc.playerSelectRangedTarget()
-			cc.playerData.InputStates.HasKeyInput = true
-			inputHandled = true
-		}
-	}
+	// Ranged attack initiation removed - squad system handles combat
 
 	return inputHandled
 }
 
-func (cc *CombatController) handleRangedAttack() bool {
-	cc.drawRangedAttackAOE()
-
-	// Cancel shooting
-	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButton2) {
-		cc.playerData.InputStates.IsShooting = false
-		cc.gameMap.ApplyColorMatrix(cc.sharedState.PrevRangedAttInds, graphics.NewEmptyMatrix())
-		return true
-	}
-
-	// Execute ranged attack
-	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButton1) {
-		combat.RangedAttackSystem(cc.ecsManager, cc.playerData, cc.gameMap, cc.playerData.Pos)
-		return true
-	}
-
-	return false
-}
+// REMOVED: handleRangedAttack - ranged weapon combat replaced by squad system
 
 func (cc *CombatController) handleThrowable() bool {
-	if cc.playerData.InputStates.IsShooting {
-		return false
-	}
+	// IsShooting check removed - squad system handles combat
 
 	throwable := cc.playerData.Throwables.ThrowableItem.GetThrowableAction()
 	if throwable == nil {
@@ -139,51 +110,9 @@ func (cc *CombatController) handleThrowable() bool {
 	return false
 }
 
-func (cc *CombatController) playerSelectRangedTarget() {
-	cc.gameMap.ApplyColorMatrix(cc.sharedState.PrevRangedAttInds, graphics.NewEmptyMatrix())
-	cc.playerData.InputStates.IsShooting = true
-	cc.playerData.Equipment.PrepareRangedAttack()
-}
+// REMOVED: playerSelectRangedTarget - ranged weapon combat replaced by squad system
 
-func (cc *CombatController) drawRangedAttackAOE() {
-	cursorX, cursorY := graphics.CursorPosition(*cc.playerData.Pos)
-
-	s := cc.playerData.Equipment.RangedWeaponAOEShape
-	rangedWep := common.GetComponentType[*gear.RangedWeapon](cc.playerData.Equipment.EqRangedWeapon, gear.RangedWeaponComponent)
-
-	// Handle rotation input directly
-	if baseShape, ok := rangedWep.TargetArea.(*graphics.BaseShape); ok {
-		if inpututil.IsKeyJustReleased(ebiten.KeyDigit1) && baseShape.Direction != nil {
-			*baseShape.Direction = graphics.RotateLeft(*baseShape.Direction)
-		} else if inpututil.IsKeyJustReleased(ebiten.KeyDigit2) && baseShape.Direction != nil {
-			*baseShape.Direction = graphics.RotateRight(*baseShape.Direction)
-		}
-	}
-
-	var indices []int
-	if cursorX != cc.sharedState.PrevCursor.X || cursorY != cc.sharedState.PrevCursor.Y {
-		if cc.sharedState.PrevCursor.X != 0 && cc.sharedState.PrevCursor.Y != 0 {
-			cc.gameMap.ApplyColorMatrix(cc.sharedState.PrevRangedAttInds, graphics.NewEmptyMatrix())
-		}
-	}
-
-	s.UpdatePosition(cursorX, cursorY)
-	indices = s.GetIndices()
-
-	for _, i := range indices {
-		logicalPos := coords.CoordManager.IndexToLogical(i)
-		playerLogicalPos := coords.LogicalPosition{X: cc.playerData.Pos.X, Y: cc.playerData.Pos.Y}
-
-		if logicalPos.InRange(&playerLogicalPos, cc.playerData.Equipment.RangedWeaponMaxDistance) {
-			cc.gameMap.ApplyColorMatrixToIndex(i, graphics.GreenColorMatrix)
-		} else {
-			cc.gameMap.ApplyColorMatrixToIndex(i, graphics.RedColorMatrix)
-		}
-	}
-
-	cc.sharedState.PrevCursor.X, cc.sharedState.PrevCursor.Y = cursorX, cursorY
-	cc.sharedState.PrevRangedAttInds = indices
-}
+// REMOVED: drawRangedAttackAOE - ranged weapon combat replaced by squad system
 
 func (cc *CombatController) drawThrowableAOE() {
 	cursorX, cursorY := graphics.CursorPosition(*cc.playerData.Pos)

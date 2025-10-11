@@ -24,9 +24,6 @@ func InitializeECS(ecsmanager *common.EntityManager) {
 	gear.InventoryComponent = manager.NewComponent()
 	common.AttributeComponent = manager.NewComponent()
 	common.UserMsgComponent = manager.NewComponent()
-	gear.MeleeWeaponComponent = manager.NewComponent()
-	gear.RangedWeaponComponent = manager.NewComponent()
-	gear.ArmorComponent = manager.NewComponent()
 
 	renderables := ecs.BuildTag(rendering.RenderableComponent, common.PositionComponent)
 	tags["renderables"] = renderables

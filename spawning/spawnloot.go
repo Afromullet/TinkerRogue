@@ -9,11 +9,9 @@ import (
 	"game_main/coords"
 	"game_main/entitytemplates"
 	"game_main/gear"
-	"game_main/graphics"
 	"game_main/rendering"
 	"game_main/worldmap"
 	"math/rand"
-	"strconv"
 
 	"github.com/bytearena/ecs"
 )
@@ -38,42 +36,7 @@ func SpawnConsumable(manager *ecs.Manager, xPos, yPos int) *ecs.Entity {
 
 }
 
-// SpawnRangedWeapon creates a ranged weapon entity at the specified position.
-// It randomly generates quality and AOE shape properties from loot tables.
-// TODO: Improve image selection logic.
-func SpawnRangedWeapon(manager *ecs.Manager, xPos, yPos int) *ecs.Entity {
-
-	//TODO better name generation
-	name := "Ranged " + strconv.Itoa(rand.Intn(1000))
-	weapon := gear.CreateItem(manager, name, coords.LogicalPosition{X: xPos, Y: yPos}, "../assets/items/longbow1.png")
-
-	qual, qualOK := LootQualityTable.GetRandomEntry(false)
-	aoeShape, shapeOK := ThrowableAOEProbTable.GetRandomEntry(false)
-
-	if qualOK && shapeOK {
-
-		r := gear.RangedWeapon{}
-		r.CreateWithQuality(qual)
-
-		// Convert BasicShapeType to actual shape instance
-		var targetShape graphics.TileBasedShape
-		switch aoeShape {
-		case graphics.Circular:
-			targetShape = graphics.NewCircle(0, 0, qual)
-		case graphics.Rectangular:
-			targetShape = graphics.NewSquare(0, 0, qual)
-		case graphics.Linear:
-			targetShape = graphics.NewLine(0, 0, graphics.LineRight, qual)
-		}
-
-		r.TargetArea = targetShape
-		weapon.AddComponent(gear.RangedWeaponComponent, &r)
-		return weapon
-	}
-
-	return nil
-
-}
+// REMOVED: SpawnRangedWeapon - weapon spawning removed as part of squad system transition
 
 // Basic spawning to start off with. Has a 30% chance to spawn a consumable in the center
 func SpawnStartingConsumables(em common.EntityManager, gm *worldmap.GameMap) {
@@ -111,61 +74,10 @@ func SpawnStartingConsumables(em common.EntityManager, gm *worldmap.GameMap) {
 	}
 }
 
-// 30 percent chance to spawn either a melee or ranged weapon in a room
-// Todo add these items to the players inventory instead and also add consumables
+// REMOVED: SpawnStartingEquipment - equipment spawning removed as part of squad system transition
+// Squad system will handle combat equipment through squad templates
 func SpawnStartingEquipment(em *common.EntityManager, gm *worldmap.GameMap, pl *avatar.PlayerData) {
-
-	weaponChoice := -1
-	weaponInd := -1
-
-	for _, room := range gm.Rooms {
-
-		if rand.Intn(100) < 50 {
-			weaponChoice = rand.Intn(2)
-
-			x, y := room.Center()
-
-			if weaponChoice == 0 {
-
-				weaponInd = rand.Intn(len(entitytemplates.MeleeWeaponTemplates))
-				wep := entitytemplates.CreateEntityFromTemplate(*em, entitytemplates.EntityConfig{
-					Type:      entitytemplates.EntityMeleeWeapon,
-					Name:      entitytemplates.MeleeWeaponTemplates[weaponInd].Name,
-					ImagePath: entitytemplates.MeleeWeaponTemplates[weaponInd].ImgName,
-					AssetDir:  "../assets/items/",
-					Visible:   false,
-					Position:  nil,
-				}, entitytemplates.MeleeWeaponTemplates[weaponInd])
-				common.GetComponentType[*rendering.Renderable](wep, rendering.RenderableComponent).Visible = true
-				pos := common.GetPosition(wep)
-				pos.X = x
-				pos.Y = y
-				gm.AddEntityToTile(wep, pos)
-
-			} else if weaponChoice == 1 {
-
-				weaponInd = rand.Intn(len(entitytemplates.RangedWeaponTemplates))
-				wep := entitytemplates.CreateEntityFromTemplate(*em, entitytemplates.EntityConfig{
-					Type:      entitytemplates.EntityMeleeWeapon,
-					Name:      entitytemplates.MeleeWeaponTemplates[weaponInd].Name,
-					ImagePath: entitytemplates.MeleeWeaponTemplates[weaponInd].ImgName,
-					AssetDir:  "../assets/items/",
-					Visible:   false,
-					Position:  nil,
-				}, entitytemplates.MeleeWeaponTemplates[weaponInd])
-				common.GetComponentType[*rendering.Renderable](wep, rendering.RenderableComponent).Visible = true
-				pos := common.GetPosition(wep)
-				pos.X = x
-				pos.Y = y
-				gm.AddEntityToTile(wep, pos)
-
-			} else {
-				// TODO: Handle starting equipment spawn error
-			}
-
-		}
-
-	}
+	// No-op - weapon/armor spawning removed
 }
 
 // Spawns loot in a square of size "size" centered at the position
@@ -192,7 +104,7 @@ func SpawnLootAroundPlayer(currentTurnNumber int, playerData avatar.PlayerData, 
 	pixelPos := coords.CoordManager.LogicalToPixel(logicalPos)
 	playerX, playerY := pixelPos.X, pixelPos.Y
 	spawnPositions := gm.UnblockedLogicalCoords(playerX, playerY, 10)
-	consChance, throwableChance, rangedWepChance := rand.Intn(100), rand.Intn(100), rand.Intn(100)
+	consChance, throwableChance := rand.Intn(100), rand.Intn(100)
 
 	if consChance < ConsumableSpawnProb {
 
@@ -209,12 +121,6 @@ func SpawnLootAroundPlayer(currentTurnNumber int, playerData avatar.PlayerData, 
 
 	}
 
-	if rangedWepChance < RangedWeaponSpawnProb {
-
-		pos := getRandomEntry(spawnPositions)
-		e := SpawnRangedWeapon(manager, pos.X, pos.Y)
-		gm.AddEntityToTile(e, &coords.LogicalPosition{X: pos.X, Y: pos.Y})
-
-	}
+	// Ranged weapon spawning removed - squad system handles combat equipment
 
 }

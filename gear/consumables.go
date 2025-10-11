@@ -199,32 +199,14 @@ func RunEffectTracker(ent *ecs.Entity) {
 
 // Does not fit in the common package because referencing gear will cause a circular inclusion issue
 // Consumables change the base attributes, so the TotalNNN stats need to be updated.
-// Todo, g.playerData.UpdatePlayerAttributes() and UpdateEntityAttributes for monster can probably be the same function
 func UpdateEntityAttributes(e *ecs.Entity) {
 
-	armor := common.GetComponentType[*Armor](e, ArmorComponent)
 	attr := common.GetComponentType[*common.Attributes](e, common.AttributeComponent)
 
-	ac := 0
-	prot := 0
-	dodge := float32(0.0)
-
-	if armor != nil {
-
-		ac = armor.ArmorClass
-		prot = armor.Protection
-		dodge = float32(armor.DodgeChance)
-	} else {
-		ac = 1
-		prot = 1
-		dodge = 1
-	}
-
-	attr.TotalArmorClass = attr.BaseArmorClass + ac
-	attr.TotalProtection = attr.BaseProtection + prot
-	attr.TotalDodgeChance = attr.BaseDodgeChance + dodge
-
-	//Nothing else affecting these
+	// Armor system removed - using only base attributes now
+	attr.TotalArmorClass = attr.BaseArmorClass
+	attr.TotalProtection = attr.BaseProtection
+	attr.TotalDodgeChance = attr.BaseDodgeChance
 	attr.TotalMovementSpeed = attr.BaseMovementSpeed
 
 }

@@ -2,7 +2,6 @@ package gear
 
 import (
 	"game_main/common"
-	"game_main/graphics"
 	"math/rand"
 )
 
@@ -82,35 +81,6 @@ func (f *Freezing) CreateWithQuality(q common.QualityType) {
 
 		f.Thickness = rand.Intn(7) + 1
 
-	}
-
-}
-
-
-
-// Selecting the shooting VX in the spawning package
-func (r *RangedWeapon) CreateWithQuality(q common.QualityType) {
-
-	r.ShootingVX = graphics.NewProjectile(0, 0, 0, 0)
-	if q == common.LowQuality {
-
-		r.MinDamage = rand.Intn(2) + 1
-		r.MaxDamage = rand.Intn(5) + 3
-		r.ShootingRange = rand.Intn(3) + 1
-		r.AttackSpeed = rand.Intn(7) + 1
-
-	} else if q == common.NormalQuality {
-		r.MinDamage = rand.Intn(7) + 1
-		r.MaxDamage = rand.Intn(10) + 1
-		r.ShootingRange = rand.Intn(7) + 3
-		r.AttackSpeed = rand.Intn(5) + 1
-
-	} else if q == common.HighQuality {
-
-		r.MinDamage = rand.Intn(10) + 1
-		r.MaxDamage = rand.Intn(15) + 1
-		r.ShootingRange = rand.Intn(10) + 3
-		r.AttackSpeed = rand.Intn(3) + 1
 	}
 
 }

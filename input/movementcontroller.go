@@ -2,7 +2,6 @@ package input
 
 import (
 	"game_main/avatar"
-	"game_main/combat"
 	"game_main/common"
 	"game_main/coords"
 	"game_main/graphics"
@@ -32,7 +31,8 @@ func NewMovementController(ecsManager *common.EntityManager, playerData *avatar.
 
 func (mc *MovementController) CanHandle() bool {
 	// Movement is always available unless in specific states
-	return !mc.playerData.InputStates.IsThrowing && !mc.playerData.InputStates.IsShooting
+	return !mc.playerData.InputStates.IsThrowing
+	// IsShooting check removed - squad system handles combat
 }
 
 func (mc *MovementController) OnActivate() {
@@ -141,10 +141,8 @@ func (mc *MovementController) movePlayer(xOffset, yOffset int) {
 		nextTile.Blocked = true
 		oldTile.Blocked = false
 	} else {
-		// Determine if the tile is blocked because there's a creature
-		if common.GetCreatureAtPosition(mc.ecsManager, &nextPosition) != nil {
-			combat.MeleeAttackSystem(mc.ecsManager, mc.playerData, mc.gameMap, mc.playerData.Pos, &nextPosition)
-		}
+		// Melee combat removed - squad system will handle combat
+		// Creature detection still available via common.GetCreatureAtPosition()
 	}
 }
 

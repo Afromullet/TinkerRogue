@@ -102,47 +102,7 @@ func (inv *Inventory) EffectNames(index int) ([]string, error) {
 
 }
 
-// Gets all Melee Weapons, Ranged Weapons, and Armor for displaying
-// Assumes that indicesToSelect is already filtered
-func (inv *Inventory) GetEquipmentForDisplay(indicesToSelect []int) []any {
-
-	inventoryItems := make([]any, 0)
-
-	for index, entity := range inv.InventoryContent {
-
-		itemName := common.GetComponentType[*common.Name](entity, common.NameComponent)
-		itemComp := GetItem(entity)
-
-		if entity.HasComponent(ArmorComponent) {
-
-			inventoryItems = append(inventoryItems, InventoryListEntry{
-				index,
-				itemName.NameStr,
-				itemComp.Count})
-
-		} else if entity.HasComponent(RangedWeaponComponent) {
-
-			inventoryItems = append(inventoryItems, InventoryListEntry{
-				index,
-				itemName.NameStr,
-				itemComp.Count})
-
-		} else if entity.HasComponent(MeleeWeaponComponent) {
-
-			inventoryItems = append(inventoryItems, InventoryListEntry{
-				index,
-				itemName.NameStr,
-				itemComp.Count})
-
-		}
-
-	}
-
-	return inventoryItems
-
-}
-
-// Gets all Melee Weapons, Ranged Weapons, and Armor for displaying
+// Gets all Consumables for displaying
 // Assumes that indicesToSelect is already filtered
 func (inv *Inventory) GetConsumablesForDisplay(indicesToSelect []int) []any {
 

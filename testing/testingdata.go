@@ -185,50 +185,8 @@ func CreateItem(manager *ecs.Manager, name string, pos coords.LogicalPosition, i
 
 }
 
-// A weapon is an Item with a weapon component
-func CreateWeapon(manager *ecs.Manager, name string, pos coords.LogicalPosition, imagePath string, MinDamage int, MaxDamage int, properties ...gear.StatusEffects) *ecs.Entity {
-
-	weapon := CreateItem(manager, name, pos, imagePath, properties...)
-
-	weapon.AddComponent(gear.MeleeWeaponComponent, &gear.MeleeWeapon{
-		MinDamage:   MinDamage,
-		MaxDamage:   MaxDamage,
-		AttackSpeed: 3,
-	})
-
-	return weapon
-
-}
-
-func CreateArmor(manager *ecs.Manager, name string, pos coords.LogicalPosition, imagePath string, ac int, prot int, dodge float32) *ecs.Entity {
-
-	armor := CreateItem(manager, name, pos, imagePath)
-
-	armor.AddComponent(gear.ArmorComponent, &gear.Armor{
-		ArmorClass:  ac,
-		Protection:  prot,
-		DodgeChance: dodge,
-	})
-
-	return armor
-
-}
-
-func CreatedRangedWeapon(manager *ecs.Manager, name string, imagePath string, pos coords.LogicalPosition, minDamage int, maxDamage int, shootingRange int, TargetArea graphics.TileBasedShape) *ecs.Entity {
-
-	weapon := CreateItem(manager, name, pos, imagePath)
-	weapon.AddComponent(gear.RangedWeaponComponent, &gear.RangedWeapon{
-		MinDamage:     minDamage,
-		MaxDamage:     maxDamage,
-		ShootingRange: shootingRange,
-		TargetArea:    TargetArea,
-		ShootingVX:    graphics.NewProjectile(0, 0, 0, 0),
-		AttackSpeed:   3,
-	})
-
-	return weapon
-
-}
+// REMOVED: CreateWeapon, CreateArmor, CreatedRangedWeapon - weapon/armor system replaced by squad system
+// See CLAUDE.md Section 7 (Squad System Infrastructure) for replacement system
 
 // This function is no longer needed since we removed the action queue system
 func InitTestActionManager(ecsmanager *common.EntityManager, pl *avatar.PlayerData) {

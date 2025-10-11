@@ -41,7 +41,8 @@ func (uc *UIController) HandleInput() bool {
 	// Handle info menu opening
 	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButton2) {
 		// Only open info menu if not in combat modes
-		if !uc.playerData.InputStates.IsThrowing && !uc.playerData.InputStates.IsShooting {
+		// IsShooting check removed - squad system handles combat
+		if !uc.playerData.InputStates.IsThrowing {
 			cursorX, cursorY := graphics.CursorPosition(*uc.playerData.Pos)
 			uc.playerUI.InformationUI.InfoSelectionWindow(cursorX, cursorY)
 			uc.playerData.InputStates.InfoMeuOpen = true

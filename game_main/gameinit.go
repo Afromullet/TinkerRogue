@@ -6,7 +6,6 @@ import (
 	"game_main/coords"
 	"game_main/gear"
 	"game_main/rendering"
-	"game_main/testing"
 	tracker "game_main/trackers"
 	"game_main/worldmap"
 	"log"
@@ -70,17 +69,8 @@ func InitializePlayerData(ecsmanager *common.EntityManager, pl *avatar.PlayerDat
 
 	inventory := common.GetComponentType[*gear.Inventory](pl.PlayerEntity, gear.InventoryComponent)
 
-	a := testing.CreateArmor(ecsmanager.World, "A1", *startPos, "../assets/items/sword.png", 10, 5, 1)
-	w := testing.CreateWeapon(ecsmanager.World, "W1", *startPos, "../assets/items/sword.png", 5, 10)
-	r := testing.CreatedRangedWeapon(ecsmanager.World, "R1", "../assets/items/sword.png", *startPos, 5, 10, 100, testing.TestRect)
-
-	pl.Equipment.EqMeleeWeapon = w
-	pl.Equipment.EqRangedWeapon = r
-	pl.Equipment.EqArmor = a
-
-	armor := common.GetComponentType[*gear.Armor](pl.Equipment.EqArmor, gear.ArmorComponent)
-
-	pl.PlayerEntity.AddComponent(gear.ArmorComponent, armor)
+	// Test weapon/armor initialization removed - squad system handles combat equipment
+	// See CLAUDE.md Section 7 (Squad System Infrastructure) for replacement system
 
 	pl.Pos = startPos
 	pl.Inventory = inventory
