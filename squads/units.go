@@ -3,6 +3,7 @@ package squads
 import (
 	"fmt"
 	"game_main/common"
+	"game_main/coords"
 	"game_main/entitytemplates"
 
 	"github.com/bytearena/ecs"
@@ -60,19 +61,19 @@ func CreateUnitTemplates(monsterData entitytemplates.JSONMonster) (UnitTemplate,
 	}
 
 	unit := UnitTemplate{
-		Name:          monsterData.Name,
-		Attributes:    monsterData.Attributes.NewAttributesFromJson(),
-		GridRow:       0,
-		GridCol:       0,
-		GridWidth:     monsterData.Width,
-		GridHeight:    monsterData.Height,
-		Role:          role,
-		TargetMode:    targetMode,
-		TargetRows:    monsterData.TargetRows,
-		IsMultiTarget: monsterData.IsMultiTarget,
-		MaxTargets:    monsterData.MaxTargets,
-		TargetCells:   monsterData.TargetCells,
-		IsLeader:      false,
+		Name:           monsterData.Name,
+		Attributes:     monsterData.Attributes.NewAttributesFromJson(),
+		GridRow:        0,
+		GridCol:        0,
+		GridWidth:      monsterData.Width,
+		GridHeight:     monsterData.Height,
+		Role:           role,
+		TargetMode:     targetMode,
+		TargetRows:     monsterData.TargetRows,
+		IsMultiTarget:  monsterData.IsMultiTarget,
+		MaxTargets:     monsterData.MaxTargets,
+		TargetCells:    monsterData.TargetCells,
+		IsLeader:       false,
 		CoverValue:     monsterData.CoverValue,
 		CoverRange:     monsterData.CoverRange,
 		RequiresActive: monsterData.RequiresActive,
@@ -151,6 +152,27 @@ func CreateUnitEntity(squadmanager *SquadECSManager, unit UnitTemplate) (*ecs.En
 
 	unitEntity.AddComponent(UnitRoleComponent, &UnitRoleData{
 		Role: unit.Role,
+	})
+
+	unitEntity.AddComponent(common.NameComponent, &common.Name{
+		NameStr: unit.Name,
+	})
+
+	unitEntity.AddComponent(common.PositionComponent, &coords.LogicalPosition{
+		X: 0,
+		Y: 0,
+	})
+
+	unitEntity.AddComponent(common.AttributeComponent, &common.Attributes{
+		Strength:      unit.Attributes.Strength,
+		Dexterity:     unit.Attributes.Dexterity,
+		Magic:         unit.Attributes.Magic,
+		Leadership:    unit.Attributes.Leadership,
+		Armor:         unit.Attributes.Armor,
+		Weapon:        unit.Attributes.Weapon,
+		MaxHealth:     unit.Attributes.GetMaxHealth(),
+		CurrentHealth: unit.Attributes.GetMaxHealth(),
+		CanAct:        true,
 	})
 
 	// Row-based targeting (simple)

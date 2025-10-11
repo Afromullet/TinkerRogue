@@ -1,0 +1,106 @@
+package main
+
+import (
+	"game_main/avatar"
+	"game_main/common"
+	"game_main/entitytemplates"
+	"game_main/graphics"
+	"game_main/input"
+	"game_main/spawning"
+	"game_main/squads"
+	"game_main/testing"
+	"game_main/worldmap"
+	"log"
+	"net/http"
+	_ "net/http/pprof" // Blank import to register pprof handlers
+	"runtime"
+)
+
+// SetupNewGame creates and initializes all game systems in the correct order.
+// This is the main orchestration function for game initialization.
+func SetupNewGame(g *Game) {
+	// 1. Load game data from JSON files
+	entitytemplates.ReadGameData()
+
+	// 2. Initialize core game systems
+	g.gameMap = worldmap.NewGameMap()
+	InitializeECS(&g.em)
+
+	// 3. Configure graphics system
+	graphics.ScreenInfo.ScaleFactor = 1
+	if graphics.MAP_SCROLLING_ENABLED {
+		graphics.ScreenInfo.ScaleFactor = 3
+	}
+
+	// 4. Initialize player
+	InitializePlayerData(&g.em, &g.playerData, &g.gameMap)
+
+	// 5. Initialize spawning system
+	spawning.InitLootSpawnTables()
+
+	// 6. Setup test data if in debug mode
+	if DEBUG_MODE {
+		SetupTestData(&g.em, &g.gameMap, &g.playerData)
+	}
+
+	// 7. Spawn starting content
+	testing.UpdateContentsForTest(&g.em, &g.gameMap)
+	spawning.SpawnStartingCreatures(0, &g.em, &g.gameMap, &g.playerData)
+	spawning.SpawnStartingEquipment(&g.em, &g.gameMap, &g.playerData)
+
+	// 8. Register creatures with tracker
+	AddCreaturesToTracker(&g.em)
+
+	// 9. Initialize squad system
+	if err := SetupSquadSystem(); err != nil {
+		log.Fatalf("Failed to initialize squad system: %v", err)
+	}
+}
+
+// SetupSquadSystem initializes the squad combat system.
+// This is separated to make it easy to extend with SquadECSManager in the future.
+func SetupSquadSystem() error {
+	if err := squads.InitializeSquadData(); err != nil {
+		return err
+	}
+	return nil
+}
+
+// SetupTestData creates test items and content for debugging.
+// Only called when DEBUG_MODE is enabled.
+func SetupTestData(em *common.EntityManager, gm *worldmap.GameMap, pd *avatar.PlayerData) {
+	testing.CreateTestItems(em.World, em.WorldTags, gm)
+	testing.InitTestActionManager(em, pd)
+}
+
+// SetupBenchmarking initializes performance profiling tools when enabled.
+// It starts an HTTP server for pprof and configures CPU/memory profiling rates.
+func SetupBenchmarking() {
+	if !ENABLE_BENCHMARKING {
+		return
+	}
+
+	// Start pprof HTTP server in background
+	go func() {
+		log.Println("Starting pprof server on", ProfileServerAddr)
+		if err := http.ListenAndServe(ProfileServerAddr, nil); err != nil {
+			log.Printf("pprof server error: %v", err)
+		}
+	}()
+
+	// Configure profiling rates
+	runtime.SetCPUProfileRate(CPUProfileRate)
+	runtime.MemProfileRate = MemoryProfileRate
+}
+
+// SetupUI initializes the game's user interface components.
+// Must be called after game initialization but before input coordinator.
+func SetupUI(g *Game) {
+	g.gameUI.CreateMainInterface(&g.playerData, &g.em)
+}
+
+// SetupInputCoordinator initializes the input handling system.
+// Must be called after UI is created.
+func SetupInputCoordinator(g *Game) {
+	g.inputCoordinator = input.NewInputCoordinator(&g.em, &g.playerData, &g.gameMap, &g.gameUI)
+}
