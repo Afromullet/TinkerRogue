@@ -179,29 +179,29 @@ func (s *Sticky) Copy() StatusEffects {
 	}
 }
 
-// Using a closure to track the original movement speed so that we don't have to track that outside of the function
+// Using a closure to track the original dexterity so that we don't have to track that outside of the function
 func (s *Sticky) ApplyToCreature(c *ecs.QueryResult) {
-	var originalMovementSpeed int
+	var originalDexterity int
 	var initialized bool
 
 	applyEffect := func(c *ecs.QueryResult) {
 		attr := common.GetComponentType[*common.Attributes](c.Entity, common.AttributeComponent)
 
 		if !initialized {
-			originalMovementSpeed = attr.TotalMovementSpeed
+			originalDexterity = attr.Dexterity
 			initialized = true
 		}
 
-		//Todo make this non constant
-		attr.TotalMovementSpeed -= 5
+		// Sticky reduces dexterity (agility) by 5
+		attr.Dexterity -= 5
 
-		if attr.TotalMovementSpeed <= 0 {
-			attr.TotalMovementSpeed = 1
+		if attr.Dexterity <= 0 {
+			attr.Dexterity = 1
 		}
 		s.MainProps.Duration--
 
 		if s.MainProps.Duration == 0 {
-			attr.TotalMovementSpeed = originalMovementSpeed
+			attr.Dexterity = originalDexterity
 		}
 	}
 

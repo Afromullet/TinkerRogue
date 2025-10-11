@@ -8,27 +8,23 @@ import (
 // All structs for unmarshalling JSON data
 
 type JSONAttributes struct {
-	MaxHealth         int     `json:"MaxHealth"`
-	AttackBonus       int     `json:"AttackBonus"`
-	BaseArmorClass    int     `json:"BaseArmorClass"`
-	BaseProtection    int     `json:"BaseProtection"`
-	BaseDodgeChance   float32 `json:"BaseDodgeChance"`
-	BaseMovementSpeed int     `json:"BaseMovementSpeed"`
-	DamageBonus       int     `json:"damagebonus"`
+	Strength   int `json:"strength"`
+	Dexterity  int `json:"dexterity"`
+	Magic      int `json:"magic"`
+	Leadership int `json:"leadership"`
+	Armor      int `json:"armor"`
+	Weapon     int `json:"weapon"`
 }
 
 func (attr JSONAttributes) NewAttributesFromJson() common.Attributes {
-
-	return common.NewBaseAttributes(
-		attr.MaxHealth,
-		attr.AttackBonus,
-		attr.BaseArmorClass,
-		attr.BaseProtection,
-		attr.BaseMovementSpeed,
-		attr.BaseDodgeChance,
-		attr.DamageBonus,
+	return common.NewAttributes(
+		attr.Strength,
+		attr.Dexterity,
+		attr.Magic,
+		attr.Leadership,
+		attr.Armor,
+		attr.Weapon,
 	)
-
 }
 
 type JSONArmor struct {
@@ -187,41 +183,42 @@ type JSONWeapon struct {
 }
 
 type JSONAttributeModifier struct {
-	Name              string  `json:"name"`
-	ImgName           string  `json:"imgname"`
-	AttackBonus       int     `json:"attackBonus"`
-	MaxHealth         int     `json:"maxHealth"`
-	CurrentHealth     int     `json:"currentHealth"`
-	BaseArmorClass    int     `json:"baseArmorClass"`
-	BaseProtection    int     `json:"baseProtection"`
-	BaseMovementSpeed int     `json:"baseMovementSpeed"`
-	BaseDodgeChance   float32 `json:"baseDodgeChance"`
-	Duration          int     `json:"duration"`
+	Name       string `json:"name"`
+	ImgName    string `json:"imgname"`
+	Strength   int    `json:"strength"`
+	Dexterity  int    `json:"dexterity"`
+	Magic      int    `json:"magic"`
+	Leadership int    `json:"leadership"`
+	Armor      int    `json:"armor"`
+	Weapon     int    `json:"weapon"`
+	Duration   int    `json:"duration"`
 }
 
 func NewJSONAttributeModifier(a JSONAttributeModifier) JSONAttributeModifier {
 	return JSONAttributeModifier{
-		Name:              a.Name,
-		ImgName:           a.ImgName,
-		MaxHealth:         a.MaxHealth,
-		CurrentHealth:     a.CurrentHealth,
-		BaseArmorClass:    a.BaseArmorClass,
-		BaseProtection:    a.BaseProtection,
-		BaseMovementSpeed: a.BaseMovementSpeed,
-		BaseDodgeChance:   a.BaseDodgeChance,
-		Duration:          a.Duration,
+		Name:       a.Name,
+		ImgName:    a.ImgName,
+		Strength:   a.Strength,
+		Dexterity:  a.Dexterity,
+		Magic:      a.Magic,
+		Leadership: a.Leadership,
+		Armor:      a.Armor,
+		Weapon:     a.Weapon,
+		Duration:   a.Duration,
 	}
 }
 
 func CreateAttributesFromJSON(a JSONAttributeModifier) common.Attributes {
+	// For consumables, create an attributes struct with modifiers only
+	// Don't use NewAttributes since we don't want to initialize health
 	return common.Attributes{
-		MaxHealth:         a.MaxHealth,
-		CurrentHealth:     a.CurrentHealth,
-		AttackBonus:       a.AttackBonus,
-		BaseArmorClass:    a.BaseArmorClass,
-		BaseProtection:    a.BaseProtection,
-		BaseDodgeChance:   a.BaseDodgeChance,
-		BaseMovementSpeed: a.BaseMovementSpeed,
+		Strength:   a.Strength,
+		Dexterity:  a.Dexterity,
+		Magic:      a.Magic,
+		Leadership: a.Leadership,
+		Armor:      a.Armor,
+		Weapon:     a.Weapon,
+		// Health fields left at zero - consumables will modify them separately
 	}
 }
 

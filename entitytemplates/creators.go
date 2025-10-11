@@ -72,18 +72,8 @@ func addCreatureComponents(m JSONMonster) ComponentAdder {
 		entity.AddComponent(monsters.CreatureComponent, &monsters.Creature{Path: make([]coords.LogicalPosition, 0)})
 		entity.AddComponent(common.UserMsgComponent, &common.UserMessage{})
 
-		attr := common.Attributes{
-			MaxHealth:          m.Attributes.MaxHealth,
-			CurrentHealth:      m.Attributes.MaxHealth,
-			AttackBonus:        m.Attributes.AttackBonus,
-			BaseArmorClass:     m.Attributes.BaseArmorClass,
-			BaseProtection:     m.Attributes.BaseProtection,
-			BaseDodgeChance:    m.Attributes.BaseDodgeChance,
-			BaseMovementSpeed:  m.Attributes.BaseMovementSpeed,
-			TotalMovementSpeed: m.Attributes.BaseMovementSpeed,
-			TotalAttackSpeed:   1,
-			CanAct:             true,
-		}
+		// Use the NewAttributesFromJson method to create attributes with proper derivation
+		attr := m.Attributes.NewAttributesFromJson()
 
 		// Weapon and armor components removed - will be replaced by squad system
 

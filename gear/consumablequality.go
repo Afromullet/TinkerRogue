@@ -58,15 +58,15 @@ func (c *Consumable) QualityProtectionPotion(q common.QualityType) *Consumable {
 	if q == common.LowQuality {
 		c.Name = "Light Protection Potion"
 		c.Duration = rand.Intn(3) + 1
-		c.AttrModifier.BaseProtection = rand.Intn(5) + 1
+		c.AttrModifier.Armor = rand.Intn(5) + 1
 	} else if q == common.NormalQuality {
 		c.Name = "Moderate Protection Potion"
 		c.Duration = rand.Intn(5) + 1
-		c.AttrModifier.BaseProtection = rand.Intn(15) + 1
+		c.AttrModifier.Armor = rand.Intn(15) + 1
 	} else if q == common.HighQuality {
 		c.Name = "Strong Protection Potion"
 		c.Duration = rand.Intn(10) + 1
-		c.AttrModifier.BaseProtection = rand.Intn(25) + 1
+		c.AttrModifier.Armor = rand.Intn(25) + 1
 	}
 
 	return c
@@ -78,15 +78,15 @@ func (c *Consumable) QualitySpeedPotion(q common.QualityType) *Consumable {
 	if q == common.LowQuality {
 		c.Name = "Light Speed Potion"
 		c.Duration = rand.Intn(3) + 1
-		c.AttrModifier.BaseMovementSpeed = rand.Intn(5) + 1
+		c.AttrModifier.Dexterity = rand.Intn(5) + 1
 	} else if q == common.NormalQuality {
 		c.Name = "Moderate Speed Potion"
 		c.Duration = rand.Intn(5) + 1
-		c.AttrModifier.BaseMovementSpeed = rand.Intn(5) + 1
+		c.AttrModifier.Dexterity = rand.Intn(5) + 1
 	} else if q == common.HighQuality {
 		c.Name = "Strong Speed Potion"
 		c.Duration = rand.Intn(7) + 1
-		c.AttrModifier.BaseMovementSpeed = rand.Intn(5) + 1
+		c.AttrModifier.Dexterity = rand.Intn(5) + 1
 	}
 
 	return c

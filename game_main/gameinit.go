@@ -25,14 +25,14 @@ func InitializePlayerData(ecsmanager *common.EntityManager, pl *avatar.PlayerDat
 		log.Fatal(err)
 	}
 
-	attr := common.Attributes{}
-	attr.MaxHealth = 50
-	attr.CurrentHealth = 50
-	attr.AttackBonus = 5
-	attr.TotalMovementSpeed = 5
-	attr.BaseMovementSpeed = 5
-
-	attr.TotalAttackSpeed = 1
+	// Create player attributes using new core attribute system
+	// Strength: 15 → 50 HP (20 + 15*2)
+	// Dexterity: 20 → 100% hit, 10% crit, 6% dodge
+	// Magic: 0 → Player starts without magic abilities
+	// Leadership: 0 → Player doesn't start with squad leadership
+	// Armor: 2 → 4 physical resistance (2*2)
+	// Weapon: 3 → 6 bonus damage (3*2)
+	attr := common.NewAttributes(15, 20, 0, 0, 2, 3)
 
 	playerEntity := ecsmanager.World.NewEntity().
 		AddComponent(avatar.PlayerComponent, &avatar.Player{}).

@@ -94,7 +94,7 @@ func ExecuteSquadAttack(attackerSquadID, defenderSquadID ecs.EntityID, squadmana
 	return result
 }
 
-// calculateUnitDamageByID - TODO, calculate damage based off unit attributes
+// calculateUnitDamageByID calculates damage using new attribute system
 func calculateUnitDamageByID(attackerID, defenderID ecs.EntityID, squadmanager *SquadECSManager) int {
 	attackerUnit := FindUnitByID(attackerID, squadmanager)
 	defenderUnit := FindUnitByID(defenderID, squadmanager)
@@ -106,25 +106,26 @@ func calculateUnitDamageByID(attackerID, defenderID ecs.EntityID, squadmanager *
 	attackerAttr := common.GetAttributes(attackerUnit)
 	defenderAttr := common.GetAttributes(defenderUnit)
 
-	// Base damage (adapt to existing weapon system)
-	baseDamage := attackerAttr.AttackBonus + attackerAttr.DamageBonus
-
-	// d20 variance (reuse existing logic)
-	roll := randgen.GetDiceRoll(20)
-	if roll >= 18 {
-		baseDamage = int(float64(baseDamage) * 1.5) // Critical
-	} else if roll <= 3 {
-		baseDamage = baseDamage / 2 // Weak hit
+	// Check if attack hits (new hit rate system)
+	if !rollHit(attackerAttr.GetHitRate()) {
+		return 0 // Miss
 	}
 
-	// Apply role modifiers
-	if attackerUnit.HasComponent(UnitRoleComponent) {
-
-		baseDamage = 1 //Todo, calculate this from attributes
+	// Check for dodge (new dodge system)
+	if rollDodge(defenderAttr.GetDodgeChance()) {
+		return 0 // Dodged
 	}
 
-	// Apply defense
-	totalDamage := baseDamage - defenderAttr.TotalProtection
+	// Calculate base physical damage from attributes
+	baseDamage := attackerAttr.GetPhysicalDamage()
+
+	// Check for critical hit (new crit system)
+	if rollCrit(attackerAttr.GetCritChance()) {
+		baseDamage = int(float64(baseDamage) * 1.5) // 1.5x damage on crit
+	}
+
+	// Apply physical resistance
+	totalDamage := baseDamage - defenderAttr.GetPhysicalResistance()
 	if totalDamage < 1 {
 		totalDamage = 1 // Minimum damage
 	}
@@ -139,6 +140,24 @@ func calculateUnitDamageByID(attackerID, defenderID ecs.EntityID, squadmanager *
 	}
 
 	return totalDamage
+}
+
+// rollHit determines if an attack hits based on hit rate
+func rollHit(hitRate int) bool {
+	roll := randgen.GetDiceRoll(100)
+	return roll <= hitRate
+}
+
+// rollCrit determines if an attack is a critical hit
+func rollCrit(critChance int) bool {
+	roll := randgen.GetDiceRoll(100)
+	return roll <= critChance
+}
+
+// rollDodge determines if an attack is dodged
+func rollDodge(dodgeChance int) bool {
+	roll := randgen.GetDiceRoll(100)
+	return roll <= dodgeChance
 }
 
 // applyDamageToUnitByID - ✅ Uses ecs.EntityID

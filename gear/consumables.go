@@ -21,17 +21,13 @@ type Consumable struct {
 }
 
 // Anything other than health is applied every turn.
+// Applies temporary buffs to core attributes
 func (c *Consumable) ApplyEffect(baseAttr *common.Attributes) {
-
-	baseAttr.AttackBonus += c.AttrModifier.AttackBonus
-	baseAttr.BaseArmorClass += c.AttrModifier.BaseArmorClass
-	baseAttr.BaseDodgeChance += c.AttrModifier.BaseDodgeChance
-	baseAttr.BaseProtection += c.AttrModifier.BaseProtection
-
-	if c.AttrModifier.BaseMovementSpeed != 0 {
-		baseAttr.BaseMovementSpeed = c.AttrModifier.BaseMovementSpeed
-	}
-
+	baseAttr.Weapon += c.AttrModifier.Weapon
+	baseAttr.Armor += c.AttrModifier.Armor
+	baseAttr.Strength += c.AttrModifier.Strength
+	baseAttr.Dexterity += c.AttrModifier.Dexterity
+	baseAttr.Magic += c.AttrModifier.Magic
 }
 
 func (c *Consumable) ApplyHealingEffect(baseAttr *common.Attributes) {
@@ -47,35 +43,34 @@ func (c Consumable) DisplayString() string {
 	s += "Name " + c.Name + "\n"
 
 	if c.AttrModifier.CurrentHealth != 0 {
-		s += "Heals: " + strconv.Itoa(c.AttrModifier.CurrentHealth)
+		s += "Heals: " + strconv.Itoa(c.AttrModifier.CurrentHealth) + "\n"
 	}
 
 	if c.AttrModifier.MaxHealth != 0 {
-		s += "Max Health: " + strconv.Itoa(c.AttrModifier.MaxHealth)
+		s += "Max Health: " + strconv.Itoa(c.AttrModifier.MaxHealth) + "\n"
 	}
 
-	if c.AttrModifier.AttackBonus != 0 {
-		s += "Attack Bonus: " + strconv.Itoa(c.AttrModifier.AttackBonus)
+	if c.AttrModifier.Strength != 0 {
+		s += "Strength: +" + strconv.Itoa(c.AttrModifier.Strength) + "\n"
 	}
 
-	if c.AttrModifier.BaseArmorClass != 0 {
-		s += "Armor Class: " + strconv.Itoa(c.AttrModifier.BaseArmorClass)
+	if c.AttrModifier.Dexterity != 0 {
+		s += "Dexterity: +" + strconv.Itoa(c.AttrModifier.Dexterity) + "\n"
 	}
 
-	if c.AttrModifier.BaseMovementSpeed != 0 {
-		s += "Movemment Speed: " + strconv.Itoa(c.AttrModifier.BaseMovementSpeed)
+	if c.AttrModifier.Magic != 0 {
+		s += "Magic: +" + strconv.Itoa(c.AttrModifier.Magic) + "\n"
 	}
 
-	if c.AttrModifier.BaseDodgeChance != 0 {
-		s += "Dodge Chance: " + strconv.FormatFloat(float64(c.AttrModifier.BaseDodgeChance), 'f', 2, 32)
+	if c.AttrModifier.Armor != 0 {
+		s += "Armor: +" + strconv.Itoa(c.AttrModifier.Armor) + "\n"
 	}
 
-	if c.AttrModifier.BaseProtection != 0 {
-		s += "Protection: " + strconv.Itoa(c.AttrModifier.BaseProtection)
+	if c.AttrModifier.Weapon != 0 {
+		s += "Weapon: +" + strconv.Itoa(c.AttrModifier.Weapon) + "\n"
 	}
 
 	return s
-
 }
 
 // ConsumableEffect tracks the duration of an effect.
@@ -139,18 +134,12 @@ func (ce *ConsumableEffects) ApplyEffects(ent *ecs.Entity) {
 		} else {
 
 			//Restore everything to the original state except CurrentHealth.
-			attr.AttackBonus -= eff.Effect.AttrModifier.AttackBonus
+			attr.Weapon -= eff.Effect.AttrModifier.Weapon
+			attr.Armor -= eff.Effect.AttrModifier.Armor
+			attr.Strength -= eff.Effect.AttrModifier.Strength
+			attr.Dexterity -= eff.Effect.AttrModifier.Dexterity
+			attr.Magic -= eff.Effect.AttrModifier.Magic
 			attr.MaxHealth -= eff.Effect.AttrModifier.MaxHealth
-			attr.BaseArmorClass -= eff.Effect.AttrModifier.BaseArmorClass
-			attr.BaseDodgeChance -= eff.Effect.AttrModifier.BaseDodgeChance
-			attr.BaseMovementSpeed -= eff.Effect.AttrModifier.BaseMovementSpeed
-
-			// A 0 movement speed causes issues with the ActionQueue due to the actionmanager not allowing actions with 0 cost
-			if attr.BaseMovementSpeed == 0 {
-				attr.BaseMovementSpeed = 1
-			}
-
-			attr.BaseProtection -= eff.Effect.AttrModifier.BaseProtection
 
 		}
 	}
@@ -198,15 +187,11 @@ func RunEffectTracker(ent *ecs.Entity) {
 }
 
 // Does not fit in the common package because referencing gear will cause a circular inclusion issue
-// Consumables change the base attributes, so the TotalNNN stats need to be updated.
+// Consumables change the core attributes - derived stats are calculated automatically
 func UpdateEntityAttributes(e *ecs.Entity) {
-
+	// With new attribute system, derived stats are calculated on-demand via methods
+	// No need to update "Total" fields since they no longer exist
+	// MaxHealth is cached, so recalculate it
 	attr := common.GetComponentType[*common.Attributes](e, common.AttributeComponent)
-
-	// Armor system removed - using only base attributes now
-	attr.TotalArmorClass = attr.BaseArmorClass
-	attr.TotalProtection = attr.BaseProtection
-	attr.TotalDodgeChance = attr.BaseDodgeChance
-	attr.TotalMovementSpeed = attr.BaseMovementSpeed
-
+	attr.MaxHealth = attr.GetMaxHealth()
 }

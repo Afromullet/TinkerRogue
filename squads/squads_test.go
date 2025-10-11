@@ -37,13 +37,12 @@ func createTestJSONMonster(name string, width, height int, role string) entityte
 		Name:      name,
 		ImageName: "test.png", // Not used in tests
 		Attributes: entitytemplates.JSONAttributes{
-			MaxHealth:         100,
-			AttackBonus:       5,
-			BaseArmorClass:    10,
-			BaseProtection:    5,
-			BaseDodgeChance:   0.1,
-			BaseMovementSpeed: 5,
-			DamageBonus:       2,
+			Strength:   10, // 40 HP (20 + 10*2), 7 damage (10/2 + 2*2), 6 resistance (10/4 + 2*2)
+			Dexterity:  20, // 100% hit (80 + 20*2, capped), 10% crit (20/2), 6% dodge (20/3)
+			Magic:      0,  // No magic abilities
+			Leadership: 0,  // No squad leadership
+			Armor:      2,  // Contributes to physical resistance
+			Weapon:     2,  // Contributes to physical damage
 		},
 		Width:         width,
 		Height:        height,

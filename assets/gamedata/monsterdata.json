@@ -4,24 +4,15 @@
       "name": "GoblinWarrior",
       "imgname": "goblin.png",
       "attributes": {
-        "maxHealth": 15,
-        "attackBonus": 1,
-        "baseArmorClass": 10,
-        "baseProtection": 1,
-        "baseDodgeChance": 0.1,
-        "baseMovementSpeed": 3,
-        "damagebonus": 0
+        "strength": 5,
+        "dexterity": 30,
+        "magic": 0,
+        "leadership": 0,
+        "armor": 1,
+        "weapon": 1
       },
-      "armor": {
-        "armorClass": 2,
-        "protection": 1,
-        "dodgeChance": 0.05
-      },
-      "meleeWeapon": {
-        "minDamage": 2,
-        "maxDamage": 3,
-        "attackSpeed": 5
-      },
+      "armor": null,
+      "meleeWeapon": null,
       "rangedWeapon": null,
       "width": 1,
       "height": 1,
@@ -39,24 +30,15 @@
       "name": "OrcBerserker",
       "imgname": "orc.png",
       "attributes": {
-        "maxHealth": 25,
-        "attackBonus": 3,
-        "baseArmorClass": 12,
-        "baseProtection": 2,
-        "baseDodgeChance": 0.05,
-        "baseMovementSpeed": 5,
-        "damagebonus": 2
+        "strength": 8,
+        "dexterity": 15,
+        "magic": 0,
+        "leadership": 0,
+        "armor": 2,
+        "weapon": 5
       },
-      "armor": {
-        "armorClass": 3,
-        "protection": 3,
-        "dodgeChance": 0.03
-      },
-      "meleeWeapon": {
-        "minDamage": 6,
-        "maxDamage": 12,
-        "attackSpeed": 7
-      },
+      "armor": null,
+      "meleeWeapon": null,
       "rangedWeapon": null,
       "width": 1,
       "height": 1,
@@ -74,24 +56,15 @@
       "name": "SkeletonWarrior",
       "imgname": "skeleton_naga.png",
       "attributes": {
-        "maxHealth": 30,
-        "attackBonus": 3,
-        "baseArmorClass": 14,
-        "baseProtection": 1,
-        "baseDodgeChance": 0.08,
-        "baseMovementSpeed": 5,
-        "damagebonus": 3
+        "strength": 10,
+        "dexterity": 24,
+        "magic": 0,
+        "leadership": 0,
+        "armor": 1,
+        "weapon": 6
       },
-      "armor": {
-        "armorClass": 5,
-        "protection": 1,
-        "dodgeChance": 0.06
-      },
-      "meleeWeapon": {
-        "minDamage": 3,
-        "maxDamage": 5,
-        "attackSpeed": 10
-      },
+      "armor": null,
+      "meleeWeapon": null,
       "rangedWeapon": null,
       "width": 1,
       "height": 1,
@@ -109,31 +82,16 @@
       "name": "DarkArcher",
       "imgname": "deep_elf_master_archer.png",
       "attributes": {
-        "maxHealth": 12,
-        "attackBonus": 2,
-        "baseArmorClass": 8,
-        "baseProtection": 1,
-        "baseDodgeChance": 0.1,
-        "baseMovementSpeed": 6,
-        "damagebonus": 0
+        "strength": 3,
+        "dexterity": 30,
+        "magic": 0,
+        "leadership": 0,
+        "armor": 1,
+        "weapon": 2
       },
-      "armor": {
-        "armorClass": 3,
-        "protection": 0,
-        "dodgeChance": 0.05
-      },
-      "rangedWeapon": {
-        "shootingVX": "arrow.png",
-        "minDamage": 3,
-        "maxDamage": 7,
-        "attackSpeed": 1,
-        "shootingRange": 5,
-        "targetArea": {
-          "type": "Line",
-          "length": 5
-        }
-      },
+      "armor": null,
       "meleeWeapon": null,
+      "rangedWeapon": null,
       "width": 1,
       "height": 1,
       "role": "DPS",
@@ -150,27 +108,16 @@
       "name": "GoblinSharpshooter",
       "imgname": "orc.png",
       "attributes": {
-        "maxHealth": 10,
-        "attackBonus": 1,
-        "baseArmorClass": 9,
-        "baseProtection": 1,
-        "baseDodgeChance": 0.1,
-        "baseMovementSpeed": 5,
-        "damagebonus": 0
+        "strength": 2,
+        "dexterity": 30,
+        "magic": 0,
+        "leadership": 0,
+        "armor": 1,
+        "weapon": 1
       },
       "armor": null,
-      "rangedWeapon": {
-        "shootingVX": "bolt.png",
-        "minDamage": 3,
-        "maxDamage": 6,
-        "attackSpeed": 1,
-        "shootingRange": 6,
-        "targetArea": {
-          "type": "Square",
-          "size": 1
-        }
-      },
       "meleeWeapon": null,
+      "rangedWeapon": null,
       "width": 1,
       "height": 1,
       "role": "Support",
@@ -187,20 +134,15 @@
       "name": "FireElemental",
       "imgname": "orc.png",
       "attributes": {
-        "maxHealth": 18,
-        "attackBonus": 4,
-        "baseArmorClass": 10,
-        "baseProtection": 0,
-        "baseDodgeChance": 0.15,
-        "baseMovementSpeed": 7,
-        "damagebonus": 3
+        "strength": 6,
+        "dexterity": 45,
+        "magic": 0,
+        "leadership": 0,
+        "armor": 0,
+        "weapon": 7
       },
       "armor": null,
-      "meleeWeapon": {
-        "minDamage": 4,
-        "maxDamage": 8,
-        "attackSpeed": 4
-      },
+      "meleeWeapon": null,
       "rangedWeapon": null,
       "width": 1,
       "height": 1,
@@ -218,31 +160,16 @@
       "name": "FrostMage",
       "imgname": "orc.png",
       "attributes": {
-        "maxHealth": 14,
-        "attackBonus": 5,
-        "baseArmorClass": 7,
-        "baseProtection": 1,
-        "baseDodgeChance": 0.12,
-        "baseMovementSpeed": 4,
-        "damagebonus": 4
+        "strength": 4,
+        "dexterity": 36,
+        "magic": 10,
+        "leadership": 0,
+        "armor": 1,
+        "weapon": 2
       },
-      "armor": {
-        "armorClass": 2,
-        "protection": 1,
-        "dodgeChance": 0.08
-      },
+      "armor": null,
       "meleeWeapon": null,
-      "rangedWeapon": {
-        "shootingVX": "orc.png",
-        "minDamage": 5,
-        "maxDamage": 10,
-        "attackSpeed": 2,
-        "shootingRange": 6,
-        "targetArea": {
-          "type": "Circle",
-          "radius": 2
-        }
-      },
+      "rangedWeapon": null,
       "width": 1,
       "height": 1,
       "role": "Support",
@@ -259,31 +186,16 @@
       "name": "NecromancerLord",
       "imgname": "orc.png",
       "attributes": {
-        "maxHealth": 20,
-        "attackBonus": 6,
-        "baseArmorClass": 8,
-        "baseProtection": 2,
-        "baseDodgeChance": 0.1,
-        "baseMovementSpeed": 3,
-        "damagebonus": 5
+        "strength": 5,
+        "dexterity": 30,
+        "magic": 12,
+        "leadership": 3,
+        "armor": 2,
+        "weapon": 3
       },
-      "armor": {
-        "armorClass": 3,
-        "protection": 2,
-        "dodgeChance": 0.05
-      },
+      "armor": null,
       "meleeWeapon": null,
-      "rangedWeapon": {
-        "shootingVX": "dark_bolt.png",
-        "minDamage": 6,
-        "maxDamage": 12,
-        "attackSpeed": 3,
-        "shootingRange": 7,
-        "targetArea": {
-          "type": "Line",
-          "length": 4
-        }
-      },
+      "rangedWeapon": null,
       "width": 1,
       "height": 1,
       "role": "Support",
@@ -300,24 +212,15 @@
       "name": "TrollChampion",
       "imgname": "orc.png",
       "attributes": {
-        "maxHealth": 45,
-        "attackBonus": 4,
-        "baseArmorClass": 16,
-        "baseProtection": 4,
-        "baseDodgeChance": 0.02,
-        "baseMovementSpeed": 4,
-        "damagebonus": 4
+        "strength": 18,
+        "dexterity": 6,
+        "magic": 0,
+        "leadership": 0,
+        "armor": 9,
+        "weapon": 8
       },
-      "armor": {
-        "armorClass": 6,
-        "protection": 5,
-        "dodgeChance": 0.02
-      },
-      "meleeWeapon": {
-        "minDamage": 8,
-        "maxDamage": 14,
-        "attackSpeed": 8
-      },
+      "armor": null,
+      "meleeWeapon": null,
       "rangedWeapon": null,
       "width": 2,
       "height": 1,
@@ -335,35 +238,16 @@
       "name": "DragonWhelp",
       "imgname": "orc.png",
       "attributes": {
-        "maxHealth": 28,
-        "attackBonus": 5,
-        "baseArmorClass": 13,
-        "baseProtection": 3,
-        "baseDodgeChance": 0.08,
-        "baseMovementSpeed": 6,
-        "damagebonus": 5
+        "strength": 10,
+        "dexterity": 24,
+        "magic": 3,
+        "leadership": 0,
+        "armor": 6,
+        "weapon": 10
       },
-      "armor": {
-        "armorClass": 5,
-        "protection": 3,
-        "dodgeChance": 0.06
-      },
-      "meleeWeapon": {
-        "minDamage": 5,
-        "maxDamage": 9,
-        "attackSpeed": 6
-      },
-      "rangedWeapon": {
-        "shootingVX": "orc.png",
-        "minDamage": 7,
-        "maxDamage": 13,
-        "attackSpeed": 4,
-        "shootingRange": 4,
-        "targetArea": {
-          "type": "Cone",
-          "length": 3
-        }
-      },
+      "armor": null,
+      "meleeWeapon": null,
+      "rangedWeapon": null,
       "width": 1,
       "height": 2,
       "role": "DPS",
@@ -380,24 +264,15 @@
       "name": "ShadowAssassin",
       "imgname": "orc.png",
       "attributes": {
-        "maxHealth": 16,
-        "attackBonus": 6,
-        "baseArmorClass": 11,
-        "baseProtection": 1,
-        "baseDodgeChance": 0.25,
-        "baseMovementSpeed": 8,
-        "damagebonus": 6
+        "strength": 6,
+        "dexterity": 75,
+        "magic": 0,
+        "leadership": 0,
+        "armor": 1,
+        "weapon": 12
       },
-      "armor": {
-        "armorClass": 3,
-        "protection": 1,
-        "dodgeChance": 0.15
-      },
-      "meleeWeapon": {
-        "minDamage": 8,
-        "maxDamage": 16,
-        "attackSpeed": 3
-      },
+      "armor": null,
+      "meleeWeapon": null,
       "rangedWeapon": null,
       "width": 1,
       "height": 1,
@@ -415,24 +290,15 @@
       "name": "DwarvenShieldbearer",
       "imgname": "orc.png",
       "attributes": {
-        "maxHealth": 38,
-        "attackBonus": 2,
-        "baseArmorClass": 18,
-        "baseProtection": 6,
-        "baseDodgeChance": 0.05,
-        "baseMovementSpeed": 2,
-        "damagebonus": 1
+        "strength": 15,
+        "dexterity": 15,
+        "magic": 0,
+        "leadership": 3,
+        "armor": 12,
+        "weapon": 3
       },
-      "armor": {
-        "armorClass": 8,
-        "protection": 6,
-        "dodgeChance": 0.03
-      },
-      "meleeWeapon": {
-        "minDamage": 3,
-        "maxDamage": 6,
-        "attackSpeed": 6
-      },
+      "armor": null,
+      "meleeWeapon": null,
       "rangedWeapon": null,
       "width": 1,
       "height": 1,
@@ -450,31 +316,16 @@
       "name": "LightningWizard",
       "imgname": "orc.png",
       "attributes": {
-        "maxHealth": 16,
-        "attackBonus": 7,
-        "baseArmorClass": 6,
-        "baseProtection": 0,
-        "baseDodgeChance": 0.14,
-        "baseMovementSpeed": 5,
-        "damagebonus": 7
+        "strength": 4,
+        "dexterity": 42,
+        "magic": 15,
+        "leadership": 0,
+        "armor": 0,
+        "weapon": 2
       },
-      "armor": {
-        "armorClass": 1,
-        "protection": 0,
-        "dodgeChance": 0.1
-      },
+      "armor": null,
       "meleeWeapon": null,
-      "rangedWeapon": {
-        "shootingVX": "orc.png",
-        "minDamage": 8,
-        "maxDamage": 15,
-        "attackSpeed": 2,
-        "shootingRange": 8,
-        "targetArea": {
-          "type": "Line",
-          "length": 6
-        }
-      },
+      "rangedWeapon": null,
       "width": 1,
       "height": 1,
       "role": "Support",
@@ -491,24 +342,15 @@
       "name": "HolyPaladin",
       "imgname": "orc.png",
       "attributes": {
-        "maxHealth": 32,
-        "attackBonus": 4,
-        "baseArmorClass": 15,
-        "baseProtection": 4,
-        "baseDodgeChance": 0.08,
-        "baseMovementSpeed": 4,
-        "damagebonus": 3
+        "strength": 12,
+        "dexterity": 24,
+        "magic": 5,
+        "leadership": 6,
+        "armor": 8,
+        "weapon": 7
       },
-      "armor": {
-        "armorClass": 6,
-        "protection": 4,
-        "dodgeChance": 0.05
-      },
-      "meleeWeapon": {
-        "minDamage": 5,
-        "maxDamage": 10,
-        "attackSpeed": 5
-      },
+      "armor": null,
+      "meleeWeapon": null,
       "rangedWeapon": null,
       "width": 1,
       "height": 1,
@@ -526,35 +368,16 @@
       "name": "VenomSpider",
       "imgname": "orc.png",
       "attributes": {
-        "maxHealth": 20,
-        "attackBonus": 5,
-        "baseArmorClass": 9,
-        "baseProtection": 1,
-        "baseDodgeChance": 0.18,
-        "baseMovementSpeed": 7,
-        "damagebonus": 4
+        "strength": 5,
+        "dexterity": 54,
+        "magic": 0,
+        "leadership": 0,
+        "armor": 1,
+        "weapon": 9
       },
-      "armor": {
-        "armorClass": 2,
-        "protection": 1,
-        "dodgeChance": 0.12
-      },
-      "meleeWeapon": {
-        "minDamage": 4,
-        "maxDamage": 7,
-        "attackSpeed": 4
-      },
-      "rangedWeapon": {
-        "shootingVX": "orc.png",
-        "minDamage": 3,
-        "maxDamage": 8,
-        "attackSpeed": 2,
-        "shootingRange": 5,
-        "targetArea": {
-          "type": "Square",
-          "size": 1
-        }
-      },
+      "armor": null,
+      "meleeWeapon": null,
+      "rangedWeapon": null,
       "width": 2,
       "height": 1,
       "role": "DPS",
@@ -571,24 +394,15 @@
       "name": "BattlePriest",
       "imgname": "orc.png",
       "attributes": {
-        "maxHealth": 24,
-        "attackBonus": 3,
-        "baseArmorClass": 12,
-        "baseProtection": 3,
-        "baseDodgeChance": 0.1,
-        "baseMovementSpeed": 4,
-        "damagebonus": 2
+        "strength": 8,
+        "dexterity": 30,
+        "magic": 8,
+        "leadership": 0,
+        "armor": 6,
+        "weapon": 5
       },
-      "armor": {
-        "armorClass": 4,
-        "protection": 3,
-        "dodgeChance": 0.07
-      },
-      "meleeWeapon": {
-        "minDamage": 4,
-        "maxDamage": 8,
-        "attackSpeed": 5
-      },
+      "armor": null,
+      "meleeWeapon": null,
       "rangedWeapon": null,
       "width": 1,
       "height": 1,
