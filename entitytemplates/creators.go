@@ -7,7 +7,7 @@ import (
 	"game_main/common"
 	"game_main/coords"
 	"game_main/gear"
-	"game_main/monsters"
+
 	"game_main/rendering"
 	"game_main/worldmap"
 	"log"
@@ -69,7 +69,7 @@ func addConsumableComponents(c JSONAttributeModifier) ComponentAdder {
 
 func addCreatureComponents(m JSONMonster) ComponentAdder {
 	return func(entity *ecs.Entity) {
-		entity.AddComponent(monsters.CreatureComponent, &monsters.Creature{Path: make([]coords.LogicalPosition, 0)})
+
 		entity.AddComponent(common.UserMsgComponent, &common.UserMessage{})
 
 		// Use the NewAttributesFromJson method to create attributes with proper derivation
@@ -142,7 +142,7 @@ func CreateEntityFromTemplate(manager common.EntityManager, config EntityConfig,
 			config.Visible, config.Position, adders...)
 		if common.GlobalPositionSystem != nil && config.Position != nil {
 			common.GlobalPositionSystem.AddEntity(entity.GetID(), *config.Position)
-			monsters.NumMonstersOnMap++
+
 		}
 		return entity
 

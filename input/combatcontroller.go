@@ -7,7 +7,7 @@ import (
 	"game_main/gear"
 	"game_main/graphics"
 	"game_main/gui"
-	"game_main/monsters"
+
 	"game_main/worldmap"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -156,20 +156,19 @@ func (cc *CombatController) applyThrowable(item *gear.Item, shape graphics.TileB
 	}
 
 	// Execute the action using the new interface
-	appliedEffects := t.Execute(cc.playerData.Pos, throwerPos, cc.ecsManager.World, cc.ecsManager.WorldTags)
+	//appliedEffects := t.Execute(cc.playerData.Pos, throwerPos, cc.ecsManager.World, cc.ecsManager.WorldTags)
 
 	// Apply the effects to creatures
 	for _, c := range cc.ecsManager.World.Query(cc.ecsManager.WorldTags["monsters"]) {
 		curPos := c.Components[common.PositionComponent].(*coords.LogicalPosition)
-		crea := c.Components[monsters.CreatureComponent].(*monsters.Creature)
 
 		pos := coords.CoordManager.GetTilePositionsAsCommon(t.Shape.GetIndices())
 		for _, p := range pos {
 			if curPos.IsEqual(&p) && curPos.InRange(throwerPos, t.ThrowingRange) {
 				// Apply individual effects instead of the entire properties entity
-				for _, effect := range appliedEffects {
-					crea.StatEffectTracker.Add(effect)
-				}
+				//for _, effect := range appliedEffects {
+				//crea.StatEffectTracker.Add(effect)
+				//	}
 				cc.playerData.InputStates.IsThrowing = false
 			}
 		}

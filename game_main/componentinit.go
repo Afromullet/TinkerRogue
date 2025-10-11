@@ -3,7 +3,7 @@ package main
 import (
 	"game_main/common"
 	"game_main/gear"
-	"game_main/monsters"
+
 	"game_main/rendering"
 
 	"github.com/bytearena/ecs"
@@ -58,8 +58,5 @@ func registerItemComponents(manager *ecs.Manager, tags map[string]ecs.Tag) {
 
 // registerCreatureComponents registers creature/monster components and builds their tag.
 func registerCreatureComponents(manager *ecs.Manager, tags map[string]ecs.Tag) {
-	monsters.CreatureComponent = manager.NewComponent()
 
-	creatures := ecs.BuildTag(monsters.CreatureComponent, common.PositionComponent, common.AttributeComponent)
-	tags["monsters"] = creatures
 }

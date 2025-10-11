@@ -4,7 +4,6 @@ import (
 	"game_main/common"
 	"game_main/coords"
 	"game_main/graphics"
-	"game_main/monsters"
 
 	"image"
 	"image/color"
@@ -249,9 +248,6 @@ func addInfoListHandler(li *widget.List, em *common.EntityManager, info *InfoUI)
 			if ent != nil {
 				info.CreatureInfoWindow(info.windowX, info.windowY)
 
-				creature := common.GetComponentType[*monsters.Creature](ent, monsters.CreatureComponent)
-
-				info.DisplayInfoTextArea.SetText(creature.DisplayString(ent))
 			}
 
 			// Examining creature

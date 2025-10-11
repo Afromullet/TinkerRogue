@@ -3,8 +3,7 @@ package resmanager
 import (
 	"game_main/common"
 	"game_main/coords"
-	"game_main/monsters"
-	"game_main/trackers"
+
 	"game_main/worldmap"
 
 	"github.com/bytearena/ecs"
@@ -20,8 +19,6 @@ func RemoveEntity(world *ecs.Manager, gm *worldmap.GameMap, e *ecs.Entity) {
 
 	pos := common.GetPosition(e)
 
-	trackers.CreatureTracker.Remove(e)
-
 	logicalPos := coords.LogicalPosition{X: pos.X, Y: pos.Y}
 	ind := coords.CoordManager.LogicalToIndex(logicalPos)
 	gm.Tiles[ind].Blocked = false
@@ -32,10 +29,6 @@ func RemoveEntity(world *ecs.Manager, gm *worldmap.GameMap, e *ecs.Entity) {
 	}
 
 	world.DisposeEntity(e)
-	monsters.NumMonstersOnMap--
-	if monsters.NumMonstersOnMap == -1 {
-		monsters.NumMonstersOnMap = 0
-	}
 
 }
 

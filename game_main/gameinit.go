@@ -6,8 +6,8 @@ import (
 	"game_main/coords"
 	"game_main/gear"
 	"game_main/rendering"
-	tracker "game_main/trackers"
 	"game_main/worldmap"
+
 	"log"
 
 	"github.com/bytearena/ecs"
@@ -89,8 +89,6 @@ func InitializePlayerData(ecsmanager *common.EntityManager, pl *avatar.PlayerDat
 func AddCreaturesToTracker(ecsmanger *common.EntityManager) {
 
 	for _, c := range ecsmanger.World.Query(ecsmanger.WorldTags["monsters"]) {
-
-		tracker.CreatureTracker.Add(c.Entity)
 
 		// Also add to new PositionSystem for O(1) lookups
 		if common.GlobalPositionSystem != nil {
