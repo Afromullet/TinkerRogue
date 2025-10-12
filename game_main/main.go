@@ -14,7 +14,6 @@ import (
 	"game_main/gui"
 	"game_main/input"
 	"game_main/rendering"
-	resmanager "game_main/resourcemanager"
 	"game_main/testing"
 	"game_main/worldmap"
 	"log"
@@ -59,8 +58,6 @@ func HandleInput(g *Game) {
 		g.playerData.InputStates.HasKeyInput = false
 	}
 
-	// Clean up dead entities
-	resmanager.RemoveDeadEntities(&g.em, &g.gameMap)
 }
 
 // Update is called each frame by the Ebiten engine.
