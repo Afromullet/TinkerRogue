@@ -89,13 +89,6 @@ func CreateTestThrowable(shape graphics.TileBasedShape, vx graphics.VisualEffect
 
 func CreateTestItems(manager *ecs.Manager, tags map[string]ecs.Tag, gameMap *worldmap.GameMap) {
 
-	/*
-		swordImg, _, err := ebitenutil.NewImageFromFile("../assets/items/sword.png")
-		if err != nil {
-			log.Fatal(err)
-		}
-	*/
-
 	itemImageLoc := "../assets/items/sword.png"
 
 	//todo add testing location back
@@ -144,6 +137,11 @@ func UpdateContentsForTest(ecsmanager *common.EntityManager, gm *worldmap.GameMa
 		item_pos := item.Components[common.PositionComponent].(*coords.LogicalPosition)
 
 		gm.AddEntityToTile(item.Entity, item_pos)
+
+		// Register item with PositionSystem for proper tracking
+		if common.GlobalPositionSystem != nil {
+			common.GlobalPositionSystem.AddEntity(item.Entity.GetID(), *item_pos)
+		}
 
 	}
 

@@ -1,700 +1,48 @@
-# ECS Usage Analysis: TinkerRogue (Post-Squad System)
-**Generated:** 2025-10-02
-**ECS Library:** github.com/bytearena/ecs v1.0.0 (2017)
-**Analysis Scope:** Post-squad system implementation (squad_system_final.md)
-**Previous Analysis:** ecs_usage_analysis.md (2025-10-01)
+# ECS Usage Analysis: TinkerRogue (Updated 2025-10-11)
+**Last Updated:** 2025-10-11
+**ECS Library:** github.com/bytearena/ecs v1.0.0
+**Analysis Scope:** Post-Phase 0 (Position System), Post-Weapon/Armor Removal
+**Previous Analysis:** ecs_usage_analysis.md (2025-10-02)
 
 ---
 
 ## EXECUTIVE SUMMARY
 
-### Overall Assessment: **SIGNIFICANTLY IMPROVED** ✅ (from ⚠️)
+### Overall Assessment: **SIGNIFICANTLY IMPROVED** ✅
 
-The squad system implementation represents a **major architectural improvement** that addresses most critical ECS anti-patterns identified in the previous analysis. The squad system demonstrates proper ECS patterns that should serve as a template for refactoring the rest of the codebase.
+**Major Achievements:**
+1. ✅ **Phase 0 Complete** - Position System implemented with O(1) lookups
+2. ✅ **Legacy Code Removed** - Weapon/Armor/Creature combat systems eliminated
+3. ✅ **Squad System Foundation** - 35% complete (621 LOC) with perfect ECS patterns
+4. ✅ **Entity Template System** - Unified factory with configuration pattern
 
-**Critical Improvements from Squad System:**
-1. ✅ **Components are pure data** - All squad components contain only data, zero methods
-2. ✅ **Entity IDs instead of pointers** - Uses native `ecs.EntityID` throughout
-3. ✅ **True systems architecture** - Proper system structs with state management
-4. ✅ **No nested entities** - Flat component structure with ID references
-5. ✅ **Query-based relationships** - Dynamic entity lookup via ECS queries
+**Remaining Work:**
+- ❌ **Item System** - Still uses nested entity anti-pattern
+- ❌ **Status Effects** - Logic still in components
+- ❌ **Item Actions** - Logic still in components
+- ⚠️ **Status Effect Tracker** - Needs migration to system pattern
 
-**Remaining Issues (Non-Squad Code):**
-1. ❌ **Legacy components still have logic** - Weapons, Creatures, Items unchanged
-2. ❌ **Legacy entity pointers remain** - PlayerEquipment, Item.Properties, PositionTracker
-3. ⚠️ **Mixed patterns** - Squad system uses proper ECS, legacy code uses anti-patterns
-
-**Impact on Simplification Roadmap:**
-The squad system **enables and accelerates** the roadmap by demonstrating correct patterns. Legacy code should be migrated to match squad system architecture.
+**Critical Insight:** Most anti-patterns have been eliminated. Only 3-4 areas remain that need ECS refactoring.
 
 ---
 
-## COMPARISON: BEFORE vs AFTER SQUAD SYSTEM
+## WHAT'S BEEN COMPLETED
 
-### Issue #1: Components Contain Logic
+### ✅ Phase 0: Position System (COMPLETE)
+**File:** `systems/positionsystem.go` (183 lines)
+**Status:** ✅ 100% IMPLEMENTED
 
-#### BEFORE (Legacy Code)
+**What Changed:**
 ```go
-// ❌ ANTI-PATTERN: Logic in components
-type MeleeWeapon struct {
-    MinDamage   int
-    MaxDamage   int
-    AttackSpeed int
-}
-
-func (w MeleeWeapon) CalculateDamage() int {
-    return randgen.GetRandomBetween(w.MinDamage, w.MaxDamage)
-}
-
-type Creature struct {
-    Path []coords.LogicalPosition
-}
-
-func (c *Creature) UpdatePosition(gm *worldmap.GameMap, currentPosition *coords.LogicalPosition) {
-    // 30+ lines of movement logic
-}
-```
-
-#### AFTER (Squad System Pattern)
-```go
-// ✅ CORRECT: Pure data components
-type UnitRoleData struct {
-    Role UnitRole  // Tank, DPS, Support
-}
-
-type TargetRowData struct {
-    TargetRows     []int
-    IsMultiTarget  bool
-    MaxTargets     int
-}
-
-type LeaderData struct {
-    Leadership int
-    Experience int
-}
-
-// ✅ CORRECT: Logic in systems
-type CombatSystem struct {
-    manager *ecs.Manager
-    // System state here
-}
-
-func (cs *CombatSystem) ExecuteSquadAttack(attackerSquadID, defenderSquadID ecs.EntityID) CombatResult {
-    // All combat logic in system
-}
-
-func (cs *CombatSystem) calculateUnitDamageByID(unitID ecs.EntityID) int {
-    // Weapon damage calculation in system, not component
-}
-```
-
-**Status:** ✅ **SOLVED** for squad system, ❌ **REMAINS** for legacy code
-
----
-
-### Issue #2: Entity Reference Coupling
-
-#### BEFORE (Legacy Code)
-```go
-// ❌ ANTI-PATTERN: Entity pointers everywhere
-type Item struct {
-    Properties *ecs.Entity  // Nested entity!
-}
-
-type PlayerEquipment struct {
-    EqMeleeWeapon  *ecs.Entity
-    EqRangedWeapon *ecs.Entity
-    EqArmor        *ecs.Entity
-}
-
+// BEFORE (O(n) linear search)
 type PositionTracker struct {
-    PosTracker map[*coords.LogicalPosition]*ecs.Entity
+    PosTracker map[*coords.LogicalPosition]*ecs.Entity  // Pointer keys!
 }
 
-type SquadData struct {  // Old squad plan (incorrect)
-    UnitEntities []*ecs.Entity  // Array of pointers!
-}
-```
-
-#### AFTER (Squad System Pattern)
-```go
-// ✅ CORRECT: Native entity IDs
-type SquadData struct {
-    SquadID    ecs.EntityID  // Native ID, not pointer
-    // ... other data fields
-}
-
-type SquadMemberData struct {
-    SquadID    ecs.EntityID  // Links to parent via ID
-}
-
-type CombatResult struct {
-    UnitsKilled   []ecs.EntityID         // IDs, not pointers
-    DamageByUnit  map[ecs.EntityID]int   // IDs in map keys
-}
-
-// ✅ CORRECT: Query for relationships
-func GetUnitIDsInSquad(squadID ecs.EntityID, ecsmanager *common.EntityManager) []ecs.EntityID {
-    unitIDs := make([]ecs.EntityID, 0, 9)
-    for _, result := range ecsmanager.World.Query(squad.SquadMemberTag) {
-        member := common.GetComponentType[*squad.SquadMemberData](result.Entity, squad.SquadMemberComponent)
-        if member.SquadID == squadID {
-            unitIDs = append(unitIDs, result.Entity.GetID())  // Native method!
-        }
-    }
-    return unitIDs
-}
-
-// ✅ CORRECT: No custom registry needed
-// Uses native entity.GetID() and query-based lookup
-```
-
-**Status:** ✅ **SOLVED** for squad system, ❌ **REMAINS** for legacy code
-
-**Critical Discovery:** The previous analysis incorrectly stated bytearena/ecs doesn't expose entity IDs. The squad system proves `entity.GetID()` exists and returns `ecs.EntityID` (uint32). **No custom EntityRegistry needed!**
-
----
-
-### Issue #3: Missing True Systems Architecture
-
-#### BEFORE (Legacy Code)
-```go
-// ❌ ANTI-PATTERN: Just functions, no system struct
-func MeleeAttackSystem(ecsmanager *common.EntityManager, pl *avatar.PlayerData,
-    gm *worldmap.GameMap, attackerPos, defenderPos *coords.LogicalPosition) {
-    // No state management
-    // No initialization
-    // Takes 5+ parameters
-}
-
-func ProcessRenderables(ecsmanager *common.EntityManager, gameMap worldmap.GameMap,
-    screen *ebiten.Image, debugMode bool) {
-    // Static function, no system state
-}
-```
-
-#### AFTER (Squad System Pattern)
-```go
-// ✅ CORRECT: Proper system struct with state
-type CombatSystem struct {
-    manager      *ecs.Manager
-    tags         map[string]ecs.Tag
-
-    // System state
-    combatLog    []CombatEvent
-    damageCache  map[ecs.EntityID]int
-}
-
-func NewCombatSystem(manager *ecs.Manager) *CombatSystem {
-    return &CombatSystem{
-        manager:     manager,
-        combatLog:   make([]CombatEvent, 0, 100),
-        damageCache: make(map[ecs.EntityID]int),
-    }
-}
-
-func (cs *CombatSystem) ExecuteSquadAttack(attackerSquadID, defenderSquadID ecs.EntityID) CombatResult {
-    // System owns logic and state
-    // Clean interface
-    // Returns structured result
-}
-
-// ✅ CORRECT: Query system
-type QuerySystem struct {
-    manager *ecs.Manager
-}
-
-func GetUnitIDsInSquad(squadID ecs.EntityID, ecsmanager *common.EntityManager) []ecs.EntityID {
-    // Centralized query logic
-}
-
-// ✅ CORRECT: Ability system
-type AbilitySystem struct {
-    manager *ecs.Manager
-}
-
-func CheckAndTriggerAbilities(squadID ecs.EntityID, ecsmanager *common.EntityManager) {
-    // Automated ability processing
-}
-```
-
-**Status:** ✅ **SOLVED** for squad system, ❌ **REMAINS** for legacy code
-
----
-
-## NEW ENTITY TYPES AND COMPONENTS
-
-### Squad Entities (NEW)
-
-**Component:** `SquadData`
-```go
-type SquadData struct {
-    SquadID       ecs.EntityID    // ✅ Native ID
-    Formation     FormationType
-    Name          string
-    Morale        int
-    SquadLevel    int
-    TurnCount     int
-    MaxUnits      int
-}
-```
-
-**Status:** ✅ **EXCELLENT** - Pure data, no methods, uses native IDs
-
----
-
-### Creature/Unit Entities (ENHANCED)
-
-#### NEW Components Added to Creatures
-
-**1. SquadMemberData** - Links unit to squad
-```go
-type SquadMemberData struct {
-    SquadID    ecs.EntityID  // ✅ ID reference, not pointer
-}
-```
-
-**2. GridPositionData** - 3x3 grid position (supports multi-cell units)
-```go
-type GridPositionData struct {
-    AnchorRow int  // 0-2
-    AnchorCol int  // 0-2
-    Width     int  // 1-3 (NEW: multi-cell support)
-    Height    int  // 1-3 (NEW: multi-cell support)
-}
-
-// ✅ CORRECT: Helper methods are pure functions on data
-func (g *GridPositionData) GetOccupiedCells() [][2]int {
-    // Pure calculation, no side effects
-}
-
-func (g *GridPositionData) OccupiesCell(row, col int) bool {
-    // Pure calculation, no ECS access
-}
-```
-
-**3. UnitRoleData** - Combat role
-```go
-type UnitRoleData struct {
-    Role UnitRole  // Tank, DPS, Support
-}
-```
-
-**4. TargetRowData** - Combat targeting
-```go
-type TargetRowData struct {
-    TargetRows     []int
-    IsMultiTarget  bool
-    MaxTargets     int
-}
-```
-
-**5. LeaderData** - Squad leader marker
-```go
-type LeaderData struct {
-    Leadership int
-    Experience int
-}
-```
-
-**6. AbilitySlotData** - Leader abilities (4 slots)
-```go
-type AbilitySlotData struct {
-    Slots [4]AbilitySlot
-}
-
-type AbilitySlot struct {
-    AbilityType  AbilityType   // enum, not string
-    TriggerType  TriggerType   // enum
-    Threshold    float64
-    HasTriggered bool
-    IsEquipped   bool
-}
-```
-
-**7. CooldownTrackerData** - Ability cooldowns
-```go
-type CooldownTrackerData struct {
-    Cooldowns     [4]int
-    MaxCooldowns  [4]int
-}
-```
-
-#### LEGACY Creature Component (UNCHANGED)
-```go
-// ❌ STILL HAS ANTI-PATTERNS
-type Creature struct {
-    Path              []coords.LogicalPosition
-    StatEffectTracker trackers.StatusEffectTracker
-}
-
-// ❌ STILL HAS METHODS
-func (c *Creature) UpdatePosition(gm *worldmap.GameMap, currentPosition *coords.LogicalPosition) {
-    // 30+ lines of logic
-}
-
-func (c *Creature) DisplayString(e *ecs.Entity) string {
-    // Display logic
-}
-```
-
-**Status:**
-- ✅ Squad components are **excellent** (pure data, no methods)
-- ❌ Legacy Creature component **still needs refactoring**
-
-**Recommendation:** Create `MovementSystem` to handle `Creature.UpdatePosition()` logic
-
----
-
-### Weapon Entities (UNCHANGED)
-
-#### LEGACY Weapon Components
-```go
-// ❌ STILL HAS ANTI-PATTERNS
-type MeleeWeapon struct {
-    MinDamage   int
-    MaxDamage   int
-    AttackSpeed int
-}
-
-func (w MeleeWeapon) CalculateDamage() int {
-    return randgen.GetRandomBetween(w.MinDamage, w.MaxDamage)
-}
-
-type RangedWeapon struct {
-    MinDamage     int
-    MaxDamage     int
-    ShootingRange int
-    TargetArea    graphics.TileBasedShape
-    ShootingVX    graphics.VisualEffect
-    AttackSpeed   int
-}
-
-func (r RangedWeapon) GetTargets(ecsmanger *common.EntityManager) []*ecs.Entity {
-    // ❌ Returns entity pointers
-    // ❌ Query logic in component
-}
-```
-
-**Status:** ❌ **NO CHANGES** - Still uses anti-patterns
-
-**How Squad System Handles Weapons:**
-```go
-// Squad combat system calculates weapon damage in the system
-func (cs *CombatSystem) calculateUnitDamageByID(unitID ecs.EntityID) int {
-    unit := FindUnitByID(unitID, cs.ecsmanager)
-
-    // Get weapon component
-    meleeWeapon := common.GetComponentType[*gear.MeleeWeapon](unit, gear.MeleeWeaponComponent)
-
-    // ✅ CORRECT: System calculates damage, not component
-    baseDamage := 0
-    if meleeWeapon != nil {
-        baseDamage = randgen.GetRandomBetween(meleeWeapon.MinDamage, meleeWeapon.MaxDamage)
-    }
-
-    // Apply role modifier
-    return cs.applyRoleModifier(baseDamage, role)
-}
-```
-
-**Recommendation:** Refactor weapon components to match squad pattern
-1. Remove `CalculateDamage()` methods from weapon components
-2. Create `WeaponSystem` to handle damage calculation
-3. Change `GetTargets()` to return `[]ecs.EntityID` instead of `[]*ecs.Entity`
-
----
-
-### Item Entities (UNCHANGED)
-
-#### LEGACY Item Component
-```go
-// ❌ STILL HAS NESTED ENTITY ANTI-PATTERN
-type Item struct {
-    Properties *ecs.Entity  // ❌ Nested entity pointer!
-    Actions    []ItemAction
-    Count      int
-}
-
-// ❌ STILL HAS METHODS
-func (item *Item) GetEffectNames() []string {
-    // Query logic in component
-}
-
-func (item *Item) HasAllEffects(effectsToCheck ...StatusEffects) bool {
-    // Filtering logic in component
-}
-```
-
-**Status:** ❌ **NO CHANGES** - Nested entity hierarchy remains
-
-**How Squad System Would Handle This:**
-```go
-// ✅ CORRECT: Flatten the hierarchy
-type Item struct {
-    PrimaryEffect   StatusEffect
-    SecondaryEffect *StatusEffect  // nil for single-effect items
-    Actions         []ItemAction
-    Count           int
-}
-
-type StatusEffect struct {
-    Type     StatusEffectType  // enum: Burning, Freezing, Sticky
-    Duration int
-    Value    int
-}
-
-// ✅ CORRECT: Use ItemSystem for logic
-type ItemSystem struct {
-    manager *ecs.Manager
-}
-
-func (is *ItemSystem) GetEffectNames(itemID ecs.EntityID) []string {
-    item := is.getItemByID(itemID)
-    names := make([]string, 0, 2)
-    if item.PrimaryEffect.Type != NoEffect {
-        names = append(names, item.PrimaryEffect.Type.String())
-    }
-    if item.SecondaryEffect != nil {
-        names = append(names, item.SecondaryEffect.Type.String())
-    }
-    return names
-}
-```
-
-**Recommendation:** Follow squad system pattern to flatten Item.Properties
-
----
-
-## SYSTEMS INVENTORY (UPDATED)
-
-### NEW Systems (From Squad Implementation)
-
-| System | File | Lines | Status | Pattern |
-|--------|------|-------|--------|---------|
-| Query System | `systems/squadqueries.go` | ~200 | ✅ NEW | Proper ECS |
-| Combat System | `systems/squadcombat.go` | ~400 | ✅ NEW | Proper ECS |
-| Ability System | `systems/squadabilities.go` | ~300 | ✅ NEW | Proper ECS |
-| Squad Creation System | `systems/squadcreation.go` | ~250 | ✅ NEW | Proper ECS |
-
-**Total New Code:** ~1150 lines of **proper ECS patterns**
-
----
-
-### LEGACY "Systems" (Still Anti-Pattern)
-
-| System | File | Lines | Status | Pattern |
-|--------|------|-------|--------|---------|
-| Combat Functions | `combat/attackingsystem.go` | ~150 | ❌ LEGACY | Just functions |
-| Rendering Functions | `rendering/rendering.go` | ~200 | ❌ LEGACY | Static functions |
-| Creature Functions | `monsters/creatures.go` | ~126 | ❌ LEGACY | Logic in components |
-
-**Total Legacy Code:** ~476 lines of **anti-patterns**
-
----
-
-## MIGRATION PATH: ALIGN LEGACY WITH SQUAD PATTERNS
-
-### Phase 1: Weapon System (Highest Impact)
-**Effort:** 12-16 hours
-**Files:** `gear/equipmentcomponents.go`, new `systems/weapon_system.go`
-
-#### Changes Required
-
-**1. Remove logic from weapon components:**
-```go
-// BEFORE (gear/equipmentcomponents.go)
-type MeleeWeapon struct {
-    MinDamage   int
-    MaxDamage   int
-    AttackSpeed int
-}
-
-func (w MeleeWeapon) CalculateDamage() int {  // ❌ DELETE THIS
-    return randgen.GetRandomBetween(w.MinDamage, w.MaxDamage)
-}
-
-// AFTER (gear/equipmentcomponents.go)
-type MeleeWeapon struct {
-    MinDamage   int
-    MaxDamage   int
-    AttackSpeed int
-}
-// ✅ No methods!
-```
-
-**2. Create weapon system:**
-```go
-// NEW FILE: systems/weapon_system.go
-type WeaponSystem struct {
-    manager *ecs.Manager
-    rng     *randgen.Generator
-}
-
-func NewWeaponSystem(manager *ecs.Manager) *WeaponSystem {
-    return &WeaponSystem{
-        manager: manager,
-        rng:     randgen.NewGenerator(),
-    }
-}
-
-func (ws *WeaponSystem) CalculateMeleeDamage(weaponID ecs.EntityID) int {
-    weapon := ws.getWeapon(weaponID)
-    return ws.rng.GetRandomBetween(weapon.MinDamage, weapon.MaxDamage)
-}
-
-func (ws *WeaponSystem) GetRangedTargetIDs(
-    weaponID ecs.EntityID,
-    shooterPos coords.LogicalPosition,
-    positionSystem *PositionSystem,
-) []ecs.EntityID {
-    weapon := ws.getRangedWeapon(weaponID)
-    targetIndices := weapon.TargetArea.GetIndices()
-    targetPositions := coords.CoordManager.GetTilePositionsAsCommon(targetIndices)
-    return positionSystem.GetEntityIDsAtPositions(targetPositions)
-}
-```
-
-**3. Update all callers:**
-```go
-// BEFORE
-damage := weapon.CalculateDamage()  // ❌ Component method
-
-// AFTER
-damage := weaponSystem.CalculateMeleeDamage(weaponID)  // ✅ System method
-```
-
----
-
-### Phase 2: Item System (Nested Entity Fix)
-**Effort:** 10-14 hours
-**Files:** `gear/items.go`, new `systems/item_system.go`
-
-#### Changes Required
-
-**1. Flatten Item structure:**
-```go
-// BEFORE (gear/items.go)
-type Item struct {
-    Properties *ecs.Entity  // ❌ DELETE THIS
-    Actions    []ItemAction
-    Count      int
-}
-
-// AFTER (gear/items.go)
-type Item struct {
-    PrimaryEffect   StatusEffect   // ✅ Inline effect data
-    SecondaryEffect *StatusEffect  // ✅ Nullable for rare multi-effect
-    Actions         []ItemAction
-    Count           int
-}
-
-type StatusEffect struct {
-    Type     StatusEffectType
-    Duration int
-    Value    int
-}
-```
-
-**2. Create item system:**
-```go
-// NEW FILE: systems/item_system.go
-type ItemSystem struct {
-    manager *ecs.Manager
-}
-
-func (is *ItemSystem) GetEffectNames(itemID ecs.EntityID) []string {
-    item := is.getItem(itemID)
-    names := make([]string, 0, 2)
-    if item.PrimaryEffect.Type != NoEffect {
-        names = append(names, item.PrimaryEffect.Type.String())
-    }
-    if item.SecondaryEffect != nil {
-        names = append(names, item.SecondaryEffect.Type.String())
-    }
-    return names
-}
-
-func (is *ItemSystem) HasAllEffects(itemID ecs.EntityID, effectsToCheck ...StatusEffectType) bool {
-    item := is.getItem(itemID)
-    // Filtering logic here
-}
-```
-
-**3. Update all callers:**
-```go
-// BEFORE
-names := item.GetEffectNames()  // ❌ Component method
-
-// AFTER
-names := itemSystem.GetEffectNames(itemID)  // ✅ System method
-```
-
----
-
-### Phase 3: Movement System
-**Effort:** 8-12 hours
-**Files:** `monsters/creatures.go`, new `systems/movement_system.go`
-
-#### Changes Required
-
-**1. Remove logic from Creature component:**
-```go
-// BEFORE (monsters/creatures.go)
-type Creature struct {
-    Path              []coords.LogicalPosition
-    StatEffectTracker trackers.StatusEffectTracker
-}
-
-func (c *Creature) UpdatePosition(gm *worldmap.GameMap, currentPosition *coords.LogicalPosition) {
-    // ❌ DELETE THIS METHOD (30+ lines)
-}
-
-// AFTER (monsters/creatures.go)
-type Creature struct {
-    Path              []coords.LogicalPosition
-    StatEffectTracker trackers.StatusEffectTracker
-}
-// ✅ No methods!
-```
-
-**2. Create movement system:**
-```go
-// NEW FILE: systems/movement_system.go
-type MovementSystem struct {
-    manager     *ecs.Manager
-    gameMap     *worldmap.GameMap
-    posSystem   *PositionSystem
-}
-
-func (ms *MovementSystem) UpdateCreaturePosition(creatureID ecs.EntityID) {
-    creature := ms.getCreature(creatureID)
-    currentPos := ms.posSystem.GetPosition(creatureID)
-
-    // All 30+ lines of movement logic here
-    // Updates position through position system
-}
-```
-
----
-
-### Phase 4: Position System (Performance Fix)
-**Effort:** 8-12 hours
-**Files:** `trackers/creaturetracker.go`, new `systems/position_system.go`
-
-#### Changes Required
-
-**1. Replace PositionTracker with PositionSystem:**
-```go
-// BEFORE (trackers/creaturetracker.go)
-type PositionTracker struct {
-    PosTracker map[*coords.LogicalPosition]*ecs.Entity  // ❌ Pointer keys!
-}
-
-// AFTER (systems/position_system.go)
+// AFTER (O(1) hash lookup)
 type PositionSystem struct {
     manager     *ecs.Manager
-    spatialGrid map[coords.LogicalPosition][]ecs.EntityID  // ✅ ID-based
+    spatialGrid map[coords.LogicalPosition][]ecs.EntityID  // Value keys!
 }
 
 func (ps *PositionSystem) GetEntityIDAt(pos coords.LogicalPosition) ecs.EntityID {
@@ -705,140 +53,609 @@ func (ps *PositionSystem) GetEntityIDAt(pos coords.LogicalPosition) ecs.EntityID
 }
 ```
 
-**2. Update all position lookups:**
-```go
-// BEFORE (O(n) - linear search)
-defender = common.GetCreatureAtPosition(ecsmanager, pos)  // Queries all monsters!
+**Impact:**
+- 50x performance improvement with 50+ entities
+- Proper ECS pattern: uses EntityID instead of pointers
+- Value-based map keys enable O(1) hash lookups
+- System struct with proper initialization
 
-// AFTER (O(1) - hash lookup)
-defenderID = positionSystem.GetEntityIDAt(pos)
-defender = FindEntityByID(defenderID, eSquad MemberTag, ecsmanager)
+**Usage:** Player, items, and monsters are now registered with `GlobalPositionSystem`
+
+---
+
+### ✅ Weapon/Armor/Creature Systems (REMOVED)
+**Status:** ✅ ELIMINATED
+
+**What Was Removed:**
+- `combat/` directory - Attack systems
+- `monsters/` directory - Creature update logic
+- `gear/equipmentcomponents.go` - MeleeWeapon, RangedWeapon, Armor components (reduced to just InventoryComponent)
+- `trackers/creaturetracker.go` - Old PositionTracker (replaced by PositionSystem)
+
+**Why Removed:**
+These systems violated ECS patterns with:
+- Logic in components (CalculateDamage, UpdatePosition)
+- Entity pointers everywhere
+- O(n) position lookups
+
+**Replacement:** Squad system will handle combat with proper ECS patterns
+
+---
+
+### ✅ Squad System Foundation (35% COMPLETE)
+**Files:** `squads/` directory (8 files, 621 LOC)
+**Status:** ✅ Components, creation, queries implemented; ⏳ Combat, abilities, formations pending
+
+**What's Implemented:**
+
+**1. Perfect ECS Components** (300 LOC)
+```go
+// ✅ EXCELLENT: Pure data components
+type SquadData struct {
+    SquadID       ecs.EntityID  // Native ID
+    Formation     FormationType
+    Name          string
+    Morale        int
+    SquadLevel    int
+    TurnCount     int
+    MaxUnits      int
+}
+
+type SquadMemberData struct {
+    SquadID ecs.EntityID  // Link via ID, not pointer
+}
+
+type GridPositionData struct {
+    AnchorRow int
+    AnchorCol int
+    Width     int  // Multi-cell support (1x1, 2x2, 3x3)
+    Height    int
+}
+
+type UnitRoleData struct {
+    Role UnitRole  // Tank, DPS, Support
+}
+
+type LeaderData struct {
+    Leadership int
+    Experience int
+}
 ```
 
-**Performance Impact:** 50+ monsters: O(50) → O(1) = **50x faster**
+**2. Query Functions** (40 LOC, 20% complete)
+```go
+// ✅ IMPLEMENTED
+func GetUnitIDsAtGridPosition(squadID ecs.EntityID, row, col int, manager *ecs.Manager) []ecs.EntityID
+func FindUnitByID(unitID ecs.EntityID, manager *ecs.Manager) *ecs.Entity
+
+// ❌ NOT IMPLEMENTED (documented only)
+func GetUnitIDsInSquad(squadID ecs.EntityID, manager *ecs.Manager) []ecs.EntityID
+func GetUnitIDsInRow(squadID ecs.EntityID, row int, manager *ecs.Manager) []ecs.EntityID
+func GetLeaderID(squadID ecs.EntityID, manager *ecs.Manager) ecs.EntityID
+func IsSquadDestroyed(squadID ecs.EntityID, manager *ecs.Manager) bool
+```
+
+**3. Squad Creation** (58 LOC, 25% complete)
+```go
+// ✅ IMPLEMENTED
+func CreateEmptySquad(manager *ecs.Manager, name string) *ecs.Entity
+func CreateUnitEntity(manager *ecs.Manager, template entitytemplates.JSONMonster) *ecs.Entity
+
+// ❌ STUB (not implemented)
+func AddUnitToSquad(squadID ecs.EntityID, unitID ecs.EntityID, row, col int, manager *ecs.Manager) error
+```
+
+**4. Manager & Init** (61 LOC, 80% complete)
+```go
+// ✅ WORKING
+func InitializeSquadData() error  // Registers all components with ECS
+```
+
+**What's Remaining:**
+- Combat System (0% - 10-12h)
+- Ability System (0% - 8-10h)
+- Query Completion (20% - 4-6h)
+- Formation System (0% - 6-8h)
+
+**Assessment:** Squad system demonstrates PERFECT ECS patterns and should be the template for all remaining refactoring.
+
+---
+
+## REMAINING ECS ANTI-PATTERNS
+
+### ❌ Issue #1: Item System (Nested Entity Pattern)
+**File:** `gear/items.go`
+**Severity:** HIGH
+**Effort to Fix:** 10-14 hours
+
+**Current Anti-Pattern:**
+```go
+// ❌ BAD: Nested entity pointer
+type Item struct {
+    Properties *ecs.Entity  // Nested entity for status effects!
+    Actions    []ItemAction
+    Count      int
+}
+
+// ❌ BAD: Logic in component methods
+func (item *Item) GetEffectNames() []string {
+    // Queries nested entity...
+}
+
+func (item *Item) HasAllEffects(effectsToCheck ...StatusEffects) bool {
+    // Filtering logic in component...
+}
+
+func (item *Item) ItemEffect(effectName string) any {
+    // Query logic in component...
+}
+```
+
+**Why It's Bad:**
+1. **Nested Entities** - `Item.Properties` is a separate entity, creating circular dependencies
+2. **Logic in Components** - Methods like `GetEffectNames()` contain query logic
+3. **Complex Queries** - Requires nested entity queries to get item effects
+4. **Not Composition** - Uses inheritance-like pattern instead of flat composition
+
+**How Squad System Would Handle This:**
+```go
+// ✅ GOOD: Flatten the hierarchy
+type Item struct {
+    PrimaryEffect   StatusEffect   // Inline data
+    SecondaryEffect *StatusEffect  // Nullable for multi-effect items
+    Actions         []ItemAction
+    Count           int
+}
+
+type StatusEffect struct {
+    Type     StatusEffectType  // enum: Burning, Freezing, Sticky
+    Duration int
+    Value    int
+}
+
+// ✅ GOOD: Use ItemSystem for logic
+type ItemSystem struct {
+    manager *ecs.Manager
+}
+
+func (is *ItemSystem) GetEffectNames(itemID ecs.EntityID) []string {
+    item := is.getItem(itemID)
+    names := make([]string, 0, 2)
+    if item.PrimaryEffect.Type != NoEffect {
+        names = append(names, item.PrimaryEffect.Type.String())
+    }
+    if item.SecondaryEffect != nil {
+        names = append(names, item.SecondaryEffect.Type.String())
+    }
+    return names
+}
+```
+
+**Migration Path:**
+1. Create `StatusEffect` struct with inline data (4h)
+2. Replace `Item.Properties *ecs.Entity` with `PrimaryEffect` and `SecondaryEffect` fields (3h)
+3. Create `ItemSystem` struct (2h)
+4. Move all `Item` methods to `ItemSystem` (3-5h)
+5. Update all callers (2-3h)
+
+**Total:** 14-17 hours
+
+---
+
+### ❌ Issue #2: Status Effects (Logic in Components)
+**Files:** `gear/stateffect.go`, `gear/itemquality.go`
+**Severity:** MEDIUM
+**Effort to Fix:** 8-10 hours
+
+**Current Anti-Pattern:**
+```go
+// ❌ BAD: Logic in component methods
+type Burning struct {
+    MainProps   CommonItemProperties
+    Temperature int
+}
+
+func (b *Burning) ApplyToCreature(c *ecs.QueryResult) {
+    b.MainProps.Duration -= 1
+    h := common.GetComponentType[*common.Attributes](c.Entity, common.AttributeComponent)
+    h.CurrentHealth -= b.Temperature  // Modifies other entity!
+}
+
+func (b *Burning) StackEffect(eff any) {
+    e := eff.(*Burning)
+    e.MainProps.AddDuration(e.MainProps)
+    b.Temperature += e.Temperature  // Logic in component!
+}
+
+func (b *Burning) CreateWithQuality(q common.QualityType) {
+    // Creation logic in component...
+}
+```
+
+**Why It's Bad:**
+1. **Business Logic** - `ApplyToCreature()` contains game logic (damage calculation, attribute modification)
+2. **Side Effects** - Methods modify other entities directly
+3. **State Mutation** - Components mutate their own state
+4. **ECS Queries** - Components perform ECS queries to find/modify other components
+
+**How Squad System Would Handle This:**
+```go
+// ✅ GOOD: Pure data component
+type Burning struct {
+    Duration    int
+    Temperature int
+}
+
+// ✅ GOOD: Logic in system
+type StatusEffectSystem struct {
+    manager *ecs.Manager
+}
+
+func (ses *StatusEffectSystem) ApplyBurningDamage(creatureID ecs.EntityID, burning *Burning) {
+    creature := ses.getCreature(creatureID)
+    attr := common.GetComponentType[*common.Attributes](creature, common.AttributeComponent)
+
+    // System handles logic
+    attr.CurrentHealth -= burning.Temperature
+    burning.Duration -= 1
+}
+
+func (ses *StatusEffectSystem) StackBurning(existing *Burning, incoming *Burning) *Burning {
+    return &Burning{
+        Duration:    existing.Duration + incoming.Duration,
+        Temperature: existing.Temperature + incoming.Temperature,
+    }
+}
+```
+
+**Migration Path:**
+1. Remove all methods from `Burning`, `Freezing`, `Sticky` structs (2h)
+2. Create `StatusEffectSystem` struct (2h)
+3. Move `ApplyToCreature` logic to `StatusEffectSystem.ApplyEffect()` (2-3h)
+4. Move `StackEffect` logic to `StatusEffectSystem.StackEffects()` (1-2h)
+5. Update all callers to use system instead of component methods (2-3h)
+
+**Total:** 9-12 hours
+
+---
+
+### ❌ Issue #3: Item Actions (Logic in Components)
+**File:** `gear/itemactions.go`
+**Severity:** MEDIUM
+**Effort to Fix:** 6-8 hours
+
+**Current Anti-Pattern:**
+```go
+// ❌ BAD: Logic in component methods
+type ThrowableAction struct {
+    MinRange         int
+    MaxRange         int
+    Damage           int
+    AOE              graphics.TileBasedShape
+    VX               graphics.VisualEffect
+    ContainedEffects []StatusEffects
+}
+
+func (t *ThrowableAction) Execute(targetPos, sourcePos *coords.LogicalPosition,
+                                   world *ecs.Manager, worldTags map[string]ecs.Tag) []StatusEffects {
+    // 30+ lines of execution logic!
+    targetIndices := t.AOE.GetIndices()
+    // ... complex logic ...
+}
+
+func (t *ThrowableAction) CanExecute(targetPos, sourcePos *coords.LogicalPosition) bool {
+    distance := sourcePos.EuclideanDistanceAsInt(targetPos)
+    return distance >= t.MinRange && distance <= t.MaxRange
+}
+
+func (t *ThrowableAction) InRange(endPos *coords.LogicalPosition) bool {
+    // Range calculation logic...
+}
+```
+
+**Why It's Bad:**
+1. **Business Logic** - `Execute()` contains 30+ lines of game logic
+2. **ECS Access** - Methods directly query and modify ECS world
+3. **Complex Operations** - Calculates AOE, applies effects, modifies multiple entities
+4. **Validation Logic** - Range checking and validation in component
+
+**How Squad System Would Handle This:**
+```go
+// ✅ GOOD: Pure data component
+type ThrowableAction struct {
+    MinRange         int
+    MaxRange         int
+    Damage           int
+    AOE              graphics.TileBasedShape
+    VX               graphics.VisualEffect
+    ContainedEffects []StatusEffectType  // Just IDs, not full objects
+}
+
+// ✅ GOOD: Logic in system
+type ItemActionSystem struct {
+    manager *ecs.Manager
+}
+
+func (ias *ItemActionSystem) ExecuteThrowable(itemID ecs.EntityID, targetPos, sourcePos coords.LogicalPosition) error {
+    throwable := ias.getThrowableAction(itemID)
+
+    // System handles all logic
+    if !ias.IsInRange(throwable, sourcePos, targetPos) {
+        return errors.New("target out of range")
+    }
+
+    targetIndices := throwable.AOE.GetIndices()
+    affectedEntities := ias.positionSystem.GetEntitiesAtIndices(targetIndices)
+
+    for _, entityID := range affectedEntities {
+        ias.applyDamage(entityID, throwable.Damage)
+        ias.applyEffects(entityID, throwable.ContainedEffects)
+    }
+
+    return nil
+}
+
+func (ias *ItemActionSystem) IsInRange(throwable *ThrowableAction, source, target coords.LogicalPosition) bool {
+    distance := source.EuclideanDistanceAsInt(&target)
+    return distance >= throwable.MinRange && distance <= throwable.MaxRange
+}
+```
+
+**Migration Path:**
+1. Remove methods from `ThrowableAction` struct (1h)
+2. Create `ItemActionSystem` struct (1h)
+3. Move `Execute` logic to `ItemActionSystem.ExecuteThrowable()` (2-3h)
+4. Move validation logic to `ItemActionSystem.IsInRange()` (1h)
+5. Update all callers (2-3h)
+
+**Total:** 7-9 hours
+
+---
+
+### ⚠️ Issue #4: Status Effect Tracker (Tracker Pattern)
+**File:** `trackers/statustracker.go`
+**Severity:** LOW
+**Effort to Fix:** 4-6 hours
+
+**Current Pattern:**
+```go
+// ⚠️ ACCEPTABLE BUT NOT IDEAL: Tracker pattern
+type StatusEffectTracker struct {
+    ActiveEffects map[string]gear.StatusEffects
+}
+
+func (s *StatusEffectTracker) Add(e gear.StatusEffects) {
+    if _, exists := s.ActiveEffects[e.StatusEffectName()]; exists {
+        s.ActiveEffects[e.StatusEffectName()].StackEffect(e)
+    } else {
+        s.ActiveEffects[e.StatusEffectName()] = e
+    }
+}
+
+func (s *StatusEffectTracker) ActiveEffectNames() string {
+    // Display logic...
+}
+```
+
+**Why It's Suboptimal:**
+1. **Stored as Component** - This tracker is stored as a component on entities
+2. **Not a System** - Should be a proper system struct
+3. **Display Logic** - Contains UI formatting logic
+
+**How Squad System Would Handle This:**
+```go
+// ✅ GOOD: System manages effect tracking
+type StatusEffectSystem struct {
+    manager     *ecs.Manager
+    activeEffects map[ecs.EntityID][]StatusEffect  // EntityID -> Effects
+}
+
+func (ses *StatusEffectSystem) AddEffect(entityID ecs.EntityID, effect StatusEffect) {
+    existing := ses.activeEffects[entityID]
+
+    // Check if effect already exists
+    for i, e := range existing {
+        if e.Type == effect.Type {
+            // Stack the effect
+            existing[i] = ses.stackEffects(e, effect)
+            return
+        }
+    }
+
+    // Add new effect
+    ses.activeEffects[entityID] = append(existing, effect)
+}
+
+func (ses *StatusEffectSystem) GetActiveEffectNames(entityID ecs.EntityID) []string {
+    effects := ses.activeEffects[entityID]
+    names := make([]string, 0, len(effects))
+    for _, e := range effects {
+        if e.Duration > 0 {
+            names = append(names, e.Type.String())
+        }
+    }
+    return names
+}
+```
+
+**Migration Path:**
+1. Create `StatusEffectSystem` struct (1h)
+2. Move effect tracking from component to system map (2-3h)
+3. Update all callers to use system API (1-2h)
+
+**Total:** 4-6 hours
 
 ---
 
 ## UPDATED EFFORT ESTIMATES
 
-### Squad System Implementation (NEW)
-**Total:** 30-37 hours ✅ **INVESTED**
-- Phase 1: Components (6-8h) ✅
-- Phase 2: Query System (4-6h) ✅
-- Phase 3: Combat System (8-10h) ✅
-- Phase 4: Ability System (6-8h) ✅
-- Phase 5: Squad Creation (4-6h) ✅
-- Phase 6: Integration (8-10h) ✅
+### Completed Work ✅
+| Item | Status | Investment |
+|------|--------|------------|
+| Phase 0: Position System | ✅ 100% | 8-12h |
+| Legacy Code Removal | ✅ 100% | 4-6h |
+| Squad System Foundation | ✅ 35% | 12-15h |
+| Entity Template System | ✅ 100% | 4h |
+| **Total Completed** | - | **28-37h** |
 
 ---
 
-### Legacy Code Migration (REMAINING)
-**Total:** 38-54 hours ❌ **NEEDED**
-
-| Phase | Effort | Impact | Priority |
-|-------|--------|--------|----------|
-| Weapon System | 12-16h | HIGH | 1 |
-| Item System | 10-14h | MEDIUM | 2 |
-| Movement System | 8-12h | MEDIUM | 3 |
-| Position System | 8-12h | HIGH | 1 |
-| **Total** | **38-54h** | - | - |
+### Remaining Work ❌
+| Item | Priority | Status | Effort |
+|------|----------|--------|--------|
+| Squad System Completion | HIGH | 35% → 100% | 28-36h |
+| Item System Refactor | MEDIUM | 0% | 10-14h |
+| Status Effects Refactor | MEDIUM | 0% | 8-10h |
+| Item Actions Refactor | MEDIUM | 0% | 6-8h |
+| Status Tracker Migration | LOW | 0% | 4-6h |
+| **Total Remaining** | - | - | **56-74h** |
 
 ---
 
-## RECOMMENDED PRIORITIES (POST-SQUAD)
+### Combined Timeline
+**Total Project:** 84-111 hours
+- **Invested:** 28-37 hours (33%)
+- **Remaining:** 56-74 hours (67%)
 
-### Priority 1: Position System (Week 1)
-**Effort:** 8-12 hours
-**Impact:** HIGH - 50x performance improvement
-**Blockers:** None
-**Approach:** Follow squad query system pattern
+---
 
+## RECOMMENDED PRIORITIES
+
+### Priority 1: Complete Squad System (HIGH) - 28-36 hours
 **Why First:**
-- Biggest performance impact
-- Zero breaking changes (internal optimization)
-- Enables efficient squad positioning
-- O(n) → O(1) lookups
+- Foundation is already 35% complete (621 LOC)
+- Perfect ECS patterns to use as template
+- Blocks multi-squad gameplay features
+- High-value feature (tactical combat)
+
+**Phases:**
+1. Query completion (4-6h) - GetUnitIDsInSquad, GetUnitIDsInRow, etc.
+2. Combat system (10-12h) - ExecuteSquadAttack with row targeting
+3. Ability system (8-10h) - Auto-triggering leader abilities
+4. Formation/Creation (6-8h) - Formation presets, complete squad creation
+5. Testing (4-6h) - Unit tests for combat without map integration
 
 ---
 
-### Priority 2: Weapon System (Week 2)
-**Effort:** 12-16 hours
-**Impact:** HIGH - Enables proper squad weapon integration
-**Blockers:** None
-**Approach:** Follow squad combat system pattern
-
+### Priority 2: Item System Refactor (MEDIUM) - 10-14 hours
 **Why Second:**
-- Most called code (every combat action)
-- Enables squad weapon consistency
-- Removes logic from components
-- Template for other system migrations
+- Biggest remaining ECS anti-pattern (nested entities)
+- Completes Status Effects roadmap item (85% → 100%)
+- Enables proper item stacking and duplication
+- Template for remaining component refactors
+
+**Phases:**
+1. Flatten Item structure (4h)
+2. Create ItemSystem (2h)
+3. Move methods to system (3-5h)
+4. Update callers (2-3h)
 
 ---
 
-### Priority 3: Item System (Week 3)
-**Effort:** 10-14 hours
-**Impact:** MEDIUM - Completes status effects roadmap
-**Blockers:** None
-**Approach:** Follow squad component patterns (flatten hierarchy)
-
+### Priority 3: Status Effects & Actions (MEDIUM) - 14-18 hours
 **Why Third:**
-- Completes simplification roadmap item #3 (Status Effects)
-- Removes nested entity anti-pattern
-- Prepares for item duplication/stacking
-- Less frequently called than weapons
+- Smaller anti-patterns than Item system
+- Can be done together (related code)
+- Depends on Item system refactor
+- Completes gear/ package ECS compliance
+
+**Phases:**
+1. Status Effects System (8-10h)
+2. Item Actions System (6-8h)
 
 ---
 
-### Priority 4: Movement System (Week 4)
-**Effort:** 8-12 hours
-**Impact:** MEDIUM - Organizational improvement
-**Blockers:** Position System recommended first
-**Approach:** Follow squad ability system pattern
-
-**Why Fourth:**
-- Less critical than combat systems
-- Benefits from Position System optimization
-- Prepares for squad formations/movement
-- Cleanest separation of concerns
+### Priority 4: Status Tracker Migration (LOW) - 4-6 hours
+**Why Last:**
+- Lowest severity
+- Current pattern works acceptably
+- Minor improvement
+- Can be deferred
 
 ---
 
 ## PATTERN COMPARISON GUIDE
 
-### Use Squad System as Template
+### Use Position System & Squad System as Templates
 
-When refactoring legacy code, follow these squad system patterns:
+When refactoring remaining code, follow these proven patterns:
 
-#### Pattern 1: Pure Data Components
+#### Pattern 1: Value-Based Map Keys (PositionSystem)
 ```go
-// ✅ SQUAD PATTERN (CORRECT)
-type UnitRoleData struct {
-    Role UnitRole  // Just data
+// ✅ CORRECT: Value keys enable O(1) hash lookup
+type PositionSystem struct {
+    spatialGrid map[coords.LogicalPosition][]ecs.EntityID  // Value key!
 }
 
-// ❌ LEGACY PATTERN (WRONG)
-type MeleeWeapon struct {
-    MinDamage int
-}
-func (w MeleeWeapon) CalculateDamage() int {  // Logic in component!
-    return randgen.GetRandomBetween(w.MinDamage, w.MaxDamage)
+// ❌ WRONG: Pointer keys require O(n) comparison
+type PositionTracker struct {
+    PosTracker map[*coords.LogicalPosition]*ecs.Entity  // Pointer key!
 }
 ```
 
-#### Pattern 2: Entity IDs, Not Pointers
+#### Pattern 2: Pure Data Components (Squad System)
 ```go
-// ✅ SQUAD PATTERN (CORRECT)
+// ✅ CORRECT: Just data fields
 type SquadMemberData struct {
+    SquadID ecs.EntityID
+}
+
+type GridPositionData struct {
+    AnchorRow int
+    AnchorCol int
+    Width     int
+    Height    int
+}
+
+// ❌ WRONG: Methods with logic
+type Burning struct {
+    Duration int
+}
+
+func (b *Burning) ApplyToCreature(c *ecs.QueryResult) {
+    // Logic in component!
+}
+```
+
+#### Pattern 3: System Structs with State (PositionSystem & Squad System)
+```go
+// ✅ CORRECT: System owns logic and state
+type PositionSystem struct {
+    manager     *ecs.Manager
+    spatialGrid map[coords.LogicalPosition][]ecs.EntityID
+}
+
+func NewPositionSystem(manager *ecs.Manager) *PositionSystem {
+    return &PositionSystem{
+        manager:     manager,
+        spatialGrid: make(map[coords.LogicalPosition][]ecs.EntityID),
+    }
+}
+
+func (ps *PositionSystem) GetEntityIDAt(pos coords.LogicalPosition) ecs.EntityID {
+    // System method, not component method
+}
+
+// ❌ WRONG: Just functions, no state
+func MeleeAttackSystem(ecsmanager, pl, gm, attackerPos, defenderPos) {
+    // Takes 5 parameters, no state management
+}
+```
+
+#### Pattern 4: Entity IDs, Not Pointers (Squad System)
+```go
+// ✅ CORRECT: Use EntityID everywhere
+type SquadData struct {
     SquadID ecs.EntityID  // Native ID
 }
 
-type CombatResult struct {
-    UnitsKilled []ecs.EntityID  // ID slice
+func GetUnitIDsInSquad(squadID ecs.EntityID, manager *ecs.Manager) []ecs.EntityID {
+    // Returns IDs
 }
 
-// ❌ LEGACY PATTERN (WRONG)
+// ❌ WRONG: Entity pointers
 type Item struct {
-    Properties *ecs.Entity  // Nested entity pointer!
+    Properties *ecs.Entity  // Nested entity!
 }
 
 type PlayerEquipment struct {
@@ -846,13 +663,13 @@ type PlayerEquipment struct {
 }
 ```
 
-#### Pattern 3: Query-Based Relationships
+#### Pattern 5: Query-Based Relationships (Squad System)
 ```go
-// ✅ SQUAD PATTERN (CORRECT)
-func GetUnitIDsInSquad(squadID ecs.EntityID, ecsmanager *common.EntityManager) []ecs.EntityID {
+// ✅ CORRECT: Discover relationships via queries
+func GetUnitIDsInSquad(squadID ecs.EntityID, manager *ecs.Manager) []ecs.EntityID {
     unitIDs := make([]ecs.EntityID, 0, 9)
-    for _, result := range ecsmanager.World.Query(squad.SquadMemberTag) {
-        member := common.GetComponentType[*squad.SquadMemberData](result.Entity, squad.SquadMemberComponent)
+    for _, result := range manager.Query(SquadMemberTag) {
+        member := common.GetComponentType[*SquadMemberData](result.Entity, SquadMemberComponent)
         if member.SquadID == squadID {
             unitIDs = append(unitIDs, result.Entity.GetID())
         }
@@ -860,159 +677,119 @@ func GetUnitIDsInSquad(squadID ecs.EntityID, ecsmanager *common.EntityManager) [
     return unitIDs
 }
 
-// ❌ LEGACY PATTERN (WRONG)
+// ❌ WRONG: Stored entity pointers
 type SquadData struct {
     UnitEntities []*ecs.Entity  // Stored pointers!
 }
 ```
 
-#### Pattern 4: System Structs with State
-```go
-// ✅ SQUAD PATTERN (CORRECT)
-type CombatSystem struct {
-    manager     *ecs.Manager
-    combatLog   []CombatEvent
-    damageCache map[ecs.EntityID]int
-}
-
-func NewCombatSystem(manager *ecs.Manager) *CombatSystem {
-    return &CombatSystem{
-        manager:     manager,
-        combatLog:   make([]CombatEvent, 0, 100),
-        damageCache: make(map[ecs.EntityID]int),
-    }
-}
-
-// ❌ LEGACY PATTERN (WRONG)
-func MeleeAttackSystem(ecsmanager *common.EntityManager, pl *avatar.PlayerData,
-    gm *worldmap.GameMap, attackerPos, defenderPos *coords.LogicalPosition) {
-    // No state, takes 5 parameters
-}
-```
-
-#### Pattern 5: Structured Return Values
-```go
-// ✅ SQUAD PATTERN (CORRECT)
-type CombatResult struct {
-    UnitsKilled   []ecs.EntityID
-    DamageByUnit  map[ecs.EntityID]int
-    TotalDamage   int
-}
-
-func (cs *CombatSystem) ExecuteSquadAttack(...) CombatResult {
-    // Return structured data
-}
-
-// ❌ LEGACY PATTERN (WRONG)
-func PerformAttack(...) bool {
-    // Returns only bool, side effects everywhere
-}
-```
-
 ---
 
-## TESTING STRATEGY (UPDATED)
+## TESTING STRATEGY
 
-### Phase 1: Baseline Current Squad System
+### Phase 1: Validate Current Systems
 ```bash
-# Verify squad system works correctly
-go test ./systems/... -v
+# Test Position System
+go test ./systems/positionsystem_test.go -v
 
-# Performance baseline
-go test -bench=SquadCombat ./systems/... -benchmem
+# Test Squad System (what's implemented)
+go test ./squads/squads_test.go -v
+
+# Benchmark Position System performance
+go test -bench=BenchmarkPositionSystem ./systems/... -benchmem
 ```
 
-### Phase 2: Test Legacy Code Before Migration
-```bash
-# Capture current behavior
-go test ./combat/... -v
-go test ./gear/... -v
-go test ./monsters/... -v
-
-# Performance baseline for comparison
-go test -bench=. ./combat/... -benchmem
-go test -bench=. ./gear/... -benchmem
-```
-
-### Phase 3: Test During Migration
+### Phase 2: Test During Refactoring
 ```go
-// systems/weapon_system_test.go
-func TestWeaponSystem_CalculateDamage(t *testing.T) {
+// Example: Item System tests
+func TestItemSystem_GetEffectNames(t *testing.T) {
     // Verify new system matches old behavior
 }
 
-// systems/integration_test.go
-func TestSquadCombatWithMigratedWeapons(t *testing.T) {
-    // Verify squad combat works with new weapon system
+func TestItemSystem_FlattenedStructure(t *testing.T) {
+    // Verify nested entity removal works
 }
 ```
 
-### Phase 4: Regression Testing
-```bash
-# Compare against baseline
-go test ./... -v
+### Phase 3: Integration Testing
+```go
+// Verify systems work together
+func TestSquadCombatWithNewItemSystem(t *testing.T) {
+    // Squad combat + new item system
+}
 
-# Verify performance improvements
-go test -bench=. ./... -benchmem
+func TestStatusEffectSystemWithSquads(t *testing.T) {
+    // Status effects + squad combat
+}
 ```
 
 ---
 
 ## CONCLUSION
 
-### Summary of Changes
+### Summary of Current State
 
-**Squad System Introduces:**
-- ✅ 7 new pure data components (SquadData, SquadMemberData, GridPositionData, UnitRoleData, TargetRowData, LeaderData, AbilitySlotData)
-- ✅ 4 new proper systems (Query, Combat, Ability, Squad Creation)
-- ✅ Native entity ID usage (ecs.EntityID) throughout
-- ✅ Query-based entity relationships (no stored pointers)
-- ✅ ~1150 lines of **excellent ECS patterns**
+**Excellent Progress:**
+- ✅ Position System: 100% complete, 50x performance boost
+- ✅ Legacy Code: Removed weapon/armor/creature anti-patterns
+- ✅ Squad System: 35% complete with perfect ECS patterns
+- ✅ Entity Templates: Unified factory complete
 
-**Legacy Code Remains:**
-- ❌ Weapons still have logic in components (CalculateDamage)
-- ❌ Creatures still have logic in components (UpdatePosition)
-- ❌ Items still use nested entities (Item.Properties)
-- ❌ Position lookups still O(n) (PositionTracker)
-- ❌ ~476 lines of **anti-patterns**
+**Remaining Anti-Patterns (3 areas):**
+- ❌ Item System: Nested entity pattern (10-14h to fix)
+- ❌ Status Effects: Logic in components (8-10h to fix)
+- ❌ Item Actions: Logic in components (6-8h to fix)
 
-**Critical Insight:**
-The squad system demonstrates that **proper ECS is achievable** with the current library (bytearena/ecs v1.0.0). The previous analysis incorrectly stated entity IDs weren't available. The squad system proves `entity.GetID()` works perfectly.
+**Total Remaining:** 56-74 hours (7-9 workdays)
 
 ---
 
 ### Recommended Action Plan
 
-**Short Term (4 weeks, 38-54 hours):**
-1. Week 1: Position System (8-12h) - 50x performance boost
-2. Week 2: Weapon System (12-16h) - Aligns with squad combat
-3. Week 3: Item System (10-14h) - Completes roadmap
-4. Week 4: Movement System (8-12h) - Final cleanup
+**Week 1-2: Squad System Completion (28-36h)**
+- Complete query functions (4-6h)
+- Implement combat system (10-12h)
+- Implement ability system (8-10h)
+- Add formation system (6-8h)
+- Write tests (4-6h)
 
-**Result:** 100% proper ECS patterns, ready for all todos implementation
+**Result:** Playable multi-squad tactical combat
 
-**Long Term:**
-- Use squad system as architectural template
-- All new features follow squad patterns
-- Gradual migration of remaining legacy code
-- Consider squad system for internal documentation/training
+**Week 3: Item System Refactor (10-14h)**
+- Flatten Item structure (4h)
+- Create ItemSystem (2h)
+- Migrate methods (3-5h)
+- Update callers (2-3h)
+
+**Result:** 100% ECS compliant item system
+
+**Week 4: Status Effects & Actions (14-18h)**
+- StatusEffectSystem (8-10h)
+- ItemActionSystem (6-8h)
+
+**Result:** All gear/ package ECS compliant
+
+**Week 5 (Optional): Status Tracker (4-6h)**
+- Migrate tracker to system pattern
+
+**Result:** 100% proper ECS patterns across entire codebase
 
 ---
 
 ### Impact on Roadmap
 
-**Simplification Roadmap:** 80% → **95%** (after legacy migration)
-
+**Simplification Roadmap Status:**
 1. ✅ Input System (100%)
 2. ✅ Coordinate System (100%)
-3. 🔄 Status Effects (85% → **100%** after Item System migration)
+3. 🔄 Status Effects (85% → **100%** after Item/StatusEffect refactor)
 4. ✅ Entity Templates (100%)
 5. ✅ Graphics Shapes (95%)
 6. ❌ GUI Buttons (10%)
-7. ✅ **Squad System (100%)** - NEW ITEM
+7. 🔄 **Squad System (35% → 100%)** ⭐
+8. ✅ **Position System (100%)** - NEW ITEM ⭐
 
-**Overall Progress:** 95% with squad system complete, 100% after legacy migration
+**Overall Progress:** 85% complete (will be 100% after remaining 56-74h work)
 
 ---
 
-**END OF UPDATED ANALYSIS**
+**END OF UPDATED ANALYSIS (2025-10-11)**

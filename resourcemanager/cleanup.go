@@ -33,8 +33,11 @@ func RemoveEntity(world *ecs.Manager, gm *worldmap.GameMap, e *ecs.Entity) {
 }
 
 func RemoveDeadEntities(ecsmanager *common.EntityManager, gm *worldmap.GameMap) {
-	for _, c := range ecsmanager.World.Query(ecsmanager.WorldTags["monsters"]) {
 
-		RemoveEntity(ecsmanager.World, gm, c.Entity)
-	}
+	/*
+		for _, c := range ecsmanager.World.Query(ecsmanager.WorldTags["monsters"]) {
+
+			RemoveEntity(ecsmanager.World, gm, c.Entity)
+		}
+	*/
 }

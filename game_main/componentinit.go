@@ -21,7 +21,6 @@ func InitializeECS(ecsmanager *common.EntityManager) {
 
 	// Register subsystem components and build their tags
 	registerItemComponents(manager, tags)
-	registerCreatureComponents(manager, tags)
 
 	// Build tags for core systems
 	buildCoreTags(tags)
@@ -54,9 +53,4 @@ func buildCoreTags(tags map[string]ecs.Tag) {
 // Delegates to gear package for its own component setup.
 func registerItemComponents(manager *ecs.Manager, tags map[string]ecs.Tag) {
 	gear.InitializeItemComponents(manager, tags)
-}
-
-// registerCreatureComponents registers creature/monster components and builds their tag.
-func registerCreatureComponents(manager *ecs.Manager, tags map[string]ecs.Tag) {
-
 }

@@ -16,6 +16,7 @@ import (
 	"game_main/input"
 	"game_main/rendering"
 	resmanager "game_main/resourcemanager"
+	"game_main/testing"
 	"game_main/worldmap"
 	"log"
 	"math"
@@ -82,7 +83,6 @@ func (g *Game) Update() error {
 
 }
 
-
 // Draw renders the game to the screen buffer.
 // It handles map rendering, entity rendering, UI drawing, and visual effects.
 func (g *Game) Draw(screen *ebiten.Image) {
@@ -127,6 +127,8 @@ func main() {
 	// Setup UI and input systems
 	SetupUI(g)
 	SetupInputCoordinator(g)
+
+	testing.CreateTestItems(g.em.World, g.em.WorldTags, &g.gameMap)
 
 	// Configure window
 	ebiten.SetWindowResizable(true)
