@@ -8,33 +8,12 @@ import (
 	"game_main/common"
 	"game_main/coords"
 	"game_main/entitytemplates"
-	"game_main/gear"
 	"game_main/rendering"
 	"game_main/worldmap"
 	"math/rand"
 
 	"github.com/bytearena/ecs"
 )
-
-// SpawnConsumable creates a consumable item entity at the specified position.
-// It randomly selects item quality and consumable type from loot tables.
-func SpawnConsumable(manager *ecs.Manager, xPos, yPos int) *ecs.Entity {
-
-	qual, qualOK := LootQualityTable.GetRandomEntry(false)
-
-	if qualOK {
-		c := gear.Consumable{}
-		consType, _ := ConsumableSpawnTable.GetRandomEntry(false)
-		c.CreateConsumable(consType, qual)
-
-		item := gear.CreateItem(manager, c.Name, coords.LogicalPosition{X: xPos, Y: yPos}, "../assets/items/bubbly.png")
-		item.AddComponent(gear.ConsumableComponent, &c)
-		return item
-
-	}
-	return nil
-
-}
 
 // REMOVED: SpawnRangedWeapon - weapon spawning removed as part of squad system transition
 
@@ -104,15 +83,8 @@ func SpawnLootAroundPlayer(currentTurnNumber int, playerData avatar.PlayerData, 
 	pixelPos := coords.CoordManager.LogicalToPixel(logicalPos)
 	playerX, playerY := pixelPos.X, pixelPos.Y
 	spawnPositions := gm.UnblockedLogicalCoords(playerX, playerY, 10)
-	consChance, throwableChance := rand.Intn(100), rand.Intn(100)
+	throwableChance := rand.Intn(100)
 
-	if consChance < ConsumableSpawnProb {
-
-		pos := getRandomEntry(spawnPositions)
-		e := SpawnConsumable(manager, pos.X, pos.Y)
-		gm.AddEntityToTile(e, &coords.LogicalPosition{X: pos.X, Y: pos.Y})
-
-	}
 	if throwableChance < ThrowableSpawnProb {
 
 		pos := getRandomEntry(spawnPositions)

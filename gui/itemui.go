@@ -13,7 +13,7 @@ import (
 type PlayerItemsUI struct {
 	ThrowableItemDisplay ThrowingItemDisplay
 	// EquipmentDisplay removed - squad system handles combat equipment
-	ConsumableDisplay ConsumableItemDisplay
+
 }
 
 // Create the container that contains the widgets for displaying the different views of the inventory
@@ -37,7 +37,6 @@ func CreateInventorySelectionContainer(playerUI *PlayerUI, inv *gear.Inventory, 
 
 	itemDisplayOptionsContainer.AddChild(CreateOpenThrowablesButton(playerUI, inv, ui))
 	// Equipment button removed - squad system handles combat equipment
-	itemDisplayOptionsContainer.AddChild(CreateOpenConsumablesButton(playerUI, inv, ui))
 
 	CreateItemManagementUI(playerUI, pl, pl.Inventory, pl.PlayerAttributes(), pl.PlayerEntity)
 
@@ -56,15 +55,10 @@ func (itemDisp *ItemDisplay) SetupItemDisplay(windowName string, pl *avatar.Play
 // This could probably be simplified
 func CreateItemManagementUI(playerUI *PlayerUI, playerData *avatar.PlayerData, playerInventory *gear.Inventory, playerAttributes *common.Attributes, playerEnt *ecs.Entity) {
 
-	playerUI.ItemsUI.ConsumableDisplay.CreateRootContainer()
-	playerUI.ItemsUI.ConsumableDisplay.ItmDisplay.SetupItemDisplay("Consumables", playerData)
-	playerUI.ItemsUI.ConsumableDisplay.SetupContainers()
-
 	// Equipment display removed - squad system handles combat equipment
 
 	playerUI.ItemsUI.ThrowableItemDisplay.CreateRootContainer()
 	playerUI.ItemsUI.ThrowableItemDisplay.ItemDisplay.SetupItemDisplay("Throwable Window", playerData)
 	playerUI.ItemsUI.ThrowableItemDisplay.SetupContainers()
-
 
 }

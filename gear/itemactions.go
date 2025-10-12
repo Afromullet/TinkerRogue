@@ -43,12 +43,12 @@ type ItemAction interface {
 
 // ThrowableAction represents the action of throwing an item
 type ThrowableAction struct {
-	MainProps         CommonItemProperties
-	ThrowingRange     int
-	Damage            int
-	Shape             graphics.TileBasedShape
-	VX                graphics.VisualEffect
-	EffectsToApply    []StatusEffects // Effects that get applied when thrown
+	MainProps      CommonItemProperties
+	ThrowingRange  int
+	Damage         int
+	Shape          graphics.TileBasedShape
+	VX             graphics.VisualEffect
+	EffectsToApply []StatusEffects // Effects that get applied when thrown
 }
 
 func (t *ThrowableAction) ActionName() string {
@@ -66,23 +66,27 @@ func (t *ThrowableAction) Execute(targetPos *coords.LogicalPosition, sourcePos *
 		graphics.AddVXArea(graphics.NewVisualEffectArea(sourcePos.X, sourcePos.Y, t.Shape, t.VX))
 	}
 
+	//TODO, apply this to squads in the future
 	// Get positions affected by the shape
-	affectedPositions := coords.CoordManager.GetTilePositionsAsCommon(t.Shape.GetIndices())
+	//affectedPositions := coords.CoordManager.GetTilePositionsAsCommon(t.Shape.GetIndices())
 	appliedEffects := make([]StatusEffects, 0)
 
 	// Apply effects to monsters in affected area
-	for _, c := range world.Query(worldTags["monsters"]) {
-		monsterPos := c.Components[common.PositionComponent].(*coords.LogicalPosition)
 
-		for _, pos := range affectedPositions {
-			if monsterPos.IsEqual(&pos) && monsterPos.InRange(sourcePos, t.ThrowingRange) {
-				// Collect all effects that were applied
-				for _, effect := range t.EffectsToApply {
-					appliedEffects = append(appliedEffects, effect.Copy())
+	/*
+		for _, c := range world.Query(worldTags["monsters"]) {
+			monsterPos := c.Components[common.PositionComponent].(*coords.LogicalPosition)
+
+			for _, pos := range affectedPositions {
+				if monsterPos.IsEqual(&pos) && monsterPos.InRange(sourcePos, t.ThrowingRange) {
+					// Collect all effects that were applied
+					for _, effect := range t.EffectsToApply {
+						appliedEffects = append(appliedEffects, effect.Copy())
+					}
 				}
 			}
 		}
-	}
+	*/
 
 	return appliedEffects
 }

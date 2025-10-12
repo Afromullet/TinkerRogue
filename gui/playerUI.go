@@ -107,30 +107,3 @@ func CreateOpenThrowablesButton(playerUI *PlayerUI, inv *gear.Inventory, ui *ebi
 	return button
 
 }
-
-// REMOVED: CreateOpenEquipmentButton - equipment UI replaced by squad system
-// See CLAUDE.md Section 7 (Squad System Infrastructure) for replacement system
-
-// Creating the button that opens the crafting menu. Other buttons will be added
-// Doing it inside a function makes the code easier to follow
-func CreateOpenConsumablesButton(playerUI *PlayerUI, inv *gear.Inventory, ui *ebitenui.UI) *widget.Button {
-	// construct a button
-	button := CreateButton("Consumables")
-
-	button.Configure( // add a handler that reacts to clicking the button
-		widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
-
-			x, y := playerUI.ItemsUI.ConsumableDisplay.ItmDisplay.RootWindow.Contents.PreferredSize()
-
-			r := image.Rect(0, 0, x, y)
-			r = r.Add(image.Point{200, 50})
-			playerUI.ItemsUI.ConsumableDisplay.ItmDisplay.RootWindow.SetLocation(r)
-			playerUI.ItemsUI.ConsumableDisplay.DisplayInventory() //Remove the item from display
-			ui.AddWindow(playerUI.ItemsUI.ConsumableDisplay.ItmDisplay.RootWindow)
-
-		}))
-
-	return button
-
-}
-

@@ -158,19 +158,24 @@ func (cc *CombatController) applyThrowable(item *gear.Item, shape graphics.TileB
 	// Execute the action using the new interface
 	//appliedEffects := t.Execute(cc.playerData.Pos, throwerPos, cc.ecsManager.World, cc.ecsManager.WorldTags)
 
-	// Apply the effects to creatures
-	for _, c := range cc.ecsManager.World.Query(cc.ecsManager.WorldTags["monsters"]) {
-		curPos := c.Components[common.PositionComponent].(*coords.LogicalPosition)
+	//cc.playerData.InputStates.IsThrowing = false
+	// TODO, for future. Eventually apply effects to a squad
 
-		pos := coords.CoordManager.GetTilePositionsAsCommon(t.Shape.GetIndices())
-		for _, p := range pos {
-			if curPos.IsEqual(&p) && curPos.InRange(throwerPos, t.ThrowingRange) {
-				// Apply individual effects instead of the entire properties entity
-				//for _, effect := range appliedEffects {
-				//crea.StatEffectTracker.Add(effect)
-				//	}
-				cc.playerData.InputStates.IsThrowing = false
+	/*
+		for _, c := range cc.ecsManager.World.Query(cc.ecsManager.WorldTags["monsters"]) {
+			curPos := c.Components[common.PositionComponent].(*coords.LogicalPosition)
+
+			pos := coords.CoordManager.GetTilePositionsAsCommon(t.Shape.GetIndices())
+			for _, p := range pos {
+				if curPos.IsEqual(&p) && curPos.InRange(throwerPos, t.ThrowingRange) {
+					// Apply individual effects instead of the entire properties entity
+					//for _, effect := range appliedEffects {
+					//crea.StatEffectTracker.Add(effect)
+					//	}
+					cc.playerData.InputStates.IsThrowing = false
+				}
 			}
+
 		}
-	}
+	*/
 }

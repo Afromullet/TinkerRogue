@@ -102,32 +102,6 @@ func (inv *Inventory) EffectNames(index int) ([]string, error) {
 
 }
 
-// Gets all Consumables for displaying
-// Assumes that indicesToSelect is already filtered
-func (inv *Inventory) GetConsumablesForDisplay(indicesToSelect []int) []any {
-
-	inventoryItems := make([]any, 0)
-
-	for index, entity := range inv.InventoryContent {
-
-		itemName := common.GetComponentType[*common.Name](entity, common.NameComponent)
-		itemComp := GetItem(entity)
-
-		if entity.HasComponent(ConsumableComponent) {
-
-			inventoryItems = append(inventoryItems, InventoryListEntry{
-				index,
-				itemName.NameStr,
-				itemComp.Count})
-
-		}
-
-	}
-
-	return inventoryItems
-
-}
-
 // Builds the list that's needed for displaying the inventory to the player
 // itemPropertiesFilter StatusEffects lets us filter by status effects
 // itemActionFilter string lets us filter by item actions (like "Throwable")

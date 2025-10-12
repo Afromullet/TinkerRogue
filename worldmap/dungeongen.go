@@ -228,6 +228,11 @@ func (gameMap *GameMap) DrawLevelCenteredSquare(screen *ebiten.Image, playerPos 
 	// Draw the square section centered on the screen
 	for x := sq.StartX; x <= sq.EndX; x++ {
 		for y := sq.StartY; y <= sq.EndY; y++ {
+			// Skip coordinates outside map bounds
+			if x < 0 || x >= graphics.ScreenInfo.DungeonWidth || y < 0 || y >= graphics.ScreenInfo.DungeonHeight {
+				continue
+			}
+
 			logicalPos := coords.LogicalPosition{X: x, Y: y}
 			idx := coords.CoordManager.LogicalToIndex(logicalPos)
 			tile := gameMap.Tiles[idx]

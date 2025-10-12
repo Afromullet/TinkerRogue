@@ -10,7 +10,6 @@ package main
 import (
 	"game_main/avatar"
 	"game_main/common"
-	"game_main/gear"
 	"game_main/graphics"
 	"game_main/gui"
 	"game_main/input"
@@ -49,14 +48,13 @@ func NewGame() *Game {
 // updates player stats, processes status effects, and cleans up dead entities.
 func HandleInput(g *Game) {
 
-	gear.UpdateEntityAttributes(g.playerData.PlayerEntity)
 	g.gameUI.StatsUI.StatsTextArea.SetText(g.playerData.PlayerAttributes().DisplayString())
 
 	// Handle all input through the InputCoordinator
 	g.inputCoordinator.HandleInput()
 
 	if g.playerData.InputStates.HasKeyInput {
-		gear.RunEffectTracker(g.playerData.PlayerEntity)
+
 		g.gameUI.StatsUI.StatsTextArea.SetText(g.playerData.PlayerAttributes().DisplayString())
 		g.playerData.InputStates.HasKeyInput = false
 	}
@@ -129,6 +127,8 @@ func main() {
 	SetupInputCoordinator(g)
 
 	testing.CreateTestItems(g.em.World, g.em.WorldTags, &g.gameMap)
+
+	testing.UpdateContentsForTest(&g.em, &g.gameMap)
 
 	// Configure window
 	ebiten.SetWindowResizable(true)

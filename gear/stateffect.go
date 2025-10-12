@@ -372,9 +372,6 @@ func InitializeItemComponents(manager *ecs.Manager, tags map[string]ecs.Tag) {
 
 	ThrowableComponent = manager.NewComponent()
 
-	ConsumableComponent = manager.NewComponent()
-	ConsEffectTrackerComponent = manager.NewComponent()
-
 	AllItemEffects = append(AllItemEffects, StickyComponent, BurningComponent, FreezingComponent)
 
 	items := ecs.BuildTag(ItemComponent, common.PositionComponent) //todo add all the tags

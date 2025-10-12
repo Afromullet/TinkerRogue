@@ -19,7 +19,6 @@ var RandThrowableOptions = []gear.StatusEffects{gear.NewBurning(1, 1), gear.NewF
 var LootQualityTable = NewProbabilityTable[common.QualityType]()           //Determining the quality of the item to be generated
 var ThrowableEffectStatTable = NewProbabilityTable[gear.StatusEffects]()   //Determines the effects that throwables apply to targets
 var ThrowableAOEProbTable = NewProbabilityTable[graphics.BasicShapeType]() //Determines the AOE of throwables
-var ConsumableSpawnTable = NewProbabilityTable[gear.ConsumableType]()
 
 func InitLootSpawnTables() {
 
@@ -37,9 +36,5 @@ func InitLootSpawnTables() {
 	ThrowableAOEProbTable.AddEntry(graphics.Circular, 10)
 	ThrowableAOEProbTable.AddEntry(graphics.Linear, 15)
 	ThrowableAOEProbTable.AddEntry(graphics.Rectangular, 5)
-
-	ConsumableSpawnTable.AddEntry(gear.HealingPotion, 50)
-	ConsumableSpawnTable.AddEntry(gear.ProtectionPotion, 30)
-	ConsumableSpawnTable.AddEntry(gear.SpeedPotion, 20)
 
 }

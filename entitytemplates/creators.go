@@ -6,7 +6,6 @@ package entitytemplates
 import (
 	"game_main/common"
 	"game_main/coords"
-	"game_main/gear"
 
 	"game_main/rendering"
 	"game_main/worldmap"
@@ -54,17 +53,6 @@ func createFromTemplate(manager common.EntityManager, name, imagePath, assetDir 
 	}
 
 	return entity
-}
-
-func addConsumableComponents(c JSONAttributeModifier) ComponentAdder {
-	return func(entity *ecs.Entity) {
-		entity.AddComponent(gear.ItemComponent, &gear.Item{Count: 1})
-		entity.AddComponent(gear.ConsumableComponent, &gear.Consumable{
-			Name:         c.Name,
-			AttrModifier: CreateAttributesFromJSON(c),
-			Duration:     c.Duration,
-		})
-	}
 }
 
 func addCreatureComponents(m JSONMonster) ComponentAdder {
@@ -117,12 +105,6 @@ func CreateEntityFromTemplate(manager common.EntityManager, config EntityConfig,
 	var adders []ComponentAdder
 
 	switch config.Type {
-	case EntityConsumable:
-		c, ok := data.(JSONAttributeModifier)
-		if !ok {
-			log.Fatalf("Expected JSONAttributeModifier for EntityConsumable, got %T", data)
-		}
-		adders = []ComponentAdder{addConsumableComponents(c)}
 
 	case EntityCreature:
 		m, ok := data.(JSONMonster)
