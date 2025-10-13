@@ -36,13 +36,15 @@ var (
 // SquadData represents the squad entity's component data.
 // ✅ Uses ecs.EntityID for relationships (native type)
 type SquadData struct {
-	SquadID    ecs.EntityID  // Unique squad identifier (native entity ID)
-	Formation  FormationType // Current formation layout
-	Name       string        // Squad display name
-	Morale     int           // Squad-wide morale (0-100)
-	SquadLevel int           // Average level for spawning
-	TurnCount  int           // Number of turns this squad has taken
-	MaxUnits   int           // Maximum squad size (typically 9)
+	SquadID       ecs.EntityID  // Unique squad identifier (native entity ID)
+	Formation     FormationType // Current formation layout
+	Name          string        // Squad display name
+	Morale        int           // Squad-wide morale (0-100)
+	SquadLevel    int           // Average level for spawning
+	TurnCount     int           // Number of turns this squad has taken
+	MaxUnits      int           // Maximum squad size (typically 9)
+	UsedCapacity  float64       // Current capacity consumed by units
+	TotalCapacity int           // Total capacity from leader's Leadership stat
 }
 
 // FormationType defines squad layout presets

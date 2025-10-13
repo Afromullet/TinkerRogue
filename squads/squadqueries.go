@@ -137,3 +137,76 @@ func IsSquadDestroyed(squadID ecs.EntityID, squadmanager *SquadECSManager) bool 
 
 	return len(unitIDs) > 0
 }
+
+// ========================================
+// CAPACITY SYSTEM QUERIES
+// ========================================
+
+// GetSquadUsedCapacity calculates total capacity consumed by all units in squad
+func GetSquadUsedCapacity(squadID ecs.EntityID, squadmanager *SquadECSManager) float64 {
+	unitIDs := GetUnitIDsInSquad(squadID, squadmanager)
+	totalUsed := 0.0
+
+	for _, unitID := range unitIDs {
+		unitEntity := FindUnitByID(unitID, squadmanager)
+		if unitEntity == nil {
+			continue
+		}
+
+		attr := common.GetAttributes(unitEntity)
+		totalUsed += attr.GetCapacityCost()
+	}
+
+	return totalUsed
+}
+
+// GetSquadTotalCapacity returns the squad's total capacity based on leader's Leadership
+// Returns 0 if squad has no leader (or defaults to 6 if no leader found)
+func GetSquadTotalCapacity(squadID ecs.EntityID, squadmanager *SquadECSManager) int {
+	leaderID := GetLeaderID(squadID, squadmanager)
+	if leaderID == 0 {
+		// No leader found - return default minimum capacity
+		return 6
+	}
+
+	leaderEntity := FindUnitByID(leaderID, squadmanager)
+	if leaderEntity == nil {
+		return 6
+	}
+
+	attr := common.GetAttributes(leaderEntity)
+	return attr.GetUnitCapacity()
+}
+
+// GetSquadRemainingCapacity returns how much capacity is available
+func GetSquadRemainingCapacity(squadID ecs.EntityID, squadmanager *SquadECSManager) float64 {
+	total := float64(GetSquadTotalCapacity(squadID, squadmanager))
+	used := GetSquadUsedCapacity(squadID, squadmanager)
+	return total - used
+}
+
+// CanAddUnitToSquad checks if a unit can be added without exceeding capacity
+// Returns true if there's enough remaining capacity, false otherwise
+func CanAddUnitToSquad(squadID ecs.EntityID, unitCapacityCost float64, squadmanager *SquadECSManager) bool {
+	remaining := GetSquadRemainingCapacity(squadID, squadmanager)
+	return remaining >= unitCapacityCost
+}
+
+// IsSquadOverCapacity checks if squad currently exceeds its capacity limit
+// Used for displaying warnings when leader changes or dies
+func IsSquadOverCapacity(squadID ecs.EntityID, squadmanager *SquadECSManager) bool {
+	return GetSquadRemainingCapacity(squadID, squadmanager) < 0
+}
+
+// UpdateSquadCapacity recalculates and updates the cached capacity values in SquadData
+// Should be called when: adding/removing units, leader changes, or leader attributes change
+func UpdateSquadCapacity(squadID ecs.EntityID, squadmanager *SquadECSManager) {
+	squadEntity := GetSquadEntity(squadID, squadmanager)
+	if squadEntity == nil {
+		return
+	}
+
+	squadData := common.GetComponentType[*SquadData](squadEntity, SquadComponent)
+	squadData.TotalCapacity = GetSquadTotalCapacity(squadID, squadmanager)
+	squadData.UsedCapacity = GetSquadUsedCapacity(squadID, squadmanager)
+}

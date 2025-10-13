@@ -19,11 +19,13 @@ func CreateEmptySquad(squadmanager *SquadECSManager,
 	squadID := squadEntity.GetID()
 
 	squadEntity.AddComponent(SquadComponent, &SquadData{
-		SquadID:   squadID,
-		Name:      squadName,
-		Morale:    100,
-		TurnCount: 0,
-		MaxUnits:  9,
+		SquadID:       squadID,
+		Name:          squadName,
+		Morale:        100,
+		TurnCount:     0,
+		MaxUnits:      9,
+		UsedCapacity:  0.0,
+		TotalCapacity: 6, // Default capacity (no leader yet)
 	})
 
 	squadEntity.AddComponent(common.PositionComponent, &coords.LogicalPosition{})
@@ -48,6 +50,14 @@ func AddUnitToSquad(
 		return fmt.Errorf("grid position (%d, %d) already occupied", gridRow, gridCol)
 	}
 
+	// Check capacity before adding unit
+	unitCapacityCost := unit.Attributes.GetCapacityCost()
+	if !CanAddUnitToSquad(squadID, unitCapacityCost, squadmanager) {
+		remaining := GetSquadRemainingCapacity(squadID, squadmanager)
+		return fmt.Errorf("insufficient squad capacity: need %.2f, have %.2f remaining (unit %s costs %.2f)",
+			unitCapacityCost, remaining, unit.Name, unitCapacityCost)
+	}
+
 	// Create unit entity (adds GridPositionComponent with default 0,0)
 	unitEntity, err := CreateUnitEntity(squadmanager, unit)
 	if err != nil {
@@ -64,6 +74,9 @@ func AddUnitToSquad(
 	gridPos.AnchorRow = gridRow
 	gridPos.AnchorCol = gridCol
 
+	// Update squad capacity tracking
+	UpdateSquadCapacity(squadID, squadmanager)
+
 	return nil
 }
 
@@ -78,10 +91,16 @@ func RemoveUnitFromSquad(unitEntityID ecs.EntityID, squadmanager *SquadECSManage
 		return fmt.Errorf("unit is not in a squad")
 	}
 
+	// Get the squad ID before removing to update capacity
+	memberData := common.GetComponentType[*SquadMemberData](unitEntity, SquadMemberComponent)
+	squadID := memberData.SquadID
+
 	// In bytearena/ecs, we can't remove components
 	// Workaround: Set SquadID to 0 to mark as "removed"
-	memberData := common.GetComponentType[*SquadMemberData](unitEntity, SquadMemberComponent)
 	memberData.SquadID = 0
+
+	// Update squad capacity tracking after removal
+	UpdateSquadCapacity(squadID, squadmanager)
 
 	return nil
 }

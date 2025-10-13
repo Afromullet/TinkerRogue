@@ -425,7 +425,7 @@ func CreateSquadFromTemplate(
 		unitEntity.AddComponent(squad.TargetRowComponent, &squad.TargetRowData{
 			Mode:          targetMode,
 			TargetRows:    template.TargetRows,
-			IsMultiTarget: template.IsMultiTarget,
+			IsMultiTarget: template.IsMultiTarget,/
 			MaxTargets:    template.MaxTargets,
 			TargetCells:   template.TargetCells,
 		})

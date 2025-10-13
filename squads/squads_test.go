@@ -20,12 +20,15 @@ func setupTestSquadManager(t *testing.T) *SquadECSManager {
 	InitSquadTags(*manager)
 
 	// Initialize common components for CreateEmptySquad and visualization
-	// (Squad entities need these to track position and unit entities need AttributeComponent)
+	// (Squad entities need these to track position and unit entities need AttributeComponent and NameComponent)
 	if common.PositionComponent == nil {
 		common.PositionComponent = manager.Manager.NewComponent()
 	}
 	if common.AttributeComponent == nil {
 		common.AttributeComponent = manager.Manager.NewComponent()
+	}
+	if common.NameComponent == nil {
+		common.NameComponent = manager.Manager.NewComponent()
 	}
 
 	return manager

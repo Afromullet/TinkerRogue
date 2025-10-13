@@ -138,7 +138,7 @@ func (a *Attributes) GetMagicDefense() int {
 // DERIVED STAT METHODS (Squad System)
 // ========================================
 
-// GetUnitCapacity calculates maximum squad size
+// GetUnitCapacity calculates maximum squad size (total capacity)
 // Formula: 6 + (Leadership / 3), capped at 9
 func (a *Attributes) GetUnitCapacity() int {
 	capacity := 6 + (a.Leadership / 3)
@@ -146,6 +146,13 @@ func (a *Attributes) GetUnitCapacity() int {
 		capacity = 9
 	}
 	return capacity
+}
+
+// GetCapacityCost calculates how much capacity this unit consumes in a squad
+// Power-based formula: (Strength + Weapon + Armor) / 5
+// Stronger units cost more capacity to field
+func (a *Attributes) GetCapacityCost() float64 {
+	return float64(a.Strength+a.Weapon+a.Armor) / 5.0
 }
 
 // ========================================
