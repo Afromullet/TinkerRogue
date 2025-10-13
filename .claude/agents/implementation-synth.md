@@ -551,6 +551,7 @@ func BenchmarkFeatureHotPath(b *testing.B) {
 - [Go Code Review Comments](https://github.com/golang/go/wiki/CodeReviewComments)
 - [High Performance Go](https://dave.cheney.net/high-performance-go-workshop/dotgo-paris.html)
 - [Ebiten Best Practices](https://ebiten.org/documents/)
+- [Ebiten UI Examples](https://github.com/ebitenui/ebitenui)
 
 ### Codebase Integration
 - CLAUDE.md - Project roadmap and patterns

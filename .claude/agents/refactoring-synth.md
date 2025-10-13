@@ -55,7 +55,7 @@ Launch refactoring-critic with all 6 approaches to lead the synthesis process:
 
 ### Phase 3: Comprehensive Report Generation
 
-Create a detailed analysis file: `refactoring_analysis_[target_name]_[timestamp].txt`
+Create a detailed analysis file: `analysis/refactoring_analysis_[target_name]_[timestamp].md`
 
 ## Output Format Structure
 
@@ -400,7 +400,7 @@ After receiving all agent outputs:
 1. Collect all 6 initial approaches with code samples
 2. Collect final 3 synthesized approaches from critic-led collaboration
 3. Assemble comprehensive analysis file following structure above
-4. Save as `refactoring_analysis_[target_name]_[timestamp].txt`
+4. Save as `analysis/refactoring_analysis_[target_name]_[timestamp].md`
 5. Provide user with file path and executive summary
 
 ## Quality Assurance
