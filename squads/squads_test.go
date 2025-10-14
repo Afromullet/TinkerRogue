@@ -14,8 +14,8 @@ import (
 // ========================================
 
 // setupTestSquadManager creates a fresh SquadECSManager for testing
-func setupTestSquadManager(t *testing.T) *SquadECSManager {
-	manager := NewSquadECSManager()
+func setupTestSquadManager(t *testing.T) *common.EntityManager {
+	manager := common.NewEntityManager()
 	InitSquadComponents(*manager)
 	InitSquadTags(*manager)
 

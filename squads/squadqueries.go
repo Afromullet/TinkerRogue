@@ -7,7 +7,7 @@ import (
 )
 
 // FindUnitByID finds a unit entity by its ID
-func FindUnitByID(unitID ecs.EntityID, squadmanager *SquadECSManager) *ecs.Entity {
+func FindUnitByID(unitID ecs.EntityID, squadmanager *common.EntityManager) *ecs.Entity {
 	for _, result := range squadmanager.World.Query(SquadMemberTag) {
 		if result.Entity.GetID() == unitID {
 			return result.Entity
@@ -18,7 +18,7 @@ func FindUnitByID(unitID ecs.EntityID, squadmanager *SquadECSManager) *ecs.Entit
 }
 
 // GetUnitIDsAtGridPosition returns unit IDs occupying a specific grid cell
-func GetUnitIDsAtGridPosition(squadID ecs.EntityID, row, col int, squadmanager *SquadECSManager) []ecs.EntityID {
+func GetUnitIDsAtGridPosition(squadID ecs.EntityID, row, col int, squadmanager *common.EntityManager) []ecs.EntityID {
 	var unitIDs []ecs.EntityID
 
 	for _, result := range squadmanager.World.Query(SquadMemberTag) {
@@ -47,7 +47,7 @@ func GetUnitIDsAtGridPosition(squadID ecs.EntityID, row, col int, squadmanager *
 
 // GetUnitIDsInSquad returns unit IDs belonging to a squad
 // ✅ Returns ecs.EntityID (native type), not entity pointers
-func GetUnitIDsInSquad(squadID ecs.EntityID, squadmanager *SquadECSManager) []ecs.EntityID {
+func GetUnitIDsInSquad(squadID ecs.EntityID, squadmanager *common.EntityManager) []ecs.EntityID {
 	var unitIDs []ecs.EntityID
 
 	for _, result := range squadmanager.World.Query(SquadMemberTag) {
@@ -65,7 +65,7 @@ func GetUnitIDsInSquad(squadID ecs.EntityID, squadmanager *SquadECSManager) []ec
 
 // GetSquadEntity finds squad entity by squad ID
 // ✅ Returns entity pointer directly from query
-func GetSquadEntity(squadID ecs.EntityID, squadmanager *SquadECSManager) *ecs.Entity {
+func GetSquadEntity(squadID ecs.EntityID, squadmanager *common.EntityManager) *ecs.Entity {
 	for _, result := range squadmanager.World.Query(SquadTag) {
 		squadEntity := result.Entity
 		squadData := common.GetComponentType[*SquadData](squadEntity, SquadComponent)
@@ -79,7 +79,7 @@ func GetSquadEntity(squadID ecs.EntityID, squadmanager *SquadECSManager) *ecs.En
 }
 
 // GetUnitIDsInRow returns alive unit IDs in a row
-func GetUnitIDsInRow(squadID ecs.EntityID, row int, squadmanager *SquadECSManager) []ecs.EntityID {
+func GetUnitIDsInRow(squadID ecs.EntityID, row int, squadmanager *common.EntityManager) []ecs.EntityID {
 	var unitIDs []ecs.EntityID
 	seen := make(map[ecs.EntityID]bool) // ✅ Prevents multi-cell units from being counted multiple times
 
@@ -106,7 +106,7 @@ func GetUnitIDsInRow(squadID ecs.EntityID, row int, squadmanager *SquadECSManage
 
 // GetLeaderID finds the leader unit ID of a squad
 // ✅ Returns ecs.EntityID (native type), not entity pointer
-func GetLeaderID(squadID ecs.EntityID, squadmanager *SquadECSManager) ecs.EntityID {
+func GetLeaderID(squadID ecs.EntityID, squadmanager *common.EntityManager) ecs.EntityID {
 	for _, result := range squadmanager.World.Query(LeaderTag) {
 		leaderEntity := result.Entity
 		memberData := common.GetComponentType[*SquadMemberData](leaderEntity, SquadMemberComponent)
@@ -120,7 +120,7 @@ func GetLeaderID(squadID ecs.EntityID, squadmanager *SquadECSManager) ecs.Entity
 }
 
 // IsSquadDestroyed checks if all units are dead
-func IsSquadDestroyed(squadID ecs.EntityID, squadmanager *SquadECSManager) bool {
+func IsSquadDestroyed(squadID ecs.EntityID, squadmanager *common.EntityManager) bool {
 	unitIDs := GetUnitIDsInSquad(squadID, squadmanager)
 
 	for _, unitID := range unitIDs {
@@ -143,7 +143,7 @@ func IsSquadDestroyed(squadID ecs.EntityID, squadmanager *SquadECSManager) bool 
 // ========================================
 
 // GetSquadUsedCapacity calculates total capacity consumed by all units in squad
-func GetSquadUsedCapacity(squadID ecs.EntityID, squadmanager *SquadECSManager) float64 {
+func GetSquadUsedCapacity(squadID ecs.EntityID, squadmanager *common.EntityManager) float64 {
 	unitIDs := GetUnitIDsInSquad(squadID, squadmanager)
 	totalUsed := 0.0
 
@@ -162,7 +162,7 @@ func GetSquadUsedCapacity(squadID ecs.EntityID, squadmanager *SquadECSManager) f
 
 // GetSquadTotalCapacity returns the squad's total capacity based on leader's Leadership
 // Returns 0 if squad has no leader (or defaults to 6 if no leader found)
-func GetSquadTotalCapacity(squadID ecs.EntityID, squadmanager *SquadECSManager) int {
+func GetSquadTotalCapacity(squadID ecs.EntityID, squadmanager *common.EntityManager) int {
 	leaderID := GetLeaderID(squadID, squadmanager)
 	if leaderID == 0 {
 		// No leader found - return default minimum capacity
@@ -179,7 +179,7 @@ func GetSquadTotalCapacity(squadID ecs.EntityID, squadmanager *SquadECSManager) 
 }
 
 // GetSquadRemainingCapacity returns how much capacity is available
-func GetSquadRemainingCapacity(squadID ecs.EntityID, squadmanager *SquadECSManager) float64 {
+func GetSquadRemainingCapacity(squadID ecs.EntityID, squadmanager *common.EntityManager) float64 {
 	total := float64(GetSquadTotalCapacity(squadID, squadmanager))
 	used := GetSquadUsedCapacity(squadID, squadmanager)
 	return total - used
@@ -187,20 +187,20 @@ func GetSquadRemainingCapacity(squadID ecs.EntityID, squadmanager *SquadECSManag
 
 // CanAddUnitToSquad checks if a unit can be added without exceeding capacity
 // Returns true if there's enough remaining capacity, false otherwise
-func CanAddUnitToSquad(squadID ecs.EntityID, unitCapacityCost float64, squadmanager *SquadECSManager) bool {
+func CanAddUnitToSquad(squadID ecs.EntityID, unitCapacityCost float64, squadmanager *common.EntityManager) bool {
 	remaining := GetSquadRemainingCapacity(squadID, squadmanager)
 	return remaining >= unitCapacityCost
 }
 
 // IsSquadOverCapacity checks if squad currently exceeds its capacity limit
 // Used for displaying warnings when leader changes or dies
-func IsSquadOverCapacity(squadID ecs.EntityID, squadmanager *SquadECSManager) bool {
+func IsSquadOverCapacity(squadID ecs.EntityID, squadmanager *common.EntityManager) bool {
 	return GetSquadRemainingCapacity(squadID, squadmanager) < 0
 }
 
 // UpdateSquadCapacity recalculates and updates the cached capacity values in SquadData
 // Should be called when: adding/removing units, leader changes, or leader attributes change
-func UpdateSquadCapacity(squadID ecs.EntityID, squadmanager *SquadECSManager) {
+func UpdateSquadCapacity(squadID ecs.EntityID, squadmanager *common.EntityManager) {
 	squadEntity := GetSquadEntity(squadID, squadmanager)
 	if squadEntity == nil {
 		return

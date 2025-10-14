@@ -12,7 +12,7 @@ import (
 // SQUAD RELATED
 // ========================================
 
-func CreateEmptySquad(squadmanager *SquadECSManager,
+func CreateEmptySquad(squadmanager *common.EntityManager,
 	squadName string) {
 
 	squadEntity := squadmanager.World.NewEntity()
@@ -35,7 +35,7 @@ func CreateEmptySquad(squadmanager *SquadECSManager,
 // gridRow and gridCol are the row and col we want to anchor the unit at
 func AddUnitToSquad(
 	squadID ecs.EntityID,
-	squadmanager *SquadECSManager,
+	squadmanager *common.EntityManager,
 	unit UnitTemplate,
 	gridRow, gridCol int) error {
 
@@ -81,7 +81,7 @@ func AddUnitToSquad(
 }
 
 // RemoveUnitFromSquad - ✅ Accepts ecs.EntityID (native type)
-func RemoveUnitFromSquad(unitEntityID ecs.EntityID, squadmanager *SquadECSManager) error {
+func RemoveUnitFromSquad(unitEntityID ecs.EntityID, squadmanager *common.EntityManager) error {
 	unitEntity := FindUnitByID(unitEntityID, squadmanager)
 	if unitEntity == nil {
 		return fmt.Errorf("unit entity not found")

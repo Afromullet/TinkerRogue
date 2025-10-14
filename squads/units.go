@@ -126,7 +126,7 @@ func GetTargetMode(targetModeString string) (TargetMode, error) {
 
 // Uses the UnitTemlate to create the unit entity and add it to the manager.
 // This does not add the SquadMemberDat
-func CreateUnitEntity(squadmanager *SquadECSManager, unit UnitTemplate) (*ecs.Entity, error) {
+func CreateUnitEntity(squadmanager *common.EntityManager, unit UnitTemplate) (*ecs.Entity, error) {
 
 	// Validate grid dimensions
 	if unit.GridWidth < 1 || unit.GridWidth > 3 {

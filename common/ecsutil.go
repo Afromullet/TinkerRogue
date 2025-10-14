@@ -27,6 +27,15 @@ type EntityManager struct {
 	Tags  map[string]ecs.Tag
 }
 
+func NewEntityManager() *EntityManager {
+
+	return &EntityManager{
+		World: ecs.NewManager(),
+		Tags:  make(map[string]ecs.Tag),
+	}
+
+}
+
 // GetAllEntities returns all entity IDs currently managed by the EntityManager.
 func (em *EntityManager) GetAllEntities() []ecs.EntityID {
 	var entityIDs []ecs.EntityID

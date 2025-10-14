@@ -10,7 +10,7 @@ import (
 
 // VisualizeSquad creates a text representation of a squad's 3x3 grid
 // showing unit EntityIDs and their multi-cell occupancy
-func VisualizeSquad(squadID ecs.EntityID, squadmanager *SquadECSManager) string {
+func VisualizeSquad(squadID ecs.EntityID, squadmanager *common.EntityManager) string {
 	var output strings.Builder
 
 	// Get squad info

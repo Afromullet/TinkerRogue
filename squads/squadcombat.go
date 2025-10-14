@@ -18,7 +18,7 @@ type CombatResult struct {
 
 // ExecuteSquadAttack performs row-based combat between two squads
 // ✅ Works with ecs.EntityID internally
-func ExecuteSquadAttack(attackerSquadID, defenderSquadID ecs.EntityID, squadmanager *SquadECSManager) *CombatResult {
+func ExecuteSquadAttack(attackerSquadID, defenderSquadID ecs.EntityID, squadmanager *common.EntityManager) *CombatResult {
 	result := &CombatResult{
 		DamageByUnit: make(map[ecs.EntityID]int),
 		UnitsKilled:  []ecs.EntityID{},
@@ -95,7 +95,7 @@ func ExecuteSquadAttack(attackerSquadID, defenderSquadID ecs.EntityID, squadmana
 }
 
 // calculateUnitDamageByID calculates damage using new attribute system
-func calculateUnitDamageByID(attackerID, defenderID ecs.EntityID, squadmanager *SquadECSManager) int {
+func calculateUnitDamageByID(attackerID, defenderID ecs.EntityID, squadmanager *common.EntityManager) int {
 	attackerUnit := FindUnitByID(attackerID, squadmanager)
 	defenderUnit := FindUnitByID(defenderID, squadmanager)
 
@@ -161,7 +161,7 @@ func rollDodge(dodgeChance int) bool {
 }
 
 // applyDamageToUnitByID - ✅ Uses ecs.EntityID
-func applyDamageToUnitByID(unitID ecs.EntityID, damage int, result *CombatResult, squadmanager *SquadECSManager) {
+func applyDamageToUnitByID(unitID ecs.EntityID, damage int, result *CombatResult, squadmanager *common.EntityManager) {
 	unit := FindUnitByID(unitID, squadmanager)
 	if unit == nil {
 		return
@@ -177,7 +177,7 @@ func applyDamageToUnitByID(unitID ecs.EntityID, damage int, result *CombatResult
 }
 
 // selectLowestHPTargetID - TODO, don't think I will want this kind of targeting
-func selectLowestHPTargetID(unitIDs []ecs.EntityID, squadmanager *SquadECSManager) ecs.EntityID {
+func selectLowestHPTargetID(unitIDs []ecs.EntityID, squadmanager *common.EntityManager) ecs.EntityID {
 	if len(unitIDs) == 0 {
 		return 0
 	}
@@ -236,7 +236,7 @@ func sumDamageMap(damageMap map[ecs.EntityID]int) int {
 // CalculateTotalCover calculates the total damage reduction from all units providing cover to the defender
 // Cover bonuses stack additively (e.g., 0.25 + 0.15 = 0.40 total reduction)
 // Returns a value between 0.0 (no cover) and 1.0 (100% damage reduction, capped)
-func CalculateTotalCover(defenderID ecs.EntityID, squadmanager *SquadECSManager) float64 {
+func CalculateTotalCover(defenderID ecs.EntityID, squadmanager *common.EntityManager) float64 {
 	defenderUnit := FindUnitByID(defenderID, squadmanager)
 	if defenderUnit == nil {
 		return 0.0
@@ -291,7 +291,7 @@ func CalculateTotalCover(defenderID ecs.EntityID, squadmanager *SquadECSManager)
 // GetCoverProvidersFor finds all units in the same squad that provide cover to the defender
 // Cover is provided by units in front (lower row number) within the same column(s)
 // Multi-cell units provide cover to all columns they occupy
-func GetCoverProvidersFor(defenderID ecs.EntityID, defenderSquadID ecs.EntityID, defenderPos *GridPositionData, squadmanager *SquadECSManager) []ecs.EntityID {
+func GetCoverProvidersFor(defenderID ecs.EntityID, defenderSquadID ecs.EntityID, defenderPos *GridPositionData, squadmanager *common.EntityManager) []ecs.EntityID {
 	var providers []ecs.EntityID
 
 	// Get all columns the defender occupies
@@ -363,7 +363,7 @@ func GetCoverProvidersFor(defenderID ecs.EntityID, defenderSquadID ecs.EntityID,
 	return providers
 }
 
-func displayCombatResult(result *CombatResult, squadmanager *SquadECSManager) {
+func displayCombatResult(result *CombatResult, squadmanager *common.EntityManager) {
 	fmt.Printf("  Total damage: %d\n", result.TotalDamage)
 	fmt.Printf("  Units killed: %d\n", len(result.UnitsKilled))
 
@@ -378,7 +378,7 @@ func displayCombatResult(result *CombatResult, squadmanager *SquadECSManager) {
 	}
 }
 
-func displaySquadStatus(squadID ecs.EntityID, squadmanager *SquadECSManager) {
+func displaySquadStatus(squadID ecs.EntityID, squadmanager *common.EntityManager) {
 	squadEntity := GetSquadEntity(squadID, squadmanager)
 	squadData := common.GetComponentType[*SquadData](squadEntity, SquadComponent)
 

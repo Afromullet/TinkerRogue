@@ -3,31 +3,18 @@ package squads
 import (
 	"fmt"
 
+	"game_main/common"
 	"game_main/entitytemplates"
 
 	"github.com/bytearena/ecs"
 )
 
-var SquadsManager SquadECSManager
+var SquadsManager common.EntityManager
 var Units = make([]UnitTemplate, 0, len(entitytemplates.MonsterTemplates))
-
-type SquadECSManager struct {
-	World *ecs.Manager
-	Tags  map[string]ecs.Tag
-}
-
-func NewSquadECSManager() *SquadECSManager {
-
-	return &SquadECSManager{
-		World: ecs.NewManager(),
-		Tags:  make(map[string]ecs.Tag),
-	}
-
-}
 
 // InitSquadComponents registers all squad-related components with the ECS manager.
 // Call this during game initialization.
-func InitSquadComponents(squadManager SquadECSManager) {
+func InitSquadComponents(squadManager common.EntityManager) {
 	SquadComponent = squadManager.World.NewComponent()
 	SquadMemberComponent = squadManager.World.NewComponent()
 	GridPositionComponent = squadManager.World.NewComponent()
@@ -41,7 +28,7 @@ func InitSquadComponents(squadManager SquadECSManager) {
 
 // InitSquadTags creates tags for querying squad-related entities
 // Call this after InitSquadComponents
-func InitSquadTags(squadManager SquadECSManager) {
+func InitSquadTags(squadManager common.EntityManager) {
 	SquadTag = ecs.BuildTag(SquadComponent)
 	SquadMemberTag = ecs.BuildTag(SquadMemberComponent)
 	LeaderTag = ecs.BuildTag(LeaderComponent, SquadMemberComponent)
@@ -52,7 +39,7 @@ func InitSquadTags(squadManager SquadECSManager) {
 }
 
 func InitializeSquadData() error {
-	SquadsManager = *NewSquadECSManager()
+	SquadsManager = *common.NewEntityManager()
 	InitSquadComponents(SquadsManager)
 	InitSquadTags(SquadsManager)
 	if err := InitUnitTemplatesFromJSON(); err != nil {
