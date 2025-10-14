@@ -23,8 +23,41 @@ var (
 
 // EntityManager wraps the ECS library's manager and provides centralized entity and tag management.
 type EntityManager struct {
-	World     *ecs.Manager
-	WorldTags map[string]ecs.Tag
+	World *ecs.Manager
+	Tags  map[string]ecs.Tag
+}
+
+// GetAllEntities returns all entity IDs currently managed by the EntityManager.
+func (em *EntityManager) GetAllEntities() []ecs.EntityID {
+	var entityIDs []ecs.EntityID
+	for _, result := range em.World.Query(ecs.BuildTag()) {
+		entityIDs = append(entityIDs, result.Entity.GetID())
+	}
+	return entityIDs
+}
+
+// HasComponent checks if an entity has a specific component.
+// Returns false if the entity ID is invalid or the component is not found.
+func (em *EntityManager) HasComponent(entityID ecs.EntityID, component *ecs.Component) bool {
+	for _, result := range em.World.Query(ecs.BuildTag()) {
+		if result.Entity.GetID() == entityID {
+			_, ok := result.Entity.GetComponentData(component)
+			return ok
+		}
+	}
+	return false
+}
+
+// GetComponent retrieves component data from an entity by its ID.
+// Returns the component data and a boolean indicating if the component was found.
+// Returns (nil, false) if the entity ID is invalid or the component is not found.
+func (em *EntityManager) GetComponent(entityID ecs.EntityID, component *ecs.Component) (interface{}, bool) {
+	for _, result := range em.World.Query(ecs.BuildTag()) {
+		if result.Entity.GetID() == entityID {
+			return result.Entity.GetComponentData(component)
+		}
+	}
+	return nil, false
 }
 
 // GetComponentType retrieves a component of type T from an entity.
@@ -84,7 +117,7 @@ func GetCreatureAtPosition(ecsmnager *EntityManager, pos *coords.LogicalPosition
 		}
 
 		// Find entity and verify it's a monster
-		for _, result := range ecsmnager.World.Query(ecsmnager.WorldTags["monsters"]) {
+		for _, result := range ecsmnager.World.Query(ecsmnager.Tags["monsters"]) {
 			if result.Entity.GetID() == entityID {
 				return result.Entity
 			}
@@ -95,7 +128,7 @@ func GetCreatureAtPosition(ecsmnager *EntityManager, pos *coords.LogicalPosition
 	// Fallback to old O(n) search if PositionSystem not initialized
 	// This ensures backward compatibility during migration
 	var e *ecs.Entity = nil
-	for _, c := range ecsmnager.World.Query(ecsmnager.WorldTags["monsters"]) {
+	for _, c := range ecsmnager.World.Query(ecsmnager.Tags["monsters"]) {
 		curPos := GetPosition(c.Entity)
 		if pos.IsEqual(curPos) {
 			e = c.Entity

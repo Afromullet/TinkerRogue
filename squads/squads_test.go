@@ -22,13 +22,13 @@ func setupTestSquadManager(t *testing.T) *SquadECSManager {
 	// Initialize common components for CreateEmptySquad and visualization
 	// (Squad entities need these to track position and unit entities need AttributeComponent and NameComponent)
 	if common.PositionComponent == nil {
-		common.PositionComponent = manager.Manager.NewComponent()
+		common.PositionComponent = manager.World.NewComponent()
 	}
 	if common.AttributeComponent == nil {
-		common.AttributeComponent = manager.Manager.NewComponent()
+		common.AttributeComponent = manager.World.NewComponent()
 	}
 	if common.NameComponent == nil {
-		common.NameComponent = manager.Manager.NewComponent()
+		common.NameComponent = manager.World.NewComponent()
 	}
 
 	return manager
@@ -170,7 +170,7 @@ func TestAddUnitToSquad_SingleCell_ValidPosition(t *testing.T) {
 
 	// Get the squad entity
 	var squadID ecs.EntityID
-	for _, result := range manager.Manager.Query(SquadTag) {
+	for _, result := range manager.World.Query(SquadTag) {
 		squadID = result.Entity.GetID()
 		break
 	}
@@ -204,7 +204,7 @@ func TestAddUnitToSquad_SingleCell_AllPositions(t *testing.T) {
 	CreateEmptySquad(manager, "Test Squad")
 
 	var squadID ecs.EntityID
-	for _, result := range manager.Manager.Query(SquadTag) {
+	for _, result := range manager.World.Query(SquadTag) {
 		squadID = result.Entity.GetID()
 		break
 	}
@@ -235,7 +235,7 @@ func TestAddUnitToSquad_SingleCell_AllPositions(t *testing.T) {
 
 	// Verify total units
 	totalUnits := 0
-	for _, result := range manager.Manager.Query(SquadMemberTag) {
+	for _, result := range manager.World.Query(SquadMemberTag) {
 		memberData := common.GetComponentType[*SquadMemberData](result.Entity, SquadMemberComponent)
 		if memberData.SquadID == squadID {
 			totalUnits++
@@ -253,7 +253,7 @@ func TestAddUnitToSquad_MultiCell_2x2_TopLeft(t *testing.T) {
 	CreateEmptySquad(manager, "Test Squad")
 
 	var squadID ecs.EntityID
-	for _, result := range manager.Manager.Query(SquadTag) {
+	for _, result := range manager.World.Query(SquadTag) {
 		squadID = result.Entity.GetID()
 		break
 	}
@@ -286,7 +286,7 @@ func TestAddUnitToSquad_MultiCell_1x3_LeftColumn(t *testing.T) {
 	CreateEmptySquad(manager, "Test Squad")
 
 	var squadID ecs.EntityID
-	for _, result := range manager.Manager.Query(SquadTag) {
+	for _, result := range manager.World.Query(SquadTag) {
 		squadID = result.Entity.GetID()
 		break
 	}
@@ -319,7 +319,7 @@ func TestAddUnitToSquad_MultiCell_3x1_TopRow(t *testing.T) {
 	CreateEmptySquad(manager, "Test Squad")
 
 	var squadID ecs.EntityID
-	for _, result := range manager.Manager.Query(SquadTag) {
+	for _, result := range manager.World.Query(SquadTag) {
 		squadID = result.Entity.GetID()
 		break
 	}
@@ -352,7 +352,7 @@ func TestAddUnitToSquad_Collision_SingleCellOverlap(t *testing.T) {
 	CreateEmptySquad(manager, "Test Squad")
 
 	var squadID ecs.EntityID
-	for _, result := range manager.Manager.Query(SquadTag) {
+	for _, result := range manager.World.Query(SquadTag) {
 		squadID = result.Entity.GetID()
 		break
 	}
@@ -388,7 +388,7 @@ func TestAddUnitToSquad_Collision_MultiCellOverlap(t *testing.T) {
 	CreateEmptySquad(manager, "Test Squad")
 
 	var squadID ecs.EntityID
-	for _, result := range manager.Manager.Query(SquadTag) {
+	for _, result := range manager.World.Query(SquadTag) {
 		squadID = result.Entity.GetID()
 		break
 	}
@@ -430,7 +430,7 @@ func TestAddUnitToSquad_InvalidPosition_RowTooLarge(t *testing.T) {
 	CreateEmptySquad(manager, "Test Squad")
 
 	var squadID ecs.EntityID
-	for _, result := range manager.Manager.Query(SquadTag) {
+	for _, result := range manager.World.Query(SquadTag) {
 		squadID = result.Entity.GetID()
 		break
 	}
@@ -454,7 +454,7 @@ func TestAddUnitToSquad_InvalidPosition_NegativeCol(t *testing.T) {
 	CreateEmptySquad(manager, "Test Squad")
 
 	var squadID ecs.EntityID
-	for _, result := range manager.Manager.Query(SquadTag) {
+	for _, result := range manager.World.Query(SquadTag) {
 		squadID = result.Entity.GetID()
 		break
 	}
@@ -478,7 +478,7 @@ func TestAddUnitToSquad_MixedSizes_NoOverlap(t *testing.T) {
 	CreateEmptySquad(manager, "Test Squad")
 
 	var squadID ecs.EntityID
-	for _, result := range manager.Manager.Query(SquadTag) {
+	for _, result := range manager.World.Query(SquadTag) {
 		squadID = result.Entity.GetID()
 		break
 	}
@@ -521,7 +521,7 @@ func TestAddUnitToSquad_MixedSizes_NoOverlap(t *testing.T) {
 
 	// Verify all units present
 	totalUnits := 0
-	for _, result := range manager.Manager.Query(SquadMemberTag) {
+	for _, result := range manager.World.Query(SquadMemberTag) {
 		memberData := common.GetComponentType[*SquadMemberData](result.Entity, SquadMemberComponent)
 		if memberData.SquadID == squadID {
 			totalUnits++
@@ -539,7 +539,7 @@ func TestAddUnitToSquad_VerifySquadMemberComponent(t *testing.T) {
 	CreateEmptySquad(manager, "Test Squad")
 
 	var squadID ecs.EntityID
-	for _, result := range manager.Manager.Query(SquadTag) {
+	for _, result := range manager.World.Query(SquadTag) {
 		squadID = result.Entity.GetID()
 		break
 	}
@@ -557,7 +557,7 @@ func TestAddUnitToSquad_VerifySquadMemberComponent(t *testing.T) {
 
 	// Find the unit entity
 	var unitEntity *ecs.Entity
-	for _, result := range manager.Manager.Query(SquadMemberTag) {
+	for _, result := range manager.World.Query(SquadMemberTag) {
 		memberData := common.GetComponentType[*SquadMemberData](result.Entity, SquadMemberComponent)
 		if memberData.SquadID == squadID {
 			unitEntity = result.Entity
@@ -590,7 +590,7 @@ func TestVisualizeSquad_EmptySquad(t *testing.T) {
 	CreateEmptySquad(manager, "Empty Squad")
 
 	var squadID ecs.EntityID
-	for _, result := range manager.Manager.Query(SquadTag) {
+	for _, result := range manager.World.Query(SquadTag) {
 		squadID = result.Entity.GetID()
 		break
 	}
@@ -626,7 +626,7 @@ func TestVisualizeSquad_SingleUnit_1x1(t *testing.T) {
 	CreateEmptySquad(manager, "Single Unit Squad")
 
 	var squadID ecs.EntityID
-	for _, result := range manager.Manager.Query(SquadTag) {
+	for _, result := range manager.World.Query(SquadTag) {
 		squadID = result.Entity.GetID()
 		break
 	}
@@ -675,7 +675,7 @@ func TestVisualizeSquad_MultiCell_2x2_Giant(t *testing.T) {
 	CreateEmptySquad(manager, "Giant Squad")
 
 	var squadID ecs.EntityID
-	for _, result := range manager.Manager.Query(SquadTag) {
+	for _, result := range manager.World.Query(SquadTag) {
 		squadID = result.Entity.GetID()
 		break
 	}
@@ -726,7 +726,7 @@ func TestVisualizeSquad_MultiCell_1x3_Cavalry(t *testing.T) {
 	CreateEmptySquad(manager, "Cavalry Squad")
 
 	var squadID ecs.EntityID
-	for _, result := range manager.Manager.Query(SquadTag) {
+	for _, result := range manager.World.Query(SquadTag) {
 		squadID = result.Entity.GetID()
 		break
 	}
@@ -775,7 +775,7 @@ func TestVisualizeSquad_FullFormation_MixedUnits(t *testing.T) {
 	CreateEmptySquad(manager, "Mixed Formation")
 
 	var squadID ecs.EntityID
-	for _, result := range manager.Manager.Query(SquadTag) {
+	for _, result := range manager.World.Query(SquadTag) {
 		squadID = result.Entity.GetID()
 		break
 	}
@@ -846,7 +846,7 @@ func TestVisualizeSquad_ComplexFormation_MultiCellUnits(t *testing.T) {
 	CreateEmptySquad(manager, "Complex Formation")
 
 	var squadID ecs.EntityID
-	for _, result := range manager.Manager.Query(SquadTag) {
+	for _, result := range manager.World.Query(SquadTag) {
 		squadID = result.Entity.GetID()
 		break
 	}
@@ -930,7 +930,7 @@ func TestVisualizeSquad_GridBoundaries(t *testing.T) {
 	CreateEmptySquad(manager, "Boundary Test")
 
 	var squadID ecs.EntityID
-	for _, result := range manager.Manager.Query(SquadTag) {
+	for _, result := range manager.World.Query(SquadTag) {
 		squadID = result.Entity.GetID()
 		break
 	}

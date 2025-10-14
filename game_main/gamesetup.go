@@ -74,7 +74,7 @@ func SetupSquadSystem() error {
 // SetupTestData creates test items and content for debugging.
 // Only called when DEBUG_MODE is enabled.
 func SetupTestData(em *common.EntityManager, gm *worldmap.GameMap, pd *avatar.PlayerData) {
-	testing.CreateTestItems(em.World, em.WorldTags, gm)
+	testing.CreateTestItems(em.World, em.Tags, gm)
 	testing.InitTestActionManager(em, pd)
 }
 

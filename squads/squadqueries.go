@@ -8,7 +8,7 @@ import (
 
 // FindUnitByID finds a unit entity by its ID
 func FindUnitByID(unitID ecs.EntityID, squadmanager *SquadECSManager) *ecs.Entity {
-	for _, result := range squadmanager.Manager.Query(SquadMemberTag) {
+	for _, result := range squadmanager.World.Query(SquadMemberTag) {
 		if result.Entity.GetID() == unitID {
 			return result.Entity
 		}
@@ -21,7 +21,7 @@ func FindUnitByID(unitID ecs.EntityID, squadmanager *SquadECSManager) *ecs.Entit
 func GetUnitIDsAtGridPosition(squadID ecs.EntityID, row, col int, squadmanager *SquadECSManager) []ecs.EntityID {
 	var unitIDs []ecs.EntityID
 
-	for _, result := range squadmanager.Manager.Query(SquadMemberTag) {
+	for _, result := range squadmanager.World.Query(SquadMemberTag) {
 		unitEntity := result.Entity
 
 		memberData := common.GetComponentType[*SquadMemberData](unitEntity, SquadMemberComponent)
@@ -50,7 +50,7 @@ func GetUnitIDsAtGridPosition(squadID ecs.EntityID, row, col int, squadmanager *
 func GetUnitIDsInSquad(squadID ecs.EntityID, squadmanager *SquadECSManager) []ecs.EntityID {
 	var unitIDs []ecs.EntityID
 
-	for _, result := range squadmanager.Manager.Query(SquadMemberTag) {
+	for _, result := range squadmanager.World.Query(SquadMemberTag) {
 		unitEntity := result.Entity
 		memberData := common.GetComponentType[*SquadMemberData](unitEntity, SquadMemberComponent)
 
@@ -66,7 +66,7 @@ func GetUnitIDsInSquad(squadID ecs.EntityID, squadmanager *SquadECSManager) []ec
 // GetSquadEntity finds squad entity by squad ID
 // ✅ Returns entity pointer directly from query
 func GetSquadEntity(squadID ecs.EntityID, squadmanager *SquadECSManager) *ecs.Entity {
-	for _, result := range squadmanager.Manager.Query(SquadTag) {
+	for _, result := range squadmanager.World.Query(SquadTag) {
 		squadEntity := result.Entity
 		squadData := common.GetComponentType[*SquadData](squadEntity, SquadComponent)
 
@@ -107,7 +107,7 @@ func GetUnitIDsInRow(squadID ecs.EntityID, row int, squadmanager *SquadECSManage
 // GetLeaderID finds the leader unit ID of a squad
 // ✅ Returns ecs.EntityID (native type), not entity pointer
 func GetLeaderID(squadID ecs.EntityID, squadmanager *SquadECSManager) ecs.EntityID {
-	for _, result := range squadmanager.Manager.Query(LeaderTag) {
+	for _, result := range squadmanager.World.Query(LeaderTag) {
 		leaderEntity := result.Entity
 		memberData := common.GetComponentType[*SquadMemberData](leaderEntity, SquadMemberComponent)
 

@@ -19,7 +19,7 @@ func TestCapacitySystem_BasicCalculations(t *testing.T) {
 	CreateEmptySquad(manager, "Test Squad")
 
 	var squadID ecs.EntityID
-	for _, result := range manager.Manager.Query(SquadTag) {
+	for _, result := range manager.World.Query(SquadTag) {
 		squadID = result.Entity.GetID()
 		break
 	}
@@ -69,7 +69,7 @@ func TestCapacitySystem_EnforceLimitWithoutLeader(t *testing.T) {
 	CreateEmptySquad(manager, "Test Squad")
 
 	var squadID ecs.EntityID
-	for _, result := range manager.Manager.Query(SquadTag) {
+	for _, result := range manager.World.Query(SquadTag) {
 		squadID = result.Entity.GetID()
 		break
 	}
@@ -153,7 +153,7 @@ func TestCapacitySystem_IsSquadOverCapacity(t *testing.T) {
 	CreateEmptySquad(manager, "Test Squad")
 
 	var squadID ecs.EntityID
-	for _, result := range manager.Manager.Query(SquadTag) {
+	for _, result := range manager.World.Query(SquadTag) {
 		squadID = result.Entity.GetID()
 		break
 	}
@@ -209,7 +209,7 @@ func TestCapacitySystem_CanAddUnitToSquad(t *testing.T) {
 	CreateEmptySquad(manager, "Test Squad")
 
 	var squadID ecs.EntityID
-	for _, result := range manager.Manager.Query(SquadTag) {
+	for _, result := range manager.World.Query(SquadTag) {
 		squadID = result.Entity.GetID()
 		break
 	}
@@ -231,7 +231,7 @@ func TestCapacitySystem_UpdateSquadCapacity(t *testing.T) {
 	CreateEmptySquad(manager, "Test Squad")
 
 	var squadID ecs.EntityID
-	for _, result := range manager.Manager.Query(SquadTag) {
+	for _, result := range manager.World.Query(SquadTag) {
 		squadID = result.Entity.GetID()
 		break
 	}

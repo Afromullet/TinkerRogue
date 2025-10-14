@@ -26,7 +26,7 @@ func InitializeECS(ecsmanager *common.EntityManager) {
 	buildCoreTags(tags)
 
 	// Assign to entity manager
-	ecsmanager.WorldTags = tags
+	ecsmanager.Tags = tags
 	ecsmanager.World = manager
 }
 

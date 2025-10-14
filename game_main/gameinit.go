@@ -56,7 +56,7 @@ func InitializePlayerData(ecsmanager *common.EntityManager, pl *avatar.PlayerDat
 
 	playerEntity.AddComponent(common.UserMsgComponent, &common.UserMessage{})
 	players := ecs.BuildTag(avatar.PlayerComponent, common.PositionComponent, gear.InventoryComponent)
-	ecsmanager.WorldTags["players"] = players
+	ecsmanager.Tags["players"] = players
 
 	//g.playerData = PlayerData{}
 
@@ -88,7 +88,7 @@ func InitializePlayerData(ecsmanager *common.EntityManager, pl *avatar.PlayerDat
 // and the new PositionSystem for O(1) position lookups.
 func AddCreaturesToTracker(ecsmanger *common.EntityManager) {
 
-	for _, c := range ecsmanger.World.Query(ecsmanger.WorldTags["monsters"]) {
+	for _, c := range ecsmanger.World.Query(ecsmanger.Tags["monsters"]) {
 
 		// Also add to new PositionSystem for O(1) lookups
 		if common.GlobalPositionSystem != nil {

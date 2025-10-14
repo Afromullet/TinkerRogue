@@ -12,15 +12,15 @@ var SquadsManager SquadECSManager
 var Units = make([]UnitTemplate, 0, len(entitytemplates.MonsterTemplates))
 
 type SquadECSManager struct {
-	Manager *ecs.Manager
-	Tags    map[string]ecs.Tag
+	World *ecs.Manager
+	Tags  map[string]ecs.Tag
 }
 
 func NewSquadECSManager() *SquadECSManager {
 
 	return &SquadECSManager{
-		Manager: ecs.NewManager(),
-		Tags:    make(map[string]ecs.Tag),
+		World: ecs.NewManager(),
+		Tags:  make(map[string]ecs.Tag),
 	}
 
 }
@@ -28,15 +28,15 @@ func NewSquadECSManager() *SquadECSManager {
 // InitSquadComponents registers all squad-related components with the ECS manager.
 // Call this during game initialization.
 func InitSquadComponents(squadManager SquadECSManager) {
-	SquadComponent = squadManager.Manager.NewComponent()
-	SquadMemberComponent = squadManager.Manager.NewComponent()
-	GridPositionComponent = squadManager.Manager.NewComponent()
-	UnitRoleComponent = squadManager.Manager.NewComponent()
-	CoverComponent = squadManager.Manager.NewComponent()
-	LeaderComponent = squadManager.Manager.NewComponent()
-	TargetRowComponent = squadManager.Manager.NewComponent()
-	AbilitySlotComponent = squadManager.Manager.NewComponent()
-	CooldownTrackerComponent = squadManager.Manager.NewComponent()
+	SquadComponent = squadManager.World.NewComponent()
+	SquadMemberComponent = squadManager.World.NewComponent()
+	GridPositionComponent = squadManager.World.NewComponent()
+	UnitRoleComponent = squadManager.World.NewComponent()
+	CoverComponent = squadManager.World.NewComponent()
+	LeaderComponent = squadManager.World.NewComponent()
+	TargetRowComponent = squadManager.World.NewComponent()
+	AbilitySlotComponent = squadManager.World.NewComponent()
+	CooldownTrackerComponent = squadManager.World.NewComponent()
 }
 
 // InitSquadTags creates tags for querying squad-related entities

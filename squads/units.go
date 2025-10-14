@@ -137,7 +137,7 @@ func CreateUnitEntity(squadmanager *SquadECSManager, unit UnitTemplate) (*ecs.En
 		return nil, fmt.Errorf("invalid grid height %d for unit %s: must be 1-3", unit.GridHeight, unit.Name)
 	}
 
-	unitEntity := squadmanager.Manager.NewEntity()
+	unitEntity := squadmanager.World.NewEntity()
 
 	if unitEntity == nil {
 		return nil, fmt.Errorf("failed to create entity for unit %s", unit.Name)

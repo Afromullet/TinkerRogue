@@ -15,7 +15,7 @@ import (
 func CreateEmptySquad(squadmanager *SquadECSManager,
 	squadName string) {
 
-	squadEntity := squadmanager.Manager.NewEntity()
+	squadEntity := squadmanager.World.NewEntity()
 	squadID := squadEntity.GetID()
 
 	squadEntity.AddComponent(SquadComponent, &SquadData{
