@@ -7,7 +7,6 @@ import (
 	"game_main/avatar"
 	"game_main/common"
 	"game_main/coords"
-	"game_main/gui"
 	"game_main/worldmap"
 )
 
@@ -42,26 +41,24 @@ type InputCoordinator struct {
 	uiController       *UIController
 	sharedState        *SharedInputState
 
-	ecsManager   *common.EntityManager
-	playerData   *avatar.PlayerData
-	gameMap      *worldmap.GameMap
-	playerUI     *gui.PlayerUI
+	ecsManager *common.EntityManager
+	playerData *avatar.PlayerData
+	gameMap    *worldmap.GameMap
 }
 
 func NewInputCoordinator(ecsManager *common.EntityManager, playerData *avatar.PlayerData,
-	gameMap *worldmap.GameMap, playerUI *gui.PlayerUI) *InputCoordinator {
+	gameMap *worldmap.GameMap, dummyUI interface{}) *InputCoordinator {
 
 	sharedState := NewSharedInputState()
 
 	return &InputCoordinator{
 		movementController: NewMovementController(ecsManager, playerData, gameMap, sharedState),
-		combatController:   NewCombatController(ecsManager, playerData, gameMap, playerUI, sharedState),
-		uiController:       NewUIController(playerData, playerUI, sharedState),
+		combatController:   NewCombatController(ecsManager, playerData, gameMap, sharedState),
+		uiController:       NewUIController(playerData, sharedState),
 		sharedState:        sharedState,
 		ecsManager:         ecsManager,
 		playerData:         playerData,
 		gameMap:            gameMap,
-		playerUI:           playerUI,
 	}
 }
 

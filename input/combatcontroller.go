@@ -6,8 +6,6 @@ import (
 	"game_main/coords"
 	"game_main/gear"
 	"game_main/graphics"
-	"game_main/gui"
-
 	"game_main/worldmap"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -18,17 +16,15 @@ type CombatController struct {
 	ecsManager  *common.EntityManager
 	playerData  *avatar.PlayerData
 	gameMap     *worldmap.GameMap
-	playerUI    *gui.PlayerUI
 	sharedState *SharedInputState
 }
 
 func NewCombatController(ecsManager *common.EntityManager, playerData *avatar.PlayerData,
-	gameMap *worldmap.GameMap, playerUI *gui.PlayerUI, sharedState *SharedInputState) *CombatController {
+	gameMap *worldmap.GameMap, sharedState *SharedInputState) *CombatController {
 	return &CombatController{
 		ecsManager:  ecsManager,
 		playerData:  playerData,
 		gameMap:     gameMap,
-		playerUI:    playerUI,
 		sharedState: sharedState,
 	}
 }
@@ -91,10 +87,10 @@ func (cc *CombatController) handleThrowable() bool {
 			cc.playerData.Throwables.RemoveThrownItem(cc.playerData.Inventory)
 			cc.applyThrowable(cc.playerData.Throwables.ThrowableItem, throwable.Shape, cc.playerData.Pos)
 
-			cc.playerUI.ItemsUI.ThrowableItemDisplay.DisplayInventory()
+			// Clear throwing state
 			cc.gameMap.ApplyColorMatrix(cc.sharedState.PrevThrowInds, graphics.NewEmptyMatrix())
 			cc.gameMap.ApplyColorMatrix(indices, graphics.NewEmptyMatrix())
-			cc.playerUI.SetThrowableItemSelected(false)
+			cc.playerData.InputStates.IsThrowing = false
 			return true
 		}
 	}
@@ -102,7 +98,6 @@ func (cc *CombatController) handleThrowable() bool {
 	// Cancel throwing
 	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButton2) {
 		cc.gameMap.ApplyColorMatrix(cc.sharedState.PrevThrowInds, graphics.NewEmptyMatrix())
-		cc.playerUI.SetThrowableItemSelected(false)
 		cc.playerData.InputStates.IsThrowing = false
 		return true
 	}

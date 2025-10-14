@@ -1,0 +1,72 @@
+// Package gui implements the context-driven modal UI system for the roguelike game.
+// Each gameplay mode (exploration, combat, squad management) has its own isolated UI configuration.
+package gui
+
+import (
+	"game_main/avatar"
+	"game_main/common"
+
+	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/ebitenui/ebitenui"
+)
+
+// UIMode represents a distinct UI context (exploration, combat, squad management, etc.)
+// Each mode has complete control over its UI layout and handles its own input events.
+type UIMode interface {
+	// Initialize is called once when mode is first created
+	Initialize(ctx *UIContext) error
+
+	// Enter is called when switching TO this mode
+	// Receives the mode we're coming from (nil if starting game)
+	Enter(fromMode UIMode) error
+
+	// Exit is called when switching FROM this mode to another
+	// Receives the mode we're going to
+	Exit(toMode UIMode) error
+
+	// Update is called every frame while mode is active
+	// deltaTime in seconds
+	Update(deltaTime float64) error
+
+	// Render is called to draw this mode's UI
+	// screen is the target ebiten image
+	Render(screen *ebiten.Image)
+
+	// HandleInput processes input events specific to this mode
+	// Returns true if input was consumed (prevents propagation)
+	HandleInput(inputState *InputState) bool
+
+	// GetEbitenUI returns the root ebitenui.UI for this mode
+	GetEbitenUI() *ebitenui.UI
+
+	// GetModeName returns identifier for this mode (for debugging/logging)
+	GetModeName() string
+}
+
+// UIContext provides shared game state to all UI modes
+type UIContext struct {
+	ECSManager   *common.EntityManager
+	PlayerData   *avatar.PlayerData
+	ScreenWidth  int
+	ScreenHeight int
+	TileSize     int
+}
+
+// InputState captures current frame's input
+type InputState struct {
+	MouseX            int
+	MouseY            int
+	MousePressed      bool
+	MouseReleased     bool
+	MouseButton       ebiten.MouseButton
+	KeysPressed       map[ebiten.Key]bool
+	KeysJustPressed   map[ebiten.Key]bool
+	PlayerInputStates *avatar.PlayerInputStates // Bridge to existing system
+}
+
+// ModeTransition represents a request to change modes
+type ModeTransition struct {
+	ToMode UIMode
+	Reason string      // For debugging
+	Data   interface{} // Optional data passed to new mode
+}

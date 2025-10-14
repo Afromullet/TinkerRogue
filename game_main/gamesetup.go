@@ -5,6 +5,7 @@ import (
 	"game_main/common"
 	"game_main/entitytemplates"
 	"game_main/graphics"
+	"game_main/gui"
 	"game_main/input"
 	"game_main/spawning"
 	"game_main/squads"
@@ -97,14 +98,36 @@ func SetupBenchmarking() {
 	runtime.MemProfileRate = MemoryProfileRate
 }
 
-// SetupUI initializes the game's user interface components.
+// SetupUI initializes the new modal UI system.
 // Must be called after game initialization but before input coordinator.
 func SetupUI(g *Game) {
-	g.gameUI.CreateMainInterface(&g.playerData, &g.em)
+	// Create UI context with shared game state
+	uiContext := &gui.UIContext{
+		ECSManager:   &g.em,
+		PlayerData:   &g.playerData,
+		ScreenWidth:  graphics.ScreenInfo.GetCanvasWidth(),
+		ScreenHeight: graphics.ScreenInfo.GetCanvasHeight(),
+		TileSize:     graphics.ScreenInfo.TileSize,
+	}
+
+	// Create mode manager
+	g.uiModeManager = gui.NewUIModeManager(uiContext)
+
+	// Register exploration mode
+	explorationMode := gui.NewExplorationMode(g.uiModeManager)
+	if err := g.uiModeManager.RegisterMode(explorationMode); err != nil {
+		log.Fatalf("Failed to register exploration mode: %v", err)
+	}
+
+	// Set initial mode
+	if err := g.uiModeManager.SetMode("exploration"); err != nil {
+		log.Fatalf("Failed to set exploration mode: %v", err)
+	}
 }
 
 // SetupInputCoordinator initializes the input handling system.
 // Must be called after UI is created.
 func SetupInputCoordinator(g *Game) {
-	g.inputCoordinator = input.NewInputCoordinator(&g.em, &g.playerData, &g.gameMap, &g.gameUI)
+	// InputCoordinator now works without PlayerUI reference
+	g.inputCoordinator = input.NewInputCoordinator(&g.em, &g.playerData, &g.gameMap, nil)
 }

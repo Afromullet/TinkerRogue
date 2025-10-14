@@ -28,7 +28,7 @@ import (
 // It is the main struct passed to the Ebiten game engine.
 type Game struct {
 	em               common.EntityManager
-	gameUI           gui.PlayerUI
+	uiModeManager    *gui.UIModeManager // NEW: Modal UI system
 	playerData       avatar.PlayerData
 	gameMap          worldmap.GameMap
 	inputCoordinator *input.InputCoordinator
@@ -46,27 +46,22 @@ func NewGame() *Game {
 // It handles movement, combat, UI interactions through the InputCoordinator,
 // updates player stats, processes status effects, and cleans up dead entities.
 func HandleInput(g *Game) {
-
-	g.gameUI.StatsUI.StatsTextArea.SetText(g.playerData.PlayerAttributes().DisplayString())
-
 	// Handle all input through the InputCoordinator
 	g.inputCoordinator.HandleInput()
 
 	if g.playerData.InputStates.HasKeyInput {
-
-		g.gameUI.StatsUI.StatsTextArea.SetText(g.playerData.PlayerAttributes().DisplayString())
 		g.playerData.InputStates.HasKeyInput = false
 	}
-
 }
 
 // Update is called each frame by the Ebiten engine.
 // It processes UI updates, visual effects, debug input, and main game logic.
 func (g *Game) Update() error {
-
-	g.gameUI.MainPlayerInterface.Update()
-
-	gui.SetContainerLocation(g.gameUI.StatsUI.StatUIContainer, g.gameMap.RightEdgeX, 0)
+	// Update UI mode manager (handles input and UI state)
+	deltaTime := 1.0 / 60.0 // 60 FPS
+	if err := g.uiModeManager.Update(deltaTime); err != nil {
+		return err
+	}
 
 	graphics.VXHandler.UpdateVisualEffects()
 
@@ -75,17 +70,16 @@ func (g *Game) Update() error {
 	HandleInput(g)
 
 	return nil
-
 }
 
 // Draw renders the game to the screen buffer.
 // It handles map rendering, entity rendering, UI drawing, and visual effects.
 func (g *Game) Draw(screen *ebiten.Image) {
-
-	//Not sure how to get the screen outside of the draw function, so I guess I will do it here for now
+	// Update screen dimensions
 	graphics.ScreenInfo.ScreenWidth = screen.Bounds().Dx()
 	graphics.ScreenInfo.ScreenHeight = screen.Bounds().Dy()
 
+	// Phase 1: Ebiten rendering (game world)
 	if graphics.MAP_SCROLLING_ENABLED {
 		g.gameMap.DrawLevelCenteredSquare(screen, g.playerData.Pos, graphics.ViewableSquareSize, DEBUG_MODE)
 		rendering.ProcessRenderablesInSquare(&g.em, g.gameMap, screen, g.playerData.Pos, graphics.ViewableSquareSize, DEBUG_MODE)
@@ -94,11 +88,10 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		rendering.ProcessRenderables(&g.em, g.gameMap, screen, DEBUG_MODE)
 	}
 
-	gui.ProcessUserLog(g.em, screen, &g.gameUI.MsgUI)
-
 	graphics.VXHandler.DrawVisualEffects(screen)
-	g.gameUI.MainPlayerInterface.Draw(screen)
 
+	// Phase 2: EbitenUI rendering (modal UI)
+	g.uiModeManager.Render(screen)
 }
 
 // Layout returns the game's logical screen dimensions.

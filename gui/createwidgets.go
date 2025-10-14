@@ -93,3 +93,33 @@ func SetContainerLocation(w *widget.Container, x, y int) {
 type StringDisplay interface {
 	DisplayString()
 }
+
+// TextAreaConfig provides configuration for creating text areas with responsive sizing
+type TextAreaConfig struct {
+	MinWidth  int
+	MinHeight int
+	FontColor color.Color
+}
+
+// CreateTextAreaWithConfig creates a textarea with custom configuration
+func CreateTextAreaWithConfig(config TextAreaConfig) *widget.TextArea {
+	return widget.NewTextArea(
+		widget.TextAreaOpts.ContainerOpts(
+			widget.ContainerOpts.WidgetOpts(
+				widget.WidgetOpts.MinSize(config.MinWidth, config.MinHeight),
+			),
+		),
+		widget.TextAreaOpts.ControlWidgetSpacing(2),
+		widget.TextAreaOpts.ProcessBBCode(true),
+		widget.TextAreaOpts.FontColor(config.FontColor),
+		widget.TextAreaOpts.FontFace(TextAreaRes.face),
+		widget.TextAreaOpts.TextPadding(TextAreaRes.entryPadding),
+		widget.TextAreaOpts.ScrollContainerOpts(
+			widget.ScrollContainerOpts.Image(ListRes.image)),
+		widget.TextAreaOpts.SliderOpts(
+			widget.SliderOpts.Images(ListRes.track, ListRes.handle),
+			widget.SliderOpts.MinHandleSize(ListRes.handleSize),
+			widget.SliderOpts.TrackPadding(ListRes.trackPadding),
+		),
+	)
+}

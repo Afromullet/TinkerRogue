@@ -19,6 +19,10 @@ var largeFace, _ = loadFont(50)
 var buttonImage, _ = loadButtonImage()
 var defaultWidgetColor = e_image.NewNineSliceColor(color.NRGBA{0x13, 0x1a, 0x22, 0xff})
 
+// Exported fonts for use in UI modes
+var SmallFace = smallFace
+var LargeFace = largeFace
+
 var PanelRes *panelResources = newPanelResources()
 var ListRes *listResources = newListResources()
 var TextAreaRes *textAreaResources = newTextAreaResources()

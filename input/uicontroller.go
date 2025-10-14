@@ -2,23 +2,19 @@ package input
 
 import (
 	"game_main/avatar"
-	"game_main/graphics"
-	"game_main/gui"
-
-	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/inpututil"
 )
 
+// UIController handles UI-related input
+// NOTE: Most UI input is now handled by the UIModeManager in the main game loop
+// This controller is kept for compatibility but may be deprecated in the future
 type UIController struct {
 	playerData  *avatar.PlayerData
-	playerUI    *gui.PlayerUI
 	sharedState *SharedInputState
 }
 
-func NewUIController(playerData *avatar.PlayerData, playerUI *gui.PlayerUI, sharedState *SharedInputState) *UIController {
+func NewUIController(playerData *avatar.PlayerData, sharedState *SharedInputState) *UIController {
 	return &UIController{
 		playerData:  playerData,
-		playerUI:    playerUI,
 		sharedState: sharedState,
 	}
 }
@@ -36,35 +32,8 @@ func (uc *UIController) OnDeactivate() {
 }
 
 func (uc *UIController) HandleInput() bool {
-	inputHandled := false
-
-	// Handle info menu opening
-	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButton2) {
-		// Only open info menu if not in combat modes
-		// IsShooting check removed - squad system handles combat
-		if !uc.playerData.InputStates.IsThrowing {
-			cursorX, cursorY := graphics.CursorPosition(*uc.playerData.Pos)
-			uc.playerUI.InformationUI.InfoSelectionWindow(cursorX, cursorY)
-			uc.playerData.InputStates.InfoMeuOpen = true
-			inputHandled = true
-		}
-	}
-
-	// Handle info menu closing
-	if uc.playerData.InputStates.InfoMeuOpen {
-		if inpututil.IsKeyJustReleased(ebiten.KeyEscape) {
-			uc.playerUI.InformationUI.CloseWindows()
-			uc.playerData.InputStates.InfoMeuOpen = false
-			inputHandled = true
-		}
-	}
-
-	// Handle throwable item selection state
-	if uc.playerUI.IsThrowableItemSelected() {
-		uc.playerData.InputStates.IsThrowing = true
-	} else {
-		uc.playerData.InputStates.IsThrowing = false
-	}
-
-	return inputHandled
+	// UI input is now handled by UIModeManager in the main game loop
+	// This method is kept for compatibility but does nothing
+	// All right-click, ESC, and mode switching is handled by ExplorationMode.HandleInput()
+	return false
 }
