@@ -1,6 +1,17 @@
 package gui
 
-/*
+import (
+	"fmt"
+	"game_main/common"
+	"game_main/squads"
+	"image/color"
+
+	"github.com/bytearena/ecs"
+	"github.com/ebitenui/ebitenui"
+	"github.com/ebitenui/ebitenui/widget"
+	"github.com/hajimehoshi/ebiten/v2"
+)
+
 // SquadManagementMode shows all squads with detailed information
 type SquadManagementMode struct {
 	ui          *ebitenui.UI
@@ -67,11 +78,16 @@ func (smm *SquadManagementMode) buildCloseButton() {
 		}),
 	)
 
-	buttonContainer.AddChild(smm.closeButton)
+	// Add LayoutData for bottom-center positioning
+	buttonContainer.GetWidget().LayoutData = widget.AnchorLayoutData{
+		HorizontalPosition: widget.AnchorLayoutPositionCenter,
+		VerticalPosition:   widget.AnchorLayoutPositionEnd,
+		Padding: widget.Insets{
+			Bottom: int(float64(smm.layout.ScreenHeight) * 0.08),
+		},
+	}
 
-	// Position at bottom-center using responsive layout
-	x, y := smm.layout.BottomCenterButtons()
-	SetContainerLocation(buttonContainer, x, y)
+	buttonContainer.AddChild(smm.closeButton)
 
 	// Add to root (not grid layout, so it floats)
 	smm.ui.Container.AddChild(buttonContainer)
@@ -114,13 +130,15 @@ func (smm *SquadManagementMode) clearSquadPanels() {
 
 func (smm *SquadManagementMode) findAllSquads() []ecs.EntityID {
 	// Query ECS for all entities with SquadData component
-	// This uses the squad system's query functions
+	// Uses common.EntityManager wrapper methods
 	allSquads := make([]ecs.EntityID, 0)
 
 	// Iterate through all entities
-	for _, entity := range smm.context.ECSManager.GetAllEntities() {
-		if smm.context.ECSManager.HasComponent(entity.ID, &squads.SquadData{}) {
-			allSquads = append(allSquads, entity.ID)
+	entityIDs := smm.context.ECSManager.GetAllEntities()
+	for _, entityID := range entityIDs {
+		// Check if entity has SquadData component
+		if smm.context.ECSManager.HasComponent(entityID, squads.SquadComponent) {
+			allSquads = append(allSquads, entityID)
 		}
 	}
 
@@ -144,12 +162,14 @@ func (smm *SquadManagementMode) createSquadPanel(squadID ecs.EntityID) *SquadPan
 		)),
 	)
 
-	// Squad name label
-	squadData := smm.context.ECSManager.GetComponent(squadID, &squads.SquadData{}).(*squads.SquadData)
-	nameLabel := widget.NewText(
-		widget.TextOpts.Text(fmt.Sprintf("Squad: %s", squadData.Name), LargeFace, color.White),
-	)
-	panel.container.AddChild(nameLabel)
+	// Squad name label - get component data using common.EntityManager
+	if squadDataRaw, ok := smm.context.ECSManager.GetComponent(squadID, squads.SquadComponent); ok {
+		squadData := squadDataRaw.(*squads.SquadData)
+		nameLabel := widget.NewText(
+			widget.TextOpts.Text(fmt.Sprintf("Squad: %s", squadData.Name), LargeFace, color.White),
+		)
+		panel.container.AddChild(nameLabel)
+	}
 
 	// 3x3 grid visualization (using squad system's VisualizeSquad function)
 	gridVisualization := squads.VisualizeSquad(squadID, smm.context.ECSManager)
@@ -186,14 +206,20 @@ func (smm *SquadManagementMode) createUnitList(squadID ecs.EntityID) *widget.Lis
 	// Create list entries
 	entries := make([]interface{}, 0, len(unitIDs))
 	for _, unitID := range unitIDs {
-		// Get unit data
-		if unitData := smm.context.ECSManager.GetComponent(unitID, &squads.UnitData{}); unitData != nil {
-			ud := unitData.(*squads.UnitData)
-			entries = append(entries, fmt.Sprintf("%s - HP: %d/%d", ud.Name, ud.CurrentHP, ud.MaxHP))
+		// Get unit attributes (units use common.Attributes, not separate UnitData)
+		if attrRaw, ok := smm.context.ECSManager.GetComponent(unitID, common.AttributeComponent); ok {
+			attr := attrRaw.(*common.Attributes)
+			// Get unit name
+			nameStr := "Unknown"
+			if nameRaw, ok := smm.context.ECSManager.GetComponent(unitID, common.NameComponent); ok {
+				name := nameRaw.(*common.Name)
+				nameStr = name.NameStr
+			}
+			entries = append(entries, fmt.Sprintf("%s - HP: %d/%d", nameStr, attr.CurrentHealth, attr.MaxHealth))
 		}
 	}
 
-	// Create list widget
+	// Create list widget using exported resources
 	list := widget.NewList(
 		widget.ListOpts.Entries(entries),
 		widget.ListOpts.EntryLabelFunc(func(e interface{}) string {
@@ -213,17 +239,17 @@ func (smm *SquadManagementMode) createUnitList(squadID ecs.EntityID) *widget.Lis
 }
 
 func (smm *SquadManagementMode) getSquadStats(squadID ecs.EntityID) string {
-	//unitIDs := squads.GetUnitIDsInSquad(squadID, smm.context.ECSManager)
+	unitIDs := squads.GetUnitIDsInSquad(squadID, smm.context.ECSManager)
 
 	totalHP := 0
 	maxHP := 0
 	unitCount := len(unitIDs)
 
 	for _, unitID := range unitIDs {
-		if unitData := smm.context.ECSManager.GetComponent(unitID, &squads.UnitData{}); unitData != nil {
-			ud := unitData.(*squads.UnitData)
-			totalHP += ud.CurrentHP
-			maxHP += ud.MaxHP
+		if attrRaw, ok := smm.context.ECSManager.GetComponent(unitID, common.AttributeComponent); ok {
+			attr := attrRaw.(*common.Attributes)
+			totalHP += attr.CurrentHealth
+			maxHP += attr.MaxHealth
 		}
 	}
 
@@ -259,5 +285,3 @@ func (smm *SquadManagementMode) GetEbitenUI() *ebitenui.UI {
 func (smm *SquadManagementMode) GetModeName() string {
 	return "squad_management"
 }
-
-*/

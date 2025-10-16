@@ -1,10 +1,45 @@
 # Plan 1: Context-Driven Modal UI System - Implementation Plan
 
 **Created:** 2025-10-13
-**Updated:** 2025-10-13 (Comprehensive Codebase Audit)
+**Updated:** 2025-10-16 (Corrected for EbitenUI and ByteArena ECS APIs)
 **Target:** GUI package redesign using modal contexts and state machine pattern
-**Technology:** EbitenUI (https://github.com/ebitenui/ebitenui)
+**Technology:** EbitenUI (https://github.com/ebitenui/ebitenui), ByteArena ECS (https://github.com/bytearena/ecs)
 **Estimated Effort:** 36 hours
+
+## ⚠️ IMPORTANT API CORRECTIONS (2025-10-16)
+
+This plan has been corrected to fix numerous API mismatches with EbitenUI and ByteArena ECS:
+
+### Key Changes Made:
+
+1. **Package Structure**
+   - ❌ OLD: `package modes` with imports `"game_main/gui/modes"`
+   - ✅ NEW: `package gui` - all modes in the main gui package
+
+2. **EbitenUI List Widget Positioning**
+   - ❌ OLD: `im.itemList.GetContainer()` - THIS METHOD DOES NOT EXIST
+   - ✅ NEW: `im.rootContainer.AddChild(im.itemList)` - Lists added directly to containers
+   - ✅ NEW: Positioning via `im.itemList.GetWidget().LayoutData = widget.AnchorLayoutData{...}`
+
+3. **ECS Manager API**
+   - ❌ OLD: `smm.context.ECSManager.GetComponent(entityID, &squads.SquadData{})`
+   - ✅ NEW: `smm.context.ECSManager.GetComponent(entityID, squads.SquadDataComponent)`
+   - ✅ Proper use of common.EntityManager wrapper methods
+   - ✅ Correct component retrieval with type assertion: `squadDataRaw.(*squads.SquadData)`
+
+4. **Resource References**
+   - ❌ OLD: `gui.LargeFace`, `gui.PanelRes.image`, `gui.ListRes.track`
+   - ✅ NEW: `LargeFace`, `PanelRes.image`, `ListRes.track` (already in gui package)
+   - ✅ Uses exported SmallFace/LargeFace from guiresources.go
+
+5. **Type References**
+   - ❌ OLD: `*gui.UIContext`, `*gui.LayoutConfig`, `*gui.UIModeManager`
+   - ✅ NEW: `*UIContext`, `*LayoutConfig`, `*UIModeManager` (same package)
+
+### Files Affected:
+- All mode implementations (5 files): explorationmode.go, squadmanagementmode.go, combatmode.go, inventorymode.go, formationeditormode.go
+- Game integration section showing proper import paths and mode registration
+- Migration strategy reflecting correct file paths
 
 ---
 
@@ -431,13 +466,12 @@ func (lc *LayoutConfig) GridLayoutArea() (x, y, width, height int) {
 ### 1. Exploration Mode (Primary Gameplay Mode)
 
 ```go
-// gui/modes/explorationmode.go
+// gui/explorationmode.go
 
-package modes
+package gui
 
 import (
 	"fmt"
-	"game_main/gui"
 	"game_main/graphics"
 	"game_main/coords"
 	"game_main/common"
@@ -450,8 +484,8 @@ import (
 // ExplorationMode is the default UI mode during dungeon exploration
 type ExplorationMode struct {
 	ui            *ebitenui.UI
-	context       *gui.UIContext
-	layout        *gui.LayoutConfig
+	context       *UIContext
+	layout        *LayoutConfig
 	initialized   bool
 
 	// UI Components (ebitenui widgets)
@@ -460,21 +494,21 @@ type ExplorationMode struct {
 	statsTextArea *widget.TextArea
 	messageLog    *widget.TextArea
 	quickInventory *widget.Container
-	infoWindow    *gui.InfoUI
+	infoWindow    *InfoUI
 
 	// Mode manager reference (for transitions)
-	modeManager   *gui.UIModeManager
+	modeManager   *UIModeManager
 }
 
-func NewExplorationMode(modeManager *gui.UIModeManager) *ExplorationMode {
+func NewExplorationMode(modeManager *UIModeManager) *ExplorationMode {
 	return &ExplorationMode{
 		modeManager: modeManager,
 	}
 }
 
-func (em *ExplorationMode) Initialize(ctx *gui.UIContext) error {
+func (em *ExplorationMode) Initialize(ctx *UIContext) error {
 	em.context = ctx
-	em.layout = gui.NewLayoutConfig(ctx)
+	em.layout = NewLayoutConfig(ctx)
 
 	// Create ebitenui root
 	em.ui = &ebitenui.UI{}
@@ -497,7 +531,7 @@ func (em *ExplorationMode) buildStatsPanel() {
 
 	// Stats panel (top-right corner)
 	em.statsPanel = widget.NewContainer(
-		widget.ContainerOpts.BackgroundImage(gui.PanelRes.image),
+		widget.ContainerOpts.BackgroundImage(PanelRes.image),
 		widget.ContainerOpts.Layout(widget.NewAnchorLayout(
 			widget.AnchorLayoutOpts.Padding(widget.Insets{
 				Left: 10, Right: 10, Top: 10, Bottom: 10,
@@ -506,19 +540,19 @@ func (em *ExplorationMode) buildStatsPanel() {
 	)
 
 	// Stats text area
-	statsConfig := gui.TextAreaConfig{
+	statsConfig := TextAreaConfig{
 		MinWidth:  width - 20,
 		MinHeight: height - 20,
 		FontColor: color.White,
 	}
-	em.statsTextArea = gui.CreateTextAreaWithConfig(statsConfig)
+	em.statsTextArea = CreateTextAreaWithConfig(statsConfig)
 	em.statsTextArea.SetText(em.context.PlayerData.PlayerAttributes().DisplayString())
 
 	em.statsPanel.AddChild(em.statsTextArea)
 
 	// Position using responsive layout
 	em.statsPanel.GetWidget().Resize(width, height)
-	gui.SetContainerLocation(em.statsPanel, x, y)
+	SetContainerLocation(em.statsPanel, x, y)
 
 	em.rootContainer.AddChild(em.statsPanel)
 }
@@ -528,21 +562,21 @@ func (em *ExplorationMode) buildMessageLog() {
 	x, y, width, height := em.layout.BottomRightPanel()
 
 	// Message log (bottom-right corner)
-	logConfig := gui.TextAreaConfig{
+	logConfig := TextAreaConfig{
 		MinWidth:  width - 20,
 		MinHeight: height - 20,
 		FontColor: color.White,
 	}
-	em.messageLog = gui.CreateTextAreaWithConfig(logConfig)
+	em.messageLog = CreateTextAreaWithConfig(logConfig)
 
 	logContainer := widget.NewContainer(
-		widget.ContainerOpts.BackgroundImage(gui.PanelRes.image),
+		widget.ContainerOpts.BackgroundImage(PanelRes.image),
 		widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
 	)
 	logContainer.AddChild(em.messageLog)
 
 	// Position using responsive layout
-	gui.SetContainerLocation(logContainer, x, y)
+	SetContainerLocation(logContainer, x, y)
 
 	em.rootContainer.AddChild(logContainer)
 }
@@ -561,7 +595,7 @@ func (em *ExplorationMode) buildQuickInventory() {
 	)
 
 	// Throwables button
-	throwableBtn := gui.CreateButton("Throwables")
+	throwableBtn := CreateButton("Throwables")
 	throwableBtn.Configure(
 		widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
 			// Transition to inventory mode (throwables)
@@ -573,7 +607,7 @@ func (em *ExplorationMode) buildQuickInventory() {
 	em.quickInventory.AddChild(throwableBtn)
 
 	// Squad button
-	squadBtn := gui.CreateButton("Squads (E)")
+	squadBtn := CreateButton("Squads (E)")
 	squadBtn.Configure(
 		widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
 			if squadMode, exists := em.modeManager.GetMode("squad_management"); exists {
@@ -584,17 +618,17 @@ func (em *ExplorationMode) buildQuickInventory() {
 	em.quickInventory.AddChild(squadBtn)
 
 	// Position using responsive layout
-	gui.SetContainerLocation(em.quickInventory, x, y)
+	SetContainerLocation(em.quickInventory, x, y)
 
 	em.rootContainer.AddChild(em.quickInventory)
 }
 
 func (em *ExplorationMode) buildInfoWindow() {
 	// Create info window (right-click inspection)
-	em.infoWindow = gui.CreateInfoUI(em.context.ECSManager, em.ui)
+	em.infoWindow = CreateInfoUI(em.context.ECSManager, em.ui)
 }
 
-func (em *ExplorationMode) Enter(fromMode gui.UIMode) error {
+func (em *ExplorationMode) Enter(fromMode UIMode) error {
 	fmt.Println("Entering Exploration Mode")
 
 	// Refresh player stats
@@ -605,7 +639,7 @@ func (em *ExplorationMode) Enter(fromMode gui.UIMode) error {
 	return nil
 }
 
-func (em *ExplorationMode) Exit(toMode gui.UIMode) error {
+func (em *ExplorationMode) Exit(toMode UIMode) error {
 	fmt.Println("Exiting Exploration Mode")
 
 	// Close any open info windows
@@ -628,7 +662,7 @@ func (em *ExplorationMode) Render(screen *ebiten.Image) {
 	// Could add overlays here (threat ranges, movement paths, etc.)
 }
 
-func (em *ExplorationMode) HandleInput(inputState *gui.InputState) bool {
+func (em *ExplorationMode) HandleInput(inputState *InputState) bool {
 	// Handle right-click info window
 	if inputState.MouseButton == ebiten.MouseButton2 && inputState.MousePressed {
 		// Only open if not in other input modes
@@ -680,15 +714,14 @@ func (em *ExplorationMode) GetModeName() string {
 ### 2. Squad Management Mode (Full-Screen Interface)
 
 ```go
-// gui/modes/squadmanagementmode.go
+// gui/squadmanagementmode.go
 
-package modes
+package gui
 
 import (
 	"fmt"
-	"game_main/gui"
 	"game_main/squads"
-	"game_main/ecs"
+	"github.com/bytearena/ecs"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/ebitenui/ebitenui"
 	"github.com/ebitenui/ebitenui/widget"
@@ -698,9 +731,9 @@ import (
 // SquadManagementMode shows all squads with detailed information
 type SquadManagementMode struct {
 	ui            *ebitenui.UI
-	context       *gui.UIContext
-	layout        *gui.LayoutConfig
-	modeManager   *gui.UIModeManager
+	context       *UIContext
+	layout        *LayoutConfig
+	modeManager   *UIModeManager
 
 	rootContainer *widget.Container
 	squadPanels   []*SquadPanel // One panel per squad
@@ -716,16 +749,16 @@ type SquadPanel struct {
 	unitList      *widget.List      // Shows individual units
 }
 
-func NewSquadManagementMode(modeManager *gui.UIModeManager) *SquadManagementMode {
+func NewSquadManagementMode(modeManager *UIModeManager) *SquadManagementMode {
 	return &SquadManagementMode{
 		modeManager: modeManager,
 		squadPanels: make([]*SquadPanel, 0),
 	}
 }
 
-func (smm *SquadManagementMode) Initialize(ctx *gui.UIContext) error {
+func (smm *SquadManagementMode) Initialize(ctx *UIContext) error {
 	smm.context = ctx
-	smm.layout = gui.NewLayoutConfig(ctx)
+	smm.layout = NewLayoutConfig(ctx)
 
 	// Create ebitenui root with grid layout for multiple squad panels
 	smm.ui = &ebitenui.UI{}
@@ -752,7 +785,7 @@ func (smm *SquadManagementMode) buildCloseButton() {
 		widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
 	)
 
-	smm.closeButton = gui.CreateButton("Close (ESC)")
+	smm.closeButton = CreateButton("Close (ESC)")
 	smm.closeButton.Configure(
 		widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
 			if exploreMode, exists := smm.modeManager.GetMode("exploration"); exists {
@@ -765,13 +798,13 @@ func (smm *SquadManagementMode) buildCloseButton() {
 
 	// Position at bottom-center using responsive layout
 	x, y := smm.layout.BottomCenterButtons()
-	gui.SetContainerLocation(buttonContainer, x, y)
+	SetContainerLocation(buttonContainer, x, y)
 
 	// Add to root (not grid layout, so it floats)
 	smm.ui.Container.AddChild(buttonContainer)
 }
 
-func (smm *SquadManagementMode) Enter(fromMode gui.UIMode) error {
+func (smm *SquadManagementMode) Enter(fromMode UIMode) error {
 	fmt.Println("Entering Squad Management Mode")
 
 	// Clear old panels
@@ -790,7 +823,7 @@ func (smm *SquadManagementMode) Enter(fromMode gui.UIMode) error {
 	return nil
 }
 
-func (smm *SquadManagementMode) Exit(toMode gui.UIMode) error {
+func (smm *SquadManagementMode) Exit(toMode UIMode) error {
 	fmt.Println("Exiting Squad Management Mode")
 
 	// Clean up panels (will be rebuilt on next Enter)
@@ -808,13 +841,15 @@ func (smm *SquadManagementMode) clearSquadPanels() {
 
 func (smm *SquadManagementMode) findAllSquads() []ecs.EntityID {
 	// Query ECS for all entities with SquadData component
-	// This uses the squad system's query functions
+	// Uses common.EntityManager wrapper methods
 	allSquads := make([]ecs.EntityID, 0)
 
 	// Iterate through all entities
-	for _, entity := range smm.context.ECSManager.GetAllEntities() {
-		if smm.context.ECSManager.HasComponent(entity.ID, &squads.SquadData{}) {
-			allSquads = append(allSquads, entity.ID)
+	entityIDs := smm.context.ECSManager.GetAllEntities()
+	for _, entityID := range entityIDs {
+		// Check if entity has SquadData component
+		if smm.context.ECSManager.HasComponent(entityID, squads.SquadDataComponent) {
+			allSquads = append(allSquads, entityID)
 		}
 	}
 
@@ -828,7 +863,7 @@ func (smm *SquadManagementMode) createSquadPanel(squadID ecs.EntityID) *SquadPan
 
 	// Container for this squad's panel
 	panel.container = widget.NewContainer(
-		widget.ContainerOpts.BackgroundImage(gui.PanelRes.image),
+		widget.ContainerOpts.BackgroundImage(PanelRes.image),
 		widget.ContainerOpts.Layout(widget.NewRowLayout(
 			widget.RowLayoutOpts.Direction(widget.DirectionVertical),
 			widget.RowLayoutOpts.Spacing(10),
@@ -838,31 +873,33 @@ func (smm *SquadManagementMode) createSquadPanel(squadID ecs.EntityID) *SquadPan
 		)),
 	)
 
-	// Squad name label
-	squadData := smm.context.ECSManager.GetComponent(squadID, &squads.SquadData{}).(*squads.SquadData)
-	nameLabel := widget.NewText(
-		widget.TextOpts.Text(fmt.Sprintf("Squad: %s", squadData.Name), gui.LargeFace, color.White),
-	)
-	panel.container.AddChild(nameLabel)
+	// Squad name label - get component data using common.EntityManager
+	if squadDataRaw, ok := smm.context.ECSManager.GetComponent(squadID, squads.SquadDataComponent); ok {
+		squadData := squadDataRaw.(*squads.SquadData)
+		nameLabel := widget.NewText(
+			widget.TextOpts.Text(fmt.Sprintf("Squad: %s", squadData.Name), LargeFace, color.White),
+		)
+		panel.container.AddChild(nameLabel)
+	}
 
 	// 3x3 grid visualization (using squad system's VisualizeSquad function)
 	gridVisualization := squads.VisualizeSquad(squadID, smm.context.ECSManager)
-	gridConfig := gui.TextAreaConfig{
+	gridConfig := TextAreaConfig{
 		MinWidth:  300,
 		MinHeight: 200,
 		FontColor: color.White,
 	}
-	panel.gridDisplay = gui.CreateTextAreaWithConfig(gridConfig)
+	panel.gridDisplay = CreateTextAreaWithConfig(gridConfig)
 	panel.gridDisplay.SetText(gridVisualization)
 	panel.container.AddChild(panel.gridDisplay)
 
 	// Squad stats display
-	statsConfig := gui.TextAreaConfig{
+	statsConfig := TextAreaConfig{
 		MinWidth:  300,
 		MinHeight: 100,
 		FontColor: color.White,
 	}
-	panel.statsDisplay = gui.CreateTextAreaWithConfig(statsConfig)
+	panel.statsDisplay = CreateTextAreaWithConfig(statsConfig)
 	panel.statsDisplay.SetText(smm.getSquadStats(squadID))
 	panel.container.AddChild(panel.statsDisplay)
 
@@ -880,27 +917,27 @@ func (smm *SquadManagementMode) createUnitList(squadID ecs.EntityID) *widget.Lis
 	// Create list entries
 	entries := make([]interface{}, 0, len(unitIDs))
 	for _, unitID := range unitIDs {
-		// Get unit data
-		if unitData := smm.context.ECSManager.GetComponent(unitID, &squads.UnitData{}); unitData != nil {
-			ud := unitData.(*squads.UnitData)
+		// Get unit data using common.EntityManager
+		if unitDataRaw, ok := smm.context.ECSManager.GetComponent(unitID, squads.UnitDataComponent); ok {
+			ud := unitDataRaw.(*squads.UnitData)
 			entries = append(entries, fmt.Sprintf("%s - HP: %d/%d", ud.Name, ud.CurrentHP, ud.MaxHP))
 		}
 	}
 
-	// Create list widget
+	// Create list widget using exported resources
 	list := widget.NewList(
 		widget.ListOpts.Entries(entries),
 		widget.ListOpts.EntryLabelFunc(func(e interface{}) string {
 			return e.(string)
 		}),
 		widget.ListOpts.ScrollContainerOpts(
-			widget.ScrollContainerOpts.Image(gui.ListRes.image),
+			widget.ScrollContainerOpts.Image(ListRes.image),
 		),
 		widget.ListOpts.SliderOpts(
-			widget.SliderOpts.Images(gui.ListRes.track, gui.ListRes.handle),
+			widget.SliderOpts.Images(ListRes.track, ListRes.handle),
 		),
-		widget.ListOpts.EntryColor(gui.ListRes.entry),
-		widget.ListOpts.EntryFontFace(gui.ListRes.face),
+		widget.ListOpts.EntryColor(ListRes.entry),
+		widget.ListOpts.EntryFontFace(ListRes.face),
 	)
 
 	return list
@@ -914,8 +951,8 @@ func (smm *SquadManagementMode) getSquadStats(squadID ecs.EntityID) string {
 	unitCount := len(unitIDs)
 
 	for _, unitID := range unitIDs {
-		if unitData := smm.context.ECSManager.GetComponent(unitID, &squads.UnitData{}); unitData != nil {
-			ud := unitData.(*squads.UnitData)
+		if unitDataRaw, ok := smm.context.ECSManager.GetComponent(unitID, squads.UnitDataComponent); ok {
+			ud := unitDataRaw.(*squads.UnitData)
 			totalHP += ud.CurrentHP
 			maxHP += ud.MaxHP
 		}
@@ -934,7 +971,7 @@ func (smm *SquadManagementMode) Render(screen *ebiten.Image) {
 	// No custom rendering - ebitenui draws everything
 }
 
-func (smm *SquadManagementMode) HandleInput(inputState *gui.InputState) bool {
+func (smm *SquadManagementMode) HandleInput(inputState *InputState) bool {
 	// ESC or E to close
 	if inputState.KeysJustPressed[ebiten.KeyEscape] || inputState.KeysJustPressed[ebiten.KeyE] {
 		if exploreMode, exists := smm.modeManager.GetMode("exploration"); exists {
@@ -958,9 +995,9 @@ func (smm *SquadManagementMode) GetModeName() string {
 ### 3. Combat Mode (Turn-Based Combat UI)
 
 ```go
-// gui/modes/combatmode.go
+// gui/combatmode.go
 
-package modes
+package gui
 
 import (
 	"fmt"
@@ -974,9 +1011,9 @@ import (
 // CombatMode provides focused UI for turn-based squad combat
 type CombatMode struct {
 	ui            *ebitenui.UI
-	context       *gui.UIContext
-	layout        *gui.LayoutConfig
-	modeManager   *gui.UIModeManager
+	context       *UIContext
+	layout        *LayoutConfig
+	modeManager   *UIModeManager
 
 	rootContainer  *widget.Container
 	turnOrderPanel *widget.Container
@@ -986,16 +1023,16 @@ type CombatMode struct {
 	combatLog []string // Store combat messages
 }
 
-func NewCombatMode(modeManager *gui.UIModeManager) *CombatMode {
+func NewCombatMode(modeManager *UIModeManager) *CombatMode {
 	return &CombatMode{
 		modeManager: modeManager,
 		combatLog:   make([]string, 0, 100),
 	}
 }
 
-func (cm *CombatMode) Initialize(ctx *gui.UIContext) error {
+func (cm *CombatMode) Initialize(ctx *UIContext) error {
 	cm.context = ctx
-	cm.layout = gui.NewLayoutConfig(ctx)
+	cm.layout = NewLayoutConfig(ctx)
 
 	cm.ui = &ebitenui.UI{}
 	cm.rootContainer = widget.NewContainer()
@@ -1163,9 +1200,9 @@ func (cm *CombatMode) GetModeName() string {
 ### 4. Inventory Mode (Full-Screen Item Browser)
 
 ```go
-// gui/modes/inventorymode.go
+// gui/inventorymode.go
 
-package modes
+package gui
 
 import (
 	"fmt"
@@ -1179,9 +1216,9 @@ import (
 // InventoryMode provides full-screen inventory browsing and management
 type InventoryMode struct {
 	ui            *ebitenui.UI
-	context       *gui.UIContext
-	layout        *gui.LayoutConfig
-	modeManager   *gui.UIModeManager
+	context       *UIContext
+	layout        *LayoutConfig
+	modeManager   *UIModeManager
 
 	rootContainer   *widget.Container
 	itemList        *widget.List
@@ -1193,16 +1230,16 @@ type InventoryMode struct {
 	currentFilter string // "all", "throwables", "equipment", "consumables"
 }
 
-func NewInventoryMode(modeManager *gui.UIModeManager) *InventoryMode {
+func NewInventoryMode(modeManager *UIModeManager) *InventoryMode {
 	return &InventoryMode{
 		modeManager:   modeManager,
 		currentFilter: "all",
 	}
 }
 
-func (im *InventoryMode) Initialize(ctx *gui.UIContext) error {
+func (im *InventoryMode) Initialize(ctx *UIContext) error {
 	im.context = ctx
-	im.layout = gui.NewLayoutConfig(ctx)
+	im.layout = NewLayoutConfig(ctx)
 
 	im.ui = &ebitenui.UI{}
 	im.rootContainer = widget.NewContainer(
@@ -1275,11 +1312,14 @@ func (im *InventoryMode) buildItemList() {
 		}),
 	)
 
-	// Position at left side
-	x, y := int(float64(im.layout.ScreenWidth)*0.02), int(float64(im.layout.ScreenHeight)*0.15)
-	gui.SetContainerLocation(im.itemList.GetContainer(), x, y)
+	// Position list widget directly using WidgetOpts.LayoutData
+	// Note: Lists are added directly to containers, they don't have GetContainer()
+	im.itemList.GetWidget().LayoutData = widget.AnchorLayoutData{
+		HorizontalPosition: widget.AnchorLayoutPositionStart,
+		VerticalPosition:   widget.AnchorLayoutPositionStart,
+	}
 
-	im.rootContainer.AddChild(im.itemList.GetContainer())
+	im.rootContainer.AddChild(im.itemList)
 }
 
 func (im *InventoryMode) buildDetailPanel() {
@@ -1388,13 +1428,12 @@ func (im *InventoryMode) GetModeName() string {
 ### 5. Formation Editor Mode (3x3 Grid Editor)
 
 ```go
-// gui/modes/formationeditormode.go
+// gui/formationeditormode.go
 
-package modes
+package gui
 
 import (
 	"fmt"
-	"game_main/gui"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/ebitenui/ebitenui"
 	"github.com/ebitenui/ebitenui/widget"
@@ -1404,9 +1443,9 @@ import (
 // FormationEditorMode provides 3x3 grid editing for squad formations
 type FormationEditorMode struct {
 	ui            *ebitenui.UI
-	context       *gui.UIContext
-	layout        *gui.LayoutConfig
-	modeManager   *gui.UIModeManager
+	context       *UIContext
+	layout        *LayoutConfig
+	modeManager   *UIModeManager
 
 	rootContainer   *widget.Container
 	gridContainer   *widget.Container
@@ -1417,15 +1456,15 @@ type FormationEditorMode struct {
 	gridCells [3][3]*widget.Button // 3x3 grid of cells
 }
 
-func NewFormationEditorMode(modeManager *gui.UIModeManager) *FormationEditorMode {
+func NewFormationEditorMode(modeManager *UIModeManager) *FormationEditorMode {
 	return &FormationEditorMode{
 		modeManager: modeManager,
 	}
 }
 
-func (fem *FormationEditorMode) Initialize(ctx *gui.UIContext) error {
+func (fem *FormationEditorMode) Initialize(ctx *UIContext) error {
 	fem.context = ctx
-	fem.layout = gui.NewLayoutConfig(ctx)
+	fem.layout = NewLayoutConfig(ctx)
 
 	fem.ui = &ebitenui.UI{}
 	fem.rootContainer = widget.NewContainer(
@@ -1503,12 +1542,14 @@ func (fem *FormationEditorMode) buildUnitPalette() {
 		}),
 	)
 
-	// Position at left side
-	x := int(float64(fem.layout.ScreenWidth) * 0.05)
-	y := int(float64(fem.layout.ScreenHeight) * 0.2)
-	gui.SetContainerLocation(fem.unitPalette.GetContainer(), x, y)
+	// Position list widget directly using WidgetOpts.LayoutData
+	// Note: Lists are added directly to containers, they don't have GetContainer()
+	fem.unitPalette.GetWidget().LayoutData = widget.AnchorLayoutData{
+		HorizontalPosition: widget.AnchorLayoutPositionStart,
+		VerticalPosition:   widget.AnchorLayoutPositionStart,
+	}
 
-	fem.rootContainer.AddChild(fem.unitPalette.GetContainer())
+	fem.rootContainer.AddChild(fem.unitPalette)
 }
 
 func (fem *FormationEditorMode) buildActionButtons() {
@@ -1618,10 +1659,10 @@ package main
 
 import (
 	"game_main/gui"
-	"game_main/gui/modes"
 	"game_main/common"
 	"game_main/avatar"
 	"game_main/graphics"
+	"game_main/levelgen"
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
@@ -1629,7 +1670,7 @@ type Game struct {
 	// Existing fields
 	ecsManager    *common.EntityManager
 	playerData    *avatar.PlayerData
-	gameMap       *levelgen.LevelMap // Add if not present
+	gameMap       *levelgen.LevelMap
 
 	// NEW: UI Mode Manager
 	uiModeManager *gui.UIModeManager
@@ -1655,12 +1696,12 @@ func NewGame() *Game {
 
 	game.uiModeManager = gui.NewUIModeManager(uiContext)
 
-	// Register all UI modes
-	explorationMode := modes.NewExplorationMode(game.uiModeManager)
-	squadManagementMode := modes.NewSquadManagementMode(game.uiModeManager)
-	combatMode := modes.NewCombatMode(game.uiModeManager)
-	inventoryMode := modes.NewInventoryMode(game.uiModeManager)
-	formationEditorMode := modes.NewFormationEditorMode(game.uiModeManager)
+	// Register all UI modes (all in gui package now)
+	explorationMode := gui.NewExplorationMode(game.uiModeManager)
+	squadManagementMode := gui.NewSquadManagementMode(game.uiModeManager)
+	combatMode := gui.NewCombatMode(game.uiModeManager)
+	inventoryMode := gui.NewInventoryMode(game.uiModeManager)
+	formationEditorMode := gui.NewFormationEditorMode(game.uiModeManager)
 
 	game.uiModeManager.RegisterMode(explorationMode)
 	game.uiModeManager.RegisterMode(squadManagementMode)
@@ -1930,9 +1971,9 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
 ### Complete Replacement Map
 
 **Old GUI Files → New Modal System:**
-- `gui/playerUI.go` (110 LOC) → `gui/modes/explorationmode.go` (stats, messages, quick inventory, info window)
-- `gui/itemui.go` (65 LOC) → `gui/modes/inventorymode.go` (full inventory browser)
-- `gui/throwingUI.go` (91 LOC) → Part of `gui/modes/inventorymode.go` + `gui/modes/combatmode.go`
+- `gui/playerUI.go` (110 LOC) → `gui/explorationmode.go` (stats, messages, quick inventory, info window)
+- `gui/itemui.go` (65 LOC) → `gui/inventorymode.go` (full inventory browser)
+- `gui/throwingUI.go` (91 LOC) → Part of `gui/inventorymode.go` + `gui/combatmode.go`
 - `gui/statsui.go` (93 LOC) → Widget extracted into exploration mode
 - `gui/messagesUI.go` (128 LOC) → Widget extracted into exploration mode
 - `gui/infoUI.go` (261 LOC) → Integrated into exploration mode (right-click inspection)

@@ -113,13 +113,33 @@ func SetupUI(g *Game) {
 	// Create mode manager
 	g.uiModeManager = gui.NewUIModeManager(uiContext)
 
-	// Register exploration mode
+	// Register all UI modes
 	explorationMode := gui.NewExplorationMode(g.uiModeManager)
 	if err := g.uiModeManager.RegisterMode(explorationMode); err != nil {
 		log.Fatalf("Failed to register exploration mode: %v", err)
 	}
 
-	// Set initial mode
+	squadManagementMode := gui.NewSquadManagementMode(g.uiModeManager)
+	if err := g.uiModeManager.RegisterMode(squadManagementMode); err != nil {
+		log.Fatalf("Failed to register squad management mode: %v", err)
+	}
+
+	combatMode := gui.NewCombatMode(g.uiModeManager)
+	if err := g.uiModeManager.RegisterMode(combatMode); err != nil {
+		log.Fatalf("Failed to register combat mode: %v", err)
+	}
+
+	inventoryMode := gui.NewInventoryMode(g.uiModeManager)
+	if err := g.uiModeManager.RegisterMode(inventoryMode); err != nil {
+		log.Fatalf("Failed to register inventory mode: %v", err)
+	}
+
+	formationEditorMode := gui.NewFormationEditorMode(g.uiModeManager)
+	if err := g.uiModeManager.RegisterMode(formationEditorMode); err != nil {
+		log.Fatalf("Failed to register formation editor mode: %v", err)
+	}
+
+	// Set initial mode to exploration
 	if err := g.uiModeManager.SetMode("exploration"); err != nil {
 		log.Fatalf("Failed to set exploration mode: %v", err)
 	}

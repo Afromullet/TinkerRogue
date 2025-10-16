@@ -1,17 +1,14 @@
-// Package gui implements the context-driven modal UI system for the roguelike game.
-// Each gameplay mode (exploration, combat, squad management) has its own isolated UI configuration.
 package gui
 
 import (
 	"game_main/avatar"
 	"game_main/common"
 
-	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/ebitenui/ebitenui"
+	"github.com/hajimehoshi/ebiten/v2"
 )
 
 // UIMode represents a distinct UI context (exploration, combat, squad management, etc.)
-// Each mode has complete control over its UI layout and handles its own input events.
 type UIMode interface {
 	// Initialize is called once when mode is first created
 	Initialize(ctx *UIContext) error
@@ -50,6 +47,7 @@ type UIContext struct {
 	ScreenWidth  int
 	ScreenHeight int
 	TileSize     int
+	// Add other commonly needed game state
 }
 
 // InputState captures current frame's input

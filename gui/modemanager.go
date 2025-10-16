@@ -15,7 +15,6 @@ type UIModeManager struct {
 	inputState        *InputState
 }
 
-// NewUIModeManager creates a new mode manager with the given context
 func NewUIModeManager(ctx *UIContext) *UIModeManager {
 	return &UIModeManager{
 		modes:   make(map[string]UIMode),
