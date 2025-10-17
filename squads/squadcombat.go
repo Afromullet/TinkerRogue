@@ -3,7 +3,7 @@ package squads
 import (
 	"fmt"
 	"game_main/common"
-	"game_main/randgen"
+
 	"math/rand/v2"
 
 	"github.com/bytearena/ecs"
@@ -144,19 +144,19 @@ func calculateUnitDamageByID(attackerID, defenderID ecs.EntityID, squadmanager *
 
 // rollHit determines if an attack hits based on hit rate
 func rollHit(hitRate int) bool {
-	roll := randgen.GetDiceRoll(100)
+	roll := common.GetDiceRoll(100)
 	return roll <= hitRate
 }
 
 // rollCrit determines if an attack is a critical hit
 func rollCrit(critChance int) bool {
-	roll := randgen.GetDiceRoll(100)
+	roll := common.GetDiceRoll(100)
 	return roll <= critChance
 }
 
 // rollDodge determines if an attack is dodged
 func rollDodge(dodgeChance int) bool {
-	roll := randgen.GetDiceRoll(100)
+	roll := common.GetDiceRoll(100)
 	return roll <= dodgeChance
 }
 

@@ -1,4 +1,4 @@
-package randgen
+package common
 
 import (
 	"math/big"

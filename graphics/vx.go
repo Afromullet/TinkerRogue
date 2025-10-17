@@ -1,8 +1,8 @@
 package graphics
 
 import (
+	"game_main/common"
 	"game_main/coords"
-	"game_main/randgen"
 	"image/color"
 	"math"
 
@@ -54,14 +54,14 @@ type Renderer interface {
 
 // BaseEffect handles lifecycle, timing, and position (used by all effects)
 type BaseEffect struct {
-	startX, startY       float64
-	startTime            time.Time
-	duration             int
-	originalDuration     int
-	completed            bool
-	img                  *ebiten.Image
-	animator             Animator
-	renderer             Renderer
+	startX, startY   float64
+	startTime        time.Time
+	duration         int
+	originalDuration int
+	completed        bool
+	img              *ebiten.Image
+	animator         Animator
+	renderer         Renderer
 }
 
 // BaseEffect implements VisualEffect interface
@@ -239,7 +239,7 @@ func NewLineSegmentRenderer(startX, startY int, numSegments int) *LineSegmentRen
 
 	return &LineSegmentRenderer{
 		segments:     segments,
-		color:        color.RGBA{200 + uint8(randgen.GetDiceRoll(55)), 200 + uint8(randgen.GetDiceRoll(55)), 255, 255},
+		color:        color.RGBA{200 + uint8(common.GetDiceRoll(55)), 200 + uint8(common.GetDiceRoll(55)), 255, 255},
 		numSegments:  numSegments,
 		jitterAmount: 5.0,
 	}
@@ -253,8 +253,8 @@ func (r *LineSegmentRenderer) Draw(screen *ebiten.Image, effect *BaseEffect, sta
 	}
 
 	// Adjust color for electrical surges
-	r.color.R = 200 + uint8(randgen.GetDiceRoll(55))
-	r.color.G = 200 + uint8(randgen.GetDiceRoll(55))
+	r.color.R = 200 + uint8(common.GetDiceRoll(55))
+	r.color.G = 200 + uint8(common.GetDiceRoll(55))
 	r.color.B = 255
 
 	// Draw all segments
@@ -286,9 +286,9 @@ func (r *ElectricArcRenderer) Draw(screen *ebiten.Image, effect *BaseEffect, sta
 	r.generateSegments(effect.startX, effect.startY)
 
 	// Randomly adjust color and thickness
-	r.color.R = uint8(randgen.GetDiceRoll(50))
-	r.color.G = 200 + uint8(randgen.GetDiceRoll(55))
-	r.color.B = 200 + uint8(randgen.GetDiceRoll(55))
+	r.color.R = uint8(common.GetDiceRoll(50))
+	r.color.G = 200 + uint8(common.GetDiceRoll(55))
+	r.color.B = 200 + uint8(common.GetDiceRoll(55))
 	r.thickness = float32(1.5 + rand.Float32())
 
 	// Draw segments

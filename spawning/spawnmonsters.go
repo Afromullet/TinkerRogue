@@ -9,7 +9,6 @@ import (
 
 	//"game_main/entitytemplates"
 
-	"game_main/randgen"
 	"game_main/worldmap"
 	"math/rand"
 	"time"
@@ -27,21 +26,21 @@ func SpawnMonster(ecsmanager common.EntityManager, gm *worldmap.GameMap) {
 		//Try 3 times to spawn something. Only spawn it if the tile is not blocked
 		for i := 0; i <= 2; i++ {
 
-			index := randgen.GetRandomBetween(0, len(worldmap.ValidPos.Pos)-1)
+			index := common.GetRandomBetween(0, len(worldmap.ValidPos.Pos)-1)
 
 			if !gm.Tiles[index].Blocked {
 
 				logicalPos := coords.CoordManager.IndexToLogical(index)
 
 				entitytemplates.CreateEntityFromTemplate(ecsmanager, entitytemplates.EntityConfig{
-				Type:      entitytemplates.EntityCreature,
-				Name:      entitytemplates.MonsterTemplates[0].Name,
-				ImagePath: entitytemplates.MonsterTemplates[0].ImageName,
-				AssetDir:  "../assets/creatures/",
-				Visible:   true,
-				Position:  &coords.LogicalPosition{X: logicalPos.X, Y: logicalPos.Y},
-				GameMap:   gm,
-			}, entitytemplates.MonsterTemplates[0])
+					Type:      entitytemplates.EntityCreature,
+					Name:      entitytemplates.MonsterTemplates[0].Name,
+					ImagePath: entitytemplates.MonsterTemplates[0].ImageName,
+					AssetDir:  "../assets/creatures/",
+					Visible:   true,
+					Position:  &coords.LogicalPosition{X: logicalPos.X, Y: logicalPos.Y},
+					GameMap:   gm,
+				}, entitytemplates.MonsterTemplates[0])
 				gm.Tiles[index].Blocked = true
 
 				break
