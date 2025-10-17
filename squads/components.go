@@ -276,12 +276,12 @@ type CooldownTrackerData struct {
 // AbilityParams defines ability effects (pure data, no logic)
 // Systems read these to execute abilities
 type AbilityParams struct {
-	DamageBonus  int // Damage increase (Rally, BattleCry)
-	HealAmount   int // HP restored (Heal)
-	MoraleBonus  int // Morale increase (BattleCry)
-	BaseDamage   int // Direct damage (Fireball)
-	Duration     int // Effect duration in turns (Rally)
-	BaseCooldown int // Default cooldown
+	StrengthBonus int // Damage increase (Rally, BattleCry)
+	HealAmount    int // HP restored (Heal)
+	MoraleBonus   int // Morale increase (BattleCry)
+	BaseDamage    int // Direct damage (Fireball)
+	Duration      int // Effect duration in turns (Rally)
+	BaseCooldown  int // Default cooldown
 }
 
 // GetAbilityParams returns parameters for each ability type
@@ -290,9 +290,9 @@ func GetAbilityParams(abilityType AbilityType) AbilityParams {
 	switch abilityType {
 	case AbilityRally:
 		return AbilityParams{
-			DamageBonus:  5,
-			Duration:     3,
-			BaseCooldown: 5,
+			StrengthBonus: 5,
+			Duration:      3,
+			BaseCooldown:  5,
 		}
 	case AbilityHeal:
 		return AbilityParams{
@@ -301,9 +301,9 @@ func GetAbilityParams(abilityType AbilityType) AbilityParams {
 		}
 	case AbilityBattleCry:
 		return AbilityParams{
-			DamageBonus:  3,
-			MoraleBonus:  10,
-			BaseCooldown: 999, // Once per combat
+			StrengthBonus: 3,
+			MoraleBonus:   10,
+			BaseCooldown:  999, // Once per combat
 		}
 	case AbilityFireball:
 		return AbilityParams{

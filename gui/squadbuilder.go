@@ -30,7 +30,8 @@ type SquadBuilderMode struct {
 	gridCells        [3][3]*GridCellButton
 	currentSquadID   ecs.EntityID
 	currentSquadName string
-	selectedUnitIdx  int // Index in Units array
+	selectedUnitIdx  int          // Index in Units array
+	currentLeaderID  ecs.EntityID // Currently designated leader
 }
 
 // GridCellButton wraps a button with squad grid metadata
@@ -321,6 +322,15 @@ func (sbm *SquadBuilderMode) buildActionButtons() {
 	)
 	buttonContainer.AddChild(clearBtn)
 
+	// Toggle Leader button
+	toggleLeaderBtn := CreateButton("Toggle Leader (L)")
+	toggleLeaderBtn.Configure(
+		widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+			sbm.onToggleLeader()
+		}),
+	)
+	buttonContainer.AddChild(toggleLeaderBtn)
+
 	// Close button
 	closeBtn := CreateButton("Close (ESC)")
 	closeBtn.Configure(
@@ -385,19 +395,72 @@ func (sbm *SquadBuilderMode) placeUnitInCell(row, col, unitIndex int) {
 		return
 	}
 
-	// Update grid cell display
-	cell := sbm.gridCells[row][col]
-	cell.unitID = unitIDs[0]
-	cell.unitIndex = unitIndex
+	unitID := unitIDs[0]
 
-	// Update button text to show unit name and role
-	cellText := fmt.Sprintf("%s\n%s\n[%d,%d]", unit.Name, unit.Role.String(), row, col)
-	cell.button.Text().Label = cellText
+	// Get the unit's grid position component to find all occupied cells
+	unitEntity := squads.FindUnitByID(unitID, sbm.context.ECSManager)
+	if unitEntity == nil {
+		fmt.Println("Error: Could not find unit entity")
+		return
+	}
+
+	gridPosData := common.GetComponentType[*squads.GridPositionData](unitEntity, squads.GridPositionComponent)
+	if gridPosData == nil {
+		fmt.Println("Error: Unit has no grid position data")
+		return
+	}
+
+	// Update ALL occupied cells
+	occupiedCells := gridPosData.GetOccupiedCells()
+	totalCells := len(occupiedCells)
+
+	for _, cellPos := range occupiedCells {
+		cellRow, cellCol := cellPos[0], cellPos[1]
+		if cellRow >= 0 && cellRow < 3 && cellCol >= 0 && cellCol < 3 {
+			cell := sbm.gridCells[cellRow][cellCol]
+			cell.unitID = unitID
+			cell.unitIndex = unitIndex
+
+			// Mark cell as occupied - show if it's the anchor or a secondary cell
+			if cellRow == row && cellCol == col {
+				// Anchor cell - show unit name and size
+				sizeInfo := ""
+				if totalCells > 1 {
+					sizeInfo = fmt.Sprintf(" (%dx%d)", unit.GridWidth, unit.GridHeight)
+				}
+				leaderMarker := ""
+				if unitID == sbm.currentLeaderID {
+					leaderMarker = " ★"
+				}
+				cellText := fmt.Sprintf("%s%s%s\n%s\n[%d,%d]", unit.Name, sizeInfo, leaderMarker, unit.Role.String(), cellRow, cellCol)
+				cell.button.Text().Label = cellText
+			} else {
+				// Secondary cell - show it's part of the unit with arrow pointing to anchor
+				direction := ""
+				if cellRow < row {
+					direction += "↓"
+				} else if cellRow > row {
+					direction += "↑"
+				}
+				if cellCol < col {
+					direction += "→"
+				} else if cellCol > col {
+					direction += "←"
+				}
+				leaderMarker := ""
+				if unitID == sbm.currentLeaderID {
+					leaderMarker = " ★"
+				}
+				cellText := fmt.Sprintf("%s%s\n%s [%d,%d]\n[%d,%d]", unit.Name, leaderMarker, direction, row, col, cellRow, cellCol)
+				cell.button.Text().Label = cellText
+			}
+		}
+	}
 
 	// Update capacity display
 	sbm.updateCapacityDisplay()
 
-	fmt.Printf("Placed %s at [%d,%d]\n", unit.Name, row, col)
+	fmt.Printf("Placed %s (size %dx%d) at anchor [%d,%d]\n", unit.Name, unit.GridWidth, unit.GridHeight, row, col)
 }
 
 func (sbm *SquadBuilderMode) removeUnitFromCell(row, col int) {
@@ -407,17 +470,47 @@ func (sbm *SquadBuilderMode) removeUnitFromCell(row, col int) {
 		return
 	}
 
+	unitID := cell.unitID
+
+	// Get the unit's grid position to find all occupied cells BEFORE removing
+	unitEntity := squads.FindUnitByID(unitID, sbm.context.ECSManager)
+	if unitEntity == nil {
+		fmt.Println("Error: Could not find unit entity to remove")
+		return
+	}
+
+	gridPosData := common.GetComponentType[*squads.GridPositionData](unitEntity, squads.GridPositionComponent)
+	var occupiedCells [][2]int
+	if gridPosData != nil {
+		occupiedCells = gridPosData.GetOccupiedCells()
+	}
+
 	// Remove unit from squad
-	err := squads.RemoveUnitFromSquad(cell.unitID, sbm.context.ECSManager)
+	err := squads.RemoveUnitFromSquad(unitID, sbm.context.ECSManager)
 	if err != nil {
 		fmt.Printf("Failed to remove unit: %v\n", err)
 		return
 	}
 
-	// Clear cell state
-	cell.unitID = 0
-	cell.unitIndex = -1
-	cell.button.Text().Label = fmt.Sprintf("Empty\n[%d,%d]", row, col)
+	// Clear ALL cells that were occupied by this unit
+	if len(occupiedCells) > 0 {
+		for _, cellPos := range occupiedCells {
+			cellRow, cellCol := cellPos[0], cellPos[1]
+			if cellRow >= 0 && cellRow < 3 && cellCol >= 0 && cellCol < 3 {
+				targetCell := sbm.gridCells[cellRow][cellCol]
+				if targetCell.unitID == unitID { // Only clear if it was this unit
+					targetCell.unitID = 0
+					targetCell.unitIndex = -1
+					targetCell.button.Text().Label = fmt.Sprintf("Empty\n[%d,%d]", cellRow, cellCol)
+				}
+			}
+		}
+	} else {
+		// Fallback: only clear the clicked cell
+		cell.unitID = 0
+		cell.unitIndex = -1
+		cell.button.Text().Label = fmt.Sprintf("Empty\n[%d,%d]", row, col)
+	}
 
 	// Update capacity display
 	sbm.updateCapacityDisplay()
@@ -465,7 +558,12 @@ func (sbm *SquadBuilderMode) updateCapacityDisplay() {
 	total := squads.GetSquadTotalCapacity(sbm.currentSquadID, sbm.context.ECSManager)
 	remaining := float64(total) - used
 
-	capacityText := fmt.Sprintf("Capacity: %.1f / %d\nRemaining: %.1f", used, total, remaining)
+	leaderStatus := "No leader"
+	if sbm.currentLeaderID != 0 {
+		leaderStatus = "Leader assigned ★"
+	}
+
+	capacityText := fmt.Sprintf("Capacity: %.1f / %d\nRemaining: %.1f\n%s", used, total, remaining, leaderStatus)
 
 	if remaining < 0 {
 		capacityText += "\nWARNING: Over capacity!"
@@ -515,11 +613,27 @@ func (sbm *SquadBuilderMode) onCreateSquad() {
 		return
 	}
 
+	// Check if a leader was designated
+	if sbm.currentLeaderID == 0 {
+		fmt.Println("Warning: No leader designated. Please designate a leader before creating the squad.")
+		return
+	}
+
 	// Update squad name if it was changed
 	squadEntity := squads.GetSquadEntity(sbm.currentSquadID, sbm.context.ECSManager)
 	if squadEntity != nil {
 		squadData := common.GetComponentType[*squads.SquadData](squadEntity, squads.SquadComponent)
 		squadData.Name = sbm.currentSquadName
+	}
+
+	// Assign leader component to the designated unit
+	leaderEntity := squads.FindUnitByID(sbm.currentLeaderID, sbm.context.ECSManager)
+	if leaderEntity != nil {
+		// Add LeaderComponent to designate this unit as leader
+		leaderEntity.AddComponent(squads.LeaderComponent, &squads.LeaderData{})
+		fmt.Printf("Unit %d designated as squad leader\n", sbm.currentLeaderID)
+	} else {
+		fmt.Println("Warning: Could not find designated leader unit")
 	}
 
 	fmt.Printf("Squad created: %s with %d units\n", sbm.currentSquadName, len(unitIDs))
@@ -532,6 +646,129 @@ func (sbm *SquadBuilderMode) onCreateSquad() {
 	sbm.onClearGrid()
 }
 
+func (sbm *SquadBuilderMode) onToggleLeader() {
+	// Find a unit to set as leader (look for first placed unit)
+	var foundUnitID ecs.EntityID
+	for row := 0; row < 3; row++ {
+		for col := 0; col < 3; col++ {
+			cell := sbm.gridCells[row][col]
+			if cell.unitID != 0 {
+				foundUnitID = cell.unitID
+				break
+			}
+		}
+		if foundUnitID != 0 {
+			break
+		}
+	}
+
+	if foundUnitID == 0 {
+		fmt.Println("No units placed in squad to designate as leader")
+		return
+	}
+
+	// Toggle leader status
+	if sbm.currentLeaderID == foundUnitID {
+		// Remove leader status
+		sbm.currentLeaderID = 0
+		fmt.Println("Leader status removed")
+	} else {
+		// Set new leader
+		sbm.currentLeaderID = foundUnitID
+		fmt.Printf("Unit %d designated as leader\n", foundUnitID)
+	}
+
+	// Refresh grid display to show leader marker
+	sbm.refreshGridDisplay()
+	sbm.updateCapacityDisplay()
+}
+
+func (sbm *SquadBuilderMode) setUnitAsLeader(row, col int) {
+	cell := sbm.gridCells[row][col]
+
+	if cell.unitID == 0 {
+		fmt.Println("No unit at this position to set as leader")
+		return
+	}
+
+	if sbm.currentLeaderID == cell.unitID {
+		// Unset leader
+		sbm.currentLeaderID = 0
+		fmt.Println("Leader status removed")
+	} else {
+		// Set new leader
+		sbm.currentLeaderID = cell.unitID
+		fmt.Printf("Unit at [%d,%d] designated as leader\n", row, col)
+	}
+
+	// Refresh grid display to show leader marker
+	sbm.refreshGridDisplay()
+	sbm.updateCapacityDisplay()
+}
+
+func (sbm *SquadBuilderMode) refreshGridDisplay() {
+	// Refresh all grid cells to update leader markers and other visual indicators
+	for row := 0; row < 3; row++ {
+		for col := 0; col < 3; col++ {
+			cell := sbm.gridCells[row][col]
+			if cell.unitID == 0 {
+				cell.button.Text().Label = fmt.Sprintf("Empty\n[%d,%d]", row, col)
+				continue
+			}
+
+			// Get unit info
+			unitEntity := squads.FindUnitByID(cell.unitID, sbm.context.ECSManager)
+			if unitEntity == nil {
+				continue
+			}
+
+			gridPosData := common.GetComponentType[*squads.GridPositionData](unitEntity, squads.GridPositionComponent)
+			if gridPosData == nil {
+				continue
+			}
+
+			// Check if this cell is the anchor
+			isAnchor := (gridPosData.AnchorRow == row && gridPosData.AnchorCol == col)
+
+			// Get unit template info
+			if cell.unitIndex < 0 || cell.unitIndex >= len(squads.Units) {
+				continue
+			}
+			unit := squads.Units[cell.unitIndex]
+
+			leaderMarker := ""
+			if cell.unitID == sbm.currentLeaderID {
+				leaderMarker = " ★"
+			}
+
+			if isAnchor {
+				// Anchor cell
+				sizeInfo := ""
+				if gridPosData.Width > 1 || gridPosData.Height > 1 {
+					sizeInfo = fmt.Sprintf(" (%dx%d)", gridPosData.Width, gridPosData.Height)
+				}
+				cellText := fmt.Sprintf("%s%s%s\n%s\n[%d,%d]", unit.Name, sizeInfo, leaderMarker, unit.Role.String(), row, col)
+				cell.button.Text().Label = cellText
+			} else {
+				// Secondary cell
+				direction := ""
+				if row < gridPosData.AnchorRow {
+					direction += "↓"
+				} else if row > gridPosData.AnchorRow {
+					direction += "↑"
+				}
+				if col < gridPosData.AnchorCol {
+					direction += "→"
+				} else if col > gridPosData.AnchorCol {
+					direction += "←"
+				}
+				cellText := fmt.Sprintf("%s%s\n%s [%d,%d]\n[%d,%d]", unit.Name, leaderMarker, direction, gridPosData.AnchorRow, gridPosData.AnchorCol, row, col)
+				cell.button.Text().Label = cellText
+			}
+		}
+	}
+}
+
 func (sbm *SquadBuilderMode) onClearGrid() {
 	// If there's a current squad, we could either delete it or just reset the UI
 	// For now, just reset the UI and create a new squad on next placement
@@ -539,6 +776,7 @@ func (sbm *SquadBuilderMode) onClearGrid() {
 	sbm.currentSquadName = ""
 	sbm.squadNameInput.SetText("")
 	sbm.selectedUnitIdx = -1
+	sbm.currentLeaderID = 0
 
 	// Clear all grid cells
 	for row := 0; row < 3; row++ {
@@ -585,6 +823,12 @@ func (sbm *SquadBuilderMode) HandleInput(inputState *InputState) bool {
 			sbm.modeManager.RequestTransition(exploreMode, "ESC pressed")
 			return true
 		}
+	}
+
+	// L key to toggle leader
+	if inputState.KeysJustPressed[ebiten.KeyL] {
+		sbm.onToggleLeader()
+		return true
 	}
 
 	return false
