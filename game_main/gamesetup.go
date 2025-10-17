@@ -147,6 +147,11 @@ func SetupUI(g *Game) {
 		log.Fatalf("Failed to register formation editor mode: %v", err)
 	}
 
+	squadBuilderMode := gui.NewSquadBuilderMode(g.uiModeManager)
+	if err := g.uiModeManager.RegisterMode(squadBuilderMode); err != nil {
+		log.Fatalf("Failed to register squad builder mode: %v", err)
+	}
+
 	// Set initial mode to exploration
 	if err := g.uiModeManager.SetMode("exploration"); err != nil {
 		log.Fatalf("Failed to set exploration mode: %v", err)

@@ -167,6 +167,17 @@ func (em *ExplorationMode) buildQuickInventory() {
 	)
 	em.quickInventory.AddChild(squadBtn)
 
+	// Squad Builder button
+	builderBtn := CreateButton("Builder (B)")
+	builderBtn.Configure(
+		widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+			if builderMode, exists := em.modeManager.GetMode("squad_builder"); exists {
+				em.modeManager.RequestTransition(builderMode, "Open Squad Builder")
+			}
+		}),
+	)
+	em.quickInventory.AddChild(builderBtn)
+
 	// Position using responsive layout
 	SetContainerLocation(em.quickInventory, x, y)
 
@@ -246,6 +257,14 @@ func (em *ExplorationMode) HandleInput(inputState *InputState) bool {
 		// Open full inventory
 		if invMode, exists := em.modeManager.GetMode("inventory"); exists {
 			em.modeManager.RequestTransition(invMode, "I key pressed")
+			return true
+		}
+	}
+
+	if inputState.KeysJustPressed[ebiten.KeyB] {
+		// Open squad builder
+		if builderMode, exists := em.modeManager.GetMode("squad_builder"); exists {
+			em.modeManager.RequestTransition(builderMode, "B key pressed")
 			return true
 		}
 	}
