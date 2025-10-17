@@ -1,13 +1,13 @@
 // Package pathfinding implements the A* algorithm for finding optimal paths in the game world.
 // It provides pathfinding capabilities for AI movement, player navigation assistance,
 // and other game mechanics that require shortest-path calculations on the game map.
-package pathfinding
+package worldmap
 
 import (
 	"errors"
 	"game_main/coords"
 	"game_main/graphics"
-	"game_main/worldmap"
+
 	"reflect"
 )
 
@@ -75,7 +75,7 @@ type AStar struct{}
 // Returns a slice of positions representing the path, or empty slice if no path exists.
 // The ignoreWalls parameter allows pathfinding through walls when true.
 // TODO: gameMap should be a pointer for better performance.
-func (as AStar) GetPath(gameMap worldmap.GameMap, start *coords.LogicalPosition, end *coords.LogicalPosition, ignoreWalls bool) []coords.LogicalPosition {
+func (as AStar) GetPath(gameMap GameMap, start *coords.LogicalPosition, end *coords.LogicalPosition, ignoreWalls bool) []coords.LogicalPosition {
 
 	openList := make([]*node, 0)
 	closedList := make([]*node, 0)
@@ -136,7 +136,7 @@ func (as AStar) GetPath(gameMap worldmap.GameMap, start *coords.LogicalPosition,
 		if currentNode.Position.Y > 0 {
 			logicalPos := coords.LogicalPosition{X: currentNode.Position.X, Y: currentNode.Position.Y - 1}
 			tile := gameMap.Tiles[coords.CoordManager.LogicalToIndex(logicalPos)]
-			if ignoreWalls || tile.TileType != worldmap.WALL {
+			if ignoreWalls || tile.TileType != WALL {
 				//The location is in the map bounds and is walkable
 				upNodePosition := coords.LogicalPosition{
 					X: currentNode.Position.X,
@@ -151,7 +151,7 @@ func (as AStar) GetPath(gameMap worldmap.GameMap, start *coords.LogicalPosition,
 		if currentNode.Position.Y < graphics.ScreenInfo.DungeonHeight {
 			logicalPos := coords.LogicalPosition{X: currentNode.Position.X, Y: currentNode.Position.Y + 1}
 			tile := gameMap.Tiles[coords.CoordManager.LogicalToIndex(logicalPos)]
-			if ignoreWalls || tile.TileType != worldmap.WALL {
+			if ignoreWalls || tile.TileType != WALL {
 				//The location is in the map bounds and is walkable
 				downNodePosition := coords.LogicalPosition{
 					X: currentNode.Position.X,
@@ -166,7 +166,7 @@ func (as AStar) GetPath(gameMap worldmap.GameMap, start *coords.LogicalPosition,
 		if currentNode.Position.X > 0 {
 			logicalPos := coords.LogicalPosition{X: currentNode.Position.X - 1, Y: currentNode.Position.Y}
 			tile := gameMap.Tiles[coords.CoordManager.LogicalToIndex(logicalPos)]
-			if ignoreWalls || tile.TileType != worldmap.WALL {
+			if ignoreWalls || tile.TileType != WALL {
 				//The location is in the map bounds and is walkable
 				leftNodePosition := coords.LogicalPosition{
 					X: currentNode.Position.X - 1,
@@ -181,7 +181,7 @@ func (as AStar) GetPath(gameMap worldmap.GameMap, start *coords.LogicalPosition,
 		if currentNode.Position.X < graphics.ScreenInfo.DungeonWidth {
 			logicalPos := coords.LogicalPosition{X: currentNode.Position.X + 1, Y: currentNode.Position.Y}
 			tile := gameMap.Tiles[coords.CoordManager.LogicalToIndex(logicalPos)]
-			if ignoreWalls && tile.TileType != worldmap.WALL {
+			if ignoreWalls && tile.TileType != WALL {
 				//The location is in the map bounds and is walkable
 				rightNodePosition := coords.LogicalPosition{
 					X: currentNode.Position.X + 1,
@@ -229,7 +229,7 @@ func (as AStar) GetPath(gameMap worldmap.GameMap, start *coords.LogicalPosition,
 }
 
 // Creates a slice of Positions from p to other. Uses AStar to build the path
-func BuildPath(gm *worldmap.GameMap, start *coords.LogicalPosition, other *coords.LogicalPosition) []coords.LogicalPosition {
+func BuildPath(gm *GameMap, start *coords.LogicalPosition, other *coords.LogicalPosition) []coords.LogicalPosition {
 
 	astar := AStar{}
 	return astar.GetPath(*gm, start, other, false)
