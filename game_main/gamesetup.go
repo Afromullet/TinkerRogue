@@ -56,18 +56,26 @@ func SetupNewGame(g *Game) {
 	// 8. Register creatures with tracker
 	AddCreaturesToTracker(&g.em)
 
-	// 9. Initialize squad system
-	if err := SetupSquadSystem(); err != nil {
+	// 9. Initialize squad system (using game's EntityManager)
+	if err := SetupSquadSystem(&g.em); err != nil {
 		log.Fatalf("Failed to initialize squad system: %v", err)
 	}
+
 }
 
 // SetupSquadSystem initializes the squad combat system.
-// This is separated to make it easy to extend with SquadECSManager in the future.
-func SetupSquadSystem() error {
-	if err := squads.InitializeSquadData(); err != nil {
+// Pass the game's EntityManager so squads exist in the same ECS world.
+func SetupSquadSystem(manager *common.EntityManager) error {
+	if err := squads.InitializeSquadData(manager); err != nil {
 		return err
 	}
+
+	// Create test squads if in debug mode
+
+	if err := squads.CreateDummySquadsForTesting(manager); err != nil {
+		return err
+	}
+
 	return nil
 }
 

@@ -16,8 +16,8 @@ import (
 // setupTestSquadManager creates a fresh SquadECSManager for testing
 func setupTestSquadManager(t *testing.T) *common.EntityManager {
 	manager := common.NewEntityManager()
-	InitSquadComponents(*manager)
-	InitSquadTags(*manager)
+	InitSquadComponents(manager)
+	InitSquadTags(manager)
 
 	// Initialize common components for CreateEmptySquad and visualization
 	// (Squad entities need these to track position and unit entities need AttributeComponent and NameComponent)

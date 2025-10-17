@@ -9,12 +9,11 @@ import (
 	"github.com/bytearena/ecs"
 )
 
-var SquadsManager common.EntityManager
 var Units = make([]UnitTemplate, 0, len(entitytemplates.MonsterTemplates))
 
 // InitSquadComponents registers all squad-related components with the ECS manager.
 // Call this during game initialization.
-func InitSquadComponents(squadManager common.EntityManager) {
+func InitSquadComponents(squadManager *common.EntityManager) {
 	SquadComponent = squadManager.World.NewComponent()
 	SquadMemberComponent = squadManager.World.NewComponent()
 	GridPositionComponent = squadManager.World.NewComponent()
@@ -28,7 +27,7 @@ func InitSquadComponents(squadManager common.EntityManager) {
 
 // InitSquadTags creates tags for querying squad-related entities
 // Call this after InitSquadComponents
-func InitSquadTags(squadManager common.EntityManager) {
+func InitSquadTags(squadManager *common.EntityManager) {
 	SquadTag = ecs.BuildTag(SquadComponent)
 	SquadMemberTag = ecs.BuildTag(SquadMemberComponent)
 	LeaderTag = ecs.BuildTag(LeaderComponent, SquadMemberComponent)
@@ -38,10 +37,11 @@ func InitSquadTags(squadManager common.EntityManager) {
 	squadManager.Tags["leader"] = LeaderTag
 }
 
-func InitializeSquadData() error {
-	SquadsManager = *common.NewEntityManager()
-	InitSquadComponents(SquadsManager)
-	InitSquadTags(SquadsManager)
+// InitializeSquadData initializes squad components and templates in the provided EntityManager.
+// This should be called with the game's main EntityManager (&g.em) so squads exist in the same ECS world.
+func InitializeSquadData(manager *common.EntityManager) error {
+	InitSquadComponents(manager)
+	InitSquadTags(manager)
 	if err := InitUnitTemplatesFromJSON(); err != nil {
 		return fmt.Errorf("failed to initialize units: %w", err)
 	}

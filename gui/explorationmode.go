@@ -133,6 +133,12 @@ func (em *ExplorationMode) buildQuickInventory() {
 		widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
 			// Transition to inventory mode (throwables)
 			if invMode, exists := em.modeManager.GetMode("inventory"); exists {
+
+				//TODO remove this in the future. Just here for testing
+				// Set the initial filter to "Throwables" before transitioning
+				if inventoryMode, ok := invMode.(*InventoryMode); ok {
+					inventoryMode.SetInitialFilter("Throwables")
+				}
 				em.modeManager.RequestTransition(invMode, "Open Throwables")
 			}
 		}),

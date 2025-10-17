@@ -25,13 +25,22 @@ type InventoryMode struct {
 	closeButton    *widget.Button
 
 	currentFilter string // "all", "throwables", "equipment", "consumables"
+	initialFilter string // Filter to set on Enter() - allows pre-setting filter before transition
 }
 
 func NewInventoryMode(modeManager *UIModeManager) *InventoryMode {
 	return &InventoryMode{
 		modeManager:   modeManager,
 		currentFilter: "all",
+		initialFilter: "",
 	}
+}
+
+// TOOO remove in the future. This is here for testing
+// SetInitialFilter sets the filter that will be applied when entering this mode
+// Call this before transitioning to pre-set the desired filter
+func (im *InventoryMode) SetInitialFilter(filter string) {
+	im.initialFilter = filter
 }
 
 func (im *InventoryMode) Initialize(ctx *UIContext) error {
@@ -277,6 +286,14 @@ func (im *InventoryMode) refreshItemList() {
 
 func (im *InventoryMode) Enter(fromMode UIMode) error {
 	fmt.Println("Entering Inventory Mode")
+
+	//TODO remove in the future. Here for testing
+	// Apply initial filter if one was set
+	if im.initialFilter != "" {
+		im.currentFilter = im.initialFilter
+		im.initialFilter = "" // Reset after use
+	}
+
 	im.refreshItemList()
 	return nil
 }
