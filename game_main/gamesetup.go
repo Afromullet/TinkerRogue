@@ -1,7 +1,6 @@
 package main
 
 import (
-	"game_main/avatar"
 	"game_main/common"
 	"game_main/entitytemplates"
 	"game_main/graphics"
@@ -81,7 +80,7 @@ func SetupSquadSystem(manager *common.EntityManager) error {
 
 // SetupTestData creates test items and content for debugging.
 // Only called when DEBUG_MODE is enabled.
-func SetupTestData(em *common.EntityManager, gm *worldmap.GameMap, pd *avatar.PlayerData) {
+func SetupTestData(em *common.EntityManager, gm *worldmap.GameMap, pd *common.PlayerData) {
 	testing.CreateTestItems(em.World, em.Tags, gm)
 	testing.InitTestActionManager(em, pd)
 }

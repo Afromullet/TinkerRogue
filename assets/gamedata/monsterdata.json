@@ -7,7 +7,7 @@
         "strength": 5,
         "dexterity": 30,
         "magic": 0,
-        "leadership": 0,
+        "leadership": 50,
         "armor": 1,
         "weapon": 1
       },
@@ -33,7 +33,7 @@
         "strength": 8,
         "dexterity": 15,
         "magic": 0,
-        "leadership": 0,
+        "leadership": 50,
         "armor": 2,
         "weapon": 5
       },
@@ -59,7 +59,7 @@
         "strength": 10,
         "dexterity": 24,
         "magic": 0,
-        "leadership": 0,
+        "leadership": 50,
         "armor": 1,
         "weapon": 6
       },
@@ -85,7 +85,7 @@
         "strength": 3,
         "dexterity": 30,
         "magic": 0,
-        "leadership": 0,
+        "leadership": 50,
         "armor": 1,
         "weapon": 2
       },
@@ -111,7 +111,7 @@
         "strength": 2,
         "dexterity": 30,
         "magic": 0,
-        "leadership": 0,
+        "leadership": 50,
         "armor": 1,
         "weapon": 1
       },
@@ -137,7 +137,7 @@
         "strength": 6,
         "dexterity": 45,
         "magic": 0,
-        "leadership": 0,
+        "leadership": 50,
         "armor": 0,
         "weapon": 7
       },
@@ -163,7 +163,7 @@
         "strength": 4,
         "dexterity": 36,
         "magic": 10,
-        "leadership": 0,
+        "leadership": 50,
         "armor": 1,
         "weapon": 2
       },
@@ -215,7 +215,7 @@
         "strength": 18,
         "dexterity": 6,
         "magic": 0,
-        "leadership": 0,
+        "leadership": 50,
         "armor": 9,
         "weapon": 8
       },
@@ -241,7 +241,7 @@
         "strength": 10,
         "dexterity": 24,
         "magic": 3,
-        "leadership": 0,
+        "leadership": 50,
         "armor": 6,
         "weapon": 10
       },
@@ -267,7 +267,7 @@
         "strength": 6,
         "dexterity": 75,
         "magic": 0,
-        "leadership": 0,
+        "leadership": 50,
         "armor": 1,
         "weapon": 12
       },
@@ -319,7 +319,7 @@
         "strength": 4,
         "dexterity": 42,
         "magic": 15,
-        "leadership": 0,
+        "leadership": 50,
         "armor": 0,
         "weapon": 2
       },
@@ -371,7 +371,7 @@
         "strength": 5,
         "dexterity": 54,
         "magic": 0,
-        "leadership": 0,
+        "leadership": 50,
         "armor": 1,
         "weapon": 9
       },
@@ -397,7 +397,7 @@
         "strength": 8,
         "dexterity": 30,
         "magic": 8,
-        "leadership": 0,
+        "leadership": 50,
         "armor": 6,
         "weapon": 5
       },

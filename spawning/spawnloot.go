@@ -4,7 +4,6 @@
 package spawning
 
 import (
-	"game_main/avatar"
 	"game_main/common"
 	"game_main/coords"
 	"game_main/entitytemplates"
@@ -55,7 +54,7 @@ func SpawnStartingConsumables(em common.EntityManager, gm *worldmap.GameMap) {
 
 // REMOVED: SpawnStartingEquipment - equipment spawning removed as part of squad system transition
 // Squad system will handle combat equipment through squad templates
-func SpawnStartingEquipment(em *common.EntityManager, gm *worldmap.GameMap, pl *avatar.PlayerData) {
+func SpawnStartingEquipment(em *common.EntityManager, gm *worldmap.GameMap, pl *common.PlayerData) {
 	// No-op - weapon/armor spawning removed
 }
 
@@ -66,7 +65,7 @@ func SpawnStartingEquipment(em *common.EntityManager, gm *worldmap.GameMap, pl *
 // Add better spawning mechanics later
 //
 
-func SpawnLootAroundPlayer(currentTurnNumber int, playerData avatar.PlayerData, manager *ecs.Manager, gm *worldmap.GameMap) {
+func SpawnLootAroundPlayer(currentTurnNumber int, playerData common.PlayerData, manager *ecs.Manager, gm *worldmap.GameMap) {
 
 	if currentTurnNumber%10 != 0 {
 		return

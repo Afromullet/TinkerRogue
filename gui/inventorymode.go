@@ -143,13 +143,16 @@ func (im *InventoryMode) buildItemList() {
 
 			// If in throwables mode, prepare the throwable
 			if im.currentFilter == "Throwables" && im.context.PlayerData != nil {
-				// Get the item entity from inventory
-				itemEntity, err := im.context.PlayerData.Inventory.GetItem(entry.Index)
-				if err == nil {
-					// Prepare the throwable
-					im.context.PlayerData.Throwables.PrepareThrowable(itemEntity, entry.Index)
-					im.context.PlayerData.InputStates.IsThrowing = true
-					fmt.Printf("Throwable prepared: %s\n", entry.Name)
+				// Type assert the inventory interface{} to *gear.Inventory
+				if inv, ok := im.context.PlayerData.Inventory.(*gear.Inventory); ok {
+					// Get the item entity from inventory
+					itemEntity, err := inv.GetItem(entry.Index)
+					if err == nil {
+						// Prepare the throwable using the gear package helper
+						gear.PreparePlayerThrowable(&im.context.PlayerData.Throwables, itemEntity, entry.Index)
+						im.context.PlayerData.InputStates.IsThrowing = true
+						fmt.Printf("Throwable prepared: %s\n", entry.Name)
+					}
 
 					// Get item details
 					item := gear.GetItem(itemEntity)
@@ -253,7 +256,14 @@ func (im *InventoryMode) refreshItemList() {
 		return
 	}
 
-	inv := im.context.PlayerData.Inventory
+	// Type assert the inventory interface{} to *gear.Inventory
+	inv, ok := im.context.PlayerData.Inventory.(*gear.Inventory)
+	if !ok {
+		entries := []interface{}{"Inventory type mismatch"}
+		im.itemList.SetEntries(entries)
+		return
+	}
+
 	entries := []interface{}{}
 
 	// Query inventory based on current filter

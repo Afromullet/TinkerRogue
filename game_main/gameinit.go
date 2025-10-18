@@ -1,7 +1,6 @@
 package main
 
 import (
-	"game_main/avatar"
 	"game_main/common"
 	"game_main/coords"
 	"game_main/gear"
@@ -16,9 +15,9 @@ import (
 
 // InitializePlayerData creates and configures the player entity with all necessary components.
 // It sets up the player's position, attributes, inventory, equipment, and adds them to the ECS world.
-func InitializePlayerData(ecsmanager *common.EntityManager, pl *avatar.PlayerData, gm *worldmap.GameMap) {
+func InitializePlayerData(ecsmanager *common.EntityManager, pl *common.PlayerData, gm *worldmap.GameMap) {
 
-	avatar.PlayerComponent = ecsmanager.World.NewComponent()
+	common.PlayerComponent = ecsmanager.World.NewComponent()
 
 	playerImg, _, err := ebitenutil.NewImageFromFile(PlayerImagePath)
 	if err != nil {
@@ -36,7 +35,7 @@ func InitializePlayerData(ecsmanager *common.EntityManager, pl *avatar.PlayerDat
 	)
 
 	playerEntity := ecsmanager.World.NewEntity().
-		AddComponent(avatar.PlayerComponent, &avatar.Player{}).
+		AddComponent(common.PlayerComponent, &common.Player{}).
 		AddComponent(rendering.RenderableComponent, &rendering.Renderable{
 			Image:   playerImg,
 			Visible: true,
@@ -55,7 +54,7 @@ func InitializePlayerData(ecsmanager *common.EntityManager, pl *avatar.PlayerDat
 		})
 
 	playerEntity.AddComponent(common.UserMsgComponent, &common.UserMessage{})
-	players := ecs.BuildTag(avatar.PlayerComponent, common.PositionComponent, gear.InventoryComponent)
+	players := ecs.BuildTag(common.PlayerComponent, common.PositionComponent, gear.InventoryComponent)
 	ecsmanager.Tags["players"] = players
 
 	//g.playerData = PlayerData{}

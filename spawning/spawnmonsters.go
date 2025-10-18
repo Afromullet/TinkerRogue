@@ -1,14 +1,9 @@
 package spawning
 
 import (
-	"game_main/avatar"
-
 	"game_main/common"
 	"game_main/coords"
 	"game_main/entitytemplates"
-
-	//"game_main/entitytemplates"
-
 	"game_main/worldmap"
 	"math/rand"
 	"time"
@@ -55,7 +50,7 @@ func SpawnMonster(ecsmanager common.EntityManager, gm *worldmap.GameMap) {
 
 // Spawns one creature in every room.
 // Then it spawns MaxNumCreatures in random rooms
-func SpawnStartingCreatures(MaxNumCreatures int, em *common.EntityManager, gm *worldmap.GameMap, pl *avatar.PlayerData) {
+func SpawnStartingCreatures(MaxNumCreatures int, em *common.EntityManager, gm *worldmap.GameMap, pl *common.PlayerData) {
 
 	//Spawn 1 random creature in every room except the starting room
 

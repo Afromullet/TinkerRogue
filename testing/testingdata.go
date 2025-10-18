@@ -1,7 +1,6 @@
 package testing
 
 import (
-	"game_main/avatar"
 	"game_main/common"
 	"game_main/coords"
 	"game_main/entitytemplates"
@@ -187,6 +186,6 @@ func CreateItem(manager *ecs.Manager, name string, pos coords.LogicalPosition, i
 // See CLAUDE.md Section 7 (Squad System Infrastructure) for replacement system
 
 // This function is no longer needed since we removed the action queue system
-func InitTestActionManager(ecsmanager *common.EntityManager, pl *avatar.PlayerData) {
+func InitTestActionManager(ecsmanager *common.EntityManager, pl *common.PlayerData) {
 	// No action queue initialization needed anymore
 }

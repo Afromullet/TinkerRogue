@@ -8,7 +8,6 @@
 package main
 
 import (
-	"game_main/avatar"
 	"game_main/common"
 	"game_main/graphics"
 	"game_main/gui"
@@ -29,7 +28,7 @@ import (
 type Game struct {
 	em               common.EntityManager
 	uiModeManager    *gui.UIModeManager // NEW: Modal UI system
-	playerData       avatar.PlayerData
+	playerData       common.PlayerData
 	gameMap          worldmap.GameMap
 	inputCoordinator *input.InputCoordinator
 }

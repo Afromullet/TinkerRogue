@@ -1,7 +1,7 @@
 package input
 
 import (
-	"game_main/avatar"
+	"game_main/common"
 	"game_main/coords"
 	"game_main/graphics"
 	"math"
@@ -12,7 +12,7 @@ import (
 
 // Actions the player can perform in debug mode. Currently not checking if in debug mode
 
-func PlayerDebugActions(pl *avatar.PlayerData) {
+func PlayerDebugActions(pl *common.PlayerData) {
 
 	//teleport to cursor
 	if inpututil.IsKeyJustReleased(ebiten.KeyY) {

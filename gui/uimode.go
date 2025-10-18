@@ -1,7 +1,6 @@
 package gui
 
 import (
-	"game_main/avatar"
 	"game_main/common"
 
 	"github.com/ebitenui/ebitenui"
@@ -43,7 +42,7 @@ type UIMode interface {
 // UIContext provides shared game state to all UI modes
 type UIContext struct {
 	ECSManager   *common.EntityManager
-	PlayerData   *avatar.PlayerData
+	PlayerData   *common.PlayerData
 	ScreenWidth  int
 	ScreenHeight int
 	TileSize     int
@@ -59,7 +58,7 @@ type InputState struct {
 	MouseButton       ebiten.MouseButton
 	KeysPressed       map[ebiten.Key]bool
 	KeysJustPressed   map[ebiten.Key]bool
-	PlayerInputStates *avatar.PlayerInputStates // Bridge to existing system
+	PlayerInputStates *common.PlayerInputStates // Bridge to existing system
 }
 
 // ModeTransition represents a request to change modes

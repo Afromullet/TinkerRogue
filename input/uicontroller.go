@@ -1,18 +1,18 @@
 package input
 
 import (
-	"game_main/avatar"
+	"game_main/common"
 )
 
 // UIController handles UI-related input
 // NOTE: Most UI input is now handled by the UIModeManager in the main game loop
 // This controller is kept for compatibility but may be deprecated in the future
 type UIController struct {
-	playerData  *avatar.PlayerData
+	playerData  *common.PlayerData
 	sharedState *SharedInputState
 }
 
-func NewUIController(playerData *avatar.PlayerData, sharedState *SharedInputState) *UIController {
+func NewUIController(playerData *common.PlayerData, sharedState *SharedInputState) *UIController {
 	return &UIController{
 		playerData:  playerData,
 		sharedState: sharedState,

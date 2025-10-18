@@ -1,7 +1,6 @@
 package input
 
 import (
-	"game_main/avatar"
 	"game_main/common"
 	"game_main/coords"
 	"game_main/gear"
@@ -14,12 +13,12 @@ import (
 
 type CombatController struct {
 	ecsManager  *common.EntityManager
-	playerData  *avatar.PlayerData
+	playerData  *common.PlayerData
 	gameMap     *worldmap.GameMap
 	sharedState *SharedInputState
 }
 
-func NewCombatController(ecsManager *common.EntityManager, playerData *avatar.PlayerData,
+func NewCombatController(ecsManager *common.EntityManager, playerData *common.PlayerData,
 	gameMap *worldmap.GameMap, sharedState *SharedInputState) *CombatController {
 	return &CombatController{
 		ecsManager:  ecsManager,
@@ -62,7 +61,12 @@ func (cc *CombatController) HandleInput() bool {
 func (cc *CombatController) handleThrowable() bool {
 	// IsShooting check removed - squad system handles combat
 
-	throwable := cc.playerData.Throwables.ThrowableItem.GetThrowableAction()
+	item := gear.GetThrowableItem(&cc.playerData.Throwables)
+	if item == nil {
+		return false
+	}
+
+	throwable := item.GetThrowableAction()
 	if throwable == nil {
 		return false
 	}
@@ -84,8 +88,11 @@ func (cc *CombatController) handleThrowable() bool {
 		if throwable.InRange(cc.playerData.Pos) {
 			indices := throwable.Shape.GetIndices()
 
-			cc.playerData.Throwables.RemoveThrownItem(cc.playerData.Inventory)
-			cc.applyThrowable(cc.playerData.Throwables.ThrowableItem, throwable.Shape, cc.playerData.Pos)
+			// Get inventory component from player entity
+			inv := common.GetComponentType[*gear.Inventory](cc.playerData.PlayerEntity, gear.InventoryComponent)
+			gear.RemovePlayerThrownItem(&cc.playerData.Throwables, inv)
+
+			cc.applyThrowable(item, throwable.Shape, cc.playerData.Pos)
 
 			// Clear throwing state
 			cc.gameMap.ApplyColorMatrix(cc.sharedState.PrevThrowInds, graphics.NewEmptyMatrix())
@@ -112,7 +119,11 @@ func (cc *CombatController) handleThrowable() bool {
 func (cc *CombatController) drawThrowableAOE() {
 	cursorX, cursorY := graphics.CursorPosition(*cc.playerData.Pos)
 
-	s := cc.playerData.Throwables.ThrowingAOEShape
+	// Type assert the interface{} to graphics.TileBasedShape
+	s, ok := cc.playerData.Throwables.ThrowingAOEShape.(graphics.TileBasedShape)
+	if !ok {
+		return
+	}
 
 	var indices []int
 	if cursorX != cc.sharedState.PrevCursor.X || cursorY != cc.sharedState.PrevCursor.Y {
@@ -121,7 +132,12 @@ func (cc *CombatController) drawThrowableAOE() {
 		}
 	}
 
-	throwable := cc.playerData.Throwables.ThrowableItem.GetThrowableAction()
+	item := gear.GetThrowableItem(&cc.playerData.Throwables)
+	if item == nil {
+		return
+	}
+
+	throwable := item.GetThrowableAction()
 	if throwable == nil {
 		return
 	}

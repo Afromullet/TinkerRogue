@@ -4,7 +4,6 @@
 package input
 
 import (
-	"game_main/avatar"
 	"game_main/common"
 	"game_main/coords"
 	"game_main/worldmap"
@@ -42,11 +41,11 @@ type InputCoordinator struct {
 	sharedState        *SharedInputState
 
 	ecsManager *common.EntityManager
-	playerData *avatar.PlayerData
+	playerData *common.PlayerData
 	gameMap    *worldmap.GameMap
 }
 
-func NewInputCoordinator(ecsManager *common.EntityManager, playerData *avatar.PlayerData,
+func NewInputCoordinator(ecsManager *common.EntityManager, playerData *common.PlayerData,
 	gameMap *worldmap.GameMap, dummyUI interface{}) *InputCoordinator {
 
 	sharedState := NewSharedInputState()

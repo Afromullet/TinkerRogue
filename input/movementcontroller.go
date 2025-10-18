@@ -1,9 +1,9 @@
 package input
 
 import (
-	"game_main/avatar"
 	"game_main/common"
 	"game_main/coords"
+	"game_main/gear"
 	"game_main/graphics"
 	"game_main/rendering"
 	"game_main/worldmap"
@@ -14,12 +14,12 @@ import (
 
 type MovementController struct {
 	ecsManager  *common.EntityManager
-	playerData  *avatar.PlayerData
+	playerData  *common.PlayerData
 	gameMap     *worldmap.GameMap
 	sharedState *SharedInputState
 }
 
-func NewMovementController(ecsManager *common.EntityManager, playerData *avatar.PlayerData,
+func NewMovementController(ecsManager *common.EntityManager, playerData *common.PlayerData,
 	gameMap *worldmap.GameMap, sharedState *SharedInputState) *MovementController {
 	return &MovementController{
 		ecsManager:  ecsManager,
@@ -174,7 +174,10 @@ func (mc *MovementController) playerPickupItem() {
 	if itemFromTile != nil {
 		renderable := common.GetComponentType[*rendering.Renderable](itemFromTile, rendering.RenderableComponent)
 		renderable.Visible = false
-		mc.playerData.Inventory.AddItem(itemFromTile)
+		// Type assert the inventory interface{} to *gear.Inventory
+		if inv, ok := mc.playerData.Inventory.(*gear.Inventory); ok {
+			inv.AddItem(itemFromTile)
+		}
 	}
 }
 
