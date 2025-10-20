@@ -23,6 +23,7 @@ var (
 	TargetRowComponent       *ecs.Component
 	AbilitySlotComponent     *ecs.Component
 	CooldownTrackerComponent *ecs.Component
+	AttackRangeComponent     *ecs.Component
 
 	SquadTag       ecs.Tag
 	SquadMemberTag ecs.Tag
@@ -161,6 +162,12 @@ func (c *CoverData) GetCoverBonus(isActive bool) float64 {
 		return 0.0
 	}
 	return c.CoverValue
+}
+
+// AttackRangeData defines the world-based attack range of a unit
+// Range determines maximum distance between squads for unit to participate in combat
+type AttackRangeData struct {
+	Range int // World tiles (Melee=1, Ranged=3, Magic=4)
 }
 
 // TargetMode defines how a unit selects targets

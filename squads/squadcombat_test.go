@@ -2,6 +2,7 @@ package squads
 
 import (
 	"game_main/common"
+	"game_main/coords"
 	"testing"
 
 	"github.com/bytearena/ecs"
@@ -18,6 +19,17 @@ func setupTestCombatManager(t *testing.T) *common.EntityManager {
 
 	if err := InitializeSquadData(manager); err != nil {
 		t.Fatalf("Failed to initialize squad data: %v", err)
+	}
+
+	// Initialize common components for tests
+	if common.PositionComponent == nil {
+		common.PositionComponent = manager.World.NewComponent()
+	}
+	if common.AttributeComponent == nil {
+		common.AttributeComponent = manager.World.NewComponent()
+	}
+	if common.NameComponent == nil {
+		common.NameComponent = manager.World.NewComponent()
 	}
 
 	return manager
@@ -56,11 +68,16 @@ func createTestUnit(manager *common.EntityManager, squadID ecs.EntityID, row, co
 		MaxTargets:    0,
 	})
 
+	// Add attack range component (default to melee range 1)
+	unit.AddComponent(AttackRangeComponent, &AttackRangeData{
+		Range: 1,
+	})
+
 	// Note: Tags are managed through the component query system, not directly added
 	return unit
 }
 
-// createTestSquad creates a squad entity with specified ID
+// createTestSquad creates a squad entity with specified ID at position (0,0)
 func createTestSquad(manager *common.EntityManager, name string) ecs.EntityID {
 	squad := manager.World.NewEntity()
 	squadID := squad.GetID()
@@ -78,6 +95,13 @@ func createTestSquad(manager *common.EntityManager, name string) ecs.EntityID {
 	}
 
 	squad.AddComponent(SquadComponent, squadData)
+
+	// Add position component so squads can calculate distance
+	squad.AddComponent(common.PositionComponent, &coords.LogicalPosition{
+		X: 0,
+		Y: 0,
+	})
+
 	// Note: Entities are added automatically, no need for AddEntity
 	// Tags are managed through component queries
 

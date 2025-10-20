@@ -2,6 +2,8 @@ package squads
 
 import (
 	"game_main/common"
+	"game_main/coords"
+	"math"
 
 	"github.com/bytearena/ecs"
 )
@@ -209,4 +211,34 @@ func UpdateSquadCapacity(squadID ecs.EntityID, squadmanager *common.EntityManage
 	squadData := common.GetComponentType[*SquadData](squadEntity, SquadComponent)
 	squadData.TotalCapacity = GetSquadTotalCapacity(squadID, squadmanager)
 	squadData.UsedCapacity = GetSquadUsedCapacity(squadID, squadmanager)
+}
+
+// ========================================
+// RANGE AND DISTANCE QUERIES
+// ========================================
+
+// GetSquadDistance calculates the Manhattan distance between two squads
+// based on their world positions. Returns -1 if either squad is not found
+// or missing a position component.
+func GetSquadDistance(squad1ID, squad2ID ecs.EntityID, squadmanager *common.EntityManager) int {
+	squad1Entity := GetSquadEntity(squad1ID, squadmanager)
+	squad2Entity := GetSquadEntity(squad2ID, squadmanager)
+
+	if squad1Entity == nil || squad2Entity == nil {
+		return -1
+	}
+
+	// Check if both squads have position components
+	if !squad1Entity.HasComponent(common.PositionComponent) || !squad2Entity.HasComponent(common.PositionComponent) {
+		return -1
+	}
+
+	pos1 := common.GetComponentType[*coords.LogicalPosition](squad1Entity, common.PositionComponent)
+	pos2 := common.GetComponentType[*coords.LogicalPosition](squad2Entity, common.PositionComponent)
+
+	// Calculate Manhattan distance (grid-based)
+	dx := math.Abs(float64(pos1.X - pos2.X))
+	dy := math.Abs(float64(pos1.Y - pos2.Y))
+
+	return int(dx + dy)
 }

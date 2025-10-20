@@ -26,10 +26,11 @@ type UnitTemplate struct {
 	IsMultiTarget  bool       // AOE or single-target (row-based)
 	MaxTargets     int        // Max targets per row (row-based)
 	TargetCells    [][2]int   // Specific cells to target (cell-based)
-	IsLeader       bool       // Squad leader flag
-	CoverValue     float64    // Damage reduction provided (0.0-1.0, 0 = no cover)
-	CoverRange     int        // Rows behind that receive cover (1-3)
-	RequiresActive bool       // If true, dead/stunned units don't provide cover
+	IsLeader       bool    // Squad leader flag
+	CoverValue     float64 // Damage reduction provided (0.0-1.0, 0 = no cover)
+	CoverRange     int     // Rows behind that receive cover (1-3)
+	RequiresActive bool    // If true, dead/stunned units don't provide cover
+	AttackRange    int     // World-based attack range (Melee=1, Ranged=3, Magic=4)
 }
 
 // Creates the Unit entities used in the Squad
@@ -77,6 +78,7 @@ func CreateUnitTemplates(monsterData entitytemplates.JSONMonster) (UnitTemplate,
 		CoverValue:     monsterData.CoverValue,
 		CoverRange:     monsterData.CoverRange,
 		RequiresActive: monsterData.RequiresActive,
+		AttackRange:    monsterData.AttackRange,
 	}
 
 	return unit, nil
@@ -192,6 +194,11 @@ func CreateUnitEntity(squadmanager *common.EntityManager, unit UnitTemplate) (*e
 			RequiresActive: unit.RequiresActive,
 		})
 	}
+
+	// Add attack range component
+	unitEntity.AddComponent(AttackRangeComponent, &AttackRangeData{
+		Range: unit.AttackRange,
+	})
 
 	return unitEntity, nil
 

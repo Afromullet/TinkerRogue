@@ -18,10 +18,18 @@ type CombatResult struct {
 
 // ExecuteSquadAttack performs row-based combat between two squads
 // ✅ Works with ecs.EntityID internally
+// Only units within their attack range of the target squad can participate
 func ExecuteSquadAttack(attackerSquadID, defenderSquadID ecs.EntityID, squadmanager *common.EntityManager) *CombatResult {
 	result := &CombatResult{
 		DamageByUnit: make(map[ecs.EntityID]int),
 		UnitsKilled:  []ecs.EntityID{},
+	}
+
+	// Calculate distance between squads for range checking
+	squadDistance := GetSquadDistance(attackerSquadID, defenderSquadID, squadmanager)
+	if squadDistance < 0 {
+		// Invalid squad positions, cannot attack
+		return result
 	}
 
 	// Query for attacker unit IDs (not pointers!)
@@ -37,6 +45,16 @@ func ExecuteSquadAttack(attackerSquadID, defenderSquadID ecs.EntityID, squadmana
 		// Check if unit is alive
 		attackerAttr := common.GetAttributes(attackerUnit)
 		if attackerAttr.CurrentHealth <= 0 {
+			continue
+		}
+
+		// Check if unit is within attack range
+		if !attackerUnit.HasComponent(AttackRangeComponent) {
+			continue
+		}
+		rangeData := common.GetComponentType[*AttackRangeData](attackerUnit, AttackRangeComponent)
+		if rangeData.Range < squadDistance {
+			// Unit is out of range, cannot attack
 			continue
 		}
 
