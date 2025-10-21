@@ -61,7 +61,11 @@ func (cc *CombatController) HandleInput() bool {
 func (cc *CombatController) handleThrowable() bool {
 	// IsShooting check removed - squad system handles combat
 
-	item := gear.GetThrowableItem(&cc.playerData.Throwables)
+	// Get throwable item component directly (no wrapper)
+	var item *gear.Item
+	if cc.playerData.Throwables.ThrowableItemEntity != nil {
+		item = common.GetComponentType[*gear.Item](cc.playerData.Throwables.ThrowableItemEntity, gear.ItemComponent)
+	}
 	if item == nil {
 		return false
 	}
@@ -88,9 +92,9 @@ func (cc *CombatController) handleThrowable() bool {
 		if throwable.InRange(cc.playerData.Pos) {
 			indices := throwable.Shape.GetIndices()
 
-			// Get inventory component from player entity
+			// Get inventory component from player entity and remove thrown item
 			inv := common.GetComponentType[*gear.Inventory](cc.playerData.PlayerEntity, gear.InventoryComponent)
-			gear.RemovePlayerThrownItem(&cc.playerData.Throwables, inv)
+			gear.RemoveItem(cc.ecsManager.World, inv, cc.playerData.Throwables.ThrowableItemIndex)
 
 			cc.applyThrowable(item, throwable.Shape, cc.playerData.Pos)
 
@@ -132,7 +136,11 @@ func (cc *CombatController) drawThrowableAOE() {
 		}
 	}
 
-	item := gear.GetThrowableItem(&cc.playerData.Throwables)
+	// Get throwable item component directly (no wrapper)
+	var item *gear.Item
+	if cc.playerData.Throwables.ThrowableItemEntity != nil {
+		item = common.GetComponentType[*gear.Item](cc.playerData.Throwables.ThrowableItemEntity, gear.ItemComponent)
+	}
 	if item == nil {
 		return
 	}

@@ -45,7 +45,7 @@ func InitializePlayerData(ecsmanager *common.EntityManager, pl *common.PlayerDat
 			Y: 45,
 		}).
 		AddComponent(gear.InventoryComponent, &gear.Inventory{
-			InventoryContent: make([]*ecs.Entity, 0),
+			ItemEntityIDs: make([]ecs.EntityID, 0),
 		}).
 		AddComponent(common.AttributeComponent, &attr).
 		AddComponent(common.UserMsgComponent, &common.UserMessage{

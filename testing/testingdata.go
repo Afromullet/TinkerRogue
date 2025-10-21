@@ -155,12 +155,14 @@ func CreateItem(manager *ecs.Manager, name string, pos coords.LogicalPosition, i
 		log.Fatal(err)
 	}
 
-	item := &gear.Item{Count: 1, Properties: manager.NewEntity()}
-
+	// Create properties entity to hold status effects (ECS best practice)
+	propsEntity := manager.NewEntity()
 	for _, prop := range effects {
-		item.Properties.AddComponent(prop.StatusEffectComponent(), &prop)
-
+		propsEntity.AddComponent(prop.StatusEffectComponent(), &prop)
 	}
+
+	// Create item with EntityID reference
+	item := &gear.Item{Count: 1, Properties: propsEntity.GetID()}
 
 	itemEntity := manager.NewEntity().
 		AddComponent(rendering.RenderableComponent, &rendering.Renderable{

@@ -176,7 +176,7 @@ func (mc *MovementController) playerPickupItem() {
 		renderable.Visible = false
 		// Type assert the inventory interface{} to *gear.Inventory
 		if inv, ok := mc.playerData.Inventory.(*gear.Inventory); ok {
-			inv.AddItem(itemFromTile)
+			gear.AddItem(mc.ecsManager.World, inv, itemFromTile.GetID())
 		}
 	}
 }

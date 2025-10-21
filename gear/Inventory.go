@@ -15,164 +15,202 @@ type InventoryListEntry struct {
 	Count int
 }
 
-// Items are stored as entities so that we can add Status Effects/Properties
+// Inventory is a pure data component storing item entity IDs
+// Use InventorySystem functions for all logic operations
 type Inventory struct {
-	InventoryContent []*ecs.Entity
+	ItemEntityIDs []ecs.EntityID // ECS best practice: use EntityID, not pointers
 }
 
-// If the item already exists, it increments the count by 1.
-// Otherwise it just sets the count to one
-func (inv *Inventory) AddItem(entityToAdd *ecs.Entity) {
+// InventorySystem - System-based functions for inventory management
+// Following ECS best practices: all logic in systems, not component methods
 
-	if entityToAdd == nil {
+// AddItem adds an item to the inventory (system function)
+// If the item already exists, it increments the count by 1.
+// Otherwise it sets the count to 1 and adds it to the inventory.
+func AddItem(manager *ecs.Manager, inv *Inventory, itemEntityID ecs.EntityID) {
+	itemEntity := FindItemEntityByID(manager, itemEntityID)
+	if itemEntity == nil {
 		return
 	}
-	newItemName := common.GetComponentType[*common.Name](entityToAdd, common.NameComponent).NameStr
+
+	newItemName := common.GetComponentType[*common.Name](itemEntity, common.NameComponent).NameStr
 	exists := false
 
-	for _, entity := range inv.InventoryContent {
+	// Check if item already exists in inventory
+	for _, existingID := range inv.ItemEntityIDs {
+		existingEntity := FindItemEntityByID(manager, existingID)
+		if existingEntity == nil {
+			continue
+		}
 
-		itemName := common.GetComponentType[*common.Name](entity, common.NameComponent).NameStr
-
-		if itemName == newItemName {
+		existingName := common.GetComponentType[*common.Name](existingEntity, common.NameComponent).NameStr
+		if existingName == newItemName {
 			exists = true
-
-			GetItem(entity).IncrementCount()
-
+			// Increment count on existing item
+			itemComp := GetItemByID(manager, existingID)
+			if itemComp != nil {
+				itemComp.Count++
+			}
 			break
 		}
 	}
 
 	if !exists {
-		itemComp := GetItem(entityToAdd)
-		itemComp.Count = 1
-		inv.InventoryContent = append(inv.InventoryContent, entityToAdd)
-
+		// Add new item to inventory
+		itemComp := GetItemByID(manager, itemEntityID)
+		if itemComp != nil {
+			itemComp.Count = 1
+		}
+		inv.ItemEntityIDs = append(inv.ItemEntityIDs, itemEntityID)
 	}
-
 }
 
-// Does not remove the item from the inventory, just returns the entity of the item
-func (inv *Inventory) GetItem(index int) (*ecs.Entity, error) {
-	if index < 0 || index >= len(inv.InventoryContent) {
-		return nil, fmt.Errorf("index out of range")
+// GetItemEntityID returns the entity ID at the specified inventory index (system function)
+// Returns 0 and error if index is out of range
+func GetItemEntityID(inv *Inventory, index int) (ecs.EntityID, error) {
+	if index < 0 || index >= len(inv.ItemEntityIDs) {
+		return 0, fmt.Errorf("index out of range")
 	}
-	return inv.InventoryContent[index], nil
+	return inv.ItemEntityIDs[index], nil
 }
 
+// RemoveItem removes an item from inventory (system function)
 // If there's more than one of an item, it decrements the Item Count
 // Otherwise it removes the item from the inventory
-func (inv *Inventory) RemoveItem(index int) {
-
-	item, err := inv.GetItem(index)
-
-	if err == nil {
-
-		itemComp := GetItem(item)
-
-		itemComp.DecrementCount()
-
-		if itemComp.Count <= 0 {
-
-			inv.InventoryContent = append(inv.InventoryContent[:index], inv.InventoryContent[index+1:]...)
-
-		}
+func RemoveItem(manager *ecs.Manager, inv *Inventory, index int) {
+	itemID, err := GetItemEntityID(inv, index)
+	if err != nil {
+		return
 	}
 
+	itemComp := GetItemByID(manager, itemID)
+	if itemComp == nil {
+		return
+	}
+
+	itemComp.Count--
+
+	if itemComp.Count <= 0 {
+		// Remove from inventory slice
+		inv.ItemEntityIDs = append(inv.ItemEntityIDs[:index], inv.ItemEntityIDs[index+1:]...)
+	}
 }
 
-// Returns the names of the Item Effects
+// GetEffectNames returns the names of the Item Effects (system function)
 // Used for displaying item effects in the GUI
-func (inv *Inventory) EffectNames(index int) ([]string, error) {
-
-	entity, err := inv.GetItem(index)
-
+func GetEffectNames(manager *ecs.Manager, inv *Inventory, index int) ([]string, error) {
+	itemID, err := GetItemEntityID(inv, index)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get item by index: %w", err)
 	}
 
-	itemComp := GetItem(entity)
-
+	itemComp := GetItemByID(manager, itemID)
 	if itemComp == nil {
-		return nil, fmt.Errorf("failed to get component data: %w", err)
-
+		return nil, fmt.Errorf("failed to get item component")
 	}
 
-	return itemComp.GetEffectNames(), nil
-
+	return GetItemEffectNames(manager, itemComp), nil
 }
 
-// Builds the list that's needed for displaying the inventory to the player
+// GetInventoryForDisplay builds the list needed for displaying the inventory to the player (system function)
 // itemPropertiesFilter StatusEffects lets us filter by status effects
-// itemActionFilter string lets us filter by item actions (like "Throwable")
-func (inv *Inventory) GetInventoryForDisplay(indicesToSelect []int, itemPropertiesFilter ...StatusEffects) []any {
-
+func GetInventoryForDisplay(manager *ecs.Manager, inv *Inventory, indicesToSelect []int, itemPropertiesFilter ...StatusEffects) []any {
 	inventoryItems := make([]any, 0)
 
 	if len(indicesToSelect) == 0 {
-		for index, entity := range inv.InventoryContent {
-
-			itemName := common.GetComponentType[*common.Name](entity, common.NameComponent)
-			itemComp := GetItem(entity)
-
-			if itemComp.HasAllEffects(itemPropertiesFilter...) {
-
-				inventoryItems = append(inventoryItems, InventoryListEntry{
-					index,
-					itemName.NameStr,
-					itemComp.Count})
+		// Show all items
+		for index, itemID := range inv.ItemEntityIDs {
+			itemEntity := FindItemEntityByID(manager, itemID)
+			if itemEntity == nil {
+				continue
 			}
 
+			itemName := common.GetComponentType[*common.Name](itemEntity, common.NameComponent)
+			itemComp := GetItemByID(manager, itemID)
+
+			if itemComp != nil && HasAllEffects(manager, itemComp, itemPropertiesFilter...) {
+				inventoryItems = append(inventoryItems, InventoryListEntry{
+					Index: index,
+					Name:  itemName.NameStr,
+					Count: itemComp.Count,
+				})
+			}
 		}
 	} else {
+		// Show selected indices only
 		for _, index := range indicesToSelect {
-			entity := inv.InventoryContent[index]
-			itemName := common.GetComponentType[*common.Name](entity, common.NameComponent)
-			itemComp := GetItem(entity)
-
-			if itemComp.HasAllEffects(itemPropertiesFilter...) {
-				inventoryItems = append(inventoryItems, InventoryListEntry{
-					index,
-					itemName.NameStr,
-					itemComp.Count})
+			if index < 0 || index >= len(inv.ItemEntityIDs) {
+				continue
 			}
 
-		}
+			itemID := inv.ItemEntityIDs[index]
+			itemEntity := FindItemEntityByID(manager, itemID)
+			if itemEntity == nil {
+				continue
+			}
 
+			itemName := common.GetComponentType[*common.Name](itemEntity, common.NameComponent)
+			itemComp := GetItemByID(manager, itemID)
+
+			if itemComp != nil && HasAllEffects(manager, itemComp, itemPropertiesFilter...) {
+				inventoryItems = append(inventoryItems, InventoryListEntry{
+					Index: index,
+					Name:  itemName.NameStr,
+					Count: itemComp.Count,
+				})
+			}
+		}
 	}
 
 	return inventoryItems
-
 }
 
-// GetInventoryByAction filters inventory items by their ItemAction capabilities
+// GetInventoryByAction filters inventory items by their ItemAction capabilities (system function)
 // actionName is the name of the action to filter by (e.g., "Throwable")
-func (inv *Inventory) GetInventoryByAction(indicesToSelect []int, actionName string) []any {
+func GetInventoryByAction(manager *ecs.Manager, inv *Inventory, indicesToSelect []int, actionName string) []any {
 	inventoryItems := make([]any, 0)
 
 	if len(indicesToSelect) == 0 {
-		for index, entity := range inv.InventoryContent {
-			itemName := common.GetComponentType[*common.Name](entity, common.NameComponent)
-			itemComp := GetItem(entity)
+		// Show all items with the specified action
+		for index, itemID := range inv.ItemEntityIDs {
+			itemEntity := FindItemEntityByID(manager, itemID)
+			if itemEntity == nil {
+				continue
+			}
 
-			if itemComp.HasAction(actionName) {
+			itemName := common.GetComponentType[*common.Name](itemEntity, common.NameComponent)
+			itemComp := GetItemByID(manager, itemID)
+
+			if itemComp != nil && HasAction(itemComp, actionName) {
 				inventoryItems = append(inventoryItems, InventoryListEntry{
-					index,
-					itemName.NameStr,
-					itemComp.Count})
+					Index: index,
+					Name:  itemName.NameStr,
+					Count: itemComp.Count,
+				})
 			}
 		}
 	} else {
+		// Show selected indices with the specified action
 		for _, index := range indicesToSelect {
-			entity := inv.InventoryContent[index]
-			itemName := common.GetComponentType[*common.Name](entity, common.NameComponent)
-			itemComp := GetItem(entity)
+			if index < 0 || index >= len(inv.ItemEntityIDs) {
+				continue
+			}
 
-			if itemComp.HasAction(actionName) {
+			itemID := inv.ItemEntityIDs[index]
+			itemEntity := FindItemEntityByID(manager, itemID)
+			if itemEntity == nil {
+				continue
+			}
+
+			itemName := common.GetComponentType[*common.Name](itemEntity, common.NameComponent)
+			itemComp := GetItemByID(manager, itemID)
+
+			if itemComp != nil && HasAction(itemComp, actionName) {
 				inventoryItems = append(inventoryItems, InventoryListEntry{
-					index,
-					itemName.NameStr,
-					itemComp.Count})
+					Index: index,
+					Name:  itemName.NameStr,
+					Count: itemComp.Count,
+				})
 			}
 		}
 	}
@@ -180,23 +218,23 @@ func (inv *Inventory) GetInventoryByAction(indicesToSelect []int, actionName str
 	return inventoryItems
 }
 
-// GetThrowableItems returns all items that have throwable actions
-func (inv *Inventory) GetThrowableItems(indicesToSelect []int) []any {
-	return inv.GetInventoryByAction(indicesToSelect, THROWABLE_ACTION_NAME)
+// GetThrowableItems returns all items that have throwable actions (system function)
+func GetThrowableItems(manager *ecs.Manager, inv *Inventory, indicesToSelect []int) []any {
+	return GetInventoryByAction(manager, inv, indicesToSelect, THROWABLE_ACTION_NAME)
 }
 
-// HasItemsWithAction checks if the inventory contains any items with the specified action
-func (inv *Inventory) HasItemsWithAction(actionName string) bool {
-	for _, entity := range inv.InventoryContent {
-		itemComp := GetItem(entity)
-		if itemComp.HasAction(actionName) {
+// HasItemsWithAction checks if the inventory contains any items with the specified action (system function)
+func HasItemsWithAction(manager *ecs.Manager, inv *Inventory, actionName string) bool {
+	for _, itemID := range inv.ItemEntityIDs {
+		itemComp := GetItemByID(manager, itemID)
+		if itemComp != nil && HasAction(itemComp, actionName) {
 			return true
 		}
 	}
 	return false
 }
 
-// HasThrowableItems checks if the inventory contains any throwable items
-func (inv *Inventory) HasThrowableItems() bool {
-	return inv.HasItemsWithAction(THROWABLE_ACTION_NAME)
+// HasThrowableItems checks if the inventory contains any throwable items (system function)
+func HasThrowableItems(manager *ecs.Manager, inv *Inventory) bool {
+	return HasItemsWithAction(manager, inv, THROWABLE_ACTION_NAME)
 }

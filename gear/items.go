@@ -1,7 +1,6 @@
 package gear
 
 import (
-	"fmt"
 	"game_main/common"
 	"game_main/coords"
 	"game_main/rendering"
@@ -38,94 +37,12 @@ Two examples below of how we'd create an item
 	CreateItem(manager, "Item"+strconv.Itoa(1), Position{X: 40, Y: 25}, itemImageLoc, NewBurning(1, 1))
 	CreateItem(manager, "Item"+strconv.Itoa(2), Position{X: 40, Y: 25}, itemImageLoc, NewBurning(1, 1), NewFreezing(1, 2))
 */
+// Item is a pure data component (ECS best practice)
+// Use system functions in gearutil.go for all logic operations
 type Item struct {
-	Properties *ecs.Entity  // Status effects only
+	Properties ecs.EntityID // Status effects entity ID (ECS best practice: use EntityID, not pointer)
 	Actions    []ItemAction // Actions like throwables, consumables, etc.
 	Count      int
-}
-
-func (item *Item) IncrementCount() {
-	item.Count += 1
-}
-
-func (item *Item) DecrementCount() {
-	item.Count -= 1
-}
-
-// Returns the names of every property the item has
-func (item *Item) GetEffectNames() []string {
-
-	names := make([]string, 0)
-
-	if item.Properties == nil {
-		return names
-	}
-
-	for _, c := range AllItemEffects {
-		data, ok := item.Properties.GetComponentData(c)
-		if ok {
-
-			d := data.(*StatusEffects)
-			names = append(names, StatusEffectName(d))
-		}
-	}
-	return names
-
-}
-
-//This will eventually fully replace GetEffectNames.
-
-func (item *Item) GetEffectString() string {
-
-	if item.Properties == nil {
-		return ""
-	}
-
-	result := ""
-
-	for _, c := range AllItemEffects {
-		data, ok := item.Properties.GetComponentData(c)
-		if ok {
-
-			d := data.(*StatusEffects)
-
-			result += fmt.Sprintln(StatusEffectName(d))
-		}
-	}
-
-	return result
-}
-
-/*
-I didn't understand Go Interfaces well enough when implementing item properties
-So accessing Item Properties takes some extra work
-
-Takes the component identifying string as input and returns the
-struct that represents the property
-
-Example for status effects:
-item := GetComponentStruct[*Item](itemEntity, ItemComponent)
-burning := item.ItemEffect(BURNING_NAME).(*Burning)
-
-For actions, use the type-safe methods:
-throwable := item.GetThrowableAction()
-
-*/
-
-func (item *Item) ItemEffect(effectName string) any {
-
-	for _, c := range AllItemEffects {
-		data, ok := item.Properties.GetComponentData(c)
-		if ok {
-
-			d := *data.(*StatusEffects)
-			if StatusEffectName(&d) == effectName {
-				p := d.(any)
-				return p
-			}
-		}
-	}
-	return nil
 }
 
 // GetAction retrieves an action by name
@@ -179,44 +96,7 @@ func GetFirstActionOfType[T ItemAction](item *Item) T {
 	return zero
 }
 
-// Not the best way to check if an item has all propeties, but it will work for now
-func (item *Item) HasAllEffects(effectsToCheck ...StatusEffects) bool {
-
-	if len(effectsToCheck) == 0 {
-		return true
-	}
-
-	for _, eff := range effectsToCheck {
-
-		if !item.HasEffect(eff) {
-			return false
-		}
-	}
-
-	return true
-
-}
-
-// Check for an effect by name.
-func (item *Item) HasEffect(effectToCheck StatusEffects) bool {
-
-	names := item.GetEffectNames()
-	comp := effectToCheck.StatusEffectName()
-
-	for _, n := range names {
-
-		if n == comp {
-			return true
-
-		}
-
-	}
-
-	return false
-
-}
-
-// The testing package has the same function. Todo remove the one from testing package
+// CreateItem creates an item entity with status effects (ECS best practice compliant)
 func CreateItem(manager *ecs.Manager, name string, pos coords.LogicalPosition, imagePath string, effects ...StatusEffects) *ecs.Entity {
 
 	img, _, err := ebitenutil.NewImageFromFile(imagePath)
@@ -224,11 +104,17 @@ func CreateItem(manager *ecs.Manager, name string, pos coords.LogicalPosition, i
 		log.Fatal(err)
 	}
 
-	item := &Item{Count: 1, Properties: manager.NewEntity(), Actions: make([]ItemAction, 0)}
-
+	// Create properties entity to hold status effects
+	propsEntity := manager.NewEntity()
 	for _, prop := range effects {
-		item.Properties.AddComponent(prop.StatusEffectComponent(), &prop)
+		propsEntity.AddComponent(prop.StatusEffectComponent(), &prop)
+	}
 
+	// Create item component with EntityID reference (ECS best practice)
+	item := &Item{
+		Count:      1,
+		Properties: propsEntity.GetID(), // Use EntityID instead of pointer
+		Actions:    make([]ItemAction, 0),
 	}
 
 	itemEntity := manager.NewEntity().
@@ -245,13 +131,10 @@ func CreateItem(manager *ecs.Manager, name string, pos coords.LogicalPosition, i
 		}).
 		AddComponent(ItemComponent, item)
 
-	//TODO where shoudl I add the tags?
-
 	return itemEntity
-
 }
 
-// CreateItemWithActions creates an item with both status effects and actions
+// CreateItemWithActions creates an item with both status effects and actions (ECS best practice compliant)
 func CreateItemWithActions(manager *ecs.Manager, name string, pos coords.LogicalPosition, imagePath string, actions []ItemAction, effects ...StatusEffects) *ecs.Entity {
 
 	img, _, err := ebitenutil.NewImageFromFile(imagePath)
@@ -259,11 +142,17 @@ func CreateItemWithActions(manager *ecs.Manager, name string, pos coords.Logical
 		log.Fatal(err)
 	}
 
-	item := &Item{Count: 1, Properties: manager.NewEntity(), Actions: make([]ItemAction, len(actions))}
-
-	// Add status effects
+	// Create properties entity to hold status effects
+	propsEntity := manager.NewEntity()
 	for _, prop := range effects {
-		item.Properties.AddComponent(prop.StatusEffectComponent(), &prop)
+		propsEntity.AddComponent(prop.StatusEffectComponent(), &prop)
+	}
+
+	// Create item component with EntityID reference (ECS best practice)
+	item := &Item{
+		Count:      1,
+		Properties: propsEntity.GetID(), // Use EntityID instead of pointer
+		Actions:    make([]ItemAction, len(actions)),
 	}
 
 	// Add actions

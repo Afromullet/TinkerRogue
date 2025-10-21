@@ -2,6 +2,7 @@ package gui
 
 import (
 	"fmt"
+	"game_main/common"
 	"game_main/gear"
 	"image/color"
 
@@ -145,19 +146,38 @@ func (im *InventoryMode) buildItemList() {
 			if im.currentFilter == "Throwables" && im.context.PlayerData != nil {
 				// Type assert the inventory interface{} to *gear.Inventory
 				if inv, ok := im.context.PlayerData.Inventory.(*gear.Inventory); ok {
-					// Get the item entity from inventory
-					itemEntity, err := inv.GetItem(entry.Index)
+					// Get the item entity ID from inventory
+					itemEntityID, err := gear.GetItemEntityID(inv, entry.Index)
 					if err == nil {
-						// Prepare the throwable using the gear package helper
-						gear.PreparePlayerThrowable(&im.context.PlayerData.Throwables, itemEntity, entry.Index)
-						im.context.PlayerData.InputStates.IsThrowing = true
-						fmt.Printf("Throwable prepared: %s\n", entry.Name)
+						// Find the actual entity
+						itemEntity := gear.FindItemEntityByID(im.context.ECSManager.World, itemEntityID)
+						if itemEntity != nil {
+							// Prepare the throwable directly (no wrapper)
+							im.context.PlayerData.Throwables.SelectedThrowable = itemEntity
+							im.context.PlayerData.Throwables.ThrowableItemEntity = itemEntity
+
+							// Get item component and setup throwing shape
+							item := common.GetComponentType[*gear.Item](itemEntity, gear.ItemComponent)
+							if item != nil {
+								if throwableAction := item.GetThrowableAction(); throwableAction != nil {
+									im.context.PlayerData.Throwables.ThrowableItemIndex = entry.Index
+									im.context.PlayerData.Throwables.ThrowingAOEShape = throwableAction.Shape
+								}
+							}
+
+							im.context.PlayerData.InputStates.IsThrowing = true
+							fmt.Printf("Throwable prepared: %s\n", entry.Name)
+						}
 					}
 
 					// Get item details
-					item := gear.GetItem(itemEntity)
+					item := gear.GetItemByID(im.context.ECSManager.World, itemEntityID)
 					if item != nil {
-						effectStr := item.GetEffectString()
+						effectNames := gear.GetItemEffectNames(im.context.ECSManager.World, item)
+						effectStr := ""
+						for _, name := range effectNames {
+							effectStr += fmt.Sprintf("%s\n", name)
+						}
 						im.detailTextArea.SetText(fmt.Sprintf("Selected: %s\n\n%s", entry.Name, effectStr))
 					} else {
 						im.detailTextArea.SetText(fmt.Sprintf("Selected: %s", entry.Name))
@@ -270,7 +290,7 @@ func (im *InventoryMode) refreshItemList() {
 	switch im.currentFilter {
 	case "Throwables":
 		// Get throwable items
-		throwableEntries := inv.GetThrowableItems([]int{})
+		throwableEntries := gear.GetThrowableItems(im.context.ECSManager.World, inv, []int{})
 		if len(throwableEntries) == 0 {
 			entries = append(entries, "No throwable items")
 		} else {
@@ -279,7 +299,7 @@ func (im *InventoryMode) refreshItemList() {
 
 	case "All":
 		// Get all items
-		allEntries := inv.GetInventoryForDisplay([]int{})
+		allEntries := gear.GetInventoryForDisplay(im.context.ECSManager.World, inv, []int{})
 		if len(allEntries) == 0 {
 			entries = append(entries, "Inventory is empty")
 		} else {
