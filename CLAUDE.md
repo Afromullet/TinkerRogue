@@ -15,18 +15,22 @@
 
 ## Simplification Progress Summary
 
-### ✅ Completed (5/7 items - 80% overall)
+### ✅ Completed (6/7 items - 90% overall)
 1. **Input System** - Unified InputCoordinator with specialized controllers
 2. **Coordinate System** - Type-safe LogicalPosition/PixelPosition with CoordinateManager
 3. **Entity Templates** - Generic factory pattern with EntityType enum (283 LOC)
 4. **Graphics Shapes** - Consolidated 8+ types into BaseShape with 3 variants (390 LOC)
 5. **Position System** - O(1) spatial grid, 50x performance improvement (399 LOC)
+6. **Inventory System** - ECS refactor: EntityIDs, system functions, pure data (533 LOC) - 2025-10-21
 
-### 🔄 In Progress (1/7 items)
-6. **Status Effects** - 85% complete, needs quality interface extraction
+### 🔄 In Progress (0/7 items)
+(None - Status Effects moved to low priority)
 
 ### ❌ Remaining (1/7 items)
 7. **GUI Button Factory** - 10% complete, needs ButtonConfig pattern
+
+### 📋 Low Priority / Optional
+- **Status Effects** - 85% complete, needs quality interface extraction (deferred)
 
 ---
 
@@ -49,9 +53,9 @@
 
 ---
 
-## ECS Best Practices (Squad System Template)
+## ECS Best Practices (Squad & Inventory System Templates)
 
-The squad system demonstrates perfect ECS architecture. Apply these patterns to all new code:
+The squad and inventory systems demonstrate perfect ECS architecture. Apply these patterns to all new code:
 
 1. **Pure Data Components** - Zero logic methods, only data fields
 2. **Native EntityID** - Use `ecs.EntityID` everywhere, not pointers
@@ -62,7 +66,15 @@ The squad system demonstrates perfect ECS architecture. Apply these patterns to 
 **Anti-Patterns Fixed:**
 - ✅ Position system: Pointer map keys → Value keys (50x faster)
 - ✅ Legacy weapon/creature components removed (replaced by squad system)
-- ⚠️ Item.Properties nested entity still exists (low priority)
+- ✅ Inventory system: Entity pointers → EntityIDs, methods → system functions (2025-10-21)
+- ✅ Item.Properties: `*ecs.Entity` → `ecs.EntityID` (2025-10-21)
+- ⚠️ Equipment system still uses entity pointers (scheduled for refactoring)
+
+**Reference Implementations:**
+- `squads/*.go` - Perfect ECS: 2358 LOC, 8 components, 7 query functions, system-based combat
+- `gear/Inventory.go` - Perfect ECS: 241 LOC, pure data component, 9 system functions
+- `gear/items.go` - Perfect ECS: 177 LOC, EntityID-based relationships
+- `gear/gearutil.go` - Perfect ECS: 115 LOC, query-based entity lookup
 
 ---
 

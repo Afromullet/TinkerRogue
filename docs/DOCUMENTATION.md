@@ -36,7 +36,7 @@ The project began as a learning exercise in both Go programming and game develop
 
 **Why Entity Component System?** The ECS architecture using bytearena/ecs was adopted to enforce separation between data (components) and behavior (systems). In traditional object-oriented game code, entities become tangled hierarchies of inherited behaviors that are difficult to extend or reason about. ECS inverts this: entities are just opaque handles, components are pure data structures, and systems are functions that query for entities with specific component combinations. This makes it trivial to add new behaviors—just attach a new component—and enables powerful querying: "give me all entities with Position and Renderable components" becomes a single line of code.
 
-The project has achieved near-complete ECS compliance through aggressive refactoring. The squad system (**85% complete, 2358 lines of code, v3.0 audit**) demonstrates perfect ECS patterns: pure data components, native entity ID usage, query-based relationships, and zero logic in component structs. **Critical v3.0 discoveries:** Position System is 100% operational (O(1) lookups), query system complete (7 functions), combat system fully functional (ExecuteSquadAttack operational), and visualization system implemented. **Legacy systems removed:** Individual creature entities, weapon components as ECS data, and the old tracker system have been entirely replaced by squad-based implementations. Remaining work: ability system (8-10h) and formation presets (4-6h).
+The project has achieved near-complete ECS compliance through aggressive refactoring. The squad system (**85% complete, 2358 lines of code, v3.0 audit**) demonstrates perfect ECS patterns: pure data components, native entity ID usage, query-based relationships, and zero logic in component structs. **Critical v3.0 discoveries:** Position System is 100% operational (O(1) lookups), query system complete (7 functions), combat system fully functional (ExecuteSquadAttack operational), and visualization system implemented. **Inventory System Refactored (2025-10-21):** Completely refactored to match squad system architecture—`ItemEntityIDs []ecs.EntityID` replaces `[]*ecs.Entity`, all logic extracted to system functions, Properties field now uses EntityID instead of pointer. See "Inventory System (ECS Refactored)" section for complete migration guide. **Legacy systems removed:** Individual creature entities, weapon components as ECS data, and the old tracker system have been entirely replaced by squad-based implementations. Remaining work: ability system (8-10h) and formation presets (4-6h).
 
 ### Key Technical Features
 
@@ -53,6 +53,8 @@ The project has achieved near-complete ECS compliance through aggressive refacto
 - **Template Factory System**: Generic entity creation uses a type-safe configuration pattern where callers provide an `EntityConfig` struct specifying entity type (Melee, Ranged, Consumable, Creature), name, asset paths, and position, plus the JSON data for that specific template. A single `CreateEntityFromTemplate()` function handles all entity types, eliminating the code duplication of having `CreateMonsterFromTemplate()`, `CreateWeaponFromTemplate()`, etc. Backward-compatible wrapper functions preserve existing code while new code can use the generic factory.
 
 - **Squad Combat System** *(85% complete, v3.0 audit)*: The tactical combat system organizes units into 3x3 grid formations with role-based mechanics (Tank, DPS, Support), row-based targeting (front row must be defeated before back row), multi-cell units (2x2 giants, 1x3 cavalry formations), cover mechanics (front units provide damage reduction), and automated leader abilities. **v3.0 Status:** Component infrastructure 100% complete (8 component types in squads/components.go), unit template system operational, **query system 100% complete** (ALL 7 functions in squads/squadqueries.go), **combat system 100% operational** (ExecuteSquadAttack with hit/dodge/crit mechanics in squads/squadcombat.go ~406 LOC), **cover system complete** (CalculateTotalCover), **visualization complete** (VisualizeSquad renders 3x3 grids in squads/visualization.go ~175 LOC), **testing infrastructure exists** (squads_test.go ~1000+ LOC). **Not implemented:** Ability system (CheckAndTriggerAbilities, trigger conditions, ability effects - abilities.go does not exist), formation presets (CreateSquadFromTemplate, Balanced/Defensive/Offensive formations partially missing). Testing approach validated: squad combat works in isolation without map integration due to component-based design. Remaining work: 12-16 hours (abilities 8-10h + formations 4-6h).
+
+- **Inventory System** *(100% complete, 2025-10-21 refactor)*: Completely refactored to demonstrate perfect ECS patterns matching the squad system architecture. Inventory component is pure data (`ItemEntityIDs []ecs.EntityID`), all operations are system functions (`AddItem(manager, inv, itemID)`), and relationships use EntityIDs instead of pointers (`item.Properties ecs.EntityID`). The refactoring eliminated three critical anti-patterns: entity pointer storage (enables serialization), logic in component methods (enables testing/reuse), and direct entity references (forces explicit queries). System functions provide comprehensive inventory management: adding/removing items, filtering by effects or actions, UI display generation, and query-based entity lookup. Integration points: input controllers use `AddItem` for item pickup, GUI uses `GetInventoryForDisplay` for rendering, testing uses `CreateItem` for fixtures. File locations: `gear/Inventory.go` (241 LOC), `gear/items.go` (177 LOC), `gear/gearutil.go` (115 LOC). **Migration complete:** All calling code updated to use system functions and direct component access. Equipment system still uses old pattern (entity pointers), scheduled for similar refactoring.
 
 ### Removed Systems (v3.0 Architectural Evolution)
 
@@ -3001,23 +3003,19 @@ func (b *Burning) ApplyEffect(entity *ecs.Entity) {
 
 #### Equipment System
 
-**Location:** `gear/equipmentcomponents.go`, `gear/Inventory.go`
+**Location:** `gear/equipmentcomponents.go`
 
-**Equipment Structure:**
+**STATUS:** Pending refactoring to ECS best practices (currently uses entity pointers)
+
+**Equipment Structure (Current - Not ECS Compliant):**
 
 ```go
 type Equipment struct {
-    WeaponSlot *ecs.Entity    // Melee or Ranged weapon
-    ArmorSlot  *ecs.Entity    // Body armor
+    WeaponSlot *ecs.Entity    // Melee or Ranged weapon (PENDING: change to ecs.EntityID)
+    ArmorSlot  *ecs.Entity    // Body armor (PENDING: change to ecs.EntityID)
 }
 
-type Inventory struct {
-    Items     []*ecs.Entity   // All items in inventory
-    MaxSlots  int
-    Equipment Equipment
-}
-
-// Type-safe equipment getters
+// Type-safe equipment getters (methods on struct - not ECS best practice)
 func (e *Equipment) MeleeWeapon() *gear.MeleeWeapon {
     if e.WeaponSlot != nil && e.WeaponSlot.HasComponent(gear.MeleeWeaponComponent) {
         return common.GetComponentType[*gear.MeleeWeapon](e.WeaponSlot, gear.MeleeWeaponComponent)
@@ -3032,6 +3030,8 @@ func (e *Equipment) RangedWeapon() *gear.RangedWeapon {
     return nil
 }
 ```
+
+**NOTE:** The Equipment system still uses entity pointers (`*ecs.Entity`) instead of EntityIDs, which violates ECS best practices. This is scheduled for refactoring to match the Inventory system pattern (using `ecs.EntityID` with system functions). The Inventory system demonstrates the correct architecture.
 
 **Attribute Calculation:**
 
@@ -3151,6 +3151,314 @@ func GetHealingPotionByQuality(quality ConsumableQuality) Consumable {
     }
 }
 ```
+
+---
+
+#### Inventory System (ECS Refactored)
+
+**Location:** `gear/Inventory.go`, `gear/items.go`, `gear/gearutil.go`
+
+**Last Updated:** 2025-10-21 (Inventory System Refactoring - ECS Compliance)
+
+The inventory system has been completely refactored to follow proper ECS patterns, matching the architectural gold standard established by the squad system. This refactoring eliminates ECS anti-patterns (storing entity pointers, logic in component methods) and implements the five core ECS best practices.
+
+**Design Philosophy:**
+
+The inventory refactoring represents a critical architectural evolution from object-oriented patterns to pure ECS design. The original implementation treated the Inventory component as an active object with methods like `inv.AddItem()`, `inv.RemoveItem()`, and stored entity pointers (`[]*ecs.Entity`) violating ECS principles. The refactored system treats Inventory as **pure data** with all logic extracted into **system functions** that operate on the ECS manager and component data.
+
+**ECS Best Practices Applied:**
+
+Following the squad system template (`squads/*.go`), the inventory system now demonstrates:
+
+1. **Pure Data Components** - Inventory and Item structs contain zero logic, only data fields
+2. **Native EntityID Usage** - Uses `ecs.EntityID` instead of `*ecs.Entity` pointers
+3. **Query-Based Relationships** - Entity lookup via `FindItemEntityByID()` using ECS queries
+4. **System-Based Logic** - All operations are functions (`AddItem(manager, inv, itemID)`), not methods
+5. **Value-Based Storage** - EntityIDs are value types, enabling efficient map lookups
+
+**Component Structure (Pure Data):**
+
+```go
+// Inventory.go - Pure data component, zero logic methods
+type Inventory struct {
+    ItemEntityIDs []ecs.EntityID  // Stores item entity IDs (not pointers!)
+}
+
+// InventoryListEntry - UI display helper
+type InventoryListEntry struct {
+    Index int
+    Name  string
+    Count int
+}
+```
+
+**Item Component (Pure Data):**
+
+```go
+// items.go - Pure data component (ECS compliant)
+type Item struct {
+    Properties ecs.EntityID  // Status effects entity ID (was *ecs.Entity)
+    Actions    []ItemAction  // Throwable, consumable, etc.
+    Count      int
+}
+
+// Action interface remains the same
+type ItemAction interface {
+    ActionName() string
+    Execute(targets []*ecs.Entity) error
+    Copy() ItemAction
+}
+```
+
+**Key Architectural Change - Properties Field:**
+
+The `Properties` field changed from `*ecs.Entity` to `ecs.EntityID`. This follows ECS best practice: components should **never store entity pointers**, only IDs. The properties entity is retrieved via query when needed:
+
+```go
+// OLD (anti-pattern): Direct pointer access
+if item.Properties != nil {
+    burning := item.Properties.GetComponentData(BurningComponent)
+}
+
+// NEW (ECS best practice): Query-based lookup
+propsEntity := FindPropertiesEntityByID(manager, item.Properties)
+if propsEntity != nil {
+    burning := propsEntity.GetComponentData(BurningComponent)
+}
+```
+
+**System Functions (All Logic Extracted):**
+
+The inventory system provides **system-based functions** that operate on the ECS manager and component data. These functions replace all former component methods:
+
+```go
+// ============================================================================
+// Core Inventory Operations (Inventory.go)
+// ============================================================================
+
+// AddItem adds an item to inventory (system function, not a method)
+// If item exists, increments count. Otherwise sets count to 1 and adds to inventory.
+func AddItem(manager *ecs.Manager, inv *Inventory, itemEntityID ecs.EntityID)
+
+// GetItemEntityID retrieves the entity ID at a specific index
+func GetItemEntityID(inv *Inventory, index int) (ecs.EntityID, error)
+
+// RemoveItem removes an item from inventory
+// Decrements count. If count <= 0, removes from inventory slice.
+func RemoveItem(manager *ecs.Manager, inv *Inventory, index int)
+
+// GetEffectNames returns status effect names for an item at index
+func GetEffectNames(manager *ecs.Manager, inv *Inventory, index int) ([]string, error)
+
+// GetInventoryForDisplay builds UI display list with optional filtering
+// itemPropertiesFilter allows filtering by status effects (e.g., show only burning items)
+func GetInventoryForDisplay(manager *ecs.Manager, inv *Inventory,
+                           indicesToSelect []int,
+                           itemPropertiesFilter ...StatusEffects) []any
+
+// GetInventoryByAction filters inventory by action capabilities
+// actionName example: "Throwable", "Consumable"
+func GetInventoryByAction(manager *ecs.Manager, inv *Inventory,
+                         indicesToSelect []int, actionName string) []any
+
+// GetThrowableItems returns all items with throwable actions
+func GetThrowableItems(manager *ecs.Manager, inv *Inventory,
+                      indicesToSelect []int) []any
+
+// HasItemsWithAction checks if inventory contains items with specific action
+func HasItemsWithAction(manager *ecs.Manager, inv *Inventory,
+                       actionName string) bool
+
+// HasThrowableItems checks if inventory contains throwable items
+func HasThrowableItems(manager *ecs.Manager, inv *Inventory) bool
+
+// ============================================================================
+// Item Query Functions (gearutil.go)
+// ============================================================================
+
+// FindItemEntityByID finds an item entity by ID using ECS queries
+// Returns nil if not found
+func FindItemEntityByID(manager *ecs.Manager, entityID ecs.EntityID) *ecs.Entity
+
+// GetItemByID retrieves Item component from entity ID
+// Returns nil if entity doesn't exist or lacks Item component
+func GetItemByID(manager *ecs.Manager, entityID ecs.EntityID) *Item
+
+// FindPropertiesEntityByID finds properties entity by ID
+func FindPropertiesEntityByID(manager *ecs.Manager, entityID ecs.EntityID) *ecs.Entity
+
+// GetItemEffectNames returns names of all effects on an item
+func GetItemEffectNames(manager *ecs.Manager, item *Item) []string
+
+// HasAllEffects checks if item has all specified effects
+func HasAllEffects(manager *ecs.Manager, item *Item,
+                  effectsToCheck ...StatusEffects) bool
+
+// HasEffect checks if item has a specific effect
+func HasEffect(manager *ecs.Manager, item *Item,
+              effectToCheck StatusEffects) bool
+
+// HasAction checks if item has a specific action
+func HasAction(item *Item, actionName string) bool
+```
+
+**Usage Examples:**
+
+**Adding Items to Inventory:**
+
+```go
+// OLD (deprecated method-based):
+playerData.Inventory.AddItem(itemEntity)
+
+// NEW (system function):
+gear.AddItem(manager, &playerData.Inventory, itemEntity.GetID())
+```
+
+**Getting Items from Inventory:**
+
+```go
+// OLD (deprecated):
+itemEntity := playerData.Inventory.GetItem(index)
+
+// NEW (two-step: get ID, then lookup entity):
+itemID, err := gear.GetItemEntityID(&playerData.Inventory, index)
+if err == nil {
+    itemEntity := gear.FindItemEntityByID(manager, itemID)
+    // Use itemEntity...
+}
+```
+
+**Removing Items:**
+
+```go
+// OLD (deprecated):
+playerData.Inventory.RemoveItem(index)
+
+// NEW (system function):
+gear.RemoveItem(manager, &playerData.Inventory, index)
+```
+
+**Displaying Inventory (UI Integration):**
+
+```go
+// Build display list for UI (shows all items)
+inventoryList := gear.GetInventoryForDisplay(manager, &playerData.Inventory, nil)
+
+// Filter by status effect (show only burning items)
+burningItems := gear.GetInventoryForDisplay(manager, &playerData.Inventory,
+                                            nil, gear.NewBurning(0, 0))
+
+// Filter by action (show only throwable items)
+throwableList := gear.GetThrowableItems(manager, &playerData.Inventory, nil)
+
+// Display specific indices only
+selectedIndices := []int{0, 2, 5}
+filteredList := gear.GetInventoryForDisplay(manager, &playerData.Inventory,
+                                            selectedIndices)
+```
+
+**Accessing Item Components Directly:**
+
+With wrapper functions removed, calling code now uses direct component access:
+
+```go
+// Get Item component from entity
+itemEntity := gear.FindItemEntityByID(manager, itemID)
+item := common.GetComponentType[*gear.Item](itemEntity, gear.ItemComponent)
+
+// Check throwable action
+if item.HasThrowableAction() {
+    throwable := item.GetThrowableAction()
+    // Use throwable...
+}
+
+// Get effect names
+effectNames := gear.GetItemEffectNames(manager, item)
+```
+
+**Migration Notes:**
+
+**Removed Wrapper Functions:**
+
+The following convenience wrappers were removed from `gearutil.go` to enforce direct component access patterns:
+
+```go
+// REMOVED - Use direct component access instead
+func GetItem(e *ecs.Entity) *Item
+func PreparePlayerThrowable(throwable, itemEntity, index)
+func RemovePlayerThrownItem(throwable, inv, manager)
+func GetThrowableItem(throwable) *Item
+```
+
+**Removed Item Methods:**
+
+The following methods were removed from the Item struct to enforce system-based logic:
+
+```go
+// REMOVED from Item struct
+func (item *Item) IncrementCount()
+func (item *Item) DecrementCount()
+func (item *Item) GetEffectNames() []string
+func (item *Item) GetEffectString() string
+func (item *Item) ItemEffect() StatusEffects
+func (item *Item) HasAllEffects(effects ...StatusEffects) bool
+func (item *Item) HasEffect(effect StatusEffects) bool
+```
+
+All this logic now exists as system functions in `Inventory.go` and `gearutil.go`.
+
+**Migration Path for Existing Code:**
+
+| Old Pattern (Deprecated) | New Pattern (ECS Compliant) |
+|-------------------------|----------------------------|
+| `inv.AddItem(entity)` | `gear.AddItem(manager, inv, entity.GetID())` |
+| `inv.GetItem(index)` | `itemID, _ := gear.GetItemEntityID(inv, index); gear.FindItemEntityByID(manager, itemID)` |
+| `inv.RemoveItem(index)` | `gear.RemoveItem(manager, inv, index)` |
+| `item.GetEffectNames()` | `gear.GetItemEffectNames(manager, item)` |
+| `item.HasAllEffects(effs...)` | `gear.HasAllEffects(manager, item, effs...)` |
+| `gear.GetItem(entity)` | `common.GetComponentType[*gear.Item](entity, gear.ItemComponent)` |
+| `item.Properties.GetComponentData(...)` | `propsEntity := gear.FindPropertiesEntityByID(manager, item.Properties); propsEntity.GetComponentData(...)` |
+
+**Why This Matters:**
+
+The inventory refactoring eliminates three critical ECS anti-patterns:
+
+1. **Entity Pointer Storage** - Storing `[]*ecs.Entity` couples components to entity lifecycle and prevents serialization. Using `[]ecs.EntityID` makes components pure data that can be saved/loaded trivially.
+
+2. **Logic in Components** - Methods like `inv.AddItem()` violate ECS separation of data and behavior. System functions enable testing, reuse, and maintain single responsibility.
+
+3. **Direct Entity References** - `item.Properties *ecs.Entity` creates hidden dependencies. Using `item.Properties ecs.EntityID` forces explicit queries, making entity relationships visible and manageable.
+
+**Performance Characteristics:**
+
+- **AddItem**: O(n) for duplicate detection (linear scan of inventory)
+- **GetItemEntityID**: O(1) array index lookup
+- **RemoveItem**: O(n) for slice removal (worst case)
+- **FindItemEntityByID**: O(n) ECS query across all item entities
+- **GetInventoryForDisplay**: O(n×m) where n=inventory size, m=effect count
+
+Future optimization: Add `map[string]int` name→index lookup for O(1) duplicate detection in AddItem.
+
+**Integration with Other Systems:**
+
+The inventory system integrates with:
+
+- **Input Controllers** (`input/movementcontroller.go`, `input/combatcontroller.go`) - Use `AddItem` when picking up items, direct component access for throwables
+- **GUI System** (`gui/inventorymode.go`) - Uses `GetInventoryForDisplay` and direct component access for rendering
+- **Testing** (`testing/testingdata.go`) - Uses `CreateItem` and `CreateItemWithActions` for test item generation
+- **Entity Templates** (future) - Will use system functions for inventory initialization from JSON data
+
+**File Locations and Line Counts:**
+
+- `gear/Inventory.go` - 241 lines - Pure data component + system functions
+- `gear/items.go` - 177 lines - Item component + creation functions
+- `gear/gearutil.go` - 115 lines - Query/helper system functions
+
+**Related Systems:**
+
+- Equipment System (`gear/equipmentcomponents.go`) - Still uses entity pointers, scheduled for similar refactoring
+- Status Effects (`gear/stateffect.go`) - Referenced via Properties entity
+- Item Actions (`gear/itemactions.go`) - Throwable/Consumable action execution
 
 ---
 
@@ -4172,10 +4480,18 @@ type JSONAttributeModifier struct {  // Consumables
 
 **Public API:**
 ```go
+// ============================================================================
+// Core Data Types (ECS Compliant - Pure Data Components)
+// ============================================================================
+
 type Item struct {
-    Properties *ecs.Entity      // Status effects
+    Properties ecs.EntityID     // Status effects entity ID (NOT pointer)
     Actions    []ItemAction     // Throwable, consumable, etc.
     Count      int
+}
+
+type Inventory struct {
+    ItemEntityIDs []ecs.EntityID  // Item entity IDs (NOT pointers)
 }
 
 type ItemAction interface {
@@ -4188,6 +4504,11 @@ type ThrowableAction struct {
     TargetArea TileBasedShape
     Effects    []StatusEffects
     Damage     int
+}
+
+type Equipment struct {
+    WeaponSlot *ecs.Entity      // NOTE: Still uses pointers, pending refactor
+    ArmorSlot  *ecs.Entity
 }
 
 type MeleeWeapon struct {
@@ -4211,21 +4532,55 @@ type Armor struct {
     DodgeChance float32
 }
 
-type Equipment struct {
-    WeaponSlot *ecs.Entity
-    ArmorSlot  *ecs.Entity
-}
+// ============================================================================
+// Inventory System Functions (CURRENT - ECS Compliant)
+// ============================================================================
 
-type Inventory struct {
-    Items     []*ecs.Entity
-    MaxSlots  int
-    Equipment Equipment
-}
+func AddItem(manager *ecs.Manager, inv *Inventory, itemEntityID ecs.EntityID)
+func GetItemEntityID(inv *Inventory, index int) (ecs.EntityID, error)
+func RemoveItem(manager *ecs.Manager, inv *Inventory, index int)
+func GetEffectNames(manager *ecs.Manager, inv *Inventory, index int) ([]string, error)
+func GetInventoryForDisplay(manager *ecs.Manager, inv *Inventory,
+                           indicesToSelect []int,
+                           itemPropertiesFilter ...StatusEffects) []any
+func GetInventoryByAction(manager *ecs.Manager, inv *Inventory,
+                         indicesToSelect []int, actionName string) []any
+func GetThrowableItems(manager *ecs.Manager, inv *Inventory,
+                      indicesToSelect []int) []any
+func HasItemsWithAction(manager *ecs.Manager, inv *Inventory,
+                       actionName string) bool
+func HasThrowableItems(manager *ecs.Manager, inv *Inventory) bool
+
+// ============================================================================
+// Item Query Functions (gearutil.go)
+// ============================================================================
+
+func FindItemEntityByID(manager *ecs.Manager, entityID ecs.EntityID) *ecs.Entity
+func GetItemByID(manager *ecs.Manager, entityID ecs.EntityID) *Item
+func FindPropertiesEntityByID(manager *ecs.Manager, entityID ecs.EntityID) *ecs.Entity
+func GetItemEffectNames(manager *ecs.Manager, item *Item) []string
+func HasAllEffects(manager *ecs.Manager, item *Item,
+                  effectsToCheck ...StatusEffects) bool
+func HasEffect(manager *ecs.Manager, item *Item,
+              effectToCheck StatusEffects) bool
+func HasAction(item *Item, actionName string) bool
+
+// ============================================================================
+// Item Creation Functions
+// ============================================================================
+
+func CreateItem(manager *ecs.Manager, name, imagePath string,
+               pos coords.LogicalPosition, effects ...StatusEffects) *ecs.Entity
+func CreateItemWithActions(manager *ecs.Manager, name, imagePath string,
+                          pos coords.LogicalPosition, actions []ItemAction,
+                          effects ...StatusEffects) *ecs.Entity
+
+// ============================================================================
+// Equipment System Functions (NOTE: Pending refactor to match Inventory)
+// ============================================================================
 
 func InitializeItemComponents(manager *ecs.Manager, tags map[string]ecs.Tag)
 func UpdateEntityAttributes(entity *ecs.Entity)
-func CreateItem(manager *ecs.Manager, name, imagePath string, pos coords.LogicalPosition,
-                effects ...StatusEffects) *ecs.Entity
 ```
 
 **Components:**
