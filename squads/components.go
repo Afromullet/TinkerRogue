@@ -24,6 +24,7 @@ var (
 	AbilitySlotComponent     *ecs.Component
 	CooldownTrackerComponent *ecs.Component
 	AttackRangeComponent     *ecs.Component
+	MovementSpeedComponent   *ecs.Component
 
 	SquadTag       ecs.Tag
 	SquadMemberTag ecs.Tag
@@ -168,6 +169,12 @@ func (c *CoverData) GetCoverBonus(isActive bool) float64 {
 // Range determines maximum distance between squads for unit to participate in combat
 type AttackRangeData struct {
 	Range int // World tiles (Melee=1, Ranged=3, Magic=4)
+}
+
+// MovementSpeedData defines a unit's movement speed on the world map
+// Squad movement speed is the minimum of all its units' speeds
+type MovementSpeedData struct {
+	Speed int // Tiles per turn (typically 1-5)
 }
 
 // TargetMode defines how a unit selects targets

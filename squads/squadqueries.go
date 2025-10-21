@@ -242,3 +242,44 @@ func GetSquadDistance(squad1ID, squad2ID ecs.EntityID, squadmanager *common.Enti
 
 	return int(dx + dy)
 }
+
+// GetSquadMovementSpeed returns the squad's movement speed (minimum of all alive units)
+// The squad moves at the speed of its slowest member
+// Returns 0 if squad has no alive units or units have no movement speed component
+func GetSquadMovementSpeed(squadID ecs.EntityID, squadmanager *common.EntityManager) int {
+	unitIDs := GetUnitIDsInSquad(squadID, squadmanager)
+
+	minSpeed := math.MaxInt32
+	foundValidUnit := false
+
+	for _, unitID := range unitIDs {
+		unitEntity := FindUnitByID(unitID, squadmanager)
+		if unitEntity == nil {
+			continue
+		}
+
+		// Only count alive units
+		attr := common.GetAttributes(unitEntity)
+		if attr.CurrentHealth <= 0 {
+			continue
+		}
+
+		// Check if unit has movement speed component
+		if !unitEntity.HasComponent(MovementSpeedComponent) {
+			continue
+		}
+
+		speedData := common.GetComponentType[*MovementSpeedData](unitEntity, MovementSpeedComponent)
+		if speedData.Speed < minSpeed {
+			minSpeed = speedData.Speed
+			foundValidUnit = true
+		}
+	}
+
+	// Return 0 if no valid units found
+	if !foundValidUnit {
+		return 0
+	}
+
+	return minSpeed
+}

@@ -142,6 +142,7 @@ type JSONMonster struct {
 	CoverRange     int     `json:"coverRange"`     // Rows behind that receive cover (1-3)
 	RequiresActive bool    `json:"requiresActive"` // If true, dead/stunned units don't provide cover
 	AttackRange    int     `json:"attackRange"`    // World-based attack range (Melee=1, Ranged=3, Magic=4)
+	MovementSpeed  int     `json:"movementSpeed"`  // Movement speed on world map (1 tile per speed point)
 }
 
 func NewJSONMonster(m JSONMonster) JSONMonster {
@@ -165,6 +166,7 @@ func NewJSONMonster(m JSONMonster) JSONMonster {
 		CoverRange:     m.CoverRange,
 		RequiresActive: m.RequiresActive,
 		AttackRange:    m.AttackRange,
+		MovementSpeed:  m.MovementSpeed,
 	}
 }
 

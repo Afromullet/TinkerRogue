@@ -979,3 +979,128 @@ func containsHelper(s, substr string) bool {
 	}
 	return false
 }
+
+// ========================================
+// MOVEMENT SPEED TESTS
+// ========================================
+
+func TestGetSquadMovementSpeed_SingleUnit(t *testing.T) {
+	manager := setupTestSquadManager(t)
+	CreateEmptySquad(manager, "Test Squad")
+
+	// Get the squad entity
+	var squadID ecs.EntityID
+	for _, result := range manager.World.Query(SquadTag) {
+		squadID = result.Entity.GetID()
+		break
+	}
+
+	// Create unit with movement speed 5
+	jsonMonster := createTestJSONMonster("FastUnit", 1, 1, "DPS")
+	jsonMonster.MovementSpeed = 5
+	unit, _ := CreateUnitTemplates(jsonMonster)
+
+	err := AddUnitToSquad(squadID, manager, unit, 0, 0)
+	if err != nil {
+		t.Fatalf("Failed to add unit: %v", err)
+	}
+
+	speed := GetSquadMovementSpeed(squadID, manager)
+	if speed != 5 {
+		t.Errorf("Expected squad speed 5, got %d", speed)
+	}
+}
+
+func TestGetSquadMovementSpeed_MultipleUnits_ReturnsMinimum(t *testing.T) {
+	manager := setupTestSquadManager(t)
+	CreateEmptySquad(manager, "Test Squad")
+
+	// Get the squad entity
+	var squadID ecs.EntityID
+	for _, result := range manager.World.Query(SquadTag) {
+		squadID = result.Entity.GetID()
+		break
+	}
+
+	// Add units with different speeds (only 2 to avoid capacity issues)
+	speeds := []int{5, 3}
+	for i, speed := range speeds {
+		unitName := fmt.Sprintf("Unit%d", i)
+		jsonMonster := createTestJSONMonster(unitName, 1, 1, "DPS")
+		jsonMonster.MovementSpeed = speed
+		unit, _ := CreateUnitTemplates(jsonMonster)
+
+		col := i
+		err := AddUnitToSquad(squadID, manager, unit, 0, col)
+		if err != nil {
+			t.Fatalf("Failed to add unit %d: %v", i, err)
+		}
+	}
+
+	// Squad should move at speed of slowest unit (3)
+	speed := GetSquadMovementSpeed(squadID, manager)
+	if speed != 3 {
+		t.Errorf("Expected squad speed 3 (minimum), got %d", speed)
+	}
+}
+
+func TestGetSquadMovementSpeed_DeadUnitsIgnored(t *testing.T) {
+	manager := setupTestSquadManager(t)
+	CreateEmptySquad(manager, "Test Squad")
+
+	// Get the squad entity
+	var squadID ecs.EntityID
+	for _, result := range manager.World.Query(SquadTag) {
+		squadID = result.Entity.GetID()
+		break
+	}
+
+	// Add two units: one slow (speed 2), one fast (speed 5)
+	jsonMonster1 := createTestJSONMonster("SlowUnit", 1, 1, "DPS")
+	jsonMonster1.MovementSpeed = 2
+	unit1, _ := CreateUnitTemplates(jsonMonster1)
+	AddUnitToSquad(squadID, manager, unit1, 0, 0)
+
+	jsonMonster2 := createTestJSONMonster("FastUnit", 1, 1, "DPS")
+	jsonMonster2.MovementSpeed = 5
+	unit2, _ := CreateUnitTemplates(jsonMonster2)
+	AddUnitToSquad(squadID, manager, unit2, 0, 1)
+
+	// Initially, squad moves at speed 2 (slowest)
+	speed := GetSquadMovementSpeed(squadID, manager)
+	if speed != 2 {
+		t.Errorf("Expected initial speed 2, got %d", speed)
+	}
+
+	// Kill the slow unit
+	unitIDs := GetUnitIDsAtGridPosition(squadID, 0, 0, manager)
+	if len(unitIDs) > 0 {
+		slowUnit := FindUnitByID(unitIDs[0], manager)
+		attr := common.GetAttributes(slowUnit)
+		attr.CurrentHealth = 0
+	}
+
+	// Now squad should move at speed 5 (only alive unit)
+	speed = GetSquadMovementSpeed(squadID, manager)
+	if speed != 5 {
+		t.Errorf("Expected speed 5 after slow unit died, got %d", speed)
+	}
+}
+
+func TestGetSquadMovementSpeed_EmptySquad(t *testing.T) {
+	manager := setupTestSquadManager(t)
+	CreateEmptySquad(manager, "Empty Squad")
+
+	// Get the squad entity
+	var squadID ecs.EntityID
+	for _, result := range manager.World.Query(SquadTag) {
+		squadID = result.Entity.GetID()
+		break
+	}
+
+	// Empty squad should have speed 0
+	speed := GetSquadMovementSpeed(squadID, manager)
+	if speed != 0 {
+		t.Errorf("Expected speed 0 for empty squad, got %d", speed)
+	}
+}

@@ -31,6 +31,7 @@ type UnitTemplate struct {
 	CoverRange     int     // Rows behind that receive cover (1-3)
 	RequiresActive bool    // If true, dead/stunned units don't provide cover
 	AttackRange    int     // World-based attack range (Melee=1, Ranged=3, Magic=4)
+	MovementSpeed  int     // Movement speed on world map (1 tile per speed point)
 }
 
 // Creates the Unit entities used in the Squad
@@ -79,6 +80,7 @@ func CreateUnitTemplates(monsterData entitytemplates.JSONMonster) (UnitTemplate,
 		CoverRange:     monsterData.CoverRange,
 		RequiresActive: monsterData.RequiresActive,
 		AttackRange:    monsterData.AttackRange,
+		MovementSpeed:  monsterData.MovementSpeed,
 	}
 
 	return unit, nil
@@ -198,6 +200,11 @@ func CreateUnitEntity(squadmanager *common.EntityManager, unit UnitTemplate) (*e
 	// Add attack range component
 	unitEntity.AddComponent(AttackRangeComponent, &AttackRangeData{
 		Range: unit.AttackRange,
+	})
+
+	// Add movement speed component
+	unitEntity.AddComponent(MovementSpeedComponent, &MovementSpeedData{
+		Speed: unit.MovementSpeed,
 	})
 
 	return unitEntity, nil
