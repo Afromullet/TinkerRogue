@@ -178,6 +178,17 @@ func (em *ExplorationMode) buildQuickInventory() {
 	)
 	em.quickInventory.AddChild(builderBtn)
 
+	// Combat button
+	combatBtn := CreateButton("Combat (C)")
+	combatBtn.Configure(
+		widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+			if combatMode, exists := em.modeManager.GetMode("combat"); exists {
+				em.modeManager.RequestTransition(combatMode, "Enter Combat")
+			}
+		}),
+	)
+	em.quickInventory.AddChild(combatBtn)
+
 	// Position using responsive layout
 	SetContainerLocation(em.quickInventory, x, y)
 
@@ -265,6 +276,14 @@ func (em *ExplorationMode) HandleInput(inputState *InputState) bool {
 		// Open squad builder
 		if builderMode, exists := em.modeManager.GetMode("squad_builder"); exists {
 			em.modeManager.RequestTransition(builderMode, "B key pressed")
+			return true
+		}
+	}
+
+	if inputState.KeysJustPressed[ebiten.KeyC] {
+		// Enter combat mode
+		if combatMode, exists := em.modeManager.GetMode("combat"); exists {
+			em.modeManager.RequestTransition(combatMode, "C key pressed")
 			return true
 		}
 	}

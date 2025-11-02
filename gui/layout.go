@@ -42,6 +42,15 @@ func (lc *LayoutConfig) BottomCenterButtons() (x, y int) {
 	return
 }
 
+// TopLeftPanel returns position and size for top-left panel (faction info)
+func (lc *LayoutConfig) TopLeftPanel() (x, y, width, height int) {
+	width = int(float64(lc.ScreenWidth) * 0.15)  // 15% of screen width
+	height = int(float64(lc.ScreenHeight) * 0.12) // 12% of screen height
+	x = int(float64(lc.ScreenWidth) * 0.01)      // 1% margin from left
+	y = int(float64(lc.ScreenHeight) * 0.01)     // 1% margin from top
+	return
+}
+
 // TopCenterPanel returns position and size for top-center panel (turn order)
 func (lc *LayoutConfig) TopCenterPanel() (x, y, width, height int) {
 	width = int(float64(lc.ScreenWidth) * 0.3)    // 30% of screen width
