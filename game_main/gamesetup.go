@@ -162,6 +162,11 @@ func SetupUI(g *Game) {
 		log.Fatalf("Failed to register squad builder mode: %v", err)
 	}
 
+	squadDeploymentMode := gui.NewSquadDeploymentMode(g.uiModeManager)
+	if err := g.uiModeManager.RegisterMode(squadDeploymentMode); err != nil {
+		log.Fatalf("Failed to register squad deployment mode: %v", err)
+	}
+
 	// Set initial mode to exploration
 	if err := g.uiModeManager.SetMode("exploration"); err != nil {
 		log.Fatalf("Failed to set exploration mode: %v", err)

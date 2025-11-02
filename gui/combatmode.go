@@ -28,7 +28,8 @@ type CombatMode struct {
 	combatLogArea    *widget.TextArea
 	actionButtons    *widget.Container
 
-	combatLog []string // Store combat messages
+	combatLog              []string // Store combat messages
+	messageCountSinceTrim int      // Track messages for periodic trimming
 
 	// Combat system managers
 	turnManager    *combat.TurnManager
@@ -310,13 +311,35 @@ func (cm *CombatMode) buildActionButtons() {
 
 func (cm *CombatMode) addCombatLog(message string) {
 	cm.combatLog = append(cm.combatLog, message)
+	cm.messageCountSinceTrim++
 
-	// Update text area with all messages
-	logText := ""
-	for _, msg := range cm.combatLog {
-		logText += msg + "\n"
+	// Use AppendText for O(1) performance - only add the new message
+	cm.combatLogArea.AppendText(message + "\n")
+
+	// Every 100 messages, trim old entries to prevent unbounded growth
+	if cm.messageCountSinceTrim >= 100 {
+		cm.trimCombatLog()
 	}
-	cm.combatLogArea.SetText(logText)
+}
+
+// trimCombatLog keeps only the last 300 messages and rebuilds the display
+func (cm *CombatMode) trimCombatLog() {
+	const maxMessages = 300
+
+	if len(cm.combatLog) > maxMessages {
+		// Remove oldest messages, keep most recent ones
+		removed := len(cm.combatLog) - maxMessages
+		cm.combatLog = cm.combatLog[removed:]
+
+		// Rebuild the text area display with trimmed content
+		fullText := ""
+		for _, msg := range cm.combatLog {
+			fullText += msg + "\n"
+		}
+		cm.combatLogArea.SetText(fullText)
+	}
+
+	cm.messageCountSinceTrim = 0
 }
 
 func (cm *CombatMode) handleEndTurn() {
@@ -474,8 +497,6 @@ func (cm *CombatMode) selectTarget(targetSquadID ecs.EntityID) {
 	}
 
 	cm.selectedTargetID = targetSquadID
-	targetName := cm.getSquadName(targetSquadID)
-	cm.addCombatLog(fmt.Sprintf("Target: %s - Click Attack again to confirm", targetName))
 
 	// Execute attack immediately
 	cm.executeAttack()
@@ -489,9 +510,10 @@ func (cm *CombatMode) executeAttack() {
 	// Create combat action system
 	combatSys := combat.NewCombatActionSystem(cm.context.ECSManager)
 
-	// Check if attack is valid
-	if !combatSys.CanSquadAttack(cm.selectedSquadID, cm.selectedTargetID) {
-		cm.addCombatLog("Cannot attack: out of range or invalid target")
+	// Check if attack is valid with detailed reason
+	reason, canAttack := combatSys.CanSquadAttackWithReason(cm.selectedSquadID, cm.selectedTargetID)
+	if !canAttack {
+		cm.addCombatLog(fmt.Sprintf("Cannot attack: %s", reason))
 		cm.inAttackMode = false
 		cm.selectedTargetID = 0
 		return
@@ -667,6 +689,7 @@ func (cm *CombatMode) Exit(toMode UIMode) error {
 	fmt.Println("Exiting Combat Mode")
 	// Clear combat log for next battle
 	cm.combatLog = cm.combatLog[:0]
+	cm.messageCountSinceTrim = 0
 	return nil
 }
 
@@ -1022,16 +1045,10 @@ func (cm *CombatMode) handleSquadClick(mouseX, mouseY int) {
 			return
 		}
 
-		// If clicking an enemy squad: try to attack
+		// If clicking an enemy squad and we have a selected squad: attack immediately
 		if cm.selectedSquadID != 0 && clickedFactionID != currentFactionID {
 			cm.selectedTargetID = clickedSquadID
-			cm.addCombatLog(fmt.Sprintf("%s targets %s - Click to confirm attack",
-				cm.getSquadName(cm.selectedSquadID), cm.getSquadName(clickedSquadID)))
-
-			// If clicking the same target again: execute attack
-			if cm.selectedTargetID != 0 {
-				cm.executeAttack()
-			}
+			cm.executeAttack()
 		}
 	}
 }

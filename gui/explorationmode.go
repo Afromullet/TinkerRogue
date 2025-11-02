@@ -178,6 +178,17 @@ func (em *ExplorationMode) buildQuickInventory() {
 	)
 	em.quickInventory.AddChild(builderBtn)
 
+	// Squad Deployment button
+	deployBtn := CreateButton("Deploy (D)")
+	deployBtn.Configure(
+		widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+			if deployMode, exists := em.modeManager.GetMode("squad_deployment"); exists {
+				em.modeManager.RequestTransition(deployMode, "Open Squad Deployment")
+			}
+		}),
+	)
+	em.quickInventory.AddChild(deployBtn)
+
 	// Combat button
 	combatBtn := CreateButton("Combat (C)")
 	combatBtn.Configure(

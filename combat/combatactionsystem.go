@@ -173,20 +173,26 @@ func (cas *CombatActionSystem) GetSquadsInRange(squadID ecs.EntityID) []ecs.Enti
 }
 
 func (cas *CombatActionSystem) CanSquadAttack(squadID, targetID ecs.EntityID) bool {
+	_, valid := cas.CanSquadAttackWithReason(squadID, targetID)
+	return valid
+}
+
+// CanSquadAttackWithReason returns detailed info about why an attack can/cannot happen
+func (cas *CombatActionSystem) CanSquadAttackWithReason(squadID, targetID ecs.EntityID) (string, bool) {
 	// Check if squad has action available
 	if !canSquadAct(squadID, cas.manager) {
-		return false // Already acted this turn
+		return "Squad has already acted this turn", false
 	}
 
 	// Get positions
 	attackerPos, err := getSquadMapPosition(squadID, cas.manager)
 	if err != nil {
-		return false // Attacker not on map
+		return "Attacker squad not found on map", false
 	}
 
 	defenderPos, err := getSquadMapPosition(targetID, cas.manager)
 	if err != nil {
-		return false // Defender not on map
+		return "Target squad not found on map", false
 	}
 
 	// Check factions (can't attack allies)
@@ -194,11 +200,11 @@ func (cas *CombatActionSystem) CanSquadAttack(squadID, targetID ecs.EntityID) bo
 	defenderFaction := getFactionOwner(targetID, cas.manager)
 
 	if attackerFaction == 0 || defenderFaction == 0 {
-		return false // One or both squads have no faction
+		return "One or both squads have no faction", false
 	}
 
 	if attackerFaction == defenderFaction {
-		return false // Can't attack own faction
+		return "Cannot attack your own faction", false
 	}
 
 	// Calculate distance
@@ -207,8 +213,8 @@ func (cas *CombatActionSystem) CanSquadAttack(squadID, targetID ecs.EntityID) bo
 	// Check range
 	maxRange := cas.GetSquadAttackRange(squadID)
 	if distance > maxRange {
-		return false // Out of range
+		return fmt.Sprintf("Target out of range: %d tiles away (max range %d)", distance, maxRange), false
 	}
 
-	return true
+	return "Attack valid", true
 }
