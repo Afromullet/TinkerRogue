@@ -1,0 +1,177 @@
+package combat
+
+import (
+	"fmt"
+	"game_main/common"
+	"game_main/coords"
+	"game_main/squads"
+	"game_main/systems"
+
+	"github.com/bytearena/ecs"
+)
+
+type MovementSystem struct {
+	manager   *common.EntityManager
+	posSystem *systems.PositionSystem // For O(1) collision detection
+}
+
+// Constructor
+func NewMovementSystem(manager *common.EntityManager, posSystem *systems.PositionSystem) *MovementSystem {
+	return &MovementSystem{
+		manager:   manager,
+		posSystem: posSystem,
+	}
+}
+
+// The squad movement speed is the movement speed of the slowest unit in the squad
+func (ms *MovementSystem) GetSquadMovementSpeed(squadID ecs.EntityID) int {
+
+	unitIDs := squads.GetUnitIDsInSquad(squadID, ms.manager)
+
+	//TODO: I should probably use a constant for this
+	if len(unitIDs) == 0 {
+		return 3
+	}
+
+	minSpeed := 999
+	for _, unitID := range unitIDs {
+		unit := squads.FindUnitByID(unitID, ms.manager)
+		if unit == nil {
+			continue
+		}
+
+		attr := common.GetAttributes(unit)
+		speed := attr.GetMovementSpeed()
+
+		if speed < minSpeed {
+			minSpeed = speed
+		}
+	}
+
+	if minSpeed == 999 {
+		return 3 // Default if no valid units
+	}
+
+	return minSpeed // Squad moves at slowest unit's speed
+}
+
+func (ms *MovementSystem) CanMoveTo(squadID ecs.EntityID, targetPos coords.LogicalPosition) bool {
+	//Check if tile is occupied using PositionSystem
+	occupyingID := ms.posSystem.GetEntityIDAt(targetPos)
+	if occupyingID == 0 {
+		return true // Empty tile - can move
+	}
+
+	//Check if occupied by a squad (not terrain/item)
+	if !isSquad(occupyingID, ms.manager) {
+		return false // Occupied by terrain/obstacle
+	}
+
+	//If occupied by squad, check if it's friendly
+	occupyingFaction := getFactionOwner(occupyingID, ms.manager)
+	squadFaction := getFactionOwner(squadID, ms.manager)
+
+	// Can pass through friendlies, NOT enemies
+	return occupyingFaction == squadFaction
+}
+
+func (ms *MovementSystem) MoveSquad(squadID ecs.EntityID, targetPos coords.LogicalPosition) error {
+
+	if !canSquadMove(squadID, ms.manager) {
+		return fmt.Errorf("squad has no movement remaining")
+	}
+
+	currentPos, err := ms.GetSquadPosition(squadID)
+	if err != nil {
+		return fmt.Errorf("cannot get current position: %w", err)
+	}
+
+	// Calculate movement cost using Chebyshev distance
+	movementCost := currentPos.ChebyshevDistance(&targetPos)
+
+	// Check if squad has enough movement
+	actionStateEntity := findActionStateEntity(squadID, ms.manager)
+	if actionStateEntity == nil {
+		return fmt.Errorf("no action state for squad")
+	}
+
+	actionState := common.GetComponentType[*ActionStateData](actionStateEntity, ActionStateComponent)
+	if actionState.MovementRemaining < movementCost {
+		return fmt.Errorf("insufficient movement: need %d, have %d", movementCost, actionState.MovementRemaining)
+	}
+
+	if !ms.CanMoveTo(squadID, targetPos) {
+		return fmt.Errorf("cannot move to %v", targetPos)
+	}
+
+	// Update MapPositionData (cached position)
+	mapPosEntity := findMapPositionEntity(squadID, ms.manager)
+	if mapPosEntity == nil {
+		return fmt.Errorf("squad not on map")
+	}
+
+	mapPos := common.GetComponentType[*MapPositionData](mapPosEntity, MapPositionComponent)
+	mapPos.Position = targetPos
+
+	// Update PositionSystem spatial grid (canonical source)
+	ms.posSystem.MoveEntity(squadID, currentPos, targetPos)
+
+	decrementMovementRemaining(squadID, movementCost, ms.manager)
+	markSquadAsMoved(squadID, ms.manager)
+
+	return nil
+}
+
+func (ms *MovementSystem) GetValidMovementTiles(squadID ecs.EntityID) []coords.LogicalPosition {
+	currentPos, err := ms.GetSquadPosition(squadID)
+	if err != nil {
+		return []coords.LogicalPosition{}
+	}
+
+	// Get remaining movement
+	actionStateEntity := findActionStateEntity(squadID, ms.manager)
+	if actionStateEntity == nil {
+		return []coords.LogicalPosition{}
+	}
+
+	actionState := common.GetComponentType[*ActionStateData](actionStateEntity, ActionStateComponent)
+	movementRange := actionState.MovementRemaining
+
+	if movementRange <= 0 {
+		return []coords.LogicalPosition{}
+	}
+
+	// Simple flood-fill for valid tiles movement with Chebyshev distance
+	validTiles := []coords.LogicalPosition{}
+
+	for x := currentPos.X - movementRange; x <= currentPos.X+movementRange; x++ {
+		for y := currentPos.Y - movementRange; y <= currentPos.Y+movementRange; y++ {
+			testPos := coords.LogicalPosition{X: x, Y: y}
+
+			// Check if within Chebyshev distance
+			distance := currentPos.ChebyshevDistance(&testPos)
+			if distance > movementRange {
+				continue
+			}
+
+			// Check if can move to this tile
+			if ms.CanMoveTo(squadID, testPos) {
+				validTiles = append(validTiles, testPos)
+			}
+		}
+	}
+
+	return validTiles
+}
+
+func (ms *MovementSystem) GetSquadPosition(squadID ecs.EntityID) (coords.LogicalPosition, error) {
+	// Find MapPositionData for this squad
+	mapPosEntity := findMapPositionEntity(squadID, ms.manager)
+	if mapPosEntity == nil {
+		return coords.LogicalPosition{}, fmt.Errorf("squad %d not on map", squadID)
+	}
+
+	// Extract position from component
+	mapPos := common.GetComponentType[*MapPositionData](mapPosEntity, MapPositionComponent)
+	return mapPos.Position, nil
+}

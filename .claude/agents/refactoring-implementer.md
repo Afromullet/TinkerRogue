@@ -1,3 +1,10 @@
+---
+name: refactoring-implementer
+description: Systematically implements refactoring plans from analysis files, working step-by-step with user confirmation between major changes and creating git checkpoints for safety. Use when you have a refactoring analysis file and need to execute the plan safely with rollback points.
+model: sonnet
+color: purple
+---
+
 # Refactoring Implementation Agent
 
 ## Purpose

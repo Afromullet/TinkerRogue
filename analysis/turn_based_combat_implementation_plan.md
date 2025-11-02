@@ -1,8 +1,21 @@
-# Turn-Based Tactical Combat System - Implementation Guide
+# Turn-Based Tactical Combat System - Implementation Plan
 
-**Version:** 2.0
-**Date:** 2025-10-21
+**Version:** 2.1 (Revised)
+**Date:** 2025-10-31
 **Estimated Effort:** 40-56 hours (5-7 workdays)
+
+## REVISION NOTES (2.1)
+
+**Corrected API Usage:**
+1. **Component Registration**: Changed from incorrect `ecs.NewComponent()` to correct `manager.World.NewComponent()`
+2. **Initialization Pattern**: Changed from Go's `init()` to explicit `InitCombatComponents()` and `InitCombatTags()` functions (matching squad system pattern)
+3. **Added Missing Function**: Added `FindSquadByID()` helper function to queries.go (this doesn't exist in the codebase yet)
+4. **Tag Registration**: Added proper tag registration in EntityManager.Tags map
+
+**Key Integration Points:**
+- Combat system initialization must be called explicitly during game setup (see [Game Initialization](#game-initialization))
+- All code examples verified against actual bytearena/ecs API usage in the codebase
+- Follows same patterns as existing squad system (squads/squadmanager.go)
 
 ---
 
@@ -16,16 +29,16 @@
 6. [Attribute Extensions](#attribute-extensions)
 7. [Helper Functions](#helper-functions)
 8. [File Structure](#file-structure)
-9. [Implementation Phases](#implementation-phases)
-10. [Integration Patterns](#integration-patterns)
-11. [Testing Strategy](#testing-strategy)
-12. [Code Examples](#code-examples)
+9. [Game Initialization](#game-initialization)
+10. [Implementation Phases](#implementation-phases)
+11. [Integration Patterns](#integration-patterns)
+12. [Testing Strategy](#testing-strategy)
 
 ---
 
 ## OVERVIEW
 
-This document provides a complete implementation guide for a turn-based tactical combat system that builds on the existing squad combat system. The design follows ECS (Entity-Component-System) architecture principles with pure data components and system-based logic.
+This document provides a complete implementation plan for a turn-based tactical combat system that builds on the existing squad combat system. The design follows ECS (Entity-Component-System) architecture principles with pure data components and system-based logic.
 
 ### Key Features
 
@@ -267,6 +280,7 @@ type MapPositionData struct {
 package combat
 
 import (
+    "game_main/common"
     "game_main/coords"
     "github.com/bytearena/ecs"
 )
@@ -284,22 +298,37 @@ var (
     MapPositionTag  ecs.Tag
 )
 
-// init registers all combat components with the ECS
-func init() {
-    // Create components
-    FactionComponent = ecs.NewComponent()
-    TurnStateComponent = ecs.NewComponent()
-    ActionStateComponent = ecs.NewComponent()
-    MapPositionComponent = ecs.NewComponent()
+// InitCombatComponents registers all combat-related components with the ECS manager.
+// Call this during game initialization, similar to InitSquadComponents.
+func InitCombatComponents(manager *common.EntityManager) {
+    FactionComponent = manager.World.NewComponent()
+    TurnStateComponent = manager.World.NewComponent()
+    ActionStateComponent = manager.World.NewComponent()
+    MapPositionComponent = manager.World.NewComponent()
+}
 
-    // Build query tags
+// InitCombatTags creates tags for querying combat-related entities.
+// Call this after InitCombatComponents.
+func InitCombatTags(manager *common.EntityManager) {
     FactionTag = ecs.BuildTag(FactionComponent)
     TurnStateTag = ecs.BuildTag(TurnStateComponent)
     ActionStateTag = ecs.BuildTag(ActionStateComponent)
     MapPositionTag = ecs.BuildTag(MapPositionComponent)
+
+    manager.Tags["faction"] = FactionTag
+    manager.Tags["turnstate"] = TurnStateTag
+    manager.Tags["actionstate"] = ActionStateTag
+    manager.Tags["mapposition"] = MapPositionTag
 }
 
-// Component data structures (defined above)
+// InitializeCombatSystem initializes combat components and tags in the provided EntityManager.
+// This should be called during game initialization, similar to InitializeSquadData.
+func InitializeCombatSystem(manager *common.EntityManager) {
+    InitCombatComponents(manager)
+    InitCombatTags(manager)
+}
+
+// Component data structures defined above
 ```
 
 ---
@@ -350,6 +379,13 @@ func (tm *TurnManager) EndCombat() error
 **Key Implementation Details**:
 
 ```go
+// Constructor
+func NewTurnManager(manager *common.EntityManager) *TurnManager {
+    return &TurnManager{
+        manager: manager,
+    }
+}
+
 func (tm *TurnManager) InitializeCombat(factionIDs []ecs.EntityID) error {
     // 1. Randomize turn order using Fisher-Yates shuffle
     turnOrder := make([]ecs.EntityID, len(factionIDs))
@@ -415,6 +451,90 @@ func (tm *TurnManager) ResetSquadActions(factionID ecs.EntityID) error {
 
     return nil
 }
+
+func (tm *TurnManager) GetCurrentFaction() ecs.EntityID {
+    // Find the single TurnStateData entity
+    turnEntity := findTurnStateEntity(tm.manager)
+    if turnEntity == nil {
+        return 0 // No active combat
+    }
+
+    // Get turn state data
+    turnState := common.GetComponentType[*TurnStateData](turnEntity, TurnStateComponent)
+
+    // Return faction ID at current index
+    currentIndex := turnState.CurrentTurnIndex
+    if currentIndex < 0 || currentIndex >= len(turnState.TurnOrder) {
+        return 0 // Invalid state
+    }
+
+    return turnState.TurnOrder[currentIndex]
+}
+
+func (tm *TurnManager) EndTurn() error {
+    turnEntity := findTurnStateEntity(tm.manager)
+    if turnEntity == nil {
+        return fmt.Errorf("no active combat")
+    }
+
+    turnState := common.GetComponentType[*TurnStateData](turnEntity, TurnStateComponent)
+
+    // Advance turn index
+    turnState.CurrentTurnIndex++
+
+    // Check for wraparound to start new round
+    if turnState.CurrentTurnIndex >= len(turnState.TurnOrder) {
+        turnState.CurrentTurnIndex = 0
+        turnState.CurrentRound++
+    }
+
+    // Reset action states for the new faction's squads
+    newFactionID := turnState.TurnOrder[turnState.CurrentTurnIndex]
+    if err := tm.ResetSquadActions(newFactionID); err != nil {
+        return fmt.Errorf("failed to reset squad actions: %w", err)
+    }
+
+    return nil
+}
+
+func (tm *TurnManager) IsSquadActivatable(squadID ecs.EntityID) bool {
+    // Get current active faction
+    currentFaction := tm.GetCurrentFaction()
+    if currentFaction == 0 {
+        return false // No active combat
+    }
+
+    // Check if squad belongs to current faction
+    squadFaction := getFactionOwner(squadID, tm.manager)
+    if squadFaction != currentFaction {
+        return false // Not this faction's squad
+    }
+
+    // Check if squad can still act (hasn't used its action)
+    return canSquadAct(squadID, tm.manager)
+}
+
+func (tm *TurnManager) GetCurrentRound() int {
+    turnEntity := findTurnStateEntity(tm.manager)
+    if turnEntity == nil {
+        return 0 // No active combat
+    }
+
+    turnState := common.GetComponentType[*TurnStateData](turnEntity, TurnStateComponent)
+    return turnState.CurrentRound
+}
+
+func (tm *TurnManager) EndCombat() error {
+    turnEntity := findTurnStateEntity(tm.manager)
+    if turnEntity == nil {
+        return fmt.Errorf("no active combat to end")
+    }
+
+    turnState := common.GetComponentType[*TurnStateData](turnEntity, TurnStateComponent)
+    turnState.CombatActive = false
+
+    return nil
+}
 ```
 
 ---
@@ -458,6 +578,14 @@ func (ms *MovementSystem) GetSquadPosition(squadID ecs.EntityID) (coords.Logical
 **Key Implementation Details**:
 
 ```go
+// Constructor
+func NewMovementSystem(manager *common.EntityManager, posSystem *systems.PositionSystem) *MovementSystem {
+    return &MovementSystem{
+        manager:   manager,
+        posSystem: posSystem,
+    }
+}
+
 func (ms *MovementSystem) GetSquadMovementSpeed(squadID ecs.EntityID) int {
     // Get all units in squad
     unitIDs := squads.GetUnitIDsInSquad(squadID, ms.manager)
@@ -599,6 +727,18 @@ func (ms *MovementSystem) GetValidMovementTiles(squadID ecs.EntityID) []coords.L
 
     return validTiles
 }
+
+func (ms *MovementSystem) GetSquadPosition(squadID ecs.EntityID) (coords.LogicalPosition, error) {
+    // Find MapPositionData for this squad
+    mapPosEntity := findMapPositionEntity(squadID, ms.manager)
+    if mapPosEntity == nil {
+        return coords.LogicalPosition{}, fmt.Errorf("squad %d not on map", squadID)
+    }
+
+    // Extract position from component
+    mapPos := common.GetComponentType[*MapPositionData](mapPosEntity, MapPositionComponent)
+    return mapPos.Position, nil
+}
 ```
 
 ---
@@ -646,6 +786,13 @@ func (cas *CombatActionSystem) GetAttackingUnits(squadID, targetID ecs.EntityID)
 **Key Implementation Details**:
 
 ```go
+// Constructor
+func NewCombatActionSystem(manager *common.EntityManager) *CombatActionSystem {
+    return &CombatActionSystem{
+        manager: manager,
+    }
+}
+
 func (cas *CombatActionSystem) ExecuteAttackAction(attackerID, defenderID ecs.EntityID) error {
     // 1. Get positions
     attackerPos, err := getSquadMapPosition(attackerID, cas.manager)
@@ -766,6 +913,90 @@ func (cas *CombatActionSystem) GetAttackingUnits(squadID, targetID ecs.EntityID)
 
     return attackingUnits
 }
+
+func (cas *CombatActionSystem) GetSquadsInRange(squadID ecs.EntityID) []ecs.EntityID {
+    var squadsInRange []ecs.EntityID
+
+    // Get attacker's position and faction
+    attackerPos, err := getSquadMapPosition(squadID, cas.manager)
+    if err != nil {
+        return squadsInRange // Return empty if squad not on map
+    }
+
+    attackerFaction := getFactionOwner(squadID, cas.manager)
+    if attackerFaction == 0 {
+        return squadsInRange // Return empty if no faction owner
+    }
+
+    // Get attack range
+    maxRange := cas.GetSquadAttackRange(squadID)
+
+    // Query all MapPositionData entities to find enemy squads
+    for _, result := range cas.manager.World.Query(MapPositionTag) {
+        mapPos := common.GetComponentType[*MapPositionData](result.Entity, MapPositionComponent)
+
+        // Skip friendly squads
+        if mapPos.FactionID == attackerFaction {
+            continue
+        }
+
+        // Skip self (shouldn't happen, but safety check)
+        if mapPos.SquadID == squadID {
+            continue
+        }
+
+        // Calculate distance using Chebyshev distance (8-directional movement)
+        distance := attackerPos.ChebyshevDistance(&mapPos.Position)
+
+        // Check if in range
+        if distance <= maxRange {
+            squadsInRange = append(squadsInRange, mapPos.SquadID)
+        }
+    }
+
+    return squadsInRange
+}
+
+func (cas *CombatActionSystem) CanSquadAttack(squadID, targetID ecs.EntityID) bool {
+    // Check if squad has action available
+    if !canSquadAct(squadID, cas.manager) {
+        return false // Already acted this turn
+    }
+
+    // Get positions
+    attackerPos, err := getSquadMapPosition(squadID, cas.manager)
+    if err != nil {
+        return false // Attacker not on map
+    }
+
+    defenderPos, err := getSquadMapPosition(targetID, cas.manager)
+    if err != nil {
+        return false // Defender not on map
+    }
+
+    // Check factions (can't attack allies)
+    attackerFaction := getFactionOwner(squadID, cas.manager)
+    defenderFaction := getFactionOwner(targetID, cas.manager)
+
+    if attackerFaction == 0 || defenderFaction == 0 {
+        return false // One or both squads have no faction
+    }
+
+    if attackerFaction == defenderFaction {
+        return false // Can't attack own faction
+    }
+
+    // Calculate distance
+    distance := attackerPos.ChebyshevDistance(&defenderPos)
+
+    // Check range
+    maxRange := cas.GetSquadAttackRange(squadID)
+    if distance > maxRange {
+        return false // Out of range
+    }
+
+    return true
+}
 ```
 
 ---
@@ -815,6 +1046,13 @@ func (fm *FactionManager) GetFactionMana(factionID ecs.EntityID) (current, max i
 **Key Implementation Details**:
 
 ```go
+// Constructor
+func NewFactionManager(manager *common.EntityManager) *FactionManager {
+    return &FactionManager{
+        manager: manager,
+    }
+}
+
 func (fm *FactionManager) CreateFaction(name string, isPlayer bool) ecs.EntityID {
     faction := fm.manager.World.NewEntity()
     factionID := faction.GetID()
@@ -869,6 +1107,43 @@ func (fm *FactionManager) GetFactionSquads(factionID ecs.EntityID) []ecs.EntityI
     }
 
     return squadIDs
+}
+
+func (fm *FactionManager) RemoveSquadFromFaction(factionID, squadID ecs.EntityID) error {
+    // Find MapPositionData entity for this squad
+    mapPosEntity := findMapPositionEntity(squadID, fm.manager)
+    if mapPosEntity == nil {
+        return fmt.Errorf("squad %d not found on map", squadID)
+    }
+
+    // Verify squad belongs to this faction
+    mapPos := common.GetComponentType[*MapPositionData](mapPosEntity, MapPositionComponent)
+    if mapPos.FactionID != factionID {
+        return fmt.Errorf("squad %d does not belong to faction %d", squadID, factionID)
+    }
+
+    // Get position before removal for PositionSystem cleanup
+    position := mapPos.Position
+
+    // Remove MapPositionData entity from ECS
+    fm.manager.World.RemoveEntity(mapPosEntity)
+
+    // Remove from PositionSystem spatial grid
+    common.GlobalPositionSystem.RemoveEntity(squadID, position)
+
+    return nil
+}
+
+func (fm *FactionManager) GetFactionMana(factionID ecs.EntityID) (current, max int) {
+    // Find faction entity
+    faction := findFactionByID(factionID, fm.manager)
+    if faction == nil {
+        return 0, 0 // Faction not found
+    }
+
+    // Get faction data
+    factionData := common.GetComponentType[*FactionData](faction, FactionComponent)
+    return factionData.Mana, factionData.MaxMana
 }
 ```
 
@@ -966,6 +1241,8 @@ Update unit templates (e.g., `monsterdata.json`) to include new attributes:
 
 **File**: `combat/queries.go`
 
+This file contains all helper query functions for entity lookup, faction relationships, action state management, and utility functions. These are essential for the ECS query-based architecture.
+
 ```go
 package combat
 
@@ -1034,6 +1311,19 @@ func findActionStateEntity(squadID ecs.EntityID, manager *common.EntityManager) 
     for _, result := range manager.World.Query(ActionStateTag) {
         actionState := common.GetComponentType[*ActionStateData](result.Entity, ActionStateComponent)
         if actionState.SquadID == squadID {
+            return result.Entity
+        }
+    }
+    return nil
+}
+
+// FindSquadByID finds a squad entity by its ID
+// Note: This function doesn't exist in the codebase yet - add it to squads/squadqueries.go
+// or use it from combat/queries.go
+func FindSquadByID(squadID ecs.EntityID, manager *common.EntityManager) *ecs.Entity {
+    // Import squads package: "game_main/squads"
+    for _, result := range manager.World.Query(squads.SquadTag) {
+        if result.Entity.GetID() == squadID {
             return result.Entity
         }
     }
@@ -1248,7 +1538,88 @@ TinkerRogue/
 │   └── squadqueries.go        # Use GetUnitIDsInSquad()
 │
 └── analysis/
-    └── turn_based_combat_implementation.md  # This file
+    └── turn_based_combat_implementation_plan.md  # This file
+```
+
+---
+
+## GAME INITIALIZATION
+
+### Integration into Game Setup
+
+The combat system must be initialized explicitly during game setup, following the same pattern as the squad system. Add this to your `game_main/gameinit.go` or equivalent initialization file:
+
+```go
+// game_main/gameinit.go
+
+import (
+    "game_main/combat"
+    "game_main/common"
+    "game_main/squads"
+    // ... other imports
+)
+
+func InitializeGame() error {
+    // Create entity manager
+    manager := common.NewEntityManager()
+
+    // Initialize core components (existing code)
+    InitializeECS(manager)
+
+    // Initialize squad system (existing code)
+    if err := squads.InitializeSquadData(manager); err != nil {
+        return fmt.Errorf("failed to initialize squads: %w", err)
+    }
+
+    // Initialize combat system (NEW)
+    combat.InitializeCombatSystem(manager)
+
+    // ... rest of game initialization
+
+    return nil
+}
+```
+
+### Initialization Order
+
+**Critical**: Combat system initialization must happen **after** squad system initialization because combat depends on squad components (SquadTag, SquadComponent, etc.).
+
+**Correct Order:**
+1. Core ECS components (`InitializeECS`)
+2. Squad system (`squads.InitializeSquadData`)
+3. Combat system (`combat.InitializeCombatSystem`)
+4. Other game systems
+
+**Why This Matters:**
+- Combat system queries use `squads.SquadTag` and `squads.SquadMemberTag`
+- `FindSquadByID` and other helpers rely on squad components being registered
+- Movement and combat actions need access to unit attributes
+
+### Testing Initialization
+
+Verify combat system is initialized correctly:
+
+```go
+func TestCombatInitialization(t *testing.T) {
+    manager := common.NewEntityManager()
+
+    // Initialize dependencies
+    squads.InitializeSquadData(manager)
+    combat.InitializeCombatSystem(manager)
+
+    // Verify components exist
+    assert.NotNil(t, combat.FactionComponent)
+    assert.NotNil(t, combat.TurnStateComponent)
+    assert.NotNil(t, combat.ActionStateComponent)
+    assert.NotNil(t, combat.MapPositionComponent)
+
+    // Verify tags are registered
+    _, ok := manager.Tags["faction"]
+    assert.True(t, ok, "faction tag should be registered")
+
+    _, ok = manager.Tags["turnstate"]
+    assert.True(t, ok, "turnstate tag should be registered")
+}
 ```
 
 ---
@@ -1383,7 +1754,7 @@ TestExecuteAttackAction_RangedAttack
 TestExecuteAttackAction_PartialSquadAttack
 TestExecuteAttackAction_MarksSquadAsActed
 TestExecuteAttackAction_RemovesDefeatedSquad
-TestGetAttackingUnits_FiltersbyUnitRange
+TestGetAttackingUnits_FiltersByUnitRange
 ```
 
 ---
@@ -1659,103 +2030,6 @@ func (tm *TurnManager) EndTurn() error {
 
 ---
 
-### Pattern 4: Squad Speed Calculation
-
-**Aggregate unit speeds:**
-
-```go
-func (ms *MovementSystem) GetSquadMovementSpeed(squadID ecs.EntityID) int {
-    // Get all units using existing query
-    unitIDs := squads.GetUnitIDsInSquad(squadID, ms.manager)
-
-    if len(unitIDs) == 0 {
-        return 3 // Default
-    }
-
-    // Find slowest unit
-    minSpeed := 999
-    for _, unitID := range unitIDs {
-        unit := squads.FindUnitByID(unitID, ms.manager)
-        if unit == nil {
-            continue
-        }
-
-        attr := common.GetAttributes(unit)
-        speed := attr.GetMovementSpeed()
-
-        if speed < minSpeed {
-            minSpeed = speed
-        }
-    }
-
-    if minSpeed == 999 {
-        return 3 // Default if no valid units
-    }
-
-    return minSpeed // Squad limited by slowest member
-}
-```
-
-**Key Points**:
-- Uses existing GetUnitIDsInSquad() query
-- Iterates all units to find minimum speed
-- Handles edge cases (no units, missing attributes)
-- Squad movement limited by slowest member
-
----
-
-### Pattern 5: Faction-Squad Relationships
-
-**Query-based ownership:**
-
-```go
-func (fm *FactionManager) GetFactionSquads(factionID ecs.EntityID) []ecs.EntityID {
-    var squadIDs []ecs.EntityID
-
-    // Query all MapPositionData entities
-    for _, result := range fm.manager.World.Query(MapPositionTag) {
-        mapPos := common.GetComponentType[*MapPositionData](result.Entity, MapPositionComponent)
-
-        if mapPos.FactionID == factionID {
-            squadIDs = append(squadIDs, mapPos.SquadID)
-        }
-    }
-
-    return squadIDs
-}
-
-func (fm *FactionManager) AddSquadToFaction(factionID, squadID ecs.EntityID, position coords.LogicalPosition) error {
-    // Verify faction and squad exist
-    faction := findFactionByID(factionID, fm.manager)
-    squad := squads.FindSquadByID(squadID, fm.manager)
-
-    if faction == nil || squad == nil {
-        return fmt.Errorf("faction or squad not found")
-    }
-
-    // Create MapPositionData to establish relationship
-    mapPosEntity := fm.manager.World.NewEntity()
-    mapPosEntity.AddComponent(MapPositionComponent, &MapPositionData{
-        SquadID:   squadID,
-        Position:  position,
-        FactionID: factionID,
-    })
-
-    // Register in PositionSystem
-    common.GlobalPositionSystem.AddEntity(squadID, position)
-
-    return nil
-}
-```
-
-**Key Points**:
-- Relationships stored in MapPositionData
-- Query-based lookup (proper ECS pattern)
-- No entity pointers stored
-- Decoupled architecture
-
----
-
 ## TESTING STRATEGY
 
 ### Unit Tests (Per System)
@@ -1962,155 +2236,9 @@ func PlaceSquadOnMap(manager *common.EntityManager, factionID, squadID ecs.Entit
 
 ---
 
-## CODE EXAMPLES
-
-### Example 1: Complete TurnManager Implementation
-
-See [System Specifications - TurnManager](#1-turnmanager) for full implementation with all methods.
-
----
-
-### Example 2: Complete MovementSystem Implementation
-
-See [System Specifications - MovementSystem](#2-movementsystem) for full implementation with all methods.
-
----
-
-### Example 3: Setting Up a Combat Encounter
-
-```go
-package main
-
-import (
-    "game_main/combat"
-    "game_main/common"
-    "game_main/coords"
-)
-
-func SetupCombat() {
-    // Create entity manager
-    manager := common.NewEntityManager()
-
-    // Create systems
-    turnMgr := combat.NewTurnManager(manager)
-    factionMgr := combat.NewFactionManager(manager)
-    moveSys := combat.NewMovementSystem(manager, common.GlobalPositionSystem)
-    combatSys := combat.NewCombatActionSystem(manager)
-
-    // Create factions
-    playerFaction := factionMgr.CreateFaction("Player", true)
-    enemyFaction := factionMgr.CreateFaction("Bandits", false)
-
-    // Create squads (using existing squad system)
-    playerSquad := CreatePlayerSquad(manager)
-    enemySquad := CreateEnemySquad(manager)
-
-    // Place squads on map
-    factionMgr.AddSquadToFaction(playerFaction, playerSquad, coords.LogicalPosition{X: 5, Y: 5})
-    factionMgr.AddSquadToFaction(enemyFaction, enemySquad, coords.LogicalPosition{X: 20, Y: 20})
-
-    // Initialize combat
-    turnMgr.InitializeCombat([]ecs.EntityID{playerFaction, enemyFaction})
-
-    // Combat is now ready
-    currentFaction := turnMgr.GetCurrentFaction()
-    fmt.Printf("Combat started! Current turn: %d\n", currentFaction)
-}
-```
-
----
-
-### Example 4: Player Turn Execution
-
-```go
-func ExecutePlayerTurn(squadID ecs.EntityID, moveSys *combat.MovementSystem, combatSys *combat.CombatActionSystem) {
-    // Get valid movement tiles
-    validMoves := moveSys.GetValidMovementTiles(squadID)
-
-    // Player chooses destination (from UI)
-    targetPos := coords.LogicalPosition{X: 10, Y: 10}
-
-    // Validate and execute movement
-    if contains(validMoves, targetPos) {
-        err := moveSys.MoveSquad(squadID, targetPos)
-        if err != nil {
-            fmt.Printf("Movement failed: %v\n", err)
-            return
-        }
-    }
-
-    // Get valid attack targets
-    targets := combatSys.GetSquadsInRange(squadID)
-
-    // Player chooses target (from UI)
-    if len(targets) > 0 {
-        targetSquad := targets[0]
-
-        // Execute attack
-        err := combatSys.ExecuteAttackAction(squadID, targetSquad)
-        if err != nil {
-            fmt.Printf("Attack failed: %v\n", err)
-            return
-        }
-    }
-
-    fmt.Println("Turn complete!")
-}
-```
-
----
-
-### Example 5: Victory Condition Check
-
-```go
-// combat/victory.go
-
-package combat
-
-import (
-    "game_main/common"
-    "github.com/bytearena/ecs"
-)
-
-// VictoryCondition interface for extensible win conditions
-type VictoryCondition interface {
-    CheckVictory(manager *common.EntityManager) (won bool, winnerID ecs.EntityID)
-}
-
-// DefaultVictoryCondition checks if only one faction has squads remaining
-type DefaultVictoryCondition struct{}
-
-func (dvc *DefaultVictoryCondition) CheckVictory(manager *common.EntityManager) (bool, ecs.EntityID) {
-    // Get all factions
-    var factionIDs []ecs.EntityID
-    for _, result := range manager.World.Query(FactionTag) {
-        factionData := common.GetComponentType[*FactionData](result.Entity, FactionComponent)
-        factionIDs = append(factionIDs, factionData.FactionID)
-    }
-
-    // Count factions with squads
-    var activeFactions []ecs.EntityID
-    for _, factionID := range factionIDs {
-        squads := GetSquadsForFaction(factionID, manager)
-        if len(squads) > 0 {
-            activeFactions = append(activeFactions, factionID)
-        }
-    }
-
-    // Victory if only one faction remains
-    if len(activeFactions) == 1 {
-        return true, activeFactions[0]
-    }
-
-    return false, 0
-}
-```
-
----
-
 ## SUMMARY
 
-This implementation guide provides:
+This implementation plan provides:
 
 ### Architecture
 - 4 new ECS components for factions, turns, actions, positions
@@ -2150,4 +2278,4 @@ This implementation guide provides:
 
 ---
 
-**END OF IMPLEMENTATION GUIDE**
+**END OF IMPLEMENTATION PLAN**

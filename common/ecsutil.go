@@ -69,6 +69,22 @@ func (em *EntityManager) GetComponent(entityID ecs.EntityID, component *ecs.Comp
 	return nil, false
 }
 
+// findEntityByID finds an entity by its ID
+func findEntityByID(entityID ecs.EntityID, manager *common.EntityManager) *ecs.Entity {
+	// Use entity map if available (O(1))
+	if manager.EntityMap != nil {
+		return manager.EntityMap[entityID]
+	}
+
+	// Fallback: Search all entities (O(n))
+	for _, result := range manager.World.Query(ecs.BuildTag()) {
+		if result.Entity.GetID() == entityID {
+			return result.Entity
+		}
+	}
+	return nil
+}
+
 // GetComponentType retrieves a component of type T from an entity.
 // It provides type-safe component access with panic recovery for missing components.
 func GetComponentType[T any](entity *ecs.Entity, component *ecs.Component) T {
