@@ -5,6 +5,7 @@ import (
 	"game_main/combat"
 	"game_main/common"
 	"game_main/coords"
+	"game_main/graphics"
 	"game_main/squads"
 	"image/color"
 
@@ -733,8 +734,12 @@ func (cm *CombatMode) renderMovementTiles(screen *ebiten.Image) {
 	// Get player position for viewport centering
 	playerPos := *cm.context.PlayerData.Pos
 
-	// Create viewport centered on player
-	screenData := coords.NewScreenData()
+	// Create viewport centered on player using the initialized ScreenInfo
+	// Update screen dimensions from current screen buffer
+	screenData := graphics.ScreenInfo
+	screenData.ScreenWidth = screen.Bounds().Dx()
+	screenData.ScreenHeight = screen.Bounds().Dy()
+
 	manager := coords.NewCoordinateManager(screenData)
 	viewport := coords.NewViewport(manager, playerPos)
 
@@ -848,8 +853,9 @@ func (cm *CombatMode) handleMovementClick(mouseX, mouseY int) {
 	// Get player position for viewport centering
 	playerPos := *cm.context.PlayerData.Pos
 
-	// Create viewport centered on player
-	manager := coords.NewCoordinateManager(coords.NewScreenData())
+	// Create viewport centered on player using the initialized ScreenInfo
+	// graphics.ScreenInfo is updated every frame with current screen dimensions
+	manager := coords.NewCoordinateManager(graphics.ScreenInfo)
 	viewport := coords.NewViewport(manager, playerPos)
 
 	// Convert screen coordinates to logical coordinates
