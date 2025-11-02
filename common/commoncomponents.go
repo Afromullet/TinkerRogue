@@ -29,6 +29,13 @@ type Attributes struct {
 	Weapon     int // Damage Increase Modifier
 
 	// ========================================
+	// TURN-BASED COMBAT ATTRIBUTES
+	// ========================================
+
+	MovementSpeed int // Tiles per turn (default: 3)
+	AttackRange   int // Attack distance in tiles (default: 1 for melee)
+
+	// ========================================
 	// RUNTIME STATE (Not Derived)
 	// ========================================
 
@@ -40,13 +47,15 @@ type Attributes struct {
 // NewAttributes creates a new Attributes instance with calculated MaxHealth
 func NewAttributes(strength, dexterity, magic, leadership, armor, weapon int) Attributes {
 	attr := Attributes{
-		Strength:   strength,
-		Dexterity:  dexterity,
-		Magic:      magic,
-		Leadership: leadership,
-		Armor:      armor,
-		Weapon:     weapon,
-		CanAct:     true,
+		Strength:      strength,
+		Dexterity:     dexterity,
+		Magic:         magic,
+		Leadership:    leadership,
+		Armor:         armor,
+		Weapon:        weapon,
+		MovementSpeed: 3, // Default movement
+		AttackRange:   1, // Default melee
+		CanAct:        true,
 	}
 
 	// Calculate and cache MaxHealth
@@ -153,6 +162,26 @@ func (a *Attributes) GetUnitCapacity() int {
 // Stronger units cost more capacity to field
 func (a *Attributes) GetCapacityCost() float64 {
 	return float64(a.Strength+a.Weapon+a.Armor) / 5.0
+}
+
+// ========================================
+// DERIVED STAT METHODS (Turn-Based Combat)
+// ========================================
+
+// GetMovementSpeed returns tiles per turn with default
+func (a *Attributes) GetMovementSpeed() int {
+	if a.MovementSpeed <= 0 {
+		return 3 // Default movement speed
+	}
+	return a.MovementSpeed
+}
+
+// GetAttackRange returns attack distance with default
+func (a *Attributes) GetAttackRange() int {
+	if a.AttackRange <= 0 {
+		return 1 // Default melee range
+	}
+	return a.AttackRange
 }
 
 // ========================================

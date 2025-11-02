@@ -40,7 +40,7 @@ func (fm *FactionManager) AddSquadToFaction(factionID, squadID ecs.EntityID, pos
 		return fmt.Errorf("faction %d not found", factionID)
 	}
 
-	squad := squads.FindSquadByID(squadID, fm.manager)
+	squad := FindSquadByID(squadID, fm.manager)
 	if squad == nil {
 		return fmt.Errorf("squad %d not found", squadID)
 	}
@@ -52,6 +52,13 @@ func (fm *FactionManager) AddSquadToFaction(factionID, squadID ecs.EntityID, pos
 		Position:  position,
 		FactionID: factionID,
 	})
+
+	// Add PositionComponent to squad entity for compatibility with existing squad combat system
+	if !squad.HasComponent(common.PositionComponent) {
+		posPtr := new(coords.LogicalPosition)
+		*posPtr = position
+		squad.AddComponent(common.PositionComponent, posPtr)
+	}
 
 	// Register in PositionSystem
 	common.GlobalPositionSystem.AddEntity(squadID, position)
@@ -90,7 +97,7 @@ func (fm *FactionManager) RemoveSquadFromFaction(factionID, squadID ecs.EntityID
 	position := mapPos.Position
 
 	// Remove MapPositionData entity from ECS
-	fm.manager.World.RemoveEntity(mapPosEntity)
+	fm.manager.World.DisposeEntities(mapPosEntity)
 
 	// Remove from PositionSystem spatial grid
 	common.GlobalPositionSystem.RemoveEntity(squadID, position)

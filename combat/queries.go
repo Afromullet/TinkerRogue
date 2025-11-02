@@ -11,12 +11,7 @@ import (
 )
 
 func findEntityByID(entityID ecs.EntityID, manager *common.EntityManager) *ecs.Entity {
-	// Use entity map if available (O(1))
-	if manager.EntityMap != nil {
-		return manager.EntityMap[entityID]
-	}
-
-	// Fallback: Search all entities (O(n))
+	// Search all entities (O(n))
 	for _, result := range manager.World.Query(ecs.BuildTag()) {
 		if result.Entity.GetID() == entityID {
 			return result.Entity
@@ -201,7 +196,7 @@ func removeSquadFromMap(squadID ecs.EntityID, manager *common.EntityManager) err
 	position := mapPos.Position
 
 	// Remove from ECS
-	manager.World.RemoveEntity(mapPosEntity)
+	manager.World.DisposeEntities(mapPosEntity)
 
 	// Remove from PositionSystem spatial grid
 	common.GlobalPositionSystem.RemoveEntity(squadID, position)

@@ -113,6 +113,15 @@ func (ms *MovementSystem) MoveSquad(squadID ecs.EntityID, targetPos coords.Logic
 	mapPos := common.GetComponentType[*MapPositionData](mapPosEntity, MapPositionComponent)
 	mapPos.Position = targetPos
 
+	// Update squad's PositionComponent for compatibility with existing squad combat system
+	squadEntity := FindSquadByID(squadID, ms.manager)
+	if squadEntity != nil && squadEntity.HasComponent(common.PositionComponent) {
+		posPtr := common.GetComponentType[*coords.LogicalPosition](squadEntity, common.PositionComponent)
+		if posPtr != nil {
+			*posPtr = targetPos
+		}
+	}
+
 	// Update PositionSystem spatial grid (canonical source)
 	ms.posSystem.MoveEntity(squadID, currentPos, targetPos)
 
