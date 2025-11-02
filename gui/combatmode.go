@@ -724,6 +724,9 @@ func (cm *CombatMode) updateFactionDisplay() {
 }
 
 func (cm *CombatMode) Render(screen *ebiten.Image) {
+	// Render all squad highlights (show player vs enemy squads with different colors)
+	cm.renderAllSquadHighlights(screen)
+
 	// Render valid movement tiles if in move mode
 	if cm.inMoveMode && len(cm.validMoveTiles) > 0 {
 		cm.renderMovementTiles(screen)
@@ -762,10 +765,93 @@ func (cm *CombatMode) renderMovementTiles(screen *ebiten.Image) {
 	}
 }
 
+func (cm *CombatMode) renderAllSquadHighlights(screen *ebiten.Image) {
+	// Get player position and viewport
+	playerPos := *cm.context.PlayerData.Pos
+
+	screenData := graphics.ScreenInfo
+	screenData.ScreenWidth = screen.Bounds().Dx()
+	screenData.ScreenHeight = screen.Bounds().Dy()
+
+	manager := coords.NewCoordinateManager(screenData)
+	viewport := coords.NewViewport(manager, playerPos)
+
+	tileSize := screenData.TileSize
+	scaleFactor := screenData.ScaleFactor
+	borderThickness := 3
+	scaledTileSize := tileSize * scaleFactor
+
+	// Get current faction ID to determine player squads
+	currentFactionID := cm.turnManager.GetCurrentFaction()
+
+	// Query all squads on map
+	for _, result := range cm.context.ECSManager.World.Query(cm.context.ECSManager.Tags["mapposition"]) {
+		mapPosData := common.GetComponentType[*combat.MapPositionData](result.Entity, combat.MapPositionComponent)
+
+		// Skip destroyed squads
+		if squads.IsSquadDestroyed(mapPosData.SquadID, cm.context.ECSManager) {
+			continue
+		}
+
+		// Convert logical position to screen position
+		screenX, screenY := viewport.LogicalToScreen(mapPosData.Position)
+
+		// Determine highlight color based on faction and selection status
+		var highlightColor color.RGBA
+		var borderOpacity uint8 = 150
+
+		if mapPosData.SquadID == cm.selectedSquadID {
+			// Selected squad gets bright white border
+			highlightColor = color.RGBA{R: 255, G: 255, B: 255, A: 255}
+		} else if mapPosData.FactionID == currentFactionID {
+			// Player faction squads get blue border
+			highlightColor = color.RGBA{R: 0, G: 150, B: 255, A: borderOpacity}
+		} else {
+			// Enemy faction squads get red border
+			highlightColor = color.RGBA{R: 255, G: 0, B: 0, A: borderOpacity}
+		}
+
+		// Draw border rectangles
+		// Top border
+		topBorder := ebiten.NewImage(scaledTileSize, borderThickness)
+		topBorder.Fill(highlightColor)
+		op := &ebiten.DrawImageOptions{}
+		op.GeoM.Translate(screenX, screenY)
+		screen.DrawImage(topBorder, op)
+
+		// Bottom border
+		bottomBorder := ebiten.NewImage(scaledTileSize, borderThickness)
+		bottomBorder.Fill(highlightColor)
+		op = &ebiten.DrawImageOptions{}
+		op.GeoM.Translate(screenX, screenY+float64(scaledTileSize-borderThickness))
+		screen.DrawImage(bottomBorder, op)
+
+		// Left border
+		leftBorder := ebiten.NewImage(borderThickness, scaledTileSize)
+		leftBorder.Fill(highlightColor)
+		op = &ebiten.DrawImageOptions{}
+		op.GeoM.Translate(screenX, screenY)
+		screen.DrawImage(leftBorder, op)
+
+		// Right border
+		rightBorder := ebiten.NewImage(borderThickness, scaledTileSize)
+		rightBorder.Fill(highlightColor)
+		op = &ebiten.DrawImageOptions{}
+		op.GeoM.Translate(screenX+float64(scaledTileSize-borderThickness), screenY)
+		screen.DrawImage(rightBorder, op)
+	}
+}
+
 func (cm *CombatMode) HandleInput(inputState *InputState) bool {
-	// Handle mouse clicks for movement
-	if cm.inMoveMode && inputState.MouseButton == ebiten.MouseButtonLeft && inputState.MousePressed {
-		cm.handleMovementClick(inputState.MouseX, inputState.MouseY)
+	// Handle left mouse clicks
+	if inputState.MouseButton == ebiten.MouseButtonLeft && inputState.MousePressed {
+		if cm.inMoveMode {
+			// In move mode: click to move squad
+			cm.handleMovementClick(inputState.MouseX, inputState.MouseY)
+		} else {
+			// Not in move mode: click to select/attack squad
+			cm.handleSquadClick(inputState.MouseX, inputState.MouseY)
+		}
 		return true
 	}
 
@@ -894,6 +980,60 @@ func (cm *CombatMode) handleMovementClick(mouseX, mouseY int) {
 
 	// Update squad detail to show new movement remaining
 	cm.updateSquadDetail()
+}
+
+func (cm *CombatMode) handleSquadClick(mouseX, mouseY int) {
+	// Convert mouse coordinates to tile coordinates
+	playerPos := *cm.context.PlayerData.Pos
+	manager := coords.NewCoordinateManager(graphics.ScreenInfo)
+	viewport := coords.NewViewport(manager, playerPos)
+	clickedPos := viewport.ScreenToLogical(mouseX, mouseY)
+
+	// Find if a squad is at the clicked position
+	var clickedSquadID ecs.EntityID
+	var clickedFactionID ecs.EntityID
+
+	for _, result := range cm.context.ECSManager.World.Query(cm.context.ECSManager.Tags["mapposition"]) {
+		mapPos := common.GetComponentType[*combat.MapPositionData](result.Entity, combat.MapPositionComponent)
+
+		// Check if squad is at clicked position
+		if mapPos.Position.X == clickedPos.X && mapPos.Position.Y == clickedPos.Y {
+			// Make sure squad is not destroyed
+			if !squads.IsSquadDestroyed(mapPos.SquadID, cm.context.ECSManager) {
+				clickedSquadID = mapPos.SquadID
+				clickedFactionID = mapPos.FactionID
+				break
+			}
+		}
+	}
+
+	// If no squad was clicked, do nothing
+	if clickedSquadID == 0 {
+		return
+	}
+
+	currentFactionID := cm.turnManager.GetCurrentFaction()
+
+	// If it's the player's turn
+	if cm.isPlayerFaction(currentFactionID) {
+		// If clicking an allied squad: select it
+		if clickedFactionID == currentFactionID {
+			cm.selectSquad(clickedSquadID)
+			return
+		}
+
+		// If clicking an enemy squad: try to attack
+		if cm.selectedSquadID != 0 && clickedFactionID != currentFactionID {
+			cm.selectedTargetID = clickedSquadID
+			cm.addCombatLog(fmt.Sprintf("%s targets %s - Click to confirm attack",
+				cm.getSquadName(cm.selectedSquadID), cm.getSquadName(clickedSquadID)))
+
+			// If clicking the same target again: execute attack
+			if cm.selectedTargetID != 0 {
+				cm.executeAttack()
+			}
+		}
+	}
 }
 
 func (cm *CombatMode) updateUnitPositions(squadID ecs.EntityID, newSquadPos coords.LogicalPosition) {

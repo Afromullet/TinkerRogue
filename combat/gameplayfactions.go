@@ -34,11 +34,11 @@ func SetupGameplayFactions(manager *common.EntityManager, playerStartPos coords.
 		return fmt.Errorf("no units available - call squads.InitUnitTemplatesFromJSON() first")
 	}
 
-	// 6. Create player squads positioned around player start position
-	// Squad positions relative to player start (40, 45):
-	// - Squad 1: (-3, -3) from player
-	// - Squad 2: (+3, -3) from player
-	// - Squad 3: (0, +3) from player
+	// 6. Create player squads positioned above player (north side)
+	// Squad positions relative to player start:
+	// - Squad 1: (-3, -3) from player (northwest)
+	// - Squad 2: (+3, -3) from player (northeast)
+	// - Squad 3: (0, +3) from player (south - slightly behind)
 	playerSquadPositions := []coords.LogicalPosition{
 		{X: playerStartPos.X - 3, Y: playerStartPos.Y - 3},
 		{X: playerStartPos.X + 3, Y: playerStartPos.Y - 3},
@@ -62,12 +62,16 @@ func SetupGameplayFactions(manager *common.EntityManager, playerStartPos coords.
 		}
 	}
 
-	// 7. Create AI squads positioned away from player
-	// AI squads positioned around (55, 55) - about 15 tiles from player start
+	// 7. Create AI squads positioned below player (south side)
+	// AI squads are mirrored across the player, creating engagement distance
+	// Squad positions relative to player start:
+	// - Squad 1: (-3, +3) from player (southwest)
+	// - Squad 2: (+3, +3) from player (southeast)
+	// - Squad 3: (0, -3) from player (north - slightly ahead)
 	aiSquadPositions := []coords.LogicalPosition{
-		{X: 55, Y: 55},
-		{X: 52, Y: 58},
-		{X: 58, Y: 52},
+		{X: playerStartPos.X - 3, Y: playerStartPos.Y + 3},
+		{X: playerStartPos.X + 3, Y: playerStartPos.Y + 3},
+		{X: playerStartPos.X, Y: playerStartPos.Y - 3},
 	}
 
 	for i, pos := range aiSquadPositions {
