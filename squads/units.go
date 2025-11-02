@@ -62,9 +62,23 @@ func CreateUnitTemplates(monsterData entitytemplates.JSONMonster) (UnitTemplate,
 		return UnitTemplate{}, fmt.Errorf("invalid targetmode for %s: %w", monsterData.Name, err)
 	}
 
+	// Create entity configuration for the unit
+	entityConfig := entitytemplates.EntityConfig{
+		Type:      entitytemplates.EntityCreature,
+		Name:      monsterData.Name,
+		ImagePath: monsterData.ImageName,
+		AssetDir:  "../assets/creatures/",
+		Visible:   true,
+		Position:  nil, // Position will be set when squad is created
+		GameMap:   nil, // GameMap will be set when squad is placed
+	}
+
 	unit := UnitTemplate{
 		Name:           monsterData.Name,
 		Attributes:     monsterData.Attributes.NewAttributesFromJson(),
+		EntityType:     entitytemplates.EntityCreature,
+		EntityConfig:   entityConfig,
+		EntityData:     monsterData,
 		GridRow:        0,
 		GridCol:        0,
 		GridWidth:      monsterData.Width,

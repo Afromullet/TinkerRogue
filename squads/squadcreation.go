@@ -298,6 +298,14 @@ func CreateSquadFromTemplate(
 			template.EntityData,
 		)
 
+		// Update unit's world position to match squad position
+		// (CreateEntityFromTemplate sets position to 0,0 by default)
+		// Re-add PositionComponent with correct world position
+		unitEntity.AddComponent(common.PositionComponent, &coords.LogicalPosition{
+			X: worldPos.X,
+			Y: worldPos.Y,
+		})
+
 		// Add squad membership (uses ID, not entity pointer)
 		unitEntity.AddComponent(SquadMemberComponent, &SquadMemberData{
 			SquadID: squadID, // ✅ Native entity ID

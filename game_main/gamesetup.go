@@ -1,6 +1,7 @@
 package main
 
 import (
+	"game_main/combat"
 	"game_main/common"
 	"game_main/entitytemplates"
 	"game_main/graphics"
@@ -60,6 +61,11 @@ func SetupNewGame(g *Game) {
 		log.Fatalf("Failed to initialize squad system: %v", err)
 	}
 
+	// 10. Setup gameplay factions and squads for testing
+	if err := SetupGameplayFactions(&g.em, &g.playerData); err != nil {
+		log.Fatalf("Failed to setup gameplay factions: %v", err)
+	}
+
 }
 
 // SetupSquadSystem initializes the squad combat system.
@@ -70,12 +76,17 @@ func SetupSquadSystem(manager *common.EntityManager) error {
 	}
 
 	// Create test squads if in debug mode
-
 	if err := squads.CreateDummySquadsForTesting(manager); err != nil {
 		return err
 	}
 
 	return nil
+}
+
+// SetupGameplayFactions creates two factions with squads for gameplay testing.
+// This sets up player and AI factions with 3 squads each positioned on the map.
+func SetupGameplayFactions(manager *common.EntityManager, playerData *common.PlayerData) error {
+	return combat.SetupGameplayFactions(manager, *playerData.Pos)
 }
 
 // SetupTestData creates test items and content for debugging.
