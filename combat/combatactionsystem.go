@@ -78,6 +78,15 @@ func (cas *CombatActionSystem) ExecuteAttackAction(attackerID, defenderID ecs.En
 
 	logCombatResult(result)
 
+	// Check abilities for both squads after combat
+	// Attacker abilities: might trigger based on damage dealt, turn count, etc.
+	squads.CheckAndTriggerAbilities(attackerID, cas.manager)
+
+	// Defender abilities: might trigger healing if HP is low, or other defensive abilities
+	if !squads.IsSquadDestroyed(defenderID, cas.manager) {
+		squads.CheckAndTriggerAbilities(defenderID, cas.manager)
+	}
+
 	return nil
 }
 

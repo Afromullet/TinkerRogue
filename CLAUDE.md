@@ -34,7 +34,7 @@
 
 ---
 
-## Squad System Status: 85% Complete (2358 LOC)
+## Squad System Status: 95% Complete (2675 LOC)
 
 **Operational NOW:**
 - ✅ All 8 ECS components with perfect data/logic separation
@@ -42,14 +42,18 @@
 - ✅ Combat system - ExecuteSquadAttack with hit/dodge/crit/cover mechanics
 - ✅ Visualization - Text-based 3x3 grid rendering
 - ✅ Testing infrastructure - Comprehensive test suite exists
+- ✅ **Ability System (317 LOC)** - Auto-triggering leader abilities fully integrated (2025-11-02)
+  - 4 abilities: Rally, Heal, Battle Cry, Fireball
+  - 5 trigger types: HP threshold, turn count, enemy count, morale, combat start
+  - Integrated with turn manager and combat system
+  - Cooldown and once-per-combat tracking
 
-**Remaining Work (12-16 hours):**
-- ❌ Ability System (8-10h) - Auto-triggering leader abilities (abilities.go doesn't exist)
-- ⚠️ Formation Presets (4-6h) - Balanced/Defensive/Offensive/Ranged templates
+**Remaining Work (4-6 hours):**
+- ⚠️ Formation Presets (4-6h) - Balanced/Defensive/Offensive/Ranged templates (stubs exist)
 
-**Key Achievement:** Squad combat fully operational and tested in isolation (no map dependency)
+**Key Achievement:** Squad combat fully operational with abilities triggering automatically
 
-**Timeline:** 2-3 workdays for completion + map integration
+**Timeline:** Formation presets are the final piece before 100% completion
 
 ---
 
@@ -71,7 +75,10 @@ The squad and inventory systems demonstrate perfect ECS architecture. Apply thes
 - ⚠️ Equipment system still uses entity pointers (scheduled for refactoring)
 
 **Reference Implementations:**
-- `squads/*.go` - Perfect ECS: 2358 LOC, 8 components, 7 query functions, system-based combat
+- `squads/*.go` - Perfect ECS: 2675 LOC, 8 components, 7 query functions, system-based combat + abilities
+  - `squadabilities.go` - 317 LOC, data-driven ability system with auto-triggers
+  - `squadcombat.go` - 387 LOC, row-based combat with multi-cell units
+  - `squadqueries.go` - 140 LOC, query functions for ECS data access
 - `gear/Inventory.go` - Perfect ECS: 241 LOC, pure data component, 9 system functions
 - `gear/items.go` - Perfect ECS: 177 LOC, EntityID-based relationships
 - `gear/gearutil.go` - Perfect ECS: 115 LOC, query-based entity lookup
@@ -87,9 +94,9 @@ The squad and inventory systems demonstrate perfect ECS architecture. Apply thes
 - Spawning system improvements (Entity Template System unblocked this)
 
 ### Blocked/Waiting
-- **Squad abilities & formations** (12-16h remaining)
-- **Balance/difficulty** (needs squad combat complete)
-- **Map integration for squads** (4-6h after abilities done)
+- **Squad formations** (4-6h remaining) - Formation presets need implementation
+- **Balance/difficulty** (needs formation presets complete)
+- **Map integration for squads** (Complete! Squads already deployed and functional on map)
 
 ---
 

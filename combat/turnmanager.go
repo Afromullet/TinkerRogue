@@ -3,6 +3,7 @@ package combat
 import (
 	"fmt"
 	"game_main/common"
+	"game_main/squads"
 
 	"github.com/bytearena/ecs"
 )
@@ -31,14 +32,18 @@ func (tm *TurnManager) InitializeCombat(factionIDs []ecs.EntityID) error {
 		CombatActive:     true,
 	})
 
+	// Create action states and check combat-start abilities for all squads
 	for _, factionID := range factionIDs {
-		squads := GetSquadsForFaction(factionID, tm.manager)
-		for _, squadID := range squads {
+		factionSquads := GetSquadsForFaction(factionID, tm.manager)
+		for _, squadID := range factionSquads {
 			tm.createActionStateForSquad(squadID)
+
+			// Check for combat-start abilities (like Battle Cry)
+			squads.CheckAndTriggerAbilities(squadID, tm.manager)
 		}
 	}
 
-	//Reset actions for first faction
+	//Reset actions for first faction (this will also check abilities again)
 	firstFaction := turnOrder[0]
 	tm.ResetSquadActions(firstFaction)
 
@@ -56,12 +61,12 @@ func (tm *TurnManager) createActionStateForSquad(squadID ecs.EntityID) {
 }
 
 func (tm *TurnManager) ResetSquadActions(factionID ecs.EntityID) error {
-	squads := GetSquadsForFaction(factionID, tm.manager)
+	factionSquads := GetSquadsForFaction(factionID, tm.manager)
 
 	//TODO: Do we really need to create a new system, or can we just reset the existing system?
 	moveSys := NewMovementSystem(tm.manager, common.GlobalPositionSystem)
 
-	for _, squadID := range squads {
+	for _, squadID := range factionSquads {
 		actionEntity := findActionStateEntity(squadID, tm.manager)
 		if actionEntity == nil {
 			continue
@@ -75,6 +80,9 @@ func (tm *TurnManager) ResetSquadActions(factionID ecs.EntityID) error {
 		// Initialize MovementRemaining from squad speed
 		squadSpeed := moveSys.GetSquadMovementSpeed(squadID)
 		actionState.MovementRemaining = squadSpeed
+
+		// Check and trigger abilities at start of turn
+		squads.CheckAndTriggerAbilities(squadID, tm.manager)
 	}
 
 	return nil
