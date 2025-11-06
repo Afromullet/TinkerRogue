@@ -7,6 +7,10 @@ import (
 	"github.com/bytearena/ecs"
 )
 
+var (
+	InventoryComponent *ecs.Component
+)
+
 // This is used to display the inventory inside of windows for the UI
 // EbitenUI needs to build a list for display - this holds the list elements
 type InventoryListEntry struct {

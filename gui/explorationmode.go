@@ -46,29 +46,23 @@ func (em *ExplorationMode) Initialize(ctx *UIContext) error {
 	em.rootContainer = widget.NewContainer()
 	em.ui.Container = em.rootContainer
 
+	// Build stats panel (top-right)
+	em.statsPanel, em.statsTextArea = em.panelBuilders.BuildStatsPanel(
+		em.context.PlayerData.PlayerAttributes().DisplayString(),
+	)
+	em.rootContainer.AddChild(em.statsPanel)
+
+	// Build message log (bottom-right)
+	var logContainer *widget.Container
+	logContainer, em.messageLog = em.panelBuilders.BuildMessageLog()
+	em.rootContainer.AddChild(logContainer)
+
 	// Build exploration-specific UI layout
-	em.buildStatsPanel()
-	em.buildMessageLog()
 	em.buildQuickInventory()
 	em.buildInfoWindow()
 
 	em.initialized = true
 	return nil
-}
-
-func (em *ExplorationMode) buildStatsPanel() {
-	// Use panel builder for stats panel
-	em.statsPanel, em.statsTextArea = em.panelBuilders.BuildStatsPanel(
-		em.context.PlayerData.PlayerAttributes().DisplayString(),
-	)
-	em.rootContainer.AddChild(em.statsPanel)
-}
-
-func (em *ExplorationMode) buildMessageLog() {
-	// Use panel builder for message log
-	var logContainer *widget.Container
-	logContainer, em.messageLog = em.panelBuilders.BuildMessageLog()
-	em.rootContainer.AddChild(logContainer)
 }
 
 func (em *ExplorationMode) buildQuickInventory() {

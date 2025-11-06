@@ -91,17 +91,6 @@ func GetComponentType[T any](entity *ecs.Entity, component *ecs.Component) T {
 
 }
 
-// DistanceBetween calculates the Chebyshev distance between two entities.
-// Both entities must have position components for this function to work correctly.
-func DistanceBetween(e1 *ecs.Entity, e2 *ecs.Entity) int {
-
-	pos1 := GetPosition(e1)
-	pos2 := GetPosition(e2)
-
-	return pos1.ChebyshevDistance(pos2)
-
-}
-
 // GetAttributes returns the Attributes component from an entity.
 // This is a convenience function for frequently accessed components.
 func GetAttributes(e *ecs.Entity) *Attributes {

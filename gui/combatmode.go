@@ -79,74 +79,47 @@ func (cm *CombatMode) Initialize(ctx *UIContext) error {
 	)
 	cm.ui.Container = cm.rootContainer
 
-	// Build combat UI layout
-	cm.buildTurnOrderPanel()
-	cm.buildFactionInfoPanel()
-	cm.buildSquadListPanel()
-	cm.buildSquadDetailPanel()
-	cm.buildCombatLog()
-	cm.buildActionButtons()
-
-	return nil
-}
-
-func (cm *CombatMode) buildTurnOrderPanel() {
-	// Use panel builder for top-center panel
+	// Build turn order panel (top-center)
 	cm.turnOrderPanel = cm.panelBuilders.BuildTopCenterPanel(0.4, 0.08, 0.01)
-
-	// Dynamic turn order display (updated in Update())
 	cm.turnOrderLabel = widget.NewText(
 		widget.TextOpts.Text("Initializing combat...", LargeFace, color.White),
 	)
 	cm.turnOrderPanel.AddChild(cm.turnOrderLabel)
-
 	cm.rootContainer.AddChild(cm.turnOrderPanel)
-}
 
-func (cm *CombatMode) buildFactionInfoPanel() {
-	// Use panel builder for top-left panel
+	// Build faction info panel (top-left)
 	cm.factionInfoPanel = cm.panelBuilders.BuildTopLeftPanel(0.15, 0.12, 0.01, 0.01)
-
-	// Dynamic faction info (updated in Update())
 	cm.factionInfoText = widget.NewText(
 		widget.TextOpts.Text("Faction Info", SmallFace, color.White),
 	)
 	cm.factionInfoPanel.AddChild(cm.factionInfoText)
-
 	cm.rootContainer.AddChild(cm.factionInfoPanel)
-}
 
-func (cm *CombatMode) buildSquadListPanel() {
-	// Use panel builder for left-side panel
+	// Build squad list panel (left-side)
 	cm.squadListPanel = cm.panelBuilders.BuildLeftSidePanel(0.15, 0.5, 0.01, widget.AnchorLayoutPositionCenter)
-
-	// Squad list will be populated dynamically in updateSquadList()
 	listLabel := widget.NewText(
 		widget.TextOpts.Text("Your Squads:", SmallFace, color.White),
 	)
 	cm.squadListPanel.AddChild(listLabel)
-
 	cm.rootContainer.AddChild(cm.squadListPanel)
-}
 
-func (cm *CombatMode) buildSquadDetailPanel() {
-	// Use panel builder for left-bottom panel
+	// Build squad detail panel (left-bottom)
 	cm.squadDetailPanel = cm.panelBuilders.BuildLeftBottomPanel(0.15, 0.25, 0.01, 0.15)
-
-	// Squad details will be updated dynamically
 	cm.squadDetailText = widget.NewText(
 		widget.TextOpts.Text("Select a squad\nto view details", SmallFace, color.White),
 	)
 	cm.squadDetailPanel.AddChild(cm.squadDetailText)
-
 	cm.rootContainer.AddChild(cm.squadDetailPanel)
-}
 
-func (cm *CombatMode) buildCombatLog() {
-	// Use panel builder for right-side panel
+	// Build combat log (right-side)
 	var logContainer *widget.Container
 	logContainer, cm.combatLogArea = cm.panelBuilders.BuildRightSidePanel("Combat started!\n")
 	cm.rootContainer.AddChild(logContainer)
+
+	// Build combat UI layout
+	cm.buildActionButtons()
+
+	return nil
 }
 
 func (cm *CombatMode) buildActionButtons() {

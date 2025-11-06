@@ -60,8 +60,16 @@ func (im *InventoryMode) Initialize(ctx *UIContext) error {
 	// Build inventory UI
 	im.buildFilterButtons()
 	im.buildItemList()
-	im.buildDetailPanel()
-	im.buildCloseButton()
+
+	// Build detail panel (right side)
+	im.detailPanel, im.detailTextArea = im.panelBuilders.BuildDetailPanel(DetailPanelConfig{
+		InitialText: "Select an item to view details",
+	})
+	im.rootContainer.AddChild(im.detailPanel)
+
+	// Build close button (bottom-right)
+	closeButtonContainer := im.panelBuilders.BuildCloseButton("exploration", "Close (ESC)")
+	im.rootContainer.AddChild(closeButtonContainer)
 
 	return nil
 }
@@ -192,20 +200,6 @@ func (im *InventoryMode) buildItemList() {
 	})
 
 	im.rootContainer.AddChild(im.itemList)
-}
-
-func (im *InventoryMode) buildDetailPanel() {
-	// Use panel builder for detail panel
-	im.detailPanel, im.detailTextArea = im.panelBuilders.BuildDetailPanel(DetailPanelConfig{
-		InitialText: "Select an item to view details",
-	})
-	im.rootContainer.AddChild(im.detailPanel)
-}
-
-func (im *InventoryMode) buildCloseButton() {
-	// Use panel builder for close button
-	closeButtonContainer := im.panelBuilders.BuildCloseButton("exploration", "Close (ESC)")
-	im.rootContainer.AddChild(closeButtonContainer)
 }
 
 func (im *InventoryMode) refreshItemList() {

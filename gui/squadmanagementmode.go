@@ -63,17 +63,10 @@ func (smm *SquadManagementMode) Initialize(ctx *UIContext) error {
 	smm.ui.Container = smm.rootContainer
 
 	// Build close button (bottom-center)
-	smm.buildCloseButton()
+	closeButtonContainer := smm.panelBuilders.BuildCloseButton("exploration", "Close (ESC)")
+	smm.ui.Container.AddChild(closeButtonContainer)
 
 	return nil
-}
-
-func (smm *SquadManagementMode) buildCloseButton() {
-	// Use panel builder for close button
-	closeButtonContainer := smm.panelBuilders.BuildCloseButton("exploration", "Close (ESC)")
-
-	// Add to root (not grid layout, so it floats)
-	smm.ui.Container.AddChild(closeButtonContainer)
 }
 
 func (smm *SquadManagementMode) Enter(fromMode UIMode) error {

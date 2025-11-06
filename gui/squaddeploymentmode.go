@@ -60,7 +60,13 @@ func (sdm *SquadDeploymentMode) Initialize(ctx *UIContext) error {
 
 	// Build UI components
 	sdm.buildSquadListPanel()
-	sdm.buildInstructionText()
+
+	// Build instruction text (top-center)
+	sdm.instructionText = sdm.panelBuilders.BuildTopInstructionText(TopInstructionTextConfig{
+		Text: "Select a squad from the list, then click on the map to place it",
+	})
+	sdm.rootContainer.AddChild(sdm.instructionText)
+
 	sdm.buildActionButtons()
 
 	return nil
@@ -89,15 +95,6 @@ func (sdm *SquadDeploymentMode) buildSquadListPanel() {
 	})
 
 	sdm.rootContainer.AddChild(sdm.squadListPanel)
-}
-
-func (sdm *SquadDeploymentMode) buildInstructionText() {
-	// Use panel builder for instruction text
-	sdm.instructionText = sdm.panelBuilders.BuildTopInstructionText(TopInstructionTextConfig{
-		Text: "Select a squad from the list, then click on the map to place it",
-	})
-
-	sdm.rootContainer.AddChild(sdm.instructionText)
 }
 
 func (sdm *SquadDeploymentMode) buildActionButtons() {

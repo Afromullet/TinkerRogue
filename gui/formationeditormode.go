@@ -44,22 +44,18 @@ func (fem *FormationEditorMode) Initialize(ctx *UIContext) error {
 	fem.ui.Container = fem.rootContainer
 
 	// Build formation editor UI
-	fem.buildGridEditor()
-	fem.buildUnitPalette()
-	fem.buildActionButtons()
-
-	return nil
-}
-
-func (fem *FormationEditorMode) buildGridEditor() {
-	// Use panel builder for 3x3 grid editor
+	// Build 3x3 grid editor (center)
 	fem.gridContainer, fem.gridCells = fem.panelBuilders.BuildGridEditor(GridEditorConfig{
 		OnCellClick: func(row, col int) {
 			fem.onCellClicked(row, col)
 		},
 	})
-
 	fem.rootContainer.AddChild(fem.gridContainer)
+
+	fem.buildUnitPalette()
+	fem.buildActionButtons()
+
+	return nil
 }
 
 func (fem *FormationEditorMode) buildUnitPalette() {
