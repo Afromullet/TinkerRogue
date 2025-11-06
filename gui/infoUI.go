@@ -78,13 +78,13 @@ func CreateInfoUI(ecsmanager *common.EntityManager, ui *ebitenui.UI) InfoUI {
 
 	infoUI := InfoUI{}
 	// Holds the widget that displays the selected items to the player
-	infoUI.InfoOptionsContainer = widget.NewContainer(
-		widget.ContainerOpts.BackgroundImage(defaultWidgetColor),
-		widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
-		widget.ContainerOpts.Layout(widget.NewRowLayout(
+	infoUI.InfoOptionsContainer = CreatePanelWithConfig(PanelConfig{
+		Background: defaultWidgetColor,
+		Layout: widget.NewRowLayout(
 			widget.RowLayoutOpts.Direction(widget.DirectionVertical),
 			widget.RowLayoutOpts.Spacing(10),
-		)))
+		),
+	})
 
 	//The window will open whenever a player right clicks on a tile
 	infoUI.InfoOptionsWindow = widget.NewWindow(
@@ -112,13 +112,13 @@ func CreateInfoUI(ecsmanager *common.EntityManager, ui *ebitenui.UI) InfoUI {
 	//addInfoListHandler(infoUI.InfoOptionList, infoUI.ecsmnager, &infoUI)
 	infoUI.InfoOptionsContainer.AddChild(infoUI.InfoOptionList)
 
-	infoUI.DisplayInfoContainer = widget.NewContainer(
-		widget.ContainerOpts.BackgroundImage(defaultWidgetColor),
-		widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
-		widget.ContainerOpts.Layout(widget.NewRowLayout(
+	infoUI.DisplayInfoContainer = CreatePanelWithConfig(PanelConfig{
+		Background: defaultWidgetColor,
+		Layout: widget.NewRowLayout(
 			widget.RowLayoutOpts.Direction(widget.DirectionVertical),
 			widget.RowLayoutOpts.Spacing(10),
-		)))
+		),
+	})
 
 	//The window will open whenever a player right clicks on a tile
 	infoUI.DisplayInfoWindow = widget.NewWindow(
@@ -142,7 +142,11 @@ func CreateInfoUI(ecsmanager *common.EntityManager, ui *ebitenui.UI) InfoUI {
 		}),
 	)
 
-	infoUI.DisplayInfoTextArea = CreateTextArea(300, 300)
+	infoUI.DisplayInfoTextArea = CreateTextAreaWithConfig(TextAreaConfig{
+		MinWidth:  300,
+		MinHeight: 300,
+		FontColor: color.White,
+	})
 
 	infoUI.DisplayInfoContainer.AddChild(infoUI.DisplayInfoTextArea)
 

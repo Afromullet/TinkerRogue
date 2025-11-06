@@ -32,6 +32,9 @@ type SquadBuilderMode struct {
 	currentSquadName string
 	selectedUnitIdx  int          // Index in Units array
 	currentLeaderID  ecs.EntityID // Currently designated leader
+
+	// Panel builders for UI composition
+	panelBuilders *PanelBuilders
 }
 
 // GridCellButton wraps a button with squad grid metadata
@@ -53,6 +56,7 @@ func NewSquadBuilderMode(modeManager *UIModeManager) *SquadBuilderMode {
 func (sbm *SquadBuilderMode) Initialize(ctx *UIContext) error {
 	sbm.context = ctx
 	sbm.layout = NewLayoutConfig(ctx)
+	sbm.panelBuilders = NewPanelBuilders(sbm.layout, sbm.modeManager)
 
 	sbm.ui = &ebitenui.UI{}
 	sbm.rootContainer = widget.NewContainer(
@@ -72,53 +76,29 @@ func (sbm *SquadBuilderMode) Initialize(ctx *UIContext) error {
 }
 
 func (sbm *SquadBuilderMode) buildGridEditor() {
-	// Center 3x3 grid for squad formation
-	sbm.gridContainer = widget.NewContainer(
-		widget.ContainerOpts.BackgroundImage(PanelRes.image),
-		widget.ContainerOpts.Layout(widget.NewGridLayout(
-			widget.GridLayoutOpts.Columns(3),
-			widget.GridLayoutOpts.Stretch([]bool{true, true, true}, []bool{true, true, true}),
-			widget.GridLayoutOpts.Spacing(5, 5),
-			widget.GridLayoutOpts.Padding(widget.Insets{
-				Left: 15, Right: 15, Top: 15, Bottom: 15,
-			}),
-		)),
-	)
+	// Use panel builder for 3x3 grid editor
+	var buttons [3][3]*widget.Button
+	sbm.gridContainer, buttons = sbm.panelBuilders.BuildGridEditor(GridEditorConfig{
+		CellTextFormat: func(row, col int) string {
+			return fmt.Sprintf("Empty\n[%d,%d]", row, col)
+		},
+		OnCellClick: func(row, col int) {
+			sbm.onCellClicked(row, col)
+		},
+		Padding: widget.Insets{Left: 15, Right: 15, Top: 15, Bottom: 15},
+	})
 
-	// Create 3x3 grid buttons
+	// Wrap buttons in GridCellButton structs
 	for row := 0; row < 3; row++ {
 		for col := 0; col < 3; col++ {
-			cellRow, cellCol := row, col // Capture for closure
-
-			cellBtn := widget.NewButton(
-				widget.ButtonOpts.Image(buttonImage),
-				widget.ButtonOpts.Text(fmt.Sprintf("Empty\n[%d,%d]", row, col), SmallFace, &widget.ButtonTextColor{
-					Idle: color.NRGBA{0xdf, 0xf4, 0xff, 0xff},
-				}),
-				widget.ButtonOpts.TextPadding(widget.Insets{
-					Left: 8, Right: 8, Top: 8, Bottom: 8,
-				}),
-				widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
-					sbm.onCellClicked(cellRow, cellCol)
-				}),
-			)
-
 			sbm.gridCells[row][col] = &GridCellButton{
-				button:    cellBtn,
+				button:    buttons[row][col],
 				row:       row,
 				col:       col,
 				unitID:    0,
 				unitIndex: -1,
 			}
-
-			sbm.gridContainer.AddChild(cellBtn)
 		}
-	}
-
-	// Center positioning
-	sbm.gridContainer.GetWidget().LayoutData = widget.AnchorLayoutData{
-		HorizontalPosition: widget.AnchorLayoutPositionCenter,
-		VerticalPosition:   widget.AnchorLayoutPositionCenter,
 	}
 
 	sbm.rootContainer.AddChild(sbm.gridContainer)
@@ -136,55 +116,39 @@ func (sbm *SquadBuilderMode) buildUnitPalette() {
 		entries[i+1] = fmt.Sprintf("%s (%s)", unit.Name, unit.Role.String())
 	}
 
-	sbm.unitPalette = widget.NewList(
-		widget.ListOpts.Entries(entries),
-		widget.ListOpts.EntryLabelFunc(func(e interface{}) string {
+	sbm.unitPalette = CreateListWithConfig(ListConfig{
+		Entries:    entries,
+		MinWidth:   listWidth,
+		MinHeight:  listHeight,
+		EntryLabelFunc: func(e interface{}) string {
 			return e.(string)
-		}),
-		widget.ListOpts.ScrollContainerOpts(
-			widget.ScrollContainerOpts.Image(ListRes.image),
-		),
-		widget.ListOpts.SliderOpts(
-			widget.SliderOpts.Images(ListRes.track, ListRes.handle),
-		),
-		widget.ListOpts.EntryColor(ListRes.entry),
-		widget.ListOpts.EntryFontFace(ListRes.face),
-		widget.ListOpts.ContainerOpts(
-			widget.ContainerOpts.WidgetOpts(
-				widget.WidgetOpts.MinSize(listWidth, listHeight),
-			),
-		),
-	)
-
-	// Add selection handler for unit palette
-	sbm.unitPalette.EntrySelectedEvent.AddHandler(func(args interface{}) {
-		a := args.(*widget.ListEntrySelectedEventArgs)
-		// Cast entry back to determine which entry was selected
-		if entryStr, ok := a.Entry.(string); ok {
-			// Find the index based on the string
-			for i, unit := range squads.Units {
-				expectedStr := fmt.Sprintf("%s (%s)", unit.Name, unit.Role.String())
-				if entryStr == expectedStr {
-					sbm.selectedUnitIdx = i
-					sbm.updateUnitDetails()
-					return
-				}
-			}
-			// If we get here, it's the "Remove Unit" entry
-			sbm.selectedUnitIdx = -1
-			sbm.updateUnitDetails()
-		}
-	})
-
-	// Position list widget
-	sbm.unitPalette.GetWidget().LayoutData = widget.AnchorLayoutData{
-		HorizontalPosition: widget.AnchorLayoutPositionStart,
-		VerticalPosition:   widget.AnchorLayoutPositionCenter,
-		Padding: widget.Insets{
-			Left: 20,
-			Top:  20,
 		},
-	}
+		OnEntrySelected: func(entry interface{}) {
+			// Cast entry back to determine which entry was selected
+			if entryStr, ok := entry.(string); ok {
+				// Find the index based on the string
+				for i, unit := range squads.Units {
+					expectedStr := fmt.Sprintf("%s (%s)", unit.Name, unit.Role.String())
+					if entryStr == expectedStr {
+						sbm.selectedUnitIdx = i
+						sbm.updateUnitDetails()
+						return
+					}
+				}
+				// If we get here, it's the "Remove Unit" entry
+				sbm.selectedUnitIdx = -1
+				sbm.updateUnitDetails()
+			}
+		},
+		LayoutData: widget.AnchorLayoutData{
+			HorizontalPosition: widget.AnchorLayoutPositionStart,
+			VerticalPosition:   widget.AnchorLayoutPositionCenter,
+			Padding: widget.Insets{
+				Left: 20,
+				Top:  20,
+			},
+		},
+	})
 
 	sbm.rootContainer.AddChild(sbm.unitPalette)
 }
@@ -305,41 +269,41 @@ func (sbm *SquadBuilderMode) buildActionButtons() {
 	)
 
 	// Create Squad button
-	createBtn := CreateButton("Create Squad")
-	createBtn.Configure(
-		widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+	createBtn := CreateButtonWithConfig(ButtonConfig{
+		Text: "Create Squad",
+		OnClick: func() {
 			sbm.onCreateSquad()
-		}),
-	)
+		},
+	})
 	buttonContainer.AddChild(createBtn)
 
 	// Clear Grid button
-	clearBtn := CreateButton("Clear Grid")
-	clearBtn.Configure(
-		widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+	clearBtn := CreateButtonWithConfig(ButtonConfig{
+		Text: "Clear Grid",
+		OnClick: func() {
 			sbm.onClearGrid()
-		}),
-	)
+		},
+	})
 	buttonContainer.AddChild(clearBtn)
 
 	// Toggle Leader button
-	toggleLeaderBtn := CreateButton("Toggle Leader (L)")
-	toggleLeaderBtn.Configure(
-		widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+	toggleLeaderBtn := CreateButtonWithConfig(ButtonConfig{
+		Text: "Toggle Leader (L)",
+		OnClick: func() {
 			sbm.onToggleLeader()
-		}),
-	)
+		},
+	})
 	buttonContainer.AddChild(toggleLeaderBtn)
 
 	// Close button
-	closeBtn := CreateButton("Close (ESC)")
-	closeBtn.Configure(
-		widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+	closeBtn := CreateButtonWithConfig(ButtonConfig{
+		Text: "Close (ESC)",
+		OnClick: func() {
 			if exploreMode, exists := sbm.modeManager.GetMode("exploration"); exists {
 				sbm.modeManager.RequestTransition(exploreMode, "Close Squad Builder")
 			}
-		}),
-	)
+		},
+	})
 	buttonContainer.AddChild(closeBtn)
 
 	// Position at bottom center

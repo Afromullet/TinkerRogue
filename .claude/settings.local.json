@@ -3,7 +3,8 @@
     "allow": [
       "Bash(go build:*)",
       "WebFetch(domain:github.com)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(go test:*)"
     ],
     "deny": [],
     "ask": []

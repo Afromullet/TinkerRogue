@@ -2,7 +2,6 @@ package gui
 
 import (
 	"fmt"
-	"image/color"
 
 	"github.com/ebitenui/ebitenui"
 	"github.com/ebitenui/ebitenui/widget"
@@ -22,6 +21,9 @@ type FormationEditorMode struct {
 	actionButtons *widget.Container
 
 	gridCells [3][3]*widget.Button // 3x3 grid of cells
+
+	// Panel builders for UI composition
+	panelBuilders *PanelBuilders
 }
 
 func NewFormationEditorMode(modeManager *UIModeManager) *FormationEditorMode {
@@ -33,6 +35,7 @@ func NewFormationEditorMode(modeManager *UIModeManager) *FormationEditorMode {
 func (fem *FormationEditorMode) Initialize(ctx *UIContext) error {
 	fem.context = ctx
 	fem.layout = NewLayoutConfig(ctx)
+	fem.panelBuilders = NewPanelBuilders(fem.layout, fem.modeManager)
 
 	fem.ui = &ebitenui.UI{}
 	fem.rootContainer = widget.NewContainer(
@@ -49,46 +52,12 @@ func (fem *FormationEditorMode) Initialize(ctx *UIContext) error {
 }
 
 func (fem *FormationEditorMode) buildGridEditor() {
-	// Center 3x3 grid editor
-	fem.gridContainer = widget.NewContainer(
-		widget.ContainerOpts.BackgroundImage(PanelRes.image),
-		widget.ContainerOpts.Layout(widget.NewGridLayout(
-			widget.GridLayoutOpts.Columns(3),
-			widget.GridLayoutOpts.Stretch([]bool{true, true, true}, []bool{true, true, true}),
-			widget.GridLayoutOpts.Spacing(5, 5),
-			widget.GridLayoutOpts.Padding(widget.Insets{
-				Left: 10, Right: 10, Top: 10, Bottom: 10,
-			}),
-		)),
-	)
-
-	// Create 3x3 grid buttons
-	for row := 0; row < 3; row++ {
-		for col := 0; col < 3; col++ {
-			cellRow, cellCol := row, col // Capture for closure
-			cellBtn := widget.NewButton(
-				widget.ButtonOpts.Image(buttonImage),
-				widget.ButtonOpts.Text(fmt.Sprintf("[%d,%d]", row, col), SmallFace, &widget.ButtonTextColor{
-					Idle: color.NRGBA{0xdf, 0xf4, 0xff, 0xff},
-				}),
-				widget.ButtonOpts.TextPadding(widget.Insets{
-					Left: 10, Right: 10, Top: 10, Bottom: 10,
-				}),
-				widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
-					fem.onCellClicked(cellRow, cellCol)
-				}),
-			)
-
-			fem.gridCells[row][col] = cellBtn
-			fem.gridContainer.AddChild(cellBtn)
-		}
-	}
-
-	// Add LayoutData for center positioning
-	fem.gridContainer.GetWidget().LayoutData = widget.AnchorLayoutData{
-		HorizontalPosition: widget.AnchorLayoutPositionCenter,
-		VerticalPosition:   widget.AnchorLayoutPositionCenter,
-	}
+	// Use panel builder for 3x3 grid editor
+	fem.gridContainer, fem.gridCells = fem.panelBuilders.BuildGridEditor(GridEditorConfig{
+		OnCellClick: func(row, col int) {
+			fem.onCellClicked(row, col)
+		},
+	})
 
 	fem.rootContainer.AddChild(fem.gridContainer)
 }
@@ -106,83 +75,52 @@ func (fem *FormationEditorMode) buildUnitPalette() {
 		"Remove Unit",
 	}
 
-	fem.unitPalette = widget.NewList(
-		widget.ListOpts.Entries(entries),
-		widget.ListOpts.EntryLabelFunc(func(e interface{}) string {
+	fem.unitPalette = CreateListWithConfig(ListConfig{
+		Entries:   entries,
+		MinWidth:  listWidth,
+		MinHeight: listHeight,
+		EntryLabelFunc: func(e interface{}) string {
 			return e.(string)
-		}),
-		widget.ListOpts.ScrollContainerOpts(
-			widget.ScrollContainerOpts.Image(ListRes.image),
-		),
-		widget.ListOpts.SliderOpts(
-			widget.SliderOpts.Images(ListRes.track, ListRes.handle),
-		),
-		widget.ListOpts.EntryColor(ListRes.entry),
-		widget.ListOpts.EntryFontFace(ListRes.face),
-		widget.ListOpts.ContainerOpts(
-			widget.ContainerOpts.WidgetOpts(
-				widget.WidgetOpts.MinSize(listWidth, listHeight),
-			),
-		),
-	)
-
-	// Position list widget using LayoutData
-	fem.unitPalette.GetWidget().LayoutData = widget.AnchorLayoutData{
-		HorizontalPosition: widget.AnchorLayoutPositionStart,
-		VerticalPosition:   widget.AnchorLayoutPositionCenter,
-	}
+		},
+		LayoutData: widget.AnchorLayoutData{
+			HorizontalPosition: widget.AnchorLayoutPositionStart,
+			VerticalPosition:   widget.AnchorLayoutPositionCenter,
+		},
+	})
 
 	fem.rootContainer.AddChild(fem.unitPalette)
 }
 
 func (fem *FormationEditorMode) buildActionButtons() {
-	buttonContainer := widget.NewContainer(
-		widget.ContainerOpts.Layout(widget.NewRowLayout(
-			widget.RowLayoutOpts.Direction(widget.DirectionHorizontal),
-			widget.RowLayoutOpts.Spacing(10),
-			widget.RowLayoutOpts.Padding(widget.Insets{Left: 10, Right: 10}),
-		)),
-	)
-
-	// Save button
-	saveBtn := CreateButton("Save Formation")
-	saveBtn.Configure(
-		widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+	// Create action buttons
+	saveBtn := CreateButtonWithConfig(ButtonConfig{
+		Text: "Save Formation",
+		OnClick: func() {
 			fmt.Println("Formation saved!")
-		}),
-	)
-	buttonContainer.AddChild(saveBtn)
+		},
+	})
 
-	// Load button
-	loadBtn := CreateButton("Load Formation")
-	loadBtn.Configure(
-		widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+	loadBtn := CreateButtonWithConfig(ButtonConfig{
+		Text: "Load Formation",
+		OnClick: func() {
 			fmt.Println("Formation loaded!")
-		}),
-	)
-	buttonContainer.AddChild(loadBtn)
+		},
+	})
 
-	// Close button
-	closeBtn := CreateButton("Close (ESC)")
-	closeBtn.Configure(
-		widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+	closeBtn := CreateButtonWithConfig(ButtonConfig{
+		Text: "Close (ESC)",
+		OnClick: func() {
 			if exploreMode, exists := fem.modeManager.GetMode("exploration"); exists {
 				fem.modeManager.RequestTransition(exploreMode, "Close Formation Editor")
 			}
-		}),
-	)
-	buttonContainer.AddChild(closeBtn)
-
-	// Add LayoutData for bottom-center positioning
-	buttonContainer.GetWidget().LayoutData = widget.AnchorLayoutData{
-		HorizontalPosition: widget.AnchorLayoutPositionCenter,
-		VerticalPosition:   widget.AnchorLayoutPositionEnd,
-		Padding: widget.Insets{
-			Bottom: int(float64(fem.layout.ScreenHeight) * 0.08),
 		},
-	}
+	})
 
-	fem.rootContainer.AddChild(buttonContainer)
+	// Use panel builder for action buttons
+	buttons := []*widget.Button{saveBtn, loadBtn, closeBtn}
+	fem.actionButtons = fem.panelBuilders.BuildActionButtons(buttons)
+
+	fem.rootContainer.AddChild(fem.actionButtons)
 }
 
 func (fem *FormationEditorMode) onCellClicked(row, col int) {

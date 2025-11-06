@@ -1,77 +1,62 @@
 # Refactoring Analysis: GUI Package
-Generated: 2025-11-04
-Target: Complete GUI package (13 files, 4,563 LOC)
+Generated: 2025-11-05
+Target: GUI Package (4563 LOC across 13 files)
 
 ## EXECUTIVE SUMMARY
 
 ### Target Analysis
-- **Scope**: Complete GUI package including 7 UI modes, widget factories, resource management, and mode coordination
-- **Current State**: Functional but painful to work with - high code duplication, large monolithic files, inconsistent patterns
+- **Scope**: Complete GUI package for Go-based roguelike game
+- **Current State**: 4563 LOC across 13 files, 8 UI modes, heavy duplication
 - **Primary Issues**:
-  1. **Massive code duplication**: 60-70% of widget creation code is repeated across modes
-  2. **Large monolithic files**: combatmode.go (1,118 LOC), squadbuilder.go (843 LOC)
-  3. **Incomplete factory pattern**: Button factory is 10% complete, needs ButtonConfig pattern
-  4. **Mixed concerns**: Mode files blend UI layout, business logic, ECS queries, event handling
-  5. **Inconsistent resource usage**: Some modes use shared resources, others create inline
-
-- **Recommended Direction**: **Incremental Factory Pattern approach** - lowest risk, highest immediate impact, enables future refactoring
+  1. ~60% code duplication across 8 mode implementations
+  2. Missing button factory pattern (mentioned in CLAUDE.md as 10% complete)
+  3. Complex widget construction ceremonies (10+ option calls per widget)
+  4. Global mutable state in resource management
+  5. CombatMode complexity (1119 LOC single file)
+- **Recommended Direction**: Config-driven widget system + mode composition
 
 ### Quick Wins vs Strategic Refactoring
-- **Immediate Improvements** (1-2 weeks):
-  - Complete widget factory with config pattern (ButtonConfig, PanelConfig, etc.)
-  - Extract 5-7 most duplicated widget creation patterns
-  - Centralize all magic numbers into LayoutConfig
-  - **Impact**: 40% reduction in GUI code duplication, easier to add new modes
+- **Immediate Improvements** (1-2 days):
+  - ButtonConfig factory pattern
+  - TextAreaConfig expansion to all common widgets
+  - Extract shared panel builders to composition functions
 
-- **Medium-Term Goals** (3-4 weeks):
-  - Decompose large mode files (combat, squadbuilder) into component modules
-  - Create shared UI component library (SquadGridPanel, UnitListWidget, etc.)
-  - Standardize all modes to use factory pattern
-  - **Impact**: 60% reduction in code duplication, 50% easier to maintain modes
+- **Medium-Term Goals** (3-5 days):
+  - Widget builder pattern for lists, containers, panels
+  - Resource dependency injection
+  - Mode base struct for shared logic
 
-- **Long-Term Architecture** (6-8 weeks):
-  - Implement layout system with declarative UI definitions
-  - Create theme system for consistent styling
-  - Refactor modes to be composition of UI components
-  - **Impact**: 70% code reduction, modes become 100-200 LOC instead of 800-1,100 LOC
+- **Long-Term Architecture** (1-2 weeks):
+  - Full config-driven UI system
+  - CombatMode decomposition
+  - Layout DSL or declarative system
 
 ### Consensus Findings
-- **Agreement Across Perspectives**:
-  - Widget factory with config pattern is highest priority
-  - Large mode files need decomposition
-  - Code duplication is the #1 pain point
-  - Current UIMode pattern is solid, don't replace it
-
-- **Divergent Perspectives**:
-  - **Refactoring-Pro**: Wants comprehensive component pattern (React-like)
-  - **Tactical-Simplifier**: Wants data-driven UI definitions (configuration over code)
-  - **Refactoring-Critic**: Warns against over-engineering, favor incremental improvements
-
-- **Critical Concerns**:
-  - **Risk of breaking existing functionality**: GUI changes are high-visibility
-  - **Testing challenge**: GUI code is hard to test, refactor incrementally
-  - **Ebiten/ebitenui constraints**: Must work within framework limitations
-  - **Don't over-engineer**: GUI is working, focus on pain points not perfection
+- **High-Impact Quick Win**: ButtonConfig pattern (already started with TextAreaConfig)
+- **Biggest Pain Point**: Repeated buildXXXPanel() methods across all 8 modes
+- **Root Cause**: No abstraction layer between ebitenui and game code
+- **Strategic Direction**: Incremental config-driven approach (proven by TextAreaConfig success)
 
 ---
 
 ## FINAL SYNTHESIZED APPROACHES
 
-### Approach 1: Incremental Factory Pattern (RECOMMENDED)
+### Approach 1: Incremental Config-Driven Widget System
 
-**Strategic Focus**: Low-risk, high-impact elimination of code duplication through systematic factory extraction
+**Strategic Focus**: Build on existing TextAreaConfig pattern to eliminate widget construction duplication
 
 **Problem Statement**:
-Every UI mode builds widgets inline with nearly identical code patterns. Creating a button, panel, list, or textarea requires 15-30 lines of repetitive code. This duplication makes the codebase painful to maintain - fixing a styling bug requires changes in 7+ places. Adding new modes is tedious because developers must copy-paste large blocks of widget setup code.
+Every mode builds UI widgets independently using verbose ebitenui option chains. Creating a button requires 5-10 lines of widget.ButtonOpts calls. Creating a list requires 10+ widget.ListOpts calls. This is repeated 40+ times across 8 modes with minimal variation.
+
+The TextAreaConfig pattern (already present in createwidgets.go lines 98-125) proves this approach works.
 
 **Solution Overview**:
-Systematically extract widget creation patterns into factory functions with configuration structs. Complete the 10% done button factory to 100%, then apply the same pattern to all other widget types. Each factory function takes a config struct describing desired properties and returns a fully configured widget.
+Extend the config pattern to all common widgets (Button, List, Container, Panel) and create builder functions that accept configs. This reduces widget creation from 10+ lines to 1-3 lines while maintaining full customization.
 
 **Code Example**:
 
-*Before (from explorationmode.go):*
+*Before (from explorationmode.go lines 131-146):*
 ```go
-// Creating a button requires 20+ lines repeated everywhere
 throwableBtn := CreateButton("Throwables")
 throwableBtn.Configure(
     widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
@@ -84,40 +69,51 @@ throwableBtn.Configure(
     }),
 )
 em.quickInventory.AddChild(throwableBtn)
-
-// Panel creation with similar duplication
-em.statsPanel = widget.NewContainer(
-    widget.ContainerOpts.BackgroundImage(PanelRes.image),
-    widget.ContainerOpts.Layout(widget.NewAnchorLayout(
-        widget.AnchorLayoutOpts.Padding(widget.Insets{
-            Left: 10, Right: 10, Top: 10, Bottom: 10,
-        }),
-    )),
-    widget.ContainerOpts.WidgetOpts(
-        widget.WidgetOpts.MinSize(width, height),
-    ),
-)
 ```
 
-*After (with factory pattern):*
+*After:*
 ```go
-// Widget factories in createwidgets.go
+throwableBtn := CreateButtonWithConfig(ButtonConfig{
+    Text: "Throwables",
+    OnClick: func() {
+        if invMode, exists := em.modeManager.GetMode("inventory"); exists {
+            if inventoryMode, ok := invMode.(*InventoryMode); ok {
+                inventoryMode.SetInitialFilter("Throwables")
+            }
+            em.modeManager.RequestTransition(invMode, "Open Throwables")
+        }
+    },
+})
+em.quickInventory.AddChild(throwableBtn)
+```
 
+**Full Implementation (add to createwidgets.go):**
+
+```go
+// ButtonConfig provides declarative button configuration
 type ButtonConfig struct {
-    Text          string
-    MinWidth      int
-    MinHeight     int
-    Font          font.Face
-    TextColor     *widget.ButtonTextColor
-    Image         *widget.ButtonImage
-    OnClick       widget.ButtonClickedHandlerFunc
-    LayoutData    interface{} // For anchor/grid layout positioning
+    Text      string
+    MinWidth  int
+    MinHeight int
+    FontFace  font.Face
+    TextColor *widget.ButtonTextColor
+    Image     *widget.ButtonImage
+    Padding   widget.Insets
+    OnClick   func() // Simplified callback - no args needed in most cases
+    LayoutData interface{} // For positioning
 }
 
+// CreateButtonWithConfig creates a button from config
 func CreateButtonWithConfig(config ButtonConfig) *widget.Button {
-    // Set defaults
-    if config.Font == nil {
-        config.Font = LargeFace
+    // Apply defaults
+    if config.MinWidth == 0 {
+        config.MinWidth = 100
+    }
+    if config.MinHeight == 0 {
+        config.MinHeight = 100
+    }
+    if config.FontFace == nil {
+        config.FontFace = largeFace
     }
     if config.TextColor == nil {
         config.TextColor = &widget.ButtonTextColor{
@@ -127,79 +123,135 @@ func CreateButtonWithConfig(config ButtonConfig) *widget.Button {
     if config.Image == nil {
         config.Image = buttonImage
     }
-    if config.MinWidth == 0 {
-        config.MinWidth = 100
-    }
-    if config.MinHeight == 0 {
-        config.MinHeight = 100
+    if config.Padding.Left == 0 {
+        config.Padding = widget.Insets{Left: 30, Right: 30, Top: 30, Bottom: 30}
     }
 
     opts := []widget.ButtonOpt{
-        widget.ButtonOpts.Image(config.Image),
-        widget.ButtonOpts.Text(config.Text, config.Font, config.TextColor),
-        widget.ButtonOpts.TextPadding(widget.Insets{
-            Left: 30, Right: 30, Top: 30, Bottom: 30,
-        }),
         widget.ButtonOpts.WidgetOpts(
             widget.WidgetOpts.MinSize(config.MinWidth, config.MinHeight),
         ),
+        widget.ButtonOpts.Image(config.Image),
+        widget.ButtonOpts.Text(config.Text, config.FontFace, config.TextColor),
+        widget.ButtonOpts.TextPadding(config.Padding),
     }
 
-    if config.OnClick != nil {
-        opts = append(opts, widget.ButtonOpts.ClickedHandler(config.OnClick))
-    }
-
+    // Add layout data if provided
     if config.LayoutData != nil {
         opts = append(opts, widget.ButtonOpts.WidgetOpts(
             widget.WidgetOpts.LayoutData(config.LayoutData),
         ))
     }
 
+    // Add click handler if provided
+    if config.OnClick != nil {
+        opts = append(opts, widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+            config.OnClick()
+        }))
+    }
+
     return widget.NewButton(opts...)
 }
 
-type PanelConfig struct {
-    Width       int
-    Height      int
-    Background  *image.NineSlice
-    Padding     widget.Insets
-    LayoutType  string // "anchor", "row", "grid"
-    LayoutData  interface{}
+// ListConfig provides declarative list configuration
+type ListConfig struct {
+    Entries         []interface{}
+    EntryLabelFunc  func(interface{}) string
+    OnEntrySelected func(interface{}) // Simplified callback
+    MinWidth        int
+    MinHeight       int
+    LayoutData      interface{}
 }
 
+// CreateListWithConfig creates a list from config
+func CreateListWithConfig(config ListConfig) *widget.List {
+    // Apply defaults
+    if config.MinWidth == 0 {
+        config.MinWidth = 150
+    }
+    if config.MinHeight == 0 {
+        config.MinHeight = 300
+    }
+    if config.EntryLabelFunc == nil {
+        config.EntryLabelFunc = func(e interface{}) string {
+            return fmt.Sprintf("%v", e)
+        }
+    }
+
+    opts := []widget.ListOpt{
+        widget.ListOpts.Entries(config.Entries),
+        widget.ListOpts.EntryLabelFunc(config.EntryLabelFunc),
+        widget.ListOpts.ContainerOpts(
+            widget.ContainerOpts.WidgetOpts(
+                widget.WidgetOpts.MinSize(config.MinWidth, config.MinHeight),
+            ),
+        ),
+        widget.ListOpts.ScrollContainerOpts(
+            widget.ScrollContainerOpts.Image(ListRes.image),
+        ),
+        widget.ListOpts.SliderOpts(
+            widget.SliderOpts.Images(ListRes.track, ListRes.handle),
+            widget.SliderOpts.MinHandleSize(ListRes.handleSize),
+            widget.SliderOpts.TrackPadding(ListRes.trackPadding),
+        ),
+        widget.ListOpts.EntryColor(ListRes.entry),
+        widget.ListOpts.EntryFontFace(ListRes.face),
+    }
+
+    // Add layout data if provided
+    if config.LayoutData != nil {
+        opts = append(opts, widget.ListOpts.ContainerOpts(
+            widget.ContainerOpts.WidgetOpts(
+                widget.WidgetOpts.LayoutData(config.LayoutData),
+            ),
+        ))
+    }
+
+    list := widget.NewList(opts...)
+
+    // Add selection handler if provided
+    if config.OnEntrySelected != nil {
+        list.EntrySelectedEvent.AddHandler(func(args interface{}) {
+            a := args.(*widget.ListEntrySelectedEventArgs)
+            config.OnEntrySelected(a.Entry)
+        })
+    }
+
+    return list
+}
+
+// PanelConfig provides declarative panel configuration
+type PanelConfig struct {
+    Title      string
+    MinWidth   int
+    MinHeight  int
+    Background *image.NineSlice
+    Padding    widget.Insets
+    Layout     widget.Layout // Row, Grid, Anchor, etc.
+    LayoutData interface{}
+}
+
+// CreatePanelWithConfig creates a container panel from config
 func CreatePanelWithConfig(config PanelConfig) *widget.Container {
-    // Set defaults
+    // Apply defaults
     if config.Background == nil {
         config.Background = PanelRes.image
     }
     if config.Padding.Left == 0 {
-        config.Padding = widget.Insets{Left: 10, Right: 10, Top: 10, Bottom: 10}
+        config.Padding = widget.Insets{Left: 15, Right: 15, Top: 15, Bottom: 15}
+    }
+    if config.Layout == nil {
+        config.Layout = widget.NewAnchorLayout()
     }
 
     opts := []widget.ContainerOpt{
         widget.ContainerOpts.BackgroundImage(config.Background),
+        widget.ContainerOpts.Layout(config.Layout),
     }
 
-    // Layout setup
-    switch config.LayoutType {
-    case "row":
-        opts = append(opts, widget.ContainerOpts.Layout(widget.NewRowLayout(
-            widget.RowLayoutOpts.Padding(config.Padding),
-        )))
-    case "grid":
-        // Grid layout would need additional config fields
-        opts = append(opts, widget.ContainerOpts.Layout(widget.NewGridLayout(
-            widget.GridLayoutOpts.Padding(config.Padding),
-        )))
-    default: // "anchor" or empty
-        opts = append(opts, widget.ContainerOpts.Layout(widget.NewAnchorLayout(
-            widget.AnchorLayoutOpts.Padding(config.Padding),
-        )))
-    }
-
-    if config.Width > 0 && config.Height > 0 {
+    if config.MinWidth > 0 || config.MinHeight > 0 {
         opts = append(opts, widget.ContainerOpts.WidgetOpts(
-            widget.WidgetOpts.MinSize(config.Width, config.Height),
+            widget.WidgetOpts.MinSize(config.MinWidth, config.MinHeight),
         ))
     }
 
@@ -209,404 +261,148 @@ func CreatePanelWithConfig(config PanelConfig) *widget.Container {
         ))
     }
 
-    return widget.NewContainer(opts...)
+    container := widget.NewContainer(opts...)
+
+    // Add title if provided
+    if config.Title != "" {
+        titleLabel := widget.NewText(
+            widget.TextOpts.Text(config.Title, LargeFace, color.White),
+        )
+        container.AddChild(titleLabel)
+    }
+
+    return container
 }
-
-// Usage in modes becomes much simpler:
-throwableBtn := CreateButtonWithConfig(ButtonConfig{
-    Text: "Throwables",
-    OnClick: func(args *widget.ButtonClickedEventArgs) {
-        // Transition logic
-        if invMode, exists := em.modeManager.GetMode("inventory"); exists {
-            if inventoryMode, ok := invMode.(*InventoryMode); ok {
-                inventoryMode.SetInitialFilter("Throwables")
-            }
-            em.modeManager.RequestTransition(invMode, "Open Throwables")
-        }
-    },
-})
-
-statsPanel := CreatePanelWithConfig(PanelConfig{
-    Width:      width,
-    Height:     height,
-    LayoutType: "anchor",
-})
 ```
 
 **Key Changes**:
-- **Extract 7 widget factory functions**: Button, Panel, List, TextArea, TextInput, GridCell, Window
-- **Create config structs**: ButtonConfig, PanelConfig, ListConfig, TextAreaConfig, etc.
-- **Sensible defaults**: Factories provide default styling, modes override only what's unique
-- **Single source of truth**: All widget styling lives in createwidgets.go
-- **Backward compatible**: Existing CreateButton/CreateTextArea still work, new config versions added
-
-**Value Proposition**:
-- **Maintainability**: Bug fixes and style changes happen in one place, not 7+ modes
-- **Readability**: Mode files shrink by 30-40%, widget creation is self-documenting
-- **Extensibility**: Adding new modes is 3x faster - copy config patterns instead of imperative code
-- **Complexity Impact**:
-  - Lines of code: -1,500 to -2,000 LOC (40% reduction)
-  - Cognitive complexity: Each mode becomes 30-40% easier to understand
-  - Duplication: 60-70% reduction in repeated widget setup patterns
+- Add `ButtonConfig`, `ListConfig`, `PanelConfig` structs
+- Add builder functions: `CreateButtonWithConfig`, `CreateListWithConfig`, `CreatePanelWithConfig`
+- Simplify callbacks to `func()` instead of `func(*WidgetEventArgs)` where args not needed
+- Automatic defaults for common values (font faces, colors, images, sizes)
+- All existing functionality preserved through optional fields
 
 **Implementation Strategy**:
-1. **Week 1: Complete button factory**
-   - Add ButtonConfig struct with all common options
-   - Refactor CreateButton to use config internally
-   - Add CreateButtonWithConfig alternative
-   - Migrate 2-3 modes to use new pattern (exploration, inventory)
-
-2. **Week 2: Add panel and text factories**
-   - Create PanelConfig, TextAreaConfig, ListConfig
-   - Implement CreatePanelWithConfig, CreateTextAreaWithConfig, CreateListWithConfig
-   - Migrate remaining modes to use factories
-
-3. **Week 3: Grid and window factories**
-   - Create GridCellConfig, WindowConfig
-   - Implement factories for grid-based widgets
-   - Refactor squadbuilder.go to use grid cell factory
-
-4. **Week 4: Cleanup and testing**
-   - Remove old inline widget creation code
-   - Verify all modes work correctly
-   - Document factory patterns for future development
+1. **Phase 1 (2-3 hours)**: Add config structs and builders to `createwidgets.go`
+2. **Phase 2 (4-6 hours)**: Refactor ExplorationMode and InventoryMode to use new configs
+3. **Phase 3 (6-8 hours)**: Refactor remaining modes (Combat, Squad Management, Squad Builder, etc.)
+4. **Phase 4 (2 hours)**: Remove old CreateButton function once all modes migrated
+5. **Testing**: Verify each mode still functions identically after migration
 
 **Advantages**:
-- **Low risk**: Incremental refactor, test each factory individually
-- **Immediate impact**: Each factory reduces duplication across all modes
-- **Foundation for future work**: Enables Approach 2 (component decomposition)
-- **Developer experience**: New modes are much easier to create
-- **Backward compatible**: Old code continues to work during migration
+- **Massive LOC reduction**: ~600-800 lines removed (estimated 15-20% of GUI package)
+- **Improved readability**: Widget creation intent clear at a glance
+- **Easier testing**: Configs can be validated without full UI setup
+- **Consistent defaults**: Font faces, colors, sizes standardized across all modes
+- **Incremental adoption**: Can migrate mode-by-mode without breaking changes
+- **Proven pattern**: TextAreaConfig already exists and works well
 
 **Drawbacks & Risks**:
-- **Incomplete solution**: Doesn't address large mode file problem directly (but enables it)
-- **Config struct explosion**: 7-10 new config structs to maintain
-  - *Mitigation*: Use composition, share common config fields (ColorConfig, LayoutConfig)
-- **Learning curve**: Team needs to learn new factory API
-  - *Mitigation*: Document with examples, keep old functions as reference
-- **Ebiten constraints**: Some widget configurations aren't composable
-  - *Mitigation*: Factory functions handle common 80%, inline code for edge cases
+- **Migration effort**: Must update ~40+ button creations, ~15+ list creations across 8 modes
+  - *Mitigation*: Migrate one mode at a time, test thoroughly before next mode
+- **Flexibility loss**: Some complex widgets might need custom options beyond configs
+  - *Mitigation*: Keep option variadic parameters for advanced customization
+- **Learning curve**: Developers must learn new config structs
+  - *Mitigation*: Config structs are self-documenting with clear field names
 
 **Effort Estimate**:
-- **Time**: 4 weeks (1 developer, part-time)
-  - Week 1: 16 hours (button factory)
-  - Week 2: 20 hours (panel/text factories)
-  - Week 3: 16 hours (grid/window factories)
-  - Week 4: 8 hours (cleanup/testing)
-  - **Total**: 60 hours
+- **Time**: 14-19 hours (2-3 days with testing)
 - **Complexity**: Low-Medium
-- **Risk**: Low (incremental, backward compatible)
-- **Files Impacted**: 14 files
-  - `gui/createwidgets.go` (major additions)
-  - All 7 mode files (refactored to use factories)
-  - `gui/squadbuilder.go` (grid cell factory usage)
-  - `gui/infoUI.go` (window factory usage)
+- **Risk**: Low
+- **Files Impacted**: 10 files (createwidgets.go + all 8 modes + infoUI.go)
 
-**Critical Assessment** (from refactoring-critic):
-This is the sweet spot - addresses the #1 pain point (duplication) with minimal risk. The factory pattern is well-understood, tested in many Go projects. Config structs might proliferate but that's manageable. The biggest win is that this enables future refactoring (Approach 2) without being a prerequisite for immediate value. **High practical value, low theoretical over-engineering risk.**
+**Critical Assessment**:
+This is the highest-value refactoring. It eliminates the most duplication (widget construction ceremonies repeated 40+ times) with the least risk. The TextAreaConfig pattern proves this approach works. Migration can be incremental, reducing risk further. **Recommended as primary refactoring.**
 
 ---
 
-### Approach 2: Component-Based Decomposition
+### Approach 2: Mode Composition with Shared Panel Builders
 
-**Strategic Focus**: Break large monolithic mode files into reusable UI component modules
+**Strategic Focus**: Extract repeated buildXXXPanel() methods into reusable composition functions
 
 **Problem Statement**:
-`combatmode.go` (1,118 LOC) and `squadbuilder.go` (843 LOC) are too large to understand or modify safely. They mix UI layout, business logic, ECS queries, and event handling in a single file. Adding features requires navigating hundreds of lines. Bugs hide in complex interactions between concerns. Testing is nearly impossible because everything is coupled.
+Every mode has 3-6 buildXXXPanel() methods (buildStatsPanel, buildMessageLog, buildCloseButton, etc.) with 80-90% identical code. Only minor variations in positioning, sizing, and content. This results in ~2000 lines of duplicated panel building logic across 8 modes.
+
+Example: Every mode has a "Close Button" at bottom-center with identical positioning logic, just different transition targets.
 
 **Solution Overview**:
-Apply component-based architecture similar to React/Vue but adapted for Go. Extract reusable UI components into separate files. Each component manages its own layout, state, and event handling. Large modes become compositions of smaller, testable components. Components follow a standard interface for lifecycle management.
+Create a set of high-level panel builder functions that encapsulate common UI patterns. Modes call these builders instead of repeating the full construction logic. This follows the composition-over-inheritance principle.
 
 **Code Example**:
 
-*Before (from squadbuilder.go - 843 LOC):*
+*Before (repeated in 6 modes):*
 ```go
-// Everything in one giant file
-type SquadBuilderMode struct {
-    ui          *ebitenui.UI
-    context     *UIContext
+func (em *ExplorationMode) buildCloseButton() {
+    buttonContainer := widget.NewContainer(
+        widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
+    )
+
+    closeBtn := CreateButton("Close (ESC)")
+    closeBtn.Configure(
+        widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+            if exploreMode, exists := em.modeManager.GetMode("exploration"); exists {
+                em.modeManager.RequestTransition(exploreMode, "Close")
+            }
+        }),
+    )
+
+    buttonContainer.GetWidget().LayoutData = widget.AnchorLayoutData{
+        HorizontalPosition: widget.AnchorLayoutPositionCenter,
+        VerticalPosition:   widget.AnchorLayoutPositionEnd,
+        Padding: widget.Insets{
+            Bottom: int(float64(em.layout.ScreenHeight) * 0.08),
+        },
+    }
+
+    buttonContainer.AddChild(closeBtn)
+    em.rootContainer.AddChild(buttonContainer)
+}
+```
+
+*After (add to new file: gui/panels.go):*
+```go
+// PanelBuilders provides high-level UI composition functions
+type PanelBuilders struct {
     layout      *LayoutConfig
     modeManager *UIModeManager
-
-    rootContainer    *widget.Container
-    gridContainer    *widget.Container
-    unitPalette      *widget.List
-    capacityDisplay  *widget.TextArea
-    squadNameInput   *widget.TextInput
-    actionButtons    *widget.Container
-    unitDetailsArea  *widget.TextArea
-
-    gridCells        [3][3]*GridCellButton
-    currentSquadID   ecs.EntityID
-    currentSquadName string
-    selectedUnitIdx  int
-    currentLeaderID  ecs.EntityID
 }
 
-// 843 lines of methods mixing concerns:
-// - buildGridEditor() - 126 LOC
-// - buildUnitPalette() - 90 LOC
-// - onCellClicked() - complex logic
-// - updateCapacityDisplay() - ECS queries
-// - refreshGridDisplay() - 60 LOC
-// ... and many more
-```
-
-*After (component-based architecture):*
-```go
-// gui/components/squadgrid.go (150 LOC)
-package components
-
-// SquadGridComponent manages the 3x3 squad formation grid
-type SquadGridComponent struct {
-    container     *widget.Container
-    gridCells     [3][3]*GridCellButton
-    currentSquadID ecs.EntityID
-    ecsManager    *common.EntityManager
-
-    // Events
-    OnCellClicked func(row, col int)
-}
-
-func NewSquadGridComponent(ecsManager *common.EntityManager) *SquadGridComponent {
-    grid := &SquadGridComponent{
-        ecsManager: ecsManager,
-        gridCells:  [3][3]*GridCellButton{},
+// BuildCloseButton creates a bottom-center close button that transitions to exploration mode
+func (pb *PanelBuilders) BuildCloseButton(targetModeName string, buttonText string) *widget.Container {
+    if buttonText == "" {
+        buttonText = "Close (ESC)"
     }
-    grid.buildGrid()
-    return grid
-}
 
-func (sg *SquadGridComponent) buildGrid() {
-    sg.container = CreatePanelWithConfig(PanelConfig{
-        LayoutType: "grid",
-    })
+    buttonContainer := widget.NewContainer(
+        widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
+    )
 
-    // Build 3x3 grid cells
-    for row := 0; row < 3; row++ {
-        for col := 0; col < 3; col++ {
-            cell := sg.createGridCell(row, col)
-            sg.gridCells[row][col] = cell
-            sg.container.AddChild(cell.button)
-        }
+    closeBtn := CreateButton(buttonText)
+    closeBtn.Configure(
+        widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+            if targetMode, exists := pb.modeManager.GetMode(targetModeName); exists {
+                pb.modeManager.RequestTransition(targetMode, "Close button pressed")
+            }
+        }),
+    )
+
+    buttonContainer.GetWidget().LayoutData = widget.AnchorLayoutData{
+        HorizontalPosition: widget.AnchorLayoutPositionCenter,
+        VerticalPosition:   widget.AnchorLayoutPositionEnd,
+        Padding: widget.Insets{
+            Bottom: int(float64(pb.layout.ScreenHeight) * 0.08),
+        },
     }
+
+    buttonContainer.AddChild(closeBtn)
+    return buttonContainer
 }
 
-func (sg *SquadGridComponent) PlaceUnit(row, col, unitIndex int) error {
-    // Encapsulated placement logic
-    // ECS operations isolated here
-    return nil
-}
+// BuildStatsPanel creates a top-right stats panel
+func (pb *PanelBuilders) BuildStatsPanel(content string) (*widget.Container, *widget.TextArea) {
+    x, y, width, height := pb.layout.TopRightPanel()
 
-func (sg *SquadGridComponent) RemoveUnit(row, col int) error {
-    // Encapsulated removal logic
-    return nil
-}
-
-func (sg *SquadGridComponent) Refresh() {
-    // Update visual display
-    for row := 0; row < 3; row++ {
-        for col := 0; col < 3; col++ {
-            sg.updateCellVisual(row, col)
-        }
-    }
-}
-
-func (sg *SquadGridComponent) GetContainer() *widget.Container {
-    return sg.container
-}
-
-// gui/components/unitpalette.go (100 LOC)
-package components
-
-type UnitPaletteComponent struct {
-    container *widget.List
-    selectedIndex int
-
-    // Events
-    OnUnitSelected func(unitIndex int)
-}
-
-func NewUnitPaletteComponent(units []squads.UnitTemplate) *UnitPaletteComponent {
-    // Build unit selection list
-    return &UnitPaletteComponent{}
-}
-
-func (up *UnitPaletteComponent) GetContainer() *widget.List {
-    return up.container
-}
-
-// gui/components/capacitydisplay.go (80 LOC)
-package components
-
-type CapacityDisplayComponent struct {
-    textArea   *widget.TextArea
-    squadID    ecs.EntityID
-    ecsManager *common.EntityManager
-}
-
-func NewCapacityDisplayComponent(ecsManager *common.EntityManager) *CapacityDisplayComponent {
-    return &CapacityDisplayComponent{
-        ecsManager: ecsManager,
-        textArea:   CreateTextAreaWithConfig(TextAreaConfig{}),
-    }
-}
-
-func (cd *CapacityDisplayComponent) SetSquad(squadID ecs.EntityID) {
-    cd.squadID = squadID
-    cd.Refresh()
-}
-
-func (cd *CapacityDisplayComponent) Refresh() {
-    used := squads.GetSquadUsedCapacity(cd.squadID, cd.ecsManager)
-    total := squads.GetSquadTotalCapacity(cd.squadID, cd.ecsManager)
-    cd.textArea.SetText(fmt.Sprintf("Capacity: %.1f / %d", used, total))
-}
-
-// gui/squadbuilder.go (NOW ONLY 250 LOC - was 843!)
-type SquadBuilderMode struct {
-    ui          *ebitenui.UI
-    context     *UIContext
-    modeManager *UIModeManager
-
-    // Components (composition over monolith)
-    gridComponent     *components.SquadGridComponent
-    paletteComponent  *components.UnitPaletteComponent
-    capacityComponent *components.CapacityDisplayComponent
-    nameInput         *components.TextInputComponent
-    actionButtons     *components.ActionButtonsComponent
-}
-
-func (sbm *SquadBuilderMode) Initialize(ctx *UIContext) error {
-    sbm.context = ctx
-
-    // Create components
-    sbm.gridComponent = components.NewSquadGridComponent(ctx.ECSManager)
-    sbm.paletteComponent = components.NewUnitPaletteComponent(squads.Units)
-    sbm.capacityComponent = components.NewCapacityDisplayComponent(ctx.ECSManager)
-
-    // Wire up event handlers
-    sbm.gridComponent.OnCellClicked = sbm.handleCellClick
-    sbm.paletteComponent.OnUnitSelected = sbm.handleUnitSelected
-
-    // Build layout
-    sbm.buildLayout()
-
-    return nil
-}
-
-func (sbm *SquadBuilderMode) buildLayout() {
-    // Simple layout assembly - no inline widget creation
-    sbm.rootContainer.AddChild(sbm.gridComponent.GetContainer())
-    sbm.rootContainer.AddChild(sbm.paletteComponent.GetContainer())
-    sbm.rootContainer.AddChild(sbm.capacityComponent.GetTextArea())
-    // ... position using layout data
-}
-
-func (sbm *SquadBuilderMode) handleCellClick(row, col int) {
-    // Mode orchestrates components, business logic stays here
-    if sbm.paletteComponent.selectedIndex >= 0 {
-        err := sbm.gridComponent.PlaceUnit(row, col, sbm.paletteComponent.selectedIndex)
-        if err == nil {
-            sbm.capacityComponent.Refresh()
-        }
-    }
-}
-```
-
-**Key Changes**:
-- **Extract 5-7 UI components**: SquadGrid, UnitPalette, CapacityDisplay, UnitDetails, ActionButtons
-- **Component interface**: Each component has GetContainer(), Refresh(), event callbacks
-- **Separation of concerns**: Components handle their UI, modes handle orchestration
-- **Event-driven architecture**: Components expose events (OnClick, OnSelected), modes wire them
-- **Reusable across modes**: SquadGridComponent used in squadbuilder, squadmanagement, formationeditor
-
-**Value Proposition**:
-- **Maintainability**: Components are 80-150 LOC each, easy to understand and modify
-- **Readability**: Mode files become 200-300 LOC instead of 800-1,100 LOC
-- **Extensibility**: New modes compose existing components, minimal new code
-- **Complexity Impact**:
-  - Lines per mode: -600 to -800 LOC (60-70% reduction)
-  - Cyclomatic complexity: Each component is independently testable
-  - Reusability: SquadGrid component reused in 3+ modes
-
-**Implementation Strategy**:
-1. **Phase 1: Extract squadgrid component (Week 1)**
-   - Create gui/components/ package
-   - Extract SquadGridComponent from squadbuilder
-   - Test in squadbuilder mode
-
-2. **Phase 2: Extract 4 more components (Week 2-3)**
-   - UnitPaletteComponent
-   - CapacityDisplayComponent
-   - UnitDetailsComponent
-   - ActionButtonsComponent
-
-3. **Phase 3: Refactor squadbuilder mode (Week 4)**
-   - Replace inline code with component composition
-   - Wire up event handlers
-   - Test all interactions
-
-4. **Phase 4: Apply to other modes (Week 5-6)**
-   - Refactor squadmanagement mode using shared components
-   - Refactor combatmode using new CombatPanelComponent
-   - Extract shared components (UnitList, SquadPanel, etc.)
-
-**Advantages**:
-- **Dramatic code reduction**: Mode files become 60-70% smaller
-- **Testability**: Components can be tested in isolation
-- **Reusability**: SquadGrid used in 3+ modes, UnitList in 4+ modes
-- **Maintainability**: Fixing squad grid bugs means fixing one component
-- **Clear boundaries**: Each component has single responsibility
-
-**Drawbacks & Risks**:
-- **Higher complexity**: More files to navigate (1 mode becomes 5-7 files)
-  - *Mitigation*: Clear naming, organize in gui/components/ package
-- **Event wiring overhead**: Modes must wire up component events
-  - *Mitigation*: Standard event patterns, helper functions for common wiring
-- **Component coupling**: Components may share state
-  - *Mitigation*: Pass state explicitly via props, avoid hidden dependencies
-- **Over-componentization**: Risk of creating too many tiny components
-  - *Mitigation*: Only extract if component is 80+ LOC and reusable
-
-**Effort Estimate**:
-- **Time**: 6 weeks (1 developer, full-time)
-  - Week 1: 20 hours (squadgrid component)
-  - Week 2-3: 60 hours (4 more components)
-  - Week 4: 20 hours (refactor squadbuilder)
-  - Week 5-6: 60 hours (apply to other modes)
-  - **Total**: 160 hours
-- **Complexity**: Medium-High
-- **Risk**: Medium (architectural change, extensive testing needed)
-- **Files Impacted**: 20+ files
-  - New: 7-10 component files in gui/components/
-  - Modified: All 7 mode files
-  - Modified: createwidgets.go (factory usage)
-
-**Critical Assessment** (from refactoring-critic):
-This is where we start to see trade-offs. The value is clear for large modes (squadbuilder, combat), but applying this everywhere might be over-engineering. Recommendation: **Start with squadbuilder only**. If it works well and reduces pain, expand to combatmode. If the component overhead feels heavy, stop there and use Approach 1 for simpler modes. **High value for complex modes, diminishing returns for simple modes.**
-
----
-
-### Approach 3: Hybrid - Factory + Declarative Layout System
-
-**Strategic Focus**: Combine factory pattern with data-driven layout definitions for maximum code reduction
-
-**Problem Statement**:
-Even with factory functions, modes still contain 100+ lines of layout code - positioning widgets, setting up containers, configuring layout managers. This is repetitive and error-prone. Hard-coded positioning (magic numbers) makes responsive design difficult. Layout changes require hunting through code. There's no visual representation of UI structure.
-
-**Solution Overview**:
-Combine Approach 1 (factory pattern) with a declarative layout system. Modes define their UI structure as data (structs or configs) instead of imperative code. A layout engine interprets these definitions and builds the widget tree. Similar to HTML/CSS separation but adapted for Go and ebitenui. Positions, sizes, and relationships are data, not code.
-
-**Code Example**:
-
-*Before (from explorationmode.go - 311 LOC):*
-```go
-// Imperative layout code - 200+ lines
-func (em *ExplorationMode) buildStatsPanel() {
-    x, y, width, height := em.layout.TopRightPanel()
-
-    em.statsPanel = widget.NewContainer(
+    panel := widget.NewContainer(
         widget.ContainerOpts.BackgroundImage(PanelRes.image),
         widget.ContainerOpts.Layout(widget.NewAnchorLayout(
             widget.AnchorLayoutOpts.Padding(widget.Insets{
@@ -618,288 +414,514 @@ func (em *ExplorationMode) buildStatsPanel() {
         ),
     )
 
-    statsConfig := TextAreaConfig{
+    textArea := CreateTextAreaWithConfig(TextAreaConfig{
+        MinWidth:  width - 20,
+        MinHeight: height - 20,
+        FontColor: color.White,
+    })
+    textArea.SetText(content)
+
+    panel.AddChild(textArea)
+    SetContainerLocation(panel, x, y)
+
+    return panel, textArea
+}
+
+// BuildMessageLog creates a bottom-right message log panel
+func (pb *PanelBuilders) BuildMessageLog() (*widget.Container, *widget.TextArea) {
+    x, y, width, height := pb.layout.BottomRightPanel()
+
+    logConfig := TextAreaConfig{
         MinWidth:  width - 20,
         MinHeight: height - 20,
         FontColor: color.White,
     }
-    em.statsTextArea = CreateTextAreaWithConfig(statsConfig)
-    em.statsTextArea.SetText(em.context.PlayerData.PlayerAttributes().DisplayString())
+    messageLog := CreateTextAreaWithConfig(logConfig)
 
-    em.statsPanel.AddChild(em.statsTextArea)
-    SetContainerLocation(em.statsPanel, x, y)
-    em.rootContainer.AddChild(em.statsPanel)
+    logContainer := widget.NewContainer(
+        widget.ContainerOpts.BackgroundImage(PanelRes.image),
+        widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
+        widget.ContainerOpts.WidgetOpts(
+            widget.WidgetOpts.MinSize(width, height),
+        ),
+    )
+    logContainer.AddChild(messageLog)
+
+    SetContainerLocation(logContainer, x, y)
+
+    return logContainer, messageLog
 }
 
-func (em *ExplorationMode) buildMessageLog() { /* 40 lines */ }
-func (em *ExplorationMode) buildQuickInventory() { /* 100 lines */ }
-func (em *ExplorationMode) buildInfoWindow() { /* 20 lines */ }
+// BuildActionButtons creates a bottom-center button row
+func (pb *PanelBuilders) BuildActionButtons(buttons []*widget.Button) *widget.Container {
+    x, y := pb.layout.BottomCenterButtons()
+
+    buttonContainer := widget.NewContainer(
+        widget.ContainerOpts.Layout(widget.NewRowLayout(
+            widget.RowLayoutOpts.Direction(widget.DirectionHorizontal),
+            widget.RowLayoutOpts.Spacing(10),
+            widget.RowLayoutOpts.Padding(widget.Insets{Left: 10, Right: 10}),
+        )),
+    )
+
+    for _, btn := range buttons {
+        buttonContainer.AddChild(btn)
+    }
+
+    SetContainerLocation(buttonContainer, x, y)
+    return buttonContainer
+}
+
+// BuildSquadListPanel creates a left-side squad list with selection
+func (pb *PanelBuilders) BuildSquadListPanel(squadNames []string, onSelect func(string)) (*widget.Container, *widget.List) {
+    width := int(float64(pb.layout.ScreenWidth) * 0.15)
+    height := int(float64(pb.layout.ScreenHeight) * 0.5)
+
+    panel := widget.NewContainer(
+        widget.ContainerOpts.BackgroundImage(PanelRes.image),
+        widget.ContainerOpts.Layout(widget.NewRowLayout(
+            widget.RowLayoutOpts.Direction(widget.DirectionVertical),
+            widget.RowLayoutOpts.Spacing(5),
+            widget.RowLayoutOpts.Padding(widget.Insets{Left: 5, Right: 5, Top: 10, Bottom: 10}),
+        )),
+        widget.ContainerOpts.WidgetOpts(
+            widget.WidgetOpts.MinSize(width, height),
+            widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{
+                HorizontalPosition: widget.AnchorLayoutPositionStart,
+                VerticalPosition:   widget.AnchorLayoutPositionCenter,
+                Padding: widget.Insets{
+                    Left: int(float64(pb.layout.ScreenWidth) * 0.01),
+                },
+            }),
+        ),
+    )
+
+    listLabel := widget.NewText(
+        widget.TextOpts.Text("Squads:", SmallFace, color.White),
+    )
+    panel.AddChild(listLabel)
+
+    // Convert squad names to entries
+    entries := make([]interface{}, len(squadNames))
+    for i, name := range squadNames {
+        entries[i] = name
+    }
+
+    squadList := widget.NewList(
+        widget.ListOpts.Entries(entries),
+        widget.ListOpts.EntryLabelFunc(func(e interface{}) string {
+            return e.(string)
+        }),
+        widget.ListOpts.ScrollContainerOpts(
+            widget.ScrollContainerOpts.Image(ListRes.image),
+        ),
+        widget.ListOpts.SliderOpts(
+            widget.SliderOpts.Images(ListRes.track, ListRes.handle),
+        ),
+        widget.ListOpts.EntryColor(ListRes.entry),
+        widget.ListOpts.EntryFontFace(ListRes.face),
+    )
+
+    if onSelect != nil {
+        squadList.EntrySelectedEvent.AddHandler(func(args interface{}) {
+            a := args.(*widget.ListEntrySelectedEventArgs)
+            if name, ok := a.Entry.(string); ok {
+                onSelect(name)
+            }
+        })
+    }
+
+    panel.AddChild(squadList)
+    return panel, squadList
+}
 ```
 
-*After (declarative layout):*
-```go
-// gui/layouts/layouts.go (new file)
-package layouts
-
-type LayoutDefinition struct {
-    Root      WidgetDef
-    Variables map[string]interface{} // For dynamic content
-}
-
-type WidgetDef struct {
-    Type       string      // "container", "button", "textarea", "list"
-    ID         string      // Identifier for accessing from code
-    Config     interface{} // Type-specific config (ButtonConfig, etc.)
-    Position   PositionDef
-    Children   []WidgetDef
-    OnEvent    map[string]string // Event name -> handler name
-}
-
-type PositionDef struct {
-    Type       string  // "topRight", "bottomCenter", "absolute", "relative"
-    OffsetX    int
-    OffsetY    int
-    Width      int     // Can use percentages via WidthPercent
-    Height     int
-    WidthPercent  float64 // If > 0, use percentage of parent
-    HeightPercent float64
-}
-
-// gui/layouts/exploration_layout.go
-var ExplorationModeLayout = LayoutDefinition{
-    Root: WidgetDef{
-        Type: "container",
-        ID:   "root",
-        Children: []WidgetDef{
-            {
-                Type: "panel",
-                ID:   "statsPanel",
-                Config: PanelConfig{
-                    LayoutType: "anchor",
-                    Padding:    widget.Insets{Left: 10, Right: 10, Top: 10, Bottom: 10},
-                },
-                Position: PositionDef{
-                    Type:          "topRight",
-                    WidthPercent:  0.2,  // 20% of screen width
-                    HeightPercent: 0.3,  // 30% of screen height
-                },
-                Children: []WidgetDef{
-                    {
-                        Type: "textarea",
-                        ID:   "statsTextArea",
-                        Config: TextAreaConfig{
-                            FontColor: color.White,
-                        },
-                    },
-                },
-            },
-            {
-                Type: "panel",
-                ID:   "messageLogPanel",
-                Position: PositionDef{
-                    Type:          "bottomRight",
-                    WidthPercent:  0.2,
-                    HeightPercent: 0.3,
-                },
-                Children: []WidgetDef{
-                    {
-                        Type: "textarea",
-                        ID:   "messageLog",
-                    },
-                },
-            },
-            {
-                Type: "container",
-                ID:   "quickInventory",
-                Position: PositionDef{
-                    Type: "bottomCenter",
-                },
-                Config: ContainerConfig{
-                    LayoutType: "row",
-                    Spacing:    10,
-                },
-                Children: []WidgetDef{
-                    {
-                        Type: "button",
-                        ID:   "throwableBtn",
-                        Config: ButtonConfig{
-                            Text: "Throwables",
-                        },
-                        OnEvent: map[string]string{
-                            "click": "onThrowableClick",
-                        },
-                    },
-                    {
-                        Type: "button",
-                        ID:   "inventoryBtn",
-                        Config: ButtonConfig{
-                            Text: "Inventory (I)",
-                        },
-                        OnEvent: map[string]string{
-                            "click": "onInventoryClick",
-                        },
-                    },
-                    // ... more buttons
-                },
-            },
-        },
-    },
-}
-
-// gui/layouts/engine.go (layout engine)
-type LayoutEngine struct {
-    screenWidth  int
-    screenHeight int
-}
-
-func (le *LayoutEngine) Build(def LayoutDefinition) (*widget.Container, map[string]interface{}) {
-    // Build widget tree from definition
-    rootWidget := le.buildWidget(def.Root, nil)
-    widgetRegistry := le.collectWidgetRefs(def.Root, rootWidget)
-    return rootWidget.(*widget.Container), widgetRegistry
-}
-
-func (le *LayoutEngine) buildWidget(def WidgetDef, parent *widget.Container) interface{} {
-    switch def.Type {
-    case "button":
-        config := def.Config.(ButtonConfig)
-        return CreateButtonWithConfig(config)
-    case "panel":
-        config := def.Config.(PanelConfig)
-        panel := CreatePanelWithConfig(config)
-        // Build children
-        for _, childDef := range def.Children {
-            child := le.buildWidget(childDef, panel)
-            panel.AddChild(child.(widget.HasWidget))
-        }
-        return panel
-    // ... other widget types
-    }
-    return nil
-}
-
-// gui/explorationmode.go (NOW ONLY 100 LOC - was 311!)
-type ExplorationMode struct {
-    ui          *ebitenui.UI
-    context     *UIContext
-    modeManager *UIModeManager
-
-    // Widget references (populated by layout engine)
-    statsTextArea *widget.TextArea
-    messageLog    *widget.TextArea
-
-    // Layout
-    layout       *layouts.LayoutDefinition
-    layoutEngine *layouts.LayoutEngine
-}
-
+*Usage in modes (e.g., ExplorationMode):*
+```go1
 func (em *ExplorationMode) Initialize(ctx *UIContext) error {
     em.context = ctx
-    em.layoutEngine = layouts.NewLayoutEngine(ctx.ScreenWidth, ctx.ScreenHeight)
+    em.layout = NewLayoutConfig(ctx)
+    em.panelBuilders = &PanelBuilders{layout: em.layout, modeManager: em.modeManager}
 
-    // Build UI from declarative layout
-    rootContainer, widgets := em.layoutEngine.Build(layouts.ExplorationModeLayout)
+    em.ui = &ebitenui.UI{}
+    em.rootContainer = widget.NewContainer()
+    em.ui.Container = em.rootContainer
 
-    // Extract widget references
-    em.statsTextArea = widgets["statsTextArea"].(*widget.TextArea)
-    em.messageLog = widgets["messageLog"].(*widget.TextArea)
-
-    em.ui = &ebitenui.UI{Container: rootContainer}
-
-    // Wire up event handlers (still in code, but minimal)
-    em.wireEventHandlers(widgets)
-
-    return nil
-}
-
-func (em *ExplorationMode) wireEventHandlers(widgets map[string]interface{}) {
-    // Event handlers referenced by layout OnEvent map
-    throwableBtn := widgets["throwableBtn"].(*widget.Button)
-    throwableBtn.Configure(
-        widget.ButtonOpts.ClickedHandler(em.onThrowableClick),
+    // Build panels using composition
+    statsPanel, em.statsTextArea := em.panelBuilders.BuildStatsPanel(
+        em.context.PlayerData.PlayerAttributes().DisplayString(),
     )
-    // ... other handlers
-}
+    em.rootContainer.AddChild(statsPanel)
 
-func (em *ExplorationMode) Enter(fromMode UIMode) error {
-    // Just update content, layout already built
-    em.statsTextArea.SetText(em.context.PlayerData.PlayerAttributes().DisplayString())
+    logPanel, em.messageLog := em.panelBuilders.BuildMessageLog()
+    em.rootContainer.AddChild(logPanel)
+
+    closeBtn := em.panelBuilders.BuildCloseButton("exploration", "")
+    em.rootContainer.AddChild(closeBtn)
+
     return nil
 }
 ```
 
 **Key Changes**:
-- **Declarative layout definitions**: UI structure defined as data (LayoutDefinition structs)
-- **Layout engine**: Interprets definitions and builds widget trees
-- **Responsive positioning**: Percentage-based sizing, named positions (topRight, bottomCenter)
-- **Separation of structure and behavior**: Layout is data, event handlers stay in code
-- **Single source of layout truth**: All positioning logic in layout definitions
-
-**Value Proposition**:
-- **Maintainability**: Layout changes don't require code changes, just edit definitions
-- **Readability**: Visual structure is clear from definition, not hidden in imperative code
-- **Extensibility**: New layouts are data files, not code files
-- **Complexity Impact**:
-  - Lines per mode: -100 to -150 LOC (50-60% reduction beyond factory pattern)
-  - Responsive design: Easy to adjust for different screen sizes
-  - Layout reusability: Share common layout patterns across modes
+- Create `PanelBuilders` struct with layout and mode manager dependencies
+- Extract 6-8 common panel patterns: close button, stats panel, message log, action buttons, squad list, etc.
+- Each builder encapsulates full construction logic including positioning
+- Modes call builders instead of repeating code
+- Return both container and child widgets for further customization if needed
 
 **Implementation Strategy**:
-1. **Phase 1: Build layout engine (Week 1-2)**
-   - Define LayoutDefinition, WidgetDef, PositionDef types
-   - Implement layout engine Build() function
-   - Support 5 basic widget types (button, panel, textarea, list, container)
-
-2. **Phase 2: Define layout system (Week 3)**
-   - Create position presets (topRight, bottomCenter, etc.)
-   - Implement percentage-based sizing
-   - Add responsive layout calculations
-
-3. **Phase 3: Convert exploration mode (Week 4)**
-   - Define ExplorationModeLayout
-   - Refactor ExplorationMode to use layout engine
-   - Test all interactions and positioning
-
-4. **Phase 4: Convert 2-3 more modes (Week 5-6)**
-   - Define InventoryModeLayout, SquadManagementModeLayout
-   - Refactor these modes to use declarative layouts
-   - Extract common layout patterns
+1. **Phase 1 (3-4 hours)**: Create `panels.go` with 6-8 common panel builders
+2. **Phase 2 (2 hours)**: Refactor ExplorationMode to use panel builders
+3. **Phase 3 (3-4 hours)**: Refactor CombatMode to use panel builders
+4. **Phase 4 (4-6 hours)**: Refactor remaining modes
+5. **Phase 5 (2 hours)**: Remove duplicated buildXXX methods from individual modes
 
 **Advantages**:
-- **Maximum code reduction**: Modes become 100-150 LOC (70% reduction)
-- **Visual editing potential**: Layout definitions could be generated by GUI tools (future)
-- **Responsive by default**: Percentage-based sizing handles screen size changes
-- **Consistency**: All modes use same positioning system
-- **Easy experimentation**: Change layout definition, reload, see results
+- **Massive LOC reduction**: ~800-1000 lines removed from mode files
+- **Centralized panel logic**: Changes to panel appearance affect all modes
+- **Consistent UI patterns**: All modes use same panel positioning and styling
+- **Easier testing**: Panel builders can be unit tested independently
+- **Separation of concerns**: Modes focus on mode-specific logic, not UI construction
 
 **Drawbacks & Risks**:
-- **High complexity**: Layout engine is 200-300 LOC, complex to get right
-  - *Mitigation*: Start simple, support basic widgets first, expand gradually
-- **Debugging difficulty**: Errors in layout definitions are runtime, not compile-time
-  - *Mitigation*: Add validation, clear error messages, layout definition tests
-- **Event handler mapping**: Wiring up event handlers is still code, adds indirection
-  - *Mitigation*: Keep event handlers in mode code, don't try to make them declarative
-- **Ebiten constraints**: Not all widget configurations are declarative
-  - *Mitigation*: Support 80% of use cases declaratively, allow code for edge cases
-- **Over-engineering risk**: This is a mini-framework within ebitenui
-  - *Mitigation*: Only do this if Approach 1 + 2 feel inadequate
+- **Flexibility reduction**: Modes with unique panel requirements may not fit builders
+  - *Mitigation*: Builders return containers for further customization; can still manually build custom panels
+- **Refactoring effort**: Must update all 8 modes to use new builders
+  - *Mitigation*: Migrate one mode at a time; old methods can coexist during transition
+- **Abstraction overhead**: One more layer of indirection
+  - *Mitigation*: Builders are simple, well-named functions; easy to understand
 
 **Effort Estimate**:
-- **Time**: 6 weeks (1 developer, full-time)
-  - Week 1-2: 60 hours (layout engine)
-  - Week 3: 20 hours (layout system design)
-  - Week 4: 20 hours (convert exploration mode)
-  - Week 5-6: 40 hours (convert more modes)
-  - **Total**: 140 hours
-- **Complexity**: High
-- **Risk**: Medium-High (new abstraction layer, debugging challenges)
-- **Files Impacted**: 15+ files
-  - New: gui/layouts/ package (5-7 files)
-  - Modified: All mode files (use layout engine)
-  - Modified: createwidgets.go (integrate with engine)
+- **Time**: 14-20 hours (2-3 days with testing)
+- **Complexity**: Medium
+- **Risk**: Low-Medium
+- **Files Impacted**: 10 files (new panels.go + all 8 modes + modemanager.go)
 
-**Critical Assessment** (from refactoring-critic):
-This is where we cross into "engineering for perfection" territory. The layout engine is elegant, but it's building a framework on top of a framework. Value is clear for complex layouts (10+ widgets), but diminishing for simple modes. **Recommendation: Only pursue if Approach 1 + 2 are complete and team still wants more abstraction**. For most teams, Approach 1 is sufficient, Approach 2 is nice-to-have, Approach 3 is luxury. **Medium practical value, moderate over-engineering risk.**
+**Critical Assessment**:
+Strong complement to Approach 1. Eliminates mode-level duplication while Approach 1 eliminates widget-level duplication. Could combine both for maximum impact. **Recommended as follow-up to Approach 1.**
+
+---
+
+### Approach 3: CombatMode Decomposition with System Functions
+
+**Strategic Focus**: Break down the massive CombatMode (1119 LOC) into focused subsystems
+
+**Problem Statement**:
+CombatMode is the largest single file in the GUI package at 1119 LOC with 40+ methods. It handles multiple responsibilities: combat state management, UI rendering, squad visualization, combat logging, input handling, turn management, and squad movement. This violates Single Responsibility Principle and makes the file difficult to understand, test, and modify.
+
+Specific issues:
+- Combat log management (lines 312-343) embedded in UI code
+- Squad rendering with viewport calculations (lines 791-866) mixed with combat logic
+- Squad detail updates (lines 588-642) duplicate ECS queries in multiple methods
+- Turn management callbacks (lines 345-396) tightly coupled to UI updates
+
+**Solution Overview**:
+Decompose CombatMode into 4-5 focused subsystems using system functions (following ECS best practices from CLAUDE.md). Extract combat logging, squad rendering, squad info queries, and turn handling into separate system modules that CombatMode orchestrates.
+
+**Code Example**:
+
+*Before (combatmode.go lines 312-343 - combat log embedded in UI):*
+```go
+func (cm *CombatMode) addCombatLog(message string) {
+    cm.combatLog = append(cm.combatLog, message)
+    cm.messageCountSinceTrim++
+
+    // Use AppendText for O(1) performance - only add the new message
+    cm.combatLogArea.AppendText(message + "\n")
+
+    // Every 100 messages, trim old entries to prevent unbounded growth
+    if cm.messageCountSinceTrim >= 100 {
+        cm.trimCombatLog()
+    }
+}
+
+// trimCombatLog keeps only the last 300 messages and rebuilds the display
+func (cm *CombatMode) trimCombatLog() {
+    const maxMessages = 300
+
+    if len(cm.combatLog) > maxMessages {
+        // Remove oldest messages, keep most recent ones
+        removed := len(cm.combatLog) - maxMessages
+        cm.combatLog = cm.combatLog[removed:]
+
+        // Rebuild the text area display with trimmed content
+        fullText := ""
+        for _, msg := range cm.combatLog {
+            fullText += msg + "\n"
+        }
+        cm.combatLogArea.SetText(fullText)
+    }
+
+    cm.messageCountSinceTrim = 0
+}
+```
+
+*After (new file: gui/combatlog.go - pure system with no UI coupling):*
+```go
+package gui
+
+// CombatLogSystem manages combat message history with automatic trimming
+type CombatLogSystem struct {
+    messages           []string
+    messageCount       int
+    maxMessages        int  // Maximum messages before trim
+    trimThreshold      int  // Trigger trim after this many additions
+}
+
+func NewCombatLogSystem() *CombatLogSystem {
+    return &CombatLogSystem{
+        messages:      make([]string, 0, 300),
+        maxMessages:   300,
+        trimThreshold: 100,
+    }
+}
+
+// AddMessage appends a message and returns whether a trim occurred
+func (cls *CombatLogSystem) AddMessage(message string) (trimmed bool) {
+    cls.messages = append(cls.messages, message)
+    cls.messageCount++
+
+    // Check if trim needed
+    if cls.messageCount >= cls.trimThreshold {
+        cls.trim()
+        return true
+    }
+
+    return false
+}
+
+// trim removes oldest messages to keep within maxMessages limit
+func (cls *CombatLogSystem) trim() {
+    if len(cls.messages) > cls.maxMessages {
+        removed := len(cls.messages) - cls.maxMessages
+        cls.messages = cls.messages[removed:]
+    }
+    cls.messageCount = 0
+}
+
+// GetAllMessages returns all current messages for display
+func (cls *CombatLogSystem) GetAllMessages() []string {
+    return cls.messages
+}
+
+// GetLatestMessage returns most recent message
+func (cls *CombatLogSystem) GetLatestMessage() string {
+    if len(cls.messages) == 0 {
+        return ""
+    }
+    return cls.messages[len(cls.messages)-1]
+}
+
+// Clear resets the log
+func (cls *CombatLogSystem) Clear() {
+    cls.messages = cls.messages[:0]
+    cls.messageCount = 0
+}
+```
+
+*CombatMode usage:*
+```go
+type CombatMode struct {
+    // ... existing fields ...
+    combatLogSystem *CombatLogSystem
+    combatLogArea   *widget.TextArea // UI widget
+}
+
+func (cm *CombatMode) Initialize(ctx *UIContext) error {
+    // ... existing code ...
+    cm.combatLogSystem = NewCombatLogSystem()
+    // ... build UI ...
+    return nil
+}
+
+func (cm *CombatMode) addCombatLog(message string) {
+    trimmed := cm.combatLogSystem.AddMessage(message)
+
+    if trimmed {
+        // Rebuild entire display after trim
+        fullText := ""
+        for _, msg := range cm.combatLogSystem.GetAllMessages() {
+            fullText += msg + "\n"
+        }
+        cm.combatLogArea.SetText(fullText)
+    } else {
+        // Append only new message
+        cm.combatLogArea.AppendText(message + "\n")
+    }
+}
+
+func (cm *CombatMode) Exit(toMode UIMode) error {
+    cm.combatLogSystem.Clear()
+    return nil
+}
+```
+
+*Additional System: gui/squadqueryhelpers.go (extract squad info queries):*
+```go
+package gui
+
+import (
+    "game_main/common"
+    "game_main/squads"
+    "github.com/bytearena/ecs"
+)
+
+// SquadQueryHelpers provides reusable squad information queries for UI
+type SquadQueryHelpers struct {
+    ecsManager *common.EntityManager
+}
+
+func NewSquadQueryHelpers(ecsManager *common.EntityManager) *SquadQueryHelpers {
+    return &SquadQueryHelpers{ecsManager: ecsManager}
+}
+
+// GetSquadName returns the name of a squad by ID
+func (sqh *SquadQueryHelpers) GetSquadName(squadID ecs.EntityID) string {
+    for _, result := range sqh.ecsManager.World.Query(sqh.ecsManager.Tags["squad"]) {
+        squadData := common.GetComponentType[*squads.SquadData](result.Entity, squads.SquadComponent)
+        if squadData.SquadID == squadID {
+            return squadData.Name
+        }
+    }
+    return "Unknown Squad"
+}
+
+// SquadHealthInfo contains health stats for a squad
+type SquadHealthInfo struct {
+    AliveUnits int
+    TotalUnits int
+    TotalHP    int
+    MaxHP      int
+}
+
+// GetSquadHealthInfo returns health statistics for a squad
+func (sqh *SquadQueryHelpers) GetSquadHealthInfo(squadID ecs.EntityID) SquadHealthInfo {
+    unitIDs := squads.GetUnitIDsInSquad(squadID, sqh.ecsManager)
+
+    info := SquadHealthInfo{
+        TotalUnits: len(unitIDs),
+    }
+
+    for _, unitID := range unitIDs {
+        for _, result := range sqh.ecsManager.World.Query(sqh.ecsManager.Tags["squadmember"]) {
+            if result.Entity.GetID() == unitID {
+                attrs := common.GetComponentType[*common.Attributes](result.Entity, common.AttributeComponent)
+                if attrs.CanAct {
+                    info.AliveUnits++
+                }
+                info.TotalHP += attrs.CurrentHealth
+                info.MaxHP += attrs.MaxHealth
+            }
+        }
+    }
+
+    return info
+}
+
+// SquadActionInfo contains action state for a squad
+type SquadActionInfo struct {
+    HasActed          bool
+    HasMoved          bool
+    MovementRemaining int
+}
+
+// GetSquadActionInfo returns action state for a squad
+func (sqh *SquadQueryHelpers) GetSquadActionInfo(squadID ecs.EntityID) SquadActionInfo {
+    // Find action state entity
+    for _, result := range sqh.ecsManager.World.Query(sqh.ecsManager.Tags["actionstate"]) {
+        actionState := common.GetComponentType[*combat.ActionStateData](result.Entity, combat.ActionStateComponent)
+        if actionState.SquadID == squadID {
+            return SquadActionInfo{
+                HasActed:          actionState.HasActed,
+                HasMoved:          actionState.HasMoved,
+                MovementRemaining: actionState.MovementRemaining,
+            }
+        }
+    }
+    return SquadActionInfo{}
+}
+```
+
+*CombatMode simplified usage:*
+```go
+func (cm *CombatMode) updateSquadDetail() {
+    if cm.selectedSquadID == 0 {
+        cm.squadDetailText.Label = "Select a squad\nto view details"
+        return
+    }
+
+    // Use helper systems instead of inline queries
+    squadName := cm.squadQueryHelpers.GetSquadName(cm.selectedSquadID)
+    healthInfo := cm.squadQueryHelpers.GetSquadHealthInfo(cm.selectedSquadID)
+    actionInfo := cm.squadQueryHelpers.GetSquadActionInfo(cm.selectedSquadID)
+
+    detailText := fmt.Sprintf("%s\n", squadName)
+    detailText += fmt.Sprintf("Units: %d/%d\n", healthInfo.AliveUnits, healthInfo.TotalUnits)
+    detailText += fmt.Sprintf("HP: %d/%d\n", healthInfo.TotalHP, healthInfo.MaxHP)
+    detailText += fmt.Sprintf("Move: %d\n", actionInfo.MovementRemaining)
+
+    if actionInfo.HasActed {
+        detailText += "Status: Acted\n"
+    } else if actionInfo.HasMoved {
+        detailText += "Status: Moved\n"
+    } else {
+        detailText += "Status: Ready\n"
+    }
+
+    cm.squadDetailText.Label = detailText
+}
+```
+
+**Full Decomposition Structure**:
+
+```
+gui/
+├── combatmode.go (600 LOC, orchestration only)
+├── combatlog.go (80 LOC, pure log system)
+├── squadqueryhelpers.go (120 LOC, ECS query helpers)
+├── squadrenderer.go (150 LOC, squad visualization)
+├── combatturnhandler.go (100 LOC, turn callbacks)
+```
+
+**Key Changes**:
+- Extract CombatLogSystem: pure message management, no UI coupling
+- Extract SquadQueryHelpers: reusable ECS queries for squad info
+- Extract SquadRenderer: viewport-based squad visualization
+- Extract CombatTurnHandler: turn management callbacks
+- CombatMode becomes thin orchestration layer: ~600 LOC (from 1119 LOC)
+
+**Implementation Strategy**:
+1. **Phase 1 (4 hours)**: Extract CombatLogSystem, update CombatMode to use it, test
+2. **Phase 2 (3 hours)**: Extract SquadQueryHelpers, update all squad info methods
+3. **Phase 3 (4 hours)**: Extract SquadRenderer for highlight/movement rendering
+4. **Phase 4 (3 hours)**: Extract CombatTurnHandler for turn management
+5. **Phase 5 (2 hours)**: Final cleanup, ensure CombatMode only orchestrates
+
+**Advantages**:
+- **Reduced complexity**: CombatMode drops from 1119 LOC to ~600 LOC
+- **Testability**: Each system can be unit tested independently
+- **Reusability**: SquadQueryHelpers useful in other modes (SquadManagement, SquadBuilder)
+- **Separation of concerns**: Each system has single, clear responsibility
+- **ECS alignment**: Follows system-based logic pattern from CLAUDE.md best practices
+- **Maintainability**: Changes to combat logging don't affect squad rendering, etc.
+
+**Drawbacks & Risks**:
+- **Over-decomposition**: Could create too many small files
+  - *Mitigation*: Each extracted system has >80 LOC and clear purpose
+- **Refactoring complexity**: Untangling tightly coupled code requires careful analysis
+  - *Mitigation*: Incremental extraction; test after each extraction
+- **Performance**: More indirection could impact performance
+  - *Mitigation*: Systems are thin wrappers; no measurable overhead expected
+
+**Effort Estimate**:
+- **Time**: 16-20 hours (3-4 days with testing)
+- **Complexity**: Medium-High
+- **Risk**: Medium
+- **Files Impacted**: 6 files (combatmode.go split into 5 files)
+
+**Critical Assessment**:
+This addresses the single largest file complexity issue. However, it requires careful refactoring to avoid breaking combat functionality. **Recommended as medium-term refactoring after Approaches 1 and 2 stabilize the codebase.** CombatMode is complex but functional; don't rush decomposition.
 
 ---
 
@@ -908,328 +930,279 @@ This is where we cross into "engineering for perfection" territory. The layout e
 ### Effort vs Impact Matrix
 | Approach | Effort | Impact | Risk | Recommended Priority |
 |----------|--------|--------|------|---------------------|
-| Approach 1: Factory Pattern | Low (60h) | High (40% duplication reduction) | Low | **1 - START HERE** |
-| Approach 2: Component Decomposition | High (160h) | High (60% LOC reduction) | Medium | **2 - After Approach 1** |
-| Approach 3: Declarative Layout | High (140h) | Medium (additional 20% reduction) | Medium-High | **3 - Optional Enhancement** |
+| Approach 1: Config-Driven Widgets | Medium | High | Low | 1 |
+| Approach 2: Mode Composition | Medium | High | Low | 2 |
+| Approach 3: CombatMode Decomposition | High | Medium | Medium | 3 |
 
 ### Decision Guidance
 
 **Choose Approach 1 if:**
-- You want **immediate pain relief** (code duplication is the biggest issue)
-- You have **limited time** (60 hours = 2 weeks part-time)
-- You want **low risk** (backward compatible, incremental)
-- You're **not sure about future needs** (doesn't lock you into big decisions)
-- Your team is **small/solo** (less coordination overhead)
+- You want the quickest LOC reduction with lowest risk
+- You need to make adding new UI widgets easier immediately
+- You want to follow the proven TextAreaConfig pattern
+- Your team is comfortable with config structs and builders
+- You want to improve consistency across the GUI
 
 **Choose Approach 2 if:**
-- You've completed Approach 1 and want to **tackle large files**
-- You have **time for bigger refactor** (160 hours = 4 weeks full-time)
-- You want **reusable components** across multiple modes
-- You're **comfortable with architectural changes**
-- You prioritize **testability** (components can be tested in isolation)
+- You want to eliminate mode-level duplication
+- You need centralized control over panel appearance
+- You're okay with a slightly higher abstraction layer
+- You want to make creating new modes faster
+- You value consistent UI patterns across all modes
 
 **Choose Approach 3 if:**
-- You've completed Approaches 1 & 2 and **still want more abstraction**
-- You have **frequent layout changes** (responsive design is critical)
-- You want **maximum code reduction** (70% total)
-- Your team **loves data-driven design** (comfortable with declarative patterns)
-- You're willing to **invest in tooling** (layout engine is reusable across projects)
+- CombatMode's complexity is actively blocking development
+- You need better testability for combat logic
+- You want to reuse squad query logic across multiple modes
+- You're willing to invest more time for long-term maintainability
+- You have thorough tests for combat functionality
 
 ### Combination Opportunities
 
-**Best Value Combination: Approach 1 + Partial Approach 2**
-- Complete factory pattern refactor (100%)
-- Apply component decomposition only to squadbuilder and combatmode (40% of Approach 2)
-- Leave simpler modes as-is with factory pattern
-- **Result**: 50% code reduction, 70% pain reduction, 120 hours total effort
+**Recommended Sequence:**
+1. **Start with Approach 1** (Config-Driven Widgets): Quick wins, low risk, high value
+2. **Follow with Approach 2** (Mode Composition): Builds on Approach 1, eliminates mode duplication
+3. **Consider Approach 3** (CombatMode Decomposition): Only if combat complexity is actively painful
 
-**Progressive Enhancement Path:**
-1. **Month 1**: Approach 1 (factory pattern) - Get immediate relief from duplication
-2. **Month 2**: Partial Approach 2 (squadbuilder only) - Test component pattern on worst offender
-3. **Month 3**: Evaluate - If component pattern feels good, expand to combatmode. If not, stop here.
-4. **Month 4+**: Consider Approach 3 only if layout changes are frequent pain point
+**Synergies:**
+- Approach 1 + Approach 2: Eliminates ~1400-1800 LOC (30-40% of GUI package)
+- Approach 2 can use Approach 1's config builders in panel construction
+- Approach 3 benefits from Approach 2's panel builders (combat UI becomes simpler)
 
-**Minimal Viable Refactor:**
-- **Just do Approach 1** - Solves 70% of the pain for 30% of the effort
-- Stop there unless new pain points emerge
-- This is the **refactoring-critic recommended path**
-
----
-
-## APPENDIX: INITIAL APPROACHES FROM ALL PERSPECTIVES
-
-### A. Refactoring-Pro Approaches
-
-#### Refactoring-Pro Approach 1: Widget Factory + Configuration Pattern
-**Focus**: Eliminate code duplication through systematic factory extraction
-
-**Problem**: Every mode creates widgets inline with 15-30 lines of repetitive code
-
-**Solution**: Extract widget creation into factory functions with config structs (ButtonConfig, PanelConfig, etc.)
-
-**Metrics**:
-- Code reduction: 1,500-2,000 LOC (40% of GUI code)
-- Duplication: 60-70% reduction
-- New files: 0 (extend existing createwidgets.go)
-- Config structs: 7-10
-
-**Assessment**:
-- **Pros**: Immediate impact, low risk, backward compatible, enables future refactoring
-- **Cons**: Doesn't solve large file problem, config struct proliferation
-- **Effort**: 60 hours (4 weeks part-time)
+**Maximum Impact Strategy:**
+Implement Approaches 1 and 2 together over 1 week:
+- Days 1-2: Config structs and builders (Approach 1)
+- Days 3-4: Panel builders (Approach 2)
+- Day 5: Refactor all modes to use both
+- Result: ~1500 LOC removed, much cleaner architecture, low risk
 
 ---
 
-#### Refactoring-Pro Approach 2: Mode Decomposition + Component Pattern
-**Focus**: Break large monolithic files into reusable components
+## APPENDIX: ADDITIONAL CONSIDERATIONS
 
-**Problem**: combatmode.go (1,118 LOC) and squadbuilder.go (843 LOC) too large
+### A. Resource Management Refactoring (Bonus Approach)
 
-**Solution**: Extract UI components (SquadGrid, UnitPalette, etc.) into separate modules, modes compose components
+**Problem**: Global mutable state in guiresources.go (lines 17-28)
 
-**Metrics**:
-- Code reduction: 1,800-2,400 LOC (50-60% per large mode)
-- Files created: 7-10 component files
-- Mode file size: 200-300 LOC (down from 800-1,100)
+```go
+var smallFace, _ = loadFont(30)
+var largeFace, _ = loadFont(50)
+var buttonImage, _ = loadButtonImage()
+var defaultWidgetColor = e_image.NewNineSliceColor(color.NRGBA{0x13, 0x1a, 0x22, 0xff})
 
-**Assessment**:
-- **Pros**: Dramatic reduction in mode complexity, reusable components, testable
-- **Cons**: More files to navigate, event wiring overhead, risk of over-componentization
-- **Effort**: 160 hours (4 weeks full-time)
+// Exported fonts for use in UI modes
+var SmallFace = smallFace
+var LargeFace = largeFace
 
----
+var PanelRes *panelResources = newPanelResources()
+var ListRes *listResources = newListResources()
+var TextAreaRes *textAreaResources = newTextAreaResources()
+```
 
-#### Refactoring-Pro Approach 3: Resource Manager + Theme System
-**Focus**: Centralize visual resources and styling
+**Solution**: Dependency injection via UIContext
 
-**Problem**: Colors, fonts, layouts scattered across files, inconsistent styling
+```go
+// Add to UIContext (uimode.go)
+type UIContext struct {
+    ECSManager   *common.EntityManager
+    PlayerData   *common.PlayerData
+    ScreenWidth  int
+    ScreenHeight int
+    TileSize     int
+    // NEW: Injected resources
+    Resources    *GUIResources
+}
 
-**Solution**: Create theme system with centralized resource management, configuration-driven styling
+// GUIResources encapsulates all GUI resources
+type GUIResources struct {
+    SmallFace font.Face
+    LargeFace font.Face
+    ButtonImage *widget.ButtonImage
+    DefaultWidgetColor *e_image.NineSlice
+    PanelRes *panelResources
+    ListRes *listResources
+    TextAreaRes *textAreaResources
+}
 
-**Metrics**:
-- Code reduction: 300-500 LOC (resource duplication)
-- Consistency: 100% modes use same theme
-- Files created: gui/themes/ package (2-3 files)
+// NewGUIResources initializes resources with error handling
+func NewGUIResources() (*GUIResources, error) {
+    smallFace, err := loadFont(30)
+    if err != nil {
+        return nil, fmt.Errorf("failed to load small font: %w", err)
+    }
 
-**Assessment**:
-- **Pros**: Consistent styling, easy theme changes, single source of truth
-- **Cons**: Lower priority, doesn't solve duplication or large file problems directly
-- **Effort**: 40 hours (1 week full-time)
+    largeFace, err := loadFont(50)
+    if err != nil {
+        return nil, fmt.Errorf("failed to load large font: %w", err)
+    }
 
----
+    buttonImage, err := loadButtonImage()
+    if err != nil {
+        return nil, fmt.Errorf("failed to load button image: %w", err)
+    }
 
-### B. Tactical-Simplifier Approaches
+    return &GUIResources{
+        SmallFace: smallFace,
+        LargeFace: largeFace,
+        ButtonImage: buttonImage,
+        DefaultWidgetColor: e_image.NewNineSliceColor(color.NRGBA{0x13, 0x1a, 0x22, 0xff}),
+        PanelRes: newPanelResources(),
+        ListRes: newListResources(),
+        TextAreaRes: newTextAreaResources(),
+    }, nil
+}
+```
 
-#### Tactical-Simplifier Approach 1: Mode State Machine + Event Bus
-**Focus**: Explicit state management and decoupled communication
+**Benefits**:
+- Explicit initialization with error handling
+- Testable (can inject mock resources)
+- No package-level state
+- Lifecycle management (can reload resources)
 
-**Problem**: Modes directly reference each other via modeManager.GetMode(), tight coupling
+**Effort**: 3-4 hours to refactor all modes to use ctx.Resources instead of globals
 
-**Solution**: Implement state machine for mode transitions, event bus for inter-mode communication
+### B. Layout DSL (Advanced Future Consideration)
 
-**Metrics**:
-- Code reduction: 200-400 LOC (mode transition logic)
-- Coupling reduction: Mode dependencies become explicit
-- Files created: gui/statemachine.go, gui/eventbus.go
+**Problem**: Layout calculations scattered, magic percentages everywhere
 
-**Assessment**:
-- **Pros**: Cleaner mode transitions, supports mode history/back button, decoupled communication
-- **Cons**: Overlaps with existing UIModeManager, adds complexity without clear pain relief
-- **Effort**: 60 hours (2 weeks full-time)
+**Solution**: Declarative layout DSL
 
----
+```go
+// Layout DSL concept
+panel := layout.Panel{
+    Position: layout.TopRight(),
+    Size: layout.Percent{Width: 15, Height: 20},
+    Margin: layout.Percent{All: 1},
+    Content: []layout.Widget{
+        layout.TextArea{
+            ID: "statsText",
+            Config: TextAreaConfig{...},
+        },
+    },
+}
 
-#### Tactical-Simplifier Approach 2: Data-Driven UI Definition
-**Focus**: Define UI layouts as data instead of code
+// Compile to concrete positions
+rendered := panel.Render(screenWidth, screenHeight)
+```
 
-**Problem**: 100+ lines of layout code per mode, hard-coded positioning
+**Benefits**: Declarative, composable, readable
 
-**Solution**: Declarative layout definitions (structs/configs), layout engine interprets and builds widget trees
+**Drawbacks**: Significant effort, may be over-engineering
 
-**Metrics**:
-- Code reduction: 1,000-1,500 LOC (layout code)
-- Mode file size: 100-150 LOC (70% reduction)
-- Files created: gui/layouts/ package (5-7 files)
+**Recommendation**: Only consider if GUI complexity continues growing
 
-**Assessment**:
-- **Pros**: Maximum code reduction, responsive by default, visual structure is clear
-- **Cons**: High complexity, debugging difficulty, mini-framework on top of ebitenui
-- **Effort**: 140 hours (3.5 weeks full-time)
+### C. Testing Strategy
 
----
+**Current State**: No GUI tests (UI testing is hard with ebitenui)
 
-#### Tactical-Simplifier Approach 3: GUI as ECS System
-**Focus**: Treat UI elements as ECS entities with components
+**Recommendations**:
+1. **Config Validation**: Test that ButtonConfig/ListConfig produce correct widget options
+2. **System Tests**: Test CombatLogSystem, SquadQueryHelpers independently
+3. **Integration Tests**: Test mode transitions without rendering
+4. **Visual Tests**: Screenshot-based regression testing (advanced)
 
-**Problem**: UI state management is ad-hoc, doesn't integrate with ECS architecture
+**Quick Win**: Add table-driven tests for config builders
 
-**Solution**: UI widgets are entities, UI updates use ECS queries, natural integration with game state
-
-**Metrics**:
-- Code reduction: Unknown (major architectural change)
-- Integration: Perfect alignment with game ECS
-- Complexity: Very high (rewrite)
-
-**Assessment**:
-- **Pros**: Theoretically elegant, perfect ECS integration, query-based UI updates
-- **Cons**: Massive rewrite, high risk, unclear value vs ebitenui's built-in state management
-- **Effort**: 200+ hours (5+ weeks full-time)
-
----
-
-## SYNTHESIS RATIONALE
-
-### Why These 3 Final Approaches?
-
-**Approach 1 Selection** (Factory Pattern):
-Combined refactoring-pro approach 1 (widget factories) with practical focus on immediate pain relief. This approach addresses the #1 complaint (code duplication) with minimal risk. It's the foundation that enables future refactoring without requiring big upfront decisions.
-
-**Approach 2 Selection** (Component Decomposition):
-Took refactoring-pro approach 2 (component pattern) and refined it with practical constraints from refactoring-critic. Focus only on large modes (squadbuilder, combatmode) instead of over-componentizing everything. Pragmatic balance between abstraction and maintainability.
-
-**Approach 3 Selection** (Hybrid Layout System):
-Combined tactical-simplifier approach 2 (data-driven UI) with refactoring-pro approach 1 (factories) to create a hybrid solution. This addresses multiple pain points (duplication + layout code + responsiveness) but requires significant investment. Positioned as optional enhancement after Approaches 1 & 2.
-
-### Rejected Elements
-
-**From Refactoring-Pro:**
-- **Approach 3 (Theme System)**: Useful but lower priority than duplication and large files. Can be added later without blocking other work.
-
-**From Tactical-Simplifier:**
-- **Approach 1 (State Machine)**: Overlaps too much with existing UIModeManager. UIModeManager already handles transitions reasonably well - no need to replace it.
-- **Approach 3 (GUI as ECS)**: Theoretically interesting but high risk for unclear value. Ebiten already provides state management. Don't replace working framework with custom solution unless there's clear pain point it solves.
-
-### Refactoring-Critic Key Insights
-
-1. **Start with Approach 1**: It's the clear winner for effort vs impact. Backward compatible, incremental, addresses biggest pain point.
-
-2. **Approach 2 is conditional**: Only needed if you're still unhappy after Approach 1. Test on squadbuilder first before expanding to all modes.
-
-3. **Approach 3 is luxury**: Beautiful architecture, but high cost for diminishing returns. Only do this if you love data-driven design and have time to spare.
-
-4. **Don't over-engineer**: The GUI works. The pain is duplication and large files. Fix those specific problems, don't rebuild the entire architecture.
-
-5. **Progressive enhancement**: Each approach builds on the previous. You can stop at any point and still have valuable improvements.
+```go
+func TestButtonConfigDefaults(t *testing.T) {
+    tests := []struct {
+        name   string
+        config ButtonConfig
+        want   ButtonConfig
+    }{
+        {
+            name: "empty config applies defaults",
+            config: ButtonConfig{Text: "Test"},
+            want: ButtonConfig{
+                Text: "Test",
+                MinWidth: 100,
+                MinHeight: 100,
+                // ... all defaults
+            },
+        },
+    }
+    // ... test logic
+}
+```
 
 ---
 
 ## PRINCIPLES APPLIED
 
 ### Software Engineering Principles
-
-- **DRY (Don't Repeat Yourself)**: Factory pattern eliminates 60-70% of duplicated widget creation code
+- **DRY (Don't Repeat Yourself)**: Approaches 1 & 2 eliminate massive widget/panel duplication
 - **SOLID Principles**:
-  - **Single Responsibility**: Components have one job (SquadGrid manages grid, not capacity or palette)
-  - **Open/Closed**: Config structs make widgets extensible without modifying factory functions
-  - **Interface Segregation**: Components expose minimal interfaces (GetContainer(), Refresh())
-  - **Dependency Inversion**: Modes depend on component interfaces, not concrete implementations
-- **KISS (Keep It Simple, Stupid)**: Approach 1 is simplest solution that solves the problem
-- **YAGNI (You Aren't Gonna Need It)**: Rejected GUI-as-ECS because no clear need yet
-- **SLAP (Single Level of Abstraction Principle)**: Modes orchestrate, components handle details
-- **Separation of Concerns**:
-  - Factories handle widget creation
-  - Components handle UI logic
-  - Modes handle orchestration
-  - ECS queries isolated in separate functions
+  - Single Responsibility: Approach 3 decomposes CombatMode into focused systems
+  - Open/Closed: Config structs allow extension without modification
+  - Dependency Inversion: Resource injection reverses dependency on globals
+- **KISS (Keep It Simple, Stupid)**: Config structs are simpler than 10+ option chains
+- **YAGNI (You Aren't Gonna Need It)**: Avoided full layout DSL, focused on proven patterns
+- **SLAP (Single Level of Abstraction Principle)**: Panel builders encapsulate low-level details
+- **Separation of Concerns**: Systems separate combat logic from UI, queries from rendering
 
 ### Go-Specific Best Practices
-
-- **Idiomatic Go patterns**:
-  - Config structs with sensible defaults (similar to functional options but simpler)
-  - Constructor functions (NewSquadGridComponent)
-  - Composition over inheritance (components composed into modes)
-  - Interface-based design (components implement common patterns)
-
-- **Error handling**:
-  - Factory functions return errors for invalid configs
-  - Components return errors for failed operations
-  - Modes handle errors at orchestration level
-
-- **Package organization**:
-  - gui/ for mode files
-  - gui/components/ for reusable components
-  - gui/layouts/ for layout system (if Approach 3)
+- **Composition over inheritance**: PanelBuilders use composition, not base classes
+- **Config structs**: Idiomatic Go pattern for optional parameters
+- **Error handling**: Resource initialization returns errors, not panics
+- **Dependency injection**: UIContext provides dependencies explicitly
+- **System functions**: Stateless helpers that operate on data
 
 ### Game Development Considerations
-
-- **Performance implications**:
-  - Factory pattern: Zero overhead (compile-time)
-  - Component pattern: Minimal overhead (small indirection)
-  - Layout system: One-time cost at mode initialization
-
-- **Real-time system constraints**:
-  - UI updates happen in Update() cycle, no blocking
-  - Event handlers are immediate, no async complications
-  - Mode transitions queued, not immediate (existing pattern)
-
-- **Game loop integration**:
-  - Modes integrate with existing UIModeManager
-  - Components Update()/Render() called by mode lifecycle
-  - No changes to game loop required
-
-- **Tactical gameplay preservation**:
-  - All refactoring is UI-only, game logic untouched
-  - Squad system integration maintained
-  - ECS queries work same as before
+- **Performance**: No significant overhead from abstractions (thin wrappers)
+- **Real-time constraints**: Combat log trimming prevents unbounded memory growth
+- **Viewport integration**: Squad rendering respects viewport system
+- **ECS alignment**: Follows ECS best practices from CLAUDE.md (system-based logic)
+- **Tactical gameplay**: Refactorings preserve all combat functionality
 
 ---
 
 ## NEXT STEPS
 
 ### Recommended Action Plan
+1. **Immediate** (This week):
+   - Implement Approach 1: Config-Driven Widgets (2-3 days)
+   - Start with ButtonConfig, ListConfig, PanelConfig
+   - Refactor 2-3 modes as proof-of-concept
 
-1. **Immediate (Week 1-2): Start Approach 1**
-   - Complete button factory with ButtonConfig
-   - Migrate 2 modes (exploration, inventory)
-   - Measure impact: count duplicated lines before/after
+2. **Short-term** (Next 1-2 weeks):
+   - Complete Approach 1 migration across all modes
+   - Implement Approach 2: Mode Composition (2-3 days)
+   - Extract 6-8 common panel builders
+   - Refactor all modes to use panel builders
 
-2. **Short-term (Week 3-4): Finish Approach 1**
-   - Add panel, textarea, list factories
-   - Migrate remaining modes
-   - Document factory patterns
+3. **Medium-term** (Next month):
+   - Assess if CombatMode complexity is still blocking
+   - If yes, implement Approach 3: CombatMode Decomposition (3-4 days)
+   - Extract combat log, squad queries, rendering systems
 
-3. **Medium-term (Month 2): Evaluate**
-   - Are large files still painful? → Do Approach 2
-   - Is duplication solved? → Stop, monitor for new pain points
-   - Do you want more abstraction? → Consider Approach 3
-
-4. **Long-term (Month 3+): Optional Approach 2**
-   - If needed, extract components from squadbuilder
-   - Test pattern on one mode before expanding
-   - Only expand if value is clear
+4. **Long-term** (Next quarter):
+   - Consider resource dependency injection (Appendix A)
+   - Add unit tests for config builders and systems
+   - Evaluate if layout DSL needed (Appendix B)
 
 ### Validation Strategy
-
 - **Testing Approach**:
-  - Manual testing: Play through each mode after refactor
-  - Regression testing: Verify all buttons/interactions work
-  - Visual testing: Compare screenshots before/after
-  - Performance testing: Measure frame time in complex modes
+  - Manual testing: Load each mode, verify no visual regressions
+  - Functionality testing: Click all buttons, verify transitions work
+  - Performance testing: Check combat log doesn't slow down after 1000 messages
+  - Config testing: Unit test that configs produce expected options
 
 - **Rollback Plan**:
-  - Git branches: Approach 1 on feature branch, merge when stable
-  - Keep old functions: Don't delete CreateButton() until migration complete
-  - Incremental migration: One mode at a time, easy to revert
+  - Commit after each mode migration
+  - Keep old methods until all modes migrated
+  - Can revert individual mode migrations if issues found
 
 - **Success Metrics**:
-  - Lines of code reduced: Target 40% for Approach 1, 60% for Approach 2
-  - Developer velocity: Time to add new mode (should be 50% faster)
-  - Bug count: Track UI bugs before/after (should stay same or decrease)
-  - Developer satisfaction: Team feedback on whether refactor helps
+  - LOC reduction: Target 1500 LOC (30%+) with Approaches 1 & 2
+  - Build time: Should not increase (no new dependencies)
+  - Bug rate: Track GUI-related bugs before/after
+  - Developer velocity: Time to add new UI mode should decrease
 
 ### Additional Resources
-
-- **Go patterns documentation**:
-  - Functional options pattern: https://dave.cheney.net/2014/10/17/functional-options-for-friendly-apis
-  - Config struct pattern: Common in many Go projects (kubernetes, docker)
-
-- **Game architecture references**:
-  - Component pattern in game dev: Game Programming Patterns by Robert Nystrom
-  - UI architecture: http://www.craftinginterpreters.com (similar declarative approach)
-
-- **Refactoring resources**:
-  - Refactoring by Martin Fowler: Extract Function, Extract Class patterns
-  - Working Effectively with Legacy Code: Safe refactoring techniques
+- **ebitenui documentation**: https://github.com/ebitenui/ebitenui
+- **Go config pattern**: Functional Options vs Config Structs (prefer config structs for complex objects)
+- **ECS patterns**: Reference squad system (squads/*.go) for system-based design
+- **GUI testing**: Consider screenshot-based visual regression testing
 
 ---
 

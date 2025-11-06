@@ -6,7 +6,6 @@ import (
 	"game_main/coords"
 	"game_main/graphics"
 	"game_main/squads"
-	"image/color"
 
 	"github.com/bytearena/ecs"
 	"github.com/ebitenui/ebitenui"
@@ -35,6 +34,9 @@ type SquadDeploymentMode struct {
 	pendingMouseX    int
 	pendingMouseY    int
 	pendingPlacement bool
+
+	// Panel builders for UI composition
+	panelBuilders *PanelBuilders
 }
 
 func NewSquadDeploymentMode(modeManager *UIModeManager) *SquadDeploymentMode {
@@ -48,6 +50,7 @@ func NewSquadDeploymentMode(modeManager *UIModeManager) *SquadDeploymentMode {
 func (sdm *SquadDeploymentMode) Initialize(ctx *UIContext) error {
 	sdm.context = ctx
 	sdm.layout = NewLayoutConfig(ctx)
+	sdm.panelBuilders = NewPanelBuilders(sdm.layout, sdm.modeManager)
 
 	sdm.ui = &ebitenui.UI{}
 	sdm.rootContainer = widget.NewContainer(
@@ -64,136 +67,60 @@ func (sdm *SquadDeploymentMode) Initialize(ctx *UIContext) error {
 }
 
 func (sdm *SquadDeploymentMode) buildSquadListPanel() {
-	// Left side squad list
-	width := int(float64(sdm.layout.ScreenWidth) * 0.2)
-	height := int(float64(sdm.layout.ScreenHeight) * 0.8)
+	// Use panel builder for squad list panel - will be populated in Enter()
+	// Note: Squad names aren't available at Initialize time, so we pass empty list
+	sdm.squadListPanel, sdm.squadList = sdm.panelBuilders.BuildSquadListPanel(SquadListConfig{
+		SquadNames:    []string{}, // Will be populated in Enter()
+		WidthPercent:  0.2,
+		HeightPercent: 0.8,
+		Label:         "Squads:",
+		OnSelect: func(squadName string, squadIndex int) {
+			fmt.Printf("DEBUG: Squad selection event fired!\n")
+			fmt.Printf("DEBUG: Selected entry: %s\n", squadName)
 
-	sdm.squadListPanel = widget.NewContainer(
-		widget.ContainerOpts.BackgroundImage(PanelRes.image),
-		widget.ContainerOpts.Layout(widget.NewAnchorLayout(
-			widget.AnchorLayoutOpts.Padding(widget.Insets{
-				Left: 10, Right: 10, Top: 10, Bottom: 10,
-			}),
-		)),
-		widget.ContainerOpts.WidgetOpts(
-			widget.WidgetOpts.MinSize(width, height),
-			widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{
-				HorizontalPosition: widget.AnchorLayoutPositionStart,
-				VerticalPosition:   widget.AnchorLayoutPositionCenter,
-				Padding: widget.Insets{
-					Left: int(float64(sdm.layout.ScreenWidth) * 0.01),
-				},
-			}),
-		),
-	)
-
-	// Create list widget with squad names
-	sdm.squadList = widget.NewList(
-		widget.ListOpts.ContainerOpts(
-			widget.ContainerOpts.WidgetOpts(
-				widget.WidgetOpts.MinSize(width-20, height-20),
-			),
-		),
-		widget.ListOpts.ScrollContainerOpts(
-			widget.ScrollContainerOpts.Image(ListRes.image),
-		),
-		widget.ListOpts.SliderOpts(
-			widget.SliderOpts.Images(ListRes.track, ListRes.handle),
-			widget.SliderOpts.MinHandleSize(ListRes.handleSize),
-			widget.SliderOpts.TrackPadding(ListRes.trackPadding),
-		),
-		widget.ListOpts.EntryColor(ListRes.entry),
-		widget.ListOpts.EntryFontFace(ListRes.face),
-		widget.ListOpts.EntryLabelFunc(func(e interface{}) string {
-			if str, ok := e.(string); ok {
-				return str
-			}
-			return ""
-		}),
-	)
-
-	// Add selection handler for squad selection
-	sdm.squadList.EntrySelectedEvent.AddHandler(func(args interface{}) {
-		fmt.Printf("DEBUG: Squad selection event fired!\n")
-		a := args.(*widget.ListEntrySelectedEventArgs)
-		selectedEntry := a.Entry
-		fmt.Printf("DEBUG: Selected entry: %v\n", selectedEntry)
-
-		if squadName, ok := selectedEntry.(string); ok {
-			fmt.Printf("DEBUG: Squad name selected: %s\n", squadName)
 			// Find the squad ID matching this name
-			for i, name := range sdm.squadNames {
-				if name == squadName && i < len(sdm.allSquads) {
-					sdm.selectedSquadID = sdm.allSquads[i]
-					sdm.isPlacingSquad = true
-					fmt.Printf("DEBUG: Set selectedSquadID=%d, isPlacingSquad=true\n", sdm.selectedSquadID)
-					sdm.updateInstructionText()
-					break
-				}
+			if squadIndex < len(sdm.allSquads) {
+				sdm.selectedSquadID = sdm.allSquads[squadIndex]
+				sdm.isPlacingSquad = true
+				fmt.Printf("DEBUG: Set selectedSquadID=%d, isPlacingSquad=true\n", sdm.selectedSquadID)
+				sdm.updateInstructionText()
 			}
-		} else {
-			fmt.Printf("DEBUG: Failed to cast entry to string\n")
-		}
+		},
 	})
 
-	sdm.squadListPanel.AddChild(sdm.squadList)
 	sdm.rootContainer.AddChild(sdm.squadListPanel)
 }
 
 func (sdm *SquadDeploymentMode) buildInstructionText() {
-	sdm.instructionText = widget.NewText(
-		widget.TextOpts.Text("Select a squad from the list, then click on the map to place it", SmallFace, color.White),
-		widget.TextOpts.WidgetOpts(
-			widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{
-				HorizontalPosition: widget.AnchorLayoutPositionCenter,
-				VerticalPosition:   widget.AnchorLayoutPositionStart,
-				Padding: widget.Insets{
-					Top: int(float64(sdm.layout.ScreenHeight) * 0.02),
-				},
-			}),
-		),
-	)
+	// Use panel builder for instruction text
+	sdm.instructionText = sdm.panelBuilders.BuildTopInstructionText(TopInstructionTextConfig{
+		Text: "Select a squad from the list, then click on the map to place it",
+	})
 
 	sdm.rootContainer.AddChild(sdm.instructionText)
 }
 
 func (sdm *SquadDeploymentMode) buildActionButtons() {
-	buttonContainer := widget.NewContainer(
-		widget.ContainerOpts.Layout(widget.NewRowLayout(
-			widget.RowLayoutOpts.Direction(widget.DirectionHorizontal),
-			widget.RowLayoutOpts.Spacing(10),
-			widget.RowLayoutOpts.Padding(widget.Insets{Left: 10, Right: 10}),
-		)),
-		widget.ContainerOpts.WidgetOpts(
-			widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{
-				HorizontalPosition: widget.AnchorLayoutPositionCenter,
-				VerticalPosition:   widget.AnchorLayoutPositionEnd,
-				Padding: widget.Insets{
-					Bottom: int(float64(sdm.layout.ScreenHeight) * 0.08),
-				},
-			}),
-		),
-	)
-
-	// Clear All button
-	sdm.clearAllButton = CreateButton("Clear All")
-	sdm.clearAllButton.Configure(
-		widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+	// Create action buttons
+	sdm.clearAllButton = CreateButtonWithConfig(ButtonConfig{
+		Text: "Clear All",
+		OnClick: func() {
 			sdm.clearAllSquadPositions()
-		}),
-	)
-	buttonContainer.AddChild(sdm.clearAllButton)
+		},
+	})
 
-	// Confirm/Start Combat button
-	sdm.confirmButton = CreateButton("Start Combat")
-	sdm.confirmButton.Configure(
-		widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+	sdm.confirmButton = CreateButtonWithConfig(ButtonConfig{
+		Text: "Start Combat",
+		OnClick: func() {
 			if combatMode, exists := sdm.modeManager.GetMode("combat"); exists {
 				sdm.modeManager.RequestTransition(combatMode, "Squads deployed, starting combat")
 			}
-		}),
-	)
-	buttonContainer.AddChild(sdm.confirmButton)
+		},
+	})
+
+	// Use panel builder for action buttons
+	buttons := []*widget.Button{sdm.clearAllButton, sdm.confirmButton}
+	buttonContainer := sdm.panelBuilders.BuildActionButtons(buttons)
 
 	sdm.rootContainer.AddChild(buttonContainer)
 }

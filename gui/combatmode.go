@@ -51,6 +51,9 @@ type CombatMode struct {
 	inAttackMode     bool
 	inMoveMode       bool
 	validMoveTiles   []coords.LogicalPosition
+
+	// Panel builders for UI composition
+	panelBuilders *PanelBuilders
 }
 
 func NewCombatMode(modeManager *UIModeManager) *CombatMode {
@@ -63,6 +66,7 @@ func NewCombatMode(modeManager *UIModeManager) *CombatMode {
 func (cm *CombatMode) Initialize(ctx *UIContext) error {
 	cm.context = ctx
 	cm.layout = NewLayoutConfig(ctx)
+	cm.panelBuilders = NewPanelBuilders(cm.layout, cm.modeManager)
 
 	// Initialize combat managers
 	cm.turnManager = combat.NewTurnManager(ctx.ECSManager)
@@ -87,27 +91,8 @@ func (cm *CombatMode) Initialize(ctx *UIContext) error {
 }
 
 func (cm *CombatMode) buildTurnOrderPanel() {
-	// Top-center turn order display
-	_, _, width, height := cm.layout.TopCenterPanel()
-
-	cm.turnOrderPanel = widget.NewContainer(
-		widget.ContainerOpts.BackgroundImage(PanelRes.image),
-		widget.ContainerOpts.Layout(widget.NewRowLayout(
-			widget.RowLayoutOpts.Direction(widget.DirectionHorizontal),
-			widget.RowLayoutOpts.Spacing(10),
-			widget.RowLayoutOpts.Padding(widget.Insets{Left: 10, Right: 10, Top: 10, Bottom: 10}),
-		)),
-		widget.ContainerOpts.WidgetOpts(
-			widget.WidgetOpts.MinSize(width, height),
-			widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{
-				HorizontalPosition: widget.AnchorLayoutPositionCenter,
-				VerticalPosition:   widget.AnchorLayoutPositionStart,
-				Padding: widget.Insets{
-					Top: int(float64(cm.layout.ScreenHeight) * 0.01),
-				},
-			}),
-		),
-	)
+	// Use panel builder for top-center panel
+	cm.turnOrderPanel = cm.panelBuilders.BuildTopCenterPanel(0.4, 0.08, 0.01)
 
 	// Dynamic turn order display (updated in Update())
 	cm.turnOrderLabel = widget.NewText(
@@ -119,28 +104,8 @@ func (cm *CombatMode) buildTurnOrderPanel() {
 }
 
 func (cm *CombatMode) buildFactionInfoPanel() {
-	// Top-left faction info display
-	_, _, width, height := cm.layout.TopLeftPanel()
-
-	cm.factionInfoPanel = widget.NewContainer(
-		widget.ContainerOpts.BackgroundImage(PanelRes.image),
-		widget.ContainerOpts.Layout(widget.NewRowLayout(
-			widget.RowLayoutOpts.Direction(widget.DirectionVertical),
-			widget.RowLayoutOpts.Spacing(5),
-			widget.RowLayoutOpts.Padding(widget.Insets{Left: 10, Right: 10, Top: 10, Bottom: 10}),
-		)),
-		widget.ContainerOpts.WidgetOpts(
-			widget.WidgetOpts.MinSize(width, height),
-			widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{
-				HorizontalPosition: widget.AnchorLayoutPositionStart,
-				VerticalPosition:   widget.AnchorLayoutPositionStart,
-				Padding: widget.Insets{
-					Top:  int(float64(cm.layout.ScreenHeight) * 0.01),
-					Left: int(float64(cm.layout.ScreenWidth) * 0.01),
-				},
-			}),
-		),
-	)
+	// Use panel builder for top-left panel
+	cm.factionInfoPanel = cm.panelBuilders.BuildTopLeftPanel(0.15, 0.12, 0.01, 0.01)
 
 	// Dynamic faction info (updated in Update())
 	cm.factionInfoText = widget.NewText(
@@ -152,28 +117,8 @@ func (cm *CombatMode) buildFactionInfoPanel() {
 }
 
 func (cm *CombatMode) buildSquadListPanel() {
-	// Left-side squad list (15% width, 50% height)
-	width := int(float64(cm.layout.ScreenWidth) * 0.15)
-	height := int(float64(cm.layout.ScreenHeight) * 0.5)
-
-	cm.squadListPanel = widget.NewContainer(
-		widget.ContainerOpts.BackgroundImage(PanelRes.image),
-		widget.ContainerOpts.Layout(widget.NewRowLayout(
-			widget.RowLayoutOpts.Direction(widget.DirectionVertical),
-			widget.RowLayoutOpts.Spacing(5),
-			widget.RowLayoutOpts.Padding(widget.Insets{Left: 5, Right: 5, Top: 10, Bottom: 10}),
-		)),
-		widget.ContainerOpts.WidgetOpts(
-			widget.WidgetOpts.MinSize(width, height),
-			widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{
-				HorizontalPosition: widget.AnchorLayoutPositionStart,
-				VerticalPosition:   widget.AnchorLayoutPositionCenter,
-				Padding: widget.Insets{
-					Left: int(float64(cm.layout.ScreenWidth) * 0.01),
-				},
-			}),
-		),
-	)
+	// Use panel builder for left-side panel
+	cm.squadListPanel = cm.panelBuilders.BuildLeftSidePanel(0.15, 0.5, 0.01, widget.AnchorLayoutPositionCenter)
 
 	// Squad list will be populated dynamically in updateSquadList()
 	listLabel := widget.NewText(
@@ -185,29 +130,8 @@ func (cm *CombatMode) buildSquadListPanel() {
 }
 
 func (cm *CombatMode) buildSquadDetailPanel() {
-	// Left-side below squad list (15% width, 30% height)
-	width := int(float64(cm.layout.ScreenWidth) * 0.15)
-	height := int(float64(cm.layout.ScreenHeight) * 0.25)
-
-	cm.squadDetailPanel = widget.NewContainer(
-		widget.ContainerOpts.BackgroundImage(PanelRes.image),
-		widget.ContainerOpts.Layout(widget.NewRowLayout(
-			widget.RowLayoutOpts.Direction(widget.DirectionVertical),
-			widget.RowLayoutOpts.Spacing(5),
-			widget.RowLayoutOpts.Padding(widget.Insets{Left: 10, Right: 10, Top: 10, Bottom: 10}),
-		)),
-		widget.ContainerOpts.WidgetOpts(
-			widget.WidgetOpts.MinSize(width, height),
-			widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{
-				HorizontalPosition: widget.AnchorLayoutPositionStart,
-				VerticalPosition:   widget.AnchorLayoutPositionEnd,
-				Padding: widget.Insets{
-					Left: int(float64(cm.layout.ScreenWidth) * 0.01),
-					Bottom: int(float64(cm.layout.ScreenHeight) * 0.15),
-				},
-			}),
-		),
-	)
+	// Use panel builder for left-bottom panel
+	cm.squadDetailPanel = cm.panelBuilders.BuildLeftBottomPanel(0.15, 0.25, 0.01, 0.15)
 
 	// Squad details will be updated dynamically
 	cm.squadDetailText = widget.NewText(
@@ -219,92 +143,47 @@ func (cm *CombatMode) buildSquadDetailPanel() {
 }
 
 func (cm *CombatMode) buildCombatLog() {
-	// Right side combat log
-	_, _, width, height := cm.layout.RightSidePanel()
-
-	logConfig := TextAreaConfig{
-		MinWidth:  width - 20,
-		MinHeight: height - 20,
-		FontColor: color.White,
-	}
-	cm.combatLogArea = CreateTextAreaWithConfig(logConfig)
-	cm.combatLogArea.SetText("Combat started!\n")
-
-	logContainer := widget.NewContainer(
-		widget.ContainerOpts.BackgroundImage(PanelRes.image),
-		widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
-		widget.ContainerOpts.WidgetOpts(
-			widget.WidgetOpts.MinSize(width, height),
-			widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{
-				HorizontalPosition: widget.AnchorLayoutPositionEnd,
-				VerticalPosition:   widget.AnchorLayoutPositionCenter,
-				Padding: widget.Insets{
-					Right: int(float64(cm.layout.ScreenWidth) * 0.01),
-				},
-			}),
-		),
-	)
-	logContainer.AddChild(cm.combatLogArea)
-
+	// Use panel builder for right-side panel
+	var logContainer *widget.Container
+	logContainer, cm.combatLogArea = cm.panelBuilders.BuildRightSidePanel("Combat started!\n")
 	cm.rootContainer.AddChild(logContainer)
 }
 
 func (cm *CombatMode) buildActionButtons() {
-	// Bottom-center action buttons
-	cm.actionButtons = widget.NewContainer(
-		widget.ContainerOpts.Layout(widget.NewRowLayout(
-			widget.RowLayoutOpts.Direction(widget.DirectionHorizontal),
-			widget.RowLayoutOpts.Spacing(10),
-			widget.RowLayoutOpts.Padding(widget.Insets{Left: 10, Right: 10}),
-		)),
-		widget.ContainerOpts.WidgetOpts(
-			widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{
-				HorizontalPosition: widget.AnchorLayoutPositionCenter,
-				VerticalPosition:   widget.AnchorLayoutPositionEnd,
-				Padding: widget.Insets{
-					Bottom: int(float64(cm.layout.ScreenHeight) * 0.08),
-				},
-			}),
-		),
-	)
-
-	// Attack button (toggle attack mode)
-	cm.attackButton = CreateButton("Attack (A)")
-	cm.attackButton.Configure(
-		widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+	// Create action buttons
+	cm.attackButton = CreateButtonWithConfig(ButtonConfig{
+		Text: "Attack (A)",
+		OnClick: func() {
 			cm.toggleAttackMode()
-		}),
-	)
-	cm.actionButtons.AddChild(cm.attackButton)
+		},
+	})
 
-	// Move button (toggle move mode)
-	cm.moveButton = CreateButton("Move (M)")
-	cm.moveButton.Configure(
-		widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+	cm.moveButton = CreateButtonWithConfig(ButtonConfig{
+		Text: "Move (M)",
+		OnClick: func() {
 			cm.toggleMoveMode()
-		}),
-	)
-	cm.actionButtons.AddChild(cm.moveButton)
+		},
+	})
 
-	// End Turn button
-	endTurnBtn := CreateButton("End Turn (Space)")
-	endTurnBtn.Configure(
-		widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+	endTurnBtn := CreateButtonWithConfig(ButtonConfig{
+		Text: "End Turn (Space)",
+		OnClick: func() {
 			cm.handleEndTurn()
-		}),
-	)
-	cm.actionButtons.AddChild(endTurnBtn)
+		},
+	})
 
-	// Flee button
-	fleeBtn := CreateButton("Flee (ESC)")
-	fleeBtn.Configure(
-		widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+	fleeBtn := CreateButtonWithConfig(ButtonConfig{
+		Text: "Flee (ESC)",
+		OnClick: func() {
 			if exploreMode, exists := cm.modeManager.GetMode("exploration"); exists {
 				cm.modeManager.RequestTransition(exploreMode, "Fled from combat")
 			}
-		}),
-	)
-	cm.actionButtons.AddChild(fleeBtn)
+		},
+	})
+
+	// Use panel builder for action button container
+	buttons := []*widget.Button{cm.attackButton, cm.moveButton, endTurnBtn, fleeBtn}
+	cm.actionButtons = cm.panelBuilders.BuildActionButtons(buttons)
 
 	cm.rootContainer.AddChild(cm.actionButtons)
 }
@@ -573,13 +452,13 @@ func (cm *CombatMode) updateSquadList() {
 		squadName := cm.getSquadName(squadID)
 
 		// Create button for each squad
-		squadButton := CreateButton(squadName)
 		localSquadID := squadID // Capture for closure
-		squadButton.Configure(
-			widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+		squadButton := CreateButtonWithConfig(ButtonConfig{
+			Text: squadName,
+			OnClick: func() {
 				cm.selectSquad(localSquadID)
-			}),
-		)
+			},
+		})
 
 		cm.squadListPanel.AddChild(squadButton)
 	}

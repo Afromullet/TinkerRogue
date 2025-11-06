@@ -22,6 +22,9 @@ type SquadManagementMode struct {
 	rootContainer *widget.Container
 	squadPanels   []*SquadPanel // One panel per squad
 	closeButton   *widget.Button
+
+	// Panel builders for UI composition
+	panelBuilders *PanelBuilders
 }
 
 // SquadPanel represents a single squad's UI panel
@@ -43,6 +46,7 @@ func NewSquadManagementMode(modeManager *UIModeManager) *SquadManagementMode {
 func (smm *SquadManagementMode) Initialize(ctx *UIContext) error {
 	smm.context = ctx
 	smm.layout = NewLayoutConfig(ctx)
+	smm.panelBuilders = NewPanelBuilders(smm.layout, smm.modeManager)
 
 	// Create ebitenui root with grid layout for multiple squad panels
 	smm.ui = &ebitenui.UI{}
@@ -65,32 +69,11 @@ func (smm *SquadManagementMode) Initialize(ctx *UIContext) error {
 }
 
 func (smm *SquadManagementMode) buildCloseButton() {
-	buttonContainer := widget.NewContainer(
-		widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
-	)
-
-	smm.closeButton = CreateButton("Close (ESC)")
-	smm.closeButton.Configure(
-		widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
-			if exploreMode, exists := smm.modeManager.GetMode("exploration"); exists {
-				smm.modeManager.RequestTransition(exploreMode, "Close Squad Management")
-			}
-		}),
-	)
-
-	// Add LayoutData for bottom-center positioning
-	buttonContainer.GetWidget().LayoutData = widget.AnchorLayoutData{
-		HorizontalPosition: widget.AnchorLayoutPositionCenter,
-		VerticalPosition:   widget.AnchorLayoutPositionEnd,
-		Padding: widget.Insets{
-			Bottom: int(float64(smm.layout.ScreenHeight) * 0.08),
-		},
-	}
-
-	buttonContainer.AddChild(smm.closeButton)
+	// Use panel builder for close button
+	closeButtonContainer := smm.panelBuilders.BuildCloseButton("exploration", "Close (ESC)")
 
 	// Add to root (not grid layout, so it floats)
-	smm.ui.Container.AddChild(buttonContainer)
+	smm.ui.Container.AddChild(closeButtonContainer)
 }
 
 func (smm *SquadManagementMode) Enter(fromMode UIMode) error {
@@ -151,16 +134,16 @@ func (smm *SquadManagementMode) createSquadPanel(squadID ecs.EntityID) *SquadPan
 	}
 
 	// Container for this squad's panel
-	panel.container = widget.NewContainer(
-		widget.ContainerOpts.BackgroundImage(PanelRes.image),
-		widget.ContainerOpts.Layout(widget.NewRowLayout(
+	panel.container = CreatePanelWithConfig(PanelConfig{
+		Background: PanelRes.image,
+		Layout: widget.NewRowLayout(
 			widget.RowLayoutOpts.Direction(widget.DirectionVertical),
 			widget.RowLayoutOpts.Spacing(10),
 			widget.RowLayoutOpts.Padding(widget.Insets{
 				Left: 15, Right: 15, Top: 15, Bottom: 15,
 			}),
-		)),
-	)
+		),
+	})
 
 	// Squad name label - get component data using common.EntityManager
 	if squadDataRaw, ok := smm.context.ECSManager.GetComponent(squadID, squads.SquadComponent); ok {
@@ -220,20 +203,12 @@ func (smm *SquadManagementMode) createUnitList(squadID ecs.EntityID) *widget.Lis
 	}
 
 	// Create list widget using exported resources
-	list := widget.NewList(
-		widget.ListOpts.Entries(entries),
-		widget.ListOpts.EntryLabelFunc(func(e interface{}) string {
+	list := CreateListWithConfig(ListConfig{
+		Entries: entries,
+		EntryLabelFunc: func(e interface{}) string {
 			return e.(string)
-		}),
-		widget.ListOpts.ScrollContainerOpts(
-			widget.ScrollContainerOpts.Image(ListRes.image),
-		),
-		widget.ListOpts.SliderOpts(
-			widget.SliderOpts.Images(ListRes.track, ListRes.handle),
-		),
-		widget.ListOpts.EntryColor(ListRes.entry),
-		widget.ListOpts.EntryFontFace(ListRes.face),
-	)
+		},
+	})
 
 	return list
 }

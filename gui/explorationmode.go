@@ -2,7 +2,6 @@ package gui
 
 import (
 	"fmt"
-	"image/color"
 
 	"github.com/ebitenui/ebitenui"
 	"github.com/ebitenui/ebitenui/widget"
@@ -26,6 +25,9 @@ type ExplorationMode struct {
 
 	// Mode manager reference (for transitions)
 	modeManager *UIModeManager
+
+	// Panel builders for UI composition
+	panelBuilders *PanelBuilders
 }
 
 func NewExplorationMode(modeManager *UIModeManager) *ExplorationMode {
@@ -37,6 +39,7 @@ func NewExplorationMode(modeManager *UIModeManager) *ExplorationMode {
 func (em *ExplorationMode) Initialize(ctx *UIContext) error {
 	em.context = ctx
 	em.layout = NewLayoutConfig(ctx)
+	em.panelBuilders = NewPanelBuilders(em.layout, em.modeManager)
 
 	// Create ebitenui root
 	em.ui = &ebitenui.UI{}
@@ -54,86 +57,30 @@ func (em *ExplorationMode) Initialize(ctx *UIContext) error {
 }
 
 func (em *ExplorationMode) buildStatsPanel() {
-	// Get responsive position
-	x, y, width, height := em.layout.TopRightPanel()
-
-	// Stats panel (top-right corner)
-	em.statsPanel = widget.NewContainer(
-		widget.ContainerOpts.BackgroundImage(PanelRes.image),
-		widget.ContainerOpts.Layout(widget.NewAnchorLayout(
-			widget.AnchorLayoutOpts.Padding(widget.Insets{
-				Left: 10, Right: 10, Top: 10, Bottom: 10,
-			}),
-		)),
-		widget.ContainerOpts.WidgetOpts(
-			widget.WidgetOpts.MinSize(width, height),
-		),
+	// Use panel builder for stats panel
+	em.statsPanel, em.statsTextArea = em.panelBuilders.BuildStatsPanel(
+		em.context.PlayerData.PlayerAttributes().DisplayString(),
 	)
-
-	// Stats text area
-	statsConfig := TextAreaConfig{
-		MinWidth:  width - 20,
-		MinHeight: height - 20,
-		FontColor: color.White,
-	}
-	em.statsTextArea = CreateTextAreaWithConfig(statsConfig)
-	em.statsTextArea.SetText(em.context.PlayerData.PlayerAttributes().DisplayString())
-
-	em.statsPanel.AddChild(em.statsTextArea)
-
-	// Position using responsive layout
-	SetContainerLocation(em.statsPanel, x, y)
-
 	em.rootContainer.AddChild(em.statsPanel)
 }
 
 func (em *ExplorationMode) buildMessageLog() {
-	// Get responsive position
-	x, y, width, height := em.layout.BottomRightPanel()
-
-	// Message log (bottom-right corner)
-	logConfig := TextAreaConfig{
-		MinWidth:  width - 20,
-		MinHeight: height - 20,
-		FontColor: color.White,
-	}
-	em.messageLog = CreateTextAreaWithConfig(logConfig)
-
-	logContainer := widget.NewContainer(
-		widget.ContainerOpts.BackgroundImage(PanelRes.image),
-		widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
-		widget.ContainerOpts.WidgetOpts(
-			widget.WidgetOpts.MinSize(width, height),
-		),
-	)
-	logContainer.AddChild(em.messageLog)
-
-	// Position using responsive layout
-	SetContainerLocation(logContainer, x, y)
-
+	// Use panel builder for message log
+	var logContainer *widget.Container
+	logContainer, em.messageLog = em.panelBuilders.BuildMessageLog()
 	em.rootContainer.AddChild(logContainer)
 }
 
 func (em *ExplorationMode) buildQuickInventory() {
-	// Get responsive position
-	x, y := em.layout.BottomCenterButtons()
-
-	// Quick inventory buttons (bottom-center)
-	em.quickInventory = widget.NewContainer(
-		widget.ContainerOpts.Layout(widget.NewRowLayout(
-			widget.RowLayoutOpts.Direction(widget.DirectionHorizontal),
-			widget.RowLayoutOpts.Spacing(10),
-			widget.RowLayoutOpts.Padding(widget.Insets{Left: 10, Right: 10}),
-		)),
-	)
+	// Use panel builder for bottom-center button container
+	em.quickInventory = em.panelBuilders.BuildBottomCenterButtons()
 
 	// Throwables button
-	throwableBtn := CreateButton("Throwables")
-	throwableBtn.Configure(
-		widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+	throwableBtn := CreateButtonWithConfig(ButtonConfig{
+		Text: "Throwables",
+		OnClick: func() {
 			// Transition to inventory mode (throwables)
 			if invMode, exists := em.modeManager.GetMode("inventory"); exists {
-
 				//TODO remove this in the future. Just here for testing
 				// Set the initial filter to "Throwables" before transitioning
 				if inventoryMode, ok := invMode.(*InventoryMode); ok {
@@ -141,67 +88,64 @@ func (em *ExplorationMode) buildQuickInventory() {
 				}
 				em.modeManager.RequestTransition(invMode, "Open Throwables")
 			}
-		}),
-	)
+		},
+	})
 	em.quickInventory.AddChild(throwableBtn)
 
 	// Inventory button
-	inventoryBtn := CreateButton("Inventory (I)")
-	inventoryBtn.Configure(
-		widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+	inventoryBtn := CreateButtonWithConfig(ButtonConfig{
+		Text: "Inventory (I)",
+		OnClick: func() {
 			if invMode, exists := em.modeManager.GetMode("inventory"); exists {
 				em.modeManager.RequestTransition(invMode, "Open Inventory")
 			}
-		}),
-	)
+		},
+	})
 	em.quickInventory.AddChild(inventoryBtn)
 
 	// Squad button
-	squadBtn := CreateButton("Squads (E)")
-	squadBtn.Configure(
-		widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+	squadBtn := CreateButtonWithConfig(ButtonConfig{
+		Text: "Squads (E)",
+		OnClick: func() {
 			if squadMode, exists := em.modeManager.GetMode("squad_management"); exists {
 				em.modeManager.RequestTransition(squadMode, "Open Squad Management")
 			}
-		}),
-	)
+		},
+	})
 	em.quickInventory.AddChild(squadBtn)
 
 	// Squad Builder button
-	builderBtn := CreateButton("Builder (B)")
-	builderBtn.Configure(
-		widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+	builderBtn := CreateButtonWithConfig(ButtonConfig{
+		Text: "Builder (B)",
+		OnClick: func() {
 			if builderMode, exists := em.modeManager.GetMode("squad_builder"); exists {
 				em.modeManager.RequestTransition(builderMode, "Open Squad Builder")
 			}
-		}),
-	)
+		},
+	})
 	em.quickInventory.AddChild(builderBtn)
 
 	// Squad Deployment button
-	deployBtn := CreateButton("Deploy (D)")
-	deployBtn.Configure(
-		widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+	deployBtn := CreateButtonWithConfig(ButtonConfig{
+		Text: "Deploy (D)",
+		OnClick: func() {
 			if deployMode, exists := em.modeManager.GetMode("squad_deployment"); exists {
 				em.modeManager.RequestTransition(deployMode, "Open Squad Deployment")
 			}
-		}),
-	)
+		},
+	})
 	em.quickInventory.AddChild(deployBtn)
 
 	// Combat button
-	combatBtn := CreateButton("Combat (C)")
-	combatBtn.Configure(
-		widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+	combatBtn := CreateButtonWithConfig(ButtonConfig{
+		Text: "Combat (C)",
+		OnClick: func() {
 			if combatMode, exists := em.modeManager.GetMode("combat"); exists {
 				em.modeManager.RequestTransition(combatMode, "Enter Combat")
 			}
-		}),
-	)
+		},
+	})
 	em.quickInventory.AddChild(combatBtn)
-
-	// Position using responsive layout
-	SetContainerLocation(em.quickInventory, x, y)
 
 	em.rootContainer.AddChild(em.quickInventory)
 }
