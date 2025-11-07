@@ -2,59 +2,77 @@ package gui
 
 import (
 	"fmt"
+	"image/color"
 
-	"github.com/ebitenui/ebitenui"
 	"github.com/ebitenui/ebitenui/widget"
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
 // ExplorationMode is the default UI mode during dungeon exploration
 type ExplorationMode struct {
-	ui          *ebitenui.UI
-	context     *UIContext
-	layout      *LayoutConfig
+	BaseMode // Embed common mode infrastructure
+
 	initialized bool
 
 	// UI Components (ebitenui widgets)
-	rootContainer  *widget.Container
 	statsPanel     *widget.Container
 	statsTextArea  *widget.TextArea
 	messageLog     *widget.TextArea
 	quickInventory *widget.Container
 	infoWindow     *InfoUI
-
-	// Mode manager reference (for transitions)
-	modeManager *UIModeManager
-
-	// Panel builders for UI composition
-	panelBuilders *PanelBuilders
 }
 
 func NewExplorationMode(modeManager *UIModeManager) *ExplorationMode {
 	return &ExplorationMode{
-		modeManager: modeManager,
+		BaseMode: BaseMode{
+			modeManager: modeManager,
+			modeName:    "exploration",
+			returnMode:  "exploration",
+		},
 	}
 }
 
 func (em *ExplorationMode) Initialize(ctx *UIContext) error {
-	em.context = ctx
-	em.layout = NewLayoutConfig(ctx)
-	em.panelBuilders = NewPanelBuilders(em.layout, em.modeManager)
+	// Initialize common mode infrastructure
+	em.InitializeBase(ctx)
 
-	// Create ebitenui root
-	em.ui = &ebitenui.UI{}
-	em.rootContainer = widget.NewContainer()
-	em.ui.Container = em.rootContainer
-
-	// Build stats panel (top-right)
-	em.statsPanel, em.statsTextArea = em.panelBuilders.BuildStatsPanel(
-		em.context.PlayerData.PlayerAttributes().DisplayString(),
+	// Build stats panel (top-right) using BuildPanel
+	em.statsPanel = em.panelBuilders.BuildPanel(
+		TopRight(),
+		Size(0.15, 0.2),
+		Padding(0.01),
+		AnchorLayout(),
 	)
+
+	// Create stats text area inside panel
+	panelWidth := int(float64(em.layout.ScreenWidth) * 0.15)
+	panelHeight := int(float64(em.layout.ScreenHeight) * 0.2)
+	em.statsTextArea = CreateTextAreaWithConfig(TextAreaConfig{
+		MinWidth:  panelWidth - 20,
+		MinHeight: panelHeight - 20,
+		FontColor: color.White,
+	})
+	em.statsTextArea.SetText(em.context.PlayerData.PlayerAttributes().DisplayString())
+	em.statsPanel.AddChild(em.statsTextArea)
 	em.rootContainer.AddChild(em.statsPanel)
 
-	// Build message log (bottom-right)
-	var logContainer *widget.Container
-	logContainer, em.messageLog = em.panelBuilders.BuildMessageLog()
+	// Build message log (bottom-right) using BuildPanel
+	logContainer := em.panelBuilders.BuildPanel(
+		BottomRight(),
+		Size(0.15, 0.15),
+		Padding(0.01),
+		AnchorLayout(),
+	)
+
+	// Create message log text area inside panel
+	logWidth := int(float64(em.layout.ScreenWidth) * 0.15)
+	logHeight := int(float64(em.layout.ScreenHeight) * 0.15)
+	em.messageLog = CreateTextAreaWithConfig(TextAreaConfig{
+		MinWidth:  logWidth - 20,
+		MinHeight: logHeight - 20,
+		FontColor: color.White,
+	})
+	logContainer.AddChild(em.messageLog)
 	em.rootContainer.AddChild(logContainer)
 
 	// Build exploration-specific UI layout
@@ -66,8 +84,14 @@ func (em *ExplorationMode) Initialize(ctx *UIContext) error {
 }
 
 func (em *ExplorationMode) buildQuickInventory() {
-	// Use panel builder for bottom-center button container
-	em.quickInventory = em.panelBuilders.BuildBottomCenterButtons()
+	// Use BuildPanel for bottom-center button container
+	em.quickInventory = em.panelBuilders.BuildPanel(
+		BottomCenter(),
+		HorizontalRowLayout(),
+		CustomPadding(widget.Insets{
+			Bottom: int(float64(em.layout.ScreenHeight) * 0.08),
+		}),
+	)
 
 	// Throwables button
 	throwableBtn := CreateButtonWithConfig(ButtonConfig{
@@ -185,21 +209,21 @@ func (em *ExplorationMode) Render(screen *ebiten.Image) {
 }
 
 func (em *ExplorationMode) HandleInput(inputState *InputState) bool {
+	// Handle info window closing first (higher priority than ESC navigation)
+	if inputState.PlayerInputStates.InfoMeuOpen {
+		if inputState.KeysJustPressed[ebiten.KeyEscape] {
+			em.infoWindow.CloseWindows()
+			inputState.PlayerInputStates.InfoMeuOpen = false
+			return true
+		}
+	}
+
 	// Handle right-click info window
 	if inputState.MouseButton == ebiten.MouseButton2 && inputState.MousePressed {
 		// Only open if not in other input modes
 		if !inputState.PlayerInputStates.IsThrowing {
 			em.infoWindow.InfoSelectionWindow(inputState.MouseX, inputState.MouseY)
 			inputState.PlayerInputStates.InfoMeuOpen = true
-			return true
-		}
-	}
-
-	// Handle info window closing
-	if inputState.PlayerInputStates.InfoMeuOpen {
-		if inputState.KeysJustPressed[ebiten.KeyEscape] {
-			em.infoWindow.CloseWindows()
-			inputState.PlayerInputStates.InfoMeuOpen = false
 			return true
 		}
 	}
@@ -238,12 +262,4 @@ func (em *ExplorationMode) HandleInput(inputState *InputState) bool {
 	}
 
 	return false // Input not consumed, let game logic handle
-}
-
-func (em *ExplorationMode) GetEbitenUI() *ebitenui.UI {
-	return em.ui
-}
-
-func (em *ExplorationMode) GetModeName() string {
-	return "exploration"
 }

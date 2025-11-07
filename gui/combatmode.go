@@ -10,19 +10,14 @@ import (
 	"image/color"
 
 	"github.com/bytearena/ecs"
-	"github.com/ebitenui/ebitenui"
 	"github.com/ebitenui/ebitenui/widget"
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
 // CombatMode provides focused UI for turn-based squad combat
 type CombatMode struct {
-	ui          *ebitenui.UI
-	context     *UIContext
-	layout      *LayoutConfig
-	modeManager *UIModeManager
+	BaseMode // Embed common mode infrastructure
 
-	rootContainer    *widget.Container
 	turnOrderPanel   *widget.Container
 	factionInfoPanel *widget.Container
 	combatLogArea    *widget.TextArea
@@ -51,36 +46,35 @@ type CombatMode struct {
 	inAttackMode     bool
 	inMoveMode       bool
 	validMoveTiles   []coords.LogicalPosition
-
-	// Panel builders for UI composition
-	panelBuilders *PanelBuilders
 }
 
 func NewCombatMode(modeManager *UIModeManager) *CombatMode {
 	return &CombatMode{
-		modeManager: modeManager,
-		combatLog:   make([]string, 0, 100),
+		BaseMode: BaseMode{
+			modeManager: modeManager,
+			modeName:    "combat",
+			returnMode:  "exploration",
+		},
+		combatLog: make([]string, 0, 100),
 	}
 }
 
 func (cm *CombatMode) Initialize(ctx *UIContext) error {
-	cm.context = ctx
-	cm.layout = NewLayoutConfig(ctx)
-	cm.panelBuilders = NewPanelBuilders(cm.layout, cm.modeManager)
+	// Initialize common mode infrastructure
+	cm.InitializeBase(ctx)
 
 	// Initialize combat managers
 	cm.turnManager = combat.NewTurnManager(ctx.ECSManager)
 	cm.factionManager = combat.NewFactionManager(ctx.ECSManager)
 	cm.movementSystem = combat.NewMovementSystem(ctx.ECSManager, common.GlobalPositionSystem)
 
-	cm.ui = &ebitenui.UI{}
-	cm.rootContainer = widget.NewContainer(
-		widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
-	)
-	cm.ui.Container = cm.rootContainer
-
 	// Build turn order panel (top-center)
-	cm.turnOrderPanel = cm.panelBuilders.BuildTopCenterPanel(0.4, 0.08, 0.01)
+	cm.turnOrderPanel = cm.panelBuilders.BuildPanel(
+		TopCenter(),
+		Size(0.4, 0.08),
+		Padding(0.01),
+		HorizontalRowLayout(),
+	)
 	cm.turnOrderLabel = widget.NewText(
 		widget.TextOpts.Text("Initializing combat...", LargeFace, color.White),
 	)
@@ -88,7 +82,12 @@ func (cm *CombatMode) Initialize(ctx *UIContext) error {
 	cm.rootContainer.AddChild(cm.turnOrderPanel)
 
 	// Build faction info panel (top-left)
-	cm.factionInfoPanel = cm.panelBuilders.BuildTopLeftPanel(0.15, 0.12, 0.01, 0.01)
+	cm.factionInfoPanel = cm.panelBuilders.BuildPanel(
+		TopLeft(),
+		Size(0.15, 0.12),
+		Padding(0.01),
+		RowLayout(),
+	)
 	cm.factionInfoText = widget.NewText(
 		widget.TextOpts.Text("Faction Info", SmallFace, color.White),
 	)
@@ -96,7 +95,12 @@ func (cm *CombatMode) Initialize(ctx *UIContext) error {
 	cm.rootContainer.AddChild(cm.factionInfoPanel)
 
 	// Build squad list panel (left-side)
-	cm.squadListPanel = cm.panelBuilders.BuildLeftSidePanel(0.15, 0.5, 0.01, widget.AnchorLayoutPositionCenter)
+	cm.squadListPanel = cm.panelBuilders.BuildPanel(
+		LeftCenter(),
+		Size(0.15, 0.5),
+		Padding(0.01),
+		RowLayout(),
+	)
 	listLabel := widget.NewText(
 		widget.TextOpts.Text("Your Squads:", SmallFace, color.White),
 	)
@@ -104,16 +108,39 @@ func (cm *CombatMode) Initialize(ctx *UIContext) error {
 	cm.rootContainer.AddChild(cm.squadListPanel)
 
 	// Build squad detail panel (left-bottom)
-	cm.squadDetailPanel = cm.panelBuilders.BuildLeftBottomPanel(0.15, 0.25, 0.01, 0.15)
+	cm.squadDetailPanel = cm.panelBuilders.BuildPanel(
+		LeftBottom(),
+		Size(0.15, 0.25),
+		CustomPadding(widget.Insets{
+			Left:   int(float64(cm.layout.ScreenWidth) * 0.01),
+			Bottom: int(float64(cm.layout.ScreenHeight) * 0.15),
+		}),
+		RowLayout(),
+	)
 	cm.squadDetailText = widget.NewText(
 		widget.TextOpts.Text("Select a squad\nto view details", SmallFace, color.White),
 	)
 	cm.squadDetailPanel.AddChild(cm.squadDetailText)
 	cm.rootContainer.AddChild(cm.squadDetailPanel)
 
-	// Build combat log (right-side)
-	var logContainer *widget.Container
-	logContainer, cm.combatLogArea = cm.panelBuilders.BuildRightSidePanel("Combat started!\n")
+	// Build combat log (right-side) using BuildPanel
+	logContainer := cm.panelBuilders.BuildPanel(
+		RightCenter(),
+		Size(0.2, 0.85),
+		Padding(0.01),
+		AnchorLayout(),
+	)
+
+	// Create combat log text area
+	logWidth := int(float64(cm.layout.ScreenWidth) * 0.2)
+	logHeight := cm.layout.ScreenHeight - int(float64(cm.layout.ScreenHeight)*0.15)
+	cm.combatLogArea = CreateTextAreaWithConfig(TextAreaConfig{
+		MinWidth:  logWidth - 20,
+		MinHeight: logHeight - 20,
+		FontColor: color.White,
+	})
+	cm.combatLogArea.SetText("Combat started!\n")
+	logContainer.AddChild(cm.combatLogArea)
 	cm.rootContainer.AddChild(logContainer)
 
 	// Build combat UI layout
@@ -154,10 +181,19 @@ func (cm *CombatMode) buildActionButtons() {
 		},
 	})
 
-	// Use panel builder for action button container
-	buttons := []*widget.Button{cm.attackButton, cm.moveButton, endTurnBtn, fleeBtn}
-	cm.actionButtons = cm.panelBuilders.BuildActionButtons(buttons)
+	// Build action buttons container using BuildPanel
+	cm.actionButtons = cm.panelBuilders.BuildPanel(
+		BottomCenter(),
+		HorizontalRowLayout(),
+		CustomPadding(widget.Insets{
+			Bottom: int(float64(cm.layout.ScreenHeight) * 0.08),
+		}),
+	)
 
+	cm.actionButtons.AddChild(cm.attackButton)
+	cm.actionButtons.AddChild(cm.moveButton)
+	cm.actionButtons.AddChild(endTurnBtn)
+	cm.actionButtons.AddChild(fleeBtn)
 	cm.rootContainer.AddChild(cm.actionButtons)
 }
 
@@ -718,6 +754,11 @@ func (cm *CombatMode) renderAllSquadHighlights(screen *ebiten.Image) {
 }
 
 func (cm *CombatMode) HandleInput(inputState *InputState) bool {
+	// Handle common input (ESC key to flee combat)
+	if cm.HandleCommonInput(inputState) {
+		return true
+	}
+
 	// Handle left mouse clicks
 	if inputState.MouseButton == ebiten.MouseButtonLeft && inputState.MousePressed {
 		if cm.inMoveMode {
@@ -728,14 +769,6 @@ func (cm *CombatMode) HandleInput(inputState *InputState) bool {
 			cm.handleSquadClick(inputState.MouseX, inputState.MouseY)
 		}
 		return true
-	}
-
-	// ESC to flee combat
-	if inputState.KeysJustPressed[ebiten.KeyEscape] {
-		if exploreMode, exists := cm.modeManager.GetMode("exploration"); exists {
-			cm.modeManager.RequestTransition(exploreMode, "ESC pressed - fled combat")
-			return true
-		}
 	}
 
 	// Space to end turn
@@ -961,10 +994,3 @@ func (cm *CombatMode) cycleSquadSelection() {
 	cm.selectSquad(aliveSquads[nextIndex])
 }
 
-func (cm *CombatMode) GetEbitenUI() *ebitenui.UI {
-	return cm.ui
-}
-
-func (cm *CombatMode) GetModeName() string {
-	return "combat"
-}

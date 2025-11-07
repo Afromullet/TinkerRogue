@@ -7,19 +7,14 @@ import (
 	"image/color"
 
 	"github.com/bytearena/ecs"
-	"github.com/ebitenui/ebitenui"
 	"github.com/ebitenui/ebitenui/widget"
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
 // SquadBuilderMode provides an interface for creating new squads
 type SquadBuilderMode struct {
-	ui          *ebitenui.UI
-	context     *UIContext
-	layout      *LayoutConfig
-	modeManager *UIModeManager
+	BaseMode // Embed common mode infrastructure
 
-	rootContainer    *widget.Container
 	gridContainer    *widget.Container
 	unitPalette      *widget.List
 	capacityDisplay  *widget.TextArea
@@ -32,9 +27,6 @@ type SquadBuilderMode struct {
 	currentSquadName string
 	selectedUnitIdx  int          // Index in Units array
 	currentLeaderID  ecs.EntityID // Currently designated leader
-
-	// Panel builders for UI composition
-	panelBuilders *PanelBuilders
 }
 
 // GridCellButton wraps a button with squad grid metadata
@@ -48,21 +40,18 @@ type GridCellButton struct {
 
 func NewSquadBuilderMode(modeManager *UIModeManager) *SquadBuilderMode {
 	return &SquadBuilderMode{
-		modeManager:     modeManager,
+		BaseMode: BaseMode{
+			modeManager: modeManager,
+			modeName:    "squad_builder",
+			returnMode:  "exploration",
+		},
 		selectedUnitIdx: -1,
 	}
 }
 
 func (sbm *SquadBuilderMode) Initialize(ctx *UIContext) error {
-	sbm.context = ctx
-	sbm.layout = NewLayoutConfig(ctx)
-	sbm.panelBuilders = NewPanelBuilders(sbm.layout, sbm.modeManager)
-
-	sbm.ui = &ebitenui.UI{}
-	sbm.rootContainer = widget.NewContainer(
-		widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
-	)
-	sbm.ui.Container = sbm.rootContainer
+	// Initialize common mode infrastructure
+	sbm.InitializeBase(ctx)
 
 	// Build UI components
 	sbm.buildGridEditor()
@@ -781,12 +770,9 @@ func (sbm *SquadBuilderMode) Render(screen *ebiten.Image) {
 }
 
 func (sbm *SquadBuilderMode) HandleInput(inputState *InputState) bool {
-	// ESC to close
-	if inputState.KeysJustPressed[ebiten.KeyEscape] {
-		if exploreMode, exists := sbm.modeManager.GetMode("exploration"); exists {
-			sbm.modeManager.RequestTransition(exploreMode, "ESC pressed")
-			return true
-		}
+	// Handle common input (ESC key)
+	if sbm.HandleCommonInput(inputState) {
+		return true
 	}
 
 	// L key to toggle leader
@@ -798,10 +784,3 @@ func (sbm *SquadBuilderMode) HandleInput(inputState *InputState) bool {
 	return false
 }
 
-func (sbm *SquadBuilderMode) GetEbitenUI() *ebitenui.UI {
-	return sbm.ui
-}
-
-func (sbm *SquadBuilderMode) GetModeName() string {
-	return "squad_builder"
-}

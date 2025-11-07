@@ -14,17 +14,10 @@ import (
 
 // SquadManagementMode shows all squads with detailed information
 type SquadManagementMode struct {
-	ui          *ebitenui.UI
-	context     *UIContext
-	layout      *LayoutConfig
-	modeManager *UIModeManager
+	BaseMode // Embed common mode infrastructure
 
-	rootContainer *widget.Container
-	squadPanels   []*SquadPanel // One panel per squad
-	closeButton   *widget.Button
-
-	// Panel builders for UI composition
-	panelBuilders *PanelBuilders
+	squadPanels []*SquadPanel // One panel per squad
+	closeButton *widget.Button
 }
 
 // SquadPanel represents a single squad's UI panel
@@ -38,17 +31,22 @@ type SquadPanel struct {
 
 func NewSquadManagementMode(modeManager *UIModeManager) *SquadManagementMode {
 	return &SquadManagementMode{
-		modeManager: modeManager,
+		BaseMode: BaseMode{
+			modeManager: modeManager,
+			modeName:    "squad_management",
+			returnMode:  "exploration",
+		},
 		squadPanels: make([]*SquadPanel, 0),
 	}
 }
 
 func (smm *SquadManagementMode) Initialize(ctx *UIContext) error {
+	// Initialize common mode infrastructure (but override root container with grid layout)
 	smm.context = ctx
 	smm.layout = NewLayoutConfig(ctx)
 	smm.panelBuilders = NewPanelBuilders(smm.layout, smm.modeManager)
 
-	// Create ebitenui root with grid layout for multiple squad panels
+	// Create ebitenui root with grid layout for multiple squad panels (overrides BaseMode default)
 	smm.ui = &ebitenui.UI{}
 	smm.rootContainer = widget.NewContainer(
 		widget.ContainerOpts.Layout(widget.NewGridLayout(
@@ -62,8 +60,24 @@ func (smm *SquadManagementMode) Initialize(ctx *UIContext) error {
 	)
 	smm.ui.Container = smm.rootContainer
 
-	// Build close button (bottom-center)
-	closeButtonContainer := smm.panelBuilders.BuildCloseButton("exploration", "Close (ESC)")
+	// Build close button (bottom-center) using BuildPanel
+	closeButtonContainer := smm.panelBuilders.BuildPanel(
+		BottomCenter(),
+		CustomPadding(widget.Insets{
+			Bottom: int(float64(smm.layout.ScreenHeight) * 0.08),
+		}),
+		AnchorLayout(),
+	)
+
+	closeBtn := CreateButtonWithConfig(ButtonConfig{
+		Text: "Close (ESC)",
+		OnClick: func() {
+			if targetMode, exists := smm.modeManager.GetMode("exploration"); exists {
+				smm.modeManager.RequestTransition(targetMode, "Close button pressed")
+			}
+		},
+	})
+	closeButtonContainer.AddChild(closeBtn)
 	smm.ui.Container.AddChild(closeButtonContainer)
 
 	return nil
@@ -235,10 +249,15 @@ func (smm *SquadManagementMode) Render(screen *ebiten.Image) {
 }
 
 func (smm *SquadManagementMode) HandleInput(inputState *InputState) bool {
-	// ESC or E to close
-	if inputState.KeysJustPressed[ebiten.KeyEscape] || inputState.KeysJustPressed[ebiten.KeyE] {
+	// Handle common input (ESC key)
+	if smm.HandleCommonInput(inputState) {
+		return true
+	}
+
+	// E key to close (squad management-specific hotkey)
+	if inputState.KeysJustPressed[ebiten.KeyE] {
 		if exploreMode, exists := smm.modeManager.GetMode("exploration"); exists {
-			smm.modeManager.RequestTransition(exploreMode, "ESC pressed")
+			smm.modeManager.RequestTransition(exploreMode, "E key pressed")
 			return true
 		}
 	}
@@ -246,10 +265,3 @@ func (smm *SquadManagementMode) HandleInput(inputState *InputState) bool {
 	return false
 }
 
-func (smm *SquadManagementMode) GetEbitenUI() *ebitenui.UI {
-	return smm.ui
-}
-
-func (smm *SquadManagementMode) GetModeName() string {
-	return "squad_management"
-}

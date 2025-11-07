@@ -6,21 +6,17 @@ import (
 	"game_main/coords"
 	"game_main/graphics"
 	"game_main/squads"
+	"image/color"
 
 	"github.com/bytearena/ecs"
-	"github.com/ebitenui/ebitenui"
 	"github.com/ebitenui/ebitenui/widget"
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
 // SquadDeploymentMode allows placing squads on the map before combat
 type SquadDeploymentMode struct {
-	ui          *ebitenui.UI
-	context     *UIContext
-	layout      *LayoutConfig
-	modeManager *UIModeManager
+	BaseMode // Embed common mode infrastructure
 
-	rootContainer     *widget.Container
 	squadListPanel    *widget.Container
 	squadList         *widget.List
 	selectedSquadID   ecs.EntityID
@@ -34,37 +30,40 @@ type SquadDeploymentMode struct {
 	pendingMouseX    int
 	pendingMouseY    int
 	pendingPlacement bool
-
-	// Panel builders for UI composition
-	panelBuilders *PanelBuilders
 }
 
 func NewSquadDeploymentMode(modeManager *UIModeManager) *SquadDeploymentMode {
 	return &SquadDeploymentMode{
-		modeManager: modeManager,
-		allSquads:   make([]ecs.EntityID, 0),
-		squadNames:  make([]string, 0),
+		BaseMode: BaseMode{
+			modeManager: modeManager,
+			modeName:    "squad_deployment",
+			returnMode:  "exploration",
+		},
+		allSquads:  make([]ecs.EntityID, 0),
+		squadNames: make([]string, 0),
 	}
 }
 
 func (sdm *SquadDeploymentMode) Initialize(ctx *UIContext) error {
-	sdm.context = ctx
-	sdm.layout = NewLayoutConfig(ctx)
-	sdm.panelBuilders = NewPanelBuilders(sdm.layout, sdm.modeManager)
-
-	sdm.ui = &ebitenui.UI{}
-	sdm.rootContainer = widget.NewContainer(
-		widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
-	)
-	sdm.ui.Container = sdm.rootContainer
+	// Initialize common mode infrastructure
+	sdm.InitializeBase(ctx)
 
 	// Build UI components
 	sdm.buildSquadListPanel()
 
-	// Build instruction text (top-center)
-	sdm.instructionText = sdm.panelBuilders.BuildTopInstructionText(TopInstructionTextConfig{
-		Text: "Select a squad from the list, then click on the map to place it",
-	})
+	// Build instruction text (top-center) using BuildPanel
+	sdm.instructionText = widget.NewText(
+		widget.TextOpts.Text("Select a squad from the list, then click on the map to place it", SmallFace, color.White),
+		widget.TextOpts.WidgetOpts(
+			widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{
+				HorizontalPosition: widget.AnchorLayoutPositionCenter,
+				VerticalPosition:   widget.AnchorLayoutPositionStart,
+				Padding: widget.Insets{
+					Top: int(float64(sdm.layout.ScreenHeight) * 0.02),
+				},
+			}),
+		),
+	)
 	sdm.rootContainer.AddChild(sdm.instructionText)
 
 	sdm.buildActionButtons()
@@ -73,27 +72,51 @@ func (sdm *SquadDeploymentMode) Initialize(ctx *UIContext) error {
 }
 
 func (sdm *SquadDeploymentMode) buildSquadListPanel() {
-	// Use panel builder for squad list panel - will be populated in Enter()
-	// Note: Squad names aren't available at Initialize time, so we pass empty list
-	sdm.squadListPanel, sdm.squadList = sdm.panelBuilders.BuildSquadListPanel(SquadListConfig{
-		SquadNames:    []string{}, // Will be populated in Enter()
-		WidthPercent:  0.2,
-		HeightPercent: 0.8,
-		Label:         "Squads:",
-		OnSelect: func(squadName string, squadIndex int) {
-			fmt.Printf("DEBUG: Squad selection event fired!\n")
-			fmt.Printf("DEBUG: Selected entry: %s\n", squadName)
+	// Build squad list panel using BuildPanel
+	sdm.squadListPanel = sdm.panelBuilders.BuildPanel(
+		LeftCenter(),
+		Size(0.2, 0.8),
+		Padding(0.01),
+		RowLayout(),
+	)
 
-			// Find the squad ID matching this name
-			if squadIndex < len(sdm.allSquads) {
-				sdm.selectedSquadID = sdm.allSquads[squadIndex]
-				sdm.isPlacingSquad = true
-				fmt.Printf("DEBUG: Set selectedSquadID=%d, isPlacingSquad=true\n", sdm.selectedSquadID)
-				sdm.updateInstructionText()
+	// Add label
+	listLabel := widget.NewText(
+		widget.TextOpts.Text("Squads:", SmallFace, color.White),
+	)
+	sdm.squadListPanel.AddChild(listLabel)
+
+	// Create list widget - will be populated in Enter()
+	sdm.squadList = CreateListWithConfig(ListConfig{
+		Entries:    []interface{}{}, // Will be populated in Enter()
+		EntryLabelFunc: func(e interface{}) string {
+			if str, ok := e.(string); ok {
+				return str
+			}
+			return fmt.Sprintf("%v", e)
+		},
+		OnEntrySelected: func(selectedEntry interface{}) {
+			if squadName, ok := selectedEntry.(string); ok {
+				fmt.Printf("DEBUG: Squad selection event fired!\n")
+				fmt.Printf("DEBUG: Selected entry: %s\n", squadName)
+
+				// Find the squad index matching this name
+				for i, name := range sdm.squadNames {
+					if name == squadName {
+						if i < len(sdm.allSquads) {
+							sdm.selectedSquadID = sdm.allSquads[i]
+							sdm.isPlacingSquad = true
+							fmt.Printf("DEBUG: Set selectedSquadID=%d, isPlacingSquad=true\n", sdm.selectedSquadID)
+							sdm.updateInstructionText()
+						}
+						break
+					}
+				}
 			}
 		},
 	})
 
+	sdm.squadListPanel.AddChild(sdm.squadList)
 	sdm.rootContainer.AddChild(sdm.squadListPanel)
 }
 
@@ -115,10 +138,17 @@ func (sdm *SquadDeploymentMode) buildActionButtons() {
 		},
 	})
 
-	// Use panel builder for action buttons
-	buttons := []*widget.Button{sdm.clearAllButton, sdm.confirmButton}
-	buttonContainer := sdm.panelBuilders.BuildActionButtons(buttons)
+	// Build action buttons container using BuildPanel
+	buttonContainer := sdm.panelBuilders.BuildPanel(
+		BottomCenter(),
+		HorizontalRowLayout(),
+		CustomPadding(widget.Insets{
+			Bottom: int(float64(sdm.layout.ScreenHeight) * 0.08),
+		}),
+	)
 
+	buttonContainer.AddChild(sdm.clearAllButton)
+	buttonContainer.AddChild(sdm.confirmButton)
 	sdm.rootContainer.AddChild(buttonContainer)
 }
 
@@ -206,6 +236,11 @@ func (sdm *SquadDeploymentMode) Render(screen *ebiten.Image) {
 }
 
 func (sdm *SquadDeploymentMode) HandleInput(inputState *InputState) bool {
+	// Handle common input (ESC key)
+	if sdm.HandleCommonInput(inputState) {
+		return true
+	}
+
 	// Capture mouse clicks for processing after UI update
 	if inputState.MouseButton == ebiten.MouseButtonLeft && inputState.MousePressed {
 		fmt.Printf("DEBUG: Mouse click captured at (%d, %d), placing=%v, squadID=%d\n",
@@ -296,10 +331,3 @@ func (sdm *SquadDeploymentMode) clearAllSquadPositions() {
 	fmt.Println("All squads cleared")
 }
 
-func (sdm *SquadDeploymentMode) GetEbitenUI() *ebitenui.UI {
-	return sdm.ui
-}
-
-func (sdm *SquadDeploymentMode) GetModeName() string {
-	return "squad_deployment"
-}

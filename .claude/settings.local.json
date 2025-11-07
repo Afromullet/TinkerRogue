@@ -4,7 +4,8 @@
       "Bash(go build:*)",
       "WebFetch(domain:github.com)",
       "Bash(find:*)",
-      "Bash(go test:*)"
+      "Bash(go test:*)",
+      "Bash(cat:*)"
     ],
     "deny": [],
     "ask": []

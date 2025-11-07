@@ -3,45 +3,34 @@ package gui
 import (
 	"fmt"
 
-	"github.com/ebitenui/ebitenui"
 	"github.com/ebitenui/ebitenui/widget"
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
 // FormationEditorMode provides 3x3 grid editing for squad formations
 type FormationEditorMode struct {
-	ui          *ebitenui.UI
-	context     *UIContext
-	layout      *LayoutConfig
-	modeManager *UIModeManager
+	BaseMode // Embed common mode infrastructure
 
-	rootContainer *widget.Container
 	gridContainer *widget.Container
 	unitPalette   *widget.List
 	actionButtons *widget.Container
 
 	gridCells [3][3]*widget.Button // 3x3 grid of cells
-
-	// Panel builders for UI composition
-	panelBuilders *PanelBuilders
 }
 
 func NewFormationEditorMode(modeManager *UIModeManager) *FormationEditorMode {
 	return &FormationEditorMode{
-		modeManager: modeManager,
+		BaseMode: BaseMode{
+			modeManager: modeManager,
+			modeName:    "formation_editor",
+			returnMode:  "exploration",
+		},
 	}
 }
 
 func (fem *FormationEditorMode) Initialize(ctx *UIContext) error {
-	fem.context = ctx
-	fem.layout = NewLayoutConfig(ctx)
-	fem.panelBuilders = NewPanelBuilders(fem.layout, fem.modeManager)
-
-	fem.ui = &ebitenui.UI{}
-	fem.rootContainer = widget.NewContainer(
-		widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
-	)
-	fem.ui.Container = fem.rootContainer
+	// Initialize common mode infrastructure
+	fem.InitializeBase(ctx)
 
 	// Build formation editor UI
 	// Build 3x3 grid editor (center)
@@ -112,10 +101,18 @@ func (fem *FormationEditorMode) buildActionButtons() {
 		},
 	})
 
-	// Use panel builder for action buttons
-	buttons := []*widget.Button{saveBtn, loadBtn, closeBtn}
-	fem.actionButtons = fem.panelBuilders.BuildActionButtons(buttons)
+	// Build action buttons container using BuildPanel
+	fem.actionButtons = fem.panelBuilders.BuildPanel(
+		BottomCenter(),
+		HorizontalRowLayout(),
+		CustomPadding(widget.Insets{
+			Bottom: int(float64(fem.layout.ScreenHeight) * 0.08),
+		}),
+	)
 
+	fem.actionButtons.AddChild(saveBtn)
+	fem.actionButtons.AddChild(loadBtn)
+	fem.actionButtons.AddChild(closeBtn)
 	fem.rootContainer.AddChild(fem.actionButtons)
 }
 
@@ -152,21 +149,11 @@ func (fem *FormationEditorMode) Render(screen *ebiten.Image) {
 }
 
 func (fem *FormationEditorMode) HandleInput(inputState *InputState) bool {
-	// ESC to close
-	if inputState.KeysJustPressed[ebiten.KeyEscape] {
-		if exploreMode, exists := fem.modeManager.GetMode("exploration"); exists {
-			fem.modeManager.RequestTransition(exploreMode, "ESC pressed")
-			return true
-		}
+	// Handle common input (ESC key)
+	if fem.HandleCommonInput(inputState) {
+		return true
 	}
 
 	return false
 }
 
-func (fem *FormationEditorMode) GetEbitenUI() *ebitenui.UI {
-	return fem.ui
-}
-
-func (fem *FormationEditorMode) GetModeName() string {
-	return "formation_editor"
-}

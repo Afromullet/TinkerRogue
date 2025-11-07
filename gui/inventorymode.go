@@ -4,20 +4,16 @@ import (
 	"fmt"
 	"game_main/common"
 	"game_main/gear"
+	"image/color"
 
-	"github.com/ebitenui/ebitenui"
 	"github.com/ebitenui/ebitenui/widget"
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
 // InventoryMode provides full-screen inventory browsing and management
 type InventoryMode struct {
-	ui          *ebitenui.UI
-	context     *UIContext
-	layout      *LayoutConfig
-	modeManager *UIModeManager
+	BaseMode // Embed common mode infrastructure
 
-	rootContainer  *widget.Container
 	itemList       *widget.List
 	detailPanel    *widget.Container
 	detailTextArea *widget.TextArea
@@ -26,14 +22,15 @@ type InventoryMode struct {
 
 	currentFilter string // "all", "throwables", "equipment", "consumables"
 	initialFilter string // Filter to set on Enter() - allows pre-setting filter before transition
-
-	// Panel builders for UI composition
-	panelBuilders *PanelBuilders
 }
 
 func NewInventoryMode(modeManager *UIModeManager) *InventoryMode {
 	return &InventoryMode{
-		modeManager:   modeManager,
+		BaseMode: BaseMode{
+			modeManager: modeManager,
+			modeName:    "inventory",
+			returnMode:  "exploration",
+		},
 		currentFilter: "all",
 		initialFilter: "",
 	}
@@ -47,51 +44,63 @@ func (im *InventoryMode) SetInitialFilter(filter string) {
 }
 
 func (im *InventoryMode) Initialize(ctx *UIContext) error {
-	im.context = ctx
-	im.layout = NewLayoutConfig(ctx)
-	im.panelBuilders = NewPanelBuilders(im.layout, im.modeManager)
-
-	im.ui = &ebitenui.UI{}
-	im.rootContainer = widget.NewContainer(
-		widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
-	)
-	im.ui.Container = im.rootContainer
+	// Initialize common mode infrastructure
+	im.InitializeBase(ctx)
 
 	// Build inventory UI
 	im.buildFilterButtons()
 	im.buildItemList()
 
-	// Build detail panel (right side)
-	im.detailPanel, im.detailTextArea = im.panelBuilders.BuildDetailPanel(DetailPanelConfig{
-		InitialText: "Select an item to view details",
+	// Build detail panel (right side) using BuildPanel
+	im.detailPanel = im.panelBuilders.BuildPanel(
+		RightCenter(),
+		Size(0.45, 0.75),
+		Padding(0.02),
+		AnchorLayout(),
+	)
+
+	// Create detail text area inside panel
+	panelWidth := int(float64(im.layout.ScreenWidth) * 0.45)
+	panelHeight := int(float64(im.layout.ScreenHeight) * 0.75)
+	im.detailTextArea = CreateTextAreaWithConfig(TextAreaConfig{
+		MinWidth:  panelWidth - 20,
+		MinHeight: panelHeight - 20,
+		FontColor: color.White,
 	})
+	im.detailTextArea.SetText("Select an item to view details")
+	im.detailPanel.AddChild(im.detailTextArea)
 	im.rootContainer.AddChild(im.detailPanel)
 
-	// Build close button (bottom-right)
-	closeButtonContainer := im.panelBuilders.BuildCloseButton("exploration", "Close (ESC)")
+	// Build close button (bottom-center) using BuildPanel
+	closeButtonContainer := im.panelBuilders.BuildPanel(
+		BottomCenter(),
+		CustomPadding(widget.Insets{
+			Bottom: int(float64(im.layout.ScreenHeight) * 0.08),
+		}),
+		AnchorLayout(),
+	)
+
+	closeBtn := CreateButtonWithConfig(ButtonConfig{
+		Text: "Close (ESC)",
+		OnClick: func() {
+			if targetMode, exists := im.modeManager.GetMode("exploration"); exists {
+				im.modeManager.RequestTransition(targetMode, "Close button pressed")
+			}
+		},
+	})
+	closeButtonContainer.AddChild(closeBtn)
 	im.rootContainer.AddChild(closeButtonContainer)
 
 	return nil
 }
 
 func (im *InventoryMode) buildFilterButtons() {
-	// Top-left filter buttons
-	im.filterButtons = CreatePanelWithConfig(PanelConfig{
-		Background: PanelRes.image,
-		Layout: widget.NewRowLayout(
-			widget.RowLayoutOpts.Direction(widget.DirectionHorizontal),
-			widget.RowLayoutOpts.Spacing(10),
-			widget.RowLayoutOpts.Padding(widget.Insets{Left: 10, Right: 10, Top: 10, Bottom: 10}),
-		),
-		LayoutData: widget.AnchorLayoutData{
-			HorizontalPosition: widget.AnchorLayoutPositionStart,
-			VerticalPosition:   widget.AnchorLayoutPositionStart,
-			Padding: widget.Insets{
-				Left: int(float64(im.layout.ScreenWidth) * 0.02),
-				Top:  int(float64(im.layout.ScreenHeight) * 0.02),
-			},
-		},
-	})
+	// Top-left filter buttons using BuildPanel
+	im.filterButtons = im.panelBuilders.BuildPanel(
+		TopLeft(),
+		Padding(0.02),
+		HorizontalRowLayout(),
+	)
 
 	// Filter buttons
 	filters := []string{"All", "Throwables", "Equipment", "Consumables"}
@@ -275,8 +284,13 @@ func (im *InventoryMode) Render(screen *ebiten.Image) {
 }
 
 func (im *InventoryMode) HandleInput(inputState *InputState) bool {
-	// ESC or I to close
-	if inputState.KeysJustPressed[ebiten.KeyEscape] || inputState.KeysJustPressed[ebiten.KeyI] {
+	// Handle common input (ESC key)
+	if im.HandleCommonInput(inputState) {
+		return true
+	}
+
+	// I key to close (inventory-specific hotkey)
+	if inputState.KeysJustPressed[ebiten.KeyI] {
 		if exploreMode, exists := im.modeManager.GetMode("exploration"); exists {
 			im.modeManager.RequestTransition(exploreMode, "Close Inventory")
 			return true
@@ -284,12 +298,4 @@ func (im *InventoryMode) HandleInput(inputState *InputState) bool {
 	}
 
 	return false
-}
-
-func (im *InventoryMode) GetEbitenUI() *ebitenui.UI {
-	return im.ui
-}
-
-func (im *InventoryMode) GetModeName() string {
-	return "inventory"
 }
