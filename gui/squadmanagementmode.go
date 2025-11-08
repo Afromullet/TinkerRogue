@@ -60,23 +60,9 @@ func (smm *SquadManagementMode) Initialize(ctx *UIContext) error {
 	)
 	smm.ui.Container = smm.rootContainer
 
-	// Build close button (bottom-center) using BuildPanel
-	closeButtonContainer := smm.panelBuilders.BuildPanel(
-		BottomCenter(),
-		CustomPadding(widget.Insets{
-			Bottom: int(float64(smm.layout.ScreenHeight) * 0.08),
-		}),
-		AnchorLayout(),
-	)
-
-	closeBtn := CreateButtonWithConfig(ButtonConfig{
-		Text: "Close (ESC)",
-		OnClick: func() {
-			if targetMode, exists := smm.modeManager.GetMode("exploration"); exists {
-				smm.modeManager.RequestTransition(targetMode, "Close button pressed")
-			}
-		},
-	})
+	// Build close button (bottom-center) using helper
+	closeButtonContainer := CreateBottomCenterButtonContainer(smm.panelBuilders)
+	closeBtn := CreateCloseButton(smm.modeManager, "exploration", "Close (ESC)")
 	closeButtonContainer.AddChild(closeBtn)
 	smm.ui.Container.AddChild(closeButtonContainer)
 
@@ -89,8 +75,8 @@ func (smm *SquadManagementMode) Enter(fromMode UIMode) error {
 	// Clear old panels
 	smm.clearSquadPanels()
 
-	// Find all squads in the game
-	allSquads := smm.findAllSquads()
+	// Find all squads in the game using shared query
+	allSquads := FindAllSquads(smm.context.ECSManager)
 
 	// Create panel for each squad
 	for _, squadID := range allSquads {
@@ -118,22 +104,6 @@ func (smm *SquadManagementMode) clearSquadPanels() {
 	smm.squadPanels = smm.squadPanels[:0] // Clear slice
 }
 
-func (smm *SquadManagementMode) findAllSquads() []ecs.EntityID {
-	// Query ECS for all entities with SquadData component
-	// Uses common.EntityManager wrapper methods
-	allSquads := make([]ecs.EntityID, 0)
-
-	// Iterate through all entities
-	entityIDs := smm.context.ECSManager.GetAllEntities()
-	for _, entityID := range entityIDs {
-		// Check if entity has SquadData component
-		if smm.context.ECSManager.HasComponent(entityID, squads.SquadComponent) {
-			allSquads = append(allSquads, entityID)
-		}
-	}
-
-	return allSquads
-}
 
 func (smm *SquadManagementMode) createSquadPanel(squadID ecs.EntityID) *SquadPanel {
 	panel := &SquadPanel{

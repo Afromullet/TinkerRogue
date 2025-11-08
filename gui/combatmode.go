@@ -324,7 +324,7 @@ func (cm *CombatMode) showAvailableTargets() {
 
 	// Show up to 3 targets
 	for i := 0; i < len(enemySquads) && i < 3; i++ {
-		targetName := cm.getSquadName(enemySquads[i])
+		targetName := GetSquadName(cm.context.ECSManager, enemySquads[i])
 		cm.addCombatLog(fmt.Sprintf("  [%d] %s", i+1, targetName))
 	}
 }
@@ -363,21 +363,12 @@ func (cm *CombatMode) selectSquad(squadID ecs.EntityID) {
 	cm.selectedTargetID = 0
 
 	// Get squad name
-	squadName := cm.getSquadName(squadID)
+	squadName := GetSquadName(cm.context.ECSManager, squadID)
 	cm.addCombatLog(fmt.Sprintf("Selected: %s", squadName))
 
 	cm.updateSquadDetail()
 }
 
-func (cm *CombatMode) getSquadName(squadID ecs.EntityID) string {
-	for _, result := range cm.context.ECSManager.World.Query(cm.context.ECSManager.Tags["squad"]) {
-		squadData := common.GetComponentType[*squads.SquadData](result.Entity, squads.SquadComponent)
-		if squadData.SquadID == squadID {
-			return squadData.Name
-		}
-	}
-	return "Unknown Squad"
-}
 
 func (cm *CombatMode) selectTarget(targetSquadID ecs.EntityID) {
 	if !cm.inAttackMode {
@@ -408,8 +399,8 @@ func (cm *CombatMode) executeAttack() {
 	}
 
 	// Execute attack
-	attackerName := cm.getSquadName(cm.selectedSquadID)
-	targetName := cm.getSquadName(cm.selectedTargetID)
+	attackerName := GetSquadName(cm.context.ECSManager, cm.selectedSquadID)
+	targetName := GetSquadName(cm.context.ECSManager, cm.selectedTargetID)
 
 	err := combatSys.ExecuteAttackAction(cm.selectedSquadID, cm.selectedTargetID)
 	if err != nil {
@@ -458,7 +449,7 @@ func (cm *CombatMode) updateSquadList() {
 			continue
 		}
 
-		squadName := cm.getSquadName(squadID)
+		squadName := GetSquadName(cm.context.ECSManager, squadID)
 
 		// Create button for each squad
 		localSquadID := squadID // Capture for closure
@@ -479,7 +470,7 @@ func (cm *CombatMode) updateSquadDetail() {
 		return
 	}
 
-	squadName := cm.getSquadName(cm.selectedSquadID)
+	squadName := GetSquadName(cm.context.ECSManager, cm.selectedSquadID)
 
 	// Get unit count and HP
 	unitIDs := squads.GetUnitIDsInSquad(cm.selectedSquadID, cm.context.ECSManager)
@@ -879,7 +870,7 @@ func (cm *CombatMode) handleMovementClick(mouseX, mouseY int) {
 	// Update unit positions to match squad position
 	cm.updateUnitPositions(cm.selectedSquadID, clickedPos)
 
-	squadName := cm.getSquadName(cm.selectedSquadID)
+	squadName := GetSquadName(cm.context.ECSManager, cm.selectedSquadID)
 	cm.addCombatLog(fmt.Sprintf("%s moved to (%d, %d)", squadName, clickedPos.X, clickedPos.Y))
 
 	// Exit move mode

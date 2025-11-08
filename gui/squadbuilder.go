@@ -481,25 +481,13 @@ func (sbm *SquadBuilderMode) createTemporarySquad() {
 
 	// Find the newly created squad
 	// Squads are created with SquadComponent, so we can query for it
-	allSquads := sbm.findAllSquads()
+	allSquads := FindAllSquads(sbm.context.ECSManager)
 	if len(allSquads) > 0 {
 		sbm.currentSquadID = allSquads[len(allSquads)-1] // Get most recent
 		fmt.Printf("Created temporary squad: %s (ID: %d)\n", squadName, sbm.currentSquadID)
 	}
 }
 
-func (sbm *SquadBuilderMode) findAllSquads() []ecs.EntityID {
-	allSquads := make([]ecs.EntityID, 0)
-	entityIDs := sbm.context.ECSManager.GetAllEntities()
-
-	for _, entityID := range entityIDs {
-		if sbm.context.ECSManager.HasComponent(entityID, squads.SquadComponent) {
-			allSquads = append(allSquads, entityID)
-		}
-	}
-
-	return allSquads
-}
 
 func (sbm *SquadBuilderMode) updateCapacityDisplay() {
 	if sbm.currentSquadID == 0 {
