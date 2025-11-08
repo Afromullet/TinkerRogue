@@ -179,12 +179,11 @@ func (gameMap *GameMap) AddEntityToTile(entity *ecs.Entity, pos *coords.LogicalP
 
 	tile := gameMap.Tile(pos)
 
-	if tile.tileContents.entities == nil {
-
-		tile.tileContents.entities = make([]*ecs.Entity, 0)
+	if tile.tileContents.entityIDs == nil {
+		tile.tileContents.entityIDs = make([]ecs.EntityID, 0)
 	}
 
-	tile.tileContents.entities = append(tile.tileContents.entities, entity)
+	tile.tileContents.entityIDs = append(tile.tileContents.entityIDs, entity.ID)
 }
 
 // This removes the item at the specified index from the tile.
@@ -192,25 +191,26 @@ func (gameMap *GameMap) AddEntityToTile(entity *ecs.Entity, pos *coords.LogicalP
 // The item is removed from the tile but still exists in the entity manager.
 // Since this removes the item from tile.tileContents, the caller will have to store it somewhere
 // Otherwise, it'll only exist in the entity manager
-func (gameMap *GameMap) RemoveItemFromTile(index int, pos *coords.LogicalPosition) (*ecs.Entity, error) {
+// Returns EntityID instead of entity pointer (ECS compliance)
+func (gameMap *GameMap) RemoveItemFromTile(index int, pos *coords.LogicalPosition) (ecs.EntityID, error) {
 
 	tile := gameMap.Tile(pos)
 
-	if tile.tileContents.entities == nil {
-		return nil, errors.New("entities slice is nil")
+	if tile.tileContents.entityIDs == nil {
+		return 0, errors.New("entityIDs slice is nil")
 	}
 
-	entities := tile.tileContents.entities
+	entityIDs := tile.tileContents.entityIDs
 
-	if index < 0 || index >= len(entities) {
-		return nil, errors.New("index out of range")
+	if index < 0 || index >= len(entityIDs) {
+		return 0, errors.New("index out of range")
 	}
 
-	entity := entities[index]
+	entityID := entityIDs[index]
 
-	tile.tileContents.entities = append(entities[:index], entities[index+1:]...)
+	tile.tileContents.entityIDs = append(entityIDs[:index], entityIDs[index+1:]...)
 
-	return entity, nil
+	return entityID, nil
 }
 
 func (gameMap *GameMap) DrawLevelCenteredSquare(screen *ebiten.Image, playerPos *coords.LogicalPosition, size int, revealAllTiles bool) {

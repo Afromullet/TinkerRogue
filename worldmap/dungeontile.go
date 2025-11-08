@@ -20,8 +20,9 @@ const (
 
 // Holds any entities that are on a tile, whether it's items, creatures, etc.
 // Currently only used for holding items.
+// Fixed ECS violation: Uses EntityIDs instead of entity pointers
 type TileContents struct {
-	entities []*ecs.Entity
+	entityIDs []ecs.EntityID
 }
 
 // TileCords keeps track of the x,y coordinates in the TileMap
