@@ -1,6 +1,17 @@
 package gui
 
-// LayoutConfig provides responsive positioning based on screen resolution
+// LayoutConfig provides responsive positioning based on screen resolution.
+//
+// DEPRECATED METHODS REMOVED:
+// The following panel positioning methods have been removed as they are replaced by
+// BuildPanel functional options in panelconfig.go:
+//   - TopRightPanel(), BottomRightPanel(), TopLeftPanel()
+//   - TopCenterPanel(), RightSidePanel(), BottomCenterButtons()
+//
+// Use instead:
+//   panel := panelBuilders.BuildPanel(TopRight(), Size(0.15, 0.2), Padding(0.01))
+//
+// Remaining methods are still used for non-panel calculations.
 type LayoutConfig struct {
 	ScreenWidth  int
 	ScreenHeight int
@@ -14,59 +25,6 @@ func NewLayoutConfig(ctx *UIContext) *LayoutConfig {
 		ScreenHeight: ctx.ScreenHeight,
 		TileSize:     ctx.TileSize,
 	}
-}
-
-// TopRightPanel returns position and size for top-right panel (stats)
-func (lc *LayoutConfig) TopRightPanel() (x, y, width, height int) {
-	width = int(float64(lc.ScreenWidth) * 0.15)                    // 15% of screen width
-	height = int(float64(lc.ScreenHeight) * 0.2)                   // 20% of screen height
-	x = lc.ScreenWidth - width - int(float64(lc.ScreenWidth)*0.01) // 1% margin
-	y = int(float64(lc.ScreenHeight) * 0.01)                       // 1% margin from top
-	return
-}
-
-// BottomRightPanel returns position and size for bottom-right panel (messages)
-func (lc *LayoutConfig) BottomRightPanel() (x, y, width, height int) {
-	width = int(float64(lc.ScreenWidth) * 0.15)                       // 15% of screen width
-	height = int(float64(lc.ScreenHeight) * 0.15)                     // 15% of screen height
-	x = lc.ScreenWidth - width - int(float64(lc.ScreenWidth)*0.01)    // 1% margin
-	y = lc.ScreenHeight - height - int(float64(lc.ScreenHeight)*0.01) // 1% margin from bottom
-	return
-}
-
-// BottomCenterButtons returns position for bottom-center button row
-func (lc *LayoutConfig) BottomCenterButtons() (x, y int) {
-	buttonRowWidth := int(float64(lc.ScreenWidth) * 0.25)    // 25% of screen width
-	x = (lc.ScreenWidth - buttonRowWidth) / 2                // Centered horizontally
-	y = lc.ScreenHeight - int(float64(lc.ScreenHeight)*0.08) // 8% from bottom
-	return
-}
-
-// TopLeftPanel returns position and size for top-left panel (faction info)
-func (lc *LayoutConfig) TopLeftPanel() (x, y, width, height int) {
-	width = int(float64(lc.ScreenWidth) * 0.15)  // 15% of screen width
-	height = int(float64(lc.ScreenHeight) * 0.12) // 12% of screen height
-	x = int(float64(lc.ScreenWidth) * 0.01)      // 1% margin from left
-	y = int(float64(lc.ScreenHeight) * 0.01)     // 1% margin from top
-	return
-}
-
-// TopCenterPanel returns position and size for top-center panel (turn order)
-func (lc *LayoutConfig) TopCenterPanel() (x, y, width, height int) {
-	width = int(float64(lc.ScreenWidth) * 0.3)    // 30% of screen width
-	height = int(float64(lc.ScreenHeight) * 0.08) // 8% of screen height
-	x = (lc.ScreenWidth - width) / 2              // Centered horizontally
-	y = int(float64(lc.ScreenHeight) * 0.01)      // 1% margin from top
-	return
-}
-
-// RightSidePanel returns position and size for right-side panel (combat log)
-func (lc *LayoutConfig) RightSidePanel() (x, y, width, height int) {
-	width = int(float64(lc.ScreenWidth) * 0.2)                     // 20% of screen width
-	height = lc.ScreenHeight - int(float64(lc.ScreenHeight)*0.15)  // Almost full height with margins
-	x = lc.ScreenWidth - width - int(float64(lc.ScreenWidth)*0.01) // 1% margin
-	y = int(float64(lc.ScreenHeight) * 0.06)                       // Below top panel
-	return
 }
 
 // CenterWindow returns position and size for centered modal window

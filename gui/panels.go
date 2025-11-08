@@ -22,9 +22,10 @@ func NewPanelBuilders(layout *LayoutConfig, modeManager *UIModeManager) *PanelBu
 	}
 }
 
-// NOTE: BuildCloseButton, BuildStatsPanel, BuildMessageLog, BuildRightSidePanel,
-// BuildActionButtons, and BuildBottomCenterButtons have been replaced by the more
-// flexible BuildPanel() method with functional options. See panelconfig.go for the new approach.
+// NOTE: All old-style panel building methods have been removed and replaced by the
+// BuildPanel() method with functional options. See panelconfig.go for the new approach.
+// Old LayoutConfig methods (TopRightPanel, BottomRightPanel, etc.) have also been
+// removed - use BuildPanel with position options instead (TopRight(), BottomCenter(), etc.).
 
 // SquadListConfig provides configuration for squad list panels
 type SquadListConfig struct {
@@ -226,26 +227,24 @@ func (pb *PanelBuilders) BuildGridEditor(config GridEditorConfig) (*widget.Conta
 
 	var gridCells [3][3]*widget.Button
 
-	// Create 3x3 grid buttons
+	// Create 3x3 grid buttons using ButtonConfig pattern for consistency
 	for row := 0; row < 3; row++ {
 		for col := 0; col < 3; col++ {
 			cellRow, cellCol := row, col // Capture for closure
 			cellText := config.CellTextFormat(row, col)
 
-			cellBtn := widget.NewButton(
-				widget.ButtonOpts.Image(buttonImage),
-				widget.ButtonOpts.Text(cellText, SmallFace, &widget.ButtonTextColor{
-					Idle: color.NRGBA{0xdf, 0xf4, 0xff, 0xff},
-				}),
-				widget.ButtonOpts.TextPadding(widget.Insets{
-					Left: 8, Right: 8, Top: 8, Bottom: 8,
-				}),
-				widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+			cellBtn := CreateButtonWithConfig(ButtonConfig{
+				Text:      cellText,
+				FontFace:  SmallFace,
+				MinWidth:  0, // Let grid layout handle sizing
+				MinHeight: 0, // Let grid layout handle sizing
+				Padding:   widget.Insets{Left: 8, Right: 8, Top: 8, Bottom: 8},
+				OnClick: func() {
 					if config.OnCellClick != nil {
 						config.OnCellClick(cellRow, cellCol)
 					}
-				}),
-			)
+				},
+			})
 
 			gridCells[row][col] = cellBtn
 			gridContainer.AddChild(cellBtn)

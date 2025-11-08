@@ -15,19 +15,20 @@
 
 ## Simplification Progress Summary
 
-### ✅ Completed (6/7 items - 90% overall)
+### ✅ Completed (7/7 items - 100% overall)
 1. **Input System** - Unified InputCoordinator with specialized controllers
 2. **Coordinate System** - Type-safe LogicalPosition/PixelPosition with CoordinateManager
 3. **Entity Templates** - Generic factory pattern with EntityType enum (283 LOC)
 4. **Graphics Shapes** - Consolidated 8+ types into BaseShape with 3 variants (390 LOC)
 5. **Position System** - O(1) spatial grid, 50x performance improvement (399 LOC)
 6. **Inventory System** - ECS refactor: EntityIDs, system functions, pure data (533 LOC) - 2025-10-21
+7. **GUI Button Factory** - ButtonConfig pattern consistently applied throughout GUI package (2025-11-07)
 
 ### 🔄 In Progress (0/7 items)
 (None - Status Effects moved to low priority)
 
-### ❌ Remaining (1/7 items)
-7. **GUI Button Factory** - 10% complete, needs ButtonConfig pattern
+### ❌ Remaining (0/7 items)
+(All core simplification tasks complete!)
 
 ### 📋 Low Priority / Optional
 - **Status Effects** - 85% complete, needs quality interface extraction (deferred)

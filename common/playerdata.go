@@ -18,7 +18,6 @@ type Player struct {
 type PlayerInputStates struct {
 	IsThrowing  bool
 	HasKeyInput bool // Tells us whether the player pressed any key.
-	InfoMeuOpen bool
 }
 
 // PlayerThrowable tracks state and variables for throwing items.

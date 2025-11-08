@@ -137,6 +137,11 @@ func SetupUI(g *Game) {
 		log.Fatalf("Failed to register exploration mode: %v", err)
 	}
 
+	infoMode := gui.NewInfoMode(g.uiModeManager)
+	if err := g.uiModeManager.RegisterMode(infoMode); err != nil {
+		log.Fatalf("Failed to register info mode: %v", err)
+	}
+
 	squadManagementMode := gui.NewSquadManagementMode(g.uiModeManager)
 	if err := g.uiModeManager.RegisterMode(squadManagementMode); err != nil {
 		log.Fatalf("Failed to register squad management mode: %v", err)

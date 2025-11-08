@@ -2,6 +2,8 @@ package gui
 
 import (
 	"fmt"
+	"game_main/coords"
+	"game_main/graphics"
 	"image/color"
 
 	"github.com/ebitenui/ebitenui/widget"
@@ -19,7 +21,6 @@ type ExplorationMode struct {
 	statsTextArea  *widget.TextArea
 	messageLog     *widget.TextArea
 	quickInventory *widget.Container
-	infoWindow     *InfoUI
 }
 
 func NewExplorationMode(modeManager *UIModeManager) *ExplorationMode {
@@ -77,7 +78,6 @@ func (em *ExplorationMode) Initialize(ctx *UIContext) error {
 
 	// Build exploration-specific UI layout
 	em.buildQuickInventory()
-	em.buildInfoWindow()
 
 	em.initialized = true
 	return nil
@@ -168,12 +168,6 @@ func (em *ExplorationMode) buildQuickInventory() {
 	em.rootContainer.AddChild(em.quickInventory)
 }
 
-func (em *ExplorationMode) buildInfoWindow() {
-	// Create info window (right-click inspection)
-	infoUI := CreateInfoUI(em.context.ECSManager, em.ui)
-	em.infoWindow = &infoUI
-}
-
 func (em *ExplorationMode) Enter(fromMode UIMode) error {
 	fmt.Println("Entering Exploration Mode")
 
@@ -187,12 +181,6 @@ func (em *ExplorationMode) Enter(fromMode UIMode) error {
 
 func (em *ExplorationMode) Exit(toMode UIMode) error {
 	fmt.Println("Exiting Exploration Mode")
-
-	// Close any open info windows
-	if em.infoWindow != nil {
-		em.infoWindow.CloseWindows()
-	}
-
 	return nil
 }
 
@@ -209,21 +197,23 @@ func (em *ExplorationMode) Render(screen *ebiten.Image) {
 }
 
 func (em *ExplorationMode) HandleInput(inputState *InputState) bool {
-	// Handle info window closing first (higher priority than ESC navigation)
-	if inputState.PlayerInputStates.InfoMeuOpen {
-		if inputState.KeysJustPressed[ebiten.KeyEscape] {
-			em.infoWindow.CloseWindows()
-			inputState.PlayerInputStates.InfoMeuOpen = false
-			return true
-		}
-	}
-
-	// Handle right-click info window
+	// Handle right-click to open info mode
 	if inputState.MouseButton == ebiten.MouseButton2 && inputState.MousePressed {
 		// Only open if not in other input modes
 		if !inputState.PlayerInputStates.IsThrowing {
-			em.infoWindow.InfoSelectionWindow(inputState.MouseX, inputState.MouseY)
-			inputState.PlayerInputStates.InfoMeuOpen = true
+			// Convert mouse position to logical position
+			playerPos := *em.context.PlayerData.Pos
+			manager := coords.NewCoordinateManager(graphics.ScreenInfo)
+			viewport := coords.NewViewport(manager, playerPos)
+			clickedPos := viewport.ScreenToLogical(inputState.MouseX, inputState.MouseY)
+
+			// Transition to info mode with position
+			if infoMode, exists := em.modeManager.GetMode("info_inspect"); exists {
+				if infoModeTyped, ok := infoMode.(*InfoMode); ok {
+					infoModeTyped.SetInspectPosition(clickedPos)
+					em.modeManager.RequestTransition(infoMode, "Right-click inspection")
+				}
+			}
 			return true
 		}
 	}
