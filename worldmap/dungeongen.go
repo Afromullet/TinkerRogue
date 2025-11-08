@@ -183,12 +183,30 @@ func (gameMap *GameMap) Tile(pos *coords.LogicalPosition) *Tile {
 }
 
 func (gameMap *GameMap) StartingPosition() coords.LogicalPosition {
-	x, y := gameMap.Rooms[0].Center()
-
-	return coords.LogicalPosition{
-		X: x,
-		Y: y,
+	// For room-based generators
+	if len(gameMap.Rooms) > 0 {
+		x, y := gameMap.Rooms[0].Center()
+		return coords.LogicalPosition{X: x, Y: y}
 	}
+
+	// Fallback for non-room generators: use center of map
+	centerX := graphics.ScreenInfo.DungeonWidth / 2
+	centerY := graphics.ScreenInfo.DungeonHeight / 2
+
+	// If center is not walkable, find first valid position
+	logicalPos := coords.LogicalPosition{X: centerX, Y: centerY}
+	idx := coords.CoordManager.LogicalToIndex(logicalPos)
+	if idx < len(gameMap.Tiles) && !gameMap.Tiles[idx].Blocked {
+		return logicalPos
+	}
+
+	// Last resort: return first valid position from ValidPos
+	if len(ValidPos.Pos) > 0 {
+		return ValidPos.Pos[0]
+	}
+
+	// Shouldn't reach here, but return center as final fallback
+	return coords.LogicalPosition{X: centerX, Y: centerY}
 }
 
 // The Entity Manager continues to track an entity when it is added to a tile.
@@ -361,16 +379,27 @@ func (gameMap *GameMap) DrawLevel(screen *ebiten.Image, revealAllTiles bool) {
 // Even if it is, that's not something to worry about now, since this is a short term approach
 func (gm *GameMap) PlaceStairs(images TileImageSet) {
 
-	//Starts at 1 so we don't create stairs in the starting room
-	randRoom := common.GetRandomBetween(1, len(gm.Rooms)-1)
+	var x, y int
 
-	x, y := gm.Rooms[randRoom].Center()
+	// For room-based generators with multiple rooms
+	if len(gm.Rooms) >= 2 {
+		//Starts at 1 so we don't create stairs in the starting room
+		randRoom := common.GetRandomBetween(1, len(gm.Rooms)-1)
+		x, y = gm.Rooms[randRoom].Center()
+	} else if len(ValidPos.Pos) > 0 {
+		// Fallback for non-room generators: place stairs at random valid position
+		randIndex := common.GetRandomBetween(0, len(ValidPos.Pos)-1)
+		pos := ValidPos.Pos[randIndex]
+		x, y = pos.X, pos.Y
+	} else {
+		// No valid positions available - shouldn't happen, but return safely
+		return
+	}
 
 	logicalPos := coords.LogicalPosition{X: x, Y: y}
 	ind := coords.CoordManager.LogicalToIndex(logicalPos)
 
 	gm.Tiles[ind].TileType = STAIRS_DOWN
-
 	gm.Tiles[ind].image = images.StairsDown
 
 }

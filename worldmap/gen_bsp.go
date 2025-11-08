@@ -3,7 +3,6 @@ package worldmap
 import (
 	"game_main/common"
 	"game_main/coords"
-	"game_main/graphics"
 )
 
 // BSPGenerator implements Binary Space Partitioning dungeon generation
@@ -39,7 +38,7 @@ type BSPNode struct {
 
 func (g *BSPGenerator) Generate(width, height int, images TileImageSet) GenerationResult {
 	result := GenerationResult{
-		Tiles:          g.createEmptyTiles(width, height, images),
+		Tiles:          createEmptyTiles(width, height, images),
 		Rooms:          make([]Rect, 0),
 		ValidPositions: make([]coords.LogicalPosition, 0),
 	}
@@ -109,7 +108,7 @@ func (g *BSPGenerator) createRoomsInTree(node *BSPNode, result *GenerationResult
 		room := NewRect(roomX, roomY, roomW, roomH)
 		node.room = &room
 
-		g.carveRoom(result, room, images)
+		carveRoom(result, room, images)
 		result.Rooms = append(result.Rooms, room)
 	}
 }
@@ -132,8 +131,8 @@ func (g *BSPGenerator) connectRoomsInTree(node *BSPNode, result *GenerationResul
 		x2, y2 := rightRoom.Center()
 
 		// Create corridor
-		g.carveHorizontalTunnel(result, x1, x2, y1, images)
-		g.carveVerticalTunnel(result, y1, y2, x2, images)
+		carveHorizontalTunnel(result, x1, x2, y1, images)
+		carveVerticalTunnel(result, y1, y2, x2, images)
 	}
 }
 
@@ -162,69 +161,8 @@ func (g *BSPGenerator) getRandomLeafRoom(node *BSPNode) *Rect {
 	}
 }
 
-func (g *BSPGenerator) createEmptyTiles(width, height int, images TileImageSet) []*Tile {
-	tiles := make([]*Tile, width*height)
 
-	for x := 0; x < width; x++ {
-		for y := 0; y < height; y++ {
-			logicalPos := coords.LogicalPosition{X: x, Y: y}
-			index := coords.CoordManager.LogicalToIndex(logicalPos)
 
-			wallImg := images.WallImages[common.GetRandomBetween(0, len(images.WallImages)-1)]
-			tile := NewTile(
-				x*graphics.ScreenInfo.TileSize,
-				y*graphics.ScreenInfo.TileSize,
-				logicalPos, true, wallImg, WALL, false,
-			)
-			tiles[index] = &tile
-		}
-	}
-
-	return tiles
-}
-
-func (g *BSPGenerator) carveRoom(result *GenerationResult, room Rect, images TileImageSet) {
-	for y := room.Y1 + 1; y < room.Y2; y++ {
-		for x := room.X1 + 1; x < room.X2; x++ {
-			logicalPos := coords.LogicalPosition{X: x, Y: y}
-			index := coords.CoordManager.LogicalToIndex(logicalPos)
-
-			result.Tiles[index].Blocked = false
-			result.Tiles[index].TileType = FLOOR
-			result.Tiles[index].image = images.FloorImages[common.GetRandomBetween(0, len(images.FloorImages)-1)]
-
-			result.ValidPositions = append(result.ValidPositions, logicalPos)
-		}
-	}
-}
-
-func (g *BSPGenerator) carveHorizontalTunnel(result *GenerationResult, x1, x2, y int, images TileImageSet) {
-	for x := min(x1, x2); x <= max(x1, x2); x++ {
-		logicalPos := coords.LogicalPosition{X: x, Y: y}
-		index := coords.CoordManager.LogicalToIndex(logicalPos)
-
-		if index >= 0 && index < len(result.Tiles) {
-			result.Tiles[index].Blocked = false
-			result.Tiles[index].TileType = FLOOR
-			result.Tiles[index].image = images.FloorImages[common.GetRandomBetween(0, len(images.FloorImages)-1)]
-			result.ValidPositions = append(result.ValidPositions, logicalPos)
-		}
-	}
-}
-
-func (g *BSPGenerator) carveVerticalTunnel(result *GenerationResult, y1, y2, x int, images TileImageSet) {
-	for y := min(y1, y2); y <= max(y1, y2); y++ {
-		logicalPos := coords.LogicalPosition{X: x, Y: y}
-		index := coords.CoordManager.LogicalToIndex(logicalPos)
-
-		if index >= 0 && index < len(result.Tiles) {
-			result.Tiles[index].Blocked = false
-			result.Tiles[index].TileType = FLOOR
-			result.Tiles[index].image = images.FloorImages[common.GetRandomBetween(0, len(images.FloorImages)-1)]
-			result.ValidPositions = append(result.ValidPositions, logicalPos)
-		}
-	}
-}
 
 // Register BSP generator
 func init() {

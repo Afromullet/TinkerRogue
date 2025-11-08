@@ -52,31 +52,56 @@ func SpawnMonster(ecsmanager common.EntityManager, gm *worldmap.GameMap) {
 // Then it spawns MaxNumCreatures in random rooms
 func SpawnStartingCreatures(MaxNumCreatures int, em *common.EntityManager, gm *worldmap.GameMap, pl *common.PlayerData) {
 
-	//Spawn 1 random creature in every room except the starting room
+	//Spawn 1 random creature in every room except the starting room (room-based generators only)
+	if len(gm.Rooms) >= 2 {
+		randCreature := 0
 
-	randCreature := 0
+		for _, room := range gm.Rooms[1:] {
 
-	for _, room := range gm.Rooms[1:] {
+			x, y := room.Center()
+			randCreature = rand.Intn(len(entitytemplates.MonsterTemplates))
+			entitytemplates.CreateEntityFromTemplate(*em, entitytemplates.EntityConfig{
+				Type:      entitytemplates.EntityCreature,
+				Name:      entitytemplates.MonsterTemplates[randCreature].Name,
+				ImagePath: entitytemplates.MonsterTemplates[randCreature].ImageName,
+				AssetDir:  "../assets/creatures/",
+				Visible:   true,
+				Position:  &coords.LogicalPosition{X: x, Y: y},
+				GameMap:   gm,
+			}, entitytemplates.MonsterTemplates[randCreature])
 
-		x, y := room.Center()
-		randCreature = rand.Intn(len(entitytemplates.MonsterTemplates))
-		entitytemplates.CreateEntityFromTemplate(*em, entitytemplates.EntityConfig{
-			Type:      entitytemplates.EntityCreature,
-			Name:      entitytemplates.MonsterTemplates[randCreature].Name,
-			ImagePath: entitytemplates.MonsterTemplates[randCreature].ImageName,
-			AssetDir:  "../assets/creatures/",
-			Visible:   true,
-			Position:  &coords.LogicalPosition{X: x, Y: y},
-			GameMap:   gm,
-		}, entitytemplates.MonsterTemplates[randCreature])
-
+		}
 	}
 
+	// Spawn additional creatures in random locations
 	for range MaxNumCreatures {
 
-		randCreature = rand.Intn(len(entitytemplates.MonsterTemplates))
-		indices := gm.Rooms[rand.Intn(len(gm.Rooms))].GetCoordinatesWithoutCenter()
-		randomPos := indices[rand.Intn(len(indices))]
+		randCreature := rand.Intn(len(entitytemplates.MonsterTemplates))
+		var randomPos coords.LogicalPosition
+
+		// Spawn in rooms if they exist, otherwise use ValidPositions
+		if len(gm.Rooms) > 0 {
+			indices := gm.Rooms[rand.Intn(len(gm.Rooms))].GetCoordinatesWithoutCenter()
+			if len(indices) > 0 {
+				randomPos = indices[rand.Intn(len(indices))]
+			} else {
+				// Room has no valid positions, fall back to ValidPositions
+				if len(worldmap.ValidPos.Pos) > 0 {
+					idx := common.GetRandomBetween(0, len(worldmap.ValidPos.Pos)-1)
+					randomPos = worldmap.ValidPos.Pos[idx]
+				} else {
+					continue // Skip if no valid positions
+				}
+			}
+		} else {
+			// Non-room generators: spawn at random valid position
+			if len(worldmap.ValidPos.Pos) > 0 {
+				idx := common.GetRandomBetween(0, len(worldmap.ValidPos.Pos)-1)
+				randomPos = worldmap.ValidPos.Pos[idx]
+			} else {
+				continue // Skip if no valid positions
+			}
+		}
 
 		entitytemplates.CreateEntityFromTemplate(*em, entitytemplates.EntityConfig{
 			Type:      entitytemplates.EntityCreature,
