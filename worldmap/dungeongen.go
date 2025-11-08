@@ -118,22 +118,40 @@ type GameMap struct {
 	RightEdgeY    int
 }
 
-func NewGameMap() GameMap {
-	loadTileImages()
-	ValidPos = ValidPositions{
-		Pos: make([]coords.LogicalPosition, 0),
+// NewGameMap creates a new game map using the specified generator algorithm
+func NewGameMap(generatorName string) GameMap {
+	images := LoadTileImages()
+
+	dungeonMap := GameMap{
+		PlayerVisible: fov.New(),
 	}
 
-	dungeonMap := GameMap{}
-	dungeonMap.Tiles = dungeonMap.CreateTiles()
-	dungeonMap.Rooms = make([]Rect, 0)
-	dungeonMap.PlayerVisible = fov.New()
+	// Get generator or fall back to default
+	gen := GetGeneratorOrDefault(generatorName)
+
+	// Generate the map
+	result := gen.Generate(
+		graphics.ScreenInfo.DungeonWidth,
+		graphics.ScreenInfo.DungeonHeight,
+		images,
+	)
+
+	dungeonMap.Tiles = result.Tiles
+	dungeonMap.Rooms = result.Rooms
 	dungeonMap.NumTiles = len(dungeonMap.Tiles)
 
-	dungeonMap.GenerateLevelTiles()
-	dungeonMap.PlaceStairs()
+	// Update global ValidPos for backward compatibility
+	ValidPos = ValidPositions{Pos: result.ValidPositions}
+
+	dungeonMap.PlaceStairs(images)
 
 	return dungeonMap
+}
+
+// NewGameMapDefault creates a game map with the default generator
+// Provides backward compatibility for existing code
+func NewGameMapDefault() GameMap {
+	return NewGameMap("rooms_corridors")
 }
 
 // Todo need to add
@@ -145,7 +163,7 @@ func NewGameMap() GameMap {
 func GoDownStairs(gm *GameMap) {
 
 	//Need to remove all entities from the old map
-	newGameMap := NewGameMap()
+	newGameMap := NewGameMapDefault()
 
 	//Not letting players go back up for now
 	//startX, startY := newGameMap.Rooms[0].Center()
@@ -335,128 +353,13 @@ func (gameMap *GameMap) DrawLevel(screen *ebiten.Image, revealAllTiles bool) {
 	}
 }
 
-func (gameMap *GameMap) CreateTiles() []*Tile {
-
-	tiles := make([]*Tile, graphics.ScreenInfo.DungeonWidth*graphics.ScreenInfo.DungeonHeight)
-	index := 0
-
-	for x := 0; x < graphics.ScreenInfo.DungeonWidth; x++ {
-		for y := 0; y < graphics.ScreenInfo.DungeonHeight; y++ {
-
-			logicalPos := coords.LogicalPosition{X: x, Y: y}
-			index = coords.CoordManager.LogicalToIndex(logicalPos)
-
-			pos := coords.LogicalPosition{X: x, Y: y}
-			wallImg := wallImgs[common.GetRandomBetween(0, len(wallImgs)-1)]
-			//tile := NewTile(x*graphics.ScreenInfo.TileWidth, y*graphics.ScreenInfo.TileHeight, pos, true, wall, WALL, false)
-			tile := NewTile(x*graphics.ScreenInfo.TileSize, y*graphics.ScreenInfo.TileSize, pos, true, wallImg, WALL, false)
-
-			tiles[index] = &tile
-		}
-	}
-	return tiles
-}
-
-func (gameMap *GameMap) GenerateLevelTiles() {
-	MIN_SIZE := 6
-	MAX_SIZE := 10
-	MAX_ROOMS := 30
-
-	tiles := gameMap.CreateTiles()
-	gameMap.Tiles = tiles
-	contains_rooms := false
-
-	for idx := 0; idx < MAX_ROOMS; idx++ {
-		w := common.GetRandomBetween(MIN_SIZE, MAX_SIZE)
-		h := common.GetRandomBetween(MIN_SIZE, MAX_SIZE)
-		x := common.GetDiceRoll(graphics.ScreenInfo.DungeonWidth - w - 1)
-		y := common.GetDiceRoll(graphics.ScreenInfo.DungeonHeight - h - 1)
-		new_room := NewRect(x, y, w, h)
-
-		okToAdd := true
-		for _, otherRoom := range gameMap.Rooms {
-			if new_room.Intersect(otherRoom) {
-				okToAdd = false
-				break
-			}
-		}
-
-		if okToAdd {
-			gameMap.createRoom(new_room)
-			if contains_rooms {
-				newX, newY := new_room.Center()
-				prevX, prevY := gameMap.Rooms[len(gameMap.Rooms)-1].Center()
-				coinflip := common.GetDiceRoll(2)
-				if coinflip == 2 {
-					gameMap.createHorizontalTunnel(prevX, newX, prevY)
-					gameMap.createVerticalTunnel(prevY, newY, newX)
-
-				} else {
-					gameMap.createHorizontalTunnel(prevX, newX, newY)
-					gameMap.createVerticalTunnel(prevY, newY, prevX)
-				}
-
-			}
-
-			gameMap.Rooms = append(gameMap.Rooms, new_room)
-			contains_rooms = true
-		}
-	}
-}
-
-func (gameMap *GameMap) createRoom(room Rect) {
-	for y := room.Y1 + 1; y < room.Y2; y++ {
-		for x := room.X1 + 1; x < room.X2; x++ {
-
-			logicalPos := coords.LogicalPosition{X: x, Y: y}
-			index := coords.CoordManager.LogicalToIndex(logicalPos)
-			gameMap.Tiles[index].Blocked = false
-			gameMap.Tiles[index].TileType = FLOOR
-
-			//Select a random tile png
-			gameMap.Tiles[index].image = floorImgs[common.GetRandomBetween(0, len(floorImgs)-1)]
-
-			ValidPos.Add(x, y)
-		}
-	}
-}
-
-func (gameMap *GameMap) createHorizontalTunnel(x1 int, x2 int, y int) {
-
-	for x := min(x1, x2); x < max(x1, x2)+1; x++ {
-		logicalPos := coords.LogicalPosition{X: x, Y: y}
-		index := coords.CoordManager.LogicalToIndex(logicalPos)
-		if index > 0 && index < graphics.ScreenInfo.DungeonWidth*graphics.ScreenInfo.DungeonHeight {
-			gameMap.Tiles[index].Blocked = false
-			gameMap.Tiles[index].TileType = FLOOR
-
-			gameMap.Tiles[index].image = floorImgs[common.GetRandomBetween(0, len(floorImgs)-1)]
-
-			ValidPos.Add(x, y)
-		}
-	}
-}
-
-func (gameMap *GameMap) createVerticalTunnel(y1 int, y2 int, x int) {
-
-	for y := min(y1, y2); y < max(y1, y2)+1; y++ {
-		logicalPos := coords.LogicalPosition{X: x, Y: y}
-		index := coords.CoordManager.LogicalToIndex(logicalPos)
-
-		if index > 0 && index < graphics.ScreenInfo.DungeonWidth*graphics.ScreenInfo.DungeonHeight {
-			gameMap.Tiles[index].Blocked = false
-			gameMap.Tiles[index].TileType = FLOOR
-			gameMap.Tiles[index].image = floorImgs[common.GetRandomBetween(0, len(floorImgs)-1)]
-
-			ValidPos.Add(x, y)
-		}
-	}
-}
+// Old generation methods removed - now handled by generator implementations
+// See gen_rooms_corridors.go for the extracted algorithm
 
 // Place the stairs in the center of a random room.
 // The center of the room SHOULD not be blocked.
 // Even if it is, that's not something to worry about now, since this is a short term approach
-func (gm *GameMap) PlaceStairs() {
+func (gm *GameMap) PlaceStairs(images TileImageSet) {
 
 	//Starts at 1 so we don't create stairs in the starting room
 	randRoom := common.GetRandomBetween(1, len(gm.Rooms)-1)
@@ -468,7 +371,7 @@ func (gm *GameMap) PlaceStairs() {
 
 	gm.Tiles[ind].TileType = STAIRS_DOWN
 
-	gm.Tiles[ind].image = stairs_down
+	gm.Tiles[ind].image = images.StairsDown
 
 }
 

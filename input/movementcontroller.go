@@ -169,14 +169,17 @@ func (mc *MovementController) handleStairsInteraction() bool {
 }
 
 func (mc *MovementController) playerPickupItem() {
-	itemFromTile, _ := mc.gameMap.RemoveItemFromTile(0, mc.playerData.Pos)
+	itemEntityID, err := mc.gameMap.RemoveItemFromTile(0, mc.playerData.Pos)
 
-	if itemFromTile != nil {
-		renderable := common.GetComponentType[*rendering.Renderable](itemFromTile, rendering.RenderableComponent)
-		renderable.Visible = false
-		// Type assert the inventory interface{} to *gear.Inventory
-		if inv, ok := mc.playerData.Inventory.(*gear.Inventory); ok {
-			gear.AddItem(mc.ecsManager.World, inv, itemFromTile.GetID())
+	if err == nil && itemEntityID != 0 {
+		itemEntity := gear.FindItemEntityByID(mc.ecsManager.World, itemEntityID)
+		if itemEntity != nil {
+			renderable := common.GetComponentType[*rendering.Renderable](itemEntity, rendering.RenderableComponent)
+			renderable.Visible = false
+			// Type assert the inventory interface{} to *gear.Inventory
+			if inv, ok := mc.playerData.Inventory.(*gear.Inventory); ok {
+				gear.AddItem(mc.ecsManager.World, inv, itemEntityID)
+			}
 		}
 	}
 }
