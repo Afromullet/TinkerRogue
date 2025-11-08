@@ -10,8 +10,6 @@ import (
 	"game_main/coords"
 	"game_main/graphics"
 
-	"image/color"
-
 	"github.com/bytearena/ecs"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/norendren/go-fov/fov"
@@ -250,125 +248,30 @@ func (gameMap *GameMap) RemoveItemFromTile(index int, pos *coords.LogicalPositio
 }
 
 func (gameMap *GameMap) DrawLevelCenteredSquare(screen *ebiten.Image, playerPos *coords.LogicalPosition, size int, revealAllTiles bool) {
+	renderer := NewTileRenderer(gameMap.Tiles, gameMap.PlayerVisible)
 
-	var cs = ebiten.ColorScale{}
-	sq := coords.NewDrawableSection(playerPos.X, playerPos.Y, size)
+	bounds := renderer.Render(RenderOptions{
+		RevealAll:    revealAllTiles,
+		CenterOn:     playerPos,
+		ViewportSize: size,
+		Screen:       screen,
+	})
 
-	//centerOffsetX, centerOffsetY := graphics.CenterOffset(playerPos.X, playerPos.Y)
-
-	// Get the dimensions of the screen
-	gameMap.RightEdgeX = 0
-	gameMap.RightEdgeY = 0
-	// Initialize with smallest possible value
-	// Draw the square section centered on the screen
-	for x := sq.StartX; x <= sq.EndX; x++ {
-		for y := sq.StartY; y <= sq.EndY; y++ {
-			// Skip coordinates outside map bounds
-			if x < 0 || x >= graphics.ScreenInfo.DungeonWidth || y < 0 || y >= graphics.ScreenInfo.DungeonHeight {
-				continue
-			}
-
-			logicalPos := coords.LogicalPosition{X: x, Y: y}
-			idx := coords.CoordManager.LogicalToIndex(logicalPos)
-			tile := gameMap.Tiles[idx]
-
-			isVis := gameMap.PlayerVisible.IsVisible(x, y)
-
-			if revealAllTiles {
-				isVis = true
-			}
-
-			op := &ebiten.DrawImageOptions{}
-
-			if isVis {
-				tile.IsRevealed = true
-			} else if tile.IsRevealed {
-				// Apply color modification to darken out-of-FOV tiles
-				op.ColorScale.ScaleWithColor(color.RGBA{1, 1, 1, 1})
-			}
-
-			if isVis || tile.IsRevealed {
-				// Apply scaling first
-				op.GeoM.Scale(float64(graphics.ScreenInfo.ScaleFactor), float64(graphics.ScreenInfo.ScaleFactor))
-				offsetX, offsetY := graphics.OffsetFromCenter(playerPos.X, playerPos.Y, tile.PixelX, tile.PixelY, graphics.ScreenInfo)
-				op.GeoM.Translate(offsetX, offsetY)
-
-				// Calculate the right edge of this tile
-				tileRightEdge := int(offsetX + float64(tile.image.Bounds().Dx()*graphics.ScreenInfo.ScaleFactor))
-				if tileRightEdge > gameMap.RightEdgeX {
-					gameMap.RightEdgeX = tileRightEdge
-				}
-
-				// Calculate the top edge of this tile
-				tileTopEdge := int(offsetY)
-				if tileTopEdge < gameMap.RightEdgeY {
-					gameMap.RightEdgeY = tileTopEdge
-				}
-			}
-
-			if !tile.cm.IsEmpty() {
-				cs.SetR(tile.cm.R)
-				cs.SetG(tile.cm.G)
-				cs.SetB(tile.cm.B)
-				cs.SetA(tile.cm.A)
-				op.ColorScale.ScaleWithColorScale(cs)
-			}
-
-			screen.DrawImage(tile.image, op)
-		}
-	}
-
+	// Track edges for GUI (existing behavior)
+	gameMap.RightEdgeX = bounds.RightEdgeX
+	gameMap.RightEdgeY = bounds.RightEdgeY
 }
 
 // The color matrix draws on tiles.
 // Right now it's only used for showing the AOE of throwable items
 func (gameMap *GameMap) DrawLevel(screen *ebiten.Image, revealAllTiles bool) {
+	renderer := NewTileRenderer(gameMap.Tiles, gameMap.PlayerVisible)
 
-	var cs = ebiten.ColorScale{}
-
-	for x := 0; x < graphics.ScreenInfo.DungeonWidth; x++ {
-		//for y := 0; y < gd.ScreenHeight; y++ {
-		for y := 0; y < graphics.ScreenInfo.DungeonHeight; y++ {
-
-			logicalPos := coords.LogicalPosition{X: x, Y: y}
-			idx := coords.CoordManager.LogicalToIndex(logicalPos)
-			tile := gameMap.Tiles[idx]
-			isVis := gameMap.PlayerVisible.IsVisible(x, y)
-
-			if revealAllTiles {
-				isVis = true
-			}
-
-			op := &ebiten.DrawImageOptions{}
-
-			if isVis {
-				op.GeoM.Translate(float64(tile.PixelX), float64(tile.PixelY))
-				gameMap.Tiles[idx].IsRevealed = true
-
-			} else if tile.IsRevealed {
-
-				op.GeoM.Translate(float64(tile.PixelX), float64(tile.PixelY))
-
-				//Blackening out tiles that are out of Fov
-				op.ColorScale.ScaleWithColor(color.RGBA{1, 1, 1, 1})
-
-			}
-
-			if !tile.cm.IsEmpty() {
-
-				cs.SetR(tile.cm.R)
-				cs.SetG(tile.cm.G)
-				cs.SetB(tile.cm.B)
-				cs.SetA(tile.cm.A)
-
-				op.ColorScale.ScaleWithColorScale(cs)
-
-			}
-
-			screen.DrawImage(tile.image, op)
-
-		}
-	}
+	renderer.Render(RenderOptions{
+		RevealAll: revealAllTiles,
+		CenterOn:  nil, // Full map
+		Screen:    screen,
+	})
 }
 
 // Old generation methods removed - now handled by generator implementations
