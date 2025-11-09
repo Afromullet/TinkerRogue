@@ -40,9 +40,9 @@ func SetupGameplayFactions(manager *common.EntityManager, playerStartPos coords.
 	// - Squad 2: (+3, -3) from player (northeast)
 	// - Squad 3: (0, +3) from player (south - slightly behind)
 	playerSquadPositions := []coords.LogicalPosition{
-		{X: playerStartPos.X - 3, Y: playerStartPos.Y - 3},
-		{X: playerStartPos.X + 3, Y: playerStartPos.Y - 3},
-		{X: playerStartPos.X, Y: playerStartPos.Y + 3},
+		{X: clampPosition(playerStartPos.X - 3, 0, 99), Y: clampPosition(playerStartPos.Y - 3, 0, 79)},
+		{X: clampPosition(playerStartPos.X + 3, 0, 99), Y: clampPosition(playerStartPos.Y - 3, 0, 79)},
+		{X: clampPosition(playerStartPos.X, 0, 99), Y: clampPosition(playerStartPos.Y + 3, 0, 79)},
 	}
 
 	for i, pos := range playerSquadPositions {
@@ -69,9 +69,9 @@ func SetupGameplayFactions(manager *common.EntityManager, playerStartPos coords.
 	// - Squad 2: (+3, +3) from player (southeast)
 	// - Squad 3: (0, -3) from player (north - slightly ahead)
 	aiSquadPositions := []coords.LogicalPosition{
-		{X: playerStartPos.X - 3, Y: playerStartPos.Y + 3},
-		{X: playerStartPos.X + 3, Y: playerStartPos.Y + 3},
-		{X: playerStartPos.X, Y: playerStartPos.Y - 3},
+		{X: clampPosition(playerStartPos.X - 3, 0, 99), Y: clampPosition(playerStartPos.Y + 3, 0, 79)},
+		{X: clampPosition(playerStartPos.X + 3, 0, 99), Y: clampPosition(playerStartPos.Y + 3, 0, 79)},
+		{X: clampPosition(playerStartPos.X, 0, 99), Y: clampPosition(playerStartPos.Y - 3, 0, 79)},
 	}
 
 	for i, pos := range aiSquadPositions {
@@ -169,4 +169,16 @@ func createActionStateForSquad(manager *common.EntityManager, squadID ecs.Entity
 	})
 
 	return nil
+}
+
+// clampPosition constrains a coordinate to valid map bounds
+// Map is 100x80 (0-99 for X, 0-79 for Y)
+func clampPosition(value, min, max int) int {
+	if value < min {
+		return min
+	}
+	if value > max {
+		return max
+	}
+	return value
 }

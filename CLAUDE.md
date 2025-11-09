@@ -95,7 +95,8 @@ The squad and inventory systems demonstrate perfect ECS architecture. Apply thes
 **Architecture:**
 - `worldmap/generator.go` - MapGenerator interface, registry, GenerationResult
 - `worldmap/gen_rooms_corridors.go` - Classic roguelike algorithm (default)
-- `worldmap/gen_bsp.go` - Binary Space Partitioning for structured layouts
+- `worldmap/gen_tactical_biome.go` - Cellular automata with 5 biomes for squad combat
+- `worldmap/gen_helpers.go` - Shared helper functions using CoordinateManager
 - `worldmap/GameMapUtil.go` - TileImageSet struct (no global variables)
 
 **Usage:**
@@ -104,11 +105,32 @@ The squad and inventory systems demonstrate perfect ECS architecture. Apply thes
 gameMap := worldmap.NewGameMapDefault()
 
 // Specify algorithm
-gameMap := worldmap.NewGameMap("bsp")
+gameMap := worldmap.NewGameMap("tactical_biome")
 
 // List available generators
-generators := worldmap.ListGenerators() // ["rooms_corridors", "bsp"]
+generators := worldmap.ListGenerators() // ["rooms_corridors", "tactical_biome"]
 ```
+
+**⚠️ CRITICAL: CoordinateManager Usage for result.Tiles**
+
+**ALWAYS use `coords.CoordManager.LogicalToIndex()` when accessing `result.Tiles`:**
+
+```go
+// ✅ CORRECT - Use CoordinateManager
+logicalPos := coords.LogicalPosition{X: x, Y: y}
+tileIdx := coords.CoordManager.LogicalToIndex(logicalPos)
+result.Tiles[tileIdx] = &tile
+
+// ❌ WRONG - Manual calculation causes "index out of range" panics
+idx := y*width + x  // This width may differ from CoordManager.dungeonWidth!
+result.Tiles[idx] = &tile  // PANIC: index out of range [-302]
+```
+
+**Why This Matters:**
+- CoordinateManager uses `cm.dungeonWidth` which may not match the generator's `width` parameter
+- Manual calculation `y*width + x` creates wrong indices → negative or out-of-bounds
+- Local arrays (like `terrainMap []bool`) can use manual calculation since they're width*height
+- But `result.Tiles` MUST use CoordinateManager for correct indexing
 
 **Benefits Achieved:**
 - ✅ Add new algorithms without modifying existing code (Open/Closed Principle)
@@ -120,10 +142,13 @@ generators := worldmap.ListGenerators() // ["rooms_corridors", "bsp"]
 **Adding New Generators:**
 1. Create `worldmap/gen_<name>.go`
 2. Implement MapGenerator interface (3 methods)
-3. Register in `init()` function
-4. Zero changes to existing code required
+3. **Use CoordinateManager for all result.Tiles indexing**
+4. Register in `init()` function
+5. Zero changes to existing code required
 
-**Reference:** See `analysis/worldmap_strategy_pattern_refactoring.md` for full implementation plan
+**Reference:**
+- `analysis/worldmap_strategy_pattern_refactoring.md` - Strategy pattern implementation
+- `analysis/tactical_biome_generator.md` - Tactical biome generator details (5 biomes, cellular automata)
 
 ---
 
