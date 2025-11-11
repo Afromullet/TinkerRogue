@@ -45,6 +45,9 @@ func (smm *SquadManagementMode) Initialize(ctx *UIContext) error {
 	// Initialize common mode infrastructure (required for queries field)
 	smm.InitializeBase(ctx)
 
+	// Register hotkey for mode transition (back to exploration)
+	smm.RegisterHotkey(ebiten.KeyE, "exploration")
+
 	// Override root container with grid layout for multiple squad panels
 	smm.ui = &ebitenui.UI{}
 	smm.rootContainer = widget.NewContainer(
@@ -120,9 +123,11 @@ func (smm *SquadManagementMode) createSquadPanel(squadID ecs.EntityID) *SquadPan
 
 	// Squad name label - use unified query service
 	squadName := smm.queries.GetSquadName(squadID)
-	nameLabel := widget.NewText(
-		widget.TextOpts.Text(fmt.Sprintf("Squad: %s", squadName), LargeFace, color.White),
-	)
+	nameLabel := CreateTextWithConfig(TextConfig{
+		Text:     fmt.Sprintf("Squad: %s", squadName),
+		FontFace: LargeFace,
+		Color:    color.White,
+	})
 	panel.container.AddChild(nameLabel)
 
 	// 3x3 grid visualization (using squad system's VisualizeSquad function)
@@ -210,14 +215,7 @@ func (smm *SquadManagementMode) HandleInput(inputState *InputState) bool {
 		return true
 	}
 
-	// E key to close (squad management-specific hotkey)
-	if inputState.KeysJustPressed[ebiten.KeyE] {
-		if exploreMode, exists := smm.modeManager.GetMode("exploration"); exists {
-			smm.modeManager.RequestTransition(exploreMode, "E key pressed")
-			return true
-		}
-	}
-
+	// E key hotkey is now handled by BaseMode.HandleCommonInput via RegisterHotkey
 	return false
 }
 

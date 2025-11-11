@@ -51,18 +51,18 @@ func (sdm *SquadDeploymentMode) Initialize(ctx *UIContext) error {
 	sdm.buildSquadListPanel()
 
 	// Build instruction text (top-center) using BuildPanel
-	sdm.instructionText = widget.NewText(
-		widget.TextOpts.Text("Select a squad from the list, then click on the map to place it", SmallFace, color.White),
-		widget.TextOpts.WidgetOpts(
-			widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{
-				HorizontalPosition: widget.AnchorLayoutPositionCenter,
-				VerticalPosition:   widget.AnchorLayoutPositionStart,
-				Padding: widget.Insets{
-					Top: int(float64(sdm.layout.ScreenHeight) * 0.02),
-				},
-			}),
-		),
-	)
+	sdm.instructionText = CreateTextWithConfig(TextConfig{
+		Text:     "Select a squad from the list, then click on the map to place it",
+		FontFace: SmallFace,
+		Color:    color.White,
+		LayoutData: widget.AnchorLayoutData{
+			HorizontalPosition: widget.AnchorLayoutPositionCenter,
+			VerticalPosition:   widget.AnchorLayoutPositionStart,
+			Padding: widget.Insets{
+				Top: int(float64(sdm.layout.ScreenHeight) * 0.02),
+			},
+		},
+	})
 	sdm.rootContainer.AddChild(sdm.instructionText)
 
 	sdm.buildActionButtons()
@@ -83,9 +83,11 @@ func (sdm *SquadDeploymentMode) buildSquadListPanel() {
 	)
 
 	// Add label
-	listLabel := widget.NewText(
-		widget.TextOpts.Text("Squads:", SmallFace, color.White),
-	)
+	listLabel := CreateTextWithConfig(TextConfig{
+		Text:     "Squads:",
+		FontFace: SmallFace,
+		Color:    color.White,
+	})
 	sdm.squadListPanel.AddChild(listLabel)
 
 	// Create squad list component - show all alive squads for placement

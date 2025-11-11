@@ -203,37 +203,23 @@ func (sbm *SquadBuilderMode) buildSquadNameInput() {
 	)
 
 	// Label
-	nameLabel := widget.NewText(
-		widget.TextOpts.Text("Squad Name:", LargeFace, color.White),
-	)
+	nameLabel := CreateTextWithConfig(TextConfig{
+		Text:     "Squad Name:",
+		FontFace: LargeFace,
+		Color:    color.White,
+	})
 	inputContainer.AddChild(nameLabel)
 
-	// Text input - use simple color background instead of complex image
-	sbm.squadNameInput = widget.NewTextInput(
-		widget.TextInputOpts.WidgetOpts(
-			widget.WidgetOpts.MinSize(300, 50),
-		),
-		widget.TextInputOpts.Image(&widget.TextInputImage{
-			Idle:     defaultWidgetColor,
-			Disabled: defaultWidgetColor,
-		}),
-		widget.TextInputOpts.Face(SmallFace),
-		widget.TextInputOpts.Color(&widget.TextInputColor{
-			Idle:     color.White,
-			Disabled: hexToColor(textDisabledColor),
-			Caret:    color.White,
-		}),
-		widget.TextInputOpts.Padding(widget.Insets{
-			Left: 15, Right: 15, Top: 10, Bottom: 10,
-		}),
-		widget.TextInputOpts.Placeholder("Enter squad name..."),
-		widget.TextInputOpts.CaretOpts(
-			widget.CaretOpts.Size(SmallFace, 2),
-		),
-		widget.TextInputOpts.ChangedHandler(func(args *widget.TextInputChangedEventArgs) {
-			sbm.currentSquadName = args.InputText
-		}),
-	)
+	// Create text input using TextInputConfig
+	sbm.squadNameInput = CreateTextInputWithConfig(TextInputConfig{
+		MinWidth:    300,
+		MinHeight:   50,
+		FontFace:    SmallFace,
+		Placeholder: "Enter squad name...",
+		OnChanged: func(text string) {
+			sbm.currentSquadName = text
+		},
+	})
 	inputContainer.AddChild(sbm.squadNameInput)
 
 	// Position at top center

@@ -1,10 +1,19 @@
 package gui
 
 import (
+	"fmt"
+
 	"github.com/ebitenui/ebitenui"
 	"github.com/ebitenui/ebitenui/widget"
 	"github.com/hajimehoshi/ebiten/v2"
 )
+
+// InputBinding maps a key to a mode transition
+type InputBinding struct {
+	Key        ebiten.Key
+	TargetMode string
+	Reason     string
+}
 
 // BaseMode provides common mode infrastructure shared by all UI modes.
 // Modes should embed this struct to inherit common fields and behavior.
@@ -17,7 +26,8 @@ type BaseMode struct {
 	panelBuilders *PanelBuilders
 	queries       *GUIQueries // Unified ECS query service
 	modeName      string
-	returnMode    string // Mode to return to on ESC/close
+	returnMode    string               // Mode to return to on ESC/close
+	hotkeys       map[ebiten.Key]InputBinding // Registered hotkeys for mode transitions
 }
 
 // InitializeBase sets up common mode infrastructure.
@@ -34,6 +44,9 @@ func (bm *BaseMode) InitializeBase(ctx *UIContext) {
 	// Initialize unified ECS query service
 	bm.queries = NewGUIQueries(ctx.ECSManager)
 
+	// Initialize hotkeys map
+	bm.hotkeys = make(map[ebiten.Key]InputBinding)
+
 	// Create root ebitenui container
 	bm.ui = &ebitenui.UI{}
 	bm.rootContainer = widget.NewContainer(
@@ -42,13 +55,45 @@ func (bm *BaseMode) InitializeBase(ctx *UIContext) {
 	bm.ui.Container = bm.rootContainer
 }
 
+// RegisterHotkey registers a key binding that transitions to a target mode.
+// This provides a declarative way to set up mode navigation without duplicating
+// hotkey handling code across modes.
+//
+// Parameters:
+//   - key: The ebiten key to bind
+//   - targetMode: The name of the mode to transition to
+//
+// Example:
+//   bm.RegisterHotkey(ebiten.KeyE, "squad_management")
+func (bm *BaseMode) RegisterHotkey(key ebiten.Key, targetMode string) {
+	if bm.hotkeys == nil {
+		bm.hotkeys = make(map[ebiten.Key]InputBinding)
+	}
+
+	bm.hotkeys[key] = InputBinding{
+		Key:        key,
+		TargetMode: targetMode,
+		Reason:     fmt.Sprintf("%s key pressed", key.String()),
+	}
+}
+
 // HandleCommonInput processes standard input that's common across all modes.
-// Currently handles ESC key to return to the designated return mode.
+// Checks registered hotkeys and handles ESC key to return to the designated return mode.
 //
 // Returns true if input was consumed (prevents further propagation).
 // Modes should call this first in their HandleInput() method before processing
 // mode-specific input.
 func (bm *BaseMode) HandleCommonInput(inputState *InputState) bool {
+	// Check registered hotkeys for mode transitions
+	for key, binding := range bm.hotkeys {
+		if inputState.KeysJustPressed[key] {
+			if targetMode, exists := bm.modeManager.GetMode(binding.TargetMode); exists {
+				bm.modeManager.RequestTransition(targetMode, binding.Reason)
+				return true
+			}
+		}
+	}
+
 	// ESC key - return to designated mode
 	if inputState.KeysJustPressed[ebiten.KeyEscape] {
 		if returnMode, exists := bm.modeManager.GetMode(bm.returnMode); exists {

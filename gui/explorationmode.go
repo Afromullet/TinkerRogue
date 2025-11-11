@@ -37,6 +37,12 @@ func (em *ExplorationMode) Initialize(ctx *UIContext) error {
 	// Initialize common mode infrastructure
 	em.InitializeBase(ctx)
 
+	// Register hotkeys for mode transitions
+	em.RegisterHotkey(ebiten.KeyE, "squad_management")
+	em.RegisterHotkey(ebiten.KeyI, "inventory")
+	em.RegisterHotkey(ebiten.KeyB, "squad_builder")
+	em.RegisterHotkey(ebiten.KeyC, "combat")
+
 	// Build stats panel (top-right) using BuildPanel
 	em.statsPanel = em.panelBuilders.BuildPanel(
 		TopRight(),
@@ -218,38 +224,6 @@ func (em *ExplorationMode) HandleInput(inputState *InputState) bool {
 		}
 	}
 
-	// Check for mode transition hotkeys
-	if inputState.KeysJustPressed[ebiten.KeyE] {
-		// Open squad management
-		if squadMode, exists := em.modeManager.GetMode("squad_management"); exists {
-			em.modeManager.RequestTransition(squadMode, "E key pressed")
-			return true
-		}
-	}
-
-	if inputState.KeysJustPressed[ebiten.KeyI] {
-		// Open full inventory
-		if invMode, exists := em.modeManager.GetMode("inventory"); exists {
-			em.modeManager.RequestTransition(invMode, "I key pressed")
-			return true
-		}
-	}
-
-	if inputState.KeysJustPressed[ebiten.KeyB] {
-		// Open squad builder
-		if builderMode, exists := em.modeManager.GetMode("squad_builder"); exists {
-			em.modeManager.RequestTransition(builderMode, "B key pressed")
-			return true
-		}
-	}
-
-	if inputState.KeysJustPressed[ebiten.KeyC] {
-		// Enter combat mode
-		if combatMode, exists := em.modeManager.GetMode("combat"); exists {
-			em.modeManager.RequestTransition(combatMode, "C key pressed")
-			return true
-		}
-	}
-
-	return false // Input not consumed, let game logic handle
+	// Mode transition hotkeys are now handled by BaseMode.HandleCommonInput via RegisterHotkey
+	return false
 }

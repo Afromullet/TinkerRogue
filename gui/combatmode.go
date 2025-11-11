@@ -85,9 +85,11 @@ func (cm *CombatMode) Initialize(ctx *UIContext) error {
 		Padding(0.01),
 		HorizontalRowLayout(),
 	)
-	cm.turnOrderLabel = widget.NewText(
-		widget.TextOpts.Text("Initializing combat...", LargeFace, color.White),
-	)
+	cm.turnOrderLabel = CreateTextWithConfig(TextConfig{
+		Text:     "Initializing combat...",
+		FontFace: LargeFace,
+		Color:    color.White,
+	})
 	cm.turnOrderPanel.AddChild(cm.turnOrderLabel)
 	cm.rootContainer.AddChild(cm.turnOrderPanel)
 
@@ -98,9 +100,11 @@ func (cm *CombatMode) Initialize(ctx *UIContext) error {
 		Padding(0.01),
 		RowLayout(),
 	)
-	cm.factionInfoText = widget.NewText(
-		widget.TextOpts.Text("Faction Info", SmallFace, color.White),
-	)
+	cm.factionInfoText = CreateTextWithConfig(TextConfig{
+		Text:     "Faction Info",
+		FontFace: SmallFace,
+		Color:    color.White,
+	})
 	cm.factionInfoPanel.AddChild(cm.factionInfoText)
 	cm.rootContainer.AddChild(cm.factionInfoPanel)
 
@@ -111,9 +115,11 @@ func (cm *CombatMode) Initialize(ctx *UIContext) error {
 		Padding(0.01),
 		RowLayout(),
 	)
-	listLabel := widget.NewText(
-		widget.TextOpts.Text("Your Squads:", SmallFace, color.White),
-	)
+	listLabel := CreateTextWithConfig(TextConfig{
+		Text:     "Your Squads:",
+		FontFace: SmallFace,
+		Color:    color.White,
+	})
 	cm.squadListPanel.AddChild(listLabel)
 	cm.rootContainer.AddChild(cm.squadListPanel)
 
@@ -127,9 +133,11 @@ func (cm *CombatMode) Initialize(ctx *UIContext) error {
 		}),
 		RowLayout(),
 	)
-	cm.squadDetailText = widget.NewText(
-		widget.TextOpts.Text("Select a squad\nto view details", SmallFace, color.White),
-	)
+	cm.squadDetailText = CreateTextWithConfig(TextConfig{
+		Text:     "Select a squad\nto view details",
+		FontFace: SmallFace,
+		Color:    color.White,
+	})
 	cm.squadDetailPanel.AddChild(cm.squadDetailText)
 	cm.rootContainer.AddChild(cm.squadDetailPanel)
 

@@ -24,6 +24,38 @@ type StringDisplay interface {
 	DisplayString()
 }
 
+// TextConfig provides declarative text widget configuration
+type TextConfig struct {
+	Text       string
+	FontFace   font.Face
+	Color      color.Color
+	LayoutData interface{}
+}
+
+// CreateTextWithConfig creates a text widget from config
+func CreateTextWithConfig(config TextConfig) *widget.Text {
+	// Apply defaults
+	if config.FontFace == nil {
+		config.FontFace = SmallFace
+	}
+	if config.Color == nil {
+		config.Color = color.White
+	}
+
+	opts := []widget.TextOpt{
+		widget.TextOpts.Text(config.Text, config.FontFace, config.Color),
+	}
+
+	// Add layout data if provided
+	if config.LayoutData != nil {
+		opts = append(opts, widget.TextOpts.WidgetOpts(
+			widget.WidgetOpts.LayoutData(config.LayoutData),
+		))
+	}
+
+	return widget.NewText(opts...)
+}
+
 // TextAreaConfig provides configuration for creating text areas with responsive sizing
 type TextAreaConfig struct {
 	MinWidth  int
@@ -236,4 +268,106 @@ func CreatePanelWithConfig(config PanelConfig) *widget.Container {
 	}
 
 	return container
+}
+
+// TextInputConfig provides declarative text input configuration
+type TextInputConfig struct {
+	MinWidth        int
+	MinHeight       int
+	FontFace        font.Face
+	TextColor       *widget.TextInputColor
+	Image           *widget.TextInputImage
+	Placeholder     string
+	Padding         widget.Insets
+	CaretSize       int
+	OnChanged       func(text string)
+	LayoutData      interface{}
+}
+
+// CreateTextInputWithConfig creates a text input from config
+func CreateTextInputWithConfig(config TextInputConfig) *widget.TextInput {
+	// Apply defaults
+	if config.MinWidth == 0 {
+		config.MinWidth = 300
+	}
+	if config.MinHeight == 0 {
+		config.MinHeight = 50
+	}
+	if config.FontFace == nil {
+		config.FontFace = SmallFace
+	}
+	if config.Image == nil {
+		config.Image = &widget.TextInputImage{
+			Idle:     defaultWidgetColor,
+			Disabled: defaultWidgetColor,
+		}
+	}
+	if config.TextColor == nil {
+		config.TextColor = &widget.TextInputColor{
+			Idle:     color.White,
+			Disabled: hexToColor(textDisabledColor),
+			Caret:    color.White,
+		}
+	}
+	if config.Padding.Left == 0 {
+		config.Padding = widget.Insets{Left: 15, Right: 15, Top: 10, Bottom: 10}
+	}
+	if config.CaretSize == 0 {
+		config.CaretSize = 2
+	}
+
+	opts := []widget.TextInputOpt{
+		widget.TextInputOpts.WidgetOpts(
+			widget.WidgetOpts.MinSize(config.MinWidth, config.MinHeight),
+		),
+		widget.TextInputOpts.Image(config.Image),
+		widget.TextInputOpts.Face(config.FontFace),
+		widget.TextInputOpts.Color(config.TextColor),
+		widget.TextInputOpts.Padding(config.Padding),
+		widget.TextInputOpts.CaretOpts(
+			widget.CaretOpts.Size(config.FontFace, config.CaretSize),
+		),
+	}
+
+	// Add placeholder if provided
+	if config.Placeholder != "" {
+		opts = append(opts, widget.TextInputOpts.Placeholder(config.Placeholder))
+	}
+
+	// Add layout data if provided
+	if config.LayoutData != nil {
+		opts = append(opts, widget.TextInputOpts.WidgetOpts(
+			widget.WidgetOpts.LayoutData(config.LayoutData),
+		))
+	}
+
+	input := widget.NewTextInput(opts...)
+
+	// Add change handler if provided
+	if config.OnChanged != nil {
+		input.ChangedEvent.AddHandler(func(args interface{}) {
+			a := args.(*widget.TextInputChangedEventArgs)
+			config.OnChanged(a.InputText)
+		})
+	}
+
+	return input
+}
+
+// SliderConfig provides declarative slider configuration
+// Note: Slider support depends on ebitenui version
+// This is a placeholder for future use when slider widgets are needed
+type SliderConfig struct {
+	MinWidth   int
+	MinHeight  int
+	MinValue   int
+	MaxValue   int
+	LayoutData interface{}
+}
+
+// CheckboxConfig provides declarative checkbox configuration
+// Note: Checkbox support depends on ebitenui version
+// This is a placeholder for future use when checkbox widgets are needed
+type CheckboxConfig struct {
+	LayoutData interface{}
 }

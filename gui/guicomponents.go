@@ -84,9 +84,11 @@ func (slc *SquadListComponent) Refresh() {
 
 	// If no squads match filter, show AI turn message
 	if len(slc.squadButtons) == 0 {
-		noSquadsText := widget.NewText(
-			widget.TextOpts.Text("AI Turn", SmallFace, color.Gray{Y: 128}),
-		)
+		noSquadsText := CreateTextWithConfig(TextConfig{
+			Text:     "AI Turn",
+			FontFace: SmallFace,
+			Color:    color.Gray{Y: 128},
+		})
 		slc.container.AddChild(noSquadsText)
 	}
 }
@@ -423,9 +425,11 @@ func NewColorLabelComponent(
 	textColor color.Color,
 ) *ColorLabelComponent {
 	return &ColorLabelComponent{
-		text: widget.NewText(
-			widget.TextOpts.Text(textContent, SmallFace, textColor),
-		),
+		text: CreateTextWithConfig(TextConfig{
+			Text:     textContent,
+			FontFace: SmallFace,
+			Color:    textColor,
+		}),
 		color: textColor,
 	}
 }
