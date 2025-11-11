@@ -16,8 +16,9 @@ import (
 type SquadManagementMode struct {
 	BaseMode // Embed common mode infrastructure
 
-	squadPanels []*SquadPanel // One panel per squad
-	closeButton *widget.Button
+	squadPanels       []*SquadPanel // One panel per squad
+	closeButton       *widget.Button
+	squadPanelComponent *PanelListComponent // Component managing squad panel refresh
 }
 
 // SquadPanel represents a single squad's UI panel
@@ -41,12 +42,10 @@ func NewSquadManagementMode(modeManager *UIModeManager) *SquadManagementMode {
 }
 
 func (smm *SquadManagementMode) Initialize(ctx *UIContext) error {
-	// Initialize common mode infrastructure (but override root container with grid layout)
-	smm.context = ctx
-	smm.layout = NewLayoutConfig(ctx)
-	smm.panelBuilders = NewPanelBuilders(smm.layout, smm.modeManager)
+	// Initialize common mode infrastructure (required for queries field)
+	smm.InitializeBase(ctx)
 
-	// Create ebitenui root with grid layout for multiple squad panels (overrides BaseMode default)
+	// Override root container with grid layout for multiple squad panels
 	smm.ui = &ebitenui.UI{}
 	smm.rootContainer = widget.NewContainer(
 		widget.ContainerOpts.Layout(widget.NewGridLayout(
@@ -66,24 +65,29 @@ func (smm *SquadManagementMode) Initialize(ctx *UIContext) error {
 	closeButtonContainer.AddChild(closeBtn)
 	smm.ui.Container.AddChild(closeButtonContainer)
 
+	// Initialize panel list component to manage squad panels
+	smm.squadPanelComponent = NewPanelListComponent(
+		smm.rootContainer,
+		smm.queries,
+		smm.panelBuilders,
+		func(queries *GUIQueries, squadID ecs.EntityID) *widget.Container {
+			panel := smm.createSquadPanel(squadID)
+			return panel.container
+		},
+		func(squadID ecs.EntityID) bool {
+			// Show all squads
+			return true
+		},
+	)
+
 	return nil
 }
 
 func (smm *SquadManagementMode) Enter(fromMode UIMode) error {
 	fmt.Println("Entering Squad Management Mode")
 
-	// Clear old panels
-	smm.clearSquadPanels()
-
-	// Find all squads in the game using query service
-	allSquads := smm.queries.FindAllSquads()
-
-	// Create panel for each squad
-	for _, squadID := range allSquads {
-		panel := smm.createSquadPanel(squadID)
-		smm.squadPanels = append(smm.squadPanels, panel)
-		smm.rootContainer.AddChild(panel.container)
-	}
+	// Refresh squad panels using component
+	smm.squadPanelComponent.Refresh()
 
 	return nil
 }
@@ -91,19 +95,11 @@ func (smm *SquadManagementMode) Enter(fromMode UIMode) error {
 func (smm *SquadManagementMode) Exit(toMode UIMode) error {
 	fmt.Println("Exiting Squad Management Mode")
 
-	// Clean up panels (will be rebuilt on next Enter)
-	smm.clearSquadPanels()
+	// Clear panels using component
+	smm.squadPanelComponent.Clear()
 
 	return nil
 }
-
-func (smm *SquadManagementMode) clearSquadPanels() {
-	for _, panel := range smm.squadPanels {
-		smm.rootContainer.RemoveChild(panel.container)
-	}
-	smm.squadPanels = smm.squadPanels[:0] // Clear slice
-}
-
 
 func (smm *SquadManagementMode) createSquadPanel(squadID ecs.EntityID) *SquadPanel {
 	panel := &SquadPanel{
@@ -122,14 +118,12 @@ func (smm *SquadManagementMode) createSquadPanel(squadID ecs.EntityID) *SquadPan
 		),
 	})
 
-	// Squad name label - get component data using common.EntityManager
-	if squadDataRaw, ok := smm.context.ECSManager.GetComponent(squadID, squads.SquadComponent); ok {
-		squadData := squadDataRaw.(*squads.SquadData)
-		nameLabel := widget.NewText(
-			widget.TextOpts.Text(fmt.Sprintf("Squad: %s", squadData.Name), LargeFace, color.White),
-		)
-		panel.container.AddChild(nameLabel)
-	}
+	// Squad name label - use unified query service
+	squadName := smm.queries.GetSquadName(squadID)
+	nameLabel := widget.NewText(
+		widget.TextOpts.Text(fmt.Sprintf("Squad: %s", squadName), LargeFace, color.White),
+	)
+	panel.container.AddChild(nameLabel)
 
 	// 3x3 grid visualization (using squad system's VisualizeSquad function)
 	gridVisualization := squads.VisualizeSquad(squadID, smm.context.ECSManager)
@@ -191,21 +185,13 @@ func (smm *SquadManagementMode) createUnitList(squadID ecs.EntityID) *widget.Lis
 }
 
 func (smm *SquadManagementMode) getSquadStats(squadID ecs.EntityID) string {
-	unitIDs := squads.GetUnitIDsInSquad(squadID, smm.context.ECSManager)
-
-	totalHP := 0
-	maxHP := 0
-	unitCount := len(unitIDs)
-
-	for _, unitID := range unitIDs {
-		if attrRaw, ok := smm.context.ECSManager.GetComponent(unitID, common.AttributeComponent); ok {
-			attr := attrRaw.(*common.Attributes)
-			totalHP += attr.CurrentHealth
-			maxHP += attr.MaxHealth
-		}
+	// Use unified query service to get squad stats
+	squadInfo := smm.queries.GetSquadInfo(squadID)
+	if squadInfo == nil {
+		return "Squad not found"
 	}
 
-	return fmt.Sprintf("Units: %d\nTotal HP: %d/%d\nMorale: N/A", unitCount, totalHP, maxHP)
+	return fmt.Sprintf("Units: %d\nTotal HP: %d/%d\nMorale: N/A", squadInfo.TotalUnits, squadInfo.CurrentHP, squadInfo.MaxHP)
 }
 
 func (smm *SquadManagementMode) Update(deltaTime float64) error {

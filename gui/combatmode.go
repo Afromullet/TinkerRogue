@@ -46,6 +46,16 @@ type CombatMode struct {
 	inAttackMode     bool
 	inMoveMode       bool
 	validMoveTiles   []coords.LogicalPosition
+
+	// UI update components
+	squadListComponent  *SquadListComponent
+	squadDetailComponent *DetailPanelComponent
+	factionInfoComponent *DetailPanelComponent
+	turnOrderComponent   *TextDisplayComponent
+
+	// Rendering systems
+	movementRenderer  *MovementTileRenderer
+	highlightRenderer *SquadHighlightRenderer
 }
 
 func NewCombatMode(modeManager *UIModeManager) *CombatMode {
@@ -146,7 +156,78 @@ func (cm *CombatMode) Initialize(ctx *UIContext) error {
 	// Build combat UI layout
 	cm.buildActionButtons()
 
+	// Initialize UI update components
+	cm.initializeUpdateComponents()
+
+	// Initialize rendering systems
+	cm.movementRenderer = NewMovementTileRenderer()
+	cm.highlightRenderer = NewSquadHighlightRenderer(cm.queries)
+
 	return nil
+}
+
+func (cm *CombatMode) initializeUpdateComponents() {
+	// Turn order component - displays current faction and round
+	cm.turnOrderComponent = NewTextDisplayComponent(
+		cm.turnOrderLabel,
+		func() string {
+			currentFactionID := cm.turnManager.GetCurrentFaction()
+			if currentFactionID == 0 {
+				return "No active combat"
+			}
+
+			round := cm.turnManager.GetCurrentRound()
+			factionName := cm.queries.GetFactionName(currentFactionID)
+
+			// Add indicator if player's turn
+			playerIndicator := ""
+			if cm.queries.IsPlayerFaction(currentFactionID) {
+				playerIndicator = " >>> YOUR TURN <<<"
+			}
+
+			return fmt.Sprintf("Round %d | %s%s", round, factionName, playerIndicator)
+		},
+	)
+
+	// Faction info component - displays squad count and mana
+	cm.factionInfoComponent = NewDetailPanelComponent(
+		cm.factionInfoText,
+		cm.queries,
+		func(data interface{}) string {
+			factionInfo := data.(*FactionInfo)
+			infoText := fmt.Sprintf("%s\n", factionInfo.Name)
+			infoText += fmt.Sprintf("Squads: %d/%d\n", factionInfo.AliveSquadCount, len(factionInfo.SquadIDs))
+			infoText += fmt.Sprintf("Mana: %d/%d", factionInfo.CurrentMana, factionInfo.MaxMana)
+			return infoText
+		},
+	)
+
+	// Squad detail component - displays selected squad details
+	cm.squadDetailComponent = NewDetailPanelComponent(
+		cm.squadDetailText,
+		cm.queries,
+		nil, // Use default formatter
+	)
+
+	// Squad list component - filter for player faction squads
+	cm.squadListComponent = NewSquadListComponent(
+		cm.squadListPanel,
+		cm.queries,
+		func(info *SquadInfo) bool {
+			currentFactionID := cm.turnManager.GetCurrentFaction()
+			if currentFactionID == 0 {
+				return false
+			}
+			// Only show squads if it's player's turn
+			if !cm.queries.IsPlayerFaction(currentFactionID) {
+				return false
+			}
+			return !info.IsDestroyed && info.FactionID == currentFactionID
+		},
+		func(squadID ecs.EntityID) {
+			cm.selectSquad(squadID)
+		},
+	)
 }
 
 func (cm *CombatMode) buildActionButtons() {
@@ -253,11 +334,11 @@ func (cm *CombatMode) handleEndTurn() {
 	cm.inMoveMode = false
 	cm.validMoveTiles = nil
 
-	// Update UI displays
-	cm.updateTurnDisplay()
-	cm.updateFactionDisplay()
-	cm.updateSquadList()
-	cm.updateSquadDetail()
+	// Update UI displays using components
+	cm.turnOrderComponent.Refresh()
+	cm.factionInfoComponent.ShowFaction(currentFactionID)
+	cm.squadListComponent.Refresh()
+	cm.squadDetailComponent.SetText("Select a squad\nto view details")
 }
 
 // getFactionName and isPlayerFaction methods removed - now using cm.queries service
@@ -338,7 +419,8 @@ func (cm *CombatMode) selectSquad(squadID ecs.EntityID) {
 	squadName := cm.queries.GetSquadName(squadID)
 	cm.addCombatLog(fmt.Sprintf("Selected: %s", squadName))
 
-	cm.updateSquadDetail()
+	// Update detail panel using component
+	cm.squadDetailComponent.ShowSquad(squadID)
 }
 
 
@@ -391,82 +473,6 @@ func (cm *CombatMode) executeAttack() {
 	cm.selectedTargetID = 0
 }
 
-func (cm *CombatMode) updateSquadList() {
-	// Clear existing buttons (keep label)
-	children := cm.squadListPanel.Children()
-	for len(children) > 1 {
-		cm.squadListPanel.RemoveChild(children[len(children)-1])
-		children = cm.squadListPanel.Children()
-	}
-
-	currentFactionID := cm.turnManager.GetCurrentFaction()
-	if currentFactionID == 0 {
-		return
-	}
-
-	// Only show squads if it's player's turn
-	if !cm.queries.IsPlayerFaction(currentFactionID) {
-		noSquadsText := widget.NewText(
-			widget.TextOpts.Text("AI Turn", SmallFace, color.Gray{Y: 128}),
-		)
-		cm.squadListPanel.AddChild(noSquadsText)
-		return
-	}
-
-	squadIDs := cm.factionManager.GetFactionSquads(currentFactionID)
-
-	for _, squadID := range squadIDs {
-		// Skip destroyed squads
-		if squads.IsSquadDestroyed(squadID, cm.context.ECSManager) {
-			continue
-		}
-
-		squadName := cm.queries.GetSquadName(squadID)
-
-		// Create button for each squad
-		localSquadID := squadID // Capture for closure
-		squadButton := CreateButtonWithConfig(ButtonConfig{
-			Text: squadName,
-			OnClick: func() {
-				cm.selectSquad(localSquadID)
-			},
-		})
-
-		cm.squadListPanel.AddChild(squadButton)
-	}
-}
-
-func (cm *CombatMode) updateSquadDetail() {
-	if cm.selectedSquadID == 0 {
-		cm.squadDetailText.Label = "Select a squad\nto view details"
-		return
-	}
-
-	// Use unified query service to get all squad info
-	squadInfo := cm.queries.GetSquadInfo(cm.selectedSquadID)
-	if squadInfo == nil {
-		cm.squadDetailText.Label = "Squad not found"
-		return
-	}
-
-	detailText := fmt.Sprintf("%s\n", squadInfo.Name)
-	detailText += fmt.Sprintf("Units: %d/%d\n", squadInfo.AliveUnits, squadInfo.TotalUnits)
-	detailText += fmt.Sprintf("HP: %d/%d\n", squadInfo.CurrentHP, squadInfo.MaxHP)
-	detailText += fmt.Sprintf("Move: %d\n", squadInfo.MovementRemaining)
-
-	if squadInfo.HasActed {
-		detailText += "Status: Acted\n"
-	} else if squadInfo.HasMoved {
-		detailText += "Status: Moved\n"
-	} else {
-		detailText += "Status: Ready\n"
-	}
-
-	cm.squadDetailText.Label = detailText
-}
-
-// findActionStateEntity removed - now using cm.queries.GetSquadInfo()
-
 func (cm *CombatMode) Enter(fromMode UIMode) error {
 	fmt.Println("Entering Combat Mode")
 	cm.addCombatLog("=== COMBAT STARTED ===")
@@ -486,10 +492,10 @@ func (cm *CombatMode) Enter(fromMode UIMode) error {
 		factionName := cm.queries.GetFactionName(currentFactionID)
 		cm.addCombatLog(fmt.Sprintf("Round 1: %s goes first!", factionName))
 
-		// Update displays
-		cm.updateTurnDisplay()
-		cm.updateFactionDisplay()
-		cm.updateSquadList()
+		// Update displays using components
+		cm.turnOrderComponent.Refresh()
+		cm.factionInfoComponent.ShowFaction(currentFactionID)
+		cm.squadListComponent.Refresh()
 	} else {
 		cm.addCombatLog("No factions found - combat cannot start")
 	}
@@ -506,171 +512,35 @@ func (cm *CombatMode) Exit(toMode UIMode) error {
 }
 
 func (cm *CombatMode) Update(deltaTime float64) error {
-	// Update UI displays each frame
-	cm.updateTurnDisplay()
-	cm.updateFactionDisplay()
-	cm.updateSquadDetail() // Update detail panel if squad selected
+	// Update UI displays each frame using components
+	cm.turnOrderComponent.Refresh()
+
+	currentFactionID := cm.turnManager.GetCurrentFaction()
+	if currentFactionID != 0 {
+		cm.factionInfoComponent.ShowFaction(currentFactionID)
+	}
+
+	if cm.selectedSquadID != 0 {
+		cm.squadDetailComponent.ShowSquad(cm.selectedSquadID)
+	}
+
 	return nil
 }
 
-func (cm *CombatMode) updateTurnDisplay() {
-	currentFactionID := cm.turnManager.GetCurrentFaction()
-	if currentFactionID == 0 {
-		cm.turnOrderLabel.Label = "No active combat"
-		return
-	}
-
-	round := cm.turnManager.GetCurrentRound()
-	factionName := cm.queries.GetFactionName(currentFactionID)
-
-	// Add indicator if player's turn
-	playerIndicator := ""
-	if cm.queries.IsPlayerFaction(currentFactionID) {
-		playerIndicator = " >>> YOUR TURN <<<"
-	}
-
-	cm.turnOrderLabel.Label = fmt.Sprintf("Round %d | %s%s", round, factionName, playerIndicator)
-}
-
-func (cm *CombatMode) updateFactionDisplay() {
-	currentFactionID := cm.turnManager.GetCurrentFaction()
-	if currentFactionID == 0 {
-		cm.factionInfoText.Label = "No faction info"
-		return
-	}
-
-	// Use unified query service to get all faction info
-	factionInfo := cm.queries.GetFactionInfo(currentFactionID)
-	if factionInfo == nil {
-		cm.factionInfoText.Label = "Faction not found"
-		return
-	}
-
-	infoText := fmt.Sprintf("%s\n", factionInfo.Name)
-	infoText += fmt.Sprintf("Squads: %d/%d\n", factionInfo.AliveSquadCount, len(factionInfo.SquadIDs))
-	infoText += fmt.Sprintf("Mana: %d/%d", factionInfo.CurrentMana, factionInfo.MaxMana)
-
-	cm.factionInfoText.Label = infoText
-}
-
 func (cm *CombatMode) Render(screen *ebiten.Image) {
-	// Render all squad highlights (show player vs enemy squads with different colors)
-	cm.renderAllSquadHighlights(screen)
-
-	// Render valid movement tiles if in move mode
-	if cm.inMoveMode && len(cm.validMoveTiles) > 0 {
-		cm.renderMovementTiles(screen)
-	}
-}
-
-func (cm *CombatMode) renderMovementTiles(screen *ebiten.Image) {
-	// Get player position for viewport centering
 	playerPos := *cm.context.PlayerData.Pos
-
-	// Create viewport centered on player using the initialized ScreenInfo
-	// Update screen dimensions from current screen buffer
-	screenData := graphics.ScreenInfo
-	screenData.ScreenWidth = screen.Bounds().Dx()
-	screenData.ScreenHeight = screen.Bounds().Dy()
-
-	manager := coords.NewCoordinateManager(screenData)
-	viewport := coords.NewViewport(manager, playerPos)
-
-	tileSize := screenData.TileSize
-	scaleFactor := screenData.ScaleFactor
-
-	// Create a semi-transparent green overlay for valid tiles
-	for _, pos := range cm.validMoveTiles {
-		// Convert logical position to screen position using viewport
-		screenX, screenY := viewport.LogicalToScreen(pos)
-
-		// Draw a scaled green rectangle
-		scaledTileSize := tileSize * scaleFactor
-		rect := ebiten.NewImage(scaledTileSize, scaledTileSize)
-		rect.Fill(color.RGBA{R: 0, G: 255, B: 0, A: 80}) // Semi-transparent green
-
-		op := &ebiten.DrawImageOptions{}
-		op.GeoM.Translate(screenX, screenY)
-		screen.DrawImage(rect, op)
-	}
-}
-
-func (cm *CombatMode) renderAllSquadHighlights(screen *ebiten.Image) {
-	// Get player position and viewport
-	playerPos := *cm.context.PlayerData.Pos
-
-	screenData := graphics.ScreenInfo
-	screenData.ScreenWidth = screen.Bounds().Dx()
-	screenData.ScreenHeight = screen.Bounds().Dy()
-
-	manager := coords.NewCoordinateManager(screenData)
-	viewport := coords.NewViewport(manager, playerPos)
-
-	tileSize := screenData.TileSize
-	scaleFactor := screenData.ScaleFactor
-	borderThickness := 3
-	scaledTileSize := tileSize * scaleFactor
-
-	// Get current faction ID to determine player squads
 	currentFactionID := cm.turnManager.GetCurrentFaction()
 
-	// Query all squads on map
-	for _, result := range cm.context.ECSManager.World.Query(cm.context.ECSManager.Tags["mapposition"]) {
-		mapPosData := common.GetComponentType[*combat.MapPositionData](result.Entity, combat.MapPositionComponent)
+	// Render squad highlights (always shown)
+	cm.highlightRenderer.Render(screen, playerPos, currentFactionID, cm.selectedSquadID)
 
-		// Skip destroyed squads
-		if squads.IsSquadDestroyed(mapPosData.SquadID, cm.context.ECSManager) {
-			continue
-		}
-
-		// Convert logical position to screen position
-		screenX, screenY := viewport.LogicalToScreen(mapPosData.Position)
-
-		// Determine highlight color based on faction and selection status
-		var highlightColor color.RGBA
-		var borderOpacity uint8 = 150
-
-		if mapPosData.SquadID == cm.selectedSquadID {
-			// Selected squad gets bright white border
-			highlightColor = color.RGBA{R: 255, G: 255, B: 255, A: 255}
-		} else if mapPosData.FactionID == currentFactionID {
-			// Player faction squads get blue border
-			highlightColor = color.RGBA{R: 0, G: 150, B: 255, A: borderOpacity}
-		} else {
-			// Enemy faction squads get red border
-			highlightColor = color.RGBA{R: 255, G: 0, B: 0, A: borderOpacity}
-		}
-
-		// Draw border rectangles
-		// Top border
-		topBorder := ebiten.NewImage(scaledTileSize, borderThickness)
-		topBorder.Fill(highlightColor)
-		op := &ebiten.DrawImageOptions{}
-		op.GeoM.Translate(screenX, screenY)
-		screen.DrawImage(topBorder, op)
-
-		// Bottom border
-		bottomBorder := ebiten.NewImage(scaledTileSize, borderThickness)
-		bottomBorder.Fill(highlightColor)
-		op = &ebiten.DrawImageOptions{}
-		op.GeoM.Translate(screenX, screenY+float64(scaledTileSize-borderThickness))
-		screen.DrawImage(bottomBorder, op)
-
-		// Left border
-		leftBorder := ebiten.NewImage(borderThickness, scaledTileSize)
-		leftBorder.Fill(highlightColor)
-		op = &ebiten.DrawImageOptions{}
-		op.GeoM.Translate(screenX, screenY)
-		screen.DrawImage(leftBorder, op)
-
-		// Right border
-		rightBorder := ebiten.NewImage(borderThickness, scaledTileSize)
-		rightBorder.Fill(highlightColor)
-		op = &ebiten.DrawImageOptions{}
-		op.GeoM.Translate(screenX+float64(scaledTileSize-borderThickness), screenY)
-		screen.DrawImage(rightBorder, op)
+	// Render valid movement tiles (only in move mode)
+	if cm.inMoveMode && len(cm.validMoveTiles) > 0 {
+		cm.movementRenderer.Render(screen, playerPos, cm.validMoveTiles)
 	}
 }
+
+// renderMovementTiles and renderAllSquadHighlights removed - now using MovementTileRenderer and SquadHighlightRenderer
 
 func (cm *CombatMode) HandleInput(inputState *InputState) bool {
 	// Handle common input (ESC key to flee combat)
@@ -739,17 +609,8 @@ func (cm *CombatMode) selectEnemyTarget(index int) {
 		return
 	}
 
-	// Get all enemy squads (squads not in current faction)
-	enemySquads := []ecs.EntityID{}
-	for _, result := range cm.context.ECSManager.World.Query(cm.context.ECSManager.Tags["mapposition"]) {
-		mapPos := common.GetComponentType[*combat.MapPositionData](result.Entity, combat.MapPositionComponent)
-		if mapPos.FactionID != currentFactionID {
-			// Check if squad is alive
-			if !squads.IsSquadDestroyed(mapPos.SquadID, cm.context.ECSManager) {
-				enemySquads = append(enemySquads, mapPos.SquadID)
-			}
-		}
-	}
+	// Get all enemy squads using unified query service
+	enemySquads := cm.queries.GetEnemySquads(currentFactionID)
 
 	if index < 0 || index >= len(enemySquads) {
 		cm.addCombatLog(fmt.Sprintf("No enemy squad at index %d", index+1))
@@ -806,7 +667,9 @@ func (cm *CombatMode) handleMovementClick(mouseX, mouseY int) {
 	cm.validMoveTiles = nil
 
 	// Update squad detail to show new movement remaining
-	cm.updateSquadDetail()
+	if cm.selectedSquadID != 0 {
+		cm.squadDetailComponent.ShowSquad(cm.selectedSquadID)
+	}
 }
 
 func (cm *CombatMode) handleSquadClick(mouseX, mouseY int) {
@@ -816,28 +679,20 @@ func (cm *CombatMode) handleSquadClick(mouseX, mouseY int) {
 	viewport := coords.NewViewport(manager, playerPos)
 	clickedPos := viewport.ScreenToLogical(mouseX, mouseY)
 
-	// Find if a squad is at the clicked position
-	var clickedSquadID ecs.EntityID
-	var clickedFactionID ecs.EntityID
-
-	for _, result := range cm.context.ECSManager.World.Query(cm.context.ECSManager.Tags["mapposition"]) {
-		mapPos := common.GetComponentType[*combat.MapPositionData](result.Entity, combat.MapPositionComponent)
-
-		// Check if squad is at clicked position
-		if mapPos.Position.X == clickedPos.X && mapPos.Position.Y == clickedPos.Y {
-			// Make sure squad is not destroyed
-			if !squads.IsSquadDestroyed(mapPos.SquadID, cm.context.ECSManager) {
-				clickedSquadID = mapPos.SquadID
-				clickedFactionID = mapPos.FactionID
-				break
-			}
-		}
-	}
+	// Find if a squad is at the clicked position using unified query service
+	clickedSquadID := cm.queries.GetSquadAtPosition(clickedPos)
 
 	// If no squad was clicked, do nothing
 	if clickedSquadID == 0 {
 		return
 	}
+
+	// Get faction info for the clicked squad
+	squadInfo := cm.queries.GetSquadInfo(clickedSquadID)
+	if squadInfo == nil {
+		return
+	}
+	clickedFactionID := squadInfo.FactionID
 
 	currentFactionID := cm.turnManager.GetCurrentFaction()
 

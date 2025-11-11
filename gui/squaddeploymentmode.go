@@ -18,10 +18,8 @@ type SquadDeploymentMode struct {
 	BaseMode // Embed common mode infrastructure
 
 	squadListPanel    *widget.Container
-	squadList         *widget.List
+	squadListComponent *SquadListComponent
 	selectedSquadID   ecs.EntityID
-	allSquads         []ecs.EntityID
-	squadNames        []string
 	instructionText   *widget.Text
 	confirmButton     *widget.Button
 	clearAllButton    *widget.Button
@@ -30,6 +28,9 @@ type SquadDeploymentMode struct {
 	pendingMouseX    int
 	pendingMouseY    int
 	pendingPlacement bool
+
+	// Rendering systems
+	highlightRenderer *SquadHighlightRenderer
 }
 
 func NewSquadDeploymentMode(modeManager *UIModeManager) *SquadDeploymentMode {
@@ -39,8 +40,6 @@ func NewSquadDeploymentMode(modeManager *UIModeManager) *SquadDeploymentMode {
 			modeName:    "squad_deployment",
 			returnMode:  "exploration",
 		},
-		allSquads:  make([]ecs.EntityID, 0),
-		squadNames: make([]string, 0),
 	}
 }
 
@@ -68,6 +67,9 @@ func (sdm *SquadDeploymentMode) Initialize(ctx *UIContext) error {
 
 	sdm.buildActionButtons()
 
+	// Initialize rendering system
+	sdm.highlightRenderer = NewSquadHighlightRenderer(sdm.queries)
+
 	return nil
 }
 
@@ -86,37 +88,21 @@ func (sdm *SquadDeploymentMode) buildSquadListPanel() {
 	)
 	sdm.squadListPanel.AddChild(listLabel)
 
-	// Create list widget - will be populated in Enter()
-	sdm.squadList = CreateListWithConfig(ListConfig{
-		Entries:    []interface{}{}, // Will be populated in Enter()
-		EntryLabelFunc: func(e interface{}) string {
-			if str, ok := e.(string); ok {
-				return str
-			}
-			return fmt.Sprintf("%v", e)
+	// Create squad list component - show all alive squads for placement
+	sdm.squadListComponent = NewSquadListComponent(
+		sdm.squadListPanel,
+		sdm.queries,
+		func(info *SquadInfo) bool {
+			// Show all non-destroyed squads for deployment
+			return !info.IsDestroyed
 		},
-		OnEntrySelected: func(selectedEntry interface{}) {
-			if squadName, ok := selectedEntry.(string); ok {
-				fmt.Printf("DEBUG: Squad selection event fired!\n")
-				fmt.Printf("DEBUG: Selected entry: %s\n", squadName)
-
-				// Find the squad index matching this name
-				for i, name := range sdm.squadNames {
-					if name == squadName {
-						if i < len(sdm.allSquads) {
-							sdm.selectedSquadID = sdm.allSquads[i]
-							sdm.isPlacingSquad = true
-							fmt.Printf("DEBUG: Set selectedSquadID=%d, isPlacingSquad=true\n", sdm.selectedSquadID)
-							sdm.updateInstructionText()
-						}
-						break
-					}
-				}
-			}
+		func(squadID ecs.EntityID) {
+			sdm.selectedSquadID = squadID
+			sdm.isPlacingSquad = true
+			sdm.updateInstructionText()
 		},
-	})
+	)
 
-	sdm.squadListPanel.AddChild(sdm.squadList)
 	sdm.rootContainer.AddChild(sdm.squadListPanel)
 }
 
@@ -166,25 +152,9 @@ func (sdm *SquadDeploymentMode) updateInstructionText() {
 func (sdm *SquadDeploymentMode) Enter(fromMode UIMode) error {
 	fmt.Println("Entering Squad Deployment Mode")
 
-	// Collect all squads
-	sdm.allSquads = sdm.allSquads[:0]
-	sdm.squadNames = sdm.squadNames[:0]
+	// Refresh the squad list using the component
+	sdm.squadListComponent.Refresh()
 
-	// Query all entities with SquadComponent
-	for _, result := range sdm.context.ECSManager.World.Query(sdm.context.ECSManager.Tags["squad"]) {
-		squadData := common.GetComponentType[*squads.SquadData](result.Entity, squads.SquadComponent)
-		sdm.allSquads = append(sdm.allSquads, squadData.SquadID)
-		sdm.squadNames = append(sdm.squadNames, squadData.Name)
-	}
-
-	// Convert squad names to interface{} for list widget
-	entries := make([]interface{}, len(sdm.squadNames))
-	for i, name := range sdm.squadNames {
-		entries[i] = name
-	}
-
-	// Update list with squad names
-	sdm.squadList.SetEntries(entries)
 	sdm.selectedSquadID = 0
 	sdm.isPlacingSquad = false
 	sdm.updateInstructionText()
@@ -223,7 +193,12 @@ func (sdm *SquadDeploymentMode) Update(deltaTime float64) error {
 }
 
 func (sdm *SquadDeploymentMode) Render(screen *ebiten.Image) {
-	// Could add visualization of valid placement zones, squad formations, etc.
+	// Render squad highlights showing all squad positions
+	playerPos := *sdm.context.PlayerData.Pos
+
+	// Show all squads with highlights (no faction distinction in deployment mode)
+	// Using faction ID 0 to show all squads uniformly
+	sdm.highlightRenderer.Render(screen, playerPos, 0, sdm.selectedSquadID)
 }
 
 func (sdm *SquadDeploymentMode) HandleInput(inputState *InputState) bool {
