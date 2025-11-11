@@ -69,7 +69,7 @@ func (g *TacticalBiomeGenerator) Generate(width, height int, images TileImageSet
 	// Clear spawn area
 	centerX := width / 2
 	centerY := height / 2
-	g.clearSpawnArea(&result, centerX, centerY, 5, width, images.FloorImages)
+	g.clearSpawnArea(&result, centerX, centerY, 5, width, height, images.FloorImages)
 
 	return result
 }
@@ -441,27 +441,31 @@ func (g *TacticalBiomeGenerator) convertToTiles(result *GenerationResult, terrai
 			pixelX := x * graphics.ScreenInfo.TileSize
 			pixelY := y * graphics.ScreenInfo.TileSize
 
-			var tile Tile
 			if terrainMap[terrainIdx] {
 				// Walkable tile
 				floorImage := floorImages[common.GetRandomBetween(0, len(floorImages)-1)]
-				tile = NewTile(pixelX, pixelY, logicalPos, false, floorImage, FLOOR, false)
+				tile := NewTile(pixelX, pixelY, logicalPos, false, floorImage, FLOOR, false)
 				result.ValidPositions = append(result.ValidPositions, logicalPos)
+				result.Tiles[tileIdx] = &tile
 			} else {
 				// Obstacle tile
 				wallImage := wallImages[common.GetRandomBetween(0, len(wallImages)-1)]
-				tile = NewTile(pixelX, pixelY, logicalPos, true, wallImage, WALL, false)
+				tile := NewTile(pixelX, pixelY, logicalPos, true, wallImage, WALL, false)
+				result.Tiles[tileIdx] = &tile
 			}
-			result.Tiles[tileIdx] = &tile
 		}
 	}
 }
 
 // clearSpawnArea ensures spawn area is walkable
-func (g *TacticalBiomeGenerator) clearSpawnArea(result *GenerationResult, centerX, centerY, radius, width int, floorImages []*ebiten.Image) {
+func (g *TacticalBiomeGenerator) clearSpawnArea(result *GenerationResult, centerX, centerY, radius, width, height int, floorImages []*ebiten.Image) {
 	for x := centerX - radius; x <= centerX+radius; x++ {
 		for y := centerY - radius; y <= centerY+radius; y++ {
-			// Use CoordinateManager to get proper index
+			// Validate coordinates are within bounds BEFORE using them
+			if x < 0 || x >= width || y < 0 || y >= height {
+				continue
+			}
+
 			logicalPos := coords.LogicalPosition{X: x, Y: y}
 			idx := coords.CoordManager.LogicalToIndex(logicalPos)
 

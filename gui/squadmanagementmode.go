@@ -75,8 +75,8 @@ func (smm *SquadManagementMode) Enter(fromMode UIMode) error {
 	// Clear old panels
 	smm.clearSquadPanels()
 
-	// Find all squads in the game using shared query
-	allSquads := FindAllSquads(smm.context.ECSManager)
+	// Find all squads in the game using query service
+	allSquads := smm.queries.FindAllSquads()
 
 	// Create panel for each squad
 	for _, squadID := range allSquads {

@@ -158,7 +158,7 @@ func (sdm *SquadDeploymentMode) updateInstructionText() {
 		return
 	}
 
-	squadName := GetSquadName(sdm.context.ECSManager, sdm.selectedSquadID)
+	squadName := sdm.queries.GetSquadName(sdm.selectedSquadID)
 	sdm.instructionText.Label = fmt.Sprintf("Placing %s - Click on the map to position it", squadName)
 }
 
@@ -284,7 +284,7 @@ func (sdm *SquadDeploymentMode) placeSquadAt(squadID ecs.EntityID, pos coords.Lo
 				posPtr.X = pos.X
 				posPtr.Y = pos.Y
 
-				squadName := GetSquadName(sdm.context.ECSManager, squadID)
+				squadName := sdm.queries.GetSquadName(squadID)
 				fmt.Printf("✓ Placed %s at (%d, %d) [was at (%d, %d)]\n", squadName, pos.X, pos.Y, oldX, oldY)
 
 				// Reset placement mode

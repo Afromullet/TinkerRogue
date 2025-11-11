@@ -25,8 +25,8 @@ func SetupNewGame(g *Game) {
 	entitytemplates.ReadGameData()
 
 	// 2. Initialize core game systems
-	//g.gameMap = worldmap.NewGameMapDefault()
-	g.gameMap = worldmap.NewGameMap("tactical_biome")
+	g.gameMap = worldmap.NewGameMapDefault()
+	//g.gameMap = worldmap.NewGameMap("tactical_biome")
 	InitializeECS(&g.em)
 
 	// 2a. Initialize Position System for O(1) position lookups (Phase 0 - MASTER_ROADMAP)

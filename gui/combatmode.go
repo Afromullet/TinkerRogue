@@ -242,7 +242,7 @@ func (cm *CombatMode) handleEndTurn() {
 	round := cm.turnManager.GetCurrentRound()
 
 	// Get faction name
-	factionName := cm.getFactionName(currentFactionID)
+	factionName := cm.queries.GetFactionName(currentFactionID)
 
 	cm.addCombatLog(fmt.Sprintf("=== Round %d: %s's Turn ===", round, factionName))
 
@@ -260,27 +260,7 @@ func (cm *CombatMode) handleEndTurn() {
 	cm.updateSquadDetail()
 }
 
-func (cm *CombatMode) getFactionName(factionID ecs.EntityID) string {
-	// Query faction entity to get name
-	for _, result := range cm.context.ECSManager.World.Query(cm.context.ECSManager.Tags["faction"]) {
-		factionData := common.GetComponentType[*combat.FactionData](result.Entity, combat.FactionComponent)
-		if factionData.FactionID == factionID {
-			return factionData.Name
-		}
-	}
-	return "Unknown Faction"
-}
-
-func (cm *CombatMode) isPlayerFaction(factionID ecs.EntityID) bool {
-	// Query faction entity to check if player controlled
-	for _, result := range cm.context.ECSManager.World.Query(cm.context.ECSManager.Tags["faction"]) {
-		factionData := common.GetComponentType[*combat.FactionData](result.Entity, combat.FactionComponent)
-		if factionData.FactionID == factionID {
-			return factionData.IsPlayerControlled
-		}
-	}
-	return false
-}
+// getFactionName and isPlayerFaction methods removed - now using cm.queries service
 
 func (cm *CombatMode) toggleAttackMode() {
 	if cm.selectedSquadID == 0 {
@@ -306,16 +286,8 @@ func (cm *CombatMode) showAvailableTargets() {
 		return
 	}
 
-	// Get all enemy squads
-	enemySquads := []ecs.EntityID{}
-	for _, result := range cm.context.ECSManager.World.Query(cm.context.ECSManager.Tags["mapposition"]) {
-		mapPos := common.GetComponentType[*combat.MapPositionData](result.Entity, combat.MapPositionComponent)
-		if mapPos.FactionID != currentFactionID {
-			if !squads.IsSquadDestroyed(mapPos.SquadID, cm.context.ECSManager) {
-				enemySquads = append(enemySquads, mapPos.SquadID)
-			}
-		}
-	}
+	// Get all enemy squads using query service
+	enemySquads := cm.queries.GetEnemySquads(currentFactionID)
 
 	if len(enemySquads) == 0 {
 		cm.addCombatLog("No enemy targets available!")
@@ -324,7 +296,7 @@ func (cm *CombatMode) showAvailableTargets() {
 
 	// Show up to 3 targets
 	for i := 0; i < len(enemySquads) && i < 3; i++ {
-		targetName := GetSquadName(cm.context.ECSManager, enemySquads[i])
+		targetName := cm.queries.GetSquadName(enemySquads[i])
 		cm.addCombatLog(fmt.Sprintf("  [%d] %s", i+1, targetName))
 	}
 }
@@ -363,7 +335,7 @@ func (cm *CombatMode) selectSquad(squadID ecs.EntityID) {
 	cm.selectedTargetID = 0
 
 	// Get squad name
-	squadName := GetSquadName(cm.context.ECSManager, squadID)
+	squadName := cm.queries.GetSquadName(squadID)
 	cm.addCombatLog(fmt.Sprintf("Selected: %s", squadName))
 
 	cm.updateSquadDetail()
@@ -399,8 +371,8 @@ func (cm *CombatMode) executeAttack() {
 	}
 
 	// Execute attack
-	attackerName := GetSquadName(cm.context.ECSManager, cm.selectedSquadID)
-	targetName := GetSquadName(cm.context.ECSManager, cm.selectedTargetID)
+	attackerName := cm.queries.GetSquadName(cm.selectedSquadID)
+	targetName := cm.queries.GetSquadName(cm.selectedTargetID)
 
 	err := combatSys.ExecuteAttackAction(cm.selectedSquadID, cm.selectedTargetID)
 	if err != nil {
@@ -433,7 +405,7 @@ func (cm *CombatMode) updateSquadList() {
 	}
 
 	// Only show squads if it's player's turn
-	if !cm.isPlayerFaction(currentFactionID) {
+	if !cm.queries.IsPlayerFaction(currentFactionID) {
 		noSquadsText := widget.NewText(
 			widget.TextOpts.Text("AI Turn", SmallFace, color.Gray{Y: 128}),
 		)
@@ -449,7 +421,7 @@ func (cm *CombatMode) updateSquadList() {
 			continue
 		}
 
-		squadName := GetSquadName(cm.context.ECSManager, squadID)
+		squadName := cm.queries.GetSquadName(squadID)
 
 		// Create button for each squad
 		localSquadID := squadID // Capture for closure
@@ -470,48 +442,21 @@ func (cm *CombatMode) updateSquadDetail() {
 		return
 	}
 
-	squadName := GetSquadName(cm.context.ECSManager, cm.selectedSquadID)
-
-	// Get unit count and HP
-	unitIDs := squads.GetUnitIDsInSquad(cm.selectedSquadID, cm.context.ECSManager)
-	aliveUnits := 0
-	totalHP := 0
-	maxHP := 0
-
-	for _, unitID := range unitIDs {
-		for _, result := range cm.context.ECSManager.World.Query(cm.context.ECSManager.Tags["squadmember"]) {
-			if result.Entity.GetID() == unitID {
-				attrs := common.GetComponentType[*common.Attributes](result.Entity, common.AttributeComponent)
-				if attrs.CanAct {
-					aliveUnits++
-				}
-				totalHP += attrs.CurrentHealth
-				maxHP += attrs.MaxHealth
-			}
-		}
+	// Use unified query service to get all squad info
+	squadInfo := cm.queries.GetSquadInfo(cm.selectedSquadID)
+	if squadInfo == nil {
+		cm.squadDetailText.Label = "Squad not found"
+		return
 	}
 
-	// Get action state
-	actionEntity := cm.findActionStateEntity(cm.selectedSquadID)
-	hasActed := false
-	hasMoved := false
-	movementRemaining := 0
+	detailText := fmt.Sprintf("%s\n", squadInfo.Name)
+	detailText += fmt.Sprintf("Units: %d/%d\n", squadInfo.AliveUnits, squadInfo.TotalUnits)
+	detailText += fmt.Sprintf("HP: %d/%d\n", squadInfo.CurrentHP, squadInfo.MaxHP)
+	detailText += fmt.Sprintf("Move: %d\n", squadInfo.MovementRemaining)
 
-	if actionEntity != nil {
-		actionState := common.GetComponentType[*combat.ActionStateData](actionEntity, combat.ActionStateComponent)
-		hasActed = actionState.HasActed
-		hasMoved = actionState.HasMoved
-		movementRemaining = actionState.MovementRemaining
-	}
-
-	detailText := fmt.Sprintf("%s\n", squadName)
-	detailText += fmt.Sprintf("Units: %d/%d\n", aliveUnits, len(unitIDs))
-	detailText += fmt.Sprintf("HP: %d/%d\n", totalHP, maxHP)
-	detailText += fmt.Sprintf("Move: %d\n", movementRemaining)
-
-	if hasActed {
+	if squadInfo.HasActed {
 		detailText += "Status: Acted\n"
-	} else if hasMoved {
+	} else if squadInfo.HasMoved {
 		detailText += "Status: Moved\n"
 	} else {
 		detailText += "Status: Ready\n"
@@ -520,26 +465,14 @@ func (cm *CombatMode) updateSquadDetail() {
 	cm.squadDetailText.Label = detailText
 }
 
-func (cm *CombatMode) findActionStateEntity(squadID ecs.EntityID) *ecs.Entity {
-	for _, result := range cm.context.ECSManager.World.Query(cm.context.ECSManager.Tags["actionstate"]) {
-		actionState := common.GetComponentType[*combat.ActionStateData](result.Entity, combat.ActionStateComponent)
-		if actionState.SquadID == squadID {
-			return result.Entity
-		}
-	}
-	return nil
-}
+// findActionStateEntity removed - now using cm.queries.GetSquadInfo()
 
 func (cm *CombatMode) Enter(fromMode UIMode) error {
 	fmt.Println("Entering Combat Mode")
 	cm.addCombatLog("=== COMBAT STARTED ===")
 
-	// Collect all factions
-	var factionIDs []ecs.EntityID
-	for _, result := range cm.context.ECSManager.World.Query(cm.context.ECSManager.Tags["faction"]) {
-		factionData := common.GetComponentType[*combat.FactionData](result.Entity, combat.FactionComponent)
-		factionIDs = append(factionIDs, factionData.FactionID)
-	}
+	// Collect all factions using query service
+	factionIDs := cm.queries.GetAllFactions()
 
 	// Initialize combat with all factions
 	if len(factionIDs) > 0 {
@@ -550,7 +483,7 @@ func (cm *CombatMode) Enter(fromMode UIMode) error {
 
 		// Log initial faction
 		currentFactionID := cm.turnManager.GetCurrentFaction()
-		factionName := cm.getFactionName(currentFactionID)
+		factionName := cm.queries.GetFactionName(currentFactionID)
 		cm.addCombatLog(fmt.Sprintf("Round 1: %s goes first!", factionName))
 
 		// Update displays
@@ -588,11 +521,11 @@ func (cm *CombatMode) updateTurnDisplay() {
 	}
 
 	round := cm.turnManager.GetCurrentRound()
-	factionName := cm.getFactionName(currentFactionID)
+	factionName := cm.queries.GetFactionName(currentFactionID)
 
 	// Add indicator if player's turn
 	playerIndicator := ""
-	if cm.isPlayerFaction(currentFactionID) {
+	if cm.queries.IsPlayerFaction(currentFactionID) {
 		playerIndicator = " >>> YOUR TURN <<<"
 	}
 
@@ -606,21 +539,16 @@ func (cm *CombatMode) updateFactionDisplay() {
 		return
 	}
 
-	factionName := cm.getFactionName(currentFactionID)
-	currentMana, maxMana := cm.factionManager.GetFactionMana(currentFactionID)
-
-	// Get squad info
-	squadIDs := cm.factionManager.GetFactionSquads(currentFactionID)
-	aliveSquads := 0
-	for _, squadID := range squadIDs {
-		if !squads.IsSquadDestroyed(squadID, cm.context.ECSManager) {
-			aliveSquads++
-		}
+	// Use unified query service to get all faction info
+	factionInfo := cm.queries.GetFactionInfo(currentFactionID)
+	if factionInfo == nil {
+		cm.factionInfoText.Label = "Faction not found"
+		return
 	}
 
-	infoText := fmt.Sprintf("%s\n", factionName)
-	infoText += fmt.Sprintf("Squads: %d/%d\n", aliveSquads, len(squadIDs))
-	infoText += fmt.Sprintf("Mana: %d/%d", currentMana, maxMana)
+	infoText := fmt.Sprintf("%s\n", factionInfo.Name)
+	infoText += fmt.Sprintf("Squads: %d/%d\n", factionInfo.AliveSquadCount, len(factionInfo.SquadIDs))
+	infoText += fmt.Sprintf("Mana: %d/%d", factionInfo.CurrentMana, factionInfo.MaxMana)
 
 	cm.factionInfoText.Label = infoText
 }
@@ -870,7 +798,7 @@ func (cm *CombatMode) handleMovementClick(mouseX, mouseY int) {
 	// Update unit positions to match squad position
 	cm.updateUnitPositions(cm.selectedSquadID, clickedPos)
 
-	squadName := GetSquadName(cm.context.ECSManager, cm.selectedSquadID)
+	squadName := cm.queries.GetSquadName(cm.selectedSquadID)
 	cm.addCombatLog(fmt.Sprintf("%s moved to (%d, %d)", squadName, clickedPos.X, clickedPos.Y))
 
 	// Exit move mode
@@ -914,7 +842,7 @@ func (cm *CombatMode) handleSquadClick(mouseX, mouseY int) {
 	currentFactionID := cm.turnManager.GetCurrentFaction()
 
 	// If it's the player's turn
-	if cm.isPlayerFaction(currentFactionID) {
+	if cm.queries.IsPlayerFaction(currentFactionID) {
 		// If clicking an allied squad: select it
 		if clickedFactionID == currentFactionID {
 			cm.selectSquad(clickedSquadID)
@@ -953,7 +881,7 @@ func (cm *CombatMode) updateUnitPositions(squadID ecs.EntityID, newSquadPos coor
 
 func (cm *CombatMode) cycleSquadSelection() {
 	currentFactionID := cm.turnManager.GetCurrentFaction()
-	if currentFactionID == 0 || !cm.isPlayerFaction(currentFactionID) {
+	if currentFactionID == 0 || !cm.queries.IsPlayerFaction(currentFactionID) {
 		return
 	}
 

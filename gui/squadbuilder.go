@@ -481,7 +481,7 @@ func (sbm *SquadBuilderMode) createTemporarySquad() {
 
 	// Find the newly created squad
 	// Squads are created with SquadComponent, so we can query for it
-	allSquads := FindAllSquads(sbm.context.ECSManager)
+	allSquads := sbm.queries.FindAllSquads()
 	if len(allSquads) > 0 {
 		sbm.currentSquadID = allSquads[len(allSquads)-1] // Get most recent
 		fmt.Printf("Created temporary squad: %s (ID: %d)\n", squadName, sbm.currentSquadID)

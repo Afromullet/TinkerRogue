@@ -15,6 +15,7 @@ type BaseMode struct {
 	modeManager   *UIModeManager
 	rootContainer *widget.Container
 	panelBuilders *PanelBuilders
+	queries       *GUIQueries // Unified ECS query service
 	modeName      string
 	returnMode    string // Mode to return to on ESC/close
 }
@@ -29,6 +30,9 @@ func (bm *BaseMode) InitializeBase(ctx *UIContext) {
 	bm.context = ctx
 	bm.layout = NewLayoutConfig(ctx)
 	bm.panelBuilders = NewPanelBuilders(bm.layout, bm.modeManager)
+
+	// Initialize unified ECS query service
+	bm.queries = NewGUIQueries(ctx.ECSManager)
 
 	// Create root ebitenui container
 	bm.ui = &ebitenui.UI{}
