@@ -82,27 +82,15 @@ func (cuf *CombatUIFactory) CreateSquadDetailPanel() *widget.Container {
 	return panel
 }
 
-// CreateLogPanel builds the combat log panel
+// CreateLogPanel builds the combat log panel using the detail panel helper
 func (cuf *CombatUIFactory) CreateLogPanel() (*widget.Container, *widget.TextArea) {
-	logContainer := cuf.panelBuilders.BuildPanel(
+	return CreateDetailPanel(
+		cuf.panelBuilders,
+		cuf.layout,
 		RightCenter(),
-		Size(0.2, 0.85),
-		Padding(0.01),
-		AnchorLayout(),
+		0.2, 0.85, 0.01,
+		"Combat started!\n",
 	)
-
-	// Create combat log text area
-	logWidth := int(float64(cuf.layout.ScreenWidth) * 0.2)
-	logHeight := cuf.layout.ScreenHeight - int(float64(cuf.layout.ScreenHeight)*0.15)
-	logArea := CreateTextAreaWithConfig(TextAreaConfig{
-		MinWidth:  logWidth - 20,
-		MinHeight: logHeight - 20,
-		FontColor: color.White,
-	})
-	logArea.SetText("Combat started!\n")
-	logContainer.AddChild(logArea)
-
-	return logContainer, logArea
 }
 
 // CreateActionButtons builds the action buttons container

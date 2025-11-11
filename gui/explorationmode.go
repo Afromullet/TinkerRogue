@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"game_main/coords"
 	"game_main/graphics"
-	"image/color"
 
 	"github.com/ebitenui/ebitenui/widget"
 	"github.com/hajimehoshi/ebiten/v2"
@@ -43,43 +42,25 @@ func (em *ExplorationMode) Initialize(ctx *UIContext) error {
 	em.RegisterHotkey(ebiten.KeyB, "squad_builder")
 	em.RegisterHotkey(ebiten.KeyC, "combat")
 
-	// Build stats panel (top-right) using BuildPanel
-	em.statsPanel = em.panelBuilders.BuildPanel(
+	// Build stats panel (top-right) using helper
+	em.statsPanel, em.statsTextArea = CreateDetailPanel(
+		em.panelBuilders,
+		em.layout,
 		TopRight(),
-		Size(0.15, 0.2),
-		Padding(0.01),
-		AnchorLayout(),
+		0.15, 0.2, 0.01,
+		em.context.PlayerData.PlayerAttributes().DisplayString(),
 	)
-
-	// Create stats text area inside panel
-	panelWidth := int(float64(em.layout.ScreenWidth) * 0.15)
-	panelHeight := int(float64(em.layout.ScreenHeight) * 0.2)
-	em.statsTextArea = CreateTextAreaWithConfig(TextAreaConfig{
-		MinWidth:  panelWidth - 20,
-		MinHeight: panelHeight - 20,
-		FontColor: color.White,
-	})
-	em.statsTextArea.SetText(em.context.PlayerData.PlayerAttributes().DisplayString())
-	em.statsPanel.AddChild(em.statsTextArea)
 	em.rootContainer.AddChild(em.statsPanel)
 
-	// Build message log (bottom-right) using BuildPanel
-	logContainer := em.panelBuilders.BuildPanel(
+	// Build message log (bottom-right) using helper
+	logContainer, messageLog := CreateDetailPanel(
+		em.panelBuilders,
+		em.layout,
 		BottomRight(),
-		Size(0.15, 0.15),
-		Padding(0.01),
-		AnchorLayout(),
+		0.15, 0.15, 0.01,
+		"",
 	)
-
-	// Create message log text area inside panel
-	logWidth := int(float64(em.layout.ScreenWidth) * 0.15)
-	logHeight := int(float64(em.layout.ScreenHeight) * 0.15)
-	em.messageLog = CreateTextAreaWithConfig(TextAreaConfig{
-		MinWidth:  logWidth - 20,
-		MinHeight: logHeight - 20,
-		FontColor: color.White,
-	})
-	logContainer.AddChild(em.messageLog)
+	em.messageLog = messageLog
 	em.rootContainer.AddChild(logContainer)
 
 	// Build exploration-specific UI layout

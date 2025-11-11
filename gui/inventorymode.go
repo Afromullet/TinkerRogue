@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"game_main/common"
 	"game_main/gear"
-	"image/color"
 
 	"github.com/ebitenui/ebitenui/widget"
 	"github.com/hajimehoshi/ebiten/v2"
@@ -51,43 +50,19 @@ func (im *InventoryMode) Initialize(ctx *UIContext) error {
 	im.buildFilterButtons()
 	im.buildItemList()
 
-	// Build detail panel (right side) using BuildPanel
-	im.detailPanel = im.panelBuilders.BuildPanel(
+	// Build detail panel (right side) using helper
+	im.detailPanel, im.detailTextArea = CreateDetailPanel(
+		im.panelBuilders,
+		im.layout,
 		RightCenter(),
-		Size(0.45, 0.75),
-		Padding(0.02),
-		AnchorLayout(),
+		0.45, 0.75, 0.02,
+		"Select an item to view details",
 	)
-
-	// Create detail text area inside panel
-	panelWidth := int(float64(im.layout.ScreenWidth) * 0.45)
-	panelHeight := int(float64(im.layout.ScreenHeight) * 0.75)
-	im.detailTextArea = CreateTextAreaWithConfig(TextAreaConfig{
-		MinWidth:  panelWidth - 20,
-		MinHeight: panelHeight - 20,
-		FontColor: color.White,
-	})
-	im.detailTextArea.SetText("Select an item to view details")
-	im.detailPanel.AddChild(im.detailTextArea)
 	im.rootContainer.AddChild(im.detailPanel)
 
-	// Build close button (bottom-center) using BuildPanel
-	closeButtonContainer := im.panelBuilders.BuildPanel(
-		BottomCenter(),
-		CustomPadding(widget.Insets{
-			Bottom: int(float64(im.layout.ScreenHeight) * 0.08),
-		}),
-		AnchorLayout(),
-	)
-
-	closeBtn := CreateButtonWithConfig(ButtonConfig{
-		Text: "Close (ESC)",
-		OnClick: func() {
-			if targetMode, exists := im.modeManager.GetMode("exploration"); exists {
-				im.modeManager.RequestTransition(targetMode, "Close button pressed")
-			}
-		},
-	})
+	// Build close button (bottom-center) using helpers
+	closeButtonContainer := CreateBottomCenterButtonContainer(im.panelBuilders)
+	closeBtn := CreateCloseButton(im.modeManager, "exploration", "Close (ESC)")
 	closeButtonContainer.AddChild(closeBtn)
 	im.rootContainer.AddChild(closeButtonContainer)
 
@@ -95,12 +70,8 @@ func (im *InventoryMode) Initialize(ctx *UIContext) error {
 }
 
 func (im *InventoryMode) buildFilterButtons() {
-	// Top-left filter buttons using BuildPanel
-	im.filterButtons = im.panelBuilders.BuildPanel(
-		TopLeft(),
-		Padding(0.02),
-		HorizontalRowLayout(),
-	)
+	// Top-left filter buttons using helper
+	im.filterButtons = CreateFilterButtonContainer(im.panelBuilders, TopLeft())
 
 	// Filter buttons
 	filters := []string{"All", "Throwables", "Equipment", "Consumables"}

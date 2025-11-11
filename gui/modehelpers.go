@@ -2,6 +2,8 @@
 package gui
 
 import (
+	"image/color"
+
 	"github.com/ebitenui/ebitenui/widget"
 )
 
@@ -41,4 +43,60 @@ func AddActionButton(container *widget.Container, text string, onClick func()) {
 		OnClick: onClick,
 	})
 	container.AddChild(btn)
+}
+
+// CreateDetailPanel creates a detail panel with a text area inside.
+// Eliminates repetitive panel+textarea initialization code across multiple modes.
+// Returns both the panel container and text area for flexibility.
+// Parameters:
+//   - panelBuilders: Used to build the panel with consistent styling
+//   - layout: Screen layout config for calculating dimensions
+//   - position: Panel position (e.g., RightCenter(), TopRight())
+//   - widthPct: Panel width as percentage of screen width (0-1)
+//   - heightPct: Panel height as percentage of screen height (0-1)
+//   - paddingPct: Panel padding as percentage of screen (0-1)
+//   - defaultText: Initial text to display in the textarea
+func CreateDetailPanel(
+	panelBuilders *PanelBuilders,
+	layout *LayoutConfig,
+	position PanelOption,
+	widthPct, heightPct, paddingPct float64,
+	defaultText string,
+) (*widget.Container, *widget.TextArea) {
+	// Build the panel with specified position, size, and padding
+	panel := panelBuilders.BuildPanel(
+		position,
+		Size(widthPct, heightPct),
+		Padding(paddingPct),
+		AnchorLayout(),
+	)
+
+	// Calculate textarea dimensions (same as panel size minus padding)
+	panelWidth := int(float64(layout.ScreenWidth) * widthPct)
+	panelHeight := int(float64(layout.ScreenHeight) * heightPct)
+	textArea := CreateTextAreaWithConfig(TextAreaConfig{
+		MinWidth:  panelWidth - 20,
+		MinHeight: panelHeight - 20,
+		FontColor: color.White,
+	})
+
+	// Set initial text and add to panel
+	textArea.SetText(defaultText)
+	panel.AddChild(textArea)
+
+	return panel, textArea
+}
+
+// CreateFilterButtonContainer creates a filter button container with consistent styling.
+// Eliminates repetitive panel building for filter buttons across multiple modes.
+// Returns an empty container ready for buttons to be added to it.
+// Parameters:
+//   - panelBuilders: Used to build the panel with consistent styling
+//   - alignment: Panel position (e.g., TopLeft(), TopRight())
+func CreateFilterButtonContainer(panelBuilders *PanelBuilders, alignment PanelOption) *widget.Container {
+	return panelBuilders.BuildPanel(
+		alignment,
+		Padding(0.02),
+		HorizontalRowLayout(),
+	)
 }

@@ -92,26 +92,14 @@ func (fem *FormationEditorMode) buildActionButtons() {
 		},
 	})
 
-	closeBtn := CreateButtonWithConfig(ButtonConfig{
-		Text: "Close (ESC)",
-		OnClick: func() {
-			if exploreMode, exists := fem.modeManager.GetMode("exploration"); exists {
-				fem.modeManager.RequestTransition(exploreMode, "Close Formation Editor")
-			}
-		},
-	})
-
-	// Build action buttons container using BuildPanel
-	fem.actionButtons = fem.panelBuilders.BuildPanel(
-		BottomCenter(),
-		HorizontalRowLayout(),
-		CustomPadding(widget.Insets{
-			Bottom: int(float64(fem.layout.ScreenHeight) * 0.08),
-		}),
-	)
+	// Build action buttons container using helper
+	fem.actionButtons = CreateBottomCenterButtonContainer(fem.panelBuilders)
 
 	fem.actionButtons.AddChild(saveBtn)
 	fem.actionButtons.AddChild(loadBtn)
+
+	// Create close button using helper
+	closeBtn := CreateCloseButton(fem.modeManager, "exploration", "Close (ESC)")
 	fem.actionButtons.AddChild(closeBtn)
 	fem.rootContainer.AddChild(fem.actionButtons)
 }
