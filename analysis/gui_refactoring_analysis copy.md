@@ -30,18 +30,6 @@ The GUI package has **strong architectural patterns** (Mode system, factory patt
 
 ## Code Duplication Analysis (380-400 LOC)
 
-### 1. Close Button Pattern (MEDIUM Priority)
-**Files:** InventoryMode, SquadManagementMode, SquadDeploymentMode, FormationEditorMode
-**LOC:** 50
-**Effort:** 1 hour
-**Status:** Partially refactored - modehelpers.go has `CreateCloseButton()` and `CreateBottomCenterButtonContainer()` but only some modes use them
-
-**Current Issue:**
-Each mode duplicates close button creation code when helpers already exist.
-
-**Action:** Update all modes to use `CreateCloseButton()` from modehelpers.go
-
----
 
 
 ### 4. Coordinate Manager Creation (LOW Priority)
@@ -78,18 +66,7 @@ func (m *Mode) handleAttackClick() {
 
 ---
 
-### 6. Filter Logic Repetition (MEDIUM Priority)
-**Scattered across:** CombatMode, SquadManagementMode, SquadDeploymentMode
-**Effort:** 1.5 hours
 
-**Current Issue:**
-Squad filtering (especially player faction squads) appears identically in 3+ modes.
-
-**Solution:** Extract `FilterHelper` utility with reusable filter functions:
-- `FilterPlayerFactionSquads(allSquads []ecs.EntityID) []ecs.EntityID`
-- `FilterEnemySquads(allSquads []ecs.EntityID, playerFaction Faction) []ecs.EntityID`
-
----
 
 ## Complex Functions Needing Decomposition
 

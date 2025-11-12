@@ -193,26 +193,33 @@ func (cm *CombatMode) initializeUpdateComponents() {
 		nil, // Use default formatter
 	)
 
-	// Squad list component - filter for player faction squads
+	// Squad list component - filter for current faction squads (during player's turn only)
+	// Extracted filter logic to separate method to eliminate inline duplication
 	cm.squadListComponent = NewSquadListComponent(
 		cm.squadListPanel,
 		cm.queries,
-		func(info *SquadInfo) bool {
-			currentFactionID := cm.turnManager.GetCurrentFaction()
-			if currentFactionID == 0 {
-				return false
-			}
-			// Only show squads if it's player's turn
-			if !cm.queries.IsPlayerFaction(currentFactionID) {
-				return false
-			}
-			return !info.IsDestroyed && info.FactionID == currentFactionID
-		},
+		cm.makeCurrentFactionSquadFilter(),
 		func(squadID ecs.EntityID) {
 			cm.actionHandler.SelectSquad(squadID)
 			cm.squadDetailComponent.ShowSquad(squadID)
 		},
 	)
+}
+
+// makeCurrentFactionSquadFilter creates a filter for squads from the current faction
+// Only shows squads during the player's faction's turn
+func (cm *CombatMode) makeCurrentFactionSquadFilter() SquadFilter {
+	return func(info *SquadInfo) bool {
+		currentFactionID := cm.turnManager.GetCurrentFaction()
+		if currentFactionID == 0 {
+			return false
+		}
+		// Only show squads if it's player's turn
+		if !cm.queries.IsPlayerFaction(currentFactionID) {
+			return false
+		}
+		return !info.IsDestroyed && info.FactionID == currentFactionID
+	}
 }
 
 func (cm *CombatMode) handleFlee() {

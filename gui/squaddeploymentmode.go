@@ -23,6 +23,7 @@ type SquadDeploymentMode struct {
 	instructionText   *widget.Text
 	confirmButton     *widget.Button
 	clearAllButton    *widget.Button
+	closeButton       *widget.Button
 
 	isPlacingSquad   bool
 	pendingMouseX    int
@@ -91,13 +92,11 @@ func (sdm *SquadDeploymentMode) buildSquadListPanel() {
 	sdm.squadListPanel.AddChild(listLabel)
 
 	// Create squad list component - show all alive squads for placement
+	// Uses centralized AliveSquadsOnly filter to eliminate code duplication
 	sdm.squadListComponent = NewSquadListComponent(
 		sdm.squadListPanel,
 		sdm.queries,
-		func(info *SquadInfo) bool {
-			// Show all non-destroyed squads for deployment
-			return !info.IsDestroyed
-		},
+		AliveSquadsOnly,
 		func(squadID ecs.EntityID) {
 			sdm.selectedSquadID = squadID
 			sdm.isPlacingSquad = true
@@ -126,6 +125,9 @@ func (sdm *SquadDeploymentMode) buildActionButtons() {
 		},
 	})
 
+	// Create close button using helper
+	sdm.closeButton = CreateCloseButton(sdm.modeManager, "exploration", "Close (ESC)")
+
 	// Build action buttons container using BuildPanel
 	buttonContainer := sdm.panelBuilders.BuildPanel(
 		BottomCenter(),
@@ -137,6 +139,7 @@ func (sdm *SquadDeploymentMode) buildActionButtons() {
 
 	buttonContainer.AddChild(sdm.clearAllButton)
 	buttonContainer.AddChild(sdm.confirmButton)
+	buttonContainer.AddChild(sdm.closeButton)
 	sdm.rootContainer.AddChild(buttonContainer)
 }
 

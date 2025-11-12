@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"game_main/common"
 	"game_main/coords"
-	"image/color"
 
 	"github.com/ebitenui/ebitenui/widget"
 )
@@ -60,20 +59,15 @@ func (im *InfoMode) Initialize(ctx *UIContext) error {
 	optionsPanel.AddChild(im.optionsList)
 	im.rootContainer.AddChild(optionsPanel)
 
-	// Detail panel using modern pattern
-	detailPanel := im.panelBuilders.BuildPanel(
+	// Detail panel using CreateDetailPanel helper
+	detailPanel, textArea := CreateDetailPanel(
+		im.panelBuilders,
+		im.layout,
 		RightCenter(),
-		Size(0.4, 0.6),
-		AnchorLayout(),
+		0.4, 0.6, 0.01,
+		"Select an option to inspect",
 	)
-
-	im.detailTextArea = CreateTextAreaWithConfig(TextAreaConfig{
-		MinWidth:  int(float64(im.layout.ScreenWidth) * 0.38),
-		MinHeight: int(float64(im.layout.ScreenHeight) * 0.58),
-		FontColor: color.White,
-	})
-	im.detailTextArea.SetText("Select an option to inspect")
-	detailPanel.AddChild(im.detailTextArea)
+	im.detailTextArea = textArea
 	im.rootContainer.AddChild(detailPanel)
 
 	return nil
