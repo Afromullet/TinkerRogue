@@ -66,16 +66,5 @@ func (fh *FilterHelper) FilterFactionSquads(allSquads []ecs.EntityID, factionID 
 	return filtered
 }
 
-// GetSquadIDsForFaction returns all squad IDs belonging to a specific faction
-// Convenience wrapper around FilterFactionSquads that queries all squads first
-func (fh *FilterHelper) GetSquadIDsForFaction(factionID ecs.EntityID) []ecs.EntityID {
-	allSquads := fh.queries.FindAllSquads()
-	return fh.FilterFactionSquads(allSquads, factionID)
-}
-
-// GetPlayerFactionSquadIDs returns all squad IDs from the player faction
-// Convenience wrapper around FilterPlayerFactionSquads that queries all squads first
-func (fh *FilterHelper) GetPlayerFactionSquadIDs() []ecs.EntityID {
-	allSquads := fh.queries.FindAllSquads()
-	return fh.FilterPlayerFactionSquads(allSquads)
-}
+// Note: Use GUIQueries.FindSquadsByFaction() instead of GetSquadIDsForFaction() - more efficient.
+// Note: Use GUIQueries.FindAllSquads() + filter instead of GetPlayerFactionSquadIDs() for consistency.

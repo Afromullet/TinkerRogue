@@ -66,19 +66,28 @@ func (gq *GUIQueries) GetFactionInfo(factionID ecs.EntityID) *FactionInfo {
 	return nil
 }
 
-// GetFactionName returns just the faction name (lightweight query)
+// GetFactionName returns just the faction name (optimized lightweight query)
+// Queries ONLY faction entities, avoiding expensive squad enumeration
 func (gq *GUIQueries) GetFactionName(factionID ecs.EntityID) string {
-	info := gq.GetFactionInfo(factionID)
-	if info != nil {
-		return info.Name
+	for _, result := range gq.ecsManager.World.Query(gq.ecsManager.Tags["faction"]) {
+		factionData := common.GetComponentType[*combat.FactionData](result.Entity, combat.FactionComponent)
+		if factionData.FactionID == factionID {
+			return factionData.Name
+		}
 	}
 	return "Unknown Faction"
 }
 
-// IsPlayerFaction checks if faction is player-controlled
+// IsPlayerFaction checks if faction is player-controlled (optimized lightweight query)
+// Queries ONLY faction entities, avoiding expensive squad enumeration
 func (gq *GUIQueries) IsPlayerFaction(factionID ecs.EntityID) bool {
-	info := gq.GetFactionInfo(factionID)
-	return info != nil && info.IsPlayerControlled
+	for _, result := range gq.ecsManager.World.Query(gq.ecsManager.Tags["faction"]) {
+		factionData := common.GetComponentType[*combat.FactionData](result.Entity, combat.FactionComponent)
+		if factionData.FactionID == factionID {
+			return factionData.IsPlayerControlled
+		}
+	}
+	return false
 }
 
 // ===== SQUAD QUERIES =====
@@ -169,24 +178,70 @@ func (gq *GUIQueries) GetSquadInfo(squadID ecs.EntityID) *SquadInfo {
 	}
 }
 
-// GetSquadName returns the squad name (delegates to existing function)
+// GetSquadName returns the squad name
+// Returns "Unknown Squad" if squad not found
 func (gq *GUIQueries) GetSquadName(squadID ecs.EntityID) string {
-	return GetSquadName(gq.ecsManager, squadID)
+	for _, result := range gq.ecsManager.World.Query(gq.ecsManager.Tags["squad"]) {
+		squadData := common.GetComponentType[*squads.SquadData](
+			result.Entity, squads.SquadComponent)
+		if squadData.SquadID == squadID {
+			return squadData.Name
+		}
+	}
+	return "Unknown Squad"
 }
 
-// FindAllSquads returns all squad IDs (delegates to existing function)
+// FindAllSquads returns all squad entity IDs in the game
+// Uses efficient ECS query pattern with SquadComponent tag
 func (gq *GUIQueries) FindAllSquads() []ecs.EntityID {
-	return FindAllSquads(gq.ecsManager)
+	allSquads := make([]ecs.EntityID, 0)
+
+	// Iterate through all entities
+	entityIDs := gq.ecsManager.GetAllEntities()
+	for _, entityID := range entityIDs {
+		// Check if entity has SquadData component
+		if gq.ecsManager.HasComponent(entityID, squads.SquadComponent) {
+			allSquads = append(allSquads, entityID)
+		}
+	}
+
+	return allSquads
 }
 
-// GetSquadAtPosition finds squad at given position (delegates to existing function)
+// GetSquadAtPosition returns the squad entity ID at the given position
+// Returns 0 if no squad at position or squad is destroyed
 func (gq *GUIQueries) GetSquadAtPosition(pos coords.LogicalPosition) ecs.EntityID {
-	return GetSquadAtPosition(gq.ecsManager, pos)
+	for _, result := range gq.ecsManager.World.Query(gq.ecsManager.Tags["mapposition"]) {
+		mapPos := common.GetComponentType[*combat.MapPositionData](
+			result.Entity, combat.MapPositionComponent)
+
+		if mapPos.Position.X == pos.X && mapPos.Position.Y == pos.Y {
+			if !squads.IsSquadDestroyed(mapPos.SquadID, gq.ecsManager) {
+				return mapPos.SquadID
+			}
+		}
+	}
+	return 0
 }
 
-// FindSquadsByFaction returns squads for a faction (delegates to existing function)
+// FindSquadsByFaction returns all squad IDs belonging to a faction
+// Returns empty slice if no squads found for faction
+// Filters out destroyed squads
 func (gq *GUIQueries) FindSquadsByFaction(factionID ecs.EntityID) []ecs.EntityID {
-	return FindSquadsByFaction(gq.ecsManager, factionID)
+	result := make([]ecs.EntityID, 0)
+
+	for _, queryResult := range gq.ecsManager.World.Query(gq.ecsManager.Tags["mapposition"]) {
+		mapPos := common.GetComponentType[*combat.MapPositionData](
+			queryResult.Entity, combat.MapPositionComponent)
+
+		if mapPos.FactionID == factionID {
+			if !squads.IsSquadDestroyed(mapPos.SquadID, gq.ecsManager) {
+				result = append(result, mapPos.SquadID)
+			}
+		}
+	}
+
+	return result
 }
 
 // ===== COMBAT QUERIES =====
