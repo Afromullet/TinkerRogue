@@ -15,6 +15,7 @@ type CombatInputHandler struct {
 	queries            *GUIQueries
 	playerPos          *coords.LogicalPosition
 	currentFactionID   ecs.EntityID
+	coordManager       *coords.CoordinateManager
 }
 
 // NewCombatInputHandler creates a new combat input handler
@@ -27,6 +28,7 @@ func NewCombatInputHandler(
 		actionHandler: actionHandler,
 		stateManager:  stateManager,
 		queries:       queries,
+		coordManager:  coords.NewCoordinateManager(graphics.ScreenInfo),
 	}
 }
 
@@ -104,9 +106,8 @@ func (cih *CombatInputHandler) handleMovementClick(mouseX, mouseY int) {
 		return
 	}
 
-	// Create viewport centered on player
-	manager := coords.NewCoordinateManager(graphics.ScreenInfo)
-	viewport := coords.NewViewport(manager, *cih.playerPos)
+	// Create viewport centered on player using cached coordinate manager
+	viewport := coords.NewViewport(cih.coordManager, *cih.playerPos)
 
 	// Convert screen coordinates to logical coordinates
 	clickedPos := viewport.ScreenToLogical(mouseX, mouseY)
@@ -132,16 +133,13 @@ func (cih *CombatInputHandler) handleSquadClick(mouseX, mouseY int) {
 		return
 	}
 
-	manager := coords.NewCoordinateManager(graphics.ScreenInfo)
-	viewport := coords.NewViewport(manager, *cih.playerPos)
+	viewport := coords.NewViewport(cih.coordManager, *cih.playerPos)
 	clickedPos := viewport.ScreenToLogical(mouseX, mouseY)
 
 	// Find if a squad is at the clicked position
 	clickedSquadID := cih.queries.GetSquadAtPosition(clickedPos)
-
-	// If no squad was clicked, do nothing
 	if clickedSquadID == 0 {
-		return
+		return // No squad at clicked position
 	}
 
 	// Get faction info for the clicked squad
@@ -149,26 +147,38 @@ func (cih *CombatInputHandler) handleSquadClick(mouseX, mouseY int) {
 	if squadInfo == nil {
 		return
 	}
-	clickedFactionID := squadInfo.FactionID
 
 	// If no faction currently active, do nothing
 	if cih.currentFactionID == 0 {
 		return
 	}
 
-	// If it's the player's turn
-	if cih.queries.IsPlayerFaction(cih.currentFactionID) {
-		// If clicking an allied squad: select it
-		if clickedFactionID == cih.currentFactionID {
-			cih.actionHandler.SelectSquad(clickedSquadID)
-			return
-		}
+	// Process click based on faction relationship
+	cih.processSquadClick(clickedSquadID, squadInfo)
+}
 
-		// If clicking an enemy squad and we have a selected squad: attack immediately
-		selectedSquad := cih.stateManager.GetSelectedSquad()
-		if selectedSquad != 0 && clickedFactionID != cih.currentFactionID {
-			cih.stateManager.SetSelectedTarget(clickedSquadID)
-			cih.actionHandler.ExecuteAttack()
-		}
+// processSquadClick handles the actual squad click logic based on faction relationships
+func (cih *CombatInputHandler) processSquadClick(clickedSquadID ecs.EntityID, squadInfo *SquadInfo) {
+	// Only player faction can take actions
+	if !cih.queries.IsPlayerFaction(cih.currentFactionID) {
+		return
 	}
+
+	// Allied squad: select it
+	if cih.isFriendlySquad(squadInfo.FactionID) {
+		cih.actionHandler.SelectSquad(clickedSquadID)
+		return
+	}
+
+	// Enemy squad: attack if a squad is selected
+	selectedSquad := cih.stateManager.GetSelectedSquad()
+	if selectedSquad != 0 {
+		cih.stateManager.SetSelectedTarget(clickedSquadID)
+		cih.actionHandler.ExecuteAttack()
+	}
+}
+
+// isFriendlySquad checks if a squad belongs to the current faction
+func (cih *CombatInputHandler) isFriendlySquad(factionID ecs.EntityID) bool {
+	return factionID == cih.currentFactionID
 }
