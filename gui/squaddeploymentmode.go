@@ -175,6 +175,8 @@ func (sdm *SquadDeploymentMode) Exit(toMode UIMode) error {
 func (sdm *SquadDeploymentMode) Update(deltaTime float64) error {
 	// Process pending placement (after UI has been updated)
 	if sdm.pendingPlacement && sdm.isPlacingSquad && sdm.selectedSquadID != 0 {
+		fmt.Printf("DEBUG: Processing pending placement in Update()\n")
+
 		// Get player position (for viewport centering)
 		playerPos := *sdm.context.PlayerData.Pos
 
@@ -184,6 +186,7 @@ func (sdm *SquadDeploymentMode) Update(deltaTime float64) error {
 
 		// Convert mouse position to logical position
 		clickedPos := viewport.ScreenToLogical(sdm.pendingMouseX, sdm.pendingMouseY)
+		fmt.Printf("DEBUG: Converted click to logical position: (%d, %d)\n", clickedPos.X, clickedPos.Y)
 
 		// Place the squad at the clicked position
 		sdm.placeSquadAt(sdm.selectedSquadID, clickedPos)

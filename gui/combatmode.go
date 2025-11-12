@@ -20,7 +20,6 @@ type CombatMode struct {
 	actionHandler   *CombatActionHandler
 	inputHandler    *CombatInputHandler
 	uiFactory       *CombatUIFactory
-	formatters      *CombatFormatters
 
 	// UI panels and widgets
 	turnOrderPanel   *widget.Container
@@ -75,9 +74,6 @@ func (cm *CombatMode) Initialize(ctx *UIContext) error {
 	// Create UI factory
 	cm.uiFactory = NewCombatUIFactory(cm.queries, cm.panelBuilders, cm.layout)
 
-	// Create formatters for display logic separation
-	cm.formatters = NewCombatFormatters(cm.queries, cm.turnManager)
-
 	// Build UI panels using factory
 	cm.buildUILayout()
 
@@ -112,23 +108,23 @@ func (cm *CombatMode) Initialize(ctx *UIContext) error {
 
 func (cm *CombatMode) buildUILayout() {
 	// Build UI panels using factory
-	cm.turnOrderPanel, cm.turnOrderLabel = cm.addLabeledPanel(
-		cm.uiFactory.CreateTurnOrderPanel(),
-		cm.uiFactory.CreateTurnOrderLabel("Initializing combat..."),
-	)
+	cm.turnOrderPanel = cm.uiFactory.CreateTurnOrderPanel()
+	cm.turnOrderLabel = cm.uiFactory.CreateTurnOrderLabel("Initializing combat...")
+	cm.turnOrderPanel.AddChild(cm.turnOrderLabel)
+	cm.rootContainer.AddChild(cm.turnOrderPanel)
 
-	cm.factionInfoPanel, cm.factionInfoText = cm.addLabeledPanel(
-		cm.uiFactory.CreateFactionInfoPanel(),
-		cm.uiFactory.CreateFactionInfoText("Faction Info"),
-	)
+	cm.factionInfoPanel = cm.uiFactory.CreateFactionInfoPanel()
+	cm.factionInfoText = cm.uiFactory.CreateFactionInfoText("Faction Info")
+	cm.factionInfoPanel.AddChild(cm.factionInfoText)
+	cm.rootContainer.AddChild(cm.factionInfoPanel)
 
 	cm.squadListPanel = cm.uiFactory.CreateSquadListPanel()
 	cm.rootContainer.AddChild(cm.squadListPanel)
 
-	cm.squadDetailPanel, cm.squadDetailText = cm.addLabeledPanel(
-		cm.uiFactory.CreateSquadDetailPanel(),
-		cm.uiFactory.CreateSquadDetailText("Select a squad\nto view details"),
-	)
+	cm.squadDetailPanel = cm.uiFactory.CreateSquadDetailPanel()
+	cm.squadDetailText = cm.uiFactory.CreateSquadDetailText("Select a squad\nto view details")
+	cm.squadDetailPanel.AddChild(cm.squadDetailText)
+	cm.rootContainer.AddChild(cm.squadDetailPanel)
 
 	// Create log panel
 	logContainer, logArea := cm.uiFactory.CreateLogPanel()
@@ -136,42 +132,57 @@ func (cm *CombatMode) buildUILayout() {
 	cm.rootContainer.AddChild(logContainer)
 
 	// Create action buttons
-	// Pass action handler methods directly instead of through wrapper methods
 	cm.actionButtons = cm.uiFactory.CreateActionButtons(
-		cm.actionHandler.ToggleAttackMode,
-		cm.actionHandler.ToggleMoveMode,
+		cm.handleAttackClick,
+		cm.handleMoveClick,
 		cm.handleEndTurn,
 		cm.handleFlee,
 	)
 	cm.rootContainer.AddChild(cm.actionButtons)
 }
 
-// addLabeledPanel adds a label to a panel and adds the panel to root container
-// Returns the panel and label for later reference
-func (cm *CombatMode) addLabeledPanel(panel *widget.Container, label *widget.Text) (*widget.Container, *widget.Text) {
-	panel.AddChild(label)
-	cm.rootContainer.AddChild(panel)
-	return panel, label
+// Button click handlers that delegate to action handler
+func (cm *CombatMode) handleAttackClick() {
+	cm.actionHandler.ToggleAttackMode()
+}
+
+func (cm *CombatMode) handleMoveClick() {
+	cm.actionHandler.ToggleMoveMode()
 }
 
 func (cm *CombatMode) initializeUpdateComponents() {
 	// Turn order component - displays current faction and round
-	// Uses formatter to separate display logic from component initialization
 	cm.turnOrderComponent = NewTextDisplayComponent(
 		cm.turnOrderLabel,
-		cm.formatters.FormatTurnOrder,
+		func() string {
+			currentFactionID := cm.turnManager.GetCurrentFaction()
+			if currentFactionID == 0 {
+				return "No active combat"
+			}
+
+			round := cm.turnManager.GetCurrentRound()
+			factionName := cm.queries.GetFactionName(currentFactionID)
+
+			// Add indicator if player's turn
+			playerIndicator := ""
+			if cm.queries.IsPlayerFaction(currentFactionID) {
+				playerIndicator = " >>> YOUR TURN <<<"
+			}
+
+			return fmt.Sprintf("Round %d | %s%s", round, factionName, playerIndicator)
+		},
 	)
 
 	// Faction info component - displays squad count and mana
-	// Uses formatter to separate display logic from component initialization
 	cm.factionInfoComponent = NewDetailPanelComponent(
 		cm.factionInfoText,
 		cm.queries,
 		func(data interface{}) string {
-			if factionInfo, ok := data.(*FactionInfo); ok {
-				return cm.formatters.FormatFactionInfo(factionInfo)
-			}
-			return "No faction selected"
+			factionInfo := data.(*FactionInfo)
+			infoText := fmt.Sprintf("%s\n", factionInfo.Name)
+			infoText += fmt.Sprintf("Squads: %d/%d\n", factionInfo.AliveSquadCount, len(factionInfo.SquadIDs))
+			infoText += fmt.Sprintf("Mana: %d/%d", factionInfo.CurrentMana, factionInfo.MaxMana)
+			return infoText
 		},
 	)
 
