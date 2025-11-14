@@ -287,7 +287,7 @@ func (sbm *SquadBuilderMode) onCreateSquad() {
 	}
 
 	// Assign leader component to the designated unit
-	leaderEntity := squads.FindUnitByID(leaderID, sbm.context.ECSManager)
+	leaderEntity := common.FindEntityByIDWithTag(sbm.context.ECSManager, leaderID, squads.SquadMemberTag)
 	if leaderEntity != nil {
 		// Add LeaderComponent to designate this unit as leader
 		leaderEntity.AddComponent(squads.LeaderComponent, &squads.LeaderData{})

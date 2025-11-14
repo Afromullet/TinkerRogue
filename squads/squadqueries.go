@@ -8,17 +8,6 @@ import (
 	"github.com/bytearena/ecs"
 )
 
-// FindUnitByID finds a unit entity by its ID
-func FindUnitByID(unitID ecs.EntityID, squadmanager *common.EntityManager) *ecs.Entity {
-	for _, result := range squadmanager.World.Query(SquadMemberTag) {
-		if result.Entity.GetID() == unitID {
-			return result.Entity
-		}
-
-	}
-	return nil
-}
-
 // GetUnitIDsAtGridPosition returns unit IDs occupying a specific grid cell
 func GetUnitIDsAtGridPosition(squadID ecs.EntityID, row, col int, squadmanager *common.EntityManager) []ecs.EntityID {
 	var unitIDs []ecs.EntityID
@@ -68,6 +57,8 @@ func GetUnitIDsInSquad(squadID ecs.EntityID, squadmanager *common.EntityManager)
 // GetSquadEntity finds squad entity by squad ID
 // ✅ Returns entity pointer directly from query
 func GetSquadEntity(squadID ecs.EntityID, squadmanager *common.EntityManager) *ecs.Entity {
+	// Note: This uses a component field match (SquadData.SquadID), not a direct entity ID match
+	// So it cannot use the generic FindEntityByIDWithTag helper. Keeping specialized implementation.
 	for _, result := range squadmanager.World.Query(SquadTag) {
 		squadEntity := result.Entity
 		squadData := common.GetComponentType[*SquadData](squadEntity, SquadComponent)
@@ -89,7 +80,7 @@ func GetUnitIDsInRow(squadID ecs.EntityID, row int, squadmanager *common.EntityM
 		idsAtPos := GetUnitIDsAtGridPosition(squadID, row, col, squadmanager)
 		for _, unitID := range idsAtPos {
 			if !seen[unitID] {
-				unitEntity := FindUnitByID(unitID, squadmanager)
+				unitEntity := common.FindEntityByIDWithTag(squadmanager, unitID, SquadMemberTag)
 				if unitEntity == nil {
 					continue
 				}
@@ -126,7 +117,7 @@ func IsSquadDestroyed(squadID ecs.EntityID, squadmanager *common.EntityManager) 
 	unitIDs := GetUnitIDsInSquad(squadID, squadmanager)
 
 	for _, unitID := range unitIDs {
-		unitEntity := FindUnitByID(unitID, squadmanager)
+		unitEntity := common.FindEntityByIDWithTag(squadmanager, unitID, SquadMemberTag)
 		if unitEntity == nil {
 			continue
 		}
@@ -150,7 +141,7 @@ func GetSquadUsedCapacity(squadID ecs.EntityID, squadmanager *common.EntityManag
 	totalUsed := 0.0
 
 	for _, unitID := range unitIDs {
-		unitEntity := FindUnitByID(unitID, squadmanager)
+		unitEntity := common.FindEntityByIDWithTag(squadmanager, unitID, SquadMemberTag)
 		if unitEntity == nil {
 			continue
 		}
@@ -171,7 +162,7 @@ func GetSquadTotalCapacity(squadID ecs.EntityID, squadmanager *common.EntityMana
 		return 6
 	}
 
-	leaderEntity := FindUnitByID(leaderID, squadmanager)
+	leaderEntity := common.FindEntityByIDWithTag(squadmanager, leaderID, SquadMemberTag)
 	if leaderEntity == nil {
 		return 6
 	}
@@ -253,7 +244,7 @@ func GetSquadMovementSpeed(squadID ecs.EntityID, squadmanager *common.EntityMana
 	foundValidUnit := false
 
 	for _, unitID := range unitIDs {
-		unitEntity := FindUnitByID(unitID, squadmanager)
+		unitEntity := common.FindEntityByIDWithTag(squadmanager, unitID, SquadMemberTag)
 		if unitEntity == nil {
 			continue
 		}

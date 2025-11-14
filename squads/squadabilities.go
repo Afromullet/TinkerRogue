@@ -15,7 +15,7 @@ func CheckAndTriggerAbilities(squadID ecs.EntityID, ecsmanager *common.EntityMan
 		return // No leader, no abilities
 	}
 
-	leaderEntity := FindUnitByID(leaderID, ecsmanager)
+	leaderEntity := common.FindEntityByIDWithTag(ecsmanager, leaderID, SquadMemberTag)
 	if leaderEntity == nil {
 		return
 	}
@@ -103,7 +103,7 @@ func calculateAverageHP(squadID ecs.EntityID, ecsmanager *common.EntityManager) 
 	totalMaxHP := 0
 
 	for _, unitID := range unitIDs {
-		unit := FindUnitByID(unitID, ecsmanager)
+		unit := common.FindEntityByIDWithTag(ecsmanager, unitID, SquadMemberTag)
 		if unit == nil {
 			continue
 		}
@@ -159,7 +159,7 @@ func applyRallyEffect(squadID ecs.EntityID, params AbilityParams, ecsmanager *co
 	unitIDs := GetUnitIDsInSquad(squadID, ecsmanager)
 
 	for _, unitID := range unitIDs {
-		unit := FindUnitByID(unitID, ecsmanager)
+		unit := common.FindEntityByIDWithTag(ecsmanager, unitID, SquadMemberTag)
 		if unit == nil {
 			continue
 		}
@@ -180,7 +180,7 @@ func applyHealEffect(squadID ecs.EntityID, params AbilityParams, ecsmanager *com
 
 	healed := 0
 	for _, unitID := range unitIDs {
-		unit := FindUnitByID(unitID, ecsmanager)
+		unit := common.FindEntityByIDWithTag(ecsmanager, unitID, SquadMemberTag)
 		if unit == nil {
 			continue
 		}
@@ -216,7 +216,7 @@ func applyBattleCryEffect(squadID ecs.EntityID, params AbilityParams, ecsmanager
 	// Boost damage
 	unitIDs := GetUnitIDsInSquad(squadID, ecsmanager)
 	for _, unitID := range unitIDs {
-		unit := FindUnitByID(unitID, ecsmanager)
+		unit := common.FindEntityByIDWithTag(ecsmanager, unitID, SquadMemberTag)
 		if unit == nil {
 			continue
 		}
@@ -252,7 +252,7 @@ func applyFireballEffect(squadID ecs.EntityID, params AbilityParams, ecsmanager 
 	killed := 0
 
 	for _, unitID := range unitIDs {
-		unit := FindUnitByID(unitID, ecsmanager)
+		unit := common.FindEntityByIDWithTag(ecsmanager, unitID, SquadMemberTag)
 		if unit == nil {
 			continue
 		}
@@ -285,7 +285,7 @@ func EquipAbilityToLeader(
 		return fmt.Errorf("invalid slot %d", slotIndex)
 	}
 
-	leaderEntity := FindUnitByID(leaderEntityID, ecsmanager)
+	leaderEntity := common.FindEntityByIDWithTag(ecsmanager, leaderEntityID, SquadMemberTag)
 	if leaderEntity == nil {
 		return fmt.Errorf("leader entity not found")
 	}

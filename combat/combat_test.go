@@ -218,7 +218,7 @@ func TestGetSquadMovementSpeed_ReturnsSlowestUnit(t *testing.T) {
 
 	// Modify one unit to have slower speed
 	unitIDs := squads.GetUnitIDsInSquad(squadID, manager)
-	slowUnit := squads.FindUnitByID(unitIDs[0], manager)
+	slowUnit := common.FindEntityByIDWithTag(manager, unitIDs[0], squads.SquadMemberTag)
 	attr := common.GetAttributes(slowUnit)
 	attr.MovementSpeed = 2
 

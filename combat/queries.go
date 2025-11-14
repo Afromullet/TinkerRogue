@@ -10,16 +10,6 @@ import (
 	"github.com/bytearena/ecs"
 )
 
-func findEntityByID(entityID ecs.EntityID, manager *common.EntityManager) *ecs.Entity {
-	// Search all entities (O(n))
-	for _, result := range manager.World.Query(ecs.BuildTag()) {
-		if result.Entity.GetID() == entityID {
-			return result.Entity
-		}
-	}
-	return nil
-}
-
 // findFactionByID finds a faction entity by faction ID
 func findFactionByID(factionID ecs.EntityID, manager *common.EntityManager) *ecs.Entity {
 	for _, result := range manager.World.Query(FactionTag) {
@@ -56,19 +46,6 @@ func findActionStateEntity(squadID ecs.EntityID, manager *common.EntityManager) 
 	for _, result := range manager.World.Query(ActionStateTag) {
 		actionState := common.GetComponentType[*ActionStateData](result.Entity, ActionStateComponent)
 		if actionState.SquadID == squadID {
-			return result.Entity
-		}
-	}
-	return nil
-}
-
-// FindSquadByID finds a squad entity by its ID
-// Note: This function doesn't exist in the codebase yet - add it to squads/squadqueries.go
-// or use it from combat/queries.go
-func FindSquadByID(squadID ecs.EntityID, manager *common.EntityManager) *ecs.Entity {
-	// Import squads package: "game_main/squads"
-	for _, result := range manager.World.Query(squads.SquadTag) {
-		if result.Entity.GetID() == squadID {
 			return result.Entity
 		}
 	}

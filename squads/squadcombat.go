@@ -37,7 +37,7 @@ func ExecuteSquadAttack(attackerSquadID, defenderSquadID ecs.EntityID, squadmana
 
 	// Process each attacker unit
 	for _, attackerID := range attackerUnitIDs {
-		attackerUnit := FindUnitByID(attackerID, squadmanager)
+		attackerUnit := common.FindEntityByIDWithTag(squadmanager, attackerID, SquadMemberTag)
 		if attackerUnit == nil {
 			continue
 		}
@@ -114,8 +114,8 @@ func ExecuteSquadAttack(attackerSquadID, defenderSquadID ecs.EntityID, squadmana
 
 // calculateUnitDamageByID calculates damage using new attribute system
 func calculateUnitDamageByID(attackerID, defenderID ecs.EntityID, squadmanager *common.EntityManager) int {
-	attackerUnit := FindUnitByID(attackerID, squadmanager)
-	defenderUnit := FindUnitByID(defenderID, squadmanager)
+	attackerUnit := common.FindEntityByIDWithTag(squadmanager, attackerID, SquadMemberTag)
+	defenderUnit := common.FindEntityByIDWithTag(squadmanager, defenderID, SquadMemberTag)
 
 	if attackerUnit == nil || defenderUnit == nil {
 		return 0
@@ -180,7 +180,7 @@ func rollDodge(dodgeChance int) bool {
 
 // applyDamageToUnitByID - ✅ Uses ecs.EntityID
 func applyDamageToUnitByID(unitID ecs.EntityID, damage int, result *CombatResult, squadmanager *common.EntityManager) {
-	unit := FindUnitByID(unitID, squadmanager)
+	unit := common.FindEntityByIDWithTag(squadmanager, unitID, SquadMemberTag)
 	if unit == nil {
 		return
 	}
@@ -201,14 +201,14 @@ func selectLowestHPTargetID(unitIDs []ecs.EntityID, squadmanager *common.EntityM
 	}
 
 	lowestID := unitIDs[0]
-	lowestUnit := FindUnitByID(lowestID, squadmanager)
+	lowestUnit := common.FindEntityByIDWithTag(squadmanager, lowestID, SquadMemberTag)
 	if lowestUnit == nil {
 		return 0
 	}
 	lowestHP := common.GetAttributes(lowestUnit).CurrentHealth
 
 	for _, unitID := range unitIDs[1:] {
-		unit := FindUnitByID(unitID, squadmanager)
+		unit := common.FindEntityByIDWithTag(squadmanager, unitID, SquadMemberTag)
 		if unit == nil {
 			continue
 		}
@@ -255,7 +255,7 @@ func sumDamageMap(damageMap map[ecs.EntityID]int) int {
 // Cover bonuses stack additively (e.g., 0.25 + 0.15 = 0.40 total reduction)
 // Returns a value between 0.0 (no cover) and 1.0 (100% damage reduction, capped)
 func CalculateTotalCover(defenderID ecs.EntityID, squadmanager *common.EntityManager) float64 {
-	defenderUnit := FindUnitByID(defenderID, squadmanager)
+	defenderUnit := common.FindEntityByIDWithTag(squadmanager, defenderID, SquadMemberTag)
 	if defenderUnit == nil {
 		return 0.0
 	}
@@ -275,7 +275,7 @@ func CalculateTotalCover(defenderID ecs.EntityID, squadmanager *common.EntityMan
 	// Sum all cover bonuses (stacking additively)
 	totalCover := 0.0
 	for _, providerID := range coverProviders {
-		providerUnit := FindUnitByID(providerID, squadmanager)
+		providerUnit := common.FindEntityByIDWithTag(squadmanager, providerID, SquadMemberTag)
 		if providerUnit == nil {
 			continue
 		}
@@ -327,7 +327,7 @@ func GetCoverProvidersFor(defenderID ecs.EntityID, defenderSquadID ecs.EntityID,
 			continue
 		}
 
-		unit := FindUnitByID(unitID, squadmanager)
+		unit := common.FindEntityByIDWithTag(squadmanager, unitID, SquadMemberTag)
 		if unit == nil {
 			continue
 		}
@@ -387,7 +387,7 @@ func displayCombatResult(result *CombatResult, squadmanager *common.EntityManage
 
 	// ✅ Result uses native entity IDs
 	for unitID, dmg := range result.DamageByUnit {
-		unit := FindUnitByID(unitID, squadmanager)
+		unit := common.FindEntityByIDWithTag(squadmanager, unitID, SquadMemberTag)
 		if unit == nil {
 			continue
 		}
@@ -406,7 +406,7 @@ func displaySquadStatus(squadID ecs.EntityID, squadmanager *common.EntityManager
 	alive := 0
 
 	for _, unitID := range unitIDs {
-		unit := FindUnitByID(unitID, squadmanager)
+		unit := common.FindEntityByIDWithTag(squadmanager, unitID, SquadMemberTag)
 		if unit == nil {
 			continue
 		}

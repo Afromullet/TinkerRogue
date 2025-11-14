@@ -135,3 +135,19 @@ func GetCreatureAtPosition(ecsmnager *EntityManager, pos *coords.LogicalPosition
 	}
 	return e
 }
+
+// FindEntityByIDWithTag finds an entity by its ID within a specific tag query.
+// This is a generic consolidation of repeated entity lookup patterns across the codebase.
+// Returns nil if the entity is not found.
+//
+// Usage:
+//   entity := FindEntityByIDWithTag(manager, squadID, SquadTag)
+//   entity := FindEntityByIDWithTag(manager, unitID, ecs.BuildTag()) // All entities
+func FindEntityByIDWithTag(manager *EntityManager, entityID ecs.EntityID, tag ecs.Tag) *ecs.Entity {
+	for _, result := range manager.World.Query(tag) {
+		if result.Entity.GetID() == entityID {
+			return result.Entity
+		}
+	}
+	return nil
+}

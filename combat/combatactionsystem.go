@@ -51,7 +51,7 @@ func (cas *CombatActionSystem) ExecuteAttackAction(attackerID, defenderID ecs.En
 
 	for _, unitID := range allUnits {
 		if !containsEntity(attackingUnits, unitID) {
-			unit := squads.FindUnitByID(unitID, cas.manager)
+			unit := common.FindEntityByIDWithTag(cas.manager, unitID, squads.SquadMemberTag)
 			attr := common.GetAttributes(unit)
 			if attr.CanAct {
 				attr.CanAct = false
@@ -65,7 +65,7 @@ func (cas *CombatActionSystem) ExecuteAttackAction(attackerID, defenderID ecs.En
 
 	// Re-enable disabled units
 	for _, unitID := range disabledUnits {
-		unit := squads.FindUnitByID(unitID, cas.manager)
+		unit := common.FindEntityByIDWithTag(cas.manager, unitID, squads.SquadMemberTag)
 		attr := common.GetAttributes(unit)
 		attr.CanAct = true
 	}
@@ -95,7 +95,7 @@ func (cas *CombatActionSystem) GetSquadAttackRange(squadID ecs.EntityID) int {
 
 	maxRange := 1 // Default melee
 	for _, unitID := range unitIDs {
-		unit := squads.FindUnitByID(unitID, cas.manager)
+		unit := common.FindEntityByIDWithTag(cas.manager, unitID, squads.SquadMemberTag)
 		if unit == nil {
 			continue
 		}
@@ -123,7 +123,7 @@ func (cas *CombatActionSystem) GetAttackingUnits(squadID, targetID ecs.EntityID)
 	var attackingUnits []ecs.EntityID
 
 	for _, unitID := range allUnits {
-		unit := squads.FindUnitByID(unitID, cas.manager)
+		unit := common.FindEntityByIDWithTag(cas.manager, unitID, squads.SquadMemberTag)
 		if unit == nil {
 			continue
 		}

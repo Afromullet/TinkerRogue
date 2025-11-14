@@ -40,7 +40,7 @@ func VisualizeSquad(squadID ecs.EntityID, squadmanager *common.EntityManager) st
 
 	// Fill the grid with unit IDs
 	for _, unitID := range unitIDs {
-		unitEntity := FindUnitByID(unitID, squadmanager)
+		unitEntity := common.FindEntityByIDWithTag(squadmanager, unitID, SquadMemberTag)
 		if unitEntity == nil {
 			continue
 		}
@@ -138,7 +138,7 @@ func VisualizeSquad(squadID ecs.EntityID, squadmanager *common.EntityManager) st
 	if len(unitIDs) > 0 {
 		output.WriteString("\nUnit Details:\n")
 		for _, unitID := range unitIDs {
-			unitEntity := FindUnitByID(unitID, squadmanager)
+			unitEntity := common.FindEntityByIDWithTag(squadmanager, unitID, SquadMemberTag)
 			if unitEntity == nil {
 				continue
 			}

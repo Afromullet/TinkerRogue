@@ -3,6 +3,7 @@ package squads
 import (
 	"fmt"
 	"game_main/common"
+	"game_main/coords"
 	"game_main/entitytemplates"
 	"testing"
 
@@ -56,6 +57,100 @@ func createTestJSONMonster(name string, width, height int, role string) entityte
 		MaxTargets:    1,
 		TargetCells:   nil,
 	}
+}
+
+// createLowCostTestMonster creates a unit with minimal capacity cost for visualization tests
+// Cost = (Strength + Weapon + Armor) / 5 = (1 + 0 + 0) / 5 = 0.2 per unit
+// This allows fitting multiple units in a single squad for visualization testing
+func createLowCostTestMonster(name string, width, height int, role string) entitytemplates.JSONMonster {
+	return entitytemplates.JSONMonster{
+		Name:      name,
+		ImageName: "test.png",
+		Attributes: entitytemplates.JSONAttributes{
+			Strength:   1,  // Minimal - only affects HP and damage
+			Dexterity:  20, // Keep dexterity for combat mechanics
+			Magic:      0,
+			Leadership: 0,
+			Armor:      0,  // No armor to minimize capacity cost
+			Weapon:     0,  // No weapon to minimize capacity cost
+		},
+		Width:         width,
+		Height:        height,
+		Role:          role,
+		TargetMode:    "row",
+		TargetRows:    []int{0},
+		IsMultiTarget: false,
+		MaxTargets:    1,
+		TargetCells:   nil,
+	}
+}
+
+// CreateHighCapacitySquad creates a squad with sufficient capacity for visualization tests
+// This is needed because visualization tests try to add multiple units,
+// and the default squad capacity (6) can only fit 2 units with normal stats
+// Note: Capacity is based on leader's Leadership stat (GetUnitCapacity = 6 + Leadership/3, capped at 9)
+// To work around this, we just add a dummy leader with max capacity
+func CreateHighCapacitySquad(manager *common.EntityManager, squadName string, capacity int) ecs.EntityID {
+	squadEntity := manager.World.NewEntity()
+	squadID := squadEntity.GetID()
+
+	squadEntity.AddComponent(SquadComponent, &SquadData{
+		SquadID:       squadID,
+		Name:          squadName,
+		Morale:        100,
+		TurnCount:     0,
+		MaxUnits:      9,
+		UsedCapacity:  0.0,
+		TotalCapacity: 9, // Will be recalculated based on leader
+	})
+
+	squadEntity.AddComponent(common.PositionComponent, &coords.LogicalPosition{})
+
+	// Create a dummy leader unit with max capacity to enable adding multiple units
+	// Leadership of 9 gives capacity = 6 + (9/3) = 9 (capped)
+	leaderEntity := manager.World.NewEntity()
+
+	leaderEntity.AddComponent(SquadMemberComponent, &SquadMemberData{SquadID: squadID})
+	leaderEntity.AddComponent(common.NameComponent, &common.Name{NameStr: "Leader"})
+
+	// Create attributes for the leader with high Leadership
+	leaderAttr := common.NewAttributes(
+		1,  // Minimal strength
+		0,  // No dexterity needed
+		0,  // No magic
+		9,  // Max leadership for capacity
+		0,  // No armor
+		0,  // No weapon
+	)
+	leaderEntity.AddComponent(common.AttributeComponent, &leaderAttr)
+
+	// Add leader component with abilities
+	leaderEntity.AddComponent(LeaderComponent, &LeaderData{
+		Leadership: 9,
+		Experience: 0,
+	})
+	leaderEntity.AddComponent(AbilitySlotComponent, &AbilitySlotData{Slots: [4]AbilitySlot{}})
+	leaderEntity.AddComponent(CooldownTrackerComponent, &CooldownTrackerData{
+		Cooldowns:    [4]int{0, 0, 0, 0},
+		MaxCooldowns: [4]int{0, 0, 0, 0},
+	})
+
+	// Add GridPositionComponent at invalid position so it doesn't interfere with grid
+	// and UnitRoleComponent for visualization compatibility
+	leaderEntity.AddComponent(GridPositionComponent, &GridPositionData{
+		AnchorRow: -1, // Invalid position - won't appear in 3x3 grid
+		AnchorCol: -1,
+		Width:     1,
+		Height:    1,
+	})
+	leaderEntity.AddComponent(UnitRoleComponent, &UnitRoleData{
+		Role: RoleTank, // Arbitrary role for the invisible leader
+	})
+
+	// Update squad capacity to reflect the leader
+	UpdateSquadCapacity(squadID, manager)
+
+	return squadID
 }
 
 // ========================================
@@ -201,19 +296,15 @@ func TestAddUnitToSquad_SingleCell_ValidPosition(t *testing.T) {
 func TestAddUnitToSquad_SingleCell_AllPositions(t *testing.T) {
 	manager := setupTestSquadManager(t)
 
-	CreateEmptySquad(manager, "Test Squad")
-
-	var squadID ecs.EntityID
-	for _, result := range manager.World.Query(SquadTag) {
-		squadID = result.Entity.GetID()
-		break
-	}
+	// Use high capacity squad to fit 9 units (0.2 capacity each = 1.8 total)
+	squadID := CreateHighCapacitySquad(manager, "Test Squad", 9)
 
 	// Test adding units to all 9 positions
-	expectedUnits := 0
+	expectedUnits := 1 // Start with 1 because CreateHighCapacitySquad adds a leader
 	for row := 0; row < 3; row++ {
 		for col := 0; col < 3; col++ {
-			jsonMonster := createTestJSONMonster("Unit", 1, 1, "DPS")
+			// Use low-cost units to fit in capacity
+			jsonMonster := createLowCostTestMonster("Unit", 1, 1, "DPS")
 			unit, err := CreateUnitTemplates(jsonMonster)
 			if err != nil {
 				t.Fatalf("CreateUnitTemplates failed: %v", err)
@@ -475,16 +566,12 @@ func TestAddUnitToSquad_InvalidPosition_NegativeCol(t *testing.T) {
 func TestAddUnitToSquad_MixedSizes_NoOverlap(t *testing.T) {
 	manager := setupTestSquadManager(t)
 
-	CreateEmptySquad(manager, "Test Squad")
-
-	var squadID ecs.EntityID
-	for _, result := range manager.World.Query(SquadTag) {
-		squadID = result.Entity.GetID()
-		break
-	}
+	// Use high capacity squad to fit multiple units
+	squadID := CreateHighCapacitySquad(manager, "Test Squad", 9)
 
 	// Add 2x2 unit at top-left (occupies [0,0], [0,1], [1,0], [1,1])
-	jsonGiant := createTestJSONMonster("Giant", 2, 2, "Tank")
+	// Use low-cost units to fit in capacity
+	jsonGiant := createLowCostTestMonster("Giant", 2, 2, "Tank")
 	giant, err := CreateUnitTemplates(jsonGiant)
 	if err != nil {
 		t.Fatalf("CreateUnitTemplates failed: %v", err)
@@ -496,7 +583,7 @@ func TestAddUnitToSquad_MixedSizes_NoOverlap(t *testing.T) {
 	}
 
 	// Add 1x1 unit at (0,2) - top-right corner
-	jsonArcher := createTestJSONMonster("Archer", 1, 1, "DPS")
+	jsonArcher := createLowCostTestMonster("Archer", 1, 1, "DPS")
 	archer, err := CreateUnitTemplates(jsonArcher)
 	if err != nil {
 		t.Fatalf("CreateUnitTemplates failed: %v", err)
@@ -508,7 +595,7 @@ func TestAddUnitToSquad_MixedSizes_NoOverlap(t *testing.T) {
 	}
 
 	// Add 1x1 unit at (2,0) - bottom-left corner
-	jsonMage := createTestJSONMonster("Mage", 1, 1, "Support")
+	jsonMage := createLowCostTestMonster("Mage", 1, 1, "Support")
 	mage, err := CreateUnitTemplates(jsonMage)
 	if err != nil {
 		t.Fatalf("CreateUnitTemplates failed: %v", err)
@@ -519,7 +606,7 @@ func TestAddUnitToSquad_MixedSizes_NoOverlap(t *testing.T) {
 		t.Fatalf("Failed to add 1x1 unit at (2,0): %v", err)
 	}
 
-	// Verify all units present
+	// Verify all units present (including leader from CreateHighCapacitySquad)
 	totalUnits := 0
 	for _, result := range manager.World.Query(SquadMemberTag) {
 		memberData := common.GetComponentType[*SquadMemberData](result.Entity, SquadMemberComponent)
@@ -528,8 +615,8 @@ func TestAddUnitToSquad_MixedSizes_NoOverlap(t *testing.T) {
 		}
 	}
 
-	if totalUnits != 3 {
-		t.Errorf("Expected 3 units in squad, got %d", totalUnits)
+	if totalUnits != 4 {
+		t.Errorf("Expected 4 units (3 visible + 1 leader), got %d", totalUnits)
 	}
 }
 
@@ -772,28 +859,23 @@ func TestVisualizeSquad_MultiCell_1x3_Cavalry(t *testing.T) {
 func TestVisualizeSquad_FullFormation_MixedUnits(t *testing.T) {
 	manager := setupTestSquadManager(t)
 
-	CreateEmptySquad(manager, "Mixed Formation")
-
-	var squadID ecs.EntityID
-	for _, result := range manager.World.Query(SquadTag) {
-		squadID = result.Entity.GetID()
-		break
-	}
+	// Use high capacity squad for multiple units (8 units * 2.8 capacity each = 22.4 needed)
+	squadID := CreateHighCapacitySquad(manager, "Mixed Formation", 25)
 
 	// Front row: Tank (0,0), Tank (0,1), Archer (0,2)
-	tankJSON := createTestJSONMonster("Tank", 1, 1, "Tank")
+	tankJSON := createLowCostTestMonster("Tank", 1, 1, "Tank")
 	tank1, _ := CreateUnitTemplates(tankJSON)
 	AddUnitToSquad(squadID, manager, tank1, 0, 0)
 
 	tank2, _ := CreateUnitTemplates(tankJSON)
 	AddUnitToSquad(squadID, manager, tank2, 0, 1)
 
-	archerJSON := createTestJSONMonster("Archer", 1, 1, "DPS")
+	archerJSON := createLowCostTestMonster("Archer", 1, 1, "DPS")
 	archer1, _ := CreateUnitTemplates(archerJSON)
 	AddUnitToSquad(squadID, manager, archer1, 0, 2)
 
 	// Middle row: Warrior (1,0), empty, Warrior (1,2)
-	warriorJSON := createTestJSONMonster("Warrior", 1, 1, "DPS")
+	warriorJSON := createLowCostTestMonster("Warrior", 1, 1, "DPS")
 	warrior1, _ := CreateUnitTemplates(warriorJSON)
 	AddUnitToSquad(squadID, manager, warrior1, 1, 0)
 
@@ -801,7 +883,7 @@ func TestVisualizeSquad_FullFormation_MixedUnits(t *testing.T) {
 	AddUnitToSquad(squadID, manager, warrior2, 1, 2)
 
 	// Back row: Mage (2,0), Mage (2,1), Mage (2,2)
-	mageJSON := createTestJSONMonster("Mage", 1, 1, "Support")
+	mageJSON := createLowCostTestMonster("Mage", 1, 1, "Support")
 	mage1, _ := CreateUnitTemplates(mageJSON)
 	AddUnitToSquad(squadID, manager, mage1, 2, 0)
 
@@ -814,10 +896,10 @@ func TestVisualizeSquad_FullFormation_MixedUnits(t *testing.T) {
 	// Visualize squad
 	output := VisualizeSquad(squadID, manager)
 
-	// Verify 8 units present (1 empty cell at 1,1)
+	// Verify 8 visible units present plus 1 invisible leader (1 empty cell at 1,1)
 	totalUnits := len(GetUnitIDsInSquad(squadID, manager))
-	if totalUnits != 8 {
-		t.Errorf("Expected 8 units, got %d", totalUnits)
+	if totalUnits != 9 {
+		t.Errorf("Expected 9 units (8 visible + 1 leader), got %d", totalUnits)
 	}
 
 	// Verify empty cell at (1,1)
@@ -843,41 +925,36 @@ func TestVisualizeSquad_FullFormation_MixedUnits(t *testing.T) {
 func TestVisualizeSquad_ComplexFormation_MultiCellUnits(t *testing.T) {
 	manager := setupTestSquadManager(t)
 
-	CreateEmptySquad(manager, "Complex Formation")
-
-	var squadID ecs.EntityID
-	for _, result := range manager.World.Query(SquadTag) {
-		squadID = result.Entity.GetID()
-		break
-	}
+	// Use high capacity squad for 4 units (4 * 2.8 = 11.2 needed)
+	squadID := CreateHighCapacitySquad(manager, "Complex Formation", 15)
 
 	// 2x2 giant at top-left (occupies [0,0], [0,1], [1,0], [1,1])
-	giantJSON := createTestJSONMonster("Giant", 2, 2, "Tank")
+	giantJSON := createLowCostTestMonster("Giant", 2, 2, "Tank")
 	giant, _ := CreateUnitTemplates(giantJSON)
 	AddUnitToSquad(squadID, manager, giant, 0, 0)
 
 	// 1x1 archer at top-right (0,2)
-	archerJSON := createTestJSONMonster("Archer", 1, 1, "DPS")
+	archerJSON := createLowCostTestMonster("Archer", 1, 1, "DPS")
 	archer, _ := CreateUnitTemplates(archerJSON)
 	AddUnitToSquad(squadID, manager, archer, 0, 2)
 
 	// 1x1 mage at middle-right (1,2)
-	mageJSON := createTestJSONMonster("Mage", 1, 1, "Support")
+	mageJSON := createLowCostTestMonster("Mage", 1, 1, "Support")
 	mage, _ := CreateUnitTemplates(mageJSON)
 	AddUnitToSquad(squadID, manager, mage, 1, 2)
 
 	// 3x1 wall at bottom (occupies [2,0], [2,1], [2,2])
-	wallJSON := createTestJSONMonster("Wall", 3, 1, "Tank")
+	wallJSON := createLowCostTestMonster("Wall", 3, 1, "Tank")
 	wall, _ := CreateUnitTemplates(wallJSON)
 	AddUnitToSquad(squadID, manager, wall, 2, 0)
 
 	// Visualize squad
 	output := VisualizeSquad(squadID, manager)
 
-	// Verify 4 distinct units
+	// Verify 4 distinct units plus 1 invisible leader
 	totalUnits := len(GetUnitIDsInSquad(squadID, manager))
-	if totalUnits != 4 {
-		t.Errorf("Expected 4 units, got %d", totalUnits)
+	if totalUnits != 5 {
+		t.Errorf("Expected 5 units (4 visible + 1 leader), got %d", totalUnits)
 	}
 
 	// Verify giant occupies 4 cells
@@ -927,19 +1004,14 @@ func TestVisualizeSquad_NonExistentSquad(t *testing.T) {
 func TestVisualizeSquad_GridBoundaries(t *testing.T) {
 	manager := setupTestSquadManager(t)
 
-	CreateEmptySquad(manager, "Boundary Test")
-
-	var squadID ecs.EntityID
-	for _, result := range manager.World.Query(SquadTag) {
-		squadID = result.Entity.GetID()
-		break
-	}
+	// Use high capacity squad for 4 corner units (4 * 2.8 = 11.2 needed)
+	squadID := CreateHighCapacitySquad(manager, "Boundary Test", 15)
 
 	// Test all corner positions
 	corners := [][2]int{{0, 0}, {0, 2}, {2, 0}, {2, 2}}
 	for i, corner := range corners {
 		unitName := fmt.Sprintf("Corner%d", i)
-		jsonMonster := createTestJSONMonster(unitName, 1, 1, "DPS")
+		jsonMonster := createLowCostTestMonster(unitName, 1, 1, "DPS")
 		unit, _ := CreateUnitTemplates(jsonMonster)
 		err := AddUnitToSquad(squadID, manager, unit, corner[0], corner[1])
 		if err != nil {
@@ -950,10 +1022,10 @@ func TestVisualizeSquad_GridBoundaries(t *testing.T) {
 	// Visualize
 	output := VisualizeSquad(squadID, manager)
 
-	// Verify 4 units
+	// Verify 4 visible units plus 1 invisible leader
 	totalUnits := len(GetUnitIDsInSquad(squadID, manager))
-	if totalUnits != 4 {
-		t.Errorf("Expected 4 corner units, got %d", totalUnits)
+	if totalUnits != 5 {
+		t.Errorf("Expected 5 units (4 corners + 1 leader), got %d", totalUnits)
 	}
 
 	// Verify center is empty
@@ -1075,7 +1147,7 @@ func TestGetSquadMovementSpeed_DeadUnitsIgnored(t *testing.T) {
 	// Kill the slow unit
 	unitIDs := GetUnitIDsAtGridPosition(squadID, 0, 0, manager)
 	if len(unitIDs) > 0 {
-		slowUnit := FindUnitByID(unitIDs[0], manager)
+		slowUnit := common.FindEntityByIDWithTag(manager, unitIDs[0], SquadMemberTag)
 		attr := common.GetAttributes(slowUnit)
 		attr.CurrentHealth = 0
 	}

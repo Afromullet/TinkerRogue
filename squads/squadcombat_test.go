@@ -58,6 +58,8 @@ func createTestUnit(manager *common.EntityManager, squadID ecs.EntityID, row, co
 		2,         // Armor
 		2,         // Weapon
 	)
+	// Set the specified health (after creation, since NewAttributes sets it to MaxHealth)
+	attr.CurrentHealth = health
 	unit.AddComponent(common.AttributeComponent, &attr)
 
 	// Add targeting data (default to front row)

@@ -83,7 +83,7 @@ func AddUnitToSquad(
 
 // RemoveUnitFromSquad - ✅ Accepts ecs.EntityID (native type)
 func RemoveUnitFromSquad(unitEntityID ecs.EntityID, squadmanager *common.EntityManager) error {
-	unitEntity := FindUnitByID(unitEntityID, squadmanager)
+	unitEntity := common.FindEntityByIDWithTag(squadmanager, unitEntityID, SquadMemberTag)
 	if unitEntity == nil {
 		return fmt.Errorf("unit entity not found")
 	}
@@ -109,7 +109,7 @@ func RemoveUnitFromSquad(unitEntityID ecs.EntityID, squadmanager *common.EntityM
 // MoveUnitInSquad - ✅ Accepts ecs.EntityID (native type)
 // ✅ Supports multi-cell units - validates all cells at new position
 func MoveUnitInSquad(unitEntityID ecs.EntityID, newRow, newCol int, ecsmanager *common.EntityManager) error {
-	unitEntity := FindUnitByID(unitEntityID, ecsmanager)
+	unitEntity := common.FindEntityByIDWithTag(ecsmanager, unitEntityID, SquadMemberTag)
 	if unitEntity == nil {
 		return fmt.Errorf("unit entity not found")
 	}

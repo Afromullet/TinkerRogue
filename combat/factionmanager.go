@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"game_main/common"
 	"game_main/coords"
+	"game_main/squads"
 
 	"github.com/bytearena/ecs"
 )
@@ -40,7 +41,7 @@ func (fm *FactionManager) AddSquadToFaction(factionID, squadID ecs.EntityID, pos
 		return fmt.Errorf("faction %d not found", factionID)
 	}
 
-	squad := FindSquadByID(squadID, fm.manager)
+	squad := common.FindEntityByIDWithTag(fm.manager, squadID, squads.SquadTag)
 	if squad == nil {
 		return fmt.Errorf("squad %d not found", squadID)
 	}

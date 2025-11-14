@@ -47,7 +47,7 @@ func (gem *GridEditorManager) PlaceUnitInCell(row, col, unitIndex int, squadID e
 	unitID := unitIDs[0]
 
 	// Get the unit's grid position component to find all occupied cells
-	unitEntity := squads.FindUnitByID(unitID, gem.entityManager)
+	unitEntity := common.FindEntityByIDWithTag(gem.entityManager, unitID, squads.SquadMemberTag)
 	if unitEntity == nil {
 		return fmt.Errorf("could not find unit entity")
 	}
@@ -119,7 +119,7 @@ func (gem *GridEditorManager) RemoveUnitFromCell(row, col int) error {
 	unitID := cell.unitID
 
 	// Get the unit's grid position to find all occupied cells BEFORE removing
-	unitEntity := squads.FindUnitByID(unitID, gem.entityManager)
+	unitEntity := common.FindEntityByIDWithTag(gem.entityManager, unitID, squads.SquadMemberTag)
 	if unitEntity == nil {
 		return fmt.Errorf("could not find unit entity to remove")
 	}
@@ -186,7 +186,7 @@ func (gem *GridEditorManager) RefreshGridDisplay() {
 			}
 
 			// Get unit info
-			unitEntity := squads.FindUnitByID(cell.unitID, gem.entityManager)
+			unitEntity := common.FindEntityByIDWithTag(gem.entityManager, cell.unitID, squads.SquadMemberTag)
 			if unitEntity == nil {
 				continue
 			}

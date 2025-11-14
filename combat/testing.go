@@ -152,7 +152,7 @@ func PlaceSquadOnMap(manager *common.EntityManager, factionID, squadID ecs.Entit
 	})
 
 	// Add PositionComponent to squad entity for compatibility with existing squad combat system
-	squadEntity := FindSquadByID(squadID, manager)
+	squadEntity := common.FindEntityByIDWithTag(manager, squadID, squads.SquadTag)
 	if squadEntity != nil && !squadEntity.HasComponent(common.PositionComponent) {
 		posPtr := new(coords.LogicalPosition)
 		*posPtr = pos
