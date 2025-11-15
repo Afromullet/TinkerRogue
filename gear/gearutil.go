@@ -9,13 +9,13 @@ import (
 	"github.com/bytearena/ecs"
 )
 
-var itemTag = ecs.BuildTag(ItemComponent)
-
 // FindItemEntityByID finds an item entity by its ID using ECS queries (ECS best practice)
 // Returns nil if not found
 // Note: This function expects an ecs.Manager directly (not EntityManager) for compatibility
 // with existing call sites. The generic helper in common package works with EntityManager.
 func FindItemEntityByID(manager *ecs.Manager, entityID ecs.EntityID) *ecs.Entity {
+	// Build tag on-the-fly for Item entities
+	itemTag := ecs.BuildTag(ItemComponent) //TODO, change this in the fut
 	for _, result := range manager.Query(itemTag) {
 		if result.Entity.GetID() == entityID {
 			return result.Entity

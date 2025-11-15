@@ -36,7 +36,7 @@ func (fm *FactionManager) CreateFaction(name string, isPlayer bool) ecs.EntityID
 
 func (fm *FactionManager) AddSquadToFaction(factionID, squadID ecs.EntityID, position coords.LogicalPosition) error {
 
-	faction := findFactionByID(factionID, fm.manager)
+	faction := FindFactionByID(factionID, fm.manager)
 	if faction == nil {
 		return fmt.Errorf("faction %d not found", factionID)
 	}
@@ -70,12 +70,10 @@ func (fm *FactionManager) AddSquadToFaction(factionID, squadID ecs.EntityID, pos
 func (fm *FactionManager) GetFactionSquads(factionID ecs.EntityID) []ecs.EntityID {
 	var squadIDs []ecs.EntityID
 
-	// Query all MapPositionData entities
-	for _, result := range fm.manager.World.Query(MapPositionTag) {
-		mapPos := common.GetComponentType[*MapPositionData](result.Entity, MapPositionComponent)
-		if mapPos.FactionID == factionID {
-			squadIDs = append(squadIDs, mapPos.SquadID)
-		}
+	// Use consolidated query function
+	mapPositions := FindMapPositionByFactionID(factionID, fm.manager)
+	for _, mapPos := range mapPositions {
+		squadIDs = append(squadIDs, mapPos.SquadID)
 	}
 
 	return squadIDs
@@ -108,7 +106,7 @@ func (fm *FactionManager) RemoveSquadFromFaction(factionID, squadID ecs.EntityID
 
 func (fm *FactionManager) GetFactionMana(factionID ecs.EntityID) (current, max int) {
 	// Find faction entity
-	faction := findFactionByID(factionID, fm.manager)
+	faction := FindFactionByID(factionID, fm.manager)
 	if faction == nil {
 		return 0, 0 // Faction not found
 	}

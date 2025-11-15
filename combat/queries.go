@@ -10,8 +10,8 @@ import (
 	"github.com/bytearena/ecs"
 )
 
-// findFactionByID finds a faction entity by faction ID
-func findFactionByID(factionID ecs.EntityID, manager *common.EntityManager) *ecs.Entity {
+// FindFactionByID finds a faction entity by faction ID (public version)
+func FindFactionByID(factionID ecs.EntityID, manager *common.EntityManager) *ecs.Entity {
 	for _, result := range manager.World.Query(FactionTag) {
 		faction := result.Entity
 		factionData := common.GetComponentType[*FactionData](faction, FactionComponent)
@@ -20,6 +20,16 @@ func findFactionByID(factionID ecs.EntityID, manager *common.EntityManager) *ecs
 		}
 	}
 	return nil
+}
+
+// FindFactionDataByID returns FactionData for a faction ID (public version)
+// Returns nil if faction not found
+func FindFactionDataByID(factionID ecs.EntityID, manager *common.EntityManager) *FactionData {
+	entity := FindFactionByID(factionID, manager)
+	if entity == nil {
+		return nil
+	}
+	return common.GetComponentType[*FactionData](entity, FactionComponent)
 }
 
 // findTurnStateEntity finds the single TurnStateData entity
@@ -41,6 +51,29 @@ func findMapPositionEntity(squadID ecs.EntityID, manager *common.EntityManager) 
 	return nil
 }
 
+// FindMapPositionBySquadID returns MapPositionData for a squad (public version)
+// Returns nil if squad not found on map
+func FindMapPositionBySquadID(squadID ecs.EntityID, manager *common.EntityManager) *MapPositionData {
+	entity := findMapPositionEntity(squadID, manager)
+	if entity == nil {
+		return nil
+	}
+	return common.GetComponentType[*MapPositionData](entity, MapPositionComponent)
+}
+
+// FindMapPositionByFactionID returns all MapPositionData for squads in a faction
+// Returns empty slice if no squads found for faction
+func FindMapPositionByFactionID(factionID ecs.EntityID, manager *common.EntityManager) []*MapPositionData {
+	result := make([]*MapPositionData, 0)
+	for _, queryResult := range manager.World.Query(MapPositionTag) {
+		mapPos := common.GetComponentType[*MapPositionData](queryResult.Entity, MapPositionComponent)
+		if mapPos.FactionID == factionID {
+			result = append(result, mapPos)
+		}
+	}
+	return result
+}
+
 // findActionStateEntity finds ActionStateData for a squad
 func findActionStateEntity(squadID ecs.EntityID, manager *common.EntityManager) *ecs.Entity {
 	for _, result := range manager.World.Query(ActionStateTag) {
@@ -50,6 +83,16 @@ func findActionStateEntity(squadID ecs.EntityID, manager *common.EntityManager) 
 		}
 	}
 	return nil
+}
+
+// FindActionStateBySquadID returns ActionStateData for a squad (public version)
+// Returns nil if squad's action state not found
+func FindActionStateBySquadID(squadID ecs.EntityID, manager *common.EntityManager) *ActionStateData {
+	entity := findActionStateEntity(squadID, manager)
+	if entity == nil {
+		return nil
+	}
+	return common.GetComponentType[*ActionStateData](entity, ActionStateComponent)
 }
 
 // getFactionOwner returns the faction that owns a squad
@@ -78,11 +121,10 @@ func getSquadMapPosition(squadID ecs.EntityID, manager *common.EntityManager) (c
 func GetSquadsForFaction(factionID ecs.EntityID, manager *common.EntityManager) []ecs.EntityID {
 	var squadIDs []ecs.EntityID
 
-	for _, result := range manager.World.Query(MapPositionTag) {
-		mapPos := common.GetComponentType[*MapPositionData](result.Entity, MapPositionComponent)
-		if mapPos.FactionID == factionID {
-			squadIDs = append(squadIDs, mapPos.SquadID)
-		}
+	// Use consolidated query function
+	mapPositions := FindMapPositionByFactionID(factionID, manager)
+	for _, mapPos := range mapPositions {
+		squadIDs = append(squadIDs, mapPos.SquadID)
 	}
 
 	return squadIDs

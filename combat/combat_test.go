@@ -84,7 +84,7 @@ func TestCreateFaction(t *testing.T) {
 	}
 
 	// Verify faction data
-	faction := findFactionByID(factionID, manager)
+	faction := FindFactionByID(factionID, manager)
 	if faction == nil {
 		t.Fatal("Cannot find created faction")
 	}
