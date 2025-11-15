@@ -234,6 +234,44 @@ func FindEntityIDWithTag(manager *EntityManager, entityID ecs.EntityID, tag ecs.
 	return 0
 }
 
+// FindEntityByID finds an entity pointer by its ID, searching all entities.
+// Use this when you need the entity pointer for operations that require it.
+// For component access, prefer GetComponentTypeByID and related helpers.
+//
+// Returns nil if the entity is not found.
+//
+// Usage:
+//   entity := FindEntityByID(manager, entityID)
+//   if entity != nil {
+//       entity.AddComponent(ComponentType, data)
+//   }
+func FindEntityByID(manager *EntityManager, entityID ecs.EntityID) *ecs.Entity {
+	for _, result := range manager.World.Query(ecs.BuildTag()) {
+		if result.Entity.GetID() == entityID {
+			return result.Entity
+		}
+	}
+	return nil
+}
+
+// FindEntityByIDInManager finds an entity pointer by its ID using ecs.Manager directly.
+// This is for packages that work with ecs.Manager instead of EntityManager.
+// Returns nil if the entity is not found.
+//
+// Usage:
+//   entity := FindEntityByIDInManager(ecsManager, entityID)
+//   if entity != nil {
+//       // use entity
+//   }
+func FindEntityByIDInManager(manager *ecs.Manager, entityID ecs.EntityID) *ecs.Entity {
+	for _, result := range manager.Query(ecs.BuildTag()) {
+		if result.Entity.GetID() == entityID {
+			return result.Entity
+		}
+	}
+	return nil
+}
+
 // FindEntityByIDWithTag finds an entity pointer within a specific tag query.
 // ⚠️ DEPRECATED: This function should only be used when you need the entity pointer
 // for operations like AddComponent that require it. For all other cases, use the

@@ -32,7 +32,7 @@ type Inventory struct {
 // If the item already exists, it increments the count by 1.
 // Otherwise it sets the count to 1 and adds it to the inventory.
 func AddItem(manager *ecs.Manager, inv *Inventory, itemEntityID ecs.EntityID) {
-	itemEntity := FindItemEntityByID(manager, itemEntityID)
+	itemEntity := common.FindEntityByIDInManager(manager, itemEntityID)
 	if itemEntity == nil {
 		return
 	}
@@ -42,7 +42,7 @@ func AddItem(manager *ecs.Manager, inv *Inventory, itemEntityID ecs.EntityID) {
 
 	// Check if item already exists in inventory
 	for _, existingID := range inv.ItemEntityIDs {
-		existingEntity := FindItemEntityByID(manager, existingID)
+		existingEntity := common.FindEntityByIDInManager(manager, existingID)
 		if existingEntity == nil {
 			continue
 		}
@@ -124,7 +124,7 @@ func GetInventoryForDisplay(manager *ecs.Manager, inv *Inventory, indicesToSelec
 	if len(indicesToSelect) == 0 {
 		// Show all items
 		for index, itemID := range inv.ItemEntityIDs {
-			itemEntity := FindItemEntityByID(manager, itemID)
+			itemEntity := common.FindEntityByIDInManager(manager, itemID)
 			if itemEntity == nil {
 				continue
 			}
@@ -148,7 +148,7 @@ func GetInventoryForDisplay(manager *ecs.Manager, inv *Inventory, indicesToSelec
 			}
 
 			itemID := inv.ItemEntityIDs[index]
-			itemEntity := FindItemEntityByID(manager, itemID)
+			itemEntity := common.FindEntityByIDInManager(manager, itemID)
 			if itemEntity == nil {
 				continue
 			}
@@ -177,7 +177,7 @@ func GetInventoryByAction(manager *ecs.Manager, inv *Inventory, indicesToSelect 
 	if len(indicesToSelect) == 0 {
 		// Show all items with the specified action
 		for index, itemID := range inv.ItemEntityIDs {
-			itemEntity := FindItemEntityByID(manager, itemID)
+			itemEntity := common.FindEntityByIDInManager(manager, itemID)
 			if itemEntity == nil {
 				continue
 			}
@@ -201,7 +201,7 @@ func GetInventoryByAction(manager *ecs.Manager, inv *Inventory, indicesToSelect 
 			}
 
 			itemID := inv.ItemEntityIDs[index]
-			itemEntity := FindItemEntityByID(manager, itemID)
+			itemEntity := common.FindEntityByIDInManager(manager, itemID)
 			if itemEntity == nil {
 				continue
 			}

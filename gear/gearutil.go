@@ -9,25 +9,10 @@ import (
 	"github.com/bytearena/ecs"
 )
 
-// FindItemEntityByID finds an item entity by its ID using ECS queries (ECS best practice)
-// Returns nil if not found
-// Note: This function expects an ecs.Manager directly (not EntityManager) for compatibility
-// with existing call sites. The generic helper in common package works with EntityManager.
-func FindItemEntityByID(manager *ecs.Manager, entityID ecs.EntityID) *ecs.Entity {
-	// Build tag on-the-fly for Item entities
-	itemTag := ecs.BuildTag(ItemComponent) //TODO, change this in the fut
-	for _, result := range manager.Query(itemTag) {
-		if result.Entity.GetID() == entityID {
-			return result.Entity
-		}
-	}
-	return nil
-}
-
 // GetItemByID retrieves the Item component from an entity ID (ECS best practice)
 // Returns nil if the entity doesn't exist or doesn't have an item component
 func GetItemByID(manager *ecs.Manager, entityID ecs.EntityID) *Item {
-	entity := FindItemEntityByID(manager, entityID)
+	entity := common.FindEntityByIDInManager(manager, entityID)
 	if entity == nil {
 		return nil
 	}
@@ -38,22 +23,6 @@ func GetItemByID(manager *ecs.Manager, entityID ecs.EntityID) *Item {
 // Item Query/Helper Functions (ECS System-based)
 // ============================================================================
 
-// FindPropertiesEntityByID finds a properties entity by its ID using ECS queries
-// Properties entities don't have a specific tag, so we query all entities
-// Note: This function expects an ecs.Manager directly (not EntityManager) for compatibility
-// with existing call sites. The generic helper in common package works with EntityManager.
-func FindPropertiesEntityByID(manager *ecs.Manager, entityID ecs.EntityID) *ecs.Entity {
-	if entityID == 0 {
-		return nil
-	}
-	for _, result := range manager.Query(ecs.BuildTag()) {
-		if result.Entity.GetID() == entityID {
-			return result.Entity
-		}
-	}
-	return nil
-}
-
 // GetItemEffectNames returns the names of all effects on an item (system function)
 func GetItemEffectNames(manager *ecs.Manager, item *Item) []string {
 	names := make([]string, 0)
@@ -63,7 +32,7 @@ func GetItemEffectNames(manager *ecs.Manager, item *Item) []string {
 	}
 
 	// Get the properties entity to check for effects
-	propsEntity := FindPropertiesEntityByID(manager, item.Properties)
+	propsEntity := common.FindEntityByIDInManager(manager, item.Properties)
 	if propsEntity == nil {
 		return names
 	}

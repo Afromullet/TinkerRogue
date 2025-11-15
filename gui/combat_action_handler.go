@@ -263,17 +263,12 @@ func (cah *CombatActionHandler) updateUnitPositions(squadID ecs.EntityID, newSqu
 	// Update each unit's position to match the squad's new position
 	for _, unitID := range unitIDs {
 		// Find the unit in the ECS world and update its position
-		for _, result := range cah.entityManager.World.Query(cah.entityManager.Tags["squadmember"]) {
-			if result.Entity.GetID() == unitID {
-				// Update PositionComponent
-				if result.Entity.HasComponent(common.PositionComponent) {
-					posPtr := common.GetComponentType[*coords.LogicalPosition](result.Entity, common.PositionComponent)
-					if posPtr != nil {
-						posPtr.X = newSquadPos.X
-						posPtr.Y = newSquadPos.Y
-					}
-				}
-				break
+		unitEntity := common.FindEntityByIDWithTag(cah.entityManager, unitID, cah.entityManager.Tags["squadmember"])
+		if unitEntity != nil && unitEntity.HasComponent(common.PositionComponent) {
+			posPtr := common.GetComponentType[*coords.LogicalPosition](unitEntity, common.PositionComponent)
+			if posPtr != nil {
+				posPtr.X = newSquadPos.X
+				posPtr.Y = newSquadPos.Y
 			}
 		}
 	}
