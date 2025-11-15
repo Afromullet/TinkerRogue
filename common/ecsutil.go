@@ -151,24 +151,26 @@ func GetComponentTypeByIDWithTag[T any](manager *EntityManager, entityID ecs.Ent
 }
 
 // GetAttributes returns the Attributes component from an entity.
-// This is a convenience function for frequently accessed components.
+// Used for entities obtained from query results.
 func GetAttributes(e *ecs.Entity) *Attributes {
 	return GetComponentType[*Attributes](e, AttributeComponent)
 }
 
 // GetAttributesByID returns the Attributes component by entity ID.
+// Use this when you only have an EntityID (not the entity pointer).
 // Returns nil if entity not found.
 func GetAttributesByID(manager *EntityManager, entityID ecs.EntityID) *Attributes {
 	return GetComponentTypeByID[*Attributes](manager, entityID, AttributeComponent)
 }
 
 // GetPosition returns the Position component from an entity.
-// This is a convenience function for frequently accessed components.
+// Used for entities obtained from query results.
 func GetPosition(e *ecs.Entity) *coords.LogicalPosition {
 	return GetComponentType[*coords.LogicalPosition](e, PositionComponent)
 }
 
 // GetPositionByID returns the Position component by entity ID.
+// Use this when you only have an EntityID (not the entity pointer).
 // Returns nil if entity not found.
 func GetPositionByID(manager *EntityManager, entityID ecs.EntityID) *coords.LogicalPosition {
 	return GetComponentTypeByID[*coords.LogicalPosition](manager, entityID, PositionComponent)
@@ -230,4 +232,28 @@ func FindEntityIDWithTag(manager *EntityManager, entityID ecs.EntityID, tag ecs.
 		}
 	}
 	return 0
+}
+
+// FindEntityByIDWithTag finds an entity pointer within a specific tag query.
+// ⚠️ DEPRECATED: This function should only be used when you need the entity pointer
+// for operations like AddComponent that require it. For all other cases, use the
+// EntityID-based helpers like GetComponentTypeByIDWithTag, GetAttributesByIDWithTag, etc.
+//
+// Returns nil if the entity is not found within the tag query.
+//
+// Limited valid use cases:
+//   - entity.AddComponent() - ECS library requires entity pointer
+//
+// Usage:
+//   entity := FindEntityByIDWithTag(manager, entityID, Tag)
+//   if entity != nil {
+//       entity.AddComponent(ComponentType, data)
+//   }
+func FindEntityByIDWithTag(manager *EntityManager, entityID ecs.EntityID, tag ecs.Tag) *ecs.Entity {
+	for _, result := range manager.World.Query(tag) {
+		if result.Entity.GetID() == entityID {
+			return result.Entity
+		}
+	}
+	return nil
 }

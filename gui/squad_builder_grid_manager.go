@@ -47,12 +47,7 @@ func (gem *GridEditorManager) PlaceUnitInCell(row, col, unitIndex int, squadID e
 	unitID := unitIDs[0]
 
 	// Get the unit's grid position component to find all occupied cells
-	unitEntity := common.FindEntityByIDWithTag(gem.entityManager, unitID, squads.SquadMemberTag)
-	if unitEntity == nil {
-		return fmt.Errorf("could not find unit entity")
-	}
-
-	gridPosData := common.GetComponentType[*squads.GridPositionData](unitEntity, squads.GridPositionComponent)
+	gridPosData := common.GetComponentTypeByIDWithTag[*squads.GridPositionData](gem.entityManager, unitID, squads.SquadMemberTag, squads.GridPositionComponent)
 	if gridPosData == nil {
 		return fmt.Errorf("unit has no grid position data")
 	}
@@ -119,16 +114,13 @@ func (gem *GridEditorManager) RemoveUnitFromCell(row, col int) error {
 	unitID := cell.unitID
 
 	// Get the unit's grid position to find all occupied cells BEFORE removing
-	unitEntity := common.FindEntityByIDWithTag(gem.entityManager, unitID, squads.SquadMemberTag)
-	if unitEntity == nil {
+	gridPosData := common.GetComponentTypeByIDWithTag[*squads.GridPositionData](gem.entityManager, unitID, squads.SquadMemberTag, squads.GridPositionComponent)
+	if gridPosData == nil {
 		return fmt.Errorf("could not find unit entity to remove")
 	}
 
-	gridPosData := common.GetComponentType[*squads.GridPositionData](unitEntity, squads.GridPositionComponent)
 	var occupiedCells [][2]int
-	if gridPosData != nil {
-		occupiedCells = gridPosData.GetOccupiedCells()
-	}
+	occupiedCells = gridPosData.GetOccupiedCells()
 
 	// Remove unit from squad
 	err := squads.RemoveUnitFromSquad(unitID, gem.entityManager)
@@ -186,12 +178,7 @@ func (gem *GridEditorManager) RefreshGridDisplay() {
 			}
 
 			// Get unit info
-			unitEntity := common.FindEntityByIDWithTag(gem.entityManager, cell.unitID, squads.SquadMemberTag)
-			if unitEntity == nil {
-				continue
-			}
-
-			gridPosData := common.GetComponentType[*squads.GridPositionData](unitEntity, squads.GridPositionComponent)
+			gridPosData := common.GetComponentTypeByIDWithTag[*squads.GridPositionData](gem.entityManager, cell.unitID, squads.SquadMemberTag, squads.GridPositionComponent)
 			if gridPosData == nil {
 				continue
 			}

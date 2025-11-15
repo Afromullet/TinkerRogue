@@ -80,12 +80,11 @@ func GetUnitIDsInRow(squadID ecs.EntityID, row int, squadmanager *common.EntityM
 		idsAtPos := GetUnitIDsAtGridPosition(squadID, row, col, squadmanager)
 		for _, unitID := range idsAtPos {
 			if !seen[unitID] {
-				unitEntity := common.FindEntityByIDWithTag(squadmanager, unitID, SquadMemberTag)
-				if unitEntity == nil {
+				attr := common.GetAttributesByIDWithTag(squadmanager, unitID, SquadMemberTag)
+				if attr == nil {
 					continue
 				}
 
-				attr := common.GetAttributes(unitEntity)
 				if attr.CurrentHealth > 0 {
 					unitIDs = append(unitIDs, unitID)
 					seen[unitID] = true
@@ -117,12 +116,11 @@ func IsSquadDestroyed(squadID ecs.EntityID, squadmanager *common.EntityManager) 
 	unitIDs := GetUnitIDsInSquad(squadID, squadmanager)
 
 	for _, unitID := range unitIDs {
-		unitEntity := common.FindEntityByIDWithTag(squadmanager, unitID, SquadMemberTag)
-		if unitEntity == nil {
+		attr := common.GetAttributesByIDWithTag(squadmanager, unitID, SquadMemberTag)
+		if attr == nil {
 			continue
 		}
 
-		attr := common.GetAttributes(unitEntity)
 		if attr.CurrentHealth > 0 {
 			return false
 		}
@@ -141,12 +139,11 @@ func GetSquadUsedCapacity(squadID ecs.EntityID, squadmanager *common.EntityManag
 	totalUsed := 0.0
 
 	for _, unitID := range unitIDs {
-		unitEntity := common.FindEntityByIDWithTag(squadmanager, unitID, SquadMemberTag)
-		if unitEntity == nil {
+		attr := common.GetAttributesByIDWithTag(squadmanager, unitID, SquadMemberTag)
+		if attr == nil {
 			continue
 		}
 
-		attr := common.GetAttributes(unitEntity)
 		totalUsed += attr.GetCapacityCost()
 	}
 
@@ -162,12 +159,11 @@ func GetSquadTotalCapacity(squadID ecs.EntityID, squadmanager *common.EntityMana
 		return 6
 	}
 
-	leaderEntity := common.FindEntityByIDWithTag(squadmanager, leaderID, SquadMemberTag)
-	if leaderEntity == nil {
+	attr := common.GetAttributesByIDWithTag(squadmanager, leaderID, SquadMemberTag)
+	if attr == nil {
 		return 6
 	}
 
-	attr := common.GetAttributes(leaderEntity)
 	return attr.GetUnitCapacity()
 }
 
@@ -244,24 +240,19 @@ func GetSquadMovementSpeed(squadID ecs.EntityID, squadmanager *common.EntityMana
 	foundValidUnit := false
 
 	for _, unitID := range unitIDs {
-		unitEntity := common.FindEntityByIDWithTag(squadmanager, unitID, SquadMemberTag)
-		if unitEntity == nil {
-			continue
-		}
-
 		// Only count alive units
-		attr := common.GetAttributes(unitEntity)
-		if attr.CurrentHealth <= 0 {
+		attr := common.GetAttributesByIDWithTag(squadmanager, unitID, SquadMemberTag)
+		if attr == nil || attr.CurrentHealth <= 0 {
 			continue
 		}
 
 		// Check if unit has movement speed component
-		if !unitEntity.HasComponent(MovementSpeedComponent) {
+		if !squadmanager.HasComponentByIDWithTag(unitID, SquadMemberTag, MovementSpeedComponent) {
 			continue
 		}
 
-		speedData := common.GetComponentType[*MovementSpeedData](unitEntity, MovementSpeedComponent)
-		if speedData.Speed < minSpeed {
+		speedData := common.GetComponentTypeByIDWithTag[*MovementSpeedData](squadmanager, unitID, SquadMemberTag, MovementSpeedComponent)
+		if speedData != nil && speedData.Speed < minSpeed {
 			minSpeed = speedData.Speed
 			foundValidUnit = true
 		}

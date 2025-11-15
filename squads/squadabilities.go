@@ -15,21 +15,16 @@ func CheckAndTriggerAbilities(squadID ecs.EntityID, ecsmanager *common.EntityMan
 		return // No leader, no abilities
 	}
 
-	leaderEntity := common.FindEntityByIDWithTag(ecsmanager, leaderID, SquadMemberTag)
-	if leaderEntity == nil {
+	if !ecsmanager.HasComponentByIDWithTag(leaderID, SquadMemberTag, AbilitySlotComponent) {
 		return
 	}
 
-	if !leaderEntity.HasComponent(AbilitySlotComponent) {
+	if !ecsmanager.HasComponentByIDWithTag(leaderID, SquadMemberTag, CooldownTrackerComponent) {
 		return
 	}
 
-	if !leaderEntity.HasComponent(CooldownTrackerComponent) {
-		return
-	}
-
-	abilityData := common.GetComponentType[*AbilitySlotData](leaderEntity, AbilitySlotComponent)
-	cooldownData := common.GetComponentType[*CooldownTrackerData](leaderEntity, CooldownTrackerComponent)
+	abilityData := common.GetComponentTypeByIDWithTag[*AbilitySlotData](ecsmanager, leaderID, SquadMemberTag, AbilitySlotComponent)
+	cooldownData := common.GetComponentTypeByIDWithTag[*CooldownTrackerData](ecsmanager, leaderID, SquadMemberTag, CooldownTrackerComponent)
 
 	// Check each ability slot
 	for i := 0; i < 4; i++ {
@@ -103,12 +98,11 @@ func calculateAverageHP(squadID ecs.EntityID, ecsmanager *common.EntityManager) 
 	totalMaxHP := 0
 
 	for _, unitID := range unitIDs {
-		unit := common.FindEntityByIDWithTag(ecsmanager, unitID, SquadMemberTag)
-		if unit == nil {
+		attr := common.GetAttributesByIDWithTag(ecsmanager, unitID, SquadMemberTag)
+		if attr == nil {
 			continue
 		}
 
-		attr := common.GetAttributes(unit)
 		totalHP += attr.CurrentHealth
 		totalMaxHP += attr.MaxHealth
 	}
@@ -159,12 +153,11 @@ func applyRallyEffect(squadID ecs.EntityID, params AbilityParams, ecsmanager *co
 	unitIDs := GetUnitIDsInSquad(squadID, ecsmanager)
 
 	for _, unitID := range unitIDs {
-		unit := common.FindEntityByIDWithTag(ecsmanager, unitID, SquadMemberTag)
-		if unit == nil {
+		attr := common.GetAttributesByIDWithTag(ecsmanager, unitID, SquadMemberTag)
+		if attr == nil {
 			continue
 		}
 
-		attr := common.GetAttributes(unit)
 		if attr.CurrentHealth > 0 {
 			attr.Strength += params.StrengthBonus
 			// TODO: Track buff duration (requires turn/buff system)
@@ -180,12 +173,11 @@ func applyHealEffect(squadID ecs.EntityID, params AbilityParams, ecsmanager *com
 
 	healed := 0
 	for _, unitID := range unitIDs {
-		unit := common.FindEntityByIDWithTag(ecsmanager, unitID, SquadMemberTag)
-		if unit == nil {
+		attr := common.GetAttributesByIDWithTag(ecsmanager, unitID, SquadMemberTag)
+		if attr == nil {
 			continue
 		}
 
-		attr := common.GetAttributes(unit)
 		if attr.CurrentHealth <= 0 {
 			continue
 		}
@@ -216,12 +208,11 @@ func applyBattleCryEffect(squadID ecs.EntityID, params AbilityParams, ecsmanager
 	// Boost damage
 	unitIDs := GetUnitIDsInSquad(squadID, ecsmanager)
 	for _, unitID := range unitIDs {
-		unit := common.FindEntityByIDWithTag(ecsmanager, unitID, SquadMemberTag)
-		if unit == nil {
+		attr := common.GetAttributesByIDWithTag(ecsmanager, unitID, SquadMemberTag)
+		if attr == nil {
 			continue
 		}
 
-		attr := common.GetAttributes(unit)
 		if attr.CurrentHealth > 0 {
 			attr.Strength += params.StrengthBonus
 		}
@@ -252,12 +243,11 @@ func applyFireballEffect(squadID ecs.EntityID, params AbilityParams, ecsmanager 
 	killed := 0
 
 	for _, unitID := range unitIDs {
-		unit := common.FindEntityByIDWithTag(ecsmanager, unitID, SquadMemberTag)
-		if unit == nil {
+		attr := common.GetAttributesByIDWithTag(ecsmanager, unitID, SquadMemberTag)
+		if attr == nil {
 			continue
 		}
 
-		attr := common.GetAttributes(unit)
 		if attr.CurrentHealth <= 0 {
 			continue
 		}
@@ -285,12 +275,7 @@ func EquipAbilityToLeader(
 		return fmt.Errorf("invalid slot %d", slotIndex)
 	}
 
-	leaderEntity := common.FindEntityByIDWithTag(ecsmanager, leaderEntityID, SquadMemberTag)
-	if leaderEntity == nil {
-		return fmt.Errorf("leader entity not found")
-	}
-
-	if !leaderEntity.HasComponent(LeaderComponent) {
+	if !ecsmanager.HasComponentByIDWithTag(leaderEntityID, SquadMemberTag, LeaderComponent) {
 		return fmt.Errorf("entity is not a leader")
 	}
 
@@ -298,7 +283,11 @@ func EquipAbilityToLeader(
 	params := GetAbilityParams(abilityType)
 
 	// Update ability slot
-	abilityData := common.GetComponentType[*AbilitySlotData](leaderEntity, AbilitySlotComponent)
+	abilityData := common.GetComponentTypeByIDWithTag[*AbilitySlotData](ecsmanager, leaderEntityID, SquadMemberTag, AbilitySlotComponent)
+	if abilityData == nil {
+		return fmt.Errorf("leader entity not found")
+	}
+
 	abilityData.Slots[slotIndex] = AbilitySlot{
 		AbilityType:  abilityType,
 		TriggerType:  triggerType,
@@ -308,9 +297,11 @@ func EquipAbilityToLeader(
 	}
 
 	// Update cooldown tracker
-	cooldownData := common.GetComponentType[*CooldownTrackerData](leaderEntity, CooldownTrackerComponent)
-	cooldownData.MaxCooldowns[slotIndex] = params.BaseCooldown
-	cooldownData.Cooldowns[slotIndex] = 0
+	cooldownData := common.GetComponentTypeByIDWithTag[*CooldownTrackerData](ecsmanager, leaderEntityID, SquadMemberTag, CooldownTrackerComponent)
+	if cooldownData != nil {
+		cooldownData.MaxCooldowns[slotIndex] = params.BaseCooldown
+		cooldownData.Cooldowns[slotIndex] = 0
+	}
 
 	return nil
 }

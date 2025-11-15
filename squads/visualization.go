@@ -40,16 +40,14 @@ func VisualizeSquad(squadID ecs.EntityID, squadmanager *common.EntityManager) st
 
 	// Fill the grid with unit IDs
 	for _, unitID := range unitIDs {
-		unitEntity := common.FindEntityByIDWithTag(squadmanager, unitID, SquadMemberTag)
-		if unitEntity == nil {
+		if !squadmanager.HasComponentByIDWithTag(unitID, SquadMemberTag, GridPositionComponent) {
 			continue
 		}
 
-		if !unitEntity.HasComponent(GridPositionComponent) {
+		gridPos := common.GetComponentTypeByIDWithTag[*GridPositionData](squadmanager, unitID, SquadMemberTag, GridPositionComponent)
+		if gridPos == nil {
 			continue
 		}
-
-		gridPos := common.GetComponentType[*GridPositionData](unitEntity, GridPositionComponent)
 
 		// Mark all occupied cells with this unit's ID
 		occupiedCells := gridPos.GetOccupiedCells()
@@ -138,24 +136,23 @@ func VisualizeSquad(squadID ecs.EntityID, squadmanager *common.EntityManager) st
 	if len(unitIDs) > 0 {
 		output.WriteString("\nUnit Details:\n")
 		for _, unitID := range unitIDs {
-			unitEntity := common.FindEntityByIDWithTag(squadmanager, unitID, SquadMemberTag)
-			if unitEntity == nil {
+			gridPos := common.GetComponentTypeByIDWithTag[*GridPositionData](squadmanager, unitID, SquadMemberTag, GridPositionComponent)
+			role := common.GetComponentTypeByIDWithTag[*UnitRoleData](squadmanager, unitID, SquadMemberTag, UnitRoleComponent)
+
+			if gridPos == nil || role == nil {
 				continue
 			}
 
-			gridPos := common.GetComponentType[*GridPositionData](unitEntity, GridPositionComponent)
-			role := common.GetComponentType[*UnitRoleData](unitEntity, UnitRoleComponent)
-
 			// Get health if available
 			healthInfo := ""
-			if unitEntity.HasComponent(common.AttributeComponent) {
-				attr := common.GetAttributes(unitEntity)
+			attr := common.GetAttributesByIDWithTag(squadmanager, unitID, SquadMemberTag)
+			if attr != nil {
 				healthInfo = fmt.Sprintf(" | HP: %d/%d", attr.CurrentHealth, attr.MaxHealth)
 			}
 
 			// Check if leader
 			leaderStr := ""
-			if unitEntity.HasComponent(LeaderComponent) {
+			if squadmanager.HasComponentByIDWithTag(unitID, SquadMemberTag, LeaderComponent) {
 				leaderStr = " [LEADER]"
 			}
 

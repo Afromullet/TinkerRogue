@@ -41,8 +41,9 @@ func (fm *FactionManager) AddSquadToFaction(factionID, squadID ecs.EntityID, pos
 		return fmt.Errorf("faction %d not found", factionID)
 	}
 
-	squad := common.FindEntityByIDWithTag(fm.manager, squadID, squads.SquadTag)
-	if squad == nil {
+	// Verify squad exists by checking for SquadComponent
+	squadData := common.GetComponentTypeByIDWithTag[*squads.SquadData](fm.manager, squadID, squads.SquadTag, squads.SquadComponent)
+	if squadData == nil {
 		return fmt.Errorf("squad %d not found", squadID)
 	}
 
@@ -55,10 +56,14 @@ func (fm *FactionManager) AddSquadToFaction(factionID, squadID ecs.EntityID, pos
 	})
 
 	// Add PositionComponent to squad entity for compatibility with existing squad combat system
-	if !squad.HasComponent(common.PositionComponent) {
-		posPtr := new(coords.LogicalPosition)
-		*posPtr = position
-		squad.AddComponent(common.PositionComponent, posPtr)
+	if !fm.manager.HasComponentByIDWithTag(squadID, squads.SquadTag, common.PositionComponent) {
+		// Need to get the entity to add component (AddComponent is not available via ID)
+		squad := common.FindEntityByIDWithTag(fm.manager, squadID, squads.SquadTag)
+		if squad != nil {
+			posPtr := new(coords.LogicalPosition)
+			*posPtr = position
+			squad.AddComponent(common.PositionComponent, posPtr)
+		}
 	}
 
 	// Register in PositionSystem

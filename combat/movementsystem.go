@@ -35,12 +35,11 @@ func (ms *MovementSystem) GetSquadMovementSpeed(squadID ecs.EntityID) int {
 
 	minSpeed := 999
 	for _, unitID := range unitIDs {
-		unit := common.FindEntityByIDWithTag(ms.manager, unitID, squads.SquadMemberTag)
-		if unit == nil {
+		attr := common.GetAttributesByIDWithTag(ms.manager, unitID, squads.SquadMemberTag)
+		if attr == nil {
 			continue
 		}
 
-		attr := common.GetAttributes(unit)
 		speed := attr.GetMovementSpeed()
 
 		if speed < minSpeed {
@@ -114,9 +113,8 @@ func (ms *MovementSystem) MoveSquad(squadID ecs.EntityID, targetPos coords.Logic
 	mapPos.Position = targetPos
 
 	// Update squad's PositionComponent for compatibility with existing squad combat system
-	squadEntity := common.FindEntityByIDWithTag(ms.manager, squadID, squads.SquadTag)
-	if squadEntity != nil && squadEntity.HasComponent(common.PositionComponent) {
-		posPtr := common.GetComponentType[*coords.LogicalPosition](squadEntity, common.PositionComponent)
+	if ms.manager.HasComponentByIDWithTag(squadID, squads.SquadTag, common.PositionComponent) {
+		posPtr := common.GetComponentTypeByIDWithTag[*coords.LogicalPosition](ms.manager, squadID, squads.SquadTag, common.PositionComponent)
 		if posPtr != nil {
 			*posPtr = targetPos
 		}

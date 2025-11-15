@@ -51,9 +51,8 @@ func (cas *CombatActionSystem) ExecuteAttackAction(attackerID, defenderID ecs.En
 
 	for _, unitID := range allUnits {
 		if !containsEntity(attackingUnits, unitID) {
-			unit := common.FindEntityByIDWithTag(cas.manager, unitID, squads.SquadMemberTag)
-			attr := common.GetAttributes(unit)
-			if attr.CanAct {
+			attr := common.GetAttributesByIDWithTag(cas.manager, unitID, squads.SquadMemberTag)
+			if attr != nil && attr.CanAct {
 				attr.CanAct = false
 				disabledUnits = append(disabledUnits, unitID)
 			}
@@ -65,9 +64,10 @@ func (cas *CombatActionSystem) ExecuteAttackAction(attackerID, defenderID ecs.En
 
 	// Re-enable disabled units
 	for _, unitID := range disabledUnits {
-		unit := common.FindEntityByIDWithTag(cas.manager, unitID, squads.SquadMemberTag)
-		attr := common.GetAttributes(unit)
-		attr.CanAct = true
+		attr := common.GetAttributesByIDWithTag(cas.manager, unitID, squads.SquadMemberTag)
+		if attr != nil {
+			attr.CanAct = true
+		}
 	}
 
 	markSquadAsActed(attackerID, cas.manager)
@@ -95,12 +95,11 @@ func (cas *CombatActionSystem) GetSquadAttackRange(squadID ecs.EntityID) int {
 
 	maxRange := 1 // Default melee
 	for _, unitID := range unitIDs {
-		unit := common.FindEntityByIDWithTag(cas.manager, unitID, squads.SquadMemberTag)
-		if unit == nil {
+		attr := common.GetAttributesByIDWithTag(cas.manager, unitID, squads.SquadMemberTag)
+		if attr == nil {
 			continue
 		}
 
-		attr := common.GetAttributes(unit)
 		unitRange := attr.GetAttackRange()
 
 		if unitRange > maxRange {
@@ -123,12 +122,11 @@ func (cas *CombatActionSystem) GetAttackingUnits(squadID, targetID ecs.EntityID)
 	var attackingUnits []ecs.EntityID
 
 	for _, unitID := range allUnits {
-		unit := common.FindEntityByIDWithTag(cas.manager, unitID, squads.SquadMemberTag)
-		if unit == nil {
+		attr := common.GetAttributesByIDWithTag(cas.manager, unitID, squads.SquadMemberTag)
+		if attr == nil {
 			continue
 		}
 
-		attr := common.GetAttributes(unit)
 		unitRange := attr.GetAttackRange()
 
 		// Check if this unit can reach the target

@@ -287,11 +287,15 @@ func (sbm *SquadBuilderMode) onCreateSquad() {
 	}
 
 	// Assign leader component to the designated unit
-	leaderEntity := common.FindEntityByIDWithTag(sbm.context.ECSManager, leaderID, squads.SquadMemberTag)
-	if leaderEntity != nil {
-		// Add LeaderComponent to designate this unit as leader
-		leaderEntity.AddComponent(squads.LeaderComponent, &squads.LeaderData{})
-		fmt.Printf("Unit %d designated as squad leader\n", leaderID)
+	// Check if leader exists first
+	if sbm.context.ECSManager.HasComponentByIDWithTag(leaderID, squads.SquadMemberTag, squads.SquadMemberComponent) {
+		// Need to get the entity to add component (AddComponent is not available via ID)
+		leaderEntity := common.FindEntityByIDWithTag(sbm.context.ECSManager, leaderID, squads.SquadMemberTag)
+		if leaderEntity != nil {
+			// Add LeaderComponent to designate this unit as leader
+			leaderEntity.AddComponent(squads.LeaderComponent, &squads.LeaderData{})
+			fmt.Printf("Unit %d designated as squad leader\n", leaderID)
+		}
 	} else {
 		fmt.Println("Warning: Could not find designated leader unit")
 	}

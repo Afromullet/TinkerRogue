@@ -83,17 +83,16 @@ func AddUnitToSquad(
 
 // RemoveUnitFromSquad - ✅ Accepts ecs.EntityID (native type)
 func RemoveUnitFromSquad(unitEntityID ecs.EntityID, squadmanager *common.EntityManager) error {
-	unitEntity := common.FindEntityByIDWithTag(squadmanager, unitEntityID, SquadMemberTag)
-	if unitEntity == nil {
-		return fmt.Errorf("unit entity not found")
-	}
-
-	if !unitEntity.HasComponent(SquadMemberComponent) {
+	if !squadmanager.HasComponentByIDWithTag(unitEntityID, SquadMemberTag, SquadMemberComponent) {
 		return fmt.Errorf("unit is not in a squad")
 	}
 
 	// Get the squad ID before removing to update capacity
-	memberData := common.GetComponentType[*SquadMemberData](unitEntity, SquadMemberComponent)
+	memberData := common.GetComponentTypeByIDWithTag[*SquadMemberData](squadmanager, unitEntityID, SquadMemberTag, SquadMemberComponent)
+	if memberData == nil {
+		return fmt.Errorf("unit entity not found")
+	}
+
 	squadID := memberData.SquadID
 
 	// In bytearena/ecs, we can't remove components
@@ -109,16 +108,14 @@ func RemoveUnitFromSquad(unitEntityID ecs.EntityID, squadmanager *common.EntityM
 // MoveUnitInSquad - ✅ Accepts ecs.EntityID (native type)
 // ✅ Supports multi-cell units - validates all cells at new position
 func MoveUnitInSquad(unitEntityID ecs.EntityID, newRow, newCol int, ecsmanager *common.EntityManager) error {
-	unitEntity := common.FindEntityByIDWithTag(ecsmanager, unitEntityID, SquadMemberTag)
-	if unitEntity == nil {
-		return fmt.Errorf("unit entity not found")
-	}
-
-	if !unitEntity.HasComponent(SquadMemberComponent) {
+	if !ecsmanager.HasComponentByIDWithTag(unitEntityID, SquadMemberTag, SquadMemberComponent) {
 		return fmt.Errorf("unit is not in a squad")
 	}
 
-	gridPosData := common.GetComponentType[*GridPositionData](unitEntity, GridPositionComponent)
+	gridPosData := common.GetComponentTypeByIDWithTag[*GridPositionData](ecsmanager, unitEntityID, SquadMemberTag, GridPositionComponent)
+	if gridPosData == nil {
+		return fmt.Errorf("unit entity not found")
+	}
 
 	// Validate new anchor position is in bounds
 	if newRow < 0 || newCol < 0 {
@@ -131,7 +128,7 @@ func MoveUnitInSquad(unitEntityID ecs.EntityID, newRow, newCol int, ecsmanager *
 			newRow, newCol, gridPosData.Width, gridPosData.Height)
 	}
 
-	memberData := common.GetComponentType[*SquadMemberData](unitEntity, SquadMemberComponent)
+	memberData := common.GetComponentTypeByIDWithTag[*SquadMemberData](ecsmanager, unitEntityID, SquadMemberTag, SquadMemberComponent)
 
 	// Check if ANY cell at new position is occupied (excluding this unit itself)
 	for r := newRow; r < newRow+gridPosData.Height; r++ {
