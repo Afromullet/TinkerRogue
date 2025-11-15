@@ -5,8 +5,6 @@ import (
 	"game_main/coords"
 	"game_main/entitytemplates"
 	"game_main/worldmap"
-	"math/rand"
-	"time"
 )
 
 var TurnsPerMonsterSpawn = 10
@@ -14,9 +12,8 @@ var TurnsPerMonsterSpawn = 10
 // Basic monster spawning function that spawns a monster on a random tile
 func SpawnMonster(ecsmanager common.EntityManager, gm *worldmap.GameMap) {
 
-	rand.Seed(time.Now().UnixNano())
-	//Half-open interval - so it includes 0 but not 100. Since it includes 0, we still have 100 possible vlaues
-	if rand.Intn(100) < 30 { // 30% chance to spawn something
+	// 30% chance to spawn something
+	if common.RandomInt(100) < 30 {
 
 		//Try 3 times to spawn something. Only spawn it if the tile is not blocked
 		for i := 0; i <= 2; i++ {
@@ -59,7 +56,7 @@ func SpawnStartingCreatures(MaxNumCreatures int, em *common.EntityManager, gm *w
 		for _, room := range gm.Rooms[1:] {
 
 			x, y := room.Center()
-			randCreature = rand.Intn(len(entitytemplates.MonsterTemplates))
+			randCreature = common.RandomInt(len(entitytemplates.MonsterTemplates))
 			entitytemplates.CreateEntityFromTemplate(*em, entitytemplates.EntityConfig{
 				Type:      entitytemplates.EntityCreature,
 				Name:      entitytemplates.MonsterTemplates[randCreature].Name,
@@ -76,14 +73,14 @@ func SpawnStartingCreatures(MaxNumCreatures int, em *common.EntityManager, gm *w
 	// Spawn additional creatures in random locations
 	for range MaxNumCreatures {
 
-		randCreature := rand.Intn(len(entitytemplates.MonsterTemplates))
+		randCreature := common.RandomInt(len(entitytemplates.MonsterTemplates))
 		var randomPos coords.LogicalPosition
 
 		// Spawn in rooms if they exist, otherwise use ValidPositions
 		if len(gm.Rooms) > 0 {
-			indices := gm.Rooms[rand.Intn(len(gm.Rooms))].GetCoordinatesWithoutCenter()
+			indices := gm.Rooms[common.RandomInt(len(gm.Rooms))].GetCoordinatesWithoutCenter()
 			if len(indices) > 0 {
-				randomPos = indices[rand.Intn(len(indices))]
+				randomPos = indices[common.RandomInt(len(indices))]
 			} else {
 				// Room has no valid positions, fall back to ValidPositions
 				if len(worldmap.ValidPos.Pos) > 0 {

@@ -9,7 +9,6 @@ import (
 	"game_main/entitytemplates"
 	"game_main/rendering"
 	"game_main/worldmap"
-	"math/rand"
 
 	"github.com/bytearena/ecs"
 )
@@ -22,13 +21,13 @@ func SpawnStartingConsumables(em common.EntityManager, gm *worldmap.GameMap) {
 
 	for _, room := range gm.Rooms {
 
-		roll := rand.Intn(spawnChance + 1)
+		roll := common.RandomInt(spawnChance + 1)
 
 		if roll < spawnChance {
 
 			x, y := room.Center()
 
-			randInd := rand.Intn(len(entitytemplates.ConsumableTemplates))
+			randInd := common.RandomInt(len(entitytemplates.ConsumableTemplates))
 
 			wep := entitytemplates.CreateEntityFromTemplate(em, entitytemplates.EntityConfig{
 				Type:      entitytemplates.EntityConsumable,
@@ -74,7 +73,7 @@ func SpawnLootAroundPlayer(currentTurnNumber int, playerData common.PlayerData, 
 	//To get a random position for spawning the item
 	getRandomEntry := func(posSlice []coords.LogicalPosition) coords.LogicalPosition {
 
-		return posSlice[rand.Intn(len(posSlice))]
+		return posSlice[common.RandomInt(len(posSlice))]
 
 	}
 
@@ -82,7 +81,7 @@ func SpawnLootAroundPlayer(currentTurnNumber int, playerData common.PlayerData, 
 	pixelPos := coords.CoordManager.LogicalToPixel(logicalPos)
 	playerX, playerY := pixelPos.X, pixelPos.Y
 	spawnPositions := gm.UnblockedLogicalCoords(playerX, playerY, 10)
-	throwableChance := rand.Intn(100)
+	throwableChance := common.RandomInt(100)
 
 	if throwableChance < ThrowableSpawnProb {
 

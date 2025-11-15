@@ -6,7 +6,6 @@ package graphics
 import (
 	"game_main/common"
 	"game_main/coords"
-	"math/rand"
 )
 
 // ============================================================================
@@ -140,11 +139,11 @@ func NewCircle(pixelX, pixelY int, quality common.QualityType) *BaseShape {
 	var radius int
 	switch quality {
 	case common.LowQuality:
-		radius = rand.Intn(3)      // 0-2 (matches current system)
+		radius = common.RandomInt(3)      // 0-2 (matches current system)
 	case common.NormalQuality:
-		radius = rand.Intn(4)      // 0-3
+		radius = common.RandomInt(4)      // 0-3
 	case common.HighQuality:
-		radius = rand.Intn(9)      // 0-8
+		radius = common.RandomInt(9)      // 0-8
 	}
 
 	return &BaseShape{
@@ -159,11 +158,11 @@ func NewSquare(pixelX, pixelY int, quality common.QualityType) *BaseShape {
 	var size int
 	switch quality {
 	case common.LowQuality:
-		size = rand.Intn(2) + 1    // 1-2 (matches current system)
+		size = common.RandomInt(2) + 1    // 1-2 (matches current system)
 	case common.NormalQuality:
-		size = rand.Intn(3) + 1    // 1-3
+		size = common.RandomInt(3) + 1    // 1-3
 	case common.HighQuality:
-		size = rand.Intn(4) + 1    // 1-4
+		size = common.RandomInt(4) + 1    // 1-4
 	}
 
 	return &BaseShape{
@@ -180,14 +179,14 @@ func NewRectangle(pixelX, pixelY int, quality common.QualityType) *BaseShape {
 	var width, height int
 	switch quality {
 	case common.LowQuality:
-		width = rand.Intn(5)       // 0-4 (matches current system)
-		height = rand.Intn(3)      // 0-2
+		width = common.RandomInt(5)       // 0-4 (matches current system)
+		height = common.RandomInt(3)      // 0-2
 	case common.NormalQuality:
-		width = rand.Intn(7)       // 0-6
-		height = rand.Intn(5)      // 0-4
+		width = common.RandomInt(7)       // 0-6
+		height = common.RandomInt(5)      // 0-4
 	case common.HighQuality:
-		width = rand.Intn(9)       // 0-8
-		height = rand.Intn(7)      // 0-6
+		width = common.RandomInt(9)       // 0-8
+		height = common.RandomInt(7)      // 0-6
 	}
 
 	return &BaseShape{
@@ -204,11 +203,11 @@ func NewLine(pixelX, pixelY int, direction ShapeDirection, quality common.Qualit
 	var length int
 	switch quality {
 	case common.LowQuality:
-		length = rand.Intn(3) + 1  // 1-3 (matches current system)
+		length = common.RandomInt(3) + 1  // 1-3 (matches current system)
 	case common.NormalQuality:
-		length = rand.Intn(5) + 1  // 1-5
+		length = common.RandomInt(5) + 1  // 1-5
 	case common.HighQuality:
-		length = rand.Intn(7) + 1  // 1-7
+		length = common.RandomInt(7) + 1  // 1-7
 	}
 
 	return &BaseShape{
@@ -224,11 +223,11 @@ func NewCone(pixelX, pixelY int, direction ShapeDirection, quality common.Qualit
 	var length int
 	switch quality {
 	case common.LowQuality:
-		length = rand.Intn(3) + 1  // 1-3
+		length = common.RandomInt(3) + 1  // 1-3
 	case common.NormalQuality:
-		length = rand.Intn(5) + 1  // 1-5
+		length = common.RandomInt(5) + 1  // 1-5
 	case common.HighQuality:
-		length = rand.Intn(7) + 1  // 1-7
+		length = common.RandomInt(7) + 1  // 1-7
 	}
 
 	return &BaseShape{

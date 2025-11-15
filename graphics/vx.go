@@ -5,8 +5,6 @@ import (
 	"game_main/coords"
 	"image/color"
 	"math"
-
-	"math/rand/v2"
 	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -224,8 +222,8 @@ func NewLineSegmentRenderer(startX, startY int, numSegments int) *LineSegmentRen
 	currentX, currentY := float64(startX), float64(startY)
 
 	for i := 0; i < numSegments; i++ {
-		nextX := currentX + -10 + 20*rand.Float64()
-		nextY := currentY + -10 + 20*rand.Float64()
+		nextX := currentX + -10 + 20*common.RandomFloat()
+		nextY := currentY + -10 + 20*common.RandomFloat()
 
 		segments[i] = lineSegment{
 			x1: currentX,
@@ -248,8 +246,8 @@ func NewLineSegmentRenderer(startX, startY int, numSegments int) *LineSegmentRen
 func (r *LineSegmentRenderer) Draw(screen *ebiten.Image, effect *BaseEffect, state AnimationState) {
 	// Regenerate line segments to simulate flickering
 	for i := range r.segments {
-		r.segments[i].x2 += -r.jitterAmount + 2*r.jitterAmount*rand.Float64()
-		r.segments[i].y2 += -r.jitterAmount + 2*r.jitterAmount*rand.Float64()
+		r.segments[i].x2 += -r.jitterAmount + 2*r.jitterAmount*common.RandomFloat()
+		r.segments[i].y2 += -r.jitterAmount + 2*r.jitterAmount*common.RandomFloat()
 	}
 
 	// Adjust color for electrical surges
@@ -289,7 +287,7 @@ func (r *ElectricArcRenderer) Draw(screen *ebiten.Image, effect *BaseEffect, sta
 	r.color.R = uint8(common.GetDiceRoll(50))
 	r.color.G = 200 + uint8(common.GetDiceRoll(55))
 	r.color.B = 200 + uint8(common.GetDiceRoll(55))
-	r.thickness = float32(1.5 + rand.Float32())
+	r.thickness = float32(1.5 + float32(common.RandomFloat()))
 
 	// Draw segments
 	for i := 0; i < len(r.segments)-1; i++ {
@@ -305,8 +303,8 @@ func (r *ElectricArcRenderer) generateSegments(startX, startY float64) {
 
 	currentX, currentY := startX, startY
 	for i := 0; i < 10; i++ {
-		nextX := currentX + (r.endX-currentX)/float64(10-i) + (rand.Float64()-0.5)*20
-		nextY := currentY + (r.endY-currentY)/float64(10-i) + (rand.Float64()-0.5)*20
+		nextX := currentX + (r.endX-currentX)/float64(10-i) + (common.RandomFloat()-0.5)*20
+		nextY := currentY + (r.endY-currentY)/float64(10-i) + (common.RandomFloat()-0.5)*20
 		r.segments = append(r.segments, []float64{nextX, nextY})
 		currentX, currentY = nextX, nextY
 	}
@@ -361,14 +359,14 @@ type FlickerAnimator struct {
 func (a *FlickerAnimator) Update(effect *BaseEffect, elapsed float64) AnimationState {
 	a.flickerTimer++
 	state := AnimationState{
-		Scale:   a.scaleRange[0] + (a.scaleRange[1]-a.scaleRange[0])*rand.Float64(),
-		Opacity: a.opacityRange[0] + (a.opacityRange[1]-a.opacityRange[0])*rand.Float64(),
+		Scale:   a.scaleRange[0] + (a.scaleRange[1]-a.scaleRange[0])*common.RandomFloat(),
+		Opacity: a.opacityRange[0] + (a.opacityRange[1]-a.opacityRange[0])*common.RandomFloat(),
 	}
 
 	// Position jitter every 5 frames
 	if a.jitterPos && a.flickerTimer%5 == 0 {
-		state.OffsetX = -0.5 + rand.Float64()
-		state.OffsetY = -0.5 + rand.Float64()
+		state.OffsetX = -0.5 + common.RandomFloat()
+		state.OffsetY = -0.5 + common.RandomFloat()
 	}
 
 	return state
@@ -387,15 +385,15 @@ type BrightnessFlickerAnimator struct {
 
 func (a *BrightnessFlickerAnimator) Update(effect *BaseEffect, elapsed float64) AnimationState {
 	state := AnimationState{
-		Scale:      a.scaleRange[0] + (a.scaleRange[1]-a.scaleRange[0])*rand.Float64(),
-		Brightness: a.brightnessRange[0] + (a.brightnessRange[1]-a.brightnessRange[0])*rand.Float64(),
+		Scale:      a.scaleRange[0] + (a.scaleRange[1]-a.scaleRange[0])*common.RandomFloat(),
+		Brightness: a.brightnessRange[0] + (a.brightnessRange[1]-a.brightnessRange[0])*common.RandomFloat(),
 		Opacity:    1.0,
 	}
 
 	// Position jitter for erratic movement
 	if a.jitterPos {
-		state.OffsetX = -1.0 + 2.0*rand.Float64()
-		state.OffsetY = -1.0 + 2.0*rand.Float64()
+		state.OffsetX = -1.0 + 2.0*common.RandomFloat()
+		state.OffsetY = -1.0 + 2.0*common.RandomFloat()
 	}
 
 	return state
@@ -414,9 +412,9 @@ type ShimmerAnimator struct {
 
 func (a *ShimmerAnimator) Update(effect *BaseEffect, elapsed float64) AnimationState {
 	return AnimationState{
-		Scale:      a.scaleRange[0] + (a.scaleRange[1]-a.scaleRange[0])*rand.Float64(),
-		Opacity:    a.opacityRange[0] + (a.opacityRange[1]-a.opacityRange[0])*rand.Float64(),
-		ColorShift: a.colorRange[0] + (a.colorRange[1]-a.colorRange[0])*rand.Float64(),
+		Scale:      a.scaleRange[0] + (a.scaleRange[1]-a.scaleRange[0])*common.RandomFloat(),
+		Opacity:    a.opacityRange[0] + (a.opacityRange[1]-a.opacityRange[0])*common.RandomFloat(),
+		ColorShift: a.colorRange[0] + (a.colorRange[1]-a.colorRange[0])*common.RandomFloat(),
 	}
 }
 

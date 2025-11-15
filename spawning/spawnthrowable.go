@@ -5,7 +5,6 @@ import (
 	"game_main/coords"
 	"game_main/gear"
 	"game_main/graphics"
-	"math/rand"
 
 	"github.com/bytearena/ecs"
 )
@@ -18,7 +17,7 @@ import (
 // The number of item properties generated for a throwable using the loot tables
 func RandomNumProperties() int {
 
-	len := rand.Intn(len(RandThrowableOptions))
+	len := common.RandomInt(len(RandThrowableOptions))
 	if len == 0 {
 		len = 1
 	}
@@ -58,7 +57,7 @@ func SpawnThrowableItem(manager *ecs.Manager, xPos, yPos int) *ecs.Entity {
 		if len(effectsToApply) == 1 {
 			vx = gear.GetVisualEffect(effectsToApply[0])
 		} else {
-			vx = gear.GetVisualEffect(effectsToApply[rand.Intn(len(effectsToApply))])
+			vx = gear.GetVisualEffect(effectsToApply[common.RandomInt(len(effectsToApply))])
 		}
 	}
 

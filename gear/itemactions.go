@@ -4,7 +4,6 @@ import (
 	"game_main/common"
 	"game_main/coords"
 	"game_main/graphics"
-	"math/rand"
 
 	"github.com/bytearena/ecs"
 )
@@ -134,14 +133,14 @@ func (t *ThrowableAction) CreateWithQuality(q common.QualityType) {
 
 	// Adjust properties based on quality
 	if q == common.LowQuality {
-		t.ThrowingRange = 3 + rand.Intn(2) // 3-4
-		t.Damage = 1 + rand.Intn(2)        // 1-2
+		t.ThrowingRange = 3 + common.RandomInt(2) // 3-4
+		t.Damage = 1 + common.RandomInt(2)        // 1-2
 	} else if q == common.NormalQuality {
-		t.ThrowingRange = 5 + rand.Intn(3) // 5-7
-		t.Damage = 2 + rand.Intn(3)        // 2-4
+		t.ThrowingRange = 5 + common.RandomInt(3) // 5-7
+		t.Damage = 2 + common.RandomInt(3)        // 2-4
 	} else if q == common.HighQuality {
-		t.ThrowingRange = 8 + rand.Intn(4) // 8-11
-		t.Damage = 4 + rand.Intn(4)        // 4-7
+		t.ThrowingRange = 8 + common.RandomInt(4) // 8-11
+		t.Damage = 4 + common.RandomInt(4)        // 4-7
 	}
 }
 

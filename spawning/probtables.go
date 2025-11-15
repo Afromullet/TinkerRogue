@@ -1,6 +1,6 @@
 package spawning
 
-import "math/rand"
+import "game_main/common"
 
 // todo add comments on how to setup and use the probability table
 type ProbabilityEntry[T any] struct {
@@ -50,7 +50,7 @@ func (lootTable *ProbabilityTable[T]) AddEntry(entry T, chance int) {
 func (lootTable *ProbabilityTable[T]) GetRandomEntry(zeroizeWeight bool) (T, bool) {
 
 	var zerovalue T
-	randVal := rand.Intn(lootTable.totalWeight)
+	randVal := common.RandomInt(lootTable.totalWeight)
 
 	cursor := 0
 	for ind, e := range lootTable.table {

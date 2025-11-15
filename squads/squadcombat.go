@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"game_main/common"
 
-	"math/rand/v2"
-
 	"github.com/bytearena/ecs"
 )
 
@@ -232,7 +230,7 @@ func selectRandomTargetIDs(unitIDs []ecs.EntityID, count int) []ecs.EntityID {
 	// Shuffle and take first N
 	shuffled := make([]ecs.EntityID, len(unitIDs))
 	copy(shuffled, unitIDs)
-	rand.Shuffle(len(shuffled), func(i, j int) {
+	common.Shuffle(len(shuffled), func(i, j int) {
 		shuffled[i], shuffled[j] = shuffled[j], shuffled[i]
 	})
 

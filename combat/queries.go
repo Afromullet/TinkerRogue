@@ -5,7 +5,6 @@ import (
 	"game_main/common"
 	"game_main/coords"
 	"game_main/squads"
-	"math/rand/v2"
 
 	"github.com/bytearena/ecs"
 )
@@ -241,7 +240,7 @@ func combatActive(manager *common.EntityManager) bool {
 // shuffleFactionOrder randomizes faction turn order using Fisher-Yates
 func shuffleFactionOrder(factionIDs []ecs.EntityID) {
 	for i := len(factionIDs) - 1; i > 0; i-- {
-		j := rand.IntN(i + 1)
+		j := common.RandomInt(i + 1)
 		factionIDs[i], factionIDs[j] = factionIDs[j], factionIDs[i]
 	}
 }
