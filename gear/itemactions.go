@@ -74,7 +74,7 @@ func (t *ThrowableAction) Execute(targetPos *coords.LogicalPosition, sourcePos *
 
 	/*
 		for _, c := range world.Query(worldTags["monsters"]) {
-			monsterPos := c.Components[common.PositionComponent].(*coords.LogicalPosition)
+			monsterPos := common.GetComponentType[*coords.LogicalPosition](c.Entity, common.PositionComponent)
 
 			for _, pos := range affectedPositions {
 				if monsterPos.IsEqual(&pos) && monsterPos.InRange(sourcePos, t.ThrowingRange) {

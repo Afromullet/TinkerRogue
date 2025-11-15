@@ -184,7 +184,7 @@ func (cc *CombatController) applyThrowable(item *gear.Item, shape graphics.TileB
 
 	/*
 		for _, c := range cc.ecsManager.World.Query(cc.ecsManager.WorldTags["monsters"]) {
-			curPos := c.Components[common.PositionComponent].(*coords.LogicalPosition)
+			curPos := common.GetComponentType[*coords.LogicalPosition](c.Entity, common.PositionComponent)
 
 			pos := coords.CoordManager.GetTilePositionsAsCommon(t.Shape.GetIndices())
 			for _, p := range pos {

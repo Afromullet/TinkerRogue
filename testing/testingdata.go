@@ -133,7 +133,7 @@ func UpdateContentsForTest(ecsmanager *common.EntityManager, gm *worldmap.GameMa
 
 	for _, item := range ecsmanager.World.Query(ecsmanager.Tags["items"]) {
 
-		item_pos := item.Components[common.PositionComponent].(*coords.LogicalPosition)
+		item_pos := common.GetComponentType[*coords.LogicalPosition](item.Entity, common.PositionComponent)
 
 		gm.AddEntityToTile(item.Entity, item_pos)
 

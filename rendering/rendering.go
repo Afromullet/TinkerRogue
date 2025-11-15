@@ -23,10 +23,11 @@ type Renderable struct {
 // Draw everything with a renderable component that's visible
 func ProcessRenderables(ecsmanager *common.EntityManager, gameMap worldmap.GameMap, screen *ebiten.Image, debugMode bool) {
 	for _, result := range ecsmanager.World.Query(ecsmanager.Tags["renderables"]) {
-		pos := result.Components[common.PositionComponent].(*coords.LogicalPosition)
-		img := result.Components[RenderableComponent].(*Renderable).Image
+		pos := common.GetComponentType[*coords.LogicalPosition](result.Entity, common.PositionComponent)
+		renderable := common.GetComponentType[*Renderable](result.Entity, RenderableComponent)
+		img := renderable.Image
 
-		if !result.Components[RenderableComponent].(*Renderable).Visible {
+		if !renderable.Visible {
 			continue
 		}
 
@@ -67,10 +68,11 @@ func ProcessRenderablesInSquare(ecsmanager *common.EntityManager, gameMap worldm
 	scaledCenterOffsetY := float64(screenHeight)/2 - float64(playerPos.Y*scaledTileSize)
 
 	for _, result := range ecsmanager.World.Query(ecsmanager.Tags["renderables"]) {
-		pos := result.Components[common.PositionComponent].(*coords.LogicalPosition)
-		img := result.Components[RenderableComponent].(*Renderable).Image
+		pos := common.GetComponentType[*coords.LogicalPosition](result.Entity, common.PositionComponent)
+		renderable := common.GetComponentType[*Renderable](result.Entity, RenderableComponent)
+		img := renderable.Image
 
-		if !result.Components[RenderableComponent].(*Renderable).Visible {
+		if !renderable.Visible {
 			continue
 		}
 
