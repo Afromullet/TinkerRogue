@@ -109,12 +109,12 @@ func (cm *CombatMode) Initialize(ctx *UIContext) error {
 func (cm *CombatMode) buildUILayout() {
 	// Build UI panels using factory
 	cm.turnOrderPanel = cm.uiFactory.CreateTurnOrderPanel()
-	cm.turnOrderLabel = cm.uiFactory.CreateTurnOrderLabel("Initializing combat...")
+	cm.turnOrderLabel = CreateLargeLabel("Initializing combat...")
 	cm.turnOrderPanel.AddChild(cm.turnOrderLabel)
 	cm.rootContainer.AddChild(cm.turnOrderPanel)
 
 	cm.factionInfoPanel = cm.uiFactory.CreateFactionInfoPanel()
-	cm.factionInfoText = cm.uiFactory.CreateFactionInfoText("Faction Info")
+	cm.factionInfoText = CreateSmallLabel("Faction Info")
 	cm.factionInfoPanel.AddChild(cm.factionInfoText)
 	cm.rootContainer.AddChild(cm.factionInfoPanel)
 
@@ -122,7 +122,7 @@ func (cm *CombatMode) buildUILayout() {
 	cm.rootContainer.AddChild(cm.squadListPanel)
 
 	cm.squadDetailPanel = cm.uiFactory.CreateSquadDetailPanel()
-	cm.squadDetailText = cm.uiFactory.CreateSquadDetailText("Select a squad\nto view details")
+	cm.squadDetailText = CreateSmallLabel("Select a squad\nto view details")
 	cm.squadDetailPanel.AddChild(cm.squadDetailText)
 	cm.rootContainer.AddChild(cm.squadDetailPanel)
 

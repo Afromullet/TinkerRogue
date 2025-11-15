@@ -56,6 +56,24 @@ func CreateTextWithConfig(config TextConfig) *widget.Text {
 	return widget.NewText(opts...)
 }
 
+// CreateLargeLabel creates a text widget with LargeFace font and white color
+func CreateLargeLabel(text string) *widget.Text {
+	return CreateTextWithConfig(TextConfig{
+		Text:     text,
+		FontFace: LargeFace,
+		Color:    color.White,
+	})
+}
+
+// CreateSmallLabel creates a text widget with SmallFace font and white color
+func CreateSmallLabel(text string) *widget.Text {
+	return CreateTextWithConfig(TextConfig{
+		Text:     text,
+		FontFace: SmallFace,
+		Color:    color.White,
+	})
+}
+
 // TextAreaConfig provides configuration for creating text areas with responsive sizing
 type TextAreaConfig struct {
 	MinWidth  int

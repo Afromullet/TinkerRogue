@@ -127,11 +127,7 @@ func (sbuf *SquadBuilderUIFactory) CreateSquadNameInput(onChanged func(string)) 
 	)
 
 	// Label
-	nameLabel := CreateTextWithConfig(TextConfig{
-		Text:     "Squad Name:",
-		FontFace: LargeFace,
-		Color:    color.White,
-	})
+	nameLabel := CreateLargeLabel("Squad Name:")
 	inputContainer.AddChild(nameLabel)
 
 	// Text input

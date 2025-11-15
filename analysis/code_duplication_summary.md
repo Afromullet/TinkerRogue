@@ -5,41 +5,7 @@ Analysis of the entire TinkerRogue codebase identified **5 major duplication cat
 
 
 
-## 2. Faction/Squad/MapPosition Query Loop Duplications (High Priority - 120 LOC savings)
 
-**Category:** Similar query patterns for specific entity relationships
-
-### Identified Duplications
-
-#### MapPosition Search Pattern (4+ occurrences)
-- **gui/guiqueries.go**: lines 113-147, 140-161, 214-224, 233-244
-- **combat/queries.go**: line 44
-
-#### ActionState Search Pattern (2+ occurrences)
-- **gui/guiqueries.go**: lines 154-162
-- **combat/queries.go**: line 55
-
-#### Faction Lookup Pattern (3+ occurrences)
-- **gui/guiqueries.go**: lines 38, 72, 84
-- **combat/queries.go**: line 24
-
-### Pattern
-```go
-for _, result := range manager.World.Query(manager.Tags["mapposition"]) {
-  mapPos := GetComponentType[*MapPositionData](result.Entity, MapPositionComponent)
-  if mapPos.SquadID == squadID { /* process */ }
-}
-```
-
-### Recommendation
-**Extract to `combat/queries.go` as reusable public functions**:
-- `FindMapPositionBySquadID(squadID, manager)`
-- `FindActionStateBySquadID(squadID, manager)`
-- `FindMapPositionByFactionID(factionID, manager)`
-
-Replace all call sites in `gui/guiqueries.go` to use consolidated functions.
-
----
 
 ## 3. Text Widget Creation Duplication (Medium Priority - 60 LOC savings)
 

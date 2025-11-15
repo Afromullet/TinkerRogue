@@ -6,7 +6,6 @@ import (
 	"game_main/coords"
 	"game_main/graphics"
 	"game_main/squads"
-	"image/color"
 
 	"github.com/bytearena/ecs"
 	"github.com/ebitenui/ebitenui/widget"
@@ -52,18 +51,14 @@ func (sdm *SquadDeploymentMode) Initialize(ctx *UIContext) error {
 	sdm.buildSquadListPanel()
 
 	// Build instruction text (top-center) using BuildPanel
-	sdm.instructionText = CreateTextWithConfig(TextConfig{
-		Text:     "Select a squad from the list, then click on the map to place it",
-		FontFace: SmallFace,
-		Color:    color.White,
-		LayoutData: widget.AnchorLayoutData{
-			HorizontalPosition: widget.AnchorLayoutPositionCenter,
-			VerticalPosition:   widget.AnchorLayoutPositionStart,
-			Padding: widget.Insets{
-				Top: int(float64(sdm.layout.ScreenHeight) * 0.02),
-			},
+	sdm.instructionText = CreateSmallLabel("Select a squad from the list, then click on the map to place it")
+	sdm.instructionText.GetWidget().LayoutData = widget.AnchorLayoutData{
+		HorizontalPosition: widget.AnchorLayoutPositionCenter,
+		VerticalPosition:   widget.AnchorLayoutPositionStart,
+		Padding: widget.Insets{
+			Top: int(float64(sdm.layout.ScreenHeight) * 0.02),
 		},
-	})
+	}
 	sdm.rootContainer.AddChild(sdm.instructionText)
 
 	sdm.buildActionButtons()
@@ -84,11 +79,7 @@ func (sdm *SquadDeploymentMode) buildSquadListPanel() {
 	)
 
 	// Add label
-	listLabel := CreateTextWithConfig(TextConfig{
-		Text:     "Squads:",
-		FontFace: SmallFace,
-		Color:    color.White,
-	})
+	listLabel := CreateSmallLabel("Squads:")
 	sdm.squadListPanel.AddChild(listLabel)
 
 	// Create squad list component - show all alive squads for placement

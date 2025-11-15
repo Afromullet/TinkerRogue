@@ -123,11 +123,7 @@ func (smm *SquadManagementMode) createSquadPanel(squadID ecs.EntityID) *SquadPan
 
 	// Squad name label - use unified query service
 	squadName := smm.queries.GetSquadName(squadID)
-	nameLabel := CreateTextWithConfig(TextConfig{
-		Text:     fmt.Sprintf("Squad: %s", squadName),
-		FontFace: LargeFace,
-		Color:    color.White,
-	})
+	nameLabel := CreateLargeLabel(fmt.Sprintf("Squad: %s", squadName))
 	panel.container.AddChild(nameLabel)
 
 	// 3x3 grid visualization (using squad system's VisualizeSquad function)

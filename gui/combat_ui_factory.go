@@ -2,7 +2,6 @@ package gui
 
 import (
 	"fmt"
-	"image/color"
 
 	"github.com/ebitenui/ebitenui/widget"
 )
@@ -57,11 +56,7 @@ func (cuf *CombatUIFactory) CreateSquadListPanel() *widget.Container {
 		RowLayout(),
 	)
 
-	listLabel := CreateTextWithConfig(TextConfig{
-		Text:     "Your Squads:",
-		FontFace: SmallFace,
-		Color:    color.White,
-	})
+	listLabel := CreateSmallLabel("Your Squads:")
 	panel.AddChild(listLabel)
 
 	return panel
@@ -153,32 +148,6 @@ func (cuf *CombatUIFactory) CreateActionButtons(
 	return actionButtons
 }
 
-// CreateTurnOrderLabel creates a text label for turn order display
-func (cuf *CombatUIFactory) CreateTurnOrderLabel(text string) *widget.Text {
-	return CreateTextWithConfig(TextConfig{
-		Text:     text,
-		FontFace: LargeFace,
-		Color:    color.White,
-	})
-}
-
-// CreateFactionInfoText creates a text label for faction info display
-func (cuf *CombatUIFactory) CreateFactionInfoText(text string) *widget.Text {
-	return CreateTextWithConfig(TextConfig{
-		Text:     text,
-		FontFace: SmallFace,
-		Color:    color.White,
-	})
-}
-
-// CreateSquadDetailText creates a text label for squad detail display
-func (cuf *CombatUIFactory) CreateSquadDetailText(text string) *widget.Text {
-	return CreateTextWithConfig(TextConfig{
-		Text:     text,
-		FontFace: SmallFace,
-		Color:    color.White,
-	})
-}
 
 // GetFormattedSquadDetails returns formatted squad details as string
 func (cuf *CombatUIFactory) GetFormattedSquadDetails(squadID interface{}) string {
