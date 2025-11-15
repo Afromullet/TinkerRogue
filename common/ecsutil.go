@@ -16,6 +16,10 @@ var (
 	AttributeComponent *ecs.Component
 	UserMsgComponent   *ecs.Component //I can probably remove this later
 
+	// AllEntitiesTag queries all entities in the ECS world (empty component set).
+	// Used by utility functions that need to work with any entity regardless of components.
+	AllEntitiesTag ecs.Tag
+
 	// GlobalPositionSystem provides O(1) position-based entity lookup.
 	// Initialized during game setup. Replaces O(n) linear search from trackers.
 	GlobalPositionSystem *systems.PositionSystem
@@ -39,7 +43,7 @@ func NewEntityManager() *EntityManager {
 // GetAllEntities returns all entity IDs currently managed by the EntityManager.
 func (em *EntityManager) GetAllEntities() []ecs.EntityID {
 	var entityIDs []ecs.EntityID
-	for _, result := range em.World.Query(ecs.BuildTag()) {
+	for _, result := range em.World.Query(AllEntitiesTag) {
 		entityIDs = append(entityIDs, result.Entity.GetID())
 	}
 	return entityIDs
@@ -48,7 +52,7 @@ func (em *EntityManager) GetAllEntities() []ecs.EntityID {
 // HasComponent checks if an entity has a specific component.
 // Returns false if the entity ID is invalid or the component is not found.
 func (em *EntityManager) HasComponent(entityID ecs.EntityID, component *ecs.Component) bool {
-	for _, result := range em.World.Query(ecs.BuildTag()) {
+	for _, result := range em.World.Query(AllEntitiesTag) {
 		if result.Entity.GetID() == entityID {
 			_, ok := result.Entity.GetComponentData(component)
 			return ok
@@ -73,7 +77,7 @@ func (em *EntityManager) HasComponentByIDWithTag(entityID ecs.EntityID, tag ecs.
 // Returns the component data and a boolean indicating if the component was found.
 // Returns (nil, false) if the entity ID is invalid or the component is not found.
 func (em *EntityManager) GetComponent(entityID ecs.EntityID, component *ecs.Component) (interface{}, bool) {
-	for _, result := range em.World.Query(ecs.BuildTag()) {
+	for _, result := range em.World.Query(AllEntitiesTag) {
 		if result.Entity.GetID() == entityID {
 			return result.Entity.GetComponentData(component)
 		}
@@ -113,7 +117,7 @@ func GetComponentTypeByID[T any](manager *EntityManager, entityID ecs.EntityID, 
 		}
 	}()
 
-	for _, result := range manager.World.Query(ecs.BuildTag()) {
+	for _, result := range manager.World.Query(AllEntitiesTag) {
 		if result.Entity.GetID() == entityID {
 			if c, ok := result.Entity.GetComponentData(component); ok {
 				return c.(T)
@@ -246,7 +250,7 @@ func FindEntityIDWithTag(manager *EntityManager, entityID ecs.EntityID, tag ecs.
 //       entity.AddComponent(ComponentType, data)
 //   }
 func FindEntityByID(manager *EntityManager, entityID ecs.EntityID) *ecs.Entity {
-	for _, result := range manager.World.Query(ecs.BuildTag()) {
+	for _, result := range manager.World.Query(AllEntitiesTag) {
 		if result.Entity.GetID() == entityID {
 			return result.Entity
 		}
@@ -264,7 +268,7 @@ func FindEntityByID(manager *EntityManager, entityID ecs.EntityID) *ecs.Entity {
 //       // use entity
 //   }
 func FindEntityByIDInManager(manager *ecs.Manager, entityID ecs.EntityID) *ecs.Entity {
-	for _, result := range manager.Query(ecs.BuildTag()) {
+	for _, result := range manager.Query(AllEntitiesTag) {
 		if result.Entity.GetID() == entityID {
 			return result.Entity
 		}

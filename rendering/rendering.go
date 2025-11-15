@@ -13,7 +13,11 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-var RenderableComponent *ecs.Component //Putting this here for now rather than in graphics
+var (
+	RenderableComponent *ecs.Component //Putting this here for now rather than in graphics
+	RenderablesTag      ecs.Tag        // Tag for querying renderable entities
+	MessengersTag       ecs.Tag        // Tag for querying messenger (UI message) entities
+)
 
 type Renderable struct {
 	Image   *ebiten.Image
@@ -22,7 +26,7 @@ type Renderable struct {
 
 // Draw everything with a renderable component that's visible
 func ProcessRenderables(ecsmanager *common.EntityManager, gameMap worldmap.GameMap, screen *ebiten.Image, debugMode bool) {
-	for _, result := range ecsmanager.World.Query(ecsmanager.Tags["renderables"]) {
+	for _, result := range ecsmanager.World.Query(RenderablesTag) {
 		pos := common.GetComponentType[*coords.LogicalPosition](result.Entity, common.PositionComponent)
 		renderable := common.GetComponentType[*Renderable](result.Entity, RenderableComponent)
 		img := renderable.Image
@@ -67,7 +71,7 @@ func ProcessRenderablesInSquare(ecsmanager *common.EntityManager, gameMap worldm
 	scaledCenterOffsetX := float64(screenWidth)/2 - float64(playerPos.X*scaledTileSize)
 	scaledCenterOffsetY := float64(screenHeight)/2 - float64(playerPos.Y*scaledTileSize)
 
-	for _, result := range ecsmanager.World.Query(ecsmanager.Tags["renderables"]) {
+	for _, result := range ecsmanager.World.Query(RenderablesTag) {
 		pos := common.GetComponentType[*coords.LogicalPosition](result.Entity, common.PositionComponent)
 		renderable := common.GetComponentType[*Renderable](result.Entity, RenderableComponent)
 		img := renderable.Image

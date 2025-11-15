@@ -38,15 +38,29 @@ func registerCoreComponents(manager *ecs.Manager) {
 	gear.InventoryComponent = manager.NewComponent()
 	common.AttributeComponent = manager.NewComponent()
 	common.UserMsgComponent = manager.NewComponent()
+	common.PlayerComponent = manager.NewComponent()
+	common.MonsterComponent = manager.NewComponent()
 }
 
 // buildCoreTags creates tags for querying core entity types.
 func buildCoreTags(tags map[string]ecs.Tag) {
-	renderables := ecs.BuildTag(rendering.RenderableComponent, common.PositionComponent)
-	tags["renderables"] = renderables
+	// Initialize utility tag for "all entities" queries (empty component set)
+	common.AllEntitiesTag = ecs.BuildTag()
+	tags["all"] = common.AllEntitiesTag
 
-	messengers := ecs.BuildTag(common.UserMsgComponent)
-	tags["messengers"] = messengers
+	// Initialize rendering tags
+	rendering.RenderablesTag = ecs.BuildTag(rendering.RenderableComponent, common.PositionComponent)
+	tags["renderables"] = rendering.RenderablesTag
+
+	rendering.MessengersTag = ecs.BuildTag(common.UserMsgComponent)
+	tags["messengers"] = rendering.MessengersTag
+
+	// Initialize gear tags
+	gear.ItemsTag = ecs.BuildTag(gear.ItemComponent, common.PositionComponent)
+	tags["items"] = gear.ItemsTag
+
+	gear.MonstersTag = ecs.BuildTag(common.MonsterComponent)
+	tags["monsters"] = gear.MonstersTag
 }
 
 // registerItemComponents registers item/gear system components.

@@ -32,6 +32,9 @@ var (
 	BurningComponent   *ecs.Component
 	FreezingComponent  *ecs.Component
 	ThrowableComponent *ecs.Component
+
+	ItemsTag    ecs.Tag // Tag for querying item entities
+	MonstersTag ecs.Tag // Tag for querying monster entities
 )
 
 /*
@@ -373,8 +376,5 @@ func InitializeItemComponents(manager *ecs.Manager, tags map[string]ecs.Tag) {
 	ThrowableComponent = manager.NewComponent()
 
 	AllItemEffects = append(AllItemEffects, StickyComponent, BurningComponent, FreezingComponent)
-
-	items := ecs.BuildTag(ItemComponent, common.PositionComponent) //todo add all the tags
-	tags["items"] = items
 
 }

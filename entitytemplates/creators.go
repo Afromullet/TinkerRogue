@@ -60,6 +60,9 @@ func addCreatureComponents(m JSONMonster) ComponentAdder {
 
 		entity.AddComponent(common.UserMsgComponent, &common.UserMessage{})
 
+		// Mark as monster for ECS queries
+		entity.AddComponent(common.MonsterComponent, &common.Monster{})
+
 		// Use the NewAttributesFromJson method to create attributes with proper derivation
 		attr := m.Attributes.NewAttributesFromJson()
 

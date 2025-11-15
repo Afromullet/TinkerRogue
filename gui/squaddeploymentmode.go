@@ -234,7 +234,7 @@ func (sdm *SquadDeploymentMode) placeSquadAt(squadID ecs.EntityID, pos coords.Lo
 
 	// Find the squad entity and update its position
 	found := false
-	for _, result := range sdm.context.ECSManager.World.Query(sdm.context.ECSManager.Tags["squad"]) {
+	for _, result := range sdm.context.ECSManager.World.Query(squads.SquadTag) {
 		squadData := common.GetComponentType[*squads.SquadData](result.Entity, squads.SquadComponent)
 		fmt.Printf("DEBUG: Checking squad %d against target %d\n", squadData.SquadID, squadID)
 
@@ -276,7 +276,7 @@ func (sdm *SquadDeploymentMode) placeSquadAt(squadID ecs.EntityID, pos coords.Lo
 
 func (sdm *SquadDeploymentMode) clearAllSquadPositions() {
 	// Reset all squads to position (0, 0)
-	for _, result := range sdm.context.ECSManager.World.Query(sdm.context.ECSManager.Tags["squad"]) {
+	for _, result := range sdm.context.ECSManager.World.Query(squads.SquadTag) {
 		if result.Entity.HasComponent(common.PositionComponent) {
 			posPtr := common.GetComponentType[*coords.LogicalPosition](result.Entity, common.PositionComponent)
 			if posPtr != nil {

@@ -6,11 +6,18 @@ import (
 	"github.com/bytearena/ecs"
 )
 
-// Player component marker
-var PlayerComponent *ecs.Component
+// Component markers
+var (
+	PlayerComponent  *ecs.Component  // Marks player entity
+	MonsterComponent *ecs.Component  // Marks monster/creature entities
+)
 
 // Player is a component marker for player entities
 type Player struct {
+}
+
+// Monster is a component marker for monster/creature entities
+type Monster struct {
 }
 
 // PlayerInputStates tracks input-related state for the player.

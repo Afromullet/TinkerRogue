@@ -117,7 +117,7 @@ func (gq *GUIQueries) GetSquadInfo(squadID ecs.EntityID) *SquadInfo {
 	totalHP := 0
 	maxHP := 0
 	for _, unitID := range unitIDs {
-		for _, result := range gq.ecsManager.World.Query(gq.ecsManager.Tags["squadmember"]) {
+		for _, result := range gq.ecsManager.World.Query(squads.SquadMemberTag) {
 			if result.Entity.GetID() == unitID {
 				attrs := common.GetComponentType[*common.Attributes](result.Entity, common.AttributeComponent)
 				if attrs.CanAct {
@@ -170,7 +170,7 @@ func (gq *GUIQueries) GetSquadInfo(squadID ecs.EntityID) *SquadInfo {
 // GetSquadName returns the squad name
 // Returns "Unknown Squad" if squad not found
 func (gq *GUIQueries) GetSquadName(squadID ecs.EntityID) string {
-	for _, result := range gq.ecsManager.World.Query(gq.ecsManager.Tags["squad"]) {
+	for _, result := range gq.ecsManager.World.Query(squads.SquadTag) {
 		squadData := common.GetComponentType[*squads.SquadData](
 			result.Entity, squads.SquadComponent)
 		if squadData.SquadID == squadID {
@@ -201,7 +201,7 @@ func (gq *GUIQueries) FindAllSquads() []ecs.EntityID {
 // Returns 0 if no squad at position or squad is destroyed
 func (gq *GUIQueries) GetSquadAtPosition(pos coords.LogicalPosition) ecs.EntityID {
 	// Query all MapPosition entities to find matching position
-	for _, result := range gq.ecsManager.World.Query(gq.ecsManager.Tags["mapposition"]) {
+	for _, result := range gq.ecsManager.World.Query(combat.MapPositionTag) {
 		mapPos := common.GetComponentType[*combat.MapPositionData](
 			result.Entity, combat.MapPositionComponent)
 
@@ -252,7 +252,7 @@ func (gq *GUIQueries) GetEnemySquads(currentFactionID ecs.EntityID) []ecs.Entity
 // GetAllFactions returns all faction IDs
 func (gq *GUIQueries) GetAllFactions() []ecs.EntityID {
 	factionIDs := []ecs.EntityID{}
-	for _, result := range gq.ecsManager.World.Query(gq.ecsManager.Tags["faction"]) {
+	for _, result := range gq.ecsManager.World.Query(combat.FactionTag) {
 		factionData := common.GetComponentType[*combat.FactionData](result.Entity, combat.FactionComponent)
 		factionIDs = append(factionIDs, factionData.FactionID)
 	}

@@ -131,7 +131,7 @@ func CreateTestItems(manager *ecs.Manager, tags map[string]ecs.Tag, gameMap *wor
 
 func UpdateContentsForTest(ecsmanager *common.EntityManager, gm *worldmap.GameMap) {
 
-	for _, item := range ecsmanager.World.Query(ecsmanager.Tags["items"]) {
+	for _, item := range ecsmanager.World.Query(gear.ItemsTag) {
 
 		item_pos := common.GetComponentType[*coords.LogicalPosition](item.Entity, common.PositionComponent)
 

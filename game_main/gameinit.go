@@ -84,7 +84,7 @@ func InitializePlayerData(ecsmanager *common.EntityManager, pl *common.PlayerDat
 // and the new PositionSystem for O(1) position lookups.
 func AddCreaturesToTracker(ecsmanger *common.EntityManager) {
 
-	for _, c := range ecsmanger.World.Query(ecsmanger.Tags["monsters"]) {
+	for _, c := range ecsmanger.World.Query(gear.MonstersTag) {
 
 		// Also add to new PositionSystem for O(1) lookups
 		if common.GlobalPositionSystem != nil {
