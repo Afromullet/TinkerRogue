@@ -2,7 +2,6 @@ package gui
 
 import (
 	"fmt"
-	"game_main/common"
 	"game_main/gear"
 
 	"github.com/ebitenui/ebitenui/widget"
@@ -121,26 +120,22 @@ func (im *InventoryMode) buildItemList() {
 					if inv, ok := im.context.PlayerData.Inventory.(*gear.Inventory); ok {
 						// Get the item entity ID from inventory
 						itemEntityID, err := gear.GetItemEntityID(inv, entry.Index)
-						if err == nil {
-							// Find the actual entity
-							itemEntity := gear.FindItemEntityByID(im.context.ECSManager.World, itemEntityID)
-							if itemEntity != nil {
-								// Prepare the throwable directly (no wrapper)
-								im.context.PlayerData.Throwables.SelectedThrowable = itemEntity
-								im.context.PlayerData.Throwables.ThrowableItemEntity = itemEntity
+						if err == nil && itemEntityID != 0 {
+							// Prepare the throwable using EntityID (no need to find entity)
+							im.context.PlayerData.Throwables.SelectedThrowableID = itemEntityID
+							im.context.PlayerData.Throwables.ThrowableItemEntityID = itemEntityID
 
-								// Get item component and setup throwing shape
-								item := common.GetComponentType[*gear.Item](itemEntity, gear.ItemComponent)
-								if item != nil {
-									if throwableAction := item.GetThrowableAction(); throwableAction != nil {
-										im.context.PlayerData.Throwables.ThrowableItemIndex = entry.Index
-										im.context.PlayerData.Throwables.ThrowingAOEShape = throwableAction.Shape
-									}
+							// Get item component and setup throwing shape
+							item := gear.GetItemByID(im.context.ECSManager.World, itemEntityID)
+							if item != nil {
+								if throwableAction := item.GetThrowableAction(); throwableAction != nil {
+									im.context.PlayerData.Throwables.ThrowableItemIndex = entry.Index
+									im.context.PlayerData.Throwables.ThrowingAOEShape = throwableAction.Shape
 								}
-
-								im.context.PlayerData.InputStates.IsThrowing = true
-								fmt.Printf("Throwable prepared: %s\n", entry.Name)
 							}
+
+							im.context.PlayerData.InputStates.IsThrowing = true
+							fmt.Printf("Throwable prepared: %s\n", entry.Name)
 						}
 
 						// Get item details

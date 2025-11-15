@@ -48,7 +48,7 @@ func (em *ExplorationMode) Initialize(ctx *UIContext) error {
 		em.layout,
 		TopRight(),
 		0.15, 0.2, 0.01,
-		em.context.PlayerData.PlayerAttributes().DisplayString(),
+		em.context.PlayerData.PlayerAttributes(em.context.ECSManager).DisplayString(),
 	)
 	em.rootContainer.AddChild(em.statsPanel)
 
@@ -160,7 +160,7 @@ func (em *ExplorationMode) Enter(fromMode UIMode) error {
 
 	// Refresh player stats
 	if em.context.PlayerData != nil && em.statsTextArea != nil {
-		em.statsTextArea.SetText(em.context.PlayerData.PlayerAttributes().DisplayString())
+		em.statsTextArea.SetText(em.context.PlayerData.PlayerAttributes(em.context.ECSManager).DisplayString())
 	}
 
 	return nil

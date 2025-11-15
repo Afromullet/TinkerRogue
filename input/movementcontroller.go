@@ -139,7 +139,7 @@ func (mc *MovementController) movePlayer(xOffset, yOffset int) {
 		// Update PositionSystem before moving player
 		if common.GlobalPositionSystem != nil {
 			common.GlobalPositionSystem.MoveEntity(
-				mc.playerData.PlayerEntity.GetID(),
+				mc.playerData.PlayerEntityID,
 				currentLogicalPos,
 				nextLogicalPos,
 			)
@@ -156,7 +156,10 @@ func (mc *MovementController) movePlayer(xOffset, yOffset int) {
 }
 
 func (mc *MovementController) handleStairsInteraction() bool {
-	playerPos := common.GetPosition(mc.playerData.PlayerEntity)
+	playerPos := common.GetPositionByID(mc.ecsManager, mc.playerData.PlayerEntityID)
+	if playerPos == nil {
+		return false
+	}
 	logicalPos := coords.LogicalPosition{X: playerPos.X, Y: playerPos.Y}
 	ind := coords.CoordManager.LogicalToIndex(logicalPos)
 

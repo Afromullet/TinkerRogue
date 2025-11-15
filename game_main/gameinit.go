@@ -59,15 +59,15 @@ func InitializePlayerData(ecsmanager *common.EntityManager, pl *common.PlayerDat
 
 	//g.playerData = PlayerData{}
 
-	pl.PlayerEntity = playerEntity
+	pl.PlayerEntityID = playerEntity.GetID()
 
 	//Don't want to Query for the player position every time, so we're storing it
 
-	startPos := common.GetComponentType[*coords.LogicalPosition](pl.PlayerEntity, common.PositionComponent)
+	startPos := common.GetComponentType[*coords.LogicalPosition](playerEntity, common.PositionComponent)
 	startPos.X = gm.StartingPosition().X
 	startPos.Y = gm.StartingPosition().Y
 
-	inventory := common.GetComponentType[*gear.Inventory](pl.PlayerEntity, gear.InventoryComponent)
+	inventory := common.GetComponentType[*gear.Inventory](playerEntity, gear.InventoryComponent)
 
 	// Test weapon/armor initialization removed - squad system handles combat equipment
 	// See CLAUDE.md Section 7 (Squad System Infrastructure) for replacement system
