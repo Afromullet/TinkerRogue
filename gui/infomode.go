@@ -108,23 +108,23 @@ func (im *InfoMode) handleOptionSelected(option string) {
 
 // displayCreatureInfo shows information about the creature at inspect position
 func (im *InfoMode) displayCreatureInfo() {
-	creature := common.GetCreatureAtPosition(im.context.ECSManager, &im.inspectPosition)
+	creatureID := common.GetCreatureAtPosition(im.context.ECSManager, &im.inspectPosition)
 
-	if creature == nil {
+	if creatureID == 0 {
 		im.detailTextArea.SetText("No creature at this position")
 		return
 	}
 
 	// Get creature details
 	name := "Unknown"
-	if nameComp, ok := im.context.ECSManager.GetComponent(creature.GetID(), common.NameComponent); ok {
+	if nameComp, ok := im.context.ECSManager.GetComponent(creatureID, common.NameComponent); ok {
 		if nameData, ok := nameComp.(*common.Name); ok {
 			name = nameData.NameStr
 		}
 	}
 
 	// Get attributes
-	attrs := common.GetComponentType[*common.Attributes](creature, common.AttributeComponent)
+	attrs := common.GetAttributesByID(im.context.ECSManager, creatureID)
 	if attrs == nil {
 		im.detailTextArea.SetText(fmt.Sprintf("=== CREATURE ===\n\nName: %s\n\nNo attribute data available", name))
 		return

@@ -57,6 +57,18 @@ func (em *EntityManager) HasComponent(entityID ecs.EntityID, component *ecs.Comp
 	return false
 }
 
+// HasComponentByIDWithTag checks if an entity (queried by tag) has a specific component.
+// Returns false if the entity ID is invalid or the component is not found.
+func (em *EntityManager) HasComponentByIDWithTag(entityID ecs.EntityID, tag ecs.Tag, component *ecs.Component) bool {
+	for _, result := range em.World.Query(tag) {
+		if result.Entity.GetID() == entityID {
+			_, ok := result.Entity.GetComponentData(component)
+			return ok
+		}
+	}
+	return false
+}
+
 // GetComponent retrieves component data from an entity by its ID.
 // Returns the component data and a boolean indicating if the component was found.
 // Returns (nil, false) if the entity ID is invalid or the component is not found.
@@ -69,8 +81,9 @@ func (em *EntityManager) GetComponent(entityID ecs.EntityID, component *ecs.Comp
 	return nil, false
 }
 
-// GetComponentType retrieves a component of type T from an entity.
-// It provides type-safe component access with panic recovery for missing components.
+// GetComponentType retrieves a component of type T from an entity pointer.
+// Used internally when entity is already available from a query result.
+// For new code, prefer GetComponentTypeByID.
 func GetComponentType[T any](entity *ecs.Entity, component *ecs.Component) T {
 
 	defer func() {
@@ -91,10 +104,62 @@ func GetComponentType[T any](entity *ecs.Entity, component *ecs.Component) T {
 
 }
 
+// GetComponentTypeByID retrieves a component of type T from an entity by ID.
+// Returns zero value if entity or component not found.
+func GetComponentTypeByID[T any](manager *EntityManager, entityID ecs.EntityID, component *ecs.Component) T {
+	defer func() {
+		if r := recover(); r != nil {
+			// ERROR HANDLING IN FUTURE
+		}
+	}()
+
+	for _, result := range manager.World.Query(ecs.BuildTag()) {
+		if result.Entity.GetID() == entityID {
+			if c, ok := result.Entity.GetComponentData(component); ok {
+				return c.(T)
+			}
+			var nilValue T
+			return nilValue
+		}
+	}
+
+	var nilValue T
+	return nilValue
+}
+
+// GetComponentTypeByIDWithTag retrieves a component by entity ID within a specific tag query.
+// Returns zero value if entity or component not found.
+func GetComponentTypeByIDWithTag[T any](manager *EntityManager, entityID ecs.EntityID, tag ecs.Tag, component *ecs.Component) T {
+	defer func() {
+		if r := recover(); r != nil {
+			// ERROR HANDLING IN FUTURE
+		}
+	}()
+
+	for _, result := range manager.World.Query(tag) {
+		if result.Entity.GetID() == entityID {
+			if c, ok := result.Entity.GetComponentData(component); ok {
+				return c.(T)
+			}
+			var nilValue T
+			return nilValue
+		}
+	}
+
+	var nilValue T
+	return nilValue
+}
+
 // GetAttributes returns the Attributes component from an entity.
 // This is a convenience function for frequently accessed components.
 func GetAttributes(e *ecs.Entity) *Attributes {
 	return GetComponentType[*Attributes](e, AttributeComponent)
+}
+
+// GetAttributesByID returns the Attributes component by entity ID.
+// Returns nil if entity not found.
+func GetAttributesByID(manager *EntityManager, entityID ecs.EntityID) *Attributes {
+	return GetComponentTypeByID[*Attributes](manager, entityID, AttributeComponent)
 }
 
 // GetPosition returns the Position component from an entity.
@@ -103,51 +168,66 @@ func GetPosition(e *ecs.Entity) *coords.LogicalPosition {
 	return GetComponentType[*coords.LogicalPosition](e, PositionComponent)
 }
 
-// GetCreatureAtPosition finds and returns the first monster entity at the specified position.
-// Returns nil if no creature is found at that position.
-// Now uses O(1) PositionSystem lookup instead of O(n) linear search.
-func GetCreatureAtPosition(ecsmnager *EntityManager, pos *coords.LogicalPosition) *ecs.Entity {
+// GetPositionByID returns the Position component by entity ID.
+// Returns nil if entity not found.
+func GetPositionByID(manager *EntityManager, entityID ecs.EntityID) *coords.LogicalPosition {
+	return GetComponentTypeByID[*coords.LogicalPosition](manager, entityID, PositionComponent)
+}
+
+// GetAttributesByIDWithTag returns the Attributes component by entity ID within a tag query.
+// Returns nil if entity not found or doesn't have the component.
+func GetAttributesByIDWithTag(manager *EntityManager, entityID ecs.EntityID, tag ecs.Tag) *Attributes {
+	return GetComponentTypeByIDWithTag[*Attributes](manager, entityID, tag, AttributeComponent)
+}
+
+// GetPositionByIDWithTag returns the Position component by entity ID within a tag query.
+// Returns nil if entity not found or doesn't have the component.
+func GetPositionByIDWithTag(manager *EntityManager, entityID ecs.EntityID, tag ecs.Tag) *coords.LogicalPosition {
+	return GetComponentTypeByIDWithTag[*coords.LogicalPosition](manager, entityID, tag, PositionComponent)
+}
+
+// GetCreatureAtPosition finds the first monster entity ID at the specified position.
+// Returns 0 if no creature is found at that position.
+// Uses O(1) PositionSystem lookup instead of O(n) linear search.
+func GetCreatureAtPosition(ecsmnager *EntityManager, pos *coords.LogicalPosition) ecs.EntityID {
 	// Use new O(1) PositionSystem if available
 	if GlobalPositionSystem != nil {
 		entityID := GlobalPositionSystem.GetEntityIDAt(*pos)
 		if entityID == 0 {
-			return nil
+			return 0
 		}
 
-		// Find entity and verify it's a monster
+		// Verify it's a monster
 		for _, result := range ecsmnager.World.Query(ecsmnager.Tags["monsters"]) {
 			if result.Entity.GetID() == entityID {
-				return result.Entity
+				return entityID
 			}
 		}
-		return nil
+		return 0
 	}
 
 	// Fallback to old O(n) search if PositionSystem not initialized
-	// This ensures backward compatibility during migration
-	var e *ecs.Entity = nil
 	for _, c := range ecsmnager.World.Query(ecsmnager.Tags["monsters"]) {
 		curPos := GetPosition(c.Entity)
 		if pos.IsEqual(curPos) {
-			e = c.Entity
-			break
+			return c.Entity.GetID()
 		}
 	}
-	return e
+	return 0
 }
 
-// FindEntityByIDWithTag finds an entity by its ID within a specific tag query.
-// This is a generic consolidation of repeated entity lookup patterns across the codebase.
-// Returns nil if the entity is not found.
+// FindEntityIDWithTag finds an entity ID within a specific tag query.
+// This replaces the old FindEntityByIDWithTag function.
+// Returns 0 if the entity is not found.
 //
 // Usage:
-//   entity := FindEntityByIDWithTag(manager, squadID, SquadTag)
-//   entity := FindEntityByIDWithTag(manager, unitID, ecs.BuildTag()) // All entities
-func FindEntityByIDWithTag(manager *EntityManager, entityID ecs.EntityID, tag ecs.Tag) *ecs.Entity {
+//   unitID := FindEntityIDWithTag(manager, unitEntityID, SquadMemberTag)
+//   if unitID != 0 { ... }
+func FindEntityIDWithTag(manager *EntityManager, entityID ecs.EntityID, tag ecs.Tag) ecs.EntityID {
 	for _, result := range manager.World.Query(tag) {
 		if result.Entity.GetID() == entityID {
-			return result.Entity
+			return entityID
 		}
 	}
-	return nil
+	return 0
 }

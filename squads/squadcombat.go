@@ -35,33 +35,28 @@ func ExecuteSquadAttack(attackerSquadID, defenderSquadID ecs.EntityID, squadmana
 
 	// Process each attacker unit
 	for _, attackerID := range attackerUnitIDs {
-		attackerUnit := common.FindEntityByIDWithTag(squadmanager, attackerID, SquadMemberTag)
-		if attackerUnit == nil {
-			continue
-		}
-
 		// Check if unit is alive
-		attackerAttr := common.GetAttributes(attackerUnit)
-		if attackerAttr.CurrentHealth <= 0 {
+		attackerAttr := common.GetAttributesByIDWithTag(squadmanager, attackerID, SquadMemberTag)
+		if attackerAttr == nil || attackerAttr.CurrentHealth <= 0 {
 			continue
 		}
 
 		// Check if unit is within attack range
-		if !attackerUnit.HasComponent(AttackRangeComponent) {
+		if !squadmanager.HasComponentByIDWithTag(attackerID, SquadMemberTag, AttackRangeComponent) {
 			continue
 		}
-		rangeData := common.GetComponentType[*AttackRangeData](attackerUnit, AttackRangeComponent)
+		rangeData := common.GetComponentTypeByIDWithTag[*AttackRangeData](squadmanager, attackerID, SquadMemberTag, AttackRangeComponent)
 		if rangeData.Range < squadDistance {
 			// Unit is out of range, cannot attack
 			continue
 		}
 
 		// Get targeting data
-		if !attackerUnit.HasComponent(TargetRowComponent) {
+		if !squadmanager.HasComponentByIDWithTag(attackerID, SquadMemberTag, TargetRowComponent) {
 			continue
 		}
 
-		targetRowData := common.GetComponentType[*TargetRowData](attackerUnit, TargetRowComponent)
+		targetRowData := common.GetComponentTypeByIDWithTag[*TargetRowData](squadmanager, attackerID, SquadMemberTag, TargetRowComponent)
 
 		var actualTargetIDs []ecs.EntityID
 
@@ -112,15 +107,12 @@ func ExecuteSquadAttack(attackerSquadID, defenderSquadID ecs.EntityID, squadmana
 
 // calculateUnitDamageByID calculates damage using new attribute system
 func calculateUnitDamageByID(attackerID, defenderID ecs.EntityID, squadmanager *common.EntityManager) int {
-	attackerUnit := common.FindEntityByIDWithTag(squadmanager, attackerID, SquadMemberTag)
-	defenderUnit := common.FindEntityByIDWithTag(squadmanager, defenderID, SquadMemberTag)
+	attackerAttr := common.GetAttributesByIDWithTag(squadmanager, attackerID, SquadMemberTag)
+	defenderAttr := common.GetAttributesByIDWithTag(squadmanager, defenderID, SquadMemberTag)
 
-	if attackerUnit == nil || defenderUnit == nil {
+	if attackerAttr == nil || defenderAttr == nil {
 		return 0
 	}
-
-	attackerAttr := common.GetAttributes(attackerUnit)
-	defenderAttr := common.GetAttributes(defenderUnit)
 
 	// Check if attack hits (new hit rate system)
 	if !rollHit(attackerAttr.GetHitRate()) {
@@ -178,12 +170,11 @@ func rollDodge(dodgeChance int) bool {
 
 // applyDamageToUnitByID - ✅ Uses ecs.EntityID
 func applyDamageToUnitByID(unitID ecs.EntityID, damage int, result *CombatResult, squadmanager *common.EntityManager) {
-	unit := common.FindEntityByIDWithTag(squadmanager, unitID, SquadMemberTag)
-	if unit == nil {
+	attr := common.GetAttributesByIDWithTag(squadmanager, unitID, SquadMemberTag)
+	if attr == nil {
 		return
 	}
 
-	attr := common.GetAttributes(unit)
 	attr.CurrentHealth -= damage
 	result.DamageByUnit[unitID] = damage
 
@@ -199,19 +190,19 @@ func selectLowestHPTargetID(unitIDs []ecs.EntityID, squadmanager *common.EntityM
 	}
 
 	lowestID := unitIDs[0]
-	lowestUnit := common.FindEntityByIDWithTag(squadmanager, lowestID, SquadMemberTag)
-	if lowestUnit == nil {
+	lowestAttr := common.GetAttributesByIDWithTag(squadmanager, lowestID, SquadMemberTag)
+	if lowestAttr == nil {
 		return 0
 	}
-	lowestHP := common.GetAttributes(lowestUnit).CurrentHealth
+	lowestHP := lowestAttr.CurrentHealth
 
 	for _, unitID := range unitIDs[1:] {
-		unit := common.FindEntityByIDWithTag(squadmanager, unitID, SquadMemberTag)
-		if unit == nil {
+		attr := common.GetAttributesByIDWithTag(squadmanager, unitID, SquadMemberTag)
+		if attr == nil {
 			continue
 		}
 
-		hp := common.GetAttributes(unit).CurrentHealth
+		hp := attr.CurrentHealth
 		if hp < lowestHP {
 			lowestID = unitID
 			lowestHP = hp
@@ -253,18 +244,15 @@ func sumDamageMap(damageMap map[ecs.EntityID]int) int {
 // Cover bonuses stack additively (e.g., 0.25 + 0.15 = 0.40 total reduction)
 // Returns a value between 0.0 (no cover) and 1.0 (100% damage reduction, capped)
 func CalculateTotalCover(defenderID ecs.EntityID, squadmanager *common.EntityManager) float64 {
-	defenderUnit := common.FindEntityByIDWithTag(squadmanager, defenderID, SquadMemberTag)
-	if defenderUnit == nil {
+	// Check if defender exists with required components
+	if !squadmanager.HasComponentByIDWithTag(defenderID, SquadMemberTag, GridPositionComponent) ||
+		!squadmanager.HasComponentByIDWithTag(defenderID, SquadMemberTag, SquadMemberComponent) {
 		return 0.0
 	}
 
 	// Get defender's position and squad
-	if !defenderUnit.HasComponent(GridPositionComponent) || !defenderUnit.HasComponent(SquadMemberComponent) {
-		return 0.0
-	}
-
-	defenderPos := common.GetComponentType[*GridPositionData](defenderUnit, GridPositionComponent)
-	defenderSquadData := common.GetComponentType[*SquadMemberData](defenderUnit, SquadMemberComponent)
+	defenderPos := common.GetComponentTypeByIDWithTag[*GridPositionData](squadmanager, defenderID, SquadMemberTag, GridPositionComponent)
+	defenderSquadData := common.GetComponentTypeByIDWithTag[*SquadMemberData](squadmanager, defenderID, SquadMemberTag, SquadMemberComponent)
 	defenderSquadID := defenderSquadData.SquadID
 
 	// Get all units providing cover
@@ -273,23 +261,20 @@ func CalculateTotalCover(defenderID ecs.EntityID, squadmanager *common.EntityMan
 	// Sum all cover bonuses (stacking additively)
 	totalCover := 0.0
 	for _, providerID := range coverProviders {
-		providerUnit := common.FindEntityByIDWithTag(squadmanager, providerID, SquadMemberTag)
-		if providerUnit == nil {
-			continue
-		}
-
 		// Check if provider has cover component
-		if !providerUnit.HasComponent(CoverComponent) {
+		if !squadmanager.HasComponentByIDWithTag(providerID, SquadMemberTag, CoverComponent) {
 			continue
 		}
 
-		coverData := common.GetComponentType[*CoverData](providerUnit, CoverComponent)
+		coverData := common.GetComponentTypeByIDWithTag[*CoverData](squadmanager, providerID, SquadMemberTag, CoverComponent)
 
 		// Check if provider is active (alive and not stunned)
 		isActive := true
 		if coverData.RequiresActive {
-			attr := common.GetAttributes(providerUnit)
-			isActive = attr.CurrentHealth > 0
+			attr := common.GetAttributesByIDWithTag(squadmanager, providerID, SquadMemberTag)
+			if attr != nil {
+				isActive = attr.CurrentHealth > 0
+			}
 			// TODO: Add stun/disable status check when status effects are implemented
 		}
 
@@ -325,24 +310,19 @@ func GetCoverProvidersFor(defenderID ecs.EntityID, defenderSquadID ecs.EntityID,
 			continue
 		}
 
-		unit := common.FindEntityByIDWithTag(squadmanager, unitID, SquadMemberTag)
-		if unit == nil {
-			continue
-		}
-
 		// Check if unit has cover component
-		if !unit.HasComponent(CoverComponent) {
+		if !squadmanager.HasComponentByIDWithTag(unitID, SquadMemberTag, CoverComponent) {
 			continue
 		}
 
-		coverData := common.GetComponentType[*CoverData](unit, CoverComponent)
+		coverData := common.GetComponentTypeByIDWithTag[*CoverData](squadmanager, unitID, SquadMemberTag, CoverComponent)
 
 		// Get unit's position
-		if !unit.HasComponent(GridPositionComponent) {
+		if !squadmanager.HasComponentByIDWithTag(unitID, SquadMemberTag, GridPositionComponent) {
 			continue
 		}
 
-		unitPos := common.GetComponentType[*GridPositionData](unit, GridPositionComponent)
+		unitPos := common.GetComponentTypeByIDWithTag[*GridPositionData](squadmanager, unitID, SquadMemberTag, GridPositionComponent)
 
 		// Check if unit is in front of defender (lower row number)
 		// Unit must be at least 1 row in front to provide cover
@@ -385,11 +365,10 @@ func displayCombatResult(result *CombatResult, squadmanager *common.EntityManage
 
 	// ✅ Result uses native entity IDs
 	for unitID, dmg := range result.DamageByUnit {
-		unit := common.FindEntityByIDWithTag(squadmanager, unitID, SquadMemberTag)
-		if unit == nil {
+		name := common.GetComponentTypeByIDWithTag[*common.Name](squadmanager, unitID, SquadMemberTag, common.NameComponent)
+		if name == nil {
 			continue
 		}
-		name := common.GetComponentType[*common.Name](unit, common.NameComponent)
 		fmt.Printf("    %s took %d damage\n", name.NameStr, dmg)
 	}
 }
@@ -404,15 +383,14 @@ func displaySquadStatus(squadID ecs.EntityID, squadmanager *common.EntityManager
 	alive := 0
 
 	for _, unitID := range unitIDs {
-		unit := common.FindEntityByIDWithTag(squadmanager, unitID, SquadMemberTag)
-		if unit == nil {
+		attr := common.GetAttributesByIDWithTag(squadmanager, unitID, SquadMemberTag)
+		if attr == nil {
 			continue
 		}
 
-		attr := common.GetAttributes(unit)
 		if attr.CurrentHealth > 0 {
 			alive++
-			name := common.GetComponentType[*common.Name](unit, common.NameComponent)
+			name := common.GetComponentTypeByIDWithTag[*common.Name](squadmanager, unitID, SquadMemberTag, common.NameComponent)
 			fmt.Printf("  %s: %d/%d HP\n", name.NameStr, attr.CurrentHealth, attr.MaxHealth)
 		}
 	}
