@@ -22,7 +22,7 @@ const (
 // Currently only used for holding items.
 // Fixed ECS violation: Uses EntityIDs instead of entity pointers
 type TileContents struct {
-	entityIDs []ecs.EntityID
+	EntityIDs []ecs.EntityID
 }
 
 // TileCords keeps track of the x,y coordinates in the TileMap

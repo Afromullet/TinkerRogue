@@ -15,26 +15,6 @@ import (
 	"github.com/norendren/go-fov/fov"
 )
 
-var ValidPos ValidPositions
-
-// ValidPositions stores positions where players or creatures can move.
-// TODO: Determine if this is still needed and find a better approach if possible.
-type ValidPositions struct {
-	Pos []coords.LogicalPosition
-}
-
-// Add appends a new position to the valid positions list.
-func (v *ValidPositions) Add(x int, y int) {
-
-	newpos := coords.LogicalPosition{X: x, Y: y}
-	v.Pos = append(v.Pos, newpos)
-}
-
-// Get returns a pointer to the position at the specified index.
-func (v *ValidPositions) Get(index int) *coords.LogicalPosition {
-	return &v.Pos[index]
-}
-
 // Rect represents a rectangular room or area on the game map.
 type Rect struct {
 	X1 int
@@ -108,12 +88,13 @@ func (r *Rect) Intersect(other Rect) bool {
 
 // Holds the Map Information
 type GameMap struct {
-	Tiles         []*Tile
-	Rooms         []Rect
-	PlayerVisible *fov.View
-	NumTiles      int
-	RightEdgeX    int
-	RightEdgeY    int
+	Tiles          []*Tile
+	Rooms          []Rect
+	PlayerVisible  *fov.View
+	NumTiles       int
+	RightEdgeX     int
+	RightEdgeY     int
+	ValidPositions []coords.LogicalPosition
 }
 
 // NewGameMap creates a new game map using the specified generator algorithm
@@ -137,9 +118,7 @@ func NewGameMap(generatorName string) GameMap {
 	dungeonMap.Tiles = result.Tiles
 	dungeonMap.Rooms = result.Rooms
 	dungeonMap.NumTiles = len(dungeonMap.Tiles)
-
-	// Update global ValidPos for backward compatibility
-	ValidPos = ValidPositions{Pos: result.ValidPositions}
+	dungeonMap.ValidPositions = result.ValidPositions
 
 	dungeonMap.PlaceStairs(images)
 
@@ -198,9 +177,9 @@ func (gameMap *GameMap) StartingPosition() coords.LogicalPosition {
 		return logicalPos
 	}
 
-	// Last resort: return first valid position from ValidPos
-	if len(ValidPos.Pos) > 0 {
-		return ValidPos.Pos[0]
+	// Last resort: return first valid position from ValidPositions
+	if len(gameMap.ValidPositions) > 0 {
+		return gameMap.ValidPositions[0]
 	}
 
 	// Shouldn't reach here, but return center as final fallback
@@ -213,11 +192,11 @@ func (gameMap *GameMap) AddEntityToTile(entity *ecs.Entity, pos *coords.LogicalP
 
 	tile := gameMap.Tile(pos)
 
-	if tile.tileContents.entityIDs == nil {
-		tile.tileContents.entityIDs = make([]ecs.EntityID, 0)
+	if tile.tileContents.EntityIDs == nil {
+		tile.tileContents.EntityIDs = make([]ecs.EntityID, 0)
 	}
 
-	tile.tileContents.entityIDs = append(tile.tileContents.entityIDs, entity.ID)
+	tile.tileContents.EntityIDs = append(tile.tileContents.EntityIDs, entity.ID)
 }
 
 // This removes the item at the specified index from the tile.
@@ -230,11 +209,11 @@ func (gameMap *GameMap) RemoveItemFromTile(index int, pos *coords.LogicalPositio
 
 	tile := gameMap.Tile(pos)
 
-	if tile.tileContents.entityIDs == nil {
+	if tile.tileContents.EntityIDs == nil {
 		return 0, errors.New("entityIDs slice is nil")
 	}
 
-	entityIDs := tile.tileContents.entityIDs
+	entityIDs := tile.tileContents.EntityIDs
 
 	if index < 0 || index >= len(entityIDs) {
 		return 0, errors.New("index out of range")
@@ -242,7 +221,7 @@ func (gameMap *GameMap) RemoveItemFromTile(index int, pos *coords.LogicalPositio
 
 	entityID := entityIDs[index]
 
-	tile.tileContents.entityIDs = append(entityIDs[:index], entityIDs[index+1:]...)
+	tile.tileContents.EntityIDs = append(entityIDs[:index], entityIDs[index+1:]...)
 
 	return entityID, nil
 }
@@ -289,10 +268,10 @@ func (gm *GameMap) PlaceStairs(images TileImageSet) {
 		//Starts at 1 so we don't create stairs in the starting room
 		randRoom := common.GetRandomBetween(1, len(gm.Rooms)-1)
 		x, y = gm.Rooms[randRoom].Center()
-	} else if len(ValidPos.Pos) > 0 {
+	} else if len(gm.ValidPositions) > 0 {
 		// Fallback for non-room generators: place stairs at random valid position
-		randIndex := common.GetRandomBetween(0, len(ValidPos.Pos)-1)
-		pos := ValidPos.Pos[randIndex]
+		randIndex := common.GetRandomBetween(0, len(gm.ValidPositions)-1)
+		pos := gm.ValidPositions[randIndex]
 		x, y = pos.X, pos.Y
 	} else {
 		// No valid positions available - shouldn't happen, but return safely

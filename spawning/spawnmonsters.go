@@ -18,7 +18,7 @@ func SpawnMonster(ecsmanager common.EntityManager, gm *worldmap.GameMap) {
 		//Try 3 times to spawn something. Only spawn it if the tile is not blocked
 		for i := 0; i <= 2; i++ {
 
-			index := common.GetRandomBetween(0, len(worldmap.ValidPos.Pos)-1)
+			index := common.GetRandomBetween(0, len(gm.ValidPositions)-1)
 
 			if !gm.Tiles[index].Blocked {
 
@@ -83,18 +83,18 @@ func SpawnStartingCreatures(MaxNumCreatures int, em *common.EntityManager, gm *w
 				randomPos = indices[common.RandomInt(len(indices))]
 			} else {
 				// Room has no valid positions, fall back to ValidPositions
-				if len(worldmap.ValidPos.Pos) > 0 {
-					idx := common.GetRandomBetween(0, len(worldmap.ValidPos.Pos)-1)
-					randomPos = worldmap.ValidPos.Pos[idx]
+				if len(gm.ValidPositions) > 0 {
+					idx := common.GetRandomBetween(0, len(gm.ValidPositions)-1)
+					randomPos = gm.ValidPositions[idx]
 				} else {
 					continue // Skip if no valid positions
 				}
 			}
 		} else {
 			// Non-room generators: spawn at random valid position
-			if len(worldmap.ValidPos.Pos) > 0 {
-				idx := common.GetRandomBetween(0, len(worldmap.ValidPos.Pos)-1)
-				randomPos = worldmap.ValidPos.Pos[idx]
+			if len(gm.ValidPositions) > 0 {
+				idx := common.GetRandomBetween(0, len(gm.ValidPositions)-1)
+				randomPos = gm.ValidPositions[idx]
 			} else {
 				continue // Skip if no valid positions
 			}

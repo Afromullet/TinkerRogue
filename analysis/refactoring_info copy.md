@@ -46,65 +46,9 @@ SetupNewGame() -> SetupSquadSystem() -> SetupGameplayFactions()
 
 **Effort:** 4-6 hours (extract to spawning, add config)
 
----
-
-### 3. Incomplete ECS Migration - TileContents (HIGH)
-**Impact:** HIGH - Performance and correctness issues
-**File:** `worldmap/tile.go` (TileContents struct)
-
-**Problem:**
-- `TileContents.entityIDs` uses `[]ecs.EntityID` (good!)
-- But lowercase field name `entityIDs` suggests private field
-- Inconsistent naming with other ECS code (should be `EntityIDs`)
-- May cause silent bugs when accessing from other packages
-- Fixed for inventory/items but not worldmap tiles
-
-**Current State:**
-```go
-type TileContents struct {
-    entityIDs []ecs.EntityID  // Should be EntityIDs
-}
-```
-
-**Solution:**
-- Rename `entityIDs` -> `EntityIDs` (public field)
-- Audit all access in `worldmap/*.go` for correctness
-- Verify CLAUDE.md note about 2025-11-08 fix was complete
-
-**Effort:** 1-2 hours (mechanical rename, verify access)
 
 ---
 
-
----
-
-### 5. ValidPos Global State Anti-Pattern (HIGH)
-**Impact:** MEDIUM-HIGH - Breaks encapsulation, causes bugs
-**File:** `worldmap/dungeongen.go:18`
-
-**Problem:**
-```go
-var ValidPos ValidPositions  // Package-level mutable global
-```
-
-- Global mutable state updated during map generation
-- Multiple generators modify same global variable
-- Creates hidden coupling between worldmap and spawning systems
-- Race condition risk if generators run concurrently
-- Contradicts strategy pattern improvements (2025-11-08)
-
-**Usage:**
-- Updated by: `NewGameMap()` from generator results
-- Read by: `PlaceStairs()`, spawning systems
-- Fallback mechanism in worldmap functions
-
-**Solution:**
-- Add `ValidPositions` field to `GameMap` struct
-- Pass positions explicitly through function parameters
-- Remove global variable entirely
-- Update spawning to query GameMap instead of global
-
-**Effort:** 3-4 hours (touch multiple systems)
 
 ---
 
