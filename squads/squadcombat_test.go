@@ -8,32 +8,7 @@ import (
 	"github.com/bytearena/ecs"
 )
 
-// ========================================
-// TEST HELPERS
-// ========================================
-
-// setupTestManager creates a manager with squad system initialized
-func setupTestCombatManager(t *testing.T) *common.EntityManager {
-	t.Helper()
-	manager := common.NewEntityManager()
-
-	if err := InitializeSquadData(manager); err != nil {
-		t.Fatalf("Failed to initialize squad data: %v", err)
-	}
-
-	// Initialize common components for tests
-	if common.PositionComponent == nil {
-		common.PositionComponent = manager.World.NewComponent()
-	}
-	if common.AttributeComponent == nil {
-		common.AttributeComponent = manager.World.NewComponent()
-	}
-	if common.NameComponent == nil {
-		common.NameComponent = manager.World.NewComponent()
-	}
-
-	return manager
-}
+// Note: setupTestManager is defined in squads_test.go
 
 // createTestUnit creates a unit with specified attributes for testing
 func createTestUnit(manager *common.EntityManager, squadID ecs.EntityID, row, col int, health, strength, dexterity int) *ecs.Entity {
@@ -115,7 +90,7 @@ func createTestSquad(manager *common.EntityManager, name string) ecs.EntityID {
 // ========================================
 
 func TestExecuteSquadAttack_SingleAttackerVsSingleDefender(t *testing.T) {
-	manager := setupTestCombatManager(t)
+	manager := setupTestManager(t)
 
 	// Create attacker squad
 	attackerSquadID := createTestSquad(manager, "Attackers")
@@ -149,7 +124,7 @@ func TestExecuteSquadAttack_SingleAttackerVsSingleDefender(t *testing.T) {
 }
 
 func TestExecuteSquadAttack_MultipleAttackersVsMultipleDefenders(t *testing.T) {
-	manager := setupTestCombatManager(t)
+	manager := setupTestManager(t)
 
 	// Create attacker squad with 3 units
 	attackerSquadID := createTestSquad(manager, "Attackers")
@@ -178,7 +153,7 @@ func TestExecuteSquadAttack_MultipleAttackersVsMultipleDefenders(t *testing.T) {
 }
 
 func TestExecuteSquadAttack_DeadAttackersDoNotAttack(t *testing.T) {
-	manager := setupTestCombatManager(t)
+	manager := setupTestManager(t)
 
 	// Create attacker squad with dead unit
 	attackerSquadID := createTestSquad(manager, "Attackers")
@@ -206,7 +181,7 @@ func TestExecuteSquadAttack_DeadAttackersDoNotAttack(t *testing.T) {
 }
 
 func TestExecuteSquadAttack_MultiTargetAttack(t *testing.T) {
-	manager := setupTestCombatManager(t)
+	manager := setupTestManager(t)
 
 	// Create attacker with multi-target ability
 	attackerSquadID := createTestSquad(manager, "Attackers")
@@ -233,7 +208,7 @@ func TestExecuteSquadAttack_MultiTargetAttack(t *testing.T) {
 }
 
 func TestExecuteSquadAttack_CellBasedTargeting(t *testing.T) {
-	manager := setupTestCombatManager(t)
+	manager := setupTestManager(t)
 
 	// Create attacker with cell-based targeting (2x2 pattern)
 	attackerSquadID := createTestSquad(manager, "Attackers")
@@ -261,7 +236,7 @@ func TestExecuteSquadAttack_CellBasedTargeting(t *testing.T) {
 }
 
 func TestExecuteSquadAttack_UnitsKilledTracking(t *testing.T) {
-	manager := setupTestCombatManager(t)
+	manager := setupTestManager(t)
 
 	// Create attacker with high damage
 	attackerSquadID := createTestSquad(manager, "Attackers")
@@ -285,7 +260,7 @@ func TestExecuteSquadAttack_UnitsKilledTracking(t *testing.T) {
 // ========================================
 
 func TestCalculateUnitDamageByID_BasicDamageCalculation(t *testing.T) {
-	manager := setupTestCombatManager(t)
+	manager := setupTestManager(t)
 
 	squadID := createTestSquad(manager, "TestSquad")
 	attacker := createTestUnit(manager, squadID, 0, 0, 100, 20, 100) // 100% hit rate
@@ -319,7 +294,7 @@ func TestCalculateUnitDamageByID_BasicDamageCalculation(t *testing.T) {
 }
 
 func TestCalculateUnitDamageByID_MissReturnsZero(t *testing.T) {
-	manager := setupTestCombatManager(t)
+	manager := setupTestManager(t)
 
 	squadID := createTestSquad(manager, "TestSquad")
 	attacker := createTestUnit(manager, squadID, 0, 0, 100, 20, 0) // Low dexterity = low hit rate
@@ -339,7 +314,7 @@ func TestCalculateUnitDamageByID_MissReturnsZero(t *testing.T) {
 }
 
 func TestCalculateUnitDamageByID_DodgeReturnsZero(t *testing.T) {
-	manager := setupTestCombatManager(t)
+	manager := setupTestManager(t)
 
 	squadID := createTestSquad(manager, "TestSquad")
 	attacker := createTestUnit(manager, squadID, 0, 0, 100, 20, 100)
@@ -360,7 +335,7 @@ func TestCalculateUnitDamageByID_DodgeReturnsZero(t *testing.T) {
 }
 
 func TestCalculateUnitDamageByID_PhysicalResistanceReducesDamage(t *testing.T) {
-	manager := setupTestCombatManager(t)
+	manager := setupTestManager(t)
 
 	squadID := createTestSquad(manager, "TestSquad")
 	// Strength=20, Armor=10 for defender gives significant resistance
@@ -391,7 +366,7 @@ func TestCalculateUnitDamageByID_PhysicalResistanceReducesDamage(t *testing.T) {
 }
 
 func TestCalculateUnitDamageByID_MinimumDamageIsOne(t *testing.T) {
-	manager := setupTestCombatManager(t)
+	manager := setupTestManager(t)
 
 	squadID := createTestSquad(manager, "TestSquad")
 	// Very low strength/weapon for attacker, very high armor for defender
@@ -417,7 +392,7 @@ func TestCalculateUnitDamageByID_MinimumDamageIsOne(t *testing.T) {
 }
 
 func TestCalculateUnitDamageByID_NilUnitsReturnZero(t *testing.T) {
-	manager := setupTestCombatManager(t)
+	manager := setupTestManager(t)
 
 	damage := calculateUnitDamageByID(9999, 9998, manager) // Non-existent IDs
 
@@ -431,7 +406,7 @@ func TestCalculateUnitDamageByID_NilUnitsReturnZero(t *testing.T) {
 // ========================================
 
 func TestCalculateTotalCover_NoCoverProviders(t *testing.T) {
-	manager := setupTestCombatManager(t)
+	manager := setupTestManager(t)
 
 	squadID := createTestSquad(manager, "TestSquad")
 	defender := createTestUnit(manager, squadID, 1, 0, 100, 10, 0)
@@ -444,7 +419,7 @@ func TestCalculateTotalCover_NoCoverProviders(t *testing.T) {
 }
 
 func TestCalculateTotalCover_SingleCoverProvider(t *testing.T) {
-	manager := setupTestCombatManager(t)
+	manager := setupTestManager(t)
 
 	squadID := createTestSquad(manager, "TestSquad")
 
@@ -467,7 +442,7 @@ func TestCalculateTotalCover_SingleCoverProvider(t *testing.T) {
 }
 
 func TestCalculateTotalCover_MultipleCoverProvidersStack(t *testing.T) {
-	manager := setupTestCombatManager(t)
+	manager := setupTestManager(t)
 
 	squadID := createTestSquad(manager, "TestSquad")
 
@@ -499,7 +474,7 @@ func TestCalculateTotalCover_MultipleCoverProvidersStack(t *testing.T) {
 }
 
 func TestCalculateTotalCover_DeadUnitDoesNotProvideCover(t *testing.T) {
-	manager := setupTestCombatManager(t)
+	manager := setupTestManager(t)
 
 	squadID := createTestSquad(manager, "TestSquad")
 
@@ -524,7 +499,7 @@ func TestCalculateTotalCover_DeadUnitDoesNotProvideCover(t *testing.T) {
 }
 
 func TestCalculateTotalCover_CoverRangeLimit(t *testing.T) {
-	manager := setupTestCombatManager(t)
+	manager := setupTestManager(t)
 
 	squadID := createTestSquad(manager, "TestSquad")
 
@@ -547,7 +522,7 @@ func TestCalculateTotalCover_CoverRangeLimit(t *testing.T) {
 }
 
 func TestCalculateTotalCover_CoverOnlyInSameColumn(t *testing.T) {
-	manager := setupTestCombatManager(t)
+	manager := setupTestManager(t)
 
 	squadID := createTestSquad(manager, "TestSquad")
 
@@ -570,7 +545,7 @@ func TestCalculateTotalCover_CoverOnlyInSameColumn(t *testing.T) {
 }
 
 func TestCalculateTotalCover_CappedAtOne(t *testing.T) {
-	manager := setupTestCombatManager(t)
+	manager := setupTestManager(t)
 
 	squadID := createTestSquad(manager, "TestSquad")
 
@@ -603,7 +578,7 @@ func TestCalculateTotalCover_CappedAtOne(t *testing.T) {
 // ========================================
 
 func TestGetCoverProvidersFor_NoProviders(t *testing.T) {
-	manager := setupTestCombatManager(t)
+	manager := setupTestManager(t)
 
 	squadID := createTestSquad(manager, "TestSquad")
 	defender := createTestUnit(manager, squadID, 1, 0, 100, 10, 0)
@@ -617,7 +592,7 @@ func TestGetCoverProvidersFor_NoProviders(t *testing.T) {
 }
 
 func TestGetCoverProvidersFor_SingleProvider(t *testing.T) {
-	manager := setupTestCombatManager(t)
+	manager := setupTestManager(t)
 
 	squadID := createTestSquad(manager, "TestSquad")
 
@@ -643,7 +618,7 @@ func TestGetCoverProvidersFor_SingleProvider(t *testing.T) {
 }
 
 func TestGetCoverProvidersFor_MultipleProviders(t *testing.T) {
-	manager := setupTestCombatManager(t)
+	manager := setupTestManager(t)
 
 	squadID := createTestSquad(manager, "TestSquad")
 
@@ -673,7 +648,7 @@ func TestGetCoverProvidersFor_MultipleProviders(t *testing.T) {
 }
 
 func TestGetCoverProvidersFor_DoesNotIncludeSelf(t *testing.T) {
-	manager := setupTestCombatManager(t)
+	manager := setupTestManager(t)
 
 	squadID := createTestSquad(manager, "TestSquad")
 
@@ -693,7 +668,7 @@ func TestGetCoverProvidersFor_DoesNotIncludeSelf(t *testing.T) {
 }
 
 func TestGetCoverProvidersFor_OnlyFromSameSquad(t *testing.T) {
-	manager := setupTestCombatManager(t)
+	manager := setupTestManager(t)
 
 	// Squad 1
 	squad1ID := createTestSquad(manager, "Squad1")
@@ -722,7 +697,7 @@ func TestGetCoverProvidersFor_OnlyFromSameSquad(t *testing.T) {
 // ========================================
 
 func TestSelectLowestHPTargetID(t *testing.T) {
-	manager := setupTestCombatManager(t)
+	manager := setupTestManager(t)
 
 	squadID := createTestSquad(manager, "TestSquad")
 
@@ -740,7 +715,7 @@ func TestSelectLowestHPTargetID(t *testing.T) {
 }
 
 func TestSelectLowestHPTargetID_EmptyList(t *testing.T) {
-	manager := setupTestCombatManager(t)
+	manager := setupTestManager(t)
 
 	var emptyList []ecs.EntityID
 	targetID := selectLowestHPTargetID(emptyList, manager)
@@ -751,7 +726,7 @@ func TestSelectLowestHPTargetID_EmptyList(t *testing.T) {
 }
 
 func TestSelectRandomTargetIDs_CountLessThanList(t *testing.T) {
-	manager := setupTestCombatManager(t)
+	manager := setupTestManager(t)
 
 	squadID := createTestSquad(manager, "TestSquad")
 
@@ -769,7 +744,7 @@ func TestSelectRandomTargetIDs_CountLessThanList(t *testing.T) {
 }
 
 func TestSelectRandomTargetIDs_CountGreaterThanList(t *testing.T) {
-	manager := setupTestCombatManager(t)
+	manager := setupTestManager(t)
 
 	squadID := createTestSquad(manager, "TestSquad")
 
@@ -814,7 +789,7 @@ func TestSumDamageMap_EmptyMap(t *testing.T) {
 // ========================================
 
 func TestCombatWithCoverSystem_Integration(t *testing.T) {
-	manager := setupTestCombatManager(t)
+	manager := setupTestManager(t)
 
 	// Create attacker squad
 	attackerSquadID := createTestSquad(manager, "Attackers")
@@ -870,7 +845,7 @@ func TestCombatWithCoverSystem_Integration(t *testing.T) {
 }
 
 func TestMultiRoundCombat_Integration(t *testing.T) {
-	manager := setupTestCombatManager(t)
+	manager := setupTestManager(t)
 
 	// Create two evenly matched squads
 	squad1ID := createTestSquad(manager, "Squad1")
@@ -928,7 +903,7 @@ func TestMultiRoundCombat_Integration(t *testing.T) {
 // ========================================
 
 func BenchmarkExecuteSquadAttack_SingleVsSingle(b *testing.B) {
-	manager := setupTestCombatManager(&testing.T{})
+	manager := setupTestManager(&testing.T{})
 
 	attackerSquadID := createTestSquad(manager, "Attackers")
 	createTestUnit(manager, attackerSquadID, 0, 0, 100, 20, 100)
@@ -943,7 +918,7 @@ func BenchmarkExecuteSquadAttack_SingleVsSingle(b *testing.B) {
 }
 
 func BenchmarkExecuteSquadAttack_FullSquadVsFullSquad(b *testing.B) {
-	manager := setupTestCombatManager(&testing.T{})
+	manager := setupTestManager(&testing.T{})
 
 	// Create full squads (9 units each)
 	attackerSquadID := createTestSquad(manager, "Attackers")
@@ -967,7 +942,7 @@ func BenchmarkExecuteSquadAttack_FullSquadVsFullSquad(b *testing.B) {
 }
 
 func BenchmarkCalculateTotalCover(b *testing.B) {
-	manager := setupTestCombatManager(&testing.T{})
+	manager := setupTestManager(&testing.T{})
 
 	squadID := createTestSquad(manager, "TestSquad")
 

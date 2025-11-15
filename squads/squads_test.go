@@ -5,6 +5,7 @@ import (
 	"game_main/common"
 	"game_main/coords"
 	"game_main/entitytemplates"
+	testfx "game_main/testing"
 	"testing"
 
 	"github.com/bytearena/ecs"
@@ -14,24 +15,13 @@ import (
 // TEST SETUP HELPERS
 // ========================================
 
-// setupTestSquadManager creates a fresh SquadECSManager for testing
-func setupTestSquadManager(t *testing.T) *common.EntityManager {
-	manager := common.NewEntityManager()
-	InitSquadComponents(manager)
-	InitSquadTags(manager)
-
-	// Initialize common components for CreateEmptySquad and visualization
-	// (Squad entities need these to track position and unit entities need AttributeComponent and NameComponent)
-	if common.PositionComponent == nil {
-		common.PositionComponent = manager.World.NewComponent()
+// setupTestManager creates a manager with squad system initialized.
+// Uses the shared testfx.NewTestEntityManager() fixture and adds squad-specific init.
+func setupTestManager(t *testing.T) *common.EntityManager {
+	manager := testfx.NewTestEntityManager()
+	if err := InitializeSquadData(manager); err != nil {
+		t.Fatalf("Failed to initialize squad data: %v", err)
 	}
-	if common.AttributeComponent == nil {
-		common.AttributeComponent = manager.World.NewComponent()
-	}
-	if common.NameComponent == nil {
-		common.NameComponent = manager.World.NewComponent()
-	}
-
 	return manager
 }
 
@@ -158,7 +148,7 @@ func CreateHighCapacitySquad(manager *common.EntityManager, squadName string, ca
 // ========================================
 
 func TestCreateUnitEntity_SingleCell(t *testing.T) {
-	manager := setupTestSquadManager(t)
+	manager := setupTestManager(t)
 
 	jsonMonster := createTestJSONMonster("Warrior", 1, 1, "Tank")
 	unit, err := CreateUnitTemplates(jsonMonster)
@@ -202,7 +192,7 @@ func TestCreateUnitEntity_SingleCell(t *testing.T) {
 }
 
 func TestCreateUnitEntity_MultiCell_2x2(t *testing.T) {
-	manager := setupTestSquadManager(t)
+	manager := setupTestManager(t)
 
 	jsonMonster := createTestJSONMonster("Giant", 2, 2, "Tank")
 	unit, err := CreateUnitTemplates(jsonMonster)
@@ -228,7 +218,7 @@ func TestCreateUnitEntity_MultiCell_2x2(t *testing.T) {
 }
 
 func TestCreateUnitEntity_MultiCell_1x3(t *testing.T) {
-	manager := setupTestSquadManager(t)
+	manager := setupTestManager(t)
 
 	jsonMonster := createTestJSONMonster("Cavalry", 1, 3, "DPS")
 	unit, err := CreateUnitTemplates(jsonMonster)
@@ -258,7 +248,7 @@ func TestCreateUnitEntity_MultiCell_1x3(t *testing.T) {
 // ========================================
 
 func TestAddUnitToSquad_SingleCell_ValidPosition(t *testing.T) {
-	manager := setupTestSquadManager(t)
+	manager := setupTestManager(t)
 
 	// Create squad
 	CreateEmptySquad(manager, "Test Squad")
@@ -294,7 +284,7 @@ func TestAddUnitToSquad_SingleCell_ValidPosition(t *testing.T) {
 }
 
 func TestAddUnitToSquad_SingleCell_AllPositions(t *testing.T) {
-	manager := setupTestSquadManager(t)
+	manager := setupTestManager(t)
 
 	// Use high capacity squad to fit 9 units (0.2 capacity each = 1.8 total)
 	squadID := CreateHighCapacitySquad(manager, "Test Squad", 9)
@@ -339,7 +329,7 @@ func TestAddUnitToSquad_SingleCell_AllPositions(t *testing.T) {
 }
 
 func TestAddUnitToSquad_MultiCell_2x2_TopLeft(t *testing.T) {
-	manager := setupTestSquadManager(t)
+	manager := setupTestManager(t)
 
 	CreateEmptySquad(manager, "Test Squad")
 
@@ -372,7 +362,7 @@ func TestAddUnitToSquad_MultiCell_2x2_TopLeft(t *testing.T) {
 }
 
 func TestAddUnitToSquad_MultiCell_1x3_LeftColumn(t *testing.T) {
-	manager := setupTestSquadManager(t)
+	manager := setupTestManager(t)
 
 	CreateEmptySquad(manager, "Test Squad")
 
@@ -405,7 +395,7 @@ func TestAddUnitToSquad_MultiCell_1x3_LeftColumn(t *testing.T) {
 }
 
 func TestAddUnitToSquad_MultiCell_3x1_TopRow(t *testing.T) {
-	manager := setupTestSquadManager(t)
+	manager := setupTestManager(t)
 
 	CreateEmptySquad(manager, "Test Squad")
 
@@ -438,7 +428,7 @@ func TestAddUnitToSquad_MultiCell_3x1_TopRow(t *testing.T) {
 }
 
 func TestAddUnitToSquad_Collision_SingleCellOverlap(t *testing.T) {
-	manager := setupTestSquadManager(t)
+	manager := setupTestManager(t)
 
 	CreateEmptySquad(manager, "Test Squad")
 
@@ -474,7 +464,7 @@ func TestAddUnitToSquad_Collision_SingleCellOverlap(t *testing.T) {
 }
 
 func TestAddUnitToSquad_Collision_MultiCellOverlap(t *testing.T) {
-	manager := setupTestSquadManager(t)
+	manager := setupTestManager(t)
 
 	CreateEmptySquad(manager, "Test Squad")
 
@@ -516,7 +506,7 @@ func TestAddUnitToSquad_Collision_MultiCellOverlap(t *testing.T) {
 }
 
 func TestAddUnitToSquad_InvalidPosition_RowTooLarge(t *testing.T) {
-	manager := setupTestSquadManager(t)
+	manager := setupTestManager(t)
 
 	CreateEmptySquad(manager, "Test Squad")
 
@@ -540,7 +530,7 @@ func TestAddUnitToSquad_InvalidPosition_RowTooLarge(t *testing.T) {
 }
 
 func TestAddUnitToSquad_InvalidPosition_NegativeCol(t *testing.T) {
-	manager := setupTestSquadManager(t)
+	manager := setupTestManager(t)
 
 	CreateEmptySquad(manager, "Test Squad")
 
@@ -564,7 +554,7 @@ func TestAddUnitToSquad_InvalidPosition_NegativeCol(t *testing.T) {
 }
 
 func TestAddUnitToSquad_MixedSizes_NoOverlap(t *testing.T) {
-	manager := setupTestSquadManager(t)
+	manager := setupTestManager(t)
 
 	// Use high capacity squad to fit multiple units
 	squadID := CreateHighCapacitySquad(manager, "Test Squad", 9)
@@ -621,7 +611,7 @@ func TestAddUnitToSquad_MixedSizes_NoOverlap(t *testing.T) {
 }
 
 func TestAddUnitToSquad_VerifySquadMemberComponent(t *testing.T) {
-	manager := setupTestSquadManager(t)
+	manager := setupTestManager(t)
 
 	CreateEmptySquad(manager, "Test Squad")
 
@@ -672,7 +662,7 @@ func TestAddUnitToSquad_VerifySquadMemberComponent(t *testing.T) {
 // ========================================
 
 func TestVisualizeSquad_EmptySquad(t *testing.T) {
-	manager := setupTestSquadManager(t)
+	manager := setupTestManager(t)
 
 	CreateEmptySquad(manager, "Empty Squad")
 
@@ -708,7 +698,7 @@ func TestVisualizeSquad_EmptySquad(t *testing.T) {
 }
 
 func TestVisualizeSquad_SingleUnit_1x1(t *testing.T) {
-	manager := setupTestSquadManager(t)
+	manager := setupTestManager(t)
 
 	CreateEmptySquad(manager, "Single Unit Squad")
 
@@ -757,7 +747,7 @@ func TestVisualizeSquad_SingleUnit_1x1(t *testing.T) {
 }
 
 func TestVisualizeSquad_MultiCell_2x2_Giant(t *testing.T) {
-	manager := setupTestSquadManager(t)
+	manager := setupTestManager(t)
 
 	CreateEmptySquad(manager, "Giant Squad")
 
@@ -808,7 +798,7 @@ func TestVisualizeSquad_MultiCell_2x2_Giant(t *testing.T) {
 }
 
 func TestVisualizeSquad_MultiCell_1x3_Cavalry(t *testing.T) {
-	manager := setupTestSquadManager(t)
+	manager := setupTestManager(t)
 
 	CreateEmptySquad(manager, "Cavalry Squad")
 
@@ -857,7 +847,7 @@ func TestVisualizeSquad_MultiCell_1x3_Cavalry(t *testing.T) {
 }
 
 func TestVisualizeSquad_FullFormation_MixedUnits(t *testing.T) {
-	manager := setupTestSquadManager(t)
+	manager := setupTestManager(t)
 
 	// Use high capacity squad for multiple units (8 units * 2.8 capacity each = 22.4 needed)
 	squadID := CreateHighCapacitySquad(manager, "Mixed Formation", 25)
@@ -923,7 +913,7 @@ func TestVisualizeSquad_FullFormation_MixedUnits(t *testing.T) {
 }
 
 func TestVisualizeSquad_ComplexFormation_MultiCellUnits(t *testing.T) {
-	manager := setupTestSquadManager(t)
+	manager := setupTestManager(t)
 
 	// Use high capacity squad for 4 units (4 * 2.8 = 11.2 needed)
 	squadID := CreateHighCapacitySquad(manager, "Complex Formation", 15)
@@ -989,7 +979,7 @@ func TestVisualizeSquad_ComplexFormation_MultiCellUnits(t *testing.T) {
 }
 
 func TestVisualizeSquad_NonExistentSquad(t *testing.T) {
-	manager := setupTestSquadManager(t)
+	manager := setupTestManager(t)
 
 	// Try to visualize squad that doesn't exist
 	output := VisualizeSquad(999999, manager)
@@ -1002,7 +992,7 @@ func TestVisualizeSquad_NonExistentSquad(t *testing.T) {
 }
 
 func TestVisualizeSquad_GridBoundaries(t *testing.T) {
-	manager := setupTestSquadManager(t)
+	manager := setupTestManager(t)
 
 	// Use high capacity squad for 4 corner units (4 * 2.8 = 11.2 needed)
 	squadID := CreateHighCapacitySquad(manager, "Boundary Test", 15)
@@ -1057,7 +1047,7 @@ func containsHelper(s, substr string) bool {
 // ========================================
 
 func TestGetSquadMovementSpeed_SingleUnit(t *testing.T) {
-	manager := setupTestSquadManager(t)
+	manager := setupTestManager(t)
 	CreateEmptySquad(manager, "Test Squad")
 
 	// Get the squad entity
@@ -1084,7 +1074,7 @@ func TestGetSquadMovementSpeed_SingleUnit(t *testing.T) {
 }
 
 func TestGetSquadMovementSpeed_MultipleUnits_ReturnsMinimum(t *testing.T) {
-	manager := setupTestSquadManager(t)
+	manager := setupTestManager(t)
 	CreateEmptySquad(manager, "Test Squad")
 
 	// Get the squad entity
@@ -1117,7 +1107,7 @@ func TestGetSquadMovementSpeed_MultipleUnits_ReturnsMinimum(t *testing.T) {
 }
 
 func TestGetSquadMovementSpeed_DeadUnitsIgnored(t *testing.T) {
-	manager := setupTestSquadManager(t)
+	manager := setupTestManager(t)
 	CreateEmptySquad(manager, "Test Squad")
 
 	// Get the squad entity
@@ -1160,7 +1150,7 @@ func TestGetSquadMovementSpeed_DeadUnitsIgnored(t *testing.T) {
 }
 
 func TestGetSquadMovementSpeed_EmptySquad(t *testing.T) {
-	manager := setupTestSquadManager(t)
+	manager := setupTestManager(t)
 	CreateEmptySquad(manager, "Empty Squad")
 
 	// Get the squad entity

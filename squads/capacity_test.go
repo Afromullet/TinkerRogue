@@ -13,7 +13,7 @@ import (
 // ========================================
 
 func TestCapacitySystem_BasicCalculations(t *testing.T) {
-	manager := setupTestSquadManager(t)
+	manager := setupTestManager(t)
 
 	// Create squad with no leader (default capacity = 6)
 	CreateEmptySquad(manager, "Test Squad")
@@ -64,7 +64,7 @@ func TestCapacitySystem_UnitCapacityCost(t *testing.T) {
 }
 
 func TestCapacitySystem_EnforceLimitWithoutLeader(t *testing.T) {
-	manager := setupTestSquadManager(t)
+	manager := setupTestManager(t)
 
 	CreateEmptySquad(manager, "Test Squad")
 
@@ -148,7 +148,7 @@ func TestCapacitySystem_WithLeader(t *testing.T) {
 }
 
 func TestCapacitySystem_IsSquadOverCapacity(t *testing.T) {
-	manager := setupTestSquadManager(t)
+	manager := setupTestManager(t)
 
 	CreateEmptySquad(manager, "Test Squad")
 
@@ -204,7 +204,7 @@ func TestCapacitySystem_IsSquadOverCapacity(t *testing.T) {
 }
 
 func TestCapacitySystem_CanAddUnitToSquad(t *testing.T) {
-	manager := setupTestSquadManager(t)
+	manager := setupTestManager(t)
 
 	CreateEmptySquad(manager, "Test Squad")
 
@@ -226,7 +226,7 @@ func TestCapacitySystem_CanAddUnitToSquad(t *testing.T) {
 }
 
 func TestCapacitySystem_UpdateSquadCapacity(t *testing.T) {
-	manager := setupTestSquadManager(t)
+	manager := setupTestManager(t)
 
 	CreateEmptySquad(manager, "Test Squad")
 

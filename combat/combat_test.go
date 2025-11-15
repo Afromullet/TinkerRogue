@@ -4,41 +4,17 @@ import (
 	"game_main/common"
 	"game_main/coords"
 	"game_main/squads"
-	"game_main/systems"
 	"testing"
 
 	"github.com/bytearena/ecs"
 )
 
 // ========================================
-// TEST SETUP HELPERS
-// ========================================
-
-// setupTestManager initializes a fresh EntityManager with all required components
-func setupTestManager() *common.EntityManager {
-	manager := common.NewEntityManager()
-
-	// Initialize common components for tests
-	common.PositionComponent = manager.World.NewComponent()
-	common.AttributeComponent = manager.World.NewComponent()
-	common.NameComponent = manager.World.NewComponent()
-
-	// Initialize PositionSystem (always create fresh for each test)
-	common.GlobalPositionSystem = systems.NewPositionSystem(manager.World)
-
-	// Initialize dependencies
-	squads.InitializeSquadData(manager)
-	InitializeCombatSystem(manager)
-
-	return manager
-}
-
-// ========================================
 // COMPONENT REGISTRATION TESTS
 // ========================================
 
 func TestCombatInitialization(t *testing.T) {
-	manager := setupTestManager()
+	manager := CreateTestCombatManager()
 
 	// Verify components exist
 	if FactionComponent == nil {
@@ -74,7 +50,7 @@ func TestCombatInitialization(t *testing.T) {
 // ========================================
 
 func TestCreateFaction(t *testing.T) {
-	manager := setupTestManager()
+	manager := CreateTestCombatManager()
 
 	fm := NewFactionManager(manager)
 	factionID := fm.CreateFaction("Test Faction", true)
@@ -99,7 +75,7 @@ func TestCreateFaction(t *testing.T) {
 }
 
 func TestAddSquadToFaction(t *testing.T) {
-	manager := setupTestManager()
+	manager := CreateTestCombatManager()
 
 	fm := NewFactionManager(manager)
 	factionID := fm.CreateFaction("Test Faction", true)
@@ -131,7 +107,7 @@ func TestAddSquadToFaction(t *testing.T) {
 // ========================================
 
 func TestInitializeCombat_RandomizesTurnOrder(t *testing.T) {
-	manager := setupTestManager()
+	manager := CreateTestCombatManager()
 
 	fm := NewFactionManager(manager)
 	faction1 := fm.CreateFaction("Faction 1", true)
@@ -164,7 +140,7 @@ func TestInitializeCombat_RandomizesTurnOrder(t *testing.T) {
 }
 
 func TestEndTurn_AdvancesToNextFaction(t *testing.T) {
-	manager := setupTestManager()
+	manager := CreateTestCombatManager()
 
 	fm := NewFactionManager(manager)
 	faction1 := fm.CreateFaction("Faction 1", true)
@@ -186,7 +162,7 @@ func TestEndTurn_AdvancesToNextFaction(t *testing.T) {
 }
 
 func TestEndTurn_WrapsAroundToFirstFaction(t *testing.T) {
-	manager := setupTestManager()
+	manager := CreateTestCombatManager()
 
 	fm := NewFactionManager(manager)
 	faction1 := fm.CreateFaction("Faction 1", true)
@@ -212,7 +188,7 @@ func TestEndTurn_WrapsAroundToFirstFaction(t *testing.T) {
 // ========================================
 
 func TestGetSquadMovementSpeed_ReturnsSlowestUnit(t *testing.T) {
-	manager := setupTestManager()
+	manager := CreateTestCombatManager()
 
 	squadID := CreateTestSquad(manager, "Test Squad", 3)
 
@@ -231,7 +207,7 @@ func TestGetSquadMovementSpeed_ReturnsSlowestUnit(t *testing.T) {
 }
 
 func TestMoveSquad_UpdatesPosition(t *testing.T) {
-	manager := setupTestManager()
+	manager := CreateTestCombatManager()
 
 	fm := NewFactionManager(manager)
 	factionID := fm.CreateFaction("Test Faction", true)
@@ -268,7 +244,7 @@ func TestMoveSquad_UpdatesPosition(t *testing.T) {
 // ========================================
 
 func TestGetSquadAttackRange_ReturnsMaxRange(t *testing.T) {
-	manager := setupTestManager()
+	manager := CreateTestCombatManager()
 
 	squadID := CreateTestMixedSquad(manager, "Mixed Squad", 3, 2)
 
@@ -281,7 +257,7 @@ func TestGetSquadAttackRange_ReturnsMaxRange(t *testing.T) {
 }
 
 func TestExecuteAttackAction_MeleeAttack(t *testing.T) {
-	manager := setupTestManager()
+	manager := CreateTestCombatManager()
 
 	fm := NewFactionManager(manager)
 	playerFaction := fm.CreateFaction("Player", true)
@@ -314,7 +290,7 @@ func TestExecuteAttackAction_MeleeAttack(t *testing.T) {
 // ========================================
 
 func TestFullCombatLoop_TwoFactions(t *testing.T) {
-	manager := setupTestManager()
+	manager := CreateTestCombatManager()
 
 	fm := NewFactionManager(manager)
 	turnMgr := NewTurnManager(manager)

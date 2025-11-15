@@ -5,9 +5,30 @@ import (
 	"game_main/common"
 	"game_main/coords"
 	"game_main/squads"
+	testfx "game_main/testing"
 
 	"github.com/bytearena/ecs"
 )
+
+// ========================================
+// TEST SETUP FIXTURES (Using shared testing fixtures)
+// ========================================
+
+// CreateTestCombatManager creates a fully initialized EntityManager with combat system.
+// This is the combat-specific version of testing.NewTestEntityManager() that also
+// initializes the combat system components and tags.
+//
+// Replaces the old setupTestManager() local function.
+func CreateTestCombatManager() *common.EntityManager {
+	manager := testfx.NewTestEntityManager()
+	// Initialize squad system (required by combat tests)
+	if err := squads.InitializeSquadData(manager); err != nil {
+		panic(fmt.Sprintf("Failed to initialize squad data: %v", err))
+	}
+	// Initialize combat system
+	InitializeCombatSystem(manager)
+	return manager
+}
 
 // ========================================
 // TEST HELPER FUNCTIONS
