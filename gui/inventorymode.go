@@ -115,46 +115,48 @@ func (im *InventoryMode) buildItemList() {
 				fmt.Printf("Selected item: %s (index %d)\n", entry.Name, entry.Index)
 
 				// If in throwables mode, prepare the throwable
-				if im.currentFilter == "Throwables" && im.context.PlayerData != nil {
+				if im.currentFilter == "Throwables" && im.context.PlayerData != nil && im.context.PlayerData.Inventory != nil {
 					// Type assert the inventory interface{} to *gear.Inventory
-					if inv, ok := im.context.PlayerData.Inventory.(*gear.Inventory); ok {
-						// Get the item entity ID from inventory
-						itemEntityID, err := gear.GetItemEntityID(inv, entry.Index)
-						if err == nil && itemEntityID != 0 {
-							// Prepare the throwable using EntityID (no need to find entity)
-							im.context.PlayerData.Throwables.SelectedThrowableID = itemEntityID
-							im.context.PlayerData.Throwables.ThrowableItemEntityID = itemEntityID
+					inv, ok := im.context.PlayerData.Inventory.(*gear.Inventory)
+					if !ok {
+						return
+					}
+					// Get the item entity ID from inventory
+					itemEntityID, err := gear.GetItemEntityID(inv, entry.Index)
+					if err == nil && itemEntityID != 0 {
+						// Prepare the throwable using EntityID (no need to find entity)
+						im.context.PlayerData.Throwables.SelectedThrowableID = itemEntityID
+						im.context.PlayerData.Throwables.ThrowableItemEntityID = itemEntityID
 
-							// Get item component and setup throwing shape
-							item := gear.GetItemByID(im.context.ECSManager.World, itemEntityID)
-							if item != nil {
-								if throwableAction := item.GetThrowableAction(); throwableAction != nil {
-									im.context.PlayerData.Throwables.ThrowableItemIndex = entry.Index
-									im.context.PlayerData.Throwables.ThrowingAOEShape = throwableAction.Shape
-								}
-							}
-
-							im.context.PlayerData.InputStates.IsThrowing = true
-							fmt.Printf("Throwable prepared: %s\n", entry.Name)
-						}
-
-						// Get item details
+						// Get item component and setup throwing shape
 						item := gear.GetItemByID(im.context.ECSManager.World, itemEntityID)
 						if item != nil {
-							effectNames := gear.GetItemEffectNames(im.context.ECSManager.World, item)
-							effectStr := ""
-							for _, name := range effectNames {
-								effectStr += fmt.Sprintf("%s\n", name)
+							if throwableAction := item.GetThrowableAction(); throwableAction != nil {
+								im.context.PlayerData.Throwables.ThrowableItemIndex = entry.Index
+								im.context.PlayerData.Throwables.ThrowingAOEShape = throwableAction.Shape
 							}
-							im.detailTextArea.SetText(fmt.Sprintf("Selected: %s\n\n%s", entry.Name, effectStr))
-						} else {
-							im.detailTextArea.SetText(fmt.Sprintf("Selected: %s", entry.Name))
 						}
 
-						// Close inventory and return to exploration
-						if exploreMode, exists := im.modeManager.GetMode("exploration"); exists {
-							im.modeManager.RequestTransition(exploreMode, "Throwable selected")
+						im.context.PlayerData.InputStates.IsThrowing = true
+						fmt.Printf("Throwable prepared: %s\n", entry.Name)
+					}
+
+					// Get item details
+					item := gear.GetItemByID(im.context.ECSManager.World, itemEntityID)
+					if item != nil {
+						effectNames := gear.GetItemEffectNames(im.context.ECSManager.World, item)
+						effectStr := ""
+						for _, name := range effectNames {
+							effectStr += fmt.Sprintf("%s\n", name)
 						}
+						im.detailTextArea.SetText(fmt.Sprintf("Selected: %s\n\n%s", entry.Name, effectStr))
+					} else {
+						im.detailTextArea.SetText(fmt.Sprintf("Selected: %s", entry.Name))
+					}
+
+					// Close inventory and return to exploration
+					if exploreMode, exists := im.modeManager.GetMode("exploration"); exists {
+						im.modeManager.RequestTransition(exploreMode, "Throwable selected")
 					}
 				} else {
 					im.detailTextArea.SetText(fmt.Sprintf("Selected: %s x%d", entry.Name, entry.Count))
