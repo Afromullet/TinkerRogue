@@ -125,19 +125,6 @@ func (cc *CombatController) handleThrowable() bool {
 func (cc *CombatController) drawThrowableAOE() {
 	cursorX, cursorY := graphics.CursorPosition(*cc.playerData.Pos)
 
-	// Type assert the interface{} to graphics.TileBasedShape
-	s, ok := cc.playerData.Throwables.ThrowingAOEShape.(graphics.TileBasedShape)
-	if !ok {
-		return
-	}
-
-	var indices []int
-	if cursorX != cc.sharedState.PrevCursor.X || cursorY != cc.sharedState.PrevCursor.Y {
-		if cc.sharedState.PrevCursor.X != 0 && cc.sharedState.PrevCursor.Y != 0 {
-			cc.gameMap.ApplyColorMatrix(cc.sharedState.PrevThrowInds, graphics.NewEmptyMatrix())
-		}
-	}
-
 	// Get throwable item component directly (no wrapper)
 	var item *gear.Item
 	if cc.playerData.Throwables.ThrowableItemEntityID != 0 {
@@ -150,6 +137,19 @@ func (cc *CombatController) drawThrowableAOE() {
 	throwable := item.GetThrowableAction()
 	if throwable == nil {
 		return
+	}
+
+	// Get shape from throwable action instead of storing in PlayerData
+	s := throwable.Shape
+	if s == nil {
+		return
+	}
+
+	var indices []int
+	if cursorX != cc.sharedState.PrevCursor.X || cursorY != cc.sharedState.PrevCursor.Y {
+		if cc.sharedState.PrevCursor.X != 0 && cc.sharedState.PrevCursor.Y != 0 {
+			cc.gameMap.ApplyColorMatrix(cc.sharedState.PrevThrowInds, graphics.NewEmptyMatrix())
+		}
 	}
 
 	s.UpdatePosition(cursorX, cursorY)

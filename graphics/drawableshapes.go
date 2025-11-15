@@ -8,7 +8,7 @@ import (
 	"game_main/coords"
 )
 
-// ============================================================================
+// ===================s=========================================================
 // SHAPE DIRECTION SYSTEM (preserved from original)
 // ============================================================================
 
@@ -70,19 +70,19 @@ func RotateLeft(dir ShapeDirection) ShapeDirection {
 type BasicShapeType int
 
 const (
-	Circular BasicShapeType = iota    // radius-based (Circle types)
+	Circular    BasicShapeType = iota // radius-based (Circle types)
 	Rectangular                       // width/height-based (Square/Rectangle types)
-	Linear                           // length/direction-based (Line/Cone types)
+	Linear                            // length/direction-based (Line/Cone types)
 )
 
 type BaseShape struct {
-	Position   coords.PixelPosition
-	Type       BasicShapeType
-	Size       int              // Primary dimension (radius, length, or width)
-	Width      int              // For rectangles only
-	Height     int              // For rectangles only
-	Direction  *ShapeDirection  // nil for non-directional shapes
-	Quality    common.QualityType
+	Position  coords.PixelPosition
+	Type      BasicShapeType
+	Size      int             // Primary dimension (radius, length, or width)
+	Width     int             // For rectangles only
+	Height    int             // For rectangles only
+	Direction *ShapeDirection // nil for non-directional shapes
+	Quality   common.QualityType
 }
 
 // TileBasedShape interface - maintains compatibility with existing code
@@ -139,11 +139,11 @@ func NewCircle(pixelX, pixelY int, quality common.QualityType) *BaseShape {
 	var radius int
 	switch quality {
 	case common.LowQuality:
-		radius = common.RandomInt(3)      // 0-2 (matches current system)
+		radius = common.RandomInt(3) // 0-2 (matches current system)
 	case common.NormalQuality:
-		radius = common.RandomInt(4)      // 0-3
+		radius = common.RandomInt(4) // 0-3
 	case common.HighQuality:
-		radius = common.RandomInt(9)      // 0-8
+		radius = common.RandomInt(9) // 0-8
 	}
 
 	return &BaseShape{
@@ -158,18 +158,18 @@ func NewSquare(pixelX, pixelY int, quality common.QualityType) *BaseShape {
 	var size int
 	switch quality {
 	case common.LowQuality:
-		size = common.RandomInt(2) + 1    // 1-2 (matches current system)
+		size = common.RandomInt(2) + 1 // 1-2 (matches current system)
 	case common.NormalQuality:
-		size = common.RandomInt(3) + 1    // 1-3
+		size = common.RandomInt(3) + 1 // 1-3
 	case common.HighQuality:
-		size = common.RandomInt(4) + 1    // 1-4
+		size = common.RandomInt(4) + 1 // 1-4
 	}
 
 	return &BaseShape{
 		Position: coords.PixelPosition{X: pixelX, Y: pixelY},
 		Type:     Rectangular,
 		Size:     size,
-		Width:    size,    // Square: width = height = size
+		Width:    size, // Square: width = height = size
 		Height:   size,
 		Quality:  quality,
 	}
@@ -179,20 +179,20 @@ func NewRectangle(pixelX, pixelY int, quality common.QualityType) *BaseShape {
 	var width, height int
 	switch quality {
 	case common.LowQuality:
-		width = common.RandomInt(5)       // 0-4 (matches current system)
-		height = common.RandomInt(3)      // 0-2
+		width = common.RandomInt(5)  // 0-4 (matches current system)
+		height = common.RandomInt(3) // 0-2
 	case common.NormalQuality:
-		width = common.RandomInt(7)       // 0-6
-		height = common.RandomInt(5)      // 0-4
+		width = common.RandomInt(7)  // 0-6
+		height = common.RandomInt(5) // 0-4
 	case common.HighQuality:
-		width = common.RandomInt(9)       // 0-8
-		height = common.RandomInt(7)      // 0-6
+		width = common.RandomInt(9)  // 0-8
+		height = common.RandomInt(7) // 0-6
 	}
 
 	return &BaseShape{
 		Position: coords.PixelPosition{X: pixelX, Y: pixelY},
 		Type:     Rectangular,
-		Size:     width,   // Primary dimension
+		Size:     width, // Primary dimension
 		Width:    width,
 		Height:   height,
 		Quality:  quality,
@@ -203,11 +203,11 @@ func NewLine(pixelX, pixelY int, direction ShapeDirection, quality common.Qualit
 	var length int
 	switch quality {
 	case common.LowQuality:
-		length = common.RandomInt(3) + 1  // 1-3 (matches current system)
+		length = common.RandomInt(3) + 1 // 1-3 (matches current system)
 	case common.NormalQuality:
-		length = common.RandomInt(5) + 1  // 1-5
+		length = common.RandomInt(5) + 1 // 1-5
 	case common.HighQuality:
-		length = common.RandomInt(7) + 1  // 1-7
+		length = common.RandomInt(7) + 1 // 1-7
 	}
 
 	return &BaseShape{
@@ -223,11 +223,11 @@ func NewCone(pixelX, pixelY int, direction ShapeDirection, quality common.Qualit
 	var length int
 	switch quality {
 	case common.LowQuality:
-		length = common.RandomInt(3) + 1  // 1-3
+		length = common.RandomInt(3) + 1 // 1-3
 	case common.NormalQuality:
-		length = common.RandomInt(5) + 1  // 1-5
+		length = common.RandomInt(5) + 1 // 1-5
 	case common.HighQuality:
-		length = common.RandomInt(7) + 1  // 1-7
+		length = common.RandomInt(7) + 1 // 1-7
 	}
 
 	return &BaseShape{
@@ -281,8 +281,8 @@ func (s *BaseShape) calculateCircle(centerX, centerY int) []int {
 	radius := s.Size
 	for x := -radius; x <= radius; x++ {
 		for y := -radius; y <= radius; y++ {
-			if x*x + y*y <= radius*radius {
-				indices = append(indices, coords.CoordManager.LogicalToIndex(coords.LogicalPosition{X: centerX+x, Y: centerY+y}))
+			if x*x+y*y <= radius*radius {
+				indices = append(indices, coords.CoordManager.LogicalToIndex(coords.LogicalPosition{X: centerX + x, Y: centerY + y}))
 			}
 		}
 	}
@@ -295,7 +295,7 @@ func (s *BaseShape) calculateRectangle(centerX, centerY int) []int {
 	halfHeight := s.Height / 2
 	for x := -halfWidth; x <= halfWidth; x++ {
 		for y := -halfHeight; y <= halfHeight; y++ {
-			indices = append(indices, coords.CoordManager.LogicalToIndex(coords.LogicalPosition{X: centerX+x, Y: centerY+y}))
+			indices = append(indices, coords.CoordManager.LogicalToIndex(coords.LogicalPosition{X: centerX + x, Y: centerY + y}))
 		}
 	}
 	return indices
@@ -308,7 +308,7 @@ func (s *BaseShape) calculateLine(centerX, centerY int) []int {
 	if s.Direction == nil {
 		// Fallback: horizontal line
 		for i := 0; i < length; i++ {
-			indices = append(indices, coords.CoordManager.LogicalToIndex(coords.LogicalPosition{X: centerX+i, Y: centerY}))
+			indices = append(indices, coords.CoordManager.LogicalToIndex(coords.LogicalPosition{X: centerX + i, Y: centerY}))
 		}
 		return indices
 	}

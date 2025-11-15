@@ -2,6 +2,7 @@ package gui
 
 import (
 	"fmt"
+	"game_main/common"
 	"game_main/gear"
 
 	"github.com/ebitenui/ebitenui/widget"
@@ -115,12 +116,13 @@ func (im *InventoryMode) buildItemList() {
 				fmt.Printf("Selected item: %s (index %d)\n", entry.Name, entry.Index)
 
 				// If in throwables mode, prepare the throwable
-				if im.currentFilter == "Throwables" && im.context.PlayerData != nil && im.context.PlayerData.Inventory != nil {
-					// Type assert the inventory interface{} to *gear.Inventory
-					inv, ok := im.context.PlayerData.Inventory.(*gear.Inventory)
-					if !ok {
+				if im.currentFilter == "Throwables" && im.context.PlayerData != nil {
+					// Query inventory from player entity via ECS instead of using Inventory field
+					inv := common.GetComponentTypeByID[*gear.Inventory](im.context.ECSManager, im.context.PlayerData.PlayerEntityID, gear.InventoryComponent)
+					if inv == nil {
 						return
 					}
+
 					// Get the item entity ID from inventory
 					itemEntityID, err := gear.GetItemEntityID(inv, entry.Index)
 					if err == nil && itemEntityID != 0 {
@@ -128,12 +130,11 @@ func (im *InventoryMode) buildItemList() {
 						im.context.PlayerData.Throwables.SelectedThrowableID = itemEntityID
 						im.context.PlayerData.Throwables.ThrowableItemEntityID = itemEntityID
 
-						// Get item component and setup throwing shape
+						// Get item component and setup throwing state
 						item := gear.GetItemByID(im.context.ECSManager.World, itemEntityID)
 						if item != nil {
 							if throwableAction := item.GetThrowableAction(); throwableAction != nil {
 								im.context.PlayerData.Throwables.ThrowableItemIndex = entry.Index
-								im.context.PlayerData.Throwables.ThrowingAOEShape = throwableAction.Shape
 							}
 						}
 
@@ -180,16 +181,16 @@ func (im *InventoryMode) buildItemList() {
 }
 
 func (im *InventoryMode) refreshItemList() {
-	if im.context.PlayerData == nil || im.context.PlayerData.Inventory == nil {
-		entries := []interface{}{"No inventory available"}
+	if im.context.PlayerData == nil {
+		entries := []interface{}{"No player data available"}
 		im.itemList.SetEntries(entries)
 		return
 	}
 
-	// Type assert the inventory interface{} to *gear.Inventory
-	inv, ok := im.context.PlayerData.Inventory.(*gear.Inventory)
-	if !ok {
-		entries := []interface{}{"Inventory type mismatch"}
+	// Query inventory from player entity via ECS instead of using Inventory field
+	inv := common.GetComponentTypeByID[*gear.Inventory](im.context.ECSManager, im.context.PlayerData.PlayerEntityID, gear.InventoryComponent)
+	if inv == nil {
+		entries := []interface{}{"No inventory available"}
 		im.itemList.SetEntries(entries)
 		return
 	}
