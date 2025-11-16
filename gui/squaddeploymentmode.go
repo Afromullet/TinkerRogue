@@ -56,7 +56,7 @@ func (sdm *SquadDeploymentMode) Initialize(ctx *UIContext) error {
 		HorizontalPosition: widget.AnchorLayoutPositionCenter,
 		VerticalPosition:   widget.AnchorLayoutPositionStart,
 		Padding: widget.Insets{
-			Top: int(float64(sdm.layout.ScreenHeight) * 0.02),
+			Top: int(float64(sdm.layout.ScreenHeight) * PaddingStandard),
 		},
 	}
 	sdm.rootContainer.AddChild(sdm.instructionText)
@@ -73,8 +73,8 @@ func (sdm *SquadDeploymentMode) buildSquadListPanel() {
 	// Build squad list panel using BuildPanel
 	sdm.squadListPanel = sdm.panelBuilders.BuildPanel(
 		LeftCenter(),
-		Size(0.2, 0.8),
-		Padding(0.01),
+		Size(PanelWidthStandard, PanelHeightFull),
+		Padding(PaddingTight),
 		RowLayout(),
 	)
 
@@ -124,7 +124,7 @@ func (sdm *SquadDeploymentMode) buildActionButtons() {
 		BottomCenter(),
 		HorizontalRowLayout(),
 		CustomPadding(widget.Insets{
-			Bottom: int(float64(sdm.layout.ScreenHeight) * 0.08),
+			Bottom: int(float64(sdm.layout.ScreenHeight) * BottomButtonOffset),
 		}),
 	)
 

@@ -55,7 +55,7 @@ func (im *InventoryMode) Initialize(ctx *UIContext) error {
 		im.panelBuilders,
 		im.layout,
 		RightCenter(),
-		0.45, 0.75, 0.02,
+		PanelWidthExtraWide, PanelHeightTall, PaddingStandard,
 		"Select an item to view details",
 	)
 	im.rootContainer.AddChild(im.detailPanel)
@@ -92,8 +92,8 @@ func (im *InventoryMode) buildFilterButtons() {
 
 func (im *InventoryMode) buildItemList() {
 	// Left side item list (50% width)
-	listWidth := int(float64(im.layout.ScreenWidth) * 0.45)
-	listHeight := int(float64(im.layout.ScreenHeight) * 0.75)
+	listWidth := int(float64(im.layout.ScreenWidth) * InventoryListWidth)
+	listHeight := int(float64(im.layout.ScreenHeight) * InventoryListHeight)
 
 	im.itemList = CreateListWithConfig(ListConfig{
 		Entries:    []interface{}{}, // Will be populated by refreshItemList
@@ -171,8 +171,8 @@ func (im *InventoryMode) buildItemList() {
 			HorizontalPosition: widget.AnchorLayoutPositionStart,
 			VerticalPosition:   widget.AnchorLayoutPositionCenter,
 			Padding: widget.Insets{
-				Left: int(float64(im.layout.ScreenWidth) * 0.02),
-				Top:  int(float64(im.layout.ScreenHeight) * 0.15),
+				Left: int(float64(im.layout.ScreenWidth) * PaddingStandard),
+				Top:  int(float64(im.layout.ScreenHeight) * PanelHeightSmall),
 			},
 		},
 	})

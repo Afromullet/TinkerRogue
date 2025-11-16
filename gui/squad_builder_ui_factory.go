@@ -37,8 +37,8 @@ func (sbuf *SquadBuilderUIFactory) CreateGridPanel(onCellClick func(row, col int
 
 // CreatePalettePanel builds the unit palette list
 func (sbuf *SquadBuilderUIFactory) CreatePalettePanel(onEntrySelected func(interface{})) *widget.List {
-	listWidth := int(float64(sbuf.layout.ScreenWidth) * 0.2)
-	listHeight := int(float64(sbuf.layout.ScreenHeight) * 0.5)
+	listWidth := int(float64(sbuf.layout.ScreenWidth) * SquadBuilderUnitListWidth)
+	listHeight := int(float64(sbuf.layout.ScreenHeight) * SquadBuilderUnitListHeight)
 
 	// Build entries from squads.Units
 	entries := make([]interface{}, len(squads.Units)+1)
@@ -68,8 +68,8 @@ func (sbuf *SquadBuilderUIFactory) CreatePalettePanel(onEntrySelected func(inter
 
 // CreateCapacityDisplay builds the capacity display panel
 func (sbuf *SquadBuilderUIFactory) CreateCapacityDisplay() *widget.TextArea {
-	displayWidth := int(float64(sbuf.layout.ScreenWidth) * 0.18)
-	displayHeight := int(float64(sbuf.layout.ScreenHeight) * 0.15)
+	displayWidth := int(float64(sbuf.layout.ScreenWidth) * SquadBuilderInfoWidth)
+	displayHeight := int(float64(sbuf.layout.ScreenHeight) * SquadBuilderInfoHeight)
 
 	config := TextAreaConfig{
 		MinWidth:  displayWidth,
@@ -94,8 +94,8 @@ func (sbuf *SquadBuilderUIFactory) CreateCapacityDisplay() *widget.TextArea {
 
 // CreateDetailsPanel builds the unit details display panel
 func (sbuf *SquadBuilderUIFactory) CreateDetailsPanel() *widget.TextArea {
-	displayWidth := int(float64(sbuf.layout.ScreenWidth) * 0.18)
-	displayHeight := int(float64(sbuf.layout.ScreenHeight) * 0.3)
+	displayWidth := int(float64(sbuf.layout.ScreenWidth) * SquadBuilderInfoWidth)
+	displayHeight := int(float64(sbuf.layout.ScreenHeight) * (SquadBuilderInfoHeight * 2))
 
 	config := TextAreaConfig{
 		MinWidth:  displayWidth,
@@ -200,7 +200,7 @@ func (sbuf *SquadBuilderUIFactory) CreateActionButtons(
 		HorizontalPosition: widget.AnchorLayoutPositionCenter,
 		VerticalPosition:   widget.AnchorLayoutPositionEnd,
 		Padding: widget.Insets{
-			Bottom: int(float64(sbuf.layout.ScreenHeight) * 0.08),
+			Bottom: int(float64(sbuf.layout.ScreenHeight) * BottomButtonOffset),
 		},
 	}
 

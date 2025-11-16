@@ -39,7 +39,7 @@ func (im *InfoMode) Initialize(ctx *UIContext) error {
 	// Build options panel using modern pattern
 	optionsPanel := im.panelBuilders.BuildPanel(
 		Center(),
-		Size(0.3, 0.4),
+		Size(PanelWidthMedium, PanelHeightHalf),
 		RowLayout(),
 	)
 

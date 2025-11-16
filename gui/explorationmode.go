@@ -47,7 +47,7 @@ func (em *ExplorationMode) Initialize(ctx *UIContext) error {
 		em.panelBuilders,
 		em.layout,
 		TopRight(),
-		0.15, 0.2, 0.01,
+		PanelWidthNarrow, PanelHeightSmall, PaddingTight,
 		em.context.PlayerData.PlayerAttributes(em.context.ECSManager).DisplayString(),
 	)
 	em.rootContainer.AddChild(em.statsPanel)
@@ -57,7 +57,7 @@ func (em *ExplorationMode) Initialize(ctx *UIContext) error {
 		em.panelBuilders,
 		em.layout,
 		BottomRight(),
-		0.15, 0.15, 0.01,
+		PanelWidthNarrow, 0.15, PaddingTight,
 		"",
 	)
 	em.messageLog = messageLog
@@ -76,7 +76,7 @@ func (em *ExplorationMode) buildQuickInventory() {
 		BottomCenter(),
 		HorizontalRowLayout(),
 		CustomPadding(widget.Insets{
-			Bottom: int(float64(em.layout.ScreenHeight) * 0.08),
+			Bottom: int(float64(em.layout.ScreenHeight) * BottomButtonOffset),
 		}),
 	)
 

@@ -29,8 +29,8 @@ func NewCombatUIFactory(queries *GUIQueries, panelBuilders *PanelBuilders, layou
 func (cuf *CombatUIFactory) CreateTurnOrderPanel() *widget.Container {
 	panel := cuf.panelBuilders.BuildPanel(
 		TopCenter(),
-		Size(0.4, 0.08),
-		Padding(0.01),
+		Size(PanelWidthWide, PanelHeightTiny),
+		Padding(PaddingTight),
 		HorizontalRowLayout(),
 	)
 	return panel
@@ -40,8 +40,8 @@ func (cuf *CombatUIFactory) CreateTurnOrderPanel() *widget.Container {
 func (cuf *CombatUIFactory) CreateFactionInfoPanel() *widget.Container {
 	panel := cuf.panelBuilders.BuildPanel(
 		TopLeft(),
-		Size(0.15, 0.12),
-		Padding(0.01),
+		Size(PanelWidthNarrow, PanelHeightSmall),
+		Padding(PaddingTight),
 		RowLayout(),
 	)
 	return panel
@@ -51,8 +51,8 @@ func (cuf *CombatUIFactory) CreateFactionInfoPanel() *widget.Container {
 func (cuf *CombatUIFactory) CreateSquadListPanel() *widget.Container {
 	panel := cuf.panelBuilders.BuildPanel(
 		LeftCenter(),
-		Size(0.15, 0.5),
-		Padding(0.01),
+		Size(PanelWidthNarrow, PanelHeightHalf),
+		Padding(PaddingTight),
 		RowLayout(),
 	)
 
@@ -66,10 +66,10 @@ func (cuf *CombatUIFactory) CreateSquadListPanel() *widget.Container {
 func (cuf *CombatUIFactory) CreateSquadDetailPanel() *widget.Container {
 	panel := cuf.panelBuilders.BuildPanel(
 		LeftBottom(),
-		Size(0.15, 0.25),
+		Size(PanelWidthNarrow, PanelHeightQuarter),
 		CustomPadding(widget.Insets{
-			Left:   int(float64(cuf.layout.ScreenWidth) * 0.01),
-			Bottom: int(float64(cuf.layout.ScreenHeight) * 0.15),
+			Left:   int(float64(cuf.layout.ScreenWidth) * PaddingTight),
+			Bottom: int(float64(cuf.layout.ScreenHeight) * 0.25),
 		}),
 		RowLayout(),
 	)
@@ -83,7 +83,7 @@ func (cuf *CombatUIFactory) CreateLogPanel() (*widget.Container, *widget.TextAre
 		cuf.panelBuilders,
 		cuf.layout,
 		RightCenter(),
-		0.2, 0.85, 0.01,
+		PanelWidthExtraWide, CombatLogHeight, PaddingTight,
 		"Combat started!\n",
 	)
 }
@@ -136,7 +136,7 @@ func (cuf *CombatUIFactory) CreateActionButtons(
 		BottomCenter(),
 		HorizontalRowLayout(),
 		CustomPadding(widget.Insets{
-			Bottom: int(float64(cuf.layout.ScreenHeight) * 0.08),
+			Bottom: int(float64(cuf.layout.ScreenHeight) * BottomButtonOffset),
 		}),
 	)
 
