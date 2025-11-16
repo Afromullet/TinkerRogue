@@ -16,10 +16,11 @@ type ExplorationMode struct {
 	initialized bool
 
 	// UI Components (ebitenui widgets)
-	statsPanel     *widget.Container
-	statsTextArea  *widget.TextArea
-	messageLog     *widget.TextArea
-	quickInventory *widget.Container
+	statsPanel          *widget.Container
+	statsTextArea       *widget.TextArea
+	statsComponent      *StatsDisplayComponent
+	messageLog          *widget.TextArea
+	quickInventory      *widget.Container
 }
 
 func NewExplorationMode(modeManager *UIModeManager) *ExplorationMode {
@@ -51,6 +52,10 @@ func (em *ExplorationMode) Initialize(ctx *UIContext) error {
 		em.context.PlayerData.PlayerAttributes(em.context.ECSManager).DisplayString(),
 	)
 	em.rootContainer.AddChild(em.statsPanel)
+
+	// Create stats display component to manage refresh logic
+	em.statsComponent = NewStatsDisplayComponent(em.statsTextArea, nil)
+	// Use default formatter which displays player attributes
 
 	// Build message log (bottom-right) using helper
 	logContainer, messageLog := CreateDetailPanel(
@@ -84,13 +89,8 @@ func (em *ExplorationMode) buildQuickInventory() {
 	throwableBtn := CreateButtonWithConfig(ButtonConfig{
 		Text: "Throwables",
 		OnClick: func() {
-			// Transition to inventory mode (throwables)
+			// Transition to inventory mode
 			if invMode, exists := em.modeManager.GetMode("inventory"); exists {
-				//TODO remove this in the future. Just here for testing
-				// Set the initial filter to "Throwables" before transitioning
-				if inventoryMode, ok := invMode.(*InventoryMode); ok {
-					inventoryMode.SetInitialFilter("Throwables")
-				}
 				em.modeManager.RequestTransition(invMode, "Open Throwables")
 			}
 		},
@@ -158,9 +158,9 @@ func (em *ExplorationMode) buildQuickInventory() {
 func (em *ExplorationMode) Enter(fromMode UIMode) error {
 	fmt.Println("Entering Exploration Mode")
 
-	// Refresh player stats
-	if em.context.PlayerData != nil && em.statsTextArea != nil {
-		em.statsTextArea.SetText(em.context.PlayerData.PlayerAttributes(em.context.ECSManager).DisplayString())
+	// Refresh player stats using component
+	if em.statsComponent != nil && em.context.PlayerData != nil {
+		em.statsComponent.RefreshStats(em.context.PlayerData, em.context.ECSManager)
 	}
 
 	return nil

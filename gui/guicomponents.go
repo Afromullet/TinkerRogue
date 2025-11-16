@@ -3,6 +3,8 @@ package gui
 import (
 	"fmt"
 	"image/color"
+	"game_main/common"
+	"game_main/gear"
 
 	"github.com/bytearena/ecs"
 	"github.com/ebitenui/ebitenui/widget"
@@ -454,4 +456,134 @@ func (clc *ColorLabelComponent) SetColor(newColor color.Color) {
 // GetWidget returns the underlying text widget
 func (clc *ColorLabelComponent) GetWidget() *widget.Text {
 	return clc.text
+}
+
+// ===== ITEM LIST COMPONENT =====
+
+// ItemListComponent manages an inventory list widget with filtering
+type ItemListComponent struct {
+	listWidget    *widget.List
+	queries       *GUIQueries
+	ecsManager    *common.EntityManager
+	playerEntityID ecs.EntityID
+	currentFilter string
+}
+
+// NewItemListComponent creates a reusable inventory list component
+func NewItemListComponent(
+	listWidget *widget.List,
+	queries *GUIQueries,
+	ecsManager *common.EntityManager,
+	playerEntityID ecs.EntityID,
+) *ItemListComponent {
+	return &ItemListComponent{
+		listWidget:     listWidget,
+		queries:        queries,
+		ecsManager:     ecsManager,
+		playerEntityID: playerEntityID,
+		currentFilter:  "All",
+	}
+}
+
+// SetFilter updates the current filter and refreshes the list
+func (ilc *ItemListComponent) SetFilter(filter string) {
+	ilc.currentFilter = filter
+	ilc.Refresh()
+}
+
+// Refresh updates the list with items based on current filter
+func (ilc *ItemListComponent) Refresh() {
+	if ilc.listWidget == nil || ilc.ecsManager == nil {
+		return
+	}
+
+	// Get inventory from player entity
+	inv := common.GetComponentTypeByID[*gear.Inventory](ilc.ecsManager, ilc.playerEntityID, gear.InventoryComponent)
+	if inv == nil {
+		ilc.listWidget.SetEntries([]interface{}{"No inventory available"})
+		return
+	}
+
+	var entries []interface{}
+
+	// Query inventory based on current filter
+	switch ilc.currentFilter {
+	case "Throwables":
+		// Get throwable items
+		throwableEntries := gear.GetThrowableItems(ilc.ecsManager.World, inv, []int{})
+		if len(throwableEntries) == 0 {
+			entries = []interface{}{"No throwable items"}
+		} else {
+			entries = make([]interface{}, len(throwableEntries))
+			for i, e := range throwableEntries {
+				entries[i] = e
+			}
+		}
+
+	case "All":
+		// Get all items
+		allEntries := gear.GetInventoryForDisplay(ilc.ecsManager.World, inv, []int{})
+		if len(allEntries) == 0 {
+			entries = []interface{}{"Inventory is empty"}
+		} else {
+			entries = make([]interface{}, len(allEntries))
+			for i, e := range allEntries {
+				entries[i] = e
+			}
+		}
+
+	default:
+		// Placeholder for other filters
+		entries = []interface{}{fmt.Sprintf("Filter '%s' not yet implemented", ilc.currentFilter)}
+	}
+
+	ilc.listWidget.SetEntries(entries)
+}
+
+// ===== STATS DISPLAY COMPONENT =====
+
+// StatsDisplayComponent manages a text widget displaying player statistics
+type StatsDisplayComponent struct {
+	textWidget *widget.TextArea
+	formatter  StatsFormatter
+}
+
+// StatsFormatter converts player data to display text
+type StatsFormatter func(*common.PlayerData, *common.EntityManager) string
+
+// NewStatsDisplayComponent creates a stats display component
+func NewStatsDisplayComponent(
+	textWidget *widget.TextArea,
+	formatter StatsFormatter,
+) *StatsDisplayComponent {
+	return &StatsDisplayComponent{
+		textWidget: textWidget,
+		formatter:  formatter,
+	}
+}
+
+// RefreshStats updates the stats display
+func (sdc *StatsDisplayComponent) RefreshStats(playerData *common.PlayerData, ecsManager *common.EntityManager) {
+	if sdc.textWidget == nil {
+		return
+	}
+
+	if playerData == nil {
+		sdc.textWidget.SetText("No player data available")
+		return
+	}
+
+	if sdc.formatter != nil {
+		sdc.textWidget.SetText(sdc.formatter(playerData, ecsManager))
+	} else {
+		// Default formatter - display player attributes
+		sdc.textWidget.SetText(playerData.PlayerAttributes(ecsManager).DisplayString())
+	}
+}
+
+// SetText sets arbitrary text in the stats display
+func (sdc *StatsDisplayComponent) SetText(text string) {
+	if sdc.textWidget != nil {
+		sdc.textWidget.SetText(text)
+	}
 }

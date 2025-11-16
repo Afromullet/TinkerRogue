@@ -13,14 +13,14 @@ import (
 type InventoryMode struct {
 	BaseMode // Embed common mode infrastructure
 
-	itemList       *widget.List
-	detailPanel    *widget.Container
-	detailTextArea *widget.TextArea
-	filterButtons  *widget.Container
-	closeButton    *widget.Button
+	itemList          *widget.List
+	itemListComponent *ItemListComponent
+	detailPanel       *widget.Container
+	detailTextArea    *widget.TextArea
+	filterButtons     *widget.Container
+	closeButton       *widget.Button
 
 	currentFilter string // "all", "throwables", "equipment", "consumables"
-	initialFilter string // Filter to set on Enter() - allows pre-setting filter before transition
 }
 
 func NewInventoryMode(modeManager *UIModeManager) *InventoryMode {
@@ -31,15 +31,7 @@ func NewInventoryMode(modeManager *UIModeManager) *InventoryMode {
 			returnMode:  "exploration",
 		},
 		currentFilter: "all",
-		initialFilter: "",
 	}
-}
-
-// TOOO remove in the future. This is here for testing
-// SetInitialFilter sets the filter that will be applied when entering this mode
-// Call this before transitioning to pre-set the desired filter
-func (im *InventoryMode) SetInitialFilter(filter string) {
-	im.initialFilter = filter
 }
 
 func (im *InventoryMode) Initialize(ctx *UIContext) error {
@@ -49,6 +41,14 @@ func (im *InventoryMode) Initialize(ctx *UIContext) error {
 	// Build inventory UI
 	im.buildFilterButtons()
 	im.buildItemList()
+
+	// Create item list component to manage refresh logic
+	im.itemListComponent = NewItemListComponent(
+		im.itemList,
+		im.queries,
+		ctx.ECSManager,
+		ctx.PlayerData.PlayerEntityID,
+	)
 
 	// Build detail panel (right side) using helper
 	im.detailPanel, im.detailTextArea = CreateDetailPanel(
@@ -73,15 +73,18 @@ func (im *InventoryMode) buildFilterButtons() {
 	// Top-left filter buttons using helper
 	im.filterButtons = CreateFilterButtonContainer(im.panelBuilders, TopLeft())
 
-	// Filter buttons
+	// Filter buttons - use component's SetFilter when clicked
 	filters := []string{"All", "Throwables", "Equipment", "Consumables"}
 	for _, filterName := range filters {
 		filterNameCopy := filterName // Capture for closure
 		btn := CreateButtonWithConfig(ButtonConfig{
 			Text: filterName,
 			OnClick: func() {
+				// Sync both filter states before delegating to component
 				im.currentFilter = filterNameCopy
-				im.refreshItemList()
+				if im.itemListComponent != nil {
+					im.itemListComponent.SetFilter(filterNameCopy)
+				}
 			},
 		})
 		im.filterButtons.AddChild(btn)
@@ -96,7 +99,7 @@ func (im *InventoryMode) buildItemList() {
 	listHeight := int(float64(im.layout.ScreenHeight) * InventoryListHeight)
 
 	im.itemList = CreateListWithConfig(ListConfig{
-		Entries:    []interface{}{}, // Will be populated by refreshItemList
+		Entries:    []interface{}{}, // Will be populated by component
 		MinWidth:   listWidth,
 		MinHeight:  listHeight,
 		EntryLabelFunc: func(e interface{}) string {
@@ -180,62 +183,16 @@ func (im *InventoryMode) buildItemList() {
 	im.rootContainer.AddChild(im.itemList)
 }
 
-func (im *InventoryMode) refreshItemList() {
-	if im.context.PlayerData == nil {
-		entries := []interface{}{"No player data available"}
-		im.itemList.SetEntries(entries)
-		return
-	}
-
-	// Query inventory from player entity via ECS instead of using Inventory field
-	inv := common.GetComponentTypeByID[*gear.Inventory](im.context.ECSManager, im.context.PlayerData.PlayerEntityID, gear.InventoryComponent)
-	if inv == nil {
-		entries := []interface{}{"No inventory available"}
-		im.itemList.SetEntries(entries)
-		return
-	}
-
-	entries := []interface{}{}
-
-	// Query inventory based on current filter
-	switch im.currentFilter {
-	case "Throwables":
-		// Get throwable items
-		throwableEntries := gear.GetThrowableItems(im.context.ECSManager.World, inv, []int{})
-		if len(throwableEntries) == 0 {
-			entries = append(entries, "No throwable items")
-		} else {
-			entries = throwableEntries
-		}
-
-	case "All":
-		// Get all items
-		allEntries := gear.GetInventoryForDisplay(im.context.ECSManager.World, inv, []int{})
-		if len(allEntries) == 0 {
-			entries = append(entries, "Inventory is empty")
-		} else {
-			entries = allEntries
-		}
-
-	default:
-		// Placeholder for other filters
-		entries = append(entries, fmt.Sprintf("Filter '%s' not yet implemented", im.currentFilter))
-	}
-
-	im.itemList.SetEntries(entries)
-}
-
 func (im *InventoryMode) Enter(fromMode UIMode) error {
 	fmt.Println("Entering Inventory Mode")
 
-	//TODO remove in the future. Here for testing
-	// Apply initial filter if one was set
-	if im.initialFilter != "" {
-		im.currentFilter = im.initialFilter
-		im.initialFilter = "" // Reset after use
+	// Initialize item list with current filter (defaults to "All")
+	// This also handles refreshing if the inventory was modified
+	if im.itemListComponent != nil {
+		// Ensure filter and list are in sync
+		im.itemListComponent.SetFilter(im.currentFilter)
 	}
 
-	im.refreshItemList()
 	return nil
 }
 
