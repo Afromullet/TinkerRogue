@@ -31,16 +31,16 @@ func TestCombatInitialization(t *testing.T) {
 	}
 
 	// Verify tags are registered
-	if _, ok := manager.Tags["faction"]; !ok {
+	if _, ok := manager.WorldTags["faction"]; !ok {
 		t.Error("faction tag not registered")
 	}
-	if _, ok := manager.Tags["turnstate"]; !ok {
+	if _, ok := manager.WorldTags["turnstate"]; !ok {
 		t.Error("turnstate tag not registered")
 	}
-	if _, ok := manager.Tags["actionstate"]; !ok {
+	if _, ok := manager.WorldTags["actionstate"]; !ok {
 		t.Error("actionstate tag not registered")
 	}
-	if _, ok := manager.Tags["mapposition"]; !ok {
+	if _, ok := manager.WorldTags["mapposition"]; !ok {
 		t.Error("mapposition tag not registered")
 	}
 }

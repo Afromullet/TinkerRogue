@@ -55,7 +55,7 @@ func InitializePlayerData(ecsmanager *common.EntityManager, pl *common.PlayerDat
 
 	playerEntity.AddComponent(common.UserMsgComponent, &common.UserMessage{})
 	players := ecs.BuildTag(common.PlayerComponent, common.PositionComponent, gear.InventoryComponent)
-	ecsmanager.Tags["players"] = players
+	ecsmanager.WorldTags["players"] = players
 
 	//g.playerData = PlayerData{}
 

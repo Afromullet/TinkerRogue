@@ -34,9 +34,9 @@ func InitSquadTags(squadManager *common.EntityManager) {
 	SquadMemberTag = ecs.BuildTag(SquadMemberComponent)
 	LeaderTag = ecs.BuildTag(LeaderComponent, SquadMemberComponent)
 
-	squadManager.Tags["squad"] = SquadTag
-	squadManager.Tags["squadmember"] = SquadMemberTag
-	squadManager.Tags["leader"] = LeaderTag
+	squadManager.WorldTags["squad"] = SquadTag
+	squadManager.WorldTags["squadmember"] = SquadMemberTag
+	squadManager.WorldTags["leader"] = LeaderTag
 }
 
 // InitializeSquadData initializes squad components and templates in the provided EntityManager.

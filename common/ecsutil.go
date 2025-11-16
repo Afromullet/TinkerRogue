@@ -27,15 +27,15 @@ var (
 
 // EntityManager wraps the ECS library's manager and provides centralized entity and tag management.
 type EntityManager struct {
-	World *ecs.Manager
-	Tags  map[string]ecs.Tag
+	World     *ecs.Manager
+	WorldTags map[string]ecs.Tag
 }
 
 func NewEntityManager() *EntityManager {
 
 	return &EntityManager{
-		World: ecs.NewManager(),
-		Tags:  make(map[string]ecs.Tag),
+		World:     ecs.NewManager(),
+		WorldTags: make(map[string]ecs.Tag),
 	}
 
 }
@@ -204,7 +204,7 @@ func GetCreatureAtPosition(ecsmnager *EntityManager, pos *coords.LogicalPosition
 		}
 
 		// Verify it's a monster
-		for _, result := range ecsmnager.World.Query(ecsmnager.Tags["monsters"]) {
+		for _, result := range ecsmnager.World.Query(ecsmnager.WorldTags["monsters"]) {
 			if result.Entity.GetID() == entityID {
 				return entityID
 			}
@@ -213,7 +213,7 @@ func GetCreatureAtPosition(ecsmnager *EntityManager, pos *coords.LogicalPosition
 	}
 
 	// Fallback to old O(n) search if PositionSystem not initialized
-	for _, c := range ecsmnager.World.Query(ecsmnager.Tags["monsters"]) {
+	for _, c := range ecsmnager.World.Query(ecsmnager.WorldTags["monsters"]) {
 		curPos := GetPosition(c.Entity)
 		if pos.IsEqual(curPos) {
 			return c.Entity.GetID()

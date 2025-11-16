@@ -65,10 +65,10 @@ func InitCombatTags(manager *common.EntityManager) {
 	ActionStateTag = ecs.BuildTag(ActionStateComponent)
 	MapPositionTag = ecs.BuildTag(MapPositionComponent)
 
-	manager.Tags["faction"] = FactionTag
-	manager.Tags["turnstate"] = TurnStateTag
-	manager.Tags["actionstate"] = ActionStateTag
-	manager.Tags["mapposition"] = MapPositionTag
+	manager.WorldTags["faction"] = FactionTag
+	manager.WorldTags["turnstate"] = TurnStateTag
+	manager.WorldTags["actionstate"] = ActionStateTag
+	manager.WorldTags["mapposition"] = MapPositionTag
 }
 
 // InitializeCombatSystem initializes combat components and tags in the provided EntityManager.

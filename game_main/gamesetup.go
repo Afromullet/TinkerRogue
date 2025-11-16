@@ -93,7 +93,7 @@ func SetupGameplayFactions(manager *common.EntityManager, playerData *common.Pla
 // SetupTestData creates test items and content for debugging.
 // Only called when DEBUG_MODE is enabled.
 func SetupTestData(em *common.EntityManager, gm *worldmap.GameMap, pd *common.PlayerData) {
-	testing.CreateTestItems(em.World, em.Tags, gm)
+	testing.CreateTestItems(em.World, em.WorldTags, gm)
 	testing.InitTestActionManager(em, pd)
 }
 
