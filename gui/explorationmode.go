@@ -43,12 +43,11 @@ func (em *ExplorationMode) Initialize(ctx *UIContext) error {
 	em.RegisterHotkey(ebiten.KeyB, "squad_builder")
 	em.RegisterHotkey(ebiten.KeyC, "combat")
 
-	// Build stats panel (top-right) using helper
-	em.statsPanel, em.statsTextArea = CreateDetailPanel(
+	// Build stats panel (top-right) using standard specification
+	em.statsPanel, em.statsTextArea = CreateStandardDetailPanel(
 		em.panelBuilders,
 		em.layout,
-		TopRight(),
-		PanelWidthNarrow, PanelHeightSmall, PaddingTight,
+		"stats_panel",
 		em.context.PlayerData.PlayerAttributes(em.context.ECSManager).DisplayString(),
 	)
 	em.rootContainer.AddChild(em.statsPanel)
@@ -57,12 +56,11 @@ func (em *ExplorationMode) Initialize(ctx *UIContext) error {
 	em.statsComponent = NewStatsDisplayComponent(em.statsTextArea, nil)
 	// Use default formatter which displays player attributes
 
-	// Build message log (bottom-right) using helper
-	logContainer, messageLog := CreateDetailPanel(
+	// Build message log (bottom-right) using standard specification
+	logContainer, messageLog := CreateStandardDetailPanel(
 		em.panelBuilders,
 		em.layout,
-		BottomRight(),
-		PanelWidthNarrow, 0.15, PaddingTight,
+		"message_log",
 		"",
 	)
 	em.messageLog = messageLog
@@ -76,10 +74,10 @@ func (em *ExplorationMode) Initialize(ctx *UIContext) error {
 }
 
 func (em *ExplorationMode) buildQuickInventory() {
-	// Use BuildPanel for bottom-center button container
-	em.quickInventory = em.panelBuilders.BuildPanel(
-		BottomCenter(),
-		HorizontalRowLayout(),
+	// Use standard panel specification with custom runtime padding
+	em.quickInventory = CreateStandardPanelWithOptions(
+		em.panelBuilders,
+		"quick_inventory",
 		CustomPadding(widget.Insets{
 			Bottom: int(float64(em.layout.ScreenHeight) * BottomButtonOffset),
 		}),

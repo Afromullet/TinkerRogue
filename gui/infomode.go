@@ -36,12 +36,8 @@ func NewInfoMode(modeManager *UIModeManager) *InfoMode {
 func (im *InfoMode) Initialize(ctx *UIContext) error {
 	im.InitializeBase(ctx)
 
-	// Build options panel using modern pattern
-	optionsPanel := im.panelBuilders.BuildPanel(
-		Center(),
-		Size(PanelWidthMedium, PanelHeightHalf),
-		RowLayout(),
-	)
+	// Build options panel using standard specification
+	optionsPanel := CreateOptionsPanel(im.panelBuilders)
 
 	// Options list
 	options := []interface{}{"Look at Creature", "Look at Tile"}

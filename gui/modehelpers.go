@@ -100,3 +100,62 @@ func CreateFilterButtonContainer(panelBuilders *PanelBuilders, alignment PanelOp
 		HorizontalRowLayout(),
 	)
 }
+
+// CreateOptionsPanel creates a centered options panel using StandardPanels.
+// Used by info/inspection mode for displaying selectable options.
+// Returns an empty container ready for options to be added to it.
+// Parameters:
+//   - panelBuilders: Used to build the panel with consistent styling
+func CreateOptionsPanel(panelBuilders *PanelBuilders) *widget.Container {
+	return CreateStandardPanel(panelBuilders, "options_list")
+}
+
+// CreateStandardDetailPanel creates a detail panel with a text area using a StandardPanels specification.
+// Combines panel specification lookup with detail panel functionality (AnchorLayout + TextArea).
+// Parameters:
+//   - panelBuilders: Used to build the panel with consistent styling
+//   - layout: Screen layout config for calculating dimensions
+//   - specName: Name of the panel specification in StandardPanels
+//   - defaultText: Initial text to display in the textarea
+func CreateStandardDetailPanel(
+	panelBuilders *PanelBuilders,
+	layout *LayoutConfig,
+	specName string,
+	defaultText string,
+) (*widget.Container, *widget.TextArea) {
+	spec, exists := StandardPanels[specName]
+	if !exists {
+		return nil, nil
+	}
+
+	// Build the panel using the specification
+	opts := []PanelOption{
+		spec.Position,
+		Size(spec.Width, spec.Height),
+		AnchorLayout(),
+	}
+
+	// Add padding option
+	if spec.Custom != nil {
+		opts = append(opts, CustomPadding(*spec.Custom))
+	} else {
+		opts = append(opts, Padding(spec.Padding))
+	}
+
+	panel := panelBuilders.BuildPanel(opts...)
+
+	// Calculate textarea dimensions
+	panelWidth := int(float64(layout.ScreenWidth) * spec.Width)
+	panelHeight := int(float64(layout.ScreenHeight) * spec.Height)
+	textArea := CreateTextAreaWithConfig(TextAreaConfig{
+		MinWidth:  panelWidth - 20,
+		MinHeight: panelHeight - 20,
+		FontColor: color.White,
+	})
+
+	// Set initial text and add to panel
+	textArea.SetText(defaultText)
+	panel.AddChild(textArea)
+
+	return panel, textArea
+}

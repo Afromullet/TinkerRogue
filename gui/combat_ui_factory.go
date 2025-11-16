@@ -27,34 +27,17 @@ func NewCombatUIFactory(queries *GUIQueries, panelBuilders *PanelBuilders, layou
 
 // CreateTurnOrderPanel builds the turn order display panel
 func (cuf *CombatUIFactory) CreateTurnOrderPanel() *widget.Container {
-	panel := cuf.panelBuilders.BuildPanel(
-		TopCenter(),
-		Size(PanelWidthWide, PanelHeightTiny),
-		Padding(PaddingTight),
-		HorizontalRowLayout(),
-	)
-	return panel
+	return CreateStandardPanel(cuf.panelBuilders, "turn_order")
 }
 
 // CreateFactionInfoPanel builds the faction information panel
 func (cuf *CombatUIFactory) CreateFactionInfoPanel() *widget.Container {
-	panel := cuf.panelBuilders.BuildPanel(
-		TopLeft(),
-		Size(PanelWidthNarrow, PanelHeightSmall),
-		Padding(PaddingTight),
-		RowLayout(),
-	)
-	return panel
+	return CreateStandardPanel(cuf.panelBuilders, "faction_info")
 }
 
 // CreateSquadListPanel builds the squad list panel
 func (cuf *CombatUIFactory) CreateSquadListPanel() *widget.Container {
-	panel := cuf.panelBuilders.BuildPanel(
-		LeftCenter(),
-		Size(PanelWidthNarrow, PanelHeightHalf),
-		Padding(PaddingTight),
-		RowLayout(),
-	)
+	panel := CreateStandardPanel(cuf.panelBuilders, "squad_list")
 
 	listLabel := CreateSmallLabel("Your Squads:")
 	panel.AddChild(listLabel)
@@ -64,17 +47,7 @@ func (cuf *CombatUIFactory) CreateSquadListPanel() *widget.Container {
 
 // CreateSquadDetailPanel builds the squad detail panel
 func (cuf *CombatUIFactory) CreateSquadDetailPanel() *widget.Container {
-	panel := cuf.panelBuilders.BuildPanel(
-		LeftBottom(),
-		Size(PanelWidthNarrow, PanelHeightQuarter),
-		CustomPadding(widget.Insets{
-			Left:   int(float64(cuf.layout.ScreenWidth) * PaddingTight),
-			Bottom: int(float64(cuf.layout.ScreenHeight) * 0.25),
-		}),
-		RowLayout(),
-	)
-
-	return panel
+	return CreateStandardPanel(cuf.panelBuilders, "squad_detail")
 }
 
 // CreateLogPanel builds the combat log panel using the detail panel helper
@@ -132,9 +105,9 @@ func (cuf *CombatUIFactory) CreateActionButtons(
 	})
 
 	// Build action buttons container
-	actionButtons := cuf.panelBuilders.BuildPanel(
-		BottomCenter(),
-		HorizontalRowLayout(),
+	actionButtons := CreateStandardPanelWithOptions(
+		cuf.panelBuilders,
+		"action_buttons",
 		CustomPadding(widget.Insets{
 			Bottom: int(float64(cuf.layout.ScreenHeight) * BottomButtonOffset),
 		}),
