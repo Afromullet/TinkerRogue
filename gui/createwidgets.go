@@ -92,14 +92,14 @@ func CreateTextAreaWithConfig(config TextAreaConfig) *widget.TextArea {
 		widget.TextAreaOpts.ControlWidgetSpacing(2),
 		widget.TextAreaOpts.ProcessBBCode(true),
 		widget.TextAreaOpts.FontColor(config.FontColor),
-		widget.TextAreaOpts.FontFace(TextAreaRes.face),
-		widget.TextAreaOpts.TextPadding(TextAreaRes.entryPadding),
+		widget.TextAreaOpts.FontFace(TextAreaRes.Face),
+		widget.TextAreaOpts.TextPadding(TextAreaRes.EntryPadding),
 		widget.TextAreaOpts.ScrollContainerOpts(
-			widget.ScrollContainerOpts.Image(ListRes.image)),
+			widget.ScrollContainerOpts.Image(ListRes.Image)),
 		widget.TextAreaOpts.SliderOpts(
-			widget.SliderOpts.Images(ListRes.track, ListRes.handle),
-			widget.SliderOpts.MinHandleSize(ListRes.handleSize),
-			widget.SliderOpts.TrackPadding(ListRes.trackPadding),
+			widget.SliderOpts.Images(ListRes.Track, ListRes.Handle),
+			widget.SliderOpts.MinHandleSize(ListRes.HandleSize),
+			widget.SliderOpts.TrackPadding(ListRes.TrackPadding),
 		),
 	)
 }
@@ -127,7 +127,7 @@ func CreateButtonWithConfig(config ButtonConfig) *widget.Button {
 		config.MinHeight = 100
 	}
 	if config.FontFace == nil {
-		config.FontFace = largeFace
+		config.FontFace = LargeFace
 	}
 	if config.TextColor == nil {
 		config.TextColor = &widget.ButtonTextColor{
@@ -135,7 +135,7 @@ func CreateButtonWithConfig(config ButtonConfig) *widget.Button {
 		}
 	}
 	if config.Image == nil {
-		config.Image = buttonImage
+		config.Image = ButtonImage
 	}
 	if config.Padding.Left == 0 {
 		config.Padding = widget.Insets{Left: 30, Right: 30, Top: 30, Bottom: 30}
@@ -201,15 +201,15 @@ func CreateListWithConfig(config ListConfig) *widget.List {
 			),
 		),
 		widget.ListOpts.ScrollContainerOpts(
-			widget.ScrollContainerOpts.Image(ListRes.image),
+			widget.ScrollContainerOpts.Image(ListRes.Image),
 		),
 		widget.ListOpts.SliderOpts(
-			widget.SliderOpts.Images(ListRes.track, ListRes.handle),
-			widget.SliderOpts.MinHandleSize(ListRes.handleSize),
-			widget.SliderOpts.TrackPadding(ListRes.trackPadding),
+			widget.SliderOpts.Images(ListRes.Track, ListRes.Handle),
+			widget.SliderOpts.MinHandleSize(ListRes.HandleSize),
+			widget.SliderOpts.TrackPadding(ListRes.TrackPadding),
 		),
-		widget.ListOpts.EntryColor(ListRes.entry),
-		widget.ListOpts.EntryFontFace(ListRes.face),
+		widget.ListOpts.EntryColor(ListRes.Entry),
+		widget.ListOpts.EntryFontFace(ListRes.Face),
 	}
 
 	// Add layout data if provided
@@ -249,7 +249,7 @@ type PanelConfig struct {
 func CreatePanelWithConfig(config PanelConfig) *widget.Container {
 	// Apply defaults
 	if config.Background == nil {
-		config.Background = PanelRes.image
+		config.Background = PanelRes.Image
 	}
 	if config.Padding.Left == 0 {
 		config.Padding = widget.Insets{Left: 15, Right: 15, Top: 15, Bottom: 15}
@@ -316,14 +316,14 @@ func CreateTextInputWithConfig(config TextInputConfig) *widget.TextInput {
 	}
 	if config.Image == nil {
 		config.Image = &widget.TextInputImage{
-			Idle:     defaultWidgetColor,
-			Disabled: defaultWidgetColor,
+			Idle:     DefaultWidgetColor,
+			Disabled: DefaultWidgetColor,
 		}
 	}
 	if config.TextColor == nil {
 		config.TextColor = &widget.TextInputColor{
 			Idle:     color.White,
-			Disabled: hexToColor(textDisabledColor),
+			Disabled: HexToColor(TextDisabledColor),
 			Caret:    color.White,
 		}
 	}

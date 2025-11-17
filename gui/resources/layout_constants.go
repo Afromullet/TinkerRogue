@@ -1,5 +1,6 @@
-// Package gui - Layout configuration constants
-package gui
+// Package resources provides GUI layout constants, asset resources, and panel specifications
+// for the TinkerRogue game UI system.
+package resources
 
 // ========================================
 // PANEL WIDTH PERCENTAGES

@@ -111,7 +111,7 @@ func (smm *SquadManagementMode) createSquadPanel(squadID ecs.EntityID) *SquadPan
 
 	// Container for this squad's panel
 	panel.container = CreatePanelWithConfig(PanelConfig{
-		Background: PanelRes.image,
+		Background: PanelRes.Image,
 		Layout: widget.NewRowLayout(
 			widget.RowLayoutOpts.Direction(widget.DirectionVertical),
 			widget.RowLayoutOpts.Spacing(10),

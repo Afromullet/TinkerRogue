@@ -47,7 +47,7 @@ func (pb *PanelBuilders) BuildGridEditor(config GridEditorConfig) (*widget.Conta
 	}
 
 	gridContainer := CreatePanelWithConfig(PanelConfig{
-		Background: PanelRes.image,
+		Background: PanelRes.Image,
 		Layout: widget.NewGridLayout(
 			widget.GridLayoutOpts.Columns(3),
 			widget.GridLayoutOpts.Stretch([]bool{true, true, true}, []bool{true, true, true}),
