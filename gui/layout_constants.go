@@ -45,6 +45,9 @@ const (
 	// Tall panels (detail views, list containers)
 	PanelHeightTall = 0.75
 
+	// Extra tall panels (between half and full)
+	PanelHeightExtraTall = 0.6
+
 	// Nearly full screen (main content areas)
 	PanelHeightFull = 0.85
 )

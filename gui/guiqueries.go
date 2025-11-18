@@ -258,3 +258,56 @@ func (gq *GUIQueries) GetAllFactions() []ecs.EntityID {
 	}
 	return factionIDs
 }
+
+// ===== UNIFIED SQUAD FILTERING =====
+
+// FilterSquadsAlive returns a filter that matches non-destroyed squads
+func (gq *GUIQueries) FilterSquadsAlive() SquadFilter {
+	return func(info *SquadInfo) bool {
+		return !info.IsDestroyed
+	}
+}
+
+// FilterSquadsByPlayer returns a filter that matches player faction squads
+func (gq *GUIQueries) FilterSquadsByPlayer() SquadFilter {
+	return func(info *SquadInfo) bool {
+		return !info.IsDestroyed && gq.IsPlayerFaction(info.FactionID)
+	}
+}
+
+// FilterSquadsByFaction returns a filter that matches squads in a specific faction
+func (gq *GUIQueries) FilterSquadsByFaction(factionID ecs.EntityID) SquadFilter {
+	return func(info *SquadInfo) bool {
+		return !info.IsDestroyed && info.FactionID == factionID
+	}
+}
+
+// ApplyFilterToSquads applies a filter to a slice of squad IDs
+// Returns filtered squad IDs as a new slice
+// If filter is nil, returns all squads unchanged
+func (gq *GUIQueries) ApplyFilterToSquads(squadIDs []ecs.EntityID, filter SquadFilter) []ecs.EntityID {
+	if filter == nil {
+		return squadIDs
+	}
+
+	filtered := make([]ecs.EntityID, 0, len(squadIDs))
+	for _, squadID := range squadIDs {
+		info := gq.GetSquadInfo(squadID)
+		if info != nil && filter(info) {
+			filtered = append(filtered, squadID)
+		}
+	}
+	return filtered
+}
+
+// GetPlayerSquads returns all squads belonging to the player faction (alive only)
+func (gq *GUIQueries) GetPlayerSquads() []ecs.EntityID {
+	allSquads := gq.FindAllSquads()
+	return gq.ApplyFilterToSquads(allSquads, gq.FilterSquadsByPlayer())
+}
+
+// GetAliveSquads returns all squads that have not been destroyed
+func (gq *GUIQueries) GetAliveSquads() []ecs.EntityID {
+	allSquads := gq.FindAllSquads()
+	return gq.ApplyFilterToSquads(allSquads, gq.FilterSquadsAlive())
+}

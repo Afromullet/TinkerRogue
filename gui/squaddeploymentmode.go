@@ -83,11 +83,11 @@ func (sdm *SquadDeploymentMode) buildSquadListPanel() {
 	sdm.squadListPanel.AddChild(listLabel)
 
 	// Create squad list component - show all alive squads for placement
-	// Uses centralized AliveSquadsOnly filter to eliminate code duplication
+	// Uses centralized filter from GUIQueries for consistency
 	sdm.squadListComponent = NewSquadListComponent(
 		sdm.squadListPanel,
 		sdm.queries,
-		AliveSquadsOnly,
+		sdm.queries.FilterSquadsAlive(),
 		func(squadID ecs.EntityID) {
 			sdm.selectedSquadID = squadID
 			sdm.isPlacingSquad = true

@@ -29,7 +29,7 @@ func CreateBottomCenterButtonContainer(panelBuilders *PanelBuilders) *widget.Con
 		BottomCenter(),
 		HorizontalRowLayout(),
 		CustomPadding(widget.Insets{
-			Bottom: int(float64(panelBuilders.layout.ScreenHeight) * 0.08),
+			Bottom: int(float64(panelBuilders.layout.ScreenHeight) * BottomButtonOffset),
 		}),
 	)
 }
@@ -96,7 +96,7 @@ func CreateDetailPanel(
 func CreateFilterButtonContainer(panelBuilders *PanelBuilders, alignment PanelOption) *widget.Container {
 	return panelBuilders.BuildPanel(
 		alignment,
-		Padding(0.02),
+		Padding(PaddingStandard),
 		HorizontalRowLayout(),
 	)
 }

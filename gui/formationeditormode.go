@@ -50,7 +50,7 @@ func (fem *FormationEditorMode) Initialize(ctx *UIContext) error {
 func (fem *FormationEditorMode) buildUnitPalette() {
 	// Left side unit palette
 	listWidth := int(float64(fem.layout.ScreenWidth) * PanelWidthStandard)
-	listHeight := int(float64(fem.layout.ScreenHeight) * 0.6)
+	listHeight := int(float64(fem.layout.ScreenHeight) * PanelHeightExtraTall)
 
 	// Unit types
 	entries := []interface{}{

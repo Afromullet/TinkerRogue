@@ -20,50 +20,21 @@ func NewFilterHelper(queries *GUIQueries) *FilterHelper {
 
 // FilterPlayerFactionSquads returns only squads from the player faction
 // Filters out destroyed squads and enemy squads
+// Delegates to centralized GUIQueries filtering
 func (fh *FilterHelper) FilterPlayerFactionSquads(allSquads []ecs.EntityID) []ecs.EntityID {
-	filtered := make([]ecs.EntityID, 0, len(allSquads))
-
-	for _, squadID := range allSquads {
-		info := fh.queries.GetSquadInfo(squadID)
-		if info == nil || info.IsDestroyed {
-			continue
-		}
-
-		// Only include player faction squads
-		if fh.queries.IsPlayerFaction(info.FactionID) {
-			filtered = append(filtered, squadID)
-		}
-	}
-
-	return filtered
+	return fh.queries.ApplyFilterToSquads(allSquads, fh.queries.FilterSquadsByPlayer())
 }
 
 // FilterAliveSquads returns only squads that have not been destroyed
+// Delegates to centralized GUIQueries filtering
 func (fh *FilterHelper) FilterAliveSquads(allSquads []ecs.EntityID) []ecs.EntityID {
-	filtered := make([]ecs.EntityID, 0, len(allSquads))
-
-	for _, squadID := range allSquads {
-		info := fh.queries.GetSquadInfo(squadID)
-		if info != nil && !info.IsDestroyed {
-			filtered = append(filtered, squadID)
-		}
-	}
-
-	return filtered
+	return fh.queries.ApplyFilterToSquads(allSquads, fh.queries.FilterSquadsAlive())
 }
 
 // FilterFactionSquads returns only squads from a specific faction
+// Delegates to centralized GUIQueries filtering
 func (fh *FilterHelper) FilterFactionSquads(allSquads []ecs.EntityID, factionID ecs.EntityID) []ecs.EntityID {
-	filtered := make([]ecs.EntityID, 0, len(allSquads))
-
-	for _, squadID := range allSquads {
-		info := fh.queries.GetSquadInfo(squadID)
-		if info != nil && !info.IsDestroyed && info.FactionID == factionID {
-			filtered = append(filtered, squadID)
-		}
-	}
-
-	return filtered
+	return fh.queries.ApplyFilterToSquads(allSquads, fh.queries.FilterSquadsByFaction(factionID))
 }
 
 // Note: Use GUIQueries.FindSquadsByFaction() instead of GetSquadIDsForFaction() - more efficient.
