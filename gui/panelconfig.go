@@ -200,7 +200,7 @@ func (pb *PanelBuilders) BuildPanel(opts ...PanelOption) *widget.Container {
 	config := panelConfig{
 		widthPercent:  0.2,
 		heightPercent: 0.3,
-		background:    PanelRes.Image,
+		background:    PanelRes.image,
 		layout: widget.NewRowLayout(
 			widget.RowLayoutOpts.Direction(widget.DirectionVertical),
 			widget.RowLayoutOpts.Spacing(5),

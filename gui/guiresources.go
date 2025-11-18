@@ -1,4 +1,4 @@
-package resources
+package gui
 
 import (
 	"image/color"
@@ -15,15 +15,13 @@ import (
 )
 
 var smallFace, _ = loadFont(30)
-var largeFont, _ = loadFont(50)
-var buttonImg, _ = loadButtonImage()
-var defaultColor = e_image.NewNineSliceColor(color.NRGBA{0x13, 0x1a, 0x22, 0xff})
+var largeFace, _ = loadFont(50)
+var buttonImage, _ = loadButtonImage()
+var defaultWidgetColor = e_image.NewNineSliceColor(color.NRGBA{0x13, 0x1a, 0x22, 0xff})
 
 // Exported fonts for use in UI modes
 var SmallFace = smallFace
-var LargeFace = largeFont
-var ButtonImage, _ = loadButtonImage()
-var DefaultWidgetColor = defaultColor
+var LargeFace = largeFace
 
 var PanelRes *panelResources = newPanelResources()
 var ListRes *listResources = newListResources()
@@ -31,16 +29,16 @@ var TextAreaRes *textAreaResources = newTextAreaResources()
 
 const (
 	textIdleColor                  = "dff4ff"
-	TextDisabledColor              = "5a7a91"
+	textDisabledColor              = "5a7a91"
 	listSelectedBackground         = "4b687a"
 	listDisabledSelectedBackground = "2a3944"
 	listFocusedBackground          = "2a3944"
 )
 
 type panelResources struct {
-	Image    *e_image.NineSlice
-	TitleBar *e_image.NineSlice
-	Padding  widget.Insets
+	image    *e_image.NineSlice
+	titleBar *e_image.NineSlice
+	padding  widget.Insets
 }
 
 func newPanelResources() *panelResources {
@@ -53,9 +51,9 @@ func newPanelResources() *panelResources {
 		return nil
 	}
 	return &panelResources{
-		Image:    i,
-		TitleBar: t,
-		Padding: widget.Insets{
+		image:    i,
+		titleBar: t,
+		padding: widget.Insets{
 			Left:   30,
 			Right:  30,
 			Top:    20,
@@ -65,14 +63,14 @@ func newPanelResources() *panelResources {
 }
 
 type listResources struct {
-	Image        *widget.ScrollContainerImage
-	Track        *widget.SliderTrackImage
-	TrackPadding widget.Insets
-	Handle       *widget.ButtonImage
-	HandleSize   int
-	Face         font.Face
-	Entry        *widget.ListEntryColor
-	EntryPadding widget.Insets
+	image        *widget.ScrollContainerImage
+	track        *widget.SliderTrackImage
+	trackPadding widget.Insets
+	handle       *widget.ButtonImage
+	handleSize   int
+	face         font.Face
+	entry        *widget.ListEntryColor
+	entryPadding widget.Insets
 }
 
 func newListResources() *listResources {
@@ -112,48 +110,48 @@ func newListResources() *listResources {
 	}
 
 	return &listResources{
-		Image: &widget.ScrollContainerImage{
+		image: &widget.ScrollContainerImage{
 			Idle:     image.NewNineSlice(idle, [3]int{25, 12, 22}, [3]int{25, 12, 25}),
 			Disabled: image.NewNineSlice(disabled, [3]int{25, 12, 22}, [3]int{25, 12, 25}),
 			Mask:     image.NewNineSlice(mask, [3]int{26, 10, 23}, [3]int{26, 10, 26}),
 		},
 
-		Track: &widget.SliderTrackImage{
+		track: &widget.SliderTrackImage{
 			Idle:     image.NewNineSlice(trackIdle, [3]int{5, 0, 0}, [3]int{25, 12, 25}),
 			Hover:    image.NewNineSlice(trackIdle, [3]int{5, 0, 0}, [3]int{25, 12, 25}),
 			Disabled: image.NewNineSlice(trackDisabled, [3]int{0, 5, 0}, [3]int{25, 12, 25}),
 		},
 
-		TrackPadding: widget.Insets{
+		trackPadding: widget.Insets{
 			Top:    5,
 			Bottom: 24,
 		},
 
-		Handle: &widget.ButtonImage{
+		handle: &widget.ButtonImage{
 			Idle:     image.NewNineSliceSimple(handleIdle, 0, 5),
 			Hover:    image.NewNineSliceSimple(handleHover, 0, 5),
 			Pressed:  image.NewNineSliceSimple(handleHover, 0, 5),
 			Disabled: image.NewNineSliceSimple(handleIdle, 0, 5),
 		},
 
-		HandleSize: 5,
-		Face:       smallFace,
+		handleSize: 5,
+		face:       smallFace,
 
-		Entry: &widget.ListEntryColor{
-			Unselected:         HexToColor(textIdleColor),
-			DisabledUnselected: HexToColor(TextDisabledColor),
+		entry: &widget.ListEntryColor{
+			Unselected:         hexToColor(textIdleColor),
+			DisabledUnselected: hexToColor(textDisabledColor),
 
-			Selected:         HexToColor(textIdleColor),
-			DisabledSelected: HexToColor(TextDisabledColor),
+			Selected:         hexToColor(textIdleColor),
+			DisabledSelected: hexToColor(textDisabledColor),
 
-			SelectedBackground:         HexToColor(listSelectedBackground),
-			DisabledSelectedBackground: HexToColor(listDisabledSelectedBackground),
+			SelectedBackground:         hexToColor(listSelectedBackground),
+			DisabledSelectedBackground: hexToColor(listDisabledSelectedBackground),
 
-			FocusedBackground:         HexToColor(listFocusedBackground),
-			SelectedFocusedBackground: HexToColor(listSelectedBackground),
+			FocusedBackground:         hexToColor(listFocusedBackground),
+			SelectedFocusedBackground: hexToColor(listSelectedBackground),
 		},
 
-		EntryPadding: widget.Insets{
+		entryPadding: widget.Insets{
 			Left:   30,
 			Right:  30,
 			Top:    2,
@@ -163,13 +161,13 @@ func newListResources() *listResources {
 }
 
 type textAreaResources struct {
-	Image        *widget.ScrollContainerImage
-	Track        *widget.SliderTrackImage
-	TrackPadding widget.Insets
-	Handle       *widget.ButtonImage
-	HandleSize   int
-	Face         font.Face
-	EntryPadding widget.Insets
+	image        *widget.ScrollContainerImage
+	track        *widget.SliderTrackImage
+	trackPadding widget.Insets
+	handle       *widget.ButtonImage
+	handleSize   int
+	face         font.Face
+	entryPadding widget.Insets
 }
 
 func newTextAreaResources() *textAreaResources {
@@ -209,34 +207,34 @@ func newTextAreaResources() *textAreaResources {
 	}
 
 	return &textAreaResources{
-		Image: &widget.ScrollContainerImage{
+		image: &widget.ScrollContainerImage{
 			Idle:     image.NewNineSlice(idle, [3]int{25, 12, 22}, [3]int{25, 12, 25}),
 			Disabled: image.NewNineSlice(disabled, [3]int{25, 12, 22}, [3]int{25, 12, 25}),
 			Mask:     image.NewNineSlice(mask, [3]int{26, 10, 23}, [3]int{26, 10, 26}),
 		},
 
-		Track: &widget.SliderTrackImage{
+		track: &widget.SliderTrackImage{
 			Idle:     image.NewNineSlice(trackIdle, [3]int{5, 0, 0}, [3]int{25, 12, 25}),
 			Hover:    image.NewNineSlice(trackIdle, [3]int{5, 0, 0}, [3]int{25, 12, 25}),
 			Disabled: image.NewNineSlice(trackDisabled, [3]int{0, 5, 0}, [3]int{25, 12, 25}),
 		},
 
-		TrackPadding: widget.Insets{
+		trackPadding: widget.Insets{
 			Top:    5,
 			Bottom: 24,
 		},
 
-		Handle: &widget.ButtonImage{
+		handle: &widget.ButtonImage{
 			Idle:     image.NewNineSliceSimple(handleIdle, 0, 5),
 			Hover:    image.NewNineSliceSimple(handleHover, 0, 5),
 			Pressed:  image.NewNineSliceSimple(handleHover, 0, 5),
 			Disabled: image.NewNineSliceSimple(handleIdle, 0, 5),
 		},
 
-		HandleSize: 5,
-		Face:       smallFace,
+		handleSize: 5,
+		face:       smallFace,
 
-		EntryPadding: widget.Insets{
+		entryPadding: widget.Insets{
 			Left:   30,
 			Right:  30,
 			Top:    2,
@@ -293,7 +291,7 @@ func newImageFromFile(path string) (*ebiten.Image, error) {
 	return f, err
 }
 
-func HexToColor(h string) color.Color {
+func hexToColor(h string) color.Color {
 	u, err := strconv.ParseUint(h, 16, 0)
 	if err != nil {
 		panic(err)
