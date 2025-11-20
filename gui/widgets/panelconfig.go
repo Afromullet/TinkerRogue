@@ -1,6 +1,8 @@
-package gui
+package widgets
 
 import (
+	"game_main/gui/guiresources"
+
 	e_image "github.com/ebitenui/ebitenui/image"
 	"github.com/ebitenui/ebitenui/widget"
 )
@@ -200,7 +202,7 @@ func (pb *PanelBuilders) BuildPanel(opts ...PanelOption) *widget.Container {
 	config := panelConfig{
 		widthPercent:  0.2,
 		heightPercent: 0.3,
-		background:    PanelRes.image,
+		background:    guiresources.PanelRes.Image,
 		layout: widget.NewRowLayout(
 			widget.RowLayoutOpts.Direction(widget.DirectionVertical),
 			widget.RowLayoutOpts.Spacing(5),
@@ -218,8 +220,8 @@ func (pb *PanelBuilders) BuildPanel(opts ...PanelOption) *widget.Container {
 	}
 
 	// Calculate actual dimensions from percentages
-	width := int(float64(pb.layout.ScreenWidth) * config.widthPercent)
-	height := int(float64(pb.layout.ScreenHeight) * config.heightPercent)
+	width := int(float64(pb.Layout.ScreenWidth) * config.widthPercent)
+	height := int(float64(pb.Layout.ScreenHeight) * config.heightPercent)
 
 	// Apply padding to layoutData
 	if config.customPadding != nil {
@@ -227,8 +229,8 @@ func (pb *PanelBuilders) BuildPanel(opts ...PanelOption) *widget.Container {
 		config.layoutData.Padding = *config.customPadding
 	} else if config.paddingPercent > 0 {
 		// Calculate padding from percentage
-		hPadding := int(float64(pb.layout.ScreenWidth) * config.paddingPercent)
-		vPadding := int(float64(pb.layout.ScreenHeight) * config.paddingPercent)
+		hPadding := int(float64(pb.Layout.ScreenWidth) * config.paddingPercent)
+		vPadding := int(float64(pb.Layout.ScreenHeight) * config.paddingPercent)
 
 		// Apply padding based on position
 		insets := widget.Insets{}

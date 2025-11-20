@@ -1,7 +1,11 @@
-package gui
+package guimodes
 
 import (
+	"game_main/gui"
+
 	"fmt"
+	"game_main/gui/core"
+	"game_main/gui/widgets"
 
 	"github.com/ebitenui/ebitenui/widget"
 	"github.com/hajimehoshi/ebiten/v2"
@@ -9,7 +13,7 @@ import (
 
 // FormationEditorMode provides 3x3 grid editing for squad formations
 type FormationEditorMode struct {
-	BaseMode // Embed common mode infrastructure
+	gui.BaseMode // Embed common mode infrastructure
 
 	gridContainer *widget.Container
 	unitPalette   *widget.List
@@ -18,28 +22,25 @@ type FormationEditorMode struct {
 	gridCells [3][3]*widget.Button // 3x3 grid of cells
 }
 
-func NewFormationEditorMode(modeManager *UIModeManager) *FormationEditorMode {
-	return &FormationEditorMode{
-		BaseMode: BaseMode{
-			modeManager: modeManager,
-			modeName:    "formation_editor",
-			returnMode:  "exploration",
-		},
-	}
+func NewFormationEditorMode(modeManager *core.UIModeManager) *FormationEditorMode {
+	mode := &FormationEditorMode{}
+	mode.SetModeName("formation_editor")
+	mode.ModeManager = modeManager
+	return mode
 }
 
-func (fem *FormationEditorMode) Initialize(ctx *UIContext) error {
+func (fem *FormationEditorMode) Initialize(ctx *core.UIContext) error {
 	// Initialize common mode infrastructure
 	fem.InitializeBase(ctx)
 
 	// Build formation editor UI
 	// Build 3x3 grid editor (center)
-	fem.gridContainer, fem.gridCells = fem.panelBuilders.BuildGridEditor(GridEditorConfig{
+	fem.gridContainer, fem.gridCells = fem.PanelBuilders.BuildGridEditor(widgets.GridEditorConfig{
 		OnCellClick: func(row, col int) {
 			fem.onCellClicked(row, col)
 		},
 	})
-	fem.rootContainer.AddChild(fem.gridContainer)
+	fem.RootContainer.AddChild(fem.gridContainer)
 
 	fem.buildUnitPalette()
 	fem.buildActionButtons()
@@ -49,8 +50,8 @@ func (fem *FormationEditorMode) Initialize(ctx *UIContext) error {
 
 func (fem *FormationEditorMode) buildUnitPalette() {
 	// Left side unit palette
-	listWidth := int(float64(fem.layout.ScreenWidth) * PanelWidthStandard)
-	listHeight := int(float64(fem.layout.ScreenHeight) * PanelHeightExtraTall)
+	listWidth := int(float64(fem.Layout.ScreenWidth) * widgets.PanelWidthStandard)
+	listHeight := int(float64(fem.Layout.ScreenHeight) * widgets.PanelHeightExtraTall)
 
 	// Unit types
 	entries := []interface{}{
@@ -60,7 +61,7 @@ func (fem *FormationEditorMode) buildUnitPalette() {
 		"Remove Unit",
 	}
 
-	fem.unitPalette = CreateListWithConfig(ListConfig{
+	fem.unitPalette = widgets.CreateListWithConfig(widgets.ListConfig{
 		Entries:   entries,
 		MinWidth:  listWidth,
 		MinHeight: listHeight,
@@ -73,19 +74,19 @@ func (fem *FormationEditorMode) buildUnitPalette() {
 		},
 	})
 
-	fem.rootContainer.AddChild(fem.unitPalette)
+	fem.RootContainer.AddChild(fem.unitPalette)
 }
 
 func (fem *FormationEditorMode) buildActionButtons() {
 	// Create action buttons
-	saveBtn := CreateButtonWithConfig(ButtonConfig{
+	saveBtn := widgets.CreateButtonWithConfig(widgets.ButtonConfig{
 		Text: "Save Formation",
 		OnClick: func() {
 			fmt.Println("Formation saved!")
 		},
 	})
 
-	loadBtn := CreateButtonWithConfig(ButtonConfig{
+	loadBtn := widgets.CreateButtonWithConfig(widgets.ButtonConfig{
 		Text: "Load Formation",
 		OnClick: func() {
 			fmt.Println("Formation loaded!")
@@ -93,15 +94,15 @@ func (fem *FormationEditorMode) buildActionButtons() {
 	})
 
 	// Build action buttons container using helper
-	fem.actionButtons = CreateBottomCenterButtonContainer(fem.panelBuilders)
+	fem.actionButtons = gui.CreateBottomCenterButtonContainer(fem.PanelBuilders)
 
 	fem.actionButtons.AddChild(saveBtn)
 	fem.actionButtons.AddChild(loadBtn)
 
 	// Create close button using helper
-	closeBtn := CreateCloseButton(fem.modeManager, "exploration", "Close (ESC)")
+	closeBtn := gui.CreateCloseButton(fem.ModeManager, "exploration", "Close (ESC)")
 	fem.actionButtons.AddChild(closeBtn)
-	fem.rootContainer.AddChild(fem.actionButtons)
+	fem.RootContainer.AddChild(fem.actionButtons)
 }
 
 func (fem *FormationEditorMode) onCellClicked(row, col int) {
@@ -118,12 +119,12 @@ func (fem *FormationEditorMode) onCellClicked(row, col int) {
 	fem.gridCells[row][col].Text().Label = unitType
 }
 
-func (fem *FormationEditorMode) Enter(fromMode UIMode) error {
+func (fem *FormationEditorMode) Enter(fromMode core.UIMode) error {
 	fmt.Println("Entering Formation Editor Mode")
 	return nil
 }
 
-func (fem *FormationEditorMode) Exit(toMode UIMode) error {
+func (fem *FormationEditorMode) Exit(toMode core.UIMode) error {
 	fmt.Println("Exiting Formation Editor Mode")
 	return nil
 }
@@ -136,7 +137,7 @@ func (fem *FormationEditorMode) Render(screen *ebiten.Image) {
 	// No custom rendering needed
 }
 
-func (fem *FormationEditorMode) HandleInput(inputState *InputState) bool {
+func (fem *FormationEditorMode) HandleInput(inputState *core.InputState) bool {
 	// Handle common input (ESC key)
 	if fem.HandleCommonInput(inputState) {
 		return true
@@ -144,4 +145,3 @@ func (fem *FormationEditorMode) HandleInput(inputState *InputState) bool {
 
 	return false
 }
-

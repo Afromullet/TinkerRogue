@@ -1,8 +1,11 @@
-package gui
+package guimodes
 
 import (
+	"game_main/gui"
+
 	"fmt"
 	"game_main/common"
+	"game_main/gui/core"
 	"game_main/squads"
 
 	"github.com/bytearena/ecs"
@@ -12,7 +15,7 @@ import (
 
 // SquadBuilderMode provides an interface for creating new squads
 type SquadBuilderMode struct {
-	BaseMode // Embed common mode infrastructure
+	gui.BaseMode // Embed common mode infrastructure
 
 	// Managers
 	gridManager *GridEditorManager
@@ -44,24 +47,22 @@ type GridCellButton struct {
 	unitIndex int          // -1 if empty, otherwise index in squads.Units
 }
 
-func NewSquadBuilderMode(modeManager *UIModeManager) *SquadBuilderMode {
-	return &SquadBuilderMode{
-		BaseMode: BaseMode{
-			modeManager: modeManager,
-			modeName:    "squad_builder",
-			returnMode:  "exploration",
-		},
+func NewSquadBuilderMode(modeManager *core.UIModeManager) *SquadBuilderMode {
+	mode := &SquadBuilderMode{
 		selectedUnitIdx: -1,
 	}
+	mode.SetModeName("squad_builder")
+	mode.ModeManager = modeManager
+	return mode
 }
 
-func (sbm *SquadBuilderMode) Initialize(ctx *UIContext) error {
+func (sbm *SquadBuilderMode) Initialize(ctx *core.UIContext) error {
 	// Initialize common mode infrastructure
 	sbm.InitializeBase(ctx)
 
 	// Create managers
 	sbm.gridManager = NewGridEditorManager(ctx.ECSManager)
-	sbm.uiFactory = NewSquadBuilderUIFactory(sbm.layout, sbm.panelBuilders)
+	sbm.uiFactory = NewSquadBuilderUIFactory(sbm.Layout, sbm.PanelBuilders)
 
 	// Build UI components
 	sbm.buildUI()
@@ -87,7 +88,7 @@ func (sbm *SquadBuilderMode) buildUI() {
 			}
 		}
 	}
-	sbm.rootContainer.AddChild(sbm.gridContainer)
+	sbm.RootContainer.AddChild(sbm.gridContainer)
 
 	// Set grid cells in manager
 	sbm.gridManager.SetGridCells(sbm.gridCells)
@@ -107,22 +108,22 @@ func (sbm *SquadBuilderMode) buildUI() {
 			sbm.updateUnitDetails()
 		}
 	})
-	sbm.rootContainer.AddChild(sbm.unitPalette)
+	sbm.RootContainer.AddChild(sbm.unitPalette)
 
 	// Build capacity display
 	sbm.capacityDisplay = sbm.uiFactory.CreateCapacityDisplay()
-	sbm.rootContainer.AddChild(sbm.capacityDisplay)
+	sbm.RootContainer.AddChild(sbm.capacityDisplay)
 
 	// Build unit details area
 	sbm.unitDetailsArea = sbm.uiFactory.CreateDetailsPanel()
-	sbm.rootContainer.AddChild(sbm.unitDetailsArea)
+	sbm.RootContainer.AddChild(sbm.unitDetailsArea)
 
 	// Build squad name input
 	var nameInputContainer *widget.Container
 	nameInputContainer, sbm.squadNameInput = sbm.uiFactory.CreateSquadNameInput(func(text string) {
 		sbm.currentSquadName = text
 	})
-	sbm.rootContainer.AddChild(nameInputContainer)
+	sbm.RootContainer.AddChild(nameInputContainer)
 
 	// Build action buttons
 	sbm.actionButtons = sbm.uiFactory.CreateActionButtons(
@@ -131,15 +132,14 @@ func (sbm *SquadBuilderMode) buildUI() {
 		sbm.onToggleLeader,
 		sbm.handleClose,
 	)
-	sbm.rootContainer.AddChild(sbm.actionButtons)
+	sbm.RootContainer.AddChild(sbm.actionButtons)
 }
 
 func (sbm *SquadBuilderMode) handleClose() {
-	if exploreMode, exists := sbm.modeManager.GetMode("exploration"); exists {
-		sbm.modeManager.RequestTransition(exploreMode, "Close Squad Builder")
+	if exploreMode, exists := sbm.ModeManager.GetMode("exploration"); exists {
+		sbm.ModeManager.RequestTransition(exploreMode, "Close Squad Builder")
 	}
 }
-
 
 func (sbm *SquadBuilderMode) onCellClicked(row, col int) {
 	cell := sbm.gridCells[row][col]
@@ -195,17 +195,16 @@ func (sbm *SquadBuilderMode) createTemporarySquad() {
 		squadName = "New Squad"
 	}
 
-	squads.CreateEmptySquad(sbm.context.ECSManager, squadName)
+	squads.CreateEmptySquad(sbm.Context.ECSManager, squadName)
 
 	// Find the newly created squad
 	// Squads are created with SquadComponent, so we can query for it
-	allSquads := sbm.queries.FindAllSquads()
+	allSquads := sbm.Queries.FindAllSquads()
 	if len(allSquads) > 0 {
 		sbm.currentSquadID = allSquads[len(allSquads)-1] // Get most recent
 		fmt.Printf("Created temporary squad: %s (ID: %d)\n", squadName, sbm.currentSquadID)
 	}
 }
-
 
 func (sbm *SquadBuilderMode) updateCapacityDisplay() {
 	if sbm.currentSquadID == 0 {
@@ -213,8 +212,8 @@ func (sbm *SquadBuilderMode) updateCapacityDisplay() {
 		return
 	}
 
-	used := squads.GetSquadUsedCapacity(sbm.currentSquadID, sbm.context.ECSManager)
-	total := squads.GetSquadTotalCapacity(sbm.currentSquadID, sbm.context.ECSManager)
+	used := squads.GetSquadUsedCapacity(sbm.currentSquadID, sbm.Context.ECSManager)
+	total := squads.GetSquadTotalCapacity(sbm.currentSquadID, sbm.Context.ECSManager)
 	remaining := float64(total) - used
 
 	leaderStatus := "No leader"
@@ -266,7 +265,7 @@ func (sbm *SquadBuilderMode) onCreateSquad() {
 	}
 
 	// Check if squad has at least one unit
-	unitIDs := squads.GetUnitIDsInSquad(sbm.currentSquadID, sbm.context.ECSManager)
+	unitIDs := squads.GetUnitIDsInSquad(sbm.currentSquadID, sbm.Context.ECSManager)
 	if len(unitIDs) == 0 {
 		fmt.Println("Cannot create empty squad")
 		return
@@ -280,7 +279,7 @@ func (sbm *SquadBuilderMode) onCreateSquad() {
 	}
 
 	// Update squad name if it was changed
-	squadEntity := squads.GetSquadEntity(sbm.currentSquadID, sbm.context.ECSManager)
+	squadEntity := squads.GetSquadEntity(sbm.currentSquadID, sbm.Context.ECSManager)
 	if squadEntity != nil {
 		squadData := common.GetComponentType[*squads.SquadData](squadEntity, squads.SquadComponent)
 		squadData.Name = sbm.currentSquadName
@@ -288,9 +287,9 @@ func (sbm *SquadBuilderMode) onCreateSquad() {
 
 	// Assign leader component to the designated unit
 	// Check if leader exists first
-	if sbm.context.ECSManager.HasComponentByIDWithTag(leaderID, squads.SquadMemberTag, squads.SquadMemberComponent) {
+	if sbm.Context.ECSManager.HasComponentByIDWithTag(leaderID, squads.SquadMemberTag, squads.SquadMemberComponent) {
 		// Need to get the entity to add component (AddComponent is not available via ID)
-		leaderEntity := common.FindEntityByIDWithTag(sbm.context.ECSManager, leaderID, squads.SquadMemberTag)
+		leaderEntity := common.FindEntityByIDWithTag(sbm.Context.ECSManager, leaderID, squads.SquadMemberTag)
 		if leaderEntity != nil {
 			// Add LeaderComponent to designate this unit as leader
 			leaderEntity.AddComponent(squads.LeaderComponent, &squads.LeaderData{})
@@ -303,7 +302,7 @@ func (sbm *SquadBuilderMode) onCreateSquad() {
 	fmt.Printf("Squad created: %s with %d units\n", sbm.currentSquadName, len(unitIDs))
 
 	// Visualize the squad
-	visualization := squads.VisualizeSquad(sbm.currentSquadID, sbm.context.ECSManager)
+	visualization := squads.VisualizeSquad(sbm.currentSquadID, sbm.Context.ECSManager)
 	fmt.Println(visualization)
 
 	// Clear the builder for next squad
@@ -386,7 +385,7 @@ func (sbm *SquadBuilderMode) onClearGrid() {
 	fmt.Println("Grid cleared")
 }
 
-func (sbm *SquadBuilderMode) Enter(fromMode UIMode) error {
+func (sbm *SquadBuilderMode) Enter(fromMode core.UIMode) error {
 	fmt.Println("Entering Squad Builder Mode")
 
 	// Reset state on entry
@@ -395,7 +394,7 @@ func (sbm *SquadBuilderMode) Enter(fromMode UIMode) error {
 	return nil
 }
 
-func (sbm *SquadBuilderMode) Exit(toMode UIMode) error {
+func (sbm *SquadBuilderMode) Exit(toMode core.UIMode) error {
 	fmt.Println("Exiting Squad Builder Mode")
 	return nil
 }
@@ -408,7 +407,7 @@ func (sbm *SquadBuilderMode) Render(screen *ebiten.Image) {
 	// No custom rendering needed - ebitenui handles everything
 }
 
-func (sbm *SquadBuilderMode) HandleInput(inputState *InputState) bool {
+func (sbm *SquadBuilderMode) HandleInput(inputState *core.InputState) bool {
 	// Handle common input (ESC key)
 	if sbm.HandleCommonInput(inputState) {
 		return true
@@ -422,4 +421,3 @@ func (sbm *SquadBuilderMode) HandleInput(inputState *InputState) bool {
 
 	return false
 }
-

@@ -1,4 +1,4 @@
-package gui
+package core
 
 import (
 	"game_main/common"

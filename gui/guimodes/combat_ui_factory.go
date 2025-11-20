@@ -1,6 +1,10 @@
-package gui
+package guimodes
 
 import (
+	"game_main/gui"
+	"game_main/gui/guicomponents"
+	"game_main/gui/widgets"
+
 	"fmt"
 
 	"github.com/ebitenui/ebitenui/widget"
@@ -8,14 +12,14 @@ import (
 
 // CombatUIFactory builds combat UI panels and widgets
 type CombatUIFactory struct {
-	queries       *GUIQueries
-	panelBuilders *PanelBuilders
-	layout        *LayoutConfig
+	queries       *guicomponents.GUIQueries
+	panelBuilders *widgets.PanelBuilders
+	layout        *widgets.LayoutConfig
 	width, height int
 }
 
 // NewCombatUIFactory creates a new combat UI factory
-func NewCombatUIFactory(queries *GUIQueries, panelBuilders *PanelBuilders, layout *LayoutConfig) *CombatUIFactory {
+func NewCombatUIFactory(queries *guicomponents.GUIQueries, panelBuilders *widgets.PanelBuilders, layout *widgets.LayoutConfig) *CombatUIFactory {
 	return &CombatUIFactory{
 		queries:       queries,
 		panelBuilders: panelBuilders,
@@ -27,19 +31,19 @@ func NewCombatUIFactory(queries *GUIQueries, panelBuilders *PanelBuilders, layou
 
 // CreateTurnOrderPanel builds the turn order display panel
 func (cuf *CombatUIFactory) CreateTurnOrderPanel() *widget.Container {
-	return CreateStandardPanel(cuf.panelBuilders, "turn_order")
+	return widgets.CreateStandardPanel(cuf.panelBuilders, "turn_order")
 }
 
 // CreateFactionInfoPanel builds the faction information panel
 func (cuf *CombatUIFactory) CreateFactionInfoPanel() *widget.Container {
-	return CreateStandardPanel(cuf.panelBuilders, "faction_info")
+	return widgets.CreateStandardPanel(cuf.panelBuilders, "faction_info")
 }
 
 // CreateSquadListPanel builds the squad list panel
 func (cuf *CombatUIFactory) CreateSquadListPanel() *widget.Container {
-	panel := CreateStandardPanel(cuf.panelBuilders, "squad_list")
+	panel := widgets.CreateStandardPanel(cuf.panelBuilders, "squad_list")
 
-	listLabel := CreateSmallLabel("Your Squads:")
+	listLabel := widgets.CreateSmallLabel("Your Squads:")
 	panel.AddChild(listLabel)
 
 	return panel
@@ -47,16 +51,16 @@ func (cuf *CombatUIFactory) CreateSquadListPanel() *widget.Container {
 
 // CreateSquadDetailPanel builds the squad detail panel
 func (cuf *CombatUIFactory) CreateSquadDetailPanel() *widget.Container {
-	return CreateStandardPanel(cuf.panelBuilders, "squad_detail")
+	return widgets.CreateStandardPanel(cuf.panelBuilders, "squad_detail")
 }
 
 // CreateLogPanel builds the combat log panel using the detail panel helper
 func (cuf *CombatUIFactory) CreateLogPanel() (*widget.Container, *widget.TextArea) {
-	return CreateDetailPanel(
+	return gui.CreateDetailPanel(
 		cuf.panelBuilders,
 		cuf.layout,
-		RightCenter(),
-		PanelWidthExtraWide, CombatLogHeight, PaddingTight,
+		widgets.RightCenter(),
+		widgets.PanelWidthExtraWide, widgets.CombatLogHeight, widgets.PaddingTight,
 		"Combat started!\n",
 	)
 }
@@ -68,7 +72,7 @@ func (cuf *CombatUIFactory) CreateActionButtons(
 	onEndTurn func(),
 	onFlee func(),
 ) *widget.Container {
-	attackButton := CreateButtonWithConfig(ButtonConfig{
+	attackButton := widgets.CreateButtonWithConfig(widgets.ButtonConfig{
 		Text: "Attack (A)",
 		OnClick: func() {
 			if onAttack != nil {
@@ -77,7 +81,7 @@ func (cuf *CombatUIFactory) CreateActionButtons(
 		},
 	})
 
-	moveButton := CreateButtonWithConfig(ButtonConfig{
+	moveButton := widgets.CreateButtonWithConfig(widgets.ButtonConfig{
 		Text: "Move (M)",
 		OnClick: func() {
 			if onMove != nil {
@@ -86,7 +90,7 @@ func (cuf *CombatUIFactory) CreateActionButtons(
 		},
 	})
 
-	endTurnBtn := CreateButtonWithConfig(ButtonConfig{
+	endTurnBtn := widgets.CreateButtonWithConfig(widgets.ButtonConfig{
 		Text: "End Turn (Space)",
 		OnClick: func() {
 			if onEndTurn != nil {
@@ -95,7 +99,7 @@ func (cuf *CombatUIFactory) CreateActionButtons(
 		},
 	})
 
-	fleeBtn := CreateButtonWithConfig(ButtonConfig{
+	fleeBtn := widgets.CreateButtonWithConfig(widgets.ButtonConfig{
 		Text: "Flee (ESC)",
 		OnClick: func() {
 			if onFlee != nil {
@@ -105,11 +109,11 @@ func (cuf *CombatUIFactory) CreateActionButtons(
 	})
 
 	// Build action buttons container
-	actionButtons := CreateStandardPanelWithOptions(
+	actionButtons := widgets.CreateStandardPanelWithOptions(
 		cuf.panelBuilders,
 		"action_buttons",
-		CustomPadding(widget.Insets{
-			Bottom: int(float64(cuf.layout.ScreenHeight) * BottomButtonOffset),
+		widgets.CustomPadding(widget.Insets{
+			Bottom: int(float64(cuf.layout.ScreenHeight) * widgets.BottomButtonOffset),
 		}),
 	)
 
@@ -121,7 +125,6 @@ func (cuf *CombatUIFactory) CreateActionButtons(
 	return actionButtons
 }
 
-
 // GetFormattedSquadDetails returns formatted squad details as string
 func (cuf *CombatUIFactory) GetFormattedSquadDetails(squadID interface{}) string {
 	// This is a helper that formats squad info for display
@@ -132,7 +135,7 @@ func (cuf *CombatUIFactory) GetFormattedSquadDetails(squadID interface{}) string
 // GetFormattedFactionInfo returns formatted faction info as string
 func (cuf *CombatUIFactory) GetFormattedFactionInfo(factionInfo interface{}) string {
 	// This is a helper that formats faction info for display
-	if fi, ok := factionInfo.(*FactionInfo); ok {
+	if fi, ok := factionInfo.(*guicomponents.FactionInfo); ok {
 		infoText := fmt.Sprintf("%s\n", fi.Name)
 		infoText += fmt.Sprintf("Squads: %d/%d\n", fi.AliveSquadCount, len(fi.SquadIDs))
 		infoText += fmt.Sprintf("Mana: %d/%d", fi.CurrentMana, fi.MaxMana)

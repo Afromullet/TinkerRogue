@@ -1,5 +1,5 @@
 // Package gui - Layout configuration constants
-package gui
+package widgets
 
 // ========================================
 // PANEL WIDTH PERCENTAGES

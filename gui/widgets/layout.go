@@ -1,4 +1,6 @@
-package gui
+package widgets
+
+import "game_main/gui/core"
 
 // LayoutConfig provides responsive positioning based on screen resolution.
 //
@@ -9,7 +11,8 @@ package gui
 //   - TopCenterPanel(), RightSidePanel(), BottomCenterButtons()
 //
 // Use instead:
-//   panel := panelBuilders.BuildPanel(TopRight(), Size(0.15, 0.2), Padding(0.01))
+//
+//	panel := panelBuilders.BuildPanel(TopRight(), Size(0.15, 0.2), Padding(0.01))
 //
 // Remaining methods are still used for non-panel calculations.
 type LayoutConfig struct {
@@ -19,7 +22,7 @@ type LayoutConfig struct {
 }
 
 // NewLayoutConfig creates a layout configuration from context
-func NewLayoutConfig(ctx *UIContext) *LayoutConfig {
+func NewLayoutConfig(ctx *core.UIContext) *LayoutConfig {
 	return &LayoutConfig{
 		ScreenWidth:  ctx.ScreenWidth,
 		ScreenHeight: ctx.ScreenHeight,

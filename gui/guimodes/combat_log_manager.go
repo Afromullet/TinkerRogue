@@ -1,4 +1,4 @@
-package gui
+package guimodes
 
 import (
 	"github.com/ebitenui/ebitenui/widget"
@@ -6,10 +6,10 @@ import (
 
 // CombatLogManager handles combat log entries and text updates
 type CombatLogManager struct {
-	entries              []string
+	entries               []string
 	messageCountSinceTrim int
-	maxMessages          int
-	trimThreshold        int
+	maxMessages           int
+	trimThreshold         int
 }
 
 // NewCombatLogManager creates a new combat log manager

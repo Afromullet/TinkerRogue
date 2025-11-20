@@ -1,6 +1,8 @@
-package gui
+package guimodes
 
 import (
+	"game_main/gui/guicomponents"
+
 	"fmt"
 	"game_main/combat"
 	"game_main/common"
@@ -13,21 +15,21 @@ import (
 
 // CombatActionHandler manages combat actions and their execution
 type CombatActionHandler struct {
-	stateManager    *CombatStateManager
-	logManager      *CombatLogManager
-	queries         *GUIQueries
-	entityManager   *common.EntityManager
-	turnManager     *combat.TurnManager
-	factionManager  *combat.FactionManager
-	movementSystem  *combat.MovementSystem
-	combatLogArea   *widget.TextArea
+	stateManager   *CombatStateManager
+	logManager     *CombatLogManager
+	queries        *guicomponents.GUIQueries
+	entityManager  *common.EntityManager
+	turnManager    *combat.TurnManager
+	factionManager *combat.FactionManager
+	movementSystem *combat.MovementSystem
+	combatLogArea  *widget.TextArea
 }
 
 // NewCombatActionHandler creates a new combat action handler
 func NewCombatActionHandler(
 	stateManager *CombatStateManager,
 	logManager *CombatLogManager,
-	queries *GUIQueries,
+	queries *guicomponents.GUIQueries,
 	entityManager *common.EntityManager,
 	turnManager *combat.TurnManager,
 	factionManager *combat.FactionManager,

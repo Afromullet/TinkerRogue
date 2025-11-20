@@ -10,7 +10,7 @@ package main
 import (
 	"game_main/common"
 	"game_main/graphics"
-	"game_main/gui"
+	"game_main/gui/core"
 	"game_main/input"
 	"game_main/rendering"
 	"game_main/testing"
@@ -27,7 +27,7 @@ import (
 // It is the main struct passed to the Ebiten game engine.
 type Game struct {
 	em               common.EntityManager
-	uiModeManager    *gui.UIModeManager // NEW: Modal UI system
+	uiModeManager    *core.UIModeManager // NEW: Modal UI system
 	playerData       common.PlayerData
 	gameMap          worldmap.GameMap
 	inputCoordinator *input.InputCoordinator

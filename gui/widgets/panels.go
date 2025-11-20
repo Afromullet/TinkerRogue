@@ -1,7 +1,10 @@
-package gui
+package widgets
 
 import (
 	"fmt"
+
+	"game_main/gui/core"
+	"game_main/gui/guiresources"
 
 	"github.com/ebitenui/ebitenui/widget"
 )
@@ -9,14 +12,14 @@ import (
 // PanelBuilders provides high-level UI composition functions to reduce duplication
 // across UI modes. Each builder encapsulates common UI patterns.
 type PanelBuilders struct {
-	layout      *LayoutConfig
-	modeManager *UIModeManager
+	Layout      *LayoutConfig        // Exported for external access
+	modeManager *core.UIModeManager
 }
 
 // NewPanelBuilders creates a new PanelBuilders instance
-func NewPanelBuilders(layout *LayoutConfig, modeManager *UIModeManager) *PanelBuilders {
+func NewPanelBuilders(layout *LayoutConfig, modeManager *core.UIModeManager) *PanelBuilders {
 	return &PanelBuilders{
-		layout:      layout,
+		Layout:      layout,
 		modeManager: modeManager,
 	}
 }
@@ -47,7 +50,7 @@ func (pb *PanelBuilders) BuildGridEditor(config GridEditorConfig) (*widget.Conta
 	}
 
 	gridContainer := CreatePanelWithConfig(PanelConfig{
-		Background: PanelRes.image,
+		Background: guiresources.PanelRes.Image,
 		Layout: widget.NewGridLayout(
 			widget.GridLayoutOpts.Columns(3),
 			widget.GridLayoutOpts.Stretch([]bool{true, true, true}, []bool{true, true, true}),
@@ -66,7 +69,7 @@ func (pb *PanelBuilders) BuildGridEditor(config GridEditorConfig) (*widget.Conta
 
 			cellBtn := CreateButtonWithConfig(ButtonConfig{
 				Text:      cellText,
-				FontFace:  SmallFace,
+				FontFace:  guiresources.SmallFace,
 				MinWidth:  0, // Let grid layout handle sizing
 				MinHeight: 0, // Let grid layout handle sizing
 				Padding:   widget.Insets{Left: 8, Right: 8, Top: 8, Bottom: 8},

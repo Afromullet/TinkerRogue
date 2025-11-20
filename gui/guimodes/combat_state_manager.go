@@ -1,4 +1,4 @@
-package gui
+package guimodes
 
 import (
 	"game_main/coords"

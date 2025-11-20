@@ -1,11 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(go build:*)",
-      "WebFetch(domain:github.com)",
-      "Bash(find:*)",
-      "Bash(go test:*)",
-      "Bash(cat:*)"
+      "Bash(for file in explorationmode.go formationeditormode.go infomode.go inventorymode.go squadmanagementmode.go squadbuilder.go squaddeploymentmode.go)",
+      "Bash(do)",
+      "Bash(perl -i -pe:*)"
     ],
     "deny": [],
     "ask": []

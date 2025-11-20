@@ -1,8 +1,11 @@
-package gui
+package guimodes
 
 import (
+	"game_main/gui/guicomponents"
+
 	"game_main/coords"
 	"game_main/graphics"
+	"game_main/gui/core"
 
 	"github.com/bytearena/ecs"
 	"github.com/hajimehoshi/ebiten/v2"
@@ -10,18 +13,18 @@ import (
 
 // CombatInputHandler manages all input processing for combat mode
 type CombatInputHandler struct {
-	actionHandler      *CombatActionHandler
-	stateManager       *CombatStateManager
-	queries            *GUIQueries
-	playerPos          *coords.LogicalPosition
-	currentFactionID   ecs.EntityID
+	actionHandler    *CombatActionHandler
+	stateManager     *CombatStateManager
+	queries          *guicomponents.GUIQueries
+	playerPos        *coords.LogicalPosition
+	currentFactionID ecs.EntityID
 }
 
 // NewCombatInputHandler creates a new combat input handler
 func NewCombatInputHandler(
 	actionHandler *CombatActionHandler,
 	stateManager *CombatStateManager,
-	queries *GUIQueries,
+	queries *guicomponents.GUIQueries,
 ) *CombatInputHandler {
 	return &CombatInputHandler{
 		actionHandler: actionHandler,
@@ -41,7 +44,7 @@ func (cih *CombatInputHandler) SetCurrentFactionID(factionID ecs.EntityID) {
 }
 
 // HandleInput processes input and returns true if input was consumed
-func (cih *CombatInputHandler) HandleInput(inputState *InputState) bool {
+func (cih *CombatInputHandler) HandleInput(inputState *core.InputState) bool {
 	// Handle mouse clicks
 	if inputState.MouseButton == ebiten.MouseButtonLeft && inputState.MousePressed {
 		if cih.stateManager.IsMoveMode() {

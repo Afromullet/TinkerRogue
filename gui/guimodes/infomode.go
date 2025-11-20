@@ -1,16 +1,20 @@
-package gui
+package guimodes
 
 import (
+	"game_main/gui"
+
 	"fmt"
 	"game_main/common"
 	"game_main/coords"
+	"game_main/gui/core"
+	"game_main/gui/widgets"
 
 	"github.com/ebitenui/ebitenui/widget"
 )
 
 // InfoMode displays entity/tile information when player right-clicks
 type InfoMode struct {
-	BaseMode
+	gui.BaseMode
 
 	// UI Components
 	optionsList    *widget.List
@@ -22,26 +26,23 @@ type InfoMode struct {
 }
 
 // NewInfoMode creates a new info inspection mode
-func NewInfoMode(modeManager *UIModeManager) *InfoMode {
-	return &InfoMode{
-		BaseMode: BaseMode{
-			modeManager: modeManager,
-			modeName:    "info_inspect",
-			returnMode:  "exploration", // ESC returns to exploration
-		},
-	}
+func NewInfoMode(modeManager *core.UIModeManager) *InfoMode {
+	mode := &InfoMode{}
+	mode.SetModeName("info_inspect")
+	mode.ModeManager = modeManager
+	return mode
 }
 
 // Initialize sets up the info mode UI
-func (im *InfoMode) Initialize(ctx *UIContext) error {
+func (im *InfoMode) Initialize(ctx *core.UIContext) error {
 	im.InitializeBase(ctx)
 
 	// Build options panel using standard specification
-	optionsPanel := CreateOptionsPanel(im.panelBuilders)
+	optionsPanel := gui.CreateOptionsPanel(im.PanelBuilders)
 
 	// Options list
 	options := []interface{}{"Look at Creature", "Look at Tile"}
-	im.optionsList = CreateListWithConfig(ListConfig{
+	im.optionsList = widgets.CreateListWithConfig(widgets.ListConfig{
 		Entries: options,
 		EntryLabelFunc: func(e interface{}) string {
 			return e.(string)
@@ -53,37 +54,37 @@ func (im *InfoMode) Initialize(ctx *UIContext) error {
 		},
 	})
 	optionsPanel.AddChild(im.optionsList)
-	im.rootContainer.AddChild(optionsPanel)
+	im.RootContainer.AddChild(optionsPanel)
 
-	// Detail panel using CreateDetailPanel helper
-	detailPanel, textArea := CreateDetailPanel(
-		im.panelBuilders,
-		im.layout,
-		RightCenter(),
+	// Detail panel using gui.CreateDetailPanel helper
+	detailPanel, textArea := gui.CreateDetailPanel(
+		im.PanelBuilders,
+		im.Layout,
+		widgets.RightCenter(),
 		0.4, 0.6, 0.01,
 		"Select an option to inspect",
 	)
 	im.detailTextArea = textArea
-	im.rootContainer.AddChild(detailPanel)
+	im.RootContainer.AddChild(detailPanel)
 
 	return nil
 }
 
 // Enter is called when switching to this mode
-func (im *InfoMode) Enter(fromMode UIMode) error {
+func (im *InfoMode) Enter(fromMode core.UIMode) error {
 	// Refresh detail display for current position
 	im.refreshDetailDisplay()
 	return nil
 }
 
 // Exit is called when switching from this mode
-func (im *InfoMode) Exit(toMode UIMode) error {
+func (im *InfoMode) Exit(toMode core.UIMode) error {
 	return nil
 }
 
 // HandleInput processes input for info mode
-func (im *InfoMode) HandleInput(inputState *InputState) bool {
-	// ESC handled by BaseMode.HandleCommonInput
+func (im *InfoMode) HandleInput(inputState *core.InputState) bool {
+	// ESC handled by gui.BaseMode.HandleCommonInput
 	if im.HandleCommonInput(inputState) {
 		return true
 	}
@@ -104,7 +105,7 @@ func (im *InfoMode) handleOptionSelected(option string) {
 
 // displayCreatureInfo shows information about the creature at inspect position
 func (im *InfoMode) displayCreatureInfo() {
-	creatureID := common.GetCreatureAtPosition(im.context.ECSManager, &im.inspectPosition)
+	creatureID := common.GetCreatureAtPosition(im.Context.ECSManager, &im.inspectPosition)
 
 	if creatureID == 0 {
 		im.detailTextArea.SetText("No creature at this position")
@@ -113,14 +114,14 @@ func (im *InfoMode) displayCreatureInfo() {
 
 	// Get creature details
 	name := "Unknown"
-	if nameComp, ok := im.context.ECSManager.GetComponent(creatureID, common.NameComponent); ok {
+	if nameComp, ok := im.Context.ECSManager.GetComponent(creatureID, common.NameComponent); ok {
 		if nameData, ok := nameComp.(*common.Name); ok {
 			name = nameData.NameStr
 		}
 	}
 
 	// Get attributes
-	attrs := common.GetAttributesByID(im.context.ECSManager, creatureID)
+	attrs := common.GetAttributesByID(im.Context.ECSManager, creatureID)
 	if attrs == nil {
 		im.detailTextArea.SetText(fmt.Sprintf("=== CREATURE ===\n\nName: %s\n\nNo attribute data available", name))
 		return

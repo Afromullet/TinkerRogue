@@ -1,9 +1,13 @@
-package gui
+package guimodes
 
 import (
 	"fmt"
 	"game_main/common"
 	"game_main/gear"
+	"game_main/gui"
+	"game_main/gui/core"
+	"game_main/gui/guicomponents"
+	"game_main/gui/widgets"
 
 	"github.com/ebitenui/ebitenui/widget"
 	"github.com/hajimehoshi/ebiten/v2"
@@ -11,10 +15,10 @@ import (
 
 // InventoryMode provides full-screen inventory browsing and management
 type InventoryMode struct {
-	BaseMode // Embed common mode infrastructure
+	gui.BaseMode // Embed common mode infrastructure
 
 	itemList          *widget.List
-	itemListComponent *ItemListComponent
+	itemListComponent *guicomponents.ItemListComponent
 	detailPanel       *widget.Container
 	detailTextArea    *widget.TextArea
 	filterButtons     *widget.Container
@@ -23,18 +27,16 @@ type InventoryMode struct {
 	currentFilter string // "all", "throwables", "equipment", "consumables"
 }
 
-func NewInventoryMode(modeManager *UIModeManager) *InventoryMode {
-	return &InventoryMode{
-		BaseMode: BaseMode{
-			modeManager: modeManager,
-			modeName:    "inventory",
-			returnMode:  "exploration",
-		},
+func NewInventoryMode(modeManager *core.UIModeManager) *InventoryMode {
+	mode := &InventoryMode{
 		currentFilter: "all",
 	}
+	mode.SetModeName("inventory")
+	mode.ModeManager = modeManager
+	return mode
 }
 
-func (im *InventoryMode) Initialize(ctx *UIContext) error {
+func (im *InventoryMode) Initialize(ctx *core.UIContext) error {
 	// Initialize common mode infrastructure
 	im.InitializeBase(ctx)
 
@@ -43,41 +45,41 @@ func (im *InventoryMode) Initialize(ctx *UIContext) error {
 	im.buildItemList()
 
 	// Create item list component to manage refresh logic
-	im.itemListComponent = NewItemListComponent(
+	im.itemListComponent = guicomponents.NewItemListComponent(
 		im.itemList,
-		im.queries,
+		im.Queries,
 		ctx.ECSManager,
 		ctx.PlayerData.PlayerEntityID,
 	)
 
 	// Build detail panel (right side) using helper
-	im.detailPanel, im.detailTextArea = CreateDetailPanel(
-		im.panelBuilders,
-		im.layout,
-		RightCenter(),
-		PanelWidthExtraWide, PanelHeightTall, PaddingStandard,
+	im.detailPanel, im.detailTextArea = gui.CreateDetailPanel(
+		im.PanelBuilders,
+		im.Layout,
+		widgets.RightCenter(),
+		widgets.PanelWidthExtraWide, widgets.PanelHeightTall, widgets.PaddingStandard,
 		"Select an item to view details",
 	)
-	im.rootContainer.AddChild(im.detailPanel)
+	im.RootContainer.AddChild(im.detailPanel)
 
 	// Build close button (bottom-center) using helpers
-	closeButtonContainer := CreateBottomCenterButtonContainer(im.panelBuilders)
-	closeBtn := CreateCloseButton(im.modeManager, "exploration", "Close (ESC)")
+	closeButtonContainer := gui.CreateBottomCenterButtonContainer(im.PanelBuilders)
+	closeBtn := gui.CreateCloseButton(im.ModeManager, "exploration", "Close (ESC)")
 	closeButtonContainer.AddChild(closeBtn)
-	im.rootContainer.AddChild(closeButtonContainer)
+	im.RootContainer.AddChild(closeButtonContainer)
 
 	return nil
 }
 
 func (im *InventoryMode) buildFilterButtons() {
 	// Top-left filter buttons using helper
-	im.filterButtons = CreateFilterButtonContainer(im.panelBuilders, TopLeft())
+	im.filterButtons = gui.CreateFilterButtonContainer(im.PanelBuilders, widgets.TopLeft())
 
 	// Filter buttons - use component's SetFilter when clicked
 	filters := []string{"All", "Throwables", "Equipment", "Consumables"}
 	for _, filterName := range filters {
 		filterNameCopy := filterName // Capture for closure
-		btn := CreateButtonWithConfig(ButtonConfig{
+		btn := widgets.CreateButtonWithConfig(widgets.ButtonConfig{
 			Text: filterName,
 			OnClick: func() {
 				// Sync both filter states before delegating to component
@@ -90,18 +92,18 @@ func (im *InventoryMode) buildFilterButtons() {
 		im.filterButtons.AddChild(btn)
 	}
 
-	im.rootContainer.AddChild(im.filterButtons)
+	im.RootContainer.AddChild(im.filterButtons)
 }
 
 func (im *InventoryMode) buildItemList() {
 	// Left side item list (50% width)
-	listWidth := int(float64(im.layout.ScreenWidth) * InventoryListWidth)
-	listHeight := int(float64(im.layout.ScreenHeight) * InventoryListHeight)
+	listWidth := int(float64(im.Layout.ScreenWidth) * widgets.InventoryListWidth)
+	listHeight := int(float64(im.Layout.ScreenHeight) * widgets.InventoryListHeight)
 
-	im.itemList = CreateListWithConfig(ListConfig{
-		Entries:    []interface{}{}, // Will be populated by component
-		MinWidth:   listWidth,
-		MinHeight:  listHeight,
+	im.itemList = widgets.CreateListWithConfig(widgets.ListConfig{
+		Entries:   []interface{}{}, // Will be populated by component
+		MinWidth:  listWidth,
+		MinHeight: listHeight,
 		EntryLabelFunc: func(e interface{}) string {
 			// Handle both string messages and InventoryListEntry
 			switch v := e.(type) {
@@ -119,9 +121,9 @@ func (im *InventoryMode) buildItemList() {
 				fmt.Printf("Selected item: %s (index %d)\n", entry.Name, entry.Index)
 
 				// If in throwables mode, prepare the throwable
-				if im.currentFilter == "Throwables" && im.context.PlayerData != nil {
+				if im.currentFilter == "Throwables" && im.Context.PlayerData != nil {
 					// Query inventory from player entity via ECS instead of using Inventory field
-					inv := common.GetComponentTypeByID[*gear.Inventory](im.context.ECSManager, im.context.PlayerData.PlayerEntityID, gear.InventoryComponent)
+					inv := common.GetComponentTypeByID[*gear.Inventory](im.Context.ECSManager, im.Context.PlayerData.PlayerEntityID, gear.InventoryComponent)
 					if inv == nil {
 						return
 					}
@@ -130,25 +132,25 @@ func (im *InventoryMode) buildItemList() {
 					itemEntityID, err := gear.GetItemEntityID(inv, entry.Index)
 					if err == nil && itemEntityID != 0 {
 						// Prepare the throwable using EntityID (no need to find entity)
-						im.context.PlayerData.Throwables.SelectedThrowableID = itemEntityID
-						im.context.PlayerData.Throwables.ThrowableItemEntityID = itemEntityID
+						im.Context.PlayerData.Throwables.SelectedThrowableID = itemEntityID
+						im.Context.PlayerData.Throwables.ThrowableItemEntityID = itemEntityID
 
 						// Get item component and setup throwing state
-						item := gear.GetItemByID(im.context.ECSManager.World, itemEntityID)
+						item := gear.GetItemByID(im.Context.ECSManager.World, itemEntityID)
 						if item != nil {
 							if throwableAction := item.GetThrowableAction(); throwableAction != nil {
-								im.context.PlayerData.Throwables.ThrowableItemIndex = entry.Index
+								im.Context.PlayerData.Throwables.ThrowableItemIndex = entry.Index
 							}
 						}
 
-						im.context.PlayerData.InputStates.IsThrowing = true
+						im.Context.PlayerData.InputStates.IsThrowing = true
 						fmt.Printf("Throwable prepared: %s\n", entry.Name)
 					}
 
 					// Get item details
-					item := gear.GetItemByID(im.context.ECSManager.World, itemEntityID)
+					item := gear.GetItemByID(im.Context.ECSManager.World, itemEntityID)
 					if item != nil {
-						effectNames := gear.GetItemEffectNames(im.context.ECSManager.World, item)
+						effectNames := gear.GetItemEffectNames(im.Context.ECSManager.World, item)
 						effectStr := ""
 						for _, name := range effectNames {
 							effectStr += fmt.Sprintf("%s\n", name)
@@ -159,8 +161,8 @@ func (im *InventoryMode) buildItemList() {
 					}
 
 					// Close inventory and return to exploration
-					if exploreMode, exists := im.modeManager.GetMode("exploration"); exists {
-						im.modeManager.RequestTransition(exploreMode, "Throwable selected")
+					if exploreMode, exists := im.ModeManager.GetMode("exploration"); exists {
+						im.ModeManager.RequestTransition(exploreMode, "Throwable selected")
 					}
 				} else {
 					im.detailTextArea.SetText(fmt.Sprintf("Selected: %s x%d", entry.Name, entry.Count))
@@ -174,16 +176,16 @@ func (im *InventoryMode) buildItemList() {
 			HorizontalPosition: widget.AnchorLayoutPositionStart,
 			VerticalPosition:   widget.AnchorLayoutPositionCenter,
 			Padding: widget.Insets{
-				Left: int(float64(im.layout.ScreenWidth) * PaddingStandard),
-				Top:  int(float64(im.layout.ScreenHeight) * PanelHeightSmall),
+				Left: int(float64(im.Layout.ScreenWidth) * widgets.PaddingStandard),
+				Top:  int(float64(im.Layout.ScreenHeight) * widgets.PanelHeightSmall),
 			},
 		},
 	})
 
-	im.rootContainer.AddChild(im.itemList)
+	im.RootContainer.AddChild(im.itemList)
 }
 
-func (im *InventoryMode) Enter(fromMode UIMode) error {
+func (im *InventoryMode) Enter(fromMode core.UIMode) error {
 	fmt.Println("Entering Inventory Mode")
 
 	// Initialize item list with current filter (defaults to "All")
@@ -196,7 +198,7 @@ func (im *InventoryMode) Enter(fromMode UIMode) error {
 	return nil
 }
 
-func (im *InventoryMode) Exit(toMode UIMode) error {
+func (im *InventoryMode) Exit(toMode core.UIMode) error {
 	fmt.Println("Exiting Inventory Mode")
 	return nil
 }
@@ -209,7 +211,7 @@ func (im *InventoryMode) Render(screen *ebiten.Image) {
 	// No custom rendering
 }
 
-func (im *InventoryMode) HandleInput(inputState *InputState) bool {
+func (im *InventoryMode) HandleInput(inputState *core.InputState) bool {
 	// Handle common input (ESC key)
 	if im.HandleCommonInput(inputState) {
 		return true
@@ -217,8 +219,8 @@ func (im *InventoryMode) HandleInput(inputState *InputState) bool {
 
 	// I key to close (inventory-specific hotkey)
 	if inputState.KeysJustPressed[ebiten.KeyI] {
-		if exploreMode, exists := im.modeManager.GetMode("exploration"); exists {
-			im.modeManager.RequestTransition(exploreMode, "Close Inventory")
+		if exploreMode, exists := im.ModeManager.GetMode("exploration"); exists {
+			im.ModeManager.RequestTransition(exploreMode, "Close Inventory")
 			return true
 		}
 	}

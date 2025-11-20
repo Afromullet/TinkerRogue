@@ -1,11 +1,14 @@
-package gui
+package guimodes
 
 import (
+	"game_main/gui/guicomponents"
+
 	"game_main/coords"
 	"game_main/graphics"
+	"image/color"
+
 	"github.com/bytearena/ecs"
 	"github.com/hajimehoshi/ebiten/v2"
-	"image/color"
 )
 
 // ViewportRenderer provides viewport-centered rendering utilities
@@ -111,15 +114,15 @@ func (mtr *MovementTileRenderer) Render(screen *ebiten.Image, centerPos coords.L
 
 // SquadHighlightRenderer renders squad position highlights
 type SquadHighlightRenderer struct {
-	queries           *GUIQueries
-	selectedColor     color.Color
-	playerColor       color.Color
-	enemyColor        color.Color
-	borderThickness   int
+	queries         *guicomponents.GUIQueries
+	selectedColor   color.Color
+	playerColor     color.Color
+	enemyColor      color.Color
+	borderThickness int
 }
 
 // NewSquadHighlightRenderer creates a renderer for squad highlights
-func NewSquadHighlightRenderer(queries *GUIQueries) *SquadHighlightRenderer {
+func NewSquadHighlightRenderer(queries *guicomponents.GUIQueries) *SquadHighlightRenderer {
 	return &SquadHighlightRenderer{
 		queries:         queries,
 		selectedColor:   color.RGBA{R: 255, G: 255, B: 255, A: 255}, // White

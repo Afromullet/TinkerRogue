@@ -3,6 +3,10 @@ package gui
 import (
 	"fmt"
 
+	"game_main/gui/core"
+	"game_main/gui/guicomponents"
+	"game_main/gui/widgets"
+
 	"github.com/ebitenui/ebitenui"
 	"github.com/ebitenui/ebitenui/widget"
 	"github.com/hajimehoshi/ebiten/v2"
@@ -19,40 +23,50 @@ type InputBinding struct {
 // Modes should embed this struct to inherit common fields and behavior.
 type BaseMode struct {
 	ui            *ebitenui.UI
-	context       *UIContext
-	layout        *LayoutConfig
-	modeManager   *UIModeManager
-	rootContainer *widget.Container
-	panelBuilders *PanelBuilders
-	queries       *GUIQueries // Unified ECS query service
+	Context       *core.UIContext           // Exported for mode access
+	Layout        *widgets.LayoutConfig     // Exported for mode access
+	ModeManager   *core.UIModeManager       // Exported for mode access
+	RootContainer *widget.Container         // Exported for mode access
+	PanelBuilders *widgets.PanelBuilders    // Exported for mode access
+	Queries       *guicomponents.GUIQueries // Unified ECS query service - exported for mode access
 	modeName      string
-	returnMode    string               // Mode to return to on ESC/close
+	returnMode    string                      // Mode to return to on ESC/close
 	hotkeys       map[ebiten.Key]InputBinding // Registered hotkeys for mode transitions
+}
+
+// SetModeName sets the mode identifier
+func (bm *BaseMode) SetModeName(name string) {
+	bm.modeName = name
+}
+
+// SetReturnMode sets the mode to return to on ESC/close
+func (bm *BaseMode) SetReturnMode(name string) {
+	bm.returnMode = name
 }
 
 // InitializeBase sets up common mode infrastructure.
 // Call this from each mode's Initialize() method before building mode-specific UI.
-// Note: modeName and returnMode should be set in the mode's constructor.
+// Note: modeName and returnMode should be set in the mode's constructor using SetModeName and SetReturnMode.
 //
 // Parameters:
 //   - ctx: UIContext with ECS manager, player data, etc.
-func (bm *BaseMode) InitializeBase(ctx *UIContext) {
-	bm.context = ctx
-	bm.layout = NewLayoutConfig(ctx)
-	bm.panelBuilders = NewPanelBuilders(bm.layout, bm.modeManager)
+func (bm *BaseMode) InitializeBase(ctx *core.UIContext) {
+	bm.Context = ctx
+	bm.Layout = widgets.NewLayoutConfig(ctx)
+	bm.PanelBuilders = widgets.NewPanelBuilders(bm.Layout, bm.ModeManager)
 
 	// Initialize unified ECS query service
-	bm.queries = NewGUIQueries(ctx.ECSManager)
+	bm.Queries = guicomponents.NewGUIQueries(ctx.ECSManager)
 
 	// Initialize hotkeys map
 	bm.hotkeys = make(map[ebiten.Key]InputBinding)
 
 	// Create root ebitenui container
 	bm.ui = &ebitenui.UI{}
-	bm.rootContainer = widget.NewContainer(
+	bm.RootContainer = widget.NewContainer(
 		widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
 	)
-	bm.ui.Container = bm.rootContainer
+	bm.ui.Container = bm.RootContainer
 }
 
 // RegisterHotkey registers a key binding that transitions to a target mode.
@@ -64,7 +78,8 @@ func (bm *BaseMode) InitializeBase(ctx *UIContext) {
 //   - targetMode: The name of the mode to transition to
 //
 // Example:
-//   bm.RegisterHotkey(ebiten.KeyE, "squad_management")
+//
+//	bm.RegisterHotkey(ebiten.KeyE, "squad_management")
 func (bm *BaseMode) RegisterHotkey(key ebiten.Key, targetMode string) {
 	if bm.hotkeys == nil {
 		bm.hotkeys = make(map[ebiten.Key]InputBinding)
@@ -83,12 +98,12 @@ func (bm *BaseMode) RegisterHotkey(key ebiten.Key, targetMode string) {
 // Returns true if input was consumed (prevents further propagation).
 // Modes should call this first in their HandleInput() method before processing
 // mode-specific input.
-func (bm *BaseMode) HandleCommonInput(inputState *InputState) bool {
+func (bm *BaseMode) HandleCommonInput(inputState *core.InputState) bool {
 	// Check registered hotkeys for mode transitions
 	for key, binding := range bm.hotkeys {
 		if inputState.KeysJustPressed[key] {
-			if targetMode, exists := bm.modeManager.GetMode(binding.TargetMode); exists {
-				bm.modeManager.RequestTransition(targetMode, binding.Reason)
+			if targetMode, exists := bm.ModeManager.GetMode(binding.TargetMode); exists {
+				bm.ModeManager.RequestTransition(targetMode, binding.Reason)
 				return true
 			}
 		}
@@ -96,15 +111,15 @@ func (bm *BaseMode) HandleCommonInput(inputState *InputState) bool {
 
 	// ESC key - return to designated mode
 	if inputState.KeysJustPressed[ebiten.KeyEscape] {
-		if returnMode, exists := bm.modeManager.GetMode(bm.returnMode); exists {
-			bm.modeManager.RequestTransition(returnMode, "ESC pressed")
+		if returnMode, exists := bm.ModeManager.GetMode(bm.returnMode); exists {
+			bm.ModeManager.RequestTransition(returnMode, "ESC pressed")
 			return true
 		}
 	}
 	return false
 }
 
-// Default implementations for UIMode interface.
+// Default implementations for core.UIMode interface.
 // Modes can override these as needed.
 
 // GetEbitenUI returns the root ebitenui.UI for this mode.
@@ -132,12 +147,12 @@ func (bm *BaseMode) Render(screen *ebiten.Image) {
 
 // Enter is called when switching TO this mode.
 // Default implementation does nothing. Override to refresh UI state.
-func (bm *BaseMode) Enter(fromMode UIMode) error {
+func (bm *BaseMode) Enter(fromMode core.UIMode) error {
 	return nil
 }
 
 // Exit is called when switching FROM this mode to another.
 // Default implementation does nothing. Override to clean up resources.
-func (bm *BaseMode) Exit(toMode UIMode) error {
+func (bm *BaseMode) Exit(toMode core.UIMode) error {
 	return nil
 }

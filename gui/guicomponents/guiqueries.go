@@ -1,5 +1,5 @@
-// Package gui provides UI and mode system for the game
-package gui
+// Package guicomponents provides UI component and query utilities for the game
+package guicomponents
 
 import (
 	"game_main/combat"

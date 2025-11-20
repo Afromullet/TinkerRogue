@@ -1,10 +1,13 @@
-package gui
+package guicomponents
 
 import (
 	"fmt"
 	"image/color"
+
 	"game_main/common"
 	"game_main/gear"
+	"game_main/gui/guiresources"
+	"game_main/gui/widgets"
 
 	"github.com/bytearena/ecs"
 	"github.com/ebitenui/ebitenui/widget"
@@ -16,8 +19,8 @@ type SquadListComponent struct {
 	queries        *GUIQueries
 	filter         SquadFilter
 	onSelect       func(squadID ecs.EntityID)
-	listLabel      *widget.Text // First child is the label
-	filteredSquads []ecs.EntityID // Cache for squad IDs
+	listLabel      *widget.Text     // First child is the label
+	filteredSquads []ecs.EntityID   // Cache for squad IDs
 	squadButtons   []*widget.Button // Cache for squad buttons
 }
 
@@ -71,7 +74,7 @@ func (slc *SquadListComponent) Refresh() {
 		localSquadID := squadID // Capture for closure
 		squadName := slc.queries.GetSquadName(squadID)
 
-		button := CreateButtonWithConfig(ButtonConfig{
+		button := widgets.CreateButtonWithConfig(widgets.ButtonConfig{
 			Text: squadName,
 			OnClick: func() {
 				if slc.onSelect != nil {
@@ -86,9 +89,9 @@ func (slc *SquadListComponent) Refresh() {
 
 	// If no squads match filter, show AI turn message
 	if len(slc.squadButtons) == 0 {
-		noSquadsText := CreateTextWithConfig(TextConfig{
+		noSquadsText := widgets.CreateTextWithConfig(widgets.TextConfig{
 			Text:     "AI Turn",
-			FontFace: SmallFace,
+			FontFace: guiresources.SmallFace,
 			Color:    color.Gray{Y: 128},
 		})
 		slc.container.AddChild(noSquadsText)
@@ -264,12 +267,12 @@ func (tdc *TextDisplayComponent) SetText(text string) {
 
 // PanelListComponent manages a container with panels for each item
 type PanelListComponent struct {
-	container      *widget.Container
-	queries        *GUIQueries
-	panelBuilders  *PanelBuilders
-	panelFactory   PanelFactory
-	filter         ItemFilter
-	activePanels   []*widget.Container
+	container     *widget.Container
+	queries       *GUIQueries
+	panelBuilders *widgets.PanelBuilders
+	panelFactory  PanelFactory
+	filter        ItemFilter
+	activePanels  []*widget.Container
 }
 
 // PanelFactory creates a panel for an entity
@@ -282,7 +285,7 @@ type ItemFilter func(squadID ecs.EntityID) bool
 func NewPanelListComponent(
 	container *widget.Container,
 	queries *GUIQueries,
-	panelBuilders *PanelBuilders,
+	panelBuilders *widgets.PanelBuilders,
 	panelFactory PanelFactory,
 	filter ItemFilter,
 ) *PanelListComponent {
@@ -338,12 +341,12 @@ func (plc *PanelListComponent) Clear() {
 
 // ButtonListComponent manages a container with buttons for each item
 type ButtonListComponent struct {
-	container      *widget.Container
-	queries        *GUIQueries
-	buttonFactory  ButtonFactory
-	filter         ItemFilter
-	activeButtons  []*widget.Button
-	filteredItems  []ecs.EntityID
+	container     *widget.Container
+	queries       *GUIQueries
+	buttonFactory ButtonFactory
+	filter        ItemFilter
+	activeButtons []*widget.Button
+	filteredItems []ecs.EntityID
 }
 
 // ButtonFactory creates a button for an entity
@@ -430,9 +433,9 @@ func NewColorLabelComponent(
 	textColor color.Color,
 ) *ColorLabelComponent {
 	return &ColorLabelComponent{
-		text: CreateTextWithConfig(TextConfig{
+		text: widgets.CreateTextWithConfig(widgets.TextConfig{
 			Text:     textContent,
-			FontFace: SmallFace,
+			FontFace: guiresources.SmallFace,
 			Color:    textColor,
 		}),
 		color: textColor,
@@ -465,11 +468,11 @@ func (clc *ColorLabelComponent) GetWidget() *widget.Text {
 
 // ItemListComponent manages an inventory list widget with filtering
 type ItemListComponent struct {
-	listWidget    *widget.List
-	queries       *GUIQueries
-	ecsManager    *common.EntityManager
+	listWidget     *widget.List
+	queries        *GUIQueries
+	ecsManager     *common.EntityManager
 	playerEntityID ecs.EntityID
-	currentFilter string
+	currentFilter  string
 }
 
 // NewItemListComponent creates a reusable inventory list component

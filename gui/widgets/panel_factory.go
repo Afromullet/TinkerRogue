@@ -1,6 +1,7 @@
-package gui
+package widgets
 
 import (
+
 	"github.com/ebitenui/ebitenui/widget"
 )
 

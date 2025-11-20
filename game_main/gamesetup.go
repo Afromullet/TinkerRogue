@@ -5,7 +5,9 @@ import (
 	"game_main/common"
 	"game_main/entitytemplates"
 	"game_main/graphics"
-	"game_main/gui"
+
+	"game_main/gui/core"
+	"game_main/gui/guimodes"
 	"game_main/input"
 	"game_main/spawning"
 	"game_main/squads"
@@ -121,7 +123,7 @@ func SetupBenchmarking() {
 // Must be called after game initialization but before input coordinator.
 func SetupUI(g *Game) {
 	// Create UI context with shared game state
-	uiContext := &gui.UIContext{
+	uiContext := &core.UIContext{
 		ECSManager:   &g.em,
 		PlayerData:   &g.playerData,
 		ScreenWidth:  graphics.ScreenInfo.GetCanvasWidth(),
@@ -130,45 +132,45 @@ func SetupUI(g *Game) {
 	}
 
 	// Create mode manager
-	g.uiModeManager = gui.NewUIModeManager(uiContext)
+	g.uiModeManager = core.NewUIModeManager(uiContext)
 
 	// Register all UI modes
-	explorationMode := gui.NewExplorationMode(g.uiModeManager)
+	explorationMode := guimodes.NewExplorationMode(g.uiModeManager)
 	if err := g.uiModeManager.RegisterMode(explorationMode); err != nil {
 		log.Fatalf("Failed to register exploration mode: %v", err)
 	}
 
-	infoMode := gui.NewInfoMode(g.uiModeManager)
+	infoMode := guimodes.NewInfoMode(g.uiModeManager)
 	if err := g.uiModeManager.RegisterMode(infoMode); err != nil {
 		log.Fatalf("Failed to register info mode: %v", err)
 	}
 
-	squadManagementMode := gui.NewSquadManagementMode(g.uiModeManager)
+	squadManagementMode := guimodes.NewSquadManagementMode(g.uiModeManager)
 	if err := g.uiModeManager.RegisterMode(squadManagementMode); err != nil {
 		log.Fatalf("Failed to register squad management mode: %v", err)
 	}
 
-	combatMode := gui.NewCombatMode(g.uiModeManager)
+	combatMode := guimodes.NewCombatMode(g.uiModeManager)
 	if err := g.uiModeManager.RegisterMode(combatMode); err != nil {
 		log.Fatalf("Failed to register combat mode: %v", err)
 	}
 
-	inventoryMode := gui.NewInventoryMode(g.uiModeManager)
+	inventoryMode := guimodes.NewInventoryMode(g.uiModeManager)
 	if err := g.uiModeManager.RegisterMode(inventoryMode); err != nil {
 		log.Fatalf("Failed to register inventory mode: %v", err)
 	}
 
-	formationEditorMode := gui.NewFormationEditorMode(g.uiModeManager)
+	formationEditorMode := guimodes.NewFormationEditorMode(g.uiModeManager)
 	if err := g.uiModeManager.RegisterMode(formationEditorMode); err != nil {
 		log.Fatalf("Failed to register formation editor mode: %v", err)
 	}
 
-	squadBuilderMode := gui.NewSquadBuilderMode(g.uiModeManager)
+	squadBuilderMode := guimodes.NewSquadBuilderMode(g.uiModeManager)
 	if err := g.uiModeManager.RegisterMode(squadBuilderMode); err != nil {
 		log.Fatalf("Failed to register squad builder mode: %v", err)
 	}
 
-	squadDeploymentMode := gui.NewSquadDeploymentMode(g.uiModeManager)
+	squadDeploymentMode := guimodes.NewSquadDeploymentMode(g.uiModeManager)
 	if err := g.uiModeManager.RegisterMode(squadDeploymentMode); err != nil {
 		log.Fatalf("Failed to register squad deployment mode: %v", err)
 	}

@@ -1,5 +1,5 @@
 // Package gui provides UI and mode system for the game
-package gui
+package guicomponents
 
 import (
 	"github.com/bytearena/ecs"

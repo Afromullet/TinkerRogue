@@ -1,6 +1,9 @@
-package gui
+package guimodes
 
 import (
+	"game_main/gui/guiresources"
+	"game_main/gui/widgets"
+
 	"fmt"
 	"game_main/squads"
 	"image/color"
@@ -10,12 +13,12 @@ import (
 
 // SquadBuilderUIFactory creates UI components for the squad builder
 type SquadBuilderUIFactory struct {
-	layout         *LayoutConfig
-	panelBuilders  *PanelBuilders
+	layout        *widgets.LayoutConfig
+	panelBuilders *widgets.PanelBuilders
 }
 
 // NewSquadBuilderUIFactory creates a new UI factory for squad builder
-func NewSquadBuilderUIFactory(layout *LayoutConfig, panelBuilders *PanelBuilders) *SquadBuilderUIFactory {
+func NewSquadBuilderUIFactory(layout *widgets.LayoutConfig, panelBuilders *widgets.PanelBuilders) *SquadBuilderUIFactory {
 	return &SquadBuilderUIFactory{
 		layout:        layout,
 		panelBuilders: panelBuilders,
@@ -25,7 +28,7 @@ func NewSquadBuilderUIFactory(layout *LayoutConfig, panelBuilders *PanelBuilders
 // CreateGridPanel builds the 3x3 grid editor panel and returns button grid
 func (sbuf *SquadBuilderUIFactory) CreateGridPanel(onCellClick func(row, col int)) (*widget.Container, [3][3]*widget.Button) {
 	var buttons [3][3]*widget.Button
-	gridContainer, buttons := sbuf.panelBuilders.BuildGridEditor(GridEditorConfig{
+	gridContainer, buttons := sbuf.panelBuilders.BuildGridEditor(widgets.GridEditorConfig{
 		CellTextFormat: func(row, col int) string {
 			return fmt.Sprintf("Empty\n[%d,%d]", row, col)
 		},
@@ -37,8 +40,8 @@ func (sbuf *SquadBuilderUIFactory) CreateGridPanel(onCellClick func(row, col int
 
 // CreatePalettePanel builds the unit palette list
 func (sbuf *SquadBuilderUIFactory) CreatePalettePanel(onEntrySelected func(interface{})) *widget.List {
-	listWidth := int(float64(sbuf.layout.ScreenWidth) * SquadBuilderUnitListWidth)
-	listHeight := int(float64(sbuf.layout.ScreenHeight) * SquadBuilderUnitListHeight)
+	listWidth := int(float64(sbuf.layout.ScreenWidth) * widgets.SquadBuilderUnitListWidth)
+	listHeight := int(float64(sbuf.layout.ScreenHeight) * widgets.SquadBuilderUnitListHeight)
 
 	// Build entries from squads.Units
 	entries := make([]interface{}, len(squads.Units)+1)
@@ -47,10 +50,10 @@ func (sbuf *SquadBuilderUIFactory) CreatePalettePanel(onEntrySelected func(inter
 		entries[i+1] = fmt.Sprintf("%s (%s)", unit.Name, unit.Role.String())
 	}
 
-	return CreateListWithConfig(ListConfig{
-		Entries:    entries,
-		MinWidth:   listWidth,
-		MinHeight:  listHeight,
+	return widgets.CreateListWithConfig(widgets.ListConfig{
+		Entries:   entries,
+		MinWidth:  listWidth,
+		MinHeight: listHeight,
 		EntryLabelFunc: func(e interface{}) string {
 			return e.(string)
 		},
@@ -68,16 +71,16 @@ func (sbuf *SquadBuilderUIFactory) CreatePalettePanel(onEntrySelected func(inter
 
 // CreateCapacityDisplay builds the capacity display panel
 func (sbuf *SquadBuilderUIFactory) CreateCapacityDisplay() *widget.TextArea {
-	displayWidth := int(float64(sbuf.layout.ScreenWidth) * SquadBuilderInfoWidth)
-	displayHeight := int(float64(sbuf.layout.ScreenHeight) * SquadBuilderInfoHeight)
+	displayWidth := int(float64(sbuf.layout.ScreenWidth) * widgets.SquadBuilderInfoWidth)
+	displayHeight := int(float64(sbuf.layout.ScreenHeight) * widgets.SquadBuilderInfoHeight)
 
-	config := TextAreaConfig{
+	config := widgets.TextAreaConfig{
 		MinWidth:  displayWidth,
 		MinHeight: displayHeight,
 		FontColor: color.White,
 	}
 
-	capacityDisplay := CreateTextAreaWithConfig(config)
+	capacityDisplay := widgets.CreateTextAreaWithConfig(config)
 	capacityDisplay.SetText("Capacity: 0.0 / 6.0\n(No leader)")
 
 	capacityDisplay.GetWidget().LayoutData = widget.AnchorLayoutData{
@@ -94,16 +97,16 @@ func (sbuf *SquadBuilderUIFactory) CreateCapacityDisplay() *widget.TextArea {
 
 // CreateDetailsPanel builds the unit details display panel
 func (sbuf *SquadBuilderUIFactory) CreateDetailsPanel() *widget.TextArea {
-	displayWidth := int(float64(sbuf.layout.ScreenWidth) * SquadBuilderInfoWidth)
-	displayHeight := int(float64(sbuf.layout.ScreenHeight) * (SquadBuilderInfoHeight * 2))
+	displayWidth := int(float64(sbuf.layout.ScreenWidth) * widgets.SquadBuilderInfoWidth)
+	displayHeight := int(float64(sbuf.layout.ScreenHeight) * (widgets.SquadBuilderInfoHeight * 2))
 
-	config := TextAreaConfig{
+	config := widgets.TextAreaConfig{
 		MinWidth:  displayWidth,
 		MinHeight: displayHeight,
 		FontColor: color.White,
 	}
 
-	unitDetailsArea := CreateTextAreaWithConfig(config)
+	unitDetailsArea := widgets.CreateTextAreaWithConfig(config)
 	unitDetailsArea.SetText("Select a unit to view details")
 
 	unitDetailsArea.GetWidget().LayoutData = widget.AnchorLayoutData{
@@ -127,14 +130,14 @@ func (sbuf *SquadBuilderUIFactory) CreateSquadNameInput(onChanged func(string)) 
 	)
 
 	// Label
-	nameLabel := CreateLargeLabel("Squad Name:")
+	nameLabel := widgets.CreateLargeLabel("Squad Name:")
 	inputContainer.AddChild(nameLabel)
 
 	// Text input
-	squadNameInput := CreateTextInputWithConfig(TextInputConfig{
+	squadNameInput := widgets.CreateTextInputWithConfig(widgets.TextInputConfig{
 		MinWidth:    300,
 		MinHeight:   50,
-		FontFace:    SmallFace,
+		FontFace:    guiresources.SmallFace,
 		Placeholder: "Enter squad name...",
 		OnChanged:   onChanged,
 	})
@@ -168,28 +171,28 @@ func (sbuf *SquadBuilderUIFactory) CreateActionButtons(
 	)
 
 	// Create Squad button
-	createBtn := CreateButtonWithConfig(ButtonConfig{
+	createBtn := widgets.CreateButtonWithConfig(widgets.ButtonConfig{
 		Text:    "Create Squad",
 		OnClick: onCreate,
 	})
 	buttonContainer.AddChild(createBtn)
 
 	// Clear Grid button
-	clearBtn := CreateButtonWithConfig(ButtonConfig{
+	clearBtn := widgets.CreateButtonWithConfig(widgets.ButtonConfig{
 		Text:    "Clear Grid",
 		OnClick: onClear,
 	})
 	buttonContainer.AddChild(clearBtn)
 
 	// Toggle Leader button
-	toggleLeaderBtn := CreateButtonWithConfig(ButtonConfig{
+	toggleLeaderBtn := widgets.CreateButtonWithConfig(widgets.ButtonConfig{
 		Text:    "Toggle Leader (L)",
 		OnClick: onToggleLeader,
 	})
 	buttonContainer.AddChild(toggleLeaderBtn)
 
 	// Close button
-	closeBtn := CreateButtonWithConfig(ButtonConfig{
+	closeBtn := widgets.CreateButtonWithConfig(widgets.ButtonConfig{
 		Text:    "Close (ESC)",
 		OnClick: onClose,
 	})
@@ -200,7 +203,7 @@ func (sbuf *SquadBuilderUIFactory) CreateActionButtons(
 		HorizontalPosition: widget.AnchorLayoutPositionCenter,
 		VerticalPosition:   widget.AnchorLayoutPositionEnd,
 		Padding: widget.Insets{
-			Bottom: int(float64(sbuf.layout.ScreenHeight) * BottomButtonOffset),
+			Bottom: int(float64(sbuf.layout.ScreenHeight) * widgets.BottomButtonOffset),
 		},
 	}
 
