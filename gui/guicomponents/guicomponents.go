@@ -98,30 +98,6 @@ func (slc *SquadListComponent) Refresh() {
 	}
 }
 
-// Common filter functions (delegated to GUIQueries for centralized filtering)
-
-// AliveSquadsOnly filters to only non-destroyed squads
-// Deprecated: Use GUIQueries.FilterSquadsAlive() for new code
-func AliveSquadsOnly(info *SquadInfo) bool {
-	return !info.IsDestroyed
-}
-
-// PlayerSquadsOnly returns a filter function for player-controlled faction squads
-// Deprecated: Use GUIQueries.FilterSquadsByPlayer() for new code
-func PlayerSquadsOnly(queries *GUIQueries) SquadFilter {
-	return queries.FilterSquadsByPlayer()
-}
-
-// FactionSquadsOnly returns a filter function for squads in a specific faction
-// Deprecated: Use GUIQueries.FilterSquadsByFaction() for new code
-func FactionSquadsOnly(factionID ecs.EntityID) SquadFilter {
-	// This requires GUIQueries to get the closure behavior, so it can't be delegated directly
-	// Callers should use FilterSquadsByFaction(factionID) instead
-	return func(info *SquadInfo) bool {
-		return !info.IsDestroyed && info.FactionID == factionID
-	}
-}
-
 // ===== DETAIL PANEL COMPONENT =====
 
 // DetailPanelComponent manages a text widget showing entity details
