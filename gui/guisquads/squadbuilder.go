@@ -1,4 +1,4 @@
-package guimodes
+package guisquads
 
 import (
 	"game_main/gui"

@@ -1,4 +1,4 @@
-package guimodes
+package guicombat
 
 import (
 	"game_main/gui"

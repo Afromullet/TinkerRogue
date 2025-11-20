@@ -1,4 +1,4 @@
-package guimodes
+package guicombat
 
 import (
 	"github.com/ebitenui/ebitenui/widget"

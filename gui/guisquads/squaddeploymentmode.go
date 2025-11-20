@@ -1,4 +1,4 @@
-package guimodes
+package guisquads
 
 import (
 	"fmt"
@@ -8,6 +8,7 @@ import (
 	"game_main/gui"
 	"game_main/gui/core"
 	"game_main/gui/guicomponents"
+	"game_main/gui/guimodes"
 	"game_main/gui/widgets"
 	"game_main/squads"
 
@@ -34,7 +35,7 @@ type SquadDeploymentMode struct {
 	pendingPlacement bool
 
 	// Rendering systems
-	highlightRenderer *SquadHighlightRenderer
+	highlightRenderer *guimodes.SquadHighlightRenderer
 }
 
 func NewSquadDeploymentMode(modeManager *core.UIModeManager) *SquadDeploymentMode {
@@ -65,7 +66,7 @@ func (sdm *SquadDeploymentMode) Initialize(ctx *core.UIContext) error {
 	sdm.buildActionButtons()
 
 	// Initialize rendering system
-	sdm.highlightRenderer = NewSquadHighlightRenderer(sdm.Queries)
+	sdm.highlightRenderer = guimodes.NewSquadHighlightRenderer(sdm.Queries)
 
 	return nil
 }

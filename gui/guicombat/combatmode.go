@@ -1,8 +1,9 @@
-package guimodes
+package guicombat
 
 import (
 	"game_main/gui"
 	"game_main/gui/guicomponents"
+	"game_main/gui/guimodes"
 	"game_main/gui/widgets"
 	"game_main/gui/core"
 	"fmt"
@@ -50,8 +51,8 @@ type CombatMode struct {
 	turnOrderComponent    *guicomponents.TextDisplayComponent
 
 	// Rendering systems
-	movementRenderer  *MovementTileRenderer
-	highlightRenderer *SquadHighlightRenderer
+	movementRenderer  *guimodes.MovementTileRenderer
+	highlightRenderer *guimodes.SquadHighlightRenderer
 }
 
 func NewCombatMode(modeManager *core.UIModeManager) *CombatMode {
@@ -102,8 +103,8 @@ func (cm *CombatMode) Initialize(ctx *core.UIContext) error {
 	cm.initializeUpdateComponents()
 
 	// Initialize rendering systems
-	cm.movementRenderer = NewMovementTileRenderer()
-	cm.highlightRenderer = NewSquadHighlightRenderer(cm.Queries)
+	cm.movementRenderer = guimodes.NewMovementTileRenderer()
+	cm.highlightRenderer = guimodes.NewSquadHighlightRenderer(cm.Queries)
 
 	return nil
 }
