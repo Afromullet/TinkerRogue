@@ -1,19 +1,19 @@
 # TinkerRogue Master Development Roadmap
 
-**Version:** 4.0 - REALITY CHECK EDITION | **Updated:** 2025-11-07
-**Status:** Squad System 98% Complete - ACTUALLY FUNCTIONAL
+**Version:** 5.0 - POST-WORLDMAP & GUI REFACTOR | **Updated:** 2025-11-21
+**Status:** Squad System 98% Complete, Worldmap Strategy Pattern Complete, GUI Reorganization In Progress
 
 ---
 
 ## Executive Summary
 
-This roadmap was audited by verifying actual implementation files, test coverage, and functional integration. Previous claims have been validated against reality.
+This roadmap reflects major architectural completions and ongoing GUI reorganization work. All core systems are functional and well-architected.
 
-**What Changed from v3.0:**
-- Ability System marked as "NOT STARTED" → **ACTUALLY COMPLETE** (317 LOC, fully tested)
-- Squad System "85% complete" → **98% complete** (4951 total LOC)
-- Map Integration "NOT STARTED" → **COMPLETE** (Turn manager integrates abilities)
-- Formation Presets "partial stubs" → **COMPLETE** (4 presets implemented)
+**What Changed from v4.0:**
+- **Worldmap Generator System** → **COMPLETE** (Strategy pattern with 2 algorithms, 2025-11-08)
+- **GUI Package Refactoring** → **IN PROGRESS** (Combat/squad modes extracted to subpackages, 2025-11-20)
+- Formation Presets → **VERIFIED COMPLETE** (4 presets with full implementations)
+- Squad System → **REMAINS 98%** (only graphical rendering and spawning hookup remain)
 
 ---
 
@@ -28,6 +28,12 @@ This roadmap was audited by verifying actual implementation files, test coverage
 - ✅ **Graphics Shapes** - BaseShape consolidation with 3 variants (drawableshapes.go, 391 LOC)
 - ✅ **Position System** - O(1) spatial grid with value-based keys (positionsystem.go, 183 LOC, tested)
 - ✅ **Inventory System** - Pure ECS: EntityIDs, system functions, no pointers (Inventory.go, 245 LOC)
+- ✅ **Worldmap Generator System** - Strategy pattern with pluggable algorithms (2025-11-08)
+  - MapGenerator interface with registry system
+  - 2 algorithms: rooms_corridors (default), tactical_biome (5 biomes, cellular automata)
+  - Files: generator.go, gen_rooms_corridors.go, gen_tactical_biome.go, gen_helpers.go
+  - Removed 180 LOC from GameMap, fixed global state issues
+  - Critical: Uses CoordinateManager for result.Tiles indexing
 
 **Squad System (98% Complete - 4951 LOC total):**
 - ✅ **Components** (components.go, 331 LOC) - 8 ECS components with perfect data/logic separation
@@ -52,10 +58,16 @@ This roadmap was audited by verifying actual implementation files, test coverage
 - ❌ **Graphical Rendering** - GUI integration for squad visualization (text-only currently)
 - ❌ **Enemy Spawning** - SpawnEnemySquad with level scaling (logic exists, needs hooking up)
 
-**GUI System (40% complete):**
-- ✅ GUI mode system exists (explorationmode.go, combatmode.go, squadmanagementmode.go, etc.)
-- ✅ ButtonConfig pattern exists (createwidgets.go, lines 58-102)
-- ✅ **Button Factory Pattern** - Inconsistent button creation across modes (needs standardization)
+**GUI System Refactoring (60% complete - 2025-11-20 analysis):**
+- ✅ **Mode Extraction Complete** - Combat/squad modes split into subpackages (guicombat/, guisquads/, guimodes/)
+- ✅ **Package Structure** - 9 directories, 6,398 LOC organized by concern
+- ✅ **Core Infrastructure** - UIMode interface, ModeManager, BaseMode pattern established
+- ⚠️ **Remaining Issues** (identified in gui_refactoring_analysis.md):
+  - ❌ Empty `gui/components/` directory (delete immediately)
+  - ❌ Mixed responsibilities in `guicomponents/` (UI components + ECS queries, needs split)
+  - ❌ BaseMode location in root package (should move to gui/core or gui/base)
+  - ❌ Global state in `guiresources/` (needs dependency injection)
+  - ⚠️ Button factory pattern partially applied (needs consistency across all modes)
 
 **Status Effects (85% complete - LOW PRIORITY):**
 - ✅ StatusEffects interface (stateffect.go, 381 LOC)
@@ -72,28 +84,36 @@ This roadmap was audited by verifying actual implementation files, test coverage
 
 ---
 
-## Reality Check: Claimed vs Actual Status
+## Reality Check: Claimed vs Actual Status (v3.0 → v5.0)
 
-| Claim (v3.0) | Actual Status | Evidence |
-|--------------|---------------|----------|
+| Claim (Previous Versions) | Actual Status (v5.0) | Evidence |
+|---------------------------|---------------------|----------|
 | Ability System "NOT STARTED (8-10h)" | **COMPLETE** | squadabilities.go (317 LOC), integrated in turnmanager.go, tests passing |
-| Formation Presets "40% COMPLETE (4-6h)" | **COMPLETE** | GetFormationPreset() returns 4 presets with 5-6 units each |
+| Formation Presets "40% COMPLETE (4-6h)" | **COMPLETE** | GetFormationPreset() returns 4 presets (Balanced/Defensive/Offensive/Ranged) with full implementations |
 | Map Integration "NOT STARTED (4-6h)" | **COMPLETE** | turnmanager.go calls CheckAndTriggerAbilities, combat system operational |
 | Squad System "85% complete" | **98% complete** | Only graphical rendering and spawning hookup remain |
-| AddUnitToSquad "only validates, doesn't create entity" | **FULLY FUNCTIONAL** | Creates entity, validates capacity, updates squad (lines 36-82) |
+| Worldmap Generator "single monolithic function" | **STRATEGY PATTERN COMPLETE** | MapGenerator interface, 2 algorithms, registry system (2025-11-08) |
+| GUI "monolithic package" | **60% REFACTORED** | Split into 9 subpackages, 4 architectural issues remain (2025-11-20) |
 
 ---
 
 ## Time Estimates (REALISTIC)
 
-**Total Remaining:** 6-10 hours (conservative)
+**Total Remaining:** 10-16 hours (conservative)
 
-### Breakdown
+### Breakdown by Priority
+
+**High Priority (Core Functionality):**
 - Squad Graphical Rendering: 2-3h (sprites, HP bars, role icons)
 - Enemy Squad Spawning: 1-2h (hookup existing logic to level system)
-- GUI Button Standardization: 1-2h (optional - system works as-is)
 - Bug Fixes: 2-3h (throwable AOE, entity cleanup, wall collision)
+
+**Medium Priority (Architecture & Polish):**
+- GUI Refactoring Completion: 3-5h (split guicomponents, relocate BaseMode, fix globals)
 - Polish: 1-2h (accuracy, level transitions, visual variety)
+
+**Low Priority (Optional):**
+- Status Effects Quality Interface: 1-2h (deferred, not blocking)
 
 ---
 
@@ -159,7 +179,69 @@ Comprehensive test suite: 30+ tests covering combat, abilities, capacity, querie
 
 ---
 
-## Phase 3: Polish and Bug Fixes (0% complete)
+## Phase 3: Worldmap Generator System ✅ COMPLETE
+
+### 3.1 Strategy Pattern Implementation ✅ COMPLETE (2025-11-08)
+**Files:** worldmap/generator.go, gen_rooms_corridors.go, gen_tactical_biome.go, gen_helpers.go
+
+**Deliverables:**
+- ✅ MapGenerator interface with 3 methods (GenerateTiles, Name, Description)
+- ✅ Registry system with RegisterGenerator() and ListGenerators()
+- ✅ 2 algorithms implemented:
+  - rooms_corridors: Classic roguelike (default)
+  - tactical_biome: Cellular automata with 5 biomes for squad combat
+- ✅ Removed 180 LOC from GameMap by extracting generation logic
+- ✅ Fixed global state issues (TileImageSet replaces global vars)
+- ✅ Fixed ECS violation (TileContents uses EntityIDs, not entity pointers)
+- ✅ CoordinateManager integration for correct indexing
+
+**Benefits Achieved:**
+- Open/Closed Principle: Add new algorithms without modifying existing code
+- Each generator independently testable
+- Zero changes to existing code required for new generators
+- Critical bug fix: CoordinateManager prevents index out of range panics
+
+**Usage:**
+```go
+// Default generator
+gameMap := worldmap.NewGameMapDefault()
+
+// Specify algorithm
+gameMap := worldmap.NewGameMap("tactical_biome")
+
+// List available
+generators := worldmap.ListGenerators()
+```
+
+---
+
+## Phase 4: GUI Package Refactoring ⚠️ IN PROGRESS
+
+### 4.1 Mode Extraction ✅ COMPLETE (2025-11-20)
+**Analysis:** analysis/gui_refactoring_analysis.md
+
+**Deliverables:**
+- ✅ Split monolithic GUI into 9 subpackages (6,398 LOC organized)
+- ✅ guicombat/ - Combat mode system (1,179 LOC)
+- ✅ guisquads/ - Squad modes: builder, deployment, management (1,541 LOC)
+- ✅ guimodes/ - General modes: exploration, inventory, info (770 LOC)
+- ✅ Core infrastructure: UIMode interface, ModeManager, BaseMode pattern
+- ✅ Dependency flow properly structured
+
+### 4.2 Architectural Cleanup ⚠️ REMAINING (3-5h)
+**Issues Identified:**
+- ❌ Delete empty `gui/components/` directory (1 minute)
+- ❌ Split `guicomponents/` into UI components and ECS queries (2-3h)
+  - Current: Mixed responsibilities (571 LOC UI + 313 LOC queries)
+  - Target: Separate `gui/components/` and `gui/queries/` packages
+- ❌ Relocate BaseMode from root package to gui/core or gui/base (1h)
+- ❌ Refactor global state in `guiresources/` (1-2h)
+  - Replace global variables with dependency injection
+- ⚠️ Standardize button factory pattern across all modes (optional, 1-2h)
+
+---
+
+## Phase 5: Polish and Bug Fixes (0% complete)
 
 ### Bug Fixes (2-3h)
 - [ ] Fix throwable AOE movement issue
@@ -191,12 +273,28 @@ Comprehensive test suite: 30+ tests covering combat, abilities, capacity, querie
 - ⚠️ Squad grid renders (text only, graphical pending)
 - ❌ Enemy squads spawn at levels (needs hookup)
 
+### Phase 3 Complete (Worldmap) ✅
+- ✅ Strategy pattern allows plug-and-play algorithms
+- ✅ Two distinct generators (classic roguelike + tactical biomes)
+- ✅ No global state, proper ECS compliance
+- ✅ CoordinateManager prevents index bugs
+- ✅ Open for extension, closed for modification
+
+### Phase 4 Progress (GUI) ⚠️
+- ✅ Mode system properly organized into subpackages
+- ✅ Clean dependency flow established
+- ✅ Core infrastructure (UIMode, ModeManager) solid
+- ⚠️ Architectural issues identified and documented
+- ❌ Some mixed responsibilities and globals remain
+
 ### Overall System Success
 - ✅ Multi-squad tactical gameplay foundation
 - ✅ Squad building with formations
 - ✅ Multi-cell units add variety
-- ✅ 100% ECS pattern compliance
+- ✅ 100% ECS pattern compliance across core systems
 - ✅ Stable performance with spatial grid
+- ✅ Pluggable map generation architecture
+- ⚠️ GUI architecture improving but not yet perfect
 
 ---
 
@@ -218,20 +316,53 @@ Comprehensive test suite: 30+ tests covering combat, abilities, capacity, querie
 
 ## Next Steps (Priority Order)
 
-### Immediate (This Week - 4-6h)
-1. **Create spawning/spawnSquads.go** - SpawnEnemySquad wrapper function (1-2h)
-2. **Squad graphical rendering** - Integrate with existing GUI modes (2-3h)
-3. **Hook up enemy spawning** - Call SpawnEnemySquad in level generation (1h)
+### Immediate Priority (High Impact - 6-8h)
+1. **Squad Graphical Rendering** (2-3h)
+   - Integrate squad sprites with existing GUI modes
+   - HP bars, role icons, row highlighting
+   - Leverages completed GUI mode infrastructure
+2. **Enemy Squad Spawning** (1-2h)
+   - Create SpawnEnemySquad wrapper function
+   - Hook up to level generation system
+   - Use completed formation presets
+3. **Critical Bug Fixes** (2-3h)
+   - Fix throwable AOE movement issue
+   - Ensure entities removed on death
+   - Block shooting/throwing through walls
 
-### First Milestone (End of Week)
-- Squad System 100% complete
-- Enemy squads spawn automatically
-- Graphical squad visualization
+### Medium Priority (Architecture - 3-5h)
+4. **GUI Architectural Cleanup** (3-5h)
+   - Delete empty `gui/components/` directory (1 min)
+   - Split `guicomponents/` into separate concerns (2-3h)
+   - Relocate BaseMode to proper package (1h)
+   - Refactor globals in `guiresources/` (1-2h)
 
-### Second Milestone (Week 2)
-- Bug fixes complete (throwables, entity cleanup, walls)
-- Polish features (accuracy, level transitions, variety)
-- Full game loop with squads operational
+### Low Priority (Polish - 2-4h)
+5. **Game Polish** (1-2h)
+   - Throwing accuracy/miss chance
+   - Level transitions cleanup
+   - Visual variety (tile types, diversity)
+6. **Status Effects Quality** (1-2h, optional)
+   - Interface extraction for quality system
+
+---
+
+## Milestones
+
+### Milestone 1: Squad System Complete (6-8h remaining)
+- ✅ Combat, abilities, formations, testing all complete
+- ⚠️ Squad graphical rendering (2-3h)
+- ⚠️ Enemy spawning hookup (1-2h)
+- ⚠️ Critical bug fixes (2-3h)
+
+### Milestone 2: Architecture Complete (3-5h after M1)
+- ✅ Worldmap strategy pattern complete
+- ✅ GUI mode extraction complete
+- ⚠️ GUI architectural cleanup (3-5h)
+
+### Milestone 3: Game Polish (2-4h after M2)
+- Polish features, visual variety, accuracy systems
+- Status effects quality improvements (optional)
 
 ---
 
@@ -247,6 +378,44 @@ Comprehensive test suite: 30+ tests covering combat, abilities, capacity, querie
 - Remaining work is polish and integration (low complexity)
 - Test suite provides safety net for changes
 - ECS architecture proven stable
+
+---
+
+## Key Achievements Summary (v5.0)
+
+### Major Systems Complete
+1. **Squad System (98%)** - 4,951 LOC of ECS-compliant tactical combat
+   - All core systems operational: components, queries, combat, abilities, formations
+   - 30+ tests passing, turn manager integration complete
+   - Only graphical rendering and enemy spawning hookup remain
+
+2. **Worldmap Generator (100%)** - Strategy pattern implementation
+   - Pluggable algorithm system with 2 generators
+   - Fixed critical indexing bugs via CoordinateManager
+   - Removed 180 LOC of monolithic code, eliminated global state
+
+3. **Core Infrastructure (100%)** - Foundation is rock-solid
+   - Input system, coordinates, entity templates, graphics shapes
+   - Position system with O(1) performance
+   - Inventory system as ECS reference implementation
+
+4. **GUI Refactoring (60%)** - Significant progress on organization
+   - Split into 9 logical subpackages (6,398 LOC)
+   - Mode system properly extracted and organized
+   - Architectural issues identified with clear remediation path
+
+### Lines of Code by System
+- Squad System: 4,951 LOC (components, queries, combat, abilities, formations, testing)
+- GUI Package: 6,398 LOC (9 subpackages with mode system)
+- Worldmap Generators: ~800 LOC (strategy pattern + 2 algorithms)
+- Core Infrastructure: ~2,000 LOC (input, coords, templates, shapes, position, inventory)
+
+### What's Left
+- **High Priority:** Squad rendering (2-3h), enemy spawning (1-2h), bug fixes (2-3h)
+- **Medium Priority:** GUI architectural cleanup (3-5h)
+- **Low Priority:** Polish and optional improvements (2-4h)
+
+**Total Remaining Work:** 10-16 hours across all priorities
 
 ---
 
