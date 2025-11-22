@@ -20,11 +20,10 @@ type CombatMode struct {
 	gui.BaseMode // Embed common mode infrastructure
 
 	// Managers
-	logManager      *CombatLogManager
-	stateManager    *CombatStateManager
-	actionHandler   *CombatActionHandler
-	inputHandler    *CombatInputHandler
-	uiFactory       *CombatUIFactory
+	logManager    *CombatLogManager
+	actionHandler *CombatActionHandler
+	inputHandler  *CombatInputHandler
+	uiFactory     *CombatUIFactory
 
 	// UI panels and widgets
 	turnOrderPanel   *widget.Container
@@ -57,8 +56,7 @@ type CombatMode struct {
 
 func NewCombatMode(modeManager *core.UIModeManager) *CombatMode {
 	cm := &CombatMode{
-		logManager:   NewCombatLogManager(),
-		stateManager: NewCombatStateManager(),
+		logManager: NewCombatLogManager(),
 	}
 	cm.SetModeName("combat")
 	cm.ModeManager = modeManager
@@ -82,7 +80,7 @@ func (cm *CombatMode) Initialize(ctx *core.UIContext) error {
 
 	// Create combat action handler
 	cm.actionHandler = NewCombatActionHandler(
-		cm.stateManager,
+		ctx.ModeCoordinator.GetBattleMapState(),
 		cm.logManager,
 		cm.Queries,
 		ctx.ECSManager,
@@ -95,7 +93,7 @@ func (cm *CombatMode) Initialize(ctx *core.UIContext) error {
 	// Create combat input handler
 	cm.inputHandler = NewCombatInputHandler(
 		cm.actionHandler,
-		cm.stateManager,
+		ctx.ModeCoordinator.GetBattleMapState(),
 		cm.Queries,
 	)
 
@@ -247,8 +245,8 @@ func (cm *CombatMode) handleEndTurn() {
 
 	cm.logManager.UpdateTextArea(cm.combatLogArea, fmt.Sprintf("=== Round %d: %s's Turn ===", round, factionName))
 
-	// Clear selection when turn changes using state manager
-	cm.stateManager.Reset()
+	// Clear selection when turn changes
+	cm.Context.ModeCoordinator.GetBattleMapState().Reset()
 
 	// Update UI displays using components
 	cm.turnOrderComponent.Refresh()
@@ -303,7 +301,7 @@ func (cm *CombatMode) Update(deltaTime float64) error {
 		cm.factionInfoComponent.ShowFaction(currentFactionID)
 	}
 
-	selectedSquad := cm.stateManager.GetSelectedSquad()
+	selectedSquad := cm.Context.ModeCoordinator.GetBattleMapState().SelectedSquadID
 	if selectedSquad != 0 {
 		cm.squadDetailComponent.ShowSquad(selectedSquad)
 	}
@@ -314,14 +312,15 @@ func (cm *CombatMode) Update(deltaTime float64) error {
 func (cm *CombatMode) Render(screen *ebiten.Image) {
 	playerPos := *cm.Context.PlayerData.Pos
 	currentFactionID := cm.turnManager.GetCurrentFaction()
-	selectedSquad := cm.stateManager.GetSelectedSquad()
+	battleState := cm.Context.ModeCoordinator.GetBattleMapState()
+	selectedSquad := battleState.SelectedSquadID
 
 	// Render squad highlights (always shown)
 	cm.highlightRenderer.Render(screen, playerPos, currentFactionID, selectedSquad)
 
 	// Render valid movement tiles (only in move mode)
-	if cm.stateManager.IsMoveMode() {
-		validTiles := cm.stateManager.GetValidMoveTiles()
+	if battleState.InMoveMode {
+		validTiles := battleState.ValidMoveTiles
 		if len(validTiles) > 0 {
 			cm.movementRenderer.Render(screen, playerPos, validTiles)
 		}

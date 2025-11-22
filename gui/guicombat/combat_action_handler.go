@@ -1,6 +1,7 @@
 package guicombat
 
 import (
+	"game_main/gui/core"
 	"game_main/gui/guicomponents"
 
 	"fmt"
@@ -15,7 +16,7 @@ import (
 
 // CombatActionHandler manages combat actions and their execution
 type CombatActionHandler struct {
-	stateManager   *CombatStateManager
+	battleMapState *core.BattleMapState
 	logManager     *CombatLogManager
 	queries        *guicomponents.GUIQueries
 	entityManager  *common.EntityManager
@@ -27,7 +28,7 @@ type CombatActionHandler struct {
 
 // NewCombatActionHandler creates a new combat action handler
 func NewCombatActionHandler(
-	stateManager *CombatStateManager,
+	battleMapState *core.BattleMapState,
 	logManager *CombatLogManager,
 	queries *guicomponents.GUIQueries,
 	entityManager *common.EntityManager,
@@ -37,7 +38,7 @@ func NewCombatActionHandler(
 	combatLogArea *widget.TextArea,
 ) *CombatActionHandler {
 	return &CombatActionHandler{
-		stateManager:   stateManager,
+		battleMapState: battleMapState,
 		logManager:     logManager,
 		queries:        queries,
 		entityManager:  entityManager,
@@ -50,7 +51,7 @@ func NewCombatActionHandler(
 
 // SelectSquad selects a squad and logs the action
 func (cah *CombatActionHandler) SelectSquad(squadID ecs.EntityID) {
-	cah.stateManager.SetSelectedSquad(squadID)
+	cah.battleMapState.SelectedSquadID = squadID
 
 	// Get squad name and log
 	squadName := cah.queries.GetSquadName(squadID)
@@ -59,13 +60,13 @@ func (cah *CombatActionHandler) SelectSquad(squadID ecs.EntityID) {
 
 // ToggleAttackMode enables/disables attack mode
 func (cah *CombatActionHandler) ToggleAttackMode() {
-	if cah.stateManager.GetSelectedSquad() == 0 {
+	if cah.battleMapState.SelectedSquadID == 0 {
 		cah.addLog("Select a squad first!")
 		return
 	}
 
-	newAttackMode := !cah.stateManager.IsAttackMode()
-	cah.stateManager.SetAttackMode(newAttackMode)
+	newAttackMode := !cah.battleMapState.InAttackMode
+	cah.battleMapState.InAttackMode = newAttackMode
 
 	if newAttackMode {
 		cah.addLog("Attack mode: Press 1-3 to target enemy")
@@ -103,38 +104,40 @@ func (cah *CombatActionHandler) showAvailableTargets() {
 
 // ToggleMoveMode enables/disables move mode
 func (cah *CombatActionHandler) ToggleMoveMode() {
-	if cah.stateManager.GetSelectedSquad() == 0 {
+	if cah.battleMapState.SelectedSquadID == 0 {
 		cah.addLog("Select a squad first!")
 		return
 	}
 
-	newMoveMode := !cah.stateManager.IsMoveMode()
+	newMoveMode := !cah.battleMapState.InMoveMode
 
 	if newMoveMode {
 		// Get valid movement tiles
-		validTiles := cah.movementSystem.GetValidMovementTiles(cah.stateManager.GetSelectedSquad())
+		validTiles := cah.movementSystem.GetValidMovementTiles(cah.battleMapState.SelectedSquadID)
 
 		if len(validTiles) == 0 {
 			cah.addLog("No movement remaining!")
 			return
 		}
 
-		cah.stateManager.SetMoveMode(true, validTiles)
+		cah.battleMapState.InMoveMode = true
+		cah.battleMapState.ValidMoveTiles = validTiles
 		cah.addLog(fmt.Sprintf("Move mode: Click a tile (%d tiles available)", len(validTiles)))
 		cah.addLog("Click on the map to move, or press M to cancel")
 	} else {
-		cah.stateManager.SetMoveMode(false, nil)
+		cah.battleMapState.InMoveMode = false
+		cah.battleMapState.ValidMoveTiles = []coords.LogicalPosition{}
 		cah.addLog("Move mode cancelled")
 	}
 }
 
 // SelectTarget selects a target squad for attack
 func (cah *CombatActionHandler) SelectTarget(targetSquadID ecs.EntityID) {
-	if !cah.stateManager.IsAttackMode() {
+	if !cah.battleMapState.InAttackMode {
 		return
 	}
 
-	cah.stateManager.SetSelectedTarget(targetSquadID)
+	cah.battleMapState.SelectedTargetID = targetSquadID
 	cah.executeAttack()
 }
 
@@ -162,8 +165,8 @@ func (cah *CombatActionHandler) ExecuteAttack() {
 }
 
 func (cah *CombatActionHandler) executeAttack() {
-	selectedSquad := cah.stateManager.GetSelectedSquad()
-	selectedTarget := cah.stateManager.GetSelectedTarget()
+	selectedSquad := cah.battleMapState.SelectedSquadID
+	selectedTarget := cah.battleMapState.SelectedTargetID
 
 	if selectedSquad == 0 || selectedTarget == 0 {
 		return
@@ -176,7 +179,7 @@ func (cah *CombatActionHandler) executeAttack() {
 	reason, canAttack := combatSys.CanSquadAttackWithReason(selectedSquad, selectedTarget)
 	if !canAttack {
 		cah.addLog(fmt.Sprintf("Cannot attack: %s", reason))
-		cah.stateManager.SetAttackMode(false)
+		cah.battleMapState.InAttackMode = false
 		return
 	}
 
@@ -197,7 +200,7 @@ func (cah *CombatActionHandler) executeAttack() {
 	}
 
 	// Reset attack mode
-	cah.stateManager.SetAttackMode(false)
+	cah.battleMapState.InAttackMode = false
 }
 
 // MoveSquad moves a squad to a new position
@@ -216,7 +219,8 @@ func (cah *CombatActionHandler) MoveSquad(squadID ecs.EntityID, newPos coords.Lo
 	cah.addLog(fmt.Sprintf("%s moved to (%d, %d)", squadName, newPos.X, newPos.Y))
 
 	// Exit move mode
-	cah.stateManager.SetMoveMode(false, nil)
+	cah.battleMapState.InMoveMode = false
+	cah.battleMapState.ValidMoveTiles = []coords.LogicalPosition{}
 
 	return nil
 }
@@ -244,7 +248,7 @@ func (cah *CombatActionHandler) CycleSquadSelection() {
 
 	// Find current index
 	currentIndex := -1
-	selectedSquad := cah.stateManager.GetSelectedSquad()
+	selectedSquad := cah.battleMapState.SelectedSquadID
 	for i, squadID := range aliveSquads {
 		if squadID == selectedSquad {
 			currentIndex = i

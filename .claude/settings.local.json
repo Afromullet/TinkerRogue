@@ -7,51 +7,5 @@
     ],
     "deny": [],
     "ask": []
-  },
-  "hooks": {
-    "UserPromptSubmit": [
-      {
-        "matcher": "commit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "go build -o game_main/game_main.exe game_main/*.go && echo '✅ Build successful' || (echo '❌ Build failed! Fix errors before committing.' && exit 1)",
-            "statusMessage": "Running build verification..."
-          }
-        ]
-      }
-    ],
-    "PostToolUse": [
-      {
-        "matcher": "Edit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "FILE=\"$1\"; if [[ \"$FILE\" == *\"/components.go\" ]] || [[ \"$FILE\" == *\"system\"* ]]; then echo '🔍 Quick ECS check...'; grep -q \"^func (.*\\\\*.*) \" \"$FILE\" && echo '⚠️  Possible component method found (ECS violation)' || true; grep -q \"\\\\*ecs.Entity\" \"$FILE\" && echo '⚠️  Entity pointer found (use ecs.EntityID instead)' || true; grep -q \"map\\\\[\\\\*\" \"$FILE\" && echo '⚠️  Pointer map key found (use value-based keys)' || true; fi; TODOS=$(grep -n '// TODO\\|// FIXME\\|// HACK' \"$FILE\" 2>/dev/null); if [ -n \"$TODOS\" ]; then echo \"📌 TODO comments found:\"; echo \"$TODOS\"; COUNT=$(echo \"$TODOS\" | wc -l); [ $COUNT -gt 5 ] && echo \"⚠️  $COUNT TODOs found - consider creating tasks\" || true; fi",
-            "statusMessage": "Checking ECS compliance..."
-          }
-        ]
-      },
-      {
-        "matcher": "Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "FILE=\"$1\"; TODOS=$(grep -n '// TODO\\|// FIXME\\|// HACK' \"$FILE\" 2>/dev/null); if [ -n \"$TODOS\" ]; then echo \"📌 TODO comments found:\"; echo \"$TODOS\"; COUNT=$(echo \"$TODOS\" | wc -l); [ $COUNT -gt 5 ] && echo \"⚠️  $COUNT TODOs found - consider creating tasks\" || true; fi",
-            "statusMessage": "Checking for TODOs..."
-          }
-        ]
-      },
-      {
-        "matcher": "Edit|Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "FILE=\"$1\"; if [[ \"$FILE\" == *\"/squads/\"* ]] || [[ \"$FILE\" == *\"/gui/\"* ]] || [[ \"$FILE\" == *\"/gear/\"* ]]; then echo \"📚 Reminder: Update DOCUMENTATION.md if architecture changed\"; echo \"   Modified: $FILE\"; fi",
-            "statusMessage": "Documentation check..."
-          }
-        ]
-      }
-    ]
   }
 }

@@ -1,11 +1,10 @@
 package guicombat
 
 import (
-	"game_main/gui/guicomponents"
-
 	"game_main/coords"
 	"game_main/graphics"
 	"game_main/gui/core"
+	"game_main/gui/guicomponents"
 
 	"github.com/bytearena/ecs"
 	"github.com/hajimehoshi/ebiten/v2"
@@ -14,7 +13,7 @@ import (
 // CombatInputHandler manages all input processing for combat mode
 type CombatInputHandler struct {
 	actionHandler    *CombatActionHandler
-	stateManager     *CombatStateManager
+	battleMapState   *core.BattleMapState
 	queries          *guicomponents.GUIQueries
 	playerPos        *coords.LogicalPosition
 	currentFactionID ecs.EntityID
@@ -23,13 +22,13 @@ type CombatInputHandler struct {
 // NewCombatInputHandler creates a new combat input handler
 func NewCombatInputHandler(
 	actionHandler *CombatActionHandler,
-	stateManager *CombatStateManager,
+	battleMapState *core.BattleMapState,
 	queries *guicomponents.GUIQueries,
 ) *CombatInputHandler {
 	return &CombatInputHandler{
-		actionHandler: actionHandler,
-		stateManager:  stateManager,
-		queries:       queries,
+		actionHandler:  actionHandler,
+		battleMapState: battleMapState,
+		queries:        queries,
 	}
 }
 
@@ -47,7 +46,7 @@ func (cih *CombatInputHandler) SetCurrentFactionID(factionID ecs.EntityID) {
 func (cih *CombatInputHandler) HandleInput(inputState *core.InputState) bool {
 	// Handle mouse clicks
 	if inputState.MouseButton == ebiten.MouseButtonLeft && inputState.MousePressed {
-		if cih.stateManager.IsMoveMode() {
+		if cih.battleMapState.InMoveMode {
 			// In move mode: click to move squad
 			cih.handleMovementClick(inputState.MouseX, inputState.MouseY)
 		} else {
@@ -82,7 +81,7 @@ func (cih *CombatInputHandler) HandleInput(inputState *core.InputState) bool {
 	}
 
 	// Number keys 1-3 to select enemy targets in attack mode
-	if cih.stateManager.IsAttackMode() {
+	if cih.battleMapState.InAttackMode {
 		if inputState.KeysJustPressed[ebiten.Key1] {
 			cih.actionHandler.SelectEnemyTarget(0)
 			return true
@@ -115,11 +114,18 @@ func (cih *CombatInputHandler) handleMovementClick(mouseX, mouseY int) {
 	clickedPos := viewport.ScreenToLogical(mouseX, mouseY)
 
 	// Check if clicked position is in valid movement tiles
-	if !cih.stateManager.IsValidMoveTile(clickedPos) {
+	isValidTile := false
+	for _, validPos := range cih.battleMapState.ValidMoveTiles {
+		if validPos.X == clickedPos.X && validPos.Y == clickedPos.Y {
+			isValidTile = true
+			break
+		}
+	}
+	if !isValidTile {
 		return // Invalid tile, do nothing
 	}
 
-	selectedSquad := cih.stateManager.GetSelectedSquad()
+	selectedSquad := cih.battleMapState.SelectedSquadID
 	if selectedSquad == 0 {
 		return
 	}
@@ -168,9 +174,9 @@ func (cih *CombatInputHandler) handleSquadClick(mouseX, mouseY int) {
 		}
 
 		// If clicking an enemy squad and we have a selected squad: attack immediately
-		selectedSquad := cih.stateManager.GetSelectedSquad()
+		selectedSquad := cih.battleMapState.SelectedSquadID
 		if selectedSquad != 0 && clickedFactionID != cih.currentFactionID {
-			cih.stateManager.SetSelectedTarget(clickedSquadID)
+			cih.battleMapState.SelectedTargetID = clickedSquadID
 			cih.actionHandler.ExecuteAttack()
 		}
 	}

@@ -207,6 +207,11 @@ func (gmc *GameModeCoordinator) GetBattleMapManager() *UIModeManager {
 	return gmc.battleMapManager
 }
 
+// GetBattleMapState returns the persistent battle map state for UI modes
+func (gmc *GameModeCoordinator) GetBattleMapState() *BattleMapState {
+	return gmc.battleMapState
+}
+
 // saveOverworldState captures current overworld state before leaving
 func (gmc *GameModeCoordinator) saveOverworldState() {
 	// TODO: Implement state capture

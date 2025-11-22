@@ -1,6 +1,8 @@
 package core
 
 import (
+	"game_main/coords"
+
 	"github.com/bytearena/ecs"
 )
 
@@ -67,6 +69,13 @@ type BattleMapState struct {
 	// UI state
 	InfoTargetEntity   ecs.EntityID // Entity being inspected in info mode
 	LastActiveModeBattleMap string  // Last mode used in battle map context
+
+	// Combat UI state (previously in CombatStateManager)
+	SelectedSquadID  ecs.EntityID                // Currently selected squad
+	SelectedTargetID ecs.EntityID                // Target squad for attacks
+	InAttackMode     bool                        // Whether attack mode is active
+	InMoveMode       bool                        // Whether movement mode is active
+	ValidMoveTiles   []coords.LogicalPosition    // Valid movement positions
 }
 
 // NewOverworldState creates a default overworld state
@@ -113,6 +122,11 @@ func NewBattleMapState() *BattleMapState {
 		ZoomLevel:               1.0,
 		InfoTargetEntity:        ecs.EntityID(0),
 		LastActiveModeBattleMap: "",
+		SelectedSquadID:         ecs.EntityID(0),
+		SelectedTargetID:        ecs.EntityID(0),
+		InAttackMode:            false,
+		InMoveMode:              false,
+		ValidMoveTiles:          make([]coords.LogicalPosition, 0),
 	}
 }
 
@@ -134,5 +148,11 @@ func (bms *BattleMapState) Reset() {
 	bms.LootCollected = make([]ecs.EntityID, 0)
 	bms.ExperienceGained = 0
 	bms.CasualtiesEntityIDs = make([]ecs.EntityID, 0)
+	// Clear combat UI state
+	bms.SelectedSquadID = ecs.EntityID(0)
+	bms.SelectedTargetID = ecs.EntityID(0)
+	bms.InAttackMode = false
+	bms.InMoveMode = false
+	bms.ValidMoveTiles = make([]coords.LogicalPosition, 0)
 	// Keep camera and UI state
 }
