@@ -5,7 +5,6 @@ import (
 	"game_main/common"
 	"game_main/gui"
 	"game_main/gui/core"
-	"game_main/gui/guicomponents"
 	"game_main/gui/guiresources"
 	"game_main/gui/widgets"
 	"game_main/squads"
@@ -17,13 +16,19 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-// SquadManagementMode shows all squads with detailed information
+// SquadManagementMode shows one squad at a time with navigation controls
 type SquadManagementMode struct {
 	gui.BaseMode // Embed common mode infrastructure
 
-	squadPanels         []*SquadPanel // One panel per squad
+	currentSquadIndex   int                                // Index of currently displayed squad
+	allSquadIDs         []ecs.EntityID                     // All available squad IDs
+	currentPanel        *SquadPanel                        // Currently displayed panel
+	panelContainer      *widget.Container                  // Container for the current squad panel
+	navigationContainer *widget.Container                  // Container for navigation buttons
 	closeButton         *widget.Button
-	squadPanelComponent *guicomponents.PanelListComponent // Component managing squad panel refresh
+	prevButton          *widget.Button
+	nextButton          *widget.Button
+	squadCounterLabel   *widget.Text // Shows "Squad 1 of 3"
 }
 
 // SquadPanel represents a single squad's UI panel
@@ -37,7 +42,8 @@ type SquadPanel struct {
 
 func NewSquadManagementMode(modeManager *core.UIModeManager) *SquadManagementMode {
 	mode := &SquadManagementMode{
-		squadPanels: make([]*SquadPanel, 0),
+		currentSquadIndex: 0,
+		allSquadIDs:       make([]ecs.EntityID, 0),
 	}
 	mode.SetModeName("squad_management")
 	mode.ModeManager = modeManager
@@ -51,18 +57,60 @@ func (smm *SquadManagementMode) Initialize(ctx *core.UIContext) error {
 	// Register hotkey for mode transition (back to exploration)
 	smm.RegisterHotkey(ebiten.KeyE, "exploration")
 
-	// Override root container with grid layout for multiple squad panels
+	// Override root container with vertical layout for single squad panel + navigation
 	smm.RootContainer = widget.NewContainer(
-		widget.ContainerOpts.Layout(widget.NewGridLayout(
-			widget.GridLayoutOpts.Columns(2), // 2 squads per row
-			widget.GridLayoutOpts.Stretch([]bool{true, true}, []bool{true, true}),
-			widget.GridLayoutOpts.Spacing(10, 10),
-			widget.GridLayoutOpts.Padding(widget.Insets{
-				Left: 20, Right: 20, Top: 20, Bottom: 80, // Extra bottom for close button
+		widget.ContainerOpts.Layout(widget.NewRowLayout(
+			widget.RowLayoutOpts.Direction(widget.DirectionVertical),
+			widget.RowLayoutOpts.Spacing(15),
+			widget.RowLayoutOpts.Padding(widget.Insets{
+				Left: 20, Right: 20, Top: 20, Bottom: 20,
 			}),
 		)),
 	)
 	smm.GetEbitenUI().Container = smm.RootContainer
+
+	// Container for the current squad panel (will be populated in Enter)
+	smm.panelContainer = widget.NewContainer(
+		widget.ContainerOpts.Layout(widget.NewRowLayout(
+			widget.RowLayoutOpts.Direction(widget.DirectionVertical),
+		)),
+	)
+	smm.RootContainer.AddChild(smm.panelContainer)
+
+	// Navigation container (Previous/Next buttons + squad counter)
+	smm.navigationContainer = widget.NewContainer(
+		widget.ContainerOpts.Layout(widget.NewRowLayout(
+			widget.RowLayoutOpts.Direction(widget.DirectionHorizontal),
+			widget.RowLayoutOpts.Spacing(20),
+			widget.RowLayoutOpts.Padding(widget.Insets{
+				Left: 10, Right: 10, Top: 10, Bottom: 10,
+			}),
+		)),
+	)
+
+	// Previous button
+	smm.prevButton = widgets.CreateButtonWithConfig(widgets.ButtonConfig{
+		Text: "< Previous",
+		OnClick: func() {
+			smm.showPreviousSquad()
+		},
+	})
+	smm.navigationContainer.AddChild(smm.prevButton)
+
+	// Squad counter label
+	smm.squadCounterLabel = widgets.CreateSmallLabel("Squad 1 of 1")
+	smm.navigationContainer.AddChild(smm.squadCounterLabel)
+
+	// Next button
+	smm.nextButton = widgets.CreateButtonWithConfig(widgets.ButtonConfig{
+		Text: "Next >",
+		OnClick: func() {
+			smm.showNextSquad()
+		},
+	})
+	smm.navigationContainer.AddChild(smm.nextButton)
+
+	smm.RootContainer.AddChild(smm.navigationContainer)
 
 	// Build close button (bottom-center) using helper
 	closeButtonContainer := gui.CreateBottomCenterButtonContainer(smm.PanelBuilders)
@@ -70,40 +118,106 @@ func (smm *SquadManagementMode) Initialize(ctx *core.UIContext) error {
 	closeButtonContainer.AddChild(closeBtn)
 	smm.GetEbitenUI().Container.AddChild(closeButtonContainer)
 
-	// Initialize panel list component to manage squad panels
-	smm.squadPanelComponent = guicomponents.NewPanelListComponent(
-		smm.RootContainer,
-		smm.Queries,
-		smm.PanelBuilders,
-		func(queries *guicomponents.GUIQueries, squadID ecs.EntityID) *widget.Container {
-			panel := smm.createSquadPanel(squadID)
-			return panel.container
-		},
-		func(squadID ecs.EntityID) bool {
-			// Show all squads
-			return true
-		},
-	)
-
 	return nil
 }
 
 func (smm *SquadManagementMode) Enter(fromMode core.UIMode) error {
 	fmt.Println("Entering Squad Management Mode")
 
-	// Refresh squad panels using component
-	smm.squadPanelComponent.Refresh()
+	// Get all squad IDs from ECS
+	smm.allSquadIDs = smm.Queries.FindAllSquads()
 
+	// Reset to first squad if we have any
+	if len(smm.allSquadIDs) > 0 {
+		smm.currentSquadIndex = 0
+		smm.refreshCurrentSquad()
+	} else {
+		// No squads available - show message
+		smm.clearPanel()
+		noSquadsLabel := widgets.CreateLargeLabel("No squads available")
+		smm.panelContainer.AddChild(noSquadsLabel)
+	}
+
+	smm.updateNavigationButtons()
 	return nil
 }
 
 func (smm *SquadManagementMode) Exit(toMode core.UIMode) error {
 	fmt.Println("Exiting Squad Management Mode")
 
-	// Clear panels using component
-	smm.squadPanelComponent.Clear()
+	// Clear current panel
+	smm.clearPanel()
+	smm.currentPanel = nil
 
 	return nil
+}
+
+// refreshCurrentSquad clears the panel and displays the current squad
+func (smm *SquadManagementMode) refreshCurrentSquad() {
+	smm.clearPanel()
+
+	if len(smm.allSquadIDs) == 0 {
+		return
+	}
+
+	// Get current squad ID
+	squadID := smm.allSquadIDs[smm.currentSquadIndex]
+
+	// Create and display panel
+	smm.currentPanel = smm.createSquadPanel(squadID)
+	smm.panelContainer.AddChild(smm.currentPanel.container)
+
+	// Update squad counter label
+	counterText := fmt.Sprintf("Squad %d of %d", smm.currentSquadIndex+1, len(smm.allSquadIDs))
+	smm.squadCounterLabel.Label = counterText
+}
+
+// clearPanel removes all children from the panel container
+func (smm *SquadManagementMode) clearPanel() {
+	smm.panelContainer.RemoveChildren()
+}
+
+// showPreviousSquad cycles to the previous squad (wraps around)
+func (smm *SquadManagementMode) showPreviousSquad() {
+	if len(smm.allSquadIDs) == 0 {
+		return
+	}
+
+	smm.currentSquadIndex--
+	if smm.currentSquadIndex < 0 {
+		smm.currentSquadIndex = len(smm.allSquadIDs) - 1
+	}
+
+	smm.refreshCurrentSquad()
+	smm.updateNavigationButtons()
+}
+
+// showNextSquad cycles to the next squad (wraps around)
+func (smm *SquadManagementMode) showNextSquad() {
+	if len(smm.allSquadIDs) == 0 {
+		return
+	}
+
+	smm.currentSquadIndex++
+	if smm.currentSquadIndex >= len(smm.allSquadIDs) {
+		smm.currentSquadIndex = 0
+	}
+
+	smm.refreshCurrentSquad()
+	smm.updateNavigationButtons()
+}
+
+// updateNavigationButtons enables/disables navigation buttons based on squad count
+func (smm *SquadManagementMode) updateNavigationButtons() {
+	hasMultipleSquads := len(smm.allSquadIDs) > 1
+
+	if smm.prevButton != nil {
+		smm.prevButton.GetWidget().Disabled = !hasMultipleSquads
+	}
+
+	if smm.nextButton != nil {
+		smm.nextButton.GetWidget().Disabled = !hasMultipleSquads
+	}
 }
 
 func (smm *SquadManagementMode) createSquadPanel(squadID ecs.EntityID) *SquadPanel {
