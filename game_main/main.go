@@ -26,11 +26,11 @@ import (
 // Game holds all game state and systems.
 // It is the main struct passed to the Ebiten game engine.
 type Game struct {
-	em               common.EntityManager
-	uiModeManager    *core.UIModeManager // NEW: Modal UI system
-	playerData       common.PlayerData
-	gameMap          worldmap.GameMap
-	inputCoordinator *input.InputCoordinator
+	em                  common.EntityManager
+	gameModeCoordinator *core.GameModeCoordinator // Coordinates Overworld and BattleMap UI contexts
+	playerData          common.PlayerData
+	gameMap             worldmap.GameMap
+	inputCoordinator    *input.InputCoordinator
 }
 
 // NewGame creates and initializes a new Game instance.
@@ -56,9 +56,9 @@ func HandleInput(g *Game) {
 // Update is called each frame by the Ebiten engine.
 // It processes UI updates, visual effects, debug input, and main game logic.
 func (g *Game) Update() error {
-	// Update UI mode manager (handles input and UI state)
+	// Update game mode coordinator (handles input and UI state for active context)
 	deltaTime := 1.0 / 60.0 // 60 FPS
-	if err := g.uiModeManager.Update(deltaTime); err != nil {
+	if err := g.gameModeCoordinator.Update(deltaTime); err != nil {
 		return err
 	}
 
@@ -89,8 +89,8 @@ func (g *Game) Draw(screen *ebiten.Image) {
 
 	graphics.VXHandler.DrawVisualEffects(screen)
 
-	// Phase 2: EbitenUI rendering (modal UI)
-	g.uiModeManager.Render(screen)
+	// Phase 2: EbitenUI rendering (modal UI via coordinator)
+	g.gameModeCoordinator.Render(screen)
 }
 
 // Layout returns the game's logical screen dimensions.

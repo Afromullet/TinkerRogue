@@ -121,7 +121,7 @@ func SetupBenchmarking() {
 	runtime.MemProfileRate = MemoryProfileRate
 }
 
-// SetupUI initializes the new modal UI system.
+// SetupUI initializes the new modal UI system with separate context managers.
 // Must be called after game initialization but before input coordinator.
 func SetupUI(g *Game) {
 	// Create UI context with shared game state
@@ -133,53 +133,77 @@ func SetupUI(g *Game) {
 		TileSize:     graphics.ScreenInfo.TileSize,
 	}
 
-	// Create mode manager
-	g.uiModeManager = core.NewUIModeManager(uiContext)
+	// Create game mode coordinator (manages two separate contexts)
+	g.gameModeCoordinator = core.NewGameModeCoordinator(uiContext)
 
-	// Register all UI modes
-	explorationMode := guimodes.NewExplorationMode(g.uiModeManager)
-	if err := g.uiModeManager.RegisterMode(explorationMode); err != nil {
+	// Set coordinator reference in context so modes can trigger context switches
+	uiContext.ModeCoordinator = g.gameModeCoordinator
+
+	// Get references to both managers for registration
+	battleMapManager := g.gameModeCoordinator.GetBattleMapManager()
+	overworldManager := g.gameModeCoordinator.GetOverworldManager()
+
+	// ===== BATTLE MAP MODES (tactical layer) =====
+
+	// Exploration mode - dungeon exploration
+	explorationMode := guimodes.NewExplorationMode(battleMapManager)
+	if err := g.gameModeCoordinator.RegisterBattleMapMode(explorationMode); err != nil {
 		log.Fatalf("Failed to register exploration mode: %v", err)
 	}
 
-	infoMode := guimodes.NewInfoMode(g.uiModeManager)
-	if err := g.uiModeManager.RegisterMode(infoMode); err != nil {
+	// Info mode - inspect entities on battlefield
+	infoMode := guimodes.NewInfoMode(battleMapManager)
+	if err := g.gameModeCoordinator.RegisterBattleMapMode(infoMode); err != nil {
 		log.Fatalf("Failed to register info mode: %v", err)
 	}
 
-	squadManagementMode := guisquads.NewSquadManagementMode(g.uiModeManager)
-	if err := g.uiModeManager.RegisterMode(squadManagementMode); err != nil {
-		log.Fatalf("Failed to register squad management mode: %v", err)
-	}
-
-	combatMode := guicombat.NewCombatMode(g.uiModeManager)
-	if err := g.uiModeManager.RegisterMode(combatMode); err != nil {
+	// Combat mode - turn-based squad combat
+	combatMode := guicombat.NewCombatMode(battleMapManager)
+	if err := g.gameModeCoordinator.RegisterBattleMapMode(combatMode); err != nil {
 		log.Fatalf("Failed to register combat mode: %v", err)
 	}
 
-	inventoryMode := guimodes.NewInventoryMode(g.uiModeManager)
-	if err := g.uiModeManager.RegisterMode(inventoryMode); err != nil {
-		log.Fatalf("Failed to register inventory mode: %v", err)
-	}
-
-	formationEditorMode := guisquads.NewFormationEditorMode(g.uiModeManager)
-	if err := g.uiModeManager.RegisterMode(formationEditorMode); err != nil {
-		log.Fatalf("Failed to register formation editor mode: %v", err)
-	}
-
-	squadBuilderMode := guisquads.NewSquadBuilderMode(g.uiModeManager)
-	if err := g.uiModeManager.RegisterMode(squadBuilderMode); err != nil {
-		log.Fatalf("Failed to register squad builder mode: %v", err)
-	}
-
-	squadDeploymentMode := guisquads.NewSquadDeploymentMode(g.uiModeManager)
-	if err := g.uiModeManager.RegisterMode(squadDeploymentMode); err != nil {
+	// Squad deployment mode - deploy squads to battle map
+	squadDeploymentMode := guisquads.NewSquadDeploymentMode(battleMapManager)
+	if err := g.gameModeCoordinator.RegisterBattleMapMode(squadDeploymentMode); err != nil {
 		log.Fatalf("Failed to register squad deployment mode: %v", err)
 	}
 
-	// Set initial mode to exploration
-	if err := g.uiModeManager.SetMode("exploration"); err != nil {
-		log.Fatalf("Failed to set exploration mode: %v", err)
+	// Inventory mode (battle map instance)
+	inventoryModeBattle := guimodes.NewInventoryMode(battleMapManager)
+	if err := g.gameModeCoordinator.RegisterBattleMapMode(inventoryModeBattle); err != nil {
+		log.Fatalf("Failed to register inventory mode (battle): %v", err)
+	}
+
+	// ===== OVERWORLD MODES (strategic layer) =====
+
+	// Squad management mode - manage squads between missions
+	squadManagementMode := guisquads.NewSquadManagementMode(overworldManager)
+	if err := g.gameModeCoordinator.RegisterOverworldMode(squadManagementMode); err != nil {
+		log.Fatalf("Failed to register squad management mode: %v", err)
+	}
+
+	// Formation editor mode - edit squad formations
+	formationEditorMode := guisquads.NewFormationEditorMode(overworldManager)
+	if err := g.gameModeCoordinator.RegisterOverworldMode(formationEditorMode); err != nil {
+		log.Fatalf("Failed to register formation editor mode: %v", err)
+	}
+
+	// Squad builder mode - create new squads
+	squadBuilderMode := guisquads.NewSquadBuilderMode(overworldManager)
+	if err := g.gameModeCoordinator.RegisterOverworldMode(squadBuilderMode); err != nil {
+		log.Fatalf("Failed to register squad builder mode: %v", err)
+	}
+
+	// Inventory mode (overworld instance)
+	inventoryModeOverworld := guimodes.NewInventoryMode(overworldManager)
+	if err := g.gameModeCoordinator.RegisterOverworldMode(inventoryModeOverworld); err != nil {
+		log.Fatalf("Failed to register inventory mode (overworld): %v", err)
+	}
+
+	// Set initial context and mode (start in battle map, exploration mode)
+	if err := g.gameModeCoordinator.EnterBattleMap("exploration"); err != nil {
+		log.Fatalf("Failed to set initial battle map mode: %v", err)
 	}
 }
 

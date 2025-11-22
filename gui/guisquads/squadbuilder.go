@@ -136,8 +136,8 @@ func (sbm *SquadBuilderMode) buildUI() {
 }
 
 func (sbm *SquadBuilderMode) handleClose() {
-	if exploreMode, exists := sbm.ModeManager.GetMode("exploration"); exists {
-		sbm.ModeManager.RequestTransition(exploreMode, "Close Squad Builder")
+	if squadMgmtMode, exists := sbm.ModeManager.GetMode("squad_management"); exists {
+		sbm.ModeManager.RequestTransition(squadMgmtMode, "Close Squad Builder")
 	}
 }
 

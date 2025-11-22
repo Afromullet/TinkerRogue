@@ -54,8 +54,9 @@ func (smm *SquadManagementMode) Initialize(ctx *core.UIContext) error {
 	// Initialize common mode infrastructure (required for queries field)
 	smm.InitializeBase(ctx)
 
-	// Register hotkey for mode transition (back to exploration)
-	smm.RegisterHotkey(ebiten.KeyE, "exploration")
+	// Register hotkeys for mode transitions (Overworld context only)
+	smm.RegisterHotkey(ebiten.KeyB, "squad_builder")
+	smm.RegisterHotkey(ebiten.KeyF, "formation_editor")
 
 	// Override root container with vertical layout for single squad panel + navigation
 	smm.RootContainer = widget.NewContainer(
@@ -112,11 +113,43 @@ func (smm *SquadManagementMode) Initialize(ctx *core.UIContext) error {
 
 	smm.RootContainer.AddChild(smm.navigationContainer)
 
-	// Build close button (bottom-center) using helper
-	closeButtonContainer := gui.CreateBottomCenterButtonContainer(smm.PanelBuilders)
-	closeBtn := gui.CreateCloseButton(smm.ModeManager, "exploration", "Close (ESC)")
-	closeButtonContainer.AddChild(closeBtn)
-	smm.GetEbitenUI().Container.AddChild(closeButtonContainer)
+	// Build action buttons (bottom-center) using helper
+	actionButtonContainer := gui.CreateBottomCenterButtonContainer(smm.PanelBuilders)
+
+	// Return to Battle Map button
+	battleMapBtn := widgets.CreateButtonWithConfig(widgets.ButtonConfig{
+		Text: "Battle Map (ESC)",
+		OnClick: func() {
+			if smm.Context.ModeCoordinator != nil {
+				smm.Context.ModeCoordinator.EnterBattleMap("exploration")
+			}
+		},
+	})
+	actionButtonContainer.AddChild(battleMapBtn)
+
+	// Squad Builder button
+	builderBtn := widgets.CreateButtonWithConfig(widgets.ButtonConfig{
+		Text: "Squad Builder (B)",
+		OnClick: func() {
+			if builderMode, exists := smm.ModeManager.GetMode("squad_builder"); exists {
+				smm.ModeManager.RequestTransition(builderMode, "Open Squad Builder")
+			}
+		},
+	})
+	actionButtonContainer.AddChild(builderBtn)
+
+	// Formation Editor button
+	formationBtn := widgets.CreateButtonWithConfig(widgets.ButtonConfig{
+		Text: "Formation (F)",
+		OnClick: func() {
+			if formationMode, exists := smm.ModeManager.GetMode("formation_editor"); exists {
+				smm.ModeManager.RequestTransition(formationMode, "Open Formation Editor")
+			}
+		},
+	})
+	actionButtonContainer.AddChild(formationBtn)
+
+	smm.GetEbitenUI().Container.AddChild(actionButtonContainer)
 
 	return nil
 }

@@ -99,8 +99,8 @@ func (fem *FormationEditorMode) buildActionButtons() {
 	fem.actionButtons.AddChild(saveBtn)
 	fem.actionButtons.AddChild(loadBtn)
 
-	// Create close button using helper
-	closeBtn := gui.CreateCloseButton(fem.ModeManager, "exploration", "Close (ESC)")
+	// Create close button to return to squad management (Overworld context)
+	closeBtn := gui.CreateCloseButton(fem.ModeManager, "squad_management", "Close (ESC)")
 	fem.actionButtons.AddChild(closeBtn)
 	fem.RootContainer.AddChild(fem.actionButtons)
 }

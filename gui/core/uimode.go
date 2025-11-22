@@ -41,11 +41,12 @@ type UIMode interface {
 
 // UIContext provides shared game state to all UI modes
 type UIContext struct {
-	ECSManager   *common.EntityManager
-	PlayerData   *common.PlayerData
-	ScreenWidth  int
-	ScreenHeight int
-	TileSize     int
+	ECSManager        *common.EntityManager
+	PlayerData        *common.PlayerData
+	ScreenWidth       int
+	ScreenHeight      int
+	TileSize          int
+	ModeCoordinator   *GameModeCoordinator // For context switching
 	// Add other commonly needed game state
 }
 

@@ -38,11 +38,11 @@ func (em *ExplorationMode) Initialize(ctx *core.UIContext) error {
 	// Initialize common mode infrastructure
 	em.InitializeBase(ctx)
 
-	// Register hotkeys for mode transitions
-	em.RegisterHotkey(ebiten.KeyE, "squad_management")
+	// Register hotkeys for mode transitions (Battle Map context only)
 	em.RegisterHotkey(ebiten.KeyI, "inventory")
-	em.RegisterHotkey(ebiten.KeyB, "squad_builder")
 	em.RegisterHotkey(ebiten.KeyC, "combat")
+	em.RegisterHotkey(ebiten.KeyD, "squad_deployment")
+	// Note: 'E' key for squads requires context switch - handled in button
 
 	// Build stats panel (top-right) using standard specification
 	em.statsPanel, em.statsTextArea = gui.CreateStandardDetailPanel(
@@ -96,7 +96,18 @@ func (em *ExplorationMode) buildQuickInventory() {
 	})
 	em.quickInventory.AddChild(throwableBtn)
 
-	// Inventory button
+	// Squads button (switches to Overworld context)
+	squadsBtn := widgets.CreateButtonWithConfig(widgets.ButtonConfig{
+		Text: "Squads (E)",
+		OnClick: func() {
+			if em.Context.ModeCoordinator != nil {
+				em.Context.ModeCoordinator.ReturnToOverworld("squad_management")
+			}
+		},
+	})
+	em.quickInventory.AddChild(squadsBtn)
+
+	// Inventory button (Battle Map context)
 	inventoryBtn := widgets.CreateButtonWithConfig(widgets.ButtonConfig{
 		Text: "Inventory (I)",
 		OnClick: func() {
@@ -107,29 +118,7 @@ func (em *ExplorationMode) buildQuickInventory() {
 	})
 	em.quickInventory.AddChild(inventoryBtn)
 
-	// Squad button
-	squadBtn := widgets.CreateButtonWithConfig(widgets.ButtonConfig{
-		Text: "Squads (E)",
-		OnClick: func() {
-			if squadMode, exists := em.ModeManager.GetMode("squad_management"); exists {
-				em.ModeManager.RequestTransition(squadMode, "Open Squad Management")
-			}
-		},
-	})
-	em.quickInventory.AddChild(squadBtn)
-
-	// Squad Builder button
-	builderBtn := widgets.CreateButtonWithConfig(widgets.ButtonConfig{
-		Text: "Builder (B)",
-		OnClick: func() {
-			if builderMode, exists := em.ModeManager.GetMode("squad_builder"); exists {
-				em.ModeManager.RequestTransition(builderMode, "Open Squad Builder")
-			}
-		},
-	})
-	em.quickInventory.AddChild(builderBtn)
-
-	// Squad Deployment button
+	// Squad Deployment button (Battle Map context)
 	deployBtn := widgets.CreateButtonWithConfig(widgets.ButtonConfig{
 		Text: "Deploy (D)",
 		OnClick: func() {
@@ -140,7 +129,7 @@ func (em *ExplorationMode) buildQuickInventory() {
 	})
 	em.quickInventory.AddChild(deployBtn)
 
-	// Combat button
+	// Combat button (Battle Map context)
 	combatBtn := widgets.CreateButtonWithConfig(widgets.ButtonConfig{
 		Text: "Combat (C)",
 		OnClick: func() {
