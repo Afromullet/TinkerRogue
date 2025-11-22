@@ -72,43 +72,7 @@ func (cuf *CombatUIFactory) CreateActionButtons(
 	onEndTurn func(),
 	onFlee func(),
 ) *widget.Container {
-	attackButton := widgets.CreateButtonWithConfig(widgets.ButtonConfig{
-		Text: "Attack (A)",
-		OnClick: func() {
-			if onAttack != nil {
-				onAttack()
-			}
-		},
-	})
-
-	moveButton := widgets.CreateButtonWithConfig(widgets.ButtonConfig{
-		Text: "Move (M)",
-		OnClick: func() {
-			if onMove != nil {
-				onMove()
-			}
-		},
-	})
-
-	endTurnBtn := widgets.CreateButtonWithConfig(widgets.ButtonConfig{
-		Text: "End Turn (Space)",
-		OnClick: func() {
-			if onEndTurn != nil {
-				onEndTurn()
-			}
-		},
-	})
-
-	fleeBtn := widgets.CreateButtonWithConfig(widgets.ButtonConfig{
-		Text: "Flee (ESC)",
-		OnClick: func() {
-			if onFlee != nil {
-				onFlee()
-			}
-		},
-	})
-
-	// Build action buttons container
+	// Build action buttons container with standard panel
 	actionButtons := widgets.CreateStandardPanelWithOptions(
 		cuf.panelBuilders,
 		"action_buttons",
@@ -117,11 +81,31 @@ func (cuf *CombatUIFactory) CreateActionButtons(
 		}),
 	)
 
-	actionButtons.AddChild(attackButton)
-	actionButtons.AddChild(moveButton)
-	actionButtons.AddChild(endTurnBtn)
-	actionButtons.AddChild(fleeBtn)
+	// Create button group with combat actions
+	buttonGroup := widgets.HorizontalButtonGroup(
+		[]widgets.ButtonSpec{
+			{
+				Text:    "Attack (A)",
+				OnClick: onAttack,
+			},
+			{
+				Text:    "Move (M)",
+				OnClick: onMove,
+			},
+			{
+				Text:    "End Turn (Space)",
+				OnClick: onEndTurn,
+			},
+			{
+				Text:    "Flee (ESC)",
+				OnClick: onFlee,
+			},
+		},
+		10,
+		widget.Insets{Left: 5, Right: 5, Top: 5, Bottom: 5},
+	)
 
+	actionButtons.AddChild(buttonGroup)
 	return actionButtons
 }
 

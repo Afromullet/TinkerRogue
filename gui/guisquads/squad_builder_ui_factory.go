@@ -162,50 +162,37 @@ func (sbuf *SquadBuilderUIFactory) CreateActionButtons(
 	onToggleLeader func(),
 	onClose func(),
 ) *widget.Container {
-	buttonContainer := widget.NewContainer(
-		widget.ContainerOpts.Layout(widget.NewRowLayout(
-			widget.RowLayoutOpts.Direction(widget.DirectionHorizontal),
-			widget.RowLayoutOpts.Spacing(15),
-			widget.RowLayoutOpts.Padding(widget.Insets{Left: 10, Right: 10}),
-		)),
-	)
-
-	// Create Squad button
-	createBtn := widgets.CreateButtonWithConfig(widgets.ButtonConfig{
-		Text:    "Create Squad",
-		OnClick: onCreate,
-	})
-	buttonContainer.AddChild(createBtn)
-
-	// Clear Grid button
-	clearBtn := widgets.CreateButtonWithConfig(widgets.ButtonConfig{
-		Text:    "Clear Grid",
-		OnClick: onClear,
-	})
-	buttonContainer.AddChild(clearBtn)
-
-	// Toggle Leader button
-	toggleLeaderBtn := widgets.CreateButtonWithConfig(widgets.ButtonConfig{
-		Text:    "Toggle Leader (L)",
-		OnClick: onToggleLeader,
-	})
-	buttonContainer.AddChild(toggleLeaderBtn)
-
-	// Close button
-	closeBtn := widgets.CreateButtonWithConfig(widgets.ButtonConfig{
-		Text:    "Close (ESC)",
-		OnClick: onClose,
-	})
-	buttonContainer.AddChild(closeBtn)
-
-	// Position at bottom center
-	buttonContainer.GetWidget().LayoutData = widget.AnchorLayoutData{
-		HorizontalPosition: widget.AnchorLayoutPositionCenter,
-		VerticalPosition:   widget.AnchorLayoutPositionEnd,
-		Padding: widget.Insets{
-			Bottom: int(float64(sbuf.layout.ScreenHeight) * widgets.BottomButtonOffset),
+	// Create button group with squad builder actions
+	buttonContainer := widgets.CreateButtonGroup(widgets.ButtonGroupConfig{
+		Buttons: []widgets.ButtonSpec{
+			{
+				Text:    "Create Squad",
+				OnClick: onCreate,
+			},
+			{
+				Text:    "Clear Grid",
+				OnClick: onClear,
+			},
+			{
+				Text:    "Toggle Leader (L)",
+				OnClick: onToggleLeader,
+			},
+			{
+				Text:    "Close (ESC)",
+				OnClick: onClose,
+			},
 		},
-	}
+		Direction: widget.DirectionHorizontal,
+		Spacing:   15,
+		Padding:   widget.Insets{Left: 10, Right: 10},
+		LayoutData: &widget.AnchorLayoutData{
+			HorizontalPosition: widget.AnchorLayoutPositionCenter,
+			VerticalPosition:   widget.AnchorLayoutPositionEnd,
+			Padding: widget.Insets{
+				Bottom: int(float64(sbuf.layout.ScreenHeight) * widgets.BottomButtonOffset),
+			},
+		},
+	})
 
 	return buttonContainer
 }
