@@ -4,6 +4,8 @@ import (
 	"game_main/common"
 	"game_main/coords"
 	"game_main/graphics"
+
+	"github.com/hajimehoshi/ebiten/v2"
 )
 
 // createEmptyTiles initializes all tiles as walls
@@ -15,7 +17,10 @@ func createEmptyTiles(width, height int, images TileImageSet) []*Tile {
 			logicalPos := coords.LogicalPosition{X: x, Y: y}
 			index := coords.CoordManager.LogicalToIndex(logicalPos)
 
-			wallImg := images.WallImages[common.GetRandomBetween(0, len(images.WallImages)-1)]
+			var wallImg *ebiten.Image
+			if len(images.WallImages) > 0 {
+				wallImg = images.WallImages[common.GetRandomBetween(0, len(images.WallImages)-1)]
+			}
 			tile := NewTile(
 				x*graphics.ScreenInfo.TileSize,
 				y*graphics.ScreenInfo.TileSize,
@@ -37,7 +42,9 @@ func carveRoom(result *GenerationResult, room Rect, images TileImageSet) {
 
 			result.Tiles[index].Blocked = false
 			result.Tiles[index].TileType = FLOOR
-			result.Tiles[index].image = images.FloorImages[common.GetRandomBetween(0, len(images.FloorImages)-1)]
+			if len(images.FloorImages) > 0 {
+				result.Tiles[index].image = images.FloorImages[common.GetRandomBetween(0, len(images.FloorImages)-1)]
+			}
 
 			// Add to valid positions
 			result.ValidPositions = append(result.ValidPositions, logicalPos)
@@ -54,7 +61,9 @@ func carveHorizontalTunnel(result *GenerationResult, x1, x2, y int, images TileI
 		if index >= 0 && index < len(result.Tiles) {
 			result.Tiles[index].Blocked = false
 			result.Tiles[index].TileType = FLOOR
-			result.Tiles[index].image = images.FloorImages[common.GetRandomBetween(0, len(images.FloorImages)-1)]
+			if len(images.FloorImages) > 0 {
+				result.Tiles[index].image = images.FloorImages[common.GetRandomBetween(0, len(images.FloorImages)-1)]
+			}
 			result.ValidPositions = append(result.ValidPositions, logicalPos)
 		}
 	}
@@ -69,7 +78,9 @@ func carveVerticalTunnel(result *GenerationResult, y1, y2, x int, images TileIma
 		if index >= 0 && index < len(result.Tiles) {
 			result.Tiles[index].Blocked = false
 			result.Tiles[index].TileType = FLOOR
-			result.Tiles[index].image = images.FloorImages[common.GetRandomBetween(0, len(images.FloorImages)-1)]
+			if len(images.FloorImages) > 0 {
+				result.Tiles[index].image = images.FloorImages[common.GetRandomBetween(0, len(images.FloorImages)-1)]
+			}
 			result.ValidPositions = append(result.ValidPositions, logicalPos)
 		}
 	}

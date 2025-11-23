@@ -52,6 +52,7 @@ func LoadTileImages() TileImageSet {
 		}
 	}
 
+	//TODO remove
 	// Note: The original code loaded from marble directory twice, keeping that behavior
 	files, _ = os.ReadDir(dir)
 	for _, file := range files {

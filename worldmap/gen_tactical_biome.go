@@ -443,13 +443,19 @@ func (g *TacticalBiomeGenerator) convertToTiles(result *GenerationResult, terrai
 
 			if terrainMap[terrainIdx] {
 				// Walkable tile
-				floorImage := floorImages[common.GetRandomBetween(0, len(floorImages)-1)]
+				var floorImage *ebiten.Image
+				if len(floorImages) > 0 {
+					floorImage = floorImages[common.GetRandomBetween(0, len(floorImages)-1)]
+				}
 				tile := NewTile(pixelX, pixelY, logicalPos, false, floorImage, FLOOR, false)
 				result.ValidPositions = append(result.ValidPositions, logicalPos)
 				result.Tiles[tileIdx] = &tile
 			} else {
 				// Obstacle tile
-				wallImage := wallImages[common.GetRandomBetween(0, len(wallImages)-1)]
+				var wallImage *ebiten.Image
+				if len(wallImages) > 0 {
+					wallImage = wallImages[common.GetRandomBetween(0, len(wallImages)-1)]
+				}
 				tile := NewTile(pixelX, pixelY, logicalPos, true, wallImage, WALL, false)
 				result.Tiles[tileIdx] = &tile
 			}
@@ -473,7 +479,10 @@ func (g *TacticalBiomeGenerator) clearSpawnArea(result *GenerationResult, center
 				pixelX := x * graphics.ScreenInfo.TileSize
 				pixelY := y * graphics.ScreenInfo.TileSize
 
-				floorImage := floorImages[common.GetRandomBetween(0, len(floorImages)-1)]
+				var floorImage *ebiten.Image
+				if len(floorImages) > 0 {
+					floorImage = floorImages[common.GetRandomBetween(0, len(floorImages)-1)]
+				}
 				tile := NewTile(pixelX, pixelY, logicalPos, false, floorImage, FLOOR, false)
 				result.Tiles[idx] = &tile
 
