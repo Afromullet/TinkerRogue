@@ -116,6 +116,12 @@ func (mc *MovementController) HandleInput() bool {
 		inputHandled = true
 	}
 
+	// Toggle map scrolling (M key)
+	if inpututil.IsKeyJustReleased(ebiten.KeyM) {
+		graphics.MAP_SCROLLING_ENABLED = !graphics.MAP_SCROLLING_ENABLED
+		inputHandled = true
+	}
+
 	return inputHandled
 }
 

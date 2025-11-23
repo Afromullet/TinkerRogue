@@ -17,6 +17,8 @@ var (
 	RenderableComponent *ecs.Component //Putting this here for now rather than in graphics
 	RenderablesTag      ecs.Tag        // Tag for querying renderable entities
 	MessengersTag       ecs.Tag        // Tag for querying messenger (UI message) entities
+
+	EnableFieldOfView = false
 )
 
 type Renderable struct {
@@ -35,7 +37,7 @@ func ProcessRenderables(ecsmanager *common.EntityManager, gameMap worldmap.GameM
 			continue
 		}
 
-		if debugMode {
+		if debugMode || !EnableFieldOfView {
 
 			logicalPos := coords.LogicalPosition{X: pos.X, Y: pos.Y}
 			index := coords.CoordManager.LogicalToIndex(logicalPos)
@@ -101,7 +103,7 @@ func ProcessRenderablesInSquare(ecsmanager *common.EntityManager, gameMap worldm
 				float64(tilePixelY)*float64(graphics.ScreenInfo.ScaleFactor)+scaledCenterOffsetY,
 			)
 
-			if debugMode {
+			if debugMode || !EnableFieldOfView {
 				// In debug mode, we can draw the image directly without visibility checks
 				screen.DrawImage(img, op)
 			} else if gameMap.PlayerVisible.IsVisible(pos.X, pos.Y) {

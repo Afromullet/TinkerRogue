@@ -17,7 +17,7 @@ import (
 // It sets up the player's position, attributes, inventory, equipment, and adds them to the ECS world.
 func InitializePlayerData(ecsmanager *common.EntityManager, pl *common.PlayerData, gm *worldmap.GameMap) {
 
-	common.PlayerComponent = ecsmanager.World.NewComponent()
+	// PlayerComponent already registered in componentinit.go - no need to recreate
 
 	playerImg, _, err := ebitenutil.NewImageFromFile(PlayerImagePath)
 	if err != nil {

@@ -29,8 +29,8 @@ func SetupNewGame(g *Game) {
 	entitytemplates.ReadGameData()
 
 	// 2. Initialize core game systems
-	//g.gameMap = worldmap.NewGameMapDefault()
-	g.gameMap = worldmap.NewGameMap("overworld")
+	g.gameMap = worldmap.NewGameMapDefault()
+	//g.gameMap = worldmap.NewGameMap("overworld")
 	InitializeECS(&g.em)
 
 	// 2a. Initialize Position System for O(1) position lookups (Phase 0 - MASTER_ROADMAP)
@@ -75,8 +75,10 @@ func SetupNewGame(g *Game) {
 
 // SetupSquadSystem initializes the squad combat system.
 // Pass the game's EntityManager so squads exist in the same ECS world.
+// Note: Squad components and tags are already registered in InitializeECS
 func SetupSquadSystem(manager *common.EntityManager) error {
-	if err := squads.InitializeSquadData(manager); err != nil {
+	// Initialize unit templates from JSON
+	if err := squads.InitUnitTemplatesFromJSON(); err != nil {
 		return err
 	}
 

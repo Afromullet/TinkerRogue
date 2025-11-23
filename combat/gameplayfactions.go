@@ -14,27 +14,23 @@ import (
 // SetupGameplayFactions creates two factions (player and AI) with squads for gameplay testing.
 // This is called during game initialization to create the initial combat setup.
 // Each faction gets 3 squads positioned on the map.
+// Note: Combat components are already registered in InitializeECS
 func SetupGameplayFactions(manager *common.EntityManager, playerStartPos coords.LogicalPosition) error {
-	// 1. Initialize combat components if not already done
-	if FactionComponent == nil {
-		InitializeCombatSystem(manager)
-	}
-
-	// 2. Create FactionManager
+	// 1. Create FactionManager
 	fm := NewFactionManager(manager)
 
-	// 3. Create Player Faction
+	// 2. Create Player Faction
 	playerFactionID := fm.CreateFaction("Player Alliance", true)
 
-	// 4. Create AI Faction
+	// 3. Create AI Faction
 	aiFactionID := fm.CreateFaction("Goblin Horde", false)
 
-	// 5. Check if we have units available
+	// 4. Check if we have units available
 	if len(squads.Units) == 0 {
 		return fmt.Errorf("no units available - call squads.InitUnitTemplatesFromJSON() first")
 	}
 
-	// 6. Create player squads positioned above player (north side)
+	// 5. Create player squads positioned above player (north side)
 	// Squad positions relative to player start:
 	// - Squad 1: (-3, -3) from player (northwest)
 	// - Squad 2: (+3, -3) from player (northeast)
@@ -62,7 +58,7 @@ func SetupGameplayFactions(manager *common.EntityManager, playerStartPos coords.
 		}
 	}
 
-	// 7. Create AI squads positioned below player (south side)
+	// 6. Create AI squads positioned below player (south side)
 	// AI squads are mirrored across the player, creating engagement distance
 	// Squad positions relative to player start:
 	// - Squad 1: (-3, +3) from player (southwest)

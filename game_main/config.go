@@ -5,7 +5,7 @@ package main
 // Debug and profiling flags
 const (
 	// DEBUG_MODE enables debug visualization and logging
-	DEBUG_MODE = false
+	DEBUG_MODE = true
 
 	// ENABLE_BENCHMARKING enables pprof profiling server on localhost:6060
 	ENABLE_BENCHMARKING = false
@@ -30,7 +30,7 @@ const (
 
 // Profiling configuration
 const (
-	ProfileServerAddr    = "localhost:6060"
-	CPUProfileRate       = 1000
-	MemoryProfileRate    = 1
+	ProfileServerAddr = "localhost:6060"
+	CPUProfileRate    = 1000
+	MemoryProfileRate = 1
 )
