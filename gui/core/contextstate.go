@@ -6,7 +6,7 @@ import (
 	"github.com/bytearena/ecs"
 )
 
-// OverworldState holds persistent data for the overworld context
+// OverworldState holds persistent UI state for the overworld context
 // This data is saved when entering battle map and restored when returning
 type OverworldState struct {
 	// Squad management state
@@ -22,15 +22,20 @@ type OverworldState struct {
 	// Squad builder state
 	BuilderSelectedUnits []ecs.EntityID // Units selected in squad builder
 	BuilderSquadName     string         // Name being entered for new squad
+}
 
-	// World map state (for future overworld map mode)
-	WorldMapPosition   [2]int         // Current position on world map
-	WorldMapZoom       float64        // Zoom level
-	VisitedLocations   []ecs.EntityID // Locations player has visited
-	ActiveQuestIDs     []ecs.EntityID // Active quests
-
-	// UI state
-	LastActiveModeOverworld string // Last mode used in overworld context
+// NewOverworldState creates a default overworld state
+func NewOverworldState() *OverworldState {
+	return &OverworldState{
+		SelectedSquadID:      ecs.EntityID(0),
+		SquadListScroll:      0,
+		SquadIDs:             make([]ecs.EntityID, 0),
+		EditingSquadID:       ecs.EntityID(0),
+		FormationDirty:       false,
+		SelectedFormation:    "",
+		BuilderSelectedUnits: make([]ecs.EntityID, 0),
+		BuilderSquadName:     "",
+	}
 }
 
 // BattleMapState holds UI state for the battle map context
@@ -46,25 +51,6 @@ type BattleMapState struct {
 
 	// Computed UI State (cached from systems)
 	ValidMoveTiles []coords.LogicalPosition // Valid movement positions (from MovementSystem)
-}
-
-// NewOverworldState creates a default overworld state
-func NewOverworldState() *OverworldState {
-	return &OverworldState{
-		SelectedSquadID:         ecs.EntityID(0),
-		SquadListScroll:         0,
-		SquadIDs:                make([]ecs.EntityID, 0),
-		EditingSquadID:          ecs.EntityID(0),
-		FormationDirty:          false,
-		SelectedFormation:       "",
-		BuilderSelectedUnits:    make([]ecs.EntityID, 0),
-		BuilderSquadName:        "",
-		WorldMapPosition:        [2]int{0, 0},
-		WorldMapZoom:            1.0,
-		VisitedLocations:        make([]ecs.EntityID, 0),
-		ActiveQuestIDs:          make([]ecs.EntityID, 0),
-		LastActiveModeOverworld: "",
-	}
 }
 
 // NewBattleMapState creates a default battle map state

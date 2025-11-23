@@ -33,7 +33,7 @@ type GameModeCoordinator struct {
 	battleMapManager      *UIModeManager  // Manages battle map modes (exploration, combat)
 	activeManager         *UIModeManager  // Points to currently active manager
 	currentContext        GameContext     // Tracks which context is active
-	overworldState        *OverworldState // Persistent overworld data
+	overworldState        *OverworldState // Persistent overworld UI state
 	battleMapState        *BattleMapState // Persistent battle data
 	contextSwitchKeyDown  bool            // Tracks if context switch key is held (prevents rapid toggling)
 }
@@ -48,8 +48,8 @@ func NewGameModeCoordinator(ctx *UIContext) *GameModeCoordinator {
 		battleMapManager: battleMapMgr,
 		activeManager:    battleMapMgr, // Start in battle map context by default
 		currentContext:   ContextBattleMap,
-		overworldState:   &OverworldState{},
-		battleMapState:   &BattleMapState{},
+		overworldState:   NewOverworldState(),
+		battleMapState:   NewBattleMapState(),
 	}
 
 	return coordinator
