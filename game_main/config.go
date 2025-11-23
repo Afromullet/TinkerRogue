@@ -16,7 +16,7 @@ const (
 const (
 	DefaultPlayerStrength   = 15 // → 50 HP (20 + 15*2)
 	DefaultPlayerDexterity  = 20 // → 100% hit, 10% crit, 6% dodge
-	DefaultPlayerMagic      = 0  // → Player starts without magic abilities
+	DefaultPlayerMagic      = 0  // → Player starts without magic abilities1
 	DefaultPlayerLeadership = 0  // → Player doesn't start with squad leadership
 	DefaultPlayerArmor      = 2  // → 4 physical resistance (2*2)
 	DefaultPlayerWeapon     = 3  // → 6 bonus damage (3*2)

@@ -13,6 +13,7 @@ import (
 	"game_main/gui/core"
 	"game_main/input"
 	"game_main/rendering"
+	"game_main/testing"
 	"game_main/worldmap"
 	"log"
 	"math"
@@ -114,8 +115,9 @@ func main() {
 	SetupUI(g)
 	SetupInputCoordinator(g)
 
-	// Note: testing.CreateTestItems() already called in SetupNewGame() when DEBUG_MODE is true
-	// testing.UpdateContentsForTest() already called in SetupNewGame() at line 57
+	testing.CreateTestItems(g.em.World, g.em.WorldTags, &g.gameMap)
+
+	testing.UpdateContentsForTest(&g.em, &g.gameMap)
 
 	// Configure window
 	ebiten.SetWindowResizable(true)
