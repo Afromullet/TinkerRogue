@@ -22,6 +22,12 @@ const (
 	DefaultPlayerWeapon     = 3  // → 6 bonus damage (3*2)
 )
 
+// Default player resources and roster limits
+const (
+	DefaultPlayerStartingGold = 1000 // Starting gold for purchasing units
+	DefaultPlayerMaxUnits     = 50   // Maximum units player can own
+)
+
 // Asset paths
 const (
 	PlayerImagePath = "../assets/creatures/player1.png"

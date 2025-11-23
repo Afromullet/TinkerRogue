@@ -210,4 +210,6 @@ After Phase 2 complete:
 
 ---
 
+
+todos   The squad builder still uses the global unit templates for now. Integrating the roster with the squad builder is a larger refactoring task that can be done separately when needed.
 **End of Roadmap**

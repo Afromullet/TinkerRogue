@@ -25,6 +25,7 @@ func InitSquadComponents(squadManager *common.EntityManager) {
 	CooldownTrackerComponent = squadManager.World.NewComponent()
 	AttackRangeComponent = squadManager.World.NewComponent()
 	MovementSpeedComponent = squadManager.World.NewComponent()
+	UnitRosterComponent = squadManager.World.NewComponent()
 }
 
 // InitSquadTags creates tags for querying squad-related entities

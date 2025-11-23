@@ -142,6 +142,7 @@ func (umm *UIModeManager) updateInputState() {
 	keysToTrack := []ebiten.Key{
 		ebiten.KeyE, ebiten.KeyC, ebiten.KeyF, ebiten.KeyEscape,
 		ebiten.KeyI, ebiten.KeyTab, ebiten.KeySpace, ebiten.KeyB,
+		ebiten.KeyP,
 	}
 
 	prevPressed := make(map[ebiten.Key]bool)

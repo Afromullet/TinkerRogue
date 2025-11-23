@@ -5,6 +5,7 @@ import (
 	"game_main/coords"
 	"game_main/gear"
 	"game_main/rendering"
+	"game_main/squads"
 	"game_main/worldmap"
 
 	"log"
@@ -51,7 +52,9 @@ func InitializePlayerData(ecsmanager *common.EntityManager, pl *common.PlayerDat
 		AddComponent(common.UserMsgComponent, &common.UserMessage{
 			AttackMessage:    "",
 			GameStateMessage: "",
-		})
+		}).
+		AddComponent(common.PlayerResourcesComponent, common.NewPlayerResources(DefaultPlayerStartingGold)).
+		AddComponent(squads.UnitRosterComponent, squads.NewUnitRoster(DefaultPlayerMaxUnits))
 
 	playerEntity.AddComponent(common.UserMsgComponent, &common.UserMessage{})
 	players := ecs.BuildTag(common.PlayerComponent, common.PositionComponent, gear.InventoryComponent)

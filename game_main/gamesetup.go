@@ -197,6 +197,12 @@ func SetupUI(g *Game) {
 		log.Fatalf("Failed to register squad builder mode: %v", err)
 	}
 
+	// Unit purchase mode - buy units for roster
+	unitPurchaseMode := guisquads.NewUnitPurchaseMode(overworldManager)
+	if err := g.gameModeCoordinator.RegisterOverworldMode(unitPurchaseMode); err != nil {
+		log.Fatalf("Failed to register unit purchase mode: %v", err)
+	}
+
 	// Inventory mode (overworld instance)
 	inventoryModeOverworld := guimodes.NewInventoryMode(overworldManager)
 	if err := g.gameModeCoordinator.RegisterOverworldMode(inventoryModeOverworld); err != nil {

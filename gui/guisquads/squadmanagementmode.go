@@ -57,6 +57,7 @@ func (smm *SquadManagementMode) Initialize(ctx *core.UIContext) error {
 	// Register hotkeys for mode transitions (Overworld context only)
 	smm.RegisterHotkey(ebiten.KeyB, "squad_builder")
 	smm.RegisterHotkey(ebiten.KeyF, "formation_editor")
+	smm.RegisterHotkey(ebiten.KeyP, "unit_purchase")
 
 	// Override root container with vertical layout for single squad panel + navigation
 	smm.RootContainer = widget.NewContainer(
@@ -148,6 +149,17 @@ func (smm *SquadManagementMode) Initialize(ctx *core.UIContext) error {
 		},
 	})
 	actionButtonContainer.AddChild(formationBtn)
+
+	// Unit Purchase button
+	purchaseBtn := widgets.CreateButtonWithConfig(widgets.ButtonConfig{
+		Text: "Buy Units (P)",
+		OnClick: func() {
+			if purchaseMode, exists := smm.ModeManager.GetMode("unit_purchase"); exists {
+				smm.ModeManager.RequestTransition(purchaseMode, "Open Unit Purchase")
+			}
+		},
+	})
+	actionButtonContainer.AddChild(purchaseBtn)
 
 	smm.GetEbitenUI().Container.AddChild(actionButtonContainer)
 
