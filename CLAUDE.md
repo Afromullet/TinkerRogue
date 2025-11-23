@@ -1,182 +1,201 @@
-# Project Configuration for Claude Code
+# TinkerRogue Developer Guide
 
-## Build Commands
-- Build: `go build -o game_main/game_main.exe game_main/*.go`
-- Run: `go run game_main/*.go`
-- Test: `go test ./...`
-- Install dependencies: `go mod tidy`
+**Last Updated:** 2025-11-23
 
-## Development Notes
-- Go-based roguelike game using Ebiten engine
-- Main entry point: `game_main/main.go`
-- Assets directory: `../assets/` (relative to game_main)
+Quick reference for working with TinkerRogue. For detailed ECS patterns, see `docs/ecs_best_practices.md`.
 
 ---
 
-## Simplification Progress Summary
+## Quick Commands
 
-### ✅ Completed (8/8 items - 100% overall)
-1. **Input System** - Unified InputCoordinator with specialized controllers
-2. **Coordinate System** - Type-safe LogicalPosition/PixelPosition with CoordinateManager
-3. **Entity Templates** - Generic factory pattern with EntityType enum (283 LOC)
-4. **Graphics Shapes** - Consolidated 8+ types into BaseShape with 3 variants (390 LOC)
-5. **Position System** - O(1) spatial grid, 50x performance improvement (399 LOC)
-6. **Inventory System** - ECS refactor: EntityIDs, system functions, pure data (533 LOC) - 2025-10-21
-7. **GUI Button Factory** - ButtonConfig pattern consistently applied throughout GUI package (2025-11-07)
-8. **Worldmap Generator Strategy Pattern** - Pluggable map generation algorithms with rooms-and-corridors + BSP generators (2025-11-08)
+```bash
+# Build and run
+go build -o game_main/game_main.exe game_main/*.go && ./game_main/game_main.exe
 
-### 🔄 In Progress (0/7 items)
-(None - Status Effects moved to low priority)
+# Test
+go test ./...                    # All tests
+go test ./squads/...            # Specific package
+go test -v ./...                # Verbose
+go test -cover ./...            # With coverage
 
-### ❌ Remaining (0/7 items)
-(All core simplification tasks complete!)
-
-### 📋 Low Priority / Optional
-- **Status Effects** - 85% complete, needs quality interface extraction (deferred)
-
----
-
-## Squad System Status: 95% Complete (2675 LOC)
-
-**Operational NOW:**
-- ✅ All 8 ECS components with perfect data/logic separation
-- ✅ Query system (7 functions) - Find units, check positions, get leaders
-- ✅ Combat system - ExecuteSquadAttack with hit/dodge/crit/cover mechanics
-- ✅ Visualization - Text-based 3x3 grid rendering
-- ✅ Testing infrastructure - Comprehensive test suite exists
-- ✅ **Ability System (317 LOC)** - Auto-triggering leader abilities fully integrated (2025-11-02)
-  - 4 abilities: Rally, Heal, Battle Cry, Fireball
-  - 5 trigger types: HP threshold, turn count, enemy count, morale, combat start
-  - Integrated with turn manager and combat system
-  - Cooldown and once-per-combat tracking
-
-**Remaining Work (4-6 hours):**
-- ⚠️ Formation Presets (4-6h) - Balanced/Defensive/Offensive/Ranged templates (stubs exist)
-
-**Key Achievement:** Squad combat fully operational with abilities triggering automatically
-
-**Timeline:** Formation presets are the final piece before 100% completion
-
----
-
-## ECS Best Practices (Squad & Inventory System Templates)
-
-The squad and inventory systems demonstrate perfect ECS architecture. Apply these patterns to all new code:
-
-1. **Pure Data Components** - Zero logic methods, only data fields
-2. **Native EntityID** - Use `ecs.EntityID` everywhere, not pointers
-3. **Query-Based Relationships** - Discover via ECS queries, don't store references
-4. **System-Based Logic** - All behavior in systems, not component methods
-5. **Value Map Keys** - Use value-based keys for O(1) performance
-
-**Anti-Patterns Fixed:**
-- ✅ Position system: Pointer map keys → Value keys (50x faster)
-- ✅ Legacy weapon/creature components removed (replaced by squad system)
-- ✅ Inventory system: Entity pointers → EntityIDs, methods → system functions (2025-10-21)
-- ✅ Item.Properties: `*ecs.Entity` → `ecs.EntityID` (2025-10-21)
-- ✅ TileContents.entities: `[]*ecs.Entity` → `[]ecs.EntityID` (2025-11-08)
-- ⚠️ Equipment system still uses entity pointers (scheduled for refactoring)
-
-**Reference Implementations:**
-- `squads/*.go` - Perfect ECS: 2675 LOC, 8 components, 7 query functions, system-based combat + abilities
-  - `squadabilities.go` - 317 LOC, data-driven ability system with auto-triggers
-  - `squadcombat.go` - 387 LOC, row-based combat with multi-cell units
-  - `squadqueries.go` - 140 LOC, query functions for ECS data access
-- `gear/Inventory.go` - Perfect ECS: 241 LOC, pure data component, 9 system functions
-- `gear/items.go` - Perfect ECS: 177 LOC, EntityID-based relationships
-- `gear/gearutil.go` - Perfect ECS: 115 LOC, query-based entity lookup
-
----
-
-## Worldmap Generator System (2025-11-08)
-
-**Status:** Complete - Strategy Pattern implementation with 2 algorithms
-
-**Architecture:**
-- `worldmap/generator.go` - MapGenerator interface, registry, GenerationResult
-- `worldmap/gen_rooms_corridors.go` - Classic roguelike algorithm (default)
-- `worldmap/gen_tactical_biome.go` - Cellular automata with 5 biomes for squad combat
-- `worldmap/gen_helpers.go` - Shared helper functions using CoordinateManager
-- `worldmap/GameMapUtil.go` - TileImageSet struct (no global variables)
-
-**Usage:**
-```go
-// Default generator (rooms and corridors)
-gameMap := worldmap.NewGameMapDefault()
-
-// Specify algorithm
-gameMap := worldmap.NewGameMap("tactical_biome")
-
-// List available generators
-generators := worldmap.ListGenerators() // ["rooms_corridors", "tactical_biome"]
+# Maintenance
+go mod tidy                     # Update dependencies
+go fmt ./...                    # Format code
+go vet ./...                    # Check for mistakes
 ```
 
-**⚠️ CRITICAL: CoordinateManager Usage for result.Tiles**
+---
 
-**ALWAYS use `coords.CoordManager.LogicalToIndex()` when accessing `result.Tiles`:**
+## Core Architecture
+
+### Global Instances
+- `coords.CoordManager` - Coordinate conversions (use for ALL tile indexing)
+- `common.GlobalPositionSystem` - O(1) spatial grid queries
+- `common.EntityManager` - Passed as parameter (NOT global)
+
+### Key Systems
+- **ECS Core:** `common/EntityManager.go`, `common/helpers.go`
+- **Coordinates:** `coords/CoordinateManager.go`, `coords/coordinates.go`
+- **Position:** `systems/positionsystem.go`
+- **Input:** `input/inputcoordinator.go` + controllers
+- **Squads:** `squads/` (8 components, query-based, system functions)
+- **Combat:** `combat/` (turn manager, combat state)
+- **GUI:** `gui/core/` (mode manager, context switching)
+- **Items:** `gear/` (pure ECS inventory)
+- **Worldmap:** `worldmap/` (generator registry, algorithms)
+
+---
+
+## ECS Quick Reference
+
+**Core Principles** (see `docs/ecs_best_practices.md` for details):
+
+1. **Pure Data Components** - Zero logic, only fields
+2. **EntityID Only** - Never store `*ecs.Entity` pointers
+3. **Query-Based** - Don't cache relationships
+4. **System Functions** - Logic outside components
+5. **Value Map Keys** - Not pointer keys (50x faster)
+
+### File Structure
+```
+package_name/
+├── components.go      # Data definitions only
+├── *queries.go        # Search/filter functions
+├── *system.go         # Logic/behavior functions
+└── *_test.go         # Tests
+```
+
+### Naming
+- Data structs: `SquadData`, `ActionStateData`
+- Components: `SquadComponent`, `ActionStateComponent`
+- Tags: `SquadTag`, `SquadMemberTag`
+- Queries: `GetSquad*`, `Find*`, `Is*`, `Can*`
+- Systems: `ExecuteAttack`, `Update*`, `Create*`
+
+### Common Patterns
+```go
+// Component access
+data := common.GetComponentType[*SquadData](entity, SquadComponent)
+data := common.GetComponentTypeByIDWithTag[*SquadData](manager, entityID, tag, component)
+
+// Query pattern
+for _, result := range manager.World.Query(SquadTag) {
+    entity := result.Entity
+    data := common.GetComponentType[*SquadData](entity, SquadComponent)
+}
+
+// Position system
+common.GlobalPositionSystem.AddEntity(entityID, logicalPos)
+common.GlobalPositionSystem.RemoveEntity(entityID, logicalPos)
+entityIDs := common.GlobalPositionSystem.GetEntitiesAtPosition(logicalPos)
+```
+
+**Reference Implementations:**
+- `squads/` - Perfect ECS example
+- `gear/Inventory.go` - Pure ECS component
+- `systems/positionsystem.go` - Value-based map keys
+
+---
+
+## Critical Warnings
+
+### ⚠️ CoordinateManager Indexing (CRITICAL)
+
+**ALWAYS use `coords.CoordManager.LogicalToIndex()` for tile arrays:**
 
 ```go
-// ✅ CORRECT - Use CoordinateManager
-logicalPos := coords.LogicalPosition{X: x, Y: y}
+// ✅ CORRECT
 tileIdx := coords.CoordManager.LogicalToIndex(logicalPos)
 result.Tiles[tileIdx] = &tile
 
-// ❌ WRONG - Manual calculation causes "index out of range" panics
-idx := y*width + x  // This width may differ from CoordManager.dungeonWidth!
-result.Tiles[idx] = &tile  // PANIC: index out of range [-302]
+// ❌ WRONG - Causes index out of range panics
+idx := y*width + x  // Width may differ from CoordManager.dungeonWidth!
+result.Tiles[idx] = &tile
 ```
 
-**Why This Matters:**
-- CoordinateManager uses `cm.dungeonWidth` which may not match the generator's `width` parameter
-- Manual calculation `y*width + x` creates wrong indices → negative or out-of-bounds
-- Local arrays (like `terrainMap []bool`) can use manual calculation since they're width*height
-- But `result.Tiles` MUST use CoordinateManager for correct indexing
+**Why:** `CoordinateManager.dungeonWidth` may not match function parameters. Manual calculation creates wrong indices.
 
-**Benefits Achieved:**
-- ✅ Add new algorithms without modifying existing code (Open/Closed Principle)
-- ✅ Each generator independently testable
-- ✅ Removed 180 LOC from GameMap (extracted to generators)
-- ✅ Fixed global state issues (TileImageSet replaces global vars)
-- ✅ Fixed ECS violation (TileContents uses EntityIDs, not entity pointers)
+### ⚠️ Entity Lifecycle
 
-**Adding New Generators:**
-1. Create `worldmap/gen_<name>.go`
-2. Implement MapGenerator interface (3 methods)
-3. **Use CoordinateManager for all result.Tiles indexing**
-4. Register in `init()` function
-5. Zero changes to existing code required
+When removing entities:
+1. Remove from `GlobalPositionSystem.RemoveEntity(entityID, position)`
+2. Remove from all other systems
+3. Call `manager.World.DisposeEntities(entity)`
 
-**Reference:**
-- `analysis/worldmap_strategy_pattern_refactoring.md` - Strategy pattern implementation
-- `analysis/tactical_biome_generator.md` - Tactical biome generator details (5 biomes, cellular automata)
+### ⚠️ GUI State Separation
 
----
+- `BattleMapState` / `OverworldState` = ONLY UI state (selection, mode flags)
+- Game state = ECS components (combat, squads, positions)
+- Never store game logic in UI state structures
 
-## Current Implementation Priorities
+### ⚠️ Generator Registration
 
-### Ready to Implement (No Blockers)
-- Bug fixes: throwable AOE, entity cleanup on death, wall collision
-- Throwing accuracy/miss chance system
-- Level transitions and tile variety
-- Spawning system improvements (Entity Template System unblocked this)
-
-### Blocked/Waiting
-- **Squad formations** (4-6h remaining) - Formation presets need implementation
-- **Balance/difficulty** (needs formation presets complete)
-- **Map integration for squads** (Complete! Squads already deployed and functional on map)
+New worldmap generators must register in `init()`:
+```go
+func init() {
+    RegisterGenerator("my_algorithm", &MyGenerator{})
+}
+```
 
 ---
 
-## Analysis Files Reference
+## Code Style
 
-**Primary:** `analysis/MASTER_ROADMAP.md` v3.0 (2025-10-12)
-- Executive summary: 16-24 hours remaining for squad completion
-- Phase breakdown with actual LOC counts from codebase audit
-- Critical discoveries: Position/Query/Combat/Visualization already complete
+### Go Conventions
+- `camelCase` for private, `PascalCase` for public
+- Package names: lowercase, single word
+- Run `go fmt ./...` before committing
 
-**Supporting:**
-- `squad_system_final.md` - Architecture details (components, abilities, targeting)
-- `combat_refactoring.md` - OBSOLETE (combat implemented)
-- `roadmap_completion.md` - OBSOLETE (superseded by v3.0)
+### ECS Conventions
+- Components: Pure data, no methods
+- Queries: Read-only functions in `*queries.go`
+- Systems: Logic functions in `*system.go`
+- Always use `ecs.EntityID`, never `*ecs.Entity`
 
-**Note:** v3.0 based on actual file analysis, not estimates.
+### Comments
+```go
+// Public functions: Document purpose and return values
+// GetSquadEntity finds squad by ID. Returns nil if not found.
+func GetSquadEntity(squadID ecs.EntityID, manager *common.EntityManager) *ecs.Entity
+
+// Complex logic: Explain WHY, not WHAT
+// Use CoordinateManager to prevent index out of bounds
+
+// TODOs: Include context
+// TODO: Add formation validation (30min)
+```
+
+---
+
+## Development Workflow
+
+### Before Coding
+1. Read existing implementation
+2. Check `docs/ecs_best_practices.md`
+3. Search for similar patterns
+4. Consider entity lifecycle impact
+
+### Adding Features
+1. Design components (pure data)
+2. Create query functions
+3. Implement system functions
+4. Write tests
+5. Integrate with existing systems
+
+### Code Review Checklist
+- [ ] No logic in components
+- [ ] Uses `ecs.EntityID` not entity pointers
+- [ ] Query-based relationships (no caching)
+- [ ] Logic in system functions
+- [ ] Uses `CoordManager.LogicalToIndex()` for tiles
+- [ ] Proper entity cleanup
+- [ ] Naming conventions followed
+- [ ] Tests included
+
+---
+
+## Resources
+
+- **Detailed ECS Guide:** `docs/ecs_best_practices.md`
+- **Tests:** Run `go test ./...` frequently
+- **Reference Code:** Study `squads/`, `gear/Inventory.go`, `systems/positionsystem.go`
