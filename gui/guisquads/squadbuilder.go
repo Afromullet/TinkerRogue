@@ -33,23 +33,23 @@ type SquadBuilderMode struct {
 	gridCells [3][3]*GridCellButton
 
 	// State
-	currentSquadID   ecs.EntityID
-	currentSquadName string
-	selectedUnitIdx  int // Index in Units array
+	currentSquadID      ecs.EntityID
+	currentSquadName    string
+	selectedRosterEntry *squads.UnitRosterEntry // Currently selected roster unit
 }
 
 // GridCellButton wraps a button with squad grid metadata
 type GridCellButton struct {
-	button    *widget.Button
-	row       int
-	col       int
-	unitID    ecs.EntityID // 0 if empty
-	unitIndex int          // -1 if empty, otherwise index in squads.Units
+	button        *widget.Button
+	row           int
+	col           int
+	unitID        ecs.EntityID // 0 if empty
+	rosterEntryID ecs.EntityID // Entity ID of the roster unit (0 if empty)
 }
 
 func NewSquadBuilderMode(modeManager *core.UIModeManager) *SquadBuilderMode {
 	mode := &SquadBuilderMode{
-		selectedUnitIdx: -1,
+		selectedRosterEntry: nil,
 	}
 	mode.SetModeName("squad_builder")
 	mode.ModeManager = modeManager
@@ -80,11 +80,11 @@ func (sbm *SquadBuilderMode) buildUI() {
 	for row := 0; row < 3; row++ {
 		for col := 0; col < 3; col++ {
 			sbm.gridCells[row][col] = &GridCellButton{
-				button:    buttons[row][col],
-				row:       row,
-				col:       col,
-				unitID:    0,
-				unitIndex: -1,
+				button:        buttons[row][col],
+				row:           row,
+				col:           col,
+				unitID:        0,
+				rosterEntryID: 0,
 			}
 		}
 	}
@@ -93,18 +93,14 @@ func (sbm *SquadBuilderMode) buildUI() {
 	// Set grid cells in manager
 	sbm.gridManager.SetGridCells(sbm.gridCells)
 
-	// Build unit palette
-	sbm.unitPalette = sbm.uiFactory.CreatePalettePanel(func(entry interface{}) {
-		if entryStr, ok := entry.(string); ok {
-			for i, unit := range squads.Units {
-				expectedStr := fmt.Sprintf("%s (%s)", unit.Name, unit.Role.String())
-				if entryStr == expectedStr {
-					sbm.selectedUnitIdx = i
-					sbm.updateUnitDetails()
-					return
-				}
-			}
-			sbm.selectedUnitIdx = -1
+	// Build unit palette - will be populated in Enter()
+	sbm.unitPalette = sbm.uiFactory.CreateRosterPalettePanel(func(entry interface{}) {
+		if rosterEntry, ok := entry.(*squads.UnitRosterEntry); ok {
+			sbm.selectedRosterEntry = rosterEntry
+			sbm.updateUnitDetails()
+		} else {
+			// Deselect if it's a message string
+			sbm.selectedRosterEntry = nil
 			sbm.updateUnitDetails()
 		}
 	})
@@ -151,39 +147,87 @@ func (sbm *SquadBuilderMode) onCellClicked(row, col int) {
 	}
 
 	// If no unit selected from palette, do nothing
-	if sbm.selectedUnitIdx < 0 || sbm.selectedUnitIdx >= len(squads.Units) {
-		fmt.Println("No unit selected from palette")
+	if sbm.selectedRosterEntry == nil {
+		fmt.Println("No unit selected from roster")
 		return
 	}
 
-	// Place selected unit
-	sbm.placeUnitInCell(row, col, sbm.selectedUnitIdx)
+	// Place selected roster unit
+	sbm.placeRosterUnitInCell(row, col, sbm.selectedRosterEntry)
 }
 
-func (sbm *SquadBuilderMode) placeUnitInCell(row, col, unitIndex int) {
+func (sbm *SquadBuilderMode) placeRosterUnitInCell(row, col int, rosterEntry *squads.UnitRosterEntry) {
 	if sbm.currentSquadID == 0 {
 		// Create temporary squad if none exists
 		sbm.createTemporarySquad()
 	}
 
-	// Delegate to grid manager
-	err := sbm.gridManager.PlaceUnitInCell(row, col, unitIndex, sbm.currentSquadID)
+	// Get the unit template by name
+	var unitTemplate *squads.UnitTemplate
+	for i := range squads.Units {
+		if squads.Units[i].Name == rosterEntry.TemplateName {
+			unitTemplate = &squads.Units[i]
+			break
+		}
+	}
+
+	if unitTemplate == nil {
+		fmt.Printf("Failed to find template for unit: %s\n", rosterEntry.TemplateName)
+		return
+	}
+
+	// Place unit using the grid manager
+	err := sbm.gridManager.PlaceRosterUnitInCell(row, col, unitTemplate, sbm.currentSquadID, rosterEntry.UnitEntityID)
 	if err != nil {
 		fmt.Printf("Failed to place unit: %v\n", err)
 		return
 	}
+
+	// Mark roster unit as in squad
+	roster := squads.GetPlayerRoster(sbm.Context.PlayerData.PlayerEntityID, sbm.Context.ECSManager)
+	if roster != nil {
+		if err := roster.MarkUnitInSquad(rosterEntry.UnitEntityID, sbm.currentSquadID); err != nil {
+			fmt.Printf("Warning: Failed to mark unit as in squad: %v\n", err)
+		}
+	}
+
+	// Store roster entry ID in grid cell for later
+	cell := sbm.gridCells[row][col]
+	cell.rosterEntryID = rosterEntry.UnitEntityID
+
+	// Refresh the unit palette to remove this unit from available list
+	sbm.refreshUnitPalette()
 
 	// Update capacity display
 	sbm.updateCapacityDisplay()
 }
 
 func (sbm *SquadBuilderMode) removeUnitFromCell(row, col int) {
+	cell := sbm.gridCells[row][col]
+	rosterEntryID := cell.rosterEntryID
+
 	// Delegate to grid manager
 	err := sbm.gridManager.RemoveUnitFromCell(row, col)
 	if err != nil {
 		fmt.Printf("Error removing unit: %v\n", err)
 		return
 	}
+
+	// Return unit to roster (mark as available)
+	if rosterEntryID != 0 {
+		roster := squads.GetPlayerRoster(sbm.Context.PlayerData.PlayerEntityID, sbm.Context.ECSManager)
+		if roster != nil {
+			if err := roster.MarkUnitAvailable(rosterEntryID); err != nil {
+				fmt.Printf("Warning: Failed to return unit to roster: %v\n", err)
+			}
+		}
+	}
+
+	// Clear roster entry ID from cell
+	cell.rosterEntryID = 0
+
+	// Refresh unit palette to show unit is available again
+	sbm.refreshUnitPalette()
 
 	// Update capacity display
 	sbm.updateCapacityDisplay()
@@ -231,18 +275,31 @@ func (sbm *SquadBuilderMode) updateCapacityDisplay() {
 }
 
 func (sbm *SquadBuilderMode) updateUnitDetails() {
-	if sbm.selectedUnitIdx < 0 || sbm.selectedUnitIdx >= len(squads.Units) {
-		sbm.unitDetailsArea.SetText("Select a unit to view details")
+	if sbm.selectedRosterEntry == nil {
+		sbm.unitDetailsArea.SetText("Select a unit from your roster")
 		return
 	}
 
-	unit := squads.Units[sbm.selectedUnitIdx]
-	attr := unit.Attributes
+	// Get the unit template by name
+	var unitTemplate *squads.UnitTemplate
+	for i := range squads.Units {
+		if squads.Units[i].Name == sbm.selectedRosterEntry.TemplateName {
+			unitTemplate = &squads.Units[i]
+			break
+		}
+	}
+
+	if unitTemplate == nil {
+		sbm.unitDetailsArea.SetText("Unit template not found")
+		return
+	}
+
+	attr := unitTemplate.Attributes
 
 	details := fmt.Sprintf(
 		"Unit: %s\nRole: %s\n\nAttributes:\nSTR: %d\nDEX: %d\nMAG: %d\nLDR: %d\nARM: %d\nWPN: %d\n\nHP: %d\nCapacity Cost: %.1f\n\nSize: %dx%d",
-		unit.Name,
-		unit.Role.String(),
+		unitTemplate.Name,
+		unitTemplate.Role.String(),
 		attr.Strength,
 		attr.Dexterity,
 		attr.Magic,
@@ -251,8 +308,8 @@ func (sbm *SquadBuilderMode) updateUnitDetails() {
 		attr.Weapon,
 		attr.GetMaxHealth(),
 		attr.GetCapacityCost(),
-		unit.GridWidth,
-		unit.GridHeight,
+		unitTemplate.GridWidth,
+		unitTemplate.GridHeight,
 	)
 
 	sbm.unitDetailsArea.SetText(details)
@@ -369,14 +426,33 @@ func (sbm *SquadBuilderMode) setUnitAsLeader(row, col int) {
 }
 
 func (sbm *SquadBuilderMode) onClearGrid() {
+	// Return all units to roster before clearing
+	roster := squads.GetPlayerRoster(sbm.Context.PlayerData.PlayerEntityID, sbm.Context.ECSManager)
+	if roster != nil {
+		for row := 0; row < 3; row++ {
+			for col := 0; col < 3; col++ {
+				cell := sbm.gridCells[row][col]
+				if cell.rosterEntryID != 0 {
+					if err := roster.MarkUnitAvailable(cell.rosterEntryID); err != nil {
+						fmt.Printf("Warning: Failed to return unit to roster: %v\n", err)
+					}
+					cell.rosterEntryID = 0
+				}
+			}
+		}
+	}
+
 	// Reset state
 	sbm.currentSquadID = 0
 	sbm.currentSquadName = ""
 	sbm.squadNameInput.SetText("")
-	sbm.selectedUnitIdx = -1
+	sbm.selectedRosterEntry = nil
 
 	// Clear grid using manager
 	sbm.gridManager.ClearGrid()
+
+	// Refresh unit palette
+	sbm.refreshUnitPalette()
 
 	// Update UI
 	sbm.updateCapacityDisplay()
@@ -385,11 +461,39 @@ func (sbm *SquadBuilderMode) onClearGrid() {
 	fmt.Println("Grid cleared")
 }
 
+func (sbm *SquadBuilderMode) refreshUnitPalette() {
+	// Get available roster units
+	roster := squads.GetPlayerRoster(sbm.Context.PlayerData.PlayerEntityID, sbm.Context.ECSManager)
+	if roster == nil {
+		sbm.unitPalette.SetEntries([]interface{}{})
+		return
+	}
+
+	availableUnits := roster.GetAvailableUnits()
+
+	if len(availableUnits) == 0 {
+		// Show message when no units available
+		sbm.unitPalette.SetEntries([]interface{}{"No units available - visit Buy Units (P)"})
+		return
+	}
+
+	// Convert to interface slice for the list
+	entries := make([]interface{}, len(availableUnits))
+	for i := range availableUnits {
+		entries[i] = &availableUnits[i]
+	}
+
+	sbm.unitPalette.SetEntries(entries)
+}
+
 func (sbm *SquadBuilderMode) Enter(fromMode core.UIMode) error {
 	fmt.Println("Entering Squad Builder Mode")
 
 	// Reset state on entry
 	sbm.onClearGrid()
+
+	// Refresh unit palette with available roster units
+	sbm.refreshUnitPalette()
 
 	return nil
 }

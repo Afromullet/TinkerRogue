@@ -28,12 +28,10 @@ func (gem *GridEditorManager) SetGridCells(cells [3][3]*GridCellButton) {
 	gem.gridCells = cells
 }
 
-// PlaceUnitInCell places a unit at a grid position and updates display
-func (gem *GridEditorManager) PlaceUnitInCell(row, col, unitIndex int, squadID ecs.EntityID) error {
-	unit := squads.Units[unitIndex]
-
+// PlaceRosterUnitInCell places a roster unit at a grid position and updates display
+func (gem *GridEditorManager) PlaceRosterUnitInCell(row, col int, unitTemplate *squads.UnitTemplate, squadID ecs.EntityID, rosterEntryID ecs.EntityID) error {
 	// Attempt to add unit to squad (this checks capacity constraints)
-	err := squads.AddUnitToSquad(squadID, gem.entityManager, unit, row, col)
+	err := squads.AddUnitToSquad(squadID, gem.entityManager, *unitTemplate, row, col)
 	if err != nil {
 		return err
 	}
@@ -61,20 +59,20 @@ func (gem *GridEditorManager) PlaceUnitInCell(row, col, unitIndex int, squadID e
 		if cellRow >= 0 && cellRow < 3 && cellCol >= 0 && cellCol < 3 {
 			cell := gem.gridCells[cellRow][cellCol]
 			cell.unitID = unitID
-			cell.unitIndex = unitIndex
+			cell.rosterEntryID = rosterEntryID
 
 			// Mark cell as occupied - show if it's the anchor or a secondary cell
 			if cellRow == row && cellCol == col {
 				// Anchor cell - show unit name and size
 				sizeInfo := ""
 				if totalCells > 1 {
-					sizeInfo = fmt.Sprintf(" (%dx%d)", unit.GridWidth, unit.GridHeight)
+					sizeInfo = fmt.Sprintf(" (%dx%d)", unitTemplate.GridWidth, unitTemplate.GridHeight)
 				}
 				leaderMarker := ""
 				if unitID == gem.currentLeaderID {
 					leaderMarker = " ★"
 				}
-				cellText := fmt.Sprintf("%s%s%s\n%s\n[%d,%d]", unit.Name, sizeInfo, leaderMarker, unit.Role.String(), cellRow, cellCol)
+				cellText := fmt.Sprintf("%s%s%s\n%s\n[%d,%d]", unitTemplate.Name, sizeInfo, leaderMarker, unitTemplate.Role.String(), cellRow, cellCol)
 				cell.button.Text().Label = cellText
 			} else {
 				// Secondary cell - show it's part of the unit with arrow pointing to anchor
@@ -93,13 +91,13 @@ func (gem *GridEditorManager) PlaceUnitInCell(row, col, unitIndex int, squadID e
 				if unitID == gem.currentLeaderID {
 					leaderMarker = " ★"
 				}
-				cellText := fmt.Sprintf("%s%s\n%s [%d,%d]\n[%d,%d]", unit.Name, leaderMarker, direction, row, col, cellRow, cellCol)
+				cellText := fmt.Sprintf("%s%s\n%s [%d,%d]\n[%d,%d]", unitTemplate.Name, leaderMarker, direction, row, col, cellRow, cellCol)
 				cell.button.Text().Label = cellText
 			}
 		}
 	}
 
-	fmt.Printf("Placed %s (size %dx%d) at anchor [%d,%d]\n", unit.Name, unit.GridWidth, unit.GridHeight, row, col)
+	fmt.Printf("Placed %s (size %dx%d) at anchor [%d,%d]\n", unitTemplate.Name, unitTemplate.GridWidth, unitTemplate.GridHeight, row, col)
 	return nil
 }
 
@@ -136,7 +134,7 @@ func (gem *GridEditorManager) RemoveUnitFromCell(row, col int) error {
 				targetCell := gem.gridCells[cellRow][cellCol]
 				if targetCell.unitID == unitID { // Only clear if it was this unit
 					targetCell.unitID = 0
-					targetCell.unitIndex = -1
+					targetCell.rosterEntryID = 0
 					targetCell.button.Text().Label = fmt.Sprintf("Empty\n[%d,%d]", cellRow, cellCol)
 				}
 			}
@@ -144,7 +142,7 @@ func (gem *GridEditorManager) RemoveUnitFromCell(row, col int) error {
 	} else {
 		// Fallback: only clear the clicked cell
 		cell.unitID = 0
-		cell.unitIndex = -1
+		cell.rosterEntryID = 0
 		cell.button.Text().Label = fmt.Sprintf("Empty\n[%d,%d]", row, col)
 	}
 
@@ -186,11 +184,19 @@ func (gem *GridEditorManager) RefreshGridDisplay() {
 			// Check if this cell is the anchor
 			isAnchor := (gridPosData.AnchorRow == row && gridPosData.AnchorCol == col)
 
-			// Get unit template info
-			if cell.unitIndex < 0 || cell.unitIndex >= len(squads.Units) {
-				continue
+			// Get unit name from name component
+			nameData := common.GetComponentTypeByIDWithTag[*common.Name](gem.entityManager, cell.unitID, squads.SquadMemberTag, common.NameComponent)
+			unitName := "Unknown"
+			if nameData != nil {
+				unitName = nameData.NameStr
 			}
-			unit := squads.Units[cell.unitIndex]
+
+			// Get unit role
+			roleData := common.GetComponentTypeByIDWithTag[*squads.UnitRoleData](gem.entityManager, cell.unitID, squads.SquadMemberTag, squads.UnitRoleComponent)
+			roleStr := "Unknown"
+			if roleData != nil {
+				roleStr = roleData.Role.String()
+			}
 
 			leaderMarker := ""
 			if cell.unitID == gem.currentLeaderID {
@@ -203,7 +209,7 @@ func (gem *GridEditorManager) RefreshGridDisplay() {
 				if gridPosData.Width > 1 || gridPosData.Height > 1 {
 					sizeInfo = fmt.Sprintf(" (%dx%d)", gridPosData.Width, gridPosData.Height)
 				}
-				cellText := fmt.Sprintf("%s%s%s\n%s\n[%d,%d]", unit.Name, sizeInfo, leaderMarker, unit.Role.String(), row, col)
+				cellText := fmt.Sprintf("%s%s%s\n%s\n[%d,%d]", unitName, sizeInfo, leaderMarker, roleStr, row, col)
 				cell.button.Text().Label = cellText
 			} else {
 				// Secondary cell
@@ -218,7 +224,7 @@ func (gem *GridEditorManager) RefreshGridDisplay() {
 				} else if col > gridPosData.AnchorCol {
 					direction += "←"
 				}
-				cellText := fmt.Sprintf("%s%s\n%s [%d,%d]\n[%d,%d]", unit.Name, leaderMarker, direction, gridPosData.AnchorRow, gridPosData.AnchorCol, row, col)
+				cellText := fmt.Sprintf("%s%s\n%s [%d,%d]\n[%d,%d]", unitName, leaderMarker, direction, gridPosData.AnchorRow, gridPosData.AnchorCol, row, col)
 				cell.button.Text().Label = cellText
 			}
 		}
@@ -231,7 +237,7 @@ func (gem *GridEditorManager) ClearGrid() {
 		for col := 0; col < 3; col++ {
 			cell := gem.gridCells[row][col]
 			cell.unitID = 0
-			cell.unitIndex = -1
+			cell.rosterEntryID = 0
 			cell.button.Text().Label = fmt.Sprintf("Empty\n[%d,%d]", row, col)
 		}
 	}

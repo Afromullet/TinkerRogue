@@ -38,7 +38,39 @@ func (sbuf *SquadBuilderUIFactory) CreateGridPanel(onCellClick func(row, col int
 	return gridContainer, buttons
 }
 
-// CreatePalettePanel builds the unit palette list
+// CreateRosterPalettePanel builds the roster-based unit palette list
+func (sbuf *SquadBuilderUIFactory) CreateRosterPalettePanel(onEntrySelected func(interface{})) *widget.List {
+	listWidth := int(float64(sbuf.layout.ScreenWidth) * widgets.SquadBuilderUnitListWidth)
+	listHeight := int(float64(sbuf.layout.ScreenHeight) * widgets.SquadBuilderUnitListHeight)
+
+	return widgets.CreateListWithConfig(widgets.ListConfig{
+		Entries:   []interface{}{}, // Will be populated dynamically
+		MinWidth:  listWidth,
+		MinHeight: listHeight,
+		EntryLabelFunc: func(e interface{}) string {
+			// Handle roster entries
+			if rosterEntry, ok := e.(*squads.UnitRosterEntry); ok {
+				return rosterEntry.TemplateName
+			}
+			// Handle string messages
+			if str, ok := e.(string); ok {
+				return str
+			}
+			return fmt.Sprintf("%v", e)
+		},
+		OnEntrySelected: onEntrySelected,
+		LayoutData: widget.AnchorLayoutData{
+			HorizontalPosition: widget.AnchorLayoutPositionStart,
+			VerticalPosition:   widget.AnchorLayoutPositionCenter,
+			Padding: widget.Insets{
+				Left: 20,
+				Top:  20,
+			},
+		},
+	})
+}
+
+// CreatePalettePanel builds the unit palette list (deprecated - kept for compatibility)
 func (sbuf *SquadBuilderUIFactory) CreatePalettePanel(onEntrySelected func(interface{})) *widget.List {
 	listWidth := int(float64(sbuf.layout.ScreenWidth) * widgets.SquadBuilderUnitListWidth)
 	listHeight := int(float64(sbuf.layout.ScreenHeight) * widgets.SquadBuilderUnitListHeight)
