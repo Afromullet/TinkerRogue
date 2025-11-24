@@ -68,8 +68,16 @@ func (upm *UnitPurchaseMode) buildUnitList() {
 		MinHeight: listHeight,
 		EntryLabelFunc: func(e interface{}) string {
 			if template, ok := e.(*squads.UnitTemplate); ok {
-				// Just show unit name as requested
-				return template.Name
+				// Show unit name with owned count
+				roster := squads.GetPlayerRoster(upm.Context.PlayerData.PlayerEntityID, upm.Context.ECSManager)
+				if roster != nil {
+					entry, exists := roster.Units[template.Name]
+					if exists {
+						available := roster.GetAvailableCount(template.Name)
+						return fmt.Sprintf("%s (Owned: %d, Available: %d)", template.Name, entry.TotalOwned, available)
+					}
+				}
+				return fmt.Sprintf("%s (Owned: 0)", template.Name)
 			}
 			return fmt.Sprintf("%v", e)
 		},
@@ -316,7 +324,7 @@ func (upm *UnitPurchaseMode) purchaseUnit() {
 	// Add to roster
 	if err := roster.AddUnit(unitID, upm.selectedTemplate.Name); err != nil {
 		fmt.Printf("Failed to add unit to roster: %v\n", err)
-		// Clean up entity
+		// Clean up entity11
 		upm.Context.ECSManager.World.DisposeEntities(unitEntity)
 		return
 	}

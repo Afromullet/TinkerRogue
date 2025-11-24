@@ -24,8 +24,8 @@ const (
 
 // Default player resources and roster limits
 const (
-	DefaultPlayerStartingGold = 1000 // Starting gold for purchasing units
-	DefaultPlayerMaxUnits     = 50   // Maximum units player can own
+	DefaultPlayerStartingGold = 100000 // Starting gold for purchasing units
+	DefaultPlayerMaxUnits     = 50     // Maximum units player can own
 )
 
 // Asset paths

@@ -103,6 +103,8 @@ func (sbm *SquadBuilderMode) buildUI() {
 			sbm.selectedRosterEntry = nil
 			sbm.updateUnitDetails()
 		}
+	}, func() *squads.UnitRoster {
+		return squads.GetPlayerRoster(sbm.Context.PlayerData.PlayerEntityID, sbm.Context.ECSManager)
 	})
 	sbm.RootContainer.AddChild(sbm.unitPalette)
 
@@ -176,26 +178,36 @@ func (sbm *SquadBuilderMode) placeRosterUnitInCell(row, col int, rosterEntry *sq
 		return
 	}
 
+	// Get an available unit entity from roster
+	roster := squads.GetPlayerRoster(sbm.Context.PlayerData.PlayerEntityID, sbm.Context.ECSManager)
+	if roster == nil {
+		fmt.Println("Roster not found")
+		return
+	}
+
+	unitEntityID := roster.GetUnitEntityForTemplate(rosterEntry.TemplateName)
+	if unitEntityID == 0 {
+		fmt.Printf("No available units of type %s\n", rosterEntry.TemplateName)
+		return
+	}
+
 	// Place unit using the grid manager
-	err := sbm.gridManager.PlaceRosterUnitInCell(row, col, unitTemplate, sbm.currentSquadID, rosterEntry.UnitEntityID)
+	err := sbm.gridManager.PlaceRosterUnitInCell(row, col, unitTemplate, sbm.currentSquadID, unitEntityID)
 	if err != nil {
 		fmt.Printf("Failed to place unit: %v\n", err)
 		return
 	}
 
 	// Mark roster unit as in squad
-	roster := squads.GetPlayerRoster(sbm.Context.PlayerData.PlayerEntityID, sbm.Context.ECSManager)
-	if roster != nil {
-		if err := roster.MarkUnitInSquad(rosterEntry.UnitEntityID, sbm.currentSquadID); err != nil {
-			fmt.Printf("Warning: Failed to mark unit as in squad: %v\n", err)
-		}
+	if err := roster.MarkUnitInSquad(unitEntityID, sbm.currentSquadID); err != nil {
+		fmt.Printf("Warning: Failed to mark unit as in squad: %v\n", err)
 	}
 
 	// Store roster entry ID in grid cell for later
 	cell := sbm.gridCells[row][col]
-	cell.rosterEntryID = rosterEntry.UnitEntityID
+	cell.rosterEntryID = unitEntityID
 
-	// Refresh the unit palette to remove this unit from available list
+	// Refresh the unit palette to update counts
 	sbm.refreshUnitPalette()
 
 	// Update capacity display
@@ -478,9 +490,10 @@ func (sbm *SquadBuilderMode) refreshUnitPalette() {
 	}
 
 	// Convert to interface slice for the list
+	// GetAvailableUnits now returns []*UnitRosterEntry, which are already pointers
 	entries := make([]interface{}, len(availableUnits))
 	for i := range availableUnits {
-		entries[i] = &availableUnits[i]
+		entries[i] = availableUnits[i]
 	}
 
 	sbm.unitPalette.SetEntries(entries)

@@ -146,6 +146,419 @@ type PositionSystem struct {
 
 ---
 
+## Component Registration & Initialization
+
+### Component Declaration Pattern
+
+Components must be registered with the ECS before use. Follow this exact pattern:
+
+#### Step 1: Declare Component Variables (components.go)
+
+```go
+package mypackage
+
+import "github.com/bytearena/ecs"
+
+// Global component variables - initialized to nil
+var (
+    MyDataComponent      *ecs.Component
+    MyOtherComponent     *ecs.Component
+
+    MyTag       ecs.Tag  // For querying MyDataComponent entities
+    MyOtherTag  ecs.Tag  // For querying MyOtherComponent entities
+)
+
+// Component data structs
+type MyData struct {
+    Field1 string
+    Field2 int
+}
+
+type MyOtherData struct {
+    Field string
+}
+```
+
+#### Step 2: Initialize Components (initialization function)
+
+**CRITICAL:** Components must be registered with `manager.World.NewComponent()` before use. **Never skip this step or components will be nil!**
+
+```go
+// InitMyComponents registers all components with the ECS manager.
+// Call this during game initialization, BEFORE creating any entities.
+func InitMyComponents(manager *common.EntityManager) {
+    // ✅ CORRECT - Register each component
+    MyDataComponent = manager.World.NewComponent()
+    MyOtherComponent = manager.World.NewComponent()
+}
+
+// InitMyTags creates tags for querying entities.
+// Call this AFTER InitMyComponents.
+func InitMyTags(manager *common.EntityManager) {
+    // ✅ CORRECT - Build tags from components
+    MyTag = ecs.BuildTag(MyDataComponent)
+    MyOtherTag = ecs.BuildTag(MyOtherComponent)
+
+    // Optional: Register tags in EntityManager for name-based lookup
+    manager.WorldTags["mytag"] = MyTag
+    manager.WorldTags["myothertag"] = MyOtherTag
+}
+
+// InitializeMySystem is the main initialization function.
+// Call this from game_main during startup.
+func InitializeMySystem(manager *common.EntityManager) error {
+    InitMyComponents(manager)
+    InitMyTags(manager)
+    // Any other initialization...
+    return nil
+}
+```
+
+#### Step 3: Call Initialization During Game Startup
+
+```go
+// In game_main/gameinit.go or similar
+func InitializeGame() {
+    manager := common.NewEntityManager()
+
+    // Initialize all systems
+    if err := mypackage.InitializeMySystem(manager); err != nil {
+        log.Fatal(err)
+    }
+
+    // Now safe to create entities with components
+}
+```
+
+### Multi-Component Tags
+
+Tags can combine multiple components for complex queries:
+
+```go
+// Single component tag
+SquadTag = ecs.BuildTag(SquadComponent)
+
+// Multi-component tag - matches entities with ALL specified components
+LeaderTag = ecs.BuildTag(LeaderComponent, SquadMemberComponent)
+
+// Usage: Query returns only entities with BOTH LeaderComponent AND SquadMemberComponent
+for _, result := range manager.World.Query(LeaderTag) {
+    // This entity is guaranteed to have both components
+    leaderData := common.GetComponentType[*LeaderData](result.Entity, LeaderComponent)
+    memberData := common.GetComponentType[*SquadMemberData](result.Entity, SquadMemberComponent)
+}
+```
+
+### Common Initialization Mistakes
+
+```go
+// ❌ WRONG - Using component before initialization
+var MyComponent *ecs.Component  // nil!
+entity.AddComponent(MyComponent, data)  // PANIC: nil component
+
+// ✅ CORRECT - Initialize first
+MyComponent = manager.World.NewComponent()
+entity.AddComponent(MyComponent, data)  // Works
+
+// ❌ WRONG - Building tag before component initialization
+var MyComponent *ecs.Component  // nil!
+MyTag = ecs.BuildTag(MyComponent)  // PANIC: nil component
+
+// ✅ CORRECT - Initialize component, then build tag
+MyComponent = manager.World.NewComponent()
+MyTag = ecs.BuildTag(MyComponent)
+
+// ❌ WRONG - Trying to use component from wrong package without initialization
+import "game_main/squads"
+// squads.SquadComponent is nil if InitializeSquadData not called!
+entity.AddComponent(squads.SquadComponent, data)  // PANIC
+
+// ✅ CORRECT - Initialize system first
+squads.InitializeSquadData(manager)
+entity.AddComponent(squads.SquadComponent, data)  // Works
+```
+
+### Reference Implementation
+
+See `squads/squadmanager.go` for perfect component initialization:
+
+```go
+// Lines 15-28: InitSquadComponents
+func InitSquadComponents(manager *common.EntityManager) {
+    SquadComponent = manager.World.NewComponent()
+    SquadMemberComponent = manager.World.NewComponent()
+    GridPositionComponent = manager.World.NewComponent()
+    // ... more components
+}
+
+// Lines 32-40: InitSquadTags
+func InitSquadTags(manager *common.EntityManager) {
+    SquadTag = ecs.BuildTag(SquadComponent)
+    SquadMemberTag = ecs.BuildTag(SquadMemberComponent)
+    LeaderTag = ecs.BuildTag(LeaderComponent, SquadMemberComponent)
+
+    manager.WorldTags["squad"] = SquadTag
+    manager.WorldTags["squadmember"] = SquadMemberTag
+    manager.WorldTags["leader"] = LeaderTag
+}
+
+// Lines 45-52: InitializeSquadData (main entry point)
+func InitializeSquadData(manager *common.EntityManager) error {
+    InitSquadComponents(manager)
+    InitSquadTags(manager)
+    // Additional initialization...
+    return nil
+}
+```
+
+---
+
+## EntityManager & Component Access
+
+The `common.EntityManager` wrapper provides type-safe component access functions. **NEVER** access the underlying ECS library directly - always use these helper functions.
+
+### EntityManager Structure
+
+```go
+// EntityManager wraps ecs.Manager and provides utilities
+type EntityManager struct {
+    World     *ecs.Manager           // Underlying ECS manager
+    WorldTags map[string]ecs.Tag     // Named tag registry
+}
+
+// Global systems (initialized during game setup)
+var (
+    GlobalPositionSystem *systems.PositionSystem  // O(1) spatial queries
+)
+```
+
+### Component Access Functions (common/ecsutil.go)
+
+#### GetComponentType - From Entity Pointer
+
+Use when you already have an entity from a query:
+
+```go
+// ✅ CORRECT - Entity from query result
+for _, result := range manager.World.Query(SquadTag) {
+    entity := result.Entity
+    squadData := common.GetComponentType[*SquadData](entity, SquadComponent)
+    // Use squadData...
+}
+
+// Type parameter T must match component data type
+// Returns zero value (nil for pointers) if component not found
+```
+
+#### GetComponentTypeByID - From EntityID
+
+Use when you only have an EntityID:
+
+```go
+// ✅ CORRECT - Access component by EntityID
+func ProcessUnit(unitID ecs.EntityID, manager *common.EntityManager) {
+    attributes := common.GetComponentTypeByID[*Attributes](manager, unitID, AttributeComponent)
+    if attributes == nil {
+        // Component not found
+        return
+    }
+    // Use attributes...
+}
+```
+
+#### GetComponentTypeByIDWithTag - Optimized Query
+
+Use when you know which tag the entity belongs to (faster than GetComponentTypeByID):
+
+```go
+// ✅ CORRECT - Query within specific tag
+func GetSquadName(squadID ecs.EntityID, manager *common.EntityManager) string {
+    squadData := common.GetComponentTypeByIDWithTag[*SquadData](
+        manager, squadID, SquadTag, SquadComponent)
+    if squadData == nil {
+        return ""
+    }
+    return squadData.Name
+}
+```
+
+**Why use WithTag version:**
+- Searches only entities with SquadTag (typically 10-50 entities)
+- Instead of AllEntitiesTag (potentially 1000+ entities)
+- Can be 10-100x faster for large entity counts
+
+#### HasComponent & HasComponentByIDWithTag
+
+Check if entity has a component before accessing:
+
+```go
+// Check by EntityID (searches all entities)
+if manager.HasComponent(entityID, PositionComponent) {
+    pos := common.GetComponentTypeByID[*coords.LogicalPosition](
+        manager, entityID, PositionComponent)
+}
+
+// Check by EntityID with tag (faster)
+if manager.HasComponentByIDWithTag(unitID, SquadMemberTag, GridPositionComponent) {
+    gridPos := common.GetComponentTypeByIDWithTag[*GridPositionData](
+        manager, unitID, SquadMemberTag, GridPositionComponent)
+}
+```
+
+### Entity Finding Functions (common/ecsutil.go)
+
+#### FindEntityByID - Get Entity Pointer
+
+**Use only when you need the entity pointer for operations that require it:**
+
+```go
+// ✅ CORRECT - Need entity pointer to add component
+func AddLeaderComponent(unitID ecs.EntityID, manager *common.EntityManager) {
+    entity := common.FindEntityByID(manager, unitID)
+    if entity == nil {
+        return  // Entity not found
+    }
+    // AddComponent requires entity pointer
+    entity.AddComponent(LeaderComponent, &LeaderData{})
+}
+
+// ❌ WRONG - Don't use FindEntityByID just to get component
+entity := common.FindEntityByID(manager, unitID)  // Wasteful
+attrs := common.GetComponentType[*Attributes](entity, AttributeComponent)
+
+// ✅ CORRECT - Use direct component access
+attrs := common.GetComponentTypeByID[*Attributes](manager, unitID, AttributeComponent)
+```
+
+**Valid use cases for FindEntityByID:**
+- `entity.AddComponent(component, data)` - ECS library requires entity pointer
+- `entity.RemoveComponent(component)` - ECS library requires entity pointer
+- `entity.HasComponent(component)` - Though `manager.HasComponent()` is preferred
+
+#### FindEntityByIDWithTag - Tag-Scoped Search
+
+Faster version that searches within a specific tag:
+
+```go
+// ✅ CORRECT - Find entity within tag scope
+func PromoteToLeader(unitID ecs.EntityID, manager *common.EntityManager) {
+    entity := common.FindEntityByIDWithTag(manager, unitID, SquadMemberTag)
+    if entity == nil {
+        return  // Not a squad member
+    }
+    entity.AddComponent(LeaderComponent, &LeaderData{})
+    entity.AddTag(LeaderTag)
+}
+```
+
+#### FindEntityIDWithTag - Verify Entity Has Tag
+
+Check if an EntityID belongs to a specific tag:
+
+```go
+// ✅ CORRECT - Verify entity has tag
+func IsSquadMember(unitID ecs.EntityID, manager *common.EntityManager) bool {
+    return common.FindEntityIDWithTag(manager, unitID, SquadMemberTag) != 0
+}
+```
+
+### Specialized Helper Functions
+
+#### Position Access
+
+```go
+// From entity pointer
+pos := common.GetPosition(entity)
+
+// From EntityID
+pos := common.GetPositionByID(manager, entityID)
+
+// From EntityID with tag (faster)
+pos := common.GetPositionByIDWithTag(manager, entityID, MonsterTag)
+```
+
+#### Attributes Access
+
+```go
+// From entity pointer
+attrs := common.GetAttributes(entity)
+
+// From EntityID
+attrs := common.GetAttributesByID(manager, entityID)
+
+// From EntityID with tag (faster)
+attrs := common.GetAttributesByIDWithTag(manager, entityID, SquadMemberTag)
+```
+
+#### Spatial Queries (O(1) Performance)
+
+```go
+// ✅ CORRECT - O(1) position lookup
+entityIDs := common.GlobalPositionSystem.GetEntitiesAtPosition(logicalPos)
+
+// Get single entity at position
+entityID := common.GlobalPositionSystem.GetEntityIDAt(logicalPos)
+if entityID != 0 {
+    // Entity found at position
+}
+
+// ❌ WRONG - O(n) brute force search
+for _, result := range manager.World.Query(AllEntitiesTag) {
+    pos := common.GetPosition(result.Entity)
+    if pos.X == targetX && pos.Y == targetY {
+        // Found it (but searched entire entity list!)
+    }
+}
+```
+
+### Function Selection Guide
+
+| Scenario | Function to Use |
+|----------|----------------|
+| Have entity from query, need component | `common.GetComponentType[T](entity, component)` |
+| Have EntityID, need component | `common.GetComponentTypeByID[T](manager, id, component)` |
+| Have EntityID + tag, need component | `common.GetComponentTypeByIDWithTag[T](manager, id, tag, component)` |
+| Need to add/remove component | `common.FindEntityByID(manager, id)` then `entity.AddComponent()` |
+| Need to add component + have tag | `common.FindEntityByIDWithTag(manager, id, tag)` then `entity.AddComponent()` |
+| Check if entity has component | `manager.HasComponent(id, component)` |
+| Check if entity has component + tag | `manager.HasComponentByIDWithTag(id, tag, component)` |
+| Verify entity exists with tag | `common.FindEntityIDWithTag(manager, id, tag) != 0` |
+| Get entity at position | `common.GlobalPositionSystem.GetEntityIDAt(pos)` |
+| Get all entities at position | `common.GlobalPositionSystem.GetEntitiesAtPosition(pos)` |
+
+### Common Access Mistakes
+
+```go
+// ❌ WRONG - Manual type assertion (risky)
+data := entity.GetComponent(SquadComponent).(*SquadData)
+
+// ✅ CORRECT - Type-safe helper
+data := common.GetComponentType[*SquadData](entity, SquadComponent)
+
+// ❌ WRONG - Unnecessary entity lookup for component access
+entity := common.FindEntityByID(manager, unitID)
+attrs := common.GetComponentType[*Attributes](entity, AttributeComponent)
+
+// ✅ CORRECT - Direct component access
+attrs := common.GetComponentTypeByID[*Attributes](manager, unitID, AttributeComponent)
+
+// ❌ WRONG - Using AllEntitiesTag when tag is known
+data := common.GetComponentTypeByID[*SquadData](manager, squadID, SquadComponent)
+// Searches ALL entities
+
+// ✅ CORRECT - Use specific tag
+data := common.GetComponentTypeByIDWithTag[*SquadData](manager, squadID, SquadTag, SquadComponent)
+// Searches only squad entities (10-100x faster)
+
+// ❌ WRONG - Calling ecs.Manager functions directly
+component := manager.World.GetComponent(entity, SquadComponent)  // NO!
+
+// ✅ CORRECT - Use EntityManager helpers
+component := common.GetComponentTypeByID[*SquadData](manager, entityID, SquadComponent)
+```
+
+---
+
 ## ECS File Organization
 
 ### Package Structure

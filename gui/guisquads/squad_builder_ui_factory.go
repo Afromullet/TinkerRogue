@@ -39,7 +39,8 @@ func (sbuf *SquadBuilderUIFactory) CreateGridPanel(onCellClick func(row, col int
 }
 
 // CreateRosterPalettePanel builds the roster-based unit palette list
-func (sbuf *SquadBuilderUIFactory) CreateRosterPalettePanel(onEntrySelected func(interface{})) *widget.List {
+// Requires roster to be passed for displaying counts
+func (sbuf *SquadBuilderUIFactory) CreateRosterPalettePanel(onEntrySelected func(interface{}), getRoster func() *squads.UnitRoster) *widget.List {
 	listWidth := int(float64(sbuf.layout.ScreenWidth) * widgets.SquadBuilderUnitListWidth)
 	listHeight := int(float64(sbuf.layout.ScreenHeight) * widgets.SquadBuilderUnitListHeight)
 
@@ -50,6 +51,11 @@ func (sbuf *SquadBuilderUIFactory) CreateRosterPalettePanel(onEntrySelected func
 		EntryLabelFunc: func(e interface{}) string {
 			// Handle roster entries
 			if rosterEntry, ok := e.(*squads.UnitRosterEntry); ok {
+				roster := getRoster()
+				if roster != nil {
+					available := roster.GetAvailableCount(rosterEntry.TemplateName)
+					return fmt.Sprintf("%s (x%d)", rosterEntry.TemplateName, available)
+				}
 				return rosterEntry.TemplateName
 			}
 			// Handle string messages
