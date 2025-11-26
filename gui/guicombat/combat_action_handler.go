@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"game_main/combat"
 	"game_main/coords"
-	"game_main/squads"
 
 	"github.com/bytearena/ecs"
 	"github.com/ebitenui/ebitenui/widget"
@@ -197,16 +196,8 @@ func (cah *CombatActionHandler) CycleSquadSelection() {
 		return
 	}
 
-	squadIDs := cah.combatService.GetFactionManager().GetFactionSquads(currentFactionID)
-
-	// Filter out destroyed squads
-	aliveSquads := []ecs.EntityID{}
-	entityManager := cah.combatService.GetEntityManager()
-	for _, squadID := range squadIDs {
-		if !squads.IsSquadDestroyed(squadID, entityManager) {
-			aliveSquads = append(aliveSquads, squadID)
-		}
-	}
+	// Get alive squads using service
+	aliveSquads := cah.combatService.GetAliveSquadsInFaction(currentFactionID)
 
 	if len(aliveSquads) == 0 {
 		return

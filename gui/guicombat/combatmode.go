@@ -151,7 +151,7 @@ func (cm *CombatMode) initializeUpdateComponents() {
 				return "No active combat"
 			}
 
-			round := cm.combatService.GetTurnManager().GetCurrentRound()
+			round := cm.combatService.GetCurrentRound()
 			factionName := cm.Queries.GetFactionName(currentFactionID)
 
 			// Add indicator if player's turn
@@ -220,15 +220,16 @@ func (cm *CombatMode) handleFlee() {
 }
 
 func (cm *CombatMode) handleEndTurn() {
-	// End current faction's turn
-	if err := cm.combatService.GetTurnManager().EndTurn(); err != nil {
-		cm.logManager.UpdateTextArea(cm.combatLogArea, fmt.Sprintf("Error ending turn: %v", err))
+	// End current faction's turn using service
+	result := cm.combatService.EndTurn()
+	if !result.Success {
+		cm.logManager.UpdateTextArea(cm.combatLogArea, fmt.Sprintf("Error ending turn: %s", result.Error))
 		return
 	}
 
-	// Get new faction info
-	currentFactionID := cm.combatService.GetCurrentFaction()
-	round := cm.combatService.GetTurnManager().GetCurrentRound()
+	// Get new faction info from result
+	currentFactionID := result.NewFaction
+	round := result.NewRound
 
 	// Get faction name
 	factionName := cm.Queries.GetFactionName(currentFactionID)

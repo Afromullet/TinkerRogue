@@ -2,7 +2,6 @@ package guisquads
 
 import (
 	"fmt"
-	"game_main/common"
 	"game_main/gui"
 	"game_main/gui/core"
 	"game_main/gui/widgets"
@@ -17,6 +16,7 @@ import (
 type UnitPurchaseMode struct {
 	gui.BaseMode // Embed common mode infrastructure
 
+	purchaseService  *squads.UnitPurchaseService
 	unitList         *widget.List
 	detailPanel      *widget.Container
 	detailTextArea   *widget.TextArea
@@ -41,6 +41,9 @@ func NewUnitPurchaseMode(modeManager *core.UIModeManager) *UnitPurchaseMode {
 func (upm *UnitPurchaseMode) Initialize(ctx *core.UIContext) error {
 	// Initialize common mode infrastructure
 	upm.InitializeBase(ctx)
+
+	// Create purchase service
+	upm.purchaseService = squads.NewUnitPurchaseService(ctx.ECSManager)
 
 	// Build unit list (left side)
 	upm.buildUnitList()
@@ -68,14 +71,13 @@ func (upm *UnitPurchaseMode) buildUnitList() {
 		MinHeight: listHeight,
 		EntryLabelFunc: func(e interface{}) string {
 			if template, ok := e.(*squads.UnitTemplate); ok {
-				// Show unit name with owned count
-				roster := squads.GetPlayerRoster(upm.Context.PlayerData.PlayerEntityID, upm.Context.ECSManager)
-				if roster != nil {
-					entry, exists := roster.Units[template.Name]
-					if exists {
-						available := roster.GetAvailableCount(template.Name)
-						return fmt.Sprintf("%s (Owned: %d, Available: %d)", template.Name, entry.TotalOwned, available)
-					}
+				// Use service to get owned count
+				totalOwned, available := upm.purchaseService.GetUnitOwnedCount(
+					upm.Context.PlayerData.PlayerEntityID,
+					template.Name,
+				)
+				if totalOwned > 0 {
+					return fmt.Sprintf("%s (Owned: %d, Available: %d)", template.Name, totalOwned, available)
 				}
 				return fmt.Sprintf("%s (Owned: 0)", template.Name)
 			}
@@ -224,8 +226,8 @@ func (upm *UnitPurchaseMode) updateDetailPanel() {
 		return
 	}
 
-	// Show basic info
-	cost := upm.getUnitCost(upm.selectedTemplate.Name)
+	// Use service to get cost
+	cost := upm.purchaseService.GetUnitCost(*upm.selectedTemplate)
 	info := fmt.Sprintf("Unit: %s\nCost: %d Gold\n\nRole: %s\nSize: %dx%d",
 		upm.selectedTemplate.Name,
 		cost,
@@ -238,11 +240,12 @@ func (upm *UnitPurchaseMode) updateDetailPanel() {
 	// Enable buttons
 	upm.viewStatsButton.GetWidget().Disabled = false
 
-	// Enable buy button only if player can afford
-	resources := common.GetPlayerResources(upm.Context.PlayerData.PlayerEntityID, upm.Context.ECSManager)
-	roster := squads.GetPlayerRoster(upm.Context.PlayerData.PlayerEntityID, upm.Context.ECSManager)
-	canBuy := resources != nil && resources.CanAfford(cost) && roster != nil && roster.CanAddUnit()
-	upm.buyButton.GetWidget().Disabled = !canBuy
+	// Use service to validate if player can purchase
+	validation := upm.purchaseService.CanPurchaseUnit(
+		upm.Context.PlayerData.PlayerEntityID,
+		*upm.selectedTemplate,
+	)
+	upm.buyButton.GetWidget().Disabled = !validation.CanPurchase
 
 	// Hide stats when selection changes
 	upm.statsTextArea.GetWidget().Visibility = widget.Visibility_Hide
@@ -291,83 +294,33 @@ func (upm *UnitPurchaseMode) purchaseUnit() {
 	}
 
 	playerID := upm.Context.PlayerData.PlayerEntityID
-	resources := common.GetPlayerResources(playerID, upm.Context.ECSManager)
-	roster := squads.GetPlayerRoster(playerID, upm.Context.ECSManager)
 
-	if resources == nil || roster == nil {
-		fmt.Println("Error: Player resources or roster not found")
+	// Use service for entire transaction - handles validation, creation, and rollback atomically
+	result := upm.purchaseService.PurchaseUnit(playerID, *upm.selectedTemplate)
+
+	if !result.Success {
+		// Display error message to user
+		fmt.Printf("Purchase failed: %s\n", result.Error)
 		return
 	}
 
-	cost := upm.getUnitCost(upm.selectedTemplate.Name)
+	// Success - display confirmation
+	fmt.Printf("Purchased unit: %s for %d gold\n", result.UnitName, result.CostPaid)
+	fmt.Printf("Remaining gold: %d, Roster: %d/%d\n", result.RemainingGold, result.RosterCount, result.RosterCapacity)
 
-	// Check if can afford and has space
-	if !resources.CanAfford(cost) {
-		fmt.Printf("Cannot afford unit: need %d gold, have %d\n", cost, resources.Gold)
-		return
-	}
-
-	if !roster.CanAddUnit() {
-		fmt.Println("Roster is full")
-		return
-	}
-
-	// Create unit entity from template
-	unitEntity, err := squads.CreateUnitEntity(upm.Context.ECSManager, *upm.selectedTemplate)
-	if err != nil {
-		fmt.Printf("Failed to create unit: %v\n", err)
-		return
-	}
-
-	unitID := unitEntity.GetID()
-
-	// Add to roster
-	if err := roster.AddUnit(unitID, upm.selectedTemplate.Name); err != nil {
-		fmt.Printf("Failed to add unit to roster: %v\n", err)
-		// Clean up entity11
-		upm.Context.ECSManager.World.DisposeEntities(unitEntity)
-		return
-	}
-
-	// Spend gold
-	if err := resources.SpendGold(cost); err != nil {
-		fmt.Printf("Failed to spend gold: %v\n", err)
-		// Rollback roster addition
-		roster.RemoveUnit(unitID)
-		upm.Context.ECSManager.World.DisposeEntities(unitEntity)
-		return
-	}
-
-	fmt.Printf("Purchased unit: %s for %d gold\n", upm.selectedTemplate.Name, cost)
-
-	// Refresh display
+	// Refresh UI display
 	upm.refreshResourceDisplay()
 	upm.updateDetailPanel()
 }
 
 func (upm *UnitPurchaseMode) refreshResourceDisplay() {
 	playerID := upm.Context.PlayerData.PlayerEntityID
-	resources := common.GetPlayerResources(playerID, upm.Context.ECSManager)
-	roster := squads.GetPlayerRoster(playerID, upm.Context.ECSManager)
 
-	if resources != nil {
-		upm.goldLabel.Label = fmt.Sprintf("Gold: %d", resources.Gold)
-	}
+	// Use service to get player purchase info
+	info := upm.purchaseService.GetPlayerPurchaseInfo(playerID)
 
-	if roster != nil {
-		current, max := roster.GetUnitCount()
-		upm.rosterLabel.Label = fmt.Sprintf("Roster: %d/%d", current, max)
-	}
-}
-
-func (upm *UnitPurchaseMode) getUnitCost(unitName string) int {
-	// Simple cost formula based on unit name hash for now
-	// TODO: Add cost to UnitTemplate or JSON data
-	baseCost := 100
-	for _, c := range unitName {
-		baseCost += int(c) % 50
-	}
-	return baseCost
+	upm.goldLabel.Label = fmt.Sprintf("Gold: %d", info.Gold)
+	upm.rosterLabel.Label = fmt.Sprintf("Roster: %d/%d", info.RosterCount, info.RosterCapacity)
 }
 
 func (upm *UnitPurchaseMode) getRoleName(role squads.UnitRole) string {

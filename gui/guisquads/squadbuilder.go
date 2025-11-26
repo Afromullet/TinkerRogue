@@ -181,10 +181,10 @@ func (sbm *SquadBuilderMode) placeRosterUnitInCell(row, col int, rosterEntry *sq
 		return
 	}
 
-	// Get an available unit entity from roster
+	// Get an available unit entity from the roster
 	roster := squads.GetPlayerRoster(sbm.Context.PlayerData.PlayerEntityID, sbm.Context.ECSManager)
 	if roster == nil {
-		fmt.Println("Roster not found")
+		fmt.Printf("Failed to get roster\n")
 		return
 	}
 
@@ -194,20 +194,22 @@ func (sbm *SquadBuilderMode) placeRosterUnitInCell(row, col int, rosterEntry *sq
 		return
 	}
 
-	// Place unit using the service (handles ECS manipulation)
-	result := sbm.squadBuilderSvc.PlaceUnit(sbm.currentSquadID, unitEntityID, *unitTemplate, row, col)
+	// Use service to assign roster unit to squad - handles both placement AND roster marking atomically
+	result := sbm.squadBuilderSvc.AssignRosterUnitToSquad(
+		sbm.Context.PlayerData.PlayerEntityID,
+		sbm.currentSquadID,
+		unitEntityID,
+		*unitTemplate,
+		row, col,
+	)
+
 	if !result.Success {
 		fmt.Printf("Failed to place unit: %s\n", result.Error)
 		return
 	}
 
-	// Mark roster unit as in squad
-	if err := roster.MarkUnitInSquad(unitEntityID, sbm.currentSquadID); err != nil {
-		fmt.Printf("Warning: Failed to mark unit as in squad: %v\n", err)
-	}
-
 	// Update grid display after successful placement
-	if err := sbm.gridManager.UpdateDisplayForPlacedUnit(result.UnitID, unitTemplate, row, col, unitEntityID); err != nil {
+	if err := sbm.gridManager.UpdateDisplayForPlacedUnit(result.PlacedUnitID, unitTemplate, row, col, result.RosterUnitID); err != nil {
 		fmt.Printf("Warning: Failed to update grid display: %v\n", err)
 	}
 
@@ -227,8 +229,14 @@ func (sbm *SquadBuilderMode) removeUnitFromCell(row, col int) {
 	unitID := cell.unitID
 	rosterEntryID := cell.rosterEntryID
 
-	// Remove unit using the service (handles ECS manipulation)
-	result := sbm.squadBuilderSvc.RemoveUnitFromGrid(sbm.currentSquadID, row, col)
+	// Use service to unassign roster unit - handles both removal AND roster return atomically
+	result := sbm.squadBuilderSvc.UnassignRosterUnitFromSquad(
+		sbm.Context.PlayerData.PlayerEntityID,
+		sbm.currentSquadID,
+		rosterEntryID,
+		row, col,
+	)
+
 	if !result.Success {
 		fmt.Printf("Error removing unit: %s\n", result.Error)
 		return
@@ -236,16 +244,6 @@ func (sbm *SquadBuilderMode) removeUnitFromCell(row, col int) {
 
 	// Update grid display after successful removal
 	sbm.gridManager.UpdateDisplayForRemovedUnit(unitID)
-
-	// Return unit to roster (mark as available)
-	if rosterEntryID != 0 {
-		roster := squads.GetPlayerRoster(sbm.Context.PlayerData.PlayerEntityID, sbm.Context.ECSManager)
-		if roster != nil {
-			if err := roster.MarkUnitAvailable(rosterEntryID); err != nil {
-				fmt.Printf("Warning: Failed to return unit to roster: %v\n", err)
-			}
-		}
-	}
 
 	// Refresh unit palette to show unit is available again
 	sbm.refreshUnitPalette()
@@ -340,9 +338,9 @@ func (sbm *SquadBuilderMode) onCreateSquad() {
 		return
 	}
 
-	// Check if squad has at least one unit
-	unitIDs := squads.GetUnitIDsInSquad(sbm.currentSquadID, sbm.Context.ECSManager)
-	if len(unitIDs) == 0 {
+	// Use service to get unit count instead of direct query
+	unitCount := sbm.squadBuilderSvc.GetSquadUnitCount(sbm.currentSquadID)
+	if unitCount == 0 {
 		fmt.Println("Cannot create empty squad")
 		return
 	}
@@ -367,10 +365,10 @@ func (sbm *SquadBuilderMode) onCreateSquad() {
 		fmt.Printf("Warning: %s\n", leaderResult.Error)
 	}
 
-	fmt.Printf("Squad created: %s with %d units\n", sbm.currentSquadName, len(unitIDs))
+	fmt.Printf("Squad created: %s with %d units\n", sbm.currentSquadName, unitCount)
 
-	// Visualize the squad
-	visualization := squads.VisualizeSquad(sbm.currentSquadID, sbm.Context.ECSManager)
+	// Use service to get visualization instead of direct query
+	visualization := sbm.squadBuilderSvc.GetSquadVisualization(sbm.currentSquadID)
 	fmt.Println(visualization)
 
 	// Clear the builder for next squad
@@ -437,21 +435,34 @@ func (sbm *SquadBuilderMode) setUnitAsLeader(row, col int) {
 }
 
 func (sbm *SquadBuilderMode) onClearGrid() {
-	// Return all units to roster before clearing
-	roster := squads.GetPlayerRoster(sbm.Context.PlayerData.PlayerEntityID, sbm.Context.ECSManager)
-	if roster != nil {
-		for row := 0; row < 3; row++ {
-			for col := 0; col < 3; col++ {
-				cell := sbm.gridCells[row][col]
-				if cell.rosterEntryID != 0 {
-					if err := roster.MarkUnitAvailable(cell.rosterEntryID); err != nil {
-						fmt.Printf("Warning: Failed to return unit to roster: %v\n", err)
-					}
-					cell.rosterEntryID = 0
-				}
+	if sbm.currentSquadID == 0 {
+		return
+	}
+
+	// Build map of placed units to roster units for service
+	rosterUnitsMap := make(map[ecs.EntityID]ecs.EntityID)
+	for row := 0; row < 3; row++ {
+		for col := 0; col < 3; col++ {
+			cell := sbm.gridCells[row][col]
+			if cell.unitID != 0 && cell.rosterEntryID != 0 {
+				rosterUnitsMap[cell.unitID] = cell.rosterEntryID
 			}
 		}
 	}
+
+	// Use service to clear squad and return all units to roster atomically
+	result := sbm.squadBuilderSvc.ClearSquadAndReturnAllUnits(
+		sbm.Context.PlayerData.PlayerEntityID,
+		sbm.currentSquadID,
+		rosterUnitsMap,
+	)
+
+	if !result.Success {
+		fmt.Printf("Failed to clear grid: %s\n", result.Error)
+		return
+	}
+
+	fmt.Printf("Grid cleared (%d units returned to roster)\n", result.UnitsCleared)
 
 	// Reset state
 	sbm.currentSquadID = 0
@@ -459,7 +470,7 @@ func (sbm *SquadBuilderMode) onClearGrid() {
 	sbm.squadNameInput.SetText("")
 	sbm.selectedRosterEntry = nil
 
-	// Clear grid using manager
+	// Clear grid display
 	sbm.gridManager.ClearGrid()
 
 	// Refresh unit palette
@@ -468,19 +479,11 @@ func (sbm *SquadBuilderMode) onClearGrid() {
 	// Update UI
 	sbm.updateCapacityDisplay()
 	sbm.updateUnitDetails()
-
-	fmt.Println("Grid cleared")
 }
 
 func (sbm *SquadBuilderMode) refreshUnitPalette() {
-	// Get available roster units
-	roster := squads.GetPlayerRoster(sbm.Context.PlayerData.PlayerEntityID, sbm.Context.ECSManager)
-	if roster == nil {
-		sbm.unitPalette.SetEntries([]interface{}{})
-		return
-	}
-
-	availableUnits := roster.GetAvailableUnits()
+	// Use service to get available roster units
+	availableUnits := sbm.squadBuilderSvc.GetAvailableRosterUnits(sbm.Context.PlayerData.PlayerEntityID)
 
 	if len(availableUnits) == 0 {
 		// Show message when no units available
@@ -489,7 +492,6 @@ func (sbm *SquadBuilderMode) refreshUnitPalette() {
 	}
 
 	// Convert to interface slice for the list
-	// GetAvailableUnits now returns []*UnitRosterEntry, which are already pointers
 	entries := make([]interface{}, len(availableUnits))
 	for i := range availableUnits {
 		entries[i] = availableUnits[i]

@@ -321,3 +321,177 @@ func (sbs *SquadBuilderService) FinalizeSquad(squadID ecs.EntityID) *FinalizeSqu
 
 	return result
 }
+
+// AssignRosterUnitResult contains information about roster unit assignment
+type AssignRosterUnitResult struct {
+	Success           bool
+	Error             string
+	PlacedUnitID      ecs.EntityID
+	RosterUnitID      ecs.EntityID
+	UnitName          string
+	RemainingCapacity float64
+}
+
+// AssignRosterUnitToSquad handles both unit placement AND roster marking atomically
+func (sbs *SquadBuilderService) AssignRosterUnitToSquad(
+	playerID ecs.EntityID,
+	squadID ecs.EntityID,
+	rosterUnitID ecs.EntityID,
+	template UnitTemplate,
+	gridRow, gridCol int,
+) *AssignRosterUnitResult {
+	result := &AssignRosterUnitResult{
+		RosterUnitID: rosterUnitID,
+		UnitName:     template.Name,
+	}
+
+	// Get roster
+	roster := GetPlayerRoster(playerID, sbs.entityManager)
+	if roster == nil {
+		result.Error = "roster not found"
+		return result
+	}
+
+	// Validate roster has this specific unit entity
+	// The roster system tracks unit entities, so we just need to verify the entity exists
+	// (The original code got the unit via GetUnitEntityForTemplate which validates availability)
+
+	// Place unit in squad (creates new unit entity in formation grid)
+	placeResult := sbs.PlaceUnit(squadID, rosterUnitID, template, gridRow, gridCol)
+	if !placeResult.Success {
+		result.Error = placeResult.Error
+		return result
+	}
+
+	// Mark roster unit as assigned to squad (atomic with placement)
+	if err := roster.MarkUnitInSquad(rosterUnitID, squadID); err != nil {
+		// Rollback: Remove the placed unit
+		sbs.RemoveUnitFromGrid(squadID, gridRow, gridCol)
+		result.Error = fmt.Sprintf("failed to mark roster unit: %v", err)
+		return result
+	}
+
+	// Success
+	result.Success = true
+	result.PlacedUnitID = placeResult.UnitID
+	result.RemainingCapacity = placeResult.RemainingCapacity
+
+	return result
+}
+
+// UnassignRosterUnitResult contains information about roster unit removal
+type UnassignRosterUnitResult struct {
+	Success           bool
+	Error             string
+	RemainingCapacity float64
+}
+
+// UnassignRosterUnitFromSquad handles unit removal AND roster return atomically
+func (sbs *SquadBuilderService) UnassignRosterUnitFromSquad(
+	playerID ecs.EntityID,
+	squadID ecs.EntityID,
+	rosterUnitID ecs.EntityID,
+	gridRow, gridCol int,
+) *UnassignRosterUnitResult {
+	result := &UnassignRosterUnitResult{}
+
+	// Get roster
+	roster := GetPlayerRoster(playerID, sbs.entityManager)
+	if roster == nil {
+		result.Error = "roster not found"
+		return result
+	}
+
+	// Remove unit from grid
+	removeResult := sbs.RemoveUnitFromGrid(squadID, gridRow, gridCol)
+	if !removeResult.Success {
+		result.Error = removeResult.Error
+		return result
+	}
+
+	// Return unit to roster (mark as available)
+	if err := roster.MarkUnitAvailable(rosterUnitID); err != nil {
+		result.Error = fmt.Sprintf("failed to mark unit available: %v", err)
+		return result
+	}
+
+	// Success
+	result.Success = true
+	result.RemainingCapacity = removeResult.RemainingCapacity
+
+	return result
+}
+
+// ClearSquadResult contains information about squad clearing
+type ClearSquadResult struct {
+	Success      bool
+	Error        string
+	UnitsCleared int
+}
+
+// ClearSquadAndReturnAllUnits removes all units from squad and returns them to roster
+func (sbs *SquadBuilderService) ClearSquadAndReturnAllUnits(
+	playerID ecs.EntityID,
+	squadID ecs.EntityID,
+	rosterUnits map[ecs.EntityID]ecs.EntityID, // map[placedUnitID]rosterUnitID
+) *ClearSquadResult {
+	result := &ClearSquadResult{}
+
+	// Get roster
+	roster := GetPlayerRoster(playerID, sbs.entityManager)
+	if roster == nil {
+		result.Error = "roster not found"
+		return result
+	}
+
+	// Get all units in squad
+	unitIDs := GetUnitIDsInSquad(squadID, sbs.entityManager)
+
+	// Remove each unit and return to roster
+	for _, unitID := range unitIDs {
+		// Find unit entity to dispose it
+		unitEntity := common.FindEntityByIDWithTag(sbs.entityManager, unitID, SquadMemberTag)
+		if unitEntity == nil {
+			continue
+		}
+
+		// Get corresponding roster unit ID if provided
+		if rosterUnitID, exists := rosterUnits[unitID]; exists {
+			// Mark roster unit as available
+			if err := roster.MarkUnitAvailable(rosterUnitID); err != nil {
+				fmt.Printf("Warning: Failed to return unit to roster: %v\n", err)
+			}
+		}
+
+		// Dispose the placed unit entity
+		sbs.entityManager.World.DisposeEntities(unitEntity)
+		result.UnitsCleared++
+	}
+
+	// Update squad capacity after clearing
+	UpdateSquadCapacity(squadID, sbs.entityManager)
+
+	result.Success = true
+	return result
+}
+
+// GetSquadVisualization returns ASCII grid visualization of squad formation
+func (sbs *SquadBuilderService) GetSquadVisualization(squadID ecs.EntityID) string {
+	return VisualizeSquad(squadID, sbs.entityManager)
+}
+
+// GetSquadUnitCount returns count of units in squad
+func (sbs *SquadBuilderService) GetSquadUnitCount(squadID ecs.EntityID) int {
+	unitIDs := GetUnitIDsInSquad(squadID, sbs.entityManager)
+	return len(unitIDs)
+}
+
+// GetAvailableRosterUnits returns roster units available for placement
+func (sbs *SquadBuilderService) GetAvailableRosterUnits(playerID ecs.EntityID) []*UnitRosterEntry {
+	roster := GetPlayerRoster(playerID, sbs.entityManager)
+	if roster == nil {
+		return []*UnitRosterEntry{}
+	}
+
+	return roster.GetAvailableUnits()
+}

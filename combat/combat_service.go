@@ -134,24 +134,26 @@ func (cs *CombatService) ResetSquadActions(factionID ecs.EntityID) error {
 	return cs.turnManager.ResetSquadActions(factionID)
 }
 
-// GetTurnManager exposes turn manager for UI queries (read-only)
-func (cs *CombatService) GetTurnManager() *TurnManager {
-	return cs.turnManager
-}
-
-// GetFactionManager exposes faction manager for UI queries (read-only)
-func (cs *CombatService) GetFactionManager() *FactionManager {
-	return cs.factionManager
-}
-
 // GetMovementSystem exposes movement system for UI queries (read-only)
 func (cs *CombatService) GetMovementSystem() *MovementSystem {
 	return cs.movementSystem
 }
 
-// GetEntityManager exposes entity manager for UI queries (read-only)
-func (cs *CombatService) GetEntityManager() *common.EntityManager {
-	return cs.entityManager
+// GetCurrentRound returns the current combat round number
+func (cs *CombatService) GetCurrentRound() int {
+	return cs.turnManager.GetCurrentRound()
+}
+
+// GetAliveSquadsInFaction returns all alive squads for a faction
+func (cs *CombatService) GetAliveSquadsInFaction(factionID ecs.EntityID) []ecs.EntityID {
+	squadIDs := cs.factionManager.GetFactionSquads(factionID)
+	result := []ecs.EntityID{}
+	for _, squadID := range squadIDs {
+		if !squads.IsSquadDestroyed(squadID, cs.entityManager) {
+			result = append(result, squadID)
+		}
+	}
+	return result
 }
 
 // EndTurnResult contains information about turn transition
