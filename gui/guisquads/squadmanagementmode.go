@@ -7,7 +7,6 @@ import (
 	"game_main/gui/core"
 	"game_main/gui/guiresources"
 	"game_main/gui/widgets"
-	"game_main/squads"
 	"image/color"
 
 	"github.com/bytearena/ecs"
@@ -287,8 +286,8 @@ func (smm *SquadManagementMode) createSquadPanel(squadID ecs.EntityID) *SquadPan
 	nameLabel := widgets.CreateLargeLabel(fmt.Sprintf("Squad: %s", squadName))
 	panel.container.AddChild(nameLabel)
 
-	// 3x3 grid visualization (using squad system's VisualizeSquad function)
-	gridVisualization := squads.VisualizeSquad(squadID, smm.Context.ECSManager)
+	// 3x3 grid visualization (using GUIQueries)
+	gridVisualization := smm.Queries.GetSquadVisualization(squadID)
 	gridConfig := widgets.TextAreaConfig{
 		MinWidth:  300,
 		MinHeight: 200,
@@ -316,8 +315,8 @@ func (smm *SquadManagementMode) createSquadPanel(squadID ecs.EntityID) *SquadPan
 }
 
 func (smm *SquadManagementMode) createUnitList(squadID ecs.EntityID) *widget.List {
-	// Get all units in this squad (using squad system query)
-	unitIDs := squads.GetUnitIDsInSquad(squadID, smm.Context.ECSManager)
+	// Get all units in this squad (using GUIQueries)
+	unitIDs := smm.Queries.GetSquadUnitIDs(squadID)
 
 	// Create list entries
 	entries := make([]interface{}, 0, len(unitIDs))

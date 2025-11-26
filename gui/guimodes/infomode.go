@@ -1,11 +1,9 @@
 package guimodes
 
 import (
-	"game_main/gui"
-
 	"fmt"
-	"game_main/common"
 	"game_main/coords"
+	"game_main/gui"
 	"game_main/gui/core"
 	"game_main/gui/widgets"
 
@@ -105,36 +103,40 @@ func (im *InfoMode) handleOptionSelected(option string) {
 
 // displayCreatureInfo shows information about the creature at inspect position
 func (im *InfoMode) displayCreatureInfo() {
-	creatureID := common.GetCreatureAtPosition(im.Context.ECSManager, &im.inspectPosition)
+	// Use GUIQueries abstraction instead of direct ECS access
+	creatureInfo := im.Queries.GetCreatureAtPosition(im.inspectPosition)
 
-	if creatureID == 0 {
+	if creatureInfo == nil {
 		im.detailTextArea.SetText("No creature at this position")
 		return
 	}
 
-	// Get creature details
-	name := "Unknown"
-	if nameComp, ok := im.Context.ECSManager.GetComponent(creatureID, common.NameComponent); ok {
-		if nameData, ok := nameComp.(*common.Name); ok {
-			name = nameData.NameStr
-		}
+	// Build display text from CreatureInfo
+	entityType := "CREATURE"
+	if creatureInfo.IsPlayer {
+		entityType = "PLAYER"
+	} else if creatureInfo.IsMonster {
+		entityType = "MONSTER"
 	}
 
-	// Get attributes
-	attrs := common.GetAttributesByID(im.Context.ECSManager, creatureID)
-	if attrs == nil {
-		im.detailTextArea.SetText(fmt.Sprintf("=== CREATURE ===\n\nName: %s\n\nNo attribute data available", name))
+	// Check if we have attribute data (MaxHP > 0 indicates full data)
+	if creatureInfo.MaxHP == 0 {
+		im.detailTextArea.SetText(fmt.Sprintf("=== %s ===\n\nName: %s\n\nNo attribute data available", entityType, creatureInfo.Name))
 		return
 	}
 
 	details := fmt.Sprintf(
-		"=== CREATURE ===\n\nName: %s\n\nHP: %d/%d\nSTR: %d\nDEX: %d\nMAG: %d\n",
-		name,
-		attrs.CurrentHealth,
-		attrs.MaxHealth,
-		attrs.Strength,
-		attrs.Dexterity,
-		attrs.Magic,
+		"=== %s ===\n\nName: %s\n\nHP: %d/%d\nSTR: %d\nDEX: %d\nMAG: %d\nLDR: %d\nARM: %d\nWPN: %d\n",
+		entityType,
+		creatureInfo.Name,
+		creatureInfo.CurrentHP,
+		creatureInfo.MaxHP,
+		creatureInfo.Strength,
+		creatureInfo.Dexterity,
+		creatureInfo.Magic,
+		creatureInfo.Leadership,
+		creatureInfo.Armor,
+		creatureInfo.Weapon,
 	)
 
 	im.detailTextArea.SetText(details)
@@ -142,13 +144,23 @@ func (im *InfoMode) displayCreatureInfo() {
 
 // displayTileInfo shows information about the tile at inspect position
 func (im *InfoMode) displayTileInfo() {
-	// Query tile properties at position
-	// Note: This is a simplified implementation - extend based on your tile system
+	// Use GUIQueries abstraction instead of hardcoded values
+	tileInfo := im.Queries.GetTileInfo(im.inspectPosition)
+
+	// Build display text from TileInfo
 	details := fmt.Sprintf(
-		"=== TILE ===\n\nPosition: (%d, %d)\n\nType: Floor\nMovement Cost: 1\n",
-		im.inspectPosition.X,
-		im.inspectPosition.Y,
+		"=== TILE ===\n\nPosition: (%d, %d)\n\nType: %s\nMovement Cost: %d\nWalkable: %v\n",
+		tileInfo.Position.X,
+		tileInfo.Position.Y,
+		tileInfo.TileType,
+		tileInfo.MovementCost,
+		tileInfo.IsWalkable,
 	)
+
+	// Add entity info if present
+	if tileInfo.HasEntity {
+		details += fmt.Sprintf("\nEntity Present: ID %d", tileInfo.EntityID)
+	}
 
 	im.detailTextArea.SetText(details)
 }

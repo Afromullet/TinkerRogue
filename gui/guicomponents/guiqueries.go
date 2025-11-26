@@ -311,3 +311,135 @@ func (gq *GUIQueries) GetAliveSquads() []ecs.EntityID {
 	allSquads := gq.FindAllSquads()
 	return gq.ApplyFilterToSquads(allSquads, gq.FilterSquadsAlive())
 }
+
+// GetSquadVisualization returns ASCII grid of squad formation
+func (gq *GUIQueries) GetSquadVisualization(squadID ecs.EntityID) string {
+	return squads.VisualizeSquad(squadID, gq.ecsManager)
+}
+
+// GetSquadUnitIDs returns all unit entity IDs in squad
+func (gq *GUIQueries) GetSquadUnitIDs(squadID ecs.EntityID) []ecs.EntityID {
+	return squads.GetUnitIDsInSquad(squadID, gq.ecsManager)
+}
+
+// ===== CREATURE/ENTITY QUERIES =====
+
+// CreatureInfo encapsulates all creature data needed by UI
+type CreatureInfo struct {
+	ID            ecs.EntityID
+	Name          string
+	CurrentHP     int
+	MaxHP         int
+	Strength      int
+	Dexterity     int
+	Magic         int
+	Leadership    int
+	Armor         int
+	Weapon        int
+	IsMonster     bool
+	IsPlayer      bool
+}
+
+// GetCreatureAtPosition returns creature information at a specific position
+// Returns nil if no creature found at the position
+// Handles both monsters and players
+func (gq *GUIQueries) GetCreatureAtPosition(pos coords.LogicalPosition) *CreatureInfo {
+	// First try the common helper (looks for monsters)
+	creatureID := common.GetCreatureAtPosition(gq.ecsManager, &pos)
+
+	// If no monster found, check if there's any entity at the position
+	if creatureID == 0 && common.GlobalPositionSystem != nil {
+		creatureID = common.GlobalPositionSystem.GetEntityIDAt(pos)
+	}
+
+	if creatureID == 0 {
+		return nil
+	}
+
+	// Get creature name
+	name := "Unknown"
+	if nameComp, ok := gq.ecsManager.GetComponent(creatureID, common.NameComponent); ok {
+		if nameData, ok := nameComp.(*common.Name); ok {
+			name = nameData.NameStr
+		}
+	}
+
+	// Get creature attributes
+	attrs := common.GetAttributesByID(gq.ecsManager, creatureID)
+	if attrs == nil {
+		// Return basic info if no attributes
+		return &CreatureInfo{
+			ID:        creatureID,
+			Name:      name,
+			IsMonster: gq.isMonster(creatureID),
+			IsPlayer:  gq.isPlayer(creatureID),
+		}
+	}
+
+	// Return full creature info
+	return &CreatureInfo{
+		ID:         creatureID,
+		Name:       name,
+		CurrentHP:  attrs.CurrentHealth,
+		MaxHP:      attrs.MaxHealth,
+		Strength:   attrs.Strength,
+		Dexterity:  attrs.Dexterity,
+		Magic:      attrs.Magic,
+		Leadership: attrs.Leadership,
+		Armor:      attrs.Armor,
+		Weapon:     attrs.Weapon,
+		IsMonster:  gq.isMonster(creatureID),
+		IsPlayer:   gq.isPlayer(creatureID),
+	}
+}
+
+// isMonster checks if an entity is a monster
+func (gq *GUIQueries) isMonster(entityID ecs.EntityID) bool {
+	if monstersTag, ok := gq.ecsManager.WorldTags["monsters"]; ok {
+		for _, result := range gq.ecsManager.World.Query(monstersTag) {
+			if result.Entity.GetID() == entityID {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// isPlayer checks if an entity is the player
+func (gq *GUIQueries) isPlayer(entityID ecs.EntityID) bool {
+	return gq.ecsManager.HasComponent(entityID, common.PlayerComponent)
+}
+
+// ===== TILE QUERIES =====
+
+// TileInfo encapsulates tile data needed by UI
+type TileInfo struct {
+	Position     coords.LogicalPosition
+	TileType     string
+	MovementCost int
+	IsWalkable   bool
+	HasEntity    bool
+	EntityID     ecs.EntityID
+}
+
+// GetTileInfo returns information about a tile at a specific position
+// This is a basic implementation - extend based on your tile system
+func (gq *GUIQueries) GetTileInfo(pos coords.LogicalPosition) *TileInfo {
+	info := &TileInfo{
+		Position:     pos,
+		TileType:     "Floor", // Default - extend with actual tile system
+		MovementCost: 1,       // Default - extend with actual tile system
+		IsWalkable:   true,    // Default - extend with actual tile system
+	}
+
+	// Check if there's an entity at this position
+	if common.GlobalPositionSystem != nil {
+		entityID := common.GlobalPositionSystem.GetEntityIDAt(pos)
+		if entityID != 0 {
+			info.HasEntity = true
+			info.EntityID = entityID
+		}
+	}
+
+	return info
+}

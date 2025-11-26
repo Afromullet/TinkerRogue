@@ -2,7 +2,6 @@ package guimodes
 
 import (
 	"fmt"
-	"game_main/common"
 	"game_main/gear"
 	"game_main/gui"
 	"game_main/gui/core"
@@ -17,6 +16,7 @@ import (
 type InventoryMode struct {
 	gui.BaseMode // Embed common mode infrastructure
 
+	inventoryService  *gear.InventoryService
 	itemList          *widget.List
 	itemListComponent *guicomponents.ItemListComponent
 	detailPanel       *widget.Container
@@ -39,6 +39,9 @@ func NewInventoryMode(modeManager *core.UIModeManager) *InventoryMode {
 func (im *InventoryMode) Initialize(ctx *core.UIContext) error {
 	// Initialize common mode infrastructure
 	im.InitializeBase(ctx)
+
+	// Create inventory service
+	im.inventoryService = gear.NewInventoryService(ctx.ECSManager)
 
 	// Build inventory UI
 	im.buildFilterButtons()
@@ -122,48 +125,7 @@ func (im *InventoryMode) buildItemList() {
 
 				// If in throwables mode, prepare the throwable
 				if im.currentFilter == "Throwables" && im.Context.PlayerData != nil {
-					// Query inventory from player entity via ECS instead of using Inventory field
-					inv := common.GetComponentTypeByID[*gear.Inventory](im.Context.ECSManager, im.Context.PlayerData.PlayerEntityID, gear.InventoryComponent)
-					if inv == nil {
-						return
-					}
-
-					// Get the item entity ID from inventory
-					itemEntityID, err := gear.GetItemEntityID(inv, entry.Index)
-					if err == nil && itemEntityID != 0 {
-						// Prepare the throwable using EntityID (no need to find entity)
-						im.Context.PlayerData.Throwables.SelectedThrowableID = itemEntityID
-						im.Context.PlayerData.Throwables.ThrowableItemEntityID = itemEntityID
-
-						// Get item component and setup throwing state
-						item := gear.GetItemByID(im.Context.ECSManager.World, itemEntityID)
-						if item != nil {
-							if throwableAction := item.GetThrowableAction(); throwableAction != nil {
-								im.Context.PlayerData.Throwables.ThrowableItemIndex = entry.Index
-							}
-						}
-
-						im.Context.PlayerData.InputStates.IsThrowing = true
-						fmt.Printf("Throwable prepared: %s\n", entry.Name)
-					}
-
-					// Get item details
-					item := gear.GetItemByID(im.Context.ECSManager.World, itemEntityID)
-					if item != nil {
-						effectNames := gear.GetItemEffectNames(im.Context.ECSManager.World, item)
-						effectStr := ""
-						for _, name := range effectNames {
-							effectStr += fmt.Sprintf("%s\n", name)
-						}
-						im.detailTextArea.SetText(fmt.Sprintf("Selected: %s\n\n%s", entry.Name, effectStr))
-					} else {
-						im.detailTextArea.SetText(fmt.Sprintf("Selected: %s", entry.Name))
-					}
-
-					// Close inventory and return to exploration
-					if exploreMode, exists := im.ModeManager.GetMode("exploration"); exists {
-						im.ModeManager.RequestTransition(exploreMode, "Throwable selected")
-					}
+					im.handleThrowableSelection(entry)
 				} else {
 					im.detailTextArea.SetText(fmt.Sprintf("Selected: %s x%d", entry.Name, entry.Count))
 				}
@@ -226,4 +188,40 @@ func (im *InventoryMode) HandleInput(inputState *core.InputState) bool {
 	}
 
 	return false
+}
+
+// handleThrowableSelection handles selecting a throwable item using the service layer
+// This replaces direct ECS manipulation in the UI code
+func (im *InventoryMode) handleThrowableSelection(entry gear.InventoryListEntry) {
+	// Use service to validate and prepare throwable selection
+	result := im.inventoryService.SelectThrowable(im.Context.PlayerData.PlayerEntityID, entry.Index)
+
+	if !result.Success {
+		// Display error message
+		im.detailTextArea.SetText(fmt.Sprintf("Cannot select throwable: %s", result.Error))
+		fmt.Printf("Throwable selection failed: %s\n", result.Error)
+		return
+	}
+
+	// Update player data with throwable selection (UI state only)
+	im.Context.PlayerData.Throwables.SelectedThrowableID = result.ItemEntityID
+	im.Context.PlayerData.Throwables.ThrowableItemEntityID = result.ItemEntityID
+	im.Context.PlayerData.Throwables.ThrowableItemIndex = result.ItemIndex
+	im.Context.PlayerData.InputStates.IsThrowing = true
+
+	// Display item details with effects
+	effectStr := ""
+	for _, effectName := range result.EffectDescriptions {
+		effectStr += fmt.Sprintf("%s\n", effectName)
+	}
+
+	detailText := fmt.Sprintf("Selected: %s\n\n%s", result.ItemName, effectStr)
+	im.detailTextArea.SetText(detailText)
+
+	fmt.Printf("Throwable prepared: %s\n", result.ItemName)
+
+	// Close inventory and return to exploration
+	if exploreMode, exists := im.ModeManager.GetMode("exploration"); exists {
+		im.ModeManager.RequestTransition(exploreMode, "Throwable selected")
+	}
 }
