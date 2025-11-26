@@ -2,7 +2,6 @@ package guisquads
 
 import (
 	"fmt"
-	"game_main/common"
 	"game_main/coords"
 	"game_main/graphics"
 	"game_main/gui"
@@ -21,6 +20,7 @@ import (
 type SquadDeploymentMode struct {
 	gui.BaseMode // Embed common mode infrastructure
 
+	deploymentService  *squads.SquadDeploymentService
 	squadListPanel     *widget.Container
 	squadListComponent *guicomponents.SquadListComponent
 	selectedSquadID    ecs.EntityID
@@ -48,6 +48,9 @@ func NewSquadDeploymentMode(modeManager *core.UIModeManager) *SquadDeploymentMod
 func (sdm *SquadDeploymentMode) Initialize(ctx *core.UIContext) error {
 	// Initialize common mode infrastructure
 	sdm.InitializeBase(ctx)
+
+	// Create deployment service
+	sdm.deploymentService = squads.NewSquadDeploymentService(ctx.ECSManager)
 
 	// Build UI components
 	sdm.buildSquadListPanel()
@@ -233,63 +236,35 @@ func (sdm *SquadDeploymentMode) HandleInput(inputState *core.InputState) bool {
 func (sdm *SquadDeploymentMode) placeSquadAt(squadID ecs.EntityID, pos coords.LogicalPosition) {
 	fmt.Printf("DEBUG: placeSquadAt called with squadID=%d, pos=(%d,%d)\n", squadID, pos.X, pos.Y)
 
-	// Find the squad entity and update its position
-	found := false
-	for _, result := range sdm.Context.ECSManager.World.Query(squads.SquadTag) {
-		squadData := common.GetComponentType[*squads.SquadData](result.Entity, squads.SquadComponent)
-		fmt.Printf("DEBUG: Checking squad %d against target %d\n", squadData.SquadID, squadID)
+	// Use service to place squad
+	result := sdm.deploymentService.PlaceSquadAtPosition(squadID, pos)
 
-		if squadData.SquadID == squadID {
-			found = true
-			fmt.Printf("DEBUG: Found matching squad entity\n")
-
-			// Check if entity has PositionComponent
-			if !result.Entity.HasComponent(common.PositionComponent) {
-				fmt.Printf("DEBUG: ERROR - Squad entity has no PositionComponent!\n")
-				return
-			}
-
-			// Update position component
-			posPtr := common.GetComponentType[*coords.LogicalPosition](result.Entity, common.PositionComponent)
-			if posPtr != nil {
-				oldX, oldY := posPtr.X, posPtr.Y
-				posPtr.X = pos.X
-				posPtr.Y = pos.Y
-
-				squadName := sdm.Queries.GetSquadName(squadID)
-				fmt.Printf("✓ Placed %s at (%d, %d) [was at (%d, %d)]\n", squadName, pos.X, pos.Y, oldX, oldY)
-
-				// Reset placement mode
-				sdm.isPlacingSquad = false
-				sdm.selectedSquadID = 0
-				sdm.updateInstructionText()
-			} else {
-				fmt.Printf("DEBUG: ERROR - posPtr is nil!\n")
-			}
-			return
-		}
+	if !result.Success {
+		fmt.Printf("DEBUG: ERROR - Failed to place squad: %s\n", result.Error)
+		return
 	}
 
-	if !found {
-		fmt.Printf("DEBUG: ERROR - Could not find squad with ID %d\n", squadID)
-	}
+	oldPos := sdm.deploymentService.GetAllSquadPositions()[squadID]
+	fmt.Printf("✓ Placed %s at (%d, %d) [was at (%d, %d)]\n", result.SquadName, pos.X, pos.Y, oldPos.X, oldPos.Y)
+
+	// Reset placement mode
+	sdm.isPlacingSquad = false
+	sdm.selectedSquadID = 0
+	sdm.updateInstructionText()
 }
 
 func (sdm *SquadDeploymentMode) clearAllSquadPositions() {
-	// Reset all squads to position (0, 0)
-	for _, result := range sdm.Context.ECSManager.World.Query(squads.SquadTag) {
-		if result.Entity.HasComponent(common.PositionComponent) {
-			posPtr := common.GetComponentType[*coords.LogicalPosition](result.Entity, common.PositionComponent)
-			if posPtr != nil {
-				posPtr.X = 0
-				posPtr.Y = 0
-			}
-		}
+	// Use service to clear all squad positions
+	result := sdm.deploymentService.ClearAllSquadPositions()
+
+	if !result.Success {
+		fmt.Printf("DEBUG: ERROR - Failed to clear positions: %s\n", result.Error)
+		return
 	}
 
 	sdm.selectedSquadID = 0
 	sdm.isPlacingSquad = false
 	sdm.updateInstructionText()
 
-	fmt.Println("All squads cleared")
+	fmt.Printf("All squads cleared (%d squads reset)\n", result.SquadsCleared)
 }

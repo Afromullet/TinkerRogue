@@ -19,10 +19,7 @@ type CombatActionHandler struct {
 	battleMapState *core.BattleMapState
 	logManager     *CombatLogManager
 	queries        *guicomponents.GUIQueries
-	entityManager  *common.EntityManager
-	turnManager    *combat.TurnManager
-	factionManager *combat.FactionManager
-	movementSystem *combat.MovementSystem
+	combatService  *combat.CombatService
 	combatLogArea  *widget.TextArea
 }
 
@@ -31,20 +28,14 @@ func NewCombatActionHandler(
 	battleMapState *core.BattleMapState,
 	logManager *CombatLogManager,
 	queries *guicomponents.GUIQueries,
-	entityManager *common.EntityManager,
-	turnManager *combat.TurnManager,
-	factionManager *combat.FactionManager,
-	movementSystem *combat.MovementSystem,
+	combatService *combat.CombatService,
 	combatLogArea *widget.TextArea,
 ) *CombatActionHandler {
 	return &CombatActionHandler{
 		battleMapState: battleMapState,
 		logManager:     logManager,
 		queries:        queries,
-		entityManager:  entityManager,
-		turnManager:    turnManager,
-		factionManager: factionManager,
-		movementSystem: movementSystem,
+		combatService:  combatService,
 		combatLogArea:  combatLogArea,
 	}
 }
@@ -82,7 +73,7 @@ func (cah *CombatActionHandler) ShowAvailableTargets() {
 }
 
 func (cah *CombatActionHandler) showAvailableTargets() {
-	currentFactionID := cah.turnManager.GetCurrentFaction()
+	currentFactionID := cah.combatService.GetCurrentFaction()
 	if currentFactionID == 0 {
 		return
 	}
@@ -113,7 +104,7 @@ func (cah *CombatActionHandler) ToggleMoveMode() {
 
 	if newMoveMode {
 		// Get valid movement tiles
-		validTiles := cah.movementSystem.GetValidMovementTiles(cah.battleMapState.SelectedSquadID)
+		validTiles := cah.combatService.GetValidMovementTiles(cah.battleMapState.SelectedSquadID)
 
 		if len(validTiles) == 0 {
 			cah.addLog("No movement remaining!")
@@ -143,7 +134,7 @@ func (cah *CombatActionHandler) SelectTarget(targetSquadID ecs.EntityID) {
 
 // SelectEnemyTarget selects an enemy squad by index (0-2 for 1-3 keys)
 func (cah *CombatActionHandler) SelectEnemyTarget(index int) {
-	currentFactionID := cah.turnManager.GetCurrentFaction()
+	currentFactionID := cah.combatService.GetCurrentFaction()
 	if currentFactionID == 0 {
 		return
 	}
@@ -172,51 +163,36 @@ func (cah *CombatActionHandler) executeAttack() {
 		return
 	}
 
-	// Create combat action system
-	combatSys := combat.NewCombatActionSystem(cah.entityManager)
+	// Call service for all game logic
+	result := cah.combatService.ExecuteSquadAttack(selectedSquad, selectedTarget)
 
-	// Check if attack is valid with detailed reason
-	reason, canAttack := combatSys.CanSquadAttackWithReason(selectedSquad, selectedTarget)
-	if !canAttack {
-		cah.addLog(fmt.Sprintf("Cannot attack: %s", reason))
-		cah.battleMapState.InAttackMode = false
-		return
-	}
-
-	// Execute attack
-	attackerName := cah.queries.GetSquadName(selectedSquad)
-	targetName := cah.queries.GetSquadName(selectedTarget)
-
-	err := combatSys.ExecuteAttackAction(selectedSquad, selectedTarget)
-	if err != nil {
-		cah.addLog(fmt.Sprintf("Attack failed: %v", err))
+	// Handle result - UI ONLY
+	if !result.Success {
+		cah.addLog(fmt.Sprintf("Cannot attack: %s", result.ErrorReason))
 	} else {
-		cah.addLog(fmt.Sprintf("%s attacked %s!", attackerName, targetName))
-
-		// Check if target destroyed
-		if squads.IsSquadDestroyed(selectedTarget, cah.entityManager) {
-			cah.addLog(fmt.Sprintf("%s was destroyed!", targetName))
+		cah.addLog(fmt.Sprintf("%s attacked %s!", result.AttackerName, result.TargetName))
+		if result.TargetDestroyed {
+			cah.addLog(fmt.Sprintf("%s was destroyed!", result.TargetName))
 		}
 	}
 
-	// Reset attack mode
+	// Reset UI state
 	cah.battleMapState.InAttackMode = false
 }
 
 // MoveSquad moves a squad to a new position
 func (cah *CombatActionHandler) MoveSquad(squadID ecs.EntityID, newPos coords.LogicalPosition) error {
 	// Execute movement
-	err := cah.movementSystem.MoveSquad(squadID, newPos)
-	if err != nil {
-		cah.addLog(fmt.Sprintf("Movement failed: %v", err))
-		return err
+	result := cah.combatService.MoveSquad(squadID, newPos)
+	if !result.Success {
+		cah.addLog(fmt.Sprintf("Movement failed: %s", result.ErrorReason))
+		return fmt.Errorf(result.ErrorReason)
 	}
 
 	// Update unit positions to match squad position
 	cah.updateUnitPositions(squadID, newPos)
 
-	squadName := cah.queries.GetSquadName(squadID)
-	cah.addLog(fmt.Sprintf("%s moved to (%d, %d)", squadName, newPos.X, newPos.Y))
+	cah.addLog(fmt.Sprintf("%s moved to (%d, %d)", result.SquadName, newPos.X, newPos.Y))
 
 	// Exit move mode
 	cah.battleMapState.InMoveMode = false
@@ -227,17 +203,18 @@ func (cah *CombatActionHandler) MoveSquad(squadID ecs.EntityID, newPos coords.Lo
 
 // CycleSquadSelection selects the next squad in the faction
 func (cah *CombatActionHandler) CycleSquadSelection() {
-	currentFactionID := cah.turnManager.GetCurrentFaction()
+	currentFactionID := cah.combatService.GetCurrentFaction()
 	if currentFactionID == 0 || !cah.queries.IsPlayerFaction(currentFactionID) {
 		return
 	}
 
-	squadIDs := cah.factionManager.GetFactionSquads(currentFactionID)
+	squadIDs := cah.combatService.GetFactionManager().GetFactionSquads(currentFactionID)
 
 	// Filter out destroyed squads
 	aliveSquads := []ecs.EntityID{}
+	entityManager := cah.combatService.GetEntityManager()
 	for _, squadID := range squadIDs {
-		if !squads.IsSquadDestroyed(squadID, cah.entityManager) {
+		if !squads.IsSquadDestroyed(squadID, entityManager) {
 			aliveSquads = append(aliveSquads, squadID)
 		}
 	}
@@ -263,13 +240,15 @@ func (cah *CombatActionHandler) CycleSquadSelection() {
 
 // updateUnitPositions updates all unit positions in a squad
 func (cah *CombatActionHandler) updateUnitPositions(squadID ecs.EntityID, newSquadPos coords.LogicalPosition) {
+	entityManager := cah.combatService.GetEntityManager()
+
 	// Get all units in the squad
-	unitIDs := squads.GetUnitIDsInSquad(squadID, cah.entityManager)
+	unitIDs := squads.GetUnitIDsInSquad(squadID, entityManager)
 
 	// Update each unit's position to match the squad's new position
 	for _, unitID := range unitIDs {
 		// Find the unit in the ECS world and update its position
-		unitEntity := common.FindEntityByIDWithTag(cah.entityManager, unitID, squads.SquadMemberTag)
+		unitEntity := common.FindEntityByIDWithTag(entityManager, unitID, squads.SquadMemberTag)
 		if unitEntity != nil && unitEntity.HasComponent(common.PositionComponent) {
 			posPtr := common.GetComponentType[*coords.LogicalPosition](unitEntity, common.PositionComponent)
 			if posPtr != nil {

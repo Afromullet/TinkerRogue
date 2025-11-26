@@ -4,7 +4,6 @@ import (
 	"game_main/gui"
 
 	"fmt"
-	"game_main/common"
 	"game_main/gui/core"
 	"game_main/squads"
 
@@ -17,9 +16,10 @@ import (
 type SquadBuilderMode struct {
 	gui.BaseMode // Embed common mode infrastructure
 
-	// Managers
-	gridManager *GridEditorManager
-	uiFactory   *SquadBuilderUIFactory
+	// Managers and services
+	gridManager       *GridEditorManager
+	squadBuilderSvc   *squads.SquadBuilderService
+	uiFactory         *SquadBuilderUIFactory
 
 	// UI widgets
 	gridContainer   *widget.Container
@@ -59,6 +59,9 @@ func NewSquadBuilderMode(modeManager *core.UIModeManager) *SquadBuilderMode {
 func (sbm *SquadBuilderMode) Initialize(ctx *core.UIContext) error {
 	// Initialize common mode infrastructure
 	sbm.InitializeBase(ctx)
+
+	// Create squad builder service
+	sbm.squadBuilderSvc = squads.NewSquadBuilderService(ctx.ECSManager)
 
 	// Create managers
 	sbm.gridManager = NewGridEditorManager(ctx.ECSManager)
@@ -191,10 +194,10 @@ func (sbm *SquadBuilderMode) placeRosterUnitInCell(row, col int, rosterEntry *sq
 		return
 	}
 
-	// Place unit using the grid manager
-	err := sbm.gridManager.PlaceRosterUnitInCell(row, col, unitTemplate, sbm.currentSquadID, unitEntityID)
-	if err != nil {
-		fmt.Printf("Failed to place unit: %v\n", err)
+	// Place unit using the service (handles ECS manipulation)
+	result := sbm.squadBuilderSvc.PlaceUnit(sbm.currentSquadID, unitEntityID, *unitTemplate, row, col)
+	if !result.Success {
+		fmt.Printf("Failed to place unit: %s\n", result.Error)
 		return
 	}
 
@@ -203,9 +206,10 @@ func (sbm *SquadBuilderMode) placeRosterUnitInCell(row, col int, rosterEntry *sq
 		fmt.Printf("Warning: Failed to mark unit as in squad: %v\n", err)
 	}
 
-	// Store roster entry ID in grid cell for later
-	cell := sbm.gridCells[row][col]
-	cell.rosterEntryID = unitEntityID
+	// Update grid display after successful placement
+	if err := sbm.gridManager.UpdateDisplayForPlacedUnit(result.UnitID, unitTemplate, row, col, unitEntityID); err != nil {
+		fmt.Printf("Warning: Failed to update grid display: %v\n", err)
+	}
 
 	// Refresh the unit palette to update counts
 	sbm.refreshUnitPalette()
@@ -216,14 +220,22 @@ func (sbm *SquadBuilderMode) placeRosterUnitInCell(row, col int, rosterEntry *sq
 
 func (sbm *SquadBuilderMode) removeUnitFromCell(row, col int) {
 	cell := sbm.gridCells[row][col]
-	rosterEntryID := cell.rosterEntryID
-
-	// Delegate to grid manager
-	err := sbm.gridManager.RemoveUnitFromCell(row, col)
-	if err != nil {
-		fmt.Printf("Error removing unit: %v\n", err)
+	if cell.unitID == 0 {
 		return
 	}
+
+	unitID := cell.unitID
+	rosterEntryID := cell.rosterEntryID
+
+	// Remove unit using the service (handles ECS manipulation)
+	result := sbm.squadBuilderSvc.RemoveUnitFromGrid(sbm.currentSquadID, row, col)
+	if !result.Success {
+		fmt.Printf("Error removing unit: %s\n", result.Error)
+		return
+	}
+
+	// Update grid display after successful removal
+	sbm.gridManager.UpdateDisplayForRemovedUnit(unitID)
 
 	// Return unit to roster (mark as available)
 	if rosterEntryID != 0 {
@@ -234,9 +246,6 @@ func (sbm *SquadBuilderMode) removeUnitFromCell(row, col int) {
 			}
 		}
 	}
-
-	// Clear roster entry ID from cell
-	cell.rosterEntryID = 0
 
 	// Refresh unit palette to show unit is available again
 	sbm.refreshUnitPalette()
@@ -251,14 +260,13 @@ func (sbm *SquadBuilderMode) createTemporarySquad() {
 		squadName = "New Squad"
 	}
 
-	squads.CreateEmptySquad(sbm.Context.ECSManager, squadName)
-
-	// Find the newly created squad
-	// Squads are created with SquadComponent, so we can query for it
-	allSquads := sbm.Queries.FindAllSquads()
-	if len(allSquads) > 0 {
-		sbm.currentSquadID = allSquads[len(allSquads)-1] // Get most recent
-		fmt.Printf("Created temporary squad: %s (ID: %d)\n", squadName, sbm.currentSquadID)
+	// Use service to create squad
+	result := sbm.squadBuilderSvc.CreateSquad(squadName)
+	if result.Success {
+		sbm.currentSquadID = result.SquadID
+		fmt.Printf("Created temporary squad: %s (ID: %d)\n", result.SquadName, result.SquadID)
+	} else {
+		fmt.Printf("Failed to create squad: %s\n", result.Error)
 	}
 }
 
@@ -348,24 +356,16 @@ func (sbm *SquadBuilderMode) onCreateSquad() {
 	}
 
 	// Update squad name if it was changed
-	squadEntity := squads.GetSquadEntity(sbm.currentSquadID, sbm.Context.ECSManager)
-	if squadEntity != nil {
-		squadData := common.GetComponentType[*squads.SquadData](squadEntity, squads.SquadComponent)
-		squadData.Name = sbm.currentSquadName
+	if sbm.currentSquadName != "" {
+		sbm.squadBuilderSvc.UpdateSquadName(sbm.currentSquadID, sbm.currentSquadName)
 	}
 
-	// Assign leader component to the designated unit
-	// Check if leader exists first
-	if sbm.Context.ECSManager.HasComponentByIDWithTag(leaderID, squads.SquadMemberTag, squads.SquadMemberComponent) {
-		// Need to get the entity to add component (AddComponent is not available via ID)
-		leaderEntity := common.FindEntityByIDWithTag(sbm.Context.ECSManager, leaderID, squads.SquadMemberTag)
-		if leaderEntity != nil {
-			// Add LeaderComponent to designate this unit as leader
-			leaderEntity.AddComponent(squads.LeaderComponent, &squads.LeaderData{})
-			fmt.Printf("Unit %d designated as squad leader\n", leaderID)
-		}
+	// Designate leader using service
+	leaderResult := sbm.squadBuilderSvc.DesignateLeader(leaderID)
+	if leaderResult.Success {
+		fmt.Printf("Unit %d designated as squad leader\n", leaderID)
 	} else {
-		fmt.Println("Warning: Could not find designated leader unit")
+		fmt.Printf("Warning: %s\n", leaderResult.Error)
 	}
 
 	fmt.Printf("Squad created: %s with %d units\n", sbm.currentSquadName, len(unitIDs))

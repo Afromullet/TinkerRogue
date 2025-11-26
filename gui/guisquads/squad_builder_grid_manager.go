@@ -28,22 +28,8 @@ func (gem *GridEditorManager) SetGridCells(cells [3][3]*GridCellButton) {
 	gem.gridCells = cells
 }
 
-// PlaceRosterUnitInCell places a roster unit at a grid position and updates display
-func (gem *GridEditorManager) PlaceRosterUnitInCell(row, col int, unitTemplate *squads.UnitTemplate, squadID ecs.EntityID, rosterEntryID ecs.EntityID) error {
-	// Attempt to add unit to squad (this checks capacity constraints)
-	err := squads.AddUnitToSquad(squadID, gem.entityManager, *unitTemplate, row, col)
-	if err != nil {
-		return err
-	}
-
-	// Find the newly created unit entity
-	unitIDs := squads.GetUnitIDsAtGridPosition(squadID, row, col, gem.entityManager)
-	if len(unitIDs) == 0 {
-		return fmt.Errorf("unit was not placed correctly")
-	}
-
-	unitID := unitIDs[0]
-
+// UpdateDisplayForPlacedUnit updates grid display after a unit has been placed (via service)
+func (gem *GridEditorManager) UpdateDisplayForPlacedUnit(unitID ecs.EntityID, unitTemplate *squads.UnitTemplate, row, col int, rosterEntryID ecs.EntityID) error {
 	// Get the unit's grid position component to find all occupied cells
 	gridPosData := common.GetComponentTypeByIDWithTag[*squads.GridPositionData](gem.entityManager, unitID, squads.SquadMemberTag, squads.GridPositionComponent)
 	if gridPosData == nil {
@@ -97,53 +83,22 @@ func (gem *GridEditorManager) PlaceRosterUnitInCell(row, col int, unitTemplate *
 		}
 	}
 
-	fmt.Printf("Placed %s (size %dx%d) at anchor [%d,%d]\n", unitTemplate.Name, unitTemplate.GridWidth, unitTemplate.GridHeight, row, col)
+	fmt.Printf("Displayed %s (size %dx%d) at anchor [%d,%d]\n", unitTemplate.Name, unitTemplate.GridWidth, unitTemplate.GridHeight, row, col)
 	return nil
 }
 
-// RemoveUnitFromCell removes a unit from a grid position and updates display
-func (gem *GridEditorManager) RemoveUnitFromCell(row, col int) error {
-	cell := gem.gridCells[row][col]
-
-	if cell.unitID == 0 {
-		return nil
-	}
-
-	unitID := cell.unitID
-
-	// Get the unit's grid position to find all occupied cells BEFORE removing
-	gridPosData := common.GetComponentTypeByIDWithTag[*squads.GridPositionData](gem.entityManager, unitID, squads.SquadMemberTag, squads.GridPositionComponent)
-	if gridPosData == nil {
-		return fmt.Errorf("could not find unit entity to remove")
-	}
-
-	var occupiedCells [][2]int
-	occupiedCells = gridPosData.GetOccupiedCells()
-
-	// Remove unit from squad
-	err := squads.RemoveUnitFromSquad(unitID, gem.entityManager)
-	if err != nil {
-		return fmt.Errorf("failed to remove unit: %v", err)
-	}
-
-	// Clear ALL cells that were occupied by this unit
-	if len(occupiedCells) > 0 {
-		for _, cellPos := range occupiedCells {
-			cellRow, cellCol := cellPos[0], cellPos[1]
-			if cellRow >= 0 && cellRow < 3 && cellCol >= 0 && cellCol < 3 {
-				targetCell := gem.gridCells[cellRow][cellCol]
-				if targetCell.unitID == unitID { // Only clear if it was this unit
-					targetCell.unitID = 0
-					targetCell.rosterEntryID = 0
-					targetCell.button.Text().Label = fmt.Sprintf("Empty\n[%d,%d]", cellRow, cellCol)
-				}
+// UpdateDisplayForRemovedUnit updates grid display after a unit has been removed (via service)
+func (gem *GridEditorManager) UpdateDisplayForRemovedUnit(unitID ecs.EntityID) {
+	// Clear all cells that contained this unit
+	for row := 0; row < 3; row++ {
+		for col := 0; col < 3; col++ {
+			cell := gem.gridCells[row][col]
+			if cell.unitID == unitID {
+				cell.unitID = 0
+				cell.rosterEntryID = 0
+				cell.button.Text().Label = fmt.Sprintf("Empty\n[%d,%d]", row, col)
 			}
 		}
-	} else {
-		// Fallback: only clear the clicked cell
-		cell.unitID = 0
-		cell.rosterEntryID = 0
-		cell.button.Text().Label = fmt.Sprintf("Empty\n[%d,%d]", row, col)
 	}
 
 	// Clear leader if it was the removed unit
@@ -151,8 +106,7 @@ func (gem *GridEditorManager) RemoveUnitFromCell(row, col int) error {
 		gem.currentLeaderID = 0
 	}
 
-	fmt.Printf("Removed unit from [%d,%d]\n", row, col)
-	return nil
+	fmt.Printf("Updated display for removed unit %d\n", unitID)
 }
 
 // SetLeader sets a unit as the squad leader

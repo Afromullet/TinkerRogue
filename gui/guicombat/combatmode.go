@@ -8,7 +8,6 @@ import (
 	"game_main/gui/core"
 	"fmt"
 	"game_main/combat"
-	"game_main/common"
 
 	"github.com/bytearena/ecs"
 	"github.com/ebitenui/ebitenui/widget"
@@ -20,10 +19,11 @@ type CombatMode struct {
 	gui.BaseMode // Embed common mode infrastructure
 
 	// Managers
-	logManager    *CombatLogManager
-	actionHandler *CombatActionHandler
-	inputHandler  *CombatInputHandler
-	uiFactory     *CombatUIFactory
+	logManager     *CombatLogManager
+	actionHandler  *CombatActionHandler
+	inputHandler   *CombatInputHandler
+	uiFactory      *CombatUIFactory
+	combatService  *combat.CombatService
 
 	// UI panels and widgets
 	turnOrderPanel   *widget.Container
@@ -37,11 +37,6 @@ type CombatMode struct {
 	turnOrderLabel   *widget.Text
 	factionInfoText  *widget.Text
 	squadDetailText  *widget.Text
-
-	// Combat system managers
-	turnManager    *combat.TurnManager
-	factionManager *combat.FactionManager
-	movementSystem *combat.MovementSystem
 
 	// UI update components
 	squadListComponent    *guicomponents.SquadListComponent
@@ -67,10 +62,8 @@ func (cm *CombatMode) Initialize(ctx *core.UIContext) error {
 	// Initialize common mode infrastructure
 	cm.InitializeBase(ctx)
 
-	// Initialize combat system managers
-	cm.turnManager = combat.NewTurnManager(ctx.ECSManager)
-	cm.factionManager = combat.NewFactionManager(ctx.ECSManager)
-	cm.movementSystem = combat.NewMovementSystem(ctx.ECSManager, common.GlobalPositionSystem)
+	// Create combat service (owns TurnManager, FactionManager, MovementSystem)
+	cm.combatService = combat.NewCombatService(ctx.ECSManager)
 
 	// Create UI factory
 	cm.uiFactory = NewCombatUIFactory(cm.Queries, cm.PanelBuilders, cm.Layout)
@@ -78,15 +71,12 @@ func (cm *CombatMode) Initialize(ctx *core.UIContext) error {
 	// Build UI panels using factory
 	cm.buildUILayout()
 
-	// Create combat action handler
+	// Create combat action handler with service
 	cm.actionHandler = NewCombatActionHandler(
 		ctx.ModeCoordinator.GetBattleMapState(),
 		cm.logManager,
 		cm.Queries,
-		ctx.ECSManager,
-		cm.turnManager,
-		cm.factionManager,
-		cm.movementSystem,
+		cm.combatService,
 		cm.combatLogArea,
 	)
 
@@ -156,12 +146,12 @@ func (cm *CombatMode) initializeUpdateComponents() {
 	cm.turnOrderComponent = guicomponents.NewTextDisplayComponent(
 		cm.turnOrderLabel,
 		func() string {
-			currentFactionID := cm.turnManager.GetCurrentFaction()
+			currentFactionID := cm.combatService.GetCurrentFaction()
 			if currentFactionID == 0 {
 				return "No active combat"
 			}
 
-			round := cm.turnManager.GetCurrentRound()
+			round := cm.combatService.GetTurnManager().GetCurrentRound()
 			factionName := cm.Queries.GetFactionName(currentFactionID)
 
 			// Add indicator if player's turn
@@ -211,7 +201,7 @@ func (cm *CombatMode) initializeUpdateComponents() {
 // Only shows squads during the player's faction's turn
 func (cm *CombatMode) makeCurrentFactionSquadFilter() guicomponents.SquadFilter {
 	return func(info *guicomponents.SquadInfo) bool {
-		currentFactionID := cm.turnManager.GetCurrentFaction()
+		currentFactionID := cm.combatService.GetCurrentFaction()
 		if currentFactionID == 0 {
 			return false
 		}
@@ -231,14 +221,14 @@ func (cm *CombatMode) handleFlee() {
 
 func (cm *CombatMode) handleEndTurn() {
 	// End current faction's turn
-	if err := cm.turnManager.EndTurn(); err != nil {
+	if err := cm.combatService.GetTurnManager().EndTurn(); err != nil {
 		cm.logManager.UpdateTextArea(cm.combatLogArea, fmt.Sprintf("Error ending turn: %v", err))
 		return
 	}
 
 	// Get new faction info
-	currentFactionID := cm.turnManager.GetCurrentFaction()
-	round := cm.turnManager.GetCurrentRound()
+	currentFactionID := cm.combatService.GetCurrentFaction()
+	round := cm.combatService.GetTurnManager().GetCurrentRound()
 
 	// Get faction name
 	factionName := cm.Queries.GetFactionName(currentFactionID)
@@ -264,13 +254,13 @@ func (cm *CombatMode) Enter(fromMode core.UIMode) error {
 
 	// Initialize combat with all factions
 	if len(factionIDs) > 0 {
-		if err := cm.turnManager.InitializeCombat(factionIDs); err != nil {
+		if err := cm.combatService.InitializeCombat(factionIDs); err != nil {
 			cm.logManager.UpdateTextArea(cm.combatLogArea, fmt.Sprintf("Error initializing combat: %v", err))
 			return err
 		}
 
 		// Log initial faction
-		currentFactionID := cm.turnManager.GetCurrentFaction()
+		currentFactionID := cm.combatService.GetCurrentFaction()
 		factionName := cm.Queries.GetFactionName(currentFactionID)
 		cm.logManager.UpdateTextArea(cm.combatLogArea, fmt.Sprintf("Round 1: %s goes first!", factionName))
 
@@ -296,7 +286,7 @@ func (cm *CombatMode) Update(deltaTime float64) error {
 	// Update UI displays each frame using components
 	cm.turnOrderComponent.Refresh()
 
-	currentFactionID := cm.turnManager.GetCurrentFaction()
+	currentFactionID := cm.combatService.GetCurrentFaction()
 	if currentFactionID != 0 {
 		cm.factionInfoComponent.ShowFaction(currentFactionID)
 	}
@@ -311,7 +301,7 @@ func (cm *CombatMode) Update(deltaTime float64) error {
 
 func (cm *CombatMode) Render(screen *ebiten.Image) {
 	playerPos := *cm.Context.PlayerData.Pos
-	currentFactionID := cm.turnManager.GetCurrentFaction()
+	currentFactionID := cm.combatService.GetCurrentFaction()
 	battleState := cm.Context.ModeCoordinator.GetBattleMapState()
 	selectedSquad := battleState.SelectedSquadID
 
@@ -337,7 +327,7 @@ func (cm *CombatMode) HandleInput(inputState *core.InputState) bool {
 
 	// Update input handler with player position and faction info
 	cm.inputHandler.SetPlayerPosition(cm.Context.PlayerData.Pos)
-	cm.inputHandler.SetCurrentFactionID(cm.turnManager.GetCurrentFaction())
+	cm.inputHandler.SetCurrentFactionID(cm.combatService.GetCurrentFaction())
 
 	// Handle combat-specific input through input handler
 	if cm.inputHandler.HandleInput(inputState) {
