@@ -1,13 +1,13 @@
 package guicombat
 
 import (
+	"fmt"
+	"game_main/combat/combatservices"
 	"game_main/gui"
+	"game_main/gui/core"
 	"game_main/gui/guicomponents"
 	"game_main/gui/guimodes"
 	"game_main/gui/widgets"
-	"game_main/gui/core"
-	"fmt"
-	"game_main/combat"
 
 	"github.com/bytearena/ecs"
 	"github.com/ebitenui/ebitenui/widget"
@@ -19,11 +19,11 @@ type CombatMode struct {
 	gui.BaseMode // Embed common mode infrastructure
 
 	// Managers
-	logManager     *CombatLogManager
-	actionHandler  *CombatActionHandler
-	inputHandler   *CombatInputHandler
-	uiFactory      *CombatUIFactory
-	combatService  *combat.CombatService
+	logManager    *CombatLogManager
+	actionHandler *CombatActionHandler
+	inputHandler  *CombatInputHandler
+	uiFactory     *CombatUIFactory
+	combatService *combatservices.CombatService
 
 	// UI panels and widgets
 	turnOrderPanel   *widget.Container
@@ -34,15 +34,15 @@ type CombatMode struct {
 	actionButtons    *widget.Container
 
 	// UI text labels
-	turnOrderLabel   *widget.Text
-	factionInfoText  *widget.Text
-	squadDetailText  *widget.Text
+	turnOrderLabel  *widget.Text
+	factionInfoText *widget.Text
+	squadDetailText *widget.Text
 
 	// UI update components
-	squadListComponent    *guicomponents.SquadListComponent
-	squadDetailComponent  *guicomponents.DetailPanelComponent
-	factionInfoComponent  *guicomponents.DetailPanelComponent
-	turnOrderComponent    *guicomponents.TextDisplayComponent
+	squadListComponent   *guicomponents.SquadListComponent
+	squadDetailComponent *guicomponents.DetailPanelComponent
+	factionInfoComponent *guicomponents.DetailPanelComponent
+	turnOrderComponent   *guicomponents.TextDisplayComponent
 
 	// Rendering systems
 	movementRenderer  *guimodes.MovementTileRenderer
@@ -63,7 +63,7 @@ func (cm *CombatMode) Initialize(ctx *core.UIContext) error {
 	cm.InitializeBase(ctx)
 
 	// Create combat service (owns TurnManager, FactionManager, MovementSystem)
-	cm.combatService = combat.NewCombatService(ctx.ECSManager)
+	cm.combatService = combatservices.NewCombatService(ctx.ECSManager)
 
 	// Create UI factory
 	cm.uiFactory = NewCombatUIFactory(cm.Queries, cm.PanelBuilders, cm.Layout)

@@ -74,7 +74,7 @@ func FindMapPositionByFactionID(factionID ecs.EntityID, manager *common.EntityMa
 }
 
 // findActionStateEntity finds ActionStateData for a squad
-func findActionStateEntity(squadID ecs.EntityID, manager *common.EntityManager) *ecs.Entity {
+func FindActionStateEntity(squadID ecs.EntityID, manager *common.EntityManager) *ecs.Entity {
 	for _, result := range manager.World.Query(ActionStateTag) {
 		actionState := common.GetComponentType[*ActionStateData](result.Entity, ActionStateComponent)
 		if actionState.SquadID == squadID {
@@ -87,7 +87,7 @@ func findActionStateEntity(squadID ecs.EntityID, manager *common.EntityManager) 
 // FindActionStateBySquadID returns ActionStateData for a squad (public version)
 // Returns nil if squad's action state not found
 func FindActionStateBySquadID(squadID ecs.EntityID, manager *common.EntityManager) *ActionStateData {
-	entity := findActionStateEntity(squadID, manager)
+	entity := FindActionStateEntity(squadID, manager)
 	if entity == nil {
 		return nil
 	}
@@ -141,7 +141,7 @@ func isSquad(entityID ecs.EntityID, manager *common.EntityManager) bool {
 
 // canSquadAct checks if a squad can perform an action this turn
 func canSquadAct(squadID ecs.EntityID, manager *common.EntityManager) bool {
-	actionStateEntity := findActionStateEntity(squadID, manager)
+	actionStateEntity := FindActionStateEntity(squadID, manager)
 	if actionStateEntity == nil {
 		return false
 	}
@@ -152,7 +152,7 @@ func canSquadAct(squadID ecs.EntityID, manager *common.EntityManager) bool {
 
 // canSquadMove checks if a squad can still move this turn
 func canSquadMove(squadID ecs.EntityID, manager *common.EntityManager) bool {
-	actionStateEntity := findActionStateEntity(squadID, manager)
+	actionStateEntity := FindActionStateEntity(squadID, manager)
 	if actionStateEntity == nil {
 		return false
 	}
@@ -163,7 +163,7 @@ func canSquadMove(squadID ecs.EntityID, manager *common.EntityManager) bool {
 
 // markSquadAsActed marks a squad as having used its combat action
 func markSquadAsActed(squadID ecs.EntityID, manager *common.EntityManager) {
-	actionStateEntity := findActionStateEntity(squadID, manager)
+	actionStateEntity := FindActionStateEntity(squadID, manager)
 	if actionStateEntity == nil {
 		return
 	}
@@ -174,7 +174,7 @@ func markSquadAsActed(squadID ecs.EntityID, manager *common.EntityManager) {
 
 // markSquadAsMoved marks a squad as having used movement
 func markSquadAsMoved(squadID ecs.EntityID, manager *common.EntityManager) {
-	actionStateEntity := findActionStateEntity(squadID, manager)
+	actionStateEntity := FindActionStateEntity(squadID, manager)
 	if actionStateEntity == nil {
 		return
 	}
@@ -185,7 +185,7 @@ func markSquadAsMoved(squadID ecs.EntityID, manager *common.EntityManager) {
 
 // decrementMovementRemaining reduces squad's remaining movement
 func decrementMovementRemaining(squadID ecs.EntityID, amount int, manager *common.EntityManager) {
-	actionStateEntity := findActionStateEntity(squadID, manager)
+	actionStateEntity := FindActionStateEntity(squadID, manager)
 	if actionStateEntity == nil {
 		return
 	}

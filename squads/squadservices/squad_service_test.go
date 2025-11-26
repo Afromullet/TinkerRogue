@@ -1,8 +1,9 @@
-package squads
+package squadservices
 
 import (
 	"game_main/common"
 	"game_main/coords"
+	"game_main/squads"
 	"testing"
 )
 
@@ -40,12 +41,12 @@ func TestCreateSquad_Success(t *testing.T) {
 	}
 
 	// Verify squad was created in ECS
-	squadEntity := common.FindEntityByIDWithTag(manager, result.SquadID, SquadTag)
+	squadEntity := common.FindEntityByIDWithTag(manager, result.SquadID, squads.SquadTag)
 	if squadEntity == nil {
 		t.Error("Squad entity should exist in ECS")
 	}
 
-	squadData := common.GetComponentType[*SquadData](squadEntity, SquadComponent)
+	squadData := common.GetComponentType[*squads.SquadData](squadEntity, squads.SquadComponent)
 	if squadData == nil {
 		t.Error("Squad should have SquadData component")
 	}
@@ -83,13 +84,12 @@ func TestAddUnitToSquad_Success(t *testing.T) {
 	}
 
 	// Add unit
-	unitTemplate := UnitTemplate{
+	unitTemplate := squads.UnitTemplate{
 		Name: "Warrior",
 		Attributes: common.Attributes{
 			Strength:  15,
 			Dexterity: 10,
 			Magic:     5,
-			Health:    20,
 			MaxHealth: 20,
 		},
 		GridWidth:  1,
@@ -119,7 +119,7 @@ func TestAddUnitToSquad_InvalidPosition(t *testing.T) {
 	// Create squad
 	squadResult := service.CreateSquad("Test Squad")
 
-	unitTemplate := UnitTemplate{
+	unitTemplate := squads.UnitTemplate{
 		Name:       "Warrior",
 		GridWidth:  1,
 		GridHeight: 1,
@@ -145,7 +145,7 @@ func TestAddUnitToSquad_OccupiedPosition(t *testing.T) {
 	// Create squad
 	squadResult := service.CreateSquad("Test Squad")
 
-	unitTemplate := UnitTemplate{
+	unitTemplate := squads.UnitTemplate{
 		Name:       "Warrior",
 		GridWidth:  1,
 		GridHeight: 1,
@@ -178,13 +178,13 @@ func TestAddUnitToSquad_InsufficientCapacity(t *testing.T) {
 	squadResult := service.CreateSquad("Test Squad")
 
 	// Create a large unit that uses most/all capacity
-	largeUnit := UnitTemplate{
+	largeUnit := squads.UnitTemplate{
 		Name: "Heavy Knight",
 		Attributes: common.Attributes{
 			Strength:  20,
 			Dexterity: 5,
 			Magic:     0,
-			Health:    30,
+
 			MaxHealth: 30,
 		},
 		GridWidth:  2,
@@ -211,7 +211,7 @@ func TestRemoveUnitFromSquad(t *testing.T) {
 
 	// Create squad and add unit
 	squadResult := service.CreateSquad("Test Squad")
-	unitTemplate := UnitTemplate{
+	unitTemplate := squads.UnitTemplate{
 		Name:       "Warrior",
 		GridWidth:  1,
 		GridHeight: 1,
@@ -283,7 +283,7 @@ func TestCanAddMoreUnits(t *testing.T) {
 	}
 
 	// Add unit
-	unitTemplate := UnitTemplate{
+	unitTemplate := squads.UnitTemplate{
 		Name:       "Warrior",
 		GridWidth:  1,
 		GridHeight: 1,
@@ -312,7 +312,7 @@ func TestGetSquadRemainingCapacity(t *testing.T) {
 	}
 
 	// Add unit
-	unitTemplate := UnitTemplate{
+	unitTemplate := squads.UnitTemplate{
 		Name:       "Warrior",
 		GridWidth:  1,
 		GridHeight: 1,
@@ -336,7 +336,7 @@ func TestSquadWithPosition(t *testing.T) {
 	squadResult := service.CreateSquad("Positioned Squad")
 
 	// Set position
-	squadEntity := common.FindEntityByIDWithTag(manager, squadResult.SquadID, SquadTag)
+	squadEntity := common.FindEntityByIDWithTag(manager, squadResult.SquadID, squads.SquadTag)
 	if squadEntity == nil {
 		t.Fatal("Squad entity not found")
 	}

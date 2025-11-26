@@ -6,6 +6,7 @@ import (
 	"game_main/gui/core"
 	"game_main/gui/widgets"
 	"game_main/squads"
+	"game_main/squads/squadservices"
 	"image/color"
 
 	"github.com/ebitenui/ebitenui/widget"
@@ -16,7 +17,7 @@ import (
 type UnitPurchaseMode struct {
 	gui.BaseMode // Embed common mode infrastructure
 
-	purchaseService  *squads.UnitPurchaseService
+	purchaseService  *squadservices.UnitPurchaseService
 	unitList         *widget.List
 	detailPanel      *widget.Container
 	detailTextArea   *widget.TextArea
@@ -43,7 +44,7 @@ func (upm *UnitPurchaseMode) Initialize(ctx *core.UIContext) error {
 	upm.InitializeBase(ctx)
 
 	// Create purchase service
-	upm.purchaseService = squads.NewUnitPurchaseService(ctx.ECSManager)
+	upm.purchaseService = squadservices.NewUnitPurchaseService(ctx.ECSManager)
 
 	// Build unit list (left side)
 	upm.buildUnitList()

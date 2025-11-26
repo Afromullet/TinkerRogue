@@ -2,6 +2,7 @@ package guisquads
 
 import (
 	"game_main/gui"
+	"game_main/squads/squadservices"
 
 	"fmt"
 	"game_main/gui/core"
@@ -17,9 +18,9 @@ type SquadBuilderMode struct {
 	gui.BaseMode // Embed common mode infrastructure
 
 	// Managers and services
-	gridManager       *GridEditorManager
-	squadBuilderSvc   *squads.SquadBuilderService
-	uiFactory         *SquadBuilderUIFactory
+	gridManager     *GridEditorManager
+	squadBuilderSvc *squadservices.SquadBuilderService
+	uiFactory       *SquadBuilderUIFactory
 
 	// UI widgets
 	gridContainer   *widget.Container
@@ -61,7 +62,7 @@ func (sbm *SquadBuilderMode) Initialize(ctx *core.UIContext) error {
 	sbm.InitializeBase(ctx)
 
 	// Create squad builder service
-	sbm.squadBuilderSvc = squads.NewSquadBuilderService(ctx.ECSManager)
+	sbm.squadBuilderSvc = squadservices.NewSquadBuilderService(ctx.ECSManager)
 
 	// Create managers
 	sbm.gridManager = NewGridEditorManager(ctx.ECSManager)

@@ -67,7 +67,7 @@ func (tm *TurnManager) ResetSquadActions(factionID ecs.EntityID) error {
 	moveSys := NewMovementSystem(tm.manager, common.GlobalPositionSystem)
 
 	for _, squadID := range factionSquads {
-		actionEntity := findActionStateEntity(squadID, tm.manager)
+		actionEntity := FindActionStateEntity(squadID, tm.manager)
 		if actionEntity == nil {
 			continue
 		}

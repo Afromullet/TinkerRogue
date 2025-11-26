@@ -1,11 +1,11 @@
 package guicombat
 
 import (
+	"game_main/combat/combatservices"
 	"game_main/gui/core"
 	"game_main/gui/guicomponents"
 
 	"fmt"
-	"game_main/combat"
 	"game_main/coords"
 
 	"github.com/bytearena/ecs"
@@ -17,7 +17,7 @@ type CombatActionHandler struct {
 	battleMapState *core.BattleMapState
 	logManager     *CombatLogManager
 	queries        *guicomponents.GUIQueries
-	combatService  *combat.CombatService
+	combatService  *combatservices.CombatService
 	combatLogArea  *widget.TextArea
 }
 
@@ -26,7 +26,7 @@ func NewCombatActionHandler(
 	battleMapState *core.BattleMapState,
 	logManager *CombatLogManager,
 	queries *guicomponents.GUIQueries,
-	combatService *combat.CombatService,
+	combatService *combatservices.CombatService,
 	combatLogArea *widget.TextArea,
 ) *CombatActionHandler {
 	return &CombatActionHandler{

@@ -89,7 +89,7 @@ func (ms *MovementSystem) MoveSquad(squadID ecs.EntityID, targetPos coords.Logic
 	movementCost := currentPos.ChebyshevDistance(&targetPos)
 
 	// Check if squad has enough movement
-	actionStateEntity := findActionStateEntity(squadID, ms.manager)
+	actionStateEntity := FindActionStateEntity(squadID, ms.manager)
 	if actionStateEntity == nil {
 		return fmt.Errorf("no action state for squad")
 	}
@@ -136,7 +136,7 @@ func (ms *MovementSystem) GetValidMovementTiles(squadID ecs.EntityID) []coords.L
 	}
 
 	// Get remaining movement
-	actionStateEntity := findActionStateEntity(squadID, ms.manager)
+	actionStateEntity := FindActionStateEntity(squadID, ms.manager)
 	if actionStateEntity == nil {
 		return []coords.LogicalPosition{}
 	}

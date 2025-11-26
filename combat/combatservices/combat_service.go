@@ -1,6 +1,7 @@
-package combat
+package combatservices
 
 import (
+	"game_main/combat"
 	"game_main/common"
 	"game_main/coords"
 	"game_main/squads"
@@ -11,18 +12,18 @@ import (
 // CombatService encapsulates all combat game logic and system ownership
 type CombatService struct {
 	entityManager  *common.EntityManager
-	turnManager    *TurnManager
-	factionManager *FactionManager
-	movementSystem *MovementSystem
+	turnManager    *combat.TurnManager
+	factionManager *combat.FactionManager
+	movementSystem *combat.MovementSystem
 }
 
 // NewCombatService creates a new combat service
 func NewCombatService(manager *common.EntityManager) *CombatService {
 	return &CombatService{
 		entityManager:  manager,
-		turnManager:    NewTurnManager(manager),
-		factionManager: NewFactionManager(manager),
-		movementSystem: NewMovementSystem(manager, common.GlobalPositionSystem),
+		turnManager:    combat.NewTurnManager(manager),
+		factionManager: combat.NewFactionManager(manager),
+		movementSystem: combat.NewMovementSystem(manager, common.GlobalPositionSystem),
 	}
 }
 
@@ -41,7 +42,7 @@ func (cs *CombatService) ExecuteSquadAttack(attackerID, targetID ecs.EntityID) *
 	result := &AttackResult{}
 
 	// Create combat action system
-	combatSys := NewCombatActionSystem(cs.entityManager)
+	combatSys := combat.NewCombatActionSystem(cs.entityManager)
 
 	// Validate attack
 	reason, canAttack := combatSys.CanSquadAttackWithReason(attackerID, targetID)
@@ -71,12 +72,12 @@ func (cs *CombatService) ExecuteSquadAttack(attackerID, targetID ecs.EntityID) *
 
 // MoveSquadResult contains all information about a movement execution
 type MoveSquadResult struct {
-	Success       bool
-	ErrorReason   string
-	SquadName     string
-	NewPosition   coords.LogicalPosition
-	MovementCost  int
-	RemainingAPs  int
+	Success      bool
+	ErrorReason  string
+	SquadName    string
+	NewPosition  coords.LogicalPosition
+	MovementCost int
+	RemainingAPs int
 }
 
 // MoveSquad moves a squad to a new position and returns result
@@ -97,9 +98,9 @@ func (cs *CombatService) MoveSquad(squadID ecs.EntityID, newPos coords.LogicalPo
 	result.SquadName = getSquadNameByID(squadID, cs.entityManager)
 
 	// Update action state with remaining APs
-	actionEntity := findActionStateEntity(squadID, cs.entityManager)
+	actionEntity := combat.FindActionStateEntity(squadID, cs.entityManager)
 	if actionEntity != nil {
-		actionState := common.GetComponentType[*ActionStateData](actionEntity, ActionStateComponent)
+		actionState := common.GetComponentType[*combat.ActionStateData](actionEntity, combat.ActionStateComponent)
 		if actionState != nil {
 			result.RemainingAPs = actionState.MovementRemaining
 		}
@@ -115,7 +116,7 @@ func (cs *CombatService) GetValidMovementTiles(squadID ecs.EntityID) []coords.Lo
 
 // GetSquadsInRange returns all enemy squads within attack range
 func (cs *CombatService) GetSquadsInRange(squadID ecs.EntityID) []ecs.EntityID {
-	combatSys := NewCombatActionSystem(cs.entityManager)
+	combatSys := combat.NewCombatActionSystem(cs.entityManager)
 	return combatSys.GetSquadsInRange(squadID)
 }
 
@@ -135,7 +136,7 @@ func (cs *CombatService) ResetSquadActions(factionID ecs.EntityID) error {
 }
 
 // GetMovementSystem exposes movement system for UI queries (read-only)
-func (cs *CombatService) GetMovementSystem() *MovementSystem {
+func (cs *CombatService) GetMovementSystem() *combat.MovementSystem {
 	return cs.movementSystem
 }
 
@@ -158,11 +159,11 @@ func (cs *CombatService) GetAliveSquadsInFaction(factionID ecs.EntityID) []ecs.E
 
 // EndTurnResult contains information about turn transition
 type EndTurnResult struct {
-	Success       bool
+	Success         bool
 	PreviousFaction ecs.EntityID
-	NewFaction    ecs.EntityID
-	NewRound      int
-	Error         string
+	NewFaction      ecs.EntityID
+	NewRound        int
+	Error           string
 }
 
 // EndTurn ends the current faction's turn and advances to next
@@ -202,7 +203,7 @@ func (cs *CombatService) CheckVictoryCondition() *VictoryCheckResult {
 	// Count alive squads per faction
 	aliveByFaction := make(map[ecs.EntityID]int)
 
-	for _, queryResult := range cs.entityManager.World.Query(FactionTag) {
+	for _, queryResult := range cs.entityManager.World.Query(combat.FactionTag) {
 		entity := queryResult.Entity
 		factionID := entity.GetID()
 		aliveByFaction[factionID] = 0
@@ -213,8 +214,8 @@ func (cs *CombatService) CheckVictoryCondition() *VictoryCheckResult {
 		entity := queryResult.Entity
 		squadData := common.GetComponentType[*squads.SquadData](entity, squads.SquadComponent)
 		if squadData != nil && !squads.IsSquadDestroyed(entity.GetID(), cs.entityManager) {
-			factionData := common.GetComponentTypeByIDWithTag[*FactionData](
-				cs.entityManager, entity.GetID(), squads.SquadTag, FactionComponent)
+			factionData := common.GetComponentTypeByIDWithTag[*combat.FactionData](
+				cs.entityManager, entity.GetID(), squads.SquadTag, combat.FactionComponent)
 			if factionData != nil {
 				aliveByFaction[factionData.FactionID]++
 			}

@@ -1,9 +1,10 @@
-package squads
+package squadservices
 
 import (
 	"fmt"
 	"game_main/common"
 	"game_main/coords"
+	"game_main/squads"
 
 	"github.com/bytearena/ecs"
 )
@@ -42,7 +43,7 @@ func (ss *SquadService) CreateSquad(squadName string) *CreateSquadResult {
 	squadEntity := ss.entityManager.World.NewEntity()
 	squadID := squadEntity.GetID()
 
-	squadEntity.AddComponent(SquadComponent, &SquadData{
+	squadEntity.AddComponent(squads.SquadComponent, &squads.SquadData{
 		SquadID:       squadID,
 		Name:          squadName,
 		Morale:        100,
@@ -72,7 +73,7 @@ type AddUnitResult struct {
 // AddUnitToSquad adds a unit to a squad at the specified grid position
 func (ss *SquadService) AddUnitToSquad(
 	squadID ecs.EntityID,
-	unit UnitTemplate,
+	unit squads.UnitTemplate,
 	gridRow, gridCol int,
 ) *AddUnitResult {
 	result := &AddUnitResult{
@@ -86,7 +87,7 @@ func (ss *SquadService) AddUnitToSquad(
 	}
 
 	// Check if position occupied
-	existingUnitIDs := GetUnitIDsAtGridPosition(squadID, gridRow, gridCol, ss.entityManager)
+	existingUnitIDs := squads.GetUnitIDsAtGridPosition(squadID, gridRow, gridCol, ss.entityManager)
 	if len(existingUnitIDs) > 0 {
 		result.Error = fmt.Sprintf("grid position (%d, %d) already occupied", gridRow, gridCol)
 		return result
@@ -94,15 +95,15 @@ func (ss *SquadService) AddUnitToSquad(
 
 	// Check capacity before adding unit
 	unitCapacityCost := unit.Attributes.GetCapacityCost()
-	if !CanAddUnitToSquad(squadID, unitCapacityCost, ss.entityManager) {
-		remaining := GetSquadRemainingCapacity(squadID, ss.entityManager)
+	if !squads.CanAddUnitToSquad(squadID, unitCapacityCost, ss.entityManager) {
+		remaining := squads.GetSquadRemainingCapacity(squadID, ss.entityManager)
 		result.RemainingCapacity = remaining
 		result.Error = fmt.Sprintf("insufficient squad capacity: need %.2f, have %.2f remaining", unitCapacityCost, remaining)
 		return result
 	}
 
 	// Create unit entity
-	unitEntity, err := CreateUnitEntity(ss.entityManager, unit)
+	unitEntity, err := squads.CreateUnitEntity(ss.entityManager, unit)
 	if err != nil {
 		result.Error = fmt.Sprintf("invalid unit %s: %v", unit.Name, err)
 		return result
@@ -111,21 +112,21 @@ func (ss *SquadService) AddUnitToSquad(
 	unitID := unitEntity.GetID()
 
 	// Add SquadMemberComponent to link unit to squad
-	unitEntity.AddComponent(SquadMemberComponent, &SquadMemberData{
+	unitEntity.AddComponent(squads.SquadMemberComponent, &squads.SquadMemberData{
 		SquadID: squadID,
 	})
 
 	// Update GridPositionComponent with actual grid position
-	gridPos := common.GetComponentType[*GridPositionData](unitEntity, GridPositionComponent)
+	gridPos := common.GetComponentType[*squads.GridPositionData](unitEntity, squads.GridPositionComponent)
 	gridPos.AnchorRow = gridRow
 	gridPos.AnchorCol = gridCol
 
 	// Update squad capacity tracking
-	UpdateSquadCapacity(squadID, ss.entityManager)
+	squads.UpdateSquadCapacity(squadID, ss.entityManager)
 
 	result.Success = true
 	result.UnitID = unitID
-	result.RemainingCapacity = GetSquadRemainingCapacity(squadID, ss.entityManager)
+	result.RemainingCapacity = squads.GetSquadRemainingCapacity(squadID, ss.entityManager)
 
 	return result
 }
@@ -146,14 +147,14 @@ func (ss *SquadService) RemoveUnitFromSquad(
 	result := &RemoveUnitResult{}
 
 	// Find the unit entity
-	unitEntity := common.FindEntityByIDWithTag(ss.entityManager, unitID, SquadMemberTag)
+	unitEntity := common.FindEntityByIDWithTag(ss.entityManager, unitID, squads.SquadMemberTag)
 	if unitEntity == nil {
 		result.Error = fmt.Sprintf("unit %d not found in squad", unitID)
 		return result
 	}
 
 	// Verify it belongs to the specified squad
-	squadMember := common.GetComponentType[*SquadMemberData](unitEntity, SquadMemberComponent)
+	squadMember := common.GetComponentType[*squads.SquadMemberData](unitEntity, squads.SquadMemberComponent)
 	if squadMember == nil || squadMember.SquadID != squadID {
 		result.Error = fmt.Sprintf("unit %d does not belong to squad %d", unitID, squadID)
 		return result
@@ -163,10 +164,10 @@ func (ss *SquadService) RemoveUnitFromSquad(
 	ss.entityManager.World.DisposeEntities(unitEntity)
 
 	// Update squad capacity
-	UpdateSquadCapacity(squadID, ss.entityManager)
+	squads.UpdateSquadCapacity(squadID, ss.entityManager)
 
 	result.Success = true
-	result.RemainingCapacity = GetSquadRemainingCapacity(squadID, ss.entityManager)
+	result.RemainingCapacity = squads.GetSquadRemainingCapacity(squadID, ss.entityManager)
 	result.RemovedUnitCount = 1
 
 	return result
@@ -189,7 +190,7 @@ func (ss *SquadService) GetSquadInfo(squadID ecs.EntityID) *GetSquadInfoResult {
 		SquadID: squadID,
 	}
 
-	squadData := common.GetComponentTypeByIDWithTag[*SquadData](ss.entityManager, squadID, SquadTag, SquadComponent)
+	squadData := common.GetComponentTypeByIDWithTag[*squads.SquadData](ss.entityManager, squadID, squads.SquadTag, squads.SquadComponent)
 	if squadData == nil {
 		return result
 	}
@@ -198,20 +199,20 @@ func (ss *SquadService) GetSquadInfo(squadID ecs.EntityID) *GetSquadInfoResult {
 	result.TotalCapacity = float64(squadData.TotalCapacity)
 	result.UsedCapacity = squadData.UsedCapacity
 	result.RemainingCapacity = float64(squadData.TotalCapacity) - squadData.UsedCapacity
-	result.UnitCount = len(GetUnitIDsInSquad(squadID, ss.entityManager))
-	result.IsDestroyed = IsSquadDestroyed(squadID, ss.entityManager)
+	result.UnitCount = len(squads.GetUnitIDsInSquad(squadID, ss.entityManager))
+	result.IsDestroyed = squads.IsSquadDestroyed(squadID, ss.entityManager)
 
 	return result
 }
 
 // CanAddMoreUnits checks if more units can be added to a squad
 func (ss *SquadService) CanAddMoreUnits(squadID ecs.EntityID, unitCapacityCost float64) bool {
-	return CanAddUnitToSquad(squadID, unitCapacityCost, ss.entityManager)
+	return squads.CanAddUnitToSquad(squadID, unitCapacityCost, ss.entityManager)
 }
 
 // GetSquadRemainingCapacity returns the remaining capacity of a squad
 func (ss *SquadService) GetSquadRemainingCapacity(squadID ecs.EntityID) float64 {
-	return GetSquadRemainingCapacity(squadID, ss.entityManager)
+	return squads.GetSquadRemainingCapacity(squadID, ss.entityManager)
 }
 
 // DestroySquadResult contains information about squad destruction
@@ -229,13 +230,13 @@ func (ss *SquadService) DestroySquad(squadID ecs.EntityID) *DestroySquadResult {
 	}
 
 	// Find and mark squad as destroyed
-	squadEntity := common.FindEntityByIDWithTag(ss.entityManager, squadID, SquadTag)
+	squadEntity := common.FindEntityByIDWithTag(ss.entityManager, squadID, squads.SquadTag)
 	if squadEntity == nil {
 		result.Error = fmt.Sprintf("squad %d not found", squadID)
 		return result
 	}
 
-	squadData := common.GetComponentType[*SquadData](squadEntity, SquadComponent)
+	squadData := common.GetComponentType[*squads.SquadData](squadEntity, squads.SquadComponent)
 	if squadData != nil {
 		result.SquadName = squadData.Name
 		squadData.Morale = 0 // Mark as destroyed
@@ -261,13 +262,13 @@ func (ss *SquadService) ApplyDamageToSquad(squadID ecs.EntityID, damageAmount in
 		DamageApplied: damageAmount,
 	}
 
-	squadEntity := common.FindEntityByIDWithTag(ss.entityManager, squadID, SquadTag)
+	squadEntity := common.FindEntityByIDWithTag(ss.entityManager, squadID, squads.SquadTag)
 	if squadEntity == nil {
 		result.Error = fmt.Sprintf("squad %d not found", squadID)
 		return result
 	}
 
-	squadData := common.GetComponentType[*SquadData](squadEntity, SquadComponent)
+	squadData := common.GetComponentType[*squads.SquadData](squadEntity, squads.SquadComponent)
 	if squadData == nil {
 		result.Error = "squad has no squad data component"
 		return result

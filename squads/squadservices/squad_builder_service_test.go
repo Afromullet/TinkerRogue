@@ -1,7 +1,8 @@
-package squads
+package squadservices
 
 import (
 	"game_main/common"
+	"game_main/squads"
 	"testing"
 )
 
@@ -76,7 +77,7 @@ func TestPlaceUnit_Success(t *testing.T) {
 	rosterUnitEntity := manager.World.NewEntity()
 	rosterUnitID := rosterUnitEntity.GetID()
 
-	unitTemplate := UnitTemplate{
+	unitTemplate := squads.UnitTemplate{
 		Name: "Test Warrior",
 		Attributes: common.Attributes{
 			Strength:  12,
@@ -112,7 +113,7 @@ func TestPlaceUnit_InvalidPosition(t *testing.T) {
 	rosterUnitEntity := manager.World.NewEntity()
 	rosterUnitID := rosterUnitEntity.GetID()
 
-	unitTemplate := UnitTemplate{
+	unitTemplate := squads.UnitTemplate{
 		Name:       "Warrior",
 		GridWidth:  1,
 		GridHeight: 1,
@@ -142,7 +143,7 @@ func TestRemoveUnitFromGrid_Success(t *testing.T) {
 	rosterUnitEntity := manager.World.NewEntity()
 	rosterUnitID := rosterUnitEntity.GetID()
 
-	unitTemplate := UnitTemplate{
+	unitTemplate := squads.UnitTemplate{
 		Name:       "Warrior",
 		GridWidth:  1,
 		GridHeight: 1,
@@ -193,7 +194,7 @@ func TestDesignateLeader(t *testing.T) {
 	rosterUnitEntity := manager.World.NewEntity()
 	rosterUnitID := rosterUnitEntity.GetID()
 
-	unitTemplate := UnitTemplate{
+	unitTemplate := squads.UnitTemplate{
 		Name:       "Champion",
 		GridWidth:  1,
 		GridHeight: 1,
@@ -256,7 +257,7 @@ func TestGetCapacityInfo_WithLeader(t *testing.T) {
 	rosterUnitEntity := manager.World.NewEntity()
 	rosterUnitID := rosterUnitEntity.GetID()
 
-	unitTemplate := UnitTemplate{
+	unitTemplate := squads.UnitTemplate{
 		Name:       "Leader Unit",
 		GridWidth:  1,
 		GridHeight: 1,
@@ -314,7 +315,7 @@ func TestValidateSquad_NoLeader(t *testing.T) {
 	rosterUnitEntity := manager.World.NewEntity()
 	rosterUnitID := rosterUnitEntity.GetID()
 
-	unitTemplate := UnitTemplate{
+	unitTemplate := squads.UnitTemplate{
 		Name:       "Regular Unit",
 		GridWidth:  1,
 		GridHeight: 1,
@@ -353,7 +354,7 @@ func TestValidateSquad_Valid(t *testing.T) {
 	rosterUnitEntity := manager.World.NewEntity()
 	rosterUnitID := rosterUnitEntity.GetID()
 
-	unitTemplate := UnitTemplate{
+	unitTemplate := squads.UnitTemplate{
 		Name:       "Leader Unit",
 		GridWidth:  1,
 		GridHeight: 1,
@@ -402,12 +403,12 @@ func TestUpdateSquadName(t *testing.T) {
 	}
 
 	// Verify name changed
-	squadEntity := common.FindEntityByIDWithTag(manager, squadResult.SquadID, SquadTag)
+	squadEntity := common.FindEntityByIDWithTag(manager, squadResult.SquadID, squads.SquadTag)
 	if squadEntity == nil {
 		t.Fatal("Squad entity not found")
 	}
 
-	squadData := common.GetComponentType[*SquadData](squadEntity, SquadComponent)
+	squadData := common.GetComponentType[*squads.SquadData](squadEntity, squads.SquadComponent)
 	if squadData == nil {
 		t.Fatal("Squad data not found")
 	}
@@ -449,7 +450,7 @@ func TestSquadBuilderFlow(t *testing.T) {
 		rosterUnitEntity := manager.World.NewEntity()
 		rosterUnitID := rosterUnitEntity.GetID()
 
-		unitTemplate := UnitTemplate{
+		unitTemplate := squads.UnitTemplate{
 			Name:       "Unit " + string(rune(i)),
 			GridWidth:  1,
 			GridHeight: 1,

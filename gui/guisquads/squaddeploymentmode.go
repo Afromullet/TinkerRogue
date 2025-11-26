@@ -9,7 +9,7 @@ import (
 	"game_main/gui/guicomponents"
 	"game_main/gui/guimodes"
 	"game_main/gui/widgets"
-	"game_main/squads"
+	"game_main/squads/squadservices"
 
 	"github.com/bytearena/ecs"
 	"github.com/ebitenui/ebitenui/widget"
@@ -20,7 +20,7 @@ import (
 type SquadDeploymentMode struct {
 	gui.BaseMode // Embed common mode infrastructure
 
-	deploymentService  *squads.SquadDeploymentService
+	deploymentService  *squadservices.SquadDeploymentService
 	squadListPanel     *widget.Container
 	squadListComponent *guicomponents.SquadListComponent
 	selectedSquadID    ecs.EntityID
@@ -50,7 +50,7 @@ func (sdm *SquadDeploymentMode) Initialize(ctx *core.UIContext) error {
 	sdm.InitializeBase(ctx)
 
 	// Create deployment service
-	sdm.deploymentService = squads.NewSquadDeploymentService(ctx.ECSManager)
+	sdm.deploymentService = squadservices.NewSquadDeploymentService(ctx.ECSManager)
 
 	// Build UI components
 	sdm.buildSquadListPanel()

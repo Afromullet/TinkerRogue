@@ -1,9 +1,10 @@
-package squads
+package squadservices
 
 import (
 	"fmt"
 	"game_main/common"
 	"game_main/coords"
+	"game_main/squads"
 
 	"github.com/bytearena/ecs"
 )
@@ -22,10 +23,10 @@ func NewSquadDeploymentService(manager *common.EntityManager) *SquadDeploymentSe
 
 // PlaceSquadResult contains information about squad placement
 type PlaceSquadResult struct {
-	Success    bool
-	SquadName  string
-	Position   coords.LogicalPosition
-	Error      string
+	Success   bool
+	SquadName string
+	Position  coords.LogicalPosition
+	Error     string
 }
 
 // PlaceSquadAtPosition places a squad at a specific map position
@@ -38,14 +39,14 @@ func (sds *SquadDeploymentService) PlaceSquadAtPosition(
 	}
 
 	// Find the squad entity
-	squadEntity := common.FindEntityByIDWithTag(sds.entityManager, squadID, SquadTag)
+	squadEntity := common.FindEntityByIDWithTag(sds.entityManager, squadID, squads.SquadTag)
 	if squadEntity == nil {
 		result.Error = fmt.Sprintf("squad %d not found", squadID)
 		return result
 	}
 
 	// Get squad data for name
-	squadData := common.GetComponentType[*SquadData](squadEntity, SquadComponent)
+	squadData := common.GetComponentType[*squads.SquadData](squadEntity, squads.SquadComponent)
 	if squadData != nil {
 		result.SquadName = squadData.Name
 	}
@@ -77,7 +78,7 @@ func (sds *SquadDeploymentService) ClearAllSquadPositions() *ClearAllSquadsResul
 
 	// Query all squads
 	squadsCleared := 0
-	for _, queryResult := range sds.entityManager.World.Query(SquadTag) {
+	for _, queryResult := range sds.entityManager.World.Query(squads.SquadTag) {
 		entity := queryResult.Entity
 
 		// Get position component
@@ -98,7 +99,7 @@ func (sds *SquadDeploymentService) ClearAllSquadPositions() *ClearAllSquadsResul
 func (sds *SquadDeploymentService) GetAllSquadPositions() map[ecs.EntityID]coords.LogicalPosition {
 	positions := make(map[ecs.EntityID]coords.LogicalPosition)
 
-	for _, queryResult := range sds.entityManager.World.Query(SquadTag) {
+	for _, queryResult := range sds.entityManager.World.Query(squads.SquadTag) {
 		entity := queryResult.Entity
 
 		posPtr := common.GetComponentType[*coords.LogicalPosition](entity, common.PositionComponent)

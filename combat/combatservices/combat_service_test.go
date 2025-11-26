@@ -1,4 +1,4 @@
-package combat
+package combatservices
 
 import (
 	"game_main/common"

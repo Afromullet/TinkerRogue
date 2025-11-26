@@ -1,9 +1,10 @@
-package squads
+package squadservices
 
 import (
 	"fmt"
 	"game_main/common"
 	"game_main/coords"
+	"game_main/squads"
 
 	"github.com/bytearena/ecs"
 )
@@ -41,7 +42,7 @@ func (sbs *SquadBuilderService) CreateSquad(squadName string) *SquadBuilderSquad
 	squadEntity := sbs.entityManager.World.NewEntity()
 	squadID := squadEntity.GetID()
 
-	squadEntity.AddComponent(SquadComponent, &SquadData{
+	squadEntity.AddComponent(squads.SquadComponent, &squads.SquadData{
 		SquadID:       squadID,
 		Name:          squadName,
 		Morale:        100,
@@ -72,7 +73,7 @@ type PlaceUnitResult struct {
 func (sbs *SquadBuilderService) PlaceUnit(
 	squadID ecs.EntityID,
 	rosterUnitID ecs.EntityID,
-	unit UnitTemplate,
+	unit squads.UnitTemplate,
 	gridRow, gridCol int,
 ) *PlaceUnitResult {
 	result := &PlaceUnitResult{
@@ -86,7 +87,7 @@ func (sbs *SquadBuilderService) PlaceUnit(
 	}
 
 	// Check if position occupied
-	existingUnitIDs := GetUnitIDsAtGridPosition(squadID, gridRow, gridCol, sbs.entityManager)
+	existingUnitIDs := squads.GetUnitIDsAtGridPosition(squadID, gridRow, gridCol, sbs.entityManager)
 	if len(existingUnitIDs) > 0 {
 		result.Error = fmt.Sprintf("grid position (%d, %d) already occupied", gridRow, gridCol)
 		return result
@@ -94,15 +95,15 @@ func (sbs *SquadBuilderService) PlaceUnit(
 
 	// Check capacity
 	unitCapacityCost := unit.Attributes.GetCapacityCost()
-	if !CanAddUnitToSquad(squadID, unitCapacityCost, sbs.entityManager) {
-		remaining := GetSquadRemainingCapacity(squadID, sbs.entityManager)
+	if !squads.CanAddUnitToSquad(squadID, unitCapacityCost, sbs.entityManager) {
+		remaining := squads.GetSquadRemainingCapacity(squadID, sbs.entityManager)
 		result.RemainingCapacity = remaining
 		result.Error = fmt.Sprintf("insufficient squad capacity: need %.2f, have %.2f remaining", unitCapacityCost, remaining)
 		return result
 	}
 
 	// Create unit entity
-	unitEntity, err := CreateUnitEntity(sbs.entityManager, unit)
+	unitEntity, err := squads.CreateUnitEntity(sbs.entityManager, unit)
 	if err != nil {
 		result.Error = fmt.Sprintf("invalid unit %s: %v", unit.Name, err)
 		return result
@@ -111,21 +112,21 @@ func (sbs *SquadBuilderService) PlaceUnit(
 	unitID := unitEntity.GetID()
 
 	// Add SquadMemberComponent to link unit to squad
-	unitEntity.AddComponent(SquadMemberComponent, &SquadMemberData{
+	unitEntity.AddComponent(squads.SquadMemberComponent, &squads.SquadMemberData{
 		SquadID: squadID,
 	})
 
 	// Update GridPositionComponent with grid position
-	gridPos := common.GetComponentType[*GridPositionData](unitEntity, GridPositionComponent)
+	gridPos := common.GetComponentType[*squads.GridPositionData](unitEntity, squads.GridPositionComponent)
 	gridPos.AnchorRow = gridRow
 	gridPos.AnchorCol = gridCol
 
 	// Update squad capacity
-	UpdateSquadCapacity(squadID, sbs.entityManager)
+	squads.UpdateSquadCapacity(squadID, sbs.entityManager)
 
 	result.Success = true
 	result.UnitID = unitID
-	result.RemainingCapacity = GetSquadRemainingCapacity(squadID, sbs.entityManager)
+	result.RemainingCapacity = squads.GetSquadRemainingCapacity(squadID, sbs.entityManager)
 
 	return result
 }
@@ -145,7 +146,7 @@ func (sbs *SquadBuilderService) RemoveUnitFromGrid(
 	result := &RemoveUnitFromGridResult{}
 
 	// Get unit at position
-	unitIDs := GetUnitIDsAtGridPosition(squadID, gridRow, gridCol, sbs.entityManager)
+	unitIDs := squads.GetUnitIDsAtGridPosition(squadID, gridRow, gridCol, sbs.entityManager)
 	if len(unitIDs) == 0 {
 		result.Error = fmt.Sprintf("no unit at position (%d, %d)", gridRow, gridCol)
 		return result
@@ -153,7 +154,7 @@ func (sbs *SquadBuilderService) RemoveUnitFromGrid(
 
 	// Remove first unit at this position
 	unitID := unitIDs[0]
-	unitEntity := common.FindEntityByIDWithTag(sbs.entityManager, unitID, SquadMemberTag)
+	unitEntity := common.FindEntityByIDWithTag(sbs.entityManager, unitID, squads.SquadMemberTag)
 	if unitEntity == nil {
 		result.Error = fmt.Sprintf("unit %d not found", unitID)
 		return result
@@ -162,10 +163,10 @@ func (sbs *SquadBuilderService) RemoveUnitFromGrid(
 	sbs.entityManager.World.DisposeEntities(unitEntity)
 
 	// Update squad capacity
-	UpdateSquadCapacity(squadID, sbs.entityManager)
+	squads.UpdateSquadCapacity(squadID, sbs.entityManager)
 
 	result.Success = true
-	result.RemainingCapacity = GetSquadRemainingCapacity(squadID, sbs.entityManager)
+	result.RemainingCapacity = squads.GetSquadRemainingCapacity(squadID, sbs.entityManager)
 
 	return result
 }
@@ -181,14 +182,14 @@ func (sbs *SquadBuilderService) DesignateLeader(unitID ecs.EntityID) *DesignateL
 	result := &DesignateLeaderResult{}
 
 	// Find the unit entity
-	unitEntity := common.FindEntityByIDWithTag(sbs.entityManager, unitID, SquadMemberTag)
+	unitEntity := common.FindEntityByIDWithTag(sbs.entityManager, unitID, squads.SquadMemberTag)
 	if unitEntity == nil {
 		result.Error = fmt.Sprintf("unit %d not found", unitID)
 		return result
 	}
 
 	// Add LeaderComponent
-	unitEntity.AddComponent(LeaderComponent, &LeaderData{})
+	unitEntity.AddComponent(squads.LeaderComponent, &squads.LeaderData{})
 
 	result.Success = true
 	return result
@@ -206,7 +207,7 @@ type SquadCapacityInfo struct {
 func (sbs *SquadBuilderService) GetCapacityInfo(squadID ecs.EntityID) *SquadCapacityInfo {
 	info := &SquadCapacityInfo{}
 
-	squadData := common.GetComponentTypeByIDWithTag[*SquadData](sbs.entityManager, squadID, SquadTag, SquadComponent)
+	squadData := common.GetComponentTypeByIDWithTag[*squads.SquadData](sbs.entityManager, squadID, squads.SquadTag, squads.SquadComponent)
 	if squadData == nil {
 		return info
 	}
@@ -216,9 +217,9 @@ func (sbs *SquadBuilderService) GetCapacityInfo(squadID ecs.EntityID) *SquadCapa
 	info.RemainingCapacity = float64(squadData.TotalCapacity) - squadData.UsedCapacity
 
 	// Check for leader
-	unitIDs := GetUnitIDsInSquad(squadID, sbs.entityManager)
+	unitIDs := squads.GetUnitIDsInSquad(squadID, sbs.entityManager)
 	for _, unitID := range unitIDs {
-		if sbs.entityManager.HasComponentByIDWithTag(unitID, SquadMemberTag, LeaderComponent) {
+		if sbs.entityManager.HasComponentByIDWithTag(unitID, squads.SquadMemberTag, squads.LeaderComponent) {
 			info.HasLeader = true
 			break
 		}
@@ -239,7 +240,7 @@ type ValidateSquadResult struct {
 func (sbs *SquadBuilderService) ValidateSquad(squadID ecs.EntityID) *ValidateSquadResult {
 	result := &ValidateSquadResult{}
 
-	unitIDs := GetUnitIDsInSquad(squadID, sbs.entityManager)
+	unitIDs := squads.GetUnitIDsInSquad(squadID, sbs.entityManager)
 	result.UnitCount = len(unitIDs)
 
 	if result.UnitCount == 0 {
@@ -249,7 +250,7 @@ func (sbs *SquadBuilderService) ValidateSquad(squadID ecs.EntityID) *ValidateSqu
 
 	// Check for leader
 	for _, unitID := range unitIDs {
-		if sbs.entityManager.HasComponentByIDWithTag(unitID, SquadMemberTag, LeaderComponent) {
+		if sbs.entityManager.HasComponentByIDWithTag(unitID, squads.SquadMemberTag, squads.LeaderComponent) {
 			result.HasLeader = true
 			break
 		}
@@ -261,7 +262,7 @@ func (sbs *SquadBuilderService) ValidateSquad(squadID ecs.EntityID) *ValidateSqu
 	}
 
 	// Check squad name
-	squadData := common.GetComponentTypeByIDWithTag[*SquadData](sbs.entityManager, squadID, SquadTag, SquadComponent)
+	squadData := common.GetComponentTypeByIDWithTag[*squads.SquadData](sbs.entityManager, squadID, squads.SquadTag, squads.SquadComponent)
 	if squadData == nil || squadData.Name == "" {
 		result.ErrorMsg = "Squad must have a name"
 		return result
@@ -277,7 +278,7 @@ func (sbs *SquadBuilderService) UpdateSquadName(squadID ecs.EntityID, newName st
 		return false
 	}
 
-	squadData := common.GetComponentTypeByIDWithTag[*SquadData](sbs.entityManager, squadID, SquadTag, SquadComponent)
+	squadData := common.GetComponentTypeByIDWithTag[*squads.SquadData](sbs.entityManager, squadID, squads.SquadTag, squads.SquadComponent)
 	if squadData == nil {
 		return false
 	}
@@ -309,7 +310,7 @@ func (sbs *SquadBuilderService) FinalizeSquad(squadID ecs.EntityID) *FinalizeSqu
 	}
 
 	// Get squad data
-	squadData := common.GetComponentTypeByIDWithTag[*SquadData](sbs.entityManager, squadID, SquadTag, SquadComponent)
+	squadData := common.GetComponentTypeByIDWithTag[*squads.SquadData](sbs.entityManager, squadID, squads.SquadTag, squads.SquadComponent)
 	if squadData == nil {
 		result.Error = "squad not found"
 		return result
@@ -337,7 +338,7 @@ func (sbs *SquadBuilderService) AssignRosterUnitToSquad(
 	playerID ecs.EntityID,
 	squadID ecs.EntityID,
 	rosterUnitID ecs.EntityID,
-	template UnitTemplate,
+	template squads.UnitTemplate,
 	gridRow, gridCol int,
 ) *AssignRosterUnitResult {
 	result := &AssignRosterUnitResult{
@@ -346,7 +347,7 @@ func (sbs *SquadBuilderService) AssignRosterUnitToSquad(
 	}
 
 	// Get roster
-	roster := GetPlayerRoster(playerID, sbs.entityManager)
+	roster := squads.GetPlayerRoster(playerID, sbs.entityManager)
 	if roster == nil {
 		result.Error = "roster not found"
 		return result
@@ -396,7 +397,7 @@ func (sbs *SquadBuilderService) UnassignRosterUnitFromSquad(
 	result := &UnassignRosterUnitResult{}
 
 	// Get roster
-	roster := GetPlayerRoster(playerID, sbs.entityManager)
+	roster := squads.GetPlayerRoster(playerID, sbs.entityManager)
 	if roster == nil {
 		result.Error = "roster not found"
 		return result
@@ -438,19 +439,19 @@ func (sbs *SquadBuilderService) ClearSquadAndReturnAllUnits(
 	result := &ClearSquadResult{}
 
 	// Get roster
-	roster := GetPlayerRoster(playerID, sbs.entityManager)
+	roster := squads.GetPlayerRoster(playerID, sbs.entityManager)
 	if roster == nil {
 		result.Error = "roster not found"
 		return result
 	}
 
 	// Get all units in squad
-	unitIDs := GetUnitIDsInSquad(squadID, sbs.entityManager)
+	unitIDs := squads.GetUnitIDsInSquad(squadID, sbs.entityManager)
 
 	// Remove each unit and return to roster
 	for _, unitID := range unitIDs {
 		// Find unit entity to dispose it
-		unitEntity := common.FindEntityByIDWithTag(sbs.entityManager, unitID, SquadMemberTag)
+		unitEntity := common.FindEntityByIDWithTag(sbs.entityManager, unitID, squads.SquadMemberTag)
 		if unitEntity == nil {
 			continue
 		}
@@ -469,7 +470,7 @@ func (sbs *SquadBuilderService) ClearSquadAndReturnAllUnits(
 	}
 
 	// Update squad capacity after clearing
-	UpdateSquadCapacity(squadID, sbs.entityManager)
+	squads.UpdateSquadCapacity(squadID, sbs.entityManager)
 
 	result.Success = true
 	return result
@@ -477,20 +478,20 @@ func (sbs *SquadBuilderService) ClearSquadAndReturnAllUnits(
 
 // GetSquadVisualization returns ASCII grid visualization of squad formation
 func (sbs *SquadBuilderService) GetSquadVisualization(squadID ecs.EntityID) string {
-	return VisualizeSquad(squadID, sbs.entityManager)
+	return squads.VisualizeSquad(squadID, sbs.entityManager)
 }
 
 // GetSquadUnitCount returns count of units in squad
 func (sbs *SquadBuilderService) GetSquadUnitCount(squadID ecs.EntityID) int {
-	unitIDs := GetUnitIDsInSquad(squadID, sbs.entityManager)
+	unitIDs := squads.GetUnitIDsInSquad(squadID, sbs.entityManager)
 	return len(unitIDs)
 }
 
 // GetAvailableRosterUnits returns roster units available for placement
-func (sbs *SquadBuilderService) GetAvailableRosterUnits(playerID ecs.EntityID) []*UnitRosterEntry {
-	roster := GetPlayerRoster(playerID, sbs.entityManager)
+func (sbs *SquadBuilderService) GetAvailableRosterUnits(playerID ecs.EntityID) []*squads.UnitRosterEntry {
+	roster := squads.GetPlayerRoster(playerID, sbs.entityManager)
 	if roster == nil {
-		return []*UnitRosterEntry{}
+		return []*squads.UnitRosterEntry{}
 	}
 
 	return roster.GetAvailableUnits()

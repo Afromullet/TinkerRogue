@@ -1,8 +1,9 @@
-package squads
+package squadservices
 
 import (
 	"fmt"
 	"game_main/common"
+	"game_main/squads"
 
 	"github.com/bytearena/ecs"
 )
@@ -50,15 +51,15 @@ type PlayerPurchaseInfo struct {
 }
 
 // GetAvailableUnitsForPurchase returns all unit templates available for purchase
-func (ups *UnitPurchaseService) GetAvailableUnitsForPurchase() []UnitTemplate {
+func (ups *UnitPurchaseService) GetAvailableUnitsForPurchase() []squads.UnitTemplate {
 	// Return all templates (in future, could filter by tier, availability, etc.)
-	templates := make([]UnitTemplate, len(Units))
-	copy(templates, Units)
+	templates := make([]squads.UnitTemplate, len(squads.Units))
+	copy(templates, squads.Units)
 	return templates
 }
 
 // GetUnitCost calculates the cost of a unit template
-func (ups *UnitPurchaseService) GetUnitCost(template UnitTemplate) int {
+func (ups *UnitPurchaseService) GetUnitCost(template squads.UnitTemplate) int {
 	// Simple cost formula based on unit name hash
 	// TODO: Add cost field to UnitTemplate or JSON data
 	baseCost := 100
@@ -69,7 +70,7 @@ func (ups *UnitPurchaseService) GetUnitCost(template UnitTemplate) int {
 }
 
 // CanPurchaseUnit validates if player can purchase a unit
-func (ups *UnitPurchaseService) CanPurchaseUnit(playerID ecs.EntityID, template UnitTemplate) *PurchaseValidationResult {
+func (ups *UnitPurchaseService) CanPurchaseUnit(playerID ecs.EntityID, template squads.UnitTemplate) *PurchaseValidationResult {
 	result := &PurchaseValidationResult{}
 
 	// Get player resources
@@ -80,7 +81,7 @@ func (ups *UnitPurchaseService) CanPurchaseUnit(playerID ecs.EntityID, template 
 	}
 
 	// Get player roster
-	roster := GetPlayerRoster(playerID, ups.entityManager)
+	roster := squads.GetPlayerRoster(playerID, ups.entityManager)
 	if roster == nil {
 		result.Error = "player roster not found"
 		return result
@@ -112,7 +113,7 @@ func (ups *UnitPurchaseService) CanPurchaseUnit(playerID ecs.EntityID, template 
 }
 
 // PurchaseUnit handles the complete purchase transaction atomically with rollback on failure
-func (ups *UnitPurchaseService) PurchaseUnit(playerID ecs.EntityID, template UnitTemplate) *PurchaseResult {
+func (ups *UnitPurchaseService) PurchaseUnit(playerID ecs.EntityID, template squads.UnitTemplate) *PurchaseResult {
 	result := &PurchaseResult{
 		UnitName: template.Name,
 	}
@@ -126,11 +127,11 @@ func (ups *UnitPurchaseService) PurchaseUnit(playerID ecs.EntityID, template Uni
 
 	// Get resources and roster
 	resources := common.GetPlayerResources(playerID, ups.entityManager)
-	roster := GetPlayerRoster(playerID, ups.entityManager)
+	roster := squads.GetPlayerRoster(playerID, ups.entityManager)
 	cost := ups.GetUnitCost(template)
 
 	// Step 1: Create unit entity from template
-	unitEntity, err := CreateUnitEntity(ups.entityManager, template)
+	unitEntity, err := squads.CreateUnitEntity(ups.entityManager, template)
 	if err != nil {
 		result.Error = fmt.Sprintf("failed to create unit: %v", err)
 		return result
@@ -177,7 +178,7 @@ func (ups *UnitPurchaseService) GetPlayerPurchaseInfo(playerID ecs.EntityID) *Pl
 	}
 
 	// Get player roster
-	roster := GetPlayerRoster(playerID, ups.entityManager)
+	roster := squads.GetPlayerRoster(playerID, ups.entityManager)
 	if roster != nil {
 		info.RosterCount, info.RosterCapacity = roster.GetUnitCount()
 		info.CanAddUnit = roster.CanAddUnit()
@@ -188,7 +189,7 @@ func (ups *UnitPurchaseService) GetPlayerPurchaseInfo(playerID ecs.EntityID) *Pl
 
 // GetUnitOwnedCount returns how many units of a template the player owns
 func (ups *UnitPurchaseService) GetUnitOwnedCount(playerID ecs.EntityID, templateName string) (totalOwned, available int) {
-	roster := GetPlayerRoster(playerID, ups.entityManager)
+	roster := squads.GetPlayerRoster(playerID, ups.entityManager)
 	if roster == nil {
 		return 0, 0
 	}
