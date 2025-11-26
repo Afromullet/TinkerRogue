@@ -120,3 +120,18 @@ func (fm *FactionManager) GetFactionMana(factionID ecs.EntityID) (current, max i
 	factionData := common.GetComponentType[*FactionData](faction, FactionComponent)
 	return factionData.Mana, factionData.MaxMana
 }
+
+func (fm *FactionManager) GetFactionName(factionID ecs.EntityID) string {
+	// Find faction entity
+	faction := FindFactionByID(factionID, fm.manager)
+	if faction == nil {
+		return "Unknown"
+	}
+
+	// Get faction data
+	factionData := common.GetComponentType[*FactionData](faction, FactionComponent)
+	if factionData != nil {
+		return factionData.Name
+	}
+	return "Unknown"
+}

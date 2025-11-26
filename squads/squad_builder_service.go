@@ -285,3 +285,39 @@ func (sbs *SquadBuilderService) UpdateSquadName(squadID ecs.EntityID, newName st
 	squadData.Name = newName
 	return true
 }
+
+// FinalizeSquadResult contains information about squad finalization
+type FinalizeSquadResult struct {
+	Success   bool
+	SquadID   ecs.EntityID
+	SquadName string
+	UnitCount int
+	Error     string
+}
+
+// FinalizeSquad validates and finalizes a squad, making it ready for deployment/combat
+func (sbs *SquadBuilderService) FinalizeSquad(squadID ecs.EntityID) *FinalizeSquadResult {
+	result := &FinalizeSquadResult{
+		SquadID: squadID,
+	}
+
+	// Validate the squad first
+	validation := sbs.ValidateSquad(squadID)
+	if !validation.Valid {
+		result.Error = validation.ErrorMsg
+		return result
+	}
+
+	// Get squad data
+	squadData := common.GetComponentTypeByIDWithTag[*SquadData](sbs.entityManager, squadID, SquadTag, SquadComponent)
+	if squadData == nil {
+		result.Error = "squad not found"
+		return result
+	}
+
+	result.SquadName = squadData.Name
+	result.UnitCount = validation.UnitCount
+	result.Success = true
+
+	return result
+}

@@ -154,6 +154,113 @@ func (cs *CombatService) GetEntityManager() *common.EntityManager {
 	return cs.entityManager
 }
 
+// EndTurnResult contains information about turn transition
+type EndTurnResult struct {
+	Success       bool
+	PreviousFaction ecs.EntityID
+	NewFaction    ecs.EntityID
+	NewRound      int
+	Error         string
+}
+
+// EndTurn ends the current faction's turn and advances to next
+func (cs *CombatService) EndTurn() *EndTurnResult {
+	result := &EndTurnResult{
+		PreviousFaction: cs.turnManager.GetCurrentFaction(),
+	}
+
+	err := cs.turnManager.EndTurn()
+	if err != nil {
+		result.Success = false
+		result.Error = err.Error()
+		return result
+	}
+
+	result.Success = true
+	result.NewFaction = cs.turnManager.GetCurrentFaction()
+	result.NewRound = cs.turnManager.GetCurrentRound()
+	return result
+}
+
+// VictoryCheckResult contains battle outcome information
+type VictoryCheckResult struct {
+	BattleOver       bool
+	VictorFaction    ecs.EntityID
+	VictorName       string
+	DefeatedFactions []ecs.EntityID
+	RoundsCompleted  int
+}
+
+// CheckVictoryCondition checks if battle has ended
+func (cs *CombatService) CheckVictoryCondition() *VictoryCheckResult {
+	result := &VictoryCheckResult{
+		RoundsCompleted: cs.turnManager.GetCurrentRound(),
+	}
+
+	// Count alive squads per faction
+	aliveByFaction := make(map[ecs.EntityID]int)
+
+	for _, queryResult := range cs.entityManager.World.Query(FactionTag) {
+		entity := queryResult.Entity
+		factionID := entity.GetID()
+		aliveByFaction[factionID] = 0
+	}
+
+	// Count squads
+	for _, queryResult := range cs.entityManager.World.Query(squads.SquadTag) {
+		entity := queryResult.Entity
+		squadData := common.GetComponentType[*squads.SquadData](entity, squads.SquadComponent)
+		if squadData != nil && !squads.IsSquadDestroyed(entity.GetID(), cs.entityManager) {
+			factionData := common.GetComponentTypeByIDWithTag[*FactionData](
+				cs.entityManager, entity.GetID(), squads.SquadTag, FactionComponent)
+			if factionData != nil {
+				aliveByFaction[factionData.FactionID]++
+			}
+		}
+	}
+
+	// Check victory: only one faction with alive squads
+	factionsWithSquads := 0
+	var victorFaction ecs.EntityID
+	for factionID, count := range aliveByFaction {
+		if count > 0 {
+			factionsWithSquads++
+			victorFaction = factionID
+		} else {
+			result.DefeatedFactions = append(result.DefeatedFactions, factionID)
+		}
+	}
+
+	if factionsWithSquads <= 1 {
+		result.BattleOver = true
+		result.VictorFaction = victorFaction
+		result.VictorName = cs.factionManager.GetFactionName(victorFaction)
+	}
+
+	return result
+}
+
+// UpdateUnitPositions updates all unit positions in a squad to match the squad's new position
+func (cs *CombatService) UpdateUnitPositions(squadID ecs.EntityID, newSquadPos coords.LogicalPosition) error {
+	// Get all units in the squad
+	unitIDs := squads.GetUnitIDsInSquad(squadID, cs.entityManager)
+
+	// Update each unit's position to match the squad's new position
+	for _, unitID := range unitIDs {
+		// Find the unit in the ECS world and update its position
+		unitEntity := common.FindEntityByIDWithTag(cs.entityManager, unitID, squads.SquadMemberTag)
+		if unitEntity != nil && unitEntity.HasComponent(common.PositionComponent) {
+			posPtr := common.GetComponentType[*coords.LogicalPosition](unitEntity, common.PositionComponent)
+			if posPtr != nil {
+				posPtr.X = newSquadPos.X
+				posPtr.Y = newSquadPos.Y
+			}
+		}
+	}
+
+	return nil
+}
+
 // getSquadNameByID is a helper to get squad name from ID
 func getSquadNameByID(squadID ecs.EntityID, manager *common.EntityManager) string {
 	squadData := common.GetComponentTypeByIDWithTag[*squads.SquadData](manager, squadID, squads.SquadTag, squads.SquadComponent)

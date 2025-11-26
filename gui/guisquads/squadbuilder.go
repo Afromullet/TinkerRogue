@@ -276,18 +276,17 @@ func (sbm *SquadBuilderMode) updateCapacityDisplay() {
 		return
 	}
 
-	used := squads.GetSquadUsedCapacity(sbm.currentSquadID, sbm.Context.ECSManager)
-	total := squads.GetSquadTotalCapacity(sbm.currentSquadID, sbm.Context.ECSManager)
-	remaining := float64(total) - used
+	// Use service to get capacity info instead of direct ECS queries
+	capacityInfo := sbm.squadBuilderSvc.GetCapacityInfo(sbm.currentSquadID)
 
 	leaderStatus := "No leader"
-	if sbm.gridManager.GetLeader() != 0 {
+	if capacityInfo.HasLeader {
 		leaderStatus = "Leader assigned ★"
 	}
 
-	capacityText := fmt.Sprintf("Capacity: %.1f / %d\nRemaining: %.1f\n%s", used, total, remaining, leaderStatus)
+	capacityText := fmt.Sprintf("Capacity: %.1f / %d\nRemaining: %.1f\n%s", capacityInfo.UsedCapacity, capacityInfo.TotalCapacity, capacityInfo.RemainingCapacity, leaderStatus)
 
-	if remaining < 0 {
+	if capacityInfo.RemainingCapacity < 0 {
 		capacityText += "\nWARNING: Over capacity!"
 	}
 

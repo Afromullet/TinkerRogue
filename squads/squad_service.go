@@ -213,3 +213,80 @@ func (ss *SquadService) CanAddMoreUnits(squadID ecs.EntityID, unitCapacityCost f
 func (ss *SquadService) GetSquadRemainingCapacity(squadID ecs.EntityID) float64 {
 	return GetSquadRemainingCapacity(squadID, ss.entityManager)
 }
+
+// DestroySquadResult contains information about squad destruction
+type DestroySquadResult struct {
+	Success   bool
+	SquadID   ecs.EntityID
+	SquadName string
+	Error     string
+}
+
+// DestroySquad removes a squad from play
+func (ss *SquadService) DestroySquad(squadID ecs.EntityID) *DestroySquadResult {
+	result := &DestroySquadResult{
+		SquadID: squadID,
+	}
+
+	// Find and mark squad as destroyed
+	squadEntity := common.FindEntityByIDWithTag(ss.entityManager, squadID, SquadTag)
+	if squadEntity == nil {
+		result.Error = fmt.Sprintf("squad %d not found", squadID)
+		return result
+	}
+
+	squadData := common.GetComponentType[*SquadData](squadEntity, SquadComponent)
+	if squadData != nil {
+		result.SquadName = squadData.Name
+		squadData.Morale = 0 // Mark as destroyed
+	}
+
+	result.Success = true
+	return result
+}
+
+// ApplyDamageResult contains information about damage application
+type ApplyDamageResult struct {
+	Success        bool
+	SquadName      string
+	DamageApplied  int
+	RemainingHP    int
+	SquadDestroyed bool
+	Error          string
+}
+
+// ApplyDamageToSquad applies damage to a squad (affects units and morale)
+func (ss *SquadService) ApplyDamageToSquad(squadID ecs.EntityID, damageAmount int) *ApplyDamageResult {
+	result := &ApplyDamageResult{
+		DamageApplied: damageAmount,
+	}
+
+	squadEntity := common.FindEntityByIDWithTag(ss.entityManager, squadID, SquadTag)
+	if squadEntity == nil {
+		result.Error = fmt.Sprintf("squad %d not found", squadID)
+		return result
+	}
+
+	squadData := common.GetComponentType[*SquadData](squadEntity, SquadComponent)
+	if squadData == nil {
+		result.Error = "squad has no squad data component"
+		return result
+	}
+
+	result.SquadName = squadData.Name
+
+	// Apply morale damage (morale represents squad integrity)
+	moraleReduction := (damageAmount / 5) // Rough estimate
+	if moraleReduction < 1 {
+		moraleReduction = 1
+	}
+	squadData.Morale -= moraleReduction
+	if squadData.Morale < 0 {
+		squadData.Morale = 0
+		result.SquadDestroyed = true
+	}
+
+	result.RemainingHP = squadData.Morale
+	result.Success = true
+	return result
+}

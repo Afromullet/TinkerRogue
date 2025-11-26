@@ -6,7 +6,6 @@ import (
 
 	"fmt"
 	"game_main/combat"
-	"game_main/common"
 	"game_main/coords"
 	"game_main/squads"
 
@@ -61,18 +60,13 @@ func (cah *CombatActionHandler) ToggleAttackMode() {
 
 	if newAttackMode {
 		cah.addLog("Attack mode: Press 1-3 to target enemy")
-		cah.showAvailableTargets()
+		cah.ShowAvailableTargets()
 	} else {
 		cah.addLog("Attack mode cancelled")
 	}
 }
 
-// ShowAvailableTargets displays available enemy targets
 func (cah *CombatActionHandler) ShowAvailableTargets() {
-	cah.showAvailableTargets()
-}
-
-func (cah *CombatActionHandler) showAvailableTargets() {
 	currentFactionID := cah.combatService.GetCurrentFaction()
 	if currentFactionID == 0 {
 		return
@@ -129,7 +123,7 @@ func (cah *CombatActionHandler) SelectTarget(targetSquadID ecs.EntityID) {
 	}
 
 	cah.battleMapState.SelectedTargetID = targetSquadID
-	cah.executeAttack()
+	cah.ExecuteAttack()
 }
 
 // SelectEnemyTarget selects an enemy squad by index (0-2 for 1-3 keys)
@@ -150,12 +144,7 @@ func (cah *CombatActionHandler) SelectEnemyTarget(index int) {
 	cah.SelectTarget(enemySquads[index])
 }
 
-// ExecuteAttack performs an attack action
 func (cah *CombatActionHandler) ExecuteAttack() {
-	cah.executeAttack()
-}
-
-func (cah *CombatActionHandler) executeAttack() {
 	selectedSquad := cah.battleMapState.SelectedSquadID
 	selectedTarget := cah.battleMapState.SelectedTargetID
 
@@ -189,8 +178,8 @@ func (cah *CombatActionHandler) MoveSquad(squadID ecs.EntityID, newPos coords.Lo
 		return fmt.Errorf(result.ErrorReason)
 	}
 
-	// Update unit positions to match squad position
-	cah.updateUnitPositions(squadID, newPos)
+	// Update unit positions to match squad position using service
+	cah.combatService.UpdateUnitPositions(squadID, newPos)
 
 	cah.addLog(fmt.Sprintf("%s moved to (%d, %d)", result.SquadName, newPos.X, newPos.Y))
 
@@ -236,27 +225,6 @@ func (cah *CombatActionHandler) CycleSquadSelection() {
 	// Select next squad
 	nextIndex := (currentIndex + 1) % len(aliveSquads)
 	cah.SelectSquad(aliveSquads[nextIndex])
-}
-
-// updateUnitPositions updates all unit positions in a squad
-func (cah *CombatActionHandler) updateUnitPositions(squadID ecs.EntityID, newSquadPos coords.LogicalPosition) {
-	entityManager := cah.combatService.GetEntityManager()
-
-	// Get all units in the squad
-	unitIDs := squads.GetUnitIDsInSquad(squadID, entityManager)
-
-	// Update each unit's position to match the squad's new position
-	for _, unitID := range unitIDs {
-		// Find the unit in the ECS world and update its position
-		unitEntity := common.FindEntityByIDWithTag(entityManager, unitID, squads.SquadMemberTag)
-		if unitEntity != nil && unitEntity.HasComponent(common.PositionComponent) {
-			posPtr := common.GetComponentType[*coords.LogicalPosition](unitEntity, common.PositionComponent)
-			if posPtr != nil {
-				posPtr.X = newSquadPos.X
-				posPtr.Y = newSquadPos.Y
-			}
-		}
-	}
 }
 
 // addLog adds a message to the combat log
