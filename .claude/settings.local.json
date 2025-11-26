@@ -4,7 +4,8 @@
       "Bash(for file in explorationmode.go formationeditormode.go infomode.go inventorymode.go squadmanagementmode.go squadbuilder.go squaddeploymentmode.go)",
       "Bash(do)",
       "Bash(perl -i -pe:*)",
-      "Bash(go build:*)"
+      "Bash(go build:*)",
+      "Bash(go test:*)"
     ],
     "deny": [],
     "ask": []
