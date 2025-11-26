@@ -82,7 +82,7 @@ func TestPlaceUnit_Success(t *testing.T) {
 			Strength:  12,
 			Dexterity: 10,
 			Magic:     5,
-			Health:    15,
+
 			MaxHealth: 15,
 		},
 		GridWidth:  1,
