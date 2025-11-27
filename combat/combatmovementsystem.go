@@ -10,21 +10,21 @@ import (
 	"github.com/bytearena/ecs"
 )
 
-type MovementSystem struct {
+type CombatMovementSystem struct {
 	manager   *common.EntityManager
 	posSystem *systems.PositionSystem // For O(1) collision detection
 }
 
 // Constructor
-func NewMovementSystem(manager *common.EntityManager, posSystem *systems.PositionSystem) *MovementSystem {
-	return &MovementSystem{
+func NewMovementSystem(manager *common.EntityManager, posSystem *systems.PositionSystem) *CombatMovementSystem {
+	return &CombatMovementSystem{
 		manager:   manager,
 		posSystem: posSystem,
 	}
 }
 
 // The squad movement speed is the movement speed of the slowest unit in the squad
-func (ms *MovementSystem) GetSquadMovementSpeed(squadID ecs.EntityID) int {
+func (ms *CombatMovementSystem) GetSquadMovementSpeed(squadID ecs.EntityID) int {
 
 	unitIDs := squads.GetUnitIDsInSquad(squadID, ms.manager)
 
@@ -54,7 +54,7 @@ func (ms *MovementSystem) GetSquadMovementSpeed(squadID ecs.EntityID) int {
 	return minSpeed // Squad moves at slowest unit's speed
 }
 
-func (ms *MovementSystem) CanMoveTo(squadID ecs.EntityID, targetPos coords.LogicalPosition) bool {
+func (ms *CombatMovementSystem) CanMoveTo(squadID ecs.EntityID, targetPos coords.LogicalPosition) bool {
 	//Check if tile is occupied using PositionSystem
 	occupyingID := ms.posSystem.GetEntityIDAt(targetPos)
 	if occupyingID == 0 {
@@ -74,7 +74,7 @@ func (ms *MovementSystem) CanMoveTo(squadID ecs.EntityID, targetPos coords.Logic
 	return occupyingFaction == squadFaction
 }
 
-func (ms *MovementSystem) MoveSquad(squadID ecs.EntityID, targetPos coords.LogicalPosition) error {
+func (ms *CombatMovementSystem) MoveSquad(squadID ecs.EntityID, targetPos coords.LogicalPosition) error {
 
 	if !canSquadMove(squadID, ms.manager) {
 		return fmt.Errorf("squad has no movement remaining")
@@ -129,7 +129,7 @@ func (ms *MovementSystem) MoveSquad(squadID ecs.EntityID, targetPos coords.Logic
 	return nil
 }
 
-func (ms *MovementSystem) GetValidMovementTiles(squadID ecs.EntityID) []coords.LogicalPosition {
+func (ms *CombatMovementSystem) GetValidMovementTiles(squadID ecs.EntityID) []coords.LogicalPosition {
 	currentPos, err := ms.GetSquadPosition(squadID)
 	if err != nil {
 		return []coords.LogicalPosition{}
@@ -171,7 +171,7 @@ func (ms *MovementSystem) GetValidMovementTiles(squadID ecs.EntityID) []coords.L
 	return validTiles
 }
 
-func (ms *MovementSystem) GetSquadPosition(squadID ecs.EntityID) (coords.LogicalPosition, error) {
+func (ms *CombatMovementSystem) GetSquadPosition(squadID ecs.EntityID) (coords.LogicalPosition, error) {
 	// Find MapPositionData for this squad
 	mapPosEntity := findMapPositionEntity(squadID, ms.manager)
 	if mapPosEntity == nil {

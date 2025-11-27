@@ -14,7 +14,7 @@ type CombatService struct {
 	entityManager  *common.EntityManager
 	turnManager    *combat.TurnManager
 	factionManager *combat.FactionManager
-	movementSystem *combat.MovementSystem
+	movementSystem *combat.CombatMovementSystem
 }
 
 // NewCombatService creates a new combat service
@@ -136,7 +136,7 @@ func (cs *CombatService) ResetSquadActions(factionID ecs.EntityID) error {
 }
 
 // GetMovementSystem exposes movement system for UI queries (read-only)
-func (cs *CombatService) GetMovementSystem() *combat.MovementSystem {
+func (cs *CombatService) GetMovementSystem() *combat.CombatMovementSystem {
 	return cs.movementSystem
 }
 
