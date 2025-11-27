@@ -1,12 +1,13 @@
 package guicombat
 
 import (
+	"fmt"
+	"game_main/combat"
 	"game_main/combat/combatservices"
+	"game_main/coords"
 	"game_main/gui/core"
 	"game_main/gui/guicomponents"
-
-	"fmt"
-	"game_main/coords"
+	"game_main/squads"
 
 	"github.com/bytearena/ecs"
 	"github.com/ebitenui/ebitenui/widget"
@@ -43,7 +44,7 @@ func (cah *CombatActionHandler) SelectSquad(squadID ecs.EntityID) {
 	cah.battleMapState.SelectedSquadID = squadID
 
 	// Get squad name and log
-	squadName := cah.queries.GetSquadName(squadID)
+	squadName := squads.GetSquadName(squadID, cah.queries.ECSManager)
 	cah.addLog(fmt.Sprintf("Selected: %s", squadName))
 }
 
@@ -81,7 +82,7 @@ func (cah *CombatActionHandler) ShowAvailableTargets() {
 
 	// Show up to 3 targets
 	for i := 0; i < len(enemySquads) && i < 3; i++ {
-		targetName := cah.queries.GetSquadName(enemySquads[i])
+		targetName := squads.GetSquadName(enemySquads[i], cah.queries.ECSManager)
 		cah.addLog(fmt.Sprintf("  [%d] %s", i+1, targetName))
 	}
 }
@@ -192,7 +193,8 @@ func (cah *CombatActionHandler) MoveSquad(squadID ecs.EntityID, newPos coords.Lo
 // CycleSquadSelection selects the next squad in the faction
 func (cah *CombatActionHandler) CycleSquadSelection() {
 	currentFactionID := cah.combatService.GetCurrentFaction()
-	if currentFactionID == 0 || !cah.queries.IsPlayerFaction(currentFactionID) {
+	factionData := combat.FindFactionDataByID(currentFactionID, cah.queries.ECSManager)
+	if currentFactionID == 0 || factionData == nil || !factionData.IsPlayerControlled {
 		return
 	}
 

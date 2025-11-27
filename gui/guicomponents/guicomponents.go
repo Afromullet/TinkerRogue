@@ -8,6 +8,7 @@ import (
 	"game_main/gear"
 	"game_main/gui/guiresources"
 	"game_main/gui/widgets"
+	"game_main/squads"
 
 	"github.com/bytearena/ecs"
 	"github.com/ebitenui/ebitenui/widget"
@@ -59,7 +60,7 @@ func (slc *SquadListComponent) Refresh() {
 	slc.filteredSquads = make([]ecs.EntityID, 0)
 
 	// Get all squads
-	allSquads := slc.queries.FindAllSquads()
+	allSquads := squads.FindAllSquads(slc.queries.ECSManager)
 
 	// Filter squads and create buttons
 	for _, squadID := range allSquads {
@@ -72,7 +73,7 @@ func (slc *SquadListComponent) Refresh() {
 
 		// Create button for this squad
 		localSquadID := squadID // Capture for closure
-		squadName := slc.queries.GetSquadName(squadID)
+		squadName := squads.GetSquadName(squadID, slc.queries.ECSManager)
 
 		button := widgets.CreateButtonWithConfig(widgets.ButtonConfig{
 			Text: squadName,
@@ -285,7 +286,7 @@ func (plc *PanelListComponent) Refresh() {
 	plc.activePanels = make([]*widget.Container, 0)
 
 	// Get all squads
-	allSquads := plc.queries.FindAllSquads()
+	allSquads := squads.FindAllSquads(plc.queries.ECSManager)
 
 	// Create panel for each filtered squad
 	for _, squadID := range allSquads {
@@ -359,7 +360,7 @@ func (blc *ButtonListComponent) Refresh(onSelect func(ecs.EntityID)) {
 	blc.filteredItems = make([]ecs.EntityID, 0)
 
 	// Get all squads
-	allSquads := blc.queries.FindAllSquads()
+	allSquads := squads.FindAllSquads(blc.queries.ECSManager)
 
 	// Create button for each filtered squad
 	for _, squadID := range allSquads {

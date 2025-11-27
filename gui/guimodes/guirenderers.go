@@ -1,10 +1,10 @@
 package guimodes
 
 import (
-	"game_main/gui/guicomponents"
-
 	"game_main/coords"
 	"game_main/graphics"
+	"game_main/gui/guicomponents"
+	"game_main/squads"
 	"image/color"
 
 	"github.com/bytearena/ecs"
@@ -142,7 +142,7 @@ func (shr *SquadHighlightRenderer) Render(
 	vr := NewViewportRenderer(screen, centerPos)
 
 	// Get all squads with positions
-	allSquads := shr.queries.FindAllSquads()
+	allSquads := squads.FindAllSquads(shr.queries.ECSManager)
 
 	for _, squadID := range allSquads {
 		squadInfo := shr.queries.GetSquadInfo(squadID)

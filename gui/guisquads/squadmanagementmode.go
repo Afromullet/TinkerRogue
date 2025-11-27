@@ -7,6 +7,7 @@ import (
 	"game_main/gui/core"
 	"game_main/gui/guiresources"
 	"game_main/gui/widgets"
+	"game_main/squads"
 	"image/color"
 
 	"github.com/bytearena/ecs"
@@ -169,7 +170,7 @@ func (smm *SquadManagementMode) Enter(fromMode core.UIMode) error {
 	fmt.Println("Entering Squad Management Mode")
 
 	// Get all squad IDs from ECS
-	smm.allSquadIDs = smm.Queries.FindAllSquads()
+	smm.allSquadIDs = squads.FindAllSquads(smm.Queries.ECSManager)
 
 	// Reset to first squad if we have any
 	if len(smm.allSquadIDs) > 0 {
@@ -282,7 +283,7 @@ func (smm *SquadManagementMode) createSquadPanel(squadID ecs.EntityID) *SquadPan
 	})
 
 	// Squad name label - use unified query service
-	squadName := smm.Queries.GetSquadName(squadID)
+	squadName := squads.GetSquadName(squadID, smm.Queries.ECSManager)
 	nameLabel := widgets.CreateLargeLabel(fmt.Sprintf("Squad: %s", squadName))
 	panel.container.AddChild(nameLabel)
 

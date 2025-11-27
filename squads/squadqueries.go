@@ -265,3 +265,28 @@ func GetSquadMovementSpeed(squadID ecs.EntityID, squadmanager *common.EntityMana
 
 	return minSpeed
 }
+
+// GetSquadName returns the squad name
+// Returns "Unknown Squad" if squad not found
+func GetSquadName(squadID ecs.EntityID, squadmanager *common.EntityManager) string {
+	squadEntity := GetSquadEntity(squadID, squadmanager)
+	if squadEntity == nil {
+		return "Unknown Squad"
+	}
+
+	squadData := common.GetComponentType[*SquadData](squadEntity, SquadComponent)
+	return squadData.Name
+}
+
+// FindAllSquads returns all squad entity IDs in the game
+// Uses efficient ECS query pattern with SquadTag
+func FindAllSquads(squadmanager *common.EntityManager) []ecs.EntityID {
+	allSquads := make([]ecs.EntityID, 0)
+
+	for _, result := range squadmanager.World.Query(SquadTag) {
+		squadData := common.GetComponentType[*SquadData](result.Entity, SquadComponent)
+		allSquads = append(allSquads, squadData.SquadID)
+	}
+
+	return allSquads
+}

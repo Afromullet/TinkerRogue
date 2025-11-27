@@ -129,6 +129,21 @@ func GetSquadsForFaction(factionID ecs.EntityID, manager *common.EntityManager) 
 	return squadIDs
 }
 
+// GetSquadAtPosition returns the squad entity ID at the given position
+// Returns 0 if no squad at position or squad is destroyed
+func GetSquadAtPosition(pos coords.LogicalPosition, manager *common.EntityManager) ecs.EntityID {
+	for _, result := range manager.World.Query(MapPositionTag) {
+		mapPos := common.GetComponentType[*MapPositionData](result.Entity, MapPositionComponent)
+
+		if mapPos.Position.X == pos.X && mapPos.Position.Y == pos.Y {
+			if !squads.IsSquadDestroyed(mapPos.SquadID, manager) {
+				return mapPos.SquadID
+			}
+		}
+	}
+	return 0
+}
+
 // isSquad checks if an entity ID represents a squad
 func isSquad(entityID ecs.EntityID, manager *common.EntityManager) bool {
 	mapPosEntity := findMapPositionEntity(entityID, manager)

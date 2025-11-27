@@ -13,12 +13,12 @@ import (
 // GUIQueries provides centralized ECS query functions for all UI modes.
 // This eliminates query duplication and provides a consistent query interface.
 type GUIQueries struct {
-	ecsManager *common.EntityManager
+	ECSManager *common.EntityManager
 }
 
 // NewGUIQueries creates a new query service
 func NewGUIQueries(ecsManager *common.EntityManager) *GUIQueries {
-	return &GUIQueries{ecsManager: ecsManager}
+	return &GUIQueries{ECSManager: ecsManager}
 }
 
 // ===== FACTION QUERIES =====
@@ -36,20 +36,20 @@ type FactionInfo struct {
 
 // GetFactionInfo returns complete faction information for UI display
 func (gq *GUIQueries) GetFactionInfo(factionID ecs.EntityID) *FactionInfo {
-	factionData := combat.FindFactionDataByID(factionID, gq.ecsManager)
+	factionData := combat.FindFactionDataByID(factionID, gq.ECSManager)
 	if factionData == nil {
 		return nil
 	}
 
 	// Get faction manager for additional data
-	factionManager := combat.NewFactionManager(gq.ecsManager)
+	factionManager := combat.NewFactionManager(gq.ECSManager)
 	currentMana, maxMana := factionManager.GetFactionMana(factionID)
 	squadIDs := factionManager.GetFactionSquads(factionID)
 
 	// Count alive squads
 	aliveCount := 0
 	for _, squadID := range squadIDs {
-		if !squads.IsSquadDestroyed(squadID, gq.ecsManager) {
+		if !squads.IsSquadDestroyed(squadID, gq.ECSManager) {
 			aliveCount++
 		}
 	}
@@ -63,26 +63,6 @@ func (gq *GUIQueries) GetFactionInfo(factionID ecs.EntityID) *FactionInfo {
 		SquadIDs:           squadIDs,
 		AliveSquadCount:    aliveCount,
 	}
-}
-
-// GetFactionName returns just the faction name (optimized lightweight query)
-// Queries ONLY faction entities, avoiding expensive squad enumeration
-func (gq *GUIQueries) GetFactionName(factionID ecs.EntityID) string {
-	factionData := combat.FindFactionDataByID(factionID, gq.ecsManager)
-	if factionData == nil {
-		return "Unknown Faction"
-	}
-	return factionData.Name
-}
-
-// IsPlayerFaction checks if faction is player-controlled (optimized lightweight query)
-// Queries ONLY faction entities, avoiding expensive squad enumeration
-func (gq *GUIQueries) IsPlayerFaction(factionID ecs.EntityID) bool {
-	factionData := combat.FindFactionDataByID(factionID, gq.ecsManager)
-	if factionData == nil {
-		return false
-	}
-	return factionData.IsPlayerControlled
 }
 
 // ===== SQUAD QUERIES =====
@@ -107,17 +87,17 @@ type SquadInfo struct {
 // GetSquadInfo returns complete squad information for UI display
 func (gq *GUIQueries) GetSquadInfo(squadID ecs.EntityID) *SquadInfo {
 	// Get squad name
-	name := gq.GetSquadName(squadID)
+	name := squads.GetSquadName(squadID, gq.ECSManager)
 
 	// Get unit IDs
-	unitIDs := squads.GetUnitIDsInSquad(squadID, gq.ecsManager)
+	unitIDs := squads.GetUnitIDsInSquad(squadID, gq.ECSManager)
 
 	// Calculate HP and alive units
 	aliveUnits := 0
 	totalHP := 0
 	maxHP := 0
 	for _, unitID := range unitIDs {
-		for _, result := range gq.ecsManager.World.Query(squads.SquadMemberTag) {
+		for _, result := range gq.ECSManager.World.Query(squads.SquadMemberTag) {
 			if result.Entity.GetID() == unitID {
 				attrs := common.GetComponentType[*common.Attributes](result.Entity, common.AttributeComponent)
 				if attrs.CanAct {
@@ -132,7 +112,7 @@ func (gq *GUIQueries) GetSquadInfo(squadID ecs.EntityID) *SquadInfo {
 	// Get position and faction using consolidated query function
 	var position *coords.LogicalPosition
 	var factionID ecs.EntityID
-	mapPos := combat.FindMapPositionBySquadID(squadID, gq.ecsManager)
+	mapPos := combat.FindMapPositionBySquadID(squadID, gq.ECSManager)
 	if mapPos != nil {
 		pos := mapPos.Position
 		position = &pos
@@ -143,7 +123,7 @@ func (gq *GUIQueries) GetSquadInfo(squadID ecs.EntityID) *SquadInfo {
 	hasActed := false
 	hasMoved := false
 	movementRemaining := 0
-	actionState := combat.FindActionStateBySquadID(squadID, gq.ecsManager)
+	actionState := combat.FindActionStateBySquadID(squadID, gq.ECSManager)
 	if actionState != nil {
 		hasActed = actionState.HasActed
 		hasMoved = actionState.HasMoved
@@ -160,75 +140,11 @@ func (gq *GUIQueries) GetSquadInfo(squadID ecs.EntityID) *SquadInfo {
 		MaxHP:             maxHP,
 		Position:          position,
 		FactionID:         factionID,
-		IsDestroyed:       squads.IsSquadDestroyed(squadID, gq.ecsManager),
+		IsDestroyed:       squads.IsSquadDestroyed(squadID, gq.ECSManager),
 		HasActed:          hasActed,
 		HasMoved:          hasMoved,
 		MovementRemaining: movementRemaining,
 	}
-}
-
-// GetSquadName returns the squad name
-// Returns "Unknown Squad" if squad not found
-func (gq *GUIQueries) GetSquadName(squadID ecs.EntityID) string {
-	for _, result := range gq.ecsManager.World.Query(squads.SquadTag) {
-		squadData := common.GetComponentType[*squads.SquadData](
-			result.Entity, squads.SquadComponent)
-		if squadData.SquadID == squadID {
-			return squadData.Name
-		}
-	}
-	return "Unknown Squad"
-}
-
-// FindAllSquads returns all squad entity IDs in the game
-// Uses efficient ECS query pattern with SquadComponent tag
-func (gq *GUIQueries) FindAllSquads() []ecs.EntityID {
-	allSquads := make([]ecs.EntityID, 0)
-
-	// Iterate through all entities
-	entityIDs := gq.ecsManager.GetAllEntities()
-	for _, entityID := range entityIDs {
-		// Check if entity has SquadData component
-		if gq.ecsManager.HasComponent(entityID, squads.SquadComponent) {
-			allSquads = append(allSquads, entityID)
-		}
-	}
-
-	return allSquads
-}
-
-// GetSquadAtPosition returns the squad entity ID at the given position
-// Returns 0 if no squad at position or squad is destroyed
-func (gq *GUIQueries) GetSquadAtPosition(pos coords.LogicalPosition) ecs.EntityID {
-	// Query all MapPosition entities to find matching position
-	for _, result := range gq.ecsManager.World.Query(combat.MapPositionTag) {
-		mapPos := common.GetComponentType[*combat.MapPositionData](
-			result.Entity, combat.MapPositionComponent)
-
-		if mapPos.Position.X == pos.X && mapPos.Position.Y == pos.Y {
-			if !squads.IsSquadDestroyed(mapPos.SquadID, gq.ecsManager) {
-				return mapPos.SquadID
-			}
-		}
-	}
-	return 0
-}
-
-// FindSquadsByFaction returns all squad IDs belonging to a faction
-// Returns empty slice if no squads found for faction
-// Filters out destroyed squads
-func (gq *GUIQueries) FindSquadsByFaction(factionID ecs.EntityID) []ecs.EntityID {
-	result := make([]ecs.EntityID, 0)
-
-	// Use consolidated query function to get all positions for faction
-	mapPositions := combat.FindMapPositionByFactionID(factionID, gq.ecsManager)
-	for _, mapPos := range mapPositions {
-		if !squads.IsSquadDestroyed(mapPos.SquadID, gq.ecsManager) {
-			result = append(result, mapPos.SquadID)
-		}
-	}
-
-	return result
 }
 
 // ===== COMBAT QUERIES =====
@@ -241,8 +157,13 @@ func (gq *GUIQueries) GetEnemySquads(currentFactionID ecs.EntityID) []ecs.Entity
 	allFactions := gq.GetAllFactions()
 	for _, factionID := range allFactions {
 		if factionID != currentFactionID {
-			squadIDs := gq.FindSquadsByFaction(factionID)
-			enemySquads = append(enemySquads, squadIDs...)
+			// Get all positions for faction and extract squad IDs
+			mapPositions := combat.FindMapPositionByFactionID(factionID, gq.ECSManager)
+			for _, mapPos := range mapPositions {
+				if !squads.IsSquadDestroyed(mapPos.SquadID, gq.ECSManager) {
+					enemySquads = append(enemySquads, mapPos.SquadID)
+				}
+			}
 		}
 	}
 
@@ -252,7 +173,7 @@ func (gq *GUIQueries) GetEnemySquads(currentFactionID ecs.EntityID) []ecs.Entity
 // GetAllFactions returns all faction IDs
 func (gq *GUIQueries) GetAllFactions() []ecs.EntityID {
 	factionIDs := []ecs.EntityID{}
-	for _, result := range gq.ecsManager.World.Query(combat.FactionTag) {
+	for _, result := range gq.ECSManager.World.Query(combat.FactionTag) {
 		factionData := common.GetComponentType[*combat.FactionData](result.Entity, combat.FactionComponent)
 		factionIDs = append(factionIDs, factionData.FactionID)
 	}
@@ -271,7 +192,8 @@ func (gq *GUIQueries) FilterSquadsAlive() SquadFilter {
 // FilterSquadsByPlayer returns a filter that matches player faction squads
 func (gq *GUIQueries) FilterSquadsByPlayer() SquadFilter {
 	return func(info *SquadInfo) bool {
-		return !info.IsDestroyed && gq.IsPlayerFaction(info.FactionID)
+		factionData := combat.FindFactionDataByID(info.FactionID, gq.ECSManager)
+		return !info.IsDestroyed && factionData != nil && factionData.IsPlayerControlled
 	}
 }
 
@@ -302,24 +224,24 @@ func (gq *GUIQueries) ApplyFilterToSquads(squadIDs []ecs.EntityID, filter SquadF
 
 // GetPlayerSquads returns all squads belonging to the player faction (alive only)
 func (gq *GUIQueries) GetPlayerSquads() []ecs.EntityID {
-	allSquads := gq.FindAllSquads()
+	allSquads := squads.FindAllSquads(gq.ECSManager)
 	return gq.ApplyFilterToSquads(allSquads, gq.FilterSquadsByPlayer())
 }
 
 // GetAliveSquads returns all squads that have not been destroyed
 func (gq *GUIQueries) GetAliveSquads() []ecs.EntityID {
-	allSquads := gq.FindAllSquads()
+	allSquads := squads.FindAllSquads(gq.ECSManager)
 	return gq.ApplyFilterToSquads(allSquads, gq.FilterSquadsAlive())
 }
 
 // GetSquadVisualization returns ASCII grid of squad formation
 func (gq *GUIQueries) GetSquadVisualization(squadID ecs.EntityID) string {
-	return squads.VisualizeSquad(squadID, gq.ecsManager)
+	return squads.VisualizeSquad(squadID, gq.ECSManager)
 }
 
 // GetSquadUnitIDs returns all unit entity IDs in squad
 func (gq *GUIQueries) GetSquadUnitIDs(squadID ecs.EntityID) []ecs.EntityID {
-	return squads.GetUnitIDsInSquad(squadID, gq.ecsManager)
+	return squads.GetUnitIDsInSquad(squadID, gq.ECSManager)
 }
 
 // ===== CREATURE/ENTITY QUERIES =====
@@ -345,7 +267,7 @@ type CreatureInfo struct {
 // Handles both monsters and players
 func (gq *GUIQueries) GetCreatureAtPosition(pos coords.LogicalPosition) *CreatureInfo {
 	// First try the common helper (looks for monsters)
-	creatureID := common.GetCreatureAtPosition(gq.ecsManager, &pos)
+	creatureID := common.GetCreatureAtPosition(gq.ECSManager, &pos)
 
 	// If no monster found, check if there's any entity at the position
 	if creatureID == 0 && common.GlobalPositionSystem != nil {
@@ -358,14 +280,14 @@ func (gq *GUIQueries) GetCreatureAtPosition(pos coords.LogicalPosition) *Creatur
 
 	// Get creature name
 	name := "Unknown"
-	if nameComp, ok := gq.ecsManager.GetComponent(creatureID, common.NameComponent); ok {
+	if nameComp, ok := gq.ECSManager.GetComponent(creatureID, common.NameComponent); ok {
 		if nameData, ok := nameComp.(*common.Name); ok {
 			name = nameData.NameStr
 		}
 	}
 
 	// Get creature attributes
-	attrs := common.GetAttributesByID(gq.ecsManager, creatureID)
+	attrs := common.GetAttributesByID(gq.ECSManager, creatureID)
 	if attrs == nil {
 		// Return basic info if no attributes
 		return &CreatureInfo{
@@ -395,8 +317,8 @@ func (gq *GUIQueries) GetCreatureAtPosition(pos coords.LogicalPosition) *Creatur
 
 // isMonster checks if an entity is a monster
 func (gq *GUIQueries) isMonster(entityID ecs.EntityID) bool {
-	if monstersTag, ok := gq.ecsManager.WorldTags["monsters"]; ok {
-		for _, result := range gq.ecsManager.World.Query(monstersTag) {
+	if monstersTag, ok := gq.ECSManager.WorldTags["monsters"]; ok {
+		for _, result := range gq.ECSManager.World.Query(monstersTag) {
 			if result.Entity.GetID() == entityID {
 				return true
 			}
@@ -407,7 +329,7 @@ func (gq *GUIQueries) isMonster(entityID ecs.EntityID) bool {
 
 // isPlayer checks if an entity is the player
 func (gq *GUIQueries) isPlayer(entityID ecs.EntityID) bool {
-	return gq.ecsManager.HasComponent(entityID, common.PlayerComponent)
+	return gq.ECSManager.HasComponent(entityID, common.PlayerComponent)
 }
 
 // ===== TILE QUERIES =====

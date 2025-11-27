@@ -2,6 +2,7 @@ package guicombat
 
 import (
 	"fmt"
+	"game_main/combat"
 	"game_main/combat/combatservices"
 	"game_main/gui"
 	"game_main/gui/core"
@@ -152,11 +153,15 @@ func (cm *CombatMode) initializeUpdateComponents() {
 			}
 
 			round := cm.combatService.GetCurrentRound()
-			factionName := cm.Queries.GetFactionName(currentFactionID)
+			factionData := combat.FindFactionDataByID(currentFactionID, cm.Queries.ECSManager)
+			factionName := "Unknown"
+			if factionData != nil {
+				factionName = factionData.Name
+			}
 
 			// Add indicator if player's turn
 			playerIndicator := ""
-			if cm.Queries.IsPlayerFaction(currentFactionID) {
+			if factionData != nil && factionData.IsPlayerControlled {
 				playerIndicator = " >>> YOUR TURN <<<"
 			}
 
@@ -206,7 +211,8 @@ func (cm *CombatMode) makeCurrentFactionSquadFilter() guicomponents.SquadFilter 
 			return false
 		}
 		// Only show squads if it's player's turn
-		if !cm.Queries.IsPlayerFaction(currentFactionID) {
+		factionData := combat.FindFactionDataByID(currentFactionID, cm.Queries.ECSManager)
+		if factionData == nil || !factionData.IsPlayerControlled {
 			return false
 		}
 		return !info.IsDestroyed && info.FactionID == currentFactionID
@@ -232,7 +238,11 @@ func (cm *CombatMode) handleEndTurn() {
 	round := result.NewRound
 
 	// Get faction name
-	factionName := cm.Queries.GetFactionName(currentFactionID)
+	factionData := combat.FindFactionDataByID(currentFactionID, cm.Queries.ECSManager)
+	factionName := "Unknown"
+	if factionData != nil {
+		factionName = factionData.Name
+	}
 
 	cm.logManager.UpdateTextArea(cm.combatLogArea, fmt.Sprintf("=== Round %d: %s's Turn ===", round, factionName))
 
@@ -262,7 +272,11 @@ func (cm *CombatMode) Enter(fromMode core.UIMode) error {
 
 		// Log initial faction
 		currentFactionID := cm.combatService.GetCurrentFaction()
-		factionName := cm.Queries.GetFactionName(currentFactionID)
+		factionData := combat.FindFactionDataByID(currentFactionID, cm.Queries.ECSManager)
+		factionName := "Unknown"
+		if factionData != nil {
+			factionName = factionData.Name
+		}
 		cm.logManager.UpdateTextArea(cm.combatLogArea, fmt.Sprintf("Round 1: %s goes first!", factionName))
 
 		// Update displays using components

@@ -9,6 +9,7 @@ import (
 	"game_main/gui/guicomponents"
 	"game_main/gui/guimodes"
 	"game_main/gui/widgets"
+	"game_main/squads"
 	"game_main/squads/squadservices"
 
 	"github.com/bytearena/ecs"
@@ -145,7 +146,7 @@ func (sdm *SquadDeploymentMode) updateInstructionText() {
 		return
 	}
 
-	squadName := sdm.Queries.GetSquadName(sdm.selectedSquadID)
+	squadName := squads.GetSquadName(sdm.selectedSquadID, sdm.Queries.ECSManager)
 	sdm.instructionText.Label = fmt.Sprintf("Placing %s - Click on the map to position it", squadName)
 }
 

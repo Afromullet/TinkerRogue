@@ -1,6 +1,7 @@
 package guicombat
 
 import (
+	"game_main/combat"
 	"game_main/coords"
 	"game_main/graphics"
 	"game_main/gui/core"
@@ -146,7 +147,7 @@ func (cih *CombatInputHandler) handleSquadClick(mouseX, mouseY int) {
 	clickedPos := viewport.ScreenToLogical(mouseX, mouseY)
 
 	// Find if a squad is at the clicked position
-	clickedSquadID := cih.queries.GetSquadAtPosition(clickedPos)
+	clickedSquadID := combat.GetSquadAtPosition(clickedPos, cih.queries.ECSManager)
 
 	// If no squad was clicked, do nothing
 	if clickedSquadID == 0 {
@@ -166,7 +167,8 @@ func (cih *CombatInputHandler) handleSquadClick(mouseX, mouseY int) {
 	}
 
 	// If it's the player's turn
-	if cih.queries.IsPlayerFaction(cih.currentFactionID) {
+	factionData := combat.FindFactionDataByID(cih.currentFactionID, cih.queries.ECSManager)
+	if factionData != nil && factionData.IsPlayerControlled {
 		// If clicking an allied squad: select it
 		if clickedFactionID == cih.currentFactionID {
 			cih.actionHandler.SelectSquad(clickedSquadID)
