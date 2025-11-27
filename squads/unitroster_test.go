@@ -2,14 +2,13 @@ package squads
 
 import (
 	"game_main/common"
-	"game_main/testfx"
 	"testing"
 
 	"github.com/bytearena/ecs"
 )
 
 func TestUnitRoster_TemplateBasedCounting(t *testing.T) {
-	manager := testfx.NewTestEntityManager()
+	manager := common.NewEntityManager()
 	if err := InitializeSquadData(manager); err != nil {
 		t.Fatalf("Failed to initialize squad data: %v", err)
 	}
@@ -70,10 +69,9 @@ func TestUnitRoster_AvailableCount(t *testing.T) {
 	manager := common.NewEntityManager()
 
 	// Initialize components
-	UnitComponent = manager.NewComponent()
-	UnitRosterComponent = manager.NewComponent()
-	SquadComponent = manager.NewComponent()
-	SquadMemberComponent = manager.NewComponent()
+	if err := InitializeSquadData(manager); err != nil {
+		t.Fatalf("Failed to initialize squad data: %v", err)
+	}
 
 	// Create roster
 	roster := NewUnitRoster(10)
@@ -129,8 +127,9 @@ func TestUnitRoster_GetAvailableUnits(t *testing.T) {
 	manager := common.NewEntityManager()
 
 	// Initialize components
-	UnitComponent = manager.NewComponent()
-	UnitRosterComponent = manager.NewComponent()
+	if err := InitializeSquadData(manager); err != nil {
+		t.Fatalf("Failed to initialize squad data: %v", err)
+	}
 
 	// Create roster
 	roster := NewUnitRoster(10)
@@ -172,8 +171,9 @@ func TestUnitRoster_GetUnitEntityForTemplate(t *testing.T) {
 	manager := common.NewEntityManager()
 
 	// Initialize components
-	UnitComponent = manager.NewComponent()
-	UnitRosterComponent = manager.NewComponent()
+	if err := InitializeSquadData(manager); err != nil {
+		t.Fatalf("Failed to initialize squad data: %v", err)
+	}
 
 	// Create roster
 	roster := NewUnitRoster(10)
@@ -213,8 +213,9 @@ func TestUnitRoster_RemoveUnit(t *testing.T) {
 	manager := common.NewEntityManager()
 
 	// Initialize components
-	UnitComponent = manager.NewComponent()
-	UnitRosterComponent = manager.NewComponent()
+	if err := InitializeSquadData(manager); err != nil {
+		t.Fatalf("Failed to initialize squad data: %v", err)
+	}
 
 	// Create roster
 	roster := NewUnitRoster(10)
