@@ -140,6 +140,21 @@ func (cs *CombatService) GetMovementSystem() *combat.MovementSystem {
 	return cs.movementSystem
 }
 
+// GetTurnManager exposes turn manager
+func (cs *CombatService) GetTurnManager() *combat.TurnManager {
+	return cs.turnManager
+}
+
+// GetFactionManager exposes faction manager
+func (cs *CombatService) GetFactionManager() *combat.FactionManager {
+	return cs.factionManager
+}
+
+// GetEntityManager exposes entity manager
+func (cs *CombatService) GetEntityManager() *common.EntityManager {
+	return cs.entityManager
+}
+
 // GetCurrentRound returns the current combat round number
 func (cs *CombatService) GetCurrentRound() int {
 	return cs.turnManager.GetCurrentRound()
@@ -262,6 +277,16 @@ func (cs *CombatService) UpdateUnitPositions(squadID ecs.EntityID, newSquadPos c
 	}
 
 	return nil
+}
+
+// GetSquadAtPosition returns the squad ID at the given position, or 0 if none
+func (cs *CombatService) GetSquadAtPosition(pos coords.LogicalPosition) ecs.EntityID {
+	return combat.GetSquadAtPosition(pos, cs.entityManager)
+}
+
+// GetFactionMana returns current and max mana for a faction
+func (cs *CombatService) GetFactionMana(factionID ecs.EntityID) (currentMana int, maxMana int) {
+	return cs.factionManager.GetFactionMana(factionID)
 }
 
 // getSquadNameByID is a helper to get squad name from ID

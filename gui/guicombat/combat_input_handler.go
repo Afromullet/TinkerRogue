@@ -147,7 +147,7 @@ func (cih *CombatInputHandler) handleSquadClick(mouseX, mouseY int) {
 	clickedPos := viewport.ScreenToLogical(mouseX, mouseY)
 
 	// Find if a squad is at the clicked position
-	clickedSquadID := combat.GetSquadAtPosition(clickedPos, cih.queries.ECSManager)
+	clickedSquadID := cih.actionHandler.combatService.GetSquadAtPosition(clickedPos)
 
 	// If no squad was clicked, do nothing
 	if clickedSquadID == 0 {

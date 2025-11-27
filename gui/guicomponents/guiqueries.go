@@ -13,12 +13,16 @@ import (
 // GUIQueries provides centralized ECS query functions for all UI modes.
 // This eliminates query duplication and provides a consistent query interface.
 type GUIQueries struct {
-	ECSManager *common.EntityManager
+	ECSManager     *common.EntityManager
+	factionManager *combat.FactionManager
 }
 
 // NewGUIQueries creates a new query service
 func NewGUIQueries(ecsManager *common.EntityManager) *GUIQueries {
-	return &GUIQueries{ECSManager: ecsManager}
+	return &GUIQueries{
+		ECSManager:     ecsManager,
+		factionManager: combat.NewFactionManager(ecsManager),
+	}
 }
 
 // ===== FACTION QUERIES =====
@@ -41,10 +45,9 @@ func (gq *GUIQueries) GetFactionInfo(factionID ecs.EntityID) *FactionInfo {
 		return nil
 	}
 
-	// Get faction manager for additional data
-	factionManager := combat.NewFactionManager(gq.ECSManager)
-	currentMana, maxMana := factionManager.GetFactionMana(factionID)
-	squadIDs := factionManager.GetFactionSquads(factionID)
+	// Use stored faction manager for additional data
+	currentMana, maxMana := gq.factionManager.GetFactionMana(factionID)
+	squadIDs := gq.factionManager.GetFactionSquads(factionID)
 
 	// Count alive squads
 	aliveCount := 0
@@ -92,20 +95,18 @@ func (gq *GUIQueries) GetSquadInfo(squadID ecs.EntityID) *SquadInfo {
 	// Get unit IDs
 	unitIDs := squads.GetUnitIDsInSquad(squadID, gq.ECSManager)
 
-	// Calculate HP and alive units
+	// Calculate HP and alive units (direct lookup instead of full query per unit)
 	aliveUnits := 0
 	totalHP := 0
 	maxHP := 0
 	for _, unitID := range unitIDs {
-		for _, result := range gq.ECSManager.World.Query(squads.SquadMemberTag) {
-			if result.Entity.GetID() == unitID {
-				attrs := common.GetComponentType[*common.Attributes](result.Entity, common.AttributeComponent)
-				if attrs.CanAct {
-					aliveUnits++
-				}
-				totalHP += attrs.CurrentHealth
-				maxHP += attrs.MaxHealth
+		attrs := common.GetAttributesByIDWithTag(gq.ECSManager, unitID, squads.SquadMemberTag)
+		if attrs != nil {
+			if attrs.CanAct {
+				aliveUnits++
 			}
+			totalHP += attrs.CurrentHealth
+			maxHP += attrs.MaxHealth
 		}
 	}
 
@@ -189,21 +190,6 @@ func (gq *GUIQueries) FilterSquadsAlive() SquadFilter {
 	}
 }
 
-// FilterSquadsByPlayer returns a filter that matches player faction squads
-func (gq *GUIQueries) FilterSquadsByPlayer() SquadFilter {
-	return func(info *SquadInfo) bool {
-		factionData := combat.FindFactionDataByID(info.FactionID, gq.ECSManager)
-		return !info.IsDestroyed && factionData != nil && factionData.IsPlayerControlled
-	}
-}
-
-// FilterSquadsByFaction returns a filter that matches squads in a specific faction
-func (gq *GUIQueries) FilterSquadsByFaction(factionID ecs.EntityID) SquadFilter {
-	return func(info *SquadInfo) bool {
-		return !info.IsDestroyed && info.FactionID == factionID
-	}
-}
-
 // ApplyFilterToSquads applies a filter to a slice of squad IDs
 // Returns filtered squad IDs as a new slice
 // If filter is nil, returns all squads unchanged
@@ -220,28 +206,6 @@ func (gq *GUIQueries) ApplyFilterToSquads(squadIDs []ecs.EntityID, filter SquadF
 		}
 	}
 	return filtered
-}
-
-// GetPlayerSquads returns all squads belonging to the player faction (alive only)
-func (gq *GUIQueries) GetPlayerSquads() []ecs.EntityID {
-	allSquads := squads.FindAllSquads(gq.ECSManager)
-	return gq.ApplyFilterToSquads(allSquads, gq.FilterSquadsByPlayer())
-}
-
-// GetAliveSquads returns all squads that have not been destroyed
-func (gq *GUIQueries) GetAliveSquads() []ecs.EntityID {
-	allSquads := squads.FindAllSquads(gq.ECSManager)
-	return gq.ApplyFilterToSquads(allSquads, gq.FilterSquadsAlive())
-}
-
-// GetSquadVisualization returns ASCII grid of squad formation
-func (gq *GUIQueries) GetSquadVisualization(squadID ecs.EntityID) string {
-	return squads.VisualizeSquad(squadID, gq.ECSManager)
-}
-
-// GetSquadUnitIDs returns all unit entity IDs in squad
-func (gq *GUIQueries) GetSquadUnitIDs(squadID ecs.EntityID) []ecs.EntityID {
-	return squads.GetUnitIDsInSquad(squadID, gq.ECSManager)
 }
 
 // ===== CREATURE/ENTITY QUERIES =====

@@ -287,8 +287,8 @@ func (smm *SquadManagementMode) createSquadPanel(squadID ecs.EntityID) *SquadPan
 	nameLabel := widgets.CreateLargeLabel(fmt.Sprintf("Squad: %s", squadName))
 	panel.container.AddChild(nameLabel)
 
-	// 3x3 grid visualization (using GUIQueries)
-	gridVisualization := smm.Queries.GetSquadVisualization(squadID)
+	// 3x3 grid visualization
+	gridVisualization := squads.VisualizeSquad(squadID, smm.Queries.ECSManager)
 	gridConfig := widgets.TextAreaConfig{
 		MinWidth:  300,
 		MinHeight: 200,
@@ -316,8 +316,8 @@ func (smm *SquadManagementMode) createSquadPanel(squadID ecs.EntityID) *SquadPan
 }
 
 func (smm *SquadManagementMode) createUnitList(squadID ecs.EntityID) *widget.List {
-	// Get all units in this squad (using GUIQueries)
-	unitIDs := smm.Queries.GetSquadUnitIDs(squadID)
+	// Get all units in this squad
+	unitIDs := squads.GetUnitIDsInSquad(squadID, smm.Queries.ECSManager)
 
 	// Create list entries
 	entries := make([]interface{}, 0, len(unitIDs))

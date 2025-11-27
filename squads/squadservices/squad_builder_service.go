@@ -429,11 +429,6 @@ func (sbs *SquadBuilderService) ClearSquadAndReturnAllUnits(
 	return result
 }
 
-// GetSquadVisualization returns ASCII grid visualization of squad formation
-func (sbs *SquadBuilderService) GetSquadVisualization(squadID ecs.EntityID) string {
-	return squads.VisualizeSquad(squadID, sbs.entityManager)
-}
-
 // GetSquadUnitCount returns count of units in squad
 func (sbs *SquadBuilderService) GetSquadUnitCount(squadID ecs.EntityID) int {
 	unitIDs := squads.GetUnitIDsInSquad(squadID, sbs.entityManager)
