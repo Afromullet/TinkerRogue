@@ -6,6 +6,7 @@ import (
 	"game_main/gui/core"
 	"game_main/gui/widgets"
 	"game_main/squads"
+	"game_main/squads/squadcommands"
 	"game_main/squads/squadservices"
 	"image/color"
 
@@ -17,15 +18,19 @@ import (
 type UnitPurchaseMode struct {
 	gui.BaseMode // Embed common mode infrastructure
 
-	purchaseService  *squadservices.UnitPurchaseService
-	unitList         *widget.List
-	detailPanel      *widget.Container
-	detailTextArea   *widget.TextArea
-	statsTextArea    *widget.TextArea
-	goldLabel        *widget.Text
-	rosterLabel      *widget.Text
-	buyButton        *widget.Button
-	viewStatsButton  *widget.Button
+	purchaseService *squadservices.UnitPurchaseService
+	commandExecutor *squadcommands.CommandExecutor
+	unitList        *widget.List
+	detailPanel     *widget.Container
+	detailTextArea  *widget.TextArea
+	statsTextArea   *widget.TextArea
+	goldLabel       *widget.Text
+	rosterLabel     *widget.Text
+	buyButton       *widget.Button
+	viewStatsButton *widget.Button
+	undoButton      *widget.Button
+	redoButton      *widget.Button
+
 	selectedTemplate *squads.UnitTemplate
 	selectedIndex    int
 }
@@ -45,6 +50,9 @@ func (upm *UnitPurchaseMode) Initialize(ctx *core.UIContext) error {
 
 	// Create purchase service
 	upm.purchaseService = squadservices.NewUnitPurchaseService(ctx.ECSManager)
+
+	// Create command executor for undo/redo
+	upm.commandExecutor = squadcommands.NewCommandExecutor()
 
 	// Build unit list (left side)
 	upm.buildUnitList()
@@ -205,6 +213,24 @@ func (upm *UnitPurchaseMode) buildActionButtons() {
 	upm.buyButton.GetWidget().Disabled = true
 	actionButtonContainer.AddChild(upm.buyButton)
 
+	// Undo button
+	upm.undoButton = widgets.CreateButtonWithConfig(widgets.ButtonConfig{
+		Text: "Undo (Ctrl+Z)",
+		OnClick: func() {
+			upm.onUndo()
+		},
+	})
+	actionButtonContainer.AddChild(upm.undoButton)
+
+	// Redo button
+	upm.redoButton = widgets.CreateButtonWithConfig(widgets.ButtonConfig{
+		Text: "Redo (Ctrl+Y)",
+		OnClick: func() {
+			upm.onRedo()
+		},
+	})
+	actionButtonContainer.AddChild(upm.redoButton)
+
 	// Close button
 	closeBtn := widgets.CreateButtonWithConfig(widgets.ButtonConfig{
 		Text: "Back (ESC)",
@@ -296,8 +322,15 @@ func (upm *UnitPurchaseMode) purchaseUnit() {
 
 	playerID := upm.Context.PlayerData.PlayerEntityID
 
-	// Use service for entire transaction - handles validation, creation, and rollback atomically
-	result := upm.purchaseService.PurchaseUnit(playerID, *upm.selectedTemplate)
+	// Create and execute purchase command
+	cmd := squadcommands.NewPurchaseUnitCommand(
+		upm.Context.ECSManager,
+		upm.purchaseService,
+		playerID,
+		*upm.selectedTemplate,
+	)
+
+	result := upm.commandExecutor.Execute(cmd)
 
 	if !result.Success {
 		// Display error message to user
@@ -306,12 +339,21 @@ func (upm *UnitPurchaseMode) purchaseUnit() {
 	}
 
 	// Success - display confirmation
-	fmt.Printf("Purchased unit: %s for %d gold\n", result.UnitName, result.CostPaid)
-	fmt.Printf("Remaining gold: %d, Roster: %d/%d\n", result.RemainingGold, result.RosterCount, result.RosterCapacity)
+	fmt.Printf("Purchased unit: %s\n", result.Description)
 
 	// Refresh UI display
+	upm.refreshUnitList()
 	upm.refreshResourceDisplay()
 	upm.updateDetailPanel()
+}
+
+func (upm *UnitPurchaseMode) refreshUnitList() {
+	// Repopulate unit list to update owned/available counts
+	entries := make([]interface{}, 0, len(squads.Units))
+	for i := range squads.Units {
+		entries = append(entries, &squads.Units[i])
+	}
+	upm.unitList.SetEntries(entries)
 }
 
 func (upm *UnitPurchaseMode) refreshResourceDisplay() {
@@ -345,6 +387,46 @@ func (upm *UnitPurchaseMode) getTargetModeName(mode squads.TargetMode) string {
 		return "Cell-based"
 	default:
 		return "Unknown"
+	}
+}
+
+// onUndo executes the last purchase undo operation
+func (upm *UnitPurchaseMode) onUndo() {
+	if !upm.commandExecutor.CanUndo() {
+		fmt.Println("Nothing to undo")
+		return
+	}
+
+	result := upm.commandExecutor.Undo()
+
+	if result.Success {
+		fmt.Printf("⟲ %s\n", result.Description)
+		// Refresh UI to reflect undone purchase
+		upm.refreshUnitList()
+		upm.refreshResourceDisplay()
+		upm.updateDetailPanel()
+	} else {
+		fmt.Printf("✗ Undo failed: %s\n", result.Error)
+	}
+}
+
+// onRedo executes the last undone purchase again
+func (upm *UnitPurchaseMode) onRedo() {
+	if !upm.commandExecutor.CanRedo() {
+		fmt.Println("Nothing to redo")
+		return
+	}
+
+	result := upm.commandExecutor.Redo()
+
+	if result.Success {
+		fmt.Printf("⟳ %s\n", result.Description)
+		// Refresh UI to reflect redone purchase
+		upm.refreshUnitList()
+		upm.refreshResourceDisplay()
+		upm.updateDetailPanel()
+	} else {
+		fmt.Printf("✗ Redo failed: %s\n", result.Error)
 	}
 }
 
@@ -389,6 +471,18 @@ func (upm *UnitPurchaseMode) HandleInput(inputState *core.InputState) bool {
 			upm.ModeManager.RequestTransition(squadMgmtMode, "Close Unit Purchase")
 			return true
 		}
+	}
+
+	// Handle Ctrl+Z for Undo
+	if inputState.KeysJustPressed[ebiten.KeyZ] && (inputState.KeysPressed[ebiten.KeyControl] || inputState.KeysPressed[ebiten.KeyMeta]) {
+		upm.onUndo()
+		return true
+	}
+
+	// Handle Ctrl+Y for Redo
+	if inputState.KeysJustPressed[ebiten.KeyY] && (inputState.KeysPressed[ebiten.KeyControl] || inputState.KeysPressed[ebiten.KeyMeta]) {
+		upm.onRedo()
+		return true
 	}
 
 	return false

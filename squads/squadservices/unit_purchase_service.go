@@ -202,3 +202,61 @@ func (ups *UnitPurchaseService) GetUnitOwnedCount(playerID ecs.EntityID, templat
 	available = roster.GetAvailableCount(templateName)
 	return entry.TotalOwned, available
 }
+
+// RefundResult contains information about a refund transaction
+type RefundResult struct {
+	Success        bool
+	Error          string
+	GoldRefunded   int
+	RemainingGold  int
+	RosterCount    int
+	RosterCapacity int
+}
+
+// RefundUnitPurchase refunds a purchased unit and returns gold to player
+// This is used for undo operations in the command pattern
+func (ups *UnitPurchaseService) RefundUnitPurchase(playerID ecs.EntityID, unitID ecs.EntityID, costPaid int) *RefundResult {
+	result := &RefundResult{}
+
+	// Get player resources
+	resources := common.GetPlayerResources(playerID, ups.entityManager)
+	if resources == nil {
+		result.Error = "player resources not found"
+		return result
+	}
+
+	// Get player roster
+	roster := squads.GetPlayerRoster(playerID, ups.entityManager)
+	if roster == nil {
+		result.Error = "player roster not found"
+		return result
+	}
+
+	// Find the unit entity
+	unitEntity := common.FindEntityByID(ups.entityManager, unitID)
+	if unitEntity == nil {
+		result.Error = fmt.Sprintf("unit %d not found", unitID)
+		return result
+	}
+
+	// Step 1: Remove from roster
+	removed := roster.RemoveUnit(unitID)
+	if !removed {
+		result.Error = "failed to remove unit from roster"
+		return result
+	}
+
+	// Step 2: Refund gold
+	resources.AddGold(costPaid)
+
+	// Step 3: Dispose unit entity
+	ups.entityManager.World.DisposeEntities(unitEntity)
+
+	// Transaction successful - populate result
+	result.Success = true
+	result.GoldRefunded = costPaid
+	result.RemainingGold = resources.Gold
+	result.RosterCount, result.RosterCapacity = roster.GetUnitCount()
+
+	return result
+}
