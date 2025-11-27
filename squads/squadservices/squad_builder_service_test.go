@@ -3,12 +3,22 @@ package squadservices
 import (
 	"game_main/common"
 	"game_main/squads"
+	testfx "game_main/testing"
 	"testing"
 )
 
+// setupTestManager creates a manager with squad system initialized
+func setupBuilderTestManager(t *testing.T) *common.EntityManager {
+	manager := testfx.NewTestEntityManager()
+	if err := squads.InitializeSquadData(manager); err != nil {
+		t.Fatalf("Failed to initialize squad data: %v", err)
+	}
+	return manager
+}
+
 // TestSquadBuilderServiceCreation tests that SquadBuilderService can be created
 func TestSquadBuilderServiceCreation(t *testing.T) {
-	manager := common.NewEntityManager()
+	manager := setupBuilderTestManager(t)
 	service := NewSquadBuilderService(manager)
 
 	if service == nil {
@@ -22,7 +32,7 @@ func TestSquadBuilderServiceCreation(t *testing.T) {
 
 // TestBuilderCreateSquad tests squad creation via builder service
 func TestBuilderCreateSquad_Success(t *testing.T) {
-	manager := common.NewEntityManager()
+	manager := setupBuilderTestManager(t)
 	service := NewSquadBuilderService(manager)
 
 	result := service.CreateSquad("Builder Test Squad")
@@ -42,7 +52,7 @@ func TestBuilderCreateSquad_Success(t *testing.T) {
 
 // TestBuilderCreateSquad_EmptyName tests creating squad with empty name
 func TestBuilderCreateSquad_EmptyName(t *testing.T) {
-	manager := common.NewEntityManager()
+	manager := setupBuilderTestManager(t)
 	service := NewSquadBuilderService(manager)
 
 	result := service.CreateSquad("")
@@ -64,7 +74,7 @@ func TestBuilderCreateSquad_EmptyName(t *testing.T) {
 
 // TestPlaceUnit tests placing a unit in the squad builder
 func TestPlaceUnit_Success(t *testing.T) {
-	manager := common.NewEntityManager()
+	manager := setupBuilderTestManager(t)
 	service := NewSquadBuilderService(manager)
 
 	// Create squad
@@ -104,7 +114,7 @@ func TestPlaceUnit_Success(t *testing.T) {
 
 // TestPlaceUnit_InvalidPosition tests placing unit at invalid position
 func TestPlaceUnit_InvalidPosition(t *testing.T) {
-	manager := common.NewEntityManager()
+	manager := setupBuilderTestManager(t)
 	service := NewSquadBuilderService(manager)
 
 	// Create squad
@@ -133,7 +143,7 @@ func TestPlaceUnit_InvalidPosition(t *testing.T) {
 
 // TestRemoveUnitFromGrid tests removing a unit from grid
 func TestRemoveUnitFromGrid_Success(t *testing.T) {
-	manager := common.NewEntityManager()
+	manager := setupBuilderTestManager(t)
 	service := NewSquadBuilderService(manager)
 
 	// Create squad
@@ -164,7 +174,7 @@ func TestRemoveUnitFromGrid_Success(t *testing.T) {
 
 // TestRemoveUnitFromGrid_EmptyPosition tests removing from empty position
 func TestRemoveUnitFromGrid_EmptyPosition(t *testing.T) {
-	manager := common.NewEntityManager()
+	manager := setupBuilderTestManager(t)
 	service := NewSquadBuilderService(manager)
 
 	// Create squad
@@ -184,7 +194,7 @@ func TestRemoveUnitFromGrid_EmptyPosition(t *testing.T) {
 
 // TestDesignateLeader tests designating a unit as leader
 func TestDesignateLeader(t *testing.T) {
-	manager := common.NewEntityManager()
+	manager := setupBuilderTestManager(t)
 	service := NewSquadBuilderService(manager)
 
 	// Create squad
@@ -215,7 +225,7 @@ func TestDesignateLeader(t *testing.T) {
 
 // TestGetCapacityInfo tests getting capacity information
 func TestGetCapacityInfo(t *testing.T) {
-	manager := common.NewEntityManager()
+	manager := setupBuilderTestManager(t)
 	service := NewSquadBuilderService(manager)
 
 	// Create squad
@@ -247,7 +257,7 @@ func TestGetCapacityInfo(t *testing.T) {
 
 // TestGetCapacityInfo_WithLeader tests capacity info when squad has leader
 func TestGetCapacityInfo_WithLeader(t *testing.T) {
-	manager := common.NewEntityManager()
+	manager := setupBuilderTestManager(t)
 	service := NewSquadBuilderService(manager)
 
 	// Create squad
@@ -281,7 +291,7 @@ func TestGetCapacityInfo_WithLeader(t *testing.T) {
 
 // TestValidateSquad tests squad validation
 func TestValidateSquad_Empty(t *testing.T) {
-	manager := common.NewEntityManager()
+	manager := setupBuilderTestManager(t)
 	service := NewSquadBuilderService(manager)
 
 	// Create empty squad
@@ -305,7 +315,7 @@ func TestValidateSquad_Empty(t *testing.T) {
 
 // TestValidateSquad_NoLeader tests validation fails without leader
 func TestValidateSquad_NoLeader(t *testing.T) {
-	manager := common.NewEntityManager()
+	manager := setupBuilderTestManager(t)
 	service := NewSquadBuilderService(manager)
 
 	// Create squad
@@ -334,14 +344,14 @@ func TestValidateSquad_NoLeader(t *testing.T) {
 		t.Errorf("Expected 1 unit, got %d", validation.UnitCount)
 	}
 
-	if !validation.HasLeader {
+	if validation.HasLeader {
 		t.Error("HasLeader should be false")
 	}
 }
 
 // TestValidateSquad_Valid tests validation passes with units and leader
 func TestValidateSquad_Valid(t *testing.T) {
-	manager := common.NewEntityManager()
+	manager := setupBuilderTestManager(t)
 	service := NewSquadBuilderService(manager)
 
 	// Create squad
@@ -389,7 +399,7 @@ func TestValidateSquad_Valid(t *testing.T) {
 
 // TestUpdateSquadName tests updating squad name
 func TestUpdateSquadName(t *testing.T) {
-	manager := common.NewEntityManager()
+	manager := setupBuilderTestManager(t)
 	service := NewSquadBuilderService(manager)
 
 	// Create squad
@@ -420,7 +430,7 @@ func TestUpdateSquadName(t *testing.T) {
 
 // TestUpdateSquadName_EmptyName tests updating with empty name
 func TestUpdateSquadName_EmptyName(t *testing.T) {
-	manager := common.NewEntityManager()
+	manager := setupBuilderTestManager(t)
 	service := NewSquadBuilderService(manager)
 
 	// Create squad
@@ -436,7 +446,7 @@ func TestUpdateSquadName_EmptyName(t *testing.T) {
 
 // TestSquadBuilderFlow tests complete squad building flow
 func TestSquadBuilderFlow(t *testing.T) {
-	manager := common.NewEntityManager()
+	manager := setupBuilderTestManager(t)
 	service := NewSquadBuilderService(manager)
 
 	// Create squad

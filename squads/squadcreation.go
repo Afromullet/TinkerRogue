@@ -13,8 +13,9 @@ import (
 // SQUAD RELATED
 // ========================================
 
+// CreateEmptySquad creates a new empty squad and returns its ID
 func CreateEmptySquad(squadmanager *common.EntityManager,
-	squadName string) {
+	squadName string) ecs.EntityID {
 
 	squadEntity := squadmanager.World.NewEntity()
 	squadID := squadEntity.GetID()
@@ -31,6 +32,7 @@ func CreateEmptySquad(squadmanager *common.EntityManager,
 
 	squadEntity.AddComponent(common.PositionComponent, &coords.LogicalPosition{})
 
+	return squadID
 }
 
 // gridRow and gridCol are the row and col we want to anchor the unit at
@@ -81,7 +83,7 @@ func AddUnitToSquad(
 	return nil
 }
 
-// RemoveUnitFromSquad - ✅ Accepts ecs.EntityID (native type)
+// RemoveUnitFromSquad - ✅ Accepts ecs.EntityID (native type), disposes the entity
 func RemoveUnitFromSquad(unitEntityID ecs.EntityID, squadmanager *common.EntityManager) error {
 	if !squadmanager.HasComponentByIDWithTag(unitEntityID, SquadMemberTag, SquadMemberComponent) {
 		return fmt.Errorf("unit is not in a squad")
@@ -95,9 +97,11 @@ func RemoveUnitFromSquad(unitEntityID ecs.EntityID, squadmanager *common.EntityM
 
 	squadID := memberData.SquadID
 
-	// In bytearena/ecs, we can't remove components
-	// Workaround: Set SquadID to 0 to mark as "removed"
-	memberData.SquadID = 0
+	// Find the unit entity and dispose it
+	unitEntity := common.FindEntityByIDWithTag(squadmanager, unitEntityID, SquadMemberTag)
+	if unitEntity != nil {
+		squadmanager.World.DisposeEntities(unitEntity)
+	}
 
 	// Update squad capacity tracking after removal
 	UpdateSquadCapacity(squadID, squadmanager)

@@ -3,7 +3,6 @@ package squadservices
 import (
 	"fmt"
 	"game_main/common"
-	"game_main/coords"
 	"game_main/squads"
 
 	"github.com/bytearena/ecs"
@@ -39,20 +38,8 @@ func (sbs *SquadBuilderService) CreateSquad(squadName string) *SquadBuilderSquad
 		squadName = "New Squad"
 	}
 
-	squadEntity := sbs.entityManager.World.NewEntity()
-	squadID := squadEntity.GetID()
-
-	squadEntity.AddComponent(squads.SquadComponent, &squads.SquadData{
-		SquadID:       squadID,
-		Name:          squadName,
-		Morale:        100,
-		TurnCount:     0,
-		MaxUnits:      9,
-		UsedCapacity:  0.0,
-		TotalCapacity: 6, // Default capacity (no leader yet)
-	})
-
-	squadEntity.AddComponent(common.PositionComponent, &coords.LogicalPosition{})
+	// Use base package function
+	squadID := squads.CreateEmptySquad(sbs.entityManager, squadName)
 
 	result.Success = true
 	result.SquadID = squadID
@@ -80,52 +67,21 @@ func (sbs *SquadBuilderService) PlaceUnit(
 		UnitName: unit.Name,
 	}
 
-	// Validate position
-	if gridRow < 0 || gridRow > 2 || gridCol < 0 || gridCol > 2 {
-		result.Error = fmt.Sprintf("invalid grid position (%d, %d)", gridRow, gridCol)
-		return result
-	}
-
-	// Check if position occupied
-	existingUnitIDs := squads.GetUnitIDsAtGridPosition(squadID, gridRow, gridCol, sbs.entityManager)
-	if len(existingUnitIDs) > 0 {
-		result.Error = fmt.Sprintf("grid position (%d, %d) already occupied", gridRow, gridCol)
-		return result
-	}
-
-	// Check capacity
-	unitCapacityCost := unit.Attributes.GetCapacityCost()
-	if !squads.CanAddUnitToSquad(squadID, unitCapacityCost, sbs.entityManager) {
-		remaining := squads.GetSquadRemainingCapacity(squadID, sbs.entityManager)
-		result.RemainingCapacity = remaining
-		result.Error = fmt.Sprintf("insufficient squad capacity: need %.2f, have %.2f remaining", unitCapacityCost, remaining)
-		return result
-	}
-
-	// Create unit entity
-	unitEntity, err := squads.CreateUnitEntity(sbs.entityManager, unit)
+	// Use base package function
+	err := squads.AddUnitToSquad(squadID, sbs.entityManager, unit, gridRow, gridCol)
 	if err != nil {
-		result.Error = fmt.Sprintf("invalid unit %s: %v", unit.Name, err)
+		result.Error = err.Error()
+		result.RemainingCapacity = squads.GetSquadRemainingCapacity(squadID, sbs.entityManager)
 		return result
 	}
 
-	unitID := unitEntity.GetID()
-
-	// Add SquadMemberComponent to link unit to squad
-	unitEntity.AddComponent(squads.SquadMemberComponent, &squads.SquadMemberData{
-		SquadID: squadID,
-	})
-
-	// Update GridPositionComponent with grid position
-	gridPos := common.GetComponentType[*squads.GridPositionData](unitEntity, squads.GridPositionComponent)
-	gridPos.AnchorRow = gridRow
-	gridPos.AnchorCol = gridCol
-
-	// Update squad capacity
-	squads.UpdateSquadCapacity(squadID, sbs.entityManager)
+	// Get the unit ID from the squad (it was just added)
+	unitIDs := squads.GetUnitIDsAtGridPosition(squadID, gridRow, gridCol, sbs.entityManager)
+	if len(unitIDs) > 0 {
+		result.UnitID = unitIDs[0]
+	}
 
 	result.Success = true
-	result.UnitID = unitID
 	result.RemainingCapacity = squads.GetSquadRemainingCapacity(squadID, sbs.entityManager)
 
 	return result
@@ -154,16 +110,13 @@ func (sbs *SquadBuilderService) RemoveUnitFromGrid(
 
 	// Remove first unit at this position
 	unitID := unitIDs[0]
-	unitEntity := common.FindEntityByIDWithTag(sbs.entityManager, unitID, squads.SquadMemberTag)
-	if unitEntity == nil {
-		result.Error = fmt.Sprintf("unit %d not found", unitID)
+
+	// Use base package function
+	err := squads.RemoveUnitFromSquad(unitID, sbs.entityManager)
+	if err != nil {
+		result.Error = err.Error()
 		return result
 	}
-
-	sbs.entityManager.World.DisposeEntities(unitEntity)
-
-	// Update squad capacity
-	squads.UpdateSquadCapacity(squadID, sbs.entityManager)
 
 	result.Success = true
 	result.RemainingCapacity = squads.GetSquadRemainingCapacity(squadID, sbs.entityManager)
