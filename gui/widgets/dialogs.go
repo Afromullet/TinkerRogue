@@ -60,12 +60,18 @@ func CreateConfirmationDialog(config DialogConfig) *widget.Window {
 		)),
 	)
 
+	// Reference to window for closing
+	var window *widget.Window
+
 	// Yes/Confirm button
 	confirmBtn := CreateButtonWithConfig(ButtonConfig{
 		Text: "Yes",
 		OnClick: func() {
 			if config.OnConfirm != nil {
 				config.OnConfirm()
+			}
+			if window != nil {
+				window.Close()
 			}
 		},
 	})
@@ -78,6 +84,9 @@ func CreateConfirmationDialog(config DialogConfig) *widget.Window {
 			if config.OnCancel != nil {
 				config.OnCancel()
 			}
+			if window != nil {
+				window.Close()
+			}
 		},
 	})
 	buttonContainer.AddChild(cancelBtn)
@@ -85,7 +94,7 @@ func CreateConfirmationDialog(config DialogConfig) *widget.Window {
 	contentContainer.AddChild(buttonContainer)
 
 	// Create window
-	window := widget.NewWindow(
+	window = widget.NewWindow(
 		widget.WindowOpts.Contents(contentContainer),
 		widget.WindowOpts.Modal(),
 		widget.WindowOpts.MinSize(config.MinWidth, config.MinHeight),
