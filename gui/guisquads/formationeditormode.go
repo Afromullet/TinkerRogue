@@ -4,9 +4,13 @@ import (
 	"game_main/gui"
 
 	"fmt"
+	"game_main/common"
 	"game_main/gui/core"
 	"game_main/gui/widgets"
+	"game_main/squads"
+	"game_main/squads/squadcommands"
 
+	"github.com/bytearena/ecs"
 	"github.com/ebitenui/ebitenui/widget"
 	"github.com/hajimehoshi/ebiten/v2"
 )
@@ -15,15 +19,21 @@ import (
 type FormationEditorMode struct {
 	gui.BaseMode // Embed common mode infrastructure
 
-	gridContainer *widget.Container
-	unitPalette   *widget.List
-	actionButtons *widget.Container
+	gridContainer   *widget.Container
+	unitPalette     *widget.List
+	actionButtons   *widget.Container
+	commandExecutor *squadcommands.CommandExecutor // Command pattern for undo/redo
+	statusLabel     *widget.Text                   // Shows command results
+	squadSelector   *widget.List                   // Squad selection list
+	currentSquadID  ecs.EntityID                   // Currently selected squad
 
 	gridCells [3][3]*widget.Button // 3x3 grid of cells
 }
 
 func NewFormationEditorMode(modeManager *core.UIModeManager) *FormationEditorMode {
-	mode := &FormationEditorMode{}
+	mode := &FormationEditorMode{
+		commandExecutor: squadcommands.NewCommandExecutor(),
+	}
 	mode.SetModeName("formation_editor")
 	mode.ModeManager = modeManager
 	return mode
@@ -33,7 +43,9 @@ func (fem *FormationEditorMode) Initialize(ctx *core.UIContext) error {
 	// Initialize common mode infrastructure
 	fem.InitializeBase(ctx)
 
-	// Build formation editor UI
+	// Build squad selector on left side
+	fem.buildSquadSelector()
+
 	// Build 3x3 grid editor (center)
 	fem.gridContainer, fem.gridCells = fem.PanelBuilders.BuildGridEditor(widgets.GridEditorConfig{
 		OnCellClick: func(row, col int) {
@@ -46,6 +58,49 @@ func (fem *FormationEditorMode) Initialize(ctx *core.UIContext) error {
 	fem.buildActionButtons()
 
 	return nil
+}
+
+func (fem *FormationEditorMode) buildSquadSelector() {
+	// Get all squads from ECS
+	allSquadIDs := squads.FindAllSquads(fem.Context.ECSManager)
+
+	// Build squad entries for list
+	squadEntries := make([]interface{}, 0, len(allSquadIDs))
+	for _, squadID := range allSquadIDs {
+		squadName := squads.GetSquadName(squadID, fem.Context.ECSManager)
+		squadEntries = append(squadEntries, squadName)
+	}
+
+	// Create squad selection list
+	listWidth := int(float64(fem.Layout.ScreenWidth) * widgets.PanelWidthStandard)
+	listHeight := int(float64(fem.Layout.ScreenHeight) * 0.3)
+
+	fem.squadSelector = widgets.CreateListWithConfig(widgets.ListConfig{
+		Entries:   squadEntries,
+		MinWidth:  listWidth,
+		MinHeight: listHeight,
+		EntryLabelFunc: func(e interface{}) string {
+			return e.(string)
+		},
+		OnEntrySelected: func(e interface{}) {
+			// Find the selected squad ID
+			selectedName := e.(string)
+			for _, squadID := range allSquadIDs {
+				if squads.GetSquadName(squadID, fem.Context.ECSManager) == selectedName {
+					fem.currentSquadID = squadID
+					fem.loadSquadFormation(squadID)
+					fem.setStatus(fmt.Sprintf("Selected squad: %s", selectedName))
+					break
+				}
+			}
+		},
+		LayoutData: widget.AnchorLayoutData{
+			HorizontalPosition: widget.AnchorLayoutPositionStart,
+			VerticalPosition:   widget.AnchorLayoutPositionStart,
+		},
+	})
+
+	fem.RootContainer.AddChild(fem.squadSelector)
 }
 
 func (fem *FormationEditorMode) buildUnitPalette() {
@@ -78,30 +133,44 @@ func (fem *FormationEditorMode) buildUnitPalette() {
 }
 
 func (fem *FormationEditorMode) buildActionButtons() {
-	// Create action buttons
-	saveBtn := widgets.CreateButtonWithConfig(widgets.ButtonConfig{
-		Text: "Save Formation",
-		OnClick: func() {
-			fmt.Println("Formation saved!")
-		},
-	})
-
-	loadBtn := widgets.CreateButtonWithConfig(widgets.ButtonConfig{
-		Text: "Load Formation",
-		OnClick: func() {
-			fmt.Println("Formation loaded!")
-		},
-	})
-
 	// Build action buttons container using helper
 	fem.actionButtons = gui.CreateBottomCenterButtonContainer(fem.PanelBuilders)
 
-	fem.actionButtons.AddChild(saveBtn)
-	fem.actionButtons.AddChild(loadBtn)
+	// Apply Formation button (placeholder - would use ChangeFormationCommand)
+	applyBtn := widgets.CreateButtonWithConfig(widgets.ButtonConfig{
+		Text: "Apply Formation",
+		OnClick: func() {
+			fem.onApplyFormation()
+		},
+	})
+	fem.actionButtons.AddChild(applyBtn)
+
+	// Undo button
+	undoBtn := widgets.CreateButtonWithConfig(widgets.ButtonConfig{
+		Text: "Undo",
+		OnClick: func() {
+			fem.onUndo()
+		},
+	})
+	fem.actionButtons.AddChild(undoBtn)
+
+	// Redo button
+	redoBtn := widgets.CreateButtonWithConfig(widgets.ButtonConfig{
+		Text: "Redo",
+		OnClick: func() {
+			fem.onRedo()
+		},
+	})
+	fem.actionButtons.AddChild(redoBtn)
 
 	// Create close button to return to squad management (Overworld context)
 	closeBtn := gui.CreateCloseButton(fem.ModeManager, "squad_management", "Close (ESC)")
 	fem.actionButtons.AddChild(closeBtn)
+
+	// Status label
+	fem.statusLabel = widgets.CreateSmallLabel("")
+	fem.RootContainer.AddChild(fem.statusLabel)
+
 	fem.RootContainer.AddChild(fem.actionButtons)
 }
 
@@ -143,5 +212,198 @@ func (fem *FormationEditorMode) HandleInput(inputState *core.InputState) bool {
 		return true
 	}
 
+	// Handle Ctrl+Z for Undo
+	if inputState.KeysJustPressed[ebiten.KeyZ] && (inputState.KeysPressed[ebiten.KeyControl] || inputState.KeysPressed[ebiten.KeyMeta]) {
+		fem.onUndo()
+		return true
+	}
+
+	// Handle Ctrl+Y for Redo
+	if inputState.KeysJustPressed[ebiten.KeyY] && (inputState.KeysPressed[ebiten.KeyControl] || inputState.KeysPressed[ebiten.KeyMeta]) {
+		fem.onRedo()
+		return true
+	}
+
 	return false
+}
+
+// loadSquadFormation loads the current formation of a squad into the grid
+func (fem *FormationEditorMode) loadSquadFormation(squadID ecs.EntityID) {
+	// Clear grid first
+	for row := 0; row < 3; row++ {
+		for col := 0; col < 3; col++ {
+			fem.gridCells[row][col].Text().Label = ""
+		}
+	}
+
+	// Get units in squad and their grid positions
+	unitIDs := squads.GetUnitIDsInSquad(squadID, fem.Context.ECSManager)
+
+	for _, unitID := range unitIDs {
+		// Get grid position component
+		entity := common.FindEntityByIDWithTag(fem.Context.ECSManager, unitID, squads.SquadMemberTag)
+		if entity == nil {
+			continue
+		}
+
+		gridPos := common.GetComponentType[*squads.GridPositionData](entity, squads.GridPositionComponent)
+		if gridPos == nil {
+			continue
+		}
+
+		// Get unit name
+		nameStr := "Unit"
+		if nameComp, ok := fem.Context.ECSManager.GetComponent(unitID, common.NameComponent); ok {
+			if name := nameComp.(*common.Name); name != nil {
+				nameStr = name.NameStr
+			}
+		}
+
+		// Update grid cell
+		if gridPos.AnchorRow >= 0 && gridPos.AnchorRow < 3 && gridPos.AnchorCol >= 0 && gridPos.AnchorCol < 3 {
+			fem.gridCells[gridPos.AnchorRow][gridPos.AnchorCol].Text().Label = nameStr
+		}
+	}
+}
+
+// onApplyFormation applies the current formation using ChangeFormationCommand
+func (fem *FormationEditorMode) onApplyFormation() {
+	if fem.currentSquadID == 0 {
+		fem.setStatus("No squad selected")
+		return
+	}
+
+	squadName := squads.GetSquadName(fem.currentSquadID, fem.Context.ECSManager)
+
+	// Show confirmation dialog
+	dialog := widgets.CreateConfirmationDialog(widgets.DialogConfig{
+		Title:   "Apply Formation",
+		Message: fmt.Sprintf("Apply current formation to squad '%s'?\n\nThis will rearrange unit positions.\n\nYou can undo this action with Ctrl+Z.", squadName),
+		OnConfirm: func() {
+			// Build formation from current grid state
+			formation, err := fem.buildFormationAssignments()
+			if err != nil {
+				fem.setStatus(fmt.Sprintf("✗ %s", err.Error()))
+				return
+			}
+
+			// Create and execute command
+			cmd := squadcommands.NewChangeFormationCommand(
+				fem.Context.ECSManager,
+				fem.currentSquadID,
+				formation,
+			)
+
+			result := fem.commandExecutor.Execute(cmd)
+
+			if result.Success {
+				fem.setStatus(fmt.Sprintf("✓ %s", result.Description))
+				fem.loadSquadFormation(fem.currentSquadID) // Refresh display
+			} else {
+				fem.setStatus(fmt.Sprintf("✗ %s", result.Error))
+			}
+		},
+		OnCancel: func() {
+			fem.setStatus("Apply formation cancelled")
+		},
+	})
+
+	fem.GetEbitenUI().AddWindow(dialog)
+}
+
+// buildFormationAssignments builds formation assignments from current grid state
+func (fem *FormationEditorMode) buildFormationAssignments() ([]squadcommands.FormationAssignment, error) {
+	if fem.currentSquadID == 0 {
+		return nil, fmt.Errorf("no squad selected")
+	}
+
+	// Get all units in squad
+	unitIDs := squads.GetUnitIDsInSquad(fem.currentSquadID, fem.Context.ECSManager)
+	if len(unitIDs) == 0 {
+		return nil, fmt.Errorf("squad has no units")
+	}
+
+	// Build map of unit names to unit IDs
+	unitNameToID := make(map[string]ecs.EntityID)
+	for _, unitID := range unitIDs {
+		nameStr := "Unit"
+		if nameComp, ok := fem.Context.ECSManager.GetComponent(unitID, common.NameComponent); ok {
+			if name := nameComp.(*common.Name); name != nil {
+				nameStr = name.NameStr
+			}
+		}
+		unitNameToID[nameStr] = unitID
+	}
+
+	// Scan grid and build assignments
+	assignments := make([]squadcommands.FormationAssignment, 0)
+	for row := 0; row < 3; row++ {
+		for col := 0; col < 3; col++ {
+			cellLabel := fem.gridCells[row][col].Text().Label
+			if cellLabel != "" && cellLabel != "Empty" {
+				// Find unit ID for this label
+				unitID, found := unitNameToID[cellLabel]
+				if !found {
+					// Skip units not in squad
+					continue
+				}
+
+				// Add assignment
+				assignment := squadcommands.FormationAssignment{
+					UnitID:  unitID,
+					GridRow: row,
+					GridCol: col,
+				}
+				assignments = append(assignments, assignment)
+			}
+		}
+	}
+
+	if len(assignments) == 0 {
+		return nil, fmt.Errorf("no units positioned in formation")
+	}
+
+	return assignments, nil
+}
+
+// onUndo executes the last command's undo operation
+func (fem *FormationEditorMode) onUndo() {
+	if !fem.commandExecutor.CanUndo() {
+		fem.setStatus("Nothing to undo")
+		return
+	}
+
+	result := fem.commandExecutor.Undo()
+
+	if result.Success {
+		fem.setStatus(fmt.Sprintf("⟲ %s", result.Description))
+		// Refresh grid display if needed
+	} else {
+		fem.setStatus(fmt.Sprintf("✗ %s", result.Error))
+	}
+}
+
+// onRedo executes the last undone command again
+func (fem *FormationEditorMode) onRedo() {
+	if !fem.commandExecutor.CanRedo() {
+		fem.setStatus("Nothing to redo")
+		return
+	}
+
+	result := fem.commandExecutor.Redo()
+
+	if result.Success {
+		fem.setStatus(fmt.Sprintf("⟳ %s", result.Description))
+		// Refresh grid display if needed
+	} else {
+		fem.setStatus(fmt.Sprintf("✗ %s", result.Error))
+	}
+}
+
+// setStatus updates the status label with a message
+func (fem *FormationEditorMode) setStatus(message string) {
+	if fem.statusLabel != nil {
+		fem.statusLabel.Label = message
+	}
+	fmt.Println(message) // Also log to console
 }

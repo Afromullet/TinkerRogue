@@ -127,6 +127,8 @@ func (cm *CombatMode) buildUILayout() {
 	cm.actionButtons = cm.uiFactory.CreateActionButtons(
 		cm.handleAttackClick,
 		cm.handleMoveClick,
+		cm.handleUndoMove,
+		cm.handleRedoMove,
 		cm.handleEndTurn,
 		cm.handleFlee,
 	)
@@ -140,6 +142,14 @@ func (cm *CombatMode) handleAttackClick() {
 
 func (cm *CombatMode) handleMoveClick() {
 	cm.actionHandler.ToggleMoveMode()
+}
+
+func (cm *CombatMode) handleUndoMove() {
+	cm.actionHandler.UndoLastMove()
+}
+
+func (cm *CombatMode) handleRedoMove() {
+	cm.actionHandler.RedoLastMove()
 }
 
 func (cm *CombatMode) initializeUpdateComponents() {
@@ -226,6 +236,9 @@ func (cm *CombatMode) handleFlee() {
 }
 
 func (cm *CombatMode) handleEndTurn() {
+	// Clear movement history when ending turn (can't undo moves from previous turns)
+	cm.actionHandler.ClearMoveHistory()
+
 	// End current faction's turn using service
 	result := cm.combatService.EndTurn()
 	if !result.Success {

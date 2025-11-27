@@ -8,6 +8,7 @@ import (
 	"game_main/gui/guiresources"
 	"game_main/gui/widgets"
 	"game_main/squads"
+	"game_main/squads/squadcommands"
 	"image/color"
 
 	"github.com/bytearena/ecs"
@@ -25,10 +26,13 @@ type SquadManagementMode struct {
 	currentPanel        *SquadPanel                        // Currently displayed panel
 	panelContainer      *widget.Container                  // Container for the current squad panel
 	navigationContainer *widget.Container                  // Container for navigation buttons
+	commandContainer    *widget.Container                  // Container for command buttons
 	closeButton         *widget.Button
 	prevButton          *widget.Button
 	nextButton          *widget.Button
-	squadCounterLabel   *widget.Text // Shows "Squad 1 of 3"
+	squadCounterLabel   *widget.Text                       // Shows "Squad 1 of 3"
+	commandExecutor     *squadcommands.CommandExecutor     // Command pattern for undo/redo
+	statusLabel         *widget.Text                       // Shows command results
 }
 
 // SquadPanel represents a single squad's UI panel
@@ -44,6 +48,7 @@ func NewSquadManagementMode(modeManager *core.UIModeManager) *SquadManagementMod
 	mode := &SquadManagementMode{
 		currentSquadIndex: 0,
 		allSquadIDs:       make([]ecs.EntityID, 0),
+		commandExecutor:   squadcommands.NewCommandExecutor(),
 	}
 	mode.SetModeName("squad_management")
 	mode.ModeManager = modeManager
@@ -113,6 +118,68 @@ func (smm *SquadManagementMode) Initialize(ctx *core.UIContext) error {
 	smm.navigationContainer.AddChild(smm.nextButton)
 
 	smm.RootContainer.AddChild(smm.navigationContainer)
+
+	// Command buttons container (Rename, Disband, Undo, Redo)
+	smm.commandContainer = widget.NewContainer(
+		widget.ContainerOpts.Layout(widget.NewRowLayout(
+			widget.RowLayoutOpts.Direction(widget.DirectionHorizontal),
+			widget.RowLayoutOpts.Spacing(10),
+			widget.RowLayoutOpts.Padding(widget.Insets{
+				Left: 10, Right: 10, Top: 10, Bottom: 10,
+			}),
+		)),
+	)
+
+	// Rename Squad button
+	renameBtn := widgets.CreateButtonWithConfig(widgets.ButtonConfig{
+		Text: "Rename Squad",
+		OnClick: func() {
+			smm.onRenameSquad()
+		},
+	})
+	smm.commandContainer.AddChild(renameBtn)
+
+	// Disband Squad button
+	disbandBtn := widgets.CreateButtonWithConfig(widgets.ButtonConfig{
+		Text: "Disband Squad",
+		OnClick: func() {
+			smm.onDisbandSquad()
+		},
+	})
+	smm.commandContainer.AddChild(disbandBtn)
+
+	// Merge Squads button
+	mergeBtn := widgets.CreateButtonWithConfig(widgets.ButtonConfig{
+		Text: "Merge Squads",
+		OnClick: func() {
+			smm.onMergeSquads()
+		},
+	})
+	smm.commandContainer.AddChild(mergeBtn)
+
+	// Undo button
+	undoBtn := widgets.CreateButtonWithConfig(widgets.ButtonConfig{
+		Text: "Undo (Ctrl+Z)",
+		OnClick: func() {
+			smm.onUndo()
+		},
+	})
+	smm.commandContainer.AddChild(undoBtn)
+
+	// Redo button
+	redoBtn := widgets.CreateButtonWithConfig(widgets.ButtonConfig{
+		Text: "Redo (Ctrl+Y)",
+		OnClick: func() {
+			smm.onRedo()
+		},
+	})
+	smm.commandContainer.AddChild(redoBtn)
+
+	smm.RootContainer.AddChild(smm.commandContainer)
+
+	// Status label for command results
+	smm.statusLabel = widgets.CreateSmallLabel("")
+	smm.RootContainer.AddChild(smm.statusLabel)
 
 	// Build action buttons (bottom-center) using helper
 	actionButtonContainer := gui.CreateBottomCenterButtonContainer(smm.PanelBuilders)
@@ -372,6 +439,338 @@ func (smm *SquadManagementMode) HandleInput(inputState *core.InputState) bool {
 		return true
 	}
 
+	// Handle Ctrl+Z for Undo
+	if inputState.KeysJustPressed[ebiten.KeyZ] && (inputState.KeysPressed[ebiten.KeyControl] || inputState.KeysPressed[ebiten.KeyMeta]) {
+		smm.onUndo()
+		return true
+	}
+
+	// Handle Ctrl+Y for Redo
+	if inputState.KeysJustPressed[ebiten.KeyY] && (inputState.KeysPressed[ebiten.KeyControl] || inputState.KeysPressed[ebiten.KeyMeta]) {
+		smm.onRedo()
+		return true
+	}
+
 	// E key hotkey is now handled by gui.BaseMode.HandleCommonInput via RegisterHotkey
 	return false
+}
+
+// onRenameSquad prompts for a new name and executes RenameSquadCommand
+func (smm *SquadManagementMode) onRenameSquad() {
+	if len(smm.allSquadIDs) == 0 {
+		smm.setStatus("No squad selected")
+		return
+	}
+
+	currentSquadID := smm.allSquadIDs[smm.currentSquadIndex]
+	currentName := squads.GetSquadName(currentSquadID, smm.Context.ECSManager)
+
+	// Show text input dialog
+	dialog := widgets.CreateTextInputDialog(widgets.TextInputDialogConfig{
+		Title:       "Rename Squad",
+		Message:     "Enter new squad name:",
+		Placeholder: "Squad name",
+		InitialText: currentName,
+		OnConfirm: func(newName string) {
+			if newName == "" || newName == currentName {
+				smm.setStatus("Rename cancelled")
+				return
+			}
+
+			// Create and execute rename command
+			cmd := squadcommands.NewRenameSquadCommand(
+				smm.Context.ECSManager,
+				currentSquadID,
+				newName,
+			)
+
+			result := smm.commandExecutor.Execute(cmd)
+
+			if result.Success {
+				smm.setStatus(fmt.Sprintf("✓ %s", result.Description))
+				smm.refreshCurrentSquad() // Refresh to show new name
+			} else {
+				smm.setStatus(fmt.Sprintf("✗ %s", result.Error))
+			}
+		},
+		OnCancel: func() {
+			smm.setStatus("Rename cancelled")
+		},
+	})
+
+	smm.GetEbitenUI().AddWindow(dialog)
+}
+
+// onDisbandSquad shows confirmation dialog then executes DisbandSquadCommand for the current squad
+func (smm *SquadManagementMode) onDisbandSquad() {
+	if len(smm.allSquadIDs) == 0 {
+		smm.setStatus("No squad selected")
+		return
+	}
+
+	currentSquadID := smm.allSquadIDs[smm.currentSquadIndex]
+	squadName := squads.GetSquadName(currentSquadID, smm.Context.ECSManager)
+
+	// Show confirmation dialog
+	dialog := widgets.CreateConfirmationDialog(widgets.DialogConfig{
+		Title:   "Confirm Disband",
+		Message: fmt.Sprintf("Disband squad '%s'? This will return all units to the roster.\n\nYou can undo this action with Ctrl+Z.", squadName),
+		OnConfirm: func() {
+			// Create and execute disband command
+			cmd := squadcommands.NewDisbandSquadCommand(
+				smm.Context.ECSManager,
+				smm.Context.PlayerData.PlayerEntityID,
+				currentSquadID,
+			)
+
+			result := smm.commandExecutor.Execute(cmd)
+
+			if result.Success {
+				smm.setStatus(fmt.Sprintf("✓ %s", result.Description))
+
+				// Remove disbanded squad from list
+				smm.allSquadIDs = append(smm.allSquadIDs[:smm.currentSquadIndex], smm.allSquadIDs[smm.currentSquadIndex+1:]...)
+
+				// Adjust index if needed
+				if smm.currentSquadIndex >= len(smm.allSquadIDs) && len(smm.allSquadIDs) > 0 {
+					smm.currentSquadIndex = len(smm.allSquadIDs) - 1
+				}
+
+				// Refresh display
+				smm.refreshCurrentSquad()
+				smm.updateNavigationButtons()
+			} else {
+				smm.setStatus(fmt.Sprintf("✗ %s", result.Error))
+			}
+		},
+		OnCancel: func() {
+			smm.setStatus("Disband cancelled")
+		},
+	})
+
+	smm.GetEbitenUI().AddWindow(dialog)
+}
+
+// onMergeSquads shows squad selection dialog then executes MergeSquadsCommand
+func (smm *SquadManagementMode) onMergeSquads() {
+	if len(smm.allSquadIDs) < 2 {
+		smm.setStatus("Need at least 2 squads to merge")
+		return
+	}
+
+	currentSquadID := smm.allSquadIDs[smm.currentSquadIndex]
+	currentSquadName := squads.GetSquadName(currentSquadID, smm.Context.ECSManager)
+
+	// Build list of other squads to merge with
+	otherSquads := make([]interface{}, 0)
+	otherSquadIDs := make([]ecs.EntityID, 0)
+	for i, squadID := range smm.allSquadIDs {
+		if i != smm.currentSquadIndex {
+			squadName := squads.GetSquadName(squadID, smm.Context.ECSManager)
+			otherSquads = append(otherSquads, squadName)
+			otherSquadIDs = append(otherSquadIDs, squadID)
+		}
+	}
+
+	// Create selection dialog container
+	contentContainer := widget.NewContainer(
+		widget.ContainerOpts.BackgroundImage(guiresources.PanelRes.Image),
+		widget.ContainerOpts.Layout(widget.NewRowLayout(
+			widget.RowLayoutOpts.Direction(widget.DirectionVertical),
+			widget.RowLayoutOpts.Spacing(15),
+			widget.RowLayoutOpts.Padding(widget.Insets{
+				Left: 20, Right: 20, Top: 20, Bottom: 20,
+			}),
+		)),
+	)
+
+	// Title
+	titleLabel := widgets.CreateLargeLabel("Merge Squads")
+	contentContainer.AddChild(titleLabel)
+
+	// Message
+	messageLabel := widgets.CreateSmallLabel(fmt.Sprintf("Select squad to merge INTO '%s':", currentSquadName))
+	contentContainer.AddChild(messageLabel)
+
+	// Squad selection list
+	var squadList *widget.List
+	squadList = widgets.CreateListWithConfig(widgets.ListConfig{
+		Entries:   otherSquads,
+		MinWidth:  400,
+		MinHeight: 200,
+		EntryLabelFunc: func(e interface{}) string {
+			return e.(string)
+		},
+	})
+	contentContainer.AddChild(squadList)
+
+	// Reference to window for closing
+	var window *widget.Window
+
+	// Button container
+	buttonContainer := widget.NewContainer(
+		widget.ContainerOpts.Layout(widget.NewRowLayout(
+			widget.RowLayoutOpts.Direction(widget.DirectionHorizontal),
+			widget.RowLayoutOpts.Spacing(15),
+		)),
+	)
+
+	// Merge button
+	mergeBtn := widgets.CreateButtonWithConfig(widgets.ButtonConfig{
+		Text: "Merge",
+		OnClick: func() {
+			selectedEntry := squadList.SelectedEntry()
+			if selectedEntry == nil {
+				smm.setStatus("No target squad selected")
+				return
+			}
+
+			// Find the selected squad ID
+			selectedIndex := -1
+			for i, entry := range otherSquads {
+				if entry == selectedEntry {
+					selectedIndex = i
+					break
+				}
+			}
+
+			if selectedIndex == -1 {
+				smm.setStatus("Error finding selected squad")
+				return
+			}
+
+			targetSquadID := otherSquadIDs[selectedIndex]
+			targetSquadName := squads.GetSquadName(targetSquadID, smm.Context.ECSManager)
+
+			// Close selection dialog
+			if window != nil {
+				window.Close()
+			}
+
+			// Show confirmation dialog
+			confirmDialog := widgets.CreateConfirmationDialog(widgets.DialogConfig{
+				Title:   "Confirm Merge",
+				Message: fmt.Sprintf("Merge '%s' INTO '%s'?\n\n'%s' will be disbanded and all units moved to '%s'.\n\nYou can undo this action with Ctrl+Z.", currentSquadName, targetSquadName, currentSquadName, targetSquadName),
+				OnConfirm: func() {
+					// Create and execute merge command
+					cmd := squadcommands.NewMergeSquadsCommand(
+						smm.Context.ECSManager,
+						smm.Context.PlayerData.PlayerEntityID,
+						currentSquadID,
+						targetSquadID,
+					)
+
+					result := smm.commandExecutor.Execute(cmd)
+
+					if result.Success {
+						smm.setStatus(fmt.Sprintf("✓ %s", result.Description))
+
+						// Refresh squad list (source squad was disbanded)
+						smm.allSquadIDs = squads.FindAllSquads(smm.Context.ECSManager)
+
+						// Adjust index if needed
+						if smm.currentSquadIndex >= len(smm.allSquadIDs) && len(smm.allSquadIDs) > 0 {
+							smm.currentSquadIndex = 0
+						}
+
+						smm.refreshCurrentSquad()
+						smm.updateNavigationButtons()
+					} else {
+						smm.setStatus(fmt.Sprintf("✗ %s", result.Error))
+					}
+				},
+				OnCancel: func() {
+					smm.setStatus("Merge cancelled")
+				},
+			})
+
+			smm.GetEbitenUI().AddWindow(confirmDialog)
+		},
+	})
+	buttonContainer.AddChild(mergeBtn)
+
+	// Cancel button
+	cancelBtn := widgets.CreateButtonWithConfig(widgets.ButtonConfig{
+		Text: "Cancel",
+		OnClick: func() {
+			smm.setStatus("Merge cancelled")
+			if window != nil {
+				window.Close()
+			}
+		},
+	})
+	buttonContainer.AddChild(cancelBtn)
+
+	contentContainer.AddChild(buttonContainer)
+
+	// Create window
+	window = widget.NewWindow(
+		widget.WindowOpts.Contents(contentContainer),
+		widget.WindowOpts.Modal(),
+		widget.WindowOpts.MinSize(500, 400),
+	)
+
+	smm.GetEbitenUI().AddWindow(window)
+}
+
+// onUndo executes the last command's undo operation
+func (smm *SquadManagementMode) onUndo() {
+	if !smm.commandExecutor.CanUndo() {
+		smm.setStatus("Nothing to undo")
+		return
+	}
+
+	result := smm.commandExecutor.Undo()
+
+	if result.Success {
+		smm.setStatus(fmt.Sprintf("⟲ %s", result.Description))
+
+		// Refresh squad list (squad might have been recreated)
+		smm.allSquadIDs = squads.FindAllSquads(smm.Context.ECSManager)
+
+		// Adjust index if needed
+		if smm.currentSquadIndex >= len(smm.allSquadIDs) && len(smm.allSquadIDs) > 0 {
+			smm.currentSquadIndex = 0
+		}
+
+		smm.refreshCurrentSquad()
+		smm.updateNavigationButtons()
+	} else {
+		smm.setStatus(fmt.Sprintf("✗ %s", result.Error))
+	}
+}
+
+// onRedo executes the last undone command again
+func (smm *SquadManagementMode) onRedo() {
+	if !smm.commandExecutor.CanRedo() {
+		smm.setStatus("Nothing to redo")
+		return
+	}
+
+	result := smm.commandExecutor.Redo()
+
+	if result.Success {
+		smm.setStatus(fmt.Sprintf("⟳ %s", result.Description))
+
+		// Refresh squad list
+		smm.allSquadIDs = squads.FindAllSquads(smm.Context.ECSManager)
+
+		// Adjust index if needed
+		if smm.currentSquadIndex >= len(smm.allSquadIDs) && len(smm.allSquadIDs) > 0 {
+			smm.currentSquadIndex = len(smm.allSquadIDs) - 1
+		}
+
+		smm.refreshCurrentSquad()
+		smm.updateNavigationButtons()
+	} else {
+		smm.setStatus(fmt.Sprintf("✗ %s", result.Error))
+	}
+}
+
+// setStatus updates the status label with a message
+func (smm *SquadManagementMode) setStatus(message string) {
+	if smm.statusLabel != nil {
+		smm.statusLabel.Label = message
+	}
+	fmt.Println(message) // Also log to console
 }

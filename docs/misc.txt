@@ -1,0 +1,9 @@
+
+  go test ./...
+
+  Here are other useful test commands from your project:
+
+  go test ./...                    # Run all tests
+  go test ./squads/...            # Run tests in specific package
+  go test -v ./...                # Run all tests with verbose output
+  go test -cover ./...            # Run all tests with coverage report

@@ -81,6 +81,18 @@ func (cih *CombatInputHandler) HandleInput(inputState *core.InputState) bool {
 		return true
 	}
 
+	// Ctrl+Z to undo last move
+	if inputState.KeysJustPressed[ebiten.KeyZ] && (inputState.KeysPressed[ebiten.KeyControl] || inputState.KeysPressed[ebiten.KeyMeta]) {
+		cih.actionHandler.UndoLastMove()
+		return true
+	}
+
+	// Ctrl+Y to redo last move
+	if inputState.KeysJustPressed[ebiten.KeyY] && (inputState.KeysPressed[ebiten.KeyControl] || inputState.KeysPressed[ebiten.KeyMeta]) {
+		cih.actionHandler.RedoLastMove()
+		return true
+	}
+
 	// Number keys 1-3 to select enemy targets in attack mode
 	if cih.battleMapState.InAttackMode {
 		if inputState.KeysJustPressed[ebiten.Key1] {

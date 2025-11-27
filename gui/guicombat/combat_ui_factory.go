@@ -69,6 +69,8 @@ func (cuf *CombatUIFactory) CreateLogPanel() (*widget.Container, *widget.TextAre
 func (cuf *CombatUIFactory) CreateActionButtons(
 	onAttack func(),
 	onMove func(),
+	onUndo func(),
+	onRedo func(),
 	onEndTurn func(),
 	onFlee func(),
 ) *widget.Container {
@@ -91,6 +93,14 @@ func (cuf *CombatUIFactory) CreateActionButtons(
 			{
 				Text:    "Move (M)",
 				OnClick: onMove,
+			},
+			{
+				Text:    "Undo (Ctrl+Z)",
+				OnClick: onUndo,
+			},
+			{
+				Text:    "Redo (Ctrl+Y)",
+				OnClick: onRedo,
 			},
 			{
 				Text:    "End Turn (Space)",

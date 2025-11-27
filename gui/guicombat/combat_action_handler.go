@@ -8,6 +8,7 @@ import (
 	"game_main/gui/core"
 	"game_main/gui/guicomponents"
 	"game_main/squads"
+	"game_main/squads/squadcommands"
 
 	"github.com/bytearena/ecs"
 	"github.com/ebitenui/ebitenui/widget"
@@ -15,11 +16,12 @@ import (
 
 // CombatActionHandler manages combat actions and their execution
 type CombatActionHandler struct {
-	battleMapState *core.BattleMapState
-	logManager     *CombatLogManager
-	queries        *guicomponents.GUIQueries
-	combatService  *combatservices.CombatService
-	combatLogArea  *widget.TextArea
+	battleMapState  *core.BattleMapState
+	logManager      *CombatLogManager
+	queries         *guicomponents.GUIQueries
+	combatService   *combatservices.CombatService
+	combatLogArea   *widget.TextArea
+	commandExecutor *squadcommands.CommandExecutor // Command pattern for undo/redo
 }
 
 // NewCombatActionHandler creates a new combat action handler
@@ -31,11 +33,12 @@ func NewCombatActionHandler(
 	combatLogArea *widget.TextArea,
 ) *CombatActionHandler {
 	return &CombatActionHandler{
-		battleMapState: battleMapState,
-		logManager:     logManager,
-		queries:        queries,
-		combatService:  combatService,
-		combatLogArea:  combatLogArea,
+		battleMapState:  battleMapState,
+		logManager:      logManager,
+		queries:         queries,
+		combatService:   combatService,
+		combatLogArea:   combatLogArea,
+		commandExecutor: squadcommands.NewCommandExecutor(),
 	}
 }
 
@@ -169,25 +172,78 @@ func (cah *CombatActionHandler) ExecuteAttack() {
 	cah.battleMapState.InAttackMode = false
 }
 
-// MoveSquad moves a squad to a new position
+// MoveSquad moves a squad to a new position using command pattern for undo support
 func (cah *CombatActionHandler) MoveSquad(squadID ecs.EntityID, newPos coords.LogicalPosition) error {
-	// Execute movement
-	result := cah.combatService.MoveSquad(squadID, newPos)
+	// Create move command
+	cmd := squadcommands.NewMoveSquadCommand(
+		cah.queries.ECSManager,
+		squadID,
+		newPos,
+	)
+
+	// Execute via command executor
+	result := cah.commandExecutor.Execute(cmd)
+
 	if !result.Success {
-		cah.addLog(fmt.Sprintf("Movement failed: %s", result.ErrorReason))
-		return fmt.Errorf(result.ErrorReason)
+		cah.addLog(fmt.Sprintf("Movement failed: %s", result.Error))
+		return fmt.Errorf(result.Error)
 	}
 
-	// Update unit positions to match squad position using service
-	cah.combatService.UpdateUnitPositions(squadID, newPos)
-
-	cah.addLog(fmt.Sprintf("%s moved to (%d, %d)", result.SquadName, newPos.X, newPos.Y))
+	cah.addLog(fmt.Sprintf("✓ %s", result.Description))
 
 	// Exit move mode
 	cah.battleMapState.InMoveMode = false
 	cah.battleMapState.ValidMoveTiles = []coords.LogicalPosition{}
 
 	return nil
+}
+
+// UndoLastMove undoes the last movement command
+func (cah *CombatActionHandler) UndoLastMove() {
+	if !cah.commandExecutor.CanUndo() {
+		cah.addLog("Nothing to undo")
+		return
+	}
+
+	result := cah.commandExecutor.Undo()
+
+	if result.Success {
+		cah.addLog(fmt.Sprintf("⟲ Undid: %s", result.Description))
+	} else {
+		cah.addLog(fmt.Sprintf("Undo failed: %s", result.Error))
+	}
+}
+
+// RedoLastMove redoes the last undone movement command
+func (cah *CombatActionHandler) RedoLastMove() {
+	if !cah.commandExecutor.CanRedo() {
+		cah.addLog("Nothing to redo")
+		return
+	}
+
+	result := cah.commandExecutor.Redo()
+
+	if result.Success {
+		cah.addLog(fmt.Sprintf("⟳ Redid: %s", result.Description))
+	} else {
+		cah.addLog(fmt.Sprintf("Redo failed: %s", result.Error))
+	}
+}
+
+// CanUndoMove returns whether there are moves to undo
+func (cah *CombatActionHandler) CanUndoMove() bool {
+	return cah.commandExecutor.CanUndo()
+}
+
+// CanRedoMove returns whether there are moves to redo
+func (cah *CombatActionHandler) CanRedoMove() bool {
+	return cah.commandExecutor.CanRedo()
+}
+
+// ClearMoveHistory clears all movement history (called when ending turn)
+func (cah *CombatActionHandler) ClearMoveHistory() {
+	cah.commandExecutor.ClearHistory()
+	cah.addLog("Movement history cleared")
 }
 
 // CycleSquadSelection selects the next squad in the faction
