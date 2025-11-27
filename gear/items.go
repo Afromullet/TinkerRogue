@@ -84,18 +84,6 @@ func (item *Item) HasThrowableAction() bool {
 	return item.GetThrowableAction() != nil
 }
 
-// GetFirstActionOfType returns the first action of the specified type, or nil if none exists
-// Usage: throwable := item.GetFirstActionOfType[*ThrowableAction]()
-func GetFirstActionOfType[T ItemAction](item *Item) T {
-	var zero T
-	for _, action := range item.Actions {
-		if typedAction, ok := action.(T); ok {
-			return typedAction
-		}
-	}
-	return zero
-}
-
 // CreateItem creates an item entity with status effects (ECS best practice compliant)
 func CreateItem(manager *ecs.Manager, name string, pos coords.LogicalPosition, imagePath string, effects ...StatusEffects) *ecs.Entity {
 

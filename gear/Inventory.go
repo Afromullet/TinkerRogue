@@ -100,22 +100,6 @@ func RemoveItem(manager *ecs.Manager, inv *Inventory, index int) {
 	}
 }
 
-// GetEffectNames returns the names of the Item Effects (system function)
-// Used for displaying item effects in the GUI
-func GetEffectNames(manager *ecs.Manager, inv *Inventory, index int) ([]string, error) {
-	itemID, err := GetItemEntityID(inv, index)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get item by index: %w", err)
-	}
-
-	itemComp := GetItemByID(manager, itemID)
-	if itemComp == nil {
-		return nil, fmt.Errorf("failed to get item component")
-	}
-
-	return GetItemEffectNames(manager, itemComp), nil
-}
-
 // GetInventoryForDisplay builds the list needed for displaying the inventory to the player (system function)
 // itemPropertiesFilter StatusEffects lets us filter by status effects
 func GetInventoryForDisplay(manager *ecs.Manager, inv *Inventory, indicesToSelect []int, itemPropertiesFilter ...StatusEffects) []any {

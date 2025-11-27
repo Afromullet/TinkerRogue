@@ -114,12 +114,6 @@ func (cs *CombatService) GetValidMovementTiles(squadID ecs.EntityID) []coords.Lo
 	return cs.movementSystem.GetValidMovementTiles(squadID)
 }
 
-// GetSquadsInRange returns all enemy squads within attack range
-func (cs *CombatService) GetSquadsInRange(squadID ecs.EntityID) []ecs.EntityID {
-	combatSys := combat.NewCombatActionSystem(cs.entityManager)
-	return combatSys.GetSquadsInRange(squadID)
-}
-
 // InitializeCombat initializes combat with the given factions
 func (cs *CombatService) InitializeCombat(factionIDs []ecs.EntityID) error {
 	return cs.turnManager.InitializeCombat(factionIDs)
@@ -128,31 +122,6 @@ func (cs *CombatService) InitializeCombat(factionIDs []ecs.EntityID) error {
 // GetCurrentFaction returns the current faction's turn
 func (cs *CombatService) GetCurrentFaction() ecs.EntityID {
 	return cs.turnManager.GetCurrentFaction()
-}
-
-// ResetSquadActions resets action state for all squads in a faction
-func (cs *CombatService) ResetSquadActions(factionID ecs.EntityID) error {
-	return cs.turnManager.ResetSquadActions(factionID)
-}
-
-// GetMovementSystem exposes movement system for UI queries (read-only)
-func (cs *CombatService) GetMovementSystem() *combat.CombatMovementSystem {
-	return cs.movementSystem
-}
-
-// GetTurnManager exposes turn manager
-func (cs *CombatService) GetTurnManager() *combat.TurnManager {
-	return cs.turnManager
-}
-
-// GetFactionManager exposes faction manager
-func (cs *CombatService) GetFactionManager() *combat.FactionManager {
-	return cs.factionManager
-}
-
-// GetEntityManager exposes entity manager
-func (cs *CombatService) GetEntityManager() *common.EntityManager {
-	return cs.entityManager
 }
 
 // GetCurrentRound returns the current combat round number
@@ -282,11 +251,6 @@ func (cs *CombatService) UpdateUnitPositions(squadID ecs.EntityID, newSquadPos c
 // GetSquadAtPosition returns the squad ID at the given position, or 0 if none
 func (cs *CombatService) GetSquadAtPosition(pos coords.LogicalPosition) ecs.EntityID {
 	return combat.GetSquadAtPosition(pos, cs.entityManager)
-}
-
-// GetFactionMana returns current and max mana for a faction
-func (cs *CombatService) GetFactionMana(factionID ecs.EntityID) (currentMana int, maxMana int) {
-	return cs.factionManager.GetFactionMana(factionID)
 }
 
 // getSquadNameByID is a helper to get squad name from ID

@@ -10,11 +10,11 @@ import (
 )
 
 type SharedInputState struct {
-	PrevCursor           coords.PixelPosition
-	PrevThrowInds        []int
-	PrevRangedAttInds    []int
-	PrevTargetLineInds   []int
-	TurnTaken            bool
+	PrevCursor         coords.PixelPosition
+	PrevThrowInds      []int
+	PrevRangedAttInds  []int
+	PrevTargetLineInds []int
+	TurnTaken          bool
 }
 
 func NewSharedInputState() *SharedInputState {

@@ -131,21 +131,6 @@ func (tm *TurnManager) EndTurn() error {
 	return nil
 }
 
-func (tm *TurnManager) IsSquadActivatable(squadID ecs.EntityID) bool {
-
-	currentFaction := tm.GetCurrentFaction()
-	if currentFaction == 0 {
-		return false // No active combat
-	}
-
-	squadFaction := getFactionOwner(squadID, tm.manager)
-	if squadFaction != currentFaction {
-		return false // Not this faction's squad
-	}
-
-	return canSquadAct(squadID, tm.manager)
-}
-
 func (tm *TurnManager) GetCurrentRound() int {
 	turnEntity := findTurnStateEntity(tm.manager)
 	if turnEntity == nil {

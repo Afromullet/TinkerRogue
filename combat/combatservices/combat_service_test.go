@@ -63,58 +63,6 @@ func TestGetCurrentFaction_BeforeInit(t *testing.T) {
 	}
 }
 
-// TestGetTurnManager tests turn manager exposure
-func TestGetTurnManager(t *testing.T) {
-	manager := common.NewEntityManager()
-	service := NewCombatService(manager)
-
-	turnMgr := service.GetTurnManager()
-
-	if turnMgr == nil {
-		t.Error("GetTurnManager should not return nil")
-	}
-}
-
-// TestGetFactionManager tests faction manager exposure
-func TestGetFactionManager(t *testing.T) {
-	manager := common.NewEntityManager()
-	service := NewCombatService(manager)
-
-	factionMgr := service.GetFactionManager()
-
-	if factionMgr == nil {
-		t.Error("GetFactionManager should not return nil")
-	}
-}
-
-// TestGetMovementSystem tests movement system exposure
-func TestGetMovementSystem(t *testing.T) {
-	manager := common.NewEntityManager()
-	service := NewCombatService(manager)
-
-	moveSys := service.GetMovementSystem()
-
-	if moveSys == nil {
-		t.Error("GetMovementSystem should not return nil")
-	}
-}
-
-// TestGetEntityManager tests entity manager exposure
-func TestGetEntityManager(t *testing.T) {
-	manager := common.NewEntityManager()
-	service := NewCombatService(manager)
-
-	em := service.GetEntityManager()
-
-	if em == nil {
-		t.Error("GetEntityManager should not return nil")
-	}
-
-	if em != manager {
-		t.Error("GetEntityManager should return the same manager passed in")
-	}
-}
-
 // TestMoveSquad tests MoveSquad method returns proper result structure
 func TestMoveSquad_ResultStructure(t *testing.T) {
 	// Test that MoveSquad with non-existent squad returns a result
@@ -144,18 +92,6 @@ func TestGetValidMovementTiles(t *testing.T) {
 	}
 
 	t.Logf("Valid movement tiles: %d", len(tiles))
-}
-
-// TestGetSquadsInRange tests finding squads in range
-func TestGetSquadsInRange(t *testing.T) {
-	manager := common.NewEntityManager()
-	service := NewCombatService(manager)
-
-	// Get squads in range for non-existent squad
-	squadsInRange := service.GetSquadsInRange(ecs.EntityID(999))
-
-	// May return nil or empty slice - both are acceptable
-	t.Logf("Squads in range: %v (len: %d)", squadsInRange, len(squadsInRange))
 }
 
 // TestAttackResult_Structure tests that AttackResult struct is properly populated
@@ -208,16 +144,4 @@ func TestMoveSquadResult_Structure(t *testing.T) {
 	if result.NewPosition.X != 5 || result.NewPosition.Y != 5 {
 		t.Error("NewPosition should be set correctly")
 	}
-}
-
-// TestResetSquadActions tests resetting squad actions
-func TestResetSquadActions(t *testing.T) {
-	manager := common.NewEntityManager()
-	service := NewCombatService(manager)
-
-	// Test reset with dummy faction ID
-	err := service.ResetSquadActions(ecs.EntityID(999))
-
-	// May return error if faction not found, which is OK
-	t.Logf("Reset squad actions returned error: %v (may be expected for non-existent faction)", err)
 }

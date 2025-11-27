@@ -22,12 +22,12 @@ func NewInventoryService(ecsManager *common.EntityManager) *InventoryService {
 
 // SelectThrowableResult contains the result of selecting a throwable item
 type SelectThrowableResult struct {
-	Success              bool
-	ItemEntityID         ecs.EntityID
-	ItemName             string
-	ItemIndex            int
-	EffectDescriptions   []string
-	Error                string
+	Success            bool
+	ItemEntityID       ecs.EntityID
+	ItemName           string
+	ItemIndex          int
+	EffectDescriptions []string
+	Error              string
 }
 
 // SelectThrowable prepares a throwable item for use
@@ -158,19 +158,4 @@ func (svc *InventoryService) FilterInventoryByAction(playerEntityID ecs.EntityID
 	}
 
 	return result
-}
-
-// GetThrowableItems returns all throwable items in the player's inventory
-func (svc *InventoryService) GetThrowableItems(playerEntityID ecs.EntityID) []InventoryListEntry {
-	return svc.FilterInventoryByAction(playerEntityID, THROWABLE_ACTION_NAME)
-}
-
-// HasThrowableItems checks if the player has any throwable items
-func (svc *InventoryService) HasThrowableItems(playerEntityID ecs.EntityID) bool {
-	inv := common.GetComponentTypeByID[*Inventory](svc.ecsManager, playerEntityID, InventoryComponent)
-	if inv == nil {
-		return false
-	}
-
-	return HasThrowableItems(svc.ecsManager.World, inv)
 }

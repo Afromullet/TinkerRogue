@@ -179,11 +179,6 @@ func (cas *CombatActionSystem) GetSquadsInRange(squadID ecs.EntityID) []ecs.Enti
 	return squadsInRange
 }
 
-func (cas *CombatActionSystem) CanSquadAttack(squadID, targetID ecs.EntityID) bool {
-	_, valid := cas.CanSquadAttackWithReason(squadID, targetID)
-	return valid
-}
-
 // CanSquadAttackWithReason returns detailed info about why an attack can/cannot happen
 func (cas *CombatActionSystem) CanSquadAttackWithReason(squadID, targetID ecs.EntityID) (string, bool) {
 	// Check if squad has action available
