@@ -22,9 +22,8 @@ type FormationEditorMode struct {
 	gridContainer  *widget.Container
 	unitPalette    *widget.List
 	actionButtons  *widget.Container
-	commandHistory *gui.CommandHistory // Centralized undo/redo support
-	squadSelector  *widget.List        // Squad selection list
-	currentSquadID ecs.EntityID        // Currently selected squad
+	squadSelector  *widget.List // Squad selection list
+	currentSquadID ecs.EntityID // Currently selected squad
 
 	gridCells [3][3]*widget.Button // 3x3 grid of cells
 }
@@ -40,11 +39,8 @@ func (fem *FormationEditorMode) Initialize(ctx *core.UIContext) error {
 	// Initialize common mode infrastructure
 	fem.InitializeBase(ctx)
 
-	// Initialize command history with callbacks
-	fem.commandHistory = gui.NewCommandHistory(
-		fem.SetStatus,
-		fem.refreshAfterUndoRedo,
-	)
+	// Initialize command history with refresh callback
+	fem.InitializeCommandHistory(fem.refreshAfterUndoRedo)
 
 	// Build squad selector on left side
 	fem.buildSquadSelector()
@@ -124,8 +120,8 @@ func (fem *FormationEditorMode) buildActionButtons() {
 	fem.actionButtons.AddChild(applyBtn)
 
 	// Undo/Redo buttons from CommandHistory
-	fem.actionButtons.AddChild(fem.commandHistory.CreateUndoButton())
-	fem.actionButtons.AddChild(fem.commandHistory.CreateRedoButton())
+	fem.actionButtons.AddChild(fem.CommandHistory.CreateUndoButton())
+	fem.actionButtons.AddChild(fem.CommandHistory.CreateRedoButton())
 
 	// Create close button to return to squad management (Overworld context)
 	closeBtn := gui.CreateCloseButton(fem.ModeManager, "squad_management", "Close (ESC)")
@@ -177,7 +173,7 @@ func (fem *FormationEditorMode) HandleInput(inputState *core.InputState) bool {
 	}
 
 	// Handle undo/redo input (Ctrl+Z, Ctrl+Y)
-	if fem.commandHistory.HandleInput(inputState) {
+	if fem.CommandHistory.HandleInput(inputState) {
 		return true
 	}
 
@@ -251,7 +247,7 @@ func (fem *FormationEditorMode) onApplyFormation() {
 				formation,
 			)
 
-			fem.commandHistory.Execute(cmd)
+			fem.CommandHistory.Execute(cmd)
 		},
 		OnCancel: func() {
 			fem.SetStatus("Apply formation cancelled")

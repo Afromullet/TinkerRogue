@@ -7,13 +7,6 @@
 
 ## High Priority
 
-### 1. Consolidate `setStatus` into BaseMode
-
-**Files:** `squadmanagementmode.go`, `formationeditormode.go`, `unitpurchasemode.go`
-
-**Issue:** 4 modes define nearly identical `setStatus` methods. BaseMode already has `SetStatus` but modes create their own unexported versions.
-
-**Action:** Remove mode-specific `setStatus` methods. Use `BaseMode.SetStatus` everywhere by assigning to `StatusLabel` in mode initialization.
 
 ---
 

@@ -24,13 +24,12 @@ type SquadManagementMode struct {
 	allSquadIDs         []ecs.EntityID                     // All available squad IDs
 	currentPanel        *SquadPanel                        // Currently displayed panel
 	panelContainer      *widget.Container                  // Container for the current squad panel
-	navigationContainer *widget.Container                  // Container for navigation buttons
-	commandContainer    *widget.Container                  // Container for command buttons
+	navigationContainer *widget.Container // Container for navigation buttons
+	commandContainer    *widget.Container // Container for command buttons
 	closeButton         *widget.Button
 	prevButton          *widget.Button
 	nextButton          *widget.Button
-	squadCounterLabel   *widget.Text                       // Shows "Squad 1 of 3"
-	commandHistory      *gui.CommandHistory                // Centralized undo/redo support
+	squadCounterLabel   *widget.Text // Shows "Squad 1 of 3"
 }
 
 // SquadPanel represents a single squad's UI panel
@@ -56,11 +55,8 @@ func (smm *SquadManagementMode) Initialize(ctx *core.UIContext) error {
 	// Initialize common mode infrastructure (required for queries field)
 	smm.InitializeBase(ctx)
 
-	// Initialize command history with callbacks
-	smm.commandHistory = gui.NewCommandHistory(
-		smm.SetStatus,
-		smm.refreshAfterUndoRedo,
-	)
+	// Initialize command history with refresh callback
+	smm.InitializeCommandHistory(smm.refreshAfterUndoRedo)
 
 	// Register hotkeys for mode transitions (Overworld context only)
 	smm.RegisterHotkey(ebiten.KeyB, "squad_builder")
@@ -161,8 +157,8 @@ func (smm *SquadManagementMode) Initialize(ctx *core.UIContext) error {
 	smm.commandContainer.AddChild(mergeBtn)
 
 	// Undo/Redo buttons from CommandHistory
-	smm.commandContainer.AddChild(smm.commandHistory.CreateUndoButton())
-	smm.commandContainer.AddChild(smm.commandHistory.CreateRedoButton())
+	smm.commandContainer.AddChild(smm.CommandHistory.CreateUndoButton())
+	smm.commandContainer.AddChild(smm.CommandHistory.CreateRedoButton())
 
 	smm.RootContainer.AddChild(smm.commandContainer)
 
@@ -413,7 +409,7 @@ func (smm *SquadManagementMode) HandleInput(inputState *core.InputState) bool {
 	}
 
 	// Handle undo/redo input (Ctrl+Z, Ctrl+Y)
-	if smm.commandHistory.HandleInput(inputState) {
+	if smm.CommandHistory.HandleInput(inputState) {
 		return true
 	}
 
@@ -450,7 +446,7 @@ func (smm *SquadManagementMode) onRenameSquad() {
 				newName,
 			)
 
-			smm.commandHistory.Execute(cmd)
+			smm.CommandHistory.Execute(cmd)
 		},
 		OnCancel: func() {
 			smm.SetStatus("Rename cancelled")
@@ -482,7 +478,7 @@ func (smm *SquadManagementMode) onDisbandSquad() {
 				currentSquadID,
 			)
 
-			smm.commandHistory.Execute(cmd)
+			smm.CommandHistory.Execute(cmd)
 		},
 		OnCancel: func() {
 			smm.SetStatus("Disband cancelled")
@@ -600,7 +596,7 @@ func (smm *SquadManagementMode) onMergeSquads() {
 						targetSquadID,
 					)
 
-					smm.commandHistory.Execute(cmd)
+					smm.CommandHistory.Execute(cmd)
 				},
 				OnCancel: func() {
 					smm.SetStatus("Merge cancelled")

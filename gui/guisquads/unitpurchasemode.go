@@ -19,7 +19,6 @@ type UnitPurchaseMode struct {
 	gui.BaseMode // Embed common mode infrastructure
 
 	purchaseService *squadservices.UnitPurchaseService
-	commandHistory  *gui.CommandHistory
 	unitList        *widget.List
 	detailPanel     *widget.Container
 	detailTextArea  *widget.TextArea
@@ -49,11 +48,8 @@ func (upm *UnitPurchaseMode) Initialize(ctx *core.UIContext) error {
 	// Create purchase service
 	upm.purchaseService = squadservices.NewUnitPurchaseService(ctx.ECSManager)
 
-	// Initialize command history with callbacks
-	upm.commandHistory = gui.NewCommandHistory(
-		upm.SetStatus,
-		upm.refreshAfterUndoRedo,
-	)
+	// Initialize command history with refresh callback
+	upm.InitializeCommandHistory(upm.refreshAfterUndoRedo)
 
 	// Build unit list (left side)
 	upm.buildUnitList()
@@ -215,8 +211,8 @@ func (upm *UnitPurchaseMode) buildActionButtons() {
 	actionButtonContainer.AddChild(upm.buyButton)
 
 	// Undo/Redo buttons from CommandHistory
-	actionButtonContainer.AddChild(upm.commandHistory.CreateUndoButton())
-	actionButtonContainer.AddChild(upm.commandHistory.CreateRedoButton())
+	actionButtonContainer.AddChild(upm.CommandHistory.CreateUndoButton())
+	actionButtonContainer.AddChild(upm.CommandHistory.CreateRedoButton())
 
 	// Close button
 	closeBtn := widgets.CreateButtonWithConfig(widgets.ButtonConfig{
@@ -317,7 +313,7 @@ func (upm *UnitPurchaseMode) purchaseUnit() {
 		*upm.selectedTemplate,
 	)
 
-	upm.commandHistory.Execute(cmd)
+	upm.CommandHistory.Execute(cmd)
 }
 
 func (upm *UnitPurchaseMode) refreshUnitList() {
@@ -415,7 +411,7 @@ func (upm *UnitPurchaseMode) HandleInput(inputState *core.InputState) bool {
 	}
 
 	// Handle undo/redo input (Ctrl+Z, Ctrl+Y)
-	if upm.commandHistory.HandleInput(inputState) {
+	if upm.CommandHistory.HandleInput(inputState) {
 		return true
 	}
 

@@ -22,17 +22,18 @@ type InputBinding struct {
 // BaseMode provides common mode infrastructure shared by all UI modes.
 // Modes should embed this struct to inherit common fields and behavior.
 type BaseMode struct {
-	ui            *ebitenui.UI
-	Context       *core.UIContext           // Exported for mode access
-	Layout        *widgets.LayoutConfig     // Exported for mode access
-	ModeManager   *core.UIModeManager       // Exported for mode access
-	RootContainer *widget.Container         // Exported for mode access
-	PanelBuilders *widgets.PanelBuilders    // Exported for mode access
-	Queries       *guicomponents.GUIQueries // Unified ECS query service - exported for mode access
-	StatusLabel   *widget.Text              // Optional status label for display and logging - set by modes that need it
-	modeName      string
-	returnMode    string                      // Mode to return to on ESC/close
-	hotkeys       map[ebiten.Key]InputBinding // Registered hotkeys for mode transitions
+	ui             *ebitenui.UI
+	Context        *core.UIContext           // Exported for mode access
+	Layout         *widgets.LayoutConfig     // Exported for mode access
+	ModeManager    *core.UIModeManager       // Exported for mode access
+	RootContainer  *widget.Container         // Exported for mode access
+	PanelBuilders  *widgets.PanelBuilders    // Exported for mode access
+	Queries        *guicomponents.GUIQueries // Unified ECS query service - exported for mode access
+	StatusLabel    *widget.Text              // Optional status label for display and logging - set by modes that need it
+	CommandHistory *CommandHistory           // Optional command history for undo/redo support
+	modeName       string
+	returnMode     string                      // Mode to return to on ESC/close
+	hotkeys        map[ebiten.Key]InputBinding // Registered hotkeys for mode transitions
 }
 
 // SetModeName sets the mode identifier
@@ -100,6 +101,19 @@ func (bm *BaseMode) SetStatus(message string) {
 		bm.StatusLabel.Label = message
 	}
 	fmt.Println(message) // Also log to console
+}
+
+// InitializeCommandHistory creates and initializes CommandHistory for this mode.
+// The onRefresh callback is called after successful undo/redo operations.
+// Automatically uses BaseMode.SetStatus for status updates.
+//
+// Example usage in mode's Initialize():
+//
+//	bm.InitializeCommandHistory(func() {
+//		bm.refreshCurrentSquad()
+//	})
+func (bm *BaseMode) InitializeCommandHistory(onRefresh func()) {
+	bm.CommandHistory = NewCommandHistory(bm.SetStatus, onRefresh)
 }
 
 // HandleCommonInput processes standard input that's common across all modes.
