@@ -68,65 +68,40 @@ func (fem *FormationEditorMode) buildSquadSelector() {
 	// Get all squads from ECS
 	allSquadIDs := squads.FindAllSquads(fem.Context.ECSManager)
 
-	// Build squad entries for list
-	squadEntries := make([]interface{}, 0, len(allSquadIDs))
-	for _, squadID := range allSquadIDs {
-		squadName := squads.GetSquadName(squadID, fem.Context.ECSManager)
-		squadEntries = append(squadEntries, squadName)
-	}
-
-	// Create squad selection list
-	listWidth := int(float64(fem.Layout.ScreenWidth) * widgets.PanelWidthStandard)
-	listHeight := int(float64(fem.Layout.ScreenHeight) * 0.3)
-
-	fem.squadSelector = widgets.CreateListWithConfig(widgets.ListConfig{
-		Entries:   squadEntries,
-		MinWidth:  listWidth,
-		MinHeight: listHeight,
-		EntryLabelFunc: func(e interface{}) string {
-			return e.(string)
-		},
-		OnEntrySelected: func(e interface{}) {
-			// Find the selected squad ID
-			selectedName := e.(string)
-			for _, squadID := range allSquadIDs {
-				if squads.GetSquadName(squadID, fem.Context.ECSManager) == selectedName {
-					fem.currentSquadID = squadID
-					fem.loadSquadFormation(squadID)
-					fem.setStatus(fmt.Sprintf("Selected squad: %s", selectedName))
-					break
-				}
-			}
-		},
-		LayoutData: widget.AnchorLayoutData{
-			HorizontalPosition: widget.AnchorLayoutPositionStart,
-			VerticalPosition:   widget.AnchorLayoutPositionStart,
+	// Create squad selection list using helper
+	fem.squadSelector = widgets.CreateSquadList(widgets.SquadListConfig{
+		SquadIDs:      allSquadIDs,
+		Manager:       fem.Context.ECSManager,
+		ScreenWidth:   fem.Layout.ScreenWidth,
+		ScreenHeight:  fem.Layout.ScreenHeight,
+		WidthPercent:  widgets.PanelWidthStandard,
+		HeightPercent: 0.3,
+		OnSelect: func(squadID ecs.EntityID) {
+			fem.currentSquadID = squadID
+			fem.loadSquadFormation(squadID)
+			squadName := squads.GetSquadName(squadID, fem.Context.ECSManager)
+			fem.setStatus(fmt.Sprintf("Selected squad: %s", squadName))
 		},
 	})
+	fem.squadSelector.GetWidget().LayoutData = widget.AnchorLayoutData{
+		HorizontalPosition: widget.AnchorLayoutPositionStart,
+		VerticalPosition:   widget.AnchorLayoutPositionStart,
+	}
 
 	fem.RootContainer.AddChild(fem.squadSelector)
 }
 
 func (fem *FormationEditorMode) buildUnitPalette() {
-	// Left side unit palette
-	listWidth := int(float64(fem.Layout.ScreenWidth) * widgets.PanelWidthStandard)
-	listHeight := int(float64(fem.Layout.ScreenHeight) * widgets.PanelHeightExtraTall)
+	// Unit type options
+	unitTypes := []string{"Tank", "DPS", "Support", "Remove Unit"}
 
-	// Unit types
-	entries := []interface{}{
-		"Tank",
-		"DPS",
-		"Support",
-		"Remove Unit",
-	}
-
-	fem.unitPalette = widgets.CreateListWithConfig(widgets.ListConfig{
-		Entries:   entries,
-		MinWidth:  listWidth,
-		MinHeight: listHeight,
-		EntryLabelFunc: func(e interface{}) string {
-			return e.(string)
-		},
+	// Create simple string list using helper
+	fem.unitPalette = widgets.CreateSimpleStringList(widgets.SimpleStringListConfig{
+		Entries:       unitTypes,
+		ScreenWidth:   fem.Layout.ScreenWidth,
+		ScreenHeight:  fem.Layout.ScreenHeight,
+		WidthPercent:  widgets.PanelWidthStandard,
+		HeightPercent: widgets.PanelHeightExtraTall,
 		LayoutData: widget.AnchorLayoutData{
 			HorizontalPosition: widget.AnchorLayoutPositionStart,
 			VerticalPosition:   widget.AnchorLayoutPositionCenter,

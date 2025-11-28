@@ -99,14 +99,13 @@ func (im *InventoryMode) buildFilterButtons() {
 }
 
 func (im *InventoryMode) buildItemList() {
-	// Left side item list (50% width)
-	listWidth := int(float64(im.Layout.ScreenWidth) * widgets.InventoryListWidth)
-	listHeight := int(float64(im.Layout.ScreenHeight) * widgets.InventoryListHeight)
-
-	im.itemList = widgets.CreateListWithConfig(widgets.ListConfig{
-		Entries:   []interface{}{}, // Will be populated by component
-		MinWidth:  listWidth,
-		MinHeight: listHeight,
+	// Create inventory list using helper
+	im.itemList = widgets.CreateInventoryList(widgets.InventoryListConfig{
+		ScreenWidth:   im.Layout.ScreenWidth,
+		ScreenHeight:  im.Layout.ScreenHeight,
+		WidthPercent:  widgets.InventoryListWidth,
+		HeightPercent: widgets.InventoryListHeight,
+		OnSelect:      im.handleItemSelection,
 		EntryLabelFunc: func(e interface{}) string {
 			// Handle both string messages and InventoryListEntry
 			switch v := e.(type) {
@@ -116,22 +115,6 @@ func (im *InventoryMode) buildItemList() {
 				return fmt.Sprintf("%s x%d", v.Name, v.Count)
 			default:
 				return fmt.Sprintf("%v", e)
-			}
-		},
-		OnEntrySelected: func(selectedEntry interface{}) {
-			// Handle InventoryListEntry type
-			if entry, ok := selectedEntry.(gear.InventoryListEntry); ok {
-				fmt.Printf("Selected item: %s (index %d)\n", entry.Name, entry.Index)
-
-				// If in throwables mode, prepare the throwable
-				if im.currentFilter == "Throwables" && im.Context.PlayerData != nil {
-					im.handleThrowableSelection(entry)
-				} else {
-					im.detailTextArea.SetText(fmt.Sprintf("Selected: %s x%d", entry.Name, entry.Count))
-				}
-			} else if str, ok := selectedEntry.(string); ok {
-				// Handle string messages
-				im.detailTextArea.SetText(str)
 			}
 		},
 		LayoutData: widget.AnchorLayoutData{
@@ -145,6 +128,24 @@ func (im *InventoryMode) buildItemList() {
 	})
 
 	im.RootContainer.AddChild(im.itemList)
+}
+
+// handleItemSelection processes item selection from the inventory list
+func (im *InventoryMode) handleItemSelection(selectedEntry interface{}) {
+	// Handle InventoryListEntry type
+	if entry, ok := selectedEntry.(gear.InventoryListEntry); ok {
+		fmt.Printf("Selected item: %s (index %d)\n", entry.Name, entry.Index)
+
+		// If in throwables mode, prepare the throwable
+		if im.currentFilter == "Throwables" && im.Context.PlayerData != nil {
+			im.handleThrowableSelection(entry)
+		} else {
+			im.detailTextArea.SetText(fmt.Sprintf("Selected: %s x%d", entry.Name, entry.Count))
+		}
+	} else if str, ok := selectedEntry.(string); ok {
+		// Handle string messages
+		im.detailTextArea.SetText(str)
+	}
 }
 
 func (im *InventoryMode) Enter(fromMode core.UIMode) error {

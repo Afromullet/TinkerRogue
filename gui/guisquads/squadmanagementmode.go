@@ -2,7 +2,6 @@ package guisquads
 
 import (
 	"fmt"
-	"game_main/common"
 	"game_main/gui"
 	"game_main/gui/core"
 	"game_main/gui/guiresources"
@@ -377,31 +376,15 @@ func (smm *SquadManagementMode) createUnitList(squadID ecs.EntityID) *widget.Lis
 	// Get all units in this squad
 	unitIDs := squads.GetUnitIDsInSquad(squadID, smm.Queries.ECSManager)
 
-	// Create list entries
-	entries := make([]interface{}, 0, len(unitIDs))
-	for _, unitID := range unitIDs {
-		// Get unit attributes (units use common.Attributes, not separate UnitData)
-		if attrRaw, ok := smm.Context.ECSManager.GetComponent(unitID, common.AttributeComponent); ok {
-			attr := attrRaw.(*common.Attributes)
-			// Get unit name
-			nameStr := "Unknown"
-			if nameRaw, ok := smm.Context.ECSManager.GetComponent(unitID, common.NameComponent); ok {
-				name := nameRaw.(*common.Name)
-				nameStr = name.NameStr
-			}
-			entries = append(entries, fmt.Sprintf("%s - HP: %d/%d", nameStr, attr.CurrentHealth, attr.MaxHealth))
-		}
-	}
-
-	// Create list widget using exported resources
-	list := widgets.CreateListWithConfig(widgets.ListConfig{
-		Entries: entries,
-		EntryLabelFunc: func(e interface{}) string {
-			return e.(string)
-		},
+	// Use helper to create unit list with fixed height to prevent layout jumping
+	return widgets.CreateUnitList(widgets.UnitListConfig{
+		UnitIDs:       unitIDs,
+		Manager:       smm.Context.ECSManager,
+		ScreenWidth:   400,  // Fixed width
+		ScreenHeight:  1000, // Fixed height (set HeightPercent to get 250px)
+		WidthPercent:  1.0,  // Use full fixed width
+		HeightPercent: 0.25, // 250px fixed height (1000 * 0.25)
 	})
-
-	return list
 }
 
 func (smm *SquadManagementMode) getSquadStats(squadID ecs.EntityID) string {
@@ -521,7 +504,7 @@ func (smm *SquadManagementMode) onMergeSquads() {
 	currentSquadName := squads.GetSquadName(currentSquadID, smm.Context.ECSManager)
 
 	// Build list of other squads to merge with
-	otherSquads := make([]interface{}, 0)
+	otherSquads := make([]string, 0)
 	otherSquadIDs := make([]ecs.EntityID, 0)
 	for i, squadID := range smm.allSquadIDs {
 		if i != smm.currentSquadIndex {
@@ -551,15 +534,14 @@ func (smm *SquadManagementMode) onMergeSquads() {
 	messageLabel := widgets.CreateSmallLabel(fmt.Sprintf("Select squad to merge INTO '%s':", currentSquadName))
 	contentContainer.AddChild(messageLabel)
 
-	// Squad selection list
+	// Squad selection list (using helper for simple string list)
 	var squadList *widget.List
-	squadList = widgets.CreateListWithConfig(widgets.ListConfig{
-		Entries:   otherSquads,
-		MinWidth:  400,
-		MinHeight: 200,
-		EntryLabelFunc: func(e interface{}) string {
-			return e.(string)
-		},
+	squadList = widgets.CreateSimpleStringList(widgets.SimpleStringListConfig{
+		Entries:       otherSquads,
+		ScreenWidth:   400,  // Fixed width for dialog
+		ScreenHeight:  200,  // Fixed height for dialog
+		WidthPercent:  1.0,  // Use full specified dimensions
+		HeightPercent: 1.0,
 	})
 	contentContainer.AddChild(squadList)
 
