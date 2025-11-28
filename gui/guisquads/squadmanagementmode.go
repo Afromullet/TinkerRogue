@@ -31,7 +31,7 @@ type SquadManagementMode struct {
 	prevButton          *widget.Button
 	nextButton          *widget.Button
 	squadCounterLabel   *widget.Text                       // Shows "Squad 1 of 3"
-	commandExecutor     *squadcommands.CommandExecutor     // Command pattern for undo/redo
+	commandHistory      *gui.CommandHistory                // Centralized undo/redo support
 	statusLabel         *widget.Text                       // Shows command results
 }
 
@@ -48,7 +48,6 @@ func NewSquadManagementMode(modeManager *core.UIModeManager) *SquadManagementMod
 	mode := &SquadManagementMode{
 		currentSquadIndex: 0,
 		allSquadIDs:       make([]ecs.EntityID, 0),
-		commandExecutor:   squadcommands.NewCommandExecutor(),
 	}
 	mode.SetModeName("squad_management")
 	mode.ModeManager = modeManager
@@ -58,6 +57,12 @@ func NewSquadManagementMode(modeManager *core.UIModeManager) *SquadManagementMod
 func (smm *SquadManagementMode) Initialize(ctx *core.UIContext) error {
 	// Initialize common mode infrastructure (required for queries field)
 	smm.InitializeBase(ctx)
+
+	// Initialize command history with callbacks
+	smm.commandHistory = gui.NewCommandHistory(
+		smm.setStatus,
+		smm.refreshAfterUndoRedo,
+	)
 
 	// Register hotkeys for mode transitions (Overworld context only)
 	smm.RegisterHotkey(ebiten.KeyB, "squad_builder")
@@ -157,23 +162,9 @@ func (smm *SquadManagementMode) Initialize(ctx *core.UIContext) error {
 	})
 	smm.commandContainer.AddChild(mergeBtn)
 
-	// Undo button
-	undoBtn := widgets.CreateButtonWithConfig(widgets.ButtonConfig{
-		Text: "Undo (Ctrl+Z)",
-		OnClick: func() {
-			smm.onUndo()
-		},
-	})
-	smm.commandContainer.AddChild(undoBtn)
-
-	// Redo button
-	redoBtn := widgets.CreateButtonWithConfig(widgets.ButtonConfig{
-		Text: "Redo (Ctrl+Y)",
-		OnClick: func() {
-			smm.onRedo()
-		},
-	})
-	smm.commandContainer.AddChild(redoBtn)
+	// Undo/Redo buttons from CommandHistory
+	smm.commandContainer.AddChild(smm.commandHistory.CreateUndoButton())
+	smm.commandContainer.AddChild(smm.commandHistory.CreateRedoButton())
 
 	smm.RootContainer.AddChild(smm.commandContainer)
 
@@ -439,15 +430,8 @@ func (smm *SquadManagementMode) HandleInput(inputState *core.InputState) bool {
 		return true
 	}
 
-	// Handle Ctrl+Z for Undo
-	if inputState.KeysJustPressed[ebiten.KeyZ] && (inputState.KeysPressed[ebiten.KeyControl] || inputState.KeysPressed[ebiten.KeyMeta]) {
-		smm.onUndo()
-		return true
-	}
-
-	// Handle Ctrl+Y for Redo
-	if inputState.KeysJustPressed[ebiten.KeyY] && (inputState.KeysPressed[ebiten.KeyControl] || inputState.KeysPressed[ebiten.KeyMeta]) {
-		smm.onRedo()
+	// Handle undo/redo input (Ctrl+Z, Ctrl+Y)
+	if smm.commandHistory.HandleInput(inputState) {
 		return true
 	}
 
@@ -484,14 +468,7 @@ func (smm *SquadManagementMode) onRenameSquad() {
 				newName,
 			)
 
-			result := smm.commandExecutor.Execute(cmd)
-
-			if result.Success {
-				smm.setStatus(fmt.Sprintf("✓ %s", result.Description))
-				smm.refreshCurrentSquad() // Refresh to show new name
-			} else {
-				smm.setStatus(fmt.Sprintf("✗ %s", result.Error))
-			}
+			smm.commandHistory.Execute(cmd)
 		},
 		OnCancel: func() {
 			smm.setStatus("Rename cancelled")
@@ -523,25 +500,7 @@ func (smm *SquadManagementMode) onDisbandSquad() {
 				currentSquadID,
 			)
 
-			result := smm.commandExecutor.Execute(cmd)
-
-			if result.Success {
-				smm.setStatus(fmt.Sprintf("✓ %s", result.Description))
-
-				// Remove disbanded squad from list
-				smm.allSquadIDs = append(smm.allSquadIDs[:smm.currentSquadIndex], smm.allSquadIDs[smm.currentSquadIndex+1:]...)
-
-				// Adjust index if needed
-				if smm.currentSquadIndex >= len(smm.allSquadIDs) && len(smm.allSquadIDs) > 0 {
-					smm.currentSquadIndex = len(smm.allSquadIDs) - 1
-				}
-
-				// Refresh display
-				smm.refreshCurrentSquad()
-				smm.updateNavigationButtons()
-			} else {
-				smm.setStatus(fmt.Sprintf("✗ %s", result.Error))
-			}
+			smm.commandHistory.Execute(cmd)
 		},
 		OnCancel: func() {
 			smm.setStatus("Disband cancelled")
@@ -660,24 +619,7 @@ func (smm *SquadManagementMode) onMergeSquads() {
 						targetSquadID,
 					)
 
-					result := smm.commandExecutor.Execute(cmd)
-
-					if result.Success {
-						smm.setStatus(fmt.Sprintf("✓ %s", result.Description))
-
-						// Refresh squad list (source squad was disbanded)
-						smm.allSquadIDs = squads.FindAllSquads(smm.Context.ECSManager)
-
-						// Adjust index if needed
-						if smm.currentSquadIndex >= len(smm.allSquadIDs) && len(smm.allSquadIDs) > 0 {
-							smm.currentSquadIndex = 0
-						}
-
-						smm.refreshCurrentSquad()
-						smm.updateNavigationButtons()
-					} else {
-						smm.setStatus(fmt.Sprintf("✗ %s", result.Error))
-					}
+					smm.commandHistory.Execute(cmd)
 				},
 				OnCancel: func() {
 					smm.setStatus("Merge cancelled")
@@ -713,58 +655,18 @@ func (smm *SquadManagementMode) onMergeSquads() {
 	smm.GetEbitenUI().AddWindow(window)
 }
 
-// onUndo executes the last command's undo operation
-func (smm *SquadManagementMode) onUndo() {
-	if !smm.commandExecutor.CanUndo() {
-		smm.setStatus("Nothing to undo")
-		return
+// refreshAfterUndoRedo is called after successful undo/redo operations
+func (smm *SquadManagementMode) refreshAfterUndoRedo() {
+	// Refresh squad list (squads might have been created/destroyed)
+	smm.allSquadIDs = squads.FindAllSquads(smm.Context.ECSManager)
+
+	// Adjust index if needed
+	if smm.currentSquadIndex >= len(smm.allSquadIDs) && len(smm.allSquadIDs) > 0 {
+		smm.currentSquadIndex = 0
 	}
 
-	result := smm.commandExecutor.Undo()
-
-	if result.Success {
-		smm.setStatus(fmt.Sprintf("⟲ %s", result.Description))
-
-		// Refresh squad list (squad might have been recreated)
-		smm.allSquadIDs = squads.FindAllSquads(smm.Context.ECSManager)
-
-		// Adjust index if needed
-		if smm.currentSquadIndex >= len(smm.allSquadIDs) && len(smm.allSquadIDs) > 0 {
-			smm.currentSquadIndex = 0
-		}
-
-		smm.refreshCurrentSquad()
-		smm.updateNavigationButtons()
-	} else {
-		smm.setStatus(fmt.Sprintf("✗ %s", result.Error))
-	}
-}
-
-// onRedo executes the last undone command again
-func (smm *SquadManagementMode) onRedo() {
-	if !smm.commandExecutor.CanRedo() {
-		smm.setStatus("Nothing to redo")
-		return
-	}
-
-	result := smm.commandExecutor.Redo()
-
-	if result.Success {
-		smm.setStatus(fmt.Sprintf("⟳ %s", result.Description))
-
-		// Refresh squad list
-		smm.allSquadIDs = squads.FindAllSquads(smm.Context.ECSManager)
-
-		// Adjust index if needed
-		if smm.currentSquadIndex >= len(smm.allSquadIDs) && len(smm.allSquadIDs) > 0 {
-			smm.currentSquadIndex = len(smm.allSquadIDs) - 1
-		}
-
-		smm.refreshCurrentSquad()
-		smm.updateNavigationButtons()
-	} else {
-		smm.setStatus(fmt.Sprintf("✗ %s", result.Error))
-	}
+	smm.refreshCurrentSquad()
+	smm.updateNavigationButtons()
 }
 
 // setStatus updates the status label with a message

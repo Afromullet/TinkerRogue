@@ -19,7 +19,7 @@ type UnitPurchaseMode struct {
 	gui.BaseMode // Embed common mode infrastructure
 
 	purchaseService *squadservices.UnitPurchaseService
-	commandExecutor *squadcommands.CommandExecutor
+	commandHistory  *gui.CommandHistory
 	unitList        *widget.List
 	detailPanel     *widget.Container
 	detailTextArea  *widget.TextArea
@@ -28,8 +28,6 @@ type UnitPurchaseMode struct {
 	rosterLabel     *widget.Text
 	buyButton       *widget.Button
 	viewStatsButton *widget.Button
-	undoButton      *widget.Button
-	redoButton      *widget.Button
 
 	selectedTemplate *squads.UnitTemplate
 	selectedIndex    int
@@ -51,8 +49,11 @@ func (upm *UnitPurchaseMode) Initialize(ctx *core.UIContext) error {
 	// Create purchase service
 	upm.purchaseService = squadservices.NewUnitPurchaseService(ctx.ECSManager)
 
-	// Create command executor for undo/redo
-	upm.commandExecutor = squadcommands.NewCommandExecutor()
+	// Initialize command history with callbacks
+	upm.commandHistory = gui.NewCommandHistory(
+		upm.setStatus,
+		upm.refreshAfterUndoRedo,
+	)
 
 	// Build unit list (left side)
 	upm.buildUnitList()
@@ -213,23 +214,9 @@ func (upm *UnitPurchaseMode) buildActionButtons() {
 	upm.buyButton.GetWidget().Disabled = true
 	actionButtonContainer.AddChild(upm.buyButton)
 
-	// Undo button
-	upm.undoButton = widgets.CreateButtonWithConfig(widgets.ButtonConfig{
-		Text: "Undo (Ctrl+Z)",
-		OnClick: func() {
-			upm.onUndo()
-		},
-	})
-	actionButtonContainer.AddChild(upm.undoButton)
-
-	// Redo button
-	upm.redoButton = widgets.CreateButtonWithConfig(widgets.ButtonConfig{
-		Text: "Redo (Ctrl+Y)",
-		OnClick: func() {
-			upm.onRedo()
-		},
-	})
-	actionButtonContainer.AddChild(upm.redoButton)
+	// Undo/Redo buttons from CommandHistory
+	actionButtonContainer.AddChild(upm.commandHistory.CreateUndoButton())
+	actionButtonContainer.AddChild(upm.commandHistory.CreateRedoButton())
 
 	// Close button
 	closeBtn := widgets.CreateButtonWithConfig(widgets.ButtonConfig{
@@ -330,21 +317,7 @@ func (upm *UnitPurchaseMode) purchaseUnit() {
 		*upm.selectedTemplate,
 	)
 
-	result := upm.commandExecutor.Execute(cmd)
-
-	if !result.Success {
-		// Display error message to user
-		fmt.Printf("Purchase failed: %s\n", result.Error)
-		return
-	}
-
-	// Success - display confirmation
-	fmt.Printf("Purchased unit: %s\n", result.Description)
-
-	// Refresh UI display
-	upm.refreshUnitList()
-	upm.refreshResourceDisplay()
-	upm.updateDetailPanel()
+	upm.commandHistory.Execute(cmd)
 }
 
 func (upm *UnitPurchaseMode) refreshUnitList() {
@@ -390,44 +363,16 @@ func (upm *UnitPurchaseMode) getTargetModeName(mode squads.TargetMode) string {
 	}
 }
 
-// onUndo executes the last purchase undo operation
-func (upm *UnitPurchaseMode) onUndo() {
-	if !upm.commandExecutor.CanUndo() {
-		fmt.Println("Nothing to undo")
-		return
-	}
-
-	result := upm.commandExecutor.Undo()
-
-	if result.Success {
-		fmt.Printf("⟲ %s\n", result.Description)
-		// Refresh UI to reflect undone purchase
-		upm.refreshUnitList()
-		upm.refreshResourceDisplay()
-		upm.updateDetailPanel()
-	} else {
-		fmt.Printf("✗ Undo failed: %s\n", result.Error)
-	}
+// refreshAfterUndoRedo is called after successful undo/redo operations
+func (upm *UnitPurchaseMode) refreshAfterUndoRedo() {
+	upm.refreshUnitList()
+	upm.refreshResourceDisplay()
+	upm.updateDetailPanel()
 }
 
-// onRedo executes the last undone purchase again
-func (upm *UnitPurchaseMode) onRedo() {
-	if !upm.commandExecutor.CanRedo() {
-		fmt.Println("Nothing to redo")
-		return
-	}
-
-	result := upm.commandExecutor.Redo()
-
-	if result.Success {
-		fmt.Printf("⟳ %s\n", result.Description)
-		// Refresh UI to reflect redone purchase
-		upm.refreshUnitList()
-		upm.refreshResourceDisplay()
-		upm.updateDetailPanel()
-	} else {
-		fmt.Printf("✗ Redo failed: %s\n", result.Error)
-	}
+// setStatus displays a status message to the user
+func (upm *UnitPurchaseMode) setStatus(message string) {
+	fmt.Println(message) // Log to console
 }
 
 func (upm *UnitPurchaseMode) Enter(fromMode core.UIMode) error {
@@ -473,15 +418,8 @@ func (upm *UnitPurchaseMode) HandleInput(inputState *core.InputState) bool {
 		}
 	}
 
-	// Handle Ctrl+Z for Undo
-	if inputState.KeysJustPressed[ebiten.KeyZ] && (inputState.KeysPressed[ebiten.KeyControl] || inputState.KeysPressed[ebiten.KeyMeta]) {
-		upm.onUndo()
-		return true
-	}
-
-	// Handle Ctrl+Y for Redo
-	if inputState.KeysJustPressed[ebiten.KeyY] && (inputState.KeysPressed[ebiten.KeyControl] || inputState.KeysPressed[ebiten.KeyMeta]) {
-		upm.onRedo()
+	// Handle undo/redo input (Ctrl+Z, Ctrl+Y)
+	if upm.commandHistory.HandleInput(inputState) {
 		return true
 	}
 

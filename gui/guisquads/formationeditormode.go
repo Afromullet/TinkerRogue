@@ -19,21 +19,19 @@ import (
 type FormationEditorMode struct {
 	gui.BaseMode // Embed common mode infrastructure
 
-	gridContainer   *widget.Container
-	unitPalette     *widget.List
-	actionButtons   *widget.Container
-	commandExecutor *squadcommands.CommandExecutor // Command pattern for undo/redo
-	statusLabel     *widget.Text                   // Shows command results
-	squadSelector   *widget.List                   // Squad selection list
-	currentSquadID  ecs.EntityID                   // Currently selected squad
+	gridContainer  *widget.Container
+	unitPalette    *widget.List
+	actionButtons  *widget.Container
+	commandHistory *gui.CommandHistory // Centralized undo/redo support
+	statusLabel    *widget.Text        // Shows command results
+	squadSelector  *widget.List        // Squad selection list
+	currentSquadID ecs.EntityID        // Currently selected squad
 
 	gridCells [3][3]*widget.Button // 3x3 grid of cells
 }
 
 func NewFormationEditorMode(modeManager *core.UIModeManager) *FormationEditorMode {
-	mode := &FormationEditorMode{
-		commandExecutor: squadcommands.NewCommandExecutor(),
-	}
+	mode := &FormationEditorMode{}
 	mode.SetModeName("formation_editor")
 	mode.ModeManager = modeManager
 	return mode
@@ -42,6 +40,12 @@ func NewFormationEditorMode(modeManager *core.UIModeManager) *FormationEditorMod
 func (fem *FormationEditorMode) Initialize(ctx *core.UIContext) error {
 	// Initialize common mode infrastructure
 	fem.InitializeBase(ctx)
+
+	// Initialize command history with callbacks
+	fem.commandHistory = gui.NewCommandHistory(
+		fem.setStatus,
+		fem.refreshAfterUndoRedo,
+	)
 
 	// Build squad selector on left side
 	fem.buildSquadSelector()
@@ -145,23 +149,9 @@ func (fem *FormationEditorMode) buildActionButtons() {
 	})
 	fem.actionButtons.AddChild(applyBtn)
 
-	// Undo button
-	undoBtn := widgets.CreateButtonWithConfig(widgets.ButtonConfig{
-		Text: "Undo",
-		OnClick: func() {
-			fem.onUndo()
-		},
-	})
-	fem.actionButtons.AddChild(undoBtn)
-
-	// Redo button
-	redoBtn := widgets.CreateButtonWithConfig(widgets.ButtonConfig{
-		Text: "Redo",
-		OnClick: func() {
-			fem.onRedo()
-		},
-	})
-	fem.actionButtons.AddChild(redoBtn)
+	// Undo/Redo buttons from CommandHistory
+	fem.actionButtons.AddChild(fem.commandHistory.CreateUndoButton())
+	fem.actionButtons.AddChild(fem.commandHistory.CreateRedoButton())
 
 	// Create close button to return to squad management (Overworld context)
 	closeBtn := gui.CreateCloseButton(fem.ModeManager, "squad_management", "Close (ESC)")
@@ -212,15 +202,8 @@ func (fem *FormationEditorMode) HandleInput(inputState *core.InputState) bool {
 		return true
 	}
 
-	// Handle Ctrl+Z for Undo
-	if inputState.KeysJustPressed[ebiten.KeyZ] && (inputState.KeysPressed[ebiten.KeyControl] || inputState.KeysPressed[ebiten.KeyMeta]) {
-		fem.onUndo()
-		return true
-	}
-
-	// Handle Ctrl+Y for Redo
-	if inputState.KeysJustPressed[ebiten.KeyY] && (inputState.KeysPressed[ebiten.KeyControl] || inputState.KeysPressed[ebiten.KeyMeta]) {
-		fem.onRedo()
+	// Handle undo/redo input (Ctrl+Z, Ctrl+Y)
+	if fem.commandHistory.HandleInput(inputState) {
 		return true
 	}
 
@@ -294,14 +277,7 @@ func (fem *FormationEditorMode) onApplyFormation() {
 				formation,
 			)
 
-			result := fem.commandExecutor.Execute(cmd)
-
-			if result.Success {
-				fem.setStatus(fmt.Sprintf("✓ %s", result.Description))
-				fem.loadSquadFormation(fem.currentSquadID) // Refresh display
-			} else {
-				fem.setStatus(fmt.Sprintf("✗ %s", result.Error))
-			}
+			fem.commandHistory.Execute(cmd)
 		},
 		OnCancel: func() {
 			fem.setStatus("Apply formation cancelled")
@@ -366,37 +342,10 @@ func (fem *FormationEditorMode) buildFormationAssignments() ([]squadcommands.For
 	return assignments, nil
 }
 
-// onUndo executes the last command's undo operation
-func (fem *FormationEditorMode) onUndo() {
-	if !fem.commandExecutor.CanUndo() {
-		fem.setStatus("Nothing to undo")
-		return
-	}
-
-	result := fem.commandExecutor.Undo()
-
-	if result.Success {
-		fem.setStatus(fmt.Sprintf("⟲ %s", result.Description))
-		// Refresh grid display if needed
-	} else {
-		fem.setStatus(fmt.Sprintf("✗ %s", result.Error))
-	}
-}
-
-// onRedo executes the last undone command again
-func (fem *FormationEditorMode) onRedo() {
-	if !fem.commandExecutor.CanRedo() {
-		fem.setStatus("Nothing to redo")
-		return
-	}
-
-	result := fem.commandExecutor.Redo()
-
-	if result.Success {
-		fem.setStatus(fmt.Sprintf("⟳ %s", result.Description))
-		// Refresh grid display if needed
-	} else {
-		fem.setStatus(fmt.Sprintf("✗ %s", result.Error))
+// refreshAfterUndoRedo is called after successful undo/redo operations
+func (fem *FormationEditorMode) refreshAfterUndoRedo() {
+	if fem.currentSquadID != 0 {
+		fem.loadSquadFormation(fem.currentSquadID)
 	}
 }
 

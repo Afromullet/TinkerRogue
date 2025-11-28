@@ -29,6 +29,7 @@ type BaseMode struct {
 	RootContainer *widget.Container         // Exported for mode access
 	PanelBuilders *widgets.PanelBuilders    // Exported for mode access
 	Queries       *guicomponents.GUIQueries // Unified ECS query service - exported for mode access
+	StatusLabel   *widget.Text              // Optional status label for display and logging - set by modes that need it
 	modeName      string
 	returnMode    string                      // Mode to return to on ESC/close
 	hotkeys       map[ebiten.Key]InputBinding // Registered hotkeys for mode transitions
@@ -90,6 +91,15 @@ func (bm *BaseMode) RegisterHotkey(key ebiten.Key, targetMode string) {
 		TargetMode: targetMode,
 		Reason:     fmt.Sprintf("%s key pressed", key.String()),
 	}
+}
+
+// SetStatus updates the status label with a message and logs to console.
+// Modes should assign their status label to StatusLabel in Initialize() to use this.
+func (bm *BaseMode) SetStatus(message string) {
+	if bm.StatusLabel != nil {
+		bm.StatusLabel.Label = message
+	}
+	fmt.Println(message) // Also log to console
 }
 
 // HandleCommonInput processes standard input that's common across all modes.
