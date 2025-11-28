@@ -26,9 +26,6 @@ type SquadDeploymentMode struct {
 	squadListComponent *guicomponents.SquadListComponent
 	selectedSquadID    ecs.EntityID
 	instructionText    *widget.Text
-	confirmButton      *widget.Button
-	clearAllButton     *widget.Button
-	closeButton        *widget.Button
 
 	isPlacingSquad   bool
 	pendingMouseX    int
@@ -105,38 +102,33 @@ func (sdm *SquadDeploymentMode) buildSquadListPanel() {
 }
 
 func (sdm *SquadDeploymentMode) buildActionButtons() {
-	// Create action buttons
-	sdm.clearAllButton = widgets.CreateButtonWithConfig(widgets.ButtonConfig{
-		Text: "Clear All",
-		OnClick: func() {
-			sdm.clearAllSquadPositions()
+	// Build action buttons using helper (consolidates positioning + button creation)
+	buttonSpecs := []widgets.ButtonSpec{
+		{
+			Text: "Clear All",
+			OnClick: func() {
+				sdm.clearAllSquadPositions()
+			},
 		},
-	})
-
-	sdm.confirmButton = widgets.CreateButtonWithConfig(widgets.ButtonConfig{
-		Text: "Start Combat",
-		OnClick: func() {
-			if combatMode, exists := sdm.ModeManager.GetMode("combat"); exists {
-				sdm.ModeManager.RequestTransition(combatMode, "Squads deployed, starting combat")
-			}
+		{
+			Text: "Start Combat",
+			OnClick: func() {
+				if combatMode, exists := sdm.ModeManager.GetMode("combat"); exists {
+					sdm.ModeManager.RequestTransition(combatMode, "Squads deployed, starting combat")
+				}
+			},
 		},
-	})
+		{
+			Text: "Close (ESC)",
+			OnClick: func() {
+				if mode, exists := sdm.ModeManager.GetMode("exploration"); exists {
+					sdm.ModeManager.RequestTransition(mode, "Close button pressed")
+				}
+			},
+		},
+	}
 
-	// Create close button using helper
-	sdm.closeButton = gui.CreateCloseButton(sdm.ModeManager, "exploration", "Close (ESC)")
-
-	// Build action buttons container using BuildPanel
-	buttonContainer := sdm.PanelBuilders.BuildPanel(
-		widgets.BottomCenter(),
-		widgets.HorizontalRowLayout(),
-		widgets.CustomPadding(widget.Insets{
-			Bottom: int(float64(sdm.Layout.ScreenHeight) * widgets.BottomButtonOffset),
-		}),
-	)
-
-	buttonContainer.AddChild(sdm.clearAllButton)
-	buttonContainer.AddChild(sdm.confirmButton)
-	buttonContainer.AddChild(sdm.closeButton)
+	buttonContainer := gui.CreateActionButtonGroup(sdm.PanelBuilders, widgets.BottomCenter(), buttonSpecs)
 	sdm.RootContainer.AddChild(buttonContainer)
 }
 

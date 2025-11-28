@@ -107,25 +107,28 @@ func (fem *FormationEditorMode) buildUnitPalette() {
 }
 
 func (fem *FormationEditorMode) buildActionButtons() {
-	// Build action buttons container using helper
-	fem.actionButtons = gui.CreateBottomCenterButtonContainer(fem.PanelBuilders)
-
-	// Apply Formation button (placeholder - would use ChangeFormationCommand)
-	applyBtn := widgets.CreateButtonWithConfig(widgets.ButtonConfig{
-		Text: "Apply Formation",
-		OnClick: func() {
-			fem.onApplyFormation()
+	// Build action button group using helper with button specs
+	buttonSpecs := []widgets.ButtonSpec{
+		{
+			Text: "Apply Formation",
+			OnClick: func() {
+				fem.onApplyFormation()
+			},
 		},
-	})
-	fem.actionButtons.AddChild(applyBtn)
+		{
+			Text: "Close (ESC)",
+			OnClick: func() {
+				if mode, exists := fem.ModeManager.GetMode("squad_management"); exists {
+					fem.ModeManager.RequestTransition(mode, "Close button pressed")
+				}
+			},
+		},
+	}
+	fem.actionButtons = gui.CreateActionButtonGroup(fem.PanelBuilders, widgets.BottomCenter(), buttonSpecs)
 
-	// Undo/Redo buttons from CommandHistory
+	// Add undo/redo buttons from CommandHistory
 	fem.actionButtons.AddChild(fem.CommandHistory.CreateUndoButton())
 	fem.actionButtons.AddChild(fem.CommandHistory.CreateRedoButton())
-
-	// Create close button to return to squad management (Overworld context)
-	closeBtn := gui.CreateCloseButton(fem.ModeManager, "squad_management", "Close (ESC)")
-	fem.actionButtons.AddChild(closeBtn)
 
 	// Status label
 	fem.StatusLabel = widgets.CreateSmallLabel("")

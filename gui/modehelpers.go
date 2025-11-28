@@ -59,6 +59,40 @@ func AddActionButton(container *widget.Container, text string, onClick func()) {
 	container.AddChild(btn)
 }
 
+// CreateActionButtonGroup creates an action button group with the specified position and button specs.
+// Consolidates the pattern of creating a positioned container and adding multiple action buttons.
+// Eliminates repetitive code across 6+ modes that build bottom-center button containers.
+// Parameters:
+//   - panelBuilders: Used to build the panel with consistent styling
+//   - position: Panel position (e.g., widgets.BottomCenter(), widgets.TopCenter())
+//   - specs: Slice of button specifications (text + onClick handlers)
+//
+// Returns a container with all buttons added and positioned according to the layout.
+// Example:
+//
+//	buttons := []widgets.ButtonSpec{
+//		{Text: "Save", OnClick: func() { /* ... */ }},
+//		{Text: "Cancel", OnClick: func() { /* ... */ }},
+//	}
+//	container := CreateActionButtonGroup(panelBuilders, widgets.BottomCenter(), buttons)
+func CreateActionButtonGroup(panelBuilders *widgets.PanelBuilders, position widgets.PanelOption, specs []widgets.ButtonSpec) *widget.Container {
+	// Create positioned container with standard horizontal layout
+	container := panelBuilders.BuildPanel(
+		position,
+		widgets.HorizontalRowLayout(),
+		widgets.CustomPadding(widget.Insets{
+			Bottom: int(float64(panelBuilders.Layout.ScreenHeight) * widgets.BottomButtonOffset),
+		}),
+	)
+
+	// Add all buttons from specs
+	for _, spec := range specs {
+		AddActionButton(container, spec.Text, spec.OnClick)
+	}
+
+	return container
+}
+
 // CreateDetailPanel creates a detail panel with a text area inside.
 // Eliminates repetitive panel+textarea initialization code across multiple modes.
 // Returns both the panel container and text area for flexibility.

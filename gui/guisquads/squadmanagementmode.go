@@ -166,53 +166,42 @@ func (smm *SquadManagementMode) Initialize(ctx *core.UIContext) error {
 	smm.StatusLabel = widgets.CreateSmallLabel("")
 	smm.RootContainer.AddChild(smm.StatusLabel)
 
-	// Build action buttons (bottom-center) using helper
-	actionButtonContainer := gui.CreateBottomCenterButtonContainer(smm.PanelBuilders)
-
-	// Return to Battle Map button
-	battleMapBtn := widgets.CreateButtonWithConfig(widgets.ButtonConfig{
-		Text: "Battle Map (ESC)",
-		OnClick: func() {
-			if smm.Context.ModeCoordinator != nil {
-				smm.Context.ModeCoordinator.EnterBattleMap("exploration")
-			}
+	// Build action buttons (bottom-center) using action button group helper
+	actionButtonSpecs := []widgets.ButtonSpec{
+		{
+			Text: "Battle Map (ESC)",
+			OnClick: func() {
+				if smm.Context.ModeCoordinator != nil {
+					smm.Context.ModeCoordinator.EnterBattleMap("exploration")
+				}
+			},
 		},
-	})
-	actionButtonContainer.AddChild(battleMapBtn)
-
-	// Squad Builder button
-	builderBtn := widgets.CreateButtonWithConfig(widgets.ButtonConfig{
-		Text: "Squad Builder (B)",
-		OnClick: func() {
-			if builderMode, exists := smm.ModeManager.GetMode("squad_builder"); exists {
-				smm.ModeManager.RequestTransition(builderMode, "Open Squad Builder")
-			}
+		{
+			Text: "Squad Builder (B)",
+			OnClick: func() {
+				if builderMode, exists := smm.ModeManager.GetMode("squad_builder"); exists {
+					smm.ModeManager.RequestTransition(builderMode, "Open Squad Builder")
+				}
+			},
 		},
-	})
-	actionButtonContainer.AddChild(builderBtn)
-
-	// Formation Editor button
-	formationBtn := widgets.CreateButtonWithConfig(widgets.ButtonConfig{
-		Text: "Formation (F)",
-		OnClick: func() {
-			if formationMode, exists := smm.ModeManager.GetMode("formation_editor"); exists {
-				smm.ModeManager.RequestTransition(formationMode, "Open Formation Editor")
-			}
+		{
+			Text: "Formation (F)",
+			OnClick: func() {
+				if formationMode, exists := smm.ModeManager.GetMode("formation_editor"); exists {
+					smm.ModeManager.RequestTransition(formationMode, "Open Formation Editor")
+				}
+			},
 		},
-	})
-	actionButtonContainer.AddChild(formationBtn)
-
-	// Unit Purchase button
-	purchaseBtn := widgets.CreateButtonWithConfig(widgets.ButtonConfig{
-		Text: "Buy Units (P)",
-		OnClick: func() {
-			if purchaseMode, exists := smm.ModeManager.GetMode("unit_purchase"); exists {
-				smm.ModeManager.RequestTransition(purchaseMode, "Open Unit Purchase")
-			}
+		{
+			Text: "Buy Units (P)",
+			OnClick: func() {
+				if purchaseMode, exists := smm.ModeManager.GetMode("unit_purchase"); exists {
+					smm.ModeManager.RequestTransition(purchaseMode, "Open Unit Purchase")
+				}
+			},
 		},
-	})
-	actionButtonContainer.AddChild(purchaseBtn)
-
+	}
+	actionButtonContainer := gui.CreateActionButtonGroup(smm.PanelBuilders, widgets.BottomCenter(), actionButtonSpecs)
 	smm.GetEbitenUI().Container.AddChild(actionButtonContainer)
 
 	return nil

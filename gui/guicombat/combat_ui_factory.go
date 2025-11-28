@@ -73,17 +73,10 @@ func (cuf *CombatUIFactory) CreateActionButtons(
 	onEndTurn func(),
 	onFlee func(),
 ) *widget.Container {
-	// Build action buttons container with standard panel
-	actionButtons := widgets.CreateStandardPanelWithOptions(
+	// Build action buttons using helper (consolidates positioning + button creation)
+	return gui.CreateActionButtonGroup(
 		cuf.panelBuilders,
-		"action_buttons",
-		widgets.CustomPadding(widget.Insets{
-			Bottom: int(float64(cuf.layout.ScreenHeight) * widgets.BottomButtonOffset),
-		}),
-	)
-
-	// Create button group with combat actions
-	buttonGroup := widgets.HorizontalButtonGroup(
+		widgets.BottomCenter(),
 		[]widgets.ButtonSpec{
 			{
 				Text:    "Attack (A)",
@@ -110,12 +103,7 @@ func (cuf *CombatUIFactory) CreateActionButtons(
 				OnClick: onFlee,
 			},
 		},
-		10,
-		widget.Insets{Left: 5, Right: 5, Top: 5, Bottom: 5},
 	)
-
-	actionButtons.AddChild(buttonGroup)
-	return actionButtons
 }
 
 // GetFormattedSquadDetails returns formatted squad details as string

@@ -29,21 +29,22 @@
 
 ## Medium Priority
 
+
+
+### 6. Consolidate Panel Creation Approach
+
+**Files:** `modehelpers.go`, various mode files
+
+**Issue:** Three different approaches for panels with text areas:
+- `gui.CreateDetailPanel()` - manual positioning
+- `gui.CreateStandardDetailPanel()` - uses StandardPanels lookup
+- Direct `widgets.CreatePanelWithConfig()` + `widgets.CreateTextAreaWithConfig()`
+
+**Action:** Prefer `CreateStandardDetailPanel` with StandardPanels. Add specs to StandardPanels for common panel types. Migrate manual panel+textarea creation.
+
 ---
 
 
-### 7. Create Bottom Action Button Builder
-
-**Files:** 6+ mode files
-
-**Issue:** Pattern of creating bottom-center container + adding action buttons repeated with identical layout logic.
-
-**Action:** Extend helpers to accept button specs:
-```go
-CreateActionButtonGroup(specs []ButtonSpec, position PanelOption) *widget.Container
-```
-
----
 
 ### 8. Consolidate Dialog Functions
 

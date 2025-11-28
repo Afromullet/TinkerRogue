@@ -198,9 +198,19 @@ func (upm *UnitPurchaseMode) buildResourceDisplay() {
 }
 
 func (upm *UnitPurchaseMode) buildActionButtons() {
-	actionButtonContainer := gui.CreateBottomCenterButtonContainer(upm.PanelBuilders)
+	// Create positioned container using helper (reduces layout boilerplate)
+	buttonSpecs := []widgets.ButtonSpec{
+		{
+			Text: "Buy Unit",
+			OnClick: func() {
+				upm.purchaseUnit()
+			},
+		},
+	}
+	actionButtonContainer := gui.CreateActionButtonGroup(upm.PanelBuilders, widgets.BottomCenter(), buttonSpecs)
 
-	// Buy button
+	// Store reference to buy button for later enable/disable control
+	// (Note: Container doesn't expose children directly, so we keep our reference)
 	upm.buyButton = widgets.CreateButtonWithConfig(widgets.ButtonConfig{
 		Text: "Buy Unit",
 		OnClick: func() {
@@ -208,6 +218,9 @@ func (upm *UnitPurchaseMode) buildActionButtons() {
 		},
 	})
 	upm.buyButton.GetWidget().Disabled = true
+
+	// Clear the helper-created buttons and add our managed buttons
+	actionButtonContainer.RemoveChildren()
 	actionButtonContainer.AddChild(upm.buyButton)
 
 	// Undo/Redo buttons from CommandHistory

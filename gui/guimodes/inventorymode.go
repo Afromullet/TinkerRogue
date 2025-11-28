@@ -64,11 +64,18 @@ func (im *InventoryMode) Initialize(ctx *core.UIContext) error {
 	)
 	im.RootContainer.AddChild(im.detailPanel)
 
-	// Build close button (bottom-center) using helpers
-	closeButtonContainer := gui.CreateBottomCenterButtonContainer(im.PanelBuilders)
-	closeBtn := gui.CreateCloseButton(im.ModeManager, "exploration", "Close (ESC)")
-	closeButtonContainer.AddChild(closeBtn)
-	im.RootContainer.AddChild(closeButtonContainer)
+	// Build close button (bottom-center) using action button group helper
+	closeButtons := []widgets.ButtonSpec{
+		{
+			Text: "Close (ESC)",
+			OnClick: func() {
+				if mode, exists := im.ModeManager.GetMode("exploration"); exists {
+					im.ModeManager.RequestTransition(mode, "Close button pressed")
+				}
+			},
+		},
+	}
+	im.RootContainer.AddChild(gui.CreateActionButtonGroup(im.PanelBuilders, widgets.BottomCenter(), closeButtons))
 
 	return nil
 }
