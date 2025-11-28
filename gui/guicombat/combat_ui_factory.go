@@ -54,13 +54,12 @@ func (cuf *CombatUIFactory) CreateSquadDetailPanel() *widget.Container {
 	return widgets.CreateStandardPanel(cuf.panelBuilders, "squad_detail")
 }
 
-// CreateLogPanel builds the combat log panel using the detail panel helper
+// CreateLogPanel builds the combat log panel using standard specification
 func (cuf *CombatUIFactory) CreateLogPanel() (*widget.Container, *widget.TextArea) {
-	return gui.CreateDetailPanel(
+	return gui.CreateStandardDetailPanel(
 		cuf.panelBuilders,
 		cuf.layout,
-		widgets.RightCenter(),
-		widgets.PanelWidthExtraWide, widgets.CombatLogHeight, widgets.PaddingTight,
+		"combat_log",
 		"Combat started!\n",
 	)
 }

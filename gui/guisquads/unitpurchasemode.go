@@ -214,15 +214,8 @@ func (upm *UnitPurchaseMode) buildActionButtons() {
 	actionButtonContainer.AddChild(upm.CommandHistory.CreateUndoButton())
 	actionButtonContainer.AddChild(upm.CommandHistory.CreateRedoButton())
 
-	// Close button
-	closeBtn := widgets.CreateButtonWithConfig(widgets.ButtonConfig{
-		Text: "Back (ESC)",
-		OnClick: func() {
-			if squadMgmtMode, exists := upm.ModeManager.GetMode("squad_management"); exists {
-				upm.ModeManager.RequestTransition(squadMgmtMode, "Close Unit Purchase")
-			}
-		},
-	})
+	// Close button using standard pattern
+	closeBtn := gui.CreateCloseButton(upm.ModeManager, "squad_management", "Back (ESC)")
 	actionButtonContainer.AddChild(closeBtn)
 
 	upm.RootContainer.AddChild(actionButtonContainer)

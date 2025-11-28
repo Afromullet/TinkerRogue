@@ -142,6 +142,17 @@ func GetTargetMode(targetModeString string) (TargetMode, error) {
 	}
 }
 
+// GetTemplateByName finds a unit template by its name.
+// Returns nil if no template with the given name is found.
+func GetTemplateByName(name string) *UnitTemplate {
+	for i := range Units {
+		if Units[i].Name == name {
+			return &Units[i]
+		}
+	}
+	return nil
+}
+
 // Uses the UnitTemlate to create the unit entity and add it to the manager.
 // This does not add the SquadMemberDat
 func CreateUnitEntity(squadmanager *common.EntityManager, unit UnitTemplate) (*ecs.Entity, error) {

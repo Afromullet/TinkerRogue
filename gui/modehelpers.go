@@ -11,8 +11,19 @@ import (
 )
 
 // CreateCloseButton creates a standard close button that transitions to a target mode.
-// Used consistently across all modes to provide ESC-like functionality.
+// Used consistently across all modes to provide ESC-like functionality for same-context transitions.
 // All modes use this same pattern - centralized here for consistency.
+//
+// Use this for:
+// - Returning to a parent mode within the same context (e.g., squad_management -> squad_builder)
+// - Same-context mode transitions that feel like "closing" the current mode
+//
+// Use ModeCoordinator.EnterBattleMap() or EnterOverworld() for:
+// - Context switches between Overworld (strategic) and BattleMap (tactical) contexts
+// - Transitions that change the fundamental game layer
+//
+// Example:
+//   closeBtn := CreateCloseButton(modeManager, "squad_management", "Back (ESC)")
 func CreateCloseButton(modeManager *core.UIModeManager, targetModeName, buttonText string) *widget.Button {
 	return widgets.CreateButtonWithConfig(widgets.ButtonConfig{
 		Text: buttonText,

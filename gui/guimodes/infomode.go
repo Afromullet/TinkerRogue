@@ -54,12 +54,11 @@ func (im *InfoMode) Initialize(ctx *core.UIContext) error {
 	optionsPanel.AddChild(im.optionsList)
 	im.RootContainer.AddChild(optionsPanel)
 
-	// Detail panel using gui.CreateDetailPanel helper
-	detailPanel, textArea := gui.CreateDetailPanel(
+	// Detail panel using standard specification
+	detailPanel, textArea := gui.CreateStandardDetailPanel(
 		im.PanelBuilders,
 		im.Layout,
-		widgets.RightCenter(),
-		0.4, 0.6, 0.01,
+		"info_detail",
 		"Select an option to inspect",
 	)
 	im.detailTextArea = textArea

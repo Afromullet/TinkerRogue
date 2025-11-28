@@ -21,9 +21,11 @@ type PanelSpec struct {
 // This is the single source of truth for panel layouts - modify here to update everywhere.
 //
 // Currently used by:
-// - CombatUIFactory: turn_order, faction_info, squad_list, squad_detail, action_buttons
+// - CombatUIFactory: turn_order, faction_info, squad_list, squad_detail, action_buttons, combat_log
+// - CombatMode: action buttons
 // - ExplorationMode: stats_panel, message_log, quick_inventory
-// - InfoMode: options_list
+// - InfoMode: options_list, info_detail
+// - InventoryMode: inventory_detail
 //
 // Note: SquadBuilderUIFactory doesn't use this system as it creates widgets (List, TextArea)
 // with custom manual layout positioning rather than using BuildPanel patterns.
@@ -110,6 +112,34 @@ var StandardPanels = map[string]PanelSpec{
 		Height:   PanelHeightHalf,
 		Padding:  0, // Uses default padding from BuildPanel
 		Layout:   RowLayout(),
+	},
+
+	// ============================================
+	// Detail Panels (TextArea Containers)
+	// ============================================
+	"inventory_detail": {
+		Name:     "Inventory Detail",
+		Position: RightCenter(),
+		Width:    PanelWidthExtraWide,
+		Height:   PanelHeightTall,
+		Padding:  PaddingStandard,
+		Layout:   AnchorLayout(),
+	},
+	"info_detail": {
+		Name:     "Info Detail",
+		Position: RightCenter(),
+		Width:    0.4,
+		Height:   0.6,
+		Padding:  0.01,
+		Layout:   AnchorLayout(),
+	},
+	"combat_log": {
+		Name:     "Combat Log",
+		Position: RightCenter(),
+		Width:    PanelWidthExtraWide,
+		Height:   CombatLogHeight,
+		Padding:  PaddingTight,
+		Layout:   AnchorLayout(),
 	},
 }
 

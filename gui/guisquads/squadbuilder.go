@@ -169,14 +169,7 @@ func (sbm *SquadBuilderMode) placeRosterUnitInCell(row, col int, rosterEntry *sq
 	}
 
 	// Get the unit template by name
-	var unitTemplate *squads.UnitTemplate
-	for i := range squads.Units {
-		if squads.Units[i].Name == rosterEntry.TemplateName {
-			unitTemplate = &squads.Units[i]
-			break
-		}
-	}
-
+	unitTemplate := squads.GetTemplateByName(rosterEntry.TemplateName)
 	if unitTemplate == nil {
 		fmt.Printf("Failed to find template for unit: %s\n", rosterEntry.TemplateName)
 		return
@@ -299,14 +292,7 @@ func (sbm *SquadBuilderMode) updateUnitDetails() {
 	}
 
 	// Get the unit template by name
-	var unitTemplate *squads.UnitTemplate
-	for i := range squads.Units {
-		if squads.Units[i].Name == sbm.selectedRosterEntry.TemplateName {
-			unitTemplate = &squads.Units[i]
-			break
-		}
-	}
-
+	unitTemplate := squads.GetTemplateByName(sbm.selectedRosterEntry.TemplateName)
 	if unitTemplate == nil {
 		sbm.unitDetailsArea.SetText("Unit template not found")
 		return

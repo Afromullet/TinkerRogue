@@ -55,12 +55,11 @@ func (im *InventoryMode) Initialize(ctx *core.UIContext) error {
 		ctx.PlayerData.PlayerEntityID,
 	)
 
-	// Build detail panel (right side) using helper
-	im.detailPanel, im.detailTextArea = gui.CreateDetailPanel(
+	// Build detail panel (right side) using standard specification
+	im.detailPanel, im.detailTextArea = gui.CreateStandardDetailPanel(
 		im.PanelBuilders,
 		im.Layout,
-		widgets.RightCenter(),
-		widgets.PanelWidthExtraWide, widgets.PanelHeightTall, widgets.PaddingStandard,
+		"inventory_detail",
 		"Select an item to view details",
 	)
 	im.RootContainer.AddChild(im.detailPanel)

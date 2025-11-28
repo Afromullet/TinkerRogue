@@ -10,16 +10,7 @@
 
 ---
 
-### 2. Extract CommandHistory Initialization
 
-**Files:** `squadmanagementmode.go`, `formationeditormode.go`, `unitpurchasemode.go`
-
-**Issue:** Identical CommandHistory setup in 3+ modes:
-```go
-mode.commandHistory = gui.NewCommandHistory(mode.setStatus, mode.refreshAfterUndoRedo)
-```
-
-**Action:** Add `InitializeCommandHistory(refreshCallback func())` to BaseMode that uses base SetStatus and the provided refresh callback.
 
 ---
 
@@ -33,40 +24,13 @@ mode.commandHistory = gui.NewCommandHistory(mode.setStatus, mode.refreshAfterUnd
 
 ---
 
-### 4. Unit Template Lookup Utility
-
-**Files:** `squadbuilder.go:173-179`, `squadbuilder.go:302-308`, `unitpurchasemode.go`
-
-**Issue:** Multiple places loop through `squads.Units` to find template by name.
-
-**Action:** Add `squads.GetTemplateByName(name string) *UnitTemplate` function.
 
 ---
 
 ## Medium Priority
 
-### 5. Unify Close Button Handler Pattern
-
-**Files:** Various modes
-
-**Issue:** Some modes use `gui.CreateCloseButton`, others create buttons inline with same logic. Mix of `ModeCoordinator` and `ModeManager.RequestTransition` calls.
-
-**Action:** Use `gui.CreateCloseButton` everywhere. Document when to use `ModeCoordinator` (context switches) vs `ModeManager` (same-context transitions).
-
 ---
 
-### 6. Consolidate Panel Creation Approach
-
-**Files:** `modehelpers.go`, various mode files
-
-**Issue:** Three different approaches for panels with text areas:
-- `gui.CreateDetailPanel()` - manual positioning
-- `gui.CreateStandardDetailPanel()` - uses StandardPanels lookup
-- Direct `widgets.CreatePanelWithConfig()` + `widgets.CreateTextAreaWithConfig()`
-
-**Action:** Prefer `CreateStandardDetailPanel` with StandardPanels. Add specs to StandardPanels for common panel types. Migrate manual panel+textarea creation.
-
----
 
 ### 7. Create Bottom Action Button Builder
 
