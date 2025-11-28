@@ -51,7 +51,7 @@ func (upm *UnitPurchaseMode) Initialize(ctx *core.UIContext) error {
 
 	// Initialize command history with callbacks
 	upm.commandHistory = gui.NewCommandHistory(
-		upm.setStatus,
+		upm.SetStatus,
 		upm.refreshAfterUndoRedo,
 	)
 
@@ -370,10 +370,6 @@ func (upm *UnitPurchaseMode) refreshAfterUndoRedo() {
 	upm.updateDetailPanel()
 }
 
-// setStatus displays a status message to the user
-func (upm *UnitPurchaseMode) setStatus(message string) {
-	fmt.Println(message) // Log to console
-}
 
 func (upm *UnitPurchaseMode) Enter(fromMode core.UIMode) error {
 	fmt.Println("Entering Unit Purchase Mode")

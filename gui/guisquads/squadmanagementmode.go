@@ -31,7 +31,6 @@ type SquadManagementMode struct {
 	nextButton          *widget.Button
 	squadCounterLabel   *widget.Text                       // Shows "Squad 1 of 3"
 	commandHistory      *gui.CommandHistory                // Centralized undo/redo support
-	statusLabel         *widget.Text                       // Shows command results
 }
 
 // SquadPanel represents a single squad's UI panel
@@ -59,7 +58,7 @@ func (smm *SquadManagementMode) Initialize(ctx *core.UIContext) error {
 
 	// Initialize command history with callbacks
 	smm.commandHistory = gui.NewCommandHistory(
-		smm.setStatus,
+		smm.SetStatus,
 		smm.refreshAfterUndoRedo,
 	)
 
@@ -167,9 +166,9 @@ func (smm *SquadManagementMode) Initialize(ctx *core.UIContext) error {
 
 	smm.RootContainer.AddChild(smm.commandContainer)
 
-	// Status label for command results
-	smm.statusLabel = widgets.CreateSmallLabel("")
-	smm.RootContainer.AddChild(smm.statusLabel)
+	// Status label for command results (use BaseMode.SetStatus to update)
+	smm.StatusLabel = widgets.CreateSmallLabel("")
+	smm.RootContainer.AddChild(smm.StatusLabel)
 
 	// Build action buttons (bottom-center) using helper
 	actionButtonContainer := gui.CreateBottomCenterButtonContainer(smm.PanelBuilders)
@@ -425,7 +424,7 @@ func (smm *SquadManagementMode) HandleInput(inputState *core.InputState) bool {
 // onRenameSquad prompts for a new name and executes RenameSquadCommand
 func (smm *SquadManagementMode) onRenameSquad() {
 	if len(smm.allSquadIDs) == 0 {
-		smm.setStatus("No squad selected")
+		smm.SetStatus("No squad selected")
 		return
 	}
 
@@ -440,7 +439,7 @@ func (smm *SquadManagementMode) onRenameSquad() {
 		InitialText: currentName,
 		OnConfirm: func(newName string) {
 			if newName == "" || newName == currentName {
-				smm.setStatus("Rename cancelled")
+				smm.SetStatus("Rename cancelled")
 				return
 			}
 
@@ -454,7 +453,7 @@ func (smm *SquadManagementMode) onRenameSquad() {
 			smm.commandHistory.Execute(cmd)
 		},
 		OnCancel: func() {
-			smm.setStatus("Rename cancelled")
+			smm.SetStatus("Rename cancelled")
 		},
 	})
 
@@ -464,7 +463,7 @@ func (smm *SquadManagementMode) onRenameSquad() {
 // onDisbandSquad shows confirmation dialog then executes DisbandSquadCommand for the current squad
 func (smm *SquadManagementMode) onDisbandSquad() {
 	if len(smm.allSquadIDs) == 0 {
-		smm.setStatus("No squad selected")
+		smm.SetStatus("No squad selected")
 		return
 	}
 
@@ -486,7 +485,7 @@ func (smm *SquadManagementMode) onDisbandSquad() {
 			smm.commandHistory.Execute(cmd)
 		},
 		OnCancel: func() {
-			smm.setStatus("Disband cancelled")
+			smm.SetStatus("Disband cancelled")
 		},
 	})
 
@@ -496,7 +495,7 @@ func (smm *SquadManagementMode) onDisbandSquad() {
 // onMergeSquads shows squad selection dialog then executes MergeSquadsCommand
 func (smm *SquadManagementMode) onMergeSquads() {
 	if len(smm.allSquadIDs) < 2 {
-		smm.setStatus("Need at least 2 squads to merge")
+		smm.SetStatus("Need at least 2 squads to merge")
 		return
 	}
 
@@ -562,7 +561,7 @@ func (smm *SquadManagementMode) onMergeSquads() {
 		OnClick: func() {
 			selectedEntry := squadList.SelectedEntry()
 			if selectedEntry == nil {
-				smm.setStatus("No target squad selected")
+				smm.SetStatus("No target squad selected")
 				return
 			}
 
@@ -576,7 +575,7 @@ func (smm *SquadManagementMode) onMergeSquads() {
 			}
 
 			if selectedIndex == -1 {
-				smm.setStatus("Error finding selected squad")
+				smm.SetStatus("Error finding selected squad")
 				return
 			}
 
@@ -604,7 +603,7 @@ func (smm *SquadManagementMode) onMergeSquads() {
 					smm.commandHistory.Execute(cmd)
 				},
 				OnCancel: func() {
-					smm.setStatus("Merge cancelled")
+					smm.SetStatus("Merge cancelled")
 				},
 			})
 
@@ -617,7 +616,7 @@ func (smm *SquadManagementMode) onMergeSquads() {
 	cancelBtn := widgets.CreateButtonWithConfig(widgets.ButtonConfig{
 		Text: "Cancel",
 		OnClick: func() {
-			smm.setStatus("Merge cancelled")
+			smm.SetStatus("Merge cancelled")
 			if window != nil {
 				window.Close()
 			}
@@ -651,10 +650,3 @@ func (smm *SquadManagementMode) refreshAfterUndoRedo() {
 	smm.updateNavigationButtons()
 }
 
-// setStatus updates the status label with a message
-func (smm *SquadManagementMode) setStatus(message string) {
-	if smm.statusLabel != nil {
-		smm.statusLabel.Label = message
-	}
-	fmt.Println(message) // Also log to console
-}

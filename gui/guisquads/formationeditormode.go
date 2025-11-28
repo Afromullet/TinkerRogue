@@ -23,7 +23,6 @@ type FormationEditorMode struct {
 	unitPalette    *widget.List
 	actionButtons  *widget.Container
 	commandHistory *gui.CommandHistory // Centralized undo/redo support
-	statusLabel    *widget.Text        // Shows command results
 	squadSelector  *widget.List        // Squad selection list
 	currentSquadID ecs.EntityID        // Currently selected squad
 
@@ -43,7 +42,7 @@ func (fem *FormationEditorMode) Initialize(ctx *core.UIContext) error {
 
 	// Initialize command history with callbacks
 	fem.commandHistory = gui.NewCommandHistory(
-		fem.setStatus,
+		fem.SetStatus,
 		fem.refreshAfterUndoRedo,
 	)
 
@@ -80,7 +79,7 @@ func (fem *FormationEditorMode) buildSquadSelector() {
 			fem.currentSquadID = squadID
 			fem.loadSquadFormation(squadID)
 			squadName := squads.GetSquadName(squadID, fem.Context.ECSManager)
-			fem.setStatus(fmt.Sprintf("Selected squad: %s", squadName))
+			fem.SetStatus(fmt.Sprintf("Selected squad: %s", squadName))
 		},
 	})
 	fem.squadSelector.GetWidget().LayoutData = widget.AnchorLayoutData{
@@ -133,8 +132,8 @@ func (fem *FormationEditorMode) buildActionButtons() {
 	fem.actionButtons.AddChild(closeBtn)
 
 	// Status label
-	fem.statusLabel = widgets.CreateSmallLabel("")
-	fem.RootContainer.AddChild(fem.statusLabel)
+	fem.StatusLabel = widgets.CreateSmallLabel("")
+	fem.RootContainer.AddChild(fem.StatusLabel)
 
 	fem.RootContainer.AddChild(fem.actionButtons)
 }
@@ -227,7 +226,7 @@ func (fem *FormationEditorMode) loadSquadFormation(squadID ecs.EntityID) {
 // onApplyFormation applies the current formation using ChangeFormationCommand
 func (fem *FormationEditorMode) onApplyFormation() {
 	if fem.currentSquadID == 0 {
-		fem.setStatus("No squad selected")
+		fem.SetStatus("No squad selected")
 		return
 	}
 
@@ -241,7 +240,7 @@ func (fem *FormationEditorMode) onApplyFormation() {
 			// Build formation from current grid state
 			formation, err := fem.buildFormationAssignments()
 			if err != nil {
-				fem.setStatus(fmt.Sprintf("✗ %s", err.Error()))
+				fem.SetStatus(fmt.Sprintf("✗ %s", err.Error()))
 				return
 			}
 
@@ -255,7 +254,7 @@ func (fem *FormationEditorMode) onApplyFormation() {
 			fem.commandHistory.Execute(cmd)
 		},
 		OnCancel: func() {
-			fem.setStatus("Apply formation cancelled")
+			fem.SetStatus("Apply formation cancelled")
 		},
 	})
 
@@ -324,10 +323,3 @@ func (fem *FormationEditorMode) refreshAfterUndoRedo() {
 	}
 }
 
-// setStatus updates the status label with a message
-func (fem *FormationEditorMode) setStatus(message string) {
-	if fem.statusLabel != nil {
-		fem.statusLabel.Label = message
-	}
-	fmt.Println(message) // Also log to console
-}
