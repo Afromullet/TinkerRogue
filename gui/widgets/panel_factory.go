@@ -135,7 +135,7 @@ var StandardPanels = map[string]PanelSpec{
 	},
 	"combat_log": {
 		Name:     "Combat Log",
-		Position: RightCenter(),
+		Position: BottomRight(), // Position at bottom-right to avoid overlapping with bottom-center buttons
 		Width:    PanelWidthExtraWide,
 		Height:   CombatLogHeight,
 		Padding:  PaddingTight,

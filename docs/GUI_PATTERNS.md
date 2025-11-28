@@ -765,22 +765,48 @@ func (m *MyMode) buildActionButtons() {
 
 ### Creating a Detail Panel with TextArea
 
+**Recommended: Use CreateStandardDetailPanel with StandardPanels**
+
 ```go
 func (m *MyMode) buildDetailPanel() {
-    // Use helper for standard pattern
-    panel, textArea := gui.CreateDetailPanel(
+    // Use standard panel spec for consistency
+    panel, textArea := gui.CreateStandardDetailPanel(
         m.PanelBuilders,
         m.Layout,
-        widgets.RightCenter(),                // Position
-        widgets.PanelWidthExtraWide,          // Width (0.45)
-        widgets.PanelHeightTall,              // Height (0.75)
-        widgets.PaddingStandard,              // Padding (0.02)
-        "Select an item to view details",    // Default text
+        "inventory_detail",                   // Spec name from StandardPanels
+        "Select an item to view details",     // Default text
     )
 
     // Store references
     m.detailPanel = panel
     m.detailText = textArea
+
+    m.RootContainer.AddChild(panel)
+}
+```
+
+**For complex panels with multiple widgets, use CreatePanelWithConfig:**
+
+```go
+func (m *MyMode) buildComplexPanel() {
+    // When you need custom layout or multiple textareas
+    panel := widgets.CreatePanelWithConfig(widgets.PanelConfig{
+        MinWidth:  panelWidth,
+        MinHeight: panelHeight,
+        Layout: widget.NewRowLayout(
+            widget.RowLayoutOpts.Direction(widget.DirectionVertical),
+            widget.RowLayoutOpts.Spacing(10),
+        ),
+    })
+
+    // Add multiple widgets
+    textArea1 := widgets.CreateTextAreaWithConfig(...)
+    button := widgets.CreateButtonWithConfig(...)
+    textArea2 := widgets.CreateTextAreaWithConfig(...)
+
+    panel.AddChild(textArea1)
+    panel.AddChild(button)
+    panel.AddChild(textArea2)
 
     m.RootContainer.AddChild(panel)
 }

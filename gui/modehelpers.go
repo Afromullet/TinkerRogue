@@ -93,47 +93,23 @@ func CreateActionButtonGroup(panelBuilders *widgets.PanelBuilders, position widg
 	return container
 }
 
-// CreateDetailPanel creates a detail panel with a text area inside.
-// Eliminates repetitive panel+textarea initialization code across multiple modes.
-// Returns both the panel container and text area for flexibility.
-// Parameters:
-//   - panelBuilders: Used to build the panel with consistent styling
-//   - layout: Screen layout config for calculating dimensions
-//   - position: Panel position (e.g., widgets.RightCenter(), widgets.TopRight())
-//   - widthPct: Panel width as percentage of screen width (0-1)
-//   - heightPct: Panel height as percentage of screen height (0-1)
-//   - paddingPct: Panel padding as percentage of screen (0-1)
-//   - defaultText: Initial text to display in the textarea
-func CreateDetailPanel(
-	panelBuilders *widgets.PanelBuilders,
-	layout *widgets.LayoutConfig,
-	position widgets.PanelOption,
-	widthPct, heightPct, paddingPct float64,
-	defaultText string,
-) (*widget.Container, *widget.TextArea) {
-	// Build the panel with specified position, size, and padding
-	panel := panelBuilders.BuildPanel(
-		position,
-		widgets.Size(widthPct, heightPct),
-		widgets.Padding(paddingPct),
-		widgets.AnchorLayout(),
-	)
-
-	// Calculate textarea dimensions (same as panel size minus padding)
-	panelWidth := int(float64(layout.ScreenWidth) * widthPct)
-	panelHeight := int(float64(layout.ScreenHeight) * heightPct)
-	textArea := widgets.CreateTextAreaWithConfig(widgets.TextAreaConfig{
-		MinWidth:  panelWidth - 20,
-		MinHeight: panelHeight - 20,
-		FontColor: color.White,
-	})
-
-	// Set initial text and add to panel
-	textArea.SetText(defaultText)
-	panel.AddChild(textArea)
-
-	return panel, textArea
-}
+// Panel Creation Patterns:
+//
+// 1. Simple Detail Panels (panel + single textarea):
+//    Use CreateStandardDetailPanel() with a spec from widgets.StandardPanels.
+//    This ensures consistent sizing/positioning across the application.
+//    Example: inventorymode, infomode, explorationmode, combat log
+//
+// 2. Complex/Custom Panels (multiple widgets, custom layout):
+//    Use widgets.CreatePanelWithConfig() directly when you need:
+//    - Multiple textareas or widgets in one panel
+//    - Custom layout (RowLayout instead of AnchorLayout)
+//    - Dynamic panel creation (e.g., squadmanagementmode's per-squad panels)
+//    Example: unitpurchasemode (2 textareas + button), squadmanagementmode
+//
+// 3. Standard Panels (no textarea, just container):
+//    Use widgets.CreateStandardPanel() with a spec from widgets.StandardPanels.
+//    Example: combat faction panel, squad list panel
 
 // CreateFilterButtonContainer creates a filter button container with consistent styling.
 // Eliminates repetitive panel building for filter buttons across multiple modes.

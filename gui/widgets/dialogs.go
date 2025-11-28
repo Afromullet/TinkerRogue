@@ -8,6 +8,90 @@ import (
 	"github.com/ebitenui/ebitenui/widget"
 )
 
+// Dialog System
+//
+// This file provides three specialized dialog functions:
+// - CreateConfirmationDialog: Yes/No confirmation dialogs
+// - CreateTextInputDialog: Text input dialogs with OK/Cancel
+// - CreateMessageDialog: Simple message dialogs with OK
+//
+// Common Setup Extracted:
+// Previously, these three functions duplicated 80% of their code (container setup,
+// title/message labels, button containers, window creation). This has been refactored
+// to use shared helper functions (createDialogContainer, addDialogHeader, etc.)
+// while maintaining the same public API for backward compatibility.
+
+// dialogBaseConfig contains common configuration for all dialog types.
+// This struct extracts the duplicated fields from DialogConfig, TextInputDialogConfig, and MessageDialogConfig.
+type dialogBaseConfig struct {
+	Title     string
+	Message   string
+	MinWidth  int
+	MinHeight int
+}
+
+// createDialogContainer creates the common dialog container with background and layout.
+// Extracts the duplicated container setup code from all three dialog functions.
+func createDialogContainer() *widget.Container {
+	return widget.NewContainer(
+		widget.ContainerOpts.BackgroundImage(guiresources.PanelRes.Image),
+		widget.ContainerOpts.Layout(widget.NewRowLayout(
+			widget.RowLayoutOpts.Direction(widget.DirectionVertical),
+			widget.RowLayoutOpts.Spacing(15),
+			widget.RowLayoutOpts.Padding(widget.Insets{
+				Left: 20, Right: 20, Top: 20, Bottom: 20,
+			}),
+		)),
+	)
+}
+
+// addDialogHeader adds title and message labels to a dialog container.
+// Extracts the duplicated title/message label creation from all three dialog functions.
+func addDialogHeader(container *widget.Container, title, message string, wrapMessage bool) {
+	// Title label
+	if title != "" {
+		titleLabel := CreateLargeLabel(title)
+		container.AddChild(titleLabel)
+	}
+
+	// Message label
+	if message != "" {
+		if wrapMessage {
+			// Use widget.NewText with MaxWidth for message dialogs
+			messageLabel := widget.NewText(
+				widget.TextOpts.Text(message, guiresources.SmallFace, color.White),
+				widget.TextOpts.MaxWidth(350), // Wrap text
+			)
+			container.AddChild(messageLabel)
+		} else {
+			// Use simple label for other dialogs
+			messageLabel := CreateSmallLabel(message)
+			container.AddChild(messageLabel)
+		}
+	}
+}
+
+// createButtonContainer creates the common button container layout.
+// Extracts the duplicated button container setup from all three dialog functions.
+func createButtonContainer() *widget.Container {
+	return widget.NewContainer(
+		widget.ContainerOpts.Layout(widget.NewRowLayout(
+			widget.RowLayoutOpts.Direction(widget.DirectionHorizontal),
+			widget.RowLayoutOpts.Spacing(15),
+		)),
+	)
+}
+
+// createDialogWindow creates the final modal window.
+// Extracts the duplicated window creation from all three dialog functions.
+func createDialogWindow(container *widget.Container, minWidth, minHeight int) *widget.Window {
+	return widget.NewWindow(
+		widget.WindowOpts.Contents(container),
+		widget.WindowOpts.Modal(),
+		widget.WindowOpts.MinSize(minWidth, minHeight),
+	)
+}
+
 // DialogConfig provides configuration for modal dialogs
 type DialogConfig struct {
 	Title      string
@@ -18,7 +102,8 @@ type DialogConfig struct {
 	MinHeight  int
 }
 
-// CreateConfirmationDialog creates a modal confirmation dialog with Yes/No buttons
+// CreateConfirmationDialog creates a modal confirmation dialog with Yes/No buttons.
+// Uses extracted helper functions to reduce code duplication.
 func CreateConfirmationDialog(config DialogConfig) *widget.Window {
 	// Apply defaults
 	if config.MinWidth == 0 {
@@ -28,37 +113,14 @@ func CreateConfirmationDialog(config DialogConfig) *widget.Window {
 		config.MinHeight = 200
 	}
 
-	// Create container for dialog content
-	contentContainer := widget.NewContainer(
-		widget.ContainerOpts.BackgroundImage(guiresources.PanelRes.Image),
-		widget.ContainerOpts.Layout(widget.NewRowLayout(
-			widget.RowLayoutOpts.Direction(widget.DirectionVertical),
-			widget.RowLayoutOpts.Spacing(15),
-			widget.RowLayoutOpts.Padding(widget.Insets{
-				Left: 20, Right: 20, Top: 20, Bottom: 20,
-			}),
-		)),
-	)
+	// Create container using common helper
+	contentContainer := createDialogContainer()
 
-	// Title label
-	if config.Title != "" {
-		titleLabel := CreateLargeLabel(config.Title)
-		contentContainer.AddChild(titleLabel)
-	}
+	// Add title and message using common helper
+	addDialogHeader(contentContainer, config.Title, config.Message, false)
 
-	// Message label
-	if config.Message != "" {
-		messageLabel := CreateSmallLabel(config.Message)
-		contentContainer.AddChild(messageLabel)
-	}
-
-	// Button container
-	buttonContainer := widget.NewContainer(
-		widget.ContainerOpts.Layout(widget.NewRowLayout(
-			widget.RowLayoutOpts.Direction(widget.DirectionHorizontal),
-			widget.RowLayoutOpts.Spacing(15),
-		)),
-	)
+	// Create button container using common helper
+	buttonContainer := createButtonContainer()
 
 	// Reference to window for closing
 	var window *widget.Window
@@ -93,12 +155,8 @@ func CreateConfirmationDialog(config DialogConfig) *widget.Window {
 
 	contentContainer.AddChild(buttonContainer)
 
-	// Create window
-	window = widget.NewWindow(
-		widget.WindowOpts.Contents(contentContainer),
-		widget.WindowOpts.Modal(),
-		widget.WindowOpts.MinSize(config.MinWidth, config.MinHeight),
-	)
+	// Create window using common helper
+	window = createDialogWindow(contentContainer, config.MinWidth, config.MinHeight)
 
 	return window
 }
@@ -115,7 +173,8 @@ type TextInputDialogConfig struct {
 	MinHeight   int
 }
 
-// CreateTextInputDialog creates a modal text input dialog with OK/Cancel buttons
+// CreateTextInputDialog creates a modal text input dialog with OK/Cancel buttons.
+// Uses extracted helper functions to reduce code duplication.
 func CreateTextInputDialog(config TextInputDialogConfig) *widget.Window {
 	// Apply defaults
 	if config.MinWidth == 0 {
@@ -125,31 +184,13 @@ func CreateTextInputDialog(config TextInputDialogConfig) *widget.Window {
 		config.MinHeight = 250
 	}
 
-	// Create container for dialog content
-	contentContainer := widget.NewContainer(
-		widget.ContainerOpts.BackgroundImage(guiresources.PanelRes.Image),
-		widget.ContainerOpts.Layout(widget.NewRowLayout(
-			widget.RowLayoutOpts.Direction(widget.DirectionVertical),
-			widget.RowLayoutOpts.Spacing(15),
-			widget.RowLayoutOpts.Padding(widget.Insets{
-				Left: 20, Right: 20, Top: 20, Bottom: 20,
-			}),
-		)),
-	)
+	// Create container using common helper
+	contentContainer := createDialogContainer()
 
-	// Title label
-	if config.Title != "" {
-		titleLabel := CreateLargeLabel(config.Title)
-		contentContainer.AddChild(titleLabel)
-	}
+	// Add title and message using common helper
+	addDialogHeader(contentContainer, config.Title, config.Message, false)
 
-	// Message label
-	if config.Message != "" {
-		messageLabel := CreateSmallLabel(config.Message)
-		contentContainer.AddChild(messageLabel)
-	}
-
-	// Text input
+	// Text input (unique to this dialog type)
 	var textInput *widget.TextInput
 	textInput = CreateTextInputWithConfig(TextInputConfig{
 		MinWidth:    400,
@@ -164,13 +205,8 @@ func CreateTextInputDialog(config TextInputDialogConfig) *widget.Window {
 
 	contentContainer.AddChild(textInput)
 
-	// Button container
-	buttonContainer := widget.NewContainer(
-		widget.ContainerOpts.Layout(widget.NewRowLayout(
-			widget.RowLayoutOpts.Direction(widget.DirectionHorizontal),
-			widget.RowLayoutOpts.Spacing(15),
-		)),
-	)
+	// Create button container using common helper
+	buttonContainer := createButtonContainer()
 
 	// Reference to window for closing
 	var window *widget.Window
@@ -205,12 +241,8 @@ func CreateTextInputDialog(config TextInputDialogConfig) *widget.Window {
 
 	contentContainer.AddChild(buttonContainer)
 
-	// Create window
-	window = widget.NewWindow(
-		widget.WindowOpts.Contents(contentContainer),
-		widget.WindowOpts.Modal(),
-		widget.WindowOpts.MinSize(config.MinWidth, config.MinHeight),
-	)
+	// Create window using common helper
+	window = createDialogWindow(contentContainer, config.MinWidth, config.MinHeight)
 
 	return window
 }
@@ -224,7 +256,8 @@ type MessageDialogConfig struct {
 	MinHeight int
 }
 
-// CreateMessageDialog creates a simple message dialog with OK button
+// CreateMessageDialog creates a simple message dialog with OK button.
+// Uses extracted helper functions to reduce code duplication.
 func CreateMessageDialog(config MessageDialogConfig) *widget.Window {
 	// Apply defaults
 	if config.MinWidth == 0 {
@@ -234,37 +267,16 @@ func CreateMessageDialog(config MessageDialogConfig) *widget.Window {
 		config.MinHeight = 200
 	}
 
-	// Create container for dialog content
-	contentContainer := widget.NewContainer(
-		widget.ContainerOpts.BackgroundImage(guiresources.PanelRes.Image),
-		widget.ContainerOpts.Layout(widget.NewRowLayout(
-			widget.RowLayoutOpts.Direction(widget.DirectionVertical),
-			widget.RowLayoutOpts.Spacing(15),
-			widget.RowLayoutOpts.Padding(widget.Insets{
-				Left: 20, Right: 20, Top: 20, Bottom: 20,
-			}),
-		)),
-	)
+	// Create container using common helper
+	contentContainer := createDialogContainer()
 
-	// Title label
-	if config.Title != "" {
-		titleLabel := CreateLargeLabel(config.Title)
-		contentContainer.AddChild(titleLabel)
-	}
-
-	// Message label
-	if config.Message != "" {
-		messageLabel := widget.NewText(
-			widget.TextOpts.Text(config.Message, guiresources.SmallFace, color.White),
-			widget.TextOpts.MaxWidth(350), // Wrap text
-		)
-		contentContainer.AddChild(messageLabel)
-	}
+	// Add title and message using common helper (with text wrapping)
+	addDialogHeader(contentContainer, config.Title, config.Message, true)
 
 	// Reference to window for closing
 	var window *widget.Window
 
-	// OK button
+	// OK button (unique to this dialog type - no button container needed)
 	okBtn := CreateButtonWithConfig(ButtonConfig{
 		Text: "OK",
 		OnClick: func() {
@@ -278,12 +290,8 @@ func CreateMessageDialog(config MessageDialogConfig) *widget.Window {
 	})
 	contentContainer.AddChild(okBtn)
 
-	// Create window
-	window = widget.NewWindow(
-		widget.WindowOpts.Contents(contentContainer),
-		widget.WindowOpts.Modal(),
-		widget.WindowOpts.MinSize(config.MinWidth, config.MinHeight),
-	)
+	// Create window using common helper
+	window = createDialogWindow(contentContainer, config.MinWidth, config.MinHeight)
 
 	return window
 }

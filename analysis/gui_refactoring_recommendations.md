@@ -31,19 +31,6 @@
 
 
 
-### 6. Consolidate Panel Creation Approach
-
-**Files:** `modehelpers.go`, various mode files
-
-**Issue:** Three different approaches for panels with text areas:
-- `gui.CreateDetailPanel()` - manual positioning
-- `gui.CreateStandardDetailPanel()` - uses StandardPanels lookup
-- Direct `widgets.CreatePanelWithConfig()` + `widgets.CreateTextAreaWithConfig()`
-
-**Action:** Prefer `CreateStandardDetailPanel` with StandardPanels. Add specs to StandardPanels for common panel types. Migrate manual panel+textarea creation.
-
----
-
 
 
 ### 8. Consolidate Dialog Functions
