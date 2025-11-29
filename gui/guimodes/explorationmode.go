@@ -172,6 +172,11 @@ func (em *ExplorationMode) Render(screen *ebiten.Image) {
 }
 
 func (em *ExplorationMode) HandleInput(inputState *core.InputState) bool {
+	// Handle common input first (ESC key, registered hotkeys like I/C/D)
+	if em.HandleCommonInput(inputState) {
+		return true
+	}
+
 	// Handle right-click to open info mode
 	if inputState.MouseButton == ebiten.MouseButton2 && inputState.MousePressed {
 		// Only open if not in other input modes
@@ -193,6 +198,5 @@ func (em *ExplorationMode) HandleInput(inputState *core.InputState) bool {
 		}
 	}
 
-	// Mode transition hotkeys are now handled by gui.BaseMode.HandleCommonInput via RegisterHotkey
 	return false
 }

@@ -27,6 +27,7 @@ type InfoMode struct {
 func NewInfoMode(modeManager *core.UIModeManager) *InfoMode {
 	mode := &InfoMode{}
 	mode.SetModeName("info_inspect")
+	mode.SetReturnMode("exploration") // ESC returns to exploration
 	mode.ModeManager = modeManager
 	return mode
 }

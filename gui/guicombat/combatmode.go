@@ -55,6 +55,7 @@ func NewCombatMode(modeManager *core.UIModeManager) *CombatMode {
 		logManager: NewCombatLogManager(),
 	}
 	cm.SetModeName("combat")
+	cm.SetReturnMode("exploration") // ESC returns to exploration
 	cm.ModeManager = modeManager
 	return cm
 }

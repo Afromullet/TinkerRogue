@@ -53,6 +53,7 @@ func NewSquadBuilderMode(modeManager *core.UIModeManager) *SquadBuilderMode {
 		selectedRosterEntry: nil,
 	}
 	mode.SetModeName("squad_builder")
+	mode.SetReturnMode("squad_management") // ESC returns to squad management
 	mode.ModeManager = modeManager
 	return mode
 }

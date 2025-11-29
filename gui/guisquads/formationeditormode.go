@@ -31,6 +31,7 @@ type FormationEditorMode struct {
 func NewFormationEditorMode(modeManager *core.UIModeManager) *FormationEditorMode {
 	mode := &FormationEditorMode{}
 	mode.SetModeName("formation_editor")
+	mode.SetReturnMode("squad_management") // ESC returns to squad management
 	mode.ModeManager = modeManager
 	return mode
 }

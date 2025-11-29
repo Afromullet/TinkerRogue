@@ -39,6 +39,7 @@ type SquadDeploymentMode struct {
 func NewSquadDeploymentMode(modeManager *core.UIModeManager) *SquadDeploymentMode {
 	mode := &SquadDeploymentMode{}
 	mode.SetModeName("squad_deployment")
+	mode.SetReturnMode("exploration") // ESC returns to exploration
 	mode.ModeManager = modeManager
 	return mode
 }

@@ -37,6 +37,7 @@ func NewUnitPurchaseMode(modeManager *core.UIModeManager) *UnitPurchaseMode {
 		selectedIndex: -1,
 	}
 	mode.SetModeName("unit_purchase")
+	mode.SetReturnMode("squad_management") // ESC returns to squad management
 	mode.ModeManager = modeManager
 	return mode
 }
@@ -408,12 +409,9 @@ func (upm *UnitPurchaseMode) Render(screen *ebiten.Image) {
 }
 
 func (upm *UnitPurchaseMode) HandleInput(inputState *core.InputState) bool {
-	// Handle common input (ESC key)
-	if inputState.KeysJustPressed[ebiten.KeyEscape] {
-		if squadMgmtMode, exists := upm.ModeManager.GetMode("squad_management"); exists {
-			upm.ModeManager.RequestTransition(squadMgmtMode, "Close Unit Purchase")
-			return true
-		}
+	// Handle common input first (ESC key, registered hotkeys)
+	if upm.HandleCommonInput(inputState) {
+		return true
 	}
 
 	// Handle undo/redo input (Ctrl+Z, Ctrl+Y)

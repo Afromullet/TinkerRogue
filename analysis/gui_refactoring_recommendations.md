@@ -55,13 +55,26 @@
 
 ## Low Priority
 
-### 10. Consistent HandleInput Pattern
+### 10. ✅ Consistent HandleInput Pattern (COMPLETED)
 
 **Files:** Various modes, especially `unitpurchasemode.go`
 
 **Issue:** Some modes handle ESC directly instead of calling `HandleCommonInput` first.
 
 **Action:** All modes should call `HandleCommonInput` first for consistent ESC handling.
+
+**Completed:**
+- ✅ Fixed `explorationmode.go` - Now calls `HandleCommonInput` first (required for registered hotkeys to work)
+- ✅ Fixed `unitpurchasemode.go` - Replaced direct ESC handling with `HandleCommonInput` call
+- ✅ Set `returnMode` for all sub-modes:
+  - infomode → "exploration"
+  - squaddeploymentmode → "exploration"
+  - formationeditormode → "squad_management"
+  - squadbuildermode → "squad_management"
+  - unitpurchasemode → "squad_management"
+- ✅ All other modes already call `HandleCommonInput` first (combatmode, inventorymode, etc.)
+
+**Result:** Consistent ESC handling across all modes. All hotkeys and ESC presses now follow the same pattern.
 
 ---
 

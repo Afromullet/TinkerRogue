@@ -173,6 +173,7 @@ func SetupUI(g *Game) {
 
 	// Inventory mode (battle map instance)
 	inventoryModeBattle := guimodes.NewInventoryMode(battleMapManager)
+	inventoryModeBattle.SetReturnMode("exploration") // ESC returns to exploration
 	if err := g.gameModeCoordinator.RegisterBattleMapMode(inventoryModeBattle); err != nil {
 		log.Fatalf("Failed to register inventory mode (battle): %v", err)
 	}
@@ -205,6 +206,7 @@ func SetupUI(g *Game) {
 
 	// Inventory mode (overworld instance)
 	inventoryModeOverworld := guimodes.NewInventoryMode(overworldManager)
+	inventoryModeOverworld.SetReturnMode("squad_management") // ESC returns to squad management
 	if err := g.gameModeCoordinator.RegisterOverworldMode(inventoryModeOverworld); err != nil {
 		log.Fatalf("Failed to register inventory mode (overworld): %v", err)
 	}
