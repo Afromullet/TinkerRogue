@@ -3,6 +3,8 @@ package entitytemplates
 import (
 	"game_main/common"
 	"game_main/coords"
+	"game_main/gear"
+	"game_main/graphics"
 	"game_main/rendering"
 	"game_main/worldmap"
 
@@ -68,4 +70,59 @@ func CreateConsumable(mgr common.EntityManager, gm *worldmap.GameMap, pos coords
 	gm.AddEntityToTile(entity, &pos)
 
 	return entity
+}
+
+// CreateUnit creates a unit entity with base components only.
+// Squad package will add squad-specific components (GridPosition, SquadMember, etc.).
+// This is the single source of truth for unit base entity creation.
+// NOTE: Units do not have RenderableComponents - they are data-only entities in the squad system.
+//
+// Parameters:
+//   - mgr: ECS entity manager
+//   - name: Unit name
+//   - attributes: Base attributes (strength, dexterity, etc.)
+//   - pos: World position (optional, nil defaults to 0,0)
+//
+// Returns entity with: NameComponent, PositionComponent, AttributeComponent
+func CreateUnit(mgr common.EntityManager, name string, attributes common.Attributes, pos *coords.LogicalPosition) *ecs.Entity {
+	// Create base entity
+	entity := mgr.World.NewEntity()
+
+	// Add name component
+	entity.AddComponent(common.NameComponent, &common.Name{NameStr: name})
+
+	// Add position component (default to 0,0 if not specified)
+	if pos == nil {
+		pos = &coords.LogicalPosition{X: 0, Y: 0}
+	}
+	entity.AddComponent(common.PositionComponent, pos)
+
+	// Add attributes component
+	entity.AddComponent(common.AttributeComponent, &attributes)
+
+	return entity
+}
+
+// CreateThrowable creates a throwable item entity with procedurally generated effects.
+// This is the single source of truth for throwable item creation.
+//
+// Parameters:
+//   - mgr: ECS entity manager
+//   - name: Item name
+//   - pos: Logical position where throwable spawns
+//   - effects: Status effects to apply when thrown
+//   - aoeShape: Area of effect shape
+//   - quality: Item quality
+//   - vx: Visual effect
+//
+// Returns throwable item entity with ItemComponent containing ThrowableAction
+func CreateThrowable(mgr common.EntityManager, name string, pos coords.LogicalPosition, effects []gear.StatusEffects, aoeShape graphics.BasicShapeType, quality common.QualityType, vx graphics.VisualEffect) *ecs.Entity {
+	// Create throwable action with effects
+	throwableAction := gear.NewShapeThrowableAction(1, 1, 1, aoeShape, quality, nil, effects...)
+	throwableAction.VX = vx
+
+	actions := []gear.ItemAction{throwableAction}
+
+	// Use gear package to create item entity
+	return gear.CreateItemWithActions(mgr.World, name, pos, "../assets/items/grenade.png", actions)
 }

@@ -2,38 +2,85 @@
 # Agent Usage Tracking Hook for Claude Code
 # Logs SubagentStop events to CSV for analytics
 
-# Exit on error (but catch errors to ensure clean exit)
-set -e
+# CSV file location - relative to project root
+CSV_FILE="analysis/agent-usage.csv"
+DEBUG_LOG="analysis/hook-debug.log"
 
-# CSV file location
-CSV_FILE="${CLAUDE_PROJECT_DIR}/.claude/agent-usage.csv"
-
-# Ensure .claude directory exists
+# Ensure analysis directory exists
 mkdir -p "$(dirname "$CSV_FILE")"
 
 # Generate timestamp (ISO 8601 format)
 TIMESTAMP=$(date -u +"%Y-%m-%d %H:%M:%S")
 
-# Extract agent metadata from environment variables
-# Note: Exact variable names may differ - these are best guesses
-AGENT_NAME="${CLAUDE_AGENT_NAME:-${SUBAGENT_TYPE:-unknown}}"
-STATUS="${CLAUDE_AGENT_STATUS:-${AGENT_STATUS:-complete}}"
-DURATION="${CLAUDE_AGENT_DURATION:-${AGENT_DURATION:-0}}"
+# Read JSON input from stdin
+INPUT_JSON=$(cat)
 
-# Optional: Debug logging (uncomment to see available environment variables)
-# DEBUG_LOG="${CLAUDE_PROJECT_DIR}/.claude/hook-debug.log"
-# echo "=== SubagentStop Hook Debug $(date) ===" >> "$DEBUG_LOG"
-# env | grep -E "(CLAUDE|AGENT|SUBAGENT)" >> "$DEBUG_LOG" 2>/dev/null || true
-# echo "" >> "$DEBUG_LOG"
+# Debug logging
+echo "=== SubagentStop Hook Debug $(date) ===" >> "$DEBUG_LOG"
+echo "Input JSON: $INPUT_JSON" >> "$DEBUG_LOG"
+
+# Extract transcript path from JSON using jq (if available) or grep/sed fallback
+if command -v jq &> /dev/null; then
+    TRANSCRIPT_PATH=$(echo "$INPUT_JSON" | jq -r '.transcript_path // empty')
+else
+    # Fallback parsing without jq
+    TRANSCRIPT_PATH=$(echo "$INPUT_JSON" | grep -o '"transcript_path":"[^"]*"' | sed 's/"transcript_path":"\([^"]*\)"/\1/')
+fi
+
+echo "Transcript path: $TRANSCRIPT_PATH" >> "$DEBUG_LOG"
 
 # Initialize CSV with header if it doesn't exist
 if [ ! -f "$CSV_FILE" ]; then
-    echo "Timestamp,Agent Name,Status,Duration" > "$CSV_FILE"
+    echo "Timestamp,Agent Name,Model,Duration,Session ID" > "$CSV_FILE"
+fi
+
+# Parse transcript to extract agent metadata
+AGENT_NAME="unknown"
+MODEL="unknown"
+DURATION=0
+SESSION_ID="unknown"
+
+if [ -n "$TRANSCRIPT_PATH" ] && [ -f "$TRANSCRIPT_PATH" ]; then
+    echo "Parsing transcript file..." >> "$DEBUG_LOG"
+
+    # Extract session ID from JSON input
+    if command -v jq &> /dev/null; then
+        SESSION_ID=$(echo "$INPUT_JSON" | jq -r '.session_id // "unknown"')
+    else
+        SESSION_ID=$(echo "$INPUT_JSON" | grep -o '"session_id":"[^"]*"' | sed 's/"session_id":"\([^"]*\)"/\1/')
+    fi
+
+    # Read last few lines of transcript to find agent metadata
+    # Look for Task tool invocations with subagent_type
+    LAST_LINES=$(tail -n 50 "$TRANSCRIPT_PATH" 2>/dev/null || echo "")
+
+    if command -v jq &> /dev/null; then
+        # Extract subagent_type from last Task tool use
+        AGENT_NAME=$(echo "$LAST_LINES" | jq -s '
+            [.[] | select(.type == "tool_use" and .name == "Task") | .input.subagent_type]
+            | last // "unknown"' 2>/dev/null || echo "unknown")
+
+        # Extract model if available
+        MODEL=$(echo "$LAST_LINES" | jq -s '
+            [.[] | select(.type == "tool_use" and .name == "Task") | .input.model]
+            | last // "unknown"' 2>/dev/null || echo "unknown")
+    else
+        # Fallback: grep for subagent_type
+        AGENT_NAME=$(echo "$LAST_LINES" | grep -o '"subagent_type":"[^"]*"' | tail -1 | sed 's/"subagent_type":"\([^"]*\)"/\1/' || echo "unknown")
+    fi
+
+    echo "Extracted agent name: $AGENT_NAME" >> "$DEBUG_LOG"
+    echo "Extracted model: $MODEL" >> "$DEBUG_LOG"
+    echo "Session ID: $SESSION_ID" >> "$DEBUG_LOG"
+else
+    echo "Transcript file not found or path empty" >> "$DEBUG_LOG"
 fi
 
 # Append agent execution data to CSV
-# Use double quotes for fields that might contain commas or spaces
-echo "\"${TIMESTAMP}\",\"${AGENT_NAME}\",\"${STATUS}\",${DURATION}" >> "$CSV_FILE"
+echo "\"${TIMESTAMP}\",\"${AGENT_NAME}\",\"${MODEL}\",${DURATION},\"${SESSION_ID}\"" >> "$CSV_FILE"
 
-# Exit successfully (don't block agent execution even if logging fails)
+echo "Logged to CSV successfully" >> "$DEBUG_LOG"
+echo "" >> "$DEBUG_LOG"
+
+# Exit successfully
 exit 0

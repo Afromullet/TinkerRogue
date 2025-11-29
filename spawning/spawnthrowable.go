@@ -3,6 +3,7 @@ package spawning
 import (
 	"game_main/common"
 	"game_main/coords"
+	"game_main/entitytemplates"
 	"game_main/gear"
 	"game_main/graphics"
 
@@ -26,7 +27,7 @@ func RandomNumProperties() int {
 
 func SpawnThrowableItem(manager *ecs.Manager, xPos, yPos int) *ecs.Entity {
 
-	// Effects that will be applied when throwable is used (not item properties)
+	// 1. Generate effects using existing loot tables (procedural generation logic)
 	effectsToApply := make([]gear.StatusEffects, 0)
 
 	itemName := ""
@@ -48,10 +49,11 @@ func SpawnThrowableItem(manager *ecs.Manager, xPos, yPos int) *ecs.Entity {
 
 	}
 
+	// 2. Generate AOE shape and quality
 	shapeType, shapeOK := ThrowableAOEProbTable.GetRandomEntry(false)
 	qual, qualOK := LootQualityTable.GetRandomEntry(false)
 
-	// Select a random visual effect based on the effects to apply
+	// 3. Select a random visual effect based on the effects to apply
 	var vx graphics.VisualEffect
 	if len(effectsToApply) > 0 {
 		if len(effectsToApply) == 1 {
@@ -61,25 +63,32 @@ func SpawnThrowableItem(manager *ecs.Manager, xPos, yPos int) *ecs.Entity {
 		}
 	}
 
+	pos := coords.LogicalPosition{X: xPos, Y: yPos}
+
+	// 4. Delegate entity creation to entitytemplates
 	if shapeOK && qualOK {
-		// Create throwable action with the effects it will apply to targets
-		throwableAction := gear.NewShapeThrowableAction(1, 1, 1, shapeType, qual, nil, effectsToApply...)
-		throwableAction.VX = vx
-
-		// Create item with throwable action - no status effects as item properties
-		actions := []gear.ItemAction{throwableAction}
-
 		ThrowableEffectStatTable.RestoreWeights()
-		return gear.CreateItemWithActions(manager, itemName, coords.LogicalPosition{X: xPos, Y: yPos}, "../assets/items/grenade.png", actions)
-
+		return entitytemplates.CreateThrowable(
+			common.EntityManager{World: manager},
+			itemName,
+			pos,
+			effectsToApply,
+			shapeType,
+			qual,
+			vx,
+		)
 	} else {
-		// TODO: Handle AOE shape generation error
+		// Fallback with basic throwable
 		ThrowableEffectStatTable.RestoreWeights()
-		// Even in error case, don't create old-style items with effects as properties
-		// Create a basic throwable action instead
-		basicThrowable := gear.NewShapeThrowableAction(1, 3, 1, graphics.Circular, common.NormalQuality, nil, effectsToApply...)
-		actions := []gear.ItemAction{basicThrowable}
-		return gear.CreateItemWithActions(manager, itemName, coords.LogicalPosition{X: xPos, Y: yPos}, "../assets/items/grenade.png", actions)
+		return entitytemplates.CreateThrowable(
+			common.EntityManager{World: manager},
+			itemName,
+			pos,
+			effectsToApply,
+			graphics.Circular,
+			common.NormalQuality,
+			vx,
+		)
 	}
 
 }

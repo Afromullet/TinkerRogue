@@ -3,7 +3,6 @@ package squads
 import (
 	"fmt"
 	"game_main/common"
-	"game_main/coords"
 	"game_main/entitytemplates"
 
 	"github.com/bytearena/ecs"
@@ -166,12 +165,20 @@ func CreateUnitEntity(squadmanager *common.EntityManager, unit UnitTemplate) (*e
 		return nil, fmt.Errorf("invalid grid height %d for unit %s: must be 1-3", unit.GridHeight, unit.Name)
 	}
 
-	unitEntity := squadmanager.World.NewEntity()
+	// Create base unit entity via entitytemplates (delegates base entity creation)
+	// Units are data-only entities (no renderables/images)
+	unitEntity := entitytemplates.CreateUnit(
+		*squadmanager,
+		unit.Name,
+		unit.Attributes,
+		nil, // Position defaults to 0,0
+	)
 
 	if unitEntity == nil {
 		return nil, fmt.Errorf("failed to create entity for unit %s", unit.Name)
 	}
 
+	// Add squad-specific components
 	unitEntity.AddComponent(GridPositionComponent, &GridPositionData{
 		AnchorRow: 0,
 		AnchorCol: 0,
@@ -181,27 +188,6 @@ func CreateUnitEntity(squadmanager *common.EntityManager, unit UnitTemplate) (*e
 
 	unitEntity.AddComponent(UnitRoleComponent, &UnitRoleData{
 		Role: unit.Role,
-	})
-
-	unitEntity.AddComponent(common.NameComponent, &common.Name{
-		NameStr: unit.Name,
-	})
-
-	unitEntity.AddComponent(common.PositionComponent, &coords.LogicalPosition{
-		X: 0,
-		Y: 0,
-	})
-
-	unitEntity.AddComponent(common.AttributeComponent, &common.Attributes{
-		Strength:      unit.Attributes.Strength,
-		Dexterity:     unit.Attributes.Dexterity,
-		Magic:         unit.Attributes.Magic,
-		Leadership:    unit.Attributes.Leadership,
-		Armor:         unit.Attributes.Armor,
-		Weapon:        unit.Attributes.Weapon,
-		MaxHealth:     unit.Attributes.GetMaxHealth(),
-		CurrentHealth: unit.Attributes.GetMaxHealth(),
-		CanAct:        true,
 	})
 
 	// Row-based targeting (simple)
