@@ -57,14 +57,20 @@ const (
 // ========================================
 
 const (
-	// Tight padding for most panels
-	PaddingTight = 0.01
+	// Extra small padding (replaces 8-10px hardcoded values)
+	PaddingExtraSmall = 0.0125 // ~10px at 800px screen
 
-	// Standard padding between elements
-	PaddingStandard = 0.02
+	// Tight padding for most panels (replaces 15px hardcoded values)
+	PaddingTight = 0.015 // ~12px at 800px screen, ~18px at 1200px
 
-	// Loose padding for spacious layouts
-	PaddingLoose = 0.03
+	// Standard padding between elements (replaces 20px hardcoded values)
+	PaddingStandard = 0.02 // ~16px at 800px, ~24px at 1200px
+
+	// Loose padding for spacious layouts (replaces 30px hardcoded values)
+	PaddingLoose = 0.03 // ~24px at 800px, ~36px at 1200px
+
+	// Vertical offset for stacking widgets (replaces 80px top offset)
+	PaddingStackedWidget = 0.08 // ~64px at 800px screen, ~96px at 1200px
 )
 
 // ========================================

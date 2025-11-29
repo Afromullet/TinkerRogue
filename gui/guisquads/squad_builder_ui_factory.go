@@ -28,12 +28,16 @@ func NewSquadBuilderUIFactory(layout *widgets.LayoutConfig, panelBuilders *widge
 // CreateGridPanel builds the 3x3 grid editor panel and returns button grid
 func (sbuf *SquadBuilderUIFactory) CreateGridPanel(onCellClick func(row, col int)) (*widget.Container, [3][3]*widget.Button) {
 	var buttons [3][3]*widget.Button
+
+	// Calculate responsive padding
+	padding := int(float64(sbuf.layout.ScreenWidth) * widgets.PaddingTight)
+
 	gridContainer, buttons := sbuf.panelBuilders.BuildGridEditor(widgets.GridEditorConfig{
 		CellTextFormat: func(row, col int) string {
 			return fmt.Sprintf("Empty\n[%d,%d]", row, col)
 		},
 		OnCellClick: onCellClick,
-		Padding:     widget.Insets{Left: 15, Right: 15, Top: 15, Bottom: 15},
+		Padding:     widget.Insets{Left: padding, Right: padding, Top: padding, Bottom: padding},
 	})
 	return gridContainer, buttons
 }
@@ -43,6 +47,10 @@ func (sbuf *SquadBuilderUIFactory) CreateGridPanel(onCellClick func(row, col int
 func (sbuf *SquadBuilderUIFactory) CreateRosterPalettePanel(onEntrySelected func(interface{}), getRoster func() *squads.UnitRoster) *widget.List {
 	listWidth := int(float64(sbuf.layout.ScreenWidth) * widgets.SquadBuilderUnitListWidth)
 	listHeight := int(float64(sbuf.layout.ScreenHeight) * widgets.SquadBuilderUnitListHeight)
+
+	// Calculate responsive padding
+	hPadding := int(float64(sbuf.layout.ScreenWidth) * widgets.PaddingStandard)
+	vPadding := int(float64(sbuf.layout.ScreenHeight) * widgets.PaddingStandard)
 
 	return widgets.CreateListWithConfig(widgets.ListConfig{
 		Entries:   []interface{}{}, // Will be populated dynamically
@@ -69,8 +77,8 @@ func (sbuf *SquadBuilderUIFactory) CreateRosterPalettePanel(onEntrySelected func
 			HorizontalPosition: widget.AnchorLayoutPositionStart,
 			VerticalPosition:   widget.AnchorLayoutPositionCenter,
 			Padding: widget.Insets{
-				Left: 20,
-				Top:  20,
+				Left: hPadding,
+				Top:  vPadding,
 			},
 		},
 	})
@@ -88,6 +96,10 @@ func (sbuf *SquadBuilderUIFactory) CreatePalettePanel(onEntrySelected func(inter
 		entries[i+1] = fmt.Sprintf("%s (%s)", unit.Name, unit.Role.String())
 	}
 
+	// Calculate responsive padding
+	hPadding := int(float64(sbuf.layout.ScreenWidth) * widgets.PaddingStandard)
+	vPadding := int(float64(sbuf.layout.ScreenHeight) * widgets.PaddingStandard)
+
 	return widgets.CreateListWithConfig(widgets.ListConfig{
 		Entries:   entries,
 		MinWidth:  listWidth,
@@ -100,8 +112,8 @@ func (sbuf *SquadBuilderUIFactory) CreatePalettePanel(onEntrySelected func(inter
 			HorizontalPosition: widget.AnchorLayoutPositionStart,
 			VerticalPosition:   widget.AnchorLayoutPositionCenter,
 			Padding: widget.Insets{
-				Left: 20,
-				Top:  20,
+				Left: hPadding,
+				Top:  vPadding,
 			},
 		},
 	})
@@ -121,12 +133,16 @@ func (sbuf *SquadBuilderUIFactory) CreateCapacityDisplay() *widget.TextArea {
 	capacityDisplay := widgets.CreateTextAreaWithConfig(config)
 	capacityDisplay.SetText("Capacity: 0.0 / 6.0\n(No leader)")
 
+	// Calculate responsive padding
+	hPadding := int(float64(sbuf.layout.ScreenWidth) * widgets.PaddingStandard)
+	vPadding := int(float64(sbuf.layout.ScreenHeight) * widgets.PaddingStackedWidget)
+
 	capacityDisplay.GetWidget().LayoutData = widget.AnchorLayoutData{
 		HorizontalPosition: widget.AnchorLayoutPositionEnd,
 		VerticalPosition:   widget.AnchorLayoutPositionStart,
 		Padding: widget.Insets{
-			Right: 20,
-			Top:   80,
+			Right: hPadding,
+			Top:   vPadding,
 		},
 	}
 
@@ -147,11 +163,14 @@ func (sbuf *SquadBuilderUIFactory) CreateDetailsPanel() *widget.TextArea {
 	unitDetailsArea := widgets.CreateTextAreaWithConfig(config)
 	unitDetailsArea.SetText("Select a unit to view details")
 
+	// Calculate responsive padding
+	hPadding := int(float64(sbuf.layout.ScreenWidth) * widgets.PaddingStandard)
+
 	unitDetailsArea.GetWidget().LayoutData = widget.AnchorLayoutData{
 		HorizontalPosition: widget.AnchorLayoutPositionEnd,
 		VerticalPosition:   widget.AnchorLayoutPositionCenter,
 		Padding: widget.Insets{
-			Right: 20,
+			Right: hPadding,
 		},
 	}
 
@@ -181,12 +200,14 @@ func (sbuf *SquadBuilderUIFactory) CreateSquadNameInput(onChanged func(string)) 
 	})
 	inputContainer.AddChild(squadNameInput)
 
-	// Position at top center
+	// Position at top center with responsive padding
+	vPadding := int(float64(sbuf.layout.ScreenHeight) * widgets.PaddingStandard)
+
 	inputContainer.GetWidget().LayoutData = widget.AnchorLayoutData{
 		HorizontalPosition: widget.AnchorLayoutPositionCenter,
 		VerticalPosition:   widget.AnchorLayoutPositionStart,
 		Padding: widget.Insets{
-			Top: 20,
+			Top: vPadding,
 		},
 	}
 
@@ -200,6 +221,10 @@ func (sbuf *SquadBuilderUIFactory) CreateActionButtons(
 	onToggleLeader func(),
 	onClose func(),
 ) *widget.Container {
+	// Calculate responsive spacing and padding
+	spacing := int(float64(sbuf.layout.ScreenWidth) * widgets.PaddingTight)
+	hPadding := int(float64(sbuf.layout.ScreenWidth) * widgets.PaddingExtraSmall)
+
 	// Create button group with squad builder actions
 	buttonContainer := widgets.CreateButtonGroup(widgets.ButtonGroupConfig{
 		Buttons: []widgets.ButtonSpec{
@@ -221,8 +246,8 @@ func (sbuf *SquadBuilderUIFactory) CreateActionButtons(
 			},
 		},
 		Direction: widget.DirectionHorizontal,
-		Spacing:   15,
-		Padding:   widget.Insets{Left: 10, Right: 10},
+		Spacing:   spacing,
+		Padding:   widget.Insets{Left: hPadding, Right: hPadding},
 		LayoutData: &widget.AnchorLayoutData{
 			HorizontalPosition: widget.AnchorLayoutPositionCenter,
 			VerticalPosition:   widget.AnchorLayoutPositionEnd,

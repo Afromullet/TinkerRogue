@@ -14,14 +14,16 @@ type PanelOption func(*panelConfig)
 // panelConfig holds the configuration for building a panel.
 // This is an internal type that gets populated by PanelOptions.
 type panelConfig struct {
-	widthPercent   float64
-	heightPercent  float64
-	paddingPercent float64
-	title          string
-	background     *e_image.NineSlice
-	layout         widget.Layouter
-	layoutData     widget.AnchorLayoutData
-	customPadding  *widget.Insets // For fine-grained control
+	widthPercent          float64
+	heightPercent         float64
+	paddingPercent        float64
+	title                 string
+	background            *e_image.NineSlice
+	layout                widget.Layouter
+	layoutData            widget.AnchorLayoutData
+	customPadding         *widget.Insets          // For fine-grained control
+	useResponsivePadding  bool                    // Flag to apply responsive padding to row layouts
+	rowLayoutDirection    widget.Direction        // Direction for row layouts when using responsive padding
 }
 
 // Predefined positioning options
@@ -142,23 +144,31 @@ func CustomPadding(insets widget.Insets) PanelOption {
 // Layout configuration options
 
 // RowLayout sets the panel to use a vertical row layout (stacks children vertically).
+// Note: Padding will be calculated responsively by BuildPanel based on screen size.
 func RowLayout() PanelOption {
 	return func(pc *panelConfig) {
+		// Mark that we want responsive padding to be applied by BuildPanel
+		pc.useResponsivePadding = true
+		pc.rowLayoutDirection = widget.DirectionVertical
 		pc.layout = widget.NewRowLayout(
 			widget.RowLayoutOpts.Direction(widget.DirectionVertical),
 			widget.RowLayoutOpts.Spacing(5),
-			widget.RowLayoutOpts.Padding(widget.Insets{Left: 10, Right: 10, Top: 10, Bottom: 10}),
+			// Padding will be set by BuildPanel using PaddingExtraSmall
 		)
 	}
 }
 
 // HorizontalRowLayout sets the panel to use a horizontal row layout (stacks children horizontally).
+// Note: Padding will be calculated responsively by BuildPanel based on screen size.
 func HorizontalRowLayout() PanelOption {
 	return func(pc *panelConfig) {
+		// Mark that we want responsive padding to be applied by BuildPanel
+		pc.useResponsivePadding = true
+		pc.rowLayoutDirection = widget.DirectionHorizontal
 		pc.layout = widget.NewRowLayout(
 			widget.RowLayoutOpts.Direction(widget.DirectionHorizontal),
 			widget.RowLayoutOpts.Spacing(10),
-			widget.RowLayoutOpts.Padding(widget.Insets{Left: 10, Right: 10, Top: 10, Bottom: 10}),
+			// Padding will be set by BuildPanel using PaddingExtraSmall
 		)
 	}
 }
@@ -198,6 +208,9 @@ func WithBackground(background *e_image.NineSlice) PanelOption {
 //	    HorizontalRowLayout(),
 //	)
 func (pb *PanelBuilders) BuildPanel(opts ...PanelOption) *widget.Container {
+	// Calculate default responsive padding
+	defaultPadding := int(float64(pb.Layout.ScreenWidth) * PaddingExtraSmall)
+
 	// Apply defaults
 	config := panelConfig{
 		widthPercent:  0.2,
@@ -206,7 +219,7 @@ func (pb *PanelBuilders) BuildPanel(opts ...PanelOption) *widget.Container {
 		layout: widget.NewRowLayout(
 			widget.RowLayoutOpts.Direction(widget.DirectionVertical),
 			widget.RowLayoutOpts.Spacing(5),
-			widget.RowLayoutOpts.Padding(widget.Insets{Left: 10, Right: 10, Top: 10, Bottom: 10}),
+			widget.RowLayoutOpts.Padding(widget.Insets{Left: defaultPadding, Right: defaultPadding, Top: defaultPadding, Bottom: defaultPadding}),
 		),
 		layoutData: widget.AnchorLayoutData{
 			HorizontalPosition: widget.AnchorLayoutPositionCenter,
@@ -217,6 +230,26 @@ func (pb *PanelBuilders) BuildPanel(opts ...PanelOption) *widget.Container {
 	// Apply all options
 	for _, opt := range opts {
 		opt(&config)
+	}
+
+	// Apply responsive padding to row layouts if requested
+	if config.useResponsivePadding {
+		padding := int(float64(pb.Layout.ScreenWidth) * PaddingExtraSmall)
+
+		// Recreate row layout with responsive padding using stored direction
+		if _, ok := config.layout.(*widget.RowLayout); ok {
+			// Determine spacing based on direction
+			spacing := 5
+			if config.rowLayoutDirection == widget.DirectionHorizontal {
+				spacing = 10
+			}
+
+			config.layout = widget.NewRowLayout(
+				widget.RowLayoutOpts.Direction(config.rowLayoutDirection),
+				widget.RowLayoutOpts.Spacing(spacing),
+				widget.RowLayoutOpts.Padding(widget.Insets{Left: padding, Right: padding, Top: padding, Bottom: padding}),
+			)
+		}
 	}
 
 	// Calculate actual dimensions from percentages

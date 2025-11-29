@@ -39,9 +39,12 @@ type GridEditorConfig struct {
 // BuildGridEditor creates a centered 3x3 grid panel for squad formations
 // Returns the grid container and a 3x3 array of the cell buttons
 func (pb *PanelBuilders) BuildGridEditor(config GridEditorConfig) (*widget.Container, [3][3]*widget.Button) {
+	// Calculate responsive padding
+	defaultPadding := int(float64(pb.Layout.ScreenWidth) * PaddingExtraSmall)
+
 	// Apply defaults
 	if config.Padding.Left == 0 && config.Padding.Right == 0 {
-		config.Padding = widget.Insets{Left: 10, Right: 10, Top: 10, Bottom: 10}
+		config.Padding = widget.Insets{Left: defaultPadding, Right: defaultPadding, Top: defaultPadding, Bottom: defaultPadding}
 	}
 	if config.CellTextFormat == nil {
 		config.CellTextFormat = func(row, col int) string {
@@ -61,6 +64,9 @@ func (pb *PanelBuilders) BuildGridEditor(config GridEditorConfig) (*widget.Conta
 
 	var gridCells [3][3]*widget.Button
 
+	// Calculate responsive cell padding (slightly smaller than container padding)
+	cellPadding := int(float64(pb.Layout.ScreenWidth) * (PaddingExtraSmall * 0.8))
+
 	// Create 3x3 grid buttons using ButtonConfig pattern for consistency
 	for row := 0; row < 3; row++ {
 		for col := 0; col < 3; col++ {
@@ -72,7 +78,7 @@ func (pb *PanelBuilders) BuildGridEditor(config GridEditorConfig) (*widget.Conta
 				FontFace:  guiresources.SmallFace,
 				MinWidth:  0, // Let grid layout handle sizing
 				MinHeight: 0, // Let grid layout handle sizing
-				Padding:   widget.Insets{Left: 8, Right: 8, Top: 8, Bottom: 8},
+				Padding:   widget.Insets{Left: cellPadding, Right: cellPadding, Top: cellPadding, Bottom: cellPadding},
 				OnClick: func() {
 					if config.OnCellClick != nil {
 						config.OnCellClick(cellRow, cellCol)
