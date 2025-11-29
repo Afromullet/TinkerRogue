@@ -26,8 +26,8 @@ func TestCombatInitialization(t *testing.T) {
 	if ActionStateComponent == nil {
 		t.Error("ActionStateComponent not initialized")
 	}
-	if MapPositionComponent == nil {
-		t.Error("MapPositionComponent not initialized")
+	if CombatFactionComponent == nil {
+		t.Error("CombatFactionComponent not initialized")
 	}
 
 	// Verify tags are registered
@@ -40,8 +40,8 @@ func TestCombatInitialization(t *testing.T) {
 	if _, ok := manager.WorldTags["actionstate"]; !ok {
 		t.Error("actionstate tag not registered")
 	}
-	if _, ok := manager.WorldTags["mapposition"]; !ok {
-		t.Error("mapposition tag not registered")
+	if _, ok := manager.WorldTags["combatfaction"]; !ok {
+		t.Error("combatfaction tag not registered")
 	}
 }
 
@@ -87,18 +87,28 @@ func TestAddSquadToFaction(t *testing.T) {
 		t.Fatalf("Failed to add squad to faction: %v", err)
 	}
 
-	// Verify squad is on map
-	mapPosEntity := findMapPositionEntity(squadID, manager)
-	if mapPosEntity == nil {
-		t.Fatal("Squad not added to map")
+	// Verify squad has CombatFactionComponent
+	squad := common.FindEntityByIDWithTag(manager, squadID, squads.SquadTag)
+	if squad == nil {
+		t.Fatal("Squad not found")
 	}
 
-	mapPos := common.GetComponentType[*MapPositionData](mapPosEntity, MapPositionComponent)
-	if mapPos.FactionID != factionID {
-		t.Errorf("Expected faction %d, got %d", factionID, mapPos.FactionID)
+	combatFaction := common.GetComponentType[*CombatFactionData](squad, CombatFactionComponent)
+	if combatFaction == nil {
+		t.Fatal("Squad does not have CombatFactionComponent")
 	}
-	if mapPos.Position.X != 10 || mapPos.Position.Y != 10 {
-		t.Errorf("Expected position (10,10), got (%d,%d)", mapPos.Position.X, mapPos.Position.Y)
+
+	if combatFaction.FactionID != factionID {
+		t.Errorf("Expected faction %d, got %d", factionID, combatFaction.FactionID)
+	}
+
+	// Verify position
+	squadPos := common.GetComponentType[*coords.LogicalPosition](squad, common.PositionComponent)
+	if squadPos == nil {
+		t.Fatal("Squad has no position")
+	}
+	if squadPos.X != 10 || squadPos.Y != 10 {
+		t.Errorf("Expected position (10,10), got (%d,%d)", squadPos.X, squadPos.Y)
 	}
 }
 

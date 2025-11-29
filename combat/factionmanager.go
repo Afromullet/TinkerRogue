@@ -42,31 +42,31 @@ func (fm *FactionManager) AddSquadToFaction(factionID, squadID ecs.EntityID, pos
 	}
 
 	// Verify squad exists by checking for SquadComponent
-	squadData := common.GetComponentTypeByIDWithTag[*squads.SquadData](fm.manager, squadID, squads.SquadTag, squads.SquadComponent)
-	if squadData == nil {
+	squad := common.FindEntityByIDWithTag(fm.manager, squadID, squads.SquadTag)
+	if squad == nil {
 		return fmt.Errorf("squad %d not found", squadID)
 	}
 
-	// Create MapPositionData to establish relationship
-	mapPosEntity := fm.manager.World.NewEntity()
-	mapPosEntity.AddComponent(MapPositionComponent, &MapPositionData{
-		SquadID:   squadID,
-		Position:  position,
+	// Add CombatFactionComponent directly to squad entity (NEW: ECS-idiomatic approach)
+	// Replaces creating a separate MapPosition entity
+	squad.AddComponent(CombatFactionComponent, &CombatFactionData{
 		FactionID: factionID,
 	})
 
-	// Add PositionComponent to squad entity for compatibility with existing squad combat system
+	// Add PositionComponent to squad entity
 	if !fm.manager.HasComponentByIDWithTag(squadID, squads.SquadTag, common.PositionComponent) {
-		// Need to get the entity to add component (AddComponent is not available via ID)
-		squad := common.FindEntityByIDWithTag(fm.manager, squadID, squads.SquadTag)
-		if squad != nil {
-			posPtr := new(coords.LogicalPosition)
+		posPtr := new(coords.LogicalPosition)
+		*posPtr = position
+		squad.AddComponent(common.PositionComponent, posPtr)
+	} else {
+		// Update existing position
+		posPtr := common.GetComponentTypeByIDWithTag[*coords.LogicalPosition](fm.manager, squadID, squads.SquadTag, common.PositionComponent)
+		if posPtr != nil {
 			*posPtr = position
-			squad.AddComponent(common.PositionComponent, posPtr)
 		}
 	}
 
-	// Register in PositionSystem
+	// Register in PositionSystem (canonical position source)
 	common.GlobalPositionSystem.AddEntity(squadID, position)
 
 	return nil
@@ -75,36 +75,44 @@ func (fm *FactionManager) AddSquadToFaction(factionID, squadID ecs.EntityID, pos
 func (fm *FactionManager) GetFactionSquads(factionID ecs.EntityID) []ecs.EntityID {
 	var squadIDs []ecs.EntityID
 
-	// Use consolidated query function
-	mapPositions := FindMapPositionByFactionID(factionID, fm.manager)
-	for _, mapPos := range mapPositions {
-		squadIDs = append(squadIDs, mapPos.SquadID)
+	// Query all squads and filter by CombatFactionComponent
+	for _, result := range fm.manager.World.Query(squads.SquadTag) {
+		combatFaction := common.GetComponentType[*CombatFactionData](result.Entity, CombatFactionComponent)
+		if combatFaction != nil && combatFaction.FactionID == factionID {
+			squadIDs = append(squadIDs, result.Entity.GetID())
+		}
 	}
 
 	return squadIDs
 }
 
 func (fm *FactionManager) RemoveSquadFromFaction(factionID, squadID ecs.EntityID) error {
-	// Find MapPositionData entity for this squad
-	mapPosEntity := findMapPositionEntity(squadID, fm.manager)
-	if mapPosEntity == nil {
-		return fmt.Errorf("squad %d not found on map", squadID)
+	// Find squad entity
+	squad := common.FindEntityByIDWithTag(fm.manager, squadID, squads.SquadTag)
+	if squad == nil {
+		return fmt.Errorf("squad %d not found", squadID)
+	}
+
+	// Verify squad has CombatFactionComponent
+	combatFaction := common.GetComponentType[*CombatFactionData](squad, CombatFactionComponent)
+	if combatFaction == nil {
+		return fmt.Errorf("squad %d is not in combat", squadID)
 	}
 
 	// Verify squad belongs to this faction
-	mapPos := common.GetComponentType[*MapPositionData](mapPosEntity, MapPositionComponent)
-	if mapPos.FactionID != factionID {
+	if combatFaction.FactionID != factionID {
 		return fmt.Errorf("squad %d does not belong to faction %d", squadID, factionID)
 	}
 
 	// Get position before removal for PositionSystem cleanup
-	position := mapPos.Position
+	position := common.GetComponentType[*coords.LogicalPosition](squad, common.PositionComponent)
+	if position != nil {
+		// Remove from PositionSystem spatial grid
+		common.GlobalPositionSystem.RemoveEntity(squadID, *position)
+	}
 
-	// Remove MapPositionData entity from ECS
-	fm.manager.World.DisposeEntities(mapPosEntity)
-
-	// Remove from PositionSystem spatial grid
-	common.GlobalPositionSystem.RemoveEntity(squadID, position)
+	// Remove CombatFactionComponent from squad (squad exits combat)
+	squad.RemoveComponent(CombatFactionComponent)
 
 	return nil
 }

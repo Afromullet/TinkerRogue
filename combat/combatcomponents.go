@@ -2,22 +2,21 @@ package combat
 
 import (
 	"game_main/common"
-	"game_main/coords"
 
 	"github.com/bytearena/ecs"
 )
 
 // Component and tag variables
 var (
-	FactionComponent     *ecs.Component
-	TurnStateComponent   *ecs.Component
-	ActionStateComponent *ecs.Component
-	MapPositionComponent *ecs.Component
+	FactionComponent       *ecs.Component
+	TurnStateComponent     *ecs.Component
+	ActionStateComponent   *ecs.Component
+	CombatFactionComponent *ecs.Component
 
-	FactionTag     ecs.Tag
-	TurnStateTag   ecs.Tag
-	ActionStateTag ecs.Tag
-	MapPositionTag ecs.Tag
+	FactionTag       ecs.Tag
+	TurnStateTag     ecs.Tag
+	ActionStateTag   ecs.Tag
+	CombatFactionTag ecs.Tag
 )
 
 type FactionData struct {
@@ -42,10 +41,11 @@ type ActionStateData struct {
 	MovementRemaining int          // Tiles left to move (starts at squad speed)
 }
 
-type MapPositionData struct {
-	SquadID   ecs.EntityID           // Squad entity
-	Position  coords.LogicalPosition // Current tile position (cached from PositionSystem)
-	FactionID ecs.EntityID           // Faction that owns this squad
+// CombatFactionData links a squad to its faction during combat.
+// This component is added to squad entities when they enter combat.
+// Squad gains this component when entering combat, loses it when exiting.
+type CombatFactionData struct {
+	FactionID ecs.EntityID // Faction that owns this squad
 }
 
 // InitCombatComponents registers all combat-related components with the ECS manager.
@@ -54,7 +54,7 @@ func InitCombatComponents(manager *common.EntityManager) {
 	FactionComponent = manager.World.NewComponent()
 	TurnStateComponent = manager.World.NewComponent()
 	ActionStateComponent = manager.World.NewComponent()
-	MapPositionComponent = manager.World.NewComponent()
+	CombatFactionComponent = manager.World.NewComponent()
 }
 
 // InitCombatTags creates tags for querying combat-related entities.
@@ -63,12 +63,12 @@ func InitCombatTags(manager *common.EntityManager) {
 	FactionTag = ecs.BuildTag(FactionComponent)
 	TurnStateTag = ecs.BuildTag(TurnStateComponent)
 	ActionStateTag = ecs.BuildTag(ActionStateComponent)
-	MapPositionTag = ecs.BuildTag(MapPositionComponent)
+	CombatFactionTag = ecs.BuildTag(CombatFactionComponent)
 
 	manager.WorldTags["faction"] = FactionTag
 	manager.WorldTags["turnstate"] = TurnStateTag
 	manager.WorldTags["actionstate"] = ActionStateTag
-	manager.WorldTags["mapposition"] = MapPositionTag
+	manager.WorldTags["combatfaction"] = CombatFactionTag
 }
 
 // InitializeCombatSystem initializes combat components and tags in the provided EntityManager.

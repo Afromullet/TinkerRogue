@@ -103,24 +103,14 @@ func (ms *CombatMovementSystem) MoveSquad(squadID ecs.EntityID, targetPos coords
 		return fmt.Errorf("cannot move to %v", targetPos)
 	}
 
-	// Update MapPositionData (cached position)
-	mapPosEntity := findMapPositionEntity(squadID, ms.manager)
-	if mapPosEntity == nil {
-		return fmt.Errorf("squad not on map")
+	// Update squad's PositionComponent (NO MORE MAPPOSITION DUPLICATION!)
+	posPtr := common.GetComponentTypeByIDWithTag[*coords.LogicalPosition](ms.manager, squadID, squads.SquadTag, common.PositionComponent)
+	if posPtr == nil {
+		return fmt.Errorf("squad has no position component")
 	}
+	*posPtr = targetPos
 
-	mapPos := common.GetComponentType[*MapPositionData](mapPosEntity, MapPositionComponent)
-	mapPos.Position = targetPos
-
-	// Update squad's PositionComponent for compatibility with existing squad combat system
-	if ms.manager.HasComponentByIDWithTag(squadID, squads.SquadTag, common.PositionComponent) {
-		posPtr := common.GetComponentTypeByIDWithTag[*coords.LogicalPosition](ms.manager, squadID, squads.SquadTag, common.PositionComponent)
-		if posPtr != nil {
-			*posPtr = targetPos
-		}
-	}
-
-	// Update PositionSystem spatial grid (canonical source)
+	// Update PositionSystem spatial grid (canonical source for O(1) lookups)
 	ms.posSystem.MoveEntity(squadID, currentPos, targetPos)
 
 	decrementMovementRemaining(squadID, movementCost, ms.manager)
@@ -172,13 +162,10 @@ func (ms *CombatMovementSystem) GetValidMovementTiles(squadID ecs.EntityID) []co
 }
 
 func (ms *CombatMovementSystem) GetSquadPosition(squadID ecs.EntityID) (coords.LogicalPosition, error) {
-	// Find MapPositionData for this squad
-	mapPosEntity := findMapPositionEntity(squadID, ms.manager)
-	if mapPosEntity == nil {
-		return coords.LogicalPosition{}, fmt.Errorf("squad %d not on map", squadID)
+	// Get position directly from PositionComponent (NO MORE MAPPOSITION DUPLICATION!)
+	pos := common.GetComponentTypeByIDWithTag[*coords.LogicalPosition](ms.manager, squadID, squads.SquadTag, common.PositionComponent)
+	if pos == nil {
+		return coords.LogicalPosition{}, fmt.Errorf("squad %d has no position component", squadID)
 	}
-
-	// Extract position from component
-	mapPos := common.GetComponentType[*MapPositionData](mapPosEntity, MapPositionComponent)
-	return mapPos.Position, nil
+	return *pos, nil
 }

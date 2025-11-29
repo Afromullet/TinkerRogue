@@ -3,6 +3,7 @@ package combat
 import (
 	"fmt"
 	"game_main/common"
+	"game_main/coords"
 	"game_main/squads"
 
 	"github.com/bytearena/ecs"
@@ -153,26 +154,38 @@ func (cas *CombatActionSystem) GetSquadsInRange(squadID ecs.EntityID) []ecs.Enti
 
 	maxRange := cas.GetSquadAttackRange(squadID)
 
-	// Query all MapPositionData entities to find enemy squads
-	for _, result := range cas.manager.World.Query(MapPositionTag) {
-		mapPos := common.GetComponentType[*MapPositionData](result.Entity, MapPositionComponent)
+	// Query all squads in combat (NO MORE MAPPOSITION QUERIES!)
+	for _, result := range cas.manager.World.Query(squads.SquadTag) {
+		targetSquadID := result.Entity.GetID()
 
-		// Skip friendly squads
-		if mapPos.FactionID == attackerFaction {
+		// Skip self
+		if targetSquadID == squadID {
 			continue
 		}
 
-		// Skip self (shouldn't happen, but safety check)
-		if mapPos.SquadID == squadID {
+		// Get target faction (only consider squads in combat)
+		combatFaction := common.GetComponentType[*CombatFactionData](result.Entity, CombatFactionComponent)
+		if combatFaction == nil {
+			continue // Squad not in combat
+		}
+
+		// Skip friendly squads
+		if combatFaction.FactionID == attackerFaction {
+			continue
+		}
+
+		// Get target position
+		targetPos := common.GetComponentType[*coords.LogicalPosition](result.Entity, common.PositionComponent)
+		if targetPos == nil {
 			continue
 		}
 
 		// Calculate distance using Chebyshev distance
-		distance := attackerPos.ChebyshevDistance(&mapPos.Position)
+		distance := attackerPos.ChebyshevDistance(targetPos)
 
 		// Check if in range
 		if distance <= maxRange {
-			squadsInRange = append(squadsInRange, mapPos.SquadID)
+			squadsInRange = append(squadsInRange, targetSquadID)
 		}
 	}
 

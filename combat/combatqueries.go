@@ -39,38 +39,20 @@ func findTurnStateEntity(manager *common.EntityManager) *ecs.Entity {
 	return nil
 }
 
-// findMapPositionEntity finds MapPositionData for a squad
-func findMapPositionEntity(squadID ecs.EntityID, manager *common.EntityManager) *ecs.Entity {
-	for _, result := range manager.World.Query(MapPositionTag) {
-		mapPos := common.GetComponentType[*MapPositionData](result.Entity, MapPositionComponent)
-		if mapPos.SquadID == squadID {
-			return result.Entity
-		}
+// GetSquadFaction returns the faction ID for a squad in combat.
+// Returns 0 if squad is not in combat (doesn't have CombatFactionComponent).
+func GetSquadFaction(squadID ecs.EntityID, manager *common.EntityManager) ecs.EntityID {
+	squad := common.FindEntityByIDWithTag(manager, squadID, squads.SquadTag)
+	if squad == nil {
+		return 0
 	}
-	return nil
-}
 
-// FindMapPositionBySquadID returns MapPositionData for a squad (public version)
-// Returns nil if squad not found on map
-func FindMapPositionBySquadID(squadID ecs.EntityID, manager *common.EntityManager) *MapPositionData {
-	entity := findMapPositionEntity(squadID, manager)
-	if entity == nil {
-		return nil
+	combatFaction := common.GetComponentType[*CombatFactionData](squad, CombatFactionComponent)
+	if combatFaction == nil {
+		return 0
 	}
-	return common.GetComponentType[*MapPositionData](entity, MapPositionComponent)
-}
 
-// FindMapPositionByFactionID returns all MapPositionData for squads in a faction
-// Returns empty slice if no squads found for faction
-func FindMapPositionByFactionID(factionID ecs.EntityID, manager *common.EntityManager) []*MapPositionData {
-	result := make([]*MapPositionData, 0)
-	for _, queryResult := range manager.World.Query(MapPositionTag) {
-		mapPos := common.GetComponentType[*MapPositionData](queryResult.Entity, MapPositionComponent)
-		if mapPos.FactionID == factionID {
-			result = append(result, mapPos)
-		}
-	}
-	return result
+	return combatFaction.FactionID
 }
 
 // findActionStateEntity finds ActionStateData for a squad
@@ -96,34 +78,28 @@ func FindActionStateBySquadID(squadID ecs.EntityID, manager *common.EntityManage
 
 // getFactionOwner returns the faction that owns a squad
 func getFactionOwner(squadID ecs.EntityID, manager *common.EntityManager) ecs.EntityID {
-	mapPosEntity := findMapPositionEntity(squadID, manager)
-	if mapPosEntity == nil {
-		return 0
-	}
-
-	mapPos := common.GetComponentType[*MapPositionData](mapPosEntity, MapPositionComponent)
-	return mapPos.FactionID
+	return GetSquadFaction(squadID, manager)
 }
 
 // getSquadMapPosition returns the current map position of a squad
 func getSquadMapPosition(squadID ecs.EntityID, manager *common.EntityManager) (coords.LogicalPosition, error) {
-	mapPosEntity := findMapPositionEntity(squadID, manager)
-	if mapPosEntity == nil {
-		return coords.LogicalPosition{}, fmt.Errorf("squad %d not on map", squadID)
+	pos := common.GetComponentTypeByIDWithTag[*coords.LogicalPosition](manager, squadID, squads.SquadTag, common.PositionComponent)
+	if pos == nil {
+		return coords.LogicalPosition{}, fmt.Errorf("squad %d has no position", squadID)
 	}
-
-	mapPos := common.GetComponentType[*MapPositionData](mapPosEntity, MapPositionComponent)
-	return mapPos.Position, nil
+	return *pos, nil
 }
 
 // GetSquadsForFaction returns all squads owned by a faction
 func GetSquadsForFaction(factionID ecs.EntityID, manager *common.EntityManager) []ecs.EntityID {
 	var squadIDs []ecs.EntityID
 
-	// Use consolidated query function
-	mapPositions := FindMapPositionByFactionID(factionID, manager)
-	for _, mapPos := range mapPositions {
-		squadIDs = append(squadIDs, mapPos.SquadID)
+	// Query all squads and filter by CombatFactionComponent
+	for _, result := range manager.World.Query(squads.SquadTag) {
+		combatFaction := common.GetComponentType[*CombatFactionData](result.Entity, CombatFactionComponent)
+		if combatFaction != nil && combatFaction.FactionID == factionID {
+			squadIDs = append(squadIDs, result.Entity.GetID())
+		}
 	}
 
 	return squadIDs
@@ -132,22 +108,34 @@ func GetSquadsForFaction(factionID ecs.EntityID, manager *common.EntityManager) 
 // GetSquadAtPosition returns the squad entity ID at the given position
 // Returns 0 if no squad at position or squad is destroyed
 func GetSquadAtPosition(pos coords.LogicalPosition, manager *common.EntityManager) ecs.EntityID {
-	for _, result := range manager.World.Query(MapPositionTag) {
-		mapPos := common.GetComponentType[*MapPositionData](result.Entity, MapPositionComponent)
+	// Query all squads and filter by combat squads only
+	for _, result := range manager.World.Query(squads.SquadTag) {
+		// Only consider squads in combat
+		combatFaction := common.GetComponentType[*CombatFactionData](result.Entity, CombatFactionComponent)
+		if combatFaction == nil {
+			continue
+		}
 
-		if mapPos.Position.X == pos.X && mapPos.Position.Y == pos.Y {
-			if !squads.IsSquadDestroyed(mapPos.SquadID, manager) {
-				return mapPos.SquadID
+		squadPos := common.GetComponentType[*coords.LogicalPosition](result.Entity, common.PositionComponent)
+		if squadPos != nil && squadPos.X == pos.X && squadPos.Y == pos.Y {
+			squadID := result.Entity.GetID()
+			if !squads.IsSquadDestroyed(squadID, manager) {
+				return squadID
 			}
 		}
 	}
 	return 0
 }
 
-// isSquad checks if an entity ID represents a squad
+// isSquad checks if an entity ID represents a squad in combat
 func isSquad(entityID ecs.EntityID, manager *common.EntityManager) bool {
-	mapPosEntity := findMapPositionEntity(entityID, manager)
-	return mapPosEntity != nil
+	squad := common.FindEntityByIDWithTag(manager, entityID, squads.SquadTag)
+	if squad == nil {
+		return false
+	}
+	// Check if squad has CombatFactionComponent (is in combat)
+	combatFaction := common.GetComponentType[*CombatFactionData](squad, CombatFactionComponent)
+	return combatFaction != nil
 }
 
 // ========================================
@@ -218,21 +206,20 @@ func decrementMovementRemaining(squadID ecs.EntityID, amount int, manager *commo
 
 // removeSquadFromMap removes a squad from the combat map
 func removeSquadFromMap(squadID ecs.EntityID, manager *common.EntityManager) error {
-	// Find and remove MapPositionData
-	mapPosEntity := findMapPositionEntity(squadID, manager)
-	if mapPosEntity == nil {
-		return fmt.Errorf("squad %d not on map", squadID)
+	squad := common.FindEntityByIDWithTag(manager, squadID, squads.SquadTag)
+	if squad == nil {
+		return fmt.Errorf("squad %d not found", squadID)
 	}
 
 	// Get position before removal
-	mapPos := common.GetComponentType[*MapPositionData](mapPosEntity, MapPositionComponent)
-	position := mapPos.Position
+	position := common.GetComponentType[*coords.LogicalPosition](squad, common.PositionComponent)
+	if position != nil {
+		// Remove from PositionSystem spatial grid
+		common.GlobalPositionSystem.RemoveEntity(squadID, *position)
+	}
 
-	// Remove from ECS
-	manager.World.DisposeEntities(mapPosEntity)
-
-	// Remove from PositionSystem spatial grid
-	common.GlobalPositionSystem.RemoveEntity(squadID, position)
+	// Remove CombatFactionComponent (squad exits combat)
+	squad.RemoveComponent(CombatFactionComponent)
 
 	return nil
 }

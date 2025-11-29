@@ -163,23 +163,28 @@ func CreateTestMixedSquad(manager *common.EntityManager, name string, meleeCount
 	return squadID
 }
 
-// PlaceSquadOnMap places a squad at a position for testing
+// PlaceSquadOnMap places a squad at a position for testing (using new CombatFactionComponent approach)
 func PlaceSquadOnMap(manager *common.EntityManager, factionID, squadID ecs.EntityID, pos coords.LogicalPosition) {
-	mapPosEntity := manager.World.NewEntity()
-	mapPosEntity.AddComponent(MapPositionComponent, &MapPositionData{
-		SquadID:   squadID,
-		Position:  pos,
+	squadEntity := common.FindEntityByIDWithTag(manager, squadID, squads.SquadTag)
+	if squadEntity == nil {
+		return
+	}
+
+	// Add CombatFactionComponent to squad (squad enters combat)
+	squadEntity.AddComponent(CombatFactionComponent, &CombatFactionData{
 		FactionID: factionID,
 	})
 
-	// Add PositionComponent to squad entity for compatibility with existing squad combat system
+	// Add PositionComponent to squad entity
 	if !manager.HasComponentByIDWithTag(squadID, squads.SquadTag, common.PositionComponent) {
-		// Need to get the entity to add component (AddComponent is not available via ID)
-		squadEntity := common.FindEntityByIDWithTag(manager, squadID, squads.SquadTag)
-		if squadEntity != nil {
-			posPtr := new(coords.LogicalPosition)
+		posPtr := new(coords.LogicalPosition)
+		*posPtr = pos
+		squadEntity.AddComponent(common.PositionComponent, posPtr)
+	} else {
+		// Update existing position
+		posPtr := common.GetComponentTypeByIDWithTag[*coords.LogicalPosition](manager, squadID, squads.SquadTag, common.PositionComponent)
+		if posPtr != nil {
 			*posPtr = pos
-			squadEntity.AddComponent(common.PositionComponent, posPtr)
 		}
 	}
 
