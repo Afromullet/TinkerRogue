@@ -1,3 +1,8 @@
 .clj-kondo
 .lsp
 *.exe
+
+# Claude Code local files
+.claude/agent-usage.csv
+.claude/hook-debug.log
+.claude/plans/

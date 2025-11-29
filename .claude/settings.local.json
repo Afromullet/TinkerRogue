@@ -9,5 +9,19 @@
     ],
     "deny": [],
     "ask": []
+  },
+  "hooks": {
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash scripts/log-agent-usage.sh",
+            "timeout": 5,
+            "description": "Log agent usage to CSV"
+          }
+        ]
+      }
+    ]
   }
 }
