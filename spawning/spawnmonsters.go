@@ -9,71 +9,60 @@ import (
 
 var TurnsPerMonsterSpawn = 10
 
+// selectValidSpawnPosition attempts to find an unblocked tile for spawning.
+// Returns nil if no valid position found after maxAttempts.
+//
+// This is pure spawn logic - separated from entity creation.
+func selectValidSpawnPosition(gm *worldmap.GameMap, maxAttempts int) *coords.LogicalPosition {
+	for i := 0; i < maxAttempts; i++ {
+		index := common.GetRandomBetween(0, len(gm.ValidPositions)-1)
+		if !gm.Tiles[index].Blocked {
+			pos := coords.CoordManager.IndexToLogical(index)
+			return &pos
+		}
+	}
+	return nil
+}
+
 // Basic monster spawning function that spawns a monster on a random tile
 func SpawnMonster(ecsmanager common.EntityManager, gm *worldmap.GameMap) {
-
 	// 30% chance to spawn something
-	if common.RandomInt(100) < 30 {
-
-		//Try 3 times to spawn something. Only spawn it if the tile is not blocked
-		for i := 0; i <= 2; i++ {
-
-			index := common.GetRandomBetween(0, len(gm.ValidPositions)-1)
-
-			if !gm.Tiles[index].Blocked {
-
-				logicalPos := coords.CoordManager.IndexToLogical(index)
-
-				entitytemplates.CreateEntityFromTemplate(ecsmanager, entitytemplates.EntityConfig{
-					Type:      entitytemplates.EntityCreature,
-					Name:      entitytemplates.MonsterTemplates[0].Name,
-					ImagePath: entitytemplates.MonsterTemplates[0].ImageName,
-					AssetDir:  "../assets/creatures/",
-					Visible:   true,
-					Position:  &coords.LogicalPosition{X: logicalPos.X, Y: logicalPos.Y},
-					GameMap:   gm,
-				}, entitytemplates.MonsterTemplates[0])
-				gm.Tiles[index].Blocked = true
-
-				break
-
-			}
-
-		}
-
+	if common.RandomInt(100) >= 30 {
+		return
 	}
 
+	// Try 3 times to find valid spawn position
+	pos := selectValidSpawnPosition(gm, 3)
+	if pos == nil {
+		return
+	}
+
+	// Use type-specific factory - handles ALL entity construction
+	template := entitytemplates.MonsterTemplates[0]
+	entitytemplates.CreateMonster(ecsmanager, gm, *pos, template)
 }
 
 // Spawns one creature in every room.
 // Then it spawns MaxNumCreatures in random rooms
 func SpawnStartingCreatures(MaxNumCreatures int, em *common.EntityManager, gm *worldmap.GameMap, pl *common.PlayerData) {
 
-	//Spawn 1 random creature in every room except the starting room (room-based generators only)
+	// Spawn 1 random creature in every room except the starting room (room-based generators only)
 	if len(gm.Rooms) >= 2 {
-		randCreature := 0
-
 		for _, room := range gm.Rooms[1:] {
-
 			x, y := room.Center()
-			randCreature = common.RandomInt(len(entitytemplates.MonsterTemplates))
-			entitytemplates.CreateEntityFromTemplate(*em, entitytemplates.EntityConfig{
-				Type:      entitytemplates.EntityCreature,
-				Name:      entitytemplates.MonsterTemplates[randCreature].Name,
-				ImagePath: entitytemplates.MonsterTemplates[randCreature].ImageName,
-				AssetDir:  "../assets/creatures/",
-				Visible:   true,
-				Position:  &coords.LogicalPosition{X: x, Y: y},
-				GameMap:   gm,
-			}, entitytemplates.MonsterTemplates[randCreature])
+			pos := coords.LogicalPosition{X: x, Y: y}
 
+			randCreature := common.RandomInt(len(entitytemplates.MonsterTemplates))
+			template := entitytemplates.MonsterTemplates[randCreature]
+
+			entitytemplates.CreateMonster(*em, gm, pos, template)
 		}
 	}
 
 	// Spawn additional creatures in random locations
 	for range MaxNumCreatures {
-
 		randCreature := common.RandomInt(len(entitytemplates.MonsterTemplates))
+		template := entitytemplates.MonsterTemplates[randCreature]
 		var randomPos coords.LogicalPosition
 
 		// Spawn in rooms if they exist, otherwise use ValidPositions
@@ -100,16 +89,7 @@ func SpawnStartingCreatures(MaxNumCreatures int, em *common.EntityManager, gm *w
 			}
 		}
 
-		entitytemplates.CreateEntityFromTemplate(*em, entitytemplates.EntityConfig{
-			Type:      entitytemplates.EntityCreature,
-			Name:      entitytemplates.MonsterTemplates[randCreature].Name,
-			ImagePath: entitytemplates.MonsterTemplates[randCreature].ImageName,
-			AssetDir:  "../assets/creatures/",
-			Visible:   true,
-			Position:  &coords.LogicalPosition{X: randomPos.X, Y: randomPos.Y},
-			GameMap:   gm,
-		}, entitytemplates.MonsterTemplates[randCreature])
-
+		entitytemplates.CreateMonster(*em, gm, randomPos, template)
 	}
 
 }

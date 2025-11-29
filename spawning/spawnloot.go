@@ -7,7 +7,6 @@ import (
 	"game_main/common"
 	"game_main/coords"
 	"game_main/entitytemplates"
-	"game_main/rendering"
 	"game_main/worldmap"
 
 	"github.com/bytearena/ecs"
@@ -20,33 +19,17 @@ func SpawnStartingConsumables(em common.EntityManager, gm *worldmap.GameMap) {
 	spawnChance := 30
 
 	for _, room := range gm.Rooms {
-
 		roll := common.RandomInt(spawnChance + 1)
 
 		if roll < spawnChance {
-
 			x, y := room.Center()
+			pos := coords.LogicalPosition{X: x + 1, Y: y + 1}
 
 			randInd := common.RandomInt(len(entitytemplates.ConsumableTemplates))
+			template := entitytemplates.ConsumableTemplates[randInd]
 
-			wep := entitytemplates.CreateEntityFromTemplate(em, entitytemplates.EntityConfig{
-				Type:      entitytemplates.EntityConsumable,
-				Name:      entitytemplates.ConsumableTemplates[randInd].Name,
-				ImagePath: entitytemplates.ConsumableTemplates[randInd].ImgName,
-				AssetDir:  "../assets/items/",
-				Visible:   false,
-				Position:  nil,
-			}, entitytemplates.ConsumableTemplates[randInd])
-
-			common.GetComponentType[*rendering.Renderable](wep, rendering.RenderableComponent).Visible = true
-
-			pos := common.GetPosition(wep)
-
-			pos.X = x + 1
-			pos.Y = y + 1
-
-			gm.AddEntityToTile(wep, pos)
-
+			// Use type-specific factory - handles ALL entity construction
+			entitytemplates.CreateConsumable(em, gm, pos, template)
 		}
 	}
 }
