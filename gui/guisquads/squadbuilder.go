@@ -109,7 +109,7 @@ func (sbm *SquadBuilderMode) buildUI() {
 			sbm.updateUnitDetails()
 		}
 	}, func() *squads.UnitRoster {
-		return squads.GetPlayerRoster(sbm.Context.PlayerData.PlayerEntityID, sbm.Context.ECSManager)
+		return squads.GetPlayerRoster(sbm.Context.PlayerData.PlayerEntityID, sbm.Queries.ECSManager)
 	})
 	sbm.RootContainer.AddChild(sbm.unitPalette)
 
@@ -177,7 +177,7 @@ func (sbm *SquadBuilderMode) placeRosterUnitInCell(row, col int, rosterEntry *sq
 	}
 
 	// Get an available unit entity from the roster
-	roster := squads.GetPlayerRoster(sbm.Context.PlayerData.PlayerEntityID, sbm.Context.ECSManager)
+	roster := squads.GetPlayerRoster(sbm.Context.PlayerData.PlayerEntityID, sbm.Queries.ECSManager)
 	if roster == nil {
 		fmt.Printf("Failed to get roster\n")
 		return
@@ -356,7 +356,7 @@ func (sbm *SquadBuilderMode) onCreateSquad() {
 	fmt.Printf("Squad created: %s with %d units\n", sbm.currentSquadName, unitCount)
 
 	// Get visualization
-	visualization := squads.VisualizeSquad(sbm.currentSquadID, sbm.Context.ECSManager)
+	visualization := squads.VisualizeSquad(sbm.currentSquadID, sbm.Queries.ECSManager)
 	fmt.Println(visualization)
 
 	// Clear the builder for next squad

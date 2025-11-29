@@ -49,7 +49,7 @@ func (em *ExplorationMode) Initialize(ctx *core.UIContext) error {
 		em.PanelBuilders,
 		em.Layout,
 		"stats_panel",
-		em.Context.PlayerData.PlayerAttributes(em.Context.ECSManager).DisplayString(),
+		em.Context.PlayerData.PlayerAttributes(em.Queries.ECSManager).DisplayString(),
 	)
 	em.RootContainer.AddChild(em.statsPanel)
 
@@ -148,7 +148,7 @@ func (em *ExplorationMode) Enter(fromMode core.UIMode) error {
 
 	// Refresh player stats using component
 	if em.statsComponent != nil && em.Context.PlayerData != nil {
-		em.statsComponent.RefreshStats(em.Context.PlayerData, em.Context.ECSManager)
+		em.statsComponent.RefreshStats(em.Context.PlayerData, em.Queries.ECSManager)
 	}
 
 	return nil

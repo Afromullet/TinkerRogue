@@ -314,7 +314,7 @@ func (upm *UnitPurchaseMode) purchaseUnit() {
 
 	// Create and execute purchase command
 	cmd := squadcommands.NewPurchaseUnitCommand(
-		upm.Context.ECSManager,
+		upm.Queries.ECSManager,
 		upm.purchaseService,
 		playerID,
 		*upm.selectedTemplate,

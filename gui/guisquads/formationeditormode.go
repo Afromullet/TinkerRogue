@@ -62,12 +62,12 @@ func (fem *FormationEditorMode) Initialize(ctx *core.UIContext) error {
 
 func (fem *FormationEditorMode) buildSquadSelector() {
 	// Get all squads from ECS
-	allSquadIDs := squads.FindAllSquads(fem.Context.ECSManager)
+	allSquadIDs := squads.FindAllSquads(fem.Queries.ECSManager)
 
 	// Create squad selection list using helper
 	fem.squadSelector = widgets.CreateSquadList(widgets.SquadListConfig{
 		SquadIDs:      allSquadIDs,
-		Manager:       fem.Context.ECSManager,
+		Manager:       fem.Queries.ECSManager,
 		ScreenWidth:   fem.Layout.ScreenWidth,
 		ScreenHeight:  fem.Layout.ScreenHeight,
 		WidthPercent:  widgets.PanelWidthStandard,
@@ -75,7 +75,7 @@ func (fem *FormationEditorMode) buildSquadSelector() {
 		OnSelect: func(squadID ecs.EntityID) {
 			fem.currentSquadID = squadID
 			fem.loadSquadFormation(squadID)
-			squadName := squads.GetSquadName(squadID, fem.Context.ECSManager)
+			squadName := squads.GetSquadName(squadID, fem.Queries.ECSManager)
 			fem.SetStatus(fmt.Sprintf("Selected squad: %s", squadName))
 		},
 	})
@@ -194,11 +194,11 @@ func (fem *FormationEditorMode) loadSquadFormation(squadID ecs.EntityID) {
 	}
 
 	// Get units in squad and their grid positions
-	unitIDs := squads.GetUnitIDsInSquad(squadID, fem.Context.ECSManager)
+	unitIDs := squads.GetUnitIDsInSquad(squadID, fem.Queries.ECSManager)
 
 	for _, unitID := range unitIDs {
 		// Get grid position component
-		entity := common.FindEntityByIDWithTag(fem.Context.ECSManager, unitID, squads.SquadMemberTag)
+		entity := common.FindEntityByIDWithTag(fem.Queries.ECSManager, unitID, squads.SquadMemberTag)
 		if entity == nil {
 			continue
 		}
@@ -210,7 +210,7 @@ func (fem *FormationEditorMode) loadSquadFormation(squadID ecs.EntityID) {
 
 		// Get unit name
 		nameStr := "Unit"
-		if nameComp, ok := fem.Context.ECSManager.GetComponent(unitID, common.NameComponent); ok {
+		if nameComp, ok := fem.Queries.ECSManager.GetComponent(unitID, common.NameComponent); ok {
 			if name := nameComp.(*common.Name); name != nil {
 				nameStr = name.NameStr
 			}
@@ -230,7 +230,7 @@ func (fem *FormationEditorMode) onApplyFormation() {
 		return
 	}
 
-	squadName := squads.GetSquadName(fem.currentSquadID, fem.Context.ECSManager)
+	squadName := squads.GetSquadName(fem.currentSquadID, fem.Queries.ECSManager)
 
 	// Show confirmation dialog
 	dialog := widgets.CreateConfirmationDialog(widgets.DialogConfig{
@@ -246,7 +246,7 @@ func (fem *FormationEditorMode) onApplyFormation() {
 
 			// Create and execute command
 			cmd := squadcommands.NewChangeFormationCommand(
-				fem.Context.ECSManager,
+				fem.Queries.ECSManager,
 				fem.currentSquadID,
 				formation,
 			)
@@ -268,7 +268,7 @@ func (fem *FormationEditorMode) buildFormationAssignments() ([]squadcommands.For
 	}
 
 	// Get all units in squad
-	unitIDs := squads.GetUnitIDsInSquad(fem.currentSquadID, fem.Context.ECSManager)
+	unitIDs := squads.GetUnitIDsInSquad(fem.currentSquadID, fem.Queries.ECSManager)
 	if len(unitIDs) == 0 {
 		return nil, fmt.Errorf("squad has no units")
 	}
@@ -277,7 +277,7 @@ func (fem *FormationEditorMode) buildFormationAssignments() ([]squadcommands.For
 	unitNameToID := make(map[string]ecs.EntityID)
 	for _, unitID := range unitIDs {
 		nameStr := "Unit"
-		if nameComp, ok := fem.Context.ECSManager.GetComponent(unitID, common.NameComponent); ok {
+		if nameComp, ok := fem.Queries.ECSManager.GetComponent(unitID, common.NameComponent); ok {
 			if name := nameComp.(*common.Name); name != nil {
 				nameStr = name.NameStr
 			}
