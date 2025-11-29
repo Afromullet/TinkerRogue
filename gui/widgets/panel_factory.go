@@ -108,7 +108,7 @@ var StandardPanels = map[string]PanelSpec{
 	"options_list": {
 		Name:     "Options List",
 		Position: Center(),
-		Width:    PanelWidthMedium,
+		Width:    0.25, // Reduced from PanelWidthMedium (0.30) to 0.25 to eliminate 5% overlap with info_detail (creates 5% gap)
 		Height:   PanelHeightHalf,
 		Padding:  0, // Uses default padding from BuildPanel
 		Layout:   RowLayout(),
@@ -135,8 +135,8 @@ var StandardPanels = map[string]PanelSpec{
 	},
 	"combat_log": {
 		Name:     "Combat Log",
-		Position: BottomRight(), // Position at bottom-right to avoid overlapping with bottom-center buttons
-		Width:    PanelWidthExtraWide,
+		Position: BottomRight(), // Position at bottom-right with 24% width to avoid overlapping with 50% bottom-center buttons (1% gap: 75% vs 76%)
+		Width:    0.24, // Reduced from 0.45 to 0.24 to eliminate overlap (action_buttons end at 75%, this starts at 76%)
 		Height:   CombatLogHeight,
 		Padding:  PaddingTight,
 		Layout:   AnchorLayout(),

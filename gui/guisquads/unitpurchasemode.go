@@ -68,8 +68,8 @@ func (upm *UnitPurchaseMode) Initialize(ctx *core.UIContext) error {
 }
 
 func (upm *UnitPurchaseMode) buildUnitList() {
-	// Left side unit list (40% width)
-	listWidth := int(float64(upm.Layout.ScreenWidth) * 0.4)
+	// Left side unit list (35% width to prevent overlap with 25% top-center resource display)
+	listWidth := int(float64(upm.Layout.ScreenWidth) * 0.35)
 	listHeight := int(float64(upm.Layout.ScreenHeight) * 0.7)
 
 	upm.unitList = widgets.CreateListWithConfig(widgets.ListConfig{
@@ -110,9 +110,9 @@ func (upm *UnitPurchaseMode) buildUnitList() {
 }
 
 func (upm *UnitPurchaseMode) buildDetailPanel() {
-	// Right side detail panel
-	panelWidth := int(float64(upm.Layout.ScreenWidth) * 0.45)
-	panelHeight := int(float64(upm.Layout.ScreenHeight) * 0.7)
+	// Right side detail panel (35% width to prevent overlap with 25% top-center resource display)
+	panelWidth := int(float64(upm.Layout.ScreenWidth) * 0.35)
+	panelHeight := int(float64(upm.Layout.ScreenHeight) * 0.6)
 
 	upm.detailPanel = widgets.CreatePanelWithConfig(widgets.PanelConfig{
 		MinWidth:  panelWidth,
@@ -129,7 +129,6 @@ func (upm *UnitPurchaseMode) buildDetailPanel() {
 			VerticalPosition:   widget.AnchorLayoutPositionCenter,
 			Padding: widget.Insets{
 				Right: int(float64(upm.Layout.ScreenWidth) * widgets.PaddingStandard),
-				Top:   int(float64(upm.Layout.ScreenHeight) * 0.1),
 			},
 		},
 	})
@@ -166,10 +165,13 @@ func (upm *UnitPurchaseMode) buildDetailPanel() {
 }
 
 func (upm *UnitPurchaseMode) buildResourceDisplay() {
-	// Top-right resource display
+	// Top-center resource display (responsive sizing)
+	panelWidth := int(float64(upm.Layout.ScreenWidth) * 0.25)
+	panelHeight := int(float64(upm.Layout.ScreenHeight) * 0.08)
+
 	resourcePanel := widgets.CreatePanelWithConfig(widgets.PanelConfig{
-		MinWidth:  300,
-		MinHeight: 100,
+		MinWidth:  panelWidth,
+		MinHeight: panelHeight,
 		Layout: widget.NewRowLayout(
 			widget.RowLayoutOpts.Direction(widget.DirectionVertical),
 			widget.RowLayoutOpts.Spacing(5),
@@ -178,11 +180,10 @@ func (upm *UnitPurchaseMode) buildResourceDisplay() {
 			}),
 		),
 		LayoutData: widget.AnchorLayoutData{
-			HorizontalPosition: widget.AnchorLayoutPositionEnd,
+			HorizontalPosition: widget.AnchorLayoutPositionCenter,
 			VerticalPosition:   widget.AnchorLayoutPositionStart,
 			Padding: widget.Insets{
-				Right: int(float64(upm.Layout.ScreenWidth) * widgets.PaddingStandard),
-				Top:   20,
+				Top: int(float64(upm.Layout.ScreenHeight) * 0.02),
 			},
 		},
 	})
