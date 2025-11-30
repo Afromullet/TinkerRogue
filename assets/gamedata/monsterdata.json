@@ -24,7 +24,9 @@
       "targetCells": null,
       "coverValue": 0.20,
       "coverRange": 1,
-      "requiresActive": true
+      "requiresActive": true,
+      "attackRange": 1,
+      "movementSpeed": 3
     },
     {
       "name": "OrcBerserker",
@@ -50,7 +52,9 @@
       "targetCells": [[0, 0], [0, 1]],
       "coverValue": 0.0,
       "coverRange": 0,
-      "requiresActive": false
+      "requiresActive": false,
+      "attackRange": 1,
+      "movementSpeed": 3
     },
     {
       "name": "SkeletonWarrior",
@@ -76,7 +80,9 @@
       "targetCells": null,
       "coverValue": 0.30,
       "coverRange": 1,
-      "requiresActive": true
+      "requiresActive": true,
+      "attackRange": 1,
+      "movementSpeed": 2
     },
     {
       "name": "DarkArcher",
@@ -102,7 +108,9 @@
       "targetCells": null,
       "coverValue": 0.0,
       "coverRange": 0,
-      "requiresActive": false
+      "requiresActive": false,
+      "attackRange": 3,
+      "movementSpeed": 3
     },
     {
       "name": "GoblinSharpshooter",
@@ -128,7 +136,9 @@
       "targetCells": [[1, 1]],
       "coverValue": 0.0,
       "coverRange": 0,
-      "requiresActive": false
+      "requiresActive": false,
+      "attackRange": 3,
+      "movementSpeed": 3
     },
     {
       "name": "FireElemental",
@@ -154,7 +164,9 @@
       "targetCells": [[0, 0], [1, 0], [2, 0]],
       "coverValue": 0.0,
       "coverRange": 0,
-      "requiresActive": false
+      "requiresActive": false,
+      "attackRange": 2,
+      "movementSpeed": 4
     },
     {
       "name": "FrostMage",
@@ -180,7 +192,9 @@
       "targetCells": [[0, 0], [0, 1], [0, 2], [1, 0], [1, 1], [1, 2]],
       "coverValue": 0.15,
       "coverRange": 1,
-      "requiresActive": true
+      "requiresActive": true,
+      "attackRange": 4,
+      "movementSpeed": 2
     },
     {
       "name": "NecromancerLord",
@@ -206,7 +220,9 @@
       "targetCells": null,
       "coverValue": 0.0,
       "coverRange": 0,
-      "requiresActive": false
+      "requiresActive": false,
+      "attackRange": 4,
+      "movementSpeed": 2
     },
     {
       "name": "TrollChampion",
@@ -232,7 +248,9 @@
       "targetCells": null,
       "coverValue": 0.40,
       "coverRange": 2,
-      "requiresActive": true
+      "requiresActive": true,
+      "attackRange": 1,
+      "movementSpeed": 2
     },
     {
       "name": "DragonWhelp",
@@ -258,7 +276,9 @@
       "targetCells": [[0, 0], [0, 1], [1, 0], [1, 1]],
       "coverValue": 0.0,
       "coverRange": 0,
-      "requiresActive": false
+      "requiresActive": false,
+      "attackRange": 2,
+      "movementSpeed": 5
     },
     {
       "name": "ShadowAssassin",
@@ -284,7 +304,9 @@
       "targetCells": [[2, 1]],
       "coverValue": 0.0,
       "coverRange": 0,
-      "requiresActive": false
+      "requiresActive": false,
+      "attackRange": 2,
+      "movementSpeed": 5
     },
     {
       "name": "DwarvenShieldbearer",
@@ -310,7 +332,9 @@
       "targetCells": null,
       "coverValue": 0.50,
       "coverRange": 2,
-      "requiresActive": true
+      "requiresActive": true,
+      "attackRange": 1,
+      "movementSpeed": 2
     },
     {
       "name": "LightningWizard",
@@ -336,7 +360,9 @@
       "targetCells": [[0, 0], [1, 0], [2, 0]],
       "coverValue": 0.0,
       "coverRange": 0,
-      "requiresActive": false
+      "requiresActive": false,
+      "attackRange": 4,
+      "movementSpeed": 2
     },
     {
       "name": "HolyPaladin",
@@ -362,7 +388,9 @@
       "targetCells": null,
       "coverValue": 0.35,
       "coverRange": 1,
-      "requiresActive": true
+      "requiresActive": true,
+      "attackRange": 1,
+      "movementSpeed": 2
     },
     {
       "name": "VenomSpider",
@@ -388,7 +416,9 @@
       "targetCells": [[1, 1], [2, 1]],
       "coverValue": 0.0,
       "coverRange": 0,
-      "requiresActive": false
+      "requiresActive": false,
+      "attackRange": 2,
+      "movementSpeed": 4
     },
     {
       "name": "BattlePriest",
@@ -414,7 +444,9 @@
       "targetCells": [[0, 1], [1, 1], [2, 1]],
       "coverValue": 0.25,
       "coverRange": 1,
-      "requiresActive": true
+      "requiresActive": true,
+      "attackRange": 2,
+      "movementSpeed": 3
     },
     {
       "name": "GoblinScout",
@@ -440,7 +472,9 @@
       "targetCells": [[2, 2]],
       "coverValue": 0.0,
       "coverRange": 0,
-      "requiresActive": false
+      "requiresActive": false,
+      "attackRange": 2,
+      "movementSpeed": 5
     },
     {
       "name": "GoblinWitchdoctor",
@@ -466,7 +500,9 @@
       "targetCells": [[1, 0], [1, 1], [1, 2]],
       "coverValue": 0.0,
       "coverRange": 0,
-      "requiresActive": false
+      "requiresActive": false,
+      "attackRange": 4,
+      "movementSpeed": 2
     },
     {
       "name": "GoblinBrute",
@@ -492,7 +528,9 @@
       "targetCells": null,
       "coverValue": 0.25,
       "coverRange": 1,
-      "requiresActive": true
+      "requiresActive": true,
+      "attackRange": 1,
+      "movementSpeed": 2
     },
     {
       "name": "GoblinArcher",
@@ -518,7 +556,9 @@
       "targetCells": null,
       "coverValue": 0.0,
       "coverRange": 0,
-      "requiresActive": false
+      "requiresActive": false,
+      "attackRange": 3,
+      "movementSpeed": 3
     },
     {
       "name": "GoblinBoss",
@@ -544,7 +584,9 @@
       "targetCells": null,
       "coverValue": 0.40,
       "coverRange": 2,
-      "requiresActive": true
+      "requiresActive": true,
+      "attackRange": 1,
+      "movementSpeed": 3
     },
     {
       "name": "GoblinTinkerer",
@@ -570,7 +612,9 @@
       "targetCells": [[0, 0], [0, 1], [0, 2]],
       "coverValue": 0.1,
       "coverRange": 1,
-      "requiresActive": true
+      "requiresActive": true,
+      "attackRange": 3,
+      "movementSpeed": 2
     }
   ]
 }
