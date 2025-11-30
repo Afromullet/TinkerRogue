@@ -23,8 +23,8 @@ func CheckAndTriggerAbilities(squadID ecs.EntityID, ecsmanager *common.EntityMan
 		return
 	}
 
-	abilityData := common.GetComponentTypeByIDWithTag[*AbilitySlotData](ecsmanager, leaderID, SquadMemberTag, AbilitySlotComponent)
-	cooldownData := common.GetComponentTypeByIDWithTag[*CooldownTrackerData](ecsmanager, leaderID, SquadMemberTag, CooldownTrackerComponent)
+	abilityData := common.GetComponentTypeByID[*AbilitySlotData](ecsmanager, leaderID, AbilitySlotComponent)
+	cooldownData := common.GetComponentTypeByID[*CooldownTrackerData](ecsmanager, leaderID, CooldownTrackerComponent)
 
 	// Check each ability slot
 	for i := 0; i < 4; i++ {
@@ -283,7 +283,7 @@ func EquipAbilityToLeader(
 	params := GetAbilityParams(abilityType)
 
 	// Update ability slot
-	abilityData := common.GetComponentTypeByIDWithTag[*AbilitySlotData](ecsmanager, leaderEntityID, SquadMemberTag, AbilitySlotComponent)
+	abilityData := common.GetComponentTypeByID[*AbilitySlotData](ecsmanager, leaderEntityID, AbilitySlotComponent)
 	if abilityData == nil {
 		return fmt.Errorf("leader entity not found")
 	}
@@ -297,7 +297,7 @@ func EquipAbilityToLeader(
 	}
 
 	// Update cooldown tracker
-	cooldownData := common.GetComponentTypeByIDWithTag[*CooldownTrackerData](ecsmanager, leaderEntityID, SquadMemberTag, CooldownTrackerComponent)
+	cooldownData := common.GetComponentTypeByID[*CooldownTrackerData](ecsmanager, leaderEntityID, CooldownTrackerComponent)
 	if cooldownData != nil {
 		cooldownData.MaxCooldowns[slotIndex] = params.BaseCooldown
 		cooldownData.Cooldowns[slotIndex] = 0

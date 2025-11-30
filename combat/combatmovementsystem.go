@@ -165,7 +165,7 @@ func (ms *CombatMovementSystem) GetValidMovementTiles(squadID ecs.EntityID) []co
 
 func (ms *CombatMovementSystem) GetSquadPosition(squadID ecs.EntityID) (coords.LogicalPosition, error) {
 	// Get position directly from PositionComponent (NO MORE MAPPOSITION DUPLICATION!)
-	pos := common.GetComponentTypeByIDWithTag[*coords.LogicalPosition](ms.manager, squadID, squads.SquadTag, common.PositionComponent)
+	pos := common.GetComponentTypeByID[*coords.LogicalPosition](ms.manager, squadID, common.PositionComponent)
 	if pos == nil {
 		return coords.LogicalPosition{}, fmt.Errorf("squad %d has no position component", squadID)
 	}

@@ -190,7 +190,7 @@ func (ss *SquadService) GetSquadInfo(squadID ecs.EntityID) *GetSquadInfoResult {
 		SquadID: squadID,
 	}
 
-	squadData := common.GetComponentTypeByIDWithTag[*squads.SquadData](ss.entityManager, squadID, squads.SquadTag, squads.SquadComponent)
+	squadData := common.GetComponentTypeByID[*squads.SquadData](ss.entityManager, squadID, squads.SquadComponent)
 	if squadData == nil {
 		return result
 	}

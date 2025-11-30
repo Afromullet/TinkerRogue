@@ -90,7 +90,7 @@ func RemoveUnitFromSquad(unitEntityID ecs.EntityID, squadmanager *common.EntityM
 	}
 
 	// Get the squad ID before removing to update capacity
-	memberData := common.GetComponentTypeByIDWithTag[*SquadMemberData](squadmanager, unitEntityID, SquadMemberTag, SquadMemberComponent)
+	memberData := common.GetComponentTypeByID[*SquadMemberData](squadmanager, unitEntityID, SquadMemberComponent)
 	if memberData == nil {
 		return fmt.Errorf("unit entity not found")
 	}
@@ -116,7 +116,7 @@ func MoveUnitInSquad(unitEntityID ecs.EntityID, newRow, newCol int, ecsmanager *
 		return fmt.Errorf("unit is not in a squad")
 	}
 
-	gridPosData := common.GetComponentTypeByIDWithTag[*GridPositionData](ecsmanager, unitEntityID, SquadMemberTag, GridPositionComponent)
+	gridPosData := common.GetComponentTypeByID[*GridPositionData](ecsmanager, unitEntityID, GridPositionComponent)
 	if gridPosData == nil {
 		return fmt.Errorf("unit entity not found")
 	}
@@ -132,7 +132,7 @@ func MoveUnitInSquad(unitEntityID ecs.EntityID, newRow, newCol int, ecsmanager *
 			newRow, newCol, gridPosData.Width, gridPosData.Height)
 	}
 
-	memberData := common.GetComponentTypeByIDWithTag[*SquadMemberData](ecsmanager, unitEntityID, SquadMemberTag, SquadMemberComponent)
+	memberData := common.GetComponentTypeByID[*SquadMemberData](ecsmanager, unitEntityID, SquadMemberComponent)
 
 	// Check if ANY cell at new position is occupied (excluding this unit itself)
 	for r := newRow; r < newRow+gridPosData.Height; r++ {

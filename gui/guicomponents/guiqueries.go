@@ -115,7 +115,7 @@ func (gq *GUIQueries) GetSquadInfo(squadID ecs.EntityID) *SquadInfo {
 	var factionID ecs.EntityID
 
 	// Get position from PositionComponent
-	squadPos := common.GetComponentTypeByIDWithTag[*coords.LogicalPosition](gq.ECSManager, squadID, squads.SquadTag, common.PositionComponent)
+	squadPos := common.GetComponentTypeByID[*coords.LogicalPosition](gq.ECSManager, squadID, common.PositionComponent)
 	if squadPos != nil {
 		pos := *squadPos
 		position = &pos

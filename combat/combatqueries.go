@@ -83,7 +83,7 @@ func getFactionOwner(squadID ecs.EntityID, manager *common.EntityManager) ecs.En
 
 // getSquadMapPosition returns the current map position of a squad
 func getSquadMapPosition(squadID ecs.EntityID, manager *common.EntityManager) (coords.LogicalPosition, error) {
-	pos := common.GetComponentTypeByIDWithTag[*coords.LogicalPosition](manager, squadID, squads.SquadTag, common.PositionComponent)
+	pos := common.GetComponentTypeByID[*coords.LogicalPosition](manager, squadID, common.PositionComponent)
 	if pos == nil {
 		return coords.LogicalPosition{}, fmt.Errorf("squad %d has no position", squadID)
 	}

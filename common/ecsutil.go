@@ -180,16 +180,18 @@ func GetPositionByID(manager *EntityManager, entityID ecs.EntityID) *coords.Logi
 	return GetComponentTypeByID[*coords.LogicalPosition](manager, entityID, PositionComponent)
 }
 
-// GetAttributesByIDWithTag returns the Attributes component by entity ID within a tag query.
+// GetAttributesByIDWithTag returns the Attributes component by entity ID.
 // Returns nil if entity not found or doesn't have the component.
+// Note: Tag parameter is deprecated but kept for backward compatibility - it is ignored.
 func GetAttributesByIDWithTag(manager *EntityManager, entityID ecs.EntityID, tag ecs.Tag) *Attributes {
-	return GetComponentTypeByIDWithTag[*Attributes](manager, entityID, tag, AttributeComponent)
+	return GetComponentTypeByID[*Attributes](manager, entityID, AttributeComponent)
 }
 
-// GetPositionByIDWithTag returns the Position component by entity ID within a tag query.
+// GetPositionByIDWithTag returns the Position component by entity ID.
 // Returns nil if entity not found or doesn't have the component.
+// Note: Tag parameter is deprecated but kept for backward compatibility - it is ignored.
 func GetPositionByIDWithTag(manager *EntityManager, entityID ecs.EntityID, tag ecs.Tag) *coords.LogicalPosition {
-	return GetComponentTypeByIDWithTag[*coords.LogicalPosition](manager, entityID, tag, PositionComponent)
+	return GetComponentTypeByID[*coords.LogicalPosition](manager, entityID, PositionComponent)
 }
 
 // GetCreatureAtPosition finds the first monster entity ID at the specified position.

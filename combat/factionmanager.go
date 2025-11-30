@@ -63,7 +63,7 @@ func (fm *FactionManager) AddSquadToFaction(factionID, squadID ecs.EntityID, pos
 		common.GlobalPositionSystem.AddEntity(squadID, position)
 	} else {
 		// Squad already has position - move it atomically
-		oldPos := common.GetComponentTypeByIDWithTag[*coords.LogicalPosition](fm.manager, squadID, squads.SquadTag, common.PositionComponent)
+		oldPos := common.GetComponentTypeByID[*coords.LogicalPosition](fm.manager, squadID, common.PositionComponent)
 		if oldPos != nil {
 			// Use MoveEntity to synchronize position component and position system
 			err := fm.manager.MoveEntity(squadID, squad, *oldPos, position)

@@ -251,7 +251,7 @@ func GetSquadMovementSpeed(squadID ecs.EntityID, squadmanager *common.EntityMana
 			continue
 		}
 
-		speedData := common.GetComponentTypeByIDWithTag[*MovementSpeedData](squadmanager, unitID, SquadMemberTag, MovementSpeedComponent)
+		speedData := common.GetComponentTypeByID[*MovementSpeedData](squadmanager, unitID, MovementSpeedComponent)
 		if speedData != nil && speedData.Speed < minSpeed {
 			minSpeed = speedData.Speed
 			foundValidUnit = true

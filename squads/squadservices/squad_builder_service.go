@@ -160,7 +160,7 @@ type SquadCapacityInfo struct {
 func (sbs *SquadBuilderService) GetCapacityInfo(squadID ecs.EntityID) *SquadCapacityInfo {
 	info := &SquadCapacityInfo{}
 
-	squadData := common.GetComponentTypeByIDWithTag[*squads.SquadData](sbs.entityManager, squadID, squads.SquadTag, squads.SquadComponent)
+	squadData := common.GetComponentTypeByID[*squads.SquadData](sbs.entityManager, squadID, squads.SquadComponent)
 	if squadData == nil {
 		return info
 	}
@@ -215,7 +215,7 @@ func (sbs *SquadBuilderService) ValidateSquad(squadID ecs.EntityID) *ValidateSqu
 	}
 
 	// Check squad name
-	squadData := common.GetComponentTypeByIDWithTag[*squads.SquadData](sbs.entityManager, squadID, squads.SquadTag, squads.SquadComponent)
+	squadData := common.GetComponentTypeByID[*squads.SquadData](sbs.entityManager, squadID, squads.SquadComponent)
 	if squadData == nil || squadData.Name == "" {
 		result.ErrorMsg = "Squad must have a name"
 		return result
@@ -231,7 +231,7 @@ func (sbs *SquadBuilderService) UpdateSquadName(squadID ecs.EntityID, newName st
 		return false
 	}
 
-	squadData := common.GetComponentTypeByIDWithTag[*squads.SquadData](sbs.entityManager, squadID, squads.SquadTag, squads.SquadComponent)
+	squadData := common.GetComponentTypeByID[*squads.SquadData](sbs.entityManager, squadID, squads.SquadComponent)
 	if squadData == nil {
 		return false
 	}
@@ -263,7 +263,7 @@ func (sbs *SquadBuilderService) FinalizeSquad(squadID ecs.EntityID) *FinalizeSqu
 	}
 
 	// Get squad data
-	squadData := common.GetComponentTypeByIDWithTag[*squads.SquadData](sbs.entityManager, squadID, squads.SquadTag, squads.SquadComponent)
+	squadData := common.GetComponentTypeByID[*squads.SquadData](sbs.entityManager, squadID, squads.SquadComponent)
 	if squadData == nil {
 		result.Error = "squad not found"
 		return result

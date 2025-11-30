@@ -1,6 +1,6 @@
 # TinkerRogue Developer Guide
 
-**Last Updated:** 2025-11-23
+**Last Updated:** 2025-11-30
 
 Quick reference for working with TinkerRogue. For detailed ECS patterns, see `docs/ecs_best_practices.md`.
 
@@ -74,11 +74,13 @@ package_name/
 
 ### Common Patterns
 ```go
-// Component access
+// Component access from entity
 data := common.GetComponentType[*SquadData](entity, SquadComponent)
-data := common.GetComponentTypeByIDWithTag[*SquadData](manager, entityID, tag, component)
 
-// Query pattern
+// Component access by ID (when needed)
+data := common.GetComponentTypeByID[*SquadData](manager, entityID, component)
+
+// Query pattern (preferred)
 for _, result := range manager.World.Query(SquadTag) {
     entity := result.Entity
     data := common.GetComponentType[*SquadData](entity, SquadComponent)
@@ -89,6 +91,39 @@ common.GlobalPositionSystem.AddEntity(entityID, logicalPos)
 common.GlobalPositionSystem.RemoveEntity(entityID, logicalPos)
 entityIDs := common.GlobalPositionSystem.GetEntitiesAtPosition(logicalPos)
 ```
+
+### Component Access Patterns
+
+Use the pattern that best fits your situation:
+
+**Pattern 1: From Query Result (Preferred)**
+
+Use when you already have the entity from a query.
+
+```go
+for _, result := range manager.World.Query(SquadTag) {
+    entity := result.Entity
+    data := common.GetComponentType[*SquadData](entity, SquadComponent)
+}
+```
+
+**Pattern 2: By EntityID (Last Resort)**
+
+Use ONLY when:
+- EntityID is your only input
+- You need component access
+- You're NOT in a performance-critical loop
+
+After CRITICAL #2 (EntityID caching), this becomes O(1):
+
+```go
+entity := manager.GetEntityByID(entityID)
+data := common.GetComponentType[*DataType](entity, SquadComponent)
+```
+
+**Pattern 3: Avoid**
+
+Don't use `GetComponentTypeByIDWithTag` - use Pattern 2 instead (simpler, same performance after caching).
 
 **Reference Implementations:**
 - `squads/` - Perfect ECS example

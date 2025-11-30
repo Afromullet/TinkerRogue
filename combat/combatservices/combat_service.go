@@ -198,8 +198,8 @@ func (cs *CombatService) CheckVictoryCondition() *VictoryCheckResult {
 		entity := queryResult.Entity
 		squadData := common.GetComponentType[*squads.SquadData](entity, squads.SquadComponent)
 		if squadData != nil && !squads.IsSquadDestroyed(entity.GetID(), cs.entityManager) {
-			factionData := common.GetComponentTypeByIDWithTag[*combat.FactionData](
-				cs.entityManager, entity.GetID(), squads.SquadTag, combat.FactionComponent)
+			factionData := common.GetComponentTypeByID[*combat.FactionData](
+				cs.entityManager, entity.GetID(), combat.FactionComponent)
 			if factionData != nil {
 				aliveByFaction[factionData.FactionID]++
 			}
@@ -234,7 +234,7 @@ func (cs *CombatService) GetSquadAtPosition(pos coords.LogicalPosition) ecs.Enti
 
 // getSquadNameByID is a helper to get squad name from ID
 func getSquadNameByID(squadID ecs.EntityID, manager *common.EntityManager) string {
-	squadData := common.GetComponentTypeByIDWithTag[*squads.SquadData](manager, squadID, squads.SquadTag, squads.SquadComponent)
+	squadData := common.GetComponentTypeByID[*squads.SquadData](manager, squadID, squads.SquadComponent)
 	if squadData != nil {
 		return squadData.Name
 	}

@@ -185,7 +185,7 @@ func PlaceSquadOnMap(manager *common.EntityManager, factionID, squadID ecs.Entit
 		common.GlobalPositionSystem.AddEntity(squadID, pos)
 	} else {
 		// Squad already has position - move it atomically
-		oldPos := common.GetComponentTypeByIDWithTag[*coords.LogicalPosition](manager, squadID, squads.SquadTag, common.PositionComponent)
+		oldPos := common.GetComponentTypeByID[*coords.LogicalPosition](manager, squadID, common.PositionComponent)
 		if oldPos != nil {
 			// Use MoveEntity to synchronize position component and position system
 			manager.MoveEntity(squadID, squadEntity, *oldPos, pos)

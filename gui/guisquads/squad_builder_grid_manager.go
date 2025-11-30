@@ -31,7 +31,7 @@ func (gem *GridEditorManager) SetGridCells(cells [3][3]*GridCellButton) {
 // UpdateDisplayForPlacedUnit updates grid display after a unit has been placed (via service)
 func (gem *GridEditorManager) UpdateDisplayForPlacedUnit(unitID ecs.EntityID, unitTemplate *squads.UnitTemplate, row, col int, rosterEntryID ecs.EntityID) error {
 	// Get the unit's grid position component to find all occupied cells
-	gridPosData := common.GetComponentTypeByIDWithTag[*squads.GridPositionData](gem.entityManager, unitID, squads.SquadMemberTag, squads.GridPositionComponent)
+	gridPosData := common.GetComponentTypeByID[*squads.GridPositionData](gem.entityManager, unitID, squads.GridPositionComponent)
 	if gridPosData == nil {
 		return fmt.Errorf("unit has no grid position data")
 	}
@@ -130,7 +130,7 @@ func (gem *GridEditorManager) RefreshGridDisplay() {
 			}
 
 			// Get unit info
-			gridPosData := common.GetComponentTypeByIDWithTag[*squads.GridPositionData](gem.entityManager, cell.unitID, squads.SquadMemberTag, squads.GridPositionComponent)
+			gridPosData := common.GetComponentTypeByID[*squads.GridPositionData](gem.entityManager, cell.unitID, squads.GridPositionComponent)
 			if gridPosData == nil {
 				continue
 			}
@@ -139,14 +139,14 @@ func (gem *GridEditorManager) RefreshGridDisplay() {
 			isAnchor := (gridPosData.AnchorRow == row && gridPosData.AnchorCol == col)
 
 			// Get unit name from name component
-			nameData := common.GetComponentTypeByIDWithTag[*common.Name](gem.entityManager, cell.unitID, squads.SquadMemberTag, common.NameComponent)
+			nameData := common.GetComponentTypeByID[*common.Name](gem.entityManager, cell.unitID, common.NameComponent)
 			unitName := "Unknown"
 			if nameData != nil {
 				unitName = nameData.NameStr
 			}
 
 			// Get unit role
-			roleData := common.GetComponentTypeByIDWithTag[*squads.UnitRoleData](gem.entityManager, cell.unitID, squads.SquadMemberTag, squads.UnitRoleComponent)
+			roleData := common.GetComponentTypeByID[*squads.UnitRoleData](gem.entityManager, cell.unitID, squads.UnitRoleComponent)
 			roleStr := "Unknown"
 			if roleData != nil {
 				roleStr = roleData.Role.String()

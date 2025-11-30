@@ -44,7 +44,7 @@ func VisualizeSquad(squadID ecs.EntityID, squadmanager *common.EntityManager) st
 			continue
 		}
 
-		gridPos := common.GetComponentTypeByIDWithTag[*GridPositionData](squadmanager, unitID, SquadMemberTag, GridPositionComponent)
+		gridPos := common.GetComponentTypeByID[*GridPositionData](squadmanager, unitID, GridPositionComponent)
 		if gridPos == nil {
 			continue
 		}
@@ -136,8 +136,8 @@ func VisualizeSquad(squadID ecs.EntityID, squadmanager *common.EntityManager) st
 	if len(unitIDs) > 0 {
 		output.WriteString("\nUnit Details:\n")
 		for _, unitID := range unitIDs {
-			gridPos := common.GetComponentTypeByIDWithTag[*GridPositionData](squadmanager, unitID, SquadMemberTag, GridPositionComponent)
-			role := common.GetComponentTypeByIDWithTag[*UnitRoleData](squadmanager, unitID, SquadMemberTag, UnitRoleComponent)
+			gridPos := common.GetComponentTypeByID[*GridPositionData](squadmanager, unitID, GridPositionComponent)
+			role := common.GetComponentTypeByID[*UnitRoleData](squadmanager, unitID, UnitRoleComponent)
 
 			if gridPos == nil || role == nil {
 				continue

@@ -45,7 +45,7 @@ func ExecuteSquadAttack(attackerSquadID, defenderSquadID ecs.EntityID, squadmana
 		if !squadmanager.HasComponentByIDWithTag(attackerID, SquadMemberTag, AttackRangeComponent) {
 			continue
 		}
-		rangeData := common.GetComponentTypeByIDWithTag[*AttackRangeData](squadmanager, attackerID, SquadMemberTag, AttackRangeComponent)
+		rangeData := common.GetComponentTypeByID[*AttackRangeData](squadmanager, attackerID, AttackRangeComponent)
 		if rangeData.Range < squadDistance {
 			// Unit is out of range, cannot attack
 			continue
@@ -56,7 +56,7 @@ func ExecuteSquadAttack(attackerSquadID, defenderSquadID ecs.EntityID, squadmana
 			continue
 		}
 
-		targetRowData := common.GetComponentTypeByIDWithTag[*TargetRowData](squadmanager, attackerID, SquadMemberTag, TargetRowComponent)
+		targetRowData := common.GetComponentTypeByID[*TargetRowData](squadmanager, attackerID, TargetRowComponent)
 
 		var actualTargetIDs []ecs.EntityID
 
@@ -251,8 +251,8 @@ func CalculateTotalCover(defenderID ecs.EntityID, squadmanager *common.EntityMan
 	}
 
 	// Get defender's position and squad
-	defenderPos := common.GetComponentTypeByIDWithTag[*GridPositionData](squadmanager, defenderID, SquadMemberTag, GridPositionComponent)
-	defenderSquadData := common.GetComponentTypeByIDWithTag[*SquadMemberData](squadmanager, defenderID, SquadMemberTag, SquadMemberComponent)
+	defenderPos := common.GetComponentTypeByID[*GridPositionData](squadmanager, defenderID, GridPositionComponent)
+	defenderSquadData := common.GetComponentTypeByID[*SquadMemberData](squadmanager, defenderID, SquadMemberComponent)
 	defenderSquadID := defenderSquadData.SquadID
 
 	// Get all units providing cover
@@ -266,7 +266,7 @@ func CalculateTotalCover(defenderID ecs.EntityID, squadmanager *common.EntityMan
 			continue
 		}
 
-		coverData := common.GetComponentTypeByIDWithTag[*CoverData](squadmanager, providerID, SquadMemberTag, CoverComponent)
+		coverData := common.GetComponentTypeByID[*CoverData](squadmanager, providerID, CoverComponent)
 
 		// Check if provider is active (alive and not stunned)
 		isActive := true
@@ -315,14 +315,14 @@ func GetCoverProvidersFor(defenderID ecs.EntityID, defenderSquadID ecs.EntityID,
 			continue
 		}
 
-		coverData := common.GetComponentTypeByIDWithTag[*CoverData](squadmanager, unitID, SquadMemberTag, CoverComponent)
+		coverData := common.GetComponentTypeByID[*CoverData](squadmanager, unitID, CoverComponent)
 
 		// Get unit's position
 		if !squadmanager.HasComponentByIDWithTag(unitID, SquadMemberTag, GridPositionComponent) {
 			continue
 		}
 
-		unitPos := common.GetComponentTypeByIDWithTag[*GridPositionData](squadmanager, unitID, SquadMemberTag, GridPositionComponent)
+		unitPos := common.GetComponentTypeByID[*GridPositionData](squadmanager, unitID, GridPositionComponent)
 
 		// Check if unit is in front of defender (lower row number)
 		// Unit must be at least 1 row in front to provide cover
@@ -365,7 +365,7 @@ func displayCombatResult(result *CombatResult, squadmanager *common.EntityManage
 
 	// ✅ Result uses native entity IDs
 	for unitID, dmg := range result.DamageByUnit {
-		name := common.GetComponentTypeByIDWithTag[*common.Name](squadmanager, unitID, SquadMemberTag, common.NameComponent)
+		name := common.GetComponentTypeByID[*common.Name](squadmanager, unitID, common.NameComponent)
 		if name == nil {
 			continue
 		}
@@ -390,7 +390,7 @@ func displaySquadStatus(squadID ecs.EntityID, squadmanager *common.EntityManager
 
 		if attr.CurrentHealth > 0 {
 			alive++
-			name := common.GetComponentTypeByIDWithTag[*common.Name](squadmanager, unitID, SquadMemberTag, common.NameComponent)
+			name := common.GetComponentTypeByID[*common.Name](squadmanager, unitID, common.NameComponent)
 			fmt.Printf("  %s: %d/%d HP\n", name.NameStr, attr.CurrentHealth, attr.MaxHealth)
 		}
 	}
