@@ -121,15 +121,11 @@ func (cmd *ChangeFormationCommand) Execute() error {
 
 	// Apply new formation
 	for _, assignment := range cmd.newFormation {
-		unitEntity := common.FindEntityByIDWithTag(cmd.entityManager, assignment.UnitID, squads.SquadMemberTag)
-		if unitEntity == nil {
-			return fmt.Errorf("unit %d not found during execution", assignment.UnitID)
-		}
-
 		// Update grid position
-		gridPos := common.GetComponentType[*squads.GridPositionData](unitEntity, squads.GridPositionComponent)
+		gridPos := common.GetComponentTypeByIDWithTag[*squads.GridPositionData](
+			cmd.entityManager, assignment.UnitID, squads.SquadMemberTag, squads.GridPositionComponent)
 		if gridPos == nil {
-			return fmt.Errorf("unit %d has no grid position component", assignment.UnitID)
+			return fmt.Errorf("unit %d not found or has no grid position component", assignment.UnitID)
 		}
 
 		gridPos.AnchorRow = assignment.GridRow
@@ -147,18 +143,16 @@ func (cmd *ChangeFormationCommand) Undo() error {
 
 	// Restore old positions
 	for _, assignment := range cmd.oldFormation {
-		unitEntity := common.FindEntityByIDWithTag(cmd.entityManager, assignment.UnitID, squads.SquadMemberTag)
-		if unitEntity == nil {
+		// Restore grid position
+		gridPos := common.GetComponentTypeByIDWithTag[*squads.GridPositionData](
+			cmd.entityManager, assignment.UnitID, squads.SquadMemberTag, squads.GridPositionComponent)
+		if gridPos == nil {
 			// Unit might have been removed - skip it
 			continue
 		}
 
-		// Restore grid position
-		gridPos := common.GetComponentType[*squads.GridPositionData](unitEntity, squads.GridPositionComponent)
-		if gridPos != nil {
-			gridPos.AnchorRow = assignment.GridRow
-			gridPos.AnchorCol = assignment.GridCol
-		}
+		gridPos.AnchorRow = assignment.GridRow
+		gridPos.AnchorCol = assignment.GridCol
 	}
 
 	return nil

@@ -119,19 +119,16 @@ func (cmd *MergeSquadsCommand) Execute() error {
 
 	// Move each unit
 	for i, unitID := range sourceUnitIDs {
-		unitEntity := common.FindEntityByIDWithTag(cmd.entityManager, unitID, squads.SquadMemberTag)
-		if unitEntity == nil {
-			continue
-		}
-
 		// Update squad membership
-		memberData := common.GetComponentType[*squads.SquadMemberData](unitEntity, squads.SquadMemberComponent)
+		memberData := common.GetComponentTypeByIDWithTag[*squads.SquadMemberData](
+			cmd.entityManager, unitID, squads.SquadMemberTag, squads.SquadMemberComponent)
 		if memberData != nil {
 			memberData.SquadID = cmd.targetSquadID
 		}
 
 		// Update grid position to empty slot in target
-		gridPos := common.GetComponentType[*squads.GridPositionData](unitEntity, squads.GridPositionComponent)
+		gridPos := common.GetComponentTypeByIDWithTag[*squads.GridPositionData](
+			cmd.entityManager, unitID, squads.SquadMemberTag, squads.GridPositionComponent)
 		if gridPos != nil && i < len(emptyPositions) {
 			gridPos.AnchorRow = emptyPositions[i][0]
 			gridPos.AnchorCol = emptyPositions[i][1]
@@ -188,19 +185,16 @@ func (cmd *MergeSquadsCommand) Undo() error {
 
 	// Move units back to source squad
 	for _, unitState := range cmd.savedSourceUnits {
-		unitEntity := common.FindEntityByIDWithTag(cmd.entityManager, unitState.unitID, squads.SquadMemberTag)
-		if unitEntity == nil {
-			continue
-		}
-
 		// Update squad membership back to source
-		memberData := common.GetComponentType[*squads.SquadMemberData](unitEntity, squads.SquadMemberComponent)
+		memberData := common.GetComponentTypeByIDWithTag[*squads.SquadMemberData](
+			cmd.entityManager, unitState.unitID, squads.SquadMemberTag, squads.SquadMemberComponent)
 		if memberData != nil {
 			memberData.SquadID = newSourceSquadID
 		}
 
 		// Restore original grid position
-		gridPos := common.GetComponentType[*squads.GridPositionData](unitEntity, squads.GridPositionComponent)
+		gridPos := common.GetComponentTypeByIDWithTag[*squads.GridPositionData](
+			cmd.entityManager, unitState.unitID, squads.SquadMemberTag, squads.GridPositionComponent)
 		if gridPos != nil {
 			gridPos.AnchorRow = unitState.gridRow
 			gridPos.AnchorCol = unitState.gridCol

@@ -408,59 +408,7 @@ func ValidateAllTagsRegistered(em *common.EntityManager) error {
 
 ## Priority 3: Consistency Improvements (LOW IMPACT)
 
-### Issue 3.1: Mixed EntityManager vs ecs.Manager Usage
-
-**Severity:** LOW
-**Locations:**
-- `gear/Inventory.go` - Uses `*ecs.Manager` directly
-- `gear/gearutil.go` - Uses `*ecs.Manager` directly
-- Most other code - Uses `*common.EntityManager`
-
-**Problem:** Inconsistent interface makes code harder to understand:
-
-```go
-// gear/Inventory.go:34 - Uses raw ecs.Manager
-func AddItem(manager *ecs.Manager, inv *Inventory, itemEntityID ecs.EntityID)
-
-// squads/squadqueries.go - Uses EntityManager wrapper
-func GetUnitIDsInSquad(squadID ecs.EntityID, squadmanager *common.EntityManager)
-```
-
-**Recommendation:** Standardize on EntityManager wrapper:
-
-```go
-// Update gear functions to accept EntityManager
-func AddItem(manager *common.EntityManager, inv *Inventory, itemEntityID ecs.EntityID) {
-    // Use manager.World where needed
-}
-```
-
 ---
-
-### Issue 3.2: FindEntityByIDWithTag Usage for Simple Component Access
-
-**Severity:** LOW
-**Impact:** 44 call sites
-
-**Problem:** Code retrieves entity pointer just to call GetComponentType:
-
-```go
-// Current pattern (44 instances)
-entity := common.FindEntityByIDWithTag(manager, unitID, squads.SquadMemberTag)
-if entity == nil { return }
-gridPos := common.GetComponentType[*squads.GridPositionData](entity, squads.GridPositionComponent)
-```
-
-**Recommendation:** Use ID-based helpers directly:
-
-```go
-// Better pattern
-gridPos := common.GetComponentTypeByIDWithTag[*squads.GridPositionData](
-    manager, unitID, squads.SquadMemberTag, squads.GridPositionComponent)
-if gridPos == nil { return }
-```
-
-**Note:** The current pattern isn't wrong (FindEntityByIDWithTag is needed for AddComponent), but for pure reads, the ID-based helpers are cleaner.
 
 ---
 

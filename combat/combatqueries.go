@@ -42,12 +42,8 @@ func findTurnStateEntity(manager *common.EntityManager) *ecs.Entity {
 // GetSquadFaction returns the faction ID for a squad in combat.
 // Returns 0 if squad is not in combat (doesn't have CombatFactionComponent).
 func GetSquadFaction(squadID ecs.EntityID, manager *common.EntityManager) ecs.EntityID {
-	squad := common.FindEntityByIDWithTag(manager, squadID, squads.SquadTag)
-	if squad == nil {
-		return 0
-	}
-
-	combatFaction := common.GetComponentType[*CombatFactionData](squad, CombatFactionComponent)
+	combatFaction := common.GetComponentTypeByIDWithTag[*CombatFactionData](
+		manager, squadID, squads.SquadTag, CombatFactionComponent)
 	if combatFaction == nil {
 		return 0
 	}
@@ -129,12 +125,9 @@ func GetSquadAtPosition(pos coords.LogicalPosition, manager *common.EntityManage
 
 // isSquad checks if an entity ID represents a squad in combat
 func isSquad(entityID ecs.EntityID, manager *common.EntityManager) bool {
-	squad := common.FindEntityByIDWithTag(manager, entityID, squads.SquadTag)
-	if squad == nil {
-		return false
-	}
 	// Check if squad has CombatFactionComponent (is in combat)
-	combatFaction := common.GetComponentType[*CombatFactionData](squad, CombatFactionComponent)
+	combatFaction := common.GetComponentTypeByIDWithTag[*CombatFactionData](
+		manager, entityID, squads.SquadTag, CombatFactionComponent)
 	return combatFaction != nil
 }
 

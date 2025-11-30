@@ -198,12 +198,8 @@ func (fem *FormationEditorMode) loadSquadFormation(squadID ecs.EntityID) {
 
 	for _, unitID := range unitIDs {
 		// Get grid position component
-		entity := common.FindEntityByIDWithTag(fem.Queries.ECSManager, unitID, squads.SquadMemberTag)
-		if entity == nil {
-			continue
-		}
-
-		gridPos := common.GetComponentType[*squads.GridPositionData](entity, squads.GridPositionComponent)
+		gridPos := common.GetComponentTypeByIDWithTag[*squads.GridPositionData](
+			fem.Queries.ECSManager, unitID, squads.SquadMemberTag, squads.GridPositionComponent)
 		if gridPos == nil {
 			continue
 		}
