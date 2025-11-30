@@ -356,6 +356,16 @@ func CreateSquadFromTemplate(
 			})
 		}
 
+		// Add attack range component
+		unitEntity.AddComponent(AttackRangeComponent, &AttackRangeData{
+			Range: template.AttackRange,
+		})
+
+		// Add movement speed component
+		unitEntity.AddComponent(MovementSpeedComponent, &MovementSpeedData{
+			Speed: template.MovementSpeed,
+		})
+
 		// Add leader component if needed
 		if template.IsLeader {
 			unitEntity.AddComponent(LeaderComponent, &LeaderData{

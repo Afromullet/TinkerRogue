@@ -12,6 +12,7 @@ type CombatResult struct {
 	TotalDamage  int
 	UnitsKilled  []ecs.EntityID       // ✅ Native IDs
 	DamageByUnit map[ecs.EntityID]int // ✅ Native IDs
+	CombatLog    *CombatLog           // Detailed event log for display
 }
 
 // ExecuteSquadAttack performs row-based combat between two squads
@@ -23,15 +24,64 @@ func ExecuteSquadAttack(attackerSquadID, defenderSquadID ecs.EntityID, squadmana
 		UnitsKilled:  []ecs.EntityID{},
 	}
 
+	// Initialize combat log
+	combatLog := &CombatLog{
+		AttackerSquadID:   attackerSquadID,
+		DefenderSquadID:   defenderSquadID,
+		AttackerSquadName: GetSquadName(attackerSquadID, squadmanager),
+		DefenderSquadName: GetSquadName(defenderSquadID, squadmanager),
+		SquadDistance:     GetSquadDistance(attackerSquadID, defenderSquadID, squadmanager),
+		AttackEvents:      []AttackEvent{},
+		AttackingUnits:    []UnitSnapshot{},
+	}
+
 	// Calculate distance between squads for range checking
-	squadDistance := GetSquadDistance(attackerSquadID, defenderSquadID, squadmanager)
+	squadDistance := combatLog.SquadDistance
 	if squadDistance < 0 {
 		// Invalid squad positions, cannot attack
+		result.CombatLog = combatLog
 		return result
 	}
 
 	// Query for attacker unit IDs (not pointers!)
 	attackerUnitIDs := GetUnitIDsInSquad(attackerSquadID, squadmanager)
+
+	// Capture attacking units snapshot (before actual combat)
+	for _, attackerID := range attackerUnitIDs {
+		attackerAttr := common.GetAttributesByIDWithTag(squadmanager, attackerID, SquadMemberTag)
+		if attackerAttr == nil || attackerAttr.CurrentHealth <= 0 {
+			continue
+		}
+
+		if !squadmanager.HasComponentByIDWithTag(attackerID, SquadMemberTag, AttackRangeComponent) {
+			continue
+		}
+		rangeData := common.GetComponentTypeByID[*AttackRangeData](squadmanager, attackerID, AttackRangeComponent)
+		if rangeData.Range < squadDistance {
+			continue
+		}
+
+		// Add to attacking units snapshot
+		identity := GetUnitIdentity(attackerID, squadmanager)
+		roleData := common.GetComponentTypeByID[*UnitRoleData](squadmanager, attackerID, UnitRoleComponent)
+		roleName := "Unknown"
+		if roleData != nil {
+			roleName = roleData.Role.String()
+		}
+
+		snapshot := UnitSnapshot{
+			UnitID:      attackerID,
+			UnitName:    identity.Name,
+			GridRow:     identity.GridRow,
+			GridCol:     identity.GridCol,
+			AttackRange: rangeData.Range,
+			RoleName:    roleName,
+		}
+		combatLog.AttackingUnits = append(combatLog.AttackingUnits, snapshot)
+	}
+
+	// Attack index for sequential numbering
+	attackIndex := 0
 
 	// Process each attacker unit
 	for _, attackerID := range attackerUnitIDs {
@@ -92,62 +142,138 @@ func ExecuteSquadAttack(attackerSquadID, defenderSquadID ecs.EntityID, squadmana
 			}
 		}
 
-		//TODO this is where we should add hit chance
-		// Apply damage to each selected target
+		// Apply damage to each selected target and capture events
+		multiTargetIndex := 1
 		for _, defenderID := range actualTargetIDs {
-			damage := calculateUnitDamageByID(attackerID, defenderID, squadmanager)
+			attackIndex++
+
+			// Calculate damage with event capture
+			damage, event := calculateUnitDamageByID(attackerID, defenderID, squadmanager)
+
+			// Add targeting info to event
+			defenderPos := common.GetComponentTypeByID[*GridPositionData](squadmanager, defenderID, GridPositionComponent)
+			event.AttackIndex = attackIndex
+			if defenderPos != nil {
+				event.TargetInfo.TargetRow = defenderPos.AnchorRow
+				event.TargetInfo.TargetCol = defenderPos.AnchorCol
+			}
+			event.TargetInfo.IsMultiTarget = targetRowData.IsMultiTarget
+			if targetRowData.IsMultiTarget {
+				event.TargetInfo.MultiTargetIndex = multiTargetIndex
+				multiTargetIndex++
+			}
+			if targetRowData.Mode == TargetModeCellBased {
+				event.TargetInfo.TargetMode = "cell"
+			} else {
+				event.TargetInfo.TargetMode = "row"
+			}
+
+			// Apply damage
 			applyDamageToUnitByID(defenderID, damage, result, squadmanager)
+
+			// Store event
+			combatLog.AttackEvents = append(combatLog.AttackEvents, *event)
 		}
 	}
 
 	result.TotalDamage = sumDamageMap(result.DamageByUnit)
 
+	// Calculate combat summary
+	combatLog.TotalDamage = result.TotalDamage
+	combatLog.UnitsKilled = len(result.UnitsKilled)
+	combatLog.DefenderStatus = calculateSquadStatus(defenderSquadID, squadmanager)
+
+	result.CombatLog = combatLog
 	return result
 }
 
-// calculateUnitDamageByID calculates damage using new attribute system
-func calculateUnitDamageByID(attackerID, defenderID ecs.EntityID, squadmanager *common.EntityManager) int {
+// calculateUnitDamageByID calculates damage using new attribute system and returns detailed event data
+func calculateUnitDamageByID(attackerID, defenderID ecs.EntityID, squadmanager *common.EntityManager) (int, *AttackEvent) {
 	attackerAttr := common.GetAttributesByIDWithTag(squadmanager, attackerID, SquadMemberTag)
 	defenderAttr := common.GetAttributesByIDWithTag(squadmanager, defenderID, SquadMemberTag)
 
+	// Create event to track damage pipeline
+	event := &AttackEvent{
+		AttackerID: attackerID,
+		DefenderID: defenderID,
+	}
+
+	if defenderAttr != nil {
+		event.DefenderHPBefore = defenderAttr.CurrentHealth
+	}
+
 	if attackerAttr == nil || defenderAttr == nil {
-		return 0
+		event.HitResult.Type = HitTypeMiss
+		return 0, event
 	}
 
-	// Check if attack hits (new hit rate system)
-	if !rollHit(attackerAttr.GetHitRate()) {
-		return 0 // Miss
+	// Hit roll
+	hitThreshold := attackerAttr.GetHitRate()
+	hitRoll := common.GetDiceRoll(100)
+	event.HitResult.HitRoll = hitRoll
+	event.HitResult.HitThreshold = hitThreshold
+
+	if hitRoll > hitThreshold {
+		event.HitResult.Type = HitTypeMiss
+		return 0, event
 	}
 
-	// Check for dodge (new dodge system)
-	if rollDodge(defenderAttr.GetDodgeChance()) {
-		return 0 // Dodged
+	// Dodge roll
+	dodgeThreshold := defenderAttr.GetDodgeChance()
+	dodgeRoll := common.GetDiceRoll(100)
+	event.HitResult.DodgeRoll = dodgeRoll
+	event.HitResult.DodgeThreshold = dodgeThreshold
+
+	if dodgeRoll <= dodgeThreshold {
+		event.HitResult.Type = HitTypeDodge
+		return 0, event
 	}
 
-	// Calculate base physical damage from attributes
+	// Calculate base damage
 	baseDamage := attackerAttr.GetPhysicalDamage()
+	event.BaseDamage = baseDamage
+	event.CritMultiplier = 1.0
 
-	// Check for critical hit (new crit system)
-	if rollCrit(attackerAttr.GetCritChance()) {
-		baseDamage = int(float64(baseDamage) * 1.5) // 1.5x damage on crit
+	// Crit roll
+	critThreshold := attackerAttr.GetCritChance()
+	critRoll := common.GetDiceRoll(100)
+	event.HitResult.CritRoll = critRoll
+	event.HitResult.CritThreshold = critThreshold
+
+	if critRoll <= critThreshold {
+		baseDamage = int(float64(baseDamage) * 1.5)
+		event.CritMultiplier = 1.5
+		event.HitResult.Type = HitTypeCritical
+	} else {
+		event.HitResult.Type = HitTypeNormal
 	}
 
-	// Apply physical resistance
-	totalDamage := baseDamage - defenderAttr.GetPhysicalResistance()
+	// Apply resistance
+	resistance := defenderAttr.GetPhysicalResistance()
+	event.ResistanceAmount = resistance
+	totalDamage := baseDamage - resistance
 	if totalDamage < 1 {
-		totalDamage = 1 // Minimum damage
+		totalDamage = 1
 	}
 
-	// Apply cover (damage reduction from units in front)
-	coverReduction := CalculateTotalCover(defenderID, squadmanager)
-	if coverReduction > 0.0 {
-		totalDamage = int(float64(totalDamage) * (1.0 - coverReduction))
+	// Apply cover with detailed breakdown
+	coverBreakdown := CalculateCoverBreakdown(defenderID, squadmanager)
+	event.CoverReduction = coverBreakdown
+
+	if coverBreakdown.TotalReduction > 0.0 {
+		totalDamage = int(float64(totalDamage) * (1.0 - coverBreakdown.TotalReduction))
 		if totalDamage < 1 {
-			totalDamage = 1 // Minimum damage even with cover
+			totalDamage = 1
 		}
 	}
 
-	return totalDamage
+	event.FinalDamage = totalDamage
+	event.DefenderHPAfter = defenderAttr.CurrentHealth - totalDamage
+	if event.DefenderHPAfter <= 0 {
+		event.WasKilled = true
+	}
+
+	return totalDamage, event
 }
 
 // rollHit determines if an attack hits based on hit rate
@@ -240,6 +366,38 @@ func sumDamageMap(damageMap map[ecs.EntityID]int) int {
 		total += dmg
 	}
 	return total
+}
+
+// calculateSquadStatus summarizes squad health for combat log
+func calculateSquadStatus(squadID ecs.EntityID, manager *common.EntityManager) SquadStatus {
+	unitIDs := GetUnitIDsInSquad(squadID, manager)
+	aliveCount := 0
+	totalHP := 0
+	totalMaxHP := 0
+
+	for _, unitID := range unitIDs {
+		attr := common.GetAttributesByIDWithTag(manager, unitID, SquadMemberTag)
+		if attr == nil {
+			continue
+		}
+
+		if attr.CurrentHealth > 0 {
+			aliveCount++
+			totalHP += attr.CurrentHealth
+			totalMaxHP += attr.MaxHealth
+		}
+	}
+
+	avgHP := 0
+	if totalMaxHP > 0 {
+		avgHP = (totalHP * 100) / totalMaxHP
+	}
+
+	return SquadStatus{
+		AliveUnits: aliveCount,
+		TotalUnits: len(unitIDs),
+		AverageHP:  avgHP,
+	}
 }
 
 // ========================================
@@ -363,6 +521,70 @@ func GetCoverProvidersFor(defenderID ecs.EntityID, defenderSquadID ecs.EntityID,
 	}
 
 	return providers
+}
+
+// CalculateCoverBreakdown returns detailed cover information for logging
+// Similar to CalculateTotalCover but includes provider details
+func CalculateCoverBreakdown(defenderID ecs.EntityID, squadmanager *common.EntityManager) CoverBreakdown {
+	breakdown := CoverBreakdown{
+		Providers: []CoverProvider{},
+	}
+
+	if !squadmanager.HasComponentByIDWithTag(defenderID, SquadMemberTag, GridPositionComponent) ||
+		!squadmanager.HasComponentByIDWithTag(defenderID, SquadMemberTag, SquadMemberComponent) {
+		return breakdown
+	}
+
+	defenderPos := common.GetComponentTypeByID[*GridPositionData](squadmanager, defenderID, GridPositionComponent)
+	defenderSquadData := common.GetComponentTypeByID[*SquadMemberData](squadmanager, defenderID, SquadMemberComponent)
+	defenderSquadID := defenderSquadData.SquadID
+
+	providerIDs := GetCoverProvidersFor(defenderID, defenderSquadID, defenderPos, squadmanager)
+
+	totalCover := 0.0
+	for _, providerID := range providerIDs {
+		if !squadmanager.HasComponentByIDWithTag(providerID, SquadMemberTag, CoverComponent) {
+			continue
+		}
+
+		coverData := common.GetComponentTypeByID[*CoverData](squadmanager, providerID, CoverComponent)
+
+		// Check if active
+		isActive := true
+		if coverData.RequiresActive {
+			attr := common.GetAttributesByIDWithTag(squadmanager, providerID, SquadMemberTag)
+			if attr != nil {
+				isActive = attr.CurrentHealth > 0
+			}
+		}
+
+		coverValue := coverData.GetCoverBonus(isActive)
+		if coverValue > 0 {
+			// Get provider info for logging
+			identity := GetUnitIdentity(providerID, squadmanager)
+			providerPos := common.GetComponentTypeByID[*GridPositionData](squadmanager, providerID, GridPositionComponent)
+
+			provider := CoverProvider{
+				UnitID:     providerID,
+				UnitName:   identity.Name,
+				CoverValue: coverValue,
+			}
+			if providerPos != nil {
+				provider.GridRow = providerPos.AnchorRow
+				provider.GridCol = providerPos.AnchorCol
+			}
+
+			breakdown.Providers = append(breakdown.Providers, provider)
+			totalCover += coverValue
+		}
+	}
+
+	if totalCover > 1.0 {
+		totalCover = 1.0
+	}
+	breakdown.TotalReduction = totalCover
+
+	return breakdown
 }
 
 func displayCombatResult(result *CombatResult, squadmanager *common.EntityManager) {

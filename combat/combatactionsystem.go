@@ -77,7 +77,10 @@ func (cas *CombatActionSystem) ExecuteAttackAction(attackerID, defenderID ecs.En
 		removeSquadFromMap(defenderID, cas.manager)
 	}
 
-	logCombatResult(result)
+	// Display detailed combat log
+	if result.CombatLog != nil {
+		DisplayCombatLog(result.CombatLog, cas.manager)
+	}
 
 	// Check abilities for both squads after combat
 	// Attacker abilities: might trigger based on damage dealt, turn count, etc.

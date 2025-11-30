@@ -240,12 +240,6 @@ func shuffleFactionOrder(factionIDs []ecs.EntityID) {
 	}
 }
 
-// logCombatResult logs combat result for debugging/UI
-func logCombatResult(result *squads.CombatResult) {
-	// TODO: Implement event system for UI
-	fmt.Printf("Combat result: %d damage, %d kills\n", result.TotalDamage, len(result.UnitsKilled))
-}
-
 // contains checks if a slice contains a position
 func contains(positions []coords.LogicalPosition, pos coords.LogicalPosition) bool {
 	for _, p := range positions {

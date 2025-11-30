@@ -273,7 +273,7 @@ func TestCalculateUnitDamageByID_BasicDamageCalculation(t *testing.T) {
 	// We can't set them directly, but with Dexterity=100, attacker should have high hit rate
 	// With Dexterity=0, defender should have low dodge chance
 
-	damage := calculateUnitDamageByID(attacker.GetID(), defender.GetID(), manager)
+	damage, _ := calculateUnitDamageByID(attacker.GetID(), defender.GetID(), manager)
 
 	if damage <= 0 {
 		t.Error("Expected positive damage (note: may miss/dodge based on derived stats)")
@@ -307,7 +307,7 @@ func TestCalculateUnitDamageByID_MissReturnsZero(t *testing.T) {
 	// This test may pass or fail based on random rolls
 	// For a reliable test, we'd need a way to inject randomness
 
-	damage := calculateUnitDamageByID(attacker.GetID(), defender.GetID(), manager)
+	damage, _ := calculateUnitDamageByID(attacker.GetID(), defender.GetID(), manager)
 
 	// Can't reliably test for 0 damage without controlling randomness
 	t.Logf("Damage dealt: %d (0 expected on miss, but randomness not controlled)", damage)
@@ -328,7 +328,7 @@ func TestCalculateUnitDamageByID_DodgeReturnsZero(t *testing.T) {
 	// This test may pass or fail based on random rolls
 	// For a reliable test, we'd need a way to inject randomness
 
-	damage := calculateUnitDamageByID(attacker.GetID(), defender.GetID(), manager)
+	damage, _ := calculateUnitDamageByID(attacker.GetID(), defender.GetID(), manager)
 
 	// Can't reliably test for 0 damage without controlling randomness
 	t.Logf("Damage dealt: %d (0 expected on dodge, but randomness not controlled)", damage)
@@ -348,7 +348,7 @@ func TestCalculateUnitDamageByID_PhysicalResistanceReducesDamage(t *testing.T) {
 	// Note: PhysicalResistance is derived from Strength/4 + Armor*2
 	// Defender: (20/4) + (10*2) = 5 + 20 = 25 resistance
 
-	damage := calculateUnitDamageByID(attacker.GetID(), defender.GetID(), manager)
+	damage, _ := calculateUnitDamageByID(attacker.GetID(), defender.GetID(), manager)
 
 	baseDamage := attackerAttr.GetPhysicalDamage()
 	resistance := defenderAttr.GetPhysicalResistance()
@@ -380,7 +380,7 @@ func TestCalculateUnitDamageByID_MinimumDamageIsOne(t *testing.T) {
 	// Defender resistance: (50/4) + (50*2) = 12 + 100 = 112
 	// Expected: 0 - 112 = minimum 1
 
-	damage := calculateUnitDamageByID(attacker.GetID(), defender.GetID(), manager)
+	damage, _ := calculateUnitDamageByID(attacker.GetID(), defender.GetID(), manager)
 
 	// Minimum damage should be 1 when attack hits
 	if damage > 1 {
@@ -394,7 +394,7 @@ func TestCalculateUnitDamageByID_MinimumDamageIsOne(t *testing.T) {
 func TestCalculateUnitDamageByID_NilUnitsReturnZero(t *testing.T) {
 	manager := setupTestManager(t)
 
-	damage := calculateUnitDamageByID(9999, 9998, manager) // Non-existent IDs
+	damage, _ := calculateUnitDamageByID(9999, 9998, manager) // Non-existent IDs
 
 	if damage != 0 {
 		t.Errorf("Expected 0 damage for nil units, got %d", damage)

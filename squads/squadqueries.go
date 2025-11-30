@@ -324,3 +324,36 @@ func UpdateSquadDestroyedStatus(squadID ecs.EntityID, manager *common.EntityMana
 
 	squadData.IsDestroyed = !hasAliveUnit
 }
+
+// GetUnitIdentity extracts display info for a unit (query-based, no caching)
+func GetUnitIdentity(unitID ecs.EntityID, manager *common.EntityManager) UnitIdentity {
+	// Query for name
+	name := common.GetComponentTypeByID[*common.Name](manager, unitID, common.NameComponent)
+	nameStr := "Unknown"
+	if name != nil {
+		nameStr = name.NameStr
+	}
+
+	// Query for grid position
+	gridPos := common.GetComponentTypeByID[*GridPositionData](manager, unitID, GridPositionComponent)
+	row, col := 0, 0
+	if gridPos != nil {
+		row, col = gridPos.AnchorRow, gridPos.AnchorCol
+	}
+
+	// Query for health
+	attr := common.GetAttributesByIDWithTag(manager, unitID, SquadMemberTag)
+	currentHP, maxHP := 0, 0
+	if attr != nil {
+		currentHP, maxHP = attr.CurrentHealth, attr.MaxHealth
+	}
+
+	return UnitIdentity{
+		ID:        unitID,
+		Name:      nameStr,
+		GridRow:   row,
+		GridCol:   col,
+		CurrentHP: currentHP,
+		MaxHP:     maxHP,
+	}
+}
