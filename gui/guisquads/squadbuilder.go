@@ -248,10 +248,13 @@ func (sbm *SquadBuilderMode) removeUnitFromCell(row, col int) {
 }
 
 func (sbm *SquadBuilderMode) createTemporarySquad() {
-	squadName := sbm.currentSquadName
+	// Read name from input field instead of potentially stale currentSquadName
+	squadName := sbm.squadNameInput.GetText()
 	if squadName == "" {
 		squadName = "New Squad"
 	}
+	// Update currentSquadName to match what we're about to create
+	sbm.currentSquadName = squadName
 
 	// Use service to create squad
 	result := sbm.squadBuilderSvc.CreateSquad(squadName)

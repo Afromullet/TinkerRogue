@@ -4,8 +4,12 @@ import (
 	"fmt"
 	"game_main/common"
 	"game_main/entitytemplates"
+	"game_main/rendering"
+	"log"
+	"path/filepath"
 
 	"github.com/bytearena/ecs"
+	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 )
 
 // UnitTemplate defines a unit to be created in a squad
@@ -166,7 +170,6 @@ func CreateUnitEntity(squadmanager *common.EntityManager, unit UnitTemplate) (*e
 	}
 
 	// Create base unit entity via entitytemplates (delegates base entity creation)
-	// Units are data-only entities (no renderables/images)
 	unitEntity := entitytemplates.CreateUnit(
 		*squadmanager,
 		unit.Name,
@@ -176,6 +179,23 @@ func CreateUnitEntity(squadmanager *common.EntityManager, unit UnitTemplate) (*e
 
 	if unitEntity == nil {
 		return nil, fmt.Errorf("failed to create entity for unit %s", unit.Name)
+	}
+
+	// Add RenderableComponent with unit's sprite image for display on map
+	// This allows units in squads to be visually rendered alongside squad highlights
+	if unit.EntityConfig.ImagePath != "" {
+		imagePath := filepath.Join(unit.EntityConfig.AssetDir, unit.EntityConfig.ImagePath)
+		img, _, err := ebitenutil.NewImageFromFile(imagePath)
+		if err != nil {
+			// Log warning but continue - unit will exist but won't render visually
+			log.Printf("Warning: Could not load image for unit %s at %s: %v\n", unit.Name, imagePath, err)
+		} else {
+			// Add renderable component with the loaded image
+			unitEntity.AddComponent(rendering.RenderableComponent, &rendering.Renderable{
+				Image:   img,
+				Visible: true,
+			})
+		}
 	}
 
 	// Add squad-specific components

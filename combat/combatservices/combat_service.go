@@ -115,8 +115,53 @@ func (cs *CombatService) GetValidMovementTiles(squadID ecs.EntityID) []coords.Lo
 }
 
 // InitializeCombat initializes combat with the given factions
+// Also assigns any unassigned squads (from squad deployment) to the player faction
 func (cs *CombatService) InitializeCombat(factionIDs []ecs.EntityID) error {
+	// Find player faction (has IsPlayerControlled = true)
+	var playerFactionID ecs.EntityID
+	for _, factionID := range factionIDs {
+		factionData := combat.FindFactionDataByID(factionID, cs.entityManager)
+		if factionData != nil && factionData.IsPlayerControlled {
+			playerFactionID = factionID
+			break
+		}
+	}
+
+	// Assign any unassigned squads to player faction
+	// These are squads deployed via SquadDeploymentMode that have positions but no CombatFactionComponent
+	if playerFactionID != 0 {
+		cs.assignDeployedSquadsToPlayerFaction(playerFactionID)
+	}
+
 	return cs.turnManager.InitializeCombat(factionIDs)
+}
+
+// assignDeployedSquadsToPlayerFaction finds all squads with positions but no CombatFactionComponent
+// and assigns them to the player faction. These are squads that were deployed via SquadDeploymentMode.
+func (cs *CombatService) assignDeployedSquadsToPlayerFaction(playerFactionID ecs.EntityID) {
+	for _, result := range cs.entityManager.World.Query(squads.SquadTag) {
+		squadEntity := result.Entity
+		squadID := squadEntity.GetID()
+
+		// Check if squad already has a faction (skip if it does)
+		combatFaction := common.GetComponentType[*combat.CombatFactionData](squadEntity, combat.CombatFactionComponent)
+		if combatFaction != nil {
+			continue // Already assigned to a faction
+		}
+
+		// Check if squad has a position (deployed squads have positions)
+		position := common.GetComponentType[*coords.LogicalPosition](squadEntity, common.PositionComponent)
+		if position == nil {
+			continue // No position, not a deployed squad
+		}
+
+		// Squad is unassigned and deployed - add it to player faction
+		fm := combat.NewFactionManager(cs.entityManager)
+		if err := fm.AddSquadToFaction(playerFactionID, squadID, *position); err != nil {
+			// Log error but continue with other squads
+			continue
+		}
+	}
 }
 
 // GetCurrentFaction returns the current faction's turn

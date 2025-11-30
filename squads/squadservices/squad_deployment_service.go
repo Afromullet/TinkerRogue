@@ -38,8 +38,8 @@ func (sds *SquadDeploymentService) PlaceSquadAtPosition(
 		Position: newPos,
 	}
 
-	// Find the squad entity
-	squadEntity := common.FindEntityByIDWithTag(sds.entityManager, squadID, squads.SquadTag)
+	// Find the squad entity using squad ID (not entity ID)
+	squadEntity := squads.GetSquadEntity(squadID, sds.entityManager)
 	if squadEntity == nil {
 		result.Error = fmt.Sprintf("squad %d not found", squadID)
 		return result
