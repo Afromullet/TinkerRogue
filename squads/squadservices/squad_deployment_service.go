@@ -51,15 +51,20 @@ func (sds *SquadDeploymentService) PlaceSquadAtPosition(
 		result.SquadName = squadData.Name
 	}
 
-	// Update position
+	// Get current position
 	posPtr := common.GetComponentType[*coords.LogicalPosition](squadEntity, common.PositionComponent)
 	if posPtr == nil {
 		result.Error = "squad has no position component"
 		return result
 	}
 
-	posPtr.X = newPos.X
-	posPtr.Y = newPos.Y
+	// Move entity atomically (updates both component and GlobalPositionSystem)
+	oldPos := *posPtr
+	err := sds.entityManager.MoveEntity(squadID, squadEntity, oldPos, newPos)
+	if err != nil {
+		result.Error = fmt.Sprintf("failed to move squad: %v", err)
+		return result
+	}
 
 	result.Success = true
 	return result
@@ -76,17 +81,25 @@ type ClearAllSquadsResult struct {
 func (sds *SquadDeploymentService) ClearAllSquadPositions() *ClearAllSquadsResult {
 	result := &ClearAllSquadsResult{}
 
+	// Target position for clearing
+	clearPos := coords.LogicalPosition{X: 0, Y: 0}
+
 	// Query all squads
 	squadsCleared := 0
 	for _, queryResult := range sds.entityManager.World.Query(squads.SquadTag) {
 		entity := queryResult.Entity
+		squadID := entity.GetID()
 
-		// Get position component
+		// Get current position
 		posPtr := common.GetComponentType[*coords.LogicalPosition](entity, common.PositionComponent)
 		if posPtr != nil {
-			posPtr.X = 0
-			posPtr.Y = 0
-			squadsCleared++
+			// Move entity atomically (updates both component and GlobalPositionSystem)
+			oldPos := *posPtr
+			err := sds.entityManager.MoveEntity(squadID, entity, oldPos, clearPos)
+			if err == nil {
+				squadsCleared++
+			}
+			// If error occurs, skip this squad and continue with others
 		}
 	}
 

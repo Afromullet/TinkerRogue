@@ -103,15 +103,17 @@ func (ms *CombatMovementSystem) MoveSquad(squadID ecs.EntityID, targetPos coords
 		return fmt.Errorf("cannot move to %v", targetPos)
 	}
 
-	// Update squad's PositionComponent (NO MORE MAPPOSITION DUPLICATION!)
-	posPtr := common.GetComponentTypeByIDWithTag[*coords.LogicalPosition](ms.manager, squadID, squads.SquadTag, common.PositionComponent)
-	if posPtr == nil {
-		return fmt.Errorf("squad has no position component")
+	// Get squad entity for movement
+	squadEntity := common.FindEntityByIDWithTag(ms.manager, squadID, squads.SquadTag)
+	if squadEntity == nil {
+		return fmt.Errorf("squad entity not found")
 	}
-	*posPtr = targetPos
 
-	// Update PositionSystem spatial grid (canonical source for O(1) lookups)
-	ms.posSystem.MoveEntity(squadID, currentPos, targetPos)
+	// Move squad atomically (updates both PositionComponent and PositionSystem)
+	err = ms.manager.MoveEntity(squadID, squadEntity, currentPos, targetPos)
+	if err != nil {
+		return fmt.Errorf("failed to move squad: %w", err)
+	}
 
 	decrementMovementRemaining(squadID, movementCost, ms.manager)
 	markSquadAsMoved(squadID, ms.manager)

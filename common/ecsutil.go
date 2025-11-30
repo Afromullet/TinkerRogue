@@ -299,3 +299,65 @@ func FindEntityByIDWithTag(manager *EntityManager, entityID ecs.EntityID, tag ec
 	}
 	return nil
 }
+
+// MoveEntity updates position component and position system atomically.
+// This ensures that position is synchronized across:
+// 1. Entity's PositionComponent
+// 2. GlobalPositionSystem spatial grid
+//
+// Returns error if entity has no position component.
+func (em *EntityManager) MoveEntity(
+	entityID ecs.EntityID,
+	entity *ecs.Entity,
+	oldPos coords.LogicalPosition,
+	newPos coords.LogicalPosition,
+) error {
+	// 1. Update component
+	posComponent, ok := entity.GetComponentData(PositionComponent)
+	if !ok {
+		return nil // Silently skip entities without position component
+	}
+
+	posPtr := posComponent.(*coords.LogicalPosition)
+	posPtr.X = newPos.X
+	posPtr.Y = newPos.Y
+
+	// 2. Update position system
+	GlobalPositionSystem.RemoveEntity(entityID, oldPos)
+	GlobalPositionSystem.AddEntity(entityID, newPos)
+
+	return nil
+}
+
+// MoveSquadAndMembers moves squad and all member units to a new position.
+// This atomically updates position across all three storage locations:
+// 1. Squad position component
+// 2. GlobalPositionSystem spatial grid
+// 3. Unit member position components
+//
+// Returns error if squad has no position component.
+func (em *EntityManager) MoveSquadAndMembers(
+	squadID ecs.EntityID,
+	squadEntity *ecs.Entity,
+	unitIDs []ecs.EntityID,
+	oldPos coords.LogicalPosition,
+	newPos coords.LogicalPosition,
+) error {
+	// Move squad
+	if err := em.MoveEntity(squadID, squadEntity, oldPos, newPos); err != nil {
+		return err
+	}
+
+	// Move all unit members
+	for _, unitID := range unitIDs {
+		unitEntity := FindEntityByID(em, unitID)
+		if unitEntity == nil {
+			continue
+		}
+
+		// Skip error - some units may not have position component
+		em.MoveEntity(unitID, unitEntity, oldPos, newPos)
+	}
+
+	return nil
+}

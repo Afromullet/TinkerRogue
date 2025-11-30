@@ -166,7 +166,7 @@ for _, unitID := range allUnits {
 ```
 
 ---
-
+I
 ### Issue 1.3: IsSquadDestroyed Repeated Queries
 
 **Severity:** HIGH

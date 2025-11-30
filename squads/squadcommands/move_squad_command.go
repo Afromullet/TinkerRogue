@@ -77,25 +77,17 @@ func (cmd *MoveSquadCommand) Execute() error {
 	}
 	cmd.oldPosition = *posPtr
 
-	// Move squad to new position
-	posPtr.X = cmd.newPosition.X
-	posPtr.Y = cmd.newPosition.Y
-
-	// Update position in global position system
-	common.GlobalPositionSystem.RemoveEntity(cmd.squadID, cmd.oldPosition)
-	common.GlobalPositionSystem.AddEntity(cmd.squadID, cmd.newPosition)
-
-	// Update all unit positions to match squad position
+	// Move squad and all members atomically
 	unitIDs := squads.GetUnitIDsInSquad(cmd.squadID, cmd.entityManager)
-	for _, unitID := range unitIDs {
-		unitEntity := common.FindEntityByIDWithTag(cmd.entityManager, unitID, squads.SquadMemberTag)
-		if unitEntity != nil && unitEntity.HasComponent(common.PositionComponent) {
-			unitPosPtr := common.GetComponentType[*coords.LogicalPosition](unitEntity, common.PositionComponent)
-			if unitPosPtr != nil {
-				unitPosPtr.X = cmd.newPosition.X
-				unitPosPtr.Y = cmd.newPosition.Y
-			}
-		}
+	err := cmd.entityManager.MoveSquadAndMembers(
+		cmd.squadID,
+		squadEntity,
+		unitIDs,
+		cmd.oldPosition,
+		cmd.newPosition,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to move squad: %w", err)
 	}
 
 	return nil
@@ -109,32 +101,24 @@ func (cmd *MoveSquadCommand) Undo() error {
 		return fmt.Errorf("squad not found")
 	}
 
-	// Restore old position
+	// Get current position before undo
 	posPtr := common.GetComponentType[*coords.LogicalPosition](squadEntity, common.PositionComponent)
 	if posPtr == nil {
 		return fmt.Errorf("squad has no position component")
 	}
-
-	// Move squad back to old position
 	currentPos := *posPtr
-	posPtr.X = cmd.oldPosition.X
-	posPtr.Y = cmd.oldPosition.Y
 
-	// Update position in global position system
-	common.GlobalPositionSystem.RemoveEntity(cmd.squadID, currentPos)
-	common.GlobalPositionSystem.AddEntity(cmd.squadID, cmd.oldPosition)
-
-	// Update all unit positions to match squad position
+	// Move squad and all members back to old position atomically
 	unitIDs := squads.GetUnitIDsInSquad(cmd.squadID, cmd.entityManager)
-	for _, unitID := range unitIDs {
-		unitEntity := common.FindEntityByIDWithTag(cmd.entityManager, unitID, squads.SquadMemberTag)
-		if unitEntity != nil && unitEntity.HasComponent(common.PositionComponent) {
-			unitPosPtr := common.GetComponentType[*coords.LogicalPosition](unitEntity, common.PositionComponent)
-			if unitPosPtr != nil {
-				unitPosPtr.X = cmd.oldPosition.X
-				unitPosPtr.Y = cmd.oldPosition.Y
-			}
-		}
+	err := cmd.entityManager.MoveSquadAndMembers(
+		cmd.squadID,
+		squadEntity,
+		unitIDs,
+		currentPos,
+		cmd.oldPosition,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to undo squad move: %w", err)
 	}
 
 	return nil

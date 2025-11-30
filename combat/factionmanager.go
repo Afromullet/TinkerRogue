@@ -53,21 +53,25 @@ func (fm *FactionManager) AddSquadToFaction(factionID, squadID ecs.EntityID, pos
 		FactionID: factionID,
 	})
 
-	// Add PositionComponent to squad entity
+	// Add or update PositionComponent on squad entity
 	if !fm.manager.HasComponentByIDWithTag(squadID, squads.SquadTag, common.PositionComponent) {
+		// Squad has no position yet - add it
 		posPtr := new(coords.LogicalPosition)
 		*posPtr = position
 		squad.AddComponent(common.PositionComponent, posPtr)
+		// Register in PositionSystem (canonical position source)
+		common.GlobalPositionSystem.AddEntity(squadID, position)
 	} else {
-		// Update existing position
-		posPtr := common.GetComponentTypeByIDWithTag[*coords.LogicalPosition](fm.manager, squadID, squads.SquadTag, common.PositionComponent)
-		if posPtr != nil {
-			*posPtr = position
+		// Squad already has position - move it atomically
+		oldPos := common.GetComponentTypeByIDWithTag[*coords.LogicalPosition](fm.manager, squadID, squads.SquadTag, common.PositionComponent)
+		if oldPos != nil {
+			// Use MoveEntity to synchronize position component and position system
+			err := fm.manager.MoveEntity(squadID, squad, *oldPos, position)
+			if err != nil {
+				return fmt.Errorf("failed to update squad position: %w", err)
+			}
 		}
 	}
-
-	// Register in PositionSystem (canonical position source)
-	common.GlobalPositionSystem.AddEntity(squadID, position)
 
 	return nil
 }

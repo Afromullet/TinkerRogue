@@ -175,21 +175,22 @@ func PlaceSquadOnMap(manager *common.EntityManager, factionID, squadID ecs.Entit
 		FactionID: factionID,
 	})
 
-	// Add PositionComponent to squad entity
+	// Add or update PositionComponent on squad entity
 	if !manager.HasComponentByIDWithTag(squadID, squads.SquadTag, common.PositionComponent) {
+		// Squad has no position yet - add it
 		posPtr := new(coords.LogicalPosition)
 		*posPtr = pos
 		squadEntity.AddComponent(common.PositionComponent, posPtr)
+		// Register in PositionSystem (canonical position source)
+		common.GlobalPositionSystem.AddEntity(squadID, pos)
 	} else {
-		// Update existing position
-		posPtr := common.GetComponentTypeByIDWithTag[*coords.LogicalPosition](manager, squadID, squads.SquadTag, common.PositionComponent)
-		if posPtr != nil {
-			*posPtr = pos
+		// Squad already has position - move it atomically
+		oldPos := common.GetComponentTypeByIDWithTag[*coords.LogicalPosition](manager, squadID, squads.SquadTag, common.PositionComponent)
+		if oldPos != nil {
+			// Use MoveEntity to synchronize position component and position system
+			manager.MoveEntity(squadID, squadEntity, *oldPos, pos)
 		}
 	}
-
-	// Register in PositionSystem
-	common.GlobalPositionSystem.AddEntity(squadID, pos)
 }
 
 // InitializeTestCombat sets up a basic test combat scenario

@@ -227,27 +227,6 @@ func (cs *CombatService) CheckVictoryCondition() *VictoryCheckResult {
 	return result
 }
 
-// UpdateUnitPositions updates all unit positions in a squad to match the squad's new position
-func (cs *CombatService) UpdateUnitPositions(squadID ecs.EntityID, newSquadPos coords.LogicalPosition) error {
-	// Get all units in the squad
-	unitIDs := squads.GetUnitIDsInSquad(squadID, cs.entityManager)
-
-	// Update each unit's position to match the squad's new position
-	for _, unitID := range unitIDs {
-		// Find the unit in the ECS world and update its position
-		unitEntity := common.FindEntityByIDWithTag(cs.entityManager, unitID, squads.SquadMemberTag)
-		if unitEntity != nil && unitEntity.HasComponent(common.PositionComponent) {
-			posPtr := common.GetComponentType[*coords.LogicalPosition](unitEntity, common.PositionComponent)
-			if posPtr != nil {
-				posPtr.X = newSquadPos.X
-				posPtr.Y = newSquadPos.Y
-			}
-		}
-	}
-
-	return nil
-}
-
 // GetSquadAtPosition returns the squad ID at the given position, or 0 if none
 func (cs *CombatService) GetSquadAtPosition(pos coords.LogicalPosition) ecs.EntityID {
 	return combat.GetSquadAtPosition(pos, cs.entityManager)
