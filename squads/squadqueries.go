@@ -112,21 +112,20 @@ func GetLeaderID(squadID ecs.EntityID, squadmanager *common.EntityManager) ecs.E
 }
 
 // IsSquadDestroyed checks if all units are dead
+// O(1) operation - uses cached IsDestroyed flag from SquadData
+// The flag is maintained by UpdateSquadDestroyedStatus() when units die or are removed
 func IsSquadDestroyed(squadID ecs.EntityID, squadmanager *common.EntityManager) bool {
-	unitIDs := GetUnitIDsInSquad(squadID, squadmanager)
-
-	for _, unitID := range unitIDs {
-		attr := common.GetAttributesByIDWithTag(squadmanager, unitID, SquadMemberTag)
-		if attr == nil {
-			continue
-		}
-
-		if attr.CurrentHealth > 0 {
-			return false
-		}
+	squadEntity := GetSquadEntity(squadID, squadmanager)
+	if squadEntity == nil {
+		return true // Squad not found, consider destroyed
 	}
 
-	return len(unitIDs) > 0
+	squadData := common.GetComponentType[*SquadData](squadEntity, SquadComponent)
+	if squadData == nil {
+		return true // Invalid squad data, consider destroyed
+	}
+
+	return squadData.IsDestroyed
 }
 
 // ========================================
@@ -289,4 +288,39 @@ func FindAllSquads(squadmanager *common.EntityManager) []ecs.EntityID {
 	}
 
 	return allSquads
+}
+
+// UpdateSquadDestroyedStatus updates the cached IsDestroyed flag for a squad
+// This should be called whenever unit health changes or units are added/removed
+// O(n) where n = number of units in squad, but only called when needed
+func UpdateSquadDestroyedStatus(squadID ecs.EntityID, manager *common.EntityManager) {
+	squadEntity := GetSquadEntity(squadID, manager)
+	if squadEntity == nil {
+		return
+	}
+
+	squadData := common.GetComponentType[*SquadData](squadEntity, SquadComponent)
+	if squadData == nil {
+		return
+	}
+
+	// Get all units in the squad
+	unitIDs := GetUnitIDsInSquad(squadID, manager)
+	if len(unitIDs) == 0 {
+		// No units means destroyed
+		squadData.IsDestroyed = true
+		return
+	}
+
+	// Check if any unit is alive
+	hasAliveUnit := false
+	for _, unitID := range unitIDs {
+		attr := common.GetAttributesByIDWithTag(manager, unitID, SquadMemberTag)
+		if attr != nil && attr.CurrentHealth > 0 {
+			hasAliveUnit = true
+			break
+		}
+	}
+
+	squadData.IsDestroyed = !hasAliveUnit
 }

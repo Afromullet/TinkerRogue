@@ -27,7 +27,8 @@ func CreateEmptySquad(squadmanager *common.EntityManager,
 		TurnCount:     0,
 		MaxUnits:      9,
 		UsedCapacity:  0.0,
-		TotalCapacity: 6, // Default capacity (no leader yet)
+		TotalCapacity: 50,    // Default capacity (no leader yet)
+		IsDestroyed:   false, // Empty squad is not destroyed (yet)
 	})
 
 	squadEntity.AddComponent(common.PositionComponent, &coords.LogicalPosition{})
@@ -108,6 +109,9 @@ func RemoveUnitFromSquad(unitEntityID ecs.EntityID, squadmanager *common.EntityM
 
 	// Update squad capacity tracking after removal
 	UpdateSquadCapacity(squadID, squadmanager)
+
+	// Update squad destroyed status cache after unit removal
+	UpdateSquadDestroyedStatus(squadID, squadmanager)
 
 	return nil
 }
@@ -237,12 +241,13 @@ func CreateSquadFromTemplate(
 	squadID := squadEntity.GetID()
 
 	squadEntity.AddComponent(SquadComponent, &SquadData{
-		SquadID:   squadID,
-		Name:      squadName,
-		Formation: formation,
-		Morale:    100,
-		TurnCount: 0,
-		MaxUnits:  9,
+		SquadID:     squadID,
+		Name:        squadName,
+		Formation:   formation,
+		Morale:      100,
+		TurnCount:   0,
+		MaxUnits:    9,
+		IsDestroyed: false, // New squad with units is not destroyed
 	})
 	squadEntity.AddComponent(common.PositionComponent, &worldPos)
 

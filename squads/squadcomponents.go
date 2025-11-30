@@ -47,6 +47,7 @@ type SquadData struct {
 	MaxUnits      int           // Maximum squad size (typically 9)
 	UsedCapacity  float64       // Current capacity consumed by units
 	TotalCapacity int           // Total capacity from leader's Leadership stat
+	IsDestroyed   bool          // Cached destruction state (all units dead)
 }
 
 // FormationType defines squad layout presets

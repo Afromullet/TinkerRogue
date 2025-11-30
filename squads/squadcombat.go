@@ -181,6 +181,12 @@ func applyDamageToUnitByID(unitID ecs.EntityID, damage int, result *CombatResult
 	if attr.CurrentHealth <= 0 {
 		result.UnitsKilled = append(result.UnitsKilled, unitID)
 	}
+
+	// Update the squad's destroyed status cache after health change
+	memberData := common.GetComponentTypeByID[*SquadMemberData](squadmanager, unitID, SquadMemberComponent)
+	if memberData != nil {
+		UpdateSquadDestroyedStatus(memberData.SquadID, squadmanager)
+	}
 }
 
 // selectLowestHPTargetID - TODO, don't think I will want this kind of targeting
