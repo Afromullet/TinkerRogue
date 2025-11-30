@@ -3,6 +3,7 @@ package squadservices
 import (
 	"fmt"
 	"game_main/common"
+	"game_main/coords"
 	"game_main/squads"
 
 	"github.com/bytearena/ecs"
@@ -141,7 +142,8 @@ func (ups *UnitPurchaseService) PurchaseUnit(playerID ecs.EntityID, template squ
 	// Step 2: Add to roster (with rollback on failure)
 	if err := roster.AddUnit(unitID, template.Name); err != nil {
 		// Rollback: Dispose entity
-		ups.entityManager.World.DisposeEntities(unitEntity)
+		pos := common.GetComponentType[*coords.LogicalPosition](unitEntity, common.PositionComponent)
+		ups.entityManager.CleanDisposeEntity(unitEntity, pos)
 		result.Error = fmt.Sprintf("failed to add to roster: %v", err)
 		return result
 	}
@@ -150,7 +152,8 @@ func (ups *UnitPurchaseService) PurchaseUnit(playerID ecs.EntityID, template squ
 	if err := resources.SpendGold(cost); err != nil {
 		// Rollback: Remove from roster and dispose entity
 		roster.RemoveUnit(unitID)
-		ups.entityManager.World.DisposeEntities(unitEntity)
+		pos := common.GetComponentType[*coords.LogicalPosition](unitEntity, common.PositionComponent)
+		ups.entityManager.CleanDisposeEntity(unitEntity, pos)
 		result.Error = fmt.Sprintf("failed to spend gold: %v", err)
 		return result
 	}
@@ -250,7 +253,8 @@ func (ups *UnitPurchaseService) RefundUnitPurchase(playerID ecs.EntityID, unitID
 	resources.AddGold(costPaid)
 
 	// Step 3: Dispose unit entity
-	ups.entityManager.World.DisposeEntities(unitEntity)
+	pos := common.GetComponentType[*coords.LogicalPosition](unitEntity, common.PositionComponent)
+	ups.entityManager.CleanDisposeEntity(unitEntity, pos)
 
 	// Transaction successful - populate result
 	result.Success = true

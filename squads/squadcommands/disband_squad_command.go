@@ -103,28 +103,20 @@ func (cmd *DisbandSquadCommand) Execute() error {
 	for _, unitID := range unitIDs {
 		unitEntity := common.FindEntityByIDWithTag(cmd.entityManager, unitID, squads.SquadMemberTag)
 		if unitEntity != nil {
-			// Remove from position system if it has a position
-			if unitEntity.HasComponent(common.PositionComponent) {
-				pos := common.GetComponentType[*coords.LogicalPosition](unitEntity, common.PositionComponent)
-				if pos != nil {
-					common.GlobalPositionSystem.RemoveEntity(unitID, *pos)
-				}
-			}
-			cmd.entityManager.World.DisposeEntities(unitEntity)
+			// Get position component for cleanup
+			pos := common.GetComponentType[*coords.LogicalPosition](unitEntity, common.PositionComponent)
+			// Use CleanDisposeEntity to remove from both ECS World and GlobalPositionSystem
+			cmd.entityManager.CleanDisposeEntity(unitEntity, pos)
 		}
 	}
 
 	// Remove squad entity
 	squadEntity := squads.GetSquadEntity(cmd.squadID, cmd.entityManager)
 	if squadEntity != nil {
-		// Remove from position system
-		if squadEntity.HasComponent(common.PositionComponent) {
-			pos := common.GetComponentType[*coords.LogicalPosition](squadEntity, common.PositionComponent)
-			if pos != nil {
-				common.GlobalPositionSystem.RemoveEntity(cmd.squadID, *pos)
-			}
-		}
-		cmd.entityManager.World.DisposeEntities(squadEntity)
+		// Get position component for cleanup
+		pos := common.GetComponentType[*coords.LogicalPosition](squadEntity, common.PositionComponent)
+		// Use CleanDisposeEntity to remove from both ECS World and GlobalPositionSystem
+		cmd.entityManager.CleanDisposeEntity(squadEntity, pos)
 	}
 
 	return nil

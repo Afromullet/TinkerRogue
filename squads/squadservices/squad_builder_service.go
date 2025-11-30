@@ -3,6 +3,7 @@ package squadservices
 import (
 	"fmt"
 	"game_main/common"
+	"game_main/coords"
 	"game_main/squads"
 
 	"github.com/bytearena/ecs"
@@ -418,7 +419,8 @@ func (sbs *SquadBuilderService) ClearSquadAndReturnAllUnits(
 		}
 
 		// Dispose the placed unit entity
-		sbs.entityManager.World.DisposeEntities(unitEntity)
+		pos := common.GetComponentType[*coords.LogicalPosition](unitEntity, common.PositionComponent)
+		sbs.entityManager.CleanDisposeEntity(unitEntity, pos)
 		result.UnitsCleared++
 	}
 

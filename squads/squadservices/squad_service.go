@@ -161,7 +161,8 @@ func (ss *SquadService) RemoveUnitFromSquad(
 	}
 
 	// Remove the unit
-	ss.entityManager.World.DisposeEntities(unitEntity)
+	pos := common.GetComponentType[*coords.LogicalPosition](unitEntity, common.PositionComponent)
+	ss.entityManager.CleanDisposeEntity(unitEntity, pos)
 
 	// Update squad capacity
 	squads.UpdateSquadCapacity(squadID, ss.entityManager)

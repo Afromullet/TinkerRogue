@@ -363,3 +363,32 @@ func (em *EntityManager) MoveSquadAndMembers(
 
 	return nil
 }
+
+// CleanDisposeEntity removes an entity from both the ECS World and GlobalPositionSystem.
+// This prevents memory leaks by ensuring entities are cleaned up from all systems.
+//
+// Call this instead of World.DisposeEntities() directly when the entity has a position.
+// For entities without positions, World.DisposeEntities() is still safe to use directly.
+//
+// Usage:
+//   pos := common.GetComponentType[*coords.LogicalPosition](entity, common.PositionComponent)
+//   if pos != nil {
+//       manager.CleanDisposeEntity(entity, pos)
+//   } else {
+//       manager.World.DisposeEntities(entity)
+//   }
+func (em *EntityManager) CleanDisposeEntity(entity *ecs.Entity, position *coords.LogicalPosition) {
+	if entity == nil {
+		return
+	}
+
+	entityID := entity.GetID()
+
+	// Remove from GlobalPositionSystem first
+	if position != nil && GlobalPositionSystem != nil {
+		GlobalPositionSystem.RemoveEntity(entityID, *position)
+	}
+
+	// Remove from ECS world
+	em.World.DisposeEntities(entity)
+}

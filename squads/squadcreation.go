@@ -100,7 +100,10 @@ func RemoveUnitFromSquad(unitEntityID ecs.EntityID, squadmanager *common.EntityM
 	// Find the unit entity and dispose it
 	unitEntity := common.FindEntityByIDWithTag(squadmanager, unitEntityID, SquadMemberTag)
 	if unitEntity != nil {
-		squadmanager.World.DisposeEntities(unitEntity)
+		// Get position component if it exists (units typically don't have world positions)
+		pos := common.GetComponentType[*coords.LogicalPosition](unitEntity, common.PositionComponent)
+		// Use CleanDisposeEntity for consistent cleanup
+		squadmanager.CleanDisposeEntity(unitEntity, pos)
 	}
 
 	// Update squad capacity tracking after removal

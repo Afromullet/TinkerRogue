@@ -139,13 +139,9 @@ func (cmd *MergeSquadsCommand) Execute() error {
 	squads.UpdateSquadCapacity(cmd.targetSquadID, cmd.entityManager)
 
 	// Destroy source squad
-	if sourceEntity.HasComponent(common.PositionComponent) {
-		pos := common.GetComponentType[*coords.LogicalPosition](sourceEntity, common.PositionComponent)
-		if pos != nil {
-			common.GlobalPositionSystem.RemoveEntity(cmd.sourceSquadID, *pos)
-		}
-	}
-	cmd.entityManager.World.DisposeEntities(sourceEntity)
+	pos := common.GetComponentType[*coords.LogicalPosition](sourceEntity, common.PositionComponent)
+	// Use CleanDisposeEntity to remove from both ECS World and GlobalPositionSystem
+	cmd.entityManager.CleanDisposeEntity(sourceEntity, pos)
 
 	return nil
 }
