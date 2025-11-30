@@ -53,7 +53,7 @@ func (svc *InventoryService) SelectThrowable(playerEntityID ecs.EntityID, itemIn
 	}
 
 	// Get item component
-	item := GetItemByID(svc.ecsManager.World, itemEntityID)
+	item := GetItemByID(svc.ecsManager, itemEntityID)
 	if item == nil {
 		result.Error = "Item not found"
 		return result
@@ -75,7 +75,7 @@ func (svc *InventoryService) SelectThrowable(playerEntityID ecs.EntityID, itemIn
 	}
 
 	// Get effect descriptions
-	effectNames := GetItemEffectNames(svc.ecsManager.World, item)
+	effectNames := GetItemEffectNames(svc.ecsManager, item)
 
 	// Build successful result
 	result.Success = true
@@ -112,7 +112,7 @@ func (svc *InventoryService) GetInventoryItemInfo(playerEntityID ecs.EntityID, i
 	}
 
 	// Get item component
-	item := GetItemByID(svc.ecsManager.World, itemEntityID)
+	item := GetItemByID(svc.ecsManager, itemEntityID)
 	if item == nil {
 		return nil, fmt.Errorf("item not found")
 	}
@@ -126,7 +126,7 @@ func (svc *InventoryService) GetInventoryItemInfo(playerEntityID ecs.EntityID, i
 	}
 
 	// Get effect descriptions
-	effectNames := GetItemEffectNames(svc.ecsManager.World, item)
+	effectNames := GetItemEffectNames(svc.ecsManager, item)
 
 	return &InventoryItemInfo{
 		ItemEntityID: itemEntityID,
@@ -147,7 +147,7 @@ func (svc *InventoryService) FilterInventoryByAction(playerEntityID ecs.EntityID
 	}
 
 	// Use existing inventory system functions
-	entries := GetInventoryByAction(svc.ecsManager.World, inv, nil, actionName)
+	entries := GetInventoryByAction(svc.ecsManager, inv, nil, actionName)
 
 	// Convert []any to []InventoryListEntry
 	result := make([]InventoryListEntry, 0, len(entries))

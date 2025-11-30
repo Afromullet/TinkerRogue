@@ -292,7 +292,7 @@ func (ilc *ItemListComponent) Refresh() {
 	switch ilc.currentFilter {
 	case "Throwables":
 		// Get throwable items
-		throwableEntries := gear.GetThrowableItems(ilc.ecsManager.World, inv, []int{})
+		throwableEntries := gear.GetThrowableItems(ilc.ecsManager, inv, []int{})
 		if len(throwableEntries) == 0 {
 			entries = []interface{}{"No throwable items"}
 		} else {
@@ -304,7 +304,7 @@ func (ilc *ItemListComponent) Refresh() {
 
 	case "All":
 		// Get all items
-		allEntries := gear.GetInventoryForDisplay(ilc.ecsManager.World, inv, []int{})
+		allEntries := gear.GetInventoryForDisplay(ilc.ecsManager, inv, []int{})
 		if len(allEntries) == 0 {
 			entries = []interface{}{"Inventory is empty"}
 		} else {

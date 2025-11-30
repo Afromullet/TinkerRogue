@@ -64,7 +64,7 @@ func (cc *CombatController) handleThrowable() bool {
 	// Get throwable item component directly (no wrapper)
 	var item *gear.Item
 	if cc.playerData.Throwables.ThrowableItemEntityID != 0 {
-		item = gear.GetItemByID(cc.ecsManager.World, cc.playerData.Throwables.ThrowableItemEntityID)
+		item = gear.GetItemByID(cc.ecsManager, cc.playerData.Throwables.ThrowableItemEntityID)
 	}
 	if item == nil {
 		return false
@@ -95,7 +95,7 @@ func (cc *CombatController) handleThrowable() bool {
 			// Get inventory component from player entity and remove thrown item
 			inv := common.GetComponentTypeByID[*gear.Inventory](cc.ecsManager, cc.playerData.PlayerEntityID, gear.InventoryComponent)
 			if inv != nil {
-				gear.RemoveItem(cc.ecsManager.World, inv, cc.playerData.Throwables.ThrowableItemIndex)
+				gear.RemoveItem(cc.ecsManager, inv, cc.playerData.Throwables.ThrowableItemIndex)
 			}
 
 			cc.applyThrowable(item, throwable.Shape, cc.playerData.Pos)
@@ -128,7 +128,7 @@ func (cc *CombatController) drawThrowableAOE() {
 	// Get throwable item component directly (no wrapper)
 	var item *gear.Item
 	if cc.playerData.Throwables.ThrowableItemEntityID != 0 {
-		item = gear.GetItemByID(cc.ecsManager.World, cc.playerData.Throwables.ThrowableItemEntityID)
+		item = gear.GetItemByID(cc.ecsManager, cc.playerData.Throwables.ThrowableItemEntityID)
 	}
 	if item == nil {
 		return

@@ -93,7 +93,7 @@ func TestSelectThrowable_Success(t *testing.T) {
 
 	// Create and add a throwable item
 	throwableItem := createTestThrowableItem(ecsManager.World, "Fire Bomb")
-	AddItem(ecsManager.World, inv, throwableItem.GetID())
+	AddItem(ecsManager, inv, throwableItem.GetID())
 
 	// Test selecting the throwable
 	result := service.SelectThrowable(playerID, 0)
@@ -143,7 +143,7 @@ func TestSelectThrowable_NonThrowableItem(t *testing.T) {
 
 	// Create and add a non-throwable item
 	nonThrowableItem := createTestNonThrowableItem(ecsManager.World, "Potion")
-	AddItem(ecsManager.World, inv, nonThrowableItem.GetID())
+	AddItem(ecsManager, inv, nonThrowableItem.GetID())
 
 	// Try to select it as throwable
 	result := service.SelectThrowable(playerID, 0)
@@ -193,7 +193,7 @@ func TestGetInventoryItemInfo_Success(t *testing.T) {
 
 	// Create and add a throwable item
 	throwableItem := createTestThrowableItem(ecsManager.World, "Ice Bomb")
-	AddItem(ecsManager.World, inv, throwableItem.GetID())
+	AddItem(ecsManager, inv, throwableItem.GetID())
 
 	// Get item info
 	info, err := service.GetInventoryItemInfo(playerID, 0)

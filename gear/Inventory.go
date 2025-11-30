@@ -31,8 +31,8 @@ type Inventory struct {
 // AddItem adds an item to the inventory (system function)
 // If the item already exists, it increments the count by 1.
 // Otherwise it sets the count to 1 and adds it to the inventory.
-func AddItem(manager *ecs.Manager, inv *Inventory, itemEntityID ecs.EntityID) {
-	itemEntity := common.FindEntityByIDInManager(manager, itemEntityID)
+func AddItem(manager *common.EntityManager, inv *Inventory, itemEntityID ecs.EntityID) {
+	itemEntity := common.FindEntityByID(manager, itemEntityID)
 	if itemEntity == nil {
 		return
 	}
@@ -42,7 +42,7 @@ func AddItem(manager *ecs.Manager, inv *Inventory, itemEntityID ecs.EntityID) {
 
 	// Check if item already exists in inventory
 	for _, existingID := range inv.ItemEntityIDs {
-		existingEntity := common.FindEntityByIDInManager(manager, existingID)
+		existingEntity := common.FindEntityByID(manager, existingID)
 		if existingEntity == nil {
 			continue
 		}
@@ -81,7 +81,7 @@ func GetItemEntityID(inv *Inventory, index int) (ecs.EntityID, error) {
 // RemoveItem removes an item from inventory (system function)
 // If there's more than one of an item, it decrements the Item Count
 // Otherwise it removes the item from the inventory
-func RemoveItem(manager *ecs.Manager, inv *Inventory, index int) {
+func RemoveItem(manager *common.EntityManager, inv *Inventory, index int) {
 	itemID, err := GetItemEntityID(inv, index)
 	if err != nil {
 		return
@@ -102,13 +102,13 @@ func RemoveItem(manager *ecs.Manager, inv *Inventory, index int) {
 
 // GetInventoryForDisplay builds the list needed for displaying the inventory to the player (system function)
 // itemPropertiesFilter StatusEffects lets us filter by status effects
-func GetInventoryForDisplay(manager *ecs.Manager, inv *Inventory, indicesToSelect []int, itemPropertiesFilter ...StatusEffects) []any {
+func GetInventoryForDisplay(manager *common.EntityManager, inv *Inventory, indicesToSelect []int, itemPropertiesFilter ...StatusEffects) []any {
 	inventoryItems := make([]any, 0)
 
 	if len(indicesToSelect) == 0 {
 		// Show all items
 		for index, itemID := range inv.ItemEntityIDs {
-			itemEntity := common.FindEntityByIDInManager(manager, itemID)
+			itemEntity := common.FindEntityByID(manager, itemID)
 			if itemEntity == nil {
 				continue
 			}
@@ -132,7 +132,7 @@ func GetInventoryForDisplay(manager *ecs.Manager, inv *Inventory, indicesToSelec
 			}
 
 			itemID := inv.ItemEntityIDs[index]
-			itemEntity := common.FindEntityByIDInManager(manager, itemID)
+			itemEntity := common.FindEntityByID(manager, itemID)
 			if itemEntity == nil {
 				continue
 			}
@@ -155,13 +155,13 @@ func GetInventoryForDisplay(manager *ecs.Manager, inv *Inventory, indicesToSelec
 
 // GetInventoryByAction filters inventory items by their ItemAction capabilities (system function)
 // actionName is the name of the action to filter by (e.g., "Throwable")
-func GetInventoryByAction(manager *ecs.Manager, inv *Inventory, indicesToSelect []int, actionName string) []any {
+func GetInventoryByAction(manager *common.EntityManager, inv *Inventory, indicesToSelect []int, actionName string) []any {
 	inventoryItems := make([]any, 0)
 
 	if len(indicesToSelect) == 0 {
 		// Show all items with the specified action
 		for index, itemID := range inv.ItemEntityIDs {
-			itemEntity := common.FindEntityByIDInManager(manager, itemID)
+			itemEntity := common.FindEntityByID(manager, itemID)
 			if itemEntity == nil {
 				continue
 			}
@@ -185,7 +185,7 @@ func GetInventoryByAction(manager *ecs.Manager, inv *Inventory, indicesToSelect 
 			}
 
 			itemID := inv.ItemEntityIDs[index]
-			itemEntity := common.FindEntityByIDInManager(manager, itemID)
+			itemEntity := common.FindEntityByID(manager, itemID)
 			if itemEntity == nil {
 				continue
 			}
@@ -207,12 +207,12 @@ func GetInventoryByAction(manager *ecs.Manager, inv *Inventory, indicesToSelect 
 }
 
 // GetThrowableItems returns all items that have throwable actions (system function)
-func GetThrowableItems(manager *ecs.Manager, inv *Inventory, indicesToSelect []int) []any {
+func GetThrowableItems(manager *common.EntityManager, inv *Inventory, indicesToSelect []int) []any {
 	return GetInventoryByAction(manager, inv, indicesToSelect, THROWABLE_ACTION_NAME)
 }
 
 // HasItemsWithAction checks if the inventory contains any items with the specified action (system function)
-func HasItemsWithAction(manager *ecs.Manager, inv *Inventory, actionName string) bool {
+func HasItemsWithAction(manager *common.EntityManager, inv *Inventory, actionName string) bool {
 	for _, itemID := range inv.ItemEntityIDs {
 		itemComp := GetItemByID(manager, itemID)
 		if itemComp != nil && HasAction(itemComp, actionName) {
@@ -223,6 +223,6 @@ func HasItemsWithAction(manager *ecs.Manager, inv *Inventory, actionName string)
 }
 
 // HasThrowableItems checks if the inventory contains any throwable items (system function)
-func HasThrowableItems(manager *ecs.Manager, inv *Inventory) bool {
+func HasThrowableItems(manager *common.EntityManager, inv *Inventory) bool {
 	return HasItemsWithAction(manager, inv, THROWABLE_ACTION_NAME)
 }

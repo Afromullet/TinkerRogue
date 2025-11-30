@@ -188,7 +188,7 @@ func (mc *MovementController) playerPickupItem() {
 			// Query inventory from player entity via ECS instead of using interface{}
 			inv := common.GetComponentTypeByID[*gear.Inventory](mc.ecsManager, mc.playerData.PlayerEntityID, gear.InventoryComponent)
 			if inv != nil {
-				gear.AddItem(mc.ecsManager.World, inv, itemEntityID)
+				gear.AddItem(mc.ecsManager, inv, itemEntityID)
 			}
 		}
 	}

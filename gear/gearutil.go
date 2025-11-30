@@ -11,8 +11,8 @@ import (
 
 // GetItemByID retrieves the Item component from an entity ID (ECS best practice)
 // Returns nil if the entity doesn't exist or doesn't have an item component
-func GetItemByID(manager *ecs.Manager, entityID ecs.EntityID) *Item {
-	entity := common.FindEntityByIDInManager(manager, entityID)
+func GetItemByID(manager *common.EntityManager, entityID ecs.EntityID) *Item {
+	entity := common.FindEntityByID(manager, entityID)
 	if entity == nil {
 		return nil
 	}
@@ -24,7 +24,7 @@ func GetItemByID(manager *ecs.Manager, entityID ecs.EntityID) *Item {
 // ============================================================================
 
 // GetItemEffectNames returns the names of all effects on an item (system function)
-func GetItemEffectNames(manager *ecs.Manager, item *Item) []string {
+func GetItemEffectNames(manager *common.EntityManager, item *Item) []string {
 	names := make([]string, 0)
 
 	if item.Properties == 0 {
@@ -32,7 +32,7 @@ func GetItemEffectNames(manager *ecs.Manager, item *Item) []string {
 	}
 
 	// Get the properties entity to check for effects
-	propsEntity := common.FindEntityByIDInManager(manager, item.Properties)
+	propsEntity := common.FindEntityByID(manager, item.Properties)
 	if propsEntity == nil {
 		return names
 	}
@@ -48,7 +48,7 @@ func GetItemEffectNames(manager *ecs.Manager, item *Item) []string {
 }
 
 // HasAllEffects checks if an item has all specified effects (system function)
-func HasAllEffects(manager *ecs.Manager, item *Item, effectsToCheck ...StatusEffects) bool {
+func HasAllEffects(manager *common.EntityManager, item *Item, effectsToCheck ...StatusEffects) bool {
 	if len(effectsToCheck) == 0 {
 		return true
 	}
@@ -63,7 +63,7 @@ func HasAllEffects(manager *ecs.Manager, item *Item, effectsToCheck ...StatusEff
 }
 
 // HasEffect checks if an item has a specific effect (system function)
-func HasEffect(manager *ecs.Manager, item *Item, effectToCheck StatusEffects) bool {
+func HasEffect(manager *common.EntityManager, item *Item, effectToCheck StatusEffects) bool {
 	names := GetItemEffectNames(manager, item)
 	comp := effectToCheck.StatusEffectName()
 
