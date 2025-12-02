@@ -51,14 +51,6 @@ type PlayerPurchaseInfo struct {
 	CanAddUnit     bool
 }
 
-// GetAvailableUnitsForPurchase returns all unit templates available for purchase
-func (ups *UnitPurchaseService) GetAvailableUnitsForPurchase() []squads.UnitTemplate {
-	// Return all templates (in future, could filter by tier, availability, etc.)
-	templates := make([]squads.UnitTemplate, len(squads.Units))
-	copy(templates, squads.Units)
-	return templates
-}
-
 // GetUnitCost calculates the cost of a unit template
 func (ups *UnitPurchaseService) GetUnitCost(template squads.UnitTemplate) int {
 	// Simple cost formula based on unit name hash
