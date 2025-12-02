@@ -83,9 +83,9 @@ func SetupSquadSystem(manager *common.EntityManager) error {
 	}
 
 	// Create test squads if in debug mode
-	if err := squads.CreateDummySquadsForTesting(manager); err != nil {
-		return err
-	}
+	//if err := squads.CreateDummySquadsForTesting(manager); err != nil {
+	//	return err
+	//}
 
 	return nil
 }
@@ -202,6 +202,12 @@ func SetupUI(g *Game) {
 	unitPurchaseMode := guisquads.NewUnitPurchaseMode(overworldManager)
 	if err := g.gameModeCoordinator.RegisterOverworldMode(unitPurchaseMode); err != nil {
 		log.Fatalf("Failed to register unit purchase mode: %v", err)
+	}
+
+	// Squad editor mode - edit existing squads (add/remove units, change leader, etc.)
+	squadEditorMode := guisquads.NewSquadEditorMode(overworldManager)
+	if err := g.gameModeCoordinator.RegisterOverworldMode(squadEditorMode); err != nil {
+		log.Fatalf("Failed to register squad editor mode: %v", err)
 	}
 
 	// Inventory mode (overworld instance)

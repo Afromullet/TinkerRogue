@@ -62,6 +62,7 @@ func (smm *SquadManagementMode) Initialize(ctx *core.UIContext) error {
 	smm.RegisterHotkey(ebiten.KeyB, "squad_builder")
 	smm.RegisterHotkey(ebiten.KeyF, "formation_editor")
 	smm.RegisterHotkey(ebiten.KeyP, "unit_purchase")
+	smm.RegisterHotkey(ebiten.KeyE, "squad_editor")
 
 	// Override root container with vertical layout for single squad panel + navigation
 	smm.RootContainer = widget.NewContainer(
@@ -129,15 +130,6 @@ func (smm *SquadManagementMode) Initialize(ctx *core.UIContext) error {
 		)),
 	)
 
-	// Rename Squad button
-	renameBtn := widgets.CreateButtonWithConfig(widgets.ButtonConfig{
-		Text: "Rename Squad",
-		OnClick: func() {
-			smm.onRenameSquad()
-		},
-	})
-	smm.commandContainer.AddChild(renameBtn)
-
 	// Disband Squad button
 	disbandBtn := widgets.CreateButtonWithConfig(widgets.ButtonConfig{
 		Text: "Disband Squad",
@@ -197,6 +189,14 @@ func (smm *SquadManagementMode) Initialize(ctx *core.UIContext) error {
 			OnClick: func() {
 				if purchaseMode, exists := smm.ModeManager.GetMode("unit_purchase"); exists {
 					smm.ModeManager.RequestTransition(purchaseMode, "Open Unit Purchase")
+				}
+			},
+		},
+		{
+			Text: "Edit Squad (E)",
+			OnClick: func() {
+				if editorMode, exists := smm.ModeManager.GetMode("squad_editor"); exists {
+					smm.ModeManager.RequestTransition(editorMode, "Open Squad Editor")
 				}
 			},
 		},
@@ -404,45 +404,6 @@ func (smm *SquadManagementMode) HandleInput(inputState *core.InputState) bool {
 
 	// E key hotkey is now handled by gui.BaseMode.HandleCommonInput via RegisterHotkey
 	return false
-}
-
-// onRenameSquad prompts for a new name and executes RenameSquadCommand
-func (smm *SquadManagementMode) onRenameSquad() {
-	if len(smm.allSquadIDs) == 0 {
-		smm.SetStatus("No squad selected")
-		return
-	}
-
-	currentSquadID := smm.allSquadIDs[smm.currentSquadIndex]
-	currentName := squads.GetSquadName(currentSquadID, smm.Queries.ECSManager)
-
-	// Show text input dialog
-	dialog := widgets.CreateTextInputDialog(widgets.TextInputDialogConfig{
-		Title:       "Rename Squad",
-		Message:     "Enter new squad name:",
-		Placeholder: "Squad name",
-		InitialText: currentName,
-		OnConfirm: func(newName string) {
-			if newName == "" || newName == currentName {
-				smm.SetStatus("Rename cancelled")
-				return
-			}
-
-			// Create and execute rename command
-			cmd := squadcommands.NewRenameSquadCommand(
-				smm.Queries.ECSManager,
-				currentSquadID,
-				newName,
-			)
-
-			smm.CommandHistory.Execute(cmd)
-		},
-		OnCancel: func() {
-			smm.SetStatus("Rename cancelled")
-		},
-	})
-
-	smm.GetEbitenUI().AddWindow(dialog)
 }
 
 // onDisbandSquad shows confirmation dialog then executes DisbandSquadCommand for the current squad

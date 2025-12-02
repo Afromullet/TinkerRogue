@@ -102,14 +102,21 @@ func CreateUnitList(config UnitListConfig) *widget.List {
 				nameStr = name.NameStr
 			}
 
-			entries = append(entries, fmt.Sprintf("%s - HP: %d/%d", nameStr, attr.CurrentHealth, attr.MaxHealth))
+			// Store UnitIdentity object instead of string
+			entries = append(entries, squads.UnitIdentity{
+				ID:        unitID,
+				Name:      nameStr,
+				CurrentHP: attr.CurrentHealth,
+				MaxHP:     attr.MaxHealth,
+			})
 		}
 	}
 
 	return CreateListWithConfig(ListConfig{
 		Entries: entries,
 		EntryLabelFunc: func(e interface{}) string {
-			return e.(string)
+			identity := e.(squads.UnitIdentity)
+			return fmt.Sprintf("%s - HP: %d/%d", identity.Name, identity.CurrentHP, identity.MaxHP)
 		},
 		MinWidth:  listWidth,
 		MinHeight: listHeight,

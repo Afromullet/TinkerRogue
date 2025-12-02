@@ -183,3 +183,28 @@ func GetPlayerRoster(playerID ecs.EntityID, manager *common.EntityManager) *Unit
 	return common.GetComponentTypeByID[*UnitRoster](manager, playerID, UnitRosterComponent)
 }
 
+// RegisterSquadUnitInRoster registers an existing squad unit in the roster
+// Used to backfill roster with units that were created before roster tracking
+// Returns error if roster is full or unit data is invalid
+func RegisterSquadUnitInRoster(roster *UnitRoster, unitID ecs.EntityID, squadID ecs.EntityID, manager *common.EntityManager) error {
+	// Get unit name to determine template
+	nameStr := "Unknown"
+	if nameComp, ok := manager.GetComponent(unitID, common.NameComponent); ok {
+		if name := nameComp.(*common.Name); name != nil {
+			nameStr = name.NameStr
+		}
+	}
+
+	// Add unit to roster (will increment TotalOwned and add to UnitEntities)
+	if err := roster.AddUnit(unitID, nameStr); err != nil {
+		return fmt.Errorf("failed to add unit to roster: %w", err)
+	}
+
+	// Mark as in squad (will increment UnitsInSquads count)
+	if err := roster.MarkUnitInSquad(unitID, squadID); err != nil {
+		return fmt.Errorf("failed to mark unit in squad: %w", err)
+	}
+
+	return nil
+}
+

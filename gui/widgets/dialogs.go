@@ -1,6 +1,7 @@
 package widgets
 
 import (
+	"image"
 	"image/color"
 
 	"game_main/gui/guiresources"
@@ -92,6 +93,23 @@ func createDialogWindow(container *widget.Container, minWidth, minHeight int) *w
 	)
 }
 
+// createPositionedDialogWindow creates a positioned modal window.
+// Used when specific X/Y positioning is needed (e.g., centering above a specific area).
+func createPositionedDialogWindow(container *widget.Container, minWidth, minHeight, x, y int) *widget.Window {
+	opts := []widget.WindowOpt{
+		widget.WindowOpts.Contents(container),
+		widget.WindowOpts.Modal(),
+		widget.WindowOpts.MinSize(minWidth, minHeight),
+	}
+
+	// Add position if specified (non-zero)
+	if x != 0 || y != 0 {
+		opts = append(opts, widget.WindowOpts.Location(image.Rect(x, y, x+minWidth, y+minHeight)))
+	}
+
+	return widget.NewWindow(opts...)
+}
+
 // DialogConfig provides configuration for modal dialogs
 type DialogConfig struct {
 	Title      string
@@ -100,6 +118,8 @@ type DialogConfig struct {
 	OnCancel   func()
 	MinWidth   int
 	MinHeight  int
+	CenterX    int // X position for centering (0 = default window positioning)
+	CenterY    int // Y position for centering (0 = default window positioning)
 }
 
 // CreateConfirmationDialog creates a modal confirmation dialog with Yes/No buttons.
@@ -155,8 +175,15 @@ func CreateConfirmationDialog(config DialogConfig) *widget.Window {
 
 	contentContainer.AddChild(buttonContainer)
 
-	// Create window using common helper
-	window = createDialogWindow(contentContainer, config.MinWidth, config.MinHeight)
+	// Create window using positioned helper if coordinates provided, otherwise use default
+	if config.CenterX != 0 || config.CenterY != 0 {
+		// Calculate top-left corner from center coordinates
+		x := config.CenterX - config.MinWidth/2
+		y := config.CenterY - config.MinHeight/2
+		window = createPositionedDialogWindow(contentContainer, config.MinWidth, config.MinHeight, x, y)
+	} else {
+		window = createDialogWindow(contentContainer, config.MinWidth, config.MinHeight)
+	}
 
 	return window
 }
