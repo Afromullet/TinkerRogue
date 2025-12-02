@@ -29,6 +29,8 @@ Simulate tactical combat scenarios using the project's squad combat system to va
 - Combat formula (from `squads/squadcombat.go`)
 - Formation definitions (from `squads/squadcreation.go`)
 - Ability definitions (from `squads/squadabilities.go`)
+- Creature data (from `assets/gamedata/monsterdata.json`)
+- Combat Mechanics in the combat package
 - Unit stats (HP, attack, defense, dodge, crit)
 - Cover mechanics (front row protects back row)
 - Ability triggers (HP threshold, turn count, etc.)
