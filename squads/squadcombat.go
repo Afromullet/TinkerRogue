@@ -24,167 +24,213 @@ func ExecuteSquadAttack(attackerSquadID, defenderSquadID ecs.EntityID, squadmana
 		UnitsKilled:  []ecs.EntityID{},
 	}
 
-	// Initialize combat log
-	combatLog := &CombatLog{
-		AttackerSquadID:   attackerSquadID,
-		DefenderSquadID:   defenderSquadID,
-		AttackerSquadName: GetSquadName(attackerSquadID, squadmanager),
-		DefenderSquadName: GetSquadName(defenderSquadID, squadmanager),
-		SquadDistance:     GetSquadDistance(attackerSquadID, defenderSquadID, squadmanager),
-		AttackEvents:      []AttackEvent{},
-		AttackingUnits:    []UnitSnapshot{},
-	}
-
-	// Calculate distance between squads for range checking
-	squadDistance := combatLog.SquadDistance
-	if squadDistance < 0 {
-		// Invalid squad positions, cannot attack
+	// Initialize combat log with squad info
+	combatLog := initializeCombatLog(attackerSquadID, defenderSquadID, squadmanager)
+	if combatLog.SquadDistance < 0 {
 		result.CombatLog = combatLog
 		return result
 	}
 
-	// Query for attacker unit IDs (not pointers!)
+	// Snapshot units that will participate (for logging)
+	combatLog.AttackingUnits = snapshotAttackingUnits(attackerSquadID, combatLog.SquadDistance, squadmanager)
+
+	// Process each attacking unit
+	attackIndex := 0
 	attackerUnitIDs := GetUnitIDsInSquad(attackerSquadID, squadmanager)
 
-	// Capture attacking units snapshot (before actual combat)
 	for _, attackerID := range attackerUnitIDs {
-		attackerAttr := common.GetAttributesByIDWithTag(squadmanager, attackerID, SquadMemberTag)
-		if attackerAttr == nil || attackerAttr.CurrentHealth <= 0 {
+		// Check if unit can attack (alive and in range)
+		if !canUnitAttack(attackerID, combatLog.SquadDistance, squadmanager) {
 			continue
 		}
 
-		if !squadmanager.HasComponentByIDWithTag(attackerID, SquadMemberTag, AttackRangeComponent) {
-			continue
-		}
-		rangeData := common.GetComponentTypeByID[*AttackRangeData](squadmanager, attackerID, AttackRangeComponent)
-		if rangeData.Range < squadDistance {
+		// Get targets for this attacker
+		targetIDs := selectTargetUnits(attackerID, defenderSquadID, squadmanager)
+
+		// Attack each target
+		attackIndex = processAttackOnTargets(attackerID, targetIDs, result, combatLog, attackIndex, squadmanager)
+	}
+
+	// Finalize combat log with summary
+	finalizeCombatLog(result, combatLog, defenderSquadID, squadmanager)
+
+	result.CombatLog = combatLog
+	return result
+}
+
+// initializeCombatLog creates the combat log structure with squad information
+func initializeCombatLog(attackerSquadID, defenderSquadID ecs.EntityID, manager *common.EntityManager) *CombatLog {
+	return &CombatLog{
+		AttackerSquadID:   attackerSquadID,
+		DefenderSquadID:   defenderSquadID,
+		AttackerSquadName: GetSquadName(attackerSquadID, manager),
+		DefenderSquadName: GetSquadName(defenderSquadID, manager),
+		SquadDistance:     GetSquadDistance(attackerSquadID, defenderSquadID, manager),
+		AttackEvents:      []AttackEvent{},
+		AttackingUnits:    []UnitSnapshot{},
+	}
+}
+
+// snapshotAttackingUnits captures attacking unit info before combat for logging
+func snapshotAttackingUnits(squadID ecs.EntityID, squadDistance int, manager *common.EntityManager) []UnitSnapshot {
+	var snapshots []UnitSnapshot
+	unitIDs := GetUnitIDsInSquad(squadID, manager)
+
+	for _, unitID := range unitIDs {
+		// Check if unit can participate
+		if !canUnitAttack(unitID, squadDistance, manager) {
 			continue
 		}
 
-		// Add to attacking units snapshot
-		identity := GetUnitIdentity(attackerID, squadmanager)
-		roleData := common.GetComponentTypeByID[*UnitRoleData](squadmanager, attackerID, UnitRoleComponent)
+		// Capture unit info
+		identity := GetUnitIdentity(unitID, manager)
+		rangeData := common.GetComponentTypeByID[*AttackRangeData](manager, unitID, AttackRangeComponent)
+		roleData := common.GetComponentTypeByID[*UnitRoleData](manager, unitID, UnitRoleComponent)
+
 		roleName := "Unknown"
 		if roleData != nil {
 			roleName = roleData.Role.String()
 		}
 
 		snapshot := UnitSnapshot{
-			UnitID:      attackerID,
+			UnitID:      unitID,
 			UnitName:    identity.Name,
 			GridRow:     identity.GridRow,
 			GridCol:     identity.GridCol,
 			AttackRange: rangeData.Range,
 			RoleName:    roleName,
 		}
-		combatLog.AttackingUnits = append(combatLog.AttackingUnits, snapshot)
+		snapshots = append(snapshots, snapshot)
 	}
 
-	// Attack index for sequential numbering
-	attackIndex := 0
+	return snapshots
+}
 
-	// Process each attacker unit
-	for _, attackerID := range attackerUnitIDs {
-		// Check if unit is alive
-		attackerAttr := common.GetAttributesByIDWithTag(squadmanager, attackerID, SquadMemberTag)
-		if attackerAttr == nil || attackerAttr.CurrentHealth <= 0 {
+// finalizeCombatLog calculates summary statistics for the combat log
+func finalizeCombatLog(result *CombatResult, log *CombatLog, defenderSquadID ecs.EntityID, manager *common.EntityManager) {
+	result.TotalDamage = sumDamageMap(result.DamageByUnit)
+	log.TotalDamage = result.TotalDamage
+	log.UnitsKilled = len(result.UnitsKilled)
+	log.DefenderStatus = calculateSquadStatus(defenderSquadID, manager)
+}
+
+// canUnitAttack checks if a unit is alive and within attack range
+func canUnitAttack(attackerID ecs.EntityID, squadDistance int, manager *common.EntityManager) bool {
+	// Check if unit is alive
+	attr := common.GetAttributesByIDWithTag(manager, attackerID, SquadMemberTag)
+	if attr == nil || attr.CurrentHealth <= 0 {
+		return false
+	}
+
+	// Check if unit has attack range component
+	if !manager.HasComponentByIDWithTag(attackerID, SquadMemberTag, AttackRangeComponent) {
+		return false
+	}
+
+	// Check if within range
+	rangeData := common.GetComponentTypeByID[*AttackRangeData](manager, attackerID, AttackRangeComponent)
+	return rangeData.Range >= squadDistance
+}
+
+// selectTargetUnits determines which defender units should be targeted
+// Handles both cell-based and row-based targeting modes
+func selectTargetUnits(attackerID, defenderSquadID ecs.EntityID, manager *common.EntityManager) []ecs.EntityID {
+	// Check if attacker has targeting component
+	if !manager.HasComponentByIDWithTag(attackerID, SquadMemberTag, TargetRowComponent) {
+		return []ecs.EntityID{}
+	}
+
+	targetRowData := common.GetComponentTypeByID[*TargetRowData](manager, attackerID, TargetRowComponent)
+	var targetIDs []ecs.EntityID
+
+	if targetRowData.Mode == TargetModeCellBased {
+		targetIDs = selectCellBasedTargets(defenderSquadID, targetRowData.TargetCells, manager)
+	} else {
+		targetIDs = selectRowBasedTargets(defenderSquadID, targetRowData, manager)
+	}
+
+	return targetIDs
+}
+
+// selectCellBasedTargets finds units at specific grid cells
+func selectCellBasedTargets(defenderSquadID ecs.EntityID, targetCells [][2]int, manager *common.EntityManager) []ecs.EntityID {
+	var targets []ecs.EntityID
+	for _, cell := range targetCells {
+		row, col := cell[0], cell[1]
+		cellTargets := GetUnitIDsAtGridPosition(defenderSquadID, row, col, manager)
+		targets = append(targets, cellTargets...)
+	}
+	return targets
+}
+
+// selectRowBasedTargets finds units in specific rows with multi-target logic
+func selectRowBasedTargets(defenderSquadID ecs.EntityID, targetData *TargetRowData, manager *common.EntityManager) []ecs.EntityID {
+	var targets []ecs.EntityID
+
+	for _, targetRow := range targetData.TargetRows {
+		rowTargets := GetUnitIDsInRow(defenderSquadID, targetRow, manager)
+		if len(rowTargets) == 0 {
 			continue
 		}
 
-		// Check if unit is within attack range
-		if !squadmanager.HasComponentByIDWithTag(attackerID, SquadMemberTag, AttackRangeComponent) {
-			continue
-		}
-		rangeData := common.GetComponentTypeByID[*AttackRangeData](squadmanager, attackerID, AttackRangeComponent)
-		if rangeData.Range < squadDistance {
-			// Unit is out of range, cannot attack
-			continue
-		}
-
-		// Get targeting data
-		if !squadmanager.HasComponentByIDWithTag(attackerID, SquadMemberTag, TargetRowComponent) {
-			continue
-		}
-
-		targetRowData := common.GetComponentTypeByID[*TargetRowData](squadmanager, attackerID, TargetRowComponent)
-
-		var actualTargetIDs []ecs.EntityID
-
-		// Handle targeting based on mode
-		if targetRowData.Mode == TargetModeCellBased {
-			// Cell-based targeting: hit specific grid cells
-			for _, cell := range targetRowData.TargetCells {
-				row, col := cell[0], cell[1]
-				cellTargetIDs := GetUnitIDsAtGridPosition(defenderSquadID, row, col, squadmanager)
-				actualTargetIDs = append(actualTargetIDs, cellTargetIDs...)
+		//TODO, handle multitarget seletion a better way. Figure out whether we still want that.
+		//I am thinking just cell based will do it
+		if targetData.IsMultiTarget {
+			maxTargets := targetData.MaxTargets
+			if maxTargets == 0 || maxTargets > len(rowTargets) {
+				targets = append(targets, rowTargets...)
+			} else {
+				targets = append(targets, selectRandomTargetIDs(rowTargets, maxTargets)...)
 			}
 		} else {
-			// Row-based targeting: hit entire row(s)
-			for _, targetRow := range targetRowData.TargetRows {
-				targetIDs := GetUnitIDsInRow(defenderSquadID, targetRow, squadmanager)
-
-				if len(targetIDs) == 0 {
-					continue
-				}
-
-				//TODO, handle multitarget seletion a better way. Figure out whether we still want that.
-				//I am thinking just cell based will do it
-				if targetRowData.IsMultiTarget {
-					maxTargets := targetRowData.MaxTargets
-					if maxTargets == 0 || maxTargets > len(targetIDs) {
-						actualTargetIDs = append(actualTargetIDs, targetIDs...)
-					} else {
-						actualTargetIDs = append(actualTargetIDs, selectRandomTargetIDs(targetIDs, maxTargets)...)
-					}
-				} else {
-					actualTargetIDs = append(actualTargetIDs, selectLowestHPTargetID(targetIDs, squadmanager))
-				}
-			}
-		}
-
-		// Apply damage to each selected target and capture events
-		multiTargetIndex := 1
-		for _, defenderID := range actualTargetIDs {
-			attackIndex++
-
-			// Calculate damage with event capture
-			damage, event := calculateUnitDamageByID(attackerID, defenderID, squadmanager)
-
-			// Add targeting info to event
-			defenderPos := common.GetComponentTypeByID[*GridPositionData](squadmanager, defenderID, GridPositionComponent)
-			event.AttackIndex = attackIndex
-			if defenderPos != nil {
-				event.TargetInfo.TargetRow = defenderPos.AnchorRow
-				event.TargetInfo.TargetCol = defenderPos.AnchorCol
-			}
-			event.TargetInfo.IsMultiTarget = targetRowData.IsMultiTarget
-			if targetRowData.IsMultiTarget {
-				event.TargetInfo.MultiTargetIndex = multiTargetIndex
-				multiTargetIndex++
-			}
-			if targetRowData.Mode == TargetModeCellBased {
-				event.TargetInfo.TargetMode = "cell"
-			} else {
-				event.TargetInfo.TargetMode = "row"
-			}
-
-			// Apply damage
-			applyDamageToUnitByID(defenderID, damage, result, squadmanager)
-
-			// Store event
-			combatLog.AttackEvents = append(combatLog.AttackEvents, *event)
+			targets = append(targets, selectLowestHPTargetID(rowTargets, manager))
 		}
 	}
 
-	result.TotalDamage = sumDamageMap(result.DamageByUnit)
+	return targets
+}
 
-	// Calculate combat summary
-	combatLog.TotalDamage = result.TotalDamage
-	combatLog.UnitsKilled = len(result.UnitsKilled)
-	combatLog.DefenderStatus = calculateSquadStatus(defenderSquadID, squadmanager)
+// processAttackOnTargets applies damage to all targets and creates combat events
+// Returns the updated attack index
+func processAttackOnTargets(attackerID ecs.EntityID, targetIDs []ecs.EntityID, result *CombatResult,
+	log *CombatLog, attackIndex int, manager *common.EntityManager) int {
 
-	result.CombatLog = combatLog
-	return result
+	// Get target mode info once
+	targetData := common.GetComponentTypeByID[*TargetRowData](manager, attackerID, TargetRowComponent)
+
+	multiTargetIndex := 1
+	for _, defenderID := range targetIDs {
+		attackIndex++
+
+		// Calculate damage and create event
+		damage, event := calculateUnitDamageByID(attackerID, defenderID, manager)
+
+		// Add targeting info to event
+		defenderPos := common.GetComponentTypeByID[*GridPositionData](manager, defenderID, GridPositionComponent)
+		event.AttackIndex = attackIndex
+		if defenderPos != nil {
+			event.TargetInfo.TargetRow = defenderPos.AnchorRow
+			event.TargetInfo.TargetCol = defenderPos.AnchorCol
+		}
+		event.TargetInfo.IsMultiTarget = targetData.IsMultiTarget
+		if targetData.IsMultiTarget {
+			event.TargetInfo.MultiTargetIndex = multiTargetIndex
+			multiTargetIndex++
+		}
+		if targetData.Mode == TargetModeCellBased {
+			event.TargetInfo.TargetMode = "cell"
+		} else {
+			event.TargetInfo.TargetMode = "row"
+		}
+
+		// Apply damage
+		applyDamageToUnitByID(defenderID, damage, result, manager)
+
+		// Store event
+		log.AttackEvents = append(log.AttackEvents, *event)
+	}
+
+	return attackIndex
 }
 
 // calculateUnitDamageByID calculates damage using new attribute system and returns detailed event data
