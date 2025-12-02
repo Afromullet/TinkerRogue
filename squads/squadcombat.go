@@ -155,10 +155,17 @@ func selectTargetUnits(attackerID, defenderSquadID ecs.EntityID, manager *common
 // selectCellBasedTargets finds units at specific grid cells
 func selectCellBasedTargets(defenderSquadID ecs.EntityID, targetCells [][2]int, manager *common.EntityManager) []ecs.EntityID {
 	var targets []ecs.EntityID
+	seen := make(map[ecs.EntityID]bool) // Prevent multi-cell units from being hit multiple times
+
 	for _, cell := range targetCells {
 		row, col := cell[0], cell[1]
 		cellTargets := GetUnitIDsAtGridPosition(defenderSquadID, row, col, manager)
-		targets = append(targets, cellTargets...)
+		for _, unitID := range cellTargets {
+			if !seen[unitID] {
+				targets = append(targets, unitID)
+				seen[unitID] = true
+			}
+		}
 	}
 	return targets
 }
@@ -166,6 +173,7 @@ func selectCellBasedTargets(defenderSquadID ecs.EntityID, targetCells [][2]int, 
 // selectRowBasedTargets finds units in specific rows with multi-target logic
 func selectRowBasedTargets(defenderSquadID ecs.EntityID, targetData *TargetRowData, manager *common.EntityManager) []ecs.EntityID {
 	var targets []ecs.EntityID
+	seen := make(map[ecs.EntityID]bool) // Prevent multi-cell units from being hit multiple times
 
 	for _, targetRow := range targetData.TargetRows {
 		rowTargets := GetUnitIDsInRow(defenderSquadID, targetRow, manager)
@@ -177,13 +185,43 @@ func selectRowBasedTargets(defenderSquadID ecs.EntityID, targetData *TargetRowDa
 		//I am thinking just cell based will do it
 		if targetData.IsMultiTarget {
 			maxTargets := targetData.MaxTargets
-			if maxTargets == 0 || maxTargets > len(rowTargets) {
-				targets = append(targets, rowTargets...)
+			var candidateTargets []ecs.EntityID
+
+			// Filter out already-seen units
+			for _, unitID := range rowTargets {
+				if !seen[unitID] {
+					candidateTargets = append(candidateTargets, unitID)
+				}
+			}
+
+			if maxTargets == 0 || maxTargets > len(candidateTargets) {
+				for _, unitID := range candidateTargets {
+					targets = append(targets, unitID)
+					seen[unitID] = true
+				}
 			} else {
-				targets = append(targets, selectRandomTargetIDs(rowTargets, maxTargets)...)
+				selectedTargets := selectRandomTargetIDs(candidateTargets, maxTargets)
+				for _, unitID := range selectedTargets {
+					targets = append(targets, unitID)
+					seen[unitID] = true
+				}
 			}
 		} else {
-			targets = append(targets, selectLowestHPTargetID(rowTargets, manager))
+			// Single target mode - find lowest HP from unseen units
+			var candidateTargets []ecs.EntityID
+			for _, unitID := range rowTargets {
+				if !seen[unitID] {
+					candidateTargets = append(candidateTargets, unitID)
+				}
+			}
+
+			if len(candidateTargets) > 0 {
+				targetID := selectLowestHPTargetID(candidateTargets, manager)
+				if targetID != 0 {
+					targets = append(targets, targetID)
+					seen[targetID] = true
+				}
+			}
 		}
 	}
 

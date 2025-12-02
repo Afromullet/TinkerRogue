@@ -898,6 +898,154 @@ func TestMultiRoundCombat_Integration(t *testing.T) {
 	}
 }
 
+func TestExecuteSquadAttack_MultiCellUnit_HitOnce(t *testing.T) {
+	manager := setupTestManager(t)
+
+	// Create attacker squad with unit targeting multiple rows
+	attackerSquadID := createTestSquad(manager, "Attackers")
+	attacker := createTestUnit(manager, attackerSquadID, 0, 0, 100, 20, 100)
+	attackerAttr := common.GetAttributes(attacker)
+	baseDamage := attackerAttr.GetPhysicalDamage()
+
+	// Set attacker to target both row 0 and row 1
+	targetData := common.GetComponentType[*TargetRowData](attacker, TargetRowComponent)
+	targetData.TargetRows = []int{0, 1}
+
+	// Create defender squad with a 2x2 multi-cell unit spanning rows 0-1, cols 0-1
+	defenderSquadID := createTestSquad(manager, "Defenders")
+	multiCellUnit := manager.World.NewEntity()
+	multiCellUnit.AddComponent(SquadMemberComponent, &SquadMemberData{SquadID: defenderSquadID})
+	multiCellUnit.AddComponent(GridPositionComponent, &GridPositionData{
+		AnchorRow: 0,
+		AnchorCol: 0,
+		Width:     2,
+		Height:    2,
+	})
+	multiCellUnit.AddComponent(common.NameComponent, &common.Name{NameStr: "Giant"})
+
+	// Set defender attributes
+	defenderAttr := common.NewAttributes(10, 0, 0, 0, 2, 2)
+	defenderAttr.CurrentHealth = 100
+	multiCellUnit.AddComponent(common.AttributeComponent, &defenderAttr)
+
+	initialHP := defenderAttr.CurrentHealth
+
+	// Execute attack
+	result := ExecuteSquadAttack(attackerSquadID, defenderSquadID, manager)
+
+	// Verify the multi-cell unit was only hit ONCE, not twice
+	if len(result.DamageByUnit) != 1 {
+		t.Errorf("Expected 1 unit to be damaged, got %d", len(result.DamageByUnit))
+	}
+
+	// Verify total damage equals damage to single unit (not doubled)
+	unitDamage := result.DamageByUnit[multiCellUnit.GetID()]
+	if result.TotalDamage != unitDamage {
+		t.Errorf("Expected total damage %d to equal unit damage %d", result.TotalDamage, unitDamage)
+	}
+
+	// Verify defender lost appropriate HP (not doubled)
+	expectedHP := initialHP - unitDamage
+	if defenderAttr.CurrentHealth != expectedHP {
+		t.Errorf("Expected defender HP %d, got %d (initial: %d, damage: %d)",
+			expectedHP, defenderAttr.CurrentHealth, initialHP, unitDamage)
+	}
+
+	// Verify damage is reasonable (should be around baseDamage - resistance, not doubled)
+	resistance := defenderAttr.GetPhysicalResistance()
+	expectedSingleHitDamage := baseDamage - resistance
+	if expectedSingleHitDamage < 1 {
+		expectedSingleHitDamage = 1
+	}
+
+	// Allow some variance for crits, but should not be ~2x the base damage
+	maxReasonableDamage := expectedSingleHitDamage * 2 // Crit is 1.5x, so 2x is generous
+	if unitDamage > maxReasonableDamage {
+		t.Errorf("Unit took %d damage, which is too high. Expected around %d (base damage %d - resistance %d). This suggests the unit was hit multiple times.",
+			unitDamage, expectedSingleHitDamage, baseDamage, resistance)
+	}
+
+	t.Logf("Multi-cell unit correctly hit once for %d damage (base: %d, resistance: %d, expected: %d)",
+		unitDamage, baseDamage, resistance, expectedSingleHitDamage)
+}
+
+func TestExecuteSquadAttack_MultiCellUnit_CellBased_HitOnce(t *testing.T) {
+	manager := setupTestManager(t)
+
+	// Create attacker squad with cell-based targeting
+	attackerSquadID := createTestSquad(manager, "Attackers")
+	attacker := createTestUnit(manager, attackerSquadID, 0, 0, 100, 20, 100)
+	attackerAttr := common.GetAttributes(attacker)
+	baseDamage := attackerAttr.GetPhysicalDamage()
+
+	// Set attacker to target all 4 cells occupied by the multi-cell unit
+	targetData := common.GetComponentType[*TargetRowData](attacker, TargetRowComponent)
+	targetData.Mode = TargetModeCellBased
+	targetData.TargetCells = [][2]int{
+		{0, 0}, // Top-left
+		{0, 1}, // Top-right
+		{1, 0}, // Bottom-left
+		{1, 1}, // Bottom-right
+	}
+
+	// Create defender squad with a 2x2 multi-cell unit spanning all 4 cells
+	defenderSquadID := createTestSquad(manager, "Defenders")
+	multiCellUnit := manager.World.NewEntity()
+	multiCellUnit.AddComponent(SquadMemberComponent, &SquadMemberData{SquadID: defenderSquadID})
+	multiCellUnit.AddComponent(GridPositionComponent, &GridPositionData{
+		AnchorRow: 0,
+		AnchorCol: 0,
+		Width:     2,
+		Height:    2,
+	})
+	multiCellUnit.AddComponent(common.NameComponent, &common.Name{NameStr: "Giant"})
+
+	// Set defender attributes
+	defenderAttr := common.NewAttributes(10, 0, 0, 0, 2, 2)
+	defenderAttr.CurrentHealth = 100
+	multiCellUnit.AddComponent(common.AttributeComponent, &defenderAttr)
+
+	initialHP := defenderAttr.CurrentHealth
+
+	// Execute attack
+	result := ExecuteSquadAttack(attackerSquadID, defenderSquadID, manager)
+
+	// Verify the multi-cell unit was only hit ONCE despite occupying 4 cells
+	if len(result.DamageByUnit) != 1 {
+		t.Errorf("Expected 1 unit to be damaged, got %d", len(result.DamageByUnit))
+	}
+
+	// Verify total damage equals damage to single unit (not quadrupled)
+	unitDamage := result.DamageByUnit[multiCellUnit.GetID()]
+	if result.TotalDamage != unitDamage {
+		t.Errorf("Expected total damage %d to equal unit damage %d", result.TotalDamage, unitDamage)
+	}
+
+	// Verify defender lost appropriate HP (not quadrupled)
+	expectedHP := initialHP - unitDamage
+	if defenderAttr.CurrentHealth != expectedHP {
+		t.Errorf("Expected defender HP %d, got %d (initial: %d, damage: %d)",
+			expectedHP, defenderAttr.CurrentHealth, initialHP, unitDamage)
+	}
+
+	// Verify damage is reasonable (should be around baseDamage - resistance, not multiplied)
+	resistance := defenderAttr.GetPhysicalResistance()
+	expectedSingleHitDamage := baseDamage - resistance
+	if expectedSingleHitDamage < 1 {
+		expectedSingleHitDamage = 1
+	}
+
+	// Allow some variance for crits, but should not be ~4x the base damage
+	maxReasonableDamage := expectedSingleHitDamage * 2 // Crit is 1.5x, so 2x is generous
+	if unitDamage > maxReasonableDamage {
+		t.Errorf("Unit took %d damage, which is too high. Expected around %d (base damage %d - resistance %d). This suggests the unit was hit multiple times.",
+			unitDamage, expectedSingleHitDamage, baseDamage, resistance)
+	}
+
+	t.Logf("Multi-cell unit correctly hit once (cell-based) for %d damage (base: %d, resistance: %d, expected: %d)",
+		unitDamage, baseDamage, resistance, expectedSingleHitDamage)
+}
+
 // ========================================
 // BENCHMARK TESTS
 // ========================================
