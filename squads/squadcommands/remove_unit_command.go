@@ -37,19 +37,13 @@ func NewRemoveUnitCommand(
 
 func (c *RemoveUnitCommand) Validate() error {
 	// Check squad exists
-	squadEntity := squads.GetSquadEntity(c.squadID, c.manager)
-	if squadEntity == nil {
-		return fmt.Errorf("squad not found")
+	if err := validateSquadExists(c.squadID, c.manager); err != nil {
+		return err
 	}
 
 	// Check unit is in squad
-	if !c.manager.HasComponentByIDWithTag(c.unitID, squads.SquadMemberTag, squads.SquadMemberComponent) {
-		return fmt.Errorf("unit is not in a squad")
-	}
-
-	memberData := common.GetComponentTypeByID[*squads.SquadMemberData](c.manager, c.unitID, squads.SquadMemberComponent)
-	if memberData == nil || memberData.SquadID != c.squadID {
-		return fmt.Errorf("unit is not in this squad")
+	if err := validateUnitInSquad(c.unitID, c.squadID, c.manager); err != nil {
+		return err
 	}
 
 	// Check unit is not the leader
@@ -63,9 +57,9 @@ func (c *RemoveUnitCommand) Validate() error {
 
 func (c *RemoveUnitCommand) Execute() error {
 	// Capture unit state for undo
-	gridPos := common.GetComponentTypeByID[*squads.GridPositionData](c.manager, c.unitID, squads.GridPositionComponent)
-	if gridPos == nil {
-		return fmt.Errorf("unit has no grid position")
+	gridPos, err := getGridPositionOrError(c.unitID, c.manager)
+	if err != nil {
+		return err
 	}
 	c.previousGridRow = gridPos.AnchorRow
 	c.previousGridCol = gridPos.AnchorCol
@@ -109,16 +103,14 @@ func (c *RemoveUnitCommand) Execute() error {
 
 	// Mark unit as available in roster (decrement in-squad count)
 	// This makes the unit available to add to squads again
-	err := roster.MarkUnitAvailable(c.unitID)
-	if err != nil {
+	if err := roster.MarkUnitAvailable(c.unitID); err != nil {
 		return fmt.Errorf("failed to mark unit available: %w", err)
 	}
 
 	// Remove unit from squad (this disposes the entity)
 	// The disposed entity ID remains in roster's UnitEntities list but that's OK
 	// because availability is tracked by counts, not entity validity
-	err = squads.RemoveUnitFromSquad(c.unitID, c.manager)
-	if err != nil {
+	if err := squads.RemoveUnitFromSquad(c.unitID, c.manager); err != nil {
 		return fmt.Errorf("failed to remove unit from squad: %w", err)
 	}
 

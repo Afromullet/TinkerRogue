@@ -32,19 +32,13 @@ func NewChangeLeaderCommand(
 
 func (c *ChangeLeaderCommand) Validate() error {
 	// Check squad exists
-	squadEntity := squads.GetSquadEntity(c.squadID, c.manager)
-	if squadEntity == nil {
-		return fmt.Errorf("squad not found")
+	if err := validateSquadExists(c.squadID, c.manager); err != nil {
+		return err
 	}
 
 	// Check new leader is in squad
-	if !c.manager.HasComponentByIDWithTag(c.newLeaderID, squads.SquadMemberTag, squads.SquadMemberComponent) {
-		return fmt.Errorf("new leader is not in a squad")
-	}
-
-	memberData := common.GetComponentTypeByID[*squads.SquadMemberData](c.manager, c.newLeaderID, squads.SquadMemberComponent)
-	if memberData == nil || memberData.SquadID != c.squadID {
-		return fmt.Errorf("new leader is not in this squad")
+	if err := validateUnitInSquad(c.newLeaderID, c.squadID, c.manager); err != nil {
+		return err
 	}
 
 	// Check new leader is not already the leader
@@ -64,15 +58,7 @@ func (c *ChangeLeaderCommand) Execute() error {
 	if c.oldLeaderID != 0 {
 		oldLeaderEntity := common.FindEntityByIDWithTag(c.manager, c.oldLeaderID, squads.SquadMemberTag)
 		if oldLeaderEntity != nil {
-			if oldLeaderEntity.HasComponent(squads.LeaderComponent) {
-				oldLeaderEntity.RemoveComponent(squads.LeaderComponent)
-			}
-			if oldLeaderEntity.HasComponent(squads.AbilitySlotComponent) {
-				oldLeaderEntity.RemoveComponent(squads.AbilitySlotComponent)
-			}
-			if oldLeaderEntity.HasComponent(squads.CooldownTrackerComponent) {
-				oldLeaderEntity.RemoveComponent(squads.CooldownTrackerComponent)
-			}
+			removeLeaderComponents(oldLeaderEntity)
 		}
 	}
 
@@ -82,22 +68,7 @@ func (c *ChangeLeaderCommand) Execute() error {
 		return fmt.Errorf("new leader entity not found")
 	}
 
-	// Add leader component with default values
-	newLeaderEntity.AddComponent(squads.LeaderComponent, &squads.LeaderData{
-		Leadership: 10,
-		Experience: 0,
-	})
-
-	// Add ability slots
-	newLeaderEntity.AddComponent(squads.AbilitySlotComponent, &squads.AbilitySlotData{
-		Slots: [4]squads.AbilitySlot{},
-	})
-
-	// Add cooldown tracker
-	newLeaderEntity.AddComponent(squads.CooldownTrackerComponent, &squads.CooldownTrackerData{
-		Cooldowns:    [4]int{0, 0, 0, 0},
-		MaxCooldowns: [4]int{0, 0, 0, 0},
-	})
+	addLeaderComponents(newLeaderEntity)
 
 	// Update squad capacity based on new leader
 	squads.UpdateSquadCapacity(c.squadID, c.manager)
@@ -109,34 +80,14 @@ func (c *ChangeLeaderCommand) Undo() error {
 	// Remove leader component from new leader
 	newLeaderEntity := common.FindEntityByIDWithTag(c.manager, c.newLeaderID, squads.SquadMemberTag)
 	if newLeaderEntity != nil {
-		if newLeaderEntity.HasComponent(squads.LeaderComponent) {
-			newLeaderEntity.RemoveComponent(squads.LeaderComponent)
-		}
-		if newLeaderEntity.HasComponent(squads.AbilitySlotComponent) {
-			newLeaderEntity.RemoveComponent(squads.AbilitySlotComponent)
-		}
-		if newLeaderEntity.HasComponent(squads.CooldownTrackerComponent) {
-			newLeaderEntity.RemoveComponent(squads.CooldownTrackerComponent)
-		}
+		removeLeaderComponents(newLeaderEntity)
 	}
 
 	// Restore old leader (if there was one)
 	if c.oldLeaderID != 0 {
 		oldLeaderEntity := common.FindEntityByIDWithTag(c.manager, c.oldLeaderID, squads.SquadMemberTag)
 		if oldLeaderEntity != nil {
-			oldLeaderEntity.AddComponent(squads.LeaderComponent, &squads.LeaderData{
-				Leadership: 10,
-				Experience: 0,
-			})
-
-			oldLeaderEntity.AddComponent(squads.AbilitySlotComponent, &squads.AbilitySlotData{
-				Slots: [4]squads.AbilitySlot{},
-			})
-
-			oldLeaderEntity.AddComponent(squads.CooldownTrackerComponent, &squads.CooldownTrackerData{
-				Cooldowns:    [4]int{0, 0, 0, 0},
-				MaxCooldowns: [4]int{0, 0, 0, 0},
-			})
+			addLeaderComponents(oldLeaderEntity)
 		}
 	}
 
@@ -147,13 +98,6 @@ func (c *ChangeLeaderCommand) Undo() error {
 }
 
 func (c *ChangeLeaderCommand) Description() string {
-	// Get unit names for better description
-	newLeaderName := "Unit"
-	if nameComp, ok := c.manager.GetComponent(c.newLeaderID, common.NameComponent); ok {
-		if name := nameComp.(*common.Name); name != nil {
-			newLeaderName = name.NameStr
-		}
-	}
-
+	newLeaderName := getUnitName(c.newLeaderID, c.manager)
 	return fmt.Sprintf("Change leader to '%s'", newLeaderName)
 }

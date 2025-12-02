@@ -41,9 +41,8 @@ func NewAddUnitCommand(
 
 func (c *AddUnitCommand) Validate() error {
 	// Check squad exists
-	squadEntity := squads.GetSquadEntity(c.squadID, c.manager)
-	if squadEntity == nil {
-		return fmt.Errorf("squad not found")
+	if err := validateSquadExists(c.squadID, c.manager); err != nil {
+		return err
 	}
 
 	// Check roster exists
@@ -59,17 +58,12 @@ func (c *AddUnitCommand) Validate() error {
 	}
 
 	// Validate grid position
-	if c.gridRow < 0 || c.gridRow > 2 || c.gridCol < 0 || c.gridCol > 2 {
-		return fmt.Errorf("invalid grid position (%d, %d)", c.gridRow, c.gridCol)
+	if err := validateGridPosition(c.gridRow, c.gridCol); err != nil {
+		return err
 	}
 
 	// Check if position is occupied
-	existingUnits := squads.GetUnitIDsAtGridPosition(c.squadID, c.gridRow, c.gridCol, c.manager)
-	if len(existingUnits) > 0 {
-		return fmt.Errorf("grid position (%d, %d) is already occupied", c.gridRow, c.gridCol)
-	}
-
-	return nil
+	return validateGridPositionNotOccupied(c.squadID, c.gridRow, c.gridCol, c.manager, 0)
 }
 
 func (c *AddUnitCommand) Execute() error {

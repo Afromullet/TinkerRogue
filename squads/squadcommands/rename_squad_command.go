@@ -3,7 +3,6 @@ package squadcommands
 import (
 	"fmt"
 	"game_main/common"
-	"game_main/squads"
 
 	"github.com/bytearena/ecs"
 )
@@ -34,35 +33,26 @@ func NewRenameSquadCommand(
 
 // Validate checks if the squad can be renamed
 func (cmd *RenameSquadCommand) Validate() error {
-	if cmd.squadID == 0 {
-		return fmt.Errorf("invalid squad ID")
-	}
-
 	if cmd.newName == "" {
 		return fmt.Errorf("squad name cannot be empty")
 	}
 
 	// Check if squad exists
-	squadEntity := squads.GetSquadEntity(cmd.squadID, cmd.entityManager)
-	if squadEntity == nil {
-		return fmt.Errorf("squad does not exist")
-	}
-
-	return nil
+	return validateSquadExists(cmd.squadID, cmd.entityManager)
 }
 
 // Execute renames the squad
 func (cmd *RenameSquadCommand) Execute() error {
 	// Get squad entity
-	squadEntity := squads.GetSquadEntity(cmd.squadID, cmd.entityManager)
-	if squadEntity == nil {
-		return fmt.Errorf("squad not found")
+	squadEntity, err := getSquadOrError(cmd.squadID, cmd.entityManager)
+	if err != nil {
+		return err
 	}
 
 	// Get squad data
-	squadData := common.GetComponentType[*squads.SquadData](squadEntity, squads.SquadComponent)
-	if squadData == nil {
-		return fmt.Errorf("squad has no data component")
+	squadData, err := getSquadDataOrError(squadEntity)
+	if err != nil {
+		return err
 	}
 
 	// Save old name for undo
@@ -81,15 +71,15 @@ func (cmd *RenameSquadCommand) Undo() error {
 	}
 
 	// Get squad entity
-	squadEntity := squads.GetSquadEntity(cmd.squadID, cmd.entityManager)
-	if squadEntity == nil {
-		return fmt.Errorf("squad not found")
+	squadEntity, err := getSquadOrError(cmd.squadID, cmd.entityManager)
+	if err != nil {
+		return err
 	}
 
 	// Get squad data
-	squadData := common.GetComponentType[*squads.SquadData](squadEntity, squads.SquadComponent)
-	if squadData == nil {
-		return fmt.Errorf("squad has no data component")
+	squadData, err := getSquadDataOrError(squadEntity)
+	if err != nil {
+		return err
 	}
 
 	// Restore old name

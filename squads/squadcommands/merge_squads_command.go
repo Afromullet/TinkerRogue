@@ -20,19 +20,8 @@ type MergeSquadsCommand struct {
 	// Captured state for undo
 	savedSourceSquadData *squads.SquadData
 	savedSourcePosition  *coords.LogicalPosition
-	savedSourceUnits     []mergedUnitState
+	savedSourceUnits     []CapturedUnitState
 	savedTargetCapacity  float64
-}
-
-// mergedUnitState captures unit data for undo
-type mergedUnitState struct {
-	unitID       ecs.EntityID
-	template     squads.UnitTemplate
-	gridRow      int
-	gridCol      int
-	isLeader     bool
-	attributes   *common.Attributes
-	gridPosition *squads.GridPositionData
 }
 
 // NewMergeSquadsCommand creates a new merge squads command
@@ -52,23 +41,17 @@ func NewMergeSquadsCommand(
 
 // Validate checks if the squads can be merged
 func (cmd *MergeSquadsCommand) Validate() error {
-	if cmd.sourceSquadID == 0 || cmd.targetSquadID == 0 {
-		return fmt.Errorf("invalid squad IDs")
-	}
-
 	if cmd.sourceSquadID == cmd.targetSquadID {
 		return fmt.Errorf("cannot merge squad with itself")
 	}
 
 	// Check if both squads exist
-	sourceEntity := squads.GetSquadEntity(cmd.sourceSquadID, cmd.entityManager)
-	if sourceEntity == nil {
-		return fmt.Errorf("source squad does not exist")
+	if err := validateSquadExists(cmd.sourceSquadID, cmd.entityManager); err != nil {
+		return fmt.Errorf("source squad: %w", err)
 	}
 
-	targetEntity := squads.GetSquadEntity(cmd.targetSquadID, cmd.entityManager)
-	if targetEntity == nil {
-		return fmt.Errorf("target squad does not exist")
+	if err := validateSquadExists(cmd.targetSquadID, cmd.entityManager); err != nil {
+		return fmt.Errorf("target squad: %w", err)
 	}
 
 	// Check if target has space for source units
@@ -98,14 +81,14 @@ func (cmd *MergeSquadsCommand) Execute() error {
 	}
 
 	// Get source and target squads
-	sourceEntity := squads.GetSquadEntity(cmd.sourceSquadID, cmd.entityManager)
-	if sourceEntity == nil {
-		return fmt.Errorf("source squad not found")
+	sourceEntity, err := getSquadOrError(cmd.sourceSquadID, cmd.entityManager)
+	if err != nil {
+		return fmt.Errorf("source squad: %w", err)
 	}
 
-	targetEntity := squads.GetSquadEntity(cmd.targetSquadID, cmd.entityManager)
-	if targetEntity == nil {
-		return fmt.Errorf("target squad not found")
+	_, err = getSquadOrError(cmd.targetSquadID, cmd.entityManager)
+	if err != nil {
+		return fmt.Errorf("target squad: %w", err)
 	}
 
 	// Move all units from source to target
@@ -183,17 +166,17 @@ func (cmd *MergeSquadsCommand) Undo() error {
 	for _, unitState := range cmd.savedSourceUnits {
 		// Update squad membership back to source
 		memberData := common.GetComponentTypeByIDWithTag[*squads.SquadMemberData](
-			cmd.entityManager, unitState.unitID, squads.SquadMemberTag, squads.SquadMemberComponent)
+			cmd.entityManager, unitState.UnitID, squads.SquadMemberTag, squads.SquadMemberComponent)
 		if memberData != nil {
 			memberData.SquadID = newSourceSquadID
 		}
 
 		// Restore original grid position
 		gridPos := common.GetComponentTypeByIDWithTag[*squads.GridPositionData](
-			cmd.entityManager, unitState.unitID, squads.SquadMemberTag, squads.GridPositionComponent)
+			cmd.entityManager, unitState.UnitID, squads.SquadMemberTag, squads.GridPositionComponent)
 		if gridPos != nil {
-			gridPos.AnchorRow = unitState.gridRow
-			gridPos.AnchorCol = unitState.gridCol
+			gridPos.AnchorRow = unitState.GridRow
+			gridPos.AnchorCol = unitState.GridCol
 		}
 	}
 
@@ -220,15 +203,15 @@ func (cmd *MergeSquadsCommand) Description() string {
 // captureState saves source squad state before merging
 func (cmd *MergeSquadsCommand) captureState() error {
 	// Get source squad
-	sourceEntity := squads.GetSquadEntity(cmd.sourceSquadID, cmd.entityManager)
-	if sourceEntity == nil {
-		return fmt.Errorf("source squad not found")
+	sourceEntity, err := getSquadOrError(cmd.sourceSquadID, cmd.entityManager)
+	if err != nil {
+		return fmt.Errorf("source squad: %w", err)
 	}
 
 	// Save source squad data
-	squadData := common.GetComponentType[*squads.SquadData](sourceEntity, squads.SquadComponent)
-	if squadData == nil {
-		return fmt.Errorf("source squad has no data component")
+	squadData, err := getSquadDataOrError(sourceEntity)
+	if err != nil {
+		return fmt.Errorf("source squad: %w", err)
 	}
 
 	cmd.savedSourceSquadData = &squads.SquadData{
@@ -257,60 +240,12 @@ func (cmd *MergeSquadsCommand) captureState() error {
 	// Save target capacity before merge
 	cmd.savedTargetCapacity = squads.GetSquadUsedCapacity(cmd.targetSquadID, cmd.entityManager)
 
-	// Save all unit states from source
-	cmd.savedSourceUnits = make([]mergedUnitState, 0)
-	sourceUnitIDs := squads.GetUnitIDsInSquad(cmd.sourceSquadID, cmd.entityManager)
-
-	for _, unitID := range sourceUnitIDs {
-		unitEntity := common.FindEntityByIDWithTag(cmd.entityManager, unitID, squads.SquadMemberTag)
-		if unitEntity == nil {
-			continue
-		}
-
-		unitState := mergedUnitState{
-			unitID: unitID,
-		}
-
-		// Get attributes
-		if unitEntity.HasComponent(common.AttributeComponent) {
-			attr := common.GetComponentType[*common.Attributes](unitEntity, common.AttributeComponent)
-			if attr != nil {
-				unitState.attributes = &common.Attributes{
-					Strength:      attr.Strength,
-					Dexterity:     attr.Dexterity,
-					Magic:         attr.Magic,
-					Leadership:    attr.Leadership,
-					Armor:         attr.Armor,
-					Weapon:        attr.Weapon,
-					MovementSpeed: attr.MovementSpeed,
-					AttackRange:   attr.AttackRange,
-					CurrentHealth: attr.CurrentHealth,
-					MaxHealth:     attr.MaxHealth,
-					CanAct:        attr.CanAct,
-				}
-			}
-		}
-
-		// Get grid position
-		if unitEntity.HasComponent(squads.GridPositionComponent) {
-			gridPos := common.GetComponentType[*squads.GridPositionData](unitEntity, squads.GridPositionComponent)
-			if gridPos != nil {
-				unitState.gridRow = gridPos.AnchorRow
-				unitState.gridCol = gridPos.AnchorCol
-				unitState.gridPosition = &squads.GridPositionData{
-					AnchorRow: gridPos.AnchorRow,
-					AnchorCol: gridPos.AnchorCol,
-					Width:     gridPos.Width,
-					Height:    gridPos.Height,
-				}
-			}
-		}
-
-		// Check if leader
-		unitState.isLeader = unitEntity.HasComponent(squads.LeaderComponent)
-
-		cmd.savedSourceUnits = append(cmd.savedSourceUnits, unitState)
+	// Capture all unit states from source squad using shared helper
+	capturedUnits, err := CaptureAllUnitsInSquad(cmd.sourceSquadID, cmd.entityManager)
+	if err != nil {
+		return fmt.Errorf("failed to capture source unit states: %w", err)
 	}
+	cmd.savedSourceUnits = capturedUnits
 
 	return nil
 }

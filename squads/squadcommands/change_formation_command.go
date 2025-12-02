@@ -41,14 +41,9 @@ func NewChangeFormationCommand(
 
 // Validate checks if the formation change is valid
 func (cmd *ChangeFormationCommand) Validate() error {
-	if cmd.squadID == 0 {
-		return fmt.Errorf("invalid squad ID")
-	}
-
 	// Check if squad exists
-	squadEntity := squads.GetSquadEntity(cmd.squadID, cmd.entityManager)
-	if squadEntity == nil {
-		return fmt.Errorf("squad does not exist")
+	if err := validateSquadExists(cmd.squadID, cmd.entityManager); err != nil {
+		return err
 	}
 
 	if len(cmd.newFormation) == 0 {
@@ -60,9 +55,8 @@ func (cmd *ChangeFormationCommand) Validate() error {
 
 	for _, assignment := range cmd.newFormation {
 		// Validate position bounds
-		if assignment.GridRow < 0 || assignment.GridRow > 2 ||
-			assignment.GridCol < 0 || assignment.GridCol > 2 {
-			return fmt.Errorf("invalid grid position (%d, %d)", assignment.GridRow, assignment.GridCol)
+		if err := validateGridPosition(assignment.GridRow, assignment.GridCol); err != nil {
+			return err
 		}
 
 		// Check for position conflicts within new formation

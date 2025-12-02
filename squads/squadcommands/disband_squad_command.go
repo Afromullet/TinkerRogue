@@ -19,19 +19,7 @@ type DisbandSquadCommand struct {
 	// Captured state for undo
 	savedSquadData *squads.SquadData
 	savedPosition  *coords.LogicalPosition
-	savedUnits     []savedUnitState
-}
-
-// savedUnitState captures all data needed to recreate a unit
-type savedUnitState struct {
-	unitID       ecs.EntityID
-	template     squads.UnitTemplate
-	gridRow      int
-	gridCol      int
-	isLeader     bool
-	attributes   *common.Attributes
-	name         *common.Name
-	gridPosition *squads.GridPositionData
+	savedUnits     []CapturedUnitState
 }
 
 // NewDisbandSquadCommand creates a new disband squad command
@@ -49,20 +37,9 @@ func NewDisbandSquadCommand(
 
 // Validate checks if the squad can be disbanded
 func (cmd *DisbandSquadCommand) Validate() error {
-	if cmd.squadID == 0 {
-		return fmt.Errorf("invalid squad ID")
-	}
-
 	// Check if squad exists
-	squadEntity := squads.GetSquadEntity(cmd.squadID, cmd.entityManager)
-	if squadEntity == nil {
-		return fmt.Errorf("squad does not exist")
-	}
-
-	// Get squad data for validation
-	squadData := common.GetComponentType[*squads.SquadData](squadEntity, squads.SquadComponent)
-	if squadData == nil {
-		return fmt.Errorf("squad has no data component")
+	if err := validateSquadExists(cmd.squadID, cmd.entityManager); err != nil {
+		return err
 	}
 
 	// Note: Additional validation could check if squad is in combat or deployed
@@ -91,7 +68,7 @@ func (cmd *DisbandSquadCommand) Execute() error {
 	// Return all units to roster
 	for _, unitState := range cmd.savedUnits {
 		// Mark unit as available in roster
-		if err := roster.MarkUnitAvailable(unitState.unitID); err != nil {
+		if err := roster.MarkUnitAvailable(unitState.UnitID); err != nil {
 			// If marking available fails, the unit might not have been in roster
 			// This is OK - we'll continue with other units
 			continue
@@ -162,34 +139,13 @@ func (cmd *DisbandSquadCommand) Undo() error {
 	}
 
 	// Recreate all units
-	for _, unitState := range cmd.savedUnits {
-		// Create unit entity from template
-		unitEntity, err := squads.CreateUnitEntity(cmd.entityManager, unitState.template)
+	for i := range cmd.savedUnits {
+		unitState := &cmd.savedUnits[i]
+
+		// Restore unit from captured state
+		newUnitID, err := RestoreUnitToSquad(unitState, newSquadID, cmd.entityManager)
 		if err != nil {
-			return fmt.Errorf("failed to recreate unit %s: %w", unitState.template.Name, err)
-		}
-
-		newUnitID := unitEntity.GetID()
-
-		// Add squad member component
-		unitEntity.AddComponent(squads.SquadMemberComponent, &squads.SquadMemberData{
-			SquadID: newSquadID,
-		})
-
-		// Restore grid position
-		gridPos := common.GetComponentType[*squads.GridPositionData](unitEntity, squads.GridPositionComponent)
-		gridPos.AnchorRow = unitState.gridRow
-		gridPos.AnchorCol = unitState.gridCol
-		gridPos.Width = unitState.gridPosition.Width
-		gridPos.Height = unitState.gridPosition.Height
-
-		// Restore leader status
-		if unitState.isLeader {
-			leaderData := &squads.LeaderData{
-				Leadership: 10, // Default leadership value
-				Experience: 0,
-			}
-			unitEntity.AddComponent(squads.LeaderComponent, leaderData)
+			return fmt.Errorf("failed to recreate unit %s: %w", unitState.Template.Name, err)
 		}
 
 		// Mark unit as in squad in roster
@@ -219,15 +175,15 @@ func (cmd *DisbandSquadCommand) Description() string {
 // captureState saves all squad state before disbanding
 func (cmd *DisbandSquadCommand) captureState() error {
 	// Get squad entity
-	squadEntity := squads.GetSquadEntity(cmd.squadID, cmd.entityManager)
-	if squadEntity == nil {
-		return fmt.Errorf("squad not found")
+	squadEntity, err := getSquadOrError(cmd.squadID, cmd.entityManager)
+	if err != nil {
+		return err
 	}
 
 	// Save squad data
-	squadData := common.GetComponentType[*squads.SquadData](squadEntity, squads.SquadComponent)
-	if squadData == nil {
-		return fmt.Errorf("squad has no data component")
+	squadData, err := getSquadDataOrError(squadEntity)
+	if err != nil {
+		return err
 	}
 
 	cmd.savedSquadData = &squads.SquadData{
@@ -253,85 +209,12 @@ func (cmd *DisbandSquadCommand) captureState() error {
 		}
 	}
 
-	// Save all unit states
-	cmd.savedUnits = make([]savedUnitState, 0)
-	unitIDs := squads.GetUnitIDsInSquad(cmd.squadID, cmd.entityManager)
-
-	for _, unitID := range unitIDs {
-		unitEntity := common.FindEntityByIDWithTag(cmd.entityManager, unitID, squads.SquadMemberTag)
-		if unitEntity == nil {
-			continue
-		}
-
-		// Get unit template (reconstruct from current state)
-		unitState := savedUnitState{
-			unitID: unitID,
-		}
-
-		// Get attributes
-		if unitEntity.HasComponent(common.AttributeComponent) {
-			attr := common.GetComponentType[*common.Attributes](unitEntity, common.AttributeComponent)
-			if attr != nil {
-				unitState.attributes = &common.Attributes{
-					Strength:      attr.Strength,
-					Dexterity:     attr.Dexterity,
-					Magic:         attr.Magic,
-					Leadership:    attr.Leadership,
-					Armor:         attr.Armor,
-					Weapon:        attr.Weapon,
-					MovementSpeed: attr.MovementSpeed,
-					AttackRange:   attr.AttackRange,
-					CurrentHealth: attr.CurrentHealth,
-					MaxHealth:     attr.MaxHealth,
-					CanAct:        attr.CanAct,
-				}
-			}
-		}
-
-		// Get name
-		if unitEntity.HasComponent(common.NameComponent) {
-			name := common.GetComponentType[*common.Name](unitEntity, common.NameComponent)
-			if name != nil {
-				unitState.name = &common.Name{
-					NameStr: name.NameStr,
-				}
-				unitState.template.Name = name.NameStr
-			}
-		}
-
-		// Get grid position
-		if unitEntity.HasComponent(squads.GridPositionComponent) {
-			gridPos := common.GetComponentType[*squads.GridPositionData](unitEntity, squads.GridPositionComponent)
-			if gridPos != nil {
-				unitState.gridRow = gridPos.AnchorRow
-				unitState.gridCol = gridPos.AnchorCol
-				unitState.gridPosition = &squads.GridPositionData{
-					AnchorRow: gridPos.AnchorRow,
-					AnchorCol: gridPos.AnchorCol,
-					Width:     gridPos.Width,
-					Height:    gridPos.Height,
-				}
-			}
-		}
-
-		// Check if leader
-		unitState.isLeader = unitEntity.HasComponent(squads.LeaderComponent)
-
-		// Get unit role
-		if unitEntity.HasComponent(squads.UnitRoleComponent) {
-			roleData := common.GetComponentType[*squads.UnitRoleData](unitEntity, squads.UnitRoleComponent)
-			if roleData != nil {
-				unitState.template.Role = roleData.Role
-			}
-		}
-
-		// Build template from captured data
-		if unitState.attributes != nil {
-			unitState.template.Attributes = *unitState.attributes
-		}
-
-		cmd.savedUnits = append(cmd.savedUnits, unitState)
+	// Capture all unit states using shared helper
+	capturedUnits, err := CaptureAllUnitsInSquad(cmd.squadID, cmd.entityManager)
+	if err != nil {
+		return fmt.Errorf("failed to capture unit states: %w", err)
 	}
+	cmd.savedUnits = capturedUnits
 
 	return nil
 }

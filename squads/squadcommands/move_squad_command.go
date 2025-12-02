@@ -36,14 +36,9 @@ func NewMoveSquadCommand(
 
 // Validate checks if the squad can be moved
 func (cmd *MoveSquadCommand) Validate() error {
-	if cmd.squadID == 0 {
-		return fmt.Errorf("invalid squad ID")
-	}
-
 	// Check if squad exists
-	squadEntity := squads.GetSquadEntity(cmd.squadID, cmd.entityManager)
-	if squadEntity == nil {
-		return fmt.Errorf("squad does not exist")
+	if err := validateSquadExists(cmd.squadID, cmd.entityManager); err != nil {
+		return err
 	}
 
 	// Validate position is within reasonable bounds (optional - could check map bounds)
@@ -57,14 +52,14 @@ func (cmd *MoveSquadCommand) Validate() error {
 // Execute moves the squad to the new position
 func (cmd *MoveSquadCommand) Execute() error {
 	// Get squad entity
-	squadEntity := squads.GetSquadEntity(cmd.squadID, cmd.entityManager)
-	if squadEntity == nil {
-		return fmt.Errorf("squad not found")
+	squadEntity, err := getSquadOrError(cmd.squadID, cmd.entityManager)
+	if err != nil {
+		return err
 	}
 
 	// Get squad name for description
-	squadData := common.GetComponentType[*squads.SquadData](squadEntity, squads.SquadComponent)
-	if squadData != nil {
+	squadData, err := getSquadDataOrError(squadEntity)
+	if err == nil {
 		cmd.squadName = squadData.Name
 	} else {
 		cmd.squadName = "Unknown Squad"
@@ -79,14 +74,13 @@ func (cmd *MoveSquadCommand) Execute() error {
 
 	// Move squad and all members atomically
 	unitIDs := squads.GetUnitIDsInSquad(cmd.squadID, cmd.entityManager)
-	err := cmd.entityManager.MoveSquadAndMembers(
+	if err := cmd.entityManager.MoveSquadAndMembers(
 		cmd.squadID,
 		squadEntity,
 		unitIDs,
 		cmd.oldPosition,
 		cmd.newPosition,
-	)
-	if err != nil {
+	); err != nil {
 		return fmt.Errorf("failed to move squad: %w", err)
 	}
 
@@ -96,9 +90,9 @@ func (cmd *MoveSquadCommand) Execute() error {
 // Undo restores the squad to its old position
 func (cmd *MoveSquadCommand) Undo() error {
 	// Get squad entity
-	squadEntity := squads.GetSquadEntity(cmd.squadID, cmd.entityManager)
-	if squadEntity == nil {
-		return fmt.Errorf("squad not found")
+	squadEntity, err := getSquadOrError(cmd.squadID, cmd.entityManager)
+	if err != nil {
+		return err
 	}
 
 	// Get current position before undo
@@ -110,14 +104,13 @@ func (cmd *MoveSquadCommand) Undo() error {
 
 	// Move squad and all members back to old position atomically
 	unitIDs := squads.GetUnitIDsInSquad(cmd.squadID, cmd.entityManager)
-	err := cmd.entityManager.MoveSquadAndMembers(
+	if err := cmd.entityManager.MoveSquadAndMembers(
 		cmd.squadID,
 		squadEntity,
 		unitIDs,
 		currentPos,
 		cmd.oldPosition,
-	)
-	if err != nil {
+	); err != nil {
 		return fmt.Errorf("failed to undo squad move: %w", err)
 	}
 
