@@ -89,10 +89,7 @@ func TestCapacitySystem_EnforceLimitWithoutLeader(t *testing.T) {
 		Width:         1,
 		Height:        1,
 		Role:          "DPS",
-		TargetMode:    "row",
-		TargetRows:    []int{0},
-		IsMultiTarget: false,
-		MaxTargets:    1,
+		TargetCells:   [][2]int{{0, 0}, {0, 1}, {0, 2}},
 	}
 
 	// With default capacity of 6, we should be able to add 6 units (6 * 1.0 = 6.0)
@@ -178,10 +175,7 @@ func TestCapacitySystem_IsSquadOverCapacity(t *testing.T) {
 		Width:         1,
 		Height:        1,
 		Role:          "DPS",
-		TargetMode:    "row",
-		TargetRows:    []int{0},
-		IsMultiTarget: false,
-		MaxTargets:    1,
+		TargetCells:   [][2]int{{0, 0}, {0, 1}, {0, 2}},
 	}
 
 	// Add units (capacity cost = 1.0 each)
@@ -251,10 +245,7 @@ func TestCapacitySystem_UpdateSquadCapacity(t *testing.T) {
 		Width:         1,
 		Height:        1,
 		Role:          "DPS",
-		TargetMode:    "row",
-		TargetRows:    []int{0},
-		IsMultiTarget: false,
-		MaxTargets:    1,
+		TargetCells:   [][2]int{{0, 0}, {0, 1}, {0, 2}},
 	}
 
 	unit, _ := CreateUnitTemplates(jsonMonster)

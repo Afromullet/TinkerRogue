@@ -1,1 +1,3 @@
 Consider replacing row based tareting with just cells. I.E, attacking row one is just 3 cells
+
+Simplify Unit data. No need for weapons, armor, etc in the json and for units

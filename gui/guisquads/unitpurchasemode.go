@@ -286,7 +286,7 @@ func (upm *UnitPurchaseMode) showStats() {
 		"=== COMBAT ===\n"+
 		"Attack Range: %d\n"+
 		"Movement Speed: %d\n"+
-		"Target Mode: %s\n"+
+		"Target Cells: %d\n"+
 		"Cover Value: %.2f\n"+
 		"Cover Range: %d",
 		attr.GetMaxHealth(),
@@ -298,7 +298,7 @@ func (upm *UnitPurchaseMode) showStats() {
 		attr.Weapon,
 		upm.selectedTemplate.AttackRange,
 		upm.selectedTemplate.MovementSpeed,
-		upm.getTargetModeName(upm.selectedTemplate.TargetMode),
+		len(upm.selectedTemplate.TargetCells),
 		upm.selectedTemplate.CoverValue,
 		upm.selectedTemplate.CoverRange)
 
@@ -356,16 +356,6 @@ func (upm *UnitPurchaseMode) getRoleName(role squads.UnitRole) string {
 	}
 }
 
-func (upm *UnitPurchaseMode) getTargetModeName(mode squads.TargetMode) string {
-	switch mode {
-	case squads.TargetModeRowBased:
-		return "Row-based"
-	case squads.TargetModeCellBased:
-		return "Cell-based"
-	default:
-		return "Unknown"
-	}
-}
 
 // refreshAfterUndoRedo is called after successful undo/redo operations
 func (upm *UnitPurchaseMode) refreshAfterUndoRedo() {

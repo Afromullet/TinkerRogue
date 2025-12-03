@@ -27,7 +27,7 @@ func CreateEmptySquad(squadmanager *common.EntityManager,
 		TurnCount:     0,
 		MaxUnits:      9,
 		UsedCapacity:  0.0,
-		TotalCapacity: 50,    // Default capacity (no leader yet)
+		TotalCapacity: 6,     // Default capacity (no leader yet)
 		IsDestroyed:   false, // Empty squad is not destroyed (yet)
 	})
 
@@ -333,18 +333,9 @@ func CreateSquadFromTemplate(
 			Role: template.Role,
 		})
 
-		// Add targeting data (supports both row-based and cell-based modes)
-		targetMode := TargetModeRowBased
-		if template.TargetMode == TargetModeCellBased {
-			targetMode = TargetModeCellBased
-		}
-
+		// Add targeting data (cell-based)
 		unitEntity.AddComponent(TargetRowComponent, &TargetRowData{
-			Mode:          targetMode,
-			TargetRows:    template.TargetRows,
-			IsMultiTarget: template.IsMultiTarget,
-			MaxTargets:    template.MaxTargets,
-			TargetCells:   template.TargetCells,
+			TargetCells: template.TargetCells,
 		})
 
 		// Add cover component if unit provides cover

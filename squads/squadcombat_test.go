@@ -39,10 +39,7 @@ func createTestUnit(manager *common.EntityManager, squadID ecs.EntityID, row, co
 
 	// Add targeting data (default to front row)
 	unit.AddComponent(TargetRowComponent, &TargetRowData{
-		Mode:          TargetModeRowBased,
-		TargetRows:    []int{0},
-		IsMultiTarget: false,
-		MaxTargets:    0,
+		TargetCells: [][2]int{{0, 0}, {0, 1}, {0, 2}},
 	})
 
 	// Add attack range component (default to melee range 1)
@@ -187,23 +184,22 @@ func TestExecuteSquadAttack_MultiTargetAttack(t *testing.T) {
 	attackerSquadID := createTestSquad(manager, "Attackers")
 	attacker := createTestUnit(manager, attackerSquadID, 0, 0, 100, 20, 100)
 
-	// Set multi-target mode
+	// Set multi-cell targeting (target 2 specific cells)
 	targetData := common.GetComponentType[*TargetRowData](attacker, TargetRowComponent)
-	targetData.IsMultiTarget = true
-	targetData.MaxTargets = 2
+	targetData.TargetCells = [][2]int{{0, 0}, {0, 1}} // Target first two front-row cells
 
 	// Create defenders
 	defenderSquadID := createTestSquad(manager, "Defenders")
-	createTestUnit(manager, defenderSquadID, 0, 0, 50, 10, 0)
-	createTestUnit(manager, defenderSquadID, 0, 1, 50, 10, 0)
-	createTestUnit(manager, defenderSquadID, 0, 2, 50, 10, 0)
+	createTestUnit(manager, defenderSquadID, 0, 0, 50, 10, 0) // Should be hit
+	createTestUnit(manager, defenderSquadID, 0, 1, 50, 10, 0) // Should be hit
+	createTestUnit(manager, defenderSquadID, 0, 2, 50, 10, 0) // Should NOT be hit
 
 	// Execute attack
 	result := ExecuteSquadAttack(attackerSquadID, defenderSquadID, manager)
 
-	// Verify multiple targets hit (should be 2 based on MaxTargets)
-	if len(result.DamageByUnit) > 2 {
-		t.Errorf("Expected at most 2 units damaged, got %d", len(result.DamageByUnit))
+	// Verify exactly 2 targets hit (the ones in targeted cells)
+	if len(result.DamageByUnit) != 2 {
+		t.Errorf("Expected 2 units damaged, got %d", len(result.DamageByUnit))
 	}
 }
 
@@ -214,9 +210,8 @@ func TestExecuteSquadAttack_CellBasedTargeting(t *testing.T) {
 	attackerSquadID := createTestSquad(manager, "Attackers")
 	attacker := createTestUnit(manager, attackerSquadID, 0, 0, 100, 20, 100)
 
-	// Set cell-based targeting
+	// Set cell-based targeting (2x2 pattern)
 	targetData := common.GetComponentType[*TargetRowData](attacker, TargetRowComponent)
-	targetData.Mode = TargetModeCellBased
 	targetData.TargetCells = [][2]int{{0, 0}, {0, 1}, {1, 0}, {1, 1}} // 2x2 top-left
 
 	// Create defenders in targeted cells
@@ -696,70 +691,6 @@ func TestGetCoverProvidersFor_OnlyFromSameSquad(t *testing.T) {
 // HELPER FUNCTION TESTS
 // ========================================
 
-func TestSelectLowestHPTargetID(t *testing.T) {
-	manager := setupTestManager(t)
-
-	squadID := createTestSquad(manager, "TestSquad")
-
-	unit1 := createTestUnit(manager, squadID, 0, 0, 100, 10, 0)
-	unit2 := createTestUnit(manager, squadID, 0, 1, 50, 10, 0)  // Lowest HP
-	unit3 := createTestUnit(manager, squadID, 0, 2, 75, 10, 0)
-
-	unitIDs := []ecs.EntityID{unit1.GetID(), unit2.GetID(), unit3.GetID()}
-
-	targetID := selectLowestHPTargetID(unitIDs, manager)
-
-	if targetID != unit2.GetID() {
-		t.Errorf("Expected unit2 (lowest HP), got %d", targetID)
-	}
-}
-
-func TestSelectLowestHPTargetID_EmptyList(t *testing.T) {
-	manager := setupTestManager(t)
-
-	var emptyList []ecs.EntityID
-	targetID := selectLowestHPTargetID(emptyList, manager)
-
-	if targetID != 0 {
-		t.Errorf("Expected 0 for empty list, got %d", targetID)
-	}
-}
-
-func TestSelectRandomTargetIDs_CountLessThanList(t *testing.T) {
-	manager := setupTestManager(t)
-
-	squadID := createTestSquad(manager, "TestSquad")
-
-	unit1 := createTestUnit(manager, squadID, 0, 0, 100, 10, 0)
-	unit2 := createTestUnit(manager, squadID, 0, 1, 100, 10, 0)
-	unit3 := createTestUnit(manager, squadID, 0, 2, 100, 10, 0)
-
-	unitIDs := []ecs.EntityID{unit1.GetID(), unit2.GetID(), unit3.GetID()}
-
-	selected := selectRandomTargetIDs(unitIDs, 2)
-
-	if len(selected) != 2 {
-		t.Errorf("Expected 2 selected targets, got %d", len(selected))
-	}
-}
-
-func TestSelectRandomTargetIDs_CountGreaterThanList(t *testing.T) {
-	manager := setupTestManager(t)
-
-	squadID := createTestSquad(manager, "TestSquad")
-
-	unit1 := createTestUnit(manager, squadID, 0, 0, 100, 10, 0)
-	unit2 := createTestUnit(manager, squadID, 0, 1, 100, 10, 0)
-
-	unitIDs := []ecs.EntityID{unit1.GetID(), unit2.GetID()}
-
-	selected := selectRandomTargetIDs(unitIDs, 5)
-
-	if len(selected) != 2 {
-		t.Errorf("Expected all 2 units returned, got %d", len(selected))
-	}
-}
-
 func TestSumDamageMap(t *testing.T) {
 	damageMap := map[ecs.EntityID]int{
 		1: 10,
@@ -813,7 +744,7 @@ func TestCombatWithCoverSystem_Integration(t *testing.T) {
 
 	// Configure attacker to target back line
 	targetData := common.GetComponentType[*TargetRowData](attacker, TargetRowComponent)
-	targetData.TargetRows = []int{1} // Target row 1
+	targetData.TargetCells = [][2]int{{1, 0}, {1, 1}, {1, 2}} // Target row 1
 
 	// Execute attack
 	result := ExecuteSquadAttack(attackerSquadID, defenderSquadID, manager)
@@ -909,7 +840,7 @@ func TestExecuteSquadAttack_MultiCellUnit_HitOnce(t *testing.T) {
 
 	// Set attacker to target both row 0 and row 1
 	targetData := common.GetComponentType[*TargetRowData](attacker, TargetRowComponent)
-	targetData.TargetRows = []int{0, 1}
+	targetData.TargetCells = [][2]int{{0, 0}, {0, 1}, {0, 2}, {1, 0}, {1, 1}, {1, 2}}
 
 	// Create defender squad with a 2x2 multi-cell unit spanning rows 0-1, cols 0-1
 	defenderSquadID := createTestSquad(manager, "Defenders")
@@ -980,7 +911,6 @@ func TestExecuteSquadAttack_MultiCellUnit_CellBased_HitOnce(t *testing.T) {
 
 	// Set attacker to target all 4 cells occupied by the multi-cell unit
 	targetData := common.GetComponentType[*TargetRowData](attacker, TargetRowComponent)
-	targetData.Mode = TargetModeCellBased
 	targetData.TargetCells = [][2]int{
 		{0, 0}, // Top-left
 		{0, 1}, // Top-right

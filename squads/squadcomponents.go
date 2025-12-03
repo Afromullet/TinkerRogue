@@ -178,27 +178,11 @@ type MovementSpeedData struct {
 	Speed int // Tiles per turn (typically 1-5)
 }
 
-// TargetMode defines how a unit selects targets
-type TargetMode int
-
-const (
-	TargetModeRowBased  TargetMode = iota // Target entire row(s)
-	TargetModeCellBased                   // Target specific grid cells
-)
-
-// TargetRowData defines which enemy cells/rows a unit attacks
-// Supports both simple row-based targeting and complex cell-pattern targeting
+// TargetRowData defines which enemy cells a unit attacks using cell-based targeting
+// Component name kept for compatibility (was originally "row-based or cell-based")
 type TargetRowData struct {
-	Mode TargetMode // Row-based or cell-based targeting
-
-	// Row-based targeting (simple)
-	TargetRows    []int // Which rows to target (e.g., [0] for front, [0,1,2] for all)
-	IsMultiTarget bool  // True if ability hits multiple units in row
-	MaxTargets    int   // Max units hit per row (0 = unlimited)
-
-	// Cell-based targeting (complex)
-	TargetCells [][2]int // Specific grid cells to target (e.g., [[0,0], [0,1]] for 1x2 pattern)
-	// Each element is [row, col] where row and col are 0-2
+	// Cell-based targeting: Specific grid cells to target (e.g., [[0,0], [0,1]] for 1x2 pattern)
+	TargetCells [][2]int // Each element is [row, col] where row and col are 0-2
 	// Examples:
 	// 1x1: [[1,1]] (center cell)
 	// 1x2: [[0,0], [0,1]] (front-left two cells)
@@ -208,9 +192,6 @@ type TargetRowData struct {
 }
 
 func (t TargetRowData) String() string {
-	if t.Mode == TargetModeRowBased {
-		return fmt.Sprintf("Row-Based: rows %v, multi=%v, max=%d", t.TargetRows, t.IsMultiTarget, t.MaxTargets)
-	}
 	return fmt.Sprintf("Cell-Based: %d cells", len(t.TargetCells))
 }
 

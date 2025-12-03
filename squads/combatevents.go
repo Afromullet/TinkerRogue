@@ -32,11 +32,9 @@ type AttackEvent struct {
 
 // TargetInfo describes how/where the target was selected
 type TargetInfo struct {
-	TargetMode       string // "row", "cell", "multi"
-	TargetRow        int    // Which row (0-2)
-	TargetCol        int    // Which col (0-2)
-	IsMultiTarget    bool   // Part of AOE?
-	MultiTargetIndex int    // Which target in multi-attack (1, 2, 3...)
+	TargetMode string // "cell" (cell-based targeting)
+	TargetRow  int    // Which row (0-2)
+	TargetCol  int    // Which col (0-2)
 }
 
 // HitResult describes the attack roll outcome

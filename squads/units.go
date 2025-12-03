@@ -24,10 +24,6 @@ type UnitTemplate struct {
 	GridWidth      int        // Width in cells (1-3), defaults to 1
 	GridHeight     int        // Height in cells (1-3), defaults to 1
 	Role           UnitRole   // Tank, DPS, Support
-	TargetMode     TargetMode // "row" or "cell"
-	TargetRows     []int      // Which rows to attack (row-based)
-	IsMultiTarget  bool       // AOE or single-target (row-based)
-	MaxTargets     int        // Max targets per row (row-based)
 	TargetCells    [][2]int   // Specific cells to target (cell-based)
 	IsLeader       bool    // Squad leader flag
 	CoverValue     float64 // Damage reduction provided (0.0-1.0, 0 = no cover)
@@ -59,12 +55,6 @@ func CreateUnitTemplates(monsterData entitytemplates.JSONMonster) (UnitTemplate,
 		return UnitTemplate{}, fmt.Errorf("invalid role for %s: %w", monsterData.Name, err)
 	}
 
-	// Validate role
-	targetMode, err := GetTargetMode(monsterData.TargetMode)
-	if err != nil {
-		return UnitTemplate{}, fmt.Errorf("invalid targetmode for %s: %w", monsterData.Name, err)
-	}
-
 	// Create entity configuration for the unit
 	entityConfig := entitytemplates.EntityConfig{
 		Type:      entitytemplates.EntityCreature,
@@ -87,10 +77,6 @@ func CreateUnitTemplates(monsterData entitytemplates.JSONMonster) (UnitTemplate,
 		GridWidth:      monsterData.Width,
 		GridHeight:     monsterData.Height,
 		Role:           role,
-		TargetMode:     targetMode,
-		TargetRows:     monsterData.TargetRows,
-		IsMultiTarget:  monsterData.IsMultiTarget,
-		MaxTargets:     monsterData.MaxTargets,
 		TargetCells:    monsterData.TargetCells,
 		IsLeader:       false,
 		CoverValue:     monsterData.CoverValue,
@@ -130,20 +116,6 @@ func GetRole(roleString string) (UnitRole, error) {
 	}
 }
 
-// GetRole converts a role string to a UnitRole enum value.
-// It returns an error if the role string is not recognized.
-func GetTargetMode(targetModeString string) (TargetMode, error) {
-
-	switch targetModeString {
-	case "row":
-		return TargetModeRowBased, nil
-	case "cell":
-		return TargetModeCellBased, nil
-
-	default:
-		return 0, fmt.Errorf("invalid targetmode: %q, expected row or Support", targetModeString)
-	}
-}
 
 // GetTemplateByName finds a unit template by its name.
 // Returns nil if no template with the given name is found.
@@ -210,13 +182,9 @@ func CreateUnitEntity(squadmanager *common.EntityManager, unit UnitTemplate) (*e
 		Role: unit.Role,
 	})
 
-	// Row-based targeting (simple)
+	// Cell-based targeting
 	unitEntity.AddComponent(TargetRowComponent, &TargetRowData{
-		Mode:          unit.TargetMode,
-		TargetRows:    unit.TargetRows,
-		IsMultiTarget: unit.IsMultiTarget,
-		MaxTargets:    unit.MaxTargets,
-		TargetCells:   nil, // Use cell-based mode for precise grid patterns
+		TargetCells: unit.TargetCells,
 	})
 
 	// Add cover component if the unit provides cover (CoverValue > 0)

@@ -20,7 +20,7 @@ func DisplayCombatLog(log *squads.CombatLog, manager *common.EntityManager) {
 
 	printAttackingUnits(log.AttackingUnits)
 
-	fmt.Println("\n--- ATTACK SEQUENCE ---\n")
+	fmt.Println("\n--- ATTACK SEQUENCE ---")
 
 	for _, event := range log.AttackEvents {
 		printAttackEvent(event, manager)

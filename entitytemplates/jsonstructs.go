@@ -133,11 +133,7 @@ type JSONMonster struct {
 	Width         int               `json:"width"`
 	Height        int               `json:"height"`
 	Role          string            `json:"role"`
-	TargetMode    string            `json:"targetMode"`    // "row" or "cell"
-	TargetRows    []int             `json:"targetRows"`    // For row-based targeting
-	IsMultiTarget bool              `json:"isMultiTarget"` // For row-based targeting
-	MaxTargets    int               `json:"maxTargets"`    // For row-based targeting
-	TargetCells   [][2]int          `json:"targetCells"`   // For cell-based targeting
+	TargetCells   [][2]int          `json:"targetCells"`   // Cell-based targeting pattern
 	CoverValue     float64 `json:"coverValue"`     // Damage reduction provided (0.0-1.0)
 	CoverRange     int     `json:"coverRange"`     // Rows behind that receive cover (1-3)
 	RequiresActive bool    `json:"requiresActive"` // If true, dead/stunned units don't provide cover
@@ -157,10 +153,6 @@ func NewJSONMonster(m JSONMonster) JSONMonster {
 		Width:         m.Width,
 		Height:        m.Height,
 		Role:          m.Role,
-		TargetMode:    m.TargetMode,
-		TargetRows:    m.TargetRows,
-		IsMultiTarget: m.IsMultiTarget,
-		MaxTargets:    m.MaxTargets,
 		TargetCells:   m.TargetCells,
 		CoverValue:     m.CoverValue,
 		CoverRange:     m.CoverRange,
@@ -239,11 +231,7 @@ type JSONCreatureModifier struct {
 	Width             int        `json:"width"`
 	Height            int        `json:"height"`
 	Role              string     `json:"role"`
-	TargetMode        string     `json:"targetMode"`        // "row" or "cell"
-	TargetRows        []int      `json:"targetRows"`        // For row-based targeting
-	IsMultiTarget     bool       `json:"isMultiTarget"`     // For row-based targeting
-	MaxTargets        int        `json:"maxTargets"`        // For row-based targeting
-	TargetCells       [][2]int   `json:"targetCells"`       // For cell-based targeting
+	TargetCells       [][2]int   `json:"targetCells"`       // Cell-based targeting pattern
 }
 
 func CreatureModifierFromJSON(a JSONCreatureModifier) JSONCreatureModifier {
@@ -260,10 +248,6 @@ func CreatureModifierFromJSON(a JSONCreatureModifier) JSONCreatureModifier {
 		Width:             a.Width,
 		Height:            a.Height,
 		Role:              a.Role,
-		TargetMode:        a.TargetMode,
-		TargetRows:        a.TargetRows,
-		IsMultiTarget:     a.IsMultiTarget,
-		MaxTargets:        a.MaxTargets,
 		TargetCells:       a.TargetCells,
 	}
 }

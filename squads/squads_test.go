@@ -41,11 +41,7 @@ func createTestJSONMonster(name string, width, height int, role string) entityte
 		Width:         width,
 		Height:        height,
 		Role:          role,
-		TargetMode:    "row",
-		TargetRows:    []int{0},
-		IsMultiTarget: false,
-		MaxTargets:    1,
-		TargetCells:   nil,
+		TargetCells:   [][2]int{{0, 0}, {0, 1}, {0, 2}},
 	}
 }
 
@@ -67,11 +63,7 @@ func createLowCostTestMonster(name string, width, height int, role string) entit
 		Width:         width,
 		Height:        height,
 		Role:          role,
-		TargetMode:    "row",
-		TargetRows:    []int{0},
-		IsMultiTarget: false,
-		MaxTargets:    1,
-		TargetCells:   nil,
+		TargetCells:   [][2]int{{0, 0}, {0, 1}, {0, 2}},
 	}
 }
 

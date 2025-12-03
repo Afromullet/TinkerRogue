@@ -133,7 +133,7 @@ func canUnitAttack(attackerID ecs.EntityID, squadDistance int, manager *common.E
 }
 
 // selectTargetUnits determines which defender units should be targeted
-// Handles both cell-based and row-based targeting modes
+// Uses cell-based targeting to find units at specific grid positions
 func selectTargetUnits(attackerID, defenderSquadID ecs.EntityID, manager *common.EntityManager) []ecs.EntityID {
 	// Check if attacker has targeting component
 	if !manager.HasComponentByIDWithTag(attackerID, SquadMemberTag, TargetRowComponent) {
@@ -141,15 +141,7 @@ func selectTargetUnits(attackerID, defenderSquadID ecs.EntityID, manager *common
 	}
 
 	targetRowData := common.GetComponentTypeByID[*TargetRowData](manager, attackerID, TargetRowComponent)
-	var targetIDs []ecs.EntityID
-
-	if targetRowData.Mode == TargetModeCellBased {
-		targetIDs = selectCellBasedTargets(defenderSquadID, targetRowData.TargetCells, manager)
-	} else {
-		targetIDs = selectRowBasedTargets(defenderSquadID, targetRowData, manager)
-	}
-
-	return targetIDs
+	return selectCellBasedTargets(defenderSquadID, targetRowData.TargetCells, manager)
 }
 
 // selectCellBasedTargets finds units at specific grid cells
@@ -170,73 +162,11 @@ func selectCellBasedTargets(defenderSquadID ecs.EntityID, targetCells [][2]int, 
 	return targets
 }
 
-// selectRowBasedTargets finds units in specific rows with multi-target logic
-func selectRowBasedTargets(defenderSquadID ecs.EntityID, targetData *TargetRowData, manager *common.EntityManager) []ecs.EntityID {
-	var targets []ecs.EntityID
-	seen := make(map[ecs.EntityID]bool) // Prevent multi-cell units from being hit multiple times
-
-	for _, targetRow := range targetData.TargetRows {
-		rowTargets := GetUnitIDsInRow(defenderSquadID, targetRow, manager)
-		if len(rowTargets) == 0 {
-			continue
-		}
-
-		//TODO, handle multitarget seletion a better way. Figure out whether we still want that.
-		//I am thinking just cell based will do it
-		if targetData.IsMultiTarget {
-			maxTargets := targetData.MaxTargets
-			var candidateTargets []ecs.EntityID
-
-			// Filter out already-seen units
-			for _, unitID := range rowTargets {
-				if !seen[unitID] {
-					candidateTargets = append(candidateTargets, unitID)
-				}
-			}
-
-			if maxTargets == 0 || maxTargets > len(candidateTargets) {
-				for _, unitID := range candidateTargets {
-					targets = append(targets, unitID)
-					seen[unitID] = true
-				}
-			} else {
-				selectedTargets := selectRandomTargetIDs(candidateTargets, maxTargets)
-				for _, unitID := range selectedTargets {
-					targets = append(targets, unitID)
-					seen[unitID] = true
-				}
-			}
-		} else {
-			// Single target mode - find lowest HP from unseen units
-			var candidateTargets []ecs.EntityID
-			for _, unitID := range rowTargets {
-				if !seen[unitID] {
-					candidateTargets = append(candidateTargets, unitID)
-				}
-			}
-
-			if len(candidateTargets) > 0 {
-				targetID := selectLowestHPTargetID(candidateTargets, manager)
-				if targetID != 0 {
-					targets = append(targets, targetID)
-					seen[targetID] = true
-				}
-			}
-		}
-	}
-
-	return targets
-}
-
 // processAttackOnTargets applies damage to all targets and creates combat events
 // Returns the updated attack index
 func processAttackOnTargets(attackerID ecs.EntityID, targetIDs []ecs.EntityID, result *CombatResult,
 	log *CombatLog, attackIndex int, manager *common.EntityManager) int {
 
-	// Get target mode info once
-	targetData := common.GetComponentTypeByID[*TargetRowData](manager, attackerID, TargetRowComponent)
-
-	multiTargetIndex := 1
 	for _, defenderID := range targetIDs {
 		attackIndex++
 
@@ -250,16 +180,7 @@ func processAttackOnTargets(attackerID ecs.EntityID, targetIDs []ecs.EntityID, r
 			event.TargetInfo.TargetRow = defenderPos.AnchorRow
 			event.TargetInfo.TargetCol = defenderPos.AnchorCol
 		}
-		event.TargetInfo.IsMultiTarget = targetData.IsMultiTarget
-		if targetData.IsMultiTarget {
-			event.TargetInfo.MultiTargetIndex = multiTargetIndex
-			multiTargetIndex++
-		}
-		if targetData.Mode == TargetModeCellBased {
-			event.TargetInfo.TargetMode = "cell"
-		} else {
-			event.TargetInfo.TargetMode = "row"
-		}
+		event.TargetInfo.TargetMode = "cell"
 
 		// Apply damage
 		applyDamageToUnitByID(defenderID, damage, result, manager)
@@ -397,51 +318,6 @@ func applyDamageToUnitByID(unitID ecs.EntityID, damage int, result *CombatResult
 	if memberData != nil {
 		UpdateSquadDestroyedStatus(memberData.SquadID, squadmanager)
 	}
-}
-
-// selectLowestHPTargetID - TODO, don't think I will want this kind of targeting
-func selectLowestHPTargetID(unitIDs []ecs.EntityID, squadmanager *common.EntityManager) ecs.EntityID {
-	if len(unitIDs) == 0 {
-		return 0
-	}
-
-	lowestID := unitIDs[0]
-	lowestAttr := common.GetAttributesByIDWithTag(squadmanager, lowestID, SquadMemberTag)
-	if lowestAttr == nil {
-		return 0
-	}
-	lowestHP := lowestAttr.CurrentHealth
-
-	for _, unitID := range unitIDs[1:] {
-		attr := common.GetAttributesByIDWithTag(squadmanager, unitID, SquadMemberTag)
-		if attr == nil {
-			continue
-		}
-
-		hp := attr.CurrentHealth
-		if hp < lowestHP {
-			lowestID = unitID
-			lowestHP = hp
-		}
-	}
-
-	return lowestID
-}
-
-// selectRandomTargetIDs - ✅ Works with ecs.EntityID
-func selectRandomTargetIDs(unitIDs []ecs.EntityID, count int) []ecs.EntityID {
-	if count >= len(unitIDs) {
-		return unitIDs
-	}
-
-	// Shuffle and take first N
-	shuffled := make([]ecs.EntityID, len(unitIDs))
-	copy(shuffled, unitIDs)
-	common.Shuffle(len(shuffled), func(i, j int) {
-		shuffled[i], shuffled[j] = shuffled[j], shuffled[i]
-	})
-
-	return shuffled[:count]
 }
 
 func sumDamageMap(damageMap map[ecs.EntityID]int) int {
