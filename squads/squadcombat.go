@@ -51,6 +51,9 @@ func ExecuteSquadAttack(attackerSquadID, defenderSquadID ecs.EntityID, squadmana
 		attackIndex = processAttackOnTargets(attackerID, targetIDs, result, combatLog, attackIndex, squadmanager)
 	}
 
+	// Update defender squad destroyed status once after all attacks (performance optimization)
+	UpdateSquadDestroyedStatus(defenderSquadID, squadmanager)
+
 	// Finalize combat log with summary
 	finalizeCombatLog(result, combatLog, defenderSquadID, squadmanager)
 
@@ -114,11 +117,11 @@ func finalizeCombatLog(result *CombatResult, log *CombatLog, defenderSquadID ecs
 	log.DefenderStatus = calculateSquadStatus(defenderSquadID, manager)
 }
 
-// canUnitAttack checks if a unit is alive and within attack range
+// canUnitAttack checks if a unit is alive, can act, and within attack range
 func canUnitAttack(attackerID ecs.EntityID, squadDistance int, manager *common.EntityManager) bool {
-	// Check if unit is alive
+	// Check if unit is alive and can act
 	attr := common.GetAttributesByIDWithTag(manager, attackerID, SquadMemberTag)
-	if attr == nil || attr.CurrentHealth <= 0 {
+	if attr == nil || attr.CurrentHealth <= 0 || !attr.CanAct {
 		return false
 	}
 
@@ -333,7 +336,7 @@ func rollDodge(dodgeChance int) bool {
 	return roll <= dodgeChance
 }
 
-// applyDamageToUnitByID - ✅ Uses ecs.EntityID
+// applyDamageToUnitByID applies damage to a unit and tracks it in the combat result
 func applyDamageToUnitByID(unitID ecs.EntityID, damage int, result *CombatResult, squadmanager *common.EntityManager) {
 	attr := common.GetAttributesByIDWithTag(squadmanager, unitID, SquadMemberTag)
 	if attr == nil {
@@ -347,11 +350,8 @@ func applyDamageToUnitByID(unitID ecs.EntityID, damage int, result *CombatResult
 		result.UnitsKilled = append(result.UnitsKilled, unitID)
 	}
 
-	// Update the squad's destroyed status cache after health change
-	memberData := common.GetComponentTypeByID[*SquadMemberData](squadmanager, unitID, SquadMemberComponent)
-	if memberData != nil {
-		UpdateSquadDestroyedStatus(memberData.SquadID, squadmanager)
-	}
+	// Note: UpdateSquadDestroyedStatus is now called once per attack in ExecuteSquadAttack
+	// instead of per damaged unit for better performance
 }
 
 func sumDamageMap(damageMap map[ecs.EntityID]int) int {

@@ -115,11 +115,11 @@ func (cas *CombatActionSystem) GetSquadAttackRange(squadID ecs.EntityID) int {
 }
 
 func (cas *CombatActionSystem) GetAttackingUnits(squadID, targetID ecs.EntityID) []ecs.EntityID {
-	// Get positions
-	attackerPos, _ := getSquadMapPosition(squadID, cas.manager)
-	defenderPos, _ := getSquadMapPosition(targetID, cas.manager)
-
-	distance := attackerPos.ChebyshevDistance(&defenderPos)
+	// Use GetSquadDistance for consistent Chebyshev distance calculation
+	distance := squads.GetSquadDistance(squadID, targetID, cas.manager)
+	if distance < 0 {
+		return []ecs.EntityID{} // Squad not found or missing position
+	}
 
 	allUnits := squads.GetUnitIDsInSquad(squadID, cas.manager)
 
@@ -131,10 +131,15 @@ func (cas *CombatActionSystem) GetAttackingUnits(squadID, targetID ecs.EntityID)
 			continue
 		}
 
+		// Check if unit is alive and can act (matches canUnitAttack logic)
+		if attr.CurrentHealth <= 0 || !attr.CanAct {
+			continue
+		}
+
 		unitRange := attr.GetAttackRange()
 
 		// Check if this unit can reach the target
-		if distance <= unitRange {
+		if unitRange >= distance {
 			attackingUnits = append(attackingUnits, unitID)
 		}
 	}

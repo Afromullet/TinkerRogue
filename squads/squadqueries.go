@@ -203,9 +203,9 @@ func UpdateSquadCapacity(squadID ecs.EntityID, squadmanager *common.EntityManage
 // RANGE AND DISTANCE QUERIES
 // ========================================
 
-// GetSquadDistance calculates the Manhattan distance between two squads
-// based on their world positions. Returns -1 if either squad is not found
-// or missing a position component.
+// GetSquadDistance calculates the Chebyshev distance (max(|dx|, |dy|)) between two squads
+// based on their world positions. This matches the tactical grid movement system where
+// diagonal moves cost 1. Returns -1 if either squad is not found or missing a position component.
 func GetSquadDistance(squad1ID, squad2ID ecs.EntityID, squadmanager *common.EntityManager) int {
 	squad1Entity := GetSquadEntity(squad1ID, squadmanager)
 	squad2Entity := GetSquadEntity(squad2ID, squadmanager)
@@ -222,11 +222,8 @@ func GetSquadDistance(squad1ID, squad2ID ecs.EntityID, squadmanager *common.Enti
 	pos1 := common.GetComponentType[*coords.LogicalPosition](squad1Entity, common.PositionComponent)
 	pos2 := common.GetComponentType[*coords.LogicalPosition](squad2Entity, common.PositionComponent)
 
-	// Calculate Manhattan distance (grid-based)
-	dx := math.Abs(float64(pos1.X - pos2.X))
-	dy := math.Abs(float64(pos1.Y - pos2.Y))
-
-	return int(dx + dy)
+	// Use Chebyshev distance consistently with combat system
+	return pos1.ChebyshevDistance(pos2)
 }
 
 // GetSquadMovementSpeed returns the squad's movement speed (minimum of all alive units)
