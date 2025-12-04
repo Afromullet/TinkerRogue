@@ -144,22 +144,56 @@ func selectTargetUnits(attackerID, defenderSquadID ecs.EntityID, manager *common
 	return selectCellBasedTargets(defenderSquadID, targetRowData.TargetCells, manager)
 }
 
-// selectCellBasedTargets finds units at specific grid cells
+// selectCellBasedTargets finds units at specific grid cells, with pierce-through targeting
+// If a target cell is empty, the attack pierces through to the next cell behind it
+// Pierce direction: toward back row (higher row numbers), stopping at first cell with units
 func selectCellBasedTargets(defenderSquadID ecs.EntityID, targetCells [][2]int, manager *common.EntityManager) []ecs.EntityID {
 	var targets []ecs.EntityID
 	seen := make(map[ecs.EntityID]bool) // Prevent multi-cell units from being hit multiple times
 
 	for _, cell := range targetCells {
-		row, col := cell[0], cell[1]
-		cellTargets := GetUnitIDsAtGridPosition(defenderSquadID, row, col, manager)
-		for _, unitID := range cellTargets {
-			if !seen[unitID] {
-				targets = append(targets, unitID)
-				seen[unitID] = true
+		targetRow, targetCol := cell[0], cell[1]
+
+		// Generate pierce chain: [target] → [target-1] → [target-2] → ...
+		pierceChain := generatePierceChain(targetRow, targetCol)
+
+		// Find first cell with units (or empty if no pierce hits)
+		for _, pierceCell := range pierceChain {
+			pRow, pCol := pierceCell[0], pierceCell[1]
+
+			// Get units at this cell in the pierce chain
+			cellTargets := GetUnitIDsAtGridPosition(defenderSquadID, pRow, pCol, manager)
+
+			if len(cellTargets) > 0 {
+				// Found units! Add them to target list
+				for _, unitID := range cellTargets {
+					if !seen[unitID] {
+						targets = append(targets, unitID)
+						seen[unitID] = true
+					}
+				}
+				break // Stop piercing at first cell with units
 			}
 		}
 	}
+
 	return targets
+}
+
+// generatePierceChain creates a vertical pierce sequence from target row toward back row
+// For a 3x3 squad grid:
+// - Row 0 (front) → Row 1 (middle) → Row 2 (back)
+// - Pierce always moves toward higher row numbers (deeper into enemy formation)
+// The column stays fixed, creating a vertical pierce effect
+func generatePierceChain(targetRow, targetCol int) [][2]int {
+	var chain [][2]int
+
+	// Add cells from target row toward back (row 2)
+	for row := targetRow; row <= 2; row++ {
+		chain = append(chain, [2]int{row, targetCol})
+	}
+
+	return chain
 }
 
 // processAttackOnTargets applies damage to all targets and creates combat events

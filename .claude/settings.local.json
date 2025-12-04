@@ -6,7 +6,8 @@
       "Bash(perl -i -pe:*)",
       "Bash(go build:*)",
       "Bash(go test:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(grep:*)"
     ],
     "deny": [],
     "ask": []

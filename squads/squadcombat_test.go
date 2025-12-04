@@ -716,6 +716,251 @@ func TestSumDamageMap_EmptyMap(t *testing.T) {
 }
 
 // ========================================
+// generatePierceChain TESTS
+// ========================================
+
+func TestGeneratePierceChain_FromBackRow(t *testing.T) {
+	chain := generatePierceChain(2, 0)
+
+	// Should generate [[2,0]] - already at back, no pierce
+	if len(chain) != 1 {
+		t.Errorf("Expected chain length 1, got %d", len(chain))
+	}
+
+	expected := [][2]int{{2, 0}}
+	for i, cell := range expected {
+		if i >= len(chain) || chain[i] != cell {
+			t.Errorf("Expected cell %d to be %v, got %v", i, cell, chain[i])
+		}
+	}
+}
+
+func TestGeneratePierceChain_FromMiddleRow(t *testing.T) {
+	chain := generatePierceChain(1, 2)
+
+	// Should generate [[1,2], [2,2]] - middle to back
+	if len(chain) != 2 {
+		t.Errorf("Expected chain length 2, got %d", len(chain))
+	}
+
+	expected := [][2]int{{1, 2}, {2, 2}}
+	for i, cell := range expected {
+		if i >= len(chain) || chain[i] != cell {
+			t.Errorf("Expected cell %d to be %v, got %v", i, cell, chain[i])
+		}
+	}
+}
+
+func TestGeneratePierceChain_FromFrontRow(t *testing.T) {
+	chain := generatePierceChain(0, 1)
+
+	// Should generate [[0,1], [1,1], [2,1]] (front to back)
+	if len(chain) != 3 {
+		t.Errorf("Expected chain length 3, got %d", len(chain))
+	}
+
+	expected := [][2]int{{0, 1}, {1, 1}, {2, 1}}
+	for i, cell := range expected {
+		if i >= len(chain) || chain[i] != cell {
+			t.Errorf("Expected cell %d to be %v, got %v", i, cell, chain[i])
+		}
+	}
+}
+
+func TestGeneratePierceChain_KeepsColumnFixed(t *testing.T) {
+	// Test that column stays the same across all pierce cells
+	for col := 0; col < 3; col++ {
+		chain := generatePierceChain(2, col)
+
+		for _, cell := range chain {
+			if cell[1] != col {
+				t.Errorf("Column changed in pierce chain! Expected column %d, got %d", col, cell[1])
+			}
+		}
+	}
+}
+
+// ========================================
+// PIERCE-THROUGH TARGETING TESTS
+// ========================================
+
+func TestSelectCellBasedTargets_PierceToNextCell(t *testing.T) {
+	manager := setupTestManager(t)
+
+	defenderSquadID := createTestSquad(manager, "Defenders")
+	// Create unit at row 1, col 0
+	unitAtRow1 := createTestUnit(manager, defenderSquadID, 1, 0, 50, 10, 0)
+
+	// Target row 0, col 0 (which is empty) -> should pierce to row 1, col 0
+	targetCells := [][2]int{{0, 0}}
+	targets := selectCellBasedTargets(defenderSquadID, targetCells, manager)
+
+	if len(targets) != 1 {
+		t.Errorf("Expected 1 target (pierced through empty cell), got %d", len(targets))
+	}
+
+	if len(targets) > 0 && targets[0] != unitAtRow1.GetID() {
+		t.Error("Expected pierced target to be the unit at row 1, col 0")
+	}
+}
+
+func TestSelectCellBasedTargets_PierceAllTheWay(t *testing.T) {
+	manager := setupTestManager(t)
+
+	defenderSquadID := createTestSquad(manager, "Defenders")
+	// Only create unit at row 2 (back)
+	unitAtBack := createTestUnit(manager, defenderSquadID, 2, 1, 50, 10, 0)
+
+	// Target row 0, col 1 (empty) -> should pierce through rows 1 to 2
+	targetCells := [][2]int{{0, 1}}
+	targets := selectCellBasedTargets(defenderSquadID, targetCells, manager)
+
+	if len(targets) != 1 {
+		t.Errorf("Expected 1 target (pierced through multiple empty cells), got %d", len(targets))
+	}
+
+	if len(targets) > 0 && targets[0] != unitAtBack.GetID() {
+		t.Error("Expected pierced target to be the unit at row 2")
+	}
+}
+
+func TestSelectCellBasedTargets_EmptyPierceChainNoTarget(t *testing.T) {
+	manager := setupTestManager(t)
+
+	defenderSquadID := createTestSquad(manager, "Defenders")
+	// Create unit at row 2, col 0 (different column)
+	createTestUnit(manager, defenderSquadID, 2, 0, 50, 10, 0)
+
+	// Target row 0, col 1 -> pierce chain [0,1], [1,1], [2,1] all empty
+	targetCells := [][2]int{{0, 1}}
+	targets := selectCellBasedTargets(defenderSquadID, targetCells, manager)
+
+	if len(targets) != 0 {
+		t.Errorf("Expected 0 targets (empty pierce chain), got %d", len(targets))
+	}
+}
+
+func TestSelectCellBasedTargets_MultiCellUnitHitOnce_WithPierce(t *testing.T) {
+	manager := setupTestManager(t)
+
+	defenderSquadID := createTestSquad(manager, "Defenders")
+	// Create a 2x2 unit at rows 1-2, cols 0-1
+	multiCellUnit := manager.World.NewEntity()
+	multiCellUnit.AddComponent(SquadMemberComponent, &SquadMemberData{SquadID: defenderSquadID})
+	multiCellUnit.AddComponent(GridPositionComponent, &GridPositionData{
+		AnchorRow: 1,
+		AnchorCol: 0,
+		Width:     2,
+		Height:    2,
+	})
+
+	// Target row 0, cols 0 and 1 (both empty, but multi-cell unit occupies rows behind)
+	targetCells := [][2]int{{0, 0}, {0, 1}}
+	targets := selectCellBasedTargets(defenderSquadID, targetCells, manager)
+
+	// Should hit the multi-cell unit once (from both targets after piercing)
+	if len(targets) != 1 {
+		t.Errorf("Expected 1 target (multi-cell unit hit once), got %d", len(targets))
+	}
+
+	if len(targets) > 0 && targets[0] != multiCellUnit.GetID() {
+		t.Error("Expected target to be the multi-cell unit")
+	}
+}
+
+// ========================================
+// PIERCE-THROUGH INTEGRATION TESTS
+// ========================================
+
+func TestExecuteSquadAttack_PierceToHitBacklineUnit(t *testing.T) {
+	manager := setupTestManager(t)
+
+	// Create attacker
+	attackerSquadID := createTestSquad(manager, "Attackers")
+	attacker := createTestUnit(manager, attackerSquadID, 0, 0, 100, 20, 100)
+
+	// Create defenders: unit in back row
+	defenderSquadID := createTestSquad(manager, "Defenders")
+	backlineUnit := createTestUnit(manager, defenderSquadID, 2, 0, 50, 10, 0)
+	backlineAttr := common.GetAttributes(backlineUnit)
+	initialHP := backlineAttr.CurrentHealth
+
+	// Set attacker to target row 2, col 0 (where backlineUnit is)
+	targetData := common.GetComponentType[*TargetRowData](attacker, TargetRowComponent)
+	targetData.TargetCells = [][2]int{{2, 0}}
+
+	// Execute attack
+	result := ExecuteSquadAttack(attackerSquadID, defenderSquadID, manager)
+
+	// Verify backline unit was hit (no pierce needed, direct hit)
+	if len(result.DamageByUnit) != 1 {
+		t.Errorf("Expected 1 unit damaged, got %d", len(result.DamageByUnit))
+	}
+
+	if backlineAttr.CurrentHealth >= initialHP {
+		t.Error("Expected backline unit to take damage")
+	}
+}
+
+func TestExecuteSquadAttack_PierceEmptyCellToHitMidline(t *testing.T) {
+	manager := setupTestManager(t)
+
+	// Create attacker
+	attackerSquadID := createTestSquad(manager, "Attackers")
+	attacker := createTestUnit(manager, attackerSquadID, 0, 0, 100, 20, 100)
+
+	// Create defenders: empty row 0, unit at row 1
+	defenderSquadID := createTestSquad(manager, "Defenders")
+	midlineUnit := createTestUnit(manager, defenderSquadID, 1, 0, 50, 10, 0)
+	midlineAttr := common.GetAttributes(midlineUnit)
+	initialHP := midlineAttr.CurrentHealth
+
+	// Set attacker to target row 0, col 0 (empty) -> should pierce to row 1, col 0
+	targetData := common.GetComponentType[*TargetRowData](attacker, TargetRowComponent)
+	targetData.TargetCells = [][2]int{{0, 0}}
+
+	// Execute attack
+	result := ExecuteSquadAttack(attackerSquadID, defenderSquadID, manager)
+
+	// Verify midline unit was hit after pierce
+	if len(result.DamageByUnit) != 1 {
+		t.Errorf("Expected 1 unit damaged (after pierce), got %d", len(result.DamageByUnit))
+	}
+
+	if midlineAttr.CurrentHealth >= initialHP {
+		t.Error("Expected midline unit to take damage after pierce")
+	}
+}
+
+func TestExecuteSquadAttack_PierceEmptyChainNoDamage(t *testing.T) {
+	manager := setupTestManager(t)
+
+	// Create attacker
+	attackerSquadID := createTestSquad(manager, "Attackers")
+	attacker := createTestUnit(manager, attackerSquadID, 0, 0, 100, 20, 100)
+
+	// Create defenders: all empty in column 1
+	defenderSquadID := createTestSquad(manager, "Defenders")
+	createTestUnit(manager, defenderSquadID, 2, 0, 50, 10, 0) // Different column
+
+	// Set attacker to target row 0, col 1 (all cells in column 1 are empty)
+	targetData := common.GetComponentType[*TargetRowData](attacker, TargetRowComponent)
+	targetData.TargetCells = [][2]int{{0, 1}}
+
+	// Execute attack
+	result := ExecuteSquadAttack(attackerSquadID, defenderSquadID, manager)
+
+	// Verify no units were hit
+	if len(result.DamageByUnit) != 0 {
+		t.Errorf("Expected 0 units damaged (empty pierce chain), got %d", len(result.DamageByUnit))
+	}
+
+	if result.TotalDamage != 0 {
+		t.Errorf("Expected 0 total damage, got %d", result.TotalDamage)
+	}
+}
+
+// ========================================
 // INTEGRATION TESTS
 // ========================================
 

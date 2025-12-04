@@ -1,0 +1,83 @@
+package combatsim
+
+import (
+	"fmt"
+	"game_main/coords"
+)
+
+// CombatScenario defines a test scenario for combat simulation
+type CombatScenario struct {
+	Name          string
+	AttackerSetup SquadSetup
+	DefenderSetup SquadSetup
+	SquadDistance int // Distance between squads (affects range)
+}
+
+// SquadSetup configures a squad for simulation
+type SquadSetup struct {
+	Name          string
+	Units         []UnitConfig
+	WorldPosition coords.LogicalPosition
+}
+
+// UnitConfig defines a unit in a squad for simulation
+type UnitConfig struct {
+	TemplateName string // Reference to Units[] global
+	GridRow      int
+	GridCol      int
+	IsLeader     bool
+}
+
+// ScenarioBuilder provides fluent API for creating combat scenarios
+type ScenarioBuilder struct {
+	scenario CombatScenario
+}
+
+// NewScenarioBuilder creates a new scenario builder
+func NewScenarioBuilder(name string) *ScenarioBuilder {
+	return &ScenarioBuilder{
+		scenario: CombatScenario{
+			Name:          name,
+			SquadDistance: 1, // Default melee range
+		},
+	}
+}
+
+// WithAttacker configures the attacking squad
+func (b *ScenarioBuilder) WithAttacker(name string, units []UnitConfig) *ScenarioBuilder {
+	b.scenario.AttackerSetup = SquadSetup{
+		Name:          name,
+		Units:         units,
+		WorldPosition: coords.LogicalPosition{X: 0, Y: 0}, // Default position
+	}
+	return b
+}
+
+// WithDefender configures the defending squad
+func (b *ScenarioBuilder) WithDefender(name string, units []UnitConfig) *ScenarioBuilder {
+	b.scenario.DefenderSetup = SquadSetup{
+		Name:          name,
+		Units:         units,
+		WorldPosition: coords.LogicalPosition{X: 0, Y: 1}, // Default position (1 tile away)
+	}
+	return b
+}
+
+// WithDistance sets the squad distance
+func (b *ScenarioBuilder) WithDistance(distance int) *ScenarioBuilder {
+	b.scenario.SquadDistance = distance
+	return b
+}
+
+// Build creates the final scenario
+func (b *ScenarioBuilder) Build() CombatScenario {
+	if b.scenario.Name == "" {
+		b.scenario.Name = fmt.Sprintf("%s vs %s", b.scenario.AttackerSetup.Name, b.scenario.DefenderSetup.Name)
+	}
+	return b.scenario
+}
+
+// GetUnitCount returns the number of units in this setup
+func (s *SquadSetup) GetUnitCount() int {
+	return len(s.Units)
+}

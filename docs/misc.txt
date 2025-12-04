@@ -7,3 +7,46 @@
   go test ./squads/...            # Run tests in specific package
   go test -v ./...                # Run all tests with verbose output
   go test -cover ./...            # Run all tests with coverage report
+ 
+
+
+  Option 1: From the project root (recommended)
+
+  # Navigate to game_main directory first (required for asset paths)
+  cd game_main
+
+  # Then run the simulator
+  ../combatsim/cmd/combatsim.exe
+
+  Option 2: Build and run from anywhere
+
+  # Build the executable
+  cd combatsim/cmd
+  go build -o combatsim.exe combatsim_main.go
+
+  # Run from game_main directory
+  cd ../../game_main
+  ../combatsim/cmd/combatsim.exe
+
+  Command-line Options
+
+  # Default: 100 iterations
+  ../combatsim/cmd/combatsim.exe
+
+  # Custom number of iterations
+  ../combatsim/cmd/combatsim.exe -iterations 1000
+
+  # Verbose mode (shows detailed combat logs)
+  ../combatsim/cmd/combatsim.exe -verbose
+
+  # Combine options
+  ../combatsim/cmd/combatsim.exe -iterations 500 -
+
+
+To Run
+
+   cd game_main && ..\combatsim\cmd\combatsim.exe
+
+   When in game main, without the cd
+
+   ..\combatsim\cmd\combatsim.exe -verbose
