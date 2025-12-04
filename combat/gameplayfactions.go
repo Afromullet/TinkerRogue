@@ -5,6 +5,7 @@ import (
 	"game_main/common"
 	"game_main/coords"
 	"game_main/squads"
+	"math"
 
 	"github.com/bytearena/ecs"
 )
@@ -36,9 +37,9 @@ func SetupGameplayFactions(manager *common.EntityManager, playerStartPos coords.
 	// - Squad 2: (+3, -3) from player (northeast)
 	// - Squad 3: (0, +3) from player (south - slightly behind)
 	playerSquadPositions := []coords.LogicalPosition{
-		{X: clampPosition(playerStartPos.X - 3, 0, 99), Y: clampPosition(playerStartPos.Y - 3, 0, 79)},
-		{X: clampPosition(playerStartPos.X + 3, 0, 99), Y: clampPosition(playerStartPos.Y - 3, 0, 79)},
-		{X: clampPosition(playerStartPos.X, 0, 99), Y: clampPosition(playerStartPos.Y + 3, 0, 79)},
+		{X: clampPosition(playerStartPos.X-3, 0, 99), Y: clampPosition(playerStartPos.Y-3, 0, 79)},
+		{X: clampPosition(playerStartPos.X+3, 0, 99), Y: clampPosition(playerStartPos.Y-3, 0, 79)},
+		{X: clampPosition(playerStartPos.X, 0, 99), Y: clampPosition(playerStartPos.Y+3, 0, 79)},
 	}
 
 	for i, pos := range playerSquadPositions {
@@ -65,9 +66,9 @@ func SetupGameplayFactions(manager *common.EntityManager, playerStartPos coords.
 	// - Squad 2: (+3, +3) from player (southeast)
 	// - Squad 3: (0, -3) from player (north - slightly ahead)
 	aiSquadPositions := []coords.LogicalPosition{
-		{X: clampPosition(playerStartPos.X - 3, 0, 99), Y: clampPosition(playerStartPos.Y + 3, 0, 79)},
-		{X: clampPosition(playerStartPos.X + 3, 0, 99), Y: clampPosition(playerStartPos.Y + 3, 0, 79)},
-		{X: clampPosition(playerStartPos.X, 0, 99), Y: clampPosition(playerStartPos.Y - 3, 0, 79)},
+		{X: clampPosition(playerStartPos.X-3, 0, 99), Y: clampPosition(playerStartPos.Y+3, 0, 79)},
+		{X: clampPosition(playerStartPos.X+3, 0, 99), Y: clampPosition(playerStartPos.Y+3, 0, 79)},
+		{X: clampPosition(playerStartPos.X, 0, 99), Y: clampPosition(playerStartPos.Y-3, 0, 79)},
 	}
 
 	for i, pos := range aiSquadPositions {
@@ -87,8 +88,25 @@ func SetupGameplayFactions(manager *common.EntityManager, playerStartPos coords.
 		}
 	}
 
+	// 7. Create 5 additional random test squads for player faction
+	// These squads have random unit counts (1-5), random unit types, and random leaders
+	// Positioned randomly 3-10 tiles from player for testing variety
+	testSquadCount := 5
+	for i := 0; i < testSquadCount; i++ {
+		// Generate random position 3-10 tiles from player
+		position := generateRandomPositionNearPlayer(playerStartPos, 3, 10)
+
+		// Create squad with random units and leader
+		squadName := fmt.Sprintf("Test Squad %d", i+1)
+		err := createRandomSquad(fm, manager, playerFactionID, squadName, position)
+		if err != nil {
+			return fmt.Errorf("failed to create test squad %d: %w", i+1, err)
+		}
+	}
+
 	fmt.Printf("Created gameplay factions:\n")
-	fmt.Printf("  Player faction (%d) with %d squads\n", playerFactionID, len(playerSquadPositions))
+	fmt.Printf("  Player faction (%d) with %d squads (%d standard + %d test squads)\n",
+		playerFactionID, len(playerSquadPositions)+testSquadCount, len(playerSquadPositions), testSquadCount)
 	fmt.Printf("  AI faction (%d) with %d squads\n", aiFactionID, len(aiSquadPositions))
 
 	return nil
@@ -167,6 +185,74 @@ func createActionStateForSquad(manager *common.EntityManager, squadID ecs.Entity
 	return nil
 }
 
+// createRandomSquad creates a squad with randomly selected units, random leader, and random size (1-5 units)
+// This is used for testing purposes to create variety in squad composition
+func createRandomSquad(
+	fm *FactionManager,
+	manager *common.EntityManager,
+	factionID ecs.EntityID,
+	squadName string,
+	position coords.LogicalPosition,
+) error {
+	// 1. Determine random unit count (1-5)
+	unitCount := common.GetRandomBetween(1, 5)
+
+	// 2. Select random units from squads.Units (duplicates allowed)
+	unitsToCreate := []squads.UnitTemplate{}
+
+	// Grid positions for units (left-to-right, top-to-bottom)
+	gridPositions := [][2]int{
+		{0, 0}, // Front left
+		{0, 1}, // Front center
+		{0, 2}, // Front right
+		{1, 0}, // Middle left
+		{1, 1}, // Middle center
+	}
+
+	for i := 0; i < unitCount; i++ {
+		// Select random unit index
+		randomIdx := common.RandomInt(len(squads.Units))
+		unit := squads.Units[randomIdx]
+
+		// Set grid position (use sequential positions for simplicity)
+		unit.GridRow = gridPositions[i][0]
+		unit.GridCol = gridPositions[i][1]
+
+		// Reset leader flag (we'll set it later)
+		unit.IsLeader = false
+
+		unitsToCreate = append(unitsToCreate, unit)
+	}
+
+	// 3. Randomly select leader index
+	leaderIndex := common.RandomInt(unitCount)
+
+	// 4. Mark the selected unit as leader and boost leadership
+	unitsToCreate[leaderIndex].IsLeader = true
+	unitsToCreate[leaderIndex].Attributes.Leadership = 20
+
+	// 5. Create squad using CreateSquadFromTemplate
+	squadID := squads.CreateSquadFromTemplate(
+		manager,
+		squadName,
+		squads.FormationBalanced,
+		position,
+		unitsToCreate,
+	)
+
+	// 6. Add squad to faction
+	if err := fm.AddSquadToFaction(factionID, squadID, position); err != nil {
+		return fmt.Errorf("failed to add squad to faction: %w", err)
+	}
+
+	// 7. Create action state for squad
+	if err := createActionStateForSquad(manager, squadID); err != nil {
+		return fmt.Errorf("failed to create action state: %w", err)
+	}
+
+	return nil
+}
+
 // clampPosition constrains a coordinate to valid map bounds
 // Map is 100x80 (0-99 for X, 0-79 for Y)
 func clampPosition(value, min, max int) int {
@@ -177,4 +263,25 @@ func clampPosition(value, min, max int) int {
 		return max
 	}
 	return value
+}
+
+// generateRandomPositionNearPlayer creates a random position around the player
+// using circular distribution to scatter squads naturally
+// minDist and maxDist control the distance range (in tiles) from the player
+func generateRandomPositionNearPlayer(playerPos coords.LogicalPosition, minDist, maxDist int) coords.LogicalPosition {
+	// Generate random angle (0 to 2π radians for full circle)
+	angle := common.RandomFloat() * 2.0 * math.Pi
+
+	// Generate random distance within range
+	distance := common.GetRandomBetween(minDist, maxDist)
+
+	// Calculate X,Y offset using circular trigonometry
+	offsetX := int(math.Round(float64(distance) * math.Cos(angle)))
+	offsetY := int(math.Round(float64(distance) * math.Sin(angle)))
+
+	// Apply offset and clamp to map bounds
+	newX := clampPosition(playerPos.X+offsetX, 0, 99)
+	newY := clampPosition(playerPos.Y+offsetY, 0, 79)
+
+	return coords.LogicalPosition{X: newX, Y: newY}
 }
