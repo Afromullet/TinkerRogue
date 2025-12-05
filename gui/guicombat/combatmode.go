@@ -80,6 +80,7 @@ func (cm *CombatMode) Initialize(ctx *core.UIContext) error {
 		cm.Queries,
 		cm.combatService,
 		cm.combatLogArea,
+		cm.ModeManager,
 	)
 
 	// Create combat input handler

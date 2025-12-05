@@ -169,6 +169,12 @@ func SetupUI(g *Game) {
 		log.Fatalf("Failed to register combat mode: %v", err)
 	}
 
+	// Combat animation mode - full-screen battle scene during attacks
+	combatAnimMode := guicombat.NewCombatAnimationMode(battleMapManager)
+	if err := g.gameModeCoordinator.RegisterBattleMapMode(combatAnimMode); err != nil {
+		log.Fatalf("Failed to register combat animation mode: %v", err)
+	}
+
 	// Squad deployment mode - deploy squads to battle map
 	squadDeploymentMode := guisquads.NewSquadDeploymentMode(battleMapManager)
 	if err := g.gameModeCoordinator.RegisterBattleMapMode(squadDeploymentMode); err != nil {

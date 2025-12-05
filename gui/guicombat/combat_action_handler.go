@@ -22,6 +22,7 @@ type CombatActionHandler struct {
 	combatService   *combatservices.CombatService
 	combatLogArea   *widget.TextArea
 	commandExecutor *squadcommands.CommandExecutor // Command pattern for undo/redo
+	modeManager     *core.UIModeManager            // For triggering combat animation mode
 }
 
 // NewCombatActionHandler creates a new combat action handler
@@ -31,6 +32,7 @@ func NewCombatActionHandler(
 	queries *guicomponents.GUIQueries,
 	combatService *combatservices.CombatService,
 	combatLogArea *widget.TextArea,
+	modeManager *core.UIModeManager,
 ) *CombatActionHandler {
 	return &CombatActionHandler{
 		battleMapState:  battleMapState,
@@ -39,6 +41,7 @@ func NewCombatActionHandler(
 		combatService:   combatService,
 		combatLogArea:   combatLogArea,
 		commandExecutor: squadcommands.NewCommandExecutor(),
+		modeManager:     modeManager,
 	}
 }
 
@@ -155,8 +158,33 @@ func (cah *CombatActionHandler) ExecuteAttack() {
 		return
 	}
 
+	// Reset UI state before animation
+	cah.battleMapState.InAttackMode = false
+
+	// Trigger combat animation mode if available
+	if cah.modeManager != nil {
+		if animMode, exists := cah.modeManager.GetMode("combat_animation"); exists {
+			if caMode, ok := animMode.(*CombatAnimationMode); ok {
+				caMode.SetCombatants(selectedSquad, selectedTarget)
+				caMode.SetOnComplete(func() {
+					cah.executeAttackInternal(selectedSquad, selectedTarget)
+				})
+				cah.modeManager.RequestTransition(animMode, "Combat animation")
+				return
+			}
+		}
+	}
+
+	//Todo remove this
+	// Fallback: execute directly if animation mode not available
+	cah.executeAttackInternal(selectedSquad, selectedTarget)
+}
+
+// TODO remove this
+// executeAttackInternal performs the actual attack logic after animation
+func (cah *CombatActionHandler) executeAttackInternal(attackerID, targetID ecs.EntityID) {
 	// Call service for all game logic
-	result := cah.combatService.ExecuteSquadAttack(selectedSquad, selectedTarget)
+	result := cah.combatService.ExecuteSquadAttack(attackerID, targetID)
 
 	// Handle result - UI ONLY
 	if !result.Success {
@@ -167,9 +195,6 @@ func (cah *CombatActionHandler) ExecuteAttack() {
 			cah.addLog(fmt.Sprintf("%s was destroyed!", result.TargetName))
 		}
 	}
-
-	// Reset UI state
-	cah.battleMapState.InAttackMode = false
 }
 
 // MoveSquad moves a squad to a new position using command pattern for undo support
