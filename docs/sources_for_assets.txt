@@ -1,4 +1,6 @@
 
 GUIAssets: https://etahoshi.itch.io/minimal-fantasy-gui-by-eta
 
-Tiles: https://pipoya.itch.io/pipoya-free-rpg-world-tileset-32x32-40x40-48x48
+Tiles: https://opengameart.org/content/miniworld-sprites
+
+Tiles2: https://pipoya.itch.io/pipoya-free-rpg-world-tileset-32x32-40x40-48x48

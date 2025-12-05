@@ -31,6 +31,10 @@ func SetupNewGame(g *Game) {
 	// 2. Initialize core game systems
 	//g.gameMap = worldmap.NewGameMapDefault()
 	g.gameMap = worldmap.NewGameMap("overworld")
+	//g.gameMap = worldmap.NewGameMap("hybrid_tactical")
+	//g.gameMap = worldmap.NewGameMap("wavelet_procedural")
+	//g.gameMap = worldmap.NewGameMap("cave_tactical")
+
 	InitializeECS(&g.em)
 
 	// 2a. Initialize Position System for O(1) position lookups (Phase 0 - MASTER_ROADMAP)
