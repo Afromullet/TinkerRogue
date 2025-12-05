@@ -46,11 +46,11 @@ type panelResources struct {
 }
 
 func newPanelResources() *panelResources {
-	i, err := loadImageNineSlice("../assets/guiassets/panels/panel_border.png", 10, 10)
+	i, err := loadImageNineSlice("../assets/guiassets/panels/panel_border_1.png", 10, 10)
 	if err != nil {
 		return nil
 	}
-	t, err := loadImageNineSlice("../assets/guiassets/panels/panel_title.png", 10, 10)
+	t, err := loadImageNineSlice("../assets/guiassets/panels/panel_title_replace.png", 10, 10)
 	if err != nil {
 		return nil
 	}
@@ -78,7 +78,7 @@ type listResources struct {
 }
 
 func newListResources() *listResources {
-	idle, err := newImageFromFile("../assets/guiassets/panels/panel_border.png")
+	idle, err := newImageFromFile("../assets/guiassets/panels/panel_border_1.png")
 	if err != nil {
 		return nil
 	}
@@ -175,7 +175,7 @@ type textAreaResources struct {
 }
 
 func newTextAreaResources() *textAreaResources {
-	idle, err := newImageFromFile("../assets/guiassets/panels/panel_border.png")
+	idle, err := newImageFromFile("../assets/guiassets/panels/panel_border_1.png")
 	if err != nil {
 		return nil
 	}
@@ -249,7 +249,7 @@ func newTextAreaResources() *textAreaResources {
 
 func loadButtonImage() (*widget.ButtonImage, error) {
 
-	idle, _ := loadImageNineSlice("../assets/guiassets/buttons/Button1.png", 10, 10)
+	idle, _ := loadImageNineSlice("../assets/guiassets/buttons/Button_1.png", 10, 10)
 
 	hover := e_image.NewNineSliceColor(color.NRGBA{R: 130, G: 130, B: 150, A: 255})
 
