@@ -65,9 +65,10 @@ func (r *SquadCombatRenderer) renderUnit(
 		return
 	}
 
-	// Get renderable (sprite)
+	// Get renderable (sprite) - ignore Visible flag since combat animation
+	// should show all units regardless of world map visibility
 	renderable := common.GetComponentType[*rendering.Renderable](entity, rendering.RenderableComponent)
-	if renderable == nil || renderable.Image == nil || !renderable.Visible {
+	if renderable == nil || renderable.Image == nil {
 		return
 	}
 
@@ -187,9 +188,10 @@ func (r *SquadCombatRenderer) renderUnitWithColor(
 		return
 	}
 
-	// Get renderable (sprite)
+	// Get renderable (sprite) - ignore Visible flag since combat animation
+	// should show all units regardless of world map visibility
 	renderable := common.GetComponentType[*rendering.Renderable](entity, rendering.RenderableComponent)
-	if renderable == nil || renderable.Image == nil || !renderable.Visible {
+	if renderable == nil || renderable.Image == nil {
 		return
 	}
 

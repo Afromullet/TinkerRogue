@@ -91,8 +91,8 @@ func SetupGameplayFactions(manager *common.EntityManager, playerStartPos coords.
 	// 7. Create 5 additional random test squads for player faction
 	// These squads have random unit counts (1-5), random unit types, and random leaders
 	// Positioned randomly 3-10 tiles from player for testing variety
-	testSquadCount := 5
-	for i := 0; i < testSquadCount; i++ {
+	playerTestSquadCount := 5
+	for i := 0; i < playerTestSquadCount; i++ {
 		// Generate random position 3-10 tiles from player
 		position := generateRandomPositionNearPlayer(playerStartPos, 3, 10)
 
@@ -104,10 +104,27 @@ func SetupGameplayFactions(manager *common.EntityManager, playerStartPos coords.
 		}
 	}
 
+	// 8. Create 5 additional random enemy squads for AI faction
+	// These squads have random unit counts (1-5), random unit types, and random leaders
+	// Positioned randomly 5-15 tiles from player for testing variety
+	enemyTestSquadCount := 5
+	for i := 0; i < enemyTestSquadCount; i++ {
+		// Generate random position 5-15 tiles from player (further out than player squads)
+		position := generateRandomPositionNearPlayer(playerStartPos, 5, 15)
+
+		// Create squad with random units and leader
+		squadName := fmt.Sprintf("Enemy Squad %d", i+1)
+		err := createRandomSquad(fm, manager, aiFactionID, squadName, position)
+		if err != nil {
+			return fmt.Errorf("failed to create enemy test squad %d: %w", i+1, err)
+		}
+	}
+
 	fmt.Printf("Created gameplay factions:\n")
-	fmt.Printf("  Player faction (%d) with %d squads (%d standard + %d test squads)\n",
-		playerFactionID, len(playerSquadPositions)+testSquadCount, len(playerSquadPositions), testSquadCount)
-	fmt.Printf("  AI faction (%d) with %d squads\n", aiFactionID, len(aiSquadPositions))
+	fmt.Printf("  Player faction (%d) with %d squads (%d standard + %d random)\n",
+		playerFactionID, len(playerSquadPositions)+playerTestSquadCount, len(playerSquadPositions), playerTestSquadCount)
+	fmt.Printf("  AI faction (%d) with %d squads (%d standard + %d random)\n",
+		aiFactionID, len(aiSquadPositions)+enemyTestSquadCount, len(aiSquadPositions), enemyTestSquadCount)
 
 	return nil
 }
@@ -133,6 +150,9 @@ func createSquadForFaction(manager *common.EntityManager, squadName string, posi
 		{2, 1}, // Back center
 	}
 
+	// Randomly select which unit will be the leader
+	leaderIndex := common.RandomInt(maxUnits)
+
 	for i := 0; i < maxUnits && i < len(positions); i++ {
 		// Create a copy of the unit template
 		unit := squads.Units[i%len(squads.Units)]
@@ -141,8 +161,8 @@ func createSquadForFaction(manager *common.EntityManager, squadName string, posi
 		unit.GridRow = positions[i][0]
 		unit.GridCol = positions[i][1]
 
-		// Make the first unit the leader
-		if i == 0 {
+		// Make the randomly selected unit the leader
+		if i == leaderIndex {
 			unit.IsLeader = true
 			// Boost leadership for capacity
 			unit.Attributes.Leadership = 20

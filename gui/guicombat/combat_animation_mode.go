@@ -1,6 +1,7 @@
 package guicombat
 
 import (
+	"fmt"
 	"image/color"
 
 	"game_main/gui"
@@ -78,6 +79,7 @@ func NewCombatAnimationMode(modeManager *core.UIModeManager) *CombatAnimationMod
 func (cam *CombatAnimationMode) SetCombatants(attackerID, defenderID ecs.EntityID) {
 	cam.attackerSquadID = attackerID
 	cam.defenderSquadID = defenderID
+	fmt.Printf("[DEBUG] SetCombatants: attacker=%d, defender=%d\n", attackerID, defenderID)
 }
 
 // SetOnComplete sets the callback to execute when animation completes
@@ -204,6 +206,9 @@ func (cam *CombatAnimationMode) Render(screen *ebiten.Image) {
 	// Draw grid backgrounds (subtle cell outlines)
 	cam.drawGridBackground(screen, cam.attackerX, cam.attackerY)
 	cam.drawGridBackground(screen, cam.defenderX, cam.defenderY)
+
+	// Debug: verify squad IDs
+	fmt.Printf("[DEBUG] Render: attackerID=%d, defenderID=%d\n", cam.attackerSquadID, cam.defenderSquadID)
 
 	// Render squads based on animation phase
 	switch cam.animationPhase {

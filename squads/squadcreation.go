@@ -5,6 +5,7 @@ import (
 	"game_main/common"
 	"game_main/coords"
 	"game_main/entitytemplates"
+	"game_main/rendering"
 
 	"github.com/bytearena/ecs"
 )
@@ -307,6 +308,13 @@ func CreateSquadFromTemplate(
 			template.EntityData,
 		)
 
+		// Make unit's renderable invisible - only the squad should render on the world map
+		// Units are internal to squads; the squad entity shows the leader's sprite
+		unitRenderable := common.GetComponentType[*rendering.Renderable](unitEntity, rendering.RenderableComponent)
+		if unitRenderable != nil {
+			unitRenderable.Visible = false
+		}
+
 		// Update unit's world position to match squad position
 		// (CreateEntityFromTemplate sets position to 0,0 by default)
 		// Re-add PositionComponent with correct world position
@@ -383,5 +391,48 @@ func CreateSquadFromTemplate(
 		}
 	}
 
+	// Set squad's renderable to the leader's sprite
+	// This makes the squad display the leader's image on the world map
+	setSquadRenderableFromLeader(squadID, squadEntity, ecsmanager)
+
 	return squadID // ✅ Return native entity ID
+}
+
+// setSquadRenderableFromLeader copies the leader unit's sprite to the squad entity.
+// This makes the squad render on the world map using the leader's image.
+// If no leader is found, the squad will have no renderable (won't display on map).
+func setSquadRenderableFromLeader(squadID ecs.EntityID, squadEntity *ecs.Entity, ecsmanager *common.EntityManager) {
+	// Find the leader unit
+	leaderID := GetLeaderID(squadID, ecsmanager)
+	if leaderID == 0 {
+		return
+	}
+
+	// Get the leader entity
+	leaderEntity := common.FindEntityByID(ecsmanager, leaderID)
+	if leaderEntity == nil {
+		return
+	}
+
+	// Get the leader's renderable
+	leaderRenderable := common.GetComponentType[*rendering.Renderable](leaderEntity, rendering.RenderableComponent)
+	if leaderRenderable == nil || leaderRenderable.Image == nil {
+		return
+	}
+
+	// Add/update the squad's renderable with the leader's image
+	squadEntity.AddComponent(rendering.RenderableComponent, &rendering.Renderable{
+		Image:   leaderRenderable.Image,
+		Visible: true,
+	})
+}
+
+// UpdateSquadRenderable updates the squad's renderable to match the current leader.
+// Call this when the leader changes (e.g., leader dies, new leader assigned).
+func UpdateSquadRenderable(squadID ecs.EntityID, ecsmanager *common.EntityManager) {
+	squadEntity := GetSquadEntity(squadID, ecsmanager)
+	if squadEntity == nil {
+		return
+	}
+	setSquadRenderableFromLeader(squadID, squadEntity, ecsmanager)
 }
