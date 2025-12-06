@@ -793,7 +793,7 @@ func TestSelectCellBasedTargets_PierceToNextCell(t *testing.T) {
 
 	// Target row 0, col 0 (which is empty) -> should pierce to row 1, col 0
 	targetCells := [][2]int{{0, 0}}
-	targets := selectCellBasedTargets(defenderSquadID, targetCells, manager)
+	targets := SelectCellBasedTargets(defenderSquadID, targetCells, manager)
 
 	if len(targets) != 1 {
 		t.Errorf("Expected 1 target (pierced through empty cell), got %d", len(targets))
@@ -813,7 +813,7 @@ func TestSelectCellBasedTargets_PierceAllTheWay(t *testing.T) {
 
 	// Target row 0, col 1 (empty) -> should pierce through rows 1 to 2
 	targetCells := [][2]int{{0, 1}}
-	targets := selectCellBasedTargets(defenderSquadID, targetCells, manager)
+	targets := SelectCellBasedTargets(defenderSquadID, targetCells, manager)
 
 	if len(targets) != 1 {
 		t.Errorf("Expected 1 target (pierced through multiple empty cells), got %d", len(targets))
@@ -833,7 +833,7 @@ func TestSelectCellBasedTargets_EmptyPierceChainNoTarget(t *testing.T) {
 
 	// Target row 0, col 1 -> pierce chain [0,1], [1,1], [2,1] all empty
 	targetCells := [][2]int{{0, 1}}
-	targets := selectCellBasedTargets(defenderSquadID, targetCells, manager)
+	targets := SelectCellBasedTargets(defenderSquadID, targetCells, manager)
 
 	if len(targets) != 0 {
 		t.Errorf("Expected 0 targets (empty pierce chain), got %d", len(targets))
@@ -856,7 +856,7 @@ func TestSelectCellBasedTargets_MultiCellUnitHitOnce_WithPierce(t *testing.T) {
 
 	// Target row 0, cols 0 and 1 (both empty, but multi-cell unit occupies rows behind)
 	targetCells := [][2]int{{0, 0}, {0, 1}}
-	targets := selectCellBasedTargets(defenderSquadID, targetCells, manager)
+	targets := SelectCellBasedTargets(defenderSquadID, targetCells, manager)
 
 	// Should hit the multi-cell unit once (from both targets after piercing)
 	if len(targets) != 1 {

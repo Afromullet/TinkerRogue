@@ -30,7 +30,7 @@ func DefaultOverworldConfig() OverworldConfig {
 	return OverworldConfig{
 		ElevationScale: 0.08,
 		MoistureScale:  0.08,
-		MountainThresh: 0.6,
+		MountainThresh: 0.75,
 		WaterThresh:    0.3,
 		ForestThresh:   0.55,
 		POICount:       5,
