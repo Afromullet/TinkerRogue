@@ -50,11 +50,8 @@ func (cuf *CombatUIFactory) CreateTurnOrderPanel() *widget.Container {
 	})
 
 	// Apply anchor layout positioning
-	panel.GetWidget().LayoutData = widget.AnchorLayoutData{
-		HorizontalPosition: widget.AnchorLayoutPositionCenter,
-		VerticalPosition:   widget.AnchorLayoutPositionStart,
-		Padding:            gui.NewResponsivePaddingSingle(cuf.layout, widgets.PaddingTight, gui.PaddingTop),
-	}
+	topPad := int(float64(cuf.layout.ScreenHeight) * widgets.PaddingTight)
+	panel.GetWidget().LayoutData = gui.AnchorCenterStart(topPad)
 
 	return panel
 }
@@ -78,11 +75,9 @@ func (cuf *CombatUIFactory) CreateFactionInfoPanel() *widget.Container {
 	})
 
 	// Apply anchor layout positioning
-	panel.GetWidget().LayoutData = widget.AnchorLayoutData{
-		HorizontalPosition: widget.AnchorLayoutPositionStart,
-		VerticalPosition:   widget.AnchorLayoutPositionStart,
-		Padding:            gui.NewResponsivePaddingSingle(cuf.layout, widgets.PaddingTight, gui.PaddingTopLeft),
-	}
+	leftPad := int(float64(cuf.layout.ScreenWidth) * widgets.PaddingTight)
+	topPad := int(float64(cuf.layout.ScreenHeight) * widgets.PaddingTight)
+	panel.GetWidget().LayoutData = gui.AnchorStartStart(leftPad, topPad)
 
 	return panel
 }
@@ -107,15 +102,9 @@ func (cuf *CombatUIFactory) CreateSquadListPanel() *widget.Container {
 
 	// Apply anchor layout positioning
 	// Position below FactionInfo panel (which is 10% height + padding)
+	leftPad := int(float64(cuf.layout.ScreenWidth) * widgets.PaddingTight)
 	topOffset := int(float64(cuf.layout.ScreenHeight) * (widgets.CombatFactionInfoHeight + widgets.PaddingTight))
-	panel.GetWidget().LayoutData = widget.AnchorLayoutData{
-		HorizontalPosition: widget.AnchorLayoutPositionStart,
-		VerticalPosition:   widget.AnchorLayoutPositionStart,
-		Padding: widget.Insets{
-			Left: int(float64(cuf.layout.ScreenWidth) * widgets.PaddingTight),
-			Top:  topOffset,
-		},
-	}
+	panel.GetWidget().LayoutData = gui.AnchorStartStart(leftPad, topOffset)
 
 	// Add label
 	listLabel := widgets.CreateSmallLabel("Your Squads:")
@@ -144,15 +133,9 @@ func (cuf *CombatUIFactory) CreateSquadDetailPanel() *widget.Container {
 
 	// Apply anchor layout positioning
 	// Position below SquadList panel (FactionInfo 10% + SquadList 35% + padding)
+	leftPad := int(float64(cuf.layout.ScreenWidth) * widgets.PaddingTight)
 	topOffset := int(float64(cuf.layout.ScreenHeight) * (widgets.CombatFactionInfoHeight + widgets.CombatSquadListHeight + widgets.PaddingTight*2))
-	panel.GetWidget().LayoutData = widget.AnchorLayoutData{
-		HorizontalPosition: widget.AnchorLayoutPositionStart,
-		VerticalPosition:   widget.AnchorLayoutPositionStart,
-		Padding: widget.Insets{
-			Left: int(float64(cuf.layout.ScreenWidth) * widgets.PaddingTight),
-			Top:  topOffset,
-		},
-	}
+	panel.GetWidget().LayoutData = gui.AnchorStartStart(leftPad, topOffset)
 
 	return panel
 }
@@ -173,15 +156,9 @@ func (cuf *CombatUIFactory) CreateLogPanel() (*widget.Container, *widget.TextAre
 
 	// Apply anchor layout positioning to panel
 	// Position above action buttons (button height 8% + bottom offset 8% + padding)
+	rightPad := int(float64(cuf.layout.ScreenWidth) * widgets.PaddingTight)
 	bottomOffset := int(float64(cuf.layout.ScreenHeight) * (widgets.CombatActionButtonHeight + widgets.BottomButtonOffset + widgets.PaddingTight))
-	panel.GetWidget().LayoutData = widget.AnchorLayoutData{
-		HorizontalPosition: widget.AnchorLayoutPositionEnd,
-		VerticalPosition:   widget.AnchorLayoutPositionEnd,
-		Padding: widget.Insets{
-			Right:  int(float64(cuf.layout.ScreenWidth) * widgets.PaddingTight),
-			Bottom: bottomOffset,
-		},
-	}
+	panel.GetWidget().LayoutData = gui.AnchorEndEnd(rightPad, bottomOffset)
 
 	// Create textarea to fit within panel
 	textArea := widgets.CreateTextAreaWithConfig(widgets.TextAreaConfig{
@@ -209,6 +186,9 @@ func (cuf *CombatUIFactory) CreateActionButtons(
 	spacing := int(float64(cuf.layout.ScreenWidth) * widgets.PaddingTight)
 
 	// Create button group using widgets.CreateButtonGroup with LayoutData
+	bottomPad := int(float64(cuf.layout.ScreenHeight) * widgets.BottomButtonOffset)
+	anchorLayout := gui.AnchorCenterEnd(bottomPad)
+
 	buttonContainer := widgets.CreateButtonGroup(widgets.ButtonGroupConfig{
 		Buttons: []widgets.ButtonSpec{
 			{Text: "Attack (A)", OnClick: onAttack},
@@ -218,14 +198,10 @@ func (cuf *CombatUIFactory) CreateActionButtons(
 			{Text: "End Turn (Space)", OnClick: onEndTurn},
 			{Text: "Flee (ESC)", OnClick: onFlee},
 		},
-		Direction: widget.DirectionHorizontal,
-		Spacing:   spacing,
-		Padding:   gui.NewResponsiveHorizontalPadding(cuf.layout, widgets.PaddingExtraSmall),
-		LayoutData: &widget.AnchorLayoutData{
-			HorizontalPosition: widget.AnchorLayoutPositionCenter,
-			VerticalPosition:   widget.AnchorLayoutPositionEnd,
-			Padding:            gui.NewResponsivePaddingSingle(cuf.layout, widgets.BottomButtonOffset, gui.PaddingBottom),
-		},
+		Direction:  widget.DirectionHorizontal,
+		Spacing:    spacing,
+		Padding:    gui.NewResponsiveHorizontalPadding(cuf.layout, widgets.PaddingExtraSmall),
+		LayoutData: &anchorLayout,
 	})
 
 	return buttonContainer

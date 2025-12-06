@@ -64,14 +64,14 @@ func (fem *FormationEditorMode) buildSquadSelector() {
 	// Get all squads from ECS
 	allSquadIDs := squads.FindAllSquads(fem.Queries.ECSManager)
 
-	// Create squad selection list using helper
+	// Create squad selection list using helper with formation-specific constants
 	fem.squadSelector = widgets.CreateSquadList(widgets.SquadListConfig{
 		SquadIDs:      allSquadIDs,
 		Manager:       fem.Queries.ECSManager,
 		ScreenWidth:   fem.Layout.ScreenWidth,
 		ScreenHeight:  fem.Layout.ScreenHeight,
-		WidthPercent:  widgets.PanelWidthStandard,
-		HeightPercent: 0.3,
+		WidthPercent:  widgets.FormationSquadListWidth,
+		HeightPercent: widgets.FormationSquadListHeight,
 		OnSelect: func(squadID ecs.EntityID) {
 			fem.currentSquadID = squadID
 			fem.loadSquadFormation(squadID)
@@ -79,10 +79,9 @@ func (fem *FormationEditorMode) buildSquadSelector() {
 			fem.SetStatus(fmt.Sprintf("Selected squad: %s", squadName))
 		},
 	})
-	fem.squadSelector.GetWidget().LayoutData = widget.AnchorLayoutData{
-		HorizontalPosition: widget.AnchorLayoutPositionStart,
-		VerticalPosition:   widget.AnchorLayoutPositionStart,
-	}
+	leftPad := int(float64(fem.Layout.ScreenWidth) * widgets.PaddingStandard)
+	topPad := int(float64(fem.Layout.ScreenHeight) * widgets.PaddingStandard)
+	fem.squadSelector.GetWidget().LayoutData = gui.AnchorStartStart(leftPad, topPad)
 
 	fem.RootContainer.AddChild(fem.squadSelector)
 }
@@ -91,18 +90,17 @@ func (fem *FormationEditorMode) buildUnitPalette() {
 	// Unit type options
 	unitTypes := []string{"Tank", "DPS", "Support", "Remove Unit"}
 
-	// Create simple string list using helper
+	// Create simple string list using helper with formation-specific constants
 	fem.unitPalette = widgets.CreateSimpleStringList(widgets.SimpleStringListConfig{
 		Entries:       unitTypes,
 		ScreenWidth:   fem.Layout.ScreenWidth,
 		ScreenHeight:  fem.Layout.ScreenHeight,
-		WidthPercent:  widgets.PanelWidthStandard,
-		HeightPercent: widgets.PanelHeightExtraTall,
-		LayoutData: widget.AnchorLayoutData{
-			HorizontalPosition: widget.AnchorLayoutPositionStart,
-			VerticalPosition:   widget.AnchorLayoutPositionCenter,
-		},
+		WidthPercent:  widgets.FormationPaletteWidth,
+		HeightPercent: widgets.FormationPaletteHeight,
 	})
+
+	rightPad := int(float64(fem.Layout.ScreenWidth) * widgets.PaddingStandard)
+	fem.unitPalette.GetWidget().LayoutData = gui.AnchorEndCenter(rightPad)
 
 	fem.RootContainer.AddChild(fem.unitPalette)
 }

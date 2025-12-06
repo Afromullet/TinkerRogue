@@ -64,32 +64,45 @@ func (smm *SquadManagementMode) Initialize(ctx *core.UIContext) error {
 	smm.RegisterHotkey(ebiten.KeyP, "unit_purchase")
 	smm.RegisterHotkey(ebiten.KeyE, "squad_editor")
 
-	// Override root container with vertical layout for single squad panel + navigation
+	// Override root container with anchor layout (consistent with combat mode)
 	smm.RootContainer = widget.NewContainer(
-		widget.ContainerOpts.Layout(widget.NewRowLayout(
-			widget.RowLayoutOpts.Direction(widget.DirectionVertical),
-			widget.RowLayoutOpts.Spacing(15),
-			widget.RowLayoutOpts.Padding(gui.NewResponsiveRowPadding(smm.Layout, widgets.PaddingStandard)),
-		)),
+		widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
 	)
 	smm.GetEbitenUI().Container = smm.RootContainer
 
 	// Container for the current squad panel (will be populated in Enter)
-	smm.panelContainer = widget.NewContainer(
-		widget.ContainerOpts.Layout(widget.NewRowLayout(
+	// Calculate responsive size
+	panelWidth := int(float64(smm.Layout.ScreenWidth) * widgets.SquadMgmtPanelWidth)
+	panelHeight := int(float64(smm.Layout.ScreenHeight) * widgets.SquadMgmtPanelHeight)
+
+	smm.panelContainer = widgets.CreatePanelWithConfig(widgets.PanelConfig{
+		MinWidth:  panelWidth,
+		MinHeight: panelHeight,
+		Layout: widget.NewRowLayout(
 			widget.RowLayoutOpts.Direction(widget.DirectionVertical),
-		)),
-	)
+		),
+	})
+
+	// Apply anchor layout positioning - top-center
+	topPad := int(float64(smm.Layout.ScreenHeight) * widgets.PaddingStandard)
+	smm.panelContainer.GetWidget().LayoutData = gui.AnchorCenterStart(topPad)
+
 	smm.RootContainer.AddChild(smm.panelContainer)
 
 	// Navigation container (Previous/Next buttons + squad counter)
-	smm.navigationContainer = widget.NewContainer(
-		widget.ContainerOpts.Layout(widget.NewRowLayout(
+	// Calculate responsive size
+	navWidth := int(float64(smm.Layout.ScreenWidth) * widgets.SquadMgmtNavWidth)
+	navHeight := int(float64(smm.Layout.ScreenHeight) * widgets.SquadMgmtNavHeight)
+
+	smm.navigationContainer = widgets.CreatePanelWithConfig(widgets.PanelConfig{
+		MinWidth:  navWidth,
+		MinHeight: navHeight,
+		Layout: widget.NewRowLayout(
 			widget.RowLayoutOpts.Direction(widget.DirectionHorizontal),
 			widget.RowLayoutOpts.Spacing(20),
 			widget.RowLayoutOpts.Padding(gui.NewResponsiveRowPadding(smm.Layout, widgets.PaddingExtraSmall)),
-		)),
-	)
+		),
+	})
 
 	// Previous button
 	smm.prevButton = widgets.CreateButtonWithConfig(widgets.ButtonConfig{
@@ -113,16 +126,26 @@ func (smm *SquadManagementMode) Initialize(ctx *core.UIContext) error {
 	})
 	smm.navigationContainer.AddChild(smm.nextButton)
 
+	// Position below panelContainer
+	navTopOffset := int(float64(smm.Layout.ScreenHeight) * (widgets.SquadMgmtPanelHeight + widgets.PaddingStandard*2))
+	smm.navigationContainer.GetWidget().LayoutData = gui.AnchorCenterStart(navTopOffset)
+
 	smm.RootContainer.AddChild(smm.navigationContainer)
 
-	// Command buttons container (Rename, Disband, Undo, Redo)
-	smm.commandContainer = widget.NewContainer(
-		widget.ContainerOpts.Layout(widget.NewRowLayout(
+	// Command buttons container (Disband, Merge, Undo, Redo)
+	// Calculate responsive size
+	cmdWidth := int(float64(smm.Layout.ScreenWidth) * widgets.SquadMgmtCmdWidth)
+	cmdHeight := int(float64(smm.Layout.ScreenHeight) * widgets.SquadMgmtCmdHeight)
+
+	smm.commandContainer = widgets.CreatePanelWithConfig(widgets.PanelConfig{
+		MinWidth:  cmdWidth,
+		MinHeight: cmdHeight,
+		Layout: widget.NewRowLayout(
 			widget.RowLayoutOpts.Direction(widget.DirectionHorizontal),
 			widget.RowLayoutOpts.Spacing(10),
 			widget.RowLayoutOpts.Padding(gui.NewResponsiveRowPadding(smm.Layout, widgets.PaddingExtraSmall)),
-		)),
-	)
+		),
+	})
 
 	// Disband Squad button
 	disbandBtn := widgets.CreateButtonWithConfig(widgets.ButtonConfig{
@@ -146,10 +169,19 @@ func (smm *SquadManagementMode) Initialize(ctx *core.UIContext) error {
 	smm.commandContainer.AddChild(smm.CommandHistory.CreateUndoButton())
 	smm.commandContainer.AddChild(smm.CommandHistory.CreateRedoButton())
 
+	// Position below navigationContainer
+	cmdTopOffset := int(float64(smm.Layout.ScreenHeight) * (widgets.SquadMgmtPanelHeight + widgets.SquadMgmtNavHeight + widgets.PaddingStandard*3))
+	smm.commandContainer.GetWidget().LayoutData = gui.AnchorCenterStart(cmdTopOffset)
+
 	smm.RootContainer.AddChild(smm.commandContainer)
 
 	// Status label for command results (use BaseMode.SetStatus to update)
 	smm.StatusLabel = widgets.CreateSmallLabel("")
+
+	// Position below commandContainer
+	statusTopOffset := int(float64(smm.Layout.ScreenHeight) * (widgets.SquadMgmtPanelHeight + widgets.SquadMgmtNavHeight + widgets.SquadMgmtCmdHeight + widgets.PaddingStandard*4))
+	smm.StatusLabel.GetWidget().LayoutData = gui.AnchorCenterStart(statusTopOffset)
+
 	smm.RootContainer.AddChild(smm.StatusLabel)
 
 	// Build action buttons (bottom-center) using action button group helper

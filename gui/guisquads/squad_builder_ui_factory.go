@@ -1,12 +1,13 @@
 package guisquads
 
 import (
+	"fmt"
+	"image/color"
+
+	"game_main/gui"
 	"game_main/gui/guiresources"
 	"game_main/gui/widgets"
-
-	"fmt"
 	"game_main/squads"
-	"image/color"
 
 	"github.com/ebitenui/ebitenui/widget"
 )
@@ -137,14 +138,7 @@ func (sbuf *SquadBuilderUIFactory) CreateCapacityDisplay() *widget.TextArea {
 	hPadding := int(float64(sbuf.layout.ScreenWidth) * widgets.PaddingStandard)
 	vPadding := int(float64(sbuf.layout.ScreenHeight) * widgets.PaddingStackedWidget)
 
-	capacityDisplay.GetWidget().LayoutData = widget.AnchorLayoutData{
-		HorizontalPosition: widget.AnchorLayoutPositionEnd,
-		VerticalPosition:   widget.AnchorLayoutPositionStart,
-		Padding: widget.Insets{
-			Right: hPadding,
-			Top:   vPadding,
-		},
-	}
+	capacityDisplay.GetWidget().LayoutData = gui.AnchorEndStart(hPadding, vPadding)
 
 	return capacityDisplay
 }
@@ -166,13 +160,7 @@ func (sbuf *SquadBuilderUIFactory) CreateDetailsPanel() *widget.TextArea {
 	// Calculate responsive padding
 	hPadding := int(float64(sbuf.layout.ScreenWidth) * widgets.PaddingStandard)
 
-	unitDetailsArea.GetWidget().LayoutData = widget.AnchorLayoutData{
-		HorizontalPosition: widget.AnchorLayoutPositionEnd,
-		VerticalPosition:   widget.AnchorLayoutPositionCenter,
-		Padding: widget.Insets{
-			Right: hPadding,
-		},
-	}
+	unitDetailsArea.GetWidget().LayoutData = gui.AnchorEndCenter(hPadding)
 
 	return unitDetailsArea
 }
@@ -203,13 +191,7 @@ func (sbuf *SquadBuilderUIFactory) CreateSquadNameInput(onChanged func(string)) 
 	// Position at top center with responsive padding
 	vPadding := int(float64(sbuf.layout.ScreenHeight) * widgets.PaddingStandard)
 
-	inputContainer.GetWidget().LayoutData = widget.AnchorLayoutData{
-		HorizontalPosition: widget.AnchorLayoutPositionCenter,
-		VerticalPosition:   widget.AnchorLayoutPositionStart,
-		Padding: widget.Insets{
-			Top: vPadding,
-		},
-	}
+	inputContainer.GetWidget().LayoutData = gui.AnchorCenterStart(vPadding)
 
 	return inputContainer, squadNameInput
 }
@@ -248,14 +230,11 @@ func (sbuf *SquadBuilderUIFactory) CreateActionButtons(
 		Direction: widget.DirectionHorizontal,
 		Spacing:   spacing,
 		Padding:   widget.Insets{Left: hPadding, Right: hPadding},
-		LayoutData: &widget.AnchorLayoutData{
-			HorizontalPosition: widget.AnchorLayoutPositionCenter,
-			VerticalPosition:   widget.AnchorLayoutPositionEnd,
-			Padding: widget.Insets{
-				Bottom: int(float64(sbuf.layout.ScreenHeight) * widgets.BottomButtonOffset),
-			},
-		},
 	})
+
+	bottomPad := int(float64(sbuf.layout.ScreenHeight) * widgets.BottomButtonOffset)
+	anchorLayout := gui.AnchorCenterEnd(bottomPad)
+	buttonContainer.GetWidget().LayoutData = anchorLayout
 
 	return buttonContainer
 }

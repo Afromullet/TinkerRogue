@@ -122,12 +122,10 @@ func (upm *UnitPurchaseMode) buildDetailPanel() {
 			widget.RowLayoutOpts.Spacing(10),
 			widget.RowLayoutOpts.Padding(gui.NewResponsiveRowPadding(upm.Layout, widgets.PaddingTight)),
 		),
-		LayoutData: widget.AnchorLayoutData{
-			HorizontalPosition: widget.AnchorLayoutPositionEnd,
-			VerticalPosition:   widget.AnchorLayoutPositionCenter,
-			Padding:            gui.NewResponsivePaddingSingle(upm.Layout, widgets.PaddingStandard, gui.PaddingRight),
-		},
 	})
+
+	rightPad := int(float64(upm.Layout.ScreenWidth) * widgets.PaddingStandard)
+	upm.detailPanel.GetWidget().LayoutData = gui.AnchorEndCenter(rightPad)
 
 	// Basic info text area
 	upm.detailTextArea = widgets.CreateTextAreaWithConfig(widgets.TextAreaConfig{
@@ -173,12 +171,10 @@ func (upm *UnitPurchaseMode) buildResourceDisplay() {
 			widget.RowLayoutOpts.Spacing(5),
 			widget.RowLayoutOpts.Padding(gui.NewResponsiveRowPadding(upm.Layout, widgets.PaddingTight)),
 		),
-		LayoutData: widget.AnchorLayoutData{
-			HorizontalPosition: widget.AnchorLayoutPositionCenter,
-			VerticalPosition:   widget.AnchorLayoutPositionStart,
-			Padding:            gui.NewResponsivePaddingSingle(upm.Layout, 0.02, gui.PaddingTop),
-		},
 	})
+
+	topPad := int(float64(upm.Layout.ScreenHeight) * 0.02)
+	resourcePanel.GetWidget().LayoutData = gui.AnchorCenterStart(topPad)
 
 	// Gold label
 	upm.goldLabel = widgets.CreateSmallLabel("Gold: 0")

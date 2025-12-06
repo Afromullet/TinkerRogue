@@ -86,17 +86,22 @@ func (sem *SquadEditorMode) Initialize(ctx *core.UIContext) error {
 
 // buildSquadNavigation creates Previous/Next buttons for squad navigation
 func (sem *SquadEditorMode) buildSquadNavigation() {
-	sem.navigationContainer = widget.NewContainer(
-		widget.ContainerOpts.Layout(widget.NewRowLayout(
+	// Calculate responsive size
+	navWidth := int(float64(sem.Layout.ScreenWidth) * 0.5)
+	navHeight := int(float64(sem.Layout.ScreenHeight) * widgets.SquadEditorNavHeight)
+
+	sem.navigationContainer = widgets.CreatePanelWithConfig(widgets.PanelConfig{
+		MinWidth:  navWidth,
+		MinHeight: navHeight,
+		Layout: widget.NewRowLayout(
 			widget.RowLayoutOpts.Direction(widget.DirectionHorizontal),
 			widget.RowLayoutOpts.Spacing(20),
 			widget.RowLayoutOpts.Padding(gui.NewResponsiveRowPadding(sem.Layout, widgets.PaddingExtraSmall)),
-		)),
-		widget.ContainerOpts.WidgetOpts(widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{
-			HorizontalPosition: widget.AnchorLayoutPositionCenter,
-			VerticalPosition:   widget.AnchorLayoutPositionStart,
-		})),
-	)
+		),
+	})
+
+	topPad := int(float64(sem.Layout.ScreenHeight) * widgets.PaddingStandard)
+	sem.navigationContainer.GetWidget().LayoutData = gui.AnchorCenterStart(topPad)
 
 	// Previous button
 	sem.prevButton = widgets.CreateButtonWithConfig(widgets.ButtonConfig{
@@ -125,17 +130,23 @@ func (sem *SquadEditorMode) buildSquadNavigation() {
 
 // buildSquadSelector creates the squad selection list (left side)
 func (sem *SquadEditorMode) buildSquadSelector() {
-	sem.squadSelectorContainer = widget.NewContainer(
-		widget.ContainerOpts.Layout(widget.NewRowLayout(
+	// Calculate responsive size
+	listWidth := int(float64(sem.Layout.ScreenWidth) * widgets.SquadEditorSquadListWidth)
+	listHeight := int(float64(sem.Layout.ScreenHeight) * widgets.SquadEditorSquadListHeight)
+
+	sem.squadSelectorContainer = widgets.CreatePanelWithConfig(widgets.PanelConfig{
+		MinWidth:  listWidth,
+		MinHeight: listHeight,
+		Layout: widget.NewRowLayout(
 			widget.RowLayoutOpts.Direction(widget.DirectionVertical),
 			widget.RowLayoutOpts.Spacing(5),
-		)),
-		widget.ContainerOpts.WidgetOpts(widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{
-			HorizontalPosition: widget.AnchorLayoutPositionStart,
-			VerticalPosition:   widget.AnchorLayoutPositionStart,
-			StretchVertical:    true,
-		})),
-	)
+		),
+	})
+
+	// Position below navigation, left side
+	leftPad := int(float64(sem.Layout.ScreenWidth) * widgets.PaddingStandard)
+	topOffset := int(float64(sem.Layout.ScreenHeight) * (widgets.SquadEditorNavHeight + widgets.PaddingStandard*2))
+	sem.squadSelectorContainer.GetWidget().LayoutData = gui.AnchorStartStart(leftPad, topOffset)
 
 	titleLabel := widgets.CreateSmallLabel("Select Squad:")
 	sem.squadSelectorContainer.AddChild(titleLabel)
@@ -169,16 +180,23 @@ func (sem *SquadEditorMode) buildGridEditor() {
 
 // buildUnitList creates the unit list for the current squad (right side, top)
 func (sem *SquadEditorMode) buildUnitList() {
-	sem.unitListContainer = widget.NewContainer(
-		widget.ContainerOpts.Layout(widget.NewRowLayout(
+	// Calculate responsive size
+	listWidth := int(float64(sem.Layout.ScreenWidth) * widgets.SquadEditorUnitListWidth)
+	listHeight := int(float64(sem.Layout.ScreenHeight) * 0.35) // Half of vertical space
+
+	sem.unitListContainer = widgets.CreatePanelWithConfig(widgets.PanelConfig{
+		MinWidth:  listWidth,
+		MinHeight: listHeight,
+		Layout: widget.NewRowLayout(
 			widget.RowLayoutOpts.Direction(widget.DirectionVertical),
 			widget.RowLayoutOpts.Spacing(5),
-		)),
-		widget.ContainerOpts.WidgetOpts(widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{
-			HorizontalPosition: widget.AnchorLayoutPositionEnd,
-			VerticalPosition:   widget.AnchorLayoutPositionStart,
-		})),
-	)
+		),
+	})
+
+	// Position below navigation, right side
+	rightPad := int(float64(sem.Layout.ScreenWidth) * widgets.PaddingStandard)
+	topOffset := int(float64(sem.Layout.ScreenHeight) * (widgets.SquadEditorNavHeight + widgets.PaddingStandard*2))
+	sem.unitListContainer.GetWidget().LayoutData = gui.AnchorEndStart(rightPad, topOffset)
 
 	titleLabel := widgets.CreateSmallLabel("Squad Units:")
 	sem.unitListContainer.AddChild(titleLabel)
@@ -216,16 +234,23 @@ func (sem *SquadEditorMode) buildUnitList() {
 
 // buildRosterList creates the roster list showing available units (right side, bottom)
 func (sem *SquadEditorMode) buildRosterList() {
-	sem.rosterListContainer = widget.NewContainer(
-		widget.ContainerOpts.Layout(widget.NewRowLayout(
+	// Calculate responsive size
+	listWidth := int(float64(sem.Layout.ScreenWidth) * widgets.SquadEditorRosterListWidth)
+	listHeight := int(float64(sem.Layout.ScreenHeight) * 0.35) // Half of vertical space
+
+	sem.rosterListContainer = widgets.CreatePanelWithConfig(widgets.PanelConfig{
+		MinWidth:  listWidth,
+		MinHeight: listHeight,
+		Layout: widget.NewRowLayout(
 			widget.RowLayoutOpts.Direction(widget.DirectionVertical),
 			widget.RowLayoutOpts.Spacing(5),
-		)),
-		widget.ContainerOpts.WidgetOpts(widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{
-			HorizontalPosition: widget.AnchorLayoutPositionEnd,
-			VerticalPosition:   widget.AnchorLayoutPositionCenter,
-		})),
-	)
+		),
+	})
+
+	// Position below unitListContainer
+	rightPad := int(float64(sem.Layout.ScreenWidth) * widgets.PaddingStandard)
+	topOffset := int(float64(sem.Layout.ScreenHeight) * (widgets.SquadEditorNavHeight + 0.35 + widgets.PaddingStandard*3))
+	sem.rosterListContainer.GetWidget().LayoutData = gui.AnchorEndStart(rightPad, topOffset)
 
 	titleLabel := widgets.CreateSmallLabel("Available Units (Roster):")
 	sem.rosterListContainer.AddChild(titleLabel)

@@ -124,8 +124,23 @@ const (
 
 // SquadManagementLayout defines layout constants for squad management mode
 const (
+	// Center squad panel
+	SquadMgmtPanelWidth  = 0.6
+	SquadMgmtPanelHeight = 0.5
+
+	// Navigation bar (Previous/Next buttons)
+	SquadMgmtNavWidth  = 0.5
+	SquadMgmtNavHeight = 0.08
+
+	// Command bar (Disband, Merge, Undo, Redo)
+	SquadMgmtCmdWidth  = 0.6
+	SquadMgmtCmdHeight = 0.08
+
+	// Status label
+	SquadMgmtStatusHeight = 0.05
+
 	// Action buttons (bottom)
-	SquadMgmtButtonHeight = 0.1
+	SquadMgmtButtonHeight = 0.08
 )
 
 // SquadBuilderLayout defines layout constants for squad builder mode
@@ -142,10 +157,63 @@ const (
 	SquadBuilderInfoHeight = 0.2
 )
 
+// SquadEditorLayout defines layout constants for squad editor mode
+const (
+	// Navigation bar (top-center)
+	SquadEditorNavHeight = 0.08
+
+	// Squad selector list (left)
+	SquadEditorSquadListWidth  = 0.25
+	SquadEditorSquadListHeight = 0.7
+
+	// Unit list (center-left)
+	SquadEditorUnitListWidth  = 0.25
+	SquadEditorUnitListHeight = 0.7
+
+	// Roster list (center-right)
+	SquadEditorRosterListWidth  = 0.25
+	SquadEditorRosterListHeight = 0.7
+)
+
+// UnitPurchaseLayout defines layout constants for unit purchase mode
+const (
+	// Unit list (left side)
+	UnitPurchaseListWidth  = 0.35
+	UnitPurchaseListHeight = 0.7
+
+	// Detail panel (right side)
+	UnitPurchaseDetailWidth  = 0.35
+	UnitPurchaseDetailHeight = 0.6
+
+	// Resource display (top-center)
+	UnitPurchaseResourceWidth  = 0.25
+	UnitPurchaseResourceHeight = 0.08
+)
+
+// SquadDeploymentLayout defines layout constants for squad deployment mode
+const (
+	// Squad list panel (left)
+	SquadDeployListWidth  = 0.3
+	SquadDeployListHeight = 0.7
+
+	// Instruction text (top-center)
+	SquadDeployInstructWidth  = 0.5
+	SquadDeployInstructHeight = 0.15
+)
+
 // FormationEditorLayout defines layout constants for formation editor mode
 const (
 	// Formation grid preview (center)
-	FormationGridWidth = 0.5
+	FormationGridWidth  = 0.5
+	FormationGridHeight = 0.6
+
+	// Squad selector (left)
+	FormationSquadListWidth  = 0.2
+	FormationSquadListHeight = 0.7
+
+	// Unit palette (right)
+	FormationPaletteWidth  = 0.2
+	FormationPaletteHeight = 0.7
 )
 
 // InfoModeLayout defines layout constants for info display mode

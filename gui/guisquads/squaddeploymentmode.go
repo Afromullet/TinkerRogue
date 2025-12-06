@@ -54,15 +54,10 @@ func (sdm *SquadDeploymentMode) Initialize(ctx *core.UIContext) error {
 	// Build UI components
 	sdm.buildSquadListPanel()
 
-	// Build instruction text (top-center) using BuildPanel
+	// Build instruction text (top-center) with explicit size
 	sdm.instructionText = widgets.CreateSmallLabel("Select a squad from the list, then click on the map to place it")
-	sdm.instructionText.GetWidget().LayoutData = widget.AnchorLayoutData{
-		HorizontalPosition: widget.AnchorLayoutPositionCenter,
-		VerticalPosition:   widget.AnchorLayoutPositionStart,
-		Padding: widget.Insets{
-			Top: int(float64(sdm.Layout.ScreenHeight) * widgets.PaddingStandard),
-		},
-	}
+	topPad := int(float64(sdm.Layout.ScreenHeight) * widgets.PaddingStandard)
+	sdm.instructionText.GetWidget().LayoutData = gui.AnchorCenterStart(topPad)
 	sdm.RootContainer.AddChild(sdm.instructionText)
 
 	sdm.buildActionButtons()
@@ -74,10 +69,10 @@ func (sdm *SquadDeploymentMode) Initialize(ctx *core.UIContext) error {
 }
 
 func (sdm *SquadDeploymentMode) buildSquadListPanel() {
-	// Build squad list panel using BuildPanel
+	// Build squad list panel using BuildPanel with deployment-specific constants
 	sdm.squadListPanel = sdm.PanelBuilders.BuildPanel(
 		widgets.LeftCenter(),
-		widgets.Size(widgets.PanelWidthStandard, widgets.PanelHeightFull),
+		widgets.Size(widgets.SquadDeployListWidth, widgets.SquadDeployListHeight),
 		widgets.Padding(widgets.PaddingTight),
 		widgets.RowLayout(),
 	)
