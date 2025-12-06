@@ -144,13 +144,13 @@ func selectTargetUnits(attackerID, defenderSquadID ecs.EntityID, manager *common
 	}
 
 	targetRowData := common.GetComponentTypeByID[*TargetRowData](manager, attackerID, TargetRowComponent)
-	return selectCellBasedTargets(defenderSquadID, targetRowData.TargetCells, manager)
+	return SelectCellBasedTargets(defenderSquadID, targetRowData.TargetCells, manager)
 }
 
-// selectCellBasedTargets finds units at specific grid cells, with pierce-through targeting
+// SelectCellBasedTargets finds units at specific grid cells, with pierce-through targeting
 // If a target cell is empty, the attack pierces through to the next cell behind it
 // Pierce direction: toward back row (higher row numbers), stopping at first cell with units
-func selectCellBasedTargets(defenderSquadID ecs.EntityID, targetCells [][2]int, manager *common.EntityManager) []ecs.EntityID {
+func SelectCellBasedTargets(defenderSquadID ecs.EntityID, targetCells [][2]int, manager *common.EntityManager) []ecs.EntityID {
 	var targets []ecs.EntityID
 	seen := make(map[ecs.EntityID]bool) // Prevent multi-cell units from being hit multiple times
 

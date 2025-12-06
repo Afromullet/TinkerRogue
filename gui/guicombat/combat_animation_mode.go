@@ -3,7 +3,10 @@ package guicombat
 import (
 	"fmt"
 	"image/color"
+	"math"
 
+	"game_main/combat"
+	"game_main/common"
 	"game_main/gui"
 	"game_main/gui/core"
 	"game_main/gui/widgets"
@@ -26,9 +29,34 @@ const (
 
 // Animation timing constants (in seconds)
 const (
-	IdleDuration      = 0.5
-	AttackingDuration = 0.5
+	IdleDuration           = 1.0
+	AttackingDuration      = 2.0
+	DefenderFlashDuration  = 0.4 // seconds per color cycle
 )
+
+// createColorScale is a helper to create an ebiten ColorScale from RGB multipliers
+func createColorScale(r, g, b float32) ebiten.ColorScale {
+	var cs ebiten.ColorScale
+	cs.SetR(r)
+	cs.SetG(g)
+	cs.SetB(b)
+	cs.SetA(1.0)
+	return cs
+}
+
+// attackColorPalette defines the 9 distinct colors for attacking units
+// Colors are carefully chosen for maximum contrast and visibility
+var attackColorPalette = []ebiten.ColorScale{
+	createColorScale(2.0, 0.3, 0.3), // 0: Vivid Red
+	createColorScale(0.3, 2.0, 0.3), // 1: Vivid Green
+	createColorScale(0.3, 0.3, 2.0), // 2: Vivid Blue
+	createColorScale(2.0, 2.0, 0.0), // 3: Bright Yellow
+	createColorScale(2.0, 0.0, 2.0), // 4: Vivid Magenta
+	createColorScale(0.0, 2.0, 2.0), // 5: Vivid Cyan
+	createColorScale(2.0, 1.0, 0.0), // 6: Bright Orange
+	createColorScale(1.0, 0.0, 2.0), // 7: Deep Purple
+	createColorScale(2.0, 0.3, 1.0), // 8: Hot Pink
+}
 
 // CombatAnimationMode displays a full-screen battle scene during combat.
 // Shows both squads side-by-side with units at their grid positions.
@@ -62,6 +90,12 @@ type CombatAnimationMode struct {
 	gridHeight   int
 	screenWidth  int
 	screenHeight int
+
+	// Color animation state
+	attackerColors     map[ecs.EntityID]ebiten.ColorScale
+	defenderColorList  map[ecs.EntityID][]ebiten.ColorScale
+	defenderFlashIndex map[ecs.EntityID]int
+	flashTimer         float64
 }
 
 // NewCombatAnimationMode creates a new combat animation mode
@@ -79,12 +113,73 @@ func NewCombatAnimationMode(modeManager *core.UIModeManager) *CombatAnimationMod
 func (cam *CombatAnimationMode) SetCombatants(attackerID, defenderID ecs.EntityID) {
 	cam.attackerSquadID = attackerID
 	cam.defenderSquadID = defenderID
-	fmt.Printf("[DEBUG] SetCombatants: attacker=%d, defender=%d\n", attackerID, defenderID)
+
+	// Initialize color maps
+	cam.attackerColors = make(map[ecs.EntityID]ebiten.ColorScale)
+	cam.defenderFlashIndex = make(map[ecs.EntityID]int)
+	cam.defenderColorList = make(map[ecs.EntityID][]ebiten.ColorScale)
+	cam.flashTimer = 0
+
+	// Assign colors to attacking units
+	combatSys := combat.NewCombatActionSystem(cam.Queries.ECSManager)
+	attackingUnits := combatSys.GetAttackingUnits(attackerID, defenderID)
+
+	for i, attackerUnitID := range attackingUnits {
+		colorIdx := i % len(attackColorPalette)
+		cam.attackerColors[attackerUnitID] = attackColorPalette[colorIdx]
+	}
+
+	// Pre-compute defender color lists
+	cam.computeDefenderColorLists(attackingUnits, defenderID)
+
+	fmt.Printf("[DEBUG] SetCombatants: attacker=%d, defender=%d, attacking_units=%d\n", attackerID, defenderID, len(attackingUnits))
 }
 
 // SetOnComplete sets the callback to execute when animation completes
 func (cam *CombatAnimationMode) SetOnComplete(callback func()) {
 	cam.onAnimationComplete = callback
+}
+
+// computeDefenderColorLists maps which attacker colors should target each defender
+func (cam *CombatAnimationMode) computeDefenderColorLists(
+	attackingUnits []ecs.EntityID,
+	defenderSquadID ecs.EntityID,
+) {
+	// Build map: defender → list of attacking unit colors
+	defenderToAttackers := make(map[ecs.EntityID][]ecs.EntityID)
+
+	for _, attackerID := range attackingUnits {
+		// Get this attacker's target cells
+		targetRowData := common.GetComponentTypeByID[*squads.TargetRowData](
+			cam.Queries.ECSManager, attackerID, squads.TargetRowComponent,
+		)
+		if targetRowData == nil {
+			continue
+		}
+
+		// Find defenders at those cells
+		targets := squads.SelectCellBasedTargets(
+			defenderSquadID, targetRowData.TargetCells, cam.Queries.ECSManager,
+		)
+
+		for _, defenderID := range targets {
+			defenderToAttackers[defenderID] = append(
+				defenderToAttackers[defenderID], attackerID,
+			)
+		}
+	}
+
+	// Convert to color lists
+	for defenderID, attackerList := range defenderToAttackers {
+		var colorList []ebiten.ColorScale
+		for _, attackerID := range attackerList {
+			if color, exists := cam.attackerColors[attackerID]; exists {
+				colorList = append(colorList, color)
+			}
+		}
+		cam.defenderColorList[defenderID] = colorList
+		cam.defenderFlashIndex[defenderID] = 0
+	}
 }
 
 // Initialize sets up the combat animation mode
@@ -160,6 +255,11 @@ func (cam *CombatAnimationMode) Enter(fromMode core.UIMode) error {
 
 // Exit is called when switching from this mode
 func (cam *CombatAnimationMode) Exit(toMode core.UIMode) error {
+	// Clear color state
+	cam.attackerColors = nil
+	cam.defenderColorList = nil
+	cam.defenderFlashIndex = nil
+	cam.flashTimer = 0
 	return nil
 }
 
@@ -175,10 +275,25 @@ func (cam *CombatAnimationMode) Update(deltaTime float64) error {
 		}
 
 	case PhaseAttacking:
+		// Update flash timer for defenders
+		cam.flashTimer += deltaTime
+
+		if cam.flashTimer >= DefenderFlashDuration {
+			cam.flashTimer = 0
+			// Advance all defenders to next color
+			for defenderID := range cam.defenderColorList {
+				cam.defenderFlashIndex[defenderID]++
+				// Wrap around
+				if cam.defenderFlashIndex[defenderID] >= len(cam.defenderColorList[defenderID]) {
+					cam.defenderFlashIndex[defenderID] = 0
+				}
+			}
+		}
+
 		if cam.animationTimer >= AttackingDuration {
 			cam.animationPhase = PhaseWaiting
 			cam.animationTimer = 0
-			cam.promptLabel.Label = "Press any key to continue..."
+			cam.promptLabel.Label = "Press SPACE to replay or any other key to continue..."
 		}
 
 	case PhaseWaiting:
@@ -218,15 +333,17 @@ func (cam *CombatAnimationMode) Render(screen *ebiten.Image) {
 		cam.squadRenderer.RenderSquad(screen, cam.defenderSquadID, cam.defenderX, cam.defenderY, cam.cellSize, true)
 
 	case PhaseAttacking:
-		// Highlight attacking units with a flash effect
-		highlightColor := cam.getAttackHighlightColor()
-		attackingUnits := cam.getAttackingUnits()
-
-		cam.squadRenderer.RenderSquadWithHighlight(
-			screen, cam.attackerSquadID, cam.attackerX, cam.attackerY, cam.cellSize, false,
-			attackingUnits, highlightColor,
+		// Render attackers with individual colors
+		cam.renderSquadWithUnitColors(
+			screen, cam.attackerSquadID, cam.attackerX, cam.attackerY,
+			cam.cellSize, false, true, // isAttacker = true
 		)
-		cam.squadRenderer.RenderSquad(screen, cam.defenderSquadID, cam.defenderX, cam.defenderY, cam.cellSize, true)
+
+		// Render defenders with sequential flash
+		cam.renderSquadWithUnitColors(
+			screen, cam.defenderSquadID, cam.defenderX, cam.defenderY,
+			cam.cellSize, true, false, // isAttacker = false
+		)
 
 	case PhaseWaiting, PhaseComplete:
 		// Static display
@@ -272,40 +389,106 @@ func (cam *CombatAnimationMode) drawSquadNames(screen *ebiten.Image) {
 	_ = defenderName
 }
 
-// getAttackHighlightColor returns a pulsing highlight color for attacking units
-func (cam *CombatAnimationMode) getAttackHighlightColor() *ebiten.ColorScale {
-	// Create a pulsing red/orange highlight
-	// Pulse based on animation timer
-	pulse := float32(0.5 + 0.5*float64(cam.animationTimer/AttackingDuration))
+// getAttackHighlightColor returns a pulsing color for an attacking unit
+func (cam *CombatAnimationMode) getAttackHighlightColor(unitID ecs.EntityID) *ebiten.ColorScale {
+	baseColor, exists := cam.attackerColors[unitID]
+	if !exists {
+		// Fallback to default red pulse if unit has no assigned color
+		return cam.getDefaultAttackPulse()
+	}
 
-	colorScale := &ebiten.ColorScale{}
-	colorScale.SetR(1.0 + pulse*0.5) // Boost red
-	colorScale.SetG(1.0 - pulse*0.3) // Reduce green slightly
-	colorScale.SetB(1.0 - pulse*0.5) // Reduce blue
+	// Create pulsing effect using sine wave (slower: 1 full cycle per 3 seconds)
+	pulse := float32(0.5 + 0.5*math.Sin(cam.animationTimer*2.0))
+
+	colorScale := ebiten.ColorScale{}
+	colorScale.SetR(baseColor.R() + pulse*0.3)
+	colorScale.SetG(baseColor.G() + pulse*0.3)
+	colorScale.SetB(baseColor.B() + pulse*0.3)
 	colorScale.SetA(1.0)
 
+	return &colorScale
+}
+
+// getDefaultAttackPulse returns a fallback red pulsing color
+func (cam *CombatAnimationMode) getDefaultAttackPulse() *ebiten.ColorScale {
+	pulse := float32(0.5 + 0.5*float64(cam.animationTimer/AttackingDuration))
+	colorScale := &ebiten.ColorScale{}
+	colorScale.SetR(1.0 + pulse*0.5)
+	colorScale.SetG(1.0 - pulse*0.3)
+	colorScale.SetB(1.0 - pulse*0.5)
+	colorScale.SetA(1.0)
 	return colorScale
 }
 
-// getAttackingUnits returns the units that are attacking (all alive units for now)
-func (cam *CombatAnimationMode) getAttackingUnits() []ecs.EntityID {
-	// For now, highlight all alive units in the attacking squad
-	return squads.GetUnitIDsInSquad(cam.attackerSquadID, cam.Queries.ECSManager)
+// getDefenderHighlightColor returns the color for a defending unit to flash
+func (cam *CombatAnimationMode) getDefenderHighlightColor(unitID ecs.EntityID) *ebiten.ColorScale {
+	colorList, exists := cam.defenderColorList[unitID]
+	if !exists || len(colorList) == 0 {
+		return nil // Not targeted, no highlight
+	}
+
+	currentIndex := cam.defenderFlashIndex[unitID]
+	if currentIndex >= len(colorList) {
+		currentIndex = 0
+	}
+
+	return &colorList[currentIndex]
+}
+
+// renderSquadWithUnitColors renders a squad where each unit has its own color
+func (cam *CombatAnimationMode) renderSquadWithUnitColors(
+	screen *ebiten.Image, squadID ecs.EntityID,
+	baseX, baseY, cellSize int, facingLeft bool, isAttacker bool,
+) {
+	unitIDs := squads.GetUnitIDsInSquad(squadID, cam.Queries.ECSManager)
+
+	for _, unitID := range unitIDs {
+		var colorScale *ebiten.ColorScale
+
+		if isAttacker {
+			colorScale = cam.getAttackHighlightColor(unitID)
+		} else {
+			colorScale = cam.getDefenderHighlightColor(unitID)
+		}
+
+		if colorScale != nil {
+			cam.squadRenderer.RenderUnitWithColor(
+				screen, unitID, baseX, baseY, cellSize, facingLeft, colorScale,
+			)
+		} else {
+			cam.squadRenderer.RenderUnit(
+				screen, unitID, baseX, baseY, cellSize, facingLeft,
+			)
+		}
+	}
 }
 
 // HandleInput handles input for the combat animation mode
 func (cam *CombatAnimationMode) HandleInput(inputState *core.InputState) bool {
-	// In waiting phase, any key dismisses
+	// In waiting phase, Space replays the animation, any other key dismisses
 	if cam.animationPhase == PhaseWaiting {
-		// Check for any key press
-		for _, pressed := range inputState.KeysJustPressed {
-			if pressed {
+		// Space to replay animation
+		if inputState.KeysJustPressed[ebiten.KeySpace] {
+			cam.animationPhase = PhaseIdle
+			cam.animationTimer = 0
+			cam.flashTimer = 0
+			// Reset defender flash indices to restart the color cycling
+			for defenderID := range cam.defenderFlashIndex {
+				cam.defenderFlashIndex[defenderID] = 0
+			}
+			cam.promptLabel.Label = ""
+			return true
+		}
+
+		// Check for any other key press to dismiss
+		for key, pressed := range inputState.KeysJustPressed {
+			if pressed && key != ebiten.KeySpace {
 				cam.animationPhase = PhaseComplete
 				return true
 			}
 		}
 
-		// Also accept mouse click
+		// Also accept mouse click to dismiss
 		if inputState.MousePressed {
 			cam.animationPhase = PhaseComplete
 			return true
