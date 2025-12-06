@@ -2,11 +2,12 @@ package guisquads
 
 import (
 	"fmt"
+	"image/color"
+
 	"game_main/coords"
 	"game_main/graphics"
 	"game_main/gui"
 	"game_main/gui/core"
-	"game_main/gui/guicomponents"
 	"game_main/gui/guimodes"
 	"game_main/gui/widgets"
 	"game_main/squads"
@@ -21,11 +22,12 @@ import (
 type SquadDeploymentMode struct {
 	gui.BaseMode // Embed common mode infrastructure
 
-	deploymentService  *squadservices.SquadDeploymentService
-	squadListPanel     *widget.Container
-	squadListComponent *guicomponents.SquadListComponent
-	selectedSquadID    ecs.EntityID
-	instructionText    *widget.Text
+	deploymentService *squadservices.SquadDeploymentService
+	squadList         *widget.List
+	detailPanel       *widget.Container
+	detailTextArea    *widget.TextArea
+	selectedSquadID   ecs.EntityID
+	instructionText   *widget.Text
 
 	isPlacingSquad   bool
 	pendingMouseX    int
@@ -52,7 +54,8 @@ func (sdm *SquadDeploymentMode) Initialize(ctx *core.UIContext) error {
 	sdm.deploymentService = squadservices.NewSquadDeploymentService(ctx.ECSManager)
 
 	// Build UI components
-	sdm.buildSquadListPanel()
+	sdm.buildSquadList()
+	sdm.buildDetailPanel()
 
 	// Build instruction text (top-center) with explicit size
 	sdm.instructionText = widgets.CreateSmallLabel("Select a squad from the list, then click on the map to place it")
@@ -68,33 +71,75 @@ func (sdm *SquadDeploymentMode) Initialize(ctx *core.UIContext) error {
 	return nil
 }
 
-func (sdm *SquadDeploymentMode) buildSquadListPanel() {
-	// Build squad list panel using BuildPanel with deployment-specific constants
-	sdm.squadListPanel = sdm.PanelBuilders.BuildPanel(
-		widgets.LeftCenter(),
-		widgets.Size(widgets.SquadDeployListWidth, widgets.SquadDeployListHeight),
-		widgets.Padding(widgets.PaddingTight),
-		widgets.RowLayout(),
-	)
+func (sdm *SquadDeploymentMode) buildSquadList() {
+	// Left side squad list (same pattern as unit purchase mode)
+	listWidth := int(float64(sdm.Layout.ScreenWidth) * widgets.SquadDeployListWidth)
+	listHeight := int(float64(sdm.Layout.ScreenHeight) * widgets.SquadDeployListHeight)
 
-	// Add label
-	listLabel := widgets.CreateSmallLabel("Squads:")
-	sdm.squadListPanel.AddChild(listLabel)
+	sdm.squadList = widgets.CreateListWithConfig(widgets.ListConfig{
+		Entries:   []interface{}{}, // Will be populated in Enter
+		MinWidth:  listWidth,
+		MinHeight: listHeight,
+		EntryLabelFunc: func(e interface{}) string {
+			if squadID, ok := e.(ecs.EntityID); ok {
+				squadName := squads.GetSquadName(squadID, sdm.Queries.ECSManager)
+				unitCount := len(squads.GetUnitIDsInSquad(squadID, sdm.Queries.ECSManager))
 
-	// Create squad list component - show all alive squads for placement
-	// Uses centralized filter from guicomponents.GUIQueries for consistency
-	sdm.squadListComponent = guicomponents.NewSquadListComponent(
-		sdm.squadListPanel,
-		sdm.Queries,
-		sdm.Queries.FilterSquadsAlive(),
-		func(squadID ecs.EntityID) {
-			sdm.selectedSquadID = squadID
-			sdm.isPlacingSquad = true
-			sdm.updateInstructionText()
+				// Check if squad has been placed
+				allPositions := sdm.deploymentService.GetAllSquadPositions()
+				if pos, hasPosition := allPositions[squadID]; hasPosition {
+					return fmt.Sprintf("%s (%d units) - Placed at (%d, %d)", squadName, unitCount, pos.X, pos.Y)
+				}
+				return fmt.Sprintf("%s (%d units)", squadName, unitCount)
+			}
+			return fmt.Sprintf("%v", e)
 		},
-	)
+		OnEntrySelected: func(selectedEntry interface{}) {
+			if squadID, ok := selectedEntry.(ecs.EntityID); ok {
+				sdm.selectedSquadID = squadID
+				sdm.isPlacingSquad = true
+				sdm.updateInstructionText()
+				sdm.updateDetailPanel()
+			}
+		},
+	})
 
-	sdm.RootContainer.AddChild(sdm.squadListPanel)
+	// Position below instruction text using Start-Start anchor (left-top)
+	leftPad := int(float64(sdm.Layout.ScreenWidth) * widgets.PaddingStandard)
+	topOffset := int(float64(sdm.Layout.ScreenHeight) * (widgets.PaddingStandard*3))
+	sdm.squadList.GetWidget().LayoutData = gui.AnchorStartStart(leftPad, topOffset)
+
+	sdm.RootContainer.AddChild(sdm.squadList)
+}
+
+func (sdm *SquadDeploymentMode) buildDetailPanel() {
+	// Right side detail panel (35% width, 60% height - same as unit purchase mode)
+	panelWidth := int(float64(sdm.Layout.ScreenWidth) * 0.35)
+	panelHeight := int(float64(sdm.Layout.ScreenHeight) * 0.6)
+
+	sdm.detailPanel = widgets.CreatePanelWithConfig(widgets.PanelConfig{
+		MinWidth:  panelWidth,
+		MinHeight: panelHeight,
+		Layout: widget.NewRowLayout(
+			widget.RowLayoutOpts.Direction(widget.DirectionVertical),
+			widget.RowLayoutOpts.Spacing(10),
+			widget.RowLayoutOpts.Padding(gui.NewResponsiveRowPadding(sdm.Layout, widgets.PaddingTight)),
+		),
+	})
+
+	rightPad := int(float64(sdm.Layout.ScreenWidth) * widgets.PaddingStandard)
+	sdm.detailPanel.GetWidget().LayoutData = gui.AnchorEndCenter(rightPad)
+
+	// Detail text area
+	sdm.detailTextArea = widgets.CreateTextAreaWithConfig(widgets.TextAreaConfig{
+		MinWidth:  panelWidth - 30,
+		MinHeight: panelHeight - 30,
+		FontColor: color.White,
+	})
+	sdm.detailTextArea.SetText("Select a squad to view details")
+	sdm.detailPanel.AddChild(sdm.detailTextArea)
+
+	sdm.RootContainer.AddChild(sdm.detailPanel)
 }
 
 func (sdm *SquadDeploymentMode) buildActionButtons() {
@@ -138,15 +183,61 @@ func (sdm *SquadDeploymentMode) updateInstructionText() {
 	sdm.instructionText.Label = fmt.Sprintf("Placing %s - Click on the map to position it", squadName)
 }
 
+func (sdm *SquadDeploymentMode) updateDetailPanel() {
+	if sdm.selectedSquadID == 0 {
+		sdm.detailTextArea.SetText("Select a squad to view details")
+		return
+	}
+
+	squadName := squads.GetSquadName(sdm.selectedSquadID, sdm.Queries.ECSManager)
+	unitIDs := squads.GetUnitIDsInSquad(sdm.selectedSquadID, sdm.Queries.ECSManager)
+
+	// Get current deployment position (if any)
+	allPositions := sdm.deploymentService.GetAllSquadPositions()
+	currentPos, hasPosition := allPositions[sdm.selectedSquadID]
+
+	info := fmt.Sprintf("Squad: %s\nUnits: %d\n\n", squadName, len(unitIDs))
+
+	if hasPosition {
+		info += fmt.Sprintf("Current Position: (%d, %d)\n\n", currentPos.X, currentPos.Y)
+	} else {
+		info += "Not yet placed\n\n"
+	}
+
+	info += "Click on the map to place this squad"
+
+	sdm.detailTextArea.SetText(info)
+}
+
+func (sdm *SquadDeploymentMode) refreshSquadList() {
+	// Repopulate squad list to update placement status in labels
+	allSquads := squads.FindAllSquads(sdm.Queries.ECSManager)
+	aliveSquads := sdm.Queries.ApplyFilterToSquads(allSquads, sdm.Queries.FilterSquadsAlive())
+
+	entries := make([]interface{}, 0, len(aliveSquads))
+	for _, squadID := range aliveSquads {
+		entries = append(entries, squadID)
+	}
+	sdm.squadList.SetEntries(entries)
+}
+
 func (sdm *SquadDeploymentMode) Enter(fromMode core.UIMode) error {
 	fmt.Println("Entering Squad Deployment Mode")
 
-	// Refresh the squad list using the component
-	sdm.squadListComponent.Refresh()
+	// Populate squad list with all alive squads
+	allSquads := squads.FindAllSquads(sdm.Queries.ECSManager)
+	aliveSquads := sdm.Queries.ApplyFilterToSquads(allSquads, sdm.Queries.FilterSquadsAlive())
+
+	entries := make([]interface{}, 0, len(aliveSquads))
+	for _, squadID := range aliveSquads {
+		entries = append(entries, squadID)
+	}
+	sdm.squadList.SetEntries(entries)
 
 	sdm.selectedSquadID = 0
 	sdm.isPlacingSquad = false
 	sdm.updateInstructionText()
+	sdm.updateDetailPanel()
 
 	return nil
 }
@@ -201,8 +292,8 @@ func (sdm *SquadDeploymentMode) HandleInput(inputState *core.InputState) bool {
 		fmt.Printf("DEBUG: Mouse click captured at (%d, %d), placing=%v, squadID=%d\n",
 			inputState.MouseX, inputState.MouseY, sdm.isPlacingSquad, sdm.selectedSquadID)
 
-		// Check if click is inside the squad list panel (UI area) - don't process as map click
-		listBounds := sdm.squadListPanel.GetWidget().Rect
+		// Check if click is inside the squad list (UI area) - don't process as map click
+		listBounds := sdm.squadList.GetWidget().Rect
 		isInsideList := inputState.MouseX >= listBounds.Min.X && inputState.MouseX <= listBounds.Max.X &&
 			inputState.MouseY >= listBounds.Min.Y && inputState.MouseY <= listBounds.Max.Y
 
@@ -236,10 +327,14 @@ func (sdm *SquadDeploymentMode) placeSquadAt(squadID ecs.EntityID, pos coords.Lo
 	oldPos := sdm.deploymentService.GetAllSquadPositions()[squadID]
 	fmt.Printf("✓ Placed %s at (%d, %d) [was at (%d, %d)]\n", result.SquadName, pos.X, pos.Y, oldPos.X, oldPos.Y)
 
+	// Refresh list to show updated placement status
+	sdm.refreshSquadList()
+
 	// Reset placement mode
 	sdm.isPlacingSquad = false
 	sdm.selectedSquadID = 0
 	sdm.updateInstructionText()
+	sdm.updateDetailPanel()
 }
 
 func (sdm *SquadDeploymentMode) clearAllSquadPositions() {
@@ -251,9 +346,13 @@ func (sdm *SquadDeploymentMode) clearAllSquadPositions() {
 		return
 	}
 
+	// Refresh list to show updated placement status
+	sdm.refreshSquadList()
+
 	sdm.selectedSquadID = 0
 	sdm.isPlacingSquad = false
 	sdm.updateInstructionText()
+	sdm.updateDetailPanel()
 
 	fmt.Printf("All squads cleared (%d squads reset)\n", result.SquadsCleared)
 }
