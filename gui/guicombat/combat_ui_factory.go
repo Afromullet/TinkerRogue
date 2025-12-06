@@ -1,11 +1,13 @@
 package guicombat
 
 import (
+	"fmt"
+	"image/color"
+
 	"game_main/gui"
 	"game_main/gui/guicomponents"
+	"game_main/gui/guiresources"
 	"game_main/gui/widgets"
-
-	"fmt"
 
 	"github.com/ebitenui/ebitenui/widget"
 )
@@ -31,18 +33,91 @@ func NewCombatUIFactory(queries *guicomponents.GUIQueries, panelBuilders *widget
 
 // CreateTurnOrderPanel builds the turn order display panel
 func (cuf *CombatUIFactory) CreateTurnOrderPanel() *widget.Container {
-	return widgets.CreateStandardPanel(cuf.panelBuilders, "turn_order")
+	// Calculate responsive size
+	panelWidth := int(float64(cuf.layout.ScreenWidth) * widgets.CombatTurnOrderWidth)
+	panelHeight := int(float64(cuf.layout.ScreenHeight) * widgets.CombatTurnOrderHeight)
+
+	// Create panel with horizontal row layout
+	panel := widgets.CreatePanelWithConfig(widgets.PanelConfig{
+		MinWidth:   panelWidth,
+		MinHeight:  panelHeight,
+		Background: guiresources.PanelRes.Image,
+		Layout: widget.NewRowLayout(
+			widget.RowLayoutOpts.Direction(widget.DirectionHorizontal),
+			widget.RowLayoutOpts.Spacing(10),
+			widget.RowLayoutOpts.Padding(gui.NewResponsiveRowPadding(cuf.layout, widgets.PaddingExtraSmall)),
+		),
+	})
+
+	// Apply anchor layout positioning
+	panel.GetWidget().LayoutData = widget.AnchorLayoutData{
+		HorizontalPosition: widget.AnchorLayoutPositionCenter,
+		VerticalPosition:   widget.AnchorLayoutPositionStart,
+		Padding:            gui.NewResponsivePaddingSingle(cuf.layout, widgets.PaddingTight, gui.PaddingTop),
+	}
+
+	return panel
 }
 
 // CreateFactionInfoPanel builds the faction information panel
 func (cuf *CombatUIFactory) CreateFactionInfoPanel() *widget.Container {
-	return widgets.CreateStandardPanel(cuf.panelBuilders, "faction_info")
+	// Calculate responsive size
+	panelWidth := int(float64(cuf.layout.ScreenWidth) * widgets.CombatFactionInfoWidth)
+	panelHeight := int(float64(cuf.layout.ScreenHeight) * widgets.CombatFactionInfoHeight)
+
+	// Create panel with vertical row layout
+	panel := widgets.CreatePanelWithConfig(widgets.PanelConfig{
+		MinWidth:   panelWidth,
+		MinHeight:  panelHeight,
+		Background: guiresources.PanelRes.Image,
+		Layout: widget.NewRowLayout(
+			widget.RowLayoutOpts.Direction(widget.DirectionVertical),
+			widget.RowLayoutOpts.Spacing(5),
+			widget.RowLayoutOpts.Padding(gui.NewResponsiveRowPadding(cuf.layout, widgets.PaddingExtraSmall)),
+		),
+	})
+
+	// Apply anchor layout positioning
+	panel.GetWidget().LayoutData = widget.AnchorLayoutData{
+		HorizontalPosition: widget.AnchorLayoutPositionStart,
+		VerticalPosition:   widget.AnchorLayoutPositionStart,
+		Padding:            gui.NewResponsivePaddingSingle(cuf.layout, widgets.PaddingTight, gui.PaddingTopLeft),
+	}
+
+	return panel
 }
 
 // CreateSquadListPanel builds the squad list panel
 func (cuf *CombatUIFactory) CreateSquadListPanel() *widget.Container {
-	panel := widgets.CreateStandardPanel(cuf.panelBuilders, "squad_list")
+	// Calculate responsive size
+	panelWidth := int(float64(cuf.layout.ScreenWidth) * widgets.CombatSquadListWidth)
+	panelHeight := int(float64(cuf.layout.ScreenHeight) * widgets.CombatSquadListHeight)
 
+	// Create panel with vertical row layout
+	panel := widgets.CreatePanelWithConfig(widgets.PanelConfig{
+		MinWidth:   panelWidth,
+		MinHeight:  panelHeight,
+		Background: guiresources.PanelRes.Image,
+		Layout: widget.NewRowLayout(
+			widget.RowLayoutOpts.Direction(widget.DirectionVertical),
+			widget.RowLayoutOpts.Spacing(5),
+			widget.RowLayoutOpts.Padding(gui.NewResponsiveRowPadding(cuf.layout, widgets.PaddingExtraSmall)),
+		),
+	})
+
+	// Apply anchor layout positioning
+	// Position below FactionInfo panel (which is 10% height + padding)
+	topOffset := int(float64(cuf.layout.ScreenHeight) * (widgets.CombatFactionInfoHeight + widgets.PaddingTight))
+	panel.GetWidget().LayoutData = widget.AnchorLayoutData{
+		HorizontalPosition: widget.AnchorLayoutPositionStart,
+		VerticalPosition:   widget.AnchorLayoutPositionStart,
+		Padding: widget.Insets{
+			Left: int(float64(cuf.layout.ScreenWidth) * widgets.PaddingTight),
+			Top:  topOffset,
+		},
+	}
+
+	// Add label
 	listLabel := widgets.CreateSmallLabel("Your Squads:")
 	panel.AddChild(listLabel)
 
@@ -51,17 +126,74 @@ func (cuf *CombatUIFactory) CreateSquadListPanel() *widget.Container {
 
 // CreateSquadDetailPanel builds the squad detail panel
 func (cuf *CombatUIFactory) CreateSquadDetailPanel() *widget.Container {
-	return widgets.CreateStandardPanel(cuf.panelBuilders, "squad_detail")
+	// Calculate responsive size
+	panelWidth := int(float64(cuf.layout.ScreenWidth) * widgets.CombatSquadDetailWidth)
+	panelHeight := int(float64(cuf.layout.ScreenHeight) * widgets.CombatSquadDetailHeight)
+
+	// Create panel with vertical row layout
+	panel := widgets.CreatePanelWithConfig(widgets.PanelConfig{
+		MinWidth:   panelWidth,
+		MinHeight:  panelHeight,
+		Background: guiresources.PanelRes.Image,
+		Layout: widget.NewRowLayout(
+			widget.RowLayoutOpts.Direction(widget.DirectionVertical),
+			widget.RowLayoutOpts.Spacing(5),
+			widget.RowLayoutOpts.Padding(gui.NewResponsiveRowPadding(cuf.layout, widgets.PaddingExtraSmall)),
+		),
+	})
+
+	// Apply anchor layout positioning
+	// Position below SquadList panel (FactionInfo 10% + SquadList 35% + padding)
+	topOffset := int(float64(cuf.layout.ScreenHeight) * (widgets.CombatFactionInfoHeight + widgets.CombatSquadListHeight + widgets.PaddingTight*2))
+	panel.GetWidget().LayoutData = widget.AnchorLayoutData{
+		HorizontalPosition: widget.AnchorLayoutPositionStart,
+		VerticalPosition:   widget.AnchorLayoutPositionStart,
+		Padding: widget.Insets{
+			Left: int(float64(cuf.layout.ScreenWidth) * widgets.PaddingTight),
+			Top:  topOffset,
+		},
+	}
+
+	return panel
 }
 
 // CreateLogPanel builds the combat log panel using standard specification
 func (cuf *CombatUIFactory) CreateLogPanel() (*widget.Container, *widget.TextArea) {
-	return gui.CreateStandardDetailPanel(
-		cuf.panelBuilders,
-		cuf.layout,
-		"combat_log",
-		"Combat started!\n",
-	)
+	// Calculate responsive size
+	panelWidth := int(float64(cuf.layout.ScreenWidth) * widgets.CombatLogWidth)
+	panelHeight := int(float64(cuf.layout.ScreenHeight) * widgets.CombatLogHeight)
+
+	// Create panel with anchor layout (to hold textarea)
+	panel := widgets.CreatePanelWithConfig(widgets.PanelConfig{
+		MinWidth:   panelWidth,
+		MinHeight:  panelHeight,
+		Background: guiresources.PanelRes.Image,
+		Layout:     widget.NewAnchorLayout(),
+	})
+
+	// Apply anchor layout positioning to panel
+	// Position above action buttons (button height 8% + bottom offset 8% + padding)
+	bottomOffset := int(float64(cuf.layout.ScreenHeight) * (widgets.CombatActionButtonHeight + widgets.BottomButtonOffset + widgets.PaddingTight))
+	panel.GetWidget().LayoutData = widget.AnchorLayoutData{
+		HorizontalPosition: widget.AnchorLayoutPositionEnd,
+		VerticalPosition:   widget.AnchorLayoutPositionEnd,
+		Padding: widget.Insets{
+			Right:  int(float64(cuf.layout.ScreenWidth) * widgets.PaddingTight),
+			Bottom: bottomOffset,
+		},
+	}
+
+	// Create textarea to fit within panel
+	textArea := widgets.CreateTextAreaWithConfig(widgets.TextAreaConfig{
+		MinWidth:  panelWidth - 20,
+		MinHeight: panelHeight - 20,
+		FontColor: color.White,
+	})
+
+	textArea.SetText("Combat started!\n")
+	panel.AddChild(textArea)
+
+	return panel, textArea
 }
 
 // CreateActionButtons builds the action buttons container
@@ -73,37 +205,30 @@ func (cuf *CombatUIFactory) CreateActionButtons(
 	onEndTurn func(),
 	onFlee func(),
 ) *widget.Container {
-	// Build action buttons using helper (consolidates positioning + button creation)
-	return gui.CreateActionButtonGroup(
-		cuf.panelBuilders,
-		widgets.BottomCenter(),
-		[]widgets.ButtonSpec{
-			{
-				Text:    "Attack (A)",
-				OnClick: onAttack,
-			},
-			{
-				Text:    "Move (M)",
-				OnClick: onMove,
-			},
-			{
-				Text:    "Undo (Ctrl+Z)",
-				OnClick: onUndo,
-			},
-			{
-				Text:    "Redo (Ctrl+Y)",
-				OnClick: onRedo,
-			},
-			{
-				Text:    "End Turn (Space)",
-				OnClick: onEndTurn,
-			},
-			{
-				Text:    "Flee (ESC)",
-				OnClick: onFlee,
-			},
+	// Calculate responsive spacing
+	spacing := int(float64(cuf.layout.ScreenWidth) * widgets.PaddingTight)
+
+	// Create button group using widgets.CreateButtonGroup with LayoutData
+	buttonContainer := widgets.CreateButtonGroup(widgets.ButtonGroupConfig{
+		Buttons: []widgets.ButtonSpec{
+			{Text: "Attack (A)", OnClick: onAttack},
+			{Text: "Move (M)", OnClick: onMove},
+			{Text: "Undo (Ctrl+Z)", OnClick: onUndo},
+			{Text: "Redo (Ctrl+Y)", OnClick: onRedo},
+			{Text: "End Turn (Space)", OnClick: onEndTurn},
+			{Text: "Flee (ESC)", OnClick: onFlee},
 		},
-	)
+		Direction: widget.DirectionHorizontal,
+		Spacing:   spacing,
+		Padding:   gui.NewResponsiveHorizontalPadding(cuf.layout, widgets.PaddingExtraSmall),
+		LayoutData: &widget.AnchorLayoutData{
+			HorizontalPosition: widget.AnchorLayoutPositionCenter,
+			VerticalPosition:   widget.AnchorLayoutPositionEnd,
+			Padding:            gui.NewResponsivePaddingSingle(cuf.layout, widgets.BottomButtonOffset, gui.PaddingBottom),
+		},
+	})
+
+	return buttonContainer
 }
 
 // GetFormattedSquadDetails returns formatted squad details as string

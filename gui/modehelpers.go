@@ -68,6 +68,7 @@ func AddActionButton(container *widget.Container, text string, onClick func()) {
 //   - specs: Slice of button specifications (text + onClick handlers)
 //
 // Returns a container with all buttons added and positioned according to the layout.
+// Uses standard action_buttons specification for consistent sizing (50% width, 8% height).
 // Example:
 //
 //	buttons := []widgets.ButtonSpec{
@@ -77,8 +78,11 @@ func AddActionButton(container *widget.Container, text string, onClick func()) {
 //	container := CreateActionButtonGroup(panelBuilders, widgets.BottomCenter(), buttons)
 func CreateActionButtonGroup(panelBuilders *widgets.PanelBuilders, position widgets.PanelOption, specs []widgets.ButtonSpec) *widget.Container {
 	// Create positioned container with standard horizontal layout
+	// Use narrower width (0.35 = 35%) to avoid overlap with LeftBottom (15%) and BottomRight (24%) panels
+	// Centered at 35% width spans from 32.5% to 67.5%, leaving space for side panels
 	container := panelBuilders.BuildPanel(
 		position,
+		widgets.Size(0.35, 0.08), // Narrower than action_buttons spec to prevent overlap
 		widgets.HorizontalRowLayout(),
 		widgets.CustomPadding(widget.Insets{
 			Bottom: int(float64(panelBuilders.Layout.ScreenHeight) * widgets.BottomButtonOffset),

@@ -69,9 +69,7 @@ func (smm *SquadManagementMode) Initialize(ctx *core.UIContext) error {
 		widget.ContainerOpts.Layout(widget.NewRowLayout(
 			widget.RowLayoutOpts.Direction(widget.DirectionVertical),
 			widget.RowLayoutOpts.Spacing(15),
-			widget.RowLayoutOpts.Padding(widget.Insets{
-				Left: 20, Right: 20, Top: 20, Bottom: 20,
-			}),
+			widget.RowLayoutOpts.Padding(gui.NewResponsiveRowPadding(smm.Layout, widgets.PaddingStandard)),
 		)),
 	)
 	smm.GetEbitenUI().Container = smm.RootContainer
@@ -89,9 +87,7 @@ func (smm *SquadManagementMode) Initialize(ctx *core.UIContext) error {
 		widget.ContainerOpts.Layout(widget.NewRowLayout(
 			widget.RowLayoutOpts.Direction(widget.DirectionHorizontal),
 			widget.RowLayoutOpts.Spacing(20),
-			widget.RowLayoutOpts.Padding(widget.Insets{
-				Left: 10, Right: 10, Top: 10, Bottom: 10,
-			}),
+			widget.RowLayoutOpts.Padding(gui.NewResponsiveRowPadding(smm.Layout, widgets.PaddingExtraSmall)),
 		)),
 	)
 
@@ -124,9 +120,7 @@ func (smm *SquadManagementMode) Initialize(ctx *core.UIContext) error {
 		widget.ContainerOpts.Layout(widget.NewRowLayout(
 			widget.RowLayoutOpts.Direction(widget.DirectionHorizontal),
 			widget.RowLayoutOpts.Spacing(10),
-			widget.RowLayoutOpts.Padding(widget.Insets{
-				Left: 10, Right: 10, Top: 10, Bottom: 10,
-			}),
+			widget.RowLayoutOpts.Padding(gui.NewResponsiveRowPadding(smm.Layout, widgets.PaddingExtraSmall)),
 		)),
 	)
 
@@ -317,9 +311,7 @@ func (smm *SquadManagementMode) createSquadPanel(squadID ecs.EntityID) *SquadPan
 		Layout: widget.NewRowLayout(
 			widget.RowLayoutOpts.Direction(widget.DirectionVertical),
 			widget.RowLayoutOpts.Spacing(10),
-			widget.RowLayoutOpts.Padding(widget.Insets{
-				Left: 15, Right: 15, Top: 15, Bottom: 15,
-			}),
+			widget.RowLayoutOpts.Padding(gui.NewResponsiveRowPadding(smm.Layout, widgets.PaddingTight)),
 		),
 	})
 
@@ -465,9 +457,7 @@ func (smm *SquadManagementMode) onMergeSquads() {
 		widget.ContainerOpts.Layout(widget.NewRowLayout(
 			widget.RowLayoutOpts.Direction(widget.DirectionVertical),
 			widget.RowLayoutOpts.Spacing(15),
-			widget.RowLayoutOpts.Padding(widget.Insets{
-				Left: 20, Right: 20, Top: 20, Bottom: 20,
-			}),
+			widget.RowLayoutOpts.Padding(gui.NewResponsiveRowPadding(smm.Layout, widgets.PaddingStandard)),
 		)),
 	)
 

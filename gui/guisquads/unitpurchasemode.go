@@ -120,16 +120,12 @@ func (upm *UnitPurchaseMode) buildDetailPanel() {
 		Layout: widget.NewRowLayout(
 			widget.RowLayoutOpts.Direction(widget.DirectionVertical),
 			widget.RowLayoutOpts.Spacing(10),
-			widget.RowLayoutOpts.Padding(widget.Insets{
-				Left: 15, Right: 15, Top: 15, Bottom: 15,
-			}),
+			widget.RowLayoutOpts.Padding(gui.NewResponsiveRowPadding(upm.Layout, widgets.PaddingTight)),
 		),
 		LayoutData: widget.AnchorLayoutData{
 			HorizontalPosition: widget.AnchorLayoutPositionEnd,
 			VerticalPosition:   widget.AnchorLayoutPositionCenter,
-			Padding: widget.Insets{
-				Right: int(float64(upm.Layout.ScreenWidth) * widgets.PaddingStandard),
-			},
+			Padding:            gui.NewResponsivePaddingSingle(upm.Layout, widgets.PaddingStandard, gui.PaddingRight),
 		},
 	})
 
@@ -175,16 +171,12 @@ func (upm *UnitPurchaseMode) buildResourceDisplay() {
 		Layout: widget.NewRowLayout(
 			widget.RowLayoutOpts.Direction(widget.DirectionVertical),
 			widget.RowLayoutOpts.Spacing(5),
-			widget.RowLayoutOpts.Padding(widget.Insets{
-				Left: 15, Right: 15, Top: 15, Bottom: 15,
-			}),
+			widget.RowLayoutOpts.Padding(gui.NewResponsiveRowPadding(upm.Layout, widgets.PaddingTight)),
 		),
 		LayoutData: widget.AnchorLayoutData{
 			HorizontalPosition: widget.AnchorLayoutPositionCenter,
 			VerticalPosition:   widget.AnchorLayoutPositionStart,
-			Padding: widget.Insets{
-				Top: int(float64(upm.Layout.ScreenHeight) * 0.02),
-			},
+			Padding:            gui.NewResponsivePaddingSingle(upm.Layout, 0.02, gui.PaddingTop),
 		},
 	})
 

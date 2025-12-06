@@ -90,9 +90,7 @@ func (sem *SquadEditorMode) buildSquadNavigation() {
 		widget.ContainerOpts.Layout(widget.NewRowLayout(
 			widget.RowLayoutOpts.Direction(widget.DirectionHorizontal),
 			widget.RowLayoutOpts.Spacing(20),
-			widget.RowLayoutOpts.Padding(widget.Insets{
-				Left: 10, Right: 10, Top: 10, Bottom: 10,
-			}),
+			widget.RowLayoutOpts.Padding(gui.NewResponsiveRowPadding(sem.Layout, widgets.PaddingExtraSmall)),
 		)),
 		widget.ContainerOpts.WidgetOpts(widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{
 			HorizontalPosition: widget.AnchorLayoutPositionCenter,
