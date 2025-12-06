@@ -2,7 +2,7 @@
   "monsters": [
     {
       "name": "Knight",
-      "imgname": "testimg.png",
+      "imgname": "gnoll_sergeant.png",
       "attributes": {
         "strength": 14,
         "dexterity": 25,
@@ -26,7 +26,7 @@
     },
     {
       "name": "Paladin",
-      "imgname": "testimg.png",
+      "imgname": "angel.png",
       "attributes": {
         "strength": 13,
         "dexterity": 22,
@@ -50,7 +50,7 @@
     },
     {
       "name": "Fighter",
-      "imgname": "testimg.png",
+      "imgname": "goblin.png",
       "attributes": {
         "strength": 15,
         "dexterity": 30,
@@ -78,7 +78,7 @@
     },
     {
       "name": "Warrior",
-      "imgname": "testimg.png",
+      "imgname": "fire_giant.png",
       "attributes": {
         "strength": 16,
         "dexterity": 28,
@@ -106,7 +106,7 @@
     },
     {
       "name": "Swordsman",
-      "imgname": "testimg.png",
+      "imgname": "deep_elf_blademaster.png",
       "attributes": {
         "strength": 12,
         "dexterity": 40,
@@ -134,7 +134,7 @@
     },
     {
       "name": "Spearman",
-      "imgname": "testimg.png",
+      "imgname": "deep_elf_knight.png",
       "attributes": {
         "strength": 13,
         "dexterity": 32,
@@ -162,7 +162,7 @@
     },
     {
       "name": "Rogue",
-      "imgname": "testimg.png",
+      "imgname": "dwarf.png",
       "attributes": {
         "strength": 8,
         "dexterity": 55,
@@ -190,7 +190,7 @@
     },
     {
       "name": "Assassin",
-      "imgname": "testimg.png",
+      "imgname": "stone_giant.png",
       "attributes": {
         "strength": 9,
         "dexterity": 60,
@@ -218,7 +218,7 @@
     },
     {
       "name": "Scout",
-      "imgname": "testimg.png",
+      "imgname": "vault_warden.png",
       "attributes": {
         "strength": 7,
         "dexterity": 50,
@@ -246,7 +246,7 @@
     },
     {
       "name": "Archer",
-      "imgname": "testimg.png",
+      "imgname": "deep_elf_master_archer.png",
       "attributes": {
         "strength": 6,
         "dexterity": 45,
@@ -270,7 +270,7 @@
     },
     {
       "name": "Ranger",
-      "imgname": "testimg.png",
+      "imgname": "dryad.png",
       "attributes": {
         "strength": 8,
         "dexterity": 48,
@@ -298,7 +298,7 @@
     },
     {
       "name": "Crossbowman",
-      "imgname": "testimg.png",
+      "imgname": "ettin.png",
       "attributes": {
         "strength": 10,
         "dexterity": 38,
@@ -326,7 +326,7 @@
     },
     {
       "name": "Marksman",
-      "imgname": "testimg.png",
+      "imgname": "elf.png",
       "attributes": {
         "strength": 7,
         "dexterity": 52,
@@ -354,7 +354,7 @@
     },
     {
       "name": "Wizard",
-      "imgname": "testimg.png",
+      "imgname": "entropy_weaver.png",
       "attributes": {
         "strength": 3,
         "dexterity": 20,
@@ -382,7 +382,7 @@
     },
     {
       "name": "Sorcerer",
-      "imgname": "testimg.png",
+      "imgname": "deep_elf_priest.png",
       "attributes": {
         "strength": 4,
         "dexterity": 22,
@@ -406,7 +406,7 @@
     },
     {
       "name": "Mage",
-      "imgname": "testimg.png",
+      "imgname": "deep_elf_sorcerer.png",
       "attributes": {
         "strength": 4,
         "dexterity": 18,
@@ -434,7 +434,7 @@
     },
     {
       "name": "Cleric",
-      "imgname": "testimg.png",
+      "imgname": "deep_elf_summoner.png",
       "attributes": {
         "strength": 8,
         "dexterity": 24,
@@ -458,7 +458,7 @@
     },
     {
       "name": "Priest",
-      "imgname": "testimg.png",
+      "imgname": "deep_troll_earth_mage.png",
       "attributes": {
         "strength": 6,
         "dexterity": 20,
@@ -482,7 +482,7 @@
     },
     {
       "name": "Warlock",
-      "imgname": "testimg.png",
+      "imgname": "glowing_shapeshifter.png",
       "attributes": {
         "strength": 5,
         "dexterity": 26,
@@ -510,7 +510,7 @@
     },
     {
       "name": "Battle Mage",
-      "imgname": "testimg.png",
+      "imgname": "human.png",
       "attributes": {
         "strength": 11,
         "dexterity": 28,
@@ -538,7 +538,7 @@
     },
     {
       "name": "Orc Warrior",
-      "imgname": "testimg.png",
+      "imgname": "siren.png",
       "attributes": {
         "strength": 17,
         "dexterity": 24,
@@ -562,7 +562,7 @@
     },
     {
       "name": "Goblin Raider",
-      "imgname": "testimg.png",
+      "imgname": "orc.png",
       "attributes": {
         "strength": 6,
         "dexterity": 42,
@@ -590,7 +590,7 @@
     },
     {
       "name": "Ogre",
-      "imgname": "testimg.png",
+      "imgname": "orc_high_priest.png",
       "attributes": {
         "strength": 18,
         "dexterity": 15,
@@ -618,7 +618,7 @@
     },
     {
       "name": "Skeleton Archer",
-      "imgname": "testimg.png",
+      "imgname": "naga_ritualist.png",
       "attributes": {
         "strength": 5,
         "dexterity": 35,
