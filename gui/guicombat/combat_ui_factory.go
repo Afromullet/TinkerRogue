@@ -132,9 +132,9 @@ func (cuf *CombatUIFactory) CreateSquadDetailPanel() *widget.Container {
 	})
 
 	// Apply anchor layout positioning
-	// Position below SquadList panel (FactionInfo 10% + SquadList 35% + padding)
+	// Position below SquadList panel (FactionInfo 10% + SquadList 35% + 3 padding gaps)
 	leftPad := int(float64(cuf.layout.ScreenWidth) * widgets.PaddingTight)
-	topOffset := int(float64(cuf.layout.ScreenHeight) * (widgets.CombatFactionInfoHeight + widgets.CombatSquadListHeight + widgets.PaddingTight*2))
+	topOffset := int(float64(cuf.layout.ScreenHeight) * (widgets.CombatFactionInfoHeight + widgets.CombatSquadListHeight + widgets.PaddingTight*3))
 	panel.GetWidget().LayoutData = gui.AnchorStartStart(leftPad, topOffset)
 
 	return panel

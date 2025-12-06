@@ -69,8 +69,8 @@ func (upm *UnitPurchaseMode) Initialize(ctx *core.UIContext) error {
 
 func (upm *UnitPurchaseMode) buildUnitList() {
 	// Left side unit list (35% width to prevent overlap with 25% top-center resource display)
-	listWidth := int(float64(upm.Layout.ScreenWidth) * 0.35)
-	listHeight := int(float64(upm.Layout.ScreenHeight) * 0.7)
+	listWidth := int(float64(upm.Layout.ScreenWidth) * widgets.UnitPurchaseListWidth)
+	listHeight := int(float64(upm.Layout.ScreenHeight) * widgets.UnitPurchaseListHeight)
 
 	upm.unitList = widgets.CreateListWithConfig(widgets.ListConfig{
 		Entries:   []interface{}{}, // Will be populated in Enter
@@ -96,15 +96,12 @@ func (upm *UnitPurchaseMode) buildUnitList() {
 				upm.updateDetailPanel()
 			}
 		},
-		LayoutData: widget.AnchorLayoutData{
-			HorizontalPosition: widget.AnchorLayoutPositionStart,
-			VerticalPosition:   widget.AnchorLayoutPositionCenter,
-			Padding: widget.Insets{
-				Left: int(float64(upm.Layout.ScreenWidth) * widgets.PaddingStandard),
-				Top:  int(float64(upm.Layout.ScreenHeight) * 0.1),
-			},
-		},
 	})
+
+	// Position below resource panel using Start-Start anchor (left-top)
+	leftPad := int(float64(upm.Layout.ScreenWidth) * widgets.PaddingStandard)
+	topOffset := int(float64(upm.Layout.ScreenHeight) * (widgets.UnitPurchaseResourceHeight + widgets.PaddingStandard*2))
+	upm.unitList.GetWidget().LayoutData = gui.AnchorStartStart(leftPad, topOffset)
 
 	upm.RootContainer.AddChild(upm.unitList)
 }
