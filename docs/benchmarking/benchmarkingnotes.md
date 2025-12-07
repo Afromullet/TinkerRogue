@@ -1,6 +1,9 @@
 _____________________
 
 
+## Setting Up Profile
+
+
 Be sure to use a blank import
 
 	_ "net/http/pprof" // Blank import to register pprof handlers
@@ -29,6 +32,9 @@ Create the server
 }
 
 
+## Not sure what this is for anymore
+
+
 _____________________
 Open the pprof URL in a browser:
 bash
@@ -39,24 +45,30 @@ This command collects a CPU profile for 30 seconds. Once the profile is captured
 
 ______________________
 
+# USAGE
 
-Use curl to download the CPU profile:
+## Collecting a Profile Through the terminal
 
-bash
-Copy code
-curl -o cpu_profile.pb.gz http://localhost:6060/debug/pprof/profile?seconds=30
-3. Analyze the CPU Profile:
-Use the go tool pprof command to analyze the collected profile. Here’s how:
 
-Run go tool pprof:
+### In the terminal window, type the following
 
-bash
-Copy code
+
+curl -o cpu_profile.pb.gz http://localhost:6060/debug/pprof/profile?seconds=60
+
+### Then run the following command to view the profile
+
 go tool pprof cpu_profile.pb.gz
-Common Commands in pprof: Once inside the interactive pprof shell, use these commands to identify CPU bottlenecks:
+
+
+___
+
+## Viewing Top Processes
+
+---
 
 Top:
 Shows the top hot spots in terms of CPU time.
+
 
 bash
 Copy code
@@ -72,5 +84,33 @@ flat  flat%   sum%        cum   cum%
 Top N:
 
 
+## Creating Graph
+---
 
 (pprof) web for graph
+
+The following seems to do the same:
+
+svg > outputfilename.svg
+---
+Or t
+
+
+## Tree Representation  Calls In Terminal
+
+tree
+
+tree callers. I.E, tree runtime.tracebackPCs
+
+### Getting graphs of specific callers
+
+I.E, 
+
+web -node=runtime.systemstack
+
+
+## Getting Graph of 
+
+## Listing Callers
+
+pprof list yourpkg.SomeFunction
