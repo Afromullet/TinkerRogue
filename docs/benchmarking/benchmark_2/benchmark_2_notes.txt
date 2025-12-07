@@ -1,3 +1,0 @@
-Benchmarking combat to see why the game slows down so much. 12/7/2025
-
-Moving around in combat. Not attacking

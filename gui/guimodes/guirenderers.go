@@ -10,10 +10,32 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
+// BorderImageCache caches border images to avoid GPU allocations in render loop.
+// Images are recreated only when tile size or thickness changes (e.g., window resize).
+type BorderImageCache struct {
+	top, bottom, left, right *ebiten.Image
+	tileSize, thickness      int
+}
+
+// GetOrCreate returns cached border images, creating them only if dimensions changed.
+func (cache *BorderImageCache) GetOrCreate(tileSize, thickness int) (*ebiten.Image, *ebiten.Image, *ebiten.Image, *ebiten.Image) {
+	if cache.top == nil || cache.tileSize != tileSize || cache.thickness != thickness {
+		// Recreate images only on size change
+		cache.top = ebiten.NewImage(tileSize, thickness)
+		cache.bottom = ebiten.NewImage(tileSize, thickness)
+		cache.left = ebiten.NewImage(thickness, tileSize)
+		cache.right = ebiten.NewImage(thickness, tileSize)
+		cache.tileSize = tileSize
+		cache.thickness = thickness
+	}
+	return cache.top, cache.bottom, cache.left, cache.right
+}
+
 // ViewportRenderer provides viewport-centered rendering utilities.
 // Now a thin wrapper around CoordinateManager for convenience.
 type ViewportRenderer struct {
-	centerPos coords.LogicalPosition
+	centerPos    coords.LogicalPosition
+	borderImages BorderImageCache
 }
 
 // NewViewportRenderer creates a renderer for the current screen
@@ -55,30 +77,31 @@ func (vr *ViewportRenderer) DrawTileBorder(screen *ebiten.Image, pos coords.Logi
 	screenX, screenY := vr.LogicalToScreen(pos)
 	tileSize := vr.TileSize()
 
-	// Top border
-	topBorder := ebiten.NewImage(tileSize, thickness)
+	// Get cached border images (creates only on first use or size change)
+	topBorder, bottomBorder, leftBorder, rightBorder := vr.borderImages.GetOrCreate(tileSize, thickness)
+
+	// Fill cached images with current color
 	topBorder.Fill(borderColor)
+	bottomBorder.Fill(borderColor)
+	leftBorder.Fill(borderColor)
+	rightBorder.Fill(borderColor)
+
+	// Top border
 	op := &ebiten.DrawImageOptions{}
 	op.GeoM.Translate(screenX, screenY)
 	screen.DrawImage(topBorder, op)
 
 	// Bottom border
-	bottomBorder := ebiten.NewImage(tileSize, thickness)
-	bottomBorder.Fill(borderColor)
 	op = &ebiten.DrawImageOptions{}
 	op.GeoM.Translate(screenX, screenY+float64(tileSize-thickness))
 	screen.DrawImage(bottomBorder, op)
 
 	// Left border
-	leftBorder := ebiten.NewImage(thickness, tileSize)
-	leftBorder.Fill(borderColor)
 	op = &ebiten.DrawImageOptions{}
 	op.GeoM.Translate(screenX, screenY)
 	screen.DrawImage(leftBorder, op)
 
 	// Right border
-	rightBorder := ebiten.NewImage(thickness, tileSize)
-	rightBorder.Fill(borderColor)
 	op = &ebiten.DrawImageOptions{}
 	op.GeoM.Translate(screenX+float64(tileSize-thickness), screenY)
 	screen.DrawImage(rightBorder, op)
@@ -114,6 +137,8 @@ type SquadHighlightRenderer struct {
 	playerColor     color.Color
 	enemyColor      color.Color
 	borderThickness int
+	cachedRenderer  *ViewportRenderer
+	lastCenterPos   coords.LogicalPosition
 }
 
 // NewSquadHighlightRenderer creates a renderer for squad highlights
@@ -134,7 +159,12 @@ func (shr *SquadHighlightRenderer) Render(
 	currentFactionID ecs.EntityID,
 	selectedSquadID ecs.EntityID,
 ) {
-	vr := NewViewportRenderer(screen, centerPos)
+	// Only recreate renderer if viewport moved or not yet created
+	if shr.cachedRenderer == nil || shr.lastCenterPos != centerPos {
+		shr.cachedRenderer = NewViewportRenderer(screen, centerPos)
+		shr.lastCenterPos = centerPos
+	}
+	vr := shr.cachedRenderer
 
 	// Get all squads with positions
 	allSquads := squads.FindAllSquads(shr.queries.ECSManager)
