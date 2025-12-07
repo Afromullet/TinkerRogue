@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"game_main/combat"
 	"game_main/combat/combatservices"
+	"game_main/config"
 	"game_main/gui"
 	"game_main/gui/core"
 	"game_main/gui/guicomponents"
@@ -120,10 +121,12 @@ func (cm *CombatMode) buildUILayout() {
 	cm.squadDetailPanel.AddChild(cm.squadDetailText)
 	cm.RootContainer.AddChild(cm.squadDetailPanel)
 
-	// Create log panel
-	logContainer, logArea := cm.uiFactory.CreateLogPanel()
-	cm.combatLogArea = logArea
-	cm.RootContainer.AddChild(logContainer)
+	// Create log panel only if combat log is enabled
+	if config.ENABLE_COMBAT_LOG {
+		logContainer, logArea := cm.uiFactory.CreateLogPanel()
+		cm.combatLogArea = logArea
+		cm.RootContainer.AddChild(logContainer)
+	}
 
 	// Create action buttons
 	cm.actionButtons = cm.uiFactory.CreateActionButtons(

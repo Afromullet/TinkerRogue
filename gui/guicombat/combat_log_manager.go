@@ -1,6 +1,7 @@
 package guicombat
 
 import (
+	"game_main/config"
 	"github.com/ebitenui/ebitenui/widget"
 )
 
@@ -30,6 +31,11 @@ func (clm *CombatLogManager) AddEntry(message string) {
 
 // UpdateTextArea updates the text area with new message and triggers trim if needed
 func (clm *CombatLogManager) UpdateTextArea(logArea *widget.TextArea, message string) {
+	// Skip all operations if combat log is disabled
+	if !config.ENABLE_COMBAT_LOG {
+		return
+	}
+
 	clm.AddEntry(message)
 
 	// Use AppendText for O(1) performance - only add the new message
