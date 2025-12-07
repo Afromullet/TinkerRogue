@@ -23,8 +23,11 @@ func NewViewportRenderer(screen *ebiten.Image, centerPos coords.LogicalPosition)
 	screenData.ScreenWidth = screen.Bounds().Dx()
 	screenData.ScreenHeight = screen.Bounds().Dy()
 
-	manager := coords.NewCoordinateManager(screenData)
-	viewport := coords.NewViewport(manager, centerPos)
+	var viewport *coords.Viewport
+	if graphics.MAP_SCROLLING_ENABLED {
+		manager := coords.NewCoordinateManager(screenData)
+		viewport = coords.NewViewport(manager, centerPos)
+	}
 
 	return &ViewportRenderer{
 		screenData: screenData,
@@ -39,7 +42,13 @@ func (vr *ViewportRenderer) TileSize() int {
 
 // LogicalToScreen converts logical position to screen coordinates
 func (vr *ViewportRenderer) LogicalToScreen(pos coords.LogicalPosition) (float64, float64) {
-	return vr.viewport.LogicalToScreen(pos)
+	if graphics.MAP_SCROLLING_ENABLED && vr.viewport != nil {
+		// Use viewport transformation when scrolling is enabled
+		return vr.viewport.LogicalToScreen(pos)
+	}
+	// When scrolling is disabled, convert directly to pixel coordinates
+	pixelPos := coords.CoordManager.LogicalToPixel(pos)
+	return float64(pixelPos.X), float64(pixelPos.Y)
 }
 
 // DrawTileOverlay draws a colored rectangle at a logical position

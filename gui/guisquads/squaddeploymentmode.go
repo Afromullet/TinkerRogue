@@ -255,12 +255,8 @@ func (sdm *SquadDeploymentMode) Update(deltaTime float64) error {
 		// Get player position (for viewport centering)
 		playerPos := *sdm.Context.PlayerData.Pos
 
-		// Create viewport to convert screen to logical coordinates
-		manager := coords.NewCoordinateManager(graphics.ScreenInfo)
-		viewport := coords.NewViewport(manager, playerPos)
-
-		// Convert mouse position to logical position
-		clickedPos := viewport.ScreenToLogical(sdm.pendingMouseX, sdm.pendingMouseY)
+		// Convert mouse position to logical position (handles both scrolling modes)
+		clickedPos := graphics.MouseToLogicalPosition(sdm.pendingMouseX, sdm.pendingMouseY, playerPos)
 		fmt.Printf("DEBUG: Converted click to logical position: (%d, %d)\n", clickedPos.X, clickedPos.Y)
 
 		// Place the squad at the clicked position

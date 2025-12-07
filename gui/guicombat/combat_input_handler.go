@@ -114,17 +114,13 @@ func (cih *CombatInputHandler) HandleInput(inputState *core.InputState) bool {
 
 // handleMovementClick processes clicks when in move mode
 func (cih *CombatInputHandler) handleMovementClick(mouseX, mouseY int) {
-	// Convert mouse coordinates to tile coordinates using viewport system
+	// Convert mouse coordinates to tile coordinates
 	if cih.playerPos == nil {
 		return
 	}
 
-	// Create viewport centered on player
-	manager := coords.NewCoordinateManager(graphics.ScreenInfo)
-	viewport := coords.NewViewport(manager, *cih.playerPos)
-
-	// Convert screen coordinates to logical coordinates
-	clickedPos := viewport.ScreenToLogical(mouseX, mouseY)
+	// Convert screen coordinates to logical coordinates (handles both scrolling modes)
+	clickedPos := graphics.MouseToLogicalPosition(mouseX, mouseY, *cih.playerPos)
 
 	// Check if clicked position is in valid movement tiles
 	isValidTile := false
@@ -154,9 +150,8 @@ func (cih *CombatInputHandler) handleSquadClick(mouseX, mouseY int) {
 		return
 	}
 
-	manager := coords.NewCoordinateManager(graphics.ScreenInfo)
-	viewport := coords.NewViewport(manager, *cih.playerPos)
-	clickedPos := viewport.ScreenToLogical(mouseX, mouseY)
+	// Convert screen coordinates to logical coordinates (handles both scrolling modes)
+	clickedPos := graphics.MouseToLogicalPosition(mouseX, mouseY, *cih.playerPos)
 
 	// Find if a squad is at the clicked position
 	clickedSquadID := cih.actionHandler.combatService.GetSquadAtPosition(clickedPos)

@@ -2,7 +2,6 @@ package guimodes
 
 import (
 	"fmt"
-	"game_main/coords"
 	"game_main/graphics"
 	"game_main/gui"
 	"game_main/gui/core"
@@ -181,11 +180,9 @@ func (em *ExplorationMode) HandleInput(inputState *core.InputState) bool {
 	if inputState.MouseButton == ebiten.MouseButton2 && inputState.MousePressed {
 		// Only open if not in other input modes
 		if !inputState.PlayerInputStates.IsThrowing {
-			// Convert mouse position to logical position
+			// Convert mouse position to logical position (handles both scrolling modes)
 			playerPos := *em.Context.PlayerData.Pos
-			manager := coords.NewCoordinateManager(graphics.ScreenInfo)
-			viewport := coords.NewViewport(manager, playerPos)
-			clickedPos := viewport.ScreenToLogical(inputState.MouseX, inputState.MouseY)
+			clickedPos := graphics.MouseToLogicalPosition(inputState.MouseX, inputState.MouseY, playerPos)
 
 			// Transition to info mode with position
 			if infoMode, exists := em.ModeManager.GetMode("info_inspect"); exists {

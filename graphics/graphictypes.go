@@ -54,3 +54,17 @@ func TransformPixelPosition(playerX, playerY, cursorX, cursorY int, screenData c
 	pixelPos := manager.LogicalToPixel(logicalPos)
 	return pixelPos.X, pixelPos.Y
 }
+
+// MouseToLogicalPosition converts mouse screen coordinates to logical tile coordinates
+// Handles both MAP_SCROLLING_ENABLED modes correctly
+func MouseToLogicalPosition(mouseX, mouseY int, centerPos coords.LogicalPosition) coords.LogicalPosition {
+	if MAP_SCROLLING_ENABLED {
+		// Use viewport transformation when scrolling is enabled
+		manager := coords.NewCoordinateManager(ScreenInfo)
+		viewport := coords.NewViewport(manager, centerPos)
+		return viewport.ScreenToLogical(mouseX, mouseY)
+	}
+	// When scrolling is disabled, convert screen pixel coords directly to logical
+	pixelPos := coords.PixelPosition{X: mouseX, Y: mouseY}
+	return coords.CoordManager.PixelToLogical(pixelPos)
+}

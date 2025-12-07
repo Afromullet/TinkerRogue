@@ -582,24 +582,21 @@ func NewVisualEffectArea(centerX, centerY int, shape TileBasedShape, vx VisualEf
 
 	for _, ind := range indices {
 
-		var x, y = 0, 0
+		var screenX, screenY int
 		if MAP_SCROLLING_ENABLED {
+			// Get logical coordinates
 			logicalPos := coords.CoordManager.IndexToLogical(ind)
-			x, y = logicalPos.X, logicalPos.Y
+			// Transform logical coordinates to screen coordinates with viewport offset
+			sx, sy := OffsetFromCenter(centerX, centerY, logicalPos.X*ScreenInfo.TileSize, logicalPos.Y*ScreenInfo.TileSize, ScreenInfo)
+			screenX, screenY = int(sx), int(sy)
 		} else {
+			// Get pixel coordinates directly (no viewport offset needed)
 			pixelPos := coords.CoordManager.IndexToPixel(ind)
-			x, y = pixelPos.X, pixelPos.Y
+			screenX, screenY = pixelPos.X, pixelPos.Y
 		}
 
-		// Transform logical coordinates to screen coordinates
-		screenX, screenY := OffsetFromCenter(centerX, centerY, x*ScreenInfo.TileSize, y*ScreenInfo.TileSize, ScreenInfo)
-
 		if vx != nil {
-			if MAP_SCROLLING_ENABLED {
-				vx.SetVXCommon(int(screenX), int(screenY), vx.VXImg())
-			} else {
-				vx.SetVXCommon(x, y, vx.VXImg())
-			}
+			vx.SetVXCommon(screenX, screenY, vx.VXImg())
 			visEffects = append(visEffects, vx.Copy())
 		}
 	}
