@@ -96,17 +96,26 @@ func (r *TileRenderer) renderTile(x, y int, opts RenderOptions, bounds *Rendered
 
 // applyViewportTransformWithBounds handles centered viewport rendering and edge tracking
 func (r *TileRenderer) applyViewportTransformWithBounds(opts *ebiten.DrawImageOptions, tile *Tile, center *coords.LogicalPosition, bounds *RenderedBounds) {
+	// Convert pixel position to logical position
+	tileLogicalPos := coords.LogicalPosition{
+		X: tile.PixelX / graphics.ScreenInfo.TileSize,
+		Y: tile.PixelY / graphics.ScreenInfo.TileSize,
+	}
+
+	// Apply sprite scaling (tiles need to be scaled when viewport scrolling is enabled)
 	opts.GeoM.Scale(float64(graphics.ScreenInfo.ScaleFactor), float64(graphics.ScreenInfo.ScaleFactor))
-	offsetX, offsetY := graphics.OffsetFromCenter(center.X, center.Y, tile.PixelX, tile.PixelY, graphics.ScreenInfo)
-	opts.GeoM.Translate(offsetX, offsetY)
+
+	// Use unified coordinate transformation - handles scrolling mode and viewport centering
+	screenX, screenY := coords.CoordManager.LogicalToScreen(tileLogicalPos, center)
+	opts.GeoM.Translate(screenX, screenY)
 
 	// Track edges for UI layout
-	tileRightEdge := int(offsetX + float64(tile.image.Bounds().Dx()*graphics.ScreenInfo.ScaleFactor))
+	tileRightEdge := int(screenX + float64(tile.image.Bounds().Dx()*graphics.ScreenInfo.ScaleFactor))
 	if tileRightEdge > bounds.RightEdgeX {
 		bounds.RightEdgeX = tileRightEdge
 	}
 
-	tileTopEdge := int(offsetY)
+	tileTopEdge := int(screenY)
 	if tileTopEdge < bounds.RightEdgeY {
 		bounds.RightEdgeY = tileTopEdge
 	}

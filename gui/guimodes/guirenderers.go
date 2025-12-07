@@ -2,7 +2,6 @@ package guimodes
 
 import (
 	"game_main/coords"
-	"game_main/graphics"
 	"game_main/gui/guicomponents"
 	"game_main/squads"
 	"image/color"
@@ -11,44 +10,31 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-// ViewportRenderer provides viewport-centered rendering utilities
+// ViewportRenderer provides viewport-centered rendering utilities.
+// Now a thin wrapper around CoordinateManager for convenience.
 type ViewportRenderer struct {
-	screenData coords.ScreenData
-	viewport   *coords.Viewport
+	centerPos coords.LogicalPosition
 }
 
 // NewViewportRenderer creates a renderer for the current screen
 func NewViewportRenderer(screen *ebiten.Image, centerPos coords.LogicalPosition) *ViewportRenderer {
-	screenData := graphics.ScreenInfo
-	screenData.ScreenWidth = screen.Bounds().Dx()
-	screenData.ScreenHeight = screen.Bounds().Dy()
-
-	var viewport *coords.Viewport
-	if graphics.MAP_SCROLLING_ENABLED {
-		manager := coords.NewCoordinateManager(screenData)
-		viewport = coords.NewViewport(manager, centerPos)
-	}
+	// Update screen dimensions in global CoordManager
+	coords.CoordManager.UpdateScreenDimensions(screen.Bounds().Dx(), screen.Bounds().Dy())
 
 	return &ViewportRenderer{
-		screenData: screenData,
-		viewport:   viewport,
+		centerPos: centerPos,
 	}
 }
 
 // TileSize returns the scaled tile size
 func (vr *ViewportRenderer) TileSize() int {
-	return vr.screenData.TileSize * vr.screenData.ScaleFactor
+	return coords.CoordManager.GetScaledTileSize()
 }
 
-// LogicalToScreen converts logical position to screen coordinates
+// LogicalToScreen converts logical position to screen coordinates.
+// Delegates to CoordinateManager which handles scrolling mode automatically.
 func (vr *ViewportRenderer) LogicalToScreen(pos coords.LogicalPosition) (float64, float64) {
-	if graphics.MAP_SCROLLING_ENABLED && vr.viewport != nil {
-		// Use viewport transformation when scrolling is enabled
-		return vr.viewport.LogicalToScreen(pos)
-	}
-	// When scrolling is disabled, convert directly to pixel coordinates
-	pixelPos := coords.CoordManager.LogicalToPixel(pos)
-	return float64(pixelPos.X), float64(pixelPos.Y)
+	return coords.CoordManager.LogicalToScreen(pos, &vr.centerPos)
 }
 
 // DrawTileOverlay draws a colored rectangle at a logical position

@@ -3,6 +3,7 @@ package main
 import (
 	"game_main/combat"
 	"game_main/common"
+	"game_main/coords"
 	"game_main/entitytemplates"
 	"game_main/graphics"
 
@@ -43,7 +44,7 @@ func SetupNewGame(g *Game) {
 
 	// 3. Configure graphics system
 	graphics.ScreenInfo.ScaleFactor = 1
-	if graphics.MAP_SCROLLING_ENABLED {
+	if coords.MAP_SCROLLING_ENABLED {
 		graphics.ScreenInfo.ScaleFactor = 3
 	}
 

@@ -581,19 +581,10 @@ func NewVisualEffectArea(centerX, centerY int, shape TileBasedShape, vx VisualEf
 	visEffects := make([]VisualEffect, 0)
 
 	for _, ind := range indices {
-
-		var screenX, screenY int
-		if MAP_SCROLLING_ENABLED {
-			// Get logical coordinates
-			logicalPos := coords.CoordManager.IndexToLogical(ind)
-			// Transform logical coordinates to screen coordinates with viewport offset
-			sx, sy := OffsetFromCenter(centerX, centerY, logicalPos.X*ScreenInfo.TileSize, logicalPos.Y*ScreenInfo.TileSize, ScreenInfo)
-			screenX, screenY = int(sx), int(sy)
-		} else {
-			// Get pixel coordinates directly (no viewport offset needed)
-			pixelPos := coords.CoordManager.IndexToPixel(ind)
-			screenX, screenY = pixelPos.X, pixelPos.Y
-		}
+		// Use unified coordinate transformation - handles scrolling mode automatically
+		centerPos := coords.LogicalPosition{X: centerX, Y: centerY}
+		sx, sy := coords.CoordManager.IndexToScreen(ind, &centerPos)
+		screenX, screenY := int(sx), int(sy)
 
 		if vx != nil {
 			vx.SetVXCommon(screenX, screenY, vx.VXImg())

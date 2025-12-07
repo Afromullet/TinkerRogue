@@ -14,7 +14,7 @@ var ScreenInfo = coords.NewScreenData()
 var CoordManager = coords.CoordManager
 
 var ViewableSquareSize = 30
-var MAP_SCROLLING_ENABLED = true
+// MAP_SCROLLING_ENABLED has been moved to coords package - use coords.MAP_SCROLLING_ENABLED directly
 
 // var StatsUIOffset int = 1000 //Offset to where the UI starts
 var StatsUIOffset int = 1000 //Offset to where the UI starts
@@ -28,7 +28,8 @@ func CursorPosition(playerPos coords.LogicalPosition) (int, int) {
 	return TransformPixelPosition(playerPos.X, playerPos.Y, cursorX, cursorY, ScreenInfo)
 }
 
-// OffsetFromCenter calculates screen offset for centering the map around a player position
+// OffsetFromCenter calculates screen offset for centering the map around a player position.
+// Deprecated: Use coords.CoordManager.LogicalToScreen instead.
 func OffsetFromCenter(centerX, centerY, tileX, tileY int, screenData coords.ScreenData) (float64, float64) {
 	// Calculate offset to center the viewport
 	offsetX := float64(screenData.ScreenWidth)/2 - float64(centerX*screenData.TileSize)*float64(screenData.ScaleFactor)
@@ -41,7 +42,8 @@ func OffsetFromCenter(centerX, centerY, tileX, tileY int, screenData coords.Scre
 	return scaledX + offsetX, scaledY + offsetY
 }
 
-// TransformPixelPosition transforms pixel coordinates using viewport logic
+// TransformPixelPosition transforms pixel coordinates using viewport logic.
+// Deprecated: Use coords.CoordManager.ScreenToLogical instead.
 func TransformPixelPosition(playerX, playerY, cursorX, cursorY int, screenData coords.ScreenData) (int, int) {
 	// Create viewport centered on player
 	manager := coords.NewCoordinateManager(screenData)
@@ -55,16 +57,8 @@ func TransformPixelPosition(playerX, playerY, cursorX, cursorY int, screenData c
 	return pixelPos.X, pixelPos.Y
 }
 
-// MouseToLogicalPosition converts mouse screen coordinates to logical tile coordinates
-// Handles both MAP_SCROLLING_ENABLED modes correctly
+// MouseToLogicalPosition converts mouse screen coordinates to logical tile coordinates.
+// Automatically handles both scrolling modes via CoordinateManager.
 func MouseToLogicalPosition(mouseX, mouseY int, centerPos coords.LogicalPosition) coords.LogicalPosition {
-	if MAP_SCROLLING_ENABLED {
-		// Use viewport transformation when scrolling is enabled
-		manager := coords.NewCoordinateManager(ScreenInfo)
-		viewport := coords.NewViewport(manager, centerPos)
-		return viewport.ScreenToLogical(mouseX, mouseY)
-	}
-	// When scrolling is disabled, convert screen pixel coords directly to logical
-	pixelPos := coords.PixelPosition{X: mouseX, Y: mouseY}
-	return coords.CoordManager.PixelToLogical(pixelPos)
+	return coords.CoordManager.ScreenToLogical(mouseX, mouseY, &centerPos)
 }

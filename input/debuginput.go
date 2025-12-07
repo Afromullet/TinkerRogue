@@ -3,8 +3,6 @@ package input
 import (
 	"game_main/common"
 	"game_main/coords"
-	"game_main/graphics"
-	"math"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
@@ -19,20 +17,12 @@ func PlayerDebugActions(pl *common.PlayerData) {
 
 		cursorX, cursorY := ebiten.CursorPosition()
 
-		var gridX, gridY = 0, 0
-		if graphics.MAP_SCROLLING_ENABLED {
-			logicalX, logicalY := graphics.TransformPixelPosition(pl.Pos.X, pl.Pos.Y, cursorX, cursorY, graphics.ScreenInfo)
-			gridX = int(math.Round(float64(logicalX) / float64(graphics.ScreenInfo.TileSize)))
-			gridY = int(math.Round(float64(logicalY) / float64(graphics.ScreenInfo.TileSize)))
+		// Use unified coordinate transformation - handles scrolling mode automatically
+		centerPos := coords.LogicalPosition{X: pl.Pos.X, Y: pl.Pos.Y}
+		logicalPos := coords.CoordManager.ScreenToLogical(cursorX, cursorY, &centerPos)
 
-		} else {
-			pixelPos := coords.PixelPosition{X: cursorX, Y: cursorY}
-			logicalPos := coords.CoordManager.PixelToLogical(pixelPos)
-			gridX, gridY = logicalPos.X, logicalPos.Y
-		}
-
-		pl.Pos.X = gridX
-		pl.Pos.Y = gridY
+		pl.Pos.X = logicalPos.X
+		pl.Pos.Y = logicalPos.Y
 
 	}
 

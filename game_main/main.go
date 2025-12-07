@@ -9,6 +9,7 @@ package main
 
 import (
 	"game_main/common"
+	"game_main/coords"
 	"game_main/graphics"
 	"game_main/gui/core"
 	"game_main/input"
@@ -77,9 +78,10 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	// Update screen dimensions
 	graphics.ScreenInfo.ScreenWidth = screen.Bounds().Dx()
 	graphics.ScreenInfo.ScreenHeight = screen.Bounds().Dy()
+	coords.CoordManager.UpdateScreenDimensions(screen.Bounds().Dx(), screen.Bounds().Dy())
 
 	// Phase 1: Ebiten rendering (game world)
-	if graphics.MAP_SCROLLING_ENABLED {
+	if coords.MAP_SCROLLING_ENABLED {
 		g.gameMap.DrawLevelCenteredSquare(screen, g.playerData.Pos, graphics.ViewableSquareSize, DEBUG_MODE)
 		rendering.ProcessRenderablesInSquare(&g.em, g.gameMap, screen, g.playerData.Pos, graphics.ViewableSquareSize, DEBUG_MODE)
 	} else {

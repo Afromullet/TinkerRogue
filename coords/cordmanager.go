@@ -1,11 +1,13 @@
 // Package coords - coordinate manager and conversion utilities
 package coords
 
-// No imports needed currently
-
 // CoordManager is a global coordinate manager instance.
-
 var CoordManager *CoordinateManager
+
+// MAP_SCROLLING_ENABLED controls whether the game uses viewport scrolling (true) or full map view (false).
+// When true: Uses 3x scaling and centers viewport on player position
+// When false: Uses 1x scaling and shows entire dungeon
+var MAP_SCROLLING_ENABLED = true
 
 // Initialize the global coordinate manager with default screen data.
 func init() {
@@ -155,15 +157,23 @@ func (v *Viewport) SetCenter(pos LogicalPosition) {
 }
 
 // LogicalToScreen converts logical coordinates to screen coordinates with viewport centering.
+// Returns the position where a sprite should be drawn (before sprite scaling is applied).
 // Replaces: OffsetFromCenter() and TransformLogicalCoordinates()
 func (v *Viewport) LogicalToScreen(pos LogicalPosition) (float64, float64) {
-	// Calculate offset to center the viewport
-	offsetX := float64(v.manager.screenWidth)/2 - float64(v.centerX*v.manager.tileSize)*float64(v.manager.scaleFactor)
-	offsetY := float64(v.manager.screenHeight)/2 - float64(v.centerY*v.manager.tileSize)*float64(v.manager.scaleFactor)
+	// Convert to pixel coordinates
+	pixelX := float64(pos.X * v.manager.tileSize)
+	pixelY := float64(pos.Y * v.manager.tileSize)
 
-	// Convert logical to pixel, apply scaling and viewport offset
-	scaledX := float64(pos.X*v.manager.tileSize) * float64(v.manager.scaleFactor)
-	scaledY := float64(pos.Y*v.manager.tileSize) * float64(v.manager.scaleFactor)
+	// Calculate offset to center the viewport
+	centerPixelX := float64(v.centerX * v.manager.tileSize)
+	centerPixelY := float64(v.centerY * v.manager.tileSize)
+
+	offsetX := float64(v.manager.screenWidth)/2 - centerPixelX*float64(v.manager.scaleFactor)
+	offsetY := float64(v.manager.screenHeight)/2 - centerPixelY*float64(v.manager.scaleFactor)
+
+	// Apply scaling to position and add centering offset
+	scaledX := pixelX * float64(v.manager.scaleFactor)
+	scaledY := pixelY * float64(v.manager.scaleFactor)
 
 	return scaledX + offsetX, scaledY + offsetY
 }
@@ -231,4 +241,83 @@ func NewDrawableSection(centerX, centerY, size int) DrawableSection {
 		EndX:   centerX + halfSize,
 		EndY:   centerY + halfSize,
 	}
+}
+
+// === UNIFIED SCREEN TRANSFORMATION API ===
+// These methods handle MAP_SCROLLING_ENABLED internally so developers don't need to check the flag.
+
+// UpdateScreenDimensions updates the screen dimensions in the coordinate manager.
+// Call this each frame from Draw() to keep screen dimensions current for viewport calculations.
+func (cm *CoordinateManager) UpdateScreenDimensions(width, height int) {
+	cm.screenWidth = width
+	cm.screenHeight = height
+}
+
+// LogicalToScreen converts logical position to screen coordinates.
+// Automatically handles MAP_SCROLLING_ENABLED mode:
+// - When scrolling enabled with centerPos: applies viewport centering and scaling
+// - When scrolling disabled or centerPos is nil: returns scaled pixels without centering
+// centerPos: viewport center (typically player position) - pass nil for full map view
+func (cm *CoordinateManager) LogicalToScreen(pos LogicalPosition, centerPos *LogicalPosition) (float64, float64) {
+	// Determine scale factor based on mode
+	scaleFactor := 1
+	if MAP_SCROLLING_ENABLED {
+		scaleFactor = cm.scaleFactor
+	}
+
+	// Convert to pixel coordinates
+	pixelPos := cm.LogicalToPixel(pos)
+
+	// If no center position or scrolling disabled, return scaled pixels
+	if centerPos == nil || !MAP_SCROLLING_ENABLED {
+		return float64(pixelPos.X) * float64(scaleFactor),
+			float64(pixelPos.Y) * float64(scaleFactor)
+	}
+
+	// Apply viewport centering (reuse existing Viewport logic)
+	viewport := NewViewport(cm, *centerPos)
+	return viewport.LogicalToScreen(pos)
+}
+
+// ScreenToLogical converts screen coordinates to logical position.
+// Automatically handles MAP_SCROLLING_ENABLED mode:
+// - When scrolling enabled with centerPos: reverses viewport centering and scaling
+// - When scrolling disabled or centerPos is nil: converts pixels directly to logical
+// centerPos: viewport center (typically player position) - pass nil for full map view
+func (cm *CoordinateManager) ScreenToLogical(screenX, screenY int, centerPos *LogicalPosition) LogicalPosition {
+	// If no center position or scrolling disabled, convert pixels directly to logical
+	if centerPos == nil || !MAP_SCROLLING_ENABLED {
+		// Determine scale factor
+		scaleFactor := 1
+		if MAP_SCROLLING_ENABLED {
+			scaleFactor = cm.scaleFactor
+		}
+
+		// Reverse scaling
+		pixelX := screenX / scaleFactor
+		pixelY := screenY / scaleFactor
+
+		// Convert to logical
+		return cm.PixelToLogical(PixelPosition{X: pixelX, Y: pixelY})
+	}
+
+	// Apply viewport transformation (reuse existing Viewport logic)
+	viewport := NewViewport(cm, *centerPos)
+	return viewport.ScreenToLogical(screenX, screenY)
+}
+
+// IndexToScreen converts array index to screen coordinates.
+// Combines IndexToLogical + LogicalToScreen for convenience.
+// centerPos: viewport center (typically player position) - pass nil for full map view
+func (cm *CoordinateManager) IndexToScreen(index int, centerPos *LogicalPosition) (float64, float64) {
+	return cm.LogicalToScreen(cm.IndexToLogical(index), centerPos)
+}
+
+// GetScaledTileSize returns the tile size with current scale factor applied.
+// Returns tileSize * scaleFactor when scrolling enabled, otherwise just tileSize.
+func (cm *CoordinateManager) GetScaledTileSize() int {
+	if MAP_SCROLLING_ENABLED {
+		return cm.tileSize * cm.scaleFactor
+	}
+	return cm.tileSize
 }

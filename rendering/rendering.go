@@ -60,18 +60,7 @@ func ProcessRenderables(ecsmanager *common.EntityManager, gameMap worldmap.GameM
 
 func ProcessRenderablesInSquare(ecsmanager *common.EntityManager, gameMap worldmap.GameMap, screen *ebiten.Image, playerPos *coords.LogicalPosition, squareSize int, debugMode bool) {
 	// Calculate the starting and ending coordinates of the square
-
 	sq := coords.NewDrawableSection(playerPos.X, playerPos.Y, squareSize)
-
-	// Get the dimensions of the screen
-	screenWidth, screenHeight := screen.Bounds().Dx(), screen.Bounds().Dy()
-
-	// Calculate the scaled tile size
-	scaledTileSize := graphics.ScreenInfo.TileSize * graphics.ScreenInfo.ScaleFactor
-
-	// Calculate the position to center the scaled map
-	scaledCenterOffsetX := float64(screenWidth)/2 - float64(playerPos.X*scaledTileSize)
-	scaledCenterOffsetY := float64(screenHeight)/2 - float64(playerPos.Y*scaledTileSize)
 
 	for _, result := range ecsmanager.World.Query(RenderablesTag) {
 		pos := common.GetComponentType[*coords.LogicalPosition](result.Entity, common.PositionComponent)
@@ -84,24 +73,16 @@ func ProcessRenderablesInSquare(ecsmanager *common.EntityManager, gameMap worldm
 
 		// Check if the entity's position is within the square bounds
 		if pos.X >= sq.StartX && pos.X <= sq.EndX && pos.Y >= sq.StartY && pos.Y <= sq.EndY {
-			// Calculate the tile's pixel position
-
 			logicalPos := coords.LogicalPosition{X: pos.X, Y: pos.Y}
-			ind := coords.CoordManager.LogicalToIndex(logicalPos)
-			tilePixelX := gameMap.Tiles[ind].PixelX
-			tilePixelY := gameMap.Tiles[ind].PixelY
 
 			op := &ebiten.DrawImageOptions{}
 
-			// Apply scaling first
-
+			// Apply scaling first (still needed for sprite scaling)
 			op.GeoM.Scale(float64(graphics.ScreenInfo.ScaleFactor), float64(graphics.ScreenInfo.ScaleFactor))
 
-			// Translate the scaled position
-			op.GeoM.Translate(
-				float64(tilePixelX)*float64(graphics.ScreenInfo.ScaleFactor)+scaledCenterOffsetX,
-				float64(tilePixelY)*float64(graphics.ScreenInfo.ScaleFactor)+scaledCenterOffsetY,
-			)
+			// Use unified coordinate transformation - handles scrolling mode and viewport centering automatically
+			screenX, screenY := coords.CoordManager.LogicalToScreen(logicalPos, playerPos)
+			op.GeoM.Translate(screenX, screenY)
 
 			if debugMode || !EnableFieldOfView {
 				// In debug mode, we can draw the image directly without visibility checks
