@@ -4,3 +4,7 @@ Simplify Unit data. No need for weapons, armor, etc in the json and for units
 
 Make sure units attack units in front of them. I,E. if a unit attacks a column, it should only attack the column that its facing. 
 Same thing with row attacks
+
+There is both a config package and config.go in game_main package. Fix that
+
+Look at the other todos

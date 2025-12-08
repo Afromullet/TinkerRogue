@@ -110,6 +110,7 @@ func GetComponentType[T any](entity *ecs.Entity, component *ecs.Component) T {
 
 // GetComponentTypeByID retrieves a component of type T from an entity by ID.
 // Returns zero value if entity or component not found.
+// Optimized to use O(1) map lookup instead of O(n) query scan.
 func GetComponentTypeByID[T any](manager *EntityManager, entityID ecs.EntityID, component *ecs.Component) T {
 	defer func() {
 		if r := recover(); r != nil {
@@ -117,14 +118,16 @@ func GetComponentTypeByID[T any](manager *EntityManager, entityID ecs.EntityID, 
 		}
 	}()
 
-	for _, result := range manager.World.Query(AllEntitiesTag) {
-		if result.Entity.GetID() == entityID {
-			if c, ok := result.Entity.GetComponentData(component); ok {
-				return c.(T)
-			}
-			var nilValue T
-			return nilValue
-		}
+	// Use ECS library's O(1) entitiesByID map lookup
+	queryResult := manager.World.GetEntityByID(entityID)
+	if queryResult == nil {
+		var nilValue T
+		return nilValue
+	}
+
+	entity := queryResult.Entity
+	if c, ok := entity.GetComponentData(component); ok {
+		return c.(T)
 	}
 
 	var nilValue T

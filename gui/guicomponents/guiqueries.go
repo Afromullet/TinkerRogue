@@ -15,6 +15,11 @@ import (
 type GUIQueries struct {
 	ECSManager     *common.EntityManager
 	factionManager *combat.FactionManager
+
+	// Cached ECS Views (automatically maintained by ECS library)
+	squadView       *ecs.View // All SquadTag entities
+	squadMemberView *ecs.View // All SquadMemberTag entities
+	actionStateView *ecs.View // All ActionStateTag entities
 }
 
 // NewGUIQueries creates a new query service
@@ -22,6 +27,11 @@ func NewGUIQueries(ecsManager *common.EntityManager) *GUIQueries {
 	return &GUIQueries{
 		ECSManager:     ecsManager,
 		factionManager: combat.NewFactionManager(ecsManager),
+
+		// Initialize Views for cached queries (one-time O(n) cost, then O(1) access)
+		squadView:       ecsManager.World.CreateView(squads.SquadTag),
+		squadMemberView: ecsManager.World.CreateView(squads.SquadMemberTag),
+		actionStateView: ecsManager.World.CreateView(combat.ActionStateTag),
 	}
 }
 
@@ -197,6 +207,7 @@ func (gq *GUIQueries) FilterSquadsAlive() SquadFilter {
 // ApplyFilterToSquads applies a filter to a slice of squad IDs
 // Returns filtered squad IDs as a new slice
 // If filter is nil, returns all squads unchanged
+// Note: For performance-critical paths, use ApplyFilterToSquadsCached instead
 func (gq *GUIQueries) ApplyFilterToSquads(squadIDs []ecs.EntityID, filter SquadFilter) []ecs.EntityID {
 	if filter == nil {
 		return squadIDs
@@ -205,6 +216,24 @@ func (gq *GUIQueries) ApplyFilterToSquads(squadIDs []ecs.EntityID, filter SquadF
 	filtered := make([]ecs.EntityID, 0, len(squadIDs))
 	for _, squadID := range squadIDs {
 		info := gq.GetSquadInfo(squadID)
+		if info != nil && filter(info) {
+			filtered = append(filtered, squadID)
+		}
+	}
+	return filtered
+}
+
+// ApplyFilterToSquadsCached applies a filter using pre-built cache (performance-optimized version)
+// Returns filtered squad IDs as a new slice
+// If filter is nil, returns all squads unchanged
+func (gq *GUIQueries) ApplyFilterToSquadsCached(squadIDs []ecs.EntityID, filter SquadFilter, cache *SquadInfoCache) []ecs.EntityID {
+	if filter == nil {
+		return squadIDs
+	}
+
+	filtered := make([]ecs.EntityID, 0, len(squadIDs))
+	for _, squadID := range squadIDs {
+		info := gq.GetSquadInfoCached(squadID, cache)
 		if info != nil && filter(info) {
 			filtered = append(filtered, squadID)
 		}
@@ -332,4 +361,122 @@ func (gq *GUIQueries) GetTileInfo(pos coords.LogicalPosition) *TileInfo {
 	}
 
 	return info
+}
+
+// ===== PERFORMANCE-OPTIMIZED SQUAD INFO CACHING =====
+
+// SquadInfoCache holds pre-built lookup maps for one render cycle.
+// This eliminates O(n) query scans by building maps once per frame.
+type SquadInfoCache struct {
+	squadNames      map[ecs.EntityID]string
+	squadMembers    map[ecs.EntityID][]ecs.EntityID
+	actionStates    map[ecs.EntityID]*combat.ActionStateData
+	squadFactions   map[ecs.EntityID]ecs.EntityID
+	destroyedStatus map[ecs.EntityID]bool
+}
+
+// BuildSquadInfoCache creates lookup maps from Views (O(squads + units + states)).
+// Call once per frame/render cycle, then reuse for all squad queries.
+// This replaces multiple O(n) scans with a single O(n) pass and O(1) lookups.
+func (gq *GUIQueries) BuildSquadInfoCache() *SquadInfoCache {
+	cache := &SquadInfoCache{
+		squadNames:      make(map[ecs.EntityID]string),
+		squadMembers:    make(map[ecs.EntityID][]ecs.EntityID),
+		actionStates:    make(map[ecs.EntityID]*combat.ActionStateData),
+		squadFactions:   make(map[ecs.EntityID]ecs.EntityID),
+		destroyedStatus: make(map[ecs.EntityID]bool),
+	}
+
+	// Single pass over all squads (uses cached View, not fresh query)
+	for _, result := range gq.squadView.Get() {
+		entity := result.Entity
+		squadData := common.GetComponentType[*squads.SquadData](entity, squads.SquadComponent)
+		squadID := squadData.SquadID
+
+		cache.squadNames[squadID] = squadData.Name
+		cache.destroyedStatus[squadID] = squadData.IsDestroyed
+
+		// Get faction if squad is in combat
+		combatFaction := common.GetComponentType[*combat.CombatFactionData](entity, combat.CombatFactionComponent)
+		if combatFaction != nil {
+			cache.squadFactions[squadID] = combatFaction.FactionID
+		}
+	}
+
+	// Single pass over all squad members (uses cached View)
+	for _, result := range gq.squadMemberView.Get() {
+		memberData := common.GetComponentType[*squads.SquadMemberData](result.Entity, squads.SquadMemberComponent)
+		squadID := memberData.SquadID
+		unitID := result.Entity.GetID()
+		cache.squadMembers[squadID] = append(cache.squadMembers[squadID], unitID)
+	}
+
+	// Single pass over all action states (uses cached View)
+	for _, result := range gq.actionStateView.Get() {
+		actionState := common.GetComponentType[*combat.ActionStateData](result.Entity, combat.ActionStateComponent)
+		cache.actionStates[actionState.SquadID] = actionState
+	}
+
+	return cache
+}
+
+// GetSquadInfoCached returns squad info using pre-built cache.
+// Replaces GetSquadInfo for performance-critical paths (O(units_in_squad) vs O(all_entities)).
+// Requires BuildSquadInfoCache() to be called first to generate the cache.
+func (gq *GUIQueries) GetSquadInfoCached(squadID ecs.EntityID, cache *SquadInfoCache) *SquadInfo {
+	// All lookups are O(1) map access (no queries!)
+	name := cache.squadNames[squadID]
+	unitIDs := cache.squadMembers[squadID]
+	factionID := cache.squadFactions[squadID]
+	isDestroyed := cache.destroyedStatus[squadID]
+	actionState := cache.actionStates[squadID]
+
+	// Calculate HP and alive units (now uses O(1) GetComponentTypeByID from Phase 1)
+	aliveUnits := 0
+	totalHP := 0
+	maxHP := 0
+	for _, unitID := range unitIDs {
+		attrs := common.GetAttributesByIDWithTag(gq.ECSManager, unitID, squads.SquadMemberTag)
+		if attrs != nil {
+			if attrs.CanAct {
+				aliveUnits++
+			}
+			totalHP += attrs.CurrentHealth
+			maxHP += attrs.MaxHealth
+		}
+	}
+
+	// Position lookup (O(1) after Phase 1 optimization)
+	var position *coords.LogicalPosition
+	squadPos := common.GetComponentTypeByID[*coords.LogicalPosition](gq.ECSManager, squadID, common.PositionComponent)
+	if squadPos != nil {
+		pos := *squadPos
+		position = &pos
+	}
+
+	// Extract action state fields
+	hasActed := false
+	hasMoved := false
+	movementRemaining := 0
+	if actionState != nil {
+		hasActed = actionState.HasActed
+		hasMoved = actionState.HasMoved
+		movementRemaining = actionState.MovementRemaining
+	}
+
+	return &SquadInfo{
+		ID:                squadID,
+		Name:              name,
+		UnitIDs:           unitIDs,
+		AliveUnits:        aliveUnits,
+		TotalUnits:        len(unitIDs),
+		CurrentHP:         totalHP,
+		MaxHP:             maxHP,
+		Position:          position,
+		FactionID:         factionID,
+		IsDestroyed:       isDestroyed,
+		HasActed:          hasActed,
+		HasMoved:          hasMoved,
+		MovementRemaining: movementRemaining,
+	}
 }

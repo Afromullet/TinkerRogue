@@ -59,12 +59,15 @@ func (slc *SquadListComponent) Refresh() {
 	slc.squadButtons = make([]*widget.Button, 0)
 	slc.filteredSquads = make([]ecs.EntityID, 0)
 
+	// Build cache once for all squad queries (performance optimization)
+	cache := slc.queries.BuildSquadInfoCache()
+
 	// Get all squads
 	allSquads := squads.FindAllSquads(slc.queries.ECSManager)
 
 	// Filter squads and create buttons
 	for _, squadID := range allSquads {
-		squadInfo := slc.queries.GetSquadInfo(squadID)
+		squadInfo := slc.queries.GetSquadInfoCached(squadID, cache)
 		if squadInfo == nil || !slc.filter(squadInfo) {
 			continue
 		}
@@ -73,7 +76,7 @@ func (slc *SquadListComponent) Refresh() {
 
 		// Create button for this squad
 		localSquadID := squadID // Capture for closure
-		squadName := squads.GetSquadName(squadID, slc.queries.ECSManager)
+		squadName := cache.squadNames[squadID]
 
 		button := widgets.CreateButtonWithConfig(widgets.ButtonConfig{
 			Text: squadName,
