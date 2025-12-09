@@ -341,8 +341,9 @@ func CreateSquadFromTemplate(
 			Role: template.Role,
 		})
 
-		// Add targeting data (cell-based)
+		// Add targeting data
 		unitEntity.AddComponent(TargetRowComponent, &TargetRowData{
+			AttackType:  template.AttackType,
 			TargetCells: template.TargetCells,
 		})
 

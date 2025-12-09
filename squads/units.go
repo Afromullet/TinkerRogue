@@ -149,6 +149,8 @@ func GetAttackType(attackTypeString string, attackRange int) (AttackType, error)
 
 	// Fallback to attackRange for backward compatibility
 	switch attackRange {
+	case 0:
+		return AttackTypeMeleeRow, nil // Default for test units / units without specified attack
 	case 1:
 		return AttackTypeMeleeRow, nil // Default melee to row attack
 	case 3:

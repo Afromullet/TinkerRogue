@@ -120,11 +120,48 @@ func SetupGameplayFactions(manager *common.EntityManager, playerStartPos coords.
 		}
 	}
 
+	// 9. Create ranged-focused test squads for player faction
+	// These squads only contain ranged attackers (Archer, Ranger, Crossbowman, Marksman, Skeleton Archer)
+	rangedSquadCount := 3
+	for i := 0; i < rangedSquadCount; i++ {
+		position := generateRandomPositionNearPlayer(playerStartPos, 4, 8)
+		squadName := fmt.Sprintf("Ranged Squad %d", i+1)
+		err := createRangedSquad(fm, manager, playerFactionID, squadName, position)
+		if err != nil {
+			return fmt.Errorf("failed to create ranged squad %d: %w", i+1, err)
+		}
+	}
+
+	// 10. Create magic-focused test squads for player faction
+	// These squads only contain magic attackers (Wizard, Sorcerer, Mage, Cleric, Priest, Warlock, Battle Mage)
+	magicSquadCount := 3
+	for i := 0; i < magicSquadCount; i++ {
+		position := generateRandomPositionNearPlayer(playerStartPos, 4, 8)
+		squadName := fmt.Sprintf("Magic Squad %d", i+1)
+		err := createMagicSquad(fm, manager, playerFactionID, squadName, position)
+		if err != nil {
+			return fmt.Errorf("failed to create magic squad %d: %w", i+1, err)
+		}
+	}
+
+	// 11. Create mixed ranged/magic squads for AI faction
+	mixedSquadCount := 2
+	for i := 0; i < mixedSquadCount; i++ {
+		position := generateRandomPositionNearPlayer(playerStartPos, 6, 12)
+		squadName := fmt.Sprintf("Mixed Ranged/Magic %d", i+1)
+		err := createMixedRangedMagicSquad(fm, manager, aiFactionID, squadName, position)
+		if err != nil {
+			return fmt.Errorf("failed to create mixed ranged/magic squad %d: %w", i+1, err)
+		}
+	}
+
 	fmt.Printf("Created gameplay factions:\n")
-	fmt.Printf("  Player faction (%d) with %d squads (%d standard + %d random)\n",
-		playerFactionID, len(playerSquadPositions)+playerTestSquadCount, len(playerSquadPositions), playerTestSquadCount)
-	fmt.Printf("  AI faction (%d) with %d squads (%d standard + %d random)\n",
-		aiFactionID, len(aiSquadPositions)+enemyTestSquadCount, len(aiSquadPositions), enemyTestSquadCount)
+	fmt.Printf("  Player faction (%d) with %d squads (%d standard + %d random + %d ranged + %d magic)\n",
+		playerFactionID, len(playerSquadPositions)+playerTestSquadCount+rangedSquadCount+magicSquadCount,
+		len(playerSquadPositions), playerTestSquadCount, rangedSquadCount, magicSquadCount)
+	fmt.Printf("  AI faction (%d) with %d squads (%d standard + %d random + %d mixed)\n",
+		aiFactionID, len(aiSquadPositions)+enemyTestSquadCount+mixedSquadCount,
+		len(aiSquadPositions), enemyTestSquadCount, mixedSquadCount)
 
 	return nil
 }
@@ -304,4 +341,209 @@ func generateRandomPositionNearPlayer(playerPos coords.LogicalPosition, minDist,
 	newY := clampPosition(playerPos.Y+offsetY, 0, 79)
 
 	return coords.LogicalPosition{X: newX, Y: newY}
+}
+
+// filterUnitsByAttackType returns units matching the specified attack type
+func filterUnitsByAttackType(attackType squads.AttackType) []squads.UnitTemplate {
+	var filtered []squads.UnitTemplate
+	for _, unit := range squads.Units {
+		if unit.AttackType == attackType {
+			filtered = append(filtered, unit)
+		}
+	}
+	return filtered
+}
+
+// createRangedSquad creates a squad with only ranged attackers
+// Units are spread across different rows for better testing of ranged targeting
+func createRangedSquad(
+	fm *FactionManager,
+	manager *common.EntityManager,
+	factionID ecs.EntityID,
+	squadName string,
+	position coords.LogicalPosition,
+) error {
+	// Get all ranged units
+	rangedUnits := filterUnitsByAttackType(squads.AttackTypeRanged)
+	if len(rangedUnits) == 0 {
+		return fmt.Errorf("no ranged units available")
+	}
+
+	// Create squad with 3-5 ranged units
+	unitCount := common.GetRandomBetween(3, 5)
+	unitsToCreate := []squads.UnitTemplate{}
+
+	// Spread units across all three rows for testing ranged targeting
+	gridPositions := [][2]int{
+		{0, 0}, // Row 0 - Front
+		{1, 1}, // Row 1 - Middle
+		{2, 2}, // Row 2 - Back
+		{0, 2}, // Row 0 - Front right
+		{1, 0}, // Row 1 - Middle left
+	}
+
+	for i := 0; i < unitCount; i++ {
+		// Randomly select a ranged unit
+		randomIdx := common.RandomInt(len(rangedUnits))
+		unit := rangedUnits[randomIdx]
+
+		unit.GridRow = gridPositions[i][0]
+		unit.GridCol = gridPositions[i][1]
+		unit.IsLeader = false
+
+		unitsToCreate = append(unitsToCreate, unit)
+	}
+
+	// Set random leader
+	leaderIndex := common.RandomInt(unitCount)
+	unitsToCreate[leaderIndex].IsLeader = true
+	unitsToCreate[leaderIndex].Attributes.Leadership = 20
+
+	// Create squad
+	squadID := squads.CreateSquadFromTemplate(
+		manager,
+		squadName,
+		squads.FormationBalanced,
+		position,
+		unitsToCreate,
+	)
+
+	if err := fm.AddSquadToFaction(factionID, squadID, position); err != nil {
+		return err
+	}
+
+	return createActionStateForSquad(manager, squadID)
+}
+
+// createMagicSquad creates a squad with only magic attackers
+// Units are spread across different rows for better testing of magic targeting patterns
+func createMagicSquad(
+	fm *FactionManager,
+	manager *common.EntityManager,
+	factionID ecs.EntityID,
+	squadName string,
+	position coords.LogicalPosition,
+) error {
+	// Get all magic units
+	magicUnits := filterUnitsByAttackType(squads.AttackTypeMagic)
+	if len(magicUnits) == 0 {
+		return fmt.Errorf("no magic units available")
+	}
+
+	// Create squad with 3-5 magic units
+	unitCount := common.GetRandomBetween(3, 5)
+	unitsToCreate := []squads.UnitTemplate{}
+
+	// Spread units across all three rows for testing magic targeting patterns
+	gridPositions := [][2]int{
+		{0, 1}, // Row 0 - Front center
+		{1, 0}, // Row 1 - Middle left
+		{2, 1}, // Row 2 - Back center
+		{0, 0}, // Row 0 - Front left
+		{2, 0}, // Row 2 - Back left
+	}
+
+	for i := 0; i < unitCount; i++ {
+		// Randomly select a magic unit
+		randomIdx := common.RandomInt(len(magicUnits))
+		unit := magicUnits[randomIdx]
+
+		unit.GridRow = gridPositions[i][0]
+		unit.GridCol = gridPositions[i][1]
+		unit.IsLeader = false
+
+		unitsToCreate = append(unitsToCreate, unit)
+	}
+
+	// Set random leader
+	leaderIndex := common.RandomInt(unitCount)
+	unitsToCreate[leaderIndex].IsLeader = true
+	unitsToCreate[leaderIndex].Attributes.Leadership = 20
+
+	// Create squad
+	squadID := squads.CreateSquadFromTemplate(
+		manager,
+		squadName,
+		squads.FormationBalanced,
+		position,
+		unitsToCreate,
+	)
+
+	if err := fm.AddSquadToFaction(factionID, squadID, position); err != nil {
+		return err
+	}
+
+	return createActionStateForSquad(manager, squadID)
+}
+
+// createMixedRangedMagicSquad creates a squad with a mix of ranged and magic attackers
+// Units are spread across different rows for comprehensive testing
+func createMixedRangedMagicSquad(
+	fm *FactionManager,
+	manager *common.EntityManager,
+	factionID ecs.EntityID,
+	squadName string,
+	position coords.LogicalPosition,
+) error {
+	rangedUnits := filterUnitsByAttackType(squads.AttackTypeRanged)
+	magicUnits := filterUnitsByAttackType(squads.AttackTypeMagic)
+
+	if len(rangedUnits) == 0 || len(magicUnits) == 0 {
+		return fmt.Errorf("insufficient ranged or magic units")
+	}
+
+	// Create squad with 4-5 units (mix of ranged and magic)
+	unitCount := common.GetRandomBetween(4, 5)
+	unitsToCreate := []squads.UnitTemplate{}
+
+	// Spread units across all three rows for testing
+	gridPositions := [][2]int{
+		{0, 0}, // Row 0 - Front left
+		{1, 1}, // Row 1 - Middle center
+		{2, 2}, // Row 2 - Back right
+		{1, 2}, // Row 1 - Middle right
+		{2, 0}, // Row 2 - Back left
+	}
+
+	for i := 0; i < unitCount; i++ {
+		var unit squads.UnitTemplate
+
+		// Alternate between ranged and magic, or randomize
+		if i%2 == 0 && len(rangedUnits) > 0 {
+			randomIdx := common.RandomInt(len(rangedUnits))
+			unit = rangedUnits[randomIdx]
+		} else if len(magicUnits) > 0 {
+			randomIdx := common.RandomInt(len(magicUnits))
+			unit = magicUnits[randomIdx]
+		} else if len(rangedUnits) > 0 {
+			randomIdx := common.RandomInt(len(rangedUnits))
+			unit = rangedUnits[randomIdx]
+		}
+
+		unit.GridRow = gridPositions[i][0]
+		unit.GridCol = gridPositions[i][1]
+		unit.IsLeader = false
+
+		unitsToCreate = append(unitsToCreate, unit)
+	}
+
+	// Set random leader
+	leaderIndex := common.RandomInt(unitCount)
+	unitsToCreate[leaderIndex].IsLeader = true
+	unitsToCreate[leaderIndex].Attributes.Leadership = 20
+
+	// Create squad
+	squadID := squads.CreateSquadFromTemplate(
+		manager,
+		squadName,
+		squads.FormationBalanced,
+		position,
+		unitsToCreate,
+	)
+
+	if err := fm.AddSquadToFaction(factionID, squadID, position); err != nil {
+		return err
+	}
+
+	return createActionStateForSquad(manager, squadID)
 }

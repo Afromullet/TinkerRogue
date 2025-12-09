@@ -173,7 +173,7 @@ func selectMeleeRowTargets(attackerID, defenderSquadID ecs.EntityID, manager *co
 	return []ecs.EntityID{}
 }
 
-// selectMeleeColumnTargets targets column directly in front of attacker, piercing forward if empty
+// selectMeleeColumnTargets targets column directly across from attacker, wrapping to adjacent columns if empty
 // Targets exactly 1 unit (spear-type attack)
 func selectMeleeColumnTargets(attackerID, defenderSquadID ecs.EntityID, manager *common.EntityManager) []ecs.EntityID {
 	// Get attacker's column
@@ -184,13 +184,23 @@ func selectMeleeColumnTargets(attackerID, defenderSquadID ecs.EntityID, manager 
 
 	attackerCol := attackerPos.AnchorCol
 
-	// Try each row starting from front (0 → 1 → 2), same column
-	for row := 0; row <= 2; row++ {
-		targets := GetUnitIDsAtGridPosition(defenderSquadID, row, attackerCol, manager)
+	// Try columns starting from attacker's column, wrapping around
+	// Example: attackerCol=1 → try columns 1, 2, 0
+	for offset := 0; offset < 3; offset++ {
+		col := (attackerCol + offset) % 3
 
-		if len(targets) > 0 {
-			// Return only the first unit found (single target)
-			return []ecs.EntityID{targets[0]}
+		// For each column, search through all rows to find any ALIVE unit
+		for row := 0; row <= 2; row++ {
+			cellUnits := GetUnitIDsAtGridPosition(defenderSquadID, row, col, manager)
+
+			for _, unitID := range cellUnits {
+				// Check if unit is alive
+				attr := common.GetAttributesByIDWithTag(manager, unitID, SquadMemberTag)
+				if attr != nil && attr.CurrentHealth > 0 {
+					// Return the first alive unit found
+					return []ecs.EntityID{unitID}
+				}
+			}
 		}
 	}
 

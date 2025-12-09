@@ -38,10 +38,11 @@ func createTestJSONMonster(name string, width, height int, role string) entityte
 			Armor:      2,  // Contributes to physical resistance
 			Weapon:     2,  // Contributes to physical damage
 		},
-		Width:         width,
-		Height:        height,
-		Role:          role,
-		TargetCells:   [][2]int{{0, 0}, {0, 1}, {0, 2}},
+		Width:       width,
+		Height:      height,
+		Role:        role,
+		AttackType:  "MeleeRow", // Explicitly set attack type for test clarity
+		TargetCells: nil,        // Not used for MeleeRow
 	}
 }
 
@@ -57,13 +58,14 @@ func createLowCostTestMonster(name string, width, height int, role string) entit
 			Dexterity:  20, // Keep dexterity for combat mechanics
 			Magic:      0,
 			Leadership: 0,
-			Armor:      0,  // No armor to minimize capacity cost
-			Weapon:     0,  // No weapon to minimize capacity cost
+			Armor:      0, // No armor to minimize capacity cost
+			Weapon:    0, // No weapon to minimize capacity cost
 		},
-		Width:         width,
-		Height:        height,
-		Role:          role,
-		TargetCells:   [][2]int{{0, 0}, {0, 1}, {0, 2}},
+		Width:       width,
+		Height:      height,
+		Role:        role,
+		AttackType:  "MeleeRow", // Explicitly set attack type for test clarity
+		TargetCells: nil,        // Not used for MeleeRow
 	}
 }
 

@@ -37,9 +37,10 @@ func createTestUnit(manager *common.EntityManager, squadID ecs.EntityID, row, co
 	attr.CurrentHealth = health
 	unit.AddComponent(common.AttributeComponent, &attr)
 
-	// Add targeting data (default to front row)
+	// Add targeting data (default to MeleeRow attacking front row)
 	unit.AddComponent(TargetRowComponent, &TargetRowData{
-		TargetCells: [][2]int{{0, 0}, {0, 1}, {0, 2}},
+		AttackType:  AttackTypeMeleeRow, // Explicit attack type
+		TargetCells: nil,                 // Not used for MeleeRow
 	})
 
 	// Add attack range component (default to melee range 1)
@@ -733,7 +734,7 @@ func TestMeleeRowTargeting_FrontRow(t *testing.T) {
 	targetData.AttackType = AttackTypeMeleeRow
 	targetData.TargetCells = nil
 
-	// Create defender squad with 3 units in front row
+	// Create defender squad with 3 units in front row (row 0)
 	defenderSquadID := createTestSquad(manager, "Defenders")
 	defender1 := createTestUnit(manager, defenderSquadID, 0, 0, 50, 10, 0)
 	defender2 := createTestUnit(manager, defenderSquadID, 0, 1, 50, 10, 0)
@@ -776,7 +777,7 @@ func TestMeleeRowTargeting_PierceToRow1(t *testing.T) {
 	// Create defender squad with units only in row 1 (front row empty)
 	defenderSquadID := createTestSquad(manager, "Defenders")
 	defender1 := createTestUnit(manager, defenderSquadID, 1, 0, 50, 10, 0)
-	defender2 := createTestUnit(manager, defenderSquadID, 1, 1, 50, 10, 0)
+	defender2 := createTestUnit(manager, defenderSquadID, 1, 2, 50, 10, 0)
 
 	// Get targets
 	targets := SelectTargetUnits(attacker.GetID(), defenderSquadID, manager)
@@ -824,7 +825,7 @@ func TestMeleeRowTargeting_PierceWhenFrontRowDead(t *testing.T) {
 
 	// Row 1 - alive (should be targeted)
 	aliveUnit1 := createTestUnit(manager, defenderSquadID, 1, 0, 50, 10, 0)
-	aliveUnit2 := createTestUnit(manager, defenderSquadID, 1, 1, 50, 10, 0)
+	aliveUnit2 := createTestUnit(manager, defenderSquadID, 1, 2, 50, 10, 0)
 
 	// Get targets
 	targets := SelectTargetUnits(attacker.GetID(), defenderSquadID, manager)
@@ -946,6 +947,65 @@ func TestMeleeColumnTargeting_PierceForward(t *testing.T) {
 
 	if targets[0] != defender2.GetID() {
 		t.Errorf("Expected defender in row 1, col 0, got %d", targets[0])
+	}
+}
+
+func TestMeleeColumnTargeting_ColumnWrapping(t *testing.T) {
+	manager := setupTestManager(t)
+
+	// Create attacker squad in column 1
+	attackerSquadID := createTestSquad(manager, "Attackers")
+	attacker := createTestUnit(manager, attackerSquadID, 0, 1, 100, 20, 100)
+
+	// Set to MeleeColumn targeting
+	targetData := common.GetComponentType[*TargetRowData](attacker, TargetRowComponent)
+	targetData.AttackType = AttackTypeMeleeColumn
+	targetData.TargetCells = nil
+
+	// Create defender squad with NO units in column 1, but units in columns 2 and 0
+	defenderSquadID := createTestSquad(manager, "Defenders")
+	createTestUnit(manager, defenderSquadID, 0, 0, 50, 10, 0) // Column 0 - should wrap to this
+	defender2 := createTestUnit(manager, defenderSquadID, 1, 2, 50, 10, 0) // Column 2 - TARGETED (next after col 1)
+
+	// Get targets
+	targets := SelectTargetUnits(attacker.GetID(), defenderSquadID, manager)
+
+	// Verify wrapping: attackerCol=1 → try col 1 (empty), col 2 (found!), col 0 (not reached)
+	if len(targets) != 1 {
+		t.Errorf("Expected 1 target (column 2 after wrapping), got %d", len(targets))
+	}
+
+	if targets[0] != defender2.GetID() {
+		t.Errorf("Expected defender in column 2, got %d", targets[0])
+	}
+}
+
+func TestMeleeColumnTargeting_WrapToColumn0(t *testing.T) {
+	manager := setupTestManager(t)
+
+	// Create attacker squad in column 2
+	attackerSquadID := createTestSquad(manager, "Attackers")
+	attacker := createTestUnit(manager, attackerSquadID, 0, 2, 100, 20, 100)
+
+	// Set to MeleeColumn targeting
+	targetData := common.GetComponentType[*TargetRowData](attacker, TargetRowComponent)
+	targetData.AttackType = AttackTypeMeleeColumn
+	targetData.TargetCells = nil
+
+	// Create defender squad with NO units in columns 2, only in column 0
+	defenderSquadID := createTestSquad(manager, "Defenders")
+	defender1 := createTestUnit(manager, defenderSquadID, 1, 0, 50, 10, 0) // Column 0 - TARGETED (after wrapping)
+
+	// Get targets
+	targets := SelectTargetUnits(attacker.GetID(), defenderSquadID, manager)
+
+	// Verify wrapping: attackerCol=2 → try col 2 (empty), col 0 (found!), col 1 (not reached)
+	if len(targets) != 1 {
+		t.Errorf("Expected 1 target (column 0 after wrapping), got %d", len(targets))
+	}
+
+	if targets[0] != defender1.GetID() {
+		t.Errorf("Expected defender in column 0, got %d", targets[0])
 	}
 }
 
