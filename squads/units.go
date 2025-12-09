@@ -18,13 +18,17 @@ type UnitTemplate struct {
 	Attributes     common.Attributes
 	EntityType     entitytemplates.EntityType
 	EntityConfig   entitytemplates.EntityConfig
-	EntityData     any        // JSONMonster, etc.
-	GridRow        int        // Anchor row (0-2)
-	GridCol        int        // Anchor col (0-2)
-	GridWidth      int        // Width in cells (1-3), defaults to 1
-	GridHeight     int        // Height in cells (1-3), defaults to 1
-	Role           UnitRole   // Tank, DPS, Support
-	TargetCells    [][2]int   // Specific cells to target (cell-based)
+	EntityData     any      // JSONMonster, etc.
+	GridRow        int      // Anchor row (0-2)
+	GridCol        int      // Anchor col (0-2)
+	GridWidth      int      // Width in cells (1-3), defaults to 1
+	GridHeight     int      // Height in cells (1-3), defaults to 1
+	Role           UnitRole // Tank, DPS, Support
+
+	// Targeting fields
+	AttackType  AttackType // MeleeRow, MeleeColumn, Ranged, or Magic
+	TargetCells [][2]int   // For magic: pattern cells
+
 	IsLeader       bool    // Squad leader flag
 	CoverValue     float64 // Damage reduction provided (0.0-1.0, 0 = no cover)
 	CoverRange     int     // Rows behind that receive cover (1-3)
@@ -55,6 +59,12 @@ func CreateUnitTemplates(monsterData entitytemplates.JSONMonster) (UnitTemplate,
 		return UnitTemplate{}, fmt.Errorf("invalid role for %s: %w", monsterData.Name, err)
 	}
 
+	// Convert attack type string to enum (with fallback to attackRange)
+	attackType, err := GetAttackType(monsterData.AttackType, monsterData.AttackRange)
+	if err != nil {
+		return UnitTemplate{}, fmt.Errorf("invalid attack type for %s: %w", monsterData.Name, err)
+	}
+
 	// Create entity configuration for the unit
 	entityConfig := entitytemplates.EntityConfig{
 		Type:      entitytemplates.EntityCreature,
@@ -77,6 +87,7 @@ func CreateUnitTemplates(monsterData entitytemplates.JSONMonster) (UnitTemplate,
 		GridWidth:      monsterData.Width,
 		GridHeight:     monsterData.Height,
 		Role:           role,
+		AttackType:     attackType,
 		TargetCells:    monsterData.TargetCells,
 		IsLeader:       false,
 		CoverValue:     monsterData.CoverValue,
@@ -113,6 +124,39 @@ func GetRole(roleString string) (UnitRole, error) {
 		return RoleSupport, nil
 	default:
 		return 0, fmt.Errorf("invalid role: %q, expected Tank, DPS, or Support", roleString)
+	}
+}
+
+// GetAttackType converts an attack type string from JSON to an AttackType enum value.
+// If attackTypeString is empty, falls back to attackRange for backward compatibility.
+// Returns an error if neither can determine a valid attack type.
+func GetAttackType(attackTypeString string, attackRange int) (AttackType, error) {
+	// Try to parse explicit attackType first
+	if attackTypeString != "" {
+		switch attackTypeString {
+		case "MeleeRow":
+			return AttackTypeMeleeRow, nil
+		case "MeleeColumn":
+			return AttackTypeMeleeColumn, nil
+		case "Ranged":
+			return AttackTypeRanged, nil
+		case "Magic":
+			return AttackTypeMagic, nil
+		default:
+			return 0, fmt.Errorf("invalid attackType: %q, expected MeleeRow, MeleeColumn, Ranged, or Magic", attackTypeString)
+		}
+	}
+
+	// Fallback to attackRange for backward compatibility
+	switch attackRange {
+	case 1:
+		return AttackTypeMeleeRow, nil // Default melee to row attack
+	case 3:
+		return AttackTypeRanged, nil
+	case 4:
+		return AttackTypeMagic, nil
+	default:
+		return 0, fmt.Errorf("cannot determine attack type: attackType is empty and attackRange %d is invalid", attackRange)
 	}
 }
 
@@ -182,8 +226,9 @@ func CreateUnitEntity(squadmanager *common.EntityManager, unit UnitTemplate) (*e
 		Role: unit.Role,
 	})
 
-	// Cell-based targeting
+	// Add targeting component
 	unitEntity.AddComponent(TargetRowComponent, &TargetRowData{
+		AttackType:  unit.AttackType,
 		TargetCells: unit.TargetCells,
 	})
 

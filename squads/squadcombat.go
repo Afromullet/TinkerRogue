@@ -45,7 +45,7 @@ func ExecuteSquadAttack(attackerSquadID, defenderSquadID ecs.EntityID, squadmana
 		}
 
 		// Get targets for this attacker
-		targetIDs := selectTargetUnits(attackerID, defenderSquadID, squadmanager)
+		targetIDs := SelectTargetUnits(attackerID, defenderSquadID, squadmanager)
 
 		// Attack each target
 		attackIndex = processAttackOnTargets(attackerID, targetIDs, result, combatLog, attackIndex, squadmanager)
@@ -135,47 +135,103 @@ func canUnitAttack(attackerID ecs.EntityID, squadDistance int, manager *common.E
 	return rangeData.Range >= squadDistance
 }
 
-// selectTargetUnits determines which defender units should be targeted
-// Uses cell-based targeting to find units at specific grid positions
-func selectTargetUnits(attackerID, defenderSquadID ecs.EntityID, manager *common.EntityManager) []ecs.EntityID {
+// SelectTargetUnits determines targets based on attack type (public for GUI and internal use)
+func SelectTargetUnits(attackerID, defenderSquadID ecs.EntityID, manager *common.EntityManager) []ecs.EntityID {
 	// Check if attacker has targeting component
 	if !manager.HasComponentByIDWithTag(attackerID, SquadMemberTag, TargetRowComponent) {
 		return []ecs.EntityID{}
 	}
 
-	targetRowData := common.GetComponentTypeByID[*TargetRowData](manager, attackerID, TargetRowComponent)
-	return SelectCellBasedTargets(defenderSquadID, targetRowData.TargetCells, manager)
+	targetData := common.GetComponentTypeByID[*TargetRowData](manager, attackerID, TargetRowComponent)
+
+	switch targetData.AttackType {
+	case AttackTypeMeleeRow:
+		return selectMeleeRowTargets(attackerID, defenderSquadID, manager)
+	case AttackTypeMeleeColumn:
+		return selectMeleeColumnTargets(attackerID, defenderSquadID, manager)
+	case AttackTypeRanged:
+		return selectRangedTargets(attackerID, defenderSquadID, manager)
+	case AttackTypeMagic:
+		return selectMagicTargets(defenderSquadID, targetData.TargetCells, manager)
+	default:
+		return []ecs.EntityID{}
+	}
 }
 
-// SelectCellBasedTargets finds units at specific grid cells, with pierce-through targeting
-// If a target cell is empty, the attack pierces through to the next cell behind it
-// Pierce direction: toward back row (higher row numbers), stopping at first cell with units
-func SelectCellBasedTargets(defenderSquadID ecs.EntityID, targetCells [][2]int, manager *common.EntityManager) []ecs.EntityID {
+// selectMeleeRowTargets targets front row (row 0), piercing to next row if empty
+// Always targets all units in the row (up to 3)
+func selectMeleeRowTargets(attackerID, defenderSquadID ecs.EntityID, manager *common.EntityManager) []ecs.EntityID {
+	// Try each row starting from front (0 → 1 → 2)
+	for row := 0; row <= 2; row++ {
+		targets := getUnitsInRow(defenderSquadID, row, manager)
+
+		if len(targets) > 0 {
+			return targets // Return all units in the row
+		}
+	}
+
+	return []ecs.EntityID{}
+}
+
+// selectMeleeColumnTargets targets column directly in front of attacker, piercing forward if empty
+// Targets exactly 1 unit (spear-type attack)
+func selectMeleeColumnTargets(attackerID, defenderSquadID ecs.EntityID, manager *common.EntityManager) []ecs.EntityID {
+	// Get attacker's column
+	attackerPos := common.GetComponentTypeByID[*GridPositionData](manager, attackerID, GridPositionComponent)
+	if attackerPos == nil {
+		return []ecs.EntityID{}
+	}
+
+	attackerCol := attackerPos.AnchorCol
+
+	// Try each row starting from front (0 → 1 → 2), same column
+	for row := 0; row <= 2; row++ {
+		targets := GetUnitIDsAtGridPosition(defenderSquadID, row, attackerCol, manager)
+
+		if len(targets) > 0 {
+			// Return only the first unit found (single target)
+			return []ecs.EntityID{targets[0]}
+		}
+	}
+
+	return []ecs.EntityID{}
+}
+
+// selectRangedTargets targets same row as attacker (all units), with fallback logic
+func selectRangedTargets(attackerID, defenderSquadID ecs.EntityID, manager *common.EntityManager) []ecs.EntityID {
+	// Get attacker's row
+	attackerPos := common.GetComponentTypeByID[*GridPositionData](manager, attackerID, GridPositionComponent)
+	if attackerPos == nil {
+		return []ecs.EntityID{}
+	}
+
+	attackerRow := attackerPos.AnchorRow
+
+	// Try same row as attacker - return ALL units in row
+	targets := getUnitsInRow(defenderSquadID, attackerRow, manager)
+	if len(targets) > 0 {
+		return targets
+	}
+
+	// Fallback: lowest armor, furthest row, leftmost column tiebreaker
+	return selectLowestArmorTarget(defenderSquadID, manager)
+}
+
+// selectMagicTargets uses cell-based patterns WITHOUT pierce-through
+func selectMagicTargets(defenderSquadID ecs.EntityID, targetCells [][2]int, manager *common.EntityManager) []ecs.EntityID {
 	var targets []ecs.EntityID
-	seen := make(map[ecs.EntityID]bool) // Prevent multi-cell units from being hit multiple times
+	seen := make(map[ecs.EntityID]bool)
 
 	for _, cell := range targetCells {
-		targetRow, targetCol := cell[0], cell[1]
+		row, col := cell[0], cell[1]
 
-		// Generate pierce chain: [target] → [target-1] → [target-2] → ...
-		pierceChain := generatePierceChain(targetRow, targetCol)
+		// Get units at exact cell (no pierce)
+		cellTargets := GetUnitIDsAtGridPosition(defenderSquadID, row, col, manager)
 
-		// Find first cell with units (or empty if no pierce hits)
-		for _, pierceCell := range pierceChain {
-			pRow, pCol := pierceCell[0], pierceCell[1]
-
-			// Get units at this cell in the pierce chain
-			cellTargets := GetUnitIDsAtGridPosition(defenderSquadID, pRow, pCol, manager)
-
-			if len(cellTargets) > 0 {
-				// Found units! Add them to target list
-				for _, unitID := range cellTargets {
-					if !seen[unitID] {
-						targets = append(targets, unitID)
-						seen[unitID] = true
-					}
-				}
-				break // Stop piercing at first cell with units
+		for _, unitID := range cellTargets {
+			if !seen[unitID] {
+				targets = append(targets, unitID)
+				seen[unitID] = true
 			}
 		}
 	}
@@ -183,20 +239,77 @@ func SelectCellBasedTargets(defenderSquadID ecs.EntityID, targetCells [][2]int, 
 	return targets
 }
 
-// generatePierceChain creates a vertical pierce sequence from target row toward back row
-// For a 3x3 squad grid:
-// - Row 0 (front) → Row 1 (middle) → Row 2 (back)
-// - Pierce always moves toward higher row numbers (deeper into enemy formation)
-// The column stays fixed, creating a vertical pierce effect
-func generatePierceChain(targetRow, targetCol int) [][2]int {
-	var chain [][2]int
+// Helper: Get all ALIVE units in a specific row
+func getUnitsInRow(squadID ecs.EntityID, row int, manager *common.EntityManager) []ecs.EntityID {
+	var units []ecs.EntityID
+	seen := make(map[ecs.EntityID]bool)
 
-	// Add cells from target row toward back (row 2)
-	for row := targetRow; row <= 2; row++ {
-		chain = append(chain, [2]int{row, targetCol})
+	// Check all columns in the row
+	for col := 0; col <= 2; col++ {
+		cellUnits := GetUnitIDsAtGridPosition(squadID, row, col, manager)
+		for _, unitID := range cellUnits {
+			if !seen[unitID] {
+				// Filter out dead units
+				attr := common.GetAttributesByIDWithTag(manager, unitID, SquadMemberTag)
+				if attr != nil && attr.CurrentHealth > 0 {
+					units = append(units, unitID)
+					seen[unitID] = true
+				}
+			}
+		}
 	}
 
-	return chain
+	return units
+}
+
+// Helper: Select lowest armor target, furthest row on tie, leftmost column on further tie
+func selectLowestArmorTarget(squadID ecs.EntityID, manager *common.EntityManager) []ecs.EntityID {
+	allUnits := GetUnitIDsInSquad(squadID, manager)
+
+	if len(allUnits) == 0 {
+		return []ecs.EntityID{}
+	}
+
+	// Find unit with lowest armor
+	var bestTarget ecs.EntityID
+	lowestArmor := int(^uint(0) >> 1) // Max int
+	furthestRow := -1
+	leftmostCol := 3 // Start with invalid column (max is 2)
+
+	for _, unitID := range allUnits {
+		attr := common.GetAttributesByIDWithTag(manager, unitID, SquadMemberTag)
+		if attr == nil || attr.CurrentHealth <= 0 {
+			continue
+		}
+
+		armor := attr.GetPhysicalResistance()
+		pos := common.GetComponentTypeByID[*GridPositionData](manager, unitID, GridPositionComponent)
+		if pos == nil {
+			continue
+		}
+
+		row := pos.AnchorRow
+		col := pos.AnchorCol
+
+		// Select if:
+		// 1. Lower armor, OR
+		// 2. Same armor AND further row, OR
+		// 3. Same armor AND same row AND more left column
+		if armor < lowestArmor ||
+			(armor == lowestArmor && row > furthestRow) ||
+			(armor == lowestArmor && row == furthestRow && col < leftmostCol) {
+			lowestArmor = armor
+			furthestRow = row
+			leftmostCol = col
+			bestTarget = unitID
+		}
+	}
+
+	if bestTarget == 0 {
+		return []ecs.EntityID{}
+	}
+
+	return []ecs.EntityID{bestTarget}
 }
 
 // processAttackOnTargets applies damage to all targets and creates combat events
@@ -217,7 +330,12 @@ func processAttackOnTargets(attackerID ecs.EntityID, targetIDs []ecs.EntityID, r
 			event.TargetInfo.TargetRow = defenderPos.AnchorRow
 			event.TargetInfo.TargetCol = defenderPos.AnchorCol
 		}
-		event.TargetInfo.TargetMode = "cell"
+
+		// Set target mode from attacker's attack type
+		targetData := common.GetComponentTypeByID[*TargetRowData](manager, attackerID, TargetRowComponent)
+		if targetData != nil {
+			event.TargetInfo.TargetMode = targetData.AttackType.String()
+		}
 
 		// Apply damage
 		applyDamageToUnitByID(defenderID, damage, result, manager)

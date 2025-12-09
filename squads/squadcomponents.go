@@ -178,21 +178,40 @@ type MovementSpeedData struct {
 	Speed int // Tiles per turn (typically 1-5)
 }
 
-// TargetRowData defines which enemy cells a unit attacks using cell-based targeting
-// Component name kept for compatibility (was originally "row-based or cell-based")
+// TargetRowData defines attack targeting based on unit type
+// Component name kept for compatibility
 type TargetRowData struct {
-	// Cell-based targeting: Specific grid cells to target (e.g., [[0,0], [0,1]] for 1x2 pattern)
-	TargetCells [][2]int // Each element is [row, col] where row and col are 0-2
-	// Examples:
-	// 1x1: [[1,1]] (center cell)
-	// 1x2: [[0,0], [0,1]] (front-left two cells)
-	// 2x1: [[0,0], [1,0]] (left column, top two)
-	// 2x2: [[0,0], [0,1], [1,0], [1,1]] (top-left quad)
-	// 3x3: [[0,0], [0,1], [0,2], [1,0], [1,1], [1,2], [2,0], [2,1], [2,2]] (all cells)
+	AttackType  AttackType // MeleeRow, MeleeColumn, Ranged, or Magic
+	TargetCells [][2]int   // For magic: specific cells (no pierce)
+}
+
+// AttackType defines how a unit selects targets
+type AttackType int
+
+const (
+	AttackTypeMeleeRow    AttackType = iota // Targets front row (3 targets max)
+	AttackTypeMeleeColumn                   // Targets column (1 target, spear-type)
+	AttackTypeRanged                        // Targets same row as attacker
+	AttackTypeMagic                         // Cell-based patterns
+)
+
+func (a AttackType) String() string {
+	switch a {
+	case AttackTypeMeleeRow:
+		return "MeleeRow"
+	case AttackTypeMeleeColumn:
+		return "MeleeColumn"
+	case AttackTypeRanged:
+		return "Ranged"
+	case AttackTypeMagic:
+		return "Magic"
+	default:
+		return "Unknown"
+	}
 }
 
 func (t TargetRowData) String() string {
-	return fmt.Sprintf("Cell-Based: %d cells", len(t.TargetCells))
+	return fmt.Sprintf("%s targeting", t.AttackType.String())
 }
 
 // ========================================

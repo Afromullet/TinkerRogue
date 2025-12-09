@@ -184,8 +184,9 @@ func TestExecuteSquadAttack_MultiTargetAttack(t *testing.T) {
 	attackerSquadID := createTestSquad(manager, "Attackers")
 	attacker := createTestUnit(manager, attackerSquadID, 0, 0, 100, 20, 100)
 
-	// Set multi-cell targeting (target 2 specific cells)
+	// Set magic targeting (target 2 specific cells)
 	targetData := common.GetComponentType[*TargetRowData](attacker, TargetRowComponent)
+	targetData.AttackType = AttackTypeMagic // Use magic for cell-based targeting
 	targetData.TargetCells = [][2]int{{0, 0}, {0, 1}} // Target first two front-row cells
 
 	// Create defenders
@@ -210,8 +211,9 @@ func TestExecuteSquadAttack_CellBasedTargeting(t *testing.T) {
 	attackerSquadID := createTestSquad(manager, "Attackers")
 	attacker := createTestUnit(manager, attackerSquadID, 0, 0, 100, 20, 100)
 
-	// Set cell-based targeting (2x2 pattern)
+	// Set magic targeting with 2x2 pattern
 	targetData := common.GetComponentType[*TargetRowData](attacker, TargetRowComponent)
+	targetData.AttackType = AttackTypeMagic // Use magic for cell-based targeting
 	targetData.TargetCells = [][2]int{{0, 0}, {0, 1}, {1, 0}, {1, 1}} // 2x2 top-left
 
 	// Create defenders in targeted cells
@@ -716,247 +718,440 @@ func TestSumDamageMap_EmptyMap(t *testing.T) {
 }
 
 // ========================================
-// generatePierceChain TESTS
+// NEW TARGETING SYSTEM TESTS
 // ========================================
 
-func TestGeneratePierceChain_FromBackRow(t *testing.T) {
-	chain := generatePierceChain(2, 0)
-
-	// Should generate [[2,0]] - already at back, no pierce
-	if len(chain) != 1 {
-		t.Errorf("Expected chain length 1, got %d", len(chain))
-	}
-
-	expected := [][2]int{{2, 0}}
-	for i, cell := range expected {
-		if i >= len(chain) || chain[i] != cell {
-			t.Errorf("Expected cell %d to be %v, got %v", i, cell, chain[i])
-		}
-	}
-}
-
-func TestGeneratePierceChain_FromMiddleRow(t *testing.T) {
-	chain := generatePierceChain(1, 2)
-
-	// Should generate [[1,2], [2,2]] - middle to back
-	if len(chain) != 2 {
-		t.Errorf("Expected chain length 2, got %d", len(chain))
-	}
-
-	expected := [][2]int{{1, 2}, {2, 2}}
-	for i, cell := range expected {
-		if i >= len(chain) || chain[i] != cell {
-			t.Errorf("Expected cell %d to be %v, got %v", i, cell, chain[i])
-		}
-	}
-}
-
-func TestGeneratePierceChain_FromFrontRow(t *testing.T) {
-	chain := generatePierceChain(0, 1)
-
-	// Should generate [[0,1], [1,1], [2,1]] (front to back)
-	if len(chain) != 3 {
-		t.Errorf("Expected chain length 3, got %d", len(chain))
-	}
-
-	expected := [][2]int{{0, 1}, {1, 1}, {2, 1}}
-	for i, cell := range expected {
-		if i >= len(chain) || chain[i] != cell {
-			t.Errorf("Expected cell %d to be %v, got %v", i, cell, chain[i])
-		}
-	}
-}
-
-func TestGeneratePierceChain_KeepsColumnFixed(t *testing.T) {
-	// Test that column stays the same across all pierce cells
-	for col := 0; col < 3; col++ {
-		chain := generatePierceChain(2, col)
-
-		for _, cell := range chain {
-			if cell[1] != col {
-				t.Errorf("Column changed in pierce chain! Expected column %d, got %d", col, cell[1])
-			}
-		}
-	}
-}
-
-// ========================================
-// PIERCE-THROUGH TARGETING TESTS
-// ========================================
-
-func TestSelectCellBasedTargets_PierceToNextCell(t *testing.T) {
+func TestMeleeRowTargeting_FrontRow(t *testing.T) {
 	manager := setupTestManager(t)
 
+	// Create attacker squad with MeleeRow attacker
+	attackerSquadID := createTestSquad(manager, "Attackers")
+	attacker := createTestUnit(manager, attackerSquadID, 0, 0, 100, 20, 100)
+
+	// Set to MeleeRow targeting
+	targetData := common.GetComponentType[*TargetRowData](attacker, TargetRowComponent)
+	targetData.AttackType = AttackTypeMeleeRow
+	targetData.TargetCells = nil
+
+	// Create defender squad with 3 units in front row
 	defenderSquadID := createTestSquad(manager, "Defenders")
-	// Create unit at row 1, col 0
-	unitAtRow1 := createTestUnit(manager, defenderSquadID, 1, 0, 50, 10, 0)
+	defender1 := createTestUnit(manager, defenderSquadID, 0, 0, 50, 10, 0)
+	defender2 := createTestUnit(manager, defenderSquadID, 0, 1, 50, 10, 0)
+	defender3 := createTestUnit(manager, defenderSquadID, 0, 2, 50, 10, 0)
 
-	// Target row 0, col 0 (which is empty) -> should pierce to row 1, col 0
-	targetCells := [][2]int{{0, 0}}
-	targets := SelectCellBasedTargets(defenderSquadID, targetCells, manager)
+	// Get targets
+	targets := SelectTargetUnits(attacker.GetID(), defenderSquadID, manager)
 
+	// Verify all 3 front row units are targeted
+	if len(targets) != 3 {
+		t.Errorf("Expected 3 targets (entire front row), got %d", len(targets))
+	}
+
+	// Verify correct units are targeted
+	expectedIDs := map[ecs.EntityID]bool{
+		defender1.GetID(): true,
+		defender2.GetID(): true,
+		defender3.GetID(): true,
+	}
+
+	for _, targetID := range targets {
+		if !expectedIDs[targetID] {
+			t.Errorf("Unexpected target ID %d", targetID)
+		}
+	}
+}
+
+func TestMeleeRowTargeting_PierceToRow1(t *testing.T) {
+	manager := setupTestManager(t)
+
+	// Create attacker squad
+	attackerSquadID := createTestSquad(manager, "Attackers")
+	attacker := createTestUnit(manager, attackerSquadID, 0, 0, 100, 20, 100)
+
+	// Set to MeleeRow targeting
+	targetData := common.GetComponentType[*TargetRowData](attacker, TargetRowComponent)
+	targetData.AttackType = AttackTypeMeleeRow
+	targetData.TargetCells = nil
+
+	// Create defender squad with units only in row 1 (front row empty)
+	defenderSquadID := createTestSquad(manager, "Defenders")
+	defender1 := createTestUnit(manager, defenderSquadID, 1, 0, 50, 10, 0)
+	defender2 := createTestUnit(manager, defenderSquadID, 1, 1, 50, 10, 0)
+
+	// Get targets
+	targets := SelectTargetUnits(attacker.GetID(), defenderSquadID, manager)
+
+	// Verify units in row 1 are targeted
+	if len(targets) != 2 {
+		t.Errorf("Expected 2 targets (row 1 after pierce), got %d", len(targets))
+	}
+
+	expectedIDs := map[ecs.EntityID]bool{
+		defender1.GetID(): true,
+		defender2.GetID(): true,
+	}
+
+	for _, targetID := range targets {
+		if !expectedIDs[targetID] {
+			t.Errorf("Unexpected target ID %d", targetID)
+		}
+	}
+}
+
+func TestMeleeRowTargeting_PierceWhenFrontRowDead(t *testing.T) {
+	manager := setupTestManager(t)
+
+	// Create attacker squad
+	attackerSquadID := createTestSquad(manager, "Attackers")
+	attacker := createTestUnit(manager, attackerSquadID, 0, 0, 100, 20, 100)
+
+	// Set to MeleeRow targeting
+	targetData := common.GetComponentType[*TargetRowData](attacker, TargetRowComponent)
+	targetData.AttackType = AttackTypeMeleeRow
+	targetData.TargetCells = nil
+
+	// Create defender squad with DEAD units in row 0 and ALIVE units in row 1
+	defenderSquadID := createTestSquad(manager, "Defenders")
+
+	// Row 0 - all dead (should be ignored for targeting)
+	deadUnit1 := createTestUnit(manager, defenderSquadID, 0, 0, 50, 10, 0)
+	deadAttr1 := common.GetAttributes(deadUnit1)
+	deadAttr1.CurrentHealth = 0
+
+	deadUnit2 := createTestUnit(manager, defenderSquadID, 0, 1, 50, 10, 0)
+	deadAttr2 := common.GetAttributes(deadUnit2)
+	deadAttr2.CurrentHealth = 0
+
+	// Row 1 - alive (should be targeted)
+	aliveUnit1 := createTestUnit(manager, defenderSquadID, 1, 0, 50, 10, 0)
+	aliveUnit2 := createTestUnit(manager, defenderSquadID, 1, 1, 50, 10, 0)
+
+	// Get targets
+	targets := SelectTargetUnits(attacker.GetID(), defenderSquadID, manager)
+
+	// Verify pierce-through works: dead units in row 0 are ignored, row 1 units targeted
+	if len(targets) != 2 {
+		t.Errorf("Expected 2 targets (row 1 after piercing through dead row 0), got %d", len(targets))
+	}
+
+	expectedIDs := map[ecs.EntityID]bool{
+		aliveUnit1.GetID(): true,
+		aliveUnit2.GetID(): true,
+	}
+
+	for _, targetID := range targets {
+		if !expectedIDs[targetID] {
+			t.Errorf("Unexpected target ID %d", targetID)
+		}
+		// Verify targeted units are alive
+		if targetID == deadUnit1.GetID() || targetID == deadUnit2.GetID() {
+			t.Errorf("Dead unit %d was targeted!", targetID)
+		}
+	}
+}
+
+func TestMeleeRowTargeting_PierceToRow2(t *testing.T) {
+	manager := setupTestManager(t)
+
+	// Create attacker squad
+	attackerSquadID := createTestSquad(manager, "Attackers")
+	attacker := createTestUnit(manager, attackerSquadID, 0, 0, 100, 20, 100)
+
+	// Set to MeleeRow targeting
+	targetData := common.GetComponentType[*TargetRowData](attacker, TargetRowComponent)
+	targetData.AttackType = AttackTypeMeleeRow
+	targetData.TargetCells = nil
+
+	// Create defender squad with units only in row 2 (rows 0 and 1 empty)
+	defenderSquadID := createTestSquad(manager, "Defenders")
+	defender1 := createTestUnit(manager, defenderSquadID, 2, 0, 50, 10, 0)
+	defender2 := createTestUnit(manager, defenderSquadID, 2, 2, 50, 10, 0)
+
+	// Get targets
+	targets := SelectTargetUnits(attacker.GetID(), defenderSquadID, manager)
+
+	// Verify units in row 2 are targeted
+	if len(targets) != 2 {
+		t.Errorf("Expected 2 targets (row 2 after pierce), got %d", len(targets))
+	}
+
+	expectedIDs := map[ecs.EntityID]bool{
+		defender1.GetID(): true,
+		defender2.GetID(): true,
+	}
+
+	for _, targetID := range targets {
+		if !expectedIDs[targetID] {
+			t.Errorf("Unexpected target ID %d", targetID)
+		}
+	}
+}
+
+func TestMeleeColumnTargeting_DirectFront(t *testing.T) {
+	manager := setupTestManager(t)
+
+	// Create attacker squad with MeleeColumn attacker in column 1
+	attackerSquadID := createTestSquad(manager, "Attackers")
+	attacker := createTestUnit(manager, attackerSquadID, 0, 1, 100, 20, 100)
+
+	// Set to MeleeColumn targeting
+	targetData := common.GetComponentType[*TargetRowData](attacker, TargetRowComponent)
+	targetData.AttackType = AttackTypeMeleeColumn
+	targetData.TargetCells = nil
+
+	// Create defender squad with units in different columns
+	defenderSquadID := createTestSquad(manager, "Defenders")
+	createTestUnit(manager, defenderSquadID, 0, 0, 50, 10, 0)  // Column 0 - NOT targeted
+	defender2 := createTestUnit(manager, defenderSquadID, 0, 1, 50, 10, 0) // Column 1 - TARGETED
+	createTestUnit(manager, defenderSquadID, 0, 2, 50, 10, 0)  // Column 2 - NOT targeted
+
+	// Get targets
+	targets := SelectTargetUnits(attacker.GetID(), defenderSquadID, manager)
+
+	// Verify only 1 target in the same column
 	if len(targets) != 1 {
-		t.Errorf("Expected 1 target (pierced through empty cell), got %d", len(targets))
+		t.Errorf("Expected 1 target (same column), got %d", len(targets))
 	}
 
-	if len(targets) > 0 && targets[0] != unitAtRow1.GetID() {
-		t.Error("Expected pierced target to be the unit at row 1, col 0")
+	if targets[0] != defender2.GetID() {
+		t.Errorf("Expected defender in column 1, got %d", targets[0])
 	}
 }
 
-func TestSelectCellBasedTargets_PierceAllTheWay(t *testing.T) {
+func TestMeleeColumnTargeting_PierceForward(t *testing.T) {
 	manager := setupTestManager(t)
 
+	// Create attacker squad in column 0
+	attackerSquadID := createTestSquad(manager, "Attackers")
+	attacker := createTestUnit(manager, attackerSquadID, 0, 0, 100, 20, 100)
+
+	// Set to MeleeColumn targeting
+	targetData := common.GetComponentType[*TargetRowData](attacker, TargetRowComponent)
+	targetData.AttackType = AttackTypeMeleeColumn
+	targetData.TargetCells = nil
+
+	// Create defender squad with unit in row 1, column 0 (row 0 col 0 is empty)
 	defenderSquadID := createTestSquad(manager, "Defenders")
-	// Only create unit at row 2 (back)
-	unitAtBack := createTestUnit(manager, defenderSquadID, 2, 1, 50, 10, 0)
+	createTestUnit(manager, defenderSquadID, 0, 1, 50, 10, 0) // Different column - NOT targeted
+	defender2 := createTestUnit(manager, defenderSquadID, 1, 0, 50, 10, 0) // Same column, row 1 - TARGETED
+	createTestUnit(manager, defenderSquadID, 2, 0, 50, 10, 0) // Same column, row 2 - NOT targeted (row 1 found first)
 
-	// Target row 0, col 1 (empty) -> should pierce through rows 1 to 2
-	targetCells := [][2]int{{0, 1}}
-	targets := SelectCellBasedTargets(defenderSquadID, targetCells, manager)
+	// Get targets
+	targets := SelectTargetUnits(attacker.GetID(), defenderSquadID, manager)
 
+	// Verify only 1 target (pierced to row 1)
 	if len(targets) != 1 {
-		t.Errorf("Expected 1 target (pierced through multiple empty cells), got %d", len(targets))
+		t.Errorf("Expected 1 target (pierced to row 1), got %d", len(targets))
 	}
 
-	if len(targets) > 0 && targets[0] != unitAtBack.GetID() {
-		t.Error("Expected pierced target to be the unit at row 2")
+	if targets[0] != defender2.GetID() {
+		t.Errorf("Expected defender in row 1, col 0, got %d", targets[0])
 	}
 }
 
-func TestSelectCellBasedTargets_EmptyPierceChainNoTarget(t *testing.T) {
+func TestRangedTargeting_SameRow(t *testing.T) {
 	manager := setupTestManager(t)
 
+	// Create attacker squad with ranged attacker in row 1
+	attackerSquadID := createTestSquad(manager, "Attackers")
+	attacker := createTestUnit(manager, attackerSquadID, 1, 0, 100, 20, 100)
+
+	// Set to Ranged targeting
+	targetData := common.GetComponentType[*TargetRowData](attacker, TargetRowComponent)
+	targetData.AttackType = AttackTypeRanged
+	targetData.TargetCells = nil
+
+	// Create defender squad with units in different rows
 	defenderSquadID := createTestSquad(manager, "Defenders")
-	// Create unit at row 2, col 0 (different column)
-	createTestUnit(manager, defenderSquadID, 2, 0, 50, 10, 0)
+	createTestUnit(manager, defenderSquadID, 0, 0, 50, 10, 0)  // Row 0 - NOT targeted
+	defender2 := createTestUnit(manager, defenderSquadID, 1, 0, 50, 10, 0) // Row 1 - TARGETED
+	defender3 := createTestUnit(manager, defenderSquadID, 1, 1, 50, 10, 0) // Row 1 - TARGETED
+	defender4 := createTestUnit(manager, defenderSquadID, 1, 2, 50, 10, 0) // Row 1 - TARGETED
+	createTestUnit(manager, defenderSquadID, 2, 0, 50, 10, 0)  // Row 2 - NOT targeted
 
-	// Target row 0, col 1 -> pierce chain [0,1], [1,1], [2,1] all empty
-	targetCells := [][2]int{{0, 1}}
-	targets := SelectCellBasedTargets(defenderSquadID, targetCells, manager)
+	// Get targets
+	targets := SelectTargetUnits(attacker.GetID(), defenderSquadID, manager)
 
+	// Verify all 3 targets in row 1
+	if len(targets) != 3 {
+		t.Errorf("Expected 3 targets (same row), got %d", len(targets))
+	}
+
+	expectedIDs := map[ecs.EntityID]bool{
+		defender2.GetID(): true,
+		defender3.GetID(): true,
+		defender4.GetID(): true,
+	}
+
+	for _, targetID := range targets {
+		if !expectedIDs[targetID] {
+			t.Errorf("Unexpected target ID %d", targetID)
+		}
+	}
+}
+
+func TestRangedTargeting_FallbackLowestArmor(t *testing.T) {
+	manager := setupTestManager(t)
+
+	// Create attacker squad in row 1
+	attackerSquadID := createTestSquad(manager, "Attackers")
+	attacker := createTestUnit(manager, attackerSquadID, 1, 0, 100, 20, 100)
+
+	// Set to Ranged targeting
+	targetData := common.GetComponentType[*TargetRowData](attacker, TargetRowComponent)
+	targetData.AttackType = AttackTypeRanged
+	targetData.TargetCells = nil
+
+	// Create defender squad with NO units in row 1 (fallback triggers)
+	defenderSquadID := createTestSquad(manager, "Defenders")
+
+	// Row 0, col 0: High armor
+	defender1 := createTestUnit(manager, defenderSquadID, 0, 0, 50, 10, 0)
+	attr1 := common.NewAttributes(10, 0, 0, 0, 10, 2) // Higher armor
+	attr1.CurrentHealth = 50
+	defender1.RemoveComponent(common.AttributeComponent)
+	defender1.AddComponent(common.AttributeComponent, &attr1)
+
+	// Row 0, col 1: Lowest armor
+	defender2 := createTestUnit(manager, defenderSquadID, 0, 1, 50, 10, 0)
+	attr2 := common.NewAttributes(10, 0, 0, 0, 2, 2) // Lower armor
+	attr2.CurrentHealth = 50
+	defender2.RemoveComponent(common.AttributeComponent)
+	defender2.AddComponent(common.AttributeComponent, &attr2)
+
+	// Row 0, col 2: Medium armor
+	defender3 := createTestUnit(manager, defenderSquadID, 0, 2, 50, 10, 0)
+	attr3 := common.NewAttributes(10, 0, 0, 0, 5, 2) // Medium armor
+	attr3.CurrentHealth = 50
+	defender3.RemoveComponent(common.AttributeComponent)
+	defender3.AddComponent(common.AttributeComponent, &attr3)
+
+	// Get targets
+	targets := SelectTargetUnits(attacker.GetID(), defenderSquadID, manager)
+
+	// Verify only 1 target (lowest armor)
+	if len(targets) != 1 {
+		t.Errorf("Expected 1 target (lowest armor fallback), got %d", len(targets))
+	}
+
+	if targets[0] != defender2.GetID() {
+		t.Errorf("Expected defender2 (lowest armor), got %d", targets[0])
+	}
+}
+
+func TestRangedTargeting_FallbackTiebreaker(t *testing.T) {
+	manager := setupTestManager(t)
+
+	// Create attacker squad in row 1
+	attackerSquadID := createTestSquad(manager, "Attackers")
+	attacker := createTestUnit(manager, attackerSquadID, 1, 0, 100, 20, 100)
+
+	// Set to Ranged targeting
+	targetData := common.GetComponentType[*TargetRowData](attacker, TargetRowComponent)
+	targetData.AttackType = AttackTypeRanged
+	targetData.TargetCells = nil
+
+	// Create defender squad with NO units in row 1
+	defenderSquadID := createTestSquad(manager, "Defenders")
+
+	// Row 0, col 2: Same armor, front row, rightmost
+	defender1 := createTestUnit(manager, defenderSquadID, 0, 2, 50, 10, 0)
+	attr1 := common.NewAttributes(10, 0, 0, 0, 5, 2)
+	attr1.CurrentHealth = 50
+	defender1.RemoveComponent(common.AttributeComponent)
+	defender1.AddComponent(common.AttributeComponent, &attr1)
+
+	// Row 2, col 0: Same armor, furthest row, leftmost - SHOULD WIN
+	defender2 := createTestUnit(manager, defenderSquadID, 2, 0, 50, 10, 0)
+	attr2 := common.NewAttributes(10, 0, 0, 0, 5, 2)
+	attr2.CurrentHealth = 50
+	defender2.RemoveComponent(common.AttributeComponent)
+	defender2.AddComponent(common.AttributeComponent, &attr2)
+
+	// Row 2, col 1: Same armor, furthest row, middle
+	defender3 := createTestUnit(manager, defenderSquadID, 2, 1, 50, 10, 0)
+	attr3 := common.NewAttributes(10, 0, 0, 0, 5, 2)
+	attr3.CurrentHealth = 50
+	defender3.RemoveComponent(common.AttributeComponent)
+	defender3.AddComponent(common.AttributeComponent, &attr3)
+
+	// Get targets
+	targets := SelectTargetUnits(attacker.GetID(), defenderSquadID, manager)
+
+	// Verify defender2 wins (furthest row + leftmost column)
+	if len(targets) != 1 {
+		t.Errorf("Expected 1 target, got %d", len(targets))
+	}
+
+	if targets[0] != defender2.GetID() {
+		t.Errorf("Expected defender2 (furthest row + leftmost), got %d", targets[0])
+	}
+}
+
+func TestMagicTargeting_ExactCells(t *testing.T) {
+	manager := setupTestManager(t)
+
+	// Create attacker squad
+	attackerSquadID := createTestSquad(manager, "Attackers")
+	attacker := createTestUnit(manager, attackerSquadID, 0, 0, 100, 20, 100)
+
+	// Set to Magic targeting with specific pattern (column 1 only)
+	targetData := common.GetComponentType[*TargetRowData](attacker, TargetRowComponent)
+	targetData.AttackType = AttackTypeMagic
+	targetData.TargetCells = [][2]int{{0, 1}, {1, 1}, {2, 1}} // Middle column
+
+	// Create defender squad
+	defenderSquadID := createTestSquad(manager, "Defenders")
+	createTestUnit(manager, defenderSquadID, 0, 0, 50, 10, 0)  // Col 0 - NOT targeted
+	defender2 := createTestUnit(manager, defenderSquadID, 0, 1, 50, 10, 0) // Col 1 - TARGETED
+	createTestUnit(manager, defenderSquadID, 0, 2, 50, 10, 0)  // Col 2 - NOT targeted
+	defender4 := createTestUnit(manager, defenderSquadID, 1, 1, 50, 10, 0) // Col 1 - TARGETED
+	defender5 := createTestUnit(manager, defenderSquadID, 2, 1, 50, 10, 0) // Col 1 - TARGETED
+
+	// Get targets
+	targets := SelectTargetUnits(attacker.GetID(), defenderSquadID, manager)
+
+	// Verify only units in specified cells are targeted
+	if len(targets) != 3 {
+		t.Errorf("Expected 3 targets (column 1), got %d", len(targets))
+	}
+
+	expectedIDs := map[ecs.EntityID]bool{
+		defender2.GetID(): true,
+		defender4.GetID(): true,
+		defender5.GetID(): true,
+	}
+
+	for _, targetID := range targets {
+		if !expectedIDs[targetID] {
+			t.Errorf("Unexpected target ID %d", targetID)
+		}
+	}
+}
+
+func TestMagicTargeting_NoPierce(t *testing.T) {
+	manager := setupTestManager(t)
+
+	// Create attacker squad
+	attackerSquadID := createTestSquad(manager, "Attackers")
+	attacker := createTestUnit(manager, attackerSquadID, 0, 0, 100, 20, 100)
+
+	// Set to Magic targeting (front row only)
+	targetData := common.GetComponentType[*TargetRowData](attacker, TargetRowComponent)
+	targetData.AttackType = AttackTypeMagic
+	targetData.TargetCells = [][2]int{{0, 0}, {0, 1}, {0, 2}} // Front row only
+
+	// Create defender squad with NO units in row 0, units in row 1
+	defenderSquadID := createTestSquad(manager, "Defenders")
+	createTestUnit(manager, defenderSquadID, 1, 0, 50, 10, 0) // Row 1 - NOT targeted (no pierce)
+	createTestUnit(manager, defenderSquadID, 1, 1, 50, 10, 0) // Row 1 - NOT targeted (no pierce)
+
+	// Get targets
+	targets := SelectTargetUnits(attacker.GetID(), defenderSquadID, manager)
+
+	// Verify no targets (magic doesn't pierce)
 	if len(targets) != 0 {
-		t.Errorf("Expected 0 targets (empty pierce chain), got %d", len(targets))
-	}
-}
-
-func TestSelectCellBasedTargets_MultiCellUnitHitOnce_WithPierce(t *testing.T) {
-	manager := setupTestManager(t)
-
-	defenderSquadID := createTestSquad(manager, "Defenders")
-	// Create a 2x2 unit at rows 1-2, cols 0-1
-	multiCellUnit := manager.World.NewEntity()
-	multiCellUnit.AddComponent(SquadMemberComponent, &SquadMemberData{SquadID: defenderSquadID})
-	multiCellUnit.AddComponent(GridPositionComponent, &GridPositionData{
-		AnchorRow: 1,
-		AnchorCol: 0,
-		Width:     2,
-		Height:    2,
-	})
-
-	// Target row 0, cols 0 and 1 (both empty, but multi-cell unit occupies rows behind)
-	targetCells := [][2]int{{0, 0}, {0, 1}}
-	targets := SelectCellBasedTargets(defenderSquadID, targetCells, manager)
-
-	// Should hit the multi-cell unit once (from both targets after piercing)
-	if len(targets) != 1 {
-		t.Errorf("Expected 1 target (multi-cell unit hit once), got %d", len(targets))
-	}
-
-	if len(targets) > 0 && targets[0] != multiCellUnit.GetID() {
-		t.Error("Expected target to be the multi-cell unit")
-	}
-}
-
-// ========================================
-// PIERCE-THROUGH INTEGRATION TESTS
-// ========================================
-
-func TestExecuteSquadAttack_PierceToHitBacklineUnit(t *testing.T) {
-	manager := setupTestManager(t)
-
-	// Create attacker
-	attackerSquadID := createTestSquad(manager, "Attackers")
-	attacker := createTestUnit(manager, attackerSquadID, 0, 0, 100, 20, 100)
-
-	// Create defenders: unit in back row
-	defenderSquadID := createTestSquad(manager, "Defenders")
-	backlineUnit := createTestUnit(manager, defenderSquadID, 2, 0, 50, 10, 0)
-	backlineAttr := common.GetAttributes(backlineUnit)
-	initialHP := backlineAttr.CurrentHealth
-
-	// Set attacker to target row 2, col 0 (where backlineUnit is)
-	targetData := common.GetComponentType[*TargetRowData](attacker, TargetRowComponent)
-	targetData.TargetCells = [][2]int{{2, 0}}
-
-	// Execute attack
-	result := ExecuteSquadAttack(attackerSquadID, defenderSquadID, manager)
-
-	// Verify backline unit was hit (no pierce needed, direct hit)
-	if len(result.DamageByUnit) != 1 {
-		t.Errorf("Expected 1 unit damaged, got %d", len(result.DamageByUnit))
-	}
-
-	if backlineAttr.CurrentHealth >= initialHP {
-		t.Error("Expected backline unit to take damage")
-	}
-}
-
-func TestExecuteSquadAttack_PierceEmptyCellToHitMidline(t *testing.T) {
-	manager := setupTestManager(t)
-
-	// Create attacker
-	attackerSquadID := createTestSquad(manager, "Attackers")
-	attacker := createTestUnit(manager, attackerSquadID, 0, 0, 100, 20, 100)
-
-	// Create defenders: empty row 0, unit at row 1
-	defenderSquadID := createTestSquad(manager, "Defenders")
-	midlineUnit := createTestUnit(manager, defenderSquadID, 1, 0, 50, 10, 0)
-	midlineAttr := common.GetAttributes(midlineUnit)
-	initialHP := midlineAttr.CurrentHealth
-
-	// Set attacker to target row 0, col 0 (empty) -> should pierce to row 1, col 0
-	targetData := common.GetComponentType[*TargetRowData](attacker, TargetRowComponent)
-	targetData.TargetCells = [][2]int{{0, 0}}
-
-	// Execute attack
-	result := ExecuteSquadAttack(attackerSquadID, defenderSquadID, manager)
-
-	// Verify midline unit was hit after pierce
-	if len(result.DamageByUnit) != 1 {
-		t.Errorf("Expected 1 unit damaged (after pierce), got %d", len(result.DamageByUnit))
-	}
-
-	if midlineAttr.CurrentHealth >= initialHP {
-		t.Error("Expected midline unit to take damage after pierce")
-	}
-}
-
-func TestExecuteSquadAttack_PierceEmptyChainNoDamage(t *testing.T) {
-	manager := setupTestManager(t)
-
-	// Create attacker
-	attackerSquadID := createTestSquad(manager, "Attackers")
-	attacker := createTestUnit(manager, attackerSquadID, 0, 0, 100, 20, 100)
-
-	// Create defenders: all empty in column 1
-	defenderSquadID := createTestSquad(manager, "Defenders")
-	createTestUnit(manager, defenderSquadID, 2, 0, 50, 10, 0) // Different column
-
-	// Set attacker to target row 0, col 1 (all cells in column 1 are empty)
-	targetData := common.GetComponentType[*TargetRowData](attacker, TargetRowComponent)
-	targetData.TargetCells = [][2]int{{0, 1}}
-
-	// Execute attack
-	result := ExecuteSquadAttack(attackerSquadID, defenderSquadID, manager)
-
-	// Verify no units were hit
-	if len(result.DamageByUnit) != 0 {
-		t.Errorf("Expected 0 units damaged (empty pierce chain), got %d", len(result.DamageByUnit))
-	}
-
-	if result.TotalDamage != 0 {
-		t.Errorf("Expected 0 total damage, got %d", result.TotalDamage)
+		t.Errorf("Expected 0 targets (magic doesn't pierce), got %d", len(targets))
 	}
 }
 

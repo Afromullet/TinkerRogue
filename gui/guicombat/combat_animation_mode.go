@@ -157,9 +157,9 @@ func (cam *CombatAnimationMode) computeDefenderColorLists(
 			continue
 		}
 
-		// Find defenders at those cells
-		targets := squads.SelectCellBasedTargets(
-			defenderSquadID, targetRowData.TargetCells, cam.Queries.ECSManager,
+		// Find defenders using new targeting system
+		targets := squads.SelectTargetUnits(
+			attackerID, defenderSquadID, cam.Queries.ECSManager,
 		)
 
 		for _, defenderID := range targets {

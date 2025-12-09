@@ -124,16 +124,20 @@ func NewJSONRangedWeapon(r JSONWeapon) JSONRangedWeapon {
 }
 
 type JSONMonster struct {
-	Name          string            `json:"name"`
-	ImageName     string            `json:"imgname"`
-	Attributes    JSONAttributes    `json:"attributes"`
-	Armor         *JSONArmor        `json:"armor"`       // Use pointer to allow null values
-	MeleeWeapon   *JSONMeleeWeapon  `json:"meleeWeapon"` // Use pointer to allow null values
-	RangedWeapon  *JSONRangedWeapon `json:"rangedWeapon"`
-	Width         int               `json:"width"`
-	Height        int               `json:"height"`
-	Role          string            `json:"role"`
-	TargetCells   [][2]int          `json:"targetCells"`   // Cell-based targeting pattern
+	Name         string         `json:"name"`
+	ImageName    string         `json:"imgname"`
+	Attributes   JSONAttributes `json:"attributes"`
+	Armor        *JSONArmor     `json:"armor"`       // Use pointer to allow null values
+	MeleeWeapon  *JSONMeleeWeapon  `json:"meleeWeapon"` // Use pointer to allow null values
+	RangedWeapon *JSONRangedWeapon `json:"rangedWeapon"`
+	Width        int            `json:"width"`
+	Height       int            `json:"height"`
+	Role         string         `json:"role"`
+
+	// Targeting fields
+	AttackType  string   `json:"attackType"`  // "MeleeRow", "MeleeColumn", "Ranged", or "Magic"
+	TargetCells [][2]int `json:"targetCells"` // For magic: pattern cells
+
 	CoverValue     float64 `json:"coverValue"`     // Damage reduction provided (0.0-1.0)
 	CoverRange     int     `json:"coverRange"`     // Rows behind that receive cover (1-3)
 	RequiresActive bool    `json:"requiresActive"` // If true, dead/stunned units don't provide cover
@@ -143,17 +147,18 @@ type JSONMonster struct {
 
 func NewJSONMonster(m JSONMonster) JSONMonster {
 	return JSONMonster{
+		Name:         m.Name,
+		ImageName:    m.ImageName,
+		Attributes:   m.Attributes,
+		Armor:        m.Armor,
+		MeleeWeapon:  m.MeleeWeapon,
+		RangedWeapon: m.RangedWeapon,
+		Width:        m.Width,
+		Height:       m.Height,
+		Role:         m.Role,
 
-		Name:          m.Name,
-		ImageName:     m.ImageName,
-		Attributes:    m.Attributes,
-		Armor:         m.Armor,
-		MeleeWeapon:   m.MeleeWeapon,
-		RangedWeapon:  m.RangedWeapon,
-		Width:         m.Width,
-		Height:        m.Height,
-		Role:          m.Role,
-		TargetCells:   m.TargetCells,
+		AttackType:     m.AttackType,
+		TargetCells:    m.TargetCells,
 		CoverValue:     m.CoverValue,
 		CoverRange:     m.CoverRange,
 		RequiresActive: m.RequiresActive,

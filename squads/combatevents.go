@@ -32,7 +32,7 @@ type AttackEvent struct {
 
 // TargetInfo describes how/where the target was selected
 type TargetInfo struct {
-	TargetMode string // "cell" (cell-based targeting)
+	TargetMode string // "MeleeRow", "MeleeColumn", "Ranged", or "Magic"
 	TargetRow  int    // Which row (0-2)
 	TargetCol  int    // Which col (0-2)
 }
