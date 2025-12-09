@@ -1,3 +1,0 @@
-Benchmarking combat to see why the game slows down so much. 12/8/2025
-
-benchmark after using views
