@@ -80,18 +80,24 @@ func (r *SquadCombatRenderer) RenderUnit(
 
 	// Calculate pixel position from grid position
 	// Grid is 3 columns (0-2), 3 rows (0-2)
-	col := gridPos.AnchorCol
-	row := gridPos.AnchorRow
+	// Apply 90° rotation so squads face each other
+	var displayCol, displayRow int
 
-	// If facing left (defender), mirror the column position
-	// Column 0 becomes column 2, column 1 stays column 1, column 2 becomes column 0
 	if facingLeft {
-		col = 2 - col
+		// Defender: 90° clockwise rotation
+		// Row 0 units appear on left side (facing attacker)
+		displayCol = gridPos.AnchorRow
+		displayRow = 2 - gridPos.AnchorCol
+	} else {
+		// Attacker: 90° counter-clockwise rotation
+		// Row 0 units appear on right side (facing defender)
+		displayCol = 2 - gridPos.AnchorRow
+		displayRow = gridPos.AnchorCol
 	}
 
 	// Calculate pixel position
-	pixelX := baseX + (col * cellSize)
-	pixelY := baseY + (row * cellSize)
+	pixelX := baseX + (displayCol * cellSize)
+	pixelY := baseY + (displayRow * cellSize)
 
 	// Get sprite dimensions
 	spriteWidth := renderable.Image.Bounds().Dx()
@@ -202,15 +208,23 @@ func (r *SquadCombatRenderer) RenderUnitWithColor(
 	}
 
 	// Calculate pixel position from grid position
-	col := gridPos.AnchorCol
-	row := gridPos.AnchorRow
+	// Apply 90° rotation so squads face each other
+	var displayCol, displayRow int
 
 	if facingLeft {
-		col = 2 - col
+		// Defender: 90° clockwise rotation
+		// Row 0 units appear on left side (facing attacker)
+		displayCol = gridPos.AnchorRow
+		displayRow = 2 - gridPos.AnchorCol
+	} else {
+		// Attacker: 90° counter-clockwise rotation
+		// Row 0 units appear on right side (facing defender)
+		displayCol = 2 - gridPos.AnchorRow
+		displayRow = gridPos.AnchorCol
 	}
 
-	pixelX := baseX + (col * cellSize)
-	pixelY := baseY + (row * cellSize)
+	pixelX := baseX + (displayCol * cellSize)
+	pixelY := baseY + (displayRow * cellSize)
 
 	// Get sprite dimensions
 	spriteWidth := renderable.Image.Bounds().Dx()
