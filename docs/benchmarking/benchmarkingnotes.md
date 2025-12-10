@@ -53,7 +53,7 @@ ______________________
 ### In the terminal window, type the following
 
 
-curl -o cpu_profile.pb.gz http://localhost:6060/debug/pprof/profile?seconds=60
+curl -o cpu_profile.pb.gz http://localhost:6060/debug/pprof/profile?seconds=120
 
 ### Then run the following command to view the profile
 

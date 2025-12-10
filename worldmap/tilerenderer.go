@@ -14,7 +14,6 @@ type TileRenderer struct {
 	tiles      []*Tile
 	fov        *fov.View
 	colorScale ebiten.ColorScale
-	drawOpts   ebiten.DrawImageOptions // Reusable draw options to avoid per-tile allocation
 }
 
 // NewTileRenderer creates a renderer for the given tileset
@@ -63,23 +62,6 @@ func (r *TileRenderer) Render(opts RenderOptions) RenderedBounds {
 // renderTile handles single tile rendering with all effects
 func (r *TileRenderer) renderTile(x, y int, opts RenderOptions, bounds *RenderedBounds) {
 	logicalPos := coords.LogicalPosition{X: x, Y: y}
-
-	// Early culling: Skip tiles outside viewport before expensive operations
-	if opts.CenterOn != nil {
-		dx := x - opts.CenterOn.X
-		if dx < 0 {
-			dx = -dx
-		}
-		dy := y - opts.CenterOn.Y
-		if dy < 0 {
-			dy = -dy
-		}
-		// Skip tiles beyond viewport range (add 1 tile buffer for partial visibility)
-		if dx > opts.ViewportSize/2+1 || dy > opts.ViewportSize/2+1 {
-			return
-		}
-	}
-
 	idx := coords.CoordManager.LogicalToIndex(logicalPos)
 	tile := r.tiles[idx]
 
@@ -91,26 +73,25 @@ func (r *TileRenderer) renderTile(x, y int, opts RenderOptions, bounds *Rendered
 		return // Don't draw unrevealed tiles
 	}
 
-	// Reset reusable draw options (avoids per-tile allocation)
-	r.drawOpts.GeoM.Reset()
-	r.drawOpts.ColorScale.Reset()
+	// Build draw options
+	drawOpts := &ebiten.DrawImageOptions{}
 
 	// Apply darkening for out-of-FOV revealed tiles
 	if !isVisible && tile.IsRevealed {
-		r.drawOpts.ColorScale.ScaleWithColor(color.RGBA{1, 1, 1, 1})
+		drawOpts.ColorScale.ScaleWithColor(color.RGBA{1, 1, 1, 1})
 	}
 
 	// Apply geometric transformation
 	if opts.CenterOn != nil {
-		r.applyViewportTransformWithBounds(&r.drawOpts, tile, opts.CenterOn, bounds)
+		r.applyViewportTransformWithBounds(drawOpts, tile, opts.CenterOn, bounds)
 	} else {
-		r.applyFullMapTransform(&r.drawOpts, tile)
+		r.applyFullMapTransform(drawOpts, tile)
 	}
 
 	// Apply color matrix if present
-	r.applyColorMatrix(&r.drawOpts, tile)
+	r.applyColorMatrix(drawOpts, tile)
 
-	opts.Screen.DrawImage(tile.image, &r.drawOpts)
+	opts.Screen.DrawImage(tile.image, drawOpts)
 }
 
 // applyViewportTransformWithBounds handles centered viewport rendering and edge tracking
