@@ -49,6 +49,10 @@ type CombatMode struct {
 	// Rendering systems
 	movementRenderer  *guimodes.MovementTileRenderer
 	highlightRenderer *guimodes.SquadHighlightRenderer
+
+	// State tracking for UI updates (GUI_PERFORMANCE_ANALYSIS.md)
+	lastFactionID    ecs.EntityID
+	lastSelectedSquad ecs.EntityID
 }
 
 func NewCombatMode(modeManager *core.UIModeManager) *CombatMode {
@@ -316,17 +320,23 @@ func (cm *CombatMode) Exit(toMode core.UIMode) error {
 }
 
 func (cm *CombatMode) Update(deltaTime float64) error {
-	// Update UI displays each frame using components
-	cm.turnOrderComponent.Refresh()
-
+	// Only update UI displays when state changes (GUI_PERFORMANCE_ANALYSIS.md)
+	// This avoids expensive text measurement on every frame (~10-15s CPU savings)
 	currentFactionID := cm.combatService.GetCurrentFaction()
-	if currentFactionID != 0 {
-		cm.factionInfoComponent.ShowFaction(currentFactionID)
+	if cm.lastFactionID != currentFactionID {
+		cm.turnOrderComponent.Refresh()
+		cm.lastFactionID = currentFactionID
+		if cm.lastFactionID != 0 {
+			cm.factionInfoComponent.ShowFaction(cm.lastFactionID)
+		}
 	}
 
-	selectedSquad := cm.Context.ModeCoordinator.GetBattleMapState().SelectedSquadID
-	if selectedSquad != 0 {
-		cm.squadDetailComponent.ShowSquad(selectedSquad)
+	battleState := cm.Context.ModeCoordinator.GetBattleMapState()
+	if cm.lastSelectedSquad != battleState.SelectedSquadID {
+		cm.lastSelectedSquad = battleState.SelectedSquadID
+		if cm.lastSelectedSquad != 0 {
+			cm.squadDetailComponent.ShowSquad(cm.lastSelectedSquad)
+		}
 	}
 
 	return nil
