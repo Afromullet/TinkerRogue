@@ -8,3 +8,5 @@ Same thing with row attacks
 There is both a config package and config.go in game_main package. Fix that
 
 Look at the other todos
+
+Review all of the solutions that use caching. See whether we can just create something once rather than caching it. 

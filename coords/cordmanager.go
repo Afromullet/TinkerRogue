@@ -75,6 +75,9 @@ type CoordinateManager struct {
 	scaleFactor   int
 	screenWidth   int
 	screenHeight  int
+
+	// Reusable viewport to avoid allocation storm (GUI_PERFORMANCE_ANALYSIS.md)
+	viewport *Viewport
 }
 
 // Viewport handles camera/centering logic that was scattered across files.
@@ -86,7 +89,7 @@ type Viewport struct {
 
 // NewCoordinateManager creates a new coordinate manager with the given screen configuration.
 func NewCoordinateManager(screenData ScreenData) *CoordinateManager {
-	return &CoordinateManager{
+	cm := &CoordinateManager{
 		dungeonWidth:  screenData.DungeonWidth,
 		dungeonHeight: screenData.DungeonHeight,
 		tileSize:      screenData.TileSize,
@@ -94,6 +97,11 @@ func NewCoordinateManager(screenData ScreenData) *CoordinateManager {
 		screenWidth:   screenData.ScreenWidth,
 		screenHeight:  screenData.ScreenHeight,
 	}
+
+	// Initialize viewport once with origin (will be updated via SetCenter)
+	cm.viewport = NewViewport(cm, LogicalPosition{X: 0, Y: 0})
+
+	return cm
 }
 
 // === CORE COORDINATE CONVERSIONS ===
@@ -274,9 +282,10 @@ func (cm *CoordinateManager) LogicalToScreen(pos LogicalPosition, centerPos *Log
 			float64(pixelPos.Y) * float64(scaleFactor)
 	}
 
-	// Apply viewport centering (reuse existing Viewport logic)
-	viewport := NewViewport(cm, *centerPos)
-	return viewport.LogicalToScreen(pos)
+	// Update viewport center and use existing viewport instance
+	// Avoids allocating 30,000+ Viewport structs per second (12s CPU savings)
+	cm.viewport.SetCenter(*centerPos)
+	return cm.viewport.LogicalToScreen(pos)
 }
 
 // ScreenToLogical converts screen coordinates to logical position.
@@ -301,9 +310,9 @@ func (cm *CoordinateManager) ScreenToLogical(screenX, screenY int, centerPos *Lo
 		return cm.PixelToLogical(PixelPosition{X: pixelX, Y: pixelY})
 	}
 
-	// Apply viewport transformation (reuse existing Viewport logic)
-	viewport := NewViewport(cm, *centerPos)
-	return viewport.ScreenToLogical(screenX, screenY)
+	// Update viewport center and use existing viewport instance
+	cm.viewport.SetCenter(*centerPos)
+	return cm.viewport.ScreenToLogical(screenX, screenY)
 }
 
 // IndexToScreen converts array index to screen coordinates.
