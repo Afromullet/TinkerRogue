@@ -9,7 +9,8 @@
       "Bash(cat:*)",
       "Bash(grep:*)",
       "Bash(go vet:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(go tool pprof:*)"
     ],
     "deny": [],
     "ask": []
