@@ -20,11 +20,13 @@ type GUIQueries struct {
 	squadView       *ecs.View // All SquadTag entities
 	squadMemberView *ecs.View // All SquadMemberTag entities
 	actionStateView *ecs.View // All ActionStateTag entities
+	factionView     *ecs.View // All FactionTag entities (GUI_PERFORMANCE_ANALYSIS.md)
+	monstersView    *ecs.View // All MonsterComponent entities (GUI_PERFORMANCE_ANALYSIS.md)
 }
 
 // NewGUIQueries creates a new query service
 func NewGUIQueries(ecsManager *common.EntityManager) *GUIQueries {
-	return &GUIQueries{
+	gq := &GUIQueries{
 		ECSManager:     ecsManager,
 		factionManager: combat.NewFactionManager(ecsManager),
 
@@ -32,7 +34,15 @@ func NewGUIQueries(ecsManager *common.EntityManager) *GUIQueries {
 		squadView:       ecsManager.World.CreateView(squads.SquadTag),
 		squadMemberView: ecsManager.World.CreateView(squads.SquadMemberTag),
 		actionStateView: ecsManager.World.CreateView(combat.ActionStateTag),
+		factionView:     ecsManager.World.CreateView(combat.FactionTag),
 	}
+
+	// Initialize monstersView if monsters tag exists in WorldTags
+	if monstersTag, ok := ecsManager.WorldTags["monsters"]; ok {
+		gq.monstersView = ecsManager.World.CreateView(monstersTag)
+	}
+
+	return gq
 }
 
 // ===== FACTION QUERIES =====
@@ -188,7 +198,8 @@ func (gq *GUIQueries) GetEnemySquads(currentFactionID ecs.EntityID) []ecs.Entity
 // GetAllFactions returns all faction IDs
 func (gq *GUIQueries) GetAllFactions() []ecs.EntityID {
 	factionIDs := []ecs.EntityID{}
-	for _, result := range gq.ECSManager.World.Query(combat.FactionTag) {
+	// Use cached View instead of Query (avoids 30,000+ map allocations per second)
+	for _, result := range gq.factionView.Get() {
 		factionData := common.GetComponentType[*combat.FactionData](result.Entity, combat.FactionComponent)
 		factionIDs = append(factionIDs, factionData.FactionID)
 	}
@@ -314,8 +325,9 @@ func (gq *GUIQueries) GetCreatureAtPosition(pos coords.LogicalPosition) *Creatur
 
 // isMonster checks if an entity is a monster
 func (gq *GUIQueries) isMonster(entityID ecs.EntityID) bool {
-	if monstersTag, ok := gq.ECSManager.WorldTags["monsters"]; ok {
-		for _, result := range gq.ECSManager.World.Query(monstersTag) {
+	// Use cached View instead of Query (avoids 30,000+ map allocations per second)
+	if gq.monstersView != nil {
+		for _, result := range gq.monstersView.Get() {
 			if result.Entity.GetID() == entityID {
 				return true
 			}
