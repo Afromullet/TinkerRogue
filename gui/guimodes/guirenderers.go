@@ -48,6 +48,11 @@ func NewViewportRenderer(screen *ebiten.Image, centerPos coords.LogicalPosition)
 	}
 }
 
+// UpdateCenter updates the viewport center position without recreating the renderer
+func (vr *ViewportRenderer) UpdateCenter(centerPos coords.LogicalPosition) {
+	vr.centerPos = centerPos
+}
+
 // TileSize returns the scaled tile size
 func (vr *ViewportRenderer) TileSize() int {
 	return coords.CoordManager.GetScaledTileSize()
@@ -111,7 +116,11 @@ func (vr *ViewportRenderer) DrawTileBorder(screen *ebiten.Image, pos coords.Logi
 
 // MovementTileRenderer renders valid movement tiles
 type MovementTileRenderer struct {
-	fillColor color.Color
+	fillColor       color.Color
+	cachedRenderer  *ViewportRenderer
+	lastCenterPos   coords.LogicalPosition
+	lastScreenSizeX int
+	lastScreenSizeY int
 }
 
 // NewMovementTileRenderer creates a renderer for movement tiles
@@ -123,7 +132,21 @@ func NewMovementTileRenderer() *MovementTileRenderer {
 
 // Render draws all valid movement tiles
 func (mtr *MovementTileRenderer) Render(screen *ebiten.Image, centerPos coords.LogicalPosition, validTiles []coords.LogicalPosition) {
-	vr := NewViewportRenderer(screen, centerPos)
+	screenX, screenY := screen.Bounds().Dx(), screen.Bounds().Dy()
+
+	// Only recreate renderer if screen size changed or not yet created
+	if mtr.cachedRenderer == nil || mtr.lastScreenSizeX != screenX || mtr.lastScreenSizeY != screenY {
+		mtr.cachedRenderer = NewViewportRenderer(screen, centerPos)
+		mtr.lastCenterPos = centerPos
+		mtr.lastScreenSizeX = screenX
+		mtr.lastScreenSizeY = screenY
+	} else if mtr.lastCenterPos != centerPos {
+		// Just update center position if only that changed
+		mtr.cachedRenderer.UpdateCenter(centerPos)
+		mtr.lastCenterPos = centerPos
+	}
+
+	vr := mtr.cachedRenderer
 
 	for _, pos := range validTiles {
 		vr.DrawTileOverlay(screen, pos, mtr.fillColor)
@@ -139,6 +162,8 @@ type SquadHighlightRenderer struct {
 	borderThickness int
 	cachedRenderer  *ViewportRenderer
 	lastCenterPos   coords.LogicalPosition
+	lastScreenSizeX int
+	lastScreenSizeY int
 }
 
 // NewSquadHighlightRenderer creates a renderer for squad highlights
@@ -159,11 +184,20 @@ func (shr *SquadHighlightRenderer) Render(
 	currentFactionID ecs.EntityID,
 	selectedSquadID ecs.EntityID,
 ) {
-	// Only recreate renderer if viewport moved or not yet created
-	if shr.cachedRenderer == nil || shr.lastCenterPos != centerPos {
+	screenX, screenY := screen.Bounds().Dx(), screen.Bounds().Dy()
+
+	// Only recreate renderer if screen size changed or not yet created
+	if shr.cachedRenderer == nil || shr.lastScreenSizeX != screenX || shr.lastScreenSizeY != screenY {
 		shr.cachedRenderer = NewViewportRenderer(screen, centerPos)
 		shr.lastCenterPos = centerPos
+		shr.lastScreenSizeX = screenX
+		shr.lastScreenSizeY = screenY
+	} else if shr.lastCenterPos != centerPos {
+		// Just update center position if only that changed
+		shr.cachedRenderer.UpdateCenter(centerPos)
+		shr.lastCenterPos = centerPos
 	}
+
 	vr := shr.cachedRenderer
 
 	// BUILD CACHE ONCE per render call (O(squads + units + states))
