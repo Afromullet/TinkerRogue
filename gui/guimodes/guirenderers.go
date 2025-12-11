@@ -3,7 +3,6 @@ package guimodes
 import (
 	"game_main/coords"
 	"game_main/gui/guicomponents"
-	"game_main/squads"
 	"image/color"
 
 	"github.com/bytearena/ecs"
@@ -200,16 +199,13 @@ func (shr *SquadHighlightRenderer) Render(
 
 	vr := shr.cachedRenderer
 
-	// BUILD CACHE ONCE per render call (O(squads + units + states))
-	// This eliminates repeated O(n) scans, providing 100-1000x speedup
-	cache := shr.queries.BuildSquadInfoCache()
-
 	// Get all squads with positions
-	allSquads := squads.FindAllSquads(shr.queries.ECSManager)
+	// GetSquadInfo uses Views directly - no need for BuildSquadInfoCache
+	allSquads := shr.queries.SquadCache.FindAllSquads()
 
 	for _, squadID := range allSquads {
-		// Use cached version (O(units_in_squad) vs O(all_entities))
-		squadInfo := shr.queries.GetSquadInfoCached(squadID, cache)
+		// GetSquadInfo now uses Views directly via SquadCache
+		squadInfo := shr.queries.GetSquadInfo(squadID)
 		if squadInfo == nil || squadInfo.IsDestroyed || squadInfo.Position == nil {
 			continue
 		}

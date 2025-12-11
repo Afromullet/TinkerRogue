@@ -86,7 +86,7 @@ func (manager *Manager) Query(tag Tag) queryResultCollection {
 - **GC Pressure**: High - allocates hundreds of maps and structs per frame
 - **CPU Time**: 5.03% of total execution (17.03s cumulative)
 
-**Optimization Strategy 1: Query Result Caching**
+P
 
 **Target Queries**: Squad system queries (called 15+ times per frame)
 

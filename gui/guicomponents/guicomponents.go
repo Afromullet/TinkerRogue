@@ -8,7 +8,6 @@ import (
 	"game_main/gear"
 	"game_main/gui/guiresources"
 	"game_main/gui/widgets"
-	"game_main/squads"
 
 	"github.com/bytearena/ecs"
 	"github.com/ebitenui/ebitenui/widget"
@@ -59,15 +58,12 @@ func (slc *SquadListComponent) Refresh() {
 	slc.squadButtons = make([]*widget.Button, 0)
 	slc.filteredSquads = make([]ecs.EntityID, 0)
 
-	// Build cache once for all squad queries (performance optimization)
-	cache := slc.queries.BuildSquadInfoCache()
-
 	// Get all squads
-	allSquads := squads.FindAllSquads(slc.queries.ECSManager)
+	allSquads := slc.queries.SquadCache.FindAllSquads()
 
 	// Filter squads and create buttons
 	for _, squadID := range allSquads {
-		squadInfo := slc.queries.GetSquadInfoCached(squadID, cache)
+		squadInfo := slc.queries.GetSquadInfo(squadID)
 		if squadInfo == nil || !slc.filter(squadInfo) {
 			continue
 		}
@@ -76,7 +72,7 @@ func (slc *SquadListComponent) Refresh() {
 
 		// Create button for this squad
 		localSquadID := squadID // Capture for closure
-		squadName := cache.squadNames[squadID]
+		squadName := squadInfo.Name
 
 		button := widgets.CreateButtonWithConfig(widgets.ButtonConfig{
 			Text: squadName,

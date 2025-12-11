@@ -10,7 +10,6 @@ import (
 	"game_main/gui/core"
 	"game_main/gui/guimodes"
 	"game_main/gui/widgets"
-	"game_main/squads"
 	"game_main/squads/squadservices"
 
 	"github.com/bytearena/ecs"
@@ -82,8 +81,8 @@ func (sdm *SquadDeploymentMode) buildSquadList() {
 		MinHeight: listHeight,
 		EntryLabelFunc: func(e interface{}) string {
 			if squadID, ok := e.(ecs.EntityID); ok {
-				squadName := squads.GetSquadName(squadID, sdm.Queries.ECSManager)
-				unitCount := len(squads.GetUnitIDsInSquad(squadID, sdm.Queries.ECSManager))
+				squadName := sdm.Queries.SquadCache.GetSquadName(squadID)
+				unitCount := len(sdm.Queries.SquadCache.GetUnitIDsInSquad(squadID))
 
 				// Check if squad has been placed
 				allPositions := sdm.deploymentService.GetAllSquadPositions()
@@ -179,7 +178,7 @@ func (sdm *SquadDeploymentMode) updateInstructionText() {
 		return
 	}
 
-	squadName := squads.GetSquadName(sdm.selectedSquadID, sdm.Queries.ECSManager)
+	squadName := sdm.Queries.SquadCache.GetSquadName(sdm.selectedSquadID)
 	sdm.instructionText.Label = fmt.Sprintf("Placing %s - Click on the map to position it", squadName)
 }
 
@@ -189,8 +188,8 @@ func (sdm *SquadDeploymentMode) updateDetailPanel() {
 		return
 	}
 
-	squadName := squads.GetSquadName(sdm.selectedSquadID, sdm.Queries.ECSManager)
-	unitIDs := squads.GetUnitIDsInSquad(sdm.selectedSquadID, sdm.Queries.ECSManager)
+	squadName := sdm.Queries.SquadCache.GetSquadName(sdm.selectedSquadID)
+	unitIDs := sdm.Queries.SquadCache.GetUnitIDsInSquad(sdm.selectedSquadID)
 
 	// Get current deployment position (if any)
 	allPositions := sdm.deploymentService.GetAllSquadPositions()
@@ -211,7 +210,7 @@ func (sdm *SquadDeploymentMode) updateDetailPanel() {
 
 func (sdm *SquadDeploymentMode) refreshSquadList() {
 	// Repopulate squad list to update placement status in labels
-	allSquads := squads.FindAllSquads(sdm.Queries.ECSManager)
+	allSquads := sdm.Queries.SquadCache.FindAllSquads()
 	aliveSquads := sdm.Queries.ApplyFilterToSquads(allSquads, sdm.Queries.FilterSquadsAlive())
 
 	entries := make([]interface{}, 0, len(aliveSquads))
@@ -225,7 +224,7 @@ func (sdm *SquadDeploymentMode) Enter(fromMode core.UIMode) error {
 	fmt.Println("Entering Squad Deployment Mode")
 
 	// Populate squad list with all alive squads
-	allSquads := squads.FindAllSquads(sdm.Queries.ECSManager)
+	allSquads := sdm.Queries.SquadCache.FindAllSquads()
 	aliveSquads := sdm.Queries.ApplyFilterToSquads(allSquads, sdm.Queries.FilterSquadsAlive())
 
 	entries := make([]interface{}, 0, len(aliveSquads))

@@ -315,7 +315,7 @@ func (sem *SquadEditorMode) Enter(fromMode core.UIMode) error {
 	sem.backfillRosterWithSquadUnits()
 
 	// Get all squad IDs
-	sem.allSquadIDs = squads.FindAllSquads(sem.Queries.ECSManager)
+	sem.allSquadIDs = sem.Queries.SquadCache.FindAllSquads()
 
 	// Refresh squad selector with current squads
 	sem.refreshSquadSelector()
@@ -382,7 +382,7 @@ func (sem *SquadEditorMode) refreshCurrentSquad() {
 	sem.refreshUnitList(currentSquadID)
 
 	// Update status
-	squadName := squads.GetSquadName(currentSquadID, sem.Queries.ECSManager)
+	squadName := sem.Queries.SquadCache.GetSquadName(currentSquadID)
 	sem.SetStatus(fmt.Sprintf("Editing squad: %s", squadName))
 }
 
@@ -396,7 +396,7 @@ func (sem *SquadEditorMode) loadSquadFormation(squadID ecs.EntityID) {
 	}
 
 	// Get units in squad and display them
-	unitIDs := squads.GetUnitIDsInSquad(squadID, sem.Queries.ECSManager)
+	unitIDs := sem.Queries.SquadCache.GetUnitIDsInSquad(squadID)
 
 	for _, unitID := range unitIDs {
 		gridPos := common.GetComponentTypeByIDWithTag[*squads.GridPositionData](
@@ -451,7 +451,7 @@ func (sem *SquadEditorMode) refreshSquadSelector() {
 
 // refreshUnitList updates the unit list for the current squad
 func (sem *SquadEditorMode) refreshUnitList(squadID ecs.EntityID) {
-	unitIDs := squads.GetUnitIDsInSquad(squadID, sem.Queries.ECSManager)
+	unitIDs := sem.Queries.SquadCache.GetUnitIDsInSquad(squadID)
 
 	// Recreate unit list with updated units
 	sem.unitListContainer.RemoveChild(sem.unitList)
@@ -798,7 +798,7 @@ func (sem *SquadEditorMode) onRenameSquad() {
 	}
 
 	currentSquadID := sem.allSquadIDs[sem.currentSquadIndex]
-	currentName := squads.GetSquadName(currentSquadID, sem.Queries.ECSManager)
+	currentName := sem.Queries.SquadCache.GetSquadName(currentSquadID)
 
 	// Show text input dialog
 	dialog := widgets.CreateTextInputDialog(widgets.TextInputDialogConfig{
@@ -838,11 +838,11 @@ func (sem *SquadEditorMode) backfillRosterWithSquadUnits() {
 	}
 
 	// Get all squads
-	allSquads := squads.FindAllSquads(sem.Queries.ECSManager)
+	allSquads := sem.Queries.SquadCache.FindAllSquads()
 
 	for _, squadID := range allSquads {
 		// Get all units in this squad
-		unitIDs := squads.GetUnitIDsInSquad(squadID, sem.Queries.ECSManager)
+		unitIDs := sem.Queries.SquadCache.GetUnitIDsInSquad(squadID)
 
 		for _, unitID := range unitIDs {
 			// Check if unit is already in roster
@@ -873,7 +873,7 @@ func (sem *SquadEditorMode) backfillRosterWithSquadUnits() {
 // refreshAfterUndoRedo is called after successful undo/redo operations
 func (sem *SquadEditorMode) refreshAfterUndoRedo() {
 	// Refresh squad list (squads might have been created/destroyed or renamed)
-	sem.allSquadIDs = squads.FindAllSquads(sem.Queries.ECSManager)
+	sem.allSquadIDs = sem.Queries.SquadCache.FindAllSquads()
 
 	// Adjust index if needed
 	if sem.currentSquadIndex >= len(sem.allSquadIDs) && len(sem.allSquadIDs) > 0 {

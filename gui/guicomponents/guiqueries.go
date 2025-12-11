@@ -16,9 +16,10 @@ type GUIQueries struct {
 	ECSManager     *common.EntityManager
 	factionManager *combat.FactionManager
 
+	// Squad query cache (owns squad/member/leader Views)
+	SquadCache *squads.SquadQueryCache
+
 	// Cached ECS Views (automatically maintained by ECS library)
-	squadView       *ecs.View // All SquadTag entities
-	squadMemberView *ecs.View // All SquadMemberTag entities
 	actionStateView *ecs.View // All ActionStateTag entities
 	factionView     *ecs.View // All FactionTag entities (GUI_PERFORMANCE_ANALYSIS.md)
 	monstersView    *ecs.View // All MonsterComponent entities (GUI_PERFORMANCE_ANALYSIS.md)
@@ -30,9 +31,10 @@ func NewGUIQueries(ecsManager *common.EntityManager) *GUIQueries {
 		ECSManager:     ecsManager,
 		factionManager: combat.NewFactionManager(ecsManager),
 
+		// Initialize squad cache (owns squad/member/leader Views)
+		SquadCache: squads.NewSquadQueryCache(ecsManager),
+
 		// Initialize Views for cached queries (one-time O(n) cost, then O(1) access)
-		squadView:       ecsManager.World.CreateView(squads.SquadTag),
-		squadMemberView: ecsManager.World.CreateView(squads.SquadMemberTag),
 		actionStateView: ecsManager.World.CreateView(combat.ActionStateTag),
 		factionView:     ecsManager.World.CreateView(combat.FactionTag),
 	}
@@ -109,11 +111,11 @@ type SquadInfo struct {
 
 // GetSquadInfo returns complete squad information for UI display
 func (gq *GUIQueries) GetSquadInfo(squadID ecs.EntityID) *SquadInfo {
-	// Get squad name
-	name := squads.GetSquadName(squadID, gq.ECSManager)
+	// Use cached queries (iterates through Views instead of World.Query)
+	name := gq.SquadCache.GetSquadName(squadID)
 
-	// Get unit IDs
-	unitIDs := squads.GetUnitIDsInSquad(squadID, gq.ECSManager)
+	// Get unit IDs using cache
+	unitIDs := gq.SquadCache.GetUnitIDsInSquad(squadID)
 
 	// Calculate HP and alive units (direct lookup instead of full query per unit)
 	aliveUnits := 0
@@ -256,18 +258,18 @@ func (gq *GUIQueries) ApplyFilterToSquadsCached(squadIDs []ecs.EntityID, filter 
 
 // CreatureInfo encapsulates all creature data needed by UI
 type CreatureInfo struct {
-	ID            ecs.EntityID
-	Name          string
-	CurrentHP     int
-	MaxHP         int
-	Strength      int
-	Dexterity     int
-	Magic         int
-	Leadership    int
-	Armor         int
-	Weapon        int
-	IsMonster     bool
-	IsPlayer      bool
+	ID         ecs.EntityID
+	Name       string
+	CurrentHP  int
+	MaxHP      int
+	Strength   int
+	Dexterity  int
+	Magic      int
+	Leadership int
+	Armor      int
+	Weapon     int
+	IsMonster  bool
+	IsPlayer   bool
 }
 
 // GetCreatureAtPosition returns creature information at a specific position
@@ -399,8 +401,8 @@ func (gq *GUIQueries) BuildSquadInfoCache() *SquadInfoCache {
 		destroyedStatus: make(map[ecs.EntityID]bool),
 	}
 
-	// Single pass over all squads (uses cached View, not fresh query)
-	for _, result := range gq.squadView.Get() {
+	// Single pass over all squads (uses cached View from SquadQueryCache)
+	for _, result := range gq.SquadCache.SquadView.Get() {
 		entity := result.Entity
 		squadData := common.GetComponentType[*squads.SquadData](entity, squads.SquadComponent)
 		squadID := squadData.SquadID
@@ -415,8 +417,8 @@ func (gq *GUIQueries) BuildSquadInfoCache() *SquadInfoCache {
 		}
 	}
 
-	// Single pass over all squad members (uses cached View)
-	for _, result := range gq.squadMemberView.Get() {
+	// Single pass over all squad members (uses cached View from SquadQueryCache)
+	for _, result := range gq.SquadCache.SquadMemberView.Get() {
 		memberData := common.GetComponentType[*squads.SquadMemberData](result.Entity, squads.SquadMemberComponent)
 		squadID := memberData.SquadID
 		unitID := result.Entity.GetID()

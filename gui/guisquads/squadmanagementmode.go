@@ -237,7 +237,7 @@ func (smm *SquadManagementMode) Enter(fromMode core.UIMode) error {
 	fmt.Println("Entering Squad Management Mode")
 
 	// Get all squad IDs from ECS
-	smm.allSquadIDs = squads.FindAllSquads(smm.Queries.ECSManager)
+	smm.allSquadIDs = smm.Queries.SquadCache.FindAllSquads()
 
 	// Reset to first squad if we have any
 	if len(smm.allSquadIDs) > 0 {
@@ -348,7 +348,7 @@ func (smm *SquadManagementMode) createSquadPanel(squadID ecs.EntityID) *SquadPan
 	})
 
 	// Squad name label - use unified query service
-	squadName := squads.GetSquadName(squadID, smm.Queries.ECSManager)
+	squadName := smm.Queries.SquadCache.GetSquadName(squadID)
 	nameLabel := widgets.CreateLargeLabel(fmt.Sprintf("Squad: %s", squadName))
 	panel.container.AddChild(nameLabel)
 
@@ -382,7 +382,7 @@ func (smm *SquadManagementMode) createSquadPanel(squadID ecs.EntityID) *SquadPan
 
 func (smm *SquadManagementMode) createUnitList(squadID ecs.EntityID) *widget.List {
 	// Get all units in this squad
-	unitIDs := squads.GetUnitIDsInSquad(squadID, smm.Queries.ECSManager)
+	unitIDs := smm.Queries.SquadCache.GetUnitIDsInSquad(squadID)
 
 	// Use helper to create unit list with fixed height to prevent layout jumping
 	return widgets.CreateUnitList(widgets.UnitListConfig{
@@ -438,7 +438,7 @@ func (smm *SquadManagementMode) onDisbandSquad() {
 	}
 
 	currentSquadID := smm.allSquadIDs[smm.currentSquadIndex]
-	squadName := squads.GetSquadName(currentSquadID, smm.Queries.ECSManager)
+	squadName := smm.Queries.SquadCache.GetSquadName(currentSquadID)
 
 	// Show confirmation dialog
 	dialog := widgets.CreateConfirmationDialog(widgets.DialogConfig{
@@ -470,14 +470,14 @@ func (smm *SquadManagementMode) onMergeSquads() {
 	}
 
 	currentSquadID := smm.allSquadIDs[smm.currentSquadIndex]
-	currentSquadName := squads.GetSquadName(currentSquadID, smm.Queries.ECSManager)
+	currentSquadName := smm.Queries.SquadCache.GetSquadName(currentSquadID)
 
 	// Build list of other squads to merge with
 	otherSquads := make([]string, 0)
 	otherSquadIDs := make([]ecs.EntityID, 0)
 	for i, squadID := range smm.allSquadIDs {
 		if i != smm.currentSquadIndex {
-			squadName := squads.GetSquadName(squadID, smm.Queries.ECSManager)
+			squadName := smm.Queries.SquadCache.GetSquadName(squadID)
 			otherSquads = append(otherSquads, squadName)
 			otherSquadIDs = append(otherSquadIDs, squadID)
 		}
@@ -548,7 +548,7 @@ func (smm *SquadManagementMode) onMergeSquads() {
 			}
 
 			targetSquadID := otherSquadIDs[selectedIndex]
-			targetSquadName := squads.GetSquadName(targetSquadID, smm.Queries.ECSManager)
+			targetSquadName := smm.Queries.SquadCache.GetSquadName(targetSquadID)
 
 			// Close selection dialog
 			if window != nil {
@@ -607,7 +607,7 @@ func (smm *SquadManagementMode) onMergeSquads() {
 // refreshAfterUndoRedo is called after successful undo/redo operations
 func (smm *SquadManagementMode) refreshAfterUndoRedo() {
 	// Refresh squad list (squads might have been created/destroyed)
-	smm.allSquadIDs = squads.FindAllSquads(smm.Queries.ECSManager)
+	smm.allSquadIDs = smm.Queries.SquadCache.FindAllSquads()
 
 	// Adjust index if needed
 	if smm.currentSquadIndex >= len(smm.allSquadIDs) && len(smm.allSquadIDs) > 0 {

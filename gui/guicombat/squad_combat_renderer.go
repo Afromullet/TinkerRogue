@@ -38,7 +38,7 @@ func (r *SquadCombatRenderer) RenderSquad(
 	facingLeft bool,
 ) {
 	// Get all units in the squad
-	unitIDs := squads.GetUnitIDsInSquad(squadID, r.queries.ECSManager)
+	unitIDs := r.queries.SquadCache.GetUnitIDsInSquad(squadID)
 
 	for _, unitID := range unitIDs {
 		r.RenderUnit(screen, unitID, baseX, baseY, cellSize, facingLeft)
@@ -153,7 +153,7 @@ func (r *SquadCombatRenderer) RenderSquadWithHighlight(
 	highlightColor *ebiten.ColorScale,
 ) {
 	// Get all units in the squad
-	unitIDs := squads.GetUnitIDsInSquad(squadID, r.queries.ECSManager)
+	unitIDs := r.queries.SquadCache.GetUnitIDsInSquad(squadID)
 
 	for _, unitID := range unitIDs {
 		// Check if this unit should be highlighted

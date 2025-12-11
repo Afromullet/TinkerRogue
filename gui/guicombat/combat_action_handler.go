@@ -7,7 +7,6 @@ import (
 	"game_main/coords"
 	"game_main/gui/core"
 	"game_main/gui/guicomponents"
-	"game_main/squads"
 	"game_main/squads/squadcommands"
 
 	"github.com/bytearena/ecs"
@@ -50,7 +49,7 @@ func (cah *CombatActionHandler) SelectSquad(squadID ecs.EntityID) {
 	cah.battleMapState.SelectedSquadID = squadID
 
 	// Get squad name and log
-	squadName := squads.GetSquadName(squadID, cah.queries.ECSManager)
+	squadName := cah.queries.SquadCache.GetSquadName(squadID)
 	cah.addLog(fmt.Sprintf("Selected: %s", squadName))
 }
 
@@ -88,7 +87,7 @@ func (cah *CombatActionHandler) ShowAvailableTargets() {
 
 	// Show up to 3 targets
 	for i := 0; i < len(enemySquads) && i < 3; i++ {
-		targetName := squads.GetSquadName(enemySquads[i], cah.queries.ECSManager)
+		targetName := cah.queries.SquadCache.GetSquadName(enemySquads[i])
 		cah.addLog(fmt.Sprintf("  [%d] %s", i+1, targetName))
 	}
 }

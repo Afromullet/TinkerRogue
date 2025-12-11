@@ -379,8 +379,8 @@ func (cam *CombatAnimationMode) drawGridBackground(screen *ebiten.Image, baseX, 
 // drawSquadNames draws the squad names above each grid
 func (cam *CombatAnimationMode) drawSquadNames(screen *ebiten.Image) {
 	// Get squad names
-	attackerName := squads.GetSquadName(cam.attackerSquadID, cam.Queries.ECSManager)
-	defenderName := squads.GetSquadName(cam.defenderSquadID, cam.Queries.ECSManager)
+	attackerName := cam.Queries.SquadCache.GetSquadName(cam.attackerSquadID)
+	defenderName := cam.Queries.SquadCache.GetSquadName(cam.defenderSquadID)
 
 	// For now, we'll rely on ebitenui to render text via the prompt label
 	// Squad names could be drawn here using text rendering, but we'll keep it simple
@@ -440,7 +440,7 @@ func (cam *CombatAnimationMode) renderSquadWithUnitColors(
 	screen *ebiten.Image, squadID ecs.EntityID,
 	baseX, baseY, cellSize int, facingLeft bool, isAttacker bool,
 ) {
-	unitIDs := squads.GetUnitIDsInSquad(squadID, cam.Queries.ECSManager)
+	unitIDs := cam.Queries.SquadCache.GetUnitIDsInSquad(squadID)
 
 	for _, unitID := range unitIDs {
 		var colorScale *ebiten.ColorScale
