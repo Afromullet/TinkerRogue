@@ -111,10 +111,13 @@ func (ms *CombatMovementSystem) MoveSquad(squadID ecs.EntityID, targetPos coords
 		return fmt.Errorf("squad entity not found")
 	}
 
-	// Move squad atomically (updates both PositionComponent and PositionSystem)
-	err = ms.manager.MoveEntity(squadID, squadEntity, currentPos, targetPos)
+	// Get unit IDs for atomic squad+members movement
+	unitIDs := squads.GetUnitIDsInSquad(squadID, ms.manager)
+
+	// Move squad AND members atomically (updates both PositionComponent and PositionSystem)
+	err = ms.manager.MoveSquadAndMembers(squadID, squadEntity, unitIDs, currentPos, targetPos)
 	if err != nil {
-		return fmt.Errorf("failed to move squad: %w", err)
+		return fmt.Errorf("failed to move squad and members: %w", err)
 	}
 
 	decrementMovementRemaining(ms.combatCache, squadID, movementCost, ms.manager)

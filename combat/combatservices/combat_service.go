@@ -31,6 +31,12 @@ func NewCombatService(manager *common.EntityManager) *CombatService {
 	}
 }
 
+// GetMovementSystem returns the movement system for command pattern integration
+// This allows commands to delegate to the movement system while maintaining encapsulation
+func (cs *CombatService) GetMovementSystem() *combat.CombatMovementSystem {
+	return cs.movementSystem
+}
+
 // AttackResult contains all information about an attack execution
 type AttackResult struct {
 	Success         bool

@@ -2,6 +2,7 @@ package squadcommands
 
 import (
 	"fmt"
+	"game_main/combat"
 	"game_main/common"
 	"game_main/coords"
 	"game_main/squads"
@@ -10,27 +11,32 @@ import (
 )
 
 // MoveSquadCommand moves a squad to a new position in combat
-// Captures old position for undo
+// Captures old position and ActionState for undo
 type MoveSquadCommand struct {
 	entityManager *common.EntityManager
+	movementSystem *combat.CombatMovementSystem
 	squadID       ecs.EntityID
 	newPosition   coords.LogicalPosition
 
 	// Captured state for undo
-	oldPosition coords.LogicalPosition
-	squadName   string
+	oldPosition          coords.LogicalPosition
+	squadName            string
+	oldMovementRemaining int
+	oldHasMoved          bool
 }
 
 // NewMoveSquadCommand creates a new move squad command
 func NewMoveSquadCommand(
 	manager *common.EntityManager,
+	movementSystem *combat.CombatMovementSystem,
 	squadID ecs.EntityID,
 	newPosition coords.LogicalPosition,
 ) *MoveSquadCommand {
 	return &MoveSquadCommand{
-		entityManager: manager,
-		squadID:       squadID,
-		newPosition:   newPosition,
+		entityManager:  manager,
+		movementSystem: movementSystem,
+		squadID:        squadID,
+		newPosition:    newPosition,
 	}
 }
 
@@ -72,16 +78,20 @@ func (cmd *MoveSquadCommand) Execute() error {
 	}
 	cmd.oldPosition = *posPtr
 
-	// Move squad and all members atomically
-	unitIDs := squads.GetUnitIDsInSquad(cmd.squadID, cmd.entityManager)
-	if err := cmd.entityManager.MoveSquadAndMembers(
-		cmd.squadID,
-		squadEntity,
-		unitIDs,
-		cmd.oldPosition,
-		cmd.newPosition,
-	); err != nil {
-		return fmt.Errorf("failed to move squad: %w", err)
+	// Capture old ActionState (CRITICAL for undo)
+	actionStateEntity := combat.FindActionStateEntity(cmd.squadID, cmd.entityManager)
+	if actionStateEntity != nil {
+		actionState := common.GetComponentType[*combat.ActionStateData](actionStateEntity, combat.ActionStateComponent)
+		if actionState != nil {
+			cmd.oldMovementRemaining = actionState.MovementRemaining
+			cmd.oldHasMoved = actionState.HasMoved
+		}
+	}
+
+	// Delegate to CombatMovementSystem (SINGLE SOURCE OF TRUTH)
+	err = cmd.movementSystem.MoveSquad(cmd.squadID, cmd.newPosition)
+	if err != nil {
+		return fmt.Errorf("movement system failed: %w", err)
 	}
 
 	return nil
@@ -103,6 +113,7 @@ func (cmd *MoveSquadCommand) Undo() error {
 	currentPos := *posPtr
 
 	// Move squad and all members back to old position atomically
+	// Use EntityManager directly (no validation for undo - we're restoring known-good state)
 	unitIDs := squads.GetUnitIDsInSquad(cmd.squadID, cmd.entityManager)
 	if err := cmd.entityManager.MoveSquadAndMembers(
 		cmd.squadID,
@@ -112,6 +123,16 @@ func (cmd *MoveSquadCommand) Undo() error {
 		cmd.oldPosition,
 	); err != nil {
 		return fmt.Errorf("failed to undo squad move: %w", err)
+	}
+
+	// Restore ActionState (CRITICAL - undo must restore full state)
+	actionStateEntity := combat.FindActionStateEntity(cmd.squadID, cmd.entityManager)
+	if actionStateEntity != nil {
+		actionState := common.GetComponentType[*combat.ActionStateData](actionStateEntity, combat.ActionStateComponent)
+		if actionState != nil {
+			actionState.MovementRemaining = cmd.oldMovementRemaining
+			actionState.HasMoved = cmd.oldHasMoved
+		}
 	}
 
 	return nil

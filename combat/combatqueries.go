@@ -120,7 +120,8 @@ func canSquadMove(cache *CombatQueryCache, squadID ecs.EntityID, manager *common
 	if actionState == nil {
 		return false
 	}
-	return actionState.MovementRemaining > 0
+	// Squad can move if: has movement points remaining AND hasn't moved yet this turn
+	return actionState.MovementRemaining > 0 && !actionState.HasMoved
 }
 
 // markSquadAsActed marks a squad as having used its combat action (uses cached query for O(k) performance)
