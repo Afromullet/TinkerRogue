@@ -2,7 +2,6 @@ package guicombat
 
 import (
 	"fmt"
-	"game_main/combat"
 	"game_main/combat/combatservices"
 	"game_main/coords"
 	"game_main/gui/core"
@@ -273,7 +272,7 @@ func (cah *CombatActionHandler) ClearMoveHistory() {
 // CycleSquadSelection selects the next squad in the faction
 func (cah *CombatActionHandler) CycleSquadSelection() {
 	currentFactionID := cah.combatService.GetCurrentFaction()
-	factionData := combat.FindFactionDataByID(currentFactionID, cah.queries.ECSManager)
+	factionData := cah.queries.CombatCache.FindFactionDataByID(currentFactionID, cah.queries.ECSManager)
 	if currentFactionID == 0 || factionData == nil || !factionData.IsPlayerControlled {
 		return
 	}

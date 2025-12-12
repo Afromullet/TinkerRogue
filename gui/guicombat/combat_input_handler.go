@@ -1,7 +1,6 @@
 package guicombat
 
 import (
-	"game_main/combat"
 	"game_main/coords"
 	"game_main/graphics"
 	"game_main/gui/core"
@@ -174,7 +173,7 @@ func (cih *CombatInputHandler) handleSquadClick(mouseX, mouseY int) {
 	}
 
 	// If it's the player's turn
-	factionData := combat.FindFactionDataByID(cih.currentFactionID, cih.queries.ECSManager)
+	factionData := cih.queries.CombatCache.FindFactionDataByID(cih.currentFactionID, cih.queries.ECSManager)
 	if factionData != nil && factionData.IsPlayerControlled {
 		// If clicking an allied squad: select it
 		if clickedFactionID == cih.currentFactionID {

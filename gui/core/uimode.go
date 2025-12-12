@@ -47,6 +47,7 @@ type UIContext struct {
 	ScreenHeight      int
 	TileSize          int
 	ModeCoordinator   *GameModeCoordinator // For context switching
+	Queries           interface{} // *GUIQueries - Shared queries for all UI modes (interface{} to avoid circular import)
 	// Add other commonly needed game state
 }
 

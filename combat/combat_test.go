@@ -59,8 +59,8 @@ func TestCreateFaction(t *testing.T) {
 		t.Fatal("Failed to create faction")
 	}
 
-	// Verify faction data
-	faction := FindFactionByID(factionID, manager)
+	// Verify faction data (using cache for O(1) lookup instead of O(n) query)
+	faction := fm.combatCache.FindFactionByID(factionID, manager)
 	if faction == nil {
 		t.Fatal("Cannot find created faction")
 	}
@@ -289,8 +289,9 @@ func TestExecuteAttackAction_MeleeAttack(t *testing.T) {
 		t.Fatalf("Failed to execute attack: %v", err)
 	}
 
-	// Verify squad marked as acted
-	if canSquadAct(playerSquad, manager) {
+	// Verify squad marked as acted (using cache for O(k) lookup instead of O(n) query)
+	cache := NewCombatQueryCache(manager)
+	if canSquadAct(cache, playerSquad, manager) {
 		t.Error("Squad should be marked as acted")
 	}
 }

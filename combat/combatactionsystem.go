@@ -10,12 +10,14 @@ import (
 )
 
 type CombatActionSystem struct {
-	manager *common.EntityManager
+	manager     *common.EntityManager
+	combatCache *CombatQueryCache // Cached queries for O(k) instead of O(n)
 }
 
 func NewCombatActionSystem(manager *common.EntityManager) *CombatActionSystem {
 	return &CombatActionSystem{
-		manager: manager,
+		manager:     manager,
+		combatCache: NewCombatQueryCache(manager),
 	}
 }
 
@@ -39,7 +41,7 @@ func (cas *CombatActionSystem) ExecuteAttackAction(attackerID, defenderID ecs.En
 		return fmt.Errorf("target out of range: %d tiles away, max range %d", distance, maxRange)
 	}
 
-	if !canSquadAct(attackerID, cas.manager) {
+	if !canSquadAct(cas.combatCache, attackerID, cas.manager) {
 		return fmt.Errorf("squad has already acted this turn")
 	}
 
@@ -71,7 +73,7 @@ func (cas *CombatActionSystem) ExecuteAttackAction(attackerID, defenderID ecs.En
 		}
 	}
 
-	markSquadAsActed(attackerID, cas.manager)
+	markSquadAsActed(cas.combatCache, attackerID, cas.manager)
 
 	if squads.IsSquadDestroyed(defenderID, cas.manager) {
 		removeSquadFromMap(defenderID, cas.manager)
@@ -203,7 +205,7 @@ func (cas *CombatActionSystem) GetSquadsInRange(squadID ecs.EntityID) []ecs.Enti
 // CanSquadAttackWithReason returns detailed info about why an attack can/cannot happen
 func (cas *CombatActionSystem) CanSquadAttackWithReason(squadID, targetID ecs.EntityID) (string, bool) {
 	// Check if squad has action available
-	if !canSquadAct(squadID, cas.manager) {
+	if !canSquadAct(cas.combatCache, squadID, cas.manager) {
 		return "Squad has already acted this turn", false
 	}
 

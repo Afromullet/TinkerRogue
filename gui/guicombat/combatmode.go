@@ -2,7 +2,6 @@ package guicombat
 
 import (
 	"fmt"
-	"game_main/combat"
 	"game_main/combat/combatservices"
 	"game_main/config"
 	"game_main/gui"
@@ -172,7 +171,7 @@ func (cm *CombatMode) initializeUpdateComponents() {
 			}
 
 			round := cm.combatService.GetCurrentRound()
-			factionData := combat.FindFactionDataByID(currentFactionID, cm.Queries.ECSManager)
+			factionData := cm.Queries.CombatCache.FindFactionDataByID(currentFactionID, cm.Queries.ECSManager)
 			factionName := "Unknown"
 			if factionData != nil {
 				factionName = factionData.Name
@@ -230,7 +229,7 @@ func (cm *CombatMode) makeCurrentFactionSquadFilter() guicomponents.SquadFilter 
 			return false
 		}
 		// Only show squads if it's player's turn
-		factionData := combat.FindFactionDataByID(currentFactionID, cm.Queries.ECSManager)
+		factionData := cm.Queries.CombatCache.FindFactionDataByID(currentFactionID, cm.Queries.ECSManager)
 		if factionData == nil || !factionData.IsPlayerControlled {
 			return false
 		}
@@ -260,7 +259,7 @@ func (cm *CombatMode) handleEndTurn() {
 	round := result.NewRound
 
 	// Get faction name
-	factionData := combat.FindFactionDataByID(currentFactionID, cm.Queries.ECSManager)
+	factionData := cm.Queries.CombatCache.FindFactionDataByID(currentFactionID, cm.Queries.ECSManager)
 	factionName := "Unknown"
 	if factionData != nil {
 		factionName = factionData.Name
@@ -294,7 +293,7 @@ func (cm *CombatMode) Enter(fromMode core.UIMode) error {
 
 		// Log initial faction
 		currentFactionID := cm.combatService.GetCurrentFaction()
-		factionData := combat.FindFactionDataByID(currentFactionID, cm.Queries.ECSManager)
+		factionData := cm.Queries.CombatCache.FindFactionDataByID(currentFactionID, cm.Queries.ECSManager)
 		factionName := "Unknown"
 		if factionData != nil {
 			factionName = factionData.Name

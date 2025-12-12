@@ -51,14 +51,15 @@ func (em *EntityManager) GetAllEntities() []ecs.EntityID {
 
 // HasComponent checks if an entity has a specific component.
 // Returns false if the entity ID is invalid or the component is not found.
+// Optimized to use O(1) map lookup instead of O(n) query scan.
 func (em *EntityManager) HasComponent(entityID ecs.EntityID, component *ecs.Component) bool {
-	for _, result := range em.World.Query(AllEntitiesTag) {
-		if result.Entity.GetID() == entityID {
-			_, ok := result.Entity.GetComponentData(component)
-			return ok
-		}
+	// Use ECS library's O(1) entitiesByID map lookup
+	result := em.World.GetEntityByID(entityID)
+	if result == nil {
+		return false
 	}
-	return false
+	_, ok := result.Entity.GetComponentData(component)
+	return ok
 }
 
 // HasComponentByIDWithTag checks if an entity (queried by tag) has a specific component.
@@ -76,13 +77,14 @@ func (em *EntityManager) HasComponentByIDWithTag(entityID ecs.EntityID, tag ecs.
 // GetComponent retrieves component data from an entity by its ID.
 // Returns the component data and a boolean indicating if the component was found.
 // Returns (nil, false) if the entity ID is invalid or the component is not found.
+// Optimized to use O(1) map lookup instead of O(n) query scan.
 func (em *EntityManager) GetComponent(entityID ecs.EntityID, component *ecs.Component) (interface{}, bool) {
-	for _, result := range em.World.Query(AllEntitiesTag) {
-		if result.Entity.GetID() == entityID {
-			return result.Entity.GetComponentData(component)
-		}
+	// Use ECS library's O(1) entitiesByID map lookup
+	result := em.World.GetEntityByID(entityID)
+	if result == nil {
+		return nil, false
 	}
-	return nil, false
+	return result.Entity.GetComponentData(component)
 }
 
 // GetComponentType retrieves a component of type T from an entity pointer.
@@ -230,17 +232,18 @@ func GetCreatureAtPosition(ecsmnager *EntityManager, pos *coords.LogicalPosition
 // FindEntityIDWithTag finds an entity ID within a specific tag query.
 // This replaces the old FindEntityByIDWithTag function.
 // Returns 0 if the entity is not found.
+// Optimized to use O(1) map lookup instead of O(n) query scan.
 //
 // Usage:
 //   unitID := FindEntityIDWithTag(manager, unitEntityID, SquadMemberTag)
 //   if unitID != 0 { ... }
 func FindEntityIDWithTag(manager *EntityManager, entityID ecs.EntityID, tag ecs.Tag) ecs.EntityID {
-	for _, result := range manager.World.Query(tag) {
-		if result.Entity.GetID() == entityID {
-			return entityID
-		}
+	// Use ECS library's O(1) entitiesByID map lookup
+	result := manager.World.GetEntityByID(entityID)
+	if result == nil {
+		return 0
 	}
-	return 0
+	return entityID
 }
 
 // FindEntityByID finds an entity pointer by its ID, searching all entities.
@@ -248,6 +251,7 @@ func FindEntityIDWithTag(manager *EntityManager, entityID ecs.EntityID, tag ecs.
 // For component access, prefer GetComponentTypeByID and related helpers.
 //
 // Returns nil if the entity is not found.
+// Optimized to use O(1) map lookup instead of O(n) query scan.
 //
 // Usage:
 //   entity := FindEntityByID(manager, entityID)
@@ -255,17 +259,18 @@ func FindEntityIDWithTag(manager *EntityManager, entityID ecs.EntityID, tag ecs.
 //       entity.AddComponent(ComponentType, data)
 //   }
 func FindEntityByID(manager *EntityManager, entityID ecs.EntityID) *ecs.Entity {
-	for _, result := range manager.World.Query(AllEntitiesTag) {
-		if result.Entity.GetID() == entityID {
-			return result.Entity
-		}
+	// Use ECS library's O(1) entitiesByID map lookup
+	result := manager.World.GetEntityByID(entityID)
+	if result == nil {
+		return nil
 	}
-	return nil
+	return result.Entity
 }
 
 // FindEntityByIDInManager finds an entity pointer by its ID using ecs.Manager directly.
 // This is for packages that work with ecs.Manager instead of EntityManager.
 // Returns nil if the entity is not found.
+// Optimized to use O(1) map lookup instead of O(n) query scan.
 //
 // Usage:
 //   entity := FindEntityByIDInManager(ecsManager, entityID)
@@ -273,12 +278,12 @@ func FindEntityByID(manager *EntityManager, entityID ecs.EntityID) *ecs.Entity {
 //       // use entity
 //   }
 func FindEntityByIDInManager(manager *ecs.Manager, entityID ecs.EntityID) *ecs.Entity {
-	for _, result := range manager.Query(AllEntitiesTag) {
-		if result.Entity.GetID() == entityID {
-			return result.Entity
-		}
+	// Use ECS library's O(1) entitiesByID map lookup
+	result := manager.GetEntityByID(entityID)
+	if result == nil {
+		return nil
 	}
-	return nil
+	return result.Entity
 }
 
 // FindEntityByIDWithTag finds an entity pointer within a specific tag query.
@@ -287,6 +292,7 @@ func FindEntityByIDInManager(manager *ecs.Manager, entityID ecs.EntityID) *ecs.E
 // EntityID-based helpers like GetComponentTypeByIDWithTag, GetAttributesByIDWithTag, etc.
 //
 // Returns nil if the entity is not found within the tag query.
+// Optimized to use O(1) map lookup instead of O(n) query scan.
 //
 // Limited valid use cases:
 //   - entity.AddComponent() - ECS library requires entity pointer
@@ -297,12 +303,12 @@ func FindEntityByIDInManager(manager *ecs.Manager, entityID ecs.EntityID) *ecs.E
 //       entity.AddComponent(ComponentType, data)
 //   }
 func FindEntityByIDWithTag(manager *EntityManager, entityID ecs.EntityID, tag ecs.Tag) *ecs.Entity {
-	for _, result := range manager.World.Query(tag) {
-		if result.Entity.GetID() == entityID {
-			return result.Entity
-		}
+	// Use ECS library's O(1) entitiesByID map lookup
+	result := manager.World.GetEntityByID(entityID)
+	if result == nil {
+		return nil
 	}
-	return nil
+	return result.Entity
 }
 
 // MoveEntity updates position component and position system atomically.

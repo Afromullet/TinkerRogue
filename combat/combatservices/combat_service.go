@@ -15,6 +15,7 @@ type CombatService struct {
 	turnManager    *combat.TurnManager
 	factionManager *combat.FactionManager
 	movementSystem *combat.CombatMovementSystem
+	combatCache    *combat.CombatQueryCache // Cached queries for O(k) instead of O(n)
 }
 
 // NewCombatService creates a new combat service
@@ -24,6 +25,7 @@ func NewCombatService(manager *common.EntityManager) *CombatService {
 		turnManager:    combat.NewTurnManager(manager),
 		factionManager: combat.NewFactionManager(manager),
 		movementSystem: combat.NewMovementSystem(manager, common.GlobalPositionSystem),
+		combatCache:    combat.NewCombatQueryCache(manager),
 	}
 }
 
@@ -97,8 +99,8 @@ func (cs *CombatService) MoveSquad(squadID ecs.EntityID, newPos coords.LogicalPo
 	result.Success = true
 	result.SquadName = getSquadNameByID(squadID, cs.entityManager)
 
-	// Update action state with remaining APs
-	actionEntity := combat.FindActionStateEntity(squadID, cs.entityManager)
+	// Update action state with remaining APs (using cached query for performance)
+	actionEntity := cs.combatCache.FindActionStateEntity(squadID, cs.entityManager)
 	if actionEntity != nil {
 		actionState := common.GetComponentType[*combat.ActionStateData](actionEntity, combat.ActionStateComponent)
 		if actionState != nil {
@@ -120,7 +122,8 @@ func (cs *CombatService) InitializeCombat(factionIDs []ecs.EntityID) error {
 	// Find player faction (has IsPlayerControlled = true)
 	var playerFactionID ecs.EntityID
 	for _, factionID := range factionIDs {
-		factionData := combat.FindFactionDataByID(factionID, cs.entityManager)
+		// Use cached query for performance
+		factionData := cs.combatCache.FindFactionDataByID(factionID, cs.entityManager)
 		if factionData != nil && factionData.IsPlayerControlled {
 			playerFactionID = factionID
 			break

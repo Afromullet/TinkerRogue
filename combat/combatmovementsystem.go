@@ -11,15 +11,17 @@ import (
 )
 
 type CombatMovementSystem struct {
-	manager   *common.EntityManager
-	posSystem *systems.PositionSystem // For O(1) collision detection
+	manager      *common.EntityManager
+	posSystem    *systems.PositionSystem // For O(1) collision detection
+	combatCache  *CombatQueryCache       // Cached queries for O(k) instead of O(n)
 }
 
 // Constructor
 func NewMovementSystem(manager *common.EntityManager, posSystem *systems.PositionSystem) *CombatMovementSystem {
 	return &CombatMovementSystem{
-		manager:   manager,
-		posSystem: posSystem,
+		manager:     manager,
+		posSystem:   posSystem,
+		combatCache: NewCombatQueryCache(manager),
 	}
 }
 
@@ -76,7 +78,7 @@ func (ms *CombatMovementSystem) CanMoveTo(squadID ecs.EntityID, targetPos coords
 
 func (ms *CombatMovementSystem) MoveSquad(squadID ecs.EntityID, targetPos coords.LogicalPosition) error {
 
-	if !canSquadMove(squadID, ms.manager) {
+	if !canSquadMove(ms.combatCache, squadID, ms.manager) {
 		return fmt.Errorf("squad has no movement remaining")
 	}
 
@@ -88,8 +90,8 @@ func (ms *CombatMovementSystem) MoveSquad(squadID ecs.EntityID, targetPos coords
 	// Calculate movement cost using Chebyshev distance
 	movementCost := currentPos.ChebyshevDistance(&targetPos)
 
-	// Check if squad has enough movement
-	actionStateEntity := FindActionStateEntity(squadID, ms.manager)
+	// Check if squad has enough movement (using cached query for performance)
+	actionStateEntity := ms.combatCache.FindActionStateEntity(squadID, ms.manager)
 	if actionStateEntity == nil {
 		return fmt.Errorf("no action state for squad")
 	}
@@ -115,8 +117,8 @@ func (ms *CombatMovementSystem) MoveSquad(squadID ecs.EntityID, targetPos coords
 		return fmt.Errorf("failed to move squad: %w", err)
 	}
 
-	decrementMovementRemaining(squadID, movementCost, ms.manager)
-	markSquadAsMoved(squadID, ms.manager)
+	decrementMovementRemaining(ms.combatCache, squadID, movementCost, ms.manager)
+	markSquadAsMoved(ms.combatCache, squadID, ms.manager)
 
 	return nil
 }
@@ -127,8 +129,8 @@ func (ms *CombatMovementSystem) GetValidMovementTiles(squadID ecs.EntityID) []co
 		return []coords.LogicalPosition{}
 	}
 
-	// Get remaining movement
-	actionStateEntity := FindActionStateEntity(squadID, ms.manager)
+	// Get remaining movement (using cached query for performance)
+	actionStateEntity := ms.combatCache.FindActionStateEntity(squadID, ms.manager)
 	if actionStateEntity == nil {
 		return []coords.LogicalPosition{}
 	}

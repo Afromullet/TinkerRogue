@@ -24,3 +24,7 @@ Remove the map in Guiqueries.
 Check which combat queries should use views
 
 Add proper squad/unit cleanup on death
+
+ecsutil.go has redundant functions
+
+Get rid of the circular inclusion issue for which we have interface{} in the gui

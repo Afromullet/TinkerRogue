@@ -21,7 +21,7 @@ import (
 // - Zero per-frame memory allocations (views are persistent)
 type SquadQueryCache struct {
 	// ECS Views (automatically maintained by ECS library)
-	// Exported so they can be accessed by other systems
+	// Exported so they can be accessed by other systems (e.g., BuildSquadInfoCache)
 	SquadView       *ecs.View // All SquadTag entities
 	SquadMemberView *ecs.View // All SquadMemberTag entities
 	LeaderView      *ecs.View // All LeaderTag entities

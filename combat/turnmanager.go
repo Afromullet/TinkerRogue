@@ -9,12 +9,14 @@ import (
 )
 
 type TurnManager struct {
-	manager *common.EntityManager
+	manager      *common.EntityManager
+	combatCache  *CombatQueryCache // Cached queries for O(k) instead of O(n)
 }
 
 func NewTurnManager(manager *common.EntityManager) *TurnManager {
 	return &TurnManager{
-		manager: manager,
+		manager:     manager,
+		combatCache: NewCombatQueryCache(manager),
 	}
 }
 
@@ -67,7 +69,7 @@ func (tm *TurnManager) ResetSquadActions(factionID ecs.EntityID) error {
 	moveSys := NewMovementSystem(tm.manager, common.GlobalPositionSystem)
 
 	for _, squadID := range factionSquads {
-		actionEntity := FindActionStateEntity(squadID, tm.manager)
+		actionEntity := tm.combatCache.FindActionStateEntity(squadID, tm.manager)
 		if actionEntity == nil {
 			continue
 		}

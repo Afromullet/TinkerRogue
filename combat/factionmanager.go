@@ -10,12 +10,14 @@ import (
 )
 
 type FactionManager struct {
-	manager *common.EntityManager
+	manager     *common.EntityManager
+	combatCache *CombatQueryCache // Cached queries for O(k) instead of O(n)
 }
 
 func NewFactionManager(manager *common.EntityManager) *FactionManager {
 	return &FactionManager{
-		manager: manager,
+		manager:     manager,
+		combatCache: NewCombatQueryCache(manager),
 	}
 }
 
@@ -36,7 +38,7 @@ func (fm *FactionManager) CreateFaction(name string, isPlayer bool) ecs.EntityID
 
 func (fm *FactionManager) AddSquadToFaction(factionID, squadID ecs.EntityID, position coords.LogicalPosition) error {
 
-	faction := FindFactionByID(factionID, fm.manager)
+	faction := fm.combatCache.FindFactionByID(factionID, fm.manager)
 	if faction == nil {
 		return fmt.Errorf("faction %d not found", factionID)
 	}
@@ -122,8 +124,8 @@ func (fm *FactionManager) RemoveSquadFromFaction(factionID, squadID ecs.EntityID
 }
 
 func (fm *FactionManager) GetFactionMana(factionID ecs.EntityID) (current, max int) {
-	// Find faction entity
-	faction := FindFactionByID(factionID, fm.manager)
+	// Find faction entity (using cached query for performance)
+	faction := fm.combatCache.FindFactionByID(factionID, fm.manager)
 	if faction == nil {
 		return 0, 0 // Faction not found
 	}
@@ -134,8 +136,8 @@ func (fm *FactionManager) GetFactionMana(factionID ecs.EntityID) (current, max i
 }
 
 func (fm *FactionManager) GetFactionName(factionID ecs.EntityID) string {
-	// Find faction entity
-	faction := FindFactionByID(factionID, fm.manager)
+	// Find faction entity (using cached query for performance)
+	faction := fm.combatCache.FindFactionByID(factionID, fm.manager)
 	if faction == nil {
 		return "Unknown"
 	}
