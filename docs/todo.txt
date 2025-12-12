@@ -21,7 +21,7 @@ Things we're in the a different view. Notice the issue as follows 1) Open Buy Un
 
 Remove the map in Guiqueries. 
 
-Check which combat queries should use views
+
 
 Add proper squad/unit cleanup on death
 

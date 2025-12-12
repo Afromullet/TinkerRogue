@@ -156,16 +156,29 @@ func (cah *CombatActionHandler) ExecuteAttack() {
 		return
 	}
 
-	// Reset UI state before animation
+	// Validate attack BEFORE triggering animation (prevents animation on invalid attacks)
+	result := cah.combatService.ExecuteSquadAttack(selectedSquad, selectedTarget)
+
+	// Reset UI state
 	cah.battleMapState.InAttackMode = false
 
-	// Trigger combat animation mode if available
+	// Handle invalid attacks immediately (no animation)
+	if !result.Success {
+		cah.addLog(fmt.Sprintf("Cannot attack: %s", result.ErrorReason))
+		return
+	}
+
+	// Attack is valid - show animation then apply results
 	if cah.modeManager != nil {
 		if animMode, exists := cah.modeManager.GetMode("combat_animation"); exists {
 			if caMode, ok := animMode.(*CombatAnimationMode); ok {
 				caMode.SetCombatants(selectedSquad, selectedTarget)
 				caMode.SetOnComplete(func() {
-					cah.executeAttackInternal(selectedSquad, selectedTarget)
+					// Animation complete - show attack results
+					cah.addLog(fmt.Sprintf("%s attacked %s!", result.AttackerName, result.TargetName))
+					if result.TargetDestroyed {
+						cah.addLog(fmt.Sprintf("%s was destroyed!", result.TargetName))
+					}
 				})
 				cah.modeManager.RequestTransition(animMode, "Combat animation")
 				return
@@ -173,27 +186,13 @@ func (cah *CombatActionHandler) ExecuteAttack() {
 		}
 	}
 
-	//Todo remove this
-	// Fallback: execute directly if animation mode not available
-	cah.executeAttackInternal(selectedSquad, selectedTarget)
-}
-
-// TODO remove this
-// executeAttackInternal performs the actual attack logic after animation
-func (cah *CombatActionHandler) executeAttackInternal(attackerID, targetID ecs.EntityID) {
-	// Call service for all game logic
-	result := cah.combatService.ExecuteSquadAttack(attackerID, targetID)
-
-	// Handle result - UI ONLY
-	if !result.Success {
-		cah.addLog(fmt.Sprintf("Cannot attack: %s", result.ErrorReason))
-	} else {
-		cah.addLog(fmt.Sprintf("%s attacked %s!", result.AttackerName, result.TargetName))
-		if result.TargetDestroyed {
-			cah.addLog(fmt.Sprintf("%s was destroyed!", result.TargetName))
-		}
+	// Fallback: no animation mode, just show results
+	cah.addLog(fmt.Sprintf("%s attacked %s!", result.AttackerName, result.TargetName))
+	if result.TargetDestroyed {
+		cah.addLog(fmt.Sprintf("%s was destroyed!", result.TargetName))
 	}
 }
+
 
 // MoveSquad moves a squad to a new position using command pattern for undo support
 func (cah *CombatActionHandler) MoveSquad(squadID ecs.EntityID, newPos coords.LogicalPosition) error {

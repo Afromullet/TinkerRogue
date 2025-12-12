@@ -11,21 +11,23 @@ import (
 
 // CombatService encapsulates all combat game logic and system ownership
 type CombatService struct {
-	entityManager  *common.EntityManager
-	turnManager    *combat.TurnManager
-	factionManager *combat.FactionManager
-	movementSystem *combat.CombatMovementSystem
-	combatCache    *combat.CombatQueryCache // Cached queries for O(k) instead of O(n)
+	entityManager   *common.EntityManager
+	turnManager     *combat.TurnManager
+	factionManager  *combat.FactionManager
+	movementSystem  *combat.CombatMovementSystem
+	combatCache     *combat.CombatQueryCache    // Cached queries for O(k) instead of O(n)
+	combatActSystem *combat.CombatActionSystem  // Shared action system (prevents double-attack bug)
 }
 
 // NewCombatService creates a new combat service
 func NewCombatService(manager *common.EntityManager) *CombatService {
 	return &CombatService{
-		entityManager:  manager,
-		turnManager:    combat.NewTurnManager(manager),
-		factionManager: combat.NewFactionManager(manager),
-		movementSystem: combat.NewMovementSystem(manager, common.GlobalPositionSystem),
-		combatCache:    combat.NewCombatQueryCache(manager),
+		entityManager:   manager,
+		turnManager:     combat.NewTurnManager(manager),
+		factionManager:  combat.NewFactionManager(manager),
+		movementSystem:  combat.NewMovementSystem(manager, common.GlobalPositionSystem),
+		combatCache:     combat.NewCombatQueryCache(manager),
+		combatActSystem: combat.NewCombatActionSystem(manager), // Create once, reuse for all attacks
 	}
 }
 
@@ -43,11 +45,11 @@ type AttackResult struct {
 func (cs *CombatService) ExecuteSquadAttack(attackerID, targetID ecs.EntityID) *AttackResult {
 	result := &AttackResult{}
 
-	// Create combat action system
-	combatSys := combat.NewCombatActionSystem(cs.entityManager)
+	// Use shared combat action system (FIX: prevents double-attack bug)
+	// Each attack MUST use the same cache instance to see HasActed flag updates
 
 	// Validate attack
-	reason, canAttack := combatSys.CanSquadAttackWithReason(attackerID, targetID)
+	reason, canAttack := cs.combatActSystem.CanSquadAttackWithReason(attackerID, targetID)
 	if !canAttack {
 		result.Success = false
 		result.ErrorReason = reason
@@ -59,7 +61,7 @@ func (cs *CombatService) ExecuteSquadAttack(attackerID, targetID ecs.EntityID) *
 	result.TargetName = getSquadNameByID(targetID, cs.entityManager)
 
 	// Execute attack
-	err := combatSys.ExecuteAttackAction(attackerID, targetID)
+	err := cs.combatActSystem.ExecuteAttackAction(attackerID, targetID)
 	if err != nil {
 		result.Success = false
 		result.ErrorReason = err.Error()

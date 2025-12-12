@@ -279,33 +279,46 @@ func (cm *CombatMode) handleEndTurn() {
 
 func (cm *CombatMode) Enter(fromMode core.UIMode) error {
 	fmt.Println("Entering Combat Mode")
-	cm.logManager.UpdateTextArea(cm.combatLogArea, "=== COMBAT STARTED ===")
 
-	// Collect all factions using query service
-	factionIDs := cm.Queries.GetAllFactions()
+	// Check if we're starting fresh combat or returning mid-combat
+	// Fresh combat: coming from exploration, squad deployment, or worldmap modes
+	// Mid-combat: returning from animation mode
+	isComingFromAnimation := fromMode != nil && fromMode.GetModeName() == "combat_animation"
+	shouldInitialize := !isComingFromAnimation
 
-	// Initialize combat with all factions
-	if len(factionIDs) > 0 {
-		if err := cm.combatService.InitializeCombat(factionIDs); err != nil {
-			cm.logManager.UpdateTextArea(cm.combatLogArea, fmt.Sprintf("Error initializing combat: %v", err))
-			return err
+	if shouldInitialize {
+		// Fresh combat start - initialize everything
+		cm.logManager.UpdateTextArea(cm.combatLogArea, "=== COMBAT STARTED ===")
+
+		// Collect all factions using query service
+		factionIDs := cm.Queries.GetAllFactions()
+
+		// Initialize combat with all factions
+		if len(factionIDs) > 0 {
+			if err := cm.combatService.InitializeCombat(factionIDs); err != nil {
+				cm.logManager.UpdateTextArea(cm.combatLogArea, fmt.Sprintf("Error initializing combat: %v", err))
+				return err
+			}
+
+			// Log initial faction
+			currentFactionID := cm.combatService.GetCurrentFaction()
+			factionData := cm.Queries.CombatCache.FindFactionDataByID(currentFactionID, cm.Queries.ECSManager)
+			factionName := "Unknown"
+			if factionData != nil {
+				factionName = factionData.Name
+			}
+			cm.logManager.UpdateTextArea(cm.combatLogArea, fmt.Sprintf("Round 1: %s goes first!", factionName))
+		} else {
+			cm.logManager.UpdateTextArea(cm.combatLogArea, "No factions found - combat cannot start")
 		}
+	}
 
-		// Log initial faction
-		currentFactionID := cm.combatService.GetCurrentFaction()
-		factionData := cm.Queries.CombatCache.FindFactionDataByID(currentFactionID, cm.Queries.ECSManager)
-		factionName := "Unknown"
-		if factionData != nil {
-			factionName = factionData.Name
-		}
-		cm.logManager.UpdateTextArea(cm.combatLogArea, fmt.Sprintf("Round 1: %s goes first!", factionName))
-
-		// Update displays using components
+	// Always refresh UI displays (whether fresh or returning from animation)
+	currentFactionID := cm.combatService.GetCurrentFaction()
+	if currentFactionID != 0 {
 		cm.turnOrderComponent.Refresh()
 		cm.factionInfoComponent.ShowFaction(currentFactionID)
 		cm.squadListComponent.Refresh()
-	} else {
-		cm.logManager.UpdateTextArea(cm.combatLogArea, "No factions found - combat cannot start")
 	}
 
 	return nil
