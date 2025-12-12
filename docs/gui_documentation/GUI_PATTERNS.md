@@ -1,9 +1,12 @@
 # TinkerRogue GUI Patterns & Architecture
 
-**Version:** 2.0
-**Last Updated:** 2025-11-29
+**Version:** 2.1
+**Last Updated:** 2025-12-12
+**Related Documentation:** See [DOCUMENTATION.md](../DOCUMENTATION.md) Section 9: "GUI Architecture" for architectural overview.
 
 Comprehensive technical documentation for TinkerRogue's GUI system. This guide covers architectural patterns, common implementations, and best practices for building UI features.
+
+> **Note:** This document provides deep-dive patterns for GUI implementation. For high-level architecture, component catalog, and data flow patterns, see the main DOCUMENTATION.md.
 
 ---
 
@@ -22,6 +25,7 @@ Comprehensive technical documentation for TinkerRogue's GUI system. This guide c
 11. [Rendering Patterns](#rendering-patterns)
 12. [Context Switching](#context-switching)
 13. [Best Practices](#best-practices)
+14. [Cross-Reference to Main Documentation](#cross-reference-to-main-documentation)
 
 ---
 
@@ -1924,6 +1928,77 @@ When creating a new GUI mode, use this checklist:
 **UIContext** - Shared game state (ECS manager, player data, screen info) passed to modes.
 
 **ViewportRenderer** - Base renderer for viewport-centered tile drawing.
+
+---
+
+## Cross-Reference to Main Documentation
+
+This document complements the main **DOCUMENTATION.md** with deep-dive implementation patterns. Use this reference table to navigate between documents:
+
+### Architecture & Design
+| Topic | GUI_PATTERNS.md | DOCUMENTATION.md |
+|-------|-----------------|------------------|
+| **GUI Overview** | [Architecture Overview](#architecture-overview) | [Section 9: GUI Architecture](../DOCUMENTATION.md#gui-architecture) |
+| **Mode Manager** | [Mode Infrastructure](#mode-infrastructure) | [Mode Manager Pattern](../DOCUMENTATION.md#mode-manager-pattern) |
+| **Context Switching** | [Context Switching](#context-switching) | [GUI Architecture - Context](../DOCUMENTATION.md#mode-based-gui) |
+| **BaseMode Pattern** | [BaseMode Embedding](#basemode-embedding) | [Mode Manager Pattern](../DOCUMENTATION.md#mode-manager-pattern) |
+
+### Widgets & Layout
+| Topic | GUI_PATTERNS.md | DOCUMENTATION.md |
+|-------|-----------------|------------------|
+| **Widget Creation** | [Widget Creation Patterns](#widget-creation-patterns) | [GUI Architecture - Modes](../DOCUMENTATION.md#available-modes) |
+| **Layout System** | [Layout Patterns](#layout-patterns) | [Layout Patterns](../DOCUMENTATION.md#layout-patterns) |
+| **Panel Building** | [Panel Building System](#panel-building-system) | [GUI Architecture - Context](../DOCUMENTATION.md#gui-context) |
+| **Standard Panels** | [Level 1: Standard Panels](#level-1-standard-panels) | Not covered in main docs |
+
+### Components & Services
+| Topic | GUI_PATTERNS.md | DOCUMENTATION.md |
+|-------|-----------------|------------------|
+| **UI Components** | [Component Architecture](#component-architecture) | [GUI Architecture - Widgets](../DOCUMENTATION.md#widget-system) |
+| **GUIQueries** | [Query Abstraction](#query-abstraction) | [Service Integration](#service-integration) |
+| **Command Pattern** | [Command Pattern](#command-pattern) | Section 13: [Data Flow Patterns](../DOCUMENTATION.md#data-flow-patterns) |
+| **Service Integration** | [Service Integration](#service-integration) | Section 8: [Combat System](../DOCUMENTATION.md#combat-service-layer) |
+
+### Input & Rendering
+| Topic | GUI_PATTERNS.md | DOCUMENTATION.md |
+|-------|-----------------|------------------|
+| **Input Handling** | [Input Handling](#input-handling) | Section 12: [Input System](../DOCUMENTATION.md#input-system) |
+| **Rendering Patterns** | [Rendering Patterns](#rendering-patterns) | [Rendering Patterns](../DOCUMENTATION.md#rendering-patterns) |
+| **Input Priority** | Not covered | Section 12: [Input Priority Chain](../DOCUMENTATION.md#input-priority-chain) |
+
+---
+
+## Document Purpose & Scope
+
+**GUI_PATTERNS.md** provides:
+- **Deep implementation details** for GUI patterns (not covered in main docs)
+- **Code examples** showing how to use each pattern
+- **File structure** and organizational conventions
+- **Best practices** and common pitfalls
+- **Checklist** for creating new GUI modes
+
+**DOCUMENTATION.md** provides:
+- **High-level architecture** overview
+- **Component catalog** (complete list of all components)
+- **Data flow** through the GUI system
+- **Cross-system integration** (GUI + ECS + Combat)
+- **Development patterns** for the entire project
+
+### When to Use Each Document
+
+**Start here (GUI_PATTERNS.md) if you're:**
+- Implementing a new GUI mode
+- Creating custom widgets
+- Working on layout and positioning
+- Debugging GUI input handling
+- Learning GUI code patterns
+
+**Start here (DOCUMENTATION.md) if you're:**
+- New to TinkerRogue architecture
+- Understanding the full system
+- Integrating GUI with combat/inventory
+- Looking for component specifications
+- Understanding data flow patterns
 
 ---
 

@@ -1,1717 +1,1053 @@
-# TinkerRogue: Technical Documentation
+# TinkerRogue Technical Documentation
 
-**Last Updated:** 2025-11-21
-**Version:** 5.0 - Architectural Edition
+**Version:** 2.0 (Merged Edition)
+**Last Updated:** 2025-12-12
+**Project Type:** Turn-based tactical roguelike with squad combat
+**Language:** Go 1.x
+**ECS Library:** bytearena/ecs
+**UI Framework:** Ebitengine v2 + ebitenui
 
 ---
 
 ## Table of Contents
 
-1. [Introduction](#1-introduction)
-2. [Architecture Overview](#2-architecture-overview)
-3. [Core Systems](#3-core-systems)
-4. [Package Guide](#4-package-guide)
-5. [Data Flow & Integration](#5-data-flow--integration)
-6. [Development Guide](#6-development-guide)
-7. [Reference](#7-reference)
+1. [Executive Summary](#executive-summary)
+2. [Architecture Overview](#architecture-overview)
+3. [Core Systems](#core-systems)
+4. [Component Catalog](#component-catalog)
+5. [Coordinate System](#coordinate-system)
+6. [Entity Component System (ECS)](#entity-component-system-ecs)
+7. [Squad System](#squad-system)
+8. [Combat System](#combat-system)
+9. [GUI Architecture](#gui-architecture)
+10. [Inventory & Gear](#inventory--gear)
+11. [World Generation](#world-generation)
+12. [Input System](#input-system)
+13. [Data Flow Patterns](#data-flow-patterns)
+14. [Development Patterns](#development-patterns)
+15. [Performance Considerations](#performance-considerations)
+16. [Appendices](#appendices)
 
 ---
 
-## 1. Introduction
+## Executive Summary
 
-### What is TinkerRogue?
+TinkerRogue is a turn-based tactical roguelike implemented in Go using a pure Entity Component System (ECS) architecture. The game features squad-based tactical combat where players control formations of units in a 3x3 grid layout, engaging enemy squads on procedurally generated maps.
 
-TinkerRogue is a **turn-based tactical roguelike** built in Go using the Ebiten game engine. It combines classic roguelike dungeon crawling with tactical squad-based combat inspired by games like Final Fantasy Tactics and Fire Emblem.
+### Key Architectural Decisions
 
-**Core Gameplay:**
-- Explore procedurally generated dungeons
-- Command squads arranged in 3x3 tactical formations
-- Manage inventory, equipment, and consumables
-- Engage in turn-based combat with emergent tactical depth
+1. **Pure ECS Architecture**: All game logic follows strict ECS patterns with zero logic in components, EntityID-only relationships, and query-based data access.
 
-### Design Philosophy
+2. **Global Coordinate Manager**: A single global `coords.CoordManager` instance handles all coordinate conversions, preventing index-out-of-bounds errors that plagued earlier versions.
 
-The codebase is built on three foundational principles:
+3. **O(1) Spatial Queries**: The `GlobalPositionSystem` provides constant-time position lookups using value-based map keys, replacing O(n) linear searches.
 
-1. **Pure Entity Component System (ECS) Architecture**
-   - Entities are lightweight IDs, not objects
-   - Components are pure data with zero logic
-   - Systems are functions that operate on components
-   - This enables extreme flexibility and composability
+4. **Mode-Based GUI**: UI uses a mode manager pattern with context isolation between different game states (overworld, combat, inventory, squad builder).
 
-2. **Data-Driven Design**
-   - Game content (monsters, items, weapons) defined in JSON
-   - Entity templates loaded at runtime
-   - Designers can modify content without touching code
+5. **Template-Based Entity Creation**: Entity spawning uses JSON templates loaded from files, separating data from code.
 
-3. **Performance Through Architecture**
-   - Type-safe coordinate systems prevent bugs
-   - O(1) spatial queries using value-based map keys
-   - Clean separation of concerns for maintainability
+### Technical Metrics
 
-### Key Technical Features
+- **Lines of Code**: ~15,000+ across 90+ files
+- **Packages**: 12 major systems (common, coords, squads, combat, gui, gear, worldmap, etc.)
+- **Components**: 25+ registered ECS components
+- **Entity Types**: Units, Squads, Items, Tiles, Factions, Combat State
+- **Performance**: Value-based map keys provide 50x improvement over pointer-based keys
 
-- **ECS Framework:** bytearena/ecs library
-- **Game Engine:** Ebiten v2 (2D, cross-platform)
-- **UI Framework:** EbitenUI for complex UI modes
-- **Spatial Queries:** Custom O(1) position system (50x faster than naive approaches)
-- **Squad Combat:** 2675 LOC tactical combat system with abilities, formations, and multi-cell units
-- **Inventory System:** 533 LOC ECS-compliant item management
-- **Map Generation:** Strategy pattern with pluggable generators (rooms-and-corridors, tactical biome)
+### Reading Paths
+
+**For New Developers:**
+1. Start with [Architecture Overview](#architecture-overview)
+2. Read [Entity Component System](#entity-component-system-ecs)
+3. Study [Squad System](#squad-system) as reference implementation
+4. Review `docs/ecs_best_practices.md` for detailed patterns
+
+**For Gameplay Programmers:**
+1. [Squad System](#squad-system) - Formation-based combat
+2. [Combat System](#combat-system) - Turn management and resolution
+3. [Inventory & Gear](#inventory--gear) - Item handling
+
+**For UI Developers:**
+1. [GUI Architecture](#gui-architecture) - Mode management
+2. [Input System](#input-system) - Controller pattern
+3. [Data Flow Patterns](#data-flow-patterns) - UI to ECS integration
+
+**For Systems Programmers:**
+1. [Coordinate System](#coordinate-system) - Global manager pattern
+2. [Performance Considerations](#performance-considerations) - Optimization strategies
+3. [Entity Component System](#entity-component-system-ecs) - Component access helpers
 
 ---
 
-## 2. Architecture Overview
+## Architecture Overview
 
-### 2.1 The Big Picture
-
-TinkerRogue's architecture follows a strict ECS pattern with clear system boundaries:
+### System Diagram
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                         GAME LOOP                                │
-│  (game_main/main.go - 60 FPS, turn-based state machine)         │
-└────────────┬────────────────────────────────────────────────────┘
-             │
-        ┌────▼────┐
-        │ UPDATE  │
-        └────┬────┘
-             │
-    ┌────────┴────────┐
-    │                 │
-┌───▼───────┐  ┌─────▼──────┐
-│   INPUT   │  │   SYSTEMS  │
-│  SYSTEM   │  │  (ECS)     │
-└───┬───────┘  └─────┬──────┘
-    │                │
-    │     ┌──────────┼──────────┐
-    │     │          │          │
-    │  ┌──▼───┐  ┌──▼────┐  ┌──▼─────┐
-    │  │Squad │  │Combat │  │Position│
-    │  │System│  │System │  │System  │
-    │  └──┬───┘  └──┬────┘  └──┬─────┘
-    │     │         │          │
-    │     └─────────┼──────────┘
-    │               │
-    │     ┌─────────▼─────────┐
-    │     │   ECS MANAGER     │
-    │     │  (Entity Store)   │
-    │     └─────────┬─────────┘
-    │               │
-    │         ┌─────▼──────┐
-    │         │ COMPONENTS │
-    │         │ (Pure Data)│
-    │         └────────────┘
-    │
-┌───▼────┐
-│  DRAW  │
-└───┬────┘
-    │
-┌───▼────────┐
-│ RENDERING  │
-│  SYSTEM    │
-└────┬───────┘
-     │
-┌────▼────┐
-│ SCREEN  │
-└─────────┘
+│                        Game Main Loop                            │
+│  (game_main/main.go, gameinit.go)                               │
+└─────────────┬───────────────────────────────────────────────────┘
+              │
+              ├─ Global Systems (Initialized Once)
+              │  ├─ coords.CoordManager (coordinate conversions)
+              │  ├─ common.GlobalPositionSystem (O(1) spatial queries)
+              │  └─ common.EntityManager (ECS world + tag registry)
+              │
+              ├─ Core Systems (Per-Entity State)
+              │  ├─ squads/ (formation management, abilities)
+              │  ├─ combat/ (turn management, damage resolution)
+              │  ├─ gear/ (inventory, items, equipment)
+              │  └─ worldmap/ (procedural generation)
+              │
+              ├─ GUI Layer (Mode-Based)
+              │  ├─ gui/core/ (UIModeManager, context switching)
+              │  ├─ gui/guimodes/ (OverworldMode, CombatMode, etc.)
+              │  ├─ gui/widgets/ (reusable UI components)
+              │  └─ gui/guicombat/ (combat-specific UI)
+              │
+              └─ Input Layer (Controller Pattern)
+                 ├─ input/inputcoordinator.go (dispatches to controllers)
+                 ├─ input/movementcontroller.go (player movement)
+                 ├─ input/combatcontroller.go (combat actions)
+                 └─ input/uicontroller.go (UI interactions)
 ```
 
-### 2.2 Architectural Layers
-
-The codebase is organized into distinct layers:
-
-#### Layer 1: Core Infrastructure
-- **ECS Manager** (`common/`) - Entity and component registration
-- **Coordinate System** (`coords/`) - LogicalPosition ↔ PixelPosition conversions
-- **Position System** (`systems/positionsystem.go`) - O(1) spatial lookups
-
-#### Layer 2: Game Systems
-- **Input System** (`input/`) - Priority-based input handling (UI → Combat → Movement)
-- **Squad System** (`squads/`) - Tactical formations, combat, abilities
-- **Inventory System** (`gear/`) - Item management, equipment
-- **Combat System** - Attack resolution, damage calculation
-- **World Map** (`worldmap/`) - Procedural generation with strategy pattern
-
-#### Layer 3: Presentation
-- **Rendering System** (`rendering/`) - Entity sprite rendering
-- **Graphics System** (`graphics/`) - Visual effects, shapes, animations
-- **GUI System** (`gui/`) - Modal UI interfaces (inventory, squad management, etc.)
-
-#### Layer 4: Content
-- **Entity Templates** (`entitytemplates/`) - JSON-based entity factories
-- **Asset Management** - Image loading, data file parsing
-
-### 2.3 Key Architectural Patterns
-
-#### Pure ECS Architecture
-
-The entire game follows strict ECS principles:
-
-```go
-// Entities are lightweight handles
-entity := manager.NewEntity()
-entityID := entity.GetID()  // Use EntityID, not pointers
-
-// Components are pure data (no methods)
-type Position struct {
-    X, Y int  // Just data
-}
-
-// Systems are functions that operate on components
-func MoveSystem(manager *ecs.Manager) {
-    for _, result := range manager.Query(movableTag) {
-        pos := GetComponent[*Position](result.Entity)
-        pos.X += 1  // System logic
-    }
-}
-```
-
-**Why This Matters:**
-- Components can be added/removed at runtime (extreme flexibility)
-- No inheritance hierarchy to manage
-- Systems are testable in isolation
-- Easy to parallelize systems (future optimization)
-
-#### Query-Based Relationships
-
-Instead of storing references, we discover relationships through queries:
-
-```go
-// ✅ CORRECT: Query-based discovery
-func GetUnitsInSquad(squadID EntityID) []EntityID {
-    var units []EntityID
-    for _, result := range manager.Query(squadMemberTag) {
-        member := GetComponent[*SquadMemberData](result.Entity)
-        if member.SquadID == squadID {
-            units = append(units, result.Entity.GetID())
-        }
-    }
-    return units
-}
-
-// ❌ WRONG: Stored references (manual synchronization)
-type Squad struct {
-    Units []EntityID  // Must manually update on add/remove
-}
-```
-
-**Benefits:**
-- Always reflects actual state
-- No synchronization bugs
-- Handles entity destruction automatically
-
-#### Value-Based Map Keys
-
-The Position System achieves O(1) lookups using value types as map keys:
-
-```go
-// ✅ CORRECT: Value-based keys (O(1) hash lookup)
-type PositionSystem struct {
-    spatialGrid map[coords.LogicalPosition][]ecs.EntityID
-}
-
-// ❌ WRONG: Pointer keys (O(n) comparison)
-spatialGrid map[*coords.LogicalPosition]*ecs.Entity
-```
-
-**Impact:** 50x performance improvement over pointer-based legacy system.
-
-#### Strategy Pattern for Map Generation
-
-World map generation uses the strategy pattern for pluggable algorithms:
-
-```go
-type MapGenerator interface {
-    GetName() string
-    GetDescription() string
-    Generate(width, height int) *GenerationResult
-}
-
-// Register generators at init time
-func init() {
-    RegisterGenerator("rooms_corridors", &RoomsCorridorsGenerator{})
-    RegisterGenerator("tactical_biome", &TacticalBiomeGenerator{})
-}
-
-// Use any registered generator
-gameMap := worldmap.NewGameMap("tactical_biome")
-```
-
-**Benefits:**
-- Add new generators without modifying existing code
-- Each generator independently testable
-- Clear contract via interface
-
-### 2.4 Package Organization
+### Package Structure
 
 ```
 TinkerRogue/
-├── game_main/          # Entry point, game loop, initialization
-├── common/             # Core ECS utilities, shared components
-├── coords/             # Coordinate system and transformations
-├── systems/            # ECS systems (position, movement, etc.)
-├── squads/             # Squad system (components, queries, combat)
-├── gear/               # Inventory and item system
-├── combat/             # Combat resolution (damage, hit/miss)
-├── input/              # Input handling (priority-based controllers)
-├── rendering/          # Entity rendering system
-├── graphics/           # Visual effects, shapes, screen utilities
-├── gui/                # UI modes (inventory, squad management, etc.)
-├── worldmap/           # Map generation (strategy pattern)
-├── entitytemplates/    # JSON-based entity factories
-├── spawning/           # Entity spawning logic
-├── testing/            # Test utilities and helpers
-└── assets/             # Game resources (images, JSON data)
+├── common/              # Core ECS utilities, shared components
+│   ├── ecsutil.go      # Type-safe component access helpers
+│   ├── commoncomponents.go  # Position, Attributes, Name
+│   └── playerdata.go   # Player state
+│
+├── coords/              # Coordinate management (CRITICAL)
+│   ├── cordmanager.go  # Global CoordManager singleton
+│   └── position.go     # LogicalPosition, PixelPosition types
+│
+├── systems/             # ECS systems (position tracking, etc.)
+│   └── positionsystem.go  # O(1) spatial grid (GlobalPositionSystem)
+│
+├── squads/              # Squad system (REFERENCE IMPLEMENTATION)
+│   ├── squadcomponents.go   # 8 pure data components
+│   ├── squadqueries.go      # Query functions
+│   ├── squadcombat.go       # Combat logic
+│   ├── squadabilities.go    # Leader abilities
+│   └── squadmanager.go      # Initialization
+│
+├── combat/              # Turn-based combat management
+│   ├── turnmanager.go       # Turn order, round tracking
+│   ├── combatservices/      # Combat service layer
+│   └── gameplayfactions.go  # Faction system
+│
+├── gear/                # Inventory and items
+│   ├── Inventory.go         # Pure ECS inventory (REFERENCE)
+│   ├── items.go             # Item components
+│   └── inventory_service.go # Service layer
+│
+├── gui/                 # User interface
+│   ├── core/                # Mode manager, context
+│   ├── guimodes/            # Game modes (overworld, combat)
+│   ├── widgets/             # Reusable widgets
+│   ├── guicombat/           # Combat UI
+│   └── guisquads/           # Squad builder UI
+│
+├── input/               # Input handling
+│   ├── inputcoordinator.go  # Central dispatcher
+│   ├── movementcontroller.go
+│   ├── combatcontroller.go
+│   └── uicontroller.go
+│
+├── worldmap/            # Procedural generation
+│   ├── generator.go         # Generator registry
+│   ├── gen_rooms_corridors.go
+│   ├── gen_tactical_biome.go
+│   └── gen_overworld.go
+│
+├── entitytemplates/     # JSON-based entity creation
+│   ├── templatelib.go       # Template registry
+│   ├── creators.go          # Factory functions
+│   └── readdata.go          # JSON loading
+│
+└── game_main/           # Entry point and initialization
+    ├── main.go              # Game loop
+    ├── gameinit.go          # System initialization
+    └── componentinit.go     # Component registration
 ```
 
-### 2.5 Critical Design Decisions
+### Dependency Flow
 
-#### Decision: Use EntityID Instead of Entity Pointers
+```
+game_main (entry point)
+    ↓
+common (ECS utilities) ← ALL systems depend on this
+    ↓
+coords (coordinate conversions) ← Used by rendering, input, worldmap
+    ↓
+systems (spatial queries) ← Used by combat, movement
+    ↓
+squads, combat, gear (game logic) ← Independent of each other
+    ↓
+gui (presentation layer) → Reads from ECS, writes commands
+    ↓
+input (user interaction) → Modifies ECS state via controllers
+```
 
-**Rationale:**
-- Entity pointers become stale if entity is destroyed/recreated
-- Prevents serialization (can't save/load game state)
-- Creates circular reference issues
+**Key Principle**: Dependencies flow downward. GUI and input layers are at the top and depend on lower layers but not vice versa. Game logic systems (squads, combat, gear) are independent and communicate through ECS.
 
-**Implementation:**
-All components store `ecs.EntityID` (uint64) instead of `*ecs.Entity`.
+### Global Instances
 
-#### Decision: O(1) Position System
+TinkerRogue uses three global singleton instances for performance and convenience:
 
-**Rationale:**
-- Previous pointer-based tracker was O(n) for position lookups
-- Caused 50x performance degradation in entity-dense scenes
-- Value-based map keys enable proper hash lookups
+```go
+// coords/cordmanager.go
+var CoordManager *CoordinateManager  // Initialized in init()
 
-**Implementation:**
-`map[coords.LogicalPosition][]ecs.EntityID` using value types.
+// common/ecsutil.go
+var GlobalPositionSystem *systems.PositionSystem  // Initialized in gameinit.go
 
-#### Decision: System Functions Instead of Component Methods
+// EntityManager is NOT global - passed as parameter
+// Prevents tight coupling and enables testing
+```
 
-**Rationale:**
-- Components with methods violate ECS principles
-- Makes testing difficult (must create full component instances)
-- Prevents logic reuse across different components
+**Why These Globals Are Acceptable:**
 
-**Implementation:**
-All logic in standalone functions (e.g., `gear.AddItem()` instead of `inv.AddItem()`).
+1. **CoordManager**: Coordinate math is pure and stateless. Having one instance prevents manual width/height passing and eliminates index calculation bugs.
 
-#### Decision: Type-Safe Coordinate System
+2. **GlobalPositionSystem**: Spatial queries are accessed from many unrelated systems. Global access prevents threading the system through every function call.
 
-**Rationale:**
-- Mixing logical (tile) and pixel coordinates caused constant bugs
-- Explicit types prevent accidental misuse
-
-**Implementation:**
-`LogicalPosition` and `PixelPosition` as distinct types with conversion functions.
+3. **EntityManager is NOT Global**: Game state must be testable and isolated. EntityManager is always passed as a parameter to enable multiple game instances and unit testing.
 
 ---
 
-## 3. Core Systems
+## Core Systems
 
-This section explains each major system, its purpose, how it works, and how it integrates with other systems.
+### Component Registration Flow
 
-### 3.1 Entity Component System (ECS)
+Understanding component initialization is critical. Components must be registered before use or you'll get nil pointer panics.
 
-#### Purpose
-
-The ECS is the **foundation** of the entire game. Every game object (player, monster, item, squad) is an entity with components attached. All game logic operates through systems that query and manipulate these components.
-
-#### How It Works
-
-**Entities:**
 ```go
-entity := manager.NewEntity()  // Creates lightweight ID container
-entityID := entity.GetID()     // Get native EntityID (uint64)
-```
+// 1. Component Declaration (squads/squadcomponents.go)
+package squads
 
-**Components:**
-```go
-// Component definition (pure data, no methods)
-type Attributes struct {
-    Strength      int
-    Dexterity     int
-    CurrentHealth int
-    MaxHealth     int
-}
-
-// Component registration (at startup)
-common.AttributeComponent = manager.NewComponent()
-
-// Adding component to entity
-entity.AddComponent(common.AttributeComponent, &Attributes{
-    Strength:      15,
-    CurrentHealth: 50,
-    MaxHealth:     50,
-})
-```
-
-**Tags (for querying):**
-```go
-// Define tag (combination of components)
-monsterTag := ecs.BuildTag(
-    common.AttributeComponent,
-    common.PositionComponent,
+var (
+    SquadComponent *ecs.Component  // nil until initialized
+    SquadTag ecs.Tag               // nil until initialized
 )
 
-// Query entities with tag
-for _, result := range manager.Query(monsterTag) {
-    entity := result.Entity
-    attr := GetComponent[*Attributes](entity)
-    pos := GetComponent[*Position](entity)
-    // Process entity
+type SquadData struct {
+    SquadID ecs.EntityID
+    Name    string
+    // ... fields only, no methods
+}
+
+// 2. Component Registration (squads/squadmanager.go)
+func InitSquadComponents(manager *common.EntityManager) {
+    SquadComponent = manager.World.NewComponent()  // Register with ECS
+    SquadMemberComponent = manager.World.NewComponent()
+    // ... register all components
+}
+
+func InitSquadTags(manager *common.EntityManager) {
+    SquadTag = ecs.BuildTag(SquadComponent)  // Build tag after component
+    manager.WorldTags["squad"] = SquadTag    // Optional: name-based lookup
+}
+
+func InitializeSquadData(manager *common.EntityManager) error {
+    InitSquadComponents(manager)  // MUST be called first
+    InitSquadTags(manager)        // MUST be called second
+    // Additional initialization...
+    return nil
+}
+
+// 3. Game Initialization (game_main/gameinit.go)
+func InitializeGame() {
+    manager := common.NewEntityManager()
+
+    // Initialize all systems in dependency order
+    common.InitCommonComponents(manager)     // Position, Attributes, Name
+    squads.InitializeSquadData(manager)      // Squad components
+    combat.InitializeCombatComponents(manager)
+    gear.InitializeGearComponents(manager)
+    // ... more systems
 }
 ```
 
-**Systems:**
+**Critical Rule**: Never use a component before calling its `Init*Components()` function. This is the #1 source of nil pointer panics.
+
+### EntityManager: The ECS Hub
+
 ```go
-// System function operates on queried entities
-func HealthRegenSystem(manager *ecs.Manager, monsterTag ecs.Tag) {
-    for _, result := range manager.Query(monsterTag) {
-        attr := GetComponent[*Attributes](result.Entity)
-        if attr.CurrentHealth < attr.MaxHealth {
-            attr.CurrentHealth += 1  // Regenerate health
-        }
+// common/ecsutil.go
+type EntityManager struct {
+    World     *ecs.Manager           // Underlying bytearena/ecs
+    WorldTags map[string]ecs.Tag     // Named tag registry
+}
+
+// Global tags and systems
+var (
+    AllEntitiesTag ecs.Tag             // Query all entities
+    GlobalPositionSystem *systems.PositionSystem  // O(1) spatial queries
+)
+```
+
+**EntityManager Responsibilities:**
+
+1. **World**: The actual ECS manager from bytearena/ecs library
+2. **WorldTags**: String-based tag lookup (e.g., `manager.WorldTags["squad"]`)
+3. **Component Access Helpers**: Type-safe wrappers around raw ECS API
+4. **Entity Lifecycle**: Create, query, dispose entities
+
+**Usage Pattern:**
+
+```go
+// Always pass EntityManager as parameter (never global)
+func ProcessSquad(squadID ecs.EntityID, manager *common.EntityManager) {
+    // Query using tags
+    for _, result := range manager.World.Query(SquadTag) {
+        entity := result.Entity
+        data := common.GetComponentType[*SquadData](entity, SquadComponent)
+        // Process data...
     }
 }
 ```
 
-#### Integration Points
+### Position System: O(1) Spatial Queries
 
-- **Position System**: Queries entities with PositionComponent for spatial lookups
-- **Squad System**: Queries entities with SquadMemberComponent to find squad units
-- **Inventory System**: Queries entities with ItemComponent to access items
-- **Rendering System**: Queries entities with RenderableComponent to draw sprites
-
-#### Key Files
-
-- `game_main/componentinit.go` - Component registration
-- `common/ecsutil.go` - Utility functions for component access
-- `common/commoncomponents.go` - Shared components (Name, Attributes, Position)
-
----
-
-### 3.2 Position System
-
-#### Purpose
-
-Provides **O(1) spatial queries** for finding entities at specific positions or within a radius. This is critical for:
-- Checking if a tile is occupied before moving
-- Finding targets for combat/abilities
-- Item pickup detection
-- Line-of-sight calculations
-
-#### How It Works
-
-The Position System maintains a spatial grid using a map with value-based keys:
+The `GlobalPositionSystem` is one of the most important performance optimizations in the codebase.
 
 ```go
+// systems/positionsystem.go
 type PositionSystem struct {
     manager     *ecs.Manager
-    spatialGrid map[coords.LogicalPosition][]ecs.EntityID
-    entityToPos map[ecs.EntityID]coords.LogicalPosition
-}
-```
-
-**Key Operations:**
-
-1. **Add Entity:**
-```go
-posSystem.AddEntity(entityID, coords.LogicalPosition{X: 10, Y: 5})
-// Registers entity at position in spatial grid
-```
-
-2. **Lookup by Position (O(1)):**
-```go
-entityID := posSystem.GetEntityIDAt(coords.LogicalPosition{X: 10, Y: 5})
-// Returns first entity at position (0 if empty)
-```
-
-3. **Move Entity:**
-```go
-posSystem.MoveEntity(entityID, oldPos, newPos)
-// More efficient than Remove + Add
-```
-
-4. **Radius Query:**
-```go
-entities := posSystem.GetEntitiesInRadius(centerPos, 3)
-// Returns all entities within Chebyshev distance
-```
-
-#### Why O(1) Performance?
-
-**The Key Insight:** Value-based map keys enable hash lookups.
-
-```go
-// LogicalPosition is a value type (not pointer)
-type LogicalPosition struct {
-    X, Y int
+    spatialGrid map[coords.LogicalPosition][]ecs.EntityID  // VALUE keys!
 }
 
-// Go can hash value types for O(1) map lookup
-spatialGrid[LogicalPosition{X: 10, Y: 5}]  // O(1) hash lookup
+// O(1) lookup instead of O(n) search
+entityIDs := common.GlobalPositionSystem.GetEntitiesAtPosition(logicalPos)
 ```
 
-**Legacy Approach (O(n) - removed):**
+**Before (O(n) - linear search):**
 ```go
-// Pointer keys can't be hashed by value → O(n) iteration
-spatialGrid[&LogicalPosition{X: 10, Y: 5}]  // O(n) comparison
-```
-
-**Performance Impact:** 50x speedup in entity-dense scenarios.
-
-#### Integration Points
-
-- **Movement System**: Checks if target position is occupied before moving
-- **Combat System**: Finds targets at specific positions
-- **Spawning System**: Finds empty positions for entity placement
-- **GUI System**: Determines what entity the player clicked on
-
-#### Key Files
-
-- `systems/positionsystem.go` (399 LOC) - Complete implementation
-- `common/globals.go` - GlobalPositionSystem singleton
-
----
-
-### 3.3 Input System
-
-#### Purpose
-
-Handles all player input (keyboard, mouse) with **priority-based routing**. Higher-priority controllers (e.g., UI) can block input from reaching lower-priority controllers (e.g., movement).
-
-#### Architecture
-
-```
-Input Event
-    ↓
-InputCoordinator
-    ↓
-┌───────────────────────────────┐
-│ Priority 1: UI Controller     │ → Handles inventory/menu input
-└────────────┬──────────────────┘
-             │ (blocked if UI consumed input)
-             ↓
-┌───────────────────────────────┐
-│ Priority 2: Combat Controller │ → Handles targeting/abilities
-└────────────┬──────────────────┘
-             │ (blocked if combat active)
-             ↓
-┌───────────────────────────────┐
-│ Priority 3: Movement Controller│ → Handles movement/interaction
-└───────────────────────────────┘
-```
-
-**Priority Rules:**
-- UI mode active? UI controller handles input, others blocked
-- Combat targeting mode? Combat controller handles input
-- Normal exploration? Movement controller handles input
-
-#### How It Works
-
-**InputCoordinator:**
-```go
-type InputCoordinator struct {
-    controllers []InputController  // Ordered by priority
-}
-
-func (ic *InputCoordinator) HandleInput() {
-    for _, controller := range ic.controllers {
-        if controller.CanHandle() {  // Check if controller is active
-            if controller.HandleInput() {  // Handle input
-                return  // Input consumed, stop propagation
-            }
-        }
+// Had to iterate all entities with position component
+for _, result := range manager.World.Query(PositionTag) {
+    pos := common.GetPosition(result.Entity)
+    if pos.X == targetX && pos.Y == targetY {
+        // Found it after checking hundreds of entities!
     }
 }
 ```
 
-**Controller Interface:**
+**After (O(1) - hash lookup):**
 ```go
-type InputController interface {
-    CanHandle() bool           // Is this controller currently active?
-    HandleInput() bool         // Handle input, return true if consumed
-    GetPriority() int          // Priority level (lower = higher priority)
+// Direct hash map lookup
+entityIDs := common.GlobalPositionSystem.GetEntitiesAtPosition(logicalPos)
+if len(entityIDs) > 0 {
+    // Found immediately
 }
 ```
 
-**Example Controller:**
+**Performance Impact**: 50x faster with 50+ entities, scales linearly vs. quadratically.
+
+**Critical Implementation Detail**: Uses **value-based keys** (`coords.LogicalPosition`) instead of pointer keys (`*coords.LogicalPosition`). Pointer keys require creating temporary pointers for lookups which is 50x slower.
+
+**Entity Lifecycle Integration:**
+
 ```go
-type MovementController struct {
-    playerData *common.PlayerData
-    gameMap    *worldmap.GameMap
-}
+// When creating entity with position
+entity := manager.World.CreateEntity()
+entity.AddComponent(common.PositionComponent, logicalPos)
+common.GlobalPositionSystem.AddEntity(entity.GetID(), *logicalPos)
 
-func (mc *MovementController) CanHandle() bool {
-    // Can handle if no UI mode is active
-    return !mc.uiModeActive
-}
+// When moving entity
+common.GlobalPositionSystem.MoveEntity(entityID, oldPos, newPos)
 
-func (mc *MovementController) HandleInput() bool {
-    // Check for movement keys
-    if ebiten.IsKeyPressed(ebiten.KeyArrowUp) {
-        newPos := mc.playerData.Pos.Translate(0, -1)
-        if !mc.gameMap.IsBlocked(newPos) {
-            mc.playerData.Pos = newPos
-            return true  // Consumed input
-        }
-    }
-    return false  // Input not handled
+// When destroying entity
+common.GlobalPositionSystem.RemoveEntity(entityID, logicalPos)
+manager.World.DisposeEntities(entity)
+```
+
+### Coordinate Manager: Unified Conversion
+
+The `coords.CoordManager` is a global singleton that handles all coordinate conversions. This prevents index calculation bugs that were common in earlier versions.
+
+```go
+// coords/cordmanager.go
+var CoordManager *CoordinateManager  // Global instance
+
+type CoordinateManager struct {
+    dungeonWidth  int  // 100
+    dungeonHeight int  // 80
+    tileSize      int  // 32 pixels
+    scaleFactor   int  // 3x
+    // ... more fields
 }
 ```
 
-#### Integration Points
+**Coordinate Spaces:**
 
-- **GUI System**: UI modes register as high-priority input controllers
-- **Combat System**: Combat targeting registers as medium-priority controller
-- **Movement System**: Movement registers as low-priority (fallback) controller
-- **Debug System**: Debug commands bypass priority system
+1. **Logical Coordinates**: Grid positions (0-99, 0-79) - game logic uses this
+2. **Index**: Flat array index for tile storage
+3. **Pixel Coordinates**: Rendering positions before scaling
+4. **Screen Coordinates**: Final on-screen positions after scaling/viewport
 
-#### Key Files
+**Conversion Functions:**
 
-- `input/inputcoordinator.go` - Priority-based input routing
-- `input/movementcontroller.go` - Player movement input
-- `input/combatcontroller.go` - Combat targeting input
-- `input/debuginput.go` - Debug commands (F1-F12)
+```go
+// Logical <-> Index (CRITICAL FOR TILE ARRAYS)
+tileIdx := coords.CoordManager.LogicalToIndex(logicalPos)  // ALWAYS USE THIS
+logicalPos := coords.CoordManager.IndexToLogical(tileIdx)
+
+// Logical <-> Pixel (for rendering)
+pixelPos := coords.CoordManager.LogicalToPixel(logicalPos)
+logicalPos := coords.CoordManager.PixelToLogical(pixelPos)
+
+// Validation
+if coords.CoordManager.IsValidLogical(pos) {
+    // Position is within dungeon bounds
+}
+```
+
+**Critical Warning**: **ALWAYS** use `CoordManager.LogicalToIndex()` when accessing tile arrays. Manual calculation (`y*width + x`) causes index out of bounds panics because the width might not match `dungeonWidth`.
+
+```go
+// ✅ CORRECT
+tileIdx := coords.CoordManager.LogicalToIndex(logicalPos)
+result.Tiles[tileIdx] = &tile
+
+// ❌ WRONG - CAUSES PANICS
+idx := y*width + x  // width might differ from CoordManager.dungeonWidth!
+result.Tiles[idx] = &tile
+```
 
 ---
 
-### 3.4 Squad System
+## Entity Component System (ECS)
 
-#### Purpose
+TinkerRogue uses the bytearena/ecs library with strict architectural patterns documented in `docs/ecs_best_practices.md`.
 
-Implements **tactical squad-based combat** with:
-- 3x3 grid formations (front/middle/back rows)
-- Role-based units (Tank, DPS, Support)
-- Multi-cell units (1x1, 2x2, 1x3, etc.)
-- Leader abilities (Rally, Heal, Battle Cry, Fireball)
-- Cover mechanics (units in front provide cover to units behind)
-- Capacity-based squad building (Leadership stat determines squad size)
+### Core ECS Principles
 
-#### Architecture
+#### 1. Pure Data Components
 
-The Squad System is built on 8 pure-data components:
+Components contain **zero logic** - only data fields.
 
-```
-Squad Entity
-    ├─ SquadData (formation, morale, capacity)
-    └─ (leader unit reference via query)
-        ↓
-Unit Entities (members)
-    ├─ SquadMemberData (links to parent squad)
-    ├─ GridPositionData (position in 3x3 grid)
-    ├─ UnitRoleData (Tank/DPS/Support)
-    ├─ Attributes (health, stats)
-    ├─ AttackRangeData (melee/ranged)
-    ├─ MovementSpeedData (world map speed)
-    ├─ CoverData (cover bonus for units behind)
-    ├─ TargetRowData (which rows this unit attacks)
-    ├─ LeaderData (if unit is squad leader)
-    ├─ AbilitySlotData (4 equipped abilities)
-    └─ CooldownTrackerData (ability cooldowns)
-```
-
-#### How It Works
-
-**Creating a Squad:**
 ```go
-// 1. Create squad entity
-squadEntity := manager.NewEntity().
-    AddComponent(squads.SquadComponent, &squads.SquadData{
-        SquadID:       squadEntity.GetID(),  // Self-reference
-        Formation:     squads.FormationBalanced,
-        Name:          "Alpha Squad",
-        MaxUnits:      9,
-        TotalCapacity: 6,  // From leader's Leadership stat
-    })
+// ✅ CORRECT - Pure data
+type SquadData struct {
+    SquadID       ecs.EntityID
+    Formation     FormationType
+    Name          string
+    Morale        int
+}
 
-// 2. Create unit entity in squad
-tankUnit := manager.NewEntity().
-    AddComponent(common.AttributeComponent, &common.Attributes{
-        Strength:  15,  // High strength = tank
-        Dexterity: 8,
-    }).
-    AddComponent(squads.SquadMemberComponent, &squads.SquadMemberData{
-        SquadID: squadEntity.GetID(),  // Link to squad
-    }).
-    AddComponent(squads.GridPositionComponent, &squads.GridPositionData{
-        AnchorRow: 0,  // Front row
-        AnchorCol: 1,  // Center column
-        Width:     1,  // Single cell
-        Height:    1,
-    }).
-    AddComponent(squads.UnitRoleComponent, &squads.UnitRoleData{
-        Role: squads.RoleTank,
-    }).
-    AddComponent(squads.AttackRangeComponent, &squads.AttackRangeData{
-        Range: 1,  // Melee range
-    })
+// ❌ WRONG - Has methods
+type SquadData struct {
+    // ... fields ...
+}
+func (s *SquadData) GetMorale() int { return s.Morale }  // NO!
 ```
 
-**Querying Squad Units:**
+#### 2. EntityID-Only Relationships
+
+Store `ecs.EntityID` for relationships, never entity pointers.
+
 ```go
-// Query-based discovery (no stored unit list!)
-func GetUnitIDsInSquad(squadID ecs.EntityID) []ecs.EntityID {
+// ✅ CORRECT
+type SquadMemberData struct {
+    SquadID ecs.EntityID  // Safe, stable reference
+}
+
+// ❌ WRONG
+type SquadMemberData struct {
+    Squad *ecs.Entity  // Can become invalid!
+}
+```
+
+**Why**: Entity pointers can become dangling when entities are disposed. EntityIDs are stable and safe.
+
+#### 3. Query-Based Relationships
+
+Discover relationships through queries instead of caching them.
+
+```go
+// ✅ CORRECT - Query when needed
+func GetUnitsInSquad(squadID ecs.EntityID, manager *common.EntityManager) []ecs.EntityID {
     var unitIDs []ecs.EntityID
-    for _, result := range manager.Query(squadMemberTag) {
-        member := GetComponent[*SquadMemberData](result.Entity)
-        if member.SquadID == squadID {
+    for _, result := range manager.World.Query(SquadMemberTag) {
+        memberData := common.GetComponentType[*SquadMemberData](result.Entity, SquadMemberComponent)
+        if memberData.SquadID == squadID {
             unitIDs = append(unitIDs, result.Entity.GetID())
         }
     }
     return unitIDs
 }
 
-// Find units in specific row
-func GetUnitIDsInRow(squadID ecs.EntityID, row int) []ecs.EntityID {
+// ❌ WRONG - Cached relationship
+type SquadData struct {
+    UnitIDs []ecs.EntityID  // Requires manual sync!
+}
+```
+
+**Why**: Cached relationships require manual synchronization. Queries are always up-to-date.
+
+#### 4. System-Based Logic
+
+All behavior belongs in system functions, not component methods.
+
+```go
+// ✅ CORRECT - System function
+func ExecuteSquadAttack(attackerID, defenderID ecs.EntityID, manager *common.EntityManager) *CombatResult {
+    // Logic here
+}
+
+// ❌ WRONG - Logic in component
+func (s *SquadData) Attack(target *SquadData) {
+    // NO! Put this in a system function
+}
+```
+
+#### 5. Value-Based Map Keys
+
+Use value types as map keys for O(1) performance.
+
+```go
+// ✅ CORRECT - Value key (fast)
+spatialGrid map[coords.LogicalPosition][]ecs.EntityID
+
+// ❌ WRONG - Pointer key (50x slower)
+spatialGrid map[*coords.LogicalPosition][]ecs.EntityID
+```
+
+### Component Access Patterns
+
+TinkerRogue provides type-safe helper functions in `common/ecsutil.go`.
+
+#### GetComponentType - From Entity Pointer
+
+Use when you already have an entity from a query:
+
+```go
+for _, result := range manager.World.Query(SquadTag) {
+    entity := result.Entity
+    squadData := common.GetComponentType[*SquadData](entity, SquadComponent)
+    // Use squadData...
+}
+```
+
+#### GetComponentTypeByID - From EntityID
+
+Use when you only have an EntityID:
+
+```go
+func ProcessUnit(unitID ecs.EntityID, manager *common.EntityManager) {
+    attributes := common.GetComponentTypeByID[*Attributes](manager, unitID, AttributeComponent)
+    if attributes == nil {
+        return  // Component not found
+    }
+    // Use attributes...
+}
+```
+
+#### GetComponentTypeByIDWithTag - Optimized Query
+
+Use when you know which tag the entity belongs to (10-100x faster):
+
+```go
+// Searches only entities with SquadTag (typically 10-50 entities)
+squadData := common.GetComponentTypeByIDWithTag[*SquadData](
+    manager, squadID, SquadTag, SquadComponent)
+
+// Instead of searching AllEntitiesTag (potentially 1000+ entities)
+```
+
+### Entity Lifecycle
+
+```go
+// 1. Create Entity
+entity := manager.World.CreateEntity()
+entityID := entity.GetID()  // Or use manager.NextID() for custom IDs
+
+// 2. Add Components
+entity.AddComponent(SquadComponent, &SquadData{
+    SquadID: entityID,
+    Name:    "Alpha Squad",
+})
+
+// 3. Add Tags
+entity.AddTag(SquadTag)
+
+// 4. Register with Spatial System (if has position)
+if hasPosition {
+    common.GlobalPositionSystem.AddEntity(entityID, logicalPos)
+}
+
+// 5. Destroy Entity (proper cleanup)
+if entity.HasComponent(common.PositionComponent) {
+    pos := common.GetPosition(entity)
+    common.GlobalPositionSystem.RemoveEntity(entityID, *pos)
+}
+manager.World.DisposeEntities(entity)
+```
+
+### File Organization
+
+Each ECS package follows this structure:
+
+```
+squads/
+├── squadcomponents.go   # Component data definitions ONLY
+├── squadqueries.go      # Query functions (read-only)
+├── squadcombat.go       # Combat system logic
+├── squadabilities.go    # Ability system logic
+└── squadmanager.go      # Initialization
+```
+
+**File Responsibilities:**
+
+- `components.go`: Data structs, component variables, tags
+- `*queries.go`: Functions that search/filter entities
+- `*system.go`: Functions that modify components
+- `*manager.go`: Initialization (InitComponents, InitTags)
+
+---
+
+## Squad System
+
+The squad system (`squads/`) is the **reference implementation** for proper ECS architecture in TinkerRogue. Study this system to understand how to structure new features.
+
+### Overview
+
+Squads are formations of units arranged in a 3x3 grid. Each squad is an entity, and each unit in the squad is also an entity with a `SquadMemberData` component linking it to its parent squad.
+
+```
+Squad Entity (SquadData)
+    ├─ Unit Entity (SquadMemberData, GridPositionData, UnitRoleData)
+    ├─ Unit Entity (SquadMemberData, GridPositionData, UnitRoleData)
+    └─ Unit Entity (Leader) (SquadMemberData, LeaderData, AbilitySlotData)
+```
+
+### Component Architecture
+
+**8 Components** (all in `squadcomponents.go`):
+
+1. **SquadData**: Squad-level properties (name, formation, morale)
+2. **SquadMemberData**: Links unit to parent squad
+3. **GridPositionData**: Unit's position in 3x3 grid
+4. **UnitRoleData**: Combat role (Tank, DPS, Support)
+5. **CoverData**: Defensive cover mechanics
+6. **LeaderData**: Leader bonuses
+7. **AbilitySlotData**: 4 ability slots (FFT-style)
+8. **TargetRowData**: Which rows/cells to attack
+
+**Tags**:
+- `SquadTag`: Entities with SquadData
+- `SquadMemberTag`: Entities with SquadMemberData
+- `LeaderTag`: Multi-component tag (LeaderComponent + SquadMemberComponent)
+
+### Squad Component Example
+
+```go
+// squadcomponents.go:40-50
+type SquadData struct {
+    SquadID       ecs.EntityID  // Native entity ID (not pointer!)
+    Formation     FormationType
+    Name          string
+    Morale        int           // 0-100
+    SquadLevel    int
+    TurnCount     int
+    MaxUnits      int           // Typically 9 (3x3 grid)
+    UsedCapacity  float64
+    TotalCapacity int
+}
+```
+
+**Note**: Zero methods on the data struct. All logic is in system functions.
+
+### Query Functions (squadqueries.go)
+
+```go
+// Get squad entity by ID
+func GetSquadEntity(squadID ecs.EntityID, manager *common.EntityManager) *ecs.Entity {
+    for _, result := range manager.World.Query(SquadTag) {
+        squadData := common.GetComponentType[*SquadData](result.Entity, SquadComponent)
+        if squadData.SquadID == squadID {
+            return result.Entity
+        }
+    }
+    return nil
+}
+
+// Get all units in a squad (query-based, not cached)
+func GetUnitIDsInSquad(squadID ecs.EntityID, manager *common.EntityManager) []ecs.EntityID {
     var unitIDs []ecs.EntityID
-    for _, unitID := range GetUnitIDsInSquad(squadID) {
-        unit := FindUnitByID(unitID)
-        gridPos := GetComponent[*GridPositionData](unit)
-        if gridPos.OccupiesRow(row) {
-            attr := GetComponent[*Attributes](unit)
-            if attr.CurrentHealth > 0 {  // Only alive units
-                unitIDs = append(unitIDs, unitID)
-            }
+    for _, result := range manager.World.Query(SquadMemberTag) {
+        memberData := common.GetComponentType[*SquadMemberData](result.Entity, SquadMemberComponent)
+        if memberData.SquadID == squadID {
+            unitIDs = append(unitIDs, result.Entity.GetID())
         }
     }
     return unitIDs
 }
 ```
 
-**Combat Execution:**
-```go
-// Execute squad vs squad combat
-result := squads.ExecuteSquadAttack(attackerSquadID, defenderSquadID, manager)
-
-// Result contains:
-// - TotalDamage: int
-// - DamageByUnit: map[EntityID]int
-// - UnitsKilled: []EntityID
-// - CriticalHits: int
-// - Dodged: int
-```
-
-**Combat Flow:**
-1. Find all alive units in attacker squad
-2. For each attacker unit:
-   - Determine which defender rows it can target (based on TargetRowData)
-   - Find alive units in target rows
-   - Select target (prioritize front row for melee)
-   - Calculate hit chance (attacker Dexterity vs defender Dodge)
-   - Roll hit/miss
-   - If hit, calculate damage (Strength + Weapon - Armor)
-   - Roll critical hit (based on Dexterity)
-   - Apply cover reduction (if target is behind another unit)
-   - Reduce target health
-3. Return combat results
-
-**Ability System:**
-
-Leaders have 4 ability slots with trigger conditions:
+### System Functions (squadcombat.go)
 
 ```go
-type AbilitySlot struct {
-    AbilityType  AbilityType   // Rally, Heal, BattleCry, Fireball
-    TriggerType  TriggerType   // HPBelow, TurnCount, EnemyCount, etc.
-    Threshold    float64       // Trigger condition value
-    HasTriggered bool          // Once-per-combat abilities
-    IsEquipped   bool
-}
-
-// Abilities auto-trigger each turn
-func ProcessAbilities(squadID ecs.EntityID, turnCount int) {
-    leaderID := GetLeaderID(squadID)
-    leader := FindUnitByID(leaderID)
-    abilitySlots := GetComponent[*AbilitySlotData](leader)
-
-    for i, slot := range abilitySlots.Slots {
-        if !slot.IsEquipped || slot.HasTriggered {
-            continue
-        }
-
-        // Check trigger condition
-        if CheckTrigger(slot.TriggerType, slot.Threshold, squadID, turnCount) {
-            ExecuteAbility(slot.AbilityType, squadID)
-            slot.HasTriggered = true
-        }
-    }
-}
-```
-
-**Capacity System:**
-
-Squad size is limited by leader's Leadership stat:
-
-```go
-// Calculate unit cost
-func GetCapacityCost(unit *ecs.Entity) float64 {
-    attr := GetAttributes(unit)
-    // Cost = (Strength + Weapon + Armor) / 5.0
-    return float64(attr.Strength + attr.Weapon + attr.Armor) / 5.0
-}
-
-// Calculate squad capacity
-func GetSquadTotalCapacity(squadID ecs.EntityID) int {
-    leaderID := GetLeaderID(squadID)
-    leader := FindUnitByID(leaderID)
-    attr := GetAttributes(leader)
-    // Capacity = 6 + (Leadership / 3), capped at 9
-    return min(9, 6 + attr.Leadership/3)
-}
-
-// Check if unit can be added
-func CanAddUnitToSquad(squadID ecs.EntityID, unitCost float64) bool {
-    used := GetSquadUsedCapacity(squadID)
-    total := GetSquadTotalCapacity(squadID)
-    return (used + unitCost) <= float64(total)
-}
-```
-
-#### Integration Points
-
-- **Position System**: Squads occupy positions on world map
-- **Combat System**: Squad combat replaces individual creature combat
-- **GUI System**: Squad management UI for building/editing formations
-- **World Map**: Squads move across map, trigger encounters
-
-#### Key Files
-
-- `squads/components.go` (331 LOC) - 8 pure-data components
-- `squads/squadqueries.go` (140 LOC) - Query functions
-- `squads/squadcombat.go` (387 LOC) - Combat execution
-- `squads/squadabilities.go` (317 LOC) - Ability system
-- `squads/visualization.go` (175 LOC) - 3x3 grid rendering
-- `squads/squadformations.go` - Formation presets (in progress)
-
-**Status:** 95% complete (formation presets remaining)
-
----
-
-### 3.5 Inventory System
-
-#### Purpose
-
-Manages **item storage and manipulation** for entities (player, monsters, containers). Fully ECS-compliant with system functions instead of component methods.
-
-#### Architecture
-
-```
-Entity (Player/Monster)
-    ├─ Inventory Component (pure data)
-    │      └─ ItemEntityIDs: []ecs.EntityID
-    │
-    └─ (Items are separate entities)
-            ↓
-Item Entities
-    ├─ Name Component
-    ├─ Item Component
-    │      ├─ Properties: ecs.EntityID (status effects entity)
-    │      ├─ Actions: []ItemAction (throwable, consumable)
-    │      └─ Count: int (stack count)
-    └─ Renderable Component (for ground rendering)
-```
-
-#### How It Works
-
-**Creating Items:**
-```go
-// Create item entity from template
-itemEntity := entitytemplates.CreateEntityFromTemplate(manager, EntityConfig{
-    Type:      entitytemplates.Consumable,
-    Name:      "Health Potion",
-    ImagePath: "../assets/items/",
-    Visible:   true,
-    Position:  &coords.LogicalPosition{X: 0, Y: 0},
-}, nil)
-
-// Add item actions
-item := GetComponent[*gear.Item](itemEntity)
-item.Actions = append(item.Actions, gear.NewConsumableAction(healing))
-```
-
-**Adding to Inventory (System Function):**
-```go
-// ✅ CORRECT: Use system function
-playerInv := GetComponent[*gear.Inventory](playerEntity)
-gear.AddItem(manager, playerInv, itemEntity.GetID())
-
-// ❌ WRONG: Direct manipulation
-playerInv.ItemEntityIDs = append(playerInv.ItemEntityIDs, itemID)  // NO!
-```
-
-**Displaying Inventory:**
-```go
-// Get formatted list for UI rendering
-items := gear.GetInventoryForDisplay(manager, playerInv, nil)
-
-for _, item := range items {
-    entry := item.(gear.InventoryListEntry)
-    // entry.Index: int
-    // entry.Name: string
-    // entry.Count: int
-    // entry.EntityID: ecs.EntityID
-    fmt.Printf("[%d] %s x%d\n", entry.Index, entry.Name, entry.Count)
-}
-```
-
-**Filtering by Action:**
-```go
-// Get only throwable items
-throwables := gear.GetThrowableItems(manager, playerInv, nil)
-
-// Get items with specific action
-consumables := gear.GetInventoryByAction(manager, playerInv, nil, "consumable")
-```
-
-**Removing Items:**
-```go
-// Remove item at index (decrements count or removes)
-gear.RemoveItem(manager, playerInv, itemIndex)
-```
-
-#### Item Actions
-
-Items can have multiple actions (e.g., throwable AND consumable):
-
-```go
-type ItemAction interface {
-    ActionName() string           // "throwable", "consumable", etc.
-    Copy() ItemAction             // For item duplication
-    Execute(...)                  // Action-specific logic
-}
-
-// Throwable action
-type ThrowableAction struct {
-    AOEPattern     [][2]int     // Cells affected by throw
-    BaseDamage     int
-    StatusEffectID ecs.EntityID
-}
-
-// Consumable action
-type ConsumableAction struct {
-    StatusEffectID ecs.EntityID
-}
-```
-
-**Using Item Actions:**
-```go
-item := gear.GetItemByID(manager, itemEntityID)
-
-if item.HasAction("throwable") {
-    throwable := item.GetAction("throwable").(*gear.ThrowableAction)
-    // Execute throw logic
-    throwable.Execute(targetPos, manager)
-}
-
-if item.HasAction("consumable") {
-    consumable := item.GetAction("consumable").(*gear.ConsumableAction)
-    // Execute consume logic
-    consumable.Execute(playerEntity, manager)
-    gear.RemoveItem(manager, playerInv, itemIndex)
-}
-```
-
-#### Integration Points
-
-- **GUI System**: Inventory UI mode displays and manages items
-- **Combat System**: Throwable items used in combat
-- **Player System**: Player inventory for item management
-- **Entity Templates**: Items created from JSON templates
-- **Position System**: Items on ground have position for pickup
-
-#### Key Files
-
-- `gear/Inventory.go` (241 LOC) - Pure component + system functions
-- `gear/items.go` (177 LOC) - Item component + actions
-- `gear/itemactions.go` - ItemAction interface + implementations
-- `gear/gearutil.go` (115 LOC) - Query-based entity lookup
-
-**Status:** 100% complete (ECS refactor completed 2025-10-21)
-
----
-
-### 3.6 Rendering System
-
-#### Purpose
-
-Draws all entities with RenderableComponent to the screen. Handles:
-- Sprite rendering at correct pixel positions
-- Viewport scrolling (only render visible area)
-- Z-ordering (entities render in correct order)
-- Visual effects (explosions, beams, etc.)
-
-#### Architecture
-
-```
-Draw Phase
-    ↓
-┌──────────────────────┐
-│ ProcessRenderables   │
-│ (rendering/render.go)│
-└──────────┬───────────┘
-           │
-           ├──> Query entities with RenderableComponent
-           │
-           ├──> Convert LogicalPosition → PixelPosition
-           │
-           ├──> Check if in viewport (if scrolling enabled)
-           │
-           └──> Draw sprite to screen
-                    ↓
-            ┌─────────────┐
-            │ ebiten.Image│
-            └─────────────┘
-```
-
-#### How It Works
-
-**Entity Rendering:**
-```go
-func ProcessRenderablesInSquare(
-    screen *ebiten.Image,
-    manager *ecs.Manager,
-    renderableTag ecs.Tag,
-    centerPos coords.LogicalPosition,
-) {
-    for _, result := range manager.Query(renderableTag) {
-        entity := result.Entity
-
-        // Get components
-        renderable := GetComponent[*Renderable](entity)
-        pos := GetComponent[*coords.LogicalPosition](entity)
-
-        // Skip if not visible
-        if !renderable.Visible {
-            continue
-        }
-
-        // Convert to pixel position
-        pixelPos := coords.CoordManager.LogicalToPixel(*pos)
-
-        // Check if in viewport (if scrolling enabled)
-        if graphics.MAP_SCROLLING_ENABLED {
-            distance := pos.ChebyshevDistance(&centerPos)
-            if distance > graphics.ViewableSquareSize / 2 {
-                continue  // Outside viewport
-            }
-        }
-
-        // Draw sprite
-        options := &ebiten.DrawImageOptions{}
-        options.GeoM.Translate(float64(pixelPos.X), float64(pixelPos.Y))
-        screen.DrawImage(renderable.Image, options)
-    }
-}
-```
-
-**Visual Effects:**
-
-The Graphics system handles temporary visual effects (explosions, beams, etc.):
-
-```go
-type BaseShape struct {
-    Position   coords.PixelPosition
-    Type       BasicShapeType  // Circular, Rectangular, Linear
-    Size       int
-    Width      int
-    Height     int
-    Direction  *ShapeDirection
-    Quality    common.QualityType
-}
-
-// Register visual effect
-graphics.VXHandler.AddVisualEffect(&graphics.VisualEffect{
-    Shape:       baseShape,
-    Color:       color.RGBA{255, 0, 0, 255},
-    Duration:    time.Millisecond * 500,
-    FadeOut:     true,
-})
-
-// Effects update and render automatically each frame
-graphics.VXHandler.UpdateVisualEffects()
-graphics.VXHandler.DrawVisualEffects(screen)
-```
-
-#### Integration Points
-
-- **ECS Manager**: Queries entities with RenderableComponent
-- **Position System**: Uses entity positions for sprite placement
-- **Coordinate System**: Converts logical → pixel positions
-- **Graphics System**: Renders visual effects on top of entities
-- **World Map**: Renders tiles before entities
-
-#### Key Files
-
-- `rendering/rendering.go` - Core rendering system
-- `graphics/drawableshapes.go` (390 LOC) - Visual effects
-- `graphics/graphictypes.go` - Screen configuration
-- `graphics/visualeffects.go` - Visual effect manager
-
----
-
-### 3.7 World Map System
-
-#### Purpose
-
-Generates procedural dungeon maps using pluggable generation algorithms. Supports multiple generators via strategy pattern.
-
-#### Architecture
-
-```
-┌─────────────────────┐
-│ MapGenerator        │ (interface)
-│ ┌─────────────────┐ │
-│ │ GetName()       │ │
-│ │ GetDescription()│ │
-│ │ Generate()      │ │
-│ └─────────────────┘ │
-└──────────┬──────────┘
-           │
-     ┌─────┴─────┐
-     │           │
-┌────▼────┐ ┌───▼─────┐
-│ Rooms & │ │ Tactical│
-│Corridors│ │ Biome   │
-│Generator│ │Generator│
-└─────────┘ └─────────┘
-```
-
-**Available Generators:**
-
-1. **Rooms and Corridors** (default)
-   - Classic roguelike generation
-   - Rectangular rooms connected by corridors
-   - Guaranteed connectivity
-
-2. **Tactical Biome**
-   - Cellular automata for natural caves
-   - 5 biomes (forest, desert, swamp, mountain, ruins)
-   - Designed for squad-based tactical combat
-
-#### How It Works
-
-**Using a Generator:**
-```go
-// Default generator (rooms and corridors)
-gameMap := worldmap.NewGameMapDefault()
-
-// Specify generator
-gameMap := worldmap.NewGameMap("tactical_biome")
-
-// List available generators
-generators := worldmap.ListGenerators()
-// Returns: ["rooms_corridors", "tactical_biome"]
-```
-
-**Implementing a Generator:**
-```go
-type MyGenerator struct{}
-
-func (g *MyGenerator) GetName() string {
-    return "my_generator"
-}
-
-func (g *MyGenerator) GetDescription() string {
-    return "My custom map generation algorithm"
-}
-
-func (g *MyGenerator) Generate(width, height int) *worldmap.GenerationResult {
-    result := &worldmap.GenerationResult{
-        Tiles:      make([]*worldmap.Tile, width*height),
-        PlayerPos:  coords.LogicalPosition{X: width/2, Y: height/2},
-        RoomCenters: []coords.LogicalPosition{},
-    }
-
-    // Generate map...
-    for y := 0; y < height; y++ {
-        for x := 0; x < width; x++ {
-            logicalPos := coords.LogicalPosition{X: x, Y: y}
-
-            // ⚠️ CRITICAL: Use CoordinateManager for indexing
-            tileIdx := coords.CoordManager.LogicalToIndex(logicalPos)
-
-            result.Tiles[tileIdx] = &worldmap.Tile{
-                Blocked: false,
-                // ... tile properties
-            }
-        }
+// squadcombat.go:15-50
+func ExecuteSquadAttack(attackerSquadID, defenderSquadID ecs.EntityID,
+                       manager *common.EntityManager) *CombatResult {
+    // 1. Get squad data
+    attackerData := common.GetComponentTypeByIDWithTag[*SquadData](
+        manager, attackerSquadID, SquadTag, SquadComponent)
+    defenderData := common.GetComponentTypeByIDWithTag[*SquadData](
+        manager, defenderSquadID, SquadTag, SquadComponent)
+
+    // 2. Get units
+    attackerUnits := GetUnitIDsInSquad(attackerSquadID, manager)
+    defenderUnits := GetUnitIDsInSquad(defenderSquadID, manager)
+
+    // 3. Execute combat logic
+    result := &CombatResult{}
+    for _, attackerID := range attackerUnits {
+        // Get attacker stats, find targets, calculate damage...
     }
 
     return result
 }
-
-// Register generator at init time
-func init() {
-    worldmap.RegisterGenerator("my_generator", &MyGenerator{})
-}
 ```
 
-**Critical: CoordinateManager Usage**
+### Grid Position System
 
-When accessing `result.Tiles`, **ALWAYS** use `CoordinateManager` for indexing:
+Units occupy cells in a 3x3 grid (row 0-2, col 0-2). Multi-cell units are supported.
 
 ```go
-// ✅ CORRECT: Use CoordinateManager
-logicalPos := coords.LogicalPosition{X: x, Y: y}
-tileIdx := coords.CoordManager.LogicalToIndex(logicalPos)
-result.Tiles[tileIdx] = &tile
+// squadcomponents.go:88-112
+type GridPositionData struct {
+    AnchorRow int  // Top-left row (0-2)
+    AnchorCol int  // Top-left col (0-2)
+    Width     int  // Number of columns (1-3)
+    Height    int  // Number of rows (1-3)
+}
 
-// ❌ WRONG: Manual calculation causes panics
-idx := y*width + x  // This width may differ from CoordManager.dungeonWidth!
-result.Tiles[idx] = &tile  // PANIC: index out of range
+// Get all cells this unit occupies
+func (g *GridPositionData) GetOccupiedCells() [][2]int {
+    var cells [][2]int
+    for r := g.AnchorRow; r < g.AnchorRow+g.Height && r < 3; r++ {
+        for c := g.AnchorCol; c < g.AnchorCol+g.Width && c < 3; c++ {
+            cells = append(cells, [2]int{r, c})
+        }
+    }
+    return cells
+}
 ```
 
-**Why?** The CoordinateManager's internal `dungeonWidth` may differ from the generator's `width` parameter. Manual calculation creates wrong indices (can even be negative!).
-
-#### Integration Points
-
-- **Game Initialization**: Map generated at startup
-- **Spawning System**: Uses room centers for entity placement
-- **Player System**: Uses player start position
-- **Rendering System**: Renders tiles before entities
-- **Position System**: Checks tile.Blocked for movement validation
-
-#### Key Files
-
-- `worldmap/generator.go` - MapGenerator interface + registry
-- `worldmap/gen_rooms_corridors.go` - Classic roguelike generator
-- `worldmap/gen_tactical_biome.go` - Cellular automata + biomes
-- `worldmap/gen_helpers.go` - Shared helper functions
-- `worldmap/GameMapUtil.go` - TileImageSet (no globals)
-
-**Status:** 100% complete (strategy pattern implemented 2025-11-08)
-
----
-
-### 3.8 GUI System
-
-#### Purpose
-
-Manages **modal UI interfaces** for inventory, squad management, formation editing, etc. Uses EbitenUI for widget rendering and event handling.
-
-#### Architecture
-
+**Formation Layout Example:**
 ```
-┌───────────────────┐
-│ UIModeManager     │
-│ ┌───────────────┐ │
-│ │ RegisterMode()│ │
-│ │ SetMode()     │ │
-│ │ Update()      │ │
-│ │ Render()      │ │
-│ └───────────────┘ │
-└─────────┬─────────┘
-          │
-    ┌─────┴─────┬─────────┬──────────┬─────────┐
-    │           │         │          │         │
-┌───▼─────┐ ┌──▼───┐ ┌──▼────┐ ┌───▼───┐ ┌──▼────┐
-│Inventory│ │Squad │ │Formation│ │Deploy │ │ Info  │
-│  Mode   │ │Mgmt  │ │ Editor  │ │ Mode  │ │ Mode  │
-│         │ │Mode  │ │  Mode   │ │       │ │       │
-└─────────┘ └──────┘ └─────────┘ └───────┘ └───────┘
+Front Row (0):  [Tank]  [Tank]  [DPS]
+Middle Row (1): [DPS]   [Leader][DPS]
+Back Row (2):   [Healer][Ranged][Ranged]
 ```
 
-**UI Modes:**
+### Leader Abilities
 
-1. **Exploration Mode** - Normal gameplay (not a UI mode, but default state)
-2. **Inventory Mode** - View/use items
-3. **Squad Management Mode** - Build squads, assign units
-4. **Formation Editor Mode** - Edit 3x3 grid formations
-5. **Squad Deployment Mode** - Place squads on world map
-6. **Info Mode** - View help/documentation
+Leaders have 4 ability slots (Final Fantasy Tactics style).
 
-#### How It Works
-
-**Creating a UI Mode:**
 ```go
-type MyMode struct {
-    context *UIContext
-    // Mode-specific state
-    selectedIndex int
+// squadcomponents.go:230-240
+type AbilitySlotData struct {
+    Slots [4]AbilitySlot  // Can't have multiple components of same type
 }
 
-// Implement UIMode interface
-func (m *MyMode) GetModeName() string {
-    return "MyMode"
+type AbilitySlot struct {
+    AbilityType  AbilityType  // Rally, Heal, BattleCry, Fireball
+    TriggerType  TriggerType  // When to activate
+    Threshold    float64      // Condition threshold
+    HasTriggered bool         // Once-per-combat flag
+    IsEquipped   bool
 }
+```
 
-func (m *MyMode) Initialize(ctx *UIContext) error {
-    m.context = ctx
+**Ability Types**:
+- `AbilityRally`: +5 Strength for 3 turns
+- `AbilityHeal`: +10 HP healing
+- `AbilityBattleCry`: +3 Strength, +10 Morale (once per combat)
+- `AbilityFireball`: 15 direct damage
 
-    // Build UI widgets using EbitenUI
-    m.container = widget.NewContainer(
-        widget.ContainerOpts.Layout(widget.NewGridLayout(...)),
-    )
+**Trigger Types**:
+- `TriggerCombatStart`: First turn of combat
+- `TriggerSquadHPBelow`: Squad average HP < threshold
+- `TriggerTurnCount`: Specific turn number
+- `TriggerMoraleBelow`: Squad morale < threshold
 
-    // Add buttons, lists, text, etc.
-    return nil
-}
+**Ability Execution** (`squadabilities.go:20-80`):
 
-func (m *MyMode) Enter(fromMode UIMode) error {
-    // Setup when entering mode (e.g., load data)
-    return nil
-}
+```go
+func CheckAndTriggerAbilities(squadID ecs.EntityID, manager *common.EntityManager) {
+    leaderID := GetSquadLeader(squadID, manager)
+    if leaderID == 0 {
+        return  // No leader
+    }
 
-func (m *MyMode) Exit(toMode UIMode) error {
-    // Cleanup when exiting mode
-    return nil
-}
+    abilityData := common.GetComponentTypeByIDWithTag[*AbilitySlotData](
+        manager, leaderID, LeaderTag, AbilitySlotComponent)
 
-func (m *MyMode) HandleInput(input *InputState) {
-    // Process keyboard/mouse input
-    if input.KeysJustPressed[ebiten.KeyEscape] {
-        m.context.ModeManager.RequestTransition(explorationMode, "Back")
+    for i, slot := range abilityData.Slots {
+        if !slot.IsEquipped || slot.HasTriggered {
+            continue
+        }
+
+        if shouldTrigger(slot, squadID, manager) {
+            executeAbility(slot.AbilityType, squadID, manager)
+            abilityData.Slots[i].HasTriggered = true
+        }
     }
 }
+```
 
-func (m *MyMode) Update(deltaTime float64) error {
-    // Update mode state (animations, timers, etc.)
+### Initialization
+
+```go
+// squadmanager.go:15-52
+func InitSquadComponents(manager *common.EntityManager) {
+    SquadComponent = manager.World.NewComponent()
+    SquadMemberComponent = manager.World.NewComponent()
+    GridPositionComponent = manager.World.NewComponent()
+    UnitRoleComponent = manager.World.NewComponent()
+    CoverComponent = manager.World.NewComponent()
+    LeaderComponent = manager.World.NewComponent()
+    TargetRowComponent = manager.World.NewComponent()
+    AbilitySlotComponent = manager.World.NewComponent()
+}
+
+func InitSquadTags(manager *common.EntityManager) {
+    SquadTag = ecs.BuildTag(SquadComponent)
+    SquadMemberTag = ecs.BuildTag(SquadMemberComponent)
+    LeaderTag = ecs.BuildTag(LeaderComponent, SquadMemberComponent)  // Multi-component
+
+    manager.WorldTags["squad"] = SquadTag
+    manager.WorldTags["squadmember"] = SquadMemberTag
+    manager.WorldTags["leader"] = LeaderTag
+}
+
+func InitializeSquadData(manager *common.EntityManager) error {
+    InitSquadComponents(manager)
+    InitSquadTags(manager)
     return nil
 }
+```
 
-func (m *MyMode) Render(screen *ebiten.Image) {
-    // EbitenUI handles rendering automatically
+**Critical**: Call `InitializeSquadData()` during game initialization before creating any squad entities.
+
+---
+
+## Combat System
+
+The combat system (`combat/`) manages turn-based tactical encounters between factions.
+
+### Architecture
+
+```
+Combat Flow:
+1. InitializeCombat() - Setup turn order, create action states
+2. ResetSquadActions() - Reset movement/action flags for active faction
+3. ProcessActions() - Player/AI selects actions
+4. ExecuteAttacks() - Resolve combat via squad system
+5. CheckVictory() - Determine if combat ends
+6. EndTurn() - Advance to next faction
+7. Repeat steps 2-6 until victory
+```
+
+### Turn Manager
+
+```go
+// combat/turnmanager.go:11-18
+type TurnManager struct {
+    manager *common.EntityManager
+}
+
+func NewTurnManager(manager *common.EntityManager) *TurnManager {
+    return &TurnManager{manager: manager}
 }
 ```
 
-**Mode Transitions:**
-```go
-// Register mode
-modeManager.RegisterMode(myMode)
-
-// Set mode immediately
-modeManager.SetMode("MyMode")
-
-// Request transition (deferred until end of frame)
-modeManager.RequestTransition(myMode, "Opening MyMode")
-```
-
-**UI Context:**
-
-Each mode receives a UIContext with access to game state:
+### Combat State Components
 
 ```go
-type UIContext struct {
-    ModeManager   *UIModeManager
-    ECSManager    *common.EntityManager
-    PlayerData    *common.PlayerData
-    GameMap       *worldmap.GameMap
-    PositionSys   *systems.PositionSystem
-    // ... other systems
+// combat/components.go (conceptual - actual location may vary)
+type TurnStateData struct {
+    CurrentRound     int
+    TurnOrder        []ecs.EntityID  // Faction IDs
+    CurrentTurnIndex int
+    CombatActive     bool
+}
+
+type ActionStateData struct {
+    SquadID           ecs.EntityID
+    HasMoved          bool
+    HasActed          bool
+    MovementRemaining int
 }
 ```
 
-#### Integration Points
+### Combat Initialization
 
-- **Input System**: UI modes are high-priority input controllers
-- **Inventory System**: Inventory mode displays and manipulates items
-- **Squad System**: Squad management mode edits squads and formations
-- **ECS Manager**: UI modes query entities for display
-- **Rendering System**: UI renders on top of game world
-
-#### Key Files
-
-- `gui/uimodemanager.go` - Mode registration and transitions
-- `gui/inventorymode.go` - Inventory UI
-- `gui/squadmanagementmode.go` - Squad builder UI
-- `gui/formationeditormode.go` - Formation grid editor
-- `gui/squaddeploymentmode.go` - Squad placement on map
-- `gui/infomode.go` - Help/documentation viewer
-
----
-
-## 4. Package Guide
-
-This section provides a detailed look at each package, its purpose, key files, and how it fits into the overall architecture.
-
-### 4.1 `game_main/` - Entry Point & Initialization
-
-**Purpose:** Application entry point, game loop, system initialization.
-
-**Key Files:**
-- `main.go` (Game struct, Update/Draw loop)
-- `componentinit.go` - Component registration
-- `gameinit.go` - System initialization
-- `gamesetup.go` - UI mode setup
-- `config.go` - Configuration constants
-
-**Responsibilities:**
-- Initialize ECS manager and register all components
-- Create global systems (Position System, etc.)
-- Setup game state (player, map, UI modes)
-- Run game loop at 60 FPS
-- Handle graceful shutdown
-
-**Dependencies:**
-- All other packages (this is the root)
-
-**Public API:**
 ```go
-type Game struct {
-    em               *common.EntityManager
-    playerData       common.PlayerData
-    gameMap          *worldmap.GameMap
-    uiModeManager    *gui.UIModeManager
-    // ... systems
+// turnmanager.go:21-50
+func (tm *TurnManager) InitializeCombat(factionIDs []ecs.EntityID) error {
+    // Randomize turn order
+    turnOrder := make([]ecs.EntityID, len(factionIDs))
+    copy(turnOrder, factionIDs)
+    shuffleFactionOrder(turnOrder)
+
+    // Create turn state entity
+    turnEntity := tm.manager.World.NewEntity()
+    turnEntity.AddComponent(TurnStateComponent, &TurnStateData{
+        CurrentRound:     1,
+        TurnOrder:        turnOrder,
+        CurrentTurnIndex: 0,
+        CombatActive:     true,
+    })
+
+    // Create action states for all squads
+    for _, factionID := range factionIDs {
+        factionSquads := GetSquadsForFaction(factionID, tm.manager)
+        for _, squadID := range factionSquads {
+            tm.createActionStateForSquad(squadID)
+            squads.CheckAndTriggerAbilities(squadID, tm.manager)  // Combat-start abilities
+        }
+    }
+
+    // Reset actions for first faction
+    tm.ResetSquadActions(turnOrder[0])
+    return nil
+}
+```
+
+### Turn Advancement
+
+```go
+// turnmanager.go:109-132
+func (tm *TurnManager) EndTurn() error {
+    turnEntity := findTurnStateEntity(tm.manager)
+    if turnEntity == nil {
+        return fmt.Errorf("no active combat")
+    }
+
+    turnState := common.GetComponentType[*TurnStateData](turnEntity, TurnStateComponent)
+    turnState.CurrentTurnIndex++
+
+    // Wraparound to new round
+    if turnState.CurrentTurnIndex >= len(turnState.TurnOrder) {
+        turnState.CurrentTurnIndex = 0
+        turnState.CurrentRound++
+    }
+
+    // Reset action states for new faction
+    newFactionID := turnState.TurnOrder[turnState.CurrentTurnIndex]
+    return tm.ResetSquadActions(newFactionID)
+}
+```
+
+### Faction System
+
+Factions group squads together (player faction, enemy factions).
+
+```go
+// combat/gameplayfactions.go (conceptual)
+func GetSquadsForFaction(factionID ecs.EntityID, manager *common.EntityManager) []ecs.EntityID {
+    var squadIDs []ecs.EntityID
+    for _, result := range manager.World.Query(SquadTag) {
+        squadData := common.GetComponentType[*SquadData](result.Entity, SquadComponent)
+        // Check if squad belongs to faction (via component or other means)
+        squadIDs = append(squadIDs, squadData.SquadID)
+    }
+    return squadIDs
+}
+```
+
+### Victory Conditions
+
+```go
+// combat/victory.go (conceptual)
+func CheckVictoryCondition(manager *common.EntityManager) (bool, ecs.EntityID) {
+    activeFactions := make(map[ecs.EntityID]bool)
+
+    for _, result := range manager.World.Query(SquadTag) {
+        squadData := common.GetComponentType[*SquadData](result.Entity, SquadComponent)
+        if !IsSquadDestroyed(squadData.SquadID, manager) {
+            factionID := GetSquadFaction(squadData.SquadID, manager)
+            activeFactions[factionID] = true
+        }
+    }
+
+    if len(activeFactions) == 1 {
+        // One faction remains - victory
+        for factionID := range activeFactions {
+            return true, factionID
+        }
+    }
+
+    return false, 0
+}
+```
+
+### Combat Service Layer
+
+The combat service provides a higher-level API over the ECS components.
+
+```go
+// combat/combatservices/combat_service.go
+type CombatService struct {
+    manager     *common.EntityManager
+    turnManager *combat.TurnManager
 }
 
-func (g *Game) Update() error  // 60 FPS, turn-based state machine
-func (g *Game) Draw(screen *ebiten.Image)
-func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int)
-```
-
----
-
-### 4.2 `common/` - Core ECS Utilities
-
-**Purpose:** Shared ECS utilities, common components, global state.
-
-**Key Files:**
-- `ecsutil.go` (149 LOC) - Component access helpers
-- `commoncomponents.go` - Name, Attributes, UserMessage components
-- `globals.go` - GlobalPositionSystem singleton
-- `playertypes.go` - PlayerData struct
-- `attributetypes.go` - Combat-related types
-
-**Responsibilities:**
-- Define common components used across systems
-- Provide type-safe component access functions
-- Maintain global singletons (Position System)
-- Define core game types (Attributes, PlayerData)
-
-**Dependencies:**
-- `coords/` - For LogicalPosition
-- `github.com/bytearena/ecs` - ECS framework
-
-**Public API:**
-```go
-// Component access
-func GetComponentType[T any](entity *ecs.Entity, component *ecs.Component) T
-func GetAttributes(e *ecs.Entity) *Attributes
-func GetPosition(e *ecs.Entity) *coords.LogicalPosition
-
-// Entity queries
-func GetCreatureAtPosition(manager *EntityManager, pos *coords.LogicalPosition) *ecs.Entity
-func DistanceBetween(e1, e2 *ecs.Entity) int
-
-// Global state
-var GlobalPositionSystem *systems.PositionSystem
-```
-
----
-
-### 4.3 `coords/` - Coordinate System
-
-**Purpose:** Type-safe coordinate transformations between logical, pixel, and index spaces.
-
-**Key Files:**
-- `coordinatemanager.go` - CoordinateManager singleton
-- `logicalposition.go` - Tile-based coordinates
-- `pixelposition.go` - Screen pixel coordinates
-
-**Responsibilities:**
-- Define LogicalPosition (tile-based) and PixelPosition (pixel-based) types
-- Provide conversions between coordinate spaces
-- Maintain dungeon dimensions for index calculations
-- Distance calculations (Manhattan, Chebyshev)
-
-**Dependencies:** None (pure math)
-
-**Public API:**
-```go
-type LogicalPosition struct { X, Y int }
-type PixelPosition struct { X, Y int }
-
-type CoordinateManager struct {
-    tileSize      int
-    dungeonWidth  int
-    dungeonHeight int
+func (cs *CombatService) StartCombat(playerFaction, enemyFaction ecs.EntityID) error {
+    factionIDs := []ecs.EntityID{playerFaction, enemyFaction}
+    return cs.turnManager.InitializeCombat(factionIDs)
 }
 
-func (cm *CoordinateManager) LogicalToPixel(pos LogicalPosition) PixelPosition
-func (cm *CoordinateManager) PixelToLogical(pos PixelPosition) LogicalPosition
-func (cm *CoordinateManager) LogicalToIndex(pos LogicalPosition) int
-func (cm *CoordinateManager) IndexToLogical(index int) LogicalPosition
+func (cs *CombatService) ExecuteSquadAttack(attackerID, defenderID ecs.EntityID) (*squads.CombatResult, error) {
+    // Validation
+    if !cs.CanSquadAct(attackerID) {
+        return nil, fmt.Errorf("squad cannot act")
+    }
 
-func (lp LogicalPosition) ManhattanDistance(other *LogicalPosition) int
-func (lp LogicalPosition) ChebyshevDistance(other *LogicalPosition) int
+    // Execute via squad system
+    result := squads.ExecuteSquadAttack(attackerID, defenderID, cs.manager)
 
-// Global singleton
-var CoordManager *CoordinateManager
-```
+    // Update action state
+    cs.MarkSquadActed(attackerID)
 
----
-
-### 4.4 `systems/` - ECS Systems
-
-**Purpose:** ECS system implementations (position, movement, etc.).
-
-**Key Files:**
-- `positionsystem.go` (399 LOC) - O(1) spatial lookups
-- `movementsystem.go` - Entity movement logic
-- `turnmanager.go` - Turn-based game state machine
-
-**Responsibilities:**
-- Implement core game systems
-- Maintain spatial grid for position queries
-- Handle turn-based state transitions
-- Provide system APIs for other packages
-
-**Dependencies:**
-- `common/` - ECS utilities
-- `coords/` - Position types
-- `github.com/bytearena/ecs`
-
-**Public API:**
-```go
-// Position System
-type PositionSystem struct { /* ... */ }
-func NewPositionSystem(manager *ecs.Manager) *PositionSystem
-func (ps *PositionSystem) GetEntityIDAt(pos coords.LogicalPosition) ecs.EntityID
-func (ps *PositionSystem) AddEntity(entityID ecs.EntityID, pos coords.LogicalPosition)
-func (ps *PositionSystem) MoveEntity(entityID ecs.EntityID, old, new coords.LogicalPosition)
-func (ps *PositionSystem) GetEntitiesInRadius(center coords.LogicalPosition, radius int) []ecs.EntityID
-```
-
----
-
-### 4.5 `squads/` - Squad Combat System
-
-**Purpose:** Tactical squad-based combat with formations, abilities, and multi-cell units.
-
-**Key Files:**
-- `components.go` (331 LOC) - 8 pure-data components
-- `squadqueries.go` (140 LOC) - Query functions
-- `squadcombat.go` (387 LOC) - Combat execution
-- `squadabilities.go` (317 LOC) - Ability system
-- `visualization.go` (175 LOC) - 3x3 grid rendering
-- `squadformations.go` - Formation presets (in progress)
-
-**Responsibilities:**
-- Define squad and unit components
-- Provide query functions for finding units/squads
-- Execute squad vs squad combat
-- Process leader abilities
-- Render 3x3 formation grids
-- Calculate squad capacity and movement
-
-**Dependencies:**
-- `common/` - ECS utilities, Attributes
-- `coords/` - Positions
-- `github.com/bytearena/ecs`
-
-**Public API:**
-```go
-// Query functions
-func GetUnitIDsInSquad(squadID ecs.EntityID, manager *common.EntityManager) []ecs.EntityID
-func GetUnitIDsInRow(squadID ecs.EntityID, row int, manager *common.EntityManager) []ecs.EntityID
-func GetLeaderID(squadID ecs.EntityID, manager *common.EntityManager) ecs.EntityID
-func IsSquadDestroyed(squadID ecs.EntityID, manager *common.EntityManager) bool
-
-// Combat
-func ExecuteSquadAttack(attackerID, defenderID ecs.EntityID, manager *common.EntityManager) *CombatResult
-
-// Capacity
-func GetSquadUsedCapacity(squadID ecs.EntityID, manager *common.EntityManager) float64
-func GetSquadTotalCapacity(squadID ecs.EntityID, manager *common.EntityManager) int
-func CanAddUnitToSquad(squadID ecs.EntityID, unitCost float64, manager *common.EntityManager) bool
-```
-
-**Status:** 95% complete (formation presets remaining, ~4-6 hours)
-
----
-
-### 4.6 `gear/` - Inventory & Items
-
-**Purpose:** Item management with pure ECS design.
-
-**Key Files:**
-- `Inventory.go` (241 LOC) - Pure component + system functions
-- `items.go` (177 LOC) - Item component + actions
-- `itemactions.go` - ItemAction interface
-- `gearutil.go` (115 LOC) - Query helpers
-
-**Responsibilities:**
-- Define Inventory and Item components (pure data)
-- Provide system functions for inventory manipulation
-- Implement item actions (throwable, consumable)
-- Query-based item lookup
-
-**Dependencies:**
-- `common/` - ECS utilities
-- `coords/` - Positions (for ground items)
-- `github.com/bytearena/ecs`
-
-**Public API:**
-```go
-// System functions
-func AddItem(manager *ecs.Manager, inv *Inventory, itemEntityID ecs.EntityID)
-func RemoveItem(manager *ecs.Manager, inv *Inventory, index int)
-func GetItemEntityID(inv *Inventory, index int) (ecs.EntityID, error)
-func GetInventoryForDisplay(manager *ecs.Manager, inv *Inventory, indicesToSelect []int) []any
-
-// Filtering
-func GetThrowableItems(manager *ecs.Manager, inv *Inventory, selected []int) []any
-func GetInventoryByAction(manager *ecs.Manager, inv *Inventory, selected []int, action string) []any
-func HasItemsWithAction(manager *ecs.Manager, inv *Inventory, action string) bool
-
-// Item lookup
-func FindItemEntityByID(manager *ecs.Manager, itemID ecs.EntityID) *ecs.Entity
-func GetItemByID(manager *ecs.Manager, itemID ecs.EntityID) *Item
-```
-
-**Status:** 100% complete (ECS refactor completed 2025-10-21)
-
----
-
-### 4.7 `input/` - Input Handling
-
-**Purpose:** Priority-based input routing with specialized controllers.
-
-**Key Files:**
-- `inputcoordinator.go` - Priority-based routing
-- `movementcontroller.go` - Player movement
-- `combatcontroller.go` - Combat targeting
-- `debuginput.go` - Debug commands (F1-F12)
-
-**Responsibilities:**
-- Route input to correct controller based on priority
-- Implement movement, combat, and UI input handling
-- Provide debug commands for development
-- Block lower-priority input when higher-priority active
-
-**Dependencies:**
-- `common/` - PlayerData
-- `worldmap/` - GameMap (for collision)
-- `github.com/hajimehoshi/ebiten/v2`
-
-**Public API:**
-```go
-type InputController interface {
-    CanHandle() bool
-    HandleInput() bool
-    GetPriority() int
+    return result, nil
 }
-
-type InputCoordinator struct { /* ... */ }
-func NewInputCoordinator() *InputCoordinator
-func (ic *InputCoordinator) RegisterController(controller InputController)
-func (ic *InputCoordinator) HandleInput()
 ```
 
 ---
 
-### 4.8 `rendering/` - Sprite Rendering
+## GUI Architecture
 
-**Purpose:** Render entities with RenderableComponent to screen.
+The GUI system uses a **mode-based architecture** with context isolation between different game states.
 
-**Key Files:**
-- `rendering.go` - Core rendering system
-- `renderabletypes.go` - Renderable component
+### Mode Manager Pattern
 
-**Responsibilities:**
-- Query entities with RenderableComponent
-- Convert logical positions to pixel positions
-- Render sprites at correct screen locations
-- Handle viewport scrolling (only render visible area)
-
-**Dependencies:**
-- `common/` - ECS utilities
-- `coords/` - Position transformations
-- `graphics/` - Screen info
-- `github.com/hajimehoshi/ebiten/v2`
-
-**Public API:**
 ```go
-type Renderable struct {
-    Image   *ebiten.Image
-    Visible bool
+// gui/core/modemanager.go:9-16
+type UIModeManager struct {
+    currentMode       UIMode
+    modes             map[string]UIMode  // Registry
+    context           *UIContext
+    pendingTransition *ModeTransition
+    inputState        *InputState
 }
-
-func ProcessRenderablesInSquare(
-    screen *ebiten.Image,
-    manager *ecs.Manager,
-    renderableTag ecs.Tag,
-    centerPos coords.LogicalPosition,
-)
 ```
 
----
+### UI Mode Interface
 
-### 4.9 `graphics/` - Visual Effects
-
-**Purpose:** Temporary visual effects (explosions, beams, etc.) and screen utilities.
-
-**Key Files:**
-- `drawableshapes.go` (390 LOC) - BaseShape + 3 variants
-- `visualeffects.go` - VisualEffectHandler
-- `graphictypes.go` - Screen configuration
-
-**Responsibilities:**
-- Define shape types (Circular, Rectangular, Linear)
-- Manage visual effect lifecycle (create, update, render, expire)
-- Provide screen dimension constants
-- Handle fade-out animations
-
-**Dependencies:**
-- `coords/` - PixelPosition
-- `common/` - QualityType
-- `github.com/hajimehoshi/ebiten/v2`
-
-**Public API:**
 ```go
-type BaseShape struct {
-    Position  coords.PixelPosition
-    Type      BasicShapeType
-    Size      int
-    Width     int
-    Height    int
-    Direction *ShapeDirection
-    Quality   common.QualityType
-}
-
-type VisualEffectHandler struct { /* ... */ }
-func (vx *VisualEffectHandler) AddVisualEffect(effect *VisualEffect)
-func (vx *VisualEffectHandler) UpdateVisualEffects()
-func (vx *VisualEffectHandler) DrawVisualEffects(screen *ebiten.Image)
-
-// Global singleton
-var VXHandler *VisualEffectHandler
-```
-
----
-
-### 4.10 `gui/` - UI Modes
-
-**Purpose:** Modal UI interfaces using EbitenUI.
-
-**Key Files:**
-- `uimodemanager.go` - Mode management
-- `inventorymode.go` - Inventory UI
-- `squadmanagementmode.go` - Squad builder
-- `formationeditormode.go` - 3x3 grid editor
-- `squaddeploymentmode.go` - Squad placement
-- `infomode.go` - Help viewer
-- `explorationmode.go` - Default mode
-
-**Responsibilities:**
-- Register and manage UI modes
-- Handle mode transitions
-- Provide UIContext to modes
-- Route input to active mode
-- Render UI overlays
-
-**Dependencies:**
-- `common/` - ECS utilities, PlayerData
-- `gear/` - Inventory system
-- `squads/` - Squad system
-- `github.com/ebitenui/ebitenui`
-
-**Public API:**
-```go
+// gui/core/uimode.go (conceptual)
 type UIMode interface {
     GetModeName() string
     Initialize(ctx *UIContext) error
@@ -1720,176 +1056,915 @@ type UIMode interface {
     HandleInput(input *InputState)
     Update(deltaTime float64) error
     Render(screen *ebiten.Image)
+    GetEbitenUI() *ebitenui.UI
+}
+```
+
+### Available Modes
+
+1. **OverworldMode**: Exploration, squad movement on world map
+2. **CombatMode**: Tactical combat between squads
+3. **InventoryMode**: Item management
+4. **SquadBuilderMode**: Formation editing, unit management
+5. **ShopMode**: Purchasing units/items
+
+### UI Context
+
+The `UIContext` provides shared resources to all modes.
+
+```go
+// gui/core/contextstate.go (conceptual)
+type UIContext struct {
+    EntityManager    *common.EntityManager
+    PlayerData       *common.PlayerData
+    CurrentMap       *worldmap.GameMap
+    GUIResources     *guiresources.GUIResources
+    CombatState      *combat.CombatState
+}
+```
+
+**Critical Principle**: UI state (selections, mode flags) is separate from game state (ECS components). Never store game logic in UI structures.
+
+### Mode Transition
+
+```go
+// modemanager.go:56-81
+func (umm *UIModeManager) transitionToMode(toMode UIMode, reason string) error {
+    // Exit current mode
+    if umm.currentMode != nil {
+        if err := umm.currentMode.Exit(toMode); err != nil {
+            return fmt.Errorf("failed to exit mode %s: %w",
+                umm.currentMode.GetModeName(), err)
+        }
+    }
+
+    // Enter new mode
+    if err := toMode.Enter(umm.currentMode); err != nil {
+        return fmt.Errorf("failed to enter mode %s: %w",
+            toMode.GetModeName(), err)
+    }
+
+    umm.currentMode = toMode
+    fmt.Printf("UI Mode Transition: %s\n", reason)
+    return nil
+}
+```
+
+### Mode Update Loop
+
+```go
+// modemanager.go:84-111
+func (umm *UIModeManager) Update(deltaTime float64) error {
+    // Update input state
+    umm.updateInputState()
+
+    // Handle pending transition
+    if umm.pendingTransition != nil {
+        if err := umm.transitionToMode(umm.pendingTransition.ToMode,
+                                       umm.pendingTransition.Reason); err != nil {
+            return err
+        }
+        umm.pendingTransition = nil
+    }
+
+    // Update current mode
+    if umm.currentMode != nil {
+        umm.currentMode.HandleInput(umm.inputState)
+        if err := umm.currentMode.Update(deltaTime); err != nil {
+            return err
+        }
+        umm.currentMode.GetEbitenUI().Update()  // Process widget interactions
+    }
+
+    return nil
+}
+```
+
+### Widget System
+
+Reusable UI components in `gui/widgets/`:
+
+```go
+// gui/widgets/createwidgets.go (conceptual)
+func CreateSquadListWidget(squads []SquadInfo, onSelect func(squadID ecs.EntityID)) *widget.List {
+    entries := make([]any, len(squads))
+    for i, squad := range squads {
+        entries[i] = SquadListEntry{
+            SquadID: squad.ID,
+            Name:    squad.Name,
+            Size:    squad.UnitCount,
+        }
+    }
+
+    list := widget.NewList(
+        widget.ListOpts.Entries(entries),
+        widget.ListOpts.EntryLabelFunc(func(e any) string {
+            entry := e.(SquadListEntry)
+            return fmt.Sprintf("%s (%d units)", entry.Name, entry.Size)
+        }),
+        widget.ListOpts.EntrySelectedHandler(func(args *widget.ListEntrySelectedEventArgs) {
+            entry := args.Entry.(SquadListEntry)
+            onSelect(entry.SquadID)
+        }),
+    )
+
+    return list
+}
+```
+
+### Combat UI Example
+
+```go
+// gui/guicombat/combat_ui_factory.go (conceptual)
+type CombatUI struct {
+    container      *widget.Container
+    squadList      *widget.List
+    actionButtons  []*widget.Button
+    combatLog      *widget.TextArea
+    selectedSquad  ecs.EntityID
 }
 
-type UIModeManager struct { /* ... */ }
-func NewUIModeManager(ctx *UIContext) *UIModeManager
-func (umm *UIModeManager) RegisterMode(mode UIMode)
-func (umm *UIModeManager) SetMode(modeName string)
-func (umm *UIModeManager) RequestTransition(mode UIMode, reason string)
+func (cui *CombatUI) Initialize(ctx *UIContext) error {
+    // Create squad list
+    cui.squadList = createSquadList(ctx, func(squadID ecs.EntityID) {
+        cui.selectedSquad = squadID
+        cui.updateActionButtons()
+    })
+
+    // Create action buttons
+    cui.actionButtons = []*widget.Button{
+        createButton("Attack", func() { cui.onAttackClicked() }),
+        createButton("Move", func() { cui.onMoveClicked() }),
+        createButton("Ability", func() { cui.onAbilityClicked() }),
+        createButton("End Turn", func() { cui.onEndTurnClicked() }),
+    }
+
+    // Layout
+    cui.container = createLayout(cui.squadList, cui.actionButtons, cui.combatLog)
+
+    return nil
+}
 ```
 
 ---
 
-### 4.11 `worldmap/` - Map Generation
+## Inventory & Gear
 
-**Purpose:** Procedural dungeon generation with strategy pattern.
+The inventory system (`gear/`) is a **reference implementation** of pure ECS principles, demonstrating how to build a system with zero cached state.
 
-**Key Files:**
-- `generator.go` - MapGenerator interface + registry
-- `gen_rooms_corridors.go` - Classic roguelike
-- `gen_tactical_biome.go` - Cellular automata + biomes
-- `gen_helpers.go` - Shared helpers
-- `GameMapUtil.go` - TileImageSet (no globals)
-- `GameMap.go` - GameMap struct + methods
+### Core Philosophy
 
-**Responsibilities:**
-- Define MapGenerator interface
-- Implement multiple generation algorithms
-- Register and retrieve generators
-- Provide map data structures (Tile, GameMap)
-- Handle tile rendering
+The inventory system was refactored in October 2025 to follow pure ECS patterns:
+- Uses `ecs.EntityID` for item references (not entity pointers)
+- No cached item lists (queries on demand)
+- All logic in system functions (not component methods)
+- Pure data components only
 
-**Dependencies:**
-- `coords/` - LogicalPosition, CoordinateManager
-- `common/` - ECS utilities
-- `github.com/hajimehoshi/ebiten/v2`
+### Inventory Component
 
-**Public API:**
 ```go
-type MapGenerator interface {
-    GetName() string
-    GetDescription() string
-    Generate(width, height int) *GenerationResult
+// gear/Inventory.go:24-26
+type Inventory struct {
+    ItemEntityIDs []ecs.EntityID  // ECS best practice: use EntityID, not pointers
 }
-
-func RegisterGenerator(name string, gen MapGenerator)
-func GetGenerator(name string) MapGenerator
-func ListGenerators() []string
-
-func NewGameMap(generatorName string) *GameMap
-func NewGameMapDefault() *GameMap
-
-type GameMap struct { /* ... */ }
-func (gm *GameMap) IsBlocked(pos coords.LogicalPosition) bool
-func (gm *GameMap) DrawLevelCenteredSquare(screen *ebiten.Image, ...)
 ```
 
-**Status:** 100% complete (strategy pattern implemented 2025-11-08)
+**Note**: The inventory stores only EntityIDs. To get item data, query the ECS:
 
----
-
-### 4.12 `entitytemplates/` - Entity Factories
-
-**Purpose:** JSON-based entity creation with generic factory pattern.
-
-**Key Files:**
-- `creators.go` (283 LOC) - Generic CreateEntityFromTemplate
-- `readdata.go` - JSON loading functions
-- `jsonstructs.go` - JSON schema definitions
-
-**Responsibilities:**
-- Define JSON schemas for monsters, items, weapons
-- Load JSON data at startup
-- Provide generic factory for entity creation
-- Support multiple entity types via EntityType enum
-
-**Dependencies:**
-- `common/` - ECS utilities, components
-- `coords/` - LogicalPosition
-- `gear/` - Item, Inventory components
-- `rendering/` - Renderable component
-- `github.com/hajimehoshi/ebiten/v2`
-
-**Public API:**
 ```go
-type EntityType int
+itemEntity := common.FindEntityByIDInManager(manager, itemEntityID)
+itemData := common.GetComponentType[*ItemData](itemEntity, ItemComponent)
+```
+
+### Inventory System Functions
+
+All inventory operations are system functions (not methods on Inventory):
+
+```go
+// Add item (increments count if exists, adds new if not)
+func AddItem(manager *ecs.Manager, inv *Inventory, itemEntityID ecs.EntityID)
+
+// Remove item (decrements count, removes if zero)
+func RemoveItem(manager *ecs.Manager, inv *Inventory, index int)
+
+// Get item entity ID by index
+func GetItemEntityID(inv *Inventory, index int) (ecs.EntityID, error)
+
+// Get inventory for display (builds list on demand)
+func GetInventoryForDisplay(manager *ecs.Manager, inv *Inventory,
+                           indicesToSelect []int,
+                           itemPropertiesFilter ...StatusEffects) []any
+
+// Filter by action capability
+func GetInventoryByAction(manager *ecs.Manager, inv *Inventory,
+                         indicesToSelect []int, actionName string) []any
+
+// Check if inventory has items with action
+func HasItemsWithAction(manager *ecs.Manager, inv *Inventory, actionName string) bool
+```
+
+### Item Components
+
+```go
+// gear/items.go (conceptual)
+type ItemData struct {
+    ItemID      ecs.EntityID
+    Count       int           // Stack size
+    ItemType    ItemType      // Consumable, Equipment, Material
+    Effects     []StatusEffect
+    Actions     []ItemAction  // Throwable, Drinkable, Equippable
+}
+
+type ItemAction struct {
+    ActionName string        // "Throwable", "Drinkable", "Equippable"
+    Range      int
+    AOERadius  int
+    Damage     int
+    // ... more fields
+}
+```
+
+### Adding Items Example
+
+```go
+// Create item entity
+itemEntity := manager.World.CreateEntity()
+itemID := itemEntity.GetID()
+
+itemEntity.AddComponent(ItemComponent, &ItemData{
+    ItemID:   itemID,
+    Count:    0,  // Will be set to 1 by AddItem
+    ItemType: ItemTypeConsumable,
+    Effects:  []StatusEffect{EffectHealing},
+    Actions:  []ItemAction{{ActionName: "Drinkable", Damage: -20}},  // Negative = heal
+})
+
+itemEntity.AddComponent(common.NameComponent, &common.Name{NameStr: "Health Potion"})
+itemEntity.AddTag(ItemTag)
+
+// Add to player inventory
+playerEntity := common.FindEntityByID(manager, playerID)
+playerInv := common.GetComponentType[*Inventory](playerEntity, InventoryComponent)
+AddItem(manager.World, playerInv, itemID)
+```
+
+### Inventory Service Layer
+
+Higher-level API for common operations:
+
+```go
+// gear/inventory_service.go (conceptual)
+type InventoryService struct {
+    manager *common.EntityManager
+}
+
+func (is *InventoryService) AddItemToPlayer(itemID ecs.EntityID) error {
+    playerEntity := is.getPlayerEntity()
+    playerInv := common.GetComponentType[*Inventory](playerEntity, InventoryComponent)
+    AddItem(is.manager.World, playerInv, itemID)
+    return nil
+}
+
+func (is *InventoryService) UseItem(inventoryIndex int) error {
+    playerEntity := is.getPlayerEntity()
+    playerInv := common.GetComponentType[*Inventory](playerEntity, InventoryComponent)
+
+    itemID, err := GetItemEntityID(playerInv, inventoryIndex)
+    if err != nil {
+        return err
+    }
+
+    itemData := GetItemByID(is.manager.World, itemID)
+    if itemData == nil {
+        return fmt.Errorf("item not found")
+    }
+
+    // Execute item actions
+    for _, action := range itemData.Actions {
+        executeItemAction(action, playerEntity, is.manager)
+    }
+
+    // Remove from inventory
+    RemoveItem(is.manager.World, playerInv, inventoryIndex)
+    return nil
+}
+```
+
+### Item Quality System
+
+```go
+// gear/itemquality.go
+type ItemQuality int
+
 const (
-    Creature EntityType = iota
-    Weapon
-    Consumable
-    Equipment
+    QualityCommon ItemQuality = iota
+    QualityUncommon
+    QualityRare
+    QualityEpic
+    QualityLegendary
 )
 
-type EntityConfig struct {
-    Type      EntityType
-    Name      string
-    ImagePath string
-    Visible   bool
-    Position  *coords.LogicalPosition
+func GetQualityColor(quality ItemQuality) color.RGBA {
+    // Returns color for UI display
+}
+```
+
+### Stat Effects
+
+Items can modify character attributes:
+
+```go
+// gear/stateffect.go (conceptual)
+type StatEffect struct {
+    Attribute AttributeType  // Strength, Dexterity, Vitality, etc.
+    Modifier  int            // +/- value
+    Duration  int            // Turns (0 = permanent)
 }
 
-func ReadGameData()  // Load all JSON templates
-func CreateEntityFromTemplate(
-    manager *ecs.Manager,
-    config EntityConfig,
-    statusEffects map[string]ecs.EntityID,
-) *ecs.Entity
-```
+func ApplyStatEffects(targetID ecs.EntityID, effects []StatEffect, manager *common.EntityManager) {
+    attrs := common.GetAttributesByID(manager, targetID)
+    if attrs == nil {
+        return
+    }
 
-**Status:** 100% complete (generic factory pattern)
+    for _, effect := range effects {
+        switch effect.Attribute {
+        case AttributeStrength:
+            attrs.Strength += effect.Modifier
+        case AttributeDexterity:
+            attrs.Dexterity += effect.Modifier
+        // ... more attributes
+        }
+    }
+}
+```
 
 ---
 
-### 4.13 `spawning/` - Entity Spawning
+## World Generation
 
-**Purpose:** Spawn entities at appropriate locations on the map.
+The worldmap system (`worldmap/`) provides procedural map generation with a plugin-style generator registry.
 
-**Key Files:**
-- `spawning.go` - Spawn functions
+### Generator Architecture
 
-**Responsibilities:**
-- Find valid spawn positions (using PositionSystem)
-- Create entities from templates
-- Register entities in PositionSystem
-- Spawn monsters, items, and equipment
-
-**Dependencies:**
-- `common/` - ECS utilities, PositionSystem
-- `coords/` - LogicalPosition
-- `entitytemplates/` - Entity creation
-- `worldmap/` - GameMap
-
-**Public API:**
 ```go
-func SpawnMonsters(manager *ecs.Manager, gameMap *worldmap.GameMap, count int)
-func SpawnItems(manager *ecs.Manager, gameMap *worldmap.GameMap, count int)
-func FindEmptyPosition(gameMap *worldmap.GameMap) coords.LogicalPosition
+// worldmap/generator.go:14-24
+type MapGenerator interface {
+    Generate(width, height int, images TileImageSet) GenerationResult
+    Name() string
+    Description() string
+}
+
+type GenerationResult struct {
+    Tiles          []*Tile
+    Rooms          []Rect
+    ValidPositions []coords.LogicalPosition
+}
 ```
 
----
+### Generator Registry
 
-### 4.14 `testing/` - Test Utilities
+Generators register themselves in `init()` functions:
 
-**Purpose:** Helper functions and utilities for testing.
-
-**Key Files:**
-- `testutils.go` - Test entity creation helpers
-
-**Responsibilities:**
-- Provide utilities for creating test entities
-- Setup test environments
-- Mock ECS components
-- Assert functions for tests
-
-**Dependencies:**
-- `common/` - ECS utilities
-- `github.com/bytearena/ecs`
-
-**Public API:**
 ```go
-func CreateTestEntity(manager *ecs.Manager) *ecs.Entity
-func CreateTestSquad(manager *ecs.Manager) (*ecs.Entity, []ecs.EntityID)
-// ... test helpers
+// worldmap/gen_rooms_corridors.go (conceptual)
+type RoomsCorridorsGenerator struct {
+    config GeneratorConfig
+}
+
+func init() {
+    RegisterGenerator(&RoomsCorridorsGenerator{
+        config: DefaultConfig(),
+    })
+}
+
+func (g *RoomsCorridorsGenerator) Name() string {
+    return "rooms_corridors"
+}
+
+func (g *RoomsCorridorsGenerator) Description() string {
+    return "Classic dungeon with rooms connected by corridors"
+}
+```
+
+**Critical Warning**: New generators MUST register in `init()` or they won't be available.
+
+### Available Generators
+
+1. **rooms_corridors**: Classic dungeon (default)
+   - Rectangular rooms connected by L-shaped corridors
+   - Binary Space Partitioning (BSP) room placement
+   - File: `worldmap/gen_rooms_corridors.go`
+
+2. **tactical_biome**: Tactical combat maps
+   - Environmental features (trees, rocks, water)
+   - Cover mechanics integration
+   - File: `worldmap/gen_tactical_biome.go`
+
+3. **overworld**: World map generation
+   - Large-scale terrain generation
+   - Location placement (towns, dungeons)
+   - File: `worldmap/gen_overworld.go`
+
+### Using Generators
+
+```go
+// Get generator by name
+gen := worldmap.GetGenerator("rooms_corridors")
+if gen == nil {
+    gen = worldmap.GetGeneratorOrDefault("rooms_corridors")  // Fallback
+}
+
+// Generate map
+images := loadTileImages()
+result := gen.Generate(100, 80, images)
+
+// result.Tiles contains the generated map
+// result.Rooms contains room rectangles
+// result.ValidPositions contains spawn points
+```
+
+### Tile System
+
+```go
+// worldmap/dungeontile.go (conceptual)
+type Tile struct {
+    TileType      TileType
+    LogicalPos    coords.LogicalPosition
+    Image         *ebiten.Image
+    IsWalkable    bool
+    IsTransparent bool
+    // ... more properties
+}
+
+type TileType int
+
+const (
+    TileFloor TileType = iota
+    TileWall
+    TileWater
+    TileDoor
+    TileStairsUp
+    TileStairsDown
+)
+```
+
+### Room-Based Generation Algorithm
+
+```go
+// worldmap/gen_rooms_corridors.go (conceptual)
+func (g *RoomsCorridorsGenerator) Generate(width, height int, images TileImageSet) GenerationResult {
+    tiles := initializeTiles(width, height, TileWall, images.Wall)
+    rooms := []Rect{}
+
+    // Binary Space Partitioning
+    partitions := bspPartition(Rect{0, 0, width, height}, g.config.MinRoomSize)
+
+    // Create room in each partition
+    for _, partition := range partitions {
+        room := carveRoom(partition, tiles, images.Floor)
+        rooms = append(rooms, room)
+    }
+
+    // Connect rooms with corridors
+    for i := 0; i < len(rooms)-1; i++ {
+        connectRooms(rooms[i], rooms[i+1], tiles, images.Floor)
+    }
+
+    // Place doors
+    placeDoors(rooms, tiles, images.Door)
+
+    // Collect valid positions
+    validPositions := getFloorPositions(tiles)
+
+    return GenerationResult{
+        Tiles:          tiles,
+        Rooms:          rooms,
+        ValidPositions: validPositions,
+    }
+}
+```
+
+### Biome System
+
+```go
+// worldmap/biome.go (conceptual)
+type Biome struct {
+    Name            string
+    FloorTileType   TileType
+    WallTileType    TileType
+    FeatureDensity  float64  // 0.0-1.0
+    Features        []FeatureType
+}
+
+type FeatureType int
+
+const (
+    FeatureTree FeatureType = iota
+    FeatureRock
+    FeatureWater
+    FeatureChasm
+)
+
+var Biomes = map[string]Biome{
+    "dungeon": {
+        Name:           "Stone Dungeon",
+        FloorTileType:  TileFloor,
+        WallTileType:   TileWall,
+        FeatureDensity: 0.05,
+        Features:       []FeatureType{FeatureRock},
+    },
+    "forest": {
+        Name:           "Dense Forest",
+        FloorTileType:  TileGrass,
+        WallTileType:   TileTree,
+        FeatureDensity: 0.15,
+        Features:       []FeatureType{FeatureTree, FeatureRock},
+    },
+}
+```
+
+### A* Pathfinding
+
+```go
+// worldmap/astar.go (conceptual)
+func FindPath(start, goal coords.LogicalPosition, gameMap *GameMap) []coords.LogicalPosition {
+    // A* implementation
+    openSet := []Node{{Pos: start, GScore: 0, FScore: heuristic(start, goal)}}
+    cameFrom := make(map[coords.LogicalPosition]coords.LogicalPosition)
+
+    for len(openSet) > 0 {
+        current := popLowestFScore(openSet)
+
+        if current.Pos == goal {
+            return reconstructPath(cameFrom, current.Pos)
+        }
+
+        for _, neighbor := range getNeighbors(current.Pos, gameMap) {
+            if !isWalkable(neighbor, gameMap) {
+                continue
+            }
+
+            tentativeGScore := current.GScore + 1
+
+            if tentativeGScore < getGScore(neighbor) {
+                cameFrom[neighbor] = current.Pos
+                updateScores(neighbor, tentativeGScore, heuristic(neighbor, goal))
+                openSet = append(openSet, Node{Pos: neighbor, ...})
+            }
+        }
+    }
+
+    return nil  // No path found
+}
 ```
 
 ---
 
-## 5. Data Flow & Integration
+## Input System
 
-This section explains how data moves through the system and how different systems integrate with each other.
+The input system (`input/`) uses a **coordinator pattern** to dispatch input to specialized controllers.
 
-### 5.1 Game Initialization Flow
+### Input Coordinator
+
+```go
+// input/inputcoordinator.go:37-46
+type InputCoordinator struct {
+    movementController *MovementController
+    combatController   *CombatController
+    uiController       *UIController
+    sharedState        *SharedInputState
+
+    ecsManager *common.EntityManager
+    playerData *common.PlayerData
+    gameMap    *worldmap.GameMap
+}
+```
+
+### Input Priority Chain
+
+```go
+// inputcoordinator.go:64-83
+func (ic *InputCoordinator) HandleInput() bool {
+    inputHandled := false
+
+    // Check UI input first (highest priority)
+    if ic.uiController.CanHandle() {
+        inputHandled = ic.uiController.HandleInput() || inputHandled
+    }
+
+    // Then combat input (throwing/shooting)
+    if ic.combatController.CanHandle() {
+        inputHandled = ic.combatController.HandleInput() || inputHandled
+    }
+
+    // Finally movement input (lowest priority)
+    if ic.movementController.CanHandle() {
+        inputHandled = ic.movementController.HandleInput() || inputHandled
+    }
+
+    return inputHandled
+}
+```
+
+**Priority Order**:
+1. UI Input (inventory, menus)
+2. Combat Input (attack, throw, abilities)
+3. Movement Input (WASD, arrow keys)
+
+### Controller Interface
+
+```go
+// inputcoordinator.go:30-35
+type InputController interface {
+    HandleInput() bool
+    CanHandle() bool      // Is this controller active?
+    OnActivate()          // Called when controller becomes active
+    OnDeactivate()        // Called when controller becomes inactive
+}
+```
+
+### Movement Controller
+
+```go
+// input/movementcontroller.go (conceptual)
+type MovementController struct {
+    manager     *common.EntityManager
+    playerData  *common.PlayerData
+    gameMap     *worldmap.GameMap
+    sharedState *SharedInputState
+}
+
+func (mc *MovementController) CanHandle() bool {
+    // Can handle if not in combat mode
+    return !mc.playerData.InCombat
+}
+
+func (mc *MovementController) HandleInput() bool {
+    playerID := mc.playerData.PlayerSquadID
+
+    // Get player position
+    playerPos := common.GetPositionByID(mc.manager, playerID)
+    if playerPos == nil {
+        return false
+    }
+
+    newPos := *playerPos
+
+    // Process directional input
+    if ebiten.IsKeyPressed(ebiten.KeyW) || ebiten.IsKeyPressed(ebiten.KeyUp) {
+        newPos.Y--
+    } else if ebiten.IsKeyPressed(ebiten.KeyS) || ebiten.IsKeyPressed(ebiten.KeyDown) {
+        newPos.Y++
+    }
+
+    if ebiten.IsKeyPressed(ebiten.KeyA) || ebiten.IsKeyPressed(ebiten.KeyLeft) {
+        newPos.X--
+    } else if ebiten.IsKeyPressed(ebiten.KeyD) || ebiten.IsKeyPressed(ebiten.KeyRight) {
+        newPos.X++
+    }
+
+    // Check if moved
+    if newPos != *playerPos {
+        if mc.isValidMove(newPos) {
+            mc.movePlayer(playerID, *playerPos, newPos)
+            return true
+        }
+    }
+
+    return false
+}
+
+func (mc *MovementController) movePlayer(playerID ecs.EntityID,
+                                         oldPos, newPos coords.LogicalPosition) {
+    // Update position component
+    playerPos := common.GetPositionByID(mc.manager, playerID)
+    *playerPos = newPos
+
+    // Update spatial system
+    common.GlobalPositionSystem.MoveEntity(playerID, oldPos, newPos)
+
+    // Check for encounters
+    mc.checkForEncounter(newPos)
+}
+```
+
+### Combat Controller
+
+```go
+// input/combatcontroller.go (conceptual)
+type CombatController struct {
+    manager     *common.EntityManager
+    playerData  *common.PlayerData
+    gameMap     *worldmap.GameMap
+    sharedState *SharedInputState
+}
+
+func (cc *CombatController) CanHandle() bool {
+    // Can handle if in combat mode
+    return cc.playerData.InCombat
+}
+
+func (cc *CombatController) HandleInput() bool {
+    // Handle attack targeting
+    if ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
+        target := cc.getTargetAtMouse()
+        if target != 0 {
+            cc.executeAttack(cc.playerData.SelectedSquad, target)
+            return true
+        }
+    }
+
+    // Handle ability keys (1-4)
+    if ebiten.IsKeyPressed(ebiten.Key1) {
+        cc.useAbility(0)  // Slot 0
+        return true
+    }
+    // ... more ability keys
+
+    // Handle item throwing
+    if cc.playerData.InputStates.ThrowingItem {
+        if ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
+            target := cc.getMouseLogicalPosition()
+            cc.throwItem(cc.playerData.SelectedItemIndex, target)
+            return true
+        }
+    }
+
+    return false
+}
+```
+
+### UI Controller
+
+```go
+// input/uicontroller.go (conceptual)
+type UIController struct {
+    playerData  *common.PlayerData
+    sharedState *SharedInputState
+}
+
+func (uc *UIController) CanHandle() bool {
+    // Can handle if UI window is open
+    return uc.playerData.InputStates.InventoryOpen ||
+           uc.playerData.InputStates.SquadBuilderOpen
+}
+
+func (uc *UIController) HandleInput() bool {
+    // Toggle inventory
+    if justPressed(ebiten.KeyI) {
+        uc.playerData.InputStates.InventoryOpen = !uc.playerData.InputStates.InventoryOpen
+        return true
+    }
+
+    // Toggle squad builder
+    if justPressed(ebiten.KeyB) {
+        uc.playerData.InputStates.SquadBuilderOpen = !uc.playerData.InputStates.SquadBuilderOpen
+        return true
+    }
+
+    // Close windows on Escape
+    if justPressed(ebiten.KeyEscape) {
+        uc.closeAllWindows()
+        return true
+    }
+
+    return false
+}
+```
+
+### Shared Input State
+
+```go
+// inputcoordinator.go:12-18
+type SharedInputState struct {
+    PrevCursor         coords.PixelPosition
+    PrevThrowInds      []int
+    PrevRangedAttInds  []int
+    PrevTargetLineInds []int
+    TurnTaken          bool
+}
+```
+
+Shared state allows controllers to communicate state between frames (e.g., cursor highlighting, targeting indicators).
+
+---
+
+## Data Flow Patterns
+
+Understanding how data flows through the system is critical for debugging and extending functionality.
+
+### Player Action Flow
+
+```
+User Input (Keyboard/Mouse)
+    ↓
+InputCoordinator.HandleInput()
+    ↓
+[Priority Chain]
+    ├─ UIController (if UI open)
+    ├─ CombatController (if in combat)
+    └─ MovementController (otherwise)
+    ↓
+Controller modifies ECS components
+    ↓
+System functions process changes
+    ↓
+Rendering reads ECS state
+    ↓
+Display updated to screen
+```
+
+### Combat Action Flow
+
+```
+Player selects attack target
+    ↓
+CombatController.executeAttack()
+    ↓
+combat/CombatService.ExecuteSquadAttack()
+    ↓
+squads/ExecuteSquadAttack() (ECS system function)
+    ├─ Query attacker units
+    ├─ Query defender units
+    ├─ Calculate damage per unit
+    ├─ Apply damage to components
+    └─ Generate CombatResult
+    ↓
+GUI reads CombatResult
+    ↓
+Combat log updated
+    ↓
+Turn advancement check
+```
+
+### Inventory Action Flow
+
+```
+Player uses item
+    ↓
+InventoryMode.onUseItemClicked()
+    ↓
+gear/InventoryService.UseItem()
+    ↓
+gear/GetItemByID() (query item component)
+    ↓
+gear/executeItemAction() (apply effects)
+    ├─ If consumable: Apply stat effects to player
+    ├─ If throwable: Create projectile entity
+    └─ If equipment: Equip to slot
+    ↓
+gear/RemoveItem() (decrement count)
+    ↓
+GUI refreshes inventory list
+```
+
+### Map Generation Flow
+
+```
+Game initialization
+    ↓
+worldmap/GetGenerator("rooms_corridors")
+    ↓
+Generator.Generate(width, height, images)
+    ├─ Initialize tile array
+    ├─ Create rooms (BSP)
+    ├─ Connect corridors
+    ├─ Place doors
+    └─ Collect valid positions
+    ↓
+GameMap creation
+    ↓
+Spawn player at valid position
+    ↓
+GlobalPositionSystem.AddEntity(playerID, startPos)
+    ↓
+Spawn entities (monsters, items)
+    ↓
+Rendering displays map
+```
+
+### Entity Template Flow
+
+```
+Request entity creation (e.g., "goblin")
+    ↓
+entitytemplates/CreateMonster("goblin")
+    ↓
+Load template from MonsterTemplates (JSON data)
+    ↓
+Create entity with components:
+    ├─ PositionComponent
+    ├─ AttributeComponent (from template stats)
+    ├─ NameComponent
+    └─ MonsterTag
+    ↓
+GlobalPositionSystem.AddEntity(entityID, pos)
+    ↓
+Return entityID to caller
+```
+
+### Game Initialization Flow
 
 ```
 1. main() starts
@@ -1943,7 +2018,7 @@ This section explains how data moves through the system and how different system
     └─ Draw() @ 60 FPS
 ```
 
-### 5.2 Game Loop Flow
+### Game Loop Flow
 
 ```
 ┌─────────────────────────────────────────────────┐
@@ -2018,813 +2093,707 @@ This section explains how data moves through the system and how different system
            └─────────────────┘
 ```
 
-### 5.3 Entity Creation Flow
-
-```
-JSON File
-    ↓
-ReadGameData()
-    ↓
-Template Arrays
-    ├─ MonsterTemplates []JSONMonster
-    ├─ WeaponTemplates []JSONWeapon
-    └─ ConsumableTemplates []JSONConsumable
-    ↓
-CreateEntityFromTemplate(config)
-    ↓
-1. Find template by name
-    ↓
-2. Load image
-    ↓
-3. Create entity
-   entity := manager.NewEntity()
-    ↓
-4. Add components based on EntityType
-   ├─ Common: Name, Position, Renderable
-   ├─ Creature: Attributes
-   ├─ Item: Item, ItemAction
-   └─ Weapon: Attributes, Item
-    ↓
-5. Return entity
-    ↓
-Caller registers in PositionSystem
-   GlobalPositionSystem.AddEntity(entityID, pos)
-```
-
-**Example:**
-
-```go
-// 1. Load templates at startup
-entitytemplates.ReadGameData()
-
-// 2. Create entity from template
-config := entitytemplates.EntityConfig{
-    Type:      entitytemplates.Creature,
-    Name:      "Goblin",  // Template name from JSON
-    ImagePath: "../assets/creatures/",
-    Visible:   true,
-    Position:  &coords.LogicalPosition{X: 10, Y: 5},
-}
-goblin := entitytemplates.CreateEntityFromTemplate(manager, config, nil)
-
-// 3. Register in position system
-common.GlobalPositionSystem.AddEntity(goblin.GetID(), *config.Position)
-```
-
-### 5.4 Combat Flow
-
-```
-Player initiates attack
-    ↓
-1. Find target position
-   targetPos := playerPos.Translate(direction)
-    ↓
-2. Query PositionSystem (O(1))
-   targetID := GlobalPositionSystem.GetEntityIDAt(targetPos)
-    ↓
-3. Find target entity
-   target := manager.FindEntity(targetID)
-    ↓
-4. Get combat stats
-   attackerAttr := GetAttributes(playerEntity)
-   defenderAttr := GetAttributes(target)
-    ↓
-5. Calculate hit chance
-   hitRate := attackerAttr.GetHitRate()
-   dodgeChance := defenderAttr.GetDodgeChance()
-   finalHitChance := hitRate - dodgeChance
-    ↓
-6. Roll hit/miss
-   if rand.Intn(100) < finalHitChance {
-       // Hit!
-    ↓
-7. Calculate damage
-   damage := attackerAttr.GetPhysicalDamage()
-   resistance := defenderAttr.GetPhysicalResistance()
-   finalDamage := max(1, damage - resistance)
-    ↓
-8. Roll critical hit
-   if rand.Intn(100) < attackerAttr.GetCritChance() {
-       finalDamage *= 2  // Critical!
-   }
-    ↓
-9. Apply damage
-   defenderAttr.CurrentHealth -= finalDamage
-    ↓
-10. Check death
-    if defenderAttr.CurrentHealth <= 0 {
-        // Entity died
-        ├─ RemoveEntity from PositionSystem
-        ├─ DeleteEntity from manager
-        └─ Spawn death visual effect
-    }
-```
-
-### 5.5 Squad Combat Flow
-
-```
-ExecuteSquadAttack(attackerSquadID, defenderSquadID)
-    ↓
-1. Query all units in attacker squad
-   attackerUnits := GetUnitIDsInSquad(attackerSquadID)
-    ↓
-2. Filter to alive units
-   for each unit:
-       if attr.CurrentHealth > 0 {
-           aliveUnits.append(unitID)
-       }
-    ↓
-3. For each alive attacker unit:
-    ↓
-    3a. Get targeting data
-        targetRowData := GetComponent[*TargetRowData](unit)
-        targetRows := targetRowData.TargetRows  // e.g., [0] (front row)
-    ↓
-    3b. Find targets in defender squad
-        targets := []
-        for each targetRow in targetRows:
-            unitsInRow := GetUnitIDsInRow(defenderSquadID, targetRow)
-            targets.append(unitsInRow)
-    ↓
-    3c. Select specific target
-        if len(targets) > 0 {
-            target := targets[rand.Intn(len(targets))]
-        }
-    ↓
-    3d. Calculate hit/damage (same as individual combat)
-        ├─ Hit chance vs dodge
-        ├─ Damage vs resistance
-        ├─ Critical hit roll
-        └─ Cover reduction (if target behind another unit)
-    ↓
-    3e. Apply damage to target
-        targetAttr.CurrentHealth -= finalDamage
-    ↓
-    3f. Record results
-        result.DamageByUnit[targetID] += finalDamage
-        if targetAttr.CurrentHealth <= 0 {
-            result.UnitsKilled.append(targetID)
-        }
-    ↓
-4. Return combat result
-   return &CombatResult{
-       TotalDamage: totalDamage,
-       DamageByUnit: damageMap,
-       UnitsKilled: killedUnits,
-       CriticalHits: critCount,
-       Dodged: dodgeCount,
-   }
-```
-
-### 5.6 Inventory Flow
-
-```
-Player opens inventory
-    ↓
-1. UI mode activated
-   modeManager.SetMode("Inventory")
-    ↓
-2. Inventory mode queries player inventory
-   playerEntity := GetPlayerEntity()
-   inv := GetComponent[*gear.Inventory](playerEntity)
-    ↓
-3. Build display list (system function)
-   items := gear.GetInventoryForDisplay(manager, inv, nil)
-    ↓
-4. For each item entity ID in inventory:
-    ↓
-    4a. Find item entity
-        itemEntity := gear.FindItemEntityByID(manager, itemID)
-    ↓
-    4b. Get item data
-        name := GetComponent[*Name](itemEntity)
-        item := GetComponent[*Item](itemEntity)
-    ↓
-    4c. Build display entry
-        entry := InventoryListEntry{
-            Index:    i,
-            Name:     name.NameStr,
-            Count:    item.Count,
-            EntityID: itemID,
-        }
-    ↓
-    4d. Append to display list
-        displayList.append(entry)
-    ↓
-5. Render UI list
-   EbitenUI renders list widgets
-    ↓
-6. Player selects item → Use
-    ↓
-7. Get item actions
-   item := gear.GetItemByID(manager, selectedItemID)
-   if item.HasAction("consumable") {
-       action := item.GetAction("consumable")
-       action.Execute(playerEntity, manager)
-       gear.RemoveItem(manager, inv, selectedIndex)
-   }
-```
-
-### 5.7 Map Generation Flow
-
-```
-Game initialization
-    ↓
-1. Get generator
-   generator := worldmap.GetGenerator("rooms_corridors")
-    ↓
-2. Execute generation
-   result := generator.Generate(80, 50)
-    ↓
-3. Generator creates tiles
-   for y := 0; y < height; y++ {
-       for x := 0; x < width; x++ {
-           logicalPos := LogicalPosition{X: x, Y: y}
-
-           // ⚠️ Use CoordinateManager for indexing
-           tileIdx := coords.CoordManager.LogicalToIndex(logicalPos)
-
-           result.Tiles[tileIdx] = &Tile{
-               Blocked: isWall(x, y),
-               // ... tile properties
-           }
-       }
-   }
-    ↓
-4. Return generation result
-   return &GenerationResult{
-       Tiles:       tiles,
-       PlayerPos:   startPos,
-       RoomCenters: roomCenters,
-   }
-    ↓
-5. Create GameMap from result
-   gameMap := NewGameMapFromResult(result)
-    ↓
-6. Spawn entities at room centers
-   for _, center := range result.RoomCenters {
-       SpawnMonsterAt(center)
-   }
-```
-
-### 5.8 Position System Integration
-
-The Position System is integrated throughout the codebase:
-
-**Movement:**
-```go
-// Check if target position is occupied
-newPos := playerPos.Translate(dx, dy)
-occupantID := GlobalPositionSystem.GetEntityIDAt(newPos)
-if occupantID == 0 && !gameMap.IsBlocked(newPos) {
-    // Position is free, move player
-    GlobalPositionSystem.MoveEntity(playerID, playerPos, newPos)
-    playerPos = newPos
-}
-```
-
-**Combat:**
-```go
-// Find target at position
-targetPos := attackerPos.Translate(direction)
-targetID := GlobalPositionSystem.GetEntityIDAt(targetPos)
-if targetID != 0 {
-    target := manager.FindEntity(targetID)
-    // Execute combat
-}
-```
-
-**Spawning:**
-```go
-// Find empty position for spawn
-for attempts := 0; attempts < 100; attempts++ {
-    pos := coords.LogicalPosition{
-        X: rand.Intn(mapWidth),
-        Y: rand.Intn(mapHeight),
-    }
-
-    // Check if position is free
-    if GlobalPositionSystem.GetEntityIDAt(pos) == 0 && !gameMap.IsBlocked(pos) {
-        // Spawn here
-        monster := CreateEntityFromTemplate(...)
-        GlobalPositionSystem.AddEntity(monster.GetID(), pos)
-        break
-    }
-}
-```
-
-**AOE Abilities:**
-```go
-// Find all entities in radius
-centerPos := abilityTargetPos
-radius := 3
-affectedEntities := GlobalPositionSystem.GetEntitiesInRadius(centerPos, radius)
-
-for _, entityID := range affectedEntities {
-    entity := manager.FindEntity(entityID)
-    // Apply AOE effect
-}
-```
-
 ---
 
-## 6. Development Guide
+## Development Patterns
 
-### 6.1 Setting Up Development Environment
-
-**Prerequisites:**
-- Go 1.18+ (for generics support)
-- Git
-- Code editor (VS Code recommended)
-
-**Installation:**
-```bash
-# Clone repository
-git clone <repository-url>
-cd TinkerRogue
-
-# Install dependencies
-go mod tidy
-
-# Verify installation
-go version  # Should show Go 1.18+
-```
-
-**Building:**
-```bash
-# Build executable
-go build -o game_main/game_main.exe game_main/*.go
-
-# Run directly
-go run game_main/*.go
-```
-
-**Testing:**
-```bash
-# Run all tests
-go test ./...
-
-# Run specific package tests
-go test ./squads -v
-go test ./systems -v
-
-# Run with coverage
-go test ./squads -cover
-```
-
-### 6.2 ECS Best Practices
-
-**Rule 1: Components are Pure Data**
+### Adding a New Component
 
 ```go
-// ✅ CORRECT
-type MyComponent struct {
-    Value int
-    IsActive bool
+// 1. Declare in package components.go
+package mysystem
+
+var (
+    MyComponent *ecs.Component
+    MyTag ecs.Tag
+)
+
+type MyData struct {
+    // ONLY data fields, NO methods
+    SomeField string
+    Value     int
 }
 
-// ❌ WRONG
-type MyComponent struct {
-    Value int
-}
-func (m *MyComponent) DoSomething() {  // NO! Logic in component
-    m.Value++
-}
-```
-
-**Rule 2: Use EntityID, Not Pointers**
-
-```go
-// ✅ CORRECT
-type SquadMemberData struct {
-    SquadID ecs.EntityID  // Native type
+// 2. Create initialization function
+func InitMyComponents(manager *common.EntityManager) {
+    MyComponent = manager.World.NewComponent()
 }
 
-// ❌ WRONG
-type SquadMemberData struct {
-    Squad *ecs.Entity  // Pointer prevents serialization
-}
-```
-
-**Rule 3: Query-Based Relationships**
-
-```go
-// ✅ CORRECT: Query-based discovery
-func GetUnitsInSquad(squadID ecs.EntityID) []ecs.EntityID {
-    var units []ecs.EntityID
-    for _, result := range manager.Query(squadMemberTag) {
-        member := GetComponent[*SquadMemberData](result.Entity)
-        if member.SquadID == squadID {
-            units = append(units, result.Entity.GetID())
-        }
-    }
-    return units
+func InitMyTags(manager *common.EntityManager) {
+    MyTag = ecs.BuildTag(MyComponent)
+    manager.WorldTags["mytag"] = MyTag
 }
 
-// ❌ WRONG: Stored references
-type SquadData struct {
-    Units []ecs.EntityID  // Requires manual sync
-}
-```
-
-**Rule 4: System Functions, Not Methods**
-
-```go
-// ✅ CORRECT
-func AddItem(manager *ecs.Manager, inv *Inventory, itemID ecs.EntityID) {
-    // System logic
+// 3. Call from game initialization
+// game_main/gameinit.go
+func InitializeGame() {
+    manager := common.NewEntityManager()
+    // ... other initializations
+    mysystem.InitMyComponents(manager)
+    mysystem.InitMyTags(manager)
 }
 
-// ❌ WRONG
-func (inv *Inventory) AddItem(itemID ecs.EntityID) {  // NO!
-    // Logic in component method
-}
-```
-
-**Rule 5: Value-Based Map Keys**
-
-```go
-// ✅ CORRECT: Value keys (O(1) hash lookup)
-spatialGrid := make(map[coords.LogicalPosition][]ecs.EntityID)
-
-// ❌ WRONG: Pointer keys (O(n) comparison)
-spatialGrid := make(map[*coords.LogicalPosition]*ecs.Entity)
-```
-
-### 6.3 Common Workflows
-
-#### Adding a New Component
-
-1. **Define component struct (pure data):**
-```go
-// File: common/newcomponent.go
-type MyComponent struct {
-    Value    int
-    IsActive bool
-}
-```
-
-2. **Register component (in componentinit.go):**
-```go
-var MyComponent *ecs.Component
-
-func InitializeECS(manager *ecs.Manager, tags map[string]ecs.Tag) {
-    common.MyComponent = manager.NewComponent()
-}
-```
-
-3. **Create tag (if needed):**
-```go
-myTag := ecs.BuildTag(common.MyComponent, common.PositionComponent)
-tags["myEntities"] = myTag
-```
-
-4. **Add to entities:**
-```go
-entity.AddComponent(common.MyComponent, &common.MyComponent{
-    Value:    10,
-    IsActive: true,
+// 4. Use component in entities
+entity := manager.World.CreateEntity()
+entity.AddComponent(mysystem.MyComponent, &mysystem.MyData{
+    SomeField: "test",
+    Value:     42,
 })
+entity.AddTag(mysystem.MyTag)
 ```
 
-#### Creating a New Entity Type
+### Adding a New System Function
 
-1. **Define JSON schema (assets/gamedata/mydata.json):**
-```json
-{
-    "entities": [
-        {
-            "name": "MyEntity",
-            "value": 42,
-            "imageFile": "myentity.png"
-        }
-    ]
-}
-```
-
-2. **Create JSON struct (entitytemplates/jsonstructs.go):**
 ```go
-type JSONMyEntity struct {
-    Name      string `json:"name"`
-    Value     int    `json:"value"`
-    ImageFile string `json:"imageFile"`
-}
-```
+// mysystem/mysystem.go
 
-3. **Add loading function (entitytemplates/readdata.go):**
-```go
-var MyEntityTemplates []JSONMyEntity
-
-func ReadMyEntityData() {
-    data, _ := os.ReadFile("../assets/gamedata/mydata.json")
-    var wrapper struct {
-        Entities []JSONMyEntity `json:"entities"`
-    }
-    json.Unmarshal(data, &wrapper)
-    MyEntityTemplates = wrapper.Entities
-}
-
-// Add to ReadGameData()
-func ReadGameData() {
-    ReadMonsterData()
-    ReadWeaponData()
-    ReadMyEntityData()  // Add here
-}
-```
-
-4. **Create factory (entitytemplates/creators.go):**
-```go
-func CreateMyEntity(manager *ecs.Manager, name string, pos coords.LogicalPosition) *ecs.Entity {
-    // Find template
-    var template *JSONMyEntity
-    for _, t := range MyEntityTemplates {
-        if t.Name == name {
-            template = &t
-            break
-        }
+// System function that modifies state
+func ProcessMyData(entityID ecs.EntityID, manager *common.EntityManager) error {
+    // Get component
+    myData := common.GetComponentTypeByIDWithTag[*MyData](
+        manager, entityID, MyTag, MyComponent)
+    if myData == nil {
+        return fmt.Errorf("entity does not have MyComponent")
     }
 
-    // Load image
-    img, _, _ := ebitenutil.NewImageFromFile("../assets/myentities/" + template.ImageFile)
+    // Modify component
+    myData.Value += 10
 
-    // Create entity
-    entity := manager.NewEntity().
-        AddComponent(common.NameComponent, &common.Name{NameStr: template.Name}).
-        AddComponent(common.PositionComponent, &pos).
-        AddComponent(common.MyComponent, &common.MyComponent{Value: template.Value}).
-        AddComponent(rendering.RenderableComponent, &rendering.Renderable{Image: img, Visible: true})
-
-    return entity
-}
-```
-
-#### Implementing a System
-
-1. **Create system struct:**
-```go
-// File: systems/mysystem.go
-type MySystem struct {
-    manager *ecs.Manager
-    cache   map[ecs.EntityID]int
-}
-
-func NewMySystem(manager *ecs.Manager) *MySystem {
-    return &MySystem{
-        manager: manager,
-        cache:   make(map[ecs.EntityID]int),
-    }
-}
-```
-
-2. **Implement Update function:**
-```go
-func (ms *MySystem) Update(deltaTime float64) {
-    for _, result := range ms.manager.Query(myTag) {
-        entity := result.Entity
-        myComp := common.GetComponentType[*MyComponent](entity)
-
-        if myComp.IsActive {
-            myComp.Value++
-        }
-    }
-}
-```
-
-3. **Register in game loop:**
-```go
-// File: game_main/gameinit.go
-g.mySystem = systems.NewMySystem(g.em.World)
-
-// File: game_main/main.go
-func (g *Game) Update() error {
-    g.mySystem.Update(1.0 / 60.0)
     return nil
 }
-```
 
-### 6.4 Debugging Tips
-
-**Enable Debug Mode:**
-```go
-// File: game_main/config.go
-const DEBUG_MODE = true
-```
-
-**Check Entity Components:**
-```go
-if entity.HasComponent(common.MyComponent) {
-    fmt.Println("Entity has MyComponent")
-} else {
-    fmt.Println("Entity missing MyComponent")
+// Query function that reads state
+func GetEntitiesWithValue(minValue int, manager *common.EntityManager) []ecs.EntityID {
+    var results []ecs.EntityID
+    for _, result := range manager.World.Query(MyTag) {
+        myData := common.GetComponentType[*MyData](result.Entity, MyComponent)
+        if myData.Value >= minValue {
+            results = append(results, result.Entity.GetID())
+        }
+    }
+    return results
 }
 ```
 
-**Verify Tag Queries:**
-```go
-results := manager.Query(tags["monsters"])
-fmt.Printf("Found %d monsters\n", len(results))
+### Adding a New UI Mode
 
-if len(results) > 0 {
-    entity := results[0].Entity
-    attr := common.GetAttributes(entity)
-    fmt.Printf("HP: %d/%d\n", attr.CurrentHealth, attr.MaxHealth)
+```go
+// gui/guimodes/mymode.go
+
+type MyMode struct {
+    ctx       *core.UIContext
+    ui        *ebitenui.UI
+    container *widget.Container
 }
+
+func NewMyMode() *MyMode {
+    return &MyMode{}
+}
+
+func (m *MyMode) GetModeName() string {
+    return "my_mode"
+}
+
+func (m *MyMode) Initialize(ctx *core.UIContext) error {
+    m.ctx = ctx
+    m.buildUI()
+    return nil
+}
+
+func (m *MyMode) Enter(fromMode core.UIMode) error {
+    fmt.Printf("Entering MyMode from %v\n", fromMode)
+    return nil
+}
+
+func (m *MyMode) Exit(toMode core.UIMode) error {
+    fmt.Printf("Exiting MyMode to %v\n", toMode)
+    return nil
+}
+
+func (m *MyMode) HandleInput(input *core.InputState) {
+    if input.KeysJustPressed[ebiten.KeyEscape] {
+        // Request transition back to previous mode
+        m.ctx.ModeManager.RequestTransition(previousMode, "Escape pressed")
+    }
+}
+
+func (m *MyMode) Update(deltaTime float64) error {
+    // Update mode logic
+    return nil
+}
+
+func (m *MyMode) Render(screen *ebiten.Image) {
+    // Custom rendering (background, etc.)
+}
+
+func (m *MyMode) GetEbitenUI() *ebitenui.UI {
+    return m.ui
+}
+
+func (m *MyMode) buildUI() {
+    // Build ebitenui widgets
+    m.container = widget.NewContainer(/* ... */)
+    m.ui = &ebitenui.UI{Container: m.container}
+}
+
+// Register mode during initialization
+// game_main/gameinit.go
+modeManager.RegisterMode(guimodes.NewMyMode())
 ```
 
-**Debug Position System:**
-```go
-fmt.Printf("Entities tracked: %d\n", common.GlobalPositionSystem.GetEntityCount())
+### Adding a World Generator
 
-entityID := common.GlobalPositionSystem.GetEntityIDAt(pos)
-if entityID != 0 {
-    fmt.Printf("Entity %d at position (%d, %d)\n", entityID, pos.X, pos.Y)
+```go
+// worldmap/gen_myalgorithm.go
+
+type MyGenerator struct {
+    config GeneratorConfig
 }
-```
 
-**Add Logging:**
-```go
-func MoveEntity(entity *ecs.Entity, newPos coords.LogicalPosition) {
-    oldPos := *common.GetPosition(entity)
-    fmt.Printf("[MOVE] Entity %d: (%d, %d) → (%d, %d)\n",
-        entity.GetID(), oldPos.X, oldPos.Y, newPos.X, newPos.Y)
-
-    // Move logic...
+func init() {
+    RegisterGenerator(&MyGenerator{
+        config: DefaultConfig(),
+    })
 }
-```
 
-### 6.5 Performance Optimization
+func (g *MyGenerator) Name() string {
+    return "my_algorithm"
+}
 
-**Use Position System for Spatial Queries:**
-```go
-// ✅ FAST: O(1) lookup
-entityID := common.GlobalPositionSystem.GetEntityIDAt(pos)
+func (g *MyGenerator) Description() string {
+    return "My custom map generation algorithm"
+}
 
-// ❌ SLOW: O(n) search
-for _, result := range manager.Query(allEntitiesTag) {
-    if pos.IsEqual(common.GetPosition(result.Entity)) {
-        // Found (but slow!)
+func (g *MyGenerator) Generate(width, height int, images TileImageSet) GenerationResult {
+    // Initialize tiles
+    tiles := make([]*Tile, width*height)
+    for i := range tiles {
+        logicalPos := coords.CoordManager.IndexToLogical(i)
+        tiles[i] = &Tile{
+            TileType:   TileWall,
+            LogicalPos: logicalPos,
+            Image:      images.Wall,
+            IsWalkable: false,
+        }
+    }
+
+    // Generate rooms
+    rooms := []Rect{}
+    // ... algorithm logic
+
+    // Carve floors
+    for _, room := range rooms {
+        for y := room.Y; y < room.Y+room.Height; y++ {
+            for x := room.X; x < room.X+room.Width; x++ {
+                idx := coords.CoordManager.LogicalToIndex(coords.LogicalPosition{X: x, Y: y})
+                tiles[idx].TileType = TileFloor
+                tiles[idx].Image = images.Floor
+                tiles[idx].IsWalkable = true
+            }
+        }
+    }
+
+    // Collect valid positions
+    validPositions := []coords.LogicalPosition{}
+    for _, tile := range tiles {
+        if tile.IsWalkable {
+            validPositions = append(validPositions, tile.LogicalPos)
+        }
+    }
+
+    return GenerationResult{
+        Tiles:          tiles,
+        Rooms:          rooms,
+        ValidPositions: validPositions,
     }
 }
 ```
 
-**Enable Viewport Rendering:**
+**Critical**: Generators MUST register in `init()` or they won't be discovered.
+
+---
+
+## Performance Considerations
+
+### Component Access Performance
+
+**Function Selection**:
+- `GetComponentTypeByIDWithTag` (10-100x faster for known tags)
+- `GetComponentTypeByID` (searches all entities)
+- `GetComponentType` (fastest, when entity already available)
+
 ```go
-// Only render visible entities
-graphics.MAP_SCROLLING_ENABLED = true
+// SLOW - Searches all 1000+ entities
+data := common.GetComponentTypeByID[*SquadData](manager, squadID, SquadComponent)
+
+// FAST - Searches only 10-50 squad entities
+data := common.GetComponentTypeByIDWithTag[*SquadData](
+    manager, squadID, SquadTag, SquadComponent)
 ```
 
-**Cache Frequently Accessed Data:**
-```go
-type CombatSystem struct {
-    attributeCache map[ecs.EntityID]*common.Attributes
-}
+### Spatial Query Performance
 
-func (cs *CombatSystem) GetAttributes(entityID ecs.EntityID) *common.Attributes {
-    if attr, ok := cs.attributeCache[entityID]; ok {
-        return attr
+**Before O(n)**:
+```go
+// Searched every entity with position
+for _, result := range manager.World.Query(PositionTag) {
+    pos := common.GetPosition(result.Entity)
+    if pos.X == targetX && pos.Y == targetY {
+        // Found after checking 500+ entities
     }
-    // Cache miss, fetch and cache
-    entity := cs.manager.FindEntity(entityID)
-    attr := common.GetAttributes(entity)
-    cs.attributeCache[entityID] = attr
-    return attr
 }
 ```
 
----
-
-## 7. Reference
-
-### 7.1 Build Commands
-
-```bash
-# Build executable
-go build -o game_main/game_main.exe game_main/*.go
-
-# Run directly
-go run game_main/*.go
-
-# Run tests
-go test ./...
-
-# Run specific package tests
-go test ./squads -v
-
-# Run with coverage
-go test ./squads -cover
-
-# Install dependencies
-go mod tidy
-```
-
-### 7.2 Configuration
-
-**game_main/config.go:**
+**After O(1)**:
 ```go
-// Debug
-const DEBUG_MODE = false
-const ENABLE_BENCHMARKING = false
-
-// Player stats
-const DefaultPlayerStrength = 15
-const DefaultPlayerDexterity = 20
-const DefaultPlayerMagic = 0
-const DefaultPlayerLeadership = 0
-const DefaultPlayerArmor = 2
-const DefaultPlayerWeapon = 3
-
-// Asset paths
-const PlayerImagePath = "../assets/creatures/player1.png"
-const AssetItemsDir = "../assets/items/"
+// Direct hash map lookup
+entityIDs := common.GlobalPositionSystem.GetEntitiesAtPosition(logicalPos)
+// Returns immediately
 ```
 
-**graphics/graphictypes.go:**
-```go
-const DefaultTileSize = 32
-const DefaultDungeonWidth = 80
-const DefaultDungeonHeight = 50
-const ViewableSquareSize = 25
-const StatsUIOffset = 200
+**Impact**: 50x faster with 50+ entities, scales linearly.
 
-var MAP_SCROLLING_ENABLED = true
-```
+### Map Key Performance
 
-### 7.3 External Dependencies
+**ALWAYS use value types as map keys**:
 
 ```go
-// Core dependencies
-github.com/bytearena/ecs         // ECS framework
-github.com/hajimehoshi/ebiten/v2 // Game engine
-github.com/ebitenui/ebitenui     // UI toolkit
-github.com/norendren/go-fov/fov  // Field of view
+// SLOW - Pointer keys require temporary pointer creation
+grid map[*coords.LogicalPosition][]ecs.EntityID
 
-// Standard library
-encoding/json
-image
-image/color
-image/png
-fmt
-log
-math
-os
+// To query:
+tempPos := &coords.LogicalPosition{X: 10, Y: 20}  // Allocation!
+entities := grid[tempPos]  // Won't work - different pointer
+
+// FAST - Value keys use struct equality
+grid map[coords.LogicalPosition][]ecs.EntityID
+
+// To query:
+entities := grid[coords.LogicalPosition{X: 10, Y: 20}]  // Works!
 ```
 
-### 7.4 Project Status
+**Measured**: 50x performance difference in PositionSystem refactor.
 
-**Completed Systems (100%):**
-- ✅ ECS infrastructure
-- ✅ Position System (O(1) lookups)
-- ✅ Inventory System (ECS refactor complete)
-- ✅ Input Coordination (priority-based)
-- ✅ Graphics System (BaseShape consolidation)
-- ✅ Entity Templates (generic factory)
-- ✅ Coordinate System (type-safe)
-- ✅ World Map Generation (strategy pattern)
+### Query Optimization
 
-**Squad System (95%):**
-- ✅ 8 ECS components
-- ✅ Query functions
-- ✅ Combat system
-- ✅ Ability system (auto-triggering)
-- ✅ Visualization
-- ⚠️ Formation presets (4-6h remaining)
+**When to Cache**:
+- Tight inner loops (Update/Render every frame)
+- Large entity sets (1000+)
+- Profile first to confirm bottleneck
 
-**Total Lines of Code:** ~15,000+
+**When NOT to Cache**:
+- One-time queries
+- Small entity sets (<100)
+- Infrequent operations
 
----
+**Example of Justified Caching**:
+```go
+// Combat resolution queries hundreds of units per attack
+// Profile showed 30% of frame time in queries
+// Solution: Cache unit positions at start of combat resolution
 
-## Document History
+type CombatCache struct {
+    unitPositions map[ecs.EntityID]coords.LogicalPosition
+}
 
-**Version 5.0** (2025-11-21) - Architectural Edition
-- Complete rewrite focusing on systems, architecture, and interactions
-- Added comprehensive architecture overview with diagrams
-- Detailed system descriptions with integration points
-- Package guide with responsibilities and dependencies
-- Data flow and integration examples
-- Development guide with best practices and workflows
-- Removed excessive code listings in favor of explanatory text
+func buildCombatCache(squadID ecs.EntityID, manager *common.EntityManager) CombatCache {
+    cache := CombatCache{unitPositions: make(map[ecs.EntityID]coords.LogicalPosition)}
 
-**Version 4.0** (2025-10-22) - Enhanced Edition
-- Component reference with all fields documented
-- System function reference
-- Practical code examples
-- Developer workflows
-- Troubleshooting section
+    unitIDs := GetUnitIDsInSquad(squadID, manager)
+    for _, unitID := range unitIDs {
+        pos := common.GetPositionByIDWithTag(manager, unitID, SquadMemberTag)
+        cache.unitPositions[unitID] = *pos
+    }
 
-**Version 3.0** (2025-10-12) - Codebase Audit
-- Actual LOC counts from file analysis
-- Squad system status update
+    return cache
+}
 
-**Version 2.0** (2025-10-21) - Inventory Refactor
-- Documented inventory system ECS refactor
+// Now use cache instead of repeated queries
+func resolveCombat(cache CombatCache) {
+    for unitID := range cache.unitPositions {
+        pos := cache.unitPositions[unitID]  // O(1) map lookup
+        // ... combat logic
+    }
+}
+```
 
-**Version 1.0** (2025-10-10) - Initial Documentation
-- Basic component listings
-- Initial architecture notes
+### Entity Lifecycle Optimization
+
+**Batch Entity Creation**:
+```go
+// Instead of creating entities one at a time in a loop:
+for i := 0; i < 100; i++ {
+    entity := manager.World.CreateEntity()
+    entity.AddComponent(/* ... */)
+    entity.AddTag(/* ... */)
+}
+
+// Create all entities first, then add components:
+entities := make([]*ecs.Entity, 100)
+for i := 0; i < 100; i++ {
+    entities[i] = manager.World.CreateEntity()
+}
+
+for i, entity := range entities {
+    entity.AddComponent(/* ... */)
+    entity.AddTag(/* ... */)
+}
+```
+
+**Batch Disposal**:
+```go
+// Collect entities to dispose
+toDispose := []*ecs.Entity{}
+for _, result := range manager.World.Query(DeadTag) {
+    toDispose = append(toDispose, result.Entity)
+}
+
+// Dispose all at once
+manager.World.DisposeEntities(toDispose...)
+```
 
 ---
 
-**For Additional Information:**
-- See `CLAUDE.md` for project configuration and build commands
-- See `analysis/MASTER_ROADMAP.md` for development roadmap
-- See `analysis/squad_system_final.md` for squad system architecture details
+## Component Catalog
+
+Complete reference of all components in TinkerRogue.
+
+### Common Components (common/)
+
+#### PositionComponent
+```go
+type LogicalPosition struct {
+    X int
+    Y int
+}
+```
+**Usage**: World position of entities
+**Systems**: GlobalPositionSystem, MovementController
+**Tag**: AllEntitiesTag
+
+#### AttributeComponent
+```go
+type Attributes struct {
+    MaxHP     int
+    HP        int
+    Strength  int
+    Dexterity int
+    Vitality  int
+    Wisdom    int
+}
+```
+**Usage**: Character stats
+**Systems**: Combat resolution, item effects
+**Tag**: AllEntitiesTag
+
+#### NameComponent
+```go
+type Name struct {
+    NameStr string
+}
+```
+**Usage**: Display name for entities
+**Systems**: GUI, combat log
+**Tag**: AllEntitiesTag
+
+### Squad Components (squads/)
+
+See [Squad System](#squad-system) for detailed documentation.
+
+| Component | Purpose | Fields |
+|-----------|---------|--------|
+| SquadComponent | Squad properties | SquadID, Formation, Name, Morale |
+| SquadMemberComponent | Unit-to-squad link | SquadID |
+| GridPositionComponent | 3x3 grid position | AnchorRow, AnchorCol, Width, Height |
+| UnitRoleComponent | Combat role | Role (Tank/DPS/Support) |
+| CoverComponent | Defensive cover | CoverValue, CoverRange |
+| LeaderComponent | Leader bonuses | Leadership, Experience |
+| AbilitySlotComponent | Leader abilities | Slots[4] |
+| TargetRowComponent | Attack targeting | TargetRows, TargetCells |
+
+### Combat Components (combat/)
+
+| Component | Purpose | Fields |
+|-----------|---------|--------|
+| TurnStateComponent | Turn tracking | CurrentRound, TurnOrder, CurrentTurnIndex |
+| ActionStateComponent | Squad actions | SquadID, HasMoved, HasActed |
+| FactionComponent | Faction membership | FactionID, FactionType |
+
+### Gear Components (gear/)
+
+| Component | Purpose | Fields |
+|-----------|---------|--------|
+| InventoryComponent | Item storage | ItemEntityIDs[]ecs.EntityID |
+| ItemComponent | Item properties | ItemID, Count, ItemType, Effects, Actions |
+| EquipmentComponent | Equipped gear | SlotType, BonusAttributes |
+
+### Worldmap Components (worldmap/)
+
+| Component | Purpose | Fields |
+|-----------|---------|--------|
+| TileComponent | Tile properties | TileType, IsWalkable, IsTransparent |
+| LocationComponent | World locations | LocationType, Name, Level |
+
+---
+
+## Appendices
+
+### Appendix A: File Reference
+
+#### Critical Files
+
+| File | Lines | Purpose |
+|------|-------|---------|
+| `common/ecsutil.go` | 302 | Type-safe component access helpers |
+| `coords/cordmanager.go` | 235 | Global coordinate conversions |
+| `systems/positionsystem.go` | 183 | O(1) spatial queries |
+| `squads/squadcomponents.go` | 331 | Reference ECS component design |
+| `squads/squadqueries.go` | ~200 | Reference query functions |
+| `gear/Inventory.go` | 229 | Reference pure ECS system |
+| `gui/core/modemanager.go` | 176 | UI mode management |
+| `combat/turnmanager.go` | 155 | Turn-based combat |
+
+#### Package Overviews
+
+| Package | Files | LOC | Purpose |
+|---------|-------|-----|---------|
+| `common/` | 8 | ~800 | Core ECS utilities |
+| `coords/` | 3 | ~400 | Coordinate management |
+| `squads/` | 12 | ~4900 | Squad system |
+| `combat/` | 8 | ~1200 | Combat management |
+| `gui/` | 35+ | ~6000 | User interface |
+| `gear/` | 7 | ~900 | Inventory & items |
+| `worldmap/` | 10 | ~2000 | Map generation |
+| `input/` | 5 | ~600 | Input handling |
+
+### Appendix B: Glossary
+
+**ECS**: Entity Component System - architectural pattern separating data (components) from logic (systems)
+
+**EntityID**: Stable integer identifier for entities (preferred over pointers)
+
+**Tag**: ECS query selector built from one or more components
+
+**Component**: Pure data structure with zero methods
+
+**System**: Function that operates on components (not part of component struct)
+
+**Query**: ECS operation that finds entities with specific components
+
+**LogicalPosition**: Grid coordinates (0-99, 0-79)
+
+**PixelPosition**: Rendering coordinates before scaling
+
+**ScreenPosition**: Final on-screen coordinates after viewport transform
+
+**Formation**: Squad layout preset (Balanced, Defensive, Offensive, Ranged)
+
+**Grid Position**: Unit position in 3x3 squad grid (row 0-2, col 0-2)
+
+**Mode**: UI state machine node (OverworldMode, CombatMode, etc.)
+
+**Controller**: Input handler specialized for specific game state
+
+**Generator**: Procedural map creation algorithm
+
+**Biome**: Environmental theme for map generation
+
+**Template**: JSON data file defining entity properties
+
+**Service**: Higher-level API layer over ECS systems
+
+**Faction**: Group of squads (player faction, enemy factions)
+
+**Turn Manager**: Combat system that tracks turn order and rounds
+
+**Spatial Grid**: O(1) position lookup data structure
+
+**Coordinator**: Dispatcher that routes to specialized handlers
+
+### Appendix C: Common Mistakes
+
+#### Using Components Before Initialization
+```go
+// ❌ WRONG - nil pointer panic
+entity.AddComponent(SquadComponent, data)  // SquadComponent is nil!
+
+// ✅ CORRECT - Initialize first
+squads.InitSquadComponents(manager)
+entity.AddComponent(SquadComponent, data)
+```
+
+#### Manual Index Calculation
+```go
+// ❌ WRONG - Index out of bounds
+idx := y*width + x  // width might not match dungeonWidth!
+result.Tiles[idx] = &tile
+
+// ✅ CORRECT - Use CoordManager
+idx := coords.CoordManager.LogicalToIndex(logicalPos)
+result.Tiles[idx] = &tile
+```
+
+#### Storing Entity Pointers
+```go
+// ❌ WRONG - Can become dangling
+type SquadData struct {
+    Units []*ecs.Entity  // Pointers become invalid!
+}
+
+// ✅ CORRECT - Store EntityIDs
+type SquadData struct {
+    // Don't even cache this - query instead!
+}
+
+func GetUnitsInSquad(squadID ecs.EntityID, manager *common.EntityManager) []ecs.EntityID {
+    // Query when needed
+}
+```
+
+#### Pointer Map Keys
+```go
+// ❌ WRONG - 50x slower
+grid map[*coords.LogicalPosition][]ecs.EntityID
+
+// ✅ CORRECT - Use values
+grid map[coords.LogicalPosition][]ecs.EntityID
+```
+
+#### Logic in Components
+```go
+// ❌ WRONG - Component method
+func (s *SquadData) Attack(target *SquadData) {
+    // NO! This is a system function
+}
+
+// ✅ CORRECT - System function
+func ExecuteAttack(attackerID, defenderID ecs.EntityID, manager *common.EntityManager) {
+    // Logic here
+}
+```
+
+#### Forgetting Generator Registration
+```go
+// ❌ WRONG - Generator not registered
+type MyGenerator struct {}
+func (g *MyGenerator) Generate(...) { /* ... */ }
+// Forgot init()!
+
+// ✅ CORRECT - Register in init
+func init() {
+    RegisterGenerator(&MyGenerator{})
+}
+```
+
+### Appendix D: Testing Patterns
+
+#### Component Tests
+```go
+func TestSquadData(t *testing.T) {
+    squadData := &SquadData{
+        SquadID:   1,
+        Formation: FormationLine,
+        Name:      "Test Squad",
+        Morale:    100,
+    }
+
+    assert.Equal(t, 100, squadData.Morale)
+    assert.Equal(t, "Test Squad", squadData.Name)
+}
+```
+
+#### Query Function Tests
+```go
+func TestGetSquadEntity(t *testing.T) {
+    manager := common.CreateTestEntityManager()
+    InitSquadComponents(manager)
+    InitSquadTags(manager)
+
+    // Create test squad
+    entity := manager.World.CreateEntity()
+    squadID := ecs.EntityID(1)
+    entity.AddComponent(SquadComponent, &SquadData{SquadID: squadID})
+    entity.AddTag(SquadTag)
+
+    // Test query
+    result := GetSquadEntity(squadID, manager)
+    assert.NotNil(t, result)
+
+    // Test not found
+    notFound := GetSquadEntity(ecs.EntityID(999), manager)
+    assert.Nil(t, notFound)
+}
+```
+
+#### System Function Tests
+```go
+func TestExecuteSquadAttack(t *testing.T) {
+    manager := common.CreateTestEntityManager()
+    InitSquadComponents(manager)
+    InitSquadTags(manager)
+
+    // Create attacker
+    attackerID := CreateSquad("Attacker", FormationLine, manager)
+
+    // Create defender
+    defenderID := CreateSquad("Defender", FormationLine, manager)
+
+    // Execute attack
+    result := ExecuteSquadAttack(attackerID, defenderID, manager)
+
+    // Verify
+    assert.NotNil(t, result)
+    assert.Greater(t, result.DamageDealt, 0)
+
+    defenderData := common.GetComponentTypeByIDWithTag[*SquadData](
+        manager, defenderID, SquadTag, SquadComponent)
+    assert.Less(t, defenderData.Morale, 100)
+}
+```
+
+### Appendix E: Detailed Package Guide
+
+This appendix provides detailed API documentation for each major package in TinkerRogue, including file structure, responsibilities, dependencies, and public interfaces.
+
+#### E.1 `game_main/` - Entry Point & Initialization
+
+**Purpose:** Application entry point, game loop, system initialization.
+
+**Key Files:**
+- `main.go` (Game struct, Update/Draw loop)
+- `componentinit.go` - Component registration
+- `gameinit.go` - System initialization
+- `gamesetup.go` - UI mode setup
+- `config.go` - Configuration constants
+
+**Responsibilities:**
+- Initialize ECS manager and register all components
+- Create global systems (Position System, etc.)
+- Setup game state (player, map, UI modes)
+- Run game loop at 60 FPS
+- Handle graceful shutdown
+
+**Dependencies:**
+- All other packages (this is the root)
+
+**Public API:**
+```go
+type Game struct {
+    em               *common.EntityManager
+    playerData       common.PlayerData
+    gameMap          *worldmap.GameMap
+    uiModeManager    *gui.UIModeManager
+    // ... systems
+}
+
+func (g *Game) Update() error  // 60 FPS, turn-based state machine
+func (g *Game) Draw(screen *ebiten.Image)
+func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int)
+```
+
+---
+
+**Document Version**: 2.0 (Merged Edition)
+**Last Updated**: 2025-12-12
+**Total Sections**: 16 + Appendices
+**Page Count**: ~80 (estimated)
