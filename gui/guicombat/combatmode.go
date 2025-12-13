@@ -173,17 +173,22 @@ func (cm *CombatMode) initializeUpdateComponents() {
 			round := cm.combatService.GetCurrentRound()
 			factionData := cm.Queries.CombatCache.FindFactionDataByID(currentFactionID, cm.Queries.ECSManager)
 			factionName := "Unknown"
+			turnIndicator := ""
+
 			if factionData != nil {
 				factionName = factionData.Name
+
+				// Show player-specific turn indicator
+				if factionData.PlayerID > 0 {
+					// Human player's turn - show player name
+					turnIndicator = fmt.Sprintf(" >>> %s's TURN <<<", factionData.PlayerName)
+				} else {
+					// AI's turn
+					turnIndicator = " [AI TURN]"
+				}
 			}
 
-			// Add indicator if player's turn
-			playerIndicator := ""
-			if factionData != nil && factionData.IsPlayerControlled {
-				playerIndicator = " >>> YOUR TURN <<<"
-			}
-
-			return fmt.Sprintf("Round %d | %s%s", round, factionName, playerIndicator)
+			return fmt.Sprintf("Round %d | %s%s", round, factionName, turnIndicator)
 		},
 	)
 
@@ -193,7 +198,17 @@ func (cm *CombatMode) initializeUpdateComponents() {
 		cm.Queries,
 		func(data interface{}) string {
 			factionInfo := data.(*guicomponents.FactionInfo)
+
+			// Get full faction data to access PlayerName
+			factionData := cm.Queries.CombatCache.FindFactionDataByID(factionInfo.ID, cm.Queries.ECSManager)
+
 			infoText := fmt.Sprintf("%s\n", factionInfo.Name)
+
+			// Add player identification
+			if factionData != nil && factionData.PlayerID > 0 {
+				infoText += fmt.Sprintf("[%s]\n", factionData.PlayerName)
+			}
+
 			infoText += fmt.Sprintf("Squads: %d/%d\n", factionInfo.AliveSquadCount, len(factionInfo.SquadIDs))
 			infoText += fmt.Sprintf("Mana: %d/%d", factionInfo.CurrentMana, factionInfo.MaxMana)
 			return infoText
@@ -258,14 +273,23 @@ func (cm *CombatMode) handleEndTurn() {
 	currentFactionID := result.NewFaction
 	round := result.NewRound
 
-	// Get faction name
+	// Get faction data for player name
 	factionData := cm.Queries.CombatCache.FindFactionDataByID(currentFactionID, cm.Queries.ECSManager)
 	factionName := "Unknown"
+	turnMessage := ""
+
 	if factionData != nil {
 		factionName = factionData.Name
+		if factionData.PlayerID > 0 {
+			turnMessage = fmt.Sprintf("=== Round %d: %s (%s) ===", round, factionName, factionData.PlayerName)
+		} else {
+			turnMessage = fmt.Sprintf("=== Round %d: %s (AI) ===", round, factionName)
+		}
+	} else {
+		turnMessage = fmt.Sprintf("=== Round %d: %s's Turn ===", round, factionName)
 	}
 
-	cm.logManager.UpdateTextArea(cm.combatLogArea, fmt.Sprintf("=== Round %d: %s's Turn ===", round, factionName))
+	cm.logManager.UpdateTextArea(cm.combatLogArea, turnMessage)
 
 	// Clear selection when turn changes
 	cm.Context.ModeCoordinator.GetBattleMapState().Reset()

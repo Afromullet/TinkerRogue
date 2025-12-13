@@ -1,6 +1,7 @@
 package combatservices
 
 import (
+	"fmt"
 	"game_main/combat"
 	"game_main/common"
 	"game_main/coords"
@@ -277,7 +278,20 @@ func (cs *CombatService) CheckVictoryCondition() *VictoryCheckResult {
 	if factionsWithSquads <= 1 {
 		result.BattleOver = true
 		result.VictorFaction = victorFaction
-		result.VictorName = cs.factionManager.GetFactionName(victorFaction)
+
+		// Get faction data to include player name
+		factionData := cs.combatCache.FindFactionDataByID(victorFaction, cs.entityManager)
+		if factionData != nil {
+			if factionData.PlayerID > 0 {
+				// Player victory - include player name
+				result.VictorName = fmt.Sprintf("%s (%s)", factionData.Name, factionData.PlayerName)
+			} else {
+				// AI victory
+				result.VictorName = factionData.Name
+			}
+		} else {
+			result.VictorName = "Unknown"
+		}
 	}
 
 	return result

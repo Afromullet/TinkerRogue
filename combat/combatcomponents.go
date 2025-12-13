@@ -25,6 +25,8 @@ type FactionData struct {
 	Mana               int          // Current mana for magic abilities
 	MaxMana            int          // Maximum mana capacity
 	IsPlayerControlled bool         // True if controlled by player
+	PlayerID           int          // Player identifier (0 = AI, 1 = Player 1, 2 = Player 2, etc.)
+	PlayerName         string       // Display name for player ("Player 1", "Player 2", or custom)
 }
 
 type TurnStateData struct {

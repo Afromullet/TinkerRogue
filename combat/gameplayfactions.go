@@ -20,18 +20,21 @@ func SetupGameplayFactions(manager *common.EntityManager, playerStartPos coords.
 	// 1. Create FactionManager
 	fm := NewFactionManager(manager)
 
-	// 2. Create Player Faction
-	playerFactionID := fm.CreateFaction("Player Alliance", true)
+	// 2. Create Player 1 Faction
+	playerFactionID := fm.CreateFactionWithPlayer("Player 1 Alliance", 1, "Player 1")
 
-	// 3. Create AI Faction
-	aiFactionID := fm.CreateFaction("Goblin Horde", false)
+	// 3. Create Player 2 Faction (hot-seat multiplayer)
+	player2FactionID := fm.CreateFactionWithPlayer("Player 2 Horde", 2, "Player 2")
 
-	// 4. Check if we have units available
+	// 4. Create AI Goblin Faction
+	aiFactionID := fm.CreateFactionWithPlayer("Goblin Horde", 0, "")
+
+	// 5. Check if we have units available
 	if len(squads.Units) == 0 {
 		return fmt.Errorf("no units available - call squads.InitUnitTemplatesFromJSON() first")
 	}
 
-	// 5. Create player squads positioned above player (north side)
+	// 6. Create Player 1 squads positioned around starting area
 	// Squad positions relative to player start:
 	// - Squad 1: (-3, -3) from player (northwest)
 	// - Squad 2: (+3, -3) from player (northeast)
@@ -59,16 +62,51 @@ func SetupGameplayFactions(manager *common.EntityManager, playerStartPos coords.
 		}
 	}
 
-	// 6. Create AI squads positioned below player (south side)
-	// AI squads are mirrored across the player, creating engagement distance
+	// 7. Create Player 2 squads positioned on opposite side (5 squads total)
+	// Player 2 squads are positioned on the opposite side of the map for hot-seat multiplayer
 	// Squad positions relative to player start:
-	// - Squad 1: (-3, +3) from player (southwest)
-	// - Squad 2: (+3, +3) from player (southeast)
-	// - Squad 3: (0, -3) from player (north - slightly ahead)
+	// - Squad 1: (-5, +8) from player (southwest)
+	// - Squad 2: (+5, +8) from player (southeast)
+	// - Squad 3: (0, +8) from player (south center)
+	// - Squad 4: (-8, +5) from player (west)
+	// - Squad 5: (+8, +5) from player (east)
+	player2SquadPositions := []coords.LogicalPosition{
+		{X: clampPosition(playerStartPos.X-5, 0, 99), Y: clampPosition(playerStartPos.Y+8, 0, 79)},
+		{X: clampPosition(playerStartPos.X+5, 0, 99), Y: clampPosition(playerStartPos.Y+8, 0, 79)},
+		{X: clampPosition(playerStartPos.X, 0, 99), Y: clampPosition(playerStartPos.Y+8, 0, 79)},
+		{X: clampPosition(playerStartPos.X-8, 0, 99), Y: clampPosition(playerStartPos.Y+5, 0, 79)},
+		{X: clampPosition(playerStartPos.X+8, 0, 99), Y: clampPosition(playerStartPos.Y+5, 0, 79)},
+	}
+
+	for i, pos := range player2SquadPositions {
+		squadID, err := createSquadForFaction(manager, fmt.Sprintf("Player 2 Squad %d", i+1), pos)
+		if err != nil {
+			return fmt.Errorf("failed to create Player 2 squad %d: %w", i+1, err)
+		}
+
+		// Add squad to faction
+		if err := fm.AddSquadToFaction(player2FactionID, squadID, pos); err != nil {
+			return fmt.Errorf("failed to add squad to Player 2 faction: %w", err)
+		}
+
+		// Create ActionStateData for squad
+		if err := createActionStateForSquad(manager, squadID); err != nil {
+			return fmt.Errorf("failed to create action state for Player 2 squad: %w", err)
+		}
+	}
+
+	// 8. Create AI Goblin Horde squads positioned on a different side (4 squads total)
+	// AI squads are positioned to create a three-way battle scenario
+	// Squad positions relative to player start:
+	// - Squad 1: (-10, -5) from player (northwest)
+	// - Squad 2: (-10, +5) from player (west)
+	// - Squad 3: (+10, -5) from player (northeast)
+	// - Squad 4: (+10, +5) from player (east)
 	aiSquadPositions := []coords.LogicalPosition{
-		{X: clampPosition(playerStartPos.X-3, 0, 99), Y: clampPosition(playerStartPos.Y+3, 0, 79)},
-		{X: clampPosition(playerStartPos.X+3, 0, 99), Y: clampPosition(playerStartPos.Y+3, 0, 79)},
-		{X: clampPosition(playerStartPos.X, 0, 99), Y: clampPosition(playerStartPos.Y-3, 0, 79)},
+		{X: clampPosition(playerStartPos.X-10, 0, 99), Y: clampPosition(playerStartPos.Y-5, 0, 79)},
+		{X: clampPosition(playerStartPos.X-10, 0, 99), Y: clampPosition(playerStartPos.Y+5, 0, 79)},
+		{X: clampPosition(playerStartPos.X+10, 0, 99), Y: clampPosition(playerStartPos.Y-5, 0, 79)},
+		{X: clampPosition(playerStartPos.X+10, 0, 99), Y: clampPosition(playerStartPos.Y+5, 0, 79)},
 	}
 
 	for i, pos := range aiSquadPositions {
@@ -77,7 +115,7 @@ func SetupGameplayFactions(manager *common.EntityManager, playerStartPos coords.
 			return fmt.Errorf("failed to create AI squad %d: %w", i+1, err)
 		}
 
-		// Add squad to faction
+		// Add squad to AI faction
 		if err := fm.AddSquadToFaction(aiFactionID, squadID, pos); err != nil {
 			return fmt.Errorf("failed to add squad to AI faction: %w", err)
 		}
@@ -88,80 +126,10 @@ func SetupGameplayFactions(manager *common.EntityManager, playerStartPos coords.
 		}
 	}
 
-	// 7. Create 5 additional random test squads for player faction
-	// These squads have random unit counts (1-5), random unit types, and random leaders
-	// Positioned randomly 3-10 tiles from player for testing variety
-	playerTestSquadCount := 5
-	for i := 0; i < playerTestSquadCount; i++ {
-		// Generate random position 3-10 tiles from player
-		position := generateRandomPositionNearPlayer(playerStartPos, 3, 10)
-
-		// Create squad with random units and leader
-		squadName := fmt.Sprintf("Test Squad %d", i+1)
-		err := createRandomSquad(fm, manager, playerFactionID, squadName, position)
-		if err != nil {
-			return fmt.Errorf("failed to create test squad %d: %w", i+1, err)
-		}
-	}
-
-	// 8. Create 5 additional random enemy squads for AI faction
-	// These squads have random unit counts (1-5), random unit types, and random leaders
-	// Positioned randomly 5-15 tiles from player for testing variety
-	enemyTestSquadCount := 5
-	for i := 0; i < enemyTestSquadCount; i++ {
-		// Generate random position 5-15 tiles from player (further out than player squads)
-		position := generateRandomPositionNearPlayer(playerStartPos, 5, 15)
-
-		// Create squad with random units and leader
-		squadName := fmt.Sprintf("Enemy Squad %d", i+1)
-		err := createRandomSquad(fm, manager, aiFactionID, squadName, position)
-		if err != nil {
-			return fmt.Errorf("failed to create enemy test squad %d: %w", i+1, err)
-		}
-	}
-
-	// 9. Create ranged-focused test squads for player faction
-	// These squads only contain ranged attackers (Archer, Ranger, Crossbowman, Marksman, Skeleton Archer)
-	rangedSquadCount := 3
-	for i := 0; i < rangedSquadCount; i++ {
-		position := generateRandomPositionNearPlayer(playerStartPos, 4, 8)
-		squadName := fmt.Sprintf("Ranged Squad %d", i+1)
-		err := createRangedSquad(fm, manager, playerFactionID, squadName, position)
-		if err != nil {
-			return fmt.Errorf("failed to create ranged squad %d: %w", i+1, err)
-		}
-	}
-
-	// 10. Create magic-focused test squads for player faction
-	// These squads only contain magic attackers (Wizard, Sorcerer, Mage, Cleric, Priest, Warlock, Battle Mage)
-	magicSquadCount := 3
-	for i := 0; i < magicSquadCount; i++ {
-		position := generateRandomPositionNearPlayer(playerStartPos, 4, 8)
-		squadName := fmt.Sprintf("Magic Squad %d", i+1)
-		err := createMagicSquad(fm, manager, playerFactionID, squadName, position)
-		if err != nil {
-			return fmt.Errorf("failed to create magic squad %d: %w", i+1, err)
-		}
-	}
-
-	// 11. Create mixed ranged/magic squads for AI faction
-	mixedSquadCount := 2
-	for i := 0; i < mixedSquadCount; i++ {
-		position := generateRandomPositionNearPlayer(playerStartPos, 6, 12)
-		squadName := fmt.Sprintf("Mixed Ranged/Magic %d", i+1)
-		err := createMixedRangedMagicSquad(fm, manager, aiFactionID, squadName, position)
-		if err != nil {
-			return fmt.Errorf("failed to create mixed ranged/magic squad %d: %w", i+1, err)
-		}
-	}
-
-	fmt.Printf("Created gameplay factions:\n")
-	fmt.Printf("  Player faction (%d) with %d squads (%d standard + %d random + %d ranged + %d magic)\n",
-		playerFactionID, len(playerSquadPositions)+playerTestSquadCount+rangedSquadCount+magicSquadCount,
-		len(playerSquadPositions), playerTestSquadCount, rangedSquadCount, magicSquadCount)
-	fmt.Printf("  AI faction (%d) with %d squads (%d standard + %d random + %d mixed)\n",
-		aiFactionID, len(aiSquadPositions)+enemyTestSquadCount+mixedSquadCount,
-		len(aiSquadPositions), enemyTestSquadCount, mixedSquadCount)
+	fmt.Printf("Created three-faction battle:\n")
+	fmt.Printf("  Player 1 faction (%d) with %d squads\n", playerFactionID, len(playerSquadPositions))
+	fmt.Printf("  Player 2 faction (%d) with %d squads\n", player2FactionID, len(player2SquadPositions))
+	fmt.Printf("  AI Goblin Horde (%d) with %d squads\n", aiFactionID, len(aiSquadPositions))
 
 	return nil
 }
@@ -546,4 +514,59 @@ func createMixedRangedMagicSquad(
 	}
 
 	return createActionStateForSquad(manager, squadID)
+}
+
+// SetupMultiplayerFactions creates N player factions for hot-seat multiplayer
+// Each player gets their own faction with 3 squads positioned spread across the map
+// playerCount must be between 2 and 4
+func SetupMultiplayerFactions(manager *common.EntityManager, playerStartPos coords.LogicalPosition, playerCount int) error {
+	fm := NewFactionManager(manager)
+
+	if playerCount < 2 || playerCount > 4 {
+		return fmt.Errorf("player count must be between 2 and 4, got %d", playerCount)
+	}
+
+	// Check if we have units available
+	if len(squads.Units) == 0 {
+		return fmt.Errorf("no units available - call squads.InitUnitTemplatesFromJSON() first")
+	}
+
+	// Create player factions
+	for i := 0; i < playerCount; i++ {
+		playerID := i + 1
+		playerName := fmt.Sprintf("Player %d", playerID)
+		factionName := fmt.Sprintf("%s's Army", playerName)
+
+		factionID := fm.CreateFactionWithPlayer(factionName, playerID, playerName)
+
+		// Create 3 squads per player faction (similar to existing setup)
+		// Spread factions across the map horizontally using i*10 offset
+		playerSquadPositions := []coords.LogicalPosition{
+			{X: clampPosition(playerStartPos.X-3+(i*10), 0, 99), Y: clampPosition(playerStartPos.Y-3, 0, 79)},
+			{X: clampPosition(playerStartPos.X+3+(i*10), 0, 99), Y: clampPosition(playerStartPos.Y-3, 0, 79)},
+			{X: clampPosition(playerStartPos.X+(i*10), 0, 99), Y: clampPosition(playerStartPos.Y+3, 0, 79)},
+		}
+
+		for j, pos := range playerSquadPositions {
+			squadID, err := createSquadForFaction(manager, fmt.Sprintf("%s Squad %d", playerName, j+1), pos)
+			if err != nil {
+				return fmt.Errorf("failed to create squad for %s: %w", playerName, err)
+			}
+
+			if err := fm.AddSquadToFaction(factionID, squadID, pos); err != nil {
+				return fmt.Errorf("failed to add squad to %s faction: %w", playerName, err)
+			}
+
+			if err := createActionStateForSquad(manager, squadID); err != nil {
+				return fmt.Errorf("failed to create action state: %w", err)
+			}
+		}
+	}
+
+	fmt.Printf("Created %d player factions for hot-seat multiplayer\n", playerCount)
+	for i := 0; i < playerCount; i++ {
+		fmt.Printf("  Player %d: 3 squads\n", i+1)
+	}
+
+	return nil
 }

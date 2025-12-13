@@ -22,15 +22,30 @@ func NewFactionManager(manager *common.EntityManager) *FactionManager {
 }
 
 func (fm *FactionManager) CreateFaction(name string, isPlayer bool) ecs.EntityID {
+	playerID := 0
+	playerName := ""
+	if isPlayer {
+		playerID = 1 // Default to Player 1 for single-player
+		playerName = "Player 1"
+	}
+	return fm.CreateFactionWithPlayer(name, playerID, playerName)
+}
+
+// CreateFactionWithPlayer creates a faction with specific player assignment
+func (fm *FactionManager) CreateFactionWithPlayer(name string, playerID int, playerName string) ecs.EntityID {
 	faction := fm.manager.World.NewEntity()
 	factionID := faction.GetID()
+
+	isPlayerControlled := playerID > 0 // Derive from PlayerID
 
 	faction.AddComponent(FactionComponent, &FactionData{
 		FactionID:          factionID,
 		Name:               name,
 		Mana:               100,
 		MaxMana:            100,
-		IsPlayerControlled: isPlayer,
+		IsPlayerControlled: isPlayerControlled,
+		PlayerID:           playerID,
+		PlayerName:         playerName,
 	})
 
 	return factionID
@@ -148,4 +163,16 @@ func (fm *FactionManager) GetFactionName(factionID ecs.EntityID) string {
 		return factionData.Name
 	}
 	return "Unknown"
+}
+
+// GetPlayerFactions returns all factions controlled by human players
+func (fm *FactionManager) GetPlayerFactions() []ecs.EntityID {
+	var playerFactions []ecs.EntityID
+	for _, result := range fm.manager.World.Query(FactionTag) {
+		factionData := common.GetComponentType[*FactionData](result.Entity, FactionComponent)
+		if factionData != nil && factionData.PlayerID > 0 {
+			playerFactions = append(playerFactions, result.Entity.GetID())
+		}
+	}
+	return playerFactions
 }
