@@ -27,12 +27,6 @@ func (attr JSONAttributes) NewAttributesFromJson() common.Attributes {
 	)
 }
 
-type JSONArmor struct {
-	ArmorClass  int     `json:"armorClass"`
-	Protection  int     `json:"protection"`
-	DodgeChance float32 `json:"dodgeChance"`
-}
-
 type JSONMeleeWeapon struct {
 	Name        string `json:"name,omitempty"`
 	ImgName     string `json:"imgname,omitempty"`
@@ -127,9 +121,6 @@ type JSONMonster struct {
 	Name         string         `json:"name"`
 	ImageName    string         `json:"imgname"`
 	Attributes   JSONAttributes `json:"attributes"`
-	Armor        *JSONArmor     `json:"armor"`       // Use pointer to allow null values
-	MeleeWeapon  *JSONMeleeWeapon  `json:"meleeWeapon"` // Use pointer to allow null values
-	RangedWeapon *JSONRangedWeapon `json:"rangedWeapon"`
 	Width        int            `json:"width"`
 	Height       int            `json:"height"`
 	Role         string         `json:"role"`
@@ -150,9 +141,6 @@ func NewJSONMonster(m JSONMonster) JSONMonster {
 		Name:         m.Name,
 		ImageName:    m.ImageName,
 		Attributes:   m.Attributes,
-		Armor:        m.Armor,
-		MeleeWeapon:  m.MeleeWeapon,
-		RangedWeapon: m.RangedWeapon,
 		Width:        m.Width,
 		Height:       m.Height,
 		Role:         m.Role,

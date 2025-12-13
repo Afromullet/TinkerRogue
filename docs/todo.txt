@@ -1,6 +1,4 @@
-Consider replacing row based tareting with just cells. I.E, attacking row one is just 3 cells
 
-Simplify Unit data. No need for weapons, armor, etc in the json and for units
 
 Make sure units attack units in front of them. I,E. if a unit attacks a column, it should only attack the column that its facing. 
 Same thing with row attacks

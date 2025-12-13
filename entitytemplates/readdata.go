@@ -47,12 +47,7 @@ func ReadMonsterData() {
 
 	// Iterate over monsters
 	for _, monster := range monsters.Monsters {
-
-		if monster.RangedWeapon != nil {
-			CreateTargetArea(monster.RangedWeapon.TargetArea)
-		}
 		MonsterTemplates = append(MonsterTemplates, NewJSONMonster(monster))
-
 	}
 
 }
