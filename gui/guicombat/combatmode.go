@@ -50,7 +50,7 @@ type CombatMode struct {
 	highlightRenderer *guimodes.SquadHighlightRenderer
 
 	// State tracking for UI updates (GUI_PERFORMANCE_ANALYSIS.md)
-	lastFactionID    ecs.EntityID
+	lastFactionID     ecs.EntityID
 	lastSelectedSquad ecs.EntityID
 }
 

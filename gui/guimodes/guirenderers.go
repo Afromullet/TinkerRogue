@@ -17,6 +17,7 @@ type BorderImageCache struct {
 }
 
 // GetOrCreate returns cached border images, creating them only if dimensions changed.
+// Border images are filled with white and should be tinted using ColorScale.
 func (cache *BorderImageCache) GetOrCreate(tileSize, thickness int) (*ebiten.Image, *ebiten.Image, *ebiten.Image, *ebiten.Image) {
 	if cache.top == nil || cache.tileSize != tileSize || cache.thickness != thickness {
 		// Recreate images only on size change
@@ -24,6 +25,14 @@ func (cache *BorderImageCache) GetOrCreate(tileSize, thickness int) (*ebiten.Ima
 		cache.bottom = ebiten.NewImage(tileSize, thickness)
 		cache.left = ebiten.NewImage(thickness, tileSize)
 		cache.right = ebiten.NewImage(thickness, tileSize)
+
+		// Fill with white once - will be tinted with ColorScale in DrawTileBorder
+		white := color.RGBA{R: 255, G: 255, B: 255, A: 255}
+		cache.top.Fill(white)
+		cache.bottom.Fill(white)
+		cache.left.Fill(white)
+		cache.right.Fill(white)
+
 		cache.tileSize = tileSize
 		cache.thickness = thickness
 	}
@@ -33,8 +42,11 @@ func (cache *BorderImageCache) GetOrCreate(tileSize, thickness int) (*ebiten.Ima
 // ViewportRenderer provides viewport-centered rendering utilities.
 // Now a thin wrapper around CoordinateManager for convenience.
 type ViewportRenderer struct {
-	centerPos    coords.LogicalPosition
-	borderImages BorderImageCache
+	centerPos       coords.LogicalPosition
+	borderImages    BorderImageCache
+	overlayCache    *ebiten.Image // Reusable overlay image to avoid allocations
+	overlayTileSize int           // Track size for invalidation
+	borderDrawOpts  [4]ebiten.DrawImageOptions // Reusable draw options for borders [top, bottom, left, right]
 }
 
 // NewViewportRenderer creates a renderer for the current screen
@@ -68,12 +80,18 @@ func (vr *ViewportRenderer) DrawTileOverlay(screen *ebiten.Image, pos coords.Log
 	screenX, screenY := vr.LogicalToScreen(pos)
 	tileSize := vr.TileSize()
 
-	rect := ebiten.NewImage(tileSize, tileSize)
-	rect.Fill(fillColor)
+	// Create overlay image only once or when size changes
+	if vr.overlayCache == nil || vr.overlayTileSize != tileSize {
+		vr.overlayCache = ebiten.NewImage(tileSize, tileSize)
+		vr.overlayTileSize = tileSize
+	}
+
+	// Fill with color (still necessary but much faster on existing image)
+	vr.overlayCache.Fill(fillColor)
 
 	op := &ebiten.DrawImageOptions{}
 	op.GeoM.Translate(screenX, screenY)
-	screen.DrawImage(rect, op)
+	screen.DrawImage(vr.overlayCache, op)
 }
 
 // DrawTileBorder draws a colored border around a logical position
@@ -81,34 +99,40 @@ func (vr *ViewportRenderer) DrawTileBorder(screen *ebiten.Image, pos coords.Logi
 	screenX, screenY := vr.LogicalToScreen(pos)
 	tileSize := vr.TileSize()
 
-	// Get cached border images (creates only on first use or size change)
+	// Get cached white border images (created only on first use or size change)
 	topBorder, bottomBorder, leftBorder, rightBorder := vr.borderImages.GetOrCreate(tileSize, thickness)
 
-	// Fill cached images with current color
-	topBorder.Fill(borderColor)
-	bottomBorder.Fill(borderColor)
-	leftBorder.Fill(borderColor)
-	rightBorder.Fill(borderColor)
+	// Convert border color to ColorScale for GPU-based tinting
+	r, g, b, a := borderColor.RGBA()
+	colorScale := ebiten.ColorScale{}
+	colorScale.SetR(float32(r) / 0xffff)
+	colorScale.SetG(float32(g) / 0xffff)
+	colorScale.SetB(float32(b) / 0xffff)
+	colorScale.SetA(float32(a) / 0xffff)
 
-	// Top border
-	op := &ebiten.DrawImageOptions{}
-	op.GeoM.Translate(screenX, screenY)
-	screen.DrawImage(topBorder, op)
+	// Top border - reuse draw options
+	vr.borderDrawOpts[0].GeoM.Reset()
+	vr.borderDrawOpts[0].GeoM.Translate(screenX, screenY)
+	vr.borderDrawOpts[0].ColorScale = colorScale
+	screen.DrawImage(topBorder, &vr.borderDrawOpts[0])
 
-	// Bottom border
-	op = &ebiten.DrawImageOptions{}
-	op.GeoM.Translate(screenX, screenY+float64(tileSize-thickness))
-	screen.DrawImage(bottomBorder, op)
+	// Bottom border - reuse draw options
+	vr.borderDrawOpts[1].GeoM.Reset()
+	vr.borderDrawOpts[1].GeoM.Translate(screenX, screenY+float64(tileSize-thickness))
+	vr.borderDrawOpts[1].ColorScale = colorScale
+	screen.DrawImage(bottomBorder, &vr.borderDrawOpts[1])
 
-	// Left border
-	op = &ebiten.DrawImageOptions{}
-	op.GeoM.Translate(screenX, screenY)
-	screen.DrawImage(leftBorder, op)
+	// Left border - reuse draw options
+	vr.borderDrawOpts[2].GeoM.Reset()
+	vr.borderDrawOpts[2].GeoM.Translate(screenX, screenY)
+	vr.borderDrawOpts[2].ColorScale = colorScale
+	screen.DrawImage(leftBorder, &vr.borderDrawOpts[2])
 
-	// Right border
-	op = &ebiten.DrawImageOptions{}
-	op.GeoM.Translate(screenX+float64(tileSize-thickness), screenY)
-	screen.DrawImage(rightBorder, op)
+	// Right border - reuse draw options
+	vr.borderDrawOpts[3].GeoM.Reset()
+	vr.borderDrawOpts[3].GeoM.Translate(screenX+float64(tileSize-thickness), screenY)
+	vr.borderDrawOpts[3].ColorScale = colorScale
+	screen.DrawImage(rightBorder, &vr.borderDrawOpts[3])
 }
 
 // ===== COMBAT RENDERING SYSTEMS =====
