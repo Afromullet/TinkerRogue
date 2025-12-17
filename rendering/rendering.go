@@ -17,8 +17,6 @@ var (
 	RenderableComponent *ecs.Component //Putting this here for now rather than in graphics
 	RenderablesTag      ecs.Tag        // Tag for querying renderable entities
 	MessengersTag       ecs.Tag        // Tag for querying messenger (UI message) entities
-
-	EnableFieldOfView = false
 )
 
 type Renderable struct {
@@ -38,24 +36,12 @@ func ProcessRenderables(ecsmanager *common.EntityManager, gameMap worldmap.GameM
 			continue
 		}
 
-		if debugMode || !EnableFieldOfView {
-
-			logicalPos := coords.LogicalPosition{X: pos.X, Y: pos.Y}
-			index := coords.CoordManager.LogicalToIndex(logicalPos)
-			tile := gameMap.Tiles[index]
-			op := &ebiten.DrawImageOptions{}
-			op.GeoM.Translate(float64(tile.PixelX), float64(tile.PixelY))
-			screen.DrawImage(img, op)
-
-		} else if gameMap.PlayerVisible.IsVisible(pos.X, pos.Y) {
-			logicalPos := coords.LogicalPosition{X: pos.X, Y: pos.Y}
-			index := coords.CoordManager.LogicalToIndex(logicalPos)
-			tile := gameMap.Tiles[index]
-			op := &ebiten.DrawImageOptions{}
-			op.GeoM.Translate(float64(tile.PixelX), float64(tile.PixelY))
-			screen.DrawImage(img, op)
-		}
-
+		logicalPos := coords.LogicalPosition{X: pos.X, Y: pos.Y}
+		index := coords.CoordManager.LogicalToIndex(logicalPos)
+		tile := gameMap.Tiles[index]
+		op := &ebiten.DrawImageOptions{}
+		op.GeoM.Translate(float64(tile.PixelX), float64(tile.PixelY))
+		screen.DrawImage(img, op)
 	}
 }
 
@@ -87,13 +73,7 @@ func ProcessRenderablesInSquare(ecsmanager *common.EntityManager, gameMap worldm
 			screenX, screenY := coords.CoordManager.LogicalToScreen(logicalPos, playerPos)
 			op.GeoM.Translate(screenX, screenY)
 
-			if debugMode || !EnableFieldOfView {
-				// In debug mode, we can draw the image directly without visibility checks
-				screen.DrawImage(img, op)
-			} else if gameMap.PlayerVisible.IsVisible(pos.X, pos.Y) {
-				// Only draw if the tile is visible to the player
-				screen.DrawImage(img, op)
-			}
+			screen.DrawImage(img, op)
 		}
 	}
 }

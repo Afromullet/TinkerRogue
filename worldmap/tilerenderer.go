@@ -3,25 +3,21 @@ package worldmap
 import (
 	"game_main/coords"
 	"game_main/graphics"
-	"image/color"
 
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/norendren/go-fov/fov"
 )
 
-// TileRenderer handles rendering of map tiles with FOV and color matrices
+// TileRenderer handles rendering of map tiles with color matrices
 type TileRenderer struct {
 	tiles      []*Tile
-	fov        *fov.View
 	colorScale ebiten.ColorScale
 	drawOpts   ebiten.DrawImageOptions // Reusable draw options (eliminates 2,000 allocations/frame)
 }
 
 // NewTileRenderer creates a renderer for the given tileset
-func NewTileRenderer(tiles []*Tile, fov *fov.View) *TileRenderer {
+func NewTileRenderer(tiles []*Tile) *TileRenderer {
 	return &TileRenderer{
 		tiles: tiles,
-		fov:   fov,
 	}
 }
 
@@ -66,21 +62,11 @@ func (r *TileRenderer) renderTile(x, y int, opts RenderOptions, bounds *Rendered
 	idx := coords.CoordManager.LogicalToIndex(logicalPos)
 	tile := r.tiles[idx]
 
-	// FOV check
-	isVisible := r.fov.IsVisible(x, y) || opts.RevealAll
-	if isVisible {
-		tile.IsRevealed = true
-	} else if !tile.IsRevealed {
-		return // Don't draw unrevealed tiles
-	}
+	// Always reveal tiles (no FOV system)
+	tile.IsRevealed = true
 
 	// Reset draw options (reuse instead of allocate - eliminates 2,000 allocations/frame)
 	r.drawOpts = ebiten.DrawImageOptions{}
-
-	// Apply darkening for out-of-FOV revealed tiles
-	if !isVisible && tile.IsRevealed {
-		r.drawOpts.ColorScale.ScaleWithColor(color.RGBA{1, 1, 1, 1})
-	}
 
 	// Apply geometric transformation
 	if opts.CenterOn != nil {

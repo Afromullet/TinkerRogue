@@ -1,6 +1,6 @@
 // Package worldmap handles game world generation, map management, and spatial operations.
 // It provides dungeon generation algorithms, room management, tile systems,
-// field of view calculations, and map-based entity placement and retrieval.
+// and map-based entity placement and retrieval.
 package worldmap
 
 import (
@@ -12,7 +12,6 @@ import (
 
 	"github.com/bytearena/ecs"
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/norendren/go-fov/fov"
 )
 
 // Rect represents a rectangular room or area on the game map.
@@ -90,7 +89,6 @@ func (r *Rect) Intersect(other Rect) bool {
 type GameMap struct {
 	Tiles          []*Tile
 	Rooms          []Rect
-	PlayerVisible  *fov.View
 	NumTiles       int
 	RightEdgeX     int
 	RightEdgeY     int
@@ -101,9 +99,7 @@ type GameMap struct {
 func NewGameMap(generatorName string) GameMap {
 	images := LoadTileImages()
 
-	dungeonMap := GameMap{
-		PlayerVisible: fov.New(),
-	}
+	dungeonMap := GameMap{}
 
 	// Get generator or fall back to default
 	gen := GetGeneratorOrDefault(generatorName)
@@ -227,7 +223,7 @@ func (gameMap *GameMap) RemoveItemFromTile(index int, pos *coords.LogicalPositio
 }
 
 func (gameMap *GameMap) DrawLevelCenteredSquare(screen *ebiten.Image, playerPos *coords.LogicalPosition, size int, revealAllTiles bool) {
-	renderer := NewTileRenderer(gameMap.Tiles, gameMap.PlayerVisible)
+	renderer := NewTileRenderer(gameMap.Tiles)
 
 	bounds := renderer.Render(RenderOptions{
 		RevealAll:    revealAllTiles,
@@ -244,7 +240,7 @@ func (gameMap *GameMap) DrawLevelCenteredSquare(screen *ebiten.Image, playerPos 
 // The color matrix draws on tiles.
 // Right now it's only used for showing the AOE of throwable items
 func (gameMap *GameMap) DrawLevel(screen *ebiten.Image, revealAllTiles bool) {
-	renderer := NewTileRenderer(gameMap.Tiles, gameMap.PlayerVisible)
+	renderer := NewTileRenderer(gameMap.Tiles)
 
 	renderer.Render(RenderOptions{
 		RevealAll: revealAllTiles,
