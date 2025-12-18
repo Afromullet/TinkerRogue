@@ -193,3 +193,64 @@ func (vr *ViewportRenderer) DrawTileBorder(screen *ebiten.Image, pos coords.Logi
 	screen.DrawImage(rightBorder, &vr.borderDrawOpts[3])
 }
 ```
+
+
+## 4 Better Usage of EbitenUI
+
+**Creating GUI Widgets Only Once/Recreating Widgets Only When We need to**
+
+```go
+
+// Refresh updates the container with current squad buttons
+// OPTIMIZED: Uses widget caching to avoid recreating buttons every frame
+func (slc *SquadListComponent) Refresh() {
+	if slc.container == nil {
+		return
+	}
+
+	// Get all squads and apply filter
+	allSquads := slc.queries.SquadCache.FindAllSquads()
+	newFilteredSquads := make([]ecs.EntityID, 0, len(allSquads))
+
+	for _, squadID := range allSquads {
+		squadInfo := slc.queries.GetSquadInfo(squadID)
+		if squadInfo == nil || !slc.filter(squadInfo) {
+			continue
+		}
+		newFilteredSquads = append(newFilteredSquads, squadID)
+	}
+
+	// OPTIMIZATION: Check if squad list changed
+	if !slc.squadListChanged(newFilteredSquads) {
+		// FAST PATH: No change - just update button labels if needed
+		slc.updateButtonLabels(newFilteredSquads)
+		return
+	}
+
+	// SLOW PATH: Squad list changed - update widgets
+	slc.updateButtonWidgets(newFilteredSquads)
+	slc.filteredSquads = newFilteredSquads
+}
+
+
+// updateButtonLabels updates button text without recreating widgets (FAST)
+func (slc *SquadListComponent) updateButtonLabels(squadIDs []ecs.EntityID) {
+	for _, squadID := range squadIDs {
+		button, exists := slc.buttons[squadID]
+		if !exists {
+			continue
+		}
+
+		squadInfo := slc.queries.GetSquadInfo(squadID)
+		if squadInfo == nil {
+			continue
+		}
+
+		// Update button text if it changed (Text widget will remeasure on next render, not now)
+		textWidget := button.Text()
+		if textWidget != nil && textWidget.Label != squadInfo.Name {
+			textWidget.Label = squadInfo.Name
+		}
+	}
+}
+```

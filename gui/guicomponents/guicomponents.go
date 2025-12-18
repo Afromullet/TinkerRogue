@@ -19,9 +19,10 @@ type SquadListComponent struct {
 	queries        *GUIQueries
 	filter         SquadFilter
 	onSelect       func(squadID ecs.EntityID)
-	listLabel      *widget.Text     // First child is the label
-	filteredSquads []ecs.EntityID   // Cache for squad IDs
-	squadButtons   []*widget.Button // Cache for squad buttons
+	listLabel      *widget.Text                    // First child is the label
+	filteredSquads []ecs.EntityID                  // Currently displayed squad IDs (for change detection)
+	buttons        map[ecs.EntityID]*widget.Button // NEW: Reuse buttons between refreshes
+	noSquadsText   *widget.Text                    // NEW: Cache "AI Turn" message widget
 }
 
 // SquadFilter determines which squads to show
@@ -40,62 +41,148 @@ func NewSquadListComponent(
 		filter:         filter,
 		onSelect:       onSelect,
 		filteredSquads: make([]ecs.EntityID, 0),
-		squadButtons:   make([]*widget.Button, 0),
+		buttons:        make(map[ecs.EntityID]*widget.Button), // Initialize button cache
+		noSquadsText:   nil,
 	}
 }
 
 // Refresh updates the container with current squad buttons
+// OPTIMIZED: Uses widget caching to avoid recreating buttons every frame
 func (slc *SquadListComponent) Refresh() {
 	if slc.container == nil {
 		return
 	}
 
-	// Remove old buttons, keep label (first child)
-	children := slc.container.Children()
-	for i := len(children) - 1; i >= 1; i-- {
-		slc.container.RemoveChild(children[i])
-	}
-	slc.squadButtons = make([]*widget.Button, 0)
-	slc.filteredSquads = make([]ecs.EntityID, 0)
-
-	// Get all squads
+	// Get all squads and apply filter
 	allSquads := slc.queries.SquadCache.FindAllSquads()
+	newFilteredSquads := make([]ecs.EntityID, 0, len(allSquads))
 
-	// Filter squads and create buttons
 	for _, squadID := range allSquads {
 		squadInfo := slc.queries.GetSquadInfo(squadID)
 		if squadInfo == nil || !slc.filter(squadInfo) {
 			continue
 		}
+		newFilteredSquads = append(newFilteredSquads, squadID)
+	}
 
-		slc.filteredSquads = append(slc.filteredSquads, squadID)
+	// OPTIMIZATION: Check if squad list changed
+	if !slc.squadListChanged(newFilteredSquads) {
+		// FAST PATH: No change - just update button labels if needed
+		slc.updateButtonLabels(newFilteredSquads)
+		return
+	}
 
-		// Create button for this squad
-		localSquadID := squadID // Capture for closure
-		squadName := squadInfo.Name
+	// SLOW PATH: Squad list changed - update widgets
+	slc.updateButtonWidgets(newFilteredSquads)
+	slc.filteredSquads = newFilteredSquads
+}
 
-		button := widgets.CreateButtonWithConfig(widgets.ButtonConfig{
-			Text: squadName,
-			OnClick: func() {
-				if slc.onSelect != nil {
-					slc.onSelect(localSquadID)
-				}
-			},
-		})
+// squadListChanged checks if the filtered squad list has changed
+func (slc *SquadListComponent) squadListChanged(newSquads []ecs.EntityID) bool {
+	if len(slc.filteredSquads) != len(newSquads) {
+		return true
+	}
+	for i := range slc.filteredSquads {
+		if slc.filteredSquads[i] != newSquads[i] {
+			return true
+		}
+	}
+	return false
+}
+
+// updateButtonLabels updates button text without recreating widgets (FAST)
+func (slc *SquadListComponent) updateButtonLabels(squadIDs []ecs.EntityID) {
+	for _, squadID := range squadIDs {
+		button, exists := slc.buttons[squadID]
+		if !exists {
+			continue
+		}
+
+		squadInfo := slc.queries.GetSquadInfo(squadID)
+		if squadInfo == nil {
+			continue
+		}
+
+		// Update button text if it changed (Text widget will remeasure on next render, not now)
+		textWidget := button.Text()
+		if textWidget != nil && textWidget.Label != squadInfo.Name {
+			textWidget.Label = squadInfo.Name
+		}
+	}
+}
+
+// updateButtonWidgets recreates the widget list when squad list changes (SLOW)
+func (slc *SquadListComponent) updateButtonWidgets(squadIDs []ecs.EntityID) {
+	// Remove buttons for squads no longer in list
+	for squadID, button := range slc.buttons {
+		if !slc.containsSquad(squadIDs, squadID) {
+			slc.container.RemoveChild(button)
+			delete(slc.buttons, squadID)
+		}
+	}
+
+	// Remove "AI Turn" message if present
+	if slc.noSquadsText != nil {
+		slc.container.RemoveChild(slc.noSquadsText)
+		slc.noSquadsText = nil
+	}
+
+	// Rebuild container children in correct order
+	slc.container.RemoveChildren()
+	if slc.listLabel != nil {
+		slc.container.AddChild(slc.listLabel)
+	}
+
+	// Add or reorder buttons
+	for _, squadID := range squadIDs {
+		button, exists := slc.buttons[squadID]
+
+		if !exists {
+			// Create new button ONLY if not in cache
+			squadInfo := slc.queries.GetSquadInfo(squadID)
+			if squadInfo == nil {
+				continue
+			}
+
+			localSquadID := squadID // Capture for closure
+
+			button = widgets.CreateButtonWithConfig(widgets.ButtonConfig{
+				Text: squadInfo.Name,
+				OnClick: func() {
+					if slc.onSelect != nil {
+						slc.onSelect(localSquadID)
+					}
+				},
+			})
+
+			slc.buttons[squadID] = button
+		}
 
 		slc.container.AddChild(button)
-		slc.squadButtons = append(slc.squadButtons, button)
 	}
 
 	// If no squads match filter, show AI turn message
-	if len(slc.squadButtons) == 0 {
-		noSquadsText := widgets.CreateTextWithConfig(widgets.TextConfig{
-			Text:     "AI Turn",
-			FontFace: guiresources.SmallFace,
-			Color:    color.Gray{Y: 128},
-		})
-		slc.container.AddChild(noSquadsText)
+	if len(squadIDs) == 0 {
+		// Create "AI Turn" message once and cache it
+		if slc.noSquadsText == nil {
+			slc.noSquadsText = widgets.CreateTextWithConfig(widgets.TextConfig{
+				Text:     "AI Turn",
+				FontFace: guiresources.SmallFace,
+				Color:    color.Gray{Y: 128},
+			})
+		}
+		slc.container.AddChild(slc.noSquadsText)
 	}
+}
+
+// containsSquad checks if a squadID is in the list
+func (slc *SquadListComponent) containsSquad(squads []ecs.EntityID, squadID ecs.EntityID) bool {
+	for _, id := range squads {
+		if id == squadID {
+			return true
+		}
+	}
+	return false
 }
 
 // ===== DETAIL PANEL COMPONENT =====
