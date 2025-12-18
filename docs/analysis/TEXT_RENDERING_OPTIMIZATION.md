@@ -120,146 +120,6 @@ func (slc *SquadListComponent) Refresh() {
 
 **Impact**: Eliminates 50-75% of text rendering overhead
 
-#### 1.1 Cache and Reuse Button Widgets
-
-**Current**: Destroy and recreate buttons every refresh
-**Optimized**: Keep buttons, update text labels only
-
-```go
-// gui/guicomponents/guicomponents.go
-type SquadListComponent struct {
-    container      *widget.Container
-    queries        *GUIQueries
-    filter         SquadFilter
-    onSelect       func(squadID ecs.EntityID)
-    listLabel      *widget.Text
-
-    // NEW: Keep button widgets between refreshes
-    buttonCache    map[ecs.EntityID]*widget.Button  // Reuse buttons
-    buttonOrder    []ecs.EntityID                   // Track display order
-}
-
-func NewSquadListComponent(...) *SquadListComponent {
-    return &SquadListComponent{
-        // ...
-        buttonCache:    make(map[ecs.EntityID]*widget.Button),
-        buttonOrder:    make([]ecs.EntityID, 0),
-    }
-}
-
-func (slc *SquadListComponent) Refresh() {
-    // Get current squads
-    allSquads := slc.queries.SquadCache.FindAllSquads()
-    newFilteredSquads := make([]ecs.EntityID, 0, len(allSquads))
-
-    for _, squadID := range allSquads {
-        squadInfo := slc.queries.GetSquadInfo(squadID)
-        if squadInfo == nil || !slc.filter(squadInfo) {
-            continue
-        }
-        newFilteredSquads = append(newFilteredSquads, squadID)
-    }
-
-    // Check if squad list changed
-    if !squadListChanged(slc.filteredSquads, newFilteredSquads) {
-        // NO CHANGE - Just update button text if needed
-        slc.updateButtonLabels(newFilteredSquads)
-        return
-    }
-
-    // Squad list changed - update buttons
-    slc.updateButtonWidgets(newFilteredSquads)
-    slc.filteredSquads = newFilteredSquads
-}
-
-// Helper: Check if squad list actually changed
-func squadListChanged(old, new []ecs.EntityID) bool {
-    if len(old) != len(new) {
-        return true
-    }
-    for i := range old {
-        if old[i] != new[i] {
-            return true
-        }
-    }
-    return false
-}
-
-// Update only button text (FAST - no widget creation)
-func (slc *SquadListComponent) updateButtonLabels(squadIDs []ecs.EntityID) {
-    for _, squadID := range squadIDs {
-        button, exists := slc.buttonCache[squadID]
-        if !exists {
-            continue
-        }
-
-        squadInfo := slc.queries.GetSquadInfo(squadID)
-        if squadInfo == nil {
-            continue
-        }
-
-        // Update button text if changed
-        if button.Text != nil && button.Text.Label != squadInfo.Name {
-            button.Text.Label = squadInfo.Name
-            // Text measurement will happen once on next render, not on creation
-        }
-    }
-}
-
-// Update button widgets (SLOW - only when squad list changes)
-func (slc *SquadListComponent) updateButtonWidgets(squadIDs []ecs.EntityID) {
-    // Remove buttons for squads no longer in list
-    for squadID, button := range slc.buttonCache {
-        if !containsSquad(squadIDs, squadID) {
-            slc.container.RemoveChild(button)
-            delete(slc.buttonCache, squadID)
-        }
-    }
-
-    // Add/reorder buttons
-    slc.container.RemoveChildren() // Remove all
-    slc.container.AddChild(slc.listLabel) // Re-add label first
-
-    for _, squadID := range squadIDs {
-        button, exists := slc.buttonCache[squadID]
-
-        if !exists {
-            // Create new button ONLY if not in cache
-            squadInfo := slc.queries.GetSquadInfo(squadID)
-            localSquadID := squadID
-
-            button = widgets.CreateButtonWithConfig(widgets.ButtonConfig{
-                Text: squadInfo.Name,
-                OnClick: func() {
-                    if slc.onSelect != nil {
-                        slc.onSelect(localSquadID)
-                    }
-                },
-            })
-
-            slc.buttonCache[squadID] = button
-        }
-
-        slc.container.AddChild(button)
-    }
-}
-
-func containsSquad(squads []ecs.EntityID, squadID ecs.EntityID) bool {
-    for _, id := range squads {
-        if id == squadID {
-            return true
-        }
-    }
-    return false
-}
-```
-
-**Expected Savings**:
-- **Fast path** (no squad changes): ~5-10s saved (skip all widget creation)
-- **Slow path** (squads changed): Only recreate changed buttons, not all
-- **Typical case**: 90% of refreshes are fast path
-
-**Implementation Effort**: 3-4 hours
 
 ---
 
@@ -355,9 +215,21 @@ text := guiresources.SmallTextPool.GetOrCreate("HP: 100")
 
 ---
 
-### PRIORITY 2: Text Measurement Caching (HIGH - 2-5s savings)
+### PRIORITY 2: Text Measurement Caching (HIGH - 2-5s savings) ✅ IMPLEMENTED & INTEGRATED
 
+**Status**: COMPLETED & FULLY INTEGRATED (2025-12-18)
+**Implementation**: `gui/guiresources/measurementcache.go`, `gui/widgets/createwidgets.go`
+**Integration Report**: `docs/analysis/MEASUREMENT_CACHE_INTEGRATION.md`
+**Documentation**: `docs/analysis/MEASUREMENT_CACHE_USAGE.md`
 **Impact**: Eliminates redundant font.MeasureString calls (13.87s → 2-3s)
+
+**Integration Summary**:
+- ✅ Automatic button width calculation using cache
+- ✅ Text truncation helpers with cache-based binary search
+- ✅ MaxWidth button support with auto-truncation
+- ✅ All CreateButtonWithConfig calls now use cache (28 files)
+- ✅ Expected cache hit rate: 60-80% for button text
+- ✅ 1500x faster for cached measurements (15ms → 0.01ms)
 
 ```go
 // gui/guiresources/measurementcache.go (NEW FILE)

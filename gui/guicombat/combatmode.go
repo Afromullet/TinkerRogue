@@ -269,6 +269,9 @@ func (cm *CombatMode) handleEndTurn() {
 		return
 	}
 
+	// Invalidate all squad caches since turn changed (all action states reset)
+	cm.Queries.MarkAllSquadsDirty()
+
 	// Get new faction info from result
 	currentFactionID := result.NewFaction
 	round := result.NewRound

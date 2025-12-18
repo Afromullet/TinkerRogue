@@ -214,20 +214,6 @@ func (gmc *GameModeCoordinator) GetBattleMapState() *BattleMapState {
 	return gmc.battleMapState
 }
 
-// RefreshSquadInfoCache rebuilds the squad info cache for this frame.
-// Call this once per render cycle before UI rendering to ensure GetSquadInfo uses cached data.
-// Performance: Eliminates 27.81 seconds per benchmark by replacing per-call lookups with pre-built maps.
-func (gmc *GameModeCoordinator) RefreshSquadInfoCache() {
-	if gmc.context == nil || gmc.context.Queries == nil {
-		return
-	}
-
-	// Type assert to GUIQueries and call refresh
-	if queries, ok := gmc.context.Queries.(interface{ RefreshSquadInfoCache() }); ok {
-		queries.RefreshSquadInfoCache()
-	}
-}
-
 // saveOverworldState captures current overworld state before leaving
 func (gmc *GameModeCoordinator) saveOverworldState() {
 	// TODO: Implement state capture

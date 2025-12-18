@@ -76,9 +76,6 @@ func (g *Game) Update() error {
 // Draw renders the game to the screen buffer.
 // It handles map rendering, entity rendering, UI drawing, and visual effects.
 func (g *Game) Draw(screen *ebiten.Image) {
-	// Refresh squad info cache once per frame for all GetSquadInfo calls (saves 27.81s per benchmark)
-	g.gameModeCoordinator.RefreshSquadInfoCache()
-
 	// Update screen dimensions
 	graphics.ScreenInfo.ScreenWidth = screen.Bounds().Dx()
 	graphics.ScreenInfo.ScreenHeight = screen.Bounds().Dy()

@@ -159,6 +159,10 @@ func (cah *CombatActionHandler) ExecuteAttack() {
 	// Validate attack BEFORE triggering animation (prevents animation on invalid attacks)
 	result := cah.combatService.ExecuteSquadAttack(selectedSquad, selectedTarget)
 
+	// Invalidate cache for both squads (attacker and defender) since their HP/status changed
+	cah.queries.MarkSquadDirty(selectedSquad)
+	cah.queries.MarkSquadDirty(selectedTarget)
+
 	// Reset UI state
 	cah.battleMapState.InAttackMode = false
 
@@ -215,6 +219,9 @@ func (cah *CombatActionHandler) MoveSquad(squadID ecs.EntityID, newPos coords.Lo
 		return fmt.Errorf(result.Error)
 	}
 
+	// Invalidate cache for the moved squad (position and movement remaining changed)
+	cah.queries.MarkSquadDirty(squadID)
+
 	cah.addLog(fmt.Sprintf("✓ %s", result.Description))
 
 	// Exit move mode
@@ -234,6 +241,8 @@ func (cah *CombatActionHandler) UndoLastMove() {
 	result := cah.commandExecutor.Undo()
 
 	if result.Success {
+		// Invalidate all squads since squad positions changed
+		cah.queries.MarkAllSquadsDirty()
 		cah.addLog(fmt.Sprintf("⟲ Undid: %s", result.Description))
 	} else {
 		cah.addLog(fmt.Sprintf("Undo failed: %s", result.Error))
@@ -250,6 +259,8 @@ func (cah *CombatActionHandler) RedoLastMove() {
 	result := cah.commandExecutor.Redo()
 
 	if result.Success {
+		// Invalidate all squads since squad positions changed
+		cah.queries.MarkAllSquadsDirty()
 		cah.addLog(fmt.Sprintf("⟳ Redid: %s", result.Description))
 	} else {
 		cah.addLog(fmt.Sprintf("Redo failed: %s", result.Error))
