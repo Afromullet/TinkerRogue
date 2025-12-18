@@ -19,9 +19,15 @@ func findTurnStateEntity(manager *common.EntityManager) *ecs.Entity {
 
 // GetSquadFaction returns the faction ID for a squad in combat.
 // Returns 0 if squad is not in combat (doesn't have CombatFactionComponent).
+// Optimized: Uses single GetEntityByID call instead of tag-based iteration.
 func GetSquadFaction(squadID ecs.EntityID, manager *common.EntityManager) ecs.EntityID {
-	combatFaction := common.GetComponentTypeByIDWithTag[*CombatFactionData](
-		manager, squadID, squads.SquadTag, CombatFactionComponent)
+	// Use direct entity lookup instead of tag-based iteration (O(1) vs O(n))
+	entity := common.FindEntityByID(manager, squadID)
+	if entity == nil {
+		return 0
+	}
+
+	combatFaction := common.GetComponentType[*CombatFactionData](entity, CombatFactionComponent)
 	if combatFaction == nil {
 		return 0
 	}
@@ -48,8 +54,14 @@ func getFactionOwner(squadID ecs.EntityID, manager *common.EntityManager) ecs.En
 }
 
 // getSquadMapPosition returns the current map position of a squad
+// Optimized: Uses single GetEntityByID call for component access.
 func getSquadMapPosition(squadID ecs.EntityID, manager *common.EntityManager) (coords.LogicalPosition, error) {
-	pos := common.GetComponentTypeByID[*coords.LogicalPosition](manager, squadID, common.PositionComponent)
+	entity := common.FindEntityByID(manager, squadID)
+	if entity == nil {
+		return coords.LogicalPosition{}, fmt.Errorf("squad %d not found", squadID)
+	}
+
+	pos := common.GetComponentType[*coords.LogicalPosition](entity, common.PositionComponent)
 	if pos == nil {
 		return coords.LogicalPosition{}, fmt.Errorf("squad %d has no position", squadID)
 	}
@@ -94,10 +106,16 @@ func GetSquadAtPosition(pos coords.LogicalPosition, manager *common.EntityManage
 }
 
 // isSquad checks if an entity ID represents a squad in combat
+// Optimized: Uses single GetEntityByID call instead of tag-based iteration.
 func isSquad(entityID ecs.EntityID, manager *common.EntityManager) bool {
 	// Check if squad has CombatFactionComponent (is in combat)
-	combatFaction := common.GetComponentTypeByIDWithTag[*CombatFactionData](
-		manager, entityID, squads.SquadTag, CombatFactionComponent)
+	// Use direct entity lookup instead of tag-based iteration (O(1) vs O(n))
+	entity := common.FindEntityByID(manager, entityID)
+	if entity == nil {
+		return false
+	}
+
+	combatFaction := common.GetComponentType[*CombatFactionData](entity, CombatFactionComponent)
 	return combatFaction != nil
 }
 
@@ -159,8 +177,10 @@ func decrementMovementRemaining(cache *CombatQueryCache, squadID ecs.EntityID, a
 // ========================================
 
 // removeSquadFromMap removes a squad from the combat map
+// Optimized: Uses direct FindEntityByID (already optimal).
 func removeSquadFromMap(squadID ecs.EntityID, manager *common.EntityManager) error {
-	squad := common.FindEntityByIDWithTag(manager, squadID, squads.SquadTag)
+	// FindEntityByID is already optimal (single GetEntityByID call)
+	squad := common.FindEntityByID(manager, squadID)
 	if squad == nil {
 		return fmt.Errorf("squad %d not found", squadID)
 	}

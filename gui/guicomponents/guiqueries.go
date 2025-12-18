@@ -223,6 +223,7 @@ type CreatureInfo struct {
 // GetCreatureAtPosition returns creature information at a specific position
 // Returns nil if no creature found at the position
 // Handles both monsters and players
+// Optimized: Batches all component lookups into single GetEntityByID call.
 func (gq *GUIQueries) GetCreatureAtPosition(pos coords.LogicalPosition) *CreatureInfo {
 	// First try the common helper (looks for monsters)
 	creatureID := common.GetCreatureAtPosition(gq.ECSManager, &pos)
@@ -236,16 +237,22 @@ func (gq *GUIQueries) GetCreatureAtPosition(pos coords.LogicalPosition) *Creatur
 		return nil
 	}
 
-	// Get creature name
-	name := "Unknown"
-	if nameComp, ok := gq.ECSManager.GetComponent(creatureID, common.NameComponent); ok {
-		if nameData, ok := nameComp.(*common.Name); ok {
-			name = nameData.NameStr
-		}
+	// OPTIMIZATION: Get entity once, then extract all components from it
+	// This avoids multiple GetEntityByID allocations
+	entity := common.FindEntityByID(gq.ECSManager, creatureID)
+	if entity == nil {
+		return nil
 	}
 
-	// Get creature attributes
-	attrs := common.GetAttributesByID(gq.ECSManager, creatureID)
+	// Get creature name from entity
+	name := "Unknown"
+	nameComp := common.GetComponentType[*common.Name](entity, common.NameComponent)
+	if nameComp != nil {
+		name = nameComp.NameStr
+	}
+
+	// Get creature attributes from entity
+	attrs := common.GetComponentType[*common.Attributes](entity, common.AttributeComponent)
 	if attrs == nil {
 		// Return basic info if no attributes
 		return &CreatureInfo{

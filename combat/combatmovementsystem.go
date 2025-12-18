@@ -26,6 +26,7 @@ func NewMovementSystem(manager *common.EntityManager, posSystem *systems.Positio
 }
 
 // The squad movement speed is the movement speed of the slowest unit in the squad
+// Optimized: Uses direct entity lookup in loop instead of GetAttributesByIDWithTag.
 func (ms *CombatMovementSystem) GetSquadMovementSpeed(squadID ecs.EntityID) int {
 
 	unitIDs := squads.GetUnitIDsInSquad(squadID, ms.manager)
@@ -37,7 +38,13 @@ func (ms *CombatMovementSystem) GetSquadMovementSpeed(squadID ecs.EntityID) int 
 
 	minSpeed := 999
 	for _, unitID := range unitIDs {
-		attr := common.GetAttributesByIDWithTag(ms.manager, unitID, squads.SquadMemberTag)
+		// OPTIMIZATION: Get entity once for attributes
+		entity := common.FindEntityByID(ms.manager, unitID)
+		if entity == nil {
+			continue
+		}
+
+		attr := common.GetComponentType[*common.Attributes](entity, common.AttributeComponent)
 		if attr == nil {
 			continue
 		}
@@ -168,9 +175,16 @@ func (ms *CombatMovementSystem) GetValidMovementTiles(squadID ecs.EntityID) []co
 	return validTiles
 }
 
+// GetSquadPosition returns the position of a squad
+// Optimized: Uses direct entity lookup instead of GetComponentTypeByID.
 func (ms *CombatMovementSystem) GetSquadPosition(squadID ecs.EntityID) (coords.LogicalPosition, error) {
-	// Get position directly from PositionComponent (NO MORE MAPPOSITION DUPLICATION!)
-	pos := common.GetComponentTypeByID[*coords.LogicalPosition](ms.manager, squadID, common.PositionComponent)
+	// OPTIMIZATION: Get entity once for position component
+	entity := common.FindEntityByID(ms.manager, squadID)
+	if entity == nil {
+		return coords.LogicalPosition{}, fmt.Errorf("squad %d not found", squadID)
+	}
+
+	pos := common.GetComponentType[*coords.LogicalPosition](entity, common.PositionComponent)
 	if pos == nil {
 		return coords.LogicalPosition{}, fmt.Errorf("squad %d has no position component", squadID)
 	}

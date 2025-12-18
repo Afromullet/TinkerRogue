@@ -120,6 +120,7 @@ func (gem *GridEditorManager) GetLeader() ecs.EntityID {
 }
 
 // RefreshGridDisplay updates all grid cell displays (for leader markers, etc.)
+// Optimized: Batches all component lookups into single GetEntityByID call (3 calls → 1).
 func (gem *GridEditorManager) RefreshGridDisplay() {
 	for row := 0; row < 3; row++ {
 		for col := 0; col < 3; col++ {
@@ -129,8 +130,15 @@ func (gem *GridEditorManager) RefreshGridDisplay() {
 				continue
 			}
 
-			// Get unit info
-			gridPosData := common.GetComponentTypeByID[*squads.GridPositionData](gem.entityManager, cell.unitID, squads.GridPositionComponent)
+			// OPTIMIZATION: Get entity once, extract all components (GridPosition, Name, Role)
+			// This replaces 3 separate GetComponentTypeByID calls with just 1
+			entity := common.FindEntityByID(gem.entityManager, cell.unitID)
+			if entity == nil {
+				continue
+			}
+
+			// Get unit grid position
+			gridPosData := common.GetComponentType[*squads.GridPositionData](entity, squads.GridPositionComponent)
 			if gridPosData == nil {
 				continue
 			}
@@ -138,15 +146,15 @@ func (gem *GridEditorManager) RefreshGridDisplay() {
 			// Check if this cell is the anchor
 			isAnchor := (gridPosData.AnchorRow == row && gridPosData.AnchorCol == col)
 
-			// Get unit name from name component
-			nameData := common.GetComponentTypeByID[*common.Name](gem.entityManager, cell.unitID, common.NameComponent)
+			// Get unit name from entity
+			nameData := common.GetComponentType[*common.Name](entity, common.NameComponent)
 			unitName := "Unknown"
 			if nameData != nil {
 				unitName = nameData.NameStr
 			}
 
-			// Get unit role
-			roleData := common.GetComponentTypeByID[*squads.UnitRoleData](gem.entityManager, cell.unitID, squads.UnitRoleComponent)
+			// Get unit role from entity
+			roleData := common.GetComponentType[*squads.UnitRoleData](entity, squads.UnitRoleComponent)
 			roleStr := "Unknown"
 			if roleData != nil {
 				roleStr = roleData.Role.String()

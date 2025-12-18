@@ -54,7 +54,13 @@ func (cas *CombatActionSystem) ExecuteAttackAction(attackerID, defenderID ecs.En
 
 	for _, unitID := range allUnits {
 		if !containsEntity(attackingUnits, unitID) {
-			attr := common.GetAttributesByIDWithTag(cas.manager, unitID, squads.SquadMemberTag)
+			// OPTIMIZATION: Get entity once for attributes
+			entity := common.FindEntityByID(cas.manager, unitID)
+			if entity == nil {
+				continue
+			}
+
+			attr := common.GetComponentType[*common.Attributes](entity, common.AttributeComponent)
 			if attr != nil && attr.CanAct {
 				attr.CanAct = false
 				disabledUnits = append(disabledUnits, unitID)
@@ -67,7 +73,13 @@ func (cas *CombatActionSystem) ExecuteAttackAction(attackerID, defenderID ecs.En
 
 	// Re-enable disabled units
 	for _, unitID := range disabledUnits {
-		attr := common.GetAttributesByIDWithTag(cas.manager, unitID, squads.SquadMemberTag)
+		// OPTIMIZATION: Get entity once for attributes
+		entity := common.FindEntityByID(cas.manager, unitID)
+		if entity == nil {
+			continue
+		}
+
+		attr := common.GetComponentType[*common.Attributes](entity, common.AttributeComponent)
 		if attr != nil {
 			attr.CanAct = true
 		}
@@ -96,12 +108,20 @@ func (cas *CombatActionSystem) ExecuteAttackAction(attackerID, defenderID ecs.En
 	return nil
 }
 
+// GetSquadAttackRange returns the maximum attack range of any unit in the squad
+// Optimized: Uses direct entity lookup in loop instead of GetAttributesByIDWithTag.
 func (cas *CombatActionSystem) GetSquadAttackRange(squadID ecs.EntityID) int {
 	unitIDs := squads.GetUnitIDsInSquad(squadID, cas.manager)
 
 	maxRange := 1 // Default melee
 	for _, unitID := range unitIDs {
-		attr := common.GetAttributesByIDWithTag(cas.manager, unitID, squads.SquadMemberTag)
+		// OPTIMIZATION: Get entity once for attributes
+		entity := common.FindEntityByID(cas.manager, unitID)
+		if entity == nil {
+			continue
+		}
+
+		attr := common.GetComponentType[*common.Attributes](entity, common.AttributeComponent)
 		if attr == nil {
 			continue
 		}
@@ -116,6 +136,8 @@ func (cas *CombatActionSystem) GetSquadAttackRange(squadID ecs.EntityID) int {
 	return maxRange // Squad can attack at max range of any unit
 }
 
+// GetAttackingUnits returns units that can attack the target based on their range
+// Optimized: Uses direct entity lookup in loop instead of GetAttributesByIDWithTag.
 func (cas *CombatActionSystem) GetAttackingUnits(squadID, targetID ecs.EntityID) []ecs.EntityID {
 	// Use GetSquadDistance for consistent Chebyshev distance calculation
 	distance := squads.GetSquadDistance(squadID, targetID, cas.manager)
@@ -128,7 +150,13 @@ func (cas *CombatActionSystem) GetAttackingUnits(squadID, targetID ecs.EntityID)
 	var attackingUnits []ecs.EntityID
 
 	for _, unitID := range allUnits {
-		attr := common.GetAttributesByIDWithTag(cas.manager, unitID, squads.SquadMemberTag)
+		// OPTIMIZATION: Get entity once for attributes
+		entity := common.FindEntityByID(cas.manager, unitID)
+		if entity == nil {
+			continue
+		}
+
+		attr := common.GetComponentType[*common.Attributes](entity, common.AttributeComponent)
 		if attr == nil {
 			continue
 		}

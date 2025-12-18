@@ -72,6 +72,7 @@ func GetSquadEntity(squadID ecs.EntityID, squadmanager *common.EntityManager) *e
 }
 
 // GetUnitIDsInRow returns alive unit IDs in a row
+// Optimized: Uses direct entity lookup instead of GetAttributesByIDWithTag.
 func GetUnitIDsInRow(squadID ecs.EntityID, row int, squadmanager *common.EntityManager) []ecs.EntityID {
 	var unitIDs []ecs.EntityID
 	seen := make(map[ecs.EntityID]bool) // ✅ Prevents multi-cell units from being counted multiple times
@@ -80,7 +81,13 @@ func GetUnitIDsInRow(squadID ecs.EntityID, row int, squadmanager *common.EntityM
 		idsAtPos := GetUnitIDsAtGridPosition(squadID, row, col, squadmanager)
 		for _, unitID := range idsAtPos {
 			if !seen[unitID] {
-				attr := common.GetAttributesByIDWithTag(squadmanager, unitID, SquadMemberTag)
+				// OPTIMIZATION: Use direct entity lookup instead of GetAttributesByIDWithTag
+				entity := common.FindEntityByID(squadmanager, unitID)
+				if entity == nil {
+					continue
+				}
+
+				attr := common.GetComponentType[*common.Attributes](entity, common.AttributeComponent)
 				if attr == nil {
 					continue
 				}
@@ -133,12 +140,19 @@ func IsSquadDestroyed(squadID ecs.EntityID, squadmanager *common.EntityManager) 
 // ========================================
 
 // GetSquadUsedCapacity calculates total capacity consumed by all units in squad
+// Optimized: Uses direct entity lookup instead of GetAttributesByIDWithTag.
 func GetSquadUsedCapacity(squadID ecs.EntityID, squadmanager *common.EntityManager) float64 {
 	unitIDs := GetUnitIDsInSquad(squadID, squadmanager)
 	totalUsed := 0.0
 
 	for _, unitID := range unitIDs {
-		attr := common.GetAttributesByIDWithTag(squadmanager, unitID, SquadMemberTag)
+		// OPTIMIZATION: Use direct entity lookup instead of GetAttributesByIDWithTag
+		entity := common.FindEntityByID(squadmanager, unitID)
+		if entity == nil {
+			continue
+		}
+
+		attr := common.GetComponentType[*common.Attributes](entity, common.AttributeComponent)
 		if attr == nil {
 			continue
 		}
@@ -151,6 +165,7 @@ func GetSquadUsedCapacity(squadID ecs.EntityID, squadmanager *common.EntityManag
 
 // GetSquadTotalCapacity returns the squad's total capacity based on leader's Leadership
 // Returns 0 if squad has no leader (or defaults to 6 if no leader found)
+// Optimized: Uses direct entity lookup instead of GetAttributesByIDWithTag.
 func GetSquadTotalCapacity(squadID ecs.EntityID, squadmanager *common.EntityManager) int {
 	leaderID := GetLeaderID(squadID, squadmanager)
 	if leaderID == 0 {
@@ -158,7 +173,13 @@ func GetSquadTotalCapacity(squadID ecs.EntityID, squadmanager *common.EntityMana
 		return 6
 	}
 
-	attr := common.GetAttributesByIDWithTag(squadmanager, leaderID, SquadMemberTag)
+	// OPTIMIZATION: Use direct entity lookup instead of GetAttributesByIDWithTag
+	entity := common.FindEntityByID(squadmanager, leaderID)
+	if entity == nil {
+		return 6
+	}
+
+	attr := common.GetComponentType[*common.Attributes](entity, common.AttributeComponent)
 	if attr == nil {
 		return 6
 	}
@@ -229,6 +250,7 @@ func GetSquadDistance(squad1ID, squad2ID ecs.EntityID, squadmanager *common.Enti
 // GetSquadMovementSpeed returns the squad's movement speed (minimum of all alive units)
 // The squad moves at the speed of its slowest member
 // Returns 0 if squad has no alive units or units have no movement speed component
+// Optimized: Batches component lookups per entity to avoid multiple GetEntityByID calls.
 func GetSquadMovementSpeed(squadID ecs.EntityID, squadmanager *common.EntityManager) int {
 	unitIDs := GetUnitIDsInSquad(squadID, squadmanager)
 
@@ -236,18 +258,24 @@ func GetSquadMovementSpeed(squadID ecs.EntityID, squadmanager *common.EntityMana
 	foundValidUnit := false
 
 	for _, unitID := range unitIDs {
+		// OPTIMIZATION: Get entity once, then extract both Attributes and MovementSpeed
+		entity := common.FindEntityByID(squadmanager, unitID)
+		if entity == nil {
+			continue
+		}
+
 		// Only count alive units
-		attr := common.GetAttributesByIDWithTag(squadmanager, unitID, SquadMemberTag)
+		attr := common.GetComponentType[*common.Attributes](entity, common.AttributeComponent)
 		if attr == nil || attr.CurrentHealth <= 0 {
 			continue
 		}
 
 		// Check if unit has movement speed component
-		if !squadmanager.HasComponentByIDWithTag(unitID, SquadMemberTag, MovementSpeedComponent) {
+		if !entity.HasComponent(MovementSpeedComponent) {
 			continue
 		}
 
-		speedData := common.GetComponentTypeByID[*MovementSpeedData](squadmanager, unitID, MovementSpeedComponent)
+		speedData := common.GetComponentType[*MovementSpeedData](entity, MovementSpeedComponent)
 		if speedData != nil && speedData.Speed < minSpeed {
 			minSpeed = speedData.Speed
 			foundValidUnit = true
@@ -290,6 +318,7 @@ func FindAllSquads(squadmanager *common.EntityManager) []ecs.EntityID {
 // UpdateSquadDestroyedStatus updates the cached IsDestroyed flag for a squad
 // This should be called whenever unit health changes or units are added/removed
 // O(n) where n = number of units in squad, but only called when needed
+// Optimized: Uses direct entity lookup instead of GetAttributesByIDWithTag.
 func UpdateSquadDestroyedStatus(squadID ecs.EntityID, manager *common.EntityManager) {
 	squadEntity := GetSquadEntity(squadID, manager)
 	if squadEntity == nil {
@@ -312,7 +341,13 @@ func UpdateSquadDestroyedStatus(squadID ecs.EntityID, manager *common.EntityMana
 	// Check if any unit is alive
 	hasAliveUnit := false
 	for _, unitID := range unitIDs {
-		attr := common.GetAttributesByIDWithTag(manager, unitID, SquadMemberTag)
+		// OPTIMIZATION: Use direct entity lookup instead of GetAttributesByIDWithTag
+		entity := common.FindEntityByID(manager, unitID)
+		if entity == nil {
+			continue
+		}
+
+		attr := common.GetComponentType[*common.Attributes](entity, common.AttributeComponent)
 		if attr != nil && attr.CurrentHealth > 0 {
 			hasAliveUnit = true
 			break
@@ -323,23 +358,38 @@ func UpdateSquadDestroyedStatus(squadID ecs.EntityID, manager *common.EntityMana
 }
 
 // GetUnitIdentity extracts display info for a unit (query-based, no caching)
+// Optimized: Batches all component lookups into single GetEntityByID call.
 func GetUnitIdentity(unitID ecs.EntityID, manager *common.EntityManager) UnitIdentity {
-	// Query for name
-	name := common.GetComponentTypeByID[*common.Name](manager, unitID, common.NameComponent)
+	// OPTIMIZATION: Get entity once, then extract all components from it
+	// This avoids 3 separate GetEntityByID allocations
+	entity := common.FindEntityByID(manager, unitID)
+	if entity == nil {
+		return UnitIdentity{
+			ID:        unitID,
+			Name:      "Unknown",
+			GridRow:   0,
+			GridCol:   0,
+			CurrentHP: 0,
+			MaxHP:     0,
+		}
+	}
+
+	// Extract name from entity
+	name := common.GetComponentType[*common.Name](entity, common.NameComponent)
 	nameStr := "Unknown"
 	if name != nil {
 		nameStr = name.NameStr
 	}
 
-	// Query for grid position
-	gridPos := common.GetComponentTypeByID[*GridPositionData](manager, unitID, GridPositionComponent)
+	// Extract grid position from entity
+	gridPos := common.GetComponentType[*GridPositionData](entity, GridPositionComponent)
 	row, col := 0, 0
 	if gridPos != nil {
 		row, col = gridPos.AnchorRow, gridPos.AnchorCol
 	}
 
-	// Query for health
-	attr := common.GetAttributesByIDWithTag(manager, unitID, SquadMemberTag)
+	// Extract attributes from entity
+	attr := common.GetComponentType[*common.Attributes](entity, common.AttributeComponent)
 	currentHP, maxHP := 0, 0
 	if attr != nil {
 		currentHP, maxHP = attr.CurrentHealth, attr.MaxHealth

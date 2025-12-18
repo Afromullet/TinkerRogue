@@ -75,6 +75,7 @@ func initializeCombatLog(attackerSquadID, defenderSquadID ecs.EntityID, manager 
 }
 
 // snapshotAttackingUnits captures attacking unit info before combat for logging
+// Optimized: Batches all component lookups into single GetEntityByID call per unit.
 func snapshotAttackingUnits(squadID ecs.EntityID, squadDistance int, manager *common.EntityManager) []UnitSnapshot {
 	var snapshots []UnitSnapshot
 	unitIDs := GetUnitIDsInSquad(squadID, manager)
@@ -85,10 +86,33 @@ func snapshotAttackingUnits(squadID ecs.EntityID, squadDistance int, manager *co
 			continue
 		}
 
-		// Capture unit info
-		identity := GetUnitIdentity(unitID, manager)
-		rangeData := common.GetComponentTypeByID[*AttackRangeData](manager, unitID, AttackRangeComponent)
-		roleData := common.GetComponentTypeByID[*UnitRoleData](manager, unitID, UnitRoleComponent)
+		// OPTIMIZATION: Get entity once, extract all components (Name, GridPosition, AttackRange, Role)
+		// This replaces 4+ separate GetEntityByID calls with just 1
+		entity := common.FindEntityByID(manager, unitID)
+		if entity == nil {
+			continue
+		}
+
+		// Extract all needed components from entity
+		name := common.GetComponentType[*common.Name](entity, common.NameComponent)
+		gridPos := common.GetComponentType[*GridPositionData](entity, GridPositionComponent)
+		rangeData := common.GetComponentType[*AttackRangeData](entity, AttackRangeComponent)
+		roleData := common.GetComponentType[*UnitRoleData](entity, UnitRoleComponent)
+
+		unitName := "Unknown"
+		if name != nil {
+			unitName = name.NameStr
+		}
+
+		row, col := 0, 0
+		if gridPos != nil {
+			row, col = gridPos.AnchorRow, gridPos.AnchorCol
+		}
+
+		attackRange := 0
+		if rangeData != nil {
+			attackRange = rangeData.Range
+		}
 
 		roleName := "Unknown"
 		if roleData != nil {
@@ -97,10 +121,10 @@ func snapshotAttackingUnits(squadID ecs.EntityID, squadDistance int, manager *co
 
 		snapshot := UnitSnapshot{
 			UnitID:      unitID,
-			UnitName:    identity.Name,
-			GridRow:     identity.GridRow,
-			GridCol:     identity.GridCol,
-			AttackRange: rangeData.Range,
+			UnitName:    unitName,
+			GridRow:     row,
+			GridCol:     col,
+			AttackRange: attackRange,
 			RoleName:    roleName,
 		}
 		snapshots = append(snapshots, snapshot)
@@ -118,31 +142,49 @@ func finalizeCombatLog(result *CombatResult, log *CombatLog, defenderSquadID ecs
 }
 
 // canUnitAttack checks if a unit is alive, can act, and within attack range
+// Optimized: Batches all component lookups into single GetEntityByID call (3 calls → 1).
 func canUnitAttack(attackerID ecs.EntityID, squadDistance int, manager *common.EntityManager) bool {
+	// OPTIMIZATION: Get entity once, extract Attributes and AttackRange
+	// This replaces 3 separate GetEntityByID calls with just 1
+	entity := common.FindEntityByID(manager, attackerID)
+	if entity == nil {
+		return false
+	}
+
 	// Check if unit is alive and can act
-	attr := common.GetAttributesByIDWithTag(manager, attackerID, SquadMemberTag)
+	attr := common.GetComponentType[*common.Attributes](entity, common.AttributeComponent)
 	if attr == nil || attr.CurrentHealth <= 0 || !attr.CanAct {
 		return false
 	}
 
-	// Check if unit has attack range component
-	if !manager.HasComponentByIDWithTag(attackerID, SquadMemberTag, AttackRangeComponent) {
+	// Check if unit has attack range component and is within range
+	if !entity.HasComponent(AttackRangeComponent) {
 		return false
 	}
 
-	// Check if within range
-	rangeData := common.GetComponentTypeByID[*AttackRangeData](manager, attackerID, AttackRangeComponent)
-	return rangeData.Range >= squadDistance
+	rangeData := common.GetComponentType[*AttackRangeData](entity, AttackRangeComponent)
+	return rangeData != nil && rangeData.Range >= squadDistance
 }
 
 // SelectTargetUnits determines targets based on attack type (public for GUI and internal use)
+// Optimized: Batches component lookups into single GetEntityByID call (2 calls → 1).
 func SelectTargetUnits(attackerID, defenderSquadID ecs.EntityID, manager *common.EntityManager) []ecs.EntityID {
-	// Check if attacker has targeting component
-	if !manager.HasComponentByIDWithTag(attackerID, SquadMemberTag, TargetRowComponent) {
+	// OPTIMIZATION: Get entity once, check for TargetRowComponent
+	// This replaces 2 separate GetEntityByID calls with just 1
+	entity := common.FindEntityByID(manager, attackerID)
+	if entity == nil {
 		return []ecs.EntityID{}
 	}
 
-	targetData := common.GetComponentTypeByID[*TargetRowData](manager, attackerID, TargetRowComponent)
+	// Check if attacker has targeting component
+	if !entity.HasComponent(TargetRowComponent) {
+		return []ecs.EntityID{}
+	}
+
+	targetData := common.GetComponentType[*TargetRowData](entity, TargetRowComponent)
+	if targetData == nil {
+		return []ecs.EntityID{}
+	}
 
 	switch targetData.AttackType {
 	case AttackTypeMeleeRow:
@@ -175,9 +217,15 @@ func selectMeleeRowTargets(attackerID, defenderSquadID ecs.EntityID, manager *co
 
 // selectMeleeColumnTargets targets column directly across from attacker, wrapping to adjacent columns if empty
 // Targets exactly 1 unit (spear-type attack)
+// Optimized: Batches component lookups for attacker and defenders.
 func selectMeleeColumnTargets(attackerID, defenderSquadID ecs.EntityID, manager *common.EntityManager) []ecs.EntityID {
-	// Get attacker's column
-	attackerPos := common.GetComponentTypeByID[*GridPositionData](manager, attackerID, GridPositionComponent)
+	// OPTIMIZATION: Get attacker entity once
+	attackerEntity := common.FindEntityByID(manager, attackerID)
+	if attackerEntity == nil {
+		return []ecs.EntityID{}
+	}
+
+	attackerPos := common.GetComponentType[*GridPositionData](attackerEntity, GridPositionComponent)
 	if attackerPos == nil {
 		return []ecs.EntityID{}
 	}
@@ -194,8 +242,14 @@ func selectMeleeColumnTargets(attackerID, defenderSquadID ecs.EntityID, manager 
 			cellUnits := GetUnitIDsAtGridPosition(defenderSquadID, row, col, manager)
 
 			for _, unitID := range cellUnits {
+				// OPTIMIZATION: Get entity once for health check
+				entity := common.FindEntityByID(manager, unitID)
+				if entity == nil {
+					continue
+				}
+
 				// Check if unit is alive
-				attr := common.GetAttributesByIDWithTag(manager, unitID, SquadMemberTag)
+				attr := common.GetComponentType[*common.Attributes](entity, common.AttributeComponent)
 				if attr != nil && attr.CurrentHealth > 0 {
 					// Return the first alive unit found
 					return []ecs.EntityID{unitID}
@@ -208,9 +262,15 @@ func selectMeleeColumnTargets(attackerID, defenderSquadID ecs.EntityID, manager 
 }
 
 // selectRangedTargets targets same row as attacker (all units), with fallback logic
+// Optimized: Batches component lookup for attacker.
 func selectRangedTargets(attackerID, defenderSquadID ecs.EntityID, manager *common.EntityManager) []ecs.EntityID {
-	// Get attacker's row
-	attackerPos := common.GetComponentTypeByID[*GridPositionData](manager, attackerID, GridPositionComponent)
+	// OPTIMIZATION: Get attacker entity once
+	attackerEntity := common.FindEntityByID(manager, attackerID)
+	if attackerEntity == nil {
+		return []ecs.EntityID{}
+	}
+
+	attackerPos := common.GetComponentType[*GridPositionData](attackerEntity, GridPositionComponent)
 	if attackerPos == nil {
 		return []ecs.EntityID{}
 	}
@@ -250,6 +310,7 @@ func selectMagicTargets(defenderSquadID ecs.EntityID, targetCells [][2]int, mana
 }
 
 // Helper: Get all ALIVE units in a specific row
+// Optimized: Uses direct entity lookup instead of GetAttributesByIDWithTag in loop.
 func getUnitsInRow(squadID ecs.EntityID, row int, manager *common.EntityManager) []ecs.EntityID {
 	var units []ecs.EntityID
 	seen := make(map[ecs.EntityID]bool)
@@ -259,8 +320,14 @@ func getUnitsInRow(squadID ecs.EntityID, row int, manager *common.EntityManager)
 		cellUnits := GetUnitIDsAtGridPosition(squadID, row, col, manager)
 		for _, unitID := range cellUnits {
 			if !seen[unitID] {
+				// OPTIMIZATION: Get entity once for health check
+				entity := common.FindEntityByID(manager, unitID)
+				if entity == nil {
+					continue
+				}
+
 				// Filter out dead units
-				attr := common.GetAttributesByIDWithTag(manager, unitID, SquadMemberTag)
+				attr := common.GetComponentType[*common.Attributes](entity, common.AttributeComponent)
 				if attr != nil && attr.CurrentHealth > 0 {
 					units = append(units, unitID)
 					seen[unitID] = true
@@ -491,6 +558,7 @@ func sumDamageMap(damageMap map[ecs.EntityID]int) int {
 }
 
 // calculateSquadStatus summarizes squad health for combat log
+// Optimized: Uses direct entity lookup in loop instead of GetAttributesByIDWithTag.
 func calculateSquadStatus(squadID ecs.EntityID, manager *common.EntityManager) SquadStatus {
 	unitIDs := GetUnitIDsInSquad(squadID, manager)
 	aliveCount := 0
@@ -498,7 +566,13 @@ func calculateSquadStatus(squadID ecs.EntityID, manager *common.EntityManager) S
 	totalMaxHP := 0
 
 	for _, unitID := range unitIDs {
-		attr := common.GetAttributesByIDWithTag(manager, unitID, SquadMemberTag)
+		// OPTIMIZATION: Get entity once for attributes check
+		entity := common.FindEntityByID(manager, unitID)
+		if entity == nil {
+			continue
+		}
+
+		attr := common.GetComponentType[*common.Attributes](entity, common.AttributeComponent)
 		if attr == nil {
 			continue
 		}
@@ -529,16 +603,26 @@ func calculateSquadStatus(squadID ecs.EntityID, manager *common.EntityManager) S
 // CalculateTotalCover calculates the total damage reduction from all units providing cover to the defender
 // Cover bonuses stack additively (e.g., 0.25 + 0.15 = 0.40 total reduction)
 // Returns a value between 0.0 (no cover) and 1.0 (100% damage reduction, capped)
+// Optimized: Batches defender component lookups (4 calls → 1), optimizes provider loop.
 func CalculateTotalCover(defenderID ecs.EntityID, squadmanager *common.EntityManager) float64 {
-	// Check if defender exists with required components
-	if !squadmanager.HasComponentByIDWithTag(defenderID, SquadMemberTag, GridPositionComponent) ||
-		!squadmanager.HasComponentByIDWithTag(defenderID, SquadMemberTag, SquadMemberComponent) {
+	// OPTIMIZATION: Get defender entity once, extract all components
+	// This replaces 4 separate GetEntityByID calls with just 1
+	defenderEntity := common.FindEntityByID(squadmanager, defenderID)
+	if defenderEntity == nil {
 		return 0.0
 	}
 
-	// Get defender's position and squad
-	defenderPos := common.GetComponentTypeByID[*GridPositionData](squadmanager, defenderID, GridPositionComponent)
-	defenderSquadData := common.GetComponentTypeByID[*SquadMemberData](squadmanager, defenderID, SquadMemberComponent)
+	// Check if defender has required components
+	if !defenderEntity.HasComponent(GridPositionComponent) || !defenderEntity.HasComponent(SquadMemberComponent) {
+		return 0.0
+	}
+
+	// Get defender's position and squad from entity
+	defenderPos := common.GetComponentType[*GridPositionData](defenderEntity, GridPositionComponent)
+	defenderSquadData := common.GetComponentType[*SquadMemberData](defenderEntity, SquadMemberComponent)
+	if defenderPos == nil || defenderSquadData == nil {
+		return 0.0
+	}
 	defenderSquadID := defenderSquadData.SquadID
 
 	// Get all units providing cover
@@ -547,17 +631,26 @@ func CalculateTotalCover(defenderID ecs.EntityID, squadmanager *common.EntityMan
 	// Sum all cover bonuses (stacking additively)
 	totalCover := 0.0
 	for _, providerID := range coverProviders {
-		// Check if provider has cover component
-		if !squadmanager.HasComponentByIDWithTag(providerID, SquadMemberTag, CoverComponent) {
+		// OPTIMIZATION: Get provider entity once for all component checks
+		providerEntity := common.FindEntityByID(squadmanager, providerID)
+		if providerEntity == nil {
 			continue
 		}
 
-		coverData := common.GetComponentTypeByID[*CoverData](squadmanager, providerID, CoverComponent)
+		// Check if provider has cover component
+		if !providerEntity.HasComponent(CoverComponent) {
+			continue
+		}
+
+		coverData := common.GetComponentType[*CoverData](providerEntity, CoverComponent)
+		if coverData == nil {
+			continue
+		}
 
 		// Check if provider is active (alive and not stunned)
 		isActive := true
 		if coverData.RequiresActive {
-			attr := common.GetAttributesByIDWithTag(squadmanager, providerID, SquadMemberTag)
+			attr := common.GetComponentType[*common.Attributes](providerEntity, common.AttributeComponent)
 			if attr != nil {
 				isActive = attr.CurrentHealth > 0
 			}
@@ -578,6 +671,7 @@ func CalculateTotalCover(defenderID ecs.EntityID, squadmanager *common.EntityMan
 // GetCoverProvidersFor finds all units in the same squad that provide cover to the defender
 // Cover is provided by units in front (lower row number) within the same column(s)
 // Multi-cell units provide cover to all columns they occupy
+// Optimized: Batches component lookups in loop (4 calls → 1 per unit).
 func GetCoverProvidersFor(defenderID ecs.EntityID, defenderSquadID ecs.EntityID, defenderPos *GridPositionData, squadmanager *common.EntityManager) []ecs.EntityID {
 	var providers []ecs.EntityID
 
@@ -596,19 +690,32 @@ func GetCoverProvidersFor(defenderID ecs.EntityID, defenderSquadID ecs.EntityID,
 			continue
 		}
 
-		// Check if unit has cover component
-		if !squadmanager.HasComponentByIDWithTag(unitID, SquadMemberTag, CoverComponent) {
+		// OPTIMIZATION: Get entity once, extract Cover and GridPosition components
+		// This replaces 4 separate GetEntityByID calls with just 1
+		entity := common.FindEntityByID(squadmanager, unitID)
+		if entity == nil {
 			continue
 		}
 
-		coverData := common.GetComponentTypeByID[*CoverData](squadmanager, unitID, CoverComponent)
+		// Check if unit has cover component
+		if !entity.HasComponent(CoverComponent) {
+			continue
+		}
+
+		coverData := common.GetComponentType[*CoverData](entity, CoverComponent)
+		if coverData == nil {
+			continue
+		}
 
 		// Get unit's position
-		if !squadmanager.HasComponentByIDWithTag(unitID, SquadMemberTag, GridPositionComponent) {
+		if !entity.HasComponent(GridPositionComponent) {
 			continue
 		}
 
-		unitPos := common.GetComponentTypeByID[*GridPositionData](squadmanager, unitID, GridPositionComponent)
+		unitPos := common.GetComponentType[*GridPositionData](entity, GridPositionComponent)
+		if unitPos == nil {
+			continue
+		}
 
 		// Check if unit is in front of defender (lower row number)
 		// Unit must be at least 1 row in front to provide cover
@@ -647,34 +754,52 @@ func GetCoverProvidersFor(defenderID ecs.EntityID, defenderSquadID ecs.EntityID,
 
 // CalculateCoverBreakdown returns detailed cover information for logging
 // Similar to CalculateTotalCover but includes provider details
+// Optimized: Batches defender and provider component lookups.
 func CalculateCoverBreakdown(defenderID ecs.EntityID, squadmanager *common.EntityManager) CoverBreakdown {
 	breakdown := CoverBreakdown{
 		Providers: []CoverProvider{},
 	}
 
-	if !squadmanager.HasComponentByIDWithTag(defenderID, SquadMemberTag, GridPositionComponent) ||
-		!squadmanager.HasComponentByIDWithTag(defenderID, SquadMemberTag, SquadMemberComponent) {
+	// OPTIMIZATION: Get defender entity once
+	defenderEntity := common.FindEntityByID(squadmanager, defenderID)
+	if defenderEntity == nil {
 		return breakdown
 	}
 
-	defenderPos := common.GetComponentTypeByID[*GridPositionData](squadmanager, defenderID, GridPositionComponent)
-	defenderSquadData := common.GetComponentTypeByID[*SquadMemberData](squadmanager, defenderID, SquadMemberComponent)
+	if !defenderEntity.HasComponent(GridPositionComponent) || !defenderEntity.HasComponent(SquadMemberComponent) {
+		return breakdown
+	}
+
+	defenderPos := common.GetComponentType[*GridPositionData](defenderEntity, GridPositionComponent)
+	defenderSquadData := common.GetComponentType[*SquadMemberData](defenderEntity, SquadMemberComponent)
+	if defenderPos == nil || defenderSquadData == nil {
+		return breakdown
+	}
 	defenderSquadID := defenderSquadData.SquadID
 
 	providerIDs := GetCoverProvidersFor(defenderID, defenderSquadID, defenderPos, squadmanager)
 
 	totalCover := 0.0
 	for _, providerID := range providerIDs {
-		if !squadmanager.HasComponentByIDWithTag(providerID, SquadMemberTag, CoverComponent) {
+		// OPTIMIZATION: Get provider entity once, extract all needed components
+		providerEntity := common.FindEntityByID(squadmanager, providerID)
+		if providerEntity == nil {
 			continue
 		}
 
-		coverData := common.GetComponentTypeByID[*CoverData](squadmanager, providerID, CoverComponent)
+		if !providerEntity.HasComponent(CoverComponent) {
+			continue
+		}
+
+		coverData := common.GetComponentType[*CoverData](providerEntity, CoverComponent)
+		if coverData == nil {
+			continue
+		}
 
 		// Check if active
 		isActive := true
 		if coverData.RequiresActive {
-			attr := common.GetAttributesByIDWithTag(squadmanager, providerID, SquadMemberTag)
+			attr := common.GetComponentType[*common.Attributes](providerEntity, common.AttributeComponent)
 			if attr != nil {
 				isActive = attr.CurrentHealth > 0
 			}
@@ -682,13 +807,18 @@ func CalculateCoverBreakdown(defenderID ecs.EntityID, squadmanager *common.Entit
 
 		coverValue := coverData.GetCoverBonus(isActive)
 		if coverValue > 0 {
-			// Get provider info for logging
-			identity := GetUnitIdentity(providerID, squadmanager)
-			providerPos := common.GetComponentTypeByID[*GridPositionData](squadmanager, providerID, GridPositionComponent)
+			// Get provider info for logging - extract from entity we already have
+			name := common.GetComponentType[*common.Name](providerEntity, common.NameComponent)
+			providerPos := common.GetComponentType[*GridPositionData](providerEntity, GridPositionComponent)
+
+			unitName := "Unknown"
+			if name != nil {
+				unitName = name.NameStr
+			}
 
 			provider := CoverProvider{
 				UnitID:     providerID,
-				UnitName:   identity.Name,
+				UnitName:   unitName,
 				CoverValue: coverValue,
 			}
 			if providerPos != nil {
@@ -723,6 +853,8 @@ func displayCombatResult(result *CombatResult, squadmanager *common.EntityManage
 	}
 }
 
+// displaySquadStatus displays squad status for debugging
+// Optimized: Batches component lookups per unit (2 calls → 1).
 func displaySquadStatus(squadID ecs.EntityID, squadmanager *common.EntityManager) {
 	squadEntity := GetSquadEntity(squadID, squadmanager)
 	squadData := common.GetComponentType[*SquadData](squadEntity, SquadComponent)
@@ -733,15 +865,26 @@ func displaySquadStatus(squadID ecs.EntityID, squadmanager *common.EntityManager
 	alive := 0
 
 	for _, unitID := range unitIDs {
-		attr := common.GetAttributesByIDWithTag(squadmanager, unitID, SquadMemberTag)
+		// OPTIMIZATION: Get entity once, extract Attributes and Name
+		// This replaces 2 separate GetEntityByID calls with just 1
+		entity := common.FindEntityByID(squadmanager, unitID)
+		if entity == nil {
+			continue
+		}
+
+		attr := common.GetComponentType[*common.Attributes](entity, common.AttributeComponent)
 		if attr == nil {
 			continue
 		}
 
 		if attr.CurrentHealth > 0 {
 			alive++
-			name := common.GetComponentTypeByID[*common.Name](squadmanager, unitID, common.NameComponent)
-			fmt.Printf("  %s: %d/%d HP\n", name.NameStr, attr.CurrentHealth, attr.MaxHealth)
+			name := common.GetComponentType[*common.Name](entity, common.NameComponent)
+			unitName := "Unknown"
+			if name != nil {
+				unitName = name.NameStr
+			}
+			fmt.Printf("  %s: %d/%d HP\n", unitName, attr.CurrentHealth, attr.MaxHealth)
 		}
 	}
 
