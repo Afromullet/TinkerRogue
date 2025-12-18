@@ -55,6 +55,9 @@ ______________________
 
 curl -o cpu_profile.pb.gz http://localhost:6060/debug/pprof/profile?seconds=60
 
+curl -o newest_benchmark.pb.gz http://localhost:6060/debug/pprof/profile?seconds=60
+
+
 ### Then run the following command to view the profile
 
 go tool pprof cpu_profile.pb.gz

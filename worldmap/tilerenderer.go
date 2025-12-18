@@ -7,17 +7,25 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-// TileRenderer handles rendering of map tiles with color matrices
+// TileRenderer handles rendering of map tiles with batching for performance
 type TileRenderer struct {
 	tiles      []*Tile
 	colorScale ebiten.ColorScale
 	drawOpts   ebiten.DrawImageOptions // Reusable draw options (eliminates 2,000 allocations/frame)
+	batches    map[*ebiten.Image]*TileBatch // Batches tiles by image for efficient rendering
+
+	// Cache state to avoid rebuilding batches every frame
+	lastCenterX    int
+	lastCenterY    int
+	lastViewportSize int
+	batchesBuilt   bool
 }
 
 // NewTileRenderer creates a renderer for the given tileset
 func NewTileRenderer(tiles []*Tile) *TileRenderer {
 	return &TileRenderer{
-		tiles: tiles,
+		tiles:   tiles,
+		batches: make(map[*ebiten.Image]*TileBatch, 20), // Pre-allocate for ~20 unique images
 	}
 }
 
@@ -37,23 +45,137 @@ type RenderedBounds struct {
 	RightEdgeY int
 }
 
-// Render draws tiles to screen based on options
+// Render draws tiles to screen based on options using batching for performance
 func (r *TileRenderer) Render(opts RenderOptions) RenderedBounds {
 	bounds := r.calculateBounds(opts)
 	bounds.RightEdgeX = 0
 	bounds.RightEdgeY = 0
 
-	for x := bounds.MinX; x <= bounds.MaxX; x++ {
-		for y := bounds.MinY; y <= bounds.MaxY; y++ {
-			if !r.inMapBounds(x, y) {
-				continue
-			}
-
-			r.renderTile(x, y, opts, &bounds)
+	// Check if we need to rebuild batches (only rebuild when viewport changes or first render)
+	needsRebuild := !r.batchesBuilt
+	if opts.CenterOn != nil {
+		if r.lastCenterX != opts.CenterOn.X || r.lastCenterY != opts.CenterOn.Y || r.lastViewportSize != opts.ViewportSize {
+			needsRebuild = true
+			r.lastCenterX = opts.CenterOn.X
+			r.lastCenterY = opts.CenterOn.Y
+			r.lastViewportSize = opts.ViewportSize
+		}
+	} else {
+		// Full map rendering - only build once
+		if !r.batchesBuilt {
+			needsRebuild = true
 		}
 	}
 
+	// Only rebuild batches if viewport changed or first render
+	if needsRebuild {
+		// Reset all batches for reuse (avoids allocations)
+		for _, batch := range r.batches {
+			batch.Reset()
+		}
+
+		// Collect tiles into batches grouped by image
+		for x := bounds.MinX; x <= bounds.MaxX; x++ {
+			for y := bounds.MinY; y <= bounds.MaxY; y++ {
+				if !r.inMapBounds(x, y) {
+					continue
+				}
+
+				r.addTileToBatch(x, y, opts, &bounds)
+			}
+		}
+
+		r.batchesBuilt = true
+	}
+
+	// Draw all batches (much fewer draw calls than individual tiles!)
+	for _, batch := range r.batches {
+		batch.Draw(opts.Screen)
+	}
+
 	return bounds
+}
+
+// addTileToBatch adds a tile to the appropriate batch based on its image
+func (r *TileRenderer) addTileToBatch(x, y int, opts RenderOptions, bounds *RenderedBounds) {
+	logicalPos := coords.LogicalPosition{X: x, Y: y}
+	idx := coords.CoordManager.LogicalToIndex(logicalPos)
+	tile := r.tiles[idx]
+
+	// Always reveal tiles (no FOV system)
+	tile.IsRevealed = true
+
+	// Get or create batch for this tile's image
+	if r.batches[tile.image] == nil {
+		r.batches[tile.image] = NewTileBatch(tile.image)
+	}
+	batch := r.batches[tile.image]
+
+	// Calculate screen position based on viewport mode
+	var screenX, screenY float32
+	if opts.CenterOn != nil {
+		screenX, screenY = r.calculateViewportPosition(tile, opts.CenterOn, bounds)
+	} else {
+		screenX = float32(tile.PixelX)
+		screenY = float32(tile.PixelY)
+	}
+
+	// Get tile dimensions from image
+	tileBounds := tile.image.Bounds()
+	tileW := float32(tileBounds.Dx())
+	tileH := float32(tileBounds.Dy())
+
+	// Apply scaling if in viewport mode
+	if opts.CenterOn != nil {
+		scale := float32(graphics.ScreenInfo.ScaleFactor)
+		tileW *= scale
+		tileH *= scale
+	}
+
+	// Get color values (default to white if no color matrix)
+	colorR, colorG, colorB, colorA := float32(1), float32(1), float32(1), float32(1)
+	if !tile.cm.IsEmpty() {
+		colorR, colorG, colorB, colorA = tile.cm.R, tile.cm.G, tile.cm.B, tile.cm.A
+	}
+
+	// Source rectangle (full tile image)
+	srcX := float32(tileBounds.Min.X)
+	srcY := float32(tileBounds.Min.Y)
+	srcW := float32(tileBounds.Dx())
+	srcH := float32(tileBounds.Dy())
+
+	// Add tile to batch with both source dimensions (texture) and destination dimensions (scaled for rendering)
+	batch.AddTile(screenX, screenY, srcX, srcY, srcW, srcH, tileW, tileH, colorR, colorG, colorB, colorA)
+}
+
+// calculateViewportPosition computes screen position for viewport-centered rendering
+func (r *TileRenderer) calculateViewportPosition(tile *Tile, center *coords.LogicalPosition, bounds *RenderedBounds) (float32, float32) {
+	// Convert pixel position to logical position
+	tileLogicalPos := coords.LogicalPosition{
+		X: tile.PixelX / graphics.ScreenInfo.TileSize,
+		Y: tile.PixelY / graphics.ScreenInfo.TileSize,
+	}
+
+	// Use unified coordinate transformation - handles scrolling mode and viewport centering
+	screenX, screenY := coords.CoordManager.LogicalToScreen(tileLogicalPos, center)
+
+	// Apply scaling
+	scale := float32(graphics.ScreenInfo.ScaleFactor)
+	tileBounds := tile.image.Bounds()
+	tileWidth := float32(tileBounds.Dx()) * scale
+
+	// Track edges for UI layout
+	tileRightEdge := int(screenX + float64(tileWidth))
+	if tileRightEdge > bounds.RightEdgeX {
+		bounds.RightEdgeX = tileRightEdge
+	}
+
+	tileTopEdge := int(screenY)
+	if tileTopEdge < bounds.RightEdgeY {
+		bounds.RightEdgeY = tileTopEdge
+	}
+
+	return float32(screenX), float32(screenY)
 }
 
 // renderTile handles single tile rendering with all effects
@@ -149,4 +271,10 @@ func (r *TileRenderer) calculateBounds(opts RenderOptions) RenderedBounds {
 func (r *TileRenderer) inMapBounds(x, y int) bool {
 	return x >= 0 && x < graphics.ScreenInfo.DungeonWidth &&
 		y >= 0 && y < graphics.ScreenInfo.DungeonHeight
+}
+
+// InvalidateCache forces batches to be rebuilt on next render
+// Call this when tiles are modified (e.g., map changes, tile colors change)
+func (r *TileRenderer) InvalidateCache() {
+	r.batchesBuilt = false
 }

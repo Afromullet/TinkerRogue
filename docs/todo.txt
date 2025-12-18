@@ -26,3 +26,6 @@ Add proper squad/unit cleanup on death
 ecsutil.go has redundant functions
 
 Get rid of the circular inclusion issue for which we have interface{} in the gui
+
+
+tilebatch.go and tilerenderer.go use magic numbers in NewTileBatch

@@ -254,3 +254,9 @@ func (slc *SquadListComponent) updateButtonLabels(squadIDs []ecs.EntityID) {
 	}
 }
 ```
+
+## 5 Batching Drawing Operations
+
+**Tile Drawing Can be Batched due tiles of the same biome using the same image**
+
+See tilebatch.go and tilerenderer.go
