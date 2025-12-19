@@ -26,37 +26,64 @@ type Renderable struct {
 
 // Draw everything with a renderable component that's visible
 // Uses cached View for O(k) iteration instead of O(n) full World.Query (3-5x faster per frame)
+// Now uses sprite batching to reduce draw calls from hundreds to a few per frame
 func ProcessRenderables(ecsmanager *common.EntityManager, gameMap worldmap.GameMap, screen *ebiten.Image, debugMode bool, cache *RenderingCache) {
+	// Clear sprite batches from previous frame
+	cache.ClearSpriteBatches()
+
+	// Collect all sprites into batches (grouped by image)
 	for _, result := range cache.RenderablesView.Get() {
 		pos := common.GetComponentType[*coords.LogicalPosition](result.Entity, common.PositionComponent)
 		renderable := common.GetComponentType[*Renderable](result.Entity, RenderableComponent)
 		img := renderable.Image
 
-		if !renderable.Visible {
+		if !renderable.Visible || img == nil {
 			continue
 		}
 
 		logicalPos := coords.LogicalPosition{X: pos.X, Y: pos.Y}
 		index := coords.CoordManager.LogicalToIndex(logicalPos)
 		tile := gameMap.Tiles[index]
-		op := &ebiten.DrawImageOptions{}
-		op.GeoM.Translate(float64(tile.PixelX), float64(tile.PixelY))
-		screen.DrawImage(img, op)
+
+		// Get sprite dimensions
+		bounds := img.Bounds()
+		srcX := float32(bounds.Min.X)
+		srcY := float32(bounds.Min.Y)
+		srcW := float32(bounds.Dx())
+		srcH := float32(bounds.Dy())
+
+		// Destination position and size (no scaling in this mode)
+		dstX := float32(tile.PixelX)
+		dstY := float32(tile.PixelY)
+		dstW := srcW
+		dstH := srcH
+
+		// Add sprite to batch (grouped by image)
+		batch := cache.GetOrCreateSpriteBatch(img)
+		batch.AddSprite(dstX, dstY, srcX, srcY, srcW, srcH, dstW, dstH, 1.0, 1.0, 1.0, 1.0)
 	}
+
+	// Draw all batches in a single pass (dramatically reduces draw calls)
+	cache.DrawSpriteBatches(screen)
 }
 
 // ProcessRenderablesInSquare renders entities in a square region around playerPos
 // Uses cached View for O(k) iteration instead of O(n) full World.Query (3-5x faster per frame)
+// Now uses sprite batching to reduce draw calls from hundreds to a few per frame
 func ProcessRenderablesInSquare(ecsmanager *common.EntityManager, gameMap worldmap.GameMap, screen *ebiten.Image, playerPos *coords.LogicalPosition, squareSize int, debugMode bool, cache *RenderingCache) {
+	// Clear sprite batches from previous frame
+	cache.ClearSpriteBatches()
+
 	// Calculate the starting and ending coordinates of the square
 	sq := coords.NewDrawableSection(playerPos.X, playerPos.Y, squareSize)
 
+	// Collect all sprites into batches (grouped by image)
 	for _, result := range cache.RenderablesView.Get() {
 		pos := common.GetComponentType[*coords.LogicalPosition](result.Entity, common.PositionComponent)
 		renderable := common.GetComponentType[*Renderable](result.Entity, RenderableComponent)
 		img := renderable.Image
 
-		if !renderable.Visible {
+		if !renderable.Visible || img == nil {
 			continue
 		}
 
@@ -64,16 +91,29 @@ func ProcessRenderablesInSquare(ecsmanager *common.EntityManager, gameMap worldm
 		if pos.X >= sq.StartX && pos.X <= sq.EndX && pos.Y >= sq.StartY && pos.Y <= sq.EndY {
 			logicalPos := coords.LogicalPosition{X: pos.X, Y: pos.Y}
 
-			op := &ebiten.DrawImageOptions{}
-
-			// Apply scaling first (still needed for sprite scaling)
-			op.GeoM.Scale(float64(graphics.ScreenInfo.ScaleFactor), float64(graphics.ScreenInfo.ScaleFactor))
-
 			// Use unified coordinate transformation - handles scrolling mode and viewport centering automatically
 			screenX, screenY := coords.CoordManager.LogicalToScreen(logicalPos, playerPos)
-			op.GeoM.Translate(screenX, screenY)
 
-			screen.DrawImage(img, op)
+			// Get sprite dimensions
+			bounds := img.Bounds()
+			srcX := float32(bounds.Min.X)
+			srcY := float32(bounds.Min.Y)
+			srcW := float32(bounds.Dx())
+			srcH := float32(bounds.Dy())
+
+			// Apply scaling to destination size
+			scale := float32(graphics.ScreenInfo.ScaleFactor)
+			dstX := float32(screenX)
+			dstY := float32(screenY)
+			dstW := srcW * scale
+			dstH := srcH * scale
+
+			// Add sprite to batch (grouped by image)
+			batch := cache.GetOrCreateSpriteBatch(img)
+			batch.AddSprite(dstX, dstY, srcX, srcY, srcW, srcH, dstW, dstH, 1.0, 1.0, 1.0, 1.0)
 		}
 	}
+
+	// Draw all batches in a single pass (dramatically reduces draw calls)
+	cache.DrawSpriteBatches(screen)
 }
