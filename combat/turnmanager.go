@@ -9,8 +9,9 @@ import (
 )
 
 type TurnManager struct {
-	manager      *common.EntityManager
-	combatCache  *CombatQueryCache // Cached queries for O(k) instead of O(n)
+	manager           *common.EntityManager
+	combatCache       *CombatQueryCache // Cached queries for O(k) instead of O(n)
+	turnStateEntityID ecs.EntityID      // Cached turn state entity ID to avoid O(n) queries
 }
 
 func NewTurnManager(manager *common.EntityManager) *TurnManager {
@@ -33,6 +34,9 @@ func (tm *TurnManager) InitializeCombat(factionIDs []ecs.EntityID) error {
 		CurrentTurnIndex: 0,
 		CombatActive:     true,
 	})
+
+	// Cache the turn state entity ID to avoid O(n) queries (ECS best practice: use EntityID, not entity pointer)
+	tm.turnStateEntityID = turnEntity.GetID()
 
 	// Create action states and check combat-start abilities for all squads
 	for _, factionID := range factionIDs {
@@ -91,13 +95,21 @@ func (tm *TurnManager) ResetSquadActions(factionID ecs.EntityID) error {
 }
 
 func (tm *TurnManager) GetCurrentFaction() ecs.EntityID {
-
-	turnEntity := findTurnStateEntity(tm.manager)
-	if turnEntity == nil {
+	// Use cached entity ID instead of O(n) query
+	if tm.turnStateEntityID == 0 {
 		return 0 // No active combat
 	}
 
-	turnState := common.GetComponentType[*TurnStateData](turnEntity, TurnStateComponent)
+	// GetEntityByID is O(1) after EntityID caching
+	turnEntity := tm.manager.World.GetEntityByID(tm.turnStateEntityID)
+	if turnEntity == nil {
+		return 0 // Entity not found
+	}
+
+	turnState := common.GetComponentType[*TurnStateData](turnEntity.Entity, TurnStateComponent)
+	if turnState == nil {
+		return 0 // Invalid state
+	}
 
 	// Return faction ID at current index
 	currentIndex := turnState.CurrentTurnIndex
@@ -109,12 +121,21 @@ func (tm *TurnManager) GetCurrentFaction() ecs.EntityID {
 }
 
 func (tm *TurnManager) EndTurn() error {
-	turnEntity := findTurnStateEntity(tm.manager)
-	if turnEntity == nil {
+	// Use cached entity ID instead of O(n) query
+	if tm.turnStateEntityID == 0 {
 		return fmt.Errorf("no active combat")
 	}
 
-	turnState := common.GetComponentType[*TurnStateData](turnEntity, TurnStateComponent)
+	// GetEntityByID is O(1) after EntityID caching
+	turnEntity := tm.manager.World.GetEntityByID(tm.turnStateEntityID)
+	if turnEntity == nil {
+		return fmt.Errorf("turn state entity not found")
+	}
+
+	turnState := common.GetComponentType[*TurnStateData](turnEntity.Entity, TurnStateComponent)
+	if turnState == nil {
+		return fmt.Errorf("invalid turn state")
+	}
 
 	turnState.CurrentTurnIndex++
 
@@ -134,23 +155,46 @@ func (tm *TurnManager) EndTurn() error {
 }
 
 func (tm *TurnManager) GetCurrentRound() int {
-	turnEntity := findTurnStateEntity(tm.manager)
-	if turnEntity == nil {
+	// Use cached entity ID instead of O(n) query
+	if tm.turnStateEntityID == 0 {
 		return 0 // No active combat
 	}
 
-	turnState := common.GetComponentType[*TurnStateData](turnEntity, TurnStateComponent)
+	// GetEntityByID is O(1) after EntityID caching
+	turnEntity := tm.manager.World.GetEntityByID(tm.turnStateEntityID)
+	if turnEntity == nil {
+		return 0 // Entity not found
+	}
+
+	turnState := common.GetComponentType[*TurnStateData](turnEntity.Entity, TurnStateComponent)
+	if turnState == nil {
+		return 0 // Invalid state
+	}
+
 	return turnState.CurrentRound
 }
 
 func (tm *TurnManager) EndCombat() error {
-	turnEntity := findTurnStateEntity(tm.manager)
-	if turnEntity == nil {
+	// Use cached entity ID instead of O(n) query
+	if tm.turnStateEntityID == 0 {
 		return fmt.Errorf("no active combat to end")
 	}
 
-	turnState := common.GetComponentType[*TurnStateData](turnEntity, TurnStateComponent)
+	// GetEntityByID is O(1) after EntityID caching
+	turnEntity := tm.manager.World.GetEntityByID(tm.turnStateEntityID)
+	if turnEntity == nil {
+		return fmt.Errorf("turn state entity not found")
+	}
+
+	turnState := common.GetComponentType[*TurnStateData](turnEntity.Entity, TurnStateComponent)
+	if turnState == nil {
+		return fmt.Errorf("invalid turn state")
+	}
+
 	turnState.CombatActive = false
+
+	// Invalidate cache when combat ends
+	tm.turnStateEntityID = 0
 
 	return nil
 }
