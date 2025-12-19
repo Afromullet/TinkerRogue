@@ -116,7 +116,7 @@ func (sdm *SquadDeploymentMode) buildDetailPanel() {
 	panelWidth := int(float64(sdm.Layout.ScreenWidth) * 0.35)
 	panelHeight := int(float64(sdm.Layout.ScreenHeight) * 0.6)
 
-	sdm.detailPanel = widgets.CreatePanelWithConfig(widgets.PanelConfig{
+	sdm.detailPanel = widgets.CreateStaticPanel(widgets.PanelConfig{
 		MinWidth:  panelWidth,
 		MinHeight: panelHeight,
 		Layout: widget.NewRowLayout(

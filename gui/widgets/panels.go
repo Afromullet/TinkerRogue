@@ -52,7 +52,8 @@ func (pb *PanelBuilders) BuildGridEditor(config GridEditorConfig) (*widget.Conta
 		}
 	}
 
-	gridContainer := CreatePanelWithConfig(PanelConfig{
+	// Grid editors are static - enable caching
+	gridContainer := CreateStaticPanel(PanelConfig{
 		Background: guiresources.PanelRes.Image,
 		Layout: widget.NewGridLayout(
 			widget.GridLayoutOpts.Columns(3),

@@ -238,13 +238,14 @@ func CreateListWithConfig(config ListConfig) *widget.List {
 
 // PanelConfig provides declarative panel configuration
 type PanelConfig struct {
-	Title      string
-	MinWidth   int
-	MinHeight  int
-	Background *e_image.NineSlice
-	Padding    widget.Insets
-	Layout     widget.Layouter // Row, Grid, Anchor, etc.
-	LayoutData interface{}
+	Title         string
+	MinWidth      int
+	MinHeight     int
+	Background    *e_image.NineSlice
+	Padding       widget.Insets
+	Layout        widget.Layouter // Row, Grid, Anchor, etc.
+	LayoutData    interface{}
+	EnableCaching bool // Whether to pre-cache the background (default: true for static panels)
 }
 
 // CreatePanelWithConfig creates a container panel from config
@@ -258,6 +259,13 @@ func CreatePanelWithConfig(config PanelConfig) *widget.Container {
 	}
 	if config.Layout == nil {
 		config.Layout = widget.NewAnchorLayout()
+	}
+
+	// Pre-cache background if dimensions are specified and caching is enabled
+	// Note: EnableCaching defaults to false for backward compatibility
+	// Use CreateStaticPanel() or set EnableCaching=true explicitly for caching
+	if config.EnableCaching && config.Background != nil && config.MinWidth > 0 && config.MinHeight > 0 {
+		_ = guiresources.GetPanelBackground(config.MinWidth, config.MinHeight)
 	}
 
 	opts := []widget.ContainerOpt{

@@ -111,7 +111,7 @@ func (upm *UnitPurchaseMode) buildDetailPanel() {
 	panelWidth := int(float64(upm.Layout.ScreenWidth) * 0.35)
 	panelHeight := int(float64(upm.Layout.ScreenHeight) * 0.6)
 
-	upm.detailPanel = widgets.CreatePanelWithConfig(widgets.PanelConfig{
+	upm.detailPanel = widgets.CreateStaticPanel(widgets.PanelConfig{
 		MinWidth:  panelWidth,
 		MinHeight: panelHeight,
 		Layout: widget.NewRowLayout(
@@ -160,7 +160,7 @@ func (upm *UnitPurchaseMode) buildResourceDisplay() {
 	panelWidth := int(float64(upm.Layout.ScreenWidth) * 0.25)
 	panelHeight := int(float64(upm.Layout.ScreenHeight) * 0.08)
 
-	resourcePanel := widgets.CreatePanelWithConfig(widgets.PanelConfig{
+	resourcePanel := widgets.CreateStaticPanel(widgets.PanelConfig{
 		MinWidth:  panelWidth,
 		MinHeight: panelHeight,
 		Layout: widget.NewRowLayout(

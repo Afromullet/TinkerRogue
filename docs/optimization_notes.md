@@ -260,3 +260,182 @@ func (slc *SquadListComponent) updateButtonLabels(squadIDs []ecs.EntityID) {
 **Tile Drawing Can be Batched due tiles of the same biome using the same image**
 
 See tilebatch.go and tilerenderer.go
+
+
+# 6 Getting Entity And Then Component Directly
+
+**GetComponentTypeByID Searched Through All Entities. We need to find the entity only once**
+
+```go
+
+		// OPTIMIZATION: Get entity once, extract all components (GridPosition, Name, Role)
+			// This replaces 3 separate GetComponentTypeByID calls with just 1
+			entity := common.FindEntityByID(gem.entityManager, cell.unitID)
+			if entity == nil {
+				continue
+			}
+
+			// Get unit grid position
+			gridPosData := common.GetComponentType[*squads.GridPositionData](entity, squads.GridPositionComponent)
+			if gridPosData == nil {
+				continue
+			}
+
+			// Check if this cell is the anchor
+			isAnchor := (gridPosData.AnchorRow == row && gridPosData.AnchorCol == col)
+
+			// Get unit name from entity
+			nameData := common.GetComponentType[*common.Name](entity, common.NameComponent)
+			unitName := "Unknown"
+			if nameData != nil {
+				unitName = nameData.NameStr
+			}
+
+			// Get unit role from entity
+			roleData := common.GetComponentType[*squads.UnitRoleData](entity, squads.UnitRoleComponent)
+			roleStr := "Unknown"
+			if roleData != nil {
+				roleStr = roleData.Role.String()
+```
+
+## 7 Pre-rendering Static UI Backgrounds (NineSlice Caching)
+
+**Problem**: EbitenUI's NineSlice.drawTile() creates new DrawImageOptions for every tile draw, causing ~4.7s CPU time and 3,276ms in allocations (70% of NineSlice rendering time).
+
+**Solution**: Pre-render static UI backgrounds to cached images, reusing them across frames.
+
+### Implementation
+
+**Files Created**:
+- `gui/guiresources/cachedbackground.go` - Core caching system
+- `gui/widgets/cachedpanels.go` - Panel integration helpers
+
+### CachedBackground System
+
+```go
+// Pre-renders NineSlice backgrounds once and caches the result
+type CachedBackground struct {
+	source      *image.NineSlice
+	cachedImage *ebiten.Image
+	dirty       bool
+	width       int
+	height      int
+}
+
+// Only re-renders when dimensions change or marked dirty
+func (cb *CachedBackground) GetImage(w, h int) *ebiten.Image {
+	needsRender := cb.cachedImage == nil ||
+		cb.width != w ||
+		cb.height != h ||
+		cb.dirty
+
+	if needsRender {
+		cb.render(w, h)
+	}
+
+	return cb.cachedImage
+}
+```
+
+### Global Background Pools
+
+```go
+// Reuses cached backgrounds for common panel sizes
+func GetPanelBackground(w, h int) *ebiten.Image {
+	if panelBackgroundPool == nil {
+		panelBackgroundPool = NewCachedBackgroundPool(PanelRes.Image)
+	}
+	return panelBackgroundPool.GetImage(w, h)
+}
+```
+
+### Panel Integration
+
+All panels created via `BuildPanel()` now have caching enabled by default:
+
+```go
+// In panelconfig.go BuildPanel():
+config := panelConfig{
+	// ...
+	enableCaching: true, // Default: enabled for all panels
+}
+
+// Pre-cache background when panel is created
+if config.enableCaching && config.background != nil {
+	_ = guiresources.GetPanelBackground(width, height)
+}
+```
+
+### Usage Examples
+
+**Automatic Caching** (all standard panels):
+```go
+// All panels created via BuildPanel use caching by default
+panel := pb.BuildPanel(
+	TopCenter(),
+	Size(0.4, 0.08),
+	HorizontalRowLayout(),
+)
+// Background is automatically pre-cached at panel creation
+```
+
+**Explicit Pre-caching** (for initialization):
+```go
+// Warm the cache during mode initialization
+PreCachePanelBackground(400, 300)  // Combat panel
+PreCachePanelBackground(350, 250)  // Squad list
+PreCachePanelBackground(300, 200)  // Stats display
+```
+
+**Disable Caching** (for dynamic panels):
+```go
+// Tooltips, popups, or frequently resizing panels
+panel := pb.BuildPanel(
+	Center(),
+	Size(0.3, 0.2),
+	WithDynamicBackground(),  // Disable caching
+)
+```
+
+### Performance Impact
+
+**Expected Savings** (from LAPTOP_OPTIMIZATION_GUIDE.md):
+- **3s CPU time** reduction (2.6% of total)
+- **~70% reduction** in NineSlice allocation overhead
+- **3,276ms allocation savings** from DrawImageOptions pooling
+
+**Trade-offs**:
+- Small memory overhead (cached images per unique panel size)
+- First render is same speed (cache miss)
+- Subsequent renders: ~70% faster (cache hit)
+
+### When to Use
+
+**Enable Caching** (default):
+- Static panels with fixed dimensions
+- Panels visible for multiple frames
+- Most standard UI panels (stats, combat, squads)
+
+**Disable Caching**:
+- Tooltips (short-lived, unique sizes)
+- Popups (created/destroyed frequently)
+- Panels that resize every frame
+
+### Memory Management
+
+```go
+// Clear all caches when changing themes or freeing memory
+ClearPanelCache()
+
+// Caches are automatically managed:
+// - Created on first use (lazy initialization)
+// - Reused for matching dimensions
+// - Disposed on clear
+```
+
+### Notes
+
+- Caching happens at initialization, not every frame
+- Cache key = (width, height) - panels with same dimensions share cache
+- Grid editors use `CreateStaticPanel()` for better performance
+- Compatible with all existing panel creation code (drop-in optimization)

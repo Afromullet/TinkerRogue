@@ -90,7 +90,7 @@ func (sem *SquadEditorMode) buildSquadNavigation() {
 	navWidth := int(float64(sem.Layout.ScreenWidth) * 0.5)
 	navHeight := int(float64(sem.Layout.ScreenHeight) * widgets.SquadEditorNavHeight)
 
-	sem.navigationContainer = widgets.CreatePanelWithConfig(widgets.PanelConfig{
+	sem.navigationContainer = widgets.CreateStaticPanel(widgets.PanelConfig{
 		MinWidth:  navWidth,
 		MinHeight: navHeight,
 		Layout: widget.NewRowLayout(
@@ -134,7 +134,7 @@ func (sem *SquadEditorMode) buildSquadSelector() {
 	listWidth := int(float64(sem.Layout.ScreenWidth) * widgets.SquadEditorSquadListWidth)
 	listHeight := int(float64(sem.Layout.ScreenHeight) * widgets.SquadEditorSquadListHeight)
 
-	sem.squadSelectorContainer = widgets.CreatePanelWithConfig(widgets.PanelConfig{
+	sem.squadSelectorContainer = widgets.CreateStaticPanel(widgets.PanelConfig{
 		MinWidth:  listWidth,
 		MinHeight: listHeight,
 		Layout: widget.NewRowLayout(
@@ -184,7 +184,7 @@ func (sem *SquadEditorMode) buildUnitList() {
 	listWidth := int(float64(sem.Layout.ScreenWidth) * widgets.SquadEditorUnitListWidth)
 	listHeight := int(float64(sem.Layout.ScreenHeight) * 0.35) // Half of vertical space
 
-	sem.unitListContainer = widgets.CreatePanelWithConfig(widgets.PanelConfig{
+	sem.unitListContainer = widgets.CreateStaticPanel(widgets.PanelConfig{
 		MinWidth:  listWidth,
 		MinHeight: listHeight,
 		Layout: widget.NewRowLayout(
@@ -238,7 +238,7 @@ func (sem *SquadEditorMode) buildRosterList() {
 	listWidth := int(float64(sem.Layout.ScreenWidth) * widgets.SquadEditorRosterListWidth)
 	listHeight := int(float64(sem.Layout.ScreenHeight) * 0.35) // Half of vertical space
 
-	sem.rosterListContainer = widgets.CreatePanelWithConfig(widgets.PanelConfig{
+	sem.rosterListContainer = widgets.CreateStaticPanel(widgets.PanelConfig{
 		MinWidth:  listWidth,
 		MinHeight: listHeight,
 		Layout: widget.NewRowLayout(

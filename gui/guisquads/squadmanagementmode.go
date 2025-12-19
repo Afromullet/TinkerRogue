@@ -75,7 +75,7 @@ func (smm *SquadManagementMode) Initialize(ctx *core.UIContext) error {
 	panelWidth := int(float64(smm.Layout.ScreenWidth) * widgets.SquadMgmtPanelWidth)
 	panelHeight := int(float64(smm.Layout.ScreenHeight) * widgets.SquadMgmtPanelHeight)
 
-	smm.panelContainer = widgets.CreatePanelWithConfig(widgets.PanelConfig{
+	smm.panelContainer = widgets.CreateStaticPanel(widgets.PanelConfig{
 		MinWidth:  panelWidth,
 		MinHeight: panelHeight,
 		Layout: widget.NewRowLayout(
@@ -94,7 +94,7 @@ func (smm *SquadManagementMode) Initialize(ctx *core.UIContext) error {
 	navWidth := int(float64(smm.Layout.ScreenWidth) * widgets.SquadMgmtNavWidth)
 	navHeight := int(float64(smm.Layout.ScreenHeight) * widgets.SquadMgmtNavHeight)
 
-	smm.navigationContainer = widgets.CreatePanelWithConfig(widgets.PanelConfig{
+	smm.navigationContainer = widgets.CreateStaticPanel(widgets.PanelConfig{
 		MinWidth:  navWidth,
 		MinHeight: navHeight,
 		Layout: widget.NewRowLayout(
@@ -137,7 +137,7 @@ func (smm *SquadManagementMode) Initialize(ctx *core.UIContext) error {
 	cmdWidth := int(float64(smm.Layout.ScreenWidth) * widgets.SquadMgmtCmdWidth)
 	cmdHeight := int(float64(smm.Layout.ScreenHeight) * widgets.SquadMgmtCmdHeight)
 
-	smm.commandContainer = widgets.CreatePanelWithConfig(widgets.PanelConfig{
+	smm.commandContainer = widgets.CreateStaticPanel(widgets.PanelConfig{
 		MinWidth:  cmdWidth,
 		MinHeight: cmdHeight,
 		Layout: widget.NewRowLayout(
@@ -338,7 +338,7 @@ func (smm *SquadManagementMode) createSquadPanel(squadID ecs.EntityID) *SquadPan
 	}
 
 	// Container for this squad's panel
-	panel.container = widgets.CreatePanelWithConfig(widgets.PanelConfig{
+	panel.container = widgets.CreateStaticPanel(widgets.PanelConfig{
 		Background: guiresources.PanelRes.Image,
 		Layout: widget.NewRowLayout(
 			widget.RowLayoutOpts.Direction(widget.DirectionVertical),

@@ -24,6 +24,7 @@ type panelConfig struct {
 	customPadding         *widget.Insets          // For fine-grained control
 	useResponsivePadding  bool                    // Flag to apply responsive padding to row layouts
 	rowLayoutDirection    widget.Direction        // Direction for row layouts when using responsive padding
+	enableCaching         bool                    // Whether to use cached background rendering (default: true for all panels)
 }
 
 // Predefined positioning options
@@ -196,6 +197,23 @@ func WithBackground(background *e_image.NineSlice) PanelOption {
 	}
 }
 
+// WithCachedBackground enables background caching for this panel.
+// This significantly reduces NineSlice allocations for static panels.
+// Use for panels with fixed dimensions that don't change size frequently.
+func WithCachedBackground() PanelOption {
+	return func(pc *panelConfig) {
+		pc.enableCaching = true
+	}
+}
+
+// WithDynamicBackground disables background caching for this panel.
+// Use for panels that change size frequently (tooltips, popups, etc.).
+func WithDynamicBackground() PanelOption {
+	return func(pc *panelConfig) {
+		pc.enableCaching = false
+	}
+}
+
 // BuildPanel creates a panel with functional options.
 // This replaces the multiple BuildXxxPanel functions with a single composable method.
 //
@@ -225,6 +243,7 @@ func (pb *PanelBuilders) BuildPanel(opts ...PanelOption) *widget.Container {
 			HorizontalPosition: widget.AnchorLayoutPositionCenter,
 			VerticalPosition:   widget.AnchorLayoutPositionCenter,
 		},
+		enableCaching: true, // Enable caching by default for all panels (reduces NineSlice allocations)
 	}
 
 	// Apply all options
@@ -289,6 +308,12 @@ func (pb *PanelBuilders) BuildPanel(opts ...PanelOption) *widget.Container {
 		}
 
 		config.layoutData.Padding = insets
+	}
+
+	// Pre-cache background if caching is enabled
+	// This warms the cache so the first render is faster
+	if config.enableCaching && config.background != nil {
+		_ = guiresources.GetPanelBackground(width, height)
 	}
 
 	// Build the panel
