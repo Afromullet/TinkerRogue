@@ -5,7 +5,6 @@ import (
 	"game_main/graphics"
 	"game_main/gui"
 	"game_main/gui/core"
-	"game_main/gui/guicomponents"
 	"game_main/gui/widgets"
 
 	"github.com/ebitenui/ebitenui/widget"
@@ -19,9 +18,7 @@ type ExplorationMode struct {
 	initialized bool
 
 	// UI Components (ebitenui widgets)
-	statsPanel     *widget.Container
-	statsTextArea  *widget.TextArea
-	statsComponent *guicomponents.StatsDisplayComponent
+
 	messageLog     *widget.TextArea
 	quickInventory *widget.Container
 }
@@ -42,19 +39,6 @@ func (em *ExplorationMode) Initialize(ctx *core.UIContext) error {
 	em.RegisterHotkey(ebiten.KeyC, "combat")
 	em.RegisterHotkey(ebiten.KeyD, "squad_deployment")
 	// Note: 'E' key for squads requires context switch - handled in button
-
-	// Build stats panel (top-right) using standard specification
-	em.statsPanel, em.statsTextArea = gui.CreateStandardDetailPanel(
-		em.PanelBuilders,
-		em.Layout,
-		"stats_panel",
-		em.Context.PlayerData.PlayerAttributes(em.Queries.ECSManager).DisplayString(),
-	)
-	em.RootContainer.AddChild(em.statsPanel)
-
-	// Create stats display component to manage refresh logic
-	em.statsComponent = guicomponents.NewStatsDisplayComponent(em.statsTextArea, nil)
-	// Use default formatter which displays player attributes
 
 	// Build message log (bottom-right) using standard specification
 	logContainer, messageLog := gui.CreateStandardDetailPanel(
@@ -144,11 +128,6 @@ func (em *ExplorationMode) buildQuickInventory() {
 
 func (em *ExplorationMode) Enter(fromMode core.UIMode) error {
 	fmt.Println("Entering Exploration Mode")
-
-	// Refresh player stats using component
-	if em.statsComponent != nil && em.Context.PlayerData != nil {
-		em.statsComponent.RefreshStats(em.Context.PlayerData, em.Queries.ECSManager)
-	}
 
 	return nil
 }
