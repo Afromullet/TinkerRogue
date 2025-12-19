@@ -37,35 +37,50 @@ func NewFormationEditorMode(modeManager *core.UIModeManager) *FormationEditorMod
 }
 
 func (fem *FormationEditorMode) Initialize(ctx *core.UIContext) error {
-	// Initialize common mode infrastructure
-	fem.InitializeBase(ctx)
+	return gui.NewModeBuilder(&fem.BaseMode, gui.ModeConfig{
+		ModeName:   "formation_editor",
+		ReturnMode: "squad_management",
 
-	// Initialize command history with refresh callback
-	fem.InitializeCommandHistory(fem.refreshAfterUndoRedo)
-
-	// Build squad selector on left side
-	fem.buildSquadSelector()
-
-	// Build 3x3 grid editor (center)
-	fem.gridContainer, fem.gridCells = fem.PanelBuilders.BuildGridEditor(widgets.GridEditorConfig{
-		OnCellClick: func(row, col int) {
-			fem.onCellClicked(row, col)
+		Panels: []gui.PanelSpec{
+			{CustomBuild: fem.buildSquadSelector},
+			{CustomBuild: fem.buildGridEditor},
+			{CustomBuild: fem.buildUnitPalette},
 		},
-	})
-	fem.RootContainer.AddChild(fem.gridContainer)
 
-	fem.buildUnitPalette()
-	fem.buildActionButtons()
+		Buttons: []gui.ButtonGroupSpec{
+			{
+				Position: widgets.BottomCenter(),
+				Buttons: []widgets.ButtonSpec{
+					{
+						Text: "Apply Formation",
+						OnClick: func() {
+							fem.onApplyFormation()
+						},
+					},
+					{
+						Text: "Close (ESC)",
+						OnClick: func() {
+							if mode, exists := fem.ModeManager.GetMode("squad_management"); exists {
+								fem.ModeManager.RequestTransition(mode, "Close button pressed")
+							}
+						},
+					},
+				},
+			},
+		},
 
-	return nil
+		StatusLabel: true,
+		Commands:    true,
+		OnRefresh:   fem.refreshAfterUndoRedo,
+	}).Build(ctx)
 }
 
-func (fem *FormationEditorMode) buildSquadSelector() {
+func (fem *FormationEditorMode) buildSquadSelector() *widget.Container {
 	// Get all squads from ECS
 	allSquadIDs := fem.Queries.SquadCache.FindAllSquads()
 
 	// Create squad selection list using helper with formation-specific constants
-	fem.squadSelector = widgets.CreateSquadList(widgets.SquadListConfig{
+	squadSelector := widgets.CreateSquadList(widgets.SquadListConfig{
 		SquadIDs:      allSquadIDs,
 		Manager:       fem.Queries.ECSManager,
 		ScreenWidth:   fem.Layout.ScreenWidth,
@@ -81,17 +96,36 @@ func (fem *FormationEditorMode) buildSquadSelector() {
 	})
 	leftPad := int(float64(fem.Layout.ScreenWidth) * widgets.PaddingStandard)
 	topPad := int(float64(fem.Layout.ScreenHeight) * widgets.PaddingStandard)
-	fem.squadSelector.GetWidget().LayoutData = gui.AnchorStartStart(leftPad, topPad)
 
-	fem.RootContainer.AddChild(fem.squadSelector)
+	fem.squadSelector = squadSelector
+
+	// Wrap in container with LayoutData
+	container := widget.NewContainer(
+		widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
+		widget.ContainerOpts.WidgetOpts(widget.WidgetOpts.LayoutData(gui.AnchorStartStart(leftPad, topPad))),
+	)
+	container.AddChild(squadSelector)
+	return container
 }
 
-func (fem *FormationEditorMode) buildUnitPalette() {
+func (fem *FormationEditorMode) buildGridEditor() *widget.Container {
+	// Build 3x3 grid editor (center)
+	gridContainer, gridCells := fem.PanelBuilders.BuildGridEditor(widgets.GridEditorConfig{
+		OnCellClick: func(row, col int) {
+			fem.onCellClicked(row, col)
+		},
+	})
+	fem.gridContainer = gridContainer
+	fem.gridCells = gridCells
+	return gridContainer
+}
+
+func (fem *FormationEditorMode) buildUnitPalette() *widget.Container {
 	// Unit type options
 	unitTypes := []string{"Tank", "DPS", "Support", "Remove Unit"}
 
 	// Create simple string list using helper with formation-specific constants
-	fem.unitPalette = widgets.CreateSimpleStringList(widgets.SimpleStringListConfig{
+	unitPalette := widgets.CreateSimpleStringList(widgets.SimpleStringListConfig{
 		Entries:       unitTypes,
 		ScreenWidth:   fem.Layout.ScreenWidth,
 		ScreenHeight:  fem.Layout.ScreenHeight,
@@ -100,40 +134,16 @@ func (fem *FormationEditorMode) buildUnitPalette() {
 	})
 
 	rightPad := int(float64(fem.Layout.ScreenWidth) * widgets.PaddingStandard)
-	fem.unitPalette.GetWidget().LayoutData = gui.AnchorEndCenter(rightPad)
 
-	fem.RootContainer.AddChild(fem.unitPalette)
-}
+	fem.unitPalette = unitPalette
 
-func (fem *FormationEditorMode) buildActionButtons() {
-	// Build action button group using helper with button specs
-	buttonSpecs := []widgets.ButtonSpec{
-		{
-			Text: "Apply Formation",
-			OnClick: func() {
-				fem.onApplyFormation()
-			},
-		},
-		{
-			Text: "Close (ESC)",
-			OnClick: func() {
-				if mode, exists := fem.ModeManager.GetMode("squad_management"); exists {
-					fem.ModeManager.RequestTransition(mode, "Close button pressed")
-				}
-			},
-		},
-	}
-	fem.actionButtons = gui.CreateActionButtonGroup(fem.PanelBuilders, widgets.BottomCenter(), buttonSpecs)
-
-	// Add undo/redo buttons from CommandHistory
-	fem.actionButtons.AddChild(fem.CommandHistory.CreateUndoButton())
-	fem.actionButtons.AddChild(fem.CommandHistory.CreateRedoButton())
-
-	// Status label
-	fem.StatusLabel = widgets.CreateSmallLabel("")
-	fem.RootContainer.AddChild(fem.StatusLabel)
-
-	fem.RootContainer.AddChild(fem.actionButtons)
+	// Wrap in container with LayoutData
+	container := widget.NewContainer(
+		widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
+		widget.ContainerOpts.WidgetOpts(widget.WidgetOpts.LayoutData(gui.AnchorEndCenter(rightPad))),
+	)
+	container.AddChild(unitPalette)
+	return container
 }
 
 func (fem *FormationEditorMode) onCellClicked(row, col int) {

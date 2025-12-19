@@ -23,7 +23,7 @@ type CombatMode struct {
 	logManager    *CombatLogManager
 	actionHandler *CombatActionHandler
 	inputHandler  *CombatInputHandler
-	uiFactory     *CombatUIFactory
+	uiFactory     *gui.UIComponentFactory
 	combatService *combatservices.CombatService
 
 	// UI panels and widgets
@@ -65,19 +65,28 @@ func NewCombatMode(modeManager *core.UIModeManager) *CombatMode {
 }
 
 func (cm *CombatMode) Initialize(ctx *core.UIContext) error {
-	// Initialize common mode infrastructure
-	cm.InitializeBase(ctx)
-
-	// Create combat service (owns TurnManager, FactionManager, MovementSystem)
+	// Create combat service before ModeBuilder
 	cm.combatService = combatservices.NewCombatService(ctx.ECSManager)
 
-	// Create UI factory
-	cm.uiFactory = NewCombatUIFactory(cm.Queries, cm.PanelBuilders, cm.Layout)
+	// Build UI using ModeBuilder
+	err := gui.NewModeBuilder(&cm.BaseMode, gui.ModeConfig{
+		ModeName:   "combat",
+		ReturnMode: "exploration",
 
-	// Build UI panels using factory
-	cm.buildUILayout()
+		Panels: []gui.PanelSpec{
+			{CustomBuild: cm.buildTurnOrderPanel},
+			{CustomBuild: cm.buildFactionInfoPanel},
+			{CustomBuild: cm.buildSquadListPanel},
+			{CustomBuild: cm.buildSquadDetailPanel},
+			{CustomBuild: cm.buildLogPanel},
+			{CustomBuild: cm.buildActionButtons},
+		},
+	}).Build(ctx)
+	if err != nil {
+		return err
+	}
 
-	// Create combat action handler with service
+	// Post-UI initialization (after panels are built)
 	cm.actionHandler = NewCombatActionHandler(
 		ctx.ModeCoordinator.GetBattleMapState(),
 		cm.logManager,
@@ -87,52 +96,83 @@ func (cm *CombatMode) Initialize(ctx *core.UIContext) error {
 		cm.ModeManager,
 	)
 
-	// Create combat input handler
 	cm.inputHandler = NewCombatInputHandler(
 		cm.actionHandler,
 		ctx.ModeCoordinator.GetBattleMapState(),
 		cm.Queries,
 	)
 
-	// Initialize UI update components
 	cm.initializeUpdateComponents()
 
-	// Initialize rendering systems
 	cm.movementRenderer = guimodes.NewMovementTileRenderer()
 	cm.highlightRenderer = guimodes.NewSquadHighlightRenderer(cm.Queries)
 
 	return nil
 }
 
-func (cm *CombatMode) buildUILayout() {
-	// Build UI panels using factory
-	cm.turnOrderPanel = cm.uiFactory.CreateTurnOrderPanel()
+func (cm *CombatMode) ensureUIFactoryInitialized() {
+	if cm.uiFactory == nil {
+		cm.uiFactory = gui.NewUIComponentFactory(cm.Queries, cm.PanelBuilders, cm.Layout)
+	}
+}
+
+func (cm *CombatMode) buildTurnOrderPanel() *widget.Container {
+	cm.ensureUIFactoryInitialized()
+
+	cm.turnOrderPanel = cm.uiFactory.CreateCombatTurnOrderPanel()
 	cm.turnOrderLabel = widgets.CreateLargeLabel("Initializing combat...")
 	cm.turnOrderPanel.AddChild(cm.turnOrderLabel)
-	cm.RootContainer.AddChild(cm.turnOrderPanel)
 
-	cm.factionInfoPanel = cm.uiFactory.CreateFactionInfoPanel()
+	return cm.turnOrderPanel
+}
+
+func (cm *CombatMode) buildFactionInfoPanel() *widget.Container {
+	cm.ensureUIFactoryInitialized()
+
+	cm.factionInfoPanel = cm.uiFactory.CreateCombatFactionInfoPanel()
 	cm.factionInfoText = widgets.CreateSmallLabel("Faction Info")
 	cm.factionInfoPanel.AddChild(cm.factionInfoText)
-	cm.RootContainer.AddChild(cm.factionInfoPanel)
 
-	cm.squadListPanel = cm.uiFactory.CreateSquadListPanel()
-	cm.RootContainer.AddChild(cm.squadListPanel)
+	return cm.factionInfoPanel
+}
 
-	cm.squadDetailPanel = cm.uiFactory.CreateSquadDetailPanel()
+func (cm *CombatMode) buildSquadListPanel() *widget.Container {
+	cm.ensureUIFactoryInitialized()
+
+	cm.squadListPanel = cm.uiFactory.CreateCombatSquadListPanel()
+
+	return cm.squadListPanel
+}
+
+func (cm *CombatMode) buildSquadDetailPanel() *widget.Container {
+	cm.ensureUIFactoryInitialized()
+
+	cm.squadDetailPanel = cm.uiFactory.CreateCombatSquadDetailPanel()
 	cm.squadDetailText = widgets.CreateSmallLabel("Select a squad\nto view details")
 	cm.squadDetailPanel.AddChild(cm.squadDetailText)
-	cm.RootContainer.AddChild(cm.squadDetailPanel)
+
+	return cm.squadDetailPanel
+}
+
+func (cm *CombatMode) buildLogPanel() *widget.Container {
+	cm.ensureUIFactoryInitialized()
 
 	// Create log panel only if combat log is enabled
 	if config.ENABLE_COMBAT_LOG {
-		logContainer, logArea := cm.uiFactory.CreateLogPanel()
+		logContainer, logArea := cm.uiFactory.CreateCombatLogPanel()
 		cm.combatLogArea = logArea
-		cm.RootContainer.AddChild(logContainer)
+		return logContainer
 	}
 
+	// Return empty container if log is disabled
+	return widget.NewContainer()
+}
+
+func (cm *CombatMode) buildActionButtons() *widget.Container {
+	cm.ensureUIFactoryInitialized()
+
 	// Create action buttons
-	cm.actionButtons = cm.uiFactory.CreateActionButtons(
+	cm.actionButtons = cm.uiFactory.CreateCombatActionButtons(
 		cm.handleAttackClick,
 		cm.handleMoveClick,
 		cm.handleUndoMove,
@@ -140,7 +180,8 @@ func (cm *CombatMode) buildUILayout() {
 		cm.handleEndTurn,
 		cm.handleFlee,
 	)
-	cm.RootContainer.AddChild(cm.actionButtons)
+
+	return cm.actionButtons
 }
 
 // Button click handlers that delegate to action handler

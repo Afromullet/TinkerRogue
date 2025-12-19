@@ -67,25 +67,48 @@ func NewSquadEditorMode(modeManager *core.UIModeManager) *SquadEditorMode {
 }
 
 func (sem *SquadEditorMode) Initialize(ctx *core.UIContext) error {
-	// Initialize common mode infrastructure
-	sem.InitializeBase(ctx)
+	return gui.NewModeBuilder(&sem.BaseMode, gui.ModeConfig{
+		ModeName:   "squad_editor",
+		ReturnMode: "squad_management",
 
-	// Initialize command history with refresh callback
-	sem.InitializeCommandHistory(sem.refreshAfterUndoRedo)
+		Panels: []gui.PanelSpec{
+			{CustomBuild: sem.buildSquadNavigation},
+			{CustomBuild: sem.buildSquadSelector},
+			{CustomBuild: sem.buildGridEditor},
+			{CustomBuild: sem.buildUnitList},
+			{CustomBuild: sem.buildRosterList},
+		},
 
-	// Build UI layout
-	sem.buildSquadNavigation()
-	sem.buildSquadSelector()
-	sem.buildGridEditor()
-	sem.buildUnitList()
-	sem.buildRosterList()
-	sem.buildActionButtons()
+		Buttons: []gui.ButtonGroupSpec{
+			{
+				Position: widgets.BottomCenter(),
+				Buttons: []widgets.ButtonSpec{
+					{
+						Text: "Rename Squad",
+						OnClick: func() {
+							sem.onRenameSquad()
+						},
+					},
+					{
+						Text: "Close (ESC)",
+						OnClick: func() {
+							if mode, exists := sem.ModeManager.GetMode("squad_management"); exists {
+								sem.ModeManager.RequestTransition(mode, "Close button pressed")
+							}
+						},
+					},
+				},
+			},
+		},
 
-	return nil
+		StatusLabel: true,
+		Commands:    true,
+		OnRefresh:   sem.refreshAfterUndoRedo,
+	}).Build(ctx)
 }
 
 // buildSquadNavigation creates Previous/Next buttons for squad navigation
-func (sem *SquadEditorMode) buildSquadNavigation() {
+func (sem *SquadEditorMode) buildSquadNavigation() *widget.Container {
 	// Calculate responsive size
 	navWidth := int(float64(sem.Layout.ScreenWidth) * 0.5)
 	navHeight := int(float64(sem.Layout.ScreenHeight) * widgets.SquadEditorNavHeight)
@@ -125,11 +148,11 @@ func (sem *SquadEditorMode) buildSquadNavigation() {
 	})
 	sem.navigationContainer.AddChild(sem.nextButton)
 
-	sem.RootContainer.AddChild(sem.navigationContainer)
+	return sem.navigationContainer
 }
 
 // buildSquadSelector creates the squad selection list (left side)
-func (sem *SquadEditorMode) buildSquadSelector() {
+func (sem *SquadEditorMode) buildSquadSelector() *widget.Container {
 	// Calculate responsive size
 	listWidth := int(float64(sem.Layout.ScreenWidth) * widgets.SquadEditorSquadListWidth)
 	listHeight := int(float64(sem.Layout.ScreenHeight) * widgets.SquadEditorSquadListHeight)
@@ -165,21 +188,21 @@ func (sem *SquadEditorMode) buildSquadSelector() {
 	})
 	sem.squadSelectorContainer.AddChild(sem.squadSelector)
 
-	sem.RootContainer.AddChild(sem.squadSelectorContainer)
+	return sem.squadSelectorContainer
 }
 
 // buildGridEditor creates the 3x3 grid editor (center)
-func (sem *SquadEditorMode) buildGridEditor() {
+func (sem *SquadEditorMode) buildGridEditor() *widget.Container {
 	sem.gridEditorContainer, sem.gridCells = sem.PanelBuilders.BuildGridEditor(widgets.GridEditorConfig{
 		OnCellClick: func(row, col int) {
 			sem.onGridCellClicked(row, col)
 		},
 	})
-	sem.RootContainer.AddChild(sem.gridEditorContainer)
+	return sem.gridEditorContainer
 }
 
 // buildUnitList creates the unit list for the current squad (right side, top)
-func (sem *SquadEditorMode) buildUnitList() {
+func (sem *SquadEditorMode) buildUnitList() *widget.Container {
 	// Calculate responsive size
 	listWidth := int(float64(sem.Layout.ScreenWidth) * widgets.SquadEditorUnitListWidth)
 	listHeight := int(float64(sem.Layout.ScreenHeight) * 0.35) // Half of vertical space
@@ -229,11 +252,11 @@ func (sem *SquadEditorMode) buildUnitList() {
 	})
 	sem.unitListContainer.AddChild(makeLeaderBtn)
 
-	sem.RootContainer.AddChild(sem.unitListContainer)
+	return sem.unitListContainer
 }
 
 // buildRosterList creates the roster list showing available units (right side, bottom)
-func (sem *SquadEditorMode) buildRosterList() {
+func (sem *SquadEditorMode) buildRosterList() *widget.Container {
 	// Calculate responsive size
 	listWidth := int(float64(sem.Layout.ScreenWidth) * widgets.SquadEditorRosterListWidth)
 	listHeight := int(float64(sem.Layout.ScreenHeight) * 0.35) // Half of vertical space
@@ -273,7 +296,7 @@ func (sem *SquadEditorMode) buildRosterList() {
 	})
 	sem.rosterListContainer.AddChild(addUnitBtn)
 
-	sem.RootContainer.AddChild(sem.rosterListContainer)
+	return sem.rosterListContainer
 }
 
 // buildActionButtons creates bottom action buttons

@@ -46,36 +46,83 @@ func NewSquadDeploymentMode(modeManager *core.UIModeManager) *SquadDeploymentMod
 }
 
 func (sdm *SquadDeploymentMode) Initialize(ctx *core.UIContext) error {
-	// Initialize common mode infrastructure
-	sdm.InitializeBase(ctx)
-
-	// Create deployment service
+	// Create deployment service first (needed by UI builders)
 	sdm.deploymentService = squadservices.NewSquadDeploymentService(ctx.ECSManager)
 
-	// Build UI components
-	sdm.buildSquadList()
-	sdm.buildDetailPanel()
+	// Build the mode UI first
+	err := gui.NewModeBuilder(&sdm.BaseMode, gui.ModeConfig{
+		ModeName:   "squad_deployment",
+		ReturnMode: "exploration",
 
-	// Build instruction text (top-center) with explicit size
-	sdm.instructionText = widgets.CreateSmallLabel("Select a squad from the list, then click on the map to place it")
-	topPad := int(float64(sdm.Layout.ScreenHeight) * widgets.PaddingStandard)
-	sdm.instructionText.GetWidget().LayoutData = gui.AnchorCenterStart(topPad)
-	sdm.RootContainer.AddChild(sdm.instructionText)
+		Panels: []gui.PanelSpec{
+			{CustomBuild: sdm.buildInstructionText},
+			{CustomBuild: sdm.buildSquadList},
+			{CustomBuild: sdm.buildDetailPanel},
+		},
 
-	sdm.buildActionButtons()
+		Buttons: []gui.ButtonGroupSpec{
+			{
+				Position: widgets.BottomCenter(),
+				Buttons: []widgets.ButtonSpec{
+					{
+						Text: "Clear All",
+						OnClick: func() {
+							sdm.clearAllSquadPositions()
+						},
+					},
+					{
+						Text: "Start Combat",
+						OnClick: func() {
+							if combatMode, exists := sdm.ModeManager.GetMode("combat"); exists {
+								sdm.ModeManager.RequestTransition(combatMode, "Squads deployed, starting combat")
+							}
+						},
+					},
+					{
+						Text: "Close (ESC)",
+						OnClick: func() {
+							if mode, exists := sdm.ModeManager.GetMode("exploration"); exists {
+								sdm.ModeManager.RequestTransition(mode, "Close button pressed")
+							}
+						},
+					},
+				},
+			},
+		},
+	}).Build(ctx)
 
-	// Initialize rendering system
+	if err != nil {
+		return err
+	}
+
+	// Initialize rendering system AFTER BaseMode is initialized (so Queries is available)
 	sdm.highlightRenderer = guimodes.NewSquadHighlightRenderer(sdm.Queries)
 
 	return nil
 }
 
-func (sdm *SquadDeploymentMode) buildSquadList() {
+func (sdm *SquadDeploymentMode) buildInstructionText() *widget.Container {
+	// Build instruction text (top-center)
+	instructionText := widgets.CreateSmallLabel("Select a squad from the list, then click on the map to place it")
+	topPad := int(float64(sdm.Layout.ScreenHeight) * widgets.PaddingStandard)
+
+	sdm.instructionText = instructionText
+
+	// Wrap in container with LayoutData
+	container := widget.NewContainer(
+		widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
+		widget.ContainerOpts.WidgetOpts(widget.WidgetOpts.LayoutData(gui.AnchorCenterStart(topPad))),
+	)
+	container.AddChild(instructionText)
+	return container
+}
+
+func (sdm *SquadDeploymentMode) buildSquadList() *widget.Container {
 	// Left side squad list (same pattern as unit purchase mode)
 	listWidth := int(float64(sdm.Layout.ScreenWidth) * widgets.SquadDeployListWidth)
 	listHeight := int(float64(sdm.Layout.ScreenHeight) * widgets.SquadDeployListHeight)
 
-	sdm.squadList = widgets.CreateListWithConfig(widgets.ListConfig{
+	squadList := widgets.CreateListWithConfig(widgets.ListConfig{
 		Entries:   []interface{}{}, // Will be populated in Enter
 		MinWidth:  listWidth,
 		MinHeight: listHeight,
@@ -106,17 +153,24 @@ func (sdm *SquadDeploymentMode) buildSquadList() {
 	// Position below instruction text using Start-Start anchor (left-top)
 	leftPad := int(float64(sdm.Layout.ScreenWidth) * widgets.PaddingStandard)
 	topOffset := int(float64(sdm.Layout.ScreenHeight) * (widgets.PaddingStandard*3))
-	sdm.squadList.GetWidget().LayoutData = gui.AnchorStartStart(leftPad, topOffset)
 
-	sdm.RootContainer.AddChild(sdm.squadList)
+	sdm.squadList = squadList
+
+	// Wrap in container with LayoutData
+	container := widget.NewContainer(
+		widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
+		widget.ContainerOpts.WidgetOpts(widget.WidgetOpts.LayoutData(gui.AnchorStartStart(leftPad, topOffset))),
+	)
+	container.AddChild(squadList)
+	return container
 }
 
-func (sdm *SquadDeploymentMode) buildDetailPanel() {
+func (sdm *SquadDeploymentMode) buildDetailPanel() *widget.Container {
 	// Right side detail panel (35% width, 60% height - same as unit purchase mode)
 	panelWidth := int(float64(sdm.Layout.ScreenWidth) * 0.35)
 	panelHeight := int(float64(sdm.Layout.ScreenHeight) * 0.6)
 
-	sdm.detailPanel = widgets.CreateStaticPanel(widgets.PanelConfig{
+	detailPanel := widgets.CreateStaticPanel(widgets.PanelConfig{
 		MinWidth:  panelWidth,
 		MinHeight: panelHeight,
 		Layout: widget.NewRowLayout(
@@ -127,18 +181,21 @@ func (sdm *SquadDeploymentMode) buildDetailPanel() {
 	})
 
 	rightPad := int(float64(sdm.Layout.ScreenWidth) * widgets.PaddingStandard)
-	sdm.detailPanel.GetWidget().LayoutData = gui.AnchorEndCenter(rightPad)
+	detailPanel.GetWidget().LayoutData = gui.AnchorEndCenter(rightPad)
 
 	// Detail text area
-	sdm.detailTextArea = widgets.CreateTextAreaWithConfig(widgets.TextAreaConfig{
+	detailTextArea := widgets.CreateTextAreaWithConfig(widgets.TextAreaConfig{
 		MinWidth:  panelWidth - 30,
 		MinHeight: panelHeight - 30,
 		FontColor: color.White,
 	})
-	sdm.detailTextArea.SetText("Select a squad to view details")
-	sdm.detailPanel.AddChild(sdm.detailTextArea)
+	detailTextArea.SetText("Select a squad to view details")
+	detailPanel.AddChild(detailTextArea)
 
-	sdm.RootContainer.AddChild(sdm.detailPanel)
+	sdm.detailPanel = detailPanel
+	sdm.detailTextArea = detailTextArea
+
+	return detailPanel
 }
 
 func (sdm *SquadDeploymentMode) buildActionButtons() {

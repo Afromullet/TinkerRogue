@@ -2,6 +2,8 @@ package guimodes
 
 import (
 	"fmt"
+	"image/color"
+
 	"game_main/graphics"
 	"game_main/gui"
 	"game_main/gui/core"
@@ -31,35 +33,58 @@ func NewExplorationMode(modeManager *core.UIModeManager) *ExplorationMode {
 }
 
 func (em *ExplorationMode) Initialize(ctx *core.UIContext) error {
-	// Initialize common mode infrastructure
-	em.InitializeBase(ctx)
+	// Use ModeBuilder for declarative initialization (reduces 60+ lines to ~30)
+	err := gui.NewModeBuilder(&em.BaseMode, gui.ModeConfig{
+		ModeName:   "exploration",
+		ReturnMode: "", // No return mode - exploration is the main mode
 
-	// Register hotkeys for mode transitions (Battle Map context only)
-	em.RegisterHotkey(ebiten.KeyI, "inventory")
-	em.RegisterHotkey(ebiten.KeyC, "combat")
-	em.RegisterHotkey(ebiten.KeyD, "squad_deployment")
-	// Note: 'E' key for squads requires context switch - handled in button
+		// Register hotkeys for mode transitions (Battle Map context only)
+		Hotkeys: []gui.HotkeySpec{
+			{Key: ebiten.KeyI, TargetMode: "inventory"},
+			{Key: ebiten.KeyC, TargetMode: "combat"},
+			{Key: ebiten.KeyD, TargetMode: "squad_deployment"},
+			// Note: 'E' key for squads requires context switch - handled in button
+		},
 
-	// Build message log (bottom-right) using standard specification
-	logContainer, messageLog := gui.CreateStandardDetailPanel(
-		em.PanelBuilders,
-		em.Layout,
-		"message_log",
-		"",
-	)
-	em.messageLog = messageLog
-	em.RootContainer.AddChild(logContainer)
+		// Build panels
+		Panels: []gui.PanelSpec{
+			{
+				// Message log panel (bottom-right)
+				SpecName: "message_log",
+				OnCreate: func(container *widget.Container) {
+					// Create and add textarea to panel
+					spec := widgets.StandardPanels["message_log"]
+					panelWidth := int(float64(em.Layout.ScreenWidth) * spec.Width)
+					panelHeight := int(float64(em.Layout.ScreenHeight) * spec.Height)
 
-	// Build exploration-specific UI layout
-	em.buildQuickInventory()
+					messageLog := widgets.CreateTextAreaWithConfig(widgets.TextAreaConfig{
+						MinWidth:  panelWidth - 20,
+						MinHeight: panelHeight - 20,
+						FontColor: color.White,
+					})
+					messageLog.SetText("")
+					container.AddChild(messageLog)
+					em.messageLog = messageLog
+				},
+			},
+			{
+				// Quick inventory panel (custom build)
+				CustomBuild: em.buildQuickInventory,
+			},
+		},
+	}).Build(ctx)
+
+	if err != nil {
+		return err
+	}
 
 	em.initialized = true
 	return nil
 }
 
-func (em *ExplorationMode) buildQuickInventory() {
+func (em *ExplorationMode) buildQuickInventory() *widget.Container {
 	// Use standard panel specification with custom runtime padding
-	em.quickInventory = widgets.CreateStandardPanelWithOptions(
+	quickInventory := widgets.CreateStandardPanelWithOptions(
 		em.PanelBuilders,
 		"quick_inventory",
 		widgets.CustomPadding(widget.Insets{
@@ -77,7 +102,7 @@ func (em *ExplorationMode) buildQuickInventory() {
 			}
 		},
 	})
-	em.quickInventory.AddChild(throwableBtn)
+	quickInventory.AddChild(throwableBtn)
 
 	// Squads button (switches to Overworld context)
 	squadsBtn := widgets.CreateButtonWithConfig(widgets.ButtonConfig{
@@ -88,7 +113,7 @@ func (em *ExplorationMode) buildQuickInventory() {
 			}
 		},
 	})
-	em.quickInventory.AddChild(squadsBtn)
+	quickInventory.AddChild(squadsBtn)
 
 	// Inventory button (Battle Map context)
 	inventoryBtn := widgets.CreateButtonWithConfig(widgets.ButtonConfig{
@@ -99,7 +124,7 @@ func (em *ExplorationMode) buildQuickInventory() {
 			}
 		},
 	})
-	em.quickInventory.AddChild(inventoryBtn)
+	quickInventory.AddChild(inventoryBtn)
 
 	// Squad Deployment button (Battle Map context)
 	deployBtn := widgets.CreateButtonWithConfig(widgets.ButtonConfig{
@@ -110,7 +135,7 @@ func (em *ExplorationMode) buildQuickInventory() {
 			}
 		},
 	})
-	em.quickInventory.AddChild(deployBtn)
+	quickInventory.AddChild(deployBtn)
 
 	// Combat button (Battle Map context)
 	combatBtn := widgets.CreateButtonWithConfig(widgets.ButtonConfig{
@@ -121,9 +146,11 @@ func (em *ExplorationMode) buildQuickInventory() {
 			}
 		},
 	})
-	em.quickInventory.AddChild(combatBtn)
+	quickInventory.AddChild(combatBtn)
 
-	em.RootContainer.AddChild(em.quickInventory)
+	// Store reference and return
+	em.quickInventory = quickInventory
+	return quickInventory
 }
 
 func (em *ExplorationMode) Enter(fromMode core.UIMode) error {

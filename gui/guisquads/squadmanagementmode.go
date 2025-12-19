@@ -52,30 +52,83 @@ func NewSquadManagementMode(modeManager *core.UIModeManager) *SquadManagementMod
 }
 
 func (smm *SquadManagementMode) Initialize(ctx *core.UIContext) error {
-	// Initialize common mode infrastructure (required for queries field)
-	smm.InitializeBase(ctx)
+	return gui.NewModeBuilder(&smm.BaseMode, gui.ModeConfig{
+		ModeName:   "squad_management",
+		ReturnMode: "", // Context switch handled separately
 
-	// Initialize command history with refresh callback
-	smm.InitializeCommandHistory(smm.refreshAfterUndoRedo)
+		Hotkeys: []gui.HotkeySpec{
+			{Key: ebiten.KeyB, TargetMode: "squad_builder"},
+			{Key: ebiten.KeyF, TargetMode: "formation_editor"},
+			{Key: ebiten.KeyP, TargetMode: "unit_purchase"},
+			{Key: ebiten.KeyE, TargetMode: "squad_editor"},
+		},
 
-	// Register hotkeys for mode transitions (Overworld context only)
-	smm.RegisterHotkey(ebiten.KeyB, "squad_builder")
-	smm.RegisterHotkey(ebiten.KeyF, "formation_editor")
-	smm.RegisterHotkey(ebiten.KeyP, "unit_purchase")
-	smm.RegisterHotkey(ebiten.KeyE, "squad_editor")
+		Panels: []gui.PanelSpec{
+			{CustomBuild: smm.buildSquadPanel},
+			{CustomBuild: smm.buildNavigationPanel},
+			{CustomBuild: smm.buildCommandPanel},
+		},
 
-	// Override root container with anchor layout (consistent with combat mode)
-	smm.RootContainer = widget.NewContainer(
-		widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
-	)
-	smm.GetEbitenUI().Container = smm.RootContainer
+		Buttons: []gui.ButtonGroupSpec{
+			{
+				Position: widgets.BottomCenter(),
+				Buttons: []widgets.ButtonSpec{
+					{
+						Text: "Battle Map (ESC)",
+						OnClick: func() {
+							if smm.Context.ModeCoordinator != nil {
+								smm.Context.ModeCoordinator.EnterBattleMap("exploration")
+							}
+						},
+					},
+					{
+						Text: "Squad Builder (B)",
+						OnClick: func() {
+							if builderMode, exists := smm.ModeManager.GetMode("squad_builder"); exists {
+								smm.ModeManager.RequestTransition(builderMode, "Open Squad Builder")
+							}
+						},
+					},
+					{
+						Text: "Formation (F)",
+						OnClick: func() {
+							if formationMode, exists := smm.ModeManager.GetMode("formation_editor"); exists {
+								smm.ModeManager.RequestTransition(formationMode, "Open Formation Editor")
+							}
+						},
+					},
+					{
+						Text: "Buy Units (P)",
+						OnClick: func() {
+							if purchaseMode, exists := smm.ModeManager.GetMode("unit_purchase"); exists {
+								smm.ModeManager.RequestTransition(purchaseMode, "Open Unit Purchase")
+							}
+						},
+					},
+					{
+						Text: "Edit Squad (E)",
+						OnClick: func() {
+							if editorMode, exists := smm.ModeManager.GetMode("squad_editor"); exists {
+								smm.ModeManager.RequestTransition(editorMode, "Open Squad Editor")
+							}
+						},
+					},
+				},
+			},
+		},
 
+		StatusLabel: true,
+		Commands:    true,
+		OnRefresh:   smm.refreshAfterUndoRedo,
+	}).Build(ctx)
+}
+
+func (smm *SquadManagementMode) buildSquadPanel() *widget.Container {
 	// Container for the current squad panel (will be populated in Enter)
-	// Calculate responsive size
 	panelWidth := int(float64(smm.Layout.ScreenWidth) * widgets.SquadMgmtPanelWidth)
 	panelHeight := int(float64(smm.Layout.ScreenHeight) * widgets.SquadMgmtPanelHeight)
 
-	smm.panelContainer = widgets.CreateStaticPanel(widgets.PanelConfig{
+	panelContainer := widgets.CreateStaticPanel(widgets.PanelConfig{
 		MinWidth:  panelWidth,
 		MinHeight: panelHeight,
 		Layout: widget.NewRowLayout(
@@ -85,16 +138,18 @@ func (smm *SquadManagementMode) Initialize(ctx *core.UIContext) error {
 
 	// Apply anchor layout positioning - top-center
 	topPad := int(float64(smm.Layout.ScreenHeight) * widgets.PaddingStandard)
-	smm.panelContainer.GetWidget().LayoutData = gui.AnchorCenterStart(topPad)
+	panelContainer.GetWidget().LayoutData = gui.AnchorCenterStart(topPad)
 
-	smm.RootContainer.AddChild(smm.panelContainer)
+	smm.panelContainer = panelContainer
+	return panelContainer
+}
 
+func (smm *SquadManagementMode) buildNavigationPanel() *widget.Container {
 	// Navigation container (Previous/Next buttons + squad counter)
-	// Calculate responsive size
 	navWidth := int(float64(smm.Layout.ScreenWidth) * widgets.SquadMgmtNavWidth)
 	navHeight := int(float64(smm.Layout.ScreenHeight) * widgets.SquadMgmtNavHeight)
 
-	smm.navigationContainer = widgets.CreateStaticPanel(widgets.PanelConfig{
+	navigationContainer := widgets.CreateStaticPanel(widgets.PanelConfig{
 		MinWidth:  navWidth,
 		MinHeight: navHeight,
 		Layout: widget.NewRowLayout(
@@ -111,11 +166,11 @@ func (smm *SquadManagementMode) Initialize(ctx *core.UIContext) error {
 			smm.showPreviousSquad()
 		},
 	})
-	smm.navigationContainer.AddChild(smm.prevButton)
+	navigationContainer.AddChild(smm.prevButton)
 
 	// Squad counter label
 	smm.squadCounterLabel = widgets.CreateSmallLabel("Squad 1 of 1")
-	smm.navigationContainer.AddChild(smm.squadCounterLabel)
+	navigationContainer.AddChild(smm.squadCounterLabel)
 
 	// Next button
 	smm.nextButton = widgets.CreateButtonWithConfig(widgets.ButtonConfig{
@@ -124,20 +179,22 @@ func (smm *SquadManagementMode) Initialize(ctx *core.UIContext) error {
 			smm.showNextSquad()
 		},
 	})
-	smm.navigationContainer.AddChild(smm.nextButton)
+	navigationContainer.AddChild(smm.nextButton)
 
 	// Position below panelContainer
 	navTopOffset := int(float64(smm.Layout.ScreenHeight) * (widgets.SquadMgmtPanelHeight + widgets.PaddingStandard*2))
-	smm.navigationContainer.GetWidget().LayoutData = gui.AnchorCenterStart(navTopOffset)
+	navigationContainer.GetWidget().LayoutData = gui.AnchorCenterStart(navTopOffset)
 
-	smm.RootContainer.AddChild(smm.navigationContainer)
+	smm.navigationContainer = navigationContainer
+	return navigationContainer
+}
 
+func (smm *SquadManagementMode) buildCommandPanel() *widget.Container {
 	// Command buttons container (Disband, Merge, Undo, Redo)
-	// Calculate responsive size
 	cmdWidth := int(float64(smm.Layout.ScreenWidth) * widgets.SquadMgmtCmdWidth)
 	cmdHeight := int(float64(smm.Layout.ScreenHeight) * widgets.SquadMgmtCmdHeight)
 
-	smm.commandContainer = widgets.CreateStaticPanel(widgets.PanelConfig{
+	commandContainer := widgets.CreateStaticPanel(widgets.PanelConfig{
 		MinWidth:  cmdWidth,
 		MinHeight: cmdHeight,
 		Layout: widget.NewRowLayout(
@@ -154,7 +211,7 @@ func (smm *SquadManagementMode) Initialize(ctx *core.UIContext) error {
 			smm.onDisbandSquad()
 		},
 	})
-	smm.commandContainer.AddChild(disbandBtn)
+	commandContainer.AddChild(disbandBtn)
 
 	// Merge Squads button
 	mergeBtn := widgets.CreateButtonWithConfig(widgets.ButtonConfig{
@@ -163,74 +220,18 @@ func (smm *SquadManagementMode) Initialize(ctx *core.UIContext) error {
 			smm.onMergeSquads()
 		},
 	})
-	smm.commandContainer.AddChild(mergeBtn)
+	commandContainer.AddChild(mergeBtn)
 
-	// Undo/Redo buttons from CommandHistory
-	smm.commandContainer.AddChild(smm.CommandHistory.CreateUndoButton())
-	smm.commandContainer.AddChild(smm.CommandHistory.CreateRedoButton())
+	// Undo/Redo buttons from CommandHistory (will be available after Initialize)
+	commandContainer.AddChild(smm.CommandHistory.CreateUndoButton())
+	commandContainer.AddChild(smm.CommandHistory.CreateRedoButton())
 
 	// Position below navigationContainer
 	cmdTopOffset := int(float64(smm.Layout.ScreenHeight) * (widgets.SquadMgmtPanelHeight + widgets.SquadMgmtNavHeight + widgets.PaddingStandard*3))
-	smm.commandContainer.GetWidget().LayoutData = gui.AnchorCenterStart(cmdTopOffset)
+	commandContainer.GetWidget().LayoutData = gui.AnchorCenterStart(cmdTopOffset)
 
-	smm.RootContainer.AddChild(smm.commandContainer)
-
-	// Status label for command results (use BaseMode.SetStatus to update)
-	smm.StatusLabel = widgets.CreateSmallLabel("")
-
-	// Position below commandContainer
-	statusTopOffset := int(float64(smm.Layout.ScreenHeight) * (widgets.SquadMgmtPanelHeight + widgets.SquadMgmtNavHeight + widgets.SquadMgmtCmdHeight + widgets.PaddingStandard*4))
-	smm.StatusLabel.GetWidget().LayoutData = gui.AnchorCenterStart(statusTopOffset)
-
-	smm.RootContainer.AddChild(smm.StatusLabel)
-
-	// Build action buttons (bottom-center) using action button group helper
-	actionButtonSpecs := []widgets.ButtonSpec{
-		{
-			Text: "Battle Map (ESC)",
-			OnClick: func() {
-				if smm.Context.ModeCoordinator != nil {
-					smm.Context.ModeCoordinator.EnterBattleMap("exploration")
-				}
-			},
-		},
-		{
-			Text: "Squad Builder (B)",
-			OnClick: func() {
-				if builderMode, exists := smm.ModeManager.GetMode("squad_builder"); exists {
-					smm.ModeManager.RequestTransition(builderMode, "Open Squad Builder")
-				}
-			},
-		},
-		{
-			Text: "Formation (F)",
-			OnClick: func() {
-				if formationMode, exists := smm.ModeManager.GetMode("formation_editor"); exists {
-					smm.ModeManager.RequestTransition(formationMode, "Open Formation Editor")
-				}
-			},
-		},
-		{
-			Text: "Buy Units (P)",
-			OnClick: func() {
-				if purchaseMode, exists := smm.ModeManager.GetMode("unit_purchase"); exists {
-					smm.ModeManager.RequestTransition(purchaseMode, "Open Unit Purchase")
-				}
-			},
-		},
-		{
-			Text: "Edit Squad (E)",
-			OnClick: func() {
-				if editorMode, exists := smm.ModeManager.GetMode("squad_editor"); exists {
-					smm.ModeManager.RequestTransition(editorMode, "Open Squad Editor")
-				}
-			},
-		},
-	}
-	actionButtonContainer := gui.CreateActionButtonGroup(smm.PanelBuilders, widgets.BottomCenter(), actionButtonSpecs)
-	smm.GetEbitenUI().Container.AddChild(actionButtonContainer)
-
-	return nil
+	smm.commandContainer = commandContainer
+	return commandContainer
 }
 
 func (smm *SquadManagementMode) Enter(fromMode core.UIMode) error {

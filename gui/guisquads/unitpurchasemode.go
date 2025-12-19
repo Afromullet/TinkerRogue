@@ -43,31 +43,26 @@ func NewUnitPurchaseMode(modeManager *core.UIModeManager) *UnitPurchaseMode {
 }
 
 func (upm *UnitPurchaseMode) Initialize(ctx *core.UIContext) error {
-	// Initialize common mode infrastructure
-	upm.InitializeBase(ctx)
-
-	// Create purchase service
+	// Create purchase service first (needed by UI builders)
 	upm.purchaseService = squadservices.NewUnitPurchaseService(ctx.ECSManager)
 
-	// Initialize command history with refresh callback
-	upm.InitializeCommandHistory(upm.refreshAfterUndoRedo)
+	return gui.NewModeBuilder(&upm.BaseMode, gui.ModeConfig{
+		ModeName:   "unit_purchase",
+		ReturnMode: "squad_management",
 
-	// Build unit list (left side)
-	upm.buildUnitList()
+		Panels: []gui.PanelSpec{
+			{CustomBuild: upm.buildResourceDisplay},
+			{CustomBuild: upm.buildUnitList},
+			{CustomBuild: upm.buildDetailPanel},
+			{CustomBuild: upm.buildActionButtons},
+		},
 
-	// Build detail panel (right side)
-	upm.buildDetailPanel()
-
-	// Build action buttons (bottom-center)
-	upm.buildActionButtons()
-
-	// Build resource display (top-right)
-	upm.buildResourceDisplay()
-
-	return nil
+		Commands:  true,
+		OnRefresh: upm.refreshAfterUndoRedo,
+	}).Build(ctx)
 }
 
-func (upm *UnitPurchaseMode) buildUnitList() {
+func (upm *UnitPurchaseMode) buildUnitList() *widget.Container {
 	// Left side unit list (35% width to prevent overlap with 25% top-center resource display)
 	listWidth := int(float64(upm.Layout.ScreenWidth) * widgets.UnitPurchaseListWidth)
 	listHeight := int(float64(upm.Layout.ScreenHeight) * widgets.UnitPurchaseListHeight)
@@ -101,12 +96,17 @@ func (upm *UnitPurchaseMode) buildUnitList() {
 	// Position below resource panel using Start-Start anchor (left-top)
 	leftPad := int(float64(upm.Layout.ScreenWidth) * widgets.PaddingStandard)
 	topOffset := int(float64(upm.Layout.ScreenHeight) * (widgets.UnitPurchaseResourceHeight + widgets.PaddingStandard*2))
-	upm.unitList.GetWidget().LayoutData = gui.AnchorStartStart(leftPad, topOffset)
 
-	upm.RootContainer.AddChild(upm.unitList)
+	// Wrap in container with LayoutData
+	container := widget.NewContainer(
+		widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
+		widget.ContainerOpts.WidgetOpts(widget.WidgetOpts.LayoutData(gui.AnchorStartStart(leftPad, topOffset))),
+	)
+	container.AddChild(upm.unitList)
+	return container
 }
 
-func (upm *UnitPurchaseMode) buildDetailPanel() {
+func (upm *UnitPurchaseMode) buildDetailPanel() *widget.Container {
 	// Right side detail panel (35% width to prevent overlap with 25% top-center resource display)
 	panelWidth := int(float64(upm.Layout.ScreenWidth) * 0.35)
 	panelHeight := int(float64(upm.Layout.ScreenHeight) * 0.6)
@@ -152,10 +152,10 @@ func (upm *UnitPurchaseMode) buildDetailPanel() {
 	upm.statsTextArea.GetWidget().Visibility = widget.Visibility_Hide
 	upm.detailPanel.AddChild(upm.statsTextArea)
 
-	upm.RootContainer.AddChild(upm.detailPanel)
+	return upm.detailPanel
 }
 
-func (upm *UnitPurchaseMode) buildResourceDisplay() {
+func (upm *UnitPurchaseMode) buildResourceDisplay() *widget.Container {
 	// Top-center resource display (responsive sizing)
 	panelWidth := int(float64(upm.Layout.ScreenWidth) * 0.25)
 	panelHeight := int(float64(upm.Layout.ScreenHeight) * 0.08)
@@ -181,23 +181,14 @@ func (upm *UnitPurchaseMode) buildResourceDisplay() {
 	upm.rosterLabel = widgets.CreateSmallLabel("Roster: 0/0")
 	resourcePanel.AddChild(upm.rosterLabel)
 
-	upm.RootContainer.AddChild(resourcePanel)
+	return resourcePanel
 }
 
-func (upm *UnitPurchaseMode) buildActionButtons() {
-	// Create positioned container using helper (reduces layout boilerplate)
-	buttonSpecs := []widgets.ButtonSpec{
-		{
-			Text: "Buy Unit",
-			OnClick: func() {
-				upm.purchaseUnit()
-			},
-		},
-	}
-	actionButtonContainer := gui.CreateActionButtonGroup(upm.PanelBuilders, widgets.BottomCenter(), buttonSpecs)
+func (upm *UnitPurchaseMode) buildActionButtons() *widget.Container {
+	// Create positioned container using helper
+	actionButtonContainer := gui.CreateActionButtonGroup(upm.PanelBuilders, widgets.BottomCenter(), []widgets.ButtonSpec{})
 
-	// Store reference to buy button for later enable/disable control
-	// (Note: Container doesn't expose children directly, so we keep our reference)
+	// Create buy button and store reference for enable/disable control
 	upm.buyButton = widgets.CreateButtonWithConfig(widgets.ButtonConfig{
 		Text: "Buy Unit",
 		OnClick: func() {
@@ -205,9 +196,6 @@ func (upm *UnitPurchaseMode) buildActionButtons() {
 		},
 	})
 	upm.buyButton.GetWidget().Disabled = true
-
-	// Clear the helper-created buttons and add our managed buttons
-	actionButtonContainer.RemoveChildren()
 	actionButtonContainer.AddChild(upm.buyButton)
 
 	// Undo/Redo buttons from CommandHistory
@@ -218,7 +206,7 @@ func (upm *UnitPurchaseMode) buildActionButtons() {
 	closeBtn := gui.CreateCloseButton(upm.ModeManager, "squad_management", "Back (ESC)")
 	actionButtonContainer.AddChild(closeBtn)
 
-	upm.RootContainer.AddChild(actionButtonContainer)
+	return actionButtonContainer
 }
 
 func (upm *UnitPurchaseMode) updateDetailPanel() {

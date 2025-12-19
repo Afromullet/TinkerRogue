@@ -21,14 +21,14 @@ type PanelSpec struct {
 // This is the single source of truth for panel layouts - modify here to update everywhere.
 //
 // Currently used by:
-// - CombatUIFactory: turn_order, faction_info, squad_list, squad_detail, action_buttons, combat_log
+// - UIComponentFactory: Combat and Squad Builder components use custom panel creation
 // - CombatMode: action buttons
 // - ExplorationMode: stats_panel, message_log, quick_inventory
 // - InfoMode: options_list, info_detail
 // - InventoryMode: inventory_detail
 //
-// Note: SquadBuilderUIFactory doesn't use this system as it creates widgets (List, TextArea)
-// with custom manual layout positioning rather than using BuildPanel patterns.
+// Note: UIComponentFactory creates widgets (List, TextArea) with custom manual layout
+// positioning rather than using BuildPanel patterns for some complex components.
 var StandardPanels = map[string]PanelSpec{
 	// ============================================
 	// Combat UI Panels

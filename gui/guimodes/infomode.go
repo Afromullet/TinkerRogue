@@ -2,6 +2,8 @@ package guimodes
 
 import (
 	"fmt"
+	"image/color"
+
 	"game_main/coords"
 	"game_main/gui"
 	"game_main/gui/core"
@@ -34,38 +36,50 @@ func NewInfoMode(modeManager *core.UIModeManager) *InfoMode {
 
 // Initialize sets up the info mode UI
 func (im *InfoMode) Initialize(ctx *core.UIContext) error {
-	im.InitializeBase(ctx)
+	return gui.NewModeBuilder(&im.BaseMode, gui.ModeConfig{
+		ModeName:   "info_inspect",
+		ReturnMode: "exploration",
 
-	// Build options panel using standard specification
-	optionsPanel := gui.CreateOptionsPanel(im.PanelBuilders)
+		Panels: []gui.PanelSpec{
+			{
+				// Options panel (center-left)
+				SpecName: "options_list",
+				OnCreate: func(container *widget.Container) {
+					options := []interface{}{"Look at Creature", "Look at Tile"}
+					im.optionsList = widgets.CreateListWithConfig(widgets.ListConfig{
+						Entries: options,
+						EntryLabelFunc: func(e interface{}) string {
+							return e.(string)
+						},
+						OnEntrySelected: func(entry interface{}) {
+							if option, ok := entry.(string); ok {
+								im.handleOptionSelected(option)
+							}
+						},
+					})
+					container.AddChild(im.optionsList)
+				},
+			},
+			{
+				// Detail panel (right side)
+				SpecName: "info_detail",
+				OnCreate: func(container *widget.Container) {
+					spec := widgets.StandardPanels["info_detail"]
+					panelWidth := int(float64(im.Layout.ScreenWidth) * spec.Width)
+					panelHeight := int(float64(im.Layout.ScreenHeight) * spec.Height)
 
-	// Options list
-	options := []interface{}{"Look at Creature", "Look at Tile"}
-	im.optionsList = widgets.CreateListWithConfig(widgets.ListConfig{
-		Entries: options,
-		EntryLabelFunc: func(e interface{}) string {
-			return e.(string)
+					textArea := widgets.CreateTextAreaWithConfig(widgets.TextAreaConfig{
+						MinWidth:  panelWidth - 20,
+						MinHeight: panelHeight - 20,
+						FontColor: color.White,
+					})
+					textArea.SetText("Select an option to inspect")
+					container.AddChild(textArea)
+					im.detailTextArea = textArea
+				},
+			},
 		},
-		OnEntrySelected: func(entry interface{}) {
-			if option, ok := entry.(string); ok {
-				im.handleOptionSelected(option)
-			}
-		},
-	})
-	optionsPanel.AddChild(im.optionsList)
-	im.RootContainer.AddChild(optionsPanel)
-
-	// Detail panel using standard specification
-	detailPanel, textArea := gui.CreateStandardDetailPanel(
-		im.PanelBuilders,
-		im.Layout,
-		"info_detail",
-		"Select an option to inspect",
-	)
-	im.detailTextArea = textArea
-	im.RootContainer.AddChild(detailPanel)
-
-	return nil
+	}).Build(ctx)
 }
 
 // Enter is called when switching to this mode

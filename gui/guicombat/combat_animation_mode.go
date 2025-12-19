@@ -184,17 +184,26 @@ func (cam *CombatAnimationMode) computeDefenderColorLists(
 
 // Initialize sets up the combat animation mode
 func (cam *CombatAnimationMode) Initialize(ctx *core.UIContext) error {
-	cam.InitializeBase(ctx)
-
-	// Create squad renderer
-	cam.squadRenderer = NewSquadCombatRenderer(cam.Queries)
-
-	// Store screen dimensions
+	// Store screen dimensions and calculate layout before ModeBuilder
 	cam.screenWidth = ctx.ScreenWidth
 	cam.screenHeight = ctx.ScreenHeight
-
-	// Calculate layout
 	cam.calculateLayout()
+
+	return gui.NewModeBuilder(&cam.BaseMode, gui.ModeConfig{
+		ModeName:   "combat_animation",
+		ReturnMode: "combat",
+
+		Panels: []gui.PanelSpec{
+			{CustomBuild: cam.buildPromptLabel},
+		},
+	}).Build(ctx)
+}
+
+func (cam *CombatAnimationMode) buildPromptLabel() *widget.Container {
+	// Create squad renderer (needs Queries which is set by ModeBuilder)
+	if cam.squadRenderer == nil {
+		cam.squadRenderer = NewSquadCombatRenderer(cam.Queries)
+	}
 
 	// Create prompt label (centered at bottom)
 	cam.promptLabel = widgets.CreateLargeLabel("")
@@ -209,9 +218,7 @@ func (cam *CombatAnimationMode) Initialize(ctx *core.UIContext) error {
 		),
 	)
 	promptContainer.AddChild(cam.promptLabel)
-	cam.RootContainer.AddChild(promptContainer)
-
-	return nil
+	return promptContainer
 }
 
 // calculateLayout computes the positions and sizes for rendering

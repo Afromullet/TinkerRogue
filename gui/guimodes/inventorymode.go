@@ -2,6 +2,8 @@ package guimodes
 
 import (
 	"fmt"
+	"image/color"
+
 	"game_main/gear"
 	"game_main/gui"
 	"game_main/gui/core"
@@ -37,52 +39,62 @@ func NewInventoryMode(modeManager *core.UIModeManager) *InventoryMode {
 }
 
 func (im *InventoryMode) Initialize(ctx *core.UIContext) error {
-	// Initialize common mode infrastructure
-	im.InitializeBase(ctx)
-
-	// Create inventory service
+	// Create inventory service first (needed by filter/list builders)
 	im.inventoryService = gear.NewInventoryService(ctx.ECSManager)
 
-	// Build inventory UI
-	im.buildFilterButtons()
-	im.buildItemList()
+	return gui.NewModeBuilder(&im.BaseMode, gui.ModeConfig{
+		ModeName:   "inventory",
+		ReturnMode: "exploration",
 
-	// Create item list component to manage refresh logic
-	im.itemListComponent = guicomponents.NewItemListComponent(
-		im.itemList,
-		im.Queries,
-		ctx.ECSManager,
-		ctx.PlayerData.PlayerEntityID,
-	)
+		Hotkeys: []gui.HotkeySpec{
+			{Key: ebiten.KeyI, TargetMode: "exploration"},
+		},
 
-	// Build detail panel (right side) using standard specification
-	im.detailPanel, im.detailTextArea = gui.CreateStandardDetailPanel(
-		im.PanelBuilders,
-		im.Layout,
-		"inventory_detail",
-		"Select an item to view details",
-	)
-	im.RootContainer.AddChild(im.detailPanel)
+		Panels: []gui.PanelSpec{
+			{CustomBuild: im.buildFilterButtons},
+			{CustomBuild: im.buildItemList},
+			{
+				// Detail panel (right side)
+				SpecName: "inventory_detail",
+				OnCreate: func(container *widget.Container) {
+					spec := widgets.StandardPanels["inventory_detail"]
+					panelWidth := int(float64(im.Layout.ScreenWidth) * spec.Width)
+					panelHeight := int(float64(im.Layout.ScreenHeight) * spec.Height)
 
-	// Build close button (bottom-center) using action button group helper
-	closeButtons := []widgets.ButtonSpec{
-		{
-			Text: "Close (ESC)",
-			OnClick: func() {
-				if mode, exists := im.ModeManager.GetMode("exploration"); exists {
-					im.ModeManager.RequestTransition(mode, "Close button pressed")
-				}
+					textArea := widgets.CreateTextAreaWithConfig(widgets.TextAreaConfig{
+						MinWidth:  panelWidth - 20,
+						MinHeight: panelHeight - 20,
+						FontColor: color.White,
+					})
+					textArea.SetText("Select an item to view details")
+					container.AddChild(textArea)
+					im.detailTextArea = textArea
+					im.detailPanel = container
+				},
 			},
 		},
-	}
-	im.RootContainer.AddChild(gui.CreateActionButtonGroup(im.PanelBuilders, widgets.BottomCenter(), closeButtons))
 
-	return nil
+		Buttons: []gui.ButtonGroupSpec{
+			{
+				Position: widgets.BottomCenter(),
+				Buttons: []widgets.ButtonSpec{
+					{
+						Text: "Close (ESC)",
+						OnClick: func() {
+							if mode, exists := im.ModeManager.GetMode("exploration"); exists {
+								im.ModeManager.RequestTransition(mode, "Close button pressed")
+							}
+						},
+					},
+				},
+			},
+		},
+	}).Build(ctx)
 }
 
-func (im *InventoryMode) buildFilterButtons() {
+func (im *InventoryMode) buildFilterButtons() *widget.Container {
 	// Top-left filter buttons using helper
-	im.filterButtons = gui.CreateFilterButtonContainer(im.PanelBuilders, widgets.TopLeft())
+	filterButtons := gui.CreateFilterButtonContainer(im.PanelBuilders, widgets.TopLeft())
 
 	// Filter buttons - use component's SetFilter when clicked
 	filters := []string{"All", "Throwables", "Equipment", "Consumables"}
@@ -98,15 +110,16 @@ func (im *InventoryMode) buildFilterButtons() {
 				}
 			},
 		})
-		im.filterButtons.AddChild(btn)
+		filterButtons.AddChild(btn)
 	}
 
-	im.RootContainer.AddChild(im.filterButtons)
+	im.filterButtons = filterButtons
+	return filterButtons
 }
 
-func (im *InventoryMode) buildItemList() {
-	// Create inventory list using helper
-	im.itemList = widgets.CreateInventoryList(widgets.InventoryListConfig{
+func (im *InventoryMode) buildItemList() *widget.Container {
+	// Create inventory list using helper (without LayoutData in config)
+	itemList := widgets.CreateInventoryList(widgets.InventoryListConfig{
 		ScreenWidth:   im.Layout.ScreenWidth,
 		ScreenHeight:  im.Layout.ScreenHeight,
 		WidthPercent:  widgets.InventoryListWidth,
@@ -123,17 +136,32 @@ func (im *InventoryMode) buildItemList() {
 				return fmt.Sprintf("%v", e)
 			}
 		},
-		LayoutData: widget.AnchorLayoutData{
+	})
+
+	im.itemList = itemList
+
+	// Create item list component to manage refresh logic
+	im.itemListComponent = guicomponents.NewItemListComponent(
+		im.itemList,
+		im.Queries,
+		im.Context.ECSManager,
+		im.Context.PlayerData.PlayerEntityID,
+	)
+
+	// Wrap in container with proper LayoutData
+	container := widget.NewContainer(
+		widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
+		widget.ContainerOpts.WidgetOpts(widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{
 			HorizontalPosition: widget.AnchorLayoutPositionStart,
 			VerticalPosition:   widget.AnchorLayoutPositionCenter,
 			Padding: widget.Insets{
 				Left: int(float64(im.Layout.ScreenWidth) * widgets.PaddingStandard),
 				Top:  int(float64(im.Layout.ScreenHeight) * widgets.PanelHeightSmall),
 			},
-		},
-	})
-
-	im.RootContainer.AddChild(im.itemList)
+		})),
+	)
+	container.AddChild(itemList)
+	return container
 }
 
 // handleItemSelection processes item selection from the inventory list
