@@ -85,7 +85,6 @@ func AddUnitToSquad(
 	return nil
 }
 
-// RemoveUnitFromSquad - ✅ Accepts ecs.EntityID (native type), disposes the entity
 func RemoveUnitFromSquad(unitEntityID ecs.EntityID, squadmanager *common.EntityManager) error {
 	if !squadmanager.HasComponentByIDWithTag(unitEntityID, SquadMemberTag, SquadMemberComponent) {
 		return fmt.Errorf("unit is not in a squad")
@@ -117,8 +116,7 @@ func RemoveUnitFromSquad(unitEntityID ecs.EntityID, squadmanager *common.EntityM
 	return nil
 }
 
-// MoveUnitInSquad - ✅ Accepts ecs.EntityID (native type)
-// ✅ Supports multi-cell units - validates all cells at new position
+
 func MoveUnitInSquad(unitEntityID ecs.EntityID, newRow, newCol int, ecsmanager *common.EntityManager) error {
 	if !ecsmanager.HasComponentByIDWithTag(unitEntityID, SquadMemberTag, SquadMemberComponent) {
 		return fmt.Errorf("unit is not in a squad")
@@ -226,7 +224,7 @@ func GetFormationPreset(formation FormationType) FormationPreset {
 	}
 }
 
-// CreateSquadFromTemplate - ✅ Returns ecs.EntityID (native type)
+// CreateSquadFromTemplate 
 func CreateSquadFromTemplate(
 	ecsmanager *common.EntityManager,
 	squadName string,
@@ -238,7 +236,7 @@ func CreateSquadFromTemplate(
 	// Create squad entity
 	squadEntity := ecsmanager.World.NewEntity()
 
-	// ✅ Get native entity ID
+
 	squadID := squadEntity.GetID()
 
 	squadEntity.AddComponent(SquadComponent, &SquadData{
@@ -325,7 +323,7 @@ func CreateSquadFromTemplate(
 
 		// Add squad membership (uses ID, not entity pointer)
 		unitEntity.AddComponent(SquadMemberComponent, &SquadMemberData{
-			SquadID: squadID, // ✅ Native entity ID
+			SquadID: squadID, 
 		})
 
 		// Add grid position (supports multi-cell)
@@ -396,7 +394,7 @@ func CreateSquadFromTemplate(
 	// This makes the squad display the leader's image on the world map
 	setSquadRenderableFromLeader(squadID, squadEntity, ecsmanager)
 
-	return squadID // ✅ Return native entity ID
+	return squadID
 }
 
 // setSquadRenderableFromLeader copies the leader unit's sprite to the squad entity.

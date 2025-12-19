@@ -2,7 +2,7 @@ package main
 
 import "game_main/config"
 
-//TODO, remove this reimportingi n the future
+//TODO, remove this and just use config.go in the config package
 
 // Re-export config constants for backward compatibility within game_main package
 const (

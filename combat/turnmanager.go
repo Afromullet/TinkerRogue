@@ -10,8 +10,8 @@ import (
 
 type TurnManager struct {
 	manager           *common.EntityManager
-	combatCache       *CombatQueryCache // Cached queries for O(k) instead of O(n)
-	turnStateEntityID ecs.EntityID      // Cached turn state entity ID to avoid O(n) queries
+	combatCache       *CombatQueryCache
+	turnStateEntityID ecs.EntityID
 }
 
 func NewTurnManager(manager *common.EntityManager) *TurnManager {
@@ -35,10 +35,12 @@ func (tm *TurnManager) InitializeCombat(factionIDs []ecs.EntityID) error {
 		CombatActive:     true,
 	})
 
-	// Cache the turn state entity ID to avoid O(n) queries (ECS best practice: use EntityID, not entity pointer)
+	// Cache the turn state entity ID to avoid O(n) queries
 	tm.turnStateEntityID = turnEntity.GetID()
 
 	// Create action states and check combat-start abilities for all squads
+	// TODO: Abilities are not yet implemented, but I forsee not needing this.
+	// It will overcomplicate things. Abilities should trigger during an attack, not at combat start
 	for _, factionID := range factionIDs {
 		factionSquads := GetSquadsForFaction(factionID, tm.manager)
 		for _, squadID := range factionSquads {
@@ -95,12 +97,11 @@ func (tm *TurnManager) ResetSquadActions(factionID ecs.EntityID) error {
 }
 
 func (tm *TurnManager) GetCurrentFaction() ecs.EntityID {
-	// Use cached entity ID instead of O(n) query
+
 	if tm.turnStateEntityID == 0 {
 		return 0 // No active combat
 	}
 
-	// GetEntityByID is O(1) after EntityID caching
 	turnEntity := tm.manager.World.GetEntityByID(tm.turnStateEntityID)
 	if turnEntity == nil {
 		return 0 // Entity not found
@@ -121,12 +122,11 @@ func (tm *TurnManager) GetCurrentFaction() ecs.EntityID {
 }
 
 func (tm *TurnManager) EndTurn() error {
-	// Use cached entity ID instead of O(n) query
+
 	if tm.turnStateEntityID == 0 {
 		return fmt.Errorf("no active combat")
 	}
 
-	// GetEntityByID is O(1) after EntityID caching
 	turnEntity := tm.manager.World.GetEntityByID(tm.turnStateEntityID)
 	if turnEntity == nil {
 		return fmt.Errorf("turn state entity not found")
@@ -155,12 +155,11 @@ func (tm *TurnManager) EndTurn() error {
 }
 
 func (tm *TurnManager) GetCurrentRound() int {
-	// Use cached entity ID instead of O(n) query
+
 	if tm.turnStateEntityID == 0 {
 		return 0 // No active combat
 	}
 
-	// GetEntityByID is O(1) after EntityID caching
 	turnEntity := tm.manager.World.GetEntityByID(tm.turnStateEntityID)
 	if turnEntity == nil {
 		return 0 // Entity not found
@@ -175,12 +174,11 @@ func (tm *TurnManager) GetCurrentRound() int {
 }
 
 func (tm *TurnManager) EndCombat() error {
-	// Use cached entity ID instead of O(n) query
+
 	if tm.turnStateEntityID == 0 {
 		return fmt.Errorf("no active combat to end")
 	}
 
-	// GetEntityByID is O(1) after EntityID caching
 	turnEntity := tm.manager.World.GetEntityByID(tm.turnStateEntityID)
 	if turnEntity == nil {
 		return fmt.Errorf("turn state entity not found")

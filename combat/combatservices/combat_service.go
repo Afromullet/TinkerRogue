@@ -16,8 +16,8 @@ type CombatService struct {
 	turnManager     *combat.TurnManager
 	factionManager  *combat.FactionManager
 	movementSystem  *combat.CombatMovementSystem
-	combatCache     *combat.CombatQueryCache    // Cached queries for O(k) instead of O(n)
-	combatActSystem *combat.CombatActionSystem  // Shared action system (prevents double-attack bug)
+	combatCache     *combat.CombatQueryCache
+	combatActSystem *combat.CombatActionSystem
 }
 
 // NewCombatService creates a new combat service
@@ -33,12 +33,11 @@ func NewCombatService(manager *common.EntityManager) *CombatService {
 }
 
 // GetMovementSystem returns the movement system for command pattern integration
-// This allows commands to delegate to the movement system while maintaining encapsulation
 func (cs *CombatService) GetMovementSystem() *combat.CombatMovementSystem {
 	return cs.movementSystem
 }
 
-// AttackResult contains all information about an attack execution
+// AttackResult contains all information about an attack execution.  Used for debugging.
 type AttackResult struct {
 	Success         bool
 	ErrorReason     string
@@ -52,10 +51,8 @@ type AttackResult struct {
 func (cs *CombatService) ExecuteSquadAttack(attackerID, targetID ecs.EntityID) *AttackResult {
 	result := &AttackResult{}
 
-	// Use shared combat action system (FIX: prevents double-attack bug)
+	// Use shared combat action system
 	// Each attack MUST use the same cache instance to see HasActed flag updates
-
-	// Validate attack
 	reason, canAttack := cs.combatActSystem.CanSquadAttackWithReason(attackerID, targetID)
 	if !canAttack {
 		result.Success = false
@@ -81,7 +78,7 @@ func (cs *CombatService) ExecuteSquadAttack(attackerID, targetID ecs.EntityID) *
 	return result
 }
 
-// MoveSquadResult contains all information about a movement execution
+// MoveSquadResult contains all information about a movement execution. Used for debugging.
 type MoveSquadResult struct {
 	Success      bool
 	ErrorReason  string
@@ -126,7 +123,8 @@ func (cs *CombatService) GetValidMovementTiles(squadID ecs.EntityID) []coords.Lo
 }
 
 // InitializeCombat initializes combat with the given factions
-// Also assigns any unassigned squads (from squad deployment) to the player faction
+// Also assigns any unassigned squads (from squad deployment) to the player faction.
+// TODO: Assinging unassigned squads to the player faction is a temporary fix. remove.
 func (cs *CombatService) InitializeCombat(factionIDs []ecs.EntityID) error {
 	// Find player faction (has IsPlayerControlled = true)
 	var playerFactionID ecs.EntityID
@@ -150,6 +148,8 @@ func (cs *CombatService) InitializeCombat(factionIDs []ecs.EntityID) error {
 
 // assignDeployedSquadsToPlayerFaction finds all squads with positions but no CombatFactionComponent
 // and assigns them to the player faction. These are squads that were deployed via SquadDeploymentMode.
+// TODO: Assinging unassigned squads to the player faction is a temporary fix. Squads will have to be assigned to the
+// Correct Faction. There can be multiple players
 func (cs *CombatService) assignDeployedSquadsToPlayerFaction(playerFactionID ecs.EntityID) {
 	for _, result := range cs.entityManager.World.Query(squads.SquadTag) {
 		squadEntity := result.Entity
@@ -198,7 +198,7 @@ func (cs *CombatService) GetAliveSquadsInFaction(factionID ecs.EntityID) []ecs.E
 	return result
 }
 
-// EndTurnResult contains information about turn transition
+// EndTurnResult contains information about turn transition.
 type EndTurnResult struct {
 	Success         bool
 	PreviousFaction ecs.EntityID
@@ -226,7 +226,7 @@ func (cs *CombatService) EndTurn() *EndTurnResult {
 	return result
 }
 
-// VictoryCheckResult contains battle outcome information
+// VictoryCheckResult contains battle outcome information.
 type VictoryCheckResult struct {
 	BattleOver       bool
 	VictorFaction    ecs.EntityID
@@ -236,6 +236,7 @@ type VictoryCheckResult struct {
 }
 
 // CheckVictoryCondition checks if battle has ended
+// TODO: Add actual victory conditions
 func (cs *CombatService) CheckVictoryCondition() *VictoryCheckResult {
 	result := &VictoryCheckResult{
 		RoundsCompleted: cs.turnManager.GetCurrentRound(),

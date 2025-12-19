@@ -8,8 +8,8 @@ import (
 
 // Component markers
 var (
-	PlayerComponent  *ecs.Component  // Marks player entity
-	MonsterComponent *ecs.Component  // Marks monster/creature entities
+	PlayerComponent *ecs.Component // Marks player entity
+
 )
 
 // Player is a component marker for player entities
@@ -30,8 +30,8 @@ type PlayerInputStates struct {
 // PlayerThrowable tracks state and variables for throwing items.
 // Inventory, drawing, and input systems use this.
 type PlayerThrowable struct {
-	SelectedThrowableID  ecs.EntityID
-	ThrowableItemIndex   int
+	SelectedThrowableID ecs.EntityID
+	ThrowableItemIndex  int
 	// Note: ThrowableItemEntityID stores the entity ID. Use GetComponentType to extract components.
 	ThrowableItemEntityID ecs.EntityID
 }
@@ -60,4 +60,3 @@ func (pl *PlayerData) PlayerAttributes(ecsManager *EntityManager) *Attributes {
 	}
 	return attr
 }
-

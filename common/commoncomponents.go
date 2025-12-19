@@ -1,7 +1,7 @@
 package common
 
 import (
-	"fmt"
+	"game_main/config"
 )
 
 type Name struct {
@@ -70,19 +70,16 @@ func NewAttributes(strength, dexterity, magic, leadership, armor, weapon int) At
 // ========================================
 
 // GetPhysicalDamage calculates physical damage output
-// Formula: (Strength / 2) + (Weapon * 2)
 func (a *Attributes) GetPhysicalDamage() int {
 	return (a.Strength / 2) + (a.Weapon * 2)
 }
 
 // GetPhysicalResistance calculates physical damage reduction
-// Formula: (Strength / 4) + (Armor * 2)
 func (a *Attributes) GetPhysicalResistance() int {
 	return (a.Strength / 4) + (a.Armor * 2)
 }
 
 // GetMaxHealth calculates maximum health points
-// Formula: 20 + (Strength * 2)
 func (a *Attributes) GetMaxHealth() int {
 	return 20 + (a.Strength * 2)
 }
@@ -92,31 +89,28 @@ func (a *Attributes) GetMaxHealth() int {
 // ========================================
 
 // GetHitRate calculates chance to hit (0-100%)
-// Formula: 80 + (Dexterity * 2), capped at 100
 func (a *Attributes) GetHitRate() int {
-	hitRate := 80 + (a.Dexterity * 2)
-	if hitRate > 100 {
-		hitRate = 100
+	hitRate := config.DefaultBaseHitChance + (a.Dexterity * 2)
+	if hitRate > config.DefaultMaxHitRate {
+		hitRate = config.DefaultMaxHitRate
 	}
 	return hitRate
 }
 
 // GetCritChance calculates critical hit chance (0-50%)
-// Formula: Dexterity / 2, capped at 50
 func (a *Attributes) GetCritChance() int {
 	critChance := a.Dexterity / 2
-	if critChance > 50 {
-		critChance = 50
+	if critChance > config.DefaultMaxCritChance {
+		critChance = config.DefaultMaxCritChance
 	}
 	return critChance
 }
 
 // GetDodgeChance calculates dodge chance (0-40%)
-// Formula: Dexterity / 3, capped at 40
 func (a *Attributes) GetDodgeChance() int {
 	dodge := a.Dexterity / 3
-	if dodge > 40 {
-		dodge = 40
+	if dodge > config.DefaultMaxDodgeChance {
+		dodge = config.DefaultMaxDodgeChance
 	}
 	return dodge
 }
@@ -126,19 +120,16 @@ func (a *Attributes) GetDodgeChance() int {
 // ========================================
 
 // GetMagicDamage calculates magic damage output
-// Formula: Magic * 3
 func (a *Attributes) GetMagicDamage() int {
 	return a.Magic * 3
 }
 
 // GetHealingAmount calculates healing power
-// Formula: Magic * 2
 func (a *Attributes) GetHealingAmount() int {
 	return a.Magic * 2
 }
 
 // GetMagicDefense calculates magic damage reduction
-// Formula: Magic / 2
 func (a *Attributes) GetMagicDefense() int {
 	return a.Magic / 2
 }
@@ -148,17 +139,15 @@ func (a *Attributes) GetMagicDefense() int {
 // ========================================
 
 // GetUnitCapacity calculates maximum squad size (total capacity)
-// Formula: 6 + (Leadership / 3), capped at 9
 func (a *Attributes) GetUnitCapacity() int {
-	capacity := 6 + (a.Leadership / 3)
-	if capacity > 9 {
-		capacity = 9
+	capacity := config.DefaultBaseCapacity + (a.Leadership / 3)
+	if capacity > config.DefaultMaxCapacity {
+		capacity = config.DefaultMaxCapacity
 	}
 	return capacity
 }
 
 // GetCapacityCost calculates how much capacity this unit consumes in a squad
-// Power-based formula: (Strength + Weapon + Armor) / 5
 // Stronger units cost more capacity to field
 func (a *Attributes) GetCapacityCost() float64 {
 	return float64(a.Strength+a.Weapon+a.Armor) / 5.0
@@ -171,7 +160,7 @@ func (a *Attributes) GetCapacityCost() float64 {
 // GetMovementSpeed returns tiles per turn with default
 func (a *Attributes) GetMovementSpeed() int {
 	if a.MovementSpeed <= 0 {
-		return 3 // Default movement speed
+		return config.DefaultMovementSpeed // Default movement speed
 	}
 	return a.MovementSpeed
 }
@@ -179,34 +168,7 @@ func (a *Attributes) GetMovementSpeed() int {
 // GetAttackRange returns attack distance with default
 func (a *Attributes) GetAttackRange() int {
 	if a.AttackRange <= 0 {
-		return 1 // Default melee range
+		return config.DefaultAttackRange // Default melee range
 	}
 	return a.AttackRange
-}
-
-// ========================================
-// DISPLAY & UTILITY
-// ========================================
-
-// DisplayString formats attributes for player display
-func (a Attributes) DisplayString() string {
-	res := ""
-	res += fmt.Sprintf("HP: %d/%d\n", a.CurrentHealth, a.MaxHealth)
-	res += fmt.Sprintf("Strength: %d (Damage: %d, Resistance: %d)\n",
-		a.Strength, a.GetPhysicalDamage(), a.GetPhysicalResistance())
-	res += fmt.Sprintf("Dexterity: %d (Hit: %d%%, Crit: %d%%, Dodge: %d%%)\n",
-		a.Dexterity, a.GetHitRate(), a.GetCritChance(), a.GetDodgeChance())
-
-	if a.Magic > 0 {
-		res += fmt.Sprintf("Magic: %d (Damage: %d, Healing: %d, Defense: %d)\n",
-			a.Magic, a.GetMagicDamage(), a.GetHealingAmount(), a.GetMagicDefense())
-	}
-
-	if a.Leadership > 0 {
-		res += fmt.Sprintf("Leadership: %d (Unit Capacity: %d)\n",
-			a.Leadership, a.GetUnitCapacity())
-	}
-
-	res += fmt.Sprintf("Armor: %d | Weapon: %d\n", a.Armor, a.Weapon)
-	return res
 }

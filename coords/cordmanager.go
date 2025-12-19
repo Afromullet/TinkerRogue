@@ -1,12 +1,14 @@
 // Package coords - coordinate manager and conversion utilities
 package coords
 
+import "game_main/config"
+
 // CoordManager is a global coordinate manager instance.
 var CoordManager *CoordinateManager
 
 // MAP_SCROLLING_ENABLED controls whether the game uses viewport scrolling (true) or full map view (false).
-// When true: Uses 3x scaling and centers viewport on player position
-// When false: Uses 1x scaling and shows entire dungeon
+// When true: Uses config.DefaultScaleFactor scaling and centers viewport on player position
+// When false: Uses 1x scaling and shows entire map
 var MAP_SCROLLING_ENABLED = true
 
 // Initialize the global coordinate manager with default screen data.
@@ -40,34 +42,31 @@ func (s ScreenData) GetCanvasHeight() int {
 }
 
 // NewScreenData creates default screen configuration.
-// TODO: This should only be calculated once instead of being called for every coordinate conversion.
+//TODO,
 func NewScreenData() ScreenData {
 	g := ScreenData{
 		DungeonWidth:  100,
 		DungeonHeight: 80,
 	}
-	tilePixels := 32
+	tilePixels := config.DefaultTilePixels
 
 	// Use a single scale value for both X and Y
 	g.TileSize = tilePixels
-	g.ScaleFactor = 3
+	g.ScaleFactor = config.DefaultScaleFactor
 
 	// Calculate the level dimensions based on the tile size
 	g.LevelHeight = g.DungeonHeight * g.TileSize
 	g.LevelWidth = g.DungeonWidth * g.TileSize
 
-	g.PaddingRight = 500
+	g.PaddingRight = config.DefaultRightPadding
 
 	return g
 }
 
 // CoordinateManager provides a unified interface for all coordinate operations.
-// This was moved from graphics package to eliminate dependency coupling.
-// Addresses problems:
-// 1. Eliminates scattered CoordTransformer calls (73+ instances)
-// 2. Centralizes coordinate logic in one place
-// 3. Provides type safety with LogicalPosition wrapper
-// 4. Handles viewport/camera logic consistently
+// 1. Centralizes coordinate logic in one place
+// 2. Provides type safety with LogicalPosition wrapper
+
 type CoordinateManager struct {
 	dungeonWidth  int
 	dungeonHeight int
@@ -80,8 +79,6 @@ type CoordinateManager struct {
 	viewport *Viewport
 }
 
-// Viewport handles camera/centering logic that was scattered across files.
-// Moved from graphics package to coords for unified coordinate management.
 type Viewport struct {
 	centerX, centerY int // logical coordinates of viewport center
 	manager          *CoordinateManager
@@ -108,13 +105,11 @@ func NewCoordinateManager(screenData ScreenData) *CoordinateManager {
 // These replace the scattered CoordTransformer methods
 
 // LogicalToIndex converts logical coordinates to flat map array index.
-// Replaces: CoordTransformer.IndexFromLogicalXY()
 func (cm *CoordinateManager) LogicalToIndex(pos LogicalPosition) int {
 	return (pos.Y * cm.dungeonWidth) + pos.X
 }
 
 // IndexToLogical converts flat map array index to logical coordinates.
-// Replaces: CoordTransformer.LogicalXYFromIndex()
 func (cm *CoordinateManager) IndexToLogical(index int) LogicalPosition {
 	x := index % cm.dungeonWidth
 	y := index / cm.dungeonWidth
@@ -122,7 +117,6 @@ func (cm *CoordinateManager) IndexToLogical(index int) LogicalPosition {
 }
 
 // LogicalToPixel converts logical coordinates to pixel coordinates (for rendering).
-// Replaces: CoordTransformer.PixelsFromLogicalXY()
 func (cm *CoordinateManager) LogicalToPixel(pos LogicalPosition) PixelPosition {
 	return PixelPosition{
 		X: pos.X * cm.tileSize,
@@ -131,14 +125,12 @@ func (cm *CoordinateManager) LogicalToPixel(pos LogicalPosition) PixelPosition {
 }
 
 // IndexToPixel converts flat map array index to pixel coordinates.
-// Replaces: CoordTransformer.PixelsFromIndex()
 func (cm *CoordinateManager) IndexToPixel(index int) PixelPosition {
 	logical := cm.IndexToLogical(index)
 	return cm.LogicalToPixel(logical)
 }
 
 // PixelToLogical converts pixel coordinates to logical coordinates.
-// Replaces: CoordTransformer.LogicalXYFromPixels()
 func (cm *CoordinateManager) PixelToLogical(pos PixelPosition) LogicalPosition {
 	return LogicalPosition{
 		X: pos.X / cm.tileSize,
@@ -147,7 +139,6 @@ func (cm *CoordinateManager) PixelToLogical(pos PixelPosition) LogicalPosition {
 }
 
 // === VIEWPORT/CAMERA OPERATIONS ===
-// These consolidate the scattered centering logic from coordtransform.go
 
 // NewViewport creates a new viewport centered on the given position.
 func NewViewport(manager *CoordinateManager, centerPos LogicalPosition) *Viewport {
@@ -166,7 +157,6 @@ func (v *Viewport) SetCenter(pos LogicalPosition) {
 
 // LogicalToScreen converts logical coordinates to screen coordinates with viewport centering.
 // Returns the position where a sprite should be drawn (before sprite scaling is applied).
-// Replaces: OffsetFromCenter() and TransformLogicalCoordinates()
 func (v *Viewport) LogicalToScreen(pos LogicalPosition) (float64, float64) {
 	// Convert to pixel coordinates
 	pixelX := float64(pos.X * v.manager.tileSize)
@@ -187,7 +177,6 @@ func (v *Viewport) LogicalToScreen(pos LogicalPosition) (float64, float64) {
 }
 
 // ScreenToLogical converts screen coordinates back to logical coordinates.
-// Replaces: TransformPixelPosition()
 func (v *Viewport) ScreenToLogical(screenX, screenY int) LogicalPosition {
 	// Calculate offset to center the viewport
 	offsetX := float64(v.manager.screenWidth)/2 - float64(v.centerX*v.manager.tileSize)*float64(v.manager.scaleFactor)
@@ -206,29 +195,6 @@ func (v *Viewport) ScreenToLogical(screenX, screenY int) LogicalPosition {
 }
 
 // === UTILITY FUNCTIONS ===
-
-// IsValidLogical checks if logical coordinates are within dungeon bounds.
-func (cm *CoordinateManager) IsValidLogical(pos LogicalPosition) bool {
-	return pos.X >= 0 && pos.X < cm.dungeonWidth &&
-		pos.Y >= 0 && pos.Y < cm.dungeonHeight
-}
-
-// GetTilePositions converts a slice of indices to logical positions.
-// Replaces: GetTilePositions() from coordcalc.go
-func (cm *CoordinateManager) GetTilePositions(indices []int) []LogicalPosition {
-	positions := make([]LogicalPosition, len(indices))
-	for i, index := range indices {
-		positions[i] = cm.IndexToLogical(index)
-	}
-	return positions
-}
-
-// GetTilePositionsAsCommon converts a slice of indices to coords.LogicalPosition slice.
-// This is a compatibility method for legacy code that still uses coords.LogicalPosition.
-// Since coords.LogicalPosition is now an alias to LogicalPosition, this just returns LogicalPosition slice.
-func (cm *CoordinateManager) GetTilePositionsAsCommon(indices []int) []LogicalPosition {
-	return cm.GetTilePositions(indices)
-}
 
 // DrawableSection is used for drawing only a section of the map.
 // Different from TileSquare. TileSquare returns indices.
@@ -252,7 +218,6 @@ func NewDrawableSection(centerX, centerY, size int) DrawableSection {
 }
 
 // === UNIFIED SCREEN TRANSFORMATION API ===
-// These methods handle MAP_SCROLLING_ENABLED internally so developers don't need to check the flag.
 
 // UpdateScreenDimensions updates the screen dimensions in the coordinate manager.
 // Call this each frame from Draw() to keep screen dimensions current for viewport calculations.
@@ -262,7 +227,6 @@ func (cm *CoordinateManager) UpdateScreenDimensions(width, height int) {
 }
 
 // LogicalToScreen converts logical position to screen coordinates.
-// Automatically handles MAP_SCROLLING_ENABLED mode:
 // - When scrolling enabled with centerPos: applies viewport centering and scaling
 // - When scrolling disabled or centerPos is nil: returns scaled pixels without centering
 // centerPos: viewport center (typically player position) - pass nil for full map view
@@ -283,13 +247,11 @@ func (cm *CoordinateManager) LogicalToScreen(pos LogicalPosition, centerPos *Log
 	}
 
 	// Update viewport center and use existing viewport instance
-	// Avoids allocating 30,000+ Viewport structs per second (12s CPU savings)
 	cm.viewport.SetCenter(*centerPos)
 	return cm.viewport.LogicalToScreen(pos)
 }
 
 // ScreenToLogical converts screen coordinates to logical position.
-// Automatically handles MAP_SCROLLING_ENABLED mode:
 // - When scrolling enabled with centerPos: reverses viewport centering and scaling
 // - When scrolling disabled or centerPos is nil: converts pixels directly to logical
 // centerPos: viewport center (typically player position) - pass nil for full map view

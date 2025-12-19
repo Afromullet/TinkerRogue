@@ -15,7 +15,6 @@ import (
 	"game_main/gui/guisquads"
 	"game_main/input"
 	"game_main/rendering"
-	"game_main/spawning"
 	"game_main/squads"
 	"game_main/systems"
 	"game_main/testing"
@@ -44,7 +43,6 @@ func SetupNewGame(g *Game) {
 	// 2a. Initialize Position System for O(1) position lookups (Phase 0 - MASTER_ROADMAP)
 	common.GlobalPositionSystem = systems.NewPositionSystem(g.em.World)
 
-	// 2b. Initialize Rendering Cache for hot path optimization (3-5x faster rendering)
 	g.renderingCache = rendering.NewRenderingCache(&g.em)
 
 	// 3. Configure graphics system
@@ -56,28 +54,23 @@ func SetupNewGame(g *Game) {
 	// 4. Initialize player
 	InitializePlayerData(&g.em, &g.playerData, &g.gameMap)
 
-	// 5. Initialize spawning system
-	spawning.InitLootSpawnTables()
-
-	// 6. Setup test data if in debug mode
+	// 5. Setup test data if in debug mode
 	if DEBUG_MODE {
 		SetupTestData(&g.em, &g.gameMap, &g.playerData)
 	}
 
-	// 7. Spawn starting content
+	// 6. Spawn starting content
 	testing.UpdateContentsForTest(&g.em, &g.gameMap)
-	spawning.SpawnStartingCreatures(0, &g.em, &g.gameMap, &g.playerData)
-	spawning.SpawnStartingEquipment(&g.em, &g.gameMap, &g.playerData)
 
-	// 8. Register creatures with tracker
+	// 7. Register creatures with tracker
 	AddCreaturesToTracker(&g.em)
 
-	// 9. Initialize squad system (using game's EntityManager)
+	// 8. Initialize squad system (using game's EntityManager)
 	if err := SetupSquadSystem(&g.em); err != nil {
 		log.Fatalf("Failed to initialize squad system: %v", err)
 	}
 
-	// 10. Setup gameplay factions and squads for testing
+	// 9. Setup gameplay factions and squads for testing
 	if err := SetupGameplayFactions(&g.em, &g.playerData); err != nil {
 		log.Fatalf("Failed to setup gameplay factions: %v", err)
 	}

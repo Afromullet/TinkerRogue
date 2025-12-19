@@ -237,7 +237,6 @@ func (gq *GUIQueries) GetCreatureAtPosition(pos coords.LogicalPosition) *Creatur
 		return nil
 	}
 
-	// OPTIMIZATION: Get entity once, then extract all components from it
 	// This avoids multiple GetEntityByID allocations
 	entity := common.FindEntityByID(gq.ECSManager, creatureID)
 	if entity == nil {

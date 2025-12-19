@@ -7,8 +7,8 @@ import (
 	"github.com/bytearena/ecs"
 )
 
-// CheckAndTriggerAbilities - ✅ Works with ecs.EntityID
-// Optimized: Batches all leader component lookups into single GetEntityByID call (4 calls → 1).
+// CheckAndTriggerAbilities - 
+
 func CheckAndTriggerAbilities(squadID ecs.EntityID, ecsmanager *common.EntityManager) {
 	// Find leader via query (not stored reference)
 	leaderID := GetLeaderID(squadID, ecsmanager)
@@ -16,7 +16,6 @@ func CheckAndTriggerAbilities(squadID ecs.EntityID, ecsmanager *common.EntityMan
 		return // No leader, no abilities
 	}
 
-	// OPTIMIZATION: Get leader entity once, extract both AbilitySlot and CooldownTracker
 	// This replaces 4 separate GetEntityByID calls with just 1
 	leaderEntity := common.FindEntityByID(ecsmanager, leaderID)
 	if leaderEntity == nil {
@@ -103,7 +102,7 @@ func evaluateTrigger(slot *AbilitySlot, squadID ecs.EntityID, ecsmanager *common
 }
 
 // calculateAverageHP computes the squad's average HP as a percentage (0.0 - 1.0)
-// Optimized: Uses direct entity lookup in loop instead of GetAttributesByIDWithTag.
+
 func calculateAverageHP(squadID ecs.EntityID, ecsmanager *common.EntityManager) float64 {
 	unitIDs := GetUnitIDsInSquad(squadID, ecsmanager)
 
@@ -111,7 +110,6 @@ func calculateAverageHP(squadID ecs.EntityID, ecsmanager *common.EntityManager) 
 	totalMaxHP := 0
 
 	for _, unitID := range unitIDs {
-		// OPTIMIZATION: Get entity once for attributes
 		entity := common.FindEntityByID(ecsmanager, unitID)
 		if entity == nil {
 			continue
@@ -168,12 +166,10 @@ func executeAbility(slot *AbilitySlot, squadID ecs.EntityID, ecsmanager *common.
 // --- Ability Implementations (Data-Driven) ---
 
 // RallyEffect: Temporary damage buff to own squad
-// Optimized: Uses direct entity lookup in loop instead of GetAttributesByIDWithTag.
 func applyRallyEffect(squadID ecs.EntityID, params AbilityParams, ecsmanager *common.EntityManager) {
 	unitIDs := GetUnitIDsInSquad(squadID, ecsmanager)
 
 	for _, unitID := range unitIDs {
-		// OPTIMIZATION: Get entity once for attributes
 		entity := common.FindEntityByID(ecsmanager, unitID)
 		if entity == nil {
 			continue
@@ -194,13 +190,11 @@ func applyRallyEffect(squadID ecs.EntityID, params AbilityParams, ecsmanager *co
 }
 
 // HealEffect: Restore HP to own squad
-// Optimized: Uses direct entity lookup in loop instead of GetAttributesByIDWithTag.
 func applyHealEffect(squadID ecs.EntityID, params AbilityParams, ecsmanager *common.EntityManager) {
 	unitIDs := GetUnitIDsInSquad(squadID, ecsmanager)
 
 	healed := 0
 	for _, unitID := range unitIDs {
-		// OPTIMIZATION: Get entity once for attributes
 		entity := common.FindEntityByID(ecsmanager, unitID)
 		if entity == nil {
 			continue
@@ -241,7 +235,6 @@ func applyBattleCryEffect(squadID ecs.EntityID, params AbilityParams, ecsmanager
 	// Boost damage
 	unitIDs := GetUnitIDsInSquad(squadID, ecsmanager)
 	for _, unitID := range unitIDs {
-		// OPTIMIZATION: Get entity once for attributes
 		entity := common.FindEntityByID(ecsmanager, unitID)
 		if entity == nil {
 			continue
@@ -282,7 +275,6 @@ func applyFireballEffect(squadID ecs.EntityID, params AbilityParams, ecsmanager 
 	killed := 0
 
 	for _, unitID := range unitIDs {
-		// OPTIMIZATION: Get entity once for attributes
 		entity := common.FindEntityByID(ecsmanager, unitID)
 		if entity == nil {
 			continue
@@ -306,8 +298,8 @@ func applyFireballEffect(squadID ecs.EntityID, params AbilityParams, ecsmanager 
 	fmt.Printf("[ABILITY] Fireball! %d damage dealt, %d units killed\n", params.BaseDamage, killed)
 }
 
-// EquipAbilityToLeader - ✅ Accepts ecs.EntityID (native type)
-// Optimized: Batches all leader component lookups into single GetEntityByID call (3 calls → 1).
+// EquipAbilityToLeader - 
+
 func EquipAbilityToLeader(
 	leaderEntityID ecs.EntityID,
 	slotIndex int,
@@ -321,8 +313,6 @@ func EquipAbilityToLeader(
 		return fmt.Errorf("invalid slot %d", slotIndex)
 	}
 
-	// OPTIMIZATION: Get leader entity once, extract Leader, AbilitySlot, and CooldownTracker
-	// This replaces 3 separate GetEntityByID calls with just 1
 	leaderEntity := common.FindEntityByID(ecsmanager, leaderEntityID)
 	if leaderEntity == nil {
 		return fmt.Errorf("leader entity not found")

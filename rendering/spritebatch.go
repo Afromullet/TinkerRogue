@@ -5,8 +5,6 @@ import (
 )
 
 // SpriteBatch batches multiple sprites that share the same source image into a single draw call.
-// This dramatically reduces draw calls from hundreds (one per entity) to a few (one per unique image).
-// Performance: Expected 250-300ms reduction in entity rendering time.
 type SpriteBatch struct {
 	vertices []ebiten.Vertex
 	indices  []uint16

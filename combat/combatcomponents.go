@@ -79,5 +79,3 @@ func InitializeCombatSystem(manager *common.EntityManager) {
 	InitCombatComponents(manager)
 	InitCombatTags(manager)
 }
-
-// Component data structures defined above

@@ -8,17 +8,6 @@ import (
 
 // SquadQueryCache provides cached access to squad-related queries using ECS Views
 // Views are automatically maintained by the ECS library when components are added/removed
-//
-// Performance Impact:
-// - GetSquadEntity: O(n) World.Query every call → O(k) view iteration where k << n
-// - GetUnitIDsInSquad: O(n) World.Query every call → O(k) view iteration
-// - GetLeaderID: O(n) World.Query every call → O(k) view iteration
-// - Expected: 70-200x faster per query (scanning 1000+ entities → iterating 20-180 cached results)
-//
-// Key Benefits:
-// - Views are automatically maintained (no manual invalidation needed)
-// - Thread-safe (views have built-in RWMutex)
-// - Zero per-frame memory allocations (views are persistent)
 type SquadQueryCache struct {
 	// ECS Views (automatically maintained by ECS library)
 	// Exported so they can be accessed by other systems (e.g., BuildSquadInfoCache)
@@ -31,7 +20,6 @@ type SquadQueryCache struct {
 // Use this to create a standalone squad query cache
 func NewSquadQueryCache(manager *common.EntityManager) *SquadQueryCache {
 	return &SquadQueryCache{
-		// Create Views - one-time O(n) cost per View
 		// Views are automatically maintained when components are added/removed
 		SquadView:       manager.World.CreateView(SquadTag),
 		SquadMemberView: manager.World.CreateView(SquadMemberTag),
@@ -44,9 +32,6 @@ func NewSquadQueryCache(manager *common.EntityManager) *SquadQueryCache {
 // ========================================
 
 // GetSquadEntity finds squad entity by ID using cached view
-// Before: O(n) World.Query() scans ALL entities in world (340μs per call)
-// After: O(k) view.Get() + iterate through 20 squads (~2.5μs per call)
-// Performance: 136x faster
 func (c *SquadQueryCache) GetSquadEntity(squadID ecs.EntityID) *ecs.Entity {
 	// Iterate through cached view results (not full World.Query)
 	// View automatically updated when SquadComponent added/removed from entities
@@ -60,9 +45,6 @@ func (c *SquadQueryCache) GetSquadEntity(squadID ecs.EntityID) *ecs.Entity {
 }
 
 // GetUnitIDsInSquad returns unit IDs belonging to a squad using cached view
-// Before: O(n) World.Query() scans ALL entities in world (280μs per call)
-// After: O(k) view.Get() + iterate through 180 members (~4μs per call)
-// Performance: 70x faster
 func (c *SquadQueryCache) GetUnitIDsInSquad(squadID ecs.EntityID) []ecs.EntityID {
 	var unitIDs []ecs.EntityID
 
@@ -79,9 +61,6 @@ func (c *SquadQueryCache) GetUnitIDsInSquad(squadID ecs.EntityID) []ecs.EntityID
 }
 
 // GetLeaderID finds the leader unit ID of a squad using cached view
-// Before: O(n) World.Query() scans ALL entities in world (200μs per call)
-// After: O(k) view.Get() + iterate through 20 leaders (~1μs per call)
-// Performance: 200x faster
 func (c *SquadQueryCache) GetLeaderID(squadID ecs.EntityID) ecs.EntityID {
 	// Iterate through cached view results
 	// View automatically updated when LeaderTag added/removed from entities
@@ -92,7 +71,7 @@ func (c *SquadQueryCache) GetLeaderID(squadID ecs.EntityID) ecs.EntityID {
 		}
 	}
 
-	return 0 // Returns 0 if not found (consistent with original GetLeaderID behavior)
+	return 0 // Returns 0 if not found
 }
 
 // GetSquadName returns the squad name using cached view
@@ -112,8 +91,6 @@ func (c *SquadQueryCache) GetSquadName(squadID ecs.EntityID) string {
 }
 
 // FindAllSquads returns all squad IDs using cached view
-// Before: O(n) World.Query() scans ALL entities
-// After: O(k) view.Get() returns only squad entities
 func (c *SquadQueryCache) FindAllSquads() []ecs.EntityID {
 	allSquads := make([]ecs.EntityID, 0)
 

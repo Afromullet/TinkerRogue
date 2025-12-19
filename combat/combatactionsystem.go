@@ -3,7 +3,7 @@ package combat
 import (
 	"fmt"
 	"game_main/common"
-	"game_main/coords"
+	"game_main/config"
 	"game_main/squads"
 
 	"github.com/bytearena/ecs"
@@ -11,7 +11,7 @@ import (
 
 type CombatActionSystem struct {
 	manager     *common.EntityManager
-	combatCache *CombatQueryCache // Cached queries for O(k) instead of O(n)
+	combatCache *CombatQueryCache
 }
 
 func NewCombatActionSystem(manager *common.EntityManager) *CombatActionSystem {
@@ -54,7 +54,6 @@ func (cas *CombatActionSystem) ExecuteAttackAction(attackerID, defenderID ecs.En
 
 	for _, unitID := range allUnits {
 		if !containsEntity(attackingUnits, unitID) {
-			// OPTIMIZATION: Get entity once for attributes
 			entity := common.FindEntityByID(cas.manager, unitID)
 			if entity == nil {
 				continue
@@ -71,9 +70,9 @@ func (cas *CombatActionSystem) ExecuteAttackAction(attackerID, defenderID ecs.En
 	// Execute attack (only CanAct=true units participate)
 	result := squads.ExecuteSquadAttack(attackerID, defenderID, cas.manager)
 
-	// Re-enable disabled units
+	// Re-enable disabled units. TODO: This might allow squads to attack twice. Once ranged, and then melee
+	// (If the squad has a mix of units, and melee units did not attack due to the range). Test and fix this
 	for _, unitID := range disabledUnits {
-		// OPTIMIZATION: Get entity once for attributes
 		entity := common.FindEntityByID(cas.manager, unitID)
 		if entity == nil {
 			continue
@@ -91,8 +90,8 @@ func (cas *CombatActionSystem) ExecuteAttackAction(attackerID, defenderID ecs.En
 		removeSquadFromMap(defenderID, cas.manager)
 	}
 
-	// Display detailed combat log
-	if result.CombatLog != nil {
+	// Display detailed combat log. Only prints in display mode.
+	if config.DEBUG_MODE && result.CombatLog != nil {
 		DisplayCombatLog(result.CombatLog, cas.manager)
 	}
 
@@ -109,13 +108,12 @@ func (cas *CombatActionSystem) ExecuteAttackAction(attackerID, defenderID ecs.En
 }
 
 // GetSquadAttackRange returns the maximum attack range of any unit in the squad
-// Optimized: Uses direct entity lookup in loop instead of GetAttributesByIDWithTag.
 func (cas *CombatActionSystem) GetSquadAttackRange(squadID ecs.EntityID) int {
 	unitIDs := squads.GetUnitIDsInSquad(squadID, cas.manager)
 
 	maxRange := 1 // Default melee
 	for _, unitID := range unitIDs {
-		// OPTIMIZATION: Get entity once for attributes
+
 		entity := common.FindEntityByID(cas.manager, unitID)
 		if entity == nil {
 			continue
@@ -137,7 +135,6 @@ func (cas *CombatActionSystem) GetSquadAttackRange(squadID ecs.EntityID) int {
 }
 
 // GetAttackingUnits returns units that can attack the target based on their range
-// Optimized: Uses direct entity lookup in loop instead of GetAttributesByIDWithTag.
 func (cas *CombatActionSystem) GetAttackingUnits(squadID, targetID ecs.EntityID) []ecs.EntityID {
 	// Use GetSquadDistance for consistent Chebyshev distance calculation
 	distance := squads.GetSquadDistance(squadID, targetID, cas.manager)
@@ -150,7 +147,7 @@ func (cas *CombatActionSystem) GetAttackingUnits(squadID, targetID ecs.EntityID)
 	var attackingUnits []ecs.EntityID
 
 	for _, unitID := range allUnits {
-		// OPTIMIZATION: Get entity once for attributes
+
 		entity := common.FindEntityByID(cas.manager, unitID)
 		if entity == nil {
 			continue
@@ -175,59 +172,6 @@ func (cas *CombatActionSystem) GetAttackingUnits(squadID, targetID ecs.EntityID)
 	}
 
 	return attackingUnits
-}
-
-func (cas *CombatActionSystem) GetSquadsInRange(squadID ecs.EntityID) []ecs.EntityID {
-	var squadsInRange []ecs.EntityID
-
-	attackerPos, err := getSquadMapPosition(squadID, cas.manager)
-	if err != nil {
-		return squadsInRange // Return empty if squad not on map
-	}
-
-	attackerFaction := getFactionOwner(squadID, cas.manager)
-	if attackerFaction == 0 {
-		return squadsInRange // Return empty if no faction owner
-	}
-
-	maxRange := cas.GetSquadAttackRange(squadID)
-
-	// Query all squads in combat (NO MORE MAPPOSITION QUERIES!)
-	for _, result := range cas.manager.World.Query(squads.SquadTag) {
-		targetSquadID := result.Entity.GetID()
-
-		// Skip self
-		if targetSquadID == squadID {
-			continue
-		}
-
-		// Get target faction (only consider squads in combat)
-		combatFaction := common.GetComponentType[*CombatFactionData](result.Entity, CombatFactionComponent)
-		if combatFaction == nil {
-			continue // Squad not in combat
-		}
-
-		// Skip friendly squads
-		if combatFaction.FactionID == attackerFaction {
-			continue
-		}
-
-		// Get target position
-		targetPos := common.GetComponentType[*coords.LogicalPosition](result.Entity, common.PositionComponent)
-		if targetPos == nil {
-			continue
-		}
-
-		// Calculate distance using Chebyshev distance
-		distance := attackerPos.ChebyshevDistance(targetPos)
-
-		// Check if in range
-		if distance <= maxRange {
-			squadsInRange = append(squadsInRange, targetSquadID)
-		}
-	}
-
-	return squadsInRange
 }
 
 // CanSquadAttackWithReason returns detailed info about why an attack can/cannot happen

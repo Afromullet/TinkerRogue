@@ -120,7 +120,6 @@ func (gem *GridEditorManager) GetLeader() ecs.EntityID {
 }
 
 // RefreshGridDisplay updates all grid cell displays (for leader markers, etc.)
-// Optimized: Batches all component lookups into single GetEntityByID call (3 calls → 1).
 func (gem *GridEditorManager) RefreshGridDisplay() {
 	for row := 0; row < 3; row++ {
 		for col := 0; col < 3; col++ {
@@ -130,7 +129,6 @@ func (gem *GridEditorManager) RefreshGridDisplay() {
 				continue
 			}
 
-			// OPTIMIZATION: Get entity once, extract all components (GridPosition, Name, Role)
 			// This replaces 3 separate GetComponentTypeByID calls with just 1
 			entity := common.FindEntityByID(gem.entityManager, cell.unitID)
 			if entity == nil {

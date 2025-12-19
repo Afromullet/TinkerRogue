@@ -47,7 +47,6 @@ func NewSquadListComponent(
 }
 
 // Refresh updates the container with current squad buttons
-// OPTIMIZED: Uses widget caching to avoid recreating buttons every frame
 func (slc *SquadListComponent) Refresh() {
 	if slc.container == nil {
 		return
@@ -65,7 +64,6 @@ func (slc *SquadListComponent) Refresh() {
 		newFilteredSquads = append(newFilteredSquads, squadID)
 	}
 
-	// OPTIMIZATION: Check if squad list changed
 	if !slc.squadListChanged(newFilteredSquads) {
 		// FAST PATH: No change - just update button labels if needed
 		slc.updateButtonLabels(newFilteredSquads)

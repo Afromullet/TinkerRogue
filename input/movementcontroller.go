@@ -32,7 +32,7 @@ func NewMovementController(ecsManager *common.EntityManager, playerData *common.
 func (mc *MovementController) CanHandle() bool {
 	// Movement is always available unless in specific states
 	return !mc.playerData.InputStates.IsThrowing
-	// IsShooting check removed - squad system handles combat
+
 }
 
 func (mc *MovementController) OnActivate() {
@@ -96,13 +96,6 @@ func (mc *MovementController) HandleInput() bool {
 		inputHandled = true
 	}
 
-	// Stairs interaction
-	if inpututil.IsKeyJustReleased(ebiten.KeySpace) {
-		if mc.handleStairsInteraction() {
-			inputHandled = true
-		}
-	}
-
 	// Pickup item
 	if inpututil.IsKeyJustReleased(ebiten.KeyG) {
 		mc.playerPickupItem()
@@ -157,22 +150,6 @@ func (mc *MovementController) movePlayer(xOffset, yOffset int) {
 		// Melee combat removed - squad system will handle combat
 		// Creature detection still available via common.GetCreatureAtPosition()
 	}
-}
-
-func (mc *MovementController) handleStairsInteraction() bool {
-	playerPos := common.GetPositionByID(mc.ecsManager, mc.playerData.PlayerEntityID)
-	if playerPos == nil {
-		return false
-	}
-	logicalPos := coords.LogicalPosition{X: playerPos.X, Y: playerPos.Y}
-	ind := coords.CoordManager.LogicalToIndex(logicalPos)
-
-	if mc.gameMap.Tiles[ind].TileType == worldmap.STAIRS_DOWN {
-		worldmap.GoDownStairs(mc.gameMap)
-		playerPos.X, playerPos.Y = mc.gameMap.Rooms[0].Center()
-		return true
-	}
-	return false
 }
 
 func (mc *MovementController) playerPickupItem() {

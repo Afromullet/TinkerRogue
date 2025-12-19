@@ -9,7 +9,9 @@ import (
 )
 
 // DisplayCombatLog formats and prints the full combat log to terminal
+// TODO, this should be part of debug mode. Do not want this for regular gameplay
 func DisplayCombatLog(log *squads.CombatLog, manager *common.EntityManager) {
+
 	if log == nil {
 		return
 	}

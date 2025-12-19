@@ -26,9 +26,9 @@ func GetUnitIDsAtGridPosition(squadID ecs.EntityID, row, col int, squadmanager *
 
 		gridPos := common.GetComponentType[*GridPositionData](unitEntity, GridPositionComponent)
 
-		// ✅ Check if this unit occupies the queried cell (supports multi-cell units)
+		// Check if this unit occupies the queried cell (supports multi-cell units)
 		if gridPos.OccupiesCell(row, col) {
-			unitID := unitEntity.GetID() // ✅ Native method!
+			unitID := unitEntity.GetID() //  Native method!
 			unitIDs = append(unitIDs, unitID)
 		}
 	}
@@ -37,7 +37,7 @@ func GetUnitIDsAtGridPosition(squadID ecs.EntityID, row, col int, squadmanager *
 }
 
 // GetUnitIDsInSquad returns unit IDs belonging to a squad
-// ✅ Returns ecs.EntityID (native type), not entity pointers
+//  Returns ecs.EntityID (native type), not entity pointers
 func GetUnitIDsInSquad(squadID ecs.EntityID, squadmanager *common.EntityManager) []ecs.EntityID {
 	var unitIDs []ecs.EntityID
 
@@ -46,7 +46,7 @@ func GetUnitIDsInSquad(squadID ecs.EntityID, squadmanager *common.EntityManager)
 		memberData := common.GetComponentType[*SquadMemberData](unitEntity, SquadMemberComponent)
 
 		if memberData.SquadID == squadID {
-			unitID := unitEntity.GetID() // ✅ Native method!
+			unitID := unitEntity.GetID() //  Native method!
 			unitIDs = append(unitIDs, unitID)
 		}
 	}
@@ -55,7 +55,7 @@ func GetUnitIDsInSquad(squadID ecs.EntityID, squadmanager *common.EntityManager)
 }
 
 // GetSquadEntity finds squad entity by squad ID
-// ✅ Returns entity pointer directly from query
+//  Returns entity pointer directly from query
 func GetSquadEntity(squadID ecs.EntityID, squadmanager *common.EntityManager) *ecs.Entity {
 	// Note: This uses a component field match (SquadData.SquadID), not a direct entity ID match
 	// So it cannot use the generic FindEntityByIDWithTag helper. Keeping specialized implementation.
@@ -72,10 +72,9 @@ func GetSquadEntity(squadID ecs.EntityID, squadmanager *common.EntityManager) *e
 }
 
 // GetUnitIDsInRow returns alive unit IDs in a row
-// Optimized: Uses direct entity lookup instead of GetAttributesByIDWithTag.
 func GetUnitIDsInRow(squadID ecs.EntityID, row int, squadmanager *common.EntityManager) []ecs.EntityID {
 	var unitIDs []ecs.EntityID
-	seen := make(map[ecs.EntityID]bool) // ✅ Prevents multi-cell units from being counted multiple times
+	seen := make(map[ecs.EntityID]bool) // Prevents multi-cell units from being counted multiple times
 
 	for col := 0; col < 3; col++ {
 		idsAtPos := GetUnitIDsAtGridPosition(squadID, row, col, squadmanager)
@@ -104,14 +103,14 @@ func GetUnitIDsInRow(squadID ecs.EntityID, row int, squadmanager *common.EntityM
 }
 
 // GetLeaderID finds the leader unit ID of a squad
-// ✅ Returns ecs.EntityID (native type), not entity pointer
+// Returns ecs.EntityID (native type), not entity pointer
 func GetLeaderID(squadID ecs.EntityID, squadmanager *common.EntityManager) ecs.EntityID {
 	for _, result := range squadmanager.World.Query(LeaderTag) {
 		leaderEntity := result.Entity
 		memberData := common.GetComponentType[*SquadMemberData](leaderEntity, SquadMemberComponent)
 
 		if memberData.SquadID == squadID {
-			return leaderEntity.GetID() // ✅ Native method!
+			return leaderEntity.GetID() //  Native method!
 		}
 	}
 

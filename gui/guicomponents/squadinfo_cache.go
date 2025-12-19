@@ -11,12 +11,6 @@ import (
 )
 
 // SquadInfoCache provides event-driven caching of SquadInfo.
-// Unlike frame-level caching, this only rebuilds squad info when actual game events occur.
-// This is optimal for turn-based games where data changes are discrete and infrequent.
-//
-// Performance: In turn-based games, data may only change 5-10 times per minute,
-// versus 3,600+ rebuilds/minute with frame-level caching (60 FPS).
-// This represents a 99%+ reduction in unnecessary cache rebuilds.
 type SquadInfoCache struct {
 	cache       map[ecs.EntityID]*SquadInfo
 	dirtySquads map[ecs.EntityID]bool

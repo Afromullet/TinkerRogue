@@ -9,6 +9,7 @@ package main
 
 import (
 	"game_main/common"
+	"game_main/config"
 	"game_main/coords"
 	"game_main/graphics"
 	"game_main/gui/core"
@@ -66,8 +67,6 @@ func (g *Game) Update() error {
 
 	graphics.VXHandler.UpdateVisualEffects()
 
-	input.PlayerDebugActions(&g.playerData)
-
 	HandleInput(g)
 
 	return nil
@@ -82,9 +81,10 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	coords.CoordManager.UpdateScreenDimensions(screen.Bounds().Dx(), screen.Bounds().Dy())
 
 	// Phase 1: Ebiten rendering (game world)
+	// TODO. This just needs to be one call. Handle the coords.MAP_SCROLLING_ENABLED a different way
 	if coords.MAP_SCROLLING_ENABLED {
-		g.gameMap.DrawLevelCenteredSquare(screen, g.playerData.Pos, graphics.ViewableSquareSize, DEBUG_MODE)
-		rendering.ProcessRenderablesInSquare(&g.em, g.gameMap, screen, g.playerData.Pos, graphics.ViewableSquareSize, DEBUG_MODE, g.renderingCache)
+		g.gameMap.DrawLevelCenteredSquare(screen, g.playerData.Pos, config.DefaultZoomNumberOfSquare, DEBUG_MODE)
+		rendering.ProcessRenderablesInSquare(&g.em, g.gameMap, screen, g.playerData.Pos, config.DefaultZoomNumberOfSquare, DEBUG_MODE, g.renderingCache)
 	} else {
 		g.gameMap.DrawLevel(screen, DEBUG_MODE)
 		rendering.ProcessRenderables(&g.em, g.gameMap, screen, DEBUG_MODE, g.renderingCache)
@@ -102,7 +102,7 @@ func (g *Game) Layout(w, h int) (int, int) {
 	scale := ebiten.DeviceScaleFactor()
 	canvasWidth := int(math.Ceil(float64(graphics.ScreenInfo.TileSize*graphics.ScreenInfo.DungeonWidth) * scale))
 	canvasHeight := int(math.Ceil(float64(graphics.ScreenInfo.TileSize*graphics.ScreenInfo.DungeonHeight) * scale))
-	return canvasWidth + graphics.StatsUIOffset, canvasHeight
+	return canvasWidth + config.DefaultStaticUIOffset, canvasHeight
 }
 
 // main is the entry point for the game.

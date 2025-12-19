@@ -36,7 +36,6 @@ var (
 // ========================================
 
 // SquadData represents the squad entity's component data.
-// ✅ Uses ecs.EntityID for relationships (native type)
 type SquadData struct {
 	SquadID       ecs.EntityID  // Unique squad identifier (native entity ID)
 	Formation     FormationType // Current formation layout
@@ -80,7 +79,6 @@ func (f FormationType) String() string {
 // ========================================
 
 // SquadMemberData links a unit back to its parent squad.
-// ✅ Uses ecs.EntityID instead of entity pointer (native type)
 type SquadMemberData struct {
 	SquadID ecs.EntityID // Parent squad's entity ID
 }

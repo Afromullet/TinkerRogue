@@ -11,7 +11,7 @@ import (
 
 type FactionManager struct {
 	manager     *common.EntityManager
-	combatCache *CombatQueryCache // Cached queries for O(k) instead of O(n)
+	combatCache *CombatQueryCache
 }
 
 func NewFactionManager(manager *common.EntityManager) *FactionManager {

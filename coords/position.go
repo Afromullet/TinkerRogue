@@ -1,6 +1,4 @@
 // Package coords provides unified coordinate system types and utilities.
-// This package consolidates all position and coordinate management that was
-// previously scattered across common and graphics packages.
 package coords
 
 import (
@@ -8,7 +6,6 @@ import (
 )
 
 // LogicalPosition represents a position in the game world (tile-based coordinates).
-// This is the unified type that replaces both coords.LogicalPosition and graphics.LogicalPosition.
 // All game entities, map coordinates, and movement targets use this type.
 type LogicalPosition struct {
 	X, Y int
@@ -46,9 +43,4 @@ func (p *LogicalPosition) ChebyshevDistance(other *LogicalPosition) int {
 // Moved from coords.LogicalPosition to maintain compatibility.
 func (p *LogicalPosition) InRange(other *LogicalPosition, distance int) bool {
 	return p.ManhattanDistance(other) <= distance
-}
-
-// NewLogicalPosition creates a new logical position with the given coordinates.
-func NewLogicalPosition(x, y int) LogicalPosition {
-	return LogicalPosition{X: x, Y: y}
 }

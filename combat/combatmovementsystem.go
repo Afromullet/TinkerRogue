@@ -11,9 +11,9 @@ import (
 )
 
 type CombatMovementSystem struct {
-	manager      *common.EntityManager
-	posSystem    *systems.PositionSystem // For O(1) collision detection
-	combatCache  *CombatQueryCache       // Cached queries for O(k) instead of O(n)
+	manager     *common.EntityManager
+	posSystem   *systems.PositionSystem // For O(1) collision detection
+	combatCache *CombatQueryCache       
 }
 
 // Constructor
@@ -26,19 +26,18 @@ func NewMovementSystem(manager *common.EntityManager, posSystem *systems.Positio
 }
 
 // The squad movement speed is the movement speed of the slowest unit in the squad
-// Optimized: Uses direct entity lookup in loop instead of GetAttributesByIDWithTag.
 func (ms *CombatMovementSystem) GetSquadMovementSpeed(squadID ecs.EntityID) int {
 
 	unitIDs := squads.GetUnitIDsInSquad(squadID, ms.manager)
 
-	//TODO: I should probably use a constant for this
+	//TODO: This makes no sense. This needs better error handling. If there are no unit IDs, this should throw an error
 	if len(unitIDs) == 0 {
 		return 3
 	}
 
 	minSpeed := 999
 	for _, unitID := range unitIDs {
-		// OPTIMIZATION: Get entity once for attributes
+
 		entity := common.FindEntityByID(ms.manager, unitID)
 		if entity == nil {
 			continue
@@ -56,6 +55,7 @@ func (ms *CombatMovementSystem) GetSquadMovementSpeed(squadID ecs.EntityID) int 
 		}
 	}
 
+	//TODO: This makes no sense. This needs better error handling. If there are no unit IDs, this should throw an error
 	if minSpeed == 999 {
 		return 3 // Default if no valid units
 	}
@@ -80,6 +80,7 @@ func (ms *CombatMovementSystem) CanMoveTo(squadID ecs.EntityID, targetPos coords
 	squadFaction := getFactionOwner(squadID, ms.manager)
 
 	// Can pass through friendlies, NOT enemies
+	//TODO. It can pass through friendlies, but should not be able to occupy the same square
 	return occupyingFaction == squadFaction
 }
 
@@ -94,7 +95,6 @@ func (ms *CombatMovementSystem) MoveSquad(squadID ecs.EntityID, targetPos coords
 		return fmt.Errorf("cannot get current position: %w", err)
 	}
 
-	// Calculate movement cost using Chebyshev distance
 	movementCost := currentPos.ChebyshevDistance(&targetPos)
 
 	// Check if squad has enough movement (using cached query for performance)
@@ -176,9 +176,7 @@ func (ms *CombatMovementSystem) GetValidMovementTiles(squadID ecs.EntityID) []co
 }
 
 // GetSquadPosition returns the position of a squad
-// Optimized: Uses direct entity lookup instead of GetComponentTypeByID.
 func (ms *CombatMovementSystem) GetSquadPosition(squadID ecs.EntityID) (coords.LogicalPosition, error) {
-	// OPTIMIZATION: Get entity once for position component
 	entity := common.FindEntityByID(ms.manager, squadID)
 	if entity == nil {
 		return coords.LogicalPosition{}, fmt.Errorf("squad %d not found", squadID)

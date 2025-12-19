@@ -32,6 +32,30 @@ const (
 	DefaultPlayerMaxUnits     = 50     // Maximum units player can own
 )
 
+// Default Unit Attributes
+const (
+	DefaultMovementSpeed  = 3
+	DefaultAttackRange    = 1
+	DefaultBaseHitChance  = 80
+	DefaultMaxHitRate     = 100
+	DefaultMaxCritChance  = 50
+	DefaultMaxDodgeChance = 30
+	DefaultBaseCapacity   = 6
+	DefaultMaxCapacity    = 9
+)
+
+// Default Graphic and Display Related Values
+
+const (
+	DefaultMapWidth           = 100
+	DefaultMapHeight          = 80
+	DefaultTilePixels         = 32
+	DefaultScaleFactor        = 3
+	DefaultRightPadding       = 500
+	DefaultZoomNumberOfSquare = 30   //Number of squares we see when zoomed it
+	DefaultStaticUIOffset     = 1000 //Leftover from the old GUI. Todo, determine if this is still needed.
+)
+
 // Asset paths
 const (
 	PlayerImagePath = "../assets/creatures/player1.png"

@@ -16,7 +16,7 @@ import (
 var (
 	RenderableComponent *ecs.Component //Putting this here for now rather than in graphics
 	RenderablesTag      ecs.Tag        // Tag for querying renderable entities
-	MessengersTag       ecs.Tag        // Tag for querying messenger (UI message) entities
+	MessengersTag       ecs.Tag        // Tag for querying messenger (UI message) entities. Todo remove this
 )
 
 type Renderable struct {
@@ -25,8 +25,7 @@ type Renderable struct {
 }
 
 // Draw everything with a renderable component that's visible
-// Uses cached View for O(k) iteration instead of O(n) full World.Query (3-5x faster per frame)
-// Now uses sprite batching to reduce draw calls from hundreds to a few per frame
+// Uses sprite batching to reduce draw calls from hundreds to a few per frame
 func ProcessRenderables(ecsmanager *common.EntityManager, gameMap worldmap.GameMap, screen *ebiten.Image, debugMode bool, cache *RenderingCache) {
 	// Clear sprite batches from previous frame
 	cache.ClearSpriteBatches()
@@ -63,13 +62,11 @@ func ProcessRenderables(ecsmanager *common.EntityManager, gameMap worldmap.GameM
 		batch.AddSprite(dstX, dstY, srcX, srcY, srcW, srcH, dstW, dstH, 1.0, 1.0, 1.0, 1.0)
 	}
 
-	// Draw all batches in a single pass (dramatically reduces draw calls)
+	// Draw all batches in a single pass
 	cache.DrawSpriteBatches(screen)
 }
 
 // ProcessRenderablesInSquare renders entities in a square region around playerPos
-// Uses cached View for O(k) iteration instead of O(n) full World.Query (3-5x faster per frame)
-// Now uses sprite batching to reduce draw calls from hundreds to a few per frame
 func ProcessRenderablesInSquare(ecsmanager *common.EntityManager, gameMap worldmap.GameMap, screen *ebiten.Image, playerPos *coords.LogicalPosition, squareSize int, debugMode bool, cache *RenderingCache) {
 	// Clear sprite batches from previous frame
 	cache.ClearSpriteBatches()
@@ -114,6 +111,6 @@ func ProcessRenderablesInSquare(ecsmanager *common.EntityManager, gameMap worldm
 		}
 	}
 
-	// Draw all batches in a single pass (dramatically reduces draw calls)
+	// Draw all batches in a single pass
 	cache.DrawSpriteBatches(screen)
 }

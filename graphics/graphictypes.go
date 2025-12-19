@@ -13,12 +13,6 @@ var RedColorMatrix = ColorMatrix{1, 0, 0, 1, true}
 var ScreenInfo = coords.NewScreenData()
 var CoordManager = coords.CoordManager
 
-var ViewableSquareSize = 30
-// MAP_SCROLLING_ENABLED has been moved to coords package - use coords.MAP_SCROLLING_ENABLED directly
-
-// var StatsUIOffset int = 1000 //Offset to where the UI starts
-var StatsUIOffset int = 1000 //Offset to where the UI starts
-
 // CursorPosition gets the cursor position relative to the player position
 func CursorPosition(playerPos coords.LogicalPosition) (int, int) {
 	// Get current cursor position from ebiten
@@ -26,20 +20,6 @@ func CursorPosition(playerPos coords.LogicalPosition) (int, int) {
 
 	// Transform pixel coordinates using viewport logic
 	return TransformPixelPosition(playerPos.X, playerPos.Y, cursorX, cursorY, ScreenInfo)
-}
-
-// OffsetFromCenter calculates screen offset for centering the map around a player position.
-// Deprecated: Use coords.CoordManager.LogicalToScreen instead.
-func OffsetFromCenter(centerX, centerY, tileX, tileY int, screenData coords.ScreenData) (float64, float64) {
-	// Calculate offset to center the viewport
-	offsetX := float64(screenData.ScreenWidth)/2 - float64(centerX*screenData.TileSize)*float64(screenData.ScaleFactor)
-	offsetY := float64(screenData.ScreenHeight)/2 - float64(centerY*screenData.TileSize)*float64(screenData.ScaleFactor)
-
-	// Apply scaling and viewport offset to tile position
-	scaledX := float64(tileX) * float64(screenData.ScaleFactor)
-	scaledY := float64(tileY) * float64(screenData.ScaleFactor)
-
-	return scaledX + offsetX, scaledY + offsetY
 }
 
 // TransformPixelPosition transforms pixel coordinates using viewport logic.

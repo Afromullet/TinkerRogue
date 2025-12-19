@@ -44,19 +44,12 @@ func (cc *CombatController) OnDeactivate() {
 func (cc *CombatController) HandleInput() bool {
 	inputHandled := false
 
-	// Ranged attack mode removed - squad system handles combat
-
 	// Handle throwing mode
 	if cc.playerData.InputStates.IsThrowing {
 		inputHandled = cc.handleThrowable() || inputHandled
 	}
-
-	// Ranged attack initiation removed - squad system handles combat
-
 	return inputHandled
 }
-
-// REMOVED: handleRangedAttack - ranged weapon combat replaced by squad system
 
 func (cc *CombatController) handleThrowable() bool {
 	// IsShooting check removed - squad system handles combat
@@ -117,10 +110,6 @@ func (cc *CombatController) handleThrowable() bool {
 
 	return false
 }
-
-// REMOVED: playerSelectRangedTarget - ranged weapon combat replaced by squad system
-
-// REMOVED: drawRangedAttackAOE - ranged weapon combat replaced by squad system
 
 func (cc *CombatController) drawThrowableAOE() {
 	cursorX, cursorY := graphics.CursorPosition(*cc.playerData.Pos)
