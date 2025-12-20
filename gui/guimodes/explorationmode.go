@@ -76,34 +76,44 @@ func (em *ExplorationMode) Initialize(ctx *core.UIContext) error {
 }
 
 func (em *ExplorationMode) buildQuickInventory() *widget.Container {
-	// Use standard panel specification with custom runtime padding
-	quickInventory := widgets.CreateStandardPanelWithOptions(
-		em.PanelBuilders,
-		"quick_inventory",
-		widgets.CustomPadding(widget.Insets{
-			Bottom: int(float64(em.Layout.ScreenHeight) * widgets.BottomButtonOffset),
-		}),
+	// Create UI factory
+	uiFactory := gui.NewUIComponentFactory(em.Queries, em.PanelBuilders, em.Layout)
+
+	// Create button callbacks (no panel wrapper - like combat mode)
+	quickInventory := uiFactory.CreateExplorationActionButtons(
+		// Throwables
+		func() {
+			if mode, exists := em.ModeManager.GetMode("inventory"); exists {
+				em.ModeManager.RequestTransition(mode, "Throwables clicked")
+			}
+		},
+		// Squads (switches to Overworld context)
+		func() {
+			if em.Context.ModeCoordinator != nil {
+				if err := em.Context.ModeCoordinator.ReturnToOverworld("squad_management"); err != nil {
+					fmt.Printf("ERROR: Failed to return to overworld: %v\n", err)
+				}
+			}
+		},
+		// Inventory
+		func() {
+			if mode, exists := em.ModeManager.GetMode("inventory"); exists {
+				em.ModeManager.RequestTransition(mode, "Inventory clicked")
+			}
+		},
+		// Deploy
+		func() {
+			if mode, exists := em.ModeManager.GetMode("squad_deployment"); exists {
+				em.ModeManager.RequestTransition(mode, "Deploy clicked")
+			}
+		},
+		// Combat
+		func() {
+			if mode, exists := em.ModeManager.GetMode("combat"); exists {
+				em.ModeManager.RequestTransition(mode, "Combat clicked")
+			}
+		},
 	)
-
-	// Throwables button
-	throwableBtn := gui.ModeTransitionButton(em.ModeManager, "Throwables", "inventory")
-	quickInventory.AddChild(throwableBtn)
-
-	// Squads button (switches to Overworld context)
-	squadsBtn := gui.ContextSwitchButton(em.Context.ModeCoordinator, "Squads (E)", "overworld", "squad_management")
-	quickInventory.AddChild(squadsBtn)
-
-	// Inventory button (Battle Map context)
-	inventoryBtn := gui.ModeTransitionButton(em.ModeManager, "Inventory (I)", "inventory")
-	quickInventory.AddChild(inventoryBtn)
-
-	// Squad Deployment button (Battle Map context)
-	deployBtn := gui.ModeTransitionButton(em.ModeManager, "Deploy (D)", "squad_deployment")
-	quickInventory.AddChild(deployBtn)
-
-	// Combat button (Battle Map context)
-	combatBtn := gui.ModeTransitionButton(em.ModeManager, "Combat (C)", "combat")
-	quickInventory.AddChild(combatBtn)
 
 	// Store reference and return
 	em.quickInventory = quickInventory

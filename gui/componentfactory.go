@@ -218,6 +218,158 @@ func (ucf *UIComponentFactory) CreateCombatActionButtons(
 	return buttonContainer
 }
 
+// CreateExplorationActionButtons builds the exploration mode buttons container (no panel wrapper, like combat mode)
+func (ucf *UIComponentFactory) CreateExplorationActionButtons(
+	onThrowables func(),
+	onSquads func(),
+	onInventory func(),
+	onDeploy func(),
+	onCombat func(),
+) *widget.Container {
+	// Calculate responsive spacing
+	spacing := int(float64(ucf.layout.ScreenWidth) * widgets.PaddingTight)
+
+	// Create button group using widgets.CreateButtonGroup with LayoutData
+	bottomPad := int(float64(ucf.layout.ScreenHeight) * widgets.BottomButtonOffset)
+	anchorLayout := AnchorCenterEnd(bottomPad)
+
+	buttonContainer := widgets.CreateButtonGroup(widgets.ButtonGroupConfig{
+		Buttons: []widgets.ButtonSpec{
+			{Text: "Throwables", OnClick: onThrowables},
+			{Text: "Squads (E)", OnClick: onSquads},
+			{Text: "Inventory (I)", OnClick: onInventory},
+			{Text: "Deploy (D)", OnClick: onDeploy},
+			{Text: "Combat (C)", OnClick: onCombat},
+		},
+		Direction:  widget.DirectionHorizontal,
+		Spacing:    spacing,
+		Padding:    NewResponsiveHorizontalPadding(ucf.layout, widgets.PaddingExtraSmall),
+		LayoutData: &anchorLayout,
+	})
+
+	return buttonContainer
+}
+
+// CreateSquadManagementActionButtons builds the squad management mode buttons container (no panel wrapper, like combat mode)
+func (ucf *UIComponentFactory) CreateSquadManagementActionButtons(
+	onBattleMap func(),
+	onSquadBuilder func(),
+	onFormation func(),
+	onBuyUnits func(),
+	onEditSquad func(),
+) *widget.Container {
+	// Calculate responsive spacing
+	spacing := int(float64(ucf.layout.ScreenWidth) * widgets.PaddingTight)
+
+	// Create button group using widgets.CreateButtonGroup with LayoutData
+	bottomPad := int(float64(ucf.layout.ScreenHeight) * widgets.BottomButtonOffset)
+	anchorLayout := AnchorCenterEnd(bottomPad)
+
+	buttonContainer := widgets.CreateButtonGroup(widgets.ButtonGroupConfig{
+		Buttons: []widgets.ButtonSpec{
+			{Text: "Battle Map (ESC)", OnClick: onBattleMap},
+			{Text: "Squad Builder (B)", OnClick: onSquadBuilder},
+			{Text: "Formation (F)", OnClick: onFormation},
+			{Text: "Buy Units (P)", OnClick: onBuyUnits},
+			{Text: "Edit Squad (E)", OnClick: onEditSquad},
+		},
+		Direction:  widget.DirectionHorizontal,
+		Spacing:    spacing,
+		Padding:    NewResponsiveHorizontalPadding(ucf.layout, widgets.PaddingExtraSmall),
+		LayoutData: &anchorLayout,
+	})
+
+	return buttonContainer
+}
+
+// CreateUnitPurchaseActionButtons builds the unit purchase mode buttons container (no panel wrapper, like combat mode)
+func (ucf *UIComponentFactory) CreateUnitPurchaseActionButtons(
+	onBuyUnit func(),
+	onUndo func(),
+	onRedo func(),
+	onBack func(),
+) *widget.Container {
+	// Calculate responsive spacing
+	spacing := int(float64(ucf.layout.ScreenWidth) * widgets.PaddingTight)
+
+	// Create button group using widgets.CreateButtonGroup with LayoutData
+	bottomPad := int(float64(ucf.layout.ScreenHeight) * widgets.BottomButtonOffset)
+	anchorLayout := AnchorCenterEnd(bottomPad)
+
+	buttonContainer := widgets.CreateButtonGroup(widgets.ButtonGroupConfig{
+		Buttons: []widgets.ButtonSpec{
+			{Text: "Buy Unit", OnClick: onBuyUnit},
+			{Text: "Undo (Ctrl+Z)", OnClick: onUndo},
+			{Text: "Redo (Ctrl+Y)", OnClick: onRedo},
+			{Text: "Back (ESC)", OnClick: onBack},
+		},
+		Direction:  widget.DirectionHorizontal,
+		Spacing:    spacing,
+		Padding:    NewResponsiveHorizontalPadding(ucf.layout, widgets.PaddingExtraSmall),
+		LayoutData: &anchorLayout,
+	})
+
+	return buttonContainer
+}
+
+// CreateSquadEditorActionButtons builds the squad editor mode buttons container (no panel wrapper, like combat mode)
+func (ucf *UIComponentFactory) CreateSquadEditorActionButtons(
+	onRenameSquad func(),
+	onUndo func(),
+	onRedo func(),
+	onClose func(),
+) *widget.Container {
+	// Calculate responsive spacing
+	spacing := int(float64(ucf.layout.ScreenWidth) * widgets.PaddingTight)
+
+	// Create button group using widgets.CreateButtonGroup with LayoutData
+	bottomPad := int(float64(ucf.layout.ScreenHeight) * widgets.BottomButtonOffset)
+	anchorLayout := AnchorCenterEnd(bottomPad)
+
+	buttonContainer := widgets.CreateButtonGroup(widgets.ButtonGroupConfig{
+		Buttons: []widgets.ButtonSpec{
+			{Text: "Rename Squad", OnClick: onRenameSquad},
+			{Text: "Undo (Ctrl+Z)", OnClick: onUndo},
+			{Text: "Redo (Ctrl+Y)", OnClick: onRedo},
+			{Text: "Close (ESC)", OnClick: onClose},
+		},
+		Direction:  widget.DirectionHorizontal,
+		Spacing:    spacing,
+		Padding:    NewResponsiveHorizontalPadding(ucf.layout, widgets.PaddingExtraSmall),
+		LayoutData: &anchorLayout,
+	})
+
+	return buttonContainer
+}
+
+// CreateSquadDeploymentActionButtons builds the squad deployment mode buttons container (no panel wrapper, like combat mode)
+func (ucf *UIComponentFactory) CreateSquadDeploymentActionButtons(
+	onClearAll func(),
+	onStartCombat func(),
+	onClose func(),
+) *widget.Container {
+	// Calculate responsive spacing
+	spacing := int(float64(ucf.layout.ScreenWidth) * widgets.PaddingTight)
+
+	// Create button group using widgets.CreateButtonGroup with LayoutData
+	bottomPad := int(float64(ucf.layout.ScreenHeight) * widgets.BottomButtonOffset)
+	anchorLayout := AnchorCenterEnd(bottomPad)
+
+	buttonContainer := widgets.CreateButtonGroup(widgets.ButtonGroupConfig{
+		Buttons: []widgets.ButtonSpec{
+			{Text: "Clear All", OnClick: onClearAll},
+			{Text: "Start Combat", OnClick: onStartCombat},
+			{Text: "Close (ESC)", OnClick: onClose},
+		},
+		Direction:  widget.DirectionHorizontal,
+		Spacing:    spacing,
+		Padding:    NewResponsiveHorizontalPadding(ucf.layout, widgets.PaddingExtraSmall),
+		LayoutData: &anchorLayout,
+	})
+
+	return buttonContainer
+}
+
 // GetFormattedSquadDetails returns formatted squad details as string
 func (ucf *UIComponentFactory) GetFormattedSquadDetails(squadID interface{}) string {
 	// This is a helper that formats squad info for display

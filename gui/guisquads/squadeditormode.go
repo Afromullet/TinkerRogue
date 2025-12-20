@@ -67,7 +67,7 @@ func NewSquadEditorMode(modeManager *core.UIModeManager) *SquadEditorMode {
 }
 
 func (sem *SquadEditorMode) Initialize(ctx *core.UIContext) error {
-	return gui.NewModeBuilder(&sem.BaseMode, gui.ModeConfig{
+	err := gui.NewModeBuilder(&sem.BaseMode, gui.ModeConfig{
 		ModeName:   "squad_editor",
 		ReturnMode: "squad_management",
 
@@ -79,25 +79,20 @@ func (sem *SquadEditorMode) Initialize(ctx *core.UIContext) error {
 			{CustomBuild: sem.buildRosterList},
 		},
 
-		Buttons: []gui.ButtonGroupSpec{
-			{
-				Position: widgets.BottomCenter(),
-				Buttons: []widgets.ButtonSpec{
-					{
-						Text: "Rename Squad",
-						OnClick: func() {
-							sem.onRenameSquad()
-						},
-					},
-					gui.ModeTransitionSpec(sem.ModeManager, "Close (ESC)", "squad_management"),
-				},
-			},
-		},
-
 		StatusLabel: true,
 		Commands:    true,
 		OnRefresh:   sem.refreshAfterUndoRedo,
 	}).Build(ctx)
+
+	if err != nil {
+		return err
+	}
+
+	// Add action buttons after ModeBuilder completes
+	actionButtons := sem.buildActionButtons()
+	sem.RootContainer.AddChild(actionButtons)
+
+	return nil
 }
 
 // buildSquadNavigation creates Previous/Next buttons for squad navigation
@@ -292,35 +287,34 @@ func (sem *SquadEditorMode) buildRosterList() *widget.Container {
 	return sem.rosterListContainer
 }
 
-// buildActionButtons creates bottom action buttons
-func (sem *SquadEditorMode) buildActionButtons() {
-	buttonSpecs := []widgets.ButtonSpec{
-		{
-			Text: "Rename Squad",
-			OnClick: func() {
-				sem.onRenameSquad()
-			},
+// buildActionButtons creates bottom action buttons (called after Initialize completes)
+func (sem *SquadEditorMode) buildActionButtons() *widget.Container {
+	// Create UI factory
+	uiFactory := gui.NewUIComponentFactory(sem.Queries, sem.PanelBuilders, sem.Layout)
+
+	// Create button callbacks (no panel wrapper - like combat mode)
+	sem.actionButtonsContainer = uiFactory.CreateSquadEditorActionButtons(
+		// Rename Squad
+		func() {
+			sem.onRenameSquad()
 		},
-		{
-			Text: "Close (ESC)",
-			OnClick: func() {
-				if mode, exists := sem.ModeManager.GetMode("squad_management"); exists {
-					sem.ModeManager.RequestTransition(mode, "Close button pressed")
-				}
-			},
+		// Undo
+		func() {
+			sem.CommandHistory.Undo()
 		},
-	}
-	sem.actionButtonsContainer = gui.CreateActionButtonGroup(sem.PanelBuilders, widgets.BottomCenter(), buttonSpecs)
+		// Redo
+		func() {
+			sem.CommandHistory.Redo()
+		},
+		// Close
+		func() {
+			if mode, exists := sem.ModeManager.GetMode("squad_management"); exists {
+				sem.ModeManager.RequestTransition(mode, "Close button pressed")
+			}
+		},
+	)
 
-	// Add undo/redo buttons
-	sem.actionButtonsContainer.AddChild(sem.CommandHistory.CreateUndoButton())
-	sem.actionButtonsContainer.AddChild(sem.CommandHistory.CreateRedoButton())
-
-	// Status label
-	sem.StatusLabel = widgets.CreateSmallLabel("")
-	sem.RootContainer.AddChild(sem.StatusLabel)
-
-	sem.RootContainer.AddChild(sem.actionButtonsContainer)
+	return sem.actionButtonsContainer
 }
 
 func (sem *SquadEditorMode) Enter(fromMode core.UIMode) error {

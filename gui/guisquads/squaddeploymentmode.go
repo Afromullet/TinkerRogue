@@ -59,22 +59,6 @@ func (sdm *SquadDeploymentMode) Initialize(ctx *core.UIContext) error {
 			{CustomBuild: sdm.buildSquadList},
 			{CustomBuild: sdm.buildDetailPanel},
 		},
-
-		Buttons: []gui.ButtonGroupSpec{
-			{
-				Position: widgets.BottomCenter(),
-				Buttons: []widgets.ButtonSpec{
-					{
-						Text: "Clear All",
-						OnClick: func() {
-							sdm.clearAllSquadPositions()
-						},
-					},
-					gui.ModeTransitionSpec(sdm.ModeManager, "Start Combat", "combat"),
-					gui.ModeTransitionSpec(sdm.ModeManager, "Close (ESC)", "exploration"),
-				},
-			},
-		},
 	}).Build(ctx)
 
 	if err != nil {
@@ -83,6 +67,10 @@ func (sdm *SquadDeploymentMode) Initialize(ctx *core.UIContext) error {
 
 	// Initialize rendering system AFTER BaseMode is initialized (so Queries is available)
 	sdm.highlightRenderer = guimodes.NewSquadHighlightRenderer(sdm.Queries)
+
+	// Add action buttons after ModeBuilder completes
+	actionButtons := sdm.buildActionButtons()
+	sdm.RootContainer.AddChild(actionButtons)
 
 	return nil
 }
@@ -184,35 +172,31 @@ func (sdm *SquadDeploymentMode) buildDetailPanel() *widget.Container {
 	return detailPanel
 }
 
-func (sdm *SquadDeploymentMode) buildActionButtons() {
-	// Build action buttons using helper (consolidates positioning + button creation)
-	buttonSpecs := []widgets.ButtonSpec{
-		{
-			Text: "Clear All",
-			OnClick: func() {
-				sdm.clearAllSquadPositions()
-			},
-		},
-		{
-			Text: "Start Combat",
-			OnClick: func() {
-				if combatMode, exists := sdm.ModeManager.GetMode("combat"); exists {
-					sdm.ModeManager.RequestTransition(combatMode, "Squads deployed, starting combat")
-				}
-			},
-		},
-		{
-			Text: "Close (ESC)",
-			OnClick: func() {
-				if mode, exists := sdm.ModeManager.GetMode("exploration"); exists {
-					sdm.ModeManager.RequestTransition(mode, "Close button pressed")
-				}
-			},
-		},
-	}
+func (sdm *SquadDeploymentMode) buildActionButtons() *widget.Container {
+	// Create UI factory
+	uiFactory := gui.NewUIComponentFactory(sdm.Queries, sdm.PanelBuilders, sdm.Layout)
 
-	buttonContainer := gui.CreateActionButtonGroup(sdm.PanelBuilders, widgets.BottomCenter(), buttonSpecs)
-	sdm.RootContainer.AddChild(buttonContainer)
+	// Create button callbacks (no panel wrapper - like combat mode)
+	buttonContainer := uiFactory.CreateSquadDeploymentActionButtons(
+		// Clear All
+		func() {
+			sdm.clearAllSquadPositions()
+		},
+		// Start Combat
+		func() {
+			if combatMode, exists := sdm.ModeManager.GetMode("combat"); exists {
+				sdm.ModeManager.RequestTransition(combatMode, "Squads deployed, starting combat")
+			}
+		},
+		// Close
+		func() {
+			if mode, exists := sdm.ModeManager.GetMode("exploration"); exists {
+				sdm.ModeManager.RequestTransition(mode, "Close button pressed")
+			}
+		},
+	)
+
+	return buttonContainer
 }
 
 func (sdm *SquadDeploymentMode) updateInstructionText() {

@@ -185,26 +185,39 @@ func (upm *UnitPurchaseMode) buildResourceDisplay() *widget.Container {
 }
 
 func (upm *UnitPurchaseMode) buildActionButtons() *widget.Container {
-	// Create positioned container using helper
-	actionButtonContainer := gui.CreateActionButtonGroup(upm.PanelBuilders, widgets.BottomCenter(), []widgets.ButtonSpec{})
+	// Create UI factory
+	uiFactory := gui.NewUIComponentFactory(upm.Queries, upm.PanelBuilders, upm.Layout)
 
-	// Create buy button and store reference for enable/disable control
-	upm.buyButton = widgets.CreateButtonWithConfig(widgets.ButtonConfig{
-		Text: "Buy Unit",
-		OnClick: func() {
+	// Create button callbacks (no panel wrapper - like combat mode)
+	actionButtonContainer := uiFactory.CreateUnitPurchaseActionButtons(
+		// Buy Unit
+		func() {
 			upm.purchaseUnit()
 		},
-	})
-	upm.buyButton.GetWidget().Disabled = true
-	actionButtonContainer.AddChild(upm.buyButton)
+		// Undo
+		func() {
+			upm.CommandHistory.Undo()
+		},
+		// Redo
+		func() {
+			upm.CommandHistory.Redo()
+		},
+		// Back
+		func() {
+			if mode, exists := upm.ModeManager.GetMode("squad_management"); exists {
+				upm.ModeManager.RequestTransition(mode, "Back button pressed")
+			}
+		},
+	)
 
-	// Undo/Redo buttons from CommandHistory
-	actionButtonContainer.AddChild(upm.CommandHistory.CreateUndoButton())
-	actionButtonContainer.AddChild(upm.CommandHistory.CreateRedoButton())
-
-	// Close button using button builder
-	closeBtn := gui.ModeTransitionButton(upm.ModeManager, "Back (ESC)", "squad_management")
-	actionButtonContainer.AddChild(closeBtn)
+	// Store buy button reference for enable/disable control (update after creation)
+	// Note: We need to reference the button from the container's children
+	if children := actionButtonContainer.Children(); len(children) > 0 {
+		if btn, ok := children[0].(*widget.Button); ok {
+			upm.buyButton = btn
+			upm.buyButton.GetWidget().Disabled = true
+		}
+	}
 
 	return actionButtonContainer
 }

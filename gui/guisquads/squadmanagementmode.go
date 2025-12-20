@@ -190,16 +190,42 @@ func (smm *SquadManagementMode) buildCommandPanel() *widget.Container {
 }
 
 func (smm *SquadManagementMode) buildActionButtons() *widget.Container {
-	// Action buttons (bottom-center) - built after Context is available
-	buttonContainer := gui.CreateActionButtonGroup(
-		smm.PanelBuilders,
-		widgets.BottomCenter(),
-		[]widgets.ButtonSpec{
-			gui.ContextSwitchSpec(smm.Context.ModeCoordinator, "Battle Map (ESC)", "battlemap", "exploration"),
-			gui.ModeTransitionSpec(smm.ModeManager, "Squad Builder (B)", "squad_builder"),
-			gui.ModeTransitionSpec(smm.ModeManager, "Formation (F)", "formation_editor"),
-			gui.ModeTransitionSpec(smm.ModeManager, "Buy Units (P)", "unit_purchase"),
-			gui.ModeTransitionSpec(smm.ModeManager, "Edit Squad (E)", "squad_editor"),
+	// Create UI factory
+	uiFactory := gui.NewUIComponentFactory(smm.Queries, smm.PanelBuilders, smm.Layout)
+
+	// Create button callbacks (no panel wrapper - like combat mode)
+	buttonContainer := uiFactory.CreateSquadManagementActionButtons(
+		// Battle Map (ESC)
+		func() {
+			if smm.Context.ModeCoordinator != nil {
+				if err := smm.Context.ModeCoordinator.EnterBattleMap("exploration"); err != nil {
+					fmt.Printf("ERROR: Failed to enter battle map: %v\n", err)
+				}
+			}
+		},
+		// Squad Builder (B)
+		func() {
+			if mode, exists := smm.ModeManager.GetMode("squad_builder"); exists {
+				smm.ModeManager.RequestTransition(mode, "Squad Builder clicked")
+			}
+		},
+		// Formation (F)
+		func() {
+			if mode, exists := smm.ModeManager.GetMode("formation_editor"); exists {
+				smm.ModeManager.RequestTransition(mode, "Formation clicked")
+			}
+		},
+		// Buy Units (P)
+		func() {
+			if mode, exists := smm.ModeManager.GetMode("unit_purchase"); exists {
+				smm.ModeManager.RequestTransition(mode, "Buy Units clicked")
+			}
+		},
+		// Edit Squad (E)
+		func() {
+			if mode, exists := smm.ModeManager.GetMode("squad_editor"); exists {
+				smm.ModeManager.RequestTransition(mode, "Edit Squad clicked")
+			}
 		},
 	)
 
