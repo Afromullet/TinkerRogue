@@ -70,22 +70,8 @@ func (sdm *SquadDeploymentMode) Initialize(ctx *core.UIContext) error {
 							sdm.clearAllSquadPositions()
 						},
 					},
-					{
-						Text: "Start Combat",
-						OnClick: func() {
-							if combatMode, exists := sdm.ModeManager.GetMode("combat"); exists {
-								sdm.ModeManager.RequestTransition(combatMode, "Squads deployed, starting combat")
-							}
-						},
-					},
-					{
-						Text: "Close (ESC)",
-						OnClick: func() {
-							if mode, exists := sdm.ModeManager.GetMode("exploration"); exists {
-								sdm.ModeManager.RequestTransition(mode, "Close button pressed")
-							}
-						},
-					},
+					gui.ModeTransitionSpec(sdm.ModeManager, "Start Combat", "combat"),
+					gui.ModeTransitionSpec(sdm.ModeManager, "Close (ESC)", "exploration"),
 				},
 			},
 		},

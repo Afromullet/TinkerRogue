@@ -31,6 +31,7 @@ type BaseMode struct {
 	Queries        *guicomponents.GUIQueries // Unified ECS query service - exported for mode access
 	StatusLabel    *widget.Text              // Optional status label for display and logging - set by modes that need it
 	CommandHistory *CommandHistory           // Optional command history for undo/redo support
+	PanelWidgets   map[string]interface{}    // Stores typed panel widgets by SpecName (TextArea, List, etc.)
 	modeName       string
 	returnMode     string                      // Mode to return to on ESC/close
 	hotkeys        map[ebiten.Key]InputBinding // Registered hotkeys for mode transitions
@@ -62,6 +63,9 @@ func (bm *BaseMode) InitializeBase(ctx *core.UIContext) {
 
 	// Initialize hotkeys map
 	bm.hotkeys = make(map[ebiten.Key]InputBinding)
+
+	// Initialize panel widgets map
+	bm.PanelWidgets = make(map[string]interface{})
 
 	// Create root ebitenui container
 	bm.ui = &ebitenui.UI{}

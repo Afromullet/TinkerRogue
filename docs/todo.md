@@ -4,7 +4,7 @@ __________________________________________
 
 - Remove a lot of the commands and GUI elements related to the commands. Those are not needed. After this, review all of the command
 
-- Remove Unused GUI elements
+- Remove Unused GUI elements and GUI elements you ddont want
 
 - Look at the combat and squad services to see which ones are necessary
 
@@ -54,9 +54,11 @@ can't attack twice. Once with ranged units and once with melee
   * Look at rendering package, 
 - Review global position system
 - The Inventory is a leftover prior to shifting the game to a turn based squad tactics game from a regular roguelike. Think of what you want to do with the inventory
+- Review Squad, combat, and worldmap packages. 
+- Review all the caches
 
 
-Remove the map in Guiqueries. 
+
 
 # Additions 
 

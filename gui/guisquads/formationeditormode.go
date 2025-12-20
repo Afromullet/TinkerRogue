@@ -57,14 +57,7 @@ func (fem *FormationEditorMode) Initialize(ctx *core.UIContext) error {
 							fem.onApplyFormation()
 						},
 					},
-					{
-						Text: "Close (ESC)",
-						OnClick: func() {
-							if mode, exists := fem.ModeManager.GetMode("squad_management"); exists {
-								fem.ModeManager.RequestTransition(mode, "Close button pressed")
-							}
-						},
-					},
+					gui.ModeTransitionSpec(fem.ModeManager, "Close (ESC)", "squad_management"),
 				},
 			},
 		},

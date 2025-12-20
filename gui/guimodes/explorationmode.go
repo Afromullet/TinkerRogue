@@ -2,7 +2,6 @@ package guimodes
 
 import (
 	"fmt"
-	"image/color"
 
 	"game_main/graphics"
 	"game_main/gui"
@@ -49,23 +48,10 @@ func (em *ExplorationMode) Initialize(ctx *core.UIContext) error {
 		// Build panels
 		Panels: []gui.PanelSpec{
 			{
-				// Message log panel (bottom-right)
-				SpecName: "message_log",
-				OnCreate: func(container *widget.Container) {
-					// Create and add textarea to panel
-					spec := widgets.StandardPanels["message_log"]
-					panelWidth := int(float64(em.Layout.ScreenWidth) * spec.Width)
-					panelHeight := int(float64(em.Layout.ScreenHeight) * spec.Height)
-
-					messageLog := widgets.CreateTextAreaWithConfig(widgets.TextAreaConfig{
-						MinWidth:  panelWidth - 20,
-						MinHeight: panelHeight - 20,
-						FontColor: color.White,
-					})
-					messageLog.SetText("")
-					container.AddChild(messageLog)
-					em.messageLog = messageLog
-				},
+				// Message log panel (bottom-right) - now uses typed panel
+				PanelType:  widgets.PanelTypeDetail,
+				SpecName:   "message_log",
+				DetailText: "",
 			},
 			{
 				// Quick inventory panel (custom build)
@@ -76,6 +62,13 @@ func (em *ExplorationMode) Initialize(ctx *core.UIContext) error {
 
 	if err != nil {
 		return err
+	}
+
+	// Get reference to message log TextArea from typed panel
+	if w, ok := em.PanelWidgets["message_log"]; ok {
+		if textArea, ok := w.(*widget.TextArea); ok {
+			em.messageLog = textArea
+		}
 	}
 
 	em.initialized = true
@@ -93,59 +86,23 @@ func (em *ExplorationMode) buildQuickInventory() *widget.Container {
 	)
 
 	// Throwables button
-	throwableBtn := widgets.CreateButtonWithConfig(widgets.ButtonConfig{
-		Text: "Throwables",
-		OnClick: func() {
-			// Transition to inventory mode
-			if invMode, exists := em.ModeManager.GetMode("inventory"); exists {
-				em.ModeManager.RequestTransition(invMode, "Open Throwables")
-			}
-		},
-	})
+	throwableBtn := gui.ModeTransitionButton(em.ModeManager, "Throwables", "inventory")
 	quickInventory.AddChild(throwableBtn)
 
 	// Squads button (switches to Overworld context)
-	squadsBtn := widgets.CreateButtonWithConfig(widgets.ButtonConfig{
-		Text: "Squads (E)",
-		OnClick: func() {
-			if em.Context.ModeCoordinator != nil {
-				em.Context.ModeCoordinator.ReturnToOverworld("squad_management")
-			}
-		},
-	})
+	squadsBtn := gui.ContextSwitchButton(em.Context.ModeCoordinator, "Squads (E)", "overworld", "squad_management")
 	quickInventory.AddChild(squadsBtn)
 
 	// Inventory button (Battle Map context)
-	inventoryBtn := widgets.CreateButtonWithConfig(widgets.ButtonConfig{
-		Text: "Inventory (I)",
-		OnClick: func() {
-			if invMode, exists := em.ModeManager.GetMode("inventory"); exists {
-				em.ModeManager.RequestTransition(invMode, "Open Inventory")
-			}
-		},
-	})
+	inventoryBtn := gui.ModeTransitionButton(em.ModeManager, "Inventory (I)", "inventory")
 	quickInventory.AddChild(inventoryBtn)
 
 	// Squad Deployment button (Battle Map context)
-	deployBtn := widgets.CreateButtonWithConfig(widgets.ButtonConfig{
-		Text: "Deploy (D)",
-		OnClick: func() {
-			if deployMode, exists := em.ModeManager.GetMode("squad_deployment"); exists {
-				em.ModeManager.RequestTransition(deployMode, "Open Squad Deployment")
-			}
-		},
-	})
+	deployBtn := gui.ModeTransitionButton(em.ModeManager, "Deploy (D)", "squad_deployment")
 	quickInventory.AddChild(deployBtn)
 
 	// Combat button (Battle Map context)
-	combatBtn := widgets.CreateButtonWithConfig(widgets.ButtonConfig{
-		Text: "Combat (C)",
-		OnClick: func() {
-			if combatMode, exists := em.ModeManager.GetMode("combat"); exists {
-				em.ModeManager.RequestTransition(combatMode, "Enter Combat")
-			}
-		},
-	})
+	combatBtn := gui.ModeTransitionButton(em.ModeManager, "Combat (C)", "combat")
 	quickInventory.AddChild(combatBtn)
 
 	// Store reference and return

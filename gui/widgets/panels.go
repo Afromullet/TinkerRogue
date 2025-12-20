@@ -2,6 +2,7 @@ package widgets
 
 import (
 	"fmt"
+	"image/color"
 
 	"game_main/gui/core"
 	"game_main/gui/guiresources"
@@ -28,6 +29,151 @@ func NewPanelBuilders(layout *LayoutConfig, modeManager *core.UIModeManager) *Pa
 // BuildPanel() method with functional options. See panelconfig.go for the new approach.
 // Old LayoutConfig methods (TopRightPanel, BottomRightPanel, etc.) have also been
 // removed - use BuildPanel with position options instead (TopRight(), BottomCenter(), etc.).
+
+// PanelType defines the type of panel to build with BuildTypedPanel
+type PanelType int
+
+const (
+	PanelTypeSimple PanelType = iota // Container only, no children
+	PanelTypeDetail                   // Container + TextArea (for detail views)
+	PanelTypeList                     // Container + List widget
+	PanelTypeGrid                     // Container + Grid layout (use BuildGridEditor instead)
+)
+
+// TypedPanelConfig provides configuration for BuildTypedPanel
+type TypedPanelConfig struct {
+	// Panel type determines what content is added
+	Type PanelType
+
+	// SpecName from StandardPanels (optional - if empty, use manual options)
+	SpecName string
+
+	// Manual panel options (when SpecName is empty)
+	Position PanelOption
+	Size     PanelOption
+	Layout   PanelOption
+	Padding  PanelOption
+
+	// Detail panel options (for PanelTypeDetail)
+	DetailText string // Initial text for detail panels
+
+	// List panel options (for PanelTypeList)
+	ListConfig *ListConfig // Complete list configuration
+}
+
+// TypedPanelResult contains the panel and any created widgets
+type TypedPanelResult struct {
+	Panel    *widget.Container
+	TextArea *widget.TextArea // For PanelTypeDetail
+	List     *widget.List     // For PanelTypeList
+}
+
+// BuildTypedPanel creates a panel with standard content based on panel type.
+// This consolidates all panel creation patterns into a single builder method.
+//
+// Example usage:
+//
+//	// Simple panel from spec
+//	result := pb.BuildTypedPanel(TypedPanelConfig{
+//	    Type:     PanelTypeSimple,
+//	    SpecName: "turn_order",
+//	})
+//
+//	// Detail panel from spec
+//	result := pb.BuildTypedPanel(TypedPanelConfig{
+//	    Type:       PanelTypeDetail,
+//	    SpecName:   "inventory_detail",
+//	    DetailText: "Select an item",
+//	})
+//	textArea := result.TextArea
+//
+//	// Manual panel construction
+//	result := pb.BuildTypedPanel(TypedPanelConfig{
+//	    Type:     PanelTypeSimple,
+//	    Position: TopCenter(),
+//	    Size:     Size(0.5, 0.3),
+//	    Layout:   HorizontalRowLayout(),
+//	    Padding:  Padding(PaddingStandard),
+//	})
+func (pb *PanelBuilders) BuildTypedPanel(config TypedPanelConfig) TypedPanelResult {
+	var opts []PanelOption
+
+	// Build options from spec or manual configuration
+	if config.SpecName != "" {
+		// Use StandardPanels spec
+		spec, exists := StandardPanels[config.SpecName]
+		if !exists {
+			return TypedPanelResult{Panel: nil}
+		}
+
+		opts = []PanelOption{
+			spec.Position,
+			Size(spec.Width, spec.Height),
+			spec.Layout,
+		}
+
+		// Add padding option
+		if spec.Custom != nil {
+			opts = append(opts, CustomPadding(*spec.Custom))
+		} else {
+			opts = append(opts, Padding(spec.Padding))
+		}
+	} else {
+		// Use manual options
+		if config.Position != nil {
+			opts = append(opts, config.Position)
+		}
+		if config.Size != nil {
+			opts = append(opts, config.Size)
+		}
+		if config.Layout != nil {
+			opts = append(opts, config.Layout)
+		}
+		if config.Padding != nil {
+			opts = append(opts, config.Padding)
+		}
+	}
+
+	// Build the base panel
+	panel := pb.BuildPanel(opts...)
+
+	result := TypedPanelResult{Panel: panel}
+
+	// Add typed content based on panel type
+	switch config.Type {
+	case PanelTypeSimple:
+		// No additional content needed
+
+	case PanelTypeDetail:
+		// Add TextArea to panel
+		spec := StandardPanels[config.SpecName]
+		panelWidth := int(float64(pb.Layout.ScreenWidth) * spec.Width)
+		panelHeight := int(float64(pb.Layout.ScreenHeight) * spec.Height)
+
+		textArea := CreateTextAreaWithConfig(TextAreaConfig{
+			MinWidth:  panelWidth - 20,
+			MinHeight: panelHeight - 20,
+			FontColor: color.White,
+		})
+		textArea.SetText(config.DetailText)
+		panel.AddChild(textArea)
+		result.TextArea = textArea
+
+	case PanelTypeList:
+		// Add List to panel
+		if config.ListConfig != nil {
+			list := CreateListWithConfig(*config.ListConfig)
+			panel.AddChild(list)
+			result.List = list
+		}
+
+	case PanelTypeGrid:
+		// Grid panels should use BuildGridEditor instead
+		// This is just a fallback - no content added
+	}
+
+	return result
+}
 
 // GridEditorConfig provides configuration for 3x3 grid editors
 type GridEditorConfig struct {

@@ -2,7 +2,6 @@ package guimodes
 
 import (
 	"fmt"
-	"image/color"
 
 	"game_main/coords"
 	"game_main/gui"
@@ -36,50 +35,53 @@ func NewInfoMode(modeManager *core.UIModeManager) *InfoMode {
 
 // Initialize sets up the info mode UI
 func (im *InfoMode) Initialize(ctx *core.UIContext) error {
-	return gui.NewModeBuilder(&im.BaseMode, gui.ModeConfig{
+	err := gui.NewModeBuilder(&im.BaseMode, gui.ModeConfig{
 		ModeName:   "info_inspect",
 		ReturnMode: "exploration",
 
 		Panels: []gui.PanelSpec{
 			{
-				// Options panel (center-left)
-				SpecName: "options_list",
-				OnCreate: func(container *widget.Container) {
-					options := []interface{}{"Look at Creature", "Look at Tile"}
-					im.optionsList = widgets.CreateListWithConfig(widgets.ListConfig{
-						Entries: options,
-						EntryLabelFunc: func(e interface{}) string {
-							return e.(string)
-						},
-						OnEntrySelected: func(entry interface{}) {
-							if option, ok := entry.(string); ok {
-								im.handleOptionSelected(option)
-							}
-						},
-					})
-					container.AddChild(im.optionsList)
+				// Options panel (center-left) - now uses typed panel
+				PanelType: widgets.PanelTypeList,
+				SpecName:  "options_list",
+				ListConfig: &widgets.ListConfig{
+					Entries: []interface{}{"Look at Creature", "Look at Tile"},
+					EntryLabelFunc: func(e interface{}) string {
+						return e.(string)
+					},
+					OnEntrySelected: func(entry interface{}) {
+						if option, ok := entry.(string); ok {
+							im.handleOptionSelected(option)
+						}
+					},
 				},
 			},
 			{
-				// Detail panel (right side)
-				SpecName: "info_detail",
-				OnCreate: func(container *widget.Container) {
-					spec := widgets.StandardPanels["info_detail"]
-					panelWidth := int(float64(im.Layout.ScreenWidth) * spec.Width)
-					panelHeight := int(float64(im.Layout.ScreenHeight) * spec.Height)
-
-					textArea := widgets.CreateTextAreaWithConfig(widgets.TextAreaConfig{
-						MinWidth:  panelWidth - 20,
-						MinHeight: panelHeight - 20,
-						FontColor: color.White,
-					})
-					textArea.SetText("Select an option to inspect")
-					container.AddChild(textArea)
-					im.detailTextArea = textArea
-				},
+				// Detail panel (right side) - now uses typed panel
+				PanelType:  widgets.PanelTypeDetail,
+				SpecName:   "info_detail",
+				DetailText: "Select an option to inspect",
 			},
 		},
 	}).Build(ctx)
+
+	if err != nil {
+		return err
+	}
+
+	// Get references to widgets from typed panels
+	if w, ok := im.PanelWidgets["options_list"]; ok {
+		if list, ok := w.(*widget.List); ok {
+			im.optionsList = list
+		}
+	}
+	if w, ok := im.PanelWidgets["info_detail"]; ok {
+		if textArea, ok := w.(*widget.TextArea); ok {
+			im.detailTextArea = textArea
+		}
+	}
+
+	return nil
 }
 
 // Enter is called when switching to this mode

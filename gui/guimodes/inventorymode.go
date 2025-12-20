@@ -2,7 +2,6 @@ package guimodes
 
 import (
 	"fmt"
-	"image/color"
 
 	"game_main/gear"
 	"game_main/gui"
@@ -42,7 +41,7 @@ func (im *InventoryMode) Initialize(ctx *core.UIContext) error {
 	// Create inventory service first (needed by filter/list builders)
 	im.inventoryService = gear.NewInventoryService(ctx.ECSManager)
 
-	return gui.NewModeBuilder(&im.BaseMode, gui.ModeConfig{
+	err := gui.NewModeBuilder(&im.BaseMode, gui.ModeConfig{
 		ModeName:   "inventory",
 		ReturnMode: "exploration",
 
@@ -54,23 +53,10 @@ func (im *InventoryMode) Initialize(ctx *core.UIContext) error {
 			{CustomBuild: im.buildFilterButtons},
 			{CustomBuild: im.buildItemList},
 			{
-				// Detail panel (right side)
-				SpecName: "inventory_detail",
-				OnCreate: func(container *widget.Container) {
-					spec := widgets.StandardPanels["inventory_detail"]
-					panelWidth := int(float64(im.Layout.ScreenWidth) * spec.Width)
-					panelHeight := int(float64(im.Layout.ScreenHeight) * spec.Height)
-
-					textArea := widgets.CreateTextAreaWithConfig(widgets.TextAreaConfig{
-						MinWidth:  panelWidth - 20,
-						MinHeight: panelHeight - 20,
-						FontColor: color.White,
-					})
-					textArea.SetText("Select an item to view details")
-					container.AddChild(textArea)
-					im.detailTextArea = textArea
-					im.detailPanel = container
-				},
+				// Detail panel (right side) - now uses typed panel
+				PanelType:  widgets.PanelTypeDetail,
+				SpecName:   "inventory_detail",
+				DetailText: "Select an item to view details",
 			},
 		},
 
@@ -78,18 +64,24 @@ func (im *InventoryMode) Initialize(ctx *core.UIContext) error {
 			{
 				Position: widgets.BottomCenter(),
 				Buttons: []widgets.ButtonSpec{
-					{
-						Text: "Close (ESC)",
-						OnClick: func() {
-							if mode, exists := im.ModeManager.GetMode("exploration"); exists {
-								im.ModeManager.RequestTransition(mode, "Close button pressed")
-							}
-						},
-					},
+					gui.ModeTransitionSpec(im.ModeManager, "Close (ESC)", "exploration"),
 				},
 			},
 		},
 	}).Build(ctx)
+
+	if err != nil {
+		return err
+	}
+
+	// Get reference to detail TextArea from typed panel
+	if w, ok := im.PanelWidgets["inventory_detail"]; ok {
+		if textArea, ok := w.(*widget.TextArea); ok {
+			im.detailTextArea = textArea
+		}
+	}
+
+	return nil
 }
 
 func (im *InventoryMode) buildFilterButtons() *widget.Container {

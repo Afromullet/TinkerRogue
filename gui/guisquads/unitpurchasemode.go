@@ -202,8 +202,8 @@ func (upm *UnitPurchaseMode) buildActionButtons() *widget.Container {
 	actionButtonContainer.AddChild(upm.CommandHistory.CreateUndoButton())
 	actionButtonContainer.AddChild(upm.CommandHistory.CreateRedoButton())
 
-	// Close button using standard pattern
-	closeBtn := gui.CreateCloseButton(upm.ModeManager, "squad_management", "Back (ESC)")
+	// Close button using button builder
+	closeBtn := gui.ModeTransitionButton(upm.ModeManager, "Back (ESC)", "squad_management")
 	actionButtonContainer.AddChild(closeBtn)
 
 	return actionButtonContainer

@@ -89,14 +89,7 @@ func (sem *SquadEditorMode) Initialize(ctx *core.UIContext) error {
 							sem.onRenameSquad()
 						},
 					},
-					{
-						Text: "Close (ESC)",
-						OnClick: func() {
-							if mode, exists := sem.ModeManager.GetMode("squad_management"); exists {
-								sem.ModeManager.RequestTransition(mode, "Close button pressed")
-							}
-						},
-					},
+					gui.ModeTransitionSpec(sem.ModeManager, "Close (ESC)", "squad_management"),
 				},
 			},
 		},

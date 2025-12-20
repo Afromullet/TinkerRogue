@@ -11,28 +11,14 @@ import (
 )
 
 // CreateCloseButton creates a standard close button that transitions to a target mode.
-// Used consistently across all modes to provide ESC-like functionality for same-context transitions.
-// All modes use this same pattern - centralized here for consistency.
+// DEPRECATED: Use ModeTransitionButton from buttonbuilders.go instead.
 //
-// Use this for:
-// - Returning to a parent mode within the same context (e.g., squad_management -> squad_builder)
-// - Same-context mode transitions that feel like "closing" the current mode
+// This function is kept for backward compatibility but new code should use:
+//   closeBtn := gui.ModeTransitionButton(modeManager, "Back (ESC)", "squad_management")
 //
-// Use ModeCoordinator.EnterBattleMap() or EnterOverworld() for:
-// - Context switches between Overworld (strategic) and BattleMap (tactical) contexts
-// - Transitions that change the fundamental game layer
-//
-// Example:
-//   closeBtn := CreateCloseButton(modeManager, "squad_management", "Back (ESC)")
+// Deprecated: Use gui.ModeTransitionButton instead.
 func CreateCloseButton(modeManager *core.UIModeManager, targetModeName, buttonText string) *widget.Button {
-	return widgets.CreateButtonWithConfig(widgets.ButtonConfig{
-		Text: buttonText,
-		OnClick: func() {
-			if targetMode, exists := modeManager.GetMode(targetModeName); exists {
-				modeManager.RequestTransition(targetMode, "Close button pressed")
-			}
-		},
-	})
+	return ModeTransitionButton(modeManager, buttonText, targetModeName)
 }
 
 // CreateBottomCenterButtonContainer creates a standard bottom-center button container.
@@ -77,6 +63,17 @@ func AddActionButton(container *widget.Container, text string, onClick func()) {
 //	}
 //	container := CreateActionButtonGroup(panelBuilders, widgets.BottomCenter(), buttons)
 func CreateActionButtonGroup(panelBuilders *widgets.PanelBuilders, position widgets.PanelOption, specs []widgets.ButtonSpec) *widget.Container {
+	// Validate inputs
+	if panelBuilders == nil {
+		panic("CreateActionButtonGroup: panelBuilders is nil")
+	}
+	if panelBuilders.Layout == nil {
+		panic("CreateActionButtonGroup: panelBuilders.Layout is nil")
+	}
+	if position == nil {
+		panic("CreateActionButtonGroup: position is nil")
+	}
+
 	// Create positioned container with standard horizontal layout
 	// Use narrower width (0.35 = 35%) to avoid overlap with LeftBottom (15%) and BottomRight (24%) panels
 	// Centered at 35% width spans from 32.5% to 67.5%, leaving space for side panels

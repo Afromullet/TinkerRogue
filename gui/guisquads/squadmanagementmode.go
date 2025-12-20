@@ -52,7 +52,7 @@ func NewSquadManagementMode(modeManager *core.UIModeManager) *SquadManagementMod
 }
 
 func (smm *SquadManagementMode) Initialize(ctx *core.UIContext) error {
-	return gui.NewModeBuilder(&smm.BaseMode, gui.ModeConfig{
+	err := gui.NewModeBuilder(&smm.BaseMode, gui.ModeConfig{
 		ModeName:   "squad_management",
 		ReturnMode: "", // Context switch handled separately
 
@@ -67,60 +67,15 @@ func (smm *SquadManagementMode) Initialize(ctx *core.UIContext) error {
 			{CustomBuild: smm.buildSquadPanel},
 			{CustomBuild: smm.buildNavigationPanel},
 			{CustomBuild: smm.buildCommandPanel},
-		},
-
-		Buttons: []gui.ButtonGroupSpec{
-			{
-				Position: widgets.BottomCenter(),
-				Buttons: []widgets.ButtonSpec{
-					{
-						Text: "Battle Map (ESC)",
-						OnClick: func() {
-							if smm.Context.ModeCoordinator != nil {
-								smm.Context.ModeCoordinator.EnterBattleMap("exploration")
-							}
-						},
-					},
-					{
-						Text: "Squad Builder (B)",
-						OnClick: func() {
-							if builderMode, exists := smm.ModeManager.GetMode("squad_builder"); exists {
-								smm.ModeManager.RequestTransition(builderMode, "Open Squad Builder")
-							}
-						},
-					},
-					{
-						Text: "Formation (F)",
-						OnClick: func() {
-							if formationMode, exists := smm.ModeManager.GetMode("formation_editor"); exists {
-								smm.ModeManager.RequestTransition(formationMode, "Open Formation Editor")
-							}
-						},
-					},
-					{
-						Text: "Buy Units (P)",
-						OnClick: func() {
-							if purchaseMode, exists := smm.ModeManager.GetMode("unit_purchase"); exists {
-								smm.ModeManager.RequestTransition(purchaseMode, "Open Unit Purchase")
-							}
-						},
-					},
-					{
-						Text: "Edit Squad (E)",
-						OnClick: func() {
-							if editorMode, exists := smm.ModeManager.GetMode("squad_editor"); exists {
-								smm.ModeManager.RequestTransition(editorMode, "Open Squad Editor")
-							}
-						},
-					},
-				},
-			},
+			{CustomBuild: smm.buildActionButtons}, // Build after Context is available
 		},
 
 		StatusLabel: true,
 		Commands:    true,
 		OnRefresh:   smm.refreshAfterUndoRedo,
 	}).Build(ctx)
+
+	return err
 }
 
 func (smm *SquadManagementMode) buildSquadPanel() *widget.Container {
@@ -232,6 +187,23 @@ func (smm *SquadManagementMode) buildCommandPanel() *widget.Container {
 
 	smm.commandContainer = commandContainer
 	return commandContainer
+}
+
+func (smm *SquadManagementMode) buildActionButtons() *widget.Container {
+	// Action buttons (bottom-center) - built after Context is available
+	buttonContainer := gui.CreateActionButtonGroup(
+		smm.PanelBuilders,
+		widgets.BottomCenter(),
+		[]widgets.ButtonSpec{
+			gui.ContextSwitchSpec(smm.Context.ModeCoordinator, "Battle Map (ESC)", "battlemap", "exploration"),
+			gui.ModeTransitionSpec(smm.ModeManager, "Squad Builder (B)", "squad_builder"),
+			gui.ModeTransitionSpec(smm.ModeManager, "Formation (F)", "formation_editor"),
+			gui.ModeTransitionSpec(smm.ModeManager, "Buy Units (P)", "unit_purchase"),
+			gui.ModeTransitionSpec(smm.ModeManager, "Edit Squad (E)", "squad_editor"),
+		},
+	)
+
+	return buttonContainer
 }
 
 func (smm *SquadManagementMode) Enter(fromMode core.UIMode) error {
