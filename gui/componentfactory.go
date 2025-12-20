@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"image/color"
 
+	"game_main/gui/builders"
 	"game_main/gui/guicomponents"
 	"game_main/gui/guiresources"
-	"game_main/gui/widgets"
+	"game_main/gui/specs"
 	"game_main/squads"
 
 	"github.com/ebitenui/ebitenui/widget"
@@ -22,13 +23,13 @@ import (
 //   gridPanel, buttons := factory.CreateSquadBuilderGridPanel(onCellClick)
 type UIComponentFactory struct {
 	queries       *guicomponents.GUIQueries
-	panelBuilders *widgets.PanelBuilders
-	layout        *widgets.LayoutConfig
+	panelBuilders *builders.PanelBuilders
+	layout        *specs.LayoutConfig
 	width, height int
 }
 
 // NewUIComponentFactory creates a new unified UI component factory
-func NewUIComponentFactory(queries *guicomponents.GUIQueries, panelBuilders *widgets.PanelBuilders, layout *widgets.LayoutConfig) *UIComponentFactory {
+func NewUIComponentFactory(queries *guicomponents.GUIQueries, panelBuilders *builders.PanelBuilders, layout *specs.LayoutConfig) *UIComponentFactory {
 	return &UIComponentFactory{
 		queries:       queries,
 		panelBuilders: panelBuilders,
@@ -45,23 +46,23 @@ func NewUIComponentFactory(queries *guicomponents.GUIQueries, panelBuilders *wid
 // CreateCombatTurnOrderPanel builds the turn order display panel
 func (ucf *UIComponentFactory) CreateCombatTurnOrderPanel() *widget.Container {
 	// Calculate responsive size
-	panelWidth := int(float64(ucf.layout.ScreenWidth) * widgets.CombatTurnOrderWidth)
-	panelHeight := int(float64(ucf.layout.ScreenHeight) * widgets.CombatTurnOrderHeight)
+	panelWidth := int(float64(ucf.layout.ScreenWidth) * specs.CombatTurnOrderWidth)
+	panelHeight := int(float64(ucf.layout.ScreenHeight) * specs.CombatTurnOrderHeight)
 
 	// Create panel with horizontal row layout
-	panel := widgets.CreatePanelWithConfig(widgets.PanelConfig{
+	panel := builders.CreatePanelWithConfig(builders.PanelConfig{
 		MinWidth:   panelWidth,
 		MinHeight:  panelHeight,
 		Background: guiresources.PanelRes.Image,
 		Layout: widget.NewRowLayout(
 			widget.RowLayoutOpts.Direction(widget.DirectionHorizontal),
 			widget.RowLayoutOpts.Spacing(10),
-			widget.RowLayoutOpts.Padding(NewResponsiveRowPadding(ucf.layout, widgets.PaddingExtraSmall)),
+			widget.RowLayoutOpts.Padding(NewResponsiveRowPadding(ucf.layout, specs.PaddingExtraSmall)),
 		),
 	})
 
 	// Apply anchor layout positioning
-	topPad := int(float64(ucf.layout.ScreenHeight) * widgets.PaddingTight)
+	topPad := int(float64(ucf.layout.ScreenHeight) * specs.PaddingTight)
 	panel.GetWidget().LayoutData = AnchorCenterStart(topPad)
 
 	return panel
@@ -70,24 +71,24 @@ func (ucf *UIComponentFactory) CreateCombatTurnOrderPanel() *widget.Container {
 // CreateCombatFactionInfoPanel builds the faction information panel
 func (ucf *UIComponentFactory) CreateCombatFactionInfoPanel() *widget.Container {
 	// Calculate responsive size
-	panelWidth := int(float64(ucf.layout.ScreenWidth) * widgets.CombatFactionInfoWidth)
-	panelHeight := int(float64(ucf.layout.ScreenHeight) * widgets.CombatFactionInfoHeight)
+	panelWidth := int(float64(ucf.layout.ScreenWidth) * specs.CombatFactionInfoWidth)
+	panelHeight := int(float64(ucf.layout.ScreenHeight) * specs.CombatFactionInfoHeight)
 
 	// Create panel with vertical row layout
-	panel := widgets.CreatePanelWithConfig(widgets.PanelConfig{
+	panel := builders.CreatePanelWithConfig(builders.PanelConfig{
 		MinWidth:   panelWidth,
 		MinHeight:  panelHeight,
 		Background: guiresources.PanelRes.Image,
 		Layout: widget.NewRowLayout(
 			widget.RowLayoutOpts.Direction(widget.DirectionVertical),
 			widget.RowLayoutOpts.Spacing(5),
-			widget.RowLayoutOpts.Padding(NewResponsiveRowPadding(ucf.layout, widgets.PaddingExtraSmall)),
+			widget.RowLayoutOpts.Padding(NewResponsiveRowPadding(ucf.layout, specs.PaddingExtraSmall)),
 		),
 	})
 
 	// Apply anchor layout positioning
-	leftPad := int(float64(ucf.layout.ScreenWidth) * widgets.PaddingTight)
-	topPad := int(float64(ucf.layout.ScreenHeight) * widgets.PaddingTight)
+	leftPad := int(float64(ucf.layout.ScreenWidth) * specs.PaddingTight)
+	topPad := int(float64(ucf.layout.ScreenHeight) * specs.PaddingTight)
 	panel.GetWidget().LayoutData = AnchorStartStart(leftPad, topPad)
 
 	return panel
@@ -96,29 +97,29 @@ func (ucf *UIComponentFactory) CreateCombatFactionInfoPanel() *widget.Container 
 // CreateCombatSquadListPanel builds the squad list panel
 func (ucf *UIComponentFactory) CreateCombatSquadListPanel() *widget.Container {
 	// Calculate responsive size
-	panelWidth := int(float64(ucf.layout.ScreenWidth) * widgets.CombatSquadListWidth)
-	panelHeight := int(float64(ucf.layout.ScreenHeight) * widgets.CombatSquadListHeight)
+	panelWidth := int(float64(ucf.layout.ScreenWidth) * specs.CombatSquadListWidth)
+	panelHeight := int(float64(ucf.layout.ScreenHeight) * specs.CombatSquadListHeight)
 
 	// Create panel with vertical row layout
-	panel := widgets.CreatePanelWithConfig(widgets.PanelConfig{
+	panel := builders.CreatePanelWithConfig(builders.PanelConfig{
 		MinWidth:   panelWidth,
 		MinHeight:  panelHeight,
 		Background: guiresources.PanelRes.Image,
 		Layout: widget.NewRowLayout(
 			widget.RowLayoutOpts.Direction(widget.DirectionVertical),
 			widget.RowLayoutOpts.Spacing(5),
-			widget.RowLayoutOpts.Padding(NewResponsiveRowPadding(ucf.layout, widgets.PaddingExtraSmall)),
+			widget.RowLayoutOpts.Padding(NewResponsiveRowPadding(ucf.layout, specs.PaddingExtraSmall)),
 		),
 	})
 
 	// Apply anchor layout positioning
 	// Position below FactionInfo panel (which is 10% height + padding)
-	leftPad := int(float64(ucf.layout.ScreenWidth) * widgets.PaddingTight)
-	topOffset := int(float64(ucf.layout.ScreenHeight) * (widgets.CombatFactionInfoHeight + widgets.PaddingTight))
+	leftPad := int(float64(ucf.layout.ScreenWidth) * specs.PaddingTight)
+	topOffset := int(float64(ucf.layout.ScreenHeight) * (specs.CombatFactionInfoHeight + specs.PaddingTight))
 	panel.GetWidget().LayoutData = AnchorStartStart(leftPad, topOffset)
 
 	// Add label
-	listLabel := widgets.CreateSmallLabel("Your Squads:")
+	listLabel := builders.CreateSmallLabel("Your Squads:")
 	panel.AddChild(listLabel)
 
 	return panel
@@ -127,25 +128,25 @@ func (ucf *UIComponentFactory) CreateCombatSquadListPanel() *widget.Container {
 // CreateCombatSquadDetailPanel builds the squad detail panel
 func (ucf *UIComponentFactory) CreateCombatSquadDetailPanel() *widget.Container {
 	// Calculate responsive size
-	panelWidth := int(float64(ucf.layout.ScreenWidth) * widgets.CombatSquadDetailWidth)
-	panelHeight := int(float64(ucf.layout.ScreenHeight) * widgets.CombatSquadDetailHeight)
+	panelWidth := int(float64(ucf.layout.ScreenWidth) * specs.CombatSquadDetailWidth)
+	panelHeight := int(float64(ucf.layout.ScreenHeight) * specs.CombatSquadDetailHeight)
 
 	// Create panel with vertical row layout
-	panel := widgets.CreatePanelWithConfig(widgets.PanelConfig{
+	panel := builders.CreatePanelWithConfig(builders.PanelConfig{
 		MinWidth:   panelWidth,
 		MinHeight:  panelHeight,
 		Background: guiresources.PanelRes.Image,
 		Layout: widget.NewRowLayout(
 			widget.RowLayoutOpts.Direction(widget.DirectionVertical),
 			widget.RowLayoutOpts.Spacing(5),
-			widget.RowLayoutOpts.Padding(NewResponsiveRowPadding(ucf.layout, widgets.PaddingExtraSmall)),
+			widget.RowLayoutOpts.Padding(NewResponsiveRowPadding(ucf.layout, specs.PaddingExtraSmall)),
 		),
 	})
 
 	// Apply anchor layout positioning
 	// Position below SquadList panel (FactionInfo 10% + SquadList 35% + 3 padding gaps)
-	leftPad := int(float64(ucf.layout.ScreenWidth) * widgets.PaddingTight)
-	topOffset := int(float64(ucf.layout.ScreenHeight) * (widgets.CombatFactionInfoHeight + widgets.CombatSquadListHeight + widgets.PaddingTight*3))
+	leftPad := int(float64(ucf.layout.ScreenWidth) * specs.PaddingTight)
+	topOffset := int(float64(ucf.layout.ScreenHeight) * (specs.CombatFactionInfoHeight + specs.CombatSquadListHeight + specs.PaddingTight*3))
 	panel.GetWidget().LayoutData = AnchorStartStart(leftPad, topOffset)
 
 	return panel
@@ -154,11 +155,11 @@ func (ucf *UIComponentFactory) CreateCombatSquadDetailPanel() *widget.Container 
 // CreateCombatLogPanel builds the combat log panel using standard specification
 func (ucf *UIComponentFactory) CreateCombatLogPanel() (*widget.Container, *widget.TextArea) {
 	// Calculate responsive size
-	panelWidth := int(float64(ucf.layout.ScreenWidth) * widgets.CombatLogWidth)
-	panelHeight := int(float64(ucf.layout.ScreenHeight) * widgets.CombatLogHeight)
+	panelWidth := int(float64(ucf.layout.ScreenWidth) * specs.CombatLogWidth)
+	panelHeight := int(float64(ucf.layout.ScreenHeight) * specs.CombatLogHeight)
 
 	// Create panel with anchor layout (to hold textarea)
-	panel := widgets.CreatePanelWithConfig(widgets.PanelConfig{
+	panel := builders.CreatePanelWithConfig(builders.PanelConfig{
 		MinWidth:   panelWidth,
 		MinHeight:  panelHeight,
 		Background: guiresources.PanelRes.Image,
@@ -167,12 +168,12 @@ func (ucf *UIComponentFactory) CreateCombatLogPanel() (*widget.Container, *widge
 
 	// Apply anchor layout positioning to panel
 	// Position above action buttons (button height 8% + bottom offset 8% + padding)
-	rightPad := int(float64(ucf.layout.ScreenWidth) * widgets.PaddingTight)
-	bottomOffset := int(float64(ucf.layout.ScreenHeight) * (widgets.CombatActionButtonHeight + widgets.BottomButtonOffset + widgets.PaddingTight))
+	rightPad := int(float64(ucf.layout.ScreenWidth) * specs.PaddingTight)
+	bottomOffset := int(float64(ucf.layout.ScreenHeight) * (specs.CombatActionButtonHeight + specs.BottomButtonOffset + specs.PaddingTight))
 	panel.GetWidget().LayoutData = AnchorEndEnd(rightPad, bottomOffset)
 
 	// Create textarea to fit within panel
-	textArea := widgets.CreateTextAreaWithConfig(widgets.TextAreaConfig{
+	textArea := builders.CreateTextAreaWithConfig(builders.TextAreaConfig{
 		MinWidth:  panelWidth - 20,
 		MinHeight: panelHeight - 20,
 		FontColor: color.White,
@@ -194,14 +195,14 @@ func (ucf *UIComponentFactory) CreateCombatActionButtons(
 	onFlee func(),
 ) *widget.Container {
 	// Calculate responsive spacing
-	spacing := int(float64(ucf.layout.ScreenWidth) * widgets.PaddingTight)
+	spacing := int(float64(ucf.layout.ScreenWidth) * specs.PaddingTight)
 
-	// Create button group using widgets.CreateButtonGroup with LayoutData
-	bottomPad := int(float64(ucf.layout.ScreenHeight) * widgets.BottomButtonOffset)
+	// Create button group using builders.CreateButtonGroup with LayoutData
+	bottomPad := int(float64(ucf.layout.ScreenHeight) * specs.BottomButtonOffset)
 	anchorLayout := AnchorCenterEnd(bottomPad)
 
-	buttonContainer := widgets.CreateButtonGroup(widgets.ButtonGroupConfig{
-		Buttons: []widgets.ButtonSpec{
+	buttonContainer := builders.CreateButtonGroup(builders.ButtonGroupConfig{
+		Buttons: []builders.ButtonSpec{
 			{Text: "Attack (A)", OnClick: onAttack},
 			{Text: "Move (M)", OnClick: onMove},
 			{Text: "Undo (Ctrl+Z)", OnClick: onUndo},
@@ -211,7 +212,7 @@ func (ucf *UIComponentFactory) CreateCombatActionButtons(
 		},
 		Direction:  widget.DirectionHorizontal,
 		Spacing:    spacing,
-		Padding:    NewResponsiveHorizontalPadding(ucf.layout, widgets.PaddingExtraSmall),
+		Padding:    NewResponsiveHorizontalPadding(ucf.layout, specs.PaddingExtraSmall),
 		LayoutData: &anchorLayout,
 	})
 
@@ -227,14 +228,14 @@ func (ucf *UIComponentFactory) CreateExplorationActionButtons(
 	onCombat func(),
 ) *widget.Container {
 	// Calculate responsive spacing
-	spacing := int(float64(ucf.layout.ScreenWidth) * widgets.PaddingTight)
+	spacing := int(float64(ucf.layout.ScreenWidth) * specs.PaddingTight)
 
-	// Create button group using widgets.CreateButtonGroup with LayoutData
-	bottomPad := int(float64(ucf.layout.ScreenHeight) * widgets.BottomButtonOffset)
+	// Create button group using builders.CreateButtonGroup with LayoutData
+	bottomPad := int(float64(ucf.layout.ScreenHeight) * specs.BottomButtonOffset)
 	anchorLayout := AnchorCenterEnd(bottomPad)
 
-	buttonContainer := widgets.CreateButtonGroup(widgets.ButtonGroupConfig{
-		Buttons: []widgets.ButtonSpec{
+	buttonContainer := builders.CreateButtonGroup(builders.ButtonGroupConfig{
+		Buttons: []builders.ButtonSpec{
 			{Text: "Throwables", OnClick: onThrowables},
 			{Text: "Squads (E)", OnClick: onSquads},
 			{Text: "Inventory (I)", OnClick: onInventory},
@@ -243,7 +244,7 @@ func (ucf *UIComponentFactory) CreateExplorationActionButtons(
 		},
 		Direction:  widget.DirectionHorizontal,
 		Spacing:    spacing,
-		Padding:    NewResponsiveHorizontalPadding(ucf.layout, widgets.PaddingExtraSmall),
+		Padding:    NewResponsiveHorizontalPadding(ucf.layout, specs.PaddingExtraSmall),
 		LayoutData: &anchorLayout,
 	})
 
@@ -259,14 +260,14 @@ func (ucf *UIComponentFactory) CreateSquadManagementActionButtons(
 	onEditSquad func(),
 ) *widget.Container {
 	// Calculate responsive spacing
-	spacing := int(float64(ucf.layout.ScreenWidth) * widgets.PaddingTight)
+	spacing := int(float64(ucf.layout.ScreenWidth) * specs.PaddingTight)
 
-	// Create button group using widgets.CreateButtonGroup with LayoutData
-	bottomPad := int(float64(ucf.layout.ScreenHeight) * widgets.BottomButtonOffset)
+	// Create button group using builders.CreateButtonGroup with LayoutData
+	bottomPad := int(float64(ucf.layout.ScreenHeight) * specs.BottomButtonOffset)
 	anchorLayout := AnchorCenterEnd(bottomPad)
 
-	buttonContainer := widgets.CreateButtonGroup(widgets.ButtonGroupConfig{
-		Buttons: []widgets.ButtonSpec{
+	buttonContainer := builders.CreateButtonGroup(builders.ButtonGroupConfig{
+		Buttons: []builders.ButtonSpec{
 			{Text: "Battle Map (ESC)", OnClick: onBattleMap},
 			{Text: "Squad Builder (B)", OnClick: onSquadBuilder},
 			{Text: "Formation (F)", OnClick: onFormation},
@@ -275,7 +276,7 @@ func (ucf *UIComponentFactory) CreateSquadManagementActionButtons(
 		},
 		Direction:  widget.DirectionHorizontal,
 		Spacing:    spacing,
-		Padding:    NewResponsiveHorizontalPadding(ucf.layout, widgets.PaddingExtraSmall),
+		Padding:    NewResponsiveHorizontalPadding(ucf.layout, specs.PaddingExtraSmall),
 		LayoutData: &anchorLayout,
 	})
 
@@ -290,14 +291,14 @@ func (ucf *UIComponentFactory) CreateUnitPurchaseActionButtons(
 	onBack func(),
 ) *widget.Container {
 	// Calculate responsive spacing
-	spacing := int(float64(ucf.layout.ScreenWidth) * widgets.PaddingTight)
+	spacing := int(float64(ucf.layout.ScreenWidth) * specs.PaddingTight)
 
-	// Create button group using widgets.CreateButtonGroup with LayoutData
-	bottomPad := int(float64(ucf.layout.ScreenHeight) * widgets.BottomButtonOffset)
+	// Create button group using builders.CreateButtonGroup with LayoutData
+	bottomPad := int(float64(ucf.layout.ScreenHeight) * specs.BottomButtonOffset)
 	anchorLayout := AnchorCenterEnd(bottomPad)
 
-	buttonContainer := widgets.CreateButtonGroup(widgets.ButtonGroupConfig{
-		Buttons: []widgets.ButtonSpec{
+	buttonContainer := builders.CreateButtonGroup(builders.ButtonGroupConfig{
+		Buttons: []builders.ButtonSpec{
 			{Text: "Buy Unit", OnClick: onBuyUnit},
 			{Text: "Undo (Ctrl+Z)", OnClick: onUndo},
 			{Text: "Redo (Ctrl+Y)", OnClick: onRedo},
@@ -305,7 +306,7 @@ func (ucf *UIComponentFactory) CreateUnitPurchaseActionButtons(
 		},
 		Direction:  widget.DirectionHorizontal,
 		Spacing:    spacing,
-		Padding:    NewResponsiveHorizontalPadding(ucf.layout, widgets.PaddingExtraSmall),
+		Padding:    NewResponsiveHorizontalPadding(ucf.layout, specs.PaddingExtraSmall),
 		LayoutData: &anchorLayout,
 	})
 
@@ -320,14 +321,14 @@ func (ucf *UIComponentFactory) CreateSquadEditorActionButtons(
 	onClose func(),
 ) *widget.Container {
 	// Calculate responsive spacing
-	spacing := int(float64(ucf.layout.ScreenWidth) * widgets.PaddingTight)
+	spacing := int(float64(ucf.layout.ScreenWidth) * specs.PaddingTight)
 
-	// Create button group using widgets.CreateButtonGroup with LayoutData
-	bottomPad := int(float64(ucf.layout.ScreenHeight) * widgets.BottomButtonOffset)
+	// Create button group using builders.CreateButtonGroup with LayoutData
+	bottomPad := int(float64(ucf.layout.ScreenHeight) * specs.BottomButtonOffset)
 	anchorLayout := AnchorCenterEnd(bottomPad)
 
-	buttonContainer := widgets.CreateButtonGroup(widgets.ButtonGroupConfig{
-		Buttons: []widgets.ButtonSpec{
+	buttonContainer := builders.CreateButtonGroup(builders.ButtonGroupConfig{
+		Buttons: []builders.ButtonSpec{
 			{Text: "Rename Squad", OnClick: onRenameSquad},
 			{Text: "Undo (Ctrl+Z)", OnClick: onUndo},
 			{Text: "Redo (Ctrl+Y)", OnClick: onRedo},
@@ -335,7 +336,7 @@ func (ucf *UIComponentFactory) CreateSquadEditorActionButtons(
 		},
 		Direction:  widget.DirectionHorizontal,
 		Spacing:    spacing,
-		Padding:    NewResponsiveHorizontalPadding(ucf.layout, widgets.PaddingExtraSmall),
+		Padding:    NewResponsiveHorizontalPadding(ucf.layout, specs.PaddingExtraSmall),
 		LayoutData: &anchorLayout,
 	})
 
@@ -349,21 +350,21 @@ func (ucf *UIComponentFactory) CreateSquadDeploymentActionButtons(
 	onClose func(),
 ) *widget.Container {
 	// Calculate responsive spacing
-	spacing := int(float64(ucf.layout.ScreenWidth) * widgets.PaddingTight)
+	spacing := int(float64(ucf.layout.ScreenWidth) * specs.PaddingTight)
 
-	// Create button group using widgets.CreateButtonGroup with LayoutData
-	bottomPad := int(float64(ucf.layout.ScreenHeight) * widgets.BottomButtonOffset)
+	// Create button group using builders.CreateButtonGroup with LayoutData
+	bottomPad := int(float64(ucf.layout.ScreenHeight) * specs.BottomButtonOffset)
 	anchorLayout := AnchorCenterEnd(bottomPad)
 
-	buttonContainer := widgets.CreateButtonGroup(widgets.ButtonGroupConfig{
-		Buttons: []widgets.ButtonSpec{
+	buttonContainer := builders.CreateButtonGroup(builders.ButtonGroupConfig{
+		Buttons: []builders.ButtonSpec{
 			{Text: "Clear All", OnClick: onClearAll},
 			{Text: "Start Combat", OnClick: onStartCombat},
 			{Text: "Close (ESC)", OnClick: onClose},
 		},
 		Direction:  widget.DirectionHorizontal,
 		Spacing:    spacing,
-		Padding:    NewResponsiveHorizontalPadding(ucf.layout, widgets.PaddingExtraSmall),
+		Padding:    NewResponsiveHorizontalPadding(ucf.layout, specs.PaddingExtraSmall),
 		LayoutData: &anchorLayout,
 	})
 
@@ -398,9 +399,9 @@ func (ucf *UIComponentFactory) CreateSquadBuilderGridPanel(onCellClick func(row,
 	var buttons [3][3]*widget.Button
 
 	// Calculate responsive padding
-	padding := int(float64(ucf.layout.ScreenWidth) * widgets.PaddingTight)
+	padding := int(float64(ucf.layout.ScreenWidth) * specs.PaddingTight)
 
-	gridContainer, buttons := ucf.panelBuilders.BuildGridEditor(widgets.GridEditorConfig{
+	gridContainer, buttons := ucf.panelBuilders.BuildGridEditor(builders.GridEditorConfig{
 		CellTextFormat: func(row, col int) string {
 			return fmt.Sprintf("Empty\n[%d,%d]", row, col)
 		},
@@ -413,14 +414,14 @@ func (ucf *UIComponentFactory) CreateSquadBuilderGridPanel(onCellClick func(row,
 // CreateSquadBuilderRosterPalette builds the roster-based unit palette list
 // Requires roster to be passed for displaying counts
 func (ucf *UIComponentFactory) CreateSquadBuilderRosterPalette(onEntrySelected func(interface{}), getRoster func() *squads.UnitRoster) *widget.List {
-	listWidth := int(float64(ucf.layout.ScreenWidth) * widgets.SquadBuilderUnitListWidth)
-	listHeight := int(float64(ucf.layout.ScreenHeight) * widgets.SquadBuilderUnitListHeight)
+	listWidth := int(float64(ucf.layout.ScreenWidth) * specs.SquadBuilderUnitListWidth)
+	listHeight := int(float64(ucf.layout.ScreenHeight) * specs.SquadBuilderUnitListHeight)
 
 	// Calculate responsive padding
-	hPadding := int(float64(ucf.layout.ScreenWidth) * widgets.PaddingStandard)
-	vPadding := int(float64(ucf.layout.ScreenHeight) * widgets.PaddingStandard)
+	hPadding := int(float64(ucf.layout.ScreenWidth) * specs.PaddingStandard)
+	vPadding := int(float64(ucf.layout.ScreenHeight) * specs.PaddingStandard)
 
-	return widgets.CreateListWithConfig(widgets.ListConfig{
+	return builders.CreateListWithConfig(builders.ListConfig{
 		Entries: []interface{}{}, // Will be populated dynamically
 		MinWidth:  listWidth,
 		MinHeight: listHeight,
@@ -454,8 +455,8 @@ func (ucf *UIComponentFactory) CreateSquadBuilderRosterPalette(onEntrySelected f
 
 // CreateSquadBuilderPalette builds the unit palette list (deprecated - kept for compatibility)
 func (ucf *UIComponentFactory) CreateSquadBuilderPalette(onEntrySelected func(interface{})) *widget.List {
-	listWidth := int(float64(ucf.layout.ScreenWidth) * widgets.SquadBuilderUnitListWidth)
-	listHeight := int(float64(ucf.layout.ScreenHeight) * widgets.SquadBuilderUnitListHeight)
+	listWidth := int(float64(ucf.layout.ScreenWidth) * specs.SquadBuilderUnitListWidth)
+	listHeight := int(float64(ucf.layout.ScreenHeight) * specs.SquadBuilderUnitListHeight)
 
 	// Build entries from squads.Units
 	entries := make([]interface{}, len(squads.Units)+1)
@@ -465,10 +466,10 @@ func (ucf *UIComponentFactory) CreateSquadBuilderPalette(onEntrySelected func(in
 	}
 
 	// Calculate responsive padding
-	hPadding := int(float64(ucf.layout.ScreenWidth) * widgets.PaddingStandard)
-	vPadding := int(float64(ucf.layout.ScreenHeight) * widgets.PaddingStandard)
+	hPadding := int(float64(ucf.layout.ScreenWidth) * specs.PaddingStandard)
+	vPadding := int(float64(ucf.layout.ScreenHeight) * specs.PaddingStandard)
 
-	return widgets.CreateListWithConfig(widgets.ListConfig{
+	return builders.CreateListWithConfig(builders.ListConfig{
 		Entries:   entries,
 		MinWidth:  listWidth,
 		MinHeight: listHeight,
@@ -489,21 +490,21 @@ func (ucf *UIComponentFactory) CreateSquadBuilderPalette(onEntrySelected func(in
 
 // CreateSquadBuilderCapacityDisplay builds the capacity display panel
 func (ucf *UIComponentFactory) CreateSquadBuilderCapacityDisplay() *widget.TextArea {
-	displayWidth := int(float64(ucf.layout.ScreenWidth) * widgets.SquadBuilderInfoWidth)
-	displayHeight := int(float64(ucf.layout.ScreenHeight) * widgets.SquadBuilderInfoHeight)
+	displayWidth := int(float64(ucf.layout.ScreenWidth) * specs.SquadBuilderInfoWidth)
+	displayHeight := int(float64(ucf.layout.ScreenHeight) * specs.SquadBuilderInfoHeight)
 
-	config := widgets.TextAreaConfig{
+	config := builders.TextAreaConfig{
 		MinWidth:  displayWidth,
 		MinHeight: displayHeight,
 		FontColor: color.White,
 	}
 
-	capacityDisplay := widgets.CreateTextAreaWithConfig(config)
+	capacityDisplay := builders.CreateTextAreaWithConfig(config)
 	capacityDisplay.SetText("Capacity: 0.0 / 6.0\n(No leader)")
 
 	// Calculate responsive padding
-	hPadding := int(float64(ucf.layout.ScreenWidth) * widgets.PaddingStandard)
-	vPadding := int(float64(ucf.layout.ScreenHeight) * widgets.PaddingStackedWidget)
+	hPadding := int(float64(ucf.layout.ScreenWidth) * specs.PaddingStandard)
+	vPadding := int(float64(ucf.layout.ScreenHeight) * specs.PaddingStackedWidget)
 
 	capacityDisplay.GetWidget().LayoutData = AnchorEndStart(hPadding, vPadding)
 
@@ -512,20 +513,20 @@ func (ucf *UIComponentFactory) CreateSquadBuilderCapacityDisplay() *widget.TextA
 
 // CreateSquadBuilderDetailsPanel builds the unit details display panel
 func (ucf *UIComponentFactory) CreateSquadBuilderDetailsPanel() *widget.TextArea {
-	displayWidth := int(float64(ucf.layout.ScreenWidth) * widgets.SquadBuilderInfoWidth)
-	displayHeight := int(float64(ucf.layout.ScreenHeight) * (widgets.SquadBuilderInfoHeight * 2))
+	displayWidth := int(float64(ucf.layout.ScreenWidth) * specs.SquadBuilderInfoWidth)
+	displayHeight := int(float64(ucf.layout.ScreenHeight) * (specs.SquadBuilderInfoHeight * 2))
 
-	config := widgets.TextAreaConfig{
+	config := builders.TextAreaConfig{
 		MinWidth:  displayWidth,
 		MinHeight: displayHeight,
 		FontColor: color.White,
 	}
 
-	unitDetailsArea := widgets.CreateTextAreaWithConfig(config)
+	unitDetailsArea := builders.CreateTextAreaWithConfig(config)
 	unitDetailsArea.SetText("Select a unit to view details")
 
 	// Calculate responsive padding
-	hPadding := int(float64(ucf.layout.ScreenWidth) * widgets.PaddingStandard)
+	hPadding := int(float64(ucf.layout.ScreenWidth) * specs.PaddingStandard)
 
 	unitDetailsArea.GetWidget().LayoutData = AnchorEndCenter(hPadding)
 
@@ -542,11 +543,11 @@ func (ucf *UIComponentFactory) CreateSquadBuilderNameInput(onChanged func(string
 	)
 
 	// Label
-	nameLabel := widgets.CreateLargeLabel("Squad Name:")
+	nameLabel := builders.CreateLargeLabel("Squad Name:")
 	inputContainer.AddChild(nameLabel)
 
 	// Text input
-	squadNameInput := widgets.CreateTextInputWithConfig(widgets.TextInputConfig{
+	squadNameInput := builders.CreateTextInputWithConfig(builders.TextInputConfig{
 		MinWidth:    300,
 		MinHeight:   50,
 		FontFace:    guiresources.SmallFace,
@@ -556,7 +557,7 @@ func (ucf *UIComponentFactory) CreateSquadBuilderNameInput(onChanged func(string
 	inputContainer.AddChild(squadNameInput)
 
 	// Position at top center with responsive padding
-	vPadding := int(float64(ucf.layout.ScreenHeight) * widgets.PaddingStandard)
+	vPadding := int(float64(ucf.layout.ScreenHeight) * specs.PaddingStandard)
 
 	inputContainer.GetWidget().LayoutData = AnchorCenterStart(vPadding)
 
@@ -571,12 +572,12 @@ func (ucf *UIComponentFactory) CreateSquadBuilderActionButtons(
 	onClose func(),
 ) *widget.Container {
 	// Calculate responsive spacing and padding
-	spacing := int(float64(ucf.layout.ScreenWidth) * widgets.PaddingTight)
-	hPadding := int(float64(ucf.layout.ScreenWidth) * widgets.PaddingExtraSmall)
+	spacing := int(float64(ucf.layout.ScreenWidth) * specs.PaddingTight)
+	hPadding := int(float64(ucf.layout.ScreenWidth) * specs.PaddingExtraSmall)
 
 	// Create button group with squad builder actions
-	buttonContainer := widgets.CreateButtonGroup(widgets.ButtonGroupConfig{
-		Buttons: []widgets.ButtonSpec{
+	buttonContainer := builders.CreateButtonGroup(builders.ButtonGroupConfig{
+		Buttons: []builders.ButtonSpec{
 			{
 				Text:    "Create Squad",
 				OnClick: onCreate,
@@ -599,7 +600,7 @@ func (ucf *UIComponentFactory) CreateSquadBuilderActionButtons(
 		Padding:   widget.Insets{Left: hPadding, Right: hPadding},
 	})
 
-	bottomPad := int(float64(ucf.layout.ScreenHeight) * widgets.BottomButtonOffset)
+	bottomPad := int(float64(ucf.layout.ScreenHeight) * specs.BottomButtonOffset)
 	anchorLayout := AnchorCenterEnd(bottomPad)
 	buttonContainer.GetWidget().LayoutData = anchorLayout
 

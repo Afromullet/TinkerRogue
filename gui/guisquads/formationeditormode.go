@@ -6,7 +6,8 @@ import (
 	"fmt"
 	"game_main/common"
 	"game_main/gui/core"
-	"game_main/gui/widgets"
+	"game_main/gui/builders"
+	"game_main/gui/specs"
 	"game_main/squads"
 	"game_main/squads/squadcommands"
 
@@ -49,8 +50,8 @@ func (fem *FormationEditorMode) Initialize(ctx *core.UIContext) error {
 
 		Buttons: []gui.ButtonGroupSpec{
 			{
-				Position: widgets.BottomCenter(),
-				Buttons: []widgets.ButtonSpec{
+				Position: builders.BottomCenter(),
+				Buttons: []builders.ButtonSpec{
 					{
 						Text: "Apply Formation",
 						OnClick: func() {
@@ -73,13 +74,13 @@ func (fem *FormationEditorMode) buildSquadSelector() *widget.Container {
 	allSquadIDs := fem.Queries.SquadCache.FindAllSquads()
 
 	// Create squad selection list using helper with formation-specific constants
-	squadSelector := widgets.CreateSquadList(widgets.SquadListConfig{
+	squadSelector := builders.CreateSquadList(builders.SquadListConfig{
 		SquadIDs:      allSquadIDs,
 		Manager:       fem.Queries.ECSManager,
 		ScreenWidth:   fem.Layout.ScreenWidth,
 		ScreenHeight:  fem.Layout.ScreenHeight,
-		WidthPercent:  widgets.FormationSquadListWidth,
-		HeightPercent: widgets.FormationSquadListHeight,
+		WidthPercent:  specs.FormationSquadListWidth,
+		HeightPercent: specs.FormationSquadListHeight,
 		OnSelect: func(squadID ecs.EntityID) {
 			fem.currentSquadID = squadID
 			fem.loadSquadFormation(squadID)
@@ -87,8 +88,8 @@ func (fem *FormationEditorMode) buildSquadSelector() *widget.Container {
 			fem.SetStatus(fmt.Sprintf("Selected squad: %s", squadName))
 		},
 	})
-	leftPad := int(float64(fem.Layout.ScreenWidth) * widgets.PaddingStandard)
-	topPad := int(float64(fem.Layout.ScreenHeight) * widgets.PaddingStandard)
+	leftPad := int(float64(fem.Layout.ScreenWidth) * specs.PaddingStandard)
+	topPad := int(float64(fem.Layout.ScreenHeight) * specs.PaddingStandard)
 
 	fem.squadSelector = squadSelector
 
@@ -103,7 +104,7 @@ func (fem *FormationEditorMode) buildSquadSelector() *widget.Container {
 
 func (fem *FormationEditorMode) buildGridEditor() *widget.Container {
 	// Build 3x3 grid editor (center)
-	gridContainer, gridCells := fem.PanelBuilders.BuildGridEditor(widgets.GridEditorConfig{
+	gridContainer, gridCells := fem.PanelBuilders.BuildGridEditor(builders.GridEditorConfig{
 		OnCellClick: func(row, col int) {
 			fem.onCellClicked(row, col)
 		},
@@ -118,15 +119,15 @@ func (fem *FormationEditorMode) buildUnitPalette() *widget.Container {
 	unitTypes := []string{"Tank", "DPS", "Support", "Remove Unit"}
 
 	// Create simple string list using helper with formation-specific constants
-	unitPalette := widgets.CreateSimpleStringList(widgets.SimpleStringListConfig{
+	unitPalette := builders.CreateSimpleStringList(builders.SimpleStringListConfig{
 		Entries:       unitTypes,
 		ScreenWidth:   fem.Layout.ScreenWidth,
 		ScreenHeight:  fem.Layout.ScreenHeight,
-		WidthPercent:  widgets.FormationPaletteWidth,
-		HeightPercent: widgets.FormationPaletteHeight,
+		WidthPercent:  specs.FormationPaletteWidth,
+		HeightPercent: specs.FormationPaletteHeight,
 	})
 
-	rightPad := int(float64(fem.Layout.ScreenWidth) * widgets.PaddingStandard)
+	rightPad := int(float64(fem.Layout.ScreenWidth) * specs.PaddingStandard)
 
 	fem.unitPalette = unitPalette
 
@@ -230,7 +231,7 @@ func (fem *FormationEditorMode) onApplyFormation() {
 	squadName := fem.Queries.SquadCache.GetSquadName(fem.currentSquadID)
 
 	// Show confirmation dialog
-	dialog := widgets.CreateConfirmationDialog(widgets.DialogConfig{
+	dialog := builders.CreateConfirmationDialog(builders.DialogConfig{
 		Title:   "Apply Formation",
 		Message: fmt.Sprintf("Apply current formation to squad '%s'?\n\nThis will rearrange unit positions.\n\nYou can undo this action with Ctrl+Z.", squadName),
 		OnConfirm: func() {

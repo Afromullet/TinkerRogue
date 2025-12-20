@@ -2,8 +2,8 @@ package gui
 
 import (
 	"fmt"
+	"game_main/gui/builders"
 	"game_main/gui/core"
-	"game_main/gui/widgets"
 
 	"github.com/ebitenui/ebitenui"
 	"github.com/ebitenui/ebitenui/widget"
@@ -20,13 +20,13 @@ import (
 //	Buttons: []gui.ButtonGroupSpec{
 //	    {
 //	        Position: widgets.BottomCenter(),
-//	        Buttons: []widgets.ButtonSpec{
+//	        Buttons: []builders.ButtonSpec{
 //	            gui.ModeTransitionSpec(modeManager, "Close (ESC)", "squad_management"),
 //	        },
 //	    },
 //	}
-func ModeTransitionSpec(modeManager *core.UIModeManager, text, targetMode string) widgets.ButtonSpec {
-	return widgets.ButtonSpec{
+func ModeTransitionSpec(modeManager *core.UIModeManager, text, targetMode string) builders.ButtonSpec {
+	return builders.ButtonSpec{
 		Text: text,
 		OnClick: func() {
 			if mode, exists := modeManager.GetMode(targetMode); exists {
@@ -46,13 +46,13 @@ func ModeTransitionSpec(modeManager *core.UIModeManager, text, targetMode string
 //	Buttons: []gui.ButtonGroupSpec{
 //	    {
 //	        Position: widgets.BottomCenter(),
-//	        Buttons: []widgets.ButtonSpec{
+//	        Buttons: []builders.ButtonSpec{
 //	            gui.ContextSwitchSpec(coordinator, "Battle Map (ESC)", "battlemap", "exploration"),
 //	        },
 //	    },
 //	}
-func ContextSwitchSpec(coordinator *core.GameModeCoordinator, text, targetContext, targetMode string) widgets.ButtonSpec {
-	return widgets.ButtonSpec{
+func ContextSwitchSpec(coordinator *core.GameModeCoordinator, text, targetContext, targetMode string) builders.ButtonSpec {
+	return builders.ButtonSpec{
 		Text: text,
 		OnClick: func() {
 			if coordinator != nil {
@@ -82,7 +82,7 @@ func ContextSwitchSpec(coordinator *core.GameModeCoordinator, text, targetContex
 //
 //	btn := gui.ModeTransitionButton(modeManager, "Squad Management (E)", "squad_management")
 func ModeTransitionButton(modeManager *core.UIModeManager, text, targetMode string) *widget.Button {
-	return widgets.CreateButtonWithConfig(widgets.ButtonConfig{
+	return builders.CreateButtonWithConfig(builders.ButtonConfig{
 		Text: text,
 		OnClick: func() {
 			if mode, exists := modeManager.GetMode(targetMode); exists {
@@ -105,7 +105,7 @@ func ModeTransitionButton(modeManager *core.UIModeManager, text, targetMode stri
 //	btn := gui.ContextSwitchButton(coordinator, "Battle Map (ESC)", "battlemap", "exploration")
 //	btn := gui.ContextSwitchButton(coordinator, "Squads (E)", "overworld", "squad_management")
 func ContextSwitchButton(coordinator *core.GameModeCoordinator, text, targetContext, targetMode string) *widget.Button {
-	return widgets.CreateButtonWithConfig(widgets.ButtonConfig{
+	return builders.CreateButtonWithConfig(builders.ButtonConfig{
 		Text: text,
 		OnClick: func() {
 			if coordinator != nil {
@@ -167,7 +167,7 @@ type CommandExecutor interface {
 //	    UI:             ebitenUI,
 //	})
 func CommandButton(config CommandButtonConfig) *widget.Button {
-	return widgets.CreateButtonWithConfig(widgets.ButtonConfig{
+	return builders.CreateButtonWithConfig(builders.ButtonConfig{
 		Text: config.Text,
 		OnClick: func() {
 			// If no confirmation needed, execute immediately
@@ -178,7 +178,7 @@ func CommandButton(config CommandButtonConfig) *widget.Button {
 			}
 
 			// Show confirmation dialog
-			dialog := widgets.CreateConfirmationDialog(widgets.DialogConfig{
+			dialog := builders.CreateConfirmationDialog(builders.DialogConfig{
 				Title:   config.ConfirmTitle,
 				Message: config.ConfirmMessage,
 				OnConfirm: func() {

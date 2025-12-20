@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"game_main/gui"
 	"game_main/gui/core"
-	"game_main/gui/widgets"
+	"game_main/gui/builders"
+	"game_main/gui/specs"
 	"game_main/squads"
 	"game_main/squads/squadcommands"
 	"game_main/squads/squadservices"
@@ -64,10 +65,10 @@ func (upm *UnitPurchaseMode) Initialize(ctx *core.UIContext) error {
 
 func (upm *UnitPurchaseMode) buildUnitList() *widget.Container {
 	// Left side unit list (35% width to prevent overlap with 25% top-center resource display)
-	listWidth := int(float64(upm.Layout.ScreenWidth) * widgets.UnitPurchaseListWidth)
-	listHeight := int(float64(upm.Layout.ScreenHeight) * widgets.UnitPurchaseListHeight)
+	listWidth := int(float64(upm.Layout.ScreenWidth) * specs.UnitPurchaseListWidth)
+	listHeight := int(float64(upm.Layout.ScreenHeight) * specs.UnitPurchaseListHeight)
 
-	upm.unitList = widgets.CreateListWithConfig(widgets.ListConfig{
+	upm.unitList = builders.CreateListWithConfig(builders.ListConfig{
 		Entries:   []interface{}{}, // Will be populated in Enter
 		MinWidth:  listWidth,
 		MinHeight: listHeight,
@@ -94,8 +95,8 @@ func (upm *UnitPurchaseMode) buildUnitList() *widget.Container {
 	})
 
 	// Position below resource panel using Start-Start anchor (left-top)
-	leftPad := int(float64(upm.Layout.ScreenWidth) * widgets.PaddingStandard)
-	topOffset := int(float64(upm.Layout.ScreenHeight) * (widgets.UnitPurchaseResourceHeight + widgets.PaddingStandard*2))
+	leftPad := int(float64(upm.Layout.ScreenWidth) * specs.PaddingStandard)
+	topOffset := int(float64(upm.Layout.ScreenHeight) * (specs.UnitPurchaseResourceHeight + specs.PaddingStandard*2))
 
 	// Wrap in container with LayoutData
 	container := widget.NewContainer(
@@ -111,21 +112,21 @@ func (upm *UnitPurchaseMode) buildDetailPanel() *widget.Container {
 	panelWidth := int(float64(upm.Layout.ScreenWidth) * 0.35)
 	panelHeight := int(float64(upm.Layout.ScreenHeight) * 0.6)
 
-	upm.detailPanel = widgets.CreateStaticPanel(widgets.PanelConfig{
+	upm.detailPanel = builders.CreateStaticPanel(builders.PanelConfig{
 		MinWidth:  panelWidth,
 		MinHeight: panelHeight,
 		Layout: widget.NewRowLayout(
 			widget.RowLayoutOpts.Direction(widget.DirectionVertical),
 			widget.RowLayoutOpts.Spacing(10),
-			widget.RowLayoutOpts.Padding(gui.NewResponsiveRowPadding(upm.Layout, widgets.PaddingTight)),
+			widget.RowLayoutOpts.Padding(gui.NewResponsiveRowPadding(upm.Layout, specs.PaddingTight)),
 		),
 	})
 
-	rightPad := int(float64(upm.Layout.ScreenWidth) * widgets.PaddingStandard)
+	rightPad := int(float64(upm.Layout.ScreenWidth) * specs.PaddingStandard)
 	upm.detailPanel.GetWidget().LayoutData = gui.AnchorEndCenter(rightPad)
 
 	// Basic info text area
-	upm.detailTextArea = widgets.CreateTextAreaWithConfig(widgets.TextAreaConfig{
+	upm.detailTextArea = builders.CreateTextAreaWithConfig(builders.TextAreaConfig{
 		MinWidth:  panelWidth - 30,
 		MinHeight: 100,
 		FontColor: color.White,
@@ -134,7 +135,7 @@ func (upm *UnitPurchaseMode) buildDetailPanel() *widget.Container {
 	upm.detailPanel.AddChild(upm.detailTextArea)
 
 	// View Stats button
-	upm.viewStatsButton = widgets.CreateButtonWithConfig(widgets.ButtonConfig{
+	upm.viewStatsButton = builders.CreateButtonWithConfig(builders.ButtonConfig{
 		Text: "View Stats",
 		OnClick: func() {
 			upm.showStats()
@@ -144,7 +145,7 @@ func (upm *UnitPurchaseMode) buildDetailPanel() *widget.Container {
 	upm.detailPanel.AddChild(upm.viewStatsButton)
 
 	// Stats text area (hidden by default)
-	upm.statsTextArea = widgets.CreateTextAreaWithConfig(widgets.TextAreaConfig{
+	upm.statsTextArea = builders.CreateTextAreaWithConfig(builders.TextAreaConfig{
 		MinWidth:  panelWidth - 30,
 		MinHeight: 300,
 		FontColor: color.White,
@@ -160,13 +161,13 @@ func (upm *UnitPurchaseMode) buildResourceDisplay() *widget.Container {
 	panelWidth := int(float64(upm.Layout.ScreenWidth) * 0.25)
 	panelHeight := int(float64(upm.Layout.ScreenHeight) * 0.08)
 
-	resourcePanel := widgets.CreateStaticPanel(widgets.PanelConfig{
+	resourcePanel := builders.CreateStaticPanel(builders.PanelConfig{
 		MinWidth:  panelWidth,
 		MinHeight: panelHeight,
 		Layout: widget.NewRowLayout(
 			widget.RowLayoutOpts.Direction(widget.DirectionVertical),
 			widget.RowLayoutOpts.Spacing(5),
-			widget.RowLayoutOpts.Padding(gui.NewResponsiveRowPadding(upm.Layout, widgets.PaddingTight)),
+			widget.RowLayoutOpts.Padding(gui.NewResponsiveRowPadding(upm.Layout, specs.PaddingTight)),
 		),
 	})
 
@@ -174,11 +175,11 @@ func (upm *UnitPurchaseMode) buildResourceDisplay() *widget.Container {
 	resourcePanel.GetWidget().LayoutData = gui.AnchorCenterStart(topPad)
 
 	// Gold label
-	upm.goldLabel = widgets.CreateSmallLabel("Gold: 0")
+	upm.goldLabel = builders.CreateSmallLabel("Gold: 0")
 	resourcePanel.AddChild(upm.goldLabel)
 
 	// Roster label
-	upm.rosterLabel = widgets.CreateSmallLabel("Roster: 0/0")
+	upm.rosterLabel = builders.CreateSmallLabel("Roster: 0/0")
 	resourcePanel.AddChild(upm.rosterLabel)
 
 	return resourcePanel

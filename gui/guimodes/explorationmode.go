@@ -6,7 +6,7 @@ import (
 	"game_main/graphics"
 	"game_main/gui"
 	"game_main/gui/core"
-	"game_main/gui/widgets"
+	"game_main/gui/builders"
 
 	"github.com/ebitenui/ebitenui/widget"
 	"github.com/hajimehoshi/ebiten/v2"
@@ -49,7 +49,7 @@ func (em *ExplorationMode) Initialize(ctx *core.UIContext) error {
 		Panels: []gui.PanelSpec{
 			{
 				// Message log panel (bottom-right) - now uses typed panel
-				PanelType:  widgets.PanelTypeDetail,
+				PanelType:  builders.PanelTypeDetail,
 				SpecName:   "message_log",
 				DetailText: "",
 			},

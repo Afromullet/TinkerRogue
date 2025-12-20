@@ -5,7 +5,8 @@ import (
 	"game_main/gui"
 	"game_main/gui/core"
 	"game_main/gui/guiresources"
-	"game_main/gui/widgets"
+	"game_main/gui/builders"
+	"game_main/gui/specs"
 	"game_main/squads"
 	"game_main/squads/squadcommands"
 	"image/color"
@@ -80,10 +81,10 @@ func (smm *SquadManagementMode) Initialize(ctx *core.UIContext) error {
 
 func (smm *SquadManagementMode) buildSquadPanel() *widget.Container {
 	// Container for the current squad panel (will be populated in Enter)
-	panelWidth := int(float64(smm.Layout.ScreenWidth) * widgets.SquadMgmtPanelWidth)
-	panelHeight := int(float64(smm.Layout.ScreenHeight) * widgets.SquadMgmtPanelHeight)
+	panelWidth := int(float64(smm.Layout.ScreenWidth) * specs.SquadMgmtPanelWidth)
+	panelHeight := int(float64(smm.Layout.ScreenHeight) * specs.SquadMgmtPanelHeight)
 
-	panelContainer := widgets.CreateStaticPanel(widgets.PanelConfig{
+	panelContainer := builders.CreateStaticPanel(builders.PanelConfig{
 		MinWidth:  panelWidth,
 		MinHeight: panelHeight,
 		Layout: widget.NewRowLayout(
@@ -92,7 +93,7 @@ func (smm *SquadManagementMode) buildSquadPanel() *widget.Container {
 	})
 
 	// Apply anchor layout positioning - top-center
-	topPad := int(float64(smm.Layout.ScreenHeight) * widgets.PaddingStandard)
+	topPad := int(float64(smm.Layout.ScreenHeight) * specs.PaddingStandard)
 	panelContainer.GetWidget().LayoutData = gui.AnchorCenterStart(topPad)
 
 	smm.panelContainer = panelContainer
@@ -101,21 +102,21 @@ func (smm *SquadManagementMode) buildSquadPanel() *widget.Container {
 
 func (smm *SquadManagementMode) buildNavigationPanel() *widget.Container {
 	// Navigation container (Previous/Next buttons + squad counter)
-	navWidth := int(float64(smm.Layout.ScreenWidth) * widgets.SquadMgmtNavWidth)
-	navHeight := int(float64(smm.Layout.ScreenHeight) * widgets.SquadMgmtNavHeight)
+	navWidth := int(float64(smm.Layout.ScreenWidth) * specs.SquadMgmtNavWidth)
+	navHeight := int(float64(smm.Layout.ScreenHeight) * specs.SquadMgmtNavHeight)
 
-	navigationContainer := widgets.CreateStaticPanel(widgets.PanelConfig{
+	navigationContainer := builders.CreateStaticPanel(builders.PanelConfig{
 		MinWidth:  navWidth,
 		MinHeight: navHeight,
 		Layout: widget.NewRowLayout(
 			widget.RowLayoutOpts.Direction(widget.DirectionHorizontal),
 			widget.RowLayoutOpts.Spacing(20),
-			widget.RowLayoutOpts.Padding(gui.NewResponsiveRowPadding(smm.Layout, widgets.PaddingExtraSmall)),
+			widget.RowLayoutOpts.Padding(gui.NewResponsiveRowPadding(smm.Layout, specs.PaddingExtraSmall)),
 		),
 	})
 
 	// Previous button
-	smm.prevButton = widgets.CreateButtonWithConfig(widgets.ButtonConfig{
+	smm.prevButton = builders.CreateButtonWithConfig(builders.ButtonConfig{
 		Text: "< Previous",
 		OnClick: func() {
 			smm.showPreviousSquad()
@@ -124,11 +125,11 @@ func (smm *SquadManagementMode) buildNavigationPanel() *widget.Container {
 	navigationContainer.AddChild(smm.prevButton)
 
 	// Squad counter label
-	smm.squadCounterLabel = widgets.CreateSmallLabel("Squad 1 of 1")
+	smm.squadCounterLabel = builders.CreateSmallLabel("Squad 1 of 1")
 	navigationContainer.AddChild(smm.squadCounterLabel)
 
 	// Next button
-	smm.nextButton = widgets.CreateButtonWithConfig(widgets.ButtonConfig{
+	smm.nextButton = builders.CreateButtonWithConfig(builders.ButtonConfig{
 		Text: "Next >",
 		OnClick: func() {
 			smm.showNextSquad()
@@ -137,7 +138,7 @@ func (smm *SquadManagementMode) buildNavigationPanel() *widget.Container {
 	navigationContainer.AddChild(smm.nextButton)
 
 	// Position below panelContainer
-	navTopOffset := int(float64(smm.Layout.ScreenHeight) * (widgets.SquadMgmtPanelHeight + widgets.PaddingStandard*2))
+	navTopOffset := int(float64(smm.Layout.ScreenHeight) * (specs.SquadMgmtPanelHeight + specs.PaddingStandard*2))
 	navigationContainer.GetWidget().LayoutData = gui.AnchorCenterStart(navTopOffset)
 
 	smm.navigationContainer = navigationContainer
@@ -146,21 +147,21 @@ func (smm *SquadManagementMode) buildNavigationPanel() *widget.Container {
 
 func (smm *SquadManagementMode) buildCommandPanel() *widget.Container {
 	// Command buttons container (Disband, Merge, Undo, Redo)
-	cmdWidth := int(float64(smm.Layout.ScreenWidth) * widgets.SquadMgmtCmdWidth)
-	cmdHeight := int(float64(smm.Layout.ScreenHeight) * widgets.SquadMgmtCmdHeight)
+	cmdWidth := int(float64(smm.Layout.ScreenWidth) * specs.SquadMgmtCmdWidth)
+	cmdHeight := int(float64(smm.Layout.ScreenHeight) * specs.SquadMgmtCmdHeight)
 
-	commandContainer := widgets.CreateStaticPanel(widgets.PanelConfig{
+	commandContainer := builders.CreateStaticPanel(builders.PanelConfig{
 		MinWidth:  cmdWidth,
 		MinHeight: cmdHeight,
 		Layout: widget.NewRowLayout(
 			widget.RowLayoutOpts.Direction(widget.DirectionHorizontal),
 			widget.RowLayoutOpts.Spacing(10),
-			widget.RowLayoutOpts.Padding(gui.NewResponsiveRowPadding(smm.Layout, widgets.PaddingExtraSmall)),
+			widget.RowLayoutOpts.Padding(gui.NewResponsiveRowPadding(smm.Layout, specs.PaddingExtraSmall)),
 		),
 	})
 
 	// Disband Squad button
-	disbandBtn := widgets.CreateButtonWithConfig(widgets.ButtonConfig{
+	disbandBtn := builders.CreateButtonWithConfig(builders.ButtonConfig{
 		Text: "Disband Squad",
 		OnClick: func() {
 			smm.onDisbandSquad()
@@ -169,7 +170,7 @@ func (smm *SquadManagementMode) buildCommandPanel() *widget.Container {
 	commandContainer.AddChild(disbandBtn)
 
 	// Merge Squads button
-	mergeBtn := widgets.CreateButtonWithConfig(widgets.ButtonConfig{
+	mergeBtn := builders.CreateButtonWithConfig(builders.ButtonConfig{
 		Text: "Merge Squads",
 		OnClick: func() {
 			smm.onMergeSquads()
@@ -182,7 +183,7 @@ func (smm *SquadManagementMode) buildCommandPanel() *widget.Container {
 	commandContainer.AddChild(smm.CommandHistory.CreateRedoButton())
 
 	// Position below navigationContainer
-	cmdTopOffset := int(float64(smm.Layout.ScreenHeight) * (widgets.SquadMgmtPanelHeight + widgets.SquadMgmtNavHeight + widgets.PaddingStandard*3))
+	cmdTopOffset := int(float64(smm.Layout.ScreenHeight) * (specs.SquadMgmtPanelHeight + specs.SquadMgmtNavHeight + specs.PaddingStandard*3))
 	commandContainer.GetWidget().LayoutData = gui.AnchorCenterStart(cmdTopOffset)
 
 	smm.commandContainer = commandContainer
@@ -245,7 +246,7 @@ func (smm *SquadManagementMode) Enter(fromMode core.UIMode) error {
 	} else {
 		// No squads available - show message
 		smm.clearPanel()
-		noSquadsLabel := widgets.CreateLargeLabel("No squads available")
+		noSquadsLabel := builders.CreateLargeLabel("No squads available")
 		smm.panelContainer.AddChild(noSquadsLabel)
 	}
 
@@ -337,38 +338,38 @@ func (smm *SquadManagementMode) createSquadPanel(squadID ecs.EntityID) *SquadPan
 	}
 
 	// Container for this squad's panel
-	panel.container = widgets.CreateStaticPanel(widgets.PanelConfig{
+	panel.container = builders.CreateStaticPanel(builders.PanelConfig{
 		Background: guiresources.PanelRes.Image,
 		Layout: widget.NewRowLayout(
 			widget.RowLayoutOpts.Direction(widget.DirectionVertical),
 			widget.RowLayoutOpts.Spacing(10),
-			widget.RowLayoutOpts.Padding(gui.NewResponsiveRowPadding(smm.Layout, widgets.PaddingTight)),
+			widget.RowLayoutOpts.Padding(gui.NewResponsiveRowPadding(smm.Layout, specs.PaddingTight)),
 		),
 	})
 
 	// Squad name label - use unified query service
 	squadName := smm.Queries.SquadCache.GetSquadName(squadID)
-	nameLabel := widgets.CreateLargeLabel(fmt.Sprintf("Squad: %s", squadName))
+	nameLabel := builders.CreateLargeLabel(fmt.Sprintf("Squad: %s", squadName))
 	panel.container.AddChild(nameLabel)
 
 	// 3x3 grid visualization
 	gridVisualization := squads.VisualizeSquad(squadID, smm.Queries.ECSManager)
-	gridConfig := widgets.TextAreaConfig{
+	gridConfig := builders.TextAreaConfig{
 		MinWidth:  300,
 		MinHeight: 200,
 		FontColor: color.White,
 	}
-	panel.gridDisplay = widgets.CreateTextAreaWithConfig(gridConfig)
+	panel.gridDisplay = builders.CreateTextAreaWithConfig(gridConfig)
 	panel.gridDisplay.SetText(gridVisualization)
 	panel.container.AddChild(panel.gridDisplay)
 
 	// Squad stats display
-	statsConfig := widgets.TextAreaConfig{
+	statsConfig := builders.TextAreaConfig{
 		MinWidth:  300,
 		MinHeight: 100,
 		FontColor: color.White,
 	}
-	panel.statsDisplay = widgets.CreateTextAreaWithConfig(statsConfig)
+	panel.statsDisplay = builders.CreateTextAreaWithConfig(statsConfig)
 	panel.statsDisplay.SetText(smm.getSquadStats(squadID))
 	panel.container.AddChild(panel.statsDisplay)
 
@@ -384,7 +385,7 @@ func (smm *SquadManagementMode) createUnitList(squadID ecs.EntityID) *widget.Lis
 	unitIDs := smm.Queries.SquadCache.GetUnitIDsInSquad(squadID)
 
 	// Use helper to create unit list with fixed height to prevent layout jumping
-	return widgets.CreateUnitList(widgets.UnitListConfig{
+	return builders.CreateUnitList(builders.UnitListConfig{
 		UnitIDs:       unitIDs,
 		Manager:       smm.Queries.ECSManager,
 		ScreenWidth:   400,  // Fixed width
@@ -440,7 +441,7 @@ func (smm *SquadManagementMode) onDisbandSquad() {
 	squadName := smm.Queries.SquadCache.GetSquadName(currentSquadID)
 
 	// Show confirmation dialog
-	dialog := widgets.CreateConfirmationDialog(widgets.DialogConfig{
+	dialog := builders.CreateConfirmationDialog(builders.DialogConfig{
 		Title:   "Confirm Disband",
 		Message: fmt.Sprintf("Disband squad '%s'? This will return all units to the roster.\n\nYou can undo this action with Ctrl+Z.", squadName),
 		OnConfirm: func() {
@@ -483,7 +484,7 @@ func (smm *SquadManagementMode) onMergeSquads() {
 	}
 
 	// Show selection dialog using new builder - replaces 90+ lines of manual dialog creation
-	selectionDialog := widgets.CreateSelectionDialog(widgets.SelectionDialogConfig{
+	selectionDialog := builders.CreateSelectionDialog(builders.SelectionDialogConfig{
 		Title:            "Merge Squads",
 		Message:          fmt.Sprintf("Select squad to merge INTO '%s':", currentSquadName),
 		SelectionEntries: otherSquads,
@@ -506,7 +507,7 @@ func (smm *SquadManagementMode) onMergeSquads() {
 			targetSquadName := smm.Queries.SquadCache.GetSquadName(targetSquadID)
 
 			// Show confirmation dialog
-			confirmDialog := widgets.CreateConfirmationDialog(widgets.DialogConfig{
+			confirmDialog := builders.CreateConfirmationDialog(builders.DialogConfig{
 				Title:   "Confirm Merge",
 				Message: fmt.Sprintf("Merge '%s' INTO '%s'?\n\n'%s' will be disbanded and all units moved to '%s'.\n\nYou can undo this action with Ctrl+Z.", currentSquadName, targetSquadName, currentSquadName, targetSquadName),
 				OnConfirm: func() {

@@ -3,9 +3,10 @@ package gui
 import (
 	"fmt"
 
+	"game_main/gui/builders"
 	"game_main/gui/core"
 	"game_main/gui/guicomponents"
-	"game_main/gui/widgets"
+	"game_main/gui/specs"
 
 	"github.com/ebitenui/ebitenui"
 	"github.com/ebitenui/ebitenui/widget"
@@ -24,10 +25,10 @@ type InputBinding struct {
 type BaseMode struct {
 	ui             *ebitenui.UI
 	Context        *core.UIContext           // Exported for mode access
-	Layout         *widgets.LayoutConfig     // Exported for mode access
+	Layout         *specs.LayoutConfig       // Exported for mode access
 	ModeManager    *core.UIModeManager       // Exported for mode access
 	RootContainer  *widget.Container         // Exported for mode access
-	PanelBuilders  *widgets.PanelBuilders    // Exported for mode access
+	PanelBuilders  *builders.PanelBuilders   // Exported for mode access
 	Queries        *guicomponents.GUIQueries // Unified ECS query service - exported for mode access
 	StatusLabel    *widget.Text              // Optional status label for display and logging - set by modes that need it
 	CommandHistory *CommandHistory           // Optional command history for undo/redo support
@@ -55,8 +56,8 @@ func (bm *BaseMode) SetReturnMode(name string) {
 //   - ctx: UIContext with ECS manager, player data, etc.
 func (bm *BaseMode) InitializeBase(ctx *core.UIContext) {
 	bm.Context = ctx
-	bm.Layout = widgets.NewLayoutConfig(ctx)
-	bm.PanelBuilders = widgets.NewPanelBuilders(bm.Layout, bm.ModeManager)
+	bm.Layout = specs.NewLayoutConfig(ctx)
+	bm.PanelBuilders = builders.NewPanelBuilders(bm.Layout, bm.ModeManager)
 
 	// Initialize unified ECS query service
 	bm.Queries = guicomponents.NewGUIQueries(ctx.ECSManager)

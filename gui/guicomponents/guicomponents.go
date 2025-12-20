@@ -6,8 +6,8 @@ import (
 
 	"game_main/common"
 	"game_main/gear"
+	"game_main/gui/builders"
 	"game_main/gui/guiresources"
-	"game_main/gui/widgets"
 
 	"github.com/bytearena/ecs"
 	"github.com/ebitenui/ebitenui/widget"
@@ -144,7 +144,7 @@ func (slc *SquadListComponent) updateButtonWidgets(squadIDs []ecs.EntityID) {
 
 			localSquadID := squadID // Capture for closure
 
-			button = widgets.CreateButtonWithConfig(widgets.ButtonConfig{
+			button = builders.CreateButtonWithConfig(builders.ButtonConfig{
 				Text: squadInfo.Name,
 				OnClick: func() {
 					if slc.onSelect != nil {
@@ -163,7 +163,7 @@ func (slc *SquadListComponent) updateButtonWidgets(squadIDs []ecs.EntityID) {
 	if len(squadIDs) == 0 {
 		// Create "AI Turn" message once and cache it
 		if slc.noSquadsText == nil {
-			slc.noSquadsText = widgets.CreateTextWithConfig(widgets.TextConfig{
+			slc.noSquadsText = builders.CreateTextWithConfig(builders.TextConfig{
 				Text:     "AI Turn",
 				FontFace: guiresources.SmallFace,
 				Color:    color.Gray{Y: 128},

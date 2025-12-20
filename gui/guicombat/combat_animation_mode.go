@@ -9,7 +9,7 @@ import (
 	"game_main/common"
 	"game_main/gui"
 	"game_main/gui/core"
-	"game_main/gui/widgets"
+	"game_main/gui/builders"
 	"game_main/squads"
 
 	"github.com/bytearena/ecs"
@@ -206,7 +206,7 @@ func (cam *CombatAnimationMode) buildPromptLabel() *widget.Container {
 	}
 
 	// Create prompt label (centered at bottom)
-	cam.promptLabel = widgets.CreateLargeLabel("")
+	cam.promptLabel = builders.CreateLargeLabel("")
 	promptContainer := widget.NewContainer(
 		widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
 		widget.ContainerOpts.WidgetOpts(

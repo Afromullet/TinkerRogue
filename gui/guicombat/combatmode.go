@@ -9,7 +9,7 @@ import (
 	"game_main/gui/core"
 	"game_main/gui/guicomponents"
 	"game_main/gui/guimodes"
-	"game_main/gui/widgets"
+	"game_main/gui/builders"
 
 	"github.com/bytearena/ecs"
 	"github.com/ebitenui/ebitenui/widget"
@@ -121,7 +121,7 @@ func (cm *CombatMode) buildTurnOrderPanel() *widget.Container {
 	cm.ensureUIFactoryInitialized()
 
 	cm.turnOrderPanel = cm.uiFactory.CreateCombatTurnOrderPanel()
-	cm.turnOrderLabel = widgets.CreateLargeLabel("Initializing combat...")
+	cm.turnOrderLabel = builders.CreateLargeLabel("Initializing combat...")
 	cm.turnOrderPanel.AddChild(cm.turnOrderLabel)
 
 	return cm.turnOrderPanel
@@ -131,7 +131,7 @@ func (cm *CombatMode) buildFactionInfoPanel() *widget.Container {
 	cm.ensureUIFactoryInitialized()
 
 	cm.factionInfoPanel = cm.uiFactory.CreateCombatFactionInfoPanel()
-	cm.factionInfoText = widgets.CreateSmallLabel("Faction Info")
+	cm.factionInfoText = builders.CreateSmallLabel("Faction Info")
 	cm.factionInfoPanel.AddChild(cm.factionInfoText)
 
 	return cm.factionInfoPanel
@@ -149,7 +149,7 @@ func (cm *CombatMode) buildSquadDetailPanel() *widget.Container {
 	cm.ensureUIFactoryInitialized()
 
 	cm.squadDetailPanel = cm.uiFactory.CreateCombatSquadDetailPanel()
-	cm.squadDetailText = widgets.CreateSmallLabel("Select a squad\nto view details")
+	cm.squadDetailText = builders.CreateSmallLabel("Select a squad\nto view details")
 	cm.squadDetailPanel.AddChild(cm.squadDetailText)
 
 	return cm.squadDetailPanel

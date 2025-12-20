@@ -7,7 +7,8 @@ import (
 	"game_main/gui"
 	"game_main/gui/core"
 	"game_main/gui/guicomponents"
-	"game_main/gui/widgets"
+	"game_main/gui/builders"
+	"game_main/gui/specs"
 
 	"github.com/ebitenui/ebitenui/widget"
 	"github.com/hajimehoshi/ebiten/v2"
@@ -54,7 +55,7 @@ func (im *InventoryMode) Initialize(ctx *core.UIContext) error {
 			{CustomBuild: im.buildItemList},
 			{
 				// Detail panel (right side) - now uses typed panel
-				PanelType:  widgets.PanelTypeDetail,
+				PanelType:  builders.PanelTypeDetail,
 				SpecName:   "inventory_detail",
 				DetailText: "Select an item to view details",
 			},
@@ -62,8 +63,8 @@ func (im *InventoryMode) Initialize(ctx *core.UIContext) error {
 
 		Buttons: []gui.ButtonGroupSpec{
 			{
-				Position: widgets.BottomCenter(),
-				Buttons: []widgets.ButtonSpec{
+				Position: builders.BottomCenter(),
+				Buttons: []builders.ButtonSpec{
 					gui.ModeTransitionSpec(im.ModeManager, "Close (ESC)", "exploration"),
 				},
 			},
@@ -86,13 +87,13 @@ func (im *InventoryMode) Initialize(ctx *core.UIContext) error {
 
 func (im *InventoryMode) buildFilterButtons() *widget.Container {
 	// Top-left filter buttons using helper
-	filterButtons := gui.CreateFilterButtonContainer(im.PanelBuilders, widgets.TopLeft())
+	filterButtons := gui.CreateFilterButtonContainer(im.PanelBuilders, builders.TopLeft())
 
 	// Filter buttons - use component's SetFilter when clicked
 	filters := []string{"All", "Throwables", "Equipment", "Consumables"}
 	for _, filterName := range filters {
 		filterNameCopy := filterName // Capture for closure
-		btn := widgets.CreateButtonWithConfig(widgets.ButtonConfig{
+		btn := builders.CreateButtonWithConfig(builders.ButtonConfig{
 			Text: filterName,
 			OnClick: func() {
 				// Sync both filter states before delegating to component
@@ -111,11 +112,11 @@ func (im *InventoryMode) buildFilterButtons() *widget.Container {
 
 func (im *InventoryMode) buildItemList() *widget.Container {
 	// Create inventory list using helper (without LayoutData in config)
-	itemList := widgets.CreateInventoryList(widgets.InventoryListConfig{
+	itemList := builders.CreateInventoryList(builders.InventoryListConfig{
 		ScreenWidth:   im.Layout.ScreenWidth,
 		ScreenHeight:  im.Layout.ScreenHeight,
-		WidthPercent:  widgets.InventoryListWidth,
-		HeightPercent: widgets.InventoryListHeight,
+		WidthPercent:  specs.InventoryListWidth,
+		HeightPercent: specs.InventoryListHeight,
 		OnSelect:      im.handleItemSelection,
 		EntryLabelFunc: func(e interface{}) string {
 			// Handle both string messages and InventoryListEntry
@@ -147,8 +148,8 @@ func (im *InventoryMode) buildItemList() *widget.Container {
 			HorizontalPosition: widget.AnchorLayoutPositionStart,
 			VerticalPosition:   widget.AnchorLayoutPositionCenter,
 			Padding: widget.Insets{
-				Left: int(float64(im.Layout.ScreenWidth) * widgets.PaddingStandard),
-				Top:  int(float64(im.Layout.ScreenHeight) * widgets.PanelHeightSmall),
+				Left: int(float64(im.Layout.ScreenWidth) * specs.PaddingStandard),
+				Top:  int(float64(im.Layout.ScreenHeight) * specs.PanelHeightSmall),
 			},
 		})),
 	)

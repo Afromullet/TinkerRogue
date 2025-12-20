@@ -1,20 +1,20 @@
 package gui
 
 import (
-	"game_main/gui/widgets"
+	"game_main/gui/specs"
 	"testing"
 
 	"github.com/ebitenui/ebitenui/widget"
 )
 
 func TestNewResponsiveRowPadding(t *testing.T) {
-	layout := &widgets.LayoutConfig{
+	layout := &specs.LayoutConfig{
 		ScreenWidth:  800,
 		ScreenHeight: 600,
 	}
 
 	// Test with PaddingExtraSmall (0.0125)
-	insets := NewResponsiveRowPadding(layout, widgets.PaddingExtraSmall)
+	insets := NewResponsiveRowPadding(layout, specs.PaddingExtraSmall)
 
 	expectedH := 10 // int(float64(800) * 0.0125)
 	expectedV := 7  // int(float64(600) * 0.0125)
@@ -31,7 +31,7 @@ func TestNewResponsiveRowPadding(t *testing.T) {
 }
 
 func TestNewResponsiveHorizontalPadding(t *testing.T) {
-	layout := &widgets.LayoutConfig{
+	layout := &specs.LayoutConfig{
 		ScreenWidth:  1000,
 		ScreenHeight: 800,
 	}
@@ -48,7 +48,7 @@ func TestNewResponsiveHorizontalPadding(t *testing.T) {
 }
 
 func TestNewResponsiveVerticalPadding(t *testing.T) {
-	layout := &widgets.LayoutConfig{
+	layout := &specs.LayoutConfig{
 		ScreenWidth:  1000,
 		ScreenHeight: 800,
 	}
@@ -65,7 +65,7 @@ func TestNewResponsiveVerticalPadding(t *testing.T) {
 }
 
 func TestNewResponsivePaddingSingle(t *testing.T) {
-	layout := &widgets.LayoutConfig{
+	layout := &specs.LayoutConfig{
 		ScreenWidth:  800,
 		ScreenHeight: 600,
 	}

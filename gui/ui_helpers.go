@@ -1,7 +1,7 @@
 package gui
 
 import (
-	"game_main/gui/widgets"
+	"game_main/gui/specs"
 
 	"github.com/ebitenui/ebitenui/widget"
 )
@@ -21,7 +21,7 @@ import (
 //	    Top:    int(float64(layout.ScreenHeight) * widgets.PaddingExtraSmall),
 //	    Bottom: int(float64(layout.ScreenHeight) * widgets.PaddingExtraSmall),
 //	}
-func NewResponsiveRowPadding(layout *widgets.LayoutConfig, paddingConstant float64) widget.Insets {
+func NewResponsiveRowPadding(layout *specs.LayoutConfig, paddingConstant float64) widget.Insets {
 	hPadding := int(float64(layout.ScreenWidth) * paddingConstant)
 	vPadding := int(float64(layout.ScreenHeight) * paddingConstant)
 
@@ -39,7 +39,7 @@ func NewResponsiveRowPadding(layout *widgets.LayoutConfig, paddingConstant float
 // Example usage:
 //
 //	padding := gui.NewResponsiveHorizontalPadding(layout, widgets.PaddingExtraSmall)
-func NewResponsiveHorizontalPadding(layout *widgets.LayoutConfig, paddingConstant float64) widget.Insets {
+func NewResponsiveHorizontalPadding(layout *specs.LayoutConfig, paddingConstant float64) widget.Insets {
 	hPadding := int(float64(layout.ScreenWidth) * paddingConstant)
 
 	return widget.Insets{
@@ -54,7 +54,7 @@ func NewResponsiveHorizontalPadding(layout *widgets.LayoutConfig, paddingConstan
 // Example usage:
 //
 //	padding := gui.NewResponsiveVerticalPadding(layout, widgets.PaddingStandard)
-func NewResponsiveVerticalPadding(layout *widgets.LayoutConfig, paddingConstant float64) widget.Insets {
+func NewResponsiveVerticalPadding(layout *specs.LayoutConfig, paddingConstant float64) widget.Insets {
 	vPadding := int(float64(layout.ScreenHeight) * paddingConstant)
 
 	return widget.Insets{
@@ -83,7 +83,7 @@ const (
 // Example usage:
 //
 //	padding := gui.NewResponsivePaddingSingle(layout, widgets.PaddingTight, gui.PaddingTop)
-func NewResponsivePaddingSingle(layout *widgets.LayoutConfig, paddingConstant float64, side PaddingSide) widget.Insets {
+func NewResponsivePaddingSingle(layout *specs.LayoutConfig, paddingConstant float64, side PaddingSide) widget.Insets {
 	hPadding := int(float64(layout.ScreenWidth) * paddingConstant)
 	vPadding := int(float64(layout.ScreenHeight) * paddingConstant)
 

@@ -6,7 +6,7 @@ import (
 	"game_main/coords"
 	"game_main/gui"
 	"game_main/gui/core"
-	"game_main/gui/widgets"
+	"game_main/gui/builders"
 
 	"github.com/ebitenui/ebitenui/widget"
 )
@@ -42,9 +42,9 @@ func (im *InfoMode) Initialize(ctx *core.UIContext) error {
 		Panels: []gui.PanelSpec{
 			{
 				// Options panel (center-left) - now uses typed panel
-				PanelType: widgets.PanelTypeList,
+				PanelType: builders.PanelTypeList,
 				SpecName:  "options_list",
-				ListConfig: &widgets.ListConfig{
+				ListConfig: &builders.ListConfig{
 					Entries: []interface{}{"Look at Creature", "Look at Tile"},
 					EntryLabelFunc: func(e interface{}) string {
 						return e.(string)
@@ -58,7 +58,7 @@ func (im *InfoMode) Initialize(ctx *core.UIContext) error {
 			},
 			{
 				// Detail panel (right side) - now uses typed panel
-				PanelType:  widgets.PanelTypeDetail,
+				PanelType:  builders.PanelTypeDetail,
 				SpecName:   "info_detail",
 				DetailText: "Select an option to inspect",
 			},

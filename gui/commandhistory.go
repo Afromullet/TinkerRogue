@@ -2,8 +2,8 @@ package gui
 
 import (
 	"fmt"
+	"game_main/gui/builders"
 	"game_main/gui/core"
-	"game_main/gui/widgets"
 	"game_main/squads/squadcommands"
 
 	"github.com/ebitenui/ebitenui/widget"
@@ -105,7 +105,7 @@ func (ch *CommandHistory) HandleInput(inputState *core.InputState) bool {
 
 // CreateUndoButton creates a standard undo button
 func (ch *CommandHistory) CreateUndoButton() *widget.Button {
-	return widgets.CreateButtonWithConfig(widgets.ButtonConfig{
+	return builders.CreateButtonWithConfig(builders.ButtonConfig{
 		Text: "Undo (Ctrl+Z)",
 		OnClick: func() {
 			ch.Undo()
@@ -115,7 +115,7 @@ func (ch *CommandHistory) CreateUndoButton() *widget.Button {
 
 // CreateRedoButton creates a standard redo button
 func (ch *CommandHistory) CreateRedoButton() *widget.Button {
-	return widgets.CreateButtonWithConfig(widgets.ButtonConfig{
+	return builders.CreateButtonWithConfig(builders.ButtonConfig{
 		Text: "Redo (Ctrl+Y)",
 		OnClick: func() {
 			ch.Redo()

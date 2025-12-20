@@ -9,7 +9,8 @@ import (
 	"game_main/gui"
 	"game_main/gui/core"
 	"game_main/gui/guimodes"
-	"game_main/gui/widgets"
+	"game_main/gui/builders"
+	"game_main/gui/specs"
 	"game_main/squads/squadservices"
 
 	"github.com/bytearena/ecs"
@@ -77,8 +78,8 @@ func (sdm *SquadDeploymentMode) Initialize(ctx *core.UIContext) error {
 
 func (sdm *SquadDeploymentMode) buildInstructionText() *widget.Container {
 	// Build instruction text (top-center)
-	instructionText := widgets.CreateSmallLabel("Select a squad from the list, then click on the map to place it")
-	topPad := int(float64(sdm.Layout.ScreenHeight) * widgets.PaddingStandard)
+	instructionText := builders.CreateSmallLabel("Select a squad from the list, then click on the map to place it")
+	topPad := int(float64(sdm.Layout.ScreenHeight) * specs.PaddingStandard)
 
 	sdm.instructionText = instructionText
 
@@ -93,10 +94,10 @@ func (sdm *SquadDeploymentMode) buildInstructionText() *widget.Container {
 
 func (sdm *SquadDeploymentMode) buildSquadList() *widget.Container {
 	// Left side squad list (same pattern as unit purchase mode)
-	listWidth := int(float64(sdm.Layout.ScreenWidth) * widgets.SquadDeployListWidth)
-	listHeight := int(float64(sdm.Layout.ScreenHeight) * widgets.SquadDeployListHeight)
+	listWidth := int(float64(sdm.Layout.ScreenWidth) * specs.SquadDeployListWidth)
+	listHeight := int(float64(sdm.Layout.ScreenHeight) * specs.SquadDeployListHeight)
 
-	squadList := widgets.CreateListWithConfig(widgets.ListConfig{
+	squadList := builders.CreateListWithConfig(builders.ListConfig{
 		Entries:   []interface{}{}, // Will be populated in Enter
 		MinWidth:  listWidth,
 		MinHeight: listHeight,
@@ -125,8 +126,8 @@ func (sdm *SquadDeploymentMode) buildSquadList() *widget.Container {
 	})
 
 	// Position below instruction text using Start-Start anchor (left-top)
-	leftPad := int(float64(sdm.Layout.ScreenWidth) * widgets.PaddingStandard)
-	topOffset := int(float64(sdm.Layout.ScreenHeight) * (widgets.PaddingStandard*3))
+	leftPad := int(float64(sdm.Layout.ScreenWidth) * specs.PaddingStandard)
+	topOffset := int(float64(sdm.Layout.ScreenHeight) * (specs.PaddingStandard*3))
 
 	sdm.squadList = squadList
 
@@ -144,21 +145,21 @@ func (sdm *SquadDeploymentMode) buildDetailPanel() *widget.Container {
 	panelWidth := int(float64(sdm.Layout.ScreenWidth) * 0.35)
 	panelHeight := int(float64(sdm.Layout.ScreenHeight) * 0.6)
 
-	detailPanel := widgets.CreateStaticPanel(widgets.PanelConfig{
+	detailPanel := builders.CreateStaticPanel(builders.PanelConfig{
 		MinWidth:  panelWidth,
 		MinHeight: panelHeight,
 		Layout: widget.NewRowLayout(
 			widget.RowLayoutOpts.Direction(widget.DirectionVertical),
 			widget.RowLayoutOpts.Spacing(10),
-			widget.RowLayoutOpts.Padding(gui.NewResponsiveRowPadding(sdm.Layout, widgets.PaddingTight)),
+			widget.RowLayoutOpts.Padding(gui.NewResponsiveRowPadding(sdm.Layout, specs.PaddingTight)),
 		),
 	})
 
-	rightPad := int(float64(sdm.Layout.ScreenWidth) * widgets.PaddingStandard)
+	rightPad := int(float64(sdm.Layout.ScreenWidth) * specs.PaddingStandard)
 	detailPanel.GetWidget().LayoutData = gui.AnchorEndCenter(rightPad)
 
 	// Detail text area
-	detailTextArea := widgets.CreateTextAreaWithConfig(widgets.TextAreaConfig{
+	detailTextArea := builders.CreateTextAreaWithConfig(builders.TextAreaConfig{
 		MinWidth:  panelWidth - 30,
 		MinHeight: panelHeight - 30,
 		FontColor: color.White,

@@ -3,8 +3,9 @@ package gui
 import (
 	"fmt"
 
+	"game_main/gui/builders"
 	"game_main/gui/core"
-	"game_main/gui/widgets"
+	
 
 	"github.com/ebitenui/ebitenui/widget"
 	"github.com/hajimehoshi/ebiten/v2"
@@ -49,10 +50,10 @@ type HotkeySpec struct {
 // 3. CustomBuild: For complex custom panels
 type PanelSpec struct {
 	// Type-based panel creation (recommended)
-	PanelType   widgets.PanelType         // Type of panel (Simple, Detail, List)
-	SpecName    string                    // Panel specification name from widgets.StandardPanels
+	PanelType   builders.PanelType           // Type of panel (Simple, Detail, List)
+	SpecName    string                    // Panel specification name from builders.StandardPanels
 	DetailText  string                    // Initial text for detail panels
-	ListConfig  *widgets.ListConfig       // List configuration for list panels
+	ListConfig  *builders.ListConfig      // List configuration for list panels
 
 	// Widget references (populated after creation for access by mode)
 	TextArea    *widget.TextArea          // Reference to created TextArea (for PanelTypeDetail)
@@ -65,8 +66,8 @@ type PanelSpec struct {
 
 // ButtonGroupSpec defines a group of buttons positioned together
 type ButtonGroupSpec struct {
-	Position widgets.PanelOption    // Position (e.g., widgets.BottomCenter())
-	Buttons  []widgets.ButtonSpec   // Button specifications
+	Position builders.PanelOption      // Position (e.g., builders.BottomCenter())
+	Buttons  []builders.ButtonSpec     // Button specifications
 }
 
 // ModeBuilder constructs UI modes using declarative configuration.
@@ -113,7 +114,7 @@ func (mb *ModeBuilder) Build(ctx *core.UIContext) error {
 
 	// Create status label if configured (before panels so it can be used in panel builders)
 	if mb.config.StatusLabel {
-		mb.baseMode.StatusLabel = widgets.CreateSmallLabel("")
+		mb.baseMode.StatusLabel = builders.CreateSmallLabel("")
 		// Position status label below other content (modes can reposition if needed)
 		mb.baseMode.RootContainer.AddChild(mb.baseMode.StatusLabel)
 	}
@@ -146,7 +147,7 @@ func (mb *ModeBuilder) buildPanels() error {
 
 		// Approach 1: TypedPanel with BuildTypedPanel (recommended)
 		if panelSpec.PanelType != 0 || (panelSpec.SpecName != "" && panelSpec.DetailText != "") {
-			result := mb.baseMode.PanelBuilders.BuildTypedPanel(widgets.TypedPanelConfig{
+			result := mb.baseMode.PanelBuilders.BuildTypedPanel(builders.TypedPanelConfig{
 				Type:       panelSpec.PanelType,
 				SpecName:   panelSpec.SpecName,
 				DetailText: panelSpec.DetailText,
@@ -179,8 +180,8 @@ func (mb *ModeBuilder) buildPanels() error {
 
 		// Approach 3: Simple panel from SpecName
 		} else if panelSpec.SpecName != "" {
-			result := mb.baseMode.PanelBuilders.BuildTypedPanel(widgets.TypedPanelConfig{
-				Type:     widgets.PanelTypeSimple,
+			result := mb.baseMode.PanelBuilders.BuildTypedPanel(builders.TypedPanelConfig{
+				Type:     builders.PanelTypeSimple,
 				SpecName: panelSpec.SpecName,
 			})
 
