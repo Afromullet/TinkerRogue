@@ -146,7 +146,12 @@ func (sm *SquadManagementMode) ResetState() {
 
 
 
-### 2.3 Extract Dialog Creation Patterns
+### 2.3 Extract Dialog Creation Patterns ✅ COMPLETED
+
+**Status:** Implemented on 2025-12-20
+- Added `CreateSelectionDialog` to `gui/widgets/dialogs.go`
+- Refactored merge squad dialog from 119 lines to 71 lines (40% reduction)
+- Dialog creation reduced from 90+ lines to ~10 lines
 
 **Problem:** Confirmation dialogs manually built in 6+ places with near-identical code (60-80 lines each):
 

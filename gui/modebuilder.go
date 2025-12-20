@@ -92,10 +92,10 @@ func NewModeBuilder(baseMode *BaseMode, config ModeConfig) *ModeBuilder {
 // 1. Set mode name and return mode
 // 2. Initialize BaseMode infrastructure
 // 3. Register hotkeys
-// 4. Build panels
-// 5. Build button groups
-// 6. Create status label (if configured)
-// 7. Initialize command history (if configured)
+// 4. Create status label (if configured)
+// 5. Initialize command history (if configured) - BEFORE panels to allow panel builders to use it
+// 6. Build panels
+// 7. Build button groups
 func (mb *ModeBuilder) Build(ctx *core.UIContext) error {
 	// Set mode properties
 	mb.baseMode.SetModeName(mb.config.ModeName)
@@ -111,7 +111,22 @@ func (mb *ModeBuilder) Build(ctx *core.UIContext) error {
 		mb.baseMode.RegisterHotkey(hk.Key, hk.TargetMode)
 	}
 
-	// Build panels
+	// Create status label if configured (before panels so it can be used in panel builders)
+	if mb.config.StatusLabel {
+		mb.baseMode.StatusLabel = widgets.CreateSmallLabel("")
+		// Position status label below other content (modes can reposition if needed)
+		mb.baseMode.RootContainer.AddChild(mb.baseMode.StatusLabel)
+	}
+
+	// Initialize command history if configured (BEFORE panels so panel builders can use it)
+	if mb.config.Commands {
+		if mb.config.OnRefresh == nil {
+			return fmt.Errorf("Commands=true requires OnRefresh callback")
+		}
+		mb.baseMode.InitializeCommandHistory(mb.config.OnRefresh)
+	}
+
+	// Build panels (can now safely use CommandHistory and StatusLabel)
 	if err := mb.buildPanels(); err != nil {
 		return fmt.Errorf("failed to build panels: %w", err)
 	}
@@ -119,21 +134,6 @@ func (mb *ModeBuilder) Build(ctx *core.UIContext) error {
 	// Build button groups
 	if err := mb.buildButtonGroups(); err != nil {
 		return fmt.Errorf("failed to build button groups: %w", err)
-	}
-
-	// Create status label if configured
-	if mb.config.StatusLabel {
-		mb.baseMode.StatusLabel = widgets.CreateSmallLabel("")
-		// Position status label below other content (modes can reposition if needed)
-		mb.baseMode.RootContainer.AddChild(mb.baseMode.StatusLabel)
-	}
-
-	// Initialize command history if configured
-	if mb.config.Commands {
-		if mb.config.OnRefresh == nil {
-			return fmt.Errorf("Commands=true requires OnRefresh callback")
-		}
-		mb.baseMode.InitializeCommandHistory(mb.config.OnRefresh)
 	}
 
 	return nil

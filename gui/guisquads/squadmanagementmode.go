@@ -456,60 +456,16 @@ func (smm *SquadManagementMode) onMergeSquads() {
 		}
 	}
 
-	// Create selection dialog container
-	contentContainer := widget.NewContainer(
-		widget.ContainerOpts.BackgroundImage(guiresources.PanelRes.Image),
-		widget.ContainerOpts.Layout(widget.NewRowLayout(
-			widget.RowLayoutOpts.Direction(widget.DirectionVertical),
-			widget.RowLayoutOpts.Spacing(15),
-			widget.RowLayoutOpts.Padding(gui.NewResponsiveRowPadding(smm.Layout, widgets.PaddingStandard)),
-		)),
-	)
-
-	// Title
-	titleLabel := widgets.CreateLargeLabel("Merge Squads")
-	contentContainer.AddChild(titleLabel)
-
-	// Message
-	messageLabel := widgets.CreateSmallLabel(fmt.Sprintf("Select squad to merge INTO '%s':", currentSquadName))
-	contentContainer.AddChild(messageLabel)
-
-	// Squad selection list (using helper for simple string list)
-	var squadList *widget.List
-	squadList = widgets.CreateSimpleStringList(widgets.SimpleStringListConfig{
-		Entries:       otherSquads,
-		ScreenWidth:   400,  // Fixed width for dialog
-		ScreenHeight:  200,  // Fixed height for dialog
-		WidthPercent:  1.0,  // Use full specified dimensions
-		HeightPercent: 1.0,
-	})
-	contentContainer.AddChild(squadList)
-
-	// Reference to window for closing
-	var window *widget.Window
-
-	// Button container
-	buttonContainer := widget.NewContainer(
-		widget.ContainerOpts.Layout(widget.NewRowLayout(
-			widget.RowLayoutOpts.Direction(widget.DirectionHorizontal),
-			widget.RowLayoutOpts.Spacing(15),
-		)),
-	)
-
-	// Merge button
-	mergeBtn := widgets.CreateButtonWithConfig(widgets.ButtonConfig{
-		Text: "Merge",
-		OnClick: func() {
-			selectedEntry := squadList.SelectedEntry()
-			if selectedEntry == nil {
-				smm.SetStatus("No target squad selected")
-				return
-			}
-
+	// Show selection dialog using new builder - replaces 90+ lines of manual dialog creation
+	selectionDialog := widgets.CreateSelectionDialog(widgets.SelectionDialogConfig{
+		Title:            "Merge Squads",
+		Message:          fmt.Sprintf("Select squad to merge INTO '%s':", currentSquadName),
+		SelectionEntries: otherSquads,
+		OnSelect: func(selected string) {
 			// Find the selected squad ID
 			selectedIndex := -1
 			for i, entry := range otherSquads {
-				if entry == selectedEntry {
+				if entry == selected {
 					selectedIndex = i
 					break
 				}
@@ -522,11 +478,6 @@ func (smm *SquadManagementMode) onMergeSquads() {
 
 			targetSquadID := otherSquadIDs[selectedIndex]
 			targetSquadName := smm.Queries.SquadCache.GetSquadName(targetSquadID)
-
-			// Close selection dialog
-			if window != nil {
-				window.Close()
-			}
 
 			// Show confirmation dialog
 			confirmDialog := widgets.CreateConfirmationDialog(widgets.DialogConfig{
@@ -550,31 +501,12 @@ func (smm *SquadManagementMode) onMergeSquads() {
 
 			smm.GetEbitenUI().AddWindow(confirmDialog)
 		},
-	})
-	buttonContainer.AddChild(mergeBtn)
-
-	// Cancel button
-	cancelBtn := widgets.CreateButtonWithConfig(widgets.ButtonConfig{
-		Text: "Cancel",
-		OnClick: func() {
+		OnCancel: func() {
 			smm.SetStatus("Merge cancelled")
-			if window != nil {
-				window.Close()
-			}
 		},
 	})
-	buttonContainer.AddChild(cancelBtn)
 
-	contentContainer.AddChild(buttonContainer)
-
-	// Create window
-	window = widget.NewWindow(
-		widget.WindowOpts.Contents(contentContainer),
-		widget.WindowOpts.Modal(),
-		widget.WindowOpts.MinSize(500, 400),
-	)
-
-	smm.GetEbitenUI().AddWindow(window)
+	smm.GetEbitenUI().AddWindow(selectionDialog)
 }
 
 // refreshAfterUndoRedo is called after successful undo/redo operations

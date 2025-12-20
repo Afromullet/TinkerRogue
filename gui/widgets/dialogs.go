@@ -322,3 +322,88 @@ func CreateMessageDialog(config MessageDialogConfig) *widget.Window {
 
 	return window
 }
+
+// SelectionDialogConfig provides configuration for selection dialogs with a list
+type SelectionDialogConfig struct {
+	Title            string
+	Message          string
+	SelectionEntries []string
+	OnSelect         func(selected string)
+	OnCancel         func()
+	MinWidth         int
+	MinHeight        int
+}
+
+// CreateSelectionDialog creates a modal selection dialog with a list and Select/Cancel buttons.
+// Uses extracted helper functions to reduce code duplication.
+// This replaces 90+ lines of manual dialog building with a simple config-based approach.
+func CreateSelectionDialog(config SelectionDialogConfig) *widget.Window {
+	// Apply defaults
+	if config.MinWidth == 0 {
+		config.MinWidth = 500
+	}
+	if config.MinHeight == 0 {
+		config.MinHeight = 400
+	}
+
+	// Create container using common helper
+	contentContainer := createDialogContainer()
+
+	// Add title and message using common helper
+	addDialogHeader(contentContainer, config.Title, config.Message, false)
+
+	// Create selection list (unique to this dialog type)
+	var selectionList *widget.List
+	selectionList = CreateSimpleStringList(SimpleStringListConfig{
+		Entries:       config.SelectionEntries,
+		ScreenWidth:   config.MinWidth,
+		ScreenHeight:  config.MinHeight - 200, // Leave room for title, message, buttons
+		WidthPercent:  0.9,                     // 90% of dialog width
+		HeightPercent: 0.5,                     // 50% of remaining height
+	})
+	contentContainer.AddChild(selectionList)
+
+	// Reference to window for closing
+	var window *widget.Window
+
+	// Create button container using common helper
+	buttonContainer := createButtonContainer()
+
+	// Select button
+	selectBtn := CreateButtonWithConfig(ButtonConfig{
+		Text: "Select",
+		OnClick: func() {
+			if config.OnSelect != nil {
+				selectedEntry := selectionList.SelectedEntry()
+				if selectedEntry != nil {
+					config.OnSelect(selectedEntry.(string))
+				}
+			}
+			if window != nil {
+				window.Close()
+			}
+		},
+	})
+	buttonContainer.AddChild(selectBtn)
+
+	// Cancel button
+	cancelBtn := CreateButtonWithConfig(ButtonConfig{
+		Text: "Cancel",
+		OnClick: func() {
+			if config.OnCancel != nil {
+				config.OnCancel()
+			}
+			if window != nil {
+				window.Close()
+			}
+		},
+	})
+	buttonContainer.AddChild(cancelBtn)
+
+	contentContainer.AddChild(buttonContainer)
+
+	// Create window using common helper
+	window = createDialogWindow(contentContainer, config.MinWidth, config.MinHeight)
+
+	return window
+}
