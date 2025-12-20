@@ -110,12 +110,10 @@ func (cah *CombatActionHandler) ToggleMoveMode() {
 		}
 
 		cah.battleMapState.InMoveMode = true
-		cah.battleMapState.ValidMoveTiles = validTiles
 		cah.addLog(fmt.Sprintf("Move mode: Click a tile (%d tiles available)", len(validTiles)))
 		cah.addLog("Click on the map to move, or press M to cancel")
 	} else {
 		cah.battleMapState.InMoveMode = false
-		cah.battleMapState.ValidMoveTiles = []coords.LogicalPosition{}
 		cah.addLog("Move mode cancelled")
 	}
 }
@@ -226,7 +224,6 @@ func (cah *CombatActionHandler) MoveSquad(squadID ecs.EntityID, newPos coords.Lo
 
 	// Exit move mode
 	cah.battleMapState.InMoveMode = false
-	cah.battleMapState.ValidMoveTiles = []coords.LogicalPosition{}
 
 	return nil
 }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"game_main/combat/combatservices"
 	"game_main/config"
+	"game_main/coords"
 	"game_main/gui"
 	"game_main/gui/core"
 	"game_main/gui/guicomponents"
@@ -422,6 +423,28 @@ func (cm *CombatMode) Update(deltaTime float64) error {
 	return nil
 }
 
+// getValidMoveTiles computes valid movement tiles on-demand from combat service
+// This is computed game data, not UI state, so we don't cache it
+func (cm *CombatMode) getValidMoveTiles() []coords.LogicalPosition {
+	battleState := cm.Context.ModeCoordinator.GetBattleMapState()
+
+	if battleState.SelectedSquadID == 0 {
+		return []coords.LogicalPosition{}
+	}
+
+	if !battleState.InMoveMode {
+		return []coords.LogicalPosition{}
+	}
+
+	// Compute from ECS game state via combat service
+	tiles := cm.combatService.GetValidMovementTiles(battleState.SelectedSquadID)
+	if tiles == nil {
+		return []coords.LogicalPosition{}
+	}
+
+	return tiles
+}
+
 func (cm *CombatMode) Render(screen *ebiten.Image) {
 	playerPos := *cm.Context.PlayerData.Pos
 	currentFactionID := cm.combatService.GetCurrentFaction()
@@ -433,7 +456,7 @@ func (cm *CombatMode) Render(screen *ebiten.Image) {
 
 	// Render valid movement tiles (only in move mode)
 	if battleState.InMoveMode {
-		validTiles := battleState.ValidMoveTiles
+		validTiles := cm.getValidMoveTiles()
 		if len(validTiles) > 0 {
 			cm.movementRenderer.Render(screen, playerPos, validTiles)
 		}

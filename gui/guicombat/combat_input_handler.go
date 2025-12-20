@@ -121,9 +121,15 @@ func (cih *CombatInputHandler) handleMovementClick(mouseX, mouseY int) {
 	// Convert screen coordinates to logical coordinates (handles both scrolling modes)
 	clickedPos := graphics.MouseToLogicalPosition(mouseX, mouseY, *cih.playerPos)
 
+	// Compute valid tiles on-demand from combat service
+	validTiles := cih.actionHandler.combatService.GetValidMovementTiles(cih.battleMapState.SelectedSquadID)
+	if validTiles == nil {
+		validTiles = []coords.LogicalPosition{}
+	}
+
 	// Check if clicked position is in valid movement tiles
 	isValidTile := false
-	for _, validPos := range cih.battleMapState.ValidMoveTiles {
+	for _, validPos := range validTiles {
 		if validPos.X == clickedPos.X && validPos.Y == clickedPos.Y {
 			isValidTile = true
 			break

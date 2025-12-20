@@ -1,8 +1,6 @@
 package core
 
 import (
-	"game_main/coords"
-
 	"github.com/bytearena/ecs"
 )
 
@@ -39,7 +37,12 @@ func NewOverworldState() *OverworldState {
 }
 
 // BattleMapState holds UI state for the battle map context
-// This contains only transient UI selection and mode state used during combat
+// This contains ONLY transient UI selection and mode state used during combat
+//
+// IMPORTANT: This is UI STATE ONLY - do not cache computed game data here
+// - UI state: User selections, mode flags, display preferences
+// - Game state: Combat data, positions, stats (stored in ECS)
+// - Computed data: Calculate on-demand from ECS via services
 type BattleMapState struct {
 	// UI Selection State
 	SelectedSquadID  ecs.EntityID // Currently selected squad
@@ -48,9 +51,6 @@ type BattleMapState struct {
 	// UI Mode Flags
 	InAttackMode bool // Whether attack mode is active
 	InMoveMode   bool // Whether movement mode is active
-
-	// Computed UI State (cached from systems)
-	ValidMoveTiles []coords.LogicalPosition // Valid movement positions (from MovementSystem)
 }
 
 // NewBattleMapState creates a default battle map state
@@ -63,9 +63,6 @@ func NewBattleMapState() *BattleMapState {
 		// UI Mode Flags
 		InAttackMode: false,
 		InMoveMode:   false,
-
-		// Computed UI State
-		ValidMoveTiles: make([]coords.LogicalPosition, 0),
 	}
 }
 
@@ -78,7 +75,4 @@ func (bms *BattleMapState) Reset() {
 	// Clear UI mode flags
 	bms.InAttackMode = false
 	bms.InMoveMode = false
-
-	// Clear computed UI state
-	bms.ValidMoveTiles = make([]coords.LogicalPosition, 0)
 }
