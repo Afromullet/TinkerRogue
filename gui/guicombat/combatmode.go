@@ -6,10 +6,11 @@ import (
 	"game_main/config"
 	"game_main/coords"
 	"game_main/gui"
+	"game_main/gui/builders"
 	"game_main/gui/core"
 	"game_main/gui/guicomponents"
 	"game_main/gui/guimodes"
-	"game_main/gui/builders"
+	"game_main/gui/widgets"
 
 	"github.com/bytearena/ecs"
 	"github.com/ebitenui/ebitenui/widget"
@@ -32,7 +33,7 @@ type CombatMode struct {
 	factionInfoPanel *widget.Container
 	squadListPanel   *widget.Container
 	squadDetailPanel *widget.Container
-	combatLogArea    *widget.TextArea
+	combatLogArea    *widgets.CachedTextAreaWrapper // Cached for performance
 	actionButtons    *widget.Container
 
 	// UI text labels

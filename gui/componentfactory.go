@@ -8,6 +8,7 @@ import (
 	"game_main/gui/guicomponents"
 	"game_main/gui/guiresources"
 	"game_main/gui/specs"
+	"game_main/gui/widgets"
 	"game_main/squads"
 
 	"github.com/ebitenui/ebitenui/widget"
@@ -153,7 +154,7 @@ func (ucf *UIComponentFactory) CreateCombatSquadDetailPanel() *widget.Container 
 }
 
 // CreateCombatLogPanel builds the combat log panel using standard specification
-func (ucf *UIComponentFactory) CreateCombatLogPanel() (*widget.Container, *widget.TextArea) {
+func (ucf *UIComponentFactory) CreateCombatLogPanel() (*widget.Container, *widgets.CachedTextAreaWrapper) {
 	// Calculate responsive size
 	panelWidth := int(float64(ucf.layout.ScreenWidth) * specs.CombatLogWidth)
 	panelHeight := int(float64(ucf.layout.ScreenHeight) * specs.CombatLogHeight)
@@ -172,15 +173,15 @@ func (ucf *UIComponentFactory) CreateCombatLogPanel() (*widget.Container, *widge
 	bottomOffset := int(float64(ucf.layout.ScreenHeight) * (specs.CombatActionButtonHeight + specs.BottomButtonOffset + specs.PaddingTight))
 	panel.GetWidget().LayoutData = AnchorEndEnd(rightPad, bottomOffset)
 
-	// Create textarea to fit within panel
-	textArea := builders.CreateTextAreaWithConfig(builders.TextAreaConfig{
+	// Create cached textarea to fit within panel - only re-renders when combat log updates
+	textArea := builders.CreateCachedTextArea(builders.TextAreaConfig{
 		MinWidth:  panelWidth - 20,
 		MinHeight: panelHeight - 20,
 		FontColor: color.White,
 	})
 
-	textArea.SetText("Combat started!\n")
-	panel.AddChild(textArea)
+	textArea.SetText("Combat started!\n") // SetText calls MarkDirty() internally
+	panel.AddChild(textArea) // The wrapper implements the necessary widget interfaces
 
 	return panel, textArea
 }

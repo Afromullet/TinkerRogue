@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"game_main/common"
 	"game_main/gui"
-	"game_main/gui/core"
 	"game_main/gui/builders"
+	"game_main/gui/core"
 	"game_main/gui/specs"
 	"game_main/squads"
 	"game_main/squads/squadcommands"
@@ -37,10 +37,10 @@ type SquadEditorMode struct {
 	navigationContainer    *widget.Container
 
 	// UI widgets
-	squadSelector     *widget.List
+	squadSelector     *widget.List   // Interactive - no caching
 	gridCells         [3][3]*widget.Button
-	unitList          *widget.List   // Units in current squad
-	rosterList        *widget.List   // Available units from roster
+	unitList          *widget.List   // Interactive - no caching
+	rosterList        *widget.List   // Interactive - no caching
 	squadCounterLabel *widget.Text   // "Squad 1 of 3"
 	prevButton        *widget.Button
 	nextButton        *widget.Button
@@ -163,7 +163,7 @@ func (sem *SquadEditorMode) buildSquadSelector() *widget.Container {
 	titleLabel := builders.CreateSmallLabel("Select Squad:")
 	sem.squadSelectorContainer.AddChild(titleLabel)
 
-	// Squad list will be populated in Enter()
+	// Squad list will be populated in Enter() - interactive, so no caching
 	sem.squadSelector = builders.CreateSquadList(builders.SquadListConfig{
 		SquadIDs:      []ecs.EntityID{},
 		Manager:       sem.Context.ECSManager,
@@ -213,7 +213,7 @@ func (sem *SquadEditorMode) buildUnitList() *widget.Container {
 	titleLabel := builders.CreateSmallLabel("Squad Units:")
 	sem.unitListContainer.AddChild(titleLabel)
 
-	// Unit list will be populated when squad is selected
+	// Unit list will be populated when squad is selected - interactive, so no caching
 	sem.unitList = builders.CreateUnitList(builders.UnitListConfig{
 		UnitIDs:       []ecs.EntityID{},
 		Manager:       sem.Context.ECSManager,
@@ -267,7 +267,7 @@ func (sem *SquadEditorMode) buildRosterList() *widget.Container {
 	titleLabel := builders.CreateSmallLabel("Available Units (Roster):")
 	sem.rosterListContainer.AddChild(titleLabel)
 
-	// Roster list will be populated in refreshRosterList()
+	// Roster list will be populated in refreshRosterList() - interactive, so no caching
 	sem.rosterList = builders.CreateSimpleStringList(builders.SimpleStringListConfig{
 		Entries:       []string{},
 		ScreenWidth:   400,

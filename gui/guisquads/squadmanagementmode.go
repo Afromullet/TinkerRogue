@@ -40,7 +40,7 @@ type SquadPanel struct {
 	squadID      ecs.EntityID
 	gridDisplay  *widgets.CachedTextAreaWrapper // Shows 3x3 grid visualization
 	statsDisplay *widgets.CachedTextAreaWrapper // Shows squad stats
-	unitList     *widget.List                   // Shows individual units
+	unitList     *widgets.CachedListWrapper     // Shows individual units (cached for performance)
 }
 
 func NewSquadManagementMode(modeManager *core.UIModeManager) *SquadManagementMode {
@@ -387,12 +387,13 @@ func (smm *SquadManagementMode) createSquadPanel(squadID ecs.EntityID) *SquadPan
 	return panel
 }
 
-func (smm *SquadManagementMode) createUnitList(squadID ecs.EntityID) *widget.List {
+func (smm *SquadManagementMode) createUnitList(squadID ecs.EntityID) *widgets.CachedListWrapper {
 	// Get all units in this squad
 	unitIDs := smm.Queries.SquadCache.GetUnitIDsInSquad(squadID)
 
-	// Use helper to create unit list with fixed height to prevent layout jumping
-	return builders.CreateUnitList(builders.UnitListConfig{
+	// Use cached helper to create unit list with fixed height to prevent layout jumping
+	// List only re-renders when units change (via MarkDirty in refreshPanel)
+	return builders.CreateCachedUnitList(builders.UnitListConfig{
 		UnitIDs:       unitIDs,
 		Manager:       smm.Queries.ECSManager,
 		ScreenWidth:   400,  // Fixed width

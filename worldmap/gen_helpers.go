@@ -9,8 +9,16 @@ import (
 )
 
 // createEmptyTiles initializes all tiles as walls
+// Optimized to reduce allocations: allocates one contiguous slice of Tile values
+// and reuses pointers to those values, avoiding per-tile heap allocations
 func createEmptyTiles(width, height int, images TileImageSet) []*Tile {
-	tiles := make([]*Tile, width*height)
+	numTiles := width * height
+
+	// Allocate all tiles in one contiguous slice (single allocation instead of thousands)
+	tileValues := make([]Tile, numTiles)
+
+	// Create pointer slice that points into the contiguous allocation
+	tiles := make([]*Tile, numTiles)
 
 	for x := 0; x < width; x++ {
 		for y := 0; y < height; y++ {
@@ -21,12 +29,16 @@ func createEmptyTiles(width, height int, images TileImageSet) []*Tile {
 			if len(images.WallImages) > 0 {
 				wallImg = images.WallImages[common.GetRandomBetween(0, len(images.WallImages)-1)]
 			}
-			tile := NewTile(
+
+			// Initialize tile directly in the contiguous slice
+			tileValues[index] = NewTile(
 				x*graphics.ScreenInfo.TileSize,
 				y*graphics.ScreenInfo.TileSize,
 				logicalPos, true, wallImg, WALL, false,
 			)
-			tiles[index] = &tile
+
+			// Store pointer to the tile in the contiguous slice
+			tiles[index] = &tileValues[index]
 		}
 	}
 

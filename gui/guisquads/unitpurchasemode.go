@@ -23,8 +23,8 @@ type UnitPurchaseMode struct {
 	purchaseService *squadservices.UnitPurchaseService
 	unitList        *widgets.CachedListWrapper
 	detailPanel     *widget.Container
-	detailTextArea  *widget.TextArea
-	statsTextArea   *widget.TextArea
+	detailTextArea  *widgets.CachedTextAreaWrapper // Cached for performance
+	statsTextArea   *widgets.CachedTextAreaWrapper // Cached for performance
 	goldLabel       *widget.Text
 	rosterLabel     *widget.Text
 	buyButton       *widget.Button
@@ -130,13 +130,13 @@ func (upm *UnitPurchaseMode) buildDetailPanel() *widget.Container {
 	rightPad := int(float64(upm.Layout.ScreenWidth) * specs.PaddingStandard)
 	upm.detailPanel.GetWidget().LayoutData = gui.AnchorEndCenter(rightPad)
 
-	// Basic info text area
-	upm.detailTextArea = builders.CreateTextAreaWithConfig(builders.TextAreaConfig{
+	// Basic info text area (cached - only re-renders when selection changes)
+	upm.detailTextArea = builders.CreateCachedTextArea(builders.TextAreaConfig{
 		MinWidth:  panelWidth - 30,
 		MinHeight: 100,
 		FontColor: color.White,
 	})
-	upm.detailTextArea.SetText("Select a unit to view details")
+	upm.detailTextArea.SetText("Select a unit to view details") // SetText calls MarkDirty() internally
 	upm.detailPanel.AddChild(upm.detailTextArea)
 
 	// View Stats button
@@ -149,8 +149,8 @@ func (upm *UnitPurchaseMode) buildDetailPanel() *widget.Container {
 	upm.viewStatsButton.GetWidget().Disabled = true
 	upm.detailPanel.AddChild(upm.viewStatsButton)
 
-	// Stats text area (hidden by default)
-	upm.statsTextArea = builders.CreateTextAreaWithConfig(builders.TextAreaConfig{
+	// Stats text area (hidden by default, cached - only re-renders when stats viewed)
+	upm.statsTextArea = builders.CreateCachedTextArea(builders.TextAreaConfig{
 		MinWidth:  panelWidth - 30,
 		MinHeight: 300,
 		FontColor: color.White,

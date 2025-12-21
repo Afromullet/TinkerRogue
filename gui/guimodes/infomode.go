@@ -2,11 +2,14 @@ package guimodes
 
 import (
 	"fmt"
+	"image/color"
 
 	"game_main/coords"
 	"game_main/gui"
 	"game_main/gui/core"
 	"game_main/gui/builders"
+	"game_main/gui/specs"
+	"game_main/gui/widgets"
 
 	"github.com/ebitenui/ebitenui/widget"
 )
@@ -17,7 +20,7 @@ type InfoMode struct {
 
 	// UI Components
 	optionsList    *widget.List
-	detailTextArea *widget.TextArea
+	detailTextArea *widgets.CachedTextAreaWrapper // Cached for performance
 
 	// State
 	inspectPosition coords.LogicalPosition
@@ -40,28 +43,8 @@ func (im *InfoMode) Initialize(ctx *core.UIContext) error {
 		ReturnMode: "exploration",
 
 		Panels: []gui.PanelSpec{
-			{
-				// Options panel (center-left) - now uses typed panel
-				PanelType: builders.PanelTypeList,
-				SpecName:  "options_list",
-				ListConfig: &builders.ListConfig{
-					Entries: []interface{}{"Look at Creature", "Look at Tile"},
-					EntryLabelFunc: func(e interface{}) string {
-						return e.(string)
-					},
-					OnEntrySelected: func(entry interface{}) {
-						if option, ok := entry.(string); ok {
-							im.handleOptionSelected(option)
-						}
-					},
-				},
-			},
-			{
-				// Detail panel (right side) - now uses typed panel
-				PanelType:  builders.PanelTypeDetail,
-				SpecName:   "info_detail",
-				DetailText: "Select an option to inspect",
-			},
+			{CustomBuild: im.buildOptionsList},
+			{CustomBuild: im.buildDetailPanel},
 		},
 	}).Build(ctx)
 
@@ -69,19 +52,73 @@ func (im *InfoMode) Initialize(ctx *core.UIContext) error {
 		return err
 	}
 
-	// Get references to widgets from typed panels
-	if w, ok := im.PanelWidgets["options_list"]; ok {
-		if list, ok := w.(*widget.List); ok {
-			im.optionsList = list
-		}
-	}
-	if w, ok := im.PanelWidgets["info_detail"]; ok {
-		if textArea, ok := w.(*widget.TextArea); ok {
-			im.detailTextArea = textArea
-		}
-	}
-
 	return nil
+}
+
+func (im *InfoMode) buildOptionsList() *widget.Container {
+	// Create options list (center-left)
+	optionsList := builders.CreateListWithConfig(builders.ListConfig{
+		Entries: []interface{}{"Look at Creature", "Look at Tile"},
+		EntryLabelFunc: func(e interface{}) string {
+			return e.(string)
+		},
+		OnEntrySelected: func(entry interface{}) {
+			if option, ok := entry.(string); ok {
+				im.handleOptionSelected(option)
+			}
+		},
+		MinWidth:  int(float64(im.Layout.ScreenWidth) * 0.3),
+		MinHeight: int(float64(im.Layout.ScreenHeight) * 0.3),
+	})
+
+	im.optionsList = optionsList
+
+	// Wrap in container with LayoutData (center-left positioning)
+	leftPad := int(float64(im.Layout.ScreenWidth) * specs.PaddingStandard)
+	container := widget.NewContainer(
+		widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
+		widget.ContainerOpts.WidgetOpts(widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{
+			HorizontalPosition: widget.AnchorLayoutPositionStart,
+			VerticalPosition:   widget.AnchorLayoutPositionCenter,
+			Padding: widget.Insets{
+				Left: leftPad,
+			},
+		})),
+	)
+	container.AddChild(optionsList)
+	return container
+}
+
+func (im *InfoMode) buildDetailPanel() *widget.Container {
+	// Right side detail panel (35% width, 60% height)
+	panelWidth := int(float64(im.Layout.ScreenWidth) * 0.35)
+	panelHeight := int(float64(im.Layout.ScreenHeight) * 0.6)
+
+	detailPanel := builders.CreateStaticPanel(builders.PanelConfig{
+		MinWidth:  panelWidth,
+		MinHeight: panelHeight,
+		Layout: widget.NewRowLayout(
+			widget.RowLayoutOpts.Direction(widget.DirectionVertical),
+			widget.RowLayoutOpts.Spacing(10),
+			widget.RowLayoutOpts.Padding(gui.NewResponsiveRowPadding(im.Layout, specs.PaddingTight)),
+		),
+	})
+
+	rightPad := int(float64(im.Layout.ScreenWidth) * specs.PaddingStandard)
+	detailPanel.GetWidget().LayoutData = gui.AnchorEndCenter(rightPad)
+
+	// Detail text area - cached for performance
+	detailTextArea := builders.CreateCachedTextArea(builders.TextAreaConfig{
+		MinWidth:  panelWidth - 30,
+		MinHeight: panelHeight - 30,
+		FontColor: color.White,
+	})
+	detailTextArea.SetText("Select an option to inspect") // SetText calls MarkDirty() internally
+	detailPanel.AddChild(detailTextArea)
+
+	im.detailTextArea = detailTextArea
+
+	return detailPanel
 }
 
 // Enter is called when switching to this mode

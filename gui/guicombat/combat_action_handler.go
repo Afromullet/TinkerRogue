@@ -6,10 +6,10 @@ import (
 	"game_main/coords"
 	"game_main/gui/core"
 	"game_main/gui/guicomponents"
+	"game_main/gui/widgets"
 	"game_main/squads/squadcommands"
 
 	"github.com/bytearena/ecs"
-	"github.com/ebitenui/ebitenui/widget"
 )
 
 // CombatActionHandler manages combat actions and their execution
@@ -18,7 +18,7 @@ type CombatActionHandler struct {
 	logManager      *CombatLogManager
 	queries         *guicomponents.GUIQueries
 	combatService   *combatservices.CombatService
-	combatLogArea   *widget.TextArea
+	combatLogArea   *widgets.CachedTextAreaWrapper // Cached for performance
 	commandExecutor *squadcommands.CommandExecutor // Command pattern for undo/redo
 	modeManager     *core.UIModeManager            // For triggering combat animation mode
 }
@@ -29,7 +29,7 @@ func NewCombatActionHandler(
 	logManager *CombatLogManager,
 	queries *guicomponents.GUIQueries,
 	combatService *combatservices.CombatService,
-	combatLogArea *widget.TextArea,
+	combatLogArea *widgets.CachedTextAreaWrapper,
 	modeManager *core.UIModeManager,
 ) *CombatActionHandler {
 	return &CombatActionHandler{

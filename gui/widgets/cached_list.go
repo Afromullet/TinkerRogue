@@ -134,3 +134,15 @@ func (clw *CachedListWrapper) SetLocation(rect image.Rectangle) {
 func (clw *CachedListWrapper) GetList() *widget.List {
 	return clw.list
 }
+
+// SelectedEntry returns the currently selected entry from the inner list.
+// This is a convenience method that delegates to the inner list.
+func (clw *CachedListWrapper) SelectedEntry() interface{} {
+	return clw.list.SelectedEntry()
+}
+
+// SetSelectedEntry sets the selected entry in the inner list.
+// IMPORTANT: Call MarkDirty() after this to update the cached rendering.
+func (clw *CachedListWrapper) SetSelectedEntry(entry interface{}) {
+	clw.list.SetSelectedEntry(entry)
+}

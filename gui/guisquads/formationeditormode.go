@@ -1,12 +1,11 @@
 package guisquads
 
 import (
-	"game_main/gui"
-
 	"fmt"
 	"game_main/common"
-	"game_main/gui/core"
+	"game_main/gui"
 	"game_main/gui/builders"
+	"game_main/gui/core"
 	"game_main/gui/specs"
 	"game_main/squads"
 	"game_main/squads/squadcommands"
@@ -21,9 +20,9 @@ type FormationEditorMode struct {
 	gui.BaseMode // Embed common mode infrastructure
 
 	gridContainer  *widget.Container
-	unitPalette    *widget.List
+	unitPalette    *widget.List   // Unit type palette - interactive, so no caching
 	actionButtons  *widget.Container
-	squadSelector  *widget.List // Squad selection list
+	squadSelector  *widget.List   // Squad selection list - interactive, so no caching
 	currentSquadID ecs.EntityID // Currently selected squad
 
 	gridCells [3][3]*widget.Button // 3x3 grid of cells
@@ -73,7 +72,7 @@ func (fem *FormationEditorMode) buildSquadSelector() *widget.Container {
 	// Get all squads from ECS
 	allSquadIDs := fem.Queries.SquadCache.FindAllSquads()
 
-	// Create squad selection list using helper with formation-specific constants
+	// Create squad selection list - interactive, so no caching
 	squadSelector := builders.CreateSquadList(builders.SquadListConfig{
 		SquadIDs:      allSquadIDs,
 		Manager:       fem.Queries.ECSManager,
@@ -118,7 +117,7 @@ func (fem *FormationEditorMode) buildUnitPalette() *widget.Container {
 	// Unit type options
 	unitTypes := []string{"Tank", "DPS", "Support", "Remove Unit"}
 
-	// Create simple string list using helper with formation-specific constants
+	// Create simple string list - interactive, so no caching
 	unitPalette := builders.CreateSimpleStringList(builders.SimpleStringListConfig{
 		Entries:       unitTypes,
 		ScreenWidth:   fem.Layout.ScreenWidth,

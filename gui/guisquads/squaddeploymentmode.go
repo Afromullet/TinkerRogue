@@ -26,7 +26,7 @@ type SquadDeploymentMode struct {
 	deploymentService *squadservices.SquadDeploymentService
 	squadList         *widgets.CachedListWrapper
 	detailPanel       *widget.Container
-	detailTextArea    *widget.TextArea
+	detailTextArea    *widgets.CachedTextAreaWrapper // Cached for performance
 	selectedSquadID   ecs.EntityID
 	instructionText   *widget.Text
 
@@ -161,13 +161,13 @@ func (sdm *SquadDeploymentMode) buildDetailPanel() *widget.Container {
 	rightPad := int(float64(sdm.Layout.ScreenWidth) * specs.PaddingStandard)
 	detailPanel.GetWidget().LayoutData = gui.AnchorEndCenter(rightPad)
 
-	// Detail text area
-	detailTextArea := builders.CreateTextAreaWithConfig(builders.TextAreaConfig{
+	// Detail text area - cached for performance
+	detailTextArea := builders.CreateCachedTextArea(builders.TextAreaConfig{
 		MinWidth:  panelWidth - 30,
 		MinHeight: panelHeight - 30,
 		FontColor: color.White,
 	})
-	detailTextArea.SetText("Select a squad to view details")
+	detailTextArea.SetText("Select a squad to view details") // SetText calls MarkDirty() internally
 	detailPanel.AddChild(detailTextArea)
 
 	sdm.detailPanel = detailPanel

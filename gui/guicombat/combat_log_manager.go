@@ -2,7 +2,7 @@ package guicombat
 
 import (
 	"game_main/config"
-	"github.com/ebitenui/ebitenui/widget"
+	"game_main/gui/widgets"
 )
 
 // CombatLogManager handles combat log entries and text updates
@@ -30,7 +30,7 @@ func (clm *CombatLogManager) AddEntry(message string) {
 }
 
 // UpdateTextArea updates the text area with new message and triggers trim if needed
-func (clm *CombatLogManager) UpdateTextArea(logArea *widget.TextArea, message string) {
+func (clm *CombatLogManager) UpdateTextArea(logArea *widgets.CachedTextAreaWrapper, message string) {
 	// Skip all operations if combat log is disabled
 	if !config.ENABLE_COMBAT_LOG {
 		return
@@ -39,7 +39,7 @@ func (clm *CombatLogManager) UpdateTextArea(logArea *widget.TextArea, message st
 	clm.AddEntry(message)
 
 	// Use AppendText for O(1) performance - only add the new message
-	logArea.AppendText(message + "\n")
+	logArea.AppendText(message + "\n") // AppendText calls MarkDirty() internally
 
 	// Every N messages, trim old entries to prevent unbounded growth
 	if clm.messageCountSinceTrim >= clm.trimThreshold {
@@ -48,7 +48,7 @@ func (clm *CombatLogManager) UpdateTextArea(logArea *widget.TextArea, message st
 }
 
 // Trim keeps only the last maxMessages entries and rebuilds the display
-func (clm *CombatLogManager) Trim(logArea *widget.TextArea) {
+func (clm *CombatLogManager) Trim(logArea *widgets.CachedTextAreaWrapper) {
 	if len(clm.entries) > clm.maxMessages {
 		// Remove oldest messages, keep most recent ones
 		removed := len(clm.entries) - clm.maxMessages
@@ -59,7 +59,7 @@ func (clm *CombatLogManager) Trim(logArea *widget.TextArea) {
 		for _, msg := range clm.entries {
 			fullText += msg + "\n"
 		}
-		logArea.SetText(fullText)
+		logArea.SetText(fullText) // SetText calls MarkDirty() internally
 	}
 
 	clm.messageCountSinceTrim = 0

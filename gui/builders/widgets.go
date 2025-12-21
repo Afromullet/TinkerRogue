@@ -6,6 +6,7 @@ import (
 	_ "image/png"
 
 	"game_main/gui/guiresources"
+	"game_main/gui/widgets"
 
 	e_image "github.com/ebitenui/ebitenui/image"
 	"github.com/ebitenui/ebitenui/widget"
@@ -170,6 +171,14 @@ func CreateTextAreaWithConfig(config TextAreaConfig) *widget.TextArea {
 	)
 }
 
+// CreateCachedTextArea creates a cached textarea that only re-renders when content changes.
+// Use this for static or semi-static text that doesn't update every frame.
+// IMPORTANT: Call MarkDirty() on the returned wrapper when text content changes!
+func CreateCachedTextArea(config TextAreaConfig) *widgets.CachedTextAreaWrapper {
+	inner := CreateTextAreaWithConfig(config)
+	return widgets.NewCachedTextAreaWrapper(inner)
+}
+
 // ============================================
 // BUTTON WIDGETS
 // ============================================
@@ -306,6 +315,14 @@ func CreateListWithConfig(config ListConfig) *widget.List {
 	}
 
 	return list
+}
+
+// CreateCachedList creates a cached list that only re-renders when content changes.
+// Use this for lists that don't update every frame.
+// IMPORTANT: Call MarkDirty() on the returned wrapper when entries change!
+func CreateCachedList(config ListConfig) *widgets.CachedListWrapper {
+	inner := CreateListWithConfig(config)
+	return widgets.NewCachedListWrapper(inner)
 }
 
 // ============================================

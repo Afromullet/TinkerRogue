@@ -16,8 +16,8 @@ type TileBatch struct {
 // NewTileBatch creates a batch for tiles sharing the same image
 func NewTileBatch(image *ebiten.Image) *TileBatch {
 	return &TileBatch{
-		vertices: make([]ebiten.Vertex, 0, 256), // Pre-allocate for ~64 tiles (4 vertices each)
-		indices:  make([]uint16, 0, 384),        // Pre-allocate for ~64 tiles (6 indices each)
+		vertices: make([]ebiten.Vertex, 0, 800),  // Pre-allocate for ~200 tiles (4 vertices each)
+		indices:  make([]uint16, 0, 1200),        // Pre-allocate for ~200 tiles (6 indices each)
 		image:    image,
 	}
 }
