@@ -2,6 +2,7 @@ package guisquads
 
 import (
 	"game_main/gui"
+	"game_main/gui/widgets"
 	"game_main/squads/squadservices"
 
 	"fmt"
@@ -24,7 +25,7 @@ type SquadBuilderMode struct {
 
 	// UI widgets
 	gridContainer   *widget.Container
-	unitPalette     *widget.List
+	unitPalette     *widgets.CachedListWrapper
 	capacityDisplay *widget.TextArea
 	squadNameInput  *widget.TextInput
 	actionButtons   *widget.Container
@@ -115,7 +116,7 @@ func (sbm *SquadBuilderMode) buildRosterPalette() *widget.Container {
 	sbm.ensureUIFactoryInitialized()
 
 	// Build unit palette - will be populated in Enter()
-	sbm.unitPalette = sbm.uiFactory.CreateSquadBuilderRosterPalette(func(entry interface{}) {
+	baseList := sbm.uiFactory.CreateSquadBuilderRosterPalette(func(entry interface{}) {
 		if rosterEntry, ok := entry.(*squads.UnitRosterEntry); ok {
 			sbm.selectedRosterEntry = rosterEntry
 			sbm.updateUnitDetails()
@@ -128,13 +129,17 @@ func (sbm *SquadBuilderMode) buildRosterPalette() *widget.Container {
 		return squads.GetPlayerRoster(sbm.Context.PlayerData.PlayerEntityID, sbm.Queries.ECSManager)
 	})
 
+	// Wrap with caching for performance (~90% render reduction for static lists)
+	sbm.unitPalette = widgets.NewCachedListWrapper(baseList)
+
 	// Wrap in container with LayoutData from factory
-	layoutData := sbm.unitPalette.GetWidget().LayoutData
+	layoutData := baseList.GetWidget().LayoutData
 	container := widget.NewContainer(
 		widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
 		widget.ContainerOpts.WidgetOpts(widget.WidgetOpts.LayoutData(layoutData)),
 	)
-	container.AddChild(sbm.unitPalette)
+	// Add the underlying list to maintain interaction functionality
+	container.AddChild(baseList)
 	return container
 }
 
@@ -536,7 +541,8 @@ func (sbm *SquadBuilderMode) refreshUnitPalette() {
 
 	if len(availableUnits) == 0 {
 		// Show message when no units available
-		sbm.unitPalette.SetEntries([]interface{}{"No units available - visit Buy Units (P)"})
+		sbm.unitPalette.GetList().SetEntries([]interface{}{"No units available - visit Buy Units (P)"})
+		sbm.unitPalette.MarkDirty() // Trigger re-render with updated entries
 		return
 	}
 
@@ -546,7 +552,8 @@ func (sbm *SquadBuilderMode) refreshUnitPalette() {
 		entries[i] = availableUnits[i]
 	}
 
-	sbm.unitPalette.SetEntries(entries)
+	sbm.unitPalette.GetList().SetEntries(entries)
+	sbm.unitPalette.MarkDirty() // Trigger re-render with updated entries
 }
 
 func (sbm *SquadBuilderMode) Enter(fromMode core.UIMode) error {

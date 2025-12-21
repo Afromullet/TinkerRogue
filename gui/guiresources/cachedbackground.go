@@ -134,9 +134,12 @@ func (cbp *CachedBackgroundPool) Clear() {
 // Global cached background pools for common UI elements.
 // These are initialized lazily when first accessed.
 var (
-	panelBackgroundPool     *CachedBackgroundPool
-	titleBarBackgroundPool  *CachedBackgroundPool
-	buttonBackgroundPool    *CachedBackgroundPool
+	panelBackgroundPool          *CachedBackgroundPool
+	titleBarBackgroundPool       *CachedBackgroundPool
+	buttonBackgroundPool         *CachedBackgroundPool
+	scrollContainerIdlePool      *CachedBackgroundPool
+	scrollContainerDisabledPool  *CachedBackgroundPool
+	scrollContainerMaskPool      *CachedBackgroundPool
 )
 
 // GetPanelBackground returns a cached panel background at the specified size.
@@ -164,6 +167,75 @@ func GetButtonBackground(w, h int) *ebiten.Image {
 	return buttonBackgroundPool.GetImage(w, h)
 }
 
+// GetScrollContainerIdleBackground returns a cached ScrollContainer idle background at the specified size.
+// Use this for List and TextArea widgets to reduce NineSlice rendering overhead.
+func GetScrollContainerIdleBackground(w, h int) *ebiten.Image {
+	if scrollContainerIdlePool == nil {
+		scrollContainerIdlePool = NewCachedBackgroundPool(ListRes.Image.Idle)
+	}
+	return scrollContainerIdlePool.GetImage(w, h)
+}
+
+// GetScrollContainerDisabledBackground returns a cached ScrollContainer disabled background at the specified size.
+func GetScrollContainerDisabledBackground(w, h int) *ebiten.Image {
+	if scrollContainerDisabledPool == nil {
+		scrollContainerDisabledPool = NewCachedBackgroundPool(ListRes.Image.Disabled)
+	}
+	return scrollContainerDisabledPool.GetImage(w, h)
+}
+
+// GetScrollContainerMaskBackground returns a cached ScrollContainer mask at the specified size.
+// The mask is used for clipping content to the ScrollContainer viewport.
+func GetScrollContainerMaskBackground(w, h int) *ebiten.Image {
+	if scrollContainerMaskPool == nil {
+		scrollContainerMaskPool = NewCachedBackgroundPool(ListRes.Image.Mask)
+	}
+	return scrollContainerMaskPool.GetImage(w, h)
+}
+
+// PreCacheScrollContainerBackgrounds pre-renders ScrollContainer backgrounds at common sizes.
+// Call this during initialization to improve first-render performance.
+// Sizes are based on common widget dimensions used in the UI.
+// For dynamic screen sizes, call PreCacheScrollContainerSizes() with actual dimensions.
+func PreCacheScrollContainerBackgrounds() {
+	// Common list sizes at 1920x1080 resolution (width, height)
+	// Based on actual usage in squad management, unit purchase, etc.
+	commonSizes := []struct{ w, h int }{
+		{672, 756},  // Unit purchase list (0.35 * 1920, 0.7 * 1080)
+		{576, 756},  // Squad deployment list (0.3 * 1920, 0.7 * 1080)
+		{384, 540},  // Squad editor unit list
+		{480, 648},  // Formation editor list
+		{300, 400},  // Small dialog list
+		{400, 500},  // Medium dialog list
+	}
+
+	for _, size := range commonSizes {
+		_ = GetScrollContainerIdleBackground(size.w, size.h)
+		_ = GetScrollContainerDisabledBackground(size.w, size.h)
+		_ = GetScrollContainerMaskBackground(size.w, size.h)
+	}
+}
+
+// PreCacheScrollContainerSizes pre-renders ScrollContainer backgrounds for specific screen dimensions.
+// Use this at runtime after screen size is known for optimal cache hit rate.
+func PreCacheScrollContainerSizes(screenWidth, screenHeight int) {
+	// Pre-cache based on actual screen dimensions
+	sizes := []struct{ widthRatio, heightRatio float64 }{
+		{0.35, 0.7},  // Unit purchase list
+		{0.3, 0.7},   // Squad deployment list
+		{0.2, 0.5},   // Small list
+		{0.25, 0.6},  // Medium list
+	}
+
+	for _, size := range sizes {
+		w := int(float64(screenWidth) * size.widthRatio)
+		h := int(float64(screenHeight) * size.heightRatio)
+		_ = GetScrollContainerIdleBackground(w, h)
+		_ = GetScrollContainerDisabledBackground(w, h)
+		_ = GetScrollContainerMaskBackground(w, h)
+	}
+}
+
 // ClearAllBackgroundCaches clears all global background caches.
 // Call this when changing themes or to free memory.
 func ClearAllBackgroundCaches() {
@@ -175,5 +247,14 @@ func ClearAllBackgroundCaches() {
 	}
 	if buttonBackgroundPool != nil {
 		buttonBackgroundPool.Clear()
+	}
+	if scrollContainerIdlePool != nil {
+		scrollContainerIdlePool.Clear()
+	}
+	if scrollContainerDisabledPool != nil {
+		scrollContainerDisabledPool.Clear()
+	}
+	if scrollContainerMaskPool != nil {
+		scrollContainerMaskPool.Clear()
 	}
 }

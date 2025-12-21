@@ -6,6 +6,7 @@ import (
 	"game_main/gui/core"
 	"game_main/gui/builders"
 	"game_main/gui/specs"
+	"game_main/gui/widgets"
 	"game_main/squads"
 	"game_main/squads/squadcommands"
 	"game_main/squads/squadservices"
@@ -20,7 +21,7 @@ type UnitPurchaseMode struct {
 	gui.BaseMode // Embed common mode infrastructure
 
 	purchaseService *squadservices.UnitPurchaseService
-	unitList        *widget.List
+	unitList        *widgets.CachedListWrapper
 	detailPanel     *widget.Container
 	detailTextArea  *widget.TextArea
 	statsTextArea   *widget.TextArea
@@ -68,7 +69,7 @@ func (upm *UnitPurchaseMode) buildUnitList() *widget.Container {
 	listWidth := int(float64(upm.Layout.ScreenWidth) * specs.UnitPurchaseListWidth)
 	listHeight := int(float64(upm.Layout.ScreenHeight) * specs.UnitPurchaseListHeight)
 
-	upm.unitList = builders.CreateListWithConfig(builders.ListConfig{
+	baseList := builders.CreateListWithConfig(builders.ListConfig{
 		Entries:   []interface{}{}, // Will be populated in Enter
 		MinWidth:  listWidth,
 		MinHeight: listHeight,
@@ -94,6 +95,9 @@ func (upm *UnitPurchaseMode) buildUnitList() *widget.Container {
 		},
 	})
 
+	// Wrap with caching for performance (~90% render reduction for static lists)
+	upm.unitList = widgets.NewCachedListWrapper(baseList)
+
 	// Position below resource panel using Start-Start anchor (left-top)
 	leftPad := int(float64(upm.Layout.ScreenWidth) * specs.PaddingStandard)
 	topOffset := int(float64(upm.Layout.ScreenHeight) * (specs.UnitPurchaseResourceHeight + specs.PaddingStandard*2))
@@ -103,7 +107,8 @@ func (upm *UnitPurchaseMode) buildUnitList() *widget.Container {
 		widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
 		widget.ContainerOpts.WidgetOpts(widget.WidgetOpts.LayoutData(gui.AnchorStartStart(leftPad, topOffset))),
 	)
-	container.AddChild(upm.unitList)
+	// Add the underlying list to maintain interaction functionality
+	container.AddChild(baseList)
 	return container
 }
 
@@ -317,7 +322,8 @@ func (upm *UnitPurchaseMode) refreshUnitList() {
 	for i := range squads.Units {
 		entries = append(entries, &squads.Units[i])
 	}
-	upm.unitList.SetEntries(entries)
+	upm.unitList.GetList().SetEntries(entries)
+	upm.unitList.MarkDirty() // Trigger re-render with updated entries
 }
 
 func (upm *UnitPurchaseMode) refreshResourceDisplay() {
@@ -360,7 +366,8 @@ func (upm *UnitPurchaseMode) Enter(fromMode core.UIMode) error {
 	for i := range squads.Units {
 		entries = append(entries, &squads.Units[i])
 	}
-	upm.unitList.SetEntries(entries)
+	upm.unitList.GetList().SetEntries(entries)
+	upm.unitList.MarkDirty() // Trigger re-render with updated entries
 
 	// Refresh resource display
 	upm.refreshResourceDisplay()

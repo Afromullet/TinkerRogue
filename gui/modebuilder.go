@@ -5,7 +5,6 @@ import (
 
 	"game_main/gui/builders"
 	"game_main/gui/core"
-	
 
 	"github.com/ebitenui/ebitenui/widget"
 	"github.com/hajimehoshi/ebiten/v2"
@@ -29,12 +28,12 @@ type ModeConfig struct {
 	ModeName   string
 	ReturnMode string // Mode to return to on ESC (empty if no return mode)
 
-	Hotkeys      []HotkeySpec
-	Panels       []PanelSpec
-	Buttons      []ButtonGroupSpec
-	StatusLabel  bool // Whether to create a status label
-	Commands     bool // Whether to enable command history
-	OnRefresh    func() // Callback for command history refresh (required if Commands=true)
+	Hotkeys     []HotkeySpec
+	Panels      []PanelSpec
+	Buttons     []ButtonGroupSpec
+	StatusLabel bool   // Whether to create a status label
+	Commands    bool   // Whether to enable command history
+	OnRefresh   func() // Callback for command history refresh (required if Commands=true)
 }
 
 // HotkeySpec defines a keyboard shortcut that transitions to a target mode
@@ -50,24 +49,24 @@ type HotkeySpec struct {
 // 3. CustomBuild: For complex custom panels
 type PanelSpec struct {
 	// Type-based panel creation (recommended)
-	PanelType   builders.PanelType           // Type of panel (Simple, Detail, List)
-	SpecName    string                    // Panel specification name from builders.StandardPanels
-	DetailText  string                    // Initial text for detail panels
-	ListConfig  *builders.ListConfig      // List configuration for list panels
+	PanelType  builders.PanelType   // Type of panel (Simple, Detail, List)
+	SpecName   string               // Panel specification name from builders.StandardPanels
+	DetailText string               // Initial text for detail panels
+	ListConfig *builders.ListConfig // List configuration for list panels
 
 	// Widget references (populated after creation for access by mode)
-	TextArea    *widget.TextArea          // Reference to created TextArea (for PanelTypeDetail)
-	List        *widget.List              // Reference to created List (for PanelTypeList)
+	TextArea *widget.TextArea // Reference to created TextArea (for PanelTypeDetail)
+	List     *widget.List     // Reference to created List (for PanelTypeList)
 
 	// Legacy/custom approaches
-	CustomBuild func() *widget.Container  // Optional: Custom panel builder function
-	OnCreate    func(*widget.Container)   // DEPRECATED: Use PanelType instead
+	CustomBuild func() *widget.Container // Optional: Custom panel builder function
+	OnCreate    func(*widget.Container)  // DEPRECATED: Use PanelType instead
 }
 
 // ButtonGroupSpec defines a group of buttons positioned together
 type ButtonGroupSpec struct {
-	Position builders.PanelOption      // Position (e.g., builders.BottomCenter())
-	Buttons  []builders.ButtonSpec     // Button specifications
+	Position builders.PanelOption  // Position (e.g., builders.BottomCenter())
+	Buttons  []builders.ButtonSpec // Button specifications
 }
 
 // ModeBuilder constructs UI modes using declarative configuration.
@@ -174,11 +173,11 @@ func (mb *ModeBuilder) buildPanels() error {
 				}
 			}
 
-		// Approach 2: CustomBuild for complex panels
+			// Approach 2: CustomBuild for complex panels
 		} else if panelSpec.CustomBuild != nil {
 			panel = panelSpec.CustomBuild()
 
-		// Approach 3: Simple panel from SpecName
+			// Approach 3: Simple panel from SpecName
 		} else if panelSpec.SpecName != "" {
 			result := mb.baseMode.PanelBuilders.BuildTypedPanel(builders.TypedPanelConfig{
 				Type:     builders.PanelTypeSimple,

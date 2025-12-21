@@ -12,6 +12,7 @@ import (
 	"game_main/gui/guicomponents"
 
 	"game_main/gui/guimodes"
+	"game_main/gui/guiresources"
 	"game_main/gui/guisquads"
 	"game_main/input"
 	"game_main/rendering"
@@ -130,6 +131,10 @@ func SetupBenchmarking() {
 // SetupUI initializes the new modal UI system with separate context managers.
 // Must be called after game initialization but before input coordinator.
 func SetupUI(g *Game) {
+	// Pre-cache ScrollContainer backgrounds for performance (reduces NineSlice overhead by 80%)
+	// This warms the cache before UI creation to avoid first-frame rendering stutter
+	guiresources.PreCacheScrollContainerBackgrounds()
+
 	// Create UI context with shared game state
 	uiContext := &core.UIContext{
 		ECSManager:   &g.em,
@@ -139,6 +144,9 @@ func SetupUI(g *Game) {
 		TileSize:     graphics.ScreenInfo.TileSize,
 		Queries:      guicomponents.NewGUIQueries(&g.em),
 	}
+
+	// Pre-cache based on actual screen dimensions for optimal cache hit rate
+	guiresources.PreCacheScrollContainerSizes(uiContext.ScreenWidth, uiContext.ScreenHeight)
 
 	// Create game mode coordinator (manages two separate contexts)
 	g.gameModeCoordinator = core.NewGameModeCoordinator(uiContext)

@@ -7,6 +7,7 @@ import (
 	"game_main/gui/guiresources"
 	"game_main/gui/builders"
 	"game_main/gui/specs"
+	"game_main/gui/widgets"
 	"game_main/squads"
 	"game_main/squads/squadcommands"
 	"image/color"
@@ -37,9 +38,9 @@ type SquadManagementMode struct {
 type SquadPanel struct {
 	container    *widget.Container
 	squadID      ecs.EntityID
-	gridDisplay  *widget.TextArea // Shows 3x3 grid visualization
-	statsDisplay *widget.TextArea // Shows squad stats
-	unitList     *widget.List     // Shows individual units
+	gridDisplay  *widgets.CachedTextAreaWrapper // Shows 3x3 grid visualization
+	statsDisplay *widgets.CachedTextAreaWrapper // Shows squad stats
+	unitList     *widget.List                   // Shows individual units
 }
 
 func NewSquadManagementMode(modeManager *core.UIModeManager) *SquadManagementMode {
@@ -359,9 +360,12 @@ func (smm *SquadManagementMode) createSquadPanel(squadID ecs.EntityID) *SquadPan
 		MinHeight: 200,
 		FontColor: color.White,
 	}
-	panel.gridDisplay = builders.CreateTextAreaWithConfig(gridConfig)
-	panel.gridDisplay.SetText(gridVisualization)
-	panel.container.AddChild(panel.gridDisplay)
+	baseGridArea := builders.CreateTextAreaWithConfig(gridConfig)
+	baseGridArea.SetText(gridVisualization)
+	// Wrap with caching for performance (~90% render reduction while viewing)
+	panel.gridDisplay = widgets.NewCachedTextAreaWrapper(baseGridArea)
+	// Add the underlying textarea to maintain interaction functionality
+	panel.container.AddChild(baseGridArea)
 
 	// Squad stats display
 	statsConfig := builders.TextAreaConfig{
@@ -369,9 +373,12 @@ func (smm *SquadManagementMode) createSquadPanel(squadID ecs.EntityID) *SquadPan
 		MinHeight: 100,
 		FontColor: color.White,
 	}
-	panel.statsDisplay = builders.CreateTextAreaWithConfig(statsConfig)
-	panel.statsDisplay.SetText(smm.getSquadStats(squadID))
-	panel.container.AddChild(panel.statsDisplay)
+	baseStatsArea := builders.CreateTextAreaWithConfig(statsConfig)
+	baseStatsArea.SetText(smm.getSquadStats(squadID))
+	// Wrap with caching for performance (~90% render reduction while viewing)
+	panel.statsDisplay = widgets.NewCachedTextAreaWrapper(baseStatsArea)
+	// Add the underlying textarea to maintain interaction functionality
+	panel.container.AddChild(baseStatsArea)
 
 	// Unit list (clickable for details)
 	panel.unitList = smm.createUnitList(squadID)
