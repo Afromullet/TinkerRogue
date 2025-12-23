@@ -53,6 +53,7 @@ type CombatMode struct {
 	movementRenderer  *guimodes.MovementTileRenderer
 	highlightRenderer *guimodes.SquadHighlightRenderer
 	dangerVisualizer  *behavior.DangerVisualizer
+	threatManager     *behavior.FactionThreatLevelManager
 
 	// State tracking for UI updates (GUI_PERFORMANCE_ANALYSIS.md)
 	lastFactionID     ecs.EntityID
@@ -117,14 +118,14 @@ func (cm *CombatMode) Initialize(ctx *core.UIContext) error {
 	gameMap := ctx.GameMap.(*worldmap.GameMap)
 
 	//Create the initial Faction Threat Level Manager and add all factions.
-	behavior.ThreatLevelManager = behavior.NewFactionThreatLevelManager(cm.Context.ECSManager)
+	cm.threatManager = behavior.NewFactionThreatLevelManager(cm.Context.ECSManager, cm.Queries.CombatCache)
 	for _, IDs := range cm.Queries.GetAllFactions() {
 
-		behavior.ThreatLevelManager.AddFaction(IDs)
+		cm.threatManager.AddFaction(IDs)
 
 	}
 
-	cm.dangerVisualizer = behavior.NewDangerVisualizer(ctx.ECSManager, gameMap)
+	cm.dangerVisualizer = behavior.NewDangerVisualizer(ctx.ECSManager, gameMap, cm.threatManager)
 
 	return nil
 }
@@ -363,7 +364,7 @@ func (cm *CombatMode) handleEndTurn() {
 	cm.squadListComponent.Refresh()
 	cm.squadDetailComponent.SetText("Select a squad\nto view details")
 
-	behavior.ThreatLevelManager.UpdateAllFactions()
+	cm.threatManager.UpdateAllFactions()
 
 }
 

@@ -38,11 +38,11 @@ type squadThreatInfo struct {
 }
 
 // NewDangerVisualizer creates a new danger visualizer
-func NewDangerVisualizer(manager *common.EntityManager, gameMap *worldmap.GameMap) *DangerVisualizer {
+func NewDangerVisualizer(manager *common.EntityManager, gameMap *worldmap.GameMap, threatManager *FactionThreatLevelManager) *DangerVisualizer {
 	return &DangerVisualizer{
 		manager:         manager,
 		gameMap:         gameMap,
-		threatManager:   ThreatLevelManager, // Use global instance
+		threatManager:   threatManager,
 		isActive:        false,
 		viewMode:        ViewEnemyThreats, // Default to showing enemy threats
 		lastUpdateRound: -1,

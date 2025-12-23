@@ -8,37 +8,17 @@ import (
 	"github.com/bytearena/ecs"
 )
 
-// Threat calculation constants
-const (
-	// Movement defaults
-	DefaultSquadMovement = 3   // Base movement when no data available
-	MaxSpeedSentinel     = 999 // Sentinel for finding minimum speed
-
-	// Role threat multipliers
-	ThreatMultiplierDPS     = 1.5 // DPS units deal highest threat
-	ThreatMultiplierTank    = 1.2 // Tanks provide high durability threat
-	ThreatMultiplierSupport = 1.0 // Support provides utility baseline
-
-	// Leader and composition bonuses
-	ThreatLeaderBonus          = 1.3 // Threat multiplier when unit is squad leader
-	CompositionPenaltyPure     = 0.8 // 1 attack type (mono-composition)
-	CompositionBonusDual       = 1.1 // 2 attack types (good diversity)
-	CompositionBonusTriple     = 1.2 // 3 attack types (excellent)
-	CompositionBonusQuad       = 1.3 // 4 attack types (optimal, rare)
-	CompositionBonusDefault    = 1.0 // Fallback
-)
+var ThreatLevelManager *FactionThreatLevelManager
 
 // Keeps track of Each Factions Danger Level.
 type FactionThreatLevelManager struct {
 	manager  *common.EntityManager
-	cache    *combat.CombatQueryCache
 	factions map[ecs.EntityID]*FactionThreatLevel
 }
 
-func NewFactionThreatLevelManager(manager *common.EntityManager, cache *combat.CombatQueryCache) *FactionThreatLevelManager {
+func NewFactionThreatLevelManager(manager *common.EntityManager) *FactionThreatLevelManager {
 	return &FactionThreatLevelManager{
 		manager:  manager,
-		cache:    cache,
 		factions: make(map[ecs.EntityID]*FactionThreatLevel),
 	}
 }
@@ -46,7 +26,7 @@ func NewFactionThreatLevelManager(manager *common.EntityManager, cache *combat.C
 func (ftlm *FactionThreatLevelManager) AddFaction(factionID ecs.EntityID) {
 
 	if _, exists := ftlm.factions[factionID]; !exists {
-		ftlm.factions[factionID] = NewFactionThreatLevel(factionID, ftlm.manager, ftlm.cache)
+		ftlm.factions[factionID] = NewFactionThreatRating(factionID, ftlm.manager)
 	}
 
 	ftlm.factions[factionID].UpdateThreatRatings()
@@ -69,12 +49,11 @@ func (ftlm *FactionThreatLevelManager) UpdateAllFactions() {
 
 type FactionThreatLevel struct {
 	manager          *common.EntityManager
-	cache            *combat.CombatQueryCache
 	factionID        ecs.EntityID
 	squadDangerLevel map[ecs.EntityID]*SquadThreatLevel //Key is the squad ID. Value is the danger level
 }
 
-func NewFactionThreatLevel(factionID ecs.EntityID, manager *common.EntityManager, cache *combat.CombatQueryCache) *FactionThreatLevel {
+func NewFactionThreatRating(factionID ecs.EntityID, manager *common.EntityManager) *FactionThreatLevel {
 
 	squadIDs := combat.GetSquadsForFaction(factionID, manager)
 
@@ -83,11 +62,10 @@ func NewFactionThreatLevel(factionID ecs.EntityID, manager *common.EntityManager
 		factionID:        factionID,
 		squadDangerLevel: make(map[ecs.EntityID]*SquadThreatLevel, len(squadIDs)),
 		manager:          manager,
-		cache:            cache,
 	}
 
 	for _, ID := range squadIDs {
-		ftl.squadDangerLevel[ID] = NewSquadThreatLevel(ftl.manager, ftl.cache, ID)
+		ftl.squadDangerLevel[ID] = NewSquadThreatLevel(ftl.manager, ID)
 	}
 
 	return ftl
@@ -110,17 +88,15 @@ func (ftr *FactionThreatLevel) UpdateThreatRatingForSquad(squadID ecs.EntityID) 
 
 type SquadThreatLevel struct {
 	manager       *common.EntityManager
-	cache         *combat.CombatQueryCache
 	squadID       ecs.EntityID
 	DangerByRange map[int]float64 //Key is the range. Value is the danger level
 
 }
 
-func NewSquadThreatLevel(manager *common.EntityManager, cache *combat.CombatQueryCache, squadID ecs.EntityID) *SquadThreatLevel {
+func NewSquadThreatLevel(manager *common.EntityManager, squadID ecs.EntityID) *SquadThreatLevel {
 
 	return &SquadThreatLevel{
 		manager: manager,
-		cache:   cache,
 		squadID: squadID,
 	}
 }
@@ -130,14 +106,13 @@ func NewSquadThreatLevel(manager *common.EntityManager, cache *combat.CombatQuer
 // Returns squad's base movement speed if not in combat.
 // Returns 0 if squad has exhausted movement.
 func (stl *SquadThreatLevel) getSquadMovementRange() int {
-	// Use cached query instead of World.Query (50-200x faster)
-	actionStateEntity := stl.cache.FindActionStateEntity(stl.squadID, stl.manager)
-	if actionStateEntity != nil {
+	// Query for ActionStateData (combat context)
+	for _, result := range stl.manager.World.Query(combat.ActionStateTag) {
 		actionState := common.GetComponentType[*combat.ActionStateData](
-			actionStateEntity,
+			result.Entity,
 			combat.ActionStateComponent,
 		)
-		if actionState != nil {
+		if actionState != nil && actionState.SquadID == stl.squadID {
 			return actionState.MovementRemaining
 		}
 	}
@@ -145,11 +120,11 @@ func (stl *SquadThreatLevel) getSquadMovementRange() int {
 	// Not in combat - use base squad movement speed
 	unitIDs := squads.GetUnitIDsInSquad(stl.squadID, stl.manager)
 	if len(unitIDs) == 0 {
-		return DefaultSquadMovement
+		return 3 // Default fallback
 	}
 
 	// Find slowest unit speed (squad moves as one)
-	minSpeed := MaxSpeedSentinel
+	minSpeed := 999
 	for _, unitID := range unitIDs {
 		entity := common.FindEntityByID(stl.manager, unitID)
 		if entity == nil {
@@ -167,8 +142,8 @@ func (stl *SquadThreatLevel) getSquadMovementRange() int {
 		}
 	}
 
-	if minSpeed == MaxSpeedSentinel {
-		return DefaultSquadMovement
+	if minSpeed == 999 {
+		return 3 // Default if no valid units
 	}
 
 	return minSpeed
@@ -272,7 +247,7 @@ func (stl *SquadThreatLevel) CalculateSquadDangerLevel() {
 				// Apply leader bonus
 				leaderBonus := 1.0
 				if ud.isLeader {
-					leaderBonus = ThreatLeaderBonus
+					leaderBonus = 1.3
 				}
 
 				// Calculate unit danger contribution at this range
@@ -298,13 +273,13 @@ func (stl *SquadThreatLevel) CalculateSquadDangerLevel() {
 func (stl *SquadThreatLevel) getRoleMultiplier(role squads.UnitRole) float64 {
 	switch role {
 	case squads.RoleDPS:
-		return ThreatMultiplierDPS
+		return 1.5 // Highest damage output
 	case squads.RoleTank:
-		return ThreatMultiplierTank
+		return 1.2 // High durability
 	case squads.RoleSupport:
-		return ThreatMultiplierSupport
+		return 1.0 // Utility/healing
 	default:
-		return ThreatMultiplierSupport
+		return 1.0
 	}
 }
 
@@ -337,14 +312,14 @@ func (stl *SquadThreatLevel) calculateCompositionBonus() float64 {
 	uniqueTypes := len(attackTypeCount)
 	switch uniqueTypes {
 	case 1:
-		return CompositionPenaltyPure
+		return 0.8 // Weak - pure melee, pure ranged, or pure magic
 	case 2:
-		return CompositionBonusDual
+		return 1.1 // Good - mixed strategies
 	case 3:
-		return CompositionBonusTriple
+		return 1.2 // Excellent - diverse
 	case 4:
-		return CompositionBonusQuad
+		return 1.3 // Optimal - all attack types
 	default:
-		return CompositionBonusDefault
+		return 1.0
 	}
 }
