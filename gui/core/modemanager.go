@@ -143,6 +143,12 @@ func (umm *UIModeManager) updateInputState() {
 		ebiten.KeyE, ebiten.KeyC, ebiten.KeyF, ebiten.KeyEscape,
 		ebiten.KeyI, ebiten.KeyTab, ebiten.KeySpace, ebiten.KeyB,
 		ebiten.KeyP,
+		// Combat mode keys
+		ebiten.KeyH, ebiten.KeyA, ebiten.KeyM, ebiten.KeyZ, ebiten.KeyY,
+		ebiten.Key1, ebiten.Key2, ebiten.Key3,
+		// Modifier keys for shortcuts (Ctrl+Z, Ctrl+Y, Shift+H)
+		ebiten.KeyControl, ebiten.KeyMeta, ebiten.KeyShift,
+		ebiten.KeyShiftLeft, ebiten.KeyShiftRight,
 	}
 
 	prevPressed := make(map[ebiten.Key]bool)
