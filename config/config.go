@@ -4,11 +4,15 @@ package config
 
 // Debug and profiling flags
 const (
+	DISPLAY_THREAT_MAP_LOG_OUTPUT = true
+
+	DISPLAY_DEATAILED_COMBAT_OUTPUT = false
+
 	// DEBUG_MODE enables debug visualization and logging
 	DEBUG_MODE = true
 
 	// ENABLE_BENCHMARKING enables pprof profiling server on localhost:6060
-	ENABLE_BENCHMARKING = true
+	ENABLE_BENCHMARKING = false
 
 	// ENABLE_COMBAT_LOG enables the combat log UI and logging during combat
 	// When disabled, no combat log panel is created and no log messages are recorded

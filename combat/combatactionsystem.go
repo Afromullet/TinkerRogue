@@ -23,12 +23,12 @@ func NewCombatActionSystem(manager *common.EntityManager) *CombatActionSystem {
 
 func (cas *CombatActionSystem) ExecuteAttackAction(attackerID, defenderID ecs.EntityID) error {
 
-	attackerPos, err := getSquadMapPosition(attackerID, cas.manager)
+	attackerPos, err := GetSquadMapPosition(attackerID, cas.manager)
 	if err != nil {
 		return fmt.Errorf("cannot find attacker position: %w", err)
 	}
 
-	defenderPos, err := getSquadMapPosition(defenderID, cas.manager)
+	defenderPos, err := GetSquadMapPosition(defenderID, cas.manager)
 	if err != nil {
 		return fmt.Errorf("cannot find defender position: %w", err)
 	}
@@ -91,7 +91,7 @@ func (cas *CombatActionSystem) ExecuteAttackAction(attackerID, defenderID ecs.En
 	}
 
 	// Display detailed combat log. Only prints in display mode.
-	if config.DEBUG_MODE && result.CombatLog != nil {
+	if config.DISPLAY_DEATAILED_COMBAT_OUTPUT && result.CombatLog != nil {
 		DisplayCombatLog(result.CombatLog, cas.manager)
 	}
 
@@ -182,12 +182,12 @@ func (cas *CombatActionSystem) CanSquadAttackWithReason(squadID, targetID ecs.En
 	}
 
 	// Get positions
-	attackerPos, err := getSquadMapPosition(squadID, cas.manager)
+	attackerPos, err := GetSquadMapPosition(squadID, cas.manager)
 	if err != nil {
 		return "Attacker squad not found on map", false
 	}
 
-	defenderPos, err := getSquadMapPosition(targetID, cas.manager)
+	defenderPos, err := GetSquadMapPosition(targetID, cas.manager)
 	if err != nil {
 		return "Target squad not found on map", false
 	}

@@ -62,6 +62,29 @@ func SetupGameplayFactions(manager *common.EntityManager, playerStartPos coords.
 		}
 	}
 
+	// 6a. Add two ranged-only squads for Player 1
+	playerRangedSquadPositions := []coords.LogicalPosition{
+		{X: clampPosition(playerStartPos.X-6, 0, 99), Y: clampPosition(playerStartPos.Y+6, 0, 79)},
+		{X: clampPosition(playerStartPos.X+6, 0, 99), Y: clampPosition(playerStartPos.Y+6, 0, 79)},
+	}
+
+	for i, pos := range playerRangedSquadPositions {
+		squadID, err := createRangedSquadByAttackRange(manager, fmt.Sprintf("Player Ranged Squad %d", i+1), pos)
+		if err != nil {
+			return fmt.Errorf("failed to create player ranged squad %d: %w", i+1, err)
+		}
+
+		// Add squad to faction
+		if err := fm.AddSquadToFaction(playerFactionID, squadID, pos); err != nil {
+			return fmt.Errorf("failed to add ranged squad to player faction: %w", err)
+		}
+
+		// Create ActionStateData for squad
+		if err := createActionStateForSquad(manager, squadID); err != nil {
+			return fmt.Errorf("failed to create action state for player ranged squad: %w", err)
+		}
+	}
+
 	// 7. Create Player 2 squads positioned on opposite side (5 squads total)
 	// Player 2 squads are positioned on the opposite side of the map for hot-seat multiplayer
 	// Squad positions relative to player start:
@@ -92,6 +115,29 @@ func SetupGameplayFactions(manager *common.EntityManager, playerStartPos coords.
 		// Create ActionStateData for squad
 		if err := createActionStateForSquad(manager, squadID); err != nil {
 			return fmt.Errorf("failed to create action state for Player 2 squad: %w", err)
+		}
+	}
+
+	// 7a. Add two ranged-only squads for Player 2
+	player2RangedSquadPositions := []coords.LogicalPosition{
+		{X: clampPosition(playerStartPos.X-7, 0, 99), Y: clampPosition(playerStartPos.Y+12, 0, 79)},
+		{X: clampPosition(playerStartPos.X+7, 0, 99), Y: clampPosition(playerStartPos.Y+12, 0, 79)},
+	}
+
+	for i, pos := range player2RangedSquadPositions {
+		squadID, err := createRangedSquadByAttackRange(manager, fmt.Sprintf("Player 2 Ranged Squad %d", i+1), pos)
+		if err != nil {
+			return fmt.Errorf("failed to create Player 2 ranged squad %d: %w", i+1, err)
+		}
+
+		// Add squad to faction
+		if err := fm.AddSquadToFaction(player2FactionID, squadID, pos); err != nil {
+			return fmt.Errorf("failed to add ranged squad to Player 2 faction: %w", err)
+		}
+
+		// Create ActionStateData for squad
+		if err := createActionStateForSquad(manager, squadID); err != nil {
+			return fmt.Errorf("failed to create action state for Player 2 ranged squad: %w", err)
 		}
 	}
 
@@ -126,10 +172,33 @@ func SetupGameplayFactions(manager *common.EntityManager, playerStartPos coords.
 		}
 	}
 
+	// 8a. Add two ranged-only squads for AI Faction
+	aiRangedSquadPositions := []coords.LogicalPosition{
+		{X: clampPosition(playerStartPos.X-12, 0, 99), Y: clampPosition(playerStartPos.Y, 0, 79)},
+		{X: clampPosition(playerStartPos.X+12, 0, 99), Y: clampPosition(playerStartPos.Y, 0, 79)},
+	}
+
+	for i, pos := range aiRangedSquadPositions {
+		squadID, err := createRangedSquadByAttackRange(manager, fmt.Sprintf("Goblin Ranged Squad %d", i+1), pos)
+		if err != nil {
+			return fmt.Errorf("failed to create AI ranged squad %d: %w", i+1, err)
+		}
+
+		// Add squad to AI faction
+		if err := fm.AddSquadToFaction(aiFactionID, squadID, pos); err != nil {
+			return fmt.Errorf("failed to add ranged squad to AI faction: %w", err)
+		}
+
+		// Create ActionStateData for squad
+		if err := createActionStateForSquad(manager, squadID); err != nil {
+			return fmt.Errorf("failed to create action state for AI ranged squad: %w", err)
+		}
+	}
+
 	fmt.Printf("Created three-faction battle:\n")
-	fmt.Printf("  Player 1 faction (%d) with %d squads\n", playerFactionID, len(playerSquadPositions))
-	fmt.Printf("  Player 2 faction (%d) with %d squads\n", player2FactionID, len(player2SquadPositions))
-	fmt.Printf("  AI Goblin Horde (%d) with %d squads\n", aiFactionID, len(aiSquadPositions))
+	fmt.Printf("  Player 1 faction (%d) with %d squads\n", playerFactionID, len(playerSquadPositions)+len(playerRangedSquadPositions))
+	fmt.Printf("  Player 2 faction (%d) with %d squads\n", player2FactionID, len(player2SquadPositions)+len(player2RangedSquadPositions))
+	fmt.Printf("  AI Goblin Horde (%d) with %d squads\n", aiFactionID, len(aiSquadPositions)+len(aiRangedSquadPositions))
 
 	return nil
 }
@@ -320,6 +389,72 @@ func filterUnitsByAttackType(attackType squads.AttackType) []squads.UnitTemplate
 		}
 	}
 	return filtered
+}
+
+// filterUnitsByAttackRange returns units with attack range >= minRange
+func filterUnitsByAttackRange(minRange int) []squads.UnitTemplate {
+	var filtered []squads.UnitTemplate
+	for _, unit := range squads.Units {
+		if unit.AttackRange >= minRange {
+			filtered = append(filtered, unit)
+		}
+	}
+	return filtered
+}
+
+// createRangedSquadByAttackRange creates a squad with only ranged units (AttackRange >= 3)
+// Uses the AttackRange field to select units
+func createRangedSquadByAttackRange(
+	manager *common.EntityManager,
+	squadName string,
+	position coords.LogicalPosition,
+) (ecs.EntityID, error) {
+	// Get all units with attack range >= 3 (ranged units)
+	rangedUnits := filterUnitsByAttackRange(3)
+	if len(rangedUnits) == 0 {
+		return 0, fmt.Errorf("no ranged units available (AttackRange >= 3)")
+	}
+
+	// Create squad with 3-5 ranged units
+	unitCount := common.GetRandomBetween(3, 5)
+	unitsToCreate := []squads.UnitTemplate{}
+
+	// Spread units across all three rows for better squad positioning
+	gridPositions := [][2]int{
+		{0, 0}, // Row 0 - Front left
+		{1, 1}, // Row 1 - Middle center
+		{2, 2}, // Row 2 - Back right
+		{0, 2}, // Row 0 - Front right
+		{1, 0}, // Row 1 - Middle left
+	}
+
+	for i := 0; i < unitCount; i++ {
+		// Randomly select a ranged unit
+		randomIdx := common.RandomInt(len(rangedUnits))
+		unit := rangedUnits[randomIdx]
+
+		unit.GridRow = gridPositions[i][0]
+		unit.GridCol = gridPositions[i][1]
+		unit.IsLeader = false
+
+		unitsToCreate = append(unitsToCreate, unit)
+	}
+
+	// Set random leader
+	leaderIndex := common.RandomInt(unitCount)
+	unitsToCreate[leaderIndex].IsLeader = true
+	unitsToCreate[leaderIndex].Attributes.Leadership = 20
+
+	// Create squad
+	squadID := squads.CreateSquadFromTemplate(
+		manager,
+		squadName,
+		squads.FormationBalanced,
+		position,
+		unitsToCreate,
+	)
+
+	return squadID, nil
 }
 
 // createRangedSquad creates a squad with only ranged attackers

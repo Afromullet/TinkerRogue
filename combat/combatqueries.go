@@ -51,8 +51,8 @@ func getFactionOwner(squadID ecs.EntityID, manager *common.EntityManager) ecs.En
 	return GetSquadFaction(squadID, manager)
 }
 
-// getSquadMapPosition returns the current map position of a squad
-func getSquadMapPosition(squadID ecs.EntityID, manager *common.EntityManager) (coords.LogicalPosition, error) {
+// GetSquadMapPosition returns the current map position of a squad
+func GetSquadMapPosition(squadID ecs.EntityID, manager *common.EntityManager) (coords.LogicalPosition, error) {
 	entity := common.FindEntityByID(manager, squadID)
 	if entity == nil {
 		return coords.LogicalPosition{}, fmt.Errorf("squad %d not found", squadID)
@@ -63,6 +63,17 @@ func getSquadMapPosition(squadID ecs.EntityID, manager *common.EntityManager) (c
 		return coords.LogicalPosition{}, fmt.Errorf("squad %d has no position", squadID)
 	}
 	return *pos, nil
+}
+
+// GetAllFactions returns all factions in the combat system
+func GetAllFactions(manager *common.EntityManager) []ecs.EntityID {
+	var factionIDs []ecs.EntityID
+
+	for _, result := range manager.World.Query(FactionTag) {
+		factionIDs = append(factionIDs, result.Entity.GetID())
+	}
+
+	return factionIDs
 }
 
 // GetSquadsForFaction returns all squads owned by a faction

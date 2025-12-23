@@ -38,7 +38,7 @@ func ExecuteSquadAttack(attackerSquadID, defenderSquadID ecs.EntityID, squadmana
 
 	for _, attackerID := range attackerUnitIDs {
 		// Check if unit can attack (alive and in range)
-		if !canUnitAttack(attackerID, combatLog.SquadDistance, squadmanager) {
+		if !CanUnitAttack(attackerID, combatLog.SquadDistance, squadmanager) {
 			continue
 		}
 
@@ -78,7 +78,7 @@ func snapshotAttackingUnits(squadID ecs.EntityID, squadDistance int, manager *co
 
 	for _, unitID := range unitIDs {
 		// Check if unit can participate
-		if !canUnitAttack(unitID, squadDistance, manager) {
+		if !CanUnitAttack(unitID, squadDistance, manager) {
 			continue
 		}
 
@@ -135,8 +135,8 @@ func finalizeCombatLog(result *CombatResult, log *CombatLog, defenderSquadID ecs
 	log.DefenderStatus = calculateSquadStatus(defenderSquadID, manager)
 }
 
-// canUnitAttack checks if a unit is alive, can act, and within attack range
-func canUnitAttack(attackerID ecs.EntityID, squadDistance int, manager *common.EntityManager) bool {
+// CanUnitAttack checks if a unit is alive, can act, and within attack range
+func CanUnitAttack(attackerID ecs.EntityID, squadDistance int, manager *common.EntityManager) bool {
 	entity := common.FindEntityByID(manager, attackerID)
 	if entity == nil {
 		return false

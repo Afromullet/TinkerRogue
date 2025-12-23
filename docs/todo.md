@@ -37,6 +37,8 @@ can't attack twice. Once with ranged units and once with melee
 - CombatController has a lot of artifacts of the old roguelike prior to the change. Specifically in regards to throwables. Find a way tohandle that. 
 - Input Package has a lot of leftovers from the old roguelike
 - Sprite, Tile, and Rendering Batches allocates default sizes for the slices. Look at those. Determine how many we need. Have a larger default size if needed (i.e, NewSpriteBatch)
+- Lots of functions that get components or entities in a different way. Consolidate them. 
+- combatqueries.go still has functions which search the entire ecs space
 
 
 
@@ -54,8 +56,7 @@ can't attack twice. Once with ranged units and once with melee
   * Look at rendering package, 
 - Review global position system
 - The Inventory is a leftover prior to shifting the game to a turn based squad tactics game from a regular roguelike. Think of what you want to do with the inventory
-- Review Squad, combat, and worldmap packages. 
-- Review all the caches
+ 
 
 
 

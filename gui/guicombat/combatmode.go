@@ -2,6 +2,7 @@ package guicombat
 
 import (
 	"fmt"
+	"game_main/behavior"
 	"game_main/combat/combatservices"
 	"game_main/config"
 	"game_main/coords"
@@ -345,6 +346,9 @@ func (cm *CombatMode) handleEndTurn() {
 	cm.factionInfoComponent.ShowFaction(currentFactionID)
 	cm.squadListComponent.Refresh()
 	cm.squadDetailComponent.SetText("Select a squad\nto view details")
+
+	behavior.ThreatLevelManager.UpdateAllFactions()
+
 }
 
 func (cm *CombatMode) Enter(fromMode core.UIMode) error {
@@ -360,27 +364,11 @@ func (cm *CombatMode) Enter(fromMode core.UIMode) error {
 		// Fresh combat start - initialize everything
 		cm.logManager.UpdateTextArea(cm.combatLogArea, "=== COMBAT STARTED ===")
 
-		// Collect all factions using query service
-		factionIDs := cm.Queries.GetAllFactions()
-
-		// Initialize combat with all factions
-		if len(factionIDs) > 0 {
-			if err := cm.combatService.InitializeCombat(factionIDs); err != nil {
-				cm.logManager.UpdateTextArea(cm.combatLogArea, fmt.Sprintf("Error initializing combat: %v", err))
-				return err
-			}
-
-			// Log initial faction
-			currentFactionID := cm.combatService.GetCurrentFaction()
-			factionData := cm.Queries.CombatCache.FindFactionDataByID(currentFactionID, cm.Queries.ECSManager)
-			factionName := "Unknown"
-			if factionData != nil {
-				factionName = factionData.Name
-			}
-			cm.logManager.UpdateTextArea(cm.combatLogArea, fmt.Sprintf("Round 1: %s goes first!", factionName))
-		} else {
-			cm.logManager.UpdateTextArea(cm.combatLogArea, "No factions found - combat cannot start")
+		// Enter new mode
+		if cm.initialzieCombatFactions() != nil {
+			return fmt.Errorf("Error initializing combat factions")
 		}
+
 	}
 
 	// Always refresh UI displays (whether fresh or returning from animation)
@@ -422,6 +410,42 @@ func (cm *CombatMode) Update(deltaTime float64) error {
 	}
 
 	return nil
+}
+
+func (cm *CombatMode) initialzieCombatFactions() error {
+
+	// Collect all factions using query service
+	factionIDs := cm.Queries.GetAllFactions()
+
+	// Initialize combat with all factions
+	if len(factionIDs) > 0 {
+		if err := cm.combatService.InitializeCombat(factionIDs); err != nil {
+			cm.logManager.UpdateTextArea(cm.combatLogArea, fmt.Sprintf("Error initializing combat: %v", err))
+			return err
+		}
+
+		// Log initial faction
+		currentFactionID := cm.combatService.GetCurrentFaction()
+		factionData := cm.Queries.CombatCache.FindFactionDataByID(currentFactionID, cm.Queries.ECSManager)
+		factionName := "Unknown"
+		if factionData != nil {
+			factionName = factionData.Name
+		}
+		cm.logManager.UpdateTextArea(cm.combatLogArea, fmt.Sprintf("Round 1: %s goes first!", factionName))
+	} else {
+		cm.logManager.UpdateTextArea(cm.combatLogArea, "No factions found - combat cannot start")
+	}
+
+	//Create the initial Faction Threat Level Manager and add all factions.
+	behavior.ThreatLevelManager = behavior.NewFactionThreatLevelManager(cm.Context.ECSManager)
+	for _, IDs := range factionIDs {
+
+		behavior.ThreatLevelManager.AddFaction(IDs)
+
+	}
+
+	return nil
+
 }
 
 // getValidMoveTiles computes valid movement tiles on-demand from combat service
