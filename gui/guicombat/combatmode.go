@@ -12,6 +12,7 @@ import (
 	"game_main/gui/guicomponents"
 	"game_main/gui/guimodes"
 	"game_main/gui/widgets"
+	"game_main/worldmap"
 
 	"github.com/bytearena/ecs"
 	"github.com/ebitenui/ebitenui/widget"
@@ -51,6 +52,7 @@ type CombatMode struct {
 	// Rendering systems
 	movementRenderer  *guimodes.MovementTileRenderer
 	highlightRenderer *guimodes.SquadHighlightRenderer
+	dangerVisualizer  *behavior.DangerVisualizer
 
 	// State tracking for UI updates (GUI_PERFORMANCE_ANALYSIS.md)
 	lastFactionID     ecs.EntityID
@@ -109,6 +111,20 @@ func (cm *CombatMode) Initialize(ctx *core.UIContext) error {
 
 	cm.movementRenderer = guimodes.NewMovementTileRenderer()
 	cm.highlightRenderer = guimodes.NewSquadHighlightRenderer(cm.Queries)
+
+	// Cast GameMap from interface{} to *worldmap.GameMap
+	//TODO, remove in future. Here for gamevisualizer
+	gameMap := ctx.GameMap.(*worldmap.GameMap)
+
+	//Create the initial Faction Threat Level Manager and add all factions.
+	behavior.ThreatLevelManager = behavior.NewFactionThreatLevelManager(cm.Context.ECSManager)
+	for _, IDs := range cm.Queries.GetAllFactions() {
+
+		behavior.ThreatLevelManager.AddFaction(IDs)
+
+	}
+
+	cm.dangerVisualizer = behavior.NewDangerVisualizer(ctx.ECSManager, gameMap)
 
 	return nil
 }
@@ -384,6 +400,12 @@ func (cm *CombatMode) Enter(fromMode core.UIMode) error {
 
 func (cm *CombatMode) Exit(toMode core.UIMode) error {
 	fmt.Println("Exiting Combat Mode")
+
+	// Clear danger visualization
+	if cm.dangerVisualizer != nil {
+		cm.dangerVisualizer.ClearVisualization()
+	}
+
 	// Clear combat log for next battle
 	cm.logManager.Clear()
 	return nil
@@ -407,6 +429,14 @@ func (cm *CombatMode) Update(deltaTime float64) error {
 		if cm.lastSelectedSquad != 0 {
 			cm.squadDetailComponent.ShowSquad(cm.lastSelectedSquad)
 		}
+	}
+
+	// Update danger visualization if active
+	if cm.dangerVisualizer.IsActive() {
+		currentRound := cm.combatService.GetCurrentRound()
+		playerPos := *cm.Context.PlayerData.Pos
+		viewportSize := 30 // Process 30x30 tile area around player
+		cm.dangerVisualizer.Update(currentFactionID, currentRound, playerPos, viewportSize)
 	}
 
 	return nil
@@ -434,14 +464,6 @@ func (cm *CombatMode) initialzieCombatFactions() error {
 		cm.logManager.UpdateTextArea(cm.combatLogArea, fmt.Sprintf("Round 1: %s goes first!", factionName))
 	} else {
 		cm.logManager.UpdateTextArea(cm.combatLogArea, "No factions found - combat cannot start")
-	}
-
-	//Create the initial Faction Threat Level Manager and add all factions.
-	behavior.ThreatLevelManager = behavior.NewFactionThreatLevelManager(cm.Context.ECSManager)
-	for _, IDs := range factionIDs {
-
-		behavior.ThreatLevelManager.AddFaction(IDs)
-
 	}
 
 	return nil
@@ -508,6 +530,33 @@ func (cm *CombatMode) HandleInput(inputState *core.InputState) bool {
 	// Space to end turn (handled separately here)
 	if inputState.KeysJustPressed[ebiten.KeySpace] {
 		cm.handleEndTurn()
+		return true
+	}
+
+	// H key to toggle danger heat map
+	if inputState.KeysJustPressed[ebiten.KeyH] {
+		// Check if Shift key is pressed
+		shiftPressed := inputState.KeysPressed[ebiten.KeyShift] ||
+			inputState.KeysPressed[ebiten.KeyShiftLeft] ||
+			inputState.KeysPressed[ebiten.KeyShiftRight]
+
+		if shiftPressed {
+			// Shift+H: Switch between enemy/player threat view
+			cm.dangerVisualizer.SwitchView()
+			viewName := "Enemy Threats"
+			if cm.dangerVisualizer.GetViewMode() == behavior.ViewPlayerThreats {
+				viewName = "Player Threats"
+			}
+			cm.logManager.UpdateTextArea(cm.combatLogArea, fmt.Sprintf("Switched to %s view", viewName))
+		} else {
+			// H alone: Toggle visualization on/off
+			cm.dangerVisualizer.Toggle()
+			status := "enabled"
+			if !cm.dangerVisualizer.IsActive() {
+				status = "disabled"
+			}
+			cm.logManager.UpdateTextArea(cm.combatLogArea, fmt.Sprintf("Danger visualization %s", status))
+		}
 		return true
 	}
 

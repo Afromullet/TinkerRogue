@@ -41,13 +41,14 @@ type UIMode interface {
 
 // UIContext provides shared game state to all UI modes
 type UIContext struct {
-	ECSManager        *common.EntityManager
-	PlayerData        *common.PlayerData
-	ScreenWidth       int
-	ScreenHeight      int
-	TileSize          int
-	ModeCoordinator   *GameModeCoordinator // For context switching
-	Queries           interface{} // *GUIQueries - Shared queries for all UI modes (interface{} to avoid circular import)
+	ECSManager      *common.EntityManager
+	PlayerData      *common.PlayerData
+	GameMap         interface{} // Todo, remove in future. Here for dangervisualzier, so that we can debug
+	ScreenWidth     int
+	ScreenHeight    int
+	TileSize        int
+	ModeCoordinator *GameModeCoordinator // For context switching
+	Queries         interface{}          // *GUIQueries - Shared queries for all UI modes (interface{} to avoid circular import)
 	// Add other commonly needed game state
 }
 

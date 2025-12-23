@@ -27,3 +27,15 @@ func (c ColorMatrix) IsEmpty() bool {
 
 	return false
 }
+
+// CreateRedGradient creates a red ColorMatrix with specified opacity
+// Used for danger visualization where intensity indicates threat level
+func CreateRedGradient(opacity float32) ColorMatrix {
+	return ColorMatrix{
+		R:           1,
+		G:           0,
+		B:           0,
+		A:           opacity,
+		ApplyMatrix: true,
+	}
+}
