@@ -3,9 +3,9 @@ package squads
 import (
 	"fmt"
 	"game_main/common"
-	"game_main/world/coords"
 	"game_main/templates"
 	testfx "game_main/testing"
+	"game_main/world/coords"
 	"testing"
 
 	"github.com/bytearena/ecs"
@@ -59,7 +59,7 @@ func createLowCostTestMonster(name string, width, height int, role string) templ
 			Magic:      0,
 			Leadership: 0,
 			Armor:      0, // No armor to minimize capacity cost
-			Weapon:    0, // No weapon to minimize capacity cost
+			Weapon:     0, // No weapon to minimize capacity cost
 		},
 		Width:       width,
 		Height:      height,
@@ -99,12 +99,12 @@ func CreateHighCapacitySquad(manager *common.EntityManager, squadName string, ca
 
 	// Create attributes for the leader with high Leadership
 	leaderAttr := common.NewAttributes(
-		1,  // Minimal strength
-		0,  // No dexterity needed
-		0,  // No magic
-		9,  // Max leadership for capacity
-		0,  // No armor
-		0,  // No weapon
+		1, // Minimal strength
+		0, // No dexterity needed
+		0, // No magic
+		9, // Max leadership for capacity
+		0, // No armor
+		0, // No weapon
 	)
 	leaderEntity.AddComponent(common.AttributeComponent, &leaderAttr)
 
@@ -1131,7 +1131,7 @@ func TestGetSquadMovementSpeed_DeadUnitsIgnored(t *testing.T) {
 	// Kill the slow unit
 	unitIDs := GetUnitIDsAtGridPosition(squadID, 0, 0, manager)
 	if len(unitIDs) > 0 {
-		slowUnit := common.FindEntityByIDWithTag(manager, unitIDs[0], SquadMemberTag)
+		slowUnit := common.FindEntityByID(manager, unitIDs[0])
 		attr := common.GetAttributes(slowUnit)
 		attr.CurrentHealth = 0
 	}

@@ -3,8 +3,8 @@ package squadcommands
 import (
 	"fmt"
 	"game_main/common"
-	"game_main/world/coords"
 	"game_main/tactical/squads"
+	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"
 )
@@ -78,7 +78,7 @@ func (cmd *DisbandSquadCommand) Execute() error {
 	// Remove all units from squad (dispose entities)
 	unitIDs := squads.GetUnitIDsInSquad(cmd.squadID, cmd.entityManager)
 	for _, unitID := range unitIDs {
-		unitEntity := common.FindEntityByIDWithTag(cmd.entityManager, unitID, squads.SquadMemberTag)
+		unitEntity := common.FindEntityByID(cmd.entityManager, unitID)
 		if unitEntity != nil {
 			// Get position component for cleanup
 			pos := common.GetComponentType[*coords.LogicalPosition](unitEntity, common.PositionComponent)

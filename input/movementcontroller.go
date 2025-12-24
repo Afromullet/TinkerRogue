@@ -2,10 +2,10 @@ package input
 
 import (
 	"game_main/common"
-	"game_main/world/coords"
 	"game_main/gear"
 	"game_main/visual/graphics"
 	"game_main/visual/rendering"
+	"game_main/world/coords"
 	"game_main/world/worldmap"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -156,7 +156,7 @@ func (mc *MovementController) playerPickupItem() {
 	itemEntityID, err := mc.gameMap.RemoveItemFromTile(0, mc.playerData.Pos)
 
 	if err == nil && itemEntityID != 0 {
-		itemEntity := common.FindEntityByIDInManager(mc.ecsManager.World, itemEntityID)
+		itemEntity := common.FindEntityByID(mc.ecsManager, itemEntityID)
 		if itemEntity != nil {
 			renderable := common.GetComponentType[*rendering.Renderable](itemEntity, rendering.RenderableComponent)
 			renderable.Visible = false

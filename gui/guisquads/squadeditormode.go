@@ -410,8 +410,8 @@ func (sem *SquadEditorMode) loadSquadFormation(squadID ecs.EntityID) {
 	unitIDs := sem.Queries.SquadCache.GetUnitIDsInSquad(squadID)
 
 	for _, unitID := range unitIDs {
-		gridPos := common.GetComponentTypeByIDWithTag[*squads.GridPositionData](
-			sem.Queries.ECSManager, unitID, squads.SquadMemberTag, squads.GridPositionComponent)
+		gridPos := common.GetComponentTypeByID[*squads.GridPositionData](
+			sem.Queries.ECSManager, unitID, squads.GridPositionComponent)
 		if gridPos == nil {
 			continue
 		}
@@ -425,7 +425,7 @@ func (sem *SquadEditorMode) loadSquadFormation(squadID ecs.EntityID) {
 		}
 
 		// Check if leader
-		isLeader := sem.Queries.ECSManager.HasComponentByIDWithTag(unitID, squads.SquadMemberTag, squads.LeaderComponent)
+		isLeader := sem.Queries.ECSManager.HasComponent(unitID, squads.LeaderComponent)
 		if isLeader {
 			nameStr = "[L] " + nameStr
 		}
@@ -704,7 +704,7 @@ func (sem *SquadEditorMode) onRemoveUnit() {
 	unitID := unitIdentity.ID
 
 	// Check if this is the leader
-	isLeader := sem.Queries.ECSManager.HasComponentByIDWithTag(unitID, squads.SquadMemberTag, squads.LeaderComponent)
+	isLeader := sem.Queries.ECSManager.HasComponent(unitID, squads.LeaderComponent)
 	if isLeader {
 		sem.SetStatus("Cannot remove leader. Make another unit leader first")
 		return
@@ -762,7 +762,7 @@ func (sem *SquadEditorMode) onMakeLeader() {
 	unitID := unitIdentity.ID
 
 	// Check if already leader
-	isLeader := sem.Queries.ECSManager.HasComponentByIDWithTag(unitID, squads.SquadMemberTag, squads.LeaderComponent)
+	isLeader := sem.Queries.ECSManager.HasComponent(unitID, squads.LeaderComponent)
 	if isLeader {
 		sem.SetStatus("Unit is already the leader")
 		return

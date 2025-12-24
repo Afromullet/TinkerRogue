@@ -3,9 +3,9 @@ package squads
 import (
 	"fmt"
 	"game_main/common"
-	"game_main/world/coords"
 	"game_main/templates"
 	"game_main/visual/rendering"
+	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"
 )
@@ -86,7 +86,7 @@ func AddUnitToSquad(
 }
 
 func RemoveUnitFromSquad(unitEntityID ecs.EntityID, squadmanager *common.EntityManager) error {
-	if !squadmanager.HasComponentByIDWithTag(unitEntityID, SquadMemberTag, SquadMemberComponent) {
+	if !squadmanager.HasComponent(unitEntityID, SquadMemberComponent) {
 		return fmt.Errorf("unit is not in a squad")
 	}
 
@@ -99,7 +99,7 @@ func RemoveUnitFromSquad(unitEntityID ecs.EntityID, squadmanager *common.EntityM
 	squadID := memberData.SquadID
 
 	// Find the unit entity and dispose it
-	unitEntity := common.FindEntityByIDWithTag(squadmanager, unitEntityID, SquadMemberTag)
+	unitEntity := common.FindEntityByID(squadmanager, unitEntityID)
 	if unitEntity != nil {
 		// Get position component if it exists (units typically don't have world positions)
 		pos := common.GetComponentType[*coords.LogicalPosition](unitEntity, common.PositionComponent)
@@ -116,9 +116,8 @@ func RemoveUnitFromSquad(unitEntityID ecs.EntityID, squadmanager *common.EntityM
 	return nil
 }
 
-
 func MoveUnitInSquad(unitEntityID ecs.EntityID, newRow, newCol int, ecsmanager *common.EntityManager) error {
-	if !ecsmanager.HasComponentByIDWithTag(unitEntityID, SquadMemberTag, SquadMemberComponent) {
+	if !ecsmanager.HasComponent(unitEntityID, SquadMemberComponent) {
 		return fmt.Errorf("unit is not in a squad")
 	}
 
@@ -224,7 +223,7 @@ func GetFormationPreset(formation FormationType) FormationPreset {
 	}
 }
 
-// CreateSquadFromTemplate 
+// CreateSquadFromTemplate
 func CreateSquadFromTemplate(
 	ecsmanager *common.EntityManager,
 	squadName string,
@@ -235,7 +234,6 @@ func CreateSquadFromTemplate(
 
 	// Create squad entity
 	squadEntity := ecsmanager.World.NewEntity()
-
 
 	squadID := squadEntity.GetID()
 
@@ -323,7 +321,7 @@ func CreateSquadFromTemplate(
 
 		// Add squad membership (uses ID, not entity pointer)
 		unitEntity.AddComponent(SquadMemberComponent, &SquadMemberData{
-			SquadID: squadID, 
+			SquadID: squadID,
 		})
 
 		// Add grid position (supports multi-cell)

@@ -67,7 +67,7 @@ func (cmd *ChangeFormationCommand) Validate() error {
 		occupiedCells[cell] = true
 
 		// Verify unit exists and belongs to this squad
-		unitEntity := common.FindEntityByIDWithTag(cmd.entityManager, assignment.UnitID, squads.SquadMemberTag)
+		unitEntity := common.FindEntityByID(cmd.entityManager, assignment.UnitID)
 		if unitEntity == nil {
 			return fmt.Errorf("unit %d not found", assignment.UnitID)
 		}
@@ -116,8 +116,8 @@ func (cmd *ChangeFormationCommand) Execute() error {
 	// Apply new formation
 	for _, assignment := range cmd.newFormation {
 		// Update grid position
-		gridPos := common.GetComponentTypeByIDWithTag[*squads.GridPositionData](
-			cmd.entityManager, assignment.UnitID, squads.SquadMemberTag, squads.GridPositionComponent)
+		gridPos := common.GetComponentTypeByID[*squads.GridPositionData](
+			cmd.entityManager, assignment.UnitID, squads.GridPositionComponent)
 		if gridPos == nil {
 			return fmt.Errorf("unit %d not found or has no grid position component", assignment.UnitID)
 		}
@@ -138,8 +138,8 @@ func (cmd *ChangeFormationCommand) Undo() error {
 	// Restore old positions
 	for _, assignment := range cmd.oldFormation {
 		// Restore grid position
-		gridPos := common.GetComponentTypeByIDWithTag[*squads.GridPositionData](
-			cmd.entityManager, assignment.UnitID, squads.SquadMemberTag, squads.GridPositionComponent)
+		gridPos := common.GetComponentTypeByID[*squads.GridPositionData](
+			cmd.entityManager, assignment.UnitID, squads.GridPositionComponent)
 		if gridPos == nil {
 			// Unit might have been removed - skip it
 			continue
@@ -167,7 +167,7 @@ func (cmd *ChangeFormationCommand) captureCurrentFormation() error {
 	unitIDs := squads.GetUnitIDsInSquad(cmd.squadID, cmd.entityManager)
 
 	for _, unitID := range unitIDs {
-		unitEntity := common.FindEntityByIDWithTag(cmd.entityManager, unitID, squads.SquadMemberTag)
+		unitEntity := common.FindEntityByID(cmd.entityManager, unitID)
 		if unitEntity == nil {
 			continue
 		}

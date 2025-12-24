@@ -3,8 +3,8 @@ package squadservices
 import (
 	"fmt"
 	"game_main/common"
-	"game_main/world/coords"
 	"game_main/tactical/squads"
+	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"
 )
@@ -69,7 +69,7 @@ func (sbs *SquadBuilderService) DesignateLeader(unitID ecs.EntityID) *DesignateL
 	result := &DesignateLeaderResult{}
 
 	// Find the unit entity
-	unitEntity := common.FindEntityByIDWithTag(sbs.entityManager, unitID, squads.SquadMemberTag)
+	unitEntity := common.FindEntityByID(sbs.entityManager, unitID)
 	if unitEntity == nil {
 		result.Error = fmt.Sprintf("unit %d not found", unitID)
 		return result
@@ -106,7 +106,7 @@ func (sbs *SquadBuilderService) GetCapacityInfo(squadID ecs.EntityID) *SquadCapa
 	// Check for leader
 	unitIDs := squads.GetUnitIDsInSquad(squadID, sbs.entityManager)
 	for _, unitID := range unitIDs {
-		if sbs.entityManager.HasComponentByIDWithTag(unitID, squads.SquadMemberTag, squads.LeaderComponent) {
+		if sbs.entityManager.HasComponent(unitID, squads.LeaderComponent) {
 			info.HasLeader = true
 			break
 		}
@@ -137,7 +137,7 @@ func (sbs *SquadBuilderService) ValidateSquad(squadID ecs.EntityID) *ValidateSqu
 
 	// Check for leader
 	for _, unitID := range unitIDs {
-		if sbs.entityManager.HasComponentByIDWithTag(unitID, squads.SquadMemberTag, squads.LeaderComponent) {
+		if sbs.entityManager.HasComponent(unitID, squads.LeaderComponent) {
 			result.HasLeader = true
 			break
 		}
@@ -303,7 +303,7 @@ func (sbs *SquadBuilderService) ClearSquadAndReturnAllUnits(
 	// Remove each unit and return to roster
 	for _, unitID := range unitIDs {
 		// Find unit entity to dispose it
-		unitEntity := common.FindEntityByIDWithTag(sbs.entityManager, unitID, squads.SquadMemberTag)
+		unitEntity := common.FindEntityByID(sbs.entityManager, unitID)
 		if unitEntity == nil {
 			continue
 		}

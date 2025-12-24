@@ -40,7 +40,7 @@ func VisualizeSquad(squadID ecs.EntityID, squadmanager *common.EntityManager) st
 
 	// Fill the grid with unit IDs
 	for _, unitID := range unitIDs {
-		if !squadmanager.HasComponentByIDWithTag(unitID, SquadMemberTag, GridPositionComponent) {
+		if !squadmanager.HasComponent(unitID, GridPositionComponent) {
 			continue
 		}
 
@@ -145,14 +145,14 @@ func VisualizeSquad(squadID ecs.EntityID, squadmanager *common.EntityManager) st
 
 			// Get health if available
 			healthInfo := ""
-			attr := common.GetAttributesByIDWithTag(squadmanager, unitID, SquadMemberTag)
+			attr := common.GetAttributesByID(squadmanager, unitID)
 			if attr != nil {
 				healthInfo = fmt.Sprintf(" | HP: %d/%d", attr.CurrentHealth, attr.MaxHealth)
 			}
 
 			// Check if leader
 			leaderStr := ""
-			if squadmanager.HasComponentByIDWithTag(unitID, SquadMemberTag, LeaderComponent) {
+			if squadmanager.HasComponent(unitID, LeaderComponent) {
 				leaderStr = " [LEADER]"
 			}
 

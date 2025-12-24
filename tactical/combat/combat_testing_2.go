@@ -3,9 +3,9 @@ package combat
 import (
 	"fmt"
 	"game_main/common"
-	"game_main/world/coords"
 	"game_main/tactical/squads"
 	testfx "game_main/testing"
+	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"
 )
@@ -165,7 +165,7 @@ func CreateTestMixedSquad(manager *common.EntityManager, name string, meleeCount
 
 // PlaceSquadOnMap places a squad at a position for testing (using new CombatFactionComponent approach)
 func PlaceSquadOnMap(manager *common.EntityManager, factionID, squadID ecs.EntityID, pos coords.LogicalPosition) {
-	squadEntity := common.FindEntityByIDWithTag(manager, squadID, squads.SquadTag)
+	squadEntity := common.FindEntityByID(manager, squadID)
 	if squadEntity == nil {
 		return
 	}
@@ -176,7 +176,7 @@ func PlaceSquadOnMap(manager *common.EntityManager, factionID, squadID ecs.Entit
 	})
 
 	// Add or update PositionComponent on squad entity
-	if !manager.HasComponentByIDWithTag(squadID, squads.SquadTag, common.PositionComponent) {
+	if !manager.HasComponent(squadID, common.PositionComponent) {
 		// Squad has no position yet - add it
 		posPtr := new(coords.LogicalPosition)
 		*posPtr = pos

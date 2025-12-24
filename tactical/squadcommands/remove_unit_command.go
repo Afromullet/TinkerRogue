@@ -47,7 +47,7 @@ func (c *RemoveUnitCommand) Validate() error {
 	}
 
 	// Check unit is not the leader
-	isLeader := c.manager.HasComponentByIDWithTag(c.unitID, squads.SquadMemberTag, squads.LeaderComponent)
+	isLeader := c.manager.HasComponent(c.unitID, squads.LeaderComponent)
 	if isLeader {
 		return fmt.Errorf("cannot remove squad leader")
 	}
@@ -65,7 +65,7 @@ func (c *RemoveUnitCommand) Execute() error {
 	c.previousGridCol = gridPos.AnchorCol
 
 	// Capture unit attributes
-	attr := common.GetAttributesByIDWithTag(c.manager, c.unitID, squads.SquadMemberTag)
+	attr := common.GetAttributesByID(c.manager, c.unitID)
 	if attr == nil {
 		return fmt.Errorf("unit has no attributes")
 	}

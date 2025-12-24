@@ -2,8 +2,8 @@ package combat
 
 import (
 	"game_main/common"
-	"game_main/world/coords"
 	"game_main/tactical/squads"
+	"game_main/world/coords"
 	"testing"
 
 	"github.com/bytearena/ecs"
@@ -88,7 +88,7 @@ func TestAddSquadToFaction(t *testing.T) {
 	}
 
 	// Verify squad has CombatFactionComponent
-	squad := common.FindEntityByIDWithTag(manager, squadID, squads.SquadTag)
+	squad := common.FindEntityByID(manager, squadID)
 	if squad == nil {
 		t.Fatal("Squad not found")
 	}
@@ -204,7 +204,7 @@ func TestGetSquadMovementSpeed_ReturnsSlowestUnit(t *testing.T) {
 
 	// Modify one unit to have slower speed
 	unitIDs := squads.GetUnitIDsInSquad(squadID, manager)
-	slowUnit := common.FindEntityByIDWithTag(manager, unitIDs[0], squads.SquadMemberTag)
+	slowUnit := common.FindEntityByID(manager, unitIDs[0])
 	attr := common.GetAttributes(slowUnit)
 	attr.MovementSpeed = 2
 

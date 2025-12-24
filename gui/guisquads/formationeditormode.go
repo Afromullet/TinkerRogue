@@ -199,8 +199,8 @@ func (fem *FormationEditorMode) loadSquadFormation(squadID ecs.EntityID) {
 
 	for _, unitID := range unitIDs {
 		// Get grid position component
-		gridPos := common.GetComponentTypeByIDWithTag[*squads.GridPositionData](
-			fem.Queries.ECSManager, unitID, squads.SquadMemberTag, squads.GridPositionComponent)
+		gridPos := common.GetComponentTypeByID[*squads.GridPositionData](
+			fem.Queries.ECSManager, unitID, squads.GridPositionComponent)
 		if gridPos == nil {
 			continue
 		}

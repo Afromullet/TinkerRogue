@@ -3,8 +3,8 @@ package combat
 import (
 	"fmt"
 	"game_main/common"
-	"game_main/world/coords"
 	"game_main/tactical/squads"
+	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"
 )
@@ -59,7 +59,7 @@ func (fm *FactionManager) AddSquadToFaction(factionID, squadID ecs.EntityID, pos
 	}
 
 	// Verify squad exists by checking for SquadComponent
-	squad := common.FindEntityByIDWithTag(fm.manager, squadID, squads.SquadTag)
+	squad := common.FindEntityByID(fm.manager, squadID)
 	if squad == nil {
 		return fmt.Errorf("squad %d not found", squadID)
 	}
@@ -71,7 +71,7 @@ func (fm *FactionManager) AddSquadToFaction(factionID, squadID ecs.EntityID, pos
 	})
 
 	// Add or update PositionComponent on squad entity
-	if !fm.manager.HasComponentByIDWithTag(squadID, squads.SquadTag, common.PositionComponent) {
+	if !fm.manager.HasComponent(squadID, common.PositionComponent) {
 		// Squad has no position yet - add it
 		posPtr := new(coords.LogicalPosition)
 		*posPtr = position
@@ -109,7 +109,7 @@ func (fm *FactionManager) GetFactionSquads(factionID ecs.EntityID) []ecs.EntityI
 
 func (fm *FactionManager) RemoveSquadFromFaction(factionID, squadID ecs.EntityID) error {
 	// Find squad entity
-	squad := common.FindEntityByIDWithTag(fm.manager, squadID, squads.SquadTag)
+	squad := common.FindEntityByID(fm.manager, squadID)
 	if squad == nil {
 		return fmt.Errorf("squad %d not found", squadID)
 	}

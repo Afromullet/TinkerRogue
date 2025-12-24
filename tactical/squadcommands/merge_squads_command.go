@@ -3,8 +3,8 @@ package squadcommands
 import (
 	"fmt"
 	"game_main/common"
-	"game_main/world/coords"
 	"game_main/tactical/squads"
+	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"
 )
@@ -103,15 +103,15 @@ func (cmd *MergeSquadsCommand) Execute() error {
 	// Move each unit
 	for i, unitID := range sourceUnitIDs {
 		// Update squad membership
-		memberData := common.GetComponentTypeByIDWithTag[*squads.SquadMemberData](
-			cmd.entityManager, unitID, squads.SquadMemberTag, squads.SquadMemberComponent)
+		memberData := common.GetComponentTypeByID[*squads.SquadMemberData](
+			cmd.entityManager, unitID, squads.SquadMemberComponent)
 		if memberData != nil {
 			memberData.SquadID = cmd.targetSquadID
 		}
 
 		// Update grid position to empty slot in target
-		gridPos := common.GetComponentTypeByIDWithTag[*squads.GridPositionData](
-			cmd.entityManager, unitID, squads.SquadMemberTag, squads.GridPositionComponent)
+		gridPos := common.GetComponentTypeByID[*squads.GridPositionData](
+			cmd.entityManager, unitID, squads.GridPositionComponent)
 		if gridPos != nil && i < len(emptyPositions) {
 			gridPos.AnchorRow = emptyPositions[i][0]
 			gridPos.AnchorCol = emptyPositions[i][1]
@@ -165,15 +165,15 @@ func (cmd *MergeSquadsCommand) Undo() error {
 	// Move units back to source squad
 	for _, unitState := range cmd.savedSourceUnits {
 		// Update squad membership back to source
-		memberData := common.GetComponentTypeByIDWithTag[*squads.SquadMemberData](
-			cmd.entityManager, unitState.UnitID, squads.SquadMemberTag, squads.SquadMemberComponent)
+		memberData := common.GetComponentTypeByID[*squads.SquadMemberData](
+			cmd.entityManager, unitState.UnitID, squads.SquadMemberComponent)
 		if memberData != nil {
 			memberData.SquadID = newSourceSquadID
 		}
 
 		// Restore original grid position
-		gridPos := common.GetComponentTypeByIDWithTag[*squads.GridPositionData](
-			cmd.entityManager, unitState.UnitID, squads.SquadMemberTag, squads.GridPositionComponent)
+		gridPos := common.GetComponentTypeByID[*squads.GridPositionData](
+			cmd.entityManager, unitState.UnitID, squads.GridPositionComponent)
 		if gridPos != nil {
 			gridPos.AnchorRow = unitState.GridRow
 			gridPos.AnchorCol = unitState.GridCol

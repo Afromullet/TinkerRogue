@@ -10,8 +10,8 @@ import (
 
 // ChangeLeaderCommand changes the squad leader to a different unit
 type ChangeLeaderCommand struct {
-	manager    *common.EntityManager
-	squadID    ecs.EntityID
+	manager     *common.EntityManager
+	squadID     ecs.EntityID
 	newLeaderID ecs.EntityID
 
 	// Undo state
@@ -42,7 +42,7 @@ func (c *ChangeLeaderCommand) Validate() error {
 	}
 
 	// Check new leader is not already the leader
-	isLeader := c.manager.HasComponentByIDWithTag(c.newLeaderID, squads.SquadMemberTag, squads.LeaderComponent)
+	isLeader := c.manager.HasComponent(c.newLeaderID, squads.LeaderComponent)
 	if isLeader {
 		return fmt.Errorf("unit is already the leader")
 	}
@@ -56,14 +56,14 @@ func (c *ChangeLeaderCommand) Execute() error {
 
 	// Remove leader component from old leader (if exists)
 	if c.oldLeaderID != 0 {
-		oldLeaderEntity := common.FindEntityByIDWithTag(c.manager, c.oldLeaderID, squads.SquadMemberTag)
+		oldLeaderEntity := common.FindEntityByID(c.manager, c.oldLeaderID)
 		if oldLeaderEntity != nil {
 			removeLeaderComponents(oldLeaderEntity)
 		}
 	}
 
 	// Add leader component to new leader
-	newLeaderEntity := common.FindEntityByIDWithTag(c.manager, c.newLeaderID, squads.SquadMemberTag)
+	newLeaderEntity := common.FindEntityByID(c.manager, c.newLeaderID)
 	if newLeaderEntity == nil {
 		return fmt.Errorf("new leader entity not found")
 	}
@@ -78,14 +78,14 @@ func (c *ChangeLeaderCommand) Execute() error {
 
 func (c *ChangeLeaderCommand) Undo() error {
 	// Remove leader component from new leader
-	newLeaderEntity := common.FindEntityByIDWithTag(c.manager, c.newLeaderID, squads.SquadMemberTag)
+	newLeaderEntity := common.FindEntityByID(c.manager, c.newLeaderID)
 	if newLeaderEntity != nil {
 		removeLeaderComponents(newLeaderEntity)
 	}
 
 	// Restore old leader (if there was one)
 	if c.oldLeaderID != 0 {
-		oldLeaderEntity := common.FindEntityByIDWithTag(c.manager, c.oldLeaderID, squads.SquadMemberTag)
+		oldLeaderEntity := common.FindEntityByID(c.manager, c.oldLeaderID)
 		if oldLeaderEntity != nil {
 			addLeaderComponents(oldLeaderEntity)
 		}

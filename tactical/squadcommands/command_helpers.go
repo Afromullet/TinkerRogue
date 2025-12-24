@@ -42,7 +42,7 @@ func validateUnitInSquad(unitID, squadID ecs.EntityID, manager *common.EntityMan
 		return fmt.Errorf("invalid unit ID")
 	}
 
-	if !manager.HasComponentByIDWithTag(unitID, squads.SquadMemberTag, squads.SquadMemberComponent) {
+	if !manager.HasComponent(unitID, squads.SquadMemberComponent) {
 		return fmt.Errorf("unit is not in a squad")
 	}
 
@@ -99,7 +99,7 @@ func getUnitEntityOrError(unitID ecs.EntityID, manager *common.EntityManager) (*
 		return nil, fmt.Errorf("invalid unit ID")
 	}
 
-	unitEntity := common.FindEntityByIDWithTag(manager, unitID, squads.SquadMemberTag)
+	unitEntity := common.FindEntityByID(manager, unitID)
 	if unitEntity == nil {
 		return nil, fmt.Errorf("unit not found")
 	}

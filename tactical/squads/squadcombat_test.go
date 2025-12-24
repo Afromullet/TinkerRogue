@@ -40,7 +40,7 @@ func createTestUnit(manager *common.EntityManager, squadID ecs.EntityID, row, co
 	// Add targeting data (default to MeleeRow attacking front row)
 	unit.AddComponent(TargetRowComponent, &TargetRowData{
 		AttackType:  AttackTypeMeleeRow, // Explicit attack type
-		TargetCells: nil,                 // Not used for MeleeRow
+		TargetCells: nil,                // Not used for MeleeRow
 	})
 
 	// Add attack range component (default to melee range 1)
@@ -187,7 +187,7 @@ func TestExecuteSquadAttack_MultiTargetAttack(t *testing.T) {
 
 	// Set magic targeting (target 2 specific cells)
 	targetData := common.GetComponentType[*TargetRowData](attacker, TargetRowComponent)
-	targetData.AttackType = AttackTypeMagic // Use magic for cell-based targeting
+	targetData.AttackType = AttackTypeMagic           // Use magic for cell-based targeting
 	targetData.TargetCells = [][2]int{{0, 0}, {0, 1}} // Target first two front-row cells
 
 	// Create defenders
@@ -214,7 +214,7 @@ func TestExecuteSquadAttack_CellBasedTargeting(t *testing.T) {
 
 	// Set magic targeting with 2x2 pattern
 	targetData := common.GetComponentType[*TargetRowData](attacker, TargetRowComponent)
-	targetData.AttackType = AttackTypeMagic // Use magic for cell-based targeting
+	targetData.AttackType = AttackTypeMagic                           // Use magic for cell-based targeting
 	targetData.TargetCells = [][2]int{{0, 0}, {0, 1}, {1, 0}, {1, 1}} // 2x2 top-left
 
 	// Create defenders in targeted cells
@@ -368,7 +368,7 @@ func TestCalculateUnitDamageByID_MinimumDamageIsOne(t *testing.T) {
 
 	squadID := createTestSquad(manager, "TestSquad")
 	// Very low strength/weapon for attacker, very high armor for defender
-	attacker := createTestUnit(manager, squadID, 0, 0, 100, 1, 0) // Strength=1, Weapon=0
+	attacker := createTestUnit(manager, squadID, 0, 0, 100, 1, 0)   // Strength=1, Weapon=0
 	defender := createTestUnit(manager, squadID, 0, 1, 100, 50, 50) // Strength=50, Armor=50 for high resistance
 
 	attackerAttr := common.GetAttributes(attacker)
@@ -902,9 +902,9 @@ func TestMeleeColumnTargeting_DirectFront(t *testing.T) {
 
 	// Create defender squad with units in different columns
 	defenderSquadID := createTestSquad(manager, "Defenders")
-	createTestUnit(manager, defenderSquadID, 0, 0, 50, 10, 0)  // Column 0 - NOT targeted
+	createTestUnit(manager, defenderSquadID, 0, 0, 50, 10, 0)              // Column 0 - NOT targeted
 	defender2 := createTestUnit(manager, defenderSquadID, 0, 1, 50, 10, 0) // Column 1 - TARGETED
-	createTestUnit(manager, defenderSquadID, 0, 2, 50, 10, 0)  // Column 2 - NOT targeted
+	createTestUnit(manager, defenderSquadID, 0, 2, 50, 10, 0)              // Column 2 - NOT targeted
 
 	// Get targets
 	targets := SelectTargetUnits(attacker.GetID(), defenderSquadID, manager)
@@ -933,9 +933,9 @@ func TestMeleeColumnTargeting_PierceForward(t *testing.T) {
 
 	// Create defender squad with unit in row 1, column 0 (row 0 col 0 is empty)
 	defenderSquadID := createTestSquad(manager, "Defenders")
-	createTestUnit(manager, defenderSquadID, 0, 1, 50, 10, 0) // Different column - NOT targeted
+	createTestUnit(manager, defenderSquadID, 0, 1, 50, 10, 0)              // Different column - NOT targeted
 	defender2 := createTestUnit(manager, defenderSquadID, 1, 0, 50, 10, 0) // Same column, row 1 - TARGETED
-	createTestUnit(manager, defenderSquadID, 2, 0, 50, 10, 0) // Same column, row 2 - NOT targeted (row 1 found first)
+	createTestUnit(manager, defenderSquadID, 2, 0, 50, 10, 0)              // Same column, row 2 - NOT targeted (row 1 found first)
 
 	// Get targets
 	targets := SelectTargetUnits(attacker.GetID(), defenderSquadID, manager)
@@ -964,7 +964,7 @@ func TestMeleeColumnTargeting_ColumnWrapping(t *testing.T) {
 
 	// Create defender squad with NO units in column 1, but units in columns 2 and 0
 	defenderSquadID := createTestSquad(manager, "Defenders")
-	createTestUnit(manager, defenderSquadID, 0, 0, 50, 10, 0) // Column 0 - should wrap to this
+	createTestUnit(manager, defenderSquadID, 0, 0, 50, 10, 0)              // Column 0 - should wrap to this
 	defender2 := createTestUnit(manager, defenderSquadID, 1, 2, 50, 10, 0) // Column 2 - TARGETED (next after col 1)
 
 	// Get targets
@@ -1023,11 +1023,11 @@ func TestRangedTargeting_SameRow(t *testing.T) {
 
 	// Create defender squad with units in different rows
 	defenderSquadID := createTestSquad(manager, "Defenders")
-	createTestUnit(manager, defenderSquadID, 0, 0, 50, 10, 0)  // Row 0 - NOT targeted
+	createTestUnit(manager, defenderSquadID, 0, 0, 50, 10, 0)              // Row 0 - NOT targeted
 	defender2 := createTestUnit(manager, defenderSquadID, 1, 0, 50, 10, 0) // Row 1 - TARGETED
 	defender3 := createTestUnit(manager, defenderSquadID, 1, 1, 50, 10, 0) // Row 1 - TARGETED
 	defender4 := createTestUnit(manager, defenderSquadID, 1, 2, 50, 10, 0) // Row 1 - TARGETED
-	createTestUnit(manager, defenderSquadID, 2, 0, 50, 10, 0)  // Row 2 - NOT targeted
+	createTestUnit(manager, defenderSquadID, 2, 0, 50, 10, 0)              // Row 2 - NOT targeted
 
 	// Get targets
 	targets := SelectTargetUnits(attacker.GetID(), defenderSquadID, manager)
@@ -1162,9 +1162,9 @@ func TestMagicTargeting_ExactCells(t *testing.T) {
 
 	// Create defender squad
 	defenderSquadID := createTestSquad(manager, "Defenders")
-	createTestUnit(manager, defenderSquadID, 0, 0, 50, 10, 0)  // Col 0 - NOT targeted
+	createTestUnit(manager, defenderSquadID, 0, 0, 50, 10, 0)              // Col 0 - NOT targeted
 	defender2 := createTestUnit(manager, defenderSquadID, 0, 1, 50, 10, 0) // Col 1 - TARGETED
-	createTestUnit(manager, defenderSquadID, 0, 2, 50, 10, 0)  // Col 2 - NOT targeted
+	createTestUnit(manager, defenderSquadID, 0, 2, 50, 10, 0)              // Col 2 - NOT targeted
 	defender4 := createTestUnit(manager, defenderSquadID, 1, 1, 50, 10, 0) // Col 1 - TARGETED
 	defender5 := createTestUnit(manager, defenderSquadID, 2, 1, 50, 10, 0) // Col 1 - TARGETED
 

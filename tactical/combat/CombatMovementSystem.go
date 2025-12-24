@@ -113,7 +113,7 @@ func (ms *CombatMovementSystem) MoveSquad(squadID ecs.EntityID, targetPos coords
 	}
 
 	// Get squad entity for movement
-	squadEntity := common.FindEntityByIDWithTag(ms.manager, squadID, squads.SquadTag)
+	squadEntity := common.FindEntityByID(ms.manager, squadID)
 	if squadEntity == nil {
 		return fmt.Errorf("squad entity not found")
 	}

@@ -335,7 +335,7 @@ func selectLowestArmorTarget(squadID ecs.EntityID, manager *common.EntityManager
 	leftmostCol := 3 // Start with invalid column (max is 2)
 
 	for _, unitID := range allUnits {
-		attr := common.GetAttributesByIDWithTag(manager, unitID, SquadMemberTag)
+		attr := common.GetAttributesByID(manager, unitID)
 		if attr == nil || attr.CurrentHealth <= 0 {
 			continue
 		}
@@ -407,8 +407,8 @@ func processAttackOnTargets(attackerID ecs.EntityID, targetIDs []ecs.EntityID, r
 
 // calculateUnitDamageByID calculates damage using new attribute system and returns detailed event data
 func calculateUnitDamageByID(attackerID, defenderID ecs.EntityID, squadmanager *common.EntityManager) (int, *AttackEvent) {
-	attackerAttr := common.GetAttributesByIDWithTag(squadmanager, attackerID, SquadMemberTag)
-	defenderAttr := common.GetAttributesByIDWithTag(squadmanager, defenderID, SquadMemberTag)
+	attackerAttr := common.GetAttributesByID(squadmanager, attackerID)
+	defenderAttr := common.GetAttributesByID(squadmanager, defenderID)
 
 	// Create event to track damage pipeline
 	event := &AttackEvent{
@@ -514,7 +514,7 @@ func rollDodge(dodgeChance int) bool {
 
 // applyDamageToUnitByID applies damage to a unit and tracks it in the combat result
 func applyDamageToUnitByID(unitID ecs.EntityID, damage int, result *CombatResult, squadmanager *common.EntityManager) {
-	attr := common.GetAttributesByIDWithTag(squadmanager, unitID, SquadMemberTag)
+	attr := common.GetAttributesByID(squadmanager, unitID)
 	if attr == nil {
 		return
 	}
