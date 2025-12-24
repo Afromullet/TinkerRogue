@@ -50,6 +50,16 @@ type CombatFactionData struct {
 	FactionID ecs.EntityID // Faction that owns this squad
 }
 
+// init registers the combat subsystem with the ECS component registry.
+// This allows the combat package to self-register its components without
+// game_main needing to know about combat internals.
+func init() {
+	common.RegisterSubsystem(func(em *common.EntityManager) {
+		InitCombatComponents(em)
+		InitCombatTags(em)
+	})
+}
+
 // InitCombatComponents registers all combat-related components with the ECS manager.
 // Call this during game initialization, similar to InitSquadComponents.
 func InitCombatComponents(manager *common.EntityManager) {

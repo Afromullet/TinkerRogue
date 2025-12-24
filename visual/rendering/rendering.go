@@ -19,6 +19,30 @@ var (
 	MessengersTag       ecs.Tag        // Tag for querying messenger (UI message) entities. Todo remove this
 )
 
+// init registers the rendering subsystem with the ECS component registry.
+// This allows the rendering package to self-register its components without
+// game_main needing to know about rendering internals.
+func init() {
+	common.RegisterSubsystem(func(em *common.EntityManager) {
+		InitializeRenderingComponents(em)
+		InitializeRenderingTags(em)
+	})
+}
+
+// InitializeRenderingComponents registers rendering-related components.
+func InitializeRenderingComponents(em *common.EntityManager) {
+	RenderableComponent = em.World.NewComponent()
+}
+
+// InitializeRenderingTags creates tags for querying rendering-related entities.
+func InitializeRenderingTags(em *common.EntityManager) {
+	RenderablesTag = ecs.BuildTag(RenderableComponent, common.PositionComponent)
+	em.WorldTags["renderables"] = RenderablesTag
+
+	MessengersTag = ecs.BuildTag(common.UserMsgComponent)
+	em.WorldTags["messengers"] = MessengersTag
+}
+
 type Renderable struct {
 	Image   *ebiten.Image
 	Visible bool

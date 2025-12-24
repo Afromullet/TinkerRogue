@@ -2,11 +2,6 @@ package main
 
 import (
 	"game_main/common"
-	"game_main/gear"
-	"game_main/tactical/combat"
-	"game_main/tactical/squads"
-
-	"game_main/visual/rendering"
 
 	"github.com/bytearena/ecs"
 )
@@ -14,15 +9,16 @@ import (
 // InitializeECS sets up the Entity Component System.
 // It creates the ECS manager, registers all components, and builds tags for querying.
 // This is the central initialization point for all ECS-related setup.
+//
+// Subsystems (gear, squads, combat) self-register via init() functions.
+// After setting up the core manager and tags, call common.InitializeSubsystems()
+// to trigger all subsystem registrations.
 func InitializeECS(ecsmanager *common.EntityManager) {
 	tags := make(map[string]ecs.Tag)
 	manager := ecs.NewManager()
 
 	// Register core components
 	registerCoreComponents(manager)
-
-	// Register subsystem components and build their tags
-	registerItemComponents(manager, tags)
 
 	// Build tags for core systems
 	buildCoreTags(tags)
@@ -31,17 +27,16 @@ func InitializeECS(ecsmanager *common.EntityManager) {
 	ecsmanager.WorldTags = tags
 	ecsmanager.World = manager
 
-	// Initialize subsystems that need the full EntityManager
-	registerSquadComponents(ecsmanager)
-	registerCombatComponents(ecsmanager)
+	// Initialize all registered subsystems (gear, squads, combat, etc.)
+	// Subsystems register themselves via init() functions in their packages
+	common.InitializeSubsystems(ecsmanager)
 }
 
 // registerCoreComponents registers all core game components.
+// Subsystem components (gear, squads, combat, rendering) are registered by their own packages.
 func registerCoreComponents(manager *ecs.Manager) {
 	common.PositionComponent = manager.NewComponent()
-	rendering.RenderableComponent = manager.NewComponent()
 	common.NameComponent = manager.NewComponent()
-	gear.InventoryComponent = manager.NewComponent()
 	common.AttributeComponent = manager.NewComponent()
 	common.UserMsgComponent = manager.NewComponent()
 	common.PlayerComponent = manager.NewComponent()
@@ -50,42 +45,12 @@ func registerCoreComponents(manager *ecs.Manager) {
 }
 
 // buildCoreTags creates tags for querying core entity types.
+// Subsystem-specific tags (gear, squads, combat, rendering) are built by the subsystems themselves.
 func buildCoreTags(tags map[string]ecs.Tag) {
 	// Initialize utility tag for "all entities" queries (empty component set)
 	common.AllEntitiesTag = ecs.BuildTag()
 	tags["all"] = common.AllEntitiesTag
 
-	// Initialize rendering tags
-	rendering.RenderablesTag = ecs.BuildTag(rendering.RenderableComponent, common.PositionComponent)
-	tags["renderables"] = rendering.RenderablesTag
-
-	rendering.MessengersTag = ecs.BuildTag(common.UserMsgComponent)
-	tags["messengers"] = rendering.MessengersTag
-
-	// Initialize gear tags
-	gear.ItemsTag = ecs.BuildTag(gear.ItemComponent, common.PositionComponent)
-	tags["items"] = gear.ItemsTag
-
-	gear.MonstersTag = ecs.BuildTag(common.MonsterComponent)
-	tags["monsters"] = gear.MonstersTag
-}
-
-// registerItemComponents registers item/gear system components.
-// Delegates to gear package for its own component setup.
-func registerItemComponents(manager *ecs.Manager, tags map[string]ecs.Tag) {
-	gear.InitializeItemComponents(manager, tags)
-}
-
-// registerSquadComponents registers squad system components and tags.
-// Must be called after EntityManager.World and WorldTags are assigned.
-func registerSquadComponents(ecsmanager *common.EntityManager) {
-	squads.InitSquadComponents(ecsmanager)
-	squads.InitSquadTags(ecsmanager)
-}
-
-// registerCombatComponents registers combat system components and tags.
-// Must be called after EntityManager.World and WorldTags are assigned.
-func registerCombatComponents(ecsmanager *common.EntityManager) {
-	combat.InitCombatComponents(ecsmanager)
-	combat.InitCombatTags(ecsmanager)
+	// Note: All subsystem tags (gear, squads, combat, rendering) are now built
+	// by their respective packages during InitializeSubsystems()
 }

@@ -366,9 +366,23 @@ func NewFreezing(dur int, t int) *Freezing {
 // This removes the forced coupling between throwables and status effects
 // Use item.GetThrowableAction() instead of string-based lookups
 
+// init registers the gear subsystem with the ECS component registry.
+// This allows the gear package to self-register its components without
+// game_main needing to know about gear internals.
+func init() {
+	common.RegisterSubsystem(func(em *common.EntityManager) {
+		InitializeItemComponents(em.World, em.WorldTags)
+		InitializeItemTags(em.WorldTags)
+	})
+}
+
 func InitializeItemComponents(manager *ecs.Manager, tags map[string]ecs.Tag) {
 
+	// Core gear components
 	ItemComponent = manager.NewComponent()
+	InventoryComponent = manager.NewComponent()
+
+	// Status effect components
 	StickyComponent = manager.NewComponent()
 	BurningComponent = manager.NewComponent()
 	FreezingComponent = manager.NewComponent()
@@ -377,4 +391,15 @@ func InitializeItemComponents(manager *ecs.Manager, tags map[string]ecs.Tag) {
 
 	AllItemEffects = append(AllItemEffects, StickyComponent, BurningComponent, FreezingComponent)
 
+}
+
+// InitializeItemTags creates tags for querying item-related entities.
+// Call this after InitializeItemComponents.
+func InitializeItemTags(tags map[string]ecs.Tag) {
+	// Build item and monster tags
+	ItemsTag = ecs.BuildTag(ItemComponent, common.PositionComponent)
+	tags["items"] = ItemsTag
+
+	MonstersTag = ecs.BuildTag(common.MonsterComponent)
+	tags["monsters"] = MonstersTag
 }

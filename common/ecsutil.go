@@ -336,3 +336,36 @@ func (em *EntityManager) CleanDisposeEntity(entity *ecs.Entity, position *coords
 	// Remove from ECS world
 	em.World.DisposeEntities(entity)
 }
+
+// ========================================
+// SUBSYSTEM SELF-REGISTRATION PATTERN
+// ========================================
+
+// subsystemRegistrars holds initialization functions for all ECS subsystems.
+// Subsystems register themselves via init() functions in their own packages.
+var subsystemRegistrars []func(*EntityManager)
+
+// RegisterSubsystem adds a subsystem initialization function to the registry.
+// This is called by subsystem packages in their init() functions.
+//
+// Example usage in a subsystem package:
+//
+//	func init() {
+//	    common.RegisterSubsystem(func(em *common.EntityManager) {
+//	        InitMyComponents(em)
+//	        InitMyTags(em)
+//	    })
+//	}
+func RegisterSubsystem(registrar func(*EntityManager)) {
+	subsystemRegistrars = append(subsystemRegistrars, registrar)
+}
+
+// InitializeSubsystems calls all registered subsystem initialization functions.
+// Call this after creating the EntityManager and setting World/WorldTags.
+//
+// This executes subsystem registrations in the order they were registered via init().
+func InitializeSubsystems(em *EntityManager) {
+	for _, registrar := range subsystemRegistrars {
+		registrar(em)
+	}
+}

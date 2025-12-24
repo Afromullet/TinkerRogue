@@ -11,6 +11,16 @@ import (
 
 var Units = make([]UnitTemplate, 0, len(templates.MonsterTemplates))
 
+// init registers the squads subsystem with the ECS component registry.
+// This allows the squads package to self-register its components without
+// game_main needing to know about squad internals.
+func init() {
+	common.RegisterSubsystem(func(em *common.EntityManager) {
+		InitSquadComponents(em)
+		InitSquadTags(em)
+	})
+}
+
 // InitSquadComponents registers all squad-related components with the ECS manager.
 // Call this during game initialization.
 func InitSquadComponents(squadManager *common.EntityManager) {
