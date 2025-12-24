@@ -83,11 +83,11 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	// Phase 1: Ebiten rendering (game world)
 	// TODO. This just needs to be one call. Handle the coords.MAP_SCROLLING_ENABLED a different way
 	if coords.MAP_SCROLLING_ENABLED {
-		g.gameMap.DrawLevelCenteredSquare(screen, g.playerData.Pos, config.DefaultZoomNumberOfSquare, DEBUG_MODE)
-		rendering.ProcessRenderablesInSquare(&g.em, g.gameMap, screen, g.playerData.Pos, config.DefaultZoomNumberOfSquare, DEBUG_MODE, g.renderingCache)
+		g.gameMap.DrawLevelCenteredSquare(screen, g.playerData.Pos, config.DefaultZoomNumberOfSquare, config.DEBUG_MODE)
+		rendering.ProcessRenderablesInSquare(&g.em, g.gameMap, screen, g.playerData.Pos, config.DefaultZoomNumberOfSquare, config.DEBUG_MODE, g.renderingCache)
 	} else {
-		g.gameMap.DrawLevel(screen, DEBUG_MODE)
-		rendering.ProcessRenderables(&g.em, g.gameMap, screen, DEBUG_MODE, g.renderingCache)
+		g.gameMap.DrawLevel(screen, config.DEBUG_MODE)
+		rendering.ProcessRenderables(&g.em, g.gameMap, screen, config.DEBUG_MODE, g.renderingCache)
 	}
 
 	graphics.VXHandler.DrawVisualEffects(screen)

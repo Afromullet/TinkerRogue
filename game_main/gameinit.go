@@ -2,6 +2,7 @@ package main
 
 import (
 	"game_main/common"
+	"game_main/config"
 	"game_main/gear"
 	"game_main/tactical/squads"
 	"game_main/visual/rendering"
@@ -20,19 +21,19 @@ func InitializePlayerData(ecsmanager *common.EntityManager, pl *common.PlayerDat
 
 	// PlayerComponent already registered in componentinit.go - no need to recreate
 
-	playerImg, _, err := ebitenutil.NewImageFromFile(PlayerImagePath)
+	playerImg, _, err := ebitenutil.NewImageFromFile(config.PlayerImagePath)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// Create player attributes using default configuration values (see config.go)
 	attr := common.NewAttributes(
-		DefaultPlayerStrength,
-		DefaultPlayerDexterity,
-		DefaultPlayerMagic,
-		DefaultPlayerLeadership,
-		DefaultPlayerArmor,
-		DefaultPlayerWeapon,
+		config.DefaultPlayerStrength,
+		config.DefaultPlayerDexterity,
+		config.DefaultPlayerMagic,
+		config.DefaultPlayerLeadership,
+		config.DefaultPlayerArmor,
+		config.DefaultPlayerWeapon,
 	)
 
 	playerEntity := ecsmanager.World.NewEntity().
@@ -53,8 +54,8 @@ func InitializePlayerData(ecsmanager *common.EntityManager, pl *common.PlayerDat
 			AttackMessage:    "",
 			GameStateMessage: "",
 		}).
-		AddComponent(common.PlayerResourcesComponent, common.NewPlayerResources(DefaultPlayerStartingGold)).
-		AddComponent(squads.UnitRosterComponent, squads.NewUnitRoster(DefaultPlayerMaxUnits))
+		AddComponent(common.PlayerResourcesComponent, common.NewPlayerResources(config.DefaultPlayerStartingGold)).
+		AddComponent(squads.UnitRosterComponent, squads.NewUnitRoster(config.DefaultPlayerMaxUnits))
 
 	playerEntity.AddComponent(common.UserMsgComponent, &common.UserMessage{})
 	players := ecs.BuildTag(common.PlayerComponent, common.PositionComponent, gear.InventoryComponent)

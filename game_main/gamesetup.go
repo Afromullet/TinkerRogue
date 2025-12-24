@@ -2,6 +2,7 @@ package main
 
 import (
 	"game_main/common"
+	"game_main/config"
 	"game_main/tactical/squads"
 	"game_main/visual/graphics"
 	"game_main/world/coords"
@@ -56,7 +57,7 @@ func SetupNewGame(g *Game) {
 	InitializePlayerData(&g.em, &g.playerData, &g.gameMap)
 
 	// 5. Setup test data if in debug mode
-	if DEBUG_MODE {
+	if config.DEBUG_MODE {
 		SetupTestData(&g.em, &g.gameMap, &g.playerData)
 	}
 
@@ -111,21 +112,21 @@ func SetupTestData(em *common.EntityManager, gm *worldmap.GameMap, pd *common.Pl
 // SetupBenchmarking initializes performance profiling tools when enabled.
 // It starts an HTTP server for pprof and configures CPU/memory profiling rates.
 func SetupBenchmarking() {
-	if !ENABLE_BENCHMARKING {
+	if !config.ENABLE_BENCHMARKING {
 		return
 	}
 
 	// Start pprof HTTP server in background
 	go func() {
-		log.Println("Starting pprof server on", ProfileServerAddr)
-		if err := http.ListenAndServe(ProfileServerAddr, nil); err != nil {
+		log.Println("Starting pprof server on", config.ProfileServerAddr)
+		if err := http.ListenAndServe(config.ProfileServerAddr, nil); err != nil {
 			log.Printf("pprof server error: %v", err)
 		}
 	}()
 
 	// Configure profiling rates
-	runtime.SetCPUProfileRate(CPUProfileRate)
-	runtime.MemProfileRate = MemoryProfileRate
+	runtime.SetCPUProfileRate(config.CPUProfileRate)
+	runtime.MemProfileRate = config.MemoryProfileRate
 }
 
 // SetupUI initializes the new modal UI system with separate context managers.
