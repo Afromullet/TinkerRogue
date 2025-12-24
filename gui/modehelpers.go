@@ -5,22 +5,10 @@ import (
 	"image/color"
 
 	"game_main/gui/builders"
-	"game_main/gui/core"
 	"game_main/gui/specs"
 
 	"github.com/ebitenui/ebitenui/widget"
 )
-
-// CreateCloseButton creates a standard close button that transitions to a target mode.
-// DEPRECATED: Use ModeTransitionButton from buttonbuilders.go instead.
-//
-// This function is kept for backward compatibility but new code should use:
-//   closeBtn := gui.ModeTransitionButton(modeManager, "Back (ESC)", "squad_management")
-//
-// Deprecated: Use gui.ModeTransitionButton instead.
-func CreateCloseButton(modeManager *core.UIModeManager, targetModeName, buttonText string) *widget.Button {
-	return ModeTransitionButton(modeManager, buttonText, targetModeName)
-}
 
 // CreateBottomCenterButtonContainer creates a standard bottom-center button container.
 // Used by 4+ modes with identical layout (horizontal row, centered at bottom).

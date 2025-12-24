@@ -53,18 +53,15 @@ func (ftlm *FactionThreatLevelManager) AddFaction(factionID ecs.EntityID) {
 }
 
 func (ftlm *FactionThreatLevelManager) UpdateFaction(factionID ecs.EntityID) {
-
-	ftlm.factions[factionID].UpdateThreatRatings()
+	if faction, exists := ftlm.factions[factionID]; exists {
+		faction.UpdateThreatRatings()
+	}
 }
 
 func (ftlm *FactionThreatLevelManager) UpdateAllFactions() {
-
-	factionIDs := combat.GetAllFactions(ftlm.manager)
-
-	for _, ID := range factionIDs {
-		ftlm.factions[ID].UpdateThreatRatings()
+	for _, faction := range ftlm.factions {
+		faction.UpdateThreatRatings()
 	}
-
 }
 
 type FactionThreatLevel struct {
@@ -190,7 +187,7 @@ func (stl *SquadThreatLevel) CalculateSquadDangerLevel() {
 	}
 
 	var units []unitData
-	uniqueRanges := make(map[int]bool)
+	attackTypeCount := make(map[squads.AttackType]int)
 
 	for _, unitID := range unitIDs {
 		unitEntity := common.FindEntityByID(stl.manager, unitID)
@@ -216,7 +213,6 @@ func (stl *SquadThreatLevel) CalculateSquadDangerLevel() {
 		if attackRangeData != nil {
 			attackRange = attackRangeData.Range
 		}
-		uniqueRanges[attackRange] = true
 
 		// Get unit attributes
 		attr := common.GetComponentType[*common.Attributes](unitEntity, common.AttributeComponent)
@@ -234,6 +230,9 @@ func (stl *SquadThreatLevel) CalculateSquadDangerLevel() {
 		// Get role multiplier
 		roleMultiplier := stl.getRoleMultiplier(roleData.Role)
 
+		// Track attack type for composition bonus
+		attackTypeCount[targetRowData.AttackType]++
+
 		units = append(units, unitData{
 			entity:         unitEntity,
 			attackRange:    attackRange,
@@ -249,8 +248,8 @@ func (stl *SquadThreatLevel) CalculateSquadDangerLevel() {
 
 	// Find maximum threat range (movement + attack)
 	maxThreatRange := 0
-	for attackRange := range uniqueRanges {
-		threatRange := movementRange + attackRange
+	for _, ud := range units {
+		threatRange := movementRange + ud.attackRange
 		if threatRange > maxThreatRange {
 			maxThreatRange = threatRange
 		}
@@ -258,7 +257,7 @@ func (stl *SquadThreatLevel) CalculateSquadDangerLevel() {
 
 	// Calculate danger at each range from 1 to maxThreatRange
 	// Units threaten a range if movement + attack >= currentRange
-	dangerByRange := make(map[int]float64)
+	dangerByRange := make(map[int]float64, maxThreatRange)
 
 	for currentRange := 1; currentRange <= maxThreatRange; currentRange++ {
 		var rangeDanger float64 = 0
@@ -285,7 +284,7 @@ func (stl *SquadThreatLevel) CalculateSquadDangerLevel() {
 	}
 
 	// Apply composition bonus to each range
-	compositionBonus := stl.calculateCompositionBonus()
+	compositionBonus := stl.calculateCompositionBonus(attackTypeCount)
 	for range_, danger := range dangerByRange {
 		dangerByRange[range_] = danger * compositionBonus
 	}
@@ -310,26 +309,7 @@ func (stl *SquadThreatLevel) getRoleMultiplier(role squads.UnitRole) float64 {
 
 // calculateCompositionBonus returns a bonus multiplier based on attack type diversity
 // Squads with diverse attack types (melee + ranged + magic) are more effective
-func (stl *SquadThreatLevel) calculateCompositionBonus() float64 {
-	unitIDs := squads.GetUnitIDsInSquad(stl.squadID, stl.manager)
-	if len(unitIDs) == 0 {
-		return 1.0
-	}
-
-	// Count different attack types in the squad
-	attackTypeCount := make(map[squads.AttackType]int)
-	for _, unitID := range unitIDs {
-		unitEntity := common.FindEntityByID(stl.manager, unitID)
-		if unitEntity == nil {
-			continue
-		}
-
-		targetRowData := common.GetComponentType[*squads.TargetRowData](unitEntity, squads.TargetRowComponent)
-		if targetRowData != nil {
-			attackTypeCount[targetRowData.AttackType]++
-		}
-	}
-
+func (stl *SquadThreatLevel) calculateCompositionBonus(attackTypeCount map[squads.AttackType]int) float64 {
 	// Bonus for having diverse attack types
 	// Pure squads (1 type) are less effective
 	// Balanced squads (2-3 types) are stronger

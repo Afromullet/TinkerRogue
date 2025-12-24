@@ -6,11 +6,9 @@ __________________________________________
 
 - Remove Unused GUI elements and GUI elements you ddont want
 
-- Look at the combat and squad services to see which ones are necessary
 
 - Clean up ECSUtil
 
-- Update Unit Tests if Needed
 
 
 ________________________________________________
@@ -25,7 +23,6 @@ can't attack twice. Once with ranged units and once with melee
 
 # Cleanup
 -There is both a config package and config.go in game_main package. Fix that
-- ecsutil.go has redundant functions
 - tilebatch.go and tilerenderer.go use magic numbers in NewTileBatch
 - Completely replace deprecated functions
 - Remove Quality
@@ -37,7 +34,6 @@ can't attack twice. Once with ranged units and once with melee
 - CombatController has a lot of artifacts of the old roguelike prior to the change. Specifically in regards to throwables. Find a way tohandle that. 
 - Input Package has a lot of leftovers from the old roguelike
 - Sprite, Tile, and Rendering Batches allocates default sizes for the slices. Look at those. Determine how many we need. Have a larger default size if needed (i.e, NewSpriteBatch)
-- Lots of functions that get components or entities in a different way. Consolidate them. 
 - combatqueries.go still has functions which search the entire ecs space
 
 

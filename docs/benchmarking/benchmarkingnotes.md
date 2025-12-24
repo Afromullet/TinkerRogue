@@ -66,9 +66,10 @@ go tool pprof cpu_profile.pb.gz
 # TODO try this
 
   curl -o heap.pb.gz http://localhost:6060/debug/pprof/heap
+  
   go tool pprof heap.pb.gz
 
-
+go test -bench . -cpuprofile=cpu.prof
 ___
 
 ## Viewing Top Processes
