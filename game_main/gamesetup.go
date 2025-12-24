@@ -160,83 +160,11 @@ func SetupUI(g *Game) {
 	battleMapManager := g.gameModeCoordinator.GetBattleMapManager()
 	overworldManager := g.gameModeCoordinator.GetOverworldManager()
 
-	// ===== BATTLE MAP MODES (tactical layer) =====
+	// Register all battle map modes (tactical layer)
+	registerBattleMapModes(g.gameModeCoordinator, battleMapManager)
 
-	// Exploration mode - dungeon exploration
-	explorationMode := guimodes.NewExplorationMode(battleMapManager)
-	if err := g.gameModeCoordinator.RegisterBattleMapMode(explorationMode); err != nil {
-		log.Fatalf("Failed to register exploration mode: %v", err)
-	}
-
-	// Info mode - inspect entities on battlefield
-	infoMode := guimodes.NewInfoMode(battleMapManager)
-	if err := g.gameModeCoordinator.RegisterBattleMapMode(infoMode); err != nil {
-		log.Fatalf("Failed to register info mode: %v", err)
-	}
-
-	// Combat mode - turn-based squad combat
-	combatMode := guicombat.NewCombatMode(battleMapManager)
-	if err := g.gameModeCoordinator.RegisterBattleMapMode(combatMode); err != nil {
-		log.Fatalf("Failed to register combat mode: %v", err)
-	}
-
-	// Combat animation mode - full-screen battle scene during attacks
-	combatAnimMode := guicombat.NewCombatAnimationMode(battleMapManager)
-	if err := g.gameModeCoordinator.RegisterBattleMapMode(combatAnimMode); err != nil {
-		log.Fatalf("Failed to register combat animation mode: %v", err)
-	}
-
-	// Squad deployment mode - deploy squads to battle map
-	squadDeploymentMode := guisquads.NewSquadDeploymentMode(battleMapManager)
-	if err := g.gameModeCoordinator.RegisterBattleMapMode(squadDeploymentMode); err != nil {
-		log.Fatalf("Failed to register squad deployment mode: %v", err)
-	}
-
-	// Inventory mode (battle map instance)
-	inventoryModeBattle := guimodes.NewInventoryMode(battleMapManager)
-	inventoryModeBattle.SetReturnMode("exploration") // ESC returns to exploration
-	if err := g.gameModeCoordinator.RegisterBattleMapMode(inventoryModeBattle); err != nil {
-		log.Fatalf("Failed to register inventory mode (battle): %v", err)
-	}
-
-	// ===== OVERWORLD MODES (strategic layer) =====
-
-	// Squad management mode - manage squads between missions
-	squadManagementMode := guisquads.NewSquadManagementMode(overworldManager)
-	if err := g.gameModeCoordinator.RegisterOverworldMode(squadManagementMode); err != nil {
-		log.Fatalf("Failed to register squad management mode: %v", err)
-	}
-
-	// Formation editor mode - edit squad formations
-	formationEditorMode := guisquads.NewFormationEditorMode(overworldManager)
-	if err := g.gameModeCoordinator.RegisterOverworldMode(formationEditorMode); err != nil {
-		log.Fatalf("Failed to register formation editor mode: %v", err)
-	}
-
-	// Squad builder mode - create new squads
-	squadBuilderMode := guisquads.NewSquadBuilderMode(overworldManager)
-	if err := g.gameModeCoordinator.RegisterOverworldMode(squadBuilderMode); err != nil {
-		log.Fatalf("Failed to register squad builder mode: %v", err)
-	}
-
-	// Unit purchase mode - buy units for roster
-	unitPurchaseMode := guisquads.NewUnitPurchaseMode(overworldManager)
-	if err := g.gameModeCoordinator.RegisterOverworldMode(unitPurchaseMode); err != nil {
-		log.Fatalf("Failed to register unit purchase mode: %v", err)
-	}
-
-	// Squad editor mode - edit existing squads (add/remove units, change leader, etc.)
-	squadEditorMode := guisquads.NewSquadEditorMode(overworldManager)
-	if err := g.gameModeCoordinator.RegisterOverworldMode(squadEditorMode); err != nil {
-		log.Fatalf("Failed to register squad editor mode: %v", err)
-	}
-
-	// Inventory mode (overworld instance)
-	inventoryModeOverworld := guimodes.NewInventoryMode(overworldManager)
-	inventoryModeOverworld.SetReturnMode("squad_management") // ESC returns to squad management
-	if err := g.gameModeCoordinator.RegisterOverworldMode(inventoryModeOverworld); err != nil {
-		log.Fatalf("Failed to register inventory mode (overworld): %v", err)
-	}
+	// Register all overworld modes (strategic layer)
+	registerOverworldModes(g.gameModeCoordinator, overworldManager)
 
 	// Set initial context and mode (start in battle map, exploration mode)
 	if err := g.gameModeCoordinator.EnterBattleMap("exploration"); err != nil {
@@ -249,4 +177,49 @@ func SetupUI(g *Game) {
 func SetupInputCoordinator(g *Game) {
 	// InputCoordinator now works without PlayerUI reference
 	g.inputCoordinator = input.NewInputCoordinator(&g.em, &g.playerData, &g.gameMap, nil)
+}
+
+// registerBattleMapModes registers all battle map UI modes with the coordinator.
+func registerBattleMapModes(coordinator *core.GameModeCoordinator, manager *core.UIModeManager) {
+	modes := []core.UIMode{
+		guimodes.NewExplorationMode(manager),
+		guimodes.NewInfoMode(manager),
+		guicombat.NewCombatMode(manager),
+		guicombat.NewCombatAnimationMode(manager),
+		guisquads.NewSquadDeploymentMode(manager),
+		newInventoryModeWithReturn(manager, "exploration"),
+	}
+
+	for _, mode := range modes {
+		if err := coordinator.RegisterBattleMapMode(mode); err != nil {
+			log.Fatalf("Failed to register battle map mode '%s': %v", mode.GetModeName(), err)
+		}
+	}
+}
+
+// registerOverworldModes registers all overworld UI modes with the coordinator.
+// This reduces boilerplate by iterating over a slice of mode constructors.
+func registerOverworldModes(coordinator *core.GameModeCoordinator, manager *core.UIModeManager) {
+	modes := []core.UIMode{
+		guisquads.NewSquadManagementMode(manager),
+		guisquads.NewFormationEditorMode(manager),
+		guisquads.NewSquadBuilderMode(manager),
+		guisquads.NewUnitPurchaseMode(manager),
+		guisquads.NewSquadEditorMode(manager),
+		newInventoryModeWithReturn(manager, "squad_management"),
+	}
+
+	for _, mode := range modes {
+		if err := coordinator.RegisterOverworldMode(mode); err != nil {
+			log.Fatalf("Failed to register overworld mode '%s': %v", mode.GetModeName(), err)
+		}
+	}
+}
+
+// newInventoryModeWithReturn creates an inventory mode configured with a return mode.
+// This helper eliminates duplicate inventory mode setup code.
+func newInventoryModeWithReturn(manager *core.UIModeManager, returnMode string) core.UIMode {
+	mode := guimodes.NewInventoryMode(manager)
+	mode.SetReturnMode(returnMode)
+	return mode
 }
