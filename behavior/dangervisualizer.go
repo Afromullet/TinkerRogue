@@ -21,6 +21,16 @@ const (
 	ViewPlayerThreats
 )
 
+// ThreatMetric represents which metric to visualize
+type ThreatMetric int
+
+const (
+	// MetricDanger shows heuristic threat (role/composition bonuses)
+	MetricDanger ThreatMetric = iota
+	// MetricExpectedDamage shows actual damage output (uses combat formulas)
+	MetricExpectedDamage
+)
+
 // DangerVisualizer handles visualization of squad threat levels on the map
 type DangerVisualizer struct {
 	manager         *common.EntityManager
@@ -28,13 +38,15 @@ type DangerVisualizer struct {
 	threatManager   *FactionThreatLevelManager
 	isActive        bool
 	viewMode        ThreatViewMode
-	lastUpdateRound int // Avoid recalculating every frame
+	metricMode      ThreatMetric // Which metric to visualize (danger or expected damage)
+	lastUpdateRound int          // Avoid recalculating every frame
 }
 
 // squadThreatInfo caches squad position and threat data to avoid repeated ECS queries
 type squadThreatInfo struct {
-	position      coords.LogicalPosition
-	dangerByRange map[int]float64
+	position              coords.LogicalPosition
+	dangerByRange         map[int]float64
+	expectedDamageByRange map[int]float64
 }
 
 // NewDangerVisualizer creates a new danger visualizer
@@ -45,6 +57,7 @@ func NewDangerVisualizer(manager *common.EntityManager, gameMap *worldmap.GameMa
 		threatManager:   threatManager,
 		isActive:        false,
 		viewMode:        ViewEnemyThreats, // Default to showing enemy threats
+		metricMode:      MetricDanger,     // Default to danger metric
 		lastUpdateRound: -1,
 	}
 }
@@ -80,6 +93,26 @@ func (dv *DangerVisualizer) SwitchView() {
 // GetViewMode returns the current threat view mode
 func (dv *DangerVisualizer) GetViewMode() ThreatViewMode {
 	return dv.viewMode
+}
+
+// CycleMetric toggles between danger and expected damage visualization
+func (dv *DangerVisualizer) CycleMetric() {
+	if dv.metricMode == MetricDanger {
+		dv.metricMode = MetricExpectedDamage
+	} else {
+		dv.metricMode = MetricDanger
+	}
+	// Force recalculation on next update
+	dv.lastUpdateRound = -1
+	// If active, immediately update with new metric
+	if dv.isActive {
+		dv.ClearVisualization()
+	}
+}
+
+// GetMetricMode returns the current metric mode
+func (dv *DangerVisualizer) GetMetricMode() ThreatMetric {
+	return dv.metricMode
 }
 
 // Update recalculates and applies danger visualization
@@ -132,13 +165,14 @@ func (dv *DangerVisualizer) Update(currentFactionID ecs.EntityID, currentRound i
 		}
 
 		squadThreat := factionThreat.squadDangerLevel[squadID]
-		if squadThreat == nil || squadThreat.DangerByRange == nil {
+		if squadThreat == nil {
 			continue
 		}
 
 		squadThreats = append(squadThreats, squadThreatInfo{
-			position:      pos,
-			dangerByRange: squadThreat.DangerByRange,
+			position:              pos,
+			dangerByRange:         squadThreat.DangerByRange,
+			expectedDamageByRange: squadThreat.ExpectedDamageByRange,
 		})
 	}
 
@@ -158,50 +192,65 @@ func (dv *DangerVisualizer) Update(currentFactionID ecs.EntityID, currentRound i
 				continue
 			}
 
-			// Calculate total danger at this tile
-			totalDanger := dv.calculateTileDanger(tilePos, squadThreats)
+			// Calculate metric value at this tile (danger or expected damage)
+			totalValue := dv.calculateTileValue(tilePos, squadThreats)
 
-			// Apply color matrix based on danger level
-			colorMatrix := dv.dangerToColorMatrix(totalDanger)
+			// Apply color matrix based on value
+			colorMatrix := dv.valueToColorMatrix(totalValue)
 			tileIdx := coords.CoordManager.LogicalToIndex(tilePos)
 			dv.gameMap.ApplyColorMatrixToIndex(tileIdx, colorMatrix)
 		}
 	}
 }
 
-// calculateTileDanger sums danger from all squads at a tile position
-func (dv *DangerVisualizer) calculateTileDanger(tilePos coords.LogicalPosition, squadThreats []squadThreatInfo) float64 {
-	totalDanger := 0.0
+// calculateTileValue sums the selected metric from all squads at a tile position
+func (dv *DangerVisualizer) calculateTileValue(tilePos coords.LogicalPosition, squadThreats []squadThreatInfo) float64 {
+	totalValue := 0.0
 
 	for _, squadThreat := range squadThreats {
 		distance := tilePos.ManhattanDistance(&squadThreat.position)
 
-		// Check if this distance has a danger value
-		if danger, exists := squadThreat.dangerByRange[distance]; exists {
-			totalDanger += danger
+		// Select metric based on current mode
+		var valueMap map[int]float64
+		if dv.metricMode == MetricDanger {
+			valueMap = squadThreat.dangerByRange
+		} else {
+			valueMap = squadThreat.expectedDamageByRange
+		}
+
+		// Check if this distance has a value
+		if value, exists := valueMap[distance]; exists {
+			totalValue += value
 		}
 	}
 
-	return totalDanger
+	return totalValue
 }
 
-// dangerToColorMatrix converts a danger value to a red gradient ColorMatrix
-func (dv *DangerVisualizer) dangerToColorMatrix(danger float64) graphics.ColorMatrix {
-	if danger == 0 {
-		// No danger - no color
+// valueToColorMatrix converts a metric value to a color gradient ColorMatrix
+// Uses red for danger, blue for expected damage
+func (dv *DangerVisualizer) valueToColorMatrix(value float64) graphics.ColorMatrix {
+	if value == 0 {
 		return graphics.NewEmptyMatrix()
-	} else if danger <= 50 {
-		// Low danger - light red
-		return graphics.CreateRedGradient(0.2)
-	} else if danger <= 100 {
-		// Medium danger - medium red
-		return graphics.CreateRedGradient(0.5)
-	} else if danger <= 150 {
-		// High danger - strong red
-		return graphics.CreateRedGradient(0.7)
+	}
+
+	// Select color gradient based on metric
+	var createGradient func(float32) graphics.ColorMatrix
+	if dv.metricMode == MetricDanger {
+		createGradient = graphics.CreateRedGradient
 	} else {
-		// Very high danger - max red
-		return graphics.CreateRedGradient(0.9)
+		createGradient = graphics.CreateBlueGradient
+	}
+
+	// Apply same thresholds for both metrics
+	if value <= 50 {
+		return createGradient(0.2) // Low
+	} else if value <= 100 {
+		return createGradient(0.5) // Medium
+	} else if value <= 150 {
+		return createGradient(0.7) // High
+	} else {
+		return createGradient(0.9) // Very high
 	}
 }
 

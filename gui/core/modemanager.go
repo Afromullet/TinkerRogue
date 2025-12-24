@@ -148,7 +148,7 @@ func (umm *UIModeManager) updateInputState() {
 		ebiten.Key1, ebiten.Key2, ebiten.Key3,
 		// Modifier keys for shortcuts (Ctrl+Z, Ctrl+Y, Shift+H)
 		ebiten.KeyControl, ebiten.KeyMeta, ebiten.KeyShift,
-		ebiten.KeyShiftLeft, ebiten.KeyShiftRight,
+		ebiten.KeyShiftLeft, ebiten.KeyShiftRight, ebiten.KeyControlLeft,
 	}
 
 	prevPressed := make(map[ebiten.Key]bool)

@@ -124,14 +124,14 @@ func (a *Attributes) GetMagicDamage() int {
 	return a.Magic * 3
 }
 
-// GetHealingAmount calculates healing power
-func (a *Attributes) GetHealingAmount() int {
-	return a.Magic * 2
-}
-
 // GetMagicDefense calculates magic damage reduction
 func (a *Attributes) GetMagicDefense() int {
 	return a.Magic / 2
+}
+
+// GetHealingAmount calculates healing power
+func (a *Attributes) GetHealingAmount() int {
+	return a.Magic * 2
 }
 
 // ========================================

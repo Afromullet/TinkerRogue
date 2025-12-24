@@ -561,5 +561,18 @@ func (cm *CombatMode) HandleInput(inputState *core.InputState) bool {
 		return true
 	}
 
+	// Left Control key to cycle between danger/expected damage metrics (when visualizer active)
+	if inputState.KeysJustPressed[ebiten.KeyControlLeft] {
+		if cm.dangerVisualizer.IsActive() {
+			cm.dangerVisualizer.CycleMetric()
+			metricName := "Danger"
+			if cm.dangerVisualizer.GetMetricMode() == behavior.MetricExpectedDamage {
+				metricName = "Expected Damage"
+			}
+			cm.logManager.UpdateTextArea(cm.combatLogArea, fmt.Sprintf("Switched to %s metric", metricName))
+			return true
+		}
+	}
+
 	return false
 }

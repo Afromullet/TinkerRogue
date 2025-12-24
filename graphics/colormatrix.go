@@ -39,3 +39,15 @@ func CreateRedGradient(opacity float32) ColorMatrix {
 		ApplyMatrix: true,
 	}
 }
+
+// CreateBlueGradient creates a blue ColorMatrix with specified opacity
+// Used for expected damage visualization
+func CreateBlueGradient(opacity float32) ColorMatrix {
+	return ColorMatrix{
+		R:           0,
+		G:           0,
+		B:           1,
+		A:           opacity,
+		ApplyMatrix: true,
+	}
+}
