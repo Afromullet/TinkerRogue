@@ -5,7 +5,6 @@ package common
 
 import (
 	"game_main/world/coords"
-	"game_main/systems"
 
 	"github.com/bytearena/ecs"
 )
@@ -20,7 +19,7 @@ var (
 	// Used by utility functions that need to work with any entity regardless of components.
 	AllEntitiesTag ecs.Tag
 
-	GlobalPositionSystem *systems.PositionSystem
+	GlobalPositionSystem *PositionSystem
 
 	MonsterComponent *ecs.Component // Marks monster/creature entities
 )

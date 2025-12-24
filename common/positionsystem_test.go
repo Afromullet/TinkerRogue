@@ -1,4 +1,4 @@
-package systems
+package common
 
 import (
 	"game_main/world/coords"

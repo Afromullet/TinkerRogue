@@ -2,7 +2,6 @@ package testing
 
 import (
 	"game_main/common"
-	"game_main/systems"
 )
 
 // ========================================
@@ -31,7 +30,7 @@ func NewTestEntityManager() *common.EntityManager {
 	common.NameComponent = manager.World.NewComponent()
 
 	// Initialize PositionSystem (fresh instance for each test)
-	common.GlobalPositionSystem = systems.NewPositionSystem(manager.World)
+	common.GlobalPositionSystem = common.NewPositionSystem(manager.World)
 
 	// Initialize squad system components and tags
 	// This is imported dynamically to avoid import cycles

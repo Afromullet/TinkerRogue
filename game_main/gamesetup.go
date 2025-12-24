@@ -2,10 +2,9 @@ package main
 
 import (
 	"game_main/common"
-	"game_main/world/coords"
-	"game_main/entitytemplates"
 	"game_main/tactical/squads"
 	"game_main/visual/graphics"
+	"game_main/world/coords"
 
 	"game_main/gui/core"
 	"game_main/gui/guicombat"
@@ -15,7 +14,8 @@ import (
 	"game_main/gui/guiresources"
 	"game_main/gui/guisquads"
 	"game_main/input"
-	"game_main/systems"
+	"game_main/templates"
+
 	"game_main/tactical/combat"
 	"game_main/testing"
 	"game_main/visual/rendering"
@@ -30,7 +30,7 @@ import (
 // This is the main orchestration function for game initialization.
 func SetupNewGame(g *Game) {
 	// 1. Load game data from JSON files
-	entitytemplates.ReadGameData()
+	templates.ReadGameData()
 
 	// 2. Initialize core game systems
 	//g.gameMap = worldmap.NewGameMapDefault()
@@ -42,7 +42,7 @@ func SetupNewGame(g *Game) {
 	InitializeECS(&g.em)
 
 	// 2a. Initialize Position System for O(1) position lookups (Phase 0 - MASTER_ROADMAP)
-	common.GlobalPositionSystem = systems.NewPositionSystem(g.em.World)
+	common.GlobalPositionSystem = common.NewPositionSystem(g.em.World)
 
 	g.renderingCache = rendering.NewRenderingCache(&g.em)
 

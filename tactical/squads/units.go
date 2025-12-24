@@ -3,7 +3,7 @@ package squads
 import (
 	"fmt"
 	"game_main/common"
-	"game_main/entitytemplates"
+	"game_main/templates"
 	"game_main/visual/rendering"
 	"log"
 	"path/filepath"
@@ -16,8 +16,8 @@ import (
 type UnitTemplate struct {
 	Name           string
 	Attributes     common.Attributes
-	EntityType     entitytemplates.EntityType
-	EntityConfig   entitytemplates.EntityConfig
+	EntityType     templates.EntityType
+	EntityConfig   templates.EntityConfig
 	EntityData     any      // JSONMonster, etc.
 	GridRow        int      // Anchor row (0-2)
 	GridCol        int      // Anchor col (0-2)
@@ -38,7 +38,7 @@ type UnitTemplate struct {
 }
 
 // Creates the Unit entities used in the Squad
-func CreateUnitTemplates(monsterData entitytemplates.JSONMonster) (UnitTemplate, error) {
+func CreateUnitTemplates(monsterData templates.JSONMonster) (UnitTemplate, error) {
 	// Validate name
 	if monsterData.Name == "" {
 		return UnitTemplate{}, fmt.Errorf("unit name cannot be empty")
@@ -66,8 +66,8 @@ func CreateUnitTemplates(monsterData entitytemplates.JSONMonster) (UnitTemplate,
 	}
 
 	// Create entity configuration for the unit
-	entityConfig := entitytemplates.EntityConfig{
-		Type:      entitytemplates.EntityCreature,
+	entityConfig := templates.EntityConfig{
+		Type:      templates.EntityCreature,
 		Name:      monsterData.Name,
 		ImagePath: monsterData.ImageName,
 		AssetDir:  "../assets/creatures/",
@@ -79,7 +79,7 @@ func CreateUnitTemplates(monsterData entitytemplates.JSONMonster) (UnitTemplate,
 	unit := UnitTemplate{
 		Name:           monsterData.Name,
 		Attributes:     monsterData.Attributes.NewAttributesFromJson(),
-		EntityType:     entitytemplates.EntityCreature,
+		EntityType:     templates.EntityCreature,
 		EntityConfig:   entityConfig,
 		EntityData:     monsterData,
 		GridRow:        0,
@@ -102,7 +102,7 @@ func CreateUnitTemplates(monsterData entitytemplates.JSONMonster) (UnitTemplate,
 
 // Reads the JSON file to create the UnitTemplates from which Unit entities can be created
 func InitUnitTemplatesFromJSON() error {
-	for _, monster := range entitytemplates.MonsterTemplates {
+	for _, monster := range templates.MonsterTemplates {
 		unit, err := CreateUnitTemplates(monster)
 		if err != nil {
 			return fmt.Errorf("failed to create unit from %s: %w", monster.Name, err)
@@ -188,7 +188,7 @@ func CreateUnitEntity(squadmanager *common.EntityManager, unit UnitTemplate) (*e
 	}
 
 	// Create base unit entity via entitytemplates (delegates base entity creation)
-	unitEntity := entitytemplates.CreateUnit(
+	unitEntity := templates.CreateUnit(
 		*squadmanager,
 		unit.Name,
 		unit.Attributes,

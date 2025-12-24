@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"game_main/common"
 	"game_main/world/coords"
-	"game_main/entitytemplates"
+	"game_main/templates"
 	"game_main/visual/rendering"
 
 	"github.com/bytearena/ecs"
@@ -300,7 +300,7 @@ func CreateSquadFromTemplate(
 		}
 
 		// Create unit entity
-		unitEntity := entitytemplates.CreateEntityFromTemplate(
+		unitEntity := templates.CreateEntityFromTemplate(
 			*ecsmanager,
 			template.EntityConfig,
 			template.EntityData,

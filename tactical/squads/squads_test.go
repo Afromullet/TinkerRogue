@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"game_main/common"
 	"game_main/world/coords"
-	"game_main/entitytemplates"
+	"game_main/templates"
 	testfx "game_main/testing"
 	"testing"
 
@@ -26,11 +26,11 @@ func setupTestManager(t *testing.T) *common.EntityManager {
 }
 
 // createTestJSONMonster creates a JSONMonster for testing
-func createTestJSONMonster(name string, width, height int, role string) entitytemplates.JSONMonster {
-	return entitytemplates.JSONMonster{
+func createTestJSONMonster(name string, width, height int, role string) templates.JSONMonster {
+	return templates.JSONMonster{
 		Name:      name,
 		ImageName: "test.png", // Not used in tests
-		Attributes: entitytemplates.JSONAttributes{
+		Attributes: templates.JSONAttributes{
 			Strength:   10, // 40 HP (20 + 10*2), 7 damage (10/2 + 2*2), 6 resistance (10/4 + 2*2)
 			Dexterity:  20, // 100% hit (80 + 20*2, capped), 10% crit (20/2), 6% dodge (20/3)
 			Magic:      0,  // No magic abilities
@@ -49,11 +49,11 @@ func createTestJSONMonster(name string, width, height int, role string) entityte
 // createLowCostTestMonster creates a unit with minimal capacity cost for visualization tests
 // Cost = (Strength + Weapon + Armor) / 5 = (1 + 0 + 0) / 5 = 0.2 per unit
 // This allows fitting multiple units in a single squad for visualization testing
-func createLowCostTestMonster(name string, width, height int, role string) entitytemplates.JSONMonster {
-	return entitytemplates.JSONMonster{
+func createLowCostTestMonster(name string, width, height int, role string) templates.JSONMonster {
+	return templates.JSONMonster{
 		Name:      name,
 		ImageName: "test.png",
-		Attributes: entitytemplates.JSONAttributes{
+		Attributes: templates.JSONAttributes{
 			Strength:   1,  // Minimal - only affects HP and damage
 			Dexterity:  20, // Keep dexterity for combat mechanics
 			Magic:      0,

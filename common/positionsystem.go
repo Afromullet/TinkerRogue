@@ -1,6 +1,6 @@
 // Package systems provides ECS systems that operate on game entities.
 // Systems contain logic that processes components, following proper ECS patterns.
-package systems
+package common
 
 import (
 	"fmt"

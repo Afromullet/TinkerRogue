@@ -1,11 +1,11 @@
-package entitytemplates
+package templates
 
 import (
 	"game_main/common"
-	"game_main/world/coords"
 	"game_main/gear"
 	"game_main/visual/graphics"
 	"game_main/visual/rendering"
+	"game_main/world/coords"
 	"game_main/world/worldmap"
 
 	"github.com/bytearena/ecs"

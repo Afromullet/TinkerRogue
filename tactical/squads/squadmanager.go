@@ -4,12 +4,12 @@ import (
 	"fmt"
 
 	"game_main/common"
-	"game_main/entitytemplates"
+	"game_main/templates"
 
 	"github.com/bytearena/ecs"
 )
 
-var Units = make([]UnitTemplate, 0, len(entitytemplates.MonsterTemplates))
+var Units = make([]UnitTemplate, 0, len(templates.MonsterTemplates))
 
 // InitSquadComponents registers all squad-related components with the ECS manager.
 // Call this during game initialization.

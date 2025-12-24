@@ -2,7 +2,7 @@ package testing
 
 import (
 	"game_main/common"
-	"game_main/entitytemplates"
+	"game_main/templates"
 	"game_main/gear"
 	"game_main/visual/graphics"
 	"game_main/visual/rendering"
@@ -31,14 +31,14 @@ var TestElectricEffect = graphics.NewElectricityEffect(0, 0, 2)
 var TestStickyEffect = graphics.NewStickyGroundEffect(0, 0, 2)
 
 func CreateTestConsumables(ecsmanager *common.EntityManager, gm *worldmap.GameMap) {
-	ent := entitytemplates.CreateEntityFromTemplate(*ecsmanager, entitytemplates.EntityConfig{
-		Type:      entitytemplates.EntityConsumable,
-		Name:      entitytemplates.ConsumableTemplates[0].Name,
-		ImagePath: entitytemplates.ConsumableTemplates[0].ImgName,
+	ent := templates.CreateEntityFromTemplate(*ecsmanager, templates.EntityConfig{
+		Type:      templates.EntityConsumable,
+		Name:      templates.ConsumableTemplates[0].Name,
+		ImagePath: templates.ConsumableTemplates[0].ImgName,
 		AssetDir:  "../assets/items/",
 		Visible:   false,
 		Position:  nil,
-	}, entitytemplates.ConsumableTemplates[0])
+	}, templates.ConsumableTemplates[0])
 	pos := common.GetPosition(ent)
 	rend := common.GetComponentType[*rendering.Renderable](ent, rendering.RenderableComponent)
 	rend.Visible = true
@@ -46,14 +46,14 @@ func CreateTestConsumables(ecsmanager *common.EntityManager, gm *worldmap.GameMa
 	pos.Y = gm.StartingPosition().Y + 2
 	gm.AddEntityToTile(ent, &coords.LogicalPosition{X: pos.X, Y: pos.Y})
 
-	ent = entitytemplates.CreateEntityFromTemplate(*ecsmanager, entitytemplates.EntityConfig{
-		Type:      entitytemplates.EntityConsumable,
-		Name:      entitytemplates.ConsumableTemplates[1].Name,
-		ImagePath: entitytemplates.ConsumableTemplates[1].ImgName,
+	ent = templates.CreateEntityFromTemplate(*ecsmanager, templates.EntityConfig{
+		Type:      templates.EntityConsumable,
+		Name:      templates.ConsumableTemplates[1].Name,
+		ImagePath: templates.ConsumableTemplates[1].ImgName,
 		AssetDir:  "../assets/items/",
 		Visible:   false,
 		Position:  nil,
-	}, entitytemplates.ConsumableTemplates[1])
+	}, templates.ConsumableTemplates[1])
 	pos = common.GetPosition(ent)
 	rend = common.GetComponentType[*rendering.Renderable](ent, rendering.RenderableComponent)
 	rend.Visible = true
@@ -62,14 +62,14 @@ func CreateTestConsumables(ecsmanager *common.EntityManager, gm *worldmap.GameMa
 
 	gm.AddEntityToTile(ent, &coords.LogicalPosition{X: pos.X, Y: pos.Y})
 
-	ent = entitytemplates.CreateEntityFromTemplate(*ecsmanager, entitytemplates.EntityConfig{
-		Type:      entitytemplates.EntityConsumable,
-		Name:      entitytemplates.ConsumableTemplates[2].Name,
-		ImagePath: entitytemplates.ConsumableTemplates[2].ImgName,
+	ent = templates.CreateEntityFromTemplate(*ecsmanager, templates.EntityConfig{
+		Type:      templates.EntityConsumable,
+		Name:      templates.ConsumableTemplates[2].Name,
+		ImagePath: templates.ConsumableTemplates[2].ImgName,
 		AssetDir:  "../assets/items/",
 		Visible:   false,
 		Position:  nil,
-	}, entitytemplates.ConsumableTemplates[2])
+	}, templates.ConsumableTemplates[2])
 	pos = common.GetPosition(ent)
 	rend = common.GetComponentType[*rendering.Renderable](ent, rendering.RenderableComponent)
 	rend.Visible = true

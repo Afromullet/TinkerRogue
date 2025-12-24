@@ -3,21 +3,21 @@ package combat
 import (
 	"fmt"
 	"game_main/common"
-	"game_main/world/coords"
+
 	"game_main/tactical/squads"
-	"game_main/systems"
+	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"
 )
 
 type CombatMovementSystem struct {
 	manager     *common.EntityManager
-	posSystem   *systems.PositionSystem // For O(1) collision detection
-	combatCache *CombatQueryCache       
+	posSystem   *common.PositionSystem // For O(1) collision detection
+	combatCache *CombatQueryCache
 }
 
 // Constructor
-func NewMovementSystem(manager *common.EntityManager, posSystem *systems.PositionSystem) *CombatMovementSystem {
+func NewMovementSystem(manager *common.EntityManager, posSystem *common.PositionSystem) *CombatMovementSystem {
 	return &CombatMovementSystem{
 		manager:     manager,
 		posSystem:   posSystem,

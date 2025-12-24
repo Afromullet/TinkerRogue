@@ -1,4 +1,4 @@
-package entitytemplates
+package templates
 
 import (
 	"encoding/json"

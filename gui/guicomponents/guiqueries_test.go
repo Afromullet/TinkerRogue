@@ -3,7 +3,7 @@ package guicomponents
 import (
 	"game_main/common"
 	"game_main/world/coords"
-	"game_main/systems"
+
 	"testing"
 
 	"github.com/bytearena/ecs"
@@ -24,7 +24,7 @@ func setupTestQueries() (*GUIQueries, *common.EntityManager) {
 	ecsManager.WorldTags["monsters"] = ecs.BuildTag(common.MonsterComponent)
 
 	// Initialize global position system
-	common.GlobalPositionSystem = systems.NewPositionSystem(ecsManager.World)
+	common.GlobalPositionSystem = common.NewPositionSystem(ecsManager.World)
 
 	queries := NewGUIQueries(ecsManager)
 	return queries, ecsManager

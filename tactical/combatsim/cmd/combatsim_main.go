@@ -3,9 +3,9 @@ package main
 import (
 	"flag"
 	"fmt"
-	"game_main/combatsim"
-	"game_main/entitytemplates"
+	"game_main/tactical/combatsim"
 	"game_main/tactical/squads"
+	"game_main/templates"
 	"log"
 )
 
@@ -18,7 +18,7 @@ func main() {
 	flag.Parse()
 
 	// Initialize unit templates
-	entitytemplates.ReadMonsterData()
+	templates.ReadMonsterData()
 	err := squads.InitUnitTemplatesFromJSON()
 	if err != nil {
 		log.Fatalf("Failed to initialize unit templates: %v", err)

@@ -2,7 +2,8 @@ package squads
 
 import (
 	"game_main/common"
-	"game_main/entitytemplates"
+	"game_main/templates"
+
 	"testing"
 
 	"github.com/bytearena/ecs"
@@ -75,10 +76,10 @@ func TestCapacitySystem_EnforceLimitWithoutLeader(t *testing.T) {
 	}
 
 	// Create weak units (cost 1.0 each: Strength=3, Weapon=1, Armor=1 → (3+1+1)/5 = 1.0)
-	jsonMonster := entitytemplates.JSONMonster{
+	jsonMonster := templates.JSONMonster{
 		Name:      "Weak Unit",
 		ImageName: "test.png",
-		Attributes: entitytemplates.JSONAttributes{
+		Attributes: templates.JSONAttributes{
 			Strength:   3,
 			Dexterity:  20,
 			Magic:      0,
@@ -162,10 +163,10 @@ func TestCapacitySystem_IsSquadOverCapacity(t *testing.T) {
 	}
 
 	// Add units up to capacity (6.0 total)
-	jsonMonster := entitytemplates.JSONMonster{
+	jsonMonster := templates.JSONMonster{
 		Name:      "Unit",
 		ImageName: "test.png",
-		Attributes: entitytemplates.JSONAttributes{
+		Attributes: templates.JSONAttributes{
 			Strength:   3,
 			Dexterity:  20,
 			Magic:      0,
@@ -233,10 +234,10 @@ func TestCapacitySystem_UpdateSquadCapacity(t *testing.T) {
 	}
 
 	// Add a unit
-	jsonMonster := entitytemplates.JSONMonster{
+	jsonMonster := templates.JSONMonster{
 		Name:      "Unit",
 		ImageName: "test.png",
-		Attributes: entitytemplates.JSONAttributes{
+		Attributes: templates.JSONAttributes{
 			Strength:   3,
 			Dexterity:  20,
 			Magic:      0,

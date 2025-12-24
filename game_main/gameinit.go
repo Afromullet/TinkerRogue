@@ -2,10 +2,10 @@ package main
 
 import (
 	"game_main/common"
-	"game_main/world/coords"
 	"game_main/gear"
-	"game_main/visual/rendering"
 	"game_main/tactical/squads"
+	"game_main/visual/rendering"
+	"game_main/world/coords"
 	"game_main/world/worldmap"
 
 	"log"

@@ -1,6 +1,6 @@
 package main
 
-import "game_main/combatsim"
+import "game_main/tactical/combatsim"
 
 // GetAllTestScenarios returns all tactical combat test scenarios
 func GetAllTestScenarios() []combatsim.CombatScenario {
@@ -190,7 +190,7 @@ func createScenario_BalancedMixed() combatsim.CombatScenario {
 // Note: Deliberately imbalanced (2v4) to test multi-cell durability
 func createScenario_MultiCellUnits() combatsim.CombatScenario {
 	attackerUnits := []combatsim.UnitConfig{
-		{TemplateName: "Ogre", GridRow: 0, GridCol: 0, IsLeader: true},       // 2x2 unit
+		{TemplateName: "Ogre", GridRow: 0, GridCol: 0, IsLeader: true},         // 2x2 unit
 		{TemplateName: "Orc Warrior", GridRow: 0, GridCol: 2, IsLeader: false}, // 2x1 unit
 	}
 
