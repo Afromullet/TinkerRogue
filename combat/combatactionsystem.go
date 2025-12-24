@@ -9,6 +9,16 @@ import (
 	"github.com/bytearena/ecs"
 )
 
+// AttackResult contains all information about an attack execution. Used for debugging.
+type AttackResult struct {
+	Success         bool
+	ErrorReason     string
+	AttackerName    string
+	TargetName      string
+	TargetDestroyed bool
+	DamageDealt     int
+}
+
 type CombatActionSystem struct {
 	manager     *common.EntityManager
 	combatCache *CombatQueryCache
@@ -21,29 +31,20 @@ func NewCombatActionSystem(manager *common.EntityManager) *CombatActionSystem {
 	}
 }
 
-func (cas *CombatActionSystem) ExecuteAttackAction(attackerID, defenderID ecs.EntityID) error {
+func (cas *CombatActionSystem) ExecuteAttackAction(attackerID, defenderID ecs.EntityID) *AttackResult {
+	result := &AttackResult{}
 
-	attackerPos, err := GetSquadMapPosition(attackerID, cas.manager)
-	if err != nil {
-		return fmt.Errorf("cannot find attacker position: %w", err)
+	// Use shared validation logic
+	reason, canAttack := cas.CanSquadAttackWithReason(attackerID, defenderID)
+	if !canAttack {
+		result.Success = false
+		result.ErrorReason = reason
+		return result
 	}
 
-	defenderPos, err := GetSquadMapPosition(defenderID, cas.manager)
-	if err != nil {
-		return fmt.Errorf("cannot find defender position: %w", err)
-	}
-
-	distance := attackerPos.ChebyshevDistance(&defenderPos)
-
-	maxRange := cas.GetSquadAttackRange(attackerID)
-
-	if distance > maxRange {
-		return fmt.Errorf("target out of range: %d tiles away, max range %d", distance, maxRange)
-	}
-
-	if !canSquadAct(cas.combatCache, attackerID, cas.manager) {
-		return fmt.Errorf("squad has already acted this turn")
-	}
+	// Get names for result
+	result.AttackerName = getSquadNameByID(attackerID, cas.manager)
+	result.TargetName = getSquadNameByID(defenderID, cas.manager)
 
 	//Filter units by range (partial squad attacks)
 	attackingUnits := cas.GetAttackingUnits(attackerID, defenderID)
@@ -68,7 +69,7 @@ func (cas *CombatActionSystem) ExecuteAttackAction(attackerID, defenderID ecs.En
 	}
 
 	// Execute attack (only CanAct=true units participate)
-	result := squads.ExecuteSquadAttack(attackerID, defenderID, cas.manager)
+	combatResult := squads.ExecuteSquadAttack(attackerID, defenderID, cas.manager)
 
 	// Re-enable disabled units. TODO: This might allow squads to attack twice. Once ranged, and then melee
 	// (If the squad has a mix of units, and melee units did not attack due to the range). Test and fix this
@@ -86,13 +87,14 @@ func (cas *CombatActionSystem) ExecuteAttackAction(attackerID, defenderID ecs.En
 
 	markSquadAsActed(cas.combatCache, attackerID, cas.manager)
 
-	if squads.IsSquadDestroyed(defenderID, cas.manager) {
+	result.TargetDestroyed = squads.IsSquadDestroyed(defenderID, cas.manager)
+	if result.TargetDestroyed {
 		removeSquadFromMap(defenderID, cas.manager)
 	}
 
 	// Display detailed combat log. Only prints in display mode.
-	if config.DISPLAY_DEATAILED_COMBAT_OUTPUT && result.CombatLog != nil {
-		DisplayCombatLog(result.CombatLog, cas.manager)
+	if config.DISPLAY_DEATAILED_COMBAT_OUTPUT && combatResult.CombatLog != nil {
+		DisplayCombatLog(combatResult.CombatLog, cas.manager)
 	}
 
 	// Check abilities for both squads after combat
@@ -100,11 +102,12 @@ func (cas *CombatActionSystem) ExecuteAttackAction(attackerID, defenderID ecs.En
 	squads.CheckAndTriggerAbilities(attackerID, cas.manager)
 
 	// Defender abilities: might trigger healing if HP is low, or other defensive abilities
-	if !squads.IsSquadDestroyed(defenderID, cas.manager) {
+	if !result.TargetDestroyed {
 		squads.CheckAndTriggerAbilities(defenderID, cas.manager)
 	}
 
-	return nil
+	result.Success = true
+	return result
 }
 
 // GetSquadAttackRange returns the maximum attack range of any unit in the squad
@@ -172,6 +175,15 @@ func (cas *CombatActionSystem) GetAttackingUnits(squadID, targetID ecs.EntityID)
 	}
 
 	return attackingUnits
+}
+
+// getSquadNameByID is a helper to get squad name from ID
+func getSquadNameByID(squadID ecs.EntityID, manager *common.EntityManager) string {
+	squadData := common.GetComponentTypeByID[*squads.SquadData](manager, squadID, squads.SquadComponent)
+	if squadData != nil {
+		return squadData.Name
+	}
+	return "Unknown"
 }
 
 // CanSquadAttackWithReason returns detailed info about why an attack can/cannot happen

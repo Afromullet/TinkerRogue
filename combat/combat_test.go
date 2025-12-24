@@ -284,9 +284,9 @@ func TestExecuteAttackAction_MeleeAttack(t *testing.T) {
 	turnMgr.InitializeCombat([]ecs.EntityID{playerFaction, enemyFaction})
 
 	combatSys := NewCombatActionSystem(manager)
-	err := combatSys.ExecuteAttackAction(playerSquad, enemySquad)
-	if err != nil {
-		t.Fatalf("Failed to execute attack: %v", err)
+	result := combatSys.ExecuteAttackAction(playerSquad, enemySquad)
+	if !result.Success {
+		t.Fatalf("Failed to execute attack: %s", result.ErrorReason)
 	}
 
 	// Verify squad marked as acted (using cache for O(k) lookup instead of O(n) query)

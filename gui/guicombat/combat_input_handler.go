@@ -1,6 +1,7 @@
 package guicombat
 
 import (
+	"game_main/combat"
 	"game_main/coords"
 	"game_main/graphics"
 	"game_main/gui/core"
@@ -121,8 +122,8 @@ func (cih *CombatInputHandler) handleMovementClick(mouseX, mouseY int) {
 	// Convert screen coordinates to logical coordinates (handles both scrolling modes)
 	clickedPos := graphics.MouseToLogicalPosition(mouseX, mouseY, *cih.playerPos)
 
-	// Compute valid tiles on-demand from combat service
-	validTiles := cih.actionHandler.combatService.GetValidMovementTiles(cih.battleMapState.SelectedSquadID)
+	// Compute valid tiles on-demand from movement system
+	validTiles := cih.actionHandler.combatService.GetMovementSystem().GetValidMovementTiles(cih.battleMapState.SelectedSquadID)
 	if validTiles == nil {
 		validTiles = []coords.LogicalPosition{}
 	}
@@ -159,7 +160,7 @@ func (cih *CombatInputHandler) handleSquadClick(mouseX, mouseY int) {
 	clickedPos := graphics.MouseToLogicalPosition(mouseX, mouseY, *cih.playerPos)
 
 	// Find if a squad is at the clicked position
-	clickedSquadID := cih.actionHandler.combatService.GetSquadAtPosition(clickedPos)
+	clickedSquadID := combat.GetSquadAtPosition(clickedPos, cih.queries.ECSManager)
 
 	// If no squad was clicked, do nothing
 	if clickedSquadID == 0 {

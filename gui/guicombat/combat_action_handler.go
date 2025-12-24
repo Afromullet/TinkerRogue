@@ -71,7 +71,7 @@ func (cah *CombatActionHandler) ToggleAttackMode() {
 }
 
 func (cah *CombatActionHandler) ShowAvailableTargets() {
-	currentFactionID := cah.combatService.GetCurrentFaction()
+	currentFactionID := cah.combatService.GetTurnManager().GetCurrentFaction()
 	if currentFactionID == 0 {
 		return
 	}
@@ -102,7 +102,7 @@ func (cah *CombatActionHandler) ToggleMoveMode() {
 
 	if newMoveMode {
 		// Get valid movement tiles
-		validTiles := cah.combatService.GetValidMovementTiles(cah.battleMapState.SelectedSquadID)
+		validTiles := cah.combatService.GetMovementSystem().GetValidMovementTiles(cah.battleMapState.SelectedSquadID)
 
 		if len(validTiles) == 0 {
 			cah.addLog("No movement remaining!")
@@ -130,7 +130,7 @@ func (cah *CombatActionHandler) SelectTarget(targetSquadID ecs.EntityID) {
 
 // SelectEnemyTarget selects an enemy squad by index (0-2 for 1-3 keys)
 func (cah *CombatActionHandler) SelectEnemyTarget(index int) {
-	currentFactionID := cah.combatService.GetCurrentFaction()
+	currentFactionID := cah.combatService.GetTurnManager().GetCurrentFaction()
 	if currentFactionID == 0 {
 		return
 	}
@@ -155,7 +155,7 @@ func (cah *CombatActionHandler) ExecuteAttack() {
 	}
 
 	// Validate attack BEFORE triggering animation (prevents animation on invalid attacks)
-	result := cah.combatService.ExecuteSquadAttack(selectedSquad, selectedTarget)
+	result := cah.combatService.GetCombatActionSystem().ExecuteAttackAction(selectedSquad, selectedTarget)
 
 	// Invalidate cache for both squads (attacker and defender) since their HP/status changed
 	cah.queries.MarkSquadDirty(selectedSquad)
@@ -282,7 +282,7 @@ func (cah *CombatActionHandler) ClearMoveHistory() {
 
 // CycleSquadSelection selects the next squad in the faction
 func (cah *CombatActionHandler) CycleSquadSelection() {
-	currentFactionID := cah.combatService.GetCurrentFaction()
+	currentFactionID := cah.combatService.GetTurnManager().GetCurrentFaction()
 	factionData := cah.queries.CombatCache.FindFactionDataByID(currentFactionID, cah.queries.ECSManager)
 	if currentFactionID == 0 || factionData == nil || !factionData.IsPlayerControlled {
 		return

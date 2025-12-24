@@ -226,12 +226,12 @@ func (cm *CombatMode) initializeUpdateComponents() {
 	cm.turnOrderComponent = guicomponents.NewTextDisplayComponent(
 		cm.turnOrderLabel,
 		func() string {
-			currentFactionID := cm.combatService.GetCurrentFaction()
+			currentFactionID := cm.combatService.GetTurnManager().GetCurrentFaction()
 			if currentFactionID == 0 {
 				return "No active combat"
 			}
 
-			round := cm.combatService.GetCurrentRound()
+			round := cm.combatService.GetTurnManager().GetCurrentRound()
 			factionData := cm.Queries.CombatCache.FindFactionDataByID(currentFactionID, cm.Queries.ECSManager)
 			factionName := "Unknown"
 			turnIndicator := ""
@@ -300,7 +300,7 @@ func (cm *CombatMode) initializeUpdateComponents() {
 // Only shows squads during the player's faction's turn
 func (cm *CombatMode) makeCurrentFactionSquadFilter() guicomponents.SquadFilter {
 	return func(info *guicomponents.SquadInfo) bool {
-		currentFactionID := cm.combatService.GetCurrentFaction()
+		currentFactionID := cm.combatService.GetTurnManager().GetCurrentFaction()
 		if currentFactionID == 0 {
 			return false
 		}
@@ -323,19 +323,19 @@ func (cm *CombatMode) handleEndTurn() {
 	// Clear movement history when ending turn (can't undo moves from previous turns)
 	cm.actionHandler.ClearMoveHistory()
 
-	// End current faction's turn using service
-	result := cm.combatService.EndTurn()
-	if !result.Success {
-		cm.logManager.UpdateTextArea(cm.combatLogArea, fmt.Sprintf("Error ending turn: %s", result.Error))
+	// End current faction's turn using turn manager
+	err := cm.combatService.GetTurnManager().EndTurn()
+	if err != nil {
+		cm.logManager.UpdateTextArea(cm.combatLogArea, fmt.Sprintf("Error ending turn: %s", err.Error()))
 		return
 	}
 
 	// Invalidate all squad caches since turn changed (all action states reset)
 	cm.Queries.MarkAllSquadsDirty()
 
-	// Get new faction info from result
-	currentFactionID := result.NewFaction
-	round := result.NewRound
+	// Get new faction info
+	currentFactionID := cm.combatService.GetTurnManager().GetCurrentFaction()
+	round := cm.combatService.GetTurnManager().GetCurrentRound()
 
 	// Get faction data for player name
 	factionData := cm.Queries.CombatCache.FindFactionDataByID(currentFactionID, cm.Queries.ECSManager)
@@ -389,7 +389,7 @@ func (cm *CombatMode) Enter(fromMode core.UIMode) error {
 	}
 
 	// Always refresh UI displays (whether fresh or returning from animation)
-	currentFactionID := cm.combatService.GetCurrentFaction()
+	currentFactionID := cm.combatService.GetTurnManager().GetCurrentFaction()
 	if currentFactionID != 0 {
 		cm.turnOrderComponent.Refresh()
 		cm.factionInfoComponent.ShowFaction(currentFactionID)
@@ -415,7 +415,7 @@ func (cm *CombatMode) Exit(toMode core.UIMode) error {
 func (cm *CombatMode) Update(deltaTime float64) error {
 	// Only update UI displays when state changes (GUI_PERFORMANCE_ANALYSIS.md)
 	// This avoids expensive text measurement on every frame (~10-15s CPU savings)
-	currentFactionID := cm.combatService.GetCurrentFaction()
+	currentFactionID := cm.combatService.GetTurnManager().GetCurrentFaction()
 	if cm.lastFactionID != currentFactionID {
 		cm.turnOrderComponent.Refresh()
 		cm.lastFactionID = currentFactionID
@@ -434,7 +434,7 @@ func (cm *CombatMode) Update(deltaTime float64) error {
 
 	// Update danger visualization if active
 	if cm.dangerVisualizer.IsActive() {
-		currentRound := cm.combatService.GetCurrentRound()
+		currentRound := cm.combatService.GetTurnManager().GetCurrentRound()
 		playerPos := *cm.Context.PlayerData.Pos
 		viewportSize := 30 // Process 30x30 tile area around player
 		cm.dangerVisualizer.Update(currentFactionID, currentRound, playerPos, viewportSize)
@@ -456,7 +456,7 @@ func (cm *CombatMode) initialzieCombatFactions() error {
 		}
 
 		// Log initial faction
-		currentFactionID := cm.combatService.GetCurrentFaction()
+		currentFactionID := cm.combatService.GetTurnManager().GetCurrentFaction()
 		factionData := cm.Queries.CombatCache.FindFactionDataByID(currentFactionID, cm.Queries.ECSManager)
 		factionName := "Unknown"
 		if factionData != nil {
@@ -484,8 +484,8 @@ func (cm *CombatMode) getValidMoveTiles() []coords.LogicalPosition {
 		return []coords.LogicalPosition{}
 	}
 
-	// Compute from ECS game state via combat service
-	tiles := cm.combatService.GetValidMovementTiles(battleState.SelectedSquadID)
+	// Compute from ECS game state via movement system
+	tiles := cm.combatService.GetMovementSystem().GetValidMovementTiles(battleState.SelectedSquadID)
 	if tiles == nil {
 		return []coords.LogicalPosition{}
 	}
@@ -495,7 +495,7 @@ func (cm *CombatMode) getValidMoveTiles() []coords.LogicalPosition {
 
 func (cm *CombatMode) Render(screen *ebiten.Image) {
 	playerPos := *cm.Context.PlayerData.Pos
-	currentFactionID := cm.combatService.GetCurrentFaction()
+	currentFactionID := cm.combatService.GetTurnManager().GetCurrentFaction()
 	battleState := cm.Context.ModeCoordinator.GetBattleMapState()
 	selectedSquad := battleState.SelectedSquadID
 
@@ -521,7 +521,7 @@ func (cm *CombatMode) HandleInput(inputState *core.InputState) bool {
 
 	// Update input handler with player position and faction info
 	cm.inputHandler.SetPlayerPosition(cm.Context.PlayerData.Pos)
-	cm.inputHandler.SetCurrentFactionID(cm.combatService.GetCurrentFaction())
+	cm.inputHandler.SetCurrentFactionID(cm.combatService.GetTurnManager().GetCurrentFaction())
 
 	// Handle combat-specific input through input handler
 	if cm.inputHandler.HandleInput(inputState) {

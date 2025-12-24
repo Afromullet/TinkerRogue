@@ -37,89 +37,14 @@ func (cs *CombatService) GetMovementSystem() *combat.CombatMovementSystem {
 	return cs.movementSystem
 }
 
-// AttackResult contains all information about an attack execution.  Used for debugging.
-type AttackResult struct {
-	Success         bool
-	ErrorReason     string
-	AttackerName    string
-	TargetName      string
-	TargetDestroyed bool
-	DamageDealt     int
+// GetCombatActionSystem returns the combat action system for executing attacks
+func (cs *CombatService) GetCombatActionSystem() *combat.CombatActionSystem {
+	return cs.combatActSystem
 }
 
-// ExecuteSquadAttack performs a squad attack and returns detailed result
-func (cs *CombatService) ExecuteSquadAttack(attackerID, targetID ecs.EntityID) *AttackResult {
-	result := &AttackResult{}
-
-	// Use shared combat action system
-	// Each attack MUST use the same cache instance to see HasActed flag updates
-	reason, canAttack := cs.combatActSystem.CanSquadAttackWithReason(attackerID, targetID)
-	if !canAttack {
-		result.Success = false
-		result.ErrorReason = reason
-		return result
-	}
-
-	// Get names for result
-	result.AttackerName = getSquadNameByID(attackerID, cs.entityManager)
-	result.TargetName = getSquadNameByID(targetID, cs.entityManager)
-
-	// Execute attack
-	err := cs.combatActSystem.ExecuteAttackAction(attackerID, targetID)
-	if err != nil {
-		result.Success = false
-		result.ErrorReason = err.Error()
-		return result
-	}
-
-	result.Success = true
-	result.TargetDestroyed = squads.IsSquadDestroyed(targetID, cs.entityManager)
-
-	return result
-}
-
-// MoveSquadResult contains all information about a movement execution. Used for debugging.
-type MoveSquadResult struct {
-	Success      bool
-	ErrorReason  string
-	SquadName    string
-	NewPosition  coords.LogicalPosition
-	MovementCost int
-	RemainingAPs int
-}
-
-// MoveSquad moves a squad to a new position and returns result
-func (cs *CombatService) MoveSquad(squadID ecs.EntityID, newPos coords.LogicalPosition) *MoveSquadResult {
-	result := &MoveSquadResult{
-		NewPosition: newPos,
-	}
-
-	// Execute movement
-	err := cs.movementSystem.MoveSquad(squadID, newPos)
-	if err != nil {
-		result.Success = false
-		result.ErrorReason = err.Error()
-		return result
-	}
-
-	result.Success = true
-	result.SquadName = getSquadNameByID(squadID, cs.entityManager)
-
-	// Update action state with remaining APs (using cached query for performance)
-	actionEntity := cs.combatCache.FindActionStateEntity(squadID, cs.entityManager)
-	if actionEntity != nil {
-		actionState := common.GetComponentType[*combat.ActionStateData](actionEntity, combat.ActionStateComponent)
-		if actionState != nil {
-			result.RemainingAPs = actionState.MovementRemaining
-		}
-	}
-
-	return result
-}
-
-// GetValidMovementTiles returns the list of tiles a squad can move to
-func (cs *CombatService) GetValidMovementTiles(squadID ecs.EntityID) []coords.LogicalPosition {
-	return cs.movementSystem.GetValidMovementTiles(squadID)
+// GetTurnManager returns the turn manager for turn operations
+func (cs *CombatService) GetTurnManager() *combat.TurnManager {
+	return cs.turnManager
 }
 
 // InitializeCombat initializes combat with the given factions
@@ -176,16 +101,6 @@ func (cs *CombatService) assignDeployedSquadsToPlayerFaction(playerFactionID ecs
 	}
 }
 
-// GetCurrentFaction returns the current faction's turn
-func (cs *CombatService) GetCurrentFaction() ecs.EntityID {
-	return cs.turnManager.GetCurrentFaction()
-}
-
-// GetCurrentRound returns the current combat round number
-func (cs *CombatService) GetCurrentRound() int {
-	return cs.turnManager.GetCurrentRound()
-}
-
 // GetAliveSquadsInFaction returns all alive squads for a faction
 func (cs *CombatService) GetAliveSquadsInFaction(factionID ecs.EntityID) []ecs.EntityID {
 	squadIDs := cs.factionManager.GetFactionSquads(factionID)
@@ -195,34 +110,6 @@ func (cs *CombatService) GetAliveSquadsInFaction(factionID ecs.EntityID) []ecs.E
 			result = append(result, squadID)
 		}
 	}
-	return result
-}
-
-// EndTurnResult contains information about turn transition.
-type EndTurnResult struct {
-	Success         bool
-	PreviousFaction ecs.EntityID
-	NewFaction      ecs.EntityID
-	NewRound        int
-	Error           string
-}
-
-// EndTurn ends the current faction's turn and advances to next
-func (cs *CombatService) EndTurn() *EndTurnResult {
-	result := &EndTurnResult{
-		PreviousFaction: cs.turnManager.GetCurrentFaction(),
-	}
-
-	err := cs.turnManager.EndTurn()
-	if err != nil {
-		result.Success = false
-		result.Error = err.Error()
-		return result
-	}
-
-	result.Success = true
-	result.NewFaction = cs.turnManager.GetCurrentFaction()
-	result.NewRound = cs.turnManager.GetCurrentRound()
 	return result
 }
 
@@ -296,11 +183,6 @@ func (cs *CombatService) CheckVictoryCondition() *VictoryCheckResult {
 	}
 
 	return result
-}
-
-// GetSquadAtPosition returns the squad ID at the given position, or 0 if none
-func (cs *CombatService) GetSquadAtPosition(pos coords.LogicalPosition) ecs.EntityID {
-	return combat.GetSquadAtPosition(pos, cs.entityManager)
 }
 
 // getSquadNameByID is a helper to get squad name from ID
