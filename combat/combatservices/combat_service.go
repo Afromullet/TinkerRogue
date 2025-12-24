@@ -12,39 +12,24 @@ import (
 
 // CombatService encapsulates all combat game logic and system ownership
 type CombatService struct {
-	entityManager   *common.EntityManager
-	turnManager     *combat.TurnManager
-	factionManager  *combat.FactionManager
-	movementSystem  *combat.CombatMovementSystem
-	combatCache     *combat.CombatQueryCache
-	combatActSystem *combat.CombatActionSystem
+	EntityManager  *common.EntityManager
+	TurnManager    *combat.TurnManager
+	FactionManager *combat.FactionManager
+	MovementSystem *combat.CombatMovementSystem
+	CombatCache    *combat.CombatQueryCache
+	CombatActSystem *combat.CombatActionSystem
 }
 
 // NewCombatService creates a new combat service
 func NewCombatService(manager *common.EntityManager) *CombatService {
 	return &CombatService{
-		entityManager:   manager,
-		turnManager:     combat.NewTurnManager(manager),
-		factionManager:  combat.NewFactionManager(manager),
-		movementSystem:  combat.NewMovementSystem(manager, common.GlobalPositionSystem),
-		combatCache:     combat.NewCombatQueryCache(manager),
-		combatActSystem: combat.NewCombatActionSystem(manager), // Create once, reuse for all attacks
+		EntityManager:  manager,
+		TurnManager:    combat.NewTurnManager(manager),
+		FactionManager: combat.NewFactionManager(manager),
+		MovementSystem: combat.NewMovementSystem(manager, common.GlobalPositionSystem),
+		CombatCache:    combat.NewCombatQueryCache(manager),
+		CombatActSystem: combat.NewCombatActionSystem(manager), // Create once, reuse for all attacks
 	}
-}
-
-// GetMovementSystem returns the movement system for command pattern integration
-func (cs *CombatService) GetMovementSystem() *combat.CombatMovementSystem {
-	return cs.movementSystem
-}
-
-// GetCombatActionSystem returns the combat action system for executing attacks
-func (cs *CombatService) GetCombatActionSystem() *combat.CombatActionSystem {
-	return cs.combatActSystem
-}
-
-// GetTurnManager returns the turn manager for turn operations
-func (cs *CombatService) GetTurnManager() *combat.TurnManager {
-	return cs.turnManager
 }
 
 // InitializeCombat initializes combat with the given factions
@@ -55,7 +40,7 @@ func (cs *CombatService) InitializeCombat(factionIDs []ecs.EntityID) error {
 	var playerFactionID ecs.EntityID
 	for _, factionID := range factionIDs {
 		// Use cached query for performance
-		factionData := cs.combatCache.FindFactionDataByID(factionID, cs.entityManager)
+		factionData := cs.CombatCache.FindFactionDataByID(factionID, cs.EntityManager)
 		if factionData != nil && factionData.IsPlayerControlled {
 			playerFactionID = factionID
 			break
@@ -68,7 +53,7 @@ func (cs *CombatService) InitializeCombat(factionIDs []ecs.EntityID) error {
 		cs.assignDeployedSquadsToPlayerFaction(playerFactionID)
 	}
 
-	return cs.turnManager.InitializeCombat(factionIDs)
+	return cs.TurnManager.InitializeCombat(factionIDs)
 }
 
 // assignDeployedSquadsToPlayerFaction finds all squads with positions but no CombatFactionComponent
@@ -76,7 +61,7 @@ func (cs *CombatService) InitializeCombat(factionIDs []ecs.EntityID) error {
 // TODO: Assinging unassigned squads to the player faction is a temporary fix. Squads will have to be assigned to the
 // Correct Faction. There can be multiple players
 func (cs *CombatService) assignDeployedSquadsToPlayerFaction(playerFactionID ecs.EntityID) {
-	for _, result := range cs.entityManager.World.Query(squads.SquadTag) {
+	for _, result := range cs.EntityManager.World.Query(squads.SquadTag) {
 		squadEntity := result.Entity
 		squadID := squadEntity.GetID()
 
@@ -93,7 +78,7 @@ func (cs *CombatService) assignDeployedSquadsToPlayerFaction(playerFactionID ecs
 		}
 
 		// Squad is unassigned and deployed - add it to player faction
-		fm := combat.NewFactionManager(cs.entityManager)
+		fm := combat.NewFactionManager(cs.EntityManager)
 		if err := fm.AddSquadToFaction(playerFactionID, squadID, *position); err != nil {
 			// Log error but continue with other squads
 			continue
@@ -103,10 +88,10 @@ func (cs *CombatService) assignDeployedSquadsToPlayerFaction(playerFactionID ecs
 
 // GetAliveSquadsInFaction returns all alive squads for a faction
 func (cs *CombatService) GetAliveSquadsInFaction(factionID ecs.EntityID) []ecs.EntityID {
-	squadIDs := cs.factionManager.GetFactionSquads(factionID)
+	squadIDs := cs.FactionManager.GetFactionSquads(factionID)
 	result := []ecs.EntityID{}
 	for _, squadID := range squadIDs {
-		if !squads.IsSquadDestroyed(squadID, cs.entityManager) {
+		if !squads.IsSquadDestroyed(squadID, cs.EntityManager) {
 			result = append(result, squadID)
 		}
 	}
@@ -126,25 +111,25 @@ type VictoryCheckResult struct {
 // TODO: Add actual victory conditions
 func (cs *CombatService) CheckVictoryCondition() *VictoryCheckResult {
 	result := &VictoryCheckResult{
-		RoundsCompleted: cs.turnManager.GetCurrentRound(),
+		RoundsCompleted: cs.TurnManager.GetCurrentRound(),
 	}
 
 	// Count alive squads per faction
 	aliveByFaction := make(map[ecs.EntityID]int)
 
-	for _, queryResult := range cs.entityManager.World.Query(combat.FactionTag) {
+	for _, queryResult := range cs.EntityManager.World.Query(combat.FactionTag) {
 		entity := queryResult.Entity
 		factionID := entity.GetID()
 		aliveByFaction[factionID] = 0
 	}
 
 	// Count squads
-	for _, queryResult := range cs.entityManager.World.Query(squads.SquadTag) {
+	for _, queryResult := range cs.EntityManager.World.Query(squads.SquadTag) {
 		entity := queryResult.Entity
 		squadData := common.GetComponentType[*squads.SquadData](entity, squads.SquadComponent)
-		if squadData != nil && !squads.IsSquadDestroyed(entity.GetID(), cs.entityManager) {
+		if squadData != nil && !squads.IsSquadDestroyed(entity.GetID(), cs.EntityManager) {
 			factionData := common.GetComponentTypeByID[*combat.FactionData](
-				cs.entityManager, entity.GetID(), combat.FactionComponent)
+				cs.EntityManager, entity.GetID(), combat.FactionComponent)
 			if factionData != nil {
 				aliveByFaction[factionData.FactionID]++
 			}
@@ -168,7 +153,7 @@ func (cs *CombatService) CheckVictoryCondition() *VictoryCheckResult {
 		result.VictorFaction = victorFaction
 
 		// Get faction data to include player name
-		factionData := cs.combatCache.FindFactionDataByID(victorFaction, cs.entityManager)
+		factionData := cs.CombatCache.FindFactionDataByID(victorFaction, cs.EntityManager)
 		if factionData != nil {
 			if factionData.PlayerID > 0 {
 				// Player victory - include player name

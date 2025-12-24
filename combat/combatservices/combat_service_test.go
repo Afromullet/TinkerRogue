@@ -17,19 +17,19 @@ func TestCombatServiceCreation(t *testing.T) {
 		t.Error("CombatService should not be nil")
 	}
 
-	if service.entityManager != manager {
+	if service.EntityManager != manager {
 		t.Error("EntityManager not set correctly")
 	}
 
-	if service.turnManager == nil {
+	if service.TurnManager == nil {
 		t.Error("TurnManager should be initialized")
 	}
 
-	if service.factionManager == nil {
+	if service.FactionManager == nil {
 		t.Error("FactionManager should be initialized")
 	}
 
-	if service.movementSystem == nil {
+	if service.MovementSystem == nil {
 		t.Error("MovementSystem should be initialized")
 	}
 }
@@ -40,7 +40,7 @@ func TestExecuteSquadAttack_NoSquads(t *testing.T) {
 	service := NewCombatService(manager)
 
 	// Try to attack with non-existent squad IDs
-	result := service.GetCombatActionSystem().ExecuteAttackAction(ecs.EntityID(999), ecs.EntityID(998))
+	result := service.CombatActSystem.ExecuteAttackAction(ecs.EntityID(999), ecs.EntityID(998))
 
 	if result == nil {
 		t.Error("Result should not be nil")

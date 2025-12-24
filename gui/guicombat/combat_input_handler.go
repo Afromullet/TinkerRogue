@@ -123,7 +123,7 @@ func (cih *CombatInputHandler) handleMovementClick(mouseX, mouseY int) {
 	clickedPos := graphics.MouseToLogicalPosition(mouseX, mouseY, *cih.playerPos)
 
 	// Compute valid tiles on-demand from movement system
-	validTiles := cih.actionHandler.combatService.GetMovementSystem().GetValidMovementTiles(cih.battleMapState.SelectedSquadID)
+	validTiles := cih.actionHandler.combatService.MovementSystem.GetValidMovementTiles(cih.battleMapState.SelectedSquadID)
 	if validTiles == nil {
 		validTiles = []coords.LogicalPosition{}
 	}
