@@ -2,12 +2,12 @@ package testing
 
 import (
 	"game_main/common"
-	"game_main/coords"
 	"game_main/entitytemplates"
 	"game_main/gear"
 	"game_main/visual/graphics"
 	"game_main/visual/rendering"
-	"game_main/worldmap"
+	"game_main/world/coords"
+	"game_main/world/worldmap"
 	"log"
 	"strconv"
 

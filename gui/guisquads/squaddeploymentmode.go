@@ -5,7 +5,7 @@ import (
 	"image/color"
 
 	"game_main/common"
-	"game_main/coords"
+	"game_main/world/coords"
 	"game_main/gui"
 	"game_main/gui/builders"
 	"game_main/gui/core"

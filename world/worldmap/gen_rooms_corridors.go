@@ -2,7 +2,7 @@ package worldmap
 
 import (
 	"game_main/common"
-	"game_main/coords"
+	"game_main/world/coords"
 )
 
 // RoomsAndCorridorsGenerator implements the classic roguelike generation

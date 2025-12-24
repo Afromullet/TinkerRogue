@@ -1,7 +1,7 @@
 package graphics
 
 import (
-	"game_main/coords"
+	"game_main/world/coords"
 
 	"github.com/hajimehoshi/ebiten/v2"
 )

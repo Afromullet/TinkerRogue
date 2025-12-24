@@ -2,7 +2,7 @@ package combatsim
 
 import (
 	"fmt"
-	"game_main/coords"
+	"game_main/world/coords"
 )
 
 // CombatScenario defines a test scenario for combat simulation

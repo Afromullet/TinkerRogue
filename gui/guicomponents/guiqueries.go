@@ -3,9 +3,9 @@ package guicomponents
 
 import (
 	"game_main/common"
-	"game_main/coords"
 	"game_main/tactical/combat"
 	"game_main/tactical/squads"
+	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"
 )

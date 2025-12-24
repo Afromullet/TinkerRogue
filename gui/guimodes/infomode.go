@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"image/color"
 
-	"game_main/coords"
+	"game_main/world/coords"
 	"game_main/gui"
 	"game_main/gui/core"
 	"game_main/gui/builders"

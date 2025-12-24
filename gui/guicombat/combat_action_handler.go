@@ -2,7 +2,7 @@ package guicombat
 
 import (
 	"fmt"
-	"game_main/coords"
+	"game_main/world/coords"
 	"game_main/gui/core"
 	"game_main/gui/guicomponents"
 	"game_main/gui/widgets"

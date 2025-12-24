@@ -1,7 +1,7 @@
 package worldmap
 
 import (
-	"game_main/coords"
+	"game_main/world/coords"
 	"game_main/visual/graphics"
 
 	"github.com/bytearena/ecs"

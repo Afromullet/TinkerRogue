@@ -3,7 +3,7 @@ package squads
 import (
 	"fmt"
 	"game_main/common"
-	"game_main/coords"
+	"game_main/world/coords"
 	"game_main/entitytemplates"
 	testfx "game_main/testing"
 	"testing"

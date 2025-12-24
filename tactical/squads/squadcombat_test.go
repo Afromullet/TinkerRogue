@@ -2,7 +2,7 @@ package squads
 
 import (
 	"game_main/common"
-	"game_main/coords"
+	"game_main/world/coords"
 	"testing"
 
 	"github.com/bytearena/ecs"

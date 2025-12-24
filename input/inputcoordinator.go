@@ -5,8 +5,8 @@ package input
 
 import (
 	"game_main/common"
-	"game_main/coords"
-	"game_main/worldmap"
+	"game_main/world/coords"
+	"game_main/world/worldmap"
 )
 
 type SharedInputState struct {

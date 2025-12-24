@@ -2,7 +2,7 @@ package guicomponents
 
 import (
 	"game_main/common"
-	"game_main/coords"
+	"game_main/world/coords"
 	"game_main/systems"
 	"testing"
 

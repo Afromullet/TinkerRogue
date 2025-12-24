@@ -1,7 +1,7 @@
 package worldmap
 
 import (
-	"game_main/coords"
+	"game_main/world/coords"
 )
 
 // GenerationResult contains the output of a map generation algorithm

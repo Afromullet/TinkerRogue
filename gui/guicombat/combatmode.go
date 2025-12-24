@@ -3,7 +3,6 @@ package guicombat
 import (
 	"fmt"
 	"game_main/config"
-	"game_main/coords"
 	"game_main/gui"
 	"game_main/gui/builders"
 	"game_main/gui/core"
@@ -12,7 +11,8 @@ import (
 	"game_main/gui/widgets"
 	"game_main/tactical/behavior"
 	"game_main/tactical/combatservices"
-	"game_main/worldmap"
+	"game_main/world/coords"
+	"game_main/world/worldmap"
 
 	"github.com/bytearena/ecs"
 	"github.com/ebitenui/ebitenui/widget"

@@ -1,7 +1,7 @@
 package guimodes
 
 import (
-	"game_main/coords"
+	"game_main/world/coords"
 	"game_main/gui/guicomponents"
 	"image/color"
 

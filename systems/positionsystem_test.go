@@ -1,7 +1,7 @@
 package systems
 
 import (
-	"game_main/coords"
+	"game_main/world/coords"
 	"testing"
 
 	"github.com/bytearena/ecs"

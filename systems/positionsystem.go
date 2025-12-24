@@ -4,7 +4,7 @@ package systems
 
 import (
 	"fmt"
-	"game_main/coords"
+	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"
 )

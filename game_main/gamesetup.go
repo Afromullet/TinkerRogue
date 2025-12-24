@@ -2,7 +2,7 @@ package main
 
 import (
 	"game_main/common"
-	"game_main/coords"
+	"game_main/world/coords"
 	"game_main/entitytemplates"
 	"game_main/tactical/squads"
 	"game_main/visual/graphics"
@@ -19,7 +19,7 @@ import (
 	"game_main/tactical/combat"
 	"game_main/testing"
 	"game_main/visual/rendering"
-	"game_main/worldmap"
+	"game_main/world/worldmap"
 	"log"
 	"net/http"
 	_ "net/http/pprof" // Blank import to register pprof handlers

@@ -2,10 +2,10 @@ package behavior
 
 import (
 	"game_main/common"
-	"game_main/coords"
 	"game_main/tactical/combat"
 	"game_main/visual/graphics"
-	"game_main/worldmap"
+	"game_main/world/coords"
+	"game_main/world/worldmap"
 
 	"github.com/bytearena/ecs"
 )

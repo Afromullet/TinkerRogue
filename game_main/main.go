@@ -10,13 +10,13 @@ package main
 import (
 	"game_main/common"
 	"game_main/config"
-	"game_main/coords"
+	"game_main/world/coords"
 	"game_main/visual/graphics"
 	"game_main/gui/core"
 	"game_main/input"
 	"game_main/visual/rendering"
 	"game_main/testing"
-	"game_main/worldmap"
+	"game_main/world/worldmap"
 	"log"
 	"math"
 

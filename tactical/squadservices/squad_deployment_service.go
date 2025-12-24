@@ -2,7 +2,7 @@ package squadservices
 
 import (
 	"game_main/common"
-	"game_main/coords"
+	"game_main/world/coords"
 	"game_main/tactical/squads"
 
 	"github.com/bytearena/ecs"
