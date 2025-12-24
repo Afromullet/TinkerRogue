@@ -19,9 +19,10 @@ import (
 // into a single factory pattern.
 //
 // Usage:
-//   factory := NewUIComponentFactory(queries, panelBuilders, layout)
-//   turnOrderPanel := factory.CreateCombatTurnOrderPanel()
-//   gridPanel, buttons := factory.CreateSquadBuilderGridPanel(onCellClick)
+//
+//	factory := NewUIComponentFactory(queries, panelBuilders, layout)
+//	turnOrderPanel := factory.CreateCombatTurnOrderPanel()
+//	gridPanel, buttons := factory.CreateSquadBuilderGridPanel(onCellClick)
 type UIComponentFactory struct {
 	queries       *guicomponents.GUIQueries
 	panelBuilders *builders.PanelBuilders
@@ -181,7 +182,7 @@ func (ucf *UIComponentFactory) CreateCombatLogPanel() (*widget.Container, *widge
 	})
 
 	textArea.SetText("Combat started!\n") // SetText calls MarkDirty() internally
-	panel.AddChild(textArea) // The wrapper implements the necessary widget interfaces
+	panel.AddChild(textArea)              // The wrapper implements the necessary widget interfaces
 
 	return panel, textArea
 }
@@ -256,7 +257,6 @@ func (ucf *UIComponentFactory) CreateExplorationActionButtons(
 func (ucf *UIComponentFactory) CreateSquadManagementActionButtons(
 	onBattleMap func(),
 	onSquadBuilder func(),
-	onFormation func(),
 	onBuyUnits func(),
 	onEditSquad func(),
 ) *widget.Container {
@@ -271,7 +271,6 @@ func (ucf *UIComponentFactory) CreateSquadManagementActionButtons(
 		Buttons: []builders.ButtonSpec{
 			{Text: "Battle Map (ESC)", OnClick: onBattleMap},
 			{Text: "Squad Builder (B)", OnClick: onSquadBuilder},
-			{Text: "Formation (F)", OnClick: onFormation},
 			{Text: "Buy Units (P)", OnClick: onBuyUnits},
 			{Text: "Edit Squad (E)", OnClick: onEditSquad},
 		},
@@ -423,7 +422,7 @@ func (ucf *UIComponentFactory) CreateSquadBuilderRosterPalette(onEntrySelected f
 	vPadding := int(float64(ucf.layout.ScreenHeight) * specs.PaddingStandard)
 
 	return builders.CreateListWithConfig(builders.ListConfig{
-		Entries: []interface{}{}, // Will be populated dynamically
+		Entries:   []interface{}{}, // Will be populated dynamically
 		MinWidth:  listWidth,
 		MinHeight: listHeight,
 		EntryLabelFunc: func(e interface{}) string {
