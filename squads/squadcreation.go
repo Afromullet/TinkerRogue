@@ -42,31 +42,31 @@ func AddUnitToSquad(
 	squadID ecs.EntityID,
 	squadmanager *common.EntityManager,
 	unit UnitTemplate,
-	gridRow, gridCol int) error {
+	gridRow, gridCol int) (ecs.EntityID, error) {
 
 	// Validate position using the provided parameters, not unit template values
 	if gridRow < 0 || gridRow > 2 || gridCol < 0 || gridCol > 2 {
-		return fmt.Errorf("invalid grid position (%d, %d)", gridRow, gridCol)
+		return 0, fmt.Errorf("invalid grid position (%d, %d)", gridRow, gridCol)
 	}
 
 	// Check if position occupied
 	existingUnitIDs := GetUnitIDsAtGridPosition(squadID, gridRow, gridCol, squadmanager)
 	if len(existingUnitIDs) > 0 {
-		return fmt.Errorf("grid position (%d, %d) already occupied", gridRow, gridCol)
+		return 0, fmt.Errorf("grid position (%d, %d) already occupied", gridRow, gridCol)
 	}
 
 	// Check capacity before adding unit
 	unitCapacityCost := unit.Attributes.GetCapacityCost()
 	if !CanAddUnitToSquad(squadID, unitCapacityCost, squadmanager) {
 		remaining := GetSquadRemainingCapacity(squadID, squadmanager)
-		return fmt.Errorf("insufficient squad capacity: need %.2f, have %.2f remaining (unit %s costs %.2f)",
+		return 0, fmt.Errorf("insufficient squad capacity: need %.2f, have %.2f remaining (unit %s costs %.2f)",
 			unitCapacityCost, remaining, unit.Name, unitCapacityCost)
 	}
 
 	// Create unit entity (adds GridPositionComponent with default 0,0)
 	unitEntity, err := CreateUnitEntity(squadmanager, unit)
 	if err != nil {
-		return fmt.Errorf("invalid unit for %s: %w", unit.Name, err)
+		return 0, fmt.Errorf("invalid unit for %s: %w", unit.Name, err)
 	}
 
 	// Add SquadMemberComponent to link unit to squad
@@ -82,7 +82,7 @@ func AddUnitToSquad(
 	// Update squad capacity tracking
 	UpdateSquadCapacity(squadID, squadmanager)
 
-	return nil
+	return unitEntity.GetID(), nil
 }
 
 func RemoveUnitFromSquad(unitEntityID ecs.EntityID, squadmanager *common.EntityManager) error {

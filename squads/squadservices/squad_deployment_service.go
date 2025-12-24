@@ -1,7 +1,6 @@
 package squadservices
 
 import (
-	"fmt"
 	"game_main/common"
 	"game_main/coords"
 	"game_main/squads"
@@ -19,55 +18,6 @@ func NewSquadDeploymentService(manager *common.EntityManager) *SquadDeploymentSe
 	return &SquadDeploymentService{
 		entityManager: manager,
 	}
-}
-
-// PlaceSquadResult contains information about squad placement
-type PlaceSquadResult struct {
-	Success   bool
-	SquadName string
-	Position  coords.LogicalPosition
-	Error     string
-}
-
-// PlaceSquadAtPosition places a squad at a specific map position
-func (sds *SquadDeploymentService) PlaceSquadAtPosition(
-	squadID ecs.EntityID,
-	newPos coords.LogicalPosition,
-) *PlaceSquadResult {
-	result := &PlaceSquadResult{
-		Position: newPos,
-	}
-
-	// Find the squad entity using squad ID (not entity ID)
-	squadEntity := squads.GetSquadEntity(squadID, sds.entityManager)
-	if squadEntity == nil {
-		result.Error = fmt.Sprintf("squad %d not found", squadID)
-		return result
-	}
-
-	// Get squad data for name
-	squadData := common.GetComponentType[*squads.SquadData](squadEntity, squads.SquadComponent)
-	if squadData != nil {
-		result.SquadName = squadData.Name
-	}
-
-	// Get current position
-	posPtr := common.GetComponentType[*coords.LogicalPosition](squadEntity, common.PositionComponent)
-	if posPtr == nil {
-		result.Error = "squad has no position component"
-		return result
-	}
-
-	// Move entity atomically (updates both component and GlobalPositionSystem)
-	oldPos := *posPtr
-	err := sds.entityManager.MoveEntity(squadID, squadEntity, oldPos, newPos)
-	if err != nil {
-		result.Error = fmt.Sprintf("failed to move squad: %v", err)
-		return result
-	}
-
-	result.Success = true
-	return result
 }
 
 // ClearAllSquadsResult contains information about clearing positions

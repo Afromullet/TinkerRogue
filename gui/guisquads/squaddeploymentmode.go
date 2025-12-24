@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"image/color"
 
+	"game_main/common"
 	"game_main/coords"
 	"game_main/graphics"
 	"game_main/gui"
@@ -12,6 +13,7 @@ import (
 	"game_main/gui/builders"
 	"game_main/gui/specs"
 	"game_main/gui/widgets"
+	"game_main/squads"
 	"game_main/squads/squadservices"
 
 	"github.com/bytearena/ecs"
@@ -344,16 +346,36 @@ func (sdm *SquadDeploymentMode) HandleInput(inputState *core.InputState) bool {
 func (sdm *SquadDeploymentMode) placeSquadAt(squadID ecs.EntityID, pos coords.LogicalPosition) {
 	fmt.Printf("DEBUG: placeSquadAt called with squadID=%d, pos=(%d,%d)\n", squadID, pos.X, pos.Y)
 
-	// Use service to place squad
-	result := sdm.deploymentService.PlaceSquadAtPosition(squadID, pos)
-
-	if !result.Success {
-		fmt.Printf("DEBUG: ERROR - Failed to place squad: %s\n", result.Error)
+	// Find the squad entity
+	squadEntity := squads.GetSquadEntity(squadID, sdm.Context.ECSManager)
+	if squadEntity == nil {
+		fmt.Printf("DEBUG: ERROR - Squad %d not found\n", squadID)
 		return
 	}
 
-	oldPos := sdm.deploymentService.GetAllSquadPositions()[squadID]
-	fmt.Printf("✓ Placed %s at (%d, %d) [was at (%d, %d)]\n", result.SquadName, pos.X, pos.Y, oldPos.X, oldPos.Y)
+	// Get squad data for name
+	squadData := common.GetComponentType[*squads.SquadData](squadEntity, squads.SquadComponent)
+	squadName := "Unknown Squad"
+	if squadData != nil {
+		squadName = squadData.Name
+	}
+
+	// Get current position
+	posPtr := common.GetComponentType[*coords.LogicalPosition](squadEntity, common.PositionComponent)
+	if posPtr == nil {
+		fmt.Printf("DEBUG: ERROR - Squad has no position component\n")
+		return
+	}
+
+	// Move entity atomically (updates both component and GlobalPositionSystem)
+	oldPos := *posPtr
+	err := sdm.Context.ECSManager.MoveEntity(squadID, squadEntity, oldPos, pos)
+	if err != nil {
+		fmt.Printf("DEBUG: ERROR - Failed to move squad: %v\n", err)
+		return
+	}
+
+	fmt.Printf("✓ Placed %s at (%d, %d) [was at (%d, %d)]\n", squadName, pos.X, pos.Y, oldPos.X, oldPos.Y)
 
 	// Refresh list to show updated placement status
 	sdm.refreshSquadList()

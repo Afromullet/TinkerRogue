@@ -21,73 +21,6 @@ func NewSquadBuilderService(manager *common.EntityManager) *SquadBuilderService 
 	}
 }
 
-// CreateSquadResult contains information about squad creation
-type SquadBuilderSquadResult struct {
-	Success   bool
-	SquadID   ecs.EntityID
-	SquadName string
-	Error     string
-}
-
-// CreateSquad creates a new empty squad for building
-func (sbs *SquadBuilderService) CreateSquad(squadName string) *SquadBuilderSquadResult {
-	result := &SquadBuilderSquadResult{
-		SquadName: squadName,
-	}
-
-	if squadName == "" {
-		squadName = "New Squad"
-	}
-
-	// Use base package function
-	squadID := squads.CreateEmptySquad(sbs.entityManager, squadName)
-
-	result.Success = true
-	result.SquadID = squadID
-
-	return result
-}
-
-// PlaceUnitResult contains information about unit placement
-type PlaceUnitResult struct {
-	Success           bool
-	UnitID            ecs.EntityID
-	UnitName          string
-	Error             string
-	RemainingCapacity float64
-}
-
-// PlaceUnit places a unit from roster into a squad at grid position
-func (sbs *SquadBuilderService) PlaceUnit(
-	squadID ecs.EntityID,
-	rosterUnitID ecs.EntityID,
-	unit squads.UnitTemplate,
-	gridRow, gridCol int,
-) *PlaceUnitResult {
-	result := &PlaceUnitResult{
-		UnitName: unit.Name,
-	}
-
-	// Use base package function
-	err := squads.AddUnitToSquad(squadID, sbs.entityManager, unit, gridRow, gridCol)
-	if err != nil {
-		result.Error = err.Error()
-		result.RemainingCapacity = squads.GetSquadRemainingCapacity(squadID, sbs.entityManager)
-		return result
-	}
-
-	// Get the unit ID from the squad (it was just added)
-	unitIDs := squads.GetUnitIDsAtGridPosition(squadID, gridRow, gridCol, sbs.entityManager)
-	if len(unitIDs) > 0 {
-		result.UnitID = unitIDs[0]
-	}
-
-	result.Success = true
-	result.RemainingCapacity = squads.GetSquadRemainingCapacity(squadID, sbs.entityManager)
-
-	return result
-}
-
 // RemoveUnitResult contains information about unit removal
 type RemoveUnitFromGridResult struct {
 	Success           bool
@@ -241,42 +174,6 @@ func (sbs *SquadBuilderService) UpdateSquadName(squadID ecs.EntityID, newName st
 	return true
 }
 
-// FinalizeSquadResult contains information about squad finalization
-type FinalizeSquadResult struct {
-	Success   bool
-	SquadID   ecs.EntityID
-	SquadName string
-	UnitCount int
-	Error     string
-}
-
-// FinalizeSquad validates and finalizes a squad, making it ready for deployment/combat
-func (sbs *SquadBuilderService) FinalizeSquad(squadID ecs.EntityID) *FinalizeSquadResult {
-	result := &FinalizeSquadResult{
-		SquadID: squadID,
-	}
-
-	// Validate the squad first
-	validation := sbs.ValidateSquad(squadID)
-	if !validation.Valid {
-		result.Error = validation.ErrorMsg
-		return result
-	}
-
-	// Get squad data
-	squadData := common.GetComponentTypeByID[*squads.SquadData](sbs.entityManager, squadID, squads.SquadComponent)
-	if squadData == nil {
-		result.Error = "squad not found"
-		return result
-	}
-
-	result.SquadName = squadData.Name
-	result.UnitCount = validation.UnitCount
-	result.Success = true
-
-	return result
-}
-
 // AssignRosterUnitResult contains information about roster unit assignment
 type AssignRosterUnitResult struct {
 	Success           bool
@@ -312,9 +209,10 @@ func (sbs *SquadBuilderService) AssignRosterUnitToSquad(
 	// (The original code got the unit via GetUnitEntityForTemplate which validates availability)
 
 	// Place unit in squad (creates new unit entity in formation grid)
-	placeResult := sbs.PlaceUnit(squadID, rosterUnitID, template, gridRow, gridCol)
-	if !placeResult.Success {
-		result.Error = placeResult.Error
+	unitID, err := squads.AddUnitToSquad(squadID, sbs.entityManager, template, gridRow, gridCol)
+	if err != nil {
+		result.Error = err.Error()
+		result.RemainingCapacity = squads.GetSquadRemainingCapacity(squadID, sbs.entityManager)
 		return result
 	}
 
@@ -328,8 +226,8 @@ func (sbs *SquadBuilderService) AssignRosterUnitToSquad(
 
 	// Success
 	result.Success = true
-	result.PlacedUnitID = placeResult.UnitID
-	result.RemainingCapacity = placeResult.RemainingCapacity
+	result.PlacedUnitID = unitID
+	result.RemainingCapacity = squads.GetSquadRemainingCapacity(squadID, sbs.entityManager)
 
 	return result
 }

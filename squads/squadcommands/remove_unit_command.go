@@ -119,7 +119,7 @@ func (c *RemoveUnitCommand) Execute() error {
 
 func (c *RemoveUnitCommand) Undo() error {
 	// Re-add unit to squad at previous position
-	err := squads.AddUnitToSquad(c.squadID, c.manager, c.unitTemplate, c.previousGridRow, c.previousGridCol)
+	_, err := squads.AddUnitToSquad(c.squadID, c.manager, c.unitTemplate, c.previousGridRow, c.previousGridCol)
 	if err != nil {
 		return fmt.Errorf("failed to re-add unit: %w", err)
 	}

@@ -105,17 +105,12 @@ func (c *AddUnitCommand) Execute() error {
 	}
 
 	// Add unit to squad
-	err := squads.AddUnitToSquad(c.squadID, c.manager, unitTemplate, c.gridRow, c.gridCol)
+	unitID, err := squads.AddUnitToSquad(c.squadID, c.manager, unitTemplate, c.gridRow, c.gridCol)
 	if err != nil {
 		return fmt.Errorf("failed to add unit to squad: %w", err)
 	}
 
-	// Get the newly added unit ID
-	addedUnits := squads.GetUnitIDsAtGridPosition(c.squadID, c.gridRow, c.gridCol, c.manager)
-	if len(addedUnits) == 0 {
-		return fmt.Errorf("unit was not added successfully")
-	}
-	c.addedUnitID = addedUnits[0]
+	c.addedUnitID = unitID
 
 	// Register the newly created squad entity in roster and mark as in squad
 	err = roster.AddUnit(c.addedUnitID, c.templateName)

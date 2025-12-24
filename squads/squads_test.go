@@ -265,7 +265,7 @@ func TestAddUnitToSquad_SingleCell_ValidPosition(t *testing.T) {
 		t.Fatalf("CreateUnitTemplates failed: %v", err)
 	}
 
-	err = AddUnitToSquad(squadID, manager, unit, 0, 0)
+	_, err = AddUnitToSquad(squadID, manager, unit, 0, 0)
 	if err != nil {
 		t.Fatalf("AddUnitToSquad failed: %v", err)
 	}
@@ -294,7 +294,7 @@ func TestAddUnitToSquad_SingleCell_AllPositions(t *testing.T) {
 				t.Fatalf("CreateUnitTemplates failed: %v", err)
 			}
 
-			err = AddUnitToSquad(squadID, manager, unit, row, col)
+			_, err = AddUnitToSquad(squadID, manager, unit, row, col)
 			if err != nil {
 				t.Fatalf("AddUnitToSquad failed at (%d,%d): %v", row, col, err)
 			}
@@ -340,7 +340,7 @@ func TestAddUnitToSquad_MultiCell_2x2_TopLeft(t *testing.T) {
 		t.Fatalf("CreateUnitTemplates failed: %v", err)
 	}
 
-	err = AddUnitToSquad(squadID, manager, unit, 0, 0)
+	_, err = AddUnitToSquad(squadID, manager, unit, 0, 0)
 	if err != nil {
 		t.Fatalf("AddUnitToSquad failed for 2x2 unit: %v", err)
 	}
@@ -373,7 +373,7 @@ func TestAddUnitToSquad_MultiCell_1x3_LeftColumn(t *testing.T) {
 		t.Fatalf("CreateUnitTemplates failed: %v", err)
 	}
 
-	err = AddUnitToSquad(squadID, manager, unit, 0, 0)
+	_, err = AddUnitToSquad(squadID, manager, unit, 0, 0)
 	if err != nil {
 		t.Fatalf("AddUnitToSquad failed for 1x3 unit: %v", err)
 	}
@@ -406,7 +406,7 @@ func TestAddUnitToSquad_MultiCell_3x1_TopRow(t *testing.T) {
 		t.Fatalf("CreateUnitTemplates failed: %v", err)
 	}
 
-	err = AddUnitToSquad(squadID, manager, unit, 0, 0)
+	_, err = AddUnitToSquad(squadID, manager, unit, 0, 0)
 	if err != nil {
 		t.Fatalf("AddUnitToSquad failed for 3x1 unit: %v", err)
 	}
@@ -439,7 +439,7 @@ func TestAddUnitToSquad_Collision_SingleCellOverlap(t *testing.T) {
 		t.Fatalf("CreateUnitTemplates failed: %v", err)
 	}
 
-	err = AddUnitToSquad(squadID, manager, unit1, 1, 1)
+	_, err = AddUnitToSquad(squadID, manager, unit1, 1, 1)
 	if err != nil {
 		t.Fatalf("AddUnitToSquad failed for first unit: %v", err)
 	}
@@ -451,7 +451,7 @@ func TestAddUnitToSquad_Collision_SingleCellOverlap(t *testing.T) {
 		t.Fatalf("CreateUnitTemplates failed: %v", err)
 	}
 
-	err = AddUnitToSquad(squadID, manager, unit2, 1, 1)
+	_, err = AddUnitToSquad(squadID, manager, unit2, 1, 1)
 	if err == nil {
 		t.Fatal("Expected error when adding unit to occupied position, got nil")
 	}
@@ -475,7 +475,7 @@ func TestAddUnitToSquad_Collision_MultiCellOverlap(t *testing.T) {
 		t.Fatalf("CreateUnitTemplates failed: %v", err)
 	}
 
-	err = AddUnitToSquad(squadID, manager, unit1, 0, 0)
+	_, err = AddUnitToSquad(squadID, manager, unit1, 0, 0)
 	if err != nil {
 		t.Fatalf("AddUnitToSquad failed for 2x2 unit: %v", err)
 	}
@@ -487,13 +487,13 @@ func TestAddUnitToSquad_Collision_MultiCellOverlap(t *testing.T) {
 		t.Fatalf("CreateUnitTemplates failed: %v", err)
 	}
 
-	err = AddUnitToSquad(squadID, manager, unit2, 0, 0)
+	_, err = AddUnitToSquad(squadID, manager, unit2, 0, 0)
 	if err == nil {
 		t.Fatal("Expected error when adding unit to position occupied by 2x2 unit, got nil")
 	}
 
 	// Try to add 1x1 unit at (1,1) - should fail (overlaps giant)
-	err = AddUnitToSquad(squadID, manager, unit2, 1, 1)
+	_, err = AddUnitToSquad(squadID, manager, unit2, 1, 1)
 	if err == nil {
 		t.Fatal("Expected error when adding unit to position occupied by 2x2 unit, got nil")
 	}
@@ -517,7 +517,7 @@ func TestAddUnitToSquad_InvalidPosition_RowTooLarge(t *testing.T) {
 	}
 
 	// Pass invalid row as parameter
-	err = AddUnitToSquad(squadID, manager, unit, 3, 0)
+	_, err = AddUnitToSquad(squadID, manager, unit, 3, 0)
 	if err == nil {
 		t.Fatal("Expected error for row=3, got nil")
 	}
@@ -541,7 +541,7 @@ func TestAddUnitToSquad_InvalidPosition_NegativeCol(t *testing.T) {
 	}
 
 	// Pass invalid col as parameter
-	err = AddUnitToSquad(squadID, manager, unit, 0, -1)
+	_, err = AddUnitToSquad(squadID, manager, unit, 0, -1)
 	if err == nil {
 		t.Fatal("Expected error for negative col, got nil")
 	}
@@ -561,7 +561,7 @@ func TestAddUnitToSquad_MixedSizes_NoOverlap(t *testing.T) {
 		t.Fatalf("CreateUnitTemplates failed: %v", err)
 	}
 
-	err = AddUnitToSquad(squadID, manager, giant, 0, 0)
+	_, err = AddUnitToSquad(squadID, manager, giant, 0, 0)
 	if err != nil {
 		t.Fatalf("Failed to add 2x2 unit: %v", err)
 	}
@@ -573,7 +573,7 @@ func TestAddUnitToSquad_MixedSizes_NoOverlap(t *testing.T) {
 		t.Fatalf("CreateUnitTemplates failed: %v", err)
 	}
 
-	err = AddUnitToSquad(squadID, manager, archer, 0, 2)
+	_, err = AddUnitToSquad(squadID, manager, archer, 0, 2)
 	if err != nil {
 		t.Fatalf("Failed to add 1x1 unit at (0,2): %v", err)
 	}
@@ -585,7 +585,7 @@ func TestAddUnitToSquad_MixedSizes_NoOverlap(t *testing.T) {
 		t.Fatalf("CreateUnitTemplates failed: %v", err)
 	}
 
-	err = AddUnitToSquad(squadID, manager, mage, 2, 0)
+	_, err = AddUnitToSquad(squadID, manager, mage, 2, 0)
 	if err != nil {
 		t.Fatalf("Failed to add 1x1 unit at (2,0): %v", err)
 	}
@@ -621,7 +621,7 @@ func TestAddUnitToSquad_VerifySquadMemberComponent(t *testing.T) {
 		t.Fatalf("CreateUnitTemplates failed: %v", err)
 	}
 
-	err = AddUnitToSquad(squadID, manager, unit, 1, 1)
+	_, err = AddUnitToSquad(squadID, manager, unit, 1, 1)
 	if err != nil {
 		t.Fatalf("AddUnitToSquad failed: %v", err)
 	}
@@ -709,7 +709,7 @@ func TestVisualizeSquad_SingleUnit_1x1(t *testing.T) {
 		t.Fatalf("CreateUnitTemplates failed: %v", err)
 	}
 
-	err = AddUnitToSquad(squadID, manager, unit, 1, 1)
+	_, err = AddUnitToSquad(squadID, manager, unit, 1, 1)
 	if err != nil {
 		t.Fatalf("AddUnitToSquad failed: %v", err)
 	}
@@ -758,7 +758,7 @@ func TestVisualizeSquad_MultiCell_2x2_Giant(t *testing.T) {
 		t.Fatalf("CreateUnitTemplates failed: %v", err)
 	}
 
-	err = AddUnitToSquad(squadID, manager, unit, 0, 0)
+	_, err = AddUnitToSquad(squadID, manager, unit, 0, 0)
 	if err != nil {
 		t.Fatalf("AddUnitToSquad failed: %v", err)
 	}
@@ -809,7 +809,7 @@ func TestVisualizeSquad_MultiCell_1x3_Cavalry(t *testing.T) {
 		t.Fatalf("CreateUnitTemplates failed: %v", err)
 	}
 
-	err = AddUnitToSquad(squadID, manager, unit, 0, 0)
+	_, err = AddUnitToSquad(squadID, manager, unit, 0, 0)
 	if err != nil {
 		t.Fatalf("AddUnitToSquad failed: %v", err)
 	}
@@ -849,33 +849,33 @@ func TestVisualizeSquad_FullFormation_MixedUnits(t *testing.T) {
 	// Front row: Tank (0,0), Tank (0,1), Archer (0,2)
 	tankJSON := createLowCostTestMonster("Tank", 1, 1, "Tank")
 	tank1, _ := CreateUnitTemplates(tankJSON)
-	AddUnitToSquad(squadID, manager, tank1, 0, 0)
+	_, _ = AddUnitToSquad(squadID, manager, tank1, 0, 0)
 
 	tank2, _ := CreateUnitTemplates(tankJSON)
-	AddUnitToSquad(squadID, manager, tank2, 0, 1)
+	_, _ = AddUnitToSquad(squadID, manager, tank2, 0, 1)
 
 	archerJSON := createLowCostTestMonster("Archer", 1, 1, "DPS")
 	archer1, _ := CreateUnitTemplates(archerJSON)
-	AddUnitToSquad(squadID, manager, archer1, 0, 2)
+	_, _ = AddUnitToSquad(squadID, manager, archer1, 0, 2)
 
 	// Middle row: Warrior (1,0), empty, Warrior (1,2)
 	warriorJSON := createLowCostTestMonster("Warrior", 1, 1, "DPS")
 	warrior1, _ := CreateUnitTemplates(warriorJSON)
-	AddUnitToSquad(squadID, manager, warrior1, 1, 0)
+	_, _ = AddUnitToSquad(squadID, manager, warrior1, 1, 0)
 
 	warrior2, _ := CreateUnitTemplates(warriorJSON)
-	AddUnitToSquad(squadID, manager, warrior2, 1, 2)
+	_, _ = AddUnitToSquad(squadID, manager, warrior2, 1, 2)
 
 	// Back row: Mage (2,0), Mage (2,1), Mage (2,2)
 	mageJSON := createLowCostTestMonster("Mage", 1, 1, "Support")
 	mage1, _ := CreateUnitTemplates(mageJSON)
-	AddUnitToSquad(squadID, manager, mage1, 2, 0)
+	_, _ = AddUnitToSquad(squadID, manager, mage1, 2, 0)
 
 	mage2, _ := CreateUnitTemplates(mageJSON)
-	AddUnitToSquad(squadID, manager, mage2, 2, 1)
+	_, _ = AddUnitToSquad(squadID, manager, mage2, 2, 1)
 
 	mage3, _ := CreateUnitTemplates(mageJSON)
-	AddUnitToSquad(squadID, manager, mage3, 2, 2)
+	_, _ = AddUnitToSquad(squadID, manager, mage3, 2, 2)
 
 	// Visualize squad
 	output := VisualizeSquad(squadID, manager)
@@ -915,22 +915,22 @@ func TestVisualizeSquad_ComplexFormation_MultiCellUnits(t *testing.T) {
 	// 2x2 giant at top-left (occupies [0,0], [0,1], [1,0], [1,1])
 	giantJSON := createLowCostTestMonster("Giant", 2, 2, "Tank")
 	giant, _ := CreateUnitTemplates(giantJSON)
-	AddUnitToSquad(squadID, manager, giant, 0, 0)
+	_, _ = AddUnitToSquad(squadID, manager, giant, 0, 0)
 
 	// 1x1 archer at top-right (0,2)
 	archerJSON := createLowCostTestMonster("Archer", 1, 1, "DPS")
 	archer, _ := CreateUnitTemplates(archerJSON)
-	AddUnitToSquad(squadID, manager, archer, 0, 2)
+	_, _ = AddUnitToSquad(squadID, manager, archer, 0, 2)
 
 	// 1x1 mage at middle-right (1,2)
 	mageJSON := createLowCostTestMonster("Mage", 1, 1, "Support")
 	mage, _ := CreateUnitTemplates(mageJSON)
-	AddUnitToSquad(squadID, manager, mage, 1, 2)
+	_, _ = AddUnitToSquad(squadID, manager, mage, 1, 2)
 
 	// 3x1 wall at bottom (occupies [2,0], [2,1], [2,2])
 	wallJSON := createLowCostTestMonster("Wall", 3, 1, "Tank")
 	wall, _ := CreateUnitTemplates(wallJSON)
-	AddUnitToSquad(squadID, manager, wall, 2, 0)
+	_, _ = AddUnitToSquad(squadID, manager, wall, 2, 0)
 
 	// Visualize squad
 	output := VisualizeSquad(squadID, manager)
@@ -997,7 +997,7 @@ func TestVisualizeSquad_GridBoundaries(t *testing.T) {
 		unitName := fmt.Sprintf("Corner%d", i)
 		jsonMonster := createLowCostTestMonster(unitName, 1, 1, "DPS")
 		unit, _ := CreateUnitTemplates(jsonMonster)
-		err := AddUnitToSquad(squadID, manager, unit, corner[0], corner[1])
+		_, err := AddUnitToSquad(squadID, manager, unit, corner[0], corner[1])
 		if err != nil {
 			t.Fatalf("Failed to add unit at corner (%d,%d): %v", corner[0], corner[1], err)
 		}
@@ -1056,7 +1056,7 @@ func TestGetSquadMovementSpeed_SingleUnit(t *testing.T) {
 	jsonMonster.MovementSpeed = 5
 	unit, _ := CreateUnitTemplates(jsonMonster)
 
-	err := AddUnitToSquad(squadID, manager, unit, 0, 0)
+	_, err := AddUnitToSquad(squadID, manager, unit, 0, 0)
 	if err != nil {
 		t.Fatalf("Failed to add unit: %v", err)
 	}
@@ -1087,7 +1087,7 @@ func TestGetSquadMovementSpeed_MultipleUnits_ReturnsMinimum(t *testing.T) {
 		unit, _ := CreateUnitTemplates(jsonMonster)
 
 		col := i
-		err := AddUnitToSquad(squadID, manager, unit, 0, col)
+		_, err := AddUnitToSquad(squadID, manager, unit, 0, col)
 		if err != nil {
 			t.Fatalf("Failed to add unit %d: %v", i, err)
 		}
@@ -1115,12 +1115,12 @@ func TestGetSquadMovementSpeed_DeadUnitsIgnored(t *testing.T) {
 	jsonMonster1 := createTestJSONMonster("SlowUnit", 1, 1, "DPS")
 	jsonMonster1.MovementSpeed = 2
 	unit1, _ := CreateUnitTemplates(jsonMonster1)
-	AddUnitToSquad(squadID, manager, unit1, 0, 0)
+	_, _ = AddUnitToSquad(squadID, manager, unit1, 0, 0)
 
 	jsonMonster2 := createTestJSONMonster("FastUnit", 1, 1, "DPS")
 	jsonMonster2.MovementSpeed = 5
 	unit2, _ := CreateUnitTemplates(jsonMonster2)
-	AddUnitToSquad(squadID, manager, unit2, 0, 1)
+	_, _ = AddUnitToSquad(squadID, manager, unit2, 0, 1)
 
 	// Initially, squad moves at speed 2 (slowest)
 	speed := GetSquadMovementSpeed(squadID, manager)

@@ -5,6 +5,8 @@ import (
 	"game_main/squads"
 	testfx "game_main/testing"
 	"testing"
+
+	"github.com/bytearena/ecs"
 )
 
 // setupTestManager creates a manager with squad system initialized
@@ -14,6 +16,18 @@ func setupBuilderTestManager(t *testing.T) *common.EntityManager {
 		t.Fatalf("Failed to initialize squad data: %v", err)
 	}
 	return manager
+}
+
+// setupTestPlayerWithRoster creates a player entity with an empty roster for testing
+func setupTestPlayerWithRoster(manager *common.EntityManager) ecs.EntityID {
+	playerEntity := manager.World.NewEntity()
+	playerID := playerEntity.GetID()
+
+	// Add roster component
+	roster := squads.NewUnitRoster(50) // Test capacity
+	playerEntity.AddComponent(squads.UnitRosterComponent, roster)
+
+	return playerID
 }
 
 // TestSquadBuilderServiceCreation tests that SquadBuilderService can be created
@@ -30,62 +44,22 @@ func TestSquadBuilderServiceCreation(t *testing.T) {
 	}
 }
 
-// TestBuilderCreateSquad tests squad creation via builder service
-func TestBuilderCreateSquad_Success(t *testing.T) {
+// TestAssignRosterUnitToSquad_Success tests assigning a roster unit to a squad
+func TestAssignRosterUnitToSquad_Success(t *testing.T) {
 	manager := setupBuilderTestManager(t)
 	service := NewSquadBuilderService(manager)
 
-	result := service.CreateSquad("Builder Test Squad")
-
-	if !result.Success {
-		t.Errorf("Squad creation should succeed, got error: %s", result.Error)
-	}
-
-	if result.SquadID == 0 {
-		t.Error("SquadID should not be 0")
-	}
-
-	if result.SquadName != "Builder Test Squad" {
-		t.Errorf("Expected squad name 'Builder Test Squad', got '%s'", result.SquadName)
-	}
-}
-
-// TestBuilderCreateSquad_EmptyName tests creating squad with empty name
-func TestBuilderCreateSquad_EmptyName(t *testing.T) {
-	manager := setupBuilderTestManager(t)
-	service := NewSquadBuilderService(manager)
-
-	result := service.CreateSquad("")
-
-	// Empty name gets default
-	if !result.Success {
-		t.Errorf("Squad creation should succeed even with empty name: %s", result.Error)
-	}
-
-	if result.SquadID == 0 {
-		t.Error("SquadID should not be 0")
-	}
-
-	// Should use default name
-	if result.SquadName != "New Squad" {
-		t.Logf("Squad got name: %s", result.SquadName)
-	}
-}
-
-// TestPlaceUnit tests placing a unit in the squad builder
-func TestPlaceUnit_Success(t *testing.T) {
-	manager := setupBuilderTestManager(t)
-	service := NewSquadBuilderService(manager)
+	// Create player with roster
+	playerID := setupTestPlayerWithRoster(manager)
 
 	// Create squad
-	squadResult := service.CreateSquad("Place Unit Test")
-	if !squadResult.Success {
-		t.Fatalf("Failed to create squad: %s", squadResult.Error)
-	}
+	squadID := squads.CreateEmptySquad(manager, "Place Unit Test")
 
-	// Create unit entity (roster unit)
+	// Create roster unit
 	rosterUnitEntity := manager.World.NewEntity()
 	rosterUnitID := rosterUnitEntity.GetID()
+	roster := squads.GetPlayerRoster(playerID, manager)
+	roster.AddUnit(rosterUnitID, "Test Warrior")
 
 	unitTemplate := squads.UnitTemplate{
 		Name: "Test Warrior",
@@ -100,28 +74,33 @@ func TestPlaceUnit_Success(t *testing.T) {
 		GridHeight: 1,
 	}
 
-	// Place unit
-	result := service.PlaceUnit(squadResult.SquadID, rosterUnitID, unitTemplate, 0, 0)
+	// Assign unit to squad
+	result := service.AssignRosterUnitToSquad(playerID, squadID, rosterUnitID, unitTemplate, 0, 0)
 
 	if !result.Success {
-		t.Errorf("Should place unit successfully, got error: %s", result.Error)
+		t.Errorf("Should assign unit successfully, got error: %s", result.Error)
 	}
 
-	if result.UnitID == 0 {
-		t.Error("UnitID should not be 0")
+	if result.PlacedUnitID == 0 {
+		t.Error("PlacedUnitID should not be 0")
 	}
 }
 
-// TestPlaceUnit_InvalidPosition tests placing unit at invalid position
-func TestPlaceUnit_InvalidPosition(t *testing.T) {
+// TestAssignRosterUnitToSquad_InvalidPosition tests assigning unit at invalid position
+func TestAssignRosterUnitToSquad_InvalidPosition(t *testing.T) {
 	manager := setupBuilderTestManager(t)
 	service := NewSquadBuilderService(manager)
 
+	// Create player with roster
+	playerID := setupTestPlayerWithRoster(manager)
+
 	// Create squad
-	squadResult := service.CreateSquad("Invalid Position Test")
+	squadID := squads.CreateEmptySquad(manager, "Invalid Position Test")
 
 	rosterUnitEntity := manager.World.NewEntity()
 	rosterUnitID := rosterUnitEntity.GetID()
+	roster := squads.GetPlayerRoster(playerID, manager)
+	roster.AddUnit(rosterUnitID, "Warrior")
 
 	unitTemplate := squads.UnitTemplate{
 		Name:       "Warrior",
@@ -130,7 +109,7 @@ func TestPlaceUnit_InvalidPosition(t *testing.T) {
 	}
 
 	// Try invalid position (row 5 is out of bounds for 3x3 grid)
-	result := service.PlaceUnit(squadResult.SquadID, rosterUnitID, unitTemplate, 5, 0)
+	result := service.AssignRosterUnitToSquad(playerID, squadID, rosterUnitID, unitTemplate, 5, 0)
 
 	if result.Success {
 		t.Error("Should reject invalid grid position")
@@ -146,12 +125,17 @@ func TestRemoveUnitFromGrid_Success(t *testing.T) {
 	manager := setupBuilderTestManager(t)
 	service := NewSquadBuilderService(manager)
 
+	// Create player with roster
+	playerID := setupTestPlayerWithRoster(manager)
+
 	// Create squad
-	squadResult := service.CreateSquad("Remove Unit Test")
+	squadID := squads.CreateEmptySquad(manager, "Remove Unit Test")
 
 	// Create and place unit
 	rosterUnitEntity := manager.World.NewEntity()
 	rosterUnitID := rosterUnitEntity.GetID()
+	roster := squads.GetPlayerRoster(playerID, manager)
+	roster.AddUnit(rosterUnitID, "Warrior")
 
 	unitTemplate := squads.UnitTemplate{
 		Name:       "Warrior",
@@ -159,13 +143,13 @@ func TestRemoveUnitFromGrid_Success(t *testing.T) {
 		GridHeight: 1,
 	}
 
-	placeResult := service.PlaceUnit(squadResult.SquadID, rosterUnitID, unitTemplate, 0, 0)
-	if !placeResult.Success {
-		t.Fatalf("Failed to place unit: %s", placeResult.Error)
+	assignResult := service.AssignRosterUnitToSquad(playerID, squadID, rosterUnitID, unitTemplate, 0, 0)
+	if !assignResult.Success {
+		t.Fatalf("Failed to assign unit: %s", assignResult.Error)
 	}
 
 	// Remove unit
-	remResult := service.RemoveUnitFromGrid(squadResult.SquadID, 0, 0)
+	remResult := service.RemoveUnitFromGrid(squadID, 0, 0)
 
 	if !remResult.Success {
 		t.Errorf("Should remove unit successfully, got error: %s", remResult.Error)
@@ -178,10 +162,10 @@ func TestRemoveUnitFromGrid_EmptyPosition(t *testing.T) {
 	service := NewSquadBuilderService(manager)
 
 	// Create squad
-	squadResult := service.CreateSquad("Empty Position Test")
+	squadID := squads.CreateEmptySquad(manager, "Empty Position Test")
 
 	// Try to remove from empty position
-	remResult := service.RemoveUnitFromGrid(squadResult.SquadID, 0, 0)
+	remResult := service.RemoveUnitFromGrid(squadID, 0, 0)
 
 	if remResult.Success {
 		t.Error("Should fail to remove from empty position")
@@ -197,12 +181,17 @@ func TestDesignateLeader(t *testing.T) {
 	manager := setupBuilderTestManager(t)
 	service := NewSquadBuilderService(manager)
 
+	// Create player with roster
+	playerID := setupTestPlayerWithRoster(manager)
+
 	// Create squad
-	squadResult := service.CreateSquad("Leader Test")
+	squadID := squads.CreateEmptySquad(manager, "Leader Test")
 
 	// Create and place unit
 	rosterUnitEntity := manager.World.NewEntity()
 	rosterUnitID := rosterUnitEntity.GetID()
+	roster := squads.GetPlayerRoster(playerID, manager)
+	roster.AddUnit(rosterUnitID, "Champion")
 
 	unitTemplate := squads.UnitTemplate{
 		Name:       "Champion",
@@ -210,13 +199,13 @@ func TestDesignateLeader(t *testing.T) {
 		GridHeight: 1,
 	}
 
-	placeResult := service.PlaceUnit(squadResult.SquadID, rosterUnitID, unitTemplate, 0, 0)
-	if !placeResult.Success {
-		t.Fatalf("Failed to place unit: %s", placeResult.Error)
+	assignResult := service.AssignRosterUnitToSquad(playerID, squadID, rosterUnitID, unitTemplate, 0, 0)
+	if !assignResult.Success {
+		t.Fatalf("Failed to assign unit: %s", assignResult.Error)
 	}
 
 	// Designate as leader
-	leaderResult := service.DesignateLeader(placeResult.UnitID)
+	leaderResult := service.DesignateLeader(assignResult.PlacedUnitID)
 
 	if !leaderResult.Success {
 		t.Errorf("Should designate leader successfully, got error: %s", leaderResult.Error)
@@ -229,10 +218,10 @@ func TestGetCapacityInfo(t *testing.T) {
 	service := NewSquadBuilderService(manager)
 
 	// Create squad
-	squadResult := service.CreateSquad("Capacity Info Test")
+	squadID := squads.CreateEmptySquad(manager, "Capacity Info Test")
 
 	// Get capacity info
-	info := service.GetCapacityInfo(squadResult.SquadID)
+	info := service.GetCapacityInfo(squadID)
 
 	if info == nil {
 		t.Fatal("GetCapacityInfo returned nil")
@@ -260,12 +249,17 @@ func TestGetCapacityInfo_WithLeader(t *testing.T) {
 	manager := setupBuilderTestManager(t)
 	service := NewSquadBuilderService(manager)
 
+	// Create player with roster
+	playerID := setupTestPlayerWithRoster(manager)
+
 	// Create squad
-	squadResult := service.CreateSquad("Leader Capacity Test")
+	squadID := squads.CreateEmptySquad(manager, "Leader Capacity Test")
 
 	// Create and place unit
 	rosterUnitEntity := manager.World.NewEntity()
 	rosterUnitID := rosterUnitEntity.GetID()
+	roster := squads.GetPlayerRoster(playerID, manager)
+	roster.AddUnit(rosterUnitID, "Leader Unit")
 
 	unitTemplate := squads.UnitTemplate{
 		Name:       "Leader Unit",
@@ -273,16 +267,16 @@ func TestGetCapacityInfo_WithLeader(t *testing.T) {
 		GridHeight: 1,
 	}
 
-	placeResult := service.PlaceUnit(squadResult.SquadID, rosterUnitID, unitTemplate, 0, 0)
-	if !placeResult.Success {
-		t.Fatalf("Failed to place unit: %s", placeResult.Error)
+	assignResult := service.AssignRosterUnitToSquad(playerID, squadID, rosterUnitID, unitTemplate, 0, 0)
+	if !assignResult.Success {
+		t.Fatalf("Failed to assign unit: %s", assignResult.Error)
 	}
 
 	// Designate as leader
-	service.DesignateLeader(placeResult.UnitID)
+	service.DesignateLeader(assignResult.PlacedUnitID)
 
 	// Get capacity info
-	info := service.GetCapacityInfo(squadResult.SquadID)
+	info := service.GetCapacityInfo(squadID)
 
 	if !info.HasLeader {
 		t.Error("Squad should have leader after designating")
@@ -295,10 +289,10 @@ func TestValidateSquad_Empty(t *testing.T) {
 	service := NewSquadBuilderService(manager)
 
 	// Create empty squad
-	squadResult := service.CreateSquad("Empty Squad")
+	squadID := squads.CreateEmptySquad(manager, "Empty Squad")
 
 	// Validate empty squad
-	validation := service.ValidateSquad(squadResult.SquadID)
+	validation := service.ValidateSquad(squadID)
 
 	if validation.Valid {
 		t.Error("Empty squad should not be valid")
@@ -318,12 +312,17 @@ func TestValidateSquad_NoLeader(t *testing.T) {
 	manager := setupBuilderTestManager(t)
 	service := NewSquadBuilderService(manager)
 
+	// Create player with roster
+	playerID := setupTestPlayerWithRoster(manager)
+
 	// Create squad
-	squadResult := service.CreateSquad("No Leader Squad")
+	squadID := squads.CreateEmptySquad(manager, "No Leader Squad")
 
 	// Add unit without designating as leader
 	rosterUnitEntity := manager.World.NewEntity()
 	rosterUnitID := rosterUnitEntity.GetID()
+	roster := squads.GetPlayerRoster(playerID, manager)
+	roster.AddUnit(rosterUnitID, "Regular Unit")
 
 	unitTemplate := squads.UnitTemplate{
 		Name:       "Regular Unit",
@@ -331,10 +330,10 @@ func TestValidateSquad_NoLeader(t *testing.T) {
 		GridHeight: 1,
 	}
 
-	service.PlaceUnit(squadResult.SquadID, rosterUnitID, unitTemplate, 0, 0)
+	service.AssignRosterUnitToSquad(playerID, squadID, rosterUnitID, unitTemplate, 0, 0)
 
 	// Validate (should fail - no leader)
-	validation := service.ValidateSquad(squadResult.SquadID)
+	validation := service.ValidateSquad(squadID)
 
 	if validation.Valid {
 		t.Error("Squad without leader should not be valid")
@@ -354,15 +353,17 @@ func TestValidateSquad_Valid(t *testing.T) {
 	manager := setupBuilderTestManager(t)
 	service := NewSquadBuilderService(manager)
 
+	// Create player with roster
+	playerID := setupTestPlayerWithRoster(manager)
+
 	// Create squad
-	squadResult := service.CreateSquad("Valid Squad")
-	if !squadResult.Success {
-		t.Fatalf("Failed to create squad: %s", squadResult.Error)
-	}
+	squadID := squads.CreateEmptySquad(manager, "Valid Squad")
 
 	// Add unit
 	rosterUnitEntity := manager.World.NewEntity()
 	rosterUnitID := rosterUnitEntity.GetID()
+	roster := squads.GetPlayerRoster(playerID, manager)
+	roster.AddUnit(rosterUnitID, "Leader Unit")
 
 	unitTemplate := squads.UnitTemplate{
 		Name:       "Leader Unit",
@@ -370,19 +371,19 @@ func TestValidateSquad_Valid(t *testing.T) {
 		GridHeight: 1,
 	}
 
-	placeResult := service.PlaceUnit(squadResult.SquadID, rosterUnitID, unitTemplate, 0, 0)
-	if !placeResult.Success {
-		t.Fatalf("Failed to place unit: %s", placeResult.Error)
+	assignResult := service.AssignRosterUnitToSquad(playerID, squadID, rosterUnitID, unitTemplate, 0, 0)
+	if !assignResult.Success {
+		t.Fatalf("Failed to assign unit: %s", assignResult.Error)
 	}
 
 	// Designate leader
-	leaderResult := service.DesignateLeader(placeResult.UnitID)
+	leaderResult := service.DesignateLeader(assignResult.PlacedUnitID)
 	if !leaderResult.Success {
 		t.Fatalf("Failed to designate leader: %s", leaderResult.Error)
 	}
 
 	// Validate (should pass)
-	validation := service.ValidateSquad(squadResult.SquadID)
+	validation := service.ValidateSquad(squadID)
 
 	if !validation.Valid {
 		t.Errorf("Valid squad should pass validation: %s", validation.ErrorMsg)
@@ -403,17 +404,17 @@ func TestUpdateSquadName(t *testing.T) {
 	service := NewSquadBuilderService(manager)
 
 	// Create squad
-	squadResult := service.CreateSquad("Original Name")
+	squadID := squads.CreateEmptySquad(manager, "Original Name")
 
 	// Update name
-	success := service.UpdateSquadName(squadResult.SquadID, "New Name")
+	success := service.UpdateSquadName(squadID, "New Name")
 
 	if !success {
 		t.Error("Should successfully update squad name")
 	}
 
 	// Verify name changed
-	squadEntity := common.FindEntityByIDWithTag(manager, squadResult.SquadID, squads.SquadTag)
+	squadEntity := common.FindEntityByIDWithTag(manager, squadID, squads.SquadTag)
 	if squadEntity == nil {
 		t.Fatal("Squad entity not found")
 	}
@@ -434,10 +435,10 @@ func TestUpdateSquadName_EmptyName(t *testing.T) {
 	service := NewSquadBuilderService(manager)
 
 	// Create squad
-	squadResult := service.CreateSquad("Original Name")
+	squadID := squads.CreateEmptySquad(manager, "Original Name")
 
 	// Try to update with empty name
-	success := service.UpdateSquadName(squadResult.SquadID, "")
+	success := service.UpdateSquadName(squadID, "")
 
 	if success {
 		t.Error("Should reject empty squad name")
@@ -449,19 +450,24 @@ func TestSquadBuilderFlow(t *testing.T) {
 	manager := setupBuilderTestManager(t)
 	service := NewSquadBuilderService(manager)
 
+	// Create player with roster
+	playerID := setupTestPlayerWithRoster(manager)
+
 	// Create squad
-	squadResult := service.CreateSquad("Complete Squad")
-	if !squadResult.Success {
-		t.Fatalf("Failed to create squad: %s", squadResult.Error)
-	}
+	squadID := squads.CreateEmptySquad(manager, "Complete Squad")
+
+	roster := squads.GetPlayerRoster(playerID, manager)
 
 	// Add multiple units
 	for i := 0; i < 3; i++ {
 		rosterUnitEntity := manager.World.NewEntity()
 		rosterUnitID := rosterUnitEntity.GetID()
 
+		unitName := "Unit " + string(rune(i))
+		roster.AddUnit(rosterUnitID, unitName)
+
 		unitTemplate := squads.UnitTemplate{
-			Name:       "Unit " + string(rune(i)),
+			Name:       unitName,
 			GridWidth:  1,
 			GridHeight: 1,
 		}
@@ -469,14 +475,14 @@ func TestSquadBuilderFlow(t *testing.T) {
 		col := i % 3
 		row := i / 3
 
-		result := service.PlaceUnit(squadResult.SquadID, rosterUnitID, unitTemplate, row, col)
+		result := service.AssignRosterUnitToSquad(playerID, squadID, rosterUnitID, unitTemplate, row, col)
 		if !result.Success {
-			t.Logf("Failed to place unit %d: %s", i, result.Error)
+			t.Logf("Failed to assign unit %d: %s", i, result.Error)
 		}
 
 		// First unit becomes leader
 		if i == 0 {
-			leaderResult := service.DesignateLeader(result.UnitID)
+			leaderResult := service.DesignateLeader(result.PlacedUnitID)
 			if !leaderResult.Success {
 				t.Logf("Failed to designate leader: %s", leaderResult.Error)
 			}
@@ -484,10 +490,10 @@ func TestSquadBuilderFlow(t *testing.T) {
 	}
 
 	// Update squad name
-	service.UpdateSquadName(squadResult.SquadID, "Elite Squad")
+	service.UpdateSquadName(squadID, "Elite Squad")
 
 	// Get capacity info
-	info := service.GetCapacityInfo(squadResult.SquadID)
+	info := service.GetCapacityInfo(squadID)
 	if info == nil {
 		t.Fatal("Capacity info is nil")
 	}
@@ -495,7 +501,7 @@ func TestSquadBuilderFlow(t *testing.T) {
 	t.Logf("Final squad state - Units: 3, Used capacity: %f, Has leader: %v", info.UsedCapacity, info.HasLeader)
 
 	// Validate squad
-	validation := service.ValidateSquad(squadResult.SquadID)
+	validation := service.ValidateSquad(squadID)
 	if !validation.Valid {
 		t.Logf("Squad validation failed: %s", validation.ErrorMsg)
 	} else {

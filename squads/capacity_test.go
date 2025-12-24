@@ -102,7 +102,7 @@ func TestCapacitySystem_EnforceLimitWithoutLeader(t *testing.T) {
 
 		row := i / 3
 		col := i % 3
-		err = AddUnitToSquad(squadID, manager, unit, row, col)
+		_, err = AddUnitToSquad(squadID, manager, unit, row, col)
 		if err != nil {
 			t.Errorf("Failed to add unit %d: %v", i, err)
 		}
@@ -116,7 +116,7 @@ func TestCapacitySystem_EnforceLimitWithoutLeader(t *testing.T) {
 
 	// Try to add a 7th unit (should fail - exceeds capacity)
 	unit, _ := CreateUnitTemplates(jsonMonster)
-	err := AddUnitToSquad(squadID, manager, unit, 2, 0)
+	_, err := AddUnitToSquad(squadID, manager, unit, 2, 0)
 	if err == nil {
 		t.Error("Expected error when exceeding capacity, got nil")
 	}
@@ -185,7 +185,7 @@ func TestCapacitySystem_IsSquadOverCapacity(t *testing.T) {
 		unit, _ := CreateUnitTemplates(jsonMonster)
 		row := i / 3
 		col := i % 3
-		AddUnitToSquad(squadID, manager, unit, row, col)
+		_, _ = AddUnitToSquad(squadID, manager, unit, row, col)
 	}
 
 	// Should be at capacity but not over
@@ -252,7 +252,7 @@ func TestCapacitySystem_UpdateSquadCapacity(t *testing.T) {
 	}
 
 	unit, _ := CreateUnitTemplates(jsonMonster)
-	AddUnitToSquad(squadID, manager, unit, 0, 0)
+	_, _ = AddUnitToSquad(squadID, manager, unit, 0, 0)
 
 	// Check SquadData fields were updated
 	squadEntity := GetSquadEntity(squadID, manager)

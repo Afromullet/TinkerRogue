@@ -316,17 +316,12 @@ func (sbm *SquadBuilderMode) createTemporarySquad() {
 	if squadName == "" {
 		squadName = "New Squad"
 	}
-	// Update currentSquadName to match what we're about to create
 	sbm.currentSquadName = squadName
 
-	// Use service to create squad
-	result := sbm.squadBuilderSvc.CreateSquad(squadName)
-	if result.Success {
-		sbm.currentSquadID = result.SquadID
-		fmt.Printf("Created temporary squad: %s (ID: %d)\n", result.SquadName, result.SquadID)
-	} else {
-		fmt.Printf("Failed to create squad: %s\n", result.Error)
-	}
+	// Create squad directly using base package function
+	squadID := squads.CreateEmptySquad(sbm.Context.ECSManager, squadName)
+	sbm.currentSquadID = squadID
+	fmt.Printf("Created temporary squad: %s (ID: %d)\n", squadName, squadID)
 }
 
 func (sbm *SquadBuilderMode) updateCapacityDisplay() {
