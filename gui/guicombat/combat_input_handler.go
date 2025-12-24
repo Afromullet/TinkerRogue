@@ -1,11 +1,11 @@
 package guicombat
 
 import (
-	"game_main/combat"
 	"game_main/coords"
-	"game_main/graphics"
 	"game_main/gui/core"
 	"game_main/gui/guicomponents"
+	"game_main/tactical/combat"
+	"game_main/visual/graphics"
 
 	"github.com/bytearena/ecs"
 	"github.com/hajimehoshi/ebiten/v2"

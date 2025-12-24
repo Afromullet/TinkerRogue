@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"game_main/gui/builders"
 	"game_main/gui/core"
-	"game_main/squads/squadcommands"
+	"game_main/tactical/squadcommands"
 
 	"github.com/ebitenui/ebitenui/widget"
 	"github.com/hajimehoshi/ebiten/v2"
@@ -15,7 +15,7 @@ import (
 type CommandHistory struct {
 	executor       *squadcommands.CommandExecutor
 	onStatusChange func(string) // Callback to display status messages
-	onRefresh      func()        // Optional callback after successful undo/redo
+	onRefresh      func()       // Optional callback after successful undo/redo
 }
 
 // NewCommandHistory creates a new CommandHistory with the given callbacks

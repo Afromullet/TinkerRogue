@@ -2,7 +2,7 @@ package entitytemplates
 
 import (
 	"game_main/common"
-	"game_main/graphics"
+	"game_main/visual/graphics"
 )
 
 // All structs for unmarshalling JSON data

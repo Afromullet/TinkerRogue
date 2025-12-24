@@ -3,11 +3,11 @@ package guisquads
 import (
 	"game_main/gui"
 	"game_main/gui/widgets"
-	"game_main/squads/squadservices"
+	"game_main/tactical/squadservices"
 
 	"fmt"
 	"game_main/gui/core"
-	"game_main/squads"
+	"game_main/tactical/squads"
 
 	"github.com/bytearena/ecs"
 	"github.com/ebitenui/ebitenui/widget"

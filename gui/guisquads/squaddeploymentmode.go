@@ -6,15 +6,15 @@ import (
 
 	"game_main/common"
 	"game_main/coords"
-	"game_main/graphics"
 	"game_main/gui"
+	"game_main/gui/builders"
 	"game_main/gui/core"
 	"game_main/gui/guimodes"
-	"game_main/gui/builders"
 	"game_main/gui/specs"
 	"game_main/gui/widgets"
-	"game_main/squads"
-	"game_main/squads/squadservices"
+	"game_main/tactical/squads"
+	"game_main/tactical/squadservices"
+	"game_main/visual/graphics"
 
 	"github.com/bytearena/ecs"
 	"github.com/ebitenui/ebitenui/widget"
@@ -133,7 +133,7 @@ func (sdm *SquadDeploymentMode) buildSquadList() *widget.Container {
 
 	// Position below instruction text using Start-Start anchor (left-top)
 	leftPad := int(float64(sdm.Layout.ScreenWidth) * specs.PaddingStandard)
-	topOffset := int(float64(sdm.Layout.ScreenHeight) * (specs.PaddingStandard*3))
+	topOffset := int(float64(sdm.Layout.ScreenHeight) * (specs.PaddingStandard * 3))
 
 	// Wrap in container with LayoutData
 	container := widget.NewContainer(

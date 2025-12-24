@@ -7,8 +7,8 @@ import (
 	"game_main/gui/builders"
 	"game_main/gui/core"
 	"game_main/gui/specs"
-	"game_main/squads"
-	"game_main/squads/squadcommands"
+	"game_main/tactical/squadcommands"
+	"game_main/tactical/squads"
 
 	"github.com/bytearena/ecs"
 	"github.com/ebitenui/ebitenui/widget"
@@ -20,9 +20,9 @@ type FormationEditorMode struct {
 	gui.BaseMode // Embed common mode infrastructure
 
 	gridContainer  *widget.Container
-	unitPalette    *widget.List   // Unit type palette - interactive, so no caching
+	unitPalette    *widget.List // Unit type palette - interactive, so no caching
 	actionButtons  *widget.Container
-	squadSelector  *widget.List   // Squad selection list - interactive, so no caching
+	squadSelector  *widget.List // Squad selection list - interactive, so no caching
 	currentSquadID ecs.EntityID // Currently selected squad
 
 	gridCells [3][3]*widget.Button // 3x3 grid of cells
@@ -319,4 +319,3 @@ func (fem *FormationEditorMode) refreshAfterUndoRedo() {
 		fem.loadSquadFormation(fem.currentSquadID)
 	}
 }
-

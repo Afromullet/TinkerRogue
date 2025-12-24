@@ -7,7 +7,7 @@ import (
 	"game_main/common"
 	"game_main/coords"
 
-	"game_main/rendering"
+	"game_main/visual/rendering"
 	"game_main/worldmap"
 	"log"
 	"path/filepath"

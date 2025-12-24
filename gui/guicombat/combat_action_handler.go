@@ -2,12 +2,12 @@ package guicombat
 
 import (
 	"fmt"
-	"game_main/combat/combatservices"
 	"game_main/coords"
 	"game_main/gui/core"
 	"game_main/gui/guicomponents"
 	"game_main/gui/widgets"
-	"game_main/squads/squadcommands"
+	"game_main/tactical/combatservices"
+	"game_main/tactical/squadcommands"
 
 	"github.com/bytearena/ecs"
 )
@@ -194,7 +194,6 @@ func (cah *CombatActionHandler) ExecuteAttack() {
 		cah.addLog(fmt.Sprintf("%s was destroyed!", result.TargetName))
 	}
 }
-
 
 // MoveSquad moves a squad to a new position using command pattern for undo support
 func (cah *CombatActionHandler) MoveSquad(squadID ecs.EntityID, newPos coords.LogicalPosition) error {

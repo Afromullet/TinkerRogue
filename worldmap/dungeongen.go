@@ -8,7 +8,7 @@ import (
 
 	"game_main/common"
 	"game_main/coords"
-	"game_main/graphics"
+	"game_main/visual/graphics"
 
 	"github.com/bytearena/ecs"
 	"github.com/hajimehoshi/ebiten/v2"

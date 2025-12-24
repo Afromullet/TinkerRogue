@@ -7,8 +7,8 @@ import (
 	"game_main/gui/builders"
 	"game_main/gui/core"
 	"game_main/gui/specs"
-	"game_main/squads"
-	"game_main/squads/squadcommands"
+	"game_main/tactical/squadcommands"
+	"game_main/tactical/squads"
 
 	"github.com/bytearena/ecs"
 	"github.com/ebitenui/ebitenui/widget"
@@ -37,17 +37,17 @@ type SquadEditorMode struct {
 	navigationContainer    *widget.Container
 
 	// UI widgets
-	squadSelector     *widget.List   // Interactive - no caching
+	squadSelector     *widget.List // Interactive - no caching
 	gridCells         [3][3]*widget.Button
-	unitList          *widget.List   // Interactive - no caching
-	rosterList        *widget.List   // Interactive - no caching
-	squadCounterLabel *widget.Text   // "Squad 1 of 3"
+	unitList          *widget.List // Interactive - no caching
+	rosterList        *widget.List // Interactive - no caching
+	squadCounterLabel *widget.Text // "Squad 1 of 3"
 	prevButton        *widget.Button
 	nextButton        *widget.Button
 
 	// State
-	selectedGridCell *GridCell      // Currently selected grid cell
-	selectedUnitID   ecs.EntityID   // Currently selected unit in squad
+	selectedGridCell *GridCell    // Currently selected grid cell
+	selectedUnitID   ecs.EntityID // Currently selected unit in squad
 }
 
 // GridCell represents a selected cell in the 3x3 grid

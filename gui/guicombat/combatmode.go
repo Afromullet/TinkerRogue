@@ -2,8 +2,6 @@ package guicombat
 
 import (
 	"fmt"
-	"game_main/behavior"
-	"game_main/combat/combatservices"
 	"game_main/config"
 	"game_main/coords"
 	"game_main/gui"
@@ -12,6 +10,8 @@ import (
 	"game_main/gui/guicomponents"
 	"game_main/gui/guimodes"
 	"game_main/gui/widgets"
+	"game_main/tactical/behavior"
+	"game_main/tactical/combatservices"
 	"game_main/worldmap"
 
 	"github.com/bytearena/ecs"

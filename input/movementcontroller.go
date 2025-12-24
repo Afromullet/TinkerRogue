@@ -4,8 +4,8 @@ import (
 	"game_main/common"
 	"game_main/coords"
 	"game_main/gear"
-	"game_main/graphics"
-	"game_main/rendering"
+	"game_main/visual/graphics"
+	"game_main/visual/rendering"
 	"game_main/worldmap"
 
 	"github.com/hajimehoshi/ebiten/v2"

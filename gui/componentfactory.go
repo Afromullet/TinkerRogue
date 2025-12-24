@@ -9,7 +9,7 @@ import (
 	"game_main/gui/guiresources"
 	"game_main/gui/specs"
 	"game_main/gui/widgets"
-	"game_main/squads"
+	"game_main/tactical/squads"
 
 	"github.com/ebitenui/ebitenui/widget"
 )

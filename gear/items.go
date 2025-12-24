@@ -3,7 +3,7 @@ package gear
 import (
 	"game_main/common"
 	"game_main/coords"
-	"game_main/rendering"
+	"game_main/visual/rendering"
 	"log"
 
 	ecs "github.com/bytearena/ecs"

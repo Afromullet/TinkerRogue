@@ -3,13 +3,13 @@ package guisquads
 import (
 	"fmt"
 	"game_main/gui"
+	"game_main/gui/builders"
 	"game_main/gui/core"
 	"game_main/gui/guiresources"
-	"game_main/gui/builders"
 	"game_main/gui/specs"
 	"game_main/gui/widgets"
-	"game_main/squads"
-	"game_main/squads/squadcommands"
+	"game_main/tactical/squadcommands"
+	"game_main/tactical/squads"
 	"image/color"
 
 	"github.com/bytearena/ecs"
@@ -22,10 +22,10 @@ import (
 type SquadManagementMode struct {
 	gui.BaseMode // Embed common mode infrastructure
 
-	currentSquadIndex   int                                // Index of currently displayed squad
-	allSquadIDs         []ecs.EntityID                     // All available squad IDs
-	currentPanel        *SquadPanel                        // Currently displayed panel
-	panelContainer      *widget.Container                  // Container for the current squad panel
+	currentSquadIndex   int               // Index of currently displayed squad
+	allSquadIDs         []ecs.EntityID    // All available squad IDs
+	currentPanel        *SquadPanel       // Currently displayed panel
+	panelContainer      *widget.Container // Container for the current squad panel
 	navigationContainer *widget.Container // Container for navigation buttons
 	commandContainer    *widget.Container // Container for command buttons
 	closeButton         *widget.Button
@@ -557,4 +557,3 @@ func (smm *SquadManagementMode) refreshAfterUndoRedo() {
 	smm.refreshCurrentSquad()
 	smm.updateNavigationButtons()
 }
-

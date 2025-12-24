@@ -3,8 +3,8 @@ package guicombat
 import (
 	"game_main/common"
 	"game_main/gui/guicomponents"
-	"game_main/rendering"
-	"game_main/squads"
+	"game_main/visual/rendering"
+	"game_main/tactical/squads"
 
 	"github.com/bytearena/ecs"
 	"github.com/hajimehoshi/ebiten/v2"

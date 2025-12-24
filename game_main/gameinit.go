@@ -4,8 +4,8 @@ import (
 	"game_main/common"
 	"game_main/coords"
 	"game_main/gear"
-	"game_main/rendering"
-	"game_main/squads"
+	"game_main/visual/rendering"
+	"game_main/tactical/squads"
 	"game_main/worldmap"
 
 	"log"

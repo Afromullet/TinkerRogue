@@ -3,7 +3,7 @@ package guimodes
 import (
 	"fmt"
 
-	"game_main/graphics"
+	"game_main/visual/graphics"
 	"game_main/gui"
 	"game_main/gui/core"
 	"game_main/gui/builders"

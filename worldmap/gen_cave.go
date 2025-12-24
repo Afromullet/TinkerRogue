@@ -3,7 +3,7 @@ package worldmap
 import (
 	"game_main/common"
 	"game_main/coords"
-	"game_main/graphics"
+	"game_main/visual/graphics"
 	"math"
 	"math/rand"
 	"time"

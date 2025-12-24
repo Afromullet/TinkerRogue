@@ -1,11 +1,11 @@
 package main
 
 import (
-	"game_main/combat"
 	"game_main/common"
 	"game_main/coords"
 	"game_main/entitytemplates"
-	"game_main/graphics"
+	"game_main/tactical/squads"
+	"game_main/visual/graphics"
 
 	"game_main/gui/core"
 	"game_main/gui/guicombat"
@@ -15,10 +15,10 @@ import (
 	"game_main/gui/guiresources"
 	"game_main/gui/guisquads"
 	"game_main/input"
-	"game_main/rendering"
-	"game_main/squads"
 	"game_main/systems"
+	"game_main/tactical/combat"
 	"game_main/testing"
+	"game_main/visual/rendering"
 	"game_main/worldmap"
 	"log"
 	"net/http"

@@ -6,7 +6,7 @@ package worldmap
 import (
 	"errors"
 	"game_main/coords"
-	"game_main/graphics"
+	"game_main/visual/graphics"
 
 	"reflect"
 )

@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"game_main/common"
-	"game_main/squads"
+	"game_main/tactical/squads"
 )
 
 func main() {

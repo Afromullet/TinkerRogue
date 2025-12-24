@@ -3,7 +3,7 @@ package gear
 import (
 	"fmt"
 	"game_main/common"
-	"game_main/graphics"
+	"game_main/visual/graphics"
 
 	"github.com/bytearena/ecs"
 )

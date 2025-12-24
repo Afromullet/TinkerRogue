@@ -1,12 +1,12 @@
 package main
 
 import (
-	"game_main/combat"
 	"game_main/common"
 	"game_main/gear"
-	"game_main/squads"
+	"game_main/tactical/combat"
+	"game_main/tactical/squads"
 
-	"game_main/rendering"
+	"game_main/visual/rendering"
 
 	"github.com/bytearena/ecs"
 )

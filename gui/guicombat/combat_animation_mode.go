@@ -5,12 +5,12 @@ import (
 	"image/color"
 	"math"
 
-	"game_main/combat"
 	"game_main/common"
 	"game_main/gui"
-	"game_main/gui/core"
 	"game_main/gui/builders"
-	"game_main/squads"
+	"game_main/gui/core"
+	"game_main/tactical/combat"
+	"game_main/tactical/squads"
 
 	"github.com/bytearena/ecs"
 	"github.com/ebitenui/ebitenui/widget"
@@ -21,17 +21,17 @@ import (
 type AnimationPhase int
 
 const (
-	PhaseIdle       AnimationPhase = iota // Display both squads statically
-	PhaseAttacking                        // Show attack animation effect
-	PhaseWaiting                          // Wait for player input
-	PhaseComplete                         // Animation done, execute callback
+	PhaseIdle      AnimationPhase = iota // Display both squads statically
+	PhaseAttacking                       // Show attack animation effect
+	PhaseWaiting                         // Wait for player input
+	PhaseComplete                        // Animation done, execute callback
 )
 
 // Animation timing constants (in seconds)
 const (
-	IdleDuration           = 1.0
-	AttackingDuration      = 2.0
-	DefenderFlashDuration  = 0.4 // seconds per color cycle
+	IdleDuration          = 1.0
+	AttackingDuration     = 2.0
+	DefenderFlashDuration = 0.4 // seconds per color cycle
 )
 
 // createColorScale is a helper to create an ebiten ColorScale from RGB multipliers

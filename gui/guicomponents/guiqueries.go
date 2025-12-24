@@ -2,10 +2,10 @@
 package guicomponents
 
 import (
-	"game_main/combat"
 	"game_main/common"
 	"game_main/coords"
-	"game_main/squads"
+	"game_main/tactical/combat"
+	"game_main/tactical/squads"
 
 	"github.com/bytearena/ecs"
 )

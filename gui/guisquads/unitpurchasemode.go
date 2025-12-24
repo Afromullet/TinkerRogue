@@ -3,13 +3,13 @@ package guisquads
 import (
 	"fmt"
 	"game_main/gui"
-	"game_main/gui/core"
 	"game_main/gui/builders"
+	"game_main/gui/core"
 	"game_main/gui/specs"
 	"game_main/gui/widgets"
-	"game_main/squads"
-	"game_main/squads/squadcommands"
-	"game_main/squads/squadservices"
+	"game_main/tactical/squadcommands"
+	"game_main/tactical/squads"
+	"game_main/tactical/squadservices"
 	"image/color"
 
 	"github.com/ebitenui/ebitenui/widget"
@@ -349,14 +349,12 @@ func (upm *UnitPurchaseMode) getRoleName(role squads.UnitRole) string {
 	}
 }
 
-
 // refreshAfterUndoRedo is called after successful undo/redo operations
 func (upm *UnitPurchaseMode) refreshAfterUndoRedo() {
 	upm.refreshUnitList()
 	upm.refreshResourceDisplay()
 	upm.updateDetailPanel()
 }
-
 
 func (upm *UnitPurchaseMode) Enter(fromMode core.UIMode) error {
 	fmt.Println("Entering Unit Purchase Mode")
