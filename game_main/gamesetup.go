@@ -27,56 +27,104 @@ import (
 	"runtime"
 )
 
-// SetupNewGame creates and initializes all game systems in the correct order.
-// This is the main orchestration function for game initialization.
-func SetupNewGame(g *Game) {
-	// 1. Load game data from JSON files
+// GameBootstrap encapsulates game initialization logic with explicit phases.
+// Each phase method represents a discrete initialization step with clear dependencies.
+type GameBootstrap struct{}
+
+// NewGameBootstrap creates a new bootstrap orchestrator.
+func NewGameBootstrap() *GameBootstrap {
+	return &GameBootstrap{}
+}
+
+// LoadGameData loads static game data from JSON files.
+// Phase 1: No dependencies, must run first.
+func (gb *GameBootstrap) LoadGameData() {
 	templates.ReadGameData()
+}
 
-	// 2. Initialize core game systems
-	//g.gameMap = worldmap.NewGameMapDefault()
-	g.gameMap = worldmap.NewGameMap("overworld")
-	//g.gameMap = worldmap.NewGameMap("hybrid_tactical")
-	//g.gameMap = worldmap.NewGameMap("wavelet_procedural")
-	//g.gameMap = worldmap.NewGameMap("cave_tactical")
+// InitializeCoreECS initializes the ECS world and global systems.
+// Phase 2: Depends on LoadGameData for templates.
+func (gb *GameBootstrap) InitializeCoreECS(em *common.EntityManager) {
+	InitializeECS(em)
 
-	InitializeECS(&g.em)
+	// Initialize Position System for O(1) position lookups (Phase 0 - MASTER_ROADMAP)
+	common.GlobalPositionSystem = common.NewPositionSystem(em.World)
 
-	// 2a. Initialize Position System for O(1) position lookups (Phase 0 - MASTER_ROADMAP)
-	common.GlobalPositionSystem = common.NewPositionSystem(g.em.World)
-
-	g.renderingCache = rendering.NewRenderingCache(&g.em)
-
-	// 3. Configure graphics system
+	// Configure graphics system
 	graphics.ScreenInfo.ScaleFactor = 1
 	if coords.MAP_SCROLLING_ENABLED {
 		graphics.ScreenInfo.ScaleFactor = 3
 	}
+}
 
-	// 4. Initialize player
-	InitializePlayerData(&g.em, &g.playerData, &g.gameMap)
+// CreateWorld generates the game map.
+// Phase 3: Depends on InitializeCoreECS for coordinate system.
+func (gb *GameBootstrap) CreateWorld(gm *worldmap.GameMap) {
+	// Multiple map generation algorithms available:
+	// - "overworld" (default)
+	// - "hybrid_tactical"
+	// - "wavelet_procedural"
+	// - "cave_tactical"
+	*gm = worldmap.NewGameMap("overworld")
+}
 
-	// 5. Setup test data if in debug mode
+// CreatePlayer initializes the player entity and adds creatures to position system.
+// Phase 4: Depends on CreateWorld for starting position.
+func (gb *GameBootstrap) CreatePlayer(em *common.EntityManager, pd *common.PlayerData, gm *worldmap.GameMap) {
+	InitializePlayerData(em, pd, gm)
+	AddCreaturesToTracker(em)
+}
+
+// SetupDebugContent creates test items and spawns debug content.
+// Debug Phase: Only runs when DEBUG_MODE is enabled.
+func (gb *GameBootstrap) SetupDebugContent(em *common.EntityManager, gm *worldmap.GameMap, pd *common.PlayerData) {
 	if config.DEBUG_MODE {
-		SetupTestData(&g.em, &g.gameMap, &g.playerData)
+		SetupTestData(em, gm, pd)
 	}
 
-	// 6. Spawn starting content
-	testing.UpdateContentsForTest(&g.em, &g.gameMap)
+	// Spawn starting content (test enemies, items, etc.)
+	testing.UpdateContentsForTest(em, gm)
+}
 
-	// 7. Register creatures with tracker
-	AddCreaturesToTracker(&g.em)
-
-	// 8. Initialize squad system (using game's EntityManager)
-	if err := SetupSquadSystem(&g.em); err != nil {
+// InitializeGameplay sets up squad system and gameplay factions.
+// Phase 5: Depends on CreatePlayer for faction positioning.
+func (gb *GameBootstrap) InitializeGameplay(em *common.EntityManager, pd *common.PlayerData) {
+	// Initialize squad system
+	if err := SetupSquadSystem(em); err != nil {
 		log.Fatalf("Failed to initialize squad system: %v", err)
 	}
 
-	// 9. Setup gameplay factions and squads for testing
-	if err := SetupGameplayFactions(&g.em, &g.playerData); err != nil {
+	// Setup gameplay factions and squads
+	if err := SetupGameplayFactions(em, pd); err != nil {
 		log.Fatalf("Failed to setup gameplay factions: %v", err)
 	}
+}
 
+// SetupNewGame orchestrates game initialization through explicit phases.
+// Each phase is named and testable, making dependencies clear.
+func SetupNewGame(g *Game) {
+	bootstrap := NewGameBootstrap()
+
+	// Phase 1: Load static data
+	bootstrap.LoadGameData()
+
+	// Phase 2: Initialize ECS and global systems
+	bootstrap.InitializeCoreECS(&g.em)
+
+	// Phase 3: Create game world
+	bootstrap.CreateWorld(&g.gameMap)
+
+	// Initialize rendering cache (depends on ECS)
+	g.renderingCache = rendering.NewRenderingCache(&g.em)
+
+	// Phase 4: Create player entity
+	bootstrap.CreatePlayer(&g.em, &g.playerData, &g.gameMap)
+
+	// Debug Phase: Setup test content
+	bootstrap.SetupDebugContent(&g.em, &g.gameMap, &g.playerData)
+
+	// Phase 5: Initialize gameplay systems
+	bootstrap.InitializeGameplay(&g.em, &g.playerData)
 }
 
 // SetupSquadSystem initializes the squad combat system.
