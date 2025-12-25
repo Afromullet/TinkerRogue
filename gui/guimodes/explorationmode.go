@@ -3,10 +3,9 @@ package guimodes
 import (
 	"fmt"
 
-	"game_main/visual/graphics"
 	"game_main/gui"
-	"game_main/gui/core"
 	"game_main/gui/builders"
+	"game_main/gui/core"
 
 	"github.com/ebitenui/ebitenui/widget"
 	"github.com/hajimehoshi/ebiten/v2"
@@ -147,25 +146,6 @@ func (em *ExplorationMode) HandleInput(inputState *core.InputState) bool {
 	// Handle common input first (ESC key, registered hotkeys like I/C/D)
 	if em.HandleCommonInput(inputState) {
 		return true
-	}
-
-	// Handle right-click to open info mode
-	if inputState.MouseButton == ebiten.MouseButton2 && inputState.MousePressed {
-		// Only open if not in other input modes
-		if !inputState.PlayerInputStates.IsThrowing {
-			// Convert mouse position to logical position (handles both scrolling modes)
-			playerPos := *em.Context.PlayerData.Pos
-			clickedPos := graphics.MouseToLogicalPosition(inputState.MouseX, inputState.MouseY, playerPos)
-
-			// Transition to info mode with position
-			if infoMode, exists := em.ModeManager.GetMode("info_inspect"); exists {
-				if infoModeTyped, ok := infoMode.(*InfoMode); ok {
-					infoModeTyped.SetInspectPosition(clickedPos)
-					em.ModeManager.RequestTransition(infoMode, "Right-click inspection")
-				}
-			}
-			return true
-		}
 	}
 
 	return false

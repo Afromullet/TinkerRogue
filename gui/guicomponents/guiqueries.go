@@ -220,65 +220,6 @@ type CreatureInfo struct {
 	IsPlayer   bool
 }
 
-// GetCreatureAtPosition returns creature information at a specific position
-// Returns nil if no creature found at the position
-// Handles both monsters and players
-// Optimized: Batches all component lookups into single GetEntityByID call.
-func (gq *GUIQueries) GetCreatureAtPosition(pos coords.LogicalPosition) *CreatureInfo {
-	// First try the common helper (looks for monsters)
-	creatureID := common.GetCreatureAtPosition(gq.ECSManager, &pos)
-
-	// If no monster found, check if there's any entity at the position
-	if creatureID == 0 && common.GlobalPositionSystem != nil {
-		creatureID = common.GlobalPositionSystem.GetEntityIDAt(pos)
-	}
-
-	if creatureID == 0 {
-		return nil
-	}
-
-	// This avoids multiple GetEntityByID allocations
-	entity := gq.ECSManager.FindEntityByID(creatureID)
-	if entity == nil {
-		return nil
-	}
-
-	// Get creature name from entity
-	name := "Unknown"
-	nameComp := common.GetComponentType[*common.Name](entity, common.NameComponent)
-	if nameComp != nil {
-		name = nameComp.NameStr
-	}
-
-	// Get creature attributes from entity
-	attrs := common.GetComponentType[*common.Attributes](entity, common.AttributeComponent)
-	if attrs == nil {
-		// Return basic info if no attributes
-		return &CreatureInfo{
-			ID:        creatureID,
-			Name:      name,
-			IsMonster: gq.isMonster(creatureID),
-			IsPlayer:  gq.isPlayer(creatureID),
-		}
-	}
-
-	// Return full creature info
-	return &CreatureInfo{
-		ID:         creatureID,
-		Name:       name,
-		CurrentHP:  attrs.CurrentHealth,
-		MaxHP:      attrs.MaxHealth,
-		Strength:   attrs.Strength,
-		Dexterity:  attrs.Dexterity,
-		Magic:      attrs.Magic,
-		Leadership: attrs.Leadership,
-		Armor:      attrs.Armor,
-		Weapon:     attrs.Weapon,
-		IsMonster:  gq.isMonster(creatureID),
-		IsPlayer:   gq.isPlayer(creatureID),
-	}
-}
-
 // isMonster checks if an entity is a monster
 func (gq *GUIQueries) isMonster(entityID ecs.EntityID) bool {
 	// Use cached View instead of Query (avoids 30,000+ map allocations per second)

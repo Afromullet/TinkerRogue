@@ -231,7 +231,6 @@ func SetupInputCoordinator(g *Game) {
 func registerBattleMapModes(coordinator *core.GameModeCoordinator, manager *core.UIModeManager) {
 	modes := []core.UIMode{
 		guimodes.NewExplorationMode(manager),
-		guimodes.NewInfoMode(manager),
 		guicombat.NewCombatMode(manager),
 		guicombat.NewCombatAnimationMode(manager),
 		guisquads.NewSquadDeploymentMode(manager),

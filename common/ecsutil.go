@@ -39,7 +39,6 @@ func NewEntityManager() *EntityManager {
 
 // HasComponent checks if an entity has a specific component.
 // Returns false if the entity ID is invalid or the component is not found.
-// TOD, this can just be replaced with GetComponent and a nill check
 func (em *EntityManager) HasComponent(entityID ecs.EntityID, component *ecs.Component) bool {
 	_, ok := em.GetComponent(entityID, component)
 	return ok
@@ -84,35 +83,6 @@ func GetComponentTypeByID[T any](manager *EntityManager, entityID ecs.EntityID, 
 		return nilValue
 	}
 	return GetComponentType[T](entity, component)
-}
-
-// GetCreatureAtPosition finds the first monster entity ID at the specified position.
-// Returns 0 if no creature is found at that position.
-func GetCreatureAtPosition(ecsmanager *EntityManager, pos *coords.LogicalPosition) ecs.EntityID {
-	// Use new O(1) PositionSystem if available
-	if GlobalPositionSystem != nil {
-		entityID := GlobalPositionSystem.GetEntityIDAt(*pos)
-		if entityID == 0 {
-			return 0
-		}
-
-		// Verify it's a monster
-		for _, result := range ecsmanager.World.Query(ecsmanager.WorldTags["monsters"]) {
-			if result.Entity.GetID() == entityID {
-				return entityID
-			}
-		}
-		return 0
-	}
-
-	// Fallback to old O(n) search if PositionSystem not initialized
-	for _, c := range ecsmanager.World.Query(ecsmanager.WorldTags["monsters"]) {
-		curPos := GetComponentType[*coords.LogicalPosition](c.Entity, PositionComponent)
-		if pos.IsEqual(curPos) {
-			return c.Entity.GetID()
-		}
-	}
-	return 0
 }
 
 // FindEntityByID finds an entity pointer by its ID.
