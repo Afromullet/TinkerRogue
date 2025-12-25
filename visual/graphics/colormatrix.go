@@ -51,3 +51,39 @@ func CreateBlueGradient(opacity float32) ColorMatrix {
 		ApplyMatrix: true,
 	}
 }
+
+// CreateGreenGradient creates a green ColorMatrix with specified opacity
+// Used for allied unit visualization
+func CreateGreenGradient(opacity float32) ColorMatrix {
+	return ColorMatrix{
+		R:           0,
+		G:           1,
+		B:           0,
+		A:           opacity,
+		ApplyMatrix: true,
+	}
+}
+
+// CreateMagentaGradient creates a magenta/purple ColorMatrix with specified opacity
+// Used for tiles with both ally and enemy units
+func CreateMagentaGradient(opacity float32) ColorMatrix {
+	return ColorMatrix{
+		R:           1,
+		G:           0,
+		B:           1,
+		A:           opacity,
+		ApplyMatrix: true,
+	}
+}
+
+// CreateYellowGradient creates a yellow ColorMatrix with specified opacity
+// Used for highlighting selected squad's position
+func CreateYellowGradient(opacity float32) ColorMatrix {
+	return ColorMatrix{
+		R:           1,
+		G:           1,
+		B:           0,
+		A:           opacity,
+		ApplyMatrix: true,
+	}
+}
