@@ -63,8 +63,6 @@ func (gb *GameBootstrap) CreateWorld(gm *worldmap.GameMap) {
 	// Multiple map generation algorithms available:
 	// - "overworld" (default)
 	// - "hybrid_tactical"
-	// - "wavelet_procedural"
-	// - "cave_tactical"
 	*gm = worldmap.NewGameMap("overworld")
 }
 
@@ -249,7 +247,6 @@ func registerBattleMapModes(coordinator *core.GameModeCoordinator, manager *core
 func registerOverworldModes(coordinator *core.GameModeCoordinator, manager *core.UIModeManager) {
 	modes := []core.UIMode{
 		guisquads.NewSquadManagementMode(manager),
-		guisquads.NewFormationEditorMode(manager),
 		guisquads.NewSquadBuilderMode(manager),
 		guisquads.NewUnitPurchaseMode(manager),
 		guisquads.NewSquadEditorMode(manager),
