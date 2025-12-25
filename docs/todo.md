@@ -7,7 +7,6 @@ __________________________________________
 - Remove Unused GUI elements and GUI elements you ddont want
 
 
-- Clean up ECSUtil
 
 
 
@@ -22,10 +21,10 @@ can't attack twice. Once with ranged units and once with melee
 
 
 # Cleanup
--There is both a config package and config.go in game_main package. Fix that
+
 - tilebatch.go and tilerenderer.go use magic numbers in NewTileBatch
-- Completely replace deprecated functions
-- Remove Quality
+
+
 - ecsutil.go seems to have redundancies/duplicate functionality. Look at that. 
 - Get Rid of common.Monsters. All the other unit related tags shoudl take care of it. 
 - Remove UserMessage component. Not needed
@@ -40,7 +39,7 @@ can't attack twice. Once with ranged units and once with melee
 
 # Bug Fixes
 - Units of the same faction should not be able to occupy the same square
-- Throwables are completely broken. I can no longer see the throwable AoE
+- Throwables are completely broken. There is an out of bounds error
 
 
 # Review
@@ -73,5 +72,4 @@ can't attack twice. Once with ranged units and once with melee
 
 
 
-- Consider removing  fmt.Errorf statements throughout the code, such as in combatactionsystem. Those are just for debugging. Need to handle differnetly
-
+- Consider removing  fmt.Errorf statements throughout the code, such as in combatactionsystem and use an error log instead

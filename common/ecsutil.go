@@ -39,6 +39,7 @@ func NewEntityManager() *EntityManager {
 
 // HasComponent checks if an entity has a specific component.
 // Returns false if the entity ID is invalid or the component is not found.
+// TOD, this can just be replaced with GetComponent and a nill check
 func (em *EntityManager) HasComponent(entityID ecs.EntityID, component *ecs.Component) bool {
 	_, ok := em.GetComponent(entityID, component)
 	return ok
