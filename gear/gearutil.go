@@ -12,7 +12,7 @@ import (
 // GetItemByID retrieves the Item component from an entity ID (ECS best practice)
 // Returns nil if the entity doesn't exist or doesn't have an item component
 func GetItemByID(manager *common.EntityManager, entityID ecs.EntityID) *Item {
-	entity := common.FindEntityByID(manager, entityID)
+	entity := manager.FindEntityByID(entityID)
 	if entity == nil {
 		return nil
 	}
@@ -32,7 +32,7 @@ func GetItemEffectNames(manager *common.EntityManager, item *Item) []string {
 	}
 
 	// Get the properties entity to check for effects
-	propsEntity := common.FindEntityByID(manager, item.Properties)
+	propsEntity := manager.FindEntityByID(item.Properties)
 	if propsEntity == nil {
 		return names
 	}

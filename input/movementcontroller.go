@@ -156,7 +156,7 @@ func (mc *MovementController) playerPickupItem() {
 	itemEntityID, err := mc.gameMap.RemoveItemFromTile(0, mc.playerData.Pos)
 
 	if err == nil && itemEntityID != 0 {
-		itemEntity := common.FindEntityByID(mc.ecsManager, itemEntityID)
+		itemEntity := mc.ecsManager.FindEntityByID(itemEntityID)
 		if itemEntity != nil {
 			renderable := common.GetComponentType[*rendering.Renderable](itemEntity, rendering.RenderableComponent)
 			renderable.Visible = false

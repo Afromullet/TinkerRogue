@@ -130,7 +130,7 @@ func (gem *GridEditorManager) RefreshGridDisplay() {
 			}
 
 			// This replaces 3 separate GetComponentTypeByID calls with just 1
-			entity := common.FindEntityByID(gem.entityManager, cell.unitID)
+			entity := gem.entityManager.FindEntityByID(cell.unitID)
 			if entity == nil {
 				continue
 			}

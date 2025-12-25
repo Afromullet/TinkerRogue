@@ -99,7 +99,7 @@ func RemoveUnitFromSquad(unitEntityID ecs.EntityID, squadmanager *common.EntityM
 	squadID := memberData.SquadID
 
 	// Find the unit entity and dispose it
-	unitEntity := common.FindEntityByID(squadmanager, unitEntityID)
+	unitEntity := squadmanager.FindEntityByID(unitEntityID)
 	if unitEntity != nil {
 		// Get position component if it exists (units typically don't have world positions)
 		pos := common.GetComponentType[*coords.LogicalPosition](unitEntity, common.PositionComponent)
@@ -406,7 +406,7 @@ func setSquadRenderableFromLeader(squadID ecs.EntityID, squadEntity *ecs.Entity,
 	}
 
 	// Get the leader entity
-	leaderEntity := common.FindEntityByID(ecsmanager, leaderID)
+	leaderEntity := ecsmanager.FindEntityByID(leaderID)
 	if leaderEntity == nil {
 		return
 	}

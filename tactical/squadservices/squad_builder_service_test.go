@@ -414,7 +414,7 @@ func TestUpdateSquadName(t *testing.T) {
 	}
 
 	// Verify name changed
-	squadEntity := common.FindEntityByID(manager, squadID)
+	squadEntity := manager.FindEntityByID(squadID)
 	if squadEntity == nil {
 		t.Fatal("Squad entity not found")
 	}

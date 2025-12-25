@@ -39,7 +39,7 @@ func CreateTestConsumables(ecsmanager *common.EntityManager, gm *worldmap.GameMa
 		Visible:   false,
 		Position:  nil,
 	}, templates.ConsumableTemplates[0])
-	pos := common.GetPosition(ent)
+	pos := common.GetComponentType[*coords.LogicalPosition](ent, common.PositionComponent)
 	rend := common.GetComponentType[*rendering.Renderable](ent, rendering.RenderableComponent)
 	rend.Visible = true
 	pos.X = gm.StartingPosition().X + 1
@@ -54,7 +54,7 @@ func CreateTestConsumables(ecsmanager *common.EntityManager, gm *worldmap.GameMa
 		Visible:   false,
 		Position:  nil,
 	}, templates.ConsumableTemplates[1])
-	pos = common.GetPosition(ent)
+	pos = common.GetComponentType[*coords.LogicalPosition](ent, common.PositionComponent)
 	rend = common.GetComponentType[*rendering.Renderable](ent, rendering.RenderableComponent)
 	rend.Visible = true
 	pos.X = gm.StartingPosition().X + 1
@@ -70,7 +70,7 @@ func CreateTestConsumables(ecsmanager *common.EntityManager, gm *worldmap.GameMa
 		Visible:   false,
 		Position:  nil,
 	}, templates.ConsumableTemplates[2])
-	pos = common.GetPosition(ent)
+	pos = common.GetComponentType[*coords.LogicalPosition](ent, common.PositionComponent)
 	rend = common.GetComponentType[*rendering.Renderable](ent, rendering.RenderableComponent)
 	rend.Visible = true
 	pos.X = gm.StartingPosition().X + 1

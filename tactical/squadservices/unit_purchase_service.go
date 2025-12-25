@@ -228,7 +228,7 @@ func (ups *UnitPurchaseService) RefundUnitPurchase(playerID ecs.EntityID, unitID
 	}
 
 	// Find the unit entity
-	unitEntity := common.FindEntityByID(ups.entityManager, unitID)
+	unitEntity := ups.entityManager.FindEntityByID(unitID)
 	if unitEntity == nil {
 		result.Error = fmt.Sprintf("unit %d not found", unitID)
 		return result

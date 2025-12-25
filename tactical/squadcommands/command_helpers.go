@@ -99,7 +99,7 @@ func getUnitEntityOrError(unitID ecs.EntityID, manager *common.EntityManager) (*
 		return nil, fmt.Errorf("invalid unit ID")
 	}
 
-	unitEntity := common.FindEntityByID(manager, unitID)
+	unitEntity := manager.FindEntityByID(unitID)
 	if unitEntity == nil {
 		return nil, fmt.Errorf("unit not found")
 	}

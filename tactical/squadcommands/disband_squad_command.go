@@ -78,7 +78,7 @@ func (cmd *DisbandSquadCommand) Execute() error {
 	// Remove all units from squad (dispose entities)
 	unitIDs := squads.GetUnitIDsInSquad(cmd.squadID, cmd.entityManager)
 	for _, unitID := range unitIDs {
-		unitEntity := common.FindEntityByID(cmd.entityManager, unitID)
+		unitEntity := cmd.entityManager.FindEntityByID(unitID)
 		if unitEntity != nil {
 			// Get position component for cleanup
 			pos := common.GetComponentType[*coords.LogicalPosition](unitEntity, common.PositionComponent)

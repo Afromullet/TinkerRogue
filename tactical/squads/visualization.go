@@ -145,7 +145,7 @@ func VisualizeSquad(squadID ecs.EntityID, squadmanager *common.EntityManager) st
 
 			// Get health if available
 			healthInfo := ""
-			attr := common.GetAttributesByID(squadmanager, unitID)
+			attr := common.GetComponentTypeByID[*common.Attributes](squadmanager, unitID, common.AttributeComponent)
 			if attr != nil {
 				healthInfo = fmt.Sprintf(" | HP: %d/%d", attr.CurrentHealth, attr.MaxHealth)
 			}

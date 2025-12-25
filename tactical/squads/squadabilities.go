@@ -17,7 +17,7 @@ func CheckAndTriggerAbilities(squadID ecs.EntityID, ecsmanager *common.EntityMan
 	}
 
 	// This replaces 4 separate GetEntityByID calls with just 1
-	leaderEntity := common.FindEntityByID(ecsmanager, leaderID)
+	leaderEntity := ecsmanager.FindEntityByID(leaderID)
 	if leaderEntity == nil {
 		return
 	}
@@ -110,7 +110,7 @@ func calculateAverageHP(squadID ecs.EntityID, ecsmanager *common.EntityManager) 
 	totalMaxHP := 0
 
 	for _, unitID := range unitIDs {
-		entity := common.FindEntityByID(ecsmanager, unitID)
+		entity := ecsmanager.FindEntityByID(unitID)
 		if entity == nil {
 			continue
 		}
@@ -170,7 +170,7 @@ func applyRallyEffect(squadID ecs.EntityID, params AbilityParams, ecsmanager *co
 	unitIDs := GetUnitIDsInSquad(squadID, ecsmanager)
 
 	for _, unitID := range unitIDs {
-		entity := common.FindEntityByID(ecsmanager, unitID)
+		entity := ecsmanager.FindEntityByID(unitID)
 		if entity == nil {
 			continue
 		}
@@ -195,7 +195,7 @@ func applyHealEffect(squadID ecs.EntityID, params AbilityParams, ecsmanager *com
 
 	healed := 0
 	for _, unitID := range unitIDs {
-		entity := common.FindEntityByID(ecsmanager, unitID)
+		entity := ecsmanager.FindEntityByID(unitID)
 		if entity == nil {
 			continue
 		}
@@ -235,7 +235,7 @@ func applyBattleCryEffect(squadID ecs.EntityID, params AbilityParams, ecsmanager
 	// Boost damage
 	unitIDs := GetUnitIDsInSquad(squadID, ecsmanager)
 	for _, unitID := range unitIDs {
-		entity := common.FindEntityByID(ecsmanager, unitID)
+		entity := ecsmanager.FindEntityByID(unitID)
 		if entity == nil {
 			continue
 		}
@@ -275,7 +275,7 @@ func applyFireballEffect(squadID ecs.EntityID, params AbilityParams, ecsmanager 
 	killed := 0
 
 	for _, unitID := range unitIDs {
-		entity := common.FindEntityByID(ecsmanager, unitID)
+		entity := ecsmanager.FindEntityByID(unitID)
 		if entity == nil {
 			continue
 		}
@@ -313,7 +313,7 @@ func EquipAbilityToLeader(
 		return fmt.Errorf("invalid slot %d", slotIndex)
 	}
 
-	leaderEntity := common.FindEntityByID(ecsmanager, leaderEntityID)
+	leaderEntity := ecsmanager.FindEntityByID(leaderEntityID)
 	if leaderEntity == nil {
 		return fmt.Errorf("leader entity not found")
 	}

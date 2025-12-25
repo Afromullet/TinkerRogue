@@ -24,7 +24,7 @@ func CreateConsumable(mgr common.EntityManager, gm *worldmap.GameMap, pos coords
 	common.GetComponentType[*rendering.Renderable](entity, rendering.RenderableComponent).Visible = true
 
 	// Set the position
-	entityPos := common.GetPosition(entity)
+	entityPos := common.GetComponentType[*coords.LogicalPosition](entity, common.PositionComponent)
 	entityPos.X = pos.X
 	entityPos.Y = pos.Y
 

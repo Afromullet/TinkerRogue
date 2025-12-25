@@ -97,7 +97,7 @@ func TestExecuteSquadAttack_SingleAttackerVsSingleDefender(t *testing.T) {
 	// Create defender squad
 	defenderSquadID := createTestSquad(manager, "Defenders")
 	defenderUnit := createTestUnit(manager, defenderSquadID, 0, 0, 50, 10, 0)
-	defenderAttr := common.GetAttributes(defenderUnit)
+	defenderAttr := common.GetComponentType[*common.Attributes](defenderUnit, common.AttributeComponent)
 	initialHP := defenderAttr.CurrentHealth
 
 	// Execute attack
@@ -156,13 +156,13 @@ func TestExecuteSquadAttack_DeadAttackersDoNotAttack(t *testing.T) {
 	// Create attacker squad with dead unit
 	attackerSquadID := createTestSquad(manager, "Attackers")
 	deadAttacker := createTestUnit(manager, attackerSquadID, 0, 0, 100, 20, 100)
-	attr := common.GetAttributes(deadAttacker)
+	attr := common.GetComponentType[*common.Attributes](deadAttacker, common.AttributeComponent)
 	attr.CurrentHealth = 0 // Dead unit
 
 	// Create defender squad
 	defenderSquadID := createTestSquad(manager, "Defenders")
 	defenderUnit := createTestUnit(manager, defenderSquadID, 0, 0, 50, 10, 0)
-	defenderAttr := common.GetAttributes(defenderUnit)
+	defenderAttr := common.GetComponentType[*common.Attributes](defenderUnit, common.AttributeComponent)
 	initialHP := defenderAttr.CurrentHealth
 
 	// Execute attack
@@ -264,8 +264,8 @@ func TestCalculateUnitDamageByID_BasicDamageCalculation(t *testing.T) {
 	attacker := createTestUnit(manager, squadID, 0, 0, 100, 20, 100) // 100% hit rate
 	defender := createTestUnit(manager, squadID, 0, 1, 100, 10, 0)
 
-	attackerAttr := common.GetAttributes(attacker)
-	defenderAttr := common.GetAttributes(defender)
+	attackerAttr := common.GetComponentType[*common.Attributes](attacker, common.AttributeComponent)
+	defenderAttr := common.GetComponentType[*common.Attributes](defender, common.AttributeComponent)
 
 	// Note: Attributes are derived from base stats (Strength, Dexterity, etc.)
 	// We can't set them directly, but with Dexterity=100, attacker should have high hit rate
@@ -298,7 +298,7 @@ func TestCalculateUnitDamageByID_MissReturnsZero(t *testing.T) {
 	attacker := createTestUnit(manager, squadID, 0, 0, 100, 20, 0) // Low dexterity = low hit rate
 	defender := createTestUnit(manager, squadID, 0, 1, 100, 10, 0)
 
-	attackerAttr := common.GetAttributes(attacker)
+	attackerAttr := common.GetComponentType[*common.Attributes](attacker, common.AttributeComponent)
 	_ = attackerAttr // Keep for potential future use
 
 	// Note: With Dexterity=0, hit rate is 80% (still decent)
@@ -318,8 +318,8 @@ func TestCalculateUnitDamageByID_DodgeReturnsZero(t *testing.T) {
 	attacker := createTestUnit(manager, squadID, 0, 0, 100, 20, 100)
 	defender := createTestUnit(manager, squadID, 0, 1, 100, 10, 100) // High dexterity for dodge
 
-	attackerAttr := common.GetAttributes(attacker)
-	defenderAttr := common.GetAttributes(defender)
+	attackerAttr := common.GetComponentType[*common.Attributes](attacker, common.AttributeComponent)
+	defenderAttr := common.GetComponentType[*common.Attributes](defender, common.AttributeComponent)
 	_, _ = attackerAttr, defenderAttr // Keep for potential future use
 
 	// Note: With Dexterity=100, dodge chance is capped at 40%
@@ -340,8 +340,8 @@ func TestCalculateUnitDamageByID_PhysicalResistanceReducesDamage(t *testing.T) {
 	attacker := createTestUnit(manager, squadID, 0, 0, 100, 20, 100)
 	defender := createTestUnit(manager, squadID, 0, 1, 100, 20, 10) // Higher armor = higher resistance
 
-	attackerAttr := common.GetAttributes(attacker)
-	defenderAttr := common.GetAttributes(defender)
+	attackerAttr := common.GetComponentType[*common.Attributes](attacker, common.AttributeComponent)
+	defenderAttr := common.GetComponentType[*common.Attributes](defender, common.AttributeComponent)
 
 	// Note: PhysicalResistance is derived from Strength/4 + Armor*2
 	// Defender: (20/4) + (10*2) = 5 + 20 = 25 resistance
@@ -371,8 +371,8 @@ func TestCalculateUnitDamageByID_MinimumDamageIsOne(t *testing.T) {
 	attacker := createTestUnit(manager, squadID, 0, 0, 100, 1, 0)   // Strength=1, Weapon=0
 	defender := createTestUnit(manager, squadID, 0, 1, 100, 50, 50) // Strength=50, Armor=50 for high resistance
 
-	attackerAttr := common.GetAttributes(attacker)
-	defenderAttr := common.GetAttributes(defender)
+	attackerAttr := common.GetComponentType[*common.Attributes](attacker, common.AttributeComponent)
+	defenderAttr := common.GetComponentType[*common.Attributes](defender, common.AttributeComponent)
 
 	// Attacker damage: (1/2) + (0*2) = 0
 	// Defender resistance: (50/4) + (50*2) = 12 + 100 = 112
@@ -483,7 +483,7 @@ func TestCalculateTotalCover_DeadUnitDoesNotProvideCover(t *testing.T) {
 		CoverRange:     1,
 		RequiresActive: true,
 	})
-	attr := common.GetAttributes(deadFrontLine)
+	attr := common.GetComponentType[*common.Attributes](deadFrontLine, common.AttributeComponent)
 	attr.CurrentHealth = 0 // Dead
 
 	// Create back-line unit
@@ -816,11 +816,11 @@ func TestMeleeRowTargeting_PierceWhenFrontRowDead(t *testing.T) {
 
 	// Row 0 - all dead (should be ignored for targeting)
 	deadUnit1 := createTestUnit(manager, defenderSquadID, 0, 0, 50, 10, 0)
-	deadAttr1 := common.GetAttributes(deadUnit1)
+	deadAttr1 := common.GetComponentType[*common.Attributes](deadUnit1, common.AttributeComponent)
 	deadAttr1.CurrentHealth = 0
 
 	deadUnit2 := createTestUnit(manager, defenderSquadID, 0, 1, 50, 10, 0)
-	deadAttr2 := common.GetAttributes(deadUnit2)
+	deadAttr2 := common.GetComponentType[*common.Attributes](deadUnit2, common.AttributeComponent)
 	deadAttr2.CurrentHealth = 0
 
 	// Row 1 - alive (should be targeted)
@@ -1225,7 +1225,7 @@ func TestCombatWithCoverSystem_Integration(t *testing.T) {
 	// Create attacker squad
 	attackerSquadID := createTestSquad(manager, "Attackers")
 	attacker := createTestUnit(manager, attackerSquadID, 0, 0, 100, 30, 0) // Low dexterity = lower crit
-	attackerAttr := common.GetAttributes(attacker)
+	attackerAttr := common.GetComponentType[*common.Attributes](attacker, common.AttributeComponent)
 
 	// Create defender squad with cover
 	defenderSquadID := createTestSquad(manager, "Defenders")
@@ -1240,7 +1240,7 @@ func TestCombatWithCoverSystem_Integration(t *testing.T) {
 
 	// Back-line unit receives cover
 	backLine := createTestUnit(manager, defenderSquadID, 1, 0, 100, 10, 0) // Low dexterity = low dodge
-	backLineAttr := common.GetAttributes(backLine)
+	backLineAttr := common.GetComponentType[*common.Attributes](backLine, common.AttributeComponent)
 
 	// Configure attacker to target back line
 	targetData := common.GetComponentType[*TargetRowData](attacker, TargetRowComponent)
@@ -1335,7 +1335,7 @@ func TestExecuteSquadAttack_MultiCellUnit_HitOnce(t *testing.T) {
 	// Create attacker squad with unit targeting multiple rows
 	attackerSquadID := createTestSquad(manager, "Attackers")
 	attacker := createTestUnit(manager, attackerSquadID, 0, 0, 100, 20, 100)
-	attackerAttr := common.GetAttributes(attacker)
+	attackerAttr := common.GetComponentType[*common.Attributes](attacker, common.AttributeComponent)
 	baseDamage := attackerAttr.GetPhysicalDamage()
 
 	// Set attacker to target both row 0 and row 1
@@ -1406,7 +1406,7 @@ func TestExecuteSquadAttack_MultiCellUnit_CellBased_HitOnce(t *testing.T) {
 	// Create attacker squad with cell-based targeting
 	attackerSquadID := createTestSquad(manager, "Attackers")
 	attacker := createTestUnit(manager, attackerSquadID, 0, 0, 100, 20, 100)
-	attackerAttr := common.GetAttributes(attacker)
+	attackerAttr := common.GetComponentType[*common.Attributes](attacker, common.AttributeComponent)
 	baseDamage := attackerAttr.GetPhysicalDamage()
 
 	// Set attacker to target all 4 cells occupied by the multi-cell unit

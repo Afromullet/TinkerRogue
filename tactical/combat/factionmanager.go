@@ -59,7 +59,7 @@ func (fm *FactionManager) AddSquadToFaction(factionID, squadID ecs.EntityID, pos
 	}
 
 	// Verify squad exists by checking for SquadComponent
-	squad := common.FindEntityByID(fm.manager, squadID)
+	squad := fm.manager.FindEntityByID(squadID)
 	if squad == nil {
 		return fmt.Errorf("squad %d not found", squadID)
 	}
@@ -109,7 +109,7 @@ func (fm *FactionManager) GetFactionSquads(factionID ecs.EntityID) []ecs.EntityI
 
 func (fm *FactionManager) RemoveSquadFromFaction(factionID, squadID ecs.EntityID) error {
 	// Find squad entity
-	squad := common.FindEntityByID(fm.manager, squadID)
+	squad := fm.manager.FindEntityByID(squadID)
 	if squad == nil {
 		return fmt.Errorf("squad %d not found", squadID)
 	}

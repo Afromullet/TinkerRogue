@@ -82,7 +82,7 @@ func snapshotAttackingUnits(squadID ecs.EntityID, squadDistance int, manager *co
 			continue
 		}
 
-		entity := common.FindEntityByID(manager, unitID)
+		entity := manager.FindEntityByID(unitID)
 		if entity == nil {
 			continue
 		}
@@ -137,7 +137,7 @@ func finalizeCombatLog(result *CombatResult, log *CombatLog, defenderSquadID ecs
 
 // CanUnitAttack checks if a unit is alive, can act, and within attack range
 func CanUnitAttack(attackerID ecs.EntityID, squadDistance int, manager *common.EntityManager) bool {
-	entity := common.FindEntityByID(manager, attackerID)
+	entity := manager.FindEntityByID(attackerID)
 	if entity == nil {
 		return false
 	}
@@ -159,7 +159,7 @@ func CanUnitAttack(attackerID ecs.EntityID, squadDistance int, manager *common.E
 
 // SelectTargetUnits determines targets based on attack type (public for GUI and internal use)
 func SelectTargetUnits(attackerID, defenderSquadID ecs.EntityID, manager *common.EntityManager) []ecs.EntityID {
-	entity := common.FindEntityByID(manager, attackerID)
+	entity := manager.FindEntityByID(attackerID)
 	if entity == nil {
 		return []ecs.EntityID{}
 	}
@@ -206,7 +206,7 @@ func selectMeleeRowTargets(attackerID, defenderSquadID ecs.EntityID, manager *co
 // selectMeleeColumnTargets targets column directly across from attacker, wrapping to adjacent columns if empty
 // Targets exactly 1 unit (spear-type attack)
 func selectMeleeColumnTargets(attackerID, defenderSquadID ecs.EntityID, manager *common.EntityManager) []ecs.EntityID {
-	attackerEntity := common.FindEntityByID(manager, attackerID)
+	attackerEntity := manager.FindEntityByID(attackerID)
 	if attackerEntity == nil {
 		return []ecs.EntityID{}
 	}
@@ -228,7 +228,7 @@ func selectMeleeColumnTargets(attackerID, defenderSquadID ecs.EntityID, manager 
 			cellUnits := GetUnitIDsAtGridPosition(defenderSquadID, row, col, manager)
 
 			for _, unitID := range cellUnits {
-				entity := common.FindEntityByID(manager, unitID)
+				entity := manager.FindEntityByID(unitID)
 				if entity == nil {
 					continue
 				}
@@ -248,7 +248,7 @@ func selectMeleeColumnTargets(attackerID, defenderSquadID ecs.EntityID, manager 
 
 // selectRangedTargets targets same row as attacker (all units), with fallback logic
 func selectRangedTargets(attackerID, defenderSquadID ecs.EntityID, manager *common.EntityManager) []ecs.EntityID {
-	attackerEntity := common.FindEntityByID(manager, attackerID)
+	attackerEntity := manager.FindEntityByID(attackerID)
 	if attackerEntity == nil {
 		return []ecs.EntityID{}
 	}
@@ -302,7 +302,7 @@ func getUnitsInRow(squadID ecs.EntityID, row int, manager *common.EntityManager)
 		cellUnits := GetUnitIDsAtGridPosition(squadID, row, col, manager)
 		for _, unitID := range cellUnits {
 			if !seen[unitID] {
-				entity := common.FindEntityByID(manager, unitID)
+				entity := manager.FindEntityByID(unitID)
 				if entity == nil {
 					continue
 				}
@@ -335,7 +335,7 @@ func selectLowestArmorTarget(squadID ecs.EntityID, manager *common.EntityManager
 	leftmostCol := 3 // Start with invalid column (max is 2)
 
 	for _, unitID := range allUnits {
-		attr := common.GetAttributesByID(manager, unitID)
+		attr := common.GetComponentTypeByID[*common.Attributes](manager, unitID, common.AttributeComponent)
 		if attr == nil || attr.CurrentHealth <= 0 {
 			continue
 		}
@@ -407,8 +407,8 @@ func processAttackOnTargets(attackerID ecs.EntityID, targetIDs []ecs.EntityID, r
 
 // calculateUnitDamageByID calculates damage using new attribute system and returns detailed event data
 func calculateUnitDamageByID(attackerID, defenderID ecs.EntityID, squadmanager *common.EntityManager) (int, *AttackEvent) {
-	attackerAttr := common.GetAttributesByID(squadmanager, attackerID)
-	defenderAttr := common.GetAttributesByID(squadmanager, defenderID)
+	attackerAttr := common.GetComponentTypeByID[*common.Attributes](squadmanager, attackerID, common.AttributeComponent)
+	defenderAttr := common.GetComponentTypeByID[*common.Attributes](squadmanager, defenderID, common.AttributeComponent)
 
 	// Create event to track damage pipeline
 	event := &AttackEvent{
@@ -514,7 +514,7 @@ func rollDodge(dodgeChance int) bool {
 
 // applyDamageToUnitByID applies damage to a unit and tracks it in the combat result
 func applyDamageToUnitByID(unitID ecs.EntityID, damage int, result *CombatResult, squadmanager *common.EntityManager) {
-	attr := common.GetAttributesByID(squadmanager, unitID)
+	attr := common.GetComponentTypeByID[*common.Attributes](squadmanager, unitID, common.AttributeComponent)
 	if attr == nil {
 		return
 	}
@@ -546,7 +546,7 @@ func calculateSquadStatus(squadID ecs.EntityID, manager *common.EntityManager) S
 	totalMaxHP := 0
 
 	for _, unitID := range unitIDs {
-		entity := common.FindEntityByID(manager, unitID)
+		entity := manager.FindEntityByID(unitID)
 		if entity == nil {
 			continue
 		}
@@ -583,7 +583,7 @@ func calculateSquadStatus(squadID ecs.EntityID, manager *common.EntityManager) S
 // Cover bonuses stack additively (e.g., 0.25 + 0.15 = 0.40 total reduction)
 // Returns a value between 0.0 (no cover) and 1.0 (100% damage reduction, capped)
 func CalculateTotalCover(defenderID ecs.EntityID, squadmanager *common.EntityManager) float64 {
-	defenderEntity := common.FindEntityByID(squadmanager, defenderID)
+	defenderEntity := squadmanager.FindEntityByID(defenderID)
 	if defenderEntity == nil {
 		return 0.0
 	}
@@ -607,7 +607,7 @@ func CalculateTotalCover(defenderID ecs.EntityID, squadmanager *common.EntityMan
 	// Sum all cover bonuses (stacking additively)
 	totalCover := 0.0
 	for _, providerID := range coverProviders {
-		providerEntity := common.FindEntityByID(squadmanager, providerID)
+		providerEntity := squadmanager.FindEntityByID(providerID)
 		if providerEntity == nil {
 			continue
 		}
@@ -663,7 +663,7 @@ func GetCoverProvidersFor(defenderID ecs.EntityID, defenderSquadID ecs.EntityID,
 		if unitID == defenderID {
 			continue
 		}
-		entity := common.FindEntityByID(squadmanager, unitID)
+		entity := squadmanager.FindEntityByID(unitID)
 		if entity == nil {
 			continue
 		}
@@ -729,7 +729,7 @@ func CalculateCoverBreakdown(defenderID ecs.EntityID, squadmanager *common.Entit
 	breakdown := CoverBreakdown{
 		Providers: []CoverProvider{},
 	}
-	defenderEntity := common.FindEntityByID(squadmanager, defenderID)
+	defenderEntity := squadmanager.FindEntityByID(defenderID)
 	if defenderEntity == nil {
 		return breakdown
 	}
@@ -749,7 +749,7 @@ func CalculateCoverBreakdown(defenderID ecs.EntityID, squadmanager *common.Entit
 
 	totalCover := 0.0
 	for _, providerID := range providerIDs {
-		providerEntity := common.FindEntityByID(squadmanager, providerID)
+		providerEntity := squadmanager.FindEntityByID(providerID)
 		if providerEntity == nil {
 			continue
 		}
@@ -831,7 +831,7 @@ func displaySquadStatus(squadID ecs.EntityID, squadmanager *common.EntityManager
 
 	for _, unitID := range unitIDs {
 
-		entity := common.FindEntityByID(squadmanager, unitID)
+		entity := squadmanager.FindEntityByID(unitID)
 		if entity == nil {
 			continue
 		}

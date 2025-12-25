@@ -67,7 +67,7 @@ func (cmd *ChangeFormationCommand) Validate() error {
 		occupiedCells[cell] = true
 
 		// Verify unit exists and belongs to this squad
-		unitEntity := common.FindEntityByID(cmd.entityManager, assignment.UnitID)
+		unitEntity := cmd.entityManager.FindEntityByID(assignment.UnitID)
 		if unitEntity == nil {
 			return fmt.Errorf("unit %d not found", assignment.UnitID)
 		}
@@ -167,7 +167,7 @@ func (cmd *ChangeFormationCommand) captureCurrentFormation() error {
 	unitIDs := squads.GetUnitIDsInSquad(cmd.squadID, cmd.entityManager)
 
 	for _, unitID := range unitIDs {
-		unitEntity := common.FindEntityByID(cmd.entityManager, unitID)
+		unitEntity := cmd.entityManager.FindEntityByID(unitID)
 		if unitEntity == nil {
 			continue
 		}

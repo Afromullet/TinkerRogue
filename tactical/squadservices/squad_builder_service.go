@@ -69,7 +69,7 @@ func (sbs *SquadBuilderService) DesignateLeader(unitID ecs.EntityID) *DesignateL
 	result := &DesignateLeaderResult{}
 
 	// Find the unit entity
-	unitEntity := common.FindEntityByID(sbs.entityManager, unitID)
+	unitEntity := sbs.entityManager.FindEntityByID(unitID)
 	if unitEntity == nil {
 		result.Error = fmt.Sprintf("unit %d not found", unitID)
 		return result
@@ -303,7 +303,7 @@ func (sbs *SquadBuilderService) ClearSquadAndReturnAllUnits(
 	// Remove each unit and return to roster
 	for _, unitID := range unitIDs {
 		// Find unit entity to dispose it
-		unitEntity := common.FindEntityByID(sbs.entityManager, unitID)
+		unitEntity := sbs.entityManager.FindEntityByID(unitID)
 		if unitEntity == nil {
 			continue
 		}

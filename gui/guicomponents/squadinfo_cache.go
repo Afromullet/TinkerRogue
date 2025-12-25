@@ -63,7 +63,7 @@ func (sc *SquadInfoCache) buildSquadInfo(squadID ecs.EntityID) *SquadInfo {
 	totalHP := 0
 	maxHP := 0
 	for _, unitID := range unitIDs {
-		attrs := common.GetAttributesByID(manager, unitID)
+		attrs := common.GetComponentTypeByID[*common.Attributes](manager, unitID, common.AttributeComponent)
 		if attrs != nil {
 			if attrs.CanAct {
 				aliveUnits++

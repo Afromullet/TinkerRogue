@@ -65,7 +65,7 @@ func (c *RemoveUnitCommand) Execute() error {
 	c.previousGridCol = gridPos.AnchorCol
 
 	// Capture unit attributes
-	attr := common.GetAttributesByID(c.manager, c.unitID)
+	attr := common.GetComponentTypeByID[*common.Attributes](c.manager, c.unitID, common.AttributeComponent)
 	if attr == nil {
 		return fmt.Errorf("unit has no attributes")
 	}

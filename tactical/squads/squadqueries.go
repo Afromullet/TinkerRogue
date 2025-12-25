@@ -81,7 +81,7 @@ func GetUnitIDsInRow(squadID ecs.EntityID, row int, squadmanager *common.EntityM
 		for _, unitID := range idsAtPos {
 			if !seen[unitID] {
 				// OPTIMIZATION: Use direct entity lookup instead of GetAttributesByIDWithTag
-				entity := common.FindEntityByID(squadmanager, unitID)
+				entity := squadmanager.FindEntityByID(unitID)
 				if entity == nil {
 					continue
 				}
@@ -146,7 +146,7 @@ func GetSquadUsedCapacity(squadID ecs.EntityID, squadmanager *common.EntityManag
 
 	for _, unitID := range unitIDs {
 		// OPTIMIZATION: Use direct entity lookup instead of GetAttributesByIDWithTag
-		entity := common.FindEntityByID(squadmanager, unitID)
+		entity := squadmanager.FindEntityByID(unitID)
 		if entity == nil {
 			continue
 		}
@@ -173,7 +173,7 @@ func GetSquadTotalCapacity(squadID ecs.EntityID, squadmanager *common.EntityMana
 	}
 
 	// OPTIMIZATION: Use direct entity lookup instead of GetAttributesByIDWithTag
-	entity := common.FindEntityByID(squadmanager, leaderID)
+	entity := squadmanager.FindEntityByID(leaderID)
 	if entity == nil {
 		return 6
 	}
@@ -258,7 +258,7 @@ func GetSquadMovementSpeed(squadID ecs.EntityID, squadmanager *common.EntityMana
 
 	for _, unitID := range unitIDs {
 		// OPTIMIZATION: Get entity once, then extract both Attributes and MovementSpeed
-		entity := common.FindEntityByID(squadmanager, unitID)
+		entity := squadmanager.FindEntityByID(unitID)
 		if entity == nil {
 			continue
 		}
@@ -341,7 +341,7 @@ func UpdateSquadDestroyedStatus(squadID ecs.EntityID, manager *common.EntityMana
 	hasAliveUnit := false
 	for _, unitID := range unitIDs {
 		// OPTIMIZATION: Use direct entity lookup instead of GetAttributesByIDWithTag
-		entity := common.FindEntityByID(manager, unitID)
+		entity := manager.FindEntityByID(unitID)
 		if entity == nil {
 			continue
 		}
@@ -361,7 +361,7 @@ func UpdateSquadDestroyedStatus(squadID ecs.EntityID, manager *common.EntityMana
 func GetUnitIdentity(unitID ecs.EntityID, manager *common.EntityManager) UnitIdentity {
 	// OPTIMIZATION: Get entity once, then extract all components from it
 	// This avoids 3 separate GetEntityByID allocations
-	entity := common.FindEntityByID(manager, unitID)
+	entity := manager.FindEntityByID(unitID)
 	if entity == nil {
 		return UnitIdentity{
 			ID:        unitID,

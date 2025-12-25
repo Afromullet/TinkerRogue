@@ -88,7 +88,7 @@ func TestAddSquadToFaction(t *testing.T) {
 	}
 
 	// Verify squad has CombatFactionComponent
-	squad := common.FindEntityByID(manager, squadID)
+	squad := manager.FindEntityByID(squadID)
 	if squad == nil {
 		t.Fatal("Squad not found")
 	}
@@ -204,8 +204,8 @@ func TestGetSquadMovementSpeed_ReturnsSlowestUnit(t *testing.T) {
 
 	// Modify one unit to have slower speed
 	unitIDs := squads.GetUnitIDsInSquad(squadID, manager)
-	slowUnit := common.FindEntityByID(manager, unitIDs[0])
-	attr := common.GetAttributes(slowUnit)
+	slowUnit := manager.FindEntityByID(unitIDs[0])
+	attr := common.GetComponentType[*common.Attributes](slowUnit, common.AttributeComponent)
 	attr.MovementSpeed = 2
 
 	moveSys := NewMovementSystem(manager, common.GlobalPositionSystem)

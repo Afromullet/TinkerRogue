@@ -54,7 +54,7 @@ func (r *SquadCombatRenderer) RenderUnit(
 	facingLeft bool,
 ) {
 	// Get the unit entity
-	entity := common.FindEntityByID(r.queries.ECSManager, unitID)
+	entity := r.queries.ECSManager.FindEntityByID(unitID)
 	if entity == nil {
 		return
 	}
@@ -183,7 +183,7 @@ func (r *SquadCombatRenderer) RenderUnitWithColor(
 	colorScale *ebiten.ColorScale,
 ) {
 	// Get the unit entity
-	entity := common.FindEntityByID(r.queries.ECSManager, unitID)
+	entity := r.queries.ECSManager.FindEntityByID(unitID)
 	if entity == nil {
 		return
 	}

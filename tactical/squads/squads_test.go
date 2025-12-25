@@ -1131,8 +1131,8 @@ func TestGetSquadMovementSpeed_DeadUnitsIgnored(t *testing.T) {
 	// Kill the slow unit
 	unitIDs := GetUnitIDsAtGridPosition(squadID, 0, 0, manager)
 	if len(unitIDs) > 0 {
-		slowUnit := common.FindEntityByID(manager, unitIDs[0])
-		attr := common.GetAttributes(slowUnit)
+		slowUnit := manager.FindEntityByID(unitIDs[0])
+		attr := common.GetComponentType[*common.Attributes](slowUnit, common.AttributeComponent)
 		attr.CurrentHealth = 0
 	}
 

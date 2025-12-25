@@ -92,7 +92,7 @@ func AddCreaturesToTracker(ecsmanger *common.EntityManager) {
 
 		// Also add to new PositionSystem for O(1) lookups
 		if common.GlobalPositionSystem != nil {
-			pos := common.GetPosition(c.Entity)
+			pos := common.GetComponentType[*coords.LogicalPosition](c.Entity, common.PositionComponent)
 			if pos != nil {
 				common.GlobalPositionSystem.AddEntity(c.Entity.GetID(), *pos)
 			}

@@ -55,7 +55,7 @@ func (cas *CombatActionSystem) ExecuteAttackAction(attackerID, defenderID ecs.En
 
 	for _, unitID := range allUnits {
 		if !containsEntity(attackingUnits, unitID) {
-			entity := common.FindEntityByID(cas.manager, unitID)
+			entity := cas.manager.FindEntityByID(unitID)
 			if entity == nil {
 				continue
 			}
@@ -74,7 +74,7 @@ func (cas *CombatActionSystem) ExecuteAttackAction(attackerID, defenderID ecs.En
 	// Re-enable disabled units. TODO: This might allow squads to attack twice. Once ranged, and then melee
 	// (If the squad has a mix of units, and melee units did not attack due to the range). Test and fix this
 	for _, unitID := range disabledUnits {
-		entity := common.FindEntityByID(cas.manager, unitID)
+		entity := cas.manager.FindEntityByID(unitID)
 		if entity == nil {
 			continue
 		}
@@ -117,7 +117,7 @@ func (cas *CombatActionSystem) GetSquadAttackRange(squadID ecs.EntityID) int {
 	maxRange := 1 // Default melee
 	for _, unitID := range unitIDs {
 
-		entity := common.FindEntityByID(cas.manager, unitID)
+		entity := cas.manager.FindEntityByID(unitID)
 		if entity == nil {
 			continue
 		}
@@ -151,7 +151,7 @@ func (cas *CombatActionSystem) GetAttackingUnits(squadID, targetID ecs.EntityID)
 
 	for _, unitID := range allUnits {
 
-		entity := common.FindEntityByID(cas.manager, unitID)
+		entity := cas.manager.FindEntityByID(unitID)
 		if entity == nil {
 			continue
 		}

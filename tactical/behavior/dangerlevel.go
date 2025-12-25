@@ -160,7 +160,7 @@ func (stl *SquadThreatLevel) getSquadMovementRange() int {
 	// Find slowest unit speed (squad moves as one)
 	minSpeed := MaxSpeedSentinel
 	for _, unitID := range unitIDs {
-		entity := common.FindEntityByID(stl.manager, unitID)
+		entity := stl.manager.FindEntityByID(unitID)
 		if entity == nil {
 			continue
 		}
@@ -203,7 +203,7 @@ func (stl *SquadThreatLevel) CalculateSquadDangerLevel() {
 	attackTypeCount := make(map[squads.AttackType]int)
 
 	for _, unitID := range unitIDs {
-		unitEntity := common.FindEntityByID(stl.manager, unitID)
+		unitEntity := stl.manager.FindEntityByID(unitID)
 		if unitEntity == nil {
 			continue
 		}

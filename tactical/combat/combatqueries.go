@@ -20,7 +20,7 @@ func findTurnStateEntity(manager *common.EntityManager) *ecs.Entity {
 // GetSquadFaction returns the faction ID for a squad in combat.
 // Returns 0 if squad is not in combat (doesn't have CombatFactionComponent).
 func GetSquadFaction(squadID ecs.EntityID, manager *common.EntityManager) ecs.EntityID {
-	entity := common.FindEntityByID(manager, squadID)
+	entity := manager.FindEntityByID(squadID)
 	if entity == nil {
 		return 0
 	}
@@ -53,7 +53,7 @@ func getFactionOwner(squadID ecs.EntityID, manager *common.EntityManager) ecs.En
 
 // GetSquadMapPosition returns the current map position of a squad
 func GetSquadMapPosition(squadID ecs.EntityID, manager *common.EntityManager) (coords.LogicalPosition, error) {
-	entity := common.FindEntityByID(manager, squadID)
+	entity := manager.FindEntityByID(squadID)
 	if entity == nil {
 		return coords.LogicalPosition{}, fmt.Errorf("squad %d not found", squadID)
 	}
@@ -117,7 +117,7 @@ func GetSquadAtPosition(pos coords.LogicalPosition, manager *common.EntityManage
 func isSquad(entityID ecs.EntityID, manager *common.EntityManager) bool {
 	// Check if squad has CombatFactionComponent (is in combat)
 	// Use direct entity lookup instead of tag-based iteration (O(1) vs O(n))
-	entity := common.FindEntityByID(manager, entityID)
+	entity := manager.FindEntityByID(entityID)
 	if entity == nil {
 		return false
 	}
@@ -185,7 +185,7 @@ func decrementMovementRemaining(cache *CombatQueryCache, squadID ecs.EntityID, a
 
 // removeSquadFromMap removes a squad from the combat map
 func removeSquadFromMap(squadID ecs.EntityID, manager *common.EntityManager) error {
-	squad := common.FindEntityByID(manager, squadID)
+	squad := manager.FindEntityByID(squadID)
 	if squad == nil {
 		return fmt.Errorf("squad %d not found", squadID)
 	}

@@ -80,7 +80,7 @@ func (c *AddUnitCommand) Execute() error {
 
 	// Create unit template from the existing unit's data
 	// Get unit attributes
-	attr := common.GetAttributesByID(c.manager, unitEntityID)
+	attr := common.GetComponentTypeByID[*common.Attributes](c.manager, unitEntityID, common.AttributeComponent)
 	if attr == nil {
 		return fmt.Errorf("unit entity has no attributes")
 	}

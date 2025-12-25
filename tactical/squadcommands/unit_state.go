@@ -24,7 +24,7 @@ type CapturedUnitState struct {
 // CaptureUnitState captures complete state of a single unit for undo operations
 // Returns error if unit doesn't exist or is missing critical components
 func CaptureUnitState(unitID ecs.EntityID, manager *common.EntityManager) (*CapturedUnitState, error) {
-	unitEntity := common.FindEntityByID(manager, unitID)
+	unitEntity := manager.FindEntityByID(unitID)
 	if unitEntity == nil {
 		return nil, fmt.Errorf("unit %d not found", unitID)
 	}

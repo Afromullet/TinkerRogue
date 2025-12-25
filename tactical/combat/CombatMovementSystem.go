@@ -38,7 +38,7 @@ func (ms *CombatMovementSystem) GetSquadMovementSpeed(squadID ecs.EntityID) int 
 	minSpeed := 999
 	for _, unitID := range unitIDs {
 
-		entity := common.FindEntityByID(ms.manager, unitID)
+		entity := ms.manager.FindEntityByID(unitID)
 		if entity == nil {
 			continue
 		}
@@ -113,7 +113,7 @@ func (ms *CombatMovementSystem) MoveSquad(squadID ecs.EntityID, targetPos coords
 	}
 
 	// Get squad entity for movement
-	squadEntity := common.FindEntityByID(ms.manager, squadID)
+	squadEntity := ms.manager.FindEntityByID(squadID)
 	if squadEntity == nil {
 		return fmt.Errorf("squad entity not found")
 	}
@@ -177,7 +177,7 @@ func (ms *CombatMovementSystem) GetValidMovementTiles(squadID ecs.EntityID) []co
 
 // GetSquadPosition returns the position of a squad
 func (ms *CombatMovementSystem) GetSquadPosition(squadID ecs.EntityID) (coords.LogicalPosition, error) {
-	entity := common.FindEntityByID(ms.manager, squadID)
+	entity := ms.manager.FindEntityByID(squadID)
 	if entity == nil {
 		return coords.LogicalPosition{}, fmt.Errorf("squad %d not found", squadID)
 	}

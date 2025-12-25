@@ -238,7 +238,7 @@ func (gq *GUIQueries) GetCreatureAtPosition(pos coords.LogicalPosition) *Creatur
 	}
 
 	// This avoids multiple GetEntityByID allocations
-	entity := common.FindEntityByID(gq.ECSManager, creatureID)
+	entity := gq.ECSManager.FindEntityByID(creatureID)
 	if entity == nil {
 		return nil
 	}

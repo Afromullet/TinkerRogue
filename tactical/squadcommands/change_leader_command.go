@@ -56,14 +56,14 @@ func (c *ChangeLeaderCommand) Execute() error {
 
 	// Remove leader component from old leader (if exists)
 	if c.oldLeaderID != 0 {
-		oldLeaderEntity := common.FindEntityByID(c.manager, c.oldLeaderID)
+		oldLeaderEntity := c.manager.FindEntityByID(c.oldLeaderID)
 		if oldLeaderEntity != nil {
 			removeLeaderComponents(oldLeaderEntity)
 		}
 	}
 
 	// Add leader component to new leader
-	newLeaderEntity := common.FindEntityByID(c.manager, c.newLeaderID)
+	newLeaderEntity := c.manager.FindEntityByID(c.newLeaderID)
 	if newLeaderEntity == nil {
 		return fmt.Errorf("new leader entity not found")
 	}
@@ -78,14 +78,14 @@ func (c *ChangeLeaderCommand) Execute() error {
 
 func (c *ChangeLeaderCommand) Undo() error {
 	// Remove leader component from new leader
-	newLeaderEntity := common.FindEntityByID(c.manager, c.newLeaderID)
+	newLeaderEntity := c.manager.FindEntityByID(c.newLeaderID)
 	if newLeaderEntity != nil {
 		removeLeaderComponents(newLeaderEntity)
 	}
 
 	// Restore old leader (if there was one)
 	if c.oldLeaderID != 0 {
-		oldLeaderEntity := common.FindEntityByID(c.manager, c.oldLeaderID)
+		oldLeaderEntity := c.manager.FindEntityByID(c.oldLeaderID)
 		if oldLeaderEntity != nil {
 			addLeaderComponents(oldLeaderEntity)
 		}
