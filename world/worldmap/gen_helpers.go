@@ -55,7 +55,7 @@ func carveRoom(result *GenerationResult, room Rect, images TileImageSet) {
 			result.Tiles[index].Blocked = false
 			result.Tiles[index].TileType = FLOOR
 			if len(images.FloorImages) > 0 {
-				result.Tiles[index].image = images.FloorImages[common.GetRandomBetween(0, len(images.FloorImages)-1)]
+				result.Tiles[index].Image = images.FloorImages[common.GetRandomBetween(0, len(images.FloorImages)-1)]
 			}
 
 			// Add to valid positions
@@ -74,7 +74,7 @@ func carveHorizontalTunnel(result *GenerationResult, x1, x2, y int, images TileI
 			result.Tiles[index].Blocked = false
 			result.Tiles[index].TileType = FLOOR
 			if len(images.FloorImages) > 0 {
-				result.Tiles[index].image = images.FloorImages[common.GetRandomBetween(0, len(images.FloorImages)-1)]
+				result.Tiles[index].Image = images.FloorImages[common.GetRandomBetween(0, len(images.FloorImages)-1)]
 			}
 			result.ValidPositions = append(result.ValidPositions, logicalPos)
 		}
@@ -91,7 +91,7 @@ func carveVerticalTunnel(result *GenerationResult, y1, y2, x int, images TileIma
 			result.Tiles[index].Blocked = false
 			result.Tiles[index].TileType = FLOOR
 			if len(images.FloorImages) > 0 {
-				result.Tiles[index].image = images.FloorImages[common.GetRandomBetween(0, len(images.FloorImages)-1)]
+				result.Tiles[index].Image = images.FloorImages[common.GetRandomBetween(0, len(images.FloorImages)-1)]
 			}
 			result.ValidPositions = append(result.ValidPositions, logicalPos)
 		}

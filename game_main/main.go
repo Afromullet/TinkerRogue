@@ -83,10 +83,12 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	// Phase 1: Ebiten rendering (game world)
 	// TODO. This just needs to be one call. Handle the coords.MAP_SCROLLING_ENABLED a different way
 	if coords.MAP_SCROLLING_ENABLED {
-		g.gameMap.DrawLevelCenteredSquare(screen, g.playerData.Pos, config.DefaultZoomNumberOfSquare, config.DEBUG_MODE)
+		bounds := rendering.DrawMapCentered(screen, &g.gameMap, g.playerData.Pos, config.DefaultZoomNumberOfSquare, config.DEBUG_MODE)
+		g.gameMap.RightEdgeX = bounds.RightEdgeX
+		g.gameMap.RightEdgeY = bounds.RightEdgeY
 		rendering.ProcessRenderablesInSquare(&g.em, g.gameMap, screen, g.playerData.Pos, config.DefaultZoomNumberOfSquare, config.DEBUG_MODE, g.renderingCache)
 	} else {
-		g.gameMap.DrawLevel(screen, config.DEBUG_MODE)
+		rendering.DrawMap(screen, &g.gameMap, config.DEBUG_MODE)
 		rendering.ProcessRenderables(&g.em, g.gameMap, screen, config.DEBUG_MODE, g.renderingCache)
 	}
 

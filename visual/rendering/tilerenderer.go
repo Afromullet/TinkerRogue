@@ -1,7 +1,8 @@
-package worldmap
+package rendering
 
 import (
 	"game_main/world/coords"
+	"game_main/world/worldmap"
 	"game_main/visual/graphics"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -9,7 +10,7 @@ import (
 
 // TileRenderer handles rendering of map tiles with batching for performance
 type TileRenderer struct {
-	tiles      []*Tile
+	tiles      []*worldmap.Tile
 	colorScale ebiten.ColorScale
 	drawOpts   ebiten.DrawImageOptions // Reusable draw options (eliminates 2,000 allocations/frame)
 	batches    map[*ebiten.Image]*TileBatch // Batches tiles by image for efficient rendering
@@ -22,7 +23,7 @@ type TileRenderer struct {
 }
 
 // NewTileRenderer creates a renderer for the given tileset
-func NewTileRenderer(tiles []*Tile) *TileRenderer {
+func NewTileRenderer(tiles []*worldmap.Tile) *TileRenderer {
 	return &TileRenderer{
 		tiles:   tiles,
 		batches: make(map[*ebiten.Image]*TileBatch, 20), // Pre-allocate for ~20 unique images
@@ -106,10 +107,10 @@ func (r *TileRenderer) addTileToBatch(x, y int, opts RenderOptions, bounds *Rend
 	tile.IsRevealed = true
 
 	// Get or create batch for this tile's image
-	if r.batches[tile.image] == nil {
-		r.batches[tile.image] = NewTileBatch(tile.image)
+	if r.batches[tile.Image] == nil {
+		r.batches[tile.Image] = NewTileBatch(tile.Image)
 	}
-	batch := r.batches[tile.image]
+	batch := r.batches[tile.Image]
 
 	// Calculate screen position based on viewport mode
 	var screenX, screenY float32
@@ -121,7 +122,7 @@ func (r *TileRenderer) addTileToBatch(x, y int, opts RenderOptions, bounds *Rend
 	}
 
 	// Get tile dimensions from image
-	tileBounds := tile.image.Bounds()
+	tileBounds := tile.Image.Bounds()
 	tileW := float32(tileBounds.Dx())
 	tileH := float32(tileBounds.Dy())
 
@@ -134,8 +135,9 @@ func (r *TileRenderer) addTileToBatch(x, y int, opts RenderOptions, bounds *Rend
 
 	// Get color values (default to white if no color matrix)
 	colorR, colorG, colorB, colorA := float32(1), float32(1), float32(1), float32(1)
-	if !tile.cm.IsEmpty() {
-		colorR, colorG, colorB, colorA = tile.cm.R, tile.cm.G, tile.cm.B, tile.cm.A
+	if !tile.GetColorMatrix().IsEmpty() {
+		cm := tile.GetColorMatrix()
+		colorR, colorG, colorB, colorA = cm.R, cm.G, cm.B, cm.A
 	}
 
 	// Source rectangle (full tile image)
@@ -149,7 +151,7 @@ func (r *TileRenderer) addTileToBatch(x, y int, opts RenderOptions, bounds *Rend
 }
 
 // calculateViewportPosition computes screen position for viewport-centered rendering
-func (r *TileRenderer) calculateViewportPosition(tile *Tile, center *coords.LogicalPosition, bounds *RenderedBounds) (float32, float32) {
+func (r *TileRenderer) calculateViewportPosition(tile *worldmap.Tile, center *coords.LogicalPosition, bounds *RenderedBounds) (float32, float32) {
 	// Convert pixel position to logical position
 	tileLogicalPos := coords.LogicalPosition{
 		X: tile.PixelX / graphics.ScreenInfo.TileSize,
@@ -161,7 +163,7 @@ func (r *TileRenderer) calculateViewportPosition(tile *Tile, center *coords.Logi
 
 	// Apply scaling
 	scale := float32(graphics.ScreenInfo.ScaleFactor)
-	tileBounds := tile.image.Bounds()
+	tileBounds := tile.Image.Bounds()
 	tileWidth := float32(tileBounds.Dx()) * scale
 
 	// Track edges for UI layout
@@ -200,11 +202,11 @@ func (r *TileRenderer) renderTile(x, y int, opts RenderOptions, bounds *Rendered
 	// Apply color matrix if present
 	r.applyColorMatrix(&r.drawOpts, tile)
 
-	opts.Screen.DrawImage(tile.image, &r.drawOpts)
+	opts.Screen.DrawImage(tile.Image, &r.drawOpts)
 }
 
 // applyViewportTransformWithBounds handles centered viewport rendering and edge tracking
-func (r *TileRenderer) applyViewportTransformWithBounds(opts *ebiten.DrawImageOptions, tile *Tile, center *coords.LogicalPosition, bounds *RenderedBounds) {
+func (r *TileRenderer) applyViewportTransformWithBounds(opts *ebiten.DrawImageOptions, tile *worldmap.Tile, center *coords.LogicalPosition, bounds *RenderedBounds) {
 	// Convert pixel position to logical position
 	tileLogicalPos := coords.LogicalPosition{
 		X: tile.PixelX / graphics.ScreenInfo.TileSize,
@@ -219,7 +221,7 @@ func (r *TileRenderer) applyViewportTransformWithBounds(opts *ebiten.DrawImageOp
 	opts.GeoM.Translate(screenX, screenY)
 
 	// Track edges for UI layout
-	tileRightEdge := int(screenX + float64(tile.image.Bounds().Dx()*graphics.ScreenInfo.ScaleFactor))
+	tileRightEdge := int(screenX + float64(tile.Image.Bounds().Dx()*graphics.ScreenInfo.ScaleFactor))
 	if tileRightEdge > bounds.RightEdgeX {
 		bounds.RightEdgeX = tileRightEdge
 	}
@@ -231,20 +233,21 @@ func (r *TileRenderer) applyViewportTransformWithBounds(opts *ebiten.DrawImageOp
 }
 
 // applyFullMapTransform handles full map rendering
-func (r *TileRenderer) applyFullMapTransform(opts *ebiten.DrawImageOptions, tile *Tile) {
+func (r *TileRenderer) applyFullMapTransform(opts *ebiten.DrawImageOptions, tile *worldmap.Tile) {
 	opts.GeoM.Translate(float64(tile.PixelX), float64(tile.PixelY))
 }
 
 // applyColorMatrix applies tile-specific color effects
-func (r *TileRenderer) applyColorMatrix(opts *ebiten.DrawImageOptions, tile *Tile) {
-	if tile.cm.IsEmpty() {
+func (r *TileRenderer) applyColorMatrix(opts *ebiten.DrawImageOptions, tile *worldmap.Tile) {
+	cm := tile.GetColorMatrix()
+	if cm.IsEmpty() {
 		return
 	}
 
-	r.colorScale.SetR(tile.cm.R)
-	r.colorScale.SetG(tile.cm.G)
-	r.colorScale.SetB(tile.cm.B)
-	r.colorScale.SetA(tile.cm.A)
+	r.colorScale.SetR(cm.R)
+	r.colorScale.SetG(cm.G)
+	r.colorScale.SetB(cm.B)
+	r.colorScale.SetA(cm.A)
 	opts.ColorScale.ScaleWithColorScale(r.colorScale)
 }
 

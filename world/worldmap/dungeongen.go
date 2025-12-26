@@ -11,7 +11,6 @@ import (
 	"game_main/visual/graphics"
 
 	"github.com/bytearena/ecs"
-	"github.com/hajimehoshi/ebiten/v2"
 )
 
 // Rect represents a rectangular room or area on the game map.
@@ -142,7 +141,7 @@ func GoDownStairs(gm *GameMap) {
 	//startX, startY := newGameMap.Rooms[0].Center()
 	//ind := graphics.IndexFromXY(startX, startY)
 	//newGameMap.Tiles[ind].TileType = STAIRS_DOWN
-	//newGameMap.Tiles[ind].image = stairs_down
+	//newGameMap.Tiles[ind].Image = stairs_down
 
 	*gm = newGameMap
 }
@@ -222,33 +221,6 @@ func (gameMap *GameMap) RemoveItemFromTile(index int, pos *coords.LogicalPositio
 	return entityID, nil
 }
 
-func (gameMap *GameMap) DrawLevelCenteredSquare(screen *ebiten.Image, playerPos *coords.LogicalPosition, size int, revealAllTiles bool) {
-	renderer := NewTileRenderer(gameMap.Tiles)
-
-	bounds := renderer.Render(RenderOptions{
-		RevealAll:    revealAllTiles,
-		CenterOn:     playerPos,
-		ViewportSize: size,
-		Screen:       screen,
-	})
-
-	// Track edges for GUI (existing behavior)
-	gameMap.RightEdgeX = bounds.RightEdgeX
-	gameMap.RightEdgeY = bounds.RightEdgeY
-}
-
-// The color matrix draws on tiles.
-// Right now it's only used for showing the AOE of throwable items
-func (gameMap *GameMap) DrawLevel(screen *ebiten.Image, revealAllTiles bool) {
-	renderer := NewTileRenderer(gameMap.Tiles)
-
-	renderer.Render(RenderOptions{
-		RevealAll: revealAllTiles,
-		CenterOn:  nil, // Full map
-		Screen:    screen,
-	})
-}
-
 // Old generation methods removed - now handled by generator implementations
 // See gen_rooms_corridors.go for the extracted algorithm
 
@@ -278,7 +250,7 @@ func (gm *GameMap) PlaceStairs(images TileImageSet) {
 	ind := coords.CoordManager.LogicalToIndex(logicalPos)
 
 	gm.Tiles[ind].TileType = STAIRS_DOWN
-	gm.Tiles[ind].image = images.StairsDown
+	gm.Tiles[ind].Image = images.StairsDown
 
 }
 

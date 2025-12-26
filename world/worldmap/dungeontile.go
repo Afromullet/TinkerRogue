@@ -31,7 +31,7 @@ type Tile struct {
 	PixelY       int
 	TileCords    coords.LogicalPosition
 	Blocked      bool
-	image        *ebiten.Image
+	Image        *ebiten.Image  // Exported for rendering package
 	tileContents TileContents
 	TileType     TileType
 	IsRevealed   bool
@@ -48,7 +48,7 @@ func NewTile(pixelX, pixelY int, tileCords coords.LogicalPosition, blocked bool,
 		PixelY:     pixelY,
 		TileCords:  tileCords,
 		Blocked:    true,
-		image:      img,
+		Image:      img,
 		TileType:   WALL,
 		IsRevealed: false,
 		cm: graphics.ColorMatrix{
@@ -65,4 +65,8 @@ func NewTile(pixelX, pixelY int, tileCords coords.LogicalPosition, blocked bool,
 func (t *Tile) SetColorMatrix(c graphics.ColorMatrix) {
 
 	t.cm = c
+}
+
+func (t *Tile) GetColorMatrix() graphics.ColorMatrix {
+	return t.cm
 }

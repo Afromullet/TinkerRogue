@@ -218,21 +218,21 @@ func (g *OverworldGenerator) createTerrain(result *GenerationResult, width, heig
 				tile.TileType = WALL // Swamp/Water is impassable
 				tile.Blocked = true
 				if len(wallImages) > 0 {
-					tile.image = wallImages[common.GetRandomBetween(0, len(wallImages)-1)]
+					tile.Image = wallImages[common.GetRandomBetween(0, len(wallImages)-1)]
 				}
 
 			case BiomeMountain:
 				tile.TileType = WALL // Mountain is impassable
 				tile.Blocked = true
 				if len(wallImages) > 0 {
-					tile.image = wallImages[common.GetRandomBetween(0, len(wallImages)-1)]
+					tile.Image = wallImages[common.GetRandomBetween(0, len(wallImages)-1)]
 				}
 
 			case BiomeDesert:
 				tile.TileType = FLOOR // Desert is traversable but harsh
 				tile.Blocked = false
 				if len(floorImages) > 0 {
-					tile.image = floorImages[common.GetRandomBetween(0, len(floorImages)-1)]
+					tile.Image = floorImages[common.GetRandomBetween(0, len(floorImages)-1)]
 				}
 				result.ValidPositions = append(result.ValidPositions, logicalPos)
 
@@ -240,7 +240,7 @@ func (g *OverworldGenerator) createTerrain(result *GenerationResult, width, heig
 				tile.TileType = FLOOR // Forest is traversable
 				tile.Blocked = false
 				if len(floorImages) > 0 {
-					tile.image = floorImages[common.GetRandomBetween(0, len(floorImages)-1)]
+					tile.Image = floorImages[common.GetRandomBetween(0, len(floorImages)-1)]
 				}
 				result.ValidPositions = append(result.ValidPositions, logicalPos)
 
@@ -248,7 +248,7 @@ func (g *OverworldGenerator) createTerrain(result *GenerationResult, width, heig
 				tile.TileType = FLOOR // Grassland is traversable
 				tile.Blocked = false
 				if len(floorImages) > 0 {
-					tile.image = floorImages[common.GetRandomBetween(0, len(floorImages)-1)]
+					tile.Image = floorImages[common.GetRandomBetween(0, len(floorImages)-1)]
 				}
 				result.ValidPositions = append(result.ValidPositions, logicalPos)
 			}
