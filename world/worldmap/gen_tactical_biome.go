@@ -437,7 +437,8 @@ func (g *TacticalBiomeGenerator) convertToTiles(result *GenerationResult, terrai
 		for x := 0; x < width; x++ {
 			terrainIdx := y*width + x  // For terrainMap local array
 			logicalPos := coords.LogicalPosition{X: x, Y: y}
-			tileIdx := coords.CoordManager.LogicalToIndex(logicalPos)  // For result.Tiles
+			// Use passed width parameter instead of global CoordManager
+			tileIdx := y*width + x  // For result.Tiles (same as terrainIdx)
 			pixelX := x * graphics.ScreenInfo.TileSize
 			pixelY := y * graphics.ScreenInfo.TileSize
 
@@ -473,7 +474,8 @@ func (g *TacticalBiomeGenerator) clearSpawnArea(result *GenerationResult, center
 			}
 
 			logicalPos := coords.LogicalPosition{X: x, Y: y}
-			idx := coords.CoordManager.LogicalToIndex(logicalPos)
+			// Use passed width parameter instead of global CoordManager
+			idx := y*width + x
 
 			if idx >= 0 && idx < len(result.Tiles) {
 				pixelX := x * graphics.ScreenInfo.TileSize

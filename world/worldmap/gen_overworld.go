@@ -191,7 +191,8 @@ func (g *OverworldGenerator) createTerrain(result *GenerationResult, width, heig
 			biome := g.determineBiome(elevation, moisture)
 
 			logicalPos := coords.LogicalPosition{X: x, Y: y}
-			index := coords.CoordManager.LogicalToIndex(logicalPos)
+			// Use passed width parameter instead of global CoordManager
+			index := y*width + x
 
 			if index < 0 || index >= len(result.Tiles) {
 				continue

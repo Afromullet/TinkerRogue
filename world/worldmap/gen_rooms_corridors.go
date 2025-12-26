@@ -35,12 +35,12 @@ func (g *RoomsAndCorridorsGenerator) Generate(width, height int, images TileImag
 		room := g.generateRandomRoom(width, height)
 
 		if g.canPlaceRoom(room, result.Rooms) {
-			carveRoom(&result, room, images)
+			carveRoom(&result, room, width, images)
 
 			// Connect to previous room if not the first
 			if len(result.Rooms) > 0 {
 				prevRoom := result.Rooms[len(result.Rooms)-1]
-				g.connectRooms(&result, prevRoom, room, images)
+				g.connectRooms(&result, prevRoom, room, width, images)
 			}
 
 			result.Rooms = append(result.Rooms, room)
@@ -72,17 +72,17 @@ func (g *RoomsAndCorridorsGenerator) canPlaceRoom(room Rect, existing []Rect) bo
 
 
 // connectRooms creates L-shaped corridor between two rooms
-func (g *RoomsAndCorridorsGenerator) connectRooms(result *GenerationResult, room1, room2 Rect, images TileImageSet) {
+func (g *RoomsAndCorridorsGenerator) connectRooms(result *GenerationResult, room1, room2 Rect, width int, images TileImageSet) {
 	x1, y1 := room1.Center()
 	x2, y2 := room2.Center()
 
 	// Randomly choose L-shape orientation
 	if common.GetDiceRoll(2) == 2 {
-		carveHorizontalTunnel(result, x1, x2, y1, images)
-		carveVerticalTunnel(result, y1, y2, x2, images)
+		carveHorizontalTunnel(result, x1, x2, y1, width, images)
+		carveVerticalTunnel(result, y1, y2, x2, width, images)
 	} else {
-		carveVerticalTunnel(result, y1, y2, x1, images)
-		carveHorizontalTunnel(result, x1, x2, y2, images)
+		carveVerticalTunnel(result, y1, y2, x1, width, images)
+		carveHorizontalTunnel(result, x1, x2, y2, width, images)
 	}
 }
 
