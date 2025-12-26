@@ -2,6 +2,7 @@ package worldmap
 
 import (
 	"os"
+	"path/filepath"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
@@ -31,23 +32,25 @@ func LoadTileImages() TileImageSet {
 	}
 
 	// Load floor tiles
-	dir := "../assets//tiles/floors/limestone"
+	dir := filepath.Join("..", "assets", "tiles", "floors", "limestone")
 	files, _ := os.ReadDir(dir)
 
 	for _, file := range files {
 		if !file.IsDir() {
-			floor, _, _ := ebitenutil.NewImageFromFile(dir + "/" + file.Name())
+			imagePath := filepath.Join(dir, file.Name())
+			floor, _, _ := ebitenutil.NewImageFromFile(imagePath)
 			images.FloorImages = append(images.FloorImages, floor)
 		}
 	}
 
 	// Load wall tiles (from marble directory)
-	dir = "../assets//tiles/walls/marble"
+	dir = filepath.Join("..", "assets", "tiles", "walls", "marble")
 	files, _ = os.ReadDir(dir)
 
 	for _, file := range files {
 		if !file.IsDir() {
-			wall, _, _ := ebitenutil.NewImageFromFile(dir + "/" + file.Name())
+			imagePath := filepath.Join(dir, file.Name())
+			wall, _, _ := ebitenutil.NewImageFromFile(imagePath)
 			images.WallImages = append(images.WallImages, wall)
 		}
 	}
@@ -57,13 +60,14 @@ func LoadTileImages() TileImageSet {
 	files, _ = os.ReadDir(dir)
 	for _, file := range files {
 		if !file.IsDir() {
-			wall, _, _ := ebitenutil.NewImageFromFile(dir + "/" + file.Name())
+			imagePath := filepath.Join(dir, file.Name())
+			wall, _, _ := ebitenutil.NewImageFromFile(imagePath)
 			images.WallImages = append(images.WallImages, wall)
 		}
 	}
 
 	// Load stairs
-	fn := "../assets//tiles/stairs1.png"
+	fn := filepath.Join("..", "assets", "tiles", "stairs1.png")
 	s, _, _ := ebitenutil.NewImageFromFile(fn)
 	images.StairsDown = s
 
@@ -86,11 +90,12 @@ func loadBiomeTiles(biome Biome) *BiomeTileSet {
 	biomeName := biome.String()
 
 	// Load floor tiles for this biome
-	floorDir := "../assets/tiles/floors/" + biomeName
+	floorDir := filepath.Join("..", "assets", "tiles", "floors", biomeName)
 	if files, err := os.ReadDir(floorDir); err == nil {
 		for _, file := range files {
 			if !file.IsDir() {
-				if img, _, err := ebitenutil.NewImageFromFile(floorDir + "/" + file.Name()); err == nil {
+				imagePath := filepath.Join(floorDir, file.Name())
+				if img, _, err := ebitenutil.NewImageFromFile(imagePath); err == nil {
 					biomeTiles.FloorImages = append(biomeTiles.FloorImages, img)
 				}
 			}
@@ -98,11 +103,12 @@ func loadBiomeTiles(biome Biome) *BiomeTileSet {
 	}
 
 	// Load wall tiles for this biome
-	wallDir := "../assets/tiles/walls/" + biomeName
+	wallDir := filepath.Join("..", "assets", "tiles", "walls", biomeName)
 	if files, err := os.ReadDir(wallDir); err == nil {
 		for _, file := range files {
 			if !file.IsDir() {
-				if img, _, err := ebitenutil.NewImageFromFile(wallDir + "/" + file.Name()); err == nil {
+				imagePath := filepath.Join(wallDir, file.Name())
+				if img, _, err := ebitenutil.NewImageFromFile(imagePath); err == nil {
 					biomeTiles.WallImages = append(biomeTiles.WallImages, img)
 				}
 			}
