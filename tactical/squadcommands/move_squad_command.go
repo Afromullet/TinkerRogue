@@ -3,9 +3,9 @@ package squadcommands
 import (
 	"fmt"
 	"game_main/common"
-	"game_main/world/coords"
 	"game_main/tactical/combat"
 	"game_main/tactical/squads"
+	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"
 )
@@ -88,10 +88,32 @@ func (cmd *MoveSquadCommand) Execute() error {
 		}
 	}
 
-	// Delegate to CombatMovementSystem (SINGLE SOURCE OF TRUTH)
-	err = cmd.movementSystem.MoveSquad(cmd.squadID, cmd.newPosition)
-	if err != nil {
-		return fmt.Errorf("movement system failed: %w", err)
+	// NEW: Check if multi-turn movement needed
+	distance := cmd.oldPosition.ChebyshevDistance(&cmd.newPosition)
+
+	if distance <= cmd.oldMovementRemaining {
+		// Single-turn movement - execute immediately (EXISTING BEHAVIOR)
+		err = cmd.movementSystem.MoveSquad(cmd.squadID, cmd.newPosition)
+		if err != nil {
+			return fmt.Errorf("movement system failed: %w", err)
+		}
+	} else {
+		// Multi-turn movement - queue step commands
+		stepCommands := createMoveStepCommands(
+			cmd.entityManager,
+			cmd.movementSystem,
+			cmd.squadID,
+			cmd.oldPosition,
+			cmd.newPosition,
+			cmd.oldMovementRemaining,
+		)
+
+		for _, stepCmd := range stepCommands {
+			err := QueueCommand(cmd.entityManager, cmd.squadID, stepCmd)
+			if err != nil {
+				return fmt.Errorf("failed to queue move step: %w", err)
+			}
+		}
 	}
 
 	return nil
@@ -99,6 +121,9 @@ func (cmd *MoveSquadCommand) Execute() error {
 
 // Undo restores the squad to its old position
 func (cmd *MoveSquadCommand) Undo() error {
+	// NEW: Clear any remaining queued commands
+	ClearCommandQueue(cmd.entityManager, cmd.squadID)
+
 	// Get squad entity
 	squadEntity, err := getSquadOrError(cmd.squadID, cmd.entityManager)
 	if err != nil {
@@ -144,4 +169,62 @@ func (cmd *MoveSquadCommand) Description() string {
 		cmd.squadName,
 		cmd.oldPosition.X, cmd.oldPosition.Y,
 		cmd.newPosition.X, cmd.newPosition.Y)
+}
+
+// Helper: Create step commands for multi-turn movement
+func createMoveStepCommands(
+	manager *common.EntityManager,
+	moveSys *combat.CombatMovementSystem,
+	squadID ecs.EntityID,
+	start, end coords.LogicalPosition,
+	movementPerTurn int,
+) []SquadCommand {
+	path := createStraightPath(start, end, movementPerTurn)
+
+	stepCommands := make([]SquadCommand, len(path))
+	for i, destination := range path {
+		stepCommands[i] = NewMoveStepCommand(manager, moveSys, squadID, destination)
+	}
+
+	return stepCommands
+}
+
+func createStraightPath(from, to coords.LogicalPosition, maxStepSize int) []coords.LogicalPosition {
+	path := []coords.LogicalPosition{}
+	current := from
+
+	for current != to {
+		dx := to.X - current.X
+		dy := to.Y - current.Y
+
+		// Clamp to maxStepSize
+		if abs(dx) > maxStepSize {
+			if dx > 0 {
+				dx = maxStepSize
+			} else {
+				dx = -maxStepSize
+			}
+		}
+
+		if abs(dy) > maxStepSize {
+			if dy > 0 {
+				dy = maxStepSize
+			} else {
+				dy = -maxStepSize
+			}
+		}
+
+		next := coords.LogicalPosition{X: current.X + dx, Y: current.Y + dy}
+		path = append(path, next)
+		current = next
+	}
+
+	return path
+}
+
+func abs(x int) int {
+	if x < 0 {
+		return -x
+	}
+	return x
 }

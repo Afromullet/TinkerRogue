@@ -5,6 +5,7 @@ import (
 	"game_main/config"
 	"game_main/gear"
 	"game_main/tactical/squads"
+	_ "game_main/tactical/squadcommands" // Blank import to trigger init() for command queue components
 	"game_main/visual/rendering"
 	"game_main/world/coords"
 	"game_main/world/worldmap"
