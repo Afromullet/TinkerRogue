@@ -12,7 +12,6 @@ import (
 	"game_main/gui/widgets"
 	"game_main/tactical/squadcommands"
 	"game_main/tactical/squads"
-	"game_main/tactical/squadservices"
 
 	"github.com/ebitenui/ebitenui/widget"
 	"github.com/hajimehoshi/ebiten/v2"
@@ -22,7 +21,6 @@ import (
 type UnitPurchaseMode struct {
 	gui.BaseMode // Embed common mode infrastructure
 
-	purchaseService *squadservices.UnitPurchaseService
 	unitList        *widgets.CachedListWrapper
 	detailPanel     *widget.Container
 	detailTextArea  *widgets.CachedTextAreaWrapper // Cached for performance
@@ -47,9 +45,6 @@ func NewUnitPurchaseMode(modeManager *core.UIModeManager) *UnitPurchaseMode {
 }
 
 func (upm *UnitPurchaseMode) Initialize(ctx *core.UIContext) error {
-	// Create purchase service first (needed by UI builders)
-	upm.purchaseService = squadservices.NewUnitPurchaseService(ctx.ECSManager)
-
 	return gui.NewModeBuilder(&upm.BaseMode, gui.ModeConfig{
 		ModeName:   "unit_purchase",
 		ReturnMode: "squad_management",
@@ -242,8 +237,8 @@ func (upm *UnitPurchaseMode) updateDetailPanel() {
 		return
 	}
 
-	// Use service to get cost
-	cost := upm.purchaseService.GetUnitCost(*upm.selectedTemplate)
+	// Get cost
+	cost := squads.GetUnitCost(*upm.selectedTemplate)
 	info := fmt.Sprintf("Unit: %s\nCost: %d Gold\n\nRole: %s\nSize: %dx%d",
 		upm.selectedTemplate.Name,
 		cost,
@@ -256,10 +251,11 @@ func (upm *UnitPurchaseMode) updateDetailPanel() {
 	// Enable buttons
 	upm.viewStatsButton.GetWidget().Disabled = false
 
-	// Use service to validate if player can purchase
-	validation := upm.purchaseService.CanPurchaseUnit(
+	// Validate if player can purchase
+	validation := squads.CanPurchaseUnit(
 		upm.Context.PlayerData.PlayerEntityID,
 		*upm.selectedTemplate,
+		upm.Context.ECSManager,
 	)
 	upm.buyButton.GetWidget().Disabled = !validation.CanPurchase
 
@@ -314,7 +310,6 @@ func (upm *UnitPurchaseMode) purchaseUnit() {
 	// Create and execute purchase command
 	cmd := squadcommands.NewPurchaseUnitCommand(
 		upm.Queries.ECSManager,
-		upm.purchaseService,
 		playerID,
 		*upm.selectedTemplate,
 	)

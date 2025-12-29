@@ -1,25 +1,12 @@
-package squadservices
+package squads
 
 import (
 	"fmt"
 	"game_main/common"
-	"game_main/tactical/squads"
 	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"
 )
-
-// SquadBuilderService encapsulates squad building game logic
-type SquadBuilderService struct {
-	entityManager *common.EntityManager
-}
-
-// NewSquadBuilderService creates a new squad builder service
-func NewSquadBuilderService(manager *common.EntityManager) *SquadBuilderService {
-	return &SquadBuilderService{
-		entityManager: manager,
-	}
-}
 
 // AssignRosterUnitResult contains information about roster unit assignment
 type AssignRosterUnitResult struct {
@@ -31,13 +18,28 @@ type AssignRosterUnitResult struct {
 	RemainingCapacity float64
 }
 
+// UnassignRosterUnitResult contains information about roster unit removal
+type UnassignRosterUnitResult struct {
+	Success           bool
+	Error             string
+	RemainingCapacity float64
+}
+
+// ClearSquadResult contains information about squad clearing
+type ClearSquadResult struct {
+	Success      bool
+	Error        string
+	UnitsCleared int
+}
+
 // AssignRosterUnitToSquad handles both unit placement AND roster marking atomically
-func (sbs *SquadBuilderService) AssignRosterUnitToSquad(
+func AssignRosterUnitToSquad(
 	playerID ecs.EntityID,
 	squadID ecs.EntityID,
 	rosterUnitID ecs.EntityID,
-	template squads.UnitTemplate,
+	template UnitTemplate,
 	gridRow, gridCol int,
+	manager *common.EntityManager,
 ) *AssignRosterUnitResult {
 	result := &AssignRosterUnitResult{
 		RosterUnitID: rosterUnitID,
@@ -45,7 +47,7 @@ func (sbs *SquadBuilderService) AssignRosterUnitToSquad(
 	}
 
 	// Get roster
-	roster := squads.GetPlayerRoster(playerID, sbs.entityManager)
+	roster := GetPlayerRoster(playerID, manager)
 	if roster == nil {
 		result.Error = "roster not found"
 		return result
@@ -56,19 +58,19 @@ func (sbs *SquadBuilderService) AssignRosterUnitToSquad(
 	// (The original code got the unit via GetUnitEntityForTemplate which validates availability)
 
 	// Place unit in squad (creates new unit entity in formation grid)
-	unitID, err := squads.AddUnitToSquad(squadID, sbs.entityManager, template, gridRow, gridCol)
+	unitID, err := AddUnitToSquad(squadID, manager, template, gridRow, gridCol)
 	if err != nil {
 		result.Error = err.Error()
-		result.RemainingCapacity = squads.GetSquadRemainingCapacity(squadID, sbs.entityManager)
+		result.RemainingCapacity = GetSquadRemainingCapacity(squadID, manager)
 		return result
 	}
 
 	// Mark roster unit as assigned to squad (atomic with placement)
 	if err := roster.MarkUnitInSquad(rosterUnitID, squadID); err != nil {
 		// Rollback: Remove the placed unit
-		unitIDs := squads.GetUnitIDsAtGridPosition(squadID, gridRow, gridCol, sbs.entityManager)
+		unitIDs := GetUnitIDsAtGridPosition(squadID, gridRow, gridCol, manager)
 		if len(unitIDs) > 0 {
-			squads.RemoveUnitFromSquad(unitIDs[0], sbs.entityManager)
+			RemoveUnitFromSquad(unitIDs[0], manager)
 		}
 		result.Error = fmt.Sprintf("failed to mark roster unit: %v", err)
 		return result
@@ -77,43 +79,37 @@ func (sbs *SquadBuilderService) AssignRosterUnitToSquad(
 	// Success
 	result.Success = true
 	result.PlacedUnitID = unitID
-	result.RemainingCapacity = squads.GetSquadRemainingCapacity(squadID, sbs.entityManager)
+	result.RemainingCapacity = GetSquadRemainingCapacity(squadID, manager)
 
 	return result
 }
 
-// UnassignRosterUnitResult contains information about roster unit removal
-type UnassignRosterUnitResult struct {
-	Success           bool
-	Error             string
-	RemainingCapacity float64
-}
-
 // UnassignRosterUnitFromSquad handles unit removal AND roster return atomically
-func (sbs *SquadBuilderService) UnassignRosterUnitFromSquad(
+func UnassignRosterUnitFromSquad(
 	playerID ecs.EntityID,
 	squadID ecs.EntityID,
 	rosterUnitID ecs.EntityID,
 	gridRow, gridCol int,
+	manager *common.EntityManager,
 ) *UnassignRosterUnitResult {
 	result := &UnassignRosterUnitResult{}
 
 	// Get roster
-	roster := squads.GetPlayerRoster(playerID, sbs.entityManager)
+	roster := GetPlayerRoster(playerID, manager)
 	if roster == nil {
 		result.Error = "roster not found"
 		return result
 	}
 
 	// Remove unit from grid
-	unitIDs := squads.GetUnitIDsAtGridPosition(squadID, gridRow, gridCol, sbs.entityManager)
+	unitIDs := GetUnitIDsAtGridPosition(squadID, gridRow, gridCol, manager)
 	if len(unitIDs) == 0 {
 		result.Error = fmt.Sprintf("no unit at position (%d, %d)", gridRow, gridCol)
 		return result
 	}
 
 	// Remove first unit at this position
-	if err := squads.RemoveUnitFromSquad(unitIDs[0], sbs.entityManager); err != nil {
+	if err := RemoveUnitFromSquad(unitIDs[0], manager); err != nil {
 		result.Error = err.Error()
 		return result
 	}
@@ -126,40 +122,34 @@ func (sbs *SquadBuilderService) UnassignRosterUnitFromSquad(
 
 	// Success
 	result.Success = true
-	result.RemainingCapacity = squads.GetSquadRemainingCapacity(squadID, sbs.entityManager)
+	result.RemainingCapacity = GetSquadRemainingCapacity(squadID, manager)
 
 	return result
 }
 
-// ClearSquadResult contains information about squad clearing
-type ClearSquadResult struct {
-	Success      bool
-	Error        string
-	UnitsCleared int
-}
-
 // ClearSquadAndReturnAllUnits removes all units from squad and returns them to roster
-func (sbs *SquadBuilderService) ClearSquadAndReturnAllUnits(
+func ClearSquadAndReturnAllUnits(
 	playerID ecs.EntityID,
 	squadID ecs.EntityID,
 	rosterUnits map[ecs.EntityID]ecs.EntityID, // map[placedUnitID]rosterUnitID
+	manager *common.EntityManager,
 ) *ClearSquadResult {
 	result := &ClearSquadResult{}
 
 	// Get roster
-	roster := squads.GetPlayerRoster(playerID, sbs.entityManager)
+	roster := GetPlayerRoster(playerID, manager)
 	if roster == nil {
 		result.Error = "roster not found"
 		return result
 	}
 
 	// Get all units in squad
-	unitIDs := squads.GetUnitIDsInSquad(squadID, sbs.entityManager)
+	unitIDs := GetUnitIDsInSquad(squadID, manager)
 
 	// Remove each unit and return to roster
 	for _, unitID := range unitIDs {
 		// Find unit entity to dispose it
-		unitEntity := sbs.entityManager.FindEntityByID(unitID)
+		unitEntity := manager.FindEntityByID(unitID)
 		if unitEntity == nil {
 			continue
 		}
@@ -174,12 +164,12 @@ func (sbs *SquadBuilderService) ClearSquadAndReturnAllUnits(
 
 		// Dispose the placed unit entity
 		pos := common.GetComponentType[*coords.LogicalPosition](unitEntity, common.PositionComponent)
-		sbs.entityManager.CleanDisposeEntity(unitEntity, pos)
+		manager.CleanDisposeEntity(unitEntity, pos)
 		result.UnitsCleared++
 	}
 
 	// Update squad capacity after clearing
-	squads.UpdateSquadCapacity(squadID, sbs.entityManager)
+	UpdateSquadCapacity(squadID, manager)
 
 	result.Success = true
 	return result

@@ -1,25 +1,12 @@
-package squadservices
+package squads
 
 import (
 	"fmt"
 	"game_main/common"
 	"game_main/world/coords"
-	"game_main/tactical/squads"
 
 	"github.com/bytearena/ecs"
 )
-
-// UnitPurchaseService encapsulates all unit purchasing game logic
-type UnitPurchaseService struct {
-	entityManager *common.EntityManager
-}
-
-// NewUnitPurchaseService creates a new unit purchase service
-func NewUnitPurchaseService(manager *common.EntityManager) *UnitPurchaseService {
-	return &UnitPurchaseService{
-		entityManager: manager,
-	}
-}
 
 // PurchaseResult contains information about a purchase transaction
 type PurchaseResult struct {
@@ -43,8 +30,18 @@ type PurchaseValidationResult struct {
 	RosterCapacity int
 }
 
+// RefundResult contains information about a refund transaction
+type RefundResult struct {
+	Success        bool
+	Error          string
+	GoldRefunded   int
+	RemainingGold  int
+	RosterCount    int
+	RosterCapacity int
+}
+
 // GetUnitCost calculates the cost of a unit template
-func (ups *UnitPurchaseService) GetUnitCost(template squads.UnitTemplate) int {
+func GetUnitCost(template UnitTemplate) int {
 	// Simple cost formula based on unit name hash
 	// TODO: Add cost field to UnitTemplate or JSON data
 	baseCost := 100
@@ -55,25 +52,25 @@ func (ups *UnitPurchaseService) GetUnitCost(template squads.UnitTemplate) int {
 }
 
 // CanPurchaseUnit validates if player can purchase a unit
-func (ups *UnitPurchaseService) CanPurchaseUnit(playerID ecs.EntityID, template squads.UnitTemplate) *PurchaseValidationResult {
+func CanPurchaseUnit(playerID ecs.EntityID, template UnitTemplate, manager *common.EntityManager) *PurchaseValidationResult {
 	result := &PurchaseValidationResult{}
 
 	// Get player resources
-	resources := common.GetPlayerResources(playerID, ups.entityManager)
+	resources := common.GetPlayerResources(playerID, manager)
 	if resources == nil {
 		result.Error = "player resources not found"
 		return result
 	}
 
 	// Get player roster
-	roster := squads.GetPlayerRoster(playerID, ups.entityManager)
+	roster := GetPlayerRoster(playerID, manager)
 	if roster == nil {
 		result.Error = "player roster not found"
 		return result
 	}
 
 	// Get unit cost
-	cost := ups.GetUnitCost(template)
+	cost := GetUnitCost(template)
 
 	// Fill in info
 	result.PlayerGold = resources.Gold
@@ -98,25 +95,25 @@ func (ups *UnitPurchaseService) CanPurchaseUnit(playerID ecs.EntityID, template 
 }
 
 // PurchaseUnit handles the complete purchase transaction atomically with rollback on failure
-func (ups *UnitPurchaseService) PurchaseUnit(playerID ecs.EntityID, template squads.UnitTemplate) *PurchaseResult {
+func PurchaseUnit(playerID ecs.EntityID, template UnitTemplate, manager *common.EntityManager) *PurchaseResult {
 	result := &PurchaseResult{
 		UnitName: template.Name,
 	}
 
 	// Validate purchase
-	validation := ups.CanPurchaseUnit(playerID, template)
+	validation := CanPurchaseUnit(playerID, template, manager)
 	if !validation.CanPurchase {
 		result.Error = validation.Error
 		return result
 	}
 
 	// Get resources and roster
-	resources := common.GetPlayerResources(playerID, ups.entityManager)
-	roster := squads.GetPlayerRoster(playerID, ups.entityManager)
-	cost := ups.GetUnitCost(template)
+	resources := common.GetPlayerResources(playerID, manager)
+	roster := GetPlayerRoster(playerID, manager)
+	cost := GetUnitCost(template)
 
 	// Step 1: Create unit entity from template
-	unitEntity, err := squads.CreateUnitEntity(ups.entityManager, template)
+	unitEntity, err := CreateUnitEntity(manager, template)
 	if err != nil {
 		result.Error = fmt.Sprintf("failed to create unit: %v", err)
 		return result
@@ -127,7 +124,7 @@ func (ups *UnitPurchaseService) PurchaseUnit(playerID ecs.EntityID, template squ
 	if err := roster.AddUnit(unitID, template.Name); err != nil {
 		// Rollback: Dispose entity
 		pos := common.GetComponentType[*coords.LogicalPosition](unitEntity, common.PositionComponent)
-		ups.entityManager.CleanDisposeEntity(unitEntity, pos)
+		manager.CleanDisposeEntity(unitEntity, pos)
 		result.Error = fmt.Sprintf("failed to add to roster: %v", err)
 		return result
 	}
@@ -137,7 +134,7 @@ func (ups *UnitPurchaseService) PurchaseUnit(playerID ecs.EntityID, template squ
 		// Rollback: Remove from roster and dispose entity
 		roster.RemoveUnit(unitID)
 		pos := common.GetComponentType[*coords.LogicalPosition](unitEntity, common.PositionComponent)
-		ups.entityManager.CleanDisposeEntity(unitEntity, pos)
+		manager.CleanDisposeEntity(unitEntity, pos)
 		result.Error = fmt.Sprintf("failed to spend gold: %v", err)
 		return result
 	}
@@ -154,37 +151,27 @@ func (ups *UnitPurchaseService) PurchaseUnit(playerID ecs.EntityID, template squ
 	return result
 }
 
-// RefundResult contains information about a refund transaction
-type RefundResult struct {
-	Success        bool
-	Error          string
-	GoldRefunded   int
-	RemainingGold  int
-	RosterCount    int
-	RosterCapacity int
-}
-
 // RefundUnitPurchase refunds a purchased unit and returns gold to player
 // This is used for undo operations in the command pattern
-func (ups *UnitPurchaseService) RefundUnitPurchase(playerID ecs.EntityID, unitID ecs.EntityID, costPaid int) *RefundResult {
+func RefundUnitPurchase(playerID ecs.EntityID, unitID ecs.EntityID, costPaid int, manager *common.EntityManager) *RefundResult {
 	result := &RefundResult{}
 
 	// Get player resources
-	resources := common.GetPlayerResources(playerID, ups.entityManager)
+	resources := common.GetPlayerResources(playerID, manager)
 	if resources == nil {
 		result.Error = "player resources not found"
 		return result
 	}
 
 	// Get player roster
-	roster := squads.GetPlayerRoster(playerID, ups.entityManager)
+	roster := GetPlayerRoster(playerID, manager)
 	if roster == nil {
 		result.Error = "player roster not found"
 		return result
 	}
 
 	// Find the unit entity
-	unitEntity := ups.entityManager.FindEntityByID(unitID)
+	unitEntity := manager.FindEntityByID(unitID)
 	if unitEntity == nil {
 		result.Error = fmt.Sprintf("unit %d not found", unitID)
 		return result
@@ -202,7 +189,7 @@ func (ups *UnitPurchaseService) RefundUnitPurchase(playerID ecs.EntityID, unitID
 
 	// Step 3: Dispose unit entity
 	pos := common.GetComponentType[*coords.LogicalPosition](unitEntity, common.PositionComponent)
-	ups.entityManager.CleanDisposeEntity(unitEntity, pos)
+	manager.CleanDisposeEntity(unitEntity, pos)
 
 	// Transaction successful - populate result
 	result.Success = true

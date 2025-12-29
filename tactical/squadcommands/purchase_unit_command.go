@@ -3,9 +3,7 @@ package squadcommands
 import (
 	"fmt"
 	"game_main/common"
-
 	"game_main/tactical/squads"
-	"game_main/tactical/squadservices"
 
 	"github.com/bytearena/ecs"
 )
@@ -13,7 +11,6 @@ import (
 // PurchaseUnitCommand purchases a unit and adds it to the player's roster
 type PurchaseUnitCommand struct {
 	entityManager *common.EntityManager
-	service       *squadservices.UnitPurchaseService
 	playerID      ecs.EntityID
 	unitTemplate  squads.UnitTemplate
 	costPaid      int
@@ -25,13 +22,11 @@ type PurchaseUnitCommand struct {
 // NewPurchaseUnitCommand creates a new purchase unit command
 func NewPurchaseUnitCommand(
 	manager *common.EntityManager,
-	service *squadservices.UnitPurchaseService,
 	playerID ecs.EntityID,
 	unitTemplate squads.UnitTemplate,
 ) *PurchaseUnitCommand {
 	return &PurchaseUnitCommand{
 		entityManager: manager,
-		service:       service,
 		playerID:      playerID,
 		unitTemplate:  unitTemplate,
 	}
@@ -43,8 +38,8 @@ func (cmd *PurchaseUnitCommand) Validate() error {
 		return fmt.Errorf("invalid player ID")
 	}
 
-	// Use service to validate purchase
-	validation := cmd.service.CanPurchaseUnit(cmd.playerID, cmd.unitTemplate)
+	// Validate purchase
+	validation := squads.CanPurchaseUnit(cmd.playerID, cmd.unitTemplate, cmd.entityManager)
 	if !validation.CanPurchase {
 		return fmt.Errorf("cannot purchase unit: %s", validation.Error)
 	}
@@ -54,8 +49,8 @@ func (cmd *PurchaseUnitCommand) Validate() error {
 
 // Execute performs the unit purchase
 func (cmd *PurchaseUnitCommand) Execute() error {
-	// Use service for entire transaction
-	result := cmd.service.PurchaseUnit(cmd.playerID, cmd.unitTemplate)
+	// Execute purchase transaction
+	result := squads.PurchaseUnit(cmd.playerID, cmd.unitTemplate, cmd.entityManager)
 
 	if !result.Success {
 		return fmt.Errorf("purchase failed: %s", result.Error)
@@ -74,8 +69,8 @@ func (cmd *PurchaseUnitCommand) Undo() error {
 		return fmt.Errorf("no saved unit ID for undo")
 	}
 
-	// Use service to refund the purchase
-	result := cmd.service.RefundUnitPurchase(cmd.playerID, cmd.purchasedUnitID, cmd.costPaid)
+	// Refund the purchase
+	result := squads.RefundUnitPurchase(cmd.playerID, cmd.purchasedUnitID, cmd.costPaid, cmd.entityManager)
 
 	if !result.Success {
 		return fmt.Errorf("failed to refund purchase: %s", result.Error)
