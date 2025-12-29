@@ -64,25 +64,36 @@ func (aic *AIController) DecideFactionTurn(factionID ecs.EntityID) bool {
 
 	actionExecuted := false
 
-	// Process each squad
+	// Process each squad - execute ALL available actions per squad
 	for _, squadID := range aliveSquads {
-		// Get action state
-		actionState := aic.combatCache.FindActionStateBySquadID(squadID, aic.entityManager)
-		if actionState == nil {
-			continue
-		}
+		// Keep executing actions for this squad until it has no actions remaining
+		for {
+			// Get current action state
+			actionState := aic.combatCache.FindActionStateBySquadID(squadID, aic.entityManager)
+			if actionState == nil {
+				break
+			}
 
-		// Skip if squad has no actions remaining
-		if actionState.HasMoved && actionState.HasActed {
-			continue
-		}
+			// Stop if squad has no actions remaining
+			if actionState.HasMoved && actionState.HasActed {
+				break
+			}
 
-		// Create action context
-		ctx := NewActionContext(squadID, aic)
+			// Create action context
+			ctx := NewActionContext(squadID, aic)
 
-		// Decide and execute best action
-		if aic.executeSquadAction(ctx) {
+			// Decide and execute best action
+			// If no valid action found, stop processing this squad
+			if !aic.executeSquadAction(ctx) {
+				break
+			}
+
 			actionExecuted = true
+
+			// Mark threat layers dirty after each action (positions changed)
+			for _, evaluator := range aic.layerEvaluators {
+				evaluator.MarkDirty()
+			}
 		}
 	}
 
