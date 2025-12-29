@@ -387,7 +387,10 @@ func (ae *ActionEvaluator) getMaxAttackRange() int {
 
 // scoreAttackTarget scores an attack target
 func (ae *ActionEvaluator) scoreAttackTarget(targetID ecs.EntityID) float64 {
-	baseScore := 50.0
+	// CRITICAL: Attack base score must be higher than movement base score
+	// to ensure AI prefers attacking when targets are in range.
+	// Movement base is 50, so attacks start at 100 to always beat movement.
+	baseScore := 100.0
 
 	// Prioritize wounded targets (focus fire)
 	targetHealth := squads.GetSquadHealthPercent(targetID, ae.ctx.Manager)
