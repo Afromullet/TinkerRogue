@@ -12,6 +12,12 @@ import (
 	"github.com/bytearena/ecs"
 )
 
+// Type aliases for GUI layer convenience
+type (
+	AIController  = ai.AIController
+	QueuedAttack  = ai.QueuedAttack
+)
+
 // CombatService encapsulates all combat game logic and system ownership
 type CombatService struct {
 	EntityManager   *common.EntityManager

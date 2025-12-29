@@ -74,6 +74,9 @@ type CombatAnimationMode struct {
 	// Callback to execute after animation
 	onAnimationComplete func()
 
+	// Auto-play mode (for AI attacks - skips waiting for user input)
+	autoPlay bool
+
 	// Renderer
 	squadRenderer *SquadCombatRenderer
 
@@ -138,6 +141,25 @@ func (cam *CombatAnimationMode) SetCombatants(attackerID, defenderID ecs.EntityI
 // SetOnComplete sets the callback to execute when animation completes
 func (cam *CombatAnimationMode) SetOnComplete(callback func()) {
 	cam.onAnimationComplete = callback
+}
+
+// SetAutoPlay enables auto-play mode (for AI attacks)
+// When enabled, animation completes automatically without waiting for user input
+func (cam *CombatAnimationMode) SetAutoPlay(autoPlay bool) {
+	cam.autoPlay = autoPlay
+}
+
+// ResetForNextAttack resets animation state to replay another attack
+// Used for chaining multiple AI attacks without mode transitions
+func (cam *CombatAnimationMode) ResetForNextAttack() {
+	cam.animationPhase = PhaseIdle
+	cam.animationTimer = 0
+	cam.flashTimer = 0
+
+	// Reset defender flash indices
+	for defenderID := range cam.defenderFlashIndex {
+		cam.defenderFlashIndex[defenderID] = 0
+	}
 }
 
 // computeDefenderColorLists maps which attacker colors should target each defender
@@ -256,7 +278,14 @@ func (cam *CombatAnimationMode) Enter(fromMode core.UIMode) error {
 	// Reset animation state
 	cam.animationPhase = PhaseIdle
 	cam.animationTimer = 0
-	cam.promptLabel.Label = ""
+
+	// Update prompt based on auto-play mode
+	if cam.autoPlay {
+		cam.promptLabel.Label = "" // No prompt in auto-play mode
+	} else {
+		cam.promptLabel.Label = ""
+	}
+
 	return nil
 }
 
@@ -267,6 +296,10 @@ func (cam *CombatAnimationMode) Exit(toMode core.UIMode) error {
 	cam.defenderColorList = nil
 	cam.defenderFlashIndex = nil
 	cam.flashTimer = 0
+
+	// Reset auto-play for next use
+	cam.autoPlay = false
+
 	return nil
 }
 
@@ -298,22 +331,32 @@ func (cam *CombatAnimationMode) Update(deltaTime float64) error {
 		}
 
 		if cam.animationTimer >= AttackingDuration {
-			cam.animationPhase = PhaseWaiting
+			// Auto-play mode: skip waiting and go straight to complete
+			if cam.autoPlay {
+				cam.animationPhase = PhaseComplete
+			} else {
+				cam.animationPhase = PhaseWaiting
+				cam.promptLabel.Label = "Press SPACE to replay or any other key to continue..."
+			}
 			cam.animationTimer = 0
-			cam.promptLabel.Label = "Press SPACE to replay or any other key to continue..."
 		}
 
 	case PhaseWaiting:
 		// Handled in HandleInput
 
 	case PhaseComplete:
-		// Execute callback and return to combat mode
+		// Execute callback
 		if cam.onAnimationComplete != nil {
-			cam.onAnimationComplete()
-		}
-		// Return to combat mode
-		if combatMode, exists := cam.ModeManager.GetMode("combat"); exists {
-			cam.ModeManager.RequestTransition(combatMode, "Animation complete")
+			callback := cam.onAnimationComplete
+			cam.onAnimationComplete = nil // Clear callback to prevent re-execution
+
+			// Don't automatically transition - let callback decide
+			callback()
+		} else {
+			// No callback - return to combat mode (manual player attack)
+			if combatMode, exists := cam.ModeManager.GetMode("combat"); exists {
+				cam.ModeManager.RequestTransition(combatMode, "Animation complete")
+			}
 		}
 	}
 

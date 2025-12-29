@@ -10,6 +10,12 @@ import (
 	"github.com/bytearena/ecs"
 )
 
+// QueuedAttack represents an attack that should be animated
+type QueuedAttack struct {
+	AttackerID ecs.EntityID
+	DefenderID ecs.EntityID
+}
+
 // AIController orchestrates AI decision-making for computer-controlled factions
 type AIController struct {
 	entityManager     *common.EntityManager
@@ -19,6 +25,9 @@ type AIController struct {
 	combatCache       *combat.CombatQueryCache
 	threatManager     *behavior.FactionThreatLevelManager
 	layerEvaluators   map[ecs.EntityID]*behavior.CompositeThreatEvaluator
+
+	// Attack queue for animations (populated during AI turn)
+	attackQueue []QueuedAttack
 }
 
 // NewAIController creates a new AI controller
@@ -39,12 +48,16 @@ func NewAIController(
 		combatCache:     combatCache,
 		threatManager:   threatManager,
 		layerEvaluators: layerEvaluators,
+		attackQueue:     make([]QueuedAttack, 0),
 	}
 }
 
 // DecideFactionTurn executes AI turn for a faction
 // Returns true if any actions were executed, false if faction has no actions
 func (aic *AIController) DecideFactionTurn(factionID ecs.EntityID) bool {
+	// Clear attack queue from previous turn
+	aic.attackQueue = aic.attackQueue[:0]
+
 	// Update threat layers at start of AI turn
 	currentRound := aic.turnManager.GetCurrentRound()
 	aic.updateThreatLayers(currentRound)
@@ -160,7 +173,8 @@ type ActionContext struct {
 	ThreatEval *behavior.CompositeThreatEvaluator
 
 	// Systems access
-	Manager *common.EntityManager
+	Manager     *common.EntityManager
+	AIController *AIController // Reference to AI controller for attack queueing
 
 	// Cached squad info
 	SquadRole   squads.UnitRole
@@ -179,12 +193,13 @@ func NewActionContext(
 	evaluator := aic.getThreatEvaluator(factionID)
 
 	ctx := ActionContext{
-		SquadID:     squadID,
-		FactionID:   factionID,
-		ActionState: aic.combatCache.FindActionStateBySquadID(squadID, aic.entityManager),
-		ThreatEval:  evaluator,
-		Manager:     aic.entityManager,
-		SquadRole:   squads.GetSquadPrimaryRole(squadID, aic.entityManager),
+		SquadID:      squadID,
+		FactionID:    factionID,
+		ActionState:  aic.combatCache.FindActionStateBySquadID(squadID, aic.entityManager),
+		ThreatEval:   evaluator,
+		Manager:      aic.entityManager,
+		AIController: aic, // Pass reference for attack queueing
+		SquadRole:    squads.GetSquadPrimaryRole(squadID, aic.entityManager),
 	}
 
 	// Get current position
@@ -213,6 +228,29 @@ func (aic *AIController) getThreatEvaluator(factionID ecs.EntityID) *behavior.Co
 	)
 	aic.layerEvaluators[factionID] = evaluator
 	return evaluator
+}
+
+// QueueAttack adds an attack to the animation queue
+func (aic *AIController) QueueAttack(attackerID, defenderID ecs.EntityID) {
+	aic.attackQueue = append(aic.attackQueue, QueuedAttack{
+		AttackerID: attackerID,
+		DefenderID: defenderID,
+	})
+}
+
+// GetQueuedAttacks returns all queued attacks for animation
+func (aic *AIController) GetQueuedAttacks() []QueuedAttack {
+	return aic.attackQueue
+}
+
+// HasQueuedAttacks returns true if there are attacks waiting for animation
+func (aic *AIController) HasQueuedAttacks() bool {
+	return len(aic.attackQueue) > 0
+}
+
+// ClearAttackQueue clears all queued attacks
+func (aic *AIController) ClearAttackQueue() {
+	aic.attackQueue = aic.attackQueue[:0]
 }
 
 // NOTE: getSquadPrimaryRole and calculateSquadHealthPercent have been moved to

@@ -48,20 +48,25 @@ func (ma *MoveAction) GetDescription() string {
 
 // AttackAction represents an attack decision
 type AttackAction struct {
-	attackerID ecs.EntityID
-	targetID   ecs.EntityID
+	attackerID   ecs.EntityID
+	targetID     ecs.EntityID
+	aiController *AIController // Reference to queue the attack for animation
 }
 
 func (aa *AttackAction) Execute(manager *common.EntityManager, movementSystem *combat.CombatMovementSystem, combatActSystem *combat.CombatActionSystem) bool {
-	// AI attacks execute directly without UI animations
-	// The combat action system handles all game logic
+	// Execute the attack
 	result := combatActSystem.ExecuteAttackAction(aa.attackerID, aa.targetID)
 
-	// Log result for debugging (could be sent to combat log in future)
+	// Log result for debugging
 	if result.Success {
 		fmt.Printf("[AI] %s attacked %s\n", result.AttackerName, result.TargetName)
 		if result.TargetDestroyed {
 			fmt.Printf("[AI] %s was destroyed!\n", result.TargetName)
+		}
+
+		// Queue this attack for animation playback after AI turn completes
+		if aa.aiController != nil {
+			aa.aiController.QueueAttack(aa.attackerID, aa.targetID)
 		}
 	} else {
 		fmt.Printf("[AI] Attack failed: %s\n", result.ErrorReason)
@@ -300,7 +305,11 @@ func (ae *ActionEvaluator) evaluateAttacks() []ScoredAction {
 		score := ae.scoreAttackTarget(targetID)
 
 		actions = append(actions, ScoredAction{
-			Action:      &AttackAction{attackerID: ae.ctx.SquadID, targetID: targetID},
+			Action: &AttackAction{
+				attackerID:   ae.ctx.SquadID,
+				targetID:     targetID,
+				aiController: ae.ctx.AIController, // Pass reference for queueing
+			},
 			Score:       score,
 			Description: fmt.Sprintf("Attack squad %d", targetID),
 		})

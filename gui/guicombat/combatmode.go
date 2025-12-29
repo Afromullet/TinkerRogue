@@ -401,7 +401,81 @@ func (cm *CombatMode) executeAITurnIfNeeded() {
 		cm.logManager.UpdateTextArea(cm.combatLogArea, fmt.Sprintf("%s (AI) has no valid actions", factionData.Name))
 	}
 
-	// Auto-advance to next turn after AI finishes
+	// Check if there are attacks to animate
+	if aiController.HasQueuedAttacks() {
+		cm.playAIAttackAnimations(aiController)
+		return // Animation completion callback will advance the turn
+	}
+
+	// No animations - advance turn immediately
+	cm.advanceAfterAITurn()
+}
+
+// playAIAttackAnimations plays all queued AI attack animations sequentially
+func (cm *CombatMode) playAIAttackAnimations(aiController *combatservices.AIController) {
+	attacks := aiController.GetQueuedAttacks()
+
+	if len(attacks) == 0 {
+		cm.advanceAfterAITurn()
+		return
+	}
+
+	// Start playing first attack (will chain to next via callbacks)
+	cm.playNextAIAttack(attacks, 0, aiController)
+}
+
+// playNextAIAttack plays a single AI attack animation and chains to the next
+func (cm *CombatMode) playNextAIAttack(attacks []combatservices.QueuedAttack, index int, aiController *combatservices.AIController) {
+	// All attacks played - return to combat mode and advance turn
+	if index >= len(attacks) {
+		aiController.ClearAttackQueue()
+
+		// Return to combat mode
+		if combatMode, exists := cm.ModeManager.GetMode("combat"); exists {
+			cm.ModeManager.RequestTransition(combatMode, "AI attacks complete")
+		}
+
+		cm.advanceAfterAITurn()
+		return
+	}
+
+	attack := attacks[index]
+	isFirstAttack := (index == 0)
+
+	// Get animation mode
+	if animMode, exists := cm.ModeManager.GetMode("combat_animation"); exists {
+		if caMode, ok := animMode.(*CombatAnimationMode); ok {
+			// Configure for AI attack
+			caMode.SetCombatants(attack.AttackerID, attack.DefenderID)
+			caMode.SetAutoPlay(true) // Enable auto-play for AI attacks
+
+			// Set callback to play next attack
+			caMode.SetOnComplete(func() {
+				// Reset animation state for next attack
+				caMode.ResetForNextAttack()
+
+				// Play next attack (stays in animation mode)
+				cm.playNextAIAttack(attacks, index+1, aiController)
+			})
+
+			// Only transition on first attack (subsequent attacks stay in animation mode)
+			if isFirstAttack {
+				cm.ModeManager.RequestTransition(animMode, "AI Attack Animation")
+			}
+		} else {
+			// Animation mode wrong type - skip animations and advance
+			aiController.ClearAttackQueue()
+			cm.advanceAfterAITurn()
+		}
+	} else {
+		// No animation mode - skip animations and advance
+		aiController.ClearAttackQueue()
+		cm.advanceAfterAITurn()
+	}
+}
+
+// advanceAfterAITurn advances to next turn after AI completes (with or without animations)
+func (cm *CombatMode) advanceAfterAITurn() {
 	// Process any queued commands
 	squadcommands.ProcessCommandQueues(cm.Context.ECSManager)
 
