@@ -142,7 +142,7 @@ func (umm *UIModeManager) updateInputState() {
 	keysToTrack := []ebiten.Key{
 		ebiten.KeyE, ebiten.KeyC, ebiten.KeyF, ebiten.KeyEscape,
 		ebiten.KeyI, ebiten.KeyTab, ebiten.KeySpace, ebiten.KeyB,
-		ebiten.KeyP,
+		ebiten.KeyP, ebiten.KeyL,
 		// Combat mode keys
 		ebiten.KeyH, ebiten.KeyA, ebiten.KeyM, ebiten.KeyZ, ebiten.KeyY,
 		ebiten.Key1, ebiten.Key2, ebiten.Key3,

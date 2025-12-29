@@ -87,3 +87,51 @@ func CreateYellowGradient(opacity float32) ColorMatrix {
 		ApplyMatrix: true,
 	}
 }
+
+// CreateOrangeGradient creates an orange ColorMatrix with specified opacity
+// Used for melee threat zone visualization
+func CreateOrangeGradient(opacity float32) ColorMatrix {
+	return ColorMatrix{
+		R:           1,
+		G:           0.5,
+		B:           0,
+		A:           opacity,
+		ApplyMatrix: true,
+	}
+}
+
+// CreateCyanGradient creates a cyan ColorMatrix with specified opacity
+// Used for ranged fire zone visualization
+func CreateCyanGradient(opacity float32) ColorMatrix {
+	return ColorMatrix{
+		R:           0,
+		G:           1,
+		B:           1,
+		A:           opacity,
+		ApplyMatrix: true,
+	}
+}
+
+// CreatePurpleGradient creates a purple ColorMatrix with specified opacity
+// Used for isolation risk visualization
+func CreatePurpleGradient(opacity float32) ColorMatrix {
+	return ColorMatrix{
+		R:           0.5,
+		G:           0,
+		B:           0.5,
+		A:           opacity,
+		ApplyMatrix: true,
+	}
+}
+
+// CreateRedOrangeGradient creates a red-orange ColorMatrix with specified opacity
+// Used for engagement pressure visualization
+func CreateRedOrangeGradient(opacity float32) ColorMatrix {
+	return ColorMatrix{
+		R:           1,
+		G:           0.3,
+		B:           0,
+		A:           opacity,
+		ApplyMatrix: true,
+	}
+}

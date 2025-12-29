@@ -8,6 +8,7 @@ import (
 	"game_main/gui/core"
 	"game_main/gui/guicomponents"
 	"game_main/gui/guimodes"
+	"game_main/gui/guiresources"
 	"game_main/gui/widgets"
 	"game_main/tactical/behavior"
 	"game_main/tactical/combatservices"
@@ -38,11 +39,13 @@ type CombatMode struct {
 	squadDetailPanel *widget.Container
 	combatLogArea    *widgets.CachedTextAreaWrapper // Cached for performance
 	actionButtons    *widget.Container
+	layerStatusPanel *widget.Container
 
 	// UI text labels
-	turnOrderLabel  *widget.Text
-	factionInfoText *widget.Text
-	squadDetailText *widget.Text
+	turnOrderLabel   *widget.Text
+	factionInfoText  *widget.Text
+	squadDetailText  *widget.Text
+	layerStatusText  *widget.Text
 
 	// UI update components
 	squadListComponent   *guicomponents.SquadListComponent
@@ -54,7 +57,9 @@ type CombatMode struct {
 	movementRenderer  *guimodes.MovementTileRenderer
 	highlightRenderer *guimodes.SquadHighlightRenderer
 	dangerVisualizer  *behavior.DangerVisualizer
+	layerVisualizer   *behavior.LayerVisualizer
 	threatManager     *behavior.FactionThreatLevelManager
+	threatEvaluator   *behavior.CompositeThreatEvaluator
 
 	// State tracking for UI updates (GUI_PERFORMANCE_ANALYSIS.md)
 	lastFactionID     ecs.EntityID
@@ -87,6 +92,7 @@ func (cm *CombatMode) Initialize(ctx *core.UIContext) error {
 			{CustomBuild: cm.buildSquadDetailPanel},
 			{CustomBuild: cm.buildLogPanel},
 			{CustomBuild: cm.buildActionButtons},
+			{CustomBuild: cm.buildLayerStatusPanel},
 		},
 	}).Build(ctx)
 	if err != nil {
@@ -127,6 +133,24 @@ func (cm *CombatMode) Initialize(ctx *core.UIContext) error {
 	}
 
 	cm.dangerVisualizer = behavior.NewDangerVisualizer(ctx.ECSManager, gameMap, cm.threatManager)
+
+	// Create threat evaluators for layer visualization
+	allFactions := cm.Queries.GetAllFactions()
+	if len(allFactions) > 0 {
+		// Use player faction (first faction) for threat evaluation
+		playerFactionID := allFactions[0]
+		cm.threatEvaluator = behavior.NewCompositeThreatEvaluator(
+			playerFactionID,
+			ctx.ECSManager,
+			cm.Queries.CombatCache,
+			cm.threatManager,
+		)
+		cm.layerVisualizer = behavior.NewLayerVisualizer(
+			ctx.ECSManager,
+			gameMap,
+			cm.threatEvaluator,
+		)
+	}
 
 	return nil
 }
@@ -203,6 +227,57 @@ func (cm *CombatMode) buildActionButtons() *widget.Container {
 	)
 
 	return cm.actionButtons
+}
+
+func (cm *CombatMode) buildLayerStatusPanel() *widget.Container {
+	cm.ensureUIFactoryInitialized()
+
+	// Create a small panel for layer status display
+	panelWidth := int(float64(cm.Layout.ScreenWidth) * 0.15)  // 15% of screen width
+	panelHeight := int(float64(cm.Layout.ScreenHeight) * 0.08) // 8% of screen height
+
+	cm.layerStatusPanel = builders.CreatePanelWithConfig(builders.PanelConfig{
+		MinWidth:   panelWidth,
+		MinHeight:  panelHeight,
+		Background: guiresources.PanelRes.Image,
+		Layout: widget.NewRowLayout(
+			widget.RowLayoutOpts.Direction(widget.DirectionVertical),
+			widget.RowLayoutOpts.Spacing(3),
+			widget.RowLayoutOpts.Padding(widget.NewInsetsSimple(5)),
+		),
+	})
+
+	// Position in top-right corner
+	rightPad := int(float64(cm.Layout.ScreenWidth) * 0.01)
+	topPad := int(float64(cm.Layout.ScreenHeight) * 0.01)
+	cm.layerStatusPanel.GetWidget().LayoutData = gui.AnchorEndStart(rightPad, topPad)
+
+	// Create status text (initially hidden)
+	cm.layerStatusText = builders.CreateSmallLabel("")
+	cm.layerStatusPanel.AddChild(cm.layerStatusText)
+
+	// Hide panel initially (shown when visualizer is active)
+	cm.layerStatusPanel.GetWidget().Visibility = widget.Visibility_Hide
+
+	return cm.layerStatusPanel
+}
+
+// updateLayerStatusWidget updates the layer status panel visibility and text
+func (cm *CombatMode) updateLayerStatusWidget() {
+	if cm.layerStatusPanel == nil || cm.layerStatusText == nil || cm.layerVisualizer == nil {
+		return
+	}
+
+	if cm.layerVisualizer.IsActive() {
+		// Show panel and update text with current mode info
+		modeInfo := cm.layerVisualizer.GetCurrentModeInfo()
+		statusText := fmt.Sprintf("LAYER VIEW\n%s\n%s", modeInfo.Name, modeInfo.ColorKey)
+		cm.layerStatusText.Label = statusText
+		cm.layerStatusPanel.GetWidget().Visibility = widget.Visibility_Show
+	} else {
+		// Hide panel when visualizer is inactive
+		cm.layerStatusPanel.GetWidget().Visibility = widget.Visibility_Hide
+	}
 }
 
 // Button click handlers that delegate to action handler
@@ -370,6 +445,11 @@ func (cm *CombatMode) handleEndTurn() {
 	cm.squadDetailComponent.SetText("Select a squad\nto view details")
 
 	cm.threatManager.UpdateAllFactions()
+
+	// Update threat evaluator for layer visualization
+	if cm.threatEvaluator != nil {
+		cm.threatEvaluator.Update(round)
+	}
 
 	// Execute AI turn if current faction is AI-controlled
 	cm.executeAITurnIfNeeded()
@@ -553,6 +633,11 @@ func (cm *CombatMode) Exit(toMode core.UIMode) error {
 		cm.dangerVisualizer.ClearVisualization()
 	}
 
+	// Clear layer visualization
+	if cm.layerVisualizer != nil {
+		cm.layerVisualizer.ClearVisualization()
+	}
+
 	// Clear combat log for next battle
 	cm.logManager.Clear()
 	return nil
@@ -584,6 +669,14 @@ func (cm *CombatMode) Update(deltaTime float64) error {
 		playerPos := *cm.Context.PlayerData.Pos
 		viewportSize := 30 // Process 30x30 tile area around player
 		cm.dangerVisualizer.Update(currentFactionID, currentRound, playerPos, viewportSize)
+	}
+
+	// Update layer visualization if active
+	if cm.layerVisualizer != nil && cm.layerVisualizer.IsActive() {
+		currentRound := cm.combatService.TurnManager.GetCurrentRound()
+		playerPos := *cm.Context.PlayerData.Pos
+		viewportSize := 30
+		cm.layerVisualizer.Update(currentFactionID, currentRound, playerPos, viewportSize)
 	}
 
 	return nil
@@ -718,6 +811,38 @@ func (cm *CombatMode) HandleInput(inputState *core.InputState) bool {
 			cm.logManager.UpdateTextArea(cm.combatLogArea, fmt.Sprintf("Switched to %s metric", metricName))
 			return true
 		}
+	}
+
+	// L key to toggle layer visualizer
+	if inputState.KeysJustPressed[ebiten.KeyL] {
+		if cm.layerVisualizer == nil {
+			return true
+		}
+
+		// Check if Shift key is pressed
+		shiftPressed := inputState.KeysPressed[ebiten.KeyShift] ||
+			inputState.KeysPressed[ebiten.KeyShiftLeft] ||
+			inputState.KeysPressed[ebiten.KeyShiftRight]
+
+		if shiftPressed {
+			// Shift+L: Cycle through layer modes
+			cm.layerVisualizer.CycleMode()
+			modeInfo := cm.layerVisualizer.GetCurrentModeInfo()
+			cm.logManager.UpdateTextArea(cm.combatLogArea,
+				fmt.Sprintf("Layer: %s (%s)", modeInfo.Name, modeInfo.ColorKey))
+		} else {
+			// L alone: Toggle visualization on/off
+			cm.layerVisualizer.Toggle()
+			status := "enabled"
+			if !cm.layerVisualizer.IsActive() {
+				status = "disabled"
+			}
+			cm.logManager.UpdateTextArea(cm.combatLogArea,
+				fmt.Sprintf("Layer visualization %s", status))
+		}
+		// Update the status widget to reflect current mode
+		cm.updateLayerStatusWidget()
+		return true
 	}
 
 	return false
