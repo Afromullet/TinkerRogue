@@ -1,0 +1,14 @@
+Metric,Value
+AttackerWinRate,0.0000
+DefenderWinRate,1.0000
+DrawRate,0.0000
+IsBalanced,false
+AvgDuration,3.52
+MinDuration,2
+MaxDuration,5
+CoverActivation,0.0000
+CoverEffectiveness,0.0000
+CritRate,0.1261
+DodgeRate,0.0823
+SampleSize,200
+MarginOfError,0.0000

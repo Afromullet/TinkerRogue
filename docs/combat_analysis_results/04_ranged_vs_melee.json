@@ -1,0 +1,193 @@
+{
+  "ScenarioName": "Ranged vs Melee",
+  "Iterations": 200,
+  "AnalysisMode": "comprehensive",
+  "WinRate": {
+    "AttackerWinRate": 0,
+    "DefenderWinRate": 1,
+    "DrawRate": 0,
+    "AttackerCI95": [
+      0,
+      0.018846005918320894
+    ],
+    "DefenderCI95": [
+      0.9811539940816792,
+      1
+    ],
+    "IsBalanced": false,
+    "ImbalanceAmount": 0.5,
+    "FavoredSide": "Defender"
+  },
+  "Duration": {
+    "Average": 1.325,
+    "Median": 1,
+    "StdDev": 0.46955019639509654,
+    "Min": 1,
+    "Max": 2,
+    "DistributionBuckets": {
+      "1-2": 200
+    },
+    "IsHealthyDuration": false
+  },
+  "UnitPerformance": {
+    "ByUnit": {
+      "Archer": {
+        "TemplateName": "Archer",
+        "Role": "",
+        "AvgDamageDealt": 5.85,
+        "AvgDamageTaken": 46.17,
+        "SurvivalRate": 0,
+        "Efficiency": 0.1267056530214425,
+        "AvgDeathTurn": 1.325,
+        "CoverProvided": 0
+      },
+      "Crossbowman": {
+        "TemplateName": "Crossbowman",
+        "Role": "",
+        "AvgDamageDealt": 18.42,
+        "AvgDamageTaken": 45.27,
+        "SurvivalRate": 0,
+        "Efficiency": 0.4068919814446653,
+        "AvgDeathTurn": 1.325,
+        "CoverProvided": 0
+      },
+      "Fighter": {
+        "TemplateName": "Fighter",
+        "Role": "",
+        "AvgDamageDealt": 24.125,
+        "AvgDamageTaken": 12.295,
+        "SurvivalRate": 1,
+        "Efficiency": 1.9621797478649858,
+        "AvgDeathTurn": 0,
+        "CoverProvided": 0
+      },
+      "Knight": {
+        "TemplateName": "Knight",
+        "Role": "",
+        "AvgDamageDealt": 48.155,
+        "AvgDamageTaken": 6.455,
+        "SurvivalRate": 1,
+        "Efficiency": 7.46010844306739,
+        "AvgDeathTurn": 0,
+        "CoverProvided": 0
+      },
+      "Marksman": {
+        "TemplateName": "Marksman",
+        "Role": "",
+        "AvgDamageDealt": 8.595,
+        "AvgDamageTaken": 45.735,
+        "SurvivalRate": 0,
+        "Efficiency": 0.18793046900623156,
+        "AvgDeathTurn": 1.325,
+        "CoverProvided": 0
+      },
+      "Warrior": {
+        "TemplateName": "Warrior",
+        "Role": "",
+        "AvgDamageDealt": 64.895,
+        "AvgDamageTaken": 14.115,
+        "SurvivalRate": 1,
+        "Efficiency": 4.597591215019483,
+        "AvgDeathTurn": 0,
+        "CoverProvided": 0
+      }
+    },
+    "ByRole": {
+      "Unknown": {
+        "Role": "Unknown",
+        "AvgDamageDealt": 28.34,
+        "DamageShare": 1,
+        "AvgSurvivalRate": 0.5,
+        "AvgDeathTurn": 1.325,
+        "CoverProvided": 0,
+        "TargetingValue": 0,
+        "UnitCount": 6
+      }
+    },
+    "TopPerformers": [
+      "Knight",
+      "Warrior",
+      "Fighter"
+    ],
+    "UnderPerformers": [
+      "Archer",
+      "Marksman",
+      "Crossbowman"
+    ]
+  },
+  "Mechanics": {
+    "CoverEffectiveness": 0,
+    "CoverActivation": 0,
+    "CritRate": 0.1964229683087543,
+    "CritImpact": 0.5,
+    "DodgeRate": 0.11052190901479207,
+    "DodgeImpact": 1,
+    "RangeAdvantage": 0
+  },
+  "Timeline": {
+    "AvgFirstBlood": 0,
+    "AvgTurningPoint": 0,
+    "AvgDuration": 1.325,
+    "SnowballFactor": 1,
+    "DamageCurve": [
+      8.14,
+      13.076923076923077
+    ]
+  },
+  "Confidence": {
+    "SampleSize": 200,
+    "MarginOfError": 0,
+    "IsStatisticallySound": true,
+    "RecommendedSamples": 0
+  },
+  "Insights": [
+    {
+      "Severity": "Critical",
+      "Category": "WinRate",
+      "Issue": "Defender is favored",
+      "Evidence": "100.0% win rate difference",
+      "Suggestion": "Adjust Defender squad stats",
+      "Impact": ""
+    },
+    {
+      "Severity": "Warning",
+      "Category": "Duration",
+      "Issue": "Combat ends too quickly",
+      "Evidence": "1.3 avg rounds",
+      "Suggestion": "Increase HP or reduce damage output",
+      "Impact": ""
+    },
+    {
+      "Severity": "Info",
+      "Category": "Unit",
+      "Issue": "Archer is underperforming",
+      "Evidence": "0.12 efficiency, 0.0% survival",
+      "Suggestion": "Increase Archer damage or survivability",
+      "Impact": ""
+    },
+    {
+      "Severity": "Info",
+      "Category": "Unit",
+      "Issue": "Marksman is underperforming",
+      "Evidence": "0.18 efficiency, 0.0% survival",
+      "Suggestion": "Increase Marksman damage or survivability",
+      "Impact": ""
+    },
+    {
+      "Severity": "Warning",
+      "Category": "Unit",
+      "Issue": "Knight is overperforming",
+      "Evidence": "7.46 efficiency ratio",
+      "Suggestion": "Reduce Knight damage or increase fragility",
+      "Impact": ""
+    },
+    {
+      "Severity": "Warning",
+      "Category": "Unit",
+      "Issue": "Warrior is overperforming",
+      "Evidence": "4.59 efficiency ratio",
+      "Suggestion": "Reduce Warrior damage or increase fragility",
+      "Impact": ""
+    }
+  ]
+}

@@ -1,0 +1,201 @@
+{
+  "ScenarioName": "Magic vs Physical",
+  "Iterations": 200,
+  "AnalysisMode": "comprehensive",
+  "WinRate": {
+    "AttackerWinRate": 0,
+    "DefenderWinRate": 1,
+    "DrawRate": 0,
+    "AttackerCI95": [
+      0,
+      0.018846005918320894
+    ],
+    "DefenderCI95": [
+      0.9811539940816792,
+      1
+    ],
+    "IsBalanced": false,
+    "ImbalanceAmount": 0.5,
+    "FavoredSide": "Defender"
+  },
+  "Duration": {
+    "Average": 1.01,
+    "Median": 1,
+    "StdDev": 0.0997484272744116,
+    "Min": 1,
+    "Max": 2,
+    "DistributionBuckets": {
+      "1-2": 200
+    },
+    "IsHealthyDuration": false
+  },
+  "UnitPerformance": {
+    "ByUnit": {
+      "Fighter": {
+        "TemplateName": "Fighter",
+        "Role": "",
+        "AvgDamageDealt": 65.065,
+        "AvgDamageTaken": 2.67,
+        "SurvivalRate": 1,
+        "Efficiency": 24.368913857677903,
+        "AvgDeathTurn": 0,
+        "CoverProvided": 0
+      },
+      "Knight": {
+        "TemplateName": "Knight",
+        "Role": "",
+        "AvgDamageDealt": 59.34,
+        "AvgDamageTaken": 2.74,
+        "SurvivalRate": 1,
+        "Efficiency": 21.656934306569344,
+        "AvgDeathTurn": 0,
+        "CoverProvided": 0
+      },
+      "Mage": {
+        "TemplateName": "Mage",
+        "Role": "",
+        "AvgDamageDealt": 2.695,
+        "AvgDamageTaken": 40.98,
+        "SurvivalRate": 0,
+        "Efficiency": 0.06576378721327476,
+        "AvgDeathTurn": 1.01,
+        "CoverProvided": 0
+      },
+      "Sorcerer": {
+        "TemplateName": "Sorcerer",
+        "Role": "",
+        "AvgDamageDealt": 2.75,
+        "AvgDamageTaken": 44.175,
+        "SurvivalRate": 0,
+        "Efficiency": 0.0622524052065648,
+        "AvgDeathTurn": 1.01,
+        "CoverProvided": 0
+      },
+      "Warrior": {
+        "TemplateName": "Warrior",
+        "Role": "",
+        "AvgDamageDealt": 7.945,
+        "AvgDamageTaken": 2.795,
+        "SurvivalRate": 1,
+        "Efficiency": 2.84257602862254,
+        "AvgDeathTurn": 0,
+        "CoverProvided": 0
+      },
+      "Wizard": {
+        "TemplateName": "Wizard",
+        "Role": "",
+        "AvgDamageDealt": 2.76,
+        "AvgDamageTaken": 47.195,
+        "SurvivalRate": 0,
+        "Efficiency": 0.058480771268142814,
+        "AvgDeathTurn": 1.01,
+        "CoverProvided": 0
+      }
+    },
+    "ByRole": {
+      "Unknown": {
+        "Role": "Unknown",
+        "AvgDamageDealt": 23.425833333333333,
+        "DamageShare": 1,
+        "AvgSurvivalRate": 0.5,
+        "AvgDeathTurn": 1.01,
+        "CoverProvided": 0,
+        "TargetingValue": 0,
+        "UnitCount": 6
+      }
+    },
+    "TopPerformers": [
+      "Fighter",
+      "Knight",
+      "Warrior"
+    ],
+    "UnderPerformers": [
+      "Wizard",
+      "Sorcerer",
+      "Mage"
+    ]
+  },
+  "Mechanics": {
+    "CoverEffectiveness": 0,
+    "CoverActivation": 0,
+    "CritRate": 0.1244122965641953,
+    "CritImpact": 0.5,
+    "DodgeRate": 0.07771847898599066,
+    "DodgeImpact": 1,
+    "RangeAdvantage": 0
+  },
+  "Timeline": {
+    "AvgFirstBlood": 0,
+    "AvgTurningPoint": 0,
+    "AvgDuration": 1.01,
+    "SnowballFactor": 1,
+    "DamageCurve": [
+      2.695,
+      3
+    ]
+  },
+  "Confidence": {
+    "SampleSize": 200,
+    "MarginOfError": 0,
+    "IsStatisticallySound": true,
+    "RecommendedSamples": 0
+  },
+  "Insights": [
+    {
+      "Severity": "Critical",
+      "Category": "WinRate",
+      "Issue": "Defender is favored",
+      "Evidence": "100.0% win rate difference",
+      "Suggestion": "Adjust Defender squad stats",
+      "Impact": ""
+    },
+    {
+      "Severity": "Warning",
+      "Category": "Duration",
+      "Issue": "Combat ends too quickly",
+      "Evidence": "1.0 avg rounds",
+      "Suggestion": "Increase HP or reduce damage output",
+      "Impact": ""
+    },
+    {
+      "Severity": "Warning",
+      "Category": "Unit",
+      "Issue": "Knight is overperforming",
+      "Evidence": "21.65 efficiency ratio",
+      "Suggestion": "Reduce Knight damage or increase fragility",
+      "Impact": ""
+    },
+    {
+      "Severity": "Warning",
+      "Category": "Unit",
+      "Issue": "Fighter is overperforming",
+      "Evidence": "24.36 efficiency ratio",
+      "Suggestion": "Reduce Fighter damage or increase fragility",
+      "Impact": ""
+    },
+    {
+      "Severity": "Info",
+      "Category": "Unit",
+      "Issue": "Wizard is underperforming",
+      "Evidence": "0.05 efficiency, 0.0% survival",
+      "Suggestion": "Increase Wizard damage or survivability",
+      "Impact": ""
+    },
+    {
+      "Severity": "Info",
+      "Category": "Unit",
+      "Issue": "Sorcerer is underperforming",
+      "Evidence": "0.06 efficiency, 0.0% survival",
+      "Suggestion": "Increase Sorcerer damage or survivability",
+      "Impact": ""
+    },
+    {
+      "Severity": "Info",
+      "Category": "Unit",
+      "Issue": "Mage is underperforming",
+      "Evidence": "0.06 efficiency, 0.0% survival",
+      "Suggestion": "Increase Mage damage or survivability",
+      "Impact": ""
+    }
+  ]
+}

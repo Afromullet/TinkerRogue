@@ -1,0 +1,159 @@
+{
+  "ScenarioName": "DPS vs DPS",
+  "Iterations": 200,
+  "AnalysisMode": "comprehensive",
+  "WinRate": {
+    "AttackerWinRate": 1,
+    "DefenderWinRate": 0,
+    "DrawRate": 0,
+    "AttackerCI95": [
+      0.9811539940816792,
+      1
+    ],
+    "DefenderCI95": [
+      0,
+      0.018846005918320894
+    ],
+    "IsBalanced": false,
+    "ImbalanceAmount": 0.5,
+    "FavoredSide": "Attacker"
+  },
+  "Duration": {
+    "Average": 1.925,
+    "Median": 2,
+    "StdDev": 0.4002197888623004,
+    "Min": 1,
+    "Max": 3,
+    "DistributionBuckets": {
+      "1-2": 191,
+      "3-4": 9
+    },
+    "IsHealthyDuration": false
+  },
+  "UnitPerformance": {
+    "ByUnit": {
+      "Assassin": {
+        "TemplateName": "Assassin",
+        "Role": "",
+        "AvgDamageDealt": 7.49,
+        "AvgDamageTaken": 46.665,
+        "SurvivalRate": 0,
+        "Efficiency": 0.16050573234758383,
+        "AvgDeathTurn": 1.925,
+        "CoverProvided": 0
+      },
+      "Rogue": {
+        "TemplateName": "Rogue",
+        "Role": "",
+        "AvgDamageDealt": 9.2675,
+        "AvgDamageTaken": 30.315,
+        "SurvivalRate": 0.445,
+        "Efficiency": 0.30570674583539503,
+        "AvgDeathTurn": 1.945945945945946,
+        "CoverProvided": 0
+      },
+      "Swordsman": {
+        "TemplateName": "Swordsman",
+        "Role": "",
+        "AvgDamageDealt": 35.9025,
+        "AvgDamageTaken": 32.515,
+        "SurvivalRate": 0.5,
+        "Efficiency": 1.1041826849146548,
+        "AvgDeathTurn": 1.925,
+        "CoverProvided": 0
+      },
+      "Warrior": {
+        "TemplateName": "Warrior",
+        "Role": "",
+        "AvgDamageDealt": 82.69,
+        "AvgDamageTaken": 8.195,
+        "SurvivalRate": 1,
+        "Efficiency": 10.090298962782184,
+        "AvgDeathTurn": 0,
+        "CoverProvided": 0
+      }
+    },
+    "ByRole": {
+      "Unknown": {
+        "Role": "Unknown",
+        "AvgDamageDealt": 30.086666666666666,
+        "DamageShare": 1,
+        "AvgSurvivalRate": 0.4816666666666667,
+        "AvgDeathTurn": 1.932475884244373,
+        "CoverProvided": 0,
+        "TargetingValue": 0,
+        "UnitCount": 4
+      }
+    },
+    "TopPerformers": [
+      "Warrior",
+      "Swordsman",
+      "Rogue"
+    ],
+    "UnderPerformers": [
+      "Assassin",
+      "Rogue",
+      "Swordsman"
+    ]
+  },
+  "Mechanics": {
+    "CoverEffectiveness": 0,
+    "CoverActivation": 0,
+    "CritRate": 0.20790300853165694,
+    "CritImpact": 0.5,
+    "DodgeRate": 0.15161904761904763,
+    "DodgeImpact": 1,
+    "RangeAdvantage": 0
+  },
+  "Timeline": {
+    "AvgFirstBlood": 1.045,
+    "AvgTurningPoint": 2,
+    "AvgDuration": 1.925,
+    "SnowballFactor": 0.9798105336538698,
+    "DamageCurve": [
+      44.24,
+      28.619318181818183,
+      21.666666666666668
+    ]
+  },
+  "Confidence": {
+    "SampleSize": 200,
+    "MarginOfError": 0,
+    "IsStatisticallySound": true,
+    "RecommendedSamples": 0
+  },
+  "Insights": [
+    {
+      "Severity": "Critical",
+      "Category": "WinRate",
+      "Issue": "Attacker is favored",
+      "Evidence": "100.0% win rate difference",
+      "Suggestion": "Adjust Attacker squad stats",
+      "Impact": ""
+    },
+    {
+      "Severity": "Warning",
+      "Category": "Duration",
+      "Issue": "Combat ends too quickly",
+      "Evidence": "1.9 avg rounds",
+      "Suggestion": "Increase HP or reduce damage output",
+      "Impact": ""
+    },
+    {
+      "Severity": "Info",
+      "Category": "Unit",
+      "Issue": "Assassin is underperforming",
+      "Evidence": "0.16 efficiency, 0.0% survival",
+      "Suggestion": "Increase Assassin damage or survivability",
+      "Impact": ""
+    },
+    {
+      "Severity": "Warning",
+      "Category": "Unit",
+      "Issue": "Warrior is overperforming",
+      "Evidence": "10.09 efficiency ratio",
+      "Suggestion": "Reduce Warrior damage or increase fragility",
+      "Impact": ""
+    }
+  ]
+}

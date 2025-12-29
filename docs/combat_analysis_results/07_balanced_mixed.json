@@ -1,0 +1,202 @@
+{
+  "ScenarioName": "Balanced Mixed",
+  "Iterations": 200,
+  "AnalysisMode": "comprehensive",
+  "WinRate": {
+    "AttackerWinRate": 0.79,
+    "DefenderWinRate": 0.21,
+    "DrawRate": 0,
+    "AttackerCI95": [
+      0.7283526118460081,
+      0.840716704721366
+    ],
+    "DefenderCI95": [
+      0.1592832952786342,
+      0.271647388153992
+    ],
+    "IsBalanced": false,
+    "ImbalanceAmount": 0.29000000000000004,
+    "FavoredSide": "Attacker"
+  },
+  "Duration": {
+    "Average": 9.405,
+    "Median": 9,
+    "StdDev": 2.1988976223937398,
+    "Min": 5,
+    "Max": 17,
+    "DistributionBuckets": {
+      "5-6": 10,
+      "7-8": 69,
+      "9+": 121
+    },
+    "IsHealthyDuration": false
+  },
+  "UnitPerformance": {
+    "ByUnit": {
+      "Archer": {
+        "TemplateName": "Archer",
+        "Role": "",
+        "AvgDamageDealt": 39.265,
+        "AvgDamageTaken": 9.195,
+        "SurvivalRate": 0.79,
+        "Efficiency": 4.270255573681348,
+        "AvgDeathTurn": 9.047619047619047,
+        "CoverProvided": 0
+      },
+      "Cleric": {
+        "TemplateName": "Cleric",
+        "Role": "",
+        "AvgDamageDealt": 19.255,
+        "AvgDamageTaken": 13.905,
+        "SurvivalRate": 0.725,
+        "Efficiency": 1.3847536857245595,
+        "AvgDeathTurn": 10.290909090909091,
+        "CoverProvided": 0
+      },
+      "Fighter": {
+        "TemplateName": "Fighter",
+        "Role": "",
+        "AvgDamageDealt": 48.585,
+        "AvgDamageTaken": 49.865,
+        "SurvivalRate": 0.185,
+        "Efficiency": 0.974330692870751,
+        "AvgDeathTurn": 9.503067484662576,
+        "CoverProvided": 0
+      },
+      "Knight": {
+        "TemplateName": "Knight",
+        "Role": "",
+        "AvgDamageDealt": 51.37,
+        "AvgDamageTaken": 42.35,
+        "SurvivalRate": 0.54,
+        "Efficiency": 1.212987012987013,
+        "AvgDeathTurn": 10.73913043478261,
+        "CoverProvided": 0
+      },
+      "Priest": {
+        "TemplateName": "Priest",
+        "Role": "",
+        "AvgDamageDealt": 9.055,
+        "AvgDamageTaken": 31.415,
+        "SurvivalRate": 0.21,
+        "Efficiency": 0.2882381028171256,
+        "AvgDeathTurn": 9.5,
+        "CoverProvided": 0
+      },
+      "Wizard": {
+        "TemplateName": "Wizard",
+        "Role": "",
+        "AvgDamageDealt": 7.81,
+        "AvgDamageTaken": 28.61,
+        "SurvivalRate": 0.21,
+        "Efficiency": 0.2729814750087382,
+        "AvgDeathTurn": 9.5,
+        "CoverProvided": 0
+      }
+    },
+    "ByRole": {
+      "Unknown": {
+        "Role": "Unknown",
+        "AvgDamageDealt": 29.223333333333333,
+        "DamageShare": 1,
+        "AvgSurvivalRate": 0.44333333333333336,
+        "AvgDeathTurn": 9.70808383233533,
+        "CoverProvided": 0,
+        "TargetingValue": 0,
+        "UnitCount": 6
+      }
+    },
+    "TopPerformers": [
+      "Archer",
+      "Cleric",
+      "Knight"
+    ],
+    "UnderPerformers": [
+      "Wizard",
+      "Priest",
+      "Fighter"
+    ]
+  },
+  "Mechanics": {
+    "CoverEffectiveness": 0,
+    "CoverActivation": 0,
+    "CritRate": 0.13735498839907193,
+    "CritImpact": 0.5,
+    "DodgeRate": 0.08638049814520403,
+    "DodgeImpact": 1,
+    "RangeAdvantage": 0
+  },
+  "Timeline": {
+    "AvgFirstBlood": 6.950920245398773,
+    "AvgTurningPoint": 12.148148148148149,
+    "AvgDuration": 9.405,
+    "SnowballFactor": 0.20508166497448765,
+    "DamageCurve": [
+      0.89,
+      0.89,
+      0.97,
+      1.39,
+      2.54,
+      5.844221105527638,
+      8.163157894736843,
+      10.527272727272727,
+      10.545454545454545,
+      12.0375,
+      11.745454545454546,
+      10.620689655172415,
+      15.4,
+      15.538461538461538,
+      12.5,
+      15,
+      15
+    ]
+  },
+  "Confidence": {
+    "SampleSize": 200,
+    "MarginOfError": 0.0564500416297455,
+    "IsStatisticallySound": false,
+    "RecommendedSamples": 470
+  },
+  "Insights": [
+    {
+      "Severity": "Critical",
+      "Category": "WinRate",
+      "Issue": "Attacker is favored",
+      "Evidence": "58.0% win rate difference",
+      "Suggestion": "Adjust Attacker squad stats",
+      "Impact": ""
+    },
+    {
+      "Severity": "Info",
+      "Category": "Unit",
+      "Issue": "Wizard is underperforming",
+      "Evidence": "0.27 efficiency, 21.0% survival",
+      "Suggestion": "Increase Wizard damage or survivability",
+      "Impact": ""
+    },
+    {
+      "Severity": "Info",
+      "Category": "Unit",
+      "Issue": "Priest is underperforming",
+      "Evidence": "0.28 efficiency, 21.0% survival",
+      "Suggestion": "Increase Priest damage or survivability",
+      "Impact": ""
+    },
+    {
+      "Severity": "Warning",
+      "Category": "Unit",
+      "Issue": "Archer is overperforming",
+      "Evidence": "4.27 efficiency ratio",
+      "Suggestion": "Reduce Archer damage or increase fragility",
+      "Impact": ""
+    },
+    {
+      "Severity": "Info",
+      "Category": "Statistical",
+      "Issue": "Sample size may be insufficient",
+      "Evidence": "5.6% margin of error",
+      "Suggestion": "Increase iterations to 470",
+      "Impact": ""
+    }
+  ]
+}
