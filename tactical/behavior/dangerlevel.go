@@ -12,12 +12,7 @@ import (
 const (
 	// Movement defaults
 	DefaultSquadMovement = 3   // Base movement when no data available
-	MaxSpeedSentinel     = 999 // Sentinel for finding minimum speed
-
-	// Role threat multipliers
-	ThreatMultiplierDPS     = 1.5 // DPS units deal highest threat
-	ThreatMultiplierTank    = 1.2 // Tanks provide high durability threat
-	ThreatMultiplierSupport = 1.0 // Support provides utility baseline
+	MaxSpeedSentinel = 999 // Sentinel for finding minimum speed
 
 	// Leader and composition bonuses
 	ThreatLeaderBonus       = 1.3 // Threat multiplier when unit is squad leader
@@ -336,16 +331,7 @@ func (stl *SquadThreatLevel) CalculateSquadDangerLevel() {
 
 // getRoleMultiplier returns a damage multiplier based on unit role
 func (stl *SquadThreatLevel) getRoleMultiplier(role squads.UnitRole) float64 {
-	switch role {
-	case squads.RoleDPS:
-		return ThreatMultiplierDPS
-	case squads.RoleTank:
-		return ThreatMultiplierTank
-	case squads.RoleSupport:
-		return ThreatMultiplierSupport
-	default:
-		return ThreatMultiplierSupport
-	}
+	return GetRoleModifier(role)
 }
 
 // calculateCompositionBonus returns a bonus multiplier based on attack type diversity
@@ -593,6 +579,11 @@ type averageCombatStats struct {
 func calculateAverageAttributes() {
 
 	num_units := len(squads.Units)
+
+	// Avoid divide by zero when no units exist (e.g., in tests)
+	if num_units == 0 {
+		return
+	}
 
 	for _, unit := range squads.Units {
 

@@ -11,6 +11,7 @@ import (
 	"game_main/gui/widgets"
 	"game_main/tactical/behavior"
 	"game_main/tactical/combatservices"
+	"game_main/tactical/squadcommands"
 	"game_main/world/coords"
 	"game_main/world/worldmap"
 
@@ -323,6 +324,10 @@ func (cm *CombatMode) handleEndTurn() {
 	// Clear movement history when ending turn (can't undo moves from previous turns)
 	cm.actionHandler.ClearMoveHistory()
 
+	// Process command queues before turn ends
+	// Executes one queued command per squad
+	squadcommands.ProcessCommandQueues(cm.Context.ECSManager)
+
 	// End current faction's turn using turn manager
 	err := cm.combatService.TurnManager.EndTurn()
 	if err != nil {
@@ -366,6 +371,73 @@ func (cm *CombatMode) handleEndTurn() {
 
 	cm.threatManager.UpdateAllFactions()
 
+	// Execute AI turn if current faction is AI-controlled
+	cm.executeAITurnIfNeeded()
+
+}
+
+// executeAITurnIfNeeded checks if current faction is AI-controlled and executes its turn
+func (cm *CombatMode) executeAITurnIfNeeded() {
+	currentFactionID := cm.combatService.TurnManager.GetCurrentFaction()
+	if currentFactionID == 0 {
+		return
+	}
+
+	// Check if faction is AI-controlled
+	factionData := cm.Queries.CombatCache.FindFactionDataByID(currentFactionID, cm.Queries.ECSManager)
+	if factionData == nil || factionData.IsPlayerControlled {
+		return // Player-controlled faction, wait for player input
+	}
+
+	// Create AI controller and execute AI turn
+	aiController := cm.combatService.GetAIController()
+
+	// Execute AI actions until faction has no more actions
+	aiExecutedActions := aiController.DecideFactionTurn(currentFactionID)
+
+	if aiExecutedActions {
+		cm.logManager.UpdateTextArea(cm.combatLogArea, fmt.Sprintf("%s (AI) executed actions", factionData.Name))
+	} else {
+		cm.logManager.UpdateTextArea(cm.combatLogArea, fmt.Sprintf("%s (AI) has no valid actions", factionData.Name))
+	}
+
+	// Auto-advance to next turn after AI finishes
+	// Process any queued commands
+	squadcommands.ProcessCommandQueues(cm.Context.ECSManager)
+
+	// End AI turn
+	err := cm.combatService.TurnManager.EndTurn()
+	if err != nil {
+		cm.logManager.UpdateTextArea(cm.combatLogArea, fmt.Sprintf("Error ending AI turn: %s", err.Error()))
+		return
+	}
+
+	// Invalidate caches
+	cm.Queries.MarkAllSquadsDirty()
+
+	// Update UI
+	newFactionID := cm.combatService.TurnManager.GetCurrentFaction()
+	round := cm.combatService.TurnManager.GetCurrentRound()
+
+	newFactionData := cm.Queries.CombatCache.FindFactionDataByID(newFactionID, cm.Queries.ECSManager)
+	if newFactionData != nil {
+		turnMessage := ""
+		if newFactionData.PlayerID > 0 {
+			turnMessage = fmt.Sprintf("=== Round %d: %s (%s) ===", round, newFactionData.Name, newFactionData.PlayerName)
+		} else {
+			turnMessage = fmt.Sprintf("=== Round %d: %s (AI) ===", round, newFactionData.Name)
+		}
+		cm.logManager.UpdateTextArea(cm.combatLogArea, turnMessage)
+	}
+
+	cm.turnOrderComponent.Refresh()
+	cm.factionInfoComponent.ShowFaction(newFactionID)
+	cm.squadListComponent.Refresh()
+
+	cm.threatManager.UpdateAllFactions()
+
+	// Recursively execute next AI turn if needed
+	cm.executeAITurnIfNeeded()
 }
 
 func (cm *CombatMode) Enter(fromMode core.UIMode) error {

@@ -51,7 +51,7 @@ can't attack twice. Once with ranged units and once with melee
   * Look at rendering package, 
 - Review global position system
 - The Inventory is a leftover prior to shifting the game to a turn based squad tactics game from a regular roguelike. Think of what you want to do with the inventory
- 
+- Look at all of the const. See which ones should be defined in a file
 
 
 

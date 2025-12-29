@@ -292,3 +292,13 @@ func (cm *CoordinateManager) GetScaledTileSize() int {
 	}
 	return cm.tileSize
 }
+
+// GetDungeonWidth returns the dungeon width in logical tiles
+func (cm *CoordinateManager) GetDungeonWidth() int {
+	return cm.dungeonWidth
+}
+
+// GetDungeonHeight returns the dungeon height in logical tiles
+func (cm *CoordinateManager) GetDungeonHeight() int {
+	return cm.dungeonHeight
+}

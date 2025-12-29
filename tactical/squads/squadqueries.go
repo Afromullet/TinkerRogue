@@ -403,3 +403,80 @@ func GetUnitIdentity(unitID ecs.EntityID, manager *common.EntityManager) UnitIde
 		MaxHP:     maxHP,
 	}
 }
+
+// ========================================
+// ROLE AND HEALTH QUERIES
+// ========================================
+
+// GetSquadPrimaryRole determines the dominant role based on unit composition
+// Returns the role with the highest count of units
+// Defaults to RoleDPS if no units found or no role data available
+func GetSquadPrimaryRole(squadID ecs.EntityID, manager *common.EntityManager) UnitRole {
+	unitIDs := GetUnitIDsInSquad(squadID, manager)
+
+	roleCounts := map[UnitRole]int{
+		RoleTank:    0,
+		RoleDPS:     0,
+		RoleSupport: 0,
+	}
+
+	for _, unitID := range unitIDs {
+		entity := manager.FindEntityByID(unitID)
+		if entity == nil {
+			continue
+		}
+
+		roleData := common.GetComponentType[*UnitRoleData](entity, UnitRoleComponent)
+		if roleData != nil {
+			roleCounts[roleData.Role]++
+		}
+	}
+
+	// Return role with highest count
+	maxRole := RoleDPS // Default
+	maxCount := 0
+	for role, count := range roleCounts {
+		if count > maxCount {
+			maxCount = count
+			maxRole = role
+		}
+	}
+
+	return maxRole
+}
+
+// GetSquadHealthPercent returns the average HP percentage of alive units in squad (0.0-1.0)
+// Returns 0.0 if no alive units found
+func GetSquadHealthPercent(squadID ecs.EntityID, manager *common.EntityManager) float64 {
+	unitIDs := GetUnitIDsInSquad(squadID, manager)
+	if len(unitIDs) == 0 {
+		return 0.0
+	}
+
+	totalHP := 0.0
+	aliveCount := 0
+
+	for _, unitID := range unitIDs {
+		entity := manager.FindEntityByID(unitID)
+		if entity == nil {
+			continue
+		}
+
+		attr := common.GetComponentType[*common.Attributes](entity, common.AttributeComponent)
+		if attr == nil || attr.CurrentHealth <= 0 {
+			continue
+		}
+
+		maxHP := attr.GetMaxHealth()
+		if maxHP > 0 {
+			totalHP += float64(attr.CurrentHealth) / float64(maxHP)
+			aliveCount++
+		}
+	}
+
+	if aliveCount == 0 {
+		return 0.0
+	}
+
+	return totalHP / float64(aliveCount)
+}

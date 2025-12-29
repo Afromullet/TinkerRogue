@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"game_main/common"
 	"game_main/world/coords"
+	"game_main/tactical/ai"
+	"game_main/tactical/behavior"
 	"game_main/tactical/combat"
 	"game_main/tactical/squads"
 
@@ -18,17 +20,28 @@ type CombatService struct {
 	MovementSystem  *combat.CombatMovementSystem
 	CombatCache     *combat.CombatQueryCache
 	CombatActSystem *combat.CombatActionSystem
+
+	// Threat evaluation system
+	ThreatManager   *behavior.FactionThreatLevelManager
+	LayerEvaluators map[ecs.EntityID]*behavior.CompositeThreatEvaluator
+
+	// AI decision-making
+	aiController *ai.AIController
 }
 
 // NewCombatService creates a new combat service
 func NewCombatService(manager *common.EntityManager) *CombatService {
+	cache := combat.NewCombatQueryCache(manager)
+
 	return &CombatService{
 		EntityManager:   manager,
 		TurnManager:     combat.NewTurnManager(manager),
 		FactionManager:  combat.NewFactionManager(manager),
 		MovementSystem:  combat.NewMovementSystem(manager, common.GlobalPositionSystem),
-		CombatCache:     combat.NewCombatQueryCache(manager),
+		CombatCache:     cache,
 		CombatActSystem: combat.NewCombatActionSystem(manager), // Create once, reuse for all attacks
+		ThreatManager:   behavior.NewFactionThreatLevelManager(manager, cache),
+		LayerEvaluators: make(map[ecs.EntityID]*behavior.CompositeThreatEvaluator),
 	}
 }
 
@@ -177,4 +190,48 @@ func getSquadNameByID(squadID ecs.EntityID, manager *common.EntityManager) strin
 		return squadData.Name
 	}
 	return "Unknown"
+}
+
+// GetThreatEvaluator returns composite evaluator for a faction (lazy initialization)
+func (cs *CombatService) GetThreatEvaluator(factionID ecs.EntityID) *behavior.CompositeThreatEvaluator {
+	if evaluator, exists := cs.LayerEvaluators[factionID]; exists {
+		return evaluator
+	}
+
+	// Create new evaluator for this faction
+	evaluator := behavior.NewCompositeThreatEvaluator(
+		factionID,
+		cs.EntityManager,
+		cs.CombatCache,
+		cs.ThreatManager,
+	)
+	cs.LayerEvaluators[factionID] = evaluator
+	return evaluator
+}
+
+// UpdateThreatLayers updates all threat layers at start of AI turn
+func (cs *CombatService) UpdateThreatLayers(currentRound int) {
+	// Update base threat data first
+	cs.ThreatManager.UpdateAllFactions()
+
+	// Then update composite layers
+	for _, evaluator := range cs.LayerEvaluators {
+		evaluator.Update(currentRound)
+	}
+}
+
+// GetAIController returns the AI controller (lazy initialization)
+func (cs *CombatService) GetAIController() *ai.AIController {
+	if cs.aiController == nil {
+		cs.aiController = ai.NewAIController(
+			cs.EntityManager,
+			cs.TurnManager,
+			cs.MovementSystem,
+			cs.CombatActSystem,
+			cs.CombatCache,
+			cs.ThreatManager,
+			cs.LayerEvaluators,
+		)
+	}
+	return cs.aiController
 }
