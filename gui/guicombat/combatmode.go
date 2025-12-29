@@ -12,7 +12,6 @@ import (
 	"game_main/gui/widgets"
 	"game_main/tactical/behavior"
 	"game_main/tactical/combatservices"
-	"game_main/tactical/squadcommands"
 	"game_main/world/coords"
 	"game_main/world/worldmap"
 
@@ -42,10 +41,10 @@ type CombatMode struct {
 	layerStatusPanel *widget.Container
 
 	// UI text labels
-	turnOrderLabel   *widget.Text
-	factionInfoText  *widget.Text
-	squadDetailText  *widget.Text
-	layerStatusText  *widget.Text
+	turnOrderLabel  *widget.Text
+	factionInfoText *widget.Text
+	squadDetailText *widget.Text
+	layerStatusText *widget.Text
 
 	// UI update components
 	squadListComponent   *guicomponents.SquadListComponent
@@ -233,7 +232,7 @@ func (cm *CombatMode) buildLayerStatusPanel() *widget.Container {
 	cm.ensureUIFactoryInitialized()
 
 	// Create a small panel for layer status display
-	panelWidth := int(float64(cm.Layout.ScreenWidth) * 0.15)  // 15% of screen width
+	panelWidth := int(float64(cm.Layout.ScreenWidth) * 0.15)   // 15% of screen width
 	panelHeight := int(float64(cm.Layout.ScreenHeight) * 0.08) // 8% of screen height
 
 	cm.layerStatusPanel = builders.CreatePanelWithConfig(builders.PanelConfig{
@@ -399,10 +398,6 @@ func (cm *CombatMode) handleEndTurn() {
 	// Clear movement history when ending turn (can't undo moves from previous turns)
 	cm.actionHandler.ClearMoveHistory()
 
-	// Process command queues before turn ends
-	// Executes one queued command per squad
-	squadcommands.ProcessCommandQueues(cm.Context.ECSManager)
-
 	// End current faction's turn using turn manager
 	err := cm.combatService.TurnManager.EndTurn()
 	if err != nil {
@@ -557,7 +552,6 @@ func (cm *CombatMode) playNextAIAttack(attacks []combatservices.QueuedAttack, in
 // advanceAfterAITurn advances to next turn after AI completes (with or without animations)
 func (cm *CombatMode) advanceAfterAITurn() {
 	// Process any queued commands
-	squadcommands.ProcessCommandQueues(cm.Context.ECSManager)
 
 	// End AI turn
 	err := cm.combatService.TurnManager.EndTurn()

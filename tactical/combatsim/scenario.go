@@ -22,7 +22,7 @@ type SquadSetup struct {
 
 // UnitConfig defines a unit in a squad for simulation
 type UnitConfig struct {
-	TemplateName       string         // Reference to Units[] global
+	TemplateName       string // Reference to Units[] global
 	GridRow            int
 	GridCol            int
 	IsLeader           bool
