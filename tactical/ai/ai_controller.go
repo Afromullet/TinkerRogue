@@ -173,8 +173,9 @@ type ActionContext struct {
 	ThreatEval *behavior.CompositeThreatEvaluator
 
 	// Systems access
-	Manager     *common.EntityManager
-	AIController *AIController // Reference to AI controller for attack queueing
+	Manager        *common.EntityManager
+	MovementSystem *combat.CombatMovementSystem // For validating movement tiles
+	AIController   *AIController                // Reference to AI controller for attack queueing
 
 	// Cached squad info
 	SquadRole   squads.UnitRole
@@ -193,13 +194,14 @@ func NewActionContext(
 	evaluator := aic.getThreatEvaluator(factionID)
 
 	ctx := ActionContext{
-		SquadID:      squadID,
-		FactionID:    factionID,
-		ActionState:  aic.combatCache.FindActionStateBySquadID(squadID, aic.entityManager),
-		ThreatEval:   evaluator,
-		Manager:      aic.entityManager,
-		AIController: aic, // Pass reference for attack queueing
-		SquadRole:    squads.GetSquadPrimaryRole(squadID, aic.entityManager),
+		SquadID:        squadID,
+		FactionID:      factionID,
+		ActionState:    aic.combatCache.FindActionStateBySquadID(squadID, aic.entityManager),
+		ThreatEval:     evaluator,
+		Manager:        aic.entityManager,
+		MovementSystem: aic.movementSystem, // For validating movement tiles
+		AIController:   aic,                // Pass reference for attack queueing
+		SquadRole:      squads.GetSquadPrimaryRole(squadID, aic.entityManager),
 	}
 
 	// Get current position

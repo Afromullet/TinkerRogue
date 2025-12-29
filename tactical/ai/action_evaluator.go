@@ -165,10 +165,9 @@ func (ae *ActionEvaluator) evaluateMovement() []ScoredAction {
 	return actions
 }
 
-// getValidMovementTiles returns all tiles the squad can move to
+// getValidMovementTiles returns all tiles the squad can actually move to
+// Uses ActionContext.MovementSystem to validate tiles (occupied, blocked, etc)
 func (ae *ActionEvaluator) getValidMovementTiles() []coords.LogicalPosition {
-	// This is a simplified version - in reality, you'd call the movement system
-	// For now, return positions within movement range
 	var tiles []coords.LogicalPosition
 
 	moveSpeed := squads.GetSquadMovementSpeed(ae.ctx.SquadID, ae.ctx.Manager)
@@ -182,7 +181,12 @@ func (ae *ActionEvaluator) getValidMovementTiles() []coords.LogicalPosition {
 
 			distance := ae.ctx.CurrentPos.ChebyshevDistance(&pos)
 			if distance > 0 && distance <= moveSpeed {
-				tiles = append(tiles, pos)
+				// CRITICAL: Validate tile is actually movable (not occupied/blocked)
+				// Without this check, AI generates invalid movement actions that fail,
+				// causing it to break out of action loop and stop moving
+				if ae.ctx.MovementSystem.CanMoveTo(ae.ctx.SquadID, pos) {
+					tiles = append(tiles, pos)
+				}
 			}
 		}
 	}
