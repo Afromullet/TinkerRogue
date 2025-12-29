@@ -10,3 +10,13 @@
  
 
 scripts\run-combatsim.sh
+
+
+  # Comprehensive analysis
+  ./combatsim_test.exe -scenario=1 -iterations=100 -analysis=comprehensive
+
+  # Parameter sweep
+  ./combatsim_test.exe -scenario=3 -sweep -sweep-attr=Strength -sweep-min=5 -sweep-max=20 -iterations=50
+
+  # Export to JSON/CSV
+  ./combatsim_test.exe -scenario=1 -export-json=report.json -export-csv=metrics.csv

@@ -22,10 +22,11 @@ type SquadSetup struct {
 
 // UnitConfig defines a unit in a squad for simulation
 type UnitConfig struct {
-	TemplateName string // Reference to Units[] global
-	GridRow      int
-	GridCol      int
-	IsLeader     bool
+	TemplateName       string         // Reference to Units[] global
+	GridRow            int
+	GridCol            int
+	IsLeader           bool
+	AttributeOverrides map[string]int // Override specific attributes for sweeps
 }
 
 // ScenarioBuilder provides fluent API for creating combat scenarios
@@ -80,4 +81,47 @@ func (b *ScenarioBuilder) Build() CombatScenario {
 // GetUnitCount returns the number of units in this setup
 func (s *SquadSetup) GetUnitCount() int {
 	return len(s.Units)
+}
+
+// Clone creates a deep copy of the scenario for mutation
+func (s CombatScenario) Clone() CombatScenario {
+	clone := CombatScenario{
+		Name:          s.Name,
+		SquadDistance: s.SquadDistance,
+		AttackerSetup: s.AttackerSetup.Clone(),
+		DefenderSetup: s.DefenderSetup.Clone(),
+	}
+	return clone
+}
+
+// Clone creates a deep copy of the squad setup
+func (s SquadSetup) Clone() SquadSetup {
+	clone := SquadSetup{
+		Name:          s.Name,
+		WorldPosition: s.WorldPosition,
+		Units:         make([]UnitConfig, len(s.Units)),
+	}
+
+	for i, unit := range s.Units {
+		clone.Units[i] = unit.Clone()
+	}
+
+	return clone
+}
+
+// Clone creates a deep copy of the unit config
+func (u UnitConfig) Clone() UnitConfig {
+	clone := UnitConfig{
+		TemplateName:       u.TemplateName,
+		GridRow:            u.GridRow,
+		GridCol:            u.GridCol,
+		IsLeader:           u.IsLeader,
+		AttributeOverrides: make(map[string]int),
+	}
+
+	for k, v := range u.AttributeOverrides {
+		clone.AttributeOverrides[k] = v
+	}
+
+	return clone
 }
