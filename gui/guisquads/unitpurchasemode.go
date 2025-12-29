@@ -2,6 +2,9 @@ package guisquads
 
 import (
 	"fmt"
+	"image/color"
+
+	"game_main/common"
 	"game_main/gui"
 	"game_main/gui/builders"
 	"game_main/gui/core"
@@ -10,7 +13,6 @@ import (
 	"game_main/tactical/squadcommands"
 	"game_main/tactical/squads"
 	"game_main/tactical/squadservices"
-	"image/color"
 
 	"github.com/ebitenui/ebitenui/widget"
 	"github.com/hajimehoshi/ebiten/v2"
@@ -75,11 +77,15 @@ func (upm *UnitPurchaseMode) buildUnitList() *widget.Container {
 		MinHeight: listHeight,
 		EntryLabelFunc: func(e interface{}) string {
 			if template, ok := e.(*squads.UnitTemplate); ok {
-				// Use service to get owned count
-				totalOwned, available := upm.purchaseService.GetUnitOwnedCount(
-					upm.Context.PlayerData.PlayerEntityID,
-					template.Name,
-				)
+				// Get owned count from roster
+				roster := squads.GetPlayerRoster(upm.Context.PlayerData.PlayerEntityID, upm.Context.ECSManager)
+				totalOwned, available := 0, 0
+				if roster != nil {
+					if entry, exists := roster.Units[template.Name]; exists {
+						totalOwned = entry.TotalOwned
+						available = roster.GetAvailableCount(template.Name)
+					}
+				}
 				if totalOwned > 0 {
 					return fmt.Sprintf("%s (Owned: %d, Available: %d)", template.Name, totalOwned, available)
 				}
@@ -329,11 +335,22 @@ func (upm *UnitPurchaseMode) refreshUnitList() {
 func (upm *UnitPurchaseMode) refreshResourceDisplay() {
 	playerID := upm.Context.PlayerData.PlayerEntityID
 
-	// Use service to get player purchase info
-	info := upm.purchaseService.GetPlayerPurchaseInfo(playerID)
+	// Get player resources and roster
+	resources := common.GetPlayerResources(playerID, upm.Context.ECSManager)
+	roster := squads.GetPlayerRoster(playerID, upm.Context.ECSManager)
 
-	upm.goldLabel.Label = fmt.Sprintf("Gold: %d", info.Gold)
-	upm.rosterLabel.Label = fmt.Sprintf("Roster: %d/%d", info.RosterCount, info.RosterCapacity)
+	gold := 0
+	if resources != nil {
+		gold = resources.Gold
+	}
+
+	rosterCount, rosterCapacity := 0, 0
+	if roster != nil {
+		rosterCount, rosterCapacity = roster.GetUnitCount()
+	}
+
+	upm.goldLabel.Label = fmt.Sprintf("Gold: %d", gold)
+	upm.rosterLabel.Label = fmt.Sprintf("Roster: %d/%d", rosterCount, rosterCapacity)
 }
 
 func (upm *UnitPurchaseMode) getRoleName(role squads.UnitRole) string {
