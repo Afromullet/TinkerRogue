@@ -1,14 +1,13 @@
 package guisquads
 
 import (
-	"fmt"
-
-	"game_main/common"
 	"game_main/gui"
-	"game_main/gui/core"
 	"game_main/gui/widgets"
-	"game_main/tactical/squads"
 	"game_main/tactical/squadservices"
+
+	"fmt"
+	"game_main/gui/core"
+	"game_main/tactical/squads"
 
 	"github.com/bytearena/ecs"
 	"github.com/ebitenui/ebitenui/widget"
@@ -331,35 +330,17 @@ func (sbm *SquadBuilderMode) updateCapacityDisplay() {
 		return
 	}
 
-	// Get squad capacity info
-	squadData := common.GetComponentTypeByID[*squads.SquadData](sbm.Context.ECSManager, sbm.currentSquadID, squads.SquadComponent)
-	if squadData == nil {
-		sbm.capacityDisplay.SetText("Capacity: 0.0 / 6.0\n(Invalid squad)")
-		return
-	}
-
-	usedCapacity := squadData.UsedCapacity
-	totalCapacity := squadData.TotalCapacity
-	remainingCapacity := float64(totalCapacity) - usedCapacity
-
-	// Check for leader
-	hasLeader := false
-	unitIDs := squads.GetUnitIDsInSquad(sbm.currentSquadID, sbm.Context.ECSManager)
-	for _, unitID := range unitIDs {
-		if sbm.Context.ECSManager.HasComponent(unitID, squads.LeaderComponent) {
-			hasLeader = true
-			break
-		}
-	}
+	// Use service to get capacity info instead of direct ECS queries
+	capacityInfo := sbm.squadBuilderSvc.GetCapacityInfo(sbm.currentSquadID)
 
 	leaderStatus := "No leader"
-	if hasLeader {
+	if capacityInfo.HasLeader {
 		leaderStatus = "Leader assigned ★"
 	}
 
-	capacityText := fmt.Sprintf("Capacity: %.1f / %d\nRemaining: %.1f\n%s", usedCapacity, totalCapacity, remainingCapacity, leaderStatus)
+	capacityText := fmt.Sprintf("Capacity: %.1f / %d\nRemaining: %.1f\n%s", capacityInfo.UsedCapacity, capacityInfo.TotalCapacity, capacityInfo.RemainingCapacity, leaderStatus)
 
-	if remainingCapacity < 0 {
+	if capacityInfo.RemainingCapacity < 0 {
 		capacityText += "\nWARNING: Over capacity!"
 	}
 
@@ -406,8 +387,8 @@ func (sbm *SquadBuilderMode) onCreateSquad() {
 		return
 	}
 
-	// Check unit count
-	unitCount := len(squads.GetUnitIDsInSquad(sbm.currentSquadID, sbm.Context.ECSManager))
+	// Use service to get unit count instead of direct query
+	unitCount := sbm.squadBuilderSvc.GetSquadUnitCount(sbm.currentSquadID)
 	if unitCount == 0 {
 		fmt.Println("Cannot create empty squad")
 		return
@@ -422,19 +403,15 @@ func (sbm *SquadBuilderMode) onCreateSquad() {
 
 	// Update squad name if it was changed
 	if sbm.currentSquadName != "" {
-		squadData := common.GetComponentTypeByID[*squads.SquadData](sbm.Context.ECSManager, sbm.currentSquadID, squads.SquadComponent)
-		if squadData != nil {
-			squadData.Name = sbm.currentSquadName
-		}
+		sbm.squadBuilderSvc.UpdateSquadName(sbm.currentSquadID, sbm.currentSquadName)
 	}
 
-	// Designate leader
-	leaderEntity := sbm.Context.ECSManager.FindEntityByID(leaderID)
-	if leaderEntity != nil {
-		leaderEntity.AddComponent(squads.LeaderComponent, &squads.LeaderData{})
+	// Designate leader using service
+	leaderResult := sbm.squadBuilderSvc.DesignateLeader(leaderID)
+	if leaderResult.Success {
 		fmt.Printf("Unit %d designated as squad leader\n", leaderID)
 	} else {
-		fmt.Printf("Warning: unit %d not found\n", leaderID)
+		fmt.Printf("Warning: %s\n", leaderResult.Error)
 	}
 
 	fmt.Printf("Squad created: %s with %d units\n", sbm.currentSquadName, unitCount)
@@ -554,12 +531,8 @@ func (sbm *SquadBuilderMode) onClearGrid() {
 }
 
 func (sbm *SquadBuilderMode) refreshUnitPalette() {
-	// Get available roster units
-	roster := squads.GetPlayerRoster(sbm.Context.PlayerData.PlayerEntityID, sbm.Context.ECSManager)
-	availableUnits := []*squads.UnitRosterEntry{}
-	if roster != nil {
-		availableUnits = roster.GetAvailableUnits()
-	}
+	// Use service to get available roster units
+	availableUnits := sbm.squadBuilderSvc.GetAvailableRosterUnits(sbm.Context.PlayerData.PlayerEntityID)
 
 	if len(availableUnits) == 0 {
 		// Show message when no units available

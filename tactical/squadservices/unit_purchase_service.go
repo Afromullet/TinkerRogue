@@ -43,6 +43,14 @@ type PurchaseValidationResult struct {
 	RosterCapacity int
 }
 
+// PlayerPurchaseInfo contains read-only purchase information
+type PlayerPurchaseInfo struct {
+	Gold           int
+	RosterCount    int
+	RosterCapacity int
+	CanAddUnit     bool
+}
+
 // GetUnitCost calculates the cost of a unit template
 func (ups *UnitPurchaseService) GetUnitCost(template squads.UnitTemplate) int {
 	// Simple cost formula based on unit name hash
@@ -152,6 +160,42 @@ func (ups *UnitPurchaseService) PurchaseUnit(playerID ecs.EntityID, template squ
 	result.RosterCapacity = rosterCapacity
 
 	return result
+}
+
+// GetPlayerPurchaseInfo returns read-only information about player's purchasing state
+func (ups *UnitPurchaseService) GetPlayerPurchaseInfo(playerID ecs.EntityID) *PlayerPurchaseInfo {
+	info := &PlayerPurchaseInfo{}
+
+	// Get player resources
+	resources := common.GetPlayerResources(playerID, ups.entityManager)
+	if resources != nil {
+		info.Gold = resources.Gold
+	}
+
+	// Get player roster
+	roster := squads.GetPlayerRoster(playerID, ups.entityManager)
+	if roster != nil {
+		info.RosterCount, info.RosterCapacity = roster.GetUnitCount()
+		info.CanAddUnit = roster.CanAddUnit()
+	}
+
+	return info
+}
+
+// GetUnitOwnedCount returns how many units of a template the player owns
+func (ups *UnitPurchaseService) GetUnitOwnedCount(playerID ecs.EntityID, templateName string) (totalOwned, available int) {
+	roster := squads.GetPlayerRoster(playerID, ups.entityManager)
+	if roster == nil {
+		return 0, 0
+	}
+
+	entry, exists := roster.Units[templateName]
+	if !exists {
+		return 0, 0
+	}
+
+	available = roster.GetAvailableCount(templateName)
+	return entry.TotalOwned, available
 }
 
 // RefundResult contains information about a refund transaction

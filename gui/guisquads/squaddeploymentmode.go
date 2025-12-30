@@ -13,6 +13,7 @@ import (
 	"game_main/gui/specs"
 	"game_main/gui/widgets"
 	"game_main/tactical/squads"
+	"game_main/tactical/squadservices"
 	"game_main/visual/graphics"
 
 	"github.com/bytearena/ecs"
@@ -24,11 +25,12 @@ import (
 type SquadDeploymentMode struct {
 	gui.BaseMode // Embed common mode infrastructure
 
-	squadList      *widgets.CachedListWrapper
-	detailPanel    *widget.Container
-	detailTextArea *widgets.CachedTextAreaWrapper // Cached for performance
-	selectedSquadID ecs.EntityID
-	instructionText *widget.Text
+	deploymentService *squadservices.SquadDeploymentService
+	squadList         *widgets.CachedListWrapper
+	detailPanel       *widget.Container
+	detailTextArea    *widgets.CachedTextAreaWrapper // Cached for performance
+	selectedSquadID   ecs.EntityID
+	instructionText   *widget.Text
 
 	isPlacingSquad   bool
 	pendingMouseX    int
@@ -48,6 +50,9 @@ func NewSquadDeploymentMode(modeManager *core.UIModeManager) *SquadDeploymentMod
 }
 
 func (sdm *SquadDeploymentMode) Initialize(ctx *core.UIContext) error {
+	// Create deployment service first (needed by UI builders)
+	sdm.deploymentService = squadservices.NewSquadDeploymentService(ctx.ECSManager)
+
 	// Build the mode UI first
 	err := gui.NewModeBuilder(&sdm.BaseMode, gui.ModeConfig{
 		ModeName:   "squad_deployment",
@@ -105,11 +110,9 @@ func (sdm *SquadDeploymentMode) buildSquadList() *widget.Container {
 				unitCount := len(sdm.Queries.SquadCache.GetUnitIDsInSquad(squadID))
 
 				// Check if squad has been placed
-				squadEntity := sdm.Context.ECSManager.FindEntityByID(squadID)
-				if squadEntity != nil {
-					if posPtr := common.GetComponentType[*coords.LogicalPosition](squadEntity, common.PositionComponent); posPtr != nil {
-						return fmt.Sprintf("%s (%d units) - Placed at (%d, %d)", squadName, unitCount, posPtr.X, posPtr.Y)
-					}
+				allPositions := sdm.deploymentService.GetAllSquadPositions()
+				if pos, hasPosition := allPositions[squadID]; hasPosition {
+					return fmt.Sprintf("%s (%d units) - Placed at (%d, %d)", squadName, unitCount, pos.X, pos.Y)
 				}
 				return fmt.Sprintf("%s (%d units)", squadName, unitCount)
 			}
@@ -222,15 +225,8 @@ func (sdm *SquadDeploymentMode) updateDetailPanel() {
 	unitIDs := sdm.Queries.SquadCache.GetUnitIDsInSquad(sdm.selectedSquadID)
 
 	// Get current deployment position (if any)
-	squadEntity := sdm.Context.ECSManager.FindEntityByID(sdm.selectedSquadID)
-	hasPosition := false
-	currentPos := coords.LogicalPosition{}
-	if squadEntity != nil {
-		if posPtr := common.GetComponentType[*coords.LogicalPosition](squadEntity, common.PositionComponent); posPtr != nil {
-			hasPosition = true
-			currentPos = *posPtr
-		}
-	}
+	allPositions := sdm.deploymentService.GetAllSquadPositions()
+	currentPos, hasPosition := allPositions[sdm.selectedSquadID]
 
 	info := fmt.Sprintf("Squad: %s\nUnits: %d\n\n", squadName, len(unitIDs))
 
@@ -392,25 +388,12 @@ func (sdm *SquadDeploymentMode) placeSquadAt(squadID ecs.EntityID, pos coords.Lo
 }
 
 func (sdm *SquadDeploymentMode) clearAllSquadPositions() {
-	// Clear all squad positions to (0, 0)
-	clearPos := coords.LogicalPosition{X: 0, Y: 0}
-	squadsCleared := 0
+	// Use service to clear all squad positions
+	result := sdm.deploymentService.ClearAllSquadPositions()
 
-	for _, queryResult := range sdm.Context.ECSManager.World.Query(squads.SquadTag) {
-		entity := queryResult.Entity
-		squadID := entity.GetID()
-
-		// Get current position
-		posPtr := common.GetComponentType[*coords.LogicalPosition](entity, common.PositionComponent)
-		if posPtr != nil {
-			// Move entity atomically (updates both component and GlobalPositionSystem)
-			oldPos := *posPtr
-			if err := sdm.Context.ECSManager.MoveEntity(squadID, entity, oldPos, clearPos); err != nil {
-				fmt.Printf("DEBUG: WARNING - Failed to clear position for squad %d: %v\n", squadID, err)
-			} else {
-				squadsCleared++
-			}
-		}
+	if !result.Success {
+		fmt.Printf("DEBUG: ERROR - Failed to clear positions: %s\n", result.Error)
+		return
 	}
 
 	// Refresh list to show updated placement status
@@ -421,5 +404,5 @@ func (sdm *SquadDeploymentMode) clearAllSquadPositions() {
 	sdm.updateInstructionText()
 	sdm.updateDetailPanel()
 
-	fmt.Printf("All squads cleared (%d squads reset)\n", squadsCleared)
+	fmt.Printf("All squads cleared (%d squads reset)\n", result.SquadsCleared)
 }
