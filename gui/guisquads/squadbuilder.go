@@ -8,6 +8,7 @@ import (
 	"game_main/gui/core"
 	"game_main/gui/widgets"
 	"game_main/tactical/squads"
+	"game_main/tactical/squadservices"
 
 	"github.com/bytearena/ecs"
 	"github.com/ebitenui/ebitenui/widget"
@@ -18,9 +19,10 @@ import (
 type SquadBuilderMode struct {
 	gui.BaseMode // Embed common mode infrastructure
 
-	// Managers
-	gridManager *GridEditorManager
-	uiFactory   *gui.UIComponentFactory
+	// Managers and services
+	gridManager     *GridEditorManager
+	squadBuilderSvc *squadservices.SquadBuilderService
+	uiFactory       *gui.UIComponentFactory
 
 	// UI widgets
 	gridContainer   *widget.Container
@@ -59,7 +61,8 @@ func NewSquadBuilderMode(modeManager *core.UIModeManager) *SquadBuilderMode {
 }
 
 func (sbm *SquadBuilderMode) Initialize(ctx *core.UIContext) error {
-	// Create managers first (needed by UI builders)
+	// Create services and managers first (needed by UI builders)
+	sbm.squadBuilderSvc = squadservices.NewSquadBuilderService(ctx.ECSManager)
 	sbm.gridManager = NewGridEditorManager(ctx.ECSManager)
 
 	return gui.NewModeBuilder(&sbm.BaseMode, gui.ModeConfig{
@@ -250,14 +253,13 @@ func (sbm *SquadBuilderMode) placeRosterUnitInCell(row, col int, rosterEntry *sq
 		return
 	}
 
-	// Assign roster unit to squad - handles both placement AND roster marking atomically
-	result := squads.AssignRosterUnitToSquad(
+	// Use service to assign roster unit to squad - handles both placement AND roster marking atomically
+	result := sbm.squadBuilderSvc.AssignRosterUnitToSquad(
 		sbm.Context.PlayerData.PlayerEntityID,
 		sbm.currentSquadID,
 		unitEntityID,
 		*unitTemplate,
 		row, col,
-		sbm.Context.ECSManager,
 	)
 
 	if !result.Success {
@@ -286,13 +288,12 @@ func (sbm *SquadBuilderMode) removeUnitFromCell(row, col int) {
 	unitID := cell.unitID
 	rosterEntryID := cell.rosterEntryID
 
-	// Unassign roster unit - handles both removal AND roster return atomically
-	result := squads.UnassignRosterUnitFromSquad(
+	// Use service to unassign roster unit - handles both removal AND roster return atomically
+	result := sbm.squadBuilderSvc.UnassignRosterUnitFromSquad(
 		sbm.Context.PlayerData.PlayerEntityID,
 		sbm.currentSquadID,
 		rosterEntryID,
 		row, col,
-		sbm.Context.ECSManager,
 	)
 
 	if !result.Success {
@@ -521,12 +522,11 @@ func (sbm *SquadBuilderMode) onClearGrid() {
 		}
 	}
 
-	// Clear squad and return all units to roster atomically
-	result := squads.ClearSquadAndReturnAllUnits(
+	// Use service to clear squad and return all units to roster atomically
+	result := sbm.squadBuilderSvc.ClearSquadAndReturnAllUnits(
 		sbm.Context.PlayerData.PlayerEntityID,
 		sbm.currentSquadID,
 		rosterUnitsMap,
-		sbm.Context.ECSManager,
 	)
 
 	if !result.Success {
