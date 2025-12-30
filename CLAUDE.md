@@ -34,15 +34,17 @@ go vet ./...                    # Check for mistakes
 - `common.EntityManager` - Passed as parameter (NOT global)
 
 ### Key Systems
-- **ECS Core:** `common/EntityManager.go`, `common/helpers.go`
-- **Coordinates:** `coords/CoordinateManager.go`, `coords/coordinates.go`
-- **Position:** `systems/positionsystem.go`
+- **ECS Core:** `common/ecsutil.go`, `common/commoncomponents.go`
+- **Coordinates:** `world/coords/cordmanager.go`, ``world/coords/position.go`
+- **Position:** `common/positionsystem.go`,  `coords/position.go`
 - **Input:** `input/inputcoordinator.go` + controllers
-- **Squads:** `squads/` (8 components, query-based, system functions)
-- **Combat:** `combat/` (turn manager, combat state)
+- **Squads:** `tactical/squads`, `tactical/squadcommands`, `tactical/squadservices`,  (Squad and Squad Management)
+- **Combat:** `tactical/combat/`, `tactical/combatservices/` (turn manager, combat state, combat actions)
+- **AI:** `tactical/ai`, `tactical/behavior` (game ai, controls enemies)
 - **GUI:** `gui/core/` (mode manager, context switching)
 - **Items:** `gear/` (pure ECS inventory)
-- **Worldmap:** `worldmap/` (generator registry, algorithms)
+- **Graphics:** `visual/graphics`, `visual/rendering` (Game graphics and rendering. Batch drawing operations)
+- **Worldmap:** `world/worldmap/` (generator registry, algorithms)
 
 ---
 
