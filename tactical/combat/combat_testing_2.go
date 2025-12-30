@@ -96,6 +96,11 @@ func CreateTestUnit(manager *common.EntityManager, squadID ecs.EntityID, index i
 		Height:    1,
 	})
 
+	// Add attack range component (matches production code in units.go)
+	unitEntity.AddComponent(squads.AttackRangeComponent, &squads.AttackRangeData{
+		Range: 1, // Melee range
+	})
+
 	return unitID
 }
 
@@ -132,6 +137,11 @@ func CreateTestRangedUnit(manager *common.EntityManager, squadID ecs.EntityID, i
 		AnchorCol: col,
 		Width:     1,
 		Height:    1,
+	})
+
+	// Add attack range component (matches production code in units.go)
+	unitEntity.AddComponent(squads.AttackRangeComponent, &squads.AttackRangeData{
+		Range: attackRange,
 	})
 
 	return unitID

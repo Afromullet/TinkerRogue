@@ -122,12 +122,13 @@ func (cas *CombatActionSystem) GetSquadAttackRange(squadID ecs.EntityID) int {
 			continue
 		}
 
-		attr := common.GetComponentType[*common.Attributes](entity, common.AttributeComponent)
-		if attr == nil {
+		// Read from AttackRangeComponent (correct source for attack range)
+		rangeData := common.GetComponentType[*squads.AttackRangeData](entity, squads.AttackRangeComponent)
+		if rangeData == nil {
 			continue
 		}
 
-		unitRange := attr.GetAttackRange()
+		unitRange := rangeData.Range
 
 		if unitRange > maxRange {
 			maxRange = unitRange
@@ -166,7 +167,13 @@ func (cas *CombatActionSystem) GetAttackingUnits(squadID, targetID ecs.EntityID)
 			continue
 		}
 
-		unitRange := attr.GetAttackRange()
+		// Read from AttackRangeComponent (correct source for attack range)
+		rangeData := common.GetComponentType[*squads.AttackRangeData](entity, squads.AttackRangeComponent)
+		if rangeData == nil {
+			continue
+		}
+
+		unitRange := rangeData.Range
 
 		// Check if this unit can reach the target
 		if unitRange >= distance {
