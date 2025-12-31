@@ -442,8 +442,8 @@ func selectMeleeRowTargets(attackerID, defenderSquadID ecs.EntityID, manager *co
 	return []ecs.EntityID{}
 }
 
-// selectMeleeColumnTargets targets column directly across from attacker, wrapping to adjacent columns if empty
-// Targets exactly 1 unit (spear-type attack)
+// selectMeleeColumnTargets targets column directly across from attacker, piercing to next column if empty
+// Always targets all units in the column (piercing attack)
 func selectMeleeColumnTargets(attackerID, defenderSquadID ecs.EntityID, manager *common.EntityManager) []ecs.EntityID {
 	attackerEntity := manager.FindEntityByID(attackerID)
 	if attackerEntity == nil {
@@ -461,24 +461,10 @@ func selectMeleeColumnTargets(attackerID, defenderSquadID ecs.EntityID, manager 
 	// Example: attackerCol=1 → try columns 1, 2, 0
 	for offset := 0; offset < 3; offset++ {
 		col := (attackerCol + offset) % 3
+		targets := getUnitsInColumn(defenderSquadID, col, manager)
 
-		// For each column, search through all rows to find any ALIVE unit
-		for row := 0; row <= 2; row++ {
-			cellUnits := GetUnitIDsAtGridPosition(defenderSquadID, row, col, manager)
-
-			for _, unitID := range cellUnits {
-				entity := manager.FindEntityByID(unitID)
-				if entity == nil {
-					continue
-				}
-
-				// Check if unit is alive
-				attr := common.GetComponentType[*common.Attributes](entity, common.AttributeComponent)
-				if attr != nil && attr.CurrentHealth > 0 {
-					// Return the first alive unit found
-					return []ecs.EntityID{unitID}
-				}
-			}
+		if len(targets) > 0 {
+			return targets // Return all units in the column
 		}
 	}
 
@@ -538,6 +524,34 @@ func getUnitsInRow(squadID ecs.EntityID, row int, manager *common.EntityManager)
 
 	// Check all columns in the row
 	for col := 0; col <= 2; col++ {
+		cellUnits := GetUnitIDsAtGridPosition(squadID, row, col, manager)
+		for _, unitID := range cellUnits {
+			if !seen[unitID] {
+				entity := manager.FindEntityByID(unitID)
+				if entity == nil {
+					continue
+				}
+
+				// Filter out dead units
+				attr := common.GetComponentType[*common.Attributes](entity, common.AttributeComponent)
+				if attr != nil && attr.CurrentHealth > 0 {
+					units = append(units, unitID)
+					seen[unitID] = true
+				}
+			}
+		}
+	}
+
+	return units
+}
+
+// Helper: Get all ALIVE units in a specific column
+func getUnitsInColumn(squadID ecs.EntityID, col int, manager *common.EntityManager) []ecs.EntityID {
+	var units []ecs.EntityID
+	seen := make(map[ecs.EntityID]bool)
+
+	// Check all rows in the column
+	for row := 0; row <= 2; row++ {
 		cellUnits := GetUnitIDsAtGridPosition(squadID, row, col, manager)
 		for _, unitID := range cellUnits {
 			if !seen[unitID] {

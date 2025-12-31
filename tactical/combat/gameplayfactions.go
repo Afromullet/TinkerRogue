@@ -85,6 +85,30 @@ func SetupGameplayFactions(manager *common.EntityManager, playerStartPos coords.
 		}
 	}
 
+	// 6b. Add three magic-only squads for Player 1
+	playerMagicSquadPositions := []coords.LogicalPosition{
+		{X: clampPosition(playerStartPos.X-9, 0, 99), Y: clampPosition(playerStartPos.Y-6, 0, 79)},
+		{X: clampPosition(playerStartPos.X+9, 0, 99), Y: clampPosition(playerStartPos.Y-6, 0, 79)},
+		{X: clampPosition(playerStartPos.X, 0, 99), Y: clampPosition(playerStartPos.Y-9, 0, 79)},
+	}
+
+	for i, pos := range playerMagicSquadPositions {
+		squadID, err := createMagicSquadByAttackType(manager, fmt.Sprintf("Player Magic Squad %d", i+1), pos)
+		if err != nil {
+			return fmt.Errorf("failed to create player magic squad %d: %w", i+1, err)
+		}
+
+		// Add squad to faction
+		if err := fm.AddSquadToFaction(playerFactionID, squadID, pos); err != nil {
+			return fmt.Errorf("failed to add magic squad to player faction: %w", err)
+		}
+
+		// Create ActionStateData for squad
+		if err := createActionStateForSquad(manager, squadID); err != nil {
+			return fmt.Errorf("failed to create action state for player magic squad: %w", err)
+		}
+	}
+
 	// 7. Create Player 2 squads positioned on opposite side (5 squads total)
 	// Player 2 squads are positioned on the opposite side of the map for hot-seat multiplayer
 	// Squad positions relative to player start:
@@ -138,6 +162,30 @@ func SetupGameplayFactions(manager *common.EntityManager, playerStartPos coords.
 		// Create ActionStateData for squad
 		if err := createActionStateForSquad(manager, squadID); err != nil {
 			return fmt.Errorf("failed to create action state for Player 2 ranged squad: %w", err)
+		}
+	}
+
+	// 7b. Add three magic-only squads for Player 2
+	player2MagicSquadPositions := []coords.LogicalPosition{
+		{X: clampPosition(playerStartPos.X-10, 0, 99), Y: clampPosition(playerStartPos.Y+15, 0, 79)},
+		{X: clampPosition(playerStartPos.X+10, 0, 99), Y: clampPosition(playerStartPos.Y+15, 0, 79)},
+		{X: clampPosition(playerStartPos.X, 0, 99), Y: clampPosition(playerStartPos.Y+15, 0, 79)},
+	}
+
+	for i, pos := range player2MagicSquadPositions {
+		squadID, err := createMagicSquadByAttackType(manager, fmt.Sprintf("Player 2 Magic Squad %d", i+1), pos)
+		if err != nil {
+			return fmt.Errorf("failed to create Player 2 magic squad %d: %w", i+1, err)
+		}
+
+		// Add squad to faction
+		if err := fm.AddSquadToFaction(player2FactionID, squadID, pos); err != nil {
+			return fmt.Errorf("failed to add magic squad to Player 2 faction: %w", err)
+		}
+
+		// Create ActionStateData for squad
+		if err := createActionStateForSquad(manager, squadID); err != nil {
+			return fmt.Errorf("failed to create action state for Player 2 magic squad: %w", err)
 		}
 	}
 
@@ -195,10 +243,34 @@ func SetupGameplayFactions(manager *common.EntityManager, playerStartPos coords.
 		}
 	}
 
+	// 8b. Add three magic-only squads for AI Faction
+	aiMagicSquadPositions := []coords.LogicalPosition{
+		{X: clampPosition(playerStartPos.X-15, 0, 99), Y: clampPosition(playerStartPos.Y-8, 0, 79)},
+		{X: clampPosition(playerStartPos.X+15, 0, 99), Y: clampPosition(playerStartPos.Y-8, 0, 79)},
+		{X: clampPosition(playerStartPos.X, 0, 99), Y: clampPosition(playerStartPos.Y-12, 0, 79)},
+	}
+
+	for i, pos := range aiMagicSquadPositions {
+		squadID, err := createMagicSquadByAttackType(manager, fmt.Sprintf("Goblin Magic Squad %d", i+1), pos)
+		if err != nil {
+			return fmt.Errorf("failed to create AI magic squad %d: %w", i+1, err)
+		}
+
+		// Add squad to AI faction
+		if err := fm.AddSquadToFaction(aiFactionID, squadID, pos); err != nil {
+			return fmt.Errorf("failed to add magic squad to AI faction: %w", err)
+		}
+
+		// Create ActionStateData for squad
+		if err := createActionStateForSquad(manager, squadID); err != nil {
+			return fmt.Errorf("failed to create action state for AI magic squad: %w", err)
+		}
+	}
+
 	fmt.Printf("Created three-faction battle:\n")
-	fmt.Printf("  Player 1 faction (%d) with %d squads\n", playerFactionID, len(playerSquadPositions)+len(playerRangedSquadPositions))
-	fmt.Printf("  Player 2 faction (%d) with %d squads\n", player2FactionID, len(player2SquadPositions)+len(player2RangedSquadPositions))
-	fmt.Printf("  AI Goblin Horde (%d) with %d squads\n", aiFactionID, len(aiSquadPositions)+len(aiRangedSquadPositions))
+	fmt.Printf("  Player 1 faction (%d) with %d squads\n", playerFactionID, len(playerSquadPositions)+len(playerRangedSquadPositions)+len(playerMagicSquadPositions))
+	fmt.Printf("  Player 2 faction (%d) with %d squads\n", player2FactionID, len(player2SquadPositions)+len(player2RangedSquadPositions)+len(player2MagicSquadPositions))
+	fmt.Printf("  AI Goblin Horde (%d) with %d squads\n", aiFactionID, len(aiSquadPositions)+len(aiRangedSquadPositions)+len(aiMagicSquadPositions))
 
 	return nil
 }
@@ -432,6 +504,59 @@ func createRangedSquadByAttackRange(
 		// Randomly select a ranged unit
 		randomIdx := common.RandomInt(len(rangedUnits))
 		unit := rangedUnits[randomIdx]
+
+		unit.GridRow = gridPositions[i][0]
+		unit.GridCol = gridPositions[i][1]
+		unit.IsLeader = false
+
+		unitsToCreate = append(unitsToCreate, unit)
+	}
+
+	// Set random leader
+	leaderIndex := common.RandomInt(unitCount)
+	unitsToCreate[leaderIndex].IsLeader = true
+	unitsToCreate[leaderIndex].Attributes.Leadership = 20
+
+	// Create squad
+	squadID := squads.CreateSquadFromTemplate(
+		manager,
+		squadName,
+		squads.FormationBalanced,
+		position,
+		unitsToCreate,
+	)
+
+	return squadID, nil
+}
+
+// createMagicSquadByAttackType creates a squad with exactly 3 magic units (AttackType == Magic)
+// Uses the AttackType field to select units
+func createMagicSquadByAttackType(
+	manager *common.EntityManager,
+	squadName string,
+	position coords.LogicalPosition,
+) (ecs.EntityID, error) {
+	// Get all units with AttackType == Magic
+	magicUnits := filterUnitsByAttackType(squads.AttackTypeMagic)
+	if len(magicUnits) == 0 {
+		return 0, fmt.Errorf("no magic units available (AttackType == Magic)")
+	}
+
+	// Create squad with exactly 3 magic units
+	unitCount := 3
+	unitsToCreate := []squads.UnitTemplate{}
+
+	// Position units in a balanced formation
+	gridPositions := [][2]int{
+		{0, 1}, // Row 0 - Front center
+		{1, 0}, // Row 1 - Middle left
+		{2, 1}, // Row 2 - Back center
+	}
+
+	for i := 0; i < unitCount; i++ {
+		// Randomly select a magic unit
+		randomIdx := common.RandomInt(len(magicUnits))
+		unit := magicUnits[randomIdx]
 
 		unit.GridRow = gridPositions[i][0]
 		unit.GridCol = gridPositions[i][1]

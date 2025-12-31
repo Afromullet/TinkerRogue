@@ -1,0 +1,1211 @@
+═══════════════════════════════════════════════════════
+BATTLE: battle_20251231_175138
+Started: 2025-12-31 17:51:38
+Ended:   2025-12-31 17:53:47
+Duration: 2m 9s
+Rounds: 2
+Victor: Unknown
+═══════════════════════════════════════════════════════
+
+┌─── ENGAGEMENT #1 (Round 1) ──────────────────────────┐
+│ Player 2 Squad 4 → Goblin Squad 2 (1 tiles)     │
+└──────────────────────────────────────────────────────┘
+
+ATTACKER FORMATION:
+┌─────┬─────┬─────┐  Player 2 Squad 4
+│A119 │A120 │A121 │
+│Knig │Pala │Figh │
+├─────┼─────┼─────┤
+│     │A122 │     │
+│     │Warr │     │
+├─────┼─────┼─────┤
+│     │A123 │     │
+│     │Swor │     │
+└─────┴─────┴─────┘
+
+DEFENDER FORMATION:
+┌─────┬─────┬─────┐  Goblin Squad 2
+│D167 │D168 │D169 │
+│Knig │Pala │Figh │
+├─────┼─────┼─────┤
+│     │     │D171 │
+│     │     │Swor │
+├─────┼─────┼─────┤
+│     │     │D170 │
+│     │     │Warr │
+└─────┴─────┴─────┘
+
+ATTACK FLOW:
+────────────────────────────────────────────────────
+[A119] Knight (Tank) at (0,0)
+  Targeted rows: [0]
+  ├─ HIT Unit_167 for 1 damage
+  ├─ HIT Unit_168 for 2 damage
+  └─ HIT Unit_169 for 4 damage
+  ➤ 3 attacks: 3 hits, 7 damage
+
+[A120] Paladin (Support) at (0,1)
+  Targeted rows: [0]
+  ├─ HIT Unit_168 for 1 damage
+  ├─ HIT Unit_169 for 1 damage
+  └─ DODGE Unit_167
+  ➤ 3 attacks: 2 hits, 1 dodge, 2 damage
+
+[A121] Fighter (Tank) at (0,2)
+  Targeted rows: [0,1,2]
+  ├─ HIT Unit_169 for 8 damage
+  ├─ HIT Unit_171 for 10 damage
+  └─ HIT Unit_170 for 9 damage
+  ➤ 3 attacks: 3 hits, 27 damage
+
+[A122] Warrior (DPS) at (1,1)
+  Targeted rows: [0]
+  ├─ HIT Unit_167 for 7 damage
+  ├─ HIT Unit_168 for 9 damage
+  └─ CRITICAL Unit_169 for 26 damage
+  ➤ 3 attacks: 3 hits, 1 critical, 42 damage
+
+[A123] Swordsman (DPS) at (2,1)
+  Targeted rows: [0]
+  └─ DODGE Unit_168
+  ➤ 1 attack: 1 dodge
+
+────────────────────────────────────────────────────
+
+COUNTERATTACK FLOW:
+────────────────────────────────────────────────────
+[D167] Knight (Tank) at (0,0)
+  Targeted rows: [0]
+  ├─ COUNTERATTACK Unit_120 for 1 damage
+  ├─ COUNTERATTACK Unit_121 for 1 damage
+  └─ MISS Unit_119
+  ➤ 3 attacks: 2 hits, 1 miss, 2 damage
+
+[D168] Paladin (Support) at (0,1)
+  Targeted rows: [0]
+  ├─ MISS Unit_121
+  ├─ MISS Unit_119
+  └─ COUNTERATTACK Unit_120 for 1 damage
+  ➤ 3 attacks: 1 hit, 2 misses, 1 damage
+
+[D169] Fighter (Tank) at (0,2)
+  Targeted rows: [0]
+  └─ COUNTERATTACK Unit_121 for 1 damage
+  ➤ 1 attack: 1 hit, 1 damage
+
+[D170] Warrior (DPS) at (2,2)
+  Targeted rows: [0]
+  ├─ DODGE Unit_119
+  ├─ MISS Unit_120
+  └─ COUNTERATTACK Unit_121 for 1 damage
+  ➤ 3 attacks: 1 hit, 1 miss, 1 dodge, 1 damage
+
+[D171] Swordsman (DPS) at (1,2)
+  Targeted rows: [0]
+  └─ MISS Unit_121
+  ➤ 1 attack: 1 miss
+
+────────────────────────────────────────────────────
+
+Engagement Summary:
+  Attacks: 13
+  Outcomes: 11 hits, 2 dodges, 1 criticals
+  Total Damage: 78
+  Units Killed: 0
+  Counterattacks: 11
+  Counter Outcomes: 5 hits, 5 misses, 1 dodges
+  Counter Damage: 5
+  Counter Kills: 0
+════════════════════════════════════════════════════
+
+┌─── ENGAGEMENT #2 (Round 1) ────────────────────────────┐
+│ Player 2 Squad 1 → Player Ranged Squad 1 (1 tiles)│
+└────────────────────────────────────────────────────────┘
+
+ATTACKER FORMATION:
+┌─────┬─────┬─────┐  Player 2 Squad 1
+│ A98 │ A99 │A100 │
+│Knig │Pala │Figh │
+├─────┼─────┼─────┤
+│     │A101 │     │
+│     │Warr │     │
+├─────┼─────┼─────┤
+│     │A102 │     │
+│     │Swor │     │
+└─────┴─────┴─────┘
+
+DEFENDER FORMATION:
+┌─────┬─────┬─────┐  Player Ranged Squad 1
+│ D71 │     │ D74 │
+│Mark │     │Arch │
+├─────┼─────┼─────┤
+│     │ D72 │     │
+│     │Sorc │     │
+├─────┼─────┼─────┤
+│     │     │ D73 │
+│     │     │Mark │
+└─────┴─────┴─────┘
+
+ATTACK FLOW:
+────────────────────────────────────────────────────
+[A98] Knight (Tank) at (0,0)
+  Targeted rows: [0]
+  ├─ DODGE Unit_71
+  └─ HIT Unit_74 for 18 damage
+  ➤ 2 attacks: 1 hit, 1 dodge, 18 damage
+
+[A99] Paladin (Support) at (0,1)
+  Targeted rows: [0]
+  ├─ HIT Unit_71 for 15 damage
+  └─ HIT Unit_74 for 15 damage (killed)
+  ➤ 2 attacks: 2 hits, 30 damage
+
+[A100] Fighter (Tank) at (0,2)
+  Targeted rows: [2]
+  └─ HIT Unit_73 for 22 damage
+  ➤ 1 attack: 1 hit, 22 damage
+
+[A101] Warrior (DPS) at (1,1)
+  Targeted rows: [0]
+  └─ DODGE Unit_71
+  ➤ 1 attack: 1 dodge
+
+[A102] Swordsman (DPS) at (2,1)
+  Targeted rows: [1]
+  └─ HIT Unit_72 for 21 damage
+  ➤ 1 attack: 1 hit, 21 damage
+
+────────────────────────────────────────────────────
+
+COUNTERATTACK FLOW:
+────────────────────────────────────────────────────
+[D71] Marksman (DPS) at (0,0)
+  Targeted rows: [0]
+  ├─ COUNTERATTACK Unit_100 for 1 damage
+  ├─ DODGE Unit_98
+  └─ MISS Unit_99
+  ➤ 3 attacks: 1 hit, 1 miss, 1 dodge, 1 damage
+
+[D72] Sorcerer (DPS) at (1,1)
+  Targeted rows: [0,1,2]
+  ├─ MISS Unit_98
+  ├─ DODGE Unit_99
+  ├─ CRITICAL Unit_100 for 1 damage
+  ├─ COUNTERATTACK Unit_101 for 1 damage
+  └─ COUNTERATTACK Unit_102 for 1 damage
+  ➤ 5 attacks: 3 hits, 1 miss, 1 dodge, 1 critical, 3 damage
+
+[D73] Marksman (DPS) at (2,2)
+  Targeted rows: [2]
+  └─ MISS Unit_102
+  ➤ 1 attack: 1 miss
+
+────────────────────────────────────────────────────
+
+Engagement Summary:
+  Attacks: 7
+  Outcomes: 5 hits, 2 dodges
+  Total Damage: 91
+  Units Killed: 1
+  Counterattacks: 9
+  Counter Outcomes: 4 hits, 3 misses, 2 dodges, 1 criticals
+  Counter Damage: 4
+  Counter Kills: 0
+════════════════════════════════════════════════════
+
+┌─── ENGAGEMENT #3 (Round 1) ────────────────────────────┐
+│ Player 2 Squad 2 → Player Ranged Squad 2 (1 tiles)│
+└────────────────────────────────────────────────────────┘
+
+ATTACKER FORMATION:
+┌─────┬─────┬─────┐  Player 2 Squad 2
+│A105 │A106 │A107 │
+│Knig │Pala │Figh │
+├─────┼─────┼─────┤
+│     │A108 │     │
+│     │Warr │     │
+├─────┼─────┼─────┤
+│     │A109 │     │
+│     │Swor │     │
+└─────┴─────┴─────┘
+
+DEFENDER FORMATION:
+┌─────┬─────┬─────┐  Player Ranged Squad 2
+│ D77 │     │ D80 │
+│Skel │     │Mark │
+├─────┼─────┼─────┤
+│     │ D78 │     │
+│     │Cros │     │
+├─────┼─────┼─────┤
+│     │     │ D79 │
+│     │     │Warl │
+└─────┴─────┴─────┘
+
+ATTACK FLOW:
+────────────────────────────────────────────────────
+[A105] Knight (Tank) at (0,0)
+  Targeted rows: [0]
+  ├─ HIT Unit_77 for 20 damage
+  └─ HIT Unit_80 for 18 damage
+  ➤ 2 attacks: 2 hits, 38 damage
+
+[A106] Paladin (Support) at (0,1)
+  Targeted rows: [0]
+  ├─ HIT Unit_77 for 17 damage (killed)
+  └─ HIT Unit_80 for 15 damage
+  ➤ 2 attacks: 2 hits, 32 damage
+
+[A107] Fighter (Tank) at (0,2)
+  Targeted rows: [0,2]
+  ├─ DODGE Unit_80
+  └─ CRITICAL Unit_79 for 35 damage (killed)
+  ➤ 2 attacks: 1 hit, 1 dodge, 1 critical, 35 damage
+
+[A108] Warrior (DPS) at (1,1)
+  Targeted rows: [0]
+  └─ HIT Unit_80 for 25 damage (killed)
+  ➤ 1 attack: 1 hit, 25 damage
+
+[A109] Swordsman (DPS) at (2,1)
+  Targeted rows: [1]
+  └─ HIT Unit_78 for 12 damage
+  ➤ 1 attack: 1 hit, 12 damage
+
+────────────────────────────────────────────────────
+
+COUNTERATTACK FLOW:
+────────────────────────────────────────────────────
+[D78] Crossbowman (DPS) at (1,1)
+  Targeted rows: [1]
+  └─ COUNTERATTACK Unit_108 for 1 damage
+  ➤ 1 attack: 1 hit, 1 damage
+
+────────────────────────────────────────────────────
+
+Engagement Summary:
+  Attacks: 8
+  Outcomes: 7 hits, 1 dodges, 1 criticals
+  Total Damage: 142
+  Units Killed: 3
+  Counterattacks: 1
+  Counter Outcomes: 1 hits
+  Counter Damage: 1
+  Counter Kills: 0
+════════════════════════════════════════════════════
+
+┌─── ENGAGEMENT #4 (Round 1) ──────────────────────────┐
+│ Goblin Squad 1 → Player Magic Squad 1 (1 tiles) │
+└──────────────────────────────────────────────────────┘
+
+ATTACKER FORMATION:
+┌─────┬─────┬─────┐  Goblin Squad 1
+│A160 │A163 │A162 │
+│Knig │Warr │Figh │
+├─────┼─────┼─────┤
+│     │     │A161 │
+│     │     │Pala │
+├─────┼─────┼─────┤
+│     │     │A164 │
+│     │     │Swor │
+└─────┴─────┴─────┘
+
+DEFENDER FORMATION:
+┌─────┬─────┬─────┐  Player Magic Squad 1
+│     │ D83 │     │
+│     │Wiza │     │
+├─────┼─────┼─────┤
+│ D84 │     │     │
+│Warl │     │     │
+├─────┼─────┼─────┤
+│     │ D85 │     │
+│     │Rang │     │
+└─────┴─────┴─────┘
+
+ATTACK FLOW:
+────────────────────────────────────────────────────
+[A160] Knight (Tank) at (0,0)
+  Targeted rows: [0]
+  └─ HIT Unit_83 for 21 damage
+  ➤ 1 attack: 1 hit, 21 damage
+
+[A161] Paladin (Support) at (1,2)
+  Targeted rows: [0]
+  └─ HIT Unit_83 for 18 damage (killed)
+  ➤ 1 attack: 1 hit, 18 damage
+
+[A162] Fighter (Tank) at (0,2)
+  Targeted rows: [1]
+  └─ DODGE Unit_84
+  ➤ 1 attack: 1 dodge
+
+[A163] Warrior (DPS) at (0,1)
+  Targeted rows: [1]
+  └─ HIT Unit_84 for 25 damage
+  ➤ 1 attack: 1 hit, 25 damage
+
+[A164] Swordsman (DPS) at (2,2)
+  Targeted rows: [1]
+  └─ HIT Unit_84 for 19 damage (killed)
+  ➤ 1 attack: 1 hit, 19 damage
+
+────────────────────────────────────────────────────
+
+COUNTERATTACK FLOW:
+────────────────────────────────────────────────────
+[D85] Ranger (Support) at (2,1)
+  Targeted rows: [0,2]
+  ├─ COUNTERATTACK Unit_160 for 1 damage
+  └─ COUNTERATTACK Unit_164 for 1 damage
+  ➤ 2 attacks: 2 hits, 2 damage
+
+────────────────────────────────────────────────────
+
+Engagement Summary:
+  Attacks: 5
+  Outcomes: 4 hits, 1 dodges
+  Total Damage: 83
+  Units Killed: 2
+  Counterattacks: 2
+  Counter Outcomes: 2 hits
+  Counter Damage: 2
+  Counter Kills: 0
+════════════════════════════════════════════════════
+
+┌─── ENGAGEMENT #5 (Round 1) ──────────────────────────┐
+│ Goblin Squad 2 → Player 2 Squad 4 (1 tiles)     │
+└──────────────────────────────────────────────────────┘
+
+ATTACKER FORMATION:
+┌─────┬─────┬─────┐  Goblin Squad 2
+│A167 │A168 │A169 │
+│Knig │Pala │Figh │
+├─────┼─────┼─────┤
+│     │     │A171 │
+│     │     │Swor │
+├─────┼─────┼─────┤
+│     │     │A170 │
+│     │     │Warr │
+└─────┴─────┴─────┘
+
+DEFENDER FORMATION:
+┌─────┬─────┬─────┐  Player 2 Squad 4
+│D119 │D120 │D121 │
+│Knig │Pala │Figh │
+├─────┼─────┼─────┤
+│     │D122 │     │
+│     │Warr │     │
+├─────┼─────┼─────┤
+│     │D123 │     │
+│     │Swor │     │
+└─────┴─────┴─────┘
+
+ATTACK FLOW:
+────────────────────────────────────────────────────
+[A167] Knight (Tank) at (0,0)
+  Targeted rows: [0]
+  ├─ HIT Unit_120 for 2 damage
+  ├─ HIT Unit_121 for 4 damage
+  └─ CRITICAL Unit_119 for 11 damage
+  ➤ 3 attacks: 3 hits, 1 critical, 17 damage
+
+[A168] Paladin (Support) at (0,1)
+  Targeted rows: [0]
+  ├─ HIT Unit_120 for 1 damage
+  ├─ HIT Unit_121 for 1 damage
+  └─ HIT Unit_119 for 1 damage
+  ➤ 3 attacks: 3 hits, 3 damage
+
+[A169] Fighter (Tank) at (0,2)
+  Targeted rows: [0]
+  └─ HIT Unit_121 for 8 damage
+  ➤ 1 attack: 1 hit, 8 damage
+
+[A170] Warrior (DPS) at (2,2)
+  Targeted rows: [0]
+  ├─ HIT Unit_119 for 7 damage
+  ├─ HIT Unit_120 for 9 damage
+  └─ HIT Unit_121 for 11 damage
+  ➤ 3 attacks: 3 hits, 27 damage
+
+[A171] Swordsman (DPS) at (1,2)
+  Targeted rows: [0]
+  └─ HIT Unit_121 for 5 damage
+  ➤ 1 attack: 1 hit, 5 damage
+
+────────────────────────────────────────────────────
+
+COUNTERATTACK FLOW:
+────────────────────────────────────────────────────
+[D119] Knight (Tank) at (0,0)
+  Targeted rows: [0]
+  ├─ COUNTERATTACK Unit_167 for 1 damage
+  ├─ COUNTERATTACK Unit_168 for 1 damage
+  └─ CRITICAL Unit_169 for 1 damage
+  ➤ 3 attacks: 3 hits, 1 critical, 3 damage
+
+[D120] Paladin (Support) at (0,1)
+  Targeted rows: [0]
+  ├─ COUNTERATTACK Unit_168 for 1 damage
+  ├─ MISS Unit_169
+  └─ COUNTERATTACK Unit_167 for 1 damage
+  ➤ 3 attacks: 2 hits, 1 miss, 2 damage
+
+[D121] Fighter (Tank) at (0,2)
+  Targeted rows: [0,1,2]
+  ├─ COUNTERATTACK Unit_169 for 1 damage
+  ├─ MISS Unit_171
+  └─ COUNTERATTACK Unit_170 for 1 damage
+  ➤ 3 attacks: 2 hits, 1 miss, 2 damage
+
+[D122] Warrior (DPS) at (1,1)
+  Targeted rows: [0]
+  ├─ CRITICAL Unit_167 for 1 damage
+  ├─ MISS Unit_168
+  └─ COUNTERATTACK Unit_169 for 1 damage
+  ➤ 3 attacks: 2 hits, 1 miss, 1 critical, 2 damage
+
+[D123] Swordsman (DPS) at (2,1)
+  Targeted rows: [0]
+  └─ COUNTERATTACK Unit_168 for 1 damage
+  ➤ 1 attack: 1 hit, 1 damage
+
+────────────────────────────────────────────────────
+
+Engagement Summary:
+  Attacks: 11
+  Outcomes: 11 hits, 1 criticals
+  Total Damage: 60
+  Units Killed: 0
+  Counterattacks: 13
+  Counter Outcomes: 10 hits, 3 misses, 2 criticals
+  Counter Damage: 10
+  Counter Kills: 0
+════════════════════════════════════════════════════
+
+┌─── ENGAGEMENT #6 (Round 1) ──────────────────────────┐
+│ Goblin Squad 3 → Player Magic Squad 2 (1 tiles) │
+└──────────────────────────────────────────────────────┘
+
+ATTACKER FORMATION:
+┌─────┬─────┬─────┐  Goblin Squad 3
+│     │     │     │
+│     │     │     │
+├─────┼─────┼─────┤
+│A175 │A177 │A174 │
+│Pala │Warr │Knig │
+├─────┼─────┼─────┤
+│     │A178 │A176 │
+│     │Swor │Figh │
+└─────┴─────┴─────┘
+
+DEFENDER FORMATION:
+┌─────┬─────┬─────┐  Player Magic Squad 2
+│     │ D88 │     │
+│     │Cler │     │
+├─────┼─────┼─────┤
+│ D89 │     │     │
+│Warl │     │     │
+├─────┼─────┼─────┤
+│     │ D90 │     │
+│     │Warl │     │
+└─────┴─────┴─────┘
+
+ATTACK FLOW:
+────────────────────────────────────────────────────
+[A174] Knight (Tank) at (1,2)
+  Targeted rows: [0]
+  └─ HIT Unit_88 for 13 damage
+  ➤ 1 attack: 1 hit, 13 damage
+
+[A175] Paladin (Support) at (1,0)
+  Targeted rows: [0]
+  └─ HIT Unit_88 for 10 damage
+  ➤ 1 attack: 1 hit, 10 damage
+
+[A176] Fighter (Tank) at (2,2)
+  Targeted rows: [1]
+  └─ HIT Unit_89 for 22 damage
+  ➤ 1 attack: 1 hit, 22 damage
+
+[A177] Warrior (DPS) at (1,1)
+  Targeted rows: [0]
+  └─ CRITICAL Unit_88 for 35 damage (killed)
+  ➤ 1 attack: 1 hit, 1 critical, 35 damage
+
+[A178] Swordsman (DPS) at (2,1)
+  Targeted rows: [2]
+  └─ HIT Unit_90 for 19 damage
+  ➤ 1 attack: 1 hit, 19 damage
+
+────────────────────────────────────────────────────
+
+COUNTERATTACK FLOW:
+────────────────────────────────────────────────────
+[D89] Warlock (DPS) at (1,0)
+  Targeted rows: [2]
+  └─ COUNTERATTACK Unit_176 for 1 damage
+  ➤ 1 attack: 1 hit, 1 damage
+
+[D90] Warlock (DPS) at (2,1)
+  Targeted rows: [2]
+  └─ COUNTERATTACK Unit_176 for 1 damage
+  ➤ 1 attack: 1 hit, 1 damage
+
+────────────────────────────────────────────────────
+
+Engagement Summary:
+  Attacks: 5
+  Outcomes: 5 hits, 1 criticals
+  Total Damage: 99
+  Units Killed: 1
+  Counterattacks: 2
+  Counter Outcomes: 2 hits
+  Counter Damage: 2
+  Counter Kills: 0
+════════════════════════════════════════════════════
+
+┌─── ENGAGEMENT #7 (Round 1) ──────────────────────────┐
+│ Goblin Squad 4 → Player 2 Squad 5 (1 tiles)     │
+└──────────────────────────────────────────────────────┘
+
+ATTACKER FORMATION:
+┌─────┬─────┬─────┐  Goblin Squad 4
+│A181 │A182 │A183 │
+│Knig │Pala │Figh │
+├─────┼─────┼─────┤
+│     │A184 │     │
+│     │Warr │     │
+├─────┼─────┼─────┤
+│     │A185 │     │
+│     │Swor │     │
+└─────┴─────┴─────┘
+
+DEFENDER FORMATION:
+┌─────┬─────┬─────┐  Player 2 Squad 5
+│     │D127 │D129 │
+│     │Pala │Warr │
+├─────┼─────┼─────┤
+│D128 │     │     │
+│Figh │     │     │
+├─────┼─────┼─────┤
+│     │D130 │D126 │
+│     │Swor │Knig │
+└─────┴─────┴─────┘
+
+ATTACK FLOW:
+────────────────────────────────────────────────────
+[A181] Knight (Tank) at (0,0)
+  Targeted rows: [0]
+  ├─ HIT Unit_127 for 2 damage
+  └─ HIT Unit_129 for 5 damage
+  ➤ 2 attacks: 2 hits, 7 damage
+
+[A182] Paladin (Support) at (0,1)
+  Targeted rows: [0]
+  ├─ HIT Unit_127 for 1 damage
+  └─ HIT Unit_129 for 2 damage
+  ➤ 2 attacks: 2 hits, 3 damage
+
+[A183] Fighter (Tank) at (0,2)
+  Targeted rows: [0,2]
+  ├─ HIT Unit_129 for 9 damage
+  └─ HIT Unit_126 for 4 damage
+  ➤ 2 attacks: 2 hits, 13 damage
+
+[A184] Warrior (DPS) at (1,1)
+  Targeted rows: [0]
+  ├─ HIT Unit_127 for 9 damage
+  └─ HIT Unit_129 for 12 damage
+  ➤ 2 attacks: 2 hits, 21 damage
+
+[A185] Swordsman (DPS) at (2,1)
+  Targeted rows: [0,2]
+  ├─ HIT Unit_127 for 3 damage
+  └─ DODGE Unit_130
+  ➤ 2 attacks: 1 hit, 1 dodge, 3 damage
+
+────────────────────────────────────────────────────
+
+COUNTERATTACK FLOW:
+────────────────────────────────────────────────────
+[D126] Knight (Tank) at (2,2)
+  Targeted rows: [0]
+  ├─ MISS Unit_181
+  ├─ COUNTERATTACK Unit_182 for 1 damage
+  └─ CRITICAL Unit_183 for 1 damage
+  ➤ 3 attacks: 2 hits, 1 miss, 1 critical, 2 damage
+
+[D127] Paladin (Support) at (0,1)
+  Targeted rows: [0]
+  ├─ CRITICAL Unit_182 for 1 damage
+  ├─ MISS Unit_183
+  └─ COUNTERATTACK Unit_181 for 1 damage
+  ➤ 3 attacks: 2 hits, 1 miss, 1 critical, 2 damage
+
+[D128] Fighter (Tank) at (1,0)
+  Targeted rows: [0]
+  └─ COUNTERATTACK Unit_181 for 1 damage
+  ➤ 1 attack: 1 hit, 1 damage
+
+[D129] Warrior (DPS) at (0,2)
+  Targeted rows: [0]
+  ├─ COUNTERATTACK Unit_181 for 1 damage
+  ├─ COUNTERATTACK Unit_182 for 1 damage
+  └─ COUNTERATTACK Unit_183 for 1 damage
+  ➤ 3 attacks: 3 hits, 3 damage
+
+[D130] Swordsman (DPS) at (2,1)
+  Targeted rows: [0,1,2]
+  ├─ MISS Unit_184
+  ├─ MISS Unit_185
+  └─ MISS Unit_182
+  ➤ 3 attacks: 3 misses
+
+────────────────────────────────────────────────────
+
+Engagement Summary:
+  Attacks: 10
+  Outcomes: 9 hits, 1 dodges
+  Total Damage: 47
+  Units Killed: 0
+  Counterattacks: 13
+  Counter Outcomes: 8 hits, 5 misses, 2 criticals
+  Counter Damage: 8
+  Counter Kills: 0
+════════════════════════════════════════════════════
+
+┌─── ENGAGEMENT #8 (Round 1) ─────────────────────────────────┐
+│ Goblin Ranged Squad 2 → Player Ranged Squad 2 (4 tiles)│
+└─────────────────────────────────────────────────────────────┘
+
+ATTACKER FORMATION:
+┌─────┬─────┬─────┐  Goblin Ranged Squad 2
+│A194 │     │     │
+│Warl │     │     │
+├─────┼─────┼─────┤
+│     │A195 │     │
+│     │Warl │     │
+├─────┼─────┼─────┤
+│     │     │     │
+│     │     │     │
+└─────┴─────┴─────┘
+
+DEFENDER FORMATION:
+┌─────┬─────┬─────┐  Player Ranged Squad 2
+│ D77 │     │ D80 │
+│Skel │     │Mark │
+├─────┼─────┼─────┤
+│     │ D78 │     │
+│     │Cros │     │
+├─────┼─────┼─────┤
+│     │     │ D79 │
+│     │     │Warl │
+└─────┴─────┴─────┘
+
+ATTACK FLOW:
+────────────────────────────────────────────────────
+[A194] Warlock (DPS) at (0,0)
+  Targeted rows: [0,2]
+  ├─ DODGE Unit_77
+  ├─ DODGE Unit_80
+  └─ HIT Unit_79 for 5 damage (killed)
+  ➤ 3 attacks: 1 hit, 2 dodges, 5 damage
+
+[A195] Warlock (DPS) at (1,1)
+  Targeted rows: [0,2]
+  ├─ DODGE Unit_77
+  ├─ HIT Unit_80 for 5 damage (killed)
+  └─ DODGE Unit_79
+  ➤ 3 attacks: 1 hit, 2 dodges, 5 damage
+
+────────────────────────────────────────────────────
+
+Engagement Summary:
+  Attacks: 6
+  Outcomes: 2 hits, 4 dodges
+  Total Damage: 10
+  Units Killed: 2
+════════════════════════════════════════════════════
+
+┌─── ENGAGEMENT #9 (Round 1) ───────────────────────────────┐
+│ Goblin Magic Squad 1 → Player Magic Squad 1 (4 tiles)│
+└───────────────────────────────────────────────────────────┘
+
+ATTACKER FORMATION:
+┌─────┬─────┬─────┐  Goblin Magic Squad 1
+│     │A200 │     │
+│     │Warl │     │
+├─────┼─────┼─────┤
+│     │     │     │
+│     │     │     │
+├─────┼─────┼─────┤
+│     │     │     │
+│     │     │     │
+└─────┴─────┴─────┘
+
+DEFENDER FORMATION:
+┌─────┬─────┬─────┐  Player Magic Squad 1
+│     │ D83 │     │
+│     │Wiza │     │
+├─────┼─────┼─────┤
+│ D84 │     │     │
+│Warl │     │     │
+├─────┼─────┼─────┤
+│     │ D85 │     │
+│     │Rang │     │
+└─────┴─────┴─────┘
+
+ATTACK FLOW:
+────────────────────────────────────────────────────
+[A200] Warlock (DPS) at (0,1)
+  ➤ 0 attacks: no outcomes
+
+────────────────────────────────────────────────────
+
+Engagement Summary:
+  Attacks: 0
+  Outcomes: 
+  Total Damage: 0
+  Units Killed: 0
+════════════════════════════════════════════════════
+
+┌─── ENGAGEMENT #10 (Round 1) ──────────────────────────────┐
+│ Goblin Magic Squad 2 → Player Magic Squad 2 (2 tiles)│
+└───────────────────────────────────────────────────────────┘
+
+ATTACKER FORMATION:
+┌─────┬─────┬─────┐  Goblin Magic Squad 2
+│     │A204 │     │
+│     │Wiza │     │
+├─────┼─────┼─────┤
+│     │     │     │
+│     │     │     │
+├─────┼─────┼─────┤
+│     │A206 │     │
+│     │Skel │     │
+└─────┴─────┴─────┘
+
+DEFENDER FORMATION:
+┌─────┬─────┬─────┐  Player Magic Squad 2
+│     │ D88 │     │
+│     │Cler │     │
+├─────┼─────┼─────┤
+│ D89 │     │     │
+│Warl │     │     │
+├─────┼─────┼─────┤
+│     │ D90 │     │
+│     │Warl │     │
+└─────┴─────┴─────┘
+
+ATTACK FLOW:
+────────────────────────────────────────────────────
+[A204] Wizard (DPS) at (0,1)
+  Targeted rows: [0,1]
+  ├─ HIT Unit_88 for 1 damage (killed)
+  └─ DODGE Unit_89
+  ➤ 2 attacks: 1 hit, 1 dodge, 1 damage
+
+[A206] Skeleton Archer (DPS) at (2,1)
+  Targeted rows: [0,1,2]
+  ├─ HIT Unit_90 for 7 damage
+  ├─ HIT Unit_88 for 2 damage (killed)
+  └─ CRITICAL Unit_89 for 13 damage (killed)
+  ➤ 3 attacks: 3 hits, 1 critical, 22 damage
+
+────────────────────────────────────────────────────
+
+Engagement Summary:
+  Attacks: 5
+  Outcomes: 4 hits, 1 dodges, 1 criticals
+  Total Damage: 23
+  Units Killed: 3
+════════════════════════════════════════════════════
+
+┌─── ENGAGEMENT #11 (Round 1) ──────────────────────────────┐
+│ Goblin Magic Squad 3 → Player Magic Squad 3 (3 tiles)│
+└───────────────────────────────────────────────────────────┘
+
+ATTACKER FORMATION:
+┌─────┬─────┬─────┐  Goblin Magic Squad 3
+│     │A209 │     │
+│     │Rang │     │
+├─────┼─────┼─────┤
+│A210 │     │     │
+│Wiza │     │     │
+├─────┼─────┼─────┤
+│     │     │     │
+│     │     │     │
+└─────┴─────┴─────┘
+
+DEFENDER FORMATION:
+┌─────┬─────┬─────┐  Player Magic Squad 3
+│     │ D93 │     │
+│     │Skel │     │
+├─────┼─────┼─────┤
+│ D94 │     │     │
+│Sorc │     │     │
+├─────┼─────┼─────┤
+│     │ D95 │     │
+│     │Prie │     │
+└─────┴─────┴─────┘
+
+ATTACK FLOW:
+────────────────────────────────────────────────────
+[A209] Ranger (Support) at (0,1)
+  ➤ 0 attacks: no outcomes
+
+[A210] Wizard (DPS) at (1,0)
+  Targeted rows: [0,1]
+  ├─ HIT Unit_93 for 2 damage
+  └─ HIT Unit_94 for 2 damage
+  ➤ 2 attacks: 2 hits, 4 damage
+
+────────────────────────────────────────────────────
+
+COUNTERATTACK FLOW:
+────────────────────────────────────────────────────
+[D93] Skeleton Archer (DPS) at (0,1)
+  Targeted rows: [0,1]
+  ├─ MISS Unit_209
+  └─ COUNTERATTACK Unit_210 for 4 damage
+  ➤ 2 attacks: 1 hit, 1 miss, 4 damage
+
+[D94] Sorcerer (DPS) at (1,0)
+  Targeted rows: [0,1]
+  ├─ DODGE Unit_210
+  └─ DODGE Unit_209
+  ➤ 2 attacks: 2 dodges
+
+────────────────────────────────────────────────────
+
+Engagement Summary:
+  Attacks: 2
+  Outcomes: 2 hits
+  Total Damage: 4
+  Units Killed: 0
+  Counterattacks: 4
+  Counter Outcomes: 1 hits, 1 misses, 2 dodges
+  Counter Damage: 4
+  Counter Kills: 0
+════════════════════════════════════════════════════
+
+┌─── ENGAGEMENT #12 (Round 1) ───────────────────────────┐
+│ Player Ranged Squad 1 → Player 2 Squad 1 (2 tiles)│
+└────────────────────────────────────────────────────────┘
+
+ATTACKER FORMATION:
+┌─────┬─────┬─────┐  Player Ranged Squad 1
+│ A71 │     │     │
+│Mark │     │     │
+├─────┼─────┼─────┤
+│     │ A72 │     │
+│     │Sorc │     │
+├─────┼─────┼─────┤
+│     │     │ A73 │
+│     │     │Mark │
+└─────┴─────┴─────┘
+
+DEFENDER FORMATION:
+┌─────┬─────┬─────┐  Player 2 Squad 1
+│ D98 │ D99 │D100 │
+│Knig │Pala │Figh │
+├─────┼─────┼─────┤
+│     │D101 │     │
+│     │Warr │     │
+├─────┼─────┼─────┤
+│     │D102 │     │
+│     │Swor │     │
+└─────┴─────┴─────┘
+
+ATTACK FLOW:
+────────────────────────────────────────────────────
+[A71] Marksman (DPS) at (0,0)
+  Targeted rows: [0]
+  ├─ HIT Unit_99 for 1 damage
+  ├─ HIT Unit_100 for 1 damage
+  └─ DODGE Unit_98
+  ➤ 3 attacks: 2 hits, 1 dodge, 2 damage
+
+[A72] Sorcerer (DPS) at (1,1)
+  Targeted rows: [0,1,2]
+  ├─ CRITICAL Unit_100 for 1 damage
+  ├─ HIT Unit_101 for 1 damage
+  ├─ HIT Unit_102 for 1 damage
+  ├─ DODGE Unit_98
+  └─ HIT Unit_99 for 1 damage
+  ➤ 5 attacks: 4 hits, 1 dodge, 1 critical, 4 damage
+
+[A73] Marksman (DPS) at (2,2)
+  Targeted rows: [2]
+  └─ DODGE Unit_102
+  ➤ 1 attack: 1 dodge
+
+────────────────────────────────────────────────────
+
+Engagement Summary:
+  Attacks: 9
+  Outcomes: 6 hits, 3 dodges, 1 criticals
+  Total Damage: 6
+  Units Killed: 0
+════════════════════════════════════════════════════
+
+┌─── ENGAGEMENT #13 (Round 1) ───────────────────────────┐
+│ Player Ranged Squad 2 → Player 2 Squad 2 (1 tiles)│
+└────────────────────────────────────────────────────────┘
+
+ATTACKER FORMATION:
+┌─────┬─────┬─────┐  Player Ranged Squad 2
+│     │     │     │
+│     │     │     │
+├─────┼─────┼─────┤
+│     │ A78 │     │
+│     │Cros │     │
+├─────┼─────┼─────┤
+│     │     │     │
+│     │     │     │
+└─────┴─────┴─────┘
+
+DEFENDER FORMATION:
+┌─────┬─────┬─────┐  Player 2 Squad 2
+│D105 │D106 │D107 │
+│Knig │Pala │Figh │
+├─────┼─────┼─────┤
+│     │D108 │     │
+│     │Warr │     │
+├─────┼─────┼─────┤
+│     │D109 │     │
+│     │Swor │     │
+└─────┴─────┴─────┘
+
+ATTACK FLOW:
+────────────────────────────────────────────────────
+[A78] Crossbowman (DPS) at (1,1)
+  Targeted rows: [1]
+  └─ CRITICAL Unit_108 for 10 damage
+  ➤ 1 attack: 1 hit, 1 critical, 10 damage
+
+────────────────────────────────────────────────────
+
+COUNTERATTACK FLOW:
+────────────────────────────────────────────────────
+[D105] Knight (Tank) at (0,0)
+  Targeted rows: [1]
+  └─ MISS Unit_78
+  ➤ 1 attack: 1 miss
+
+[D106] Paladin (Support) at (0,1)
+  Targeted rows: [1]
+  └─ COUNTERATTACK Unit_78 for 1 damage
+  ➤ 1 attack: 1 hit, 1 damage
+
+[D107] Fighter (Tank) at (0,2)
+  Targeted rows: [1]
+  └─ CRITICAL Unit_78 for 8 damage
+  ➤ 1 attack: 1 hit, 1 critical, 8 damage
+
+[D108] Warrior (DPS) at (1,1)
+  Targeted rows: [1]
+  └─ COUNTERATTACK Unit_78 for 3 damage
+  ➤ 1 attack: 1 hit, 3 damage
+
+[D109] Swordsman (DPS) at (2,1)
+  Targeted rows: [1]
+  └─ COUNTERATTACK Unit_78 for 1 damage
+  ➤ 1 attack: 1 hit, 1 damage
+
+────────────────────────────────────────────────────
+
+Engagement Summary:
+  Attacks: 1
+  Outcomes: 1 hits, 1 criticals
+  Total Damage: 10
+  Units Killed: 0
+  Counterattacks: 5
+  Counter Outcomes: 4 hits, 1 misses, 1 criticals
+  Counter Damage: 13
+  Counter Kills: 0
+════════════════════════════════════════════════════
+
+┌─── ENGAGEMENT #14 (Round 1) ──────────────────────────────┐
+│ Player Magic Squad 3 → Goblin Magic Squad 3 (1 tiles)│
+└───────────────────────────────────────────────────────────┘
+
+ATTACKER FORMATION:
+┌─────┬─────┬─────┐  Player Magic Squad 3
+│     │ A93 │     │
+│     │Skel │     │
+├─────┼─────┼─────┤
+│ A94 │     │     │
+│Sorc │     │     │
+├─────┼─────┼─────┤
+│     │ A95 │     │
+│     │Prie │     │
+└─────┴─────┴─────┘
+
+DEFENDER FORMATION:
+┌─────┬─────┬─────┐  Goblin Magic Squad 3
+│     │D209 │     │
+│     │Rang │     │
+├─────┼─────┼─────┤
+│D210 │     │     │
+│Wiza │     │     │
+├─────┼─────┼─────┤
+│     │     │     │
+│     │     │     │
+└─────┴─────┴─────┘
+
+ATTACK FLOW:
+────────────────────────────────────────────────────
+[A93] Skeleton Archer (DPS) at (0,1)
+  Targeted rows: [0,1]
+  ├─ HIT Unit_209 for 2 damage
+  └─ HIT Unit_210 for 10 damage
+  ➤ 2 attacks: 2 hits, 12 damage
+
+[A94] Sorcerer (DPS) at (1,0)
+  Targeted rows: [0,1]
+  ├─ HIT Unit_209 for 1 damage
+  └─ HIT Unit_210 for 6 damage
+  ➤ 2 attacks: 2 hits, 7 damage
+
+[A95] Priest (Support) at (2,1)
+  Targeted rows: [0,1]
+  ├─ HIT Unit_209 for 1 damage
+  └─ HIT Unit_210 for 7 damage (killed)
+  ➤ 2 attacks: 2 hits, 8 damage
+
+────────────────────────────────────────────────────
+
+Engagement Summary:
+  Attacks: 6
+  Outcomes: 6 hits
+  Total Damage: 27
+  Units Killed: 1
+════════════════════════════════════════════════════
+
+┌─── ENGAGEMENT #15 (Round 1) ─────────────────────────┐
+│ Player Magic Squad 2 → Goblin Squad 3 (2 tiles) │
+└──────────────────────────────────────────────────────┘
+
+ATTACKER FORMATION:
+┌─────┬─────┬─────┐  Player Magic Squad 2
+│     │     │     │
+│     │     │     │
+├─────┼─────┼─────┤
+│     │     │     │
+│     │     │     │
+├─────┼─────┼─────┤
+│     │ A90 │     │
+│     │Warl │     │
+└─────┴─────┴─────┘
+
+DEFENDER FORMATION:
+┌─────┬─────┬─────┐  Goblin Squad 3
+│     │     │     │
+│     │     │     │
+├─────┼─────┼─────┤
+│D175 │D177 │D174 │
+│Pala │Warr │Knig │
+├─────┼─────┼─────┤
+│     │D178 │D176 │
+│     │Swor │Figh │
+└─────┴─────┴─────┘
+
+ATTACK FLOW:
+────────────────────────────────────────────────────
+[A90] Warlock (DPS) at (2,1)
+  Targeted rows: [2]
+  └─ HIT Unit_176 for 1 damage
+  ➤ 1 attack: 1 hit, 1 damage
+
+────────────────────────────────────────────────────
+
+Engagement Summary:
+  Attacks: 1
+  Outcomes: 1 hits
+  Total Damage: 1
+  Units Killed: 0
+════════════════════════════════════════════════════
+
+┌─── ENGAGEMENT #16 (Round 1) ─────────────────────────┐
+│ Player Magic Squad 1 → Goblin Squad 1 (1 tiles) │
+└──────────────────────────────────────────────────────┘
+
+ATTACKER FORMATION:
+┌─────┬─────┬─────┐  Player Magic Squad 1
+│     │     │     │
+│     │     │     │
+├─────┼─────┼─────┤
+│     │     │     │
+│     │     │     │
+├─────┼─────┼─────┤
+│     │ A85 │     │
+│     │Rang │     │
+└─────┴─────┴─────┘
+
+DEFENDER FORMATION:
+┌─────┬─────┬─────┐  Goblin Squad 1
+│D160 │D163 │D162 │
+│Knig │Warr │Figh │
+├─────┼─────┼─────┤
+│     │     │D161 │
+│     │     │Pala │
+├─────┼─────┼─────┤
+│     │     │D164 │
+│     │     │Swor │
+└─────┴─────┴─────┘
+
+ATTACK FLOW:
+────────────────────────────────────────────────────
+[A85] Ranger (Support) at (2,1)
+  Targeted rows: [0,2]
+  ├─ HIT Unit_160 for 1 damage
+  └─ DODGE Unit_164
+  ➤ 2 attacks: 1 hit, 1 dodge, 1 damage
+
+────────────────────────────────────────────────────
+
+COUNTERATTACK FLOW:
+────────────────────────────────────────────────────
+[D160] Knight (Tank) at (0,0)
+  Targeted rows: [2]
+  └─ COUNTERATTACK Unit_85 for 1 damage
+  ➤ 1 attack: 1 hit, 1 damage
+
+[D161] Paladin (Support) at (1,2)
+  Targeted rows: [2]
+  └─ COUNTERATTACK Unit_85 for 1 damage
+  ➤ 1 attack: 1 hit, 1 damage
+
+[D162] Fighter (Tank) at (0,2)
+  Targeted rows: [2]
+  └─ MISS Unit_85
+  ➤ 1 attack: 1 miss
+
+[D163] Warrior (DPS) at (0,1)
+  Targeted rows: [2]
+  └─ CRITICAL Unit_85 for 12 damage
+  ➤ 1 attack: 1 hit, 1 critical, 12 damage
+
+[D164] Swordsman (DPS) at (2,2)
+  Targeted rows: [2]
+  └─ COUNTERATTACK Unit_85 for 2 damage
+  ➤ 1 attack: 1 hit, 2 damage
+
+────────────────────────────────────────────────────
+
+Engagement Summary:
+  Attacks: 2
+  Outcomes: 1 hits, 1 dodges
+  Total Damage: 1
+  Units Killed: 0
+  Counterattacks: 5
+  Counter Outcomes: 4 hits, 1 misses, 1 criticals
+  Counter Damage: 16
+  Counter Kills: 0
+════════════════════════════════════════════════════
+
+════════════════════════════════════════════════════
+BATTLE END
+════════════════════════════════════════════════════
+
