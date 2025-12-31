@@ -7,6 +7,7 @@ import (
 	"game_main/tactical/ai"
 	"game_main/tactical/behavior"
 	"game_main/tactical/combat"
+	"game_main/tactical/combat/battlelog"
 	"game_main/tactical/squads"
 
 	"github.com/bytearena/ecs"
@@ -28,7 +29,7 @@ type CombatService struct {
 	CombatActSystem *combat.CombatActionSystem
 
 	// Battle recording for export
-	BattleRecorder *combat.BattleRecorder
+	BattleRecorder *battlelog.BattleRecorder
 
 	// Threat evaluation system
 	ThreatManager   *behavior.FactionThreatLevelManager
@@ -41,7 +42,7 @@ type CombatService struct {
 // NewCombatService creates a new combat service
 func NewCombatService(manager *common.EntityManager) *CombatService {
 	cache := combat.NewCombatQueryCache(manager)
-	battleRecorder := combat.NewBattleRecorder()
+	battleRecorder := battlelog.NewBattleRecorder()
 	combatActSystem := combat.NewCombatActionSystem(manager)
 
 	// Wire up battle recorder to combat action system

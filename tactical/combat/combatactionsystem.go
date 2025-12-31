@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"game_main/common"
 	"game_main/config"
+	"game_main/tactical/combat/battlelog"
 	"game_main/tactical/squads"
 
 	"github.com/bytearena/ecs"
@@ -22,7 +23,7 @@ type AttackResult struct {
 type CombatActionSystem struct {
 	manager        *common.EntityManager
 	combatCache    *CombatQueryCache
-	battleRecorder *BattleRecorder
+	battleRecorder *battlelog.BattleRecorder
 }
 
 func NewCombatActionSystem(manager *common.EntityManager) *CombatActionSystem {
@@ -33,7 +34,7 @@ func NewCombatActionSystem(manager *common.EntityManager) *CombatActionSystem {
 }
 
 // SetBattleRecorder sets the battle recorder for combat log export.
-func (cas *CombatActionSystem) SetBattleRecorder(recorder *BattleRecorder) {
+func (cas *CombatActionSystem) SetBattleRecorder(recorder *battlelog.BattleRecorder) {
 	cas.battleRecorder = recorder
 }
 

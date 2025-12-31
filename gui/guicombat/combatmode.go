@@ -11,7 +11,7 @@ import (
 	"game_main/gui/guiresources"
 	"game_main/gui/widgets"
 	"game_main/tactical/behavior"
-	"game_main/tactical/combat"
+	"game_main/tactical/combat/battlelog"
 	"game_main/tactical/combatservices"
 	"game_main/world/coords"
 	"game_main/world/worldmap"
@@ -644,13 +644,13 @@ func (cm *CombatMode) Exit(toMode core.UIMode) error {
 	isToAnimation := toMode != nil && toMode.GetModeName() == "combat_animation"
 	if !isToAnimation && config.ENABLE_COMBAT_LOG_EXPORT && cm.combatService.BattleRecorder != nil && cm.combatService.BattleRecorder.IsEnabled() {
 		victor := cm.combatService.CheckVictoryCondition()
-		victoryInfo := &combat.VictoryInfo{
+		victoryInfo := &battlelog.VictoryInfo{
 			RoundsCompleted: victor.RoundsCompleted,
 			VictorFaction:   victor.VictorFaction,
 			VictorName:      victor.VictorName,
 		}
 		record := cm.combatService.BattleRecorder.Finalize(victoryInfo)
-		if err := combat.ExportBattleJSON(record, config.COMBAT_LOG_EXPORT_DIR); err != nil {
+		if err := battlelog.ExportBattleJSON(record, config.COMBAT_LOG_EXPORT_DIR); err != nil {
 			fmt.Printf("Failed to export combat log: %v\n", err)
 		}
 		cm.combatService.BattleRecorder.Clear()
