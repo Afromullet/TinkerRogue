@@ -11,8 +11,9 @@ type AttackEvent struct {
 	DefenderID ecs.EntityID
 
 	// Attack metadata
-	AttackIndex int        // Sequential number in attack sequence
-	TargetInfo  TargetInfo // Row/cell targeting info
+	AttackIndex     int        // Sequential number in attack sequence
+	TargetInfo      TargetInfo // Row/cell targeting info
+	IsCounterattack bool       // True if this is a counterattack
 
 	// Combat rolls
 	HitResult HitResult // Hit, miss, dodge, crit
@@ -55,6 +56,7 @@ const (
 	HitTypeDodge
 	HitTypeNormal
 	HitTypeCritical
+	HitTypeCounterattack
 )
 
 func (h HitType) String() string {
@@ -67,6 +69,8 @@ func (h HitType) String() string {
 		return "HIT"
 	case HitTypeCritical:
 		return "CRITICAL"
+	case HitTypeCounterattack:
+		return "COUNTERATTACK"
 	default:
 		return "UNKNOWN"
 	}

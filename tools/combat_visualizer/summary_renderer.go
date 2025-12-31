@@ -31,7 +31,7 @@ func RenderEngagement(eng EngagementRecord) string {
 
 	if eng.Summary != nil && len(eng.Summary.AttackerSummaries) > 0 {
 		for _, summary := range eng.Summary.AttackerSummaries {
-			sb.WriteString(renderUnitSummary(summary))
+			sb.WriteString(renderUnitSummary(summary, "A"))
 		}
 	} else {
 		sb.WriteString("  (No attacks recorded)\n")
@@ -39,6 +39,19 @@ func RenderEngagement(eng EngagementRecord) string {
 
 	sb.WriteString("────────────────────────────────────────────────────\n")
 	sb.WriteString("\n")
+
+	// Counterattack flow
+	if eng.Summary != nil && len(eng.Summary.DefenderSummaries) > 0 {
+		sb.WriteString("COUNTERATTACK FLOW:\n")
+		sb.WriteString("────────────────────────────────────────────────────\n")
+
+		for _, summary := range eng.Summary.DefenderSummaries {
+			sb.WriteString(renderUnitSummary(summary, "D"))
+		}
+
+		sb.WriteString("────────────────────────────────────────────────────\n")
+		sb.WriteString("\n")
+	}
 
 	// Engagement totals
 	sb.WriteString(renderEngagementTotals(eng.Summary))
@@ -93,7 +106,7 @@ func renderEngagementHeader(eng EngagementRecord) string {
 }
 
 // renderUnitSummary renders attack flow for a single unit.
-func renderUnitSummary(summary UnitActionSummary) string {
+func renderUnitSummary(summary UnitActionSummary, prefix string) string {
 	var sb strings.Builder
 
 	// Unit header: [ID] Name (Role) at (row,col)
@@ -102,8 +115,8 @@ func renderUnitSummary(summary UnitActionSummary) string {
 		roleInfo = fmt.Sprintf(" (%s)", summary.Role)
 	}
 
-	sb.WriteString(fmt.Sprintf("[A%d] %s%s at (%d,%d)\n",
-		summary.UnitID, summary.UnitName, roleInfo,
+	sb.WriteString(fmt.Sprintf("[%s%d] %s%s at (%d,%d)\n",
+		prefix, summary.UnitID, summary.UnitName, roleInfo,
 		summary.GridPos.Row, summary.GridPos.Col))
 
 	// Targeting info
@@ -219,9 +232,28 @@ func renderEngagementTotals(summary *EngagementSummary) string {
 		totalKills += s.UnitsKilled
 	}
 
+	// Aggregate totals for counterattacks
+	counterAttacks := 0
+	counterHits := 0
+	counterMisses := 0
+	counterDodges := 0
+	counterCriticals := 0
+	counterDamage := 0
+	counterKills := 0
+
+	for _, s := range summary.DefenderSummaries {
+		counterAttacks += s.TotalAttacks
+		counterHits += s.Hits
+		counterMisses += s.Misses
+		counterDodges += s.Dodges
+		counterCriticals += s.Criticals
+		counterDamage += s.TotalDamage
+		counterKills += s.UnitsKilled
+	}
+
 	var sb strings.Builder
 	sb.WriteString("Engagement Summary:\n")
-	sb.WriteString(fmt.Sprintf("  Total Attacks: %d\n", totalAttacks))
+	sb.WriteString(fmt.Sprintf("  Attacks: %d\n", totalAttacks))
 
 	// Outcomes line
 	sb.WriteString("  Outcomes: ")
@@ -243,6 +275,31 @@ func renderEngagementTotals(summary *EngagementSummary) string {
 
 	sb.WriteString(fmt.Sprintf("  Total Damage: %d\n", totalDamage))
 	sb.WriteString(fmt.Sprintf("  Units Killed: %d\n", totalKills))
+
+	// Counterattack stats
+	if counterAttacks > 0 {
+		sb.WriteString(fmt.Sprintf("  Counterattacks: %d\n", counterAttacks))
+
+		sb.WriteString("  Counter Outcomes: ")
+		counterOutcomes := []string{}
+		if counterHits > 0 {
+			counterOutcomes = append(counterOutcomes, fmt.Sprintf("%d hits", counterHits))
+		}
+		if counterMisses > 0 {
+			counterOutcomes = append(counterOutcomes, fmt.Sprintf("%d misses", counterMisses))
+		}
+		if counterDodges > 0 {
+			counterOutcomes = append(counterOutcomes, fmt.Sprintf("%d dodges", counterDodges))
+		}
+		if counterCriticals > 0 {
+			counterOutcomes = append(counterOutcomes, fmt.Sprintf("%d criticals", counterCriticals))
+		}
+		sb.WriteString(strings.Join(counterOutcomes, ", "))
+		sb.WriteString("\n")
+
+		sb.WriteString(fmt.Sprintf("  Counter Damage: %d\n", counterDamage))
+		sb.WriteString(fmt.Sprintf("  Counter Kills: %d\n", counterKills))
+	}
 
 	return sb.String()
 }

@@ -76,7 +76,7 @@ type UnitActionSummary struct {
 // EngagementSummary contains per-unit summaries for both squads.
 type EngagementSummary struct {
 	AttackerSummaries []UnitActionSummary `json:"attacker_summaries"`
-	DefenderSummaries []UnitActionSummary `json:"defender_summaries"` // For counterattacks (future)
+	DefenderSummaries []UnitActionSummary `json:"defender_summaries"` // Now includes counterattacks
 }
 
 // BattleRecorder accumulates combat events during a battle for later export.

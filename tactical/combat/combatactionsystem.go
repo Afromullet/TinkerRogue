@@ -94,6 +94,39 @@ func (cas *CombatActionSystem) ExecuteAttackAction(attackerID, defenderID ecs.En
 
 	markSquadAsActed(cas.combatCache, attackerID, cas.manager)
 
+	// === COUNTERATTACK PHASE ===
+	// Defender counterattacks if still alive and has units in range
+	// Counterattacks do NOT consume defender's action for their turn
+	defenderStillAlive := !squads.IsSquadDestroyed(defenderID, cas.manager)
+	if defenderStillAlive {
+		// Check if any defender units can reach the attacker
+		counterattackers := cas.getCounterattackingUnits(defenderID, attackerID)
+
+		if len(counterattackers) > 0 {
+			// Execute counterattack (does NOT mark defender as acted)
+			counterResult := squads.ExecuteSquadCounterattack(defenderID, attackerID, cas.manager)
+
+			// Merge counterattack events into main combat log
+			if counterResult.CombatLog != nil && combatResult.CombatLog != nil {
+				// Append all counterattack events to the main attack's combat log
+				combatResult.CombatLog.AttackEvents = append(combatResult.CombatLog.AttackEvents,
+					counterResult.CombatLog.AttackEvents...)
+			}
+
+			// Log counterattack if enabled
+			if config.DISPLAY_DEATAILED_COMBAT_OUTPUT && counterResult.CombatLog != nil {
+				fmt.Println("\n=== COUNTERATTACK ===")
+				DisplayCombatLog(counterResult.CombatLog, cas.manager)
+			}
+
+			// Check if attacker was destroyed by counterattack
+			if squads.IsSquadDestroyed(attackerID, cas.manager) {
+				removeSquadFromMap(attackerID, cas.manager)
+			}
+		}
+	}
+	// === END COUNTERATTACK PHASE ===
+
 	result.TargetDestroyed = squads.IsSquadDestroyed(defenderID, cas.manager)
 	if result.TargetDestroyed {
 		removeSquadFromMap(defenderID, cas.manager)
@@ -194,6 +227,39 @@ func (cas *CombatActionSystem) GetAttackingUnits(squadID, targetID ecs.EntityID)
 	}
 
 	return attackingUnits
+}
+
+// getCounterattackingUnits returns defender units that can counterattack the attacker
+// Uses same range logic as GetAttackingUnits
+func (cas *CombatActionSystem) getCounterattackingUnits(defenderID, attackerID ecs.EntityID) []ecs.EntityID {
+	distance := squads.GetSquadDistance(defenderID, attackerID, cas.manager)
+	if distance < 0 {
+		return []ecs.EntityID{}
+	}
+
+	allUnits := squads.GetUnitIDsInSquad(defenderID, cas.manager)
+	var counterattackers []ecs.EntityID
+
+	for _, unitID := range allUnits {
+		entity := cas.manager.FindEntityByID(unitID)
+		if entity == nil {
+			continue
+		}
+
+		attr := common.GetComponentType[*common.Attributes](entity, common.AttributeComponent)
+		if attr == nil || attr.CurrentHealth <= 0 {
+			continue
+		}
+
+		// Counterattacks do NOT check CanAct flag (they're free actions)
+		// Only check range
+		rangeData := common.GetComponentType[*squads.AttackRangeData](entity, squads.AttackRangeComponent)
+		if rangeData != nil && rangeData.Range >= distance {
+			counterattackers = append(counterattackers, unitID)
+		}
+	}
+
+	return counterattackers
 }
 
 // getSquadNameByID is a helper to get squad name from ID

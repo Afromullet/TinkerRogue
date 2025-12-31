@@ -16,7 +16,7 @@ const (
 
 	// ENABLE_COMBAT_LOG enables the combat log UI and logging during combat
 	// When disabled, no combat log panel is created and no log messages are recorded
-	ENABLE_COMBAT_LOG = true
+	ENABLE_COMBAT_LOG = false
 
 	// ENABLE_COMBAT_LOG_EXPORT enables JSON export of battle logs for post-combat analysis
 	// When enabled, a JSON file is written to COMBAT_LOG_EXPORT_DIR after each battle
@@ -51,6 +51,12 @@ const (
 	DefaultMaxDodgeChance = 30
 	DefaultBaseCapacity   = 6
 	DefaultMaxCapacity    = 9
+)
+
+// Counterattack penalties
+const (
+	COUNTERATTACK_DAMAGE_MULTIPLIER = 0.5 // 50% damage on counterattack
+	COUNTERATTACK_HIT_PENALTY       = 20  // -20% hit chance on counterattack
 )
 
 // Default Graphic and Display Related Values

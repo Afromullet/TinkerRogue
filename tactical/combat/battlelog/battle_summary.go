@@ -26,8 +26,18 @@ func GenerateEngagementSummary(log *squads.CombatLog) *EngagementSummary {
 		attackerSummaries = append(attackerSummaries, summary)
 	}
 
-	// Defender summaries empty for now (counterattacks not yet implemented)
-	defenderSummaries := []UnitActionSummary{}
+	// Build defender summaries from counterattack events
+	defenderSummaries := make([]UnitActionSummary, 0, len(log.DefendingUnits))
+	for _, unitSnapshot := range log.DefendingUnits {
+		// Filter counterattack events for this defender
+		counterEvents := filterCounterattackEventsByAttacker(unitSnapshot.UnitID, log.AttackEvents)
+
+		// Only create summary if this unit counterattacked
+		if len(counterEvents) > 0 {
+			summary := buildUnitSummary(unitSnapshot.UnitID, unitSnapshot, counterEvents)
+			defenderSummaries = append(defenderSummaries, summary)
+		}
+	}
 
 	return &EngagementSummary{
 		AttackerSummaries: attackerSummaries,
@@ -113,6 +123,8 @@ func buildUnitSummary(unitID ecs.EntityID, unitSnapshot squads.UnitSnapshot, eve
 		case squads.HitTypeCritical:
 			summary.Criticals++
 			summary.Hits++ // Criticals also count as hits
+		case squads.HitTypeCounterattack:
+			summary.Hits++ // Counterattacks count as hits
 		case squads.HitTypeMiss:
 			summary.Misses++
 		case squads.HitTypeDodge:
@@ -131,6 +143,18 @@ func filterEventsByAttacker(unitID ecs.EntityID, events []squads.AttackEvent) []
 	filtered := []squads.AttackEvent{}
 	for _, event := range events {
 		if event.AttackerID == unitID {
+			filtered = append(filtered, event)
+		}
+	}
+	return filtered
+}
+
+// filterCounterattackEventsByAttacker returns counterattack events where AttackerID matches.
+// Only returns events with IsCounterattack == true
+func filterCounterattackEventsByAttacker(unitID ecs.EntityID, events []squads.AttackEvent) []squads.AttackEvent {
+	filtered := []squads.AttackEvent{}
+	for _, event := range events {
+		if event.AttackerID == unitID && event.IsCounterattack {
 			filtered = append(filtered, event)
 		}
 	}
@@ -220,6 +244,8 @@ func parseOutcome(outcome string) squads.HitType {
 		return squads.HitTypeNormal
 	case "CRITICAL":
 		return squads.HitTypeCritical
+	case "COUNTERATTACK":
+		return squads.HitTypeCounterattack
 	default:
 		return squads.HitTypeMiss
 	}
@@ -230,6 +256,8 @@ func outcomeRank(hitType squads.HitType) int {
 	switch hitType {
 	case squads.HitTypeCritical:
 		return 3
+	case squads.HitTypeCounterattack:
+		return 2
 	case squads.HitTypeNormal:
 		return 2
 	case squads.HitTypeDodge:

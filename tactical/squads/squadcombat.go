@@ -3,6 +3,7 @@ package squads
 import (
 	"fmt"
 	"game_main/common"
+	"game_main/config"
 
 	"github.com/bytearena/ecs"
 )
@@ -57,6 +58,191 @@ func ExecuteSquadAttack(attackerSquadID, defenderSquadID ecs.EntityID, squadmana
 
 	result.CombatLog = combatLog
 	return result
+}
+
+// ExecuteSquadCounterattack executes a counterattack from defender to attacker
+// Counterattacks have reduced damage (50%) and lower hit chance (-20%)
+// Only units within their attack range of the target squad can participate
+func ExecuteSquadCounterattack(defenderSquadID, attackerSquadID ecs.EntityID, squadmanager *common.EntityManager) *CombatResult {
+	result := &CombatResult{
+		DamageByUnit: make(map[ecs.EntityID]int),
+		UnitsKilled:  []ecs.EntityID{},
+	}
+
+	// Initialize combat log
+	combatLog := initializeCombatLog(defenderSquadID, attackerSquadID, squadmanager)
+	if combatLog.SquadDistance < 0 {
+		result.CombatLog = combatLog
+		return result
+	}
+
+	// Snapshot units
+	combatLog.AttackingUnits = snapshotAttackingUnits(defenderSquadID, combatLog.SquadDistance, squadmanager)
+	combatLog.DefendingUnits = snapshotAllUnits(attackerSquadID, squadmanager)
+
+	// Process each counterattacking unit
+	attackIndex := 0
+	defenderUnitIDs := GetUnitIDsInSquad(defenderSquadID, squadmanager)
+
+	for _, counterAttackerID := range defenderUnitIDs {
+		// Check if unit can counterattack (alive, in range)
+		if !CanUnitAttack(counterAttackerID, combatLog.SquadDistance, squadmanager) {
+			continue
+		}
+
+		// Get targets (same targeting logic as normal attacks)
+		targetIDs := SelectTargetUnits(counterAttackerID, attackerSquadID, squadmanager)
+
+		// Counterattack each target with penalties
+		attackIndex = processCounterattackOnTargets(counterAttackerID, targetIDs, result, combatLog, attackIndex, squadmanager)
+	}
+
+	UpdateSquadDestroyedStatus(attackerSquadID, squadmanager)
+
+	// Finalize combat log
+	finalizeCombatLog(result, combatLog, attackerSquadID, squadmanager)
+
+	result.CombatLog = combatLog
+	return result
+}
+
+// processCounterattackOnTargets applies counterattack damage with penalties
+func processCounterattackOnTargets(attackerID ecs.EntityID, targetIDs []ecs.EntityID, result *CombatResult,
+	log *CombatLog, attackIndex int, manager *common.EntityManager) int {
+
+	for _, defenderID := range targetIDs {
+		attackIndex++
+
+		// Calculate damage WITH COUNTERATTACK PENALTIES
+		damage, event := calculateCounterattackDamage(attackerID, defenderID, manager)
+
+		// Mark as counterattack
+		event.IsCounterattack = true
+
+		// Add targeting info
+		defenderPos := common.GetComponentTypeByID[*GridPositionData](manager, defenderID, GridPositionComponent)
+		event.AttackIndex = attackIndex
+		if defenderPos != nil {
+			event.TargetInfo.TargetRow = defenderPos.AnchorRow
+			event.TargetInfo.TargetCol = defenderPos.AnchorCol
+		}
+
+		// Set target mode
+		targetData := common.GetComponentTypeByID[*TargetRowData](manager, attackerID, TargetRowComponent)
+		if targetData != nil {
+			event.TargetInfo.TargetMode = targetData.AttackType.String()
+		}
+
+		// Apply damage
+		applyDamageToUnitByID(defenderID, damage, result, manager)
+
+		// Store event
+		log.AttackEvents = append(log.AttackEvents, *event)
+	}
+
+	return attackIndex
+}
+
+// calculateCounterattackDamage calculates damage with BOTH penalties:
+// 1. Reduced hit chance (-20%)
+// 2. Reduced damage (50% multiplier)
+func calculateCounterattackDamage(attackerID, defenderID ecs.EntityID, squadmanager *common.EntityManager) (int, *AttackEvent) {
+	attackerAttr := common.GetComponentTypeByID[*common.Attributes](squadmanager, attackerID, common.AttributeComponent)
+	defenderAttr := common.GetComponentTypeByID[*common.Attributes](squadmanager, defenderID, common.AttributeComponent)
+
+	event := &AttackEvent{
+		AttackerID:      attackerID,
+		DefenderID:      defenderID,
+		IsCounterattack: true,
+	}
+
+	if defenderAttr != nil {
+		event.DefenderHPBefore = defenderAttr.CurrentHealth
+	}
+
+	if attackerAttr == nil || defenderAttr == nil {
+		event.HitResult.Type = HitTypeMiss
+		return 0, event
+	}
+
+	// PENALTY #1: Reduced hit chance (-20%)
+	baseHitThreshold := attackerAttr.GetHitRate()
+	hitThreshold := baseHitThreshold - config.COUNTERATTACK_HIT_PENALTY
+	if hitThreshold < 0 {
+		hitThreshold = 0
+	}
+
+	hitRoll := common.GetDiceRoll(100)
+	event.HitResult.HitRoll = hitRoll
+	event.HitResult.HitThreshold = hitThreshold
+
+	if hitRoll > hitThreshold {
+		event.HitResult.Type = HitTypeMiss
+		return 0, event
+	}
+
+	// Dodge roll (no penalty)
+	dodgeThreshold := defenderAttr.GetDodgeChance()
+	dodgeRoll := common.GetDiceRoll(100)
+	event.HitResult.DodgeRoll = dodgeRoll
+	event.HitResult.DodgeThreshold = dodgeThreshold
+
+	if dodgeRoll <= dodgeThreshold {
+		event.HitResult.Type = HitTypeDodge
+		return 0, event
+	}
+
+	// Calculate base damage
+	baseDamage := attackerAttr.GetPhysicalDamage()
+	event.BaseDamage = baseDamage
+	event.CritMultiplier = 1.0
+
+	// Crit roll (no penalty)
+	critThreshold := attackerAttr.GetCritChance()
+	critRoll := common.GetDiceRoll(100)
+	event.HitResult.CritRoll = critRoll
+	event.HitResult.CritThreshold = critThreshold
+
+	if critRoll <= critThreshold {
+		baseDamage = int(float64(baseDamage) * 1.5)
+		event.CritMultiplier = 1.5
+		event.HitResult.Type = HitTypeCritical
+	} else {
+		event.HitResult.Type = HitTypeCounterattack
+	}
+
+	// PENALTY #2: Reduced damage (50%)
+	baseDamage = int(float64(baseDamage) * config.COUNTERATTACK_DAMAGE_MULTIPLIER)
+	if baseDamage < 1 {
+		baseDamage = 1
+	}
+
+	// Apply resistance (normal)
+	resistance := defenderAttr.GetPhysicalResistance()
+	event.ResistanceAmount = resistance
+	totalDamage := baseDamage - resistance
+	if totalDamage < 1 {
+		totalDamage = 1
+	}
+
+	// Apply cover (normal)
+	coverBreakdown := CalculateCoverBreakdown(defenderID, squadmanager)
+	event.CoverReduction = coverBreakdown
+
+	if coverBreakdown.TotalReduction > 0.0 {
+		totalDamage = int(float64(totalDamage) * (1.0 - coverBreakdown.TotalReduction))
+		if totalDamage < 1 {
+			totalDamage = 1
+		}
+	}
+
+	event.FinalDamage = totalDamage
+	event.DefenderHPAfter = defenderAttr.CurrentHealth - totalDamage
+	if event.DefenderHPAfter <= 0 {
+		event.WasKilled = true
+	}
+
+	return totalDamage, event
 }
 
 // initializeCombatLog creates the combat log structure with squad information

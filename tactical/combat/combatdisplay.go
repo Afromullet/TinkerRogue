@@ -65,8 +65,13 @@ func printAttackEvent(event squads.AttackEvent, manager *common.EntityManager) {
 	attacker := squads.GetUnitIdentity(event.AttackerID, manager)
 	defender := squads.GetUnitIdentity(event.DefenderID, manager)
 
-	// Header with attacker → defender
-	fmt.Printf("[%d] %s → %s (Row %d, Col %d)\n",
+	// Header with counterattack indicator
+	prefix := ""
+	if event.IsCounterattack {
+		prefix = "[COUNTER] "
+	}
+	fmt.Printf("%s[%d] %s → %s (Row %d, Col %d)\n",
+		prefix,
 		event.AttackIndex,
 		attacker.Name,
 		defender.Name,
