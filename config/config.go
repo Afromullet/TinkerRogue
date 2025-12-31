@@ -16,7 +16,12 @@ const (
 
 	// ENABLE_COMBAT_LOG enables the combat log UI and logging during combat
 	// When disabled, no combat log panel is created and no log messages are recorded
-	ENABLE_COMBAT_LOG = false
+	ENABLE_COMBAT_LOG = true
+
+	// ENABLE_COMBAT_LOG_EXPORT enables JSON export of battle logs for post-combat analysis
+	// When enabled, a JSON file is written to COMBAT_LOG_EXPORT_DIR after each battle
+	ENABLE_COMBAT_LOG_EXPORT = true
+	COMBAT_LOG_EXPORT_DIR    = "./combat_logs"
 )
 
 // Default player starting attributes

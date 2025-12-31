@@ -20,8 +20,9 @@ type AttackResult struct {
 }
 
 type CombatActionSystem struct {
-	manager     *common.EntityManager
-	combatCache *CombatQueryCache
+	manager        *common.EntityManager
+	combatCache    *CombatQueryCache
+	battleRecorder *BattleRecorder
 }
 
 func NewCombatActionSystem(manager *common.EntityManager) *CombatActionSystem {
@@ -29,6 +30,11 @@ func NewCombatActionSystem(manager *common.EntityManager) *CombatActionSystem {
 		manager:     manager,
 		combatCache: NewCombatQueryCache(manager),
 	}
+}
+
+// SetBattleRecorder sets the battle recorder for combat log export.
+func (cas *CombatActionSystem) SetBattleRecorder(recorder *BattleRecorder) {
+	cas.battleRecorder = recorder
 }
 
 func (cas *CombatActionSystem) ExecuteAttackAction(attackerID, defenderID ecs.EntityID) *AttackResult {
@@ -95,6 +101,11 @@ func (cas *CombatActionSystem) ExecuteAttackAction(attackerID, defenderID ecs.En
 	// Display detailed combat log. Only prints in display mode.
 	if config.DISPLAY_DEATAILED_COMBAT_OUTPUT && combatResult.CombatLog != nil {
 		DisplayCombatLog(combatResult.CombatLog, cas.manager)
+	}
+
+	// Record combat log for export (if enabled)
+	if cas.battleRecorder != nil && cas.battleRecorder.IsEnabled() {
+		cas.battleRecorder.RecordEngagement(combatResult.CombatLog)
 	}
 
 	// Check abilities for both squads after combat

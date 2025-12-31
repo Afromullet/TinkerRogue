@@ -98,6 +98,7 @@ type CombatLog struct {
 
 	// Participating units
 	AttackingUnits []UnitSnapshot // Units in range
+	DefendingUnits []UnitSnapshot // All defending units
 
 	// All individual attacks
 	AttackEvents []AttackEvent

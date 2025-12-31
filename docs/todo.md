@@ -73,3 +73,4 @@ can't attack twice. Once with ranged units and once with melee
 
 
 - Consider removing  fmt.Errorf statements throughout the code, such as in combatactionsystem and use an error log instead
+- Check on ENABLE_COMBAT_LOG and ENABLE_COMBAT_LOG_EXPORT. Probabably some duplication we can get rid of

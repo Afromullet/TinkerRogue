@@ -31,6 +31,7 @@ func ExecuteSquadAttack(attackerSquadID, defenderSquadID ecs.EntityID, squadmana
 
 	// Snapshot units that will participate (for logging)
 	combatLog.AttackingUnits = snapshotAttackingUnits(attackerSquadID, combatLog.SquadDistance, squadmanager)
+	combatLog.DefendingUnits = snapshotAllUnits(defenderSquadID, squadmanager)
 
 	// Process each attacking unit
 	attackIndex := 0
@@ -68,6 +69,7 @@ func initializeCombatLog(attackerSquadID, defenderSquadID ecs.EntityID, manager 
 		SquadDistance:     GetSquadDistance(attackerSquadID, defenderSquadID, manager),
 		AttackEvents:      []AttackEvent{},
 		AttackingUnits:    []UnitSnapshot{},
+		DefendingUnits:    []UnitSnapshot{},
 	}
 }
 
@@ -82,6 +84,57 @@ func snapshotAttackingUnits(squadID ecs.EntityID, squadDistance int, manager *co
 			continue
 		}
 
+		entity := manager.FindEntityByID(unitID)
+		if entity == nil {
+			continue
+		}
+
+		// Extract all needed components from entity
+		name := common.GetComponentType[*common.Name](entity, common.NameComponent)
+		gridPos := common.GetComponentType[*GridPositionData](entity, GridPositionComponent)
+		rangeData := common.GetComponentType[*AttackRangeData](entity, AttackRangeComponent)
+		roleData := common.GetComponentType[*UnitRoleData](entity, UnitRoleComponent)
+
+		unitName := "Unknown"
+		if name != nil {
+			unitName = name.NameStr
+		}
+
+		row, col := 0, 0
+		if gridPos != nil {
+			row, col = gridPos.AnchorRow, gridPos.AnchorCol
+		}
+
+		attackRange := 0
+		if rangeData != nil {
+			attackRange = rangeData.Range
+		}
+
+		roleName := "Unknown"
+		if roleData != nil {
+			roleName = roleData.Role.String()
+		}
+
+		snapshot := UnitSnapshot{
+			UnitID:      unitID,
+			UnitName:    unitName,
+			GridRow:     row,
+			GridCol:     col,
+			AttackRange: attackRange,
+			RoleName:    roleName,
+		}
+		snapshots = append(snapshots, snapshot)
+	}
+
+	return snapshots
+}
+
+// snapshotAllUnits captures all units in a squad for logging (used for defenders)
+func snapshotAllUnits(squadID ecs.EntityID, manager *common.EntityManager) []UnitSnapshot {
+	var snapshots []UnitSnapshot
+	unitIDs := GetUnitIDsInSquad(squadID, manager)
+
+	for _, unitID := range unitIDs {
 		entity := manager.FindEntityByID(unitID)
 		if entity == nil {
 			continue

@@ -20,3 +20,59 @@ scripts\run-combatsim.sh
 
   # Export to JSON/CSV
   ./combatsim_test.exe -scenario=1 -export-json=report.json -export-csv=metrics.csv
+
+
+# Combat Log Visualizer
+
+The combat visualizer is a standalone tool that generates ASCII visualizations of combat battles
+from exported JSON logs. It displays squad formations, attack flows, and detailed statistics.
+
+## Location
+  tools/combat_visualizer/
+
+## Running the Visualizer
+
+  # Visualize the most recent battle
+  cd tools/combat_visualizer
+  go run . --latest
+
+  # Visualize a specific battle file
+  go run . ../../game_main/combat_logs/battle_20251231_045121.json
+
+  # Visualize all battles
+  go run . --all
+
+  # Save output to a file
+  go run . --latest > ../../battle_visualization.txt
+
+  # Show help
+  go run . --help
+
+## Building the Visualizer
+
+  cd tools/combat_visualizer
+  go build -o combat_visualizer
+
+  # Then run the compiled executable
+  ./combat_visualizer --latest
+
+## Output Format
+
+The visualizer displays:
+  - Battle metadata (ID, timestamps, duration, rounds, victor)
+  - Engagement headers (attacker → defender, distance)
+  - 3x3 squad formation grids showing unit positions
+  - Attack flow with targeted rows/columns/cells
+  - Combat outcomes (HIT, CRITICAL, DODGE, MISS) with damage values
+  - Engagement summaries (total attacks, outcomes, damage, kills)
+
+## Combat Log Location
+
+Combat logs are automatically exported to:
+  game_main/combat_logs/
+
+Files are named: battle_YYYYMMDD_HHMMSS.json
+
+Enable/disable export in config/config.go:
+  ENABLE_COMBAT_LOG_EXPORT = true
+  COMBAT_LOG_EXPORT_DIR    = "./combat_logs"

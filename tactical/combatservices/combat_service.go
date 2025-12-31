@@ -27,6 +27,9 @@ type CombatService struct {
 	CombatCache     *combat.CombatQueryCache
 	CombatActSystem *combat.CombatActionSystem
 
+	// Battle recording for export
+	BattleRecorder *combat.BattleRecorder
+
 	// Threat evaluation system
 	ThreatManager   *behavior.FactionThreatLevelManager
 	LayerEvaluators map[ecs.EntityID]*behavior.CompositeThreatEvaluator
@@ -38,6 +41,11 @@ type CombatService struct {
 // NewCombatService creates a new combat service
 func NewCombatService(manager *common.EntityManager) *CombatService {
 	cache := combat.NewCombatQueryCache(manager)
+	battleRecorder := combat.NewBattleRecorder()
+	combatActSystem := combat.NewCombatActionSystem(manager)
+
+	// Wire up battle recorder to combat action system
+	combatActSystem.SetBattleRecorder(battleRecorder)
 
 	return &CombatService{
 		EntityManager:   manager,
@@ -45,7 +53,8 @@ func NewCombatService(manager *common.EntityManager) *CombatService {
 		FactionManager:  combat.NewFactionManager(manager),
 		MovementSystem:  combat.NewMovementSystem(manager, common.GlobalPositionSystem),
 		CombatCache:     cache,
-		CombatActSystem: combat.NewCombatActionSystem(manager), // Create once, reuse for all attacks
+		CombatActSystem: combatActSystem,
+		BattleRecorder:  battleRecorder,
 		ThreatManager:   behavior.NewFactionThreatLevelManager(manager, cache),
 		LayerEvaluators: make(map[ecs.EntityID]*behavior.CompositeThreatEvaluator),
 	}

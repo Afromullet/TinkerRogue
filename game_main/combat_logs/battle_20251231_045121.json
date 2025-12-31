@@ -1,0 +1,3255 @@
+{
+  "battle_id": "battle_20251231_045121",
+  "start_time": "2025-12-31T04:51:21.9044937-05:00",
+  "end_time": "2025-12-31T04:55:14.4755092-05:00",
+  "final_round": 2,
+  "victor_name": "Unknown",
+  "engagements": [
+    {
+      "index": 1,
+      "round": 1,
+      "combat_log": {
+        "AttackerSquadID": 76,
+        "DefenderSquadID": 110,
+        "AttackerSquadName": "Player Ranged Squad 2",
+        "DefenderSquadName": "Player 2 Squad 5",
+        "SquadDistance": 1,
+        "AttackingUnits": [
+          {
+            "UnitID": 77,
+            "UnitName": "Skeleton Archer",
+            "GridRow": 0,
+            "GridCol": 0,
+            "AttackRange": 3,
+            "RoleName": "DPS"
+          },
+          {
+            "UnitID": 78,
+            "UnitName": "Crossbowman",
+            "GridRow": 1,
+            "GridCol": 1,
+            "AttackRange": 3,
+            "RoleName": "DPS"
+          },
+          {
+            "UnitID": 79,
+            "UnitName": "Warlock",
+            "GridRow": 2,
+            "GridCol": 2,
+            "AttackRange": 4,
+            "RoleName": "DPS"
+          },
+          {
+            "UnitID": 80,
+            "UnitName": "Marksman",
+            "GridRow": 0,
+            "GridCol": 2,
+            "AttackRange": 4,
+            "RoleName": "DPS"
+          }
+        ],
+        "DefendingUnits": [
+          {
+            "UnitID": 111,
+            "UnitName": "Knight",
+            "GridRow": 0,
+            "GridCol": 0,
+            "AttackRange": 1,
+            "RoleName": "Tank"
+          },
+          {
+            "UnitID": 112,
+            "UnitName": "Paladin",
+            "GridRow": 0,
+            "GridCol": 1,
+            "AttackRange": 1,
+            "RoleName": "Support"
+          },
+          {
+            "UnitID": 113,
+            "UnitName": "Fighter",
+            "GridRow": 0,
+            "GridCol": 2,
+            "AttackRange": 1,
+            "RoleName": "Tank"
+          },
+          {
+            "UnitID": 114,
+            "UnitName": "Warrior",
+            "GridRow": 1,
+            "GridCol": 1,
+            "AttackRange": 1,
+            "RoleName": "DPS"
+          },
+          {
+            "UnitID": 115,
+            "UnitName": "Swordsman",
+            "GridRow": 2,
+            "GridCol": 1,
+            "AttackRange": 1,
+            "RoleName": "DPS"
+          }
+        ],
+        "AttackEvents": [
+          {
+            "AttackerID": 77,
+            "DefenderID": 111,
+            "AttackIndex": 1,
+            "TargetInfo": {
+              "TargetMode": "Magic",
+              "TargetRow": 0,
+              "TargetCol": 0
+            },
+            "HitResult": {
+              "Type": 2,
+              "HitRoll": 18,
+              "HitThreshold": 100,
+              "DodgeRoll": 48,
+              "DodgeThreshold": 8,
+              "CritRoll": 32,
+              "CritThreshold": 17
+            },
+            "BaseDamage": 12,
+            "CritMultiplier": 1,
+            "ResistanceAmount": 23,
+            "CoverReduction": {
+              "TotalReduction": 0,
+              "Providers": []
+            },
+            "FinalDamage": 1,
+            "DefenderHPBefore": 48,
+            "DefenderHPAfter": 47,
+            "WasKilled": false
+          },
+          {
+            "AttackerID": 77,
+            "DefenderID": 112,
+            "AttackIndex": 2,
+            "TargetInfo": {
+              "TargetMode": "Magic",
+              "TargetRow": 0,
+              "TargetCol": 1
+            },
+            "HitResult": {
+              "Type": 2,
+              "HitRoll": 30,
+              "HitThreshold": 100,
+              "DodgeRoll": 59,
+              "DodgeThreshold": 7,
+              "CritRoll": 96,
+              "CritThreshold": 17
+            },
+            "BaseDamage": 12,
+            "CritMultiplier": 1,
+            "ResistanceAmount": 21,
+            "CoverReduction": {
+              "TotalReduction": 0,
+              "Providers": []
+            },
+            "FinalDamage": 1,
+            "DefenderHPBefore": 46,
+            "DefenderHPAfter": 45,
+            "WasKilled": false
+          },
+          {
+            "AttackerID": 77,
+            "DefenderID": 113,
+            "AttackIndex": 3,
+            "TargetInfo": {
+              "TargetMode": "Magic",
+              "TargetRow": 0,
+              "TargetCol": 2
+            },
+            "HitResult": {
+              "Type": 2,
+              "HitRoll": 46,
+              "HitThreshold": 100,
+              "DodgeRoll": 57,
+              "DodgeThreshold": 10,
+              "CritRoll": 30,
+              "CritThreshold": 17
+            },
+            "BaseDamage": 12,
+            "CritMultiplier": 1,
+            "ResistanceAmount": 19,
+            "CoverReduction": {
+              "TotalReduction": 0,
+              "Providers": []
+            },
+            "FinalDamage": 1,
+            "DefenderHPBefore": 50,
+            "DefenderHPAfter": 49,
+            "WasKilled": false
+          },
+          {
+            "AttackerID": 77,
+            "DefenderID": 114,
+            "AttackIndex": 4,
+            "TargetInfo": {
+              "TargetMode": "Magic",
+              "TargetRow": 1,
+              "TargetCol": 1
+            },
+            "HitResult": {
+              "Type": 2,
+              "HitRoll": 19,
+              "HitThreshold": 100,
+              "DodgeRoll": 66,
+              "DodgeThreshold": 9,
+              "CritRoll": 22,
+              "CritThreshold": 17
+            },
+            "BaseDamage": 12,
+            "CritMultiplier": 1,
+            "ResistanceAmount": 18,
+            "CoverReduction": {
+              "TotalReduction": 0.35,
+              "Providers": [
+                {
+                  "UnitID": 112,
+                  "UnitName": "Paladin",
+                  "CoverValue": 0.35,
+                  "GridRow": 0,
+                  "GridCol": 1
+                }
+              ]
+            },
+            "FinalDamage": 1,
+            "DefenderHPBefore": 52,
+            "DefenderHPAfter": 51,
+            "WasKilled": false
+          },
+          {
+            "AttackerID": 77,
+            "DefenderID": 115,
+            "AttackIndex": 5,
+            "TargetInfo": {
+              "TargetMode": "Magic",
+              "TargetRow": 2,
+              "TargetCol": 1
+            },
+            "HitResult": {
+              "Type": 1,
+              "HitRoll": 24,
+              "HitThreshold": 100,
+              "DodgeRoll": 8,
+              "DodgeThreshold": 13,
+              "CritRoll": 0,
+              "CritThreshold": 0
+            },
+            "BaseDamage": 0,
+            "CritMultiplier": 0,
+            "ResistanceAmount": 0,
+            "CoverReduction": {
+              "TotalReduction": 0,
+              "Providers": null
+            },
+            "FinalDamage": 0,
+            "DefenderHPBefore": 44,
+            "DefenderHPAfter": 0,
+            "WasKilled": false
+          },
+          {
+            "AttackerID": 78,
+            "DefenderID": 114,
+            "AttackIndex": 6,
+            "TargetInfo": {
+              "TargetMode": "Ranged",
+              "TargetRow": 1,
+              "TargetCol": 1
+            },
+            "HitResult": {
+              "Type": 2,
+              "HitRoll": 39,
+              "HitThreshold": 100,
+              "DodgeRoll": 99,
+              "DodgeThreshold": 9,
+              "CritRoll": 65,
+              "CritThreshold": 19
+            },
+            "BaseDamage": 23,
+            "CritMultiplier": 1,
+            "ResistanceAmount": 18,
+            "CoverReduction": {
+              "TotalReduction": 0.35,
+              "Providers": [
+                {
+                  "UnitID": 112,
+                  "UnitName": "Paladin",
+                  "CoverValue": 0.35,
+                  "GridRow": 0,
+                  "GridCol": 1
+                }
+              ]
+            },
+            "FinalDamage": 3,
+            "DefenderHPBefore": 51,
+            "DefenderHPAfter": 48,
+            "WasKilled": false
+          },
+          {
+            "AttackerID": 79,
+            "DefenderID": 111,
+            "AttackIndex": 7,
+            "TargetInfo": {
+              "TargetMode": "Magic",
+              "TargetRow": 0,
+              "TargetCol": 0
+            },
+            "HitResult": {
+              "Type": 2,
+              "HitRoll": 89,
+              "HitThreshold": 100,
+              "DodgeRoll": 90,
+              "DodgeThreshold": 8,
+              "CritRoll": 99,
+              "CritThreshold": 13
+            },
+            "BaseDamage": 10,
+            "CritMultiplier": 1,
+            "ResistanceAmount": 23,
+            "CoverReduction": {
+              "TotalReduction": 0,
+              "Providers": []
+            },
+            "FinalDamage": 1,
+            "DefenderHPBefore": 47,
+            "DefenderHPAfter": 46,
+            "WasKilled": false
+          },
+          {
+            "AttackerID": 79,
+            "DefenderID": 113,
+            "AttackIndex": 8,
+            "TargetInfo": {
+              "TargetMode": "Magic",
+              "TargetRow": 0,
+              "TargetCol": 2
+            },
+            "HitResult": {
+              "Type": 2,
+              "HitRoll": 64,
+              "HitThreshold": 100,
+              "DodgeRoll": 20,
+              "DodgeThreshold": 10,
+              "CritRoll": 79,
+              "CritThreshold": 13
+            },
+            "BaseDamage": 10,
+            "CritMultiplier": 1,
+            "ResistanceAmount": 19,
+            "CoverReduction": {
+              "TotalReduction": 0,
+              "Providers": []
+            },
+            "FinalDamage": 1,
+            "DefenderHPBefore": 49,
+            "DefenderHPAfter": 48,
+            "WasKilled": false
+          },
+          {
+            "AttackerID": 80,
+            "DefenderID": 111,
+            "AttackIndex": 9,
+            "TargetInfo": {
+              "TargetMode": "Ranged",
+              "TargetRow": 0,
+              "TargetCol": 0
+            },
+            "HitResult": {
+              "Type": 2,
+              "HitRoll": 89,
+              "HitThreshold": 100,
+              "DodgeRoll": 24,
+              "DodgeThreshold": 8,
+              "CritRoll": 66,
+              "CritThreshold": 26
+            },
+            "BaseDamage": 19,
+            "CritMultiplier": 1,
+            "ResistanceAmount": 23,
+            "CoverReduction": {
+              "TotalReduction": 0,
+              "Providers": []
+            },
+            "FinalDamage": 1,
+            "DefenderHPBefore": 46,
+            "DefenderHPAfter": 45,
+            "WasKilled": false
+          },
+          {
+            "AttackerID": 80,
+            "DefenderID": 112,
+            "AttackIndex": 10,
+            "TargetInfo": {
+              "TargetMode": "Ranged",
+              "TargetRow": 0,
+              "TargetCol": 1
+            },
+            "HitResult": {
+              "Type": 1,
+              "HitRoll": 24,
+              "HitThreshold": 100,
+              "DodgeRoll": 7,
+              "DodgeThreshold": 7,
+              "CritRoll": 0,
+              "CritThreshold": 0
+            },
+            "BaseDamage": 0,
+            "CritMultiplier": 0,
+            "ResistanceAmount": 0,
+            "CoverReduction": {
+              "TotalReduction": 0,
+              "Providers": null
+            },
+            "FinalDamage": 0,
+            "DefenderHPBefore": 45,
+            "DefenderHPAfter": 0,
+            "WasKilled": false
+          },
+          {
+            "AttackerID": 80,
+            "DefenderID": 113,
+            "AttackIndex": 11,
+            "TargetInfo": {
+              "TargetMode": "Ranged",
+              "TargetRow": 0,
+              "TargetCol": 2
+            },
+            "HitResult": {
+              "Type": 3,
+              "HitRoll": 98,
+              "HitThreshold": 100,
+              "DodgeRoll": 14,
+              "DodgeThreshold": 10,
+              "CritRoll": 14,
+              "CritThreshold": 26
+            },
+            "BaseDamage": 19,
+            "CritMultiplier": 1.5,
+            "ResistanceAmount": 19,
+            "CoverReduction": {
+              "TotalReduction": 0,
+              "Providers": []
+            },
+            "FinalDamage": 9,
+            "DefenderHPBefore": 48,
+            "DefenderHPAfter": 39,
+            "WasKilled": false
+          }
+        ],
+        "TotalDamage": 13,
+        "UnitsKilled": 0,
+        "DefenderStatus": {
+          "AliveUnits": 5,
+          "TotalUnits": 5,
+          "AverageHP": 92
+        }
+      },
+      "summary": {
+        "attacker_summaries": [
+          {
+            "unit_id": 77,
+            "unit_name": "Skeleton Archer",
+            "role": "DPS",
+            "grid_pos": {
+              "row": 0,
+              "col": 0
+            },
+            "targeted_rows": [
+              0,
+              1,
+              2
+            ],
+            "targeted_columns": [
+              0,
+              1,
+              2
+            ],
+            "targeted_cells": [
+              {
+                "row": 2,
+                "col": 1
+              },
+              {
+                "row": 0,
+                "col": 0
+              },
+              {
+                "row": 0,
+                "col": 1
+              },
+              {
+                "row": 0,
+                "col": 2
+              },
+              {
+                "row": 1,
+                "col": 1
+              }
+            ],
+            "target_mode": "Magic",
+            "units_engaged": [
+              {
+                "target_id": 111,
+                "target_name": "Unit_111",
+                "outcome": "HIT",
+                "damage_dealt": 1,
+                "was_killed": false
+              },
+              {
+                "target_id": 112,
+                "target_name": "Unit_112",
+                "outcome": "HIT",
+                "damage_dealt": 1,
+                "was_killed": false
+              },
+              {
+                "target_id": 113,
+                "target_name": "Unit_113",
+                "outcome": "HIT",
+                "damage_dealt": 1,
+                "was_killed": false
+              },
+              {
+                "target_id": 114,
+                "target_name": "Unit_114",
+                "outcome": "HIT",
+                "damage_dealt": 1,
+                "was_killed": false
+              },
+              {
+                "target_id": 115,
+                "target_name": "Unit_115",
+                "outcome": "DODGE",
+                "damage_dealt": 0,
+                "was_killed": false
+              }
+            ],
+            "total_attacks": 5,
+            "hits": 4,
+            "misses": 0,
+            "dodges": 1,
+            "criticals": 0,
+            "total_damage": 4,
+            "units_killed": 0,
+            "summary": "Skeleton Archer: attacked rows 0,1,2; HIT Unit_111 for 1, HIT Unit_112 for 1, HIT Unit_113 for 1, HIT Unit_114 for 1, DODGE Unit_115; 4 hit, 1 dodge; 4 total damage"
+          },
+          {
+            "unit_id": 78,
+            "unit_name": "Crossbowman",
+            "role": "DPS",
+            "grid_pos": {
+              "row": 1,
+              "col": 1
+            },
+            "targeted_rows": [
+              1
+            ],
+            "targeted_columns": [
+              1
+            ],
+            "targeted_cells": [],
+            "target_mode": "Ranged",
+            "units_engaged": [
+              {
+                "target_id": 114,
+                "target_name": "Unit_114",
+                "outcome": "HIT",
+                "damage_dealt": 3,
+                "was_killed": false
+              }
+            ],
+            "total_attacks": 1,
+            "hits": 1,
+            "misses": 0,
+            "dodges": 0,
+            "criticals": 0,
+            "total_damage": 3,
+            "units_killed": 0,
+            "summary": "Crossbowman: attacked rows 1; HIT Unit_114 for 3; 1 hit; 3 total damage"
+          },
+          {
+            "unit_id": 79,
+            "unit_name": "Warlock",
+            "role": "DPS",
+            "grid_pos": {
+              "row": 2,
+              "col": 2
+            },
+            "targeted_rows": [
+              0
+            ],
+            "targeted_columns": [
+              0,
+              2
+            ],
+            "targeted_cells": [
+              {
+                "row": 0,
+                "col": 0
+              },
+              {
+                "row": 0,
+                "col": 2
+              }
+            ],
+            "target_mode": "Magic",
+            "units_engaged": [
+              {
+                "target_id": 111,
+                "target_name": "Unit_111",
+                "outcome": "HIT",
+                "damage_dealt": 1,
+                "was_killed": false
+              },
+              {
+                "target_id": 113,
+                "target_name": "Unit_113",
+                "outcome": "HIT",
+                "damage_dealt": 1,
+                "was_killed": false
+              }
+            ],
+            "total_attacks": 2,
+            "hits": 2,
+            "misses": 0,
+            "dodges": 0,
+            "criticals": 0,
+            "total_damage": 2,
+            "units_killed": 0,
+            "summary": "Warlock: attacked rows 0; HIT Unit_111 for 1, HIT Unit_113 for 1; 2 hit; 2 total damage"
+          },
+          {
+            "unit_id": 80,
+            "unit_name": "Marksman",
+            "role": "DPS",
+            "grid_pos": {
+              "row": 0,
+              "col": 2
+            },
+            "targeted_rows": [
+              0
+            ],
+            "targeted_columns": [
+              0,
+              1,
+              2
+            ],
+            "targeted_cells": [],
+            "target_mode": "Ranged",
+            "units_engaged": [
+              {
+                "target_id": 113,
+                "target_name": "Unit_113",
+                "outcome": "CRITICAL",
+                "damage_dealt": 9,
+                "was_killed": false
+              },
+              {
+                "target_id": 111,
+                "target_name": "Unit_111",
+                "outcome": "HIT",
+                "damage_dealt": 1,
+                "was_killed": false
+              },
+              {
+                "target_id": 112,
+                "target_name": "Unit_112",
+                "outcome": "DODGE",
+                "damage_dealt": 0,
+                "was_killed": false
+              }
+            ],
+            "total_attacks": 3,
+            "hits": 2,
+            "misses": 0,
+            "dodges": 1,
+            "criticals": 1,
+            "total_damage": 10,
+            "units_killed": 0,
+            "summary": "Marksman: attacked rows 0; CRITICAL Unit_113 for 9, HIT Unit_111 for 1, DODGE Unit_112; 2 hit, 1 critical, 1 dodge; 10 total damage"
+          }
+        ],
+        "defender_summaries": []
+      }
+    },
+    {
+      "index": 2,
+      "round": 1,
+      "combat_log": {
+        "AttackerSquadID": 96,
+        "DefenderSquadID": 70,
+        "AttackerSquadName": "Player 2 Squad 3",
+        "DefenderSquadName": "Player Ranged Squad 1",
+        "SquadDistance": 1,
+        "AttackingUnits": [
+          {
+            "UnitID": 97,
+            "UnitName": "Knight",
+            "GridRow": 0,
+            "GridCol": 0,
+            "AttackRange": 1,
+            "RoleName": "Tank"
+          },
+          {
+            "UnitID": 98,
+            "UnitName": "Paladin",
+            "GridRow": 0,
+            "GridCol": 1,
+            "AttackRange": 1,
+            "RoleName": "Support"
+          },
+          {
+            "UnitID": 99,
+            "UnitName": "Fighter",
+            "GridRow": 0,
+            "GridCol": 2,
+            "AttackRange": 1,
+            "RoleName": "Tank"
+          },
+          {
+            "UnitID": 100,
+            "UnitName": "Warrior",
+            "GridRow": 1,
+            "GridCol": 1,
+            "AttackRange": 1,
+            "RoleName": "DPS"
+          },
+          {
+            "UnitID": 101,
+            "UnitName": "Swordsman",
+            "GridRow": 2,
+            "GridCol": 1,
+            "AttackRange": 1,
+            "RoleName": "DPS"
+          }
+        ],
+        "DefendingUnits": [
+          {
+            "UnitID": 71,
+            "UnitName": "Marksman",
+            "GridRow": 0,
+            "GridCol": 0,
+            "AttackRange": 4,
+            "RoleName": "DPS"
+          },
+          {
+            "UnitID": 72,
+            "UnitName": "Sorcerer",
+            "GridRow": 1,
+            "GridCol": 1,
+            "AttackRange": 3,
+            "RoleName": "DPS"
+          },
+          {
+            "UnitID": 73,
+            "UnitName": "Marksman",
+            "GridRow": 2,
+            "GridCol": 2,
+            "AttackRange": 4,
+            "RoleName": "DPS"
+          },
+          {
+            "UnitID": 74,
+            "UnitName": "Archer",
+            "GridRow": 0,
+            "GridCol": 2,
+            "AttackRange": 4,
+            "RoleName": "DPS"
+          }
+        ],
+        "AttackEvents": [
+          {
+            "AttackerID": 97,
+            "DefenderID": 71,
+            "AttackIndex": 1,
+            "TargetInfo": {
+              "TargetMode": "MeleeRow",
+              "TargetRow": 0,
+              "TargetCol": 0
+            },
+            "HitResult": {
+              "Type": 2,
+              "HitRoll": 30,
+              "HitThreshold": 100,
+              "DodgeRoll": 82,
+              "DodgeThreshold": 17,
+              "CritRoll": 92,
+              "CritThreshold": 12
+            },
+            "BaseDamage": 23,
+            "CritMultiplier": 1,
+            "ResistanceAmount": 5,
+            "CoverReduction": {
+              "TotalReduction": 0,
+              "Providers": []
+            },
+            "FinalDamage": 18,
+            "DefenderHPBefore": 34,
+            "DefenderHPAfter": 16,
+            "WasKilled": false
+          },
+          {
+            "AttackerID": 97,
+            "DefenderID": 74,
+            "AttackIndex": 2,
+            "TargetInfo": {
+              "TargetMode": "MeleeRow",
+              "TargetRow": 0,
+              "TargetCol": 2
+            },
+            "HitResult": {
+              "Type": 2,
+              "HitRoll": 18,
+              "HitThreshold": 100,
+              "DodgeRoll": 39,
+              "DodgeThreshold": 15,
+              "CritRoll": 55,
+              "CritThreshold": 12
+            },
+            "BaseDamage": 23,
+            "CritMultiplier": 1,
+            "ResistanceAmount": 5,
+            "CoverReduction": {
+              "TotalReduction": 0,
+              "Providers": []
+            },
+            "FinalDamage": 18,
+            "DefenderHPBefore": 32,
+            "DefenderHPAfter": 14,
+            "WasKilled": false
+          },
+          {
+            "AttackerID": 98,
+            "DefenderID": 71,
+            "AttackIndex": 3,
+            "TargetInfo": {
+              "TargetMode": "MeleeRow",
+              "TargetRow": 0,
+              "TargetCol": 0
+            },
+            "HitResult": {
+              "Type": 2,
+              "HitRoll": 33,
+              "HitThreshold": 100,
+              "DodgeRoll": 71,
+              "DodgeThreshold": 17,
+              "CritRoll": 100,
+              "CritThreshold": 11
+            },
+            "BaseDamage": 20,
+            "CritMultiplier": 1,
+            "ResistanceAmount": 5,
+            "CoverReduction": {
+              "TotalReduction": 0,
+              "Providers": []
+            },
+            "FinalDamage": 15,
+            "DefenderHPBefore": 16,
+            "DefenderHPAfter": 1,
+            "WasKilled": false
+          },
+          {
+            "AttackerID": 98,
+            "DefenderID": 74,
+            "AttackIndex": 4,
+            "TargetInfo": {
+              "TargetMode": "MeleeRow",
+              "TargetRow": 0,
+              "TargetCol": 2
+            },
+            "HitResult": {
+              "Type": 2,
+              "HitRoll": 99,
+              "HitThreshold": 100,
+              "DodgeRoll": 43,
+              "DodgeThreshold": 15,
+              "CritRoll": 66,
+              "CritThreshold": 11
+            },
+            "BaseDamage": 20,
+            "CritMultiplier": 1,
+            "ResistanceAmount": 5,
+            "CoverReduction": {
+              "TotalReduction": 0,
+              "Providers": []
+            },
+            "FinalDamage": 15,
+            "DefenderHPBefore": 14,
+            "DefenderHPAfter": -1,
+            "WasKilled": true
+          },
+          {
+            "AttackerID": 99,
+            "DefenderID": 73,
+            "AttackIndex": 5,
+            "TargetInfo": {
+              "TargetMode": "MeleeColumn",
+              "TargetRow": 2,
+              "TargetCol": 2
+            },
+            "HitResult": {
+              "Type": 2,
+              "HitRoll": 46,
+              "HitThreshold": 100,
+              "DodgeRoll": 27,
+              "DodgeThreshold": 17,
+              "CritRoll": 60,
+              "CritThreshold": 15
+            },
+            "BaseDamage": 27,
+            "CritMultiplier": 1,
+            "ResistanceAmount": 5,
+            "CoverReduction": {
+              "TotalReduction": 0,
+              "Providers": []
+            },
+            "FinalDamage": 22,
+            "DefenderHPBefore": 34,
+            "DefenderHPAfter": 12,
+            "WasKilled": false
+          },
+          {
+            "AttackerID": 100,
+            "DefenderID": 71,
+            "AttackIndex": 6,
+            "TargetInfo": {
+              "TargetMode": "MeleeRow",
+              "TargetRow": 0,
+              "TargetCol": 0
+            },
+            "HitResult": {
+              "Type": 2,
+              "HitRoll": 3,
+              "HitThreshold": 100,
+              "DodgeRoll": 97,
+              "DodgeThreshold": 17,
+              "CritRoll": 26,
+              "CritThreshold": 14
+            },
+            "BaseDamage": 30,
+            "CritMultiplier": 1,
+            "ResistanceAmount": 5,
+            "CoverReduction": {
+              "TotalReduction": 0,
+              "Providers": []
+            },
+            "FinalDamage": 25,
+            "DefenderHPBefore": 1,
+            "DefenderHPAfter": -24,
+            "WasKilled": true
+          },
+          {
+            "AttackerID": 101,
+            "DefenderID": 72,
+            "AttackIndex": 7,
+            "TargetInfo": {
+              "TargetMode": "MeleeColumn",
+              "TargetRow": 1,
+              "TargetCol": 1
+            },
+            "HitResult": {
+              "Type": 2,
+              "HitRoll": 91,
+              "HitThreshold": 100,
+              "DodgeRoll": 38,
+              "DodgeThreshold": 7,
+              "CritRoll": 75,
+              "CritThreshold": 20
+            },
+            "BaseDamage": 24,
+            "CritMultiplier": 1,
+            "ResistanceAmount": 3,
+            "CoverReduction": {
+              "TotalReduction": 0,
+              "Providers": []
+            },
+            "FinalDamage": 21,
+            "DefenderHPBefore": 28,
+            "DefenderHPAfter": 7,
+            "WasKilled": false
+          }
+        ],
+        "TotalDamage": 83,
+        "UnitsKilled": 2,
+        "DefenderStatus": {
+          "AliveUnits": 2,
+          "TotalUnits": 4,
+          "AverageHP": 30
+        }
+      },
+      "summary": {
+        "attacker_summaries": [
+          {
+            "unit_id": 97,
+            "unit_name": "Knight",
+            "role": "Tank",
+            "grid_pos": {
+              "row": 0,
+              "col": 0
+            },
+            "targeted_rows": [
+              0
+            ],
+            "targeted_columns": [
+              0,
+              2
+            ],
+            "targeted_cells": [],
+            "target_mode": "MeleeRow",
+            "units_engaged": [
+              {
+                "target_id": 71,
+                "target_name": "Unit_71",
+                "outcome": "HIT",
+                "damage_dealt": 18,
+                "was_killed": false
+              },
+              {
+                "target_id": 74,
+                "target_name": "Unit_74",
+                "outcome": "HIT",
+                "damage_dealt": 18,
+                "was_killed": false
+              }
+            ],
+            "total_attacks": 2,
+            "hits": 2,
+            "misses": 0,
+            "dodges": 0,
+            "criticals": 0,
+            "total_damage": 36,
+            "units_killed": 0,
+            "summary": "Knight: attacked rows 0; HIT Unit_71 for 18, HIT Unit_74 for 18; 2 hit; 36 total damage"
+          },
+          {
+            "unit_id": 98,
+            "unit_name": "Paladin",
+            "role": "Support",
+            "grid_pos": {
+              "row": 0,
+              "col": 1
+            },
+            "targeted_rows": [
+              0
+            ],
+            "targeted_columns": [
+              0,
+              2
+            ],
+            "targeted_cells": [],
+            "target_mode": "MeleeRow",
+            "units_engaged": [
+              {
+                "target_id": 71,
+                "target_name": "Unit_71",
+                "outcome": "HIT",
+                "damage_dealt": 15,
+                "was_killed": false
+              },
+              {
+                "target_id": 74,
+                "target_name": "Unit_74",
+                "outcome": "HIT",
+                "damage_dealt": 15,
+                "was_killed": true
+              }
+            ],
+            "total_attacks": 2,
+            "hits": 2,
+            "misses": 0,
+            "dodges": 0,
+            "criticals": 0,
+            "total_damage": 30,
+            "units_killed": 1,
+            "summary": "Paladin: attacked rows 0; HIT Unit_71 for 15, HIT Unit_74 for 15 (killed); 2 hit; 30 total damage"
+          },
+          {
+            "unit_id": 99,
+            "unit_name": "Fighter",
+            "role": "Tank",
+            "grid_pos": {
+              "row": 0,
+              "col": 2
+            },
+            "targeted_rows": [
+              2
+            ],
+            "targeted_columns": [
+              2
+            ],
+            "targeted_cells": [],
+            "target_mode": "MeleeColumn",
+            "units_engaged": [
+              {
+                "target_id": 73,
+                "target_name": "Unit_73",
+                "outcome": "HIT",
+                "damage_dealt": 22,
+                "was_killed": false
+              }
+            ],
+            "total_attacks": 1,
+            "hits": 1,
+            "misses": 0,
+            "dodges": 0,
+            "criticals": 0,
+            "total_damage": 22,
+            "units_killed": 0,
+            "summary": "Fighter: attacked rows 2; HIT Unit_73 for 22; 1 hit; 22 total damage"
+          },
+          {
+            "unit_id": 100,
+            "unit_name": "Warrior",
+            "role": "DPS",
+            "grid_pos": {
+              "row": 1,
+              "col": 1
+            },
+            "targeted_rows": [
+              0
+            ],
+            "targeted_columns": [
+              0
+            ],
+            "targeted_cells": [],
+            "target_mode": "MeleeRow",
+            "units_engaged": [
+              {
+                "target_id": 71,
+                "target_name": "Unit_71",
+                "outcome": "HIT",
+                "damage_dealt": 25,
+                "was_killed": true
+              }
+            ],
+            "total_attacks": 1,
+            "hits": 1,
+            "misses": 0,
+            "dodges": 0,
+            "criticals": 0,
+            "total_damage": 25,
+            "units_killed": 1,
+            "summary": "Warrior: attacked rows 0; HIT Unit_71 for 25 (killed); 1 hit; 25 total damage"
+          },
+          {
+            "unit_id": 101,
+            "unit_name": "Swordsman",
+            "role": "DPS",
+            "grid_pos": {
+              "row": 2,
+              "col": 1
+            },
+            "targeted_rows": [
+              1
+            ],
+            "targeted_columns": [
+              1
+            ],
+            "targeted_cells": [],
+            "target_mode": "MeleeColumn",
+            "units_engaged": [
+              {
+                "target_id": 72,
+                "target_name": "Unit_72",
+                "outcome": "HIT",
+                "damage_dealt": 21,
+                "was_killed": false
+              }
+            ],
+            "total_attacks": 1,
+            "hits": 1,
+            "misses": 0,
+            "dodges": 0,
+            "criticals": 0,
+            "total_damage": 21,
+            "units_killed": 0,
+            "summary": "Swordsman: attacked rows 1; HIT Unit_72 for 21; 1 hit; 21 total damage"
+          }
+        ],
+        "defender_summaries": []
+      }
+    },
+    {
+      "index": 3,
+      "round": 1,
+      "combat_log": {
+        "AttackerSquadID": 137,
+        "DefenderSquadID": 103,
+        "AttackerSquadName": "Goblin Squad 2",
+        "DefenderSquadName": "Player 2 Squad 4",
+        "SquadDistance": 0,
+        "AttackingUnits": [
+          {
+            "UnitID": 138,
+            "UnitName": "Knight",
+            "GridRow": 0,
+            "GridCol": 0,
+            "AttackRange": 1,
+            "RoleName": "Tank"
+          },
+          {
+            "UnitID": 139,
+            "UnitName": "Paladin",
+            "GridRow": 0,
+            "GridCol": 1,
+            "AttackRange": 1,
+            "RoleName": "Support"
+          },
+          {
+            "UnitID": 140,
+            "UnitName": "Fighter",
+            "GridRow": 0,
+            "GridCol": 2,
+            "AttackRange": 1,
+            "RoleName": "Tank"
+          },
+          {
+            "UnitID": 141,
+            "UnitName": "Warrior",
+            "GridRow": 1,
+            "GridCol": 1,
+            "AttackRange": 1,
+            "RoleName": "DPS"
+          },
+          {
+            "UnitID": 142,
+            "UnitName": "Swordsman",
+            "GridRow": 2,
+            "GridCol": 1,
+            "AttackRange": 1,
+            "RoleName": "DPS"
+          }
+        ],
+        "DefendingUnits": [
+          {
+            "UnitID": 104,
+            "UnitName": "Knight",
+            "GridRow": 0,
+            "GridCol": 0,
+            "AttackRange": 1,
+            "RoleName": "Tank"
+          },
+          {
+            "UnitID": 105,
+            "UnitName": "Paladin",
+            "GridRow": 0,
+            "GridCol": 1,
+            "AttackRange": 1,
+            "RoleName": "Support"
+          },
+          {
+            "UnitID": 106,
+            "UnitName": "Fighter",
+            "GridRow": 0,
+            "GridCol": 2,
+            "AttackRange": 1,
+            "RoleName": "Tank"
+          },
+          {
+            "UnitID": 107,
+            "UnitName": "Warrior",
+            "GridRow": 1,
+            "GridCol": 1,
+            "AttackRange": 1,
+            "RoleName": "DPS"
+          },
+          {
+            "UnitID": 108,
+            "UnitName": "Swordsman",
+            "GridRow": 2,
+            "GridCol": 1,
+            "AttackRange": 1,
+            "RoleName": "DPS"
+          }
+        ],
+        "AttackEvents": [
+          {
+            "AttackerID": 138,
+            "DefenderID": 104,
+            "AttackIndex": 1,
+            "TargetInfo": {
+              "TargetMode": "MeleeRow",
+              "TargetRow": 0,
+              "TargetCol": 0
+            },
+            "HitResult": {
+              "Type": 2,
+              "HitRoll": 57,
+              "HitThreshold": 100,
+              "DodgeRoll": 15,
+              "DodgeThreshold": 8,
+              "CritRoll": 61,
+              "CritThreshold": 12
+            },
+            "BaseDamage": 23,
+            "CritMultiplier": 1,
+            "ResistanceAmount": 23,
+            "CoverReduction": {
+              "TotalReduction": 0,
+              "Providers": []
+            },
+            "FinalDamage": 1,
+            "DefenderHPBefore": 48,
+            "DefenderHPAfter": 47,
+            "WasKilled": false
+          },
+          {
+            "AttackerID": 138,
+            "DefenderID": 105,
+            "AttackIndex": 2,
+            "TargetInfo": {
+              "TargetMode": "MeleeRow",
+              "TargetRow": 0,
+              "TargetCol": 1
+            },
+            "HitResult": {
+              "Type": 2,
+              "HitRoll": 30,
+              "HitThreshold": 100,
+              "DodgeRoll": 68,
+              "DodgeThreshold": 7,
+              "CritRoll": 50,
+              "CritThreshold": 12
+            },
+            "BaseDamage": 23,
+            "CritMultiplier": 1,
+            "ResistanceAmount": 21,
+            "CoverReduction": {
+              "TotalReduction": 0,
+              "Providers": []
+            },
+            "FinalDamage": 2,
+            "DefenderHPBefore": 46,
+            "DefenderHPAfter": 44,
+            "WasKilled": false
+          },
+          {
+            "AttackerID": 138,
+            "DefenderID": 106,
+            "AttackIndex": 3,
+            "TargetInfo": {
+              "TargetMode": "MeleeRow",
+              "TargetRow": 0,
+              "TargetCol": 2
+            },
+            "HitResult": {
+              "Type": 2,
+              "HitRoll": 23,
+              "HitThreshold": 100,
+              "DodgeRoll": 95,
+              "DodgeThreshold": 10,
+              "CritRoll": 25,
+              "CritThreshold": 12
+            },
+            "BaseDamage": 23,
+            "CritMultiplier": 1,
+            "ResistanceAmount": 19,
+            "CoverReduction": {
+              "TotalReduction": 0,
+              "Providers": []
+            },
+            "FinalDamage": 4,
+            "DefenderHPBefore": 50,
+            "DefenderHPAfter": 46,
+            "WasKilled": false
+          },
+          {
+            "AttackerID": 139,
+            "DefenderID": 104,
+            "AttackIndex": 4,
+            "TargetInfo": {
+              "TargetMode": "MeleeRow",
+              "TargetRow": 0,
+              "TargetCol": 0
+            },
+            "HitResult": {
+              "Type": 2,
+              "HitRoll": 60,
+              "HitThreshold": 100,
+              "DodgeRoll": 85,
+              "DodgeThreshold": 8,
+              "CritRoll": 35,
+              "CritThreshold": 11
+            },
+            "BaseDamage": 20,
+            "CritMultiplier": 1,
+            "ResistanceAmount": 23,
+            "CoverReduction": {
+              "TotalReduction": 0,
+              "Providers": []
+            },
+            "FinalDamage": 1,
+            "DefenderHPBefore": 47,
+            "DefenderHPAfter": 46,
+            "WasKilled": false
+          },
+          {
+            "AttackerID": 139,
+            "DefenderID": 105,
+            "AttackIndex": 5,
+            "TargetInfo": {
+              "TargetMode": "MeleeRow",
+              "TargetRow": 0,
+              "TargetCol": 1
+            },
+            "HitResult": {
+              "Type": 2,
+              "HitRoll": 84,
+              "HitThreshold": 100,
+              "DodgeRoll": 25,
+              "DodgeThreshold": 7,
+              "CritRoll": 16,
+              "CritThreshold": 11
+            },
+            "BaseDamage": 20,
+            "CritMultiplier": 1,
+            "ResistanceAmount": 21,
+            "CoverReduction": {
+              "TotalReduction": 0,
+              "Providers": []
+            },
+            "FinalDamage": 1,
+            "DefenderHPBefore": 44,
+            "DefenderHPAfter": 43,
+            "WasKilled": false
+          },
+          {
+            "AttackerID": 139,
+            "DefenderID": 106,
+            "AttackIndex": 6,
+            "TargetInfo": {
+              "TargetMode": "MeleeRow",
+              "TargetRow": 0,
+              "TargetCol": 2
+            },
+            "HitResult": {
+              "Type": 2,
+              "HitRoll": 27,
+              "HitThreshold": 100,
+              "DodgeRoll": 24,
+              "DodgeThreshold": 10,
+              "CritRoll": 92,
+              "CritThreshold": 11
+            },
+            "BaseDamage": 20,
+            "CritMultiplier": 1,
+            "ResistanceAmount": 19,
+            "CoverReduction": {
+              "TotalReduction": 0,
+              "Providers": []
+            },
+            "FinalDamage": 1,
+            "DefenderHPBefore": 46,
+            "DefenderHPAfter": 45,
+            "WasKilled": false
+          },
+          {
+            "AttackerID": 140,
+            "DefenderID": 106,
+            "AttackIndex": 7,
+            "TargetInfo": {
+              "TargetMode": "MeleeColumn",
+              "TargetRow": 0,
+              "TargetCol": 2
+            },
+            "HitResult": {
+              "Type": 3,
+              "HitRoll": 6,
+              "HitThreshold": 100,
+              "DodgeRoll": 80,
+              "DodgeThreshold": 10,
+              "CritRoll": 2,
+              "CritThreshold": 15
+            },
+            "BaseDamage": 27,
+            "CritMultiplier": 1.5,
+            "ResistanceAmount": 19,
+            "CoverReduction": {
+              "TotalReduction": 0,
+              "Providers": []
+            },
+            "FinalDamage": 21,
+            "DefenderHPBefore": 45,
+            "DefenderHPAfter": 24,
+            "WasKilled": false
+          },
+          {
+            "AttackerID": 141,
+            "DefenderID": 104,
+            "AttackIndex": 8,
+            "TargetInfo": {
+              "TargetMode": "MeleeRow",
+              "TargetRow": 0,
+              "TargetCol": 0
+            },
+            "HitResult": {
+              "Type": 1,
+              "HitRoll": 96,
+              "HitThreshold": 100,
+              "DodgeRoll": 5,
+              "DodgeThreshold": 8,
+              "CritRoll": 0,
+              "CritThreshold": 0
+            },
+            "BaseDamage": 0,
+            "CritMultiplier": 0,
+            "ResistanceAmount": 0,
+            "CoverReduction": {
+              "TotalReduction": 0,
+              "Providers": null
+            },
+            "FinalDamage": 0,
+            "DefenderHPBefore": 46,
+            "DefenderHPAfter": 0,
+            "WasKilled": false
+          },
+          {
+            "AttackerID": 141,
+            "DefenderID": 105,
+            "AttackIndex": 9,
+            "TargetInfo": {
+              "TargetMode": "MeleeRow",
+              "TargetRow": 0,
+              "TargetCol": 1
+            },
+            "HitResult": {
+              "Type": 2,
+              "HitRoll": 94,
+              "HitThreshold": 100,
+              "DodgeRoll": 43,
+              "DodgeThreshold": 7,
+              "CritRoll": 18,
+              "CritThreshold": 14
+            },
+            "BaseDamage": 30,
+            "CritMultiplier": 1,
+            "ResistanceAmount": 21,
+            "CoverReduction": {
+              "TotalReduction": 0,
+              "Providers": []
+            },
+            "FinalDamage": 9,
+            "DefenderHPBefore": 43,
+            "DefenderHPAfter": 34,
+            "WasKilled": false
+          },
+          {
+            "AttackerID": 141,
+            "DefenderID": 106,
+            "AttackIndex": 10,
+            "TargetInfo": {
+              "TargetMode": "MeleeRow",
+              "TargetRow": 0,
+              "TargetCol": 2
+            },
+            "HitResult": {
+              "Type": 2,
+              "HitRoll": 36,
+              "HitThreshold": 100,
+              "DodgeRoll": 99,
+              "DodgeThreshold": 10,
+              "CritRoll": 89,
+              "CritThreshold": 14
+            },
+            "BaseDamage": 30,
+            "CritMultiplier": 1,
+            "ResistanceAmount": 19,
+            "CoverReduction": {
+              "TotalReduction": 0,
+              "Providers": []
+            },
+            "FinalDamage": 11,
+            "DefenderHPBefore": 24,
+            "DefenderHPAfter": 13,
+            "WasKilled": false
+          },
+          {
+            "AttackerID": 142,
+            "DefenderID": 105,
+            "AttackIndex": 11,
+            "TargetInfo": {
+              "TargetMode": "MeleeColumn",
+              "TargetRow": 0,
+              "TargetCol": 1
+            },
+            "HitResult": {
+              "Type": 2,
+              "HitRoll": 12,
+              "HitThreshold": 100,
+              "DodgeRoll": 89,
+              "DodgeThreshold": 7,
+              "CritRoll": 69,
+              "CritThreshold": 20
+            },
+            "BaseDamage": 24,
+            "CritMultiplier": 1,
+            "ResistanceAmount": 21,
+            "CoverReduction": {
+              "TotalReduction": 0,
+              "Providers": []
+            },
+            "FinalDamage": 3,
+            "DefenderHPBefore": 34,
+            "DefenderHPAfter": 31,
+            "WasKilled": false
+          }
+        ],
+        "TotalDamage": 14,
+        "UnitsKilled": 0,
+        "DefenderStatus": {
+          "AliveUnits": 5,
+          "TotalUnits": 5,
+          "AverageHP": 77
+        }
+      },
+      "summary": {
+        "attacker_summaries": [
+          {
+            "unit_id": 138,
+            "unit_name": "Knight",
+            "role": "Tank",
+            "grid_pos": {
+              "row": 0,
+              "col": 0
+            },
+            "targeted_rows": [
+              0
+            ],
+            "targeted_columns": [
+              0,
+              1,
+              2
+            ],
+            "targeted_cells": [],
+            "target_mode": "MeleeRow",
+            "units_engaged": [
+              {
+                "target_id": 105,
+                "target_name": "Unit_105",
+                "outcome": "HIT",
+                "damage_dealt": 2,
+                "was_killed": false
+              },
+              {
+                "target_id": 106,
+                "target_name": "Unit_106",
+                "outcome": "HIT",
+                "damage_dealt": 4,
+                "was_killed": false
+              },
+              {
+                "target_id": 104,
+                "target_name": "Unit_104",
+                "outcome": "HIT",
+                "damage_dealt": 1,
+                "was_killed": false
+              }
+            ],
+            "total_attacks": 3,
+            "hits": 3,
+            "misses": 0,
+            "dodges": 0,
+            "criticals": 0,
+            "total_damage": 7,
+            "units_killed": 0,
+            "summary": "Knight: attacked rows 0; HIT Unit_105 for 2, HIT Unit_106 for 4, HIT Unit_104 for 1; 3 hit; 7 total damage"
+          },
+          {
+            "unit_id": 139,
+            "unit_name": "Paladin",
+            "role": "Support",
+            "grid_pos": {
+              "row": 0,
+              "col": 1
+            },
+            "targeted_rows": [
+              0
+            ],
+            "targeted_columns": [
+              0,
+              1,
+              2
+            ],
+            "targeted_cells": [],
+            "target_mode": "MeleeRow",
+            "units_engaged": [
+              {
+                "target_id": 104,
+                "target_name": "Unit_104",
+                "outcome": "HIT",
+                "damage_dealt": 1,
+                "was_killed": false
+              },
+              {
+                "target_id": 105,
+                "target_name": "Unit_105",
+                "outcome": "HIT",
+                "damage_dealt": 1,
+                "was_killed": false
+              },
+              {
+                "target_id": 106,
+                "target_name": "Unit_106",
+                "outcome": "HIT",
+                "damage_dealt": 1,
+                "was_killed": false
+              }
+            ],
+            "total_attacks": 3,
+            "hits": 3,
+            "misses": 0,
+            "dodges": 0,
+            "criticals": 0,
+            "total_damage": 3,
+            "units_killed": 0,
+            "summary": "Paladin: attacked rows 0; HIT Unit_104 for 1, HIT Unit_105 for 1, HIT Unit_106 for 1; 3 hit; 3 total damage"
+          },
+          {
+            "unit_id": 140,
+            "unit_name": "Fighter",
+            "role": "Tank",
+            "grid_pos": {
+              "row": 0,
+              "col": 2
+            },
+            "targeted_rows": [
+              0
+            ],
+            "targeted_columns": [
+              2
+            ],
+            "targeted_cells": [],
+            "target_mode": "MeleeColumn",
+            "units_engaged": [
+              {
+                "target_id": 106,
+                "target_name": "Unit_106",
+                "outcome": "CRITICAL",
+                "damage_dealt": 21,
+                "was_killed": false
+              }
+            ],
+            "total_attacks": 1,
+            "hits": 1,
+            "misses": 0,
+            "dodges": 0,
+            "criticals": 1,
+            "total_damage": 21,
+            "units_killed": 0,
+            "summary": "Fighter: attacked rows 0; CRITICAL Unit_106 for 21; 1 hit, 1 critical; 21 total damage"
+          },
+          {
+            "unit_id": 141,
+            "unit_name": "Warrior",
+            "role": "DPS",
+            "grid_pos": {
+              "row": 1,
+              "col": 1
+            },
+            "targeted_rows": [
+              0
+            ],
+            "targeted_columns": [
+              0,
+              1,
+              2
+            ],
+            "targeted_cells": [],
+            "target_mode": "MeleeRow",
+            "units_engaged": [
+              {
+                "target_id": 104,
+                "target_name": "Unit_104",
+                "outcome": "DODGE",
+                "damage_dealt": 0,
+                "was_killed": false
+              },
+              {
+                "target_id": 105,
+                "target_name": "Unit_105",
+                "outcome": "HIT",
+                "damage_dealt": 9,
+                "was_killed": false
+              },
+              {
+                "target_id": 106,
+                "target_name": "Unit_106",
+                "outcome": "HIT",
+                "damage_dealt": 11,
+                "was_killed": false
+              }
+            ],
+            "total_attacks": 3,
+            "hits": 2,
+            "misses": 0,
+            "dodges": 1,
+            "criticals": 0,
+            "total_damage": 20,
+            "units_killed": 0,
+            "summary": "Warrior: attacked rows 0; DODGE Unit_104, HIT Unit_105 for 9, HIT Unit_106 for 11; 2 hit, 1 dodge; 20 total damage"
+          },
+          {
+            "unit_id": 142,
+            "unit_name": "Swordsman",
+            "role": "DPS",
+            "grid_pos": {
+              "row": 2,
+              "col": 1
+            },
+            "targeted_rows": [
+              0
+            ],
+            "targeted_columns": [
+              1
+            ],
+            "targeted_cells": [],
+            "target_mode": "MeleeColumn",
+            "units_engaged": [
+              {
+                "target_id": 105,
+                "target_name": "Unit_105",
+                "outcome": "HIT",
+                "damage_dealt": 3,
+                "was_killed": false
+              }
+            ],
+            "total_attacks": 1,
+            "hits": 1,
+            "misses": 0,
+            "dodges": 0,
+            "criticals": 0,
+            "total_damage": 3,
+            "units_killed": 0,
+            "summary": "Swordsman: attacked rows 0; HIT Unit_105 for 3; 1 hit; 3 total damage"
+          }
+        ],
+        "defender_summaries": []
+      }
+    },
+    {
+      "index": 4,
+      "round": 1,
+      "combat_log": {
+        "AttackerSquadID": 151,
+        "DefenderSquadID": 76,
+        "AttackerSquadName": "Goblin Squad 4",
+        "DefenderSquadName": "Player Ranged Squad 2",
+        "SquadDistance": 1,
+        "AttackingUnits": [
+          {
+            "UnitID": 152,
+            "UnitName": "Knight",
+            "GridRow": 0,
+            "GridCol": 0,
+            "AttackRange": 1,
+            "RoleName": "Tank"
+          },
+          {
+            "UnitID": 153,
+            "UnitName": "Paladin",
+            "GridRow": 0,
+            "GridCol": 1,
+            "AttackRange": 1,
+            "RoleName": "Support"
+          },
+          {
+            "UnitID": 154,
+            "UnitName": "Fighter",
+            "GridRow": 0,
+            "GridCol": 2,
+            "AttackRange": 1,
+            "RoleName": "Tank"
+          },
+          {
+            "UnitID": 155,
+            "UnitName": "Warrior",
+            "GridRow": 1,
+            "GridCol": 1,
+            "AttackRange": 1,
+            "RoleName": "DPS"
+          },
+          {
+            "UnitID": 156,
+            "UnitName": "Swordsman",
+            "GridRow": 2,
+            "GridCol": 1,
+            "AttackRange": 1,
+            "RoleName": "DPS"
+          }
+        ],
+        "DefendingUnits": [
+          {
+            "UnitID": 77,
+            "UnitName": "Skeleton Archer",
+            "GridRow": 0,
+            "GridCol": 0,
+            "AttackRange": 3,
+            "RoleName": "DPS"
+          },
+          {
+            "UnitID": 78,
+            "UnitName": "Crossbowman",
+            "GridRow": 1,
+            "GridCol": 1,
+            "AttackRange": 3,
+            "RoleName": "DPS"
+          },
+          {
+            "UnitID": 79,
+            "UnitName": "Warlock",
+            "GridRow": 2,
+            "GridCol": 2,
+            "AttackRange": 4,
+            "RoleName": "DPS"
+          },
+          {
+            "UnitID": 80,
+            "UnitName": "Marksman",
+            "GridRow": 0,
+            "GridCol": 2,
+            "AttackRange": 4,
+            "RoleName": "DPS"
+          }
+        ],
+        "AttackEvents": [
+          {
+            "AttackerID": 152,
+            "DefenderID": 77,
+            "AttackIndex": 1,
+            "TargetInfo": {
+              "TargetMode": "MeleeRow",
+              "TargetRow": 0,
+              "TargetCol": 0
+            },
+            "HitResult": {
+              "Type": 2,
+              "HitRoll": 85,
+              "HitThreshold": 100,
+              "DodgeRoll": 49,
+              "DodgeThreshold": 11,
+              "CritRoll": 30,
+              "CritThreshold": 12
+            },
+            "BaseDamage": 23,
+            "CritMultiplier": 1,
+            "ResistanceAmount": 3,
+            "CoverReduction": {
+              "TotalReduction": 0,
+              "Providers": []
+            },
+            "FinalDamage": 20,
+            "DefenderHPBefore": 30,
+            "DefenderHPAfter": 10,
+            "WasKilled": false
+          },
+          {
+            "AttackerID": 152,
+            "DefenderID": 80,
+            "AttackIndex": 2,
+            "TargetInfo": {
+              "TargetMode": "MeleeRow",
+              "TargetRow": 0,
+              "TargetCol": 2
+            },
+            "HitResult": {
+              "Type": 3,
+              "HitRoll": 37,
+              "HitThreshold": 100,
+              "DodgeRoll": 19,
+              "DodgeThreshold": 17,
+              "CritRoll": 1,
+              "CritThreshold": 12
+            },
+            "BaseDamage": 23,
+            "CritMultiplier": 1.5,
+            "ResistanceAmount": 5,
+            "CoverReduction": {
+              "TotalReduction": 0,
+              "Providers": []
+            },
+            "FinalDamage": 29,
+            "DefenderHPBefore": 34,
+            "DefenderHPAfter": 5,
+            "WasKilled": false
+          },
+          {
+            "AttackerID": 153,
+            "DefenderID": 77,
+            "AttackIndex": 3,
+            "TargetInfo": {
+              "TargetMode": "MeleeRow",
+              "TargetRow": 0,
+              "TargetCol": 0
+            },
+            "HitResult": {
+              "Type": 2,
+              "HitRoll": 96,
+              "HitThreshold": 100,
+              "DodgeRoll": 25,
+              "DodgeThreshold": 11,
+              "CritRoll": 73,
+              "CritThreshold": 11
+            },
+            "BaseDamage": 20,
+            "CritMultiplier": 1,
+            "ResistanceAmount": 3,
+            "CoverReduction": {
+              "TotalReduction": 0,
+              "Providers": []
+            },
+            "FinalDamage": 17,
+            "DefenderHPBefore": 10,
+            "DefenderHPAfter": -7,
+            "WasKilled": true
+          },
+          {
+            "AttackerID": 153,
+            "DefenderID": 80,
+            "AttackIndex": 4,
+            "TargetInfo": {
+              "TargetMode": "MeleeRow",
+              "TargetRow": 0,
+              "TargetCol": 2
+            },
+            "HitResult": {
+              "Type": 2,
+              "HitRoll": 43,
+              "HitThreshold": 100,
+              "DodgeRoll": 90,
+              "DodgeThreshold": 17,
+              "CritRoll": 39,
+              "CritThreshold": 11
+            },
+            "BaseDamage": 20,
+            "CritMultiplier": 1,
+            "ResistanceAmount": 5,
+            "CoverReduction": {
+              "TotalReduction": 0,
+              "Providers": []
+            },
+            "FinalDamage": 15,
+            "DefenderHPBefore": 5,
+            "DefenderHPAfter": -10,
+            "WasKilled": true
+          },
+          {
+            "AttackerID": 154,
+            "DefenderID": 79,
+            "AttackIndex": 5,
+            "TargetInfo": {
+              "TargetMode": "MeleeColumn",
+              "TargetRow": 2,
+              "TargetCol": 2
+            },
+            "HitResult": {
+              "Type": 2,
+              "HitRoll": 14,
+              "HitThreshold": 100,
+              "DodgeRoll": 44,
+              "DodgeThreshold": 8,
+              "CritRoll": 70,
+              "CritThreshold": 15
+            },
+            "BaseDamage": 27,
+            "CritMultiplier": 1,
+            "ResistanceAmount": 5,
+            "CoverReduction": {
+              "TotalReduction": 0,
+              "Providers": []
+            },
+            "FinalDamage": 22,
+            "DefenderHPBefore": 30,
+            "DefenderHPAfter": 8,
+            "WasKilled": false
+          },
+          {
+            "AttackerID": 155,
+            "DefenderID": 78,
+            "AttackIndex": 6,
+            "TargetInfo": {
+              "TargetMode": "MeleeRow",
+              "TargetRow": 1,
+              "TargetCol": 1
+            },
+            "HitResult": {
+              "Type": 2,
+              "HitRoll": 94,
+              "HitThreshold": 100,
+              "DodgeRoll": 98,
+              "DodgeThreshold": 12,
+              "CritRoll": 44,
+              "CritThreshold": 14
+            },
+            "BaseDamage": 30,
+            "CritMultiplier": 1,
+            "ResistanceAmount": 12,
+            "CoverReduction": {
+              "TotalReduction": 0,
+              "Providers": []
+            },
+            "FinalDamage": 18,
+            "DefenderHPBefore": 40,
+            "DefenderHPAfter": 22,
+            "WasKilled": false
+          },
+          {
+            "AttackerID": 156,
+            "DefenderID": 78,
+            "AttackIndex": 7,
+            "TargetInfo": {
+              "TargetMode": "MeleeColumn",
+              "TargetRow": 1,
+              "TargetCol": 1
+            },
+            "HitResult": {
+              "Type": 2,
+              "HitRoll": 71,
+              "HitThreshold": 100,
+              "DodgeRoll": 32,
+              "DodgeThreshold": 12,
+              "CritRoll": 55,
+              "CritThreshold": 20
+            },
+            "BaseDamage": 24,
+            "CritMultiplier": 1,
+            "ResistanceAmount": 12,
+            "CoverReduction": {
+              "TotalReduction": 0,
+              "Providers": []
+            },
+            "FinalDamage": 12,
+            "DefenderHPBefore": 22,
+            "DefenderHPAfter": 10,
+            "WasKilled": false
+          }
+        ],
+        "TotalDamage": 66,
+        "UnitsKilled": 2,
+        "DefenderStatus": {
+          "AliveUnits": 2,
+          "TotalUnits": 4,
+          "AverageHP": 25
+        }
+      },
+      "summary": {
+        "attacker_summaries": [
+          {
+            "unit_id": 152,
+            "unit_name": "Knight",
+            "role": "Tank",
+            "grid_pos": {
+              "row": 0,
+              "col": 0
+            },
+            "targeted_rows": [
+              0
+            ],
+            "targeted_columns": [
+              0,
+              2
+            ],
+            "targeted_cells": [],
+            "target_mode": "MeleeRow",
+            "units_engaged": [
+              {
+                "target_id": 77,
+                "target_name": "Unit_77",
+                "outcome": "HIT",
+                "damage_dealt": 20,
+                "was_killed": false
+              },
+              {
+                "target_id": 80,
+                "target_name": "Unit_80",
+                "outcome": "CRITICAL",
+                "damage_dealt": 29,
+                "was_killed": false
+              }
+            ],
+            "total_attacks": 2,
+            "hits": 2,
+            "misses": 0,
+            "dodges": 0,
+            "criticals": 1,
+            "total_damage": 49,
+            "units_killed": 0,
+            "summary": "Knight: attacked rows 0; HIT Unit_77 for 20, CRITICAL Unit_80 for 29; 2 hit, 1 critical; 49 total damage"
+          },
+          {
+            "unit_id": 153,
+            "unit_name": "Paladin",
+            "role": "Support",
+            "grid_pos": {
+              "row": 0,
+              "col": 1
+            },
+            "targeted_rows": [
+              0
+            ],
+            "targeted_columns": [
+              0,
+              2
+            ],
+            "targeted_cells": [],
+            "target_mode": "MeleeRow",
+            "units_engaged": [
+              {
+                "target_id": 77,
+                "target_name": "Unit_77",
+                "outcome": "HIT",
+                "damage_dealt": 17,
+                "was_killed": true
+              },
+              {
+                "target_id": 80,
+                "target_name": "Unit_80",
+                "outcome": "HIT",
+                "damage_dealt": 15,
+                "was_killed": true
+              }
+            ],
+            "total_attacks": 2,
+            "hits": 2,
+            "misses": 0,
+            "dodges": 0,
+            "criticals": 0,
+            "total_damage": 32,
+            "units_killed": 2,
+            "summary": "Paladin: attacked rows 0; HIT Unit_77 for 17 (killed), HIT Unit_80 for 15 (killed); 2 hit; 32 total damage"
+          },
+          {
+            "unit_id": 154,
+            "unit_name": "Fighter",
+            "role": "Tank",
+            "grid_pos": {
+              "row": 0,
+              "col": 2
+            },
+            "targeted_rows": [
+              2
+            ],
+            "targeted_columns": [
+              2
+            ],
+            "targeted_cells": [],
+            "target_mode": "MeleeColumn",
+            "units_engaged": [
+              {
+                "target_id": 79,
+                "target_name": "Unit_79",
+                "outcome": "HIT",
+                "damage_dealt": 22,
+                "was_killed": false
+              }
+            ],
+            "total_attacks": 1,
+            "hits": 1,
+            "misses": 0,
+            "dodges": 0,
+            "criticals": 0,
+            "total_damage": 22,
+            "units_killed": 0,
+            "summary": "Fighter: attacked rows 2; HIT Unit_79 for 22; 1 hit; 22 total damage"
+          },
+          {
+            "unit_id": 155,
+            "unit_name": "Warrior",
+            "role": "DPS",
+            "grid_pos": {
+              "row": 1,
+              "col": 1
+            },
+            "targeted_rows": [
+              1
+            ],
+            "targeted_columns": [
+              1
+            ],
+            "targeted_cells": [],
+            "target_mode": "MeleeRow",
+            "units_engaged": [
+              {
+                "target_id": 78,
+                "target_name": "Unit_78",
+                "outcome": "HIT",
+                "damage_dealt": 18,
+                "was_killed": false
+              }
+            ],
+            "total_attacks": 1,
+            "hits": 1,
+            "misses": 0,
+            "dodges": 0,
+            "criticals": 0,
+            "total_damage": 18,
+            "units_killed": 0,
+            "summary": "Warrior: attacked rows 1; HIT Unit_78 for 18; 1 hit; 18 total damage"
+          },
+          {
+            "unit_id": 156,
+            "unit_name": "Swordsman",
+            "role": "DPS",
+            "grid_pos": {
+              "row": 2,
+              "col": 1
+            },
+            "targeted_rows": [
+              1
+            ],
+            "targeted_columns": [
+              1
+            ],
+            "targeted_cells": [],
+            "target_mode": "MeleeColumn",
+            "units_engaged": [
+              {
+                "target_id": 78,
+                "target_name": "Unit_78",
+                "outcome": "HIT",
+                "damage_dealt": 12,
+                "was_killed": false
+              }
+            ],
+            "total_attacks": 1,
+            "hits": 1,
+            "misses": 0,
+            "dodges": 0,
+            "criticals": 0,
+            "total_damage": 12,
+            "units_killed": 0,
+            "summary": "Swordsman: attacked rows 1; HIT Unit_78 for 12; 1 hit; 12 total damage"
+          }
+        ],
+        "defender_summaries": []
+      }
+    },
+    {
+      "index": 5,
+      "round": 1,
+      "combat_log": {
+        "AttackerSquadID": 158,
+        "DefenderSquadID": 49,
+        "AttackerSquadName": "Goblin Ranged Squad 1",
+        "DefenderSquadName": "Player Squad 1",
+        "SquadDistance": 4,
+        "AttackingUnits": [
+          {
+            "UnitID": 159,
+            "UnitName": "Marksman",
+            "GridRow": 0,
+            "GridCol": 0,
+            "AttackRange": 4,
+            "RoleName": "DPS"
+          },
+          {
+            "UnitID": 160,
+            "UnitName": "Archer",
+            "GridRow": 1,
+            "GridCol": 1,
+            "AttackRange": 4,
+            "RoleName": "DPS"
+          }
+        ],
+        "DefendingUnits": [
+          {
+            "UnitID": 50,
+            "UnitName": "Knight",
+            "GridRow": 0,
+            "GridCol": 0,
+            "AttackRange": 1,
+            "RoleName": "Tank"
+          },
+          {
+            "UnitID": 51,
+            "UnitName": "Paladin",
+            "GridRow": 0,
+            "GridCol": 1,
+            "AttackRange": 1,
+            "RoleName": "Support"
+          },
+          {
+            "UnitID": 52,
+            "UnitName": "Fighter",
+            "GridRow": 0,
+            "GridCol": 2,
+            "AttackRange": 1,
+            "RoleName": "Tank"
+          },
+          {
+            "UnitID": 53,
+            "UnitName": "Warrior",
+            "GridRow": 1,
+            "GridCol": 1,
+            "AttackRange": 1,
+            "RoleName": "DPS"
+          },
+          {
+            "UnitID": 54,
+            "UnitName": "Swordsman",
+            "GridRow": 2,
+            "GridCol": 1,
+            "AttackRange": 1,
+            "RoleName": "DPS"
+          }
+        ],
+        "AttackEvents": [
+          {
+            "AttackerID": 159,
+            "DefenderID": 50,
+            "AttackIndex": 1,
+            "TargetInfo": {
+              "TargetMode": "Ranged",
+              "TargetRow": 0,
+              "TargetCol": 0
+            },
+            "HitResult": {
+              "Type": 3,
+              "HitRoll": 36,
+              "HitThreshold": 100,
+              "DodgeRoll": 97,
+              "DodgeThreshold": 8,
+              "CritRoll": 20,
+              "CritThreshold": 26
+            },
+            "BaseDamage": 19,
+            "CritMultiplier": 1.5,
+            "ResistanceAmount": 23,
+            "CoverReduction": {
+              "TotalReduction": 0,
+              "Providers": []
+            },
+            "FinalDamage": 5,
+            "DefenderHPBefore": 48,
+            "DefenderHPAfter": 43,
+            "WasKilled": false
+          },
+          {
+            "AttackerID": 159,
+            "DefenderID": 51,
+            "AttackIndex": 2,
+            "TargetInfo": {
+              "TargetMode": "Ranged",
+              "TargetRow": 0,
+              "TargetCol": 1
+            },
+            "HitResult": {
+              "Type": 1,
+              "HitRoll": 77,
+              "HitThreshold": 100,
+              "DodgeRoll": 3,
+              "DodgeThreshold": 7,
+              "CritRoll": 0,
+              "CritThreshold": 0
+            },
+            "BaseDamage": 0,
+            "CritMultiplier": 0,
+            "ResistanceAmount": 0,
+            "CoverReduction": {
+              "TotalReduction": 0,
+              "Providers": null
+            },
+            "FinalDamage": 0,
+            "DefenderHPBefore": 46,
+            "DefenderHPAfter": 0,
+            "WasKilled": false
+          },
+          {
+            "AttackerID": 159,
+            "DefenderID": 52,
+            "AttackIndex": 3,
+            "TargetInfo": {
+              "TargetMode": "Ranged",
+              "TargetRow": 0,
+              "TargetCol": 2
+            },
+            "HitResult": {
+              "Type": 2,
+              "HitRoll": 9,
+              "HitThreshold": 100,
+              "DodgeRoll": 27,
+              "DodgeThreshold": 10,
+              "CritRoll": 72,
+              "CritThreshold": 26
+            },
+            "BaseDamage": 19,
+            "CritMultiplier": 1,
+            "ResistanceAmount": 19,
+            "CoverReduction": {
+              "TotalReduction": 0,
+              "Providers": []
+            },
+            "FinalDamage": 1,
+            "DefenderHPBefore": 50,
+            "DefenderHPAfter": 49,
+            "WasKilled": false
+          },
+          {
+            "AttackerID": 160,
+            "DefenderID": 53,
+            "AttackIndex": 4,
+            "TargetInfo": {
+              "TargetMode": "Ranged",
+              "TargetRow": 1,
+              "TargetCol": 1
+            },
+            "HitResult": {
+              "Type": 3,
+              "HitRoll": 38,
+              "HitThreshold": 100,
+              "DodgeRoll": 54,
+              "DodgeThreshold": 9,
+              "CritRoll": 2,
+              "CritThreshold": 22
+            },
+            "BaseDamage": 17,
+            "CritMultiplier": 1.5,
+            "ResistanceAmount": 18,
+            "CoverReduction": {
+              "TotalReduction": 0.35,
+              "Providers": [
+                {
+                  "UnitID": 51,
+                  "UnitName": "Paladin",
+                  "CoverValue": 0.35,
+                  "GridRow": 0,
+                  "GridCol": 1
+                }
+              ]
+            },
+            "FinalDamage": 4,
+            "DefenderHPBefore": 52,
+            "DefenderHPAfter": 48,
+            "WasKilled": false
+          }
+        ],
+        "TotalDamage": 10,
+        "UnitsKilled": 0,
+        "DefenderStatus": {
+          "AliveUnits": 5,
+          "TotalUnits": 5,
+          "AverageHP": 95
+        }
+      },
+      "summary": {
+        "attacker_summaries": [
+          {
+            "unit_id": 159,
+            "unit_name": "Marksman",
+            "role": "DPS",
+            "grid_pos": {
+              "row": 0,
+              "col": 0
+            },
+            "targeted_rows": [
+              0
+            ],
+            "targeted_columns": [
+              0,
+              1,
+              2
+            ],
+            "targeted_cells": [],
+            "target_mode": "Ranged",
+            "units_engaged": [
+              {
+                "target_id": 52,
+                "target_name": "Unit_52",
+                "outcome": "HIT",
+                "damage_dealt": 1,
+                "was_killed": false
+              },
+              {
+                "target_id": 50,
+                "target_name": "Unit_50",
+                "outcome": "CRITICAL",
+                "damage_dealt": 5,
+                "was_killed": false
+              },
+              {
+                "target_id": 51,
+                "target_name": "Unit_51",
+                "outcome": "DODGE",
+                "damage_dealt": 0,
+                "was_killed": false
+              }
+            ],
+            "total_attacks": 3,
+            "hits": 2,
+            "misses": 0,
+            "dodges": 1,
+            "criticals": 1,
+            "total_damage": 6,
+            "units_killed": 0,
+            "summary": "Marksman: attacked rows 0; HIT Unit_52 for 1, CRITICAL Unit_50 for 5, DODGE Unit_51; 2 hit, 1 critical, 1 dodge; 6 total damage"
+          },
+          {
+            "unit_id": 160,
+            "unit_name": "Archer",
+            "role": "DPS",
+            "grid_pos": {
+              "row": 1,
+              "col": 1
+            },
+            "targeted_rows": [
+              1
+            ],
+            "targeted_columns": [
+              1
+            ],
+            "targeted_cells": [],
+            "target_mode": "Ranged",
+            "units_engaged": [
+              {
+                "target_id": 53,
+                "target_name": "Unit_53",
+                "outcome": "CRITICAL",
+                "damage_dealt": 4,
+                "was_killed": false
+              }
+            ],
+            "total_attacks": 1,
+            "hits": 1,
+            "misses": 0,
+            "dodges": 0,
+            "criticals": 1,
+            "total_damage": 4,
+            "units_killed": 0,
+            "summary": "Archer: attacked rows 1; CRITICAL Unit_53 for 4; 1 hit, 1 critical; 4 total damage"
+          }
+        ],
+        "defender_summaries": []
+      }
+    },
+    {
+      "index": 6,
+      "round": 1,
+      "combat_log": {
+        "AttackerSquadID": 164,
+        "DefenderSquadID": 76,
+        "AttackerSquadName": "Goblin Ranged Squad 2",
+        "DefenderSquadName": "Player Ranged Squad 2",
+        "SquadDistance": 2,
+        "AttackingUnits": [
+          {
+            "UnitID": 165,
+            "UnitName": "Marksman",
+            "GridRow": 0,
+            "GridCol": 0,
+            "AttackRange": 4,
+            "RoleName": "DPS"
+          },
+          {
+            "UnitID": 166,
+            "UnitName": "Marksman",
+            "GridRow": 1,
+            "GridCol": 1,
+            "AttackRange": 4,
+            "RoleName": "DPS"
+          },
+          {
+            "UnitID": 167,
+            "UnitName": "Marksman",
+            "GridRow": 2,
+            "GridCol": 2,
+            "AttackRange": 4,
+            "RoleName": "DPS"
+          }
+        ],
+        "DefendingUnits": [
+          {
+            "UnitID": 77,
+            "UnitName": "Skeleton Archer",
+            "GridRow": 0,
+            "GridCol": 0,
+            "AttackRange": 3,
+            "RoleName": "DPS"
+          },
+          {
+            "UnitID": 78,
+            "UnitName": "Crossbowman",
+            "GridRow": 1,
+            "GridCol": 1,
+            "AttackRange": 3,
+            "RoleName": "DPS"
+          },
+          {
+            "UnitID": 79,
+            "UnitName": "Warlock",
+            "GridRow": 2,
+            "GridCol": 2,
+            "AttackRange": 4,
+            "RoleName": "DPS"
+          },
+          {
+            "UnitID": 80,
+            "UnitName": "Marksman",
+            "GridRow": 0,
+            "GridCol": 2,
+            "AttackRange": 4,
+            "RoleName": "DPS"
+          }
+        ],
+        "AttackEvents": [
+          {
+            "AttackerID": 165,
+            "DefenderID": 79,
+            "AttackIndex": 1,
+            "TargetInfo": {
+              "TargetMode": "Ranged",
+              "TargetRow": 2,
+              "TargetCol": 2
+            },
+            "HitResult": {
+              "Type": 2,
+              "HitRoll": 91,
+              "HitThreshold": 100,
+              "DodgeRoll": 52,
+              "DodgeThreshold": 8,
+              "CritRoll": 39,
+              "CritThreshold": 26
+            },
+            "BaseDamage": 19,
+            "CritMultiplier": 1,
+            "ResistanceAmount": 5,
+            "CoverReduction": {
+              "TotalReduction": 0,
+              "Providers": []
+            },
+            "FinalDamage": 14,
+            "DefenderHPBefore": 8,
+            "DefenderHPAfter": -6,
+            "WasKilled": true
+          },
+          {
+            "AttackerID": 166,
+            "DefenderID": 78,
+            "AttackIndex": 2,
+            "TargetInfo": {
+              "TargetMode": "Ranged",
+              "TargetRow": 1,
+              "TargetCol": 1
+            },
+            "HitResult": {
+              "Type": 3,
+              "HitRoll": 81,
+              "HitThreshold": 100,
+              "DodgeRoll": 94,
+              "DodgeThreshold": 12,
+              "CritRoll": 2,
+              "CritThreshold": 26
+            },
+            "BaseDamage": 19,
+            "CritMultiplier": 1.5,
+            "ResistanceAmount": 12,
+            "CoverReduction": {
+              "TotalReduction": 0,
+              "Providers": []
+            },
+            "FinalDamage": 16,
+            "DefenderHPBefore": 10,
+            "DefenderHPAfter": -6,
+            "WasKilled": true
+          }
+        ],
+        "TotalDamage": 30,
+        "UnitsKilled": 2,
+        "DefenderStatus": {
+          "AliveUnits": 0,
+          "TotalUnits": 4,
+          "AverageHP": 0
+        }
+      },
+      "summary": {
+        "attacker_summaries": [
+          {
+            "unit_id": 165,
+            "unit_name": "Marksman",
+            "role": "DPS",
+            "grid_pos": {
+              "row": 0,
+              "col": 0
+            },
+            "targeted_rows": [
+              2
+            ],
+            "targeted_columns": [
+              2
+            ],
+            "targeted_cells": [],
+            "target_mode": "Ranged",
+            "units_engaged": [
+              {
+                "target_id": 79,
+                "target_name": "Unit_79",
+                "outcome": "HIT",
+                "damage_dealt": 14,
+                "was_killed": true
+              }
+            ],
+            "total_attacks": 1,
+            "hits": 1,
+            "misses": 0,
+            "dodges": 0,
+            "criticals": 0,
+            "total_damage": 14,
+            "units_killed": 1,
+            "summary": "Marksman: attacked rows 2; HIT Unit_79 for 14 (killed); 1 hit; 14 total damage"
+          },
+          {
+            "unit_id": 166,
+            "unit_name": "Marksman",
+            "role": "DPS",
+            "grid_pos": {
+              "row": 1,
+              "col": 1
+            },
+            "targeted_rows": [
+              1
+            ],
+            "targeted_columns": [
+              1
+            ],
+            "targeted_cells": [],
+            "target_mode": "Ranged",
+            "units_engaged": [
+              {
+                "target_id": 78,
+                "target_name": "Unit_78",
+                "outcome": "CRITICAL",
+                "damage_dealt": 16,
+                "was_killed": true
+              }
+            ],
+            "total_attacks": 1,
+            "hits": 1,
+            "misses": 0,
+            "dodges": 0,
+            "criticals": 1,
+            "total_damage": 16,
+            "units_killed": 1,
+            "summary": "Marksman: attacked rows 1; CRITICAL Unit_78 for 16 (killed); 1 hit, 1 critical; 16 total damage"
+          },
+          {
+            "unit_id": 167,
+            "unit_name": "Marksman",
+            "role": "DPS",
+            "grid_pos": {
+              "row": 2,
+              "col": 2
+            },
+            "targeted_rows": [],
+            "targeted_columns": [],
+            "targeted_cells": [],
+            "target_mode": "",
+            "units_engaged": [],
+            "total_attacks": 0,
+            "hits": 0,
+            "misses": 0,
+            "dodges": 0,
+            "criticals": 0,
+            "total_damage": 0,
+            "units_killed": 0,
+            "summary": "Marksman did not attack"
+          }
+        ],
+        "defender_summaries": []
+      }
+    },
+    {
+      "index": 7,
+      "round": 2,
+      "combat_log": {
+        "AttackerSquadID": 70,
+        "DefenderSquadID": 96,
+        "AttackerSquadName": "Player Ranged Squad 1",
+        "DefenderSquadName": "Player 2 Squad 3",
+        "SquadDistance": 2,
+        "AttackingUnits": [
+          {
+            "UnitID": 72,
+            "UnitName": "Sorcerer",
+            "GridRow": 1,
+            "GridCol": 1,
+            "AttackRange": 3,
+            "RoleName": "DPS"
+          },
+          {
+            "UnitID": 73,
+            "UnitName": "Marksman",
+            "GridRow": 2,
+            "GridCol": 2,
+            "AttackRange": 4,
+            "RoleName": "DPS"
+          }
+        ],
+        "DefendingUnits": [
+          {
+            "UnitID": 97,
+            "UnitName": "Knight",
+            "GridRow": 0,
+            "GridCol": 0,
+            "AttackRange": 1,
+            "RoleName": "Tank"
+          },
+          {
+            "UnitID": 98,
+            "UnitName": "Paladin",
+            "GridRow": 0,
+            "GridCol": 1,
+            "AttackRange": 1,
+            "RoleName": "Support"
+          },
+          {
+            "UnitID": 99,
+            "UnitName": "Fighter",
+            "GridRow": 0,
+            "GridCol": 2,
+            "AttackRange": 1,
+            "RoleName": "Tank"
+          },
+          {
+            "UnitID": 100,
+            "UnitName": "Warrior",
+            "GridRow": 1,
+            "GridCol": 1,
+            "AttackRange": 1,
+            "RoleName": "DPS"
+          },
+          {
+            "UnitID": 101,
+            "UnitName": "Swordsman",
+            "GridRow": 2,
+            "GridCol": 1,
+            "AttackRange": 1,
+            "RoleName": "DPS"
+          }
+        ],
+        "AttackEvents": [
+          {
+            "AttackerID": 72,
+            "DefenderID": 97,
+            "AttackIndex": 1,
+            "TargetInfo": {
+              "TargetMode": "Magic",
+              "TargetRow": 0,
+              "TargetCol": 0
+            },
+            "HitResult": {
+              "Type": 2,
+              "HitRoll": 7,
+              "HitThreshold": 100,
+              "DodgeRoll": 31,
+              "DodgeThreshold": 8,
+              "CritRoll": 81,
+              "CritThreshold": 11
+            },
+            "BaseDamage": 8,
+            "CritMultiplier": 1,
+            "ResistanceAmount": 23,
+            "CoverReduction": {
+              "TotalReduction": 0,
+              "Providers": []
+            },
+            "FinalDamage": 1,
+            "DefenderHPBefore": 48,
+            "DefenderHPAfter": 47,
+            "WasKilled": false
+          },
+          {
+            "AttackerID": 72,
+            "DefenderID": 98,
+            "AttackIndex": 2,
+            "TargetInfo": {
+              "TargetMode": "Magic",
+              "TargetRow": 0,
+              "TargetCol": 1
+            },
+            "HitResult": {
+              "Type": 1,
+              "HitRoll": 10,
+              "HitThreshold": 100,
+              "DodgeRoll": 1,
+              "DodgeThreshold": 7,
+              "CritRoll": 0,
+              "CritThreshold": 0
+            },
+            "BaseDamage": 0,
+            "CritMultiplier": 0,
+            "ResistanceAmount": 0,
+            "CoverReduction": {
+              "TotalReduction": 0,
+              "Providers": null
+            },
+            "FinalDamage": 0,
+            "DefenderHPBefore": 46,
+            "DefenderHPAfter": 0,
+            "WasKilled": false
+          },
+          {
+            "AttackerID": 72,
+            "DefenderID": 99,
+            "AttackIndex": 3,
+            "TargetInfo": {
+              "TargetMode": "Magic",
+              "TargetRow": 0,
+              "TargetCol": 2
+            },
+            "HitResult": {
+              "Type": 2,
+              "HitRoll": 56,
+              "HitThreshold": 100,
+              "DodgeRoll": 84,
+              "DodgeThreshold": 10,
+              "CritRoll": 43,
+              "CritThreshold": 11
+            },
+            "BaseDamage": 8,
+            "CritMultiplier": 1,
+            "ResistanceAmount": 19,
+            "CoverReduction": {
+              "TotalReduction": 0,
+              "Providers": []
+            },
+            "FinalDamage": 1,
+            "DefenderHPBefore": 50,
+            "DefenderHPAfter": 49,
+            "WasKilled": false
+          },
+          {
+            "AttackerID": 72,
+            "DefenderID": 100,
+            "AttackIndex": 4,
+            "TargetInfo": {
+              "TargetMode": "Magic",
+              "TargetRow": 1,
+              "TargetCol": 1
+            },
+            "HitResult": {
+              "Type": 2,
+              "HitRoll": 18,
+              "HitThreshold": 100,
+              "DodgeRoll": 43,
+              "DodgeThreshold": 9,
+              "CritRoll": 90,
+              "CritThreshold": 11
+            },
+            "BaseDamage": 8,
+            "CritMultiplier": 1,
+            "ResistanceAmount": 18,
+            "CoverReduction": {
+              "TotalReduction": 0.35,
+              "Providers": [
+                {
+                  "UnitID": 98,
+                  "UnitName": "Paladin",
+                  "CoverValue": 0.35,
+                  "GridRow": 0,
+                  "GridCol": 1
+                }
+              ]
+            },
+            "FinalDamage": 1,
+            "DefenderHPBefore": 52,
+            "DefenderHPAfter": 51,
+            "WasKilled": false
+          },
+          {
+            "AttackerID": 72,
+            "DefenderID": 101,
+            "AttackIndex": 5,
+            "TargetInfo": {
+              "TargetMode": "Magic",
+              "TargetRow": 2,
+              "TargetCol": 1
+            },
+            "HitResult": {
+              "Type": 2,
+              "HitRoll": 37,
+              "HitThreshold": 100,
+              "DodgeRoll": 74,
+              "DodgeThreshold": 13,
+              "CritRoll": 83,
+              "CritThreshold": 11
+            },
+            "BaseDamage": 8,
+            "CritMultiplier": 1,
+            "ResistanceAmount": 13,
+            "CoverReduction": {
+              "TotalReduction": 0,
+              "Providers": []
+            },
+            "FinalDamage": 1,
+            "DefenderHPBefore": 44,
+            "DefenderHPAfter": 43,
+            "WasKilled": false
+          },
+          {
+            "AttackerID": 73,
+            "DefenderID": 101,
+            "AttackIndex": 6,
+            "TargetInfo": {
+              "TargetMode": "Ranged",
+              "TargetRow": 2,
+              "TargetCol": 1
+            },
+            "HitResult": {
+              "Type": 2,
+              "HitRoll": 1,
+              "HitThreshold": 100,
+              "DodgeRoll": 88,
+              "DodgeThreshold": 13,
+              "CritRoll": 43,
+              "CritThreshold": 26
+            },
+            "BaseDamage": 19,
+            "CritMultiplier": 1,
+            "ResistanceAmount": 13,
+            "CoverReduction": {
+              "TotalReduction": 0,
+              "Providers": []
+            },
+            "FinalDamage": 6,
+            "DefenderHPBefore": 43,
+            "DefenderHPAfter": 37,
+            "WasKilled": false
+          }
+        ],
+        "TotalDamage": 9,
+        "UnitsKilled": 0,
+        "DefenderStatus": {
+          "AliveUnits": 5,
+          "TotalUnits": 5,
+          "AverageHP": 95
+        }
+      },
+      "summary": {
+        "attacker_summaries": [
+          {
+            "unit_id": 72,
+            "unit_name": "Sorcerer",
+            "role": "DPS",
+            "grid_pos": {
+              "row": 1,
+              "col": 1
+            },
+            "targeted_rows": [
+              0,
+              1,
+              2
+            ],
+            "targeted_columns": [
+              0,
+              1,
+              2
+            ],
+            "targeted_cells": [
+              {
+                "row": 2,
+                "col": 1
+              },
+              {
+                "row": 0,
+                "col": 0
+              },
+              {
+                "row": 0,
+                "col": 1
+              },
+              {
+                "row": 0,
+                "col": 2
+              },
+              {
+                "row": 1,
+                "col": 1
+              }
+            ],
+            "target_mode": "Magic",
+            "units_engaged": [
+              {
+                "target_id": 99,
+                "target_name": "Unit_99",
+                "outcome": "HIT",
+                "damage_dealt": 1,
+                "was_killed": false
+              },
+              {
+                "target_id": 100,
+                "target_name": "Unit_100",
+                "outcome": "HIT",
+                "damage_dealt": 1,
+                "was_killed": false
+              },
+              {
+                "target_id": 101,
+                "target_name": "Unit_101",
+                "outcome": "HIT",
+                "damage_dealt": 1,
+                "was_killed": false
+              },
+              {
+                "target_id": 97,
+                "target_name": "Unit_97",
+                "outcome": "HIT",
+                "damage_dealt": 1,
+                "was_killed": false
+              },
+              {
+                "target_id": 98,
+                "target_name": "Unit_98",
+                "outcome": "DODGE",
+                "damage_dealt": 0,
+                "was_killed": false
+              }
+            ],
+            "total_attacks": 5,
+            "hits": 4,
+            "misses": 0,
+            "dodges": 1,
+            "criticals": 0,
+            "total_damage": 4,
+            "units_killed": 0,
+            "summary": "Sorcerer: attacked rows 0,1,2; HIT Unit_99 for 1, HIT Unit_100 for 1, HIT Unit_101 for 1, HIT Unit_97 for 1, DODGE Unit_98; 4 hit, 1 dodge; 4 total damage"
+          },
+          {
+            "unit_id": 73,
+            "unit_name": "Marksman",
+            "role": "DPS",
+            "grid_pos": {
+              "row": 2,
+              "col": 2
+            },
+            "targeted_rows": [
+              2
+            ],
+            "targeted_columns": [
+              1
+            ],
+            "targeted_cells": [],
+            "target_mode": "Ranged",
+            "units_engaged": [
+              {
+                "target_id": 101,
+                "target_name": "Unit_101",
+                "outcome": "HIT",
+                "damage_dealt": 6,
+                "was_killed": false
+              }
+            ],
+            "total_attacks": 1,
+            "hits": 1,
+            "misses": 0,
+            "dodges": 0,
+            "criticals": 0,
+            "total_damage": 6,
+            "units_killed": 0,
+            "summary": "Marksman: attacked rows 2; HIT Unit_101 for 6; 1 hit; 6 total damage"
+          }
+        ],
+        "defender_summaries": []
+      }
+    }
+  ]
+}

@@ -11,6 +11,7 @@ import (
 	"game_main/gui/guiresources"
 	"game_main/gui/widgets"
 	"game_main/tactical/behavior"
+	"game_main/tactical/combat"
 	"game_main/tactical/combatservices"
 	"game_main/world/coords"
 	"game_main/world/worldmap"
@@ -412,6 +413,11 @@ func (cm *CombatMode) handleEndTurn() {
 	currentFactionID := cm.combatService.TurnManager.GetCurrentFaction()
 	round := cm.combatService.TurnManager.GetCurrentRound()
 
+	// Update battle recorder with current round
+	if cm.combatService.BattleRecorder != nil && cm.combatService.BattleRecorder.IsEnabled() {
+		cm.combatService.BattleRecorder.SetCurrentRound(round)
+	}
+
 	// Get faction data for player name
 	factionData := cm.Queries.CombatCache.FindFactionDataByID(currentFactionID, cm.Queries.ECSManager)
 	factionName := "Unknown"
@@ -567,6 +573,11 @@ func (cm *CombatMode) advanceAfterAITurn() {
 	newFactionID := cm.combatService.TurnManager.GetCurrentFaction()
 	round := cm.combatService.TurnManager.GetCurrentRound()
 
+	// Update battle recorder with current round
+	if cm.combatService.BattleRecorder != nil && cm.combatService.BattleRecorder.IsEnabled() {
+		cm.combatService.BattleRecorder.SetCurrentRound(round)
+	}
+
 	newFactionData := cm.Queries.CombatCache.FindFactionDataByID(newFactionID, cm.Queries.ECSManager)
 	if newFactionData != nil {
 		turnMessage := ""
@@ -601,6 +612,13 @@ func (cm *CombatMode) Enter(fromMode core.UIMode) error {
 		// Fresh combat start - initialize everything
 		cm.logManager.UpdateTextArea(cm.combatLogArea, "=== COMBAT STARTED ===")
 
+		// Start battle recording if enabled
+		if config.ENABLE_COMBAT_LOG_EXPORT && cm.combatService.BattleRecorder != nil {
+			cm.combatService.BattleRecorder.SetEnabled(true)
+			cm.combatService.BattleRecorder.Start()
+			cm.combatService.BattleRecorder.SetCurrentRound(1)
+		}
+
 		// Enter new mode
 		if cm.initialzieCombatFactions() != nil {
 			return fmt.Errorf("Error initializing combat factions")
@@ -621,6 +639,23 @@ func (cm *CombatMode) Enter(fromMode core.UIMode) error {
 
 func (cm *CombatMode) Exit(toMode core.UIMode) error {
 	fmt.Println("Exiting Combat Mode")
+
+	// Export battle log when leaving combat (not to animation mode)
+	isToAnimation := toMode != nil && toMode.GetModeName() == "combat_animation"
+	if !isToAnimation && config.ENABLE_COMBAT_LOG_EXPORT && cm.combatService.BattleRecorder != nil && cm.combatService.BattleRecorder.IsEnabled() {
+		victor := cm.combatService.CheckVictoryCondition()
+		victoryInfo := &combat.VictoryInfo{
+			RoundsCompleted: victor.RoundsCompleted,
+			VictorFaction:   victor.VictorFaction,
+			VictorName:      victor.VictorName,
+		}
+		record := cm.combatService.BattleRecorder.Finalize(victoryInfo)
+		if err := combat.ExportBattleJSON(record, config.COMBAT_LOG_EXPORT_DIR); err != nil {
+			fmt.Printf("Failed to export combat log: %v\n", err)
+		}
+		cm.combatService.BattleRecorder.Clear()
+		cm.combatService.BattleRecorder.SetEnabled(false)
+	}
 
 	// Clear danger visualization
 	if cm.dangerVisualizer != nil {
