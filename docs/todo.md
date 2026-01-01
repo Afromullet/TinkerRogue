@@ -7,7 +7,9 @@ __________________________________________
 - Remove Unused GUI elements and GUI elements you ddont want
 
 
+### Combat - Important ###
 
+- Handle a unit dying correctly. Currently, it still stays in the squad
 
 
 ________________________________________________
