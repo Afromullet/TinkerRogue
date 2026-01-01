@@ -700,8 +700,23 @@ func calculateUnitDamageByID(attackerID, defenderID ecs.EntityID, squadmanager *
 		return 0, event
 	}
 
-	// Calculate base damage
-	baseDamage := attackerAttr.GetPhysicalDamage()
+	// Get attacker's attack type to determine damage formula
+	attackerTargetData := common.GetComponentTypeByID[*TargetRowData](squadmanager, attackerID, TargetRowComponent)
+
+	// Calculate base damage based on attack type
+	var baseDamage int
+	var resistance int
+
+	if attackerTargetData != nil && attackerTargetData.AttackType == AttackTypeMagic {
+		// Magic damage path
+		baseDamage = attackerAttr.GetMagicDamage()
+		resistance = defenderAttr.GetMagicDefense()
+	} else {
+		// Physical damage path (Melee, Ranged, or fallback)
+		baseDamage = attackerAttr.GetPhysicalDamage()
+		resistance = defenderAttr.GetPhysicalResistance()
+	}
+
 	event.BaseDamage = baseDamage
 	event.CritMultiplier = 1.0
 
@@ -719,8 +734,7 @@ func calculateUnitDamageByID(attackerID, defenderID ecs.EntityID, squadmanager *
 		event.HitResult.Type = HitTypeNormal
 	}
 
-	// Apply resistance
-	resistance := defenderAttr.GetPhysicalResistance()
+	// Apply resistance (now type-appropriate)
 	event.ResistanceAmount = resistance
 	totalDamage := baseDamage - resistance
 	if totalDamage < 1 {

@@ -70,12 +70,12 @@
       "name": "Warrior",
       "imgname": "fire_giant.png",
       "attributes": {
-        "strength": 16,
+        "strength": 12,
         "dexterity": 28,
         "magic": 0,
         "leadership": 15,
         "armor": 7,
-        "weapon": 11
+        "weapon": 9
       },
       "width": 1,
       "height": 1,
@@ -290,11 +290,11 @@
       "name": "Wizard",
       "imgname": "entropy_weaver.png",
       "attributes": {
-        "strength": 3,
+        "strength": 10,
         "dexterity": 20,
         "magic": 15,
         "leadership": 25,
-        "armor": 1,
+        "armor": 3,
         "weapon": 2
       },
       "width": 1,
@@ -312,11 +312,11 @@
       "name": "Sorcerer",
       "imgname": "deep_elf_priest.png",
       "attributes": {
-        "strength": 4,
+        "strength": 11,
         "dexterity": 22,
         "magic": 14,
         "leadership": 18,
-        "armor": 1,
+        "armor": 3,
         "weapon": 3
       },
       "width": 1,
@@ -334,11 +334,11 @@
       "name": "Mage",
       "imgname": "deep_elf_sorcerer.png",
       "attributes": {
-        "strength": 4,
+        "strength": 12,
         "dexterity": 18,
         "magic": 13,
         "leadership": 20,
-        "armor": 2,
+        "armor": 4,
         "weapon": 2
       },
       "width": 1,

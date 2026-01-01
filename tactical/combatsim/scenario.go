@@ -70,6 +70,28 @@ func (b *ScenarioBuilder) WithDistance(distance int) *ScenarioBuilder {
 	return b
 }
 
+// WithFormation applies the formation template to both attacker and defender squads
+func (b *ScenarioBuilder) WithFormation(formType FormationType) *ScenarioBuilder {
+	template := GetFormationTemplate(formType)
+	b.scenario.AttackerSetup.Units = ApplyFormationToSquad(b.scenario.AttackerSetup.Units, template)
+	b.scenario.DefenderSetup.Units = ApplyFormationToSquad(b.scenario.DefenderSetup.Units, template)
+	return b
+}
+
+// WithAttackerFormation applies the formation template to the attacker squad only
+func (b *ScenarioBuilder) WithAttackerFormation(formType FormationType) *ScenarioBuilder {
+	template := GetFormationTemplate(formType)
+	b.scenario.AttackerSetup.Units = ApplyFormationToSquad(b.scenario.AttackerSetup.Units, template)
+	return b
+}
+
+// WithDefenderFormation applies the formation template to the defender squad only
+func (b *ScenarioBuilder) WithDefenderFormation(formType FormationType) *ScenarioBuilder {
+	template := GetFormationTemplate(formType)
+	b.scenario.DefenderSetup.Units = ApplyFormationToSquad(b.scenario.DefenderSetup.Units, template)
+	return b
+}
+
 // Build creates the final scenario
 func (b *ScenarioBuilder) Build() CombatScenario {
 	if b.scenario.Name == "" {

@@ -400,6 +400,139 @@ func TestCalculateUnitDamageByID_NilUnitsReturnZero(t *testing.T) {
 }
 
 // ========================================
+// MAGIC DAMAGE TESTS
+// ========================================
+
+func TestCalculateUnitDamageByID_MagicDamageUsesMagicFormula(t *testing.T) {
+	manager := setupTestManager(t)
+
+	squadID := createTestSquad(manager, "TestSquad")
+
+	// Create magic attacker: Magic=15, Strength=3, Weapon=2
+	attacker := manager.World.NewEntity()
+	attacker.AddComponent(SquadMemberComponent, &SquadMemberData{SquadID: squadID})
+	attacker.AddComponent(GridPositionComponent, &GridPositionData{AnchorRow: 0, AnchorCol: 0, Width: 1, Height: 1})
+	attacker.AddComponent(common.NameComponent, &common.Name{NameStr: "Wizard"})
+
+	attackerAttr := common.NewAttributes(3, 100, 15, 0, 1, 2) // High dex for guaranteed hit
+	attackerAttr.CurrentHealth = 100
+	attacker.AddComponent(common.AttributeComponent, &attackerAttr)
+
+	// Set attack type to Magic
+	attacker.AddComponent(TargetRowComponent, &TargetRowData{
+		AttackType:  AttackTypeMagic,
+		TargetCells: [][2]int{{0, 0}},
+	})
+	attacker.AddComponent(AttackRangeComponent, &AttackRangeData{Range: 4})
+
+	// Create defender with low magic defense
+	defender := manager.World.NewEntity()
+	defender.AddComponent(SquadMemberComponent, &SquadMemberData{SquadID: squadID})
+	defender.AddComponent(GridPositionComponent, &GridPositionData{AnchorRow: 0, AnchorCol: 1, Width: 1, Height: 1})
+	defender.AddComponent(common.NameComponent, &common.Name{NameStr: "Fighter"})
+
+	defenderAttr := common.NewAttributes(10, 0, 0, 0, 2, 10) // Magic=0, so MagicDefense=0
+	defenderAttr.CurrentHealth = 100
+	defender.AddComponent(common.AttributeComponent, &defenderAttr)
+
+	damage, event := calculateUnitDamageByID(attacker.GetID(), defender.GetID(), manager)
+
+	// Verify magic damage formula was used
+	// Magic=15 → GetMagicDamage() = 45
+	// Defender MagicDefense = 0/2 = 0
+	// Expected: 45 - 0 = 45 (or 45*1.5=67 if crit)
+
+	if event.HitResult.Type != HitTypeMiss && event.HitResult.Type != HitTypeDodge {
+		expectedBaseDamage := attackerAttr.GetMagicDamage() // Should be 45
+		if event.BaseDamage != expectedBaseDamage {
+			t.Errorf("Expected base damage %d (Magic*3), got %d", expectedBaseDamage, event.BaseDamage)
+		}
+
+		// Verify NOT using physical formula
+		physicalDamage := attackerAttr.GetPhysicalDamage() // Would be (3/2) + (2*2) = 5
+		if event.BaseDamage == physicalDamage {
+			t.Error("Magic attacker incorrectly using physical damage formula")
+		}
+
+		t.Logf("Magic attacker dealt %d damage (base: %d, type: %s)", damage, event.BaseDamage, event.HitResult.Type)
+	}
+}
+
+func TestCalculateUnitDamageByID_PhysicalAttackersUnchanged(t *testing.T) {
+	manager := setupTestManager(t)
+
+	squadID := createTestSquad(manager, "TestSquad")
+	attacker := createTestUnit(manager, squadID, 0, 0, 100, 20, 100) // Physical unit
+	defender := createTestUnit(manager, squadID, 0, 1, 100, 10, 0)
+
+	attackerAttr := common.GetComponentType[*common.Attributes](attacker, common.AttributeComponent)
+
+	damage, event := calculateUnitDamageByID(attacker.GetID(), defender.GetID(), manager)
+
+	// Verify physical damage formula is still used
+	if event.HitResult.Type != HitTypeMiss && event.HitResult.Type != HitTypeDodge {
+		expectedBaseDamage := attackerAttr.GetPhysicalDamage()
+		if event.BaseDamage != expectedBaseDamage {
+			t.Errorf("Physical attacker should use physical damage formula. Expected base %d, got %d",
+				expectedBaseDamage, event.BaseDamage)
+		}
+
+		t.Logf("Physical attacker dealt %d damage (base: %d, type: %s)", damage, event.BaseDamage, event.HitResult.Type)
+	}
+}
+
+func TestCalculateUnitDamageByID_MagicDefenseApplied(t *testing.T) {
+	manager := setupTestManager(t)
+
+	squadID := createTestSquad(manager, "TestSquad")
+
+	// Create magic attacker: Wizard with Magic=15
+	attacker := manager.World.NewEntity()
+	attacker.AddComponent(SquadMemberComponent, &SquadMemberData{SquadID: squadID})
+	attacker.AddComponent(GridPositionComponent, &GridPositionData{AnchorRow: 0, AnchorCol: 0, Width: 1, Height: 1})
+	attacker.AddComponent(common.NameComponent, &common.Name{NameStr: "Wizard"})
+
+	attackerAttr := common.NewAttributes(3, 100, 15, 0, 1, 2) // High dex for guaranteed hit
+	attackerAttr.CurrentHealth = 100
+	attacker.AddComponent(common.AttributeComponent, &attackerAttr)
+
+	attacker.AddComponent(TargetRowComponent, &TargetRowData{
+		AttackType:  AttackTypeMagic,
+		TargetCells: [][2]int{{0, 0}},
+	})
+	attacker.AddComponent(AttackRangeComponent, &AttackRangeData{Range: 4})
+
+	// Create magic defender: Sorcerer with Magic=14
+	defender := manager.World.NewEntity()
+	defender.AddComponent(SquadMemberComponent, &SquadMemberData{SquadID: squadID})
+	defender.AddComponent(GridPositionComponent, &GridPositionData{AnchorRow: 0, AnchorCol: 1, Width: 1, Height: 1})
+	defender.AddComponent(common.NameComponent, &common.Name{NameStr: "Sorcerer"})
+
+	defenderAttr := common.NewAttributes(4, 0, 14, 0, 1, 3) // Magic=14, so MagicDefense=7
+	defenderAttr.CurrentHealth = 100
+	defender.AddComponent(common.AttributeComponent, &defenderAttr)
+
+	_, event := calculateUnitDamageByID(attacker.GetID(), defender.GetID(), manager)
+
+	// Verify magic defense was used (not physical resistance)
+	if event.HitResult.Type != HitTypeMiss && event.HitResult.Type != HitTypeDodge {
+		expectedMagicDefense := defenderAttr.GetMagicDefense() // Should be 7
+		if event.ResistanceAmount != expectedMagicDefense {
+			t.Errorf("Expected magic defense %d, got resistance %d", expectedMagicDefense, event.ResistanceAmount)
+		}
+
+		// Verify NOT using physical resistance
+		physicalResistance := defenderAttr.GetPhysicalResistance()
+		if event.ResistanceAmount == physicalResistance {
+			t.Error("Magic attack incorrectly using physical resistance instead of magic defense")
+		}
+
+		t.Logf("Magic vs Magic: Base damage %d, Magic defense %d, Final damage %d",
+			event.BaseDamage, event.ResistanceAmount, event.FinalDamage)
+	}
+}
+
+// ========================================
 // COVER SYSTEM TESTS
 // ========================================
 
