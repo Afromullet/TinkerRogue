@@ -1,4 +1,18 @@
 __________________________________________
+### Update to Gamepay ###
+
+We need to expand on gameplay.
+
+1) Currently, once the game launches, the two main modes are exploration mode and combat mode.
+2) I want to expand this. In Exploration mode, the player travels through the world. There are random units placed on the map. They can engage in combat with them.
+
+
+For now, let's just start with the basics. The map as it currently is works fine for the overworld. What we need is the map with a few units placed on it. Once we walk into the unit, combat starts. That's when the squads are placed. For this part, we still want to use the current squad placement mode in gameplayfactions.go
+
+What I need is:
+
+1) An overworld section. Just the player avatr moves like it currently does. The same GUI as we see in exploration mode
+2) Once we walk into a unit, combat mode starts. And then the combatmode gui comes into play. That's when the units get placed. For now, we use the placement from gameplafactions.go
 
 # # # **IMPORTANT** # # # 
 
