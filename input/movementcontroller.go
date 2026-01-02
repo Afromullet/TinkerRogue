@@ -1,31 +1,37 @@
 package input
 
 import (
+	"fmt"
 	"game_main/common"
 	"game_main/gear"
+	"game_main/gui/core"
 	"game_main/visual/graphics"
 	"game_main/visual/rendering"
 	"game_main/world/coords"
+	"game_main/world/encounter"
 	"game_main/world/worldmap"
 
+	"github.com/bytearena/ecs"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 )
 
 type MovementController struct {
-	ecsManager  *common.EntityManager
-	playerData  *common.PlayerData
-	gameMap     *worldmap.GameMap
-	sharedState *SharedInputState
+	ecsManager      *common.EntityManager
+	playerData      *common.PlayerData
+	gameMap         *worldmap.GameMap
+	modeCoordinator *core.GameModeCoordinator
+	sharedState     *SharedInputState
 }
 
 func NewMovementController(ecsManager *common.EntityManager, playerData *common.PlayerData,
-	gameMap *worldmap.GameMap, sharedState *SharedInputState) *MovementController {
+	gameMap *worldmap.GameMap, coordinator *core.GameModeCoordinator, sharedState *SharedInputState) *MovementController {
 	return &MovementController{
-		ecsManager:  ecsManager,
-		playerData:  playerData,
-		gameMap:     gameMap,
-		sharedState: sharedState,
+		ecsManager:      ecsManager,
+		playerData:      playerData,
+		gameMap:         gameMap,
+		modeCoordinator: coordinator,
+		sharedState:     sharedState,
 	}
 }
 
@@ -144,6 +150,13 @@ func (mc *MovementController) movePlayer(xOffset, yOffset int) {
 
 		mc.playerData.Pos.X = nextPosition.X
 		mc.playerData.Pos.Y = nextPosition.Y
+
+		// Check if player stepped on an encounter
+		encounterID := encounter.CheckEncounterAtPosition(mc.ecsManager, nextLogicalPos)
+		if encounterID != 0 {
+			mc.handleEncounterCollision(encounterID)
+		}
+
 		nextTile.Blocked = true
 		oldTile.Blocked = false
 	} else {
@@ -173,4 +186,34 @@ func (mc *MovementController) highlightCurrentTile() {
 	logicalPos := coords.LogicalPosition{X: mc.playerData.Pos.X, Y: mc.playerData.Pos.Y}
 	ind := coords.CoordManager.LogicalToIndex(logicalPos)
 	mc.gameMap.ApplyColorMatrixToIndex(ind, graphics.GreenColorMatrix)
+}
+
+// handleEncounterCollision triggers combat when player walks onto an encounter
+func (mc *MovementController) handleEncounterCollision(encounterID ecs.EntityID) {
+	// Get encounter details
+	entity := mc.ecsManager.FindEntityByID(encounterID)
+	if entity == nil {
+		return
+	}
+
+	encounterData := common.GetComponentType[*encounter.OverworldEncounterData](
+		entity,
+		encounter.OverworldEncounterComponent,
+	)
+
+	if encounterData == nil || encounterData.IsDefeated {
+		return
+	}
+
+	// Log encounter trigger
+	fmt.Printf("Player encountered: %s (Level %d)\n", encounterData.Name, encounterData.Level)
+
+	// Store encounter ID in BattleMapState and transition to combat
+	if mc.modeCoordinator != nil {
+		battleMapState := mc.modeCoordinator.GetBattleMapState()
+		battleMapState.TriggeredEncounterID = encounterID
+
+		// Transition to combat mode
+		mc.modeCoordinator.EnterBattleMap("combat")
+	}
 }

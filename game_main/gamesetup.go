@@ -20,6 +20,7 @@ import (
 	"game_main/tactical/combat"
 	"game_main/testing"
 	"game_main/visual/rendering"
+	"game_main/world/encounter"
 	"game_main/world/worldmap"
 	"log"
 	"net/http"
@@ -84,7 +85,7 @@ func (gb *GameBootstrap) SetupDebugContent(em *common.EntityManager, gm *worldma
 	testing.UpdateContentsForTest(em, gm)
 }
 
-// InitializeGameplay sets up squad system and gameplay factions.
+// InitializeGameplay sets up squad system and exploration squads.
 // Phase 5: Depends on CreatePlayer for faction positioning.
 func (gb *GameBootstrap) InitializeGameplay(em *common.EntityManager, pd *common.PlayerData) {
 	// Initialize squad system
@@ -92,10 +93,8 @@ func (gb *GameBootstrap) InitializeGameplay(em *common.EntityManager, pd *common
 		log.Fatalf("Failed to initialize squad system: %v", err)
 	}
 
-	// Setup gameplay factions and squads
-	if err := SetupGameplayFactions(em, pd); err != nil {
-		log.Fatalf("Failed to setup gameplay factions: %v", err)
-	}
+	// Spawn test encounters on overworld
+	encounter.SpawnTestEncounters(em, *pd.Pos)
 }
 
 // SetupNewGame orchestrates game initialization through explicit phases.
@@ -144,6 +143,7 @@ func SetupSquadSystem(manager *common.EntityManager) error {
 
 // SetupGameplayFactions creates two factions with squads for gameplay testing.
 // This sets up player and AI factions with 3 squads each positioned on the map.
+// NOTE: This is now called ONLY when entering combat mode, not during game initialization
 func SetupGameplayFactions(manager *common.EntityManager, playerData *common.PlayerData) error {
 	return combat.SetupGameplayFactions(manager, *playerData.Pos)
 }
@@ -221,8 +221,8 @@ func SetupUI(g *Game) {
 // SetupInputCoordinator initializes the input handling system.
 // Must be called after UI is created.
 func SetupInputCoordinator(g *Game) {
-	// InputCoordinator now works without PlayerUI reference
-	g.inputCoordinator = input.NewInputCoordinator(&g.em, &g.playerData, &g.gameMap, nil)
+	// Pass ModeCoordinator so MovementController can trigger encounters
+	g.inputCoordinator = input.NewInputCoordinator(&g.em, &g.playerData, &g.gameMap, g.gameModeCoordinator)
 }
 
 // registerBattleMapModes registers all battle map UI modes with the coordinator.

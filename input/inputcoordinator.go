@@ -5,6 +5,7 @@ package input
 
 import (
 	"game_main/common"
+	"game_main/gui/core"
 	"game_main/world/coords"
 	"game_main/world/worldmap"
 )
@@ -46,12 +47,12 @@ type InputCoordinator struct {
 }
 
 func NewInputCoordinator(ecsManager *common.EntityManager, playerData *common.PlayerData,
-	gameMap *worldmap.GameMap, dummyUI interface{}) *InputCoordinator {
+	gameMap *worldmap.GameMap, coordinator interface{}) *InputCoordinator {
 
 	sharedState := NewSharedInputState()
 
 	return &InputCoordinator{
-		movementController: NewMovementController(ecsManager, playerData, gameMap, sharedState),
+		movementController: NewMovementController(ecsManager, playerData, gameMap, coordinator.(*core.GameModeCoordinator), sharedState),
 		combatController:   NewCombatController(ecsManager, playerData, gameMap, sharedState),
 		uiController:       NewUIController(playerData, sharedState),
 		sharedState:        sharedState,

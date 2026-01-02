@@ -51,6 +51,9 @@ type BattleMapState struct {
 	// UI Mode Flags
 	InAttackMode bool // Whether attack mode is active
 	InMoveMode   bool // Whether movement mode is active
+
+	// Encounter Tracking
+	TriggeredEncounterID ecs.EntityID // Encounter that triggered this combat (0 if none)
 }
 
 // NewBattleMapState creates a default battle map state
@@ -63,6 +66,9 @@ func NewBattleMapState() *BattleMapState {
 		// UI Mode Flags
 		InAttackMode: false,
 		InMoveMode:   false,
+
+		// Encounter Tracking
+		TriggeredEncounterID: ecs.EntityID(0),
 	}
 }
 
@@ -75,4 +81,7 @@ func (bms *BattleMapState) Reset() {
 	// Clear UI mode flags
 	bms.InAttackMode = false
 	bms.InMoveMode = false
+
+	// Clear encounter tracking
+	bms.TriggeredEncounterID = ecs.EntityID(0)
 }

@@ -2,6 +2,7 @@ package guicombat
 
 import (
 	"fmt"
+	"game_main/common"
 	"game_main/config"
 	"game_main/gui"
 	"game_main/gui/builders"
@@ -11,9 +12,12 @@ import (
 	"game_main/gui/guiresources"
 	"game_main/gui/widgets"
 	"game_main/tactical/behavior"
+	"game_main/tactical/combat"
 	"game_main/tactical/combat/battlelog"
 	"game_main/tactical/combatservices"
+	"game_main/tactical/squads"
 	"game_main/world/coords"
+	"game_main/world/encounter"
 	"game_main/world/worldmap"
 
 	"github.com/bytearena/ecs"
@@ -64,6 +68,9 @@ type CombatMode struct {
 	// State tracking for UI updates (GUI_PERFORMANCE_ANALYSIS.md)
 	lastFactionID     ecs.EntityID
 	lastSelectedSquad ecs.EntityID
+
+	// Encounter tracking
+	currentEncounterID ecs.EntityID // Tracks which encounter triggered this combat
 }
 
 func NewCombatMode(modeManager *core.UIModeManager) *CombatMode {
@@ -390,6 +397,9 @@ func (cm *CombatMode) makeCurrentFactionSquadFilter() guicomponents.SquadFilter 
 }
 
 func (cm *CombatMode) handleFlee() {
+	cm.logManager.UpdateTextArea(cm.combatLogArea, "Fleeing from combat...")
+
+	// Return to exploration mode (stays in BattleMap context)
 	if exploreMode, exists := cm.ModeManager.GetMode("exploration"); exists {
 		cm.ModeManager.RequestTransition(exploreMode, "Fled from combat")
 	}
@@ -599,6 +609,47 @@ func (cm *CombatMode) advanceAfterAITurn() {
 	cm.executeAITurnIfNeeded()
 }
 
+func (cm *CombatMode) SetupEncounter(fromMode core.UIMode) error {
+
+	cm.logManager.UpdateTextArea(cm.combatLogArea, "Fresh combat encounter - spawning entities")
+
+	// Get encounter ID from BattleMapState
+	if cm.Context.ModeCoordinator != nil {
+		battleMapState := cm.Context.ModeCoordinator.GetBattleMapState()
+		cm.currentEncounterID = battleMapState.TriggeredEncounterID
+
+		// Log encounter info if available
+		if cm.currentEncounterID != 0 {
+			entity := cm.Context.ECSManager.FindEntityByID(cm.currentEncounterID)
+			if entity != nil {
+				encounterData := common.GetComponentType[*encounter.OverworldEncounterData](
+					entity,
+					encounter.OverworldEncounterComponent,
+				)
+				if encounterData != nil {
+					cm.logManager.UpdateTextArea(cm.combatLogArea,
+						fmt.Sprintf("Encounter: %s (Level %d)", encounterData.Name, encounterData.Level))
+				}
+			}
+		}
+	}
+
+	// Get player start position for squad spawning
+	playerStartPos := coords.LogicalPosition{X: 50, Y: 40}
+	if cm.Context.PlayerData != nil && cm.Context.PlayerData.Pos != nil {
+		playerStartPos = *cm.Context.PlayerData.Pos
+	}
+
+	// Call SetupGameplayFactions to create combat entities
+	if err := combat.SetupGameplayFactions(cm.Context.ECSManager, playerStartPos); err != nil {
+		cm.logManager.UpdateTextArea(cm.combatLogArea, fmt.Sprintf("Error spawning combat entities: %v", err))
+		return fmt.Errorf("failed to setup gameplay factions: %w", err)
+	}
+
+	return nil
+
+}
+
 func (cm *CombatMode) Enter(fromMode core.UIMode) error {
 	fmt.Println("Entering Combat Mode")
 
@@ -612,6 +663,7 @@ func (cm *CombatMode) Enter(fromMode core.UIMode) error {
 		// Fresh combat start - initialize everything
 		cm.logManager.UpdateTextArea(cm.combatLogArea, "=== COMBAT STARTED ===")
 
+		cm.SetupEncounter(fromMode)
 		// Start battle recording if enabled
 		if config.ENABLE_COMBAT_LOG_EXPORT && cm.combatService.BattleRecorder != nil {
 			cm.combatService.BattleRecorder.SetEnabled(true)
@@ -640,8 +692,20 @@ func (cm *CombatMode) Enter(fromMode core.UIMode) error {
 func (cm *CombatMode) Exit(toMode core.UIMode) error {
 	fmt.Println("Exiting Combat Mode")
 
-	// Export battle log when leaving combat (not to animation mode)
+	// Check if returning to exploration (not going to animation mode)
 	isToAnimation := toMode != nil && toMode.GetModeName() == "combat_animation"
+
+	// Mark encounter as defeated if player won
+	if !isToAnimation {
+		cm.markEncounterDefeatedIfVictorious()
+	}
+
+	// Clean up all combat entities when returning to exploration
+	if !isToAnimation {
+		cm.cleanupCombatEntities()
+	}
+
+	// Export battle log when leaving combat (not to animation mode)
 	if !isToAnimation && config.ENABLE_COMBAT_LOG_EXPORT && cm.combatService.BattleRecorder != nil && cm.combatService.BattleRecorder.IsEnabled() {
 		victor := cm.combatService.CheckVictoryCondition()
 		victoryInfo := &battlelog.VictoryInfo{
@@ -737,6 +801,122 @@ func (cm *CombatMode) initialzieCombatFactions() error {
 
 	return nil
 
+}
+
+// markEncounterDefeatedIfVictorious marks the encounter as defeated if player won
+func (cm *CombatMode) markEncounterDefeatedIfVictorious() {
+	// Only mark if we have a tracked encounter
+	if cm.currentEncounterID == 0 {
+		return
+	}
+
+	// Check victory condition
+	victor := cm.combatService.CheckVictoryCondition()
+
+	// Only mark as defeated if a player faction won
+	if victor.VictorFaction != 0 {
+		factionData := cm.Queries.CombatCache.FindFactionDataByID(victor.VictorFaction, cm.Queries.ECSManager)
+		if factionData != nil && factionData.IsPlayerControlled {
+			// Player won - mark encounter as defeated
+			entity := cm.Context.ECSManager.FindEntityByID(cm.currentEncounterID)
+			if entity != nil {
+				encounterData := common.GetComponentType[*encounter.OverworldEncounterData](
+					entity,
+					encounter.OverworldEncounterComponent,
+				)
+				if encounterData != nil {
+					encounterData.IsDefeated = true
+					fmt.Printf("Marked encounter '%s' as defeated\n", encounterData.Name)
+					cm.logManager.UpdateTextArea(cm.combatLogArea,
+						fmt.Sprintf("Encounter '%s' defeated!", encounterData.Name))
+				}
+			}
+		}
+	}
+}
+
+// cleanupCombatEntities removes ALL combat entities when returning to exploration
+func (cm *CombatMode) cleanupCombatEntities() {
+	fmt.Println("Cleaning up combat entities")
+
+	// Step 1: Collect IDs of combat squads (those being removed)
+	combatSquadIDs := make(map[ecs.EntityID]bool)
+	for _, result := range cm.Context.ECSManager.World.Query(squads.SquadTag) {
+		entity := result.Entity
+		// Combat squads have CombatFactionComponent
+		if entity.HasComponent(combat.CombatFactionComponent) {
+			combatSquadIDs[entity.GetID()] = true
+		}
+	}
+
+	fmt.Printf("Found %d combat squads to remove\n", len(combatSquadIDs))
+
+	// Step 2: Remove all faction entities
+	for _, result := range cm.Context.ECSManager.World.Query(combat.FactionTag) {
+		entity := result.Entity
+		cm.Context.ECSManager.World.DisposeEntities(entity)
+	}
+
+	// Step 3: Remove ONLY combat squads (those with CombatFactionComponent)
+	// This preserves exploration squads which don't have this component
+	for _, result := range cm.Context.ECSManager.World.Query(squads.SquadTag) {
+		entity := result.Entity
+
+		// CRITICAL: Only remove squads that belong to factions (combat squads)
+		// Exploration squads don't have CombatFactionComponent and should be preserved
+		if !entity.HasComponent(combat.CombatFactionComponent) {
+			fmt.Printf("Preserving exploration squad: %d\n", entity.GetID())
+			continue // Skip exploration squads
+		}
+
+		fmt.Printf("Removing combat squad: %d\n", entity.GetID())
+
+		// Remove from position system
+		if entity.HasComponent(common.PositionComponent) {
+			posData := common.GetComponentType[*coords.LogicalPosition](entity, common.PositionComponent)
+			if posData != nil {
+				common.GlobalPositionSystem.RemoveEntity(entity.GetID(), *posData)
+			}
+		}
+
+		// Dispose entity
+		cm.Context.ECSManager.World.DisposeEntities(entity)
+	}
+
+	// Step 4: Remove ONLY unit entities that belong to combat squads
+	// This preserves units in exploration squads
+	for _, result := range cm.Context.ECSManager.World.Query(squads.SquadMemberTag) {
+		entity := result.Entity
+
+		// Get unit's squad ID
+		memberData := common.GetComponentType[*squads.SquadMemberData](entity, squads.SquadMemberComponent)
+		if memberData != nil {
+			// Only remove if this unit belongs to a combat squad
+			if combatSquadIDs[memberData.SquadID] {
+				fmt.Printf("Removing combat unit from squad %d\n", memberData.SquadID)
+				cm.Context.ECSManager.World.DisposeEntities(entity)
+			} else {
+				fmt.Printf("Preserving exploration unit from squad %d\n", memberData.SquadID)
+			}
+		}
+	}
+
+	// Step 5: Remove all action state entities
+	for _, result := range cm.Context.ECSManager.World.Query(combat.ActionStateTag) {
+		entity := result.Entity
+		cm.Context.ECSManager.World.DisposeEntities(entity)
+	}
+
+	// Step 6: Remove turn state entity
+	for _, result := range cm.Context.ECSManager.World.Query(combat.TurnStateTag) {
+		entity := result.Entity
+		cm.Context.ECSManager.World.DisposeEntities(entity)
+	}
+
+	// Step 7: Clear all caches
+	cm.Queries.MarkAllSquadsDirty()
+
+	fmt.Println("Combat entities cleanup complete")
 }
 
 // getValidMoveTiles computes valid movement tiles on-demand from combat service
