@@ -15,11 +15,6 @@ __________________________________________
 ________________________________________________
 # Testing 
 
-**Combat Testing**
-
-- Confirm that Targeting Works Correctly in Combat. Such as a unit correctly attacking rows
-- Ensure that ranged attacks work correctly. Only units in range should attack. If it does work, make sure squads
-can't attack twice. Once with ranged units and once with melee
 
 
 # Cleanup
@@ -50,8 +45,8 @@ can't attack twice. Once with ranged units and once with melee
 
 - Identify where there is a possiblity of cache invalidation errors. We started to cache things used for ECS query, so we need to 
 - Look at how Tile, sprite, and rendering batching truly works
-  * Look at rendering package, 
-- Review global position system
+
+
 - The Inventory is a leftover prior to shifting the game to a turn based squad tactics game from a regular roguelike. Think of what you want to do with the inventory
 - Look at all of the const. See which ones should be defined in a file
 
