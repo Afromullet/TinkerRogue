@@ -6,9 +6,9 @@ import (
 
 	"game_main/gear"
 	"game_main/gui"
+	"game_main/gui/builders"
 	"game_main/gui/core"
 	"game_main/gui/guicomponents"
-	"game_main/gui/builders"
 	"game_main/gui/specs"
 	"game_main/gui/widgets"
 
