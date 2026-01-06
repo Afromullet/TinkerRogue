@@ -23,17 +23,17 @@ type PanelOption func(*panelConfig)
 // panelConfig holds the configuration for building a panel.
 // This is an internal type that gets populated by PanelOptions.
 type panelConfig struct {
-	widthPercent          float64
-	heightPercent         float64
-	paddingPercent        float64
-	title                 string
-	background            *e_image.NineSlice
-	layout                widget.Layouter
-	layoutData            widget.AnchorLayoutData
-	customPadding         *widget.Insets          // For fine-grained control
-	useResponsivePadding  bool                    // Flag to apply responsive padding to row layouts
-	rowLayoutDirection    widget.Direction        // Direction for row layouts when using responsive padding
-	enableCaching         bool                    // Whether to use cached background rendering (default: true for all panels)
+	widthPercent         float64
+	heightPercent        float64
+	paddingPercent       float64
+	title                string
+	background           *e_image.NineSlice
+	layout               widget.Layouter
+	layoutData           widget.AnchorLayoutData
+	customPadding        *widget.Insets   // For fine-grained control
+	useResponsivePadding bool             // Flag to apply responsive padding to row layouts
+	rowLayoutDirection   widget.Direction // Direction for row layouts when using responsive padding
+	enableCaching        bool             // Whether to use cached background rendering (default: true for all panels)
 }
 
 // Predefined positioning options
@@ -230,7 +230,7 @@ func WithDynamicBackground() PanelOption {
 // PanelBuilders provides high-level UI composition functions to reduce duplication
 // across UI modes. Each builder encapsulates common UI patterns.
 type PanelBuilders struct {
-	Layout      *specs.LayoutConfig        // Exported for external access
+	Layout      *specs.LayoutConfig // Exported for external access
 	modeManager *core.UIModeManager
 }
 
@@ -243,8 +243,7 @@ func NewPanelBuilders(layout *specs.LayoutConfig, modeManager *core.UIModeManage
 }
 
 // BuildPanel creates a panel with functional options.
-// This replaces the multiple BuildXxxPanel functions with a single composable method.
-//
+
 // Example usage:
 //
 //	panel := pb.BuildPanel(
@@ -365,9 +364,9 @@ type PanelType int
 
 const (
 	PanelTypeSimple PanelType = iota // Container only, no children
-	PanelTypeDetail                   // Container + TextArea (for detail views)
-	PanelTypeList                     // Container + List widget
-	PanelTypeGrid                     // Container + Grid layout (use BuildGridEditor instead)
+	PanelTypeDetail                  // Container + TextArea (for detail views)
+	PanelTypeList                    // Container + List widget
+	PanelTypeGrid                    // Container + Grid layout (use BuildGridEditor instead)
 )
 
 // TypedPanelConfig provides configuration for BuildTypedPanel
@@ -399,7 +398,6 @@ type TypedPanelResult struct {
 }
 
 // BuildTypedPanel creates a panel with standard content based on panel type.
-// This consolidates all panel creation patterns into a single builder method.
 //
 // Example usage:
 //
@@ -511,9 +509,9 @@ func (pb *PanelBuilders) BuildTypedPanel(config TypedPanelConfig) TypedPanelResu
 
 // GridEditorConfig provides configuration for 3x3 grid editors
 type GridEditorConfig struct {
-	CellTextFormat func(row, col int) string           // Function to generate cell text
-	OnCellClick    func(row, col int)                  // Callback when cell is clicked
-	Padding        widget.Insets                       // Padding for grid (default: 10 all sides)
+	CellTextFormat func(row, col int) string // Function to generate cell text
+	OnCellClick    func(row, col int)        // Callback when cell is clicked
+	Padding        widget.Insets             // Padding for grid (default: 10 all sides)
 }
 
 // BuildGridEditor creates a centered 3x3 grid panel for squad formations
@@ -597,15 +595,16 @@ type CreateCachedPanelConfig struct {
 // The caching is handled by the global background pools in guiresources.
 //
 // Example:
-//   panel := CreateCachedPanel(CreateCachedPanelConfig{
-//       PanelConfig: PanelConfig{
-//           MinWidth:  400,
-//           MinHeight: 300,
-//           Background: guiresources.PanelRes.Image,
-//       },
-//       EnableCaching: true,  // Use cached background
-//       PreCache:      true,  // Pre-render immediately
-//   })
+//
+//	panel := CreateCachedPanel(CreateCachedPanelConfig{
+//	    PanelConfig: PanelConfig{
+//	        MinWidth:  400,
+//	        MinHeight: 300,
+//	        Background: guiresources.PanelRes.Image,
+//	    },
+//	    EnableCaching: true,  // Use cached background
+//	    PreCache:      true,  // Pre-render immediately
+//	})
 func CreateCachedPanel(config CreateCachedPanelConfig) *widget.Container {
 	// Pre-cache the background if requested
 	if config.EnableCaching && config.PreCache && config.Background != nil {

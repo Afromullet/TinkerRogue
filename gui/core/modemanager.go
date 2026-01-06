@@ -122,6 +122,7 @@ func (umm *UIModeManager) Render(screen *ebiten.Image) {
 }
 
 // updateInputState captures current frame's input
+// SKH Input
 func (umm *UIModeManager) updateInputState() {
 	// Mouse position
 	umm.inputState.MouseX, umm.inputState.MouseY = ebiten.CursorPosition()

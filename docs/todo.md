@@ -50,7 +50,15 @@ ________________________________________________
 - The Inventory is a leftover prior to shifting the game to a turn based squad tactics game from a regular roguelike. Think of what you want to do with the inventory
 - Look at all of the const. See which ones should be defined in a file
 
+- Added a comment of the form "SKH Input" for input related stuff that needs to be reviewed. It's currently very scattered. Need to
 
+- Determine whether we need to mark caches that use ECS views as dirty, or if the ECS library handles it
+
+
+# GUI
+
+- Panels.go has fields to enable cached backgrounds. Determine if we need that
+- Look at all of the caching in the GUI. See what is being used, what isn't, and what should be used. 
 
 
 

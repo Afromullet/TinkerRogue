@@ -3,9 +3,9 @@ package main
 import (
 	"flag"
 	"fmt"
-	"game_main/tactical/combatsim"
 	"game_main/tactical/squads"
 	"game_main/templates"
+	"game_main/tools/combatsim"
 	"log"
 )
 

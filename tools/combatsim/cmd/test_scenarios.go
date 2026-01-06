@@ -1,6 +1,6 @@
 package main
 
-import "game_main/tactical/combatsim"
+import "game_main/tools/combatsim"
 
 // GetAllTestScenarios returns all tactical combat test scenarios
 func GetAllTestScenarios() []combatsim.CombatScenario {
@@ -97,8 +97,8 @@ func createScenario_TankVsDPS() combatsim.CombatScenario {
 // Focus: Distance-based combat, range advantage
 func createScenario_RangedVsMelee() combatsim.CombatScenario {
 	attackerUnits := []combatsim.UnitConfig{
-		{TemplateName: "Knight", GridRow: 0, GridCol: 0},                  // FIXED: Tank in front to provide cover
-		{TemplateName: "Archer", GridRow: 2, GridCol: 0},                  // FIXED: Same column for cover
+		{TemplateName: "Knight", GridRow: 0, GridCol: 0}, // FIXED: Tank in front to provide cover
+		{TemplateName: "Archer", GridRow: 2, GridCol: 0}, // FIXED: Same column for cover
 		{TemplateName: "Crossbowman", GridRow: 2, GridCol: 1, IsLeader: true},
 		{TemplateName: "Marksman", GridRow: 2, GridCol: 2},
 	}
@@ -121,8 +121,8 @@ func createScenario_RangedVsMelee() combatsim.CombatScenario {
 // Focus: Multi-target attacks, AOE patterns, magic damage
 func createScenario_MagicVsPhysical() combatsim.CombatScenario {
 	attackerUnits := []combatsim.UnitConfig{
-		{TemplateName: "Fighter", GridRow: 0, GridCol: 0},                 // FIXED: Tank in front to provide cover
-		{TemplateName: "Wizard", GridRow: 2, GridCol: 0},                  // FIXED: Same column for cover
+		{TemplateName: "Fighter", GridRow: 0, GridCol: 0}, // FIXED: Tank in front to provide cover
+		{TemplateName: "Wizard", GridRow: 2, GridCol: 0},  // FIXED: Same column for cover
 		{TemplateName: "Sorcerer", GridRow: 2, GridCol: 1},
 		{TemplateName: "Mage", GridRow: 2, GridCol: 2, IsLeader: true},
 	}
@@ -130,7 +130,7 @@ func createScenario_MagicVsPhysical() combatsim.CombatScenario {
 	defenderUnits := []combatsim.UnitConfig{
 		{TemplateName: "Knight", GridRow: 0, GridCol: 0, IsLeader: true},
 		{TemplateName: "Fighter", GridRow: 0, GridCol: 1},
-		{TemplateName: "Fighter", GridRow: 1, GridCol: 0},                 // FIXED: Same column for cover
+		{TemplateName: "Fighter", GridRow: 1, GridCol: 0}, // FIXED: Same column for cover
 	}
 
 	return combatsim.NewScenarioBuilder("Magic vs Physical").
@@ -201,7 +201,7 @@ func createScenario_MultiCellUnits() combatsim.CombatScenario {
 		{TemplateName: "Fighter", GridRow: 0, GridCol: 0, IsLeader: true},
 		{TemplateName: "Fighter", GridRow: 0, GridCol: 1},
 		{TemplateName: "Fighter", GridRow: 0, GridCol: 2},
-		{TemplateName: "Fighter", GridRow: 2, GridCol: 0},                      // FIXED: Same column for cover
+		{TemplateName: "Fighter", GridRow: 2, GridCol: 0}, // FIXED: Same column for cover
 	}
 
 	return combatsim.NewScenarioBuilder("Multi-Cell Units").
@@ -239,8 +239,8 @@ func createScenario_CoverStacking() combatsim.CombatScenario {
 // Focus: Pierce-through to back row when front empty
 func createScenario_PierceThrough() combatsim.CombatScenario {
 	attackerUnits := []combatsim.UnitConfig{
-		{TemplateName: "Fighter", GridRow: 0, GridCol: 0},                 // FIXED: Tank in front to provide cover
-		{TemplateName: "Wizard", GridRow: 2, GridCol: 0},                  // FIXED: Same column for cover
+		{TemplateName: "Fighter", GridRow: 0, GridCol: 0}, // FIXED: Tank in front to provide cover
+		{TemplateName: "Wizard", GridRow: 2, GridCol: 0},  // FIXED: Same column for cover
 		{TemplateName: "Sorcerer", GridRow: 2, GridCol: 1, IsLeader: true},
 	}
 
@@ -283,14 +283,14 @@ func createScenario_SizeAsymmetry() combatsim.CombatScenario {
 	attackerUnits := []combatsim.UnitConfig{
 		{TemplateName: "Knight", GridRow: 0, GridCol: 0, IsLeader: true},
 		{TemplateName: "Paladin", GridRow: 0, GridCol: 1},
-		{TemplateName: "Cleric", GridRow: 2, GridCol: 0},                  // FIXED: Same column for cover
+		{TemplateName: "Cleric", GridRow: 2, GridCol: 0}, // FIXED: Same column for cover
 	}
 
 	defenderUnits := []combatsim.UnitConfig{
 		{TemplateName: "Fighter", GridRow: 0, GridCol: 0, IsLeader: true}, // FIXED: Fighter has cover
 		{TemplateName: "Swordsman", GridRow: 0, GridCol: 1},
-		{TemplateName: "Rogue", GridRow: 1, GridCol: 0},                   // FIXED: Same column for cover
-		{TemplateName: "Assassin", GridRow: 2, GridCol: 1},                // FIXED: Same column for cover
+		{TemplateName: "Rogue", GridRow: 1, GridCol: 0},    // FIXED: Same column for cover
+		{TemplateName: "Assassin", GridRow: 2, GridCol: 1}, // FIXED: Same column for cover
 	}
 
 	return combatsim.NewScenarioBuilder("Size Asymmetry (3v4)").
@@ -305,8 +305,8 @@ func createScenario_SizeAsymmetry() combatsim.CombatScenario {
 // Focus: Maximum AOE damage, cover against magic
 func createScenario_FullAOE() combatsim.CombatScenario {
 	attackerUnits := []combatsim.UnitConfig{
-		{TemplateName: "Knight", GridRow: 0, GridCol: 0},                  // FIXED: Tank in front to provide cover
-		{TemplateName: "Wizard", GridRow: 2, GridCol: 0},                  // FIXED: Same column for cover
+		{TemplateName: "Knight", GridRow: 0, GridCol: 0}, // FIXED: Tank in front to provide cover
+		{TemplateName: "Wizard", GridRow: 2, GridCol: 0}, // FIXED: Same column for cover
 		{TemplateName: "Sorcerer", GridRow: 2, GridCol: 1},
 		{TemplateName: "Warlock", GridRow: 2, GridCol: 2, IsLeader: true},
 	}
@@ -315,7 +315,7 @@ func createScenario_FullAOE() combatsim.CombatScenario {
 		{TemplateName: "Knight", GridRow: 0, GridCol: 0, IsLeader: true},
 		{TemplateName: "Fighter", GridRow: 0, GridCol: 1},
 		{TemplateName: "Paladin", GridRow: 0, GridCol: 2},
-		{TemplateName: "Fighter", GridRow: 1, GridCol: 0},                 // FIXED: Same column for cover
+		{TemplateName: "Fighter", GridRow: 1, GridCol: 0}, // FIXED: Same column for cover
 	}
 
 	return combatsim.NewScenarioBuilder("Full AOE Assault").
@@ -330,15 +330,15 @@ func createScenario_FullAOE() combatsim.CombatScenario {
 // Focus: Various range values (2-4), ranged vs ranged
 func createScenario_MixedRange() combatsim.CombatScenario {
 	attackerUnits := []combatsim.UnitConfig{
-		{TemplateName: "Fighter", GridRow: 0, GridCol: 0},                 // FIXED: Tank in front to provide cover
-		{TemplateName: "Archer", GridRow: 2, GridCol: 0},                  // FIXED: Same column for cover
+		{TemplateName: "Fighter", GridRow: 0, GridCol: 0}, // FIXED: Tank in front to provide cover
+		{TemplateName: "Archer", GridRow: 2, GridCol: 0},  // FIXED: Same column for cover
 		{TemplateName: "Scout", GridRow: 2, GridCol: 1, IsLeader: true},
 		{TemplateName: "Marksman", GridRow: 2, GridCol: 2},
 	}
 
 	defenderUnits := []combatsim.UnitConfig{
-		{TemplateName: "Knight", GridRow: 0, GridCol: 0},                  // FIXED: Tank in front to provide cover
-		{TemplateName: "Crossbowman", GridRow: 2, GridCol: 0},             // FIXED: Same column for cover
+		{TemplateName: "Knight", GridRow: 0, GridCol: 0},      // FIXED: Tank in front to provide cover
+		{TemplateName: "Crossbowman", GridRow: 2, GridCol: 0}, // FIXED: Same column for cover
 		{TemplateName: "Ranger", GridRow: 2, GridCol: 1, IsLeader: true},
 		{TemplateName: "Spearman", GridRow: 2, GridCol: 2},
 	}

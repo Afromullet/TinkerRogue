@@ -29,14 +29,14 @@ func (gc GameContext) String() string {
 // GameModeCoordinator manages two independent UIModeManagers - one for Overworld context
 // and one for BattleMap context. It handles context switching and state persistence.
 type GameModeCoordinator struct {
-	overworldManager      *UIModeManager  // Manages overworld modes (squad management, etc.)
-	battleMapManager      *UIModeManager  // Manages battle map modes (exploration, combat)
-	activeManager         *UIModeManager  // Points to currently active manager
-	currentContext        GameContext     // Tracks which context is active
-	overworldState        *OverworldState // Persistent overworld UI state
-	battleMapState        *BattleMapState // Persistent battle data
-	contextSwitchKeyDown  bool            // Tracks if context switch key is held (prevents rapid toggling)
-	context               *UIContext      // Reference to shared UIContext for cache management
+	overworldManager     *UIModeManager  // Manages overworld modes (squad management, etc.)
+	battleMapManager     *UIModeManager  // Manages battle map modes (exploration, combat)
+	activeManager        *UIModeManager  // Points to currently active manager
+	currentContext       GameContext     // Tracks which context is active
+	overworldState       *OverworldState // Persistent overworld UI state
+	battleMapState       *BattleMapState // Persistent battle data
+	contextSwitchKeyDown bool            // Tracks if context switch key is held (prevents rapid toggling)
+	context              *UIContext      // Reference to shared UIContext for cache management
 }
 
 // NewGameModeCoordinator creates a new coordinator with two separate mode managers
@@ -174,16 +174,6 @@ func (gmc *GameModeCoordinator) Render(screen *ebiten.Image) {
 		gmc.activeManager.Render(screen)
 	}
 
-	// Display current context in top-right corner (for debugging/info)
-	// This could be removed or made conditional in production
-	gmc.renderContextIndicator(screen)
-}
-
-// renderContextIndicator draws the current context name on screen
-func (gmc *GameModeCoordinator) renderContextIndicator(screen *ebiten.Image) {
-	// Simple text rendering would go here
-	// For now, just print to console when context changes
-	// (actual text rendering would require the ebitenutil package)
 }
 
 // GetCurrentContext returns the active game context
@@ -215,6 +205,7 @@ func (gmc *GameModeCoordinator) GetBattleMapState() *BattleMapState {
 }
 
 // saveOverworldState captures current overworld state before leaving
+// TODO, consider if we need this
 func (gmc *GameModeCoordinator) saveOverworldState() {
 	// TODO: Implement state capture
 	// - Current squad selection
@@ -224,6 +215,7 @@ func (gmc *GameModeCoordinator) saveOverworldState() {
 }
 
 // restoreOverworldState restores overworld state when returning
+// TODO, consider if we need this
 func (gmc *GameModeCoordinator) restoreOverworldState() {
 	// TODO: Implement state restoration
 	// - Restore squad selections
@@ -232,6 +224,7 @@ func (gmc *GameModeCoordinator) restoreOverworldState() {
 }
 
 // saveBattleMapState captures current battle map state before leaving
+// TODO, consider if we need this
 func (gmc *GameModeCoordinator) saveBattleMapState() {
 	// TODO: Implement state capture
 	// - Current map state

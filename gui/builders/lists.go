@@ -16,13 +16,13 @@ import (
 
 // SquadListConfig provides configuration for creating squad selection lists
 type SquadListConfig struct {
-	SquadIDs       []ecs.EntityID
-	Manager        *common.EntityManager
-	OnSelect       func(squadID ecs.EntityID)
-	ScreenWidth    int
-	ScreenHeight   int
-	WidthPercent   float64 // Default 0.3
-	HeightPercent  float64 // Default 0.3
+	SquadIDs      []ecs.EntityID
+	Manager       *common.EntityManager
+	OnSelect      func(squadID ecs.EntityID)
+	ScreenWidth   int
+	ScreenHeight  int
+	WidthPercent  float64 // Default 0.3
+	HeightPercent float64 // Default 0.3
 }
 
 // CreateSquadList creates a list widget for selecting squads
@@ -128,6 +128,8 @@ type UnitListConfig struct {
 }
 
 // CreateUnitList creates a list widget displaying units with name and health
+// TODO, this not not currently being used. It should be used instead of CreateUnitList, but I need to test that to make sure the cache
+// Is updated correctly
 func CreateUnitList(config UnitListConfig) *widget.List {
 	// Apply defaults
 	if config.WidthPercent == 0 {
@@ -178,6 +180,8 @@ func CreateUnitList(config UnitListConfig) *widget.List {
 
 // CreateCachedUnitList creates a cached list widget displaying units with name and health
 // IMPORTANT: Call MarkDirty() when unit data changes (e.g., after adding/removing units, combat)
+// TODO, this not not currently being used. It should be used instead of CreateUnitList, but I need to test that to make sure the cache
+// Is updated correctly
 func CreateCachedUnitList(config UnitListConfig) *widgets.CachedListWrapper {
 	// Apply defaults
 	if config.WidthPercent == 0 {
@@ -278,46 +282,6 @@ func CreateSimpleStringList(config SimpleStringListConfig) *widget.List {
 	}
 
 	return CreateListWithConfig(listConfig)
-}
-
-// CreateCachedSimpleStringList creates a cached list widget for selecting from string entries
-// IMPORTANT: Call MarkDirty() when entries change
-func CreateCachedSimpleStringList(config SimpleStringListConfig) *widgets.CachedListWrapper {
-	// Apply defaults
-	if config.WidthPercent == 0 {
-		config.WidthPercent = 0.3
-	}
-	if config.HeightPercent == 0 {
-		config.HeightPercent = 0.3
-	}
-
-	// Calculate dimensions
-	listWidth := int(float64(config.ScreenWidth) * config.WidthPercent)
-	listHeight := int(float64(config.ScreenHeight) * config.HeightPercent)
-
-	// Convert strings to interface{} slice
-	entries := make([]interface{}, len(config.Entries))
-	for i, s := range config.Entries {
-		entries[i] = s
-	}
-
-	listConfig := ListConfig{
-		Entries:   entries,
-		MinWidth:  listWidth,
-		MinHeight: listHeight,
-		EntryLabelFunc: func(e interface{}) string {
-			return e.(string)
-		},
-		LayoutData: config.LayoutData,
-	}
-
-	if config.OnSelect != nil {
-		listConfig.OnEntrySelected = func(e interface{}) {
-			config.OnSelect(e.(string))
-		}
-	}
-
-	return CreateCachedList(listConfig)
 }
 
 // ============================================

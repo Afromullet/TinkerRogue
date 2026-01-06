@@ -2,12 +2,12 @@ package guicombat
 
 import (
 	"fmt"
-	"game_main/world/coords"
 	"game_main/gui/core"
 	"game_main/gui/guicomponents"
 	"game_main/gui/widgets"
 	"game_main/tactical/combatservices"
 	"game_main/tactical/squadcommands"
+	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"
 )
@@ -63,31 +63,10 @@ func (cah *CombatActionHandler) ToggleAttackMode() {
 	cah.battleMapState.InAttackMode = newAttackMode
 
 	if newAttackMode {
-		cah.addLog("Attack mode: Press 1-3 to target enemy")
-		cah.ShowAvailableTargets()
+		cah.addLog("Attack mode")
+
 	} else {
 		cah.addLog("Attack mode cancelled")
-	}
-}
-
-func (cah *CombatActionHandler) ShowAvailableTargets() {
-	currentFactionID := cah.combatService.TurnManager.GetCurrentFaction()
-	if currentFactionID == 0 {
-		return
-	}
-
-	// Get all enemy squads
-	enemySquads := cah.queries.GetEnemySquads(currentFactionID)
-
-	if len(enemySquads) == 0 {
-		cah.addLog("No enemy targets available!")
-		return
-	}
-
-	// Show up to 3 targets
-	for i := 0; i < len(enemySquads) && i < 3; i++ {
-		targetName := cah.queries.SquadCache.GetSquadName(enemySquads[i])
-		cah.addLog(fmt.Sprintf("  [%d] %s", i+1, targetName))
 	}
 }
 
@@ -264,11 +243,13 @@ func (cah *CombatActionHandler) RedoLastMove() {
 }
 
 // CanUndoMove returns whether there are moves to undo
+// TODO, add logic here.
 func (cah *CombatActionHandler) CanUndoMove() bool {
 	return cah.commandExecutor.CanUndo()
 }
 
 // CanRedoMove returns whether there are moves to redo
+// // TODO, add logic here.
 func (cah *CombatActionHandler) CanRedoMove() bool {
 	return cah.commandExecutor.CanRedo()
 }

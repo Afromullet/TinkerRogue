@@ -224,6 +224,8 @@ func (cm *CombatMode) buildActionButtons() *widget.Container {
 	cm.ensureUIFactoryInitialized()
 
 	// Create action buttons
+	// TODO, get rid of handleAttackClick,handleMovClick,handleUndoMove,and handleRedoMove.
+	// CombatActionSystem throws a null error when I call the function they are a wrapper around
 	cm.actionButtons = cm.uiFactory.CreateCombatActionButtons(
 		cm.handleAttackClick,
 		cm.handleMoveClick,

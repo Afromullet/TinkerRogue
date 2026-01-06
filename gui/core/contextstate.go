@@ -6,6 +6,7 @@ import (
 
 // OverworldState holds persistent UI state for the overworld context
 // This data is saved when entering battle map and restored when returning
+// TODO. None of the state is currently used. Determine whether we still need them
 type OverworldState struct {
 	// Squad management state
 	SelectedSquadID ecs.EntityID   // Currently selected squad in squad management
@@ -13,9 +14,9 @@ type OverworldState struct {
 	SquadIDs        []ecs.EntityID // All available squads (for quick access)
 
 	// Formation editor state
-	EditingSquadID     ecs.EntityID // Squad being edited in formation editor
-	FormationDirty     bool         // Whether formation has unsaved changes
-	SelectedFormation  string       // Name of selected formation preset
+	EditingSquadID    ecs.EntityID // Squad being edited in formation editor
+	FormationDirty    bool         // Whether formation has unsaved changes
+	SelectedFormation string       // Name of selected formation preset
 
 	// Squad builder state
 	BuilderSelectedUnits []ecs.EntityID // Units selected in squad builder

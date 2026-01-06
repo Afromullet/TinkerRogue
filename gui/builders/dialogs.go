@@ -16,12 +16,6 @@ import (
 // - CreateTextInputDialog: Text input dialogs with OK/Cancel
 // - CreateMessageDialog: Simple message dialogs with OK
 //
-// Common Setup Extracted:
-// Previously, these three functions duplicated 80% of their code (container setup,
-// title/message labels, button containers, window creation). This has been refactored
-// to use shared helper functions (createDialogContainer, addDialogHeader, etc.)
-// while maintaining the same public API for backward compatibility.
-
 // dialogBaseConfig contains common configuration for all dialog types.
 // This struct extracts the duplicated fields from DialogConfig, TextInputDialogConfig, and MessageDialogConfig.
 type dialogBaseConfig struct {
@@ -32,7 +26,6 @@ type dialogBaseConfig struct {
 }
 
 // createDialogContainer creates the common dialog container with background and layout.
-// Extracts the duplicated container setup code from all three dialog functions.
 func createDialogContainer() *widget.Container {
 	return widget.NewContainer(
 		widget.ContainerOpts.BackgroundImage(guiresources.PanelRes.Image),
@@ -47,7 +40,6 @@ func createDialogContainer() *widget.Container {
 }
 
 // addDialogHeader adds title and message labels to a dialog container.
-// Extracts the duplicated title/message label creation from all three dialog functions.
 func addDialogHeader(container *widget.Container, title, message string, wrapMessage bool) {
 	// Title label
 	if title != "" {
@@ -73,7 +65,6 @@ func addDialogHeader(container *widget.Container, title, message string, wrapMes
 }
 
 // createButtonContainer creates the common button container layout.
-// Extracts the duplicated button container setup from all three dialog functions.
 func createButtonContainer() *widget.Container {
 	return widget.NewContainer(
 		widget.ContainerOpts.Layout(widget.NewRowLayout(
@@ -84,7 +75,6 @@ func createButtonContainer() *widget.Container {
 }
 
 // createDialogWindow creates the final modal window.
-// Extracts the duplicated window creation from all three dialog functions.
 func createDialogWindow(container *widget.Container, minWidth, minHeight int) *widget.Window {
 	return widget.NewWindow(
 		widget.WindowOpts.Contents(container),
@@ -112,18 +102,17 @@ func createPositionedDialogWindow(container *widget.Container, minWidth, minHeig
 
 // DialogConfig provides configuration for modal dialogs
 type DialogConfig struct {
-	Title      string
-	Message    string
-	OnConfirm  func()
-	OnCancel   func()
-	MinWidth   int
-	MinHeight  int
-	CenterX    int // X position for centering (0 = default window positioning)
-	CenterY    int // Y position for centering (0 = default window positioning)
+	Title     string
+	Message   string
+	OnConfirm func()
+	OnCancel  func()
+	MinWidth  int
+	MinHeight int
+	CenterX   int // X position for centering (0 = default window positioning)
+	CenterY   int // Y position for centering (0 = default window positioning)
 }
 
 // CreateConfirmationDialog creates a modal confirmation dialog with Yes/No buttons.
-// Uses extracted helper functions to reduce code duplication.
 func CreateConfirmationDialog(config DialogConfig) *widget.Window {
 	// Apply defaults
 	if config.MinWidth == 0 {
@@ -201,7 +190,6 @@ type TextInputDialogConfig struct {
 }
 
 // CreateTextInputDialog creates a modal text input dialog with OK/Cancel buttons.
-// Uses extracted helper functions to reduce code duplication.
 func CreateTextInputDialog(config TextInputDialogConfig) *widget.Window {
 	// Apply defaults
 	if config.MinWidth == 0 {
@@ -284,7 +272,6 @@ type MessageDialogConfig struct {
 }
 
 // CreateMessageDialog creates a simple message dialog with OK button.
-// Uses extracted helper functions to reduce code duplication.
 func CreateMessageDialog(config MessageDialogConfig) *widget.Window {
 	// Apply defaults
 	if config.MinWidth == 0 {
@@ -335,8 +322,6 @@ type SelectionDialogConfig struct {
 }
 
 // CreateSelectionDialog creates a modal selection dialog with a list and Select/Cancel buttons.
-// Uses extracted helper functions to reduce code duplication.
-// This replaces 90+ lines of manual dialog building with a simple config-based approach.
 func CreateSelectionDialog(config SelectionDialogConfig) *widget.Window {
 	// Apply defaults
 	if config.MinWidth == 0 {
@@ -358,8 +343,8 @@ func CreateSelectionDialog(config SelectionDialogConfig) *widget.Window {
 		Entries:       config.SelectionEntries,
 		ScreenWidth:   config.MinWidth,
 		ScreenHeight:  config.MinHeight - 200, // Leave room for title, message, buttons
-		WidthPercent:  0.9,                     // 90% of dialog width
-		HeightPercent: 0.5,                     // 50% of remaining height
+		WidthPercent:  0.9,                    // 90% of dialog width
+		HeightPercent: 0.5,                    // 50% of remaining height
 	})
 	contentContainer.AddChild(selectionList)
 
