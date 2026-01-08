@@ -52,7 +52,7 @@ func (ucf *UIComponentFactory) CreateCombatTurnOrderPanel() *widget.Container {
 	panelHeight := int(float64(ucf.layout.ScreenHeight) * specs.CombatTurnOrderHeight)
 
 	// Create panel with horizontal row layout
-	panel := builders.CreatePanelWithConfig(builders.PanelConfig{
+	panel := builders.CreatePanelWithConfig(builders.ContainerConfig{
 		MinWidth:   panelWidth,
 		MinHeight:  panelHeight,
 		Background: guiresources.PanelRes.Image,
@@ -77,7 +77,7 @@ func (ucf *UIComponentFactory) CreateCombatFactionInfoPanel() *widget.Container 
 	panelHeight := int(float64(ucf.layout.ScreenHeight) * specs.CombatFactionInfoHeight)
 
 	// Create panel with vertical row layout
-	panel := builders.CreatePanelWithConfig(builders.PanelConfig{
+	panel := builders.CreatePanelWithConfig(builders.ContainerConfig{
 		MinWidth:   panelWidth,
 		MinHeight:  panelHeight,
 		Background: guiresources.PanelRes.Image,
@@ -103,7 +103,7 @@ func (ucf *UIComponentFactory) CreateCombatSquadListPanel() *widget.Container {
 	panelHeight := int(float64(ucf.layout.ScreenHeight) * specs.CombatSquadListHeight)
 
 	// Create panel with vertical row layout
-	panel := builders.CreatePanelWithConfig(builders.PanelConfig{
+	panel := builders.CreatePanelWithConfig(builders.ContainerConfig{
 		MinWidth:   panelWidth,
 		MinHeight:  panelHeight,
 		Background: guiresources.PanelRes.Image,
@@ -134,7 +134,7 @@ func (ucf *UIComponentFactory) CreateCombatSquadDetailPanel() *widget.Container 
 	panelHeight := int(float64(ucf.layout.ScreenHeight) * specs.CombatSquadDetailHeight)
 
 	// Create panel with vertical row layout
-	panel := builders.CreatePanelWithConfig(builders.PanelConfig{
+	panel := builders.CreatePanelWithConfig(builders.ContainerConfig{
 		MinWidth:   panelWidth,
 		MinHeight:  panelHeight,
 		Background: guiresources.PanelRes.Image,
@@ -161,7 +161,7 @@ func (ucf *UIComponentFactory) CreateCombatLogPanel() (*widget.Container, *widge
 	panelHeight := int(float64(ucf.layout.ScreenHeight) * specs.CombatLogHeight)
 
 	// Create panel with anchor layout (to hold textarea)
-	panel := builders.CreatePanelWithConfig(builders.PanelConfig{
+	panel := builders.CreatePanelWithConfig(builders.ContainerConfig{
 		MinWidth:   panelWidth,
 		MinHeight:  panelHeight,
 		Background: guiresources.PanelRes.Image,

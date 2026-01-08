@@ -20,7 +20,7 @@ import (
 //	        ModeName: "my_mode",
 //	        ReturnMode: "parent_mode",
 //	        Hotkeys: []HotkeySpec{{Key: ebiten.KeyI, TargetMode: "inventory"}},
-//	        Panels: []PanelSpec{{SpecName: "message_log"}},
+//	        Panels: []ModePanelConfig{{SpecName: "message_log"}},
 //	        Buttons: []ButtonGroupSpec{{Position: widgets.BottomCenter(), Buttons: myButtons}},
 //	    }).Build(ctx)
 //	}
@@ -29,7 +29,7 @@ type ModeConfig struct {
 	ReturnMode string // Mode to return to on ESC (empty if no return mode)
 
 	Hotkeys     []HotkeySpec
-	Panels      []PanelSpec
+	Panels      []ModePanelConfig
 	Buttons     []ButtonGroupSpec
 	StatusLabel bool   // Whether to create a status label
 	Commands    bool   // Whether to enable command history
@@ -42,12 +42,12 @@ type HotkeySpec struct {
 	TargetMode string
 }
 
-// PanelSpec defines a panel to create during mode initialization.
+// ModePanelConfig defines a panel to create during mode initialization.
 // Use one of three approaches:
 // 1. TypedPanel with SpecName (recommended): Specify PanelType + SpecName for standard panels with content
 // 2. SpecName only: For simple container panels without content
 // 3. CustomBuild: For complex custom panels
-type PanelSpec struct {
+type ModePanelConfig struct {
 	// Type-based panel creation (recommended)
 	PanelType  builders.PanelType   // Type of panel (Simple, Detail, List)
 	SpecName   string               // Panel specification name from builders.StandardPanels

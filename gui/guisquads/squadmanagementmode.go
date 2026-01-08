@@ -35,7 +35,7 @@ func (smm *SquadManagementMode) Initialize(ctx *core.UIContext) error {
 			{Key: ebiten.KeyE, TargetMode: "squad_editor"},
 		},
 
-		Panels: []gui.PanelSpec{
+		Panels: []gui.ModePanelConfig{
 
 			{CustomBuild: smm.buildActionButtons}, // Build after Context is available
 		},

@@ -329,8 +329,8 @@ func CreateCachedList(config ListConfig) *widgets.CachedListWrapper {
 // PANEL WIDGETS
 // ============================================
 
-// PanelConfig provides declarative panel configuration
-type PanelConfig struct {
+// ContainerConfig provides declarative container configuration
+type ContainerConfig struct {
 	Title         string
 	MinWidth      int
 	MinHeight     int
@@ -342,7 +342,7 @@ type PanelConfig struct {
 }
 
 // CreatePanelWithConfig creates a container panel from config
-func CreatePanelWithConfig(config PanelConfig) *widget.Container {
+func CreatePanelWithConfig(config ContainerConfig) *widget.Container {
 	// Apply defaults
 	if config.Background == nil {
 		config.Background = guiresources.PanelRes.Image

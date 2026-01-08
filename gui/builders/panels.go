@@ -344,7 +344,7 @@ func (pb *PanelBuilders) BuildPanel(opts ...PanelOption) *widget.Container {
 	}
 
 	// Build the panel
-	panel := CreatePanelWithConfig(PanelConfig{
+	panel := CreatePanelWithConfig(ContainerConfig{
 		MinWidth:   width,
 		MinHeight:  height,
 		Background: config.background,
@@ -531,7 +531,7 @@ func (pb *PanelBuilders) BuildGridEditor(config GridEditorConfig) (*widget.Conta
 	}
 
 	// Grid editors are static - enable caching
-	gridContainer := CreateStaticPanel(PanelConfig{
+	gridContainer := CreateStaticPanel(ContainerConfig{
 		Background: guiresources.PanelRes.Image,
 		Layout: widget.NewGridLayout(
 			widget.GridLayoutOpts.Columns(3),
@@ -583,9 +583,9 @@ func (pb *PanelBuilders) BuildGridEditor(config GridEditorConfig) (*widget.Conta
 // CACHED PANEL CREATION
 // ============================================
 
-// CreateCachedPanelConfig extends PanelConfig with caching options.
-type CreateCachedPanelConfig struct {
-	PanelConfig
+// CreateCachedContainerConfig extends ContainerConfig with caching options.
+type CreateCachedContainerConfig struct {
+	ContainerConfig
 	EnableCaching bool // Whether to use cached background rendering
 	PreCache      bool // Whether to pre-render background on creation
 }
@@ -596,8 +596,8 @@ type CreateCachedPanelConfig struct {
 //
 // Example:
 //
-//	panel := CreateCachedPanel(CreateCachedPanelConfig{
-//	    PanelConfig: PanelConfig{
+//	panel := CreateCachedPanel(CreateCachedContainerConfig{
+//	    ContainerConfig: ContainerConfig{
 //	        MinWidth:  400,
 //	        MinHeight: 300,
 //	        Background: guiresources.PanelRes.Image,
@@ -605,7 +605,7 @@ type CreateCachedPanelConfig struct {
 //	    EnableCaching: true,  // Use cached background
 //	    PreCache:      true,  // Pre-render immediately
 //	})
-func CreateCachedPanel(config CreateCachedPanelConfig) *widget.Container {
+func CreateCachedPanel(config CreateCachedContainerConfig) *widget.Container {
 	// Pre-cache the background if requested
 	if config.EnableCaching && config.PreCache && config.Background != nil {
 		_ = guiresources.GetPanelBackground(config.MinWidth, config.MinHeight)
@@ -613,7 +613,7 @@ func CreateCachedPanel(config CreateCachedPanelConfig) *widget.Container {
 
 	// Create panel with standard approach
 	// The actual caching optimization is applied at the BuildPanel level
-	return CreatePanelWithConfig(config.PanelConfig)
+	return CreatePanelWithConfig(config.ContainerConfig)
 }
 
 // CreateStaticPanel creates a panel optimized for static content (enables caching and pre-rendering).
@@ -623,7 +623,7 @@ func CreateCachedPanel(config CreateCachedPanelConfig) *widget.Container {
 // - Are visible most of the time
 //
 // Examples: squad management panels, combat UI panels, stats displays
-func CreateStaticPanel(config PanelConfig) *widget.Container {
+func CreateStaticPanel(config ContainerConfig) *widget.Container {
 	config.EnableCaching = true
 	return CreatePanelWithConfig(config)
 }
@@ -635,7 +635,7 @@ func CreateStaticPanel(config PanelConfig) *widget.Container {
 // - Have variable dimensions
 //
 // Examples: tooltips, context menus, popups
-func CreateDynamicPanel(config PanelConfig) *widget.Container {
+func CreateDynamicPanel(config ContainerConfig) *widget.Container {
 	config.EnableCaching = false
 	return CreatePanelWithConfig(config)
 }

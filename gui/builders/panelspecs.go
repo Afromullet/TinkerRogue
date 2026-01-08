@@ -6,9 +6,9 @@ import (
 	"github.com/ebitenui/ebitenui/widget"
 )
 
-// PanelSpec defines a reusable panel configuration specification.
+// PanelLayoutSpec defines a reusable panel configuration specification.
 // This allows panels to be defined once and used consistently across factories.
-type PanelSpec struct {
+type PanelLayoutSpec struct {
 	Name     string                      // Descriptive name for the panel
 	Position PanelOption        // Position on screen (TopCenter, LeftCenter, etc.)
 	Width    float64                     // Width as percentage of screen width
@@ -30,7 +30,7 @@ type PanelSpec struct {
 //
 // Note: UIComponentFactory creates widgets (List, TextArea) with custom manual layout
 // positioning rather than using BuildPanel patterns for some complex components.
-var StandardPanels = map[string]PanelSpec{
+var StandardPanels = map[string]PanelLayoutSpec{
 	// ============================================
 	// Combat UI Panels
 	// ============================================
@@ -210,14 +210,14 @@ func CreateStandardPanelWithOptions(pb *PanelBuilders, specName string, addition
 //
 // Example usage:
 //
-//	AddPanelSpec("custom_panel", PanelSpec{
+//	AddPanelSpec("custom_panel", PanelLayoutSpec{
 //	    Position: TopCenter(),
 //	    Width:    specs.PanelWidthWide,
 //	    Height:   specs.PanelHeightSmall,
 //	    Padding:  specs.PaddingTight,
 //	    Layout:   RowLayout(),
 //	})
-func AddPanelSpec(name string, spec PanelSpec) {
+func AddPanelSpec(name string, spec PanelLayoutSpec) {
 	spec.Name = name
 	StandardPanels[name] = spec
 }

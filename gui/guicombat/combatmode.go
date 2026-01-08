@@ -98,7 +98,7 @@ func (cm *CombatMode) Initialize(ctx *core.UIContext) error {
 		ModeName:   "combat",
 		ReturnMode: "exploration",
 
-		Panels: []gui.PanelSpec{
+		Panels: []gui.ModePanelConfig{
 			{CustomBuild: cm.buildTurnOrderPanel},
 			{CustomBuild: cm.buildFactionInfoPanel},
 			{CustomBuild: cm.buildSquadListPanel},
@@ -226,7 +226,7 @@ func (cm *CombatMode) buildLayerStatusPanel() *widget.Container {
 	panelWidth := int(float64(cm.Layout.ScreenWidth) * 0.15)   // 15% of screen width
 	panelHeight := int(float64(cm.Layout.ScreenHeight) * 0.08) // 8% of screen height
 
-	cm.ui.layerStatusPanel = builders.CreatePanelWithConfig(builders.PanelConfig{
+	cm.ui.layerStatusPanel = builders.CreatePanelWithConfig(builders.ContainerConfig{
 		MinWidth:   panelWidth,
 		MinHeight:  panelHeight,
 		Background: guiresources.PanelRes.Image,

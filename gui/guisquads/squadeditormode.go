@@ -72,7 +72,7 @@ func (sem *SquadEditorMode) Initialize(ctx *core.UIContext) error {
 		ModeName:   "squad_editor",
 		ReturnMode: "squad_management",
 
-		Panels: []gui.PanelSpec{
+		Panels: []gui.ModePanelConfig{
 			{CustomBuild: sem.buildSquadNavigation},
 			{CustomBuild: sem.buildSquadSelector},
 			{CustomBuild: sem.buildGridEditor},
@@ -102,7 +102,7 @@ func (sem *SquadEditorMode) buildSquadNavigation() *widget.Container {
 	navWidth := int(float64(sem.Layout.ScreenWidth) * 0.5)
 	navHeight := int(float64(sem.Layout.ScreenHeight) * specs.SquadEditorNavHeight)
 
-	sem.navigationContainer = builders.CreateStaticPanel(builders.PanelConfig{
+	sem.navigationContainer = builders.CreateStaticPanel(builders.ContainerConfig{
 		MinWidth:  navWidth,
 		MinHeight: navHeight,
 		Layout: widget.NewRowLayout(
@@ -146,7 +146,7 @@ func (sem *SquadEditorMode) buildSquadSelector() *widget.Container {
 	listWidth := int(float64(sem.Layout.ScreenWidth) * specs.SquadEditorSquadListWidth)
 	listHeight := int(float64(sem.Layout.ScreenHeight) * specs.SquadEditorSquadListHeight)
 
-	sem.squadSelectorContainer = builders.CreateStaticPanel(builders.PanelConfig{
+	sem.squadSelectorContainer = builders.CreateStaticPanel(builders.ContainerConfig{
 		MinWidth:  listWidth,
 		MinHeight: listHeight,
 		Layout: widget.NewRowLayout(
@@ -196,7 +196,7 @@ func (sem *SquadEditorMode) buildUnitList() *widget.Container {
 	listWidth := int(float64(sem.Layout.ScreenWidth) * specs.SquadEditorUnitListWidth)
 	listHeight := int(float64(sem.Layout.ScreenHeight) * 0.35) // Half of vertical space
 
-	sem.unitListContainer = builders.CreateStaticPanel(builders.PanelConfig{
+	sem.unitListContainer = builders.CreateStaticPanel(builders.ContainerConfig{
 		MinWidth:  listWidth,
 		MinHeight: listHeight,
 		Layout: widget.NewRowLayout(
@@ -250,7 +250,7 @@ func (sem *SquadEditorMode) buildRosterList() *widget.Container {
 	listWidth := int(float64(sem.Layout.ScreenWidth) * specs.SquadEditorRosterListWidth)
 	listHeight := int(float64(sem.Layout.ScreenHeight) * 0.35) // Half of vertical space
 
-	sem.rosterListContainer = builders.CreateStaticPanel(builders.PanelConfig{
+	sem.rosterListContainer = builders.CreateStaticPanel(builders.ContainerConfig{
 		MinWidth:  listWidth,
 		MinHeight: listHeight,
 		Layout: widget.NewRowLayout(

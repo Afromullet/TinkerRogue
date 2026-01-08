@@ -215,7 +215,7 @@ func (cam *CombatAnimationMode) Initialize(ctx *core.UIContext) error {
 		ModeName:   "combat_animation",
 		ReturnMode: "combat",
 
-		Panels: []gui.PanelSpec{
+		Panels: []gui.ModePanelConfig{
 			{CustomBuild: cam.buildPromptLabel},
 		},
 	}).Build(ctx)

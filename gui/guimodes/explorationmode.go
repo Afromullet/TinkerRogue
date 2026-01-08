@@ -47,7 +47,7 @@ func (em *ExplorationMode) Initialize(ctx *core.UIContext) error {
 		},
 
 		// Build panels
-		Panels: []gui.PanelSpec{
+		Panels: []gui.ModePanelConfig{
 			{
 				// Message log panel (bottom-right) - now uses typed panel
 				PanelType:  builders.PanelTypeDetail,

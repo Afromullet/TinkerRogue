@@ -58,7 +58,7 @@ func (sdm *SquadDeploymentMode) Initialize(ctx *core.UIContext) error {
 		ModeName:   "squad_deployment",
 		ReturnMode: "exploration",
 
-		Panels: []gui.PanelSpec{
+		Panels: []gui.ModePanelConfig{
 			{CustomBuild: sdm.buildInstructionText},
 			{CustomBuild: sdm.buildSquadList},
 			{CustomBuild: sdm.buildDetailPanel},
@@ -150,7 +150,7 @@ func (sdm *SquadDeploymentMode) buildDetailPanel() *widget.Container {
 	panelWidth := int(float64(sdm.Layout.ScreenWidth) * 0.35)
 	panelHeight := int(float64(sdm.Layout.ScreenHeight) * 0.6)
 
-	detailPanel := builders.CreateStaticPanel(builders.PanelConfig{
+	detailPanel := builders.CreateStaticPanel(builders.ContainerConfig{
 		MinWidth:  panelWidth,
 		MinHeight: panelHeight,
 		Layout: widget.NewRowLayout(

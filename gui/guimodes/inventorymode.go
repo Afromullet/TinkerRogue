@@ -52,7 +52,7 @@ func (im *InventoryMode) Initialize(ctx *core.UIContext) error {
 			{Key: ebiten.KeyI, TargetMode: "exploration"},
 		},
 
-		Panels: []gui.PanelSpec{
+		Panels: []gui.ModePanelConfig{
 			{CustomBuild: im.buildFilterButtons},
 			{CustomBuild: im.buildItemList},
 			{CustomBuild: im.buildDetailPanel},
@@ -152,7 +152,7 @@ func (im *InventoryMode) buildDetailPanel() *widget.Container {
 	panelWidth := int(float64(im.Layout.ScreenWidth) * 0.35)
 	panelHeight := int(float64(im.Layout.ScreenHeight) * 0.6)
 
-	detailPanel := builders.CreateStaticPanel(builders.PanelConfig{
+	detailPanel := builders.CreateStaticPanel(builders.ContainerConfig{
 		MinWidth:  panelWidth,
 		MinHeight: panelHeight,
 		Layout: widget.NewRowLayout(

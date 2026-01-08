@@ -52,7 +52,7 @@ func (upm *UnitPurchaseMode) Initialize(ctx *core.UIContext) error {
 		ModeName:   "unit_purchase",
 		ReturnMode: "squad_management",
 
-		Panels: []gui.PanelSpec{
+		Panels: []gui.ModePanelConfig{
 			{CustomBuild: upm.buildResourceDisplay},
 			{CustomBuild: upm.buildUnitList},
 			{CustomBuild: upm.buildDetailPanel},
@@ -117,7 +117,7 @@ func (upm *UnitPurchaseMode) buildDetailPanel() *widget.Container {
 	panelWidth := int(float64(upm.Layout.ScreenWidth) * 0.35)
 	panelHeight := int(float64(upm.Layout.ScreenHeight) * 0.6)
 
-	upm.detailPanel = builders.CreateStaticPanel(builders.PanelConfig{
+	upm.detailPanel = builders.CreateStaticPanel(builders.ContainerConfig{
 		MinWidth:  panelWidth,
 		MinHeight: panelHeight,
 		Layout: widget.NewRowLayout(
@@ -166,7 +166,7 @@ func (upm *UnitPurchaseMode) buildResourceDisplay() *widget.Container {
 	panelWidth := int(float64(upm.Layout.ScreenWidth) * 0.25)
 	panelHeight := int(float64(upm.Layout.ScreenHeight) * 0.08)
 
-	resourcePanel := builders.CreateStaticPanel(builders.PanelConfig{
+	resourcePanel := builders.CreateStaticPanel(builders.ContainerConfig{
 		MinWidth:  panelWidth,
 		MinHeight: panelHeight,
 		Layout: widget.NewRowLayout(

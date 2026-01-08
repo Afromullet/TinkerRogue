@@ -68,7 +68,7 @@ func (sbm *SquadBuilderMode) Initialize(ctx *core.UIContext) error {
 		ModeName:   "squad_builder",
 		ReturnMode: "squad_management",
 
-		Panels: []gui.PanelSpec{
+		Panels: []gui.ModePanelConfig{
 			{CustomBuild: sbm.buildGridPanel},
 			{CustomBuild: sbm.buildRosterPalette},
 			{CustomBuild: sbm.buildCapacityDisplay},
