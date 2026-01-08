@@ -7,7 +7,6 @@ import (
 	"game_main/gui/builders"
 	"game_main/gui/core"
 	"game_main/gui/guicomponents"
-	"game_main/gui/guimodes"
 	"game_main/gui/guiresources"
 	"game_main/gui/widgets"
 	"game_main/tactical/behavior"
@@ -19,6 +18,30 @@ import (
 	"github.com/ebitenui/ebitenui/widget"
 	"github.com/hajimehoshi/ebiten/v2"
 )
+
+// CombatModeUI groups all UI widgets, components, and panels for CombatMode
+type CombatModeUI struct {
+	// Panels and widgets
+	turnOrderPanel   *widget.Container
+	factionInfoPanel *widget.Container
+	squadListPanel   *widget.Container
+	squadDetailPanel *widget.Container
+	combatLogArea    *widgets.CachedTextAreaWrapper // Cached for performance
+	actionButtons    *widget.Container
+	layerStatusPanel *widget.Container
+
+	// Text labels
+	turnOrderLabel  *widget.Text
+	factionInfoText *widget.Text
+	squadDetailText *widget.Text
+	layerStatusText *widget.Text
+
+	// Update components
+	squadListComponent   *guicomponents.SquadListComponent
+	squadDetailComponent *guicomponents.DetailPanelComponent
+	factionInfoComponent *guicomponents.DetailPanelComponent
+	turnOrderComponent   *guicomponents.TextDisplayComponent
+}
 
 // CombatMode provides focused UI for turn-based squad combat
 type CombatMode struct {
@@ -32,34 +55,11 @@ type CombatMode struct {
 	combatService    *combatservices.CombatService
 	lifecycleManager *CombatLifecycleManager
 
-	// UI panels and widgets
-	turnOrderPanel   *widget.Container
-	factionInfoPanel *widget.Container
-	squadListPanel   *widget.Container
-	squadDetailPanel *widget.Container
-	combatLogArea    *widgets.CachedTextAreaWrapper // Cached for performance
-	actionButtons    *widget.Container
-	layerStatusPanel *widget.Container
+	// UI state (grouped for clarity)
+	ui *CombatModeUI
 
-	// UI text labels
-	turnOrderLabel  *widget.Text
-	factionInfoText *widget.Text
-	squadDetailText *widget.Text
-	layerStatusText *widget.Text
-
-	// UI update components
-	squadListComponent   *guicomponents.SquadListComponent
-	squadDetailComponent *guicomponents.DetailPanelComponent
-	factionInfoComponent *guicomponents.DetailPanelComponent
-	turnOrderComponent   *guicomponents.TextDisplayComponent
-
-	// Rendering systems
-	movementRenderer  *guimodes.MovementTileRenderer
-	highlightRenderer *guimodes.SquadHighlightRenderer
-	dangerVisualizer  *behavior.DangerVisualizer
-	layerVisualizer   *behavior.LayerVisualizer
-	threatManager     *behavior.FactionThreatLevelManager
-	threatEvaluator   *behavior.CompositeThreatEvaluator
+	// Visualization systems (grouped for clarity)
+	visualization *CombatVisualizationManager
 
 	// State tracking for UI updates (GUI_PERFORMANCE_ANALYSIS.md)
 	lastFactionID     ecs.EntityID
@@ -72,6 +72,7 @@ type CombatMode struct {
 func NewCombatMode(modeManager *core.UIModeManager) *CombatMode {
 	cm := &CombatMode{
 		logManager: NewCombatLogManager(),
+		ui:         &CombatModeUI{}, // Initialize UI struct
 	}
 	cm.SetModeName("combat")
 	cm.SetReturnMode("exploration") // ESC returns to exploration
@@ -114,7 +115,7 @@ func (cm *CombatMode) Initialize(ctx *core.UIContext) error {
 	// Post-UI initialization (after panels are built)
 	// Update lifecycle manager with Queries and combatLogArea now that they're available
 	cm.lifecycleManager.queries = cm.Queries
-	cm.lifecycleManager.combatLogArea = cm.combatLogArea
+	cm.lifecycleManager.combatLogArea = cm.ui.combatLogArea
 	cm.lifecycleManager.SetBattleRecorder(cm.combatService.BattleRecorder)
 
 	cm.actionHandler = NewCombatActionHandler(
@@ -122,7 +123,7 @@ func (cm *CombatMode) Initialize(ctx *core.UIContext) error {
 		cm.logManager,
 		cm.Queries,
 		cm.combatService,
-		cm.combatLogArea,
+		cm.ui.combatLogArea,
 		cm.ModeManager,
 	)
 
@@ -134,40 +135,10 @@ func (cm *CombatMode) Initialize(ctx *core.UIContext) error {
 
 	cm.initializeUpdateComponents()
 
-	cm.movementRenderer = guimodes.NewMovementTileRenderer()
-	cm.highlightRenderer = guimodes.NewSquadHighlightRenderer(cm.Queries)
-
+	// Initialize all visualization systems (renderers, threat managers, visualizers)
 	// Cast GameMap from interface{} to *worldmap.GameMap
-	//TODO, remove in future. Here for gamevisualizer
 	gameMap := ctx.GameMap.(*worldmap.GameMap)
-
-	//Create the initial Faction Threat Level Manager and add all factions.
-	cm.threatManager = behavior.NewFactionThreatLevelManager(cm.Context.ECSManager, cm.Queries.CombatCache)
-	for _, IDs := range cm.Queries.GetAllFactions() {
-
-		cm.threatManager.AddFaction(IDs)
-
-	}
-
-	cm.dangerVisualizer = behavior.NewDangerVisualizer(ctx.ECSManager, gameMap, cm.threatManager)
-
-	// Create threat evaluators for layer visualization
-	allFactions := cm.Queries.GetAllFactions()
-	if len(allFactions) > 0 {
-		// Use player faction (first faction) for threat evaluation
-		playerFactionID := allFactions[0]
-		cm.threatEvaluator = behavior.NewCompositeThreatEvaluator(
-			playerFactionID,
-			ctx.ECSManager,
-			cm.Queries.CombatCache,
-			cm.threatManager,
-		)
-		cm.layerVisualizer = behavior.NewLayerVisualizer(
-			ctx.ECSManager,
-			gameMap,
-			cm.threatEvaluator,
-		)
-	}
+	cm.visualization = NewCombatVisualizationManager(ctx, cm.Queries, gameMap)
 
 	return nil
 }
@@ -181,39 +152,39 @@ func (cm *CombatMode) ensureUIFactoryInitialized() {
 func (cm *CombatMode) buildTurnOrderPanel() *widget.Container {
 	cm.ensureUIFactoryInitialized()
 
-	cm.turnOrderPanel = cm.uiFactory.CreateCombatTurnOrderPanel()
-	cm.turnOrderLabel = builders.CreateLargeLabel("Initializing combat...")
-	cm.turnOrderPanel.AddChild(cm.turnOrderLabel)
+	cm.ui.turnOrderPanel = cm.uiFactory.CreateCombatTurnOrderPanel()
+	cm.ui.turnOrderLabel = builders.CreateLargeLabel("Initializing combat...")
+	cm.ui.turnOrderPanel.AddChild(cm.ui.turnOrderLabel)
 
-	return cm.turnOrderPanel
+	return cm.ui.turnOrderPanel
 }
 
 func (cm *CombatMode) buildFactionInfoPanel() *widget.Container {
 	cm.ensureUIFactoryInitialized()
 
-	cm.factionInfoPanel = cm.uiFactory.CreateCombatFactionInfoPanel()
-	cm.factionInfoText = builders.CreateSmallLabel("Faction Info")
-	cm.factionInfoPanel.AddChild(cm.factionInfoText)
+	cm.ui.factionInfoPanel = cm.uiFactory.CreateCombatFactionInfoPanel()
+	cm.ui.factionInfoText = builders.CreateSmallLabel("Faction Info")
+	cm.ui.factionInfoPanel.AddChild(cm.ui.factionInfoText)
 
-	return cm.factionInfoPanel
+	return cm.ui.factionInfoPanel
 }
 
 func (cm *CombatMode) buildSquadListPanel() *widget.Container {
 	cm.ensureUIFactoryInitialized()
 
-	cm.squadListPanel = cm.uiFactory.CreateCombatSquadListPanel()
+	cm.ui.squadListPanel = cm.uiFactory.CreateCombatSquadListPanel()
 
-	return cm.squadListPanel
+	return cm.ui.squadListPanel
 }
 
 func (cm *CombatMode) buildSquadDetailPanel() *widget.Container {
 	cm.ensureUIFactoryInitialized()
 
-	cm.squadDetailPanel = cm.uiFactory.CreateCombatSquadDetailPanel()
-	cm.squadDetailText = builders.CreateSmallLabel("Select a squad\nto view details")
-	cm.squadDetailPanel.AddChild(cm.squadDetailText)
+	cm.ui.squadDetailPanel = cm.uiFactory.CreateCombatSquadDetailPanel()
+	cm.ui.squadDetailText = builders.CreateSmallLabel("Select a squad\nto view details")
+	cm.ui.squadDetailPanel.AddChild(cm.ui.squadDetailText)
 
-	return cm.squadDetailPanel
+	return cm.ui.squadDetailPanel
 }
 
 func (cm *CombatMode) buildLogPanel() *widget.Container {
@@ -222,7 +193,7 @@ func (cm *CombatMode) buildLogPanel() *widget.Container {
 	// Create log panel only if combat log is enabled
 	if config.ENABLE_COMBAT_LOG {
 		logContainer, logArea := cm.uiFactory.CreateCombatLogPanel()
-		cm.combatLogArea = logArea
+		cm.ui.combatLogArea = logArea
 		return logContainer
 	}
 
@@ -236,7 +207,7 @@ func (cm *CombatMode) buildActionButtons() *widget.Container {
 	// Create action buttons
 	// TODO, get rid of handleAttackClick,handleMovClick,handleUndoMove,and handleRedoMove.
 	// CombatActionSystem throws a null error when I call the function they are a wrapper around
-	cm.actionButtons = cm.uiFactory.CreateCombatActionButtons(
+	cm.ui.actionButtons = cm.uiFactory.CreateCombatActionButtons(
 		cm.handleAttackClick,
 		cm.handleMoveClick,
 		cm.handleUndoMove,
@@ -245,7 +216,7 @@ func (cm *CombatMode) buildActionButtons() *widget.Container {
 		cm.handleFlee,
 	)
 
-	return cm.actionButtons
+	return cm.ui.actionButtons
 }
 
 func (cm *CombatMode) buildLayerStatusPanel() *widget.Container {
@@ -255,7 +226,7 @@ func (cm *CombatMode) buildLayerStatusPanel() *widget.Container {
 	panelWidth := int(float64(cm.Layout.ScreenWidth) * 0.15)   // 15% of screen width
 	panelHeight := int(float64(cm.Layout.ScreenHeight) * 0.08) // 8% of screen height
 
-	cm.layerStatusPanel = builders.CreatePanelWithConfig(builders.PanelConfig{
+	cm.ui.layerStatusPanel = builders.CreatePanelWithConfig(builders.PanelConfig{
 		MinWidth:   panelWidth,
 		MinHeight:  panelHeight,
 		Background: guiresources.PanelRes.Image,
@@ -269,33 +240,34 @@ func (cm *CombatMode) buildLayerStatusPanel() *widget.Container {
 	// Position in top-right corner
 	rightPad := int(float64(cm.Layout.ScreenWidth) * 0.01)
 	topPad := int(float64(cm.Layout.ScreenHeight) * 0.01)
-	cm.layerStatusPanel.GetWidget().LayoutData = gui.AnchorEndStart(rightPad, topPad)
+	cm.ui.layerStatusPanel.GetWidget().LayoutData = gui.AnchorEndStart(rightPad, topPad)
 
 	// Create status text (initially hidden)
-	cm.layerStatusText = builders.CreateSmallLabel("")
-	cm.layerStatusPanel.AddChild(cm.layerStatusText)
+	cm.ui.layerStatusText = builders.CreateSmallLabel("")
+	cm.ui.layerStatusPanel.AddChild(cm.ui.layerStatusText)
 
 	// Hide panel initially (shown when visualizer is active)
-	cm.layerStatusPanel.GetWidget().Visibility = widget.Visibility_Hide
+	cm.ui.layerStatusPanel.GetWidget().Visibility = widget.Visibility_Hide
 
-	return cm.layerStatusPanel
+	return cm.ui.layerStatusPanel
 }
 
 // updateLayerStatusWidget updates the layer status panel visibility and text
 func (cm *CombatMode) updateLayerStatusWidget() {
-	if cm.layerStatusPanel == nil || cm.layerStatusText == nil || cm.layerVisualizer == nil {
+	layerViz := cm.visualization.GetLayerVisualizer()
+	if cm.ui.layerStatusPanel == nil || cm.ui.layerStatusText == nil || layerViz == nil {
 		return
 	}
 
-	if cm.layerVisualizer.IsActive() {
+	if layerViz.IsActive() {
 		// Show panel and update text with current mode info
-		modeInfo := cm.layerVisualizer.GetCurrentModeInfo()
+		modeInfo := layerViz.GetCurrentModeInfo()
 		statusText := fmt.Sprintf("LAYER VIEW\n%s\n%s", modeInfo.Name, modeInfo.ColorKey)
-		cm.layerStatusText.Label = statusText
-		cm.layerStatusPanel.GetWidget().Visibility = widget.Visibility_Show
+		cm.ui.layerStatusText.Label = statusText
+		cm.ui.layerStatusPanel.GetWidget().Visibility = widget.Visibility_Show
 	} else {
 		// Hide panel when visualizer is inactive
-		cm.layerStatusPanel.GetWidget().Visibility = widget.Visibility_Hide
+		cm.ui.layerStatusPanel.GetWidget().Visibility = widget.Visibility_Hide
 	}
 }
 
@@ -318,8 +290,8 @@ func (cm *CombatMode) handleRedoMove() {
 
 func (cm *CombatMode) initializeUpdateComponents() {
 	// Turn order component - displays current faction and round
-	cm.turnOrderComponent = guicomponents.NewTextDisplayComponent(
-		cm.turnOrderLabel,
+	cm.ui.turnOrderComponent = guicomponents.NewTextDisplayComponent(
+		cm.ui.turnOrderLabel,
 		func() string {
 			currentFactionID := cm.combatService.TurnManager.GetCurrentFaction()
 			if currentFactionID == 0 {
@@ -349,8 +321,8 @@ func (cm *CombatMode) initializeUpdateComponents() {
 	)
 
 	// Faction info component - displays squad count and mana
-	cm.factionInfoComponent = guicomponents.NewDetailPanelComponent(
-		cm.factionInfoText,
+	cm.ui.factionInfoComponent = guicomponents.NewDetailPanelComponent(
+		cm.ui.factionInfoText,
 		cm.Queries,
 		func(data interface{}) string {
 			factionInfo := data.(*guicomponents.FactionInfo)
@@ -372,21 +344,21 @@ func (cm *CombatMode) initializeUpdateComponents() {
 	)
 
 	// Squad detail component - displays selected squad details
-	cm.squadDetailComponent = guicomponents.NewDetailPanelComponent(
-		cm.squadDetailText,
+	cm.ui.squadDetailComponent = guicomponents.NewDetailPanelComponent(
+		cm.ui.squadDetailText,
 		cm.Queries,
 		nil, // Use default formatter
 	)
 
 	// Squad list component - filter for current faction squads (during player's turn only)
 	// Extracted filter logic to separate method to eliminate inline duplication
-	cm.squadListComponent = guicomponents.NewSquadListComponent(
-		cm.squadListPanel,
+	cm.ui.squadListComponent = guicomponents.NewSquadListComponent(
+		cm.ui.squadListPanel,
 		cm.Queries,
 		cm.makeCurrentFactionSquadFilter(),
 		func(squadID ecs.EntityID) {
 			cm.actionHandler.SelectSquad(squadID)
-			cm.squadDetailComponent.ShowSquad(squadID)
+			cm.ui.squadDetailComponent.ShowSquad(squadID)
 		},
 	)
 }
@@ -408,8 +380,23 @@ func (cm *CombatMode) makeCurrentFactionSquadFilter() guicomponents.SquadFilter 
 	}
 }
 
+// formatTurnMessage creates the turn transition message for combat log
+func (cm *CombatMode) formatTurnMessage(factionID ecs.EntityID, round int) string {
+	factionData := cm.Queries.CombatCache.FindFactionDataByID(factionID, cm.Queries.ECSManager)
+	factionName := "Unknown"
+
+	if factionData != nil {
+		factionName = factionData.Name
+		if factionData.PlayerID > 0 {
+			return fmt.Sprintf("=== Round %d: %s (%s) ===", round, factionName, factionData.PlayerName)
+		}
+		return fmt.Sprintf("=== Round %d: %s (AI) ===", round, factionName)
+	}
+	return fmt.Sprintf("=== Round %d: %s's Turn ===", round, factionName)
+}
+
 func (cm *CombatMode) handleFlee() {
-	cm.logManager.UpdateTextArea(cm.combatLogArea, "Fleeing from combat...")
+	cm.logManager.UpdateTextArea(cm.ui.combatLogArea, "Fleeing from combat...")
 
 	// Return to exploration mode (stays in BattleMap context)
 	if exploreMode, exists := cm.ModeManager.GetMode("exploration"); exists {
@@ -424,7 +411,7 @@ func (cm *CombatMode) handleEndTurn() {
 	// End current faction's turn using turn manager
 	err := cm.combatService.TurnManager.EndTurn()
 	if err != nil {
-		cm.logManager.UpdateTextArea(cm.combatLogArea, fmt.Sprintf("Error ending turn: %s", err.Error()))
+		cm.logManager.UpdateTextArea(cm.ui.combatLogArea, fmt.Sprintf("Error ending turn: %s", err.Error()))
 		return
 	}
 
@@ -440,39 +427,23 @@ func (cm *CombatMode) handleEndTurn() {
 		cm.combatService.BattleRecorder.SetCurrentRound(round)
 	}
 
-	// Get faction data for player name
-	factionData := cm.Queries.CombatCache.FindFactionDataByID(currentFactionID, cm.Queries.ECSManager)
-	factionName := "Unknown"
-	turnMessage := ""
-
-	if factionData != nil {
-		factionName = factionData.Name
-		if factionData.PlayerID > 0 {
-			turnMessage = fmt.Sprintf("=== Round %d: %s (%s) ===", round, factionName, factionData.PlayerName)
-		} else {
-			turnMessage = fmt.Sprintf("=== Round %d: %s (AI) ===", round, factionName)
-		}
-	} else {
-		turnMessage = fmt.Sprintf("=== Round %d: %s's Turn ===", round, factionName)
-	}
-
-	cm.logManager.UpdateTextArea(cm.combatLogArea, turnMessage)
+	// Log turn change
+	turnMessage := cm.formatTurnMessage(currentFactionID, round)
+	cm.logManager.UpdateTextArea(cm.ui.combatLogArea, turnMessage)
 
 	// Clear selection when turn changes
 	cm.Context.ModeCoordinator.GetBattleMapState().Reset()
 
 	// Update UI displays using components
-	cm.turnOrderComponent.Refresh()
-	cm.factionInfoComponent.ShowFaction(currentFactionID)
-	cm.squadListComponent.Refresh()
-	cm.squadDetailComponent.SetText("Select a squad\nto view details")
+	cm.ui.turnOrderComponent.Refresh()
+	cm.ui.factionInfoComponent.ShowFaction(currentFactionID)
+	cm.ui.squadListComponent.Refresh()
+	cm.ui.squadDetailComponent.SetText("Select a squad\nto view details")
 
-	cm.threatManager.UpdateAllFactions()
+	cm.visualization.UpdateThreatManagers()
 
 	// Update threat evaluator for layer visualization
-	if cm.threatEvaluator != nil {
-		cm.threatEvaluator.Update(round)
-	}
+	cm.visualization.UpdateThreatEvaluator(round)
 
 	// Execute AI turn if current faction is AI-controlled
 	cm.executeAITurnIfNeeded()
@@ -499,9 +470,9 @@ func (cm *CombatMode) executeAITurnIfNeeded() {
 	aiExecutedActions := aiController.DecideFactionTurn(currentFactionID)
 
 	if aiExecutedActions {
-		cm.logManager.UpdateTextArea(cm.combatLogArea, fmt.Sprintf("%s (AI) executed actions", factionData.Name))
+		cm.logManager.UpdateTextArea(cm.ui.combatLogArea, fmt.Sprintf("%s (AI) executed actions", factionData.Name))
 	} else {
-		cm.logManager.UpdateTextArea(cm.combatLogArea, fmt.Sprintf("%s (AI) has no valid actions", factionData.Name))
+		cm.logManager.UpdateTextArea(cm.ui.combatLogArea, fmt.Sprintf("%s (AI) has no valid actions", factionData.Name))
 	}
 
 	// Check if there are attacks to animate
@@ -584,7 +555,7 @@ func (cm *CombatMode) advanceAfterAITurn() {
 	// End AI turn
 	err := cm.combatService.TurnManager.EndTurn()
 	if err != nil {
-		cm.logManager.UpdateTextArea(cm.combatLogArea, fmt.Sprintf("Error ending AI turn: %s", err.Error()))
+		cm.logManager.UpdateTextArea(cm.ui.combatLogArea, fmt.Sprintf("Error ending AI turn: %s", err.Error()))
 		return
 	}
 
@@ -600,22 +571,15 @@ func (cm *CombatMode) advanceAfterAITurn() {
 		cm.combatService.BattleRecorder.SetCurrentRound(round)
 	}
 
-	newFactionData := cm.Queries.CombatCache.FindFactionDataByID(newFactionID, cm.Queries.ECSManager)
-	if newFactionData != nil {
-		turnMessage := ""
-		if newFactionData.PlayerID > 0 {
-			turnMessage = fmt.Sprintf("=== Round %d: %s (%s) ===", round, newFactionData.Name, newFactionData.PlayerName)
-		} else {
-			turnMessage = fmt.Sprintf("=== Round %d: %s (AI) ===", round, newFactionData.Name)
-		}
-		cm.logManager.UpdateTextArea(cm.combatLogArea, turnMessage)
-	}
+	// Log turn change
+	turnMessage := cm.formatTurnMessage(newFactionID, round)
+	cm.logManager.UpdateTextArea(cm.ui.combatLogArea, turnMessage)
 
-	cm.turnOrderComponent.Refresh()
-	cm.factionInfoComponent.ShowFaction(newFactionID)
-	cm.squadListComponent.Refresh()
+	cm.ui.turnOrderComponent.Refresh()
+	cm.ui.factionInfoComponent.ShowFaction(newFactionID)
+	cm.ui.squadListComponent.Refresh()
 
-	cm.threatManager.UpdateAllFactions()
+	cm.visualization.UpdateThreatManagers()
 
 	// Recursively execute next AI turn if needed
 	cm.executeAITurnIfNeeded()
@@ -652,7 +616,7 @@ func (cm *CombatMode) Enter(fromMode core.UIMode) error {
 
 	if shouldInitialize {
 		// Fresh combat start - initialize everything
-		cm.logManager.UpdateTextArea(cm.combatLogArea, "=== COMBAT STARTED ===")
+		cm.logManager.UpdateTextArea(cm.ui.combatLogArea, "=== COMBAT STARTED ===")
 
 		cm.SetupEncounter(fromMode)
 
@@ -669,9 +633,9 @@ func (cm *CombatMode) Enter(fromMode core.UIMode) error {
 	// Always refresh UI displays (whether fresh or returning from animation)
 	currentFactionID := cm.combatService.TurnManager.GetCurrentFaction()
 	if currentFactionID != 0 {
-		cm.turnOrderComponent.Refresh()
-		cm.factionInfoComponent.ShowFaction(currentFactionID)
-		cm.squadListComponent.Refresh()
+		cm.ui.turnOrderComponent.Refresh()
+		cm.ui.factionInfoComponent.ShowFaction(currentFactionID)
+		cm.ui.squadListComponent.Refresh()
 	}
 
 	return nil
@@ -697,15 +661,8 @@ func (cm *CombatMode) Exit(toMode core.UIMode) error {
 		}
 	}
 
-	// Clear danger visualization
-	if cm.dangerVisualizer != nil {
-		cm.dangerVisualizer.ClearVisualization()
-	}
-
-	// Clear layer visualization
-	if cm.layerVisualizer != nil {
-		cm.layerVisualizer.ClearVisualization()
-	}
+	// Clear all visualizations
+	cm.visualization.ClearAllVisualizations()
 
 	// Clear combat log for next battle
 	cm.logManager.Clear()
@@ -717,10 +674,10 @@ func (cm *CombatMode) Update(deltaTime float64) error {
 	// This avoids expensive text measurement on every frame (~10-15s CPU savings)
 	currentFactionID := cm.combatService.TurnManager.GetCurrentFaction()
 	if cm.lastFactionID != currentFactionID {
-		cm.turnOrderComponent.Refresh()
+		cm.ui.turnOrderComponent.Refresh()
 		cm.lastFactionID = currentFactionID
 		if cm.lastFactionID != 0 {
-			cm.factionInfoComponent.ShowFaction(cm.lastFactionID)
+			cm.ui.factionInfoComponent.ShowFaction(cm.lastFactionID)
 		}
 	}
 
@@ -728,25 +685,17 @@ func (cm *CombatMode) Update(deltaTime float64) error {
 	if cm.lastSelectedSquad != battleState.SelectedSquadID {
 		cm.lastSelectedSquad = battleState.SelectedSquadID
 		if cm.lastSelectedSquad != 0 {
-			cm.squadDetailComponent.ShowSquad(cm.lastSelectedSquad)
+			cm.ui.squadDetailComponent.ShowSquad(cm.lastSelectedSquad)
 		}
 	}
 
-	// Update danger visualization if active
-	if cm.dangerVisualizer.IsActive() {
-		currentRound := cm.combatService.TurnManager.GetCurrentRound()
-		playerPos := *cm.Context.PlayerData.Pos
-		viewportSize := 30 // Process 30x30 tile area around player
-		cm.dangerVisualizer.Update(currentFactionID, currentRound, playerPos, viewportSize)
-	}
+	// Update visualizations if active
+	currentRound := cm.combatService.TurnManager.GetCurrentRound()
+	playerPos := *cm.Context.PlayerData.Pos
+	viewportSize := 30 // Process 30x30 tile area around player
 
-	// Update layer visualization if active
-	if cm.layerVisualizer != nil && cm.layerVisualizer.IsActive() {
-		currentRound := cm.combatService.TurnManager.GetCurrentRound()
-		playerPos := *cm.Context.PlayerData.Pos
-		viewportSize := 30
-		cm.layerVisualizer.Update(currentFactionID, currentRound, playerPos, viewportSize)
-	}
+	cm.visualization.UpdateDangerVisualization(currentFactionID, currentRound, playerPos, viewportSize)
+	cm.visualization.UpdateLayerVisualization(currentFactionID, currentRound, playerPos, viewportSize)
 
 	return nil
 }
@@ -780,13 +729,13 @@ func (cm *CombatMode) Render(screen *ebiten.Image) {
 	selectedSquad := battleState.SelectedSquadID
 
 	// Render squad highlights (always shown)
-	cm.highlightRenderer.Render(screen, playerPos, currentFactionID, selectedSquad)
+	cm.visualization.GetHighlightRenderer().Render(screen, playerPos, currentFactionID, selectedSquad)
 
 	// Render valid movement tiles (only in move mode)
 	if battleState.InMoveMode {
 		validTiles := cm.getValidMoveTiles()
 		if len(validTiles) > 0 {
-			cm.movementRenderer.Render(screen, playerPos, validTiles)
+			cm.visualization.GetMovementRenderer().Render(screen, playerPos, validTiles)
 		}
 	}
 }
@@ -821,42 +770,45 @@ func (cm *CombatMode) HandleInput(inputState *core.InputState) bool {
 			inputState.KeysPressed[ebiten.KeyShiftLeft] ||
 			inputState.KeysPressed[ebiten.KeyShiftRight]
 
+		dangerViz := cm.visualization.GetDangerVisualizer()
 		if shiftPressed {
 			// Shift+H: Switch between enemy/player threat view
-			cm.dangerVisualizer.SwitchView()
+			dangerViz.SwitchView()
 			viewName := "Enemy Threats"
-			if cm.dangerVisualizer.GetViewMode() == behavior.ViewPlayerThreats {
+			if dangerViz.GetViewMode() == behavior.ViewPlayerThreats {
 				viewName = "Player Threats"
 			}
-			cm.logManager.UpdateTextArea(cm.combatLogArea, fmt.Sprintf("Switched to %s view", viewName))
+			cm.logManager.UpdateTextArea(cm.ui.combatLogArea, fmt.Sprintf("Switched to %s view", viewName))
 		} else {
 			// H alone: Toggle visualization on/off
-			cm.dangerVisualizer.Toggle()
+			dangerViz.Toggle()
 			status := "enabled"
-			if !cm.dangerVisualizer.IsActive() {
+			if !dangerViz.IsActive() {
 				status = "disabled"
 			}
-			cm.logManager.UpdateTextArea(cm.combatLogArea, fmt.Sprintf("Danger visualization %s", status))
+			cm.logManager.UpdateTextArea(cm.ui.combatLogArea, fmt.Sprintf("Danger visualization %s", status))
 		}
 		return true
 	}
 
 	// Left Control key to cycle between danger/expected damage metrics (when visualizer active)
 	if inputState.KeysJustPressed[ebiten.KeyControlLeft] {
-		if cm.dangerVisualizer.IsActive() {
-			cm.dangerVisualizer.CycleMetric()
+		dangerViz := cm.visualization.GetDangerVisualizer()
+		if dangerViz.IsActive() {
+			dangerViz.CycleMetric()
 			metricName := "Danger"
-			if cm.dangerVisualizer.GetMetricMode() == behavior.MetricExpectedDamage {
+			if dangerViz.GetMetricMode() == behavior.MetricExpectedDamage {
 				metricName = "Expected Damage"
 			}
-			cm.logManager.UpdateTextArea(cm.combatLogArea, fmt.Sprintf("Switched to %s metric", metricName))
+			cm.logManager.UpdateTextArea(cm.ui.combatLogArea, fmt.Sprintf("Switched to %s metric", metricName))
 			return true
 		}
 	}
 
 	// L key to toggle layer visualizer
 	if inputState.KeysJustPressed[ebiten.KeyL] {
-		if cm.layerVisualizer == nil {
+		layerViz := cm.visualization.GetLayerVisualizer()
+		if layerViz == nil {
 			return true
 		}
 
@@ -867,18 +819,18 @@ func (cm *CombatMode) HandleInput(inputState *core.InputState) bool {
 
 		if shiftPressed {
 			// Shift+L: Cycle through layer modes
-			cm.layerVisualizer.CycleMode()
-			modeInfo := cm.layerVisualizer.GetCurrentModeInfo()
-			cm.logManager.UpdateTextArea(cm.combatLogArea,
+			layerViz.CycleMode()
+			modeInfo := layerViz.GetCurrentModeInfo()
+			cm.logManager.UpdateTextArea(cm.ui.combatLogArea,
 				fmt.Sprintf("Layer: %s (%s)", modeInfo.Name, modeInfo.ColorKey))
 		} else {
 			// L alone: Toggle visualization on/off
-			cm.layerVisualizer.Toggle()
+			layerViz.Toggle()
 			status := "enabled"
-			if !cm.layerVisualizer.IsActive() {
+			if !layerViz.IsActive() {
 				status = "disabled"
 			}
-			cm.logManager.UpdateTextArea(cm.combatLogArea,
+			cm.logManager.UpdateTextArea(cm.ui.combatLogArea,
 				fmt.Sprintf("Layer visualization %s", status))
 		}
 		// Update the status widget to reflect current mode
