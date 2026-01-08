@@ -158,12 +158,12 @@ func (im *InventoryMode) buildDetailPanel() *widget.Container {
 		Layout: widget.NewRowLayout(
 			widget.RowLayoutOpts.Direction(widget.DirectionVertical),
 			widget.RowLayoutOpts.Spacing(10),
-			widget.RowLayoutOpts.Padding(gui.NewResponsiveRowPadding(im.Layout, specs.PaddingTight)),
+			widget.RowLayoutOpts.Padding(builders.NewResponsiveRowPadding(im.Layout, specs.PaddingTight)),
 		),
 	})
 
 	rightPad := int(float64(im.Layout.ScreenWidth) * specs.PaddingStandard)
-	detailPanel.GetWidget().LayoutData = gui.AnchorEndCenter(rightPad)
+	detailPanel.GetWidget().LayoutData = builders.AnchorEndCenter(rightPad)
 
 	// Detail text area - cached for performance
 	detailTextArea := builders.CreateCachedTextArea(builders.TextAreaConfig{

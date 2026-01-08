@@ -240,7 +240,7 @@ func (cm *CombatMode) buildLayerStatusPanel() *widget.Container {
 	// Position in top-right corner
 	rightPad := int(float64(cm.Layout.ScreenWidth) * 0.01)
 	topPad := int(float64(cm.Layout.ScreenHeight) * 0.01)
-	cm.ui.layerStatusPanel.GetWidget().LayoutData = gui.AnchorEndStart(rightPad, topPad)
+	cm.ui.layerStatusPanel.GetWidget().LayoutData = builders.AnchorEndStart(rightPad, topPad)
 
 	// Create status text (initially hidden)
 	cm.ui.layerStatusText = builders.CreateSmallLabel("")
