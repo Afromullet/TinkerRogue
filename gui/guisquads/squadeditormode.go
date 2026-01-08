@@ -108,12 +108,12 @@ func (sem *SquadEditorMode) buildSquadNavigation() *widget.Container {
 		Layout: widget.NewRowLayout(
 			widget.RowLayoutOpts.Direction(widget.DirectionHorizontal),
 			widget.RowLayoutOpts.Spacing(20),
-			widget.RowLayoutOpts.Padding(gui.NewResponsiveRowPadding(sem.Layout, specs.PaddingExtraSmall)),
+			widget.RowLayoutOpts.Padding(builders.NewResponsiveRowPadding(sem.Layout, specs.PaddingExtraSmall)),
 		),
 	})
 
 	topPad := int(float64(sem.Layout.ScreenHeight) * specs.PaddingStandard)
-	sem.navigationContainer.GetWidget().LayoutData = gui.AnchorCenterStart(topPad)
+	sem.navigationContainer.GetWidget().LayoutData = builders.AnchorCenterStart(topPad)
 
 	// Previous button
 	sem.prevButton = builders.CreateButtonWithConfig(builders.ButtonConfig{
@@ -158,7 +158,7 @@ func (sem *SquadEditorMode) buildSquadSelector() *widget.Container {
 	// Position below navigation, left side
 	leftPad := int(float64(sem.Layout.ScreenWidth) * specs.PaddingStandard)
 	topOffset := int(float64(sem.Layout.ScreenHeight) * (specs.SquadEditorNavHeight + specs.PaddingStandard*2))
-	sem.squadSelectorContainer.GetWidget().LayoutData = gui.AnchorStartStart(leftPad, topOffset)
+	sem.squadSelectorContainer.GetWidget().LayoutData = builders.AnchorStartStart(leftPad, topOffset)
 
 	titleLabel := builders.CreateSmallLabel("Select Squad:")
 	sem.squadSelectorContainer.AddChild(titleLabel)
@@ -208,7 +208,7 @@ func (sem *SquadEditorMode) buildUnitList() *widget.Container {
 	// Position below navigation, right side
 	rightPad := int(float64(sem.Layout.ScreenWidth) * specs.PaddingStandard)
 	topOffset := int(float64(sem.Layout.ScreenHeight) * (specs.SquadEditorNavHeight + specs.PaddingStandard*2))
-	sem.unitListContainer.GetWidget().LayoutData = gui.AnchorEndStart(rightPad, topOffset)
+	sem.unitListContainer.GetWidget().LayoutData = builders.AnchorEndStart(rightPad, topOffset)
 
 	titleLabel := builders.CreateSmallLabel("Squad Units:")
 	sem.unitListContainer.AddChild(titleLabel)
@@ -262,7 +262,7 @@ func (sem *SquadEditorMode) buildRosterList() *widget.Container {
 	// Position below unitListContainer
 	rightPad := int(float64(sem.Layout.ScreenWidth) * specs.PaddingStandard)
 	topOffset := int(float64(sem.Layout.ScreenHeight) * (specs.SquadEditorNavHeight + 0.35 + specs.PaddingStandard*3))
-	sem.rosterListContainer.GetWidget().LayoutData = gui.AnchorEndStart(rightPad, topOffset)
+	sem.rosterListContainer.GetWidget().LayoutData = builders.AnchorEndStart(rightPad, topOffset)
 
 	titleLabel := builders.CreateSmallLabel("Available Units (Roster):")
 	sem.rosterListContainer.AddChild(titleLabel)

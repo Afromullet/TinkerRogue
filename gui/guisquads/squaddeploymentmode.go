@@ -89,7 +89,7 @@ func (sdm *SquadDeploymentMode) buildInstructionText() *widget.Container {
 	// Wrap in container with LayoutData
 	container := widget.NewContainer(
 		widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
-		widget.ContainerOpts.WidgetOpts(widget.WidgetOpts.LayoutData(gui.AnchorCenterStart(topPad))),
+		widget.ContainerOpts.WidgetOpts(widget.WidgetOpts.LayoutData(builders.AnchorCenterStart(topPad))),
 	)
 	container.AddChild(instructionText)
 	return container
@@ -138,7 +138,7 @@ func (sdm *SquadDeploymentMode) buildSquadList() *widget.Container {
 	// Wrap in container with LayoutData
 	container := widget.NewContainer(
 		widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
-		widget.ContainerOpts.WidgetOpts(widget.WidgetOpts.LayoutData(gui.AnchorStartStart(leftPad, topOffset))),
+		widget.ContainerOpts.WidgetOpts(widget.WidgetOpts.LayoutData(builders.AnchorStartStart(leftPad, topOffset))),
 	)
 	// Add the underlying list to maintain interaction functionality
 	container.AddChild(baseList)
@@ -156,12 +156,12 @@ func (sdm *SquadDeploymentMode) buildDetailPanel() *widget.Container {
 		Layout: widget.NewRowLayout(
 			widget.RowLayoutOpts.Direction(widget.DirectionVertical),
 			widget.RowLayoutOpts.Spacing(10),
-			widget.RowLayoutOpts.Padding(gui.NewResponsiveRowPadding(sdm.Layout, specs.PaddingTight)),
+			widget.RowLayoutOpts.Padding(builders.NewResponsiveRowPadding(sdm.Layout, specs.PaddingTight)),
 		),
 	})
 
 	rightPad := int(float64(sdm.Layout.ScreenWidth) * specs.PaddingStandard)
-	detailPanel.GetWidget().LayoutData = gui.AnchorEndCenter(rightPad)
+	detailPanel.GetWidget().LayoutData = builders.AnchorEndCenter(rightPad)
 
 	// Detail text area - cached for performance
 	detailTextArea := builders.CreateCachedTextArea(builders.TextAreaConfig{

@@ -105,7 +105,7 @@ func (upm *UnitPurchaseMode) buildUnitList() *widget.Container {
 	// Wrap in container with LayoutData
 	container := widget.NewContainer(
 		widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
-		widget.ContainerOpts.WidgetOpts(widget.WidgetOpts.LayoutData(gui.AnchorStartStart(leftPad, topOffset))),
+		widget.ContainerOpts.WidgetOpts(widget.WidgetOpts.LayoutData(builders.AnchorStartStart(leftPad, topOffset))),
 	)
 	// Add the underlying list to maintain interaction functionality
 	container.AddChild(baseList)
@@ -123,12 +123,12 @@ func (upm *UnitPurchaseMode) buildDetailPanel() *widget.Container {
 		Layout: widget.NewRowLayout(
 			widget.RowLayoutOpts.Direction(widget.DirectionVertical),
 			widget.RowLayoutOpts.Spacing(10),
-			widget.RowLayoutOpts.Padding(gui.NewResponsiveRowPadding(upm.Layout, specs.PaddingTight)),
+			widget.RowLayoutOpts.Padding(builders.NewResponsiveRowPadding(upm.Layout, specs.PaddingTight)),
 		),
 	})
 
 	rightPad := int(float64(upm.Layout.ScreenWidth) * specs.PaddingStandard)
-	upm.detailPanel.GetWidget().LayoutData = gui.AnchorEndCenter(rightPad)
+	upm.detailPanel.GetWidget().LayoutData = builders.AnchorEndCenter(rightPad)
 
 	// Basic info text area (cached - only re-renders when selection changes)
 	upm.detailTextArea = builders.CreateCachedTextArea(builders.TextAreaConfig{
@@ -172,12 +172,12 @@ func (upm *UnitPurchaseMode) buildResourceDisplay() *widget.Container {
 		Layout: widget.NewRowLayout(
 			widget.RowLayoutOpts.Direction(widget.DirectionVertical),
 			widget.RowLayoutOpts.Spacing(5),
-			widget.RowLayoutOpts.Padding(gui.NewResponsiveRowPadding(upm.Layout, specs.PaddingTight)),
+			widget.RowLayoutOpts.Padding(builders.NewResponsiveRowPadding(upm.Layout, specs.PaddingTight)),
 		),
 	})
 
 	topPad := int(float64(upm.Layout.ScreenHeight) * 0.02)
-	resourcePanel.GetWidget().LayoutData = gui.AnchorCenterStart(topPad)
+	resourcePanel.GetWidget().LayoutData = builders.AnchorCenterStart(topPad)
 
 	// Gold label
 	upm.goldLabel = builders.CreateSmallLabel("Gold: 0")
