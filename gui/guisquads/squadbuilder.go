@@ -1,7 +1,7 @@
 package guisquads
 
 import (
-	"game_main/gui"
+	"game_main/gui/framework"
 	"game_main/gui/widgets"
 	"game_main/tactical/squadservices"
 
@@ -16,12 +16,12 @@ import (
 
 // SquadBuilderMode provides an interface for creating new squads
 type SquadBuilderMode struct {
-	gui.BaseMode // Embed common mode infrastructure
+	framework.BaseMode // Embed common mode infrastructure
 
 	// Managers and services
 	gridManager     *GridEditorManager
 	squadBuilderSvc *squadservices.SquadBuilderService
-	uiFactory       *gui.UIComponentFactory
+	uiFactory       *framework.UIComponentFactory
 
 	// UI widgets
 	gridContainer   *widget.Container
@@ -64,11 +64,11 @@ func (sbm *SquadBuilderMode) Initialize(ctx *core.UIContext) error {
 	sbm.squadBuilderSvc = squadservices.NewSquadBuilderService(ctx.ECSManager)
 	sbm.gridManager = NewGridEditorManager(ctx.ECSManager)
 
-	return gui.NewModeBuilder(&sbm.BaseMode, gui.ModeConfig{
+	return framework.NewModeBuilder(&sbm.BaseMode, framework.ModeConfig{
 		ModeName:   "squad_builder",
 		ReturnMode: "squad_management",
 
-		Panels: []gui.ModePanelConfig{
+		Panels: []framework.ModePanelConfig{
 			{CustomBuild: sbm.buildGridPanel},
 			{CustomBuild: sbm.buildRosterPalette},
 			{CustomBuild: sbm.buildCapacityDisplay},
@@ -81,7 +81,7 @@ func (sbm *SquadBuilderMode) Initialize(ctx *core.UIContext) error {
 
 func (sbm *SquadBuilderMode) ensureUIFactoryInitialized() {
 	if sbm.uiFactory == nil {
-		sbm.uiFactory = gui.NewUIComponentFactory(sbm.Queries, sbm.PanelBuilders, sbm.Layout)
+		sbm.uiFactory = framework.NewUIComponentFactory(sbm.Queries, sbm.PanelBuilders, sbm.Layout)
 	}
 }
 

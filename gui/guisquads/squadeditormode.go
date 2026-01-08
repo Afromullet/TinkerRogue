@@ -3,7 +3,7 @@ package guisquads
 import (
 	"fmt"
 	"game_main/common"
-	"game_main/gui"
+	"game_main/gui/framework"
 	"game_main/gui/builders"
 	"game_main/gui/core"
 	"game_main/gui/specs"
@@ -22,7 +22,7 @@ import (
 // - Change squad leader
 // - Change unit positions in grid
 type SquadEditorMode struct {
-	gui.BaseMode // Embed common mode infrastructure
+	framework.BaseMode // Embed common mode infrastructure
 
 	// Squad navigation
 	currentSquadIndex int
@@ -68,11 +68,11 @@ func NewSquadEditorMode(modeManager *core.UIModeManager) *SquadEditorMode {
 }
 
 func (sem *SquadEditorMode) Initialize(ctx *core.UIContext) error {
-	err := gui.NewModeBuilder(&sem.BaseMode, gui.ModeConfig{
+	err := framework.NewModeBuilder(&sem.BaseMode, framework.ModeConfig{
 		ModeName:   "squad_editor",
 		ReturnMode: "squad_management",
 
-		Panels: []gui.ModePanelConfig{
+		Panels: []framework.ModePanelConfig{
 			{CustomBuild: sem.buildSquadNavigation},
 			{CustomBuild: sem.buildSquadSelector},
 			{CustomBuild: sem.buildGridEditor},
@@ -291,7 +291,7 @@ func (sem *SquadEditorMode) buildRosterList() *widget.Container {
 // buildActionButtons creates bottom action buttons (called after Initialize completes)
 func (sem *SquadEditorMode) buildActionButtons() *widget.Container {
 	// Create UI factory
-	uiFactory := gui.NewUIComponentFactory(sem.Queries, sem.PanelBuilders, sem.Layout)
+	uiFactory := framework.NewUIComponentFactory(sem.Queries, sem.PanelBuilders, sem.Layout)
 
 	// Create button callbacks (no panel wrapper - like combat mode)
 	sem.actionButtonsContainer = uiFactory.CreateSquadEditorActionButtons(

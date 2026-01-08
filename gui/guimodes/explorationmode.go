@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"game_main/common"
-	"game_main/gui"
+	"game_main/gui/framework"
 	"game_main/gui/builders"
 	"game_main/gui/core"
 	"game_main/world/encounter"
@@ -16,7 +16,7 @@ import (
 
 // ExplorationMode is the default UI mode during dungeon exploration
 type ExplorationMode struct {
-	gui.BaseMode // Embed common mode infrastructure
+	framework.BaseMode // Embed common mode infrastructure
 
 	initialized bool
 
@@ -34,12 +34,12 @@ func NewExplorationMode(modeManager *core.UIModeManager) *ExplorationMode {
 
 func (em *ExplorationMode) Initialize(ctx *core.UIContext) error {
 	// Use ModeBuilder for declarative initialization (reduces 60+ lines to ~30)
-	err := gui.NewModeBuilder(&em.BaseMode, gui.ModeConfig{
+	err := framework.NewModeBuilder(&em.BaseMode, framework.ModeConfig{
 		ModeName:   "exploration",
 		ReturnMode: "", // No return mode - exploration is the main mode
 
 		// Register hotkeys for mode transitions (Battle Map context only)
-		Hotkeys: []gui.HotkeySpec{
+		Hotkeys: []framework.HotkeySpec{
 			{Key: ebiten.KeyI, TargetMode: "inventory"},
 			{Key: ebiten.KeyC, TargetMode: "combat"},
 			{Key: ebiten.KeyD, TargetMode: "squad_deployment"},
@@ -47,7 +47,7 @@ func (em *ExplorationMode) Initialize(ctx *core.UIContext) error {
 		},
 
 		// Build panels
-		Panels: []gui.ModePanelConfig{
+		Panels: []framework.ModePanelConfig{
 			{
 				// Message log panel (bottom-right) - now uses typed panel
 				PanelType:  builders.PanelTypeDetail,
@@ -78,7 +78,7 @@ func (em *ExplorationMode) Initialize(ctx *core.UIContext) error {
 
 func (em *ExplorationMode) buildQuickInventory() *widget.Container {
 	// Create UI factory
-	uiFactory := gui.NewUIComponentFactory(em.Queries, em.PanelBuilders, em.Layout)
+	uiFactory := framework.NewUIComponentFactory(em.Queries, em.PanelBuilders, em.Layout)
 
 	// Create button callbacks (no panel wrapper - like combat mode)
 	quickInventory := uiFactory.CreateExplorationActionButtons(

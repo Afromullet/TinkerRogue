@@ -6,7 +6,7 @@ import (
 	"math"
 
 	"game_main/common"
-	"game_main/gui"
+	"game_main/gui/framework"
 	"game_main/gui/builders"
 	"game_main/gui/core"
 	"game_main/tactical/combat"
@@ -61,7 +61,7 @@ var attackColorPalette = []ebiten.ColorScale{
 // CombatAnimationMode displays a full-screen battle scene during combat.
 // Shows both squads side-by-side with units at their grid positions.
 type CombatAnimationMode struct {
-	gui.BaseMode
+	framework.BaseMode
 
 	// Combat participants
 	attackerSquadID ecs.EntityID
@@ -211,11 +211,11 @@ func (cam *CombatAnimationMode) Initialize(ctx *core.UIContext) error {
 	cam.screenHeight = ctx.ScreenHeight
 	cam.calculateLayout()
 
-	return gui.NewModeBuilder(&cam.BaseMode, gui.ModeConfig{
+	return framework.NewModeBuilder(&cam.BaseMode, framework.ModeConfig{
 		ModeName:   "combat_animation",
 		ReturnMode: "combat",
 
-		Panels: []gui.ModePanelConfig{
+		Panels: []framework.ModePanelConfig{
 			{CustomBuild: cam.buildPromptLabel},
 		},
 	}).Build(ctx)

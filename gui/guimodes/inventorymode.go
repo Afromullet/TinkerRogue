@@ -5,7 +5,7 @@ import (
 	"image/color"
 
 	"game_main/gear"
-	"game_main/gui"
+	"game_main/gui/framework"
 	"game_main/gui/builders"
 	"game_main/gui/core"
 	"game_main/gui/guicomponents"
@@ -18,7 +18,7 @@ import (
 
 // InventoryMode provides full-screen inventory browsing and management
 type InventoryMode struct {
-	gui.BaseMode // Embed common mode infrastructure
+	framework.BaseMode // Embed common mode infrastructure
 
 	inventoryService  *gear.InventoryService
 	itemList          *widget.List
@@ -44,25 +44,25 @@ func (im *InventoryMode) Initialize(ctx *core.UIContext) error {
 	// Create inventory service first (needed by filter/list builders)
 	im.inventoryService = gear.NewInventoryService(ctx.ECSManager)
 
-	err := gui.NewModeBuilder(&im.BaseMode, gui.ModeConfig{
+	err := framework.NewModeBuilder(&im.BaseMode, framework.ModeConfig{
 		ModeName:   "inventory",
 		ReturnMode: "exploration",
 
-		Hotkeys: []gui.HotkeySpec{
+		Hotkeys: []framework.HotkeySpec{
 			{Key: ebiten.KeyI, TargetMode: "exploration"},
 		},
 
-		Panels: []gui.ModePanelConfig{
+		Panels: []framework.ModePanelConfig{
 			{CustomBuild: im.buildFilterButtons},
 			{CustomBuild: im.buildItemList},
 			{CustomBuild: im.buildDetailPanel},
 		},
 
-		Buttons: []gui.ButtonGroupSpec{
+		Buttons: []framework.ButtonGroupSpec{
 			{
 				Position: builders.BottomCenter(),
 				Buttons: []builders.ButtonSpec{
-					gui.ModeTransitionSpec(im.ModeManager, "Close (ESC)", "exploration"),
+					framework.ModeTransitionSpec(im.ModeManager, "Close (ESC)", "exploration"),
 				},
 			},
 		},
@@ -77,7 +77,7 @@ func (im *InventoryMode) Initialize(ctx *core.UIContext) error {
 
 func (im *InventoryMode) buildFilterButtons() *widget.Container {
 	// Top-left filter buttons using helper
-	filterButtons := gui.CreateFilterButtonContainer(im.PanelBuilders, builders.TopLeft())
+	filterButtons := framework.CreateFilterButtonContainer(im.PanelBuilders, builders.TopLeft())
 
 	// Filter buttons - use component's SetFilter when clicked
 	filters := []string{"All", "Throwables", "Equipment", "Consumables"}

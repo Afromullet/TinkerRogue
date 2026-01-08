@@ -1,5 +1,5 @@
-// Package gui provides UI and mode system for the game
-package gui
+// Package framework provides UI and mode system for the game
+package framework
 
 import (
 	"fmt"
@@ -194,11 +194,11 @@ func CreateStandardDetailPanel(
 //
 // Example:
 //
-//	Buttons: []gui.ButtonGroupSpec{
+//	Buttons: []framework.ButtonGroupSpec{
 //	    {
 //	        Position: builders.BottomCenter(),
 //	        Buttons: []builders.ButtonSpec{
-//	            gui.ModeTransitionSpec(modeManager, "Close (ESC)", "squad_management"),
+//	            framework.ModeTransitionSpec(modeManager, "Close (ESC)", "squad_management"),
 //	        },
 //	    },
 //	}
@@ -220,11 +220,11 @@ func ModeTransitionSpec(modeManager *core.UIModeManager, text, targetMode string
 //
 // Example:
 //
-//	Buttons: []gui.ButtonGroupSpec{
+//	Buttons: []framework.ButtonGroupSpec{
 //	    {
 //	        Position: builders.BottomCenter(),
 //	        Buttons: []builders.ButtonSpec{
-//	            gui.ContextSwitchSpec(coordinator, "Battle Map (ESC)", "battlemap", "exploration"),
+//	            framework.ContextSwitchSpec(coordinator, "Battle Map (ESC)", "battlemap", "exploration"),
 //	        },
 //	    },
 //	}
@@ -257,7 +257,7 @@ func ContextSwitchSpec(coordinator *core.GameModeCoordinator, text, targetContex
 //
 // Example usage:
 //
-//	btn := gui.ModeTransitionButton(modeManager, "Squad Management (E)", "squad_management")
+//	btn := framework.ModeTransitionButton(modeManager, "Squad Management (E)", "squad_management")
 func ModeTransitionButton(modeManager *core.UIModeManager, text, targetMode string) *widget.Button {
 	return builders.CreateButtonWithConfig(builders.ButtonConfig{
 		Text: text,
@@ -279,8 +279,8 @@ func ModeTransitionButton(modeManager *core.UIModeManager, text, targetMode stri
 //
 // Example usage:
 //
-//	btn := gui.ContextSwitchButton(coordinator, "Battle Map (ESC)", "battlemap", "exploration")
-//	btn := gui.ContextSwitchButton(coordinator, "Squads (E)", "overworld", "squad_management")
+//	btn := framework.ContextSwitchButton(coordinator, "Battle Map (ESC)", "battlemap", "exploration")
+//	btn := framework.ContextSwitchButton(coordinator, "Squads (E)", "overworld", "squad_management")
 func ContextSwitchButton(coordinator *core.GameModeCoordinator, text, targetContext, targetMode string) *widget.Button {
 	return builders.CreateButtonWithConfig(builders.ButtonConfig{
 		Text: text,
@@ -332,7 +332,7 @@ type CommandExecutor interface {
 //
 // Example usage:
 //
-//	btn := gui.CommandButton(gui.CommandButtonConfig{
+//	btn := framework.CommandButton(framework.CommandButtonConfig{
 //	    Text:           "Disband Squad",
 //	    ConfirmTitle:   "Confirm Disband",
 //	    ConfirmMessage: "Disband squad? This will return all units to the roster.",

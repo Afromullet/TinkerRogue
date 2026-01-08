@@ -2,7 +2,7 @@ package guisquads
 
 import (
 	"fmt"
-	"game_main/gui"
+	"game_main/gui/framework"
 	"game_main/gui/core"
 
 	"github.com/ebitenui/ebitenui/widget"
@@ -11,7 +11,7 @@ import (
 
 // SquadManagementMode shows one squad at a time with navigation controls
 type SquadManagementMode struct {
-	gui.BaseMode // Embed common mode infrastructure
+	framework.BaseMode // Embed common mode infrastructure
 
 	commandContainer *widget.Container // Container for command buttons
 
@@ -25,17 +25,17 @@ func NewSquadManagementMode(modeManager *core.UIModeManager) *SquadManagementMod
 }
 
 func (smm *SquadManagementMode) Initialize(ctx *core.UIContext) error {
-	err := gui.NewModeBuilder(&smm.BaseMode, gui.ModeConfig{
+	err := framework.NewModeBuilder(&smm.BaseMode, framework.ModeConfig{
 		ModeName:   "squad_management",
 		ReturnMode: "", // Context switch handled separately
 
-		Hotkeys: []gui.HotkeySpec{
+		Hotkeys: []framework.HotkeySpec{
 			{Key: ebiten.KeyB, TargetMode: "squad_builder"},
 			{Key: ebiten.KeyP, TargetMode: "unit_purchase"},
 			{Key: ebiten.KeyE, TargetMode: "squad_editor"},
 		},
 
-		Panels: []gui.ModePanelConfig{
+		Panels: []framework.ModePanelConfig{
 
 			{CustomBuild: smm.buildActionButtons}, // Build after Context is available
 		},
@@ -50,7 +50,7 @@ func (smm *SquadManagementMode) Initialize(ctx *core.UIContext) error {
 
 func (smm *SquadManagementMode) buildActionButtons() *widget.Container {
 	// Create UI factory
-	uiFactory := gui.NewUIComponentFactory(smm.Queries, smm.PanelBuilders, smm.Layout)
+	uiFactory := framework.NewUIComponentFactory(smm.Queries, smm.PanelBuilders, smm.Layout)
 
 	// Create button callbacks (no panel wrapper - like combat mode)
 	buttonContainer := uiFactory.CreateSquadManagementActionButtons(
@@ -118,7 +118,7 @@ func (smm *SquadManagementMode) HandleInput(inputState *core.InputState) bool {
 		return true
 	}
 
-	// E key hotkey is now handled by gui.BaseMode.HandleCommonInput via RegisterHotkey
+	// E key hotkey is now handled by framework.BaseMode.HandleCommonInput via RegisterHotkey
 	return false
 }
 

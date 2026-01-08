@@ -19,7 +19,8 @@
       "Bash(for file in gui/guicombat/combatmode.go gui/guicombat/combat_animation_mode.go)",
       "Bash(do sed -i 's/widgets\\\\.CreateSmallLabel/builders.CreateSmallLabel/g; s/widgets\\\\.CreateLargeLabel/builders.CreateLargeLabel/g; s/widgets\\\\.CreateButtonWithConfig/builders.CreateButtonWithConfig/g; s/widgets\\\\.ButtonConfig/builders.ButtonConfig/g; s/widgets\\\\.CreateTextAreaWithConfig/builders.CreateTextAreaWithConfig/g; s/widgets\\\\.TextAreaConfig/builders.TextAreaConfig/g; s/widgets\\\\.PanelConfig/builders.PanelConfig/g; s/widgets\\\\.CreateStaticPanel/builders.CreateStaticPanel/g' \"$file\")",
       "Bash(go list:*)",
-      "Bash(./combatsim_test.exe:*)"
+      "Bash(./combatsim_test.exe:*)",
+      "Bash(mkdir:*)"
     ],
     "deny": [],
     "ask": []

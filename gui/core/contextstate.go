@@ -9,7 +9,7 @@ import (
 // TODO. None of the state is currently used. Determine whether we still need them
 type OverworldState struct {
 	// Squad management state
-	SelectedSquadID ecs.EntityID   // Currently selected squad in squad management
+	SelectedSquadID ecs.EntityID   // Currently selgui/modebuilder.goected squad in squad management
 	SquadListScroll int            // Scroll position in squad list
 	SquadIDs        []ecs.EntityID // All available squads (for quick access)
 

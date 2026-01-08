@@ -3,7 +3,7 @@ package guicombat
 import (
 	"fmt"
 	"game_main/config"
-	"game_main/gui"
+	"game_main/gui/framework"
 	"game_main/gui/builders"
 	"game_main/gui/core"
 	"game_main/gui/guicomponents"
@@ -45,13 +45,13 @@ type CombatModeUI struct {
 
 // CombatMode provides focused UI for turn-based squad combat
 type CombatMode struct {
-	gui.BaseMode // Embed common mode infrastructure
+	framework.BaseMode // Embed common mode infrastructure
 
 	// Managers
 	logManager       *CombatLogManager
 	actionHandler    *CombatActionHandler
 	inputHandler     *CombatInputHandler
-	uiFactory        *gui.UIComponentFactory
+	uiFactory        *framework.UIComponentFactory
 	combatService    *combatservices.CombatService
 	lifecycleManager *CombatLifecycleManager
 
@@ -94,11 +94,11 @@ func (cm *CombatMode) Initialize(ctx *core.UIContext) error {
 	)
 
 	// Build UI using ModeBuilder
-	err := gui.NewModeBuilder(&cm.BaseMode, gui.ModeConfig{
+	err := framework.NewModeBuilder(&cm.BaseMode, framework.ModeConfig{
 		ModeName:   "combat",
 		ReturnMode: "exploration",
 
-		Panels: []gui.ModePanelConfig{
+		Panels: []framework.ModePanelConfig{
 			{CustomBuild: cm.buildTurnOrderPanel},
 			{CustomBuild: cm.buildFactionInfoPanel},
 			{CustomBuild: cm.buildSquadListPanel},
@@ -145,7 +145,7 @@ func (cm *CombatMode) Initialize(ctx *core.UIContext) error {
 
 func (cm *CombatMode) ensureUIFactoryInitialized() {
 	if cm.uiFactory == nil {
-		cm.uiFactory = gui.NewUIComponentFactory(cm.Queries, cm.PanelBuilders, cm.Layout)
+		cm.uiFactory = framework.NewUIComponentFactory(cm.Queries, cm.PanelBuilders, cm.Layout)
 	}
 }
 

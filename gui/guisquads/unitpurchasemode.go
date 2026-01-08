@@ -2,7 +2,7 @@ package guisquads
 
 import (
 	"fmt"
-	"game_main/gui"
+	"game_main/gui/framework"
 	"game_main/gui/builders"
 	"game_main/gui/core"
 	"game_main/gui/specs"
@@ -18,7 +18,7 @@ import (
 
 // UnitPurchaseMode allows players to buy units and add them to their roster
 type UnitPurchaseMode struct {
-	gui.BaseMode // Embed common mode infrastructure
+	framework.BaseMode // Embed common mode infrastructure
 
 	purchaseService *squadservices.UnitPurchaseService
 	unitList        *widgets.CachedListWrapper
@@ -48,11 +48,11 @@ func (upm *UnitPurchaseMode) Initialize(ctx *core.UIContext) error {
 	// Create purchase service first (needed by UI builders)
 	upm.purchaseService = squadservices.NewUnitPurchaseService(ctx.ECSManager)
 
-	return gui.NewModeBuilder(&upm.BaseMode, gui.ModeConfig{
+	return framework.NewModeBuilder(&upm.BaseMode, framework.ModeConfig{
 		ModeName:   "unit_purchase",
 		ReturnMode: "squad_management",
 
-		Panels: []gui.ModePanelConfig{
+		Panels: []framework.ModePanelConfig{
 			{CustomBuild: upm.buildResourceDisplay},
 			{CustomBuild: upm.buildUnitList},
 			{CustomBuild: upm.buildDetailPanel},
@@ -192,7 +192,7 @@ func (upm *UnitPurchaseMode) buildResourceDisplay() *widget.Container {
 
 func (upm *UnitPurchaseMode) buildActionButtons() *widget.Container {
 	// Create UI factory
-	uiFactory := gui.NewUIComponentFactory(upm.Queries, upm.PanelBuilders, upm.Layout)
+	uiFactory := framework.NewUIComponentFactory(upm.Queries, upm.PanelBuilders, upm.Layout)
 
 	// Create button callbacks (no panel wrapper - like combat mode)
 	actionButtonContainer := uiFactory.CreateUnitPurchaseActionButtons(

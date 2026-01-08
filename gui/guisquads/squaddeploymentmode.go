@@ -6,7 +6,7 @@ import (
 
 	"game_main/common"
 	"game_main/world/coords"
-	"game_main/gui"
+	"game_main/gui/framework"
 	"game_main/gui/builders"
 	"game_main/gui/core"
 	"game_main/gui/guimodes"
@@ -23,7 +23,7 @@ import (
 
 // SquadDeploymentMode allows placing squads on the map before combat
 type SquadDeploymentMode struct {
-	gui.BaseMode // Embed common mode infrastructure
+	framework.BaseMode // Embed common mode infrastructure
 
 	deploymentService *squadservices.SquadDeploymentService
 	squadList         *widgets.CachedListWrapper
@@ -54,11 +54,11 @@ func (sdm *SquadDeploymentMode) Initialize(ctx *core.UIContext) error {
 	sdm.deploymentService = squadservices.NewSquadDeploymentService(ctx.ECSManager)
 
 	// Build the mode UI first
-	err := gui.NewModeBuilder(&sdm.BaseMode, gui.ModeConfig{
+	err := framework.NewModeBuilder(&sdm.BaseMode, framework.ModeConfig{
 		ModeName:   "squad_deployment",
 		ReturnMode: "exploration",
 
-		Panels: []gui.ModePanelConfig{
+		Panels: []framework.ModePanelConfig{
 			{CustomBuild: sdm.buildInstructionText},
 			{CustomBuild: sdm.buildSquadList},
 			{CustomBuild: sdm.buildDetailPanel},
@@ -180,7 +180,7 @@ func (sdm *SquadDeploymentMode) buildDetailPanel() *widget.Container {
 
 func (sdm *SquadDeploymentMode) buildActionButtons() *widget.Container {
 	// Create UI factory
-	uiFactory := gui.NewUIComponentFactory(sdm.Queries, sdm.PanelBuilders, sdm.Layout)
+	uiFactory := framework.NewUIComponentFactory(sdm.Queries, sdm.PanelBuilders, sdm.Layout)
 
 	// Create button callbacks (no panel wrapper - like combat mode)
 	buttonContainer := uiFactory.CreateSquadDeploymentActionButtons(
