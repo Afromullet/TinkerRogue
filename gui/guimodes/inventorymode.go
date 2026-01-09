@@ -5,9 +5,9 @@ import (
 	"image/color"
 
 	"game_main/gear"
-	"game_main/gui/framework"
 	"game_main/gui/builders"
-	"game_main/gui/core"
+	"game_main/gui/framework"
+
 	"game_main/gui/guicomponents"
 	"game_main/gui/specs"
 	"game_main/gui/widgets"
@@ -31,7 +31,7 @@ type InventoryMode struct {
 	currentFilter string // "all", "throwables", "equipment", "consumables"
 }
 
-func NewInventoryMode(modeManager *core.UIModeManager) *InventoryMode {
+func NewInventoryMode(modeManager *framework.UIModeManager) *InventoryMode {
 	mode := &InventoryMode{
 		currentFilter: "all",
 	}
@@ -40,7 +40,7 @@ func NewInventoryMode(modeManager *core.UIModeManager) *InventoryMode {
 	return mode
 }
 
-func (im *InventoryMode) Initialize(ctx *core.UIContext) error {
+func (im *InventoryMode) Initialize(ctx *framework.UIContext) error {
 	// Create inventory service first (needed by filter/list builders)
 	im.inventoryService = gear.NewInventoryService(ctx.ECSManager)
 
@@ -198,7 +198,7 @@ func (im *InventoryMode) handleItemSelection(selectedEntry interface{}) {
 	}
 }
 
-func (im *InventoryMode) Enter(fromMode core.UIMode) error {
+func (im *InventoryMode) Enter(fromMode framework.UIMode) error {
 	fmt.Println("Entering Inventory Mode")
 
 	// Initialize item list with current filter (defaults to "All")
@@ -211,7 +211,7 @@ func (im *InventoryMode) Enter(fromMode core.UIMode) error {
 	return nil
 }
 
-func (im *InventoryMode) Exit(toMode core.UIMode) error {
+func (im *InventoryMode) Exit(toMode framework.UIMode) error {
 	fmt.Println("Exiting Inventory Mode")
 	return nil
 }
@@ -224,7 +224,7 @@ func (im *InventoryMode) Render(screen *ebiten.Image) {
 	// No custom rendering
 }
 
-func (im *InventoryMode) HandleInput(inputState *core.InputState) bool {
+func (im *InventoryMode) HandleInput(inputState *framework.InputState) bool {
 	// Handle common input (ESC key)
 	if im.HandleCommonInput(inputState) {
 		return true

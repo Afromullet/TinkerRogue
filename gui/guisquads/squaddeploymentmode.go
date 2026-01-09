@@ -5,10 +5,10 @@ import (
 	"image/color"
 
 	"game_main/common"
-	"game_main/world/coords"
-	"game_main/gui/framework"
 	"game_main/gui/builders"
-	"game_main/gui/core"
+	"game_main/gui/framework"
+	"game_main/world/coords"
+
 	"game_main/gui/guimodes"
 	"game_main/gui/specs"
 	"game_main/gui/widgets"
@@ -41,7 +41,7 @@ type SquadDeploymentMode struct {
 	highlightRenderer *guimodes.SquadHighlightRenderer
 }
 
-func NewSquadDeploymentMode(modeManager *core.UIModeManager) *SquadDeploymentMode {
+func NewSquadDeploymentMode(modeManager *framework.UIModeManager) *SquadDeploymentMode {
 	mode := &SquadDeploymentMode{}
 	mode.SetModeName("squad_deployment")
 	mode.SetReturnMode("exploration") // ESC returns to exploration
@@ -49,7 +49,7 @@ func NewSquadDeploymentMode(modeManager *core.UIModeManager) *SquadDeploymentMod
 	return mode
 }
 
-func (sdm *SquadDeploymentMode) Initialize(ctx *core.UIContext) error {
+func (sdm *SquadDeploymentMode) Initialize(ctx *framework.UIContext) error {
 	// Create deployment service first (needed by UI builders)
 	sdm.deploymentService = squadservices.NewSquadDeploymentService(ctx.ECSManager)
 
@@ -180,10 +180,10 @@ func (sdm *SquadDeploymentMode) buildDetailPanel() *widget.Container {
 
 func (sdm *SquadDeploymentMode) buildActionButtons() *widget.Container {
 	// Create UI factory
-	uiFactory := framework.NewUIComponentFactory(sdm.Queries, sdm.PanelBuilders, sdm.Layout)
+	panelFactory := guimodes.NewExplorationPanelFactory(sdm.PanelBuilders, sdm.Layout)
 
 	// Create button callbacks (no panel wrapper - like combat mode)
-	buttonContainer := uiFactory.CreateSquadDeploymentActionButtons(
+	buttonContainer := panelFactory.CreateSquadDeploymentActionButtons(
 		// Clear All
 		func() {
 			sdm.clearAllSquadPositions()
@@ -254,7 +254,7 @@ func (sdm *SquadDeploymentMode) refreshSquadList() {
 	sdm.squadList.MarkDirty() // Trigger re-render with updated entries
 }
 
-func (sdm *SquadDeploymentMode) Enter(fromMode core.UIMode) error {
+func (sdm *SquadDeploymentMode) Enter(fromMode framework.UIMode) error {
 	fmt.Println("Entering Squad Deployment Mode")
 
 	// Populate squad list with all alive squads
@@ -276,7 +276,7 @@ func (sdm *SquadDeploymentMode) Enter(fromMode core.UIMode) error {
 	return nil
 }
 
-func (sdm *SquadDeploymentMode) Exit(toMode core.UIMode) error {
+func (sdm *SquadDeploymentMode) Exit(toMode framework.UIMode) error {
 	fmt.Println("Exiting Squad Deployment Mode")
 	return nil
 }
@@ -311,7 +311,7 @@ func (sdm *SquadDeploymentMode) Render(screen *ebiten.Image) {
 	sdm.highlightRenderer.Render(screen, playerPos, 0, sdm.selectedSquadID)
 }
 
-func (sdm *SquadDeploymentMode) HandleInput(inputState *core.InputState) bool {
+func (sdm *SquadDeploymentMode) HandleInput(inputState *framework.InputState) bool {
 	// Handle common input (ESC key)
 	if sdm.HandleCommonInput(inputState) {
 		return true

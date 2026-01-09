@@ -4,9 +4,9 @@ import (
 	"fmt"
 
 	"game_main/common"
-	"game_main/gui/framework"
 	"game_main/gui/builders"
-	"game_main/gui/core"
+	"game_main/gui/framework"
+
 	"game_main/world/encounter"
 
 	"github.com/bytearena/ecs"
@@ -25,14 +25,14 @@ type ExplorationMode struct {
 	quickInventory *widget.Container
 }
 
-func NewExplorationMode(modeManager *core.UIModeManager) *ExplorationMode {
+func NewExplorationMode(modeManager *framework.UIModeManager) *ExplorationMode {
 	mode := &ExplorationMode{}
 	mode.SetModeName("exploration")
 	mode.ModeManager = modeManager
 	return mode
 }
 
-func (em *ExplorationMode) Initialize(ctx *core.UIContext) error {
+func (em *ExplorationMode) Initialize(ctx *framework.UIContext) error {
 	// Use ModeBuilder for declarative initialization (reduces 60+ lines to ~30)
 	err := framework.NewModeBuilder(&em.BaseMode, framework.ModeConfig{
 		ModeName:   "exploration",
@@ -78,10 +78,10 @@ func (em *ExplorationMode) Initialize(ctx *core.UIContext) error {
 
 func (em *ExplorationMode) buildQuickInventory() *widget.Container {
 	// Create UI factory
-	uiFactory := framework.NewUIComponentFactory(em.Queries, em.PanelBuilders, em.Layout)
+	panelFactory := NewExplorationPanelFactory(em.PanelBuilders, em.Layout)
 
 	// Create button callbacks (no panel wrapper - like combat mode)
-	quickInventory := uiFactory.CreateExplorationActionButtons(
+	quickInventory := panelFactory.CreateExplorationActionButtons(
 		// Throwables
 		func() {
 			if mode, exists := em.ModeManager.GetMode("inventory"); exists {
@@ -121,13 +121,13 @@ func (em *ExplorationMode) buildQuickInventory() *widget.Container {
 	return quickInventory
 }
 
-func (em *ExplorationMode) Enter(fromMode core.UIMode) error {
+func (em *ExplorationMode) Enter(fromMode framework.UIMode) error {
 	fmt.Println("Entering Exploration Mode")
 
 	return nil
 }
 
-func (em *ExplorationMode) Exit(toMode core.UIMode) error {
+func (em *ExplorationMode) Exit(toMode framework.UIMode) error {
 	fmt.Println("Exiting Exploration Mode")
 	return nil
 }
@@ -144,7 +144,7 @@ func (em *ExplorationMode) Render(screen *ebiten.Image) {
 	// Could add overlays here (threat ranges, movement paths, etc.)
 }
 
-func (em *ExplorationMode) HandleInput(inputState *core.InputState) bool {
+func (em *ExplorationMode) HandleInput(inputState *framework.InputState) bool {
 	// Handle common input first (ESC key, registered hotkeys like I/C/D)
 	if em.HandleCommonInput(inputState) {
 		return true

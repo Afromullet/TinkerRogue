@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"image/color"
 
-	"game_main/gui/core"
 	"game_main/gui/guiresources"
 	"game_main/gui/specs"
 
@@ -230,15 +229,13 @@ func WithDynamicBackground() PanelOption {
 // PanelBuilders provides high-level UI composition functions to reduce duplication
 // across UI modes. Each builder encapsulates common UI patterns.
 type PanelBuilders struct {
-	Layout      *specs.LayoutConfig // Exported for external access
-	modeManager *core.UIModeManager
+	Layout *specs.LayoutConfig // Exported for external access
 }
 
 // NewPanelBuilders creates a new PanelBuilders instance
-func NewPanelBuilders(layout *specs.LayoutConfig, modeManager *core.UIModeManager) *PanelBuilders {
+func NewPanelBuilders(layout *specs.LayoutConfig) *PanelBuilders {
 	return &PanelBuilders{
-		Layout:      layout,
-		modeManager: modeManager,
+		Layout: layout,
 	}
 }
 

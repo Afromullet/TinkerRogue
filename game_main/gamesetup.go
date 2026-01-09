@@ -7,7 +7,7 @@ import (
 	"game_main/visual/graphics"
 	"game_main/world/coords"
 
-	"game_main/gui/core"
+	"game_main/gui/framework"
 	"game_main/gui/guicombat"
 	"game_main/gui/guicomponents"
 
@@ -183,7 +183,7 @@ func SetupUI(g *Game) {
 	guiresources.PreCacheScrollContainerBackgrounds()
 
 	// Create UI context with shared game state
-	uiContext := &core.UIContext{
+	uiContext := &framework.UIContext{
 		ECSManager:   &g.em,
 		PlayerData:   &g.playerData,
 		GameMap:      &g.gameMap, //Todo, remove in future. Used by dangervisualizer, which is for debugging
@@ -197,7 +197,7 @@ func SetupUI(g *Game) {
 	guiresources.PreCacheScrollContainerSizes(uiContext.ScreenWidth, uiContext.ScreenHeight)
 
 	// Create game mode coordinator (manages two separate contexts)
-	g.gameModeCoordinator = core.NewGameModeCoordinator(uiContext)
+	g.gameModeCoordinator = framework.NewGameModeCoordinator(uiContext)
 
 	// Set coordinator reference in context so modes can trigger context switches
 	uiContext.ModeCoordinator = g.gameModeCoordinator
@@ -226,8 +226,8 @@ func SetupInputCoordinator(g *Game) {
 }
 
 // registerBattleMapModes registers all battle map UI modes with the coordinator.
-func registerBattleMapModes(coordinator *core.GameModeCoordinator, manager *core.UIModeManager) {
-	modes := []core.UIMode{
+func registerBattleMapModes(coordinator *framework.GameModeCoordinator, manager *framework.UIModeManager) {
+	modes := []framework.UIMode{
 		guimodes.NewExplorationMode(manager),
 		guicombat.NewCombatMode(manager),
 		guicombat.NewCombatAnimationMode(manager),
@@ -244,8 +244,8 @@ func registerBattleMapModes(coordinator *core.GameModeCoordinator, manager *core
 
 // registerOverworldModes registers all overworld UI modes with the coordinator.
 // This reduces boilerplate by iterating over a slice of mode constructors.
-func registerOverworldModes(coordinator *core.GameModeCoordinator, manager *core.UIModeManager) {
-	modes := []core.UIMode{
+func registerOverworldModes(coordinator *framework.GameModeCoordinator, manager *framework.UIModeManager) {
+	modes := []framework.UIMode{
 		guisquads.NewSquadManagementMode(manager),
 		guisquads.NewSquadBuilderMode(manager),
 		guisquads.NewUnitPurchaseMode(manager),
@@ -262,7 +262,7 @@ func registerOverworldModes(coordinator *core.GameModeCoordinator, manager *core
 
 // newInventoryModeWithReturn creates an inventory mode configured with a return mode.
 // This helper eliminates duplicate inventory mode setup code.
-func newInventoryModeWithReturn(manager *core.UIModeManager, returnMode string) core.UIMode {
+func newInventoryModeWithReturn(manager *framework.UIModeManager, returnMode string) framework.UIMode {
 	mode := guimodes.NewInventoryMode(manager)
 	mode.SetReturnMode(returnMode)
 	return mode

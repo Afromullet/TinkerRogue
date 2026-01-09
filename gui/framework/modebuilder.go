@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"game_main/gui/builders"
-	"game_main/gui/core"
 
 	"github.com/ebitenui/ebitenui/widget"
 	"github.com/hajimehoshi/ebiten/v2"
@@ -15,7 +14,7 @@ import (
 //
 // Usage:
 //
-//	func (m *MyMode) Initialize(ctx *core.UIContext) error {
+//	func (m *MyMode) Initialize(ctx *UIContext) error {
 //	    return NewModeBuilder(&m.BaseMode, ModeConfig{
 //	        ModeName: "my_mode",
 //	        ReturnMode: "parent_mode",
@@ -96,7 +95,7 @@ func NewModeBuilder(baseMode *BaseMode, config ModeConfig) *ModeBuilder {
 // 5. Initialize command history (if configured) - BEFORE panels to allow panel builders to use it
 // 6. Build panels
 // 7. Build button groups
-func (mb *ModeBuilder) Build(ctx *core.UIContext) error {
+func (mb *ModeBuilder) Build(ctx *UIContext) error {
 	// Set mode properties
 	mb.baseMode.SetModeName(mb.config.ModeName)
 	if mb.config.ReturnMode != "" {

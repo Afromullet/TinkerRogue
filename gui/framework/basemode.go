@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"game_main/gui/builders"
-	"game_main/gui/core"
 	"game_main/gui/guicomponents"
 	"game_main/gui/specs"
 
@@ -24,9 +23,9 @@ type InputBinding struct {
 // Modes should embed this struct to inherit common fields and behavior.
 type BaseMode struct {
 	ui             *ebitenui.UI
-	Context        *core.UIContext           // Exported for mode access
+	Context        *UIContext                // Exported for mode access
 	Layout         *specs.LayoutConfig       // Exported for mode access
-	ModeManager    *core.UIModeManager       // Exported for mode access
+	ModeManager    *UIModeManager            // Exported for mode access
 	RootContainer  *widget.Container         // Exported for mode access
 	PanelBuilders  *builders.PanelBuilders   // Exported for mode access
 	Queries        *guicomponents.GUIQueries // Unified ECS query service - exported for mode access
@@ -54,10 +53,10 @@ func (bm *BaseMode) SetReturnMode(name string) {
 //
 // Parameters:
 //   - ctx: UIContext with ECS manager, player data, etc.
-func (bm *BaseMode) InitializeBase(ctx *core.UIContext) {
+func (bm *BaseMode) InitializeBase(ctx *UIContext) {
 	bm.Context = ctx
-	bm.Layout = specs.NewLayoutConfig(ctx)
-	bm.PanelBuilders = builders.NewPanelBuilders(bm.Layout, bm.ModeManager)
+	bm.Layout = specs.NewLayoutConfig(ctx.ScreenWidth, ctx.ScreenHeight, ctx.TileSize)
+	bm.PanelBuilders = builders.NewPanelBuilders(bm.Layout)
 
 	// Initialize unified ECS query service
 	bm.Queries = guicomponents.NewGUIQueries(ctx.ECSManager)
@@ -127,7 +126,7 @@ func (bm *BaseMode) InitializeCommandHistory(onRefresh func()) {
 // Returns true if input was consumed (prevents further propagation).
 // Modes should call this first in their HandleInput() method before processing
 // mode-specific input.
-func (bm *BaseMode) HandleCommonInput(inputState *core.InputState) bool {
+func (bm *BaseMode) HandleCommonInput(inputState *InputState) bool {
 	// Check registered hotkeys for mode transitions
 	for key, binding := range bm.hotkeys {
 		if inputState.KeysJustPressed[key] {
@@ -148,7 +147,7 @@ func (bm *BaseMode) HandleCommonInput(inputState *core.InputState) bool {
 	return false
 }
 
-// Default implementations for core.UIMode interface.
+// Default implementations for UIMode interface.
 // Modes can override these as needed.
 
 // GetEbitenUI returns the root ebitenui.UI for this mode.
@@ -176,12 +175,12 @@ func (bm *BaseMode) Render(screen *ebiten.Image) {
 
 // Enter is called when switching TO this mode.
 // Default implementation does nothing. Override to refresh UI state.
-func (bm *BaseMode) Enter(fromMode core.UIMode) error {
+func (bm *BaseMode) Enter(fromMode UIMode) error {
 	return nil
 }
 
 // Exit is called when switching FROM this mode to another.
 // Default implementation does nothing. Override to clean up resources.
-func (bm *BaseMode) Exit(toMode core.UIMode) error {
+func (bm *BaseMode) Exit(toMode UIMode) error {
 	return nil
 }

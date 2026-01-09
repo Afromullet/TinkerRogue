@@ -1,7 +1,5 @@
 package specs
 
-import "game_main/gui/core"
-
 // LayoutConfig provides responsive positioning based on screen resolution.
 //
 // DEPRECATED METHODS REMOVED:
@@ -21,12 +19,12 @@ type LayoutConfig struct {
 	TileSize     int
 }
 
-// NewLayoutConfig creates a layout configuration from context
-func NewLayoutConfig(ctx *core.UIContext) *LayoutConfig {
+// NewLayoutConfig creates a layout configuration from screen dimensions
+func NewLayoutConfig(screenWidth, screenHeight, tileSize int) *LayoutConfig {
 	return &LayoutConfig{
-		ScreenWidth:  ctx.ScreenWidth,
-		ScreenHeight: ctx.ScreenHeight,
-		TileSize:     ctx.TileSize,
+		ScreenWidth:  screenWidth,
+		ScreenHeight: screenHeight,
+		TileSize:     tileSize,
 	}
 }
 

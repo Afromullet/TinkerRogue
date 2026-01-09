@@ -2,7 +2,7 @@ package guicombat
 
 import (
 	"game_main/world/coords"
-	"game_main/gui/core"
+	"game_main/gui/framework"
 	"game_main/gui/guicomponents"
 	"game_main/tactical/combat"
 	"game_main/visual/graphics"
@@ -14,7 +14,7 @@ import (
 // CombatInputHandler manages all input processing for combat mode
 type CombatInputHandler struct {
 	actionHandler    *CombatActionHandler
-	battleMapState   *core.BattleMapState
+	battleMapState   *framework.BattleMapState
 	queries          *guicomponents.GUIQueries
 	playerPos        *coords.LogicalPosition
 	currentFactionID ecs.EntityID
@@ -23,7 +23,7 @@ type CombatInputHandler struct {
 // NewCombatInputHandler creates a new combat input handler
 func NewCombatInputHandler(
 	actionHandler *CombatActionHandler,
-	battleMapState *core.BattleMapState,
+	battleMapState *framework.BattleMapState,
 	queries *guicomponents.GUIQueries,
 ) *CombatInputHandler {
 	return &CombatInputHandler{
@@ -44,7 +44,7 @@ func (cih *CombatInputHandler) SetCurrentFactionID(factionID ecs.EntityID) {
 }
 
 // HandleInput processes input and returns true if input was consumed
-func (cih *CombatInputHandler) HandleInput(inputState *core.InputState) bool {
+func (cih *CombatInputHandler) HandleInput(inputState *framework.InputState) bool {
 	// Handle mouse clicks
 	if inputState.MouseButton == ebiten.MouseButtonLeft && inputState.MousePressed {
 		if cih.battleMapState.InMoveMode {

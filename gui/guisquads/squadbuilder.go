@@ -6,7 +6,7 @@ import (
 	"game_main/tactical/squadservices"
 
 	"fmt"
-	"game_main/gui/core"
+
 	"game_main/tactical/squads"
 
 	"github.com/bytearena/ecs"
@@ -21,7 +21,7 @@ type SquadBuilderMode struct {
 	// Managers and services
 	gridManager     *GridEditorManager
 	squadBuilderSvc *squadservices.SquadBuilderService
-	uiFactory       *framework.UIComponentFactory
+	panelFactory       *SquadBuilderPanelFactory
 
 	// UI widgets
 	gridContainer   *widget.Container
@@ -49,7 +49,7 @@ type GridCellButton struct {
 	rosterEntryID ecs.EntityID // Entity ID of the roster unit (0 if empty)
 }
 
-func NewSquadBuilderMode(modeManager *core.UIModeManager) *SquadBuilderMode {
+func NewSquadBuilderMode(modeManager *framework.UIModeManager) *SquadBuilderMode {
 	mode := &SquadBuilderMode{
 		selectedRosterEntry: nil,
 	}
@@ -59,7 +59,7 @@ func NewSquadBuilderMode(modeManager *core.UIModeManager) *SquadBuilderMode {
 	return mode
 }
 
-func (sbm *SquadBuilderMode) Initialize(ctx *core.UIContext) error {
+func (sbm *SquadBuilderMode) Initialize(ctx *framework.UIContext) error {
 	// Create services and managers first (needed by UI builders)
 	sbm.squadBuilderSvc = squadservices.NewSquadBuilderService(ctx.ECSManager)
 	sbm.gridManager = NewGridEditorManager(ctx.ECSManager)
@@ -80,8 +80,8 @@ func (sbm *SquadBuilderMode) Initialize(ctx *core.UIContext) error {
 }
 
 func (sbm *SquadBuilderMode) ensureUIFactoryInitialized() {
-	if sbm.uiFactory == nil {
-		sbm.uiFactory = framework.NewUIComponentFactory(sbm.Queries, sbm.PanelBuilders, sbm.Layout)
+	if sbm.panelFactory == nil {
+		sbm.panelFactory = NewSquadBuilderPanelFactory(sbm.PanelBuilders, sbm.Layout)
 	}
 }
 
@@ -90,7 +90,7 @@ func (sbm *SquadBuilderMode) buildGridPanel() *widget.Container {
 
 	// Build grid editor and wrap buttons in GridCellButton structs
 	var buttons [3][3]*widget.Button
-	sbm.gridContainer, buttons = sbm.uiFactory.CreateSquadBuilderGridPanel(func(row, col int) {
+	sbm.gridContainer, buttons = sbm.panelFactory.CreateSquadBuilderGridPanel(func(row, col int) {
 		sbm.onCellClicked(row, col)
 	})
 
@@ -116,7 +116,7 @@ func (sbm *SquadBuilderMode) buildRosterPalette() *widget.Container {
 	sbm.ensureUIFactoryInitialized()
 
 	// Build unit palette - will be populated in Enter()
-	baseList := sbm.uiFactory.CreateSquadBuilderRosterPalette(func(entry interface{}) {
+	baseList := sbm.panelFactory.CreateSquadBuilderRosterPalette(func(entry interface{}) {
 		if rosterEntry, ok := entry.(*squads.UnitRosterEntry); ok {
 			sbm.selectedRosterEntry = rosterEntry
 			sbm.updateUnitDetails()
@@ -147,7 +147,7 @@ func (sbm *SquadBuilderMode) buildCapacityDisplay() *widget.Container {
 	sbm.ensureUIFactoryInitialized()
 
 	// Build capacity display
-	sbm.capacityDisplay = sbm.uiFactory.CreateSquadBuilderCapacityDisplay()
+	sbm.capacityDisplay = sbm.panelFactory.CreateSquadBuilderCapacityDisplay()
 
 	// Wrap in container with LayoutData from factory
 	layoutData := sbm.capacityDisplay.GetWidget().LayoutData
@@ -163,7 +163,7 @@ func (sbm *SquadBuilderMode) buildDetailsPanel() *widget.Container {
 	sbm.ensureUIFactoryInitialized()
 
 	// Build unit details area
-	sbm.unitDetailsArea = sbm.uiFactory.CreateSquadBuilderDetailsPanel()
+	sbm.unitDetailsArea = sbm.panelFactory.CreateSquadBuilderDetailsPanel()
 
 	// Wrap in container with LayoutData from factory
 	layoutData := sbm.unitDetailsArea.GetWidget().LayoutData
@@ -180,7 +180,7 @@ func (sbm *SquadBuilderMode) buildSquadNameInput() *widget.Container {
 
 	// Build squad name input
 	var nameInputContainer *widget.Container
-	nameInputContainer, sbm.squadNameInput = sbm.uiFactory.CreateSquadBuilderNameInput(func(text string) {
+	nameInputContainer, sbm.squadNameInput = sbm.panelFactory.CreateSquadBuilderNameInput(func(text string) {
 		sbm.currentSquadName = text
 	})
 
@@ -191,7 +191,7 @@ func (sbm *SquadBuilderMode) buildActionButtons() *widget.Container {
 	sbm.ensureUIFactoryInitialized()
 
 	// Build action buttons
-	sbm.actionButtons = sbm.uiFactory.CreateSquadBuilderActionButtons(
+	sbm.actionButtons = sbm.panelFactory.CreateSquadBuilderActionButtons(
 		sbm.onCreateSquad,
 		sbm.onClearGrid,
 		sbm.onToggleLeader,
@@ -551,7 +551,7 @@ func (sbm *SquadBuilderMode) refreshUnitPalette() {
 	sbm.unitPalette.MarkDirty() // Trigger re-render with updated entries
 }
 
-func (sbm *SquadBuilderMode) Enter(fromMode core.UIMode) error {
+func (sbm *SquadBuilderMode) Enter(fromMode framework.UIMode) error {
 	fmt.Println("Entering Squad Builder Mode")
 
 	// Reset state on entry
@@ -563,7 +563,7 @@ func (sbm *SquadBuilderMode) Enter(fromMode core.UIMode) error {
 	return nil
 }
 
-func (sbm *SquadBuilderMode) Exit(toMode core.UIMode) error {
+func (sbm *SquadBuilderMode) Exit(toMode framework.UIMode) error {
 	fmt.Println("Exiting Squad Builder Mode")
 	return nil
 }
@@ -576,7 +576,7 @@ func (sbm *SquadBuilderMode) Render(screen *ebiten.Image) {
 	// No custom rendering needed - ebitenui handles everything
 }
 
-func (sbm *SquadBuilderMode) HandleInput(inputState *core.InputState) bool {
+func (sbm *SquadBuilderMode) HandleInput(inputState *framework.InputState) bool {
 	// Handle common input (ESC key)
 	if sbm.HandleCommonInput(inputState) {
 		return true

@@ -3,9 +3,9 @@ package guisquads
 import (
 	"fmt"
 	"game_main/common"
-	"game_main/gui/framework"
 	"game_main/gui/builders"
-	"game_main/gui/core"
+	"game_main/gui/framework"
+	"game_main/gui/guimodes"
 	"game_main/gui/specs"
 	"game_main/tactical/squadcommands"
 	"game_main/tactical/squads"
@@ -56,7 +56,7 @@ type GridCell struct {
 	Col int
 }
 
-func NewSquadEditorMode(modeManager *core.UIModeManager) *SquadEditorMode {
+func NewSquadEditorMode(modeManager *framework.UIModeManager) *SquadEditorMode {
 	mode := &SquadEditorMode{
 		currentSquadIndex: 0,
 		allSquadIDs:       make([]ecs.EntityID, 0),
@@ -67,7 +67,7 @@ func NewSquadEditorMode(modeManager *core.UIModeManager) *SquadEditorMode {
 	return mode
 }
 
-func (sem *SquadEditorMode) Initialize(ctx *core.UIContext) error {
+func (sem *SquadEditorMode) Initialize(ctx *framework.UIContext) error {
 	err := framework.NewModeBuilder(&sem.BaseMode, framework.ModeConfig{
 		ModeName:   "squad_editor",
 		ReturnMode: "squad_management",
@@ -291,10 +291,10 @@ func (sem *SquadEditorMode) buildRosterList() *widget.Container {
 // buildActionButtons creates bottom action buttons (called after Initialize completes)
 func (sem *SquadEditorMode) buildActionButtons() *widget.Container {
 	// Create UI factory
-	uiFactory := framework.NewUIComponentFactory(sem.Queries, sem.PanelBuilders, sem.Layout)
+	panelFactory := guimodes.NewExplorationPanelFactory(sem.PanelBuilders, sem.Layout)
 
 	// Create button callbacks (no panel wrapper - like combat mode)
-	sem.actionButtonsContainer = uiFactory.CreateSquadEditorActionButtons(
+	sem.actionButtonsContainer = panelFactory.CreateSquadEditorActionButtons(
 		// Rename Squad
 		func() {
 			sem.onRenameSquad()
@@ -318,7 +318,7 @@ func (sem *SquadEditorMode) buildActionButtons() *widget.Container {
 	return sem.actionButtonsContainer
 }
 
-func (sem *SquadEditorMode) Enter(fromMode core.UIMode) error {
+func (sem *SquadEditorMode) Enter(fromMode framework.UIMode) error {
 	fmt.Println("Entering Squad Editor Mode")
 
 	// Backfill roster with any existing squad units
@@ -345,7 +345,7 @@ func (sem *SquadEditorMode) Enter(fromMode core.UIMode) error {
 	return nil
 }
 
-func (sem *SquadEditorMode) Exit(toMode core.UIMode) error {
+func (sem *SquadEditorMode) Exit(toMode framework.UIMode) error {
 	fmt.Println("Exiting Squad Editor Mode")
 	sem.selectedGridCell = nil
 	sem.selectedUnitID = 0
@@ -360,7 +360,7 @@ func (sem *SquadEditorMode) Render(screen *ebiten.Image) {
 	// No custom rendering needed
 }
 
-func (sem *SquadEditorMode) HandleInput(inputState *core.InputState) bool {
+func (sem *SquadEditorMode) HandleInput(inputState *framework.InputState) bool {
 	// Handle common input (ESC key)
 	if sem.HandleCommonInput(inputState) {
 		return true

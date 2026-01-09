@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"game_main/common"
 	"game_main/gear"
-	"game_main/gui/core"
+	"game_main/gui/framework"
 	"game_main/visual/graphics"
 	"game_main/visual/rendering"
 	"game_main/world/coords"
@@ -20,12 +20,12 @@ type MovementController struct {
 	ecsManager      *common.EntityManager
 	playerData      *common.PlayerData
 	gameMap         *worldmap.GameMap
-	modeCoordinator *core.GameModeCoordinator
+	modeCoordinator *framework.GameModeCoordinator
 	sharedState     *SharedInputState
 }
 
 func NewMovementController(ecsManager *common.EntityManager, playerData *common.PlayerData,
-	gameMap *worldmap.GameMap, coordinator *core.GameModeCoordinator, sharedState *SharedInputState) *MovementController {
+	gameMap *worldmap.GameMap, coordinator *framework.GameModeCoordinator, sharedState *SharedInputState) *MovementController {
 	return &MovementController{
 		ecsManager:      ecsManager,
 		playerData:      playerData,

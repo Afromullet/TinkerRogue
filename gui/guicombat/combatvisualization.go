@@ -1,7 +1,7 @@
 package guicombat
 
 import (
-	"game_main/gui/core"
+	"game_main/gui/framework"
 	"game_main/gui/guicomponents"
 	"game_main/gui/guimodes"
 	"game_main/tactical/behavior"
@@ -27,7 +27,7 @@ type CombatVisualizationManager struct {
 
 // NewCombatVisualizationManager creates and initializes all visualization systems
 func NewCombatVisualizationManager(
-	ctx *core.UIContext,
+	ctx *framework.UIContext,
 	queries *guicomponents.GUIQueries,
 	gameMap *worldmap.GameMap,
 ) *CombatVisualizationManager {

@@ -3,7 +3,6 @@ package framework
 import (
 	"fmt"
 	"game_main/gui/builders"
-	"game_main/gui/core"
 	"game_main/tactical/squadcommands"
 
 	"github.com/ebitenui/ebitenui/widget"
@@ -87,7 +86,7 @@ func (ch *CommandHistory) Redo() bool {
 
 // HandleInput processes undo/redo keyboard shortcuts (Ctrl+Z, Ctrl+Y)
 // Returns true if input was handled
-func (ch *CommandHistory) HandleInput(inputState *core.InputState) bool {
+func (ch *CommandHistory) HandleInput(inputState *InputState) bool {
 	// Handle Ctrl+Z for Undo
 	if inputState.KeysJustPressed[ebiten.KeyZ] && (inputState.KeysPressed[ebiten.KeyControl] || inputState.KeysPressed[ebiten.KeyMeta]) {
 		ch.Undo()

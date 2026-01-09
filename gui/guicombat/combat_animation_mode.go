@@ -6,9 +6,8 @@ import (
 	"math"
 
 	"game_main/common"
-	"game_main/gui/framework"
 	"game_main/gui/builders"
-	"game_main/gui/core"
+	"game_main/gui/framework"
 	"game_main/tactical/combat"
 	"game_main/tactical/squads"
 
@@ -102,7 +101,7 @@ type CombatAnimationMode struct {
 }
 
 // NewCombatAnimationMode creates a new combat animation mode
-func NewCombatAnimationMode(modeManager *core.UIModeManager) *CombatAnimationMode {
+func NewCombatAnimationMode(modeManager *framework.UIModeManager) *CombatAnimationMode {
 	cam := &CombatAnimationMode{
 		animationPhase: PhaseIdle,
 	}
@@ -205,7 +204,7 @@ func (cam *CombatAnimationMode) computeDefenderColorLists(
 }
 
 // Initialize sets up the combat animation mode
-func (cam *CombatAnimationMode) Initialize(ctx *core.UIContext) error {
+func (cam *CombatAnimationMode) Initialize(ctx *framework.UIContext) error {
 	// Store screen dimensions and calculate layout before ModeBuilder
 	cam.screenWidth = ctx.ScreenWidth
 	cam.screenHeight = ctx.ScreenHeight
@@ -274,7 +273,7 @@ func (cam *CombatAnimationMode) calculateLayout() {
 }
 
 // Enter is called when switching to this mode
-func (cam *CombatAnimationMode) Enter(fromMode core.UIMode) error {
+func (cam *CombatAnimationMode) Enter(fromMode framework.UIMode) error {
 	// Reset animation state
 	cam.animationPhase = PhaseIdle
 	cam.animationTimer = 0
@@ -290,7 +289,7 @@ func (cam *CombatAnimationMode) Enter(fromMode core.UIMode) error {
 }
 
 // Exit is called when switching from this mode
-func (cam *CombatAnimationMode) Exit(toMode core.UIMode) error {
+func (cam *CombatAnimationMode) Exit(toMode framework.UIMode) error {
 	// Clear color state
 	cam.attackerColors = nil
 	cam.defenderColorList = nil
@@ -514,7 +513,7 @@ func (cam *CombatAnimationMode) renderSquadWithUnitColors(
 }
 
 // HandleInput handles input for the combat animation mode
-func (cam *CombatAnimationMode) HandleInput(inputState *core.InputState) bool {
+func (cam *CombatAnimationMode) HandleInput(inputState *framework.InputState) bool {
 	// In waiting phase, Space replays the animation, any other key dismisses
 	if cam.animationPhase == PhaseWaiting {
 		// Space to replay animation

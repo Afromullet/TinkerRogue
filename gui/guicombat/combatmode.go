@@ -3,9 +3,8 @@ package guicombat
 import (
 	"fmt"
 	"game_main/config"
-	"game_main/gui/framework"
 	"game_main/gui/builders"
-	"game_main/gui/core"
+	"game_main/gui/framework"
 	"game_main/gui/guicomponents"
 	"game_main/gui/guiresources"
 	"game_main/gui/widgets"
@@ -51,7 +50,7 @@ type CombatMode struct {
 	logManager       *CombatLogManager
 	actionHandler    *CombatActionHandler
 	inputHandler     *CombatInputHandler
-	uiFactory        *framework.UIComponentFactory
+	panelFactory     *CombatPanelFactory
 	combatService    *combatservices.CombatService
 	lifecycleManager *CombatLifecycleManager
 
@@ -69,7 +68,7 @@ type CombatMode struct {
 	currentEncounterID ecs.EntityID // Tracks which encounter triggered this combat
 }
 
-func NewCombatMode(modeManager *core.UIModeManager) *CombatMode {
+func NewCombatMode(modeManager *framework.UIModeManager) *CombatMode {
 	cm := &CombatMode{
 		logManager: NewCombatLogManager(),
 		ui:         &CombatModeUI{}, // Initialize UI struct
@@ -80,7 +79,7 @@ func NewCombatMode(modeManager *core.UIModeManager) *CombatMode {
 	return cm
 }
 
-func (cm *CombatMode) Initialize(ctx *core.UIContext) error {
+func (cm *CombatMode) Initialize(ctx *framework.UIContext) error {
 	// Create combat service before ModeBuilder
 	cm.combatService = combatservices.NewCombatService(ctx.ECSManager)
 
@@ -143,16 +142,16 @@ func (cm *CombatMode) Initialize(ctx *core.UIContext) error {
 	return nil
 }
 
-func (cm *CombatMode) ensureUIFactoryInitialized() {
-	if cm.uiFactory == nil {
-		cm.uiFactory = framework.NewUIComponentFactory(cm.Queries, cm.PanelBuilders, cm.Layout)
+func (cm *CombatMode) ensurePanelFactoryInitialized() {
+	if cm.panelFactory == nil {
+		cm.panelFactory = NewCombatPanelFactory(cm.Queries, cm.PanelBuilders, cm.Layout)
 	}
 }
 
 func (cm *CombatMode) buildTurnOrderPanel() *widget.Container {
-	cm.ensureUIFactoryInitialized()
+	cm.ensurePanelFactoryInitialized()
 
-	cm.ui.turnOrderPanel = cm.uiFactory.CreateCombatTurnOrderPanel()
+	cm.ui.turnOrderPanel = cm.panelFactory.CreateCombatTurnOrderPanel()
 	cm.ui.turnOrderLabel = builders.CreateLargeLabel("Initializing combat...")
 	cm.ui.turnOrderPanel.AddChild(cm.ui.turnOrderLabel)
 
@@ -160,9 +159,9 @@ func (cm *CombatMode) buildTurnOrderPanel() *widget.Container {
 }
 
 func (cm *CombatMode) buildFactionInfoPanel() *widget.Container {
-	cm.ensureUIFactoryInitialized()
+	cm.ensurePanelFactoryInitialized()
 
-	cm.ui.factionInfoPanel = cm.uiFactory.CreateCombatFactionInfoPanel()
+	cm.ui.factionInfoPanel = cm.panelFactory.CreateCombatFactionInfoPanel()
 	cm.ui.factionInfoText = builders.CreateSmallLabel("Faction Info")
 	cm.ui.factionInfoPanel.AddChild(cm.ui.factionInfoText)
 
@@ -170,17 +169,17 @@ func (cm *CombatMode) buildFactionInfoPanel() *widget.Container {
 }
 
 func (cm *CombatMode) buildSquadListPanel() *widget.Container {
-	cm.ensureUIFactoryInitialized()
+	cm.ensurePanelFactoryInitialized()
 
-	cm.ui.squadListPanel = cm.uiFactory.CreateCombatSquadListPanel()
+	cm.ui.squadListPanel = cm.panelFactory.CreateCombatSquadListPanel()
 
 	return cm.ui.squadListPanel
 }
 
 func (cm *CombatMode) buildSquadDetailPanel() *widget.Container {
-	cm.ensureUIFactoryInitialized()
+	cm.ensurePanelFactoryInitialized()
 
-	cm.ui.squadDetailPanel = cm.uiFactory.CreateCombatSquadDetailPanel()
+	cm.ui.squadDetailPanel = cm.panelFactory.CreateCombatSquadDetailPanel()
 	cm.ui.squadDetailText = builders.CreateSmallLabel("Select a squad\nto view details")
 	cm.ui.squadDetailPanel.AddChild(cm.ui.squadDetailText)
 
@@ -188,11 +187,11 @@ func (cm *CombatMode) buildSquadDetailPanel() *widget.Container {
 }
 
 func (cm *CombatMode) buildLogPanel() *widget.Container {
-	cm.ensureUIFactoryInitialized()
+	cm.ensurePanelFactoryInitialized()
 
 	// Create log panel only if combat log is enabled
 	if config.ENABLE_COMBAT_LOG {
-		logContainer, logArea := cm.uiFactory.CreateCombatLogPanel()
+		logContainer, logArea := cm.panelFactory.CreateCombatLogPanel()
 		cm.ui.combatLogArea = logArea
 		return logContainer
 	}
@@ -202,12 +201,12 @@ func (cm *CombatMode) buildLogPanel() *widget.Container {
 }
 
 func (cm *CombatMode) buildActionButtons() *widget.Container {
-	cm.ensureUIFactoryInitialized()
+	cm.ensurePanelFactoryInitialized()
 
 	// Create action buttons
 	// TODO, get rid of handleAttackClick,handleMovClick,handleUndoMove,and handleRedoMove.
 	// CombatActionSystem throws a null error when I call the function they are a wrapper around
-	cm.ui.actionButtons = cm.uiFactory.CreateCombatActionButtons(
+	cm.ui.actionButtons = cm.panelFactory.CreateCombatActionButtons(
 		cm.handleAttackClick,
 		cm.handleMoveClick,
 		cm.handleUndoMove,
@@ -220,7 +219,7 @@ func (cm *CombatMode) buildActionButtons() *widget.Container {
 }
 
 func (cm *CombatMode) buildLayerStatusPanel() *widget.Container {
-	cm.ensureUIFactoryInitialized()
+	cm.ensurePanelFactoryInitialized()
 
 	// Create a small panel for layer status display
 	panelWidth := int(float64(cm.Layout.ScreenWidth) * 0.15)   // 15% of screen width
@@ -585,7 +584,7 @@ func (cm *CombatMode) advanceAfterAITurn() {
 	cm.executeAITurnIfNeeded()
 }
 
-func (cm *CombatMode) SetupEncounter(fromMode core.UIMode) error {
+func (cm *CombatMode) SetupEncounter(fromMode framework.UIMode) error {
 	// Get encounter ID from BattleMapState
 	encounterID := ecs.EntityID(0)
 	if cm.Context.ModeCoordinator != nil {
@@ -605,7 +604,7 @@ func (cm *CombatMode) SetupEncounter(fromMode core.UIMode) error {
 	return err
 }
 
-func (cm *CombatMode) Enter(fromMode core.UIMode) error {
+func (cm *CombatMode) Enter(fromMode framework.UIMode) error {
 	fmt.Println("Entering Combat Mode")
 
 	// Check if we're starting fresh combat or returning mid-combat
@@ -641,7 +640,7 @@ func (cm *CombatMode) Enter(fromMode core.UIMode) error {
 	return nil
 }
 
-func (cm *CombatMode) Exit(toMode core.UIMode) error {
+func (cm *CombatMode) Exit(toMode framework.UIMode) error {
 	fmt.Println("Exiting Combat Mode")
 
 	// Check if returning to exploration (not going to animation mode)
@@ -742,7 +741,7 @@ func (cm *CombatMode) Render(screen *ebiten.Image) {
 
 // renderMovementTiles and renderAllSquadHighlights removed - now using MovementTileRenderer and SquadHighlightRenderer
 
-func (cm *CombatMode) HandleInput(inputState *core.InputState) bool {
+func (cm *CombatMode) HandleInput(inputState *framework.InputState) bool {
 	// Handle common input (ESC key to flee combat)
 	if cm.HandleCommonInput(inputState) {
 		return true

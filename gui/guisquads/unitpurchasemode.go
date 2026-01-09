@@ -2,9 +2,10 @@ package guisquads
 
 import (
 	"fmt"
-	"game_main/gui/framework"
 	"game_main/gui/builders"
-	"game_main/gui/core"
+	"game_main/gui/framework"
+	"game_main/gui/guimodes"
+
 	"game_main/gui/specs"
 	"game_main/gui/widgets"
 	"game_main/tactical/squadcommands"
@@ -34,7 +35,7 @@ type UnitPurchaseMode struct {
 	selectedIndex    int
 }
 
-func NewUnitPurchaseMode(modeManager *core.UIModeManager) *UnitPurchaseMode {
+func NewUnitPurchaseMode(modeManager *framework.UIModeManager) *UnitPurchaseMode {
 	mode := &UnitPurchaseMode{
 		selectedIndex: -1,
 	}
@@ -44,7 +45,7 @@ func NewUnitPurchaseMode(modeManager *core.UIModeManager) *UnitPurchaseMode {
 	return mode
 }
 
-func (upm *UnitPurchaseMode) Initialize(ctx *core.UIContext) error {
+func (upm *UnitPurchaseMode) Initialize(ctx *framework.UIContext) error {
 	// Create purchase service first (needed by UI builders)
 	upm.purchaseService = squadservices.NewUnitPurchaseService(ctx.ECSManager)
 
@@ -192,10 +193,10 @@ func (upm *UnitPurchaseMode) buildResourceDisplay() *widget.Container {
 
 func (upm *UnitPurchaseMode) buildActionButtons() *widget.Container {
 	// Create UI factory
-	uiFactory := framework.NewUIComponentFactory(upm.Queries, upm.PanelBuilders, upm.Layout)
+	panelFactory := guimodes.NewExplorationPanelFactory(upm.PanelBuilders, upm.Layout)
 
 	// Create button callbacks (no panel wrapper - like combat mode)
-	actionButtonContainer := uiFactory.CreateUnitPurchaseActionButtons(
+	actionButtonContainer := panelFactory.CreateUnitPurchaseActionButtons(
 		// Buy Unit
 		func() {
 			upm.purchaseUnit()
@@ -356,7 +357,7 @@ func (upm *UnitPurchaseMode) refreshAfterUndoRedo() {
 	upm.updateDetailPanel()
 }
 
-func (upm *UnitPurchaseMode) Enter(fromMode core.UIMode) error {
+func (upm *UnitPurchaseMode) Enter(fromMode framework.UIMode) error {
 	fmt.Println("Entering Unit Purchase Mode")
 
 	// Populate unit list with all available templates
@@ -378,7 +379,7 @@ func (upm *UnitPurchaseMode) Enter(fromMode core.UIMode) error {
 	return nil
 }
 
-func (upm *UnitPurchaseMode) Exit(toMode core.UIMode) error {
+func (upm *UnitPurchaseMode) Exit(toMode framework.UIMode) error {
 	fmt.Println("Exiting Unit Purchase Mode")
 	return nil
 }
@@ -391,7 +392,7 @@ func (upm *UnitPurchaseMode) Render(screen *ebiten.Image) {
 	// No custom rendering
 }
 
-func (upm *UnitPurchaseMode) HandleInput(inputState *core.InputState) bool {
+func (upm *UnitPurchaseMode) HandleInput(inputState *framework.InputState) bool {
 	// Handle common input first (ESC key, registered hotkeys)
 	if upm.HandleCommonInput(inputState) {
 		return true

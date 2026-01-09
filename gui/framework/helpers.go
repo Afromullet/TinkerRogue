@@ -6,7 +6,6 @@ import (
 	"image/color"
 
 	"game_main/gui/builders"
-	"game_main/gui/core"
 	"game_main/gui/specs"
 
 	"github.com/ebitenui/ebitenui"
@@ -202,7 +201,7 @@ func CreateStandardDetailPanel(
 //	        },
 //	    },
 //	}
-func ModeTransitionSpec(modeManager *core.UIModeManager, text, targetMode string) builders.ButtonSpec {
+func ModeTransitionSpec(modeManager *UIModeManager, text, targetMode string) builders.ButtonSpec {
 	return builders.ButtonSpec{
 		Text: text,
 		OnClick: func() {
@@ -228,7 +227,7 @@ func ModeTransitionSpec(modeManager *core.UIModeManager, text, targetMode string
 //	        },
 //	    },
 //	}
-func ContextSwitchSpec(coordinator *core.GameModeCoordinator, text, targetContext, targetMode string) builders.ButtonSpec {
+func ContextSwitchSpec(coordinator *GameModeCoordinator, text, targetContext, targetMode string) builders.ButtonSpec {
 	return builders.ButtonSpec{
 		Text: text,
 		OnClick: func() {
@@ -258,7 +257,7 @@ func ContextSwitchSpec(coordinator *core.GameModeCoordinator, text, targetContex
 // Example usage:
 //
 //	btn := framework.ModeTransitionButton(modeManager, "Squad Management (E)", "squad_management")
-func ModeTransitionButton(modeManager *core.UIModeManager, text, targetMode string) *widget.Button {
+func ModeTransitionButton(modeManager *UIModeManager, text, targetMode string) *widget.Button {
 	return builders.CreateButtonWithConfig(builders.ButtonConfig{
 		Text: text,
 		OnClick: func() {
@@ -281,7 +280,7 @@ func ModeTransitionButton(modeManager *core.UIModeManager, text, targetMode stri
 //
 //	btn := framework.ContextSwitchButton(coordinator, "Battle Map (ESC)", "battlemap", "exploration")
 //	btn := framework.ContextSwitchButton(coordinator, "Squads (E)", "overworld", "squad_management")
-func ContextSwitchButton(coordinator *core.GameModeCoordinator, text, targetContext, targetMode string) *widget.Button {
+func ContextSwitchButton(coordinator *GameModeCoordinator, text, targetContext, targetMode string) *widget.Button {
 	return builders.CreateButtonWithConfig(builders.ButtonConfig{
 		Text: text,
 		OnClick: func() {

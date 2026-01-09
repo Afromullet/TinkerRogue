@@ -3,7 +3,7 @@ package guisquads
 import (
 	"fmt"
 	"game_main/gui/framework"
-	"game_main/gui/core"
+	"game_main/gui/guimodes"
 
 	"github.com/ebitenui/ebitenui/widget"
 	"github.com/hajimehoshi/ebiten/v2"
@@ -17,14 +17,14 @@ type SquadManagementMode struct {
 
 }
 
-func NewSquadManagementMode(modeManager *core.UIModeManager) *SquadManagementMode {
+func NewSquadManagementMode(modeManager *framework.UIModeManager) *SquadManagementMode {
 	mode := &SquadManagementMode{}
 	mode.SetModeName("squad_management")
 	mode.ModeManager = modeManager
 	return mode
 }
 
-func (smm *SquadManagementMode) Initialize(ctx *core.UIContext) error {
+func (smm *SquadManagementMode) Initialize(ctx *framework.UIContext) error {
 	err := framework.NewModeBuilder(&smm.BaseMode, framework.ModeConfig{
 		ModeName:   "squad_management",
 		ReturnMode: "", // Context switch handled separately
@@ -50,10 +50,10 @@ func (smm *SquadManagementMode) Initialize(ctx *core.UIContext) error {
 
 func (smm *SquadManagementMode) buildActionButtons() *widget.Container {
 	// Create UI factory
-	uiFactory := framework.NewUIComponentFactory(smm.Queries, smm.PanelBuilders, smm.Layout)
+	panelFactory := guimodes.NewExplorationPanelFactory(smm.PanelBuilders, smm.Layout)
 
 	// Create button callbacks (no panel wrapper - like combat mode)
-	buttonContainer := uiFactory.CreateSquadManagementActionButtons(
+	buttonContainer := panelFactory.CreateSquadManagementActionButtons(
 		// Battle Map (ESC)
 		func() {
 			if smm.Context.ModeCoordinator != nil {
@@ -85,13 +85,13 @@ func (smm *SquadManagementMode) buildActionButtons() *widget.Container {
 	return buttonContainer
 }
 
-func (smm *SquadManagementMode) Enter(fromMode core.UIMode) error {
+func (smm *SquadManagementMode) Enter(fromMode framework.UIMode) error {
 	fmt.Println("Entering Squad Management Mode")
 
 	return nil
 }
 
-func (smm *SquadManagementMode) Exit(toMode core.UIMode) error {
+func (smm *SquadManagementMode) Exit(toMode framework.UIMode) error {
 	fmt.Println("Exiting Squad Management Mode")
 
 	return nil
@@ -107,7 +107,7 @@ func (smm *SquadManagementMode) Render(screen *ebiten.Image) {
 	// No custom rendering - ebitenui draws everything
 }
 
-func (smm *SquadManagementMode) HandleInput(inputState *core.InputState) bool {
+func (smm *SquadManagementMode) HandleInput(inputState *framework.InputState) bool {
 	// Handle common input (ESC key)
 	if smm.HandleCommonInput(inputState) {
 		return true
