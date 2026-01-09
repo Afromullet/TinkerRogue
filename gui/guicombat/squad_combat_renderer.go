@@ -2,7 +2,7 @@ package guicombat
 
 import (
 	"game_main/common"
-	"game_main/gui/guicomponents"
+	"game_main/gui/framework"
 	"game_main/visual/rendering"
 	"game_main/tactical/squads"
 
@@ -13,11 +13,11 @@ import (
 // SquadCombatRenderer handles rendering a squad's 3x3 grid of units
 // for the combat animation screen.
 type SquadCombatRenderer struct {
-	queries *guicomponents.GUIQueries
+	queries *framework.GUIQueries
 }
 
 // NewSquadCombatRenderer creates a new squad combat renderer
-func NewSquadCombatRenderer(queries *guicomponents.GUIQueries) *SquadCombatRenderer {
+func NewSquadCombatRenderer(queries *framework.GUIQueries) *SquadCombatRenderer {
 	return &SquadCombatRenderer{
 		queries: queries,
 	}

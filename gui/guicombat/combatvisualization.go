@@ -2,7 +2,7 @@ package guicombat
 
 import (
 	"game_main/gui/framework"
-	"game_main/gui/guicomponents"
+
 	"game_main/gui/guimodes"
 	"game_main/tactical/behavior"
 	"game_main/world/coords"
@@ -28,7 +28,7 @@ type CombatVisualizationManager struct {
 // NewCombatVisualizationManager creates and initializes all visualization systems
 func NewCombatVisualizationManager(
 	ctx *framework.UIContext,
-	queries *guicomponents.GUIQueries,
+	queries *framework.GUIQueries,
 	gameMap *worldmap.GameMap,
 ) *CombatVisualizationManager {
 	cvm := &CombatVisualizationManager{

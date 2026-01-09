@@ -5,7 +5,7 @@ import (
 
 	"game_main/common"
 	"game_main/config"
-	"game_main/gui/guicomponents"
+	"game_main/gui/framework"
 	"game_main/gui/widgets"
 	"game_main/tactical/combat"
 	"game_main/tactical/combat/battlelog"
@@ -21,7 +21,7 @@ import (
 // Extracted from CombatMode to separate lifecycle concerns from UI management.
 type CombatLifecycleManager struct {
 	ecsManager     *common.EntityManager
-	queries        *guicomponents.GUIQueries
+	queries        *framework.GUIQueries
 	combatService  *combatservices.CombatService
 	logManager     *CombatLogManager
 	combatLogArea  *widgets.CachedTextAreaWrapper
@@ -31,7 +31,7 @@ type CombatLifecycleManager struct {
 // NewCombatLifecycleManager creates a new combat lifecycle manager
 func NewCombatLifecycleManager(
 	ecsManager *common.EntityManager,
-	queries *guicomponents.GUIQueries,
+	queries *framework.GUIQueries,
 	combatService *combatservices.CombatService,
 	logManager *CombatLogManager,
 	combatLogArea *widgets.CachedTextAreaWrapper,

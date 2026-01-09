@@ -9,7 +9,6 @@ import (
 
 	"game_main/gui/framework"
 	"game_main/gui/guicombat"
-	"game_main/gui/guicomponents"
 
 	"game_main/gui/guimodes"
 	"game_main/gui/guiresources"
@@ -190,7 +189,7 @@ func SetupUI(g *Game) {
 		ScreenWidth:  graphics.ScreenInfo.GetCanvasWidth(),
 		ScreenHeight: graphics.ScreenInfo.GetCanvasHeight(),
 		TileSize:     graphics.ScreenInfo.TileSize,
-		Queries:      guicomponents.NewGUIQueries(&g.em),
+		Queries:      framework.NewGUIQueries(&g.em),
 	}
 
 	// Pre-cache based on actual screen dimensions for optimal cache hit rate

@@ -1,9 +1,9 @@
 package guicombat
 
 import (
-	"game_main/world/coords"
 	"game_main/gui/framework"
-	"game_main/gui/guicomponents"
+	"game_main/world/coords"
+
 	"game_main/tactical/combat"
 	"game_main/visual/graphics"
 
@@ -15,7 +15,7 @@ import (
 type CombatInputHandler struct {
 	actionHandler    *CombatActionHandler
 	battleMapState   *framework.BattleMapState
-	queries          *guicomponents.GUIQueries
+	queries          *framework.GUIQueries
 	playerPos        *coords.LogicalPosition
 	currentFactionID ecs.EntityID
 }
@@ -24,7 +24,7 @@ type CombatInputHandler struct {
 func NewCombatInputHandler(
 	actionHandler *CombatActionHandler,
 	battleMapState *framework.BattleMapState,
-	queries *guicomponents.GUIQueries,
+	queries *framework.GUIQueries,
 ) *CombatInputHandler {
 	return &CombatInputHandler{
 		actionHandler:  actionHandler,

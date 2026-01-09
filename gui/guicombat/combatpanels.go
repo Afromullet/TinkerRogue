@@ -5,7 +5,7 @@ import (
 	"image/color"
 
 	"game_main/gui/builders"
-	"game_main/gui/guicomponents"
+	"game_main/gui/framework"
 	"game_main/gui/guiresources"
 	"game_main/gui/specs"
 	"game_main/gui/widgets"
@@ -15,13 +15,13 @@ import (
 
 // CombatPanelFactory builds combat-specific UI panels and components
 type CombatPanelFactory struct {
-	queries       *guicomponents.GUIQueries
+	queries       *framework.GUIQueries
 	panelBuilders *builders.PanelBuilders
 	layout        *specs.LayoutConfig
 }
 
 // NewCombatPanelFactory creates a factory for combat UI components
-func NewCombatPanelFactory(queries *guicomponents.GUIQueries, panelBuilders *builders.PanelBuilders, layout *specs.LayoutConfig) *CombatPanelFactory {
+func NewCombatPanelFactory(queries *framework.GUIQueries, panelBuilders *builders.PanelBuilders, layout *specs.LayoutConfig) *CombatPanelFactory {
 	return &CombatPanelFactory{
 		queries:       queries,
 		panelBuilders: panelBuilders,
@@ -215,7 +215,7 @@ func (cpf *CombatPanelFactory) GetFormattedSquadDetails(squadID interface{}) str
 // GetFormattedFactionInfo returns formatted faction info as string
 func (cpf *CombatPanelFactory) GetFormattedFactionInfo(factionInfo interface{}) string {
 	// This is a helper that formats faction info for display
-	if fi, ok := factionInfo.(*guicomponents.FactionInfo); ok {
+	if fi, ok := factionInfo.(*framework.FactionInfo); ok {
 		infoText := fmt.Sprintf("%s\n", fi.Name)
 		infoText += fmt.Sprintf("Squads: %d/%d\n", fi.AliveSquadCount, len(fi.SquadIDs))
 		infoText += fmt.Sprintf("Mana: %d/%d", fi.CurrentMana, fi.MaxMana)

@@ -3,7 +3,7 @@ package guicombat
 import (
 	"fmt"
 	"game_main/gui/framework"
-	"game_main/gui/guicomponents"
+
 	"game_main/gui/widgets"
 	"game_main/tactical/combatservices"
 	"game_main/tactical/squadcommands"
@@ -16,18 +16,18 @@ import (
 type CombatActionHandler struct {
 	battleMapState  *framework.BattleMapState
 	logManager      *CombatLogManager
-	queries         *guicomponents.GUIQueries
+	queries         *framework.GUIQueries
 	combatService   *combatservices.CombatService
 	combatLogArea   *widgets.CachedTextAreaWrapper // Cached for performance
 	commandExecutor *squadcommands.CommandExecutor // Command pattern for undo/redo
-	modeManager     *framework.UIModeManager            // For triggering combat animation mode
+	modeManager     *framework.UIModeManager       // For triggering combat animation mode
 }
 
 // NewCombatActionHandler creates a new combat action handler
 func NewCombatActionHandler(
 	battleMapState *framework.BattleMapState,
 	logManager *CombatLogManager,
-	queries *guicomponents.GUIQueries,
+	queries *framework.GUIQueries,
 	combatService *combatservices.CombatService,
 	combatLogArea *widgets.CachedTextAreaWrapper,
 	modeManager *framework.UIModeManager,

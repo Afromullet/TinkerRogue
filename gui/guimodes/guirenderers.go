@@ -2,7 +2,7 @@ package guimodes
 
 import (
 	"game_main/world/coords"
-	"game_main/gui/guicomponents"
+	"game_main/gui/framework"
 	"image/color"
 
 	"github.com/bytearena/ecs"
@@ -178,7 +178,7 @@ func (mtr *MovementTileRenderer) Render(screen *ebiten.Image, centerPos coords.L
 
 // SquadHighlightRenderer renders squad position highlights
 type SquadHighlightRenderer struct {
-	queries         *guicomponents.GUIQueries
+	queries         *framework.GUIQueries
 	selectedColor   color.Color
 	factionColors   map[ecs.EntityID]color.Color // Maps faction ID to unique color
 	defaultColor    color.Color                  // Fallback color for unknown factions
@@ -190,7 +190,7 @@ type SquadHighlightRenderer struct {
 }
 
 // NewSquadHighlightRenderer creates a renderer for squad highlights
-func NewSquadHighlightRenderer(queries *guicomponents.GUIQueries) *SquadHighlightRenderer {
+func NewSquadHighlightRenderer(queries *framework.GUIQueries) *SquadHighlightRenderer {
 	return &SquadHighlightRenderer{
 		queries:         queries,
 		selectedColor:   color.RGBA{R: 255, G: 255, B: 255, A: 255}, // White for selected

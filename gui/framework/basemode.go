@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"game_main/gui/builders"
-	"game_main/gui/guicomponents"
 	"game_main/gui/specs"
 
 	"github.com/ebitenui/ebitenui"
@@ -28,7 +27,7 @@ type BaseMode struct {
 	ModeManager    *UIModeManager            // Exported for mode access
 	RootContainer  *widget.Container         // Exported for mode access
 	PanelBuilders  *builders.PanelBuilders   // Exported for mode access
-	Queries        *guicomponents.GUIQueries // Unified ECS query service - exported for mode access
+	Queries        *GUIQueries // Unified ECS query service - exported for mode access
 	StatusLabel    *widget.Text              // Optional status label for display and logging - set by modes that need it
 	CommandHistory *CommandHistory           // Optional command history for undo/redo support
 	PanelWidgets   map[string]interface{}    // Stores typed panel widgets by SpecName (TextArea, List, etc.)
@@ -59,7 +58,7 @@ func (bm *BaseMode) InitializeBase(ctx *UIContext) {
 	bm.PanelBuilders = builders.NewPanelBuilders(bm.Layout)
 
 	// Initialize unified ECS query service
-	bm.Queries = guicomponents.NewGUIQueries(ctx.ECSManager)
+	bm.Queries = NewGUIQueries(ctx.ECSManager)
 
 	// Initialize hotkeys map
 	bm.hotkeys = make(map[ebiten.Key]InputBinding)

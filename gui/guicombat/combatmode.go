@@ -5,8 +5,8 @@ import (
 	"game_main/config"
 	"game_main/gui/builders"
 	"game_main/gui/framework"
-	"game_main/gui/guicomponents"
 	"game_main/gui/guiresources"
+	"game_main/gui/guisquads"
 	"game_main/gui/widgets"
 	"game_main/tactical/behavior"
 	"game_main/tactical/combatservices"
@@ -36,10 +36,10 @@ type CombatModeUI struct {
 	layerStatusText *widget.Text
 
 	// Update components
-	squadListComponent   *guicomponents.SquadListComponent
-	squadDetailComponent *guicomponents.DetailPanelComponent
-	factionInfoComponent *guicomponents.DetailPanelComponent
-	turnOrderComponent   *guicomponents.TextDisplayComponent
+	squadListComponent   *guisquads.SquadListComponent
+	squadDetailComponent *guisquads.DetailPanelComponent
+	factionInfoComponent *guisquads.DetailPanelComponent
+	turnOrderComponent   *widgets.TextDisplayComponent
 }
 
 // CombatMode provides focused UI for turn-based squad combat
@@ -289,7 +289,7 @@ func (cm *CombatMode) handleRedoMove() {
 
 func (cm *CombatMode) initializeUpdateComponents() {
 	// Turn order component - displays current faction and round
-	cm.ui.turnOrderComponent = guicomponents.NewTextDisplayComponent(
+	cm.ui.turnOrderComponent = widgets.NewTextDisplayComponent(
 		cm.ui.turnOrderLabel,
 		func() string {
 			currentFactionID := cm.combatService.TurnManager.GetCurrentFaction()
@@ -320,11 +320,11 @@ func (cm *CombatMode) initializeUpdateComponents() {
 	)
 
 	// Faction info component - displays squad count and mana
-	cm.ui.factionInfoComponent = guicomponents.NewDetailPanelComponent(
+	cm.ui.factionInfoComponent = guisquads.NewDetailPanelComponent(
 		cm.ui.factionInfoText,
 		cm.Queries,
 		func(data interface{}) string {
-			factionInfo := data.(*guicomponents.FactionInfo)
+			factionInfo := data.(*framework.FactionInfo)
 
 			// Get full faction data to access PlayerName
 			factionData := cm.Queries.CombatCache.FindFactionDataByID(factionInfo.ID, cm.Queries.ECSManager)
@@ -343,7 +343,7 @@ func (cm *CombatMode) initializeUpdateComponents() {
 	)
 
 	// Squad detail component - displays selected squad details
-	cm.ui.squadDetailComponent = guicomponents.NewDetailPanelComponent(
+	cm.ui.squadDetailComponent = guisquads.NewDetailPanelComponent(
 		cm.ui.squadDetailText,
 		cm.Queries,
 		nil, // Use default formatter
@@ -351,7 +351,7 @@ func (cm *CombatMode) initializeUpdateComponents() {
 
 	// Squad list component - filter for current faction squads (during player's turn only)
 	// Extracted filter logic to separate method to eliminate inline duplication
-	cm.ui.squadListComponent = guicomponents.NewSquadListComponent(
+	cm.ui.squadListComponent = guisquads.NewSquadListComponent(
 		cm.ui.squadListPanel,
 		cm.Queries,
 		cm.makeCurrentFactionSquadFilter(),
@@ -364,8 +364,8 @@ func (cm *CombatMode) initializeUpdateComponents() {
 
 // makeCurrentFactionSquadFilter creates a filter for squads from the current faction
 // Only shows squads during the player's faction's turn
-func (cm *CombatMode) makeCurrentFactionSquadFilter() guicomponents.SquadFilter {
-	return func(info *guicomponents.SquadInfo) bool {
+func (cm *CombatMode) makeCurrentFactionSquadFilter() framework.SquadFilter {
+	return func(info *framework.SquadInfo) bool {
 		currentFactionID := cm.combatService.TurnManager.GetCurrentFaction()
 		if currentFactionID == 0 {
 			return false

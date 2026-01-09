@@ -1,5 +1,5 @@
-// Package guicomponents provides UI component and query utilities for the game
-package guicomponents
+// Package framework provides UI framework infrastructure including query services
+package framework
 
 import (
 	"game_main/common"

@@ -1,12 +1,11 @@
-package guicomponents
+package guisquads
 
 import (
 	"fmt"
 	"image/color"
 
-	"game_main/common"
-	"game_main/gear"
 	"game_main/gui/builders"
+	"game_main/gui/framework"
 	"game_main/gui/guiresources"
 
 	"github.com/bytearena/ecs"
@@ -16,8 +15,8 @@ import (
 // SquadListComponent manages a container displaying squad buttons with filtering and selection
 type SquadListComponent struct {
 	container      *widget.Container
-	queries        *GUIQueries
-	filter         SquadFilter
+	queries        *framework.GUIQueries
+	filter         framework.SquadFilter
 	onSelect       func(squadID ecs.EntityID)
 	listLabel      *widget.Text                    // First child is the label
 	filteredSquads []ecs.EntityID                  // Currently displayed squad IDs (for change detection)
@@ -25,14 +24,11 @@ type SquadListComponent struct {
 	noSquadsText   *widget.Text                    // NEW: Cache "AI Turn" message widget
 }
 
-// SquadFilter determines which squads to show
-type SquadFilter func(squadInfo *SquadInfo) bool
-
 // NewSquadListComponent creates a reusable squad list updater for a container
 func NewSquadListComponent(
 	container *widget.Container,
-	queries *GUIQueries,
-	filter SquadFilter,
+	queries *framework.GUIQueries,
+	filter framework.SquadFilter,
 	onSelect func(ecs.EntityID),
 ) *SquadListComponent {
 	return &SquadListComponent{
@@ -188,7 +184,7 @@ func (slc *SquadListComponent) containsSquad(squads []ecs.EntityID, squadID ecs.
 // DetailPanelComponent manages a text widget showing entity details
 type DetailPanelComponent struct {
 	textWidget *widget.Text
-	queries    *GUIQueries
+	queries    *framework.GUIQueries
 	formatter  DetailFormatter
 }
 
@@ -198,7 +194,7 @@ type DetailFormatter func(data interface{}) string
 // NewDetailPanelComponent creates a reusable detail panel updater for Text widgets
 func NewDetailPanelComponent(
 	textWidget *widget.Text,
-	queries *GUIQueries,
+	queries *framework.GUIQueries,
 	formatter DetailFormatter,
 ) *DetailPanelComponent {
 	return &DetailPanelComponent{
@@ -258,7 +254,7 @@ func (dpc *DetailPanelComponent) SetText(text string) {
 
 // DefaultSquadFormatter creates a formatted string from squad info
 func DefaultSquadFormatter(data interface{}) string {
-	info := data.(*SquadInfo)
+	info := data.(*framework.SquadInfo)
 	status := getSquadStatus(info)
 	return fmt.Sprintf("%s\n\nUnits: %d/%d\nHP: %d/%d\nMove: %d\nStatus: %s",
 		info.Name,
@@ -270,14 +266,14 @@ func DefaultSquadFormatter(data interface{}) string {
 
 // DefaultFactionFormatter creates a formatted string from faction info
 func DefaultFactionFormatter(data interface{}) string {
-	info := data.(*FactionInfo)
+	info := data.(*framework.FactionInfo)
 	return fmt.Sprintf("%s\n\nSquads: %d/%d\nMana: %d/%d",
 		info.Name,
 		info.AliveSquadCount, len(info.SquadIDs),
 		info.CurrentMana, info.MaxMana)
 }
 
-func getSquadStatus(info *SquadInfo) string {
+func getSquadStatus(info *framework.SquadInfo) string {
 	if info.HasActed {
 		return "Acted"
 	} else if info.HasMoved {
@@ -285,123 +281,4 @@ func getSquadStatus(info *SquadInfo) string {
 	} else {
 		return "Ready"
 	}
-}
-
-// ===== TEXT DISPLAY COMPONENT =====
-
-// TextDisplayComponent manages a text widget with periodic updates
-type TextDisplayComponent struct {
-	textWidget *widget.Text
-	formatter  TextDisplayFormatter
-}
-
-// TextDisplayFormatter converts data to display text
-type TextDisplayFormatter func() string
-
-// NewTextDisplayComponent creates a text display updater
-func NewTextDisplayComponent(
-	textWidget *widget.Text,
-	formatter TextDisplayFormatter,
-) *TextDisplayComponent {
-	return &TextDisplayComponent{
-		textWidget: textWidget,
-		formatter:  formatter,
-	}
-}
-
-// Refresh updates the text display
-func (tdc *TextDisplayComponent) Refresh() {
-	if tdc.textWidget == nil || tdc.formatter == nil {
-		return
-	}
-	tdc.textWidget.Label = tdc.formatter()
-}
-
-// SetText sets arbitrary text directly
-func (tdc *TextDisplayComponent) SetText(text string) {
-	if tdc.textWidget != nil {
-		tdc.textWidget.Label = text
-	}
-}
-
-// ===== ITEM LIST COMPONENT =====
-
-// ItemListComponent manages an inventory list widget with filtering
-type ItemListComponent struct {
-	listWidget     *widget.List
-	queries        *GUIQueries
-	ecsManager     *common.EntityManager
-	playerEntityID ecs.EntityID
-	currentFilter  string
-}
-
-// NewItemListComponent creates a reusable inventory list component
-func NewItemListComponent(
-	listWidget *widget.List,
-	queries *GUIQueries,
-	ecsManager *common.EntityManager,
-	playerEntityID ecs.EntityID,
-) *ItemListComponent {
-	return &ItemListComponent{
-		listWidget:     listWidget,
-		queries:        queries,
-		ecsManager:     ecsManager,
-		playerEntityID: playerEntityID,
-		currentFilter:  "All",
-	}
-}
-
-// SetFilter updates the current filter and refreshes the list
-func (ilc *ItemListComponent) SetFilter(filter string) {
-	ilc.currentFilter = filter
-	ilc.Refresh()
-}
-
-// Refresh updates the list with items based on current filter
-func (ilc *ItemListComponent) Refresh() {
-	if ilc.listWidget == nil || ilc.ecsManager == nil {
-		return
-	}
-
-	// Get inventory from player entity
-	inv := common.GetComponentTypeByID[*gear.Inventory](ilc.ecsManager, ilc.playerEntityID, gear.InventoryComponent)
-	if inv == nil {
-		ilc.listWidget.SetEntries([]interface{}{"No inventory available"})
-		return
-	}
-
-	var entries []interface{}
-
-	// Query inventory based on current filter
-	switch ilc.currentFilter {
-	case "Throwables":
-		// Get throwable items
-		throwableEntries := gear.GetThrowableItems(ilc.ecsManager, inv, []int{})
-		if len(throwableEntries) == 0 {
-			entries = []interface{}{"No throwable items"}
-		} else {
-			entries = make([]interface{}, len(throwableEntries))
-			for i, e := range throwableEntries {
-				entries[i] = e
-			}
-		}
-
-	case "All":
-		// Get all items
-		allEntries := gear.GetInventoryForDisplay(ilc.ecsManager, inv, []int{})
-		if len(allEntries) == 0 {
-			entries = []interface{}{"Inventory is empty"}
-		} else {
-			entries = make([]interface{}, len(allEntries))
-			for i, e := range allEntries {
-				entries[i] = e
-			}
-		}
-
-	default:
-		// Placeholder for other filters
-		entries = []interface{}{fmt.Sprintf("Filter '%s' not yet implemented", ilc.currentFilter)}
-	}
-
-	ilc.listWidget.SetEntries(entries)
 }

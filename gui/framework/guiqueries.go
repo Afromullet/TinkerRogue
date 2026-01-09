@@ -1,5 +1,5 @@
-// Package guicomponents provides UI component and query utilities for the game
-package guicomponents
+// Package framework provides UI framework infrastructure including query services
+package framework
 
 import (
 	"game_main/common"
@@ -175,6 +175,9 @@ func (gq *GUIQueries) GetAllFactions() []ecs.EntityID {
 }
 
 // ===== UNIFIED SQUAD FILTERING =====
+
+// SquadFilter determines which squads to show
+type SquadFilter func(squadInfo *SquadInfo) bool
 
 // FilterSquadsAlive returns a filter that matches non-destroyed squads
 func (gq *GUIQueries) FilterSquadsAlive() SquadFilter {

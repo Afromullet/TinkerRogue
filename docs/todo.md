@@ -22,7 +22,7 @@ ________________________________________________
 - tilebatch.go and tilerenderer.go use magic numbers in NewTileBatch
 
 
-- ecsutil.go seems to have redundancies/duplicate functionality. Look at that. 
+
 - Get Rid of common.Monsters. All the other unit related tags shoudl take care of it. 
 - Remove UserMessage component. Not needed
 - Remove Quality. DrawableShape Quality should be callled something different
@@ -44,7 +44,7 @@ ________________________________________________
 
 
 - Identify where there is a possiblity of cache invalidation errors. We started to cache things used for ECS query, so we need to 
-- Look at how Tile, sprite, and rendering batching truly works
+
 
 
 - The Inventory is a leftover prior to shifting the game to a turn based squad tactics game from a regular roguelike. Think of what you want to do with the inventory
@@ -56,11 +56,6 @@ ________________________________________________
 - Determine whether we need to mark caches that use ECS views as dirty, or if the ECS library handles it
 - behavor and ai package
 
-
-# GUI
-
-- Panels.go has fields to enable cached backgrounds. Determine if we need that
-- Look at all of the caching in the GUI. See what is being used, what isn't, and what should be used. 
 
 
 

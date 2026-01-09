@@ -7,8 +7,6 @@ import (
 	"game_main/gear"
 	"game_main/gui/builders"
 	"game_main/gui/framework"
-
-	"game_main/gui/guicomponents"
 	"game_main/gui/specs"
 	"game_main/gui/widgets"
 
@@ -22,7 +20,7 @@ type InventoryMode struct {
 
 	inventoryService  *gear.InventoryService
 	itemList          *widget.List
-	itemListComponent *guicomponents.ItemListComponent
+	itemListComponent *ItemListComponent
 	detailPanel       *widget.Container
 	detailTextArea    *widgets.CachedTextAreaWrapper // Cached for performance
 	filterButtons     *widget.Container
@@ -124,7 +122,7 @@ func (im *InventoryMode) buildItemList() *widget.Container {
 	im.itemList = itemList
 
 	// Create item list component to manage refresh logic
-	im.itemListComponent = guicomponents.NewItemListComponent(
+	im.itemListComponent = NewItemListComponent(
 		im.itemList,
 		im.Queries,
 		im.Context.ECSManager,

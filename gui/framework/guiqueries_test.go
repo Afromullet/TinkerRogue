@@ -1,4 +1,4 @@
-package guicomponents
+package framework
 
 import (
 	"game_main/common"
