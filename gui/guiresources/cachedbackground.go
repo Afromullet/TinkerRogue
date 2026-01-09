@@ -65,21 +65,6 @@ func (cb *CachedBackground) render(w, h int) {
 	cb.dirty = false
 }
 
-// MarkDirty forces re-rendering on next GetImage call.
-// Use when the NineSlice source changes (e.g., theme change).
-func (cb *CachedBackground) MarkDirty() {
-	cb.dirty = true
-}
-
-// Dispose frees the cached image memory.
-// Call this when the background is no longer needed.
-func (cb *CachedBackground) Dispose() {
-	if cb.cachedImage != nil {
-		cb.cachedImage.Dispose()
-		cb.cachedImage = nil
-	}
-}
-
 // CachedBackgroundPool manages multiple cached backgrounds for reuse.
 // Use this when you have many UI elements that share the same dimensions
 // (e.g., squad list buttons, inventory slots).
@@ -116,30 +101,15 @@ func (cbp *CachedBackgroundPool) GetImage(w, h int) *ebiten.Image {
 	return cached.GetImage(w, h)
 }
 
-// MarkAllDirty marks all cached backgrounds as needing re-render.
-func (cbp *CachedBackgroundPool) MarkAllDirty() {
-	for _, cached := range cbp.cache {
-		cached.MarkDirty()
-	}
-}
-
-// Clear removes all cached backgrounds and frees memory.
-func (cbp *CachedBackgroundPool) Clear() {
-	for _, cached := range cbp.cache {
-		cached.Dispose()
-	}
-	cbp.cache = make(map[cacheKey]*CachedBackground)
-}
-
 // Global cached background pools for common UI elements.
 // These are initialized lazily when first accessed.
 var (
-	panelBackgroundPool          *CachedBackgroundPool
-	titleBarBackgroundPool       *CachedBackgroundPool
-	buttonBackgroundPool         *CachedBackgroundPool
-	scrollContainerIdlePool      *CachedBackgroundPool
-	scrollContainerDisabledPool  *CachedBackgroundPool
-	scrollContainerMaskPool      *CachedBackgroundPool
+	panelBackgroundPool         *CachedBackgroundPool
+	titleBarBackgroundPool      *CachedBackgroundPool
+	buttonBackgroundPool        *CachedBackgroundPool
+	scrollContainerIdlePool     *CachedBackgroundPool
+	scrollContainerDisabledPool *CachedBackgroundPool
+	scrollContainerMaskPool     *CachedBackgroundPool
 )
 
 // GetPanelBackground returns a cached panel background at the specified size.
@@ -148,23 +118,6 @@ func GetPanelBackground(w, h int) *ebiten.Image {
 		panelBackgroundPool = NewCachedBackgroundPool(PanelRes.Image)
 	}
 	return panelBackgroundPool.GetImage(w, h)
-}
-
-// GetTitleBarBackground returns a cached title bar background at the specified size.
-func GetTitleBarBackground(w, h int) *ebiten.Image {
-	if titleBarBackgroundPool == nil {
-		titleBarBackgroundPool = NewCachedBackgroundPool(PanelRes.TitleBar)
-	}
-	return titleBarBackgroundPool.GetImage(w, h)
-}
-
-// GetButtonBackground returns a cached button background at the specified size.
-func GetButtonBackground(w, h int) *ebiten.Image {
-	if buttonBackgroundPool == nil {
-		// Use the idle button image as the source
-		buttonBackgroundPool = NewCachedBackgroundPool(ButtonImage.Idle)
-	}
-	return buttonBackgroundPool.GetImage(w, h)
 }
 
 // GetScrollContainerIdleBackground returns a cached ScrollContainer idle background at the specified size.
@@ -201,12 +154,12 @@ func PreCacheScrollContainerBackgrounds() {
 	// Common list sizes at 1920x1080 resolution (width, height)
 	// Based on actual usage in squad management, unit purchase, etc.
 	commonSizes := []struct{ w, h int }{
-		{672, 756},  // Unit purchase list (0.35 * 1920, 0.7 * 1080)
-		{576, 756},  // Squad deployment list (0.3 * 1920, 0.7 * 1080)
-		{384, 540},  // Squad editor unit list
-		{480, 648},  // Formation editor list
-		{300, 400},  // Small dialog list
-		{400, 500},  // Medium dialog list
+		{672, 756}, // Unit purchase list (0.35 * 1920, 0.7 * 1080)
+		{576, 756}, // Squad deployment list (0.3 * 1920, 0.7 * 1080)
+		{384, 540}, // Squad editor unit list
+		{480, 648}, // Formation editor list
+		{300, 400}, // Small dialog list
+		{400, 500}, // Medium dialog list
 	}
 
 	for _, size := range commonSizes {
@@ -221,10 +174,10 @@ func PreCacheScrollContainerBackgrounds() {
 func PreCacheScrollContainerSizes(screenWidth, screenHeight int) {
 	// Pre-cache based on actual screen dimensions
 	sizes := []struct{ widthRatio, heightRatio float64 }{
-		{0.35, 0.7},  // Unit purchase list
-		{0.3, 0.7},   // Squad deployment list
-		{0.2, 0.5},   // Small list
-		{0.25, 0.6},  // Medium list
+		{0.35, 0.7}, // Unit purchase list
+		{0.3, 0.7},  // Squad deployment list
+		{0.2, 0.5},  // Small list
+		{0.25, 0.6}, // Medium list
 	}
 
 	for _, size := range sizes {
@@ -233,28 +186,5 @@ func PreCacheScrollContainerSizes(screenWidth, screenHeight int) {
 		_ = GetScrollContainerIdleBackground(w, h)
 		_ = GetScrollContainerDisabledBackground(w, h)
 		_ = GetScrollContainerMaskBackground(w, h)
-	}
-}
-
-// ClearAllBackgroundCaches clears all global background caches.
-// Call this when changing themes or to free memory.
-func ClearAllBackgroundCaches() {
-	if panelBackgroundPool != nil {
-		panelBackgroundPool.Clear()
-	}
-	if titleBarBackgroundPool != nil {
-		titleBarBackgroundPool.Clear()
-	}
-	if buttonBackgroundPool != nil {
-		buttonBackgroundPool.Clear()
-	}
-	if scrollContainerIdlePool != nil {
-		scrollContainerIdlePool.Clear()
-	}
-	if scrollContainerDisabledPool != nil {
-		scrollContainerDisabledPool.Clear()
-	}
-	if scrollContainerMaskPool != nil {
-		scrollContainerMaskPool.Clear()
 	}
 }

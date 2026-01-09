@@ -48,21 +48,6 @@ func NewResponsiveHorizontalPadding(layout *specs.LayoutConfig, paddingConstant 
 	}
 }
 
-// NewResponsiveVerticalPadding creates vertical-only responsive padding.
-// Useful for top/bottom spacing.
-//
-// Example usage:
-//
-//	padding := builders.NewResponsiveVerticalPadding(layout, specs.PaddingStandard)
-func NewResponsiveVerticalPadding(layout *specs.LayoutConfig, paddingConstant float64) widget.Insets {
-	vPadding := int(float64(layout.ScreenHeight) * paddingConstant)
-
-	return widget.Insets{
-		Top:    vPadding,
-		Bottom: vPadding,
-	}
-}
-
 // PaddingSide specifies which side(s) to apply padding to for NewResponsivePaddingSingle
 type PaddingSide int
 
@@ -76,44 +61,6 @@ const (
 	PaddingBottomLeft
 	PaddingBottomRight
 )
-
-// NewResponsivePaddingSingle creates single-side responsive padding.
-// Used for anchor layout positioning (e.g., Top-only, Left-only).
-//
-// Example usage:
-//
-//	padding := builders.NewResponsivePaddingSingle(layout, specs.PaddingTight, builders.PaddingTop)
-func NewResponsivePaddingSingle(layout *specs.LayoutConfig, paddingConstant float64, side PaddingSide) widget.Insets {
-	hPadding := int(float64(layout.ScreenWidth) * paddingConstant)
-	vPadding := int(float64(layout.ScreenHeight) * paddingConstant)
-
-	insets := widget.Insets{}
-
-	switch side {
-	case PaddingTop:
-		insets.Top = vPadding
-	case PaddingBottom:
-		insets.Bottom = vPadding
-	case PaddingLeft:
-		insets.Left = hPadding
-	case PaddingRight:
-		insets.Right = hPadding
-	case PaddingTopLeft:
-		insets.Top = vPadding
-		insets.Left = hPadding
-	case PaddingTopRight:
-		insets.Top = vPadding
-		insets.Right = hPadding
-	case PaddingBottomLeft:
-		insets.Bottom = vPadding
-		insets.Left = hPadding
-	case PaddingBottomRight:
-		insets.Bottom = vPadding
-		insets.Right = hPadding
-	}
-
-	return insets
-}
 
 // ========================================
 // ANCHOR LAYOUT HELPERS

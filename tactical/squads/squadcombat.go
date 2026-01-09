@@ -1,7 +1,6 @@
 package squads
 
 import (
-	"fmt"
 	"game_main/common"
 	"game_main/config"
 
@@ -761,6 +760,8 @@ func calculateUnitDamageByID(attackerID, defenderID ecs.EntityID, squadmanager *
 	return totalDamage, event
 }
 
+//TODO, the rollhit, rollCrit and rollDodge functions need to be used
+
 // rollHit determines if an attack hits based on hit rate
 func rollHit(hitRate int) bool {
 	roll := common.GetDiceRoll(100)
@@ -845,70 +846,6 @@ func calculateSquadStatus(squadID ecs.EntityID, manager *common.EntityManager) S
 // ========================================
 // COVER SYSTEM FUNCTIONS
 // ========================================
-
-// CalculateTotalCover calculates the total damage reduction from all units providing cover to the defender
-// Cover bonuses stack additively (e.g., 0.25 + 0.15 = 0.40 total reduction)
-// Returns a value between 0.0 (no cover) and 1.0 (100% damage reduction, capped)
-func CalculateTotalCover(defenderID ecs.EntityID, squadmanager *common.EntityManager) float64 {
-	defenderEntity := squadmanager.FindEntityByID(defenderID)
-	if defenderEntity == nil {
-		return 0.0
-	}
-
-	// Check if defender has required components
-	if !defenderEntity.HasComponent(GridPositionComponent) || !defenderEntity.HasComponent(SquadMemberComponent) {
-		return 0.0
-	}
-
-	// Get defender's position and squad from entity
-	defenderPos := common.GetComponentType[*GridPositionData](defenderEntity, GridPositionComponent)
-	defenderSquadData := common.GetComponentType[*SquadMemberData](defenderEntity, SquadMemberComponent)
-	if defenderPos == nil || defenderSquadData == nil {
-		return 0.0
-	}
-	defenderSquadID := defenderSquadData.SquadID
-
-	// Get all units providing cover
-	coverProviders := GetCoverProvidersFor(defenderID, defenderSquadID, defenderPos, squadmanager)
-
-	// Sum all cover bonuses (stacking additively)
-	totalCover := 0.0
-	for _, providerID := range coverProviders {
-		providerEntity := squadmanager.FindEntityByID(providerID)
-		if providerEntity == nil {
-			continue
-		}
-
-		// Check if provider has cover component
-		if !providerEntity.HasComponent(CoverComponent) {
-			continue
-		}
-
-		coverData := common.GetComponentType[*CoverData](providerEntity, CoverComponent)
-		if coverData == nil {
-			continue
-		}
-
-		// Check if provider is active (alive and not stunned)
-		isActive := true
-		if coverData.RequiresActive {
-			attr := common.GetComponentType[*common.Attributes](providerEntity, common.AttributeComponent)
-			if attr != nil {
-				isActive = attr.CurrentHealth > 0
-			}
-			// TODO: Add stun/disable status check when status effects are implemented
-		}
-
-		totalCover += coverData.GetCoverBonus(isActive)
-	}
-
-	// Cap at 100% reduction (though in practice this should be very rare)
-	if totalCover > 1.0 {
-		totalCover = 1.0
-	}
-
-	return totalCover
-}
 
 // GetCoverProvidersFor finds all units in the same squad that provide cover to the defender
 // Cover is provided by units in front (lower row number) within the same column(s)
@@ -1071,53 +1008,4 @@ func CalculateCoverBreakdown(defenderID ecs.EntityID, squadmanager *common.Entit
 	breakdown.TotalReduction = totalCover
 
 	return breakdown
-}
-
-func displayCombatResult(result *CombatResult, squadmanager *common.EntityManager) {
-	fmt.Printf("  Total damage: %d\n", result.TotalDamage)
-	fmt.Printf("  Units killed: %d\n", len(result.UnitsKilled))
-
-	for unitID, dmg := range result.DamageByUnit {
-		name := common.GetComponentTypeByID[*common.Name](squadmanager, unitID, common.NameComponent)
-		if name == nil {
-			continue
-		}
-		fmt.Printf("    %s took %d damage\n", name.NameStr, dmg)
-	}
-}
-
-// displaySquadStatus displays squad status for debugging
-func displaySquadStatus(squadID ecs.EntityID, squadmanager *common.EntityManager) {
-	squadEntity := GetSquadEntity(squadID, squadmanager)
-	squadData := common.GetComponentType[*SquadData](squadEntity, SquadComponent)
-
-	fmt.Printf("\n%s Status:\n", squadData.Name)
-
-	unitIDs := GetUnitIDsInSquad(squadID, squadmanager)
-	alive := 0
-
-	for _, unitID := range unitIDs {
-
-		entity := squadmanager.FindEntityByID(unitID)
-		if entity == nil {
-			continue
-		}
-
-		attr := common.GetComponentType[*common.Attributes](entity, common.AttributeComponent)
-		if attr == nil {
-			continue
-		}
-
-		if attr.CurrentHealth > 0 {
-			alive++
-			name := common.GetComponentType[*common.Name](entity, common.NameComponent)
-			unitName := "Unknown"
-			if name != nil {
-				unitName = name.NameStr
-			}
-			fmt.Printf("  %s: %d/%d HP\n", unitName, attr.CurrentHealth, attr.MaxHealth)
-		}
-	}
-
-	fmt.Printf("Total alive: %d\n", alive)
 }

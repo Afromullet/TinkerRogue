@@ -3,13 +3,9 @@ package guimodes
 import (
 	"fmt"
 
-	"game_main/common"
 	"game_main/gui/builders"
 	"game_main/gui/framework"
 
-	"game_main/world/encounter"
-
-	"github.com/bytearena/ecs"
 	"github.com/ebitenui/ebitenui/widget"
 	"github.com/hajimehoshi/ebiten/v2"
 )
@@ -151,31 +147,4 @@ func (em *ExplorationMode) HandleInput(inputState *framework.InputState) bool {
 	}
 
 	return false
-}
-
-// triggerCombat transitions to combat mode when an encounter is triggered
-func (em *ExplorationMode) triggerCombat(encounterID ecs.EntityID) {
-	// Store encounter ID in BattleMapState for combat mode to use
-	if em.Context.ModeCoordinator != nil {
-		battleMapState := em.Context.ModeCoordinator.GetBattleMapState()
-		battleMapState.TriggeredEncounterID = encounterID
-	}
-
-	// Log encounter details
-	entity := em.Context.ECSManager.FindEntityByID(encounterID)
-	if entity != nil {
-		encounterData := common.GetComponentType[*encounter.OverworldEncounterData](
-			entity,
-			encounter.OverworldEncounterComponent,
-		)
-		if encounterData != nil {
-			fmt.Printf("Triggering combat encounter: %s (Level %d)\n",
-				encounterData.Name, encounterData.Level)
-		}
-	}
-
-	// Transition to combat mode
-	if em.Context.ModeCoordinator != nil {
-		em.Context.ModeCoordinator.EnterBattleMap("combat")
-	}
 }

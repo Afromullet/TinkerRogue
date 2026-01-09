@@ -124,12 +124,6 @@ func (cm *CoordinateManager) LogicalToPixel(pos LogicalPosition) PixelPosition {
 	}
 }
 
-// IndexToPixel converts flat map array index to pixel coordinates.
-func (cm *CoordinateManager) IndexToPixel(index int) PixelPosition {
-	logical := cm.IndexToLogical(index)
-	return cm.LogicalToPixel(logical)
-}
-
 // PixelToLogical converts pixel coordinates to logical coordinates.
 func (cm *CoordinateManager) PixelToLogical(pos PixelPosition) LogicalPosition {
 	return LogicalPosition{

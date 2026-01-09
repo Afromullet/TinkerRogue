@@ -25,11 +25,11 @@ type ButtonSpec struct {
 
 // ButtonGroupConfig defines configuration for creating a group of buttons
 type ButtonGroupConfig struct {
-	Buttons      []ButtonSpec           // Buttons to create
-	Direction    widget.Direction       // Horizontal or Vertical
-	Spacing      int                    // Space between buttons
-	Padding      widget.Insets          // Container padding
-	LayoutData   *widget.AnchorLayoutData // Optional positioning (for anchor layout)
+	Buttons    []ButtonSpec             // Buttons to create
+	Direction  widget.Direction         // Horizontal or Vertical
+	Spacing    int                      // Space between buttons
+	Padding    widget.Insets            // Container padding
+	LayoutData *widget.AnchorLayoutData // Optional positioning (for anchor layout)
 }
 
 // CreateButtonGroup creates a container with multiple buttons arranged according to config
@@ -57,26 +57,6 @@ func CreateButtonGroup(config ButtonGroupConfig) *widget.Container {
 	}
 
 	return container
-}
-
-// HorizontalButtonGroup is a convenience helper for creating horizontal button groups
-func HorizontalButtonGroup(buttons []ButtonSpec, spacing int, padding widget.Insets) *widget.Container {
-	return CreateButtonGroup(ButtonGroupConfig{
-		Buttons:   buttons,
-		Direction: widget.DirectionHorizontal,
-		Spacing:   spacing,
-		Padding:   padding,
-	})
-}
-
-// VerticalButtonGroup is a convenience helper for creating vertical button groups
-func VerticalButtonGroup(buttons []ButtonSpec, spacing int, padding widget.Insets) *widget.Container {
-	return CreateButtonGroup(ButtonGroupConfig{
-		Buttons:   buttons,
-		Direction: widget.DirectionVertical,
-		Spacing:   spacing,
-		Padding:   padding,
-	})
 }
 
 // ============================================
@@ -192,7 +172,7 @@ type ButtonConfig struct {
 	TextColor  *widget.ButtonTextColor
 	Image      *widget.ButtonImage
 	Padding    widget.Insets
-	OnClick    func() // Simplified callback - no args needed in most cases
+	OnClick    func()      // Simplified callback - no args needed in most cases
 	LayoutData interface{} // For positioning
 }
 
@@ -317,14 +297,6 @@ func CreateListWithConfig(config ListConfig) *widget.List {
 	return list
 }
 
-// CreateCachedList creates a cached list that only re-renders when content changes.
-// Use this for lists that don't update every frame.
-// IMPORTANT: Call MarkDirty() on the returned wrapper when entries change!
-func CreateCachedList(config ListConfig) *widgets.CachedListWrapper {
-	inner := CreateListWithConfig(config)
-	return widgets.NewCachedListWrapper(inner)
-}
-
 // ============================================
 // PANEL WIDGETS
 // ============================================
@@ -397,16 +369,16 @@ func CreatePanelWithConfig(config ContainerConfig) *widget.Container {
 
 // TextInputConfig provides declarative text input configuration
 type TextInputConfig struct {
-	MinWidth        int
-	MinHeight       int
-	FontFace        font.Face
-	TextColor       *widget.TextInputColor
-	Image           *widget.TextInputImage
-	Placeholder     string
-	Padding         widget.Insets
-	CaretSize       int
-	OnChanged       func(text string)
-	LayoutData      interface{}
+	MinWidth    int
+	MinHeight   int
+	FontFace    font.Face
+	TextColor   *widget.TextInputColor
+	Image       *widget.TextInputImage
+	Placeholder string
+	Padding     widget.Insets
+	CaretSize   int
+	OnChanged   func(text string)
+	LayoutData  interface{}
 }
 
 // CreateTextInputWithConfig creates a text input from config

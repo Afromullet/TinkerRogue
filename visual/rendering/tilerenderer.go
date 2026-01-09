@@ -1,9 +1,9 @@
 package rendering
 
 import (
+	"game_main/visual/graphics"
 	"game_main/world/coords"
 	"game_main/world/worldmap"
-	"game_main/visual/graphics"
 
 	"github.com/hajimehoshi/ebiten/v2"
 )
@@ -12,14 +12,14 @@ import (
 type TileRenderer struct {
 	tiles      []*worldmap.Tile
 	colorScale ebiten.ColorScale
-	drawOpts   ebiten.DrawImageOptions // Reusable draw options (eliminates 2,000 allocations/frame)
+	drawOpts   ebiten.DrawImageOptions      // Reusable draw options (eliminates 2,000 allocations/frame)
 	batches    map[*ebiten.Image]*TileBatch // Batches tiles by image for efficient rendering
 
 	// Cache state to avoid rebuilding batches every frame
-	lastCenterX    int
-	lastCenterY    int
+	lastCenterX      int
+	lastCenterY      int
 	lastViewportSize int
-	batchesBuilt   bool
+	batchesBuilt     bool
 }
 
 // NewTileRenderer creates a renderer for the given tileset
@@ -178,63 +178,6 @@ func (r *TileRenderer) calculateViewportPosition(tile *worldmap.Tile, center *co
 	}
 
 	return float32(screenX), float32(screenY)
-}
-
-// renderTile handles single tile rendering with all effects
-func (r *TileRenderer) renderTile(x, y int, opts RenderOptions, bounds *RenderedBounds) {
-	logicalPos := coords.LogicalPosition{X: x, Y: y}
-	idx := coords.CoordManager.LogicalToIndex(logicalPos)
-	tile := r.tiles[idx]
-
-	// Always reveal tiles (no FOV system)
-	tile.IsRevealed = true
-
-	// Reset draw options (reuse instead of allocate - eliminates 2,000 allocations/frame)
-	r.drawOpts = ebiten.DrawImageOptions{}
-
-	// Apply geometric transformation
-	if opts.CenterOn != nil {
-		r.applyViewportTransformWithBounds(&r.drawOpts, tile, opts.CenterOn, bounds)
-	} else {
-		r.applyFullMapTransform(&r.drawOpts, tile)
-	}
-
-	// Apply color matrix if present
-	r.applyColorMatrix(&r.drawOpts, tile)
-
-	opts.Screen.DrawImage(tile.Image, &r.drawOpts)
-}
-
-// applyViewportTransformWithBounds handles centered viewport rendering and edge tracking
-func (r *TileRenderer) applyViewportTransformWithBounds(opts *ebiten.DrawImageOptions, tile *worldmap.Tile, center *coords.LogicalPosition, bounds *RenderedBounds) {
-	// Convert pixel position to logical position
-	tileLogicalPos := coords.LogicalPosition{
-		X: tile.PixelX / graphics.ScreenInfo.TileSize,
-		Y: tile.PixelY / graphics.ScreenInfo.TileSize,
-	}
-
-	// Apply sprite scaling (tiles need to be scaled when viewport scrolling is enabled)
-	opts.GeoM.Scale(float64(graphics.ScreenInfo.ScaleFactor), float64(graphics.ScreenInfo.ScaleFactor))
-
-	// Use unified coordinate transformation - handles scrolling mode and viewport centering
-	screenX, screenY := coords.CoordManager.LogicalToScreen(tileLogicalPos, center)
-	opts.GeoM.Translate(screenX, screenY)
-
-	// Track edges for UI layout
-	tileRightEdge := int(screenX + float64(tile.Image.Bounds().Dx()*graphics.ScreenInfo.ScaleFactor))
-	if tileRightEdge > bounds.RightEdgeX {
-		bounds.RightEdgeX = tileRightEdge
-	}
-
-	tileTopEdge := int(screenY)
-	if tileTopEdge < bounds.RightEdgeY {
-		bounds.RightEdgeY = tileTopEdge
-	}
-}
-
-// applyFullMapTransform handles full map rendering
-func (r *TileRenderer) applyFullMapTransform(opts *ebiten.DrawImageOptions, tile *worldmap.Tile) {
-	opts.GeoM.Translate(float64(tile.PixelX), float64(tile.PixelY))
 }
 
 // applyColorMatrix applies tile-specific color effects

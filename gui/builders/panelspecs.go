@@ -9,13 +9,13 @@ import (
 // PanelLayoutSpec defines a reusable panel configuration specification.
 // This allows panels to be defined once and used consistently across factories.
 type PanelLayoutSpec struct {
-	Name     string                      // Descriptive name for the panel
-	Position PanelOption        // Position on screen (TopCenter, LeftCenter, etc.)
-	Width    float64                     // Width as percentage of screen width
-	Height   float64                     // Height as percentage of screen height
-	Padding  float64                     // Padding as percentage of screen size
-	Layout   PanelOption        // Layout strategy (RowLayout, HorizontalRowLayout, etc.)
-	Custom   *widget.Insets              // Optional: Override padding with custom insets
+	Name     string         // Descriptive name for the panel
+	Position PanelOption    // Position on screen (TopCenter, LeftCenter, etc.)
+	Width    float64        // Width as percentage of screen width
+	Height   float64        // Height as percentage of screen height
+	Padding  float64        // Padding as percentage of screen size
+	Layout   PanelOption    // Layout strategy (RowLayout, HorizontalRowLayout, etc.)
+	Custom   *widget.Insets // Optional: Override padding with custom insets
 }
 
 // StandardPanels defines common panel configurations used across the GUI package.
@@ -137,97 +137,9 @@ var StandardPanels = map[string]PanelLayoutSpec{
 	"combat_log": {
 		Name:     "Combat Log",
 		Position: BottomRight(), // Position at bottom-right with 24% width to avoid overlapping with 50% bottom-center buttons (1% gap: 75% vs 76%)
-		Width:    0.24, // Reduced from 0.45 to 0.24 to eliminate overlap (action_buttons end at 75%, this starts at 76%)
+		Width:    0.24,          // Reduced from 0.45 to 0.24 to eliminate overlap (action_buttons end at 75%, this starts at 76%)
 		Height:   specs.CombatLogHeight,
 		Padding:  specs.PaddingTight,
 		Layout:   AnchorLayout(),
 	},
-}
-
-// CreateStandardPanel builds a panel from a specification by name.
-// If the spec doesn't exist, it returns nil and should be handled by the caller.
-//
-// Example usage:
-//
-//	panel := CreateStandardPanel(panelBuilders, "turn_order")
-func CreateStandardPanel(pb *PanelBuilders, specName string) *widget.Container {
-	spec, exists := StandardPanels[specName]
-	if !exists {
-		return nil
-	}
-
-	// Build options slice
-	opts := []PanelOption{
-		spec.Position,
-		Size(spec.Width, spec.Height),
-		spec.Layout,
-	}
-
-	// Add padding option
-	if spec.Custom != nil {
-		opts = append(opts, CustomPadding(*spec.Custom))
-	} else {
-		opts = append(opts, Padding(spec.Padding))
-	}
-
-	return pb.BuildPanel(opts...)
-}
-
-// CreateStandardPanelWithOptions builds a panel from a specification and additional options.
-// This allows for overriding or extending the standard spec.
-//
-// Example usage:
-//
-//	panel := CreateStandardPanelWithOptions(pb, "faction_info", WithTitle("Faction Status"))
-func CreateStandardPanelWithOptions(pb *PanelBuilders, specName string, additionalOpts ...PanelOption) *widget.Container {
-	spec, exists := StandardPanels[specName]
-	if !exists {
-		return nil
-	}
-
-	// Build options slice
-	opts := []PanelOption{
-		spec.Position,
-		Size(spec.Width, spec.Height),
-		spec.Layout,
-	}
-
-	// Add padding option
-	if spec.Custom != nil {
-		opts = append(opts, CustomPadding(*spec.Custom))
-	} else {
-		opts = append(opts, Padding(spec.Padding))
-	}
-
-	// Append additional options (these override spec options)
-	opts = append(opts, additionalOpts...)
-
-	return pb.BuildPanel(opts...)
-}
-
-// AddPanelSpec adds or updates a panel specification in the StandardPanels map.
-// This allows dynamic panel registration for custom modes.
-//
-// Example usage:
-//
-//	AddPanelSpec("custom_panel", PanelLayoutSpec{
-//	    Position: TopCenter(),
-//	    Width:    specs.PanelWidthWide,
-//	    Height:   specs.PanelHeightSmall,
-//	    Padding:  specs.PaddingTight,
-//	    Layout:   RowLayout(),
-//	})
-func AddPanelSpec(name string, spec PanelLayoutSpec) {
-	spec.Name = name
-	StandardPanels[name] = spec
-}
-
-// ListPanelSpecs returns a list of all available panel specification names.
-// Useful for debugging and documentation.
-func ListPanelSpecs() []string {
-	specs := make([]string, 0, len(StandardPanels))
-	for name := range StandardPanels {
-		specs = append(specs, name)
-	}
-	return specs
 }
