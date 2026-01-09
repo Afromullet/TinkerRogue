@@ -3,7 +3,6 @@ package guisquads
 import (
 	"fmt"
 	"game_main/gui/framework"
-	"game_main/gui/guimodes"
 
 	"github.com/ebitenui/ebitenui/widget"
 	"github.com/hajimehoshi/ebiten/v2"
@@ -50,7 +49,7 @@ func (smm *SquadManagementMode) Initialize(ctx *framework.UIContext) error {
 
 func (smm *SquadManagementMode) buildActionButtons() *widget.Container {
 	// Create UI factory
-	panelFactory := guimodes.NewExplorationPanelFactory(smm.PanelBuilders, smm.Layout)
+	panelFactory := NewSquadPanelFactory(smm.PanelBuilders, smm.Layout)
 
 	// Create button callbacks (no panel wrapper - like combat mode)
 	buttonContainer := panelFactory.CreateSquadManagementActionButtons(

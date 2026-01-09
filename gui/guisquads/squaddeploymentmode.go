@@ -7,13 +7,12 @@ import (
 	"game_main/common"
 	"game_main/gui/builders"
 	"game_main/gui/framework"
-	"game_main/world/coords"
-
 	"game_main/gui/guimodes"
 	"game_main/gui/specs"
 	"game_main/gui/widgets"
 	"game_main/tactical/squads"
 	"game_main/tactical/squadservices"
+	"game_main/world/coords"
 	"game_main/visual/graphics"
 
 	"github.com/bytearena/ecs"
@@ -180,7 +179,7 @@ func (sdm *SquadDeploymentMode) buildDetailPanel() *widget.Container {
 
 func (sdm *SquadDeploymentMode) buildActionButtons() *widget.Container {
 	// Create UI factory
-	panelFactory := guimodes.NewExplorationPanelFactory(sdm.PanelBuilders, sdm.Layout)
+	panelFactory := NewSquadPanelFactory(sdm.PanelBuilders, sdm.Layout)
 
 	// Create button callbacks (no panel wrapper - like combat mode)
 	buttonContainer := panelFactory.CreateSquadDeploymentActionButtons(

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"game_main/gui/builders"
 	"game_main/gui/framework"
-	"game_main/gui/guimodes"
 
 	"game_main/gui/specs"
 	"game_main/gui/widgets"
@@ -193,7 +192,7 @@ func (upm *UnitPurchaseMode) buildResourceDisplay() *widget.Container {
 
 func (upm *UnitPurchaseMode) buildActionButtons() *widget.Container {
 	// Create UI factory
-	panelFactory := guimodes.NewExplorationPanelFactory(upm.PanelBuilders, upm.Layout)
+	panelFactory := NewSquadPanelFactory(upm.PanelBuilders, upm.Layout)
 
 	// Create button callbacks (no panel wrapper - like combat mode)
 	actionButtonContainer := panelFactory.CreateUnitPurchaseActionButtons(

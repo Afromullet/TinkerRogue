@@ -5,7 +5,6 @@ import (
 	"game_main/common"
 	"game_main/gui/builders"
 	"game_main/gui/framework"
-	"game_main/gui/guimodes"
 	"game_main/gui/specs"
 	"game_main/tactical/squadcommands"
 	"game_main/tactical/squads"
@@ -291,7 +290,7 @@ func (sem *SquadEditorMode) buildRosterList() *widget.Container {
 // buildActionButtons creates bottom action buttons (called after Initialize completes)
 func (sem *SquadEditorMode) buildActionButtons() *widget.Container {
 	// Create UI factory
-	panelFactory := guimodes.NewExplorationPanelFactory(sem.PanelBuilders, sem.Layout)
+	panelFactory := NewSquadPanelFactory(sem.PanelBuilders, sem.Layout)
 
 	// Create button callbacks (no panel wrapper - like combat mode)
 	sem.actionButtonsContainer = panelFactory.CreateSquadEditorActionButtons(
