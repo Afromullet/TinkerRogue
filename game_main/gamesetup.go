@@ -71,6 +71,16 @@ func (gb *GameBootstrap) CreateWorld(gm *worldmap.GameMap) {
 func (gb *GameBootstrap) CreatePlayer(em *common.EntityManager, pd *common.PlayerData, gm *worldmap.GameMap) {
 	InitializePlayerData(em, pd, gm)
 	AddCreaturesToTracker(em)
+
+	// Initialize unit templates before creating initial squads
+	if err := squads.InitUnitTemplatesFromJSON(); err != nil {
+		log.Fatalf("Failed to load unit templates: %v", err)
+	}
+
+	// Create initial squads for player (in reserves, not deployed)
+	if err := squads.CreateInitialPlayerSquads(pd.PlayerEntityID, em); err != nil {
+		log.Fatalf("Failed to create initial player squads: %v", err)
+	}
 }
 
 // SetupDebugContent creates test items and spawns debug content.
@@ -87,10 +97,8 @@ func (gb *GameBootstrap) SetupDebugContent(em *common.EntityManager, gm *worldma
 // InitializeGameplay sets up squad system and exploration squads.
 // Phase 5: Depends on CreatePlayer for faction positioning.
 func (gb *GameBootstrap) InitializeGameplay(em *common.EntityManager, pd *common.PlayerData) {
-	// Initialize squad system
-	if err := SetupSquadSystem(em); err != nil {
-		log.Fatalf("Failed to initialize squad system: %v", err)
-	}
+	// Note: Unit templates are now loaded in CreatePlayer phase (before initial squads)
+	// SetupSquadSystem is kept here for any future squad system initialization needs
 
 	// Spawn test encounters on overworld
 	encounter.SpawnTestEncounters(em, *pd.Pos)

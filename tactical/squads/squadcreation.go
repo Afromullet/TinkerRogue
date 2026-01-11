@@ -30,6 +30,7 @@ func CreateEmptySquad(squadmanager *common.EntityManager,
 		UsedCapacity:  0.0,
 		TotalCapacity: 6,     // Default capacity (no leader yet)
 		IsDestroyed:   false, // Empty squad is not destroyed (yet)
+		IsDeployed:    false, // New squads start in reserves (not on map)
 	})
 
 	squadEntity.AddComponent(common.PositionComponent, &coords.LogicalPosition{})
@@ -245,6 +246,7 @@ func CreateSquadFromTemplate(
 		TurnCount:   0,
 		MaxUnits:    9,
 		IsDestroyed: false, // New squad with units is not destroyed
+		IsDeployed:  false, // New squads start in reserves (not on map)
 	})
 	squadEntity.AddComponent(common.PositionComponent, &worldPos)
 

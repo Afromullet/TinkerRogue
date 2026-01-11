@@ -56,7 +56,8 @@ func InitializePlayerData(ecsmanager *common.EntityManager, pl *common.PlayerDat
 			GameStateMessage: "",
 		}).
 		AddComponent(common.PlayerResourcesComponent, common.NewPlayerResources(config.DefaultPlayerStartingGold)).
-		AddComponent(squads.UnitRosterComponent, squads.NewUnitRoster(config.DefaultPlayerMaxUnits))
+		AddComponent(squads.UnitRosterComponent, squads.NewUnitRoster(config.DefaultPlayerMaxUnits)).
+		AddComponent(squads.SquadRosterComponent, squads.NewSquadRoster(config.DefaultPlayerMaxSquads))
 
 	playerEntity.AddComponent(common.UserMsgComponent, &common.UserMessage{})
 	players := ecs.BuildTag(common.PlayerComponent, common.PositionComponent, gear.InventoryComponent)

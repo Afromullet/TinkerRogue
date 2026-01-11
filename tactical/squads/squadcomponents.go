@@ -47,6 +47,7 @@ type SquadData struct {
 	UsedCapacity  float64       // Current capacity consumed by units
 	TotalCapacity int           // Total capacity from leader's Leadership stat
 	IsDestroyed   bool          // Cached destruction state (all units dead)
+	IsDeployed    bool          // true if squad is on battle map, false if in reserves
 }
 
 // FormationType defines squad layout presets
