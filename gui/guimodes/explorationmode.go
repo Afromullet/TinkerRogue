@@ -3,7 +3,6 @@ package guimodes
 import (
 	"fmt"
 
-	"game_main/gui/builders"
 	"game_main/gui/framework"
 
 	"github.com/ebitenui/ebitenui/widget"
@@ -16,7 +15,8 @@ type ExplorationMode struct {
 
 	initialized bool
 
-	// UI Components (ebitenui widgets)
+	// Interactive widget references (stored here for refresh/access)
+	// These are populated from panel registry after BuildPanels()
 	messageLog     *widget.TextArea
 	quickInventory *widget.Container
 }
@@ -24,12 +24,14 @@ type ExplorationMode struct {
 func NewExplorationMode(modeManager *framework.UIModeManager) *ExplorationMode {
 	mode := &ExplorationMode{}
 	mode.SetModeName("exploration")
+	mode.SetReturnMode("") // No return mode - exploration is the main mode
 	mode.ModeManager = modeManager
+	mode.SetSelf(mode) // Required for panel registry building
 	return mode
 }
 
 func (em *ExplorationMode) Initialize(ctx *framework.UIContext) error {
-	// Use ModeBuilder for declarative initialization (reduces 60+ lines to ~30)
+	// Build base UI using ModeBuilder (minimal config - panels handled by registry)
 	err := framework.NewModeBuilder(&em.BaseMode, framework.ModeConfig{
 		ModeName:   "exploration",
 		ReturnMode: "", // No return mode - exploration is the main mode
@@ -41,80 +43,31 @@ func (em *ExplorationMode) Initialize(ctx *framework.UIContext) error {
 			{Key: ebiten.KeyD, TargetMode: "squad_deployment"},
 			// Note: 'E' key for squads requires context switch - handled in button
 		},
-
-		// Build panels
-		Panels: []framework.ModePanelConfig{
-			{
-				// Message log panel (bottom-right) - now uses typed panel
-				PanelType:  builders.PanelTypeDetail,
-				SpecName:   "message_log",
-				DetailText: "",
-			},
-			{
-				// Quick inventory panel (custom build)
-				CustomBuild: em.buildQuickInventory,
-			},
-		},
 	}).Build(ctx)
 
 	if err != nil {
 		return err
 	}
 
-	// Get reference to message log TextArea from typed panel
-	if w, ok := em.PanelWidgets["message_log"]; ok {
-		if textArea, ok := w.(*widget.TextArea); ok {
-			em.messageLog = textArea
-		}
+	// Build panels from registry
+	if err := em.BuildPanels(
+		ExplorationPanelMessageLog,
+		ExplorationPanelQuickInventory,
+	); err != nil {
+		return err
 	}
+
+	// Initialize widget references from registry
+	em.initializeWidgetReferences()
 
 	em.initialized = true
 	return nil
 }
 
-func (em *ExplorationMode) buildQuickInventory() *widget.Container {
-	// Create UI factory
-	panelFactory := NewExplorationPanelFactory(em.PanelBuilders, em.Layout)
-
-	// Create button callbacks (no panel wrapper - like combat mode)
-	quickInventory := panelFactory.CreateExplorationActionButtons(
-		// Throwables
-		func() {
-			if mode, exists := em.ModeManager.GetMode("inventory"); exists {
-				em.ModeManager.RequestTransition(mode, "Throwables clicked")
-			}
-		},
-		// Squads (switches to Overworld context)
-		func() {
-			if em.Context.ModeCoordinator != nil {
-				if err := em.Context.ModeCoordinator.ReturnToOverworld("squad_management"); err != nil {
-					fmt.Printf("ERROR: Failed to return to overworld: %v\n", err)
-				}
-			}
-		},
-		// Inventory
-		func() {
-			if mode, exists := em.ModeManager.GetMode("inventory"); exists {
-				em.ModeManager.RequestTransition(mode, "Inventory clicked")
-			}
-		},
-		// Deploy
-		func() {
-			if mode, exists := em.ModeManager.GetMode("squad_deployment"); exists {
-				em.ModeManager.RequestTransition(mode, "Deploy clicked")
-			}
-		},
-		// Combat
-		func() {
-			if mode, exists := em.ModeManager.GetMode("combat"); exists {
-				em.ModeManager.RequestTransition(mode, "Combat clicked")
-			}
-		},
-	)
-
-	// Store reference and return
-	em.quickInventory = quickInventory
-	return quickInventory
+// initializeWidgetReferences populates mode fields from panel registry
+func (em *ExplorationMode) initializeWidgetReferences() {
+	em.messageLog = GetExplorationMessageLog(em.Panels)
+	em.quickInventory = GetExplorationQuickInventory(em.Panels)
 }
 
 func (em *ExplorationMode) Enter(fromMode framework.UIMode) error {

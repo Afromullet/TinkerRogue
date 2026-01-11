@@ -6,7 +6,6 @@ import (
 	"math"
 
 	"game_main/common"
-	"game_main/gui/builders"
 	"game_main/gui/framework"
 	"game_main/tactical/combat"
 	"game_main/tactical/squads"
@@ -108,6 +107,7 @@ func NewCombatAnimationMode(modeManager *framework.UIModeManager) *CombatAnimati
 	cam.SetModeName("combat_animation")
 	cam.SetReturnMode("combat") // ESC returns to combat mode
 	cam.ModeManager = modeManager
+	cam.SetSelf(cam) // Required for panel registry building
 	return cam
 }
 
@@ -210,36 +210,25 @@ func (cam *CombatAnimationMode) Initialize(ctx *framework.UIContext) error {
 	cam.screenHeight = ctx.ScreenHeight
 	cam.calculateLayout()
 
-	return framework.NewModeBuilder(&cam.BaseMode, framework.ModeConfig{
+	// Build base UI using ModeBuilder (minimal config - panels handled by registry)
+	err := framework.NewModeBuilder(&cam.BaseMode, framework.ModeConfig{
 		ModeName:   "combat_animation",
 		ReturnMode: "combat",
-
-		Panels: []framework.ModePanelConfig{
-			{CustomBuild: cam.buildPromptLabel},
-		},
 	}).Build(ctx)
-}
 
-func (cam *CombatAnimationMode) buildPromptLabel() *widget.Container {
-	// Create squad renderer (needs Queries which is set by ModeBuilder)
-	if cam.squadRenderer == nil {
-		cam.squadRenderer = NewSquadCombatRenderer(cam.Queries)
+	if err != nil {
+		return err
 	}
 
-	// Create prompt label (centered at bottom)
-	cam.promptLabel = builders.CreateLargeLabel("")
-	promptContainer := widget.NewContainer(
-		widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
-		widget.ContainerOpts.WidgetOpts(
-			widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{
-				HorizontalPosition: widget.AnchorLayoutPositionCenter,
-				VerticalPosition:   widget.AnchorLayoutPositionEnd,
-				Padding:            widget.NewInsetsSimple(40),
-			}),
-		),
-	)
-	promptContainer.AddChild(cam.promptLabel)
-	return promptContainer
+	// Build panels from registry
+	if err := cam.BuildPanels(CombatAnimationPanelPrompt); err != nil {
+		return err
+	}
+
+	// Initialize widget references from registry
+	cam.promptLabel = GetCombatAnimationPromptLabel(cam.Panels)
+
+	return nil
 }
 
 // calculateLayout computes the positions and sizes for rendering

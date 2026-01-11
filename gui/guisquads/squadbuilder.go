@@ -21,17 +21,15 @@ type SquadBuilderMode struct {
 	// Managers and services
 	gridManager     *GridEditorManager
 	squadBuilderSvc *squadservices.SquadBuilderService
-	panelFactory       *SquadBuilderPanelFactory
 
-	// UI widgets
-	gridContainer   *widget.Container
+	// Interactive widget references (stored here for refresh/access)
+	// These are populated from panel registry after BuildPanels()
+	squadNameInput  *widget.TextInput
 	unitPalette     *widgets.CachedListWrapper
 	capacityDisplay *widget.TextArea
-	squadNameInput  *widget.TextInput
-	actionButtons   *widget.Container
 	unitDetailsArea *widget.TextArea
 
-	// Grid cells for UI updates
+	// Grid cells for UI updates (wrapped with metadata)
 	gridCells [3][3]*GridCellButton
 
 	// State
@@ -56,6 +54,7 @@ func NewSquadBuilderMode(modeManager *framework.UIModeManager) *SquadBuilderMode
 	mode.SetModeName("squad_builder")
 	mode.SetReturnMode("squad_management") // ESC returns to squad management
 	mode.ModeManager = modeManager
+	mode.SetSelf(mode) // Required for panel registry building
 	return mode
 }
 
@@ -64,36 +63,46 @@ func (sbm *SquadBuilderMode) Initialize(ctx *framework.UIContext) error {
 	sbm.squadBuilderSvc = squadservices.NewSquadBuilderService(ctx.ECSManager)
 	sbm.gridManager = NewGridEditorManager(ctx.ECSManager)
 
-	return framework.NewModeBuilder(&sbm.BaseMode, framework.ModeConfig{
+	// Build base UI using ModeBuilder (minimal config - panels handled by registry)
+	err := framework.NewModeBuilder(&sbm.BaseMode, framework.ModeConfig{
 		ModeName:   "squad_builder",
 		ReturnMode: "squad_management",
-
-		Panels: []framework.ModePanelConfig{
-			{CustomBuild: sbm.buildGridPanel},
-			{CustomBuild: sbm.buildRosterPalette},
-			{CustomBuild: sbm.buildCapacityDisplay},
-			{CustomBuild: sbm.buildDetailsPanel},
-			{CustomBuild: sbm.buildSquadNameInput},
-			{CustomBuild: sbm.buildActionButtons},
-		},
 	}).Build(ctx)
-}
 
-func (sbm *SquadBuilderMode) ensureUIFactoryInitialized() {
-	if sbm.panelFactory == nil {
-		sbm.panelFactory = NewSquadBuilderPanelFactory(sbm.PanelBuilders, sbm.Layout)
+	if err != nil {
+		return err
 	}
+
+	// Build panels from registry
+	if err := sbm.BuildPanels(
+		SquadBuilderPanelNameInput,
+		SquadBuilderPanelGrid,
+		SquadBuilderPanelRosterPalette,
+		SquadBuilderPanelCapacity,
+		SquadBuilderPanelDetails,
+		SquadBuilderPanelActionButtons,
+	); err != nil {
+		return err
+	}
+
+	// Initialize widget references from registry
+	sbm.initializeWidgetReferences()
+
+	// Set grid cells in manager
+	sbm.gridManager.SetGridCells(sbm.gridCells)
+
+	return nil
 }
 
-func (sbm *SquadBuilderMode) buildGridPanel() *widget.Container {
-	sbm.ensureUIFactoryInitialized()
+// initializeWidgetReferences populates mode fields from panel registry
+func (sbm *SquadBuilderMode) initializeWidgetReferences() {
+	sbm.squadNameInput = GetSquadBuilderNameInput(sbm.Panels)
+	sbm.unitPalette = GetSquadBuilderUnitPalette(sbm.Panels)
+	sbm.capacityDisplay = GetSquadBuilderCapacityDisplay(sbm.Panels)
+	sbm.unitDetailsArea = GetSquadBuilderUnitDetailsArea(sbm.Panels)
 
-	// Build grid editor and wrap buttons in GridCellButton structs
-	var buttons [3][3]*widget.Button
-	sbm.gridContainer, buttons = sbm.panelFactory.CreateSquadBuilderGridPanel(func(row, col int) {
-		sbm.onCellClicked(row, col)
-	})
-
+	// Initialize grid cells with button references
+	buttons := GetSquadBuilderGridButtons(sbm.Panels)
 	for row := 0; row < 3; row++ {
 		for col := 0; col < 3; col++ {
 			sbm.gridCells[row][col] = &GridCellButton{
@@ -105,100 +114,6 @@ func (sbm *SquadBuilderMode) buildGridPanel() *widget.Container {
 			}
 		}
 	}
-
-	// Set grid cells in manager
-	sbm.gridManager.SetGridCells(sbm.gridCells)
-
-	return sbm.gridContainer
-}
-
-func (sbm *SquadBuilderMode) buildRosterPalette() *widget.Container {
-	sbm.ensureUIFactoryInitialized()
-
-	// Build unit palette - will be populated in Enter()
-	baseList := sbm.panelFactory.CreateSquadBuilderRosterPalette(func(entry interface{}) {
-		if rosterEntry, ok := entry.(*squads.UnitRosterEntry); ok {
-			sbm.selectedRosterEntry = rosterEntry
-			sbm.updateUnitDetails()
-		} else {
-			// Deselect if it's a message string
-			sbm.selectedRosterEntry = nil
-			sbm.updateUnitDetails()
-		}
-	}, func() *squads.UnitRoster {
-		return squads.GetPlayerRoster(sbm.Context.PlayerData.PlayerEntityID, sbm.Queries.ECSManager)
-	})
-
-	// Wrap with caching for performance (~90% render reduction for static lists)
-	sbm.unitPalette = widgets.NewCachedListWrapper(baseList)
-
-	// Wrap in container with LayoutData from factory
-	layoutData := baseList.GetWidget().LayoutData
-	container := widget.NewContainer(
-		widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
-		widget.ContainerOpts.WidgetOpts(widget.WidgetOpts.LayoutData(layoutData)),
-	)
-	// Add the underlying list to maintain interaction functionality
-	container.AddChild(baseList)
-	return container
-}
-
-func (sbm *SquadBuilderMode) buildCapacityDisplay() *widget.Container {
-	sbm.ensureUIFactoryInitialized()
-
-	// Build capacity display
-	sbm.capacityDisplay = sbm.panelFactory.CreateSquadBuilderCapacityDisplay()
-
-	// Wrap in container with LayoutData from factory
-	layoutData := sbm.capacityDisplay.GetWidget().LayoutData
-	container := widget.NewContainer(
-		widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
-		widget.ContainerOpts.WidgetOpts(widget.WidgetOpts.LayoutData(layoutData)),
-	)
-	container.AddChild(sbm.capacityDisplay)
-	return container
-}
-
-func (sbm *SquadBuilderMode) buildDetailsPanel() *widget.Container {
-	sbm.ensureUIFactoryInitialized()
-
-	// Build unit details area
-	sbm.unitDetailsArea = sbm.panelFactory.CreateSquadBuilderDetailsPanel()
-
-	// Wrap in container with LayoutData from factory
-	layoutData := sbm.unitDetailsArea.GetWidget().LayoutData
-	container := widget.NewContainer(
-		widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
-		widget.ContainerOpts.WidgetOpts(widget.WidgetOpts.LayoutData(layoutData)),
-	)
-	container.AddChild(sbm.unitDetailsArea)
-	return container
-}
-
-func (sbm *SquadBuilderMode) buildSquadNameInput() *widget.Container {
-	sbm.ensureUIFactoryInitialized()
-
-	// Build squad name input
-	var nameInputContainer *widget.Container
-	nameInputContainer, sbm.squadNameInput = sbm.panelFactory.CreateSquadBuilderNameInput(func(text string) {
-		sbm.currentSquadName = text
-	})
-
-	return nameInputContainer
-}
-
-func (sbm *SquadBuilderMode) buildActionButtons() *widget.Container {
-	sbm.ensureUIFactoryInitialized()
-
-	// Build action buttons
-	sbm.actionButtons = sbm.panelFactory.CreateSquadBuilderActionButtons(
-		sbm.onCreateSquad,
-		sbm.onClearGrid,
-		sbm.onToggleLeader,
-		sbm.handleClose,
-	)
-
-	return sbm.actionButtons
 }
 
 func (sbm *SquadBuilderMode) handleClose() {

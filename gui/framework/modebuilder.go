@@ -5,31 +5,32 @@ import (
 
 	"game_main/gui/builders"
 
-	"github.com/ebitenui/ebitenui/widget"
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
 // ModeConfig provides declarative configuration for mode initialization.
-// This eliminates 70-100 lines of repetitive initialization code in each mode.
+// This eliminates repetitive initialization code in each mode.
 //
 // Usage:
 //
 //	func (m *MyMode) Initialize(ctx *UIContext) error {
-//	    return NewModeBuilder(&m.BaseMode, ModeConfig{
-//	        ModeName: "my_mode",
+//	    err := NewModeBuilder(&m.BaseMode, ModeConfig{
+//	        ModeName:   "my_mode",
 //	        ReturnMode: "parent_mode",
-//	        Hotkeys: []HotkeySpec{{Key: ebiten.KeyI, TargetMode: "inventory"}},
-//	        Panels: []ModePanelConfig{{SpecName: "message_log"}},
-//	        Buttons: []ButtonGroupSpec{{Position: widgets.BottomCenter(), Buttons: myButtons}},
+//	        Hotkeys:    []HotkeySpec{{Key: ebiten.KeyI, TargetMode: "inventory"}},
 //	    }).Build(ctx)
+//	    if err != nil {
+//	        return err
+//	    }
+//
+//	    // Build panels from registry
+//	    return m.BuildPanels(MyPanelType1, MyPanelType2)
 //	}
 type ModeConfig struct {
 	ModeName   string
 	ReturnMode string // Mode to return to on ESC (empty if no return mode)
 
 	Hotkeys     []HotkeySpec
-	Panels      []ModePanelConfig
-	Buttons     []ButtonGroupSpec
 	StatusLabel bool   // Whether to create a status label
 	Commands    bool   // Whether to enable command history
 	OnRefresh   func() // Callback for command history refresh (required if Commands=true)
@@ -41,35 +42,8 @@ type HotkeySpec struct {
 	TargetMode string
 }
 
-// ModePanelConfig defines a panel to create during mode initialization.
-// Use one of three approaches:
-// 1. TypedPanel with SpecName (recommended): Specify PanelType + SpecName for standard panels with content
-// 2. SpecName only: For simple container panels without content
-// 3. CustomBuild: For complex custom panels
-type ModePanelConfig struct {
-	// Type-based panel creation (recommended)
-	PanelType  builders.PanelType   // Type of panel (Simple, Detail, List)
-	SpecName   string               // Panel specification name from builders.StandardPanels
-	DetailText string               // Initial text for detail panels
-	ListConfig *builders.ListConfig // List configuration for list panels
-
-	// Widget references (populated after creation for access by mode)
-	TextArea *widget.TextArea // Reference to created TextArea (for PanelTypeDetail)
-	List     *widget.List     // Reference to created List (for PanelTypeList)
-
-	// Legacy/custom approaches
-	CustomBuild func() *widget.Container // Optional: Custom panel builder function
-	OnCreate    func(*widget.Container)  // DEPRECATED: Use PanelType instead
-}
-
-// ButtonGroupSpec defines a group of buttons positioned together
-type ButtonGroupSpec struct {
-	Position builders.PanelOption  // Position (e.g., builders.BottomCenter())
-	Buttons  []builders.ButtonSpec // Button specifications
-}
-
 // ModeBuilder constructs UI modes using declarative configuration.
-// Eliminates repetitive initialization boilerplate across 10+ mode implementations.
+// Eliminates repetitive initialization boilerplate across mode implementations.
 type ModeBuilder struct {
 	baseMode *BaseMode
 	config   ModeConfig
@@ -85,16 +59,15 @@ func NewModeBuilder(baseMode *BaseMode, config ModeConfig) *ModeBuilder {
 }
 
 // Build initializes the mode according to the configuration.
-// This replaces 70-100 lines of manual initialization with declarative config.
 //
 // Steps performed:
 // 1. Set mode name and return mode
 // 2. Initialize BaseMode infrastructure
 // 3. Register hotkeys
 // 4. Create status label (if configured)
-// 5. Initialize command history (if configured) - BEFORE panels to allow panel builders to use it
-// 6. Build panels
-// 7. Build button groups
+// 5. Initialize command history (if configured)
+//
+// After Build() completes, call BuildPanels() to add panels from the registry.
 func (mb *ModeBuilder) Build(ctx *UIContext) error {
 	// Set mode properties
 	mb.baseMode.SetModeName(mb.config.ModeName)
@@ -110,130 +83,18 @@ func (mb *ModeBuilder) Build(ctx *UIContext) error {
 		mb.baseMode.RegisterHotkey(hk.Key, hk.TargetMode)
 	}
 
-	// Create status label if configured (before panels so it can be used in panel builders)
+	// Create status label if configured
 	if mb.config.StatusLabel {
 		mb.baseMode.StatusLabel = builders.CreateSmallLabel("")
-		// Position status label below other content (modes can reposition if needed)
 		mb.baseMode.RootContainer.AddChild(mb.baseMode.StatusLabel)
 	}
 
-	// Initialize command history if configured (BEFORE panels so panel builders can use it)
+	// Initialize command history if configured
 	if mb.config.Commands {
 		if mb.config.OnRefresh == nil {
 			return fmt.Errorf("Commands=true requires OnRefresh callback")
 		}
 		mb.baseMode.InitializeCommandHistory(mb.config.OnRefresh)
-	}
-
-	// Build panels (can now safely use CommandHistory and StatusLabel)
-	if err := mb.buildPanels(); err != nil {
-		return fmt.Errorf("failed to build panels: %w", err)
-	}
-
-	// Build button groups
-	if err := mb.buildButtonGroups(); err != nil {
-		return fmt.Errorf("failed to build button groups: %w", err)
-	}
-
-	return nil
-}
-
-// buildPanels creates all configured panels and adds them to the root container
-func (mb *ModeBuilder) buildPanels() error {
-	for i, panelSpec := range mb.config.Panels {
-		var panel *widget.Container
-
-		// Approach 1: TypedPanel with BuildTypedPanel (recommended)
-		if panelSpec.PanelType != 0 || (panelSpec.SpecName != "" && panelSpec.DetailText != "") {
-			result := mb.baseMode.PanelBuilders.BuildTypedPanel(builders.TypedPanelConfig{
-				Type:       panelSpec.PanelType,
-				SpecName:   panelSpec.SpecName,
-				DetailText: panelSpec.DetailText,
-				ListConfig: panelSpec.ListConfig,
-			})
-
-			if result.Panel == nil {
-				return fmt.Errorf("panel %d: failed to build typed panel with spec '%s'", i, panelSpec.SpecName)
-			}
-
-			panel = result.Panel
-
-			// Store widget references for mode access
-			mb.config.Panels[i].TextArea = result.TextArea
-			mb.config.Panels[i].List = result.List
-
-			// Store widgets in BaseMode.PanelWidgets map by SpecName
-			if panelSpec.SpecName != "" {
-				if result.TextArea != nil {
-					mb.baseMode.PanelWidgets[panelSpec.SpecName] = result.TextArea
-				}
-				if result.List != nil {
-					mb.baseMode.PanelWidgets[panelSpec.SpecName] = result.List
-				}
-			}
-
-			// Approach 2: CustomBuild for complex panels
-		} else if panelSpec.CustomBuild != nil {
-			panel = panelSpec.CustomBuild()
-
-			// Approach 3: Simple panel from SpecName
-		} else if panelSpec.SpecName != "" {
-			result := mb.baseMode.PanelBuilders.BuildTypedPanel(builders.TypedPanelConfig{
-				Type:     builders.PanelTypeSimple,
-				SpecName: panelSpec.SpecName,
-			})
-
-			if result.Panel == nil {
-				return fmt.Errorf("panel %d: specification '%s' not found in StandardPanels", i, panelSpec.SpecName)
-			}
-
-			panel = result.Panel
-
-		} else {
-			return fmt.Errorf("panel %d: must specify either SpecName, PanelType, or CustomBuild", i)
-		}
-
-		// Call post-creation hook if provided (deprecated - use PanelType instead)
-		if panelSpec.OnCreate != nil {
-			panelSpec.OnCreate(panel)
-		}
-
-		// Add panel to root container
-		mb.baseMode.RootContainer.AddChild(panel)
-	}
-
-	return nil
-}
-
-// buildButtonGroups creates all configured button groups and adds them to the root container
-func (mb *ModeBuilder) buildButtonGroups() error {
-	// Skip if no button groups configured
-	if len(mb.config.Buttons) == 0 {
-		return nil
-	}
-
-	// Verify PanelBuilders is initialized
-	if mb.baseMode.PanelBuilders == nil {
-		return fmt.Errorf("PanelBuilders is nil - ensure InitializeBase() was called")
-	}
-
-	for i, btnGroup := range mb.config.Buttons {
-		if len(btnGroup.Buttons) == 0 {
-			return fmt.Errorf("button group %d: must have at least one button", i)
-		}
-
-		// Verify Position is not nil
-		if btnGroup.Position == nil {
-			return fmt.Errorf("button group %d: Position is required", i)
-		}
-
-		container := CreateActionButtonGroup(
-			mb.baseMode.PanelBuilders,
-			btnGroup.Position,
-			btnGroup.Buttons,
-		)
-
-		mb.baseMode.RootContainer.AddChild(container)
 	}
 
 	return nil

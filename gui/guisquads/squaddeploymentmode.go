@@ -2,18 +2,15 @@ package guisquads
 
 import (
 	"fmt"
-	"image/color"
 
 	"game_main/common"
-	"game_main/gui/builders"
 	"game_main/gui/framework"
 	"game_main/gui/guimodes"
-	"game_main/gui/specs"
 	"game_main/gui/widgets"
 	"game_main/tactical/squads"
 	"game_main/tactical/squadservices"
-	"game_main/world/coords"
 	"game_main/visual/graphics"
+	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"
 	"github.com/ebitenui/ebitenui/widget"
@@ -25,11 +22,14 @@ type SquadDeploymentMode struct {
 	framework.BaseMode // Embed common mode infrastructure
 
 	deploymentService *squadservices.SquadDeploymentService
-	squadList         *widgets.CachedListWrapper
-	detailPanel       *widget.Container
-	detailTextArea    *widgets.CachedTextAreaWrapper // Cached for performance
-	selectedSquadID   ecs.EntityID
-	instructionText   *widget.Text
+
+	// Interactive widget references (stored here for refresh/access)
+	// These are populated from panel registry after BuildPanels()
+	squadList      *widgets.CachedListWrapper
+	detailTextArea *widgets.CachedTextAreaWrapper
+	instructionText *widget.Text
+
+	selectedSquadID ecs.EntityID
 
 	isPlacingSquad   bool
 	pendingMouseX    int
@@ -45,6 +45,7 @@ func NewSquadDeploymentMode(modeManager *framework.UIModeManager) *SquadDeployme
 	mode.SetModeName("squad_deployment")
 	mode.SetReturnMode("exploration") // ESC returns to exploration
 	mode.ModeManager = modeManager
+	mode.SetSelf(mode) // Required for panel registry building
 	return mode
 }
 
@@ -52,156 +53,40 @@ func (sdm *SquadDeploymentMode) Initialize(ctx *framework.UIContext) error {
 	// Create deployment service first (needed by UI builders)
 	sdm.deploymentService = squadservices.NewSquadDeploymentService(ctx.ECSManager)
 
-	// Build the mode UI first
+	// Build base UI using ModeBuilder (minimal config - panels handled by registry)
 	err := framework.NewModeBuilder(&sdm.BaseMode, framework.ModeConfig{
 		ModeName:   "squad_deployment",
 		ReturnMode: "exploration",
-
-		Panels: []framework.ModePanelConfig{
-			{CustomBuild: sdm.buildInstructionText},
-			{CustomBuild: sdm.buildSquadList},
-			{CustomBuild: sdm.buildDetailPanel},
-		},
 	}).Build(ctx)
 
 	if err != nil {
 		return err
 	}
 
+	// Build panels from registry
+	if err := sdm.BuildPanels(
+		SquadDeploymentPanelInstruction,
+		SquadDeploymentPanelSquadList,
+		SquadDeploymentPanelDetailPanel,
+		SquadDeploymentPanelActionButtons,
+	); err != nil {
+		return err
+	}
+
+	// Initialize widget references from registry
+	sdm.initializeWidgetReferences()
+
 	// Initialize rendering system AFTER BaseMode is initialized (so Queries is available)
 	sdm.highlightRenderer = guimodes.NewSquadHighlightRenderer(sdm.Queries)
-
-	// Add action buttons after ModeBuilder completes
-	actionButtons := sdm.buildActionButtons()
-	sdm.RootContainer.AddChild(actionButtons)
 
 	return nil
 }
 
-func (sdm *SquadDeploymentMode) buildInstructionText() *widget.Container {
-	// Build instruction text (top-center)
-	instructionText := builders.CreateSmallLabel("Select a squad from the list, then click on the map to place it")
-	topPad := int(float64(sdm.Layout.ScreenHeight) * specs.PaddingStandard)
-
-	sdm.instructionText = instructionText
-
-	// Wrap in container with LayoutData
-	container := widget.NewContainer(
-		widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
-		widget.ContainerOpts.WidgetOpts(widget.WidgetOpts.LayoutData(builders.AnchorCenterStart(topPad))),
-	)
-	container.AddChild(instructionText)
-	return container
-}
-
-func (sdm *SquadDeploymentMode) buildSquadList() *widget.Container {
-	// Left side squad list (same pattern as unit purchase mode)
-	listWidth := int(float64(sdm.Layout.ScreenWidth) * specs.SquadDeployListWidth)
-	listHeight := int(float64(sdm.Layout.ScreenHeight) * specs.SquadDeployListHeight)
-
-	baseList := builders.CreateListWithConfig(builders.ListConfig{
-		Entries:   []interface{}{}, // Will be populated in Enter
-		MinWidth:  listWidth,
-		MinHeight: listHeight,
-		EntryLabelFunc: func(e interface{}) string {
-			if squadID, ok := e.(ecs.EntityID); ok {
-				squadName := sdm.Queries.SquadCache.GetSquadName(squadID)
-				unitCount := len(sdm.Queries.SquadCache.GetUnitIDsInSquad(squadID))
-
-				// Check if squad has been placed
-				allPositions := sdm.deploymentService.GetAllSquadPositions()
-				if pos, hasPosition := allPositions[squadID]; hasPosition {
-					return fmt.Sprintf("%s (%d units) - Placed at (%d, %d)", squadName, unitCount, pos.X, pos.Y)
-				}
-				return fmt.Sprintf("%s (%d units)", squadName, unitCount)
-			}
-			return fmt.Sprintf("%v", e)
-		},
-		OnEntrySelected: func(selectedEntry interface{}) {
-			if squadID, ok := selectedEntry.(ecs.EntityID); ok {
-				sdm.selectedSquadID = squadID
-				sdm.isPlacingSquad = true
-				sdm.updateInstructionText()
-				sdm.updateDetailPanel()
-			}
-		},
-	})
-
-	// Wrap with caching for performance (~90% render reduction for static lists)
-	sdm.squadList = widgets.NewCachedListWrapper(baseList)
-
-	// Position below instruction text using Start-Start anchor (left-top)
-	leftPad := int(float64(sdm.Layout.ScreenWidth) * specs.PaddingStandard)
-	topOffset := int(float64(sdm.Layout.ScreenHeight) * (specs.PaddingStandard * 3))
-
-	// Wrap in container with LayoutData
-	container := widget.NewContainer(
-		widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
-		widget.ContainerOpts.WidgetOpts(widget.WidgetOpts.LayoutData(builders.AnchorStartStart(leftPad, topOffset))),
-	)
-	// Add the underlying list to maintain interaction functionality
-	container.AddChild(baseList)
-	return container
-}
-
-func (sdm *SquadDeploymentMode) buildDetailPanel() *widget.Container {
-	// Right side detail panel (35% width, 60% height - same as unit purchase mode)
-	panelWidth := int(float64(sdm.Layout.ScreenWidth) * 0.35)
-	panelHeight := int(float64(sdm.Layout.ScreenHeight) * 0.6)
-
-	detailPanel := builders.CreateStaticPanel(builders.ContainerConfig{
-		MinWidth:  panelWidth,
-		MinHeight: panelHeight,
-		Layout: widget.NewRowLayout(
-			widget.RowLayoutOpts.Direction(widget.DirectionVertical),
-			widget.RowLayoutOpts.Spacing(10),
-			widget.RowLayoutOpts.Padding(builders.NewResponsiveRowPadding(sdm.Layout, specs.PaddingTight)),
-		),
-	})
-
-	rightPad := int(float64(sdm.Layout.ScreenWidth) * specs.PaddingStandard)
-	detailPanel.GetWidget().LayoutData = builders.AnchorEndCenter(rightPad)
-
-	// Detail text area - cached for performance
-	detailTextArea := builders.CreateCachedTextArea(builders.TextAreaConfig{
-		MinWidth:  panelWidth - 30,
-		MinHeight: panelHeight - 30,
-		FontColor: color.White,
-	})
-	detailTextArea.SetText("Select a squad to view details") // SetText calls MarkDirty() internally
-	detailPanel.AddChild(detailTextArea)
-
-	sdm.detailPanel = detailPanel
-	sdm.detailTextArea = detailTextArea
-
-	return detailPanel
-}
-
-func (sdm *SquadDeploymentMode) buildActionButtons() *widget.Container {
-	// Create UI factory
-	panelFactory := NewSquadPanelFactory(sdm.PanelBuilders, sdm.Layout)
-
-	// Create button callbacks (no panel wrapper - like combat mode)
-	buttonContainer := panelFactory.CreateSquadDeploymentActionButtons(
-		// Clear All
-		func() {
-			sdm.clearAllSquadPositions()
-		},
-		// Start Combat
-		func() {
-			if combatMode, exists := sdm.ModeManager.GetMode("combat"); exists {
-				sdm.ModeManager.RequestTransition(combatMode, "Squads deployed, starting combat")
-			}
-		},
-		// Close
-		func() {
-			if mode, exists := sdm.ModeManager.GetMode("exploration"); exists {
-				sdm.ModeManager.RequestTransition(mode, "Close button pressed")
-			}
-		},
-	)
-
-	return buttonContainer
+// initializeWidgetReferences populates mode fields from panel registry
+func (sdm *SquadDeploymentMode) initializeWidgetReferences() {
+	sdm.instructionText = GetSquadDeploymentInstructionText(sdm.Panels)
+	sdm.squadList = GetSquadDeploymentSquadList(sdm.Panels)
+	sdm.detailTextArea = GetSquadDeploymentDetailTextArea(sdm.Panels)
 }
 
 func (sdm *SquadDeploymentMode) updateInstructionText() {

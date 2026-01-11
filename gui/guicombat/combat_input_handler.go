@@ -11,25 +11,20 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-// CombatInputHandler manages all input processing for combat mode
+// CombatInputHandler manages all input processing for combat mode.
+// Uses CombatModeDeps for shared state and services.
 type CombatInputHandler struct {
 	actionHandler    *CombatActionHandler
-	battleMapState   *framework.BattleMapState
-	queries          *framework.GUIQueries
+	deps             *CombatModeDeps
 	playerPos        *coords.LogicalPosition
 	currentFactionID ecs.EntityID
 }
 
 // NewCombatInputHandler creates a new combat input handler
-func NewCombatInputHandler(
-	actionHandler *CombatActionHandler,
-	battleMapState *framework.BattleMapState,
-	queries *framework.GUIQueries,
-) *CombatInputHandler {
+func NewCombatInputHandler(actionHandler *CombatActionHandler, deps *CombatModeDeps) *CombatInputHandler {
 	return &CombatInputHandler{
-		actionHandler:  actionHandler,
-		battleMapState: battleMapState,
-		queries:        queries,
+		actionHandler: actionHandler,
+		deps:          deps,
 	}
 }
 
@@ -47,7 +42,7 @@ func (cih *CombatInputHandler) SetCurrentFactionID(factionID ecs.EntityID) {
 func (cih *CombatInputHandler) HandleInput(inputState *framework.InputState) bool {
 	// Handle mouse clicks
 	if inputState.MouseButton == ebiten.MouseButtonLeft && inputState.MousePressed {
-		if cih.battleMapState.InMoveMode {
+		if cih.deps.BattleState.InMoveMode {
 			// In move mode: click to move squad
 			cih.handleMovementClick(inputState.MouseX, inputState.MouseY)
 		} else {
@@ -94,7 +89,7 @@ func (cih *CombatInputHandler) HandleInput(inputState *framework.InputState) boo
 	}
 
 	// Number keys 1-3 to select enemy targets in attack mode
-	if cih.battleMapState.InAttackMode {
+	if cih.deps.BattleState.InAttackMode {
 		if inputState.KeysJustPressed[ebiten.Key1] {
 			cih.actionHandler.SelectEnemyTarget(0)
 			return true
@@ -123,7 +118,7 @@ func (cih *CombatInputHandler) handleMovementClick(mouseX, mouseY int) {
 	clickedPos := graphics.MouseToLogicalPosition(mouseX, mouseY, *cih.playerPos)
 
 	// Compute valid tiles on-demand from movement system
-	validTiles := cih.actionHandler.combatService.MovementSystem.GetValidMovementTiles(cih.battleMapState.SelectedSquadID)
+	validTiles := cih.deps.CombatService.MovementSystem.GetValidMovementTiles(cih.deps.BattleState.SelectedSquadID)
 	if validTiles == nil {
 		validTiles = []coords.LogicalPosition{}
 	}
@@ -140,7 +135,7 @@ func (cih *CombatInputHandler) handleMovementClick(mouseX, mouseY int) {
 		return // Invalid tile, do nothing
 	}
 
-	selectedSquad := cih.battleMapState.SelectedSquadID
+	selectedSquad := cih.deps.BattleState.SelectedSquadID
 	if selectedSquad == 0 {
 		return
 	}
@@ -160,7 +155,7 @@ func (cih *CombatInputHandler) handleSquadClick(mouseX, mouseY int) {
 	clickedPos := graphics.MouseToLogicalPosition(mouseX, mouseY, *cih.playerPos)
 
 	// Find if a squad is at the clicked position
-	clickedSquadID := combat.GetSquadAtPosition(clickedPos, cih.queries.ECSManager)
+	clickedSquadID := combat.GetSquadAtPosition(clickedPos, cih.deps.Queries.ECSManager)
 
 	// If no squad was clicked, do nothing
 	if clickedSquadID == 0 {
@@ -168,7 +163,7 @@ func (cih *CombatInputHandler) handleSquadClick(mouseX, mouseY int) {
 	}
 
 	// Get faction info for the clicked squad
-	squadInfo := cih.queries.GetSquadInfo(clickedSquadID)
+	squadInfo := cih.deps.Queries.GetSquadInfo(clickedSquadID)
 	if squadInfo == nil {
 		return
 	}
@@ -180,7 +175,7 @@ func (cih *CombatInputHandler) handleSquadClick(mouseX, mouseY int) {
 	}
 
 	// If it's the player's turn
-	factionData := cih.queries.CombatCache.FindFactionDataByID(cih.currentFactionID, cih.queries.ECSManager)
+	factionData := cih.deps.Queries.CombatCache.FindFactionDataByID(cih.currentFactionID, cih.deps.Queries.ECSManager)
 	if factionData != nil && factionData.IsPlayerControlled {
 		// If clicking an allied squad: select it
 		if clickedFactionID == cih.currentFactionID {
@@ -189,9 +184,9 @@ func (cih *CombatInputHandler) handleSquadClick(mouseX, mouseY int) {
 		}
 
 		// If clicking an enemy squad and we have a selected squad: attack immediately
-		selectedSquad := cih.battleMapState.SelectedSquadID
+		selectedSquad := cih.deps.BattleState.SelectedSquadID
 		if selectedSquad != 0 && clickedFactionID != cih.currentFactionID {
-			cih.battleMapState.SelectedTargetID = clickedSquadID
+			cih.deps.BattleState.SelectedTargetID = clickedSquadID
 			cih.actionHandler.ExecuteAttack()
 		}
 	}

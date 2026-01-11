@@ -2,15 +2,11 @@ package guisquads
 
 import (
 	"fmt"
-	"game_main/gui/builders"
 	"game_main/gui/framework"
-
-	"game_main/gui/specs"
 	"game_main/gui/widgets"
 	"game_main/tactical/squadcommands"
 	"game_main/tactical/squads"
 	"game_main/tactical/squadservices"
-	"image/color"
 
 	"github.com/ebitenui/ebitenui/widget"
 	"github.com/hajimehoshi/ebiten/v2"
@@ -21,10 +17,12 @@ type UnitPurchaseMode struct {
 	framework.BaseMode // Embed common mode infrastructure
 
 	purchaseService *squadservices.UnitPurchaseService
+
+	// Interactive widget references (stored here for refresh/access)
+	// These are populated from panel registry after BuildPanels()
 	unitList        *widgets.CachedListWrapper
-	detailPanel     *widget.Container
-	detailTextArea  *widgets.CachedTextAreaWrapper // Cached for performance
-	statsTextArea   *widgets.CachedTextAreaWrapper // Cached for performance
+	detailTextArea  *widgets.CachedTextAreaWrapper
+	statsTextArea   *widgets.CachedTextAreaWrapper
 	goldLabel       *widget.Text
 	rosterLabel     *widget.Text
 	buyButton       *widget.Button
@@ -41,6 +39,7 @@ func NewUnitPurchaseMode(modeManager *framework.UIModeManager) *UnitPurchaseMode
 	mode.SetModeName("unit_purchase")
 	mode.SetReturnMode("squad_management") // ESC returns to squad management
 	mode.ModeManager = modeManager
+	mode.SetSelf(mode) // Required for panel registry building
 	return mode
 }
 
@@ -48,184 +47,47 @@ func (upm *UnitPurchaseMode) Initialize(ctx *framework.UIContext) error {
 	// Create purchase service first (needed by UI builders)
 	upm.purchaseService = squadservices.NewUnitPurchaseService(ctx.ECSManager)
 
-	return framework.NewModeBuilder(&upm.BaseMode, framework.ModeConfig{
+	// Build base UI using ModeBuilder (minimal config - panels handled by registry)
+	err := framework.NewModeBuilder(&upm.BaseMode, framework.ModeConfig{
 		ModeName:   "unit_purchase",
 		ReturnMode: "squad_management",
-
-		Panels: []framework.ModePanelConfig{
-			{CustomBuild: upm.buildResourceDisplay},
-			{CustomBuild: upm.buildUnitList},
-			{CustomBuild: upm.buildDetailPanel},
-			{CustomBuild: upm.buildActionButtons},
-		},
-
-		Commands:  true,
-		OnRefresh: upm.refreshAfterUndoRedo,
+		Commands:   true,
+		OnRefresh:  upm.refreshAfterUndoRedo,
 	}).Build(ctx)
-}
 
-func (upm *UnitPurchaseMode) buildUnitList() *widget.Container {
-	// Left side unit list (35% width to prevent overlap with 25% top-center resource display)
-	listWidth := int(float64(upm.Layout.ScreenWidth) * specs.UnitPurchaseListWidth)
-	listHeight := int(float64(upm.Layout.ScreenHeight) * specs.UnitPurchaseListHeight)
-
-	baseList := builders.CreateListWithConfig(builders.ListConfig{
-		Entries:   []interface{}{}, // Will be populated in Enter
-		MinWidth:  listWidth,
-		MinHeight: listHeight,
-		EntryLabelFunc: func(e interface{}) string {
-			if template, ok := e.(*squads.UnitTemplate); ok {
-				// Use service to get owned count
-				totalOwned, available := upm.purchaseService.GetUnitOwnedCount(
-					upm.Context.PlayerData.PlayerEntityID,
-					template.Name,
-				)
-				if totalOwned > 0 {
-					return fmt.Sprintf("%s (Owned: %d, Available: %d)", template.Name, totalOwned, available)
-				}
-				return fmt.Sprintf("%s (Owned: 0)", template.Name)
-			}
-			return fmt.Sprintf("%v", e)
-		},
-		OnEntrySelected: func(selectedEntry interface{}) {
-			if template, ok := selectedEntry.(*squads.UnitTemplate); ok {
-				upm.selectedTemplate = template
-				upm.updateDetailPanel()
-			}
-		},
-	})
-
-	// Wrap with caching for performance (~90% render reduction for static lists)
-	upm.unitList = widgets.NewCachedListWrapper(baseList)
-
-	// Position below resource panel using Start-Start anchor (left-top)
-	leftPad := int(float64(upm.Layout.ScreenWidth) * specs.PaddingStandard)
-	topOffset := int(float64(upm.Layout.ScreenHeight) * (specs.UnitPurchaseResourceHeight + specs.PaddingStandard*2))
-
-	// Wrap in container with LayoutData
-	container := widget.NewContainer(
-		widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
-		widget.ContainerOpts.WidgetOpts(widget.WidgetOpts.LayoutData(builders.AnchorStartStart(leftPad, topOffset))),
-	)
-	// Add the underlying list to maintain interaction functionality
-	container.AddChild(baseList)
-	return container
-}
-
-func (upm *UnitPurchaseMode) buildDetailPanel() *widget.Container {
-	// Right side detail panel (35% width to prevent overlap with 25% top-center resource display)
-	panelWidth := int(float64(upm.Layout.ScreenWidth) * 0.35)
-	panelHeight := int(float64(upm.Layout.ScreenHeight) * 0.6)
-
-	upm.detailPanel = builders.CreateStaticPanel(builders.ContainerConfig{
-		MinWidth:  panelWidth,
-		MinHeight: panelHeight,
-		Layout: widget.NewRowLayout(
-			widget.RowLayoutOpts.Direction(widget.DirectionVertical),
-			widget.RowLayoutOpts.Spacing(10),
-			widget.RowLayoutOpts.Padding(builders.NewResponsiveRowPadding(upm.Layout, specs.PaddingTight)),
-		),
-	})
-
-	rightPad := int(float64(upm.Layout.ScreenWidth) * specs.PaddingStandard)
-	upm.detailPanel.GetWidget().LayoutData = builders.AnchorEndCenter(rightPad)
-
-	// Basic info text area (cached - only re-renders when selection changes)
-	upm.detailTextArea = builders.CreateCachedTextArea(builders.TextAreaConfig{
-		MinWidth:  panelWidth - 30,
-		MinHeight: 100,
-		FontColor: color.White,
-	})
-	upm.detailTextArea.SetText("Select a unit to view details") // SetText calls MarkDirty() internally
-	upm.detailPanel.AddChild(upm.detailTextArea)
-
-	// View Stats button
-	upm.viewStatsButton = builders.CreateButtonWithConfig(builders.ButtonConfig{
-		Text: "View Stats",
-		OnClick: func() {
-			upm.showStats()
-		},
-	})
-	upm.viewStatsButton.GetWidget().Disabled = true
-	upm.detailPanel.AddChild(upm.viewStatsButton)
-
-	// Stats text area (hidden by default, cached - only re-renders when stats viewed)
-	upm.statsTextArea = builders.CreateCachedTextArea(builders.TextAreaConfig{
-		MinWidth:  panelWidth - 30,
-		MinHeight: 300,
-		FontColor: color.White,
-	})
-	upm.statsTextArea.GetWidget().Visibility = widget.Visibility_Hide
-	upm.detailPanel.AddChild(upm.statsTextArea)
-
-	return upm.detailPanel
-}
-
-func (upm *UnitPurchaseMode) buildResourceDisplay() *widget.Container {
-	// Top-center resource display (responsive sizing)
-	panelWidth := int(float64(upm.Layout.ScreenWidth) * 0.25)
-	panelHeight := int(float64(upm.Layout.ScreenHeight) * 0.08)
-
-	resourcePanel := builders.CreateStaticPanel(builders.ContainerConfig{
-		MinWidth:  panelWidth,
-		MinHeight: panelHeight,
-		Layout: widget.NewRowLayout(
-			widget.RowLayoutOpts.Direction(widget.DirectionVertical),
-			widget.RowLayoutOpts.Spacing(5),
-			widget.RowLayoutOpts.Padding(builders.NewResponsiveRowPadding(upm.Layout, specs.PaddingTight)),
-		),
-	})
-
-	topPad := int(float64(upm.Layout.ScreenHeight) * 0.02)
-	resourcePanel.GetWidget().LayoutData = builders.AnchorCenterStart(topPad)
-
-	// Gold label
-	upm.goldLabel = builders.CreateSmallLabel("Gold: 0")
-	resourcePanel.AddChild(upm.goldLabel)
-
-	// Roster label
-	upm.rosterLabel = builders.CreateSmallLabel("Roster: 0/0")
-	resourcePanel.AddChild(upm.rosterLabel)
-
-	return resourcePanel
-}
-
-func (upm *UnitPurchaseMode) buildActionButtons() *widget.Container {
-	// Create UI factory
-	panelFactory := NewSquadPanelFactory(upm.PanelBuilders, upm.Layout)
-
-	// Create button callbacks (no panel wrapper - like combat mode)
-	actionButtonContainer := panelFactory.CreateUnitPurchaseActionButtons(
-		// Buy Unit
-		func() {
-			upm.purchaseUnit()
-		},
-		// Undo
-		func() {
-			upm.CommandHistory.Undo()
-		},
-		// Redo
-		func() {
-			upm.CommandHistory.Redo()
-		},
-		// Back
-		func() {
-			if mode, exists := upm.ModeManager.GetMode("squad_management"); exists {
-				upm.ModeManager.RequestTransition(mode, "Back button pressed")
-			}
-		},
-	)
-
-	// Store buy button reference for enable/disable control (update after creation)
-	// Note: We need to reference the button from the container's children
-	if children := actionButtonContainer.Children(); len(children) > 0 {
-		if btn, ok := children[0].(*widget.Button); ok {
-			upm.buyButton = btn
-			upm.buyButton.GetWidget().Disabled = true
-		}
+	if err != nil {
+		return err
 	}
 
-	return actionButtonContainer
+	// Build panels from registry
+	if err := upm.BuildPanels(
+		UnitPurchasePanelResourceDisplay,
+		UnitPurchasePanelUnitList,
+		UnitPurchasePanelDetailPanel,
+		UnitPurchasePanelActionButtons,
+	); err != nil {
+		return err
+	}
+
+	// Initialize widget references from registry
+	upm.initializeWidgetReferences()
+
+	return nil
+}
+
+// initializeWidgetReferences populates mode fields from panel registry
+func (upm *UnitPurchaseMode) initializeWidgetReferences() {
+	// Resource display
+	upm.goldLabel, upm.rosterLabel = GetUnitPurchaseResourceLabels(upm.Panels)
+
+	// Unit list
+	upm.unitList = GetUnitPurchaseUnitList(upm.Panels)
+
+	// Detail panel
+	upm.detailTextArea, upm.statsTextArea, upm.viewStatsButton = GetUnitPurchaseDetailWidgets(upm.Panels)
+
+	// Buy button
+	upm.buyButton = GetUnitPurchaseBuyButton(upm.Panels)
 }
 
 func (upm *UnitPurchaseMode) updateDetailPanel() {

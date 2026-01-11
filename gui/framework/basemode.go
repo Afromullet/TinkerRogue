@@ -20,20 +20,27 @@ type InputBinding struct {
 
 // BaseMode provides common mode infrastructure shared by all UI modes.
 // Modes should embed this struct to inherit common fields and behavior.
+//
+// Architecture:
+//   - Panels: Registry of built panels with type-safe widget access
+//   - Context: Access to ECS, PlayerData, ModeCoordinator
+//   - Queries: Unified ECS query service for squad/unit lookups
 type BaseMode struct {
 	ui             *ebitenui.UI
-	Context        *UIContext                // Exported for mode access
-	Layout         *specs.LayoutConfig       // Exported for mode access
-	ModeManager    *UIModeManager            // Exported for mode access
-	RootContainer  *widget.Container         // Exported for mode access
-	PanelBuilders  *builders.PanelBuilders   // Exported for mode access
-	Queries        *GUIQueries // Unified ECS query service - exported for mode access
-	StatusLabel    *widget.Text              // Optional status label for display and logging - set by modes that need it
-	CommandHistory *CommandHistory           // Optional command history for undo/redo support
-	PanelWidgets   map[string]interface{}    // Stores typed panel widgets by SpecName (TextArea, List, etc.)
-	modeName       string
-	returnMode     string                      // Mode to return to on ESC/close
-	hotkeys        map[ebiten.Key]InputBinding // Registered hotkeys for mode transitions
+	Context        *UIContext              // Exported for mode access
+	Layout         *specs.LayoutConfig     // Exported for mode access
+	ModeManager    *UIModeManager          // Exported for mode access
+	RootContainer  *widget.Container       // Exported for mode access
+	PanelBuilders  *builders.PanelBuilders // Exported for mode access
+	Queries        *GUIQueries             // Unified ECS query service - exported for mode access
+	StatusLabel    *widget.Text            // Optional status label for display and logging - set by modes that need it
+	CommandHistory *CommandHistory         // Optional command history for undo/redo support
+	Panels         *PanelRegistry          // Built panels with type-safe access
+
+	modeName   string
+	returnMode string                      // Mode to return to on ESC/close
+	hotkeys    map[ebiten.Key]InputBinding // Registered hotkeys for mode transitions
+	self       UIMode                      // Reference to concrete mode for panel building
 }
 
 // SetModeName sets the mode identifier
@@ -44,6 +51,12 @@ func (bm *BaseMode) SetModeName(name string) {
 // SetReturnMode sets the mode to return to on ESC/close
 func (bm *BaseMode) SetReturnMode(name string) {
 	bm.returnMode = name
+}
+
+// SetSelf stores a reference to the concrete mode for panel building.
+// Call this in the concrete mode's constructor after embedding BaseMode.
+func (bm *BaseMode) SetSelf(mode UIMode) {
+	bm.self = mode
 }
 
 // InitializeBase sets up common mode infrastructure.
@@ -63,8 +76,8 @@ func (bm *BaseMode) InitializeBase(ctx *UIContext) {
 	// Initialize hotkeys map
 	bm.hotkeys = make(map[ebiten.Key]InputBinding)
 
-	// Initialize panel widgets map
-	bm.PanelWidgets = make(map[string]interface{})
+	// Initialize panel registry
+	bm.Panels = NewPanelRegistry()
 
 	// Create root ebitenui container
 	bm.ui = &ebitenui.UI{}
@@ -181,5 +194,43 @@ func (bm *BaseMode) Enter(fromMode UIMode) error {
 // Exit is called when switching FROM this mode to another.
 // Default implementation does nothing. Override to clean up resources.
 func (bm *BaseMode) Exit(toMode UIMode) error {
+	return nil
+}
+
+// BuildPanels builds multiple panels from the global registry and adds them to the root container.
+// Panels are built using the stored self reference (set via SetSelf) for OnCreate callbacks.
+//
+// Example:
+//
+//	cm.BuildPanels(CombatPanelTurnOrder, CombatPanelFactionInfo, CombatPanelSquadList)
+func (bm *BaseMode) BuildPanels(panelTypes ...PanelType) error {
+	for _, ptype := range panelTypes {
+		result, err := BuildRegisteredPanel(ptype, bm.self, bm.PanelBuilders, bm.Layout)
+		if err != nil {
+			return fmt.Errorf("failed to build panel %s: %w", ptype, err)
+		}
+		bm.Panels.Add(result)
+		if result.Container != nil {
+			bm.RootContainer.AddChild(result.Container)
+		}
+	}
+	return nil
+}
+
+// GetTextLabel returns the text label from a panel, or nil if not found.
+// Use this for type-safe access to text panels.
+func (bm *BaseMode) GetTextLabel(ptype PanelType) *widget.Text {
+	if result := bm.Panels.Get(ptype); result != nil {
+		return result.TextLabel
+	}
+	return nil
+}
+
+// GetPanelContainer returns the container for a panel, or nil if not found.
+// Use this to add/remove children or access the panel directly.
+func (bm *BaseMode) GetPanelContainer(ptype PanelType) *widget.Container {
+	if result := bm.Panels.Get(ptype); result != nil {
+		return result.Container
+	}
 	return nil
 }

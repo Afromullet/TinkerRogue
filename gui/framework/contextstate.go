@@ -49,9 +49,10 @@ type BattleMapState struct {
 	SelectedSquadID  ecs.EntityID // Currently selected squad
 	SelectedTargetID ecs.EntityID // Target squad for attacks
 
-	// UI Mode Flags
-	InAttackMode bool // Whether attack mode is active
-	InMoveMode   bool // Whether movement mode is active
+	// UI Overlay Flags (controls what visual overlay is showing)
+	// These are PURELY visual - game logic should NOT check these flags
+	InAttackMode bool // Whether attack overlay is showing
+	InMoveMode   bool // Whether movement overlay is showing
 
 	// Encounter Tracking
 	TriggeredEncounterID ecs.EntityID // Encounter that triggered this combat (0 if none)
@@ -85,4 +86,15 @@ func (bms *BattleMapState) Reset() {
 
 	// Clear encounter tracking
 	bms.TriggeredEncounterID = ecs.EntityID(0)
+}
+
+// DebugMap returns state as a map for structured logging
+func (bms *BattleMapState) DebugMap() map[string]interface{} {
+	return map[string]interface{}{
+		"selectedSquad":  bms.SelectedSquadID,
+		"selectedTarget": bms.SelectedTargetID,
+		"inAttackMode":   bms.InAttackMode,
+		"inMoveMode":     bms.InMoveMode,
+		"encounterID":    bms.TriggeredEncounterID,
+	}
 }

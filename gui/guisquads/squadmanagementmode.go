@@ -13,17 +13,18 @@ type SquadManagementMode struct {
 	framework.BaseMode // Embed common mode infrastructure
 
 	commandContainer *widget.Container // Container for command buttons
-
 }
 
 func NewSquadManagementMode(modeManager *framework.UIModeManager) *SquadManagementMode {
 	mode := &SquadManagementMode{}
 	mode.SetModeName("squad_management")
 	mode.ModeManager = modeManager
+	mode.SetSelf(mode) // Required for panel registry building
 	return mode
 }
 
 func (smm *SquadManagementMode) Initialize(ctx *framework.UIContext) error {
+	// Build base UI using ModeBuilder (minimal config - panels handled by registry)
 	err := framework.NewModeBuilder(&smm.BaseMode, framework.ModeConfig{
 		ModeName:   "squad_management",
 		ReturnMode: "", // Context switch handled separately
@@ -34,54 +35,21 @@ func (smm *SquadManagementMode) Initialize(ctx *framework.UIContext) error {
 			{Key: ebiten.KeyE, TargetMode: "squad_editor"},
 		},
 
-		Panels: []framework.ModePanelConfig{
-
-			{CustomBuild: smm.buildActionButtons}, // Build after Context is available
-		},
-
 		StatusLabel: true,
 		Commands:    true,
 		OnRefresh:   smm.refresh,
 	}).Build(ctx)
 
-	return err
-}
+	if err != nil {
+		return err
+	}
 
-func (smm *SquadManagementMode) buildActionButtons() *widget.Container {
-	// Create UI factory
-	panelFactory := NewSquadPanelFactory(smm.PanelBuilders, smm.Layout)
+	// Build panels from registry
+	if err := smm.BuildPanels(SquadManagementPanelActionButtons); err != nil {
+		return err
+	}
 
-	// Create button callbacks (no panel wrapper - like combat mode)
-	buttonContainer := panelFactory.CreateSquadManagementActionButtons(
-		// Battle Map (ESC)
-		func() {
-			if smm.Context.ModeCoordinator != nil {
-				if err := smm.Context.ModeCoordinator.EnterBattleMap("exploration"); err != nil {
-					fmt.Printf("ERROR: Failed to enter battle map: %v\n", err)
-				}
-			}
-		},
-		// Squad Builder (B)
-		func() {
-			if mode, exists := smm.ModeManager.GetMode("squad_builder"); exists {
-				smm.ModeManager.RequestTransition(mode, "Squad Builder clicked")
-			}
-		},
-		// Buy Units (P)
-		func() {
-			if mode, exists := smm.ModeManager.GetMode("unit_purchase"); exists {
-				smm.ModeManager.RequestTransition(mode, "Buy Units clicked")
-			}
-		},
-		// Edit Squad (E)
-		func() {
-			if mode, exists := smm.ModeManager.GetMode("squad_editor"); exists {
-				smm.ModeManager.RequestTransition(mode, "Edit Squad clicked")
-			}
-		},
-	)
-
-	return buttonContainer
+	return nil
 }
 
 func (smm *SquadManagementMode) Enter(fromMode framework.UIMode) error {

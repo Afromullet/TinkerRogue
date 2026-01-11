@@ -1,0 +1,110 @@
+package guisquads
+
+import (
+	"fmt"
+	"game_main/common"
+	"game_main/tactical/squadcommands"
+	"game_main/tactical/squads"
+
+	"github.com/bytearena/ecs"
+)
+
+// Grid interaction logic for SquadEditorMode
+
+// onGridCellClicked handles clicking a grid cell
+func (sem *SquadEditorMode) onGridCellClicked(row, col int) {
+	if len(sem.allSquadIDs) == 0 {
+		sem.SetStatus("No squad selected")
+		return
+	}
+
+	currentSquadID := sem.allSquadIDs[sem.currentSquadIndex]
+
+	// Check if there's a unit at this position
+	unitIDs := squads.GetUnitIDsAtGridPosition(currentSquadID, row, col, sem.Queries.ECSManager)
+
+	if len(unitIDs) > 0 {
+		// Unit exists - select it for moving
+		sem.selectedUnitID = unitIDs[0]
+		sem.selectedGridCell = nil
+
+		// Get unit name
+		nameStr := "Unit"
+		if nameComp, ok := sem.Queries.ECSManager.GetComponent(sem.selectedUnitID, common.NameComponent); ok {
+			if name := nameComp.(*common.Name); name != nil {
+				nameStr = name.NameStr
+			}
+		}
+
+		sem.SetStatus(fmt.Sprintf("Selected unit: %s. Click another cell to move", nameStr))
+	} else if sem.selectedUnitID != 0 {
+		// Empty cell clicked with unit selected - move unit here
+		sem.moveSelectedUnitToCell(row, col)
+		sem.selectedUnitID = 0
+		sem.selectedGridCell = nil
+	} else {
+		// Empty cell clicked with no unit selected - remember for adding units
+		sem.selectedGridCell = &GridCell{Row: row, Col: col}
+		sem.SetStatus(fmt.Sprintf("Selected cell [%d,%d]. Click 'Add to Squad' to place a unit here", row, col))
+	}
+}
+
+// moveSelectedUnitToCell moves the currently selected unit to the specified cell
+func (sem *SquadEditorMode) moveSelectedUnitToCell(row, col int) {
+	if sem.selectedUnitID == 0 {
+		return
+	}
+
+	currentSquadID := sem.allSquadIDs[sem.currentSquadIndex]
+
+	// Create and execute move command
+	cmd := squadcommands.NewMoveUnitCommand(
+		sem.Queries.ECSManager,
+		currentSquadID,
+		sem.selectedUnitID,
+		row,
+		col,
+	)
+
+	sem.CommandHistory.Execute(cmd)
+}
+
+// loadSquadFormation loads squad units into the 3x3 grid display
+func (sem *SquadEditorMode) loadSquadFormation(squadID ecs.EntityID) {
+	// Clear grid first
+	for row := 0; row < 3; row++ {
+		for col := 0; col < 3; col++ {
+			sem.gridCells[row][col].Text().Label = ""
+		}
+	}
+
+	// Get units in squad and display them
+	unitIDs := sem.Queries.SquadCache.GetUnitIDsInSquad(squadID)
+
+	for _, unitID := range unitIDs {
+		gridPos := common.GetComponentTypeByID[*squads.GridPositionData](
+			sem.Queries.ECSManager, unitID, squads.GridPositionComponent)
+		if gridPos == nil {
+			continue
+		}
+
+		// Get unit name
+		nameStr := "Unit"
+		if nameComp, ok := sem.Queries.ECSManager.GetComponent(unitID, common.NameComponent); ok {
+			if name := nameComp.(*common.Name); name != nil {
+				nameStr = name.NameStr
+			}
+		}
+
+		// Check if leader
+		isLeader := sem.Queries.ECSManager.HasComponent(unitID, squads.LeaderComponent)
+		if isLeader {
+			nameStr = "[L] " + nameStr
+		}
+
+		// Update grid cell
+		if gridPos.AnchorRow >= 0 && gridPos.AnchorRow < 3 && gridPos.AnchorCol >= 0 && gridPos.AnchorCol < 3 {
+			sem.gridCells[gridPos.AnchorRow][gridPos.AnchorCol].Text().Label = nameStr
+		}
+	}
+}
