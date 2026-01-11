@@ -171,22 +171,22 @@ func calculateCounterattackDamage(attackerID, defenderID ecs.EntityID, squadmana
 		hitThreshold = 0
 	}
 
-	hitRoll := common.GetDiceRoll(100)
+	hitRoll, didHit := rollHit(hitThreshold)
 	event.HitResult.HitRoll = hitRoll
 	event.HitResult.HitThreshold = hitThreshold
 
-	if hitRoll > hitThreshold {
+	if !didHit {
 		event.HitResult.Type = HitTypeMiss
 		return 0, event
 	}
 
 	// Dodge roll (no penalty)
 	dodgeThreshold := defenderAttr.GetDodgeChance()
-	dodgeRoll := common.GetDiceRoll(100)
+	dodgeRoll, wasDodged := rollDodge(dodgeThreshold)
 	event.HitResult.DodgeRoll = dodgeRoll
 	event.HitResult.DodgeThreshold = dodgeThreshold
 
-	if dodgeRoll <= dodgeThreshold {
+	if wasDodged {
 		event.HitResult.Type = HitTypeDodge
 		return 0, event
 	}
@@ -198,11 +198,11 @@ func calculateCounterattackDamage(attackerID, defenderID ecs.EntityID, squadmana
 
 	// Crit roll (no penalty)
 	critThreshold := attackerAttr.GetCritChance()
-	critRoll := common.GetDiceRoll(100)
+	critRoll, wasCrit := rollCrit(critThreshold)
 	event.HitResult.CritRoll = critRoll
 	event.HitResult.CritThreshold = critThreshold
 
-	if critRoll <= critThreshold {
+	if wasCrit {
 		baseDamage = int(float64(baseDamage) * 1.5)
 		event.CritMultiplier = 1.5
 		event.HitResult.Type = HitTypeCritical
@@ -679,22 +679,22 @@ func calculateUnitDamageByID(attackerID, defenderID ecs.EntityID, squadmanager *
 
 	// Hit roll
 	hitThreshold := attackerAttr.GetHitRate()
-	hitRoll := common.GetDiceRoll(100)
+	hitRoll, didHit := rollHit(hitThreshold)
 	event.HitResult.HitRoll = hitRoll
 	event.HitResult.HitThreshold = hitThreshold
 
-	if hitRoll > hitThreshold {
+	if !didHit {
 		event.HitResult.Type = HitTypeMiss
 		return 0, event
 	}
 
 	// Dodge roll
 	dodgeThreshold := defenderAttr.GetDodgeChance()
-	dodgeRoll := common.GetDiceRoll(100)
+	dodgeRoll, wasDodged := rollDodge(dodgeThreshold)
 	event.HitResult.DodgeRoll = dodgeRoll
 	event.HitResult.DodgeThreshold = dodgeThreshold
 
-	if dodgeRoll <= dodgeThreshold {
+	if wasDodged {
 		event.HitResult.Type = HitTypeDodge
 		return 0, event
 	}
@@ -721,11 +721,11 @@ func calculateUnitDamageByID(attackerID, defenderID ecs.EntityID, squadmanager *
 
 	// Crit roll
 	critThreshold := attackerAttr.GetCritChance()
-	critRoll := common.GetDiceRoll(100)
+	critRoll, wasCrit := rollCrit(critThreshold)
 	event.HitResult.CritRoll = critRoll
 	event.HitResult.CritThreshold = critThreshold
 
-	if critRoll <= critThreshold {
+	if wasCrit {
 		baseDamage = int(float64(baseDamage) * 1.5)
 		event.CritMultiplier = 1.5
 		event.HitResult.Type = HitTypeCritical
@@ -760,24 +760,28 @@ func calculateUnitDamageByID(attackerID, defenderID ecs.EntityID, squadmanager *
 	return totalDamage, event
 }
 
-//TODO, the rollhit, rollCrit and rollDodge functions need to be used
-
-// rollHit determines if an attack hits based on hit rate
-func rollHit(hitRate int) bool {
-	roll := common.GetDiceRoll(100)
-	return roll <= hitRate
+// rollHit returns the roll value and whether the attack hit
+// Returns: (roll value, hit succeeded)
+func rollHit(hitRate int) (roll int, hit bool) {
+	roll = common.GetDiceRoll(100)
+	hit = roll <= hitRate
+	return
 }
 
-// rollCrit determines if an attack is a critical hit
-func rollCrit(critChance int) bool {
-	roll := common.GetDiceRoll(100)
-	return roll <= critChance
+// rollCrit returns the roll value and whether the attack is a critical hit
+// Returns: (roll value, crit succeeded)
+func rollCrit(critChance int) (roll int, crit bool) {
+	roll = common.GetDiceRoll(100)
+	crit = roll <= critChance
+	return
 }
 
-// rollDodge determines if an attack is dodged
-func rollDodge(dodgeChance int) bool {
-	roll := common.GetDiceRoll(100)
-	return roll <= dodgeChance
+// rollDodge returns the roll value and whether the attack was dodged
+// Returns: (roll value, dodge succeeded)
+func rollDodge(dodgeChance int) (roll int, dodged bool) {
+	roll = common.GetDiceRoll(100)
+	dodged = roll <= dodgeChance
+	return
 }
 
 // applyDamageToUnitByID applies damage to a unit and tracks it in the combat result
