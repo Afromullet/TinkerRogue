@@ -3,7 +3,6 @@ package guicombat
 import (
 	"game_main/gui/framework"
 
-	"game_main/gui/guimodes"
 	"game_main/tactical/behavior"
 	"game_main/world/coords"
 	"game_main/world/worldmap"
@@ -15,8 +14,8 @@ import (
 // danger visualization, layer visualization, and threat evaluation.
 type CombatVisualizationManager struct {
 	// Rendering systems
-	movementRenderer  *guimodes.MovementTileRenderer
-	highlightRenderer *guimodes.SquadHighlightRenderer
+	movementRenderer  *framework.MovementTileRenderer
+	highlightRenderer *framework.SquadHighlightRenderer
 	dangerVisualizer  *behavior.DangerVisualizer
 	layerVisualizer   *behavior.LayerVisualizer
 
@@ -32,8 +31,8 @@ func NewCombatVisualizationManager(
 	gameMap *worldmap.GameMap,
 ) *CombatVisualizationManager {
 	cvm := &CombatVisualizationManager{
-		movementRenderer:  guimodes.NewMovementTileRenderer(),
-		highlightRenderer: guimodes.NewSquadHighlightRenderer(queries),
+		movementRenderer:  framework.NewMovementTileRenderer(),
+		highlightRenderer: framework.NewSquadHighlightRenderer(queries),
 	}
 
 	// Create the initial Faction Threat Level Manager and add all factions
@@ -67,12 +66,12 @@ func NewCombatVisualizationManager(
 }
 
 // GetMovementRenderer returns the movement tile renderer
-func (cvm *CombatVisualizationManager) GetMovementRenderer() *guimodes.MovementTileRenderer {
+func (cvm *CombatVisualizationManager) GetMovementRenderer() *framework.MovementTileRenderer {
 	return cvm.movementRenderer
 }
 
 // GetHighlightRenderer returns the squad highlight renderer
-func (cvm *CombatVisualizationManager) GetHighlightRenderer() *guimodes.SquadHighlightRenderer {
+func (cvm *CombatVisualizationManager) GetHighlightRenderer() *framework.SquadHighlightRenderer {
 	return cvm.highlightRenderer
 }
 

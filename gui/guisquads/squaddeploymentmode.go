@@ -5,7 +5,6 @@ import (
 
 	"game_main/common"
 	"game_main/gui/framework"
-	"game_main/gui/guimodes"
 	"game_main/gui/widgets"
 	"game_main/tactical/squads"
 	"game_main/tactical/squadservices"
@@ -25,8 +24,8 @@ type SquadDeploymentMode struct {
 
 	// Interactive widget references (stored here for refresh/access)
 	// These are populated from panel registry after BuildPanels()
-	squadList      *widgets.CachedListWrapper
-	detailTextArea *widgets.CachedTextAreaWrapper
+	squadList       *widgets.CachedListWrapper
+	detailTextArea  *widgets.CachedTextAreaWrapper
 	instructionText *widget.Text
 
 	selectedSquadID ecs.EntityID
@@ -37,7 +36,7 @@ type SquadDeploymentMode struct {
 	pendingPlacement bool
 
 	// Rendering systems
-	highlightRenderer *guimodes.SquadHighlightRenderer
+	highlightRenderer *framework.SquadHighlightRenderer
 }
 
 func NewSquadDeploymentMode(modeManager *framework.UIModeManager) *SquadDeploymentMode {
@@ -77,7 +76,7 @@ func (sdm *SquadDeploymentMode) Initialize(ctx *framework.UIContext) error {
 	sdm.initializeWidgetReferences()
 
 	// Initialize rendering system AFTER BaseMode is initialized (so Queries is available)
-	sdm.highlightRenderer = guimodes.NewSquadHighlightRenderer(sdm.Queries)
+	sdm.highlightRenderer = framework.NewSquadHighlightRenderer(sdm.Queries)
 
 	return nil
 }

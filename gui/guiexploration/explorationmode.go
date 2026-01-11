@@ -1,4 +1,4 @@
-package guimodes
+package guiexploration
 
 import (
 	"fmt"

@@ -9,8 +9,8 @@ import (
 
 	"game_main/gui/framework"
 	"game_main/gui/guicombat"
+	"game_main/gui/guiexploration"
 
-	"game_main/gui/guimodes"
 	"game_main/gui/guiresources"
 	"game_main/gui/guisquads"
 	"game_main/input"
@@ -227,7 +227,7 @@ func SetupInputCoordinator(g *Game) {
 // registerBattleMapModes registers all battle map UI modes with the coordinator.
 func registerBattleMapModes(coordinator *framework.GameModeCoordinator, manager *framework.UIModeManager) {
 	modes := []framework.UIMode{
-		guimodes.NewExplorationMode(manager),
+		guiexploration.NewExplorationMode(manager),
 		guicombat.NewCombatMode(manager),
 		guicombat.NewCombatAnimationMode(manager),
 		guisquads.NewSquadDeploymentMode(manager),
@@ -262,7 +262,7 @@ func registerOverworldModes(coordinator *framework.GameModeCoordinator, manager 
 // newInventoryModeWithReturn creates an inventory mode configured with a return mode.
 // This helper eliminates duplicate inventory mode setup code.
 func newInventoryModeWithReturn(manager *framework.UIModeManager, returnMode string) framework.UIMode {
-	mode := guimodes.NewInventoryMode(manager)
+	mode := guiexploration.NewInventoryMode(manager)
 	mode.SetReturnMode(returnMode)
 	return mode
 }

@@ -76,3 +76,10 @@ Files are named: battle_YYYYMMDD_HHMMSS.json
 Enable/disable export in config/config.go:
   ENABLE_COMBAT_LOG_EXPORT = true
   COMBAT_LOG_EXPORT_DIR    = "./combat_logs"
+
+
+_____
+
+Checking for deadcode:
+
+deadcode ./...
