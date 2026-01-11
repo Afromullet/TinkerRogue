@@ -1,7 +1,7 @@
 # TinkerRogue Technical Documentation
 
-**Version:** 2.0 (Merged Edition)
-**Last Updated:** 2025-12-12
+**Version:** 3.0 (2026 Edition)
+**Last Updated:** 2026-01-11
 **Project Type:** Turn-based tactical roguelike with squad combat
 **Language:** Go 1.x
 **ECS Library:** bytearena/ecs
@@ -48,11 +48,15 @@ TinkerRogue is a turn-based tactical roguelike implemented in Go using a pure En
 
 ### Technical Metrics
 
-- **Lines of Code**: ~15,000+ across 90+ files
-- **Packages**: 12 major systems (common, coords, squads, combat, gui, gear, worldmap, etc.)
-- **Components**: 25+ registered ECS components
+- **Lines of Code**: ~20,000+ across 120+ files
+- **Packages**: 15 major systems (common, coords, tactical, gui, gear, worldmap, visual, etc.)
+- **Components**: 30+ registered ECS components
 - **Entity Types**: Units, Squads, Items, Tiles, Factions, Combat State
-- **Performance**: Value-based map keys provide 50x improvement over pointer-based keys
+- **Performance**:
+  - Value-based map keys provide 50x improvement over pointer-based keys
+  - Cached list widgets reduce CPU usage by ~90%
+  - Batched rendering for tiles and sprites
+  - O(1) spatial queries via GlobalPositionSystem
 
 ### Reading Paths
 
@@ -122,36 +126,69 @@ TinkerRogue/
 │   ├── commoncomponents.go  # Position, Attributes, Name
 │   └── playerdata.go   # Player state
 │
-├── coords/              # Coordinate management (CRITICAL)
-│   ├── cordmanager.go  # Global CoordManager singleton
-│   └── position.go     # LogicalPosition, PixelPosition types
+├── world/               # World systems (renamed from coords/)
+│   ├── coords/         # Coordinate management (CRITICAL)
+│   │   ├── cordmanager.go  # Global CoordManager singleton
+│   │   └── position.go     # LogicalPosition, PixelPosition types
+│   ├── systems/        # ECS systems (position tracking, etc.)
+│   │   └── positionsystem.go  # O(1) spatial grid (GlobalPositionSystem)
+│   └── worldmap/       # Procedural generation
+│       ├── generator.go         # Generator registry
+│       ├── gen_rooms_corridors.go
+│       ├── gen_tactical_biome.go
+│       └── gen_overworld.go
 │
-├── systems/             # ECS systems (position tracking, etc.)
-│   └── positionsystem.go  # O(1) spatial grid (GlobalPositionSystem)
-│
-├── squads/              # Squad system (REFERENCE IMPLEMENTATION)
-│   ├── squadcomponents.go   # 8 pure data components
-│   ├── squadqueries.go      # Query functions
-│   ├── squadcombat.go       # Combat logic
-│   ├── squadabilities.go    # Leader abilities
-│   └── squadmanager.go      # Initialization
-│
-├── combat/              # Turn-based combat management
-│   ├── turnmanager.go       # Turn order, round tracking
-│   ├── combatservices/      # Combat service layer
-│   └── gameplayfactions.go  # Faction system
+├── tactical/            # Tactical gameplay systems (NEW)
+│   ├── squads/         # Squad system (REFERENCE IMPLEMENTATION)
+│   │   ├── squadcomponents.go   # 8 pure data components
+│   │   ├── squadqueries.go      # Query functions
+│   │   ├── squadcombat.go       # Combat logic
+│   │   ├── squadabilities.go    # Leader abilities
+│   │   └── squadmanager.go      # Initialization
+│   ├── combat/         # Turn-based combat management
+│   │   ├── turnmanager.go       # Turn order, round tracking
+│   │   └── gameplayfactions.go  # Faction system
+│   ├── combatservices/ # Combat service layer
+│   ├── squadservices/  # Squad service layer
+│   ├── squadcommands/  # Squad command pattern (undo/redo)
+│   ├── ai/             # AI decision-making
+│   └── behavior/       # Behavior trees and utility AI
 │
 ├── gear/                # Inventory and items
 │   ├── Inventory.go         # Pure ECS inventory (REFERENCE)
 │   ├── items.go             # Item components
 │   └── inventory_service.go # Service layer
 │
-├── gui/                 # User interface
-│   ├── core/                # Mode manager, context
-│   ├── guimodes/            # Game modes (overworld, combat)
-│   ├── widgets/             # Reusable widgets
-│   ├── guicombat/           # Combat UI
-│   └── guisquads/           # Squad builder UI
+├── gui/                 # User interface (MAJOR OVERHAUL)
+│   ├── framework/      # Core mode infrastructure (NEW)
+│   │   ├── uimode.go          # UIMode interface, UIContext
+│   │   ├── basemode.go        # Common mode infrastructure
+│   │   ├── modemanager.go     # Mode lifecycle & transitions
+│   │   ├── coordinator.go     # Two-context system (Overworld/BattleMap)
+│   │   ├── modebuilder.go     # Declarative mode configuration
+│   │   ├── panelregistry.go   # Global panel type registry
+│   │   ├── guiqueries.go      # ECS query abstraction
+│   │   └── commandhistory.go  # Undo/redo system
+│   ├── builders/       # UI construction helpers (NEW)
+│   │   ├── panels.go          # Panel building with functional options
+│   │   ├── layout.go          # Layout calculations
+│   │   ├── dialogs.go         # Modal dialog builders
+│   │   └── panelspecs.go      # Standard panel specifications
+│   ├── widgets/        # Widget wrappers & utilities (NEW)
+│   │   ├── cached_list.go     # Cached list (90% CPU reduction)
+│   │   ├── cached_textarea.go # Cached text area
+│   │   └── createwidgets.go   # Widget creation helpers
+│   ├── specs/          # Layout specifications (NEW)
+│   │   └── layout.go          # Responsive layout configuration
+│   ├── guiresources/   # Shared UI resources
+│   │   └── cachedbackground.go # Cached background rendering
+│   ├── guicombat/      # Combat mode implementation
+│   ├── guisquads/      # Squad management modes
+│   └── guimodes/       # Other game modes (exploration, inventory)
+│
+├── visual/              # Rendering systems (NEW)
+│   ├── graphics/       # Graphics utilities
+│   └── rendering/      # Batch rendering, sprite management
 │
 ├── input/               # Input handling
 │   ├── inputcoordinator.go  # Central dispatcher
@@ -159,16 +196,13 @@ TinkerRogue/
 │   ├── combatcontroller.go
 │   └── uicontroller.go
 │
-├── worldmap/            # Procedural generation
-│   ├── generator.go         # Generator registry
-│   ├── gen_rooms_corridors.go
-│   ├── gen_tactical_biome.go
-│   └── gen_overworld.go
-│
-├── entitytemplates/     # JSON-based entity creation
+├── templates/           # JSON-based entity creation (renamed)
 │   ├── templatelib.go       # Template registry
 │   ├── creators.go          # Factory functions
 │   └── readdata.go          # JSON loading
+│
+├── tools/               # Development tools (NEW)
+│   └── combatsim/      # Combat simulation and analysis
 │
 └── game_main/           # Entry point and initialization
     ├── main.go              # Game loop
@@ -615,7 +649,9 @@ squads/
 
 ## Squad System
 
-The squad system (`squads/`) is the **reference implementation** for proper ECS architecture in TinkerRogue. Study this system to understand how to structure new features.
+The squad system (`tactical/squads/`) is the **reference implementation** for proper ECS architecture in TinkerRogue. Study this system to understand how to structure new features.
+
+> **Package Location**: Squads moved to `tactical/squads/` as part of 2026 reorganization.
 
 ### Overview
 
@@ -844,7 +880,17 @@ func InitializeSquadData(manager *common.EntityManager) error {
 
 ## Combat System
 
-The combat system (`combat/`) manages turn-based tactical encounters between factions.
+The combat system (`tactical/combat/`, `tactical/combatservices/`) manages turn-based tactical encounters between factions.
+
+> **Package Location**: Combat moved to `tactical/combat/` as part of 2026 reorganization.
+
+### Recent Enhancements (2026)
+
+1. **Multiple Faction Support** - Supports hot-seat multiplayer with multiple player-controlled factions
+2. **Threat Map System** - AI uses threat maps for tactical decision-making (`tactical/ai/`)
+3. **Combat Visualization** - File-based combat recording for testing and analysis (`tools/combatsim/`)
+4. **Movement System** - Squads can move multiple tiles over multiple actions based on movement speed
+5. **Combat Animation** - Visual feedback for attacks, movements, and abilities
 
 ### Architecture
 
@@ -993,6 +1039,44 @@ func CheckVictoryCondition(manager *common.EntityManager) (bool, ecs.EntityID) {
 }
 ```
 
+### AI System (New in 2026)
+
+**File:** `tactical/ai/`, `tactical/behavior/`
+
+TinkerRogue features a utility AI system with threat map generation for tactical decision-making.
+
+**Threat Map System:**
+
+```go
+// AI evaluates danger at each position on the battlefield
+type ThreatMap struct {
+    DangerLevels map[coords.LogicalPosition]DangerLevel
+    FactionID    ecs.EntityID
+}
+
+// Danger levels guide movement and positioning
+type DangerLevel int
+const (
+    DangerNone DangerLevel = iota
+    DangerLow
+    DangerMedium
+    DangerHigh
+    DangerExtreme
+)
+```
+
+**AI Decision Making:**
+
+1. **Threat Assessment** - Calculate danger at each tile based on enemy squads
+2. **Utility Evaluation** - Score potential actions (attack, move, ability)
+3. **Action Selection** - Choose highest-utility action
+4. **Execution** - Perform action via combat service layer
+
+**Visualization Tools:**
+
+- `DangerVisualizer` - Renders threat map overlay for debugging
+- Combat simulation recording for analysis
+
 ### Combat Service Layer
 
 The combat service provides a higher-level API over the ECS components.
@@ -1029,12 +1113,32 @@ func (cs *CombatService) ExecuteSquadAttack(attackerID, defenderID ecs.EntityID)
 
 ## GUI Architecture
 
-The GUI system uses a **mode-based architecture** with context isolation between different game states.
+> **Note**: For comprehensive GUI documentation, see `docs/gui_documentation/GUI_DOCUMENTATION.md`.
+> This section provides a high-level overview. The detailed GUI documentation covers:
+> - Complete package structure and responsibilities
+> - ModeBuilder pattern and Panel Registry system
+> - GUIQueries abstraction layer
+> - Performance optimization techniques (caching, batching)
+> - Step-by-step guide for adding new modes
+> - Common patterns and troubleshooting
+
+The GUI system uses a **mode-based architecture** with two-context separation (Overworld/BattleMap) and declarative panel building.
+
+### Modern GUI Architecture (2026 Overhaul)
+
+**Key Improvements:**
+1. **Framework Package** - Core abstractions (BaseMode, ModeBuilder, Panel Registry)
+2. **Builders Package** - Declarative panel construction with functional options
+3. **Two-Context System** - Separate Overworld (strategic) and BattleMap (tactical) contexts
+4. **GUIQueries Layer** - ECS abstraction preventing tight coupling
+5. **Panel Registry** - Type-safe, centralized panel definitions
+6. **Performance Caching** - 90% CPU reduction with cached widgets
+7. **Command Pattern** - Undo/redo support for user actions
 
 ### Mode Manager Pattern
 
 ```go
-// gui/core/modemanager.go:9-16
+// gui/framework/modemanager.go
 type UIModeManager struct {
     currentMode       UIMode
     modes             map[string]UIMode  // Registry
@@ -1042,23 +1146,120 @@ type UIModeManager struct {
     pendingTransition *ModeTransition
     inputState        *InputState
 }
+
+// gui/framework/coordinator.go - Two-context system
+type GameModeCoordinator struct {
+    overworldManager *UIModeManager   // Strategic layer
+    battleMapManager *UIModeManager   // Tactical layer
+    activeManager    *UIModeManager
+    currentContext   GameContext
+    overworldState   *OverworldState  // Persistent UI state
+    battleMapState   *BattleMapState  // Persistent UI state
+}
 ```
 
 ### UI Mode Interface
 
 ```go
-// gui/core/uimode.go (conceptual)
+// gui/framework/uimode.go
 type UIMode interface {
     GetModeName() string
     Initialize(ctx *UIContext) error
     Enter(fromMode UIMode) error
     Exit(toMode UIMode) error
-    HandleInput(input *InputState)
+    HandleInput(input *InputState) bool  // Returns true if input consumed
     Update(deltaTime float64) error
     Render(screen *ebiten.Image)
     GetEbitenUI() *ebitenui.UI
 }
 ```
+
+### ModeBuilder Pattern (Declarative Configuration)
+
+**File:** `gui/framework/modebuilder.go`
+
+The ModeBuilder eliminates boilerplate by providing declarative mode initialization:
+
+```go
+// Before (50+ lines of boilerplate)
+func (m *MyMode) Initialize(ctx *UIContext) error {
+    m.InitializeBase(ctx)
+    m.SetModeName("my_mode")
+    m.SetReturnMode("exploration")
+    m.RegisterHotkey(ebiten.KeyI, "inventory")
+    m.RegisterHotkey(ebiten.KeyC, "combat")
+    // ... many more lines ...
+}
+
+// After (10 lines, declarative)
+func (m *MyMode) Initialize(ctx *framework.UIContext) error {
+    err := framework.NewModeBuilder(&m.BaseMode, framework.ModeConfig{
+        ModeName:   "my_mode",
+        ReturnMode: "exploration",
+        Hotkeys: []framework.HotkeySpec{
+            {Key: ebiten.KeyI, TargetMode: "inventory"},
+            {Key: ebiten.KeyC, TargetMode: "combat"},
+        },
+        StatusLabel: true,  // Automatically creates status label
+        Commands:    true,  // Enables undo/redo
+        OnRefresh:   m.refreshUI,  // Optional refresh callback
+    }).Build(ctx)
+
+    if err != nil {
+        return err
+    }
+
+    // Build panels from registry
+    return m.BuildPanels(MyPanelType1, MyPanelType2)
+}
+```
+
+### Panel Registry System (Type-Safe Panel Building)
+
+**File:** `gui/framework/panelregistry.go`
+
+Panels are registered once globally and built declaratively:
+
+```go
+// 1. Register panel in init() (typically in *_panels_registry.go)
+func init() {
+    framework.RegisterPanel(CombatPanelTurnOrder, framework.PanelDescriptor{
+        SpecName: "turn_order",  // Uses StandardPanels specification
+        Content:  framework.ContentText,
+        OnCreate: func(pr *framework.PanelResult, mode framework.UIMode) error {
+            pr.TextLabel = builders.CreateLargeLabel("Turn Order")
+            pr.Container.AddChild(pr.TextLabel)
+            return nil
+        },
+    })
+}
+
+// 2. Build panel in mode
+func (cm *CombatMode) Initialize(ctx *framework.UIContext) error {
+    // ... ModeBuilder setup ...
+
+    // Build registered panels
+    return cm.BuildPanels(
+        CombatPanelTurnOrder,
+        CombatPanelSquadList,
+        CombatPanelCombatLog,
+    )
+}
+
+// 3. Access panel widgets type-safely
+func (cm *CombatMode) Enter(fromMode framework.UIMode) error {
+    if panel, exists := cm.Panels.Get(CombatPanelTurnOrder); exists {
+        panel.TextLabel.Label = "Round 1 - Player Turn"
+    }
+    return nil
+}
+```
+
+**Benefits:**
+- Type-safe panel types (compile-time checking)
+- Centralized panel definitions
+- No scattered UI construction code
+- Easy refactoring and maintenance
 
 ### Available Modes
 
@@ -2315,6 +2516,51 @@ func (g *MyGenerator) Generate(width, height int, images TileImageSet) Generatio
 
 ## Performance Considerations
 
+### 2026 Performance Enhancements
+
+TinkerRogue has undergone significant performance optimization, particularly in rendering and UI systems.
+
+**GUI Performance (90% CPU Reduction):**
+
+```go
+// File: gui/widgets/cached_list.go
+// Cached lists avoid re-rendering unchanged data
+list := builders.CreateListWithConfig(...)
+cachedList := widgets.NewCachedListWrapper(list)
+
+// Mark dirty only when entries change
+cachedList.MarkDirty()
+```
+
+**Rendering Performance:**
+
+1. **Batched Tile Rendering** - Draw all tiles in single batch call
+2. **Batched Sprite Rendering** - Batch entity sprites together
+3. **Static Panel Backgrounds** - Pre-render panel backgrounds to reduce nineslice overhead
+4. **Cached Background Images** - Reuse background textures
+5. **DrawImageOptions Reuse** - Avoid allocating new options every frame
+
+**Before:**
+```go
+// Created new image every frame (SLOW)
+for _, tile := range tiles {
+    overlay := ebiten.NewImage(tileSize, tileSize)
+    overlay.Fill(color)
+    screen.DrawImage(overlay, opts)
+}
+```
+
+**After:**
+```go
+// Reuse single overlay image (FAST)
+overlay := ebiten.NewImage(tileSize, tileSize)
+for _, tile := range tiles {
+    overlay.Fill(color)
+    screen.DrawImage(overlay, opts)
+    overlay.Clear()
+}
+```
+
 ### Component Access Performance
 
 **Function Selection**:
@@ -2540,31 +2786,47 @@ See [Squad System](#squad-system) for detailed documentation.
 
 ### Appendix A: File Reference
 
-#### Critical Files
+#### Critical Files (Updated 2026)
 
 | File | Lines | Purpose |
 |------|-------|---------|
 | `common/ecsutil.go` | 302 | Type-safe component access helpers |
-| `coords/cordmanager.go` | 235 | Global coordinate conversions |
-| `systems/positionsystem.go` | 183 | O(1) spatial queries |
-| `squads/squadcomponents.go` | 331 | Reference ECS component design |
-| `squads/squadqueries.go` | ~200 | Reference query functions |
+| `world/coords/cordmanager.go` | 235 | Global coordinate conversions |
+| `world/systems/positionsystem.go` | 183 | O(1) spatial queries |
+| `tactical/squads/squadcomponents.go` | 331 | Reference ECS component design |
+| `tactical/squads/squadqueries.go` | ~200 | Reference query functions |
 | `gear/Inventory.go` | 229 | Reference pure ECS system |
-| `gui/core/modemanager.go` | 176 | UI mode management |
-| `combat/turnmanager.go` | 155 | Turn-based combat |
+| `gui/framework/modemanager.go` | 176 | UI mode management |
+| `gui/framework/modebuilder.go` | ~150 | Declarative mode configuration |
+| `gui/framework/panelregistry.go` | ~200 | Type-safe panel building |
+| `tactical/combat/turnmanager.go` | 155 | Turn-based combat |
+| `tactical/ai/` | ~800 | Utility AI and threat maps |
 
-#### Package Overviews
+#### Package Overviews (Updated 2026)
 
 | Package | Files | LOC | Purpose |
 |---------|-------|-----|---------|
 | `common/` | 8 | ~800 | Core ECS utilities |
-| `coords/` | 3 | ~400 | Coordinate management |
-| `squads/` | 12 | ~4900 | Squad system |
-| `combat/` | 8 | ~1200 | Combat management |
-| `gui/` | 35+ | ~6000 | User interface |
+| `world/coords/` | 3 | ~400 | Coordinate management |
+| `world/systems/` | 2 | ~250 | Position system |
+| `world/worldmap/` | 10 | ~2000 | Map generation |
+| `tactical/squads/` | 12 | ~4900 | Squad system |
+| `tactical/combat/` | 8 | ~1200 | Combat management |
+| `tactical/combatservices/` | 6 | ~800 | Combat service layer |
+| `tactical/squadservices/` | 4 | ~500 | Squad service layer |
+| `tactical/squadcommands/` | 8 | ~600 | Undo/redo commands |
+| `tactical/ai/` | 6 | ~800 | AI and threat maps |
+| `tactical/behavior/` | 3 | ~400 | Behavior trees |
+| `gui/framework/` | 12 | ~2000 | Mode infrastructure |
+| `gui/builders/` | 6 | ~1200 | Panel building |
+| `gui/widgets/` | 6 | ~800 | Widget utilities |
+| `gui/guicombat/` | 12 | ~2500 | Combat UI |
+| `gui/guisquads/` | 10 | ~2000 | Squad management UI |
+| `gui/guimodes/` | 8 | ~1500 | Other game modes |
+| `visual/rendering/` | 5 | ~600 | Batch rendering |
 | `gear/` | 7 | ~900 | Inventory & items |
-| `worldmap/` | 10 | ~2000 | Map generation |
 | `input/` | 5 | ~600 | Input handling |
+| `tools/combatsim/` | 4 | ~500 | Combat analysis tools |
 
 ### Appendix B: Glossary
 
@@ -2609,6 +2871,30 @@ See [Squad System](#squad-system) for detailed documentation.
 **Spatial Grid**: O(1) position lookup data structure
 
 **Coordinator**: Dispatcher that routes to specialized handlers
+
+**BaseMode**: Common mode infrastructure embedded in all UI modes
+
+**ModeBuilder**: Declarative configuration pattern for mode initialization
+
+**Panel Registry**: Type-safe global registry mapping panel types to build functions
+
+**GUIQueries**: Abstraction layer providing DTOs for UI to access ECS data
+
+**Two-Context System**: Separation of Overworld (strategic) and BattleMap (tactical) gameplay contexts
+
+**Threat Map**: AI tactical map showing danger levels at each battlefield position
+
+**Cached Widget**: Performance-optimized widget wrapper that avoids re-rendering unchanged data
+
+**Panel Descriptor**: Registration entry defining how to build a panel
+
+**Utility AI**: AI decision-making system that scores actions by utility value
+
+**Combat Visualization**: File-based recording system for combat testing and analysis
+
+**Command Pattern**: Undo/redo support for user actions via reversible commands
+
+**Context State**: Persistent UI state that survives context switches (e.g., OverworldState, BattleMapState)
 
 ### Appendix C: Common Mistakes
 
@@ -2683,6 +2969,58 @@ func (g *MyGenerator) Generate(...) { /* ... */ }
 func init() {
     RegisterGenerator(&MyGenerator{})
 }
+```
+
+#### GUI-Specific Mistakes (New in 2026)
+
+**Forgetting to Call SetSelf():**
+```go
+// ❌ WRONG - Panel building will fail
+func NewMyMode(modeManager *framework.UIModeManager) *MyMode {
+    mode := &MyMode{}
+    // Missing SetSelf()
+    return mode
+}
+
+// ✅ CORRECT - Required for panel registry
+func NewMyMode(modeManager *framework.UIModeManager) *MyMode {
+    mode := &MyMode{}
+    mode.SetSelf(mode)
+    return mode
+}
+```
+
+**Using KeysPressed Instead of KeysJustPressed:**
+```go
+// ❌ WRONG - Action repeats every frame while held
+if inputState.KeysPressed[ebiten.KeySpace] {
+    m.handleAction()  // Fires 60 times per second!
+}
+
+// ✅ CORRECT - Single action on press
+if inputState.KeysJustPressed[ebiten.KeySpace] {
+    m.handleAction()
+}
+```
+
+**Not Marking Cached Widgets Dirty:**
+```go
+// ❌ WRONG - UI shows stale data
+list.SetEntries(newEntries)
+// Forgot MarkDirty() - cache still shows old entries
+
+// ✅ CORRECT
+list.SetEntries(newEntries)
+cachedList.MarkDirty()  // Force re-render
+```
+
+**Direct ECS Access from UI:**
+```go
+// ❌ WRONG - UI coupled to ECS
+squadData := common.GetComponentType[*squads.SquadData](entity, squads.SquadComponent)
+
+// ✅ CORRECT - Use GUIQueries abstraction
+squadInfo := m.Queries.GetSquadInfo(squadID)
 ```
 
 ### Appendix D: Testing Patterns
@@ -2791,9 +3129,89 @@ func (g *Game) Draw(screen *ebiten.Image)
 func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int)
 ```
 
+### Appendix F: 2026 Changes Summary
+
+#### Major Architectural Changes
+
+**Package Reorganization:**
+- Created `tactical/` parent package for all combat-related systems
+- Created `world/` parent package for spatial systems
+- Created `visual/` package for rendering utilities
+- Created `tools/` package for development tools
+- Restructured `gui/` with `framework/`, `builders/`, `widgets/`, `specs/` subpackages
+
+**GUI System Overhaul:**
+1. **ModeBuilder Pattern** - Declarative mode initialization (reduces boilerplate by ~80%)
+2. **Panel Registry** - Type-safe, centralized panel definitions
+3. **Two-Context System** - Separated Overworld and BattleMap gameplay
+4. **GUIQueries Layer** - ECS abstraction for UI code
+5. **BaseMode Infrastructure** - Common mode functionality
+6. **Command Pattern** - Undo/redo support
+7. **Performance Caching** - Cached widgets, batched rendering
+
+**Combat Enhancements:**
+1. **Threat Map System** - AI uses tactical danger maps
+2. **Multiple Factions** - Hot-seat multiplayer support
+3. **Movement System** - Multi-tile movement over multiple actions
+4. **Combat Visualization** - File-based combat recording
+5. **Combat Animation** - Visual feedback system
+
+**Performance Improvements:**
+- 90% CPU reduction in GUI rendering (cached lists/textareas)
+- Batched tile and sprite rendering
+- Static panel backgrounds
+- DrawImageOptions reuse
+- Optimized spatial queries remain O(1)
+
+#### Migration Notes (For Developers)
+
+**Old → New Package Paths:**
+```
+squads/ → tactical/squads/
+combat/ → tactical/combat/
+coords/ → world/coords/
+systems/ → world/systems/
+worldmap/ → world/worldmap/
+entitytemplates/ → templates/
+gui/core/ → gui/framework/
+```
+
+**GUI Code Updates:**
+
+**Before (2025):**
+```go
+func (m *MyMode) Initialize(ctx *UIContext) error {
+    m.InitializeBase(ctx)
+    m.SetModeName("my_mode")
+    m.SetReturnMode("exploration")
+    // ... 40+ more lines ...
+}
+```
+
+**After (2026):**
+```go
+func (m *MyMode) Initialize(ctx *framework.UIContext) error {
+    err := framework.NewModeBuilder(&m.BaseMode, framework.ModeConfig{
+        ModeName:   "my_mode",
+        ReturnMode: "exploration",
+        Hotkeys:    []framework.HotkeySpec{...},
+        StatusLabel: true,
+    }).Build(ctx)
+
+    return m.BuildPanels(Panel1, Panel2)
+}
+```
+
+**Deprecated Patterns:**
+- Manual mode initialization → Use ModeBuilder
+- Scattered panel creation → Use Panel Registry
+- Direct ECS access from GUI → Use GUIQueries
+- Uncached lists in Update() → Use CachedListWrapper
+
 ---
 
-**Document Version**: 2.0 (Merged Edition)
-**Last Updated**: 2025-12-12
-**Total Sections**: 16 + Appendices
-**Page Count**: ~80 (estimated)
+**Document Version**: 3.0 (2026 Edition)
+**Last Updated**: 2026-01-11
+**Total Sections**: 16 + Appendices (A-F)
+**Page Count**: ~95 (estimated)
+**Major Changes**: GUI architecture overhaul, package reorganization, performance optimizations

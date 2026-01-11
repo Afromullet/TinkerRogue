@@ -1,6 +1,6 @@
 # TinkerRogue Developer Guide
 
-**Last Updated:** 2025-11-30
+**Last Updated:** 2026-01-11
 
 Quick reference for working with TinkerRogue. For detailed ECS patterns, see `docs/ecs_best_practices.md`.
 
@@ -78,19 +78,38 @@ package_name/
 
 ### Common Patterns
 ```go
-// Component access from entity
+// Component access from entity (preferred when you have entity)
 data := common.GetComponentType[*SquadData](entity, SquadComponent)
 
-// Component access by ID (when needed)
+// Component access by ID (when you only have entityID)
 data := common.GetComponentTypeByID[*SquadData](manager, entityID, component)
 
-// Query pattern (preferred)
+// Check if entity has component
+if manager.HasComponent(entityID, SquadComponent) {
+    // Component exists
+}
+
+// Get component with existence check
+if componentData, ok := manager.GetComponent(entityID, SquadComponent); ok {
+    data := componentData.(*SquadData)
+}
+
+// Query pattern (preferred for iteration)
 for _, result := range manager.World.Query(SquadTag) {
     entity := result.Entity
     data := common.GetComponentType[*SquadData](entity, SquadComponent)
 }
 
-// Position system
+// Find entity by ID (when you need entity pointer)
+entity := manager.FindEntityByID(entityID)
+
+// Move entity (atomically updates position component + position system)
+manager.MoveEntity(entityID, entity, oldPos, newPos)
+
+// Move squad and all members together
+manager.MoveSquadAndMembers(squadID, squadEntity, unitIDs, oldPos, newPos)
+
+// Position system (direct access when needed)
 common.GlobalPositionSystem.AddEntity(entityID, logicalPos)
 common.GlobalPositionSystem.RemoveEntity(entityID, logicalPos)
 entityIDs := common.GlobalPositionSystem.GetEntitiesAtPosition(logicalPos)
@@ -111,28 +130,55 @@ for _, result := range manager.World.Query(SquadTag) {
 }
 ```
 
-**Pattern 2: By EntityID (Last Resort)**
+**Pattern 2: By EntityID**
 
-Use ONLY when:
-- EntityID is your only input
-- You need component access
-- You're NOT in a performance-critical loop
-
-After CRITICAL #2 (EntityID caching), this becomes O(1):
+Use when you only have the EntityID:
 
 ```go
-entity := manager.GetEntityByID(entityID)
-data := common.GetComponentType[*DataType](entity, SquadComponent)
+// Direct component access (preferred)
+data := common.GetComponentTypeByID[*DataType](manager, entityID, SquadComponent)
+
+// Or get entity pointer first (when you need the entity for multiple operations)
+entity := manager.FindEntityByID(entityID)
+if entity != nil {
+    data := common.GetComponentType[*DataType](entity, SquadComponent)
+}
+
+// With existence check
+if componentData, ok := manager.GetComponent(entityID, SquadComponent); ok {
+    data := componentData.(*DataType)
+}
 ```
-
-**Pattern 3: Avoid**
-
-Don't use `GetComponentTypeByIDWithTag` - use Pattern 2 instead (simpler, same performance after caching).
 
 **Reference Implementations:**
 - `squads/` - Perfect ECS example
 - `gear/Inventory.go` - Pure ECS component
 - `systems/positionsystem.go` - Value-based map keys
+
+### Subsystem Registration
+
+Use the self-registration pattern for initializing ECS subsystems:
+
+```go
+// In your subsystem package (e.g., squads/init.go)
+func init() {
+    common.RegisterSubsystem(func(em *common.EntityManager) {
+        // Initialize components
+        SquadComponent = em.World.NewComponent()
+        SquadMemberComponent = em.World.NewComponent()
+
+        // Initialize tags
+        SquadTag = em.World.NewTag(SquadComponent)
+        SquadMemberTag = em.World.NewTag(SquadMemberComponent)
+    })
+}
+
+// In main, after creating EntityManager
+manager := common.NewEntityManager()
+common.InitializeSubsystems(manager)  // Calls all registered init functions
+```
+
+This pattern ensures subsystems initialize themselves without manual coordination.
 
 ---
 
@@ -156,7 +202,26 @@ result.Tiles[idx] = &tile
 
 ### ⚠️ Entity Lifecycle
 
-When removing entities:
+**Removing entities with positions:**
+```go
+pos := common.GetComponentType[*coords.LogicalPosition](entity, common.PositionComponent)
+if pos != nil {
+    manager.CleanDisposeEntity(entity, pos)  // Removes from position system + ECS
+} else {
+    manager.World.DisposeEntities(entity)
+}
+```
+
+**Moving entities:**
+```go
+// Single entity - atomically updates component + position system
+manager.MoveEntity(entityID, entity, oldPos, newPos)
+
+// Squad with members - moves all units together
+manager.MoveSquadAndMembers(squadID, squadEntity, unitIDs, oldPos, newPos)
+```
+
+**Manual cleanup (if not using helpers):**
 1. Remove from `GlobalPositionSystem.RemoveEntity(entityID, position)`
 2. Remove from all other systems
 3. Call `manager.World.DisposeEntities(entity)`
