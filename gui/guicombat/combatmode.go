@@ -77,7 +77,8 @@ func (cm *CombatMode) Initialize(ctx *framework.UIContext) error {
 		nil, // Queries set after ModeBuilder
 		cm.combatService,
 		cm.logManager,
-		nil, // combatLogArea set after panels are built
+		nil,                           // combatLogArea set after panels are built
+		ctx.PlayerData.PlayerEntityID, // Player entity ID from context
 	)
 
 	// Build UI using ModeBuilder (minimal config - panels handled by registry)
@@ -294,6 +295,9 @@ func (cm *CombatMode) formatTurnMessage(factionID ecs.EntityID, round int) strin
 func (cm *CombatMode) handleFlee() {
 	combatLogArea := GetCombatLogTextArea(cm.Panels)
 	cm.logManager.UpdateTextArea(combatLogArea, "Fleeing from combat...")
+
+	// Restore encounter sprite so player can re-engage later
+	cm.lifecycleManager.RestoreEncounterSprite(cm.currentEncounterID)
 
 	if exploreMode, exists := cm.ModeManager.GetMode("exploration"); exists {
 		cm.ModeManager.RequestTransition(exploreMode, "Fled from combat")

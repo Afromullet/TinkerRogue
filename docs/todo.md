@@ -2,11 +2,17 @@ __________________________________________
 #
 # # # **IMPORTANT** # # # 
 
+- Check if we have to mark the caches as dirty, or whether the way the ecs library implements views handles that automatically
 
+- When an encounter starts, we hide the encounter sprites for the combat sprites. Check to make sure that combat can't accidentally start if a combat squad moves into the position of a hidden encounter sprite 
+
+- Handle Entity Cleanup
 
 - Remove a lot of the commands and GUI elements related to the commands. Those are not needed. After this, review all of the command
 
 - Remove Unused GUI elements and GUI elements you ddont want
+
+- combat life cycle manager changes only support one player at the moment, de to storing the playerEntityID. Consider changing that for multiplayer
 
 
 ### Combat - Important ###

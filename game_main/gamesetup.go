@@ -16,7 +16,6 @@ import (
 	"game_main/input"
 	"game_main/templates"
 
-	"game_main/tactical/combat"
 	"game_main/testing"
 	"game_main/visual/rendering"
 	"game_main/world/encounter"
@@ -100,8 +99,8 @@ func (gb *GameBootstrap) InitializeGameplay(em *common.EntityManager, pd *common
 	// Note: Unit templates are now loaded in CreatePlayer phase (before initial squads)
 	// SetupSquadSystem is kept here for any future squad system initialization needs
 
-	// Spawn test encounters on overworld
-	encounter.SpawnTestEncounters(em, *pd.Pos)
+	// Spawn random encounters on overworld
+	encounter.SpawnRandomEncounters(em, *pd.Pos)
 }
 
 // SetupNewGame orchestrates game initialization through explicit phases.
@@ -148,12 +147,9 @@ func SetupSquadSystem(manager *common.EntityManager) error {
 	return nil
 }
 
-// SetupGameplayFactions creates two factions with squads for gameplay testing.
-// This sets up player and AI factions with 3 squads each positioned on the map.
-// NOTE: This is now called ONLY when entering combat mode, not during game initialization
-func SetupGameplayFactions(manager *common.EntityManager, playerData *common.PlayerData) error {
-	return combat.SetupGameplayFactions(manager, *playerData.Pos)
-}
+// SetupGameplayFactions has been removed and replaced with SetupBalancedEncounter
+// Combat encounters now use power-based balancing (see tactical/combat/encounter_spawner.go)
+// This comment left for reference - function removed as part of encounter system overhaul
 
 // SetupTestData creates test items and content for debugging.
 // Only called when DEBUG_MODE is enabled.

@@ -55,3 +55,9 @@ func (rc *RenderingCache) DrawSpriteBatches(screen *ebiten.Image) {
 		batch.Draw(screen)
 	}
 }
+
+// RefreshRenderablesView recreates the RenderablesView to force it to update
+// Call this after batch entity disposal to ensure stale entities don't render
+func (rc *RenderingCache) RefreshRenderablesView(manager *common.EntityManager) {
+	rc.RenderablesView = manager.World.CreateView(RenderablesTag)
+}
