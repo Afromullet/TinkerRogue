@@ -95,6 +95,17 @@ func (cvm *CombatVisualizationManager) GetThreatEvaluator() *behavior.CompositeT
 	return cvm.threatEvaluator
 }
 
+// RefreshFactions adds any new factions to the threat manager
+// Should be called when combat starts and factions are created
+func (cvm *CombatVisualizationManager) RefreshFactions(queries *framework.GUIQueries) {
+	if cvm.threatManager == nil {
+		return
+	}
+	for _, factionID := range queries.GetAllFactions() {
+		cvm.threatManager.AddFaction(factionID)
+	}
+}
+
 // UpdateThreatManagers updates all threat-related systems
 func (cvm *CombatVisualizationManager) UpdateThreatManagers() {
 	if cvm.threatManager != nil {

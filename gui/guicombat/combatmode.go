@@ -487,6 +487,9 @@ func (cm *CombatMode) Enter(fromMode framework.UIMode) error {
 
 		cm.SetupEncounter(fromMode)
 
+		// Refresh threat manager with newly created factions (must be after SetupEncounter)
+		cm.visualization.RefreshFactions(cm.Queries)
+
 		cm.lifecycleManager.StartBattleRecording(1)
 
 		if _, err := cm.lifecycleManager.InitializeCombatFactions(); err != nil {
