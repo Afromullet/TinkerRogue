@@ -190,7 +190,7 @@ func TestThreatLayerBase_Caching(t *testing.T) {
 	base := NewThreatLayerBase(faction1, manager, cache)
 
 	// Initially dirty
-	if !base.isDirty {
+	if !base.IsDirty() {
 		t.Error("New layer should be dirty")
 	}
 
@@ -198,7 +198,7 @@ func TestThreatLayerBase_Caching(t *testing.T) {
 	currentRound := 0
 	base.markClean(currentRound)
 
-	if base.isDirty {
+	if base.IsDirty() {
 		t.Error("Layer should not be dirty after markClean()")
 	}
 	if !base.IsValid(currentRound) {

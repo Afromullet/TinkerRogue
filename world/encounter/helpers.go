@@ -2,6 +2,7 @@ package encounter
 
 import (
 	"game_main/common"
+	"game_main/tactical/evaluation"
 	"game_main/tactical/squads"
 
 	"github.com/bytearena/ecs"
@@ -24,9 +25,10 @@ func applyDeploymentWeight(power float64, isDeployed bool, config *EvaluationCon
 	return power * config.ReserveWeight
 }
 
-// calculateRoleValue computes power contribution from unit role
+// calculateRoleValue computes power contribution from unit role.
+// Uses shared role multipliers from evaluation package.
 func calculateRoleValue(roleData *squads.UnitRoleData) float64 {
-	roleMultiplier := RolePowerModifiers[roleData.Role]
+	roleMultiplier := evaluation.GetRoleMultiplier(roleData.Role)
 	return roleMultiplier * RoleScalingFactor
 }
 

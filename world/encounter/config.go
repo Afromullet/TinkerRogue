@@ -1,6 +1,9 @@
 package encounter
 
-import "game_main/tactical/squads"
+import (
+	"game_main/tactical/evaluation"
+	"game_main/tactical/squads"
+)
 
 // EvaluationProfile defines named configuration profiles
 // These are data-driven and can be loaded from JSON in the future
@@ -38,15 +41,10 @@ func GetDefaultConfig() *EvaluationConfigData {
 		CoverWeight:   0.2,
 
 		// Squad modifiers
-		FormationBonus:   1.0,                     // No bonus by default
-		MoraleMultiplier: DefaultMoraleMultiplier, // +0.2% power per morale point (20% at 100 morale)
-		LeaderBonus:      DefaultLeaderBonus,      // 30% bonus for leader presence
-		CompositionBonus: map[int]float64{
-			1: 0.8, // Mono-composition penalty
-			2: 1.1, // Dual-type bonus
-			3: 1.2, // Triple-type bonus
-			4: 1.3, // Quad-type bonus (rare)
-		},
+		FormationBonus:   1.0,                        // No bonus by default
+		MoraleMultiplier: DefaultMoraleMultiplier,    // +0.2% power per morale point (20% at 100 morale)
+		LeaderBonus:      evaluation.LeaderBonus,     // Shared leader bonus from evaluation package
+		CompositionBonus: evaluation.CompositionBonuses, // Shared composition bonuses from evaluation package
 		HealthPenalty: 2.0, // HP% multiplier (0.5 HP = 1.0 power, 1.0 HP = 2.0 power)
 
 		// Roster modifiers
@@ -80,13 +78,9 @@ func GetDefensiveConfig() *EvaluationConfigData {
 	return config
 }
 
-// RolePowerModifiers maps unit roles to base power multipliers
-// These match the AI threat system for consistency
-var RolePowerModifiers = map[squads.UnitRole]float64{
-	squads.RoleTank:    1.2, // High survivability value
-	squads.RoleDPS:     1.5, // High damage output value
-	squads.RoleSupport: 1.0, // Baseline utility value
-}
+// RolePowerModifiers aliases shared role multipliers for backward compatibility.
+// These match the AI threat system for consistency (both use evaluation.RoleMultipliers).
+var RolePowerModifiers = evaluation.RoleMultipliers
 
 // AbilityPowerValues maps leader abilities to power ratings
 var AbilityPowerValues = map[squads.AbilityType]float64{

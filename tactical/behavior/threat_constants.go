@@ -2,16 +2,10 @@ package behavior
 
 import (
 	"game_main/common"
+	"game_main/tactical/evaluation"
 	"game_main/tactical/squads"
 
 	"github.com/bytearena/ecs"
-)
-
-// Role threat multipliers (shared across all threat systems)
-const (
-	ThreatMultiplierDPS     = 1.5 // DPS units deal highest threat
-	ThreatMultiplierTank    = 1.2 // Tanks provide high durability threat
-	ThreatMultiplierSupport = 1.0 // Support provides utility baseline
 )
 
 // Positional risk constants
@@ -43,19 +37,10 @@ const (
 	BuffPriorityEngagementRange = 4 // Within 4 tiles = prioritize buffs
 )
 
-// RoleModifiers defines threat multipliers for unit roles
-var RoleModifiers = map[squads.UnitRole]float64{
-	squads.RoleTank:    ThreatMultiplierTank,
-	squads.RoleDPS:     ThreatMultiplierDPS,
-	squads.RoleSupport: ThreatMultiplierSupport,
-}
-
-// GetRoleModifier returns threat multiplier for a role
+// GetRoleModifier returns threat multiplier for a role.
+// Delegates to shared evaluation package.
 func GetRoleModifier(role squads.UnitRole) float64 {
-	if modifier, exists := RoleModifiers[role]; exists {
-		return modifier
-	}
-	return ThreatMultiplierSupport // Default to baseline
+	return evaluation.GetRoleMultiplier(role)
 }
 
 // GetSquadRoleModifier returns threat modifier based on squad's primary role

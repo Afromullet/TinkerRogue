@@ -3,6 +3,7 @@ package behavior
 import (
 	"game_main/common"
 	"game_main/tactical/combat"
+	"game_main/tactical/evaluation"
 
 	"github.com/bytearena/ecs"
 )
@@ -24,11 +25,10 @@ type ThreatLayer interface {
 // ThreatLayerBase provides common functionality for all layers
 // Uses composition pattern - embed this in concrete layers
 type ThreatLayerBase struct {
-	manager         *common.EntityManager
-	cache           *combat.CombatQueryCache
-	factionID       ecs.EntityID // The faction viewing this threat layer
-	lastUpdateRound int          // Round number when last computed
-	isDirty         bool         // Forces recomputation if true
+	*evaluation.DirtyCache // Embedded cache for dirty flag management
+	manager                *common.EntityManager
+	cache                  *combat.CombatQueryCache
+	factionID              ecs.EntityID // The faction viewing this threat layer
 }
 
 // NewThreatLayerBase creates a new base layer with common dependencies
@@ -38,31 +38,17 @@ func NewThreatLayerBase(
 	cache *combat.CombatQueryCache,
 ) *ThreatLayerBase {
 	return &ThreatLayerBase{
-		manager:         manager,
-		cache:           cache,
-		factionID:       factionID,
-		lastUpdateRound: -1,
-		isDirty:         true,
+		DirtyCache: evaluation.NewDirtyCache(),
+		manager:    manager,
+		cache:      cache,
+		factionID:  factionID,
 	}
-}
-
-// IsValid checks if layer data is still current
-// Returns false if round changed or layer marked dirty
-func (tlb *ThreatLayerBase) IsValid(currentRound int) bool {
-	return !tlb.isDirty && tlb.lastUpdateRound == currentRound
-}
-
-// MarkDirty forces layer to recompute on next Compute() call
-// Call when squad moves, is destroyed, or combat state changes
-func (tlb *ThreatLayerBase) MarkDirty() {
-	tlb.isDirty = true
 }
 
 // markClean updates the layer state after successful computation
 // Called internally by concrete layer Compute() methods
 func (tlb *ThreatLayerBase) markClean(currentRound int) {
-	tlb.isDirty = false
-	tlb.lastUpdateRound = currentRound
+	tlb.DirtyCache.MarkClean(currentRound)
 }
 
 // getEnemyFactions returns all factions hostile to this layer's faction

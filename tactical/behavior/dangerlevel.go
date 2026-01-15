@@ -3,6 +3,7 @@ package behavior
 import (
 	"game_main/common"
 	"game_main/tactical/combat"
+	"game_main/tactical/evaluation"
 	"game_main/tactical/squads"
 
 	"github.com/bytearena/ecs"
@@ -12,15 +13,7 @@ import (
 const (
 	// Movement defaults
 	DefaultSquadMovement = 3   // Base movement when no data available
-	MaxSpeedSentinel = 999 // Sentinel for finding minimum speed
-
-	// Leader and composition bonuses
-	ThreatLeaderBonus       = 1.3 // Threat multiplier when unit is squad leader
-	CompositionPenaltyPure  = 0.8 // 1 attack type (mono-composition)
-	CompositionBonusDual    = 1.1 // 2 attack types (good diversity)
-	CompositionBonusTriple  = 1.2 // 3 attack types (excellent)
-	CompositionBonusQuad    = 1.3 // 4 attack types (optimal, rare)
-	CompositionBonusDefault = 1.0 // Fallback
+	MaxSpeedSentinel     = 999 // Sentinel for finding minimum speed
 
 	// Reference target for expected damage calculations
 	// Represents a medium-difficulty enemy unit with typical stats
@@ -300,7 +293,7 @@ func (stl *SquadThreatLevel) CalculateSquadDangerLevel() {
 				// Apply leader bonus
 				leaderBonus := 1.0
 				if ud.isLeader {
-					leaderBonus = ThreatLeaderBonus
+					leaderBonus = evaluation.LeaderBonus
 				}
 
 				// Calculate unit danger contribution at this range
@@ -334,26 +327,10 @@ func (stl *SquadThreatLevel) getRoleMultiplier(role squads.UnitRole) float64 {
 	return GetRoleModifier(role)
 }
 
-// calculateCompositionBonus returns a bonus multiplier based on attack type diversity
-// Squads with diverse attack types (melee + ranged + magic) are more effective
+// calculateCompositionBonus returns a bonus multiplier based on attack type diversity.
+// Delegates to shared evaluation package.
 func (stl *SquadThreatLevel) calculateCompositionBonus(attackTypeCount map[squads.AttackType]int) float64 {
-	// Bonus for having diverse attack types
-	// Pure squads (1 type) are less effective
-	// Balanced squads (2-3 types) are stronger
-	// Highly diverse (4 types) is ideal but rare
-	uniqueTypes := len(attackTypeCount)
-	switch uniqueTypes {
-	case 1:
-		return CompositionPenaltyPure
-	case 2:
-		return CompositionBonusDual
-	case 3:
-		return CompositionBonusTriple
-	case 4:
-		return CompositionBonusQuad
-	default:
-		return CompositionBonusDefault
-	}
+	return evaluation.GetCompositionBonus(len(attackTypeCount))
 }
 
 // calculateExpectedDamageForUnit computes expected damage for one attacker unit.
@@ -440,7 +417,7 @@ func (stl *SquadThreatLevel) calculateSquadExpectedDamageByRange(
 
 				// Apply leader bonus (same as DangerByRange)
 				if ud.isLeader {
-					unitExpectedDamage *= ThreatLeaderBonus
+					unitExpectedDamage *= evaluation.LeaderBonus
 				}
 
 				rangeDamage += unitExpectedDamage

@@ -7,7 +7,7 @@ const (
 	DefaultUtilityWeight   = 0.2
 
 	// Squad-level modifier defaults
-	DefaultLeaderBonus      = 1.3   // 30% bonus for leader presence
+	// NOTE: LeaderBonus is now in tactical/evaluation package (evaluation.LeaderBonus)
 	DefaultMoraleMultiplier = 0.002 // +0.2% power per morale point
 	MinimumHealthMultiplier = 0.1   // Minimum 10% power even at low HP
 
