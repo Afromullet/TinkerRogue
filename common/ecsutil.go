@@ -13,7 +13,6 @@ var (
 	PositionComponent  *ecs.Component
 	NameComponent      *ecs.Component
 	AttributeComponent *ecs.Component
-	UserMsgComponent   *ecs.Component //I can probably remove this later
 
 	// AllEntitiesTag queries all entities in the ECS world (empty component set).
 	// Used by utility functions that need to work with any entity regardless of components.

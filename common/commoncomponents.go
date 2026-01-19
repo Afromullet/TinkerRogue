@@ -8,12 +8,6 @@ type Name struct {
 	NameStr string
 }
 
-type UserMessage struct {
-	AttackMessage       string
-	GameStateMessage    string
-	StatusEffectMessage string
-}
-
 // Attributes represents a unit's core stats and combat capabilities.
 // Uses 6 core attributes that derive all combat stats.
 type Attributes struct {

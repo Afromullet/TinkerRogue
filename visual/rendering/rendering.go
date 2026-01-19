@@ -16,7 +16,6 @@ import (
 var (
 	RenderableComponent *ecs.Component //Putting this here for now rather than in graphics
 	RenderablesTag      ecs.Tag        // Tag for querying renderable entities
-	MessengersTag       ecs.Tag        // Tag for querying messenger (UI message) entities. Todo remove this
 )
 
 // init registers the rendering subsystem with the ECS component registry.
@@ -38,9 +37,6 @@ func InitializeRenderingComponents(em *common.EntityManager) {
 func InitializeRenderingTags(em *common.EntityManager) {
 	RenderablesTag = ecs.BuildTag(RenderableComponent, common.PositionComponent)
 	em.WorldTags["renderables"] = RenderablesTag
-
-	MessengersTag = ecs.BuildTag(common.UserMsgComponent)
-	em.WorldTags["messengers"] = MessengersTag
 }
 
 type Renderable struct {
