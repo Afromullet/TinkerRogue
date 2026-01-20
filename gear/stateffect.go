@@ -61,10 +61,6 @@ type StatusEffects interface {
 	DisplayString() string
 	StackEffect(eff any)
 	Copy() StatusEffects
-	//Todo for the future, figure out if you can make this an interface
-	//Figure out how you have to implement methods for nested interfaces
-
-	common.Quality
 }
 
 func GetVisualEffect(eff StatusEffects) graphics.VisualEffect {
@@ -119,7 +115,6 @@ func AllStatusEffects(effects *ecs.Entity) []StatusEffects {
 type CommonItemProperties struct {
 	Duration int
 	Name     string
-	Quality  common.QualityType
 }
 
 // Adds the duration of the other to the CommonItemProperty
@@ -127,19 +122,6 @@ func (c *CommonItemProperties) AddDuration(other CommonItemProperties) {
 
 	c.Duration += other.Duration
 
-}
-
-func (c *CommonItemProperties) QualityName() string {
-
-	if c.Quality == common.LowQuality {
-		return "Low Quality"
-	} else if c.Quality == common.NormalQuality {
-		return "Medium Quality"
-	} else if c.Quality == common.HighQuality {
-		return "High Quality"
-	} else {
-		return "Invalid Quality"
-	}
 }
 
 type Sticky struct {

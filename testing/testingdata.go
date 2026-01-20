@@ -15,11 +15,11 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 )
 
-var TestSquare = graphics.NewSquare(0, 0, common.NormalQuality)
-var TestLine = graphics.NewLine(0, 0, graphics.LinedDiagonalDownLeft, common.NormalQuality)
-var TestCone = graphics.NewCone(0, 0, graphics.LineDiagonalUpRight, common.NormalQuality)
-var TestCircle = graphics.NewCircle(0, 0, common.NormalQuality)
-var TestRect = graphics.NewRectangle(0, 0, common.NormalQuality)
+var TestSquare = graphics.NewSquare(0, 0, graphics.MediumShape)
+var TestLine = graphics.NewLine(0, 0, graphics.LinedDiagonalDownLeft, graphics.MediumShape)
+var TestCone = graphics.NewCone(0, 0, graphics.LineDiagonalUpRight, graphics.MediumShape)
+var TestCircle = graphics.NewCircle(0, 0, graphics.MediumShape)
+var TestRect = graphics.NewRectangle(0, 0, graphics.MediumShape)
 var TestBurning = gear.NewBurning(5, 2)
 var TestSticky = gear.NewSticky(5, 2)
 var TestFreezing = gear.NewFreezing(3, 5)

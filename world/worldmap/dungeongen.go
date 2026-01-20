@@ -295,7 +295,7 @@ func (gameMap GameMap) IsOpaque(x, y int) bool {
 func (gameMap *GameMap) UnblockedIndices(pixelX, pixelY, size int) []int {
 	inds := make([]int, 0)
 
-	sq := graphics.NewSquare(pixelX, pixelY, common.NormalQuality).GetIndices()
+	sq := graphics.NewSquare(pixelX, pixelY, graphics.MediumShape).GetIndices()
 
 	for _, i := range sq {
 
@@ -312,7 +312,7 @@ func (gameMap *GameMap) UnblockedIndices(pixelX, pixelY, size int) []int {
 func (gameMap *GameMap) UnblockedLogicalCoords(pixelX, pixelY, size int) []coords.LogicalPosition {
 	pos := make([]coords.LogicalPosition, 0)
 
-	sq := graphics.NewSquare(pixelX, pixelY, common.NormalQuality).GetIndices()
+	sq := graphics.NewSquare(pixelX, pixelY, graphics.MediumShape).GetIndices()
 
 	for _, i := range sq {
 

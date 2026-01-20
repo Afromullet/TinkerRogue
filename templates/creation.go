@@ -60,9 +60,9 @@ func CreateUnit(mgr common.EntityManager, name string, attributes common.Attribu
 // CreateThrowable creates a throwable item entity with procedurally generated effects.
 // This is the single source of truth for throwable item creation.
 // Returns throwable item entity with ItemComponent containing ThrowableAction
-func CreateThrowable(mgr common.EntityManager, name string, pos coords.LogicalPosition, effects []gear.StatusEffects, aoeShape graphics.BasicShapeType, quality common.QualityType, vx graphics.VisualEffect) *ecs.Entity {
+func CreateThrowable(mgr common.EntityManager, name string, pos coords.LogicalPosition, effects []gear.StatusEffects, aoeShape graphics.BasicShapeType, size graphics.ShapeSize, vx graphics.VisualEffect) *ecs.Entity {
 	// Create throwable action with effects
-	throwableAction := gear.NewShapeThrowableAction(1, 1, 1, aoeShape, quality, nil, effects...)
+	throwableAction := gear.NewShapeThrowableAction(1, 1, 1, aoeShape, size, nil, effects...)
 	throwableAction.VX = vx
 
 	actions := []gear.ItemAction{throwableAction}

@@ -39,7 +39,7 @@ func createTestThrowableItem(manager *ecs.Manager, name string) *ecs.Entity {
 		1,  // duration
 		5,  // range
 		10, // damage
-		graphics.NewCircle(0, 0, common.NormalQuality),
+		graphics.NewCircle(0, 0, graphics.MediumShape),
 	)
 
 	// Create properties entity (empty for testing)

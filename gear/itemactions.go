@@ -1,9 +1,8 @@
 package gear
 
 import (
-	"game_main/common"
-	"game_main/world/coords"
 	"game_main/visual/graphics"
+	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"
 )
@@ -35,9 +34,6 @@ type ItemAction interface {
 
 	// Copy creates a copy of this action
 	Copy() ItemAction
-
-	// Quality interface for item quality
-	common.Quality
 }
 
 // ThrowableAction represents the action of throwing an item
@@ -122,28 +118,6 @@ func (t *ThrowableAction) Copy() ItemAction {
 	}
 }
 
-func (t *ThrowableAction) QualityName() string {
-	return t.MainProps.QualityName()
-}
-
-// CreateWithQuality sets the quality of the throwable action
-func (t *ThrowableAction) CreateWithQuality(q common.QualityType) {
-	t.MainProps = t.MainProps.CreateWithQuality(q)
-	t.MainProps.Name = THROWABLE_ACTION_NAME
-
-	// Adjust properties based on quality
-	if q == common.LowQuality {
-		t.ThrowingRange = 3 + common.RandomInt(2) // 3-4
-		t.Damage = 1 + common.RandomInt(2)        // 1-2
-	} else if q == common.NormalQuality {
-		t.ThrowingRange = 5 + common.RandomInt(3) // 5-7
-		t.Damage = 2 + common.RandomInt(3)        // 2-4
-	} else if q == common.HighQuality {
-		t.ThrowingRange = 8 + common.RandomInt(4) // 8-11
-		t.Damage = 4 + common.RandomInt(4)        // 4-7
-	}
-}
-
 // InRange checks if the action can reach the target position (legacy method for compatibility)
 func (t *ThrowableAction) InRange(endPos *coords.LogicalPosition) bool {
 	pixelX, pixelY := t.Shape.StartPositionPixels()
@@ -169,19 +143,19 @@ func NewThrowableAction(dur, throwRange, dam int, shape graphics.TileBasedShape,
 }
 
 // NewShapeThrowableAction creates a throwable action with a basic shape and effects
-func NewShapeThrowableAction(dur, throwRange, dam int, shapeType graphics.BasicShapeType, quality common.QualityType, direction *graphics.ShapeDirection, effects ...StatusEffects) *ThrowableAction {
+func NewShapeThrowableAction(dur, throwRange, dam int, shapeType graphics.BasicShapeType, size graphics.ShapeSize, direction *graphics.ShapeDirection, effects ...StatusEffects) *ThrowableAction {
 	var shape graphics.TileBasedShape
 
 	switch shapeType {
 	case graphics.Circular:
-		shape = graphics.NewCircle(0, 0, quality)
+		shape = graphics.NewCircle(0, 0, size)
 	case graphics.Rectangular:
-		shape = graphics.NewSquare(0, 0, quality)
+		shape = graphics.NewSquare(0, 0, size)
 	case graphics.Linear:
 		if direction != nil {
-			shape = graphics.NewLine(0, 0, *direction, quality)
+			shape = graphics.NewLine(0, 0, *direction, size)
 		} else {
-			shape = graphics.NewLine(0, 0, graphics.LineRight, quality)
+			shape = graphics.NewLine(0, 0, graphics.LineRight, size)
 		}
 	}
 

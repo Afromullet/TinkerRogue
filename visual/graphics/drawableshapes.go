@@ -5,6 +5,15 @@ import (
 	"game_main/world/coords"
 )
 
+// ShapeSize determines the scale of shape dimensions
+type ShapeSize int
+
+const (
+	SmallShape ShapeSize = iota
+	MediumShape
+	LargeShape
+)
+
 // ===================s=========================================================
 // SHAPE DIRECTION SYSTEM (preserved from original)
 // ============================================================================
@@ -73,13 +82,13 @@ const (
 )
 
 type BaseShape struct {
-	Position  coords.PixelPosition
-	Type      BasicShapeType
-	Size      int             // Primary dimension (radius, length, or width)
-	Width     int             // For rectangles only
-	Height    int             // For rectangles only
-	Direction *ShapeDirection // nil for non-directional shapes
-	Quality   common.QualityType
+	Position     coords.PixelPosition
+	Type         BasicShapeType
+	Size         int             // Primary dimension (radius, length, or width)
+	Width        int             // For rectangles only
+	Height       int             // For rectangles only
+	Direction    *ShapeDirection // nil for non-directional shapes
+	SizeCategory ShapeSize
 }
 
 // TileBasedShape interface - maintains compatibility with existing code
@@ -132,107 +141,107 @@ func (s *BaseShape) CanRotate() bool {
 // FACTORY FUNCTIONS WITH INTEGRATED QUALITY
 // ============================================================================
 
-func NewCircle(pixelX, pixelY int, quality common.QualityType) *BaseShape {
+func NewCircle(pixelX, pixelY int, size ShapeSize) *BaseShape {
 	var radius int
-	switch quality {
-	case common.LowQuality:
+	switch size {
+	case SmallShape:
 		radius = common.RandomInt(3) // 0-2 (matches current system)
-	case common.NormalQuality:
+	case MediumShape:
 		radius = common.RandomInt(4) // 0-3
-	case common.HighQuality:
+	case LargeShape:
 		radius = common.RandomInt(9) // 0-8
 	}
 
 	return &BaseShape{
-		Position: coords.PixelPosition{X: pixelX, Y: pixelY},
-		Type:     Circular,
-		Size:     radius,
-		Quality:  quality,
+		Position:     coords.PixelPosition{X: pixelX, Y: pixelY},
+		Type:         Circular,
+		Size:         radius,
+		SizeCategory: size,
 	}
 }
 
-func NewSquare(pixelX, pixelY int, quality common.QualityType) *BaseShape {
+func NewSquare(pixelX, pixelY int, shapeSize ShapeSize) *BaseShape {
 	var size int
-	switch quality {
-	case common.LowQuality:
+	switch shapeSize {
+	case SmallShape:
 		size = common.RandomInt(2) + 1 // 1-2 (matches current system)
-	case common.NormalQuality:
+	case MediumShape:
 		size = common.RandomInt(3) + 1 // 1-3
-	case common.HighQuality:
+	case LargeShape:
 		size = common.RandomInt(4) + 1 // 1-4
 	}
 
 	return &BaseShape{
-		Position: coords.PixelPosition{X: pixelX, Y: pixelY},
-		Type:     Rectangular,
-		Size:     size,
-		Width:    size, // Square: width = height = size
-		Height:   size,
-		Quality:  quality,
+		Position:     coords.PixelPosition{X: pixelX, Y: pixelY},
+		Type:         Rectangular,
+		Size:         size,
+		Width:        size, // Square: width = height = size
+		Height:       size,
+		SizeCategory: shapeSize,
 	}
 }
 
-func NewRectangle(pixelX, pixelY int, quality common.QualityType) *BaseShape {
+func NewRectangle(pixelX, pixelY int, size ShapeSize) *BaseShape {
 	var width, height int
-	switch quality {
-	case common.LowQuality:
+	switch size {
+	case SmallShape:
 		width = common.RandomInt(5)  // 0-4 (matches current system)
 		height = common.RandomInt(3) // 0-2
-	case common.NormalQuality:
+	case MediumShape:
 		width = common.RandomInt(7)  // 0-6
 		height = common.RandomInt(5) // 0-4
-	case common.HighQuality:
+	case LargeShape:
 		width = common.RandomInt(9)  // 0-8
 		height = common.RandomInt(7) // 0-6
 	}
 
 	return &BaseShape{
-		Position: coords.PixelPosition{X: pixelX, Y: pixelY},
-		Type:     Rectangular,
-		Size:     width, // Primary dimension
-		Width:    width,
-		Height:   height,
-		Quality:  quality,
+		Position:     coords.PixelPosition{X: pixelX, Y: pixelY},
+		Type:         Rectangular,
+		Size:         width, // Primary dimension
+		Width:        width,
+		Height:       height,
+		SizeCategory: size,
 	}
 }
 
-func NewLine(pixelX, pixelY int, direction ShapeDirection, quality common.QualityType) *BaseShape {
+func NewLine(pixelX, pixelY int, direction ShapeDirection, size ShapeSize) *BaseShape {
 	var length int
-	switch quality {
-	case common.LowQuality:
+	switch size {
+	case SmallShape:
 		length = common.RandomInt(3) + 1 // 1-3 (matches current system)
-	case common.NormalQuality:
+	case MediumShape:
 		length = common.RandomInt(5) + 1 // 1-5
-	case common.HighQuality:
+	case LargeShape:
 		length = common.RandomInt(7) + 1 // 1-7
 	}
 
 	return &BaseShape{
-		Position:  coords.PixelPosition{X: pixelX, Y: pixelY},
-		Type:      Linear,
-		Size:      length,
-		Direction: &direction,
-		Quality:   quality,
+		Position:     coords.PixelPosition{X: pixelX, Y: pixelY},
+		Type:         Linear,
+		Size:         length,
+		Direction:    &direction,
+		SizeCategory: size,
 	}
 }
 
-func NewCone(pixelX, pixelY int, direction ShapeDirection, quality common.QualityType) *BaseShape {
+func NewCone(pixelX, pixelY int, direction ShapeDirection, size ShapeSize) *BaseShape {
 	var length int
-	switch quality {
-	case common.LowQuality:
+	switch size {
+	case SmallShape:
 		length = common.RandomInt(3) + 1 // 1-3
-	case common.NormalQuality:
+	case MediumShape:
 		length = common.RandomInt(5) + 1 // 1-5
-	case common.HighQuality:
+	case LargeShape:
 		length = common.RandomInt(7) + 1 // 1-7
 	}
 
 	return &BaseShape{
-		Position:  coords.PixelPosition{X: pixelX, Y: pixelY},
-		Type:      Linear,
-		Size:      length,
-		Direction: &direction,
-		Quality:   quality,
+		Position:     coords.PixelPosition{X: pixelX, Y: pixelY},
+		Type:         Linear,
+		Size:         length,
+		Direction:    &direction,
+		SizeCategory: size,
 	}
 }
 

@@ -32,7 +32,7 @@ ________________________________________________
 
 
 - Get Rid of common.Monsters. All the other unit related tags shoudl take care of it. 
-- Remove UserMessage component. Not needed
+
 - Remove Quality. DrawableShape Quality should be callled something different
 - func CursorPosition(playerPos coords.LogicalPosition) (int, int) in graphictypes requires a change. Leftover from how throwables are handled. 
 - CombatController has a lot of artifacts of the old roguelike prior to the change. Specifically in regards to throwables. Find a way tohandle that. 
