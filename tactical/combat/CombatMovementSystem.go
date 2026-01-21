@@ -64,23 +64,36 @@ func (ms *CombatMovementSystem) GetSquadMovementSpeed(squadID ecs.EntityID) int 
 }
 
 func (ms *CombatMovementSystem) CanMoveTo(squadID ecs.EntityID, targetPos coords.LogicalPosition) bool {
-	//Check if tile is occupied using PositionSystem
+	// Check if tile is occupied using PositionSystem
 	occupyingID := ms.posSystem.GetEntityIDAt(targetPos)
 	if occupyingID == 0 {
 		return true // Empty tile - can move
 	}
 
-	//Check if occupied by a squad (not terrain/item)
+	// Check if occupied by a squad (not terrain/item)
 	if !isSquad(occupyingID, ms.manager) {
 		return false // Occupied by terrain/obstacle
 	}
 
-	//If occupied by squad, check if it's friendly
+	// Squads cannot occupy the same square as another squad, even friendlies
+	return false
+}
+
+// CanPassThrough checks if a squad can pass through a tile during pathfinding.
+// Friendlies can be passed through, enemies cannot.
+func (ms *CombatMovementSystem) CanPassThrough(squadID ecs.EntityID, pos coords.LogicalPosition) bool {
+	occupyingID := ms.posSystem.GetEntityIDAt(pos)
+	if occupyingID == 0 {
+		return true // Empty tile
+	}
+
+	if !isSquad(occupyingID, ms.manager) {
+		return false // Terrain/obstacle blocks passage
+	}
+
+	// Can pass through friendlies, not enemies
 	occupyingFaction := getFactionOwner(occupyingID, ms.manager)
 	squadFaction := getFactionOwner(squadID, ms.manager)
-
-	// Can pass through friendlies, NOT enemies
-	//TODO. It can pass through friendlies, but should not be able to occupy the same square
 	return occupyingFaction == squadFaction
 }
 

@@ -33,7 +33,6 @@ ________________________________________________
 
 - Get Rid of common.Monsters. All the other unit related tags shoudl take care of it. 
 
-- Remove Quality. DrawableShape Quality should be callled something different
 - func CursorPosition(playerPos coords.LogicalPosition) (int, int) in graphictypes requires a change. Leftover from how throwables are handled. 
 - CombatController has a lot of artifacts of the old roguelike prior to the change. Specifically in regards to throwables. Find a way tohandle that. 
 - Input Package has a lot of leftovers from the old roguelike
@@ -43,7 +42,6 @@ ________________________________________________
 
 
 # Bug Fixes
-- Units of the same faction should not be able to occupy the same square
 - Throwables are completely broken. There is an out of bounds error
 
 
