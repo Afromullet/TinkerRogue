@@ -8,7 +8,6 @@ __________________________________________
 
 - Handle Entity Cleanup
 
-- Remove a lot of the commands and GUI elements related to the commands. Those are not needed. After this, review all of the command
 
 - Remove Unused GUI elements and GUI elements you ddont want
 
