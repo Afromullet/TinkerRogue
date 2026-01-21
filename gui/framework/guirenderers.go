@@ -2,7 +2,7 @@ package framework
 
 import (
 	"game_main/world/coords"
-
+	"image"
 	"image/color"
 
 	"github.com/bytearena/ecs"
@@ -273,5 +273,107 @@ func (shr *SquadHighlightRenderer) Render(
 
 		// Draw border
 		vr.DrawTileBorder(screen, *squadInfo.Position, highlightColor, shr.borderThickness)
+	}
+}
+
+// HealthBarRenderer renders health bars above squads
+type HealthBarRenderer struct {
+	queries         *GUIQueries
+	bgColor         color.Color
+	fillColor       color.Color
+	barHeight       int
+	barWidthRatio   float64 // Ratio of tile width for bar width
+	yOffset         int     // Offset above the tile (negative = above)
+	cachedRenderer  *ViewportRenderer
+	lastCenterPos   coords.LogicalPosition
+	lastScreenSizeX int
+	lastScreenSizeY int
+	bgImage         *ebiten.Image // Cached background bar image
+	fillImage       *ebiten.Image // Cached fill bar image
+	cachedBarWidth  int           // Cached bar width for invalidation
+}
+
+// NewHealthBarRenderer creates a renderer for squad health bars
+func NewHealthBarRenderer(queries *GUIQueries) *HealthBarRenderer {
+	return &HealthBarRenderer{
+		queries:       queries,
+		bgColor:       color.RGBA{R: 40, G: 40, B: 40, A: 200},   // Dark gray background
+		fillColor:     color.RGBA{R: 220, G: 40, B: 40, A: 255},  // Red health fill
+		barHeight:     5,
+		barWidthRatio: 0.8, // 80% of tile width
+		yOffset:       -10, // 10 pixels above the tile
+	}
+}
+
+// Render draws health bars above all squads
+func (hbr *HealthBarRenderer) Render(screen *ebiten.Image, centerPos coords.LogicalPosition) {
+	screenX, screenY := screen.Bounds().Dx(), screen.Bounds().Dy()
+
+	// Only recreate renderer if screen size changed or not yet created
+	if hbr.cachedRenderer == nil || hbr.lastScreenSizeX != screenX || hbr.lastScreenSizeY != screenY {
+		hbr.cachedRenderer = NewViewportRenderer(screen, centerPos)
+		hbr.lastCenterPos = centerPos
+		hbr.lastScreenSizeX = screenX
+		hbr.lastScreenSizeY = screenY
+	} else if hbr.lastCenterPos != centerPos {
+		// Just update center position if only that changed
+		hbr.cachedRenderer.UpdateCenter(centerPos)
+		hbr.lastCenterPos = centerPos
+	}
+
+	tileSize := hbr.cachedRenderer.TileSize()
+	barWidth := int(float64(tileSize) * hbr.barWidthRatio)
+
+	// Update cached images if bar width changed
+	if hbr.bgImage == nil || hbr.cachedBarWidth != barWidth {
+		hbr.bgImage = ebiten.NewImage(barWidth, hbr.barHeight)
+		hbr.bgImage.Fill(hbr.bgColor)
+		hbr.fillImage = ebiten.NewImage(barWidth, hbr.barHeight)
+		hbr.fillImage.Fill(hbr.fillColor)
+		hbr.cachedBarWidth = barWidth
+	}
+
+	// Get all squads
+	allSquads := hbr.queries.SquadCache.FindAllSquads()
+
+	for _, squadID := range allSquads {
+		squadInfo := hbr.queries.GetSquadInfo(squadID)
+		if squadInfo == nil || squadInfo.IsDestroyed || squadInfo.Position == nil {
+			continue
+		}
+
+		// Calculate health ratio
+		healthRatio := 0.0
+		if squadInfo.MaxHP > 0 {
+			healthRatio = float64(squadInfo.CurrentHP) / float64(squadInfo.MaxHP)
+		}
+
+		hbr.drawHealthBar(screen, *squadInfo.Position, healthRatio, barWidth, tileSize)
+	}
+}
+
+// drawHealthBar draws a single health bar at the given position
+func (hbr *HealthBarRenderer) drawHealthBar(screen *ebiten.Image, pos coords.LogicalPosition, healthRatio float64, barWidth, tileSize int) {
+	screenX, screenY := hbr.cachedRenderer.LogicalToScreen(pos)
+
+	// Center the bar horizontally above the tile
+	barX := screenX + float64(tileSize-barWidth)/2
+	barY := screenY + float64(hbr.yOffset)
+
+	// Draw background bar
+	bgOp := &ebiten.DrawImageOptions{}
+	bgOp.GeoM.Translate(barX, barY)
+	screen.DrawImage(hbr.bgImage, bgOp)
+
+	// Draw health fill (proportional to health ratio)
+	if healthRatio > 0 {
+		fillWidth := int(float64(barWidth) * healthRatio)
+		if fillWidth > 0 {
+			// Create a sub-image for the fill portion
+			fillOp := &ebiten.DrawImageOptions{}
+			fillOp.GeoM.Translate(barX, barY)
+			fillRect := hbr.fillImage.SubImage(image.Rect(0, 0, fillWidth, hbr.barHeight)).(*ebiten.Image)
+			screen.DrawImage(fillRect, fillOp)
+		}
 	}
 }

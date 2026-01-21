@@ -51,8 +51,9 @@ type BattleMapState struct {
 
 	// UI Overlay Flags (controls what visual overlay is showing)
 	// These are PURELY visual - game logic should NOT check these flags
-	InAttackMode bool // Whether attack overlay is showing
-	InMoveMode   bool // Whether movement overlay is showing
+	InAttackMode   bool // Whether attack overlay is showing
+	InMoveMode     bool // Whether movement overlay is showing
+	ShowHealthBars bool // Whether health bars are displayed above squads
 
 	// Encounter Tracking
 	TriggeredEncounterID ecs.EntityID // Encounter that triggered this combat (0 if none)
@@ -66,8 +67,9 @@ func NewBattleMapState() *BattleMapState {
 		SelectedTargetID: ecs.EntityID(0),
 
 		// UI Mode Flags
-		InAttackMode: false,
-		InMoveMode:   false,
+		InAttackMode:   false,
+		InMoveMode:     false,
+		ShowHealthBars: false,
 
 		// Encounter Tracking
 		TriggeredEncounterID: ecs.EntityID(0),
@@ -83,6 +85,7 @@ func (bms *BattleMapState) Reset() {
 	// Clear UI mode flags
 	bms.InAttackMode = false
 	bms.InMoveMode = false
+	bms.ShowHealthBars = false
 
 	// Clear encounter tracking
 	bms.TriggeredEncounterID = ecs.EntityID(0)
@@ -95,6 +98,7 @@ func (bms *BattleMapState) DebugMap() map[string]interface{} {
 		"selectedTarget": bms.SelectedTargetID,
 		"inAttackMode":   bms.InAttackMode,
 		"inMoveMode":     bms.InMoveMode,
+		"showHealthBars": bms.ShowHealthBars,
 		"encounterID":    bms.TriggeredEncounterID,
 	}
 }

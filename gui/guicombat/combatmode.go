@@ -594,6 +594,11 @@ func (cm *CombatMode) Render(screen *ebiten.Image) {
 			cm.visualization.GetMovementRenderer().Render(screen, playerPos, validTiles)
 		}
 	}
+
+	// Render health bars when enabled
+	if battleState.ShowHealthBars {
+		cm.visualization.GetHealthBarRenderer().Render(screen, playerPos)
+	}
 }
 
 func (cm *CombatMode) HandleInput(inputState *framework.InputState) bool {
@@ -653,6 +658,19 @@ func (cm *CombatMode) HandleInput(inputState *framework.InputState) bool {
 			cm.logManager.UpdateTextArea(combatLogArea, fmt.Sprintf("Switched to %s metric", metricName))
 			return true
 		}
+	}
+
+	// Right Control key to toggle health bars
+	if inputState.KeysJustPressed[ebiten.KeyControlRight] {
+		battleState := cm.Context.ModeCoordinator.GetBattleMapState()
+		battleState.ShowHealthBars = !battleState.ShowHealthBars
+		status := "enabled"
+		if !battleState.ShowHealthBars {
+			status = "disabled"
+		}
+		combatLogArea := GetCombatLogTextArea(cm.Panels)
+		cm.logManager.UpdateTextArea(combatLogArea, fmt.Sprintf("Health bars %s", status))
+		return true
 	}
 
 	// L key to toggle layer visualizer

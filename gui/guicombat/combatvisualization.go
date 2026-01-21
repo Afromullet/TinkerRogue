@@ -16,6 +16,7 @@ type CombatVisualizationManager struct {
 	// Rendering systems
 	movementRenderer  *framework.MovementTileRenderer
 	highlightRenderer *framework.SquadHighlightRenderer
+	healthBarRenderer *framework.HealthBarRenderer
 	dangerVisualizer  *behavior.DangerVisualizer
 	layerVisualizer   *behavior.LayerVisualizer
 
@@ -33,6 +34,7 @@ func NewCombatVisualizationManager(
 	cvm := &CombatVisualizationManager{
 		movementRenderer:  framework.NewMovementTileRenderer(),
 		highlightRenderer: framework.NewSquadHighlightRenderer(queries),
+		healthBarRenderer: framework.NewHealthBarRenderer(queries),
 	}
 
 	// Create the initial Faction Threat Level Manager and add all factions
@@ -73,6 +75,11 @@ func (cvm *CombatVisualizationManager) GetMovementRenderer() *framework.Movement
 // GetHighlightRenderer returns the squad highlight renderer
 func (cvm *CombatVisualizationManager) GetHighlightRenderer() *framework.SquadHighlightRenderer {
 	return cvm.highlightRenderer
+}
+
+// GetHealthBarRenderer returns the health bar renderer
+func (cvm *CombatVisualizationManager) GetHealthBarRenderer() *framework.HealthBarRenderer {
+	return cvm.healthBarRenderer
 }
 
 // GetDangerVisualizer returns the danger visualizer
