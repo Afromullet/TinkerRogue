@@ -435,3 +435,65 @@ func UpdateSquadRenderable(squadID ecs.EntityID, ecsmanager *common.EntityManage
 	}
 	setSquadRenderableFromLeader(squadID, squadEntity, ecsmanager)
 }
+
+// ========================================
+// ENTITY DISPOSAL FUNCTIONS
+// ========================================
+
+// DisposeDeadUnitsInSquad disposes all dead units (CurrentHealth <= 0) in a squad.
+// Returns the number of units disposed.
+// Use this to clean up dead units after combat while the squad survives.
+func DisposeDeadUnitsInSquad(squadID ecs.EntityID, manager *common.EntityManager) int {
+	unitIDs := GetUnitIDsInSquad(squadID, manager)
+	disposedCount := 0
+
+	for _, unitID := range unitIDs {
+		entity := manager.FindEntityByID(unitID)
+		if entity == nil {
+			continue
+		}
+
+		attr := common.GetComponentType[*common.Attributes](entity, common.AttributeComponent)
+		if attr != nil && attr.CurrentHealth <= 0 {
+			// Unit is dead, dispose it
+			pos := common.GetComponentType[*coords.LogicalPosition](entity, common.PositionComponent)
+			manager.CleanDisposeEntity(entity, pos)
+			disposedCount++
+		}
+	}
+
+	// Update squad capacity after disposing units
+	if disposedCount > 0 {
+		UpdateSquadCapacity(squadID, manager)
+	}
+
+	return disposedCount
+}
+
+// DisposeSquadAndUnits disposes a squad entity and ALL its units (dead or alive).
+// Use this when a squad is destroyed and needs complete cleanup.
+// This removes all entities from the ECS world.
+func DisposeSquadAndUnits(squadID ecs.EntityID, manager *common.EntityManager) {
+	// Get the squad entity first (use direct ID lookup for reliability)
+	squadEntity := manager.FindEntityByID(squadID)
+
+	// Get all units before disposing (query won't work after squad is gone)
+	unitIDs := GetUnitIDsInSquad(squadID, manager)
+
+	// Dispose all units first
+	for _, unitID := range unitIDs {
+		entity := manager.FindEntityByID(unitID)
+		if entity == nil {
+			continue
+		}
+
+		pos := common.GetComponentType[*coords.LogicalPosition](entity, common.PositionComponent)
+		manager.CleanDisposeEntity(entity, pos)
+	}
+
+	// Now dispose the squad entity itself
+	if squadEntity != nil {
+		pos := common.GetComponentType[*coords.LogicalPosition](squadEntity, common.PositionComponent)
+		manager.CleanDisposeEntity(squadEntity, pos)
+	}
+}

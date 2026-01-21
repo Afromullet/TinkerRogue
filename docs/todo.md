@@ -14,11 +14,7 @@ __________________________________________
 
 - combat life cycle manager changes only support one player at the moment, de to storing the playerEntityID. Consider changing that for multiplayer
 
-
-### Combat - Important ###
-
-- Handle a unit dying correctly. Currently, it still stays in the squad
-
+- Can always use the move undo command, even after attacking. That's a bug
 
 ________________________________________________
 # Testing 
@@ -67,7 +63,7 @@ ________________________________________________
 
 # Additions 
 
-- Add proper squad/unit cleanup on death
+
 - Add Abilities
 - Better Combat Log
 

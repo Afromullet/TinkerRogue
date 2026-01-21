@@ -142,13 +142,21 @@ func (cas *CombatActionSystem) ExecuteAttackAction(attackerID, defenderID ecs.En
 		cas.battleRecorder.RecordEngagement(combatResult.CombatLog)
 	}
 
-	// Check abilities for both squads after combat
+	// Check abilities for both squads after combat (only if they survived)
+	attackerDestroyed := squads.IsSquadDestroyed(attackerID, cas.manager)
+
 	// Attacker abilities: might trigger based on damage dealt, turn count, etc.
-	squads.CheckAndTriggerAbilities(attackerID, cas.manager)
+	if !attackerDestroyed {
+		squads.CheckAndTriggerAbilities(attackerID, cas.manager)
+		// Clean up dead units in surviving attacker squad
+		squads.DisposeDeadUnitsInSquad(attackerID, cas.manager)
+	}
 
 	// Defender abilities: might trigger healing if HP is low, or other defensive abilities
 	if !result.TargetDestroyed {
 		squads.CheckAndTriggerAbilities(defenderID, cas.manager)
+		// Clean up dead units in surviving defender squad
+		squads.DisposeDeadUnitsInSquad(defenderID, cas.manager)
 	}
 
 	result.Success = true
