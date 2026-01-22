@@ -46,11 +46,6 @@ func FindActionStateEntity(squadID ecs.EntityID, manager *common.EntityManager) 
 	return nil
 }
 
-// getFactionOwner returns the faction that owns a squad
-func getFactionOwner(squadID ecs.EntityID, manager *common.EntityManager) ecs.EntityID {
-	return GetSquadFaction(squadID, manager)
-}
-
 // GetSquadMapPosition returns the current map position of a squad
 func GetSquadMapPosition(squadID ecs.EntityID, manager *common.EntityManager) (coords.LogicalPosition, error) {
 	entity := manager.FindEntityByID(squadID)
@@ -248,4 +243,13 @@ func containsEntity(entities []ecs.EntityID, entityID ecs.EntityID) bool {
 		}
 	}
 	return false
+}
+
+// GetSquadName returns the name of a squad by ID
+func GetSquadName(squadID ecs.EntityID, manager *common.EntityManager) string {
+	squadData := common.GetComponentTypeByID[*squads.SquadData](manager, squadID, squads.SquadComponent)
+	if squadData != nil {
+		return squadData.Name
+	}
+	return "Unknown"
 }

@@ -82,7 +82,8 @@ func SetupBalancedEncounter(
 		len(deployedSquads), avgPlayerSquadPower, targetEnemySquadPower, difficultyMod.PowerMultiplier*100)
 
 	// 5. Create factions
-	fm := combat.NewFactionManager(manager)
+	cache := combat.NewCombatQueryCache(manager)
+	fm := combat.NewFactionManager(manager, cache)
 	playerFactionID := fm.CreateFactionWithPlayer("Player Forces", 1, "Player 1")
 	enemyFactionID := fm.CreateFactionWithPlayer("Enemy Forces", 0, "")
 

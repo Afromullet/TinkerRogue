@@ -14,10 +14,10 @@ type TurnManager struct {
 	turnStateEntityID ecs.EntityID
 }
 
-func NewTurnManager(manager *common.EntityManager) *TurnManager {
+func NewTurnManager(manager *common.EntityManager, cache *CombatQueryCache) *TurnManager {
 	return &TurnManager{
 		manager:     manager,
-		combatCache: NewCombatQueryCache(manager),
+		combatCache: cache,
 	}
 }
 
@@ -72,7 +72,7 @@ func (tm *TurnManager) ResetSquadActions(factionID ecs.EntityID) error {
 	factionSquads := GetSquadsForFaction(factionID, tm.manager)
 
 	//TODO: Do we really need to create a new system, or can we just reset the existing system?
-	moveSys := NewMovementSystem(tm.manager, common.GlobalPositionSystem)
+	moveSys := NewMovementSystem(tm.manager, common.GlobalPositionSystem, tm.combatCache)
 
 	for _, squadID := range factionSquads {
 		actionEntity := tm.combatCache.FindActionStateEntity(squadID, tm.manager)

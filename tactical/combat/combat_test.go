@@ -52,7 +52,8 @@ func TestCombatInitialization(t *testing.T) {
 func TestCreateFaction(t *testing.T) {
 	manager := CreateTestCombatManager()
 
-	fm := NewFactionManager(manager)
+	cache := NewCombatQueryCache(manager)
+	fm := NewFactionManager(manager, cache)
 	factionID := fm.CreateFaction("Test Faction", true)
 
 	if factionID == 0 {
@@ -77,7 +78,8 @@ func TestCreateFaction(t *testing.T) {
 func TestAddSquadToFaction(t *testing.T) {
 	manager := CreateTestCombatManager()
 
-	fm := NewFactionManager(manager)
+	cache := NewCombatQueryCache(manager)
+	fm := NewFactionManager(manager, cache)
 	factionID := fm.CreateFaction("Test Faction", true)
 	squadID := CreateTestSquad(manager, "Test Squad", 5)
 
@@ -119,11 +121,12 @@ func TestAddSquadToFaction(t *testing.T) {
 func TestInitializeCombat_RandomizesTurnOrder(t *testing.T) {
 	manager := CreateTestCombatManager()
 
-	fm := NewFactionManager(manager)
+	cache := NewCombatQueryCache(manager)
+	fm := NewFactionManager(manager, cache)
 	faction1 := fm.CreateFaction("Faction 1", true)
 	faction2 := fm.CreateFaction("Faction 2", false)
 
-	turnMgr := NewTurnManager(manager)
+	turnMgr := NewTurnManager(manager, cache)
 	err := turnMgr.InitializeCombat([]ecs.EntityID{faction1, faction2})
 	if err != nil {
 		t.Fatalf("Failed to initialize combat: %v", err)
@@ -152,11 +155,12 @@ func TestInitializeCombat_RandomizesTurnOrder(t *testing.T) {
 func TestEndTurn_AdvancesToNextFaction(t *testing.T) {
 	manager := CreateTestCombatManager()
 
-	fm := NewFactionManager(manager)
+	cache := NewCombatQueryCache(manager)
+	fm := NewFactionManager(manager, cache)
 	faction1 := fm.CreateFaction("Faction 1", true)
 	faction2 := fm.CreateFaction("Faction 2", false)
 
-	turnMgr := NewTurnManager(manager)
+	turnMgr := NewTurnManager(manager, cache)
 	turnMgr.InitializeCombat([]ecs.EntityID{faction1, faction2})
 
 	firstFaction := turnMgr.GetCurrentFaction()
@@ -174,11 +178,12 @@ func TestEndTurn_AdvancesToNextFaction(t *testing.T) {
 func TestEndTurn_WrapsAroundToFirstFaction(t *testing.T) {
 	manager := CreateTestCombatManager()
 
-	fm := NewFactionManager(manager)
+	cache := NewCombatQueryCache(manager)
+	fm := NewFactionManager(manager, cache)
 	faction1 := fm.CreateFaction("Faction 1", true)
 	faction2 := fm.CreateFaction("Faction 2", false)
 
-	turnMgr := NewTurnManager(manager)
+	turnMgr := NewTurnManager(manager, cache)
 	turnMgr.InitializeCombat([]ecs.EntityID{faction1, faction2})
 
 	initialRound := turnMgr.GetCurrentRound()
@@ -208,7 +213,8 @@ func TestGetSquadMovementSpeed_ReturnsSlowestUnit(t *testing.T) {
 	attr := common.GetComponentType[*common.Attributes](slowUnit, common.AttributeComponent)
 	attr.MovementSpeed = 2
 
-	moveSys := NewMovementSystem(manager, common.GlobalPositionSystem)
+	cache := NewCombatQueryCache(manager)
+	moveSys := NewMovementSystem(manager, common.GlobalPositionSystem, cache)
 	speed := moveSys.GetSquadMovementSpeed(squadID)
 
 	if speed != 2 {
@@ -219,7 +225,8 @@ func TestGetSquadMovementSpeed_ReturnsSlowestUnit(t *testing.T) {
 func TestMoveSquad_UpdatesPosition(t *testing.T) {
 	manager := CreateTestCombatManager()
 
-	fm := NewFactionManager(manager)
+	cache := NewCombatQueryCache(manager)
+	fm := NewFactionManager(manager, cache)
 	factionID := fm.CreateFaction("Test Faction", true)
 	squadID := CreateTestSquad(manager, "Test Squad", 3)
 
@@ -227,10 +234,10 @@ func TestMoveSquad_UpdatesPosition(t *testing.T) {
 	fm.AddSquadToFaction(factionID, squadID, startPos)
 
 	// Create action state
-	turnMgr := NewTurnManager(manager)
+	turnMgr := NewTurnManager(manager, cache)
 	turnMgr.InitializeCombat([]ecs.EntityID{factionID})
 
-	moveSys := NewMovementSystem(manager, common.GlobalPositionSystem)
+	moveSys := NewMovementSystem(manager, common.GlobalPositionSystem, cache)
 	targetPos := coords.LogicalPosition{X: 6, Y: 6}
 
 	err := moveSys.MoveSquad(squadID, targetPos)
@@ -239,7 +246,7 @@ func TestMoveSquad_UpdatesPosition(t *testing.T) {
 	}
 
 	// Verify position updated
-	newPos, err := moveSys.GetSquadPosition(squadID)
+	newPos, err := GetSquadMapPosition(squadID, manager)
 	if err != nil {
 		t.Fatalf("Failed to get squad position: %v", err)
 	}
@@ -258,7 +265,8 @@ func TestGetSquadAttackRange_ReturnsMaxRange(t *testing.T) {
 
 	squadID := CreateTestMixedSquad(manager, "Mixed Squad", 3, 2)
 
-	combatSys := NewCombatActionSystem(manager)
+	cache := NewCombatQueryCache(manager)
+	combatSys := NewCombatActionSystem(manager, cache)
 	maxRange := combatSys.GetSquadAttackRange(squadID)
 
 	if maxRange != 3 {
@@ -269,7 +277,8 @@ func TestGetSquadAttackRange_ReturnsMaxRange(t *testing.T) {
 func TestExecuteAttackAction_MeleeAttack(t *testing.T) {
 	manager := CreateTestCombatManager()
 
-	fm := NewFactionManager(manager)
+	cache := NewCombatQueryCache(manager)
+	fm := NewFactionManager(manager, cache)
 	playerFaction := fm.CreateFaction("Player", true)
 	enemyFaction := fm.CreateFaction("Enemy", false)
 
@@ -280,17 +289,16 @@ func TestExecuteAttackAction_MeleeAttack(t *testing.T) {
 	fm.AddSquadToFaction(enemyFaction, enemySquad, coords.LogicalPosition{X: 6, Y: 5})
 
 	// Initialize combat
-	turnMgr := NewTurnManager(manager)
+	turnMgr := NewTurnManager(manager, cache)
 	turnMgr.InitializeCombat([]ecs.EntityID{playerFaction, enemyFaction})
 
-	combatSys := NewCombatActionSystem(manager)
+	combatSys := NewCombatActionSystem(manager, cache)
 	result := combatSys.ExecuteAttackAction(playerSquad, enemySquad)
 	if !result.Success {
 		t.Fatalf("Failed to execute attack: %s", result.ErrorReason)
 	}
 
 	// Verify squad marked as acted (using cache for O(k) lookup instead of O(n) query)
-	cache := NewCombatQueryCache(manager)
 	if canSquadAct(cache, playerSquad, manager) {
 		t.Error("Squad should be marked as acted")
 	}
@@ -303,9 +311,10 @@ func TestExecuteAttackAction_MeleeAttack(t *testing.T) {
 func TestFullCombatLoop_TwoFactions(t *testing.T) {
 	manager := CreateTestCombatManager()
 
-	fm := NewFactionManager(manager)
-	turnMgr := NewTurnManager(manager)
-	moveSys := NewMovementSystem(manager, common.GlobalPositionSystem)
+	cache := NewCombatQueryCache(manager)
+	fm := NewFactionManager(manager, cache)
+	turnMgr := NewTurnManager(manager, cache)
+	moveSys := NewMovementSystem(manager, common.GlobalPositionSystem, cache)
 
 	// Create factions
 	playerID := fm.CreateFaction("Player", true)

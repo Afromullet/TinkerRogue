@@ -43,16 +43,16 @@ type CombatService struct {
 func NewCombatService(manager *common.EntityManager) *CombatService {
 	cache := combat.NewCombatQueryCache(manager)
 	battleRecorder := battlelog.NewBattleRecorder()
-	combatActSystem := combat.NewCombatActionSystem(manager)
+	combatActSystem := combat.NewCombatActionSystem(manager, cache)
 
 	// Wire up battle recorder to combat action system
 	combatActSystem.SetBattleRecorder(battleRecorder)
 
 	return &CombatService{
 		EntityManager:   manager,
-		TurnManager:     combat.NewTurnManager(manager),
-		FactionManager:  combat.NewFactionManager(manager),
-		MovementSystem:  combat.NewMovementSystem(manager, common.GlobalPositionSystem),
+		TurnManager:     combat.NewTurnManager(manager, cache),
+		FactionManager:  combat.NewFactionManager(manager, cache),
+		MovementSystem:  combat.NewMovementSystem(manager, common.GlobalPositionSystem, cache),
 		CombatCache:     cache,
 		CombatActSystem: combatActSystem,
 		BattleRecorder:  battleRecorder,
@@ -107,8 +107,7 @@ func (cs *CombatService) assignDeployedSquadsToPlayerFaction(playerFactionID ecs
 		}
 
 		// Squad is unassigned and deployed - add it to player faction
-		fm := combat.NewFactionManager(cs.EntityManager)
-		if err := fm.AddSquadToFaction(playerFactionID, squadID, *position); err != nil {
+		if err := cs.FactionManager.AddSquadToFaction(playerFactionID, squadID, *position); err != nil {
 			// Log error but continue with other squads
 			continue
 		}
@@ -117,7 +116,7 @@ func (cs *CombatService) assignDeployedSquadsToPlayerFaction(playerFactionID ecs
 
 // GetAliveSquadsInFaction returns all alive squads for a faction
 func (cs *CombatService) GetAliveSquadsInFaction(factionID ecs.EntityID) []ecs.EntityID {
-	squadIDs := cs.FactionManager.GetFactionSquads(factionID)
+	squadIDs := combat.GetSquadsForFaction(factionID, cs.EntityManager)
 	result := []ecs.EntityID{}
 	for _, squadID := range squadIDs {
 		if !squads.IsSquadDestroyed(squadID, cs.EntityManager) {
@@ -197,15 +196,6 @@ func (cs *CombatService) CheckVictoryCondition() *VictoryCheckResult {
 	}
 
 	return result
-}
-
-// getSquadNameByID is a helper to get squad name from ID
-func getSquadNameByID(squadID ecs.EntityID, manager *common.EntityManager) string {
-	squadData := common.GetComponentTypeByID[*squads.SquadData](manager, squadID, squads.SquadComponent)
-	if squadData != nil {
-		return squadData.Name
-	}
-	return "Unknown"
 }
 
 // GetThreatEvaluator returns composite evaluator for a faction (lazy initialization)

@@ -3,7 +3,6 @@ package combat
 import (
 	"fmt"
 	"game_main/common"
-	"game_main/tactical/squads"
 	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"
@@ -14,10 +13,10 @@ type FactionManager struct {
 	combatCache *CombatQueryCache
 }
 
-func NewFactionManager(manager *common.EntityManager) *FactionManager {
+func NewFactionManager(manager *common.EntityManager, cache *CombatQueryCache) *FactionManager {
 	return &FactionManager{
 		manager:     manager,
-		combatCache: NewCombatQueryCache(manager),
+		combatCache: cache,
 	}
 }
 
@@ -91,20 +90,6 @@ func (fm *FactionManager) AddSquadToFaction(factionID, squadID ecs.EntityID, pos
 	}
 
 	return nil
-}
-
-func (fm *FactionManager) GetFactionSquads(factionID ecs.EntityID) []ecs.EntityID {
-	var squadIDs []ecs.EntityID
-
-	// Query all squads and filter by CombatFactionComponent
-	for _, result := range fm.manager.World.Query(squads.SquadTag) {
-		combatFaction := common.GetComponentType[*CombatFactionData](result.Entity, CombatFactionComponent)
-		if combatFaction != nil && combatFaction.FactionID == factionID {
-			squadIDs = append(squadIDs, result.Entity.GetID())
-		}
-	}
-
-	return squadIDs
 }
 
 func (fm *FactionManager) RemoveSquadFromFaction(factionID, squadID ecs.EntityID) error {

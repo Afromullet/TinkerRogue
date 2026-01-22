@@ -123,7 +123,7 @@ func (cam *CombatAnimationMode) SetCombatants(attackerID, defenderID ecs.EntityI
 	cam.flashTimer = 0
 
 	// Assign colors to attacking units
-	combatSys := combat.NewCombatActionSystem(cam.Queries.ECSManager)
+	combatSys := combat.NewCombatActionSystem(cam.Queries.ECSManager, cam.Queries.CombatCache)
 	attackingUnits := combatSys.GetAttackingUnits(attackerID, defenderID)
 
 	for i, attackerUnitID := range attackingUnits {

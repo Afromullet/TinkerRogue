@@ -17,11 +17,11 @@ type CombatMovementSystem struct {
 }
 
 // Constructor
-func NewMovementSystem(manager *common.EntityManager, posSystem *common.PositionSystem) *CombatMovementSystem {
+func NewMovementSystem(manager *common.EntityManager, posSystem *common.PositionSystem, cache *CombatQueryCache) *CombatMovementSystem {
 	return &CombatMovementSystem{
 		manager:     manager,
 		posSystem:   posSystem,
-		combatCache: NewCombatQueryCache(manager),
+		combatCache: cache,
 	}
 }
 
@@ -92,8 +92,8 @@ func (ms *CombatMovementSystem) CanPassThrough(squadID ecs.EntityID, pos coords.
 	}
 
 	// Can pass through friendlies, not enemies
-	occupyingFaction := getFactionOwner(occupyingID, ms.manager)
-	squadFaction := getFactionOwner(squadID, ms.manager)
+	occupyingFaction := GetSquadFaction(occupyingID, ms.manager)
+	squadFaction := GetSquadFaction(squadID, ms.manager)
 	return occupyingFaction == squadFaction
 }
 
@@ -103,7 +103,7 @@ func (ms *CombatMovementSystem) MoveSquad(squadID ecs.EntityID, targetPos coords
 		return fmt.Errorf("squad has no movement remaining")
 	}
 
-	currentPos, err := ms.GetSquadPosition(squadID)
+	currentPos, err := GetSquadMapPosition(squadID, ms.manager)
 	if err != nil {
 		return fmt.Errorf("cannot get current position: %w", err)
 	}
@@ -147,7 +147,7 @@ func (ms *CombatMovementSystem) MoveSquad(squadID ecs.EntityID, targetPos coords
 }
 
 func (ms *CombatMovementSystem) GetValidMovementTiles(squadID ecs.EntityID) []coords.LogicalPosition {
-	currentPos, err := ms.GetSquadPosition(squadID)
+	currentPos, err := GetSquadMapPosition(squadID, ms.manager)
 	if err != nil {
 		return []coords.LogicalPosition{}
 	}
@@ -186,18 +186,4 @@ func (ms *CombatMovementSystem) GetValidMovementTiles(squadID ecs.EntityID) []co
 	}
 
 	return validTiles
-}
-
-// GetSquadPosition returns the position of a squad
-func (ms *CombatMovementSystem) GetSquadPosition(squadID ecs.EntityID) (coords.LogicalPosition, error) {
-	entity := ms.manager.FindEntityByID(squadID)
-	if entity == nil {
-		return coords.LogicalPosition{}, fmt.Errorf("squad %d not found", squadID)
-	}
-
-	pos := common.GetComponentType[*coords.LogicalPosition](entity, common.PositionComponent)
-	if pos == nil {
-		return coords.LogicalPosition{}, fmt.Errorf("squad %d has no position component", squadID)
-	}
-	return *pos, nil
 }

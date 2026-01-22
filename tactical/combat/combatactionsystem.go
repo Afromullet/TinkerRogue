@@ -26,10 +26,10 @@ type CombatActionSystem struct {
 	battleRecorder *battlelog.BattleRecorder
 }
 
-func NewCombatActionSystem(manager *common.EntityManager) *CombatActionSystem {
+func NewCombatActionSystem(manager *common.EntityManager, cache *CombatQueryCache) *CombatActionSystem {
 	return &CombatActionSystem{
 		manager:     manager,
-		combatCache: NewCombatQueryCache(manager),
+		combatCache: cache,
 	}
 }
 
@@ -50,8 +50,8 @@ func (cas *CombatActionSystem) ExecuteAttackAction(attackerID, defenderID ecs.En
 	}
 
 	// Get names for result
-	result.AttackerName = getSquadNameByID(attackerID, cas.manager)
-	result.TargetName = getSquadNameByID(defenderID, cas.manager)
+	result.AttackerName = GetSquadName(attackerID, cas.manager)
+	result.TargetName = GetSquadName(defenderID, cas.manager)
 
 	//Filter units by range (partial squad attacks)
 	attackingUnits := cas.GetAttackingUnits(attackerID, defenderID)
@@ -270,15 +270,6 @@ func (cas *CombatActionSystem) getCounterattackingUnits(defenderID, attackerID e
 	return counterattackers
 }
 
-// getSquadNameByID is a helper to get squad name from ID
-func getSquadNameByID(squadID ecs.EntityID, manager *common.EntityManager) string {
-	squadData := common.GetComponentTypeByID[*squads.SquadData](manager, squadID, squads.SquadComponent)
-	if squadData != nil {
-		return squadData.Name
-	}
-	return "Unknown"
-}
-
 // CanSquadAttackWithReason returns detailed info about why an attack can/cannot happen
 func (cas *CombatActionSystem) CanSquadAttackWithReason(squadID, targetID ecs.EntityID) (string, bool) {
 	// Check if squad has action available
@@ -298,8 +289,8 @@ func (cas *CombatActionSystem) CanSquadAttackWithReason(squadID, targetID ecs.En
 	}
 
 	// Check factions (can't attack allies)
-	attackerFaction := getFactionOwner(squadID, cas.manager)
-	defenderFaction := getFactionOwner(targetID, cas.manager)
+	attackerFaction := GetSquadFaction(squadID, cas.manager)
+	defenderFaction := GetSquadFaction(targetID, cas.manager)
 
 	if attackerFaction == 0 || defenderFaction == 0 {
 		return "One or both squads have no faction", false

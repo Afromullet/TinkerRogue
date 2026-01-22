@@ -35,8 +35,8 @@ func CreateTestCombatManager() *common.EntityManager {
 // ========================================
 
 // CreateTestFaction creates a faction for testing
-func CreateTestFaction(manager *common.EntityManager, name string, isPlayer bool) ecs.EntityID {
-	fm := NewFactionManager(manager)
+func CreateTestFaction(manager *common.EntityManager, cache *CombatQueryCache, name string, isPlayer bool) ecs.EntityID {
+	fm := NewFactionManager(manager, cache)
 	return fm.CreateFaction(name, isPlayer)
 }
 
@@ -205,9 +205,12 @@ func PlaceSquadOnMap(manager *common.EntityManager, factionID, squadID ecs.Entit
 
 // InitializeTestCombat sets up a basic test combat scenario
 func InitializeTestCombat(manager *common.EntityManager, factionCount int) ([]ecs.EntityID, *TurnManager) {
+	// Create shared cache
+	cache := NewCombatQueryCache(manager)
+
 	// Create factions
 	factionIDs := make([]ecs.EntityID, factionCount)
-	fm := NewFactionManager(manager)
+	fm := NewFactionManager(manager, cache)
 
 	for i := 0; i < factionCount; i++ {
 		if i == 0 {
@@ -218,7 +221,7 @@ func InitializeTestCombat(manager *common.EntityManager, factionCount int) ([]ec
 	}
 
 	// Initialize turn manager
-	turnMgr := NewTurnManager(manager)
+	turnMgr := NewTurnManager(manager, cache)
 	turnMgr.InitializeCombat(factionIDs)
 
 	return factionIDs, turnMgr

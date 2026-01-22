@@ -27,13 +27,16 @@ type GUIQueries struct {
 
 // NewGUIQueries creates a new query service
 func NewGUIQueries(ecsManager *common.EntityManager) *GUIQueries {
+	// Create shared combat cache first
+	combatCache := combat.NewCombatQueryCache(ecsManager)
+
 	gq := &GUIQueries{
 		ECSManager:     ecsManager,
-		factionManager: combat.NewFactionManager(ecsManager),
+		factionManager: combat.NewFactionManager(ecsManager, combatCache),
 
 		// Initialize query caches (own Views that are automatically maintained by ECS library)
 		SquadCache:  squads.NewSquadQueryCache(ecsManager),
-		CombatCache: combat.NewCombatQueryCache(ecsManager),
+		CombatCache: combatCache,
 	}
 
 	// Initialize monstersView if monsters tag exists in WorldTags
@@ -92,7 +95,7 @@ func (gq *GUIQueries) GetFactionInfo(factionID ecs.EntityID) *FactionInfo {
 
 	// Use stored faction manager for additional data
 	currentMana, maxMana := gq.factionManager.GetFactionMana(factionID)
-	squadIDs := gq.factionManager.GetFactionSquads(factionID)
+	squadIDs := combat.GetSquadsForFaction(factionID, gq.ECSManager)
 
 	// Count alive squads
 	aliveCount := 0
