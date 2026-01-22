@@ -42,7 +42,7 @@ ________________________________________________
 
 # Review
 
-
+- Check for redundant components, such as CombatFactionComponent and FactionComponent
 
 - Identify where there is a possiblity of cache invalidation errors. We started to cache things used for ECS query, so we need to 
 

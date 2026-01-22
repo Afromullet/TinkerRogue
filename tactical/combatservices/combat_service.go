@@ -157,10 +157,10 @@ func (cs *CombatService) CheckVictoryCondition() *VictoryCheckResult {
 		entity := queryResult.Entity
 		squadData := common.GetComponentType[*squads.SquadData](entity, squads.SquadComponent)
 		if squadData != nil && !squads.IsSquadDestroyed(entity.GetID(), cs.EntityManager) {
-			factionData := common.GetComponentTypeByID[*combat.FactionData](
-				cs.EntityManager, entity.GetID(), combat.FactionComponent)
-			if factionData != nil {
-				aliveByFaction[factionData.FactionID]++
+			// Squads have CombatFactionComponent (not FactionComponent) to indicate faction membership
+			combatFaction := common.GetComponentType[*combat.CombatFactionData](entity, combat.CombatFactionComponent)
+			if combatFaction != nil {
+				aliveByFaction[combatFaction.FactionID]++
 			}
 		}
 	}

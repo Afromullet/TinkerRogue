@@ -139,6 +139,10 @@ func (cah *CombatActionHandler) ExecuteAttack() {
 					if result.TargetDestroyed {
 						cah.addLog(fmt.Sprintf("%s was destroyed!", result.TargetName))
 					}
+					// Check for victory after player attack
+					if cah.deps.OnVictoryCheck != nil {
+						cah.deps.OnVictoryCheck()
+					}
 				})
 				cah.deps.ModeManager.RequestTransition(animMode, "Combat animation")
 				return
@@ -150,6 +154,10 @@ func (cah *CombatActionHandler) ExecuteAttack() {
 	cah.addLog(fmt.Sprintf("%s attacked %s!", result.AttackerName, result.TargetName))
 	if result.TargetDestroyed {
 		cah.addLog(fmt.Sprintf("%s was destroyed!", result.TargetName))
+	}
+	// Check for victory after player attack (fallback path)
+	if cah.deps.OnVictoryCheck != nil {
+		cah.deps.OnVictoryCheck()
 	}
 }
 

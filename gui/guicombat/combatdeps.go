@@ -29,6 +29,9 @@ type CombatModeDeps struct {
 
 	// Mode management
 	ModeManager *framework.UIModeManager
+
+	// Victory check callback - returns true if combat ended
+	OnVictoryCheck func() bool
 }
 
 // NewCombatModeDeps creates a new dependencies container

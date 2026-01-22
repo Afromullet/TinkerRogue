@@ -36,7 +36,7 @@ func NewEliminationVictory() VictoryCondition {
 // CheckVictory checks if only one faction has squads remaining
 func (ev *EliminationVictory) CheckVictory(manager *common.EntityManager) (ecs.EntityID, bool) {
 	// STUB: Always returns false (combat never ends)
-	// TODO: Implement actual faction squad counting logic
+	// TODO: Implement actual factionsquad counting logic
 	//
 	// Proper implementation:
 	// 1. Count squads per faction

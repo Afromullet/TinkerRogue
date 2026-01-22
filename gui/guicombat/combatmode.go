@@ -114,6 +114,9 @@ func (cm *CombatMode) Initialize(ctx *framework.UIContext) error {
 		cm.ModeManager,
 	)
 
+	// Wire up victory check callback
+	cm.deps.OnVictoryCheck = cm.checkAndHandleVictory
+
 	// Create handlers with deps
 	cm.actionHandler = NewCombatActionHandler(cm.deps)
 	cm.inputHandler = NewCombatInputHandler(cm.actionHandler, cm.deps)
@@ -304,6 +307,42 @@ func (cm *CombatMode) handleFlee() {
 	}
 }
 
+// checkAndHandleVictory checks if combat has ended and handles the transition.
+// Returns true if combat ended (victory or defeat), false if combat continues.
+func (cm *CombatMode) checkAndHandleVictory() bool {
+	result := cm.combatService.CheckVictoryCondition()
+
+	if !result.BattleOver {
+		return false
+	}
+
+	combatLogArea := GetCombatLogTextArea(cm.Panels)
+
+	// Determine if player won or lost
+	factionData := cm.Queries.CombatCache.FindFactionDataByID(result.VictorFaction, cm.Queries.ECSManager)
+
+	if factionData != nil && factionData.IsPlayerControlled {
+		cm.logManager.UpdateTextArea(combatLogArea, "=== VICTORY! ===")
+		cm.logManager.UpdateTextArea(combatLogArea, fmt.Sprintf("%s is victorious!", result.VictorName))
+	} else {
+		cm.logManager.UpdateTextArea(combatLogArea, "=== DEFEAT ===")
+		if result.VictorFaction != 0 {
+			cm.logManager.UpdateTextArea(combatLogArea, fmt.Sprintf("%s has won the battle.", result.VictorName))
+		} else {
+			cm.logManager.UpdateTextArea(combatLogArea, "All forces have been eliminated.")
+		}
+	}
+
+	cm.logManager.UpdateTextArea(combatLogArea, fmt.Sprintf("Battle lasted %d rounds.", result.RoundsCompleted))
+
+	// Transition to exploration mode
+	if exploreMode, exists := cm.ModeManager.GetMode("exploration"); exists {
+		cm.ModeManager.RequestTransition(exploreMode, "Combat ended - "+result.VictorName+" victorious")
+	}
+
+	return true
+}
+
 func (cm *CombatMode) handleEndTurn() {
 	cm.actionHandler.ClearMoveHistory()
 
@@ -315,6 +354,11 @@ func (cm *CombatMode) handleEndTurn() {
 	}
 
 	cm.Queries.MarkAllSquadsDirty()
+
+	// Check for victory after player ends turn
+	if cm.checkAndHandleVictory() {
+		return
+	}
 
 	currentFactionID := cm.combatService.TurnManager.GetCurrentFaction()
 	round := cm.combatService.TurnManager.GetCurrentRound()
@@ -387,6 +431,11 @@ func (cm *CombatMode) playNextAIAttack(attacks []combatservices.QueuedAttack, in
 	if index >= len(attacks) {
 		aiController.ClearAttackQueue()
 
+		// Check for victory after all AI attacks complete
+		if cm.checkAndHandleVictory() {
+			return
+		}
+
 		if combatMode, exists := cm.ModeManager.GetMode("combat"); exists {
 			cm.ModeManager.RequestTransition(combatMode, "AI attacks complete")
 		}
@@ -431,6 +480,11 @@ func (cm *CombatMode) advanceAfterAITurn() {
 	}
 
 	cm.Queries.MarkAllSquadsDirty()
+
+	// Check for victory after AI turn
+	if cm.checkAndHandleVictory() {
+		return
+	}
 
 	newFactionID := cm.combatService.TurnManager.GetCurrentFaction()
 	round := cm.combatService.TurnManager.GetCurrentRound()
