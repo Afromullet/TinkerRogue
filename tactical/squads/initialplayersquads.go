@@ -9,7 +9,7 @@ import (
 )
 
 // CreateInitialPlayerSquads creates starting squads for the player at game launch.
-// Creates 5 diverse squads in player reserves (not deployed on map).
+// Creates 10 diverse squads in player reserves (not deployed on map).
 // All squads are marked with IsDeployed = false and added to player's SquadRoster.
 func CreateInitialPlayerSquads(playerID ecs.EntityID, manager *common.EntityManager) error {
 	// 1. Verify unit templates are loaded
@@ -29,7 +29,7 @@ func CreateInitialPlayerSquads(playerID ecs.EntityID, manager *common.EntityMana
 		return fmt.Errorf("player has no unit roster component")
 	}
 
-	// 4. Create 5 diverse squads
+	// 4. Create 10 diverse squads
 	squadConfigs := []struct {
 		name      string
 		createFn  func(*common.EntityManager, string) (ecs.EntityID, error)
@@ -39,6 +39,11 @@ func CreateInitialPlayerSquads(playerID ecs.EntityID, manager *common.EntityMana
 		{"Player Magic Squad", createMagicSquad},
 		{"Player Balanced Squad 2", createBalancedSquad},
 		{"Player Mixed Squad", createMixedSquad},
+		{"Player Balanced Squad 3", createBalancedSquad},
+		{"Player Ranged Squad 2", createRangedSquad},
+		{"Player Magic Squad 2", createMagicSquad},
+		{"Player Mixed Squad 2", createMixedSquad},
+		{"Player Balanced Squad 4", createBalancedSquad},
 	}
 
 	for _, config := range squadConfigs {

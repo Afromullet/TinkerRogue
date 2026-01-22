@@ -44,6 +44,7 @@ type SquadEditorMode struct {
 	// State
 	selectedGridCell *GridCell    // Currently selected grid cell
 	selectedUnitID   ecs.EntityID // Currently selected unit in squad
+	swapState        *SwapState   // Click-to-swap state for squad reordering
 }
 
 // GridCell represents a selected cell in the 3x3 grid
@@ -56,6 +57,7 @@ func NewSquadEditorMode(modeManager *framework.UIModeManager) *SquadEditorMode {
 	mode := &SquadEditorMode{
 		currentSquadIndex: 0,
 		allSquadIDs:       make([]ecs.EntityID, 0),
+		swapState:         NewSwapState(),
 	}
 	mode.SetModeName("squad_editor")
 	mode.SetReturnMode("squad_management")
@@ -154,8 +156,8 @@ func (sem *SquadEditorMode) Enter(fromMode framework.UIMode) error {
 	// This handles units created before roster tracking was implemented
 	sem.backfillRosterWithSquadUnits()
 
-	// Get all squad IDs
-	sem.allSquadIDs = sem.Queries.SquadCache.FindAllSquads()
+	// Sync from roster (source of truth)
+	sem.syncSquadOrderFromRoster()
 
 	// Refresh squad selector with current squads
 	sem.refreshSquadSelector()
@@ -178,6 +180,7 @@ func (sem *SquadEditorMode) Exit(toMode framework.UIMode) error {
 	fmt.Println("Exiting Squad Editor Mode")
 	sem.selectedGridCell = nil
 	sem.selectedUnitID = 0
+	sem.swapState.Reset()
 	return nil
 }
 
@@ -190,6 +193,11 @@ func (sem *SquadEditorMode) Render(screen *ebiten.Image) {
 }
 
 func (sem *SquadEditorMode) HandleInput(inputState *framework.InputState) bool {
+	// Handle swap FIRST (before other input)
+	if sem.handleSwapInput(inputState) {
+		return true
+	}
+
 	// Handle common input (ESC key)
 	if sem.HandleCommonInput(inputState) {
 		return true

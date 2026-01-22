@@ -146,8 +146,8 @@ func (sem *SquadEditorMode) refreshRosterList() {
 
 // refreshAfterUndoRedo is called after successful undo/redo operations
 func (sem *SquadEditorMode) refreshAfterUndoRedo() {
-	// Refresh squad list (squads might have been created/destroyed or renamed)
-	sem.allSquadIDs = sem.Queries.SquadCache.FindAllSquads()
+	// Sync from roster (source of truth for order and contents)
+	sem.syncSquadOrderFromRoster()
 
 	// Adjust index if needed
 	if sem.currentSquadIndex >= len(sem.allSquadIDs) && len(sem.allSquadIDs) > 0 {
