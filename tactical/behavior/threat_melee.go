@@ -61,7 +61,7 @@ func (mtl *MeleeThreatLayer) Compute() {
 			}
 
 			// Check if squad has melee units
-			if !mtl.hasMeleeUnits(squadID) {
+			if !hasUnitsWithAttackType(squadID, mtl.manager, MeleeAttackTypes) {
 				continue
 			}
 
@@ -73,7 +73,7 @@ func (mtl *MeleeThreatLayer) Compute() {
 
 			// Calculate threat parameters
 			moveSpeed := squads.GetSquadMovementSpeed(squadID, mtl.manager)
-			maxMeleeRange := mtl.getMaxMeleeRange(squadID)
+			maxMeleeRange := getMaxRangeForAttackTypes(squadID, mtl.manager, MeleeAttackTypes, 1)
 			threatRadius := moveSpeed + maxMeleeRange
 
 			// Get melee damage from base threat system
@@ -91,7 +91,7 @@ func (mtl *MeleeThreatLayer) Compute() {
 			meleeDamage := squadThreat.ExpectedDamageByRange[1]
 
 			// Apply role modifier (tanks are more threatening due to durability)
-			roleModifier := mtl.getSquadRoleModifier(squadID)
+			roleModifier := GetSquadRoleModifier(squadID, mtl.manager)
 			totalThreat := meleeDamage * roleModifier
 
 			// Store squad data
@@ -106,21 +106,6 @@ func (mtl *MeleeThreatLayer) Compute() {
 	// Mark as clean (round will be updated by Update() call)
 	// We don't track rounds internally - that's handled by CompositeThreatEvaluator
 	mtl.markClean(0)
-}
-
-// hasMeleeUnits checks if squad has any units with melee attack types
-func (mtl *MeleeThreatLayer) hasMeleeUnits(squadID ecs.EntityID) bool {
-	return hasUnitsWithAttackType(squadID, mtl.manager, MeleeAttackTypes)
-}
-
-// getMaxMeleeRange returns the maximum attack range among melee units
-func (mtl *MeleeThreatLayer) getMaxMeleeRange(squadID ecs.EntityID) int {
-	return getMaxRangeForAttackTypes(squadID, mtl.manager, MeleeAttackTypes, 1)
-}
-
-// getSquadRoleModifier returns threat multiplier based on squad's primary role
-func (mtl *MeleeThreatLayer) getSquadRoleModifier(squadID ecs.EntityID) float64 {
-	return GetSquadRoleModifier(squadID, mtl.manager)
 }
 
 // paintThreatRadius paints threat values onto the map with distance falloff
@@ -148,10 +133,4 @@ func (mtl *MeleeThreatLayer) GetMeleeThreatFrom(squadID ecs.EntityID) float64 {
 // IsInMeleeZone checks if a position is within any melee threat zone
 func (mtl *MeleeThreatLayer) IsInMeleeZone(pos coords.LogicalPosition) bool {
 	return mtl.threatByPos[pos] > 0.0
-}
-
-// getSquadPrimaryRole determines dominant role based on unit composition
-// Delegates to centralized implementation in squads package
-func getSquadPrimaryRole(squadID ecs.EntityID, manager *common.EntityManager) squads.UnitRole {
-	return squads.GetSquadPrimaryRole(squadID, manager)
 }

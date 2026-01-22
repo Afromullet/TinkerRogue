@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"game_main/common"
 	"game_main/tactical/combat"
+	"game_main/tactical/evaluation"
 	"game_main/tactical/squads"
 	"game_main/world/coords"
 
@@ -488,7 +489,7 @@ func estimateUnitPower(unit squads.UnitTemplate, config *EvaluationConfigData) f
 
 	// === UTILITY POWER (matches calculateUtilityPower) ===
 	// Role component
-	roleMultiplier := getRoleMultiplier(unit.Role)
+	roleMultiplier := evaluation.GetRoleMultiplier(unit.Role)
 	roleValue := roleMultiplier * 10.0 // RoleScalingFactor = 10.0
 	roleComponent := roleValue * config.RoleWeight
 
@@ -514,21 +515,6 @@ func estimateUnitPower(unit squads.UnitTemplate, config *EvaluationConfigData) f
 		(utilityPower * config.UtilityWeight)
 
 	return totalPower
-}
-
-// getRoleMultiplier returns the power multiplier for a unit role
-// Matches RolePowerModifiers from encounter/config.go
-func getRoleMultiplier(role squads.UnitRole) float64 {
-	switch role {
-	case squads.RoleTank:
-		return 1.2 // High survivability value
-	case squads.RoleDPS:
-		return 1.5 // High damage output value
-	case squads.RoleSupport:
-		return 1.0 // Baseline utility value
-	default:
-		return 1.0
-	}
 }
 
 // Helper functions

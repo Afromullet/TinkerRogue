@@ -56,7 +56,7 @@ func (rtl *RangedThreatLayer) Compute() {
 			}
 
 			// Check if squad has ranged units
-			if !rtl.hasRangedUnits(squadID) {
+			if !hasUnitsWithAttackType(squadID, rtl.manager, RangedAttackTypes) {
 				continue
 			}
 
@@ -66,7 +66,7 @@ func (rtl *RangedThreatLayer) Compute() {
 			}
 
 			// Get max ranged attack range
-			maxRange := rtl.getMaxRangedRange(squadID)
+			maxRange := getMaxRangeForAttackTypes(squadID, rtl.manager, RangedAttackTypes, 3)
 
 			// Get ranged damage from base threat system
 			factionThreat, exists := rtl.baseThreatMgr.factions[enemyFactionID]
@@ -90,16 +90,6 @@ func (rtl *RangedThreatLayer) Compute() {
 	// Mark as clean (round will be updated by Update() call)
 	// We don't track rounds internally - that's handled by CompositeThreatEvaluator
 	rtl.markClean(0)
-}
-
-// hasRangedUnits checks if squad has any ranged/magic units
-func (rtl *RangedThreatLayer) hasRangedUnits(squadID ecs.EntityID) bool {
-	return hasUnitsWithAttackType(squadID, rtl.manager, RangedAttackTypes)
-}
-
-// getMaxRangedRange returns maximum ranged attack range
-func (rtl *RangedThreatLayer) getMaxRangedRange(squadID ecs.EntityID) int {
-	return getMaxRangeForAttackTypes(squadID, rtl.manager, RangedAttackTypes, 3)
 }
 
 // paintRangedPressure paints ranged threat without distance falloff

@@ -222,7 +222,7 @@ func TestGetSquadPrimaryRole(t *testing.T) {
 	manager := combat.CreateTestCombatManager()
 
 	// Test returns default when squad not found
-	role := getSquadPrimaryRole(999, manager)
+	role := squads.GetSquadPrimaryRole(999, manager)
 	if role != squads.RoleDPS {
 		t.Error("Should return default DPS role for non-existent squad")
 	}

@@ -45,6 +45,6 @@ func GetRoleModifier(role squads.UnitRole) float64 {
 
 // GetSquadRoleModifier returns threat modifier based on squad's primary role
 func GetSquadRoleModifier(squadID ecs.EntityID, manager *common.EntityManager) float64 {
-	role := getSquadPrimaryRole(squadID, manager)
+	role := squads.GetSquadPrimaryRole(squadID, manager)
 	return GetRoleModifier(role)
 }
