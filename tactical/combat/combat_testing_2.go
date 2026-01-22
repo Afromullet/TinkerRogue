@@ -101,6 +101,11 @@ func CreateTestUnit(manager *common.EntityManager, squadID ecs.EntityID, index i
 		Range: 1, // Melee range
 	})
 
+	// Add movement speed component (matches production code in units.go)
+	unitEntity.AddComponent(squads.MovementSpeedComponent, &squads.MovementSpeedData{
+		Speed: 5, // Default movement speed (matches Attributes.MovementSpeed above)
+	})
+
 	return unitID
 }
 

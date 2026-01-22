@@ -258,14 +258,16 @@ func initializeCombatLog(attackerSquadID, defenderSquadID ecs.EntityID, manager 
 	}
 }
 
-// snapshotAttackingUnits captures attacking unit info before combat for logging
-func snapshotAttackingUnits(squadID ecs.EntityID, squadDistance int, manager *common.EntityManager) []UnitSnapshot {
+// snapshotUnits captures unit info before combat for logging
+// If squadDistance >= 0, only includes units that can attack at that distance
+// If squadDistance < 0, includes all units (used for defenders)
+func snapshotUnits(squadID ecs.EntityID, squadDistance int, filterByRange bool, manager *common.EntityManager) []UnitSnapshot {
 	var snapshots []UnitSnapshot
 	unitIDs := GetUnitIDsInSquad(squadID, manager)
 
 	for _, unitID := range unitIDs {
-		// Check if unit can participate
-		if !CanUnitAttack(unitID, squadDistance, manager) {
+		// Check if unit can participate (if filtering by range)
+		if filterByRange && !CanUnitAttack(unitID, squadDistance, manager) {
 			continue
 		}
 
@@ -314,55 +316,14 @@ func snapshotAttackingUnits(squadID ecs.EntityID, squadDistance int, manager *co
 	return snapshots
 }
 
+// snapshotAttackingUnits captures attacking unit info before combat for logging
+func snapshotAttackingUnits(squadID ecs.EntityID, squadDistance int, manager *common.EntityManager) []UnitSnapshot {
+	return snapshotUnits(squadID, squadDistance, true, manager)
+}
+
 // snapshotAllUnits captures all units in a squad for logging (used for defenders)
 func snapshotAllUnits(squadID ecs.EntityID, manager *common.EntityManager) []UnitSnapshot {
-	var snapshots []UnitSnapshot
-	unitIDs := GetUnitIDsInSquad(squadID, manager)
-
-	for _, unitID := range unitIDs {
-		entity := manager.FindEntityByID(unitID)
-		if entity == nil {
-			continue
-		}
-
-		// Extract all needed components from entity
-		name := common.GetComponentType[*common.Name](entity, common.NameComponent)
-		gridPos := common.GetComponentType[*GridPositionData](entity, GridPositionComponent)
-		rangeData := common.GetComponentType[*AttackRangeData](entity, AttackRangeComponent)
-		roleData := common.GetComponentType[*UnitRoleData](entity, UnitRoleComponent)
-
-		unitName := "Unknown"
-		if name != nil {
-			unitName = name.NameStr
-		}
-
-		row, col := 0, 0
-		if gridPos != nil {
-			row, col = gridPos.AnchorRow, gridPos.AnchorCol
-		}
-
-		attackRange := 0
-		if rangeData != nil {
-			attackRange = rangeData.Range
-		}
-
-		roleName := "Unknown"
-		if roleData != nil {
-			roleName = roleData.Role.String()
-		}
-
-		snapshot := UnitSnapshot{
-			UnitID:      unitID,
-			UnitName:    unitName,
-			GridRow:     row,
-			GridCol:     col,
-			AttackRange: attackRange,
-			RoleName:    roleName,
-		}
-		snapshots = append(snapshots, snapshot)
-	}
-
-	return snapshots
+	return snapshotUnits(squadID, -1, false, manager)
 }
 
 // finalizeCombatLog calculates summary statistics for the combat log

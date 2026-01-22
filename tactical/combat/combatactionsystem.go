@@ -191,8 +191,10 @@ func (cas *CombatActionSystem) GetSquadAttackRange(squadID ecs.EntityID) int {
 	return maxRange // Squad can attack at max range of any unit
 }
 
-// GetAttackingUnits returns units that can attack the target based on their range
-func (cas *CombatActionSystem) GetAttackingUnits(squadID, targetID ecs.EntityID) []ecs.EntityID {
+// getUnitsInRange returns units that can reach the target based on their range
+// If checkCanAct is true, filters out units that have already acted (for attacks)
+// If checkCanAct is false, includes all alive units regardless of action state (for counterattacks)
+func (cas *CombatActionSystem) getUnitsInRange(squadID, targetID ecs.EntityID, checkCanAct bool) []ecs.EntityID {
 	// Use GetSquadDistance for consistent Chebyshev distance calculation
 	distance := squads.GetSquadDistance(squadID, targetID, cas.manager)
 	if distance < 0 {
@@ -200,53 +202,7 @@ func (cas *CombatActionSystem) GetAttackingUnits(squadID, targetID ecs.EntityID)
 	}
 
 	allUnits := squads.GetUnitIDsInSquad(squadID, cas.manager)
-
-	var attackingUnits []ecs.EntityID
-
-	for _, unitID := range allUnits {
-
-		entity := cas.manager.FindEntityByID(unitID)
-		if entity == nil {
-			continue
-		}
-
-		attr := common.GetComponentType[*common.Attributes](entity, common.AttributeComponent)
-		if attr == nil {
-			continue
-		}
-
-		// Check if unit is alive and can act (matches canUnitAttack logic)
-		if attr.CurrentHealth <= 0 || !attr.CanAct {
-			continue
-		}
-
-		// Read from AttackRangeComponent (correct source for attack range)
-		rangeData := common.GetComponentType[*squads.AttackRangeData](entity, squads.AttackRangeComponent)
-		if rangeData == nil {
-			continue
-		}
-
-		unitRange := rangeData.Range
-
-		// Check if this unit can reach the target
-		if unitRange >= distance {
-			attackingUnits = append(attackingUnits, unitID)
-		}
-	}
-
-	return attackingUnits
-}
-
-// getCounterattackingUnits returns defender units that can counterattack the attacker
-// Uses same range logic as GetAttackingUnits
-func (cas *CombatActionSystem) getCounterattackingUnits(defenderID, attackerID ecs.EntityID) []ecs.EntityID {
-	distance := squads.GetSquadDistance(defenderID, attackerID, cas.manager)
-	if distance < 0 {
-		return []ecs.EntityID{}
-	}
-
-	allUnits := squads.GetUnitIDsInSquad(defenderID, cas.manager)
-	var counterattackers []ecs.EntityID
+	var unitsInRange []ecs.EntityID
 
 	for _, unitID := range allUnits {
 		entity := cas.manager.FindEntityByID(unitID)
@@ -259,15 +215,36 @@ func (cas *CombatActionSystem) getCounterattackingUnits(defenderID, attackerID e
 			continue
 		}
 
-		// Counterattacks do NOT check CanAct flag (they're free actions)
-		// Only check range
+		// For attacks, check CanAct flag. For counterattacks, skip this check
+		if checkCanAct && !attr.CanAct {
+			continue
+		}
+
+		// Read from AttackRangeComponent (correct source for attack range)
 		rangeData := common.GetComponentType[*squads.AttackRangeData](entity, squads.AttackRangeComponent)
-		if rangeData != nil && rangeData.Range >= distance {
-			counterattackers = append(counterattackers, unitID)
+		if rangeData == nil {
+			continue
+		}
+
+		// Check if this unit can reach the target
+		if rangeData.Range >= distance {
+			unitsInRange = append(unitsInRange, unitID)
 		}
 	}
 
-	return counterattackers
+	return unitsInRange
+}
+
+// GetAttackingUnits returns units that can attack the target based on their range
+// Only includes units that haven't acted yet (CanAct=true)
+func (cas *CombatActionSystem) GetAttackingUnits(squadID, targetID ecs.EntityID) []ecs.EntityID {
+	return cas.getUnitsInRange(squadID, targetID, true)
+}
+
+// getCounterattackingUnits returns defender units that can counterattack the attacker
+// Counterattacks are free actions, so includes all alive units regardless of action state
+func (cas *CombatActionSystem) getCounterattackingUnits(defenderID, attackerID ecs.EntityID) []ecs.EntityID {
+	return cas.getUnitsInRange(defenderID, attackerID, false)
 }
 
 // CanSquadAttackWithReason returns detailed info about why an attack can/cannot happen

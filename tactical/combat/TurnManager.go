@@ -96,20 +96,24 @@ func (tm *TurnManager) ResetSquadActions(factionID ecs.EntityID) error {
 	return nil
 }
 
-func (tm *TurnManager) GetCurrentFaction() ecs.EntityID {
-
+// getTurnState retrieves the current turn state or returns nil if invalid
+func (tm *TurnManager) getTurnState() *TurnStateData {
 	if tm.turnStateEntityID == 0 {
-		return 0 // No active combat
+		return nil // No active combat
 	}
 
 	turnEntity := tm.manager.World.GetEntityByID(tm.turnStateEntityID)
 	if turnEntity == nil {
-		return 0 // Entity not found
+		return nil // Entity not found
 	}
 
-	turnState := common.GetComponentType[*TurnStateData](turnEntity.Entity, TurnStateComponent)
+	return common.GetComponentType[*TurnStateData](turnEntity.Entity, TurnStateComponent)
+}
+
+func (tm *TurnManager) GetCurrentFaction() ecs.EntityID {
+	turnState := tm.getTurnState()
 	if turnState == nil {
-		return 0 // Invalid state
+		return 0
 	}
 
 	// Return faction ID at current index
@@ -122,19 +126,9 @@ func (tm *TurnManager) GetCurrentFaction() ecs.EntityID {
 }
 
 func (tm *TurnManager) EndTurn() error {
-
-	if tm.turnStateEntityID == 0 {
-		return fmt.Errorf("no active combat")
-	}
-
-	turnEntity := tm.manager.World.GetEntityByID(tm.turnStateEntityID)
-	if turnEntity == nil {
-		return fmt.Errorf("turn state entity not found")
-	}
-
-	turnState := common.GetComponentType[*TurnStateData](turnEntity.Entity, TurnStateComponent)
+	turnState := tm.getTurnState()
 	if turnState == nil {
-		return fmt.Errorf("invalid turn state")
+		return fmt.Errorf("no active combat")
 	}
 
 	turnState.CurrentTurnIndex++
@@ -155,38 +149,17 @@ func (tm *TurnManager) EndTurn() error {
 }
 
 func (tm *TurnManager) GetCurrentRound() int {
-
-	if tm.turnStateEntityID == 0 {
-		return 0 // No active combat
-	}
-
-	turnEntity := tm.manager.World.GetEntityByID(tm.turnStateEntityID)
-	if turnEntity == nil {
-		return 0 // Entity not found
-	}
-
-	turnState := common.GetComponentType[*TurnStateData](turnEntity.Entity, TurnStateComponent)
+	turnState := tm.getTurnState()
 	if turnState == nil {
-		return 0 // Invalid state
+		return 0
 	}
-
 	return turnState.CurrentRound
 }
 
 func (tm *TurnManager) EndCombat() error {
-
-	if tm.turnStateEntityID == 0 {
-		return fmt.Errorf("no active combat to end")
-	}
-
-	turnEntity := tm.manager.World.GetEntityByID(tm.turnStateEntityID)
-	if turnEntity == nil {
-		return fmt.Errorf("turn state entity not found")
-	}
-
-	turnState := common.GetComponentType[*TurnStateData](turnEntity.Entity, TurnStateComponent)
+	turnState := tm.getTurnState()
 	if turnState == nil {
-		return fmt.Errorf("invalid turn state")
+		return fmt.Errorf("no active combat to end")
 	}
 
 	turnState.CombatActive = false

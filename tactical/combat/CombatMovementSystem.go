@@ -25,42 +25,15 @@ func NewMovementSystem(manager *common.EntityManager, posSystem *common.Position
 	}
 }
 
-// The squad movement speed is the movement speed of the slowest unit in the squad
+// GetSquadMovementSpeed delegates to squads package for consistent speed calculation
+// Squad moves at the speed of its slowest alive unit with MovementSpeedComponent
 func (ms *CombatMovementSystem) GetSquadMovementSpeed(squadID ecs.EntityID) int {
-
-	unitIDs := squads.GetUnitIDsInSquad(squadID, ms.manager)
-
-	//TODO: This makes no sense. This needs better error handling. If there are no unit IDs, this should throw an error
-	if len(unitIDs) == 0 {
-		return 3
+	speed := squads.GetSquadMovementSpeed(squadID, ms.manager)
+	// If squads returns 0 (no units or no movement components), use default
+	if speed == 0 {
+		return 3 // Default movement speed for empty/invalid squads
 	}
-
-	minSpeed := 999
-	for _, unitID := range unitIDs {
-
-		entity := ms.manager.FindEntityByID(unitID)
-		if entity == nil {
-			continue
-		}
-
-		attr := common.GetComponentType[*common.Attributes](entity, common.AttributeComponent)
-		if attr == nil {
-			continue
-		}
-
-		speed := attr.GetMovementSpeed()
-
-		if speed < minSpeed {
-			minSpeed = speed
-		}
-	}
-
-	//TODO: This makes no sense. This needs better error handling. If there are no unit IDs, this should throw an error
-	if minSpeed == 999 {
-		return 3 // Default if no valid units
-	}
-
-	return minSpeed // Squad moves at slowest unit's speed
+	return speed
 }
 
 func (ms *CombatMovementSystem) CanMoveTo(squadID ecs.EntityID, targetPos coords.LogicalPosition) bool {
