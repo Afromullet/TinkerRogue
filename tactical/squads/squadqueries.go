@@ -37,7 +37,8 @@ func GetUnitIDsAtGridPosition(squadID ecs.EntityID, row, col int, squadmanager *
 }
 
 // GetUnitIDsInSquad returns unit IDs belonging to a squad
-//  Returns ecs.EntityID (native type), not entity pointers
+//
+//	Returns ecs.EntityID (native type), not entity pointers
 func GetUnitIDsInSquad(squadID ecs.EntityID, squadmanager *common.EntityManager) []ecs.EntityID {
 	var unitIDs []ecs.EntityID
 
@@ -55,7 +56,8 @@ func GetUnitIDsInSquad(squadID ecs.EntityID, squadmanager *common.EntityManager)
 }
 
 // GetSquadEntity finds squad entity by squad ID
-//  Returns entity pointer directly from query
+//
+//	Returns entity pointer directly from query
 func GetSquadEntity(squadID ecs.EntityID, squadmanager *common.EntityManager) *ecs.Entity {
 	// Note: This uses a component field match (SquadData.SquadID), not a direct entity ID match
 	// So it cannot use the generic FindEntityByIDWithTag helper. Keeping specialized implementation.
@@ -69,37 +71,6 @@ func GetSquadEntity(squadID ecs.EntityID, squadmanager *common.EntityManager) *e
 	}
 
 	return nil
-}
-
-// GetUnitIDsInRow returns alive unit IDs in a row
-func GetUnitIDsInRow(squadID ecs.EntityID, row int, squadmanager *common.EntityManager) []ecs.EntityID {
-	var unitIDs []ecs.EntityID
-	seen := make(map[ecs.EntityID]bool) // Prevents multi-cell units from being counted multiple times
-
-	for col := 0; col < 3; col++ {
-		idsAtPos := GetUnitIDsAtGridPosition(squadID, row, col, squadmanager)
-		for _, unitID := range idsAtPos {
-			if !seen[unitID] {
-				// OPTIMIZATION: Use direct entity lookup instead of GetAttributesByIDWithTag
-				entity := squadmanager.FindEntityByID(unitID)
-				if entity == nil {
-					continue
-				}
-
-				attr := common.GetComponentType[*common.Attributes](entity, common.AttributeComponent)
-				if attr == nil {
-					continue
-				}
-
-				if attr.CurrentHealth > 0 {
-					unitIDs = append(unitIDs, unitID)
-					seen[unitID] = true
-				}
-			}
-		}
-	}
-
-	return unitIDs
 }
 
 // GetLeaderID finds the leader unit ID of a squad
@@ -299,19 +270,6 @@ func GetSquadName(squadID ecs.EntityID, squadmanager *common.EntityManager) stri
 
 	squadData := common.GetComponentType[*SquadData](squadEntity, SquadComponent)
 	return squadData.Name
-}
-
-// FindAllSquads returns all squad entity IDs in the game
-// Uses efficient ECS query pattern with SquadTag
-func FindAllSquads(squadmanager *common.EntityManager) []ecs.EntityID {
-	allSquads := make([]ecs.EntityID, 0)
-
-	for _, result := range squadmanager.World.Query(SquadTag) {
-		squadData := common.GetComponentType[*SquadData](result.Entity, SquadComponent)
-		allSquads = append(allSquads, squadData.SquadID)
-	}
-
-	return allSquads
 }
 
 // UpdateSquadDestroyedStatus updates the cached IsDestroyed flag for a squad

@@ -2,6 +2,10 @@ __________________________________________
 #
 # # # **IMPORTANT** # # # 
 
+- Spawn the top 5 units from the squad roster in an encounter
+
+- calculateEntryIndexAtPosition in squadeditor_movesquad.go is not accurately calculating the position to move the squad to. Check if there is an ebitenui var (such as entryselected) you can use instead of calculating with pixel positions
+
 - Check if we have to mark the caches as dirty, or whether the way the ecs library implements views handles that automatically
 
 - When an encounter starts, we hide the encounter sprites for the combat sprites. Check to make sure that combat can't accidentally start if a combat squad moves into the position of a hidden encounter sprite 
@@ -14,6 +18,14 @@ __________________________________________
 - combat life cycle manager changes only support one player at the moment, de to storing the playerEntityID. Consider changing that for multiplayer
 
 - Can always use the move undo command, even after attacking. That's a bug
+
+- Evaluation package seems kind of weird. Need to determine whether I really want it
+
+- combat services package seems redundant
+
+- Determine if anything from the squad package really belongs in the squad services package
+
+- Determine if we still need combatdisplay.go, considering we have the battlelog package
 
 ________________________________________________
 # Testing 
@@ -63,7 +75,7 @@ ________________________________________________
 # Additions 
 
 
-- Add Abilities
+- Add Abilities. Once they are, see how they are called in combat. Detemrine how you want to call them
 - Better Combat Log
 
 

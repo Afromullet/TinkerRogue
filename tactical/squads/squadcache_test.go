@@ -169,19 +169,6 @@ func BenchmarkGetLeaderID_WithCache(b *testing.B) {
 // BENCHMARKS: FindAllSquads
 // ========================================
 
-// BenchmarkFindAllSquads_NoCache tests the original World.Query() approach
-func BenchmarkFindAllSquads_NoCache(b *testing.B) {
-	manager, _ := setupTestSquads(b, 20, 9)
-
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		squadIDs := FindAllSquads(manager)
-		if len(squadIDs) != 20 {
-			b.Fatalf("expected 20 squads, got %d", len(squadIDs))
-		}
-	}
-}
-
 // BenchmarkFindAllSquads_WithCache tests the new view-based approach
 func BenchmarkFindAllSquads_WithCache(b *testing.B) {
 	manager, _ := setupTestSquads(b, 20, 9)

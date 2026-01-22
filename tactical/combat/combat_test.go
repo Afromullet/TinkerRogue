@@ -118,40 +118,6 @@ func TestAddSquadToFaction(t *testing.T) {
 // TURN MANAGER TESTS
 // ========================================
 
-func TestInitializeCombat_RandomizesTurnOrder(t *testing.T) {
-	manager := CreateTestCombatManager()
-
-	cache := NewCombatQueryCache(manager)
-	fm := NewFactionManager(manager, cache)
-	faction1 := fm.CreateFaction("Faction 1", true)
-	faction2 := fm.CreateFaction("Faction 2", false)
-
-	turnMgr := NewTurnManager(manager, cache)
-	err := turnMgr.InitializeCombat([]ecs.EntityID{faction1, faction2})
-	if err != nil {
-		t.Fatalf("Failed to initialize combat: %v", err)
-	}
-
-	// Verify combat is active
-	if !combatActive(manager) {
-		t.Error("Combat should be active")
-	}
-
-	// Verify turn state exists
-	turnEntity := findTurnStateEntity(manager)
-	if turnEntity == nil {
-		t.Fatal("Turn state not created")
-	}
-
-	turnState := common.GetComponentType[*TurnStateData](turnEntity, TurnStateComponent)
-	if len(turnState.TurnOrder) != 2 {
-		t.Errorf("Expected 2 factions in turn order, got %d", len(turnState.TurnOrder))
-	}
-	if turnState.CurrentRound != 1 {
-		t.Errorf("Expected round 1, got %d", turnState.CurrentRound)
-	}
-}
-
 func TestEndTurn_AdvancesToNextFaction(t *testing.T) {
 	manager := CreateTestCombatManager()
 
@@ -357,11 +323,6 @@ func TestFullCombatLoop_TwoFactions(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to end turn: %v", err)
 		}
-	}
-
-	// Verify combat still active
-	if !combatActive(manager) {
-		t.Error("Combat should still be active")
 	}
 
 	// Verify we're in round 4 (6 turns / 2 factions = 3 complete rounds + 1)

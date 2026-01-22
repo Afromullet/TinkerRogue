@@ -226,24 +226,6 @@ type CreatureInfo struct {
 	IsPlayer   bool
 }
 
-// isMonster checks if an entity is a monster
-func (gq *GUIQueries) isMonster(entityID ecs.EntityID) bool {
-	// Use cached View instead of Query (avoids 30,000+ map allocations per second)
-	if gq.monstersView != nil {
-		for _, result := range gq.monstersView.Get() {
-			if result.Entity.GetID() == entityID {
-				return true
-			}
-		}
-	}
-	return false
-}
-
-// isPlayer checks if an entity is the player
-func (gq *GUIQueries) isPlayer(entityID ecs.EntityID) bool {
-	return gq.ECSManager.HasComponent(entityID, common.PlayerComponent)
-}
-
 // ===== TILE QUERIES =====
 
 // TileInfo encapsulates tile data needed by UI

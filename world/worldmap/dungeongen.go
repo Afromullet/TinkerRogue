@@ -7,8 +7,8 @@ import (
 	"errors"
 
 	"game_main/common"
-	"game_main/world/coords"
 	"game_main/visual/graphics"
+	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"
 )
@@ -124,26 +124,6 @@ func NewGameMap(generatorName string) GameMap {
 // Provides backward compatibility for existing code
 func NewGameMapDefault() GameMap {
 	return NewGameMap("rooms_corridors")
-}
-
-// Todo need to add
-// 1) Check to make sure we are at stairs
-// 2) Clear all old entities. Store them somewhere else
-// 3) Place the player in the starting room of the next map
-// 4) Need to add Up Stairs function too
-// 5) Figure out what else you have to add
-func GoDownStairs(gm *GameMap) {
-
-	//Need to remove all entities from the old map
-	newGameMap := NewGameMapDefault()
-
-	//Not letting players go back up for now
-	//startX, startY := newGameMap.Rooms[0].Center()
-	//ind := graphics.IndexFromXY(startX, startY)
-	//newGameMap.Tiles[ind].TileType = STAIRS_DOWN
-	//newGameMap.Tiles[ind].Image = stairs_down
-
-	*gm = newGameMap
 }
 
 func (gameMap *GameMap) Tile(pos *coords.LogicalPosition) *Tile {

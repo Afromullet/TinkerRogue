@@ -9,14 +9,6 @@ import (
 	"github.com/bytearena/ecs"
 )
 
-// findTurnStateEntity finds the single TurnStateData entity
-func findTurnStateEntity(manager *common.EntityManager) *ecs.Entity {
-	for _, result := range manager.World.Query(TurnStateTag) {
-		return result.Entity // Only one should exist
-	}
-	return nil
-}
-
 // GetSquadFaction returns the faction ID for a squad in combat.
 // Returns 0 if squad is not in combat (doesn't have CombatFactionComponent).
 func GetSquadFaction(squadID ecs.EntityID, manager *common.EntityManager) ecs.EntityID {
@@ -202,17 +194,6 @@ func removeSquadFromMap(squadID ecs.EntityID, manager *common.EntityManager) err
 	return nil
 }
 
-// combatActive checks if combat is currently ongoing
-func combatActive(manager *common.EntityManager) bool {
-	turnStateEntity := findTurnStateEntity(manager)
-	if turnStateEntity == nil {
-		return false
-	}
-
-	turnState := common.GetComponentType[*TurnStateData](turnStateEntity, TurnStateComponent)
-	return turnState.CombatActive
-}
-
 // ========================================
 // UTILITY HELPERS
 // ========================================
@@ -223,16 +204,6 @@ func shuffleFactionOrder(factionIDs []ecs.EntityID) {
 		j := common.RandomInt(i + 1)
 		factionIDs[i], factionIDs[j] = factionIDs[j], factionIDs[i]
 	}
-}
-
-// contains checks if a slice contains a position
-func contains(positions []coords.LogicalPosition, pos coords.LogicalPosition) bool {
-	for _, p := range positions {
-		if p.X == pos.X && p.Y == pos.Y {
-			return true
-		}
-	}
-	return false
 }
 
 // containsEntity checks if a slice contains an entity ID

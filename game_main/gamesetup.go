@@ -96,8 +96,6 @@ func (gb *GameBootstrap) SetupDebugContent(em *common.EntityManager, gm *worldma
 // InitializeGameplay sets up squad system and exploration squads.
 // Phase 5: Depends on CreatePlayer for faction positioning.
 func (gb *GameBootstrap) InitializeGameplay(em *common.EntityManager, pd *common.PlayerData) {
-	// Note: Unit templates are now loaded in CreatePlayer phase (before initial squads)
-	// SetupSquadSystem is kept here for any future squad system initialization needs
 
 	// Spawn random encounters on overworld
 	encounter.SpawnRandomEncounters(em, *pd.Pos)
@@ -128,23 +126,6 @@ func SetupNewGame(g *Game) {
 
 	// Phase 5: Initialize gameplay systems
 	bootstrap.InitializeGameplay(&g.em, &g.playerData)
-}
-
-// SetupSquadSystem initializes the squad combat system.
-// Pass the game's EntityManager so squads exist in the same ECS world.
-// Note: Squad components and tags are already registered in InitializeECS
-func SetupSquadSystem(manager *common.EntityManager) error {
-	// Initialize unit templates from JSON
-	if err := squads.InitUnitTemplatesFromJSON(); err != nil {
-		return err
-	}
-
-	// Create test squads if in debug mode
-	//if err := squads.CreateDummySquadsForTesting(manager); err != nil {
-	//	return err
-	//}
-
-	return nil
 }
 
 // SetupGameplayFactions has been removed and replaced with SetupBalancedEncounter
