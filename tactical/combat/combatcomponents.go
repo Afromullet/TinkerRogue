@@ -8,10 +8,10 @@ import (
 
 // Component and tag variables
 var (
-	FactionComponent       *ecs.Component
-	TurnStateComponent     *ecs.Component
-	ActionStateComponent   *ecs.Component
-	CombatFactionComponent *ecs.Component
+	FactionComponent           *ecs.Component
+	TurnStateComponent         *ecs.Component
+	ActionStateComponent       *ecs.Component
+	FactionMembershipComponent *ecs.Component
 
 	FactionTag       ecs.Tag
 	TurnStateTag     ecs.Tag
@@ -66,7 +66,7 @@ func InitCombatComponents(manager *common.EntityManager) {
 	FactionComponent = manager.World.NewComponent()
 	TurnStateComponent = manager.World.NewComponent()
 	ActionStateComponent = manager.World.NewComponent()
-	CombatFactionComponent = manager.World.NewComponent()
+	FactionMembershipComponent = manager.World.NewComponent()
 }
 
 // InitCombatTags creates tags for querying combat-related entities.
@@ -75,7 +75,7 @@ func InitCombatTags(manager *common.EntityManager) {
 	FactionTag = ecs.BuildTag(FactionComponent)
 	TurnStateTag = ecs.BuildTag(TurnStateComponent)
 	ActionStateTag = ecs.BuildTag(ActionStateComponent)
-	CombatFactionTag = ecs.BuildTag(CombatFactionComponent)
+	CombatFactionTag = ecs.BuildTag(FactionMembershipComponent)
 
 	manager.WorldTags["faction"] = FactionTag
 	manager.WorldTags["turnstate"] = TurnStateTag

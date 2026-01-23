@@ -2,7 +2,6 @@ __________________________________________
 #
 # # # **IMPORTANT** # # # 
 
-- Spawn the top 5 units from the squad roster in an encounter
 
 - calculateEntryIndexAtPosition in squadeditor_movesquad.go is not accurately calculating the position to move the squad to. Check if there is an ebitenui var (such as entryselected) you can use instead of calculating with pixel positions
 
@@ -51,7 +50,6 @@ ________________________________________________
 - Input Package has a lot of leftovers from the old roguelike
 
 
-- Sprite, Tile, and Rendering Batches allocates default sizes for the slices. Look at those. Determine how many we need. Have a larger default size if needed (i.e, NewSpriteBatch)
 
 
 - combatqueries.go still has functions which search the entire ecs space
@@ -59,12 +57,11 @@ ________________________________________________
 
 
 # Bug Fixes
+
 - Throwables are completely broken. There is an out of bounds error
 
 
 # Review
-
-- Check for redundant components, such as CombatFactionComponent and FactionComponent
 
 - Identify where there is a possiblity of cache invalidation errors. We started to cache things used for ECS query, so we need to 
 
@@ -76,7 +73,7 @@ ________________________________________________
 
 
 
-- Determine whether we need to mark caches that use ECS views as dirty, or if the ECS library handles it
+
 - behavor and ai package
 
 
@@ -92,10 +89,6 @@ ________________________________________________
 
 
 # Redundancies?
-
-
-
-
 
 - Consider removing  fmt.Errorf statements throughout the code, such as in combatactionsystem and use an error log instead
 - Check on ENABLE_COMBAT_LOG and ENABLE_COMBAT_LOG_EXPORT. Probabably some duplication we can get rid of

@@ -63,9 +63,9 @@ func (fm *FactionManager) AddSquadToFaction(factionID, squadID ecs.EntityID, pos
 		return fmt.Errorf("squad %d not found", squadID)
 	}
 
-	// Add CombatFactionComponent directly to squad entity (NEW: ECS-idiomatic approach)
+	// Add FactionMembershipComponent directly to squad entity (NEW: ECS-idiomatic approach)
 	// Replaces creating a separate MapPosition entity
-	squad.AddComponent(CombatFactionComponent, &CombatFactionData{
+	squad.AddComponent(FactionMembershipComponent, &CombatFactionData{
 		FactionID: factionID,
 	})
 
@@ -99,8 +99,8 @@ func (fm *FactionManager) RemoveSquadFromFaction(factionID, squadID ecs.EntityID
 		return fmt.Errorf("squad %d not found", squadID)
 	}
 
-	// Verify squad has CombatFactionComponent
-	combatFaction := common.GetComponentType[*CombatFactionData](squad, CombatFactionComponent)
+	// Verify squad has FactionMembershipComponent
+	combatFaction := common.GetComponentType[*CombatFactionData](squad, FactionMembershipComponent)
 	if combatFaction == nil {
 		return fmt.Errorf("squad %d is not in combat", squadID)
 	}
@@ -117,8 +117,8 @@ func (fm *FactionManager) RemoveSquadFromFaction(factionID, squadID ecs.EntityID
 		common.GlobalPositionSystem.RemoveEntity(squadID, *position)
 	}
 
-	// Remove CombatFactionComponent from squad (squad exits combat)
-	squad.RemoveComponent(CombatFactionComponent)
+	// Remove FactionMembershipComponent from squad (squad exits combat)
+	squad.RemoveComponent(FactionMembershipComponent)
 
 	return nil
 }

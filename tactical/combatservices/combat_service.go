@@ -3,20 +3,20 @@ package combatservices
 import (
 	"fmt"
 	"game_main/common"
-	"game_main/world/coords"
 	"game_main/tactical/ai"
 	"game_main/tactical/behavior"
 	"game_main/tactical/combat"
 	"game_main/tactical/combat/battlelog"
 	"game_main/tactical/squads"
+	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"
 )
 
 // Type aliases for GUI layer convenience
 type (
-	AIController  = ai.AIController
-	QueuedAttack  = ai.QueuedAttack
+	AIController = ai.AIController
+	QueuedAttack = ai.QueuedAttack
 )
 
 // CombatService encapsulates all combat game logic and system ownership
@@ -77,7 +77,7 @@ func (cs *CombatService) InitializeCombat(factionIDs []ecs.EntityID) error {
 	}
 
 	// Assign any unassigned squads to player faction
-	// These are squads deployed via SquadDeploymentMode that have positions but no CombatFactionComponent
+	// These are squads deployed via SquadDeploymentMode that have positions but no FactionMembershipComponent
 	if playerFactionID != 0 {
 		cs.assignDeployedSquadsToPlayerFaction(playerFactionID)
 	}
@@ -85,7 +85,7 @@ func (cs *CombatService) InitializeCombat(factionIDs []ecs.EntityID) error {
 	return cs.TurnManager.InitializeCombat(factionIDs)
 }
 
-// assignDeployedSquadsToPlayerFaction finds all squads with positions but no CombatFactionComponent
+// assignDeployedSquadsToPlayerFaction finds all squads with positions but no FactionMembershipComponent
 // and assigns them to the player faction. These are squads that were deployed via SquadDeploymentMode.
 // TODO: Assinging unassigned squads to the player faction is a temporary fix. Squads will have to be assigned to the
 // Correct Faction. There can be multiple players
@@ -95,7 +95,7 @@ func (cs *CombatService) assignDeployedSquadsToPlayerFaction(playerFactionID ecs
 		squadID := squadEntity.GetID()
 
 		// Check if squad already has a faction (skip if it does)
-		combatFaction := common.GetComponentType[*combat.CombatFactionData](squadEntity, combat.CombatFactionComponent)
+		combatFaction := common.GetComponentType[*combat.CombatFactionData](squadEntity, combat.FactionMembershipComponent)
 		if combatFaction != nil {
 			continue // Already assigned to a faction
 		}
@@ -156,8 +156,8 @@ func (cs *CombatService) CheckVictoryCondition() *VictoryCheckResult {
 		entity := queryResult.Entity
 		squadData := common.GetComponentType[*squads.SquadData](entity, squads.SquadComponent)
 		if squadData != nil && !squads.IsSquadDestroyed(entity.GetID(), cs.EntityManager) {
-			// Squads have CombatFactionComponent (not FactionComponent) to indicate faction membership
-			combatFaction := common.GetComponentType[*combat.CombatFactionData](entity, combat.CombatFactionComponent)
+			// Squads have FactionMembershipComponent (not FactionComponent) to indicate faction membership
+			combatFaction := common.GetComponentType[*combat.CombatFactionData](entity, combat.FactionMembershipComponent)
 			if combatFaction != nil {
 				aliveByFaction[combatFaction.FactionID]++
 			}

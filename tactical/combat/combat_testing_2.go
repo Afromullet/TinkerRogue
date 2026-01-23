@@ -178,15 +178,15 @@ func CreateTestMixedSquad(manager *common.EntityManager, name string, meleeCount
 	return squadID
 }
 
-// PlaceSquadOnMap places a squad at a position for testing (using new CombatFactionComponent approach)
+// PlaceSquadOnMap places a squad at a position for testing (using new FactionMembershipComponent approach)
 func PlaceSquadOnMap(manager *common.EntityManager, factionID, squadID ecs.EntityID, pos coords.LogicalPosition) {
 	squadEntity := manager.FindEntityByID(squadID)
 	if squadEntity == nil {
 		return
 	}
 
-	// Add CombatFactionComponent to squad (squad enters combat)
-	squadEntity.AddComponent(CombatFactionComponent, &CombatFactionData{
+	// Add FactionMembershipComponent to squad (squad enters combat)
+	squadEntity.AddComponent(FactionMembershipComponent, &CombatFactionData{
 		FactionID: factionID,
 	})
 

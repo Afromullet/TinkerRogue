@@ -26,8 +26,8 @@ func TestCombatInitialization(t *testing.T) {
 	if ActionStateComponent == nil {
 		t.Error("ActionStateComponent not initialized")
 	}
-	if CombatFactionComponent == nil {
-		t.Error("CombatFactionComponent not initialized")
+	if FactionMembershipComponent == nil {
+		t.Error("FactionMembershipComponent not initialized")
 	}
 
 	// Verify tags are registered
@@ -89,15 +89,15 @@ func TestAddSquadToFaction(t *testing.T) {
 		t.Fatalf("Failed to add squad to faction: %v", err)
 	}
 
-	// Verify squad has CombatFactionComponent
+	// Verify squad has FactionMembershipComponent
 	squad := manager.FindEntityByID(squadID)
 	if squad == nil {
 		t.Fatal("Squad not found")
 	}
 
-	combatFaction := common.GetComponentType[*CombatFactionData](squad, CombatFactionComponent)
+	combatFaction := common.GetComponentType[*CombatFactionData](squad, FactionMembershipComponent)
 	if combatFaction == nil {
-		t.Fatal("Squad does not have CombatFactionComponent")
+		t.Fatal("Squad does not have FactionMembershipComponent")
 	}
 
 	if combatFaction.FactionID != factionID {

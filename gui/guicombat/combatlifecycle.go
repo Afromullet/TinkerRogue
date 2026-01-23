@@ -329,8 +329,8 @@ func (clm *CombatLifecycleManager) resetPlayerSquads(playerSquadIDs map[ecs.Enti
 		}
 
 		// Remove combat component
-		if entity.HasComponent(combat.CombatFactionComponent) {
-			entity.RemoveComponent(combat.CombatFactionComponent)
+		if entity.HasComponent(combat.FactionMembershipComponent) {
+			entity.RemoveComponent(combat.FactionMembershipComponent)
 		}
 	}
 	fmt.Printf("Moved %d player squads back to player\n", movedCount)

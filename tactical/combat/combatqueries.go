@@ -10,14 +10,14 @@ import (
 )
 
 // GetSquadFaction returns the faction ID for a squad in combat.
-// Returns 0 if squad is not in combat (doesn't have CombatFactionComponent).
+// Returns 0 if squad is not in combat (doesn't have FactionMembershipComponent).
 func GetSquadFaction(squadID ecs.EntityID, manager *common.EntityManager) ecs.EntityID {
 	entity := manager.FindEntityByID(squadID)
 	if entity == nil {
 		return 0
 	}
 
-	combatFaction := common.GetComponentType[*CombatFactionData](entity, CombatFactionComponent)
+	combatFaction := common.GetComponentType[*CombatFactionData](entity, FactionMembershipComponent)
 	if combatFaction == nil {
 		return 0
 	}
@@ -67,9 +67,9 @@ func GetAllFactions(manager *common.EntityManager) []ecs.EntityID {
 func GetSquadsForFaction(factionID ecs.EntityID, manager *common.EntityManager) []ecs.EntityID {
 	var squadIDs []ecs.EntityID
 
-	// Query all squads and filter by CombatFactionComponent
+	// Query all squads and filter by FactionMembershipComponent
 	for _, result := range manager.World.Query(squads.SquadTag) {
-		combatFaction := common.GetComponentType[*CombatFactionData](result.Entity, CombatFactionComponent)
+		combatFaction := common.GetComponentType[*CombatFactionData](result.Entity, FactionMembershipComponent)
 		if combatFaction != nil && combatFaction.FactionID == factionID {
 			squadIDs = append(squadIDs, result.Entity.GetID())
 		}
@@ -84,7 +84,7 @@ func GetSquadAtPosition(pos coords.LogicalPosition, manager *common.EntityManage
 	// Query all squads and filter by combat squads only
 	for _, result := range manager.World.Query(squads.SquadTag) {
 		// Only consider squads in combat
-		combatFaction := common.GetComponentType[*CombatFactionData](result.Entity, CombatFactionComponent)
+		combatFaction := common.GetComponentType[*CombatFactionData](result.Entity, FactionMembershipComponent)
 		if combatFaction == nil {
 			continue
 		}
@@ -102,14 +102,14 @@ func GetSquadAtPosition(pos coords.LogicalPosition, manager *common.EntityManage
 
 // isSquad checks if an entity ID represents a squad in combat
 func isSquad(entityID ecs.EntityID, manager *common.EntityManager) bool {
-	// Check if squad has CombatFactionComponent (is in combat)
+	// Check if squad has FactionMembershipComponent (is in combat)
 	// Use direct entity lookup instead of tag-based iteration (O(1) vs O(n))
 	entity := manager.FindEntityByID(entityID)
 	if entity == nil {
 		return false
 	}
 
-	combatFaction := common.GetComponentType[*CombatFactionData](entity, CombatFactionComponent)
+	combatFaction := common.GetComponentType[*CombatFactionData](entity, FactionMembershipComponent)
 	return combatFaction != nil
 }
 
@@ -185,8 +185,8 @@ func removeSquadFromMap(squadID ecs.EntityID, manager *common.EntityManager) err
 		common.GlobalPositionSystem.RemoveEntity(squadID, *position)
 	}
 
-	// Remove CombatFactionComponent (squad exits combat) before disposal
-	squad.RemoveComponent(CombatFactionComponent)
+	// Remove FactionMembershipComponent (squad exits combat) before disposal
+	squad.RemoveComponent(FactionMembershipComponent)
 
 	// Dispose the squad and all its units (dead or alive) from the ECS world
 	squads.DisposeSquadAndUnits(squadID, manager)

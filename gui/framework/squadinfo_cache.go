@@ -3,9 +3,9 @@ package framework
 
 import (
 	"game_main/common"
-	"game_main/world/coords"
 	"game_main/tactical/combat"
 	"game_main/tactical/squads"
+	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"
 )
@@ -83,7 +83,7 @@ func (sc *SquadInfoCache) buildSquadInfo(squadID ecs.EntityID) *SquadInfo {
 
 	// Get faction if squad is in combat
 	var factionID ecs.EntityID
-	combatFaction := common.GetComponentType[*combat.CombatFactionData](squadEntity, combat.CombatFactionComponent)
+	combatFaction := common.GetComponentType[*combat.CombatFactionData](squadEntity, combat.FactionMembershipComponent)
 	if combatFaction != nil {
 		factionID = combatFaction.FactionID
 	}

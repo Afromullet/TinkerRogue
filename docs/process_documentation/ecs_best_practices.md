@@ -3106,7 +3106,7 @@ func (gq *GUIQueries) BuildSquadInfoCache() *SquadInfoCache {
         cache.destroyedStatus[squadID] = squadData.IsDestroyed
 
         // Get faction if squad is in combat
-        combatFaction := common.GetComponentType[*combat.CombatFactionData](entity, combat.CombatFactionComponent)
+        combatFaction := common.GetComponentType[*combat.CombatFactionData](entity, combat.FactionMembershipComponent)
         if combatFaction != nil {
             cache.squadFactions[squadID] = combatFaction.FactionID
         }
