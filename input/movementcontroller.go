@@ -110,7 +110,7 @@ func (mc *MovementController) HandleInput() bool {
 	}
 
 	// Debug tile highlighting
-	if inpututil.IsKeyJustReleased(ebiten.KeyL) {
+	if inpututil.IsKeyJustReleased(ebiten.KeyB) {
 		mc.highlightCurrentTile()
 		inputHandled = true
 	}

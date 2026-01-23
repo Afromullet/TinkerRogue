@@ -18,10 +18,6 @@ func setupTestQueries() (*GUIQueries, *common.EntityManager) {
 	common.NameComponent = ecsManager.World.NewComponent()
 	common.AttributeComponent = ecsManager.World.NewComponent()
 	common.PlayerComponent = ecsManager.World.NewComponent()
-	common.MonsterComponent = ecsManager.World.NewComponent()
-
-	// Initialize tags
-	ecsManager.WorldTags["monsters"] = ecs.BuildTag(common.MonsterComponent)
 
 	// Initialize global position system
 	common.GlobalPositionSystem = common.NewPositionSystem(ecsManager.World)
@@ -53,13 +49,6 @@ func createTestCreature(manager *ecs.Manager, name string, pos coords.LogicalPos
 		Armor:         5,
 		Weapon:        7,
 	})
-
-	// Add monster or player tag
-	if isMonster {
-		entity.AddComponent(common.MonsterComponent, &common.Monster{})
-	} else {
-		entity.AddComponent(common.PlayerComponent, &common.Player{})
-	}
 
 	entityID := entity.GetID()
 

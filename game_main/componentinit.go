@@ -39,7 +39,6 @@ func registerCoreComponents(manager *ecs.Manager) {
 	common.NameComponent = manager.NewComponent()
 	common.AttributeComponent = manager.NewComponent()
 	common.PlayerComponent = manager.NewComponent()
-	common.MonsterComponent = manager.NewComponent()
 	common.PlayerResourcesComponent = manager.NewComponent()
 }
 

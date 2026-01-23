@@ -382,6 +382,4 @@ func InitializeItemTags(tags map[string]ecs.Tag) {
 	ItemsTag = ecs.BuildTag(ItemComponent, common.PositionComponent)
 	tags["items"] = ItemsTag
 
-	MonstersTag = ecs.BuildTag(common.MonsterComponent)
-	tags["monsters"] = MonstersTag
 }

@@ -41,7 +41,6 @@ ________________________________________________
 
 - Replace squad.ExecuteSquadAttack in simulator. 
 
-- Get Rid of common.Monsters. All the other unit related tags shoudl take care of it. 
 
 - func CursorPosition(playerPos coords.LogicalPosition) (int, int) in graphictypes requires a change. Leftover from how throwables are handled. 
 

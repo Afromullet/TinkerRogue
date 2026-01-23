@@ -19,8 +19,6 @@ var (
 	AllEntitiesTag ecs.Tag
 
 	GlobalPositionSystem *PositionSystem
-
-	MonsterComponent *ecs.Component // Marks monster/creature entities
 )
 
 // EntityManager wraps the ECS library's manager and provides centralized entity and tag management.
