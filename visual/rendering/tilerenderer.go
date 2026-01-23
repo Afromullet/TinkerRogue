@@ -26,7 +26,7 @@ type TileRenderer struct {
 func NewTileRenderer(tiles []*worldmap.Tile) *TileRenderer {
 	return &TileRenderer{
 		tiles:   tiles,
-		batches: make(map[*ebiten.Image]*TileBatch, 20), // Pre-allocate for ~20 unique images
+		batches: make(map[*ebiten.Image]*TileBatch, TileBatchDefaultNumImages), // Pre-allocate for ~20 unique images
 	}
 }
 

@@ -1,8 +1,8 @@
 package guicombat
 
 import (
+	"game_main/common"
 	"game_main/gui/framework"
-
 	"game_main/tactical/behavior"
 	"game_main/world/coords"
 	"game_main/world/worldmap"
@@ -23,6 +23,11 @@ type CombatVisualizationManager struct {
 	// Threat management
 	threatManager   *behavior.FactionThreatLevelManager
 	threatEvaluator *behavior.CompositeThreatEvaluator
+
+	// References needed for late initialization
+	ecsManager *common.EntityManager
+	gameMap    *worldmap.GameMap
+	queries    *framework.GUIQueries
 }
 
 // NewCombatVisualizationManager creates and initializes all visualization systems
@@ -35,6 +40,9 @@ func NewCombatVisualizationManager(
 		movementRenderer:  framework.NewMovementTileRenderer(),
 		highlightRenderer: framework.NewSquadHighlightRenderer(queries),
 		healthBarRenderer: framework.NewHealthBarRenderer(queries),
+		ecsManager:        ctx.ECSManager,
+		gameMap:           gameMap,
+		queries:           queries,
 	}
 
 	// Create the initial Faction Threat Level Manager and add all factions
@@ -108,8 +116,33 @@ func (cvm *CombatVisualizationManager) RefreshFactions(queries *framework.GUIQue
 	if cvm.threatManager == nil {
 		return
 	}
-	for _, factionID := range queries.GetAllFactions() {
+
+	// Add all factions to threat manager
+	allFactions := queries.GetAllFactions()
+	for _, factionID := range allFactions {
 		cvm.threatManager.AddFaction(factionID)
+	}
+
+	// If visualizers were nil during initialization (no factions existed yet), create them now
+	if len(allFactions) > 0 {
+		if cvm.threatEvaluator == nil {
+			// Use player faction (first faction) for threat evaluation
+			playerFactionID := allFactions[0]
+			cvm.threatEvaluator = behavior.NewCompositeThreatEvaluator(
+				playerFactionID,
+				cvm.ecsManager,
+				queries.CombatCache,
+				cvm.threatManager,
+			)
+		}
+
+		if cvm.layerVisualizer == nil {
+			cvm.layerVisualizer = behavior.NewLayerVisualizer(
+				cvm.ecsManager,
+				cvm.gameMap,
+				cvm.threatEvaluator,
+			)
+		}
 	}
 }
 

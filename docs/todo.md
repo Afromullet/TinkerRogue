@@ -21,12 +21,14 @@ __________________________________________
 
 - Evaluation package seems kind of weird. Need to determine whether I really want it
 
-- combat services package seems redundant
+
 
 - Determine if anything from the squad package really belongs in the squad services package
 
 - Determine if we still need combatdisplay.go, considering we have the battlelog package
 
+
+- Check if counter attack in ExecuteAttackAction accounts for dead units. Dead units should  not be part of the counter attack damage calculation
 ________________________________________________
 # Testing 
 
@@ -34,16 +36,22 @@ ________________________________________________
 
 # Cleanup
 
-- tilebatch.go and tilerenderer.go use magic numbers in NewTileBatch
-
 - Replace squad.ExecuteSquadAttack in simulator. 
 
 - Get Rid of common.Monsters. All the other unit related tags shoudl take care of it. 
 
 - func CursorPosition(playerPos coords.LogicalPosition) (int, int) in graphictypes requires a change. Leftover from how throwables are handled. 
+
+
 - CombatController has a lot of artifacts of the old roguelike prior to the change. Specifically in regards to throwables. Find a way tohandle that. 
+
+
 - Input Package has a lot of leftovers from the old roguelike
+
+
 - Sprite, Tile, and Rendering Batches allocates default sizes for the slices. Look at those. Determine how many we need. Have a larger default size if needed (i.e, NewSpriteBatch)
+
+
 - combatqueries.go still has functions which search the entire ecs space
 
 

@@ -3,6 +3,7 @@ package rendering
 import (
 	"game_main/world/coords"
 	"game_main/world/worldmap"
+
 	"github.com/hajimehoshi/ebiten/v2"
 )
 

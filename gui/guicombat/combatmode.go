@@ -674,11 +674,15 @@ func (cm *CombatMode) HandleInput(inputState *framework.InputState) bool {
 
 	// H key to toggle danger heat map
 	if inputState.KeysJustPressed[ebiten.KeyH] {
+		dangerViz := cm.visualization.GetDangerVisualizer()
+		if dangerViz == nil {
+			return true
+		}
+
 		shiftPressed := inputState.KeysPressed[ebiten.KeyShift] ||
 			inputState.KeysPressed[ebiten.KeyShiftLeft] ||
 			inputState.KeysPressed[ebiten.KeyShiftRight]
 
-		dangerViz := cm.visualization.GetDangerVisualizer()
 		combatLogArea := GetCombatLogTextArea(cm.Panels)
 
 		if shiftPressed {
@@ -702,7 +706,7 @@ func (cm *CombatMode) HandleInput(inputState *framework.InputState) bool {
 	// Left Control key to cycle metrics
 	if inputState.KeysJustPressed[ebiten.KeyControlLeft] {
 		dangerViz := cm.visualization.GetDangerVisualizer()
-		if dangerViz.IsActive() {
+		if dangerViz != nil && dangerViz.IsActive() {
 			dangerViz.CycleMetric()
 			metricName := "Danger"
 			if dangerViz.GetMetricMode() == behavior.MetricExpectedDamage {

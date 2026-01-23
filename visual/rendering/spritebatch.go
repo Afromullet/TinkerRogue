@@ -14,8 +14,8 @@ type SpriteBatch struct {
 // NewSpriteBatch creates a batch for sprites sharing the same image
 func NewSpriteBatch(image *ebiten.Image) *SpriteBatch {
 	return &SpriteBatch{
-		vertices: make([]ebiten.Vertex, 0, 256), // Pre-allocate for ~64 sprites (4 vertices each)
-		indices:  make([]uint16, 0, 384),        // Pre-allocate for ~64 sprites (6 indices each)
+		vertices: make([]ebiten.Vertex, 0, SpriteVerticesBatchSize), // Pre-allocate for ~64 sprites (4 vertices each)
+		indices:  make([]uint16, 0, SpriteIndicesBatchSize),         // Pre-allocate for ~64 sprites (6 indices each)
 		image:    image,
 	}
 }

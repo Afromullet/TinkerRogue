@@ -13,6 +13,14 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
+const (
+	TileBatchDefaultNumImages = 20
+	TileVerticeBatchSize      = 800
+	TileIndicesBatchSize      = 1200
+	SpriteVerticesBatchSize   = 256
+	SpriteIndicesBatchSize    = 384
+)
+
 var (
 	RenderableComponent *ecs.Component //Putting this here for now rather than in graphics
 	RenderablesTag      ecs.Tag        // Tag for querying renderable entities
