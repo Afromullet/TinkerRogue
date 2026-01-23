@@ -59,9 +59,15 @@ func (aa *AttackAction) Execute(manager *common.EntityManager, movementSystem *c
 
 	// Log result for debugging
 	if result.Success {
-		fmt.Printf("[AI] %s attacked %s\n", result.AttackerName, result.TargetName)
+		attackerName := "Unknown"
+		defenderName := "Unknown"
+		if result.CombatLog != nil {
+			attackerName = result.CombatLog.AttackerSquadName
+			defenderName = result.CombatLog.DefenderSquadName
+		}
+		fmt.Printf("[AI] %s attacked %s\n", attackerName, defenderName)
 		if result.TargetDestroyed {
-			fmt.Printf("[AI] %s was destroyed!\n", result.TargetName)
+			fmt.Printf("[AI] %s was destroyed!\n", defenderName)
 		}
 
 		// Queue this attack for animation playback after AI turn completes

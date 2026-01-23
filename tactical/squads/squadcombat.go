@@ -7,12 +7,19 @@ import (
 	"github.com/bytearena/ecs"
 )
 
-// CombatResult - Uses ecs.EntityID (native type) instead of entity pointers
+// CombatResult - Unified result type for combat operations
+// Contains both combat execution data and orchestration status
 type CombatResult struct {
+	// Orchestration status (set by combat action system)
+	Success         bool
+	ErrorReason     string
+	TargetDestroyed bool
+
+	// Combat execution data (set by combat calculation logic)
 	TotalDamage  int
 	UnitsKilled  []ecs.EntityID
 	DamageByUnit map[ecs.EntityID]int
-	CombatLog    *CombatLog // Detailed event log for display
+	CombatLog    *CombatLog // Contains AttackerSquadName, DefenderSquadName for display
 }
 
 // Only units within their attack range of the target squad can participate
@@ -23,15 +30,15 @@ func ExecuteSquadAttack(attackerSquadID, defenderSquadID ecs.EntityID, squadmana
 	}
 
 	// Initialize combat log with squad info
-	combatLog := initializeCombatLog(attackerSquadID, defenderSquadID, squadmanager)
+	combatLog := InitializeCombatLog(attackerSquadID, defenderSquadID, squadmanager)
 	if combatLog.SquadDistance < 0 {
 		result.CombatLog = combatLog
 		return result
 	}
 
 	// Snapshot units that will participate (for logging)
-	combatLog.AttackingUnits = snapshotAttackingUnits(attackerSquadID, combatLog.SquadDistance, squadmanager)
-	combatLog.DefendingUnits = snapshotAllUnits(defenderSquadID, squadmanager)
+	combatLog.AttackingUnits = SnapshotAttackingUnits(attackerSquadID, combatLog.SquadDistance, squadmanager)
+	combatLog.DefendingUnits = SnapshotAllUnits(defenderSquadID, squadmanager)
 
 	// Process each attacking unit
 	attackIndex := 0
@@ -47,13 +54,16 @@ func ExecuteSquadAttack(attackerSquadID, defenderSquadID ecs.EntityID, squadmana
 		targetIDs := SelectTargetUnits(attackerID, defenderSquadID, squadmanager)
 
 		// Attack each target
-		attackIndex = processAttackOnTargets(attackerID, targetIDs, result, combatLog, attackIndex, squadmanager)
+		attackIndex = ProcessAttackOnTargets(attackerID, targetIDs, result, combatLog, attackIndex, squadmanager)
 	}
+
+	// Apply recorded damage to units (for backward compatibility with tests/simulator)
+	ApplyRecordedDamage(result, squadmanager)
 
 	UpdateSquadDestroyedStatus(defenderSquadID, squadmanager)
 
 	// Finalize combat log with summary
-	finalizeCombatLog(result, combatLog, defenderSquadID, squadmanager)
+	FinalizeCombatLog(result, combatLog, defenderSquadID, attackerSquadID, squadmanager)
 
 	result.CombatLog = combatLog
 	return result
@@ -69,15 +79,15 @@ func ExecuteSquadCounterattack(defenderSquadID, attackerSquadID ecs.EntityID, sq
 	}
 
 	// Initialize combat log
-	combatLog := initializeCombatLog(defenderSquadID, attackerSquadID, squadmanager)
+	combatLog := InitializeCombatLog(defenderSquadID, attackerSquadID, squadmanager)
 	if combatLog.SquadDistance < 0 {
 		result.CombatLog = combatLog
 		return result
 	}
 
 	// Snapshot units
-	combatLog.AttackingUnits = snapshotAttackingUnits(defenderSquadID, combatLog.SquadDistance, squadmanager)
-	combatLog.DefendingUnits = snapshotAllUnits(attackerSquadID, squadmanager)
+	combatLog.AttackingUnits = SnapshotAttackingUnits(defenderSquadID, combatLog.SquadDistance, squadmanager)
+	combatLog.DefendingUnits = SnapshotAllUnits(attackerSquadID, squadmanager)
 
 	// Process each counterattacking unit
 	attackIndex := 0
@@ -93,20 +103,23 @@ func ExecuteSquadCounterattack(defenderSquadID, attackerSquadID ecs.EntityID, sq
 		targetIDs := SelectTargetUnits(counterAttackerID, attackerSquadID, squadmanager)
 
 		// Counterattack each target with penalties
-		attackIndex = processCounterattackOnTargets(counterAttackerID, targetIDs, result, combatLog, attackIndex, squadmanager)
+		attackIndex = ProcessCounterattackOnTargets(counterAttackerID, targetIDs, result, combatLog, attackIndex, squadmanager)
 	}
+
+	// Apply recorded damage to units (for backward compatibility with tests/simulator)
+	ApplyRecordedDamage(result, squadmanager)
 
 	UpdateSquadDestroyedStatus(attackerSquadID, squadmanager)
 
 	// Finalize combat log
-	finalizeCombatLog(result, combatLog, attackerSquadID, squadmanager)
+	FinalizeCombatLog(result, combatLog, attackerSquadID, defenderSquadID, squadmanager)
 
 	result.CombatLog = combatLog
 	return result
 }
 
-// processCounterattackOnTargets applies counterattack damage with penalties
-func processCounterattackOnTargets(attackerID ecs.EntityID, targetIDs []ecs.EntityID, result *CombatResult,
+// ProcessCounterattackOnTargets applies counterattack damage with penalties
+func ProcessCounterattackOnTargets(attackerID ecs.EntityID, targetIDs []ecs.EntityID, result *CombatResult,
 	log *CombatLog, attackIndex int, manager *common.EntityManager) int {
 
 	for _, defenderID := range targetIDs {
@@ -133,7 +146,7 @@ func processCounterattackOnTargets(attackerID ecs.EntityID, targetIDs []ecs.Enti
 		}
 
 		// Apply damage
-		applyDamageToUnitByID(defenderID, damage, result, manager)
+		recordDamageToUnit(defenderID, damage, result, manager)
 
 		// Store event
 		log.AttackEvents = append(log.AttackEvents, *event)
@@ -244,8 +257,8 @@ func calculateCounterattackDamage(attackerID, defenderID ecs.EntityID, squadmana
 	return totalDamage, event
 }
 
-// initializeCombatLog creates the combat log structure with squad information
-func initializeCombatLog(attackerSquadID, defenderSquadID ecs.EntityID, manager *common.EntityManager) *CombatLog {
+// InitializeCombatLog creates the combat log structure with squad information
+func InitializeCombatLog(attackerSquadID, defenderSquadID ecs.EntityID, manager *common.EntityManager) *CombatLog {
 	return &CombatLog{
 		AttackerSquadID:   attackerSquadID,
 		DefenderSquadID:   defenderSquadID,
@@ -316,18 +329,19 @@ func snapshotUnits(squadID ecs.EntityID, squadDistance int, filterByRange bool, 
 	return snapshots
 }
 
-// snapshotAttackingUnits captures attacking unit info before combat for logging
-func snapshotAttackingUnits(squadID ecs.EntityID, squadDistance int, manager *common.EntityManager) []UnitSnapshot {
+// SnapshotAttackingUnits captures attacking unit info before combat for logging
+func SnapshotAttackingUnits(squadID ecs.EntityID, squadDistance int, manager *common.EntityManager) []UnitSnapshot {
 	return snapshotUnits(squadID, squadDistance, true, manager)
 }
 
-// snapshotAllUnits captures all units in a squad for logging (used for defenders)
-func snapshotAllUnits(squadID ecs.EntityID, manager *common.EntityManager) []UnitSnapshot {
+// SnapshotAllUnits captures all units in a squad for logging (used for defenders)
+func SnapshotAllUnits(squadID ecs.EntityID, manager *common.EntityManager) []UnitSnapshot {
 	return snapshotUnits(squadID, -1, false, manager)
 }
 
-// finalizeCombatLog calculates summary statistics for the combat log
-func finalizeCombatLog(result *CombatResult, log *CombatLog, defenderSquadID ecs.EntityID, manager *common.EntityManager) {
+// FinalizeCombatLog calculates summary statistics for the combat log
+// Now takes both attacker and defender IDs to handle counterattack deaths properly
+func FinalizeCombatLog(result *CombatResult, log *CombatLog, defenderSquadID, attackerSquadID ecs.EntityID, manager *common.EntityManager) {
 	result.TotalDamage = sumDamageMap(result.DamageByUnit)
 	log.TotalDamage = result.TotalDamage
 	log.UnitsKilled = len(result.UnitsKilled)
@@ -583,9 +597,9 @@ func selectLowestArmorTarget(squadID ecs.EntityID, manager *common.EntityManager
 	return []ecs.EntityID{bestTarget}
 }
 
-// processAttackOnTargets applies damage to all targets and creates combat events
+// ProcessAttackOnTargets applies damage to all targets and creates combat events
 // Returns the updated attack index
-func processAttackOnTargets(attackerID ecs.EntityID, targetIDs []ecs.EntityID, result *CombatResult,
+func ProcessAttackOnTargets(attackerID ecs.EntityID, targetIDs []ecs.EntityID, result *CombatResult,
 	log *CombatLog, attackIndex int, manager *common.EntityManager) int {
 
 	for _, defenderID := range targetIDs {
@@ -609,7 +623,7 @@ func processAttackOnTargets(attackerID ecs.EntityID, targetIDs []ecs.EntityID, r
 		}
 
 		// Apply damage
-		applyDamageToUnitByID(defenderID, damage, result, manager)
+		recordDamageToUnit(defenderID, damage, result, manager)
 
 		// Store event
 		log.AttackEvents = append(log.AttackEvents, *event)
@@ -745,22 +759,41 @@ func rollDodge(dodgeChance int) (roll int, dodged bool) {
 	return
 }
 
-// applyDamageToUnitByID applies damage to a unit and tracks it in the combat result
-func applyDamageToUnitByID(unitID ecs.EntityID, damage int, result *CombatResult, squadmanager *common.EntityManager) {
+// recordDamageToUnit records damage in the combat result without modifying HP (pure calculation)
+func recordDamageToUnit(unitID ecs.EntityID, damage int, result *CombatResult, squadmanager *common.EntityManager) {
+	// Accumulate damage (in case unit is hit multiple times)
+	result.DamageByUnit[unitID] += damage
+
+	// Check if unit would be killed (prediction based on current HP)
 	attr := common.GetComponentTypeByID[*common.Attributes](squadmanager, unitID, common.AttributeComponent)
-	if attr == nil {
-		return
+	if attr != nil {
+		totalDamageTaken := result.DamageByUnit[unitID]
+		if attr.CurrentHealth-totalDamageTaken <= 0 {
+			// Only add to UnitsKilled once
+			alreadyMarked := false
+			for _, killedID := range result.UnitsKilled {
+				if killedID == unitID {
+					alreadyMarked = true
+					break
+				}
+			}
+			if !alreadyMarked {
+				result.UnitsKilled = append(result.UnitsKilled, unitID)
+			}
+		}
 	}
+}
 
-	attr.CurrentHealth -= damage
-	result.DamageByUnit[unitID] = damage
-
-	if attr.CurrentHealth <= 0 {
-		result.UnitsKilled = append(result.UnitsKilled, unitID)
+// ApplyRecordedDamage applies all recorded damage from result.DamageByUnit to actual unit HP
+// This is called during orchestration phase after all combat calculations are complete
+func ApplyRecordedDamage(result *CombatResult, squadmanager *common.EntityManager) {
+	for unitID, damage := range result.DamageByUnit {
+		attr := common.GetComponentTypeByID[*common.Attributes](squadmanager, unitID, common.AttributeComponent)
+		if attr == nil {
+			continue
+		}
+		attr.CurrentHealth -= damage
 	}
-
-	// Note: UpdateSquadDestroyedStatus is now called once per attack in ExecuteSquadAttack
-	// instead of per damaged unit for better performance
 }
 
 func sumDamageMap(damageMap map[ecs.EntityID]int) int {

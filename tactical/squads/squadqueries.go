@@ -105,6 +105,52 @@ func IsSquadDestroyed(squadID ecs.EntityID, squadmanager *common.EntityManager) 
 	return squadData.IsDestroyed
 }
 
+// HasAliveUnits checks if a squad has any units with CurrentHealth > 0
+// This is used to determine destruction status without checking the IsDestroyed flag
+func HasAliveUnits(squadID ecs.EntityID, manager *common.EntityManager) bool {
+	unitIDs := GetUnitIDsInSquad(squadID, manager)
+
+	for _, unitID := range unitIDs {
+		entity := manager.FindEntityByID(unitID)
+		if entity == nil {
+			continue
+		}
+
+		attr := common.GetComponentType[*common.Attributes](entity, common.AttributeComponent)
+		if attr != nil && attr.CurrentHealth > 0 {
+			return true // Found at least one alive unit
+		}
+	}
+
+	return false // No alive units found
+}
+
+// WouldSquadSurvive checks if a squad would have any survivors after predicted damage is applied
+// Used during combat calculation to determine if counterattacks should happen
+func WouldSquadSurvive(squadID ecs.EntityID, predictedDamage map[ecs.EntityID]int, manager *common.EntityManager) bool {
+	unitIDs := GetUnitIDsInSquad(squadID, manager)
+
+	for _, unitID := range unitIDs {
+		entity := manager.FindEntityByID(unitID)
+		if entity == nil {
+			continue
+		}
+
+		attr := common.GetComponentType[*common.Attributes](entity, common.AttributeComponent)
+		if attr == nil {
+			continue
+		}
+
+		// Check if unit would survive after predicted damage
+		damageToThisUnit := predictedDamage[unitID]
+		if attr.CurrentHealth-damageToThisUnit > 0 {
+			return true // Found at least one unit that would survive
+		}
+	}
+
+	return false // No survivors
+}
+
 // ========================================
 // CAPACITY SYSTEM QUERIES
 // ========================================

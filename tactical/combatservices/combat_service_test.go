@@ -2,7 +2,7 @@ package combatservices
 
 import (
 	"game_main/common"
-	"game_main/tactical/combat"
+	"game_main/tactical/squads"
 	"testing"
 
 	"github.com/bytearena/ecs"
@@ -51,30 +51,35 @@ func TestExecuteSquadAttack_NoSquads(t *testing.T) {
 	}
 }
 
-// TestAttackResult_Structure tests that AttackResult struct is properly populated
-func TestAttackResult_Structure(t *testing.T) {
-	result := &combat.AttackResult{
+// TestCombatResult_Structure tests that CombatResult struct is properly populated
+func TestCombatResult_Structure(t *testing.T) {
+	result := &squads.CombatResult{
 		Success:         true,
 		ErrorReason:     "",
-		AttackerName:    "Attacker",
-		TargetName:      "Defender",
 		TargetDestroyed: false,
-		DamageDealt:     10,
+		TotalDamage:     25,
+		UnitsKilled:     []ecs.EntityID{},
+		DamageByUnit:    make(map[ecs.EntityID]int),
+		CombatLog:       nil,
 	}
 
 	if !result.Success {
 		t.Error("Success field should be true")
 	}
 
-	if result.AttackerName != "Attacker" {
-		t.Error("AttackerName should be set")
+	if result.TargetDestroyed {
+		t.Error("TargetDestroyed should be false")
 	}
 
-	if result.TargetName != "Defender" {
-		t.Error("TargetName should be set")
+	if result.TotalDamage != 25 {
+		t.Error("TotalDamage should be 25")
 	}
 
-	if result.DamageDealt != 10 {
-		t.Error("DamageDealt should be 10")
+	if result.UnitsKilled == nil {
+		t.Error("UnitsKilled should not be nil")
+	}
+
+	if result.DamageByUnit == nil {
+		t.Error("DamageByUnit should not be nil")
 	}
 }

@@ -10,16 +10,6 @@ import (
 	"github.com/bytearena/ecs"
 )
 
-// AttackResult contains all information about an attack execution. Used for debugging.
-type AttackResult struct {
-	Success         bool
-	ErrorReason     string
-	AttackerName    string
-	TargetName      string
-	TargetDestroyed bool
-	DamageDealt     int
-}
-
 type CombatActionSystem struct {
 	manager        *common.EntityManager
 	combatCache    *CombatQueryCache
@@ -38,127 +28,158 @@ func (cas *CombatActionSystem) SetBattleRecorder(recorder *battlelog.BattleRecor
 	cas.battleRecorder = recorder
 }
 
-func (cas *CombatActionSystem) ExecuteAttackAction(attackerID, defenderID ecs.EntityID) *AttackResult {
-	result := &AttackResult{}
+func (cas *CombatActionSystem) ExecuteAttackAction(attackerID, defenderID ecs.EntityID) *squads.CombatResult {
 
-	// Use shared validation logic
+	//Validation
 	reason, canAttack := cas.CanSquadAttackWithReason(attackerID, defenderID)
 	if !canAttack {
+		return &squads.CombatResult{
+			Success:     false,
+			ErrorReason: reason,
+		}
+	}
+
+	// Main Attack calculation
+
+	result := &squads.CombatResult{
+		DamageByUnit: make(map[ecs.EntityID]int),
+		UnitsKilled:  []ecs.EntityID{},
+	}
+
+	// Initialize combat log with squad info
+	combatLog := squads.InitializeCombatLog(attackerID, defenderID, cas.manager)
+	if combatLog.SquadDistance < 0 {
+		result.CombatLog = combatLog
 		result.Success = false
-		result.ErrorReason = reason
+		result.ErrorReason = "Squads not found or missing position"
 		return result
 	}
 
-	// Get names for result
-	result.AttackerName = GetSquadName(attackerID, cas.manager)
-	result.TargetName = GetSquadName(defenderID, cas.manager)
+	// Snapshot units that will participate (for logging)
+	combatLog.AttackingUnits = squads.SnapshotAttackingUnits(attackerID, combatLog.SquadDistance, cas.manager)
+	combatLog.DefendingUnits = squads.SnapshotAllUnits(defenderID, cas.manager)
 
-	//Filter units by range (partial squad attacks)
-	attackingUnits := cas.GetAttackingUnits(attackerID, defenderID)
+	// Process each attacking unit
+	attackIndex := 0
+	attackerUnitIDs := squads.GetUnitIDsInSquad(attackerID, cas.manager)
 
-	// Temporarily disable out-of-range units
-	allUnits := squads.GetUnitIDsInSquad(attackerID, cas.manager)
-	disabledUnits := []ecs.EntityID{}
-
-	for _, unitID := range allUnits {
-		if !containsEntity(attackingUnits, unitID) {
-			entity := cas.manager.FindEntityByID(unitID)
-			if entity == nil {
-				continue
-			}
-
-			attr := common.GetComponentType[*common.Attributes](entity, common.AttributeComponent)
-			if attr != nil && attr.CanAct {
-				attr.CanAct = false
-				disabledUnits = append(disabledUnits, unitID)
-			}
-		}
-	}
-
-	// Execute attack (only CanAct=true units participate)
-	combatResult := squads.ExecuteSquadAttack(attackerID, defenderID, cas.manager)
-
-	// Re-enable disabled units. TODO: This might allow squads to attack twice. Once ranged, and then melee
-	// (If the squad has a mix of units, and melee units did not attack due to the range). Test and fix this
-	for _, unitID := range disabledUnits {
-		entity := cas.manager.FindEntityByID(unitID)
-		if entity == nil {
+	for _, attackerUnitID := range attackerUnitIDs {
+		// Check if unit can attack (alive, can act, and in range)
+		if !squads.CanUnitAttack(attackerUnitID, combatLog.SquadDistance, cas.manager) {
 			continue
 		}
 
-		attr := common.GetComponentType[*common.Attributes](entity, common.AttributeComponent)
-		if attr != nil {
-			attr.CanAct = true
-		}
+		// Get targets for this attacker
+		targetIDs := squads.SelectTargetUnits(attackerUnitID, defenderID, cas.manager)
+
+		// Attack each target
+		attackIndex = squads.ProcessAttackOnTargets(attackerUnitID, targetIDs, result, combatLog, attackIndex, cas.manager)
 	}
 
-	markSquadAsActed(cas.combatCache, attackerID, cas.manager)
+	// Counterattack
 
-	// === COUNTERATTACK PHASE ===
-	// Defender counterattacks if still alive and has units in range
-	// Counterattacks do NOT consume defender's action for their turn
-	defenderStillAlive := !squads.IsSquadDestroyed(defenderID, cas.manager)
-	if defenderStillAlive {
+	// Check if defender would survive the main attack (checking HP after predicted damage)
+	defenderWouldSurvive := squads.WouldSquadSurvive(defenderID, result.DamageByUnit, cas.manager)
+
+	if defenderWouldSurvive {
 		// Check if any defender units can reach the attacker
 		counterattackers := cas.getCounterattackingUnits(defenderID, attackerID)
 
 		if len(counterattackers) > 0 {
-			// Execute counterattack (does NOT mark defender as acted)
-			counterResult := squads.ExecuteSquadCounterattack(defenderID, attackerID, cas.manager)
+			// Process each counterattacking unit (using same distance)
+			defenderUnitIDs := squads.GetUnitIDsInSquad(defenderID, cas.manager)
 
-			// Merge counterattack events into main combat log
-			if counterResult.CombatLog != nil && combatResult.CombatLog != nil {
-				// Append all counterattack events to the main attack's combat log
-				combatResult.CombatLog.AttackEvents = append(combatResult.CombatLog.AttackEvents,
-					counterResult.CombatLog.AttackEvents...)
+			for _, counterAttackerID := range defenderUnitIDs {
+				// Check if unit can counterattack (alive after main attack, in range)
+				entity := cas.manager.FindEntityByID(counterAttackerID)
+				if entity == nil {
+					continue
+				}
+
+				attr := common.GetComponentType[*common.Attributes](entity, common.AttributeComponent)
+				if attr == nil {
+					continue
+				}
+
+				// Check if unit would survive the main attack damage
+				damageToThisUnit := result.DamageByUnit[counterAttackerID]
+				if attr.CurrentHealth-damageToThisUnit <= 0 {
+					continue // Unit would be dead, can't counterattack
+				}
+
+				rangeData := common.GetComponentType[*squads.AttackRangeData](entity, squads.AttackRangeComponent)
+				if rangeData == nil || rangeData.Range < combatLog.SquadDistance {
+					continue
+				}
+
+				// Get targets (same targeting logic as normal attacks)
+				targetIDs := squads.SelectTargetUnits(counterAttackerID, attackerID, cas.manager)
+
+				// Counterattack each target with penalties
+				attackIndex = squads.ProcessCounterattackOnTargets(counterAttackerID, targetIDs, result, combatLog, attackIndex, cas.manager)
 			}
 
 			// Log counterattack if enabled
-			if config.DISPLAY_DEATAILED_COMBAT_OUTPUT && counterResult.CombatLog != nil {
+			if config.DISPLAY_DEATAILED_COMBAT_OUTPUT {
 				fmt.Println("\n=== COUNTERATTACK ===")
-				DisplayCombatLog(counterResult.CombatLog, cas.manager)
-			}
-
-			// Check if attacker was destroyed by counterattack
-			if squads.IsSquadDestroyed(attackerID, cas.manager) {
-				removeSquadFromMap(attackerID, cas.manager)
 			}
 		}
 	}
-	// === END COUNTERATTACK PHASE ===
 
-	result.TargetDestroyed = squads.IsSquadDestroyed(defenderID, cas.manager)
-	if result.TargetDestroyed {
-		removeSquadFromMap(defenderID, cas.manager)
-	}
+	// Finalize combat log with summary statistics
+	squads.FinalizeCombatLog(result, combatLog, defenderID, attackerID, cas.manager)
+	result.CombatLog = combatLog
 
-	// Display detailed combat log. Only prints in display mode.
-	if config.DISPLAY_DEATAILED_COMBAT_OUTPUT && combatResult.CombatLog != nil {
-		DisplayCombatLog(combatResult.CombatLog, cas.manager)
+	// Determien Destruction Status
+
+	// Predict destruction based on recorded damage (before applying)
+	// Reuse defenderWouldSurvive from Phase 3 (already calculated)
+	attackerDestroyed := !squads.WouldSquadSurvive(attackerID, result.DamageByUnit, cas.manager)
+	defenderDestroyed := !defenderWouldSurvive // Reuse cached value
+
+	result.TargetDestroyed = defenderDestroyed
+
+	// post combat
+
+	// Apply all recorded damage to unit HP (STATE MODIFICATION STARTS HERE)
+	squads.ApplyRecordedDamage(result, cas.manager)
+
+	// Mark attacker squad as acted (turn state modification)
+	markSquadAsActed(cas.combatCache, attackerID, cas.manager)
+
+	// Display detailed combat log (only prints in display mode)
+	if config.DISPLAY_DEATAILED_COMBAT_OUTPUT && result.CombatLog != nil {
+		DisplayCombatLog(result.CombatLog, cas.manager)
 	}
 
 	// Record combat log for export (if enabled)
 	if cas.battleRecorder != nil && cas.battleRecorder.IsEnabled() {
-		cas.battleRecorder.RecordEngagement(combatResult.CombatLog)
+		cas.battleRecorder.RecordEngagement(result.CombatLog)
 	}
 
-	// Check abilities for both squads after combat (only if they survived)
-	attackerDestroyed := squads.IsSquadDestroyed(attackerID, cas.manager)
+	// Update squad destroyed flags (state modification)
+	if attackerDestroyed {
+		squads.UpdateSquadDestroyedStatus(attackerID, cas.manager)
+		removeSquadFromMap(attackerID, cas.manager)
+	}
 
-	// Attacker abilities: might trigger based on damage dealt, turn count, etc.
+	if defenderDestroyed {
+		squads.UpdateSquadDestroyedStatus(defenderID, cas.manager)
+		removeSquadFromMap(defenderID, cas.manager)
+	}
+
+	// Trigger abilities for surviving squads
 	if !attackerDestroyed {
 		squads.CheckAndTriggerAbilities(attackerID, cas.manager)
-		// Clean up dead units in surviving attacker squad
 		squads.DisposeDeadUnitsInSquad(attackerID, cas.manager)
 	}
 
-	// Defender abilities: might trigger healing if HP is low, or other defensive abilities
-	if !result.TargetDestroyed {
+	if !defenderDestroyed {
 		squads.CheckAndTriggerAbilities(defenderID, cas.manager)
-		// Clean up dead units in surviving defender squad
 		squads.DisposeDeadUnitsInSquad(defenderID, cas.manager)
 	}
 
+	// Mark as successful
 	result.Success = true
 	return result
 }

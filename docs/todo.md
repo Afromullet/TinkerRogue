@@ -36,7 +36,7 @@ ________________________________________________
 
 - tilebatch.go and tilerenderer.go use magic numbers in NewTileBatch
 
-
+- Replace squad.ExecuteSquadAttack in simulator. 
 
 - Get Rid of common.Monsters. All the other unit related tags shoudl take care of it. 
 

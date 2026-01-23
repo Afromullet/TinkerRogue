@@ -135,9 +135,15 @@ func (cah *CombatActionHandler) ExecuteAttack() {
 				caMode.SetCombatants(selectedSquad, selectedTarget)
 				caMode.SetOnComplete(func() {
 					// Animation complete - show attack results
-					cah.addLog(fmt.Sprintf("%s attacked %s!", result.AttackerName, result.TargetName))
+					attackerName := "Unknown"
+					defenderName := "Unknown"
+					if result.CombatLog != nil {
+						attackerName = result.CombatLog.AttackerSquadName
+						defenderName = result.CombatLog.DefenderSquadName
+					}
+					cah.addLog(fmt.Sprintf("%s attacked %s!", attackerName, defenderName))
 					if result.TargetDestroyed {
-						cah.addLog(fmt.Sprintf("%s was destroyed!", result.TargetName))
+						cah.addLog(fmt.Sprintf("%s was destroyed!", defenderName))
 					}
 					// Check for victory after player attack
 					if cah.deps.OnVictoryCheck != nil {
@@ -151,9 +157,15 @@ func (cah *CombatActionHandler) ExecuteAttack() {
 	}
 
 	// Fallback: no animation mode, just show results
-	cah.addLog(fmt.Sprintf("%s attacked %s!", result.AttackerName, result.TargetName))
+	attackerName := "Unknown"
+	defenderName := "Unknown"
+	if result.CombatLog != nil {
+		attackerName = result.CombatLog.AttackerSquadName
+		defenderName = result.CombatLog.DefenderSquadName
+	}
+	cah.addLog(fmt.Sprintf("%s attacked %s!", attackerName, defenderName))
 	if result.TargetDestroyed {
-		cah.addLog(fmt.Sprintf("%s was destroyed!", result.TargetName))
+		cah.addLog(fmt.Sprintf("%s was destroyed!", defenderName))
 	}
 	// Check for victory after player attack (fallback path)
 	if cah.deps.OnVictoryCheck != nil {
