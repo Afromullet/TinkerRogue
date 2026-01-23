@@ -41,10 +41,10 @@ func GetDefaultConfig() *EvaluationConfigData {
 		CoverWeight:   0.2,
 
 		// Squad modifiers
-		FormationBonus:   1.0,                        // No bonus by default
-		MoraleMultiplier: DefaultMoraleMultiplier,    // +0.2% power per morale point (20% at 100 morale)
-		LeaderBonus:      evaluation.LeaderBonus,     // Shared leader bonus from evaluation package
-		CompositionBonus: evaluation.CompositionBonuses, // Shared composition bonuses from evaluation package
+		FormationBonus:   1.0,                     // No bonus by default
+		MoraleMultiplier: DefaultMoraleMultiplier, // +0.2% power per morale point (20% at 100 morale)
+		LeaderBonus:      evaluation.LeaderBonus,  // Shared leader bonus from evaluation package
+
 		HealthPenalty: 2.0, // HP% multiplier (0.5 HP = 1.0 power, 1.0 HP = 2.0 power)
 
 		// Roster modifiers

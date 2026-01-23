@@ -24,6 +24,16 @@ const (
 
 var avgCombatStats = &averageCombatStats{}
 
+// CompositionBonuses defines multipliers based on attack type diversity.
+// Squads with diverse attack types (melee + ranged + magic) are more effective.
+// Key is the count of unique attack types in the squad.
+var CompositionBonuses = map[int]float64{
+	1: 0.8, // Mono-composition penalty (vulnerable to counters)
+	2: 1.1, // Dual-type bonus (good diversity)
+	3: 1.2, // Triple-type bonus (excellent diversity)
+	4: 1.3, // Quad-type bonus (optimal, rare)
+}
+
 // Keeps track of Each Factions Danger Level.
 type FactionThreatLevelManager struct {
 	manager  *common.EntityManager
@@ -330,7 +340,12 @@ func (stl *SquadThreatLevel) getRoleMultiplier(role squads.UnitRole) float64 {
 // calculateCompositionBonus returns a bonus multiplier based on attack type diversity.
 // Delegates to shared evaluation package.
 func (stl *SquadThreatLevel) calculateCompositionBonus(attackTypeCount map[squads.AttackType]int) float64 {
-	return evaluation.GetCompositionBonus(len(attackTypeCount))
+
+	if bonus, exists := CompositionBonuses[len(attackTypeCount)]; exists {
+		return bonus
+	}
+	return 1.0
+
 }
 
 // calculateExpectedDamageForUnit computes expected damage for one attacker unit.

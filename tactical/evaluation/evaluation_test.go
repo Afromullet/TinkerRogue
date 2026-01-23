@@ -41,30 +41,6 @@ func TestLeaderBonus(t *testing.T) {
 	}
 }
 
-func TestGetCompositionBonus(t *testing.T) {
-	tests := []struct {
-		name        string
-		uniqueTypes int
-		expected    float64
-	}{
-		{"Mono-composition penalty", 1, 0.8},
-		{"Dual-type bonus", 2, 1.1},
-		{"Triple-type bonus", 3, 1.2},
-		{"Quad-type bonus", 4, 1.3},
-		{"Zero types (edge case)", 0, 1.0},
-		{"Five types (edge case)", 5, 1.0},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := GetCompositionBonus(tt.uniqueTypes)
-			if result != tt.expected {
-				t.Errorf("GetCompositionBonus(%d) = %v, want %v", tt.uniqueTypes, result, tt.expected)
-			}
-		})
-	}
-}
-
 func TestDirtyCache_NewCache(t *testing.T) {
 	cache := NewDirtyCache()
 
