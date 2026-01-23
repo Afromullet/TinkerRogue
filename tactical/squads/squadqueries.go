@@ -105,26 +105,6 @@ func IsSquadDestroyed(squadID ecs.EntityID, squadmanager *common.EntityManager) 
 	return squadData.IsDestroyed
 }
 
-// HasAliveUnits checks if a squad has any units with CurrentHealth > 0
-// This is used to determine destruction status without checking the IsDestroyed flag
-func HasAliveUnits(squadID ecs.EntityID, manager *common.EntityManager) bool {
-	unitIDs := GetUnitIDsInSquad(squadID, manager)
-
-	for _, unitID := range unitIDs {
-		entity := manager.FindEntityByID(unitID)
-		if entity == nil {
-			continue
-		}
-
-		attr := common.GetComponentType[*common.Attributes](entity, common.AttributeComponent)
-		if attr != nil && attr.CurrentHealth > 0 {
-			return true // Found at least one alive unit
-		}
-	}
-
-	return false // No alive units found
-}
-
 // WouldSquadSurvive checks if a squad would have any survivors after predicted damage is applied
 // Used during combat calculation to determine if counterattacks should happen
 func WouldSquadSurvive(squadID ecs.EntityID, predictedDamage map[ecs.EntityID]int, manager *common.EntityManager) bool {
@@ -358,54 +338,6 @@ func UpdateSquadDestroyedStatus(squadID ecs.EntityID, manager *common.EntityMana
 	}
 
 	squadData.IsDestroyed = !hasAliveUnit
-}
-
-// GetUnitIdentity extracts display info for a unit (query-based, no caching)
-// Optimized: Batches all component lookups into single GetEntityByID call.
-func GetUnitIdentity(unitID ecs.EntityID, manager *common.EntityManager) UnitIdentity {
-	// OPTIMIZATION: Get entity once, then extract all components from it
-	// This avoids 3 separate GetEntityByID allocations
-	entity := manager.FindEntityByID(unitID)
-	if entity == nil {
-		return UnitIdentity{
-			ID:        unitID,
-			Name:      "Unknown",
-			GridRow:   0,
-			GridCol:   0,
-			CurrentHP: 0,
-			MaxHP:     0,
-		}
-	}
-
-	// Extract name from entity
-	name := common.GetComponentType[*common.Name](entity, common.NameComponent)
-	nameStr := "Unknown"
-	if name != nil {
-		nameStr = name.NameStr
-	}
-
-	// Extract grid position from entity
-	gridPos := common.GetComponentType[*GridPositionData](entity, GridPositionComponent)
-	row, col := 0, 0
-	if gridPos != nil {
-		row, col = gridPos.AnchorRow, gridPos.AnchorCol
-	}
-
-	// Extract attributes from entity
-	attr := common.GetComponentType[*common.Attributes](entity, common.AttributeComponent)
-	currentHP, maxHP := 0, 0
-	if attr != nil {
-		currentHP, maxHP = attr.CurrentHealth, attr.MaxHealth
-	}
-
-	return UnitIdentity{
-		ID:        unitID,
-		Name:      nameStr,
-		GridRow:   row,
-		GridCol:   col,
-		CurrentHP: currentHP,
-		MaxHP:     maxHP,
-	}
 }
 
 // ========================================

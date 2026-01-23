@@ -3,7 +3,6 @@ package combat
 import (
 	"fmt"
 	"game_main/common"
-	"game_main/config"
 	"game_main/tactical/combat/battlelog"
 	"game_main/tactical/squads"
 
@@ -119,10 +118,6 @@ func (cas *CombatActionSystem) ExecuteAttackAction(attackerID, defenderID ecs.En
 				attackIndex = squads.ProcessCounterattackOnTargets(counterAttackerID, targetIDs, result, combatLog, attackIndex, cas.manager)
 			}
 
-			// Log counterattack if enabled
-			if config.DISPLAY_DEATAILED_COMBAT_OUTPUT {
-				fmt.Println("\n=== COUNTERATTACK ===")
-			}
 		}
 	}
 
@@ -146,11 +141,6 @@ func (cas *CombatActionSystem) ExecuteAttackAction(attackerID, defenderID ecs.En
 
 	// Mark attacker squad as acted (turn state modification)
 	markSquadAsActed(cas.combatCache, attackerID, cas.manager)
-
-	// Display detailed combat log (only prints in display mode)
-	if config.DISPLAY_DEATAILED_COMBAT_OUTPUT && result.CombatLog != nil {
-		DisplayCombatLog(result.CombatLog, cas.manager)
-	}
 
 	// Record combat log for export (if enabled)
 	if cas.battleRecorder != nil && cas.battleRecorder.IsEnabled() {

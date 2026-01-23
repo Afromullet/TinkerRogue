@@ -331,10 +331,6 @@ func (sbm *SquadBuilderMode) onCreateSquad() {
 
 	fmt.Printf("Squad created: %s with %d units\n", sbm.currentSquadName, unitCount)
 
-	// Get visualization
-	visualization := squads.VisualizeSquad(sbm.currentSquadID, sbm.Queries.ECSManager)
-	fmt.Println(visualization)
-
 	// Clear the builder for next squad
 	sbm.onClearGrid()
 }

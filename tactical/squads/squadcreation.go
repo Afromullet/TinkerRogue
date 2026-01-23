@@ -171,59 +171,6 @@ type FormationPosition struct {
 	Target    []int
 }
 
-// GetFormationPreset returns predefined formation templates
-func GetFormationPreset(formation FormationType) FormationPreset {
-	switch formation {
-	case FormationBalanced:
-		return FormationPreset{
-			Positions: []FormationPosition{
-				{AnchorRow: 0, AnchorCol: 0, Role: RoleTank, Target: []int{0}},
-				{AnchorRow: 0, AnchorCol: 2, Role: RoleTank, Target: []int{0}},
-				{AnchorRow: 1, AnchorCol: 1, Role: RoleSupport, Target: []int{1}},
-				{AnchorRow: 2, AnchorCol: 0, Role: RoleDPS, Target: []int{2}},
-				{AnchorRow: 2, AnchorCol: 2, Role: RoleDPS, Target: []int{2}},
-			},
-		}
-
-	case FormationDefensive:
-		return FormationPreset{
-			Positions: []FormationPosition{
-				{AnchorRow: 0, AnchorCol: 0, Role: RoleTank, Target: []int{0}},
-				{AnchorRow: 0, AnchorCol: 1, Role: RoleTank, Target: []int{0}},
-				{AnchorRow: 0, AnchorCol: 2, Role: RoleTank, Target: []int{0}},
-				{AnchorRow: 1, AnchorCol: 1, Role: RoleSupport, Target: []int{1}},
-				{AnchorRow: 2, AnchorCol: 1, Role: RoleDPS, Target: []int{2}},
-			},
-		}
-
-	case FormationOffensive:
-		return FormationPreset{
-			Positions: []FormationPosition{
-				{AnchorRow: 0, AnchorCol: 1, Role: RoleTank, Target: []int{0}},
-				{AnchorRow: 1, AnchorCol: 0, Role: RoleDPS, Target: []int{1}},
-				{AnchorRow: 1, AnchorCol: 1, Role: RoleDPS, Target: []int{1}},
-				{AnchorRow: 1, AnchorCol: 2, Role: RoleDPS, Target: []int{1}},
-				{AnchorRow: 2, AnchorCol: 1, Role: RoleSupport, Target: []int{2}},
-			},
-		}
-
-	case FormationRanged:
-		return FormationPreset{
-			Positions: []FormationPosition{
-				{AnchorRow: 0, AnchorCol: 1, Role: RoleTank, Target: []int{0}},
-				{AnchorRow: 1, AnchorCol: 0, Role: RoleDPS, Target: []int{1, 2}},
-				{AnchorRow: 1, AnchorCol: 2, Role: RoleDPS, Target: []int{1, 2}},
-				{AnchorRow: 2, AnchorCol: 0, Role: RoleDPS, Target: []int{2}},
-				{AnchorRow: 2, AnchorCol: 1, Role: RoleSupport, Target: []int{2}},
-				{AnchorRow: 2, AnchorCol: 2, Role: RoleDPS, Target: []int{2}},
-			},
-		}
-
-	default:
-		return FormationPreset{Positions: []FormationPosition{}}
-	}
-}
-
 // CreateSquadFromTemplate
 func CreateSquadFromTemplate(
 	ecsmanager *common.EntityManager,

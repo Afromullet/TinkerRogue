@@ -93,20 +93,6 @@ func getSquadDataOrError(squadEntity *ecs.Entity) (*squads.SquadData, error) {
 	return squadData, nil
 }
 
-// getUnitEntityOrError retrieves a unit entity or returns an error
-func getUnitEntityOrError(unitID ecs.EntityID, manager *common.EntityManager) (*ecs.Entity, error) {
-	if unitID == 0 {
-		return nil, fmt.Errorf("invalid unit ID")
-	}
-
-	unitEntity := manager.FindEntityByID(unitID)
-	if unitEntity == nil {
-		return nil, fmt.Errorf("unit not found")
-	}
-
-	return unitEntity, nil
-}
-
 // getGridPositionOrError retrieves a unit's grid position or returns an error
 func getGridPositionOrError(unitID ecs.EntityID, manager *common.EntityManager) (*squads.GridPositionData, error) {
 	gridPos := common.GetComponentTypeByID[*squads.GridPositionData](manager, unitID, squads.GridPositionComponent)

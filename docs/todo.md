@@ -23,7 +23,7 @@ __________________________________________
 
 
 
-- Determine if anything from the squad package really belongs in the squad services package
+
 
 - Determine if we still need combatdisplay.go, considering we have the battlelog package
 
