@@ -31,6 +31,14 @@ func main() {
 	exportJSON := flag.String("export-json", "", "Export report to JSON file")
 	exportCSV := flag.String("export-csv", "", "Export metrics to CSV file")
 
+	// Battle logging mode flags (NEW)
+	battleLog := flag.Bool("battle-log", false, "Enable battle logging mode (generates JSON logs)")
+	numBattles := flag.Int("num-battles", 10, "Number of battles to run in battle-log mode")
+	squadsPerBattle := flag.Int("squads-per-battle", 2, "Squads per battle (default: 2 for 1v1)")
+	logOutputDir := flag.String("log-output-dir", "./combat_logs", "Directory for battle logs")
+	squadGen := flag.String("squad-gen", "varied", "Squad generation: random, balanced, varied")
+	maxRounds := flag.Int("max-rounds", 50, "Maximum rounds per battle")
+
 	flag.Parse()
 
 	// Initialize unit templates
@@ -41,6 +49,12 @@ func main() {
 	}
 
 	fmt.Printf("Loaded %d unit templates\n\n", len(squads.Units))
+
+	// Handle battle logging mode (NEW)
+	if *battleLog {
+		runBattleLoggingMode(*numBattles, *squadsPerBattle, *logOutputDir, *squadGen, *maxRounds)
+		return
+	}
 
 	// Get all test scenarios
 	scenarios := GetAllTestScenarios()
@@ -151,6 +165,44 @@ func runSweepMode(sim *combatsim.Simulator, scenarios []combatsim.CombatScenario
 
 	// Print sweep report
 	fmt.Println(combatsim.FormatSweepReport(result))
+}
+
+// runBattleLoggingMode handles battle logging mode with JSON export
+func runBattleLoggingMode(numBattles, squadsPerBattle int, outputDir, squadGen string, maxRounds int) {
+	fmt.Println("=== Battle Logging Mode ===")
+	fmt.Println()
+
+	// Validate parameters
+	if squadsPerBattle < 2 {
+		log.Fatalf("squads-per-battle must be at least 2, got %d", squadsPerBattle)
+	}
+	if squadsPerBattle > 10 {
+		fmt.Printf("Warning: %d squads per battle may be slow\n", squadsPerBattle)
+	}
+	if numBattles < 1 {
+		log.Fatalf("num-battles must be at least 1, got %d", numBattles)
+	}
+
+	// Create config
+	config := combatsim.BattleSimConfig{
+		NumBattles:      numBattles,
+		SquadsPerBattle: squadsPerBattle,
+		OutputDir:       outputDir,
+		GenerationMode:  squadGen,
+		MaxRounds:       maxRounds,
+		Verbose:         false, // Can be made configurable if desired
+	}
+
+	// Create runner
+	runner := combatsim.NewBattleSimulationRunner(config)
+
+	// Run battle set
+	if err := runner.RunBattleSet(); err != nil {
+		log.Fatalf("Battle simulation failed: %v", err)
+	}
+
+	fmt.Println()
+	fmt.Printf("Battle logs exported to: %s\n", outputDir)
 }
 
 // createTestScenario creates a simple test scenario

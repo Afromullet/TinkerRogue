@@ -112,7 +112,8 @@ func (br *BattleRecorder) IsEnabled() bool {
 // Should be called when combat begins.
 func (br *BattleRecorder) Start() {
 	br.startTime = time.Now()
-	br.battleID = fmt.Sprintf("battle_%s", br.startTime.Format("20060102_150405"))
+	// Include milliseconds to prevent ID collisions when battles run in quick succession
+	br.battleID = fmt.Sprintf("battle_%s", br.startTime.Format("20060102_150405.000"))
 	br.engagements = make([]EngagementRecord, 0)
 	br.nextIndex = 1
 }
