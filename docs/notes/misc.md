@@ -18,72 +18,29 @@ scripts\run-combatsim.sh
   # 1. Build the combat simulator
 
 
- Correct Build Command (Windows)
-
   # From TinkerRogue root directory
   go build -o combatsim.exe ./tools/combatsim/cmd
 
-  Or specify the directory:
 
-  go build -o combatsim.exe tools/combatsim/cmd
 
-  Full Process
+  # Running the combat sim
 
-  # 1. Navigate to project root
-  cd C:\Users\Afromullet\Desktop\TinkerRogue
+Change directory to game_main
 
-  # 2. Build (use package path, not wildcard)
-  go build -o combatsim.exe ./tools/combatsim/cmd
+#Basic Example
 
-  # 3. Verify the build worked - check for new flags
-  combatsim.exe -help
+ C:\Users\Afromullet\Desktop\TinkerRogue\combatsim.exe -battle-log -num-battles=5
 
-  # 4. Run from game_main directory
-  cd game_main
-  ..\combatsim.exe -battle-log -num-battles=5
 
-  Alternative: Build in Place
+ C:\Users\Afromullet\Desktop\TinkerRogue\combatsim.exe -battle-log -num-battles=3  -squad-gen=balanced 
 
-  # Navigate to the cmd directory
-  cd C:\Users\Afromullet\Desktop\TinkerRogue\tools\combatsim\cmd
-
-  # Build in current directory
-  go build -o combatsim.exe
-
-  # Move back to game_main and run
-  cd ..\..\..\game_main
-  ..\tools\combatsim\cmd\combatsim.exe -battle-log -num-battles=5
-
-  # 2. Change to game_main directory (required for asset loading)
-  cd game_main
-
-  # 3. Run with battle logging enabled
-  ../combatsim.exe -battle-log
-
-  That's it! This will run 10 battles (default) and create JSON logs in ./combat_logs/.
-
-  Common Usage Examples
-
-  # Basic: 10 battles, 1v1 format
-  ..\combatsim.exe -battle-log
+# Parameters are like this 
 
 
 
-  # More battles for better data
-  ..\combatsim.exe -battle-log -num-battles=50
+------------------
 
-  # Longer battles (more rounds before timeout)
-  ..\combatsim.exe -battle-log -num-battles=20 -max-rounds=100
 
-  # Custom output directory
-  ..\combatsim.exe -battle-log -log-output-dir=../my_test_logs
-
-  # Multi-squad battles (3-way free-for-all)
-  ..\combatsim.exe -battle-log -squads-per-battle=3 -num-battles=10
-
-  # Specific squad generation strategy
-  ..\combatsim.exe -battle-log -squad-gen=balanced -num-battles=30
-  ..\combatsim.exe -battle-log -squad-gen=random -num-battles=30
 
   All Available Flags
   ┌────────────────────┬───────────────┬───────────────────────────────────────────┐
@@ -124,9 +81,13 @@ scripts\run-combatsim.sh
   ../combatsim.exe -help
 
 
+---------------------------
+
 # Checking for Dead Code:
 
 deadcode ./...
+
+---------------------------
 
 ### Combat Visualizer ###
 
@@ -147,7 +108,6 @@ from exported JSON logs. It displays squad formations, attack flows, and detaile
 
   ____
 
+# Running from Tinker Rogue root dir
 
-
-
-  tools\combat_visualizer\combat_visualizer.exe game_main\combat_logs\battle_20260111_070533.json >> all_battles.txt
+  tools\combat_visualizer\combat_visualizer.exe game_main\combat_logs\battle_20260124_065313.641.json >> all_battles.txt
