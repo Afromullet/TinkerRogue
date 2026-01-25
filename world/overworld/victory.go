@@ -79,7 +79,11 @@ func CheckVictoryCondition(manager *common.EntityManager) VictoryCondition {
 		if tickState != nil {
 			currentTick = tickState.CurrentTick
 		}
-		LogEvent(EventDefeat, currentTick, 0, GetDefeatReason(manager))
+		defeatReason := GetDefeatReason(manager)
+		LogEvent(EventDefeat, currentTick, 0, defeatReason)
+
+		// Export overworld log on defeat
+		FinalizeRecording("Defeat", defeatReason)
 
 		return VictoryPlayerLoses
 	}
@@ -92,8 +96,11 @@ func CheckVictoryCondition(manager *common.EntityManager) VictoryCondition {
 			victoryState.VictoryAchieved = true
 
 			// Log victory event
-			LogEvent(EventVictory, tickState.CurrentTick, 0,
-				formatEventString("Victory! Survived %d ticks", victoryState.TicksToSurvive))
+			victoryReason := formatEventString("Victory! Survived %d ticks", victoryState.TicksToSurvive)
+			LogEvent(EventVictory, tickState.CurrentTick, 0, victoryReason)
+
+			// Export overworld log on survival victory
+			FinalizeRecording("Victory", victoryReason)
 
 			return VictoryTimeLimit
 		}
@@ -114,7 +121,11 @@ func CheckVictoryCondition(manager *common.EntityManager) VictoryCondition {
 		if tickState != nil {
 			currentTick = tickState.CurrentTick
 		}
-		LogEvent(EventVictory, currentTick, 0, "Victory! All threats eliminated")
+		victoryReason := "Victory! All threats eliminated"
+		LogEvent(EventVictory, currentTick, 0, victoryReason)
+
+		// Export overworld log on threat elimination victory
+		FinalizeRecording("Victory", victoryReason)
 
 		return VictoryPlayerWins
 	}
@@ -131,8 +142,11 @@ func CheckVictoryCondition(manager *common.EntityManager) VictoryCondition {
 			if tickState != nil {
 				currentTick = tickState.CurrentTick
 			}
-			LogEvent(EventVictory, currentTick, 0,
-				formatEventString("Victory! Defeated all %s factions", victoryState.TargetFactionType.String()))
+			victoryReason := formatEventString("Victory! Defeated all %s factions", victoryState.TargetFactionType.String())
+			LogEvent(EventVictory, currentTick, 0, victoryReason)
+
+			// Export overworld log on faction victory
+			FinalizeRecording("Victory", victoryReason)
 
 			return VictoryFactionDefeat
 		}

@@ -22,6 +22,10 @@ func CreateTickStateEntity(manager *common.EntityManager) ecs.EntityID {
 		CurrentTick: 0,
 		IsGameOver:  false,
 	})
+
+	// Start recording session when tick state is created
+	StartRecordingSession(0)
+
 	return entity.GetID()
 }
 

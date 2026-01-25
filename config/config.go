@@ -22,6 +22,11 @@ const (
 	// When enabled, a JSON file is written to COMBAT_LOG_EXPORT_DIR after each battle
 	ENABLE_COMBAT_LOG_EXPORT = false
 	COMBAT_LOG_EXPORT_DIR    = "./combat_logs"
+
+	// ENABLE_OVERWORLD_LOG_EXPORT enables JSON export of overworld session logs for post-game analysis
+	// When enabled, a JSON file is written to OVERWORLD_LOG_EXPORT_DIR after game end (victory/defeat)
+	ENABLE_OVERWORLD_LOG_EXPORT = false
+	OVERWORLD_LOG_EXPORT_DIR    = "./overworld_logs"
 )
 
 // Default player starting attributes

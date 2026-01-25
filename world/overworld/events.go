@@ -2,6 +2,8 @@ package overworld
 
 import (
 	"fmt"
+	"game_main/config"
+	"game_main/world/overworldlog"
 
 	"github.com/bytearena/ecs"
 )
@@ -76,6 +78,11 @@ func (el *EventLog) AddEvent(event OverworldEvent) {
 	el.Events = append(el.Events, event)
 	el.Unread++
 
+	// Auto-record to GlobalOverworldRecorder if enabled
+	if GlobalOverworldRecorder != nil && GlobalOverworldRecorder.IsEnabled() {
+		GlobalOverworldRecorder.RecordEvent(event.Tick, event.Type.String(), event.EntityID, event.Description, event.Data)
+	}
+
 	// Trim old events if over max size
 	if len(el.Events) > el.MaxSize {
 		// Remove oldest events
@@ -108,6 +115,9 @@ func (el *EventLog) Clear() {
 
 // Global event log (singleton for simplicity)
 var GlobalEventLog = NewEventLog(100)
+
+// GlobalOverworldRecorder records events for JSON export
+var GlobalOverworldRecorder = overworldlog.NewOverworldRecorder()
 
 // LogEvent adds an event to the global log
 func LogEvent(eventType EventType, tick int64, entityID ecs.EntityID, description string) {
@@ -164,4 +174,30 @@ func HasUnreadEvents() bool {
 // GetUnreadCount returns number of unread events
 func GetUnreadCount() int {
 	return GlobalEventLog.Unread
+}
+
+// StartRecordingSession initializes the overworld recorder for a new game session
+func StartRecordingSession(currentTick int64) {
+	GlobalOverworldRecorder.SetEnabled(config.ENABLE_OVERWORLD_LOG_EXPORT)
+	if GlobalOverworldRecorder.IsEnabled() {
+		GlobalOverworldRecorder.Start(currentTick)
+		fmt.Printf("Overworld recording started (tick %d)\n", currentTick)
+	}
+}
+
+// FinalizeRecording completes recording and exports to JSON
+func FinalizeRecording(outcome, reason string) {
+	if !GlobalOverworldRecorder.IsEnabled() {
+		return
+	}
+
+	record := GlobalOverworldRecorder.Finalize(outcome, reason)
+	if err := overworldlog.ExportOverworldJSON(record, config.OVERWORLD_LOG_EXPORT_DIR); err != nil {
+		fmt.Printf("ERROR: Failed to export overworld log: %v\n", err)
+	}
+}
+
+// ClearRecording resets the recorder for the next session
+func ClearRecording() {
+	GlobalOverworldRecorder.Clear()
 }

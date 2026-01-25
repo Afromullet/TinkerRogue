@@ -105,8 +105,34 @@ func (gb *GameBootstrap) InitializeGameplay(em *common.EntityManager, pd *common
 	// Inject squad checker for victory conditions (avoids circular dependency)
 	overworld.SetSquadChecker(&gameSquadChecker{})
 
+	// Create initial overworld factions
+	gb.InitializeOverworldFactions(em, pd)
+
 	// Spawn random encounters on overworld
 	encounter.SpawnRandomEncounters(em, *pd.Pos)
+}
+
+// InitializeOverworldFactions creates starting NPC factions on the overworld.
+// Spawns 3-5 factions at different positions across the map.
+func (gb *GameBootstrap) InitializeOverworldFactions(em *common.EntityManager, pd *common.PlayerData) {
+	// Define faction spawn positions (spread across map, away from player start)
+	factionConfigs := []struct {
+		factionType overworld.FactionType
+		position    coords.LogicalPosition
+		strength    int
+	}{
+		{overworld.FactionNecromancers, coords.LogicalPosition{X: 15, Y: 15}, 8},
+		{overworld.FactionBandits, coords.LogicalPosition{X: 85, Y: 15}, 6},
+		{overworld.FactionOrcs, coords.LogicalPosition{X: 85, Y: 65}, 10},
+		{overworld.FactionCultists, coords.LogicalPosition{X: 15, Y: 65}, 7},
+	}
+
+	// Create each faction
+	for _, cfg := range factionConfigs {
+		factionID := overworld.CreateFaction(em, cfg.factionType, cfg.position, cfg.strength)
+		log.Printf("Created %s faction at (%d, %d) with strength %d (ID: %d)\n",
+			cfg.factionType.String(), cfg.position.X, cfg.position.Y, cfg.strength, factionID)
+	}
 }
 
 // SetupNewGame orchestrates game initialization through explicit phases.

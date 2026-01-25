@@ -77,6 +77,8 @@ ________________________________________________
 - behavor and ai package
 
 
+- Look into GameBootStrap
+
 
 
 # Additions 

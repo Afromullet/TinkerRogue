@@ -100,6 +100,15 @@ func (om *OverworldMode) initializeWidgetReferences() {
 func (om *OverworldMode) Enter(fromMode framework.UIMode) error {
 	fmt.Println("Entering Overworld Mode")
 
+	// Ensure recording is active when entering overworld
+	if overworld.GlobalOverworldRecorder != nil && overworld.GlobalOverworldRecorder.IsEnabled() {
+		tickState := overworld.GetTickState(om.Context.ECSManager)
+		if tickState != nil && overworld.GlobalOverworldRecorder.EventCount() == 0 {
+			// Start new recording session if recorder is empty
+			overworld.StartRecordingSession(tickState.CurrentTick)
+		}
+	}
+
 	// Refresh UI displays
 	om.refreshThreatInfo()
 	om.refreshTickStatus()
@@ -110,6 +119,25 @@ func (om *OverworldMode) Enter(fromMode framework.UIMode) error {
 
 func (om *OverworldMode) Exit(toMode framework.UIMode) error {
 	fmt.Println("Exiting Overworld Mode")
+
+	// Export overworld log when leaving overworld mode
+	if overworld.GlobalOverworldRecorder != nil && overworld.GlobalOverworldRecorder.IsEnabled() {
+		tickState := overworld.GetTickState(om.Context.ECSManager)
+
+		// Only export if game isn't over (victory/defeat already exported)
+		if tickState != nil && !tickState.IsGameOver {
+			// Only export if we actually have events recorded
+			if overworld.GlobalOverworldRecorder.EventCount() > 0 {
+				tickMsg := fmt.Sprintf("tick %d", tickState.CurrentTick)
+
+				// Export with "Session Paused" outcome (game continues, not victory/defeat)
+				overworld.FinalizeRecording("Session Paused", fmt.Sprintf("Left overworld at %s", tickMsg))
+
+				// Clear recording for next session (will restart on next Enter)
+				overworld.ClearRecording()
+			}
+		}
+	}
 
 	// Clear selection when leaving
 	om.state.ClearSelection()
