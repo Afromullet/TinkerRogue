@@ -8,19 +8,19 @@ import (
 	"github.com/bytearena/ecs"
 )
 
-type FactionManager struct {
+type CombatFactionManager struct {
 	manager     *common.EntityManager
 	combatCache *CombatQueryCache
 }
 
-func NewFactionManager(manager *common.EntityManager, cache *CombatQueryCache) *FactionManager {
-	return &FactionManager{
+func NewCombatFactionManager(manager *common.EntityManager, cache *CombatQueryCache) *CombatFactionManager {
+	return &CombatFactionManager{
 		manager:     manager,
 		combatCache: cache,
 	}
 }
 
-func (fm *FactionManager) CreateFaction(name string, isPlayer bool) ecs.EntityID {
+func (fm *CombatFactionManager) CreateCombatFaction(name string, isPlayer bool) ecs.EntityID {
 	playerID := 0
 	playerName := ""
 	if isPlayer {
@@ -31,13 +31,13 @@ func (fm *FactionManager) CreateFaction(name string, isPlayer bool) ecs.EntityID
 }
 
 // CreateFactionWithPlayer creates a faction with specific player assignment
-func (fm *FactionManager) CreateFactionWithPlayer(name string, playerID int, playerName string) ecs.EntityID {
+func (fm *CombatFactionManager) CreateFactionWithPlayer(name string, playerID int, playerName string) ecs.EntityID {
 	faction := fm.manager.World.NewEntity()
 	factionID := faction.GetID()
 
 	isPlayerControlled := playerID > 0 // Derive from PlayerID
 
-	faction.AddComponent(FactionComponent, &FactionData{
+	faction.AddComponent(CombatFactionComponent, &FactionData{
 		FactionID:          factionID,
 		Name:               name,
 		Mana:               100,
@@ -50,7 +50,7 @@ func (fm *FactionManager) CreateFactionWithPlayer(name string, playerID int, pla
 	return factionID
 }
 
-func (fm *FactionManager) AddSquadToFaction(factionID, squadID ecs.EntityID, position coords.LogicalPosition) error {
+func (fm *CombatFactionManager) AddSquadToFaction(factionID, squadID ecs.EntityID, position coords.LogicalPosition) error {
 
 	faction := fm.combatCache.FindFactionByID(factionID, fm.manager)
 	if faction == nil {
@@ -92,7 +92,7 @@ func (fm *FactionManager) AddSquadToFaction(factionID, squadID ecs.EntityID, pos
 	return nil
 }
 
-func (fm *FactionManager) RemoveSquadFromFaction(factionID, squadID ecs.EntityID) error {
+func (fm *CombatFactionManager) RemoveSquadFromFaction(factionID, squadID ecs.EntityID) error {
 	// Find squad entity
 	squad := fm.manager.FindEntityByID(squadID)
 	if squad == nil {
@@ -123,7 +123,7 @@ func (fm *FactionManager) RemoveSquadFromFaction(factionID, squadID ecs.EntityID
 	return nil
 }
 
-func (fm *FactionManager) GetFactionMana(factionID ecs.EntityID) (current, max int) {
+func (fm *CombatFactionManager) GetFactionMana(factionID ecs.EntityID) (current, max int) {
 	// Find faction entity (using cached query for performance)
 	faction := fm.combatCache.FindFactionByID(factionID, fm.manager)
 	if faction == nil {
@@ -131,11 +131,11 @@ func (fm *FactionManager) GetFactionMana(factionID ecs.EntityID) (current, max i
 	}
 
 	// Get faction data
-	factionData := common.GetComponentType[*FactionData](faction, FactionComponent)
+	factionData := common.GetComponentType[*FactionData](faction, CombatFactionComponent)
 	return factionData.Mana, factionData.MaxMana
 }
 
-func (fm *FactionManager) GetFactionName(factionID ecs.EntityID) string {
+func (fm *CombatFactionManager) GetFactionName(factionID ecs.EntityID) string {
 	// Find faction entity (using cached query for performance)
 	faction := fm.combatCache.FindFactionByID(factionID, fm.manager)
 	if faction == nil {
@@ -143,7 +143,7 @@ func (fm *FactionManager) GetFactionName(factionID ecs.EntityID) string {
 	}
 
 	// Get faction data
-	factionData := common.GetComponentType[*FactionData](faction, FactionComponent)
+	factionData := common.GetComponentType[*FactionData](faction, CombatFactionComponent)
 	if factionData != nil {
 		return factionData.Name
 	}
@@ -151,10 +151,10 @@ func (fm *FactionManager) GetFactionName(factionID ecs.EntityID) string {
 }
 
 // GetPlayerFactions returns all factions controlled by human players
-func (fm *FactionManager) GetPlayerFactions() []ecs.EntityID {
+func (fm *CombatFactionManager) GetPlayerFactions() []ecs.EntityID {
 	var playerFactions []ecs.EntityID
 	for _, result := range fm.manager.World.Query(FactionTag) {
-		factionData := common.GetComponentType[*FactionData](result.Entity, FactionComponent)
+		factionData := common.GetComponentType[*FactionData](result.Entity, CombatFactionComponent)
 		if factionData != nil && factionData.PlayerID > 0 {
 			playerFactions = append(playerFactions, result.Entity.GetID())
 		}

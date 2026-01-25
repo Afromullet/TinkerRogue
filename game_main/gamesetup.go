@@ -19,7 +19,6 @@ import (
 
 	"game_main/testing"
 	"game_main/visual/rendering"
-	"game_main/world/encounter"
 	"game_main/world/overworld"
 	"game_main/world/worldmap"
 	"log"
@@ -97,6 +96,7 @@ func (gb *GameBootstrap) SetupDebugContent(em *common.EntityManager, gm *worldma
 
 // InitializeGameplay sets up squad system and exploration squads.
 // Phase 5: Depends on CreatePlayer for faction positioning.
+// Overworld factions spawn threats dynamically during gameplay.
 func (gb *GameBootstrap) InitializeGameplay(em *common.EntityManager, pd *common.PlayerData) {
 
 	// Initialize overworld tick state
@@ -105,11 +105,8 @@ func (gb *GameBootstrap) InitializeGameplay(em *common.EntityManager, pd *common
 	// Inject squad checker for victory conditions (avoids circular dependency)
 	overworld.SetSquadChecker(&gameSquadChecker{})
 
-	// Create initial overworld factions
+	// Create initial overworld factions (they will spawn threats dynamically)
 	gb.InitializeOverworldFactions(em, pd)
-
-	// Spawn random encounters on overworld
-	encounter.SpawnRandomEncounters(em, *pd.Pos)
 }
 
 // InitializeOverworldFactions creates starting NPC factions on the overworld.

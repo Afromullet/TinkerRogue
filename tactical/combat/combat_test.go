@@ -17,7 +17,7 @@ func TestCombatInitialization(t *testing.T) {
 	manager := CreateTestCombatManager()
 
 	// Verify components exist
-	if FactionComponent == nil {
+	if CombatFactionComponent == nil {
 		t.Error("FactionComponent not initialized")
 	}
 	if TurnStateComponent == nil {
@@ -53,8 +53,8 @@ func TestCreateFaction(t *testing.T) {
 	manager := CreateTestCombatManager()
 
 	cache := NewCombatQueryCache(manager)
-	fm := NewFactionManager(manager, cache)
-	factionID := fm.CreateFaction("Test Faction", true)
+	fm := NewCombatFactionManager(manager, cache)
+	factionID := fm.CreateCombatFaction("Test Faction", true)
 
 	if factionID == 0 {
 		t.Fatal("Failed to create faction")
@@ -66,7 +66,7 @@ func TestCreateFaction(t *testing.T) {
 		t.Fatal("Cannot find created faction")
 	}
 
-	factionData := common.GetComponentType[*FactionData](faction, FactionComponent)
+	factionData := common.GetComponentType[*FactionData](faction, CombatFactionComponent)
 	if factionData.Name != "Test Faction" {
 		t.Errorf("Expected name 'Test Faction', got '%s'", factionData.Name)
 	}
@@ -79,8 +79,8 @@ func TestAddSquadToFaction(t *testing.T) {
 	manager := CreateTestCombatManager()
 
 	cache := NewCombatQueryCache(manager)
-	fm := NewFactionManager(manager, cache)
-	factionID := fm.CreateFaction("Test Faction", true)
+	fm := NewCombatFactionManager(manager, cache)
+	factionID := fm.CreateCombatFaction("Test Faction", true)
 	squadID := CreateTestSquad(manager, "Test Squad", 5)
 
 	pos := coords.LogicalPosition{X: 10, Y: 10}
@@ -122,9 +122,9 @@ func TestEndTurn_AdvancesToNextFaction(t *testing.T) {
 	manager := CreateTestCombatManager()
 
 	cache := NewCombatQueryCache(manager)
-	fm := NewFactionManager(manager, cache)
-	faction1 := fm.CreateFaction("Faction 1", true)
-	faction2 := fm.CreateFaction("Faction 2", false)
+	fm := NewCombatFactionManager(manager, cache)
+	faction1 := fm.CreateCombatFaction("Faction 1", true)
+	faction2 := fm.CreateCombatFaction("Faction 2", false)
 
 	turnMgr := NewTurnManager(manager, cache)
 	turnMgr.InitializeCombat([]ecs.EntityID{faction1, faction2})
@@ -145,9 +145,9 @@ func TestEndTurn_WrapsAroundToFirstFaction(t *testing.T) {
 	manager := CreateTestCombatManager()
 
 	cache := NewCombatQueryCache(manager)
-	fm := NewFactionManager(manager, cache)
-	faction1 := fm.CreateFaction("Faction 1", true)
-	faction2 := fm.CreateFaction("Faction 2", false)
+	fm := NewCombatFactionManager(manager, cache)
+	faction1 := fm.CreateCombatFaction("Faction 1", true)
+	faction2 := fm.CreateCombatFaction("Faction 2", false)
 
 	turnMgr := NewTurnManager(manager, cache)
 	turnMgr.InitializeCombat([]ecs.EntityID{faction1, faction2})
@@ -192,8 +192,8 @@ func TestMoveSquad_UpdatesPosition(t *testing.T) {
 	manager := CreateTestCombatManager()
 
 	cache := NewCombatQueryCache(manager)
-	fm := NewFactionManager(manager, cache)
-	factionID := fm.CreateFaction("Test Faction", true)
+	fm := NewCombatFactionManager(manager, cache)
+	factionID := fm.CreateCombatFaction("Test Faction", true)
 	squadID := CreateTestSquad(manager, "Test Squad", 3)
 
 	startPos := coords.LogicalPosition{X: 5, Y: 5}
@@ -244,9 +244,9 @@ func TestExecuteAttackAction_MeleeAttack(t *testing.T) {
 	manager := CreateTestCombatManager()
 
 	cache := NewCombatQueryCache(manager)
-	fm := NewFactionManager(manager, cache)
-	playerFaction := fm.CreateFaction("Player", true)
-	enemyFaction := fm.CreateFaction("Enemy", false)
+	fm := NewCombatFactionManager(manager, cache)
+	playerFaction := fm.CreateCombatFaction("Player", true)
+	enemyFaction := fm.CreateCombatFaction("Enemy", false)
 
 	playerSquad := CreateTestSquad(manager, "Player Squad", 3)
 	enemySquad := CreateTestSquad(manager, "Enemy Squad", 3)
@@ -278,13 +278,13 @@ func TestFullCombatLoop_TwoFactions(t *testing.T) {
 	manager := CreateTestCombatManager()
 
 	cache := NewCombatQueryCache(manager)
-	fm := NewFactionManager(manager, cache)
+	fm := NewCombatFactionManager(manager, cache)
 	turnMgr := NewTurnManager(manager, cache)
 	moveSys := NewMovementSystem(manager, common.GlobalPositionSystem, cache)
 
 	// Create factions
-	playerID := fm.CreateFaction("Player", true)
-	aiID := fm.CreateFaction("Goblins", false)
+	playerID := fm.CreateCombatFaction("Player", true)
+	aiID := fm.CreateCombatFaction("Goblins", false)
 
 	// Create squads
 	playerSquad1 := CreateTestSquad(manager, "Knights", 5)

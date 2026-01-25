@@ -36,8 +36,8 @@ func CreateTestCombatManager() *common.EntityManager {
 
 // CreateTestFaction creates a faction for testing
 func CreateTestFaction(manager *common.EntityManager, cache *CombatQueryCache, name string, isPlayer bool) ecs.EntityID {
-	fm := NewFactionManager(manager, cache)
-	return fm.CreateFaction(name, isPlayer)
+	fm := NewCombatFactionManager(manager, cache)
+	return fm.CreateCombatFaction(name, isPlayer)
 }
 
 // CreateTestSquad creates a squad with test units
@@ -215,13 +215,13 @@ func InitializeTestCombat(manager *common.EntityManager, factionCount int) ([]ec
 
 	// Create factions
 	factionIDs := make([]ecs.EntityID, factionCount)
-	fm := NewFactionManager(manager, cache)
+	fm := NewCombatFactionManager(manager, cache)
 
 	for i := 0; i < factionCount; i++ {
 		if i == 0 {
-			factionIDs[i] = fm.CreateFaction("Player", true)
+			factionIDs[i] = fm.CreateCombatFaction("Player", true)
 		} else {
-			factionIDs[i] = fm.CreateFaction(fmt.Sprintf("Enemy %d", i), false)
+			factionIDs[i] = fm.CreateCombatFaction(fmt.Sprintf("Enemy %d", i), false)
 		}
 	}
 

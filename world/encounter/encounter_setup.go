@@ -84,7 +84,7 @@ func SetupBalancedEncounter(
 
 	// 5. Create factions
 	cache := combat.NewCombatQueryCache(manager)
-	fm := combat.NewFactionManager(manager, cache)
+	fm := combat.NewCombatFactionManager(manager, cache)
 	playerFactionID := fm.CreateFactionWithPlayer("Player Forces", 1, "Player 1")
 	enemyFactionID := fm.CreateFactionWithPlayer("Enemy Forces", 0, "")
 
@@ -159,7 +159,7 @@ func ensurePlayerSquadsDeployed(playerID ecs.EntityID, manager *common.EntityMan
 // assignPlayerSquadsToFaction adds all deployed player squads to the player faction
 // Assumes squads are already deployed (handled by ensurePlayerSquadsDeployed)
 func assignPlayerSquadsToFaction(
-	fm *combat.FactionManager,
+	fm *combat.CombatFactionManager,
 	playerID ecs.EntityID,
 	manager *common.EntityManager,
 	factionID ecs.EntityID,
@@ -561,4 +561,15 @@ func filterUnitsByAttackType(attackType squads.AttackType) []squads.UnitTemplate
 		}
 	}
 	return filtered
+}
+
+// clampPosition ensures a position stays within bounds
+func clampPosition(value, min, max int) int {
+	if value < min {
+		return min
+	}
+	if value > max {
+		return max
+	}
+	return value
 }

@@ -23,7 +23,7 @@ type (
 type CombatService struct {
 	EntityManager   *common.EntityManager
 	TurnManager     *combat.TurnManager
-	FactionManager  *combat.FactionManager
+	FactionManager  *combat.CombatFactionManager
 	MovementSystem  *combat.CombatMovementSystem
 	CombatCache     *combat.CombatQueryCache
 	CombatActSystem *combat.CombatActionSystem
@@ -51,7 +51,7 @@ func NewCombatService(manager *common.EntityManager) *CombatService {
 	return &CombatService{
 		EntityManager:   manager,
 		TurnManager:     combat.NewTurnManager(manager, cache),
-		FactionManager:  combat.NewFactionManager(manager, cache),
+		FactionManager:  combat.NewCombatFactionManager(manager, cache),
 		MovementSystem:  combat.NewMovementSystem(manager, common.GlobalPositionSystem, cache),
 		CombatCache:     cache,
 		CombatActSystem: combatActSystem,

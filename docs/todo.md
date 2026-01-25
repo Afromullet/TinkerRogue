@@ -86,6 +86,7 @@ ________________________________________________
 
 - Add Abilities. Once they are, see how they are called in combat. Detemrine how you want to call them
 - Better Combat Log
+- Add squad equipment
 
 
 

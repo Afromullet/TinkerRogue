@@ -8,7 +8,7 @@ import (
 	"game_main/visual/graphics"
 	"game_main/visual/rendering"
 	"game_main/world/coords"
-	"game_main/world/encounter"
+	"game_main/world/overworld"
 	"game_main/world/worldmap"
 
 	"github.com/bytearena/ecs"
@@ -151,10 +151,10 @@ func (mc *MovementController) movePlayer(xOffset, yOffset int) {
 		mc.playerData.Pos.X = nextPosition.X
 		mc.playerData.Pos.Y = nextPosition.Y
 
-		// Check if player stepped on an encounter
-		encounterID := encounter.CheckEncounterAtPosition(mc.ecsManager, nextLogicalPos)
-		if encounterID != 0 {
-			mc.handleEncounterCollision(encounterID)
+		// Check if player stepped on a threat node
+		threatEntity := overworld.GetThreatNodeAt(mc.ecsManager, nextLogicalPos)
+		if threatEntity != nil {
+			mc.handleThreatCollision(threatEntity, nextLogicalPos)
 		}
 
 		nextTile.Blocked = true
@@ -188,32 +188,57 @@ func (mc *MovementController) highlightCurrentTile() {
 	mc.gameMap.ApplyColorMatrixToIndex(ind, graphics.GreenColorMatrix)
 }
 
-// handleEncounterCollision triggers combat when player walks onto an encounter
-func (mc *MovementController) handleEncounterCollision(encounterID ecs.EntityID) {
-	// Get encounter details
-	entity := mc.ecsManager.FindEntityByID(encounterID)
-	if entity == nil {
-		return
-	}
-
-	encounterData := common.GetComponentType[*encounter.OverworldEncounterData](
-		entity,
-		encounter.OverworldEncounterComponent,
+// handleThreatCollision triggers combat when player walks onto a threat node
+func (mc *MovementController) handleThreatCollision(threatEntity *ecs.Entity, position coords.LogicalPosition) {
+	// Get threat details
+	threatData := common.GetComponentType[*overworld.ThreatNodeData](
+		threatEntity,
+		overworld.ThreatNodeComponent,
 	)
 
-	if encounterData == nil || encounterData.IsDefeated {
+	if threatData == nil {
 		return
 	}
 
-	// Log encounter trigger
-	fmt.Printf("Player encountered: %s (Level %d)\n", encounterData.Name, encounterData.Level)
+	// Log threat encounter
+	threatName := getThreatTypeName(threatData.ThreatType)
+	fmt.Printf("Player encountered: %s (Intensity %d)\n", threatName, threatData.Intensity)
 
-	// Store encounter ID in BattleMapState and transition to combat
+	// Create encounter from threat
+	encounterID, err := overworld.TriggerCombatFromThreat(
+		mc.ecsManager,
+		threatEntity,
+		position,
+	)
+	if err != nil {
+		fmt.Printf("ERROR: Failed to trigger combat: %v\n", err)
+		return
+	}
+
+	// Store encounter ID and transition to combat
 	if mc.modeCoordinator != nil {
 		battleMapState := mc.modeCoordinator.GetBattleMapState()
 		battleMapState.TriggeredEncounterID = encounterID
 
 		// Transition to combat mode
 		mc.modeCoordinator.EnterBattleMap("combat")
+	}
+}
+
+// getThreatTypeName converts ThreatType to display string
+func getThreatTypeName(threatType overworld.ThreatType) string {
+	switch threatType {
+	case overworld.ThreatNecromancer:
+		return "Necromancer Outpost"
+	case overworld.ThreatBanditCamp:
+		return "Bandit Camp"
+	case overworld.ThreatCorruption:
+		return "Corruption"
+	case overworld.ThreatBeastNest:
+		return "Beast Nest"
+	case overworld.ThreatOrcWarband:
+		return "Orc Warband"
+	default:
+		return "Unknown Threat"
 	}
 }

@@ -34,26 +34,9 @@ func calculateRoleValue(roleData *squads.UnitRoleData) float64 {
 
 // calculateAbilityValue computes power contribution from leader abilities
 func calculateAbilityValue(entity *ecs.Entity) float64 {
-	if !entity.HasComponent(squads.LeaderComponent) {
+	if !entity.HasComponent(squads.LeaderComponent) || !entity.HasComponent(squads.AbilitySlotComponent) {
 		return 0.0
 	}
-	return calculateLeaderAbilityValue(entity)
-}
-
-// calculateCoverValue computes power contribution from cover provision
-func calculateCoverValue(entity *ecs.Entity) float64 {
-	if !entity.HasComponent(squads.CoverComponent) {
-		return 0.0
-	}
-	coverData := common.GetComponentType[*squads.CoverData](entity, squads.CoverComponent)
-	if coverData == nil {
-		return 0.0
-	}
-	return coverData.CoverValue * CoverScalingFactor * CoverBeneficiaryMultiplier
-}
-
-// calculateLeaderAbilityValue sums power value of equipped abilities
-func calculateLeaderAbilityValue(entity *ecs.Entity) float64 {
 	if !entity.HasComponent(squads.AbilitySlotComponent) {
 		return 0.0
 	}
@@ -71,4 +54,16 @@ func calculateLeaderAbilityValue(entity *ecs.Entity) float64 {
 	}
 
 	return totalValue
+}
+
+// calculateCoverValue computes power contribution from cover provision
+func calculateCoverValue(entity *ecs.Entity) float64 {
+	if !entity.HasComponent(squads.CoverComponent) {
+		return 0.0
+	}
+	coverData := common.GetComponentType[*squads.CoverData](entity, squads.CoverComponent)
+	if coverData == nil {
+		return 0.0
+	}
+	return coverData.CoverValue * CoverScalingFactor * CoverBeneficiaryMultiplier
 }

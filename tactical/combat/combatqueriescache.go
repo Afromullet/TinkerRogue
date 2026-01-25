@@ -60,7 +60,7 @@ func (c *CombatQueryCache) FindFactionByID(factionID ecs.EntityID, manager *comm
 	// View automatically updated when FactionComponent added/removed
 	for _, result := range c.FactionView.Get() {
 		faction := result.Entity
-		factionData := common.GetComponentType[*FactionData](faction, FactionComponent)
+		factionData := common.GetComponentType[*FactionData](faction, CombatFactionComponent)
 		if factionData != nil && factionData.FactionID == factionID {
 			return faction
 		}
@@ -74,5 +74,5 @@ func (c *CombatQueryCache) FindFactionDataByID(factionID ecs.EntityID, manager *
 	if entity == nil {
 		return nil
 	}
-	return common.GetComponentType[*FactionData](entity, FactionComponent)
+	return common.GetComponentType[*FactionData](entity, CombatFactionComponent)
 }

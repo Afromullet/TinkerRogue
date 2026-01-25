@@ -3,8 +3,9 @@ package encounter
 import (
 	"game_main/common"
 	"game_main/tactical/squads"
-	"github.com/bytearena/ecs"
 	"math"
+
+	"github.com/bytearena/ecs"
 )
 
 // CalculateUnitPower computes the power rating for a single unit

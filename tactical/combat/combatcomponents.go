@@ -8,7 +8,7 @@ import (
 
 // Component and tag variables
 var (
-	FactionComponent           *ecs.Component
+	CombatFactionComponent     *ecs.Component
 	TurnStateComponent         *ecs.Component
 	ActionStateComponent       *ecs.Component
 	FactionMembershipComponent *ecs.Component
@@ -63,7 +63,7 @@ func init() {
 // InitCombatComponents registers all combat-related components with the ECS manager.
 // Call this during game initialization, similar to InitSquadComponents.
 func InitCombatComponents(manager *common.EntityManager) {
-	FactionComponent = manager.World.NewComponent()
+	CombatFactionComponent = manager.World.NewComponent()
 	TurnStateComponent = manager.World.NewComponent()
 	ActionStateComponent = manager.World.NewComponent()
 	FactionMembershipComponent = manager.World.NewComponent()
@@ -72,7 +72,7 @@ func InitCombatComponents(manager *common.EntityManager) {
 // InitCombatTags creates tags for querying combat-related entities.
 // Call this after InitCombatComponents.
 func InitCombatTags(manager *common.EntityManager) {
-	FactionTag = ecs.BuildTag(FactionComponent)
+	FactionTag = ecs.BuildTag(CombatFactionComponent)
 	TurnStateTag = ecs.BuildTag(TurnStateComponent)
 	ActionStateTag = ecs.BuildTag(ActionStateComponent)
 	CombatFactionTag = ecs.BuildTag(FactionMembershipComponent)

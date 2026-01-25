@@ -14,7 +14,7 @@ import (
 // This eliminates query duplication and provides a consistent query interface.
 type GUIQueries struct {
 	ECSManager     *common.EntityManager
-	factionManager *combat.FactionManager
+	factionManager *combat.CombatFactionManager
 
 	// Query caches (own Views that are automatically maintained by ECS library)
 	SquadCache     *squads.SquadQueryCache
@@ -32,7 +32,7 @@ func NewGUIQueries(ecsManager *common.EntityManager) *GUIQueries {
 
 	gq := &GUIQueries{
 		ECSManager:     ecsManager,
-		factionManager: combat.NewFactionManager(ecsManager, combatCache),
+		factionManager: combat.NewCombatFactionManager(ecsManager, combatCache),
 
 		// Initialize query caches (own Views that are automatically maintained by ECS library)
 		SquadCache:  squads.NewSquadQueryCache(ecsManager),
@@ -171,7 +171,7 @@ func (gq *GUIQueries) GetAllFactions() []ecs.EntityID {
 	factionIDs := []ecs.EntityID{}
 	// Use cached View instead of Query (avoids 30,000+ map allocations per second)
 	for _, result := range gq.CombatCache.FactionView.Get() {
-		factionData := common.GetComponentType[*combat.FactionData](result.Entity, combat.FactionComponent)
+		factionData := common.GetComponentType[*combat.FactionData](result.Entity, combat.CombatFactionComponent)
 		factionIDs = append(factionIDs, factionData.FactionID)
 	}
 	return factionIDs

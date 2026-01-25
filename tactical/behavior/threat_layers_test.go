@@ -13,11 +13,11 @@ func TestMeleeThreatLayer_Compute(t *testing.T) {
 	manager := combat.CreateTestCombatManager()
 	cache := combat.NewCombatQueryCache(manager)
 	baseThreatMgr := NewFactionThreatLevelManager(manager, cache)
-	fm := combat.NewFactionManager(manager, cache)
+	fm := combat.NewCombatFactionManager(manager, cache)
 
 	// Create two factions
-	faction1 := fm.CreateFaction("Player", true)
-	faction2 := fm.CreateFaction("Enemy", false)
+	faction1 := fm.CreateCombatFaction("Player", true)
+	faction2 := fm.CreateCombatFaction("Enemy", false)
 
 	// Add factions to threat manager
 	baseThreatMgr.AddFaction(faction1)
@@ -55,11 +55,11 @@ func TestRangedThreatLayer_Compute(t *testing.T) {
 	manager := combat.CreateTestCombatManager()
 	cache := combat.NewCombatQueryCache(manager)
 	baseThreatMgr := NewFactionThreatLevelManager(manager, cache)
-	fm := combat.NewFactionManager(manager, cache)
+	fm := combat.NewCombatFactionManager(manager, cache)
 
 	// Create two factions
-	faction1 := fm.CreateFaction("Player", true)
-	faction2 := fm.CreateFaction("Enemy", false)
+	faction1 := fm.CreateCombatFaction("Player", true)
+	faction2 := fm.CreateCombatFaction("Enemy", false)
 
 	baseThreatMgr.AddFaction(faction1)
 	baseThreatMgr.AddFaction(faction2)
@@ -91,9 +91,9 @@ func TestCompositeThreatEvaluator_Update(t *testing.T) {
 	manager := combat.CreateTestCombatManager()
 	cache := combat.NewCombatQueryCache(manager)
 	baseThreatMgr := NewFactionThreatLevelManager(manager, cache)
-	fm := combat.NewFactionManager(manager, cache)
+	fm := combat.NewCombatFactionManager(manager, cache)
 
-	faction1 := fm.CreateFaction("Player", true)
+	faction1 := fm.CreateCombatFaction("Player", true)
 	baseThreatMgr.AddFaction(faction1)
 
 	// Create composite evaluator
@@ -158,9 +158,9 @@ func TestGetOptimalPositionForRole(t *testing.T) {
 	manager := combat.CreateTestCombatManager()
 	cache := combat.NewCombatQueryCache(manager)
 	baseThreatMgr := NewFactionThreatLevelManager(manager, cache)
-	fm := combat.NewFactionManager(manager, cache)
+	fm := combat.NewCombatFactionManager(manager, cache)
 
-	faction1 := fm.CreateFaction("Player", true)
+	faction1 := fm.CreateCombatFaction("Player", true)
 	baseThreatMgr.AddFaction(faction1)
 
 	evaluator := NewCompositeThreatEvaluator(faction1, manager, cache, baseThreatMgr)
@@ -184,8 +184,8 @@ func TestGetOptimalPositionForRole(t *testing.T) {
 func TestThreatLayerBase_Caching(t *testing.T) {
 	manager := combat.CreateTestCombatManager()
 	cache := combat.NewCombatQueryCache(manager)
-	fm := combat.NewFactionManager(manager, cache)
-	faction1 := fm.CreateFaction("Player", true)
+	fm := combat.NewCombatFactionManager(manager, cache)
+	faction1 := fm.CreateCombatFaction("Player", true)
 
 	base := NewThreatLayerBase(faction1, manager, cache)
 
@@ -232,12 +232,12 @@ func TestGetSquadPrimaryRole(t *testing.T) {
 func TestThreatLayerBase_GetEnemyFactions(t *testing.T) {
 	manager := combat.CreateTestCombatManager()
 	cache := combat.NewCombatQueryCache(manager)
-	fm := combat.NewFactionManager(manager, cache)
+	fm := combat.NewCombatFactionManager(manager, cache)
 
 	// Create multiple factions
-	faction1 := fm.CreateFaction("Player", true)
-	faction2 := fm.CreateFaction("Enemy1", false)
-	faction3 := fm.CreateFaction("Enemy2", false)
+	faction1 := fm.CreateCombatFaction("Player", true)
+	faction2 := fm.CreateCombatFaction("Enemy1", false)
+	faction3 := fm.CreateCombatFaction("Enemy2", false)
 
 	base := NewThreatLayerBase(faction1, manager, cache)
 	enemies := base.getEnemyFactions()

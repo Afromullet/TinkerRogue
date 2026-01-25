@@ -459,7 +459,7 @@ func (clm *CombatLifecycleManager) calculateCasualties(
 	// Find player and enemy factions
 	for _, result := range clm.ecsManager.World.Query(combat.FactionTag) {
 		entity := result.Entity
-		factionData := common.GetComponentType[*combat.FactionData](entity, combat.FactionComponent)
+		factionData := common.GetComponentType[*combat.FactionData](entity, combat.CombatFactionComponent)
 		if factionData != nil {
 			if factionData.IsPlayerControlled {
 				playerFactionID = entity.GetID()

@@ -70,8 +70,8 @@ func GenerateEnemyComposition(threatType ThreatType, intensity int) []UnitTempla
 	baseUnits := GetBaseThreatUnits(threatType)
 
 	// Scale by intensity
-	squadCount := 1 + (intensity / 3)        // 1 squad at tier 1-2, 2 squads at 3-5, etc.
-	unitsPerSquad := 5 + intensity           // More units at higher intensity
+	squadCount := 1 + (intensity / 3) // 1 squad at tier 1-2, 2 squads at 3-5, etc.
+	unitsPerSquad := 5 + intensity    // More units at higher intensity
 
 	// Cap at reasonable limits
 	if squadCount > 4 {
@@ -94,6 +94,7 @@ func GenerateEnemyComposition(threatType ThreatType, intensity int) []UnitTempla
 }
 
 // GetBaseThreatUnits returns base unit types per threat
+// TODO. This should be configurable through a file
 func GetBaseThreatUnits(threatType ThreatType) []UnitTemplate {
 	switch threatType {
 	case ThreatNecromancer:
