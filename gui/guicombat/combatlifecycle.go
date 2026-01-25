@@ -9,11 +9,13 @@ import (
 	"game_main/gui/widgets"
 	"game_main/tactical/combat"
 	"game_main/tactical/combat/battlelog"
+	"game_main/tactical/combatresolution"
 	"game_main/tactical/combatservices"
 	"game_main/tactical/squads"
 	"game_main/visual/rendering"
 	"game_main/world/coords"
 	"game_main/world/encounter"
+	"game_main/world/overworld"
 
 	"github.com/bytearena/ecs"
 )
@@ -146,6 +148,7 @@ func (clm *CombatLifecycleManager) StartBattleRecording(round int) {
 }
 
 // MarkEncounterDefeated marks an encounter as defeated if the player won
+// and applies combat resolution to overworld threats
 func (clm *CombatLifecycleManager) MarkEncounterDefeated(encounterID ecs.EntityID) {
 	// Only mark if we have a tracked encounter
 	if encounterID == 0 {
@@ -155,6 +158,25 @@ func (clm *CombatLifecycleManager) MarkEncounterDefeated(encounterID ecs.EntityI
 	// Check victory condition
 	victor := clm.combatService.CheckVictoryCondition()
 
+	// Get encounter data
+	entity := clm.ecsManager.FindEntityByID(encounterID)
+	if entity == nil {
+		return
+	}
+
+	encounterData := common.GetComponentType[*encounter.OverworldEncounterData](
+		entity,
+		encounter.OverworldEncounterComponent,
+	)
+	if encounterData == nil {
+		return
+	}
+
+	// Apply combat resolution to overworld if this came from a threat
+	if encounterData.ThreatNodeID != 0 {
+		clm.resolveCombatToOverworld(encounterData.ThreatNodeID, victor)
+	}
+
 	// Only mark as defeated if a player faction won
 	//TODO, we need to remove it rather than just hiding it
 	if victor.VictorFaction != 0 {
@@ -162,29 +184,20 @@ func (clm *CombatLifecycleManager) MarkEncounterDefeated(encounterID ecs.EntityI
 		if factionData != nil && factionData.IsPlayerControlled {
 			// Player won - mark encounter as defeated and hide permanently
 			//TODO, we need to remove this rather than hide sprite.
-			entity := clm.ecsManager.FindEntityByID(encounterID)
-			if entity != nil {
-				encounterData := common.GetComponentType[*encounter.OverworldEncounterData](
-					entity,
-					encounter.OverworldEncounterComponent,
-				)
-				if encounterData != nil {
-					encounterData.IsDefeated = true
+			encounterData.IsDefeated = true
 
-					// Hide encounter sprite permanently on overworld map
-					renderable := common.GetComponentType[*rendering.Renderable](
-						entity,
-						rendering.RenderableComponent,
-					)
-					if renderable != nil {
-						renderable.Visible = false
-					}
-
-					fmt.Printf("Marked encounter '%s' as defeated\n", encounterData.Name)
-					clm.logManager.UpdateTextArea(clm.combatLogArea,
-						fmt.Sprintf("Encounter '%s' defeated!", encounterData.Name))
-				}
+			// Hide encounter sprite permanently on overworld map
+			renderable := common.GetComponentType[*rendering.Renderable](
+				entity,
+				rendering.RenderableComponent,
+			)
+			if renderable != nil {
+				renderable.Visible = false
 			}
+
+			fmt.Printf("Marked encounter '%s' as defeated\n", encounterData.Name)
+			clm.logManager.UpdateTextArea(clm.combatLogArea,
+				fmt.Sprintf("Encounter '%s' defeated!", encounterData.Name))
 		}
 	}
 }
@@ -371,4 +384,129 @@ func (clm *CombatLifecycleManager) disposeEnemyUnitsHelper(enemySquadSet map[ecs
 		}
 	}
 	fmt.Printf("Disposed %d enemy units\n", count)
+}
+
+// resolveCombatToOverworld applies combat outcome to overworld threat state
+func (clm *CombatLifecycleManager) resolveCombatToOverworld(
+	threatNodeID ecs.EntityID,
+	victor *combatservices.VictoryCheckResult,
+) {
+	// Calculate casualties
+	playerUnitsLost, enemyUnitsKilled := clm.calculateCasualties(victor)
+
+	// Determine outcome type
+	playerVictory := false
+	playerRetreat := false
+
+	if victor.VictorFaction != 0 {
+		factionData := clm.queries.CombatCache.FindFactionDataByID(victor.VictorFaction, clm.queries.ECSManager)
+		if factionData != nil {
+			playerVictory = factionData.IsPlayerControlled
+		}
+	}
+
+	// TODO: Track retreat status (currently not implemented in combat system)
+	// For now, assume no retreat - either win or lose
+
+	// Get player squad ID (use first deployed squad)
+	playerSquadID := clm.getFirstPlayerSquadID()
+
+	// Calculate rewards from threat
+	threatEntity := clm.ecsManager.FindEntityByID(threatNodeID)
+	if threatEntity == nil {
+		fmt.Printf("WARNING: Threat node %d not found for resolution\n", threatNodeID)
+		return
+	}
+
+	threatData := common.GetComponentType[*overworld.ThreatNodeData](threatEntity, overworld.ThreatNodeComponent)
+	if threatData == nil {
+		fmt.Printf("WARNING: Entity %d is not a threat node\n", threatNodeID)
+		return
+	}
+
+	rewards := overworld.CalculateRewards(threatData.Intensity, threatData.ThreatType)
+
+	// Create combat outcome
+	outcome := combatresolution.CreateCombatOutcome(
+		threatNodeID,
+		playerVictory,
+		playerRetreat,
+		playerSquadID,
+		playerUnitsLost,
+		enemyUnitsKilled,
+		rewards,
+	)
+
+	// Apply to overworld
+	if err := combatresolution.ResolveCombatToOverworld(clm.ecsManager, outcome); err != nil {
+		fmt.Printf("ERROR resolving combat to overworld: %v\n", err)
+		clm.logManager.UpdateTextArea(clm.combatLogArea,
+			fmt.Sprintf("Warning: Failed to update overworld state: %v", err))
+	} else {
+		fmt.Printf("Combat resolved to overworld: %d enemy killed, %d player lost\n",
+			enemyUnitsKilled, playerUnitsLost)
+	}
+}
+
+// calculateCasualties counts units killed in combat
+func (clm *CombatLifecycleManager) calculateCasualties(
+	victor *combatservices.VictoryCheckResult,
+) (playerUnitsLost int, enemyUnitsKilled int) {
+	// Count destroyed units by faction
+	playerFactionID := ecs.EntityID(0)
+	enemyFactionID := ecs.EntityID(0)
+
+	// Find player and enemy factions
+	for _, result := range clm.ecsManager.World.Query(combat.FactionTag) {
+		entity := result.Entity
+		factionData := common.GetComponentType[*combat.FactionData](entity, combat.FactionComponent)
+		if factionData != nil {
+			if factionData.IsPlayerControlled {
+				playerFactionID = entity.GetID()
+			} else {
+				enemyFactionID = entity.GetID()
+			}
+		}
+	}
+
+	// Count dead units in each faction
+	for _, result := range clm.ecsManager.World.Query(squads.SquadMemberTag) {
+		entity := result.Entity
+		memberData := common.GetComponentType[*squads.SquadMemberData](entity, squads.SquadMemberComponent)
+		if memberData == nil {
+			continue
+		}
+
+		// Get squad to check faction membership
+		squadEntity := clm.ecsManager.FindEntityByID(memberData.SquadID)
+		if squadEntity == nil {
+			continue
+		}
+
+		squadFaction := common.GetComponentType[*combat.CombatFactionData](squadEntity, combat.FactionMembershipComponent)
+		if squadFaction == nil {
+			continue
+		}
+
+		// Check if unit is dead
+		unitAttr := common.GetComponentType[*common.Attributes](entity, common.AttributeComponent)
+		if unitAttr != nil && unitAttr.CurrentHealth <= 0 {
+			if squadFaction.FactionID == playerFactionID {
+				playerUnitsLost++
+			} else if squadFaction.FactionID == enemyFactionID {
+				enemyUnitsKilled++
+			}
+		}
+	}
+
+	return playerUnitsLost, enemyUnitsKilled
+}
+
+// getFirstPlayerSquadID returns the first player squad ID found
+func (clm *CombatLifecycleManager) getFirstPlayerSquadID() ecs.EntityID {
+	roster := squads.GetPlayerSquadRoster(clm.playerEntityID, clm.ecsManager)
+	if roster != nil && len(roster.OwnedSquads) > 0 {
+		return roster.OwnedSquads[0]
+	}
+	return 0
 }

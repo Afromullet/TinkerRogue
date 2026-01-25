@@ -13,7 +13,7 @@ import (
 // setupTestManager functions across multiple test files.
 //
 // Initializes:
-// - Common components (Position, Attribute, Name)
+// - Common components (Position, Attribute, Name, Player, PlayerResources)
 // - PositionSystem (fresh instance for isolation)
 // - Squad system (components and tags) via InitializeSquadData
 // - Other ECS components as needed
@@ -28,6 +28,8 @@ func NewTestEntityManager() *common.EntityManager {
 	common.PositionComponent = manager.World.NewComponent()
 	common.AttributeComponent = manager.World.NewComponent()
 	common.NameComponent = manager.World.NewComponent()
+	common.PlayerComponent = manager.World.NewComponent()
+	common.PlayerResourcesComponent = manager.World.NewComponent()
 
 	// Initialize PositionSystem (fresh instance for each test)
 	common.GlobalPositionSystem = common.NewPositionSystem(manager.World)

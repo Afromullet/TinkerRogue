@@ -1,0 +1,159 @@
+package combatresolution
+
+import (
+	"fmt"
+
+	"game_main/common"
+	"game_main/world/overworld"
+
+	"github.com/bytearena/ecs"
+)
+
+// CombatOutcome describes result of a tactical battle
+type CombatOutcome struct {
+	ThreatNodeID  ecs.EntityID
+	PlayerVictory bool
+	PlayerRetreat bool
+	PlayerSquadID ecs.EntityID
+	Casualties    CasualtyReport
+	RewardsEarned overworld.RewardTable
+}
+
+// CasualtyReport tracks units lost in combat
+type CasualtyReport struct {
+	PlayerUnitsLost  int
+	EnemyUnitsKilled int
+}
+
+// ResolveCombatToOverworld applies combat outcome to overworld state
+// This is the feedback loop from tactical combat back to strategic layer
+func ResolveCombatToOverworld(
+	manager *common.EntityManager,
+	outcome *CombatOutcome,
+) error {
+	// Find threat node
+	threatEntity := manager.FindEntityByID(outcome.ThreatNodeID)
+	if threatEntity == nil {
+		return fmt.Errorf("threat node %d not found", outcome.ThreatNodeID)
+	}
+
+	threatData := common.GetComponentType[*overworld.ThreatNodeData](threatEntity, overworld.ThreatNodeComponent)
+	if threatData == nil {
+		return fmt.Errorf("entity is not a threat node")
+	}
+
+	if outcome.PlayerVictory {
+		// Player won - reduce or destroy threat
+		damageDealt := CalculateThreatDamage(outcome.Casualties.EnemyUnitsKilled)
+		threatData.Intensity -= damageDealt
+
+		if threatData.Intensity <= 0 {
+			// Destroy threat node completely
+			overworld.DestroyThreatNode(manager, threatEntity)
+
+			// Grant full rewards
+			GrantRewards(manager, outcome.PlayerSquadID, outcome.RewardsEarned)
+
+			fmt.Printf("Threat %d destroyed! Rewards: %d gold, %d XP\n",
+				outcome.ThreatNodeID, outcome.RewardsEarned.Gold, outcome.RewardsEarned.Experience)
+		} else {
+			// Weakened but not destroyed - partial rewards
+			partialRewards := overworld.RewardTable{
+				Gold:       outcome.RewardsEarned.Gold / 2,
+				Experience: outcome.RewardsEarned.Experience / 2,
+			}
+			GrantRewards(manager, outcome.PlayerSquadID, partialRewards)
+
+			// Reset growth progress (player setback the threat)
+			threatData.GrowthProgress = 0.0
+
+			fmt.Printf("Threat %d weakened to intensity %d. Partial rewards: %d gold, %d XP\n",
+				outcome.ThreatNodeID, threatData.Intensity, partialRewards.Gold, partialRewards.Experience)
+		}
+	} else if outcome.PlayerRetreat {
+		// Player fled - no change to threat, no rewards
+		fmt.Printf("Retreated from threat %d (no changes)\n", outcome.ThreatNodeID)
+	} else {
+		// Player defeat - threat grows stronger
+		threatData.Intensity += 1
+		threatData.GrowthProgress = 0.0
+
+		// Update influence radius
+		influenceData := common.GetComponentType[*overworld.InfluenceData](threatEntity, overworld.InfluenceComponent)
+		if influenceData != nil {
+			params := overworld.GetThreatTypeParams(threatData.ThreatType)
+			influenceData.Radius = params.BaseRadius + threatData.Intensity
+			influenceData.EffectStrength = float64(threatData.Intensity) * 0.1
+		}
+
+		fmt.Printf("Defeated by threat %d! Threat grew to intensity %d\n",
+			outcome.ThreatNodeID, threatData.Intensity)
+
+		// TODO: Player suffers additional penalties (resource loss, morale, etc.)
+	}
+
+	return nil
+}
+
+// CalculateThreatDamage converts enemy casualties to threat intensity damage
+// Every 5 enemies killed = 1 intensity reduction
+func CalculateThreatDamage(enemiesKilled int) int {
+	return enemiesKilled / 5
+}
+
+// GrantRewards applies rewards to player
+func GrantRewards(manager *common.EntityManager, squadID ecs.EntityID, rewards overworld.RewardTable) {
+	// Find player entity (owner of the squad)
+	playerID := findPlayerEntityID(manager)
+	if playerID == 0 {
+		fmt.Printf("WARNING: Could not find player entity to grant rewards\n")
+		return
+	}
+
+	// Grant resources to player
+	err := overworld.GrantResources(manager, playerID, rewards)
+	if err != nil {
+		fmt.Printf("ERROR granting resources: %v\n", err)
+		return
+	}
+
+	fmt.Printf("Squad %d earned rewards: %d gold, %d XP\n", squadID, rewards.Gold, rewards.Experience)
+
+	// TODO: Add XP to squad (Phase 4: squad progression system)
+}
+
+// findPlayerEntityID locates the player entity
+func findPlayerEntityID(manager *common.EntityManager) ecs.EntityID {
+	// Search for entity with PlayerComponent
+	for id := ecs.EntityID(1); id < ecs.EntityID(1000); id++ {
+		entity := manager.FindEntityByID(id)
+		if entity != nil && entity.HasComponent(common.PlayerComponent) {
+			return id
+		}
+	}
+	return 0
+}
+
+// CreateCombatOutcome creates outcome from combat state
+// Helper function to construct outcome from combat results
+func CreateCombatOutcome(
+	threatNodeID ecs.EntityID,
+	playerWon bool,
+	playerRetreated bool,
+	playerSquadID ecs.EntityID,
+	playerUnitsLost int,
+	enemyUnitsKilled int,
+	rewards overworld.RewardTable,
+) *CombatOutcome {
+	return &CombatOutcome{
+		ThreatNodeID:  threatNodeID,
+		PlayerVictory: playerWon,
+		PlayerRetreat: playerRetreated,
+		PlayerSquadID: playerSquadID,
+		Casualties: CasualtyReport{
+			PlayerUnitsLost:  playerUnitsLost,
+			EnemyUnitsKilled: enemyUnitsKilled,
+		},
+		RewardsEarned: rewards,
+	}
+}

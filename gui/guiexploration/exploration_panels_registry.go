@@ -58,6 +58,13 @@ func init() {
 							em.ModeManager.RequestTransition(mode, "Throwables clicked")
 						}
 					}},
+					{Text: "Overworld (O)", OnClick: func() {
+						if em.Context.ModeCoordinator != nil {
+							if err := em.Context.ModeCoordinator.ReturnToOverworld("overworld"); err != nil {
+								fmt.Printf("ERROR: Failed to switch to overworld: %v\n", err)
+							}
+						}
+					}},
 					{Text: "Squads (E)", OnClick: func() {
 						if em.Context.ModeCoordinator != nil {
 							if err := em.Context.ModeCoordinator.ReturnToOverworld("squad_management"); err != nil {

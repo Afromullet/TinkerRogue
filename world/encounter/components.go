@@ -33,10 +33,11 @@ func InitEncounterTags(manager *common.EntityManager) {
 
 // OverworldEncounterData - Pure data for encounter entities
 type OverworldEncounterData struct {
-	Name          string // Display name (e.g., "Goblin Patrol")
-	Level         int    // Difficulty level
-	EncounterType string // Type identifier for spawn logic
-	IsDefeated    bool   // Marked true after victory
+	Name          string       // Display name (e.g., "Goblin Patrol")
+	Level         int          // Difficulty level
+	EncounterType string       // Type identifier for spawn logic
+	IsDefeated    bool         // Marked true after victory
+	ThreatNodeID  ecs.EntityID // Link to overworld threat node (0 if not from threat)
 }
 
 // EvaluationConfigData holds configurable weights for power calculations

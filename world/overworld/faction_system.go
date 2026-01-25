@@ -1,0 +1,382 @@
+package overworld
+
+import (
+	"game_main/common"
+	"game_main/world/coords"
+
+	"github.com/bytearena/ecs"
+)
+
+// CreateFaction creates a new NPC faction entity
+func CreateFaction(
+	manager *common.EntityManager,
+	factionType FactionType,
+	homePosition coords.LogicalPosition,
+	initialStrength int,
+) ecs.EntityID {
+	entity := manager.World.NewEntity()
+
+	factionData := &OverworldFactionData{
+		FactionID:     entity.GetID(),
+		FactionType:   factionType,
+		Strength:      initialStrength,
+		TerritorySize: 1,
+		Disposition:   -50, // Default hostile
+		CurrentIntent: IntentExpand,
+		GrowthRate:    1.0,
+	}
+
+	territoryData := &TerritoryData{
+		OwnedTiles:  []coords.LogicalPosition{homePosition},
+		BorderTiles: []coords.LogicalPosition{},
+	}
+
+	intentData := &StrategicIntentData{
+		Intent:         FactionIntent(IntentExpand),
+		TargetPosition: nil,
+		TicksRemaining: DefaultIntentTickDuration,
+		Priority:       0.5,
+	}
+
+	entity.AddComponent(OverworldFactionComponent, factionData)
+	entity.AddComponent(TerritoryComponent, territoryData)
+	entity.AddComponent(StrategicIntentComponent, intentData)
+
+	// Spawn initial threat at home position
+	SpawnThreatForFaction(manager, entity, homePosition, factionType)
+
+	return entity.GetID()
+}
+
+// UpdateFactions executes faction AI for all factions
+func UpdateFactions(manager *common.EntityManager, currentTick int64) error {
+	for _, result := range manager.World.Query(OverworldFactionTag) {
+		entity := result.Entity
+		factionData := common.GetComponentType[*OverworldFactionData](entity, OverworldFactionComponent)
+		intentData := common.GetComponentType[*StrategicIntentData](entity, StrategicIntentComponent)
+
+		if factionData == nil || intentData == nil {
+			continue
+		}
+
+		// Decrement intent timer
+		intentData.TicksRemaining--
+
+		// Re-evaluate intent if timer expired
+		if intentData.TicksRemaining <= 0 {
+			EvaluateFactionIntent(manager, entity, factionData, intentData)
+			intentData.TicksRemaining = DefaultIntentTickDuration
+		}
+
+		// Execute current intent
+		ExecuteFactionIntent(manager, entity, factionData, intentData)
+	}
+
+	return nil
+}
+
+// EvaluateFactionIntent determines what faction should do next
+func EvaluateFactionIntent(
+	manager *common.EntityManager,
+	entity *ecs.Entity,
+	factionData *OverworldFactionData,
+	intentData *StrategicIntentData,
+) {
+	// Score possible actions
+	expandScore := ScoreExpansion(manager, entity, factionData)
+	fortifyScore := ScoreFortification(manager, entity, factionData)
+	raidScore := ScoreRaiding(manager, entity, factionData)
+	retreatScore := ScoreRetreat(manager, entity, factionData)
+
+	// Choose highest-scoring action
+	maxScore := expandScore
+	newIntent := IntentExpand
+	newPriority := 0.5
+
+	if fortifyScore > maxScore {
+		maxScore = fortifyScore
+		newIntent = IntentFortify
+	}
+	if raidScore > maxScore {
+		maxScore = raidScore
+		newIntent = IntentRaid
+	}
+	if retreatScore > maxScore {
+		maxScore = retreatScore
+		newIntent = IntentRetreat
+	}
+
+	// If all scores are low, go idle
+	if maxScore < 2.0 {
+		newIntent = IntentIdle
+	}
+
+	intentData.Intent = newIntent
+	intentData.Priority = newPriority
+	factionData.CurrentIntent = newIntent
+}
+
+// ScoreExpansion evaluates how good expansion is right now
+func ScoreExpansion(manager *common.EntityManager, entity *ecs.Entity, factionData *OverworldFactionData) float64 {
+	score := 0.0
+
+	// Favor expansion when strong
+	if factionData.Strength >= ExpansionStrengthThreshold {
+		score += 5.0
+	}
+
+	// Favor expansion when territory is small
+	if factionData.TerritorySize < ExpansionTerritoryLimit {
+		score += 3.0
+	}
+
+	// Penalize if at territory limit
+	if factionData.TerritorySize >= MaxTerritorySize {
+		score -= 10.0
+	}
+
+	// Faction type modifiers
+	switch factionData.FactionType {
+	case FactionCultists:
+		score += 3.0 // Cultists love to expand
+	case FactionOrcs:
+		score += 2.0 // Orcs are territorial
+	case FactionBeasts:
+		score -= 1.0 // Beasts prefer smaller territories
+	}
+
+	return score
+}
+
+// ScoreFortification evaluates defensive posture
+func ScoreFortification(manager *common.EntityManager, entity *ecs.Entity, factionData *OverworldFactionData) float64 {
+	score := 0.0
+
+	// Favor fortify when weak
+	if factionData.Strength < FortificationWeakThreshold {
+		score += 6.0
+	}
+
+	// Always some value to fortifying
+	score += 2.0
+
+	// Faction type modifiers
+	switch factionData.FactionType {
+	case FactionNecromancers:
+		score += 2.0 // Necromancers prefer defense
+	}
+
+	return score
+}
+
+// ScoreRaiding evaluates attacking player/other factions
+func ScoreRaiding(manager *common.EntityManager, entity *ecs.Entity, factionData *OverworldFactionData) float64 {
+	score := 0.0
+
+	// Need minimum strength to raid
+	if factionData.Strength < RaidStrengthThreshold {
+		return 0.0
+	}
+
+	// Aggressive faction types raid more
+	switch factionData.FactionType {
+	case FactionBandits:
+		score += 5.0
+	case FactionOrcs:
+		score += 4.0
+	}
+
+	// Raid if strong
+	if factionData.Strength > 10 {
+		score += 3.0
+	}
+
+	return score
+}
+
+// ScoreRetreat evaluates abandoning territory
+func ScoreRetreat(manager *common.EntityManager, entity *ecs.Entity, factionData *OverworldFactionData) float64 {
+	score := 0.0
+
+	// Only retreat if critically weak
+	if factionData.Strength < RetreatCriticalStrength {
+		score += 8.0
+	}
+
+	// Don't retreat if territory is small
+	if factionData.TerritorySize <= 1 {
+		score -= 5.0
+	}
+
+	return score
+}
+
+// ExecuteFactionIntent performs the chosen action
+func ExecuteFactionIntent(
+	manager *common.EntityManager,
+	entity *ecs.Entity,
+	factionData *OverworldFactionData,
+	intentData *StrategicIntentData,
+) {
+	switch intentData.Intent {
+	case IntentExpand:
+		ExpandTerritory(manager, entity, factionData)
+	case IntentFortify:
+		FortifyTerritory(manager, entity, factionData)
+	case IntentRaid:
+		ExecuteRaid(manager, entity, factionData)
+	case IntentRetreat:
+		AbandonTerritory(manager, entity, factionData)
+	case IntentIdle:
+		// Do nothing
+	}
+}
+
+// ExpandTerritory claims adjacent tiles
+func ExpandTerritory(manager *common.EntityManager, entity *ecs.Entity, factionData *OverworldFactionData) {
+	territoryData := common.GetComponentType[*TerritoryData](entity, TerritoryComponent)
+	if territoryData == nil || len(territoryData.OwnedTiles) == 0 {
+		return
+	}
+
+	// Don't expand beyond limit
+	if factionData.TerritorySize >= MaxTerritorySize {
+		return
+	}
+
+	// Pick random owned tile
+	randomTile := territoryData.OwnedTiles[common.RandomInt(len(territoryData.OwnedTiles))]
+
+	// Try to claim adjacent tile
+	adjacents := []coords.LogicalPosition{
+		{X: randomTile.X + 1, Y: randomTile.Y},
+		{X: randomTile.X - 1, Y: randomTile.Y},
+		{X: randomTile.X, Y: randomTile.Y + 1},
+		{X: randomTile.X, Y: randomTile.Y - 1},
+	}
+
+	for _, adj := range adjacents {
+		// Check bounds (100x80 map)
+		if adj.X < 0 || adj.X >= 100 || adj.Y < 0 || adj.Y >= 80 {
+			continue
+		}
+
+		// Check if tile is unoccupied
+		if !IsTileOwnedByAnyFaction(manager, adj) {
+			territoryData.OwnedTiles = append(territoryData.OwnedTiles, adj)
+			factionData.TerritorySize++
+
+			// Log expansion event
+			tickState := GetTickState(manager)
+			currentTick := int64(0)
+			if tickState != nil {
+				currentTick = tickState.CurrentTick
+			}
+			LogEvent(EventFactionExpanded, currentTick, entity.GetID(),
+				formatEventString("%s expanded to (%d, %d)",
+					factionData.FactionType.String(), adj.X, adj.Y))
+
+			// Spawn threat on newly claimed tile (20% chance)
+			if common.RandomInt(100) < 20 {
+				SpawnThreatForFaction(manager, entity, adj, factionData.FactionType)
+			}
+
+			return
+		}
+	}
+}
+
+// FortifyTerritory increases faction strength and spawns threats
+func FortifyTerritory(manager *common.EntityManager, entity *ecs.Entity, factionData *OverworldFactionData) {
+	territoryData := common.GetComponentType[*TerritoryData](entity, TerritoryComponent)
+	if territoryData == nil || len(territoryData.OwnedTiles) == 0 {
+		return
+	}
+
+	// Increase strength
+	factionData.Strength += FortificationStrengthGain
+
+	// Spawn threat on random owned tile (30% chance)
+	if common.RandomInt(100) < 30 {
+		randomTile := territoryData.OwnedTiles[common.RandomInt(len(territoryData.OwnedTiles))]
+		SpawnThreatForFaction(manager, entity, randomTile, factionData.FactionType)
+	}
+}
+
+// ExecuteRaid attacks player or rival faction
+func ExecuteRaid(manager *common.EntityManager, entity *ecs.Entity, factionData *OverworldFactionData) {
+	territoryData := common.GetComponentType[*TerritoryData](entity, TerritoryComponent)
+	if territoryData == nil || len(territoryData.OwnedTiles) == 0 {
+		return
+	}
+
+	// Spawn aggressive threat near faction border
+	// Pick random border tile
+	randomTile := territoryData.OwnedTiles[common.RandomInt(len(territoryData.OwnedTiles))]
+
+	// Spawn higher-intensity threat for raids
+	threatType := MapFactionToThreatType(factionData.FactionType)
+	intensity := 3 + (factionData.Strength / 3) // Stronger factions spawn stronger raids
+
+	// Get current tick
+	tickState := GetTickState(manager)
+	currentTick := int64(0)
+	if tickState != nil {
+		currentTick = tickState.CurrentTick
+	}
+
+	CreateThreatNode(manager, randomTile, threatType, intensity, currentTick)
+
+	// Log raid event
+	LogEvent(EventFactionRaid, currentTick, entity.GetID(),
+		formatEventString("%s launched raid! Spawned intensity %d %s at (%d, %d)",
+			factionData.FactionType.String(), intensity, threatType.String(),
+			randomTile.X, randomTile.Y))
+}
+
+// AbandonTerritory shrinks faction
+func AbandonTerritory(manager *common.EntityManager, entity *ecs.Entity, factionData *OverworldFactionData) {
+	territoryData := common.GetComponentType[*TerritoryData](entity, TerritoryComponent)
+	if territoryData == nil || len(territoryData.OwnedTiles) <= 1 {
+		return
+	}
+
+	// Abandon outermost tile (simplified - just remove last)
+	territoryData.OwnedTiles = territoryData.OwnedTiles[:len(territoryData.OwnedTiles)-1]
+	factionData.TerritorySize--
+}
+
+// IsTileOwnedByAnyFaction checks if a tile is controlled
+func IsTileOwnedByAnyFaction(manager *common.EntityManager, pos coords.LogicalPosition) bool {
+	for _, result := range manager.World.Query(OverworldFactionTag) {
+		territoryData := common.GetComponentType[*TerritoryData](result.Entity, TerritoryComponent)
+		if territoryData != nil {
+			for _, tile := range territoryData.OwnedTiles {
+				if tile.X == pos.X && tile.Y == pos.Y {
+					return true
+				}
+			}
+		}
+	}
+	return false
+}
+
+// SpawnThreatForFaction creates a threat matching faction type
+func SpawnThreatForFaction(
+	manager *common.EntityManager,
+	factionEntity *ecs.Entity,
+	position coords.LogicalPosition,
+	factionType FactionType,
+) ecs.EntityID {
+	threatType := MapFactionToThreatType(factionType)
+	intensity := 1 + common.RandomInt(3) // Random intensity 1-3
+
+	// Get current tick
+	tickState := GetTickState(manager)
+	currentTick := int64(0)
+	if tickState != nil {
+		currentTick = tickState.CurrentTick
+	}
+
+	return CreateThreatNode(manager, position, threatType, intensity, currentTick)
+}

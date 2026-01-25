@@ -10,6 +10,7 @@ import (
 	"game_main/gui/framework"
 	"game_main/gui/guicombat"
 	"game_main/gui/guiexploration"
+	"game_main/gui/guioverworld"
 
 	"game_main/gui/guiresources"
 	"game_main/gui/guisquads"
@@ -19,6 +20,7 @@ import (
 	"game_main/testing"
 	"game_main/visual/rendering"
 	"game_main/world/encounter"
+	"game_main/world/overworld"
 	"game_main/world/worldmap"
 	"log"
 	"net/http"
@@ -97,6 +99,12 @@ func (gb *GameBootstrap) SetupDebugContent(em *common.EntityManager, gm *worldma
 // Phase 5: Depends on CreatePlayer for faction positioning.
 func (gb *GameBootstrap) InitializeGameplay(em *common.EntityManager, pd *common.PlayerData) {
 
+	// Initialize overworld tick state
+	overworld.CreateTickStateEntity(em)
+
+	// Inject squad checker for victory conditions (avoids circular dependency)
+	overworld.SetSquadChecker(&gameSquadChecker{})
+
 	// Spawn random encounters on overworld
 	encounter.SpawnRandomEncounters(em, *pd.Pos)
 }
@@ -157,6 +165,29 @@ func SetupBenchmarking() {
 	// Configure profiling rates
 	runtime.SetCPUProfileRate(config.CPUProfileRate)
 	runtime.MemProfileRate = config.MemoryProfileRate
+}
+
+// gameSquadChecker implements overworld.SquadChecker interface
+// This allows the overworld package to check squad status without circular dependency
+type gameSquadChecker struct{}
+
+// HasActiveSquads checks if player has any squads with living units
+func (gsc *gameSquadChecker) HasActiveSquads(manager *common.EntityManager) bool {
+	// Query all squad entities
+	for _, result := range manager.World.Query(squads.SquadTag) {
+		squadData := common.GetComponentType[*squads.SquadData](result.Entity, squads.SquadComponent)
+		if squadData == nil {
+			continue
+		}
+
+		// Check if this squad is destroyed
+		// IsDestroyed is maintained by squad system when units die
+		if !squadData.IsDestroyed {
+			return true // Found at least one active squad
+		}
+	}
+
+	return false // All squads are destroyed or no squads exist
 }
 
 // SetupUI initializes the new modal UI system with separate context managers.
@@ -230,6 +261,7 @@ func registerBattleMapModes(coordinator *framework.GameModeCoordinator, manager 
 // This reduces boilerplate by iterating over a slice of mode constructors.
 func registerOverworldModes(coordinator *framework.GameModeCoordinator, manager *framework.UIModeManager) {
 	modes := []framework.UIMode{
+		guioverworld.NewOverworldMode(manager),
 		guisquads.NewSquadManagementMode(manager),
 		guisquads.NewSquadBuilderMode(manager),
 		guisquads.NewUnitPurchaseMode(manager),
