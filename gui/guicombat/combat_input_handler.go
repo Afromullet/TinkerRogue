@@ -1,11 +1,12 @@
 package guicombat
 
 import (
+	"game_main/common"
 	"game_main/gui/framework"
-	"game_main/world/coords"
-
 	"game_main/tactical/combat"
+	"game_main/tactical/squads"
 	"game_main/visual/graphics"
+	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"
 	"github.com/hajimehoshi/ebiten/v2"
@@ -104,6 +105,24 @@ func (cih *CombatInputHandler) HandleInput(inputState *framework.InputState) boo
 		}
 	}
 
+	// Ctrl+K to kill all enemy squads (debug command)
+	// Also accept just K without modifier for easier debugging
+	if inputState.KeysJustPressed[ebiten.KeyK] {
+		println("[DEBUG] K key pressed")
+		if inputState.KeysPressed[ebiten.KeyControl] {
+			println("[DEBUG] Control is held")
+		}
+		if inputState.KeysPressed[ebiten.KeyMeta] {
+			println("[DEBUG] Meta is held")
+		}
+
+		if inputState.KeysPressed[ebiten.KeyControl] || inputState.KeysPressed[ebiten.KeyMeta] {
+			println("[DEBUG] Calling killAllEnemySquads()")
+			cih.killAllEnemySquads()
+			return true
+		}
+	}
+
 	return false
 }
 
@@ -190,4 +209,70 @@ func (cih *CombatInputHandler) handleSquadClick(mouseX, mouseY int) {
 			cih.actionHandler.ExecuteAttack()
 		}
 	}
+}
+
+// killAllEnemySquads is a debug function that instantly kills all units in all enemy squads.
+// This is useful for quickly testing victory conditions.
+func (cih *CombatInputHandler) killAllEnemySquads() {
+	// Get all enemy squads (squads not in the current player faction)
+	if cih.currentFactionID == 0 {
+		println("[DEBUG] No current faction, cannot kill enemies")
+		return
+	}
+
+	enemySquads := cih.deps.Queries.GetEnemySquads(cih.currentFactionID)
+	println("[DEBUG] Ctrl+K pressed - Found", len(enemySquads), "enemy squads to kill")
+
+	if len(enemySquads) == 0 {
+		return
+	}
+
+	// Kill all units in each enemy squad
+	totalKilled := 0
+	for _, squadID := range enemySquads {
+		killed := cih.killAllUnitsInSquad(squadID)
+		totalKilled += killed
+		println("[DEBUG] Killed", killed, "units in squad", squadID)
+
+		// Update squad's destroyed status
+		squads.UpdateSquadDestroyedStatus(squadID, cih.deps.Queries.ECSManager)
+		println("[DEBUG] Updated destroyed status for squad", squadID)
+	}
+
+	println("[DEBUG] Total units killed:", totalKilled)
+
+	// Trigger victory check through the callback
+	if cih.deps.OnVictoryCheck != nil {
+		println("[DEBUG] Checking for victory...")
+		if cih.deps.OnVictoryCheck() {
+			println("[DEBUG] Victory condition met!")
+		} else {
+			println("[DEBUG] Combat continues")
+		}
+	}
+}
+
+// killAllUnitsInSquad sets all units in a squad to 0 health and returns count killed
+func (cih *CombatInputHandler) killAllUnitsInSquad(squadID ecs.EntityID) int {
+	// Get all units in the squad
+	unitIDs := squads.GetUnitIDsInSquad(squadID, cih.deps.Queries.ECSManager)
+	killed := 0
+
+	// Set health to 0 for all units
+	for _, unitID := range unitIDs {
+		unitEntity := cih.deps.Queries.ECSManager.FindEntityByID(unitID)
+		if unitEntity == nil {
+			continue
+		}
+
+		attr := common.GetComponentType[*common.Attributes](unitEntity, common.AttributeComponent)
+		if attr != nil {
+			oldHealth := attr.CurrentHealth
+			attr.CurrentHealth = 0
+			killed++
+			println("[DEBUG]   Unit", unitID, "health:", oldHealth, "-> 0")
+		}
+	}
+
+	return killed
 }

@@ -80,6 +80,9 @@ ________________________________________________
 - Look into GameBootStrap
 
 
+- Look at keysToTrack
+
+- Review enounter and overworld package
 
 # Additions 
 

@@ -13,7 +13,6 @@ import (
 	"github.com/bytearena/ecs"
 )
 
-// TODO, this should be moved to the encounter package
 // EnemySquadInfo holds information about a generated enemy squad
 type EnemySquadInfo struct {
 	SquadID  ecs.EntityID
@@ -39,6 +38,7 @@ func SetupBalancedEncounter(
 	}
 
 	// 2. Ensure player has deployed squads (auto-deploy if needed)
+	//TODO, eventually the player will deploy their own squads
 	if err := ensurePlayerSquadsDeployed(playerEntityID, manager); err != nil {
 		return nil, fmt.Errorf("failed to deploy player squads: %w", err)
 	}
@@ -120,20 +120,6 @@ func SetupBalancedEncounter(
 
 	return createdEnemySquadIDs, nil
 }
-
-// getPlayerEntityID is no longer used - player entity ID is now passed as a parameter
-// Kept for reference - DO NOT USE (iterating 10000 entities is wasteful)
-/*
-func getPlayerEntityID(manager *common.EntityManager) ecs.EntityID {
-	for id := ecs.EntityID(1); id < ecs.EntityID(10000); id++ {
-		entity := manager.FindEntityByID(id)
-		if entity != nil && entity.HasComponent(common.PlayerComponent) {
-			return id
-		}
-	}
-	return 0
-}
-*/
 
 // ensurePlayerSquadsDeployed checks if player has deployed squads, and auto-deploys all if none are deployed
 func ensurePlayerSquadsDeployed(playerID ecs.EntityID, manager *common.EntityManager) error {

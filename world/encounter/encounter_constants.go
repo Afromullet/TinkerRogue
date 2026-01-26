@@ -42,6 +42,7 @@ type EncounterDifficultyModifier struct {
 
 // EncounterDifficultyTable maps encounter level to difficulty modifiers
 // Squad counts increased for better balance with 5 player squads
+// TODO this should be defined in a file
 var EncounterDifficultyTable = map[int]EncounterDifficultyModifier{
 	1: {PowerMultiplier: 0.7, MinSquads: 2, MaxSquads: 3}, // Level 1: Easy, 70% power, 2-3 squads
 	2: {PowerMultiplier: 0.9, MinSquads: 3, MaxSquads: 4}, // Level 2: Moderate, 90% power, 3-4 squads
