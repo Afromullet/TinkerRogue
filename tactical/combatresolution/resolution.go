@@ -66,11 +66,11 @@ func ResolveCombatToOverworld(
 			overworld.LogEventWithData(overworld.EventCombatResolved, currentTick, outcome.ThreatNodeID,
 				fmt.Sprintf("Combat victory - Threat %d destroyed", outcome.ThreatNodeID),
 				map[string]interface{}{
-					"victory":           true,
-					"intensity_reduced": oldIntensity,
-					"rewards_gold":      outcome.RewardsEarned.Gold,
-					"rewards_xp":        outcome.RewardsEarned.Experience,
-					"player_units_lost": outcome.Casualties.PlayerUnitsLost,
+					"victory":            true,
+					"intensity_reduced":  oldIntensity,
+					"rewards_gold":       outcome.RewardsEarned.Gold,
+					"rewards_xp":         outcome.RewardsEarned.Experience,
+					"player_units_lost":  outcome.Casualties.PlayerUnitsLost,
 					"enemy_units_killed": outcome.Casualties.EnemyUnitsKilled,
 				})
 
@@ -91,12 +91,12 @@ func ResolveCombatToOverworld(
 			overworld.LogEventWithData(overworld.EventCombatResolved, currentTick, outcome.ThreatNodeID,
 				fmt.Sprintf("Combat victory - Threat %d weakened to intensity %d", outcome.ThreatNodeID, threatData.Intensity),
 				map[string]interface{}{
-					"victory":           true,
-					"intensity_reduced": damageDealt,
-					"new_intensity":     threatData.Intensity,
-					"rewards_gold":      partialRewards.Gold,
-					"rewards_xp":        partialRewards.Experience,
-					"player_units_lost": outcome.Casualties.PlayerUnitsLost,
+					"victory":            true,
+					"intensity_reduced":  damageDealt,
+					"new_intensity":      threatData.Intensity,
+					"rewards_gold":       partialRewards.Gold,
+					"rewards_xp":         partialRewards.Experience,
+					"player_units_lost":  outcome.Casualties.PlayerUnitsLost,
 					"enemy_units_killed": outcome.Casualties.EnemyUnitsKilled,
 				})
 
@@ -158,23 +158,8 @@ func CalculateThreatDamage(enemiesKilled int) int {
 
 // GrantRewards applies rewards to player
 func GrantRewards(manager *common.EntityManager, squadID ecs.EntityID, rewards overworld.RewardTable) {
-	// Find player entity (owner of the squad)
-	playerID := findPlayerEntityID(manager)
-	if playerID == 0 {
-		fmt.Printf("WARNING: Could not find player entity to grant rewards\n")
-		return
-	}
 
-	// Grant resources to player
-	err := overworld.GrantResources(manager, playerID, rewards)
-	if err != nil {
-		fmt.Printf("ERROR granting resources: %v\n", err)
-		return
-	}
-
-	fmt.Printf("Squad %d earned rewards: %d gold, %d XP\n", squadID, rewards.Gold, rewards.Experience)
-
-	// TODO: Add XP to squad (Phase 4: squad progression system)
+	//todo
 }
 
 // findPlayerEntityID locates the player entity

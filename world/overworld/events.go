@@ -12,15 +12,15 @@ import (
 type EventType int
 
 const (
-	EventThreatSpawned    EventType = iota // New threat appeared
-	EventThreatEvolved                     // Threat gained intensity
-	EventThreatDestroyed                   // Threat eliminated
-	EventFactionExpanded                   // Faction claimed territory
-	EventFactionRaid                       // Faction launched raid
-	EventFactionDefeated                   // Faction eliminated
-	EventVictory                           // Player won
-	EventDefeat                            // Player lost
-	EventCombatResolved                    // Combat outcome applied
+	EventThreatSpawned   EventType = iota // New threat appeared
+	EventThreatEvolved                    // Threat gained intensity
+	EventThreatDestroyed                  // Threat eliminated
+	EventFactionExpanded                  // Faction claimed territory
+	EventFactionRaid                      // Faction launched raid
+	EventFactionDefeated                  // Faction eliminated
+	EventVictory                          // Player won
+	EventDefeat                           // Player lost
+	EventCombatResolved                   // Combat outcome applied
 )
 
 func (e EventType) String() string {
@@ -59,9 +59,9 @@ type OverworldEvent struct {
 
 // EventLog stores recent events for display
 type EventLog struct {
-	Events   []OverworldEvent
-	MaxSize  int // Maximum events to keep
-	Unread   int // Count of unread events
+	Events  []OverworldEvent
+	MaxSize int // Maximum events to keep
+	Unread  int // Count of unread events
 }
 
 // NewEventLog creates an event log
@@ -102,17 +102,6 @@ func (el *EventLog) GetRecentEvents(count int) []OverworldEvent {
 	return el.Events[start:]
 }
 
-// MarkRead resets unread counter
-func (el *EventLog) MarkRead() {
-	el.Unread = 0
-}
-
-// Clear empties the event log
-func (el *EventLog) Clear() {
-	el.Events = make([]OverworldEvent, 0, el.MaxSize)
-	el.Unread = 0
-}
-
 // Global event log (singleton for simplicity)
 var GlobalEventLog = NewEventLog(100)
 
@@ -148,32 +137,6 @@ func LogEventWithData(eventType EventType, tick int64, entityID ecs.EntityID, de
 	GlobalEventLog.AddEvent(event)
 
 	fmt.Printf("[Tick %d] %s: %s\n", tick, eventType, description)
-}
-
-// GetEventLogForUI returns recent events formatted for display
-func GetEventLogForUI(count int) string {
-	events := GlobalEventLog.GetRecentEvents(count)
-	if len(events) == 0 {
-		return "No recent events"
-	}
-
-	result := ""
-	for i := len(events) - 1; i >= 0; i-- { // Reverse order (newest first)
-		event := events[i]
-		result += fmt.Sprintf("[Tick %d] %s\n", event.Tick, event.Description)
-	}
-
-	return result
-}
-
-// HasUnreadEvents checks if there are new events
-func HasUnreadEvents() bool {
-	return GlobalEventLog.Unread > 0
-}
-
-// GetUnreadCount returns number of unread events
-func GetUnreadCount() int {
-	return GlobalEventLog.Unread
 }
 
 // StartRecordingSession initializes the overworld recorder for a new game session

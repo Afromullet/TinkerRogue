@@ -8,33 +8,33 @@ import (
 
 // Component and tag variables
 var (
-	ThreatNodeComponent         *ecs.Component
-	OverworldFactionComponent   *ecs.Component
-	TickStateComponent          *ecs.Component
-	InfluenceComponent          *ecs.Component
-	TerritoryComponent          *ecs.Component
-	StrategicIntentComponent    *ecs.Component
-	VictoryStateComponent       *ecs.Component
-	PlayerResourcesComponent    *ecs.Component
-	InfluenceCacheComponent     *ecs.Component
+	ThreatNodeComponent       *ecs.Component
+	OverworldFactionComponent *ecs.Component
+	TickStateComponent        *ecs.Component
+	InfluenceComponent        *ecs.Component
+	TerritoryComponent        *ecs.Component
+	StrategicIntentComponent  *ecs.Component
+	VictoryStateComponent     *ecs.Component
+	PlayerResourcesComponent  *ecs.Component
+	InfluenceCacheComponent   *ecs.Component
 
-	ThreatNodeTag         ecs.Tag
-	OverworldFactionTag   ecs.Tag
-	TickStateTag          ecs.Tag
-	VictoryStateTag       ecs.Tag
-	PlayerResourcesTag    ecs.Tag
-	InfluenceCacheTag     ecs.Tag
+	ThreatNodeTag       ecs.Tag
+	OverworldFactionTag ecs.Tag
+	TickStateTag        ecs.Tag
+	VictoryStateTag     ecs.Tag
+	PlayerResourcesTag  ecs.Tag
+	InfluenceCacheTag   ecs.Tag
 )
 
 // ThreatNodeData - Pure data component for threat nodes
 type ThreatNodeData struct {
-	ThreatID       ecs.EntityID  // Entity ID of this threat node
-	ThreatType     ThreatType    // Enum: Necromancer, Bandit, Corruption, etc.
-	Intensity      int           // Current power level (0-10)
-	GrowthProgress float64       // 0.0-1.0 progress to next intensity level
-	GrowthRate     float64       // Growth per tick (e.g., 0.05)
-	IsContained    bool          // Player nearby, slows growth
-	SpawnedTick    int64         // Tick when threat was created
+	ThreatID       ecs.EntityID // Entity ID of this threat node
+	ThreatType     ThreatType   // Enum: Necromancer, Bandit, Corruption, etc.
+	Intensity      int          // Current power level (0-10)
+	GrowthProgress float64      // 0.0-1.0 progress to next intensity level
+	GrowthRate     float64      // Growth per tick (e.g., 0.05)
+	IsContained    bool         // Player nearby, slows growth
+	SpawnedTick    int64        // Tick when threat was created
 }
 
 // OverworldFactionData - Renamed to avoid conflict with combat.FactionComponent
@@ -57,7 +57,7 @@ type TickStateData struct {
 
 // InfluenceData - Cached influence radius
 type InfluenceData struct {
-	Radius         int     // Tiles affected by this threat
+	Radius         int // Tiles affected by this threat
 	EffectType     InfluenceEffect
 	EffectStrength float64 // Magnitude of effect
 }
@@ -75,10 +75,4 @@ type StrategicIntentData struct {
 	TargetPosition *coords.LogicalPosition // Expand toward this, raid this
 	TicksRemaining int                     // Ticks until intent re-evaluation
 	Priority       float64                 // How important this action is (0.0-1.0)
-}
-
-// InfluenceCacheData - ECS-managed singleton for influence cache
-// Wraps InfluenceCache to manage it via ECS component system
-type InfluenceCacheData struct {
-	Cache *InfluenceCache // The actual influence cache instance
 }
