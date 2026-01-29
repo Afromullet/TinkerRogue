@@ -40,9 +40,9 @@ func SetupCombatFromEncounter(
 	cache := NewCombatQueryCache(manager)
 	fm := NewCombatFactionManager(manager, cache)
 
-	// Create factions
-	playerFactionID := fm.CreateFactionWithPlayer("Player Forces", 1, "Player 1")
-	enemyFactionID := fm.CreateFactionWithPlayer("Enemy Forces", 0, "")
+	// Create factions (no encounterID for this legacy setup function)
+	playerFactionID := fm.CreateFactionWithPlayer("Player Forces", 1, "Player 1", 0)
+	enemyFactionID := fm.CreateFactionWithPlayer("Enemy Forces", 0, "", 0)
 
 	// Add player's deployed squads to faction
 	if err := addPlayerSquadsToFaction(fm, playerEntityID, manager, playerFactionID, playerStartPos); err != nil {

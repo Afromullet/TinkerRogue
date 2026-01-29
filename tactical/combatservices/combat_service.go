@@ -294,7 +294,7 @@ func (cs *CombatService) StartEncounter(encounterID ecs.EntityID, playerStartPos
 	}
 
 	// Call SetupBalancedEncounter for power-based enemy spawning
-	enemySquadIDs, err := encounter.SetupBalancedEncounter(cs.EntityManager, cs.playerEntityID, playerStartPos, encounterData)
+	enemySquadIDs, err := encounter.SetupBalancedEncounter(cs.EntityManager, cs.playerEntityID, playerStartPos, encounterData, encounterID)
 	if err != nil {
 		return 0, fmt.Errorf("failed to setup balanced encounter: %w", err)
 	}
@@ -311,15 +311,15 @@ func (cs *CombatService) GetCurrentEncounterID() ecs.EntityID {
 	return cs.currentEncounterID
 }
 
-// EndEncounter marks an encounter as defeated if the player won and applies combat resolution to overworld threats
-func (cs *CombatService) EndEncounter() {
+// EndEncounter marks an encounter as defeated if the player won and applies combat resolution to overworld threats.
+// Accepts a pre-calculated VictoryCheckResult to avoid redundant checks.
+func (cs *CombatService) EndEncounter(victor *VictoryCheckResult) {
 	// Only mark if we have a tracked encounter
 	if cs.currentEncounterID == 0 {
 		return
 	}
 
-	// Check victory condition
-	victor := cs.CheckVictoryCondition()
+	// Use the provided victory result (already calculated by caller)
 
 	// Get encounter data
 	entity := cs.EntityManager.FindEntityByID(cs.currentEncounterID)

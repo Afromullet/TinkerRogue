@@ -3,6 +3,8 @@ __________________________________________
 # # # **IMPORTANT** # # # 
 
 
+- The ctrl+k debug command that kills all enemy squads seems to kill every squad that is not in combat. Need to look at that
+
 - calculateEntryIndexAtPosition in squadeditor_movesquad.go is not accurately calculating the position to move the squad to. Check if there is an ebitenui var (such as entryselected) you can use instead of calculating with pixel positions
 
 - Check if we have to mark the caches as dirty, or whether the way the ecs library implements views handles that automatically

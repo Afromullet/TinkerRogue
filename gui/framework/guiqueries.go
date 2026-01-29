@@ -153,6 +153,34 @@ func (gq *GUIQueries) GetEnemySquads(currentFactionID ecs.EntityID) []ecs.Entity
 	return enemySquads
 }
 
+// GetEnemySquadsForEncounter returns all squads not in the given faction that belong to the specified encounter.
+// This filters by encounterID to avoid affecting squads from other encounters.
+func (gq *GUIQueries) GetEnemySquadsForEncounter(currentFactionID ecs.EntityID, encounterID ecs.EntityID) []ecs.EntityID {
+	enemySquads := []ecs.EntityID{}
+
+	// Get factions for this encounter only
+	encounterFactions := gq.GetFactionsForEncounter(encounterID)
+	for _, factionID := range encounterFactions {
+		if factionID != currentFactionID {
+			enemySquads = append(enemySquads, combat.GetActiveSquadsForFaction(factionID, gq.ECSManager)...)
+		}
+	}
+
+	return enemySquads
+}
+
+// GetFactionsForEncounter returns all faction IDs belonging to a specific encounter
+func (gq *GUIQueries) GetFactionsForEncounter(encounterID ecs.EntityID) []ecs.EntityID {
+	factionIDs := []ecs.EntityID{}
+	for _, result := range gq.CombatCache.FactionView.Get() {
+		factionData := common.GetComponentType[*combat.FactionData](result.Entity, combat.CombatFactionComponent)
+		if factionData != nil && factionData.EncounterID == encounterID {
+			factionIDs = append(factionIDs, factionData.FactionID)
+		}
+	}
+	return factionIDs
+}
+
 // GetAllFactions returns all faction IDs
 func (gq *GUIQueries) GetAllFactions() []ecs.EntityID {
 	factionIDs := []ecs.EntityID{}

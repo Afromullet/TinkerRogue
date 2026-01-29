@@ -213,6 +213,7 @@ func (cih *CombatInputHandler) handleSquadClick(mouseX, mouseY int) {
 
 // killAllEnemySquads is a debug function that instantly kills all units in all enemy squads.
 // This is useful for quickly testing victory conditions.
+// Only affects squads in the current encounter (not all squads in the ECS).
 func (cih *CombatInputHandler) killAllEnemySquads() {
 	// Get all enemy squads (squads not in the current player faction)
 	if cih.currentFactionID == 0 {
@@ -220,8 +221,15 @@ func (cih *CombatInputHandler) killAllEnemySquads() {
 		return
 	}
 
-	enemySquads := cih.deps.Queries.GetEnemySquads(cih.currentFactionID)
-	println("[DEBUG] Ctrl+K pressed - Found", len(enemySquads), "enemy squads to kill")
+	// Get current encounter ID to filter only this encounter's squads
+	encounterID := cih.deps.CombatService.GetCurrentEncounterID()
+	if encounterID == 0 {
+		println("[DEBUG] No current encounter, cannot kill enemies")
+		return
+	}
+
+	enemySquads := cih.deps.Queries.GetEnemySquadsForEncounter(cih.currentFactionID, encounterID)
+	println("[DEBUG] Ctrl+K pressed - Found", len(enemySquads), "enemy squads in encounter", encounterID, "to kill")
 
 	if len(enemySquads) == 0 {
 		return

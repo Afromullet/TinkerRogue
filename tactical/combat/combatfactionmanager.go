@@ -27,11 +27,11 @@ func (fm *CombatFactionManager) CreateCombatFaction(name string, isPlayer bool) 
 		playerID = 1 // Default to Player 1 for single-player
 		playerName = "Player 1"
 	}
-	return fm.CreateFactionWithPlayer(name, playerID, playerName)
+	return fm.CreateFactionWithPlayer(name, playerID, playerName, 0) // 0 = no encounter
 }
 
-// CreateFactionWithPlayer creates a faction with specific player assignment
-func (fm *CombatFactionManager) CreateFactionWithPlayer(name string, playerID int, playerName string) ecs.EntityID {
+// CreateFactionWithPlayer creates a faction with specific player assignment and encounter tracking
+func (fm *CombatFactionManager) CreateFactionWithPlayer(name string, playerID int, playerName string, encounterID ecs.EntityID) ecs.EntityID {
 	faction := fm.manager.World.NewEntity()
 	factionID := faction.GetID()
 
@@ -45,6 +45,7 @@ func (fm *CombatFactionManager) CreateFactionWithPlayer(name string, playerID in
 		IsPlayerControlled: isPlayerControlled,
 		PlayerID:           playerID,
 		PlayerName:         playerName,
+		EncounterID:        encounterID,
 	})
 
 	return factionID

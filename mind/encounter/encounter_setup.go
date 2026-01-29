@@ -26,6 +26,7 @@ func SetupBalancedEncounter(
 	playerEntityID ecs.EntityID,
 	playerStartPos coords.LogicalPosition,
 	encounterData *OverworldEncounterData,
+	encounterID ecs.EntityID,
 ) ([]ecs.EntityID, error) {
 	// 1. Generate encounter specification (handles validation, power calculation, squad creation)
 	spec, err := GenerateEncounterSpec(manager, playerEntityID, playerStartPos, encounterData)
@@ -33,11 +34,11 @@ func SetupBalancedEncounter(
 		return nil, fmt.Errorf("failed to generate encounter spec: %w", err)
 	}
 
-	// 2. Create factions
+	// 2. Create factions with encounter tracking
 	cache := combat.NewCombatQueryCache(manager)
 	fm := combat.NewCombatFactionManager(manager, cache)
-	playerFactionID := fm.CreateFactionWithPlayer("Player Forces", 1, "Player 1")
-	enemyFactionID := fm.CreateFactionWithPlayer("Enemy Forces", 0, "")
+	playerFactionID := fm.CreateFactionWithPlayer("Player Forces", 1, "Player 1", encounterID)
+	enemyFactionID := fm.CreateFactionWithPlayer("Enemy Forces", 0, "", encounterID)
 
 	// 3. Add player's deployed squads to faction
 	if err := assignPlayerSquadsToFaction(fm, playerEntityID, manager, playerFactionID, playerStartPos); err != nil {

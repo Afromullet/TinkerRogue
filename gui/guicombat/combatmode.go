@@ -46,6 +46,9 @@ type CombatMode struct {
 	lastFactionID     ecs.EntityID
 	lastSelectedSquad ecs.EntityID
 
+	// Victory tracking (cached to avoid redundant checks)
+	lastVictoryResult *combatservices.VictoryCheckResult
+
 	// Debug support
 	debugLogger *framework.DebugLogger
 }
@@ -291,12 +294,16 @@ func (cm *CombatMode) handleFlee() {
 
 // checkAndHandleVictory checks if combat has ended and handles the transition.
 // Returns true if combat ended (victory or defeat), false if combat continues.
+// Caches the victory result to avoid redundant checks during cleanup.
 func (cm *CombatMode) checkAndHandleVictory() bool {
 	result := cm.combatService.CheckVictoryCondition()
 
 	if !result.BattleOver {
 		return false
 	}
+
+	// Cache the result for use in Exit() to avoid redundant checks
+	cm.lastVictoryResult = result
 
 	combatLogArea := GetCombatLogTextArea(cm.Panels)
 
@@ -568,15 +575,21 @@ func (cm *CombatMode) Exit(toMode framework.UIMode) error {
 	if !isToAnimation {
 		cm.debugLogger.Log("Full cleanup - returning to exploration")
 
+		// Get victory result (use cached if available, otherwise check now)
+		victor := cm.lastVictoryResult
+		if victor == nil {
+			victor = cm.combatService.CheckVictoryCondition()
+		}
+
 		// Mark encounter as defeated and apply combat resolution
-		cm.combatService.EndEncounter()
+		cm.combatService.EndEncounter(victor)
 
 		// Cleanup all combat entities
 		cm.combatService.CleanupCombat()
 
 		// Export battle log if enabled
 		if config.ENABLE_COMBAT_LOG_EXPORT && cm.combatService.BattleRecorder != nil && cm.combatService.BattleRecorder.IsEnabled() {
-			victor := cm.combatService.CheckVictoryCondition()
+			// Reuse the victory result instead of recalculating
 			victoryInfo := &battlelog.VictoryInfo{
 				RoundsCompleted: victor.RoundsCompleted,
 				VictorFaction:   victor.VictorFaction,
@@ -589,6 +602,9 @@ func (cm *CombatMode) Exit(toMode framework.UIMode) error {
 			cm.combatService.BattleRecorder.Clear()
 			cm.combatService.BattleRecorder.SetEnabled(false)
 		}
+
+		// Clear cached victory result
+		cm.lastVictoryResult = nil
 	}
 
 	cm.visualization.ClearAllVisualizations()
