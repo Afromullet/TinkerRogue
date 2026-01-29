@@ -28,10 +28,9 @@ type PowerConfig struct {
 	CoverWeight   float64 // Cover provision value
 
 	// Squad-level modifiers
-	FormationBonus   float64         // Bonus per formation type
-	MoraleMultiplier float64         // Morale impact (0.01 per morale point)
-	CompositionBonus map[int]float64 // Bonus by unique attack type count (1→0.8, 2→1.1, 3→1.2, 4→1.3)
-	HealthPenalty    float64         // Penalty multiplier for low HP squads
+	FormationBonus   float64 // Bonus per formation type
+	MoraleMultiplier float64 // Morale impact (0.01 per morale point)
+	HealthPenalty    float64 // Penalty multiplier for low HP squads
 
 	// Roster-level modifiers
 	DeployedWeight float64 // Weight for deployed squads (default 1.0)
@@ -96,10 +95,9 @@ func GetDefaultConfig() *PowerConfig {
 		CoverWeight:   0.2,
 
 		// Squad modifiers
-		FormationBonus:   1.0,                   // No bonus by default
+		FormationBonus:   1.0, // No bonus by default
 		MoraleMultiplier: DefaultMoraleMultiplier,
-		CompositionBonus: CompositionBonuses,    // Use shared composition bonus
-		HealthPenalty:    2.0,                   // HP% multiplier (0.5 HP = 1.0 power, 1.0 HP = 2.0 power)
+		HealthPenalty:    2.0, // HP% squared penalty (50% HP = 0.25x power)
 
 		// Roster modifiers
 		DeployedWeight: DefaultDeployedWeight,

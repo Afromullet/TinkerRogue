@@ -191,7 +191,7 @@ func CalculateSquadPower(
 	basePower *= moraleBonus
 
 	// Composition bonus (attack type diversity)
-	compositionMod := CalculateSquadCompositionBonus(squadID, manager, config)
+	compositionMod := CalculateSquadCompositionBonus(squadID, manager)
 	basePower *= compositionMod
 
 	// Health penalty (low HP squads are less effective)
@@ -204,10 +204,10 @@ func CalculateSquadPower(
 }
 
 // CalculateSquadCompositionBonus evaluates attack type diversity.
+// Uses shared CompositionBonuses from roles.go (no longer configurable per-profile).
 func CalculateSquadCompositionBonus(
 	squadID ecs.EntityID,
 	manager *common.EntityManager,
-	config *PowerConfig,
 ) float64 {
 	unitIDs := squads.GetUnitIDsInSquad(squadID, manager)
 	attackTypes := make(map[squads.AttackType]bool)
@@ -224,12 +224,7 @@ func CalculateSquadCompositionBonus(
 		}
 	}
 
-	uniqueTypes := len(attackTypes)
-	if bonus, exists := config.CompositionBonus[uniqueTypes]; exists {
-		return bonus
-	}
-
-	return 1.0 // Default no bonus
+	return GetCompositionBonus(len(attackTypes))
 }
 
 // CalculateHealthMultiplier returns power multiplier based on squad health.

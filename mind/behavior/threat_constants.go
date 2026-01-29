@@ -39,6 +39,16 @@ const (
 	ReferenceTargetArmor     = 5  // → Contributes to resistance
 )
 
+// RoleThreatWeights defines how each role weighs different threat layers.
+// Negative weights = attraction (e.g., tanks seek melee danger, support seeks wounded allies)
+// Positive weights = avoidance (e.g., support avoids all danger)
+type RoleThreatWeights struct {
+	MeleeWeight      float64
+	RangedWeight     float64
+	SupportWeight    float64
+	PositionalWeight float64
+}
+
 // DefaultRoleWeights defines standard weights for each role
 var DefaultRoleWeights = map[squads.UnitRole]RoleThreatWeights{
 	squads.RoleTank: {

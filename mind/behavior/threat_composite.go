@@ -9,37 +9,7 @@ import (
 	"github.com/bytearena/ecs"
 )
 
-// RoleThreatWeights defines how each role weighs different threat layers
-// Negative weights = attraction (e.g., tanks seek melee danger, support seeks wounded allies)
-// Positive weights = avoidance (e.g., support avoids all danger)
-type RoleThreatWeights struct {
-	MeleeWeight      float64
-	RangedWeight     float64
-	SupportWeight    float64
-	PositionalWeight float64
-}
-
-// DefaultRoleWeights defines standard weights for each role
-var DefaultRoleWeights = map[squads.UnitRole]RoleThreatWeights{
-	squads.RoleTank: {
-		MeleeWeight:      -0.5, // Tanks SEEK melee danger (intercept enemies)
-		RangedWeight:     0.3,  // Moderate concern for ranged
-		SupportWeight:    0.2,  // Stay near support for heals
-		PositionalWeight: 0.5,  // High concern for isolation
-	},
-	squads.RoleDPS: {
-		MeleeWeight:      0.7, // Avoid melee danger
-		RangedWeight:     0.5, // Moderate concern for ranged
-		SupportWeight:    0.1, // Low support priority
-		PositionalWeight: 0.6, // High concern for flanking
-	},
-	squads.RoleSupport: {
-		MeleeWeight:      1.0,  // Strongly avoid melee danger
-		RangedWeight:     0.8,  // Strongly avoid ranged pressure
-		SupportWeight:    -1.0, // SEEK high support value positions (wounded allies)
-		PositionalWeight: 0.4,  // Moderate positional awareness
-	},
-}
+// Note: RoleThreatWeights struct and DefaultRoleWeights are defined in threat_constants.go
 
 // CompositeThreatEvaluator combines multiple threat layers
 // Provides role-aware threat queries for AI decision-making

@@ -10,18 +10,9 @@ import (
 	"github.com/bytearena/ecs"
 )
 
-// Threat calculation constants
-const (
-	// Movement defaults
-	DefaultSquadMovement = 3   // Base movement when no data available
-	MaxSpeedSentinel     = 999 // Sentinel for finding minimum speed
-
-	// Reference target for expected damage calculations
-	// Represents a medium-difficulty enemy unit with typical stats
-	ReferenceTargetStrength  = 10 // → 12 resistance (10/4 + 5*2)
-	ReferenceTargetDexterity = 15 // → 5% dodge (15/3)
-	ReferenceTargetArmor     = 5  // → Contributes to resistance
-)
+// Note: Threat calculation constants (DefaultSquadMovement, MaxSpeedSentinel,
+// ReferenceTargetStrength, ReferenceTargetDexterity, ReferenceTargetArmor)
+// are defined in threat_constants.go
 
 var avgCombatStats = &averageCombatStats{}
 
@@ -194,16 +185,6 @@ func NewSquadThreatLevel(manager *common.EntityManager, cache *combat.CombatQuer
 	}
 }
 
-// unitData represents attack data for a unit in the squad.
-// Used for expected damage calculations which require per-unit details.
-type unitData struct {
-	entity         *ecs.Entity
-	attackRange    int
-	power          float64
-	roleMultiplier float64
-	isLeader       bool
-	attackType     squads.AttackType
-}
 
 // CalculateSquadDangerLevel computes threat ratings for the squad.
 // Uses shared power calculation from evaluation package for DangerByRange,
@@ -213,26 +194,16 @@ func (stl *SquadThreatLevel) CalculateSquadDangerLevel() {
 	config := evaluation.GetDefaultConfig()
 	stl.DangerByRange = evaluation.CalculateSquadPowerByRange(stl.squadID, stl.manager, config)
 
-	// For expected damage calculation, we still need per-unit data
+	// Collect unit combat data for expected damage calculation
 	unitIDs := squads.GetUnitIDsInSquad(stl.squadID, stl.manager)
-	var units []unitData
+	var units []*UnitCombatData
 
 	for _, unitID := range unitIDs {
 		data := GetUnitCombatData(unitID, stl.manager)
 		if data == nil {
 			continue
 		}
-
-		basePower := float64(data.Attributes.Weapon + data.Attributes.Dexterity/2)
-
-		units = append(units, unitData{
-			entity:         data.Entity,
-			attackRange:    data.AttackRange,
-			power:          basePower,
-			roleMultiplier: evaluation.GetRoleMultiplier(data.Role),
-			isLeader:       data.IsLeader,
-			attackType:     data.AttackType,
-		})
+		units = append(units, data)
 	}
 
 	movementRange := squads.GetSquadMovementSpeed(stl.squadID, stl.manager)
@@ -240,7 +211,7 @@ func (stl *SquadThreatLevel) CalculateSquadDangerLevel() {
 	// Find maximum threat range for expected damage calculation
 	maxThreatRange := 0
 	for _, ud := range units {
-		threatRange := movementRange + ud.attackRange
+		threatRange := movementRange + ud.AttackRange
 		if threatRange > maxThreatRange {
 			maxThreatRange = threatRange
 		}
@@ -304,14 +275,12 @@ func (stl *SquadThreatLevel) calculateExpectedDamageForUnit(
 // calculateSquadExpectedDamageByRange computes expected damage output for the squad
 // at each range. Similar to DangerByRange but uses actual damage formulas.
 //
-// This reuses unit data from CalculateSquadDangerLevel to avoid redundant queries.
+// This reuses UnitCombatData from CalculateSquadDangerLevel to avoid redundant queries.
 func (stl *SquadThreatLevel) calculateSquadExpectedDamageByRange(
-	units []unitData,
+	units []*UnitCombatData,
 	movementRange int,
 	maxThreatRange int,
 ) map[int]float64 {
-
-	// Create reference target once
 
 	// Calculate expected damage at each range
 	expectedDamageByRange := make(map[int]float64, maxThreatRange)
@@ -321,23 +290,14 @@ func (stl *SquadThreatLevel) calculateSquadExpectedDamageByRange(
 
 		// Sum expected damage from units that can threaten this range
 		for _, ud := range units {
-			effectiveThreatRange := movementRange + ud.attackRange
+			effectiveThreatRange := movementRange + ud.AttackRange
 
 			if effectiveThreatRange >= currentRange {
-				// Get attacker attributes
-				attr := common.GetComponentType[*common.Attributes](
-					ud.entity,
-					common.AttributeComponent,
-				)
-				if attr == nil {
-					continue
-				}
-
-				// Calculate expected damage for this unit
-				unitExpectedDamage := stl.calculateExpectedDamageForUnit(attr, &avgCombatStats.avgAttributes)
+				// Calculate expected damage for this unit using pre-fetched attributes
+				unitExpectedDamage := stl.calculateExpectedDamageForUnit(ud.Attributes, &avgCombatStats.avgAttributes)
 
 				// Apply leader bonus (same as DangerByRange)
-				if ud.isLeader {
+				if ud.IsLeader {
 					unitExpectedDamage *= evaluation.LeaderBonus
 				}
 
