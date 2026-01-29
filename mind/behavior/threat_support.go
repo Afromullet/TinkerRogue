@@ -15,10 +15,10 @@ type SupportValueLayer struct {
 	*ThreatLayerBase
 
 	// Core support data
-	healPriority    map[ecs.EntityID]float64              // Squad -> heal urgency (0-1)
-	buffPriority    map[ecs.EntityID]float64              // Squad -> buff value
-	supportValuePos map[coords.LogicalPosition]float64    // Position -> support value
-	allyProximity   map[coords.LogicalPosition]int        // Position -> count of nearby allies
+	healPriority    map[ecs.EntityID]float64           // Squad -> heal urgency (0-1)
+	buffPriority    map[ecs.EntityID]float64           // Squad -> buff value
+	supportValuePos map[coords.LogicalPosition]float64 // Position -> support value
+	allyProximity   map[coords.LogicalPosition]int     // Position -> count of nearby allies
 
 	// Dependencies
 	baseThreatMgr *FactionThreatLevelManager
@@ -130,6 +130,7 @@ func (svl *SupportValueLayer) paintSupportValue(
 // Query API methods
 
 // GetHealPriority returns heal urgency for a squad (0-1, higher = more urgent)
+// TODO, this is not being used
 func (svl *SupportValueLayer) GetHealPriority(squadID ecs.EntityID) float64 {
 	return svl.healPriority[squadID]
 }
