@@ -13,110 +13,51 @@ import (
 	"github.com/bytearena/ecs"
 )
 
-// EnemySquadInfo holds information about a generated enemy squad
-type EnemySquadInfo struct {
-	SquadID  ecs.EntityID
-	Position coords.LogicalPosition
-	Power    float64
-}
+// Note: EnemySquadSpec is defined in types.go and used for all enemy squad generation
 
 // SetupBalancedEncounter creates player and enemy factions with power-based squad generation.
 // Replaces SetupGameplayFactions with dynamic encounter balancing.
 // Returns a list of enemy squad IDs created for this encounter.
+//
+// This function delegates to GenerateEncounterSpec for the core generation logic,
+// then sets up combat factions and action states.
 func SetupBalancedEncounter(
 	manager *common.EntityManager,
 	playerEntityID ecs.EntityID,
 	playerStartPos coords.LogicalPosition,
 	encounterData *OverworldEncounterData,
 ) ([]ecs.EntityID, error) {
-	// Track created enemy squad IDs for cleanup
-	createdEnemySquadIDs := []ecs.EntityID{}
-
-	// 1. Use provided player entity ID
-	if playerEntityID == 0 {
-		return nil, fmt.Errorf("invalid player entity ID")
+	// 1. Generate encounter specification (handles validation, power calculation, squad creation)
+	spec, err := GenerateEncounterSpec(manager, playerEntityID, playerStartPos, encounterData)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate encounter spec: %w", err)
 	}
 
-	// 2. Ensure player has deployed squads (auto-deploy if needed)
-	//TODO, eventually the player will deploy their own squads
-	if err := ensurePlayerSquadsDeployed(playerEntityID, manager); err != nil {
-		return nil, fmt.Errorf("failed to deploy player squads: %w", err)
-	}
-
-	// 3. Calculate average squad power (squad-centric approach)
-	config := evaluation.GetDefaultConfig()
-	roster := squads.GetPlayerSquadRoster(playerEntityID, manager)
-	if roster == nil {
-		return nil, fmt.Errorf("player has no squad roster")
-	}
-
-	deployedSquads := roster.GetDeployedSquads(manager)
-	if len(deployedSquads) == 0 {
-		return nil, fmt.Errorf("no deployed squads - this should not happen after ensurePlayerSquadsDeployed()")
-	}
-
-	// Calculate average power per squad
-	totalPlayerPower := 0.0
-	for _, squadID := range deployedSquads {
-		squadPower := evaluation.CalculateSquadPower(squadID, manager, config)
-		totalPlayerPower += squadPower
-	}
-	avgPlayerSquadPower := totalPlayerPower / float64(len(deployedSquads))
-
-	// 4. Determine enemy difficulty from encounter data
-	difficultyMod := getEncounterDifficulty(encounterData)
-	targetEnemySquadPower := avgPlayerSquadPower * difficultyMod.PowerMultiplier
-
-	// Handle edge cases
-	if avgPlayerSquadPower <= 0.0 {
-		// Fallback if power calculation failed - use minimal encounter
-		targetEnemySquadPower = 50.0
-		difficultyMod.MinSquads = 1
-		difficultyMod.MaxSquads = 1
-	}
-	if targetEnemySquadPower > 2000.0 {
-		// Cap per-squad power to prevent overpowered units
-		targetEnemySquadPower = 2000.0
-	}
-
-	fmt.Printf("Player: %d squads, Avg Power: %.2f | Target Enemy Squad Power: %.2f (%.0f%% multiplier)\n",
-		len(deployedSquads), avgPlayerSquadPower, targetEnemySquadPower, difficultyMod.PowerMultiplier*100)
-
-	// 5. Create factions
+	// 2. Create factions
 	cache := combat.NewCombatQueryCache(manager)
 	fm := combat.NewCombatFactionManager(manager, cache)
 	playerFactionID := fm.CreateFactionWithPlayer("Player Forces", 1, "Player 1")
 	enemyFactionID := fm.CreateFactionWithPlayer("Enemy Forces", 0, "")
 
-	// 6. Add player's deployed squads to faction
+	// 3. Add player's deployed squads to faction
 	if err := assignPlayerSquadsToFaction(fm, playerEntityID, manager, playerFactionID, playerStartPos); err != nil {
 		return nil, fmt.Errorf("failed to assign player squads: %w", err)
 	}
 
-	// 6. Generate enemy squads targeting average player squad power
-	enemySquads := generateEnemySquadsByPower(
-		manager,
-		targetEnemySquadPower,
-		difficultyMod,
-		encounterData,
-		playerStartPos,
-		config,
-	)
-
-	// 7. Add enemy squads to faction and track their IDs
-	for i, squadInfo := range enemySquads {
-		if err := fm.AddSquadToFaction(enemyFactionID, squadInfo.SquadID, squadInfo.Position); err != nil {
+	// 4. Add enemy squads to faction and track their IDs
+	createdEnemySquadIDs := make([]ecs.EntityID, 0, len(spec.EnemySquads))
+	for i, enemySpec := range spec.EnemySquads {
+		if err := fm.AddSquadToFaction(enemyFactionID, enemySpec.SquadID, enemySpec.Position); err != nil {
 			return nil, fmt.Errorf("failed to add enemy squad %d to faction: %w", i, err)
 		}
-		if err := createActionStateForSquad(manager, squadInfo.SquadID); err != nil {
+		if err := createActionStateForSquad(manager, enemySpec.SquadID); err != nil {
 			return nil, fmt.Errorf("failed to create action state for enemy squad %d: %w", i, err)
 		}
-		// Track this enemy squad ID for cleanup
-		createdEnemySquadIDs = append(createdEnemySquadIDs, squadInfo.SquadID)
+		createdEnemySquadIDs = append(createdEnemySquadIDs, enemySpec.SquadID)
 	}
 
 	fmt.Printf("Created encounter: Player Faction (%d) vs Enemy Faction (%d) with %d squads\n",
-		playerFactionID, enemyFactionID, len(enemySquads))
+		playerFactionID, enemyFactionID, len(spec.EnemySquads))
 
 	return createdEnemySquadIDs, nil
 }
@@ -238,6 +179,7 @@ func getEncounterDifficulty(encounterData *OverworldEncounterData) EncounterDiff
 
 // generateEnemySquadsByPower creates enemy squads matching target squad power.
 // targetPower is now the per-squad target (average player squad power * difficulty).
+// Returns EnemySquadSpec which includes Type and Name for full encounter specification.
 func generateEnemySquadsByPower(
 	manager *common.EntityManager,
 	targetSquadPower float64,
@@ -245,11 +187,11 @@ func generateEnemySquadsByPower(
 	encounterData *OverworldEncounterData,
 	playerPos coords.LogicalPosition,
 	config *evaluation.PowerConfig,
-) []EnemySquadInfo {
+) []EnemySquadSpec {
 	// Determine number of squads
 	squadCount := common.GetRandomBetween(difficultyMod.MinSquads, difficultyMod.MaxSquads)
 
-	enemySquads := []EnemySquadInfo{}
+	enemySquads := []EnemySquadSpec{}
 
 	// Get squad composition preferences
 	squadTypes := getSquadComposition(encounterData, squadCount)
@@ -257,22 +199,25 @@ func generateEnemySquadsByPower(
 	for i := 0; i < squadCount; i++ {
 		// Generate position around player (circular distribution)
 		pos := generateEnemyPosition(playerPos, i, squadCount)
+		squadName := fmt.Sprintf("Enemy Squad %d", i+1)
 
 		// Each enemy squad targets the same power (average player squad power * difficulty)
 		squadID := createSquadForPowerBudget(
 			manager,
 			targetSquadPower,
 			squadTypes[i],
-			fmt.Sprintf("Enemy Squad %d", i+1),
+			squadName,
 			pos,
 			config,
 		)
 
 		if squadID != 0 {
-			enemySquads = append(enemySquads, EnemySquadInfo{
+			enemySquads = append(enemySquads, EnemySquadSpec{
 				SquadID:  squadID,
 				Position: pos,
 				Power:    targetSquadPower,
+				Type:     squadTypes[i],
+				Name:     squadName,
 			})
 		}
 	}

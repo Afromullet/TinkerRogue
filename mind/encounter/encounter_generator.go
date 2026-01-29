@@ -6,7 +6,6 @@ import (
 	"game_main/mind/evaluation"
 	"game_main/tactical/squads"
 	"game_main/world/coords"
-	"math"
 
 	"github.com/bytearena/ecs"
 )
@@ -69,8 +68,8 @@ func GenerateEncounterSpec(
 	fmt.Printf("Generating encounter spec: Avg Power %.2f, Target Power %.2f\n",
 		avgPlayerSquadPower, targetEnemySquadPower)
 
-	// Generate enemy squad specifications
-	enemySquadSpecs := generateEnemySquadSpecs(
+	// Generate enemy squad specifications using shared function
+	enemySquadSpecs := generateEnemySquadsByPower(
 		manager,
 		targetEnemySquadPower,
 		difficultyMod,
@@ -95,57 +94,5 @@ func GenerateEncounterSpec(
 	}, nil
 }
 
-// generateEnemySquadSpecs creates enemy squad specifications without combat dependencies.
-func generateEnemySquadSpecs(
-	manager *common.EntityManager,
-	targetSquadPower float64,
-	difficultyMod EncounterDifficultyModifier,
-	encounterData *OverworldEncounterData,
-	playerPos coords.LogicalPosition,
-	config *evaluation.PowerConfig,
-) []EnemySquadSpec {
-	squadCount := common.GetRandomBetween(difficultyMod.MinSquads, difficultyMod.MaxSquads)
-	squadTypes := getSquadComposition(encounterData, squadCount)
-
-	specs := make([]EnemySquadSpec, 0, squadCount)
-
-	for i := 0; i < squadCount; i++ {
-		pos := generateEnemyPositionSpec(playerPos, i, squadCount)
-
-		// Create the actual squad
-		squadID := createSquadForPowerBudget(
-			manager,
-			targetSquadPower,
-			squadTypes[i],
-			fmt.Sprintf("Enemy Squad %d", i+1),
-			pos,
-			config,
-		)
-
-		if squadID != 0 {
-			specs = append(specs, EnemySquadSpec{
-				SquadID:  squadID,
-				Position: pos,
-				Power:    targetSquadPower,
-				Type:     squadTypes[i],
-				Name:     fmt.Sprintf("Enemy Squad %d", i+1),
-			})
-		}
-	}
-
-	return specs
-}
-
-// generateEnemyPositionSpec creates position for an enemy squad.
-func generateEnemyPositionSpec(playerPos coords.LogicalPosition, index, total int) coords.LogicalPosition {
-	angle := (float64(index) / float64(total)) * 2.0 * math.Pi
-	distance := 10
-
-	offsetX := int(math.Round(float64(distance) * math.Cos(angle)))
-	offsetY := int(math.Round(float64(distance) * math.Sin(angle)))
-
-	x := clampPosition(playerPos.X+offsetX, 0, 99)
-	y := clampPosition(playerPos.Y+offsetY, 0, 79)
-
-	return coords.LogicalPosition{X: x, Y: y}
-}
+// Note: generateEnemySquadsByPower and generateEnemyPosition are defined in encounter_setup.go
+// and shared by both GenerateEncounterSpec and SetupBalancedEncounter
