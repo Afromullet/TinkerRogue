@@ -15,6 +15,16 @@ const (
 	VictoryFactionDefeat                         // Defeated specific faction
 )
 
+// DefeatReasonType categorizes why the player was defeated
+type DefeatReasonType int
+
+const (
+	DefeatNone                  DefeatReasonType = iota // Not defeated
+	DefeatByInfluence                                   // Overwhelmed by threat influence
+	DefeatByHighIntensityThreats                        // Too many powerful threats
+	DefeatBySquadLoss                                   // All squads destroyed
+)
+
 func (v VictoryCondition) String() string {
 	switch v {
 	case VictoryNone:
@@ -39,6 +49,16 @@ type VictoryStateData struct {
 	TargetFactionType FactionType
 	VictoryAchieved   bool
 	DefeatReason      string
+}
+
+// DefeatCheckResult contains the result of checking defeat conditions.
+// Single source of truth for defeat determination - avoids duplicate checks.
+type DefeatCheckResult struct {
+	IsDefeated         bool
+	DefeatReason       DefeatReasonType
+	DefeatMessage      string
+	TotalInfluence     float64 // Cached value to avoid recalculation
+	HighIntensityCount int     // Cached value to avoid recalculation
 }
 
 // SquadChecker is an interface for checking squad status without circular dependency

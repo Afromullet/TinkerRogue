@@ -11,20 +11,20 @@ func CheckVictoryCondition(manager *common.EntityManager) VictoryCondition {
 	// Get victory state (if configured)
 	victoryState := GetVictoryState(manager)
 
-	// Check defeat conditions first (highest priority)
-	if IsPlayerDefeated(manager) {
+	// Check defeat conditions first (highest priority) - single check replaces duplicate logic
+	defeatCheck := CheckPlayerDefeat(manager)
+	if defeatCheck.IsDefeated {
 		if victoryState != nil {
 			victoryState.Condition = VictoryPlayerLoses
 			victoryState.VictoryAchieved = true
-			victoryState.DefeatReason = GetDefeatReason(manager)
+			victoryState.DefeatReason = defeatCheck.DefeatMessage
 		}
 
 		// Log defeat event
-		defeatReason := GetDefeatReason(manager)
-		LogEvent(EventDefeat, GetCurrentTick(manager), 0, defeatReason)
+		LogEvent(EventDefeat, GetCurrentTick(manager), 0, defeatCheck.DefeatMessage)
 
 		// Export overworld log on defeat
-		FinalizeRecording("Defeat", defeatReason)
+		FinalizeRecording("Defeat", defeatCheck.DefeatMessage)
 
 		return VictoryPlayerLoses
 	}
