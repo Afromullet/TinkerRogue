@@ -114,9 +114,6 @@ func (cm *CombatMode) Initialize(ctx *framework.UIContext) error {
 		cm.ModeManager,
 	)
 
-	// Wire up victory check callback
-	cm.deps.OnVictoryCheck = cm.checkAndHandleVictory
-
 	// Create handlers with deps
 	cm.actionHandler = NewCombatActionHandler(cm.deps)
 	cm.inputHandler = NewCombatInputHandler(cm.actionHandler, cm.deps)
@@ -430,11 +427,6 @@ func (cm *CombatMode) playAIAttackAnimations(aiController *combatservices.AICont
 func (cm *CombatMode) playNextAIAttack(attacks []combatservices.QueuedAttack, index int, aiController *combatservices.AIController) {
 	if index >= len(attacks) {
 		aiController.ClearAttackQueue()
-
-		// Check for victory after all AI attacks complete
-		if cm.checkAndHandleVictory() {
-			return
-		}
 
 		if combatMode, exists := cm.ModeManager.GetMode("combat"); exists {
 			cm.ModeManager.RequestTransition(combatMode, "AI attacks complete")

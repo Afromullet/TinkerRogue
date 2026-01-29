@@ -241,15 +241,8 @@ func (cih *CombatInputHandler) killAllEnemySquads() {
 
 	println("[DEBUG] Total units killed:", totalKilled)
 
-	// Trigger victory check through the callback
-	if cih.deps.OnVictoryCheck != nil {
-		println("[DEBUG] Checking for victory...")
-		if cih.deps.OnVictoryCheck() {
-			println("[DEBUG] Victory condition met!")
-		} else {
-			println("[DEBUG] Combat continues")
-		}
-	}
+	// Note: Victory will be detected at next turn boundary (handleEndTurn or advanceAfterAITurn)
+	// Debug cheat doesn't need immediate victory check since player must still end turn
 }
 
 // killAllUnitsInSquad sets all units in a squad to 0 health and returns count killed
