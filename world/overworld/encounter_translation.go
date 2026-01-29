@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	"game_main/common"
+	"game_main/mind/encounter"
 	"game_main/world/coords"
-	"game_main/world/encounter"
 
 	"github.com/bytearena/ecs"
 )

@@ -2,8 +2,8 @@ package behavior
 
 import (
 	"game_main/common"
-	"game_main/tactical/balance"
-	"game_main/tactical/evaluation"
+	"game_main/mind/balance"
+	"game_main/mind/evaluation"
 	"game_main/tactical/squads"
 
 	"github.com/bytearena/ecs"
@@ -12,11 +12,11 @@ import (
 // Re-export balance constants for backward compatibility within behavior package.
 // New code should import from tactical/balance directly.
 const (
-	FlankingThreatRangeBonus  = balance.FlankingThreatRangeBonus
-	IsolationSafeDistance     = balance.IsolationSafeDistance
-	IsolationModerateDistance = balance.IsolationModerateDistance
-	IsolationHighDistance     = balance.IsolationHighDistance
-	EngagementPressureMax     = balance.EngagementPressureMax
+	FlankingThreatRangeBonus   = balance.FlankingThreatRangeBonus
+	IsolationSafeDistance      = balance.IsolationSafeDistance
+	IsolationModerateDistance  = balance.IsolationModerateDistance
+	IsolationHighDistance      = balance.IsolationHighDistance
+	EngagementPressureMax      = balance.EngagementPressureMax
 	RetreatSafeThreatThreshold = balance.RetreatSafeThreatThreshold
 )
 

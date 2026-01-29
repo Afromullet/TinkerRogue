@@ -7,6 +7,7 @@ import (
 	"game_main/config"
 	"game_main/gui/framework"
 	"game_main/gui/widgets"
+	"game_main/mind/encounter"
 	"game_main/tactical/combat"
 	"game_main/tactical/combat/battlelog"
 	"game_main/tactical/combatresolution"
@@ -14,7 +15,6 @@ import (
 	"game_main/tactical/squads"
 	"game_main/visual/rendering"
 	"game_main/world/coords"
-	"game_main/world/encounter"
 	"game_main/world/overworld"
 
 	"github.com/bytearena/ecs"

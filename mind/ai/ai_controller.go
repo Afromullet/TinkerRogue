@@ -2,7 +2,7 @@ package ai
 
 import (
 	"game_main/common"
-	"game_main/tactical/behavior"
+	"game_main/mind/behavior"
 	"game_main/tactical/combat"
 	"game_main/tactical/squads"
 	"game_main/world/coords"
@@ -18,13 +18,13 @@ type QueuedAttack struct {
 
 // AIController orchestrates AI decision-making for computer-controlled factions
 type AIController struct {
-	entityManager     *common.EntityManager
-	turnManager       *combat.TurnManager
-	movementSystem    *combat.CombatMovementSystem
-	combatActSystem   *combat.CombatActionSystem
-	combatCache       *combat.CombatQueryCache
-	threatManager     *behavior.FactionThreatLevelManager
-	layerEvaluators   map[ecs.EntityID]*behavior.CompositeThreatEvaluator
+	entityManager   *common.EntityManager
+	turnManager     *combat.TurnManager
+	movementSystem  *combat.CombatMovementSystem
+	combatActSystem *combat.CombatActionSystem
+	combatCache     *combat.CombatQueryCache
+	threatManager   *behavior.FactionThreatLevelManager
+	layerEvaluators map[ecs.EntityID]*behavior.CompositeThreatEvaluator
 
 	// Attack queue for animations (populated during AI turn)
 	attackQueue []QueuedAttack

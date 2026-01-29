@@ -8,7 +8,7 @@ import (
 	"game_main/gui/guisquads"
 	"game_main/gui/specs"
 	"game_main/gui/widgets"
-	"game_main/tactical/behavior"
+	"game_main/mind/behavior"
 	"game_main/tactical/combatservices"
 	"game_main/world/coords"
 	"game_main/world/worldmap"

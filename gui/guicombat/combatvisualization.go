@@ -3,7 +3,7 @@ package guicombat
 import (
 	"game_main/common"
 	"game_main/gui/framework"
-	"game_main/tactical/behavior"
+	"game_main/mind/behavior"
 	"game_main/world/coords"
 	"game_main/world/worldmap"
 

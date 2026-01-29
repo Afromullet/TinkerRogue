@@ -3,7 +3,7 @@ package encounter
 import (
 	"fmt"
 	"game_main/common"
-	"game_main/tactical/evaluation"
+	"game_main/mind/evaluation"
 	"game_main/tactical/squads"
 	"game_main/world/coords"
 	"math"

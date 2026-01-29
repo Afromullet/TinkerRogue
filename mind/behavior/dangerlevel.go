@@ -3,8 +3,8 @@ package behavior
 import (
 	"game_main/common"
 	"game_main/config"
+	"game_main/mind/evaluation"
 	"game_main/tactical/combat"
-	"game_main/tactical/evaluation"
 	"game_main/tactical/squads"
 
 	"github.com/bytearena/ecs"

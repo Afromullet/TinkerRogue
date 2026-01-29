@@ -3,8 +3,8 @@ package combatservices
 import (
 	"fmt"
 	"game_main/common"
-	"game_main/tactical/ai"
-	"game_main/tactical/behavior"
+	"game_main/mind/ai"
+	"game_main/mind/behavior"
 	"game_main/tactical/combat"
 	"game_main/tactical/combat/battlelog"
 	"game_main/tactical/squads"
