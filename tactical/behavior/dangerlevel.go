@@ -194,7 +194,8 @@ func NewSquadThreatLevel(manager *common.EntityManager, cache *combat.CombatQuer
 	}
 }
 
-// unitData represents attack data for a unit in the squad
+// unitData represents attack data for a unit in the squad.
+// Used for expected damage calculations which require per-unit details.
 type unitData struct {
 	entity         *ecs.Entity
 	attackRange    int
@@ -204,72 +205,39 @@ type unitData struct {
 	attackType     squads.AttackType
 }
 
-// Returns a map of squadID -> danger levels by range.
+// CalculateSquadDangerLevel computes threat ratings for the squad.
+// Uses shared power calculation from evaluation package for DangerByRange,
+// and local damage formulas for ExpectedDamageByRange.
 func (stl *SquadThreatLevel) CalculateSquadDangerLevel() {
+	// Use shared power calculation for DangerByRange
+	config := evaluation.GetDefaultConfig()
+	stl.DangerByRange = evaluation.CalculateSquadPowerByRange(stl.squadID, stl.manager, config)
+
+	// For expected damage calculation, we still need per-unit data
 	unitIDs := squads.GetUnitIDsInSquad(stl.squadID, stl.manager)
-
-	// Collect all units with their attack data
-
 	var units []unitData
-	attackTypeCount := make(map[squads.AttackType]int)
 
 	for _, unitID := range unitIDs {
-		unitEntity := stl.manager.FindEntityByID(unitID)
-		if unitEntity == nil {
+		data := GetUnitCombatData(unitID, stl.manager)
+		if data == nil {
 			continue
 		}
 
-		// Get unit role
-		roleData := common.GetComponentType[*squads.UnitRoleData](unitEntity, squads.UnitRoleComponent)
-		if roleData == nil {
-			continue
-		}
-
-		// Get unit target row (attack type)
-		targetRowData := common.GetComponentType[*squads.TargetRowData](unitEntity, squads.TargetRowComponent)
-		if targetRowData == nil {
-			continue
-		}
-
-		// Get attack range
-		attackRangeData := common.GetComponentType[*squads.AttackRangeData](unitEntity, squads.AttackRangeComponent)
-		attackRange := 1
-		if attackRangeData != nil {
-			attackRange = attackRangeData.Range
-		}
-
-		// Get unit attributes
-		attr := common.GetComponentType[*common.Attributes](unitEntity, common.AttributeComponent)
-		if attr == nil {
-			continue
-		}
-
-		// Check if unit is leader by checking for LeaderComponent
-		isLeader := unitEntity.HasComponent(squads.LeaderComponent)
-
-		// Calculate base power from weapon and dexterity
-		// Weapon damage is primary, dexterity improves hit rate
-		basePower := float64(attr.Weapon + attr.Dexterity/2)
-
-		// Get role multiplier
-		roleMultiplier := stl.getRoleMultiplier(roleData.Role)
-
-		// Track attack type for composition bonus
-		attackTypeCount[targetRowData.AttackType]++
+		basePower := float64(data.Attributes.Weapon + data.Attributes.Dexterity/2)
 
 		units = append(units, unitData{
-			entity:         unitEntity,
-			attackRange:    attackRange,
+			entity:         data.Entity,
+			attackRange:    data.AttackRange,
 			power:          basePower,
-			roleMultiplier: roleMultiplier,
-			isLeader:       isLeader,
-			attackType:     targetRowData.AttackType,
+			roleMultiplier: evaluation.GetRoleMultiplier(data.Role),
+			isLeader:       data.IsLeader,
+			attackType:     data.AttackType,
 		})
 	}
 
 	movementRange := squads.GetSquadMovementSpeed(stl.squadID, stl.manager)
 
-	// Find maximum threat range (movement + attack)
+	// Find maximum threat range for expected damage calculation
 	maxThreatRange := 0
 	for _, ud := range units {
 		threatRange := movementRange + ud.attackRange
@@ -278,60 +246,12 @@ func (stl *SquadThreatLevel) CalculateSquadDangerLevel() {
 		}
 	}
 
-	// Calculate danger at each range from 1 to maxThreatRange
-	// Units threaten a range if movement + attack >= currentRange
-	dangerByRange := make(map[int]float64, maxThreatRange)
-
-	for currentRange := 1; currentRange <= maxThreatRange; currentRange++ {
-		var rangeDanger float64 = 0
-
-		// Sum danger from units that can threaten this range
-		for _, ud := range units {
-			// Unit threatens currentRange if movement + attack >= currentRange
-			effectiveThreatRange := movementRange + ud.attackRange
-
-			if effectiveThreatRange >= currentRange {
-				// Apply leader bonus
-				leaderBonus := 1.0
-				if ud.isLeader {
-					leaderBonus = evaluation.LeaderBonus
-				}
-
-				// Calculate unit danger contribution at this range
-				unitDanger := ud.power * ud.roleMultiplier * leaderBonus
-				rangeDanger += unitDanger
-			}
-		}
-
-		dangerByRange[currentRange] = rangeDanger
-	}
-
-	// Apply composition bonus to each range
-	compositionBonus := stl.calculateCompositionBonus(attackTypeCount)
-	for range_, danger := range dangerByRange {
-		dangerByRange[range_] = danger * compositionBonus
-	}
-
-	stl.DangerByRange = dangerByRange
-
 	// Calculate expected damage by range using actual damage formulas
 	stl.ExpectedDamageByRange = stl.calculateSquadExpectedDamageByRange(
 		units,
 		movementRange,
 		maxThreatRange,
 	)
-
-}
-
-// getRoleMultiplier returns a damage multiplier based on unit role
-func (stl *SquadThreatLevel) getRoleMultiplier(role squads.UnitRole) float64 {
-	return GetRoleModifier(role)
-}
-
-// calculateCompositionBonus returns a bonus multiplier based on attack type diversity.
-// Delegates to shared evaluation package.
-func (stl *SquadThreatLevel) calculateCompositionBonus(attackTypeCount map[squads.AttackType]int) float64 {
-	return evaluation.GetCompositionBonus(len(attackTypeCount))
 }
 
 // calculateExpectedDamageForUnit computes expected damage for one attacker unit.

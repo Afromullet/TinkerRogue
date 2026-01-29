@@ -2,39 +2,29 @@ package behavior
 
 import (
 	"game_main/common"
+	"game_main/tactical/balance"
 	"game_main/tactical/evaluation"
 	"game_main/tactical/squads"
 
 	"github.com/bytearena/ecs"
 )
 
-// Positional risk constants
+// Re-export balance constants for backward compatibility within behavior package.
+// New code should import from tactical/balance directly.
 const (
-	// Flanking threat extends this many tiles beyond movement speed
-	FlankingThreatRangeBonus = 3
-
-	// Isolation risk thresholds (in tiles from nearest ally)
-	IsolationSafeDistance     = 2 // 0-2 tiles = no isolation risk
-	IsolationModerateDistance = 3 // 3-5 tiles = moderate risk
-	IsolationHighDistance     = 6 // 6+ tiles = high isolation risk
-
-	// Engagement pressure normalization (max expected damage per position)
-	EngagementPressureMax = 200.0
-
-	// Retreat quality threshold (threat values below this are safe escape routes)
-	RetreatSafeThreatThreshold = 10.0
+	FlankingThreatRangeBonus  = balance.FlankingThreatRangeBonus
+	IsolationSafeDistance     = balance.IsolationSafeDistance
+	IsolationModerateDistance = balance.IsolationModerateDistance
+	IsolationHighDistance     = balance.IsolationHighDistance
+	EngagementPressureMax     = balance.EngagementPressureMax
+	RetreatSafeThreatThreshold = balance.RetreatSafeThreatThreshold
 )
 
-// Support layer constants
+// Support layer constants (re-exported from balance).
 const (
-	// Default healing support radius (in tiles)
-	SupportHealRadius = 3
-
-	// Ally proximity tracking radius (in tiles)
-	SupportAllyProximityRadius = 2
-
-	// Buff priority engagement distance thresholds
-	BuffPriorityEngagementRange = 4 // Within 4 tiles = prioritize buffs
+	SupportHealRadius           = balance.SupportHealRadius
+	SupportAllyProximityRadius  = balance.SupportAllyProximityRadius
+	BuffPriorityEngagementRange = balance.BuffPriorityEngagementRange
 )
 
 // GetRoleModifier returns threat multiplier for a role.
@@ -43,7 +33,7 @@ func GetRoleModifier(role squads.UnitRole) float64 {
 	return evaluation.GetRoleMultiplier(role)
 }
 
-// GetSquadRoleModifier returns threat modifier based on squad's primary role
+// GetSquadRoleModifier returns threat modifier based on squad's primary role.
 func GetSquadRoleModifier(squadID ecs.EntityID, manager *common.EntityManager) float64 {
 	role := squads.GetSquadPrimaryRole(squadID, manager)
 	return GetRoleModifier(role)

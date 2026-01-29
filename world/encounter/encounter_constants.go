@@ -1,28 +1,5 @@
 package encounter
 
-const (
-	// Default category weights for balanced profile
-	DefaultOffensiveWeight = 0.4
-	DefaultDefensiveWeight = 0.4
-	DefaultUtilityWeight   = 0.2
-
-	// Squad-level modifier defaults
-	// NOTE: LeaderBonus is now in tactical/evaluation package (evaluation.LeaderBonus)
-	DefaultMoraleMultiplier = 0.002 // +0.2% power per morale point
-	MinimumHealthMultiplier = 0.1   // Minimum 10% power even at low HP
-
-	// Scaling factors for power calculations
-	RoleScalingFactor          = 10.0  // Base multiplier for role value
-	DodgeScalingFactor         = 100.0 // Scale dodge to 0-40 range
-	CoverScalingFactor         = 100.0 // Scale cover value percentage
-	CoverBeneficiaryMultiplier = 2.5   // Avg units protected per cover provider
-	// NOTE: CritDamageMultiplier moved to config.CritDamageBonus for single source of truth
-
-	// Deployment weights
-	DefaultDeployedWeight = 1.0 // Full weight for deployed squads
-	DefaultReserveWeight  = 0.3 // 30% weight for reserves
-)
-
 // Encounter type identifiers
 type EncounterType string
 
@@ -40,9 +17,9 @@ type EncounterDifficultyModifier struct {
 	MaxSquads       int     // Maximum enemy squads
 }
 
-// EncounterDifficultyTable maps encounter level to difficulty modifiers
-// Squad counts increased for better balance with 5 player squads
-// TODO this should be defined in a file
+// EncounterDifficultyTable maps encounter level to difficulty modifiers.
+// Squad counts increased for better balance with 5 player squads.
+// TODO: This should be defined in a file.
 var EncounterDifficultyTable = map[int]EncounterDifficultyModifier{
 	1: {PowerMultiplier: 0.7, MinSquads: 2, MaxSquads: 3}, // Level 1: Easy, 70% power, 2-3 squads
 	2: {PowerMultiplier: 0.9, MinSquads: 3, MaxSquads: 4}, // Level 2: Moderate, 90% power, 3-4 squads
@@ -58,8 +35,8 @@ const (
 	SquadTypeMagic  = "magic"
 )
 
-// EncounterSquadPreferences maps encounter types to preferred squad compositions
-// Each encounter favors certain unit types (melee, ranged, or magic)
+// EncounterSquadPreferences maps encounter types to preferred squad compositions.
+// Each encounter favors certain unit types (melee, ranged, or magic).
 var EncounterSquadPreferences = map[string][]string{
 	string(EncounterGoblinBasic): {SquadTypeMelee, SquadTypeMelee, SquadTypeRanged},  // Goblins: 2 melee + 1 ranged
 	string(EncounterBanditBasic): {SquadTypeMelee, SquadTypeRanged, SquadTypeRanged}, // Bandits: 1 melee + 2 ranged

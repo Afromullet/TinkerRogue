@@ -20,9 +20,9 @@ type EnemySquadInfo struct {
 	Power    float64
 }
 
-// SetupBalancedEncounter creates player and enemy factions with power-based squad generation
-// Replaces SetupGameplayFactions with dynamic encounter balancing
-// Returns a list of enemy squad IDs created for this encounter
+// SetupBalancedEncounter creates player and enemy factions with power-based squad generation.
+// Replaces SetupGameplayFactions with dynamic encounter balancing.
+// Returns a list of enemy squad IDs created for this encounter.
 func SetupBalancedEncounter(
 	manager *common.EntityManager,
 	playerEntityID ecs.EntityID,
@@ -44,7 +44,7 @@ func SetupBalancedEncounter(
 	}
 
 	// 3. Calculate average squad power (squad-centric approach)
-	config := GetDefaultConfig()
+	config := evaluation.GetDefaultConfig()
 	roster := squads.GetPlayerSquadRoster(playerEntityID, manager)
 	if roster == nil {
 		return nil, fmt.Errorf("player has no squad roster")
@@ -58,7 +58,7 @@ func SetupBalancedEncounter(
 	// Calculate average power per squad
 	totalPlayerPower := 0.0
 	for _, squadID := range deployedSquads {
-		squadPower := CalculateSquadPower(squadID, manager, config)
+		squadPower := evaluation.CalculateSquadPower(squadID, manager, config)
 		totalPlayerPower += squadPower
 	}
 	avgPlayerSquadPower := totalPlayerPower / float64(len(deployedSquads))
@@ -236,15 +236,15 @@ func getEncounterDifficulty(encounterData *OverworldEncounterData) EncounterDiff
 	return EncounterDifficultyTable[3]
 }
 
-// generateEnemySquadsByPower creates enemy squads matching target squad power
-// targetPower is now the per-squad target (average player squad power * difficulty)
+// generateEnemySquadsByPower creates enemy squads matching target squad power.
+// targetPower is now the per-squad target (average player squad power * difficulty).
 func generateEnemySquadsByPower(
 	manager *common.EntityManager,
 	targetSquadPower float64,
 	difficultyMod EncounterDifficultyModifier,
 	encounterData *OverworldEncounterData,
 	playerPos coords.LogicalPosition,
-	config *EvaluationConfigData,
+	config *evaluation.PowerConfig,
 ) []EnemySquadInfo {
 	// Determine number of squads
 	squadCount := common.GetRandomBetween(difficultyMod.MinSquads, difficultyMod.MaxSquads)
@@ -326,14 +326,15 @@ func generateEnemyPosition(playerPos coords.LogicalPosition, index, total int) c
 	return coords.LogicalPosition{X: x, Y: y}
 }
 
-// createSquadForPowerBudget creates a squad matching target power
+// createSquadForPowerBudget creates a squad matching target power.
+// Uses the shared evaluation package for power estimation.
 func createSquadForPowerBudget(
 	manager *common.EntityManager,
 	targetPower float64,
 	squadType string,
 	name string,
 	position coords.LogicalPosition,
-	config *EvaluationConfigData,
+	config *evaluation.PowerConfig,
 ) ecs.EntityID {
 	fmt.Printf("[DEBUG] Creating squad '%s' with target power: %.2f\n", name, targetPower)
 
@@ -360,8 +361,8 @@ func createSquadForPowerBudget(
 		// Pick random unit from pool
 		unit := unitPool[common.RandomInt(len(unitPool))]
 
-		// Estimate unit power contribution
-		unitPower := estimateUnitPower(unit, config)
+		// Estimate unit power contribution using shared function
+		unitPower := evaluation.EstimateUnitPowerFromTemplate(unit, config)
 		fmt.Printf("[DEBUG] Unit '%s' power: %.2f (current: %.2f / target: %.2f)\n",
 			unit.Name, unitPower, currentPower, targetPower)
 
@@ -433,86 +434,12 @@ func filterUnitsBySquadType(squadType string) []squads.UnitTemplate {
 	}
 }
 
-// estimateUnitPower calculates accurate power contribution matching CalculateUnitPower
-// Now properly includes all sub-weights, accuracy modifiers, defensive components, and utility scaling
-func estimateUnitPower(unit squads.UnitTemplate, config *EvaluationConfigData) float64 {
-	attr := &unit.Attributes
-
-	// Offensive power uses shared calculation
-	offensivePower := calculateOffensivePower(attr, config)
-
-	// === DEFENSIVE POWER ===
-	// NOTE: Uses full HP assumption for templates (no current HP state)
-	maxHP := float64(attr.GetMaxHealth())
-	effectiveHealth := maxHP // Assume full HP for new units
-
-	// Resistance component
-	physicalResist := float64(attr.GetPhysicalResistance())
-	magicResist := float64(attr.GetMagicDefense())
-	avgResistance := (physicalResist + magicResist) / 2.0
-
-	// Avoidance component
-	dodgeChance := float64(attr.GetDodgeChance()) / 100.0
-	dodgeScaled := dodgeChance * 100.0 // DodgeScalingFactor = 100.0
-
-	// Sub-weighted combination
-	healthComponent := effectiveHealth * config.HealthWeight
-	resistanceComponent := avgResistance * config.ResistanceWeight
-	avoidanceComponent := dodgeScaled * config.AvoidanceWeight
-	defensivePower := healthComponent + resistanceComponent + avoidanceComponent
-
-	// === UTILITY POWER (matches calculateUtilityPower) ===
-	// Role component
-	roleMultiplier := evaluation.GetRoleMultiplier(unit.Role)
-	roleValue := roleMultiplier * 10.0 // RoleScalingFactor = 10.0
-	roleComponent := roleValue * config.RoleWeight
-
-	// Ability component (simplified - assume leader gets average ability value)
-	abilityValue := 0.0
-	if unit.IsLeader {
-		abilityValue = 15.0 // Average of Rally (15.0), Heal (20.0), BattleCry (12.0)
-	}
-	abilityComponent := abilityValue * config.AbilityWeight
-
-	// Cover component
-	coverValue := 0.0
-	if unit.CoverValue > 0 {
-		coverValue = unit.CoverValue * 100.0 * 2.5 // CoverScalingFactor * CoverBeneficiaryMultiplier
-	}
-	coverComponent := coverValue * config.CoverWeight
-
-	utilityPower := roleComponent + abilityComponent + coverComponent
-
-	// === WEIGHTED SUM ===
-	totalPower := (offensivePower * config.OffensiveWeight) +
-		(defensivePower * config.DefensiveWeight) +
-		(utilityPower * config.UtilityWeight)
-
-	return totalPower
-}
-
 // Helper functions
 
-// createActionStateForSquad creates the ActionStateData component for a squad
-// Uses the existing GetSquadMovementSpeed function from squads package
+// createActionStateForSquad creates the ActionStateData component for a squad.
+// Delegates to combat package's CreateActionStateForSquad.
 func createActionStateForSquad(manager *common.EntityManager, squadID ecs.EntityID) error {
-	// Create ActionStateData entity
-	actionEntity := manager.World.NewEntity()
-
-	// Get squad movement speed using existing function
-	movementSpeed := squads.GetSquadMovementSpeed(squadID, manager)
-	if movementSpeed == 0 {
-		movementSpeed = 3 // Default if no valid units found
-	}
-
-	actionEntity.AddComponent(combat.ActionStateComponent, &combat.ActionStateData{
-		SquadID:           squadID,
-		HasMoved:          false,
-		HasActed:          false,
-		MovementRemaining: movementSpeed,
-	})
-
-	return nil
+	return combat.CreateActionStateForSquad(manager, squadID)
 }
 
 // filterUnitsByAttackRange returns units with attack range >= minRange
