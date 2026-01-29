@@ -1,6 +1,6 @@
 # TinkerRogue: Algorithms & System Architecture
 
-**Last Updated:** 2026-01-25
+**Last Updated:** 2026-01-29
 
 This document provides a high-level architectural overview of the calculation systems driving TinkerRogue's strategic and tactical gameplay. It covers four interconnected packages that manage the overworld simulation, combat encounter balancing, AI threat assessment, and autonomous decision-making.
 
@@ -71,6 +71,8 @@ The overworld package simulates the **strategic turn-based world state**. It man
 
 **Key Functions:** `UpdateThreatNodes()`, `EvolveThreatNode()`, `ExecuteThreatEvolutionEffect()`
 
+**Utility Functions:** `GetCardinalNeighbors()`, `IsThreatAtPosition()` (shared by corruption spread and child spawning)
+
 #### Faction AI Decision Making
 
 **Inputs:**
@@ -94,6 +96,8 @@ The overworld package simulates the **strategic turn-based world state**. It man
 - Abandoned territory tiles
 
 **Key Functions:** `EvaluateFactionIntent()`, `ExecuteFactionIntent()`
+
+**Utility Functions:** `GetCardinalNeighbors()`, `GetRandomTileFromSlice()` (shared by expand, fortify, and raid actions)
 
 #### Influence Calculation (Cached)
 
@@ -130,19 +134,52 @@ The overworld package simulates the **strategic turn-based world state**. It man
 Checks conditions in priority order:
 1. **Defeat Conditions:**
    - Total influence exceeds 100.0 (overwhelming corruption)
-   - 10 or more tier-8 threats exist (critical mass)
+   - High-intensity threats exceed threshold (configurable via `HighIntensityThreshold` and `MaxHighIntensityThreats` constants)
    - All player squads destroyed
 2. **Victory Conditions:**
    - Survival goal reached (ticks >= target survival time)
    - All threats eliminated
    - Target faction completely destroyed
 
+**Constants:**
+```go
+HighIntensityThreshold  = 8   // Intensity level considered "high"
+MaxHighIntensityThreats = 10  // Maximum allowed before defeat
+```
+
 **Outputs:**
 - `IsGameOver` flag set
 - `VictoryAchieved` or `DefeatTriggered` status
 - Final event log export
 
-**Key Functions:** `CheckVictoryCondition()`
+**Key Functions:** `CheckVictoryCondition()`, `CountHighIntensityThreats()`
+
+### Shared Utility Functions
+
+The overworld package provides reusable utilities to reduce code duplication:
+
+| Function | Purpose | Used By |
+|----------|---------|---------|
+| `GetCardinalNeighbors(pos)` | Returns 4 adjacent positions (N, S, E, W) | Corruption spread, faction expansion |
+| `GetRandomTileFromSlice(tiles)` | Returns random tile from slice, nil-safe | Faction territory operations |
+| `IsThreatAtPosition(manager, pos)` | Checks if threat node exists at position | Child spawning, corruption spread |
+| `CountHighIntensityThreats(manager, threshold)` | Counts threats at or above intensity | Victory/defeat evaluation |
+
+### Data-Driven Item Drops
+
+Item rewards are configured via `itemDropTables` map:
+
+```go
+var itemDropTables = map[ThreatType]ItemDropTable{
+    ThreatNecromancer: {
+        Basic:    []string{"Dark Essence", "Necromantic Scroll", ...},
+        HighTier: []string{"Lich Phylactery", "Staff of Undeath"},
+    },
+    // ... other threat types
+}
+```
+
+High-tier items are only available when `intensity >= HighTierIntensityThreshold` (default: 7).
 
 ### Integration Points
 
@@ -155,7 +192,7 @@ Checks conditions in priority order:
 
 ## Encounter Package
 
-**Location:** `world/encounter/`
+**Location:** `mind/encounter/`
 
 ### Purpose
 
@@ -302,7 +339,7 @@ Level 5: 1.5x power, 5-7 squads (boss)
 
 ## Behavior Package
 
-**Location:** `tactical/behavior/`
+**Location:** `mind/behavior/`
 
 ### Purpose
 
@@ -507,7 +544,7 @@ All threat layers use lazy evaluation:
 
 ## AI Package
 
-**Location:** `tactical/ai/`
+**Location:** `mind/ai/`
 
 ### Purpose
 
@@ -702,7 +739,7 @@ The system uses three action implementations of the `SquadAction` interface:
         │              │              │
         ▼              ▼              ▼
    ┌────────┐    ┌─────────┐    ┌──────────┐
-   │ AI Pkg │◄───│ Combat  │◄───│ Overworld│
+   │mind/ai │◄───│ Combat  │◄───│ Overworld│
    │        │    │ System  │    │ Package  │
    └────┬───┘    └────┬────┘    └────┬─────┘
         │             │              │
@@ -710,16 +747,16 @@ The system uses three action implementations of the `SquadAction` interface:
         │        │         │         │
         ▼        ▼         ▼         ▼
    ┌──────────┐      ┌─────────────┐
-   │ Behavior │      │  Encounter  │
-   │ Package  │      │   Package   │
+   │  mind/   │      │    mind/    │
+   │ behavior │      │  encounter  │
    └──────────┘      └─────────────┘
         │                   │
         └───────┬───────────┘
                 ▼
-          ┌──────────┐
-          │  Squad   │
-          │  System  │
-          └──────────┘
+          ┌──────────────┐
+          │mind/evaluation│
+          │ + Squad System│
+          └──────────────┘
 ```
 
 ### Key Integration Patterns

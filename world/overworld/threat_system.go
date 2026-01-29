@@ -140,16 +140,7 @@ func SpawnChildThreatNode(manager *common.EntityManager, parentPos coords.Logica
 		}
 
 		// Check if position is free (no other threat nodes)
-		entityIDs := common.GlobalPositionSystem.GetAllEntityIDsAt(newPos)
-		occupied := false
-		for _, entityID := range entityIDs {
-			if manager.HasComponent(entityID, ThreatNodeComponent) {
-				occupied = true
-				break
-			}
-		}
-
-		if !occupied {
+		if !IsThreatAtPosition(manager, newPos) {
 			CreateThreatNode(manager, newPos, threatType, intensity, GetCurrentTick(manager))
 			return
 		}
@@ -164,28 +155,18 @@ func SpreadCorruption(manager *common.EntityManager, entity *ecs.Entity, threatD
 	}
 
 	// Try to spawn corruption on adjacent tile
-	adjacents := []coords.LogicalPosition{
-		{X: pos.X + 1, Y: pos.Y},
-		{X: pos.X - 1, Y: pos.Y},
-		{X: pos.X, Y: pos.Y + 1},
-		{X: pos.X, Y: pos.Y - 1},
-	}
+	adjacents := GetCardinalNeighbors(*pos)
 
 	// Pick random adjacent
-	if len(adjacents) > 0 {
-		targetPos := adjacents[common.RandomInt(len(adjacents))]
+	targetPos := adjacents[common.RandomInt(len(adjacents))]
 
-		// Check if already corrupted
-		entityIDs := common.GlobalPositionSystem.GetAllEntityIDsAt(targetPos)
-		for _, entityID := range entityIDs {
-			if manager.HasComponent(entityID, ThreatNodeComponent) {
-				return // Already has a threat
-			}
-		}
-
-		// Spawn new corruption
-		CreateThreatNode(manager, targetPos, ThreatCorruption, 1, GetCurrentTick(manager))
+	// Check if already corrupted
+	if IsThreatAtPosition(manager, targetPos) {
+		return // Already has a threat
 	}
+
+	// Spawn new corruption
+	CreateThreatNode(manager, targetPos, ThreatCorruption, 1, GetCurrentTick(manager))
 }
 
 // DestroyThreatNode removes a threat from the overworld

@@ -109,33 +109,26 @@ var GlobalEventLog = NewEventLog(100)
 var GlobalOverworldRecorder = overworldlog.NewOverworldRecorder()
 
 // LogEvent adds an event to the global log
-func LogEvent(eventType EventType, tick int64, entityID ecs.EntityID, description string) {
+// Optional data parameter can be passed for additional event metadata
+func LogEvent(eventType EventType, tick int64, entityID ecs.EntityID, description string, data ...map[string]interface{}) {
+	var eventData map[string]interface{}
+	if len(data) > 0 && data[0] != nil {
+		eventData = data[0]
+	} else {
+		eventData = make(map[string]interface{})
+	}
+
 	event := OverworldEvent{
 		Type:        eventType,
 		Tick:        tick,
 		EntityID:    entityID,
 		Description: description,
-		Data:        make(map[string]interface{}),
+		Data:        eventData,
 	}
 
 	GlobalEventLog.AddEvent(event)
 
 	// Also print to console for debugging
-	fmt.Printf("[Tick %d] %s: %s\n", tick, eventType, description)
-}
-
-// LogEventWithData adds an event with custom data
-func LogEventWithData(eventType EventType, tick int64, entityID ecs.EntityID, description string, data map[string]interface{}) {
-	event := OverworldEvent{
-		Type:        eventType,
-		Tick:        tick,
-		EntityID:    entityID,
-		Description: description,
-		Data:        data,
-	}
-
-	GlobalEventLog.AddEvent(event)
-
 	fmt.Printf("[Tick %d] %s: %s\n", tick, eventType, description)
 }
 

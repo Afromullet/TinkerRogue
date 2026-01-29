@@ -36,6 +36,18 @@ func CountThreatNodes(manager *common.EntityManager) int {
 	return count
 }
 
+// CountHighIntensityThreats returns the number of threats at or above the threshold
+func CountHighIntensityThreats(manager *common.EntityManager, threshold int) int {
+	count := 0
+	for _, result := range manager.World.Query(ThreatNodeTag) {
+		threatData := common.GetComponentType[*ThreatNodeData](result.Entity, ThreatNodeComponent)
+		if threatData != nil && threatData.Intensity >= threshold {
+			count++
+		}
+	}
+	return count
+}
+
 // CalculateAverageIntensity returns the average intensity of all threats
 func CalculateAverageIntensity(manager *common.EntityManager) float64 {
 	totalIntensity := 0

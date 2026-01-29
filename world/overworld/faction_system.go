@@ -150,15 +150,13 @@ func ExpandTerritory(manager *common.EntityManager, entity *ecs.Entity, factionD
 	}
 
 	// Pick random owned tile
-	randomTile := territoryData.OwnedTiles[common.RandomInt(len(territoryData.OwnedTiles))]
+	randomTile := GetRandomTileFromSlice(territoryData.OwnedTiles)
+	if randomTile == nil {
+		return
+	}
 
 	// Try to claim adjacent tile
-	adjacents := []coords.LogicalPosition{
-		{X: randomTile.X + 1, Y: randomTile.Y},
-		{X: randomTile.X - 1, Y: randomTile.Y},
-		{X: randomTile.X, Y: randomTile.Y + 1},
-		{X: randomTile.X, Y: randomTile.Y - 1},
-	}
+	adjacents := GetCardinalNeighbors(*randomTile)
 
 	for _, adj := range adjacents {
 		// Check bounds (100x80 map)
@@ -198,8 +196,10 @@ func FortifyTerritory(manager *common.EntityManager, entity *ecs.Entity, faction
 
 	// Spawn threat on random owned tile (30% chance)
 	if common.RandomInt(100) < 30 {
-		randomTile := territoryData.OwnedTiles[common.RandomInt(len(territoryData.OwnedTiles))]
-		SpawnThreatForFaction(manager, entity, randomTile, factionData.FactionType)
+		randomTile := GetRandomTileFromSlice(territoryData.OwnedTiles)
+		if randomTile != nil {
+			SpawnThreatForFaction(manager, entity, *randomTile, factionData.FactionType)
+		}
 	}
 }
 
@@ -212,14 +212,17 @@ func ExecuteRaid(manager *common.EntityManager, entity *ecs.Entity, factionData 
 
 	// Spawn aggressive threat near faction border
 	// Pick random border tile
-	randomTile := territoryData.OwnedTiles[common.RandomInt(len(territoryData.OwnedTiles))]
+	randomTile := GetRandomTileFromSlice(territoryData.OwnedTiles)
+	if randomTile == nil {
+		return
+	}
 
 	// Spawn higher-intensity threat for raids
 	threatType := MapFactionToThreatType(factionData.FactionType)
 	intensity := 3 + (factionData.Strength / 3) // Stronger factions spawn stronger raids
 	currentTick := GetCurrentTick(manager)
 
-	CreateThreatNode(manager, randomTile, threatType, intensity, currentTick)
+	CreateThreatNode(manager, *randomTile, threatType, intensity, currentTick)
 
 	// Log raid event
 	LogEvent(EventFactionRaid, currentTick, entity.GetID(),

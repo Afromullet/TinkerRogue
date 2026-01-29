@@ -201,7 +201,7 @@ func FormatThreatInfo(threat *ecs.Entity, manager *common.EntityManager) string 
 		return "Invalid threat"
 	}
 
-	threatTypeName := getThreatTypeName(data.ThreatType)
+	threatTypeName := data.ThreatType.String()
 	containedStatus := ""
 	if data.IsContained {
 		containedStatus = " (CONTAINED)"
@@ -224,19 +224,3 @@ func FormatThreatInfo(threat *ecs.Entity, manager *common.EntityManager) string 
 	)
 }
 
-func getThreatTypeName(threatType overworld.ThreatType) string {
-	switch threatType {
-	case overworld.ThreatNecromancer:
-		return "Necromancer"
-	case overworld.ThreatBanditCamp:
-		return "Bandit Camp"
-	case overworld.ThreatCorruption:
-		return "Corruption"
-	case overworld.ThreatBeastNest:
-		return "Beast Nest"
-	case overworld.ThreatOrcWarband:
-		return "Orc Warband"
-	default:
-		return "Unknown"
-	}
-}

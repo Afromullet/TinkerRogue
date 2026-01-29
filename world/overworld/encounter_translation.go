@@ -51,8 +51,7 @@ func TranslateThreatToEncounter(
 	rewards := CalculateRewards(threatData.Intensity, threatData.ThreatType)
 
 	// Create encounter name
-	threatName := getThreatTypeName(threatData.ThreatType)
-	encounterName := fmt.Sprintf("%s (Level %d)", threatName, threatData.Intensity)
+	encounterName := fmt.Sprintf("%s (Level %d)", threatData.ThreatType.String(), threatData.Intensity)
 
 	return &EncounterParams{
 		ThreatNodeID:     threatData.ThreatID,
@@ -192,82 +191,54 @@ func GenerateItemDrops(intensity int, threatType ThreatType) []string {
 	return items
 }
 
+// ItemDropTable defines basic and high-tier drops for a threat type
+type ItemDropTable struct {
+	Basic    []string // Normal drops
+	HighTier []string // Drops only available at intensity >= 7
+}
+
+// itemDropTables maps threat types to their item drop tables
+var itemDropTables = map[ThreatType]ItemDropTable{
+	ThreatNecromancer: {
+		Basic:    []string{"Dark Essence", "Necromantic Scroll", "Bone Fragment", "Soul Gem", "Cursed Tome"},
+		HighTier: []string{"Lich Phylactery", "Staff of Undeath"},
+	},
+	ThreatBanditCamp: {
+		Basic:    []string{"Rusty Sword", "Leather Armor", "Iron Dagger", "Stolen Goods", "Lockpicks"},
+		HighTier: []string{"Masterwork Blade", "Bandit King's Crown"},
+	},
+	ThreatOrcWarband: {
+		Basic:    []string{"Orcish Axe", "Crude Shield", "War Paint", "Tusk Trophy", "Bone Club"},
+		HighTier: []string{"Warlord's Greataxe", "Berserker Totem"},
+	},
+	ThreatCorruption: {
+		Basic:    []string{"Tainted Crystal", "Corrupted Seed", "Void Essence", "Shadow Fragment", "Blighted Herb"},
+		HighTier: []string{"Heart of Corruption", "Void Shard"},
+	},
+	ThreatBeastNest: {
+		Basic:    []string{"Beast Pelt", "Sharp Claw", "Fang", "Beast Horn", "Hide Scraps"},
+		HighTier: []string{"Alpha Pelt", "Primal Essence"},
+	},
+}
+
+// HighTierIntensityThreshold is the minimum intensity for high-tier drops
+const HighTierIntensityThreshold = 7
+
 // generateItemByType returns an item name based on threat type
 func generateItemByType(threatType ThreatType, intensity int) string {
-	switch threatType {
-	case ThreatNecromancer:
-		// Necromancer drops: Dark items, scrolls, bones
-		options := []string{
-			"Dark Essence",
-			"Necromantic Scroll",
-			"Bone Fragment",
-			"Soul Gem",
-			"Cursed Tome",
-		}
-		if intensity >= 7 {
-			options = append(options, "Lich Phylactery", "Staff of Undeath")
-		}
-		return options[common.RandomInt(len(options))]
-
-	case ThreatBanditCamp:
-		// Bandit drops: Weapons, gold, equipment
-		options := []string{
-			"Rusty Sword",
-			"Leather Armor",
-			"Iron Dagger",
-			"Stolen Goods",
-			"Lockpicks",
-		}
-		if intensity >= 7 {
-			options = append(options, "Masterwork Blade", "Bandit King's Crown")
-		}
-		return options[common.RandomInt(len(options))]
-
-	case ThreatOrcWarband:
-		// Orc drops: Heavy weapons, crude armor
-		options := []string{
-			"Orcish Axe",
-			"Crude Shield",
-			"War Paint",
-			"Tusk Trophy",
-			"Bone Club",
-		}
-		if intensity >= 7 {
-			options = append(options, "Warlord's Greataxe", "Berserker Totem")
-		}
-		return options[common.RandomInt(len(options))]
-
-	case ThreatCorruption:
-		// Corruption drops: Tainted items, essence
-		options := []string{
-			"Tainted Crystal",
-			"Corrupted Seed",
-			"Void Essence",
-			"Shadow Fragment",
-			"Blighted Herb",
-		}
-		if intensity >= 7 {
-			options = append(options, "Heart of Corruption", "Void Shard")
-		}
-		return options[common.RandomInt(len(options))]
-
-	case ThreatBeastNest:
-		// Beast drops: Pelts, claws, natural materials
-		options := []string{
-			"Beast Pelt",
-			"Sharp Claw",
-			"Fang",
-			"Beast Horn",
-			"Hide Scraps",
-		}
-		if intensity >= 7 {
-			options = append(options, "Alpha Pelt", "Primal Essence")
-		}
-		return options[common.RandomInt(len(options))]
-
-	default:
+	table, ok := itemDropTables[threatType]
+	if !ok {
 		return "Unknown Item"
 	}
+
+	options := make([]string, len(table.Basic))
+	copy(options, table.Basic)
+
+	if intensity >= HighTierIntensityThreshold {
+		options = append(options, table.HighTier...)
+	}
+
+	return options[common.RandomInt(len(options))]
 }
 
 // CreateOverworldEncounter creates an encounter entity from threat parameters

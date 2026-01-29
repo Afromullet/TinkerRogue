@@ -63,7 +63,7 @@ func ResolveCombatToOverworld(
 			GrantRewards(manager, outcome.PlayerSquadID, outcome.RewardsEarned)
 
 			// Log combat resolution event
-			overworld.LogEventWithData(overworld.EventCombatResolved, currentTick, outcome.ThreatNodeID,
+			overworld.LogEvent(overworld.EventCombatResolved, currentTick, outcome.ThreatNodeID,
 				fmt.Sprintf("Combat victory - Threat %d destroyed", outcome.ThreatNodeID),
 				map[string]interface{}{
 					"victory":            true,
@@ -88,7 +88,7 @@ func ResolveCombatToOverworld(
 			threatData.GrowthProgress = 0.0
 
 			// Log combat resolution event
-			overworld.LogEventWithData(overworld.EventCombatResolved, currentTick, outcome.ThreatNodeID,
+			overworld.LogEvent(overworld.EventCombatResolved, currentTick, outcome.ThreatNodeID,
 				fmt.Sprintf("Combat victory - Threat %d weakened to intensity %d", outcome.ThreatNodeID, threatData.Intensity),
 				map[string]interface{}{
 					"victory":            true,
@@ -106,7 +106,7 @@ func ResolveCombatToOverworld(
 	} else if outcome.PlayerRetreat {
 		// Player fled - no change to threat, no rewards
 		// Log combat resolution event
-		overworld.LogEventWithData(overworld.EventCombatResolved, currentTick, outcome.ThreatNodeID,
+		overworld.LogEvent(overworld.EventCombatResolved, currentTick, outcome.ThreatNodeID,
 			fmt.Sprintf("Retreated from threat %d", outcome.ThreatNodeID),
 			map[string]interface{}{
 				"victory":            false,
@@ -131,7 +131,7 @@ func ResolveCombatToOverworld(
 		}
 
 		// Log combat resolution event
-		overworld.LogEventWithData(overworld.EventCombatResolved, currentTick, outcome.ThreatNodeID,
+		overworld.LogEvent(overworld.EventCombatResolved, currentTick, outcome.ThreatNodeID,
 			fmt.Sprintf("Combat defeat - Threat %d grew to intensity %d", outcome.ThreatNodeID, threatData.Intensity),
 			map[string]interface{}{
 				"victory":            false,

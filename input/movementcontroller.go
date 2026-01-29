@@ -201,8 +201,7 @@ func (mc *MovementController) handleThreatCollision(threatEntity *ecs.Entity, po
 	}
 
 	// Log threat encounter
-	threatName := getThreatTypeName(threatData.ThreatType)
-	fmt.Printf("Player encountered: %s (Intensity %d)\n", threatName, threatData.Intensity)
+	fmt.Printf("Player encountered: %s (Intensity %d)\n", threatData.ThreatType.String(), threatData.Intensity)
 
 	// Create encounter from threat
 	encounterID, err := overworld.TriggerCombatFromThreat(
@@ -225,20 +224,3 @@ func (mc *MovementController) handleThreatCollision(threatEntity *ecs.Entity, po
 	}
 }
 
-// getThreatTypeName converts ThreatType to display string
-func getThreatTypeName(threatType overworld.ThreatType) string {
-	switch threatType {
-	case overworld.ThreatNecromancer:
-		return "Necromancer Outpost"
-	case overworld.ThreatBanditCamp:
-		return "Bandit Camp"
-	case overworld.ThreatCorruption:
-		return "Corruption"
-	case overworld.ThreatBeastNest:
-		return "Beast Nest"
-	case overworld.ThreatOrcWarband:
-		return "Orc Warband"
-	default:
-		return "Unknown Threat"
-	}
-}

@@ -4,6 +4,12 @@ import (
 	"game_main/common"
 )
 
+// High-intensity threat thresholds for defeat conditions
+const (
+	HighIntensityThreshold = 8  // Intensity level considered "high"
+	MaxHighIntensityThreats = 10 // Maximum allowed before defeat
+)
+
 // IsPlayerDefeated checks if player has lost
 func IsPlayerDefeated(manager *common.EntityManager) bool {
 	// Player loses if threat influence is too high
@@ -13,15 +19,7 @@ func IsPlayerDefeated(manager *common.EntityManager) bool {
 	}
 
 	// Player loses if too many high-intensity threats exist
-	highIntensityCount := 0
-	for _, result := range manager.World.Query(ThreatNodeTag) {
-		threatData := common.GetComponentType[*ThreatNodeData](result.Entity, ThreatNodeComponent)
-		if threatData != nil && threatData.Intensity >= 8 {
-			highIntensityCount++
-		}
-	}
-
-	if highIntensityCount >= 10 {
+	if CountHighIntensityThreats(manager, HighIntensityThreshold) >= MaxHighIntensityThreats {
 		return true // 10+ tier-8 threats = overwhelming
 	}
 
@@ -40,16 +38,9 @@ func GetDefeatReason(manager *common.EntityManager) string {
 		return formatEventString("Defeat! Overwhelmed by threat influence (%.1f)", totalInfluence)
 	}
 
-	highIntensityCount := 0
-	for _, result := range manager.World.Query(ThreatNodeTag) {
-		threatData := common.GetComponentType[*ThreatNodeData](result.Entity, ThreatNodeComponent)
-		if threatData != nil && threatData.Intensity >= 8 {
-			highIntensityCount++
-		}
-	}
-
-	if highIntensityCount >= 10 {
-		return formatEventString("Defeat! Too many powerful threats (%d tier-8+ threats)", highIntensityCount)
+	highIntensityCount := CountHighIntensityThreats(manager, HighIntensityThreshold)
+	if highIntensityCount >= MaxHighIntensityThreats {
+		return formatEventString("Defeat! Too many powerful threats (%d tier-%d+ threats)", highIntensityCount, HighIntensityThreshold)
 	}
 
 	if HasPlayerLostAllSquads(manager) {
