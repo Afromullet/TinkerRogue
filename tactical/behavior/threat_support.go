@@ -51,13 +51,9 @@ func (svl *SupportValueLayer) Compute() {
 	clear(svl.allyProximity)
 
 	// Get all allied squads
-	squadIDs := combat.GetSquadsForFaction(svl.factionID, svl.manager)
+	squadIDs := combat.GetActiveSquadsForFaction(svl.factionID, svl.manager)
 
 	for _, squadID := range squadIDs {
-		if squads.IsSquadDestroyed(squadID, svl.manager) {
-			continue
-		}
-
 		// Calculate heal priority (inverse of health percentage)
 		// Use centralized squad health calculation
 		avgHP := squads.GetSquadHealthPercent(squadID, svl.manager)
@@ -172,13 +168,9 @@ func (svl *SupportValueLayer) GetAlliesInHealRange(
 ) []ecs.EntityID {
 	var allies []ecs.EntityID
 
-	squadIDs := combat.GetSquadsForFaction(svl.factionID, svl.manager)
+	squadIDs := combat.GetActiveSquadsForFaction(svl.factionID, svl.manager)
 
 	for _, squadID := range squadIDs {
-		if squads.IsSquadDestroyed(squadID, svl.manager) {
-			continue
-		}
-
 		squadPos, err := combat.GetSquadMapPosition(squadID, svl.manager)
 		if err != nil {
 			continue

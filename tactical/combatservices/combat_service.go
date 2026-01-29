@@ -116,14 +116,7 @@ func (cs *CombatService) assignDeployedSquadsToPlayerFaction(playerFactionID ecs
 
 // GetAliveSquadsInFaction returns all alive squads for a faction
 func (cs *CombatService) GetAliveSquadsInFaction(factionID ecs.EntityID) []ecs.EntityID {
-	squadIDs := combat.GetSquadsForFaction(factionID, cs.EntityManager)
-	result := []ecs.EntityID{}
-	for _, squadID := range squadIDs {
-		if !squads.IsSquadDestroyed(squadID, cs.EntityManager) {
-			result = append(result, squadID)
-		}
-	}
-	return result
+	return combat.GetActiveSquadsForFaction(factionID, cs.EntityManager)
 }
 
 // VictoryCheckResult contains battle outcome information.

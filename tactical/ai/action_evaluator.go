@@ -281,13 +281,9 @@ func (ae *ActionEvaluator) findNearestEnemy() (ecs.EntityID, int) {
 			continue // Skip own faction
 		}
 
-		squadIDs := combat.GetSquadsForFaction(factionID, ae.ctx.Manager)
+		squadIDs := combat.GetActiveSquadsForFaction(factionID, ae.ctx.Manager)
 
 		for _, squadID := range squadIDs {
-			if squads.IsSquadDestroyed(squadID, ae.ctx.Manager) {
-				continue
-			}
-
 			enemyPos, err := combat.GetSquadMapPosition(squadID, ae.ctx.Manager)
 			if err != nil {
 				continue
@@ -340,13 +336,9 @@ func (ae *ActionEvaluator) getAttackableTargets() []ecs.EntityID {
 			continue // Skip own faction
 		}
 
-		squadIDs := combat.GetSquadsForFaction(factionID, ae.ctx.Manager)
+		squadIDs := combat.GetActiveSquadsForFaction(factionID, ae.ctx.Manager)
 
 		for _, squadID := range squadIDs {
-			if squads.IsSquadDestroyed(squadID, ae.ctx.Manager) {
-				continue
-			}
-
 			// Check if squad is in attack range
 			if ae.isInAttackRange(squadID) {
 				targets = append(targets, squadID)

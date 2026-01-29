@@ -97,12 +97,7 @@ func EvolveThreatNode(manager *common.EntityManager, entity *ecs.Entity, threatD
 		}
 
 		// Log evolution event
-		tickState := GetTickState(manager)
-		currentTick := int64(0)
-		if tickState != nil {
-			currentTick = tickState.CurrentTick
-		}
-		LogEvent(EventThreatEvolved, currentTick, entity.GetID(),
+		LogEvent(EventThreatEvolved, GetCurrentTick(manager), entity.GetID(),
 			formatEventString("Threat evolved %d -> %d", oldIntensity, threatData.Intensity))
 
 		// Trigger evolution effect (spawn child nodes, etc.)
@@ -135,12 +130,6 @@ func ExecuteThreatEvolutionEffect(manager *common.EntityManager, entity *ecs.Ent
 
 // SpawnChildThreatNode creates a nearby threat node
 func SpawnChildThreatNode(manager *common.EntityManager, parentPos coords.LogicalPosition, threatType ThreatType, intensity int) {
-	tickState := GetTickState(manager)
-	currentTick := int64(0)
-	if tickState != nil {
-		currentTick = tickState.CurrentTick
-	}
-
 	// Find nearby unoccupied position (within radius 3)
 	for attempts := 0; attempts < 10; attempts++ {
 		offsetX := common.RandomInt(7) - 3 // -3 to 3
@@ -161,7 +150,7 @@ func SpawnChildThreatNode(manager *common.EntityManager, parentPos coords.Logica
 		}
 
 		if !occupied {
-			CreateThreatNode(manager, newPos, threatType, intensity, currentTick)
+			CreateThreatNode(manager, newPos, threatType, intensity, GetCurrentTick(manager))
 			return
 		}
 	}
@@ -195,12 +184,7 @@ func SpreadCorruption(manager *common.EntityManager, entity *ecs.Entity, threatD
 		}
 
 		// Spawn new corruption
-		tickState := GetTickState(manager)
-		currentTick := int64(0)
-		if tickState != nil {
-			currentTick = tickState.CurrentTick
-		}
-		CreateThreatNode(manager, targetPos, ThreatCorruption, 1, currentTick)
+		CreateThreatNode(manager, targetPos, ThreatCorruption, 1, GetCurrentTick(manager))
 	}
 }
 
@@ -212,18 +196,12 @@ func DestroyThreatNode(manager *common.EntityManager, threatEntity *ecs.Entity) 
 
 	// Log destruction event
 	if threatData != nil {
-		tickState := GetTickState(manager)
-		currentTick := int64(0)
-		if tickState != nil {
-			currentTick = tickState.CurrentTick
-		}
-
 		location := "unknown"
 		if pos != nil {
 			location = formatEventString("(%d, %d)", pos.X, pos.Y)
 		}
 
-		LogEvent(EventThreatDestroyed, currentTick, threatEntity.GetID(),
+		LogEvent(EventThreatDestroyed, GetCurrentTick(manager), threatEntity.GetID(),
 			formatEventString("%s destroyed at %s",
 				threatData.ThreatType.String(), location))
 	}

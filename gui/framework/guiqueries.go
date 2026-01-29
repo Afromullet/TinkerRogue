@@ -96,14 +96,7 @@ func (gq *GUIQueries) GetFactionInfo(factionID ecs.EntityID) *FactionInfo {
 	// Use stored faction manager for additional data
 	currentMana, maxMana := gq.factionManager.GetFactionMana(factionID)
 	squadIDs := combat.GetSquadsForFaction(factionID, gq.ECSManager)
-
-	// Count alive squads
-	aliveCount := 0
-	for _, squadID := range squadIDs {
-		if !squads.IsSquadDestroyed(squadID, gq.ECSManager) {
-			aliveCount++
-		}
-	}
+	aliveCount := len(combat.GetActiveSquadsForFaction(factionID, gq.ECSManager))
 
 	return &FactionInfo{
 		ID:                 factionID,
@@ -153,13 +146,7 @@ func (gq *GUIQueries) GetEnemySquads(currentFactionID ecs.EntityID) []ecs.Entity
 	allFactions := gq.GetAllFactions()
 	for _, factionID := range allFactions {
 		if factionID != currentFactionID {
-			// Get all squads in this faction
-			squadIDs := combat.GetSquadsForFaction(factionID, gq.ECSManager)
-			for _, squadID := range squadIDs {
-				if !squads.IsSquadDestroyed(squadID, gq.ECSManager) {
-					enemySquads = append(enemySquads, squadID)
-				}
-			}
+			enemySquads = append(enemySquads, combat.GetActiveSquadsForFaction(factionID, gq.ECSManager)...)
 		}
 	}
 

@@ -438,23 +438,11 @@ func filterUnitsBySquadType(squadType string) []squads.UnitTemplate {
 func estimateUnitPower(unit squads.UnitTemplate, config *EvaluationConfigData) float64 {
 	attr := &unit.Attributes
 
-	// === OFFENSIVE POWER (matches calculateOffensivePower) ===
-	physicalDmg := float64(attr.GetPhysicalDamage())
-	magicDmg := float64(attr.GetMagicDamage())
-	avgDamage := (physicalDmg + magicDmg) / 2.0
+	// Offensive power uses shared calculation
+	offensivePower := calculateOffensivePower(attr, config)
 
-	// Apply accuracy modifiers
-	hitRate := float64(attr.GetHitRate()) / 100.0 // Normalize to 0-1
-	critChance := float64(attr.GetCritChance()) / 100.0
-	critMultiplier := 1.0 + (critChance * 0.5) // CritDamageMultiplier = 0.5
-	effectiveDamage := avgDamage * hitRate * critMultiplier
-
-	// Sub-weighted combination
-	damageComponent := avgDamage * config.DamageWeight
-	accuracyComponent := effectiveDamage * config.AccuracyWeight
-	offensivePower := damageComponent + accuracyComponent
-
-	// === DEFENSIVE POWER (matches calculateDefensivePower) ===
+	// === DEFENSIVE POWER ===
+	// NOTE: Uses full HP assumption for templates (no current HP state)
 	maxHP := float64(attr.GetMaxHealth())
 	effectiveHealth := maxHP // Assume full HP for new units
 

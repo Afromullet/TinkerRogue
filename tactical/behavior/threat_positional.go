@@ -57,7 +57,7 @@ func (prl *PositionalRiskLayer) Compute() {
 	clear(prl.retreatQuality)
 
 	// Get all squads (allies and enemies)
-	alliedSquads := combat.GetSquadsForFaction(prl.factionID, prl.manager)
+	alliedSquads := combat.GetActiveSquadsForFaction(prl.factionID, prl.manager)
 	enemyFactions := prl.getEnemyFactions()
 
 	// Compute flanking risk based on enemy positions
@@ -81,13 +81,9 @@ func (prl *PositionalRiskLayer) computeFlankingRisk(enemyFactions []ecs.EntityID
 	threatDirections := make(map[coords.LogicalPosition]map[int]bool) // pos -> set of attack angles
 
 	for _, enemyFactionID := range enemyFactions {
-		squadIDs := combat.GetSquadsForFaction(enemyFactionID, prl.manager)
+		squadIDs := combat.GetActiveSquadsForFaction(enemyFactionID, prl.manager)
 
 		for _, squadID := range squadIDs {
-			if squads.IsSquadDestroyed(squadID, prl.manager) {
-				continue
-			}
-
 			enemyPos, err := combat.GetSquadMapPosition(squadID, prl.manager)
 			if err != nil {
 				continue
@@ -158,10 +154,6 @@ func (prl *PositionalRiskLayer) computeIsolationRisk(alliedSquads []ecs.EntityID
 	// Get ally positions
 	allyPositions := []coords.LogicalPosition{}
 	for _, squadID := range alliedSquads {
-		if squads.IsSquadDestroyed(squadID, prl.manager) {
-			continue
-		}
-
 		pos, err := combat.GetSquadMapPosition(squadID, prl.manager)
 		if err != nil {
 			continue
@@ -228,10 +220,6 @@ func (prl *PositionalRiskLayer) computeRetreatQuality(alliedSquads []ecs.EntityI
 	// Get allied positions (safe zones)
 	allyPositions := []coords.LogicalPosition{}
 	for _, squadID := range alliedSquads {
-		if squads.IsSquadDestroyed(squadID, prl.manager) {
-			continue
-		}
-
 		pos, err := combat.GetSquadMapPosition(squadID, prl.manager)
 		if err != nil {
 			continue

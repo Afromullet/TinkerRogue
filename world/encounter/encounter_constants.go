@@ -16,7 +16,7 @@ const (
 	DodgeScalingFactor         = 100.0 // Scale dodge to 0-40 range
 	CoverScalingFactor         = 100.0 // Scale cover value percentage
 	CoverBeneficiaryMultiplier = 2.5   // Avg units protected per cover provider
-	CritDamageMultiplier       = 0.5   // Expected damage boost from crits
+	// NOTE: CritDamageMultiplier moved to config.CritDamageBonus for single source of truth
 
 	// Deployment weights
 	DefaultDeployedWeight = 1.0 // Full weight for deployed squads

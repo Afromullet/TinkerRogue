@@ -20,13 +20,8 @@ func CheckVictoryCondition(manager *common.EntityManager) VictoryCondition {
 		}
 
 		// Log defeat event
-		tickState := GetTickState(manager)
-		currentTick := int64(0)
-		if tickState != nil {
-			currentTick = tickState.CurrentTick
-		}
 		defeatReason := GetDefeatReason(manager)
-		LogEvent(EventDefeat, currentTick, 0, defeatReason)
+		LogEvent(EventDefeat, GetCurrentTick(manager), 0, defeatReason)
 
 		// Export overworld log on defeat
 		FinalizeRecording("Defeat", defeatReason)
@@ -36,14 +31,14 @@ func CheckVictoryCondition(manager *common.EntityManager) VictoryCondition {
 
 	// Check survival victory first (if configured) - takes priority over threat elimination
 	if victoryState != nil && victoryState.TicksToSurvive > 0 {
-		tickState := GetTickState(manager)
-		if tickState != nil && tickState.CurrentTick >= victoryState.TicksToSurvive {
+		currentTick := GetCurrentTick(manager)
+		if currentTick >= victoryState.TicksToSurvive {
 			victoryState.Condition = VictoryTimeLimit
 			victoryState.VictoryAchieved = true
 
 			// Log victory event
 			victoryReason := formatEventString("Victory! Survived %d ticks", victoryState.TicksToSurvive)
-			LogEvent(EventVictory, tickState.CurrentTick, 0, victoryReason)
+			LogEvent(EventVictory, currentTick, 0, victoryReason)
 
 			// Export overworld log on survival victory
 			FinalizeRecording("Victory", victoryReason)
@@ -62,13 +57,8 @@ func CheckVictoryCondition(manager *common.EntityManager) VictoryCondition {
 		}
 
 		// Log victory event
-		tickState := GetTickState(manager)
-		currentTick := int64(0)
-		if tickState != nil {
-			currentTick = tickState.CurrentTick
-		}
 		victoryReason := "Victory! All threats eliminated"
-		LogEvent(EventVictory, currentTick, 0, victoryReason)
+		LogEvent(EventVictory, GetCurrentTick(manager), 0, victoryReason)
 
 		// Export overworld log on threat elimination victory
 		FinalizeRecording("Victory", victoryReason)
@@ -83,13 +73,8 @@ func CheckVictoryCondition(manager *common.EntityManager) VictoryCondition {
 			victoryState.VictoryAchieved = true
 
 			// Log victory event
-			tickState := GetTickState(manager)
-			currentTick := int64(0)
-			if tickState != nil {
-				currentTick = tickState.CurrentTick
-			}
 			victoryReason := formatEventString("Victory! Defeated all %s factions", victoryState.TargetFactionType.String())
-			LogEvent(EventVictory, currentTick, 0, victoryReason)
+			LogEvent(EventVictory, GetCurrentTick(manager), 0, victoryReason)
 
 			// Export overworld log on faction victory
 			FinalizeRecording("Victory", victoryReason)

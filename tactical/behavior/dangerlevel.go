@@ -2,6 +2,7 @@ package behavior
 
 import (
 	"game_main/common"
+	"game_main/config"
 	"game_main/tactical/combat"
 	"game_main/tactical/evaluation"
 	"game_main/tactical/squads"
@@ -23,16 +24,6 @@ const (
 )
 
 var avgCombatStats = &averageCombatStats{}
-
-// CompositionBonuses defines multipliers based on attack type diversity.
-// Squads with diverse attack types (melee + ranged + magic) are more effective.
-// Key is the count of unique attack types in the squad.
-var CompositionBonuses = map[int]float64{
-	1: 0.8, // Mono-composition penalty (vulnerable to counters)
-	2: 1.1, // Dual-type bonus (good diversity)
-	3: 1.2, // Triple-type bonus (excellent diversity)
-	4: 1.3, // Quad-type bonus (optimal, rare)
-}
 
 // Keeps track of Each Factions Danger Level.
 type FactionThreatLevelManager struct {
@@ -340,12 +331,7 @@ func (stl *SquadThreatLevel) getRoleMultiplier(role squads.UnitRole) float64 {
 // calculateCompositionBonus returns a bonus multiplier based on attack type diversity.
 // Delegates to shared evaluation package.
 func (stl *SquadThreatLevel) calculateCompositionBonus(attackTypeCount map[squads.AttackType]int) float64 {
-
-	if bonus, exists := CompositionBonuses[len(attackTypeCount)]; exists {
-		return bonus
-	}
-	return 1.0
-
+	return evaluation.GetCompositionBonus(len(attackTypeCount))
 }
 
 // calculateExpectedDamageForUnit computes expected damage for one attacker unit.
@@ -376,7 +362,7 @@ func (stl *SquadThreatLevel) calculateExpectedDamageForUnit(
 	// 3. Expected crit multiplier
 	// Expected value: P(normal) × 1.0 + P(crit) × 1.5
 	critChance := float64(attackerAttr.GetCritChance()) / 100.0
-	expectedCritMult := 1.0 + (critChance * 0.5)
+	expectedCritMult := 1.0 + (critChance * config.CritDamageBonus)
 
 	// 4. Apply resistance (subtraction, not percentage)
 	resistance := float64(defenderAttr.GetPhysicalResistance())

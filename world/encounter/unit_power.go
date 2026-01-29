@@ -2,6 +2,7 @@ package encounter
 
 import (
 	"game_main/common"
+	gameconfig "game_main/config"
 	"game_main/tactical/squads"
 	"math"
 
@@ -59,7 +60,7 @@ func calculateOffensivePower(attr *common.Attributes, config *EvaluationConfigDa
 	// Accuracy component (hit rate and crit chance)
 	hitRate := float64(attr.GetHitRate()) / 100.0 // Normalize to 0-1
 	critChance := float64(attr.GetCritChance()) / 100.0
-	critMultiplier := 1.0 + (critChance * CritDamageMultiplier) // Expected damage multiplier from crits
+	critMultiplier := 1.0 + (critChance * gameconfig.CritDamageBonus) // Expected damage multiplier from crits
 
 	effectiveDamage := avgDamage * hitRate * critMultiplier
 

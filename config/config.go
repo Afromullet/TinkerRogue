@@ -65,6 +65,14 @@ const (
 	COUNTERATTACK_HIT_PENALTY       = 20  // -20% hit chance on counterattack
 )
 
+// Critical hit constants
+const (
+	// CritDamageBonus is the extra damage multiplier on critical hits.
+	// Crits deal (1 + CritDamageBonus) = 1.5x damage.
+	// Used in expected damage calculations: expectedMult = 1 + (critChance * CritDamageBonus)
+	CritDamageBonus = 0.5
+)
+
 // Default Graphic and Display Related Values
 
 const (

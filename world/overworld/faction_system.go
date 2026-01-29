@@ -172,12 +172,7 @@ func ExpandTerritory(manager *common.EntityManager, entity *ecs.Entity, factionD
 			factionData.TerritorySize++
 
 			// Log expansion event
-			tickState := GetTickState(manager)
-			currentTick := int64(0)
-			if tickState != nil {
-				currentTick = tickState.CurrentTick
-			}
-			LogEvent(EventFactionExpanded, currentTick, entity.GetID(),
+			LogEvent(EventFactionExpanded, GetCurrentTick(manager), entity.GetID(),
 				formatEventString("%s expanded to (%d, %d)",
 					factionData.FactionType.String(), adj.X, adj.Y))
 
@@ -222,13 +217,7 @@ func ExecuteRaid(manager *common.EntityManager, entity *ecs.Entity, factionData 
 	// Spawn higher-intensity threat for raids
 	threatType := MapFactionToThreatType(factionData.FactionType)
 	intensity := 3 + (factionData.Strength / 3) // Stronger factions spawn stronger raids
-
-	// Get current tick
-	tickState := GetTickState(manager)
-	currentTick := int64(0)
-	if tickState != nil {
-		currentTick = tickState.CurrentTick
-	}
+	currentTick := GetCurrentTick(manager)
 
 	CreateThreatNode(manager, randomTile, threatType, intensity, currentTick)
 
@@ -276,12 +265,5 @@ func SpawnThreatForFaction(
 	threatType := MapFactionToThreatType(factionType)
 	intensity := 1 + common.RandomInt(3) // Random intensity 1-3
 
-	// Get current tick
-	tickState := GetTickState(manager)
-	currentTick := int64(0)
-	if tickState != nil {
-		currentTick = tickState.CurrentTick
-	}
-
-	return CreateThreatNode(manager, position, threatType, intensity, currentTick)
+	return CreateThreatNode(manager, position, threatType, intensity, GetCurrentTick(manager))
 }

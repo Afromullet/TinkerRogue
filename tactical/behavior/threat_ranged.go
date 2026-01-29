@@ -3,7 +3,6 @@ package behavior
 import (
 	"game_main/common"
 	"game_main/tactical/combat"
-	"game_main/tactical/squads"
 	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"
@@ -48,13 +47,9 @@ func (rtl *RangedThreatLayer) Compute() {
 	enemyFactions := rtl.getEnemyFactions()
 
 	for _, enemyFactionID := range enemyFactions {
-		squadIDs := combat.GetSquadsForFaction(enemyFactionID, rtl.manager)
+		squadIDs := combat.GetActiveSquadsForFaction(enemyFactionID, rtl.manager)
 
 		for _, squadID := range squadIDs {
-			if squads.IsSquadDestroyed(squadID, rtl.manager) {
-				continue
-			}
-
 			// Check if squad has ranged units
 			if !hasUnitsWithAttackType(squadID, rtl.manager, RangedAttackTypes) {
 				continue

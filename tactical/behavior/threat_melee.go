@@ -52,14 +52,9 @@ func (mtl *MeleeThreatLayer) Compute() {
 	enemyFactions := mtl.getEnemyFactions()
 
 	for _, enemyFactionID := range enemyFactions {
-		squadIDs := combat.GetSquadsForFaction(enemyFactionID, mtl.manager)
+		squadIDs := combat.GetActiveSquadsForFaction(enemyFactionID, mtl.manager)
 
 		for _, squadID := range squadIDs {
-			// Skip if squad is destroyed
-			if squads.IsSquadDestroyed(squadID, mtl.manager) {
-				continue
-			}
-
 			// Check if squad has melee units
 			if !hasUnitsWithAttackType(squadID, mtl.manager, MeleeAttackTypes) {
 				continue

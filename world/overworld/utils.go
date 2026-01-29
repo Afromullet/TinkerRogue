@@ -1,11 +1,23 @@
 package overworld
 
-import "fmt"
+import (
+	"fmt"
+	"game_main/common"
+)
 
 // formatEventString is a helper for formatting event descriptions
 // Centralizes string formatting for event logging
 func formatEventString(format string, args ...interface{}) string {
 	return fmt.Sprintf(format, args...)
+}
+
+// GetCurrentTick returns the current tick from the tick state singleton.
+// Returns 0 if no tick state exists.
+func GetCurrentTick(manager *common.EntityManager) int64 {
+	if tickState := GetTickState(manager); tickState != nil {
+		return tickState.CurrentTick
+	}
+	return 0
 }
 
 // MapFactionToThreatType converts faction type to corresponding threat type

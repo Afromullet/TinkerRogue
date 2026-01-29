@@ -63,13 +63,7 @@ func (aic *AIController) DecideFactionTurn(factionID ecs.EntityID) bool {
 	aic.updateThreatLayers(currentRound)
 
 	// Get all alive squads in faction
-	squadIDs := combat.GetSquadsForFaction(factionID, aic.entityManager)
-	aliveSquads := []ecs.EntityID{}
-	for _, squadID := range squadIDs {
-		if !squads.IsSquadDestroyed(squadID, aic.entityManager) {
-			aliveSquads = append(aliveSquads, squadID)
-		}
-	}
+	aliveSquads := combat.GetActiveSquadsForFaction(factionID, aic.entityManager)
 
 	if len(aliveSquads) == 0 {
 		return false

@@ -78,6 +78,19 @@ func GetSquadsForFaction(factionID ecs.EntityID, manager *common.EntityManager) 
 	return squadIDs
 }
 
+// GetActiveSquadsForFaction returns all non-destroyed squads owned by a faction.
+// This filters out destroyed squads, eliminating the need for callers to check IsSquadDestroyed.
+func GetActiveSquadsForFaction(factionID ecs.EntityID, manager *common.EntityManager) []ecs.EntityID {
+	all := GetSquadsForFaction(factionID, manager)
+	active := make([]ecs.EntityID, 0, len(all))
+	for _, squadID := range all {
+		if !squads.IsSquadDestroyed(squadID, manager) {
+			active = append(active, squadID)
+		}
+	}
+	return active
+}
+
 // GetSquadAtPosition returns the squad entity ID at the given position
 // Returns 0 if no squad at position or squad is destroyed
 func GetSquadAtPosition(pos coords.LogicalPosition, manager *common.EntityManager) ecs.EntityID {
