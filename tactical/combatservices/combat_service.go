@@ -133,13 +133,14 @@ type VictoryCheckResult struct {
 	BattleOver       bool
 	VictorFaction    ecs.EntityID
 	VictorName       string
-	IsPlayerVictory  bool             // True if a player-controlled faction won
+	IsPlayerVictory  bool // True if a player-controlled faction won
 	DefeatedFactions []ecs.EntityID
 	RoundsCompleted  int
 }
 
 // CheckVictoryCondition checks if battle has ended
 // TODO: Add actual victory conditions
+// TODO, this can be simplified. We already have part of the code that filters by alive and dead squads
 func (cs *CombatService) CheckVictoryCondition() *VictoryCheckResult {
 	result := &VictoryCheckResult{
 		RoundsCompleted: cs.TurnManager.GetCurrentRound(),

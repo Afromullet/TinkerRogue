@@ -288,8 +288,11 @@ func (om *OverworldMode) handleEngageThreat() {
 	}
 
 	// Store encounter ID for combat mode
-	// TODO: Pass encounter ID to combat mode coordinator
-	_ = encounterID
+	if om.Context.ModeCoordinator != nil {
+		battleMapState := om.Context.ModeCoordinator.GetBattleMapState()
+		battleMapState.TriggeredEncounterID = encounterID
+		fmt.Printf("Stored encounterID %d in BattleMapState\n", encounterID)
+	}
 
 	// Switch to combat mode
 	if om.Context.ModeCoordinator != nil {
