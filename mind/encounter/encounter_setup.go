@@ -114,21 +114,13 @@ func assignPlayerSquadsToFaction(
 	for i, squadID := range deployedSquads {
 		pos := squadPositions[i]
 
-		// Update squad's position component for combat
-		squadEntity := manager.FindEntityByID(squadID)
-		if squadEntity != nil {
-			squadPos := common.GetComponentType[*coords.LogicalPosition](squadEntity, common.PositionComponent)
-			if squadPos != nil {
-				// Update position for combat
-				oldPos := *squadPos
-				manager.MoveEntity(squadID, squadEntity, oldPos, pos)
-			}
-		}
-
-		// Add to faction
+		// Add to faction (handles creating/updating squad position)
 		if err := fm.AddSquadToFaction(factionID, squadID, pos); err != nil {
 			return fmt.Errorf("failed to add squad %d to faction: %w", squadID, err)
 		}
+
+		// Ensure all squad units have positions at the squad's location
+		ensureUnitPositions(manager, squadID, pos)
 
 		// Create action state
 		if err := createActionStateForSquad(manager, squadID); err != nil {
@@ -386,6 +378,31 @@ func filterUnitsBySquadType(squadType string) []squads.UnitTemplate {
 // Delegates to combat package's CreateActionStateForSquad.
 func createActionStateForSquad(manager *common.EntityManager, squadID ecs.EntityID) error {
 	return combat.CreateActionStateForSquad(manager, squadID)
+}
+
+// ensureUnitPositions ensures all units in a squad have position components
+// Units that already have positions are moved to the squad position
+// Units without positions get a new position component created
+func ensureUnitPositions(manager *common.EntityManager, squadID ecs.EntityID, squadPos coords.LogicalPosition) {
+	unitIDs := squads.GetUnitIDsInSquad(squadID, manager)
+	for _, unitID := range unitIDs {
+		unitEntity := manager.FindEntityByID(unitID)
+		if unitEntity == nil {
+			continue
+		}
+
+		unitPos := common.GetComponentType[*coords.LogicalPosition](unitEntity, common.PositionComponent)
+		if unitPos != nil {
+			// Unit has position - move it to squad location
+			manager.MoveEntity(unitID, unitEntity, *unitPos, squadPos)
+		} else {
+			// Unit has no position - create one at squad location
+			newPos := new(coords.LogicalPosition)
+			*newPos = squadPos
+			unitEntity.AddComponent(common.PositionComponent, newPos)
+			common.GlobalPositionSystem.AddEntity(unitID, squadPos)
+		}
+	}
 }
 
 // filterUnitsByAttackRange returns units with attack range >= minRange
