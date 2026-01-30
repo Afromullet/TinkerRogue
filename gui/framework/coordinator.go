@@ -29,14 +29,14 @@ func (gc GameContext) String() string {
 // GameModeCoordinator manages two independent UIModeManagers - one for Overworld context
 // and one for BattleMap context. It handles context switching and state persistence.
 type GameModeCoordinator struct {
-	overworldManager     *UIModeManager  // Manages overworld modes (squad management, etc.)
-	battleMapManager     *UIModeManager  // Manages battle map modes (exploration, combat)
-	activeManager        *UIModeManager  // Points to currently active manager
-	currentContext       GameContext     // Tracks which context is active
-	overworldState       *OverworldState // Persistent overworld UI state
-	battleMapState       *BattleMapState // Persistent battle data
-	contextSwitchKeyDown bool            // Tracks if context switch key is held (prevents rapid toggling)
-	context              *UIContext      // Reference to shared UIContext for cache management
+	overworldManager *UIModeManager // Manages overworld modes (squad management, etc.)
+	battleMapManager *UIModeManager // Manages battle map modes (exploration, combat)
+	activeManager    *UIModeManager // Points to currently active manager
+	currentContext   GameContext    // Tracks which context is active
+
+	battleMapState *BattleMapState // Persistent battle data
+
+	context *UIContext // Reference to shared UIContext for cache management
 }
 
 // NewGameModeCoordinator creates a new coordinator with two separate mode managers
@@ -49,9 +49,9 @@ func NewGameModeCoordinator(ctx *UIContext) *GameModeCoordinator {
 		battleMapManager: battleMapMgr,
 		activeManager:    battleMapMgr, // Start in battle map context by default
 		currentContext:   ContextBattleMap,
-		overworldState:   NewOverworldState(),
-		battleMapState:   NewBattleMapState(),
-		context:          ctx, // Store reference to UIContext for cache management
+
+		battleMapState: NewBattleMapState(),
+		context:        ctx, // Store reference to UIContext for cache management
 	}
 
 	return coordinator
@@ -83,9 +83,6 @@ func (gmc *GameModeCoordinator) EnterBattleMap(initialMode string) error {
 		return nil
 	}
 
-	// Save overworld state before switching
-	gmc.saveOverworldState()
-
 	// Switch to battle map manager
 	gmc.activeManager = gmc.battleMapManager
 	gmc.currentContext = ContextBattleMap
@@ -111,15 +108,9 @@ func (gmc *GameModeCoordinator) ReturnToOverworld(initialMode string) error {
 		return nil
 	}
 
-	// Save battle map state before switching
-	gmc.saveBattleMapState()
-
 	// Switch to overworld manager
 	gmc.activeManager = gmc.overworldManager
 	gmc.currentContext = ContextOverworld
-
-	// Restore overworld state
-	gmc.restoreOverworldState()
 
 	// Enter the specified mode (or keep current overworld mode)
 	if initialMode != "" {
@@ -148,18 +139,6 @@ func (gmc *GameModeCoordinator) ToggleContext() error {
 
 // Update updates the active manager and handles context switching
 func (gmc *GameModeCoordinator) Update(deltaTime float64) error {
-	// Check for context switch hotkey (Tab key)
-	if ebiten.IsKeyPressed(ebiten.KeyTab) && ebiten.IsKeyPressed(ebiten.KeyControl) {
-		// Wait for key release to avoid rapid toggling
-		if !gmc.contextSwitchKeyDown {
-			gmc.contextSwitchKeyDown = true
-			if err := gmc.ToggleContext(); err != nil {
-				fmt.Printf("Failed to toggle context: %v\n", err)
-			}
-		}
-	} else {
-		gmc.contextSwitchKeyDown = false
-	}
 
 	// Update active manager
 	if gmc.activeManager != nil {
@@ -202,33 +181,4 @@ func (gmc *GameModeCoordinator) GetBattleMapManager() *UIModeManager {
 // GetBattleMapState returns the persistent battle map state for UI modes
 func (gmc *GameModeCoordinator) GetBattleMapState() *BattleMapState {
 	return gmc.battleMapState
-}
-
-// saveOverworldState captures current overworld state before leaving
-// TODO, consider if we need this
-func (gmc *GameModeCoordinator) saveOverworldState() {
-	// TODO: Implement state capture
-	// - Current squad selection
-	// - UI state (scroll positions, selections)
-	// - Any pending actions
-	fmt.Println("Saving overworld state...")
-}
-
-// restoreOverworldState restores overworld state when returning
-// TODO, consider if we need this
-func (gmc *GameModeCoordinator) restoreOverworldState() {
-	// TODO: Implement state restoration
-	// - Restore squad selections
-	// - Restore UI state
-	fmt.Println("Restoring overworld state...")
-}
-
-// saveBattleMapState captures current battle map state before leaving
-// TODO, consider if we need this
-func (gmc *GameModeCoordinator) saveBattleMapState() {
-	// TODO: Implement state capture
-	// - Current map state
-	// - Combat state (turn order, positions)
-	// - Battle results (loot, XP, casualties)
-	fmt.Println("Saving battle map state...")
 }

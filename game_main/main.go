@@ -81,7 +81,8 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	coords.CoordManager.UpdateScreenDimensions(screen.Bounds().Dx(), screen.Bounds().Dy())
 
 	// Phase 1: Ebiten rendering (game world)
-	// TODO. This just needs to be one call. Handle the coords.MAP_SCROLLING_ENABLED a different way
+	// TODO. This just needs to be one call. Handle the coords.MAP_SCROLLING_ENABLED a different way.
+	// Update: Reconsider whether that todoo really matters
 	if coords.MAP_SCROLLING_ENABLED {
 		bounds := rendering.DrawMapCentered(screen, &g.gameMap, g.playerData.Pos, config.DefaultZoomNumberOfSquare, config.DEBUG_MODE)
 		g.gameMap.RightEdgeX = bounds.RightEdgeX

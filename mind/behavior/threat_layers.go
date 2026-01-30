@@ -53,7 +53,7 @@ func (tlb *ThreatLayerBase) markClean(currentRound int) {
 
 // getEnemyFactions returns all factions hostile to this layer's faction
 // For now, returns all factions except the viewing faction
-// TODO: In future, support faction alliances and complex relationships
+
 func (tlb *ThreatLayerBase) getEnemyFactions() []ecs.EntityID {
 	var enemies []ecs.EntityID
 	allFactions := combat.GetAllFactions(tlb.manager)

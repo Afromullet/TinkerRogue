@@ -61,7 +61,7 @@ func (t *ThrowableAction) Execute(targetPos *coords.LogicalPosition, sourcePos *
 		graphics.AddVXArea(graphics.NewVisualEffectArea(sourcePos.X, sourcePos.Y, t.Shape, t.VX))
 	}
 
-	//TODO, apply this to squads in the future
+	//TODO, maybe consider replacing this with targetable spells
 	// Get positions affected by the shape
 	//affectedPositions := coords.CoordManager.GetTilePositionsAsCommon(t.Shape.GetIndices())
 	appliedEffects := make([]StatusEffects, 0)

@@ -25,6 +25,8 @@ __________________________________________
 
 - Need to be able to toggle threat layer visualzation to player faction.
 
+- Enemy squads appear to attack when they're out of range
+
 
 
 

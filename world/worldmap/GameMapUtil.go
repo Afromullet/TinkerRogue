@@ -55,17 +55,6 @@ func LoadTileImages() TileImageSet {
 		}
 	}
 
-	//TODO remove
-	// Note: The original code loaded from marble directory twice, keeping that behavior
-	files, _ = os.ReadDir(dir)
-	for _, file := range files {
-		if !file.IsDir() {
-			imagePath := filepath.Join(dir, file.Name())
-			wall, _, _ := ebitenutil.NewImageFromFile(imagePath)
-			images.WallImages = append(images.WallImages, wall)
-		}
-	}
-
 	// Load stairs
 	fn := filepath.Join("..", "assets", "tiles", "stairs1.png")
 	s, _, _ := ebitenutil.NewImageFromFile(fn)

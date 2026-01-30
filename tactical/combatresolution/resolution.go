@@ -162,18 +162,6 @@ func GrantRewards(manager *common.EntityManager, squadID ecs.EntityID, rewards o
 	//todo
 }
 
-// findPlayerEntityID locates the player entity
-func findPlayerEntityID(manager *common.EntityManager) ecs.EntityID {
-	// Search for entity with PlayerComponent
-	for id := ecs.EntityID(1); id < ecs.EntityID(1000); id++ {
-		entity := manager.FindEntityByID(id)
-		if entity != nil && entity.HasComponent(common.PlayerComponent) {
-			return id
-		}
-	}
-	return 0
-}
-
 // CreateCombatOutcome creates outcome from combat state
 // Helper function to construct outcome from combat results
 func CreateCombatOutcome(
