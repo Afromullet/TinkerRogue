@@ -64,9 +64,9 @@ func (r *OverworldRenderer) renderOverworldMap(screen *ebiten.Image) {
 
 // renderThreatNodes draws all threat nodes as colored circles
 func (r *OverworldRenderer) renderThreatNodes(screen *ebiten.Image) {
-	threats := overworld.GetAllThreatNodes(r.manager)
-
-	for _, threat := range threats {
+	// Query threats directly following ECS best practices
+	for _, result := range r.manager.World.Query(overworld.ThreatNodeTag) {
+		threat := result.Entity
 		pos := common.GetComponentType[*coords.LogicalPosition](threat, common.PositionComponent)
 		data := common.GetComponentType[*overworld.ThreatNodeData](threat, overworld.ThreatNodeComponent)
 
@@ -98,9 +98,9 @@ func (r *OverworldRenderer) renderThreatNodes(screen *ebiten.Image) {
 
 // renderInfluenceZones draws influence radius for threats
 func (r *OverworldRenderer) renderInfluenceZones(screen *ebiten.Image) {
-	threats := overworld.GetAllThreatNodes(r.manager)
-
-	for _, threat := range threats {
+	// Query threats directly following ECS best practices
+	for _, result := range r.manager.World.Query(overworld.ThreatNodeTag) {
+		threat := result.Entity
 		pos := common.GetComponentType[*coords.LogicalPosition](threat, common.PositionComponent)
 		influenceData := common.GetComponentType[*overworld.InfluenceData](threat, overworld.InfluenceComponent)
 
@@ -180,12 +180,7 @@ func (r *OverworldRenderer) GetThreatAtPosition(screenX, screenY int) ecs.Entity
 	logicalPos := coords.LogicalPosition{X: logicalX, Y: logicalY}
 
 	// Check if threat exists at this position
-	threat := overworld.GetThreatNodeAt(r.manager, logicalPos)
-	if threat != nil {
-		return threat.GetID()
-	}
-
-	return 0
+	return overworld.GetThreatNodeAt(r.manager, logicalPos)
 }
 
 // FormatThreatInfo returns formatted string for threat details

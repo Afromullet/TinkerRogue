@@ -3,14 +3,12 @@ __________________________________________
 # # # **IMPORTANT** # # # 
 
 
-- The ctrl+k debug command that kills all enemy squads seems to kill every squad that is not in combat. Need to look at that
 
 - calculateEntryIndexAtPosition in squadeditor_movesquad.go is not accurately calculating the position to move the squad to. Check if there is an ebitenui var (such as entryselected) you can use instead of calculating with pixel positions
 
 - Check if we have to mark the caches as dirty, or whether the way the ecs library implements views handles that automatically
 
-- When an encounter starts, we hide the encounter sprites for the combat sprites. Check to make sure that combat can't accidentally start if a combat squad moves into the position of a hidden encounter sprite 
-* This is broken. Encounters can still start
+
 
 - Handle Entity Cleanup
 

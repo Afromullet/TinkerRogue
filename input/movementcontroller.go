@@ -152,9 +152,12 @@ func (mc *MovementController) movePlayer(xOffset, yOffset int) {
 		mc.playerData.Pos.Y = nextPosition.Y
 
 		// Check if player stepped on a threat node
-		threatEntity := overworld.GetThreatNodeAt(mc.ecsManager, nextLogicalPos)
-		if threatEntity != nil {
-			mc.handleThreatCollision(threatEntity, nextLogicalPos)
+		threatID := overworld.GetThreatNodeAt(mc.ecsManager, nextLogicalPos)
+		if threatID != 0 {
+			threatEntity := mc.ecsManager.FindEntityByID(threatID)
+			if threatEntity != nil {
+				mc.handleThreatCollision(threatEntity, nextLogicalPos)
+			}
 		}
 
 		nextTile.Blocked = true

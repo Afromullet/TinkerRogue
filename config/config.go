@@ -81,8 +81,8 @@ const (
 	DefaultTilePixels         = 32
 	DefaultScaleFactor        = 3
 	DefaultRightPadding       = 500
-	DefaultZoomNumberOfSquare = 30   //Number of squares we see when zoomed it
-	DefaultStaticUIOffset     = 1000 //Leftover from the old GUI. Todo, determine if this is still needed.
+	DefaultZoomNumberOfSquare = 30 //Number of squares we see when zoomed it
+	DefaultStaticUIOffset     = 1000
 )
 
 // Asset paths

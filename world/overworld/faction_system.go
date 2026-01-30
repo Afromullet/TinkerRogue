@@ -159,8 +159,8 @@ func ExpandTerritory(manager *common.EntityManager, entity *ecs.Entity, factionD
 	adjacents := GetCardinalNeighbors(*randomTile)
 
 	for _, adj := range adjacents {
-		// Check bounds (100x80 map)
-		if adj.X < 0 || adj.X >= 100 || adj.Y < 0 || adj.Y >= 80 {
+		// Check bounds using configured map dimensions
+		if adj.X < 0 || adj.X >= DefaultMapWidth || adj.Y < 0 || adj.Y >= DefaultMapHeight {
 			continue
 		}
 
@@ -172,10 +172,10 @@ func ExpandTerritory(manager *common.EntityManager, entity *ecs.Entity, factionD
 			// Log expansion event
 			LogEvent(EventFactionExpanded, GetCurrentTick(manager), entity.GetID(),
 				formatEventString("%s expanded to (%d, %d)",
-					factionData.FactionType.String(), adj.X, adj.Y))
+					factionData.FactionType.String(), adj.X, adj.Y), nil)
 
-			// Spawn threat on newly claimed tile (20% chance)
-			if common.RandomInt(100) < 20 {
+			// Spawn threat on newly claimed tile
+			if common.RandomInt(100) < ExpansionThreatSpawnChance {
 				SpawnThreatForFaction(manager, entity, adj, factionData.FactionType)
 			}
 
@@ -194,8 +194,8 @@ func FortifyTerritory(manager *common.EntityManager, entity *ecs.Entity, faction
 	// Increase strength
 	factionData.Strength += FortificationStrengthGain
 
-	// Spawn threat on random owned tile (30% chance)
-	if common.RandomInt(100) < 30 {
+	// Spawn threat on random owned tile
+	if common.RandomInt(100) < FortifyThreatSpawnChance {
 		randomTile := GetRandomTileFromSlice(territoryData.OwnedTiles)
 		if randomTile != nil {
 			SpawnThreatForFaction(manager, entity, *randomTile, factionData.FactionType)
@@ -228,7 +228,7 @@ func ExecuteRaid(manager *common.EntityManager, entity *ecs.Entity, factionData 
 	LogEvent(EventFactionRaid, currentTick, entity.GetID(),
 		formatEventString("%s launched raid! Spawned intensity %d %s at (%d, %d)",
 			factionData.FactionType.String(), intensity, threatType.String(),
-			randomTile.X, randomTile.Y))
+			randomTile.X, randomTile.Y), nil)
 }
 
 // AbandonTerritory shrinks faction

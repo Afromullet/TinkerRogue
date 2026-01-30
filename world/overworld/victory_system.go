@@ -1,6 +1,7 @@
 package overworld
 
 import (
+	"fmt"
 	"game_main/common"
 
 	"github.com/bytearena/ecs"
@@ -21,10 +22,12 @@ func CheckVictoryCondition(manager *common.EntityManager) VictoryCondition {
 		}
 
 		// Log defeat event
-		LogEvent(EventDefeat, GetCurrentTick(manager), 0, defeatCheck.DefeatMessage)
+		LogEvent(EventDefeat, GetCurrentTick(manager), 0, defeatCheck.DefeatMessage, nil)
 
 		// Export overworld log on defeat
-		FinalizeRecording("Defeat", defeatCheck.DefeatMessage)
+		if err := FinalizeRecording("Defeat", defeatCheck.DefeatMessage); err != nil {
+			fmt.Printf("WARNING: Failed to export overworld log: %v\n", err)
+		}
 
 		return VictoryPlayerLoses
 	}
@@ -38,10 +41,12 @@ func CheckVictoryCondition(manager *common.EntityManager) VictoryCondition {
 
 			// Log victory event
 			victoryReason := formatEventString("Victory! Survived %d ticks", victoryState.TicksToSurvive)
-			LogEvent(EventVictory, currentTick, 0, victoryReason)
+			LogEvent(EventVictory, currentTick, 0, victoryReason, nil)
 
 			// Export overworld log on survival victory
-			FinalizeRecording("Victory", victoryReason)
+			if err := FinalizeRecording("Victory", victoryReason); err != nil {
+				fmt.Printf("WARNING: Failed to export overworld log: %v\n", err)
+			}
 
 			return VictoryTimeLimit
 		}
@@ -58,10 +63,12 @@ func CheckVictoryCondition(manager *common.EntityManager) VictoryCondition {
 
 		// Log victory event
 		victoryReason := "Victory! All threats eliminated"
-		LogEvent(EventVictory, GetCurrentTick(manager), 0, victoryReason)
+		LogEvent(EventVictory, GetCurrentTick(manager), 0, victoryReason, nil)
 
 		// Export overworld log on threat elimination victory
-		FinalizeRecording("Victory", victoryReason)
+		if err := FinalizeRecording("Victory", victoryReason); err != nil {
+			fmt.Printf("WARNING: Failed to export overworld log: %v\n", err)
+		}
 
 		return VictoryPlayerWins
 	}
@@ -74,10 +81,12 @@ func CheckVictoryCondition(manager *common.EntityManager) VictoryCondition {
 
 			// Log victory event
 			victoryReason := formatEventString("Victory! Defeated all %s factions", victoryState.TargetFactionType.String())
-			LogEvent(EventVictory, GetCurrentTick(manager), 0, victoryReason)
+			LogEvent(EventVictory, GetCurrentTick(manager), 0, victoryReason, nil)
 
 			// Export overworld log on faction victory
-			FinalizeRecording("Victory", victoryReason)
+			if err := FinalizeRecording("Victory", victoryReason); err != nil {
+				fmt.Printf("WARNING: Failed to export overworld log: %v\n", err)
+			}
 
 			return VictoryFactionDefeat
 		}

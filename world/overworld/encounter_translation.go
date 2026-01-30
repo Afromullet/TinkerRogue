@@ -176,7 +176,7 @@ func GenerateItemDrops(intensity int, threatType ThreatType) []string {
 	// Intensity 1-2 drops nothing (no guaranteed drops)
 
 	// Random chance for bonus drop
-	if common.RandomInt(100) < 30 {
+	if common.RandomInt(100) < BonusItemDropChance {
 		numDrops++
 	}
 
@@ -197,28 +197,40 @@ type ItemDropTable struct {
 	HighTier []string // Drops only available at intensity >= 7
 }
 
-// itemDropTables maps threat types to their item drop tables
-var itemDropTables = map[ThreatType]ItemDropTable{
-	ThreatNecromancer: {
-		Basic:    []string{"Dark Essence", "Necromantic Scroll", "Bone Fragment", "Soul Gem", "Cursed Tome"},
-		HighTier: []string{"Lich Phylactery", "Staff of Undeath"},
-	},
-	ThreatBanditCamp: {
-		Basic:    []string{"Rusty Sword", "Leather Armor", "Iron Dagger", "Stolen Goods", "Lockpicks"},
-		HighTier: []string{"Masterwork Blade", "Bandit King's Crown"},
-	},
-	ThreatOrcWarband: {
-		Basic:    []string{"Orcish Axe", "Crude Shield", "War Paint", "Tusk Trophy", "Bone Club"},
-		HighTier: []string{"Warlord's Greataxe", "Berserker Totem"},
-	},
-	ThreatCorruption: {
-		Basic:    []string{"Tainted Crystal", "Corrupted Seed", "Void Essence", "Shadow Fragment", "Blighted Herb"},
-		HighTier: []string{"Heart of Corruption", "Void Shard"},
-	},
-	ThreatBeastNest: {
-		Basic:    []string{"Beast Pelt", "Sharp Claw", "Fang", "Beast Horn", "Hide Scraps"},
-		HighTier: []string{"Alpha Pelt", "Primal Essence"},
-	},
+// itemDropTables maps threat types to their item drop tables.
+// This is initialized once at package load and should be treated as read-only.
+// DO NOT MODIFY at runtime.
+var itemDropTables map[ThreatType]ItemDropTable
+
+// initItemDropTables initializes the item drop table configuration.
+// Called automatically during package initialization.
+func initItemDropTables() {
+	itemDropTables = map[ThreatType]ItemDropTable{
+		ThreatNecromancer: {
+			Basic:    []string{"Dark Essence", "Necromantic Scroll", "Bone Fragment", "Soul Gem", "Cursed Tome"},
+			HighTier: []string{"Lich Phylactery", "Staff of Undeath"},
+		},
+		ThreatBanditCamp: {
+			Basic:    []string{"Rusty Sword", "Leather Armor", "Iron Dagger", "Stolen Goods", "Lockpicks"},
+			HighTier: []string{"Masterwork Blade", "Bandit King's Crown"},
+		},
+		ThreatOrcWarband: {
+			Basic:    []string{"Orcish Axe", "Crude Shield", "War Paint", "Tusk Trophy", "Bone Club"},
+			HighTier: []string{"Warlord's Greataxe", "Berserker Totem"},
+		},
+		ThreatCorruption: {
+			Basic:    []string{"Tainted Crystal", "Corrupted Seed", "Void Essence", "Shadow Fragment", "Blighted Herb"},
+			HighTier: []string{"Heart of Corruption", "Void Shard"},
+		},
+		ThreatBeastNest: {
+			Basic:    []string{"Beast Pelt", "Sharp Claw", "Fang", "Beast Horn", "Hide Scraps"},
+			HighTier: []string{"Alpha Pelt", "Primal Essence"},
+		},
+	}
+}
+
+func init() {
+	initItemDropTables()
 }
 
 // HighTierIntensityThreshold is the minimum intensity for high-tier drops

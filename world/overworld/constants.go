@@ -107,6 +107,9 @@ const (
 	ChildNodeSpawnThreshold = 3    // Spawn child at tier 3, 6, 9
 	PlayerContainmentRadius = 5    // Player presence slows threats in radius
 
+	// Threat spawn attempt limits
+	MaxChildNodeSpawnAttempts = 10 // Maximum tries to find valid spawn position for child nodes
+
 	// Faction AI parameters
 	DefaultIntentTickDuration  = 10 // Re-evaluate every 10 ticks
 	ExpansionStrengthThreshold = 5  // Minimum strength to expand
@@ -117,6 +120,17 @@ const (
 	RaidProximityRange         = 5  // Max distance to raid target
 	RetreatCriticalStrength    = 2  // Retreat if strength below this
 	MaxTerritorySize           = 30 // Cap on faction territory
+
+	// Faction spawn probabilities (percentage 0-100)
+	ExpansionThreatSpawnChance = 20 // Chance to spawn threat when faction expands territory
+	FortifyThreatSpawnChance   = 30 // Chance to spawn threat when faction fortifies
+
+	// Item drop probabilities (percentage 0-100)
+	BonusItemDropChance = 30 // Chance for bonus item drop from encounters
+
+	// Map dimensions (TODO: Should come from worldmap config)
+	DefaultMapWidth  = 100 // Default overworld map width
+	DefaultMapHeight = 80  // Default overworld map height
 )
 
 // ThreatTypeParams defines behavior per threat type

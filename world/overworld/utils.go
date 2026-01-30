@@ -62,5 +62,5 @@ func GetRandomTileFromSlice(tiles []coords.LogicalPosition) *coords.LogicalPosit
 
 // IsThreatAtPosition checks if any threat node exists at the given position
 func IsThreatAtPosition(manager *common.EntityManager, pos coords.LogicalPosition) bool {
-	return GetThreatNodeAt(manager, pos) != nil
+	return GetThreatNodeAt(manager, pos) != 0
 }

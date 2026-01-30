@@ -82,9 +82,6 @@ type UnitListConfig struct {
 	HeightPercent float64 // Default 0.5
 }
 
-// CreateUnitList creates a list widget displaying units with name and health
-// TODO, this not not currently being used. It should be used instead of CreateUnitList, but I need to test that to make sure the cache
-// Is updated correctly
 func CreateUnitList(config UnitListConfig) *widget.List {
 	// Apply defaults
 	if config.WidthPercent == 0 {

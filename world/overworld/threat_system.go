@@ -48,7 +48,7 @@ func CreateThreatNode(
 	// Log threat spawn event
 	LogEvent(EventThreatSpawned, currentTick, entity.GetID(),
 		formatEventString("%s spawned at (%d, %d) with intensity %d",
-			threatType.String(), pos.X, pos.Y, initialIntensity))
+			threatType.String(), pos.X, pos.Y, initialIntensity), nil)
 
 	return entity.GetID()
 }
@@ -98,7 +98,7 @@ func EvolveThreatNode(manager *common.EntityManager, entity *ecs.Entity, threatD
 
 		// Log evolution event
 		LogEvent(EventThreatEvolved, GetCurrentTick(manager), entity.GetID(),
-			formatEventString("Threat evolved %d -> %d", oldIntensity, threatData.Intensity))
+			formatEventString("Threat evolved %d -> %d", oldIntensity, threatData.Intensity), nil)
 
 		// Trigger evolution effect (spawn child nodes, etc.)
 		ExecuteThreatEvolutionEffect(manager, entity, threatData)
@@ -119,7 +119,11 @@ func ExecuteThreatEvolutionEffect(manager *common.EntityManager, entity *ecs.Ent
 		if threatData.Intensity%ChildNodeSpawnThreshold == 0 {
 			pos := common.GetComponentType[*coords.LogicalPosition](entity, common.PositionComponent)
 			if pos != nil {
-				SpawnChildThreatNode(manager, *pos, ThreatNecromancer, 1)
+				if !SpawnChildThreatNode(manager, *pos, ThreatNecromancer, 1) {
+					// Log warning if spawn failed (no valid positions available)
+					LogEvent(EventThreatEvolved, GetCurrentTick(manager), entity.GetID(),
+						formatEventString("Failed to spawn child node (no valid positions)"), nil)
+				}
 			}
 		}
 	case ThreatCorruption:
@@ -128,10 +132,11 @@ func ExecuteThreatEvolutionEffect(manager *common.EntityManager, entity *ecs.Ent
 	}
 }
 
-// SpawnChildThreatNode creates a nearby threat node
-func SpawnChildThreatNode(manager *common.EntityManager, parentPos coords.LogicalPosition, threatType ThreatType, intensity int) {
+// SpawnChildThreatNode creates a nearby threat node.
+// Returns true if spawn succeeded, false if no valid position found.
+func SpawnChildThreatNode(manager *common.EntityManager, parentPos coords.LogicalPosition, threatType ThreatType, intensity int) bool {
 	// Find nearby unoccupied position (within radius 3)
-	for attempts := 0; attempts < 10; attempts++ {
+	for attempts := 0; attempts < MaxChildNodeSpawnAttempts; attempts++ {
 		offsetX := common.RandomInt(7) - 3 // -3 to 3
 		offsetY := common.RandomInt(7) - 3
 		newPos := coords.LogicalPosition{
@@ -142,9 +147,11 @@ func SpawnChildThreatNode(manager *common.EntityManager, parentPos coords.Logica
 		// Check if position is free (no other threat nodes)
 		if !IsThreatAtPosition(manager, newPos) {
 			CreateThreatNode(manager, newPos, threatType, intensity, GetCurrentTick(manager))
-			return
+			return true
 		}
 	}
+	// Failed to find valid position after max attempts
+	return false
 }
 
 // SpreadCorruption spreads corruption to adjacent tiles
@@ -184,7 +191,7 @@ func DestroyThreatNode(manager *common.EntityManager, threatEntity *ecs.Entity) 
 
 		LogEvent(EventThreatDestroyed, GetCurrentTick(manager), threatEntity.GetID(),
 			formatEventString("%s destroyed at %s",
-				threatData.ThreatType.String(), location))
+				threatData.ThreatType.String(), location), nil)
 	}
 
 	// Remove entity

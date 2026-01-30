@@ -63,11 +63,10 @@ func AdvanceTick(manager *common.EntityManager) error {
 	// Note: Influence calculation is now handled by InfluenceCache (see influence_cache.go)
 	// The cache is updated on-demand when threats are added/removed/moved
 
-	if err := ProcessEvents(manager, tick); err != nil {
-		return fmt.Errorf("event processing failed: %w", err)
-	}
+	// Note: Events are logged inline by individual systems via LogEvent()
+	// No batch event processing needed currently
 
-	// Check victory/loss conditions (Phase 4)
+	// Check victory/loss conditions
 	victoryCondition := CheckVictoryCondition(manager)
 	if victoryCondition != VictoryNone {
 		// Victory or defeat achieved - set game over flag
@@ -85,12 +84,3 @@ func GetTickState(manager *common.EntityManager) *TickStateData {
 	return nil
 }
 
-// ProcessEvents handles event generation and logging
-// Note: Events are now logged directly by systems (threat_system, faction_system, victory)
-// via the LogEvent() function from events.go. This function is kept for future batch
-// event processing if needed.
-func ProcessEvents(manager *common.EntityManager, tick int64) error {
-	// Events are now logged inline by individual systems
-	// No batch processing needed currently
-	return nil
-}

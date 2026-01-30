@@ -73,14 +73,16 @@ func NewEventLog(maxSize int) *EventLog {
 	}
 }
 
-// AddEvent adds a new event to the log
+// AddEvent adds a new event to the log and records it if recording is enabled.
+// This method is used internally by the event system.
 func (el *EventLog) AddEvent(event OverworldEvent) {
 	el.Events = append(el.Events, event)
 	el.Unread++
 
-	// Auto-record to GlobalOverworldRecorder if enabled
-	if GlobalOverworldRecorder != nil && GlobalOverworldRecorder.IsEnabled() {
-		GlobalOverworldRecorder.RecordEvent(event.Tick, event.Type.String(), event.EntityID, event.Description, event.Data)
+	// Auto-record to recorder if enabled (accessed via context)
+	ctx := GetContext()
+	if ctx.Recorder != nil && ctx.Recorder.IsEnabled() {
+		ctx.Recorder.RecordEvent(event.Tick, event.Type.String(), event.EntityID, event.Description, event.Data)
 	}
 
 	// Trim old events if over max size
@@ -102,20 +104,45 @@ func (el *EventLog) GetRecentEvents(count int) []OverworldEvent {
 	return el.Events[start:]
 }
 
-// Global event log (singleton for simplicity)
-var GlobalEventLog = NewEventLog(100)
+// OverworldContext holds runtime state for the overworld system.
+// This centralizes previously global variables for better testability and control.
+type OverworldContext struct {
+	EventLog *EventLog
+	Recorder *overworldlog.OverworldRecorder
+}
 
-// GlobalOverworldRecorder records events for JSON export
-var GlobalOverworldRecorder = overworldlog.NewOverworldRecorder()
+// NewOverworldContext creates a new context with default settings.
+func NewOverworldContext() *OverworldContext {
+	return &OverworldContext{
+		EventLog: NewEventLog(100),
+		Recorder: overworldlog.NewOverworldRecorder(),
+	}
+}
 
-// LogEvent adds an event to the global log
-// Optional data parameter can be passed for additional event metadata
-func LogEvent(eventType EventType, tick int64, entityID ecs.EntityID, description string, data ...map[string]interface{}) {
-	var eventData map[string]interface{}
-	if len(data) > 0 && data[0] != nil {
-		eventData = data[0]
-	} else {
-		eventData = make(map[string]interface{})
+// Package-level context instance (initialized on first use)
+var defaultContext *OverworldContext
+
+// GetContext returns the current overworld context, initializing if needed.
+// For testing, use SetContext to inject a custom context.
+func GetContext() *OverworldContext {
+	if defaultContext == nil {
+		defaultContext = NewOverworldContext()
+	}
+	return defaultContext
+}
+
+// SetContext replaces the default context (useful for testing).
+func SetContext(ctx *OverworldContext) {
+	defaultContext = ctx
+}
+
+// LogEvent adds an event to the event log.
+// Pass nil for data if no additional metadata is needed.
+func LogEvent(eventType EventType, tick int64, entityID ecs.EntityID, description string, data map[string]interface{}) {
+	ctx := GetContext()
+
+	if data == nil {
+		data = make(map[string]interface{})
 	}
 
 	event := OverworldEvent{
@@ -123,37 +150,43 @@ func LogEvent(eventType EventType, tick int64, entityID ecs.EntityID, descriptio
 		Tick:        tick,
 		EntityID:    entityID,
 		Description: description,
-		Data:        eventData,
+		Data:        data,
 	}
 
-	GlobalEventLog.AddEvent(event)
+	ctx.EventLog.AddEvent(event)
 
 	// Also print to console for debugging
 	fmt.Printf("[Tick %d] %s: %s\n", tick, eventType, description)
 }
 
-// StartRecordingSession initializes the overworld recorder for a new game session
+// StartRecordingSession initializes the overworld recorder for a new game session.
 func StartRecordingSession(currentTick int64) {
-	GlobalOverworldRecorder.SetEnabled(config.ENABLE_OVERWORLD_LOG_EXPORT)
-	if GlobalOverworldRecorder.IsEnabled() {
-		GlobalOverworldRecorder.Start(currentTick)
+	ctx := GetContext()
+	ctx.Recorder.SetEnabled(config.ENABLE_OVERWORLD_LOG_EXPORT)
+	if ctx.Recorder.IsEnabled() {
+		ctx.Recorder.Start(currentTick)
 		fmt.Printf("Overworld recording started (tick %d)\n", currentTick)
 	}
 }
 
-// FinalizeRecording completes recording and exports to JSON
-func FinalizeRecording(outcome, reason string) {
-	if !GlobalOverworldRecorder.IsEnabled() {
-		return
+// FinalizeRecording completes recording and exports to JSON.
+// Returns an error if export fails.
+func FinalizeRecording(outcome, reason string) error {
+	ctx := GetContext()
+
+	if !ctx.Recorder.IsEnabled() {
+		return nil
 	}
 
-	record := GlobalOverworldRecorder.Finalize(outcome, reason)
+	record := ctx.Recorder.Finalize(outcome, reason)
 	if err := overworldlog.ExportOverworldJSON(record, config.OVERWORLD_LOG_EXPORT_DIR); err != nil {
-		fmt.Printf("ERROR: Failed to export overworld log: %v\n", err)
+		return fmt.Errorf("failed to export overworld log: %w", err)
 	}
+	return nil
 }
 
-// ClearRecording resets the recorder for the next session
+// ClearRecording resets the recorder for the next session.
 func ClearRecording() {
-	GlobalOverworldRecorder.Clear()
+	ctx := GetContext()
+	ctx.Recorder.Clear()
 }

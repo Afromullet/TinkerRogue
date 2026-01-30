@@ -22,11 +22,12 @@
 9. [GUI Architecture](#gui-architecture)
 10. [Inventory & Gear](#inventory--gear)
 11. [World Generation](#world-generation)
-12. [Input System](#input-system)
-13. [Data Flow Patterns](#data-flow-patterns)
-14. [Development Patterns](#development-patterns)
-15. [Performance Considerations](#performance-considerations)
-16. [Appendices](#appendices)
+12. [Overworld System](#overworld-system)
+13. [Input System](#input-system)
+14. [Data Flow Patterns](#data-flow-patterns)
+15. [Development Patterns](#development-patterns)
+16. [Performance Considerations](#performance-considerations)
+17. [Appendices](#appendices)
 
 ---
 

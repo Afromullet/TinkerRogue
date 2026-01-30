@@ -7,24 +7,17 @@ import (
 	"github.com/bytearena/ecs"
 )
 
-// GetAllThreatNodes returns all threat node entities
-func GetAllThreatNodes(manager *common.EntityManager) []*ecs.Entity {
-	var threats []*ecs.Entity
-	for _, result := range manager.World.Query(ThreatNodeTag) {
-		threats = append(threats, result.Entity)
-	}
-	return threats
-}
-
-// GetThreatNodeAt returns threat node at specific position
-func GetThreatNodeAt(manager *common.EntityManager, pos coords.LogicalPosition) *ecs.Entity {
+// GetThreatNodeAt returns the EntityID of a threat node at a specific position.
+// Returns 0 if no threat exists at the position.
+// Prefer using queries directly when iterating over multiple threats.
+func GetThreatNodeAt(manager *common.EntityManager, pos coords.LogicalPosition) ecs.EntityID {
 	entityIDs := common.GlobalPositionSystem.GetAllEntityIDsAt(pos)
 	for _, entityID := range entityIDs {
 		if manager.HasComponent(entityID, ThreatNodeComponent) {
-			return manager.FindEntityByID(entityID)
+			return entityID
 		}
 	}
-	return nil
+	return 0
 }
 
 // CountThreatNodes returns the total number of threat nodes
