@@ -138,7 +138,7 @@ func (aic *AIController) executeSquadAction(ctx ActionContext) bool {
 	}
 
 	// Execute the action
-	return bestAction.Action.Execute(aic.entityManager, aic.movementSystem, aic.combatActSystem)
+	return bestAction.Action.Execute(aic.entityManager, aic.movementSystem, aic.combatActSystem, aic.combatCache)
 }
 
 // SelectBestAction picks the highest-scoring action

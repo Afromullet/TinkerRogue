@@ -139,33 +139,20 @@ type VictoryCheckResult struct {
 }
 
 // CheckVictoryCondition checks if battle has ended
-// TODO: Add actual victory conditions
-// TODO, this can be simplified. We already have part of the code that filters by alive and dead squads
 func (cs *CombatService) CheckVictoryCondition() *VictoryCheckResult {
 	result := &VictoryCheckResult{
 		RoundsCompleted: cs.TurnManager.GetCurrentRound(),
 	}
 
-	// Count alive squads per faction
+	// Count alive squads per faction using existing helper
 	aliveByFaction := make(map[ecs.EntityID]int)
 
-	for _, queryResult := range cs.EntityManager.World.Query(combat.FactionTag) {
-		entity := queryResult.Entity
-		factionID := entity.GetID()
-		aliveByFaction[factionID] = 0
-	}
-
-	// Count squads
-	for _, queryResult := range cs.EntityManager.World.Query(squads.SquadTag) {
-		entity := queryResult.Entity
-		squadData := common.GetComponentType[*squads.SquadData](entity, squads.SquadComponent)
-		if squadData != nil && !squads.IsSquadDestroyed(entity.GetID(), cs.EntityManager) {
-			// Squads have FactionMembershipComponent (not FactionComponent) to indicate faction membership
-			combatFaction := common.GetComponentType[*combat.CombatFactionData](entity, combat.FactionMembershipComponent)
-			if combatFaction != nil {
-				aliveByFaction[combatFaction.FactionID]++
-			}
-		}
+	// Get all factions
+	allFactions := combat.GetAllFactions(cs.EntityManager)
+	for _, factionID := range allFactions {
+		// Use existing GetActiveSquadsForFaction which filters destroyed squads
+		activeSquads := combat.GetActiveSquadsForFaction(factionID, cs.EntityManager)
+		aliveByFaction[factionID] = len(activeSquads)
 	}
 
 	// Check victory: only one faction with alive squads

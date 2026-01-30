@@ -84,9 +84,3 @@ func InitCombatTags(manager *common.EntityManager) {
 	manager.WorldTags["combatfaction"] = CombatFactionTag
 }
 
-// InitializeCombatSystem initializes combat components and tags in the provided EntityManager.
-// This should be called during game initialization, similar to InitializeSquadData.
-func InitializeCombatSystem(manager *common.EntityManager) {
-	InitCombatComponents(manager)
-	InitCombatTags(manager)
-}

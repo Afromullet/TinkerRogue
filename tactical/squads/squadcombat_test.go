@@ -896,22 +896,27 @@ func TestMeleeColumnTargeting_PierceForward(t *testing.T) {
 	targetData.AttackType = AttackTypeMeleeColumn
 	targetData.TargetCells = nil
 
-	// Create defender squad with unit in row 1, column 0 (row 0 col 0 is empty)
+	// Create defender squad with units in column 0 (row 0 col 0 is empty)
 	defenderSquadID := createTestSquad(manager, "Defenders")
 	createTestUnit(manager, defenderSquadID, 0, 1, 50, 10, 0)              // Different column - NOT targeted
 	defender2 := createTestUnit(manager, defenderSquadID, 1, 0, 50, 10, 0) // Same column, row 1 - TARGETED
-	createTestUnit(manager, defenderSquadID, 2, 0, 50, 10, 0)              // Same column, row 2 - NOT targeted (row 1 found first)
+	defender3 := createTestUnit(manager, defenderSquadID, 2, 0, 50, 10, 0) // Same column, row 2 - ALSO TARGETED (piercing attack)
 
 	// Get targets
 	targets := SelectTargetUnits(attacker.GetID(), defenderSquadID, manager)
 
-	// Verify only 1 target (pierced to row 1)
-	if len(targets) != 1 {
-		t.Errorf("Expected 1 target (pierced to row 1), got %d", len(targets))
+	// Verify 2 targets (all units in the column - piercing attack)
+	if len(targets) != 2 {
+		t.Errorf("Expected 2 targets (all units in column), got %d", len(targets))
 	}
 
-	if targets[0] != defender2.GetID() {
-		t.Errorf("Expected defender in row 1, col 0, got %d", targets[0])
+	// Check both targets are present (order may vary)
+	targetSet := make(map[ecs.EntityID]bool)
+	for _, tid := range targets {
+		targetSet[tid] = true
+	}
+	if !targetSet[defender2.GetID()] || !targetSet[defender3.GetID()] {
+		t.Errorf("Expected defenders at (1,0) and (2,0) to be targeted")
 	}
 }
 

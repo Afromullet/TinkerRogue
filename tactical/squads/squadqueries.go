@@ -37,8 +37,8 @@ func GetUnitIDsAtGridPosition(squadID ecs.EntityID, row, col int, squadmanager *
 }
 
 // GetUnitIDsInSquad returns unit IDs belonging to a squad
-//
-//	Returns ecs.EntityID (native type), not entity pointers
+// NOTE: This is the non-cached version (O(n)). Prefer using SquadQueryCache.GetUnitIDsInSquad() when available for better performance.
+// Returns ecs.EntityID (native type), not entity pointers
 func GetUnitIDsInSquad(squadID ecs.EntityID, squadmanager *common.EntityManager) []ecs.EntityID {
 	var unitIDs []ecs.EntityID
 
@@ -56,8 +56,8 @@ func GetUnitIDsInSquad(squadID ecs.EntityID, squadmanager *common.EntityManager)
 }
 
 // GetSquadEntity finds squad entity by squad ID
-//
-//	Returns entity pointer directly from query
+// NOTE: This is the non-cached version (O(n)). Prefer using SquadQueryCache.GetSquadEntity() when available for better performance.
+// Returns entity pointer directly from query
 func GetSquadEntity(squadID ecs.EntityID, squadmanager *common.EntityManager) *ecs.Entity {
 	// Note: This uses a component field match (SquadData.SquadID), not a direct entity ID match
 	// So it cannot use the generic FindEntityByIDWithTag helper. Keeping specialized implementation.
@@ -74,6 +74,7 @@ func GetSquadEntity(squadID ecs.EntityID, squadmanager *common.EntityManager) *e
 }
 
 // GetLeaderID finds the leader unit ID of a squad
+// NOTE: This is the non-cached version (O(n)). Prefer using SquadQueryCache.GetLeaderID() when available for better performance.
 // Returns ecs.EntityID (native type), not entity pointer
 func GetLeaderID(squadID ecs.EntityID, squadmanager *common.EntityManager) ecs.EntityID {
 	for _, result := range squadmanager.World.Query(LeaderTag) {
@@ -132,23 +133,47 @@ func WouldSquadSurvive(squadID ecs.EntityID, predictedDamage map[ecs.EntityID]in
 }
 
 // ========================================
+// HELPER FUNCTIONS
+// ========================================
+
+// getAliveUnitAttributes returns the attributes component for a unit if it's alive
+// Returns nil if entity not found, no attributes, or unit is dead
+func getAliveUnitAttributes(unitID ecs.EntityID, manager *common.EntityManager) *common.Attributes {
+	entity := manager.FindEntityByID(unitID)
+	if entity == nil {
+		return nil
+	}
+
+	attr := common.GetComponentType[*common.Attributes](entity, common.AttributeComponent)
+	if attr == nil || attr.CurrentHealth <= 0 {
+		return nil
+	}
+
+	return attr
+}
+
+// getUnitAttributes returns the attributes component for a unit (dead or alive)
+// Returns nil if entity not found or no attributes
+func getUnitAttributes(unitID ecs.EntityID, manager *common.EntityManager) *common.Attributes {
+	entity := manager.FindEntityByID(unitID)
+	if entity == nil {
+		return nil
+	}
+
+	return common.GetComponentType[*common.Attributes](entity, common.AttributeComponent)
+}
+
+// ========================================
 // CAPACITY SYSTEM QUERIES
 // ========================================
 
 // GetSquadUsedCapacity calculates total capacity consumed by all units in squad
-// Optimized: Uses direct entity lookup instead of GetAttributesByIDWithTag.
 func GetSquadUsedCapacity(squadID ecs.EntityID, squadmanager *common.EntityManager) float64 {
 	unitIDs := GetUnitIDsInSquad(squadID, squadmanager)
 	totalUsed := 0.0
 
 	for _, unitID := range unitIDs {
-		// OPTIMIZATION: Use direct entity lookup instead of GetAttributesByIDWithTag
-		entity := squadmanager.FindEntityByID(unitID)
-		if entity == nil {
-			continue
-		}
-
-		attr := common.GetComponentType[*common.Attributes](entity, common.AttributeComponent)
+		attr := getUnitAttributes(unitID, squadmanager)
 		if attr == nil {
 			continue
 		}
@@ -161,7 +186,6 @@ func GetSquadUsedCapacity(squadID ecs.EntityID, squadmanager *common.EntityManag
 
 // GetSquadTotalCapacity returns the squad's total capacity based on leader's Leadership
 // Returns 0 if squad has no leader (or defaults to 6 if no leader found)
-// Optimized: Uses direct entity lookup instead of GetAttributesByIDWithTag.
 func GetSquadTotalCapacity(squadID ecs.EntityID, squadmanager *common.EntityManager) int {
 	leaderID := GetLeaderID(squadID, squadmanager)
 	if leaderID == 0 {
@@ -169,13 +193,7 @@ func GetSquadTotalCapacity(squadID ecs.EntityID, squadmanager *common.EntityMana
 		return 6
 	}
 
-	// OPTIMIZATION: Use direct entity lookup instead of GetAttributesByIDWithTag
-	entity := squadmanager.FindEntityByID(leaderID)
-	if entity == nil {
-		return 6
-	}
-
-	attr := common.GetComponentType[*common.Attributes](entity, common.AttributeComponent)
+	attr := getUnitAttributes(leaderID, squadmanager)
 	if attr == nil {
 		return 6
 	}
@@ -246,7 +264,6 @@ func GetSquadDistance(squad1ID, squad2ID ecs.EntityID, squadmanager *common.Enti
 // GetSquadMovementSpeed returns the squad's movement speed (minimum of all alive units)
 // The squad moves at the speed of its slowest member
 // Returns 0 if squad has no alive units or units have no movement speed component
-// Optimized: Batches component lookups per entity to avoid multiple GetEntityByID calls.
 func GetSquadMovementSpeed(squadID ecs.EntityID, squadmanager *common.EntityManager) int {
 	unitIDs := GetUnitIDsInSquad(squadID, squadmanager)
 
@@ -254,20 +271,14 @@ func GetSquadMovementSpeed(squadID ecs.EntityID, squadmanager *common.EntityMana
 	foundValidUnit := false
 
 	for _, unitID := range unitIDs {
-		// OPTIMIZATION: Get entity once, then extract both Attributes and MovementSpeed
+		// Use helper to get alive unit attributes
+		if getAliveUnitAttributes(unitID, squadmanager) == nil {
+			continue
+		}
+
+		// Get entity for movement speed component check
 		entity := squadmanager.FindEntityByID(unitID)
-		if entity == nil {
-			continue
-		}
-
-		// Only count alive units
-		attr := common.GetComponentType[*common.Attributes](entity, common.AttributeComponent)
-		if attr == nil || attr.CurrentHealth <= 0 {
-			continue
-		}
-
-		// Check if unit has movement speed component
-		if !entity.HasComponent(MovementSpeedComponent) {
+		if entity == nil || !entity.HasComponent(MovementSpeedComponent) {
 			continue
 		}
 
@@ -287,6 +298,7 @@ func GetSquadMovementSpeed(squadID ecs.EntityID, squadmanager *common.EntityMana
 }
 
 // GetSquadName returns the squad name
+// NOTE: This is the non-cached version (O(n)). Prefer using SquadQueryCache.GetSquadName() when available for better performance.
 // Returns "Unknown Squad" if squad not found
 func GetSquadName(squadID ecs.EntityID, squadmanager *common.EntityManager) string {
 	squadEntity := GetSquadEntity(squadID, squadmanager)
@@ -301,7 +313,6 @@ func GetSquadName(squadID ecs.EntityID, squadmanager *common.EntityManager) stri
 // UpdateSquadDestroyedStatus updates the cached IsDestroyed flag for a squad
 // This should be called whenever unit health changes or units are added/removed
 // O(n) where n = number of units in squad, but only called when needed
-// Optimized: Uses direct entity lookup instead of GetAttributesByIDWithTag.
 func UpdateSquadDestroyedStatus(squadID ecs.EntityID, manager *common.EntityManager) {
 	squadEntity := GetSquadEntity(squadID, manager)
 	if squadEntity == nil {
@@ -321,17 +332,10 @@ func UpdateSquadDestroyedStatus(squadID ecs.EntityID, manager *common.EntityMana
 		return
 	}
 
-	// Check if any unit is alive
+	// Check if any unit is alive using helper
 	hasAliveUnit := false
 	for _, unitID := range unitIDs {
-		// OPTIMIZATION: Use direct entity lookup instead of GetAttributesByIDWithTag
-		entity := manager.FindEntityByID(unitID)
-		if entity == nil {
-			continue
-		}
-
-		attr := common.GetComponentType[*common.Attributes](entity, common.AttributeComponent)
-		if attr != nil && attr.CurrentHealth > 0 {
+		if getAliveUnitAttributes(unitID, manager) != nil {
 			hasAliveUnit = true
 			break
 		}
@@ -393,13 +397,8 @@ func GetSquadHealthPercent(squadID ecs.EntityID, manager *common.EntityManager) 
 	aliveCount := 0
 
 	for _, unitID := range unitIDs {
-		entity := manager.FindEntityByID(unitID)
-		if entity == nil {
-			continue
-		}
-
-		attr := common.GetComponentType[*common.Attributes](entity, common.AttributeComponent)
-		if attr == nil || attr.CurrentHealth <= 0 {
+		attr := getAliveUnitAttributes(unitID, manager)
+		if attr == nil {
 			continue
 		}
 

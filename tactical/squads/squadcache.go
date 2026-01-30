@@ -30,8 +30,10 @@ func NewSquadQueryCache(manager *common.EntityManager) *SquadQueryCache {
 // ========================================
 // CACHED QUERY FUNCTIONS
 // ========================================
+// These functions use ECS Views for O(k) performance where k = number of entities with the component.
+// Prefer these over the non-cached versions in squadqueries.go when you have access to a SquadQueryCache.
 
-// GetSquadEntity finds squad entity by ID using cached view
+// GetSquadEntity finds squad entity by ID using cached view (O(k) where k = squad count)
 func (c *SquadQueryCache) GetSquadEntity(squadID ecs.EntityID) *ecs.Entity {
 	// Iterate through cached view results (not full World.Query)
 	// View automatically updated when SquadComponent added/removed from entities

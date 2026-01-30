@@ -25,8 +25,8 @@ func CreateTestCombatManager() *common.EntityManager {
 	if err := squads.InitializeSquadData(manager); err != nil {
 		panic(fmt.Sprintf("Failed to initialize squad data: %v", err))
 	}
-	// Initialize combat system
-	InitializeCombatSystem(manager)
+	// Initialize all registered subsystems (including combat via init())
+	common.InitializeSubsystems(manager)
 	return manager
 }
 

@@ -191,8 +191,7 @@ func (g *OverworldGenerator) createTerrain(result *GenerationResult, width, heig
 			biome := g.determineBiome(elevation, moisture)
 
 			logicalPos := coords.LogicalPosition{X: x, Y: y}
-			// Use passed width parameter instead of global CoordManager
-			index := y*width + x
+			index := positionToIndex(x, y, width)
 
 			if index < 0 || index >= len(result.Tiles) {
 				continue
@@ -201,56 +200,35 @@ func (g *OverworldGenerator) createTerrain(result *GenerationResult, width, heig
 			tile := result.Tiles[index]
 
 			// Get biome-specific images
-			wallImages := images.WallImages
-			floorImages := images.FloorImages
-
-			biomeTileSet := images.BiomeImages[biome]
-			if biomeTileSet != nil {
-				if len(biomeTileSet.WallImages) > 0 {
-					wallImages = biomeTileSet.WallImages
-				}
-				if len(biomeTileSet.FloorImages) > 0 {
-					floorImages = biomeTileSet.FloorImages
-				}
-			}
+			wallImages, floorImages := getBiomeImages(images, biome)
 
 			switch biome {
 			case BiomeSwamp:
 				tile.TileType = WALL // Swamp/Water is impassable
 				tile.Blocked = true
-				if len(wallImages) > 0 {
-					tile.Image = wallImages[common.GetRandomBetween(0, len(wallImages)-1)]
-				}
+				tile.Image = selectRandomImage(wallImages)
 
 			case BiomeMountain:
 				tile.TileType = WALL // Mountain is impassable
 				tile.Blocked = true
-				if len(wallImages) > 0 {
-					tile.Image = wallImages[common.GetRandomBetween(0, len(wallImages)-1)]
-				}
+				tile.Image = selectRandomImage(wallImages)
 
 			case BiomeDesert:
 				tile.TileType = FLOOR // Desert is traversable but harsh
 				tile.Blocked = false
-				if len(floorImages) > 0 {
-					tile.Image = floorImages[common.GetRandomBetween(0, len(floorImages)-1)]
-				}
+				tile.Image = selectRandomImage(floorImages)
 				result.ValidPositions = append(result.ValidPositions, logicalPos)
 
 			case BiomeForest:
 				tile.TileType = FLOOR // Forest is traversable
 				tile.Blocked = false
-				if len(floorImages) > 0 {
-					tile.Image = floorImages[common.GetRandomBetween(0, len(floorImages)-1)]
-				}
+				tile.Image = selectRandomImage(floorImages)
 				result.ValidPositions = append(result.ValidPositions, logicalPos)
 
 			case BiomeGrassland:
 				tile.TileType = FLOOR // Grassland is traversable
 				tile.Blocked = false
-				if len(floorImages) > 0 {
-					tile.Image = floorImages[common.GetRandomBetween(0, len(floorImages)-1)]
-				}
+				tile.Image = selectRandomImage(floorImages)
 				result.ValidPositions = append(result.ValidPositions, logicalPos)
 			}
 		}

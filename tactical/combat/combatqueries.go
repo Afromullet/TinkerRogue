@@ -25,18 +25,6 @@ func GetSquadFaction(squadID ecs.EntityID, manager *common.EntityManager) ecs.En
 	return combatFaction.FactionID
 }
 
-// findActionStateEntity finds ActionStateData for a squad (internal version)
-// DEPRECATED: Use CombatQueryCache.FindActionStateEntity for better performance (50-200x faster)
-// This version scans all entities and should only be used during initialization
-func FindActionStateEntity(squadID ecs.EntityID, manager *common.EntityManager) *ecs.Entity {
-	for _, result := range manager.World.Query(ActionStateTag) {
-		actionState := common.GetComponentType[*ActionStateData](result.Entity, ActionStateComponent)
-		if actionState.SquadID == squadID {
-			return result.Entity
-		}
-	}
-	return nil
-}
 
 // GetSquadMapPosition returns the current map position of a squad
 func GetSquadMapPosition(squadID ecs.EntityID, manager *common.EntityManager) (coords.LogicalPosition, error) {

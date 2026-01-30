@@ -22,8 +22,13 @@ type CombatResult struct {
 	CombatLog    *CombatLog // Contains AttackerSquadName, DefenderSquadName for display
 }
 
-// Only units within their attack range of the target squad can participate
-func ExecuteSquadAttack(attackerSquadID, defenderSquadID ecs.EntityID, squadmanager *common.EntityManager) *CombatResult {
+// executeCombatPhase handles the common combat flow for both attacks and counterattacks
+// The attackProcessor function determines whether to use normal or counterattack damage
+func executeCombatPhase(
+	attackerSquadID, defenderSquadID ecs.EntityID,
+	attackProcessor func(ecs.EntityID, []ecs.EntityID, *CombatResult, *CombatLog, int, *common.EntityManager) int,
+	squadmanager *common.EntityManager,
+) *CombatResult {
 	result := &CombatResult{
 		DamageByUnit: make(map[ecs.EntityID]int),
 		UnitsKilled:  []ecs.EntityID{},
@@ -53,8 +58,8 @@ func ExecuteSquadAttack(attackerSquadID, defenderSquadID ecs.EntityID, squadmana
 		// Get targets for this attacker
 		targetIDs := SelectTargetUnits(attackerID, defenderSquadID, squadmanager)
 
-		// Attack each target
-		attackIndex = ProcessAttackOnTargets(attackerID, targetIDs, result, combatLog, attackIndex, squadmanager)
+		// Process attack using provided processor function
+		attackIndex = attackProcessor(attackerID, targetIDs, result, combatLog, attackIndex, squadmanager)
 	}
 
 	// Apply recorded damage to units (for backward compatibility with tests/simulator)
@@ -69,53 +74,16 @@ func ExecuteSquadAttack(attackerSquadID, defenderSquadID ecs.EntityID, squadmana
 	return result
 }
 
+// Only units within their attack range of the target squad can participate
+func ExecuteSquadAttack(attackerSquadID, defenderSquadID ecs.EntityID, squadmanager *common.EntityManager) *CombatResult {
+	return executeCombatPhase(attackerSquadID, defenderSquadID, ProcessAttackOnTargets, squadmanager)
+}
+
 // ExecuteSquadCounterattack executes a counterattack from defender to attacker
 // Counterattacks have reduced damage (50%) and lower hit chance (-20%)
 // Only units within their attack range of the target squad can participate
 func ExecuteSquadCounterattack(defenderSquadID, attackerSquadID ecs.EntityID, squadmanager *common.EntityManager) *CombatResult {
-	result := &CombatResult{
-		DamageByUnit: make(map[ecs.EntityID]int),
-		UnitsKilled:  []ecs.EntityID{},
-	}
-
-	// Initialize combat log
-	combatLog := InitializeCombatLog(defenderSquadID, attackerSquadID, squadmanager)
-	if combatLog.SquadDistance < 0 {
-		result.CombatLog = combatLog
-		return result
-	}
-
-	// Snapshot units
-	combatLog.AttackingUnits = SnapshotAttackingUnits(defenderSquadID, combatLog.SquadDistance, squadmanager)
-	combatLog.DefendingUnits = SnapshotAllUnits(attackerSquadID, squadmanager)
-
-	// Process each counterattacking unit
-	attackIndex := 0
-	defenderUnitIDs := GetUnitIDsInSquad(defenderSquadID, squadmanager)
-
-	for _, counterAttackerID := range defenderUnitIDs {
-		// Check if unit can counterattack (alive, in range)
-		if !CanUnitAttack(counterAttackerID, combatLog.SquadDistance, squadmanager) {
-			continue
-		}
-
-		// Get targets (same targeting logic as normal attacks)
-		targetIDs := SelectTargetUnits(counterAttackerID, attackerSquadID, squadmanager)
-
-		// Counterattack each target with penalties
-		attackIndex = ProcessCounterattackOnTargets(counterAttackerID, targetIDs, result, combatLog, attackIndex, squadmanager)
-	}
-
-	// Apply recorded damage to units (for backward compatibility with tests/simulator)
-	ApplyRecordedDamage(result, squadmanager)
-
-	UpdateSquadDestroyedStatus(attackerSquadID, squadmanager)
-
-	// Finalize combat log
-	FinalizeCombatLog(result, combatLog, attackerSquadID, defenderSquadID, squadmanager)
-
-	result.CombatLog = combatLog
-	return result
+	return executeCombatPhase(defenderSquadID, attackerSquadID, ProcessCounterattackOnTargets, squadmanager)
 }
 
 // ProcessCounterattackOnTargets applies counterattack damage with penalties
@@ -491,24 +459,27 @@ func selectMagicTargets(defenderSquadID ecs.EntityID, targetCells [][2]int, mana
 	return targets
 }
 
-// Helper: Get all ALIVE units in a specific row
-func getUnitsInRow(squadID ecs.EntityID, row int, manager *common.EntityManager) []ecs.EntityID {
+// getUnitsInLine returns all ALIVE units in a specific row or column
+// If isRow is true, lineIndex specifies the row; otherwise it specifies the column
+func getUnitsInLine(squadID ecs.EntityID, lineIndex int, isRow bool, manager *common.EntityManager) []ecs.EntityID {
 	var units []ecs.EntityID
 	seen := make(map[ecs.EntityID]bool)
 
-	// Check all columns in the row
-	for col := 0; col <= 2; col++ {
-		cellUnits := GetUnitIDsAtGridPosition(squadID, row, col, manager)
+	// Iterate through the perpendicular dimension
+	for i := 0; i <= 2; i++ {
+		var cellUnits []ecs.EntityID
+		if isRow {
+			// lineIndex is row, i is column
+			cellUnits = GetUnitIDsAtGridPosition(squadID, lineIndex, i, manager)
+		} else {
+			// lineIndex is column, i is row
+			cellUnits = GetUnitIDsAtGridPosition(squadID, i, lineIndex, manager)
+		}
+
 		for _, unitID := range cellUnits {
 			if !seen[unitID] {
-				entity := manager.FindEntityByID(unitID)
-				if entity == nil {
-					continue
-				}
-
-				// Filter out dead units
-				attr := common.GetComponentType[*common.Attributes](entity, common.AttributeComponent)
-				if attr != nil && attr.CurrentHealth > 0 {
+				// Use helper to check if unit is alive
+				if getAliveUnitAttributes(unitID, manager) != nil {
 					units = append(units, unitID)
 					seen[unitID] = true
 				}
@@ -519,32 +490,14 @@ func getUnitsInRow(squadID ecs.EntityID, row int, manager *common.EntityManager)
 	return units
 }
 
+// Helper: Get all ALIVE units in a specific row
+func getUnitsInRow(squadID ecs.EntityID, row int, manager *common.EntityManager) []ecs.EntityID {
+	return getUnitsInLine(squadID, row, true, manager)
+}
+
 // Helper: Get all ALIVE units in a specific column
 func getUnitsInColumn(squadID ecs.EntityID, col int, manager *common.EntityManager) []ecs.EntityID {
-	var units []ecs.EntityID
-	seen := make(map[ecs.EntityID]bool)
-
-	// Check all rows in the column
-	for row := 0; row <= 2; row++ {
-		cellUnits := GetUnitIDsAtGridPosition(squadID, row, col, manager)
-		for _, unitID := range cellUnits {
-			if !seen[unitID] {
-				entity := manager.FindEntityByID(unitID)
-				if entity == nil {
-					continue
-				}
-
-				// Filter out dead units
-				attr := common.GetComponentType[*common.Attributes](entity, common.AttributeComponent)
-				if attr != nil && attr.CurrentHealth > 0 {
-					units = append(units, unitID)
-					seen[unitID] = true
-				}
-			}
-		}
-	}
-
-	return units
+	return getUnitsInLine(squadID, col, false, manager)
 }
 
 // Helper: Select lowest armor target, furthest row on tie, leftmost column on further tie

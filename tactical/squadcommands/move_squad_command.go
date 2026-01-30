@@ -15,6 +15,7 @@ import (
 type MoveSquadCommand struct {
 	entityManager  *common.EntityManager
 	movementSystem *combat.CombatMovementSystem
+	combatCache    *combat.CombatQueryCache
 	squadID        ecs.EntityID
 	newPosition    coords.LogicalPosition
 
@@ -29,12 +30,14 @@ type MoveSquadCommand struct {
 func NewMoveSquadCommand(
 	manager *common.EntityManager,
 	movementSystem *combat.CombatMovementSystem,
+	cache *combat.CombatQueryCache,
 	squadID ecs.EntityID,
 	newPosition coords.LogicalPosition,
 ) *MoveSquadCommand {
 	return &MoveSquadCommand{
 		entityManager:  manager,
 		movementSystem: movementSystem,
+		combatCache:    cache,
 		squadID:        squadID,
 		newPosition:    newPosition,
 	}
@@ -79,7 +82,7 @@ func (cmd *MoveSquadCommand) Execute() error {
 	cmd.oldPosition = *posPtr
 
 	// Capture old ActionState (CRITICAL for undo)
-	actionStateEntity := combat.FindActionStateEntity(cmd.squadID, cmd.entityManager)
+	actionStateEntity := cmd.combatCache.FindActionStateEntity(cmd.squadID, cmd.entityManager)
 	if actionStateEntity != nil {
 		actionState := common.GetComponentType[*combat.ActionStateData](actionStateEntity, combat.ActionStateComponent)
 		if actionState != nil {
@@ -126,7 +129,7 @@ func (cmd *MoveSquadCommand) Undo() error {
 	}
 
 	// Restore ActionState (CRITICAL - undo must restore full state)
-	actionStateEntity := combat.FindActionStateEntity(cmd.squadID, cmd.entityManager)
+	actionStateEntity := cmd.combatCache.FindActionStateEntity(cmd.squadID, cmd.entityManager)
 	if actionStateEntity != nil {
 		actionState := common.GetComponentType[*combat.ActionStateData](actionStateEntity, combat.ActionStateComponent)
 		if actionState != nil {

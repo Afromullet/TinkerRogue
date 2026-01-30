@@ -170,7 +170,10 @@ func TestUnitRoster_GetAvailableUnits(t *testing.T) {
 func TestUnitRoster_GetUnitEntityForTemplate(t *testing.T) {
 	manager := common.NewEntityManager()
 
-	// Initialize components
+	// Initialize all registered subsystems (including squads via init())
+	common.InitializeSubsystems(manager)
+
+	// Initialize squad templates
 	if err := InitializeSquadData(manager); err != nil {
 		t.Fatalf("Failed to initialize squad data: %v", err)
 	}

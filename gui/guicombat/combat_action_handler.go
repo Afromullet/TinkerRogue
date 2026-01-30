@@ -167,13 +167,15 @@ func (cah *CombatActionHandler) ExecuteAttack() {
 
 // MoveSquad moves a squad to a new position using command pattern for undo support
 func (cah *CombatActionHandler) MoveSquad(squadID ecs.EntityID, newPos coords.LogicalPosition) error {
-	// Get movement system from combat service
+	// Get movement system and cache from combat service
 	movementSystem := cah.deps.CombatService.MovementSystem
+	combatCache := cah.deps.CombatService.CombatCache
 
 	// Create move command with system reference
 	cmd := squadcommands.NewMoveSquadCommand(
 		cah.deps.Queries.ECSManager,
 		movementSystem,
+		combatCache,
 		squadID,
 		newPos,
 	)

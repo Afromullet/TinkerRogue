@@ -12,12 +12,14 @@ type TurnManager struct {
 	manager           *common.EntityManager
 	combatCache       *CombatQueryCache
 	turnStateEntityID ecs.EntityID
+	movementSystem    *CombatMovementSystem
 }
 
 func NewTurnManager(manager *common.EntityManager, cache *CombatQueryCache) *TurnManager {
 	return &TurnManager{
-		manager:     manager,
-		combatCache: cache,
+		manager:        manager,
+		combatCache:    cache,
+		movementSystem: NewMovementSystem(manager, common.GlobalPositionSystem, cache),
 	}
 }
 
@@ -71,9 +73,6 @@ func (tm *TurnManager) createActionStateForSquad(squadID ecs.EntityID) {
 func (tm *TurnManager) ResetSquadActions(factionID ecs.EntityID) error {
 	factionSquads := GetSquadsForFaction(factionID, tm.manager)
 
-	//TODO: Do we really need to create a new system, or can we just reset the existing system?
-	moveSys := NewMovementSystem(tm.manager, common.GlobalPositionSystem, tm.combatCache)
-
 	for _, squadID := range factionSquads {
 		actionEntity := tm.combatCache.FindActionStateEntity(squadID, tm.manager)
 		if actionEntity == nil {
@@ -86,7 +85,7 @@ func (tm *TurnManager) ResetSquadActions(factionID ecs.EntityID) error {
 		actionState.HasActed = false
 
 		// Initialize MovementRemaining from squad speed
-		squadSpeed := moveSys.GetSquadMovementSpeed(squadID)
+		squadSpeed := tm.movementSystem.GetSquadMovementSpeed(squadID)
 		actionState.MovementRemaining = squadSpeed
 
 		// Check and trigger abilities at start of turn

@@ -49,20 +49,17 @@ func (r Rect) GetCoordinates() []coords.LogicalPosition {
 // Used for monster spawning to avoid placing monsters in room centers.
 // TODO: This is a temporary solution for spawning logic.
 func (r Rect) GetCoordinatesWithoutCenter() []coords.LogicalPosition {
+	allCoords := r.GetCoordinates()
+	centerX, centerY := r.Center()
 
-	//Adding +1 and -1 so we don't get the walls
-	pos := make([]coords.LogicalPosition, 0)
-	for y := r.Y1 + 1; y <= r.Y2-1; y++ {
-		for x := r.X1 + 1; x <= r.X2-1; x++ {
-			centerX, centerY := r.Center()
-
-			if centerX != x && centerY != y {
-				pos = append(pos, coords.LogicalPosition{X: x, Y: y})
-			}
+	result := make([]coords.LogicalPosition, 0, len(allCoords))
+	for _, pos := range allCoords {
+		if centerX != pos.X && centerY != pos.Y {
+			result = append(result, pos)
 		}
 	}
 
-	return pos
+	return result
 }
 
 func (r *Rect) Center() (int, int) {
@@ -290,22 +287,13 @@ func (gameMap *GameMap) UnblockedIndices(pixelX, pixelY, size int) []int {
 }
 
 func (gameMap *GameMap) UnblockedLogicalCoords(pixelX, pixelY, size int) []coords.LogicalPosition {
-	pos := make([]coords.LogicalPosition, 0)
+	indices := gameMap.UnblockedIndices(pixelX, pixelY, size)
+	pos := make([]coords.LogicalPosition, 0, len(indices))
 
-	sq := graphics.NewSquare(pixelX, pixelY, graphics.MediumShape).GetIndices()
-
-	for _, i := range sq {
-
-		if !gameMap.Tiles[i].Blocked {
-
-			logicalPos := coords.CoordManager.IndexToLogical(i)
-			x, y := logicalPos.X, logicalPos.Y
-			pos = append(pos, coords.LogicalPosition{X: x, Y: y})
-
-		}
-
+	for _, i := range indices {
+		logicalPos := coords.CoordManager.IndexToLogical(i)
+		pos = append(pos, logicalPos)
 	}
 
 	return pos
-
 }

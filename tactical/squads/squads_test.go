@@ -19,6 +19,8 @@ import (
 // Uses the shared testfx.NewTestEntityManager() fixture and adds squad-specific init.
 func setupTestManager(t *testing.T) *common.EntityManager {
 	manager := testfx.NewTestEntityManager()
+	// Initialize all registered subsystems (including squads via init())
+	common.InitializeSubsystems(manager)
 	if err := InitializeSquadData(manager); err != nil {
 		t.Fatalf("Failed to initialize squad data: %v", err)
 	}

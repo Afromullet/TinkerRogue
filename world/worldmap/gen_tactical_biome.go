@@ -420,45 +420,26 @@ func (g *TacticalBiomeGenerator) carveCorridorToRegion(terrainMap []bool, width,
 // convertToTiles converts terrain map to tile array
 func (g *TacticalBiomeGenerator) convertToTiles(result *GenerationResult, terrainMap []bool, width, height int, images TileImageSet, biome Biome) {
 	// Get biome-specific images
-	biomeTileSet := images.BiomeImages[biome]
-	wallImages := images.WallImages
-	floorImages := images.FloorImages
-
-	if biomeTileSet != nil {
-		if len(biomeTileSet.WallImages) > 0 {
-			wallImages = biomeTileSet.WallImages
-		}
-		if len(biomeTileSet.FloorImages) > 0 {
-			floorImages = biomeTileSet.FloorImages
-		}
-	}
+	wallImages, floorImages := getBiomeImages(images, biome)
 
 	for y := 0; y < height; y++ {
 		for x := 0; x < width; x++ {
-			terrainIdx := y*width + x  // For terrainMap local array
+			idx := positionToIndex(x, y, width)
 			logicalPos := coords.LogicalPosition{X: x, Y: y}
-			// Use passed width parameter instead of global CoordManager
-			tileIdx := y*width + x  // For result.Tiles (same as terrainIdx)
 			pixelX := x * graphics.ScreenInfo.TileSize
 			pixelY := y * graphics.ScreenInfo.TileSize
 
-			if terrainMap[terrainIdx] {
+			if terrainMap[idx] {
 				// Walkable tile
-				var floorImage *ebiten.Image
-				if len(floorImages) > 0 {
-					floorImage = floorImages[common.GetRandomBetween(0, len(floorImages)-1)]
-				}
+				floorImage := selectRandomImage(floorImages)
 				tile := NewTile(pixelX, pixelY, logicalPos, false, floorImage, FLOOR, false)
 				result.ValidPositions = append(result.ValidPositions, logicalPos)
-				result.Tiles[tileIdx] = &tile
+				result.Tiles[idx] = &tile
 			} else {
 				// Obstacle tile
-				var wallImage *ebiten.Image
-				if len(wallImages) > 0 {
-					wallImage = wallImages[common.GetRandomBetween(0, len(wallImages)-1)]
-				}
+				wallImage := selectRandomImage(wallImages)
 				tile := NewTile(pixelX, pixelY, logicalPos, true, wallImage, WALL, false)
-				result.Tiles[tileIdx] = &tile
+				result.Tiles[idx] = &tile
 			}
 		}
 	}
@@ -474,17 +455,13 @@ func (g *TacticalBiomeGenerator) clearSpawnArea(result *GenerationResult, center
 			}
 
 			logicalPos := coords.LogicalPosition{X: x, Y: y}
-			// Use passed width parameter instead of global CoordManager
-			idx := y*width + x
+			idx := positionToIndex(x, y, width)
 
 			if idx >= 0 && idx < len(result.Tiles) {
 				pixelX := x * graphics.ScreenInfo.TileSize
 				pixelY := y * graphics.ScreenInfo.TileSize
 
-				var floorImage *ebiten.Image
-				if len(floorImages) > 0 {
-					floorImage = floorImages[common.GetRandomBetween(0, len(floorImages)-1)]
-				}
+				floorImage := selectRandomImage(floorImages)
 				tile := NewTile(pixelX, pixelY, logicalPos, false, floorImage, FLOOR, false)
 				result.Tiles[idx] = &tile
 

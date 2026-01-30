@@ -51,11 +51,10 @@ func InitSquadTags(squadManager *common.EntityManager) {
 	squadManager.WorldTags["leader"] = LeaderTag
 }
 
-// InitializeSquadData initializes squad components and templates in the provided EntityManager.
-// This should be called with the game's main EntityManager (&g.em) so squads exist in the same ECS world.
+// InitializeSquadData initializes squad templates (unit data from JSON).
+// Components and tags are auto-initialized via init() and common.InitializeSubsystems().
+// This should be called with the game's main EntityManager for template loading only.
 func InitializeSquadData(manager *common.EntityManager) error {
-	InitSquadComponents(manager)
-	InitSquadTags(manager)
 	if err := InitUnitTemplatesFromJSON(); err != nil {
 		return fmt.Errorf("failed to initialize units: %w", err)
 	}

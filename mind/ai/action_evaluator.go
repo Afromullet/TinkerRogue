@@ -20,7 +20,7 @@ type ScoredAction struct {
 
 // SquadAction interface for executable actions
 type SquadAction interface {
-	Execute(manager *common.EntityManager, movementSystem *combat.CombatMovementSystem, combatActSystem *combat.CombatActionSystem) bool
+	Execute(manager *common.EntityManager, movementSystem *combat.CombatMovementSystem, combatActSystem *combat.CombatActionSystem, cache *combat.CombatQueryCache) bool
 	GetDescription() string
 }
 
@@ -30,10 +30,11 @@ type MoveAction struct {
 	target  coords.LogicalPosition
 }
 
-func (ma *MoveAction) Execute(manager *common.EntityManager, movementSystem *combat.CombatMovementSystem, combatActSystem *combat.CombatActionSystem) bool {
+func (ma *MoveAction) Execute(manager *common.EntityManager, movementSystem *combat.CombatMovementSystem, combatActSystem *combat.CombatActionSystem, cache *combat.CombatQueryCache) bool {
 	cmd := squadcommands.NewMoveSquadCommand(
 		manager,
 		movementSystem,
+		cache,
 		ma.squadID,
 		ma.target,
 	)
@@ -53,7 +54,7 @@ type AttackAction struct {
 	aiController *AIController // Reference to queue the attack for animation
 }
 
-func (aa *AttackAction) Execute(manager *common.EntityManager, movementSystem *combat.CombatMovementSystem, combatActSystem *combat.CombatActionSystem) bool {
+func (aa *AttackAction) Execute(manager *common.EntityManager, movementSystem *combat.CombatMovementSystem, combatActSystem *combat.CombatActionSystem, cache *combat.CombatQueryCache) bool {
 	// Execute the attack
 	result := combatActSystem.ExecuteAttackAction(aa.attackerID, aa.targetID)
 
@@ -90,19 +91,15 @@ type WaitAction struct {
 	squadID ecs.EntityID
 }
 
-func (wa *WaitAction) Execute(manager *common.EntityManager, movementSystem *combat.CombatMovementSystem, combatActSystem *combat.CombatActionSystem) bool {
+func (wa *WaitAction) Execute(manager *common.EntityManager, movementSystem *combat.CombatMovementSystem, combatActSystem *combat.CombatActionSystem, cache *combat.CombatQueryCache) bool {
 	// CRITICAL: Mark the squad's turn as complete to prevent infinite loops
-	// Find the action state entity and set both flags
-	for _, result := range manager.World.Query(combat.ActionStateTag) {
-		actionEntity := result.Entity
-		actionState := common.GetComponentType[*combat.ActionStateData](actionEntity, combat.ActionStateComponent)
-
-		if actionState != nil && actionState.SquadID == wa.squadID {
-			// Mark both actions as used so squad finishes turn
-			actionState.HasMoved = true
-			actionState.HasActed = true
-			return true
-		}
+	// Use cached query for better performance
+	actionState := cache.FindActionStateBySquadID(wa.squadID, manager)
+	if actionState != nil {
+		// Mark both actions as used so squad finishes turn
+		actionState.HasMoved = true
+		actionState.HasActed = true
+		return true
 	}
 
 	return false // Action state not found
