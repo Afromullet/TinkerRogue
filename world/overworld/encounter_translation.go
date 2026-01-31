@@ -165,14 +165,14 @@ func GenerateItemDrops(intensity int, threatType ThreatType) []string {
 
 	// Higher intensity threats drop more items
 	numDrops := 0
-	if intensity >= 8 {
-		numDrops = 3 // High-tier threats drop 3 items
-	} else if intensity >= 5 {
-		numDrops = 2 // Mid-tier threats drop 2 items
-	} else if intensity >= 3 {
-		numDrops = 1 // Low-tier threats drop 1 item
+	if intensity >= 5 {
+		numDrops = 3 // High-tier threats (level 5) drop 3 items
+	} else if intensity >= 4 {
+		numDrops = 2 // Mid-tier threats (level 4) drop 2 items
+	} else if intensity >= 2 {
+		numDrops = 1 // Low-tier threats (level 2-3) drop 1 item
 	}
-	// Intensity 1-2 drops nothing (no guaranteed drops)
+	// Intensity 1 drops nothing (no guaranteed drops)
 
 	// Random chance for bonus drop
 	if common.RandomInt(100) < GetBonusItemDropChance() {
@@ -233,7 +233,7 @@ func init() {
 }
 
 // HighTierIntensityThreshold is the minimum intensity for high-tier drops
-const HighTierIntensityThreshold = 7
+const HighTierIntensityThreshold = 5
 
 // generateItemByType returns an item name based on threat type
 func generateItemByType(threatType ThreatType, intensity int) string {
@@ -245,6 +245,7 @@ func generateItemByType(threatType ThreatType, intensity int) string {
 	options := make([]string, len(table.Basic))
 	copy(options, table.Basic)
 
+	// High-tier drops available at max intensity (level 5)
 	if intensity >= HighTierIntensityThreshold {
 		options = append(options, table.HighTier...)
 	}

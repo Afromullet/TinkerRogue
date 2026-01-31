@@ -105,8 +105,8 @@ const (
 	// Threat growth rates
 	DefaultGrowthRate       = 0.05 // 20 ticks to evolve
 	ContainmentSlowdown     = 0.5  // 50% slower when player nearby
-	MaxThreatIntensity      = 10   // Hard cap
-	ChildNodeSpawnThreshold = 3    // Spawn child at tier 3, 6, 9
+	MaxThreatIntensity      = 5    // Hard cap (matches difficulty levels 1-5)
+	ChildNodeSpawnThreshold = 3    // Spawn child at tier 3
 	PlayerContainmentRadius = 5    // Player presence slows threats in radius
 
 	// Threat spawn attempt limits
@@ -155,7 +155,7 @@ func GetThreatTypeParams(threatType ThreatType) ThreatTypeParams {
 			BaseRadius:       3,
 			PrimaryEffect:    InfluenceSpawnBoost,
 			CanSpawnChildren: true,
-			MaxIntensity:     10,
+			MaxIntensity:     5,
 		}
 	case ThreatBanditCamp:
 		return ThreatTypeParams{
@@ -163,7 +163,7 @@ func GetThreatTypeParams(threatType ThreatType) ThreatTypeParams {
 			BaseRadius:       2,
 			PrimaryEffect:    InfluenceResourceDrain,
 			CanSpawnChildren: false,
-			MaxIntensity:     7,
+			MaxIntensity:     5,
 		}
 	case ThreatCorruption:
 		return ThreatTypeParams{
@@ -171,7 +171,7 @@ func GetThreatTypeParams(threatType ThreatType) ThreatTypeParams {
 			BaseRadius:       5,
 			PrimaryEffect:    InfluenceTerrainCorruption,
 			CanSpawnChildren: true,
-			MaxIntensity:     10,
+			MaxIntensity:     5,
 		}
 	case ThreatBeastNest:
 		return ThreatTypeParams{
@@ -179,7 +179,7 @@ func GetThreatTypeParams(threatType ThreatType) ThreatTypeParams {
 			BaseRadius:       2,
 			PrimaryEffect:    InfluenceSpawnBoost,
 			CanSpawnChildren: false,
-			MaxIntensity:     6,
+			MaxIntensity:     5,
 		}
 	case ThreatOrcWarband:
 		return ThreatTypeParams{
@@ -187,7 +187,7 @@ func GetThreatTypeParams(threatType ThreatType) ThreatTypeParams {
 			BaseRadius:       3,
 			PrimaryEffect:    InfluenceCombatDebuff,
 			CanSpawnChildren: false,
-			MaxIntensity:     8,
+			MaxIntensity:     5,
 		}
 	default:
 		return ThreatTypeParams{

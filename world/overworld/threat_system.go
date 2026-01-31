@@ -115,7 +115,7 @@ func ExecuteThreatEvolutionEffect(manager *common.EntityManager, entity *ecs.Ent
 
 	switch threatData.ThreatType {
 	case ThreatNecromancer:
-		// Spawn child node at tier 3, 6, 9
+		// Spawn child node at tier 3 (with max intensity 5, only spawns once)
 		if threatData.Intensity%GetChildNodeSpawnThreshold() == 0 {
 			pos := common.GetComponentType[*coords.LogicalPosition](entity, common.PositionComponent)
 			if pos != nil {

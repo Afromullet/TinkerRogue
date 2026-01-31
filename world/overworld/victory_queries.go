@@ -6,7 +6,7 @@ import (
 
 // High-intensity threat thresholds for defeat conditions
 const (
-	HighIntensityThreshold  = 8     // Intensity level considered "high"
+	HighIntensityThreshold  = 4     // Intensity level considered "high" (4-5 are high with max 5)
 	MaxHighIntensityThreats = 10    // Maximum allowed before defeat
 	MaxThreatInfluence      = 100.0 // Maximum total influence before defeat
 )

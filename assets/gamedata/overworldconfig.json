@@ -2,7 +2,7 @@
   "threatGrowth": {
     "defaultGrowthRate": 0.05,
     "containmentSlowdown": 0.5,
-    "maxThreatIntensity": 10,
+    "maxThreatIntensity": 5,
     "childNodeSpawnThreshold": 3,
     "playerContainmentRadius": 5,
     "maxChildNodeSpawnAttempts": 10
@@ -34,7 +34,7 @@
       "baseRadius": 3,
       "primaryEffect": "SpawnBoost",
       "canSpawnChildren": true,
-      "maxIntensity": 10
+      "maxIntensity": 5
     },
     {
       "threatType": "BanditCamp",
@@ -42,7 +42,7 @@
       "baseRadius": 2,
       "primaryEffect": "ResourceDrain",
       "canSpawnChildren": false,
-      "maxIntensity": 7
+      "maxIntensity": 5
     },
     {
       "threatType": "Corruption",
@@ -50,7 +50,7 @@
       "baseRadius": 5,
       "primaryEffect": "TerrainCorruption",
       "canSpawnChildren": true,
-      "maxIntensity": 10
+      "maxIntensity": 5
     },
     {
       "threatType": "BeastNest",
@@ -58,7 +58,7 @@
       "baseRadius": 2,
       "primaryEffect": "SpawnBoost",
       "canSpawnChildren": false,
-      "maxIntensity": 6
+      "maxIntensity": 5
     },
     {
       "threatType": "OrcWarband",
@@ -66,7 +66,7 @@
       "baseRadius": 3,
       "primaryEffect": "CombatDebuff",
       "canSpawnChildren": false,
-      "maxIntensity": 8
+      "maxIntensity": 5
     }
   ],
   "factionScoring": {
