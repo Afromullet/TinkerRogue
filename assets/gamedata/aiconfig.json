@@ -1,0 +1,44 @@
+{
+  "threatCalculation": {
+    "flankingThreatRangeBonus": 3,
+    "isolationSafeDistance": 2,
+    "isolationModerateDistance": 3,
+    "isolationHighDistance": 6,
+    "engagementPressureMax": 200,
+    "retreatSafeThreatThreshold": 10
+  },
+  "roleBehaviors": [
+    {
+      "role": "Tank",
+      "meleeWeight": -0.5,
+      "rangedWeight": 0.3,
+      "supportWeight": 0.2,
+      "positionalWeight": 0.5
+    },
+    {
+      "role": "DPS",
+      "meleeWeight": 0.7,
+      "rangedWeight": 0.5,
+      "supportWeight": 0.1,
+      "positionalWeight": 0.6
+    },
+    {
+      "role": "Support",
+      "meleeWeight": 1.0,
+      "rangedWeight": 0.8,
+      "supportWeight": -1.0,
+      "positionalWeight": 0.4
+    }
+  ],
+  "positionalRisk": {
+    "flankingWeight": 0.4,
+    "isolationWeight": 0.3,
+    "pressureWeight": 0.2,
+    "retreatWeight": 0.1
+  },
+  "supportLayer": {
+    "healRadius": 3,
+    "allyProximityRadius": 2,
+    "buffPriorityEngagementRange": 4
+  }
+}

@@ -91,7 +91,7 @@ func (prl *PositionalRiskLayer) computeFlankingRisk(enemyFactions []ecs.EntityID
 
 			// Get threat range for this squad
 			moveSpeed := squads.GetSquadMovementSpeed(squadID, prl.manager)
-			threatRange := moveSpeed + FlankingThreatRangeBonus
+			threatRange := moveSpeed + GetFlankingThreatRangeBonus()
 
 			// Paint threat directions
 			for dx := -threatRange; dx <= threatRange; dx++ {
@@ -184,10 +184,11 @@ func (prl *PositionalRiskLayer) computeIsolationRisk(alliedSquads []ecs.EntityID
 
 			// Isolation risk increases with distance from nearest ally
 			// See threat_constants.go for threshold definitions
-			if minDistance >= IsolationHighDistance {
+			safeDistance, moderateDistance, highDistance := GetIsolationDistances()
+			if minDistance >= highDistance {
 				prl.isolationRisk[pos] = 1.0
-			} else if minDistance >= IsolationModerateDistance {
-				prl.isolationRisk[pos] = float64(minDistance-IsolationSafeDistance) / 4.0 // 0.25 to 0.75
+			} else if minDistance >= moderateDistance {
+				prl.isolationRisk[pos] = float64(minDistance-safeDistance) / 4.0 // 0.25 to 0.75
 			}
 		}
 	}
@@ -210,7 +211,7 @@ func (prl *PositionalRiskLayer) computeEngagementPressure() {
 			totalPressure := meleeThreat + rangedThreat
 
 			// Normalize to 0-1 range using configured max pressure
-			prl.engagementPressure[pos] = math.Min(totalPressure/EngagementPressureMax, 1.0)
+			prl.engagementPressure[pos] = math.Min(totalPressure/float64(GetEngagementPressureMax()), 1.0)
 		}
 	}
 }
@@ -251,7 +252,8 @@ func (prl *PositionalRiskLayer) computeRetreatQuality(alliedSquads []ecs.EntityI
 					rangedThreat := prl.rangedLayer.GetRangedPressureAt(adjacentPos)
 
 					// Low threat path = good retreat route
-					if meleeThreat < RetreatSafeThreatThreshold && rangedThreat < RetreatSafeThreatThreshold {
+					retreatThreshold := float64(GetRetreatSafeThreatThreshold())
+					if meleeThreat < retreatThreshold && rangedThreat < retreatThreshold {
 						retreatScore += 1.0
 					}
 					checkedDirs++
@@ -295,8 +297,9 @@ func (prl *PositionalRiskLayer) GetTotalRiskAt(pos coords.LogicalPosition) float
 	pressure := prl.engagementPressure[pos]
 	retreatPenalty := 1.0 - prl.retreatQuality[pos] // Invert: low quality = high risk
 
-	// Weighted combination
-	return (flanking*0.4 + isolation*0.3 + pressure*0.2 + retreatPenalty*0.1)
+	// Weighted combination using configured weights
+	flankingWeight, isolationWeight, pressureWeight, retreatWeight := GetPositionalRiskWeights()
+	return (flanking*flankingWeight + isolation*isolationWeight + pressure*pressureWeight + retreatPenalty*retreatWeight)
 }
 
 // IsFlankingPosition checks if attacking from pos would flank target

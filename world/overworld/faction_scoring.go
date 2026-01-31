@@ -10,29 +10,33 @@ import (
 func ScoreExpansion(manager *common.EntityManager, entity *ecs.Entity, factionData *OverworldFactionData) float64 {
 	score := 0.0
 
+	// Get config parameters
+	strongBonus, smallTerritoryBonus, maxTerritoryPenalty,
+		cultistMod, orcMod, beastMod := GetExpansionScoringParams()
+
 	// Favor expansion when strong
-	if factionData.Strength >= ExpansionStrengthThreshold {
-		score += 5.0
+	if factionData.Strength >= GetExpansionStrengthThreshold() {
+		score += strongBonus
 	}
 
 	// Favor expansion when territory is small
-	if factionData.TerritorySize < ExpansionTerritoryLimit {
-		score += 3.0
+	if factionData.TerritorySize < GetExpansionTerritoryLimit() {
+		score += smallTerritoryBonus
 	}
 
 	// Penalize if at territory limit
-	if factionData.TerritorySize >= MaxTerritorySize {
-		score -= 10.0
+	if factionData.TerritorySize >= GetMaxTerritorySize() {
+		score += maxTerritoryPenalty
 	}
 
 	// Faction type modifiers
 	switch factionData.FactionType {
 	case FactionCultists:
-		score += 3.0 // Cultists love to expand
+		score += cultistMod // Cultists love to expand
 	case FactionOrcs:
-		score += 2.0 // Orcs are territorial
+		score += orcMod // Orcs are territorial
 	case FactionBeasts:
-		score -= 1.0 // Beasts prefer smaller territories
+		score += beastMod // Beasts prefer smaller territories
 	}
 
 	return score
@@ -42,18 +46,21 @@ func ScoreExpansion(manager *common.EntityManager, entity *ecs.Entity, factionDa
 func ScoreFortification(manager *common.EntityManager, entity *ecs.Entity, factionData *OverworldFactionData) float64 {
 	score := 0.0
 
+	// Get config parameters
+	weakBonus, baseValue, necromancerMod := GetFortificationScoringParams()
+
 	// Favor fortify when weak
-	if factionData.Strength < FortificationWeakThreshold {
-		score += 6.0
+	if factionData.Strength < GetFortificationWeakThreshold() {
+		score += weakBonus
 	}
 
 	// Always some value to fortifying
-	score += 2.0
+	score += baseValue
 
 	// Faction type modifiers
 	switch factionData.FactionType {
 	case FactionNecromancers:
-		score += 2.0 // Necromancers prefer defense
+		score += necromancerMod // Necromancers prefer defense
 	}
 
 	return score
@@ -63,22 +70,25 @@ func ScoreFortification(manager *common.EntityManager, entity *ecs.Entity, facti
 func ScoreRaiding(manager *common.EntityManager, entity *ecs.Entity, factionData *OverworldFactionData) float64 {
 	score := 0.0
 
+	// Get config parameters
+	banditMod, orcMod, strongBonus, strongThreshold := GetRaidingScoringParams()
+
 	// Need minimum strength to raid
-	if factionData.Strength < RaidStrengthThreshold {
+	if factionData.Strength < GetRaidStrengthThreshold() {
 		return 0.0
 	}
 
 	// Aggressive faction types raid more
 	switch factionData.FactionType {
 	case FactionBandits:
-		score += 5.0
+		score += banditMod
 	case FactionOrcs:
-		score += 4.0
+		score += orcMod
 	}
 
 	// Raid if strong
-	if factionData.Strength > 10 {
-		score += 3.0
+	if factionData.Strength > strongThreshold {
+		score += strongBonus
 	}
 
 	return score
@@ -88,14 +98,17 @@ func ScoreRaiding(manager *common.EntityManager, entity *ecs.Entity, factionData
 func ScoreRetreat(manager *common.EntityManager, entity *ecs.Entity, factionData *OverworldFactionData) float64 {
 	score := 0.0
 
+	// Get config parameters
+	criticalWeakBonus, smallTerritoryPenalty, minTerritorySize := GetRetreatScoringParams()
+
 	// Only retreat if critically weak
-	if factionData.Strength < RetreatCriticalStrength {
-		score += 8.0
+	if factionData.Strength < GetRetreatCriticalStrength() {
+		score += criticalWeakBonus
 	}
 
 	// Don't retreat if territory is small
-	if factionData.TerritorySize <= 1 {
-		score -= 5.0
+	if factionData.TerritorySize <= minTerritorySize {
+		score += smallTerritoryPenalty
 	}
 
 	return score

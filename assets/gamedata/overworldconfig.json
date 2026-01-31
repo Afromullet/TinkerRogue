@@ -1,0 +1,98 @@
+{
+  "threatGrowth": {
+    "defaultGrowthRate": 0.05,
+    "containmentSlowdown": 0.5,
+    "maxThreatIntensity": 10,
+    "childNodeSpawnThreshold": 3,
+    "playerContainmentRadius": 5,
+    "maxChildNodeSpawnAttempts": 10
+  },
+  "factionAI": {
+    "defaultIntentTickDuration": 10,
+    "expansionStrengthThreshold": 5,
+    "expansionTerritoryLimit": 20,
+    "fortificationWeakThreshold": 3,
+    "fortificationStrengthGain": 1,
+    "raidStrengthThreshold": 7,
+    "raidProximityRange": 5,
+    "retreatCriticalStrength": 2,
+    "maxTerritorySize": 30
+  },
+  "spawnProbabilities": {
+    "expansionThreatSpawnChance": 20,
+    "fortifyThreatSpawnChance": 30,
+    "bonusItemDropChance": 30
+  },
+  "mapDimensions": {
+    "defaultMapWidth": 100,
+    "defaultMapHeight": 80
+  },
+  "threatTypes": [
+    {
+      "threatType": "Necromancer",
+      "baseGrowthRate": 0.05,
+      "baseRadius": 3,
+      "primaryEffect": "SpawnBoost",
+      "canSpawnChildren": true,
+      "maxIntensity": 10
+    },
+    {
+      "threatType": "BanditCamp",
+      "baseGrowthRate": 0.08,
+      "baseRadius": 2,
+      "primaryEffect": "ResourceDrain",
+      "canSpawnChildren": false,
+      "maxIntensity": 7
+    },
+    {
+      "threatType": "Corruption",
+      "baseGrowthRate": 0.03,
+      "baseRadius": 5,
+      "primaryEffect": "TerrainCorruption",
+      "canSpawnChildren": true,
+      "maxIntensity": 10
+    },
+    {
+      "threatType": "BeastNest",
+      "baseGrowthRate": 0.06,
+      "baseRadius": 2,
+      "primaryEffect": "SpawnBoost",
+      "canSpawnChildren": false,
+      "maxIntensity": 6
+    },
+    {
+      "threatType": "OrcWarband",
+      "baseGrowthRate": 0.07,
+      "baseRadius": 3,
+      "primaryEffect": "CombatDebuff",
+      "canSpawnChildren": false,
+      "maxIntensity": 8
+    }
+  ],
+  "factionScoring": {
+    "expansion": {
+      "strongBonus": 5.0,
+      "smallTerritoryBonus": 3.0,
+      "maxTerritoryPenalty": -10.0,
+      "cultistModifier": 3.0,
+      "orcModifier": 2.0,
+      "beastModifier": -1.0
+    },
+    "fortification": {
+      "weakBonus": 6.0,
+      "baseValue": 2.0,
+      "necromancerModifier": 2.0
+    },
+    "raiding": {
+      "banditModifier": 5.0,
+      "orcModifier": 4.0,
+      "strongBonus": 3.0,
+      "strongThreshold": 10
+    },
+    "retreat": {
+      "criticalWeakBonus": 8.0,
+      "smallTerritoryPenalty": -5.0,
+      "minTerritorySize": 1
+    }
+  }
+}

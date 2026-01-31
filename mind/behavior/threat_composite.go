@@ -92,7 +92,7 @@ func (cte *CompositeThreatEvaluator) GetRoleWeightedThreat(
 	pos coords.LogicalPosition,
 ) float64 {
 	role := squads.GetSquadPrimaryRole(squadID, cte.manager)
-	weights := DefaultRoleWeights[role]
+	weights := GetRoleBehaviorWeights(role)
 
 	meleeThreat := cte.meleeThreat.GetMeleeThreatAt(pos)
 	rangedThreat := cte.rangedThreat.GetRangedPressureAt(pos)

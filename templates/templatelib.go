@@ -6,6 +6,12 @@ var MeleeWeaponTemplates []JSONMeleeWeapon
 var RangedWeaponTemplates []JSONRangedWeapon
 var ConsumableTemplates []JSONAttributeModifier
 var CreatureModifierTemplates []JSONCreatureModifier
+var EncounterDifficultyTemplates []JSONEncounterDifficulty
+var EncounterTypeTemplates []JSONEncounterType
+var SquadTypeTemplates []JSONSquadType
+var AIConfigTemplate JSONAIConfig
+var PowerConfigTemplate JSONPowerConfig
+var OverworldConfigTemplate JSONOverworldConfig
 
 func ReadGameData() {
 
@@ -13,5 +19,9 @@ func ReadGameData() {
 	ReadWeaponData()
 	ReadConsumableData()
 	ReadCreatureModifiers()
+	ReadEncounterData()
+	ReadAIConfig()
+	ReadPowerConfig()
+	ReadOverworldConfig()
 
 }

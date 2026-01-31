@@ -244,3 +244,230 @@ func CreatureModifierFromJSON(a JSONCreatureModifier) JSONCreatureModifier {
 		TargetCells:       a.TargetCells,
 	}
 }
+
+// JSONEncounterDifficulty defines difficulty scaling for encounters
+type JSONEncounterDifficulty struct {
+	Level           int     `json:"level"`
+	Name            string  `json:"name"`
+	PowerMultiplier float64 `json:"powerMultiplier"`
+	MinSquads       int     `json:"minSquads"`
+	MaxSquads       int     `json:"maxSquads"`
+}
+
+// JSONEncounterType defines an encounter template with squad composition preferences
+type JSONEncounterType struct {
+	ID               string   `json:"id"`
+	Name             string   `json:"name"`
+	SquadPreferences []string `json:"squadPreferences"`
+	DefaultDifficulty int     `json:"defaultDifficulty"`
+	Tags             []string `json:"tags"`
+}
+
+// JSONSquadType defines squad type metadata (for future filtering/validation)
+type JSONSquadType struct {
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+}
+
+// EncounterData is the root container for encounter configuration
+type EncounterData struct {
+	DifficultyLevels []JSONEncounterDifficulty `json:"difficultyLevels"`
+	EncounterTypes   []JSONEncounterType       `json:"encounterTypes"`
+	SquadTypes       []JSONSquadType           `json:"squadTypes"`
+}
+
+// JSONAIConfig is the root container for AI behavior configuration
+type JSONAIConfig struct {
+	ThreatCalculation ThreatCalculationConfig `json:"threatCalculation"`
+	RoleBehaviors     []RoleBehaviorConfig    `json:"roleBehaviors"`
+	PositionalRisk    PositionalRiskConfig    `json:"positionalRisk"`
+	SupportLayer      SupportLayerConfig      `json:"supportLayer"`
+}
+
+// ThreatCalculationConfig defines threat calculation parameters
+type ThreatCalculationConfig struct {
+	FlankingThreatRangeBonus   int `json:"flankingThreatRangeBonus"`
+	IsolationSafeDistance      int `json:"isolationSafeDistance"`
+	IsolationModerateDistance  int `json:"isolationModerateDistance"`
+	IsolationHighDistance      int `json:"isolationHighDistance"`
+	EngagementPressureMax      int `json:"engagementPressureMax"`
+	RetreatSafeThreatThreshold int `json:"retreatSafeThreatThreshold"`
+}
+
+// RoleBehaviorConfig defines how a role weighs different threat layers
+type RoleBehaviorConfig struct {
+	Role             string  `json:"role"`
+	MeleeWeight      float64 `json:"meleeWeight"`
+	RangedWeight     float64 `json:"rangedWeight"`
+	SupportWeight    float64 `json:"supportWeight"`
+	PositionalWeight float64 `json:"positionalWeight"`
+}
+
+// PositionalRiskConfig defines positional risk weights
+type PositionalRiskConfig struct {
+	FlankingWeight  float64 `json:"flankingWeight"`
+	IsolationWeight float64 `json:"isolationWeight"`
+	PressureWeight  float64 `json:"pressureWeight"`
+	RetreatWeight   float64 `json:"retreatWeight"`
+}
+
+// SupportLayerConfig defines support layer parameters
+type SupportLayerConfig struct {
+	HealRadius                   int `json:"healRadius"`
+	AllyProximityRadius          int `json:"allyProximityRadius"`
+	BuffPriorityEngagementRange  int `json:"buffPriorityEngagementRange"`
+}
+
+// JSONPowerConfig is the root container for power evaluation configuration
+type JSONPowerConfig struct {
+	Profiles           []PowerProfileConfig     `json:"profiles"`
+	RoleMultipliers    []RoleMultiplierConfig   `json:"roleMultipliers"`
+	AbilityValues      []AbilityValueConfig     `json:"abilityValues"`
+	CompositionBonuses []CompositionBonusConfig `json:"compositionBonuses"`
+	ScalingConstants   ScalingConstantsConfig   `json:"scalingConstants"`
+}
+
+// PowerProfileConfig defines a power calculation profile
+type PowerProfileConfig struct {
+	Name             string  `json:"name"`
+	OffensiveWeight  float64 `json:"offensiveWeight"`
+	DefensiveWeight  float64 `json:"defensiveWeight"`
+	UtilityWeight    float64 `json:"utilityWeight"`
+	DamageWeight     float64 `json:"damageWeight"`
+	AccuracyWeight   float64 `json:"accuracyWeight"`
+	HealthWeight     float64 `json:"healthWeight"`
+	ResistanceWeight float64 `json:"resistanceWeight"`
+	AvoidanceWeight  float64 `json:"avoidanceWeight"`
+	RoleWeight       float64 `json:"roleWeight"`
+	AbilityWeight    float64 `json:"abilityWeight"`
+	CoverWeight      float64 `json:"coverWeight"`
+	FormationBonus   float64 `json:"formationBonus"`
+	MoraleMultiplier float64 `json:"moraleMultiplier"`
+	HealthPenalty    float64 `json:"healthPenalty"`
+	DeployedWeight   float64 `json:"deployedWeight"`
+	ReserveWeight    float64 `json:"reserveWeight"`
+}
+
+// RoleMultiplierConfig defines role multiplier value
+type RoleMultiplierConfig struct {
+	Role       string  `json:"role"`
+	Multiplier float64 `json:"multiplier"`
+}
+
+// AbilityValueConfig defines ability power value
+type AbilityValueConfig struct {
+	Ability string  `json:"ability"`
+	Power   float64 `json:"power"`
+}
+
+// CompositionBonusConfig defines composition bonus
+type CompositionBonusConfig struct {
+	UniqueTypes int     `json:"uniqueTypes"`
+	Bonus       float64 `json:"bonus"`
+}
+
+// ScalingConstantsConfig defines scaling constants
+type ScalingConstantsConfig struct {
+	RoleScaling                float64 `json:"roleScaling"`
+	DodgeScaling               float64 `json:"dodgeScaling"`
+	CoverScaling               float64 `json:"coverScaling"`
+	CoverBeneficiaryMultiplier float64 `json:"coverBeneficiaryMultiplier"`
+	LeaderBonus                float64 `json:"leaderBonus"`
+}
+
+// JSONOverworldConfig is the root container for overworld configuration
+type JSONOverworldConfig struct {
+	ThreatGrowth        ThreatGrowthConfig        `json:"threatGrowth"`
+	FactionAI           FactionAIConfig           `json:"factionAI"`
+	SpawnProbabilities  SpawnProbabilitiesConfig  `json:"spawnProbabilities"`
+	MapDimensions       MapDimensionsConfig       `json:"mapDimensions"`
+	ThreatTypes         []ThreatTypeConfig        `json:"threatTypes"`
+	FactionScoring      FactionScoringConfig      `json:"factionScoring"`
+}
+
+// ThreatGrowthConfig defines threat growth parameters
+type ThreatGrowthConfig struct {
+	DefaultGrowthRate          float64 `json:"defaultGrowthRate"`
+	ContainmentSlowdown        float64 `json:"containmentSlowdown"`
+	MaxThreatIntensity         int     `json:"maxThreatIntensity"`
+	ChildNodeSpawnThreshold    int     `json:"childNodeSpawnThreshold"`
+	PlayerContainmentRadius    int     `json:"playerContainmentRadius"`
+	MaxChildNodeSpawnAttempts  int     `json:"maxChildNodeSpawnAttempts"`
+}
+
+// FactionAIConfig defines faction AI behavior parameters
+type FactionAIConfig struct {
+	DefaultIntentTickDuration  int `json:"defaultIntentTickDuration"`
+	ExpansionStrengthThreshold int `json:"expansionStrengthThreshold"`
+	ExpansionTerritoryLimit    int `json:"expansionTerritoryLimit"`
+	FortificationWeakThreshold int `json:"fortificationWeakThreshold"`
+	FortificationStrengthGain  int `json:"fortificationStrengthGain"`
+	RaidStrengthThreshold      int `json:"raidStrengthThreshold"`
+	RaidProximityRange         int `json:"raidProximityRange"`
+	RetreatCriticalStrength    int `json:"retreatCriticalStrength"`
+	MaxTerritorySize           int `json:"maxTerritorySize"`
+}
+
+// SpawnProbabilitiesConfig defines spawn and drop probabilities
+type SpawnProbabilitiesConfig struct {
+	ExpansionThreatSpawnChance int `json:"expansionThreatSpawnChance"`
+	FortifyThreatSpawnChance   int `json:"fortifyThreatSpawnChance"`
+	BonusItemDropChance        int `json:"bonusItemDropChance"`
+}
+
+// MapDimensionsConfig defines default map dimensions
+type MapDimensionsConfig struct {
+	DefaultMapWidth  int `json:"defaultMapWidth"`
+	DefaultMapHeight int `json:"defaultMapHeight"`
+}
+
+// ThreatTypeConfig defines threat type parameters
+type ThreatTypeConfig struct {
+	ThreatType       string  `json:"threatType"`
+	BaseGrowthRate   float64 `json:"baseGrowthRate"`
+	BaseRadius       int     `json:"baseRadius"`
+	PrimaryEffect    string  `json:"primaryEffect"`
+	CanSpawnChildren bool    `json:"canSpawnChildren"`
+	MaxIntensity     int     `json:"maxIntensity"`
+}
+
+// FactionScoringConfig defines faction intent scoring parameters
+type FactionScoringConfig struct {
+	Expansion      ExpansionScoringConfig      `json:"expansion"`
+	Fortification  FortificationScoringConfig  `json:"fortification"`
+	Raiding        RaidingScoringConfig        `json:"raiding"`
+	Retreat        RetreatScoringConfig        `json:"retreat"`
+}
+
+// ExpansionScoringConfig defines expansion scoring parameters
+type ExpansionScoringConfig struct {
+	StrongBonus          float64 `json:"strongBonus"`
+	SmallTerritoryBonus  float64 `json:"smallTerritoryBonus"`
+	MaxTerritoryPenalty  float64 `json:"maxTerritoryPenalty"`
+	CultistModifier      float64 `json:"cultistModifier"`
+	OrcModifier          float64 `json:"orcModifier"`
+	BeastModifier        float64 `json:"beastModifier"`
+}
+
+// FortificationScoringConfig defines fortification scoring parameters
+type FortificationScoringConfig struct {
+	WeakBonus             float64 `json:"weakBonus"`
+	BaseValue             float64 `json:"baseValue"`
+	NecromancerModifier   float64 `json:"necromancerModifier"`
+}
+
+// RaidingScoringConfig defines raiding scoring parameters
+type RaidingScoringConfig struct {
+	BanditModifier  float64 `json:"banditModifier"`
+	OrcModifier     float64 `json:"orcModifier"`
+	StrongBonus     float64 `json:"strongBonus"`
+	StrongThreshold int     `json:"strongThreshold"`
+}
+
+// RetreatScoringConfig defines retreat scoring parameters
+type RetreatScoringConfig struct {
+	CriticalWeakBonus       float64 `json:"criticalWeakBonus"`
+	SmallTerritoryPenalty   float64 `json:"smallTerritoryPenalty"`
+	MinTerritorySize        int     `json:"minTerritorySize"`
+}

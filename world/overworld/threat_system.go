@@ -23,8 +23,8 @@ func CreateThreatNode(
 		Y: pos.Y,
 	})
 
-	// Add threat node data
-	params := GetThreatTypeParams(threatType)
+	// Add threat node data (use config)
+	params := GetThreatTypeParamsFromConfig(threatType)
 	entity.AddComponent(ThreatNodeComponent, &ThreatNodeData{
 		ThreatID:       entity.GetID(),
 		ThreatType:     threatType,
@@ -66,7 +66,7 @@ func UpdateThreatNodes(manager *common.EntityManager, currentTick int64) error {
 		// Apply growth
 		growthAmount := threatData.GrowthRate
 		if threatData.IsContained {
-			growthAmount *= ContainmentSlowdown // Player presence slows growth
+			growthAmount *= GetContainmentSlowdown() // Player presence slows growth
 		}
 
 		threatData.GrowthProgress += growthAmount
@@ -82,7 +82,7 @@ func UpdateThreatNodes(manager *common.EntityManager, currentTick int64) error {
 
 // EvolveThreatNode increases threat intensity
 func EvolveThreatNode(manager *common.EntityManager, entity *ecs.Entity, threatData *ThreatNodeData) {
-	params := GetThreatTypeParams(threatData.ThreatType)
+	params := GetThreatTypeParamsFromConfig(threatData.ThreatType)
 
 	// Increase intensity (cap at threat-specific max)
 	if threatData.Intensity < params.MaxIntensity {
@@ -107,7 +107,7 @@ func EvolveThreatNode(manager *common.EntityManager, entity *ecs.Entity, threatD
 
 // ExecuteThreatEvolutionEffect applies type-specific evolution behavior
 func ExecuteThreatEvolutionEffect(manager *common.EntityManager, entity *ecs.Entity, threatData *ThreatNodeData) {
-	params := GetThreatTypeParams(threatData.ThreatType)
+	params := GetThreatTypeParamsFromConfig(threatData.ThreatType)
 
 	if !params.CanSpawnChildren {
 		return
@@ -116,7 +116,7 @@ func ExecuteThreatEvolutionEffect(manager *common.EntityManager, entity *ecs.Ent
 	switch threatData.ThreatType {
 	case ThreatNecromancer:
 		// Spawn child node at tier 3, 6, 9
-		if threatData.Intensity%ChildNodeSpawnThreshold == 0 {
+		if threatData.Intensity%GetChildNodeSpawnThreshold() == 0 {
 			pos := common.GetComponentType[*coords.LogicalPosition](entity, common.PositionComponent)
 			if pos != nil {
 				if !SpawnChildThreatNode(manager, *pos, ThreatNecromancer, 1) {
@@ -136,7 +136,8 @@ func ExecuteThreatEvolutionEffect(manager *common.EntityManager, entity *ecs.Ent
 // Returns true if spawn succeeded, false if no valid position found.
 func SpawnChildThreatNode(manager *common.EntityManager, parentPos coords.LogicalPosition, threatType ThreatType, intensity int) bool {
 	// Find nearby unoccupied position (within radius 3)
-	for attempts := 0; attempts < MaxChildNodeSpawnAttempts; attempts++ {
+	maxAttempts := GetMaxChildNodeSpawnAttempts()
+	for attempts := 0; attempts < maxAttempts; attempts++ {
 		offsetX := common.RandomInt(7) - 3 // -3 to 3
 		offsetY := common.RandomInt(7) - 3
 		newPos := coords.LogicalPosition{

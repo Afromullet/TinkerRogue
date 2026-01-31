@@ -90,9 +90,10 @@ func CalculateDefensivePower(attr *common.Attributes, config *PowerConfig) float
 	dodgeChance := float64(attr.GetDodgeChance()) / 100.0
 
 	// Sub-weighted combination
+	scalingConstants := GetScalingConstants()
 	healthComponent := effectiveHealth * config.HealthWeight
 	resistanceComponent := avgResistance * config.ResistanceWeight
-	avoidanceComponent := dodgeChance * DodgeScalingFactor * config.AvoidanceWeight // Scale dodge to 0-40 range
+	avoidanceComponent := dodgeChance * scalingConstants.DodgeScaling * config.AvoidanceWeight // Scale dodge to 0-40 range
 
 	return healthComponent + resistanceComponent + avoidanceComponent
 }
@@ -114,8 +115,9 @@ func CalculateUtilityPower(
 
 // calculateRoleValue returns power value based on unit role.
 func calculateRoleValue(roleData *squads.UnitRoleData) float64 {
-	roleMultiplier := GetRoleMultiplier(roleData.Role)
-	return roleMultiplier * RoleScalingFactor
+	roleMultiplier := GetRoleMultiplierFromConfig(roleData.Role)
+	scalingConstants := GetScalingConstants()
+	return roleMultiplier * scalingConstants.RoleScaling
 }
 
 // calculateAbilityValue returns power value from leader abilities.
@@ -135,9 +137,7 @@ func calculateAbilityValue(entity *ecs.Entity) float64 {
 	totalAbilityPower := 0.0
 	for _, slot := range abilitySlots.Slots {
 		if slot.IsEquipped {
-			if value, exists := AbilityPowerValues[slot.AbilityType]; exists {
-				totalAbilityPower += value
-			}
+			totalAbilityPower += GetAbilityPowerValue(slot.AbilityType)
 		}
 	}
 	return totalAbilityPower
@@ -151,7 +151,8 @@ func calculateCoverValue(entity *ecs.Entity) float64 {
 	}
 
 	// Cover value scaled by how many units it can protect
-	return coverData.CoverValue * CoverScalingFactor * CoverBeneficiaryMultiplier
+	scalingConstants := GetScalingConstants()
+	return coverData.CoverValue * scalingConstants.CoverScaling * scalingConstants.CoverBeneficiaryMultiplier
 }
 
 // CalculateSquadPower computes the power rating for a full squad.
@@ -224,7 +225,7 @@ func CalculateSquadCompositionBonus(
 		}
 	}
 
-	return GetCompositionBonus(len(attackTypes))
+	return GetCompositionBonusFromConfig(len(attackTypes))
 }
 
 // CalculateHealthMultiplier returns power multiplier based on squad health.
@@ -300,7 +301,7 @@ func CalculateSquadPowerByRange(
 
 		// Calculate base unit power (simplified - weapon + dex/2 for threat)
 		basePower := float64(attr.Weapon + attr.Dexterity/2)
-		roleMultiplier := GetRoleMultiplier(roleData.Role)
+		roleMultiplier := GetRoleMultiplierFromConfig(roleData.Role)
 
 		units = append(units, unitPowerData{
 			power:       basePower * roleMultiplier,
@@ -337,7 +338,7 @@ func CalculateSquadPowerByRange(
 				// Apply leader bonus
 				leaderBonus := 1.0
 				if ud.isLeader {
-					leaderBonus = LeaderBonus
+					leaderBonus = GetLeaderBonusFromConfig()
 				}
 
 				// Calculate unit power contribution at this range
@@ -350,7 +351,7 @@ func CalculateSquadPowerByRange(
 	}
 
 	// Apply composition bonus to each range
-	compositionBonus := GetCompositionBonus(len(attackTypeCount))
+	compositionBonus := GetCompositionBonusFromConfig(len(attackTypeCount))
 	for range_, power := range powerByRange {
 		powerByRange[range_] = power * compositionBonus
 	}
@@ -378,7 +379,8 @@ func EstimateUnitPowerFromTemplate(unit squads.UnitTemplate, config *PowerConfig
 
 	// Avoidance component
 	dodgeChance := float64(attr.GetDodgeChance()) / 100.0
-	dodgeScaled := dodgeChance * DodgeScalingFactor
+	scalingConstants := GetScalingConstants()
+	dodgeScaled := dodgeChance * scalingConstants.DodgeScaling
 
 	// Sub-weighted combination
 	healthComponent := effectiveHealth * config.HealthWeight
@@ -388,8 +390,8 @@ func EstimateUnitPowerFromTemplate(unit squads.UnitTemplate, config *PowerConfig
 
 	// === UTILITY POWER ===
 	// Role component
-	roleMultiplier := GetRoleMultiplier(unit.Role)
-	roleValue := roleMultiplier * RoleScalingFactor
+	roleMultiplier := GetRoleMultiplierFromConfig(unit.Role)
+	roleValue := roleMultiplier * scalingConstants.RoleScaling
 	roleComponent := roleValue * config.RoleWeight
 
 	// Ability component (simplified - assume leader gets average ability value)
@@ -402,7 +404,7 @@ func EstimateUnitPowerFromTemplate(unit squads.UnitTemplate, config *PowerConfig
 	// Cover component
 	coverValue := 0.0
 	if unit.CoverValue > 0 {
-		coverValue = unit.CoverValue * CoverScalingFactor * CoverBeneficiaryMultiplier
+		coverValue = unit.CoverValue * scalingConstants.CoverScaling * scalingConstants.CoverBeneficiaryMultiplier
 	}
 	coverComponent := coverValue * config.CoverWeight
 

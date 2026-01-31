@@ -98,7 +98,9 @@ const (
 	InfluenceCombatDebuff
 )
 
-// Tuning parameters
+// DEPRECATED: These constants are now loaded from overworldconfig.json.
+// Use getter functions from overworld_config.go instead (e.g., GetThreatGrowthRate()).
+// Kept for fallback purposes only.
 const (
 	// Threat growth rates
 	DefaultGrowthRate       = 0.05 // 20 ticks to evolve
@@ -142,7 +144,9 @@ type ThreatTypeParams struct {
 	MaxIntensity     int
 }
 
-// GetThreatTypeParams returns parameters for each threat type
+// DEPRECATED: Use GetThreatTypeParamsFromConfig() from overworld_config.go instead.
+// This function is kept for fallback purposes only.
+// Threat type parameters are now loaded from overworldconfig.json for designer-friendly tuning.
 func GetThreatTypeParams(threatType ThreatType) ThreatTypeParams {
 	switch threatType {
 	case ThreatNecromancer:

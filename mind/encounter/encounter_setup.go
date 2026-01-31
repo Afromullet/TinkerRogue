@@ -157,18 +157,9 @@ func generatePlayerSquadPositions(startPos coords.LogicalPosition, count int) []
 
 // getEncounterDifficulty extracts difficulty modifier from encounter data
 func getEncounterDifficulty(encounterData *overworld.OverworldEncounterData) EncounterDifficultyModifier {
-	if encounterData == nil {
-		// Default to level 2 for testing
-		return EncounterDifficultyTable[2]
-	}
 
 	level := encounterData.Level
-	if mod, exists := EncounterDifficultyTable[level]; exists {
-		return mod
-	}
-
-	// Fallback to balanced encounter
-	return EncounterDifficultyTable[3]
+	return GetDifficultyModifier(level) // Falls back to level 3 if invalid
 }
 
 // generateEnemySquadsByPower creates enemy squads matching target squad power.
@@ -226,8 +217,8 @@ func getSquadComposition(encounterData *overworld.OverworldEncounterData, count 
 		return generateRandomComposition(count)
 	}
 
-	// Use encounter preferences
-	preferences := EncounterSquadPreferences[encounterData.EncounterType]
+	// Use encounter preferences from JSON configuration
+	preferences := GetSquadPreferences(encounterData.EncounterType)
 	if len(preferences) == 0 {
 		return generateRandomComposition(count)
 	}

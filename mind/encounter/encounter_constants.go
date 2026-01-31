@@ -19,7 +19,10 @@ type EncounterDifficultyModifier struct {
 
 // EncounterDifficultyTable maps encounter level to difficulty modifiers.
 // Squad counts increased for better balance with 5 player squads.
-// TODO: This should be defined in a file.
+//
+// DEPRECATED: This map is now loaded from assets/gamedata/encounterdata.json.
+// Use GetDifficultyModifier(level) from encounter_config.go instead.
+// This map is kept temporarily for validation and backward compatibility.
 var EncounterDifficultyTable = map[int]EncounterDifficultyModifier{
 	1: {PowerMultiplier: 0.7, MinSquads: 2, MaxSquads: 3}, // Level 1: Easy, 70% power, 2-3 squads
 	2: {PowerMultiplier: 0.9, MinSquads: 3, MaxSquads: 4}, // Level 2: Moderate, 90% power, 3-4 squads
@@ -37,6 +40,10 @@ const (
 
 // EncounterSquadPreferences maps encounter types to preferred squad compositions.
 // Each encounter favors certain unit types (melee, ranged, or magic).
+//
+// DEPRECATED: This map is now loaded from assets/gamedata/encounterdata.json.
+// Use GetSquadPreferences(encounterType) from encounter_config.go instead.
+// This map is kept temporarily for validation and backward compatibility.
 var EncounterSquadPreferences = map[string][]string{
 	string(EncounterGoblinBasic): {SquadTypeMelee, SquadTypeMelee, SquadTypeRanged},  // Goblins: 2 melee + 1 ranged
 	string(EncounterBanditBasic): {SquadTypeMelee, SquadTypeRanged, SquadTypeRanged}, // Bandits: 1 melee + 2 ranged

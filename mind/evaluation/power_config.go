@@ -1,6 +1,9 @@
 package evaluation
 
-import "game_main/tactical/squads"
+import (
+	"game_main/tactical/squads"
+	"game_main/templates"
+)
 
 // PowerConfig holds configurable weights for power calculations.
 // Used by both encounter generation and AI threat assessment for consistent evaluation.
@@ -59,18 +62,14 @@ const (
 	DefaultMoraleMultiplier = 0.002 // +0.2% power per morale point
 	MinimumHealthMultiplier = 0.1   // Minimum 10% power even at low HP
 
-	// Scaling factors for power calculations
-	RoleScalingFactor          = 10.0  // Base multiplier for role value
-	DodgeScalingFactor         = 100.0 // Scale dodge to 0-40 range
-	CoverScalingFactor         = 100.0 // Scale cover value percentage
-	CoverBeneficiaryMultiplier = 2.5   // Avg units protected per cover provider
-
 	// Deployment weights
 	DefaultDeployedWeight = 1.0 // Full weight for deployed squads
 	DefaultReserveWeight  = 0.3 // 30% weight for reserves
 )
 
-// GetDefaultConfig returns a default balanced configuration.
+// DEPRECATED: Use GetPowerConfigByProfile("Balanced") instead.
+// This function is kept for fallback purposes only.
+// Power configurations are now loaded from powerconfig.json for designer-friendly tuning.
 func GetDefaultConfig() *PowerConfig {
 	return &PowerConfig{
 		ProfileName: string(ProfileBalanced),
@@ -105,7 +104,9 @@ func GetDefaultConfig() *PowerConfig {
 	}
 }
 
-// GetOffensiveConfig returns an offensive-focused configuration.
+// DEPRECATED: Use GetPowerConfigByProfile("Offensive") instead.
+// This function is kept for fallback purposes only.
+// Power configurations are now loaded from powerconfig.json for designer-friendly tuning.
 func GetOffensiveConfig() *PowerConfig {
 	config := GetDefaultConfig()
 	config.ProfileName = string(ProfileOffensive)
@@ -117,7 +118,9 @@ func GetOffensiveConfig() *PowerConfig {
 	return config
 }
 
-// GetDefensiveConfig returns a defensive-focused configuration.
+// DEPRECATED: Use GetPowerConfigByProfile("Defensive") instead.
+// This function is kept for fallback purposes only.
+// Power configurations are now loaded from powerconfig.json for designer-friendly tuning.
 func GetDefensiveConfig() *PowerConfig {
 	config := GetDefaultConfig()
 	config.ProfileName = string(ProfileDefensive)
@@ -144,11 +147,61 @@ func GetConfigByProfile(profile PowerProfile) *PowerConfig {
 	}
 }
 
-// AbilityPowerValues maps leader abilities to power ratings.
+// DEPRECATED: Use GetAbilityPowerValue() instead.
+// This map is now loaded from powerconfig.json for designer-friendly tuning.
+// Kept for fallback purposes only.
 var AbilityPowerValues = map[squads.AbilityType]float64{
 	squads.AbilityRally:     15.0, // +5 Strength for 3 turns = sustained damage
 	squads.AbilityHeal:      20.0, // 10 HP heal = high value
 	squads.AbilityBattleCry: 12.0, // +3 Strength + morale once per combat
 	squads.AbilityFireball:  18.0, // 15 direct damage AoE
 	squads.AbilityNone:      0.0,  // No ability
+}
+
+// --- Data-Driven Accessor Functions ---
+// These functions retrieve power evaluation configuration from JSON templates.
+// They replace direct constant/map access to enable designer-friendly tuning.
+
+// GetPowerConfigByProfile returns power configuration for the specified profile name.
+// Converts JSON profile to runtime PowerConfig struct.
+// Falls back to hardcoded defaults if profile not found.
+func GetPowerConfigByProfile(profileName string) *PowerConfig {
+	for _, profile := range templates.PowerConfigTemplate.Profiles {
+		if profile.Name == profileName {
+			return profileToConfig(profile)
+		}
+	}
+
+	// Fallback to hardcoded defaults
+	switch PowerProfile(profileName) {
+	case ProfileOffensive:
+		return GetOffensiveConfig()
+	case ProfileDefensive:
+		return GetDefensiveConfig()
+	default:
+		return GetDefaultConfig()
+	}
+}
+
+// profileToConfig converts JSON profile to runtime PowerConfig.
+func profileToConfig(json templates.PowerProfileConfig) *PowerConfig {
+	return &PowerConfig{
+		ProfileName:      json.Name,
+		OffensiveWeight:  json.OffensiveWeight,
+		DefensiveWeight:  json.DefensiveWeight,
+		UtilityWeight:    json.UtilityWeight,
+		DamageWeight:     json.DamageWeight,
+		AccuracyWeight:   json.AccuracyWeight,
+		HealthWeight:     json.HealthWeight,
+		ResistanceWeight: json.ResistanceWeight,
+		AvoidanceWeight:  json.AvoidanceWeight,
+		RoleWeight:       json.RoleWeight,
+		AbilityWeight:    json.AbilityWeight,
+		CoverWeight:      json.CoverWeight,
+		FormationBonus:   json.FormationBonus,
+		MoraleMultiplier: json.MoraleMultiplier,
+		HealthPenalty:    json.HealthPenalty,
+		DeployedWeight:   json.DeployedWeight,
+		ReserveWeight:    json.ReserveWeight,
+	}
 }

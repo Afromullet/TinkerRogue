@@ -175,7 +175,7 @@ func GenerateItemDrops(intensity int, threatType ThreatType) []string {
 	// Intensity 1-2 drops nothing (no guaranteed drops)
 
 	// Random chance for bonus drop
-	if common.RandomInt(100) < BonusItemDropChance {
+	if common.RandomInt(100) < GetBonusItemDropChance() {
 		numDrops++
 	}
 

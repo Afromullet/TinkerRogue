@@ -96,10 +96,11 @@ func (svl *SupportValueLayer) calculateBuffPriority(squadID ecs.EntityID) float6
 
 	// Check if enemy is within engagement range
 	// Buff priority increases as enemies get closer
-	for distance := 1; distance <= BuffPriorityEngagementRange; distance++ {
+	_, _, buffRange := GetSupportLayerParams()
+	for distance := 1; distance <= buffRange; distance++ {
 		if enemies, exists := squadThreat.SquadDistances.EnemiesByDistance[distance]; exists && len(enemies) > 0 {
 			// Closer enemies = higher buff priority
-			return 1.0 - (float64(distance) / float64(BuffPriorityEngagementRange+1))
+			return 1.0 - (float64(distance) / float64(buffRange+1))
 		}
 	}
 
@@ -113,10 +114,10 @@ func (svl *SupportValueLayer) paintSupportValue(
 	healPriority float64,
 ) {
 	// Paint support value with linear falloff using configured radius
-	PaintThreatToMap(svl.supportValuePos, center, SupportHealRadius, healPriority, LinearFalloff)
+	healRadius, proximityRadius, _ := GetSupportLayerParams()
+	PaintThreatToMap(svl.supportValuePos, center, healRadius, healPriority, LinearFalloff)
 
 	// Track ally proximity separately
-	proximityRadius := SupportAllyProximityRadius
 	for dx := -proximityRadius; dx <= proximityRadius; dx++ {
 		for dy := -proximityRadius; dy <= proximityRadius; dy++ {
 			pos := coords.LogicalPosition{X: center.X + dx, Y: center.Y + dy}

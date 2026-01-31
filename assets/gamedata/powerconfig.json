@@ -1,0 +1,122 @@
+{
+  "profiles": [
+    {
+      "name": "Balanced",
+      "offensiveWeight": 0.4,
+      "defensiveWeight": 0.4,
+      "utilityWeight": 0.2,
+      "damageWeight": 0.6,
+      "accuracyWeight": 0.4,
+      "healthWeight": 0.5,
+      "resistanceWeight": 0.3,
+      "avoidanceWeight": 0.2,
+      "roleWeight": 0.5,
+      "abilityWeight": 0.3,
+      "coverWeight": 0.2,
+      "formationBonus": 1.0,
+      "moraleMultiplier": 0.002,
+      "healthPenalty": 2.0,
+      "deployedWeight": 1.0,
+      "reserveWeight": 0.3
+    },
+    {
+      "name": "Offensive",
+      "offensiveWeight": 0.6,
+      "defensiveWeight": 0.25,
+      "utilityWeight": 0.15,
+      "damageWeight": 0.7,
+      "accuracyWeight": 0.3,
+      "healthWeight": 0.5,
+      "resistanceWeight": 0.3,
+      "avoidanceWeight": 0.2,
+      "roleWeight": 0.5,
+      "abilityWeight": 0.3,
+      "coverWeight": 0.2,
+      "formationBonus": 1.0,
+      "moraleMultiplier": 0.002,
+      "healthPenalty": 2.0,
+      "deployedWeight": 1.0,
+      "reserveWeight": 0.3
+    },
+    {
+      "name": "Defensive",
+      "offensiveWeight": 0.25,
+      "defensiveWeight": 0.6,
+      "utilityWeight": 0.15,
+      "damageWeight": 0.6,
+      "accuracyWeight": 0.4,
+      "healthWeight": 0.6,
+      "resistanceWeight": 0.25,
+      "avoidanceWeight": 0.15,
+      "roleWeight": 0.5,
+      "abilityWeight": 0.3,
+      "coverWeight": 0.2,
+      "formationBonus": 1.0,
+      "moraleMultiplier": 0.002,
+      "healthPenalty": 2.0,
+      "deployedWeight": 1.0,
+      "reserveWeight": 0.3
+    }
+  ],
+  "roleMultipliers": [
+    {
+      "role": "Tank",
+      "multiplier": 1.2
+    },
+    {
+      "role": "DPS",
+      "multiplier": 1.5
+    },
+    {
+      "role": "Support",
+      "multiplier": 1.0
+    }
+  ],
+  "abilityValues": [
+    {
+      "ability": "Rally",
+      "power": 15.0
+    },
+    {
+      "ability": "Heal",
+      "power": 20.0
+    },
+    {
+      "ability": "BattleCry",
+      "power": 12.0
+    },
+    {
+      "ability": "Fireball",
+      "power": 18.0
+    },
+    {
+      "ability": "None",
+      "power": 0.0
+    }
+  ],
+  "compositionBonuses": [
+    {
+      "uniqueTypes": 1,
+      "bonus": 0.8
+    },
+    {
+      "uniqueTypes": 2,
+      "bonus": 1.1
+    },
+    {
+      "uniqueTypes": 3,
+      "bonus": 1.2
+    },
+    {
+      "uniqueTypes": 4,
+      "bonus": 1.3
+    }
+  ],
+  "scalingConstants": {
+    "roleScaling": 10.0,
+    "dodgeScaling": 100.0,
+    "coverScaling": 100.0,
+    "coverBeneficiaryMultiplier": 2.5,
+    "leaderBonus": 1.3
+  }
+}

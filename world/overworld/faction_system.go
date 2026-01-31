@@ -34,7 +34,7 @@ func CreateFaction(
 	intentData := &StrategicIntentData{
 		Intent:         FactionIntent(IntentExpand),
 		TargetPosition: nil,
-		TicksRemaining: DefaultIntentTickDuration,
+		TicksRemaining: GetDefaultIntentTickDuration(),
 		Priority:       0.5,
 	}
 
@@ -65,7 +65,7 @@ func UpdateFactions(manager *common.EntityManager, currentTick int64) error {
 		// Re-evaluate intent if timer expired
 		if intentData.TicksRemaining <= 0 {
 			EvaluateFactionIntent(manager, entity, factionData, intentData)
-			intentData.TicksRemaining = DefaultIntentTickDuration
+			intentData.TicksRemaining = GetDefaultIntentTickDuration()
 		}
 
 		// Execute current intent
@@ -145,7 +145,7 @@ func ExpandTerritory(manager *common.EntityManager, entity *ecs.Entity, factionD
 	}
 
 	// Don't expand beyond limit
-	if factionData.TerritorySize >= MaxTerritorySize {
+	if factionData.TerritorySize >= GetMaxTerritorySize() {
 		return
 	}
 
@@ -175,7 +175,7 @@ func ExpandTerritory(manager *common.EntityManager, entity *ecs.Entity, factionD
 					factionData.FactionType.String(), adj.X, adj.Y), nil)
 
 			// Spawn threat on newly claimed tile
-			if common.RandomInt(100) < ExpansionThreatSpawnChance {
+			if common.RandomInt(100) < GetExpansionThreatSpawnChance() {
 				SpawnThreatForFaction(manager, entity, adj, factionData.FactionType)
 			}
 
@@ -192,10 +192,10 @@ func FortifyTerritory(manager *common.EntityManager, entity *ecs.Entity, faction
 	}
 
 	// Increase strength
-	factionData.Strength += FortificationStrengthGain
+	factionData.Strength += GetFortificationStrengthGain()
 
 	// Spawn threat on random owned tile
-	if common.RandomInt(100) < FortifyThreatSpawnChance {
+	if common.RandomInt(100) < GetFortifyThreatSpawnChance() {
 		randomTile := GetRandomTileFromSlice(territoryData.OwnedTiles)
 		if randomTile != nil {
 			SpawnThreatForFaction(manager, entity, *randomTile, factionData.FactionType)
