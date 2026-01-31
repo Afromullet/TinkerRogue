@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"game_main/common"
-	"game_main/mind/encounter"
 	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"
@@ -260,7 +259,7 @@ func CreateOverworldEncounter(
 ) (ecs.EntityID, error) {
 	entity := manager.World.NewEntity()
 
-	encounterData := &encounter.OverworldEncounterData{
+	encounterData := &OverworldEncounterData{
 		Name:          params.EncounterName,
 		Level:         params.Difficulty,
 		EncounterType: params.EncounterType,
@@ -268,7 +267,7 @@ func CreateOverworldEncounter(
 		ThreatNodeID:  params.ThreatNodeID, // Store threat link for resolution
 	}
 
-	entity.AddComponent(encounter.OverworldEncounterComponent, encounterData)
+	entity.AddComponent(OverworldEncounterComponent, encounterData)
 
 	return entity.GetID(), nil
 }

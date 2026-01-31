@@ -7,6 +7,7 @@ import (
 	"game_main/tactical/combat"
 	"game_main/tactical/squads"
 	"game_main/world/coords"
+	"game_main/world/overworld"
 
 	"math"
 
@@ -25,7 +26,7 @@ func SetupBalancedEncounter(
 	manager *common.EntityManager,
 	playerEntityID ecs.EntityID,
 	playerStartPos coords.LogicalPosition,
-	encounterData *OverworldEncounterData,
+	encounterData *overworld.OverworldEncounterData,
 	encounterID ecs.EntityID,
 ) ([]ecs.EntityID, error) {
 	// 1. Generate encounter specification (handles validation, power calculation, squad creation)
@@ -155,7 +156,7 @@ func generatePlayerSquadPositions(startPos coords.LogicalPosition, count int) []
 }
 
 // getEncounterDifficulty extracts difficulty modifier from encounter data
-func getEncounterDifficulty(encounterData *OverworldEncounterData) EncounterDifficultyModifier {
+func getEncounterDifficulty(encounterData *overworld.OverworldEncounterData) EncounterDifficultyModifier {
 	if encounterData == nil {
 		// Default to level 2 for testing
 		return EncounterDifficultyTable[2]
@@ -177,7 +178,7 @@ func generateEnemySquadsByPower(
 	manager *common.EntityManager,
 	targetSquadPower float64,
 	difficultyMod EncounterDifficultyModifier,
-	encounterData *OverworldEncounterData,
+	encounterData *overworld.OverworldEncounterData,
 	playerPos coords.LogicalPosition,
 	config *evaluation.PowerConfig,
 ) []EnemySquadSpec {
@@ -219,7 +220,7 @@ func generateEnemySquadsByPower(
 }
 
 // getSquadComposition returns squad type distribution based on encounter type
-func getSquadComposition(encounterData *OverworldEncounterData, count int) []string {
+func getSquadComposition(encounterData *overworld.OverworldEncounterData, count int) []string {
 	if encounterData == nil || encounterData.EncounterType == "" {
 		// Random balanced composition
 		return generateRandomComposition(count)

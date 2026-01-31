@@ -9,6 +9,7 @@ import (
 	"game_main/gui/specs"
 	"game_main/gui/widgets"
 	"game_main/mind/behavior"
+	"game_main/mind/encounter"
 	"game_main/tactical/combat/battlelog"
 	"game_main/tactical/combatservices"
 	"game_main/world/coords"
@@ -28,10 +29,11 @@ type CombatMode struct {
 	deps *CombatModeDeps
 
 	// Managers
-	logManager    *CombatLogManager
-	actionHandler *CombatActionHandler
-	inputHandler  *CombatInputHandler
-	combatService *combatservices.CombatService
+	logManager       *CombatLogManager
+	actionHandler    *CombatActionHandler
+	inputHandler     *CombatInputHandler
+	combatService    *combatservices.CombatService
+	encounterService *encounter.EncounterService
 
 	// Update components (stored for refresh calls)
 	squadListComponent   *guisquads.SquadListComponent
@@ -53,10 +55,11 @@ type CombatMode struct {
 	debugLogger *framework.DebugLogger
 }
 
-func NewCombatMode(modeManager *framework.UIModeManager) *CombatMode {
+func NewCombatMode(modeManager *framework.UIModeManager, encounterService *encounter.EncounterService) *CombatMode {
 	cm := &CombatMode{
-		logManager:  NewCombatLogManager(),
-		debugLogger: framework.NewDebugLogger("combat"),
+		logManager:       NewCombatLogManager(),
+		debugLogger:      framework.NewDebugLogger("combat"),
+		encounterService: encounterService,
 	}
 	cm.SetModeName("combat")
 	cm.SetReturnMode("exploration")
@@ -70,7 +73,6 @@ func (cm *CombatMode) Initialize(ctx *framework.UIContext) error {
 
 	// Create combat service before ModeBuilder
 	cm.combatService = combatservices.NewCombatService(ctx.ECSManager)
-	cm.combatService.SetPlayerEntity(ctx.PlayerData.PlayerEntityID)
 
 	// Build UI using ModeBuilder (minimal config - panels handled by registry)
 	err := framework.NewModeBuilder(&cm.BaseMode, framework.ModeConfig{
@@ -96,6 +98,7 @@ func (cm *CombatMode) Initialize(ctx *framework.UIContext) error {
 	cm.deps = NewCombatModeDeps(
 		ctx.ModeCoordinator.GetBattleMapState(),
 		cm.combatService,
+		cm.encounterService,
 		cm.Queries,
 		combatLogArea,
 		cm.logManager,
@@ -285,7 +288,9 @@ func (cm *CombatMode) handleFlee() {
 	cm.logManager.UpdateTextArea(combatLogArea, "Fleeing from combat...")
 
 	// Restore encounter sprite so player can re-engage later
-	cm.combatService.RestoreEncounterSprite()
+	if cm.encounterService != nil {
+		cm.encounterService.RestoreEncounterSprite()
+	}
 
 	if exploreMode, exists := cm.ModeManager.GetMode("exploration"); exists {
 		cm.ModeManager.RequestTransition(exploreMode, "Fled from combat")
@@ -488,22 +493,6 @@ func (cm *CombatMode) advanceAfterAITurn() {
 	cm.executeAITurnIfNeeded()
 }
 
-func (cm *CombatMode) SetupEncounter(fromMode framework.UIMode) error {
-	encounterID := ecs.EntityID(0)
-	if cm.Context.ModeCoordinator != nil {
-		battleMapState := cm.Context.ModeCoordinator.GetBattleMapState()
-		encounterID = battleMapState.TriggeredEncounterID
-	}
-
-	playerStartPos := coords.LogicalPosition{X: 50, Y: 40}
-	if cm.Context.PlayerData != nil && cm.Context.PlayerData.Pos != nil {
-		playerStartPos = *cm.Context.PlayerData.Pos
-	}
-
-	_, err := cm.combatService.StartEncounter(encounterID, playerStartPos)
-	return err
-}
-
 func (cm *CombatMode) Enter(fromMode framework.UIMode) error {
 	fromModeName := "nil"
 	if fromMode != nil {
@@ -519,8 +508,6 @@ func (cm *CombatMode) Enter(fromMode framework.UIMode) error {
 	if shouldInitialize {
 		cm.debugLogger.Log("Fresh combat start - initializing")
 		cm.logManager.UpdateTextArea(combatLogArea, "=== COMBAT STARTED ===")
-
-		cm.SetupEncounter(fromMode)
 
 		// Refresh threat manager with newly created factions (must be after SetupEncounter)
 		cm.visualization.RefreshFactions(cm.Queries)
@@ -581,11 +568,29 @@ func (cm *CombatMode) Exit(toMode framework.UIMode) error {
 			victor = cm.combatService.CheckVictoryCondition()
 		}
 
-		// Mark encounter as defeated and apply combat resolution
-		cm.combatService.EndEncounter(victor)
+		// End encounter (marks defeated, applies resolution) and record to history
+		if cm.encounterService != nil {
+			cm.encounterService.EndEncounter(
+				victor.IsPlayerVictory,
+				victor.VictorFaction,
+				victor.VictorName,
+				victor.RoundsCompleted,
+				victor.DefeatedFactions,
+			)
+			cm.encounterService.RecordEncounterCompletion(
+				victor.IsPlayerVictory,
+				victor.VictorFaction,
+				victor.VictorName,
+				victor.RoundsCompleted,
+			)
+		}
 
-		// Cleanup all combat entities
-		cm.combatService.CleanupCombat()
+		// Cleanup all combat entities (needs enemy squad IDs from encounter service)
+		enemySquadIDs := []ecs.EntityID{}
+		if cm.encounterService != nil {
+			enemySquadIDs = cm.encounterService.GetEnemySquadIDs()
+		}
+		cm.combatService.CleanupCombat(enemySquadIDs)
 
 		// Export battle log if enabled
 		if config.ENABLE_COMBAT_LOG_EXPORT && cm.combatService.BattleRecorder != nil && cm.combatService.BattleRecorder.IsEnabled() {

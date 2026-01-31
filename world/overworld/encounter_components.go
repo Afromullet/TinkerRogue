@@ -1,4 +1,4 @@
-package encounter
+package overworld
 
 import (
 	"game_main/common"
@@ -11,7 +11,7 @@ var (
 	OverworldEncounterComponent *ecs.Component
 )
 
-// init registers encounter component initialization with the common subsystem registry
+// init registers overworld encounter component initialization
 func init() {
 	common.RegisterSubsystem(func(em *common.EntityManager) {
 		OverworldEncounterComponent = em.World.NewComponent()

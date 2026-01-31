@@ -15,6 +15,7 @@ import (
 	"game_main/gui/guiresources"
 	"game_main/gui/guisquads"
 	"game_main/input"
+	"game_main/mind/encounter"
 	"game_main/templates"
 
 	"game_main/testing"
@@ -240,15 +241,18 @@ func SetupUI(g *Game) {
 	// Set coordinator reference in context so modes can trigger context switches
 	uiContext.ModeCoordinator = g.gameModeCoordinator
 
+	// Create encounter service (centralizes encounter lifecycle management)
+	encounterService := encounter.NewEncounterService(&g.em, g.gameModeCoordinator)
+
 	// Get references to both managers for registration
 	battleMapManager := g.gameModeCoordinator.GetBattleMapManager()
 	overworldManager := g.gameModeCoordinator.GetOverworldManager()
 
 	// Register all battle map modes (tactical layer)
-	registerBattleMapModes(g.gameModeCoordinator, battleMapManager)
+	registerBattleMapModes(g.gameModeCoordinator, battleMapManager, encounterService)
 
 	// Register all overworld modes (strategic layer)
-	registerOverworldModes(g.gameModeCoordinator, overworldManager)
+	registerOverworldModes(g.gameModeCoordinator, overworldManager, encounterService)
 
 	// Set initial context and mode (start in battle map, exploration mode)
 	if err := g.gameModeCoordinator.EnterBattleMap("exploration"); err != nil {
@@ -259,15 +263,15 @@ func SetupUI(g *Game) {
 // SetupInputCoordinator initializes the input handling system.
 // Must be called after UI is created.
 func SetupInputCoordinator(g *Game) {
-	// Pass ModeCoordinator so MovementController can trigger encounters
+	// Pass ModeCoordinator for context switching
 	g.inputCoordinator = input.NewInputCoordinator(&g.em, &g.playerData, &g.gameMap, g.gameModeCoordinator)
 }
 
 // registerBattleMapModes registers all battle map UI modes with the coordinator.
-func registerBattleMapModes(coordinator *framework.GameModeCoordinator, manager *framework.UIModeManager) {
+func registerBattleMapModes(coordinator *framework.GameModeCoordinator, manager *framework.UIModeManager, encounterService *encounter.EncounterService) {
 	modes := []framework.UIMode{
 		guiexploration.NewExplorationMode(manager),
-		guicombat.NewCombatMode(manager),
+		guicombat.NewCombatMode(manager, encounterService),
 		guicombat.NewCombatAnimationMode(manager),
 		guisquads.NewSquadDeploymentMode(manager),
 		newInventoryModeWithReturn(manager, "exploration"),
@@ -282,9 +286,9 @@ func registerBattleMapModes(coordinator *framework.GameModeCoordinator, manager 
 
 // registerOverworldModes registers all overworld UI modes with the coordinator.
 // This reduces boilerplate by iterating over a slice of mode constructors.
-func registerOverworldModes(coordinator *framework.GameModeCoordinator, manager *framework.UIModeManager) {
+func registerOverworldModes(coordinator *framework.GameModeCoordinator, manager *framework.UIModeManager, encounterService *encounter.EncounterService) {
 	modes := []framework.UIMode{
-		guioverworld.NewOverworldMode(manager),
+		guioverworld.NewOverworldMode(manager, encounterService),
 		guisquads.NewSquadManagementMode(manager),
 		guisquads.NewSquadBuilderMode(manager),
 		guisquads.NewUnitPurchaseMode(manager),

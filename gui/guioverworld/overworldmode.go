@@ -5,10 +5,12 @@ import (
 
 	"game_main/common"
 	"game_main/gui/framework"
+	"game_main/mind/encounter"
 	"game_main/world/coords"
 	"game_main/world/overworld"
 	"game_main/world/worldmap"
 
+	"github.com/bytearena/ecs"
 	"github.com/ebitenui/ebitenui/widget"
 	"github.com/hajimehoshi/ebiten/v2"
 )
@@ -23,6 +25,9 @@ type OverworldMode struct {
 	// Renderer
 	renderer *OverworldRenderer
 
+	// Services
+	encounterService *encounter.EncounterService
+
 	// Widget references (populated from panel registry)
 	threatInfoText  *widget.TextArea
 	tickStatusText  *widget.TextArea
@@ -33,9 +38,10 @@ type OverworldMode struct {
 	initialized bool
 }
 
-func NewOverworldMode(modeManager *framework.UIModeManager) *OverworldMode {
+func NewOverworldMode(modeManager *framework.UIModeManager, encounterService *encounter.EncounterService) *OverworldMode {
 	om := &OverworldMode{
-		state: NewOverworldState(),
+		state:            NewOverworldState(),
+		encounterService: encounterService,
 	}
 	om.SetModeName("overworld")
 	om.SetReturnMode("") // No simple return mode - uses context switching
@@ -253,57 +259,50 @@ func (om *OverworldMode) handleToggleInfluence() {
 }
 
 func (om *OverworldMode) handleEngageThreat() {
+	// Validate selection
 	if !om.state.HasSelection() {
 		om.logEvent("No threat selected")
 		return
 	}
 
+	// Get threat entity
 	threatEntity := om.Context.ECSManager.FindEntityByID(om.state.SelectedThreatID)
 	if threatEntity == nil {
 		om.logEvent("ERROR: Threat entity not found")
 		return
 	}
 
+	// Validate threat data
 	threatData := common.GetComponentType[*overworld.ThreatNodeData](threatEntity, overworld.ThreatNodeComponent)
 	if threatData == nil {
 		om.logEvent("ERROR: Invalid threat entity")
 		return
 	}
 
+	// Get threat position
 	posData := common.GetComponentType[*coords.LogicalPosition](threatEntity, common.PositionComponent)
 	if posData == nil {
 		om.logEvent("ERROR: Threat has no position")
 		return
 	}
 
-	// Trigger combat from threat
+	// Create encounter entity from threat
 	om.logEvent(fmt.Sprintf("Engaging threat %d...", om.state.SelectedThreatID))
 
-	encounterID, err := overworld.TriggerCombatFromThreat(
-		om.Context.ECSManager,
-		threatEntity,
-		*posData,
-	)
-
+	encounterID, err := overworld.TriggerCombatFromThreat(om.Context.ECSManager, threatEntity, *posData)
 	if err != nil {
-		om.logEvent(fmt.Sprintf("ERROR: Failed to engage threat: %v", err))
-		fmt.Printf("ERROR engaging threat: %v\n", err)
+		om.logEvent(fmt.Sprintf("ERROR: Failed to create encounter: %v", err))
 		return
 	}
 
-	// Store encounter ID for combat mode
-	if om.Context.ModeCoordinator != nil {
-		battleMapState := om.Context.ModeCoordinator.GetBattleMapState()
-		battleMapState.TriggeredEncounterID = encounterID
-		fmt.Printf("Stored encounterID %d in BattleMapState\n", encounterID)
+	// Start encounter (spawns enemies, tracks state, and transitions to combat)
+	threatName := fmt.Sprintf("%s (Level %d)", threatData.ThreatType.String(), threatData.Intensity)
+	playerEntityID := ecs.EntityID(0)
+	if om.Context.PlayerData != nil {
+		playerEntityID = om.Context.PlayerData.PlayerEntityID
 	}
-
-	// Switch to combat mode
-	if om.Context.ModeCoordinator != nil {
-		if err := om.Context.ModeCoordinator.EnterBattleMap("combat"); err != nil {
-			om.logEvent(fmt.Sprintf("ERROR: Failed to enter combat: %v", err))
-			fmt.Printf("ERROR switching to combat: %v\n", err)
-		}
+	if err := om.encounterService.StartEncounter(encounterID, threatEntity.GetID(), threatName, *posData, playerEntityID); err != nil {
+		om.logEvent(fmt.Sprintf("ERROR: Failed to start encounter: %v", err))
 	}
 }
 

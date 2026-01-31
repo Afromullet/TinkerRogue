@@ -5,14 +5,10 @@ import (
 	"game_main/common"
 	"game_main/mind/ai"
 	"game_main/mind/behavior"
-	"game_main/mind/encounter"
 	"game_main/tactical/combat"
 	"game_main/tactical/combat/battlelog"
-	"game_main/tactical/combatresolution"
 	"game_main/tactical/squads"
-	"game_main/visual/rendering"
 	"game_main/world/coords"
-	"game_main/world/overworld"
 
 	"github.com/bytearena/ecs"
 )
@@ -41,11 +37,6 @@ type CombatService struct {
 
 	// AI decision-making
 	aiController *ai.AIController
-
-	// Combat lifecycle tracking
-	currentEncounterID ecs.EntityID
-	enemySquadIDs      []ecs.EntityID // Track enemy squads for cleanup
-	playerEntityID     ecs.EntityID   // Player entity ID for squad management
 }
 
 // NewCombatService creates a new combat service
@@ -237,154 +228,22 @@ func (cs *CombatService) GetAIController() *ai.AIController {
 	return cs.aiController
 }
 
-// SetPlayerEntity sets the player entity ID for combat lifecycle management
-func (cs *CombatService) SetPlayerEntity(playerID ecs.EntityID) {
-	cs.playerEntityID = playerID
-}
-
 // ================================
 // Combat Lifecycle Methods
 // ================================
 
-// StartEncounter initializes a combat encounter by spawning entities.
-// Returns the encounter ID and any error encountered.
-func (cs *CombatService) StartEncounter(encounterID ecs.EntityID, playerStartPos coords.LogicalPosition) (ecs.EntityID, error) {
-	fmt.Println("Starting combat encounter - spawning entities")
-
-	// Clear previous enemy squad tracking
-	cs.enemySquadIDs = []ecs.EntityID{}
-	cs.currentEncounterID = encounterID
-
-	// Extract encounter data to pass to balanced spawner
-	var encounterData *encounter.OverworldEncounterData
-	if encounterID != 0 {
-		entity := cs.EntityManager.FindEntityByID(encounterID)
-		if entity != nil {
-			encounterData = common.GetComponentType[*encounter.OverworldEncounterData](
-				entity,
-				encounter.OverworldEncounterComponent,
-			)
-			if encounterData != nil {
-				fmt.Printf("Encounter: %s (Level %d)\n", encounterData.Name, encounterData.Level)
-			}
-
-			// Hide encounter sprite during combat
-			renderable := common.GetComponentType[*rendering.Renderable](
-				entity,
-				rendering.RenderableComponent,
-			)
-			if renderable != nil {
-				renderable.Visible = false
-				fmt.Println("Hiding overworld encounter sprite during combat")
-			}
-		}
-	}
-
-	// Call SetupBalancedEncounter for power-based enemy spawning
-	enemySquadIDs, err := encounter.SetupBalancedEncounter(cs.EntityManager, cs.playerEntityID, playerStartPos, encounterData, encounterID)
-	if err != nil {
-		return 0, fmt.Errorf("failed to setup balanced encounter: %w", err)
-	}
-
-	// Store enemy squad IDs for cleanup
-	cs.enemySquadIDs = enemySquadIDs
-	fmt.Printf("Tracking %d enemy squads for cleanup: %v\n", len(cs.enemySquadIDs), cs.enemySquadIDs)
-
-	return encounterID, nil
-}
-
-// GetCurrentEncounterID returns the current encounter ID
-func (cs *CombatService) GetCurrentEncounterID() ecs.EntityID {
-	return cs.currentEncounterID
-}
-
-// EndEncounter marks an encounter as defeated if the player won and applies combat resolution to overworld threats.
-// Accepts a pre-calculated VictoryCheckResult to avoid redundant checks.
-func (cs *CombatService) EndEncounter(victor *VictoryCheckResult) {
-	// Only mark if we have a tracked encounter
-	if cs.currentEncounterID == 0 {
-		return
-	}
-
-	// Use the provided victory result (already calculated by caller)
-
-	// Get encounter data
-	entity := cs.EntityManager.FindEntityByID(cs.currentEncounterID)
-	if entity == nil {
-		return
-	}
-
-	encounterData := common.GetComponentType[*encounter.OverworldEncounterData](
-		entity,
-		encounter.OverworldEncounterComponent,
-	)
-	if encounterData == nil {
-		return
-	}
-
-	// Apply combat resolution to overworld if this came from a threat
-	if encounterData.ThreatNodeID != 0 {
-		cs.resolveCombatToOverworld(encounterData.ThreatNodeID, victor)
-	}
-
-	// Only mark as defeated if a player faction won (uses single source of truth)
-	if victor.IsPlayerVictory {
-		// Player won - mark encounter as defeated and hide permanently
-		encounterData.IsDefeated = true
-
-		// Hide encounter sprite permanently on overworld map
-		renderable := common.GetComponentType[*rendering.Renderable](
-			entity,
-			rendering.RenderableComponent,
-		)
-		if renderable != nil {
-			renderable.Visible = false
-		}
-
-		fmt.Printf("Marked encounter '%s' as defeated\n", encounterData.Name)
-	}
-}
-
-// RestoreEncounterSprite restores the encounter sprite visibility when fleeing combat.
-// This allows the player to re-engage with the encounter later.
-func (cs *CombatService) RestoreEncounterSprite() {
-	if cs.currentEncounterID == 0 {
-		return
-	}
-
-	entity := cs.EntityManager.FindEntityByID(cs.currentEncounterID)
-	if entity == nil {
-		return
-	}
-
-	// Only restore if not already defeated
-	encounterData := common.GetComponentType[*encounter.OverworldEncounterData](
-		entity,
-		encounter.OverworldEncounterComponent,
-	)
-	if encounterData != nil && !encounterData.IsDefeated {
-		renderable := common.GetComponentType[*rendering.Renderable](
-			entity,
-			rendering.RenderableComponent,
-		)
-		if renderable != nil {
-			renderable.Visible = true
-			fmt.Println("Restoring overworld encounter sprite after fleeing")
-		}
-	}
-}
-
 // CleanupCombat removes ALL combat entities when returning to exploration
-func (cs *CombatService) CleanupCombat() {
+// Enemy squads must be provided by the encounter service for cleanup
+func (cs *CombatService) CleanupCombat(enemySquadIDs []ecs.EntityID) {
 	fmt.Println("=== Combat Cleanup Starting ===")
 
 	// Remove player squads from map and remove combat components
-	// NEW: Uses faction-based filtering instead of roster lookup
+	// Uses faction-based filtering instead of roster lookup
 	cs.resetPlayerSquadsToOverworld()
 
 	// Build set of enemy squad IDs for unit filtering
 	enemySquadSet := make(map[ecs.EntityID]bool)
-	for _, id := range cs.enemySquadIDs {
+	for _, id := range enemySquadIDs {
 		enemySquadSet[id] = true
 	}
 
@@ -392,129 +251,15 @@ func (cs *CombatService) CleanupCombat() {
 	cs.disposeEntitiesByTag(combat.FactionTag, "factions")
 	cs.disposeEntitiesByTag(combat.ActionStateTag, "action states")
 	cs.disposeEntitiesByTag(combat.TurnStateTag, "turn states")
-	cs.disposeEnemySquads()
+	cs.disposeEnemySquads(enemySquadIDs)
 	cs.disposeEnemyUnits(enemySquadSet)
 
-	// Clear tracking
-	cs.enemySquadIDs = []ecs.EntityID{}
-	cs.currentEncounterID = 0
 	fmt.Println("=== Combat Cleanup Complete ===")
-}
-
-// ================================
-// Combat Resolution to Overworld
-// ================================
-
-// resolveCombatToOverworld applies combat outcome to overworld threat state
-func (cs *CombatService) resolveCombatToOverworld(threatNodeID ecs.EntityID, victor *VictoryCheckResult) {
-	// Calculate casualties
-	playerUnitsLost, enemyUnitsKilled := cs.calculateCasualties(victor)
-
-	// Get player victory from single source of truth
-	playerVictory := victor.IsPlayerVictory
-
-	// Get player squad ID (use first deployed squad)
-	playerSquadID := cs.getFirstPlayerSquadID()
-
-	// Calculate rewards from threat
-	threatEntity := cs.EntityManager.FindEntityByID(threatNodeID)
-	if threatEntity == nil {
-		fmt.Printf("WARNING: Threat node %d not found for resolution\n", threatNodeID)
-		return
-	}
-
-	threatData := common.GetComponentType[*overworld.ThreatNodeData](threatEntity, overworld.ThreatNodeComponent)
-	if threatData == nil {
-		fmt.Printf("WARNING: Entity %d is not a threat node\n", threatNodeID)
-		return
-	}
-
-	rewards := overworld.CalculateRewards(threatData.Intensity, threatData.ThreatType)
-
-	// Create combat outcome
-	outcome := combatresolution.CreateCombatOutcome(
-		threatNodeID,
-		playerVictory,
-		false, // playerRetreat - not implemented yet
-		playerSquadID,
-		playerUnitsLost,
-		enemyUnitsKilled,
-		rewards,
-	)
-
-	// Apply to overworld
-	if err := combatresolution.ResolveCombatToOverworld(cs.EntityManager, outcome); err != nil {
-		fmt.Printf("ERROR resolving combat to overworld: %v\n", err)
-	} else {
-		fmt.Printf("Combat resolved to overworld: %d enemy killed, %d player lost\n",
-			enemyUnitsKilled, playerUnitsLost)
-	}
-}
-
-// calculateCasualties counts units killed in combat
-func (cs *CombatService) calculateCasualties(victor *VictoryCheckResult) (playerUnitsLost int, enemyUnitsKilled int) {
-	// Count destroyed units by faction
-	playerFactionID := ecs.EntityID(0)
-	enemyFactionID := ecs.EntityID(0)
-
-	// Find player and enemy factions
-	for _, result := range cs.EntityManager.World.Query(combat.FactionTag) {
-		entity := result.Entity
-		factionData := common.GetComponentType[*combat.FactionData](entity, combat.CombatFactionComponent)
-		if factionData != nil {
-			if factionData.IsPlayerControlled {
-				playerFactionID = entity.GetID()
-			} else {
-				enemyFactionID = entity.GetID()
-			}
-		}
-	}
-
-	// Count dead units in each faction
-	for _, result := range cs.EntityManager.World.Query(squads.SquadMemberTag) {
-		entity := result.Entity
-		memberData := common.GetComponentType[*squads.SquadMemberData](entity, squads.SquadMemberComponent)
-		if memberData == nil {
-			continue
-		}
-
-		// Get squad to check faction membership
-		squadEntity := cs.EntityManager.FindEntityByID(memberData.SquadID)
-		if squadEntity == nil {
-			continue
-		}
-
-		squadFaction := common.GetComponentType[*combat.CombatFactionData](squadEntity, combat.FactionMembershipComponent)
-		if squadFaction == nil {
-			continue
-		}
-
-		// Check if unit is dead
-		unitAttr := common.GetComponentType[*common.Attributes](entity, common.AttributeComponent)
-		if unitAttr != nil && unitAttr.CurrentHealth <= 0 {
-			if squadFaction.FactionID == playerFactionID {
-				playerUnitsLost++
-			} else if squadFaction.FactionID == enemyFactionID {
-				enemyUnitsKilled++
-			}
-		}
-	}
-
-	return playerUnitsLost, enemyUnitsKilled
 }
 
 // ================================
 // Helper Methods
 // ================================
-
-// getFirstPlayerSquadID returns the first player squad ID found
-func (cs *CombatService) getFirstPlayerSquadID() ecs.EntityID {
-	roster := squads.GetPlayerSquadRoster(cs.playerEntityID, cs.EntityManager)
-	if roster != nil && len(roster.OwnedSquads) > 0 {
-		return roster.OwnedSquads[0]
-	}
-	return 0
-}
 
 // resetPlayerSquadsToOverworld removes player squads from the map after combat
 // Player squads should only exist in the roster, not on the map
@@ -580,6 +325,13 @@ func (cs *CombatService) resetPlayerSquadsToOverworld() {
 			removedCount++
 		}
 
+		// Reset deployment flag (squad returns to reserves after combat)
+		squadData := common.GetComponentType[*squads.SquadData](entity, squads.SquadComponent)
+		if squadData != nil {
+			squadData.IsDeployed = false
+			fmt.Printf("Reset IsDeployed flag for squad %d\n", squadID)
+		}
+
 		// Remove combat component (no longer in faction during overworld)
 		if entity.HasComponent(combat.FactionMembershipComponent) {
 			entity.RemoveComponent(combat.FactionMembershipComponent)
@@ -600,14 +352,14 @@ func (cs *CombatService) disposeEntitiesByTag(tag ecs.Tag, name string) {
 }
 
 // disposeEnemySquads disposes all tracked enemy squads
-func (cs *CombatService) disposeEnemySquads() {
-	for _, squadID := range cs.enemySquadIDs {
+func (cs *CombatService) disposeEnemySquads(enemySquadIDs []ecs.EntityID) {
+	for _, squadID := range enemySquadIDs {
 		if entity := cs.EntityManager.FindEntityByID(squadID); entity != nil {
 			pos := common.GetComponentType[*coords.LogicalPosition](entity, common.PositionComponent)
 			cs.EntityManager.CleanDisposeEntity(entity, pos)
 		}
 	}
-	fmt.Printf("Disposed %d enemy squads\n", len(cs.enemySquadIDs))
+	fmt.Printf("Disposed %d enemy squads\n", len(enemySquadIDs))
 }
 
 // disposeEnemyUnits disposes all units belonging to enemy squads

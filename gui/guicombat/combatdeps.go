@@ -3,6 +3,7 @@ package guicombat
 import (
 	"game_main/gui/framework"
 	"game_main/gui/widgets"
+	"game_main/mind/encounter"
 	"game_main/tactical/combatservices"
 )
 
@@ -18,7 +19,8 @@ type CombatModeDeps struct {
 	BattleState *framework.BattleMapState
 
 	// Services (game logic)
-	CombatService *combatservices.CombatService
+	CombatService    *combatservices.CombatService
+	EncounterService *encounter.EncounterService
 
 	// Queries (read access to ECS)
 	Queries *framework.GUIQueries
@@ -35,18 +37,20 @@ type CombatModeDeps struct {
 func NewCombatModeDeps(
 	battleState *framework.BattleMapState,
 	combatService *combatservices.CombatService,
+	encounterService *encounter.EncounterService,
 	queries *framework.GUIQueries,
 	combatLogArea *widgets.CachedTextAreaWrapper,
 	logManager *CombatLogManager,
 	modeManager *framework.UIModeManager,
 ) *CombatModeDeps {
 	return &CombatModeDeps{
-		BattleState:   battleState,
-		CombatService: combatService,
-		Queries:       queries,
-		CombatLogArea: combatLogArea,
-		LogManager:    logManager,
-		ModeManager:   modeManager,
+		BattleState:      battleState,
+		CombatService:    combatService,
+		EncounterService: encounterService,
+		Queries:          queries,
+		CombatLogArea:    combatLogArea,
+		LogManager:       logManager,
+		ModeManager:      modeManager,
 	}
 }
 

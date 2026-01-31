@@ -3,6 +3,8 @@ package framework
 import (
 	"fmt"
 
+	"game_main/common"
+
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
@@ -181,4 +183,12 @@ func (gmc *GameModeCoordinator) GetBattleMapManager() *UIModeManager {
 // GetBattleMapState returns the persistent battle map state for UI modes
 func (gmc *GameModeCoordinator) GetBattleMapState() *BattleMapState {
 	return gmc.battleMapState
+}
+
+// GetPlayerData returns the player data from the UI context
+func (gmc *GameModeCoordinator) GetPlayerData() *common.PlayerData {
+	if gmc.context != nil {
+		return gmc.context.PlayerData
+	}
+	return nil
 }

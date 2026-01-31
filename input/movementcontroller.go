@@ -1,17 +1,14 @@
 package input
 
 import (
-	"fmt"
 	"game_main/common"
 	"game_main/gear"
 	"game_main/gui/framework"
 	"game_main/visual/graphics"
 	"game_main/visual/rendering"
 	"game_main/world/coords"
-	"game_main/world/overworld"
 	"game_main/world/worldmap"
 
-	"github.com/bytearena/ecs"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 )
@@ -151,15 +148,6 @@ func (mc *MovementController) movePlayer(xOffset, yOffset int) {
 		mc.playerData.Pos.X = nextPosition.X
 		mc.playerData.Pos.Y = nextPosition.Y
 
-		// Check if player stepped on a threat node
-		threatID := overworld.GetThreatNodeAt(mc.ecsManager, nextLogicalPos)
-		if threatID != 0 {
-			threatEntity := mc.ecsManager.FindEntityByID(threatID)
-			if threatEntity != nil {
-				mc.handleThreatCollision(threatEntity, nextLogicalPos)
-			}
-		}
-
 		nextTile.Blocked = true
 		oldTile.Blocked = false
 	} else {
@@ -189,41 +177,5 @@ func (mc *MovementController) highlightCurrentTile() {
 	logicalPos := coords.LogicalPosition{X: mc.playerData.Pos.X, Y: mc.playerData.Pos.Y}
 	ind := coords.CoordManager.LogicalToIndex(logicalPos)
 	mc.gameMap.ApplyColorMatrixToIndex(ind, graphics.GreenColorMatrix)
-}
-
-// handleThreatCollision triggers combat when player walks onto a threat node
-func (mc *MovementController) handleThreatCollision(threatEntity *ecs.Entity, position coords.LogicalPosition) {
-	// Get threat details
-	threatData := common.GetComponentType[*overworld.ThreatNodeData](
-		threatEntity,
-		overworld.ThreatNodeComponent,
-	)
-
-	if threatData == nil {
-		return
-	}
-
-	// Log threat encounter
-	fmt.Printf("Player encountered: %s (Intensity %d)\n", threatData.ThreatType.String(), threatData.Intensity)
-
-	// Create encounter from threat
-	encounterID, err := overworld.TriggerCombatFromThreat(
-		mc.ecsManager,
-		threatEntity,
-		position,
-	)
-	if err != nil {
-		fmt.Printf("ERROR: Failed to trigger combat: %v\n", err)
-		return
-	}
-
-	// Store encounter ID and transition to combat
-	if mc.modeCoordinator != nil {
-		battleMapState := mc.modeCoordinator.GetBattleMapState()
-		battleMapState.TriggeredEncounterID = encounterID
-
-		// Transition to combat mode
-		mc.modeCoordinator.EnterBattleMap("combat")
-	}
 }
 

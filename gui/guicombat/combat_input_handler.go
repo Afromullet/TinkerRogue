@@ -215,20 +215,22 @@ func (cih *CombatInputHandler) handleSquadClick(mouseX, mouseY int) {
 // This is useful for quickly testing victory conditions.
 // Only affects squads in the current encounter (not all squads in the ECS).
 func (cih *CombatInputHandler) killAllEnemySquads() {
-	// Get all enemy squads (squads not in the current player faction)
-	if cih.currentFactionID == 0 {
-		println("[DEBUG] No current faction, cannot kill enemies")
-		return
-	}
-
 	// Get current encounter ID to filter only this encounter's squads
-	encounterID := cih.deps.CombatService.GetCurrentEncounterID()
+	encounterID := cih.deps.EncounterService.GetCurrentEncounterID()
 	if encounterID == 0 {
 		println("[DEBUG] No current encounter, cannot kill enemies")
 		return
 	}
 
-	enemySquads := cih.deps.Queries.GetEnemySquadsForEncounter(cih.currentFactionID, encounterID)
+	// CRITICAL: Must use PLAYER faction ID, not current turn faction ID
+	// If we use currentFactionID and it's the AI's turn, we'd kill player squads instead!
+	playerFactionID := cih.getPlayerFactionID(encounterID)
+	if playerFactionID == 0 {
+		println("[DEBUG] No player faction found, cannot kill enemies")
+		return
+	}
+
+	enemySquads := cih.deps.Queries.GetEnemySquadsForEncounter(playerFactionID, encounterID)
 	println("[DEBUG] Ctrl+K pressed - Found", len(enemySquads), "enemy squads in encounter", encounterID, "to kill")
 
 	if len(enemySquads) == 0 {
@@ -276,4 +278,16 @@ func (cih *CombatInputHandler) killAllUnitsInSquad(squadID ecs.EntityID) int {
 	}
 
 	return killed
+}
+
+// getPlayerFactionID finds the player-controlled faction in the current encounter
+func (cih *CombatInputHandler) getPlayerFactionID(encounterID ecs.EntityID) ecs.EntityID {
+	encounterFactions := cih.deps.Queries.GetFactionsForEncounter(encounterID)
+	for _, factionID := range encounterFactions {
+		factionData := cih.deps.Queries.CombatCache.FindFactionDataByID(factionID, cih.deps.Queries.ECSManager)
+		if factionData != nil && factionData.IsPlayerControlled {
+			return factionID
+		}
+	}
+	return 0
 }

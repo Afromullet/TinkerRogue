@@ -6,6 +6,7 @@ import (
 	"game_main/mind/evaluation"
 	"game_main/tactical/squads"
 	"game_main/world/coords"
+	"game_main/world/overworld"
 
 	"github.com/bytearena/ecs"
 )
@@ -19,7 +20,7 @@ func GenerateEncounterSpec(
 	manager *common.EntityManager,
 	playerEntityID ecs.EntityID,
 	playerStartPos coords.LogicalPosition,
-	encounterData *OverworldEncounterData,
+	encounterData *overworld.OverworldEncounterData,
 ) (*EncounterSpec, error) {
 	// Validate player
 	if playerEntityID == 0 {
