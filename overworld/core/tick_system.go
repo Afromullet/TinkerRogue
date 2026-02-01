@@ -6,13 +6,37 @@
 // Core function: AdvanceTick() orchestrates all overworld subsystems in order.
 // Victory/defeat conditions set IsGameOver flag to prevent further ticks.
 
-package overworld
+package core
 
 import (
 	"fmt"
 	"game_main/common"
 
 	"github.com/bytearena/ecs"
+)
+
+// TickAdvancer is an interface for systems that can be advanced per tick.
+// This allows the core tick system to orchestrate subsystems without direct imports.
+type TickAdvancer interface {
+	AdvanceTick(manager *common.EntityManager, currentTick int64) error
+}
+
+// TravelAdvancer is an interface for the travel system
+type TravelAdvancer interface {
+	AdvanceTravelTick(manager *common.EntityManager, playerData *common.PlayerData) (bool, error)
+}
+
+// VictoryChecker is an interface for checking victory conditions
+type VictoryChecker interface {
+	CheckVictoryCondition(manager *common.EntityManager) VictoryCondition
+}
+
+// Subsystem registrations - set these from the respective packages
+var (
+	ThreatSystem  TickAdvancer
+	FactionSystem TickAdvancer
+	TravelSystem  TravelAdvancer
+	VictorySystem VictoryChecker
 )
 
 // CreateTickStateEntity creates singleton tick state entity
@@ -53,18 +77,26 @@ func AdvanceTick(manager *common.EntityManager, playerData *common.PlayerData) (
 	tick := tickState.CurrentTick
 
 	// Advance travel if active (before other subsystems)
-	travelCompleted, err := AdvanceTravelTick(manager, playerData)
-	if err != nil {
-		return false, fmt.Errorf("travel update failed: %w", err)
+	travelCompleted := false
+	if TravelSystem != nil {
+		var err error
+		travelCompleted, err = TravelSystem.AdvanceTravelTick(manager, playerData)
+		if err != nil {
+			return false, fmt.Errorf("travel update failed: %w", err)
+		}
 	}
 
 	// Execute subsystems in order (world continues evolving during travel)
-	if err := UpdateThreatNodes(manager, tick); err != nil {
-		return false, fmt.Errorf("threat update failed: %w", err)
+	if ThreatSystem != nil {
+		if err := ThreatSystem.AdvanceTick(manager, tick); err != nil {
+			return false, fmt.Errorf("threat update failed: %w", err)
+		}
 	}
 
-	if err := UpdateFactions(manager, tick); err != nil {
-		return false, fmt.Errorf("faction update failed: %w", err)
+	if FactionSystem != nil {
+		if err := FactionSystem.AdvanceTick(manager, tick); err != nil {
+			return false, fmt.Errorf("faction update failed: %w", err)
+		}
 	}
 
 	// Note: Influence calculation is now handled by InfluenceCache (see influence_cache.go)
@@ -74,20 +106,13 @@ func AdvanceTick(manager *common.EntityManager, playerData *common.PlayerData) (
 	// No batch event processing needed currently
 
 	// Check victory/loss conditions
-	victoryCondition := CheckVictoryCondition(manager)
-	if victoryCondition != VictoryNone {
-		// Victory or defeat achieved - set game over flag
-		tickState.IsGameOver = true
+	if VictorySystem != nil {
+		victoryCondition := VictorySystem.CheckVictoryCondition(manager)
+		if victoryCondition != VictoryNone {
+			// Victory or defeat achieved - set game over flag
+			tickState.IsGameOver = true
+		}
 	}
 
 	return travelCompleted, nil
 }
-
-// GetTickState retrieves the singleton tick state
-func GetTickState(manager *common.EntityManager) *TickStateData {
-	for _, result := range manager.World.Query(TickStateTag) {
-		return common.GetComponentType[*TickStateData](result.Entity, TickStateComponent)
-	}
-	return nil
-}
-

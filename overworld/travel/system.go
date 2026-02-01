@@ -1,36 +1,45 @@
-package overworld
+package travel
 
 import (
 	"fmt"
 	"game_main/common"
+	"game_main/overworld/core"
 	"game_main/world/coords"
 	"math"
 
 	"github.com/bytearena/ecs"
 )
 
+// TravelSystemImpl implements core.TravelAdvancer
+type TravelSystemImpl struct{}
+
+// Register the travel system with core on package init
+func init() {
+	core.TravelSystem = &TravelSystemImpl{}
+}
+
 // CreateTravelStateEntity creates the singleton travel state entity
 func CreateTravelStateEntity(manager *common.EntityManager) ecs.EntityID {
 	entity := manager.World.NewEntity()
 
-	travelData := &TravelStateData{
+	travelData := &core.TravelStateData{
 		IsTraveling: false,
 	}
 
-	entity.AddComponent(TravelStateComponent, travelData)
+	entity.AddComponent(core.TravelStateComponent, travelData)
 
 	return entity.GetID()
 }
 
 // GetTravelState retrieves the singleton travel state
-func GetTravelState(manager *common.EntityManager) *TravelStateData {
-	results := manager.World.Query(TravelStateTag)
+func GetTravelState(manager *common.EntityManager) *core.TravelStateData {
+	results := manager.World.Query(core.TravelStateTag)
 	if len(results) == 0 {
 		return nil
 	}
 
 	entity := results[0].Entity
-	return common.GetComponentType[*TravelStateData](entity, TravelStateComponent)
+	return common.GetComponentType[*core.TravelStateData](entity, core.TravelStateComponent)
 }
 
 // IsTraveling checks if player is currently traveling
@@ -114,6 +123,15 @@ func StartTravel(
 		distance, playerPos.X, playerPos.Y, destinationPos.X, destinationPos.Y)
 
 	return nil
+}
+
+// AdvanceTravelTick moves player during travel (called by AdvanceTick)
+// Returns true if travel completed this tick
+func (t *TravelSystemImpl) AdvanceTravelTick(
+	manager *common.EntityManager,
+	playerData *common.PlayerData,
+) (bool, error) {
+	return AdvanceTravelTick(manager, playerData)
 }
 
 // AdvanceTravelTick moves player during travel (called by AdvanceTick)

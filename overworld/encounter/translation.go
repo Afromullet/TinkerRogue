@@ -1,9 +1,10 @@
-package overworld
+package encounter
 
 import (
 	"fmt"
 
 	"game_main/common"
+	"game_main/overworld/core"
 	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"
@@ -38,7 +39,7 @@ func TranslateThreatToEncounter(
 	manager *common.EntityManager,
 	threatEntity *ecs.Entity,
 ) (*EncounterParams, error) {
-	threatData := common.GetComponentType[*ThreatNodeData](threatEntity, ThreatNodeComponent)
+	threatData := common.GetComponentType[*core.ThreatNodeData](threatEntity, core.ThreatNodeComponent)
 	if threatData == nil {
 		return nil, fmt.Errorf("entity is not a threat node")
 	}
@@ -63,7 +64,7 @@ func TranslateThreatToEncounter(
 }
 
 // GenerateEnemyComposition creates enemy units based on threat
-func GenerateEnemyComposition(threatType ThreatType, intensity int) []UnitTemplate {
+func GenerateEnemyComposition(threatType core.ThreatType, intensity int) []UnitTemplate {
 	// Base composition
 	baseUnits := GetBaseThreatUnits(threatType)
 
@@ -93,32 +94,32 @@ func GenerateEnemyComposition(threatType ThreatType, intensity int) []UnitTempla
 
 // GetBaseThreatUnits returns base unit types per threat
 // TODO. This should be configurable through a file
-func GetBaseThreatUnits(threatType ThreatType) []UnitTemplate {
+func GetBaseThreatUnits(threatType core.ThreatType) []UnitTemplate {
 	switch threatType {
-	case ThreatNecromancer:
+	case core.ThreatNecromancer:
 		return []UnitTemplate{
 			{Type: "Skeleton", Role: "Tank"},
 			{Type: "Zombie", Role: "DPS"},
 			{Type: "Wraith", Role: "Support"},
 		}
-	case ThreatBanditCamp:
+	case core.ThreatBanditCamp:
 		return []UnitTemplate{
 			{Type: "Bandit", Role: "DPS"},
 			{Type: "Archer", Role: "DPS"},
 			{Type: "Thug", Role: "Tank"},
 		}
-	case ThreatCorruption:
+	case core.ThreatCorruption:
 		return []UnitTemplate{
 			{Type: "CorruptedBeast", Role: "Tank"},
 			{Type: "CorruptedSpirit", Role: "DPS"},
 		}
-	case ThreatBeastNest:
+	case core.ThreatBeastNest:
 		return []UnitTemplate{
 			{Type: "Wolf", Role: "DPS"},
 			{Type: "Bear", Role: "Tank"},
 			{Type: "Boar", Role: "Tank"},
 		}
-	case ThreatOrcWarband:
+	case core.ThreatOrcWarband:
 		return []UnitTemplate{
 			{Type: "OrcWarrior", Role: "Tank"},
 			{Type: "OrcBerserker", Role: "DPS"},
@@ -130,22 +131,22 @@ func GetBaseThreatUnits(threatType ThreatType) []UnitTemplate {
 }
 
 // CalculateRewards determines loot from defeating a threat
-func CalculateRewards(intensity int, threatType ThreatType) RewardTable {
+func CalculateRewards(intensity int, threatType core.ThreatType) RewardTable {
 	baseGold := 100 + (intensity * 50)
 	baseXP := 50 + (intensity * 25)
 
 	// Type-specific bonuses
 	typeMultiplier := 1.0
 	switch threatType {
-	case ThreatNecromancer:
+	case core.ThreatNecromancer:
 		typeMultiplier = 1.5 // Higher rewards for harder threats
-	case ThreatOrcWarband:
+	case core.ThreatOrcWarband:
 		typeMultiplier = 1.3
-	case ThreatBanditCamp:
+	case core.ThreatBanditCamp:
 		typeMultiplier = 1.2
-	case ThreatCorruption:
+	case core.ThreatCorruption:
 		typeMultiplier = 1.1
-	case ThreatBeastNest:
+	case core.ThreatBeastNest:
 		typeMultiplier = 1.0
 	}
 
@@ -160,7 +161,7 @@ func CalculateRewards(intensity int, threatType ThreatType) RewardTable {
 }
 
 // GenerateItemDrops creates item rewards based on threat type and intensity
-func GenerateItemDrops(intensity int, threatType ThreatType) []string {
+func GenerateItemDrops(intensity int, threatType core.ThreatType) []string {
 	items := []string{}
 
 	// Higher intensity threats drop more items
@@ -175,7 +176,7 @@ func GenerateItemDrops(intensity int, threatType ThreatType) []string {
 	// Intensity 1 drops nothing (no guaranteed drops)
 
 	// Random chance for bonus drop
-	if common.RandomInt(100) < GetBonusItemDropChance() {
+	if common.RandomInt(100) < core.GetBonusItemDropChance() {
 		numDrops++
 	}
 
@@ -199,29 +200,29 @@ type ItemDropTable struct {
 // itemDropTables maps threat types to their item drop tables.
 // This is initialized once at package load and should be treated as read-only.
 // DO NOT MODIFY at runtime.
-var itemDropTables map[ThreatType]ItemDropTable
+var itemDropTables map[core.ThreatType]ItemDropTable
 
 // initItemDropTables initializes the item drop table configuration.
 // Called automatically during package initialization.
 func initItemDropTables() {
-	itemDropTables = map[ThreatType]ItemDropTable{
-		ThreatNecromancer: {
+	itemDropTables = map[core.ThreatType]ItemDropTable{
+		core.ThreatNecromancer: {
 			Basic:    []string{"Dark Essence", "Necromantic Scroll", "Bone Fragment", "Soul Gem", "Cursed Tome"},
 			HighTier: []string{"Lich Phylactery", "Staff of Undeath"},
 		},
-		ThreatBanditCamp: {
+		core.ThreatBanditCamp: {
 			Basic:    []string{"Rusty Sword", "Leather Armor", "Iron Dagger", "Stolen Goods", "Lockpicks"},
 			HighTier: []string{"Masterwork Blade", "Bandit King's Crown"},
 		},
-		ThreatOrcWarband: {
+		core.ThreatOrcWarband: {
 			Basic:    []string{"Orcish Axe", "Crude Shield", "War Paint", "Tusk Trophy", "Bone Club"},
 			HighTier: []string{"Warlord's Greataxe", "Berserker Totem"},
 		},
-		ThreatCorruption: {
+		core.ThreatCorruption: {
 			Basic:    []string{"Tainted Crystal", "Corrupted Seed", "Void Essence", "Shadow Fragment", "Blighted Herb"},
 			HighTier: []string{"Heart of Corruption", "Void Shard"},
 		},
-		ThreatBeastNest: {
+		core.ThreatBeastNest: {
 			Basic:    []string{"Beast Pelt", "Sharp Claw", "Fang", "Beast Horn", "Hide Scraps"},
 			HighTier: []string{"Alpha Pelt", "Primal Essence"},
 		},
@@ -236,7 +237,7 @@ func init() {
 const HighTierIntensityThreshold = 5
 
 // generateItemByType returns an item name based on threat type
-func generateItemByType(threatType ThreatType, intensity int) string {
+func generateItemByType(threatType core.ThreatType, intensity int) string {
 	table, ok := itemDropTables[threatType]
 	if !ok {
 		return "Unknown Item"
@@ -260,7 +261,7 @@ func CreateOverworldEncounter(
 ) (ecs.EntityID, error) {
 	entity := manager.World.NewEntity()
 
-	encounterData := &OverworldEncounterData{
+	encounterData := &core.OverworldEncounterData{
 		Name:          params.EncounterName,
 		Level:         params.Difficulty,
 		EncounterType: params.EncounterType,
@@ -268,23 +269,23 @@ func CreateOverworldEncounter(
 		ThreatNodeID:  params.ThreatNodeID, // Store threat link for resolution
 	}
 
-	entity.AddComponent(OverworldEncounterComponent, encounterData)
+	entity.AddComponent(core.OverworldEncounterComponent, encounterData)
 
 	return entity.GetID(), nil
 }
 
 // getThreatEncounterType maps threat type to encounter type string
-func getThreatEncounterType(threatType ThreatType) string {
+func getThreatEncounterType(threatType core.ThreatType) string {
 	switch threatType {
-	case ThreatNecromancer:
+	case core.ThreatNecromancer:
 		return "undead"
-	case ThreatBanditCamp:
+	case core.ThreatBanditCamp:
 		return "humanoid"
-	case ThreatCorruption:
+	case core.ThreatCorruption:
 		return "corruption"
-	case ThreatBeastNest:
+	case core.ThreatBeastNest:
 		return "beast"
-	case ThreatOrcWarband:
+	case core.ThreatOrcWarband:
 		return "orc"
 	default:
 		return "generic"

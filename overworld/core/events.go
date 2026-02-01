@@ -1,52 +1,12 @@
-package overworld
+package core
 
 import (
 	"fmt"
 	"game_main/config"
-	"game_main/world/overworldlog"
+	"game_main/overworld/overworldlog"
 
 	"github.com/bytearena/ecs"
 )
-
-// EventType categorizes overworld events
-type EventType int
-
-const (
-	EventThreatSpawned   EventType = iota // New threat appeared
-	EventThreatEvolved                    // Threat gained intensity
-	EventThreatDestroyed                  // Threat eliminated
-	EventFactionExpanded                  // Faction claimed territory
-	EventFactionRaid                      // Faction launched raid
-	EventFactionDefeated                  // Faction eliminated
-	EventVictory                          // Player won
-	EventDefeat                           // Player lost
-	EventCombatResolved                   // Combat outcome applied
-)
-
-func (e EventType) String() string {
-	switch e {
-	case EventThreatSpawned:
-		return "Threat Spawned"
-	case EventThreatEvolved:
-		return "Threat Evolved"
-	case EventThreatDestroyed:
-		return "Threat Destroyed"
-	case EventFactionExpanded:
-		return "Faction Expanded"
-	case EventFactionRaid:
-		return "Faction Raid"
-	case EventFactionDefeated:
-		return "Faction Defeated"
-	case EventVictory:
-		return "Victory"
-	case EventDefeat:
-		return "Defeat"
-	case EventCombatResolved:
-		return "Combat Resolved"
-	default:
-		return "Unknown Event"
-	}
-}
 
 // OverworldEvent represents a significant game event
 type OverworldEvent struct {

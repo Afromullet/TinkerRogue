@@ -6,8 +6,11 @@ import (
 	"game_main/common"
 	"game_main/gui/framework"
 	"game_main/mind/encounter"
+	"game_main/overworld/core"
+	owencounter "game_main/overworld/encounter"
+	"game_main/overworld/threat"
+	"game_main/overworld/travel"
 	"game_main/world/coords"
-	"game_main/world/overworld"
 	"game_main/world/worldmap"
 
 	"github.com/bytearena/ecs"
@@ -84,9 +87,9 @@ func (om *OverworldMode) Initialize(ctx *framework.UIContext) error {
 	om.renderer = NewOverworldRenderer(ctx.ECSManager, om.state, gameMap, ctx.TileSize, ctx)
 
 	// Ensure tick state exists
-	tickState := overworld.GetTickState(ctx.ECSManager)
+	tickState := core.GetTickState(ctx.ECSManager)
 	if tickState == nil {
-		overworld.CreateTickStateEntity(ctx.ECSManager)
+		core.CreateTickStateEntity(ctx.ECSManager)
 		om.logEvent("Tick state initialized")
 	}
 
@@ -107,12 +110,12 @@ func (om *OverworldMode) Enter(fromMode framework.UIMode) error {
 	fmt.Println("Entering Overworld Mode")
 
 	// Ensure recording is active when entering overworld
-	ctx := overworld.GetContext()
+	ctx := core.GetContext()
 	if ctx.Recorder != nil && ctx.Recorder.IsEnabled() {
-		tickState := overworld.GetTickState(om.Context.ECSManager)
+		tickState := core.GetTickState(om.Context.ECSManager)
 		if tickState != nil && ctx.Recorder.EventCount() == 0 {
 			// Start new recording session if recorder is empty
-			overworld.StartRecordingSession(tickState.CurrentTick)
+			core.StartRecordingSession(tickState.CurrentTick)
 		}
 	}
 
@@ -128,9 +131,9 @@ func (om *OverworldMode) Exit(toMode framework.UIMode) error {
 	fmt.Println("Exiting Overworld Mode")
 
 	// Export overworld log when leaving overworld mode
-	ctx := overworld.GetContext()
+	ctx := core.GetContext()
 	if ctx.Recorder != nil && ctx.Recorder.IsEnabled() {
-		tickState := overworld.GetTickState(om.Context.ECSManager)
+		tickState := core.GetTickState(om.Context.ECSManager)
 
 		// Only export if game isn't over (victory/defeat already exported)
 		if tickState != nil && !tickState.IsGameOver {
@@ -139,12 +142,12 @@ func (om *OverworldMode) Exit(toMode framework.UIMode) error {
 				tickMsg := fmt.Sprintf("tick %d", tickState.CurrentTick)
 
 				// Export with "Session Paused" outcome (game continues, not victory/defeat)
-				if err := overworld.FinalizeRecording("Session Paused", fmt.Sprintf("Left overworld at %s", tickMsg)); err != nil {
+				if err := core.FinalizeRecording("Session Paused", fmt.Sprintf("Left overworld at %s", tickMsg)); err != nil {
 					fmt.Printf("WARNING: Failed to export overworld log on exit: %v\n", err)
 				}
 
 				// Clear recording for next session (will restart on next Enter)
-				overworld.ClearRecording()
+				core.ClearRecording()
 			}
 		}
 	}
@@ -168,7 +171,7 @@ func (om *OverworldMode) Update(deltaTime float64) error {
 	}
 
 	// Auto-travel: automatically advance ticks when traveling
-	if om.state.IsAutoTraveling && overworld.IsTraveling(om.Context.ECSManager) {
+	if om.state.IsAutoTraveling && travel.IsTraveling(om.Context.ECSManager) {
 		om.handleAdvanceTick()
 	}
 
@@ -224,7 +227,7 @@ func (om *OverworldMode) HandleInput(inputState *framework.InputState) bool {
 
 	// Handle 'C' key to cancel travel
 	if inputState.KeysJustPressed[ebiten.KeyC] {
-		if overworld.IsTraveling(om.Context.ECSManager) {
+		if travel.IsTraveling(om.Context.ECSManager) {
 			om.handleCancelTravel()
 			return true
 		}
@@ -263,14 +266,14 @@ func (om *OverworldMode) HandleInput(inputState *framework.InputState) bool {
 // Button click handlers
 
 func (om *OverworldMode) handleAdvanceTick() {
-	travelCompleted, err := overworld.AdvanceTick(om.Context.ECSManager, om.Context.PlayerData)
+	travelCompleted, err := core.AdvanceTick(om.Context.ECSManager, om.Context.PlayerData)
 	if err != nil {
 		om.logEvent(fmt.Sprintf("ERROR: %v", err))
 		return
 	}
 
-	tickState := overworld.GetTickState(om.Context.ECSManager)
-	travelState := overworld.GetTravelState(om.Context.ECSManager)
+	tickState := core.GetTickState(om.Context.ECSManager)
+	travelState := travel.GetTravelState(om.Context.ECSManager)
 
 	// Log appropriate message
 	if travelState != nil && travelState.IsTraveling {
@@ -302,7 +305,7 @@ func (om *OverworldMode) handleToggleInfluence() {
 
 func (om *OverworldMode) handleToggleAutoTravel() {
 	// Only allow auto-travel when actually traveling
-	if !overworld.IsTraveling(om.Context.ECSManager) {
+	if !travel.IsTraveling(om.Context.ECSManager) {
 		om.logEvent("Auto-travel only available during travel")
 		return
 	}
@@ -331,7 +334,7 @@ func (om *OverworldMode) handleEngageThreat() {
 	}
 
 	// Validate threat data
-	threatData := common.GetComponentType[*overworld.ThreatNodeData](threatEntity, overworld.ThreatNodeComponent)
+	threatData := common.GetComponentType[*core.ThreatNodeData](threatEntity, core.ThreatNodeComponent)
 	if threatData == nil {
 		om.logEvent("ERROR: Invalid threat entity")
 		return
@@ -345,14 +348,14 @@ func (om *OverworldMode) handleEngageThreat() {
 	}
 
 	// Create encounter entity from threat
-	encounterID, err := overworld.TriggerCombatFromThreat(om.Context.ECSManager, threatEntity, *posData)
+	encounterID, err := owencounter.TriggerCombatFromThreat(om.Context.ECSManager, threatEntity, *posData)
 	if err != nil {
 		om.logEvent(fmt.Sprintf("ERROR: Failed to create encounter: %v", err))
 		return
 	}
 
 	// Start travel instead of immediate combat
-	if err := overworld.StartTravel(
+	if err := travel.StartTravel(
 		om.Context.ECSManager,
 		om.Context.PlayerData,
 		*posData,
@@ -369,12 +372,12 @@ func (om *OverworldMode) handleEngageThreat() {
 }
 
 func (om *OverworldMode) handleCancelTravel() {
-	if !overworld.IsTraveling(om.Context.ECSManager) {
+	if !travel.IsTraveling(om.Context.ECSManager) {
 		om.logEvent("Not currently traveling")
 		return
 	}
 
-	if err := overworld.CancelTravel(
+	if err := travel.CancelTravel(
 		om.Context.ECSManager,
 		om.Context.PlayerData,
 	); err != nil {
@@ -389,7 +392,7 @@ func (om *OverworldMode) handleCancelTravel() {
 }
 
 func (om *OverworldMode) startCombatAfterTravel() {
-	travelState := overworld.GetTravelState(om.Context.ECSManager)
+	travelState := travel.GetTravelState(om.Context.ECSManager)
 	if travelState == nil {
 		return
 	}
@@ -400,8 +403,8 @@ func (om *OverworldMode) startCombatAfterTravel() {
 		return
 	}
 
-	threatData := common.GetComponentType[*overworld.ThreatNodeData](
-		threatEntity, overworld.ThreatNodeComponent)
+	threatData := common.GetComponentType[*core.ThreatNodeData](
+		threatEntity, core.ThreatNodeComponent)
 	posData := common.GetComponentType[*coords.LogicalPosition](
 		threatEntity, common.PositionComponent)
 
@@ -452,7 +455,7 @@ func (om *OverworldMode) refreshTickStatus() {
 		return
 	}
 
-	tickState := overworld.GetTickState(om.Context.ECSManager)
+	tickState := core.GetTickState(om.Context.ECSManager)
 	if tickState == nil {
 		om.tickStatusText.SetText("Tick: ??? | Status: ERROR")
 		return
@@ -475,8 +478,8 @@ func (om *OverworldMode) refreshThreatStats() {
 		return
 	}
 
-	count := overworld.CountThreatNodes(om.Context.ECSManager)
-	avgIntensity := overworld.CalculateAverageIntensity(om.Context.ECSManager)
+	count := threat.CountThreatNodes(om.Context.ECSManager)
+	avgIntensity := threat.CalculateAverageIntensity(om.Context.ECSManager)
 
 	om.threatStatsText.SetText(fmt.Sprintf(
 		"Threats: %d | Avg Intensity: %.1f",

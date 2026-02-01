@@ -1,4 +1,4 @@
-package overworld
+package core
 
 import (
 	"game_main/common"
@@ -6,7 +6,7 @@ import (
 	"github.com/bytearena/ecs"
 )
 
-// init registers the overworld subsystem with the ECS component registry.
+// init registers the overworld core subsystem with the ECS component registry.
 // This allows the overworld package to self-register its components without
 // game_main needing to know about overworld internals.
 func init() {
@@ -28,6 +28,7 @@ func InitOverworldComponents(manager *common.EntityManager) {
 	PlayerResourcesComponent = manager.World.NewComponent()
 	InfluenceCacheComponent = manager.World.NewComponent()
 	TravelStateComponent = manager.World.NewComponent()
+	OverworldEncounterComponent = manager.World.NewComponent()
 }
 
 // InitOverworldTags creates tags for querying overworld-related entities.
@@ -39,6 +40,7 @@ func InitOverworldTags(manager *common.EntityManager) {
 	PlayerResourcesTag = ecs.BuildTag(PlayerResourcesComponent)
 	InfluenceCacheTag = ecs.BuildTag(InfluenceCacheComponent)
 	TravelStateTag = ecs.BuildTag(TravelStateComponent)
+	OverworldEncounterTag = ecs.BuildTag(OverworldEncounterComponent)
 
 	// Register tags in WorldTags for easier lookup
 	manager.WorldTags["threatnode"] = ThreatNodeTag
@@ -48,4 +50,5 @@ func InitOverworldTags(manager *common.EntityManager) {
 	manager.WorldTags["playerresources"] = PlayerResourcesTag
 	manager.WorldTags["influencecache"] = InfluenceCacheTag
 	manager.WorldTags["travelstate"] = TravelStateTag
+	manager.WorldTags["overworldencounter"] = OverworldEncounterTag
 }

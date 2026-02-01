@@ -1,8 +1,9 @@
-package overworld
+package travel
 
 import (
 	"game_main/common"
 	"game_main/config"
+	"game_main/overworld/core"
 	"game_main/world/coords"
 	"math"
 	"testing"
@@ -18,8 +19,8 @@ func setupTestEnvironment() (*common.EntityManager, *common.PlayerData) {
 	// Initialize only required components for testing
 	common.PositionComponent = manager.World.NewComponent()
 	common.AttributeComponent = manager.World.NewComponent()
-	TravelStateComponent = manager.World.NewComponent()
-	TravelStateTag = ecs.BuildTag(TravelStateComponent)
+	core.TravelStateComponent = manager.World.NewComponent()
+	core.TravelStateTag = ecs.BuildTag(core.TravelStateComponent)
 
 	// Initialize position system
 	common.GlobalPositionSystem = common.NewPositionSystem(manager.World)

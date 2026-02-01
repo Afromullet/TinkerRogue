@@ -1,105 +1,16 @@
-package overworld
+package core
 
-// ThreatType represents different categories of threats
-type ThreatType int
-
-const (
-	ThreatNecromancer ThreatType = iota
-	ThreatBanditCamp
-	ThreatCorruption
-	ThreatBeastNest
-	ThreatOrcWarband
-)
-
-// String returns human-readable threat name
-func (t ThreatType) String() string {
-	switch t {
-	case ThreatNecromancer:
-		return "Necromancer"
-	case ThreatBanditCamp:
-		return "Bandit Camp"
-	case ThreatCorruption:
-		return "Corruption"
-	case ThreatBeastNest:
-		return "Beast Nest"
-	case ThreatOrcWarband:
-		return "Orc Warband"
-	default:
-		return "Unknown Threat"
-	}
+// ThreatTypeParams defines behavior per threat type
+type ThreatTypeParams struct {
+	BaseGrowthRate   float64
+	BaseRadius       int
+	PrimaryEffect    InfluenceEffect
+	CanSpawnChildren bool
+	MaxIntensity     int
 }
-
-// FactionType represents different faction types
-type FactionType int
-
-const (
-	FactionNecromancers FactionType = iota // Undead necromancer faction
-	FactionBandits                         // Bandit faction
-	FactionBeasts                          // Beast faction
-	FactionOrcs                            // Orc faction
-	FactionCultists                        // Corruption/cultist faction
-
-)
-
-// FactionIntent represents current strategic objective
-type FactionIntent int
-
-const (
-	IntentExpand  FactionIntent = iota // Claim new territory
-	IntentFortify                      // Increase strength, spawn threats
-	IntentRaid                         // Attack player or rival faction
-	IntentRetreat                      // Abandon weak positions
-	IntentIdle                         // No action (weak factions)
-)
-
-// String returns human-readable intent name
-func (i FactionIntent) String() string {
-	switch i {
-	case IntentExpand:
-		return "Expand"
-	case IntentFortify:
-		return "Fortify"
-	case IntentRaid:
-		return "Raid"
-	case IntentRetreat:
-		return "Retreat"
-	case IntentIdle:
-		return "Idle"
-	default:
-		return "Unknown"
-	}
-}
-
-// String returns human-readable faction type name
-func (f FactionType) String() string {
-	switch f {
-	case FactionNecromancers:
-		return "Necromancers"
-	case FactionBandits:
-		return "Bandits"
-	case FactionOrcs:
-		return "Orcs"
-	case FactionBeasts:
-		return "Beasts"
-	case FactionCultists:
-		return "Cultists"
-	default:
-		return "Unknown"
-	}
-}
-
-// InfluenceEffect represents type of influence
-type InfluenceEffect int
-
-const (
-	InfluenceSpawnBoost InfluenceEffect = iota
-	InfluenceResourceDrain
-	InfluenceTerrainCorruption
-	InfluenceCombatDebuff
-)
 
 // DEPRECATED: These constants are now loaded from overworldconfig.json.
-// Use getter functions from overworld_config.go instead (e.g., GetThreatGrowthRate()).
+// Use getter functions from config.go instead (e.g., GetThreatGrowthRate()).
 // Kept for fallback purposes only.
 const (
 	// Threat growth rates
@@ -135,16 +46,7 @@ const (
 	DefaultMapHeight = 80  // Default overworld map height
 )
 
-// ThreatTypeParams defines behavior per threat type
-type ThreatTypeParams struct {
-	BaseGrowthRate   float64
-	BaseRadius       int
-	PrimaryEffect    InfluenceEffect
-	CanSpawnChildren bool
-	MaxIntensity     int
-}
-
-// DEPRECATED: Use GetThreatTypeParamsFromConfig() from overworld_config.go instead.
+// DEPRECATED: Use GetThreatTypeParamsFromConfig() from config.go instead.
 // This function is kept for fallback purposes only.
 // Threat type parameters are now loaded from overworldconfig.json for designer-friendly tuning.
 func GetThreatTypeParams(threatType ThreatType) ThreatTypeParams {

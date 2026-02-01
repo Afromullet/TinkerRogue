@@ -1,4 +1,4 @@
-package overworld
+package core
 
 import (
 	"game_main/world/coords"
@@ -6,7 +6,7 @@ import (
 	"github.com/bytearena/ecs"
 )
 
-// Component and tag variables
+// Component and tag variables - shared across all overworld subsystems
 var (
 	ThreatNodeComponent       *ecs.Component
 	OverworldFactionComponent *ecs.Component
@@ -17,6 +17,7 @@ var (
 	VictoryStateComponent     *ecs.Component
 	PlayerResourcesComponent  *ecs.Component
 	InfluenceCacheComponent   *ecs.Component
+	TravelStateComponent      *ecs.Component
 
 	ThreatNodeTag       ecs.Tag
 	OverworldFactionTag ecs.Tag
@@ -24,6 +25,13 @@ var (
 	VictoryStateTag     ecs.Tag
 	PlayerResourcesTag  ecs.Tag
 	InfluenceCacheTag   ecs.Tag
+	TravelStateTag      ecs.Tag
+)
+
+// OverworldEncounterComponent and tag for encounter entities
+var (
+	OverworldEncounterTag       ecs.Tag
+	OverworldEncounterComponent *ecs.Component
 )
 
 // ThreatNodeData - Pure data component for threat nodes
@@ -75,4 +83,24 @@ type StrategicIntentData struct {
 	TargetPosition *coords.LogicalPosition // Expand toward this, raid this
 	TicksRemaining int                     // Ticks until intent re-evaluation
 	Priority       float64                 // How important this action is (0.0-1.0)
+}
+
+// TravelStateData - Singleton component tracking player travel state
+type TravelStateData struct {
+	IsTraveling       bool                   // Currently traveling
+	Origin            coords.LogicalPosition // Starting position
+	Destination       coords.LogicalPosition // Target position (threat node)
+	TotalDistance     float64                // Euclidean distance (calculated once at start)
+	RemainingDistance float64                // Distance left to travel
+	TargetThreatID    ecs.EntityID           // Threat being traveled to
+	TargetEncounterID ecs.EntityID           // Encounter entity created for this travel
+}
+
+// OverworldEncounterData - Encounter metadata created from overworld threats
+type OverworldEncounterData struct {
+	Name          string       // Display name (e.g., "Goblin Patrol")
+	Level         int          // Difficulty level
+	EncounterType string       // Type identifier for spawn logic
+	IsDefeated    bool         // Marked true after victory
+	ThreatNodeID  ecs.EntityID // Link to overworld threat node (0 if not from threat)
 }

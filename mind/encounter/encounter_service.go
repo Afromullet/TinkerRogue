@@ -6,12 +6,13 @@ import (
 
 	"game_main/common"
 	"game_main/gui/framework"
+	"game_main/overworld/core"
+	owencounter "game_main/overworld/encounter"
 	"game_main/tactical/combat"
 	"game_main/tactical/combatresolution"
 	"game_main/tactical/squads"
 	"game_main/visual/rendering"
 	"game_main/world/coords"
-	"game_main/world/overworld"
 
 	"github.com/bytearena/ecs"
 )
@@ -28,8 +29,8 @@ type EncounterOutcome int
 
 const (
 	Victory EncounterOutcome = iota // Player won
-	Defeat                           // Player lost
-	Fled                             // Player fled (not implemented yet)
+	Defeat                          // Player lost
+	Fled                            // Player fled (not implemented yet)
 )
 
 // String returns a human-readable outcome name
@@ -154,9 +155,9 @@ func (es *EncounterService) StartEncounter(
 		return fmt.Errorf("encounter entity %d not found", encounterID)
 	}
 
-	encounterData := common.GetComponentType[*overworld.OverworldEncounterData](encounterEntity, overworld.OverworldEncounterComponent)
+	encounterData := common.GetComponentType[*core.OverworldEncounterData](encounterEntity, core.OverworldEncounterComponent)
 	if encounterData == nil {
-		return fmt.Errorf("encounter %d missing overworld.OverworldEncounterData", encounterID)
+		return fmt.Errorf("encounter %d missing core.OverworldEncounterData", encounterID)
 	}
 
 	fmt.Printf("EncounterService: Starting encounter %d (%s)\n", encounterID, threatName)
@@ -382,12 +383,12 @@ func (es *EncounterService) EndEncounter(
 		return
 	}
 
-	encounterData := common.GetComponentType[*overworld.OverworldEncounterData](
+	encounterData := common.GetComponentType[*core.OverworldEncounterData](
 		entity,
-		overworld.OverworldEncounterComponent,
+		core.OverworldEncounterComponent,
 	)
 	if encounterData == nil {
-		fmt.Printf("WARNING: Encounter %d missing overworld.OverworldEncounterData\n", encounterID)
+		fmt.Printf("WARNING: Encounter %d missing core.OverworldEncounterData\n", encounterID)
 		return
 	}
 
@@ -445,13 +446,13 @@ func (es *EncounterService) resolveCombatToOverworld(
 		return
 	}
 
-	threatData := common.GetComponentType[*overworld.ThreatNodeData](threatEntity, overworld.ThreatNodeComponent)
+	threatData := common.GetComponentType[*core.ThreatNodeData](threatEntity, core.ThreatNodeComponent)
 	if threatData == nil {
 		fmt.Printf("WARNING: Entity %d is not a threat node\n", threatNodeID)
 		return
 	}
 
-	rewards := overworld.CalculateRewards(threatData.Intensity, threatData.ThreatType)
+	rewards := owencounter.CalculateRewards(threatData.Intensity, threatData.ThreatType)
 
 	// Create combat outcome
 	outcome := combatresolution.CreateCombatOutcome(
@@ -561,9 +562,9 @@ func (es *EncounterService) RestoreEncounterSprite() {
 	}
 
 	// Only restore if not already defeated
-	encounterData := common.GetComponentType[*overworld.OverworldEncounterData](
+	encounterData := common.GetComponentType[*core.OverworldEncounterData](
 		entity,
-		overworld.OverworldEncounterComponent,
+		core.OverworldEncounterComponent,
 	)
 	if encounterData != nil && !encounterData.IsDefeated {
 		renderable := common.GetComponentType[*rendering.Renderable](

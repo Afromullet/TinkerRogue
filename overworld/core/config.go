@@ -1,4 +1,4 @@
-package overworld
+package core
 
 import (
 	"game_main/templates"

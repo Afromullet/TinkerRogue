@@ -1,7 +1,9 @@
-package overworld
+package victory
 
 import (
 	"game_main/common"
+	"game_main/world/overworld/core"
+	"game_main/world/overworld/threat"
 )
 
 // High-intensity threat thresholds for defeat conditions
@@ -14,27 +16,27 @@ const (
 // CheckPlayerDefeat checks if player has lost and returns structured result.
 // Single source of truth for defeat determination - runs checks once and caches results.
 // Replaces the duplicate logic that was split between IsPlayerDefeated() and GetDefeatReason().
-func CheckPlayerDefeat(manager *common.EntityManager) *DefeatCheckResult {
-	result := &DefeatCheckResult{
+func CheckPlayerDefeat(manager *common.EntityManager) *core.DefeatCheckResult {
+	result := &core.DefeatCheckResult{
 		IsDefeated:   false,
-		DefeatReason: DefeatNone,
+		DefeatReason: core.DefeatNone,
 	}
 
 	// Check threat influence (run query once and cache result)
 	result.TotalInfluence = GetTotalThreatInfluence(manager)
 	if result.TotalInfluence > MaxThreatInfluence {
 		result.IsDefeated = true
-		result.DefeatReason = DefeatByInfluence
-		result.DefeatMessage = formatEventString("Defeat! Overwhelmed by threat influence (%.1f)", result.TotalInfluence)
+		result.DefeatReason = core.DefeatByInfluence
+		result.DefeatMessage = core.FormatEventString("Defeat! Overwhelmed by threat influence (%.1f)", result.TotalInfluence)
 		return result
 	}
 
 	// Check high-intensity threats (run query once and cache result)
-	result.HighIntensityCount = CountHighIntensityThreats(manager, HighIntensityThreshold)
+	result.HighIntensityCount = threat.CountHighIntensityThreats(manager, HighIntensityThreshold)
 	if result.HighIntensityCount >= MaxHighIntensityThreats {
 		result.IsDefeated = true
-		result.DefeatReason = DefeatByHighIntensityThreats
-		result.DefeatMessage = formatEventString("Defeat! Too many powerful threats (%d tier-%d+ threats)",
+		result.DefeatReason = core.DefeatByHighIntensityThreats
+		result.DefeatMessage = core.FormatEventString("Defeat! Too many powerful threats (%d tier-%d+ threats)",
 			result.HighIntensityCount, HighIntensityThreshold)
 		return result
 	}
@@ -42,7 +44,7 @@ func CheckPlayerDefeat(manager *common.EntityManager) *DefeatCheckResult {
 	// Check squad loss
 	if HasPlayerLostAllSquads(manager) {
 		result.IsDefeated = true
-		result.DefeatReason = DefeatBySquadLoss
+		result.DefeatReason = core.DefeatBySquadLoss
 		result.DefeatMessage = "Defeat! All squads destroyed"
 		return result
 	}
@@ -60,6 +62,7 @@ func IsPlayerDefeated(manager *common.EntityManager) bool {
 func HasPlayerLostAllSquads(manager *common.EntityManager) bool {
 	// If no squad checker is injected, assume player hasn't lost
 	// (squad-based defeat is optional feature)
+	squadChecker := core.GetSquadChecker()
 	if squadChecker == nil {
 		return false
 	}
@@ -68,30 +71,13 @@ func HasPlayerLostAllSquads(manager *common.EntityManager) bool {
 	return !squadChecker.HasActiveSquads(manager)
 }
 
-// HasPlayerEliminatedAllThreats checks if all threats are gone
-func HasPlayerEliminatedAllThreats(manager *common.EntityManager) bool {
-	threatCount := CountThreatNodes(manager)
-	return threatCount == 0
-}
-
-// HasPlayerDefeatedFactionType checks if specific faction type is eliminated
-func HasPlayerDefeatedFactionType(manager *common.EntityManager, factionType FactionType) bool {
-	for _, result := range manager.World.Query(OverworldFactionTag) {
-		factionData := common.GetComponentType[*OverworldFactionData](result.Entity, OverworldFactionComponent)
-		if factionData != nil && factionData.FactionType == factionType {
-			return false // Faction still exists
-		}
-	}
-	return true // No factions of this type found
-}
-
 // GetTotalThreatInfluence calculates combined threat pressure
 func GetTotalThreatInfluence(manager *common.EntityManager) float64 {
 	total := 0.0
 
-	for _, result := range manager.World.Query(ThreatNodeTag) {
-		threatData := common.GetComponentType[*ThreatNodeData](result.Entity, ThreatNodeComponent)
-		influenceData := common.GetComponentType[*InfluenceData](result.Entity, InfluenceComponent)
+	for _, result := range manager.World.Query(core.ThreatNodeTag) {
+		threatData := common.GetComponentType[*core.ThreatNodeData](result.Entity, core.ThreatNodeComponent)
+		influenceData := common.GetComponentType[*core.InfluenceData](result.Entity, core.InfluenceComponent)
 
 		if threatData != nil && influenceData != nil {
 			// Influence value = intensity × radius × strength
@@ -104,9 +90,9 @@ func GetTotalThreatInfluence(manager *common.EntityManager) float64 {
 }
 
 // GetVictoryState retrieves singleton victory state
-func GetVictoryState(manager *common.EntityManager) *VictoryStateData {
-	for _, result := range manager.World.Query(VictoryStateTag) {
-		return common.GetComponentType[*VictoryStateData](result.Entity, VictoryStateComponent)
+func GetVictoryState(manager *common.EntityManager) *core.VictoryStateData {
+	for _, result := range manager.World.Query(core.VictoryStateTag) {
+		return common.GetComponentType[*core.VictoryStateData](result.Entity, core.VictoryStateComponent)
 	}
 	return nil
 }

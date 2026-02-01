@@ -18,9 +18,11 @@ import (
 	"game_main/mind/encounter"
 	"game_main/templates"
 
+	"game_main/overworld/core"
+	"game_main/overworld/faction"
+	"game_main/overworld/travel"
 	"game_main/testing"
 	"game_main/visual/rendering"
-	"game_main/world/overworld"
 	"game_main/world/worldmap"
 	"log"
 	"net/http"
@@ -101,13 +103,13 @@ func (gb *GameBootstrap) SetupDebugContent(em *common.EntityManager, gm *worldma
 func (gb *GameBootstrap) InitializeGameplay(em *common.EntityManager, pd *common.PlayerData) {
 
 	// Initialize overworld tick state
-	overworld.CreateTickStateEntity(em)
+	core.CreateTickStateEntity(em)
 
 	// Initialize travel state
-	overworld.CreateTravelStateEntity(em)
+	travel.CreateTravelStateEntity(em)
 
 	// Inject squad checker for victory conditions (avoids circular dependency)
-	overworld.SetSquadChecker(&gameSquadChecker{})
+	core.SetSquadChecker(&gameSquadChecker{})
 
 	// Create initial overworld factions (they will spawn threats dynamically)
 	gb.InitializeOverworldFactions(em, pd)
@@ -118,19 +120,19 @@ func (gb *GameBootstrap) InitializeGameplay(em *common.EntityManager, pd *common
 func (gb *GameBootstrap) InitializeOverworldFactions(em *common.EntityManager, pd *common.PlayerData) {
 	// Define faction spawn positions (spread across map, away from player start)
 	factionConfigs := []struct {
-		factionType overworld.FactionType
+		factionType core.FactionType
 		position    coords.LogicalPosition
 		strength    int
 	}{
-		{overworld.FactionNecromancers, coords.LogicalPosition{X: 15, Y: 15}, 8},
-		{overworld.FactionBandits, coords.LogicalPosition{X: 85, Y: 15}, 6},
-		{overworld.FactionOrcs, coords.LogicalPosition{X: 85, Y: 65}, 10},
-		{overworld.FactionCultists, coords.LogicalPosition{X: 15, Y: 65}, 7},
+		{core.FactionNecromancers, coords.LogicalPosition{X: 15, Y: 15}, 8},
+		{core.FactionBandits, coords.LogicalPosition{X: 85, Y: 15}, 6},
+		{core.FactionOrcs, coords.LogicalPosition{X: 85, Y: 65}, 10},
+		{core.FactionCultists, coords.LogicalPosition{X: 15, Y: 65}, 7},
 	}
 
 	// Create each faction
 	for _, cfg := range factionConfigs {
-		factionID := overworld.CreateFaction(em, cfg.factionType, cfg.position, cfg.strength)
+		factionID := faction.CreateFaction(em, cfg.factionType, cfg.position, cfg.strength)
 		log.Printf("Created %s faction at (%d, %d) with strength %d (ID: %d)\n",
 			cfg.factionType.String(), cfg.position.X, cfg.position.Y, cfg.strength, factionID)
 	}
@@ -194,7 +196,7 @@ func SetupBenchmarking() {
 	runtime.MemProfileRate = config.MemoryProfileRate
 }
 
-// gameSquadChecker implements overworld.SquadChecker interface
+// gameSquadChecker implements core.SquadChecker interface
 // This allows the overworld package to check squad status without circular dependency
 type gameSquadChecker struct{}
 

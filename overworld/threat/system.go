@@ -1,17 +1,31 @@
-package overworld
+package threat
 
 import (
 	"game_main/common"
+	"game_main/overworld/core"
 	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"
 )
 
+// ThreatSystemImpl implements core.TickAdvancer
+type ThreatSystemImpl struct{}
+
+// Register the threat system with core on package init
+func init() {
+	core.ThreatSystem = &ThreatSystemImpl{}
+}
+
+// AdvanceTick implements core.TickAdvancer
+func (t *ThreatSystemImpl) AdvanceTick(manager *common.EntityManager, currentTick int64) error {
+	return UpdateThreatNodes(manager, currentTick)
+}
+
 // CreateThreatNode spawns a new threat at a position
 func CreateThreatNode(
 	manager *common.EntityManager,
 	pos coords.LogicalPosition,
-	threatType ThreatType,
+	threatType core.ThreatType,
 	initialIntensity int,
 	currentTick int64,
 ) ecs.EntityID {
@@ -24,8 +38,8 @@ func CreateThreatNode(
 	})
 
 	// Add threat node data (use config)
-	params := GetThreatTypeParamsFromConfig(threatType)
-	entity.AddComponent(ThreatNodeComponent, &ThreatNodeData{
+	params := core.GetThreatTypeParamsFromConfig(threatType)
+	entity.AddComponent(core.ThreatNodeComponent, &core.ThreatNodeData{
 		ThreatID:       entity.GetID(),
 		ThreatType:     threatType,
 		Intensity:      initialIntensity,
@@ -36,7 +50,7 @@ func CreateThreatNode(
 	})
 
 	// Add influence component
-	entity.AddComponent(InfluenceComponent, &InfluenceData{
+	entity.AddComponent(core.InfluenceComponent, &core.InfluenceData{
 		Radius:         params.BaseRadius + initialIntensity,
 		EffectType:     params.PrimaryEffect,
 		EffectStrength: float64(initialIntensity) * 0.1,
@@ -46,8 +60,8 @@ func CreateThreatNode(
 	common.GlobalPositionSystem.AddEntity(entity.GetID(), pos)
 
 	// Log threat spawn event
-	LogEvent(EventThreatSpawned, currentTick, entity.GetID(),
-		formatEventString("%s spawned at (%d, %d) with intensity %d",
+	core.LogEvent(core.EventThreatSpawned, currentTick, entity.GetID(),
+		core.FormatEventString("%s spawned at (%d, %d) with intensity %d",
 			threatType.String(), pos.X, pos.Y, initialIntensity), nil)
 
 	return entity.GetID()
@@ -55,9 +69,9 @@ func CreateThreatNode(
 
 // UpdateThreatNodes evolves all threat nodes by one tick
 func UpdateThreatNodes(manager *common.EntityManager, currentTick int64) error {
-	for _, result := range manager.World.Query(ThreatNodeTag) {
+	for _, result := range manager.World.Query(core.ThreatNodeTag) {
 		entity := result.Entity
-		threatData := common.GetComponentType[*ThreatNodeData](entity, ThreatNodeComponent)
+		threatData := common.GetComponentType[*core.ThreatNodeData](entity, core.ThreatNodeComponent)
 
 		if threatData == nil {
 			continue
@@ -66,7 +80,7 @@ func UpdateThreatNodes(manager *common.EntityManager, currentTick int64) error {
 		// Apply growth
 		growthAmount := threatData.GrowthRate
 		if threatData.IsContained {
-			growthAmount *= GetContainmentSlowdown() // Player presence slows growth
+			growthAmount *= core.GetContainmentSlowdown() // Player presence slows growth
 		}
 
 		threatData.GrowthProgress += growthAmount
@@ -81,8 +95,8 @@ func UpdateThreatNodes(manager *common.EntityManager, currentTick int64) error {
 }
 
 // EvolveThreatNode increases threat intensity
-func EvolveThreatNode(manager *common.EntityManager, entity *ecs.Entity, threatData *ThreatNodeData) {
-	params := GetThreatTypeParamsFromConfig(threatData.ThreatType)
+func EvolveThreatNode(manager *common.EntityManager, entity *ecs.Entity, threatData *core.ThreatNodeData) {
+	params := core.GetThreatTypeParamsFromConfig(threatData.ThreatType)
 
 	// Increase intensity (cap at threat-specific max)
 	if threatData.Intensity < params.MaxIntensity {
@@ -90,15 +104,15 @@ func EvolveThreatNode(manager *common.EntityManager, entity *ecs.Entity, threatD
 		threatData.Intensity++
 
 		// Update influence radius
-		influenceData := common.GetComponentType[*InfluenceData](entity, InfluenceComponent)
+		influenceData := common.GetComponentType[*core.InfluenceData](entity, core.InfluenceComponent)
 		if influenceData != nil {
 			influenceData.Radius = params.BaseRadius + threatData.Intensity
 			influenceData.EffectStrength = float64(threatData.Intensity) * 0.1
 		}
 
 		// Log evolution event
-		LogEvent(EventThreatEvolved, GetCurrentTick(manager), entity.GetID(),
-			formatEventString("Threat evolved %d -> %d", oldIntensity, threatData.Intensity), nil)
+		core.LogEvent(core.EventThreatEvolved, core.GetCurrentTick(manager), entity.GetID(),
+			core.FormatEventString("Threat evolved %d -> %d", oldIntensity, threatData.Intensity), nil)
 
 		// Trigger evolution effect (spawn child nodes, etc.)
 		ExecuteThreatEvolutionEffect(manager, entity, threatData)
@@ -106,27 +120,27 @@ func EvolveThreatNode(manager *common.EntityManager, entity *ecs.Entity, threatD
 }
 
 // ExecuteThreatEvolutionEffect applies type-specific evolution behavior
-func ExecuteThreatEvolutionEffect(manager *common.EntityManager, entity *ecs.Entity, threatData *ThreatNodeData) {
-	params := GetThreatTypeParamsFromConfig(threatData.ThreatType)
+func ExecuteThreatEvolutionEffect(manager *common.EntityManager, entity *ecs.Entity, threatData *core.ThreatNodeData) {
+	params := core.GetThreatTypeParamsFromConfig(threatData.ThreatType)
 
 	if !params.CanSpawnChildren {
 		return
 	}
 
 	switch threatData.ThreatType {
-	case ThreatNecromancer:
+	case core.ThreatNecromancer:
 		// Spawn child node at tier 3 (with max intensity 5, only spawns once)
-		if threatData.Intensity%GetChildNodeSpawnThreshold() == 0 {
+		if threatData.Intensity%core.GetChildNodeSpawnThreshold() == 0 {
 			pos := common.GetComponentType[*coords.LogicalPosition](entity, common.PositionComponent)
 			if pos != nil {
-				if !SpawnChildThreatNode(manager, *pos, ThreatNecromancer, 1) {
+				if !SpawnChildThreatNode(manager, *pos, core.ThreatNecromancer, 1) {
 					// Log warning if spawn failed (no valid positions available)
-					LogEvent(EventThreatEvolved, GetCurrentTick(manager), entity.GetID(),
-						formatEventString("Failed to spawn child node (no valid positions)"), nil)
+					core.LogEvent(core.EventThreatEvolved, core.GetCurrentTick(manager), entity.GetID(),
+						core.FormatEventString("Failed to spawn child node (no valid positions)"), nil)
 				}
 			}
 		}
-	case ThreatCorruption:
+	case core.ThreatCorruption:
 		// Spread to adjacent tiles
 		SpreadCorruption(manager, entity, threatData)
 	}
@@ -134,9 +148,9 @@ func ExecuteThreatEvolutionEffect(manager *common.EntityManager, entity *ecs.Ent
 
 // SpawnChildThreatNode creates a nearby threat node.
 // Returns true if spawn succeeded, false if no valid position found.
-func SpawnChildThreatNode(manager *common.EntityManager, parentPos coords.LogicalPosition, threatType ThreatType, intensity int) bool {
+func SpawnChildThreatNode(manager *common.EntityManager, parentPos coords.LogicalPosition, threatType core.ThreatType, intensity int) bool {
 	// Find nearby unoccupied position (within radius 3)
-	maxAttempts := GetMaxChildNodeSpawnAttempts()
+	maxAttempts := core.GetMaxChildNodeSpawnAttempts()
 	for attempts := 0; attempts < maxAttempts; attempts++ {
 		offsetX := common.RandomInt(7) - 3 // -3 to 3
 		offsetY := common.RandomInt(7) - 3
@@ -146,8 +160,8 @@ func SpawnChildThreatNode(manager *common.EntityManager, parentPos coords.Logica
 		}
 
 		// Check if position is free (no other threat nodes)
-		if !IsThreatAtPosition(manager, newPos) {
-			CreateThreatNode(manager, newPos, threatType, intensity, GetCurrentTick(manager))
+		if !core.IsThreatAtPosition(manager, newPos) {
+			CreateThreatNode(manager, newPos, threatType, intensity, core.GetCurrentTick(manager))
 			return true
 		}
 	}
@@ -156,42 +170,42 @@ func SpawnChildThreatNode(manager *common.EntityManager, parentPos coords.Logica
 }
 
 // SpreadCorruption spreads corruption to adjacent tiles
-func SpreadCorruption(manager *common.EntityManager, entity *ecs.Entity, threatData *ThreatNodeData) {
+func SpreadCorruption(manager *common.EntityManager, entity *ecs.Entity, threatData *core.ThreatNodeData) {
 	pos := common.GetComponentType[*coords.LogicalPosition](entity, common.PositionComponent)
 	if pos == nil {
 		return
 	}
 
 	// Try to spawn corruption on adjacent tile
-	adjacents := GetCardinalNeighbors(*pos)
+	adjacents := core.GetCardinalNeighbors(*pos)
 
 	// Pick random adjacent
 	targetPos := adjacents[common.RandomInt(len(adjacents))]
 
 	// Check if already corrupted
-	if IsThreatAtPosition(manager, targetPos) {
+	if core.IsThreatAtPosition(manager, targetPos) {
 		return // Already has a threat
 	}
 
 	// Spawn new corruption
-	CreateThreatNode(manager, targetPos, ThreatCorruption, 1, GetCurrentTick(manager))
+	CreateThreatNode(manager, targetPos, core.ThreatCorruption, 1, core.GetCurrentTick(manager))
 }
 
 // DestroyThreatNode removes a threat from the overworld
 func DestroyThreatNode(manager *common.EntityManager, threatEntity *ecs.Entity) {
 	// Get threat data for logging before destruction
-	threatData := common.GetComponentType[*ThreatNodeData](threatEntity, ThreatNodeComponent)
+	threatData := common.GetComponentType[*core.ThreatNodeData](threatEntity, core.ThreatNodeComponent)
 	pos := common.GetComponentType[*coords.LogicalPosition](threatEntity, common.PositionComponent)
 
 	// Log destruction event
 	if threatData != nil {
 		location := "unknown"
 		if pos != nil {
-			location = formatEventString("(%d, %d)", pos.X, pos.Y)
+			location = core.FormatEventString("(%d, %d)", pos.X, pos.Y)
 		}
 
-		LogEvent(EventThreatDestroyed, GetCurrentTick(manager), threatEntity.GetID(),
-			formatEventString("%s destroyed at %s",
+		core.LogEvent(core.EventThreatDestroyed, core.GetCurrentTick(manager), threatEntity.GetID(),
+			core.FormatEventString("%s destroyed at %s",
 				threatData.ThreatType.String(), location), nil)
 	}
 

@@ -4,7 +4,9 @@ import (
 	"fmt"
 
 	"game_main/common"
-	"game_main/world/overworld"
+	"game_main/overworld/core"
+	owencounter "game_main/overworld/encounter"
+	"game_main/overworld/threat"
 
 	"github.com/bytearena/ecs"
 )
@@ -16,7 +18,7 @@ type CombatOutcome struct {
 	PlayerRetreat bool
 	PlayerSquadID ecs.EntityID
 	Casualties    CasualtyReport
-	RewardsEarned overworld.RewardTable
+	RewardsEarned owencounter.RewardTable
 }
 
 // CasualtyReport tracks units lost in combat
@@ -37,13 +39,13 @@ func ResolveCombatToOverworld(
 		return fmt.Errorf("threat node %d not found", outcome.ThreatNodeID)
 	}
 
-	threatData := common.GetComponentType[*overworld.ThreatNodeData](threatEntity, overworld.ThreatNodeComponent)
+	threatData := common.GetComponentType[*core.ThreatNodeData](threatEntity, core.ThreatNodeComponent)
 	if threatData == nil {
 		return fmt.Errorf("entity is not a threat node")
 	}
 
 	// Get current tick for event logging
-	tickState := overworld.GetTickState(manager)
+	tickState := core.GetTickState(manager)
 	currentTick := int64(0)
 	if tickState != nil {
 		currentTick = tickState.CurrentTick
@@ -57,13 +59,13 @@ func ResolveCombatToOverworld(
 
 		if threatData.Intensity <= 0 {
 			// Destroy threat node completely
-			overworld.DestroyThreatNode(manager, threatEntity)
+			threat.DestroyThreatNode(manager, threatEntity)
 
 			// Grant full rewards
 			GrantRewards(manager, outcome.PlayerSquadID, outcome.RewardsEarned)
 
 			// Log combat resolution event
-			overworld.LogEvent(overworld.EventCombatResolved, currentTick, outcome.ThreatNodeID,
+			core.LogEvent(core.EventCombatResolved, currentTick, outcome.ThreatNodeID,
 				fmt.Sprintf("Combat victory - Threat %d destroyed", outcome.ThreatNodeID),
 				map[string]interface{}{
 					"victory":            true,
@@ -78,7 +80,7 @@ func ResolveCombatToOverworld(
 				outcome.ThreatNodeID, outcome.RewardsEarned.Gold, outcome.RewardsEarned.Experience)
 		} else {
 			// Weakened but not destroyed - partial rewards
-			partialRewards := overworld.RewardTable{
+			partialRewards := owencounter.RewardTable{
 				Gold:       outcome.RewardsEarned.Gold / 2,
 				Experience: outcome.RewardsEarned.Experience / 2,
 			}
@@ -88,7 +90,7 @@ func ResolveCombatToOverworld(
 			threatData.GrowthProgress = 0.0
 
 			// Log combat resolution event
-			overworld.LogEvent(overworld.EventCombatResolved, currentTick, outcome.ThreatNodeID,
+			core.LogEvent(core.EventCombatResolved, currentTick, outcome.ThreatNodeID,
 				fmt.Sprintf("Combat victory - Threat %d weakened to intensity %d", outcome.ThreatNodeID, threatData.Intensity),
 				map[string]interface{}{
 					"victory":            true,
@@ -106,7 +108,7 @@ func ResolveCombatToOverworld(
 	} else if outcome.PlayerRetreat {
 		// Player fled - no change to threat, no rewards
 		// Log combat resolution event
-		overworld.LogEvent(overworld.EventCombatResolved, currentTick, outcome.ThreatNodeID,
+		core.LogEvent(core.EventCombatResolved, currentTick, outcome.ThreatNodeID,
 			fmt.Sprintf("Retreated from threat %d", outcome.ThreatNodeID),
 			map[string]interface{}{
 				"victory":            false,
@@ -123,15 +125,15 @@ func ResolveCombatToOverworld(
 		threatData.GrowthProgress = 0.0
 
 		// Update influence radius
-		influenceData := common.GetComponentType[*overworld.InfluenceData](threatEntity, overworld.InfluenceComponent)
+		influenceData := common.GetComponentType[*core.InfluenceData](threatEntity, core.InfluenceComponent)
 		if influenceData != nil {
-			params := overworld.GetThreatTypeParams(threatData.ThreatType)
+			params := core.GetThreatTypeParams(threatData.ThreatType)
 			influenceData.Radius = params.BaseRadius + threatData.Intensity
 			influenceData.EffectStrength = float64(threatData.Intensity) * 0.1
 		}
 
 		// Log combat resolution event
-		overworld.LogEvent(overworld.EventCombatResolved, currentTick, outcome.ThreatNodeID,
+		core.LogEvent(core.EventCombatResolved, currentTick, outcome.ThreatNodeID,
 			fmt.Sprintf("Combat defeat - Threat %d grew to intensity %d", outcome.ThreatNodeID, threatData.Intensity),
 			map[string]interface{}{
 				"victory":            false,
@@ -157,7 +159,7 @@ func CalculateThreatDamage(enemiesKilled int) int {
 }
 
 // GrantRewards applies rewards to player
-func GrantRewards(manager *common.EntityManager, squadID ecs.EntityID, rewards overworld.RewardTable) {
+func GrantRewards(manager *common.EntityManager, squadID ecs.EntityID, rewards owencounter.RewardTable) {
 
 	//todo
 }
@@ -171,7 +173,7 @@ func CreateCombatOutcome(
 	playerSquadID ecs.EntityID,
 	playerUnitsLost int,
 	enemyUnitsKilled int,
-	rewards overworld.RewardTable,
+	rewards owencounter.RewardTable,
 ) *CombatOutcome {
 	return &CombatOutcome{
 		ThreatNodeID:  threatNodeID,
