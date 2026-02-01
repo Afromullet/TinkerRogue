@@ -38,6 +38,9 @@ func init() {
 					{Text: "Advance Tick (Space)", OnClick: func() {
 						om.handleAdvanceTick()
 					}},
+					{Text: "Auto-Travel (A)", OnClick: func() {
+						om.handleToggleAutoTravel()
+					}},
 					{Text: "Toggle Influence (I)", OnClick: func() {
 						om.handleToggleInfluence()
 					}},

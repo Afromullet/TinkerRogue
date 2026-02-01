@@ -103,6 +103,9 @@ func (gb *GameBootstrap) InitializeGameplay(em *common.EntityManager, pd *common
 	// Initialize overworld tick state
 	overworld.CreateTickStateEntity(em)
 
+	// Initialize travel state
+	overworld.CreateTravelStateEntity(em)
+
 	// Inject squad checker for victory conditions (avoids circular dependency)
 	overworld.SetSquadChecker(&gameSquadChecker{})
 

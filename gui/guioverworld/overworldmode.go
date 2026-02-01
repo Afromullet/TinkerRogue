@@ -81,7 +81,7 @@ func (om *OverworldMode) Initialize(ctx *framework.UIContext) error {
 	if !ok {
 		return fmt.Errorf("GameMap is not *worldmap.GameMap")
 	}
-	om.renderer = NewOverworldRenderer(ctx.ECSManager, om.state, gameMap, ctx.TileSize)
+	om.renderer = NewOverworldRenderer(ctx.ECSManager, om.state, gameMap, ctx.TileSize, ctx)
 
 	// Ensure tick state exists
 	tickState := overworld.GetTickState(ctx.ECSManager)
@@ -167,6 +167,11 @@ func (om *OverworldMode) Update(deltaTime float64) error {
 		om.refreshThreatInfo()
 	}
 
+	// Auto-travel: automatically advance ticks when traveling
+	if om.state.IsAutoTraveling && overworld.IsTraveling(om.Context.ECSManager) {
+		om.handleAdvanceTick()
+	}
+
 	return nil
 }
 
@@ -199,6 +204,11 @@ func (om *OverworldMode) HandleInput(inputState *framework.InputState) bool {
 		return true
 	}
 
+	if inputState.KeysJustPressed[ebiten.KeyA] {
+		om.handleToggleAutoTravel()
+		return true
+	}
+
 	if inputState.KeysJustPressed[ebiten.KeyI] {
 		om.handleToggleInfluence()
 		return true
@@ -210,6 +220,26 @@ func (om *OverworldMode) HandleInput(inputState *framework.InputState) bool {
 			om.handleEngageThreat()
 			return true
 		}
+	}
+
+	// Handle 'C' key to cancel travel
+	if inputState.KeysJustPressed[ebiten.KeyC] {
+		if overworld.IsTraveling(om.Context.ECSManager) {
+			om.handleCancelTravel()
+			return true
+		}
+	}
+
+	// Movement keys advance time in overworld (WASD + diagonals)
+	//Todo, the keys have to be added to keys to track
+	// Note: A, E, C are reserved for other commands, so we handle them separately above
+	if inputState.KeysJustPressed[ebiten.KeyW] ||
+		inputState.KeysJustPressed[ebiten.KeyS] ||
+		inputState.KeysJustPressed[ebiten.KeyD] ||
+		inputState.KeysJustPressed[ebiten.KeyQ] ||
+		inputState.KeysJustPressed[ebiten.KeyZ] {
+		om.handleAdvanceTick()
+		return true
 	}
 
 	// Handle mouse clicks for threat selection
@@ -233,19 +263,31 @@ func (om *OverworldMode) HandleInput(inputState *framework.InputState) bool {
 // Button click handlers
 
 func (om *OverworldMode) handleAdvanceTick() {
-	err := overworld.AdvanceTick(om.Context.ECSManager)
+	travelCompleted, err := overworld.AdvanceTick(om.Context.ECSManager, om.Context.PlayerData)
 	if err != nil {
 		om.logEvent(fmt.Sprintf("ERROR: %v", err))
 		return
 	}
 
 	tickState := overworld.GetTickState(om.Context.ECSManager)
-	if tickState != nil {
+	travelState := overworld.GetTravelState(om.Context.ECSManager)
+
+	// Log appropriate message
+	if travelState != nil && travelState.IsTraveling {
+		om.logEvent(fmt.Sprintf("Tick %d - Distance remaining: %.1f",
+			tickState.CurrentTick, travelState.RemainingDistance))
+	} else {
 		om.logEvent(fmt.Sprintf("Tick advanced to %d", tickState.CurrentTick))
 	}
 
 	om.refreshTickStatus()
 	om.refreshThreatStats()
+
+	// If travel completed, stop auto-travel and start combat
+	if travelCompleted {
+		om.state.IsAutoTraveling = false
+		om.startCombatAfterTravel()
+	}
 }
 
 func (om *OverworldMode) handleToggleInfluence() {
@@ -255,6 +297,22 @@ func (om *OverworldMode) handleToggleInfluence() {
 		om.logEvent("Influence zones visible")
 	} else {
 		om.logEvent("Influence zones hidden")
+	}
+}
+
+func (om *OverworldMode) handleToggleAutoTravel() {
+	// Only allow auto-travel when actually traveling
+	if !overworld.IsTraveling(om.Context.ECSManager) {
+		om.logEvent("Auto-travel only available during travel")
+		return
+	}
+
+	om.state.IsAutoTraveling = !om.state.IsAutoTraveling
+
+	if om.state.IsAutoTraveling {
+		om.logEvent("Auto-travel enabled - automatically advancing ticks")
+	} else {
+		om.logEvent("Auto-travel disabled")
 	}
 }
 
@@ -287,22 +345,88 @@ func (om *OverworldMode) handleEngageThreat() {
 	}
 
 	// Create encounter entity from threat
-	om.logEvent(fmt.Sprintf("Engaging threat %d...", om.state.SelectedThreatID))
-
 	encounterID, err := overworld.TriggerCombatFromThreat(om.Context.ECSManager, threatEntity, *posData)
 	if err != nil {
 		om.logEvent(fmt.Sprintf("ERROR: Failed to create encounter: %v", err))
 		return
 	}
 
-	// Start encounter (spawns enemies, tracks state, and transitions to combat)
-	threatName := fmt.Sprintf("%s (Level %d)", threatData.ThreatType.String(), threatData.Intensity)
+	// Start travel instead of immediate combat
+	if err := overworld.StartTravel(
+		om.Context.ECSManager,
+		om.Context.PlayerData,
+		*posData,
+		om.state.SelectedThreatID,
+		encounterID,
+	); err != nil {
+		om.logEvent(fmt.Sprintf("ERROR: %v", err))
+		return
+	}
+
+	threatName := threatData.ThreatType.String()
+	om.logEvent(fmt.Sprintf("Traveling to %s (Press C to cancel)...", threatName))
+	om.state.ClearSelection()
+}
+
+func (om *OverworldMode) handleCancelTravel() {
+	if !overworld.IsTraveling(om.Context.ECSManager) {
+		om.logEvent("Not currently traveling")
+		return
+	}
+
+	if err := overworld.CancelTravel(
+		om.Context.ECSManager,
+		om.Context.PlayerData,
+	); err != nil {
+		om.logEvent(fmt.Sprintf("ERROR: %v", err))
+		return
+	}
+
+	// Stop auto-travel when travel is cancelled
+	om.state.IsAutoTraveling = false
+
+	om.logEvent("Travel cancelled - returned to origin")
+}
+
+func (om *OverworldMode) startCombatAfterTravel() {
+	travelState := overworld.GetTravelState(om.Context.ECSManager)
+	if travelState == nil {
+		return
+	}
+
+	threatEntity := om.Context.ECSManager.FindEntityByID(travelState.TargetThreatID)
+	if threatEntity == nil {
+		om.logEvent("ERROR: Threat not found")
+		return
+	}
+
+	threatData := common.GetComponentType[*overworld.ThreatNodeData](
+		threatEntity, overworld.ThreatNodeComponent)
+	posData := common.GetComponentType[*coords.LogicalPosition](
+		threatEntity, common.PositionComponent)
+
+	if threatData == nil || posData == nil {
+		om.logEvent("ERROR: Invalid threat entity")
+		return
+	}
+
+	threatName := fmt.Sprintf("%s (Level %d)",
+		threatData.ThreatType.String(), threatData.Intensity)
+
 	playerEntityID := ecs.EntityID(0)
 	if om.Context.PlayerData != nil {
 		playerEntityID = om.Context.PlayerData.PlayerEntityID
 	}
-	if err := om.encounterService.StartEncounter(encounterID, threatEntity.GetID(), threatName, *posData, playerEntityID); err != nil {
-		om.logEvent(fmt.Sprintf("ERROR: Failed to start encounter: %v", err))
+
+	// Start encounter (existing flow)
+	if err := om.encounterService.StartEncounter(
+		travelState.TargetEncounterID,
+		travelState.TargetThreatID,
+		threatName,
+		*posData,
+		playerEntityID,
+	); err != nil {
+		om.logEvent(fmt.Sprintf("ERROR: %v", err))
 	}
 }
 

@@ -5,6 +5,7 @@ import (
 	"image/color"
 
 	"game_main/common"
+	"game_main/gui/framework"
 	"game_main/visual/rendering"
 	"game_main/world/coords"
 	"game_main/world/overworld"
@@ -21,15 +22,17 @@ type OverworldRenderer struct {
 	state    *OverworldState
 	gameMap  *worldmap.GameMap
 	tileSize int
+	context  *framework.UIContext // For accessing PlayerData
 }
 
 // NewOverworldRenderer creates a new overworld renderer
-func NewOverworldRenderer(manager *common.EntityManager, state *OverworldState, gameMap *worldmap.GameMap, tileSize int) *OverworldRenderer {
+func NewOverworldRenderer(manager *common.EntityManager, state *OverworldState, gameMap *worldmap.GameMap, tileSize int, context *framework.UIContext) *OverworldRenderer {
 	return &OverworldRenderer{
 		manager:  manager,
 		state:    state,
 		gameMap:  gameMap,
 		tileSize: tileSize,
+		context:  context,
 	}
 }
 
@@ -43,10 +46,13 @@ func (r *OverworldRenderer) Render(screen *ebiten.Image) {
 		r.renderInfluenceZones(screen)
 	}
 
-	// Render threat nodes on top
+	// Render threat nodes
 	r.renderThreatNodes(screen)
 
-	// Render selection highlight if a threat is selected
+	// Render player avatar (above threats)
+	r.renderPlayerAvatar(screen)
+
+	// Render selection highlight on top (last)
 	if r.state.HasSelection() {
 		r.renderSelectionHighlight(screen)
 	}
@@ -122,6 +128,41 @@ func (r *OverworldRenderer) renderInfluenceZones(screen *ebiten.Image) {
 
 		vector.DrawFilledCircle(screen, centerX, centerY, influenceRadius, influenceColor, true)
 	}
+}
+
+// renderPlayerAvatar draws the player sprite at their current position
+func (r *OverworldRenderer) renderPlayerAvatar(screen *ebiten.Image) {
+	// 1. Get player entity from manager
+	if r.context == nil || r.context.PlayerData == nil {
+		return
+	}
+
+	playerEntity := r.manager.FindEntityByID(r.context.PlayerData.PlayerEntityID)
+	if playerEntity == nil {
+		return // Player not initialized yet
+	}
+
+	// 2. Get player position component
+	pos := common.GetComponentType[*coords.LogicalPosition](playerEntity, common.PositionComponent)
+	if pos == nil {
+		return
+	}
+
+	// 3. Get player renderable component (has sprite image)
+	renderable := common.GetComponentType[*rendering.Renderable](playerEntity, rendering.RenderableComponent)
+	if renderable == nil || renderable.Image == nil || !renderable.Visible {
+		return
+	}
+
+	// 4. Calculate screen position (using camera offset)
+	screenX := float64((pos.X - r.state.CameraX) * r.tileSize)
+	screenY := float64((pos.Y - r.state.CameraY) * r.tileSize)
+
+	// 5. Draw player sprite
+	op := &ebiten.DrawImageOptions{}
+	op.GeoM.Translate(screenX, screenY)
+
+	screen.DrawImage(renderable.Image, op)
 }
 
 // renderSelectionHighlight draws a highlight around the selected threat

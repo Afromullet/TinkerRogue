@@ -6,6 +6,20 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
+// Keyboard (example keys - expand as needed)
+var keysToTrack = []ebiten.Key{
+	ebiten.KeyE, ebiten.KeyC, ebiten.KeyF, ebiten.KeyEscape,
+	ebiten.KeyI, ebiten.KeyTab, ebiten.KeySpace, ebiten.KeyB,
+	ebiten.KeyP, ebiten.KeyL,
+	// Combat mode keys
+	ebiten.KeyH, ebiten.KeyA, ebiten.KeyM, ebiten.KeyZ, ebiten.KeyY,
+	ebiten.Key1, ebiten.Key2, ebiten.Key3,
+	// Modifier keys for shortcuts (Ctrl+Z, Ctrl+Y, Shift+H)
+	ebiten.KeyControl, ebiten.KeyMeta, ebiten.KeyShift,
+	ebiten.KeyShiftLeft, ebiten.KeyShiftRight, ebiten.KeyControlLeft,
+	ebiten.KeyControlRight, ebiten.KeyK, ebiten.KeyS,
+}
+
 // UIModeManager coordinates switching between UI modes
 type UIModeManager struct {
 	currentMode       UIMode
@@ -138,20 +152,6 @@ func (umm *UIModeManager) updateInputState() {
 		umm.inputState.MousePressed = false
 	}
 	umm.inputState.MouseReleased = !umm.inputState.MousePressed
-
-	// Keyboard (example keys - expand as needed)
-	keysToTrack := []ebiten.Key{
-		ebiten.KeyE, ebiten.KeyC, ebiten.KeyF, ebiten.KeyEscape,
-		ebiten.KeyI, ebiten.KeyTab, ebiten.KeySpace, ebiten.KeyB,
-		ebiten.KeyP, ebiten.KeyL,
-		// Combat mode keys
-		ebiten.KeyH, ebiten.KeyA, ebiten.KeyM, ebiten.KeyZ, ebiten.KeyY,
-		ebiten.Key1, ebiten.Key2, ebiten.Key3,
-		// Modifier keys for shortcuts (Ctrl+Z, Ctrl+Y, Shift+H)
-		ebiten.KeyControl, ebiten.KeyMeta, ebiten.KeyShift,
-		ebiten.KeyShiftLeft, ebiten.KeyShiftRight, ebiten.KeyControlLeft,
-		ebiten.KeyControlRight,ebiten.KeyK,
-	}
 
 	prevPressed := make(map[ebiten.Key]bool)
 	for k, v := range umm.inputState.KeysPressed {

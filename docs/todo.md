@@ -40,6 +40,8 @@ ________________________________________________
 
 # Cleanup
 
+- The way the GUI handles keys to track and keyboard presses need to improve
+
 - Replace squad.ExecuteSquadAttack in simulator. 
 
 

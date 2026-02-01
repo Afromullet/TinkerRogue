@@ -32,32 +32,39 @@ func CreateTickStateEntity(manager *common.EntityManager) ecs.EntityID {
 // AdvanceTick executes one turn of overworld simulation (turn-based system).
 // This is the master orchestration function that updates all subsystems in sequence.
 // Returns immediately if game is over (victory/defeat achieved).
+// Returns true if travel was completed this tick, false otherwise.
 //
 // This function should be called when the player performs actions that advance time:
 //   - Manual advancement (Space key)
-//   - Movement/travel (future feature)
+//   - Movement/travel
 //   - Other turn-consuming actions
-func AdvanceTick(manager *common.EntityManager) error {
+func AdvanceTick(manager *common.EntityManager, playerData *common.PlayerData) (bool, error) {
 	tickState := GetTickState(manager)
 	if tickState == nil {
-		return fmt.Errorf("tick state not initialized")
+		return false, fmt.Errorf("tick state not initialized")
 	}
 
 	if tickState.IsGameOver {
-		return nil
+		return false, nil
 	}
 
 	// Increment tick counter
 	tickState.CurrentTick++
 	tick := tickState.CurrentTick
 
-	// Execute subsystems in order
+	// Advance travel if active (before other subsystems)
+	travelCompleted, err := AdvanceTravelTick(manager, playerData)
+	if err != nil {
+		return false, fmt.Errorf("travel update failed: %w", err)
+	}
+
+	// Execute subsystems in order (world continues evolving during travel)
 	if err := UpdateThreatNodes(manager, tick); err != nil {
-		return fmt.Errorf("threat update failed: %w", err)
+		return false, fmt.Errorf("threat update failed: %w", err)
 	}
 
 	if err := UpdateFactions(manager, tick); err != nil {
-		return fmt.Errorf("faction update failed: %w", err)
+		return false, fmt.Errorf("faction update failed: %w", err)
 	}
 
 	// Note: Influence calculation is now handled by InfluenceCache (see influence_cache.go)
@@ -73,7 +80,7 @@ func AdvanceTick(manager *common.EntityManager) error {
 		tickState.IsGameOver = true
 	}
 
-	return nil
+	return travelCompleted, nil
 }
 
 // GetTickState retrieves the singleton tick state

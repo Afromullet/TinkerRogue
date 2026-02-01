@@ -14,6 +14,7 @@ type OverworldState struct {
 	SelectedThreatID ecs.EntityID            // Selected threat node for inspection
 	HoveredPosition  *coords.LogicalPosition // Current mouse hover position
 	ShowInfluence    bool                    // Toggle influence visualization
+	IsAutoTraveling  bool                    // Auto-advance ticks during travel
 }
 
 // NewOverworldState creates a new UI state instance
