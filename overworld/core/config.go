@@ -8,15 +8,6 @@ import (
 // These functions retrieve overworld configuration from JSON templates.
 // They replace direct constant access to enable designer-friendly tuning.
 
-// GetThreatGrowthRate returns the default threat growth rate from config.
-// Falls back to hardcoded default if template lookup fails.
-func GetThreatGrowthRate() float64 {
-	if templates.OverworldConfigTemplate.ThreatGrowth.DefaultGrowthRate > 0 {
-		return templates.OverworldConfigTemplate.ThreatGrowth.DefaultGrowthRate
-	}
-	return DefaultGrowthRate
-}
-
 // GetContainmentSlowdown returns the containment slowdown multiplier from config.
 // Falls back to hardcoded default if template lookup fails.
 func GetContainmentSlowdown() float64 {
@@ -26,15 +17,6 @@ func GetContainmentSlowdown() float64 {
 	return ContainmentSlowdown
 }
 
-// GetMaxThreatIntensity returns the maximum threat intensity from config.
-// Falls back to hardcoded default if template lookup fails.
-func GetMaxThreatIntensity() int {
-	if templates.OverworldConfigTemplate.ThreatGrowth.MaxThreatIntensity > 0 {
-		return templates.OverworldConfigTemplate.ThreatGrowth.MaxThreatIntensity
-	}
-	return MaxThreatIntensity
-}
-
 // GetChildNodeSpawnThreshold returns the child node spawn threshold from config.
 // Falls back to hardcoded default if template lookup fails.
 func GetChildNodeSpawnThreshold() int {
@@ -42,15 +24,6 @@ func GetChildNodeSpawnThreshold() int {
 		return templates.OverworldConfigTemplate.ThreatGrowth.ChildNodeSpawnThreshold
 	}
 	return ChildNodeSpawnThreshold
-}
-
-// GetPlayerContainmentRadius returns the player containment radius from config.
-// Falls back to hardcoded default if template lookup fails.
-func GetPlayerContainmentRadius() int {
-	if templates.OverworldConfigTemplate.ThreatGrowth.PlayerContainmentRadius > 0 {
-		return templates.OverworldConfigTemplate.ThreatGrowth.PlayerContainmentRadius
-	}
-	return PlayerContainmentRadius
 }
 
 // GetMaxChildNodeSpawnAttempts returns the max child node spawn attempts from config.
@@ -116,15 +89,6 @@ func GetRaidStrengthThreshold() int {
 	return RaidStrengthThreshold
 }
 
-// GetRaidProximityRange returns the raid proximity range from config.
-// Falls back to hardcoded default if template lookup fails.
-func GetRaidProximityRange() int {
-	if templates.OverworldConfigTemplate.FactionAI.RaidProximityRange > 0 {
-		return templates.OverworldConfigTemplate.FactionAI.RaidProximityRange
-	}
-	return RaidProximityRange
-}
-
 // GetRetreatCriticalStrength returns the retreat critical strength from config.
 // Falls back to hardcoded default if template lookup fails.
 func GetRetreatCriticalStrength() int {
@@ -168,24 +132,6 @@ func GetBonusItemDropChance() int {
 		return templates.OverworldConfigTemplate.SpawnProbabilities.BonusItemDropChance
 	}
 	return BonusItemDropChance
-}
-
-// GetDefaultMapWidth returns the default map width from config.
-// Falls back to hardcoded default if template lookup fails.
-func GetDefaultMapWidth() int {
-	if templates.OverworldConfigTemplate.MapDimensions.DefaultMapWidth > 0 {
-		return templates.OverworldConfigTemplate.MapDimensions.DefaultMapWidth
-	}
-	return DefaultMapWidth
-}
-
-// GetDefaultMapHeight returns the default map height from config.
-// Falls back to hardcoded default if template lookup fails.
-func GetDefaultMapHeight() int {
-	if templates.OverworldConfigTemplate.MapDimensions.DefaultMapHeight > 0 {
-		return templates.OverworldConfigTemplate.MapDimensions.DefaultMapHeight
-	}
-	return DefaultMapHeight
 }
 
 // GetThreatTypeParamsFromConfig returns parameters for each threat type from config.

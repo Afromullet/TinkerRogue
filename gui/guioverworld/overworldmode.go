@@ -9,6 +9,7 @@ import (
 	"game_main/overworld/core"
 	owencounter "game_main/overworld/encounter"
 	"game_main/overworld/threat"
+	"game_main/overworld/tick"
 	"game_main/overworld/travel"
 	"game_main/world/coords"
 	"game_main/world/worldmap"
@@ -89,7 +90,7 @@ func (om *OverworldMode) Initialize(ctx *framework.UIContext) error {
 	// Ensure tick state exists
 	tickState := core.GetTickState(ctx.ECSManager)
 	if tickState == nil {
-		core.CreateTickStateEntity(ctx.ECSManager)
+		tick.CreateTickStateEntity(ctx.ECSManager)
 		om.logEvent("Tick state initialized")
 	}
 
@@ -266,7 +267,7 @@ func (om *OverworldMode) HandleInput(inputState *framework.InputState) bool {
 // Button click handlers
 
 func (om *OverworldMode) handleAdvanceTick() {
-	travelCompleted, err := core.AdvanceTick(om.Context.ECSManager, om.Context.PlayerData)
+	travelCompleted, err := tick.AdvanceTick(om.Context.ECSManager, om.Context.PlayerData)
 	if err != nil {
 		om.logEvent(fmt.Sprintf("ERROR: %v", err))
 		return

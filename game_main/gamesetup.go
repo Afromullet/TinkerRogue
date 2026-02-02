@@ -20,6 +20,7 @@ import (
 
 	"game_main/overworld/core"
 	"game_main/overworld/faction"
+	"game_main/overworld/tick"
 	"game_main/overworld/travel"
 	"game_main/testing"
 	"game_main/visual/rendering"
@@ -103,7 +104,7 @@ func (gb *GameBootstrap) SetupDebugContent(em *common.EntityManager, gm *worldma
 func (gb *GameBootstrap) InitializeGameplay(em *common.EntityManager, pd *common.PlayerData) {
 
 	// Initialize overworld tick state
-	core.CreateTickStateEntity(em)
+	tick.CreateTickStateEntity(em)
 
 	// Initialize travel state
 	travel.CreateTravelStateEntity(em)

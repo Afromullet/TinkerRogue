@@ -2,8 +2,8 @@ package victory
 
 import (
 	"game_main/common"
-	"game_main/world/overworld/core"
-	"game_main/world/overworld/threat"
+	"game_main/overworld/core"
+	"game_main/overworld/threat"
 )
 
 // High-intensity threat thresholds for defeat conditions

@@ -10,14 +10,6 @@ import (
 	"github.com/bytearena/ecs"
 )
 
-// TravelSystemImpl implements core.TravelAdvancer
-type TravelSystemImpl struct{}
-
-// Register the travel system with core on package init
-func init() {
-	core.TravelSystem = &TravelSystemImpl{}
-}
-
 // CreateTravelStateEntity creates the singleton travel state entity
 func CreateTravelStateEntity(manager *common.EntityManager) ecs.EntityID {
 	entity := manager.World.NewEntity()
@@ -125,16 +117,7 @@ func StartTravel(
 	return nil
 }
 
-// AdvanceTravelTick moves player during travel (called by AdvanceTick)
-// Returns true if travel completed this tick
-func (t *TravelSystemImpl) AdvanceTravelTick(
-	manager *common.EntityManager,
-	playerData *common.PlayerData,
-) (bool, error) {
-	return AdvanceTravelTick(manager, playerData)
-}
-
-// AdvanceTravelTick moves player during travel (called by AdvanceTick)
+// AdvanceTravelTick moves player during travel (called by manager.AdvanceTick)
 // Returns true if travel completed this tick
 func AdvanceTravelTick(
 	manager *common.EntityManager,

@@ -8,19 +8,6 @@ import (
 	"github.com/bytearena/ecs"
 )
 
-// ThreatSystemImpl implements core.TickAdvancer
-type ThreatSystemImpl struct{}
-
-// Register the threat system with core on package init
-func init() {
-	core.ThreatSystem = &ThreatSystemImpl{}
-}
-
-// AdvanceTick implements core.TickAdvancer
-func (t *ThreatSystemImpl) AdvanceTick(manager *common.EntityManager, currentTick int64) error {
-	return UpdateThreatNodes(manager, currentTick)
-}
-
 // CreateThreatNode spawns a new threat at a position
 func CreateThreatNode(
 	manager *common.EntityManager,

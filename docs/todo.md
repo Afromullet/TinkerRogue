@@ -3,6 +3,7 @@ __________________________________________
 # # # **IMPORTANT** # # # 
 
 
+- Look at all of the Utility AI parameters and simplfiy it. Too many parameters make it hard to balance
 
 - calculateEntryIndexAtPosition in squadeditor_movesquad.go is not accurately calculating the position to move the squad to. Check if there is an ebitenui var (such as entryselected) you can use instead of calculating with pixel positions
 
@@ -53,7 +54,7 @@ ________________________________________________
 
 - Input Package has a lot of leftovers from the old roguelike
 
-
+- Review anything that was done to deal with circular dependencies
 
 
 - combatqueries.go still has functions which search the entire ecs space

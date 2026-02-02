@@ -9,19 +9,6 @@ import (
 	"github.com/bytearena/ecs"
 )
 
-// FactionSystemImpl implements core.TickAdvancer
-type FactionSystemImpl struct{}
-
-// Register the faction system with core on package init
-func init() {
-	core.FactionSystem = &FactionSystemImpl{}
-}
-
-// AdvanceTick implements core.TickAdvancer
-func (f *FactionSystemImpl) AdvanceTick(manager *common.EntityManager, currentTick int64) error {
-	return UpdateFactions(manager, currentTick)
-}
-
 // CreateFaction creates a new NPC faction entity
 func CreateFaction(
 	manager *common.EntityManager,

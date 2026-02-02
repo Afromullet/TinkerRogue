@@ -10,6 +10,8 @@ import (
 	"github.com/bytearena/ecs"
 )
 
+//TODO think of a better name for this package
+
 // EncounterParams describes a combat scenario generated from a threat node
 type EncounterParams struct {
 	ThreatNodeID     ecs.EntityID

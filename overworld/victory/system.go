@@ -3,24 +3,11 @@ package victory
 import (
 	"fmt"
 	"game_main/common"
-	"game_main/world/overworld/core"
-	"game_main/world/overworld/threat"
+	"game_main/overworld/core"
+	"game_main/overworld/threat"
 
 	"github.com/bytearena/ecs"
 )
-
-// VictorySystemImpl implements core.VictoryChecker
-type VictorySystemImpl struct{}
-
-// Register the victory system with core on package init
-func init() {
-	core.VictorySystem = &VictorySystemImpl{}
-}
-
-// CheckVictoryCondition implements core.VictoryChecker
-func (v *VictorySystemImpl) CheckVictoryCondition(manager *common.EntityManager) core.VictoryCondition {
-	return CheckVictoryCondition(manager)
-}
 
 // CheckVictoryCondition evaluates if player has won or lost
 func CheckVictoryCondition(manager *common.EntityManager) core.VictoryCondition {
