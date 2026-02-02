@@ -48,13 +48,3 @@ func RandomInt(n int) int {
 func RandomFloat() float64 {
 	return rng.Float64()
 }
-
-// RandomFloatRange returns a random float64 in the range [min, max)
-func RandomFloatRange(min, max float64) float64 {
-	return min + (max-min)*rng.Float64()
-}
-
-// Shuffle randomizes the order of elements in a slice
-func Shuffle(length int, swap func(i, j int)) {
-	rng.Shuffle(length, swap)
-}

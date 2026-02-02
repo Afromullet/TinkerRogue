@@ -11,26 +11,6 @@ import (
 // SQUAD STATE QUERIES
 // =============================================================================
 
-// getSquadUnits returns all living unit entities for a squad
-func getSquadUnits(squadID ecs.EntityID, manager *common.EntityManager) []*ecs.Entity {
-	var units []*ecs.Entity
-
-	for _, result := range manager.World.Query(squads.SquadMemberTag) {
-		unitEntity := result.Entity
-		memberData := common.GetComponentType[*squads.SquadMemberData](unitEntity, squads.SquadMemberComponent)
-
-		if memberData != nil && memberData.SquadID == squadID {
-			// Check if unit is alive
-			attrs := common.GetComponentType[*common.Attributes](unitEntity, common.AttributeComponent)
-			if attrs != nil && attrs.CurrentHealth > 0 {
-				units = append(units, unitEntity)
-			}
-		}
-	}
-
-	return units
-}
-
 // getSquadHP returns (currentHP, maxHP, livingUnits) for a squad
 func getSquadHP(squadID ecs.EntityID, manager *common.EntityManager) (int, int, int) {
 	currentHP := 0
@@ -125,7 +105,7 @@ func CalculateMomentum(attackerSquadID, defenderSquadID ecs.EntityID, manager *c
 	unitWeight := float64(attackerUnits-defenderUnits) / float64(totalUnits) * 0.3 // 30% weight for units
 
 	// Combined momentum: HP difference (70%) + Unit count (30%)
-	momentum := (attackerHPPercent - defenderHPPercent) * 0.7 + unitWeight
+	momentum := (attackerHPPercent-defenderHPPercent)*0.7 + unitWeight
 
 	// Clamp to [-1, 1]
 	if momentum > 1.0 {

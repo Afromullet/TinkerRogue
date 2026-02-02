@@ -3,17 +3,7 @@ package threat
 import (
 	"game_main/common"
 	"game_main/overworld/core"
-	"game_main/world/coords"
-
-	"github.com/bytearena/ecs"
 )
-
-// GetThreatNodeAt returns the EntityID of a threat node at a specific position.
-// Returns 0 if no threat exists at the position.
-// Prefer using queries directly when iterating over multiple threats.
-func GetThreatNodeAt(manager *common.EntityManager, pos coords.LogicalPosition) ecs.EntityID {
-	return core.GetThreatNodeAt(manager, pos)
-}
 
 // CountThreatNodes returns the total number of threat nodes
 func CountThreatNodes(manager *common.EntityManager) int {
@@ -53,9 +43,4 @@ func CalculateAverageIntensity(manager *common.EntityManager) float64 {
 		return 0.0
 	}
 	return float64(totalIntensity) / float64(count)
-}
-
-// IsThreatAtPosition checks if any threat node exists at the given position
-func IsThreatAtPosition(manager *common.EntityManager, pos coords.LogicalPosition) bool {
-	return core.IsThreatAtPosition(manager, pos)
 }

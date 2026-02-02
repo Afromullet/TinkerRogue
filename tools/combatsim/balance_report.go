@@ -340,61 +340,6 @@ func ExportUnitCSV(report *BalanceReport, path string) error {
 // COMPARISON REPORTS
 // =============================================================================
 
-// FormatComparisonReport compares two scenarios
-func FormatComparisonReport(before, after *SimulationResult, beforeName, afterName string) string {
-	var sb strings.Builder
-
-	sb.WriteString("═══════════════════════════════════════════════════════════\n")
-	sb.WriteString(" SCENARIO COMPARISON\n")
-	sb.WriteString("═══════════════════════════════════════════════════════════\n\n")
-
-	sb.WriteString(fmt.Sprintf("Before: %s\n", beforeName))
-	sb.WriteString(fmt.Sprintf("After: %s\n\n", afterName))
-
-	// Win rate comparison
-	beforeWR := float64(before.AttackerWins) / float64(before.Iterations)
-	afterWR := float64(after.AttackerWins) / float64(after.Iterations)
-	wrDiff := afterWR - beforeWR
-
-	sb.WriteString("WIN RATE CHANGE:\n")
-	sb.WriteString(fmt.Sprintf("  Before: %.1f%% attacker wins\n", beforeWR*100))
-	sb.WriteString(fmt.Sprintf("  After:  %.1f%% attacker wins\n", afterWR*100))
-	sb.WriteString(fmt.Sprintf("  Change: %+.1f%%\n\n", wrDiff*100))
-
-	// Duration comparison
-	sb.WriteString("DURATION CHANGE:\n")
-	sb.WriteString(fmt.Sprintf("  Before: %.1f avg rounds\n", before.AvgTurnsUntilEnd))
-	sb.WriteString(fmt.Sprintf("  After:  %.1f avg rounds\n", after.AvgTurnsUntilEnd))
-	sb.WriteString(fmt.Sprintf("  Change: %+.1f rounds\n\n", after.AvgTurnsUntilEnd-before.AvgTurnsUntilEnd))
-
-	// Significance test
-	if before.Iterations >= 30 && after.Iterations >= 30 {
-		// Simple z-test for proportions
-		p1 := beforeWR
-		p2 := afterWR
-		n1 := float64(before.Iterations)
-		n2 := float64(after.Iterations)
-
-		pooledP := (p1*n1 + p2*n2) / (n1 + n2)
-		se := pooledP * (1 - pooledP) * (1/n1 + 1/n2)
-		if se > 0 {
-			z := (p2 - p1) / (se * 0.5) // Approximate
-			isSignificant := absFloat(z) > 1.96
-
-			sb.WriteString("STATISTICAL SIGNIFICANCE:\n")
-			if isSignificant {
-				sb.WriteString("  Result: SIGNIFICANT at 95% confidence\n")
-			} else {
-				sb.WriteString("  Result: NOT significant at 95% confidence\n")
-			}
-		}
-	}
-
-	sb.WriteString("\n═══════════════════════════════════════════════════════════\n")
-
-	return sb.String()
-}
-
 // =============================================================================
 // QUICK REPORT
 // =============================================================================

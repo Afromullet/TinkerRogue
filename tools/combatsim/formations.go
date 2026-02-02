@@ -1,7 +1,6 @@
 package combatsim
 
 import (
-	"fmt"
 	"game_main/tactical/squads"
 )
 
@@ -9,11 +8,11 @@ import (
 type FormationType int
 
 const (
-	FormationStandard FormationType = iota // Tank front, DPS front, Support mid, Ranged back
-	FormationDefensive                     // Tank front, all others back for maximum cover
-	FormationAggressive                    // DPS front, Tank mid for cover, Support/Ranged back
-	FormationRanged                        // Tank front, everything else back (ranged-heavy)
-	FormationBalanced                      // Mixed positioning for flexibility
+	FormationStandard   FormationType = iota // Tank front, DPS front, Support mid, Ranged back
+	FormationDefensive                       // Tank front, all others back for maximum cover
+	FormationAggressive                      // DPS front, Tank mid for cover, Support/Ranged back
+	FormationRanged                          // Tank front, everything else back (ranged-heavy)
+	FormationBalanced                        // Mixed positioning for flexibility
 )
 
 // FormationTemplate defines row assignments by unit role
@@ -129,62 +128,4 @@ type FormationValidation struct {
 	HasCoverProviders bool    // At least one unit with CoverValue > 0
 	HasReceivers      bool    // At least one unit that can receive cover
 	CoverPotential    float64 // Sum of all CoverValue
-}
-
-// ValidateFormation checks if formation enables cover mechanics
-func ValidateFormation(units []UnitConfig) FormationValidation {
-	validation := FormationValidation{
-		HasDepth:          false,
-		HasCoverProviders: false,
-		HasReceivers:      false,
-		CoverPotential:    0.0,
-	}
-
-	// Check row distribution
-	rowCounts := make(map[int]int)
-	for _, unit := range units {
-		rowCounts[unit.GridRow]++
-	}
-	validation.HasDepth = len(rowCounts) > 1
-
-	// Check for cover providers and receivers
-	for i, unit := range units {
-		template := findUnitTemplateByName(unit.TemplateName)
-		if template == nil {
-			continue
-		}
-
-		// Check if this unit provides cover
-		if template.CoverValue > 0 {
-			validation.HasCoverProviders = true
-			validation.CoverPotential += template.CoverValue
-		}
-
-		// Check if this unit can receive cover from another unit
-		// (i.e., is there a cover provider in a lower row in the same column or nearby)
-		for j, other := range units {
-			if i == j {
-				continue // Don't compare with self
-			}
-
-			otherTemplate := findUnitTemplateByName(other.TemplateName)
-			if otherTemplate == nil || otherTemplate.CoverValue == 0 {
-				continue // Other unit doesn't provide cover
-			}
-
-			// Check if other unit is in front of this unit (lower row number)
-			if other.GridRow < unit.GridRow {
-				validation.HasReceivers = true
-				break
-			}
-		}
-	}
-
-	return validation
-}
-
-// String returns a human-readable summary of the validation
-func (v FormationValidation) String() string {
-	return fmt.Sprintf("Formation: Depth=%v, Providers=%v, Receivers=%v, Potential=%.2f",
-		v.HasDepth, v.HasCoverProviders, v.HasReceivers, v.CoverPotential)
 }

@@ -119,23 +119,6 @@ const (
 	DefeatBySquadLoss                                    // All squads destroyed
 )
 
-func (v VictoryCondition) String() string {
-	switch v {
-	case VictoryNone:
-		return "In Progress"
-	case VictoryPlayerWins:
-		return "Victory!"
-	case VictoryPlayerLoses:
-		return "Defeat"
-	case VictoryTimeLimit:
-		return "Survival Victory"
-	case VictoryFactionDefeat:
-		return "Faction Defeated"
-	default:
-		return "Unknown"
-	}
-}
-
 // VictoryStateData tracks victory condition progress
 type VictoryStateData struct {
 	Condition         VictoryCondition

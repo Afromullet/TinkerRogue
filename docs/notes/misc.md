@@ -87,6 +87,8 @@ Change directory to game_main
 
 deadcode ./...
 
+deadcode -test ./...
+
 ---------------------------
 
 ### Combat Visualizer ###

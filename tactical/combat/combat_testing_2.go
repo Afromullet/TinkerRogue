@@ -5,7 +5,6 @@ import (
 	"game_main/common"
 	"game_main/tactical/squads"
 	testfx "game_main/testing"
-	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"
 )
@@ -33,12 +32,6 @@ func CreateTestCombatManager() *common.EntityManager {
 // ========================================
 // TEST HELPER FUNCTIONS
 // ========================================
-
-// CreateTestFaction creates a faction for testing
-func CreateTestFaction(manager *common.EntityManager, cache *CombatQueryCache, name string, isPlayer bool) ecs.EntityID {
-	fm := NewCombatFactionManager(manager, cache)
-	return fm.CreateCombatFaction(name, isPlayer)
-}
 
 // CreateTestSquad creates a squad with test units
 func CreateTestSquad(manager *common.EntityManager, name string, unitCount int) ecs.EntityID {
@@ -176,58 +169,4 @@ func CreateTestMixedSquad(manager *common.EntityManager, name string, meleeCount
 	}
 
 	return squadID
-}
-
-// PlaceSquadOnMap places a squad at a position for testing (using new FactionMembershipComponent approach)
-func PlaceSquadOnMap(manager *common.EntityManager, factionID, squadID ecs.EntityID, pos coords.LogicalPosition) {
-	squadEntity := manager.FindEntityByID(squadID)
-	if squadEntity == nil {
-		return
-	}
-
-	// Add FactionMembershipComponent to squad (squad enters combat)
-	squadEntity.AddComponent(FactionMembershipComponent, &CombatFactionData{
-		FactionID: factionID,
-	})
-
-	// Add or update PositionComponent on squad entity
-	if !manager.HasComponent(squadID, common.PositionComponent) {
-		// Squad has no position yet - add it
-		posPtr := new(coords.LogicalPosition)
-		*posPtr = pos
-		squadEntity.AddComponent(common.PositionComponent, posPtr)
-		// Register in PositionSystem (canonical position source)
-		common.GlobalPositionSystem.AddEntity(squadID, pos)
-	} else {
-		// Squad already has position - move it atomically
-		oldPos := common.GetComponentTypeByID[*coords.LogicalPosition](manager, squadID, common.PositionComponent)
-		if oldPos != nil {
-			// Use MoveEntity to synchronize position component and position system
-			manager.MoveEntity(squadID, squadEntity, *oldPos, pos)
-		}
-	}
-}
-
-// InitializeTestCombat sets up a basic test combat scenario
-func InitializeTestCombat(manager *common.EntityManager, factionCount int) ([]ecs.EntityID, *TurnManager) {
-	// Create shared cache
-	cache := NewCombatQueryCache(manager)
-
-	// Create factions
-	factionIDs := make([]ecs.EntityID, factionCount)
-	fm := NewCombatFactionManager(manager, cache)
-
-	for i := 0; i < factionCount; i++ {
-		if i == 0 {
-			factionIDs[i] = fm.CreateCombatFaction("Player", true)
-		} else {
-			factionIDs[i] = fm.CreateCombatFaction(fmt.Sprintf("Enemy %d", i), false)
-		}
-	}
-
-	// Initialize turn manager
-	turnMgr := NewTurnManager(manager, cache)
-	turnMgr.InitializeCombat(factionIDs)
-
-	return factionIDs, turnMgr
 }

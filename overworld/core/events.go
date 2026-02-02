@@ -53,17 +53,6 @@ func (el *EventLog) AddEvent(event OverworldEvent) {
 	}
 }
 
-// GetRecentEvents returns the N most recent events
-func (el *EventLog) GetRecentEvents(count int) []OverworldEvent {
-	if count > len(el.Events) {
-		count = len(el.Events)
-	}
-
-	// Return last N events
-	start := len(el.Events) - count
-	return el.Events[start:]
-}
-
 // OverworldContext holds runtime state for the overworld system.
 // This centralizes previously global variables for better testability and control.
 type OverworldContext struct {
@@ -89,11 +78,6 @@ func GetContext() *OverworldContext {
 		defaultContext = NewOverworldContext()
 	}
 	return defaultContext
-}
-
-// SetContext replaces the default context (useful for testing).
-func SetContext(ctx *OverworldContext) {
-	defaultContext = ctx
 }
 
 // LogEvent adds an event to the event log.

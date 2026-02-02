@@ -81,14 +81,6 @@ func CalculateSurvivalRate(agg *UnitPerformanceAggregated) float64 {
 	return float64(agg.SurvivalCount) / float64(agg.SampleCount)
 }
 
-// CalculateHitRate computes hit rate (hits + crits / attempts)
-func CalculateHitRate(agg *UnitPerformanceAggregated) float64 {
-	if agg.TotalAttacksAttempted == 0 {
-		return 0
-	}
-	return float64(agg.TotalAttacksHit+agg.TotalAttacksCrit) / float64(agg.TotalAttacksAttempted)
-}
-
 // CalculateCritRate computes critical hit rate
 func CalculateCritRate(agg *UnitPerformanceAggregated) float64 {
 	if agg.TotalAttacksAttempted == 0 {
@@ -131,13 +123,13 @@ func AnalyzeRoleEffectiveness(unitAggs map[string]*UnitPerformanceAggregated) ma
 
 	// Initialize role aggregators
 	roleAggs := make(map[string]struct {
-		totalDamage    int64
-		totalReceived  int64
-		survivalCount  int
-		totalCount     int
-		deathTurns     []int
-		coverProvided  float64
-		unitCount      int
+		totalDamage   int64
+		totalReceived int64
+		survivalCount int
+		totalCount    int
+		deathTurns    []int
+		coverProvided float64
+		unitCount     int
 	})
 
 	// Aggregate by role
@@ -521,10 +513,10 @@ func GenerateInsights(report *BalanceReport) []BalanceInsight {
 		}
 
 		insights = append(insights, BalanceInsight{
-			Severity: severity,
-			Category: "WinRate",
-			Issue:    report.WinRate.FavoredSide + " is favored",
-			Evidence: formatPercent(report.WinRate.ImbalanceAmount*2) + " win rate difference",
+			Severity:   severity,
+			Category:   "WinRate",
+			Issue:      report.WinRate.FavoredSide + " is favored",
+			Evidence:   formatPercent(report.WinRate.ImbalanceAmount*2) + " win rate difference",
 			Suggestion: "Adjust " + report.WinRate.FavoredSide + " squad stats",
 		})
 	}

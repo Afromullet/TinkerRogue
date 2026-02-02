@@ -49,12 +49,6 @@ func RegisterGenerator(gen MapGenerator) {
 	generators[gen.Name()] = gen
 }
 
-// GetGenerator retrieves an algorithm by name
-// Returns nil if not found
-func GetGenerator(name string) MapGenerator {
-	return generators[name]
-}
-
 // GetGeneratorOrDefault retrieves algorithm by name, falls back to default
 func GetGeneratorOrDefault(name string) MapGenerator {
 	gen := generators[name]
@@ -62,13 +56,4 @@ func GetGeneratorOrDefault(name string) MapGenerator {
 		gen = generators["rooms_corridors"] // Default fallback
 	}
 	return gen
-}
-
-// ListGenerators returns all registered algorithm names
-func ListGenerators() []string {
-	names := make([]string, 0, len(generators))
-	for name := range generators {
-		names = append(names, name)
-	}
-	return names
 }

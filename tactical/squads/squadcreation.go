@@ -373,16 +373,6 @@ func setSquadRenderableFromLeader(squadID ecs.EntityID, squadEntity *ecs.Entity,
 	})
 }
 
-// UpdateSquadRenderable updates the squad's renderable to match the current leader.
-// Call this when the leader changes (e.g., leader dies, new leader assigned).
-func UpdateSquadRenderable(squadID ecs.EntityID, ecsmanager *common.EntityManager) {
-	squadEntity := GetSquadEntity(squadID, ecsmanager)
-	if squadEntity == nil {
-		return
-	}
-	setSquadRenderableFromLeader(squadID, squadEntity, ecsmanager)
-}
-
 // ========================================
 // ENTITY DISPOSAL FUNCTIONS
 // ========================================

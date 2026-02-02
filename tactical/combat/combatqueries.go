@@ -25,7 +25,6 @@ func GetSquadFaction(squadID ecs.EntityID, manager *common.EntityManager) ecs.En
 	return combatFaction.FactionID
 }
 
-
 // GetSquadMapPosition returns the current map position of a squad
 func GetSquadMapPosition(squadID ecs.EntityID, manager *common.EntityManager) (coords.LogicalPosition, error) {
 	entity := manager.FindEntityByID(squadID)
@@ -205,23 +204,4 @@ func shuffleFactionOrder(factionIDs []ecs.EntityID) {
 		j := common.RandomInt(i + 1)
 		factionIDs[i], factionIDs[j] = factionIDs[j], factionIDs[i]
 	}
-}
-
-// containsEntity checks if a slice contains an entity ID
-func containsEntity(entities []ecs.EntityID, entityID ecs.EntityID) bool {
-	for _, e := range entities {
-		if e == entityID {
-			return true
-		}
-	}
-	return false
-}
-
-// GetSquadName returns the name of a squad by ID
-func GetSquadName(squadID ecs.EntityID, manager *common.EntityManager) string {
-	squadData := common.GetComponentTypeByID[*squads.SquadData](manager, squadID, squads.SquadComponent)
-	if squadData != nil {
-		return squadData.Name
-	}
-	return "Unknown"
 }

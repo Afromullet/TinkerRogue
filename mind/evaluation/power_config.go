@@ -2,7 +2,6 @@ package evaluation
 
 import (
 	"game_main/tactical/squads"
-	"game_main/templates"
 )
 
 // PowerConfig holds configurable weights for power calculations.
@@ -104,49 +103,6 @@ func GetDefaultConfig() *PowerConfig {
 	}
 }
 
-// DEPRECATED: Use GetPowerConfigByProfile("Offensive") instead.
-// This function is kept for fallback purposes only.
-// Power configurations are now loaded from powerconfig.json for designer-friendly tuning.
-func GetOffensiveConfig() *PowerConfig {
-	config := GetDefaultConfig()
-	config.ProfileName = string(ProfileOffensive)
-	config.OffensiveWeight = 0.6
-	config.DefensiveWeight = 0.25
-	config.UtilityWeight = 0.15
-	config.DamageWeight = 0.7
-	config.AccuracyWeight = 0.3
-	return config
-}
-
-// DEPRECATED: Use GetPowerConfigByProfile("Defensive") instead.
-// This function is kept for fallback purposes only.
-// Power configurations are now loaded from powerconfig.json for designer-friendly tuning.
-func GetDefensiveConfig() *PowerConfig {
-	config := GetDefaultConfig()
-	config.ProfileName = string(ProfileDefensive)
-	config.OffensiveWeight = 0.25
-	config.DefensiveWeight = 0.6
-	config.UtilityWeight = 0.15
-	config.HealthWeight = 0.6
-	config.ResistanceWeight = 0.25
-	config.AvoidanceWeight = 0.15
-	return config
-}
-
-// GetConfigByProfile returns a pre-configured evaluation profile.
-func GetConfigByProfile(profile PowerProfile) *PowerConfig {
-	switch profile {
-	case ProfileOffensive:
-		return GetOffensiveConfig()
-	case ProfileDefensive:
-		return GetDefensiveConfig()
-	case ProfileUtility:
-		return GetDefaultConfig() // Future: add utility profile
-	default:
-		return GetDefaultConfig()
-	}
-}
-
 // DEPRECATED: Use GetAbilityPowerValue() instead.
 // This map is now loaded from powerconfig.json for designer-friendly tuning.
 // Kept for fallback purposes only.
@@ -165,43 +121,3 @@ var AbilityPowerValues = map[squads.AbilityType]float64{
 // GetPowerConfigByProfile returns power configuration for the specified profile name.
 // Converts JSON profile to runtime PowerConfig struct.
 // Falls back to hardcoded defaults if profile not found.
-func GetPowerConfigByProfile(profileName string) *PowerConfig {
-	for _, profile := range templates.PowerConfigTemplate.Profiles {
-		if profile.Name == profileName {
-			return profileToConfig(profile)
-		}
-	}
-
-	// Fallback to hardcoded defaults
-	switch PowerProfile(profileName) {
-	case ProfileOffensive:
-		return GetOffensiveConfig()
-	case ProfileDefensive:
-		return GetDefensiveConfig()
-	default:
-		return GetDefaultConfig()
-	}
-}
-
-// profileToConfig converts JSON profile to runtime PowerConfig.
-func profileToConfig(json templates.PowerProfileConfig) *PowerConfig {
-	return &PowerConfig{
-		ProfileName:      json.Name,
-		OffensiveWeight:  json.OffensiveWeight,
-		DefensiveWeight:  json.DefensiveWeight,
-		UtilityWeight:    json.UtilityWeight,
-		DamageWeight:     json.DamageWeight,
-		AccuracyWeight:   json.AccuracyWeight,
-		HealthWeight:     json.HealthWeight,
-		ResistanceWeight: json.ResistanceWeight,
-		AvoidanceWeight:  json.AvoidanceWeight,
-		RoleWeight:       json.RoleWeight,
-		AbilityWeight:    json.AbilityWeight,
-		CoverWeight:      json.CoverWeight,
-		FormationBonus:   json.FormationBonus,
-		MoraleMultiplier: json.MoraleMultiplier,
-		HealthPenalty:    json.HealthPenalty,
-		DeployedWeight:   json.DeployedWeight,
-		ReserveWeight:    json.ReserveWeight,
-	}
-}

@@ -204,29 +204,3 @@ func runBattleLoggingMode(numBattles, squadsPerBattle int, outputDir, squadGen s
 	fmt.Println()
 	fmt.Printf("Battle logs exported to: %s\n", outputDir)
 }
-
-// createTestScenario creates a simple test scenario
-func createTestScenario() combatsim.CombatScenario {
-	// Create attacker squad (front row fighters)
-	attackerUnits := []combatsim.UnitConfig{
-		{TemplateName: "Fighter", GridRow: 0, GridCol: 0, IsLeader: true},
-		{TemplateName: "Fighter", GridRow: 0, GridCol: 1},
-		{TemplateName: "Fighter", GridRow: 0, GridCol: 2},
-	}
-
-	// Create defender squad (front row warriors)
-	defenderUnits := []combatsim.UnitConfig{
-		{TemplateName: "Fighter", GridRow: 0, GridCol: 0, IsLeader: true},
-		{TemplateName: "Fighter", GridRow: 0, GridCol: 1},
-		{TemplateName: "Fighter", GridRow: 0, GridCol: 2},
-	}
-
-	// Build scenario
-	scenario := combatsim.NewScenarioBuilder("Fighters vs Warriors").
-		WithAttacker("Fighter Squad", attackerUnits).
-		WithDefender("Warridddor Squad", defenderUnits).
-		WithDistance(1).
-		Build()
-
-	return scenario
-}

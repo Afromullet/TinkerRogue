@@ -2,17 +2,13 @@ package testing
 
 import (
 	"game_main/common"
-	"game_main/templates"
 	"game_main/gear"
 	"game_main/visual/graphics"
-	"game_main/visual/rendering"
 	"game_main/world/coords"
 	"game_main/world/worldmap"
-	"log"
 	"strconv"
 
 	"github.com/bytearena/ecs"
-	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 )
 
 var TestSquare = graphics.NewSquare(0, 0, graphics.MediumShape)
@@ -29,55 +25,6 @@ var TestCloudEffect = graphics.NewCloudEffect(0, 0, 2)
 var TestIceEffect = graphics.NewIceEffect(0, 0, 2)
 var TestElectricEffect = graphics.NewElectricityEffect(0, 0, 2)
 var TestStickyEffect = graphics.NewStickyGroundEffect(0, 0, 2)
-
-func CreateTestConsumables(ecsmanager *common.EntityManager, gm *worldmap.GameMap) {
-	ent := templates.CreateEntityFromTemplate(*ecsmanager, templates.EntityConfig{
-		Type:      templates.EntityConsumable,
-		Name:      templates.ConsumableTemplates[0].Name,
-		ImagePath: templates.ConsumableTemplates[0].ImgName,
-		AssetDir:  "../assets/items/",
-		Visible:   false,
-		Position:  nil,
-	}, templates.ConsumableTemplates[0])
-	pos := common.GetComponentType[*coords.LogicalPosition](ent, common.PositionComponent)
-	rend := common.GetComponentType[*rendering.Renderable](ent, rendering.RenderableComponent)
-	rend.Visible = true
-	pos.X = gm.StartingPosition().X + 1
-	pos.Y = gm.StartingPosition().Y + 2
-	gm.AddEntityToTile(ent, &coords.LogicalPosition{X: pos.X, Y: pos.Y})
-
-	ent = templates.CreateEntityFromTemplate(*ecsmanager, templates.EntityConfig{
-		Type:      templates.EntityConsumable,
-		Name:      templates.ConsumableTemplates[1].Name,
-		ImagePath: templates.ConsumableTemplates[1].ImgName,
-		AssetDir:  "../assets/items/",
-		Visible:   false,
-		Position:  nil,
-	}, templates.ConsumableTemplates[1])
-	pos = common.GetComponentType[*coords.LogicalPosition](ent, common.PositionComponent)
-	rend = common.GetComponentType[*rendering.Renderable](ent, rendering.RenderableComponent)
-	rend.Visible = true
-	pos.X = gm.StartingPosition().X + 1
-	pos.Y = gm.StartingPosition().Y + 2
-
-	gm.AddEntityToTile(ent, &coords.LogicalPosition{X: pos.X, Y: pos.Y})
-
-	ent = templates.CreateEntityFromTemplate(*ecsmanager, templates.EntityConfig{
-		Type:      templates.EntityConsumable,
-		Name:      templates.ConsumableTemplates[2].Name,
-		ImagePath: templates.ConsumableTemplates[2].ImgName,
-		AssetDir:  "../assets/items/",
-		Visible:   false,
-		Position:  nil,
-	}, templates.ConsumableTemplates[2])
-	pos = common.GetComponentType[*coords.LogicalPosition](ent, common.PositionComponent)
-	rend = common.GetComponentType[*rendering.Renderable](ent, rendering.RenderableComponent)
-	rend.Visible = true
-	pos.X = gm.StartingPosition().X + 1
-	pos.Y = gm.StartingPosition().Y + 2
-
-	gm.AddEntityToTile(ent, &coords.LogicalPosition{X: pos.X, Y: pos.Y})
-}
 
 func CreateTestThrowable(shape graphics.TileBasedShape, vx graphics.VisualEffect) *gear.ThrowableAction {
 
@@ -143,44 +90,6 @@ func UpdateContentsForTest(ecsmanager *common.EntityManager, gm *worldmap.GameMa
 		}
 
 	}
-
-}
-
-// Create an item with any number of Effects. ItemEffect is a wrapper around an ecs.Component to make
-// Manipulating it easier
-func CreateItem(manager *ecs.Manager, name string, pos coords.LogicalPosition, imagePath string, effects ...gear.StatusEffects) *ecs.Entity {
-
-	img, _, err := ebitenutil.NewImageFromFile(imagePath)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// Create properties entity to hold status effects (ECS best practice)
-	propsEntity := manager.NewEntity()
-	for _, prop := range effects {
-		propsEntity.AddComponent(prop.StatusEffectComponent(), &prop)
-	}
-
-	// Create item with EntityID reference
-	item := &gear.Item{Count: 1, Properties: propsEntity.GetID()}
-
-	itemEntity := manager.NewEntity().
-		AddComponent(rendering.RenderableComponent, &rendering.Renderable{
-			Image:   img,
-			Visible: true,
-		}).
-		AddComponent(common.PositionComponent, &coords.LogicalPosition{
-			X: pos.X,
-			Y: pos.Y,
-		}).
-		AddComponent(common.NameComponent, &common.Name{
-			NameStr: name,
-		}).
-		AddComponent(gear.ItemComponent, item)
-
-	//TODO where shoudl I add the tags?
-
-	return itemEntity
 
 }
 

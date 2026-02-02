@@ -218,9 +218,3 @@ func (r *TileRenderer) inMapBounds(x, y int) bool {
 	return x >= 0 && x < graphics.ScreenInfo.DungeonWidth &&
 		y >= 0 && y < graphics.ScreenInfo.DungeonHeight
 }
-
-// InvalidateCache forces batches to be rebuilt on next render
-// Call this when tiles are modified (e.g., map changes, tile colors change)
-func (r *TileRenderer) InvalidateCache() {
-	r.batchesBuilt = false
-}
