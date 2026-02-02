@@ -5,7 +5,7 @@ import (
 
 	"game_main/common"
 	"game_main/overworld/core"
-	owencounter "game_main/overworld/encounter"
+	owencounter "game_main/overworld/overworldencounter"
 	"game_main/overworld/threat"
 
 	"github.com/bytearena/ecs"

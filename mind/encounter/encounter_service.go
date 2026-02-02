@@ -7,7 +7,7 @@ import (
 	"game_main/common"
 	"game_main/gui/framework"
 	"game_main/overworld/core"
-	owencounter "game_main/overworld/encounter"
+	owencounter "game_main/overworld/overworldencounter"
 	"game_main/tactical/combat"
 	"game_main/tactical/combatresolution"
 	"game_main/tactical/squads"

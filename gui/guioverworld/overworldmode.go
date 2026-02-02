@@ -7,7 +7,7 @@ import (
 	"game_main/gui/framework"
 	"game_main/mind/encounter"
 	"game_main/overworld/core"
-	owencounter "game_main/overworld/encounter"
+	owencounter "game_main/overworld/overworldencounter"
 	"game_main/overworld/threat"
 	"game_main/overworld/tick"
 	"game_main/overworld/travel"

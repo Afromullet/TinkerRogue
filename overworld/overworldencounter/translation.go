@@ -1,4 +1,4 @@
-package encounter
+package overworldencounter
 
 import (
 	"fmt"
@@ -14,18 +14,11 @@ import (
 
 // EncounterParams describes a combat scenario generated from a threat node
 type EncounterParams struct {
-	ThreatNodeID     ecs.EntityID
-	EnemyComposition []UnitTemplate // Unit types and counts
-	Difficulty       int            // Derived from threat intensity
-	EncounterName    string
-	EncounterType    string
-	Rewards          RewardTable
-}
-
-// UnitTemplate describes a unit to spawn in combat
-type UnitTemplate struct {
-	Type string // Template name (e.g., "Skeleton", "Bandit")
-	Role string // Role: "Tank", "DPS", "Support"
+	ThreatNodeID  ecs.EntityID
+	Difficulty    int // Derived from threat intensity
+	EncounterName string
+	EncounterType string
+	Rewards       RewardTable
 }
 
 // RewardTable defines rewards for defeating a threat
@@ -35,8 +28,10 @@ type RewardTable struct {
 	Items      []string // Future: item IDs
 }
 
-// TranslateThreatToEncounter generates combat parameters from a threat node
-// This is the bridge between overworld strategic layer and tactical combat
+// TranslateThreatToEncounter generates combat parameters from a threat node.
+// This creates the encounter metadata (name, difficulty, type, rewards).
+// Enemy composition is generated later by SetupBalancedEncounter() using
+// power-based balancing to match player strength.
 func TranslateThreatToEncounter(
 	manager *common.EntityManager,
 	threatEntity *ecs.Entity,
@@ -46,9 +41,6 @@ func TranslateThreatToEncounter(
 		return nil, fmt.Errorf("entity is not a threat node")
 	}
 
-	// Generate enemy composition based on threat type + intensity
-	enemies := GenerateEnemyComposition(threatData.ThreatType, threatData.Intensity)
-
 	// Calculate rewards
 	rewards := CalculateRewards(threatData.Intensity, threatData.ThreatType)
 
@@ -56,80 +48,12 @@ func TranslateThreatToEncounter(
 	encounterName := fmt.Sprintf("%s (Level %d)", threatData.ThreatType.String(), threatData.Intensity)
 
 	return &EncounterParams{
-		ThreatNodeID:     threatData.ThreatID,
-		EnemyComposition: enemies,
-		Difficulty:       threatData.Intensity,
-		EncounterName:    encounterName,
-		EncounterType:    getThreatEncounterType(threatData.ThreatType),
-		Rewards:          rewards,
+		ThreatNodeID:  threatData.ThreatID,
+		Difficulty:    threatData.Intensity,
+		EncounterName: encounterName,
+		EncounterType: getThreatEncounterType(threatData.ThreatType),
+		Rewards:       rewards,
 	}, nil
-}
-
-// GenerateEnemyComposition creates enemy units based on threat
-func GenerateEnemyComposition(threatType core.ThreatType, intensity int) []UnitTemplate {
-	// Base composition
-	baseUnits := GetBaseThreatUnits(threatType)
-
-	// Scale by intensity
-	squadCount := 1 + (intensity / 3) // 1 squad at tier 1-2, 2 squads at 3-5, etc.
-	unitsPerSquad := 5 + intensity    // More units at higher intensity
-
-	// Cap at reasonable limits
-	if squadCount > 4 {
-		squadCount = 4 // Max 4 enemy squads
-	}
-	if unitsPerSquad > 9 {
-		unitsPerSquad = 9 // Max squad capacity
-	}
-
-	var units []UnitTemplate
-	for i := 0; i < squadCount; i++ {
-		for j := 0; j < unitsPerSquad; j++ {
-			// Pick unit type from base composition (cycle through)
-			unitType := baseUnits[j%len(baseUnits)]
-			units = append(units, unitType)
-		}
-	}
-
-	return units
-}
-
-// GetBaseThreatUnits returns base unit types per threat
-// TODO. This should be configurable through a file
-func GetBaseThreatUnits(threatType core.ThreatType) []UnitTemplate {
-	switch threatType {
-	case core.ThreatNecromancer:
-		return []UnitTemplate{
-			{Type: "Skeleton", Role: "Tank"},
-			{Type: "Zombie", Role: "DPS"},
-			{Type: "Wraith", Role: "Support"},
-		}
-	case core.ThreatBanditCamp:
-		return []UnitTemplate{
-			{Type: "Bandit", Role: "DPS"},
-			{Type: "Archer", Role: "DPS"},
-			{Type: "Thug", Role: "Tank"},
-		}
-	case core.ThreatCorruption:
-		return []UnitTemplate{
-			{Type: "CorruptedBeast", Role: "Tank"},
-			{Type: "CorruptedSpirit", Role: "DPS"},
-		}
-	case core.ThreatBeastNest:
-		return []UnitTemplate{
-			{Type: "Wolf", Role: "DPS"},
-			{Type: "Bear", Role: "Tank"},
-			{Type: "Boar", Role: "Tank"},
-		}
-	case core.ThreatOrcWarband:
-		return []UnitTemplate{
-			{Type: "OrcWarrior", Role: "Tank"},
-			{Type: "OrcBerserker", Role: "DPS"},
-			{Type: "OrcShaman", Role: "Support"},
-		}
-	default:
-		return []UnitTemplate{{Type: "Generic", Role: "DPS"}}
-	}
 }
 
 // CalculateRewards determines loot from defeating a threat
