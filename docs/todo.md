@@ -13,7 +13,7 @@ __________________________________________
 
 - Handle Entity Cleanup
 
-
+- config.go in the Overworld package requires error handling in case there is an issue with the JSON file. Also add error handling for every other case of JSON loading
 
 
 - combat life cycle manager changes only support one player at the moment, de to storing the playerEntityID. Consider changing that for multiplayer

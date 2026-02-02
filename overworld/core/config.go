@@ -9,133 +9,79 @@ import (
 // They replace direct constant access to enable designer-friendly tuning.
 
 // GetContainmentSlowdown returns the containment slowdown multiplier from config.
-// Falls back to hardcoded default if template lookup fails.
 func GetContainmentSlowdown() float64 {
-	if templates.OverworldConfigTemplate.ThreatGrowth.ContainmentSlowdown > 0 {
-		return templates.OverworldConfigTemplate.ThreatGrowth.ContainmentSlowdown
-	}
-	return ContainmentSlowdown
+	return templates.OverworldConfigTemplate.ThreatGrowth.ContainmentSlowdown
 }
 
 // GetChildNodeSpawnThreshold returns the child node spawn threshold from config.
-// Falls back to hardcoded default if template lookup fails.
 func GetChildNodeSpawnThreshold() int {
-	if templates.OverworldConfigTemplate.ThreatGrowth.ChildNodeSpawnThreshold > 0 {
-		return templates.OverworldConfigTemplate.ThreatGrowth.ChildNodeSpawnThreshold
-	}
-	return ChildNodeSpawnThreshold
+	return templates.OverworldConfigTemplate.ThreatGrowth.ChildNodeSpawnThreshold
 }
 
 // GetMaxChildNodeSpawnAttempts returns the max child node spawn attempts from config.
-// Falls back to hardcoded default if template lookup fails.
 func GetMaxChildNodeSpawnAttempts() int {
-	if templates.OverworldConfigTemplate.ThreatGrowth.MaxChildNodeSpawnAttempts > 0 {
-		return templates.OverworldConfigTemplate.ThreatGrowth.MaxChildNodeSpawnAttempts
-	}
-	return MaxChildNodeSpawnAttempts
+	return templates.OverworldConfigTemplate.ThreatGrowth.MaxChildNodeSpawnAttempts
 }
 
 // GetDefaultIntentTickDuration returns the default intent tick duration from config.
-// Falls back to hardcoded default if template lookup fails.
 func GetDefaultIntentTickDuration() int {
-	if templates.OverworldConfigTemplate.FactionAI.DefaultIntentTickDuration > 0 {
-		return templates.OverworldConfigTemplate.FactionAI.DefaultIntentTickDuration
-	}
-	return DefaultIntentTickDuration
+	return templates.OverworldConfigTemplate.FactionAI.DefaultIntentTickDuration
+
 }
 
 // GetExpansionStrengthThreshold returns the expansion strength threshold from config.
-// Falls back to hardcoded default if template lookup fails.
 func GetExpansionStrengthThreshold() int {
-	if templates.OverworldConfigTemplate.FactionAI.ExpansionStrengthThreshold > 0 {
-		return templates.OverworldConfigTemplate.FactionAI.ExpansionStrengthThreshold
-	}
-	return ExpansionStrengthThreshold
+	return templates.OverworldConfigTemplate.FactionAI.ExpansionStrengthThreshold
 }
 
 // GetExpansionTerritoryLimit returns the expansion territory limit from config.
-// Falls back to hardcoded default if template lookup fails.
 func GetExpansionTerritoryLimit() int {
-	if templates.OverworldConfigTemplate.FactionAI.ExpansionTerritoryLimit > 0 {
-		return templates.OverworldConfigTemplate.FactionAI.ExpansionTerritoryLimit
-	}
-	return ExpansionTerritoryLimit
+	return templates.OverworldConfigTemplate.FactionAI.ExpansionTerritoryLimit
+
 }
 
 // GetFortificationWeakThreshold returns the fortification weak threshold from config.
-// Falls back to hardcoded default if template lookup fails.
 func GetFortificationWeakThreshold() int {
-	if templates.OverworldConfigTemplate.FactionAI.FortificationWeakThreshold > 0 {
-		return templates.OverworldConfigTemplate.FactionAI.FortificationWeakThreshold
-	}
-	return FortificationWeakThreshold
+	return templates.OverworldConfigTemplate.FactionAI.FortificationWeakThreshold
 }
 
 // GetFortificationStrengthGain returns the fortification strength gain from config.
-// Falls back to hardcoded default if template lookup fails.
 func GetFortificationStrengthGain() int {
-	if templates.OverworldConfigTemplate.FactionAI.FortificationStrengthGain > 0 {
-		return templates.OverworldConfigTemplate.FactionAI.FortificationStrengthGain
-	}
-	return FortificationStrengthGain
+	return templates.OverworldConfigTemplate.FactionAI.FortificationStrengthGain
 }
 
 // GetRaidStrengthThreshold returns the raid strength threshold from config.
-// Falls back to hardcoded default if template lookup fails.
 func GetRaidStrengthThreshold() int {
-	if templates.OverworldConfigTemplate.FactionAI.RaidStrengthThreshold > 0 {
-		return templates.OverworldConfigTemplate.FactionAI.RaidStrengthThreshold
-	}
-	return RaidStrengthThreshold
+	return templates.OverworldConfigTemplate.FactionAI.RaidStrengthThreshold
 }
 
 // GetRetreatCriticalStrength returns the retreat critical strength from config.
-// Falls back to hardcoded default if template lookup fails.
 func GetRetreatCriticalStrength() int {
-	if templates.OverworldConfigTemplate.FactionAI.RetreatCriticalStrength > 0 {
-		return templates.OverworldConfigTemplate.FactionAI.RetreatCriticalStrength
-	}
-	return RetreatCriticalStrength
+	return templates.OverworldConfigTemplate.FactionAI.RetreatCriticalStrength
 }
 
 // GetMaxTerritorySize returns the max territory size from config.
-// Falls back to hardcoded default if template lookup fails.
 func GetMaxTerritorySize() int {
-	if templates.OverworldConfigTemplate.FactionAI.MaxTerritorySize > 0 {
-		return templates.OverworldConfigTemplate.FactionAI.MaxTerritorySize
-	}
-	return MaxTerritorySize
+	return templates.OverworldConfigTemplate.FactionAI.MaxTerritorySize
 }
 
 // GetExpansionThreatSpawnChance returns the expansion threat spawn chance from config.
-// Falls back to hardcoded default if template lookup fails.
 func GetExpansionThreatSpawnChance() int {
-	if templates.OverworldConfigTemplate.SpawnProbabilities.ExpansionThreatSpawnChance >= 0 {
-		return templates.OverworldConfigTemplate.SpawnProbabilities.ExpansionThreatSpawnChance
-	}
-	return ExpansionThreatSpawnChance
+	return templates.OverworldConfigTemplate.SpawnProbabilities.ExpansionThreatSpawnChance
 }
 
 // GetFortifyThreatSpawnChance returns the fortify threat spawn chance from config.
 // Falls back to hardcoded default if template lookup fails.
 func GetFortifyThreatSpawnChance() int {
-	if templates.OverworldConfigTemplate.SpawnProbabilities.FortifyThreatSpawnChance >= 0 {
-		return templates.OverworldConfigTemplate.SpawnProbabilities.FortifyThreatSpawnChance
-	}
-	return FortifyThreatSpawnChance
+	return templates.OverworldConfigTemplate.SpawnProbabilities.FortifyThreatSpawnChance
 }
 
 // GetBonusItemDropChance returns the bonus item drop chance from config.
-// Falls back to hardcoded default if template lookup fails.
 func GetBonusItemDropChance() int {
-	if templates.OverworldConfigTemplate.SpawnProbabilities.BonusItemDropChance >= 0 {
-		return templates.OverworldConfigTemplate.SpawnProbabilities.BonusItemDropChance
-	}
-	return BonusItemDropChance
+	return templates.OverworldConfigTemplate.SpawnProbabilities.BonusItemDropChance
 }
 
 // GetThreatTypeParamsFromConfig returns parameters for each threat type from config.
-// Falls back to hardcoded defaults if template lookup fails.
 func GetThreatTypeParamsFromConfig(threatType ThreatType) ThreatTypeParams {
 	threatStr := threatType.String()
 
