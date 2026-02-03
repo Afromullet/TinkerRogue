@@ -10,10 +10,6 @@ import (
 	"github.com/bytearena/ecs"
 )
 
-// Note: Threat calculation constants (DefaultSquadMovement, MaxSpeedSentinel,
-// ReferenceTargetStrength, ReferenceTargetDexterity, ReferenceTargetArmor)
-// are defined in threat_constants.go
-
 var avgCombatStats = &averageCombatStats{}
 
 // Keeps track of Each Factions Danger Level.

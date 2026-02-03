@@ -28,7 +28,9 @@ __________________________________________
 
 - Enemy squads appear to attack when they're out of range
 
+- Encounted difficulty should partially be based on overworld stuff
 
+- Fully explor encoutner types from encounterdata.json - determine how squad composition works in encounters
 
 
 

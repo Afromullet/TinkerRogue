@@ -182,13 +182,15 @@ func (prl *PositionalRiskLayer) computeIsolationRisk(alliedSquads []ecs.EntityID
 				}
 			}
 
-			// Isolation risk increases with distance from nearest ally
-			// See threat_constants.go for threshold definitions
-			safeDistance, moderateDistance, highDistance := GetIsolationDistances()
-			if minDistance >= highDistance {
+			// Isolation risk increases linearly with distance from nearest ally
+			// Below threshold: no risk. Above threshold: linear gradient to 1.0 at max distance.
+			threshold := GetIsolationThreshold()
+			maxDist := GetIsolationMaxDistance()
+			if minDistance >= maxDist {
 				prl.isolationRisk[pos] = 1.0
-			} else if minDistance >= moderateDistance {
-				prl.isolationRisk[pos] = float64(minDistance-safeDistance) / 4.0 // 0.25 to 0.75
+			} else if minDistance > threshold {
+				// Linear gradient from 0 at threshold to 1.0 at maxDist
+				prl.isolationRisk[pos] = float64(minDistance-threshold) / float64(maxDist-threshold)
 			}
 		}
 	}

@@ -280,42 +280,29 @@ type EncounterData struct {
 type JSONAIConfig struct {
 	ThreatCalculation ThreatCalculationConfig `json:"threatCalculation"`
 	RoleBehaviors     []RoleBehaviorConfig    `json:"roleBehaviors"`
-	PositionalRisk    PositionalRiskConfig    `json:"positionalRisk"`
 	SupportLayer      SupportLayerConfig      `json:"supportLayer"`
 }
 
 // ThreatCalculationConfig defines threat calculation parameters
 type ThreatCalculationConfig struct {
 	FlankingThreatRangeBonus   int `json:"flankingThreatRangeBonus"`
-	IsolationSafeDistance      int `json:"isolationSafeDistance"`
-	IsolationModerateDistance  int `json:"isolationModerateDistance"`
-	IsolationHighDistance      int `json:"isolationHighDistance"`
-	EngagementPressureMax      int `json:"engagementPressureMax"`
+	IsolationThreshold         int `json:"isolationThreshold"`
 	RetreatSafeThreatThreshold int `json:"retreatSafeThreatThreshold"`
 }
 
 // RoleBehaviorConfig defines how a role weighs different threat layers
+// RangedWeight and PositionalWeight are hardcoded as shared constants.
 type RoleBehaviorConfig struct {
-	Role             string  `json:"role"`
-	MeleeWeight      float64 `json:"meleeWeight"`
-	RangedWeight     float64 `json:"rangedWeight"`
-	SupportWeight    float64 `json:"supportWeight"`
-	PositionalWeight float64 `json:"positionalWeight"`
+	Role          string  `json:"role"`
+	MeleeWeight   float64 `json:"meleeWeight"`
+	SupportWeight float64 `json:"supportWeight"`
 }
 
-// PositionalRiskConfig defines positional risk weights
-type PositionalRiskConfig struct {
-	FlankingWeight  float64 `json:"flankingWeight"`
-	IsolationWeight float64 `json:"isolationWeight"`
-	PressureWeight  float64 `json:"pressureWeight"`
-	RetreatWeight   float64 `json:"retreatWeight"`
-}
 
 // SupportLayerConfig defines support layer parameters
 type SupportLayerConfig struct {
-	HealRadius                   int `json:"healRadius"`
-	AllyProximityRadius          int `json:"allyProximityRadius"`
-	BuffPriorityEngagementRange  int `json:"buffPriorityEngagementRange"`
+	HealRadius                  int `json:"healRadius"`
+	BuffPriorityEngagementRange int `json:"buffPriorityEngagementRange"`
 }
 
 // JSONPowerConfig is the root container for power evaluation configuration

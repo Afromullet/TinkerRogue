@@ -33,20 +33,6 @@ const (
 	Fled                            // Player fled (not implemented yet)
 )
 
-// String returns a human-readable outcome name
-func (eo EncounterOutcome) String() string {
-	switch eo {
-	case Victory:
-		return "Victory"
-	case Defeat:
-		return "Defeat"
-	case Fled:
-		return "Fled"
-	default:
-		return fmt.Sprintf("Unknown(%d)", eo)
-	}
-}
-
 // ActiveEncounter holds context for the currently active encounter
 type ActiveEncounter struct {
 	// Core identification
@@ -301,54 +287,12 @@ func (es *EncounterService) IsEncounterActive() bool {
 	return es.activeEncounter != nil
 }
 
-// GetActiveEncounter returns the current active encounter, or nil if none
-func (es *EncounterService) GetActiveEncounter() *ActiveEncounter {
-	return es.activeEncounter
-}
-
 // GetCurrentEncounterID returns the currently active encounter ID (0 if none)
 func (es *EncounterService) GetCurrentEncounterID() ecs.EntityID {
 	if es.activeEncounter != nil {
 		return es.activeEncounter.EncounterID
 	}
 	return 0
-}
-
-// GetCurrentThreatID returns the threat ID that triggered the current encounter (0 if none)
-func (es *EncounterService) GetCurrentThreatID() ecs.EntityID {
-	if es.activeEncounter != nil {
-		return es.activeEncounter.ThreatID
-	}
-	return 0
-}
-
-// GetEncounterHistory returns the list of completed encounters
-func (es *EncounterService) GetEncounterHistory() []*CompletedEncounter {
-	return es.history
-}
-
-// GetLastEncounter returns the most recent completed encounter, or nil if no history
-func (es *EncounterService) GetLastEncounter() *CompletedEncounter {
-	if len(es.history) == 0 {
-		return nil
-	}
-	return es.history[len(es.history)-1]
-}
-
-// GetWinRate returns the percentage of encounters won (0.0 to 1.0)
-func (es *EncounterService) GetWinRate() float64 {
-	if len(es.history) == 0 {
-		return 0.0
-	}
-
-	wins := 0
-	for _, encounter := range es.history {
-		if encounter.Outcome == Victory {
-			wins++
-		}
-	}
-
-	return float64(wins) / float64(len(es.history))
 }
 
 // GetEnemySquadIDs returns the enemy squad IDs for the current encounter (for cleanup coordination)
@@ -576,25 +520,6 @@ func (es *EncounterService) RestoreEncounterSprite() {
 			fmt.Println("Restoring overworld encounter sprite after fleeing")
 		}
 	}
-}
-
-// === LEGACY COMPATIBILITY ===
-
-// TriggerEncounter is deprecated - use StartEncounter instead.
-// Kept for backward compatibility.
-func (es *EncounterService) TriggerEncounter(
-	encounterID ecs.EntityID,
-	threatID ecs.EntityID,
-) error {
-	fmt.Println("WARNING: TriggerEncounter is deprecated - use StartEncounter instead")
-	return es.StartEncounter(encounterID, threatID, "Unknown Threat", coords.LogicalPosition{}, 0)
-}
-
-// ClearEncounter is deprecated - use RecordEncounterCompletion instead.
-// Kept for backward compatibility.
-func (es *EncounterService) ClearEncounter() {
-	fmt.Println("WARNING: ClearEncounter is deprecated - encounters are auto-cleared after recording")
-	es.activeEncounter = nil
 }
 
 // === PRIVATE HELPER METHODS ===

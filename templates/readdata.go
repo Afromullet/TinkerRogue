@@ -210,36 +210,24 @@ func validateAIConfig(config *JSONAIConfig) {
 		}
 	}
 
-	// Validate positional risk weights sum to ~1.0
-	total := config.PositionalRisk.FlankingWeight +
-		config.PositionalRisk.IsolationWeight +
-		config.PositionalRisk.PressureWeight +
-		config.PositionalRisk.RetreatWeight
-	if total < 0.99 || total > 1.01 {
-		panic("Positional risk weights must sum to 1.0")
-	}
-
 	// Validate all weights are in valid range [-1.0, 1.0]
 	for _, rb := range config.RoleBehaviors {
 		if rb.MeleeWeight < -1.0 || rb.MeleeWeight > 1.0 ||
-			rb.RangedWeight < -1.0 || rb.RangedWeight > 1.0 ||
-			rb.SupportWeight < -1.0 || rb.SupportWeight > 1.0 ||
-			rb.PositionalWeight < -1.0 || rb.PositionalWeight > 1.0 {
+			rb.SupportWeight < -1.0 || rb.SupportWeight > 1.0 {
 			panic("Role behavior weights must be between -1.0 and 1.0 for role: " + rb.Role)
 		}
 	}
 
 	// Validate distance thresholds are positive
 	tc := config.ThreatCalculation
-	if tc.FlankingThreatRangeBonus <= 0 || tc.IsolationSafeDistance <= 0 ||
-		tc.IsolationModerateDistance <= 0 || tc.IsolationHighDistance <= 0 ||
-		tc.EngagementPressureMax <= 0 || tc.RetreatSafeThreatThreshold <= 0 {
+	if tc.FlankingThreatRangeBonus <= 0 || tc.IsolationThreshold <= 0 ||
+		tc.RetreatSafeThreatThreshold <= 0 {
 		panic("All threat calculation distances must be positive")
 	}
 
 	// Validate support layer parameters are positive
 	sl := config.SupportLayer
-	if sl.HealRadius <= 0 || sl.AllyProximityRadius <= 0 || sl.BuffPriorityEngagementRange <= 0 {
+	if sl.HealRadius <= 0 || sl.BuffPriorityEngagementRange <= 0 {
 		panic("All support layer parameters must be positive")
 	}
 }
