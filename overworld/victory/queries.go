@@ -6,25 +6,24 @@ import (
 	"game_main/overworld/threat"
 )
 
-// High-intensity threat thresholds for defeat conditions
-const (
-	HighIntensityThreshold  = 4     // Intensity level considered "high" (4-5 are high with max 5)
-	MaxHighIntensityThreats = 10    // Maximum allowed before defeat
-	MaxThreatInfluence      = 100.0 // Maximum total influence before defeat
-)
-
 // CheckPlayerDefeat checks if player has lost and returns structured result.
 // Single source of truth for defeat determination - runs checks once and caches results.
 // Replaces the duplicate logic that was split between IsPlayerDefeated() and GetDefeatReason().
+// Thresholds are now loaded from config for designer-friendly tuning.
 func CheckPlayerDefeat(manager *common.EntityManager) *core.DefeatCheckResult {
 	result := &core.DefeatCheckResult{
 		IsDefeated:   false,
 		DefeatReason: core.DefeatNone,
 	}
 
+	// Get thresholds from config
+	maxInfluence := core.GetMaxThreatInfluence()
+	highIntensityThreshold := core.GetHighIntensityThreshold()
+	maxHighIntensityThreats := core.GetMaxHighIntensityThreats()
+
 	// Check threat influence (run query once and cache result)
 	result.TotalInfluence = GetTotalThreatInfluence(manager)
-	if result.TotalInfluence > MaxThreatInfluence {
+	if result.TotalInfluence > maxInfluence {
 		result.IsDefeated = true
 		result.DefeatReason = core.DefeatByInfluence
 		result.DefeatMessage = core.FormatEventString("Defeat! Overwhelmed by threat influence (%.1f)", result.TotalInfluence)
@@ -32,20 +31,12 @@ func CheckPlayerDefeat(manager *common.EntityManager) *core.DefeatCheckResult {
 	}
 
 	// Check high-intensity threats (run query once and cache result)
-	result.HighIntensityCount = threat.CountHighIntensityThreats(manager, HighIntensityThreshold)
-	if result.HighIntensityCount >= MaxHighIntensityThreats {
+	result.HighIntensityCount = threat.CountHighIntensityThreats(manager, highIntensityThreshold)
+	if result.HighIntensityCount >= maxHighIntensityThreats {
 		result.IsDefeated = true
 		result.DefeatReason = core.DefeatByHighIntensityThreats
 		result.DefeatMessage = core.FormatEventString("Defeat! Too many powerful threats (%d tier-%d+ threats)",
-			result.HighIntensityCount, HighIntensityThreshold)
-		return result
-	}
-
-	// Check squad loss
-	if HasPlayerLostAllSquads(manager) {
-		result.IsDefeated = true
-		result.DefeatReason = core.DefeatBySquadLoss
-		result.DefeatMessage = "Defeat! All squads destroyed"
+			result.HighIntensityCount, highIntensityThreshold)
 		return result
 	}
 
@@ -56,19 +47,6 @@ func CheckPlayerDefeat(manager *common.EntityManager) *core.DefeatCheckResult {
 // DEPRECATED: Use CheckPlayerDefeat() instead for better performance (avoids duplicate checks).
 func IsPlayerDefeated(manager *common.EntityManager) bool {
 	return CheckPlayerDefeat(manager).IsDefeated
-}
-
-// HasPlayerLostAllSquads checks if player has any surviving squads
-func HasPlayerLostAllSquads(manager *common.EntityManager) bool {
-	// If no squad checker is injected, assume player hasn't lost
-	// (squad-based defeat is optional feature)
-	squadChecker := core.GetSquadChecker()
-	if squadChecker == nil {
-		return false
-	}
-
-	// Invert the checker result: HasActiveSquads=false means all squads lost
-	return !squadChecker.HasActiveSquads(manager)
 }
 
 // GetTotalThreatInfluence calculates combined threat pressure

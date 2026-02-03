@@ -108,8 +108,8 @@ func EvaluateFactionIntent(
 		newIntent = core.IntentRetreat
 	}
 
-	// If all scores are low, go idle
-	if maxScore < 2.0 {
+	// If all scores are low, go idle (threshold from config)
+	if maxScore < core.GetIdleScoreThreshold() {
 		newIntent = core.IntentIdle
 	}
 
@@ -219,9 +219,11 @@ func ExecuteRaid(manager *common.EntityManager, entity *ecs.Entity, factionData 
 		return
 	}
 
-	// Spawn higher-intensity threat for raids
+	// Spawn higher-intensity threat for raids (formula from config)
 	threatType := core.MapFactionToThreatType(factionData.FactionType)
-	intensity := 3 + (factionData.Strength / 3) // Stronger factions spawn stronger raids
+	baseIntensity := core.GetRaidBaseIntensity()
+	intensityScale := core.GetRaidIntensityScale()
+	intensity := baseIntensity + int(float64(factionData.Strength)*intensityScale)
 	currentTick := core.GetCurrentTick(manager)
 
 	threat.CreateThreatNode(manager, *randomTile, threatType, intensity, currentTick)

@@ -1,22 +1,37 @@
 {
   "threatGrowth": {
-    "defaultGrowthRate": 0.05,
     "containmentSlowdown": 0.5,
     "maxThreatIntensity": 5,
     "childNodeSpawnThreshold": 3,
-    "playerContainmentRadius": 5,
     "maxChildNodeSpawnAttempts": 10
   },
   "factionAI": {
     "defaultIntentTickDuration": 10,
-    "expansionStrengthThreshold": 5,
     "expansionTerritoryLimit": 20,
-    "fortificationWeakThreshold": 3,
     "fortificationStrengthGain": 1,
-    "raidStrengthThreshold": 7,
-    "raidProximityRange": 5,
-    "retreatCriticalStrength": 2,
     "maxTerritorySize": 30
+  },
+  "strengthThresholds": {
+    "weak": 3,
+    "strong": 7,
+    "critical": 2
+  },
+  "factionArchetypes": {
+    "Cultists":     { "strategy": "Expansionist", "aggression": 0.7 },
+    "Orcs":         { "strategy": "Aggressor",    "aggression": 0.9 },
+    "Bandits":      { "strategy": "Raider",       "aggression": 0.8 },
+    "Necromancers": { "strategy": "Defensive",    "aggression": 0.3 },
+    "Beasts":       { "strategy": "Territorial",  "aggression": 0.5 }
+  },
+  "victoryConditions": {
+    "highIntensityThreshold": 4,
+    "maxHighIntensityThreats": 10,
+    "maxThreatInfluence": 100.0
+  },
+  "factionScoringControl": {
+    "idleScoreThreshold": 2.0,
+    "raidBaseIntensity": 3,
+    "raidIntensityScale": 0.33
   },
   "spawnProbabilities": {
     "expansionThreatSpawnChance": 20,
@@ -33,61 +48,49 @@
       "baseGrowthRate": 0.05,
       "baseRadius": 3,
       "primaryEffect": "SpawnBoost",
-      "canSpawnChildren": true,
-      "maxIntensity": 5
+      "canSpawnChildren": true
     },
     {
       "threatType": "BanditCamp",
       "baseGrowthRate": 0.08,
       "baseRadius": 2,
       "primaryEffect": "ResourceDrain",
-      "canSpawnChildren": false,
-      "maxIntensity": 5
+      "canSpawnChildren": false
     },
     {
       "threatType": "Corruption",
       "baseGrowthRate": 0.03,
       "baseRadius": 5,
       "primaryEffect": "TerrainCorruption",
-      "canSpawnChildren": true,
-      "maxIntensity": 5
+      "canSpawnChildren": true
     },
     {
       "threatType": "BeastNest",
       "baseGrowthRate": 0.06,
       "baseRadius": 2,
       "primaryEffect": "SpawnBoost",
-      "canSpawnChildren": false,
-      "maxIntensity": 5
+      "canSpawnChildren": false
     },
     {
       "threatType": "OrcWarband",
       "baseGrowthRate": 0.07,
       "baseRadius": 3,
       "primaryEffect": "CombatDebuff",
-      "canSpawnChildren": false,
-      "maxIntensity": 5
+      "canSpawnChildren": false
     }
   ],
   "factionScoring": {
     "expansion": {
       "strongBonus": 5.0,
       "smallTerritoryBonus": 3.0,
-      "maxTerritoryPenalty": -10.0,
-      "cultistModifier": 3.0,
-      "orcModifier": 2.0,
-      "beastModifier": -1.0
+      "maxTerritoryPenalty": -10.0
     },
     "fortification": {
       "weakBonus": 6.0,
-      "baseValue": 2.0,
-      "necromancerModifier": 2.0
+      "baseValue": 2.0
     },
     "raiding": {
-      "banditModifier": 5.0,
-      "orcModifier": 4.0,
-      "strongBonus": 3.0,
-      "strongThreshold": 10
+      "strongBonus": 3.0
     },
     "retreat": {
       "criticalWeakBonus": 8.0,

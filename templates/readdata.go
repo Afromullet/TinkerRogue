@@ -370,20 +370,47 @@ func ReadOverworldConfig() {
 func validateOverworldConfig(config *JSONOverworldConfig) {
 	// Validate threat growth parameters are positive
 	tg := config.ThreatGrowth
-	if tg.DefaultGrowthRate <= 0 || tg.ContainmentSlowdown <= 0 || tg.MaxThreatIntensity <= 0 ||
-		tg.ChildNodeSpawnThreshold <= 0 || tg.PlayerContainmentRadius <= 0 ||
-		tg.MaxChildNodeSpawnAttempts <= 0 {
+	if tg.ContainmentSlowdown <= 0 || tg.MaxThreatIntensity <= 0 ||
+		tg.ChildNodeSpawnThreshold <= 0 || tg.MaxChildNodeSpawnAttempts <= 0 {
 		panic("All threat growth parameters must be positive")
 	}
 
 	// Validate faction AI parameters are positive
 	fa := config.FactionAI
-	if fa.DefaultIntentTickDuration <= 0 || fa.ExpansionStrengthThreshold <= 0 ||
-		fa.ExpansionTerritoryLimit <= 0 || fa.FortificationWeakThreshold <= 0 ||
-		fa.FortificationStrengthGain <= 0 || fa.RaidStrengthThreshold <= 0 ||
-		fa.RaidProximityRange <= 0 || fa.RetreatCriticalStrength <= 0 ||
+	if fa.DefaultIntentTickDuration <= 0 ||
+		fa.ExpansionTerritoryLimit <= 0 ||
+		fa.FortificationStrengthGain <= 0 ||
 		fa.MaxTerritorySize <= 0 {
 		panic("All faction AI parameters must be positive")
+	}
+
+	// Validate strength thresholds
+	st := config.StrengthThresholds
+	if st.Weak <= 0 || st.Strong <= 0 || st.Critical < 0 {
+		panic("Strength thresholds must be positive (critical can be 0)")
+	}
+	if st.Critical > st.Weak || st.Weak >= st.Strong {
+		panic("Strength thresholds must be: critical <= weak < strong")
+	}
+
+	// Validate faction archetypes exist for required factions
+	requiredFactions := []string{"Cultists", "Orcs", "Bandits", "Necromancers", "Beasts"}
+	for _, faction := range requiredFactions {
+		if _, ok := config.FactionArchetypes[faction]; !ok {
+			panic("Missing faction archetype for: " + faction)
+		}
+	}
+
+	// Validate victory conditions
+	vc := config.VictoryConditions
+	if vc.HighIntensityThreshold <= 0 || vc.MaxHighIntensityThreats <= 0 || vc.MaxThreatInfluence <= 0 {
+		panic("Victory condition thresholds must be positive")
+	}
+
+	// Validate faction scoring control
+	fsc := config.FactionScoringControl
+	if fsc.IdleScoreThreshold <= 0 || fsc.RaidBaseIntensity <= 0 || fsc.RaidIntensityScale <= 0 {
+		panic("Faction scoring control parameters must be positive")
 	}
 
 	// Validate spawn probabilities are in valid range [0-100]
@@ -413,17 +440,17 @@ func validateOverworldConfig(config *JSONOverworldConfig) {
 			requiredThreats[tt.ThreatType] = true
 		}
 
-		// Validate threat type parameters are positive
-		if tt.BaseGrowthRate <= 0 || tt.BaseRadius <= 0 || tt.MaxIntensity <= 0 {
+		// Validate threat type parameters are positive (maxIntensity is optional now, use global)
+		if tt.BaseGrowthRate <= 0 || tt.BaseRadius <= 0 {
 			panic("Threat type '" + tt.ThreatType + "' parameters must be positive")
 		}
 
 		// Validate primary effect is valid
 		validEffects := map[string]bool{
-			"SpawnBoost":         true,
-			"ResourceDrain":      true,
-			"TerrainCorruption":  true,
-			"CombatDebuff":       true,
+			"SpawnBoost":        true,
+			"ResourceDrain":     true,
+			"TerrainCorruption": true,
+			"CombatDebuff":      true,
 		}
 		if !validEffects[tt.PrimaryEffect] {
 			panic("Threat type '" + tt.ThreatType + "' has invalid primary effect: " + tt.PrimaryEffect)

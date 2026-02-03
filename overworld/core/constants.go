@@ -1,16 +1,15 @@
 package core
 
-// ThreatTypeParams defines behavior per threat type
+// ThreatTypeParams defines behavior per threat type.
+// Note: MaxIntensity has been removed - use GetMaxThreatIntensity() for the global cap.
 type ThreatTypeParams struct {
 	BaseGrowthRate   float64
 	BaseRadius       int
 	PrimaryEffect    InfluenceEffect
 	CanSpawnChildren bool
-	MaxIntensity     int
 }
 
 const (
-
 	// Map dimensions (TODO: Should come from worldmap config)
 	DefaultMapWidth  = 100 // Default overworld map width
 	DefaultMapHeight = 80  // Default overworld map height
@@ -27,7 +26,6 @@ func GetThreatTypeParams(threatType ThreatType) ThreatTypeParams {
 			BaseRadius:       3,
 			PrimaryEffect:    InfluenceSpawnBoost,
 			CanSpawnChildren: true,
-			MaxIntensity:     5,
 		}
 	case ThreatBanditCamp:
 		return ThreatTypeParams{
@@ -35,7 +33,6 @@ func GetThreatTypeParams(threatType ThreatType) ThreatTypeParams {
 			BaseRadius:       2,
 			PrimaryEffect:    InfluenceResourceDrain,
 			CanSpawnChildren: false,
-			MaxIntensity:     5,
 		}
 	case ThreatCorruption:
 		return ThreatTypeParams{
@@ -43,7 +40,6 @@ func GetThreatTypeParams(threatType ThreatType) ThreatTypeParams {
 			BaseRadius:       5,
 			PrimaryEffect:    InfluenceTerrainCorruption,
 			CanSpawnChildren: true,
-			MaxIntensity:     5,
 		}
 	case ThreatBeastNest:
 		return ThreatTypeParams{
@@ -51,7 +47,6 @@ func GetThreatTypeParams(threatType ThreatType) ThreatTypeParams {
 			BaseRadius:       2,
 			PrimaryEffect:    InfluenceSpawnBoost,
 			CanSpawnChildren: false,
-			MaxIntensity:     5,
 		}
 	case ThreatOrcWarband:
 		return ThreatTypeParams{
@@ -59,7 +54,6 @@ func GetThreatTypeParams(threatType ThreatType) ThreatTypeParams {
 			BaseRadius:       3,
 			PrimaryEffect:    InfluenceCombatDebuff,
 			CanSpawnChildren: false,
-			MaxIntensity:     5,
 		}
 	default:
 		return ThreatTypeParams{
@@ -67,7 +61,6 @@ func GetThreatTypeParams(threatType ThreatType) ThreatTypeParams {
 			BaseRadius:       2,
 			PrimaryEffect:    InfluenceSpawnBoost,
 			CanSpawnChildren: false,
-			MaxIntensity:     5,
 		}
 	}
 }

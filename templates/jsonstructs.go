@@ -378,35 +378,32 @@ type ScalingConstantsConfig struct {
 
 // JSONOverworldConfig is the root container for overworld configuration
 type JSONOverworldConfig struct {
-	ThreatGrowth        ThreatGrowthConfig        `json:"threatGrowth"`
-	FactionAI           FactionAIConfig           `json:"factionAI"`
-	SpawnProbabilities  SpawnProbabilitiesConfig  `json:"spawnProbabilities"`
-	MapDimensions       MapDimensionsConfig       `json:"mapDimensions"`
-	ThreatTypes         []ThreatTypeConfig        `json:"threatTypes"`
-	FactionScoring      FactionScoringConfig      `json:"factionScoring"`
+	ThreatGrowth          ThreatGrowthConfig               `json:"threatGrowth"`
+	FactionAI             FactionAIConfig                  `json:"factionAI"`
+	SpawnProbabilities    SpawnProbabilitiesConfig         `json:"spawnProbabilities"`
+	MapDimensions         MapDimensionsConfig              `json:"mapDimensions"`
+	ThreatTypes           []ThreatTypeConfig               `json:"threatTypes"`
+	FactionScoring        FactionScoringConfig             `json:"factionScoring"`
+	StrengthThresholds    StrengthThresholdsConfig         `json:"strengthThresholds"`
+	FactionArchetypes     map[string]FactionArchetypeConfig `json:"factionArchetypes"`
+	VictoryConditions     VictoryConditionsConfig          `json:"victoryConditions"`
+	FactionScoringControl FactionScoringControlConfig      `json:"factionScoringControl"`
 }
 
 // ThreatGrowthConfig defines threat growth parameters
 type ThreatGrowthConfig struct {
-	DefaultGrowthRate          float64 `json:"defaultGrowthRate"`
-	ContainmentSlowdown        float64 `json:"containmentSlowdown"`
-	MaxThreatIntensity         int     `json:"maxThreatIntensity"`
-	ChildNodeSpawnThreshold    int     `json:"childNodeSpawnThreshold"`
-	PlayerContainmentRadius    int     `json:"playerContainmentRadius"`
-	MaxChildNodeSpawnAttempts  int     `json:"maxChildNodeSpawnAttempts"`
+	ContainmentSlowdown       float64 `json:"containmentSlowdown"`
+	MaxThreatIntensity        int     `json:"maxThreatIntensity"`
+	ChildNodeSpawnThreshold   int     `json:"childNodeSpawnThreshold"`
+	MaxChildNodeSpawnAttempts int     `json:"maxChildNodeSpawnAttempts"`
 }
 
 // FactionAIConfig defines faction AI behavior parameters
 type FactionAIConfig struct {
-	DefaultIntentTickDuration  int `json:"defaultIntentTickDuration"`
-	ExpansionStrengthThreshold int `json:"expansionStrengthThreshold"`
-	ExpansionTerritoryLimit    int `json:"expansionTerritoryLimit"`
-	FortificationWeakThreshold int `json:"fortificationWeakThreshold"`
-	FortificationStrengthGain  int `json:"fortificationStrengthGain"`
-	RaidStrengthThreshold      int `json:"raidStrengthThreshold"`
-	RaidProximityRange         int `json:"raidProximityRange"`
-	RetreatCriticalStrength    int `json:"retreatCriticalStrength"`
-	MaxTerritorySize           int `json:"maxTerritorySize"`
+	DefaultIntentTickDuration int `json:"defaultIntentTickDuration"`
+	ExpansionTerritoryLimit   int `json:"expansionTerritoryLimit"`
+	FortificationStrengthGain int `json:"fortificationStrengthGain"`
+	MaxTerritorySize          int `json:"maxTerritorySize"`
 }
 
 // SpawnProbabilitiesConfig defines spawn and drop probabilities
@@ -422,14 +419,14 @@ type MapDimensionsConfig struct {
 	DefaultMapHeight int `json:"defaultMapHeight"`
 }
 
-// ThreatTypeConfig defines threat type parameters
+// ThreatTypeConfig defines threat type parameters.
+// Note: MaxIntensity removed - now uses global maxThreatIntensity from ThreatGrowthConfig.
 type ThreatTypeConfig struct {
 	ThreatType       string  `json:"threatType"`
 	BaseGrowthRate   float64 `json:"baseGrowthRate"`
 	BaseRadius       int     `json:"baseRadius"`
 	PrimaryEffect    string  `json:"primaryEffect"`
 	CanSpawnChildren bool    `json:"canSpawnChildren"`
-	MaxIntensity     int     `json:"maxIntensity"`
 }
 
 // FactionScoringConfig defines faction intent scoring parameters
@@ -442,27 +439,20 @@ type FactionScoringConfig struct {
 
 // ExpansionScoringConfig defines expansion scoring parameters
 type ExpansionScoringConfig struct {
-	StrongBonus          float64 `json:"strongBonus"`
-	SmallTerritoryBonus  float64 `json:"smallTerritoryBonus"`
-	MaxTerritoryPenalty  float64 `json:"maxTerritoryPenalty"`
-	CultistModifier      float64 `json:"cultistModifier"`
-	OrcModifier          float64 `json:"orcModifier"`
-	BeastModifier        float64 `json:"beastModifier"`
+	StrongBonus         float64 `json:"strongBonus"`
+	SmallTerritoryBonus float64 `json:"smallTerritoryBonus"`
+	MaxTerritoryPenalty float64 `json:"maxTerritoryPenalty"`
 }
 
 // FortificationScoringConfig defines fortification scoring parameters
 type FortificationScoringConfig struct {
-	WeakBonus             float64 `json:"weakBonus"`
-	BaseValue             float64 `json:"baseValue"`
-	NecromancerModifier   float64 `json:"necromancerModifier"`
+	WeakBonus float64 `json:"weakBonus"`
+	BaseValue float64 `json:"baseValue"`
 }
 
 // RaidingScoringConfig defines raiding scoring parameters
 type RaidingScoringConfig struct {
-	BanditModifier  float64 `json:"banditModifier"`
-	OrcModifier     float64 `json:"orcModifier"`
-	StrongBonus     float64 `json:"strongBonus"`
-	StrongThreshold int     `json:"strongThreshold"`
+	StrongBonus float64 `json:"strongBonus"`
 }
 
 // RetreatScoringConfig defines retreat scoring parameters
@@ -470,4 +460,31 @@ type RetreatScoringConfig struct {
 	CriticalWeakBonus       float64 `json:"criticalWeakBonus"`
 	SmallTerritoryPenalty   float64 `json:"smallTerritoryPenalty"`
 	MinTerritorySize        int     `json:"minTerritorySize"`
+}
+
+// StrengthThresholdsConfig defines unified strength thresholds
+type StrengthThresholdsConfig struct {
+	Weak     int `json:"weak"`     // 0-weak = weak (fortify/retreat)
+	Strong   int `json:"strong"`   // strong+ = strong (expand/raid)
+	Critical int `json:"critical"` // 0-critical = critically weak (must retreat)
+}
+
+// FactionArchetypeConfig defines strategic archetype per faction
+type FactionArchetypeConfig struct {
+	Strategy   string  `json:"strategy"`
+	Aggression float64 `json:"aggression"`
+}
+
+// VictoryConditionsConfig defines victory/defeat thresholds
+type VictoryConditionsConfig struct {
+	HighIntensityThreshold  int     `json:"highIntensityThreshold"`
+	MaxHighIntensityThreats int     `json:"maxHighIntensityThreats"`
+	MaxThreatInfluence      float64 `json:"maxThreatInfluence"`
+}
+
+// FactionScoringControlConfig defines faction scoring control parameters
+type FactionScoringControlConfig struct {
+	IdleScoreThreshold float64 `json:"idleScoreThreshold"`
+	RaidBaseIntensity  int     `json:"raidBaseIntensity"`
+	RaidIntensityScale float64 `json:"raidIntensityScale"`
 }

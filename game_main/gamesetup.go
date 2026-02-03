@@ -109,9 +109,6 @@ func (gb *GameBootstrap) InitializeGameplay(em *common.EntityManager, pd *common
 	// Initialize travel state
 	travel.CreateTravelStateEntity(em)
 
-	// Inject squad checker for victory conditions (avoids circular dependency)
-	core.SetSquadChecker(&gameSquadChecker{})
-
 	// Create initial overworld factions (they will spawn threats dynamically)
 	gb.InitializeOverworldFactions(em, pd)
 }

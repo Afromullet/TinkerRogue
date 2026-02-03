@@ -254,7 +254,7 @@ func FormatThreatInfo(threat *ecs.Entity, manager *common.EntityManager) string 
 		containedStatus,
 		pos.X, pos.Y,
 		data.Intensity,
-		core.GetThreatTypeParams(data.ThreatType).MaxIntensity,
+		core.GetMaxThreatIntensity(),
 		data.GrowthProgress*100,
 		data.SpawnedTick,
 	)

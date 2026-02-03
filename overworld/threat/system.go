@@ -85,8 +85,8 @@ func UpdateThreatNodes(manager *common.EntityManager, currentTick int64) error {
 func EvolveThreatNode(manager *common.EntityManager, entity *ecs.Entity, threatData *core.ThreatNodeData) {
 	params := core.GetThreatTypeParamsFromConfig(threatData.ThreatType)
 
-	// Increase intensity (cap at threat-specific max)
-	if threatData.Intensity < params.MaxIntensity {
+	// Increase intensity (cap at global max)
+	if threatData.Intensity < core.GetMaxThreatIntensity() {
 		oldIntensity := threatData.Intensity
 		threatData.Intensity++
 

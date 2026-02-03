@@ -56,25 +56,16 @@ func TranslateThreatToEncounter(
 	}, nil
 }
 
-// CalculateRewards determines loot from defeating a threat
+// CalculateRewards determines loot from defeating a threat.
+// Reward multiplier is now derived from intensity instead of hardcoded per-type values.
+// Formula: 1.0 + (intensity × 0.1) gives 1.1x-1.5x for intensity 1-5.
 func CalculateRewards(intensity int, threatType core.ThreatType) RewardTable {
 	baseGold := 100 + (intensity * 50)
 	baseXP := 50 + (intensity * 25)
 
-	// Type-specific bonuses
-	typeMultiplier := 1.0
-	switch threatType {
-	case core.ThreatNecromancer:
-		typeMultiplier = 1.5 // Higher rewards for harder threats
-	case core.ThreatOrcWarband:
-		typeMultiplier = 1.3
-	case core.ThreatBanditCamp:
-		typeMultiplier = 1.2
-	case core.ThreatCorruption:
-		typeMultiplier = 1.1
-	case core.ThreatBeastNest:
-		typeMultiplier = 1.0
-	}
+	// Intensity-based multiplier (replaces hardcoded type-specific values)
+	// Higher intensity threats give proportionally better rewards
+	typeMultiplier := 1.0 + (float64(intensity) * 0.1)
 
 	// Generate item drops based on threat type and intensity
 	items := GenerateItemDrops(intensity, threatType)

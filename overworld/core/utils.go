@@ -87,25 +87,3 @@ func GetThreatNodeAt(manager *common.EntityManager, pos coords.LogicalPosition) 
 	}
 	return 0
 }
-
-// SquadChecker is an interface for checking squad status without circular dependency
-// This interface allows the overworld package to query squad status without importing the squads package
-type SquadChecker interface {
-	// HasActiveSquads returns true if the player has any squads with living units
-	HasActiveSquads(manager *common.EntityManager) bool
-}
-
-// squadChecker is the injected implementation for squad checking
-// Set this in main package initialization via SetSquadChecker()
-var squadChecker SquadChecker
-
-// SetSquadChecker injects the squad checking implementation
-// Call this from main package after squads package is initialized
-func SetSquadChecker(checker SquadChecker) {
-	squadChecker = checker
-}
-
-// GetSquadChecker returns the injected squad checker
-func GetSquadChecker() SquadChecker {
-	return squadChecker
-}
