@@ -191,22 +191,10 @@ func CreateOverworldEncounter(
 	return entity.GetID(), nil
 }
 
-// getThreatEncounterType maps threat type to encounter type string
+// getThreatEncounterType maps threat type to encounter type string.
+// Returns the JSON encounter type ID that matches encounterdata.json.
 func getThreatEncounterType(threatType core.ThreatType) string {
-	switch threatType {
-	case core.ThreatNecromancer:
-		return "undead"
-	case core.ThreatBanditCamp:
-		return "humanoid"
-	case core.ThreatCorruption:
-		return "corruption"
-	case core.ThreatBeastNest:
-		return "beast"
-	case core.ThreatOrcWarband:
-		return "orc"
-	default:
-		return "generic"
-	}
+	return threatType.EncounterTypeID()
 }
 
 // TriggerCombatFromThreat initiates combat when player engages a threat

@@ -33,6 +33,20 @@ const (
 	Fled                            // Player fled (not implemented yet)
 )
 
+// String returns a human-readable outcome name
+func (o EncounterOutcome) String() string {
+	switch o {
+	case Victory:
+		return "Victory"
+	case Defeat:
+		return "Defeat"
+	case Fled:
+		return "Fled"
+	default:
+		return "Unknown"
+	}
+}
+
 // ActiveEncounter holds context for the currently active encounter
 type ActiveEncounter struct {
 	// Core identification

@@ -29,6 +29,26 @@ func (t ThreatType) String() string {
 	}
 }
 
+// EncounterTypeID returns the JSON encounter type ID for this threat.
+// This is the SINGLE SOURCE OF TRUTH for threat-to-encounter mapping.
+// These IDs must match the "id" field in assets/gamedata/encounterdata.json.
+func (t ThreatType) EncounterTypeID() string {
+	switch t {
+	case ThreatNecromancer:
+		return "undead_basic"
+	case ThreatBanditCamp:
+		return "bandit_basic"
+	case ThreatCorruption:
+		return "corruption_basic"
+	case ThreatBeastNest:
+		return "beast_basic"
+	case ThreatOrcWarband:
+		return "orc_basic"
+	default:
+		return "generic"
+	}
+}
+
 // FactionType represents different faction types
 type FactionType int
 

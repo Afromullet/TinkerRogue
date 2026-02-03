@@ -2,6 +2,9 @@ __________________________________________
 #
 # # # **IMPORTANT** # # # 
 
+- Reneable victory conditions in tickmanager.go. They are disabled for testing
+
+
 
 - Look at all of the Utility AI parameters and simplfiy it. Too many parameters make it hard to balance
 

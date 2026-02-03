@@ -59,6 +59,20 @@
       "squadPreferences": ["melee", "ranged", "magic"],
       "defaultDifficulty": 4,
       "tags": ["common", "balanced"]
+    },
+    {
+      "id": "undead_basic",
+      "name": "Undead Horde",
+      "squadPreferences": ["melee", "melee", "magic"],
+      "defaultDifficulty": 4,
+      "tags": ["common", "undead"]
+    },
+    {
+      "id": "corruption_basic",
+      "name": "Corrupted Forces",
+      "squadPreferences": ["magic", "ranged", "melee"],
+      "defaultDifficulty": 4,
+      "tags": ["common", "corruption"]
     }
   ],
   "squadTypes": [

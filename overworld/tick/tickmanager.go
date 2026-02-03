@@ -12,7 +12,6 @@ import (
 	"game_main/overworld/faction"
 	"game_main/overworld/threat"
 	"game_main/overworld/travel"
-	"game_main/overworld/victory"
 
 	"github.com/bytearena/ecs"
 )
@@ -78,11 +77,15 @@ func AdvanceTick(manager *common.EntityManager, playerData *common.PlayerData) (
 	// No batch event processing needed currently
 
 	// Check victory/loss conditions
-	victoryCondition := victory.CheckVictoryCondition(manager)
-	if victoryCondition != core.VictoryNone {
-		// Victory or defeat achieved - set game over flag
-		tickState.IsGameOver = true
-	}
+
+	//todo re-enable this
+	/*
+		victoryCondition := victory.CheckVictoryCondition(manager)
+		if victoryCondition != core.VictoryNone {
+			// Victory or defeat achieved - set game over flag
+			tickState.IsGameOver = true
+		}
+	*/
 
 	return travelCompleted, nil
 }
