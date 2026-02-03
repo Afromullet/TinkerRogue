@@ -19,14 +19,14 @@ var RoleMultipliers = map[squads.UnitRole]float64{
 // Kept for fallback purposes only.
 const LeaderBonus = 1.3
 
-// DEPRECATED: Use GetScalingConstants() instead.
-// These constants are now loaded from powerconfig.json for designer-friendly tuning.
-// Kept for fallback purposes only.
+// Scaling constants for power calculations.
+// These are internal implementation details, not designer-tunable parameters.
+// They convert raw stat values to comparable power scores.
 const (
 	RoleScalingFactor          = 10.0  // Base multiplier for role value
-	DodgeScalingFactor         = 100.0 // Scale dodge to 0-40 range
-	CoverScalingFactor         = 100.0 // Scale cover value percentage
-	CoverBeneficiaryMultiplier = 2.5   // Avg units protected per cover provider
+	DodgeScalingFactor         = 100.0 // Scale dodge (0.0-0.4) to comparable range (0-40)
+	CoverScalingFactor         = 100.0 // Scale cover value (0.0-0.5) to comparable range (0-50)
+	CoverBeneficiaryMultiplier = 2.5   // Average units protected per cover provider
 )
 
 // DEPRECATED: Use GetRoleMultiplierFromConfig() instead.
@@ -79,8 +79,8 @@ func GetRoleMultiplierFromConfig(role squads.UnitRole) float64 {
 // GetLeaderBonusFromConfig returns the leader bonus multiplier from JSON config.
 // Falls back to hardcoded constant if not found in config.
 func GetLeaderBonusFromConfig() float64 {
-	if templates.PowerConfigTemplate.ScalingConstants.LeaderBonus > 0 {
-		return templates.PowerConfigTemplate.ScalingConstants.LeaderBonus
+	if templates.PowerConfigTemplate.LeaderBonus > 0 {
+		return templates.PowerConfigTemplate.LeaderBonus
 	}
 	return LeaderBonus
 }
@@ -114,6 +114,7 @@ func GetCompositionBonusFromConfig(uniqueAttackTypes int) float64 {
 }
 
 // ScalingConstants holds scaling factors for power calculations.
+// These are internal implementation details, not configurable parameters.
 type ScalingConstants struct {
 	RoleScaling                float64
 	DodgeScaling               float64
@@ -122,21 +123,9 @@ type ScalingConstants struct {
 	LeaderBonus                float64
 }
 
-// GetScalingConstants returns all scaling constants from JSON config.
-// Falls back to hardcoded constants if not found in config.
+// GetScalingConstants returns the hardcoded scaling constants.
+// These are cosmetic multipliers that convert raw stats to comparable ranges.
 func GetScalingConstants() ScalingConstants {
-	sc := templates.PowerConfigTemplate.ScalingConstants
-	if sc.RoleScaling > 0 && sc.DodgeScaling > 0 && sc.CoverScaling > 0 &&
-		sc.CoverBeneficiaryMultiplier > 0 && sc.LeaderBonus > 0 {
-		return ScalingConstants{
-			RoleScaling:                sc.RoleScaling,
-			DodgeScaling:               sc.DodgeScaling,
-			CoverScaling:               sc.CoverScaling,
-			CoverBeneficiaryMultiplier: sc.CoverBeneficiaryMultiplier,
-			LeaderBonus:                sc.LeaderBonus,
-		}
-	}
-	// Fallback to hardcoded constants
 	return ScalingConstants{
 		RoleScaling:                RoleScalingFactor,
 		DodgeScaling:               DodgeScalingFactor,

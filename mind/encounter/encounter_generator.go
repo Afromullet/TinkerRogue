@@ -59,8 +59,7 @@ func GenerateEncounterSpec(
 	// Handle edge cases
 	if avgPlayerSquadPower <= 0.0 {
 		targetEnemySquadPower = 50.0
-		difficultyMod.MinSquads = 1
-		difficultyMod.MaxSquads = 1
+		difficultyMod.SquadCount = 1
 	}
 	if targetEnemySquadPower > 2000.0 {
 		targetEnemySquadPower = 2000.0

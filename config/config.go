@@ -59,12 +59,6 @@ const (
 	DefaultMaxCapacity    = 9
 )
 
-// Counterattack penalties
-const (
-	COUNTERATTACK_DAMAGE_MULTIPLIER = 0.5 // 50% damage on counterattack
-	COUNTERATTACK_HIT_PENALTY       = 20  // -20% hit chance on counterattack
-)
-
 // Critical hit constants
 const (
 	// CritDamageBonus is the extra damage multiplier on critical hits.

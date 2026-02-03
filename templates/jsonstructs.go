@@ -250,8 +250,7 @@ type JSONEncounterDifficulty struct {
 	Level           int     `json:"level"`
 	Name            string  `json:"name"`
 	PowerMultiplier float64 `json:"powerMultiplier"`
-	MinSquads       int     `json:"minSquads"`
-	MaxSquads       int     `json:"maxSquads"`
+	SquadCount      int     `json:"squadCount"`
 }
 
 // JSONEncounterType defines an encounter template with squad composition preferences
@@ -325,28 +324,17 @@ type JSONPowerConfig struct {
 	RoleMultipliers    []RoleMultiplierConfig   `json:"roleMultipliers"`
 	AbilityValues      []AbilityValueConfig     `json:"abilityValues"`
 	CompositionBonuses []CompositionBonusConfig `json:"compositionBonuses"`
-	ScalingConstants   ScalingConstantsConfig   `json:"scalingConstants"`
+	LeaderBonus        float64                  `json:"leaderBonus"`
 }
 
-// PowerProfileConfig defines a power calculation profile
+// PowerProfileConfig defines a power calculation profile.
+// Only top-level category weights are configurable; sub-calculations use fixed formulas.
 type PowerProfileConfig struct {
-	Name             string  `json:"name"`
-	OffensiveWeight  float64 `json:"offensiveWeight"`
-	DefensiveWeight  float64 `json:"defensiveWeight"`
-	UtilityWeight    float64 `json:"utilityWeight"`
-	DamageWeight     float64 `json:"damageWeight"`
-	AccuracyWeight   float64 `json:"accuracyWeight"`
-	HealthWeight     float64 `json:"healthWeight"`
-	ResistanceWeight float64 `json:"resistanceWeight"`
-	AvoidanceWeight  float64 `json:"avoidanceWeight"`
-	RoleWeight       float64 `json:"roleWeight"`
-	AbilityWeight    float64 `json:"abilityWeight"`
-	CoverWeight      float64 `json:"coverWeight"`
-	FormationBonus   float64 `json:"formationBonus"`
-	MoraleMultiplier float64 `json:"moraleMultiplier"`
-	HealthPenalty    float64 `json:"healthPenalty"`
-	DeployedWeight   float64 `json:"deployedWeight"`
-	ReserveWeight    float64 `json:"reserveWeight"`
+	Name            string  `json:"name"`
+	OffensiveWeight float64 `json:"offensiveWeight"` // Weight for offensive stats (damage output)
+	DefensiveWeight float64 `json:"defensiveWeight"` // Weight for defensive stats (survivability)
+	UtilityWeight   float64 `json:"utilityWeight"`   // Weight for utility (role, abilities, cover)
+	HealthPenalty   float64 `json:"healthPenalty"`   // Exponent for health-based power scaling
 }
 
 // RoleMultiplierConfig defines role multiplier value
@@ -367,14 +355,6 @@ type CompositionBonusConfig struct {
 	Bonus       float64 `json:"bonus"`
 }
 
-// ScalingConstantsConfig defines scaling constants
-type ScalingConstantsConfig struct {
-	RoleScaling                float64 `json:"roleScaling"`
-	DodgeScaling               float64 `json:"dodgeScaling"`
-	CoverScaling               float64 `json:"coverScaling"`
-	CoverBeneficiaryMultiplier float64 `json:"coverBeneficiaryMultiplier"`
-	LeaderBonus                float64 `json:"leaderBonus"`
-}
 
 // JSONOverworldConfig is the root container for overworld configuration
 type JSONOverworldConfig struct {

@@ -12,8 +12,7 @@ func GetDifficultyModifier(level int) EncounterDifficultyModifier {
 		if template.Level == level {
 			return EncounterDifficultyModifier{
 				PowerMultiplier: template.PowerMultiplier,
-				MinSquads:       template.MinSquads,
-				MaxSquads:       template.MaxSquads,
+				SquadCount:      template.SquadCount,
 			}
 		}
 	}
@@ -23,8 +22,7 @@ func GetDifficultyModifier(level int) EncounterDifficultyModifier {
 		if template.Level == 3 {
 			return EncounterDifficultyModifier{
 				PowerMultiplier: template.PowerMultiplier,
-				MinSquads:       template.MinSquads,
-				MaxSquads:       template.MaxSquads,
+				SquadCount:      template.SquadCount,
 			}
 		}
 	}
@@ -32,8 +30,7 @@ func GetDifficultyModifier(level int) EncounterDifficultyModifier {
 	// Last resort fallback (should never happen if JSON loads correctly)
 	return EncounterDifficultyModifier{
 		PowerMultiplier: 1.0,
-		MinSquads:       3,
-		MaxSquads:       5,
+		SquadCount:      4,
 	}
 }
 

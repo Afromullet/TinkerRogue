@@ -4,36 +4,31 @@
       "level": 1,
       "name": "Easy",
       "powerMultiplier": 0.7,
-      "minSquads": 2,
-      "maxSquads": 3
+      "squadCount": 2
     },
     {
       "level": 2,
       "name": "Moderate",
       "powerMultiplier": 0.9,
-      "minSquads": 3,
-      "maxSquads": 4
+      "squadCount": 3
     },
     {
       "level": 3,
       "name": "Fair",
       "powerMultiplier": 1.0,
-      "minSquads": 3,
-      "maxSquads": 5
+      "squadCount": 4
     },
     {
       "level": 4,
       "name": "Hard",
-      "powerMultiplier": 5,
-      "minSquads": 4,
-      "maxSquads": 6
+      "powerMultiplier": 1.2,
+      "squadCount": 5
     },
     {
       "level": 5,
       "name": "Boss",
       "powerMultiplier": 1.5,
-      "minSquads": 5,
-      "maxSquads": 7
+      "squadCount": 6
     }
   ],
   "encounterTypes": [

@@ -52,65 +52,55 @@ func CalculateUnitPower(
 }
 
 // CalculateOffensivePower evaluates a unit's damage output potential.
+// Returns expected damage per attack accounting for hit rate and crits.
 func CalculateOffensivePower(attr *common.Attributes, config *PowerConfig) float64 {
-	// Damage component (physical + magic)
+	// Average of physical and magic damage
 	physicalDamage := float64(attr.GetPhysicalDamage())
 	magicDamage := float64(attr.GetMagicDamage())
 	avgDamage := (physicalDamage + magicDamage) / 2.0
 
-	// Accuracy component (hit rate and crit chance)
-	hitRate := float64(attr.GetHitRate()) / 100.0 // Normalize to 0-1
+	// Calculate expected damage (damage * hit rate * crit multiplier)
+	hitRate := float64(attr.GetHitRate()) / 100.0
 	critChance := float64(attr.GetCritChance()) / 100.0
-	critMultiplier := 1.0 + (critChance * gameconfig.CritDamageBonus) // Expected damage multiplier from crits
+	critMultiplier := 1.0 + (critChance * gameconfig.CritDamageBonus)
 
-	effectiveDamage := avgDamage * hitRate * critMultiplier
-
-	// Sub-weighted combination
-	damageComponent := avgDamage * config.DamageWeight
-	accuracyComponent := effectiveDamage * config.AccuracyWeight
-
-	return damageComponent + accuracyComponent
+	return avgDamage * hitRate * critMultiplier
 }
 
 // CalculateDefensivePower evaluates a unit's survivability.
+// Returns effective HP accounting for current health, resistance, and dodge.
 func CalculateDefensivePower(attr *common.Attributes, config *PowerConfig) float64 {
-	// Health component (current and max)
+	// Effective health based on current HP
 	maxHP := float64(attr.GetMaxHealth())
 	currentHP := float64(attr.CurrentHealth)
 	healthRatio := currentHP / math.Max(maxHP, 1.0)
-
 	effectiveHealth := maxHP * healthRatio
 
-	// Resistance component (physical + magic)
+	// Average resistance provides damage reduction
 	physicalResist := float64(attr.GetPhysicalResistance())
 	magicResist := float64(attr.GetMagicDefense())
 	avgResistance := (physicalResist + magicResist) / 2.0
 
-	// Avoidance component (dodge)
+	// Dodge provides effective HP multiplier: HP / (1 - dodgeChance)
+	// e.g., 20% dodge = HP / 0.8 = 1.25x effective HP
 	dodgeChance := float64(attr.GetDodgeChance()) / 100.0
+	dodgeMultiplier := 1.0 / math.Max(1.0-dodgeChance, 0.5) // Cap at 2x for 50% dodge
 
-	// Sub-weighted combination
-	scalingConstants := GetScalingConstants()
-	healthComponent := effectiveHealth * config.HealthWeight
-	resistanceComponent := avgResistance * config.ResistanceWeight
-	avoidanceComponent := dodgeChance * scalingConstants.DodgeScaling * config.AvoidanceWeight // Scale dodge to 0-40 range
-
-	return healthComponent + resistanceComponent + avoidanceComponent
+	// Combine: effective HP * dodge multiplier + resistance bonus
+	// Resistance adds flat survivability (roughly 1 HP per point)
+	return (effectiveHealth * dodgeMultiplier) + avgResistance
 }
 
 // CalculateUtilityPower evaluates a unit's support and tactical value.
+// Sums role value, leader abilities, and cover provision.
 func CalculateUtilityPower(
 	entity *ecs.Entity,
 	attr *common.Attributes,
 	roleData *squads.UnitRoleData,
 	config *PowerConfig,
 ) float64 {
-	// Calculate individual utility components using helper functions
-	roleComponent := calculateRoleValue(roleData) * config.RoleWeight
-	abilityComponent := calculateAbilityValue(entity) * config.AbilityWeight
-	coverComponent := calculateCoverValue(entity) * config.CoverWeight
-
-	return roleComponent + abilityComponent + coverComponent
+	// Sum all utility components (no sub-weights, just add them together)
+	return calculateRoleValue(roleData) + calculateAbilityValue(entity) + calculateCoverValue(entity)
 }
 
 // calculateRoleValue returns power value based on unit role.
@@ -187,10 +177,6 @@ func CalculateSquadPower(
 	// Apply squad-level modifiers
 	basePower := totalUnitPower
 
-	// Morale modifier (0-100 morale → 0.8x to 1.2x multiplier)
-	moraleBonus := 1.0 + (float64(squadData.Morale) * config.MoraleMultiplier)
-	basePower *= moraleBonus
-
 	// Composition bonus (attack type diversity)
 	compositionMod := CalculateSquadCompositionBonus(squadID, manager)
 	basePower *= compositionMod
@@ -232,21 +218,11 @@ func CalculateSquadCompositionBonus(
 func CalculateHealthMultiplier(healthPercent float64, healthPenalty float64) float64 {
 	// healthPenalty acts as an exponent - lower health = less power
 	// e.g., 50% health with penalty 2.0 = 0.5^2 = 0.25 power
-	// But we cap at MinimumHealthMultiplier to prevent complete ineffectiveness
-	multiplier := math.Pow(healthPercent, healthPenalty)
-	if multiplier < MinimumHealthMultiplier {
-		multiplier = MinimumHealthMultiplier
-	}
-	return multiplier
+	// Note: With penalty=2.0, even at 10% health the multiplier is 0.01,
+	// which is functionally near-zero but never exactly zero.
+	return math.Pow(healthPercent, healthPenalty)
 }
 
-// ApplyDeploymentWeight applies roster deployment weighting.
-func ApplyDeploymentWeight(power float64, isDeployed bool, config *PowerConfig) float64 {
-	if isDeployed {
-		return power * config.DeployedWeight
-	}
-	return power * config.ReserveWeight
-}
 
 // CalculateSquadPowerByRange computes power contribution at each attack range.
 // Used by AI threat assessment to understand how dangerous a squad is at different distances.
@@ -364,7 +340,7 @@ func CalculateSquadPowerByRange(
 func EstimateUnitPowerFromTemplate(unit squads.UnitTemplate, config *PowerConfig) float64 {
 	attr := &unit.Attributes
 
-	// Offensive power uses shared calculation
+	// === OFFENSIVE POWER ===
 	offensivePower := CalculateOffensivePower(attr, config)
 
 	// === DEFENSIVE POWER ===
@@ -372,43 +348,37 @@ func EstimateUnitPowerFromTemplate(unit squads.UnitTemplate, config *PowerConfig
 	maxHP := float64(attr.GetMaxHealth())
 	effectiveHealth := maxHP // Assume full HP for new units
 
-	// Resistance component
+	// Average resistance
 	physicalResist := float64(attr.GetPhysicalResistance())
 	magicResist := float64(attr.GetMagicDefense())
 	avgResistance := (physicalResist + magicResist) / 2.0
 
-	// Avoidance component
+	// Dodge multiplier
 	dodgeChance := float64(attr.GetDodgeChance()) / 100.0
-	scalingConstants := GetScalingConstants()
-	dodgeScaled := dodgeChance * scalingConstants.DodgeScaling
+	dodgeMultiplier := 1.0 / math.Max(1.0-dodgeChance, 0.5)
 
-	// Sub-weighted combination
-	healthComponent := effectiveHealth * config.HealthWeight
-	resistanceComponent := avgResistance * config.ResistanceWeight
-	avoidanceComponent := dodgeScaled * config.AvoidanceWeight
-	defensivePower := healthComponent + resistanceComponent + avoidanceComponent
+	defensivePower := (effectiveHealth * dodgeMultiplier) + avgResistance
 
 	// === UTILITY POWER ===
-	// Role component
+	scalingConstants := GetScalingConstants()
+
+	// Role value
 	roleMultiplier := GetRoleMultiplierFromConfig(unit.Role)
 	roleValue := roleMultiplier * scalingConstants.RoleScaling
-	roleComponent := roleValue * config.RoleWeight
 
-	// Ability component (simplified - assume leader gets average ability value)
+	// Ability value (simplified - assume leader gets average ability value)
 	abilityValue := 0.0
 	if unit.IsLeader {
 		abilityValue = 15.0 // Average of Rally (15.0), Heal (20.0), BattleCry (12.0)
 	}
-	abilityComponent := abilityValue * config.AbilityWeight
 
-	// Cover component
+	// Cover value
 	coverValue := 0.0
 	if unit.CoverValue > 0 {
 		coverValue = unit.CoverValue * scalingConstants.CoverScaling * scalingConstants.CoverBeneficiaryMultiplier
 	}
-	coverComponent := coverValue * config.CoverWeight
 
-	utilityPower := roleComponent + abilityComponent + coverComponent
+	utilityPower := roleValue + abilityValue + coverValue
 
 	// === WEIGHTED SUM ===
 	totalPower := (offensivePower * config.OffensiveWeight) +

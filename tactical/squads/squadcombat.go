@@ -2,9 +2,14 @@ package squads
 
 import (
 	"game_main/common"
-	"game_main/config"
 
 	"github.com/bytearena/ecs"
+)
+
+// Counterattack penalties - applied to units attacking back after being hit
+const (
+	counterattackDamageMultiplier = 0.5 // 50% damage on counterattack
+	counterattackHitPenalty       = 20  // -20% hit chance on counterattack
 )
 
 // CombatResult - Unified result type for combat operations
@@ -147,7 +152,7 @@ func calculateCounterattackDamage(attackerID, defenderID ecs.EntityID, squadmana
 
 	// PENALTY #1: Reduced hit chance (-20%)
 	baseHitThreshold := attackerAttr.GetHitRate()
-	hitThreshold := baseHitThreshold - config.COUNTERATTACK_HIT_PENALTY
+	hitThreshold := baseHitThreshold - counterattackHitPenalty
 	if hitThreshold < 0 {
 		hitThreshold = 0
 	}
@@ -192,7 +197,7 @@ func calculateCounterattackDamage(attackerID, defenderID ecs.EntityID, squadmana
 	}
 
 	// PENALTY #2: Reduced damage (50%)
-	baseDamage = int(float64(baseDamage) * config.COUNTERATTACK_DAMAGE_MULTIPLIER)
+	baseDamage = int(float64(baseDamage) * counterattackDamageMultiplier)
 	if baseDamage < 1 {
 		baseDamage = 1
 	}

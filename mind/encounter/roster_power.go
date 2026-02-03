@@ -25,12 +25,7 @@ func CalculateRosterPower(
 
 	for _, squadID := range roster.OwnedSquads {
 		squadPower := evaluation.CalculateSquadPower(squadID, manager, config)
-
-		// Apply deployment weight
-		squadData := common.GetComponentTypeByID[*squads.SquadData](manager, squadID, squads.SquadComponent)
-		if squadData != nil {
-			totalPower += evaluation.ApplyDeploymentWeight(squadPower, squadData.IsDeployed, config)
-		}
+		totalPower += squadPower
 	}
 
 	return totalPower
@@ -88,11 +83,10 @@ func CalculateRosterPowerBreakdown(
 
 		squadData := common.GetComponentTypeByID[*squads.SquadData](manager, squadID, squads.SquadComponent)
 		if squadData != nil {
-			weightedPower := evaluation.ApplyDeploymentWeight(squadPower, squadData.IsDeployed, config)
 			if squadData.IsDeployed {
-				breakdown.DeployedPower += weightedPower
+				breakdown.DeployedPower += squadPower
 			} else {
-				breakdown.ReservePower += weightedPower
+				breakdown.ReservePower += squadPower
 			}
 		}
 	}

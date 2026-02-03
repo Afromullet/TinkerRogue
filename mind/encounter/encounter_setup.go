@@ -173,8 +173,8 @@ func generateEnemySquadsByPower(
 	playerPos coords.LogicalPosition,
 	config *evaluation.PowerConfig,
 ) []EnemySquadSpec {
-	// Determine number of squads
-	squadCount := common.GetRandomBetween(difficultyMod.MinSquads, difficultyMod.MaxSquads)
+	// Use fixed squad count from difficulty modifier
+	squadCount := difficultyMod.SquadCount
 
 	enemySquads := []EnemySquadSpec{}
 

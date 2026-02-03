@@ -265,8 +265,8 @@ func ReadPowerConfig() {
 }
 
 func validatePowerConfig(config *JSONPowerConfig) {
-	// Validate required profiles exist
-	requiredProfiles := map[string]bool{"Balanced": false, "Offensive": false, "Defensive": false}
+	// Validate required profiles exist (only Balanced is required)
+	requiredProfiles := map[string]bool{"Balanced": false}
 	for _, profile := range config.Profiles {
 		if _, exists := requiredProfiles[profile.Name]; exists {
 			requiredProfiles[profile.Name] = true
@@ -278,30 +278,14 @@ func validatePowerConfig(config *JSONPowerConfig) {
 			panic("Profile '" + profile.Name + "' category weights must sum to 1.0")
 		}
 
-		// Validate offensive sub-weights sum to ~1.0
-		offensiveTotal := profile.DamageWeight + profile.AccuracyWeight
-		if offensiveTotal < 0.99 || offensiveTotal > 1.01 {
-			panic("Profile '" + profile.Name + "' offensive sub-weights must sum to 1.0")
-		}
-
-		// Validate defensive sub-weights sum to ~1.0
-		defensiveTotal := profile.HealthWeight + profile.ResistanceWeight + profile.AvoidanceWeight
-		if defensiveTotal < 0.99 || defensiveTotal > 1.01 {
-			panic("Profile '" + profile.Name + "' defensive sub-weights must sum to 1.0")
-		}
-
-		// Validate utility sub-weights sum to ~1.0
-		utilityTotal := profile.RoleWeight + profile.AbilityWeight + profile.CoverWeight
-		if utilityTotal < 0.99 || utilityTotal > 1.01 {
-			panic("Profile '" + profile.Name + "' utility sub-weights must sum to 1.0")
-		}
-
 		// Validate all weights are non-negative
-		if profile.OffensiveWeight < 0 || profile.DefensiveWeight < 0 || profile.UtilityWeight < 0 ||
-			profile.DamageWeight < 0 || profile.AccuracyWeight < 0 ||
-			profile.HealthWeight < 0 || profile.ResistanceWeight < 0 || profile.AvoidanceWeight < 0 ||
-			profile.RoleWeight < 0 || profile.AbilityWeight < 0 || profile.CoverWeight < 0 {
+		if profile.OffensiveWeight < 0 || profile.DefensiveWeight < 0 || profile.UtilityWeight < 0 {
 			panic("Profile '" + profile.Name + "' weights must be non-negative")
+		}
+
+		// Validate health penalty is positive
+		if profile.HealthPenalty <= 0 {
+			panic("Profile '" + profile.Name + "' health penalty must be positive")
 		}
 	}
 
@@ -340,11 +324,9 @@ func validatePowerConfig(config *JSONPowerConfig) {
 		}
 	}
 
-	// Validate scaling constants are positive
-	sc := config.ScalingConstants
-	if sc.RoleScaling <= 0 || sc.DodgeScaling <= 0 || sc.CoverScaling <= 0 ||
-		sc.CoverBeneficiaryMultiplier <= 0 || sc.LeaderBonus <= 0 {
-		panic("All scaling constants must be positive")
+	// Validate leader bonus is positive
+	if config.LeaderBonus <= 0 {
+		panic("Leader bonus must be positive")
 	}
 }
 

@@ -7,47 +7,27 @@ import (
 // PowerConfig holds configurable weights for power calculations.
 // Used by both encounter generation and AI threat assessment for consistent evaluation.
 // Pure data component - no logic.
+//
+// Only top-level category weights are configurable. Sub-calculations use fixed
+// formulas internally (e.g., offensive = damage * hitRate * critMultiplier).
 type PowerConfig struct {
-	ProfileName string // "Offensive", "Defensive", "Balanced"
+	ProfileName string // "Balanced" (only profile in use)
 
-	// Unit-level weights (0.0-1.0 range, sum should equal 1.0 for each category)
-	OffensiveWeight float64 // Weight for offensive stats (damage, hit, crit)
-	DefensiveWeight float64 // Weight for defensive stats (HP, resistance, dodge)
+	// Unit-level weights (0.0-1.0 range, sum should equal 1.0)
+	OffensiveWeight float64 // Weight for offensive stats (damage output)
+	DefensiveWeight float64 // Weight for defensive stats (survivability)
 	UtilityWeight   float64 // Weight for utility (role, abilities, cover)
 
-	// Offensive sub-weights (should sum to 1.0)
-	DamageWeight   float64 // Physical/magic damage output
-	AccuracyWeight float64 // Hit rate and crit chance
-
-	// Defensive sub-weights (should sum to 1.0)
-	HealthWeight     float64 // Max HP and current HP
-	ResistanceWeight float64 // Physical/magic resistance
-	AvoidanceWeight  float64 // Dodge chance
-
-	// Utility sub-weights (should sum to 1.0)
-	RoleWeight    float64 // Role multiplier importance
-	AbilityWeight float64 // Leader ability value
-	CoverWeight   float64 // Cover provision value
-
 	// Squad-level modifiers
-	FormationBonus   float64 // Bonus per formation type
-	MoraleMultiplier float64 // Morale impact (0.01 per morale point)
-	HealthPenalty    float64 // Penalty multiplier for low HP squads
-
-	// Roster-level modifiers
-	DeployedWeight float64 // Weight for deployed squads (default 1.0)
-	ReserveWeight  float64 // Weight for reserve squads (default 0.3)
+	HealthPenalty float64 // Exponent for health-based power scaling (e.g., 2.0 = squared)
 }
 
 // PowerProfile defines named configuration profiles.
-// These are data-driven and can be loaded from JSON in the future.
+// Currently only Balanced is used. Other profiles can be added via powerconfig.json.
 type PowerProfile string
 
 const (
-	ProfileBalanced  PowerProfile = "Balanced"  // Equal weight offensive/defensive
-	ProfileOffensive PowerProfile = "Offensive" // Prioritize damage output
-	ProfileDefensive PowerProfile = "Defensive" // Prioritize survivability
-	ProfileUtility   PowerProfile = "Utility"   // Prioritize support/abilities
+	ProfileBalanced PowerProfile = "Balanced" // Equal weight offensive/defensive (only profile in use)
 )
 
 // Power calculation constants
@@ -58,12 +38,8 @@ const (
 	DefaultUtilityWeight   = 0.2
 
 	// Squad-level modifier defaults
-	DefaultMoraleMultiplier = 0.002 // +0.2% power per morale point
-	MinimumHealthMultiplier = 0.1   // Minimum 10% power even at low HP
-
-	// Deployment weights
-	DefaultDeployedWeight = 1.0 // Full weight for deployed squads
-	DefaultReserveWeight  = 0.3 // 30% weight for reserves
+	// Note: MoraleMultiplier is 0 (dormant) - morale system not yet implemented
+	DefaultMoraleMultiplier = 0.0
 )
 
 // DEPRECATED: Use GetPowerConfigByProfile("Balanced") instead.
@@ -78,28 +54,8 @@ func GetDefaultConfig() *PowerConfig {
 		DefensiveWeight: DefaultDefensiveWeight,
 		UtilityWeight:   DefaultUtilityWeight,
 
-		// Offensive sub-weights (sum to 1.0)
-		DamageWeight:   0.6,
-		AccuracyWeight: 0.4,
-
-		// Defensive sub-weights (sum to 1.0)
-		HealthWeight:     0.5,
-		ResistanceWeight: 0.3,
-		AvoidanceWeight:  0.2,
-
-		// Utility sub-weights (sum to 1.0)
-		RoleWeight:    0.5,
-		AbilityWeight: 0.3,
-		CoverWeight:   0.2,
-
 		// Squad modifiers
-		FormationBonus:   1.0, // No bonus by default
-		MoraleMultiplier: DefaultMoraleMultiplier,
-		HealthPenalty:    2.0, // HP% squared penalty (50% HP = 0.25x power)
-
-		// Roster modifiers
-		DeployedWeight: DefaultDeployedWeight,
-		ReserveWeight:  DefaultReserveWeight,
+		HealthPenalty: 2.0, // HP% squared penalty (50% HP = 0.25x power)
 	}
 }
 
