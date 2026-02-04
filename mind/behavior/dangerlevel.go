@@ -187,7 +187,7 @@ func NewSquadThreatLevel(manager *common.EntityManager, cache *combat.CombatQuer
 // and local damage formulas for ExpectedDamageByRange.
 func (stl *SquadThreatLevel) CalculateSquadDangerLevel() {
 	// Use shared power calculation for DangerByRange
-	config := evaluation.GetDefaultConfig()
+	config := evaluation.GetPowerConfigByProfile("Balanced")
 	stl.DangerByRange = evaluation.CalculateSquadPowerByRange(stl.squadID, stl.manager, config)
 
 	// Collect unit combat data for expected damage calculation
@@ -294,7 +294,7 @@ func (stl *SquadThreatLevel) calculateSquadExpectedDamageByRange(
 
 				// Apply leader bonus (same as DangerByRange)
 				if ud.IsLeader {
-					unitExpectedDamage *= evaluation.LeaderBonus
+					unitExpectedDamage *= evaluation.GetLeaderBonusFromConfig()
 				}
 
 				rangeDamage += unitExpectedDamage

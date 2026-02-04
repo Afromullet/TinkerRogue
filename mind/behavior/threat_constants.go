@@ -9,28 +9,11 @@ import (
 	"github.com/bytearena/ecs"
 )
 
-// DEPRECATED: Use GetFlankingThreatRangeBonus() and related accessor functions instead.
-// These constants are now loaded from aiconfig.json for designer-friendly tuning.
-// Kept for fallback purposes only.
-const (
-	FlankingThreatRangeBonus   = 3
-	IsolationThreshold         = 3
-	RetreatSafeThreatThreshold = 10
-)
-
 // Max isolation distance for linear gradient calculation (internal constant)
 const isolationMaxDistance = 8
 
 // Hardcoded normalizer for engagement pressure (cosmetic, converts to 0-1 range)
 const engagementPressureMax = 200
-
-// DEPRECATED: Use GetSupportLayerParams() instead.
-// These constants are now loaded from aiconfig.json for designer-friendly tuning.
-// Kept for fallback purposes only.
-const (
-	SupportHealRadius           = 3
-	BuffPriorityEngagementRange = 4
-)
 
 // Shared constants for role weights (roles differentiated by melee/support weights only)
 const (
@@ -49,35 +32,10 @@ type RoleThreatWeights struct {
 	PositionalWeight float64
 }
 
-// DEPRECATED: Use GetRoleBehaviorWeights() instead.
-// This map is now loaded from aiconfig.json for designer-friendly tuning.
-// Kept for fallback purposes only.
-// Note: RangedWeight and PositionalWeight now use shared constants.
-var DefaultRoleWeights = map[squads.UnitRole]RoleThreatWeights{
-	squads.RoleTank: {
-		MeleeWeight:      -0.5,                   // Tanks SEEK melee danger (intercept enemies)
-		RangedWeight:     sharedRangedWeight,     // Shared moderate concern
-		SupportWeight:    0.2,                    // Stay near support for heals
-		PositionalWeight: sharedPositionalWeight, // Shared moderate awareness
-	},
-	squads.RoleDPS: {
-		MeleeWeight:      0.7,                    // Avoid melee danger
-		RangedWeight:     sharedRangedWeight,     // Shared moderate concern
-		SupportWeight:    0.1,                    // Low support priority
-		PositionalWeight: sharedPositionalWeight, // Shared moderate awareness
-	},
-	squads.RoleSupport: {
-		MeleeWeight:      1.0,                    // Strongly avoid melee danger
-		RangedWeight:     sharedRangedWeight,     // Shared moderate concern
-		SupportWeight:    -1.0,                   // SEEK high support value positions (wounded allies)
-		PositionalWeight: sharedPositionalWeight, // Shared moderate awareness
-	},
-}
-
 // GetRoleModifier returns threat multiplier for a role.
 // Delegates to shared evaluation package.
 func GetRoleModifier(role squads.UnitRole) float64 {
-	return evaluation.GetRoleMultiplier(role)
+	return evaluation.GetRoleMultiplierFromConfig(role)
 }
 
 // GetSquadRoleModifier returns threat modifier based on squad's primary role.
@@ -91,23 +49,23 @@ func GetSquadRoleModifier(squadID ecs.EntityID, manager *common.EntityManager) f
 // They replace direct constant access to enable designer-friendly tuning.
 
 // GetFlankingThreatRangeBonus returns the flanking threat range bonus from config.
-// Returns hardcoded default if template lookup fails.
+// Returns default value if template lookup fails.
 func GetFlankingThreatRangeBonus() int {
 	if templates.AIConfigTemplate.ThreatCalculation.FlankingThreatRangeBonus > 0 {
 		return templates.AIConfigTemplate.ThreatCalculation.FlankingThreatRangeBonus
 	}
-	return FlankingThreatRangeBonus
+	return 3 // Default flanking threat range bonus
 }
 
 // GetIsolationThreshold returns the isolation distance threshold from config.
 // Units farther than this from allies start accumulating isolation risk.
-// Returns hardcoded default if template lookup fails.
+// Returns default value if template lookup fails.
 func GetIsolationThreshold() int {
 	tc := templates.AIConfigTemplate.ThreatCalculation
 	if tc.IsolationThreshold > 0 {
 		return tc.IsolationThreshold
 	}
-	return IsolationThreshold
+	return 3 // Default isolation threshold
 }
 
 // GetIsolationMaxDistance returns the max distance for isolation risk calculation.
@@ -123,17 +81,17 @@ func GetEngagementPressureMax() int {
 }
 
 // GetRetreatSafeThreatThreshold returns the retreat safety threshold from config.
-// Returns hardcoded default if template lookup fails.
+// Returns default value if template lookup fails.
 func GetRetreatSafeThreatThreshold() int {
 	if templates.AIConfigTemplate.ThreatCalculation.RetreatSafeThreatThreshold > 0 {
 		return templates.AIConfigTemplate.ThreatCalculation.RetreatSafeThreatThreshold
 	}
-	return RetreatSafeThreatThreshold
+	return 10 // Default retreat safe threat threshold
 }
 
 // GetRoleBehaviorWeights returns threat layer weights for a specific role from config.
 // RangedWeight and PositionalWeight use shared constants (roles differentiated by melee/support).
-// Falls back to hardcoded defaults if template lookup fails.
+// Falls back to default values if template lookup fails.
 func GetRoleBehaviorWeights(role squads.UnitRole) RoleThreatWeights {
 	roleStr := role.String()
 	for _, rb := range templates.AIConfigTemplate.RoleBehaviors {
@@ -146,15 +104,36 @@ func GetRoleBehaviorWeights(role squads.UnitRole) RoleThreatWeights {
 			}
 		}
 	}
-	// Fallback to hardcoded defaults
-	if weights, exists := DefaultRoleWeights[role]; exists {
-		return weights
-	}
-	return RoleThreatWeights{
-		MeleeWeight:      0.5,
-		RangedWeight:     sharedRangedWeight,
-		SupportWeight:    0.5,
-		PositionalWeight: sharedPositionalWeight,
+	// Fallback to default values by role
+	switch role {
+	case squads.RoleTank:
+		return RoleThreatWeights{
+			MeleeWeight:      -0.5,                   // Tanks SEEK melee danger
+			RangedWeight:     sharedRangedWeight,     // Shared moderate concern
+			SupportWeight:    0.2,                    // Stay near support for heals
+			PositionalWeight: sharedPositionalWeight, // Shared moderate awareness
+		}
+	case squads.RoleDPS:
+		return RoleThreatWeights{
+			MeleeWeight:      0.7,                    // Avoid melee danger
+			RangedWeight:     sharedRangedWeight,     // Shared moderate concern
+			SupportWeight:    0.1,                    // Low support priority
+			PositionalWeight: sharedPositionalWeight, // Shared moderate awareness
+		}
+	case squads.RoleSupport:
+		return RoleThreatWeights{
+			MeleeWeight:      1.0,                    // Strongly avoid melee danger
+			RangedWeight:     sharedRangedWeight,     // Shared moderate concern
+			SupportWeight:    -1.0,                   // SEEK high support value positions
+			PositionalWeight: sharedPositionalWeight, // Shared moderate awareness
+		}
+	default:
+		return RoleThreatWeights{
+			MeleeWeight:      0.5,
+			RangedWeight:     sharedRangedWeight,
+			SupportWeight:    0.5,
+			PositionalWeight: sharedPositionalWeight,
+		}
 	}
 }
 
@@ -168,12 +147,15 @@ func GetPositionalRiskWeights() (flanking, isolation, pressure, retreat float64)
 // GetSupportLayerParams returns support layer configuration parameters from config.
 // Returns (healRadius, proximityRadius, buffRange).
 // proximityRadius is derived as healRadius - 1.
-// Falls back to hardcoded defaults if template lookup fails.
+// Falls back to default values if template lookup fails.
 func GetSupportLayerParams() (healRadius, proximityRadius, buffRange int) {
 	sl := templates.AIConfigTemplate.SupportLayer
 	if sl.HealRadius > 0 && sl.BuffPriorityEngagementRange > 0 {
 		// Derive proximityRadius from healRadius
 		return sl.HealRadius, sl.HealRadius - 1, sl.BuffPriorityEngagementRange
 	}
-	return SupportHealRadius, SupportHealRadius - 1, BuffPriorityEngagementRange
+	// Default values
+	const defaultHealRadius = 3
+	const defaultBuffRange = 4
+	return defaultHealRadius, defaultHealRadius - 1, defaultBuffRange
 }

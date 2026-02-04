@@ -47,29 +47,3 @@ func GetSquadPreferences(encounterTypeID string) []string {
 	}
 	return nil // Not found - allows caller to handle random composition
 }
-
-// GetEncounterTypeByID retrieves encounter type info from the threat registry.
-// Returns nil if not found.
-func GetEncounterTypeByID(id string) *EncounterTypeInfo {
-	def := core.GetThreatRegistry().GetByEncounterTypeID(id)
-	if def.ID == "default" {
-		return nil
-	}
-	return &EncounterTypeInfo{
-		ID:                def.EncounterTypeID,
-		Name:              def.EncounterTypeName,
-		SquadPreferences:  def.SquadPreferences,
-		DefaultDifficulty: def.DefaultDifficulty,
-		Tags:              def.Tags,
-	}
-}
-
-// EncounterTypeInfo provides encounter type information from the threat registry.
-// This replaces the removed JSONEncounterType struct for external consumers.
-type EncounterTypeInfo struct {
-	ID                string
-	Name              string
-	SquadPreferences  []string
-	DefaultDifficulty int
-	Tags              []string
-}

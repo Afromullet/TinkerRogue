@@ -1,7 +1,7 @@
 package evaluation
 
 import (
-	"game_main/tactical/squads"
+	"game_main/templates"
 )
 
 // PowerConfig holds configurable weights for power calculations.
@@ -42,38 +42,32 @@ const (
 	DefaultMoraleMultiplier = 0.0
 )
 
-// DEPRECATED: Use GetPowerConfigByProfile("Balanced") instead.
-// This function is kept for fallback purposes only.
-// Power configurations are now loaded from powerconfig.json for designer-friendly tuning.
-func GetDefaultConfig() *PowerConfig {
-	return &PowerConfig{
-		ProfileName: string(ProfileBalanced),
-
-		// Category weights (sum to 1.0)
-		OffensiveWeight: DefaultOffensiveWeight,
-		DefensiveWeight: DefaultDefensiveWeight,
-		UtilityWeight:   DefaultUtilityWeight,
-
-		// Squad modifiers
-		HealthPenalty: 2.0, // HP% squared penalty (50% HP = 0.25x power)
-	}
-}
-
-// DEPRECATED: Use GetAbilityPowerValue() instead.
-// This map is now loaded from powerconfig.json for designer-friendly tuning.
-// Kept for fallback purposes only.
-var AbilityPowerValues = map[squads.AbilityType]float64{
-	squads.AbilityRally:     15.0, // +5 Strength for 3 turns = sustained damage
-	squads.AbilityHeal:      20.0, // 10 HP heal = high value
-	squads.AbilityBattleCry: 12.0, // +3 Strength + morale once per combat
-	squads.AbilityFireball:  18.0, // 15 direct damage AoE
-	squads.AbilityNone:      0.0,  // No ability
-}
-
 // --- Data-Driven Accessor Functions ---
 // These functions retrieve power evaluation configuration from JSON templates.
 // They replace direct constant/map access to enable designer-friendly tuning.
 
 // GetPowerConfigByProfile returns power configuration for the specified profile name.
 // Converts JSON profile to runtime PowerConfig struct.
-// Falls back to hardcoded defaults if profile not found.
+// Falls back to default balanced profile if not found.
+func GetPowerConfigByProfile(profileName string) *PowerConfig {
+	// Try to find profile in loaded config
+	for _, profile := range templates.PowerConfigTemplate.Profiles {
+		if profile.Name == profileName {
+			return &PowerConfig{
+				ProfileName:     profile.Name,
+				OffensiveWeight: profile.OffensiveWeight,
+				DefensiveWeight: profile.DefensiveWeight,
+				UtilityWeight:   profile.UtilityWeight,
+				HealthPenalty:   profile.HealthPenalty,
+			}
+		}
+	}
+	// Fallback to default balanced profile
+	return &PowerConfig{
+		ProfileName:     "Balanced",
+		OffensiveWeight: DefaultOffensiveWeight,
+		DefensiveWeight: DefaultDefensiveWeight,
+		UtilityWeight:   DefaultUtilityWeight,
+		HealthPenalty:   2.0,
+	}
+}

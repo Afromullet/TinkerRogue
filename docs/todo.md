@@ -12,7 +12,7 @@ __________________________________________
 
 - Check if we have to mark the caches as dirty, or whether the way the ecs library implements views handles that automatically
 
-
+- Overworld needs difficulty setting
 
 - Handle Entity Cleanup
 

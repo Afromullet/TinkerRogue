@@ -126,10 +126,10 @@ func TestCompositeThreatEvaluator_Update(t *testing.T) {
 
 // TestCompositeThreatEvaluator_RoleWeights tests role-specific threat weighting
 func TestCompositeThreatEvaluator_RoleWeights(t *testing.T) {
-	// Verify default role weights are defined
-	tankWeights := DefaultRoleWeights[squads.RoleTank]
-	dpsWeights := DefaultRoleWeights[squads.RoleDPS]
-	supportWeights := DefaultRoleWeights[squads.RoleSupport]
+	// Verify role weights from config
+	tankWeights := GetRoleBehaviorWeights(squads.RoleTank)
+	dpsWeights := GetRoleBehaviorWeights(squads.RoleDPS)
+	supportWeights := GetRoleBehaviorWeights(squads.RoleSupport)
 
 	// Tank should seek melee danger (negative weight)
 	if tankWeights.MeleeWeight >= 0 {

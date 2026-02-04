@@ -33,7 +33,7 @@ func GenerateEncounterSpec(
 	}
 
 	// Get player's roster
-	config := evaluation.GetDefaultConfig()
+	config := evaluation.GetPowerConfigByProfile("Balanced")
 	roster := squads.GetPlayerSquadRoster(playerEntityID, manager)
 	if roster == nil {
 		return nil, fmt.Errorf("player has no squad roster")

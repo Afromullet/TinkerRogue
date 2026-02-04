@@ -58,7 +58,7 @@ func GetUnitCombatData(unitID ecs.EntityID, manager *common.EntityManager) *Unit
 
 	// Pre-calculate power-related values
 	basePower := float64(attr.Weapon + attr.Dexterity/2)
-	roleMultiplier := evaluation.GetRoleMultiplier(roleData.Role)
+	roleMultiplier := evaluation.GetRoleMultiplierFromConfig(roleData.Role)
 
 	return &UnitCombatData{
 		Entity:         entity,

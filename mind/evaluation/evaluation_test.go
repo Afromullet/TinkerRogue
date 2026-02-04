@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func TestGetRoleMultiplier(t *testing.T) {
+func TestGetRoleMultiplierFromConfig(t *testing.T) {
 	tests := []struct {
 		name     string
 		role     squads.UnitRole
@@ -18,26 +18,27 @@ func TestGetRoleMultiplier(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := GetRoleMultiplier(tt.role)
+			result := GetRoleMultiplierFromConfig(tt.role)
 			if result != tt.expected {
-				t.Errorf("GetRoleMultiplier(%v) = %v, want %v", tt.role, result, tt.expected)
+				t.Errorf("GetRoleMultiplierFromConfig(%v) = %v, want %v", tt.role, result, tt.expected)
 			}
 		})
 	}
 }
 
-func TestGetRoleMultiplier_UnknownRole(t *testing.T) {
+func TestGetRoleMultiplierFromConfig_UnknownRole(t *testing.T) {
 	// Unknown role should return baseline 1.0
 	unknownRole := squads.UnitRole(999)
-	result := GetRoleMultiplier(unknownRole)
+	result := GetRoleMultiplierFromConfig(unknownRole)
 	if result != 1.0 {
-		t.Errorf("GetRoleMultiplier(unknown) = %v, want 1.0", result)
+		t.Errorf("GetRoleMultiplierFromConfig(unknown) = %v, want 1.0", result)
 	}
 }
 
-func TestLeaderBonus(t *testing.T) {
-	if LeaderBonus != 1.3 {
-		t.Errorf("LeaderBonus = %v, want 1.3", LeaderBonus)
+func TestGetLeaderBonusFromConfig(t *testing.T) {
+	result := GetLeaderBonusFromConfig()
+	if result != 1.3 {
+		t.Errorf("GetLeaderBonusFromConfig() = %v, want 1.3", result)
 	}
 }
 
