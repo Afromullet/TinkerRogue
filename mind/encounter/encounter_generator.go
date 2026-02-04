@@ -33,7 +33,7 @@ func GenerateEncounterSpec(
 	}
 
 	// Get player's roster
-	config := evaluation.GetPowerConfigByProfile("Balanced")
+	config := evaluation.GetPowerConfigByProfile(DefaultPowerProfile)
 	roster := squads.GetPlayerSquadRoster(playerEntityID, manager)
 	if roster == nil {
 		return nil, fmt.Errorf("player has no squad roster")
@@ -53,16 +53,20 @@ func GenerateEncounterSpec(
 	avgPlayerSquadPower := totalPlayerPower / float64(len(deployedSquads))
 
 	// Determine difficulty
-	difficultyMod := getEncounterDifficulty(encounterData)
+	level := 3 // Default level
+	if encounterData != nil {
+		level = encounterData.Level
+	}
+	difficultyMod := GetDifficultyModifier(level)
 	targetEnemySquadPower := avgPlayerSquadPower * difficultyMod.PowerMultiplier
 
 	// Handle edge cases
 	if avgPlayerSquadPower <= 0.0 {
-		targetEnemySquadPower = 50.0
+		targetEnemySquadPower = MinTargetPower
 		difficultyMod.SquadCount = 1
 	}
-	if targetEnemySquadPower > 2000.0 {
-		targetEnemySquadPower = 2000.0
+	if targetEnemySquadPower > MaxTargetPower {
+		targetEnemySquadPower = MaxTargetPower
 	}
 
 	fmt.Printf("Generating encounter spec: Avg Power %.2f, Target Power %.2f\n",

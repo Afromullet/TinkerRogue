@@ -186,13 +186,10 @@ func (es *EncounterService) StartEncounter(
 
 	// Save player's original position before teleporting to encounter
 	originalPlayerPos := coords.LogicalPosition{X: 50, Y: 40} // Default if PlayerData unavailable
-	if es.modeCoordinator != nil {
-		playerData := es.modeCoordinator.GetPlayerData()
-		if playerData != nil && playerData.Pos != nil {
-			originalPlayerPos = *playerData.Pos
-			fmt.Printf("Saved original player position (%d,%d) before teleporting to encounter\n",
-				originalPlayerPos.X, originalPlayerPos.Y)
-		}
+	if pos := es.getPlayerPosition(); pos != nil {
+		originalPlayerPos = *pos
+		fmt.Printf("Saved original player position (%d,%d) before teleporting to encounter\n",
+			originalPlayerPos.X, originalPlayerPos.Y)
 	}
 
 	// Track active encounter with combat data
@@ -207,22 +204,20 @@ func (es *EncounterService) StartEncounter(
 		PlayerEntityID:         playerEntityID,
 	}
 
-	// Set BattleMapState for GUI handoff to CombatMode
+	// Handle mode coordinator tasks (setup battle state, move player, enter combat)
 	if es.modeCoordinator != nil {
+		// Setup battle state for GUI handoff to CombatMode
 		battleMapState := es.modeCoordinator.GetBattleMapState()
 		battleMapState.TriggeredEncounterID = encounterID
 		battleMapState.Reset() // Reset UI state for new encounter
 
 		// Move player camera to encounter position so map zooms correctly
-		playerData := es.modeCoordinator.GetPlayerData()
-		if playerData != nil && playerData.Pos != nil {
-			*playerData.Pos = playerPos
+		if pos := es.getPlayerPosition(); pos != nil {
+			*pos = playerPos
 			fmt.Printf("Updated player position to encounter location (%d,%d)\n", playerPos.X, playerPos.Y)
 		}
-	}
 
-	// Transition to combat mode
-	if es.modeCoordinator != nil {
+		// Transition to combat mode
 		if err := es.modeCoordinator.EnterBattleMap("combat"); err != nil {
 			// Rollback on failure
 			es.activeEncounter = nil
@@ -277,14 +272,11 @@ func (es *EncounterService) RecordEncounterCompletion(
 	es.addToHistory(completed)
 
 	// Restore player to original position (before they were teleported to encounter)
-	if es.modeCoordinator != nil {
-		playerData := es.modeCoordinator.GetPlayerData()
-		if playerData != nil && playerData.Pos != nil {
-			originalPos := es.activeEncounter.OriginalPlayerPosition
-			*playerData.Pos = originalPos
-			fmt.Printf("Restored player position to original location (%d,%d)\n",
-				originalPos.X, originalPos.Y)
-		}
+	if pos := es.getPlayerPosition(); pos != nil {
+		originalPos := es.activeEncounter.OriginalPlayerPosition
+		*pos = originalPos
+		fmt.Printf("Restored player position to original location (%d,%d)\n",
+			originalPos.X, originalPos.Y)
 	}
 
 	// Clear active encounter
@@ -379,7 +371,8 @@ func (es *EncounterService) EndEncounter(
 	}
 }
 
-// resolveCombatToOverworld applies combat outcome to overworld threat state
+// resolveCombatToOverworld applies combat outcome to overworld threat state.
+// Caller (EndEncounter) already validates activeEncounter != nil.
 func (es *EncounterService) resolveCombatToOverworld(
 	threatNodeID ecs.EntityID,
 	playerVictory bool,
@@ -387,10 +380,6 @@ func (es *EncounterService) resolveCombatToOverworld(
 	defeatedFactions []ecs.EntityID,
 	roundsCompleted int,
 ) {
-	if es.activeEncounter == nil {
-		return
-	}
-
 	// Calculate casualties
 	playerUnitsLost, enemyUnitsKilled := es.calculateCasualties(victorFaction, defeatedFactions)
 
@@ -432,15 +421,12 @@ func (es *EncounterService) resolveCombatToOverworld(
 	}
 }
 
-// calculateCasualties counts units killed in combat
+// calculateCasualties counts units killed in combat.
+// Caller (resolveCombatToOverworld via EndEncounter) already validates activeEncounter != nil.
 func (es *EncounterService) calculateCasualties(
 	victorFaction ecs.EntityID,
 	defeatedFactions []ecs.EntityID,
 ) (playerUnitsLost int, enemyUnitsKilled int) {
-	if es.activeEncounter == nil {
-		return 0, 0
-	}
-
 	// Find player and enemy factions from combat
 	// Note: We rely on faction data that still exists during this call
 	playerFactionID := ecs.EntityID(0)
@@ -537,6 +523,19 @@ func (es *EncounterService) RestoreEncounterSprite() {
 }
 
 // === PRIVATE HELPER METHODS ===
+
+// getPlayerPosition returns the player's current position, or nil if unavailable.
+// This centralizes the nil-check pattern for modeCoordinator -> PlayerData -> Pos.
+func (es *EncounterService) getPlayerPosition() *coords.LogicalPosition {
+	if es.modeCoordinator == nil {
+		return nil
+	}
+	playerData := es.modeCoordinator.GetPlayerData()
+	if playerData == nil || playerData.Pos == nil {
+		return nil
+	}
+	return playerData.Pos
+}
 
 // addToHistory adds a completed encounter to the history
 func (es *EncounterService) addToHistory(completed *CompletedEncounter) {

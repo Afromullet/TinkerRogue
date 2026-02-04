@@ -13,6 +13,32 @@ const (
 	SquadTypeMagic  = "magic"
 )
 
+// Position generation constants
+const (
+	EnemySpacingDistance = 10 // Distance from player for enemy squad spawns
+	PlayerMinDistance    = 3  // Minimum distance for player squad positioning
+	PlayerMaxDistance    = 4  // Maximum distance for player squad positioning
+)
+
+// Squad creation constants
+const (
+	MaxUnitsPerSquad        = 5    // Maximum units allowed in a squad
+	MinUnitsPerSquad        = 3    // Minimum units to ensure in a squad
+	PowerThreshold          = 0.95 // Stop adding units at 95% target power
+	LeadershipAttributeBase = 20   // Base leadership for squad leaders
+)
+
+// Power edge case constants
+const (
+	MinTargetPower = 50.0   // Minimum target power for encounters
+	MaxTargetPower = 2000.0 // Maximum target power cap
+)
+
+// Power profile constant
+const (
+	DefaultPowerProfile = "Balanced" // Default power calculation profile
+)
+
 // EncounterDifficultyModifier defines how encounter level scales enemy power
 type EncounterDifficultyModifier struct {
 	PowerMultiplier float64 // Multiply player power by this (e.g., 0.7 for easier, 1.5 for harder)

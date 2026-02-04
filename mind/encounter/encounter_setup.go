@@ -52,7 +52,7 @@ func SetupBalancedEncounter(
 		if err := fm.AddSquadToFaction(enemyFactionID, enemySpec.SquadID, enemySpec.Position); err != nil {
 			return nil, fmt.Errorf("failed to add enemy squad %d to faction: %w", i, err)
 		}
-		if err := createActionStateForSquad(manager, enemySpec.SquadID); err != nil {
+		if err := combat.CreateActionStateForSquad(manager, enemySpec.SquadID); err != nil {
 			return nil, fmt.Errorf("failed to create action state for enemy squad %d: %w", i, err)
 		}
 		createdEnemySquadIDs = append(createdEnemySquadIDs, enemySpec.SquadID)
@@ -124,7 +124,7 @@ func assignPlayerSquadsToFaction(
 		ensureUnitPositions(manager, squadID, pos)
 
 		// Create action state
-		if err := createActionStateForSquad(manager, squadID); err != nil {
+		if err := combat.CreateActionStateForSquad(manager, squadID); err != nil {
 			return fmt.Errorf("failed to create action state for squad %d: %w", squadID, err)
 		}
 	}
@@ -132,35 +132,43 @@ func assignPlayerSquadsToFaction(
 	return nil
 }
 
-// generatePlayerSquadPositions creates positions for player squads around starting point
-func generatePlayerSquadPositions(startPos coords.LogicalPosition, count int) []coords.LogicalPosition {
+// generatePositionsAroundPoint creates positions distributed around a center point.
+// arcStart/arcEnd define the angle range in radians (0 to 2*Pi for full circle).
+// minDistance/maxDistance define the radius range from center.
+func generatePositionsAroundPoint(
+	center coords.LogicalPosition,
+	count int,
+	arcStart, arcEnd float64,
+	minDistance, maxDistance int,
+) []coords.LogicalPosition {
 	positions := make([]coords.LogicalPosition, count)
+	arcRange := arcEnd - arcStart
+	mapWidth := coords.CoordManager.GetDungeonWidth()
+	mapHeight := coords.CoordManager.GetDungeonHeight()
 
-	// Arrange squads in an arc behind/around the player
 	for i := 0; i < count; i++ {
-		// Position squads at distance 3-6 tiles from start, in a defensive arc
-		angle := (float64(i) / float64(count)) * math.Pi // 0 to Pi (half circle)
-		angle = angle - math.Pi/2                        // Rotate to face forward
-		distance := 3 + (i % 2)                          // Alternate 3 and 4 distance
+		angle := arcStart + (float64(i)/float64(count))*arcRange
+		// Alternate between min and max distance for variety
+		distance := minDistance + (i % (maxDistance - minDistance + 1))
 
 		offsetX := int(math.Round(float64(distance) * math.Cos(angle)))
 		offsetY := int(math.Round(float64(distance) * math.Sin(angle)))
 
-		positions[i] = coords.LogicalPosition{
-			X: clampPosition(startPos.X+offsetX, 0, 99),
-			Y: clampPosition(startPos.Y+offsetY, 0, 79),
+		pos := coords.LogicalPosition{
+			X: clampPosition(center.X+offsetX, 0, mapWidth-1),
+			Y: clampPosition(center.Y+offsetY, 0, mapHeight-1),
 		}
+		positions[i] = pos
 	}
-
 	return positions
 }
 
-// getEncounterDifficulty extracts difficulty modifier from encounter data
-func getEncounterDifficulty(encounterData *core.OverworldEncounterData) EncounterDifficultyModifier {
-
-	level := encounterData.Level
-	return GetDifficultyModifier(level) // Falls back to level 3 if invalid
+// generatePlayerSquadPositions creates positions for player squads around starting point
+func generatePlayerSquadPositions(startPos coords.LogicalPosition, count int) []coords.LogicalPosition {
+	// Player squads: arc from -Pi/2 to Pi/2 (facing forward), distance alternating 3-4
+	return generatePositionsAroundPoint(startPos, count, -math.Pi/2, math.Pi/2, PlayerMinDistance, PlayerMaxDistance)
 }
+
 
 // generateEnemySquadsByPower creates enemy squads matching target squad power.
 // targetPower is now the per-squad target (average player squad power * difficulty).
@@ -243,17 +251,10 @@ func generateRandomComposition(count int) []string {
 
 // generateEnemyPosition scatters enemies around player using circular distribution
 func generateEnemyPosition(playerPos coords.LogicalPosition, index, total int) coords.LogicalPosition {
-	// Circular distribution at fixed distance
-	angle := (float64(index) / float64(total)) * 2.0 * math.Pi
-	distance := 10 // Fixed distance from player
-
-	offsetX := int(math.Round(float64(distance) * math.Cos(angle)))
-	offsetY := int(math.Round(float64(distance) * math.Sin(angle)))
-
-	x := clampPosition(playerPos.X+offsetX, 0, 99)
-	y := clampPosition(playerPos.Y+offsetY, 0, 79)
-
-	return coords.LogicalPosition{X: x, Y: y}
+	// Enemy squads: full circle (0 to 2*Pi), fixed distance
+	// Generate all positions and return the one at this index
+	positions := generatePositionsAroundPoint(playerPos, total, 0, 2*math.Pi, EnemySpacingDistance, EnemySpacingDistance)
+	return positions[index]
 }
 
 // createSquadForPowerBudget creates a squad matching target power.
@@ -287,7 +288,7 @@ func createSquadForPowerBudget(
 	// Pattern: Front row (0,0 and 0,1), middle row (1,0 and 1,1), back row (2,0)
 	gridPositions := [][2]int{{0, 0}, {0, 1}, {1, 0}, {1, 1}, {2, 0}}
 
-	for currentPower < targetPower && len(unitsToCreate) < 5 {
+	for currentPower < targetPower && len(unitsToCreate) < MaxUnitsPerSquad {
 		// Pick random unit from pool
 		unit := unitPool[common.RandomInt(len(unitPool))]
 
@@ -304,18 +305,18 @@ func createSquadForPowerBudget(
 		unitsToCreate = append(unitsToCreate, unit)
 		currentPower += unitPower
 
-		// Stop if we've reached 95% of target (was 85% - increased to allow fuller squads)
-		if currentPower >= targetPower*0.95 {
-			fmt.Printf("[DEBUG] Stopping - reached 95%% of target (%.2f >= %.2f)\n",
-				currentPower, targetPower*0.95)
+		// Stop if we've reached the power threshold
+		if currentPower >= targetPower*PowerThreshold {
+			fmt.Printf("[DEBUG] Stopping - reached %.0f%% of target (%.2f >= %.2f)\n",
+				PowerThreshold*100, currentPower, targetPower*PowerThreshold)
 			break
 		}
 	}
 
 	fmt.Printf("[DEBUG] After power loop: %d units created\n", len(unitsToCreate))
 
-	// Ensure at least 3 units
-	for len(unitsToCreate) < 3 && len(unitPool) > 0 {
+	// Ensure minimum units
+	for len(unitsToCreate) < MinUnitsPerSquad && len(unitPool) > 0 {
 		unit := unitPool[common.RandomInt(len(unitPool))]
 		unit.GridRow = gridPositions[len(unitsToCreate)][0]
 		unit.GridCol = gridPositions[len(unitsToCreate)][1]
@@ -327,7 +328,7 @@ func createSquadForPowerBudget(
 
 	// Set leader attributes
 	if len(unitsToCreate) > 0 {
-		unitsToCreate[0].Attributes.Leadership = 20
+		unitsToCreate[0].Attributes.Leadership = LeadershipAttributeBase
 	}
 
 	// Create squad
@@ -346,31 +347,18 @@ func createSquadForPowerBudget(
 // filterUnitsBySquadType selects units matching squad archetype
 func filterUnitsBySquadType(squadType string) []squads.UnitTemplate {
 	switch squadType {
+	case SquadTypeMelee:
+		return filterUnitsByMaxAttackRange(2) // Melee: range <= 2
 	case SquadTypeRanged:
-		return filterUnitsByAttackRange(3) // Range >= 3
+		return filterUnitsByAttackRange(3) // Ranged: range >= 3
 	case SquadTypeMagic:
 		return filterUnitsByAttackType(squads.AttackTypeMagic)
-	case SquadTypeMelee:
-		// Melee: range <= 2
-		var filtered []squads.UnitTemplate
-		for _, unit := range squads.Units {
-			if unit.AttackRange <= 2 {
-				filtered = append(filtered, unit)
-			}
-		}
-		return filtered
 	default:
 		return squads.Units
 	}
 }
 
 // Helper functions
-
-// createActionStateForSquad creates the ActionStateData component for a squad.
-// Delegates to combat package's CreateActionStateForSquad.
-func createActionStateForSquad(manager *common.EntityManager, squadID ecs.EntityID) error {
-	return combat.CreateActionStateForSquad(manager, squadID)
-}
 
 // ensureUnitPositions ensures all units in a squad have position components
 // Units that already have positions are moved to the squad position
@@ -402,6 +390,17 @@ func filterUnitsByAttackRange(minRange int) []squads.UnitTemplate {
 	var filtered []squads.UnitTemplate
 	for _, unit := range squads.Units {
 		if unit.AttackRange >= minRange {
+			filtered = append(filtered, unit)
+		}
+	}
+	return filtered
+}
+
+// filterUnitsByMaxAttackRange returns units with attack range <= maxRange
+func filterUnitsByMaxAttackRange(maxRange int) []squads.UnitTemplate {
+	var filtered []squads.UnitTemplate
+	for _, unit := range squads.Units {
+		if unit.AttackRange <= maxRange {
 			filtered = append(filtered, unit)
 		}
 	}
