@@ -127,7 +127,7 @@ func ResolveCombatToOverworld(
 		// Update influence radius
 		influenceData := common.GetComponentType[*core.InfluenceData](threatEntity, core.InfluenceComponent)
 		if influenceData != nil {
-			params := core.GetThreatTypeParams(threatData.ThreatType)
+			params := core.GetThreatTypeParamsFromConfig(threatData.ThreatType)
 			influenceData.Radius = params.BaseRadius + threatData.Intensity
 			influenceData.EffectStrength = float64(threatData.Intensity) * 0.1
 		}

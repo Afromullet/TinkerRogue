@@ -108,64 +108,24 @@ func GenerateItemDrops(intensity int, threatType core.ThreatType) []string {
 	return items
 }
 
-// ItemDropTable defines basic and high-tier drops for a threat type
-type ItemDropTable struct {
-	Basic    []string // Normal drops
-	HighTier []string // Drops only available at intensity >= 7
-}
-
-// itemDropTables maps threat types to their item drop tables.
-// This is initialized once at package load and should be treated as read-only.
-// DO NOT MODIFY at runtime.
-var itemDropTables map[core.ThreatType]ItemDropTable
-
-// initItemDropTables initializes the item drop table configuration.
-// Called automatically during package initialization.
-func initItemDropTables() {
-	itemDropTables = map[core.ThreatType]ItemDropTable{
-		core.ThreatNecromancer: {
-			Basic:    []string{"Dark Essence", "Necromantic Scroll", "Bone Fragment", "Soul Gem", "Cursed Tome"},
-			HighTier: []string{"Lich Phylactery", "Staff of Undeath"},
-		},
-		core.ThreatBanditCamp: {
-			Basic:    []string{"Rusty Sword", "Leather Armor", "Iron Dagger", "Stolen Goods", "Lockpicks"},
-			HighTier: []string{"Masterwork Blade", "Bandit King's Crown"},
-		},
-		core.ThreatOrcWarband: {
-			Basic:    []string{"Orcish Axe", "Crude Shield", "War Paint", "Tusk Trophy", "Bone Club"},
-			HighTier: []string{"Warlord's Greataxe", "Berserker Totem"},
-		},
-		core.ThreatCorruption: {
-			Basic:    []string{"Tainted Crystal", "Corrupted Seed", "Void Essence", "Shadow Fragment", "Blighted Herb"},
-			HighTier: []string{"Heart of Corruption", "Void Shard"},
-		},
-		core.ThreatBeastNest: {
-			Basic:    []string{"Beast Pelt", "Sharp Claw", "Fang", "Beast Horn", "Hide Scraps"},
-			HighTier: []string{"Alpha Pelt", "Primal Essence"},
-		},
-	}
-}
-
-func init() {
-	initItemDropTables()
-}
-
 // HighTierIntensityThreshold is the minimum intensity for high-tier drops
 const HighTierIntensityThreshold = 5
 
-// generateItemByType returns an item name based on threat type
+// generateItemByType returns an item name based on threat type.
+// Uses ThreatRegistry for data-driven item drop tables.
 func generateItemByType(threatType core.ThreatType, intensity int) string {
-	table, ok := itemDropTables[threatType]
-	if !ok {
+	basic, highTier := core.GetThreatRegistry().GetItemDropTable(threatType)
+
+	if len(basic) == 0 {
 		return "Unknown Item"
 	}
 
-	options := make([]string, len(table.Basic))
-	copy(options, table.Basic)
+	options := make([]string, len(basic))
+	copy(options, basic)
 
 	// High-tier drops available at max intensity (level 5)
 	if intensity >= HighTierIntensityThreshold {
-		options = append(options, table.HighTier...)
+		options = append(options, highTier...)
 	}
 
 	return options[common.RandomInt(len(options))]

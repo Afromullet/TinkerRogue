@@ -1,6 +1,7 @@
 package encounter
 
 import (
+	"game_main/overworld/core"
 	"game_main/templates"
 )
 
@@ -36,25 +37,39 @@ func GetDifficultyModifier(level int) EncounterDifficultyModifier {
 
 // GetSquadPreferences retrieves preferred squad composition for an encounter type.
 // Returns nil if encounter type not found (allows random composition fallback).
-func GetSquadPreferences(encounterType string) []string {
-	for _, template := range templates.EncounterTypeTemplates {
-		if template.ID == encounterType {
-			// Return copy to prevent external modification
-			prefs := make([]string, len(template.SquadPreferences))
-			copy(prefs, template.SquadPreferences)
-			return prefs
-		}
+func GetSquadPreferences(encounterTypeID string) []string {
+	def := core.GetThreatRegistry().GetByEncounterTypeID(encounterTypeID)
+	if def.ID != "default" {
+		// Return copy to prevent external modification
+		prefs := make([]string, len(def.SquadPreferences))
+		copy(prefs, def.SquadPreferences)
+		return prefs
 	}
 	return nil // Not found - allows caller to handle random composition
 }
 
-// GetEncounterTypeByID retrieves full encounter type template.
+// GetEncounterTypeByID retrieves encounter type info from the threat registry.
 // Returns nil if not found.
-func GetEncounterTypeByID(id string) *templates.JSONEncounterType {
-	for i := range templates.EncounterTypeTemplates {
-		if templates.EncounterTypeTemplates[i].ID == id {
-			return &templates.EncounterTypeTemplates[i]
-		}
+func GetEncounterTypeByID(id string) *EncounterTypeInfo {
+	def := core.GetThreatRegistry().GetByEncounterTypeID(id)
+	if def.ID == "default" {
+		return nil
 	}
-	return nil
+	return &EncounterTypeInfo{
+		ID:                def.EncounterTypeID,
+		Name:              def.EncounterTypeName,
+		SquadPreferences:  def.SquadPreferences,
+		DefaultDifficulty: def.DefaultDifficulty,
+		Tags:              def.Tags,
+	}
+}
+
+// EncounterTypeInfo provides encounter type information from the threat registry.
+// This replaces the removed JSONEncounterType struct for external consumers.
+type EncounterTypeInfo struct {
+	ID                string
+	Name              string
+	SquadPreferences  []string
+	DefaultDifficulty int
+	Tags              []string
 }

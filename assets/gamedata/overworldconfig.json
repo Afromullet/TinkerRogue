@@ -42,43 +42,6 @@
     "defaultMapWidth": 100,
     "defaultMapHeight": 80
   },
-  "threatTypes": [
-    {
-      "threatType": "Necromancer",
-      "baseGrowthRate": 0.05,
-      "baseRadius": 3,
-      "primaryEffect": "SpawnBoost",
-      "canSpawnChildren": true
-    },
-    {
-      "threatType": "BanditCamp",
-      "baseGrowthRate": 0.08,
-      "baseRadius": 2,
-      "primaryEffect": "ResourceDrain",
-      "canSpawnChildren": false
-    },
-    {
-      "threatType": "Corruption",
-      "baseGrowthRate": 0.03,
-      "baseRadius": 5,
-      "primaryEffect": "TerrainCorruption",
-      "canSpawnChildren": true
-    },
-    {
-      "threatType": "BeastNest",
-      "baseGrowthRate": 0.06,
-      "baseRadius": 2,
-      "primaryEffect": "SpawnBoost",
-      "canSpawnChildren": false
-    },
-    {
-      "threatType": "OrcWarband",
-      "baseGrowthRate": 0.07,
-      "baseRadius": 3,
-      "primaryEffect": "CombatDebuff",
-      "canSpawnChildren": false
-    }
-  ],
   "factionScoring": {
     "expansion": {
       "strongBonus": 5.0,

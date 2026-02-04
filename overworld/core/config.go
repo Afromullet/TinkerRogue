@@ -170,24 +170,10 @@ func GetBonusItemDropChance() int {
 }
 
 // GetThreatTypeParamsFromConfig returns parameters for each threat type from config.
-// Falls back to hardcoded defaults if template lookup fails.
+// Uses ThreatRegistry for unified data-driven lookup.
 // Note: MaxIntensity is now a global config value - use GetMaxThreatIntensity().
 func GetThreatTypeParamsFromConfig(threatType ThreatType) ThreatTypeParams {
-	threatStr := threatType.String()
-
-	for _, tt := range templates.OverworldConfigTemplate.ThreatTypes {
-		if tt.ThreatType == threatStr {
-			return ThreatTypeParams{
-				BaseGrowthRate:   tt.BaseGrowthRate,
-				BaseRadius:       tt.BaseRadius,
-				PrimaryEffect:    stringToInfluenceEffect(tt.PrimaryEffect),
-				CanSpawnChildren: tt.CanSpawnChildren,
-			}
-		}
-	}
-
-	// Fallback to hardcoded defaults
-	return GetThreatTypeParams(threatType)
+	return GetThreatRegistry().GetOverworldParams(threatType)
 }
 
 // stringToInfluenceEffect converts string to InfluenceEffect enum

@@ -253,15 +253,6 @@ type JSONEncounterDifficulty struct {
 	SquadCount      int     `json:"squadCount"`
 }
 
-// JSONEncounterType defines an encounter template with squad composition preferences
-type JSONEncounterType struct {
-	ID               string   `json:"id"`
-	Name             string   `json:"name"`
-	SquadPreferences []string `json:"squadPreferences"`
-	DefaultDifficulty int     `json:"defaultDifficulty"`
-	Tags             []string `json:"tags"`
-}
-
 // JSONSquadType defines squad type metadata (for future filtering/validation)
 type JSONSquadType struct {
 	ID          string `json:"id"`
@@ -271,9 +262,10 @@ type JSONSquadType struct {
 
 // EncounterData is the root container for encounter configuration
 type EncounterData struct {
-	DifficultyLevels []JSONEncounterDifficulty `json:"difficultyLevels"`
-	EncounterTypes   []JSONEncounterType       `json:"encounterTypes"`
-	SquadTypes       []JSONSquadType           `json:"squadTypes"`
+	DifficultyLevels  []JSONEncounterDifficulty `json:"difficultyLevels"`
+	SquadTypes        []JSONSquadType           `json:"squadTypes"`
+	ThreatDefinitions []JSONThreatDefinition    `json:"threatDefinitions"` // Unified threat config
+	DefaultThreat     *JSONDefaultThreat        `json:"defaultThreat"`     // Fallback for unknown threats
 }
 
 // JSONAIConfig is the root container for AI behavior configuration
@@ -297,7 +289,6 @@ type RoleBehaviorConfig struct {
 	MeleeWeight   float64 `json:"meleeWeight"`
 	SupportWeight float64 `json:"supportWeight"`
 }
-
 
 // SupportLayerConfig defines support layer parameters
 type SupportLayerConfig struct {
@@ -342,19 +333,17 @@ type CompositionBonusConfig struct {
 	Bonus       float64 `json:"bonus"`
 }
 
-
 // JSONOverworldConfig is the root container for overworld configuration
 type JSONOverworldConfig struct {
-	ThreatGrowth          ThreatGrowthConfig               `json:"threatGrowth"`
-	FactionAI             FactionAIConfig                  `json:"factionAI"`
-	SpawnProbabilities    SpawnProbabilitiesConfig         `json:"spawnProbabilities"`
-	MapDimensions         MapDimensionsConfig              `json:"mapDimensions"`
-	ThreatTypes           []ThreatTypeConfig               `json:"threatTypes"`
-	FactionScoring        FactionScoringConfig             `json:"factionScoring"`
-	StrengthThresholds    StrengthThresholdsConfig         `json:"strengthThresholds"`
+	ThreatGrowth          ThreatGrowthConfig                `json:"threatGrowth"`
+	FactionAI             FactionAIConfig                   `json:"factionAI"`
+	SpawnProbabilities    SpawnProbabilitiesConfig          `json:"spawnProbabilities"`
+	MapDimensions         MapDimensionsConfig               `json:"mapDimensions"`
+	FactionScoring        FactionScoringConfig              `json:"factionScoring"`
+	StrengthThresholds    StrengthThresholdsConfig          `json:"strengthThresholds"`
 	FactionArchetypes     map[string]FactionArchetypeConfig `json:"factionArchetypes"`
-	VictoryConditions     VictoryConditionsConfig          `json:"victoryConditions"`
-	FactionScoringControl FactionScoringControlConfig      `json:"factionScoringControl"`
+	VictoryConditions     VictoryConditionsConfig           `json:"victoryConditions"`
+	FactionScoringControl FactionScoringControlConfig       `json:"factionScoringControl"`
 }
 
 // ThreatGrowthConfig defines threat growth parameters
@@ -386,22 +375,12 @@ type MapDimensionsConfig struct {
 	DefaultMapHeight int `json:"defaultMapHeight"`
 }
 
-// ThreatTypeConfig defines threat type parameters.
-// Note: MaxIntensity removed - now uses global maxThreatIntensity from ThreatGrowthConfig.
-type ThreatTypeConfig struct {
-	ThreatType       string  `json:"threatType"`
-	BaseGrowthRate   float64 `json:"baseGrowthRate"`
-	BaseRadius       int     `json:"baseRadius"`
-	PrimaryEffect    string  `json:"primaryEffect"`
-	CanSpawnChildren bool    `json:"canSpawnChildren"`
-}
-
 // FactionScoringConfig defines faction intent scoring parameters
 type FactionScoringConfig struct {
-	Expansion      ExpansionScoringConfig      `json:"expansion"`
-	Fortification  FortificationScoringConfig  `json:"fortification"`
-	Raiding        RaidingScoringConfig        `json:"raiding"`
-	Retreat        RetreatScoringConfig        `json:"retreat"`
+	Expansion     ExpansionScoringConfig     `json:"expansion"`
+	Fortification FortificationScoringConfig `json:"fortification"`
+	Raiding       RaidingScoringConfig       `json:"raiding"`
+	Retreat       RetreatScoringConfig       `json:"retreat"`
 }
 
 // ExpansionScoringConfig defines expansion scoring parameters
@@ -424,9 +403,9 @@ type RaidingScoringConfig struct {
 
 // RetreatScoringConfig defines retreat scoring parameters
 type RetreatScoringConfig struct {
-	CriticalWeakBonus       float64 `json:"criticalWeakBonus"`
-	SmallTerritoryPenalty   float64 `json:"smallTerritoryPenalty"`
-	MinTerritorySize        int     `json:"minTerritorySize"`
+	CriticalWeakBonus     float64 `json:"criticalWeakBonus"`
+	SmallTerritoryPenalty float64 `json:"smallTerritoryPenalty"`
+	MinTerritorySize      int     `json:"minTerritorySize"`
 }
 
 // StrengthThresholdsConfig defines unified strength thresholds
@@ -454,4 +433,60 @@ type FactionScoringControlConfig struct {
 	IdleScoreThreshold float64 `json:"idleScoreThreshold"`
 	RaidBaseIntensity  int     `json:"raidBaseIntensity"`
 	RaidIntensityScale float64 `json:"raidIntensityScale"`
+}
+
+// --- Unified Threat Definition Structs ---
+// These structs enable loading ALL threat configuration from a single JSON array,
+// replacing the need to edit 6-8 files when adding a new threat type.
+
+// JSONColor represents an RGBA color in JSON
+type JSONColor struct {
+	R uint8 `json:"r"`
+	G uint8 `json:"g"`
+	B uint8 `json:"b"`
+	A uint8 `json:"a"`
+}
+
+// JSONThreatEncounterConfig defines encounter parameters for a threat
+type JSONThreatEncounterConfig struct {
+	TypeID            string   `json:"typeId"`            // e.g., "undead_basic"
+	TypeName          string   `json:"typeName"`          // e.g., "Undead Horde"
+	SquadPreferences  []string `json:"squadPreferences"`  // e.g., ["melee", "melee", "magic"]
+	DefaultDifficulty int      `json:"defaultDifficulty"` // Default difficulty level
+	Tags              []string `json:"tags"`              // e.g., ["common", "undead"]
+}
+
+
+// JSONThreatOverworldConfig defines overworld behavior parameters
+type JSONThreatOverworldConfig struct {
+	BaseGrowthRate   float64 `json:"baseGrowthRate"`   // Growth rate per tick
+	BaseRadius       int     `json:"baseRadius"`       // Influence radius
+	PrimaryEffect    string  `json:"primaryEffect"`    // "SpawnBoost", "ResourceDrain", etc.
+	CanSpawnChildren bool    `json:"canSpawnChildren"` // Can spawn child nodes
+}
+
+
+// JSONThreatDefinition is the unified threat configuration
+// A single entry in the threatDefinitions array replaces configuration
+// previously spread across 6-8 files.
+type JSONThreatDefinition struct {
+	ID          string `json:"id"`          // Unique identifier, e.g., "necromancer"
+	DisplayName string `json:"displayName"` // Human-readable name, e.g., "Necromancer"
+	EnumValue   int    `json:"enumValue"`   // Maps to ThreatType enum (-1 for JSON-only threats)
+
+	Encounter     JSONThreatEncounterConfig `json:"encounter"`     // Encounter configuration
+	Color         JSONColor                 `json:"color"`         // Display color on overworld map
+	Overworld     JSONThreatOverworldConfig `json:"overworld"`     // Overworld behavior
+	BasicDrops    []string                  `json:"basicDrops"`    // Normal item drops
+	HighTierDrops []string                  `json:"highTierDrops"` // Drops at high intensity
+	FactionID     string                    `json:"factionId"`     // Faction mapping, e.g., "Necromancers"
+}
+
+// JSONDefaultThreat defines fallback configuration for unknown threats
+type JSONDefaultThreat struct {
+	DisplayName   string                    `json:"displayName"`
+	Color         JSONColor                 `json:"color"`         // Display color on overworld map
+	Overworld     JSONThreatOverworldConfig `json:"overworld"`     // Overworld behavior
+	BasicDrops    []string                  `json:"basicDrops"`    // Normal item drops
+	HighTierDrops []string                  `json:"highTierDrops"` // Drops at high intensity
 }

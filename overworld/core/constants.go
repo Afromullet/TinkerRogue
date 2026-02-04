@@ -15,52 +15,6 @@ const (
 	DefaultMapHeight = 80  // Default overworld map height
 )
 
-// DEPRECATED: Use GetThreatTypeParamsFromConfig() from config.go instead.
-// This function is kept for fallback purposes only.
-// Threat type parameters are now loaded from overworldconfig.json for designer-friendly tuning.
-func GetThreatTypeParams(threatType ThreatType) ThreatTypeParams {
-	switch threatType {
-	case ThreatNecromancer:
-		return ThreatTypeParams{
-			BaseGrowthRate:   0.05,
-			BaseRadius:       3,
-			PrimaryEffect:    InfluenceSpawnBoost,
-			CanSpawnChildren: true,
-		}
-	case ThreatBanditCamp:
-		return ThreatTypeParams{
-			BaseGrowthRate:   0.08,
-			BaseRadius:       2,
-			PrimaryEffect:    InfluenceResourceDrain,
-			CanSpawnChildren: false,
-		}
-	case ThreatCorruption:
-		return ThreatTypeParams{
-			BaseGrowthRate:   0.03,
-			BaseRadius:       5,
-			PrimaryEffect:    InfluenceTerrainCorruption,
-			CanSpawnChildren: true,
-		}
-	case ThreatBeastNest:
-		return ThreatTypeParams{
-			BaseGrowthRate:   0.06,
-			BaseRadius:       2,
-			PrimaryEffect:    InfluenceSpawnBoost,
-			CanSpawnChildren: false,
-		}
-	case ThreatOrcWarband:
-		return ThreatTypeParams{
-			BaseGrowthRate:   0.07,
-			BaseRadius:       3,
-			PrimaryEffect:    InfluenceCombatDebuff,
-			CanSpawnChildren: false,
-		}
-	default:
-		return ThreatTypeParams{
-			BaseGrowthRate:   0.05,
-			BaseRadius:       2,
-			PrimaryEffect:    InfluenceSpawnBoost,
-			CanSpawnChildren: false,
-		}
-	}
-}
+// DEPRECATED: GetThreatTypeParams has been removed.
+// All threat parameters are now loaded from encounterdata.json via ThreatRegistry.
+// Use GetThreatTypeParamsFromConfig() or GetThreatRegistry().GetOverworldParams() instead.

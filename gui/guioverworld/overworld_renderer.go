@@ -194,22 +194,10 @@ func (r *OverworldRenderer) renderSelectionHighlight(screen *ebiten.Image) {
 	vector.StrokeCircle(screen, centerX, centerY, radius, 2, selectionColor, true)
 }
 
-// getThreatColor returns color for each threat type
+// getThreatColor returns color for each threat type.
+// Uses ThreatRegistry for data-driven lookup.
 func (r *OverworldRenderer) getThreatColor(threatType core.ThreatType) color.RGBA {
-	switch threatType {
-	case core.ThreatNecromancer:
-		return color.RGBA{150, 50, 150, 255} // Purple
-	case core.ThreatBanditCamp:
-		return color.RGBA{200, 100, 50, 255} // Brown
-	case core.ThreatCorruption:
-		return color.RGBA{100, 200, 50, 255} // Sickly green
-	case core.ThreatBeastNest:
-		return color.RGBA{200, 150, 50, 255} // Orange
-	case core.ThreatOrcWarband:
-		return color.RGBA{200, 50, 50, 255} // Red
-	default:
-		return color.RGBA{128, 128, 128, 255} // Gray
-	}
+	return core.GetThreatRegistry().GetColor(threatType)
 }
 
 // GetThreatAtPosition returns threat entity at screen coordinates (for mouse clicks)

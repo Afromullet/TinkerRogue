@@ -11,42 +11,17 @@ const (
 	ThreatOrcWarband
 )
 
-// String returns human-readable threat name
+// String returns human-readable threat name.
+// Uses ThreatRegistry for data-driven lookup with fallback.
 func (t ThreatType) String() string {
-	switch t {
-	case ThreatNecromancer:
-		return "Necromancer"
-	case ThreatBanditCamp:
-		return "Bandit Camp"
-	case ThreatCorruption:
-		return "Corruption"
-	case ThreatBeastNest:
-		return "Beast Nest"
-	case ThreatOrcWarband:
-		return "Orc Warband"
-	default:
-		return "Unknown Threat"
-	}
+	return GetThreatRegistry().GetDisplayName(t)
 }
 
 // EncounterTypeID returns the JSON encounter type ID for this threat.
-// This is the SINGLE SOURCE OF TRUTH for threat-to-encounter mapping.
-// These IDs must match the "id" field in assets/gamedata/encounterdata.json.
+// Uses ThreatRegistry for data-driven lookup.
+// These IDs match the "encounter.typeId" field in assets/gamedata/encounterdata.json.
 func (t ThreatType) EncounterTypeID() string {
-	switch t {
-	case ThreatNecromancer:
-		return "undead_basic"
-	case ThreatBanditCamp:
-		return "bandit_basic"
-	case ThreatCorruption:
-		return "corruption_basic"
-	case ThreatBeastNest:
-		return "beast_basic"
-	case ThreatOrcWarband:
-		return "orc_basic"
-	default:
-		return "generic"
-	}
+	return GetThreatRegistry().GetEncounterTypeID(t)
 }
 
 // FactionType represents different faction types

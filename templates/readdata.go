@@ -153,28 +153,111 @@ func ReadEncounterData() {
 		}
 	}
 
-	// Validate encounter types reference valid squad types
+	// Build valid squad types map
 	validSquadTypes := make(map[string]bool)
 	for _, squadType := range encounterData.SquadTypes {
 		validSquadTypes[squadType.ID] = true
 	}
 
-	for _, encounterType := range encounterData.EncounterTypes {
-		for _, pref := range encounterType.SquadPreferences {
-			if !validSquadTypes[pref] {
-				panic("Encounter type '" + encounterType.ID + "' references invalid squad type: " + pref)
-			}
-		}
+	// Validate threat definitions if present
+	if len(encounterData.ThreatDefinitions) > 0 {
+		validateThreatDefinitions(&encounterData, validSquadTypes)
 	}
 
 	// Store in global template arrays
 	EncounterDifficultyTemplates = encounterData.DifficultyLevels
-	EncounterTypeTemplates = encounterData.EncounterTypes
 	SquadTypeTemplates = encounterData.SquadTypes
+	ThreatDefinitionTemplates = encounterData.ThreatDefinitions
+	DefaultThreatTemplate = encounterData.DefaultThreat
 
 	// Log successful load
 	println("Encounter data loaded:", len(EncounterDifficultyTemplates), "difficulty levels,",
-		len(EncounterTypeTemplates), "encounter types,", len(SquadTypeTemplates), "squad types")
+		len(SquadTypeTemplates), "squad types,", len(ThreatDefinitionTemplates), "threat definitions")
+}
+
+// validateThreatDefinitions validates the unified threat definitions
+func validateThreatDefinitions(data *EncounterData, validSquadTypes map[string]bool) {
+	seenIDs := make(map[string]bool)
+	seenEncounterTypeIDs := make(map[string]bool)
+
+	// Required threat IDs for backwards compatibility with existing enum
+	requiredThreats := map[string]bool{
+		"necromancer": false,
+		"banditcamp":  false,
+		"corruption":  false,
+		"beastnest":   false,
+		"orcwarband":  false,
+	}
+
+	// Valid primary effects
+	validEffects := map[string]bool{
+		"SpawnBoost":        true,
+		"ResourceDrain":     true,
+		"TerrainCorruption": true,
+		"CombatDebuff":      true,
+	}
+
+	for _, threat := range data.ThreatDefinitions {
+		// Required fields
+		if threat.ID == "" {
+			panic("Threat definition missing required 'id' field")
+		}
+		if threat.DisplayName == "" {
+			panic("Threat definition '" + threat.ID + "' missing required 'displayName' field")
+		}
+		if threat.Encounter.TypeID == "" {
+			panic("Threat definition '" + threat.ID + "' missing required 'encounter.typeId' field")
+		}
+
+		// Check for duplicate IDs
+		if seenIDs[threat.ID] {
+			panic("Duplicate threat definition ID: " + threat.ID)
+		}
+		seenIDs[threat.ID] = true
+
+		// Check for duplicate encounter type IDs
+		if seenEncounterTypeIDs[threat.Encounter.TypeID] {
+			panic("Duplicate encounter typeId: " + threat.Encounter.TypeID)
+		}
+		seenEncounterTypeIDs[threat.Encounter.TypeID] = true
+
+		// Validate squad preferences reference valid squad types
+		for _, pref := range threat.Encounter.SquadPreferences {
+			if !validSquadTypes[pref] {
+				panic("Threat '" + threat.ID + "' references invalid squad type: " + pref)
+			}
+		}
+
+		// Validate primary effect
+		if threat.Overworld.PrimaryEffect != "" && !validEffects[threat.Overworld.PrimaryEffect] {
+			panic("Threat '" + threat.ID + "' has invalid primary effect: " + threat.Overworld.PrimaryEffect)
+		}
+
+		// Warn about unusual overworld params (but allow them for design flexibility)
+		if threat.Overworld.BaseGrowthRate <= 0 {
+			println("Warning: Threat '" + threat.ID + "' has non-positive baseGrowthRate")
+		}
+		if threat.Overworld.BaseRadius <= 0 {
+			println("Warning: Threat '" + threat.ID + "' has non-positive baseRadius")
+		}
+
+		// Warn about invisible color (but allow it for design flexibility)
+		if threat.Color.A == 0 {
+			println("Warning: Threat '" + threat.ID + "' has zero alpha (invisible)")
+		}
+
+		// Mark required threats as found
+		if _, exists := requiredThreats[threat.ID]; exists {
+			requiredThreats[threat.ID] = true
+		}
+	}
+
+	// Check all required threats exist
+	for id, found := range requiredThreats {
+		if !found {
+			panic("Missing required threat definition: " + id)
+		}
+	}
 }
 
 func ReadAIConfig() {
@@ -334,7 +417,7 @@ func ReadOverworldConfig() {
 	validateOverworldConfig(&OverworldConfigTemplate)
 
 	// Log successful load
-	println("Overworld config loaded:", len(OverworldConfigTemplate.ThreatTypes), "threat types")
+	println("Overworld config loaded")
 }
 
 func validateOverworldConfig(config *JSONOverworldConfig) {
@@ -396,42 +479,4 @@ func validateOverworldConfig(config *JSONOverworldConfig) {
 	if md.DefaultMapWidth <= 0 || md.DefaultMapHeight <= 0 {
 		panic("Map dimensions must be positive")
 	}
-
-	// Validate required threat types exist
-	requiredThreats := map[string]bool{
-		"Necromancer": false,
-		"BanditCamp":  false,
-		"Corruption":  false,
-		"BeastNest":   false,
-		"OrcWarband":  false,
-	}
-	for _, tt := range config.ThreatTypes {
-		if _, exists := requiredThreats[tt.ThreatType]; exists {
-			requiredThreats[tt.ThreatType] = true
-		}
-
-		// Validate threat type parameters are positive (maxIntensity is optional now, use global)
-		if tt.BaseGrowthRate <= 0 || tt.BaseRadius <= 0 {
-			panic("Threat type '" + tt.ThreatType + "' parameters must be positive")
-		}
-
-		// Validate primary effect is valid
-		validEffects := map[string]bool{
-			"SpawnBoost":        true,
-			"ResourceDrain":     true,
-			"TerrainCorruption": true,
-			"CombatDebuff":      true,
-		}
-		if !validEffects[tt.PrimaryEffect] {
-			panic("Threat type '" + tt.ThreatType + "' has invalid primary effect: " + tt.PrimaryEffect)
-		}
-	}
-	for threat, found := range requiredThreats {
-		if !found {
-			panic("Overworld config missing required threat type: " + threat)
-		}
-	}
-
-	// Validate faction scoring parameters (allow negative values for penalties/modifiers)
-	// Just ensure critical values exist (no strict validation needed since negative values are intentional)
 }

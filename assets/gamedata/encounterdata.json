@@ -31,50 +31,6 @@
       "squadCount": 6
     }
   ],
-  "encounterTypes": [
-    {
-      "id": "goblin_basic",
-      "name": "Goblin Patrol",
-      "squadPreferences": ["melee", "melee", "ranged"],
-      "defaultDifficulty": 4,
-      "tags": ["common", "melee-focused"]
-    },
-    {
-      "id": "bandit_basic",
-      "name": "Bandit Ambush",
-      "squadPreferences": ["melee", "ranged", "ranged"],
-      "defaultDifficulty": 4,
-      "tags": ["common", "ranged-focused"]
-    },
-    {
-      "id": "beast_basic",
-      "name": "Beast Swarm",
-      "squadPreferences": ["melee", "melee", "melee"],
-      "defaultDifficulty": 4,
-      "tags": ["common", "swarm"]
-    },
-    {
-      "id": "orc_basic",
-      "name": "Orc Warband",
-      "squadPreferences": ["melee", "ranged", "magic"],
-      "defaultDifficulty": 4,
-      "tags": ["common", "balanced"]
-    },
-    {
-      "id": "undead_basic",
-      "name": "Undead Horde",
-      "squadPreferences": ["melee", "melee", "magic"],
-      "defaultDifficulty": 4,
-      "tags": ["common", "undead"]
-    },
-    {
-      "id": "corruption_basic",
-      "name": "Corrupted Forces",
-      "squadPreferences": ["magic", "ranged", "melee"],
-      "defaultDifficulty": 4,
-      "tags": ["common", "corruption"]
-    }
-  ],
   "squadTypes": [
     {
       "id": "melee",
@@ -91,5 +47,129 @@
       "name": "Magic Squad",
       "description": "Spellcasters and support"
     }
-  ]
+  ],
+  "threatDefinitions": [
+    {
+      "id": "necromancer",
+      "displayName": "Necromancer",
+      "enumValue": 0,
+      "encounter": {
+        "typeId": "undead_basic",
+        "typeName": "Undead Horde",
+        "squadPreferences": ["melee", "melee", "magic"],
+        "defaultDifficulty": 4,
+        "tags": ["common", "undead"]
+      },
+      "color": { "r": 150, "g": 50, "b": 150, "a": 255 },
+      "overworld": {
+        "baseGrowthRate": 0.05,
+        "baseRadius": 3,
+        "primaryEffect": "SpawnBoost",
+        "canSpawnChildren": true
+      },
+      "basicDrops": ["Dark Essence", "Necromantic Scroll", "Bone Fragment", "Soul Gem", "Cursed Tome"],
+      "highTierDrops": ["Lich Phylactery", "Staff of Undeath"],
+      "factionId": "Necromancers"
+    },
+    {
+      "id": "banditcamp",
+      "displayName": "Bandit Camp",
+      "enumValue": 1,
+      "encounter": {
+        "typeId": "bandit_basic",
+        "typeName": "Bandit Ambush",
+        "squadPreferences": ["melee", "ranged", "ranged"],
+        "defaultDifficulty": 4,
+        "tags": ["common", "ranged-focused"]
+      },
+      "color": { "r": 200, "g": 100, "b": 50, "a": 255 },
+      "overworld": {
+        "baseGrowthRate": 0.08,
+        "baseRadius": 2,
+        "primaryEffect": "ResourceDrain",
+        "canSpawnChildren": false
+      },
+      "basicDrops": ["Rusty Sword", "Leather Armor", "Iron Dagger", "Stolen Goods", "Lockpicks"],
+      "highTierDrops": ["Masterwork Blade", "Bandit King's Crown"],
+      "factionId": "Bandits"
+    },
+    {
+      "id": "corruption",
+      "displayName": "Corruption",
+      "enumValue": 2,
+      "encounter": {
+        "typeId": "corruption_basic",
+        "typeName": "Corrupted Forces",
+        "squadPreferences": ["magic", "ranged", "melee"],
+        "defaultDifficulty": 4,
+        "tags": ["common", "corruption"]
+      },
+      "color": { "r": 100, "g": 200, "b": 50, "a": 255 },
+      "overworld": {
+        "baseGrowthRate": 0.03,
+        "baseRadius": 5,
+        "primaryEffect": "TerrainCorruption",
+        "canSpawnChildren": true
+      },
+      "basicDrops": ["Tainted Crystal", "Corrupted Seed", "Void Essence", "Shadow Fragment", "Blighted Herb"],
+      "highTierDrops": ["Heart of Corruption", "Void Shard"],
+      "factionId": "Cultists"
+    },
+    {
+      "id": "beastnest",
+      "displayName": "Beast Nest",
+      "enumValue": 3,
+      "encounter": {
+        "typeId": "beast_basic",
+        "typeName": "Beast Swarm",
+        "squadPreferences": ["melee", "melee", "melee"],
+        "defaultDifficulty": 4,
+        "tags": ["common", "swarm"]
+      },
+      "color": { "r": 200, "g": 150, "b": 50, "a": 255 },
+      "overworld": {
+        "baseGrowthRate": 0.06,
+        "baseRadius": 2,
+        "primaryEffect": "SpawnBoost",
+        "canSpawnChildren": false
+      },
+      "basicDrops": ["Beast Pelt", "Sharp Claw", "Fang", "Beast Horn", "Hide Scraps"],
+      "highTierDrops": ["Alpha Pelt", "Primal Essence"],
+      "factionId": "Beasts"
+    },
+    {
+      "id": "orcwarband",
+      "displayName": "Orc Warband",
+      "enumValue": 4,
+      "encounter": {
+        "typeId": "orc_basic",
+        "typeName": "Orc Warband",
+        "squadPreferences": ["melee", "ranged", "magic"],
+        "defaultDifficulty": 4,
+        "tags": ["common", "balanced"]
+      },
+      "color": { "r": 200, "g": 50, "b": 50, "a": 255 },
+      "overworld": {
+        "baseGrowthRate": 0.07,
+        "baseRadius": 3,
+        "primaryEffect": "CombatDebuff",
+        "canSpawnChildren": false
+      },
+      "basicDrops": ["Orcish Axe", "Crude Shield", "War Paint", "Tusk Trophy", "Bone Club"],
+      "highTierDrops": ["Warlord's Greataxe", "Berserker Totem"],
+      "factionId": "Orcs"
+    }
+  ],
+  "defaultThreat": {
+    "displayName": "Unknown Threat",
+    "color": { "r": 128, "g": 128, "b": 128, "a": 255 },
+    "overworld": {
+      "baseGrowthRate": 0.05,
+      "baseRadius": 2,
+      "primaryEffect": "SpawnBoost",
+      "canSpawnChildren": false
+    },
+    "basicDrops": ["Unknown Item"],
+    "highTierDrops": []
+  }
 }
