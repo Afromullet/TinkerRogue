@@ -13,6 +13,7 @@ var PowerConfigTemplate JSONPowerConfig
 var OverworldConfigTemplate JSONOverworldConfig
 var ThreatDefinitionTemplates []JSONThreatDefinition
 var DefaultThreatTemplate *JSONDefaultThreat
+var FactionArchetypeTemplates map[string]FactionArchetypeConfig
 
 func ReadGameData() {
 

@@ -10,8 +10,8 @@ import (
 // We populate the template directly rather than loading from JSON
 // since tests run from different directories.
 func init() {
-	// Set up faction archetypes
-	templates.OverworldConfigTemplate.FactionArchetypes = map[string]templates.FactionArchetypeConfig{
+	// Set up faction archetypes (now stored in FactionArchetypeTemplates)
+	templates.FactionArchetypeTemplates = map[string]templates.FactionArchetypeConfig{
 		"Cultists":     {Strategy: "Expansionist", Aggression: 0.7},
 		"Orcs":         {Strategy: "Aggressor", Aggression: 0.9},
 		"Bandits":      {Strategy: "Raider", Aggression: 0.8},

@@ -262,10 +262,11 @@ type JSONSquadType struct {
 
 // EncounterData is the root container for encounter configuration
 type EncounterData struct {
-	DifficultyLevels  []JSONEncounterDifficulty `json:"difficultyLevels"`
-	SquadTypes        []JSONSquadType           `json:"squadTypes"`
-	ThreatDefinitions []JSONThreatDefinition    `json:"threatDefinitions"` // Unified threat config
-	DefaultThreat     *JSONDefaultThreat        `json:"defaultThreat"`     // Fallback for unknown threats
+	Factions          map[string]FactionArchetypeConfig `json:"factions"`          // Faction archetypes (strategy, aggression)
+	DifficultyLevels  []JSONEncounterDifficulty         `json:"difficultyLevels"`
+	SquadTypes        []JSONSquadType                   `json:"squadTypes"`
+	ThreatDefinitions []JSONThreatDefinition            `json:"threatDefinitions"` // Unified threat config
+	DefaultThreat     *JSONDefaultThreat                `json:"defaultThreat"`     // Fallback for unknown threats
 }
 
 // JSONAIConfig is the root container for AI behavior configuration
@@ -335,15 +336,14 @@ type CompositionBonusConfig struct {
 
 // JSONOverworldConfig is the root container for overworld configuration
 type JSONOverworldConfig struct {
-	ThreatGrowth          ThreatGrowthConfig                `json:"threatGrowth"`
-	FactionAI             FactionAIConfig                   `json:"factionAI"`
-	SpawnProbabilities    SpawnProbabilitiesConfig          `json:"spawnProbabilities"`
-	MapDimensions         MapDimensionsConfig               `json:"mapDimensions"`
-	FactionScoring        FactionScoringConfig              `json:"factionScoring"`
-	StrengthThresholds    StrengthThresholdsConfig          `json:"strengthThresholds"`
-	FactionArchetypes     map[string]FactionArchetypeConfig `json:"factionArchetypes"`
-	VictoryConditions     VictoryConditionsConfig           `json:"victoryConditions"`
-	FactionScoringControl FactionScoringControlConfig       `json:"factionScoringControl"`
+	ThreatGrowth          ThreatGrowthConfig          `json:"threatGrowth"`
+	FactionAI             FactionAIConfig             `json:"factionAI"`
+	SpawnProbabilities    SpawnProbabilitiesConfig    `json:"spawnProbabilities"`
+	MapDimensions         MapDimensionsConfig         `json:"mapDimensions"`
+	FactionScoring        FactionScoringConfig        `json:"factionScoring"`
+	StrengthThresholds    StrengthThresholdsConfig    `json:"strengthThresholds"`
+	VictoryConditions     VictoryConditionsConfig     `json:"victoryConditions"`
+	FactionScoringControl FactionScoringControlConfig `json:"factionScoringControl"`
 }
 
 // ThreatGrowthConfig defines threat growth parameters

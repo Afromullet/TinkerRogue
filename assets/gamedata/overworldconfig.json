@@ -16,13 +16,6 @@
     "strong": 7,
     "critical": 2
   },
-  "factionArchetypes": {
-    "Cultists":     { "strategy": "Expansionist", "aggression": 0.7 },
-    "Orcs":         { "strategy": "Aggressor",    "aggression": 0.9 },
-    "Bandits":      { "strategy": "Raider",       "aggression": 0.8 },
-    "Necromancers": { "strategy": "Defensive",    "aggression": 0.3 },
-    "Beasts":       { "strategy": "Territorial",  "aggression": 0.5 }
-  },
   "victoryConditions": {
     "highIntensityThreshold": 4,
     "maxHighIntensityThreats": 10,

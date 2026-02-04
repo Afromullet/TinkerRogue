@@ -88,7 +88,7 @@ var strategyBonuses = map[string]FactionBonuses{
 // GetFactionArchetype returns archetype config for a faction type.
 func GetFactionArchetype(factionType FactionType) FactionArchetype {
 	factionName := factionType.String()
-	if a, ok := templates.OverworldConfigTemplate.FactionArchetypes[factionName]; ok {
+	if a, ok := templates.FactionArchetypeTemplates[factionName]; ok {
 		return FactionArchetype{
 			Strategy:   a.Strategy,
 			Aggression: a.Aggression,

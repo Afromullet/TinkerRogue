@@ -169,10 +169,12 @@ func ReadEncounterData() {
 	SquadTypeTemplates = encounterData.SquadTypes
 	ThreatDefinitionTemplates = encounterData.ThreatDefinitions
 	DefaultThreatTemplate = encounterData.DefaultThreat
+	FactionArchetypeTemplates = encounterData.Factions
 
 	// Log successful load
 	println("Encounter data loaded:", len(EncounterDifficultyTemplates), "difficulty levels,",
-		len(SquadTypeTemplates), "squad types,", len(ThreatDefinitionTemplates), "threat definitions")
+		len(SquadTypeTemplates), "squad types,", len(ThreatDefinitionTemplates), "threat definitions,",
+		len(FactionArchetypeTemplates), "factions")
 }
 
 // validateThreatDefinitions validates the unified threat definitions
@@ -187,6 +189,14 @@ func validateThreatDefinitions(data *EncounterData, validSquadTypes map[string]b
 		"corruption":  false,
 		"beastnest":   false,
 		"orcwarband":  false,
+	}
+
+	// Required factions that must exist in data.Factions
+	requiredFactions := []string{"Cultists", "Orcs", "Bandits", "Necromancers", "Beasts"}
+	for _, faction := range requiredFactions {
+		if _, ok := data.Factions[faction]; !ok {
+			panic("Missing required faction in encounterdata.json: " + faction)
+		}
 	}
 
 	// Valid primary effects
@@ -231,6 +241,13 @@ func validateThreatDefinitions(data *EncounterData, validSquadTypes map[string]b
 		// Validate primary effect
 		if threat.Overworld.PrimaryEffect != "" && !validEffects[threat.Overworld.PrimaryEffect] {
 			panic("Threat '" + threat.ID + "' has invalid primary effect: " + threat.Overworld.PrimaryEffect)
+		}
+
+		// Validate factionId references an existing faction
+		if threat.FactionID != "" {
+			if _, exists := data.Factions[threat.FactionID]; !exists {
+				panic("Threat '" + threat.ID + "' references unknown faction: " + threat.FactionID)
+			}
 		}
 
 		// Warn about unusual overworld params (but allow them for design flexibility)
@@ -446,13 +463,7 @@ func validateOverworldConfig(config *JSONOverworldConfig) {
 		panic("Strength thresholds must be: critical <= weak < strong")
 	}
 
-	// Validate faction archetypes exist for required factions
-	requiredFactions := []string{"Cultists", "Orcs", "Bandits", "Necromancers", "Beasts"}
-	for _, faction := range requiredFactions {
-		if _, ok := config.FactionArchetypes[faction]; !ok {
-			panic("Missing faction archetype for: " + faction)
-		}
-	}
+	// Note: Faction archetypes are now validated in encounterdata.json
 
 	// Validate victory conditions
 	vc := config.VictoryConditions
