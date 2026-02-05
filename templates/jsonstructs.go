@@ -264,15 +264,6 @@ type JSONSquadType struct {
 	Description string `json:"description"`
 }
 
-// EncounterData is the root container for encounter configuration
-type EncounterData struct {
-	Factions          map[string]FactionArchetypeConfig `json:"factions"`          // Faction archetypes (strategy, aggression)
-	DifficultyLevels  []JSONEncounterDifficulty         `json:"difficultyLevels"`
-	SquadTypes        []JSONSquadType                   `json:"squadTypes"`
-	ThreatDefinitions []JSONThreatDefinition            `json:"threatDefinitions"` // Unified threat config
-	DefaultThreat     *JSONDefaultThreat                `json:"defaultThreat"`     // Fallback for unknown threats
-}
-
 // JSONAIConfig is the root container for AI behavior configuration
 type JSONAIConfig struct {
 	ThreatCalculation    ThreatCalculationConfig `json:"threatCalculation"`
@@ -451,49 +442,6 @@ type JSONColor struct {
 	G uint8 `json:"g"`
 	B uint8 `json:"b"`
 	A uint8 `json:"a"`
-}
-
-// JSONThreatEncounterConfig defines encounter parameters for a threat
-type JSONThreatEncounterConfig struct {
-	TypeID            string   `json:"typeId"`            // e.g., "undead_basic"
-	TypeName          string   `json:"typeName"`          // e.g., "Undead Horde"
-	SquadPreferences  []string `json:"squadPreferences"`  // e.g., ["melee", "melee", "magic"]
-	DefaultDifficulty int      `json:"defaultDifficulty"` // Default difficulty level
-	Tags              []string `json:"tags"`              // e.g., ["common", "undead"]
-}
-
-
-// JSONThreatOverworldConfig defines overworld behavior parameters
-type JSONThreatOverworldConfig struct {
-	BaseGrowthRate   float64 `json:"baseGrowthRate"`   // Growth rate per tick
-	BaseRadius       int     `json:"baseRadius"`       // Influence radius
-	PrimaryEffect    string  `json:"primaryEffect"`    // "SpawnBoost", "ResourceDrain", etc.
-	CanSpawnChildren bool    `json:"canSpawnChildren"` // Can spawn child nodes
-}
-
-
-// JSONThreatDefinition is the unified threat configuration (legacy format)
-// A single entry in the threatDefinitions array replaces configuration
-// previously spread across 6-8 files.
-type JSONThreatDefinition struct {
-	ID          string `json:"id"`          // Unique identifier, e.g., "necromancer" - this IS the type
-	DisplayName string `json:"displayName"` // Human-readable name, e.g., "Necromancer"
-
-	Encounter     JSONThreatEncounterConfig `json:"encounter"`     // Encounter configuration
-	Color         JSONColor                 `json:"color"`         // Display color on overworld map
-	Overworld     JSONThreatOverworldConfig `json:"overworld"`     // Overworld behavior
-	BasicDrops    []string                  `json:"basicDrops"`    // Normal item drops
-	HighTierDrops []string                  `json:"highTierDrops"` // Drops at high intensity
-	FactionID     string                    `json:"factionId"`     // Faction mapping, e.g., "Necromancers"
-}
-
-// JSONDefaultThreat defines fallback configuration for unknown threats
-type JSONDefaultThreat struct {
-	DisplayName   string                    `json:"displayName"`
-	Color         JSONColor                 `json:"color"`         // Display color on overworld map
-	Overworld     JSONThreatOverworldConfig `json:"overworld"`     // Overworld behavior
-	BasicDrops    []string                  `json:"basicDrops"`    // Normal item drops
-	HighTierDrops []string                  `json:"highTierDrops"` // Drops at high intensity
 }
 
 // --- Node Definition Structs ---

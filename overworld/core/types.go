@@ -50,24 +50,6 @@ const (
 	IntentIdle                         // No action (weak factions)
 )
 
-// String returns human-readable intent name
-func (i FactionIntent) String() string {
-	switch i {
-	case IntentExpand:
-		return "Expand"
-	case IntentFortify:
-		return "Fortify"
-	case IntentRaid:
-		return "Raid"
-	case IntentRetreat:
-		return "Retreat"
-	case IntentIdle:
-		return "Idle"
-	default:
-		return "Unknown"
-	}
-}
-
 // String returns human-readable faction type name
 func (f FactionType) String() string {
 	switch f {

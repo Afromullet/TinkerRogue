@@ -119,6 +119,7 @@ func EvaluateFactionIntent(
 	factionData.CurrentIntent = newIntent
 }
 
+// TODO, consider using an interface for intent
 // ExecuteFactionIntent performs the chosen action
 func ExecuteFactionIntent(
 	manager *common.EntityManager,

@@ -2,8 +2,6 @@ package core
 
 import (
 	"image/color"
-
-	"game_main/templates"
 )
 
 // ThreatTypeParams defines behavior per threat type.
@@ -70,21 +68,14 @@ func GetThreatRegistry() *ThreatRegistry {
 	return globalThreatRegistry
 }
 
-// newThreatRegistry creates and initializes a new threat registry.
-// It can source data from either the new NodeRegistry or the legacy ThreatDefinitionTemplates.
+// newThreatRegistry creates and initializes a new threat registry from the NodeRegistry.
 func newThreatRegistry() *ThreatRegistry {
 	registry := &ThreatRegistry{
 		byID: make(map[string]*ThreatDefinition),
 	}
 
-	// Try to use NodeRegistry (new format) if available
-	if len(templates.NodeDefinitionTemplates) > 0 && len(templates.EncounterDefinitionTemplates) > 0 {
-		registry.nodeRegistry = GetNodeRegistry()
-		registry.initFromNodeRegistry()
-	} else {
-		// Fall back to legacy format
-		registry.initFromLegacyTemplates()
-	}
+	registry.nodeRegistry = GetNodeRegistry()
+	registry.initFromNodeRegistry()
 
 	registry.initialized = true
 	return registry
@@ -144,59 +135,6 @@ func (r *ThreatRegistry) initFromNodeRegistry() {
 			r.defaultThreat.BasicItems = defaultEnc.BasicItems
 			r.defaultThreat.HighTierItems = defaultEnc.HighTierItems
 		}
-	}
-}
-
-// initFromLegacyTemplates populates the ThreatRegistry from the legacy threatDefinitions.
-func (r *ThreatRegistry) initFromLegacyTemplates() {
-	// Load threat definitions from JSON templates
-	for _, jsonDef := range templates.ThreatDefinitionTemplates {
-		def := &ThreatDefinition{
-			ID:                jsonDef.ID, // ID is the ThreatType (string)
-			DisplayName:       jsonDef.DisplayName,
-			EncounterTypeID:   jsonDef.Encounter.TypeID,
-			EncounterTypeName: jsonDef.Encounter.TypeName,
-			SquadPreferences:  jsonDef.Encounter.SquadPreferences,
-			DefaultDifficulty: jsonDef.Encounter.DefaultDifficulty,
-			Tags:              jsonDef.Encounter.Tags,
-			Color: color.RGBA{
-				R: jsonDef.Color.R,
-				G: jsonDef.Color.G,
-				B: jsonDef.Color.B,
-				A: jsonDef.Color.A,
-			},
-			BaseGrowthRate:   jsonDef.Overworld.BaseGrowthRate,
-			BaseRadius:       jsonDef.Overworld.BaseRadius,
-			PrimaryEffect:    stringToInfluenceEffect(jsonDef.Overworld.PrimaryEffect),
-			CanSpawnChildren: jsonDef.Overworld.CanSpawnChildren,
-			BasicItems:       jsonDef.BasicDrops,
-			HighTierItems:    jsonDef.HighTierDrops,
-			FactionID:        jsonDef.FactionID,
-		}
-
-		// Register by ID (ID is the ThreatType)
-		r.byID[def.ID] = def
-	}
-
-	// Load default threat from JSON (required data)
-	if templates.DefaultThreatTemplate == nil {
-		panic("DefaultThreatTemplate is required in encounterdata.json")
-	}
-	r.defaultThreat = &ThreatDefinition{
-		ID:          "default",
-		DisplayName: templates.DefaultThreatTemplate.DisplayName,
-		Color: color.RGBA{
-			R: templates.DefaultThreatTemplate.Color.R,
-			G: templates.DefaultThreatTemplate.Color.G,
-			B: templates.DefaultThreatTemplate.Color.B,
-			A: templates.DefaultThreatTemplate.Color.A,
-		},
-		BaseGrowthRate:   templates.DefaultThreatTemplate.Overworld.BaseGrowthRate,
-		BaseRadius:       templates.DefaultThreatTemplate.Overworld.BaseRadius,
-		PrimaryEffect:    stringToInfluenceEffect(templates.DefaultThreatTemplate.Overworld.PrimaryEffect),
-		CanSpawnChildren: templates.DefaultThreatTemplate.Overworld.CanSpawnChildren,
-		BasicItems:       templates.DefaultThreatTemplate.BasicDrops,
-		HighTierItems:    templates.DefaultThreatTemplate.HighTierDrops,
 	}
 }
 

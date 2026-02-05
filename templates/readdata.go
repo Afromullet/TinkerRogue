@@ -31,15 +31,13 @@ type CreatureModifiers struct {
 	CreatureMods []JSONCreatureModifier
 }
 
-// EncounterDataWithNew extends EncounterData to include new encounter definitions
+// EncounterDataWithNew is the root container for encounter configuration
 type EncounterDataWithNew struct {
 	Factions             map[string]FactionArchetypeConfig `json:"factions"`
 	DifficultyLevels     []JSONEncounterDifficulty         `json:"difficultyLevels"`
 	SquadTypes           []JSONSquadType                   `json:"squadTypes"`
-	ThreatDefinitions    []JSONThreatDefinition            `json:"threatDefinitions"`    // Legacy
-	DefaultThreat        *JSONDefaultThreat                `json:"defaultThreat"`        // Legacy
-	EncounterDefinitions []JSONEncounterDefinition         `json:"encounterDefinitions"` // New
-	DefaultEncounter     *JSONDefaultEncounter             `json:"defaultEncounter"`     // New
+	EncounterDefinitions []JSONEncounterDefinition         `json:"encounterDefinitions"`
+	DefaultEncounter     *JSONDefaultEncounter             `json:"defaultEncounter"`
 }
 
 func ReadMonsterData() {
@@ -276,12 +274,7 @@ func ReadEncounterData() {
 		validSquadTypes[squadType.ID] = true
 	}
 
-	// Validate threat definitions if present (legacy support)
-	if len(encounterData.ThreatDefinitions) > 0 {
-		validateThreatDefinitionsLegacy(&encounterData, validSquadTypes)
-	}
-
-	// Validate new encounter definitions if present
+	// Validate encounter definitions
 	if len(encounterData.EncounterDefinitions) > 0 {
 		validateEncounterDefinitions(&encounterData, validSquadTypes)
 	}
@@ -289,8 +282,6 @@ func ReadEncounterData() {
 	// Store in global template arrays
 	EncounterDifficultyTemplates = encounterData.DifficultyLevels
 	SquadTypeTemplates = encounterData.SquadTypes
-	ThreatDefinitionTemplates = encounterData.ThreatDefinitions
-	DefaultThreatTemplate = encounterData.DefaultThreat
 	FactionArchetypeTemplates = encounterData.Factions
 
 	// Store new encounter definitions
@@ -304,109 +295,9 @@ func ReadEncounterData() {
 
 	// Log successful load
 	println("Encounter data loaded:", len(EncounterDifficultyTemplates), "difficulty levels,",
-		len(SquadTypeTemplates), "squad types,", len(ThreatDefinitionTemplates), "threat definitions,",
+		len(SquadTypeTemplates), "squad types,",
 		len(EncounterDefinitionTemplates), "encounter definitions,",
 		len(FactionArchetypeTemplates), "factions")
-}
-
-// validateThreatDefinitionsLegacy validates the unified threat definitions (legacy format)
-func validateThreatDefinitionsLegacy(data *EncounterDataWithNew, validSquadTypes map[string]bool) {
-	seenIDs := make(map[string]bool)
-	seenEncounterTypeIDs := make(map[string]bool)
-
-	// Required threat IDs for backwards compatibility with existing enum
-	requiredThreats := map[string]bool{
-		"necromancer": false,
-		"banditcamp":  false,
-		"corruption":  false,
-		"beastnest":   false,
-		"orcwarband":  false,
-	}
-
-	// Required factions that must exist in data.Factions
-	requiredFactions := []string{"Cultists", "Orcs", "Bandits", "Necromancers", "Beasts"}
-	for _, faction := range requiredFactions {
-		if _, ok := data.Factions[faction]; !ok {
-			panic("Missing required faction in encounterdata.json: " + faction)
-		}
-	}
-
-	// Valid primary effects
-	validEffects := map[string]bool{
-		"SpawnBoost":        true,
-		"ResourceDrain":     true,
-		"TerrainCorruption": true,
-		"CombatDebuff":      true,
-	}
-
-	for _, threat := range data.ThreatDefinitions {
-		// Required fields
-		if threat.ID == "" {
-			panic("Threat definition missing required 'id' field")
-		}
-		if threat.DisplayName == "" {
-			panic("Threat definition '" + threat.ID + "' missing required 'displayName' field")
-		}
-		if threat.Encounter.TypeID == "" {
-			panic("Threat definition '" + threat.ID + "' missing required 'encounter.typeId' field")
-		}
-
-		// Check for duplicate IDs
-		if seenIDs[threat.ID] {
-			panic("Duplicate threat definition ID: " + threat.ID)
-		}
-		seenIDs[threat.ID] = true
-
-		// Check for duplicate encounter type IDs
-		if seenEncounterTypeIDs[threat.Encounter.TypeID] {
-			panic("Duplicate encounter typeId: " + threat.Encounter.TypeID)
-		}
-		seenEncounterTypeIDs[threat.Encounter.TypeID] = true
-
-		// Validate squad preferences reference valid squad types
-		for _, pref := range threat.Encounter.SquadPreferences {
-			if !validSquadTypes[pref] {
-				panic("Threat '" + threat.ID + "' references invalid squad type: " + pref)
-			}
-		}
-
-		// Validate primary effect
-		if threat.Overworld.PrimaryEffect != "" && !validEffects[threat.Overworld.PrimaryEffect] {
-			panic("Threat '" + threat.ID + "' has invalid primary effect: " + threat.Overworld.PrimaryEffect)
-		}
-
-		// Validate factionId references an existing faction
-		if threat.FactionID != "" {
-			if _, exists := data.Factions[threat.FactionID]; !exists {
-				panic("Threat '" + threat.ID + "' references unknown faction: " + threat.FactionID)
-			}
-		}
-
-		// Warn about unusual overworld params (but allow them for design flexibility)
-		if threat.Overworld.BaseGrowthRate <= 0 {
-			println("Warning: Threat '" + threat.ID + "' has non-positive baseGrowthRate")
-		}
-		if threat.Overworld.BaseRadius <= 0 {
-			println("Warning: Threat '" + threat.ID + "' has non-positive baseRadius")
-		}
-
-		// Warn about invisible color (but allow it for design flexibility)
-		if threat.Color.A == 0 {
-			println("Warning: Threat '" + threat.ID + "' has zero alpha (invisible)")
-		}
-
-		// Mark required threats as found
-		if _, exists := requiredThreats[threat.ID]; exists {
-			requiredThreats[threat.ID] = true
-		}
-	}
-
-	// Check all required threats exist
-	for id, found := range requiredThreats {
-		if !found {
-			panic("Missing required threat definition: " + id)
-		}
-	}
 }
 
 // validateEncounterDefinitions validates the new encounter definitions format

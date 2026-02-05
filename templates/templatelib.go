@@ -11,8 +11,6 @@ var SquadTypeTemplates []JSONSquadType
 var AIConfigTemplate JSONAIConfig
 var PowerConfigTemplate JSONPowerConfig
 var OverworldConfigTemplate JSONOverworldConfig
-var ThreatDefinitionTemplates []JSONThreatDefinition
-var DefaultThreatTemplate *JSONDefaultThreat
 var FactionArchetypeTemplates map[string]FactionArchetypeConfig
 
 // Node definition templates (new system)

@@ -2,7 +2,9 @@ __________________________________________
 #
 # # # **IMPORTANT** # # # 
 
+- Consider using an interface for intent in overworld
 
+- Need to be able to equip items to squads
 
 -  ExecuteThreatEvolutionEffect needs to changed base off threat type/data.  
 
