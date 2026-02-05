@@ -271,9 +271,11 @@ type EncounterData struct {
 
 // JSONAIConfig is the root container for AI behavior configuration
 type JSONAIConfig struct {
-	ThreatCalculation ThreatCalculationConfig `json:"threatCalculation"`
-	RoleBehaviors     []RoleBehaviorConfig    `json:"roleBehaviors"`
-	SupportLayer      SupportLayerConfig      `json:"supportLayer"`
+	ThreatCalculation    ThreatCalculationConfig `json:"threatCalculation"`
+	RoleBehaviors        []RoleBehaviorConfig    `json:"roleBehaviors"`
+	SupportLayer         SupportLayerConfig      `json:"supportLayer"`
+	SharedRangedWeight   float64                 `json:"sharedRangedWeight"`   // Shared ranged threat weight (all roles)
+	SharedPositionalWeight float64               `json:"sharedPositionalWeight"` // Shared positional awareness weight (all roles)
 }
 
 // ThreatCalculationConfig defines threat calculation parameters

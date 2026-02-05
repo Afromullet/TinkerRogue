@@ -15,11 +15,29 @@ const isolationMaxDistance = 8
 // Hardcoded normalizer for engagement pressure (cosmetic, converts to 0-1 range)
 const engagementPressureMax = 200
 
-// Shared constants for role weights (roles differentiated by melee/support weights only)
+// Default values for shared weights (used when config not loaded)
 const (
-	sharedRangedWeight     = 0.5 // Moderate concern for ranged threats
-	sharedPositionalWeight = 0.5 // Moderate positional awareness
+	defaultSharedRangedWeight     = 0.5
+	defaultSharedPositionalWeight = 0.5
 )
+
+// getSharedRangedWeight returns the shared ranged threat weight from config.
+// Falls back to default if not configured.
+func getSharedRangedWeight() float64 {
+	if templates.AIConfigTemplate.SharedRangedWeight > 0 {
+		return templates.AIConfigTemplate.SharedRangedWeight
+	}
+	return defaultSharedRangedWeight
+}
+
+// getSharedPositionalWeight returns the shared positional awareness weight from config.
+// Falls back to default if not configured.
+func getSharedPositionalWeight() float64 {
+	if templates.AIConfigTemplate.SharedPositionalWeight > 0 {
+		return templates.AIConfigTemplate.SharedPositionalWeight
+	}
+	return defaultSharedPositionalWeight
+}
 
 
 // RoleThreatWeights defines how each role weighs different threat layers.
@@ -90,17 +108,20 @@ func GetRetreatSafeThreatThreshold() int {
 }
 
 // GetRoleBehaviorWeights returns threat layer weights for a specific role from config.
-// RangedWeight and PositionalWeight use shared constants (roles differentiated by melee/support).
+// RangedWeight and PositionalWeight use shared config values (roles differentiated by melee/support).
 // Falls back to default values if template lookup fails.
 func GetRoleBehaviorWeights(role squads.UnitRole) RoleThreatWeights {
+	rangedWeight := getSharedRangedWeight()
+	positionalWeight := getSharedPositionalWeight()
+
 	roleStr := role.String()
 	for _, rb := range templates.AIConfigTemplate.RoleBehaviors {
 		if rb.Role == roleStr {
 			return RoleThreatWeights{
 				MeleeWeight:      rb.MeleeWeight,
-				RangedWeight:     sharedRangedWeight,     // Hardcoded shared constant
+				RangedWeight:     rangedWeight,
 				SupportWeight:    rb.SupportWeight,
-				PositionalWeight: sharedPositionalWeight, // Hardcoded shared constant
+				PositionalWeight: positionalWeight,
 			}
 		}
 	}
@@ -108,31 +129,31 @@ func GetRoleBehaviorWeights(role squads.UnitRole) RoleThreatWeights {
 	switch role {
 	case squads.RoleTank:
 		return RoleThreatWeights{
-			MeleeWeight:      -0.5,                   // Tanks SEEK melee danger
-			RangedWeight:     sharedRangedWeight,     // Shared moderate concern
-			SupportWeight:    0.2,                    // Stay near support for heals
-			PositionalWeight: sharedPositionalWeight, // Shared moderate awareness
+			MeleeWeight:      -0.5,           // Tanks SEEK melee danger
+			RangedWeight:     rangedWeight,   // Shared config value
+			SupportWeight:    0.2,            // Stay near support for heals
+			PositionalWeight: positionalWeight,
 		}
 	case squads.RoleDPS:
 		return RoleThreatWeights{
-			MeleeWeight:      0.7,                    // Avoid melee danger
-			RangedWeight:     sharedRangedWeight,     // Shared moderate concern
-			SupportWeight:    0.1,                    // Low support priority
-			PositionalWeight: sharedPositionalWeight, // Shared moderate awareness
+			MeleeWeight:      0.7,            // Avoid melee danger
+			RangedWeight:     rangedWeight,   // Shared config value
+			SupportWeight:    0.1,            // Low support priority
+			PositionalWeight: positionalWeight,
 		}
 	case squads.RoleSupport:
 		return RoleThreatWeights{
-			MeleeWeight:      1.0,                    // Strongly avoid melee danger
-			RangedWeight:     sharedRangedWeight,     // Shared moderate concern
-			SupportWeight:    -1.0,                   // SEEK high support value positions
-			PositionalWeight: sharedPositionalWeight, // Shared moderate awareness
+			MeleeWeight:      1.0,            // Strongly avoid melee danger
+			RangedWeight:     rangedWeight,   // Shared config value
+			SupportWeight:    -1.0,           // SEEK high support value positions
+			PositionalWeight: positionalWeight,
 		}
 	default:
 		return RoleThreatWeights{
 			MeleeWeight:      0.5,
-			RangedWeight:     sharedRangedWeight,
+			RangedWeight:     rangedWeight,
 			SupportWeight:    0.5,
-			PositionalWeight: sharedPositionalWeight,
+			PositionalWeight: positionalWeight,
 		}
 	}
 }

@@ -11,14 +11,13 @@ import (
 )
 
 // CombatVisualizationManager manages all combat visualization systems including
-// danger visualization, layer visualization, and threat evaluation.
+// threat visualization (both danger and layer modes) and threat evaluation.
 type CombatVisualizationManager struct {
 	// Rendering systems
 	movementRenderer  *framework.MovementTileRenderer
 	highlightRenderer *framework.SquadHighlightRenderer
 	healthBarRenderer *framework.HealthBarRenderer
-	dangerVisualizer  *behavior.DangerVisualizer
-	layerVisualizer   *behavior.LayerVisualizer
+	threatVisualizer  *behavior.ThreatVisualizer
 
 	// Threat management
 	threatManager   *behavior.FactionThreatLevelManager
@@ -51,9 +50,6 @@ func NewCombatVisualizationManager(
 		cvm.threatManager.AddFaction(factionID)
 	}
 
-	// Initialize danger visualizer
-	cvm.dangerVisualizer = behavior.NewDangerVisualizer(ctx.ECSManager, gameMap, cvm.threatManager)
-
 	// Create threat evaluators for layer visualization
 	allFactions := queries.GetAllFactions()
 	if len(allFactions) > 0 {
@@ -65,12 +61,15 @@ func NewCombatVisualizationManager(
 			queries.CombatCache,
 			cvm.threatManager,
 		)
-		cvm.layerVisualizer = behavior.NewLayerVisualizer(
-			ctx.ECSManager,
-			gameMap,
-			cvm.threatEvaluator,
-		)
 	}
+
+	// Initialize unified threat visualizer (supports both danger and layer modes)
+	cvm.threatVisualizer = behavior.NewThreatVisualizer(
+		ctx.ECSManager,
+		gameMap,
+		cvm.threatManager,
+		cvm.threatEvaluator,
+	)
 
 	return cvm
 }
@@ -90,14 +89,9 @@ func (cvm *CombatVisualizationManager) GetHealthBarRenderer() *framework.HealthB
 	return cvm.healthBarRenderer
 }
 
-// GetDangerVisualizer returns the danger visualizer
-func (cvm *CombatVisualizationManager) GetDangerVisualizer() *behavior.DangerVisualizer {
-	return cvm.dangerVisualizer
-}
-
-// GetLayerVisualizer returns the layer visualizer
-func (cvm *CombatVisualizationManager) GetLayerVisualizer() *behavior.LayerVisualizer {
-	return cvm.layerVisualizer
+// GetThreatVisualizer returns the unified threat visualizer
+func (cvm *CombatVisualizationManager) GetThreatVisualizer() *behavior.ThreatVisualizer {
+	return cvm.threatVisualizer
 }
 
 // GetThreatManager returns the faction threat level manager
@@ -123,26 +117,31 @@ func (cvm *CombatVisualizationManager) RefreshFactions(queries *framework.GUIQue
 		cvm.threatManager.AddFaction(factionID)
 	}
 
-	// If visualizers were nil during initialization (no factions existed yet), create them now
-	if len(allFactions) > 0 {
-		if cvm.threatEvaluator == nil {
-			// Use player faction (first faction) for threat evaluation
-			playerFactionID := allFactions[0]
-			cvm.threatEvaluator = behavior.NewCompositeThreatEvaluator(
-				playerFactionID,
-				cvm.ecsManager,
-				queries.CombatCache,
-				cvm.threatManager,
-			)
-		}
+	// If threat evaluator was nil during initialization (no factions existed yet), create it now
+	if len(allFactions) > 0 && cvm.threatEvaluator == nil {
+		// Use player faction (first faction) for threat evaluation
+		playerFactionID := allFactions[0]
+		cvm.threatEvaluator = behavior.NewCompositeThreatEvaluator(
+			playerFactionID,
+			cvm.ecsManager,
+			queries.CombatCache,
+			cvm.threatManager,
+		)
 
-		if cvm.layerVisualizer == nil {
-			cvm.layerVisualizer = behavior.NewLayerVisualizer(
-				cvm.ecsManager,
-				cvm.gameMap,
-				cvm.threatEvaluator,
-			)
+		// Update the existing visualizer with the new evaluator
+		if cvm.threatVisualizer != nil {
+			cvm.threatVisualizer.SetThreatEvaluator(cvm.threatEvaluator)
 		}
+	}
+
+	// If threat visualizer was nil, create it now
+	if cvm.threatVisualizer == nil {
+		cvm.threatVisualizer = behavior.NewThreatVisualizer(
+			cvm.ecsManager,
+			cvm.gameMap,
+			cvm.threatManager,
+			cvm.threatEvaluator,
+		)
 	}
 }
 
@@ -160,36 +159,21 @@ func (cvm *CombatVisualizationManager) UpdateThreatEvaluator(round int) {
 	}
 }
 
-// UpdateDangerVisualization updates danger visualization if active
-func (cvm *CombatVisualizationManager) UpdateDangerVisualization(
+// UpdateThreatVisualization updates threat visualization if active
+func (cvm *CombatVisualizationManager) UpdateThreatVisualization(
 	currentFactionID ecs.EntityID,
 	currentRound int,
 	playerPos coords.LogicalPosition,
 	viewportSize int,
 ) {
-	if cvm.dangerVisualizer != nil && cvm.dangerVisualizer.IsActive() {
-		cvm.dangerVisualizer.Update(currentFactionID, currentRound, playerPos, viewportSize)
-	}
-}
-
-// UpdateLayerVisualization updates layer visualization if active
-func (cvm *CombatVisualizationManager) UpdateLayerVisualization(
-	currentFactionID ecs.EntityID,
-	currentRound int,
-	playerPos coords.LogicalPosition,
-	viewportSize int,
-) {
-	if cvm.layerVisualizer != nil && cvm.layerVisualizer.IsActive() {
-		cvm.layerVisualizer.Update(currentFactionID, currentRound, playerPos, viewportSize)
+	if cvm.threatVisualizer != nil && cvm.threatVisualizer.IsActive() {
+		cvm.threatVisualizer.Update(currentFactionID, currentRound, playerPos, viewportSize)
 	}
 }
 
 // ClearAllVisualizations clears all active visualizations
 func (cvm *CombatVisualizationManager) ClearAllVisualizations() {
-	if cvm.dangerVisualizer != nil {
-		cvm.dangerVisualizer.ClearVisualization()
-	}
-	if cvm.layerVisualizer != nil {
-		cvm.layerVisualizer.ClearVisualization()
+	if cvm.threatVisualizer != nil {
+		cvm.threatVisualizer.ClearVisualization()
 	}
 }

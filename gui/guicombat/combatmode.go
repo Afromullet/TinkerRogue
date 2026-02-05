@@ -639,8 +639,7 @@ func (cm *CombatMode) Update(deltaTime float64) error {
 	playerPos := *cm.Context.PlayerData.Pos
 	viewportSize := 30
 
-	cm.visualization.UpdateDangerVisualization(currentFactionID, currentRound, playerPos, viewportSize)
-	cm.visualization.UpdateLayerVisualization(currentFactionID, currentRound, playerPos, viewportSize)
+	cm.visualization.UpdateThreatVisualization(currentFactionID, currentRound, playerPos, viewportSize)
 
 	return nil
 }
@@ -703,10 +702,10 @@ func (cm *CombatMode) HandleInput(inputState *framework.InputState) bool {
 		return true
 	}
 
-	// H key to toggle danger heat map
+	// H key to toggle threat heat map
 	if inputState.KeysJustPressed[ebiten.KeyH] {
-		dangerViz := cm.visualization.GetDangerVisualizer()
-		if dangerViz == nil {
+		threatViz := cm.visualization.GetThreatVisualizer()
+		if threatViz == nil {
 			return true
 		}
 
@@ -717,32 +716,28 @@ func (cm *CombatMode) HandleInput(inputState *framework.InputState) bool {
 		combatLogArea := GetCombatLogTextArea(cm.Panels)
 
 		if shiftPressed {
-			dangerViz.SwitchView()
+			threatViz.SwitchThreatView()
 			viewName := "Enemy Threats"
-			if dangerViz.GetViewMode() == behavior.ViewPlayerThreats {
+			if threatViz.GetThreatViewMode() == behavior.ViewPlayerThreats {
 				viewName = "Player Threats"
 			}
 			cm.logManager.UpdateTextArea(combatLogArea, fmt.Sprintf("Switched to %s view", viewName))
 		} else {
-			dangerViz.Toggle()
-			status := "enabled"
-			if !dangerViz.IsActive() {
-				status = "disabled"
+			// If not active or in different mode: activate in Threat mode
+			// If already active in Threat mode: turn off
+			if !threatViz.IsActive() || threatViz.GetMode() != behavior.VisualizerModeThreat {
+				threatViz.SetMode(behavior.VisualizerModeThreat)
+				if !threatViz.IsActive() {
+					threatViz.Toggle()
+				}
+				cm.logManager.UpdateTextArea(combatLogArea, "Threat visualization enabled")
+			} else {
+				threatViz.Toggle()
+				cm.logManager.UpdateTextArea(combatLogArea, "Threat visualization disabled")
 			}
-			cm.logManager.UpdateTextArea(combatLogArea, fmt.Sprintf("Danger visualization %s", status))
 		}
+		cm.updateLayerStatusWidget()
 		return true
-	}
-
-	// Left Control key reserved for future metric cycling
-	// Currently only MetricDanger is available
-	if inputState.KeysJustPressed[ebiten.KeyControlLeft] {
-		dangerViz := cm.visualization.GetDangerVisualizer()
-		if dangerViz != nil && dangerViz.IsActive() {
-			// CycleMetric is no-op with single metric, but keep for future extensibility
-			dangerViz.CycleMetric()
-			return true
-		}
 	}
 
 	// Right Control key to toggle health bars
@@ -760,8 +755,8 @@ func (cm *CombatMode) HandleInput(inputState *framework.InputState) bool {
 
 	// L key to toggle layer visualizer
 	if inputState.KeysJustPressed[ebiten.KeyL] {
-		layerViz := cm.visualization.GetLayerVisualizer()
-		if layerViz == nil {
+		threatViz := cm.visualization.GetThreatVisualizer()
+		if threatViz == nil {
 			return true
 		}
 
@@ -772,18 +767,25 @@ func (cm *CombatMode) HandleInput(inputState *framework.InputState) bool {
 		combatLogArea := GetCombatLogTextArea(cm.Panels)
 
 		if shiftPressed {
-			layerViz.CycleMode()
-			modeInfo := layerViz.GetCurrentModeInfo()
+			threatViz.CycleLayerMode()
+			modeInfo := threatViz.GetLayerModeInfo()
 			cm.logManager.UpdateTextArea(combatLogArea,
 				fmt.Sprintf("Layer: %s (%s)", modeInfo.Name, modeInfo.ColorKey))
 		} else {
-			layerViz.Toggle()
-			status := "enabled"
-			if !layerViz.IsActive() {
-				status = "disabled"
+			// If not active or in different mode: activate in Layer mode
+			// If already active in Layer mode: turn off
+			if !threatViz.IsActive() || threatViz.GetMode() != behavior.VisualizerModeLayer {
+				threatViz.SetMode(behavior.VisualizerModeLayer)
+				if !threatViz.IsActive() {
+					threatViz.Toggle()
+				}
+				modeInfo := threatViz.GetLayerModeInfo()
+				cm.logManager.UpdateTextArea(combatLogArea,
+					fmt.Sprintf("Layer visualization enabled: %s", modeInfo.Name))
+			} else {
+				threatViz.Toggle()
+				cm.logManager.UpdateTextArea(combatLogArea, "Layer visualization disabled")
 			}
-			cm.logManager.UpdateTextArea(combatLogArea,
-				fmt.Sprintf("Layer visualization %s", status))
 		}
 		cm.updateLayerStatusWidget()
 		return true
@@ -794,16 +796,17 @@ func (cm *CombatMode) HandleInput(inputState *framework.InputState) bool {
 
 // updateLayerStatusWidget updates the layer status panel visibility and text
 func (cm *CombatMode) updateLayerStatusWidget() {
-	layerViz := cm.visualization.GetLayerVisualizer()
+	threatViz := cm.visualization.GetThreatVisualizer()
 	layerStatusPanel := cm.GetPanelContainer(CombatPanelLayerStatus)
 	layerStatusText := cm.GetTextLabel(CombatPanelLayerStatus)
 
-	if layerStatusPanel == nil || layerStatusText == nil || layerViz == nil {
+	if layerStatusPanel == nil || layerStatusText == nil || threatViz == nil {
 		return
 	}
 
-	if layerViz.IsActive() {
-		modeInfo := layerViz.GetCurrentModeInfo()
+	// Show layer status only when in layer mode and active
+	if threatViz.IsActive() && threatViz.GetMode() == behavior.VisualizerModeLayer {
+		modeInfo := threatViz.GetLayerModeInfo()
 		statusText := fmt.Sprintf("LAYER VIEW\n%s\n%s", modeInfo.Name, modeInfo.ColorKey)
 		layerStatusText.Label = statusText
 		layerStatusPanel.GetWidget().Visibility = widget.Visibility_Show

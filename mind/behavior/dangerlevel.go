@@ -9,7 +9,7 @@ import (
 	"github.com/bytearena/ecs"
 )
 
-// Keeps track of Each Factions Danger Level.
+// FactionThreatLevelManager keeps track of each faction's threat levels.
 type FactionThreatLevelManager struct {
 	manager  *common.EntityManager
 	cache    *combat.CombatQueryCache
@@ -49,7 +49,7 @@ type FactionThreatLevel struct {
 	manager          *common.EntityManager
 	cache            *combat.CombatQueryCache
 	factionID        ecs.EntityID
-	squadDangerLevel map[ecs.EntityID]*SquadThreatLevel //Key is the squad ID. Value is the danger level
+	squadThreatLevels map[ecs.EntityID]*SquadThreatLevel //Key is the squad ID. Value is the danger level
 }
 
 func NewFactionThreatLevel(factionID ecs.EntityID, manager *common.EntityManager, cache *combat.CombatQueryCache) *FactionThreatLevel {
@@ -59,13 +59,13 @@ func NewFactionThreatLevel(factionID ecs.EntityID, manager *common.EntityManager
 	ftl := &FactionThreatLevel{
 
 		factionID:        factionID,
-		squadDangerLevel: make(map[ecs.EntityID]*SquadThreatLevel, len(squadIDs)),
+		squadThreatLevels: make(map[ecs.EntityID]*SquadThreatLevel, len(squadIDs)),
 		manager:          manager,
 		cache:            cache,
 	}
 
 	for _, ID := range squadIDs {
-		ftl.squadDangerLevel[ID] = NewSquadThreatLevel(ftl.manager, ftl.cache, ID)
+		ftl.squadThreatLevels[ID] = NewSquadThreatLevel(ftl.manager, ftl.cache, ID)
 	}
 
 	return ftl
@@ -77,21 +77,21 @@ func (ftr *FactionThreatLevel) UpdateThreatRatings() {
 
 	for _, squadID := range squadIDs {
 		// Update threat calculations
-		ftr.squadDangerLevel[squadID].CalculateSquadDangerLevel()
+		ftr.squadThreatLevels[squadID].CalculateThreatLevels()
 
 	}
 
 }
 
 func (ftr *FactionThreatLevel) UpdateThreatRatingForSquad(squadID ecs.EntityID) {
-	ftr.squadDangerLevel[squadID].CalculateSquadDangerLevel()
+	ftr.squadThreatLevels[squadID].CalculateThreatLevels()
 
 }
 
 // GetSquadDistanceTracker retrieves distance tracker for specific squad
 // Returns nil if squad not found in this faction
 func (ftr *FactionThreatLevel) GetSquadDistanceTracker(squadID ecs.EntityID) *SquadDistanceTracker {
-	if stl, exists := ftr.squadDangerLevel[squadID]; exists {
+	if stl, exists := ftr.squadThreatLevels[squadID]; exists {
 		return stl.SquadDistances
 	}
 	return nil
@@ -100,7 +100,7 @@ func (ftr *FactionThreatLevel) GetSquadDistanceTracker(squadID ecs.EntityID) *Sq
 // MarkAllSquadDistancesDirty marks all squad distance trackers as needing recalculation
 // Call this when squad positions change (e.g., after movement phase)
 func (ftr *FactionThreatLevel) MarkAllSquadDistancesDirty() {
-	for _, squadThreatLevel := range ftr.squadDangerLevel {
+	for _, squadThreatLevel := range ftr.squadThreatLevels {
 		squadThreatLevel.SquadDistances.isDirty = true
 	}
 }
@@ -108,7 +108,7 @@ func (ftr *FactionThreatLevel) MarkAllSquadDistancesDirty() {
 // UpdateSquadDistancesIfNeeded updates distances only if needed (lazy evaluation)
 // Pass current round to enable round-based caching
 func (ftr *FactionThreatLevel) UpdateSquadDistancesIfNeeded(squadID ecs.EntityID, currentRound int) {
-	if stl, exists := ftr.squadDangerLevel[squadID]; exists {
+	if stl, exists := ftr.squadThreatLevels[squadID]; exists {
 		stl.SquadDistances.UpdateSquadDistances(ftr.manager, currentRound)
 	}
 }
@@ -148,7 +148,7 @@ type SquadThreatLevel struct {
 	manager       *common.EntityManager
 	cache         *combat.CombatQueryCache
 	squadID       ecs.EntityID
-	DangerByRange map[int]float64 //Key is the range. Value is the danger level. How dangerous the squad is at each range
+	ThreatByRange map[int]float64 //Key is the range. Value is the danger level. How dangerous the squad is at each range
 
 	// Distance tracking to all other squads in the game grouped by faction
 	SquadDistances *SquadDistanceTracker
@@ -174,12 +174,12 @@ func NewSquadThreatLevel(manager *common.EntityManager, cache *combat.CombatQuer
 }
 
 
-// CalculateSquadDangerLevel computes threat ratings for the squad.
-// Uses shared power calculation from evaluation package for DangerByRange.
-func (stl *SquadThreatLevel) CalculateSquadDangerLevel() {
-	// Use shared power calculation for DangerByRange
+// CalculateThreatLevels computes threat ratings for the squad.
+// Uses shared power calculation from evaluation package for ThreatByRange.
+func (stl *SquadThreatLevel) CalculateThreatLevels() {
+	// Use shared power calculation for ThreatByRange
 	config := evaluation.GetPowerConfigByProfile("Balanced")
-	stl.DangerByRange = evaluation.CalculateSquadPowerByRange(stl.squadID, stl.manager, config)
+	stl.ThreatByRange = evaluation.CalculateSquadPowerByRange(stl.squadID, stl.manager, config)
 }
 
 // ========================================

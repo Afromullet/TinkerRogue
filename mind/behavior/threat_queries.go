@@ -84,28 +84,45 @@ var (
 	RangedAttackTypes = AttackTypeFilter{squads.AttackTypeRanged, squads.AttackTypeMagic}
 )
 
-// hasUnitsWithAttackType checks if squad has any units matching attack types
-func hasUnitsWithAttackType(
+// Matches returns true if the given attack type is in this filter
+func (f AttackTypeFilter) Matches(attackType squads.AttackType) bool {
+	for _, t := range f {
+		if t == attackType {
+			return true
+		}
+	}
+	return false
+}
+
+// getUnitsWithAttackTypes returns combat data for all units matching the attack types
+func getUnitsWithAttackTypes(
 	squadID ecs.EntityID,
 	manager *common.EntityManager,
 	attackTypes AttackTypeFilter,
-) bool {
+) []*UnitCombatData {
 	unitIDs := squads.GetUnitIDsInSquad(squadID, manager)
+	var matching []*UnitCombatData
 
 	for _, unitID := range unitIDs {
 		data := GetUnitCombatData(unitID, manager)
 		if data == nil {
 			continue
 		}
-
-		for _, attackType := range attackTypes {
-			if data.AttackType == attackType {
-				return true
-			}
+		if attackTypes.Matches(data.AttackType) {
+			matching = append(matching, data)
 		}
 	}
 
-	return false
+	return matching
+}
+
+// hasUnitsWithAttackType checks if squad has any units matching attack types
+func hasUnitsWithAttackType(
+	squadID ecs.EntityID,
+	manager *common.EntityManager,
+	attackTypes AttackTypeFilter,
+) bool {
+	return len(getUnitsWithAttackTypes(squadID, manager, attackTypes)) > 0
 }
 
 // getMaxRangeForAttackTypes returns maximum attack range among matching units
@@ -116,30 +133,10 @@ func getMaxRangeForAttackTypes(
 	defaultRange int,
 ) int {
 	maxRange := defaultRange
-	unitIDs := squads.GetUnitIDsInSquad(squadID, manager)
-
-	for _, unitID := range unitIDs {
-		data := GetUnitCombatData(unitID, manager)
-		if data == nil {
-			continue
-		}
-
-		// Check if attack type matches
-		matches := false
-		for _, attackType := range attackTypes {
-			if data.AttackType == attackType {
-				matches = true
-				break
-			}
-		}
-		if !matches {
-			continue
-		}
-
+	for _, data := range getUnitsWithAttackTypes(squadID, manager, attackTypes) {
 		if data.AttackRange > maxRange {
 			maxRange = data.AttackRange
 		}
 	}
-
 	return maxRange
 }

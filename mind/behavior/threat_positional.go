@@ -10,16 +10,6 @@ import (
 	"github.com/bytearena/ecs"
 )
 
-// MeleeThreatSource provides melee threat queries at positions
-type MeleeThreatSource interface {
-	GetMeleeThreatAt(pos coords.LogicalPosition) float64
-}
-
-// RangedThreatSource provides ranged threat queries at positions
-type RangedThreatSource interface {
-	GetRangedPressureAt(pos coords.LogicalPosition) float64
-}
-
 // PositionalRiskLayer computes tactical risk based on positioning
 // Identifies flanking exposure, isolation, and retreat path quality
 type PositionalRiskLayer struct {
@@ -33,19 +23,16 @@ type PositionalRiskLayer struct {
 
 	// Dependencies
 	baseThreatMgr *FactionThreatLevelManager
-	meleeSource   MeleeThreatSource
-	rangedSource  RangedThreatSource
+	combatLayer   *CombatThreatLayer
 }
 
 // NewPositionalRiskLayer creates a new positional risk layer
-// meleeSource and rangedSource can be the same layer (e.g., CombatThreatLayer)
 func NewPositionalRiskLayer(
 	factionID ecs.EntityID,
 	manager *common.EntityManager,
 	cache *combat.CombatQueryCache,
 	baseThreatMgr *FactionThreatLevelManager,
-	meleeSource MeleeThreatSource,
-	rangedSource RangedThreatSource,
+	combatLayer *CombatThreatLayer,
 ) *PositionalRiskLayer {
 	return &PositionalRiskLayer{
 		ThreatLayerBase:    NewThreatLayerBase(factionID, manager, cache),
@@ -54,8 +41,7 @@ func NewPositionalRiskLayer(
 		engagementPressure: make(map[coords.LogicalPosition]float64),
 		retreatQuality:     make(map[coords.LogicalPosition]float64),
 		baseThreatMgr:      baseThreatMgr,
-		meleeSource:        meleeSource,
-		rangedSource:       rangedSource,
+		combatLayer:        combatLayer,
 	}
 }
 
@@ -205,8 +191,8 @@ func (prl *PositionalRiskLayer) computeEngagementPressure() {
 	maxPressure := float64(GetEngagementPressureMax())
 
 	IterateMapGrid(func(pos coords.LogicalPosition) {
-		meleeThreat := prl.meleeSource.GetMeleeThreatAt(pos)
-		rangedThreat := prl.rangedSource.GetRangedPressureAt(pos)
+		meleeThreat := prl.combatLayer.GetMeleeThreatAt(pos)
+		rangedThreat := prl.combatLayer.GetRangedPressureAt(pos)
 
 		// Total engagement pressure, normalized to 0-1 range
 		totalPressure := meleeThreat + rangedThreat
@@ -231,8 +217,8 @@ func (prl *PositionalRiskLayer) computeRetreatQuality(alliedSquads []ecs.EntityI
 
 				adjacentPos := coords.LogicalPosition{X: pos.X + dx, Y: pos.Y + dy}
 
-				meleeThreat := prl.meleeSource.GetMeleeThreatAt(adjacentPos)
-				rangedThreat := prl.rangedSource.GetRangedPressureAt(adjacentPos)
+				meleeThreat := prl.combatLayer.GetMeleeThreatAt(adjacentPos)
+				rangedThreat := prl.combatLayer.GetRangedPressureAt(adjacentPos)
 
 				// Low threat path = good retreat route
 				if meleeThreat < retreatThreshold && rangedThreat < retreatThreshold {

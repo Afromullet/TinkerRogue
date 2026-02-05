@@ -44,7 +44,7 @@ func NewCompositeThreatEvaluator(
 		factionID:       factionID,
 		combatThreat:    combatLayer,
 		supportValue:    NewSupportValueLayer(factionID, manager, cache, baseThreatMgr),
-		positionalRisk:  NewPositionalRiskLayer(factionID, manager, cache, baseThreatMgr, combatLayer, combatLayer),
+		positionalRisk:  NewPositionalRiskLayer(factionID, manager, cache, baseThreatMgr, combatLayer),
 		lastUpdateRound: -1,
 		isDirty:         true,
 	}
@@ -130,18 +130,6 @@ func (cte *CompositeThreatEvaluator) GetOptimalPositionForRole(
 
 // GetCombatLayer returns direct access to the unified combat layer
 func (cte *CompositeThreatEvaluator) GetCombatLayer() *CombatThreatLayer {
-	return cte.combatThreat
-}
-
-// GetMeleeLayer returns the combat layer (provides melee queries)
-// Deprecated: Use GetCombatLayer() instead
-func (cte *CompositeThreatEvaluator) GetMeleeLayer() *CombatThreatLayer {
-	return cte.combatThreat
-}
-
-// GetRangedLayer returns the combat layer (provides ranged queries)
-// Deprecated: Use GetCombatLayer() instead
-func (cte *CompositeThreatEvaluator) GetRangedLayer() *CombatThreatLayer {
 	return cte.combatThreat
 }
 

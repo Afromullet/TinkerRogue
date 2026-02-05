@@ -15,8 +15,8 @@ import (
 type VisualizerMode int
 
 const (
-	// VisualizerModeDanger shows danger projection from squads
-	VisualizerModeDanger VisualizerMode = iota
+	// VisualizerModeThreat shows danger projection from squads
+	VisualizerModeThreat VisualizerMode = iota
 	// VisualizerModeLayer shows individual threat layers
 	VisualizerModeLayer
 )
@@ -131,7 +131,7 @@ func NewThreatVisualizer(
 		threatEvaluator: threatEvaluator,
 		DirtyCache:      evaluation.NewDirtyCache(),
 		isActive:        false,
-		mode:            VisualizerModeDanger,
+		mode:            VisualizerModeThreat,
 		threatViewMode:  ViewEnemyThreats,
 		layerMode:       LayerMelee,
 	}
@@ -144,7 +144,9 @@ func NewThreatVisualizer(
 // Toggle enables/disables the visualization
 func (tv *ThreatVisualizer) Toggle() {
 	tv.isActive = !tv.isActive
-	if !tv.isActive {
+	if tv.isActive {
+		tv.MarkDirty() // Force redraw when activating
+	} else {
 		tv.ClearVisualization()
 	}
 }
@@ -154,11 +156,24 @@ func (tv *ThreatVisualizer) IsActive() bool {
 	return tv.isActive
 }
 
+// SetThreatEvaluator updates the threat evaluator reference
+// Needed when the evaluator is created after the visualizer
+func (tv *ThreatVisualizer) SetThreatEvaluator(evaluator *CompositeThreatEvaluator) {
+	tv.threatEvaluator = evaluator
+}
+
 // SetMode sets the primary visualization mode
 func (tv *ThreatVisualizer) SetMode(mode VisualizerMode) {
 	if tv.mode != mode {
 		tv.mode = mode
+		// Force re-render by marking dirty AND resetting the round
+		// This is necessary because we now have ONE cache shared between modes
 		tv.MarkDirty()
+		tv.DirtyCache = evaluation.NewDirtyCache() // Reset cache completely
+		// Also mark evaluator dirty when switching to layer mode
+		if mode == VisualizerModeLayer && tv.threatEvaluator != nil {
+			tv.threatEvaluator.MarkDirty()
+		}
 		if tv.isActive {
 			tv.ClearVisualization()
 		}
@@ -211,9 +226,9 @@ func (tv *ThreatVisualizer) Update(
 		var colorMatrix graphics.ColorMatrix
 
 		switch tv.mode {
-		case VisualizerModeDanger:
-			value = tv.calculateDangerValue(pos, currentFactionID)
-			colorMatrix = tv.dangerValueToColorMatrix(value)
+		case VisualizerModeThreat:
+			value = tv.calculateThreatValue(pos, currentFactionID)
+			colorMatrix = tv.threatValueToColorMatrix(value)
 		case VisualizerModeLayer:
 			value = tv.getLayerValueAt(pos)
 			colorMatrix = tv.layerValueToColorMatrix(value)
@@ -227,7 +242,7 @@ func (tv *ThreatVisualizer) Update(
 }
 
 // =========================================
-// Danger Mode API (formerly DangerVisualizer)
+// Threat Mode API (formerly DangerVisualizer)
 // =========================================
 
 // SwitchThreatView toggles between enemy threat view and player threat view
@@ -248,8 +263,13 @@ func (tv *ThreatVisualizer) GetThreatViewMode() ThreatViewMode {
 	return tv.threatViewMode
 }
 
-// calculateDangerValue calculates danger at a position using DangerByRange
-func (tv *ThreatVisualizer) calculateDangerValue(pos coords.LogicalPosition, currentFactionID ecs.EntityID) float64 {
+// calculateThreatValue calculates danger at a position using ThreatByRange
+func (tv *ThreatVisualizer) calculateThreatValue(pos coords.LogicalPosition, currentFactionID ecs.EntityID) float64 {
+	// Guard against nil threatManager (can happen when using layer mode only)
+	if tv.threatManager == nil {
+		return 0.0
+	}
+
 	// Get relevant squads based on view mode
 	var relevantSquads []ecs.EntityID
 	if tv.threatViewMode == ViewEnemyThreats {
@@ -275,13 +295,13 @@ func (tv *ThreatVisualizer) calculateDangerValue(pos coords.LogicalPosition, cur
 			continue
 		}
 
-		squadThreat := factionThreat.squadDangerLevel[squadID]
+		squadThreat := factionThreat.squadThreatLevels[squadID]
 		if squadThreat == nil {
 			continue
 		}
 
 		distance := pos.ManhattanDistance(&squadPos)
-		if value, exists := squadThreat.DangerByRange[distance]; exists {
+		if value, exists := squadThreat.ThreatByRange[distance]; exists {
 			totalValue += value
 		}
 	}
@@ -289,8 +309,8 @@ func (tv *ThreatVisualizer) calculateDangerValue(pos coords.LogicalPosition, cur
 	return totalValue
 }
 
-// dangerValueToColorMatrix converts danger value to red gradient
-func (tv *ThreatVisualizer) dangerValueToColorMatrix(value float64) graphics.ColorMatrix {
+// threatValueToColorMatrix converts danger value to red gradient
+func (tv *ThreatVisualizer) threatValueToColorMatrix(value float64) graphics.ColorMatrix {
 	if value == 0 {
 		return graphics.NewEmptyMatrix()
 	}
@@ -350,18 +370,25 @@ func (tv *ThreatVisualizer) GetLayerModeInfo() LayerModeInfo {
 	return LayerModeMetadata[tv.layerMode]
 }
 
-// getLayerValueAt returns threat layer value at position
+// getLayerValueAt returns threat layer value at position (normalized to 0-1 range)
 func (tv *ThreatVisualizer) getLayerValueAt(pos coords.LogicalPosition) float64 {
 	if tv.threatEvaluator == nil {
 		return 0.0
 	}
 
+	// Max values for normalization (melee/ranged/support use raw power values)
+	const maxThreatValue = 200.0
+	const maxSupportValue = 1.0 // Support is already normalized by heal priority (0-1)
+
 	switch tv.layerMode {
 	case LayerMelee:
-		return tv.threatEvaluator.GetCombatLayer().GetMeleeThreatAt(pos)
+		raw := tv.threatEvaluator.GetCombatLayer().GetMeleeThreatAt(pos)
+		return min(raw/maxThreatValue, 1.0)
 	case LayerRanged:
-		return tv.threatEvaluator.GetCombatLayer().GetRangedPressureAt(pos)
+		raw := tv.threatEvaluator.GetCombatLayer().GetRangedPressureAt(pos)
+		return min(raw/maxThreatValue, 1.0)
 	case LayerSupport:
+		// Support value is already in 0-1 range from heal priority
 		return tv.threatEvaluator.GetSupportLayer().GetSupportValueAt(pos)
 	case LayerPositionalFlanking:
 		return tv.threatEvaluator.GetPositionalLayer().GetFlankingRiskAt(pos)

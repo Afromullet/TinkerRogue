@@ -20,8 +20,8 @@ const (
 // CombatThreatLayer computes both melee and ranged threats from enemy squads.
 // This is a unified layer that replaces the separate MeleeThreatLayer and RangedThreatLayer.
 //
-// Melee threat: DangerByRange[1] * LinearFalloff over (MoveSpeed + AttackRange)
-// Ranged threat: DangerByRange[maxRange] * NoFalloff over maxRange
+// Melee threat: ThreatByRange[1] * LinearFalloff over (MoveSpeed + AttackRange)
+// Ranged threat: ThreatByRange[maxRange] * NoFalloff over maxRange
 type CombatThreatLayer struct {
 	*ThreatLayerBase
 
@@ -81,7 +81,7 @@ func (ctl *CombatThreatLayer) Compute() {
 			if !exists {
 				continue
 			}
-			squadThreat, exists := factionThreat.squadDangerLevel[squadID]
+			squadThreat, exists := factionThreat.squadThreatLevels[squadID]
 			if !exists {
 				continue
 			}
@@ -112,7 +112,7 @@ func (ctl *CombatThreatLayer) computeMeleeThreat(
 	threatRadius := moveSpeed + maxMeleeRange
 
 	// Use danger at range 1 (melee range) - already includes role multipliers
-	totalThreat := squadThreat.DangerByRange[1]
+	totalThreat := squadThreat.ThreatByRange[1]
 
 	// Store squad data
 	ctl.meleeThreatBySquad[squadID] = totalThreat
@@ -132,7 +132,7 @@ func (ctl *CombatThreatLayer) computeRangedThreat(
 	maxRange := getMaxRangeForAttackTypes(squadID, ctl.manager, RangedAttackTypes, 3)
 
 	// Use danger at max range - already includes role multipliers
-	rangedDanger := squadThreat.DangerByRange[maxRange]
+	rangedDanger := squadThreat.ThreatByRange[maxRange]
 
 	// Paint ranged pressure with no falloff and track positions for line-of-fire zones
 	ctl.lineOfFireZones[squadID] = PaintThreatToMap(

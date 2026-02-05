@@ -89,7 +89,7 @@ func (svl *SupportValueLayer) calculateBuffPriority(squadID ecs.EntityID) float6
 		return 0.0
 	}
 
-	squadThreat, exists := factionThreat.squadDangerLevel[squadID]
+	squadThreat, exists := factionThreat.squadThreatLevels[squadID]
 	if !exists || squadThreat.SquadDistances == nil {
 		return 0.0
 	}
@@ -129,12 +129,6 @@ func (svl *SupportValueLayer) paintSupportValue(
 }
 
 // Query API methods
-
-// GetHealPriority returns heal urgency for a squad (0-1, higher = more urgent)
-// TODO, this is not being used
-func (svl *SupportValueLayer) GetHealPriority(squadID ecs.EntityID) float64 {
-	return svl.healPriority[squadID]
-}
 
 // GetSupportValueAt returns support value at a position
 // Higher values indicate better positions for support squads
