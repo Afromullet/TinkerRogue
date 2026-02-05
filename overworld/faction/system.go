@@ -2,6 +2,7 @@ package faction
 
 import (
 	"game_main/common"
+	"game_main/config"
 	"game_main/overworld/core"
 	"game_main/overworld/threat"
 	"game_main/world/coords"
@@ -162,7 +163,7 @@ func ExpandTerritory(manager *common.EntityManager, entity *ecs.Entity, factionD
 
 	for _, adj := range adjacents {
 		// Check bounds using configured map dimensions
-		if adj.X < 0 || adj.X >= core.DefaultMapWidth || adj.Y < 0 || adj.Y >= core.DefaultMapHeight {
+		if adj.X < 0 || adj.X >= config.DefaultMapWidth || adj.Y < 0 || adj.Y >= config.DefaultMapHeight {
 			continue
 		}
 

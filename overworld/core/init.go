@@ -25,8 +25,6 @@ func InitOverworldComponents(manager *common.EntityManager) {
 	TerritoryComponent = manager.World.NewComponent()
 	StrategicIntentComponent = manager.World.NewComponent()
 	VictoryStateComponent = manager.World.NewComponent()
-	PlayerResourcesComponent = manager.World.NewComponent()
-	InfluenceCacheComponent = manager.World.NewComponent()
 	TravelStateComponent = manager.World.NewComponent()
 	OverworldEncounterComponent = manager.World.NewComponent()
 }
@@ -37,8 +35,6 @@ func InitOverworldTags(manager *common.EntityManager) {
 	OverworldFactionTag = ecs.BuildTag(OverworldFactionComponent)
 	TickStateTag = ecs.BuildTag(TickStateComponent)
 	VictoryStateTag = ecs.BuildTag(VictoryStateComponent)
-	PlayerResourcesTag = ecs.BuildTag(PlayerResourcesComponent)
-	InfluenceCacheTag = ecs.BuildTag(InfluenceCacheComponent)
 	TravelStateTag = ecs.BuildTag(TravelStateComponent)
 	OverworldEncounterTag = ecs.BuildTag(OverworldEncounterComponent)
 
@@ -47,8 +43,6 @@ func InitOverworldTags(manager *common.EntityManager) {
 	manager.WorldTags["overworldfaction"] = OverworldFactionTag
 	manager.WorldTags["tickstate"] = TickStateTag
 	manager.WorldTags["victorystate"] = VictoryStateTag
-	manager.WorldTags["playerresources"] = PlayerResourcesTag
-	manager.WorldTags["influencecache"] = InfluenceCacheTag
 	manager.WorldTags["travelstate"] = TravelStateTag
 	manager.WorldTags["overworldencounter"] = OverworldEncounterTag
 }

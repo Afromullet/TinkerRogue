@@ -15,16 +15,12 @@ var (
 	TerritoryComponent        *ecs.Component
 	StrategicIntentComponent  *ecs.Component
 	VictoryStateComponent     *ecs.Component
-	PlayerResourcesComponent  *ecs.Component
-	InfluenceCacheComponent   *ecs.Component
 	TravelStateComponent      *ecs.Component
 
 	ThreatNodeTag       ecs.Tag
 	OverworldFactionTag ecs.Tag
 	TickStateTag        ecs.Tag
 	VictoryStateTag     ecs.Tag
-	PlayerResourcesTag  ecs.Tag
-	InfluenceCacheTag   ecs.Tag
 	TravelStateTag      ecs.Tag
 )
 

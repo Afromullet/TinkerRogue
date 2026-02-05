@@ -31,10 +31,10 @@ func ScoreExpansion(manager *common.EntityManager, entity *ecs.Entity, factionDa
 	}
 
 	// Apply faction archetype bonus
-	score += core.GetFactionBonuses(factionData.FactionType).ExpansionBonus
+	score += GetFactionBonuses(factionData.FactionType).ExpansionBonus
 
 	// Apply aggression modifier: high aggression = more territorial (70-100%)
-	aggression := core.GetFactionAggression(factionData.FactionType)
+	aggression := GetFactionAggression(factionData.FactionType)
 	score *= (0.7 + aggression*0.3)
 
 	return score
@@ -57,10 +57,10 @@ func ScoreFortification(manager *common.EntityManager, entity *ecs.Entity, facti
 	score += baseValue
 
 	// Apply faction archetype bonus
-	score += core.GetFactionBonuses(factionData.FactionType).FortificationBonus
+	score += GetFactionBonuses(factionData.FactionType).FortificationBonus
 
 	// Apply aggression modifier: low aggression = more defensive (100-130%)
-	aggression := core.GetFactionAggression(factionData.FactionType)
+	aggression := GetFactionAggression(factionData.FactionType)
 	score *= (1.3 - aggression*0.3)
 
 	return score
@@ -80,11 +80,11 @@ func ScoreRaiding(manager *common.EntityManager, entity *ecs.Entity, factionData
 	}
 
 	// Apply faction archetype bonus
-	bonuses := core.GetFactionBonuses(factionData.FactionType)
+	bonuses := GetFactionBonuses(factionData.FactionType)
 	score += bonuses.RaidingBonus
 
 	// Apply aggression modifier to raiding intensity
-	aggression := core.GetFactionAggression(factionData.FactionType)
+	aggression := GetFactionAggression(factionData.FactionType)
 	score *= (0.5 + aggression*0.5) // Scale raiding by aggression (0.5-1.0x)
 
 	// Raid if very strong (use unified strong threshold + offset)
@@ -114,10 +114,10 @@ func ScoreRetreat(manager *common.EntityManager, entity *ecs.Entity, factionData
 	}
 
 	// Apply faction archetype penalty
-	score -= core.GetFactionBonuses(factionData.FactionType).RetreatPenalty
+	score -= GetFactionBonuses(factionData.FactionType).RetreatPenalty
 
 	// Apply aggression modifier: high aggression = less likely to retreat (80-120%)
-	aggression := core.GetFactionAggression(factionData.FactionType)
+	aggression := GetFactionAggression(factionData.FactionType)
 	score *= (1.2 - aggression*0.4)
 
 	return score

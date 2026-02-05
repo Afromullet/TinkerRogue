@@ -6,6 +6,14 @@ import (
 	"game_main/templates"
 )
 
+// ThreatTypeParams defines behavior per threat type.
+type ThreatTypeParams struct {
+	BaseGrowthRate   float64
+	BaseRadius       int
+	PrimaryEffect    InfluenceEffect
+	CanSpawnChildren bool
+}
+
 // ThreatDefinition is the runtime representation of a threat type.
 // It wraps the JSON definition and provides convenient accessors.
 type ThreatDefinition struct {

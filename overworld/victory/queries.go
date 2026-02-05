@@ -8,8 +8,7 @@ import (
 
 // CheckPlayerDefeat checks if player has lost and returns structured result.
 // Single source of truth for defeat determination - runs checks once and caches results.
-// Replaces the duplicate logic that was split between IsPlayerDefeated() and GetDefeatReason().
-// Thresholds are now loaded from config for designer-friendly tuning.
+// Thresholds are loaded from config for designer-friendly tuning.
 func CheckPlayerDefeat(manager *common.EntityManager) *core.DefeatCheckResult {
 	result := &core.DefeatCheckResult{
 		IsDefeated:   false,
@@ -41,12 +40,6 @@ func CheckPlayerDefeat(manager *common.EntityManager) *core.DefeatCheckResult {
 	}
 
 	return result
-}
-
-// IsPlayerDefeated checks if player has lost.
-// DEPRECATED: Use CheckPlayerDefeat() instead for better performance (avoids duplicate checks).
-func IsPlayerDefeated(manager *common.EntityManager) bool {
-	return CheckPlayerDefeat(manager).IsDefeated
 }
 
 // GetTotalThreatInfluence calculates combined threat pressure
