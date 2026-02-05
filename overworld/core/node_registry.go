@@ -18,10 +18,9 @@ const (
 // NodeDefinition is the runtime representation of an overworld node.
 // This is the new format that separates node properties from encounter properties.
 type NodeDefinition struct {
-	ID          string
+	ID          string       // The node type ID (e.g., "necromancer")
 	Category    NodeCategory
 	DisplayName string
-	EnumValue   ThreatType // -1 for non-combat nodes
 
 	// Rendering
 	Color color.RGBA
@@ -60,12 +59,11 @@ type EncounterDefinition struct {
 // NodeRegistry provides lookups for node and encounter definitions.
 // This is the new unified registry that supports multiple node types.
 type NodeRegistry struct {
-	nodesByID     map[string]*NodeDefinition      // "necromancer" -> def
-	nodesByEnum   map[ThreatType]*NodeDefinition  // ThreatNecromancer -> def
-	encountersByID map[string]*EncounterDefinition // "necromancer" -> def
-	defaultNode   *NodeDefinition
+	nodesByID        map[string]*NodeDefinition      // "necromancer" -> def (ThreatType is now string-based)
+	encountersByID   map[string]*EncounterDefinition // "necromancer" -> def
+	defaultNode      *NodeDefinition
 	defaultEncounter *EncounterDefinition
-	initialized   bool
+	initialized      bool
 }
 
 // Global node registry instance
@@ -84,17 +82,15 @@ func GetNodeRegistry() *NodeRegistry {
 func newNodeRegistry() *NodeRegistry {
 	registry := &NodeRegistry{
 		nodesByID:      make(map[string]*NodeDefinition),
-		nodesByEnum:    make(map[ThreatType]*NodeDefinition),
 		encountersByID: make(map[string]*EncounterDefinition),
 	}
 
 	// Load node definitions from JSON templates
 	for _, jsonDef := range templates.NodeDefinitionTemplates {
 		def := &NodeDefinition{
-			ID:          jsonDef.ID,
+			ID:          jsonDef.ID, // This is the ThreatType (string)
 			Category:    NodeCategory(jsonDef.Category),
 			DisplayName: jsonDef.DisplayName,
-			EnumValue:   ThreatType(jsonDef.EnumValue),
 			Color: color.RGBA{
 				R: jsonDef.Color.R,
 				G: jsonDef.Color.G,
@@ -109,13 +105,8 @@ func newNodeRegistry() *NodeRegistry {
 			EncounterID:      jsonDef.EncounterID,
 		}
 
-		// Register by ID
+		// Register by ID (ID is the ThreatType)
 		registry.nodesByID[def.ID] = def
-
-		// Register by enum if valid (non-negative)
-		if def.EnumValue >= 0 {
-			registry.nodesByEnum[def.EnumValue] = def
-		}
 	}
 
 	// Load default node from JSON
@@ -124,7 +115,6 @@ func newNodeRegistry() *NodeRegistry {
 			ID:          "default",
 			Category:    "threat",
 			DisplayName: templates.DefaultNodeTemplate.DisplayName,
-			EnumValue:   -1,
 			Color: color.RGBA{
 				R: templates.DefaultNodeTemplate.Color.R,
 				G: templates.DefaultNodeTemplate.Color.G,
@@ -179,13 +169,11 @@ func (r *NodeRegistry) GetNodeByID(id string) *NodeDefinition {
 	return r.defaultNode
 }
 
-// GetNodeByEnum returns a node definition by its ThreatType enum.
-// Returns default if not found.
-func (r *NodeRegistry) GetNodeByEnum(threatType ThreatType) *NodeDefinition {
-	if def, ok := r.nodesByEnum[threatType]; ok {
-		return def
-	}
-	return r.defaultNode
+// GetNodeByType returns a node definition by its ThreatType.
+// Since ThreatType is now string-based, this is the same as GetNodeByID.
+// Kept for API compatibility.
+func (r *NodeRegistry) GetNodeByType(threatType ThreatType) *NodeDefinition {
+	return r.GetNodeByID(string(threatType))
 }
 
 // GetAllNodes returns all registered node definitions.
@@ -235,9 +223,9 @@ func (r *NodeRegistry) GetEncounterForNode(nodeID string) *EncounterDefinition {
 	return r.GetEncounterByID(node.EncounterID)
 }
 
-// GetEncounterForThreatType returns the encounter definition for a threat enum.
+// GetEncounterForThreatType returns the encounter definition for a threat type.
 func (r *NodeRegistry) GetEncounterForThreatType(threatType ThreatType) *EncounterDefinition {
-	node := r.GetNodeByEnum(threatType)
+	node := r.GetNodeByType(threatType)
 	if node == nil || node.EncounterID == "" {
 		return r.defaultEncounter
 	}
@@ -293,17 +281,17 @@ func (r *NodeRegistry) HasEncounter(id string) bool {
 
 // GetDisplayName returns the display name for a threat type.
 func (r *NodeRegistry) GetDisplayName(threatType ThreatType) string {
-	return r.GetNodeByEnum(threatType).DisplayName
+	return r.GetNodeByType(threatType).DisplayName
 }
 
 // GetColor returns the display color for a threat type.
 func (r *NodeRegistry) GetColor(threatType ThreatType) color.RGBA {
-	return r.GetNodeByEnum(threatType).Color
+	return r.GetNodeByType(threatType).Color
 }
 
 // GetOverworldParams returns the overworld parameters for a threat type.
 func (r *NodeRegistry) GetOverworldParams(threatType ThreatType) ThreatTypeParams {
-	node := r.GetNodeByEnum(threatType)
+	node := r.GetNodeByType(threatType)
 	return ThreatTypeParams{
 		BaseGrowthRate:   node.BaseGrowthRate,
 		BaseRadius:       node.BaseRadius,

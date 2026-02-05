@@ -472,13 +472,12 @@ type JSONThreatOverworldConfig struct {
 }
 
 
-// JSONThreatDefinition is the unified threat configuration
+// JSONThreatDefinition is the unified threat configuration (legacy format)
 // A single entry in the threatDefinitions array replaces configuration
 // previously spread across 6-8 files.
 type JSONThreatDefinition struct {
-	ID          string `json:"id"`          // Unique identifier, e.g., "necromancer"
+	ID          string `json:"id"`          // Unique identifier, e.g., "necromancer" - this IS the type
 	DisplayName string `json:"displayName"` // Human-readable name, e.g., "Necromancer"
-	EnumValue   int    `json:"enumValue"`   // Maps to ThreatType enum (-1 for JSON-only threats)
 
 	Encounter     JSONThreatEncounterConfig `json:"encounter"`     // Encounter configuration
 	Color         JSONColor                 `json:"color"`         // Display color on overworld map
@@ -517,15 +516,14 @@ type JSONSettlementServices struct {
 // JSONNodeDefinition is the unified node configuration
 // A single entry defines an overworld node (threat, settlement, fortress, etc.)
 type JSONNodeDefinition struct {
-	ID          string `json:"id"`          // Unique identifier, e.g., "necromancer_lair"
+	ID          string `json:"id"`          // Unique identifier, e.g., "necromancer" - this IS the type
 	Category    string `json:"category"`    // "threat", "settlement", "fortress"
 	DisplayName string `json:"displayName"` // Human-readable name
-	EnumValue   int    `json:"enumValue"`   // Maps to ThreatType enum (-1 for non-combat nodes)
 
-	Color     JSONColor         `json:"color"`               // Display color on overworld map
-	Overworld JSONNodeOverworld `json:"overworld"`           // Overworld behavior
-	Services  []string          `json:"services,omitempty"`  // For settlements: available services
-	EncounterID string          `json:"encounterId,omitempty"` // Links to encounterDefinitions (for combat nodes)
+	Color       JSONColor         `json:"color"`                 // Display color on overworld map
+	Overworld   JSONNodeOverworld `json:"overworld"`             // Overworld behavior
+	Services    []string          `json:"services,omitempty"`    // For settlements: available services
+	EncounterID string            `json:"encounterId,omitempty"` // Links to encounterDefinitions (for combat nodes)
 }
 
 // JSONDefaultNode defines fallback configuration for unknown nodes

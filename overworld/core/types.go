@@ -1,14 +1,17 @@
 package core
 
-// ThreatType represents different categories of threats
-type ThreatType int
+// ThreatType represents different categories of threats.
+// Now string-based for flexibility - can add new types via JSON without code changes.
+type ThreatType string
 
+// Threat type constants (optional - for IDE autocomplete and type safety)
+// The actual types are defined in nodeDefinitions.json
 const (
-	ThreatNecromancer ThreatType = iota
-	ThreatBanditCamp
-	ThreatCorruption
-	ThreatBeastNest
-	ThreatOrcWarband
+	ThreatNecromancer ThreatType = "necromancer"
+	ThreatBanditCamp  ThreatType = "banditcamp"
+	ThreatCorruption  ThreatType = "corruption"
+	ThreatBeastNest   ThreatType = "beastnest"
+	ThreatOrcWarband  ThreatType = "orcwarband"
 )
 
 // String returns human-readable threat name.

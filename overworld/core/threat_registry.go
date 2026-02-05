@@ -18,9 +18,8 @@ type ThreatTypeParams struct {
 // It wraps the JSON definition and provides convenient accessors.
 // This structure is maintained for backward compatibility.
 type ThreatDefinition struct {
-	ID          string
+	ID          string // The threat type (e.g., "necromancer")
 	DisplayName string
-	EnumValue   ThreatType // -1 for JSON-only threats
 
 	// Encounter config
 	EncounterTypeID   string
@@ -50,9 +49,8 @@ type ThreatDefinition struct {
 // This registry delegates to NodeRegistry for the new split data format,
 // while maintaining backward compatibility with existing code.
 type ThreatRegistry struct {
-	// Internal caches built from NodeRegistry
+	// Internal caches built from NodeRegistry (ThreatType is now string-based)
 	byID          map[string]*ThreatDefinition
-	byEnum        map[ThreatType]*ThreatDefinition
 	defaultThreat *ThreatDefinition
 	initialized   bool
 
@@ -76,8 +74,7 @@ func GetThreatRegistry() *ThreatRegistry {
 // It can source data from either the new NodeRegistry or the legacy ThreatDefinitionTemplates.
 func newThreatRegistry() *ThreatRegistry {
 	registry := &ThreatRegistry{
-		byID:   make(map[string]*ThreatDefinition),
-		byEnum: make(map[ThreatType]*ThreatDefinition),
+		byID: make(map[string]*ThreatDefinition),
 	}
 
 	// Try to use NodeRegistry (new format) if available
@@ -103,9 +100,8 @@ func (r *ThreatRegistry) initFromNodeRegistry() {
 		enc := nodeReg.GetEncounterByID(node.EncounterID)
 
 		def := &ThreatDefinition{
-			ID:               node.ID,
+			ID:               node.ID, // ID is the ThreatType (string)
 			DisplayName:      node.DisplayName,
-			EnumValue:        node.EnumValue,
 			Color:            node.Color,
 			BaseGrowthRate:   node.BaseGrowthRate,
 			BaseRadius:       node.BaseRadius,
@@ -125,13 +121,8 @@ func (r *ThreatRegistry) initFromNodeRegistry() {
 			def.FactionID = enc.FactionID
 		}
 
-		// Register by ID
+		// Register by ID (ID is the ThreatType)
 		r.byID[def.ID] = def
-
-		// Register by enum if valid (non-negative)
-		if def.EnumValue >= 0 {
-			r.byEnum[def.EnumValue] = def
-		}
 	}
 
 	// Build default threat from node registry
@@ -142,7 +133,6 @@ func (r *ThreatRegistry) initFromNodeRegistry() {
 		r.defaultThreat = &ThreatDefinition{
 			ID:               "default",
 			DisplayName:      defaultNode.DisplayName,
-			EnumValue:        -1,
 			Color:            defaultNode.Color,
 			BaseGrowthRate:   defaultNode.BaseGrowthRate,
 			BaseRadius:       defaultNode.BaseRadius,
@@ -162,9 +152,8 @@ func (r *ThreatRegistry) initFromLegacyTemplates() {
 	// Load threat definitions from JSON templates
 	for _, jsonDef := range templates.ThreatDefinitionTemplates {
 		def := &ThreatDefinition{
-			ID:                jsonDef.ID,
+			ID:                jsonDef.ID, // ID is the ThreatType (string)
 			DisplayName:       jsonDef.DisplayName,
-			EnumValue:         ThreatType(jsonDef.EnumValue),
 			EncounterTypeID:   jsonDef.Encounter.TypeID,
 			EncounterTypeName: jsonDef.Encounter.TypeName,
 			SquadPreferences:  jsonDef.Encounter.SquadPreferences,
@@ -185,13 +174,8 @@ func (r *ThreatRegistry) initFromLegacyTemplates() {
 			FactionID:        jsonDef.FactionID,
 		}
 
-		// Register by ID
+		// Register by ID (ID is the ThreatType)
 		r.byID[def.ID] = def
-
-		// Register by enum if valid (non-negative)
-		if def.EnumValue >= 0 {
-			r.byEnum[def.EnumValue] = def
-		}
 	}
 
 	// Load default threat from JSON (required data)
@@ -201,7 +185,6 @@ func (r *ThreatRegistry) initFromLegacyTemplates() {
 	r.defaultThreat = &ThreatDefinition{
 		ID:          "default",
 		DisplayName: templates.DefaultThreatTemplate.DisplayName,
-		EnumValue:   -1,
 		Color: color.RGBA{
 			R: templates.DefaultThreatTemplate.Color.R,
 			G: templates.DefaultThreatTemplate.Color.G,
@@ -228,13 +211,11 @@ func (r *ThreatRegistry) GetByID(id string) *ThreatDefinition {
 	return r.defaultThreat
 }
 
-// GetByEnum returns a threat definition by its ThreatType enum.
-// Returns default if not found.
+// GetByEnum returns a threat definition by its ThreatType.
+// Since ThreatType is now string-based, this is the same as GetByID.
+// Kept for API compatibility.
 func (r *ThreatRegistry) GetByEnum(threatType ThreatType) *ThreatDefinition {
-	if def, ok := r.byEnum[threatType]; ok {
-		return def
-	}
-	return r.defaultThreat
+	return r.GetByID(string(threatType))
 }
 
 // GetByEncounterTypeID returns a threat definition by its encounter type ID.
@@ -314,15 +295,15 @@ func (r *ThreatRegistry) GetOverworldParams(threatType ThreatType) ThreatTypePar
 	}
 }
 
-// GetThreatTypeForFaction returns the ThreatType enum for a faction type.
+// GetThreatTypeForFaction returns the ThreatType for a faction type.
 // This replaces MapFactionToThreatType().
 func (r *ThreatRegistry) GetThreatTypeForFaction(factionType FactionType) ThreatType {
 	factionID := factionType.String()
 	def := r.GetByFactionID(factionID)
-	if def.EnumValue >= 0 {
-		return def.EnumValue
+	if def != nil && def.ID != "" {
+		return ThreatType(def.ID)
 	}
-	// Fallback to default mapping if no valid enum
+	// Fallback to default threat type
 	return ThreatBanditCamp
 }
 

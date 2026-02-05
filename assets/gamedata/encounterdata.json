@@ -250,7 +250,6 @@
     {
       "id": "necromancer",
       "displayName": "Necromancer",
-      "enumValue": 0,
       "encounter": {
         "typeId": "undead_basic",
         "typeName": "Undead Horde",
@@ -272,7 +271,6 @@
     {
       "id": "banditcamp",
       "displayName": "Bandit Camp",
-      "enumValue": 1,
       "encounter": {
         "typeId": "bandit_basic",
         "typeName": "Bandit Ambush",
@@ -294,7 +292,6 @@
     {
       "id": "corruption",
       "displayName": "Corruption",
-      "enumValue": 2,
       "encounter": {
         "typeId": "corruption_basic",
         "typeName": "Corrupted Forces",
@@ -316,7 +313,6 @@
     {
       "id": "beastnest",
       "displayName": "Beast Nest",
-      "enumValue": 3,
       "encounter": {
         "typeId": "beast_basic",
         "typeName": "Beast Swarm",
@@ -338,7 +334,6 @@
     {
       "id": "orcwarband",
       "displayName": "Orc Warband",
-      "enumValue": 4,
       "encounter": {
         "typeId": "orc_basic",
         "typeName": "Orc Warband",

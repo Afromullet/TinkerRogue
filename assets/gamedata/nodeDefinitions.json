@@ -5,7 +5,6 @@
       "id": "necromancer",
       "category": "threat",
       "displayName": "Necromancer",
-      "enumValue": 0,
       "color": { "r": 150, "g": 50, "b": 150, "a": 255 },
       "overworld": {
         "baseGrowthRate": 0.05,
@@ -19,7 +18,6 @@
       "id": "banditcamp",
       "category": "threat",
       "displayName": "Bandit Camp",
-      "enumValue": 1,
       "color": { "r": 200, "g": 100, "b": 50, "a": 255 },
       "overworld": {
         "baseGrowthRate": 0.08,
@@ -33,7 +31,6 @@
       "id": "corruption",
       "category": "threat",
       "displayName": "Corruption",
-      "enumValue": 2,
       "color": { "r": 100, "g": 200, "b": 50, "a": 255 },
       "overworld": {
         "baseGrowthRate": 0.03,
@@ -47,7 +44,6 @@
       "id": "beastnest",
       "category": "threat",
       "displayName": "Beast Nest",
-      "enumValue": 3,
       "color": { "r": 200, "g": 150, "b": 50, "a": 255 },
       "overworld": {
         "baseGrowthRate": 0.06,
@@ -61,7 +57,6 @@
       "id": "orcwarband",
       "category": "threat",
       "displayName": "Orc Warband",
-      "enumValue": 4,
       "color": { "r": 200, "g": 50, "b": 50, "a": 255 },
       "overworld": {
         "baseGrowthRate": 0.07,
@@ -75,7 +70,6 @@
       "id": "marketplace",
       "category": "settlement",
       "displayName": "Marketplace",
-      "enumValue": -1,
       "color": { "r": 50, "g": 150, "b": 200, "a": 255 },
       "overworld": {
         "baseRadius": 1
@@ -86,7 +80,6 @@
       "id": "guild_hall",
       "category": "settlement",
       "displayName": "Guild Hall",
-      "enumValue": -1,
       "color": { "r": 100, "g": 100, "b": 200, "a": 255 },
       "overworld": {
         "baseRadius": 2
@@ -97,7 +90,6 @@
       "id": "watchtower",
       "category": "fortress",
       "displayName": "Watchtower",
-      "enumValue": -1,
       "color": { "r": 180, "g": 180, "b": 180, "a": 255 },
       "overworld": {
         "baseRadius": 4,

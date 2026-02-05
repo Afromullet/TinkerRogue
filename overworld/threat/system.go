@@ -142,19 +142,19 @@ func ExecuteThreatEvolutionEffect(manager *common.EntityManager, entity *ecs.Ent
 	}
 
 	switch threatData.ThreatType {
-	case core.ThreatNecromancer:
+	case "necromancer":
 		// Spawn child node at tier 3 (with max intensity 5, only spawns once)
 		if threatData.Intensity%core.GetChildNodeSpawnThreshold() == 0 {
 			pos := common.GetComponentType[*coords.LogicalPosition](entity, common.PositionComponent)
 			if pos != nil {
-				if !SpawnChildThreatNode(manager, *pos, core.ThreatNecromancer, 1) {
+				if !SpawnChildThreatNode(manager, *pos, "necromancer", 1) {
 					// Log warning if spawn failed (no valid positions available)
 					core.LogEvent(core.EventThreatEvolved, core.GetCurrentTick(manager), entity.GetID(),
 						core.FormatEventString("Failed to spawn child node (no valid positions)"), nil)
 				}
 			}
 		}
-	case core.ThreatCorruption:
+	case "corruption":
 		// Spread to adjacent tiles
 		SpreadCorruption(manager, entity, threatData)
 	}
@@ -202,7 +202,7 @@ func SpreadCorruption(manager *common.EntityManager, entity *ecs.Entity, threatD
 	}
 
 	// Spawn new corruption
-	CreateThreatNode(manager, targetPos, core.ThreatCorruption, 1, core.GetCurrentTick(manager))
+	CreateThreatNode(manager, targetPos, "corruption", 1, core.GetCurrentTick(manager))
 }
 
 // DestroyThreatNode removes a threat from the overworld
