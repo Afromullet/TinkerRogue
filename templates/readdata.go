@@ -31,6 +31,17 @@ type CreatureModifiers struct {
 	CreatureMods []JSONCreatureModifier
 }
 
+// EncounterDataWithNew extends EncounterData to include new encounter definitions
+type EncounterDataWithNew struct {
+	Factions             map[string]FactionArchetypeConfig `json:"factions"`
+	DifficultyLevels     []JSONEncounterDifficulty         `json:"difficultyLevels"`
+	SquadTypes           []JSONSquadType                   `json:"squadTypes"`
+	ThreatDefinitions    []JSONThreatDefinition            `json:"threatDefinitions"`    // Legacy
+	DefaultThreat        *JSONDefaultThreat                `json:"defaultThreat"`        // Legacy
+	EncounterDefinitions []JSONEncounterDefinition         `json:"encounterDefinitions"` // New
+	DefaultEncounter     *JSONDefaultEncounter             `json:"defaultEncounter"`     // New
+}
+
 func ReadMonsterData() {
 	data, err := os.ReadFile("../assets//gamedata/monsterdata.json")
 	if err != nil {
@@ -131,14 +142,120 @@ func ReadCreatureModifiers() {
 
 }
 
+func ReadNodeDefinitions() {
+	data, err := os.ReadFile("../assets//gamedata/nodeDefinitions.json")
+	if err != nil {
+		panic(err)
+	}
+
+	// Parse JSON
+	var nodeData NodeDefinitionsData
+	err = json.Unmarshal(data, &nodeData)
+
+	if err != nil {
+		panic(err)
+	}
+
+	// Validate node definitions
+	validateNodeDefinitions(&nodeData)
+
+	// Store in global template arrays
+	NodeDefinitionTemplates = nodeData.Nodes
+	DefaultNodeTemplate = nodeData.DefaultNode
+	NodeCategories = nodeData.NodeCategories
+
+	// Log successful load
+	println("Node definitions loaded:", len(NodeDefinitionTemplates), "nodes,",
+		len(NodeCategories), "categories")
+}
+
+func validateNodeDefinitions(data *NodeDefinitionsData) {
+	seenIDs := make(map[string]bool)
+
+	// Build valid categories map
+	validCategories := make(map[string]bool)
+	for _, cat := range data.NodeCategories {
+		validCategories[cat] = true
+	}
+
+	// Required node IDs for backwards compatibility with existing enum
+	requiredNodes := map[string]bool{
+		"necromancer": false,
+		"banditcamp":  false,
+		"corruption":  false,
+		"beastnest":   false,
+		"orcwarband":  false,
+	}
+
+	// Valid primary effects
+	validEffects := map[string]bool{
+		"SpawnBoost":        true,
+		"ResourceDrain":     true,
+		"TerrainCorruption": true,
+		"CombatDebuff":      true,
+		"":                  true, // Allow empty for non-combat nodes
+	}
+
+	for _, node := range data.Nodes {
+		// Required fields
+		if node.ID == "" {
+			panic("Node definition missing required 'id' field")
+		}
+		if node.DisplayName == "" {
+			panic("Node definition '" + node.ID + "' missing required 'displayName' field")
+		}
+		if node.Category == "" {
+			panic("Node definition '" + node.ID + "' missing required 'category' field")
+		}
+
+		// Check for duplicate IDs
+		if seenIDs[node.ID] {
+			panic("Duplicate node definition ID: " + node.ID)
+		}
+		seenIDs[node.ID] = true
+
+		// Validate category
+		if !validCategories[node.Category] {
+			panic("Node '" + node.ID + "' has invalid category: " + node.Category)
+		}
+
+		// Validate primary effect
+		if !validEffects[node.Overworld.PrimaryEffect] {
+			panic("Node '" + node.ID + "' has invalid primary effect: " + node.Overworld.PrimaryEffect)
+		}
+
+		// Warn about invisible color
+		if node.Color.A == 0 {
+			println("Warning: Node '" + node.ID + "' has zero alpha (invisible)")
+		}
+
+		// Mark required nodes as found
+		if _, exists := requiredNodes[node.ID]; exists {
+			requiredNodes[node.ID] = true
+		}
+	}
+
+	// Check all required nodes exist
+	for id, found := range requiredNodes {
+		if !found {
+			panic("Missing required node definition: " + id)
+		}
+	}
+
+	// Validate default node
+	if data.DefaultNode == nil {
+		panic("Missing defaultNode in nodeDefinitions.json")
+	}
+}
+
 func ReadEncounterData() {
 	data, err := os.ReadFile("../assets//gamedata/encounterdata.json")
 	if err != nil {
 		panic(err)
 	}
 
-	// Parse JSON
-	var encounterData EncounterData
+	// Parse JSON with extended struct to support both old and new format
+	var encounterData EncounterDataWithNew
 	err = json.Unmarshal(data, &encounterData)
 
 	if err != nil {
@@ -159,9 +276,14 @@ func ReadEncounterData() {
 		validSquadTypes[squadType.ID] = true
 	}
 
-	// Validate threat definitions if present
+	// Validate threat definitions if present (legacy support)
 	if len(encounterData.ThreatDefinitions) > 0 {
-		validateThreatDefinitions(&encounterData, validSquadTypes)
+		validateThreatDefinitionsLegacy(&encounterData, validSquadTypes)
+	}
+
+	// Validate new encounter definitions if present
+	if len(encounterData.EncounterDefinitions) > 0 {
+		validateEncounterDefinitions(&encounterData, validSquadTypes)
 	}
 
 	// Store in global template arrays
@@ -171,14 +293,24 @@ func ReadEncounterData() {
 	DefaultThreatTemplate = encounterData.DefaultThreat
 	FactionArchetypeTemplates = encounterData.Factions
 
+	// Store new encounter definitions
+	EncounterDefinitionTemplates = encounterData.EncounterDefinitions
+	DefaultEncounterTemplate = encounterData.DefaultEncounter
+
+	// Cross-validate node-encounter links if both are loaded
+	if len(NodeDefinitionTemplates) > 0 && len(EncounterDefinitionTemplates) > 0 {
+		validateNodeEncounterLinks()
+	}
+
 	// Log successful load
 	println("Encounter data loaded:", len(EncounterDifficultyTemplates), "difficulty levels,",
 		len(SquadTypeTemplates), "squad types,", len(ThreatDefinitionTemplates), "threat definitions,",
+		len(EncounterDefinitionTemplates), "encounter definitions,",
 		len(FactionArchetypeTemplates), "factions")
 }
 
-// validateThreatDefinitions validates the unified threat definitions
-func validateThreatDefinitions(data *EncounterData, validSquadTypes map[string]bool) {
+// validateThreatDefinitionsLegacy validates the unified threat definitions (legacy format)
+func validateThreatDefinitionsLegacy(data *EncounterDataWithNew, validSquadTypes map[string]bool) {
 	seenIDs := make(map[string]bool)
 	seenEncounterTypeIDs := make(map[string]bool)
 
@@ -275,6 +407,102 @@ func validateThreatDefinitions(data *EncounterData, validSquadTypes map[string]b
 			panic("Missing required threat definition: " + id)
 		}
 	}
+}
+
+// validateEncounterDefinitions validates the new encounter definitions format
+// NOTE: Multiple encounters per faction are explicitly supported (e.g., basic/elite/boss variants)
+func validateEncounterDefinitions(data *EncounterDataWithNew, validSquadTypes map[string]bool) {
+	seenIDs := make(map[string]bool)
+	seenEncounterTypeIDs := make(map[string]bool)
+
+	// Required encounter IDs for backwards compatibility
+	requiredEncounters := map[string]bool{
+		"necromancer": false,
+		"banditcamp":  false,
+		"corruption":  false,
+		"beastnest":   false,
+		"orcwarband":  false,
+	}
+
+	// Track encounters per faction to log multi-encounter factions
+	encountersPerFaction := make(map[string][]string)
+
+	for _, encounter := range data.EncounterDefinitions {
+		// Required fields
+		if encounter.ID == "" {
+			panic("Encounter definition missing required 'id' field")
+		}
+		if encounter.EncounterTypeID == "" {
+			panic("Encounter definition '" + encounter.ID + "' missing required 'encounterTypeId' field")
+		}
+
+		// Check for duplicate IDs
+		if seenIDs[encounter.ID] {
+			panic("Duplicate encounter definition ID: " + encounter.ID)
+		}
+		seenIDs[encounter.ID] = true
+
+		// Check for duplicate encounter type IDs
+		if seenEncounterTypeIDs[encounter.EncounterTypeID] {
+			panic("Duplicate encounterTypeId: " + encounter.EncounterTypeID)
+		}
+		seenEncounterTypeIDs[encounter.EncounterTypeID] = true
+
+		// Validate squad preferences reference valid squad types
+		for _, pref := range encounter.SquadPreferences {
+			if !validSquadTypes[pref] {
+				panic("Encounter '" + encounter.ID + "' references invalid squad type: " + pref)
+			}
+		}
+
+		// Validate factionId references an existing faction
+		if encounter.FactionID != "" {
+			if _, exists := data.Factions[encounter.FactionID]; !exists {
+				panic("Encounter '" + encounter.ID + "' references unknown faction: " + encounter.FactionID)
+			}
+			// Track encounters per faction
+			encountersPerFaction[encounter.FactionID] = append(encountersPerFaction[encounter.FactionID], encounter.ID)
+		}
+
+		// Mark required encounters as found
+		if _, exists := requiredEncounters[encounter.ID]; exists {
+			requiredEncounters[encounter.ID] = true
+		}
+	}
+
+	// Check all required encounters exist
+	for id, found := range requiredEncounters {
+		if !found {
+			panic("Missing required encounter definition: " + id)
+		}
+	}
+
+	// Log factions with multiple encounters (informational, not an error)
+	for factionID, encounterIDs := range encountersPerFaction {
+		if len(encounterIDs) > 1 {
+			println("Faction '" + factionID + "' has multiple encounters:", len(encounterIDs))
+		}
+	}
+}
+
+// validateNodeEncounterLinks cross-validates that nodes reference valid encounters
+func validateNodeEncounterLinks() {
+	// Build encounter ID lookup
+	encounterIDs := make(map[string]bool)
+	for _, enc := range EncounterDefinitionTemplates {
+		encounterIDs[enc.ID] = true
+	}
+
+	// Validate each threat node has a valid encounter link
+	for _, node := range NodeDefinitionTemplates {
+		if node.Category == "threat" && node.EncounterID != "" {
+			if !encounterIDs[node.EncounterID] {
+				panic("Node '" + node.ID + "' references unknown encounter: " + node.EncounterID)
+			}
+		}
+	}
+
+	println("Node-encounter links validated successfully")
 }
 
 func ReadAIConfig() {

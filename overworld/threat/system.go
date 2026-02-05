@@ -8,6 +8,28 @@ import (
 	"github.com/bytearena/ecs"
 )
 
+// selectRandomEncounterForNode randomly selects an encounter variant for a threat node.
+// This is called once when the node is created to determine which encounter variant it uses.
+func selectRandomEncounterForNode(threatType core.ThreatType) string {
+	// Get the threat definition to find the faction
+	threatDef := core.GetThreatRegistry().GetByEnum(threatType)
+	if threatDef == nil || threatDef.FactionID == "" {
+		// Fallback to default encounter for this threat type
+		return threatType.EncounterTypeID()
+	}
+
+	// Get all encounters for this faction
+	encounters := core.GetNodeRegistry().GetEncountersByFaction(threatDef.FactionID)
+	if len(encounters) == 0 {
+		// Fallback if no encounters found
+		return threatType.EncounterTypeID()
+	}
+
+	// Randomly select one encounter from the faction's pool
+	selectedEncounter := encounters[common.RandomInt(len(encounters))]
+	return selectedEncounter.ID
+}
+
 // CreateThreatNode spawns a new threat at a position
 func CreateThreatNode(
 	manager *common.EntityManager,
@@ -24,11 +46,15 @@ func CreateThreatNode(
 		Y: pos.Y,
 	})
 
+	// Randomly select an encounter variant for this specific node
+	encounterID := selectRandomEncounterForNode(threatType)
+
 	// Add threat node data (use config)
 	params := core.GetThreatTypeParamsFromConfig(threatType)
 	entity.AddComponent(core.ThreatNodeComponent, &core.ThreatNodeData{
 		ThreatID:       entity.GetID(),
 		ThreatType:     threatType,
+		EncounterID:    encounterID,
 		Intensity:      initialIntensity,
 		GrowthProgress: 0.0,
 		GrowthRate:     params.BaseGrowthRate,
@@ -107,6 +133,7 @@ func EvolveThreatNode(manager *common.EntityManager, entity *ecs.Entity, threatD
 }
 
 // ExecuteThreatEvolutionEffect applies type-specific evolution behavior
+// TODO, need to expand on this
 func ExecuteThreatEvolutionEffect(manager *common.EntityManager, entity *ecs.Entity, threatData *core.ThreatNodeData) {
 	params := core.GetThreatTypeParamsFromConfig(threatData.ThreatType)
 

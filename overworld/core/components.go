@@ -34,6 +34,7 @@ var (
 type ThreatNodeData struct {
 	ThreatID       ecs.EntityID // Entity ID of this threat node
 	ThreatType     ThreatType   // Enum: Necromancer, Bandit, Corruption, etc.
+	EncounterID    string       // Specific encounter variant (e.g., "necromancer_elite")
 	Intensity      int          // Current power level (0-10)
 	GrowthProgress float64      // 0.0-1.0 progress to next intensity level
 	GrowthRate     float64      // Growth per tick (e.g., 0.05)

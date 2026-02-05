@@ -16,6 +16,7 @@ type ThreatTypeParams struct {
 
 // ThreatDefinition is the runtime representation of a threat type.
 // It wraps the JSON definition and provides convenient accessors.
+// This structure is maintained for backward compatibility.
 type ThreatDefinition struct {
 	ID          string
 	DisplayName string
@@ -46,12 +47,17 @@ type ThreatDefinition struct {
 }
 
 // ThreatRegistry provides lookups for threat definitions.
-// This is the single source of truth for all threat configuration.
+// This registry delegates to NodeRegistry for the new split data format,
+// while maintaining backward compatibility with existing code.
 type ThreatRegistry struct {
-	byID          map[string]*ThreatDefinition     // "necromancer" -> def
-	byEnum        map[ThreatType]*ThreatDefinition // ThreatNecromancer -> def
+	// Internal caches built from NodeRegistry
+	byID          map[string]*ThreatDefinition
+	byEnum        map[ThreatType]*ThreatDefinition
 	defaultThreat *ThreatDefinition
 	initialized   bool
+
+	// Reference to NodeRegistry for delegation
+	nodeRegistry *NodeRegistry
 }
 
 // Global registry instance
@@ -66,13 +72,93 @@ func GetThreatRegistry() *ThreatRegistry {
 	return globalThreatRegistry
 }
 
-// newThreatRegistry creates and initializes a new threat registry from JSON templates.
+// newThreatRegistry creates and initializes a new threat registry.
+// It can source data from either the new NodeRegistry or the legacy ThreatDefinitionTemplates.
 func newThreatRegistry() *ThreatRegistry {
 	registry := &ThreatRegistry{
 		byID:   make(map[string]*ThreatDefinition),
 		byEnum: make(map[ThreatType]*ThreatDefinition),
 	}
 
+	// Try to use NodeRegistry (new format) if available
+	if len(templates.NodeDefinitionTemplates) > 0 && len(templates.EncounterDefinitionTemplates) > 0 {
+		registry.nodeRegistry = GetNodeRegistry()
+		registry.initFromNodeRegistry()
+	} else {
+		// Fall back to legacy format
+		registry.initFromLegacyTemplates()
+	}
+
+	registry.initialized = true
+	return registry
+}
+
+// initFromNodeRegistry populates the ThreatRegistry from the new NodeRegistry.
+// This creates ThreatDefinition objects by combining Node and Encounter data.
+func (r *ThreatRegistry) initFromNodeRegistry() {
+	nodeReg := r.nodeRegistry
+
+	// Build ThreatDefinition for each threat-category node
+	for _, node := range nodeReg.GetNodesByCategory(NodeCategoryThreat) {
+		enc := nodeReg.GetEncounterByID(node.EncounterID)
+
+		def := &ThreatDefinition{
+			ID:               node.ID,
+			DisplayName:      node.DisplayName,
+			EnumValue:        node.EnumValue,
+			Color:            node.Color,
+			BaseGrowthRate:   node.BaseGrowthRate,
+			BaseRadius:       node.BaseRadius,
+			PrimaryEffect:    node.PrimaryEffect,
+			CanSpawnChildren: node.CanSpawnChildren,
+		}
+
+		// Fill in encounter data if available
+		if enc != nil {
+			def.EncounterTypeID = enc.EncounterTypeID
+			def.EncounterTypeName = enc.EncounterTypeName
+			def.SquadPreferences = enc.SquadPreferences
+			def.DefaultDifficulty = enc.DefaultDifficulty
+			def.Tags = enc.Tags
+			def.BasicItems = enc.BasicItems
+			def.HighTierItems = enc.HighTierItems
+			def.FactionID = enc.FactionID
+		}
+
+		// Register by ID
+		r.byID[def.ID] = def
+
+		// Register by enum if valid (non-negative)
+		if def.EnumValue >= 0 {
+			r.byEnum[def.EnumValue] = def
+		}
+	}
+
+	// Build default threat from node registry
+	defaultNode := nodeReg.defaultNode
+	defaultEnc := nodeReg.defaultEncounter
+
+	if defaultNode != nil {
+		r.defaultThreat = &ThreatDefinition{
+			ID:               "default",
+			DisplayName:      defaultNode.DisplayName,
+			EnumValue:        -1,
+			Color:            defaultNode.Color,
+			BaseGrowthRate:   defaultNode.BaseGrowthRate,
+			BaseRadius:       defaultNode.BaseRadius,
+			PrimaryEffect:    defaultNode.PrimaryEffect,
+			CanSpawnChildren: defaultNode.CanSpawnChildren,
+		}
+
+		if defaultEnc != nil {
+			r.defaultThreat.BasicItems = defaultEnc.BasicItems
+			r.defaultThreat.HighTierItems = defaultEnc.HighTierItems
+		}
+	}
+}
+
+// initFromLegacyTemplates populates the ThreatRegistry from the legacy threatDefinitions.
+func (r *ThreatRegistry) initFromLegacyTemplates() {
 	// Load threat definitions from JSON templates
 	for _, jsonDef := range templates.ThreatDefinitionTemplates {
 		def := &ThreatDefinition{
@@ -100,11 +186,11 @@ func newThreatRegistry() *ThreatRegistry {
 		}
 
 		// Register by ID
-		registry.byID[def.ID] = def
+		r.byID[def.ID] = def
 
 		// Register by enum if valid (non-negative)
 		if def.EnumValue >= 0 {
-			registry.byEnum[def.EnumValue] = def
+			r.byEnum[def.EnumValue] = def
 		}
 	}
 
@@ -112,7 +198,7 @@ func newThreatRegistry() *ThreatRegistry {
 	if templates.DefaultThreatTemplate == nil {
 		panic("DefaultThreatTemplate is required in encounterdata.json")
 	}
-	registry.defaultThreat = &ThreatDefinition{
+	r.defaultThreat = &ThreatDefinition{
 		ID:          "default",
 		DisplayName: templates.DefaultThreatTemplate.DisplayName,
 		EnumValue:   -1,
@@ -129,9 +215,6 @@ func newThreatRegistry() *ThreatRegistry {
 		BasicItems:       templates.DefaultThreatTemplate.BasicDrops,
 		HighTierItems:    templates.DefaultThreatTemplate.HighTierDrops,
 	}
-
-	registry.initialized = true
-	return registry
 }
 
 // --- Lookup Methods ---
@@ -166,6 +249,8 @@ func (r *ThreatRegistry) GetByEncounterTypeID(encounterTypeID string) *ThreatDef
 }
 
 // GetByFactionID returns a threat definition by its faction ID.
+// NOTE: If multiple threats exist for the same faction, this returns only the FIRST match.
+// Use GetThreatsByFaction() to get all threats for a faction.
 // Returns default if not found.
 func (r *ThreatRegistry) GetByFactionID(factionID string) *ThreatDefinition {
 	for _, def := range r.byID {
@@ -174,6 +259,19 @@ func (r *ThreatRegistry) GetByFactionID(factionID string) *ThreatDefinition {
 		}
 	}
 	return r.defaultThreat
+}
+
+// GetThreatsByFaction returns all threat definitions for a specific faction.
+// Supports multiple threat types per faction (basic, elite, boss variants).
+// Returns empty slice if no threats found for the faction.
+func (r *ThreatRegistry) GetThreatsByFaction(factionID string) []*ThreatDefinition {
+	var threats []*ThreatDefinition
+	for _, def := range r.byID {
+		if def.FactionID == factionID {
+			threats = append(threats, def)
+		}
+	}
+	return threats
 }
 
 // --- Convenience Accessors ---
@@ -241,4 +339,10 @@ func (r *ThreatRegistry) GetAllDefinitions() []*ThreatDefinition {
 func (r *ThreatRegistry) HasThreat(id string) bool {
 	_, ok := r.byID[id]
 	return ok
+}
+
+// GetNodeRegistry returns the underlying NodeRegistry if using the new format.
+// Returns nil if using legacy format.
+func (r *ThreatRegistry) GetNodeRegistry() *NodeRegistry {
+	return r.nodeRegistry
 }

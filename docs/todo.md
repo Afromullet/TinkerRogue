@@ -2,11 +2,14 @@ __________________________________________
 #
 # # # **IMPORTANT** # # # 
 
+
+
+-  ExecuteThreatEvolutionEffect needs to changed base off threat type/data.  
+
 - Reneable victory conditions in tickmanager.go. They are disabled for testing
 
 - encounter service should not have mode coordinator. It overlaps too much with what the GUI is doing
 
-- Look at all of the Utility AI parameters and simplfiy it. Too many parameters make it hard to balance
 
 - calculateEntryIndexAtPosition in squadeditor_movesquad.go is not accurately calculating the position to move the squad to. Check if there is an ebitenui var (such as entryselected) you can use instead of calculating with pixel positions
 

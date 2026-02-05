@@ -496,3 +496,70 @@ type JSONDefaultThreat struct {
 	BasicDrops    []string                  `json:"basicDrops"`    // Normal item drops
 	HighTierDrops []string                  `json:"highTierDrops"` // Drops at high intensity
 }
+
+// --- Node Definition Structs ---
+// These structs separate overworld node configuration from combat encounter configuration
+// to support multiple node types (threats, settlements, fortresses, etc.).
+
+// JSONNodeOverworld defines overworld behavior for a node
+type JSONNodeOverworld struct {
+	BaseGrowthRate   float64 `json:"baseGrowthRate,omitempty"`   // Growth rate per tick
+	BaseRadius       int     `json:"baseRadius"`                 // Influence radius
+	PrimaryEffect    string  `json:"primaryEffect,omitempty"`    // "SpawnBoost", "ResourceDrain", etc.
+	CanSpawnChildren bool    `json:"canSpawnChildren,omitempty"` // Can spawn child nodes
+}
+
+// JSONSettlementServices defines services available at a settlement
+type JSONSettlementServices struct {
+	Services []string `json:"services,omitempty"` // e.g., ["trade", "repair", "recruit"]
+}
+
+// JSONNodeDefinition is the unified node configuration
+// A single entry defines an overworld node (threat, settlement, fortress, etc.)
+type JSONNodeDefinition struct {
+	ID          string `json:"id"`          // Unique identifier, e.g., "necromancer_lair"
+	Category    string `json:"category"`    // "threat", "settlement", "fortress"
+	DisplayName string `json:"displayName"` // Human-readable name
+	EnumValue   int    `json:"enumValue"`   // Maps to ThreatType enum (-1 for non-combat nodes)
+
+	Color     JSONColor         `json:"color"`               // Display color on overworld map
+	Overworld JSONNodeOverworld `json:"overworld"`           // Overworld behavior
+	Services  []string          `json:"services,omitempty"`  // For settlements: available services
+	EncounterID string          `json:"encounterId,omitempty"` // Links to encounterDefinitions (for combat nodes)
+}
+
+// JSONDefaultNode defines fallback configuration for unknown nodes
+type JSONDefaultNode struct {
+	DisplayName string            `json:"displayName"`
+	Color       JSONColor         `json:"color"`
+	Overworld   JSONNodeOverworld `json:"overworld"`
+}
+
+// NodeDefinitionsData is the root container for node definitions
+type NodeDefinitionsData struct {
+	NodeCategories []string             `json:"nodeCategories"` // Valid categories
+	Nodes          []JSONNodeDefinition `json:"nodes"`
+	DefaultNode    *JSONDefaultNode     `json:"defaultNode"`
+}
+
+// --- Encounter Definition Structs ---
+// These structs define combat-only configuration, separate from node properties.
+
+// JSONEncounterDefinition defines combat mechanics for an encounter
+type JSONEncounterDefinition struct {
+	ID                string   `json:"id"`                // Unique identifier matching node's encounterId
+	EncounterTypeID   string   `json:"encounterTypeId"`   // e.g., "undead_basic"
+	EncounterTypeName string   `json:"encounterTypeName"` // e.g., "Undead Horde"
+	SquadPreferences  []string `json:"squadPreferences"`  // e.g., ["melee", "melee", "magic"]
+	DefaultDifficulty int      `json:"defaultDifficulty"` // Default difficulty level
+	Tags              []string `json:"tags"`              // e.g., ["common", "undead"]
+	BasicDrops        []string `json:"basicDrops"`        // Normal item drops
+	HighTierDrops     []string `json:"highTierDrops"`     // Drops at high intensity
+	FactionID         string   `json:"factionId"`         // Faction mapping
+}
+
+// JSONDefaultEncounter defines fallback configuration for unknown encounters
+type JSONDefaultEncounter struct {
+	BasicDrops    []string `json:"basicDrops"`
+	HighTierDrops []string `json:"highTierDrops"`
+}

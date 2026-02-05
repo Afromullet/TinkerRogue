@@ -41,17 +41,25 @@ func TranslateThreatToEncounter(
 		return nil, fmt.Errorf("entity is not a threat node")
 	}
 
-	// Calculate rewards
-	rewards := CalculateRewards(threatData.Intensity, threatData.ThreatType)
+	// Get the encounter that was assigned to this node when it was created
+	selectedEncounter := core.GetNodeRegistry().GetEncounterByID(threatData.EncounterID)
+	if selectedEncounter == nil {
+		return nil, fmt.Errorf("encounter %s not found for threat node", threatData.EncounterID)
+	}
 
-	// Create encounter name
-	encounterName := fmt.Sprintf("%s (Level %d)", threatData.ThreatType.String(), threatData.Intensity)
+	// Calculate rewards based on this node's specific encounter
+	rewards := CalculateRewards(threatData.Intensity, selectedEncounter)
+
+	// Create encounter name using the selected encounter's name
+	encounterName := fmt.Sprintf("%s (Level %d)",
+		getEncounterDisplayName(selectedEncounter, threatData.ThreatType),
+		threatData.Intensity)
 
 	return &EncounterParams{
 		ThreatNodeID:  threatData.ThreatID,
 		Difficulty:    threatData.Intensity,
 		EncounterName: encounterName,
-		EncounterType: getThreatEncounterType(threatData.ThreatType),
+		EncounterType: selectedEncounter.EncounterTypeID,
 		Rewards:       rewards,
 	}, nil
 }
@@ -59,7 +67,8 @@ func TranslateThreatToEncounter(
 // CalculateRewards determines loot from defeating a threat.
 // Reward multiplier is now derived from intensity instead of hardcoded per-type values.
 // Formula: 1.0 + (intensity × 0.1) gives 1.1x-1.5x for intensity 1-5.
-func CalculateRewards(intensity int, threatType core.ThreatType) RewardTable {
+// Uses the selected encounter's drop table for items.
+func CalculateRewards(intensity int, encounter *core.EncounterDefinition) RewardTable {
 	baseGold := 100 + (intensity * 50)
 	baseXP := 50 + (intensity * 25)
 
@@ -67,8 +76,8 @@ func CalculateRewards(intensity int, threatType core.ThreatType) RewardTable {
 	// Higher intensity threats give proportionally better rewards
 	typeMultiplier := 1.0 + (float64(intensity) * 0.1)
 
-	// Generate item drops based on threat type and intensity
-	items := GenerateItemDrops(intensity, threatType)
+	// Generate item drops based on selected encounter and intensity
+	items := GenerateItemDrops(intensity, encounter)
 
 	return RewardTable{
 		Gold:       int(float64(baseGold) * typeMultiplier),
@@ -77,8 +86,8 @@ func CalculateRewards(intensity int, threatType core.ThreatType) RewardTable {
 	}
 }
 
-// GenerateItemDrops creates item rewards based on threat type and intensity
-func GenerateItemDrops(intensity int, threatType core.ThreatType) []string {
+// GenerateItemDrops creates item rewards based on selected encounter and intensity
+func GenerateItemDrops(intensity int, encounter *core.EncounterDefinition) []string {
 	items := []string{}
 
 	// Higher intensity threats drop more items
@@ -97,9 +106,9 @@ func GenerateItemDrops(intensity int, threatType core.ThreatType) []string {
 		numDrops++
 	}
 
-	// Generate items based on threat type
+	// Generate items from the selected encounter's drop table
 	for i := 0; i < numDrops; i++ {
-		item := generateItemByType(threatType, intensity)
+		item := generateItemFromEncounter(encounter, intensity)
 		if item != "" {
 			items = append(items, item)
 		}
@@ -111,10 +120,15 @@ func GenerateItemDrops(intensity int, threatType core.ThreatType) []string {
 // HighTierIntensityThreshold is the minimum intensity for high-tier drops
 const HighTierIntensityThreshold = 5
 
-// generateItemByType returns an item name based on threat type.
-// Uses ThreatRegistry for data-driven item drop tables.
-func generateItemByType(threatType core.ThreatType, intensity int) string {
-	basic, highTier := core.GetThreatRegistry().GetItemDropTable(threatType)
+// generateItemFromEncounter returns an item name from the encounter's drop table.
+// Uses the selected encounter's specific item pools.
+func generateItemFromEncounter(encounter *core.EncounterDefinition, intensity int) string {
+	if encounter == nil {
+		return "Unknown Item"
+	}
+
+	basic := encounter.BasicItems
+	highTier := encounter.HighTierItems
 
 	if len(basic) == 0 {
 		return "Unknown Item"
@@ -124,7 +138,7 @@ func generateItemByType(threatType core.ThreatType, intensity int) string {
 	copy(options, basic)
 
 	// High-tier drops available at max intensity (level 5)
-	if intensity >= HighTierIntensityThreshold {
+	if intensity >= HighTierIntensityThreshold && len(highTier) > 0 {
 		options = append(options, highTier...)
 	}
 
@@ -151,10 +165,37 @@ func CreateOverworldEncounter(
 	return entity.GetID(), nil
 }
 
-// getThreatEncounterType maps threat type to encounter type string.
-// Returns the JSON encounter type ID that matches encounterdata.json.
-func getThreatEncounterType(threatType core.ThreatType) string {
-	return threatType.EncounterTypeID()
+// SelectRandomEncounterForThreat randomly selects an encounter from the threat's faction pool.
+// Returns the encounter type ID and the full encounter definition.
+// Exported for use by encounter service for reward calculation.
+func SelectRandomEncounterForThreat(threatType core.ThreatType) (string, *core.EncounterDefinition) {
+	// Get the threat definition to find the faction
+	threatDef := core.GetThreatRegistry().GetByEnum(threatType)
+	if threatDef == nil || threatDef.FactionID == "" {
+		// Fallback to old behavior if no faction found
+		return threatType.EncounterTypeID(), nil
+	}
+
+	// Get all encounters for this faction
+	encounters := core.GetNodeRegistry().GetEncountersByFaction(threatDef.FactionID)
+	if len(encounters) == 0 {
+		// Fallback if no encounters found
+		return threatType.EncounterTypeID(), nil
+	}
+
+	// Randomly select one encounter from the faction's pool
+	selectedEncounter := encounters[common.RandomInt(len(encounters))]
+	return selectedEncounter.EncounterTypeID, selectedEncounter
+}
+
+// getEncounterDisplayName returns the display name for an encounter.
+// Falls back to threat type name if encounter is nil.
+func getEncounterDisplayName(encounter *core.EncounterDefinition, threatType core.ThreatType) string {
+	if encounter != nil && encounter.EncounterTypeName != "" {
+		return encounter.EncounterTypeName
+	}
+	// Fallback to threat type display name
+	return threatType.String()
 }
 
 // TriggerCombatFromThreat initiates combat when player engages a threat

@@ -15,13 +15,23 @@ var ThreatDefinitionTemplates []JSONThreatDefinition
 var DefaultThreatTemplate *JSONDefaultThreat
 var FactionArchetypeTemplates map[string]FactionArchetypeConfig
 
+// Node definition templates (new system)
+var NodeDefinitionTemplates []JSONNodeDefinition
+var DefaultNodeTemplate *JSONDefaultNode
+var NodeCategories []string
+
+// Encounter definition templates (combat-only, replacing ThreatDefinitions for combat)
+var EncounterDefinitionTemplates []JSONEncounterDefinition
+var DefaultEncounterTemplate *JSONDefaultEncounter
+
 func ReadGameData() {
 
 	ReadMonsterData()
 	ReadWeaponData()
 	ReadConsumableData()
 	ReadCreatureModifiers()
-	ReadEncounterData()
+	ReadNodeDefinitions() // Load node definitions first
+	ReadEncounterData()   // Then encounter data (validates links)
 	ReadAIConfig()
 	ReadPowerConfig()
 	ReadOverworldConfig()

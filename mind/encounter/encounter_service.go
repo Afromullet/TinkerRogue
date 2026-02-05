@@ -399,7 +399,9 @@ func (es *EncounterService) resolveCombatToOverworld(
 		return
 	}
 
-	rewards := owencounter.CalculateRewards(threatData.Intensity, threatData.ThreatType)
+	// Get the specific encounter that was assigned to this threat node
+	selectedEncounter := core.GetNodeRegistry().GetEncounterByID(threatData.EncounterID)
+	rewards := owencounter.CalculateRewards(threatData.Intensity, selectedEncounter)
 
 	// Create combat outcome
 	outcome := combatresolution.CreateCombatOutcome(
