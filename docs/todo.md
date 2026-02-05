@@ -4,7 +4,7 @@ __________________________________________
 
 - Reneable victory conditions in tickmanager.go. They are disabled for testing
 
-
+- encounter service should not have mode coordinator. It overlaps too much with what the GUI is doing
 
 - Look at all of the Utility AI parameters and simplfiy it. Too many parameters make it hard to balance
 

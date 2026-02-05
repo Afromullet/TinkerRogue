@@ -7,8 +7,8 @@ import (
 	"testing"
 )
 
-// TestMeleeThreatLayer_Compute tests basic melee threat computation
-func TestMeleeThreatLayer_Compute(t *testing.T) {
+// TestCombatThreatLayer_Compute tests basic combat threat computation
+func TestCombatThreatLayer_Compute(t *testing.T) {
 	// Setup test environment
 	manager := combat.CreateTestCombatManager()
 	cache := combat.NewCombatQueryCache(manager)
@@ -23,64 +23,36 @@ func TestMeleeThreatLayer_Compute(t *testing.T) {
 	baseThreatMgr.AddFaction(faction1)
 	baseThreatMgr.AddFaction(faction2)
 
-	// Create melee threat layer for faction1 (viewing threats FROM faction2)
-	meleeLayer := NewMeleeThreatLayer(faction1, manager, cache, baseThreatMgr)
+	// Create unified combat threat layer for faction1 (viewing threats FROM faction2)
+	combatLayer := NewCombatThreatLayer(faction1, manager, cache, baseThreatMgr)
 
 	// Verify initial state
-	if meleeLayer.factionID != faction1 {
-		t.Errorf("Expected factionID %d, got %d", faction1, meleeLayer.factionID)
+	if combatLayer.factionID != faction1 {
+		t.Errorf("Expected factionID %d, got %d", faction1, combatLayer.factionID)
 	}
 
 	// Compute threats
-	meleeLayer.Compute()
+	combatLayer.Compute()
 
 	// Verify layer marked as clean
 	currentRound := 0
-	if !meleeLayer.IsValid(currentRound) {
+	if !combatLayer.IsValid(currentRound) {
 		t.Error("Layer should be valid after Compute()")
 	}
 
-	// Verify data structures initialized
-	if meleeLayer.threatByPos == nil {
-		t.Error("threatByPos should be initialized")
+	// Verify melee data structures initialized
+	if combatLayer.meleeThreatByPos == nil {
+		t.Error("meleeThreatByPos should be initialized")
 	}
-	if meleeLayer.threatBySquad == nil {
-		t.Error("threatBySquad should be initialized")
-	}
-}
-
-// TestRangedThreatLayer_Compute tests basic ranged threat computation
-func TestRangedThreatLayer_Compute(t *testing.T) {
-	// Setup test environment
-	manager := combat.CreateTestCombatManager()
-	cache := combat.NewCombatQueryCache(manager)
-	baseThreatMgr := NewFactionThreatLevelManager(manager, cache)
-	fm := combat.NewCombatFactionManager(manager, cache)
-
-	// Create two factions
-	faction1 := fm.CreateCombatFaction("Player", true)
-	faction2 := fm.CreateCombatFaction("Enemy", false)
-
-	baseThreatMgr.AddFaction(faction1)
-	baseThreatMgr.AddFaction(faction2)
-
-	// Create ranged threat layer
-	rangedLayer := NewRangedThreatLayer(faction1, manager, cache, baseThreatMgr)
-
-	// Compute threats
-	rangedLayer.Compute()
-
-	// Verify layer marked as clean
-	currentRound := 0
-	if !rangedLayer.IsValid(currentRound) {
-		t.Error("Layer should be valid after Compute()")
+	if combatLayer.meleeThreatBySquad == nil {
+		t.Error("meleeThreatBySquad should be initialized")
 	}
 
-	// Verify data structures initialized
-	if rangedLayer.pressureByPos == nil {
-		t.Error("pressureByPos should be initialized")
+	// Verify ranged data structures initialized
+	if combatLayer.rangedPressureByPos == nil {
+		t.Error("rangedPressureByPos should be initialized")
 	}
-	if rangedLayer.lineOfFireZones == nil {
+	if combatLayer.lineOfFireZones == nil {
 		t.Error("lineOfFireZones should be initialized")
 	}
 }

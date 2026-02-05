@@ -10,6 +10,16 @@ import (
 	"github.com/bytearena/ecs"
 )
 
+// MeleeThreatSource provides melee threat queries at positions
+type MeleeThreatSource interface {
+	GetMeleeThreatAt(pos coords.LogicalPosition) float64
+}
+
+// RangedThreatSource provides ranged threat queries at positions
+type RangedThreatSource interface {
+	GetRangedPressureAt(pos coords.LogicalPosition) float64
+}
+
 // PositionalRiskLayer computes tactical risk based on positioning
 // Identifies flanking exposure, isolation, and retreat path quality
 type PositionalRiskLayer struct {
@@ -23,18 +33,19 @@ type PositionalRiskLayer struct {
 
 	// Dependencies
 	baseThreatMgr *FactionThreatLevelManager
-	meleeLayer    *MeleeThreatLayer
-	rangedLayer   *RangedThreatLayer
+	meleeSource   MeleeThreatSource
+	rangedSource  RangedThreatSource
 }
 
 // NewPositionalRiskLayer creates a new positional risk layer
+// meleeSource and rangedSource can be the same layer (e.g., CombatThreatLayer)
 func NewPositionalRiskLayer(
 	factionID ecs.EntityID,
 	manager *common.EntityManager,
 	cache *combat.CombatQueryCache,
 	baseThreatMgr *FactionThreatLevelManager,
-	meleeLayer *MeleeThreatLayer,
-	rangedLayer *RangedThreatLayer,
+	meleeSource MeleeThreatSource,
+	rangedSource RangedThreatSource,
 ) *PositionalRiskLayer {
 	return &PositionalRiskLayer{
 		ThreatLayerBase:    NewThreatLayerBase(factionID, manager, cache),
@@ -43,8 +54,8 @@ func NewPositionalRiskLayer(
 		engagementPressure: make(map[coords.LogicalPosition]float64),
 		retreatQuality:     make(map[coords.LogicalPosition]float64),
 		baseThreatMgr:      baseThreatMgr,
-		meleeLayer:         meleeLayer,
-		rangedLayer:        rangedLayer,
+		meleeSource:        meleeSource,
+		rangedSource:       rangedSource,
 	}
 }
 
@@ -165,109 +176,77 @@ func (prl *PositionalRiskLayer) computeIsolationRisk(alliedSquads []ecs.EntityID
 		return
 	}
 
-	// For each potential position, find distance to nearest ally
-	// Sample a grid of positions (optimization - don't check every tile)
-	mapWidth := coords.CoordManager.GetDungeonWidth()
-	mapHeight := coords.CoordManager.GetDungeonHeight()
+	threshold := GetIsolationThreshold()
+	maxDist := GetIsolationMaxDistance()
 
-	for x := 0; x < mapWidth; x++ {
-		for y := 0; y < mapHeight; y++ {
-			pos := coords.LogicalPosition{X: x, Y: y}
-
-			minDistance := math.MaxInt32
-			for _, allyPos := range allyPositions {
-				distance := pos.ChebyshevDistance(&allyPos)
-				if distance < minDistance {
-					minDistance = distance
-				}
-			}
-
-			// Isolation risk increases linearly with distance from nearest ally
-			// Below threshold: no risk. Above threshold: linear gradient to 1.0 at max distance.
-			threshold := GetIsolationThreshold()
-			maxDist := GetIsolationMaxDistance()
-			if minDistance >= maxDist {
-				prl.isolationRisk[pos] = 1.0
-			} else if minDistance > threshold {
-				// Linear gradient from 0 at threshold to 1.0 at maxDist
-				prl.isolationRisk[pos] = float64(minDistance-threshold) / float64(maxDist-threshold)
+	// For each position, find distance to nearest ally
+	IterateMapGrid(func(pos coords.LogicalPosition) {
+		minDistance := math.MaxInt32
+		for _, allyPos := range allyPositions {
+			distance := pos.ChebyshevDistance(&allyPos)
+			if distance < minDistance {
+				minDistance = distance
 			}
 		}
-	}
+
+		// Isolation risk increases linearly with distance from nearest ally
+		// Below threshold: no risk. Above threshold: linear gradient to 1.0 at max distance.
+		if minDistance >= maxDist {
+			prl.isolationRisk[pos] = 1.0
+		} else if minDistance > threshold {
+			// Linear gradient from 0 at threshold to 1.0 at maxDist
+			prl.isolationRisk[pos] = float64(minDistance-threshold) / float64(maxDist-threshold)
+		}
+	})
 }
 
 // computeEngagementPressure combines melee and ranged threat for net pressure
 func (prl *PositionalRiskLayer) computeEngagementPressure() {
-	// Sample grid positions
-	mapWidth := coords.CoordManager.GetDungeonWidth()
-	mapHeight := coords.CoordManager.GetDungeonHeight()
+	maxPressure := float64(GetEngagementPressureMax())
 
-	for x := 0; x < mapWidth; x++ {
-		for y := 0; y < mapHeight; y++ {
-			pos := coords.LogicalPosition{X: x, Y: y}
+	IterateMapGrid(func(pos coords.LogicalPosition) {
+		meleeThreat := prl.meleeSource.GetMeleeThreatAt(pos)
+		rangedThreat := prl.rangedSource.GetRangedPressureAt(pos)
 
-			meleeThreat := prl.meleeLayer.GetMeleeThreatAt(pos)
-			rangedThreat := prl.rangedLayer.GetRangedPressureAt(pos)
-
-			// Total engagement pressure
-			totalPressure := meleeThreat + rangedThreat
-
-			// Normalize to 0-1 range using configured max pressure
-			prl.engagementPressure[pos] = math.Min(totalPressure/float64(GetEngagementPressureMax()), 1.0)
-		}
-	}
+		// Total engagement pressure, normalized to 0-1 range
+		totalPressure := meleeThreat + rangedThreat
+		prl.engagementPressure[pos] = math.Min(totalPressure/maxPressure, 1.0)
+	})
 }
 
 // computeRetreatQuality evaluates escape route quality
 func (prl *PositionalRiskLayer) computeRetreatQuality(alliedSquads []ecs.EntityID) {
-	// Get allied positions (safe zones)
-	allyPositions := []coords.LogicalPosition{}
-	for _, squadID := range alliedSquads {
-		pos, err := combat.GetSquadMapPosition(squadID, prl.manager)
-		if err != nil {
-			continue
-		}
-		allyPositions = append(allyPositions, pos)
-	}
+	retreatThreshold := float64(GetRetreatSafeThreatThreshold())
 
-	// For each position, check if there's a low-threat path to allies
-	mapWidth := coords.CoordManager.GetDungeonWidth()
-	mapHeight := coords.CoordManager.GetDungeonHeight()
+	IterateMapGrid(func(pos coords.LogicalPosition) {
+		// Check adjacent positions for low-threat retreat paths
+		retreatScore := 0.0
+		checkedDirs := 0
 
-	for x := 0; x < mapWidth; x++ {
-		for y := 0; y < mapHeight; y++ {
-			pos := coords.LogicalPosition{X: x, Y: y}
-
-			// Check adjacent positions for low-threat retreat paths
-			retreatScore := 0.0
-			checkedDirs := 0
-
-			for dx := -1; dx <= 1; dx++ {
-				for dy := -1; dy <= 1; dy++ {
-					if dx == 0 && dy == 0 {
-						continue
-					}
-
-					adjacentPos := coords.LogicalPosition{X: pos.X + dx, Y: pos.Y + dy}
-
-					meleeThreat := prl.meleeLayer.GetMeleeThreatAt(adjacentPos)
-					rangedThreat := prl.rangedLayer.GetRangedPressureAt(adjacentPos)
-
-					// Low threat path = good retreat route
-					retreatThreshold := float64(GetRetreatSafeThreatThreshold())
-					if meleeThreat < retreatThreshold && rangedThreat < retreatThreshold {
-						retreatScore += 1.0
-					}
-					checkedDirs++
+		for dx := -1; dx <= 1; dx++ {
+			for dy := -1; dy <= 1; dy++ {
+				if dx == 0 && dy == 0 {
+					continue
 				}
-			}
 
-			// Retreat quality = percentage of low-threat adjacent positions
-			if checkedDirs > 0 {
-				prl.retreatQuality[pos] = retreatScore / float64(checkedDirs)
+				adjacentPos := coords.LogicalPosition{X: pos.X + dx, Y: pos.Y + dy}
+
+				meleeThreat := prl.meleeSource.GetMeleeThreatAt(adjacentPos)
+				rangedThreat := prl.rangedSource.GetRangedPressureAt(adjacentPos)
+
+				// Low threat path = good retreat route
+				if meleeThreat < retreatThreshold && rangedThreat < retreatThreshold {
+					retreatScore += 1.0
+				}
+				checkedDirs++
 			}
 		}
-	}
+
+		// Retreat quality = percentage of low-threat adjacent positions
+		if checkedDirs > 0 {
+			prl.retreatQuality[pos] = retreatScore / float64(checkedDirs)
+		}
+	})
 }
 
 // Query API methods

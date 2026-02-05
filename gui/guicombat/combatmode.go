@@ -734,17 +734,13 @@ func (cm *CombatMode) HandleInput(inputState *framework.InputState) bool {
 		return true
 	}
 
-	// Left Control key to cycle metrics
+	// Left Control key reserved for future metric cycling
+	// Currently only MetricDanger is available
 	if inputState.KeysJustPressed[ebiten.KeyControlLeft] {
 		dangerViz := cm.visualization.GetDangerVisualizer()
 		if dangerViz != nil && dangerViz.IsActive() {
+			// CycleMetric is no-op with single metric, but keep for future extensibility
 			dangerViz.CycleMetric()
-			metricName := "Danger"
-			if dangerViz.GetMetricMode() == behavior.MetricExpectedDamage {
-				metricName = "Expected Damage"
-			}
-			combatLogArea := GetCombatLogTextArea(cm.Panels)
-			cm.logManager.UpdateTextArea(combatLogArea, fmt.Sprintf("Switched to %s metric", metricName))
 			return true
 		}
 	}

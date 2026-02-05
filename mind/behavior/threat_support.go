@@ -115,7 +115,7 @@ func (svl *SupportValueLayer) paintSupportValue(
 ) {
 	// Paint support value with linear falloff using configured radius
 	healRadius, proximityRadius, _ := GetSupportLayerParams()
-	PaintThreatToMap(svl.supportValuePos, center, healRadius, healPriority, LinearFalloff)
+	PaintThreatToMap(svl.supportValuePos, center, healRadius, healPriority, LinearFalloff, false)
 
 	// Track ally proximity separately
 	for dx := -proximityRadius; dx <= proximityRadius; dx++ {

@@ -19,8 +19,7 @@ type CompositeThreatEvaluator struct {
 	factionID ecs.EntityID
 
 	// Individual layers
-	meleeThreat    *MeleeThreatLayer
-	rangedThreat   *RangedThreatLayer
+	combatThreat   *CombatThreatLayer   // Unified melee + ranged layer
 	supportValue   *SupportValueLayer
 	positionalRisk *PositionalRiskLayer
 
@@ -36,18 +35,16 @@ func NewCompositeThreatEvaluator(
 	cache *combat.CombatQueryCache,
 	baseThreatMgr *FactionThreatLevelManager,
 ) *CompositeThreatEvaluator {
-	// Create melee and ranged layers first (needed by positional layer)
-	meleeLayer := NewMeleeThreatLayer(factionID, manager, cache, baseThreatMgr)
-	rangedLayer := NewRangedThreatLayer(factionID, manager, cache, baseThreatMgr)
+	// Create unified combat threat layer (provides both melee and ranged)
+	combatLayer := NewCombatThreatLayer(factionID, manager, cache, baseThreatMgr)
 
 	return &CompositeThreatEvaluator{
 		manager:         manager,
 		cache:           cache,
 		factionID:       factionID,
-		meleeThreat:     meleeLayer,
-		rangedThreat:    rangedLayer,
+		combatThreat:    combatLayer,
 		supportValue:    NewSupportValueLayer(factionID, manager, cache, baseThreatMgr),
-		positionalRisk:  NewPositionalRiskLayer(factionID, manager, cache, baseThreatMgr, meleeLayer, rangedLayer),
+		positionalRisk:  NewPositionalRiskLayer(factionID, manager, cache, baseThreatMgr, combatLayer, combatLayer),
 		lastUpdateRound: -1,
 		isDirty:         true,
 	}
@@ -61,11 +58,10 @@ func (cte *CompositeThreatEvaluator) Update(currentRound int) {
 		return
 	}
 
-	// Compute base threat layers first (melee/ranged)
-	cte.meleeThreat.Compute()
-	cte.rangedThreat.Compute()
+	// Compute unified combat threat layer first (provides melee + ranged)
+	cte.combatThreat.Compute()
 
-	// Then compute derived layers (support/positional depend on melee/ranged)
+	// Then compute derived layers (support/positional depend on combat layer)
 	cte.supportValue.Compute()
 	cte.positionalRisk.Compute()
 
@@ -78,8 +74,7 @@ func (cte *CompositeThreatEvaluator) Update(currentRound int) {
 // Call when squad moves, is destroyed, or combat state changes
 func (cte *CompositeThreatEvaluator) MarkDirty() {
 	cte.isDirty = true
-	cte.meleeThreat.MarkDirty()
-	cte.rangedThreat.MarkDirty()
+	cte.combatThreat.MarkDirty()
 	cte.supportValue.MarkDirty()
 	cte.positionalRisk.MarkDirty()
 }
@@ -94,8 +89,8 @@ func (cte *CompositeThreatEvaluator) GetRoleWeightedThreat(
 	role := squads.GetSquadPrimaryRole(squadID, cte.manager)
 	weights := GetRoleBehaviorWeights(role)
 
-	meleeThreat := cte.meleeThreat.GetMeleeThreatAt(pos)
-	rangedThreat := cte.rangedThreat.GetRangedPressureAt(pos)
+	meleeThreat := cte.combatThreat.GetMeleeThreatAt(pos)
+	rangedThreat := cte.combatThreat.GetRangedPressureAt(pos)
 	supportValue := cte.supportValue.GetSupportValueAt(pos)
 	positionalRisk := cte.positionalRisk.GetTotalRiskAt(pos)
 
@@ -133,14 +128,21 @@ func (cte *CompositeThreatEvaluator) GetOptimalPositionForRole(
 	return bestPos
 }
 
-// GetMeleeLayer returns direct access to melee layer (for specific queries)
-func (cte *CompositeThreatEvaluator) GetMeleeLayer() *MeleeThreatLayer {
-	return cte.meleeThreat
+// GetCombatLayer returns direct access to the unified combat layer
+func (cte *CompositeThreatEvaluator) GetCombatLayer() *CombatThreatLayer {
+	return cte.combatThreat
 }
 
-// GetRangedLayer returns direct access to ranged layer
-func (cte *CompositeThreatEvaluator) GetRangedLayer() *RangedThreatLayer {
-	return cte.rangedThreat
+// GetMeleeLayer returns the combat layer (provides melee queries)
+// Deprecated: Use GetCombatLayer() instead
+func (cte *CompositeThreatEvaluator) GetMeleeLayer() *CombatThreatLayer {
+	return cte.combatThreat
+}
+
+// GetRangedLayer returns the combat layer (provides ranged queries)
+// Deprecated: Use GetCombatLayer() instead
+func (cte *CompositeThreatEvaluator) GetRangedLayer() *CombatThreatLayer {
+	return cte.combatThreat
 }
 
 // GetSupportLayer returns direct access to support value layer
