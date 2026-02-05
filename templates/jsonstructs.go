@@ -341,6 +341,7 @@ type JSONOverworldConfig struct {
 	StrengthThresholds    StrengthThresholdsConfig    `json:"strengthThresholds"`
 	VictoryConditions     VictoryConditionsConfig     `json:"victoryConditions"`
 	FactionScoringControl FactionScoringControlConfig `json:"factionScoringControl"`
+	StrategyBonuses       map[string]StrategyBonusConfig `json:"strategyBonuses"`
 }
 
 // ThreatGrowthConfig defines threat growth parameters
@@ -423,6 +424,14 @@ type VictoryConditionsConfig struct {
 	HighIntensityThreshold  int     `json:"highIntensityThreshold"`
 	MaxHighIntensityThreats int     `json:"maxHighIntensityThreats"`
 	MaxThreatInfluence      float64 `json:"maxThreatInfluence"`
+}
+
+// StrategyBonusConfig defines per-strategy scoring bonuses
+type StrategyBonusConfig struct {
+	ExpansionBonus     float64 `json:"expansionBonus"`
+	FortificationBonus float64 `json:"fortificationBonus"`
+	RaidingBonus       float64 `json:"raidingBonus"`
+	RetreatPenalty     float64 `json:"retreatPenalty"`
 }
 
 // FactionScoringControlConfig defines faction scoring control parameters

@@ -34,6 +34,15 @@ func init() {
 		MaxTerritorySize:          30,
 	}
 
+	// Set up strategy bonuses (previously hardcoded in archetype.go)
+	templates.OverworldConfigTemplate.StrategyBonuses = map[string]templates.StrategyBonusConfig{
+		"Expansionist": {ExpansionBonus: 3.0, FortificationBonus: 0.0, RaidingBonus: 1.0, RetreatPenalty: 0.0},
+		"Aggressor":    {ExpansionBonus: 2.0, FortificationBonus: 0.0, RaidingBonus: 4.0, RetreatPenalty: 0.0},
+		"Raider":       {ExpansionBonus: 0.0, FortificationBonus: 0.0, RaidingBonus: 5.0, RetreatPenalty: -2.0},
+		"Defensive":    {ExpansionBonus: 0.0, FortificationBonus: 2.0, RaidingBonus: 0.0, RetreatPenalty: 2.0},
+		"Territorial":  {ExpansionBonus: -1.0, FortificationBonus: 1.0, RaidingBonus: 0.0, RetreatPenalty: -3.0},
+	}
+
 	// Set up faction scoring config
 	templates.OverworldConfigTemplate.FactionScoring = templates.FactionScoringConfig{
 		Expansion: templates.ExpansionScoringConfig{

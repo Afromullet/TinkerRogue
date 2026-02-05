@@ -19,15 +19,6 @@ type FactionBonuses struct {
 	RetreatPenalty     float64
 }
 
-// strategyBonuses maps archetype strategies to behavior bonuses
-var strategyBonuses = map[string]FactionBonuses{
-	"Expansionist": {ExpansionBonus: 3.0, FortificationBonus: 0.0, RaidingBonus: 1.0, RetreatPenalty: 0.0},
-	"Aggressor":    {ExpansionBonus: 2.0, FortificationBonus: 0.0, RaidingBonus: 4.0, RetreatPenalty: 0.0},
-	"Raider":       {ExpansionBonus: 0.0, FortificationBonus: 0.0, RaidingBonus: 5.0, RetreatPenalty: -2.0},
-	"Defensive":    {ExpansionBonus: 0.0, FortificationBonus: 2.0, RaidingBonus: 0.0, RetreatPenalty: 2.0},
-	"Territorial":  {ExpansionBonus: -1.0, FortificationBonus: 1.0, RaidingBonus: 0.0, RetreatPenalty: -3.0},
-}
-
 // GetFactionArchetype returns archetype config for a faction type.
 func GetFactionArchetype(factionType core.FactionType) FactionArchetype {
 	factionName := factionType.String()
@@ -44,8 +35,14 @@ func GetFactionArchetype(factionType core.FactionType) FactionArchetype {
 // GetFactionBonuses returns behavior bonuses for a faction type based on its archetype.
 func GetFactionBonuses(factionType core.FactionType) FactionBonuses {
 	archetype := GetFactionArchetype(factionType)
-	if bonuses, ok := strategyBonuses[archetype.Strategy]; ok {
-		return bonuses
+	bonuses := core.GetStrategyBonuses()
+	if cfg, ok := bonuses[archetype.Strategy]; ok {
+		return FactionBonuses{
+			ExpansionBonus:     cfg.ExpansionBonus,
+			FortificationBonus: cfg.FortificationBonus,
+			RaidingBonus:       cfg.RaidingBonus,
+			RetreatPenalty:     cfg.RetreatPenalty,
+		}
 	}
 	return FactionBonuses{}
 }

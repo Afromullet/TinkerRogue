@@ -33,7 +33,7 @@
 	"attackBonus" : 0,
 	  "maxHealth" : 0,
 	  "currentHealth" : 0,
-	  "baseArmorClass" : 0,
+	"baseArmorClass" : 0,
 	  "baseProtection" : 5,
 	  "baseMovementSpeed" :0,
 	  "baseDodgeChance" : 0.3,

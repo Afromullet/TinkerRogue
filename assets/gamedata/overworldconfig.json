@@ -53,5 +53,12 @@
       "smallTerritoryPenalty": -5.0,
       "minTerritorySize": 1
     }
+  },
+  "strategyBonuses": {
+    "Expansionist": { "expansionBonus": 3.0, "fortificationBonus": 0.0, "raidingBonus": 1.0, "retreatPenalty": 0.0 },
+    "Aggressor": { "expansionBonus": 2.0, "fortificationBonus": 0.0, "raidingBonus": 4.0, "retreatPenalty": 0.0 },
+    "Raider": { "expansionBonus": 0.0, "fortificationBonus": 0.0, "raidingBonus": 5.0, "retreatPenalty": -2.0 },
+    "Defensive": { "expansionBonus": 0.0, "fortificationBonus": 2.0, "raidingBonus": 0.0, "retreatPenalty": 2.0 },
+    "Territorial": { "expansionBonus": -1.0, "fortificationBonus": 1.0, "raidingBonus": 0.0, "retreatPenalty": -3.0 }
   }
 }

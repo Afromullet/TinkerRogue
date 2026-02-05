@@ -141,6 +141,13 @@ func GetRetreatScoringParams() (criticalWeakBonus, smallTerritoryPenalty float64
 	return retreat.CriticalWeakBonus, retreat.SmallTerritoryPenalty, retreat.MinTerritorySize
 }
 
+// --- Strategy Bonuses ---
+
+// GetStrategyBonuses returns the strategy bonuses map from config.
+func GetStrategyBonuses() map[string]templates.StrategyBonusConfig {
+	return templates.OverworldConfigTemplate.StrategyBonuses
+}
+
 // --- Threat Type Config ---
 
 // GetThreatTypeParamsFromConfig returns parameters for a threat type.

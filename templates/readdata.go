@@ -609,4 +609,12 @@ func validateOverworldConfig(config *JSONOverworldConfig) {
 	if md.DefaultMapWidth <= 0 || md.DefaultMapHeight <= 0 {
 		panic("Map dimensions must be positive")
 	}
+
+	// Validate strategy bonuses
+	requiredStrategies := []string{"Expansionist", "Aggressor", "Raider", "Defensive", "Territorial"}
+	for _, strategy := range requiredStrategies {
+		if _, ok := config.StrategyBonuses[strategy]; !ok {
+			panic("Missing required strategy bonus: " + strategy)
+		}
+	}
 }
