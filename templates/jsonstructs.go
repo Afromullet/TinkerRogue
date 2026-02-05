@@ -251,6 +251,10 @@ type JSONEncounterDifficulty struct {
 	Name            string  `json:"name"`
 	PowerMultiplier float64 `json:"powerMultiplier"`
 	SquadCount      int     `json:"squadCount"`
+	MinUnitsPerSquad int    `json:"minUnitsPerSquad"`
+	MaxUnitsPerSquad int    `json:"maxUnitsPerSquad"`
+	MinTargetPower  float64 `json:"minTargetPower"`
+	MaxTargetPower  float64 `json:"maxTargetPower"`
 }
 
 // JSONSquadType defines squad type metadata (for future filtering/validation)

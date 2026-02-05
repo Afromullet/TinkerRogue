@@ -202,6 +202,7 @@ func generateEnemySquadsByPower(
 			squadName,
 			pos,
 			config,
+			difficultyMod,
 		)
 
 		if squadID != 0 {
@@ -266,6 +267,7 @@ func createSquadForPowerBudget(
 	name string,
 	position coords.LogicalPosition,
 	config *evaluation.PowerConfig,
+	difficultyMod EncounterDifficultyModifier,
 ) ecs.EntityID {
 	fmt.Printf("[DEBUG] Creating squad '%s' with target power: %.2f\n", name, targetPower)
 
@@ -285,10 +287,10 @@ func createSquadForPowerBudget(
 	unitsToCreate := []squads.UnitTemplate{}
 	currentPower := 0.0
 	// Use safe grid positions that work for 2-wide units (avoid rightmost column)
-	// Pattern: Front row (0,0 and 0,1), middle row (1,0 and 1,1), back row (2,0)
-	gridPositions := [][2]int{{0, 0}, {0, 1}, {1, 0}, {1, 1}, {2, 0}}
+	// Extended pattern to support up to 8 units for Boss difficulty
+	gridPositions := [][2]int{{0, 0}, {0, 1}, {1, 0}, {1, 1}, {2, 0}, {2, 1}, {3, 0}, {3, 1}}
 
-	for currentPower < targetPower && len(unitsToCreate) < MaxUnitsPerSquad {
+	for currentPower < targetPower && len(unitsToCreate) < difficultyMod.MaxUnitsPerSquad {
 		// Pick random unit from pool
 		unit := unitPool[common.RandomInt(len(unitPool))]
 
@@ -315,8 +317,8 @@ func createSquadForPowerBudget(
 
 	fmt.Printf("[DEBUG] After power loop: %d units created\n", len(unitsToCreate))
 
-	// Ensure minimum units
-	for len(unitsToCreate) < MinUnitsPerSquad && len(unitPool) > 0 {
+	// Ensure minimum units based on difficulty
+	for len(unitsToCreate) < difficultyMod.MinUnitsPerSquad && len(unitPool) > 0 {
 		unit := unitPool[common.RandomInt(len(unitPool))]
 		unit.GridRow = gridPositions[len(unitsToCreate)][0]
 		unit.GridCol = gridPositions[len(unitsToCreate)][1]

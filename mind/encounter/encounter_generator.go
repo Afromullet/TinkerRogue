@@ -60,13 +60,13 @@ func GenerateEncounterSpec(
 	difficultyMod := GetDifficultyModifier(level)
 	targetEnemySquadPower := avgPlayerSquadPower * difficultyMod.PowerMultiplier
 
-	// Handle edge cases
+	// Handle edge cases using difficulty-specific power bounds
 	if avgPlayerSquadPower <= 0.0 {
-		targetEnemySquadPower = MinTargetPower
+		targetEnemySquadPower = difficultyMod.MinTargetPower
 		difficultyMod.SquadCount = 1
 	}
-	if targetEnemySquadPower > MaxTargetPower {
-		targetEnemySquadPower = MaxTargetPower
+	if targetEnemySquadPower > difficultyMod.MaxTargetPower {
+		targetEnemySquadPower = difficultyMod.MaxTargetPower
 	}
 
 	fmt.Printf("Generating encounter spec: Avg Power %.2f, Target Power %.2f\n",
