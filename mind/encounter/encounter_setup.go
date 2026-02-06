@@ -7,6 +7,7 @@ import (
 	"game_main/overworld/core"
 	"game_main/tactical/combat"
 	"game_main/tactical/squads"
+	"game_main/templates"
 	"game_main/world/coords"
 
 	"math"
@@ -176,7 +177,7 @@ func generatePlayerSquadPositions(startPos coords.LogicalPosition, count int) []
 func generateEnemySquadsByPower(
 	manager *common.EntityManager,
 	targetSquadPower float64,
-	difficultyMod EncounterDifficultyModifier,
+	difficultyMod templates.JSONEncounterDifficulty,
 	encounterData *core.OverworldEncounterData,
 	playerPos coords.LogicalPosition,
 	config *evaluation.PowerConfig,
@@ -267,7 +268,7 @@ func createSquadForPowerBudget(
 	name string,
 	position coords.LogicalPosition,
 	config *evaluation.PowerConfig,
-	difficultyMod EncounterDifficultyModifier,
+	difficultyMod templates.JSONEncounterDifficulty,
 ) ecs.EntityID {
 	fmt.Printf("[DEBUG] Creating squad '%s' with target power: %.2f\n", name, targetPower)
 

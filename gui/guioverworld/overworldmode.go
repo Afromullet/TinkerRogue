@@ -7,7 +7,6 @@ import (
 	"game_main/gui/framework"
 	"game_main/mind/encounter"
 	"game_main/overworld/core"
-	owencounter "game_main/overworld/overworldencounter"
 	"game_main/overworld/threat"
 	"game_main/overworld/tick"
 	"game_main/overworld/travel"
@@ -349,7 +348,7 @@ func (om *OverworldMode) handleEngageThreat() {
 	}
 
 	// Create encounter entity from threat
-	encounterID, err := owencounter.TriggerCombatFromThreat(om.Context.ECSManager, threatEntity, *posData)
+	encounterID, err := encounter.TriggerCombatFromThreat(om.Context.ECSManager, threatEntity, *posData)
 	if err != nil {
 		om.logEvent(fmt.Sprintf("ERROR: Failed to create encounter: %v", err))
 		return

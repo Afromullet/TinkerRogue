@@ -7,9 +7,7 @@ import (
 	"game_main/common"
 	"game_main/gui/framework"
 	"game_main/overworld/core"
-	owencounter "game_main/overworld/overworldencounter"
 	"game_main/tactical/combat"
-	"game_main/tactical/combatresolution"
 	"game_main/tactical/squads"
 	"game_main/visual/rendering"
 	"game_main/world/coords"
@@ -24,29 +22,6 @@ type ModeCoordinator interface {
 	GetPlayerData() *common.PlayerData
 }
 
-// EncounterOutcome represents the result of an encounter
-type EncounterOutcome int
-
-const (
-	Victory EncounterOutcome = iota // Player won
-	Defeat                          // Player lost
-	Fled                            // Player fled
-)
-
-// String returns a human-readable outcome name
-func (o EncounterOutcome) String() string {
-	switch o {
-	case Victory:
-		return "Victory"
-	case Defeat:
-		return "Defeat"
-	case Fled:
-		return "Fled"
-	default:
-		return "Unknown"
-	}
-}
-
 // CombatExitReason describes why combat ended
 type CombatExitReason int
 
@@ -55,6 +30,20 @@ const (
 	ExitDefeat
 	ExitFlee
 )
+
+// String returns a human-readable name for the exit reason
+func (r CombatExitReason) String() string {
+	switch r {
+	case ExitVictory:
+		return "Victory"
+	case ExitDefeat:
+		return "Defeat"
+	case ExitFlee:
+		return "Fled"
+	default:
+		return "Unknown"
+	}
+}
 
 // CombatResult captures the combat outcome for the exit pipeline.
 // Built by the GUI layer from CombatService.CheckVictoryCondition().
@@ -104,7 +93,7 @@ type CompletedEncounter struct {
 	Duration  time.Duration
 
 	// Outcome
-	Outcome         EncounterOutcome
+	Outcome         CombatExitReason
 	RoundsCompleted int
 	VictorFaction   ecs.EntityID
 	VictorName      string
@@ -118,8 +107,8 @@ type CompletedEncounter struct {
 // - Analytics (win rate, last encounter)
 //
 // What it DOESN'T do (handled by other systems):
-// - Create encounter entities (caller does this via overworld package)
-// - Setup combat (CombatService does this via SetupBalancedEncounter)
+// - Create encounter entities (TriggerCombatFromThreat handles this)
+// - Setup combat (SetupBalancedEncounter in this package handles this)
 // - Resolve combat outcomes (CombatService does this)
 // - Mark threats defeated (CombatService does this)
 type EncounterService struct {
@@ -149,7 +138,7 @@ func NewEncounterService(
 }
 
 // StartEncounter coordinates encounter initialization and spawns enemies.
-// Caller must create the encounter entity first (via overworld.TriggerCombatFromThreat).
+// Caller must create the encounter entity first (via TriggerCombatFromThreat).
 //
 // This method:
 // 1. Validates no encounter is active
@@ -175,12 +164,10 @@ func (es *EncounterService) StartEncounter(
 	}
 
 	// Validate encounter entity exists
-	encounterEntity := es.manager.FindEntityByID(encounterID)
+	encounterEntity, encounterData := es.getEncounterData(encounterID)
 	if encounterEntity == nil {
 		return fmt.Errorf("encounter entity %d not found", encounterID)
 	}
-
-	encounterData := common.GetComponentType[*core.OverworldEncounterData](encounterEntity, core.OverworldEncounterComponent)
 	if encounterData == nil {
 		return fmt.Errorf("encounter %d missing core.OverworldEncounterData", encounterID)
 	}
@@ -271,17 +258,6 @@ func (es *EncounterService) RecordEncounterCompletion(
 		return
 	}
 
-	// Map CombatExitReason to EncounterOutcome
-	var outcome EncounterOutcome
-	switch reason {
-	case ExitVictory:
-		outcome = Victory
-	case ExitDefeat:
-		outcome = Defeat
-	case ExitFlee:
-		outcome = Fled
-	}
-
 	// Create history record
 	completed := &CompletedEncounter{
 		EncounterID:     es.activeEncounter.EncounterID,
@@ -291,7 +267,7 @@ func (es *EncounterService) RecordEncounterCompletion(
 		StartTime:       es.activeEncounter.StartTime,
 		EndTime:         time.Now(),
 		Duration:        time.Since(es.activeEncounter.StartTime),
-		Outcome:         outcome,
+		Outcome:         reason,
 		RoundsCompleted: roundsCompleted,
 		VictorFaction:   victorFaction,
 		VictorName:      victorName,
@@ -311,7 +287,7 @@ func (es *EncounterService) RecordEncounterCompletion(
 	es.activeEncounter = nil
 
 	fmt.Printf("EncounterService: Recorded %s after %d rounds (%.1fs)\n",
-		outcome, roundsCompleted, completed.Duration.Seconds())
+		reason, roundsCompleted, completed.Duration.Seconds())
 }
 
 // === QUERY METHODS ===
@@ -354,19 +330,9 @@ func (es *EncounterService) EndEncounter(
 
 	encounterID := es.activeEncounter.EncounterID
 
-	// Get encounter entity
-	entity := es.manager.FindEntityByID(encounterID)
-	if entity == nil {
-		fmt.Printf("WARNING: Encounter entity %d not found during EndEncounter\n", encounterID)
-		return
-	}
-
-	encounterData := common.GetComponentType[*core.OverworldEncounterData](
-		entity,
-		core.OverworldEncounterComponent,
-	)
-	if encounterData == nil {
-		fmt.Printf("WARNING: Encounter %d missing core.OverworldEncounterData\n", encounterID)
+	entity, encounterData := es.getEncounterData(encounterID)
+	if entity == nil || encounterData == nil {
+		fmt.Printf("WARNING: Encounter entity %d not found or missing data during EndEncounter\n", encounterID)
 		return
 	}
 
@@ -429,13 +395,12 @@ func (es *EncounterService) resolveCombatToOverworld(
 
 	// Get the specific encounter that was assigned to this threat node
 	selectedEncounter := core.GetNodeRegistry().GetEncounterByID(threatData.EncounterID)
-	rewards := owencounter.CalculateRewards(threatData.Intensity, selectedEncounter)
+	rewards := calculateRewards(threatData.Intensity, selectedEncounter)
 
 	// Create combat outcome
-	outcome := combatresolution.CreateCombatOutcome(
+	outcome := createCombatOutcome(
 		threatNodeID,
 		playerVictory,
-		false, // playerRetreat
 		es.activeEncounter.PlayerEntityID,
 		playerSquadIDs,
 		playerUnitsLost,
@@ -444,7 +409,7 @@ func (es *EncounterService) resolveCombatToOverworld(
 	)
 
 	// Apply to overworld
-	if err := combatresolution.ResolveCombatToOverworld(es.manager, outcome); err != nil {
+	if err := applyCombatOutcome(es.manager, outcome); err != nil {
 		fmt.Printf("ERROR resolving combat to overworld: %v\n", err)
 	} else {
 		fmt.Printf("Combat resolved to overworld: %d enemy killed, %d player lost\n",
@@ -530,26 +495,18 @@ func (es *EncounterService) RestoreEncounterSprite() {
 		return
 	}
 
-	encounterID := es.activeEncounter.EncounterID
-	entity := es.manager.FindEntityByID(encounterID)
-	if entity == nil {
+	entity, encounterData := es.getEncounterData(es.activeEncounter.EncounterID)
+	if entity == nil || encounterData == nil || encounterData.IsDefeated {
 		return
 	}
 
-	// Only restore if not already defeated
-	encounterData := common.GetComponentType[*core.OverworldEncounterData](
+	renderable := common.GetComponentType[*rendering.Renderable](
 		entity,
-		core.OverworldEncounterComponent,
+		rendering.RenderableComponent,
 	)
-	if encounterData != nil && !encounterData.IsDefeated {
-		renderable := common.GetComponentType[*rendering.Renderable](
-			entity,
-			rendering.RenderableComponent,
-		)
-		if renderable != nil {
-			renderable.Visible = true
-			fmt.Println("Restoring overworld encounter sprite after fleeing")
-		}
+	if renderable != nil {
+		renderable.Visible = true
+		fmt.Println("Restoring overworld encounter sprite after fleeing")
 	}
 }
 
@@ -587,46 +544,51 @@ func (es *EncounterService) ExitCombat(
 	}
 }
 
-// resolveFleeToOverworld creates a retreat CombatOutcome and sends it through
-// the existing resolution pipeline. No rewards, no casualties applied.
+// resolveFleeToOverworld logs the retreat event to overworld.
+// No rewards, no casualties, no threat changes.
 func (es *EncounterService) resolveFleeToOverworld() {
 	if es.activeEncounter == nil {
 		return
 	}
 
-	encounterID := es.activeEncounter.EncounterID
-	entity := es.manager.FindEntityByID(encounterID)
-	if entity == nil {
-		return
-	}
-
-	encounterData := common.GetComponentType[*core.OverworldEncounterData](
-		entity, core.OverworldEncounterComponent,
-	)
+	_, encounterData := es.getEncounterData(es.activeEncounter.EncounterID)
 	if encounterData == nil || encounterData.ThreatNodeID == 0 {
 		return
 	}
 
-	// Build retreat outcome — no casualties, no rewards
-	outcome := combatresolution.CreateCombatOutcome(
-		encounterData.ThreatNodeID,
-		false, // playerVictory
-		true,  // playerRetreat
-		es.activeEncounter.PlayerEntityID,
-		es.getAllPlayerSquadIDs(),
-		0, // playerUnitsLost
-		0, // enemyUnitsKilled
-		owencounter.RewardTable{},
-	)
+	threatNodeID := encounterData.ThreatNodeID
 
-	if err := combatresolution.ResolveCombatToOverworld(es.manager, outcome); err != nil {
-		fmt.Printf("ERROR resolving flee to overworld: %v\n", err)
-	} else {
-		fmt.Println("Flee resolved to overworld (no changes to threat)")
+	// Log retreat event
+	tickState := core.GetTickState(es.manager)
+	currentTick := int64(0)
+	if tickState != nil {
+		currentTick = tickState.CurrentTick
 	}
+
+	core.LogEvent(core.EventCombatResolved, currentTick, threatNodeID,
+		fmt.Sprintf("Retreated from threat %d", threatNodeID),
+		map[string]interface{}{
+			"victory":            false,
+			"retreat":            true,
+			"player_units_lost":  0,
+			"enemy_units_killed": 0,
+		})
+
+	fmt.Printf("Retreated from threat %d (no changes)\n", threatNodeID)
 }
 
 // === PRIVATE HELPER METHODS ===
+
+// getEncounterData looks up an encounter entity and its OverworldEncounterData.
+// Returns (nil, nil) if either the entity or the component is missing.
+func (es *EncounterService) getEncounterData(encounterID ecs.EntityID) (*ecs.Entity, *core.OverworldEncounterData) {
+	entity := es.manager.FindEntityByID(encounterID)
+	if entity == nil {
+		return nil, nil
+	}
+	data := common.GetComponentType[*core.OverworldEncounterData](entity, core.OverworldEncounterComponent)
+	return entity, data
+}
 
 // getPlayerPosition returns the player's current position, or nil if unavailable.
 // This centralizes the nil-check pattern for modeCoordinator -> PlayerData -> Pos.

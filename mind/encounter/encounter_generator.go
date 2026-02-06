@@ -57,7 +57,7 @@ func GenerateEncounterSpec(
 	if encounterData != nil {
 		level = encounterData.Level
 	}
-	difficultyMod := GetDifficultyModifier(level)
+	difficultyMod := getDifficultyModifier(level)
 	targetEnemySquadPower := avgPlayerSquadPower * difficultyMod.PowerMultiplier
 
 	// Handle edge cases using difficulty-specific power bounds
@@ -97,6 +97,3 @@ func GenerateEncounterSpec(
 		PlayerStartPos: playerStartPos,
 	}, nil
 }
-
-// Note: generateEnemySquadsByPower and generateEnemyPosition are defined in encounter_setup.go
-// and shared by both GenerateEncounterSpec and SetupBalancedEncounter

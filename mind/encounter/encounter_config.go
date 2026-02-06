@@ -5,39 +5,27 @@ import (
 	"game_main/templates"
 )
 
-// GetDifficultyModifier retrieves difficulty settings for a given encounter level.
+// getDifficultyModifier retrieves difficulty settings for a given encounter level.
 // Falls back to level 3 (fair fight) if level is invalid.
-func GetDifficultyModifier(level int) EncounterDifficultyModifier {
+func getDifficultyModifier(level int) templates.JSONEncounterDifficulty {
 	// Search for matching difficulty level in templates
-	for _, template := range templates.EncounterDifficultyTemplates {
-		if template.Level == level {
-			return EncounterDifficultyModifier{
-				PowerMultiplier:  template.PowerMultiplier,
-				SquadCount:       template.SquadCount,
-				MinUnitsPerSquad: template.MinUnitsPerSquad,
-				MaxUnitsPerSquad: template.MaxUnitsPerSquad,
-				MinTargetPower:   template.MinTargetPower,
-				MaxTargetPower:   template.MaxTargetPower,
-			}
+	for _, t := range templates.EncounterDifficultyTemplates {
+		if t.Level == level {
+			return t
 		}
 	}
 
 	// Fallback to level 3 (fair fight) if not found
-	for _, template := range templates.EncounterDifficultyTemplates {
-		if template.Level == 3 {
-			return EncounterDifficultyModifier{
-				PowerMultiplier:  template.PowerMultiplier,
-				SquadCount:       template.SquadCount,
-				MinUnitsPerSquad: template.MinUnitsPerSquad,
-				MaxUnitsPerSquad: template.MaxUnitsPerSquad,
-				MinTargetPower:   template.MinTargetPower,
-				MaxTargetPower:   template.MaxTargetPower,
-			}
+	for _, t := range templates.EncounterDifficultyTemplates {
+		if t.Level == 3 {
+			return t
 		}
 	}
 
 	// Last resort fallback (should never happen if JSON loads correctly)
-	return EncounterDifficultyModifier{
+	return templates.JSONEncounterDifficulty{
+		Level:            3,
+		Name:             "Fair Fight",
 		PowerMultiplier:  1.0,
 		SquadCount:       4,
 		MinUnitsPerSquad: 3,

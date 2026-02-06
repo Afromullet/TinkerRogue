@@ -31,16 +31,6 @@ const (
 	DefaultPowerProfile = "Balanced" // Default power calculation profile
 )
 
-// EncounterDifficultyModifier defines how encounter level scales enemy power
-type EncounterDifficultyModifier struct {
-	PowerMultiplier  float64 // Multiply player power by this (e.g., 0.7 for easier, 1.5 for harder)
-	SquadCount       int     // Fixed number of enemy squads
-	MinUnitsPerSquad int     // Minimum units to ensure in a squad
-	MaxUnitsPerSquad int     // Maximum units allowed in a squad
-	MinTargetPower   float64 // Minimum target power for encounters
-	MaxTargetPower   float64 // Maximum target power cap
-}
-
 // EncounterSpec describes what to create for an encounter.
 // Pure data structure - no combat references.
 // This allows encounter generation to be decoupled from combat setup.
