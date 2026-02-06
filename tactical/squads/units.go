@@ -35,6 +35,7 @@ type UnitTemplate struct {
 	RequiresActive bool    // If true, dead/stunned units don't provide cover
 	AttackRange    int     // World-based attack range (Melee=1, Ranged=3, Magic=4)
 	MovementSpeed  int     // Movement speed on world map (1 tile per speed point)
+	StatGrowths    StatGrowthData // Per-stat growth rates for leveling
 }
 
 // Creates the Unit entities used in the Squad
@@ -76,6 +77,16 @@ func CreateUnitTemplates(monsterData templates.JSONMonster) (UnitTemplate, error
 		GameMap:   nil, // GameMap will be set when squad is placed
 	}
 
+	// Parse stat growth grades from JSON
+	growths := StatGrowthData{
+		Strength:   GrowthGrade(monsterData.StatGrowths.Strength),
+		Dexterity:  GrowthGrade(monsterData.StatGrowths.Dexterity),
+		Magic:      GrowthGrade(monsterData.StatGrowths.Magic),
+		Leadership: GrowthGrade(monsterData.StatGrowths.Leadership),
+		Armor:      GrowthGrade(monsterData.StatGrowths.Armor),
+		Weapon:     GrowthGrade(monsterData.StatGrowths.Weapon),
+	}
+
 	unit := UnitTemplate{
 		Name:           monsterData.Name,
 		Attributes:     monsterData.Attributes.NewAttributesFromJson(),
@@ -95,6 +106,7 @@ func CreateUnitTemplates(monsterData templates.JSONMonster) (UnitTemplate, error
 		RequiresActive: monsterData.RequiresActive,
 		AttackRange:    monsterData.AttackRange,
 		MovementSpeed:  monsterData.MovementSpeed,
+		StatGrowths:    growths,
 	}
 
 	return unit, nil
@@ -251,6 +263,23 @@ func CreateUnitEntity(squadmanager *common.EntityManager, unit UnitTemplate) (*e
 	// Add movement speed component
 	unitEntity.AddComponent(MovementSpeedComponent, &MovementSpeedData{
 		Speed: unit.MovementSpeed,
+	})
+
+	// Add experience component (all units start at level 1 with 0 XP)
+	unitEntity.AddComponent(ExperienceComponent, &ExperienceData{
+		Level:         1,
+		CurrentXP:     0,
+		XPToNextLevel: 100,
+	})
+
+	// Add stat growth component
+	unitEntity.AddComponent(StatGrowthComponent, &StatGrowthData{
+		Strength:   unit.StatGrowths.Strength,
+		Dexterity:  unit.StatGrowths.Dexterity,
+		Magic:      unit.StatGrowths.Magic,
+		Leadership: unit.StatGrowths.Leadership,
+		Armor:      unit.StatGrowths.Armor,
+		Weapon:     unit.StatGrowths.Weapon,
 	})
 
 	return unitEntity, nil

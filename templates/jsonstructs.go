@@ -117,6 +117,17 @@ func NewJSONRangedWeapon(r JSONWeapon) JSONRangedWeapon {
 
 }
 
+// JSONStatGrowths defines per-stat growth rate grades for leveling.
+// Each field is a grade string: S, A, B, C, D, E, or F.
+type JSONStatGrowths struct {
+	Strength   string `json:"strength"`
+	Dexterity  string `json:"dexterity"`
+	Magic      string `json:"magic"`
+	Leadership string `json:"leadership"`
+	Armor      string `json:"armor"`
+	Weapon     string `json:"weapon"`
+}
+
 type JSONMonster struct {
 	Name       string         `json:"name"`
 	ImageName  string         `json:"imgname"`
@@ -134,6 +145,8 @@ type JSONMonster struct {
 	RequiresActive bool    `json:"requiresActive"` // If true, dead/stunned units don't provide cover
 	AttackRange    int     `json:"attackRange"`    // World-based attack range (Melee=1, Ranged=3, Magic=4)
 	MovementSpeed  int     `json:"movementSpeed"`  // Movement speed on world map (1 tile per speed point)
+
+	StatGrowths JSONStatGrowths `json:"statGrowths"` // Per-stat growth rate grades for leveling
 }
 
 func NewJSONMonster(m JSONMonster) JSONMonster {
@@ -152,6 +165,7 @@ func NewJSONMonster(m JSONMonster) JSONMonster {
 		RequiresActive: m.RequiresActive,
 		AttackRange:    m.AttackRange,
 		MovementSpeed:  m.MovementSpeed,
+		StatGrowths:    m.StatGrowths,
 	}
 }
 

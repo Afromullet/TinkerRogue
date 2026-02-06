@@ -20,7 +20,8 @@
       "coverRange": 2,
       "requiresActive": true,
       "attackRange": 1,
-      "movementSpeed": 2
+      "movementSpeed": 2,
+      "statGrowths": { "strength": "A", "dexterity": "C", "magic": "F", "leadership": "B", "armor": "A", "weapon": "B" }
     },
     {
       "name": "Paladin",
@@ -42,7 +43,8 @@
       "coverRange": 1,
       "requiresActive": true,
       "attackRange": 1,
-      "movementSpeed": 2
+      "movementSpeed": 2,
+      "statGrowths": { "strength": "B", "dexterity": "D", "magic": "B", "leadership": "S", "armor": "B", "weapon": "C" }
     },
     {
       "name": "Fighter",
@@ -64,7 +66,8 @@
       "coverRange": 1,
       "requiresActive": true,
       "attackRange": 1,
-      "movementSpeed": 3
+      "movementSpeed": 3,
+      "statGrowths": { "strength": "A", "dexterity": "B", "magic": "F", "leadership": "D", "armor": "B", "weapon": "A" }
     },
     {
       "name": "Warrior",
@@ -86,7 +89,8 @@
       "coverRange": 0,
       "requiresActive": false,
       "attackRange": 1,
-      "movementSpeed": 3
+      "movementSpeed": 3,
+      "statGrowths": { "strength": "B", "dexterity": "B", "magic": "F", "leadership": "D", "armor": "C", "weapon": "A" }
     },
     {
       "name": "Swordsman",
@@ -108,7 +112,8 @@
       "coverRange": 0,
       "requiresActive": false,
       "attackRange": 1,
-      "movementSpeed": 4
+      "movementSpeed": 4,
+      "statGrowths": { "strength": "C", "dexterity": "S", "magic": "F", "leadership": "E", "armor": "D", "weapon": "A" }
     },
     {
       "name": "Spearman",
@@ -130,7 +135,8 @@
       "coverRange": 1,
       "requiresActive": true,
       "attackRange": 2,
-      "movementSpeed": 3
+      "movementSpeed": 3,
+      "statGrowths": { "strength": "B", "dexterity": "C", "magic": "F", "leadership": "C", "armor": "A", "weapon": "B" }
     },
     {
       "name": "Rogue",
@@ -152,7 +158,8 @@
       "coverRange": 0,
       "requiresActive": false,
       "attackRange": 1,
-      "movementSpeed": 5
+      "movementSpeed": 5,
+      "statGrowths": { "strength": "D", "dexterity": "S", "magic": "F", "leadership": "E", "armor": "E", "weapon": "B" }
     },
     {
       "name": "Assassin",
@@ -174,7 +181,8 @@
       "coverRange": 0,
       "requiresActive": false,
       "attackRange": 1,
-      "movementSpeed": 5
+      "movementSpeed": 5,
+      "statGrowths": { "strength": "D", "dexterity": "S", "magic": "F", "leadership": "F", "armor": "E", "weapon": "A" }
     },
     {
       "name": "Scout",
@@ -196,7 +204,8 @@
       "coverRange": 1,
       "requiresActive": false,
       "attackRange": 3,
-      "movementSpeed": 5
+      "movementSpeed": 5,
+      "statGrowths": { "strength": "D", "dexterity": "A", "magic": "E", "leadership": "B", "armor": "D", "weapon": "C" }
     },
     {
       "name": "Archer",
@@ -218,7 +227,8 @@
       "coverRange": 0,
       "requiresActive": false,
       "attackRange": 4,
-      "movementSpeed": 3
+      "movementSpeed": 3,
+      "statGrowths": { "strength": "D", "dexterity": "A", "magic": "F", "leadership": "D", "armor": "E", "weapon": "A" }
     },
     {
       "name": "Ranger",
@@ -240,7 +250,8 @@
       "coverRange": 1,
       "requiresActive": false,
       "attackRange": 3,
-      "movementSpeed": 4
+      "movementSpeed": 4,
+      "statGrowths": { "strength": "C", "dexterity": "A", "magic": "C", "leadership": "B", "armor": "C", "weapon": "B" }
     },
     {
       "name": "Crossbowman",
@@ -262,7 +273,8 @@
       "coverRange": 0,
       "requiresActive": false,
       "attackRange": 3,
-      "movementSpeed": 3
+      "movementSpeed": 3,
+      "statGrowths": { "strength": "C", "dexterity": "B", "magic": "F", "leadership": "D", "armor": "D", "weapon": "A" }
     },
     {
       "name": "Marksman",
@@ -284,7 +296,8 @@
       "coverRange": 0,
       "requiresActive": false,
       "attackRange": 4,
-      "movementSpeed": 3
+      "movementSpeed": 3,
+      "statGrowths": { "strength": "D", "dexterity": "S", "magic": "F", "leadership": "E", "armor": "E", "weapon": "A" }
     },
     {
       "name": "Wizard",
@@ -306,7 +319,8 @@
       "coverRange": 0,
       "requiresActive": false,
       "attackRange": 4,
-      "movementSpeed": 2
+      "movementSpeed": 2,
+      "statGrowths": { "strength": "D", "dexterity": "D", "magic": "S", "leadership": "C", "armor": "E", "weapon": "F" }
     },
     {
       "name": "Sorcerer",
@@ -328,7 +342,8 @@
       "coverRange": 0,
       "requiresActive": false,
       "attackRange": 3,
-      "movementSpeed": 2
+      "movementSpeed": 2,
+      "statGrowths": { "strength": "D", "dexterity": "C", "magic": "A", "leadership": "C", "armor": "D", "weapon": "E" }
     },
     {
       "name": "Mage",
@@ -350,7 +365,8 @@
       "coverRange": 1,
       "requiresActive": false,
       "attackRange": 3,
-      "movementSpeed": 2
+      "movementSpeed": 2,
+      "statGrowths": { "strength": "D", "dexterity": "D", "magic": "A", "leadership": "B", "armor": "D", "weapon": "F" }
     },
     {
       "name": "Cleric",
@@ -372,7 +388,8 @@
       "coverRange": 2,
       "requiresActive": true,
       "attackRange": 2,
-      "movementSpeed": 3
+      "movementSpeed": 3,
+      "statGrowths": { "strength": "E", "dexterity": "D", "magic": "A", "leadership": "S", "armor": "C", "weapon": "E" }
     },
     {
       "name": "Priest",
@@ -394,7 +411,8 @@
       "coverRange": 2,
       "requiresActive": true,
       "attackRange": 2,
-      "movementSpeed": 3
+      "movementSpeed": 3,
+      "statGrowths": { "strength": "E", "dexterity": "D", "magic": "B", "leadership": "S", "armor": "D", "weapon": "E" }
     },
     {
       "name": "Warlock",
@@ -416,7 +434,8 @@
       "coverRange": 0,
       "requiresActive": false,
       "attackRange": 4,
-      "movementSpeed": 3
+      "movementSpeed": 3,
+      "statGrowths": { "strength": "E", "dexterity": "C", "magic": "S", "leadership": "D", "armor": "E", "weapon": "D" }
     },
     {
       "name": "Battle Mage",
@@ -438,7 +457,8 @@
       "coverRange": 1,
       "requiresActive": false,
       "attackRange": 2,
-      "movementSpeed": 3
+      "movementSpeed": 3,
+      "statGrowths": { "strength": "B", "dexterity": "B", "magic": "B", "leadership": "B", "armor": "C", "weapon": "C" }
     },
     {
       "name": "Orc Warrior",
@@ -460,7 +480,8 @@
       "coverRange": 2,
       "requiresActive": true,
       "attackRange": 1,
-      "movementSpeed": 2
+      "movementSpeed": 2,
+      "statGrowths": { "strength": "S", "dexterity": "D", "magic": "F", "leadership": "C", "armor": "A", "weapon": "B" }
     },
     {
       "name": "Goblin Raider",
@@ -482,7 +503,8 @@
       "coverRange": 0,
       "requiresActive": false,
       "attackRange": 1,
-      "movementSpeed": 4
+      "movementSpeed": 4,
+      "statGrowths": { "strength": "D", "dexterity": "A", "magic": "F", "leadership": "C", "armor": "E", "weapon": "C" }
     },
     {
       "name": "Ogre",
@@ -504,7 +526,8 @@
       "coverRange": 2,
       "requiresActive": true,
       "attackRange": 1,
-      "movementSpeed": 2
+      "movementSpeed": 2,
+      "statGrowths": { "strength": "S", "dexterity": "E", "magic": "F", "leadership": "E", "armor": "S", "weapon": "B" }
     },
     {
       "name": "Skeleton Archer",
@@ -526,7 +549,8 @@
       "coverRange": 0,
       "requiresActive": false,
       "attackRange": 3,
-      "movementSpeed": 3
+      "movementSpeed": 3,
+      "statGrowths": { "strength": "E", "dexterity": "B", "magic": "C", "leadership": "B", "armor": "F", "weapon": "C" }
     }
   ]
 }

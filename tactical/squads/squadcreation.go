@@ -311,6 +311,23 @@ func CreateSquadFromTemplate(
 			Speed: template.MovementSpeed,
 		})
 
+		// Add experience component (all units start at level 1 with 0 XP)
+		unitEntity.AddComponent(ExperienceComponent, &ExperienceData{
+			Level:         1,
+			CurrentXP:     0,
+			XPToNextLevel: 100,
+		})
+
+		// Add stat growth component
+		unitEntity.AddComponent(StatGrowthComponent, &StatGrowthData{
+			Strength:   template.StatGrowths.Strength,
+			Dexterity:  template.StatGrowths.Dexterity,
+			Magic:      template.StatGrowths.Magic,
+			Leadership: template.StatGrowths.Leadership,
+			Armor:      template.StatGrowths.Armor,
+			Weapon:     template.StatGrowths.Weapon,
+		})
+
 		// Add leader component if needed
 		if template.IsLeader {
 			unitEntity.AddComponent(LeaderComponent, &LeaderData{

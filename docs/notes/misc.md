@@ -89,6 +89,12 @@ deadcode ./...
 
 deadcode -test ./...
 
+
+# Checking for Unused Variables
+
+golangci-lint run
+
+
 ---------------------------
 
 ### Combat Visualizer ###

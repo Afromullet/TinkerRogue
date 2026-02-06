@@ -9,14 +9,6 @@ import (
 	"github.com/bytearena/ecs"
 )
 
-// ThreatType distinguishes between melee and ranged threats
-type ThreatType int
-
-const (
-	ThreatTypeMelee ThreatType = iota
-	ThreatTypeRanged
-)
-
 // CombatThreatLayer computes both melee and ranged threats from enemy squads.
 // This is a unified layer that replaces the separate MeleeThreatLayer and RangedThreatLayer.
 //
@@ -26,13 +18,13 @@ type CombatThreatLayer struct {
 	*ThreatLayerBase
 
 	// Melee threat data
-	meleeThreatByPos   map[coords.LogicalPosition]float64 // Position -> melee threat value
-	meleeThreatBySquad map[ecs.EntityID]float64           // Squad -> total melee threat emitted
-	meleeEffectiveRange map[ecs.EntityID]int              // Squad -> max melee engagement range
+	meleeThreatByPos    map[coords.LogicalPosition]float64 // Position -> melee threat value
+	meleeThreatBySquad  map[ecs.EntityID]float64           // Squad -> total melee threat emitted
+	meleeEffectiveRange map[ecs.EntityID]int               // Squad -> max melee engagement range
 
 	// Ranged threat data
-	rangedPressureByPos map[coords.LogicalPosition]float64         // Position -> ranged pressure
-	lineOfFireZones     map[ecs.EntityID][]coords.LogicalPosition  // Squad -> threatened positions
+	rangedPressureByPos map[coords.LogicalPosition]float64        // Position -> ranged pressure
+	lineOfFireZones     map[ecs.EntityID][]coords.LogicalPosition // Squad -> threatened positions
 
 	// Dependencies
 	baseThreatMgr *FactionThreatLevelManager
