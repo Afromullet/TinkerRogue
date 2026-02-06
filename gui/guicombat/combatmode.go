@@ -51,6 +51,9 @@ type CombatMode struct {
 	// Victory tracking (cached to avoid redundant checks)
 	lastVictoryResult *combatservices.VictoryCheckResult
 
+	// Flee tracking
+	fleeRequested bool
+
 	// Debug support
 	debugLogger *framework.DebugLogger
 }
@@ -287,10 +290,14 @@ func (cm *CombatMode) handleFlee() {
 	combatLogArea := GetCombatLogTextArea(cm.Panels)
 	cm.logManager.UpdateTextArea(combatLogArea, "Fleeing from combat...")
 
-	// Restore encounter sprite so player can re-engage later
-	if cm.encounterService != nil {
-		cm.encounterService.RestoreEncounterSprite()
+	rounds := cm.combatService.TurnManager.GetCurrentRound()
+	cm.lastVictoryResult = &combatservices.VictoryCheckResult{
+		BattleOver:      true,
+		IsPlayerVictory: false,
+		VictorName:      "Retreat",
+		RoundsCompleted: rounds,
 	}
+	cm.fleeRequested = true
 
 	if exploreMode, exists := cm.ModeManager.GetMode("exploration"); exists {
 		cm.ModeManager.RequestTransition(exploreMode, "Fled from combat")
@@ -568,33 +575,30 @@ func (cm *CombatMode) Exit(toMode framework.UIMode) error {
 			victor = cm.combatService.CheckVictoryCondition()
 		}
 
-		// End encounter (marks defeated, applies resolution) and record to history
-		if cm.encounterService != nil {
-			cm.encounterService.EndEncounter(
-				victor.IsPlayerVictory,
-				victor.VictorFaction,
-				victor.VictorName,
-				victor.RoundsCompleted,
-				victor.DefeatedFactions,
-			)
-			cm.encounterService.RecordEncounterCompletion(
-				victor.IsPlayerVictory,
-				victor.VictorFaction,
-				victor.VictorName,
-				victor.RoundsCompleted,
-			)
+		// Determine exit reason
+		reason := encounter.ExitDefeat
+		if cm.fleeRequested {
+			reason = encounter.ExitFlee
+			cm.fleeRequested = false
+		} else if victor.IsPlayerVictory {
+			reason = encounter.ExitVictory
 		}
 
-		// Cleanup all combat entities (needs enemy squad IDs from encounter service)
-		enemySquadIDs := []ecs.EntityID{}
+		// Single call handles: overworld resolution, history recording, entity cleanup
 		if cm.encounterService != nil {
-			enemySquadIDs = cm.encounterService.GetEnemySquadIDs()
+			cm.encounterService.ExitCombat(reason,
+				&encounter.CombatResult{
+					IsPlayerVictory:  victor.IsPlayerVictory,
+					VictorFaction:    victor.VictorFaction,
+					VictorName:       victor.VictorName,
+					RoundsCompleted:  victor.RoundsCompleted,
+					DefeatedFactions: victor.DefeatedFactions,
+				},
+				cm.combatService)
 		}
-		cm.combatService.CleanupCombat(enemySquadIDs)
 
-		// Export battle log if enabled
+		// Export battle log if enabled (GUI-only concern, stays here)
 		if config.ENABLE_COMBAT_LOG_EXPORT && cm.combatService.BattleRecorder != nil && cm.combatService.BattleRecorder.IsEnabled() {
-			// Reuse the victory result instead of recalculating
 			victoryInfo := &battlelog.VictoryInfo{
 				RoundsCompleted: victor.RoundsCompleted,
 				VictorFaction:   victor.VictorFaction,

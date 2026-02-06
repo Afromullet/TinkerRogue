@@ -30,7 +30,7 @@ type EncounterOutcome int
 const (
 	Victory EncounterOutcome = iota // Player won
 	Defeat                          // Player lost
-	Fled                            // Player fled (not implemented yet)
+	Fled                            // Player fled
 )
 
 // String returns a human-readable outcome name
@@ -45,6 +45,31 @@ func (o EncounterOutcome) String() string {
 	default:
 		return "Unknown"
 	}
+}
+
+// CombatExitReason describes why combat ended
+type CombatExitReason int
+
+const (
+	ExitVictory CombatExitReason = iota
+	ExitDefeat
+	ExitFlee
+)
+
+// CombatResult captures the combat outcome for the exit pipeline.
+// Built by the GUI layer from CombatService.CheckVictoryCondition().
+type CombatResult struct {
+	IsPlayerVictory  bool
+	VictorFaction    ecs.EntityID
+	VictorName       string
+	RoundsCompleted  int
+	DefeatedFactions []ecs.EntityID
+}
+
+// CombatCleaner handles entity disposal when exiting combat.
+// Implemented by CombatService (satisfies via Go structural typing, no import needed).
+type CombatCleaner interface {
+	CleanupCombat(enemySquadIDs []ecs.EntityID)
 }
 
 // ActiveEncounter holds context for the currently active encounter
@@ -236,7 +261,7 @@ func (es *EncounterService) StartEncounter(
 // This does NOT handle resolution - CombatService handles that.
 // This just tracks what happened for analytics/debugging.
 func (es *EncounterService) RecordEncounterCompletion(
-	isPlayerVictory bool,
+	reason CombatExitReason,
 	victorFaction ecs.EntityID,
 	victorName string,
 	roundsCompleted int,
@@ -246,12 +271,15 @@ func (es *EncounterService) RecordEncounterCompletion(
 		return
 	}
 
-	// Determine outcome
+	// Map CombatExitReason to EncounterOutcome
 	var outcome EncounterOutcome
-	if isPlayerVictory {
+	switch reason {
+	case ExitVictory:
 		outcome = Victory
-	} else {
+	case ExitDefeat:
 		outcome = Defeat
+	case ExitFlee:
+		outcome = Fled
 	}
 
 	// Create history record
@@ -383,8 +411,8 @@ func (es *EncounterService) resolveCombatToOverworld(
 	// Calculate casualties
 	playerUnitsLost, enemyUnitsKilled := es.calculateCasualties(victorFaction, defeatedFactions)
 
-	// Get player squad ID (use first from roster)
-	playerSquadID := es.getFirstPlayerSquadID()
+	// Get all player squad IDs for reward distribution
+	playerSquadIDs := es.getAllPlayerSquadIDs()
 
 	// Calculate rewards from threat
 	threatEntity := es.manager.FindEntityByID(threatNodeID)
@@ -407,8 +435,9 @@ func (es *EncounterService) resolveCombatToOverworld(
 	outcome := combatresolution.CreateCombatOutcome(
 		threatNodeID,
 		playerVictory,
-		false, // playerRetreat - not implemented yet
-		playerSquadID,
+		false, // playerRetreat
+		es.activeEncounter.PlayerEntityID,
+		playerSquadIDs,
 		playerUnitsLost,
 		enemyUnitsKilled,
 		rewards,
@@ -481,17 +510,17 @@ func (es *EncounterService) calculateCasualties(
 	return playerUnitsLost, enemyUnitsKilled
 }
 
-// getFirstPlayerSquadID returns the first player squad ID found
-func (es *EncounterService) getFirstPlayerSquadID() ecs.EntityID {
+// getAllPlayerSquadIDs returns all player squad IDs from the roster
+func (es *EncounterService) getAllPlayerSquadIDs() []ecs.EntityID {
 	if es.activeEncounter == nil {
-		return 0
+		return nil
 	}
 
 	roster := squads.GetPlayerSquadRoster(es.activeEncounter.PlayerEntityID, es.manager)
 	if roster != nil && len(roster.OwnedSquads) > 0 {
-		return roster.OwnedSquads[0]
+		return roster.OwnedSquads
 	}
-	return 0
+	return nil
 }
 
 // RestoreEncounterSprite restores the encounter sprite visibility when fleeing combat.
@@ -521,6 +550,79 @@ func (es *EncounterService) RestoreEncounterSprite() {
 			renderable.Visible = true
 			fmt.Println("Restoring overworld encounter sprite after fleeing")
 		}
+	}
+}
+
+// ExitCombat is the single unified exit point for all combat endings.
+// All paths (victory, defeat, flee) MUST use this method.
+func (es *EncounterService) ExitCombat(
+	reason CombatExitReason,
+	result *CombatResult,
+	combatCleaner CombatCleaner,
+) {
+	if es.activeEncounter == nil {
+		return
+	}
+
+	// Capture before RecordEncounterCompletion clears activeEncounter
+	enemySquadIDs := es.activeEncounter.EnemySquadIDs
+
+	// Step 1: Resolve combat outcome to overworld
+	switch reason {
+	case ExitVictory, ExitDefeat:
+		es.EndEncounter(result.IsPlayerVictory, result.VictorFaction,
+			result.VictorName, result.RoundsCompleted, result.DefeatedFactions)
+	case ExitFlee:
+		es.RestoreEncounterSprite()
+		es.resolveFleeToOverworld()
+	}
+
+	// Step 2: Record history + restore player position
+	es.RecordEncounterCompletion(reason, result.VictorFaction,
+		result.VictorName, result.RoundsCompleted)
+
+	// Step 3: Clean up all combat entities
+	if combatCleaner != nil {
+		combatCleaner.CleanupCombat(enemySquadIDs)
+	}
+}
+
+// resolveFleeToOverworld creates a retreat CombatOutcome and sends it through
+// the existing resolution pipeline. No rewards, no casualties applied.
+func (es *EncounterService) resolveFleeToOverworld() {
+	if es.activeEncounter == nil {
+		return
+	}
+
+	encounterID := es.activeEncounter.EncounterID
+	entity := es.manager.FindEntityByID(encounterID)
+	if entity == nil {
+		return
+	}
+
+	encounterData := common.GetComponentType[*core.OverworldEncounterData](
+		entity, core.OverworldEncounterComponent,
+	)
+	if encounterData == nil || encounterData.ThreatNodeID == 0 {
+		return
+	}
+
+	// Build retreat outcome — no casualties, no rewards
+	outcome := combatresolution.CreateCombatOutcome(
+		encounterData.ThreatNodeID,
+		false, // playerVictory
+		true,  // playerRetreat
+		es.activeEncounter.PlayerEntityID,
+		es.getAllPlayerSquadIDs(),
+		0, // playerUnitsLost
+		0, // enemyUnitsKilled
+		owencounter.RewardTable{},
+	)
+
+	if err := combatresolution.ResolveCombatToOverworld(es.manager, outcome); err != nil {
+		fmt.Printf("ERROR resolving flee to overworld: %v\n", err)
+	} else {
+		fmt.Println("Flee resolved to overworld (no changes to threat)")
 	}
 }
 

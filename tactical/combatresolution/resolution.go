@@ -2,23 +2,27 @@ package combatresolution
 
 import (
 	"fmt"
+	"math/rand"
+	"time"
 
 	"game_main/common"
 	"game_main/overworld/core"
 	owencounter "game_main/overworld/overworldencounter"
 	"game_main/overworld/threat"
+	"game_main/tactical/squads"
 
 	"github.com/bytearena/ecs"
 )
 
 // CombatOutcome describes result of a tactical battle
 type CombatOutcome struct {
-	ThreatNodeID  ecs.EntityID
-	PlayerVictory bool
-	PlayerRetreat bool
-	PlayerSquadID ecs.EntityID
-	Casualties    CasualtyReport
-	RewardsEarned owencounter.RewardTable
+	ThreatNodeID   ecs.EntityID
+	PlayerVictory  bool
+	PlayerRetreat  bool
+	PlayerEntityID ecs.EntityID
+	PlayerSquadIDs []ecs.EntityID
+	Casualties     CasualtyReport
+	RewardsEarned  owencounter.RewardTable
 }
 
 // CasualtyReport tracks units lost in combat
@@ -62,7 +66,7 @@ func ResolveCombatToOverworld(
 			threat.DestroyThreatNode(manager, threatEntity)
 
 			// Grant full rewards
-			GrantRewards(manager, outcome.PlayerSquadID, outcome.RewardsEarned)
+			GrantRewards(manager, outcome, outcome.RewardsEarned)
 
 			// Log combat resolution event
 			core.LogEvent(core.EventCombatResolved, currentTick, outcome.ThreatNodeID,
@@ -84,7 +88,7 @@ func ResolveCombatToOverworld(
 				Gold:       outcome.RewardsEarned.Gold / 2,
 				Experience: outcome.RewardsEarned.Experience / 2,
 			}
-			GrantRewards(manager, outcome.PlayerSquadID, partialRewards)
+			GrantRewards(manager, outcome, partialRewards)
 
 			// Reset growth progress (player setback the threat)
 			threatData.GrowthProgress = 0.0
@@ -158,10 +162,61 @@ func CalculateThreatDamage(enemiesKilled int) int {
 	return enemiesKilled / 5
 }
 
-// GrantRewards applies rewards to player
-func GrantRewards(manager *common.EntityManager, squadID ecs.EntityID, rewards owencounter.RewardTable) {
+// GrantRewards distributes rewards to all surviving units across all player squads
+func GrantRewards(manager *common.EntityManager, outcome *CombatOutcome, rewards owencounter.RewardTable) {
+	if len(outcome.PlayerSquadIDs) == 0 {
+		return
+	}
 
-	//todo
+	// Grant gold to the player
+	if rewards.Gold > 0 && outcome.PlayerEntityID != 0 {
+		resources := common.GetPlayerResources(outcome.PlayerEntityID, manager)
+		if resources != nil {
+			resources.AddGold(rewards.Gold)
+			fmt.Printf("Granted %d gold to player %d\n", rewards.Gold, outcome.PlayerEntityID)
+		}
+	}
+
+	// Distribute experience across all alive units in all squads
+	if rewards.Experience > 0 {
+		grantExperience(manager, outcome.PlayerSquadIDs, rewards.Experience)
+	}
+}
+
+// grantExperience distributes XP evenly across all alive units in all squads
+func grantExperience(manager *common.EntityManager, squadIDs []ecs.EntityID, totalXP int) {
+	// Collect all alive unit IDs across all squads
+	var aliveUnitIDs []ecs.EntityID
+	for _, squadID := range squadIDs {
+		unitIDs := squads.GetUnitIDsInSquad(squadID, manager)
+		for _, unitID := range unitIDs {
+			unitEntity := manager.FindEntityByID(unitID)
+			if unitEntity == nil {
+				continue
+			}
+			attr := common.GetComponentType[*common.Attributes](unitEntity, common.AttributeComponent)
+			if attr != nil && attr.CurrentHealth > 0 {
+				aliveUnitIDs = append(aliveUnitIDs, unitID)
+			}
+		}
+	}
+
+	if len(aliveUnitIDs) == 0 {
+		return
+	}
+
+	xpPerUnit := totalXP / len(aliveUnitIDs)
+	if xpPerUnit <= 0 {
+		xpPerUnit = 1 // Minimum 1 XP per unit
+	}
+
+	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
+	for _, unitID := range aliveUnitIDs {
+		squads.AwardExperience(unitID, xpPerUnit, manager, rng)
+	}
+
+	fmt.Printf("Granted %d XP each to %d alive units (total %d XP)\n",
+		xpPerUnit, len(aliveUnitIDs), totalXP)
 }
 
 // CreateCombatOutcome creates outcome from combat state
@@ -170,16 +225,18 @@ func CreateCombatOutcome(
 	threatNodeID ecs.EntityID,
 	playerWon bool,
 	playerRetreated bool,
-	playerSquadID ecs.EntityID,
+	playerEntityID ecs.EntityID,
+	playerSquadIDs []ecs.EntityID,
 	playerUnitsLost int,
 	enemyUnitsKilled int,
 	rewards owencounter.RewardTable,
 ) *CombatOutcome {
 	return &CombatOutcome{
-		ThreatNodeID:  threatNodeID,
-		PlayerVictory: playerWon,
-		PlayerRetreat: playerRetreated,
-		PlayerSquadID: playerSquadID,
+		ThreatNodeID:   threatNodeID,
+		PlayerVictory:  playerWon,
+		PlayerRetreat:  playerRetreated,
+		PlayerEntityID: playerEntityID,
+		PlayerSquadIDs: playerSquadIDs,
 		Casualties: CasualtyReport{
 			PlayerUnitsLost:  playerUnitsLost,
 			EnemyUnitsKilled: enemyUnitsKilled,
