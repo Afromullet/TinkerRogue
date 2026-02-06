@@ -15,16 +15,16 @@ const (
 )
 
 // String returns human-readable threat name.
-// Uses ThreatRegistry for data-driven lookup with fallback.
+// Uses NodeRegistry for data-driven lookup.
 func (t ThreatType) String() string {
-	return GetThreatRegistry().GetDisplayName(t)
+	return GetNodeRegistry().GetDisplayName(t)
 }
 
 // EncounterTypeID returns the JSON encounter type ID for this threat.
-// Uses ThreatRegistry for data-driven lookup.
+// Uses NodeRegistry for data-driven lookup.
 // These IDs match the "encounter.typeId" field in assets/gamedata/encounterdata.json.
 func (t ThreatType) EncounterTypeID() string {
-	return GetThreatRegistry().GetEncounterTypeID(t)
+	return GetNodeRegistry().GetEncounterTypeID(t)
 }
 
 // FactionType represents different faction types

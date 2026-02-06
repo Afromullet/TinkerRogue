@@ -6,6 +6,14 @@ import (
 	"game_main/templates"
 )
 
+// ThreatTypeParams defines behavior per threat type.
+type ThreatTypeParams struct {
+	BaseGrowthRate   float64
+	BaseRadius       int
+	PrimaryEffect    InfluenceEffect
+	CanSpawnChildren bool
+}
+
 // NodeCategory represents the type of overworld node
 type NodeCategory string
 
@@ -34,8 +42,8 @@ type NodeDefinition struct {
 	// Settlement services (for settlement nodes)
 	Services []string
 
-	// Combat link (for threat nodes)
-	EncounterID string
+	// Faction (for threat nodes)
+	FactionID string
 }
 
 // EncounterDefinition is the runtime representation of combat mechanics.
@@ -102,7 +110,7 @@ func newNodeRegistry() *NodeRegistry {
 			PrimaryEffect:    stringToInfluenceEffect(jsonDef.Overworld.PrimaryEffect),
 			CanSpawnChildren: jsonDef.Overworld.CanSpawnChildren,
 			Services:         jsonDef.Services,
-			EncounterID:      jsonDef.EncounterID,
+			FactionID:        jsonDef.FactionID,
 		}
 
 		// Register by ID (ID is the ThreatType)
@@ -213,23 +221,31 @@ func (r *NodeRegistry) GetEncounterByID(id string) *EncounterDefinition {
 	return r.defaultEncounter
 }
 
-// GetEncounterForNode returns the encounter definition linked to a node.
-// Returns nil if the node has no encounter (non-combat node).
+// GetEncounterForNode returns an encounter definition linked to a node via faction.
+// Returns nil if the node has no faction (non-combat node).
 func (r *NodeRegistry) GetEncounterForNode(nodeID string) *EncounterDefinition {
 	node := r.GetNodeByID(nodeID)
-	if node == nil || node.EncounterID == "" {
+	if node == nil || node.FactionID == "" {
 		return nil
 	}
-	return r.GetEncounterByID(node.EncounterID)
+	encounters := r.GetEncountersByFaction(node.FactionID)
+	if len(encounters) == 0 {
+		return r.defaultEncounter
+	}
+	return encounters[0]
 }
 
 // GetEncounterForThreatType returns the encounter definition for a threat type.
 func (r *NodeRegistry) GetEncounterForThreatType(threatType ThreatType) *EncounterDefinition {
 	node := r.GetNodeByType(threatType)
-	if node == nil || node.EncounterID == "" {
+	if node == nil || node.FactionID == "" {
 		return r.defaultEncounter
 	}
-	return r.GetEncounterByID(node.EncounterID)
+	encounters := r.GetEncountersByFaction(node.FactionID)
+	if len(encounters) == 0 {
+		return r.defaultEncounter
+	}
+	return encounters[0]
 }
 
 // GetEncountersByFaction returns all encounters for a specific faction.
@@ -245,18 +261,13 @@ func (r *NodeRegistry) GetEncountersByFaction(factionID string) []*EncounterDefi
 	return encounters
 }
 
-// GetNodesByFaction returns all nodes linked to encounters of a specific faction.
-// This finds all nodes whose encounters belong to the given faction.
+// GetNodesByFaction returns all nodes belonging to a specific faction.
 // Returns empty slice if no nodes found for the faction.
 func (r *NodeRegistry) GetNodesByFaction(factionID string) []*NodeDefinition {
 	var nodes []*NodeDefinition
 	for _, node := range r.nodesByID {
-		// Get the encounter for this node
-		if node.EncounterID != "" {
-			enc := r.GetEncounterByID(node.EncounterID)
-			if enc != nil && enc.FactionID == factionID {
-				nodes = append(nodes, node)
-			}
+		if node.FactionID == factionID {
+			nodes = append(nodes, node)
 		}
 	}
 	return nodes
@@ -275,6 +286,29 @@ func (r *NodeRegistry) GetAllEncounters() []*EncounterDefinition {
 func (r *NodeRegistry) HasEncounter(id string) bool {
 	_, ok := r.encountersByID[id]
 	return ok
+}
+
+// GetEncounterByTypeID returns an encounter definition by its EncounterTypeID field.
+// Linear scan — returns first match or default.
+func (r *NodeRegistry) GetEncounterByTypeID(encounterTypeID string) *EncounterDefinition {
+	for _, enc := range r.encountersByID {
+		if enc.EncounterTypeID == encounterTypeID {
+			return enc
+		}
+	}
+	return r.defaultEncounter
+}
+
+// GetThreatTypeForFaction returns the ThreatType for a faction.
+// Finds the first threat-category node whose FactionID matches.
+func (r *NodeRegistry) GetThreatTypeForFaction(factionType FactionType) ThreatType {
+	factionID := factionType.String()
+	for _, node := range r.nodesByID {
+		if node.Category == NodeCategoryThreat && node.FactionID == factionID {
+			return ThreatType(node.ID)
+		}
+	}
+	return ThreatBanditCamp // fallback
 }
 
 // --- Convenience Accessors (for backward compatibility) ---

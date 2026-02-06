@@ -12,7 +12,7 @@
         "primaryEffect": "SpawnBoost",
         "canSpawnChildren": true
       },
-      "encounterId": "necromancer"
+      "factionId": "Necromancers"
     },
     {
       "id": "banditcamp",
@@ -25,7 +25,7 @@
         "primaryEffect": "ResourceDrain",
         "canSpawnChildren": false
       },
-      "encounterId": "banditcamp"
+      "factionId": "Bandits"
     },
     {
       "id": "corruption",
@@ -38,7 +38,7 @@
         "primaryEffect": "TerrainCorruption",
         "canSpawnChildren": true
       },
-      "encounterId": "corruption"
+      "factionId": "Cultists"
     },
     {
       "id": "beastnest",
@@ -51,7 +51,7 @@
         "primaryEffect": "SpawnBoost",
         "canSpawnChildren": false
       },
-      "encounterId": "beastnest"
+      "factionId": "Beasts"
     },
     {
       "id": "orcwarband",
@@ -64,7 +64,7 @@
         "primaryEffect": "CombatDebuff",
         "canSpawnChildren": false
       },
-      "encounterId": "orcwarband"
+      "factionId": "Orcs"
     },
     {
       "id": "marketplace",

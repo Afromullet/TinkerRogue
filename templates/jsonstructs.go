@@ -480,7 +480,7 @@ type JSONNodeDefinition struct {
 	Color       JSONColor         `json:"color"`                 // Display color on overworld map
 	Overworld   JSONNodeOverworld `json:"overworld"`             // Overworld behavior
 	Services    []string          `json:"services,omitempty"`    // For settlements: available services
-	EncounterID string            `json:"encounterId,omitempty"` // Links to encounterDefinitions (for combat nodes)
+	FactionID   string            `json:"factionId,omitempty"`   // Faction this node belongs to (for threat nodes)
 }
 
 // JSONDefaultNode defines fallback configuration for unknown nodes
@@ -502,7 +502,7 @@ type NodeDefinitionsData struct {
 
 // JSONEncounterDefinition defines combat mechanics for an encounter
 type JSONEncounterDefinition struct {
-	ID                string   `json:"id"`                // Unique identifier matching node's encounterId
+	ID                string   `json:"id"`                // Unique identifier
 	EncounterTypeID   string   `json:"encounterTypeId"`   // e.g., "undead_basic"
 	EncounterTypeName string   `json:"encounterTypeName"` // e.g., "Undead Horde"
 	SquadPreferences  []string `json:"squadPreferences"`  // e.g., ["melee", "melee", "magic"]

@@ -222,6 +222,11 @@ func validateNodeDefinitions(data *NodeDefinitionsData) {
 			panic("Node '" + node.ID + "' has invalid primary effect: " + node.Overworld.PrimaryEffect)
 		}
 
+		// Threat nodes must have a factionId
+		if node.Category == "threat" && node.FactionID == "" {
+			panic("Threat node '" + node.ID + "' missing required 'factionId' field")
+		}
+
 		// Warn about invisible color
 		if node.Color.A == 0 {
 			println("Warning: Node '" + node.ID + "' has zero alpha (invisible)")
@@ -376,19 +381,21 @@ func validateEncounterDefinitions(data *EncounterDataWithNew, validSquadTypes ma
 	}
 }
 
-// validateNodeEncounterLinks cross-validates that nodes reference valid encounters
+// validateNodeEncounterLinks cross-validates that threat nodes' factions have encounters
 func validateNodeEncounterLinks() {
-	// Build encounter ID lookup
-	encounterIDs := make(map[string]bool)
+	// Build faction → encounter count lookup
+	encountersPerFaction := make(map[string]int)
 	for _, enc := range EncounterDefinitionTemplates {
-		encounterIDs[enc.ID] = true
+		if enc.FactionID != "" {
+			encountersPerFaction[enc.FactionID]++
+		}
 	}
 
-	// Validate each threat node has a valid encounter link
+	// Validate each threat node's faction has at least one encounter
 	for _, node := range NodeDefinitionTemplates {
-		if node.Category == "threat" && node.EncounterID != "" {
-			if !encounterIDs[node.EncounterID] {
-				panic("Node '" + node.ID + "' references unknown encounter: " + node.EncounterID)
+		if node.Category == "threat" && node.FactionID != "" {
+			if encountersPerFaction[node.FactionID] == 0 {
+				panic("Threat node '" + node.ID + "' has factionId '" + node.FactionID + "' but no encounters exist for that faction")
 			}
 		}
 	}

@@ -195,9 +195,9 @@ func (r *OverworldRenderer) renderSelectionHighlight(screen *ebiten.Image) {
 }
 
 // getThreatColor returns color for each threat type.
-// Uses ThreatRegistry for data-driven lookup.
+// Uses NodeRegistry for data-driven lookup.
 func (r *OverworldRenderer) getThreatColor(threatType core.ThreatType) color.RGBA {
-	return core.GetThreatRegistry().GetColor(threatType)
+	return core.GetNodeRegistry().GetColor(threatType)
 }
 
 // GetThreatAtPosition returns threat entity at screen coordinates (for mouse clicks)

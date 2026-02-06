@@ -169,17 +169,15 @@ func CreateOverworldEncounter(
 // Returns the encounter type ID and the full encounter definition.
 // Exported for use by encounter service for reward calculation.
 func SelectRandomEncounterForThreat(threatType core.ThreatType) (string, *core.EncounterDefinition) {
-	// Get the threat definition to find the faction
-	threatDef := core.GetThreatRegistry().GetByEnum(threatType)
-	if threatDef == nil || threatDef.FactionID == "" {
-		// Fallback to old behavior if no faction found
+	// Get the node definition to find the faction
+	node := core.GetNodeRegistry().GetNodeByType(threatType)
+	if node == nil || node.FactionID == "" {
 		return threatType.EncounterTypeID(), nil
 	}
 
 	// Get all encounters for this faction
-	encounters := core.GetNodeRegistry().GetEncountersByFaction(threatDef.FactionID)
+	encounters := core.GetNodeRegistry().GetEncountersByFaction(node.FactionID)
 	if len(encounters) == 0 {
-		// Fallback if no encounters found
 		return threatType.EncounterTypeID(), nil
 	}
 

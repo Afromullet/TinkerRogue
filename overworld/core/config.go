@@ -152,7 +152,7 @@ func GetStrategyBonuses() map[string]templates.StrategyBonusConfig {
 
 // GetThreatTypeParamsFromConfig returns parameters for a threat type.
 func GetThreatTypeParamsFromConfig(threatType ThreatType) ThreatTypeParams {
-	return GetThreatRegistry().GetOverworldParams(threatType)
+	return GetNodeRegistry().GetOverworldParams(threatType)
 }
 
 // stringToInfluenceEffect converts string to InfluenceEffect enum

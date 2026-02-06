@@ -18,7 +18,7 @@ var NodeDefinitionTemplates []JSONNodeDefinition
 var DefaultNodeTemplate *JSONDefaultNode
 var NodeCategories []string
 
-// Encounter definition templates (combat-only, replacing ThreatDefinitions for combat)
+// Encounter definition templates (combat-only configuration)
 var EncounterDefinitionTemplates []JSONEncounterDefinition
 var DefaultEncounterTemplate *JSONDefaultEncounter
 

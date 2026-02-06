@@ -50,11 +50,11 @@ func GetDifficultyModifier(level int) EncounterDifficultyModifier {
 // GetSquadPreferences retrieves preferred squad composition for an encounter type.
 // Returns nil if encounter type not found (allows random composition fallback).
 func GetSquadPreferences(encounterTypeID string) []string {
-	def := core.GetThreatRegistry().GetByEncounterTypeID(encounterTypeID)
-	if def.ID != "default" {
+	enc := core.GetNodeRegistry().GetEncounterByTypeID(encounterTypeID)
+	if enc != nil && enc.ID != "default" {
 		// Return copy to prevent external modification
-		prefs := make([]string, len(def.SquadPreferences))
-		copy(prefs, def.SquadPreferences)
+		prefs := make([]string, len(enc.SquadPreferences))
+		copy(prefs, enc.SquadPreferences)
 		return prefs
 	}
 	return nil // Not found - allows caller to handle random composition

@@ -32,10 +32,10 @@ func GetTickState(manager *common.EntityManager) *TickStateData {
 }
 
 // MapFactionToThreatType converts faction type to corresponding threat type.
-// Uses ThreatRegistry for data-driven lookup.
+// Uses NodeRegistry for data-driven lookup.
 // Used when factions spawn new threat nodes.
 func MapFactionToThreatType(factionType FactionType) ThreatType {
-	return GetThreatRegistry().GetThreatTypeForFaction(factionType)
+	return GetNodeRegistry().GetThreatTypeForFaction(factionType)
 }
 
 // GetCardinalNeighbors returns the 4 adjacent positions (up, down, left, right)
