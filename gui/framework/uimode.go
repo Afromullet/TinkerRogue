@@ -48,7 +48,7 @@ type UIContext struct {
 	ScreenHeight    int
 	TileSize        int
 	ModeCoordinator *GameModeCoordinator // For context switching
-	Queries         interface{}          // *GUIQueries - Shared queries for all UI modes (interface{} to avoid circular import)
+	Queries         *GUIQueries          // Shared queries for all UI modes
 	// Add other commonly needed game state
 }
 
@@ -67,6 +67,5 @@ type InputState struct {
 // ModeTransition represents a request to change modes
 type ModeTransition struct {
 	ToMode UIMode
-	Reason string      // For debugging
-	Data   interface{} // Optional data passed to new mode
+	Reason string // For debugging
 }

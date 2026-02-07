@@ -77,51 +77,38 @@ func (gmc *GameModeCoordinator) RegisterBattleMapMode(mode UIMode) error {
 
 // EnterBattleMap switches to the battle map context
 func (gmc *GameModeCoordinator) EnterBattleMap(initialMode string) error {
-	if gmc.currentContext == ContextBattleMap {
-		// Already in battle map, just switch mode if needed
-		if initialMode != "" {
-			return gmc.battleMapManager.SetMode(initialMode)
-		}
-		return nil
-	}
-
-	// Switch to battle map manager
-	gmc.activeManager = gmc.battleMapManager
-	gmc.currentContext = ContextBattleMap
-
-	// Enter the specified mode (or keep current battle map mode)
-	if initialMode != "" {
-		if err := gmc.battleMapManager.SetMode(initialMode); err != nil {
-			return fmt.Errorf("failed to enter battle map mode %s: %w", initialMode, err)
-		}
-	}
-
-	fmt.Printf("Context Switch: Overworld -> BattleMap (mode: %s)\n", initialMode)
-	return nil
+	return gmc.switchToContext(ContextBattleMap, gmc.battleMapManager, initialMode)
 }
 
 // ReturnToOverworld switches back to the overworld context
 func (gmc *GameModeCoordinator) ReturnToOverworld(initialMode string) error {
-	if gmc.currentContext == ContextOverworld {
-		// Already in overworld, just switch mode if needed
+	return gmc.switchToContext(ContextOverworld, gmc.overworldManager, initialMode)
+}
+
+// switchToContext handles the common logic for switching between game contexts.
+func (gmc *GameModeCoordinator) switchToContext(targetContext GameContext, targetManager *UIModeManager, initialMode string) error {
+	if gmc.currentContext == targetContext {
+		// Already in target context, just switch mode if needed
 		if initialMode != "" {
-			return gmc.overworldManager.SetMode(initialMode)
+			return targetManager.SetMode(initialMode)
 		}
 		return nil
 	}
 
-	// Switch to overworld manager
-	gmc.activeManager = gmc.overworldManager
-	gmc.currentContext = ContextOverworld
+	fromContext := gmc.currentContext
 
-	// Enter the specified mode (or keep current overworld mode)
+	// Switch to target manager
+	gmc.activeManager = targetManager
+	gmc.currentContext = targetContext
+
+	// Enter the specified mode (or keep current mode)
 	if initialMode != "" {
-		if err := gmc.overworldManager.SetMode(initialMode); err != nil {
-			return fmt.Errorf("failed to enter overworld mode %s: %w", initialMode, err)
+		if err := targetManager.SetMode(initialMode); err != nil {
+			return fmt.Errorf("failed to enter %s mode %s: %w", targetContext, initialMode, err)
 		}
 	}
 
-	fmt.Printf("Context Switch: BattleMap -> Overworld (mode: %s)\n", initialMode)
+	fmt.Printf("Context Switch: %s -> %s (mode: %s)\n", fromContext, targetContext, initialMode)
 	return nil
 }
 

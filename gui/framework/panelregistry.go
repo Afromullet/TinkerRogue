@@ -165,36 +165,10 @@ func BuildRegisteredPanel(ptype PanelType, mode UIMode, pb *builders.PanelBuilde
 		if err := desc.OnCreate(result, mode); err != nil {
 			return nil, fmt.Errorf("panel %s OnCreate failed: %w", ptype, err)
 		}
-	} else {
-		// Add content based on type (only when OnCreate is not defined)
-		switch desc.Content {
-		case ContentText:
-			result.TextLabel = builders.CreateSmallLabel("")
-			if result.Container != nil {
-				result.Container.AddChild(result.TextLabel)
-			}
-
-		case ContentTextArea:
-			// TextArea creation handled by OnCreate for now
-			// (needs more configuration)
-
-		case ContentList:
-			// List creation handled by OnCreate for now
-			// (needs OnSelect callback)
-
-		case ContentButtonGroup:
-			// Buttons handled by OnCreate
-			// (needs callbacks)
-
-		case ContentGrid:
-			// Grid handled by OnCreate
-			// (needs cell callbacks)
-
-		case ContentCustom:
-			// Fully handled by OnCreate
-
-		case ContentEmpty:
-			// Nothing to add
+	} else if desc.Content == ContentText {
+		result.TextLabel = builders.CreateSmallLabel("")
+		if result.Container != nil {
+			result.Container.AddChild(result.TextLabel)
 		}
 	}
 

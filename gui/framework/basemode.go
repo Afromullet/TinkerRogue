@@ -71,14 +71,7 @@ func (bm *BaseMode) InitializeBase(ctx *UIContext) {
 	bm.PanelBuilders = builders.NewPanelBuilders(bm.Layout)
 
 	// Use unified ECS query service from context
-	if queries, ok := ctx.Queries.(*GUIQueries); ok {
-		bm.Queries = queries
-
-	} else {
-		// Fallback: This should not happen - ctx.Queries should always be *GUIQueries
-		fmt.Printf("ERROR: ctx.Queries type assertion failed - got type %T instead of *GUIQueries\n", ctx.Queries)
-		bm.Queries = NewGUIQueries(ctx.ECSManager)
-	}
+	bm.Queries = ctx.Queries
 
 	// Initialize hotkeys map
 	bm.hotkeys = make(map[ebiten.Key]InputBinding)

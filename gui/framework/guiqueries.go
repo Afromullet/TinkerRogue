@@ -21,8 +21,6 @@ type GUIQueries struct {
 	CombatCache    *combat.CombatQueryCache
 	squadInfoCache *SquadInfoCache // Event-driven cache for turn-based game
 
-	// Cached ECS Views (automatically maintained by ECS library)
-	monstersView *ecs.View // All MonsterComponent entities (GUI_PERFORMANCE_ANALYSIS.md)
 }
 
 // NewGUIQueries creates a new query service
@@ -37,11 +35,6 @@ func NewGUIQueries(ecsManager *common.EntityManager) *GUIQueries {
 		// Initialize query caches (own Views that are automatically maintained by ECS library)
 		SquadCache:  squads.NewSquadQueryCache(ecsManager),
 		CombatCache: combatCache,
-	}
-
-	// Initialize monstersView if monsters tag exists in WorldTags
-	if monstersTag, ok := ecsManager.WorldTags["monsters"]; ok {
-		gq.monstersView = ecsManager.World.CreateView(monstersTag)
 	}
 
 	// Initialize smart squad info cache (event-driven, not frame-level)
@@ -221,24 +214,6 @@ func (gq *GUIQueries) ApplyFilterToSquads(squadIDs []ecs.EntityID, filter SquadF
 		}
 	}
 	return filtered
-}
-
-// ===== CREATURE/ENTITY QUERIES =====
-
-// CreatureInfo encapsulates all creature data needed by UI
-type CreatureInfo struct {
-	ID         ecs.EntityID
-	Name       string
-	CurrentHP  int
-	MaxHP      int
-	Strength   int
-	Dexterity  int
-	Magic      int
-	Leadership int
-	Armor      int
-	Weapon     int
-	IsMonster  bool
-	IsPlayer   bool
 }
 
 // ===== TILE QUERIES =====

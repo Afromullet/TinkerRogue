@@ -137,13 +137,37 @@ func (vr *ViewportRenderer) DrawTileBorder(screen *ebiten.Image, pos coords.Logi
 
 // ===== COMBAT RENDERING SYSTEMS =====
 
+// CachedViewport manages a ViewportRenderer with caching to avoid recreation
+// when only the center position changes. Shared by all tile renderers.
+type CachedViewport struct {
+	renderer    *ViewportRenderer
+	lastCenter  coords.LogicalPosition
+	lastScreenX int
+	lastScreenY int
+}
+
+// GetRenderer returns a ViewportRenderer, creating or updating it as needed.
+// Only recreates the renderer when screen dimensions change.
+func (cv *CachedViewport) GetRenderer(screen *ebiten.Image, centerPos coords.LogicalPosition) *ViewportRenderer {
+	screenX, screenY := screen.Bounds().Dx(), screen.Bounds().Dy()
+
+	if cv.renderer == nil || cv.lastScreenX != screenX || cv.lastScreenY != screenY {
+		cv.renderer = NewViewportRenderer(screen, centerPos)
+		cv.lastCenter = centerPos
+		cv.lastScreenX = screenX
+		cv.lastScreenY = screenY
+	} else if cv.lastCenter != centerPos {
+		cv.renderer.UpdateCenter(centerPos)
+		cv.lastCenter = centerPos
+	}
+
+	return cv.renderer
+}
+
 // MovementTileRenderer renders valid movement tiles
 type MovementTileRenderer struct {
-	fillColor       color.Color
-	cachedRenderer  *ViewportRenderer
-	lastCenterPos   coords.LogicalPosition
-	lastScreenSizeX int
-	lastScreenSizeY int
+	fillColor color.Color
+	viewport  CachedViewport
 }
 
 // NewMovementTileRenderer creates a renderer for movement tiles
@@ -155,21 +179,7 @@ func NewMovementTileRenderer() *MovementTileRenderer {
 
 // Render draws all valid movement tiles
 func (mtr *MovementTileRenderer) Render(screen *ebiten.Image, centerPos coords.LogicalPosition, validTiles []coords.LogicalPosition) {
-	screenX, screenY := screen.Bounds().Dx(), screen.Bounds().Dy()
-
-	// Only recreate renderer if screen size changed or not yet created
-	if mtr.cachedRenderer == nil || mtr.lastScreenSizeX != screenX || mtr.lastScreenSizeY != screenY {
-		mtr.cachedRenderer = NewViewportRenderer(screen, centerPos)
-		mtr.lastCenterPos = centerPos
-		mtr.lastScreenSizeX = screenX
-		mtr.lastScreenSizeY = screenY
-	} else if mtr.lastCenterPos != centerPos {
-		// Just update center position if only that changed
-		mtr.cachedRenderer.UpdateCenter(centerPos)
-		mtr.lastCenterPos = centerPos
-	}
-
-	vr := mtr.cachedRenderer
+	vr := mtr.viewport.GetRenderer(screen, centerPos)
 
 	for _, pos := range validTiles {
 		vr.DrawTileOverlay(screen, pos, mtr.fillColor)
@@ -183,10 +193,7 @@ type SquadHighlightRenderer struct {
 	factionColors   map[ecs.EntityID]color.Color // Maps faction ID to unique color
 	defaultColor    color.Color                  // Fallback color for unknown factions
 	borderThickness int
-	cachedRenderer  *ViewportRenderer
-	lastCenterPos   coords.LogicalPosition
-	lastScreenSizeX int
-	lastScreenSizeY int
+	viewport        CachedViewport
 }
 
 // NewSquadHighlightRenderer creates a renderer for squad highlights
@@ -234,21 +241,7 @@ func (shr *SquadHighlightRenderer) Render(
 	currentFactionID ecs.EntityID,
 	selectedSquadID ecs.EntityID,
 ) {
-	screenX, screenY := screen.Bounds().Dx(), screen.Bounds().Dy()
-
-	// Only recreate renderer if screen size changed or not yet created
-	if shr.cachedRenderer == nil || shr.lastScreenSizeX != screenX || shr.lastScreenSizeY != screenY {
-		shr.cachedRenderer = NewViewportRenderer(screen, centerPos)
-		shr.lastCenterPos = centerPos
-		shr.lastScreenSizeX = screenX
-		shr.lastScreenSizeY = screenY
-	} else if shr.lastCenterPos != centerPos {
-		// Just update center position if only that changed
-		shr.cachedRenderer.UpdateCenter(centerPos)
-		shr.lastCenterPos = centerPos
-	}
-
-	vr := shr.cachedRenderer
+	vr := shr.viewport.GetRenderer(screen, centerPos)
 
 	// Get all squads with positions
 	// GetSquadInfo uses Views directly - no need for BuildSquadInfoCache
@@ -278,19 +271,16 @@ func (shr *SquadHighlightRenderer) Render(
 
 // HealthBarRenderer renders health bars above squads
 type HealthBarRenderer struct {
-	queries         *GUIQueries
-	bgColor         color.Color
-	fillColor       color.Color
-	barHeight       int
-	barWidthRatio   float64 // Ratio of tile width for bar width
-	yOffset         int     // Offset above the tile (negative = above)
-	cachedRenderer  *ViewportRenderer
-	lastCenterPos   coords.LogicalPosition
-	lastScreenSizeX int
-	lastScreenSizeY int
-	bgImage         *ebiten.Image // Cached background bar image
-	fillImage       *ebiten.Image // Cached fill bar image
-	cachedBarWidth  int           // Cached bar width for invalidation
+	queries       *GUIQueries
+	bgColor       color.Color
+	fillColor     color.Color
+	barHeight     int
+	barWidthRatio float64 // Ratio of tile width for bar width
+	yOffset       int     // Offset above the tile (negative = above)
+	viewport      CachedViewport
+	bgImage       *ebiten.Image // Cached background bar image
+	fillImage     *ebiten.Image // Cached fill bar image
+	cachedBarWidth int          // Cached bar width for invalidation
 }
 
 // NewHealthBarRenderer creates a renderer for squad health bars
@@ -307,21 +297,9 @@ func NewHealthBarRenderer(queries *GUIQueries) *HealthBarRenderer {
 
 // Render draws health bars above all squads
 func (hbr *HealthBarRenderer) Render(screen *ebiten.Image, centerPos coords.LogicalPosition) {
-	screenX, screenY := screen.Bounds().Dx(), screen.Bounds().Dy()
+	vr := hbr.viewport.GetRenderer(screen, centerPos)
 
-	// Only recreate renderer if screen size changed or not yet created
-	if hbr.cachedRenderer == nil || hbr.lastScreenSizeX != screenX || hbr.lastScreenSizeY != screenY {
-		hbr.cachedRenderer = NewViewportRenderer(screen, centerPos)
-		hbr.lastCenterPos = centerPos
-		hbr.lastScreenSizeX = screenX
-		hbr.lastScreenSizeY = screenY
-	} else if hbr.lastCenterPos != centerPos {
-		// Just update center position if only that changed
-		hbr.cachedRenderer.UpdateCenter(centerPos)
-		hbr.lastCenterPos = centerPos
-	}
-
-	tileSize := hbr.cachedRenderer.TileSize()
+	tileSize := vr.TileSize()
 	barWidth := int(float64(tileSize) * hbr.barWidthRatio)
 
 	// Update cached images if bar width changed
@@ -354,7 +332,7 @@ func (hbr *HealthBarRenderer) Render(screen *ebiten.Image, centerPos coords.Logi
 
 // drawHealthBar draws a single health bar at the given position
 func (hbr *HealthBarRenderer) drawHealthBar(screen *ebiten.Image, pos coords.LogicalPosition, healthRatio float64, barWidth, tileSize int) {
-	screenX, screenY := hbr.cachedRenderer.LogicalToScreen(pos)
+	screenX, screenY := hbr.viewport.renderer.LogicalToScreen(pos)
 
 	// Center the bar horizontally above the tile
 	barX := screenX + float64(tileSize-barWidth)/2

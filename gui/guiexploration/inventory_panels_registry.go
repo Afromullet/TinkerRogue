@@ -28,8 +28,12 @@ func init() {
 		OnCreate: func(result *framework.PanelResult, mode framework.UIMode) error {
 			im := mode.(*InventoryMode)
 
-			// Top-left filter buttons using helper
-			filterButtons := framework.CreateFilterButtonContainer(im.PanelBuilders, builders.TopLeft())
+			// Top-left filter buttons
+			filterButtons := im.PanelBuilders.BuildPanel(
+				builders.TopLeft(),
+				builders.Padding(specs.PaddingStandard),
+				builders.HorizontalRowLayout(),
+			)
 
 			// Filter buttons - use component's SetFilter when clicked
 			filters := []string{"All", "Throwables", "Equipment", "Consumables"}

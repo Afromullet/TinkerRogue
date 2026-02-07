@@ -117,36 +117,3 @@ func formatContext(context map[string]interface{}) string {
 	return strings.Join(parts, ", ")
 }
 
-// DebugState provides a snapshot of state for debugging
-type DebugState struct {
-	Fields map[string]interface{}
-}
-
-// NewDebugState creates an empty debug state
-func NewDebugState() *DebugState {
-	return &DebugState{
-		Fields: make(map[string]interface{}),
-	}
-}
-
-// Set adds a field to the debug state
-func (ds *DebugState) Set(key string, value interface{}) *DebugState {
-	ds.Fields[key] = value
-	return ds
-}
-
-// String returns a formatted string of all state fields
-func (ds *DebugState) String() string {
-	if len(ds.Fields) == 0 {
-		return "(empty state)"
-	}
-	return formatContext(ds.Fields)
-}
-
-// LogState logs the current debug state
-func (dl *DebugLogger) LogState(label string, state *DebugState) {
-	if !dl.enabled {
-		return
-	}
-	dl.Logf("STATE[%s]: %s", label, state.String())
-}
