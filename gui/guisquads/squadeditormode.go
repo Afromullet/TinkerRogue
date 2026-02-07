@@ -109,15 +109,17 @@ func (sem *SquadEditorMode) buildPanelsFromRegistry() error {
 // initializeWidgetReferences populates mode fields from panel registry
 func (sem *SquadEditorMode) initializeWidgetReferences() {
 	// Navigation widgets
-	sem.prevButton, sem.nextButton, sem.squadCounterLabel = GetSquadEditorNavButtons(sem.Panels)
+	sem.prevButton = framework.GetPanelWidget[*widget.Button](sem.Panels, SquadEditorPanelNavigation, "prevButton")
+	sem.nextButton = framework.GetPanelWidget[*widget.Button](sem.Panels, SquadEditorPanelNavigation, "nextButton")
+	sem.squadCounterLabel = framework.GetPanelWidget[*widget.Text](sem.Panels, SquadEditorPanelNavigation, "counterLabel")
 
 	// List widgets
-	sem.squadSelector = GetSquadEditorSquadList(sem.Panels)
-	sem.unitList = GetSquadEditorUnitList(sem.Panels)
-	sem.rosterList = GetSquadEditorRosterList(sem.Panels)
+	sem.squadSelector = framework.GetPanelWidget[*widget.List](sem.Panels, SquadEditorPanelSquadSelector, "squadList")
+	sem.unitList = framework.GetPanelWidget[*widget.List](sem.Panels, SquadEditorPanelUnitList, "unitList")
+	sem.rosterList = framework.GetPanelWidget[*widget.List](sem.Panels, SquadEditorPanelRosterList, "rosterList")
 
 	// Grid cells
-	sem.gridCells = GetSquadEditorGridCells(sem.Panels)
+	sem.gridCells = framework.GetPanelWidget[[3][3]*widget.Button](sem.Panels, SquadEditorPanelGridEditor, "gridCells")
 }
 
 // buildActionButtons creates bottom action buttons (needs callbacks, so done separately)

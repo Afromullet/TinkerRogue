@@ -78,16 +78,19 @@ func (upm *UnitPurchaseMode) Initialize(ctx *framework.UIContext) error {
 // initializeWidgetReferences populates mode fields from panel registry
 func (upm *UnitPurchaseMode) initializeWidgetReferences() {
 	// Resource display
-	upm.goldLabel, upm.rosterLabel = GetUnitPurchaseResourceLabels(upm.Panels)
+	upm.goldLabel = framework.GetPanelWidget[*widget.Text](upm.Panels, UnitPurchasePanelResourceDisplay, "goldLabel")
+	upm.rosterLabel = framework.GetPanelWidget[*widget.Text](upm.Panels, UnitPurchasePanelResourceDisplay, "rosterLabel")
 
 	// Unit list
-	upm.unitList = GetUnitPurchaseUnitList(upm.Panels)
+	upm.unitList = framework.GetPanelWidget[*widgets.CachedListWrapper](upm.Panels, UnitPurchasePanelUnitList, "unitList")
 
 	// Detail panel
-	upm.detailTextArea, upm.statsTextArea, upm.viewStatsButton = GetUnitPurchaseDetailWidgets(upm.Panels)
+	upm.detailTextArea = framework.GetPanelWidget[*widgets.CachedTextAreaWrapper](upm.Panels, UnitPurchasePanelDetailPanel, "detailTextArea")
+	upm.statsTextArea = framework.GetPanelWidget[*widgets.CachedTextAreaWrapper](upm.Panels, UnitPurchasePanelDetailPanel, "statsTextArea")
+	upm.viewStatsButton = framework.GetPanelWidget[*widget.Button](upm.Panels, UnitPurchasePanelDetailPanel, "viewStatsButton")
 
 	// Buy button
-	upm.buyButton = GetUnitPurchaseBuyButton(upm.Panels)
+	upm.buyButton = framework.GetPanelWidget[*widget.Button](upm.Panels, UnitPurchasePanelActionButtons, "buyButton")
 }
 
 func (upm *UnitPurchaseMode) updateDetailPanel() {

@@ -9,6 +9,11 @@ import (
 
 // Roster management logic for SquadEditorMode
 
+// defaultDialogPosition returns consistent dialog positioning values
+func (sem *SquadEditorMode) defaultDialogPosition() (width, height, centerX, centerY int) {
+	return 400, 200, sem.Layout.ScreenWidth / 2, sem.Layout.ScreenHeight / 3
+}
+
 // onAddUnitFromRoster adds a unit from the roster to the squad
 func (sem *SquadEditorMode) onAddUnitFromRoster() {
 	if len(sem.allSquadIDs) == 0 {
@@ -83,12 +88,7 @@ func (sem *SquadEditorMode) onRemoveUnit() {
 	}
 
 	currentSquadID := sem.allSquadIDs[sem.currentSquadIndex]
-
-	// Calculate dialog position (center of screen, above the grid)
-	dialogWidth := 400
-	dialogHeight := 200
-	centerX := sem.Layout.ScreenWidth / 2
-	centerY := sem.Layout.ScreenHeight / 3 // Position in upper third of screen
+	dialogWidth, dialogHeight, centerX, centerY := sem.defaultDialogPosition()
 
 	// Show confirmation dialog
 	dialog := builders.CreateConfirmationDialog(builders.DialogConfig{
@@ -141,12 +141,7 @@ func (sem *SquadEditorMode) onMakeLeader() {
 	}
 
 	currentSquadID := sem.allSquadIDs[sem.currentSquadIndex]
-
-	// Calculate dialog position (center of screen, above the grid)
-	dialogWidth := 400
-	dialogHeight := 200
-	centerX := sem.Layout.ScreenWidth / 2
-	centerY := sem.Layout.ScreenHeight / 3 // Position in upper third of screen
+	dialogWidth, dialogHeight, centerX, centerY := sem.defaultDialogPosition()
 
 	// Show confirmation dialog
 	dialog := builders.CreateConfirmationDialog(builders.DialogConfig{

@@ -96,13 +96,13 @@ func (sbm *SquadBuilderMode) Initialize(ctx *framework.UIContext) error {
 
 // initializeWidgetReferences populates mode fields from panel registry
 func (sbm *SquadBuilderMode) initializeWidgetReferences() {
-	sbm.squadNameInput = GetSquadBuilderNameInput(sbm.Panels)
-	sbm.unitPalette = GetSquadBuilderUnitPalette(sbm.Panels)
-	sbm.capacityDisplay = GetSquadBuilderCapacityDisplay(sbm.Panels)
-	sbm.unitDetailsArea = GetSquadBuilderUnitDetailsArea(sbm.Panels)
+	sbm.squadNameInput = framework.GetPanelWidget[*widget.TextInput](sbm.Panels, SquadBuilderPanelNameInput, "squadNameInput")
+	sbm.unitPalette = framework.GetPanelWidget[*widgets.CachedListWrapper](sbm.Panels, SquadBuilderPanelRosterPalette, "unitPalette")
+	sbm.capacityDisplay = framework.GetPanelWidget[*widget.TextArea](sbm.Panels, SquadBuilderPanelCapacity, "capacityDisplay")
+	sbm.unitDetailsArea = framework.GetPanelWidget[*widget.TextArea](sbm.Panels, SquadBuilderPanelDetails, "unitDetailsArea")
 
 	// Initialize grid cells with button references
-	buttons := GetSquadBuilderGridButtons(sbm.Panels)
+	buttons := framework.GetPanelWidget[[3][3]*widget.Button](sbm.Panels, SquadBuilderPanelGrid, "gridButtons")
 	for row := 0; row < 3; row++ {
 		for col := 0; col < 3; col++ {
 			sbm.gridCells[row][col] = &GridCellButton{
@@ -364,29 +364,6 @@ func (sbm *SquadBuilderMode) onToggleLeader() {
 		// Set new leader
 		sbm.gridManager.SetLeader(foundUnitID)
 		fmt.Printf("Unit %d designated as leader\n", foundUnitID)
-	}
-
-	// Refresh grid display to show leader marker
-	sbm.gridManager.RefreshGridDisplay()
-	sbm.updateCapacityDisplay()
-}
-
-func (sbm *SquadBuilderMode) setUnitAsLeader(row, col int) {
-	unitID := sbm.gridManager.GetCellUnitID(row, col)
-
-	if unitID == 0 {
-		fmt.Println("No unit at this position to set as leader")
-		return
-	}
-
-	if sbm.gridManager.GetLeader() == unitID {
-		// Unset leader
-		sbm.gridManager.SetLeader(0)
-		fmt.Println("Leader status removed")
-	} else {
-		// Set new leader
-		sbm.gridManager.SetLeader(unitID)
-		fmt.Printf("Unit at [%d,%d] designated as leader\n", row, col)
 	}
 
 	// Refresh grid display to show leader marker

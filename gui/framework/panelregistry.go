@@ -196,3 +196,17 @@ func (pr *PanelRegistry) Add(result *PanelResult) {
 func (pr *PanelRegistry) Get(ptype PanelType) *PanelResult {
 	return pr.panels[ptype]
 }
+
+// GetPanelWidget retrieves a typed widget from a panel's Custom map.
+// Returns the zero value of T if the panel or key doesn't exist.
+func GetPanelWidget[T any](pr *PanelRegistry, panelType PanelType, key string) T {
+	var zero T
+	result := pr.Get(panelType)
+	if result == nil {
+		return zero
+	}
+	if val, ok := result.Custom[key].(T); ok {
+		return val
+	}
+	return zero
+}

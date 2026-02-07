@@ -176,31 +176,3 @@ func init() {
 	})
 }
 
-// Helper functions to retrieve widgets from panel registry
-
-func GetSquadDeploymentInstructionText(panels *framework.PanelRegistry) *widget.Text {
-	if result := panels.Get(SquadDeploymentPanelInstruction); result != nil {
-		if text, ok := result.Custom["instructionText"].(*widget.Text); ok {
-			return text
-		}
-	}
-	return nil
-}
-
-func GetSquadDeploymentSquadList(panels *framework.PanelRegistry) *widgets.CachedListWrapper {
-	if result := panels.Get(SquadDeploymentPanelSquadList); result != nil {
-		if list, ok := result.Custom["squadList"].(*widgets.CachedListWrapper); ok {
-			return list
-		}
-	}
-	return nil
-}
-
-func GetSquadDeploymentDetailTextArea(panels *framework.PanelRegistry) *widgets.CachedTextAreaWrapper {
-	if result := panels.Get(SquadDeploymentPanelDetailPanel); result != nil {
-		if area, ok := result.Custom["detailTextArea"].(*widgets.CachedTextAreaWrapper); ok {
-			return area
-		}
-	}
-	return nil
-}

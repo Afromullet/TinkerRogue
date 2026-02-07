@@ -83,9 +83,9 @@ func (sdm *SquadDeploymentMode) Initialize(ctx *framework.UIContext) error {
 
 // initializeWidgetReferences populates mode fields from panel registry
 func (sdm *SquadDeploymentMode) initializeWidgetReferences() {
-	sdm.instructionText = GetSquadDeploymentInstructionText(sdm.Panels)
-	sdm.squadList = GetSquadDeploymentSquadList(sdm.Panels)
-	sdm.detailTextArea = GetSquadDeploymentDetailTextArea(sdm.Panels)
+	sdm.instructionText = framework.GetPanelWidget[*widget.Text](sdm.Panels, SquadDeploymentPanelInstruction, "instructionText")
+	sdm.squadList = framework.GetPanelWidget[*widgets.CachedListWrapper](sdm.Panels, SquadDeploymentPanelSquadList, "squadList")
+	sdm.detailTextArea = framework.GetPanelWidget[*widgets.CachedTextAreaWrapper](sdm.Panels, SquadDeploymentPanelDetailPanel, "detailTextArea")
 }
 
 func (sdm *SquadDeploymentMode) updateInstructionText() {
@@ -140,16 +140,7 @@ func (sdm *SquadDeploymentMode) refreshSquadList() {
 func (sdm *SquadDeploymentMode) Enter(fromMode framework.UIMode) error {
 	fmt.Println("Entering Squad Deployment Mode")
 
-	// Populate squad list with all alive squads
-	allSquads := sdm.Queries.SquadCache.FindAllSquads()
-	aliveSquads := sdm.Queries.ApplyFilterToSquads(allSquads, sdm.Queries.FilterSquadsAlive())
-
-	entries := make([]interface{}, 0, len(aliveSquads))
-	for _, squadID := range aliveSquads {
-		entries = append(entries, squadID)
-	}
-	sdm.squadList.GetList().SetEntries(entries)
-	sdm.squadList.MarkDirty() // Trigger re-render with updated entries
+	sdm.refreshSquadList()
 
 	sdm.selectedSquadID = 0
 	sdm.isPlacingSquad = false
@@ -167,14 +158,11 @@ func (sdm *SquadDeploymentMode) Exit(toMode framework.UIMode) error {
 func (sdm *SquadDeploymentMode) Update(deltaTime float64) error {
 	// Process pending placement (after UI has been updated)
 	if sdm.pendingPlacement && sdm.isPlacingSquad && sdm.selectedSquadID != 0 {
-		fmt.Printf("DEBUG: Processing pending placement in Update()\n")
-
 		// Get player position (for viewport centering)
 		playerPos := *sdm.Context.PlayerData.Pos
 
 		// Convert mouse position to logical position (handles both scrolling modes)
 		clickedPos := graphics.MouseToLogicalPosition(sdm.pendingMouseX, sdm.pendingMouseY, playerPos)
-		fmt.Printf("DEBUG: Converted click to logical position: (%d, %d)\n", clickedPos.X, clickedPos.Y)
 
 		// Place the squad at the clicked position
 		sdm.placeSquadAt(sdm.selectedSquadID, clickedPos)
@@ -202,16 +190,12 @@ func (sdm *SquadDeploymentMode) HandleInput(inputState *framework.InputState) bo
 
 	// Capture mouse clicks for processing after UI update
 	if inputState.MouseButton == ebiten.MouseButtonLeft && inputState.MousePressed {
-		fmt.Printf("DEBUG: Mouse click captured at (%d, %d), placing=%v, squadID=%d\n",
-			inputState.MouseX, inputState.MouseY, sdm.isPlacingSquad, sdm.selectedSquadID)
-
 		// Check if click is inside the squad list (UI area) - don't process as map click
 		listBounds := sdm.squadList.GetWidget().Rect
 		isInsideList := inputState.MouseX >= listBounds.Min.X && inputState.MouseX <= listBounds.Max.X &&
 			inputState.MouseY >= listBounds.Min.Y && inputState.MouseY <= listBounds.Max.Y
 
 		if isInsideList {
-			fmt.Printf("DEBUG: Click is inside UI panel, not processing as map placement\n")
 			return false
 		}
 
@@ -219,20 +203,15 @@ func (sdm *SquadDeploymentMode) HandleInput(inputState *framework.InputState) bo
 		sdm.pendingMouseX = inputState.MouseX
 		sdm.pendingMouseY = inputState.MouseY
 		sdm.pendingPlacement = true
-
-		fmt.Printf("DEBUG: Click stored as pending for map placement\n")
 	}
 
 	return false
 }
 
 func (sdm *SquadDeploymentMode) placeSquadAt(squadID ecs.EntityID, pos coords.LogicalPosition) {
-	fmt.Printf("DEBUG: placeSquadAt called with squadID=%d, pos=(%d,%d)\n", squadID, pos.X, pos.Y)
-
 	// Find the squad entity
 	squadEntity := squads.GetSquadEntity(squadID, sdm.Context.ECSManager)
 	if squadEntity == nil {
-		fmt.Printf("DEBUG: ERROR - Squad %d not found\n", squadID)
 		return
 	}
 
@@ -246,7 +225,6 @@ func (sdm *SquadDeploymentMode) placeSquadAt(squadID ecs.EntityID, pos coords.Lo
 	// Get current position
 	posPtr := common.GetComponentType[*coords.LogicalPosition](squadEntity, common.PositionComponent)
 	if posPtr == nil {
-		fmt.Printf("DEBUG: ERROR - Squad has no position component\n")
 		return
 	}
 
@@ -254,11 +232,10 @@ func (sdm *SquadDeploymentMode) placeSquadAt(squadID ecs.EntityID, pos coords.Lo
 	oldPos := *posPtr
 	err := sdm.Context.ECSManager.MoveEntity(squadID, squadEntity, oldPos, pos)
 	if err != nil {
-		fmt.Printf("DEBUG: ERROR - Failed to move squad: %v\n", err)
 		return
 	}
 
-	fmt.Printf("✓ Placed %s at (%d, %d) [was at (%d, %d)]\n", squadName, pos.X, pos.Y, oldPos.X, oldPos.Y)
+	fmt.Printf("Placed %s at (%d, %d) [was at (%d, %d)]\n", squadName, pos.X, pos.Y, oldPos.X, oldPos.Y)
 
 	// Refresh list to show updated placement status
 	sdm.refreshSquadList()
@@ -275,7 +252,6 @@ func (sdm *SquadDeploymentMode) clearAllSquadPositions() {
 	result := sdm.deploymentService.ClearAllSquadPositions()
 
 	if !result.Success {
-		fmt.Printf("DEBUG: ERROR - Failed to clear positions: %s\n", result.Error)
 		return
 	}
 
