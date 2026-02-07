@@ -4,10 +4,12 @@ import (
 	"game_main/common"
 	"game_main/gui/framework"
 	"game_main/mind/behavior"
+	"game_main/tactical/combatservices"
 	"game_main/world/coords"
 	"game_main/world/worldmap"
 
 	"github.com/bytearena/ecs"
+	"github.com/hajimehoshi/ebiten/v2"
 )
 
 // CombatVisualizationManager manages all combat visualization systems including
@@ -74,19 +76,43 @@ func NewCombatVisualizationManager(
 	return cvm
 }
 
-// GetMovementRenderer returns the movement tile renderer
-func (cvm *CombatVisualizationManager) GetMovementRenderer() *framework.MovementTileRenderer {
-	return cvm.movementRenderer
+// RenderAll renders all combat visualization layers: squad highlights, movement tiles, and health bars
+func (cvm *CombatVisualizationManager) RenderAll(
+	screen *ebiten.Image,
+	playerPos coords.LogicalPosition,
+	currentFactionID ecs.EntityID,
+	battleState *framework.BattleMapState,
+	combatService *combatservices.CombatService,
+) {
+	cvm.highlightRenderer.Render(screen, playerPos, currentFactionID, battleState.SelectedSquadID)
+
+	if battleState.InMoveMode {
+		validTiles := cvm.GetValidMoveTiles(combatService, battleState.SelectedSquadID, battleState.InMoveMode)
+		if len(validTiles) > 0 {
+			cvm.movementRenderer.Render(screen, playerPos, validTiles)
+		}
+	}
+
+	if battleState.ShowHealthBars {
+		cvm.healthBarRenderer.Render(screen, playerPos)
+	}
 }
 
-// GetHighlightRenderer returns the squad highlight renderer
-func (cvm *CombatVisualizationManager) GetHighlightRenderer() *framework.SquadHighlightRenderer {
-	return cvm.highlightRenderer
-}
+// GetValidMoveTiles computes valid movement tiles on-demand
+func (cvm *CombatVisualizationManager) GetValidMoveTiles(
+	combatService *combatservices.CombatService,
+	selectedSquadID ecs.EntityID,
+	inMoveMode bool,
+) []coords.LogicalPosition {
+	if selectedSquadID == 0 || !inMoveMode {
+		return []coords.LogicalPosition{}
+	}
 
-// GetHealthBarRenderer returns the health bar renderer
-func (cvm *CombatVisualizationManager) GetHealthBarRenderer() *framework.HealthBarRenderer {
-	return cvm.healthBarRenderer
+	tiles := combatService.MovementSystem.GetValidMovementTiles(selectedSquadID)
+	if tiles == nil {
+		return []coords.LogicalPosition{}
+	}
+	return tiles
 }
 
 // GetThreatVisualizer returns the unified threat visualizer

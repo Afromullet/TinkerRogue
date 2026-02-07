@@ -1,14 +1,17 @@
 package guicombat
 
 import (
+	"fmt"
 	"game_main/common"
 	"game_main/gui/framework"
+	"game_main/mind/behavior"
 	"game_main/tactical/combat"
 	"game_main/tactical/squads"
 	"game_main/visual/graphics"
 	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"
+	"github.com/ebitenui/ebitenui/widget"
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
@@ -19,6 +22,11 @@ type CombatInputHandler struct {
 	deps             *CombatModeDeps
 	playerPos        *coords.LogicalPosition
 	currentFactionID ecs.EntityID
+
+	// Visualization input support
+	visualization *CombatVisualizationManager
+	panels        *framework.PanelRegistry
+	logManager    *CombatLogManager
 }
 
 // NewCombatInputHandler creates a new combat input handler
@@ -37,6 +45,13 @@ func (cih *CombatInputHandler) SetPlayerPosition(playerPos *coords.LogicalPositi
 // SetCurrentFactionID sets the current faction ID for turn checking
 func (cih *CombatInputHandler) SetCurrentFactionID(factionID ecs.EntityID) {
 	cih.currentFactionID = factionID
+}
+
+// SetVisualization sets the visualization manager and related dependencies for keybinding handling
+func (cih *CombatInputHandler) SetVisualization(viz *CombatVisualizationManager, panels *framework.PanelRegistry, logManager *CombatLogManager) {
+	cih.visualization = viz
+	cih.panels = panels
+	cih.logManager = logManager
 }
 
 // HandleInput processes input and returns true if input was consumed
@@ -103,6 +118,17 @@ func (cih *CombatInputHandler) HandleInput(inputState *framework.InputState) boo
 			cih.actionHandler.SelectEnemyTarget(2)
 			return true
 		}
+	}
+
+	// Visualization keybindings
+	if cih.handleThreatToggle(inputState) {
+		return true
+	}
+	if cih.handleHealthBarToggle(inputState) {
+		return true
+	}
+	if cih.handleLayerToggle(inputState) {
+		return true
 	}
 
 	// Ctrl+K to kill all enemy squads (debug command)
@@ -290,4 +316,130 @@ func (cih *CombatInputHandler) getPlayerFactionID(encounterID ecs.EntityID) ecs.
 		}
 	}
 	return 0
+}
+
+// handleThreatToggle handles H key to toggle threat heat map
+func (cih *CombatInputHandler) handleThreatToggle(inputState *framework.InputState) bool {
+	if !inputState.KeysJustPressed[ebiten.KeyH] {
+		return false
+	}
+
+	threatViz := cih.visualization.GetThreatVisualizer()
+	if threatViz == nil {
+		return true
+	}
+
+	shiftPressed := inputState.KeysPressed[ebiten.KeyShift] ||
+		inputState.KeysPressed[ebiten.KeyShiftLeft] ||
+		inputState.KeysPressed[ebiten.KeyShiftRight]
+
+	combatLogArea := GetCombatLogTextArea(cih.panels)
+
+	if shiftPressed {
+		threatViz.SwitchThreatView()
+		viewName := "Enemy Threats"
+		if threatViz.GetThreatViewMode() == behavior.ViewPlayerThreats {
+			viewName = "Player Threats"
+		}
+		cih.logManager.UpdateTextArea(combatLogArea, fmt.Sprintf("Switched to %s view", viewName))
+	} else {
+		// If not active or in different mode: activate in Threat mode
+		// If already active in Threat mode: turn off
+		if !threatViz.IsActive() || threatViz.GetMode() != behavior.VisualizerModeThreat {
+			threatViz.SetMode(behavior.VisualizerModeThreat)
+			if !threatViz.IsActive() {
+				threatViz.Toggle()
+			}
+			cih.logManager.UpdateTextArea(combatLogArea, "Threat visualization enabled")
+		} else {
+			threatViz.Toggle()
+			cih.logManager.UpdateTextArea(combatLogArea, "Threat visualization disabled")
+		}
+	}
+	cih.updateLayerStatusWidget()
+	return true
+}
+
+// handleHealthBarToggle handles Ctrl+Right key to toggle health bars
+func (cih *CombatInputHandler) handleHealthBarToggle(inputState *framework.InputState) bool {
+	if !inputState.KeysJustPressed[ebiten.KeyControlRight] {
+		return false
+	}
+
+	battleState := cih.deps.BattleState
+	battleState.ShowHealthBars = !battleState.ShowHealthBars
+	status := "enabled"
+	if !battleState.ShowHealthBars {
+		status = "disabled"
+	}
+	combatLogArea := GetCombatLogTextArea(cih.panels)
+	cih.logManager.UpdateTextArea(combatLogArea, fmt.Sprintf("Health bars %s", status))
+	return true
+}
+
+// handleLayerToggle handles L key to toggle layer visualizer
+func (cih *CombatInputHandler) handleLayerToggle(inputState *framework.InputState) bool {
+	if !inputState.KeysJustPressed[ebiten.KeyL] {
+		return false
+	}
+
+	threatViz := cih.visualization.GetThreatVisualizer()
+	if threatViz == nil {
+		return true
+	}
+
+	shiftPressed := inputState.KeysPressed[ebiten.KeyShift] ||
+		inputState.KeysPressed[ebiten.KeyShiftLeft] ||
+		inputState.KeysPressed[ebiten.KeyShiftRight]
+
+	combatLogArea := GetCombatLogTextArea(cih.panels)
+
+	if shiftPressed {
+		threatViz.CycleLayerMode()
+		modeInfo := threatViz.GetLayerModeInfo()
+		cih.logManager.UpdateTextArea(combatLogArea,
+			fmt.Sprintf("Layer: %s (%s)", modeInfo.Name, modeInfo.ColorKey))
+	} else {
+		// If not active or in different mode: activate in Layer mode
+		// If already active in Layer mode: turn off
+		if !threatViz.IsActive() || threatViz.GetMode() != behavior.VisualizerModeLayer {
+			threatViz.SetMode(behavior.VisualizerModeLayer)
+			if !threatViz.IsActive() {
+				threatViz.Toggle()
+			}
+			modeInfo := threatViz.GetLayerModeInfo()
+			cih.logManager.UpdateTextArea(combatLogArea,
+				fmt.Sprintf("Layer visualization enabled: %s", modeInfo.Name))
+		} else {
+			threatViz.Toggle()
+			cih.logManager.UpdateTextArea(combatLogArea, "Layer visualization disabled")
+		}
+	}
+	cih.updateLayerStatusWidget()
+	return true
+}
+
+// updateLayerStatusWidget updates the layer status panel visibility and text
+func (cih *CombatInputHandler) updateLayerStatusWidget() {
+	threatViz := cih.visualization.GetThreatVisualizer()
+
+	result := cih.panels.Get(CombatPanelLayerStatus)
+	if result == nil || threatViz == nil {
+		return
+	}
+	layerStatusPanel := result.Container
+	layerStatusText := result.TextLabel
+	if layerStatusPanel == nil || layerStatusText == nil {
+		return
+	}
+
+	// Show layer status only when in layer mode and active
+	if threatViz.IsActive() && threatViz.GetMode() == behavior.VisualizerModeLayer {
+		modeInfo := threatViz.GetLayerModeInfo()
+		statusText := fmt.Sprintf("LAYER VIEW\n%s\n%s", modeInfo.Name, modeInfo.ColorKey)
+		layerStatusText.Label = statusText
+		layerStatusPanel.GetWidget().Visibility = widget.Visibility_Show
+	} else {
+		layerStatusPanel.GetWidget().Visibility = widget.Visibility_Hide
+	}
 }
