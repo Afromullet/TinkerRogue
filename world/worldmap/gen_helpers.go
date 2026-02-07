@@ -125,3 +125,117 @@ func carveHorizontalTunnel(result *GenerationResult, x1, x2, y, width int, image
 func carveVerticalTunnel(result *GenerationResult, y1, y2, x, width int, images TileImageSet) {
 	carveTunnel(result, y1, y2, x, width, false, images)
 }
+
+// ========================================
+// SHARED CONNECTIVITY HELPERS
+// ========================================
+
+// floodFillRegion finds all connected walkable tiles starting from (startX, startY).
+// terrainMap: true = walkable, false = obstacle.
+// Returns slice of flat indices belonging to this connected region.
+func floodFillRegion(terrainMap []bool, visited []bool, startX, startY, width, height int) []int {
+	var region []int
+	queue := [][2]int{{startX, startY}}
+	visited[startY*width+startX] = true
+
+	for len(queue) > 0 {
+		x, y := queue[0][0], queue[0][1]
+		queue = queue[1:]
+
+		region = append(region, y*width+x)
+
+		neighbors := [][2]int{{0, -1}, {0, 1}, {-1, 0}, {1, 0}}
+		for _, dir := range neighbors {
+			nx, ny := x+dir[0], y+dir[1]
+			if nx >= 0 && nx < width && ny >= 0 && ny < height {
+				nidx := ny*width + nx
+				if !visited[nidx] && terrainMap[nidx] {
+					visited[nidx] = true
+					queue = append(queue, [2]int{nx, ny})
+				}
+			}
+		}
+	}
+
+	return region
+}
+
+// carveCorridorBetween creates an L-shaped corridor between two flat indices on the terrain map.
+// Sets traversed cells to walkable (true).
+func carveCorridorBetween(terrainMap []bool, width, height, fromIdx, toIdx int) {
+	fromX, fromY := fromIdx%width, fromIdx/width
+	toX, toY := toIdx%width, toIdx/width
+
+	// Horizontal first
+	if fromX < toX {
+		for x := fromX; x <= toX; x++ {
+			terrainMap[fromY*width+x] = true
+		}
+	} else {
+		for x := fromX; x >= toX; x-- {
+			terrainMap[fromY*width+x] = true
+		}
+	}
+
+	// Then vertical
+	if fromY < toY {
+		for y := fromY; y <= toY; y++ {
+			terrainMap[y*width+toX] = true
+		}
+	} else {
+		for y := fromY; y >= toY; y-- {
+			terrainMap[y*width+toX] = true
+		}
+	}
+}
+
+// ensureTerrainConnectivity finds all disconnected walkable regions and connects
+// them to the largest region via L-shaped corridors.
+func ensureTerrainConnectivity(terrainMap []bool, width, height int) {
+	visited := make([]bool, len(terrainMap))
+	var largestRegion []int
+	maxSize := 0
+
+	// Find all regions and track the largest
+	for y := 0; y < height; y++ {
+		for x := 0; x < width; x++ {
+			idx := y*width + x
+			if !visited[idx] && terrainMap[idx] {
+				region := floodFillRegion(terrainMap, visited, x, y, width, height)
+				if len(region) > maxSize {
+					largestRegion = region
+					maxSize = len(region)
+				}
+			}
+		}
+	}
+
+	// If no walkable region, make center 50% walkable
+	if maxSize == 0 {
+		for y := height / 4; y < (height * 3 / 4); y++ {
+			for x := width / 4; x < (width * 3 / 4); x++ {
+				terrainMap[y*width+x] = true
+			}
+		}
+		return
+	}
+
+	// Mark largest region as visited
+	visited = make([]bool, len(terrainMap))
+	for _, idx := range largestRegion {
+		visited[idx] = true
+	}
+
+	// Connect all other regions to the largest
+	for y := 0; y < height; y++ {
+		for x := 0; x < width; x++ {
+			idx := y*width + x
+			if !visited[idx] && terrainMap[idx] {
+				region := floodFillRegion(terrainMap, visited, x, y, width, height)
+				if len(region) > 0 {
+					carveCorridorBetween(terrainMap, width, height, largestRegion[0], region[0])
+				}
+			}
+		}
+	}
+}

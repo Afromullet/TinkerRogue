@@ -17,13 +17,13 @@ import (
 
 // Note: EnemySquadSpec is defined in types.go and used for all enemy squad generation
 
-// SetupBalancedEncounter creates player and enemy factions with power-based squad generation.
+// SetupEncounter creates player and enemy factions with power-based squad generation.
 // Replaces SetupGameplayFactions with dynamic encounter balancing.
 // Returns a list of enemy squad IDs created for this encounter.
 //
 // This function delegates to GenerateEncounterSpec for the core generation logic,
 // then sets up combat factions and action states.
-func SetupBalancedEncounter(
+func SetupEncounter(
 	manager *common.EntityManager,
 	playerEntityID ecs.EntityID,
 	playerStartPos coords.LogicalPosition,
@@ -169,7 +169,6 @@ func generatePlayerSquadPositions(startPos coords.LogicalPosition, count int) []
 	// Player squads: arc from -Pi/2 to Pi/2 (facing forward), distance alternating 3-4
 	return generatePositionsAroundPoint(startPos, count, -math.Pi/2, math.Pi/2, PlayerMinDistance, PlayerMaxDistance)
 }
-
 
 // generateEnemySquadsByPower creates enemy squads matching target squad power.
 // targetPower is now the per-squad target (average player squad power * difficulty).

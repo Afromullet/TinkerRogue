@@ -4,11 +4,28 @@ import (
 	"game_main/world/coords"
 )
 
+// POIData describes a placed point of interest with type and terrain info
+type POIData struct {
+	Position coords.LogicalPosition
+	NodeID   string // Maps to nodeDefinitions.json ID: "town", "temple", "guild_hall", "watchtower"
+	Biome    Biome
+}
+
+// FactionStartPosition describes a generator-chosen starting position for a faction
+type FactionStartPosition struct {
+	Position coords.LogicalPosition
+	Biome    Biome
+	Sector   int // Which map sector (0-4)
+}
+
 // GenerationResult contains the output of a map generation algorithm
 type GenerationResult struct {
-	Tiles          []*Tile
-	Rooms          []Rect
-	ValidPositions []coords.LogicalPosition
+	Tiles                 []*Tile
+	Rooms                 []Rect
+	ValidPositions        []coords.LogicalPosition
+	POIs                  []POIData             // Typed points of interest
+	FactionStartPositions []FactionStartPosition // Generator-chosen faction positions
+	BiomeMap              []Biome               // Flat array indexed by positionToIndex
 }
 
 // MapGenerator defines the interface for all map generation algorithms

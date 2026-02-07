@@ -168,6 +168,11 @@ func ExpandTerritory(manager *common.EntityManager, entity *ecs.Entity, factionD
 			continue
 		}
 
+		// Skip impassable terrain (mountains, water)
+		if !core.IsTileWalkable(adj) {
+			continue
+		}
+
 		// Check if tile is unoccupied
 		if !IsTileOwnedByAnyFaction(manager, adj) {
 			territoryData.OwnedTiles = append(territoryData.OwnedTiles, adj)

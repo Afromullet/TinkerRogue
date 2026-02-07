@@ -60,8 +60,8 @@ func (g *TacticalBiomeGenerator) Generate(width, height int, images TileImageSet
 	// Add biome-specific tactical features
 	g.addTacticalFeatures(terrainMap, width, height, profile, biome)
 
-	// Ensure connectivity
-	g.ensureConnectivity(terrainMap, width, height)
+	// Ensure connectivity (uses shared helper)
+	ensureTerrainConnectivity(terrainMap, width, height)
 
 	// Convert terrain map to tiles
 	g.convertToTiles(&result, terrainMap, width, height, images, biome)
@@ -309,113 +309,9 @@ func (g *TacticalBiomeGenerator) ensureOpenAreas(terrainMap []bool, width, heigh
 	}
 }
 
-// ensureConnectivity uses flood-fill to connect all walkable regions
-func (g *TacticalBiomeGenerator) ensureConnectivity(terrainMap []bool, width, height int) {
-	// Find largest connected region
-	visited := make([]bool, len(terrainMap))
-	var largestRegion []int
-	maxSize := 0
-
-	for y := 0; y < height; y++ {
-		for x := 0; x < width; x++ {
-			idx := y*width + x
-			if !visited[idx] && terrainMap[idx] {
-				region := g.floodFill(terrainMap, visited, x, y, width, height)
-				if len(region) > maxSize {
-					largestRegion = region
-					maxSize = len(region)
-				}
-			}
-		}
-	}
-
-	// If no walkable region, make center 50% walkable
-	if maxSize == 0 {
-		for y := height / 4; y < (height * 3 / 4); y++ {
-			for x := width / 4; x < (width * 3 / 4); x++ {
-				terrainMap[y*width+x] = true
-			}
-		}
-		return
-	}
-
-	// Mark largest region
-	visited = make([]bool, len(terrainMap))
-	for _, idx := range largestRegion {
-		visited[idx] = true
-	}
-
-	// Connect all other regions to largest
-	for y := 0; y < height; y++ {
-		for x := 0; x < width; x++ {
-			idx := y*width + x
-			if !visited[idx] && terrainMap[idx] {
-				region := g.floodFill(terrainMap, visited, x, y, width, height)
-				if len(region) > 0 {
-					// Carve corridor from this region to largest
-					g.carveCorridorToRegion(terrainMap, width, height, largestRegion[0], region[0])
-				}
-			}
-		}
-	}
-}
-
-// floodFill finds all connected walkable tiles
-func (g *TacticalBiomeGenerator) floodFill(terrainMap, visited []bool, startX, startY, width, height int) []int {
-	var region []int
-	queue := [][2]int{{startX, startY}}
-	visited[startY*width+startX] = true
-
-	for len(queue) > 0 {
-		x, y := queue[0][0], queue[0][1]
-		queue = queue[1:]
-
-		region = append(region, y*width+x)
-
-		// Check 4 neighbors
-		neighbors := [][2]int{{0, -1}, {0, 1}, {-1, 0}, {1, 0}}
-		for _, dir := range neighbors {
-			nx, ny := x+dir[0], y+dir[1]
-			if nx >= 0 && nx < width && ny >= 0 && ny < height {
-				nidx := ny*width + nx
-				if !visited[nidx] && terrainMap[nidx] {
-					visited[nidx] = true
-					queue = append(queue, [2]int{nx, ny})
-				}
-			}
-		}
-	}
-
-	return region
-}
-
-// carveCorridorToRegion creates L-shaped corridor between regions
-func (g *TacticalBiomeGenerator) carveCorridorToRegion(terrainMap []bool, width, height, fromIdx, toIdx int) {
-	fromX, fromY := fromIdx%width, fromIdx/width
-	toX, toY := toIdx%width, toIdx/width
-
-	// Horizontal first
-	if fromX < toX {
-		for x := fromX; x <= toX; x++ {
-			terrainMap[fromY*width+x] = true
-		}
-	} else {
-		for x := fromX; x >= toX; x-- {
-			terrainMap[fromY*width+x] = true
-		}
-	}
-
-	// Then vertical
-	if fromY < toY {
-		for y := fromY; y <= toY; y++ {
-			terrainMap[y*width+toX] = true
-		}
-	} else {
-		for y := fromY; y >= toY; y-- {
-			terrainMap[y*width+toX] = true
-		}
-	}
-}
+// ensureConnectivity, floodFill, and carveCorridorToRegion have been
+// extracted to shared package-level functions in gen_helpers.go:
+// ensureTerrainConnectivity(), floodFillRegion(), carveCorridorBetween()
 
 // convertToTiles converts terrain map to tile array
 func (g *TacticalBiomeGenerator) convertToTiles(result *GenerationResult, terrainMap []bool, width, height int, images TileImageSet, biome Biome) {

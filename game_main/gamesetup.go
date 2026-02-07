@@ -101,7 +101,7 @@ func (gb *GameBootstrap) SetupDebugContent(em *common.EntityManager, gm *worldma
 // InitializeGameplay sets up squad system and exploration squads.
 // Phase 5: Depends on CreatePlayer for faction positioning.
 // Overworld factions spawn threats dynamically during gameplay.
-func (gb *GameBootstrap) InitializeGameplay(em *common.EntityManager, pd *common.PlayerData) {
+func (gb *GameBootstrap) InitializeGameplay(em *common.EntityManager, pd *common.PlayerData, gm *worldmap.GameMap) {
 
 	// Initialize overworld tick state
 	tick.CreateTickStateEntity(em)
@@ -109,30 +109,40 @@ func (gb *GameBootstrap) InitializeGameplay(em *common.EntityManager, pd *common
 	// Initialize travel state
 	travel.CreateTravelStateEntity(em)
 
+	// Initialize walkable grid from map tiles
+	core.InitWalkableGrid(config.DefaultMapWidth, config.DefaultMapHeight)
+	for _, pos := range gm.ValidPositions {
+		core.SetTileWalkable(pos, true)
+	}
+
 	// Create initial overworld factions (they will spawn threats dynamically)
-	gb.InitializeOverworldFactions(em, pd)
+	gb.InitializeOverworldFactions(em, pd, gm)
 }
 
 // InitializeOverworldFactions creates starting NPC factions on the overworld.
-// Spawns 3-5 factions at different positions across the map.
-func (gb *GameBootstrap) InitializeOverworldFactions(em *common.EntityManager, pd *common.PlayerData) {
-	// Define faction spawn positions (spread across map, away from player start)
-	factionConfigs := []struct {
-		factionType core.FactionType
-		position    coords.LogicalPosition
-		strength    int
-	}{
-		{core.FactionNecromancers, coords.LogicalPosition{X: 15, Y: 15}, 8},
-		{core.FactionBandits, coords.LogicalPosition{X: 85, Y: 15}, 6},
-		{core.FactionOrcs, coords.LogicalPosition{X: 85, Y: 65}, 10},
-		{core.FactionCultists, coords.LogicalPosition{X: 15, Y: 65}, 7},
+// Uses generator-provided positions when available, falls back to hardcoded positions.
+func (gb *GameBootstrap) InitializeOverworldFactions(em *common.EntityManager, pd *common.PlayerData, gm *worldmap.GameMap) {
+	factionTypes := []core.FactionType{
+		core.FactionNecromancers,
+		core.FactionBandits,
+		core.FactionOrcs,
+		core.FactionCultists,
 	}
 
-	// Create each faction
-	for _, cfg := range factionConfigs {
-		factionID := faction.CreateFaction(em, cfg.factionType, cfg.position, cfg.strength)
+	for i, fType := range factionTypes {
+		var pos coords.LogicalPosition
+		strength := 6 + common.RandomInt(5)
+
+		if i < len(gm.FactionStartPositions) {
+			pos = gm.FactionStartPositions[i].Position
+		} else {
+			// Fallback hardcoded positions
+			pos = coords.LogicalPosition{X: 15 + i*35, Y: 15 + (i%2)*50}
+		}
+
+		factionID := faction.CreateFaction(em, fType, pos, strength)
 		log.Printf("Created %s faction at (%d, %d) with strength %d (ID: %d)\n",
-			cfg.factionType.String(), cfg.position.X, cfg.position.Y, cfg.strength, factionID)
+			fType.String(), pos.X, pos.Y, strength, factionID)
 	}
 }
 
@@ -160,7 +170,7 @@ func SetupNewGame(g *Game) {
 	bootstrap.SetupDebugContent(&g.em, &g.gameMap, &g.playerData)
 
 	// Phase 5: Initialize gameplay systems
-	bootstrap.InitializeGameplay(&g.em, &g.playerData)
+	bootstrap.InitializeGameplay(&g.em, &g.playerData, &g.gameMap)
 }
 
 // SetupGameplayFactions has been removed and replaced with SetupBalancedEncounter

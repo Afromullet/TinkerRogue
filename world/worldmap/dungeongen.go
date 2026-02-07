@@ -83,12 +83,15 @@ func (r *Rect) Intersect(other Rect) bool {
 
 // Holds the Map Information
 type GameMap struct {
-	Tiles          []*Tile
-	Rooms          []Rect
-	NumTiles       int
-	RightEdgeX     int
-	RightEdgeY     int
-	ValidPositions []coords.LogicalPosition
+	Tiles                 []*Tile
+	Rooms                 []Rect
+	NumTiles              int
+	RightEdgeX            int
+	RightEdgeY            int
+	ValidPositions        []coords.LogicalPosition
+	BiomeMap              []Biome
+	POIs                  []POIData
+	FactionStartPositions []FactionStartPosition
 }
 
 // NewGameMap creates a new game map using the specified generator algorithm
@@ -111,6 +114,9 @@ func NewGameMap(generatorName string) GameMap {
 	dungeonMap.Rooms = result.Rooms
 	dungeonMap.NumTiles = len(dungeonMap.Tiles)
 	dungeonMap.ValidPositions = result.ValidPositions
+	dungeonMap.BiomeMap = result.BiomeMap
+	dungeonMap.POIs = result.POIs
+	dungeonMap.FactionStartPositions = result.FactionStartPositions
 
 	dungeonMap.PlaceStairs(images)
 
@@ -258,6 +264,18 @@ func (gameMap GameMap) InBounds(x, y int) bool {
 		return false
 	}
 	return true
+}
+
+// GetBiomeAt returns the biome at the given position, defaulting to BiomeGrassland
+func (gm *GameMap) GetBiomeAt(pos coords.LogicalPosition) Biome {
+	if gm.BiomeMap == nil {
+		return BiomeGrassland
+	}
+	idx := coords.CoordManager.LogicalToIndex(pos)
+	if idx < 0 || idx >= len(gm.BiomeMap) {
+		return BiomeGrassland
+	}
+	return gm.BiomeMap[idx]
 }
 
 // TODO: Change this to check for WALL, not blocked

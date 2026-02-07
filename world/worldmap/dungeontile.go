@@ -36,6 +36,7 @@ type Tile struct {
 	TileType     TileType
 	IsRevealed   bool
 	cm           graphics.ColorMatrix
+	Biome        Biome // Terrain biome (default BiomeGrassland)
 }
 
 func NewTile(pixelX, pixelY int, tileCords coords.LogicalPosition, blocked bool, img *ebiten.Image, tileType TileType, isRevealed bool) Tile {
