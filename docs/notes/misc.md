@@ -119,3 +119,8 @@ from exported JSON logs. It displays squad formations, attack flows, and detaile
 # Running from Tinker Rogue root dir
 
 tools\combat_visualizer\combat_visualizer.exe game_main\combat_logs\battle_20260207_070651.948.json >> all_battles.txt
+
+
+# Running comabt sim from TinkerRogue Dir
+
+ cd game_main && go run ../tools/combat_simulator/
