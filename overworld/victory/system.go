@@ -30,6 +30,7 @@ func CheckVictoryCondition(manager *common.EntityManager) core.VictoryCondition 
 		if err := core.FinalizeRecording("Defeat", defeatCheck.DefeatMessage); err != nil {
 			fmt.Printf("WARNING: Failed to export overworld log: %v\n", err)
 		}
+		core.ClearRecording()
 
 		return core.VictoryPlayerLoses
 	}
@@ -49,6 +50,7 @@ func CheckVictoryCondition(manager *common.EntityManager) core.VictoryCondition 
 			if err := core.FinalizeRecording("Victory", victoryReason); err != nil {
 				fmt.Printf("WARNING: Failed to export overworld log: %v\n", err)
 			}
+			core.ClearRecording()
 
 			return core.VictoryTimeLimit
 		}
@@ -71,6 +73,7 @@ func CheckVictoryCondition(manager *common.EntityManager) core.VictoryCondition 
 		if err := core.FinalizeRecording("Victory", victoryReason); err != nil {
 			fmt.Printf("WARNING: Failed to export overworld log: %v\n", err)
 		}
+		core.ClearRecording()
 
 		return core.VictoryPlayerWins
 	}
@@ -89,6 +92,7 @@ func CheckVictoryCondition(manager *common.EntityManager) core.VictoryCondition 
 			if err := core.FinalizeRecording("Victory", victoryReason); err != nil {
 				fmt.Printf("WARNING: Failed to export overworld log: %v\n", err)
 			}
+			core.ClearRecording()
 
 			return core.VictoryFactionDefeat
 		}

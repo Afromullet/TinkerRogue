@@ -8,10 +8,12 @@
 package main
 
 import (
+	"fmt"
 	"game_main/common"
 	"game_main/config"
 	"game_main/gui/framework"
 	"game_main/input"
+	"game_main/overworld/core"
 	"game_main/testing"
 	"game_main/visual/graphics"
 	"game_main/visual/rendering"
@@ -132,5 +134,13 @@ func main() {
 	// Start game loop
 	if err := ebiten.RunGame(g); err != nil {
 		log.Fatal(err)
+	}
+
+	// Export overworld log on game exit (if not already exported by victory/defeat)
+	ctx := core.GetContext()
+	if ctx.Recorder != nil && ctx.Recorder.IsEnabled() && ctx.Recorder.EventCount() > 0 {
+		if err := core.FinalizeRecording("Exit", "Game closed"); err != nil {
+			fmt.Printf("WARNING: Failed to export overworld log on exit: %v\n", err)
+		}
 	}
 }
