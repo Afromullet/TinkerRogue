@@ -55,7 +55,6 @@ ________________________________________________
 - Need a better job of highlighting was data comes from JSON files
 - The way the GUI handles keys to track and keyboard presses need to improve
 
-- Replace squad.ExecuteSquadAttack in simulator. 
 
 
 - func CursorPosition(playerPos coords.LogicalPosition) (int, int) in graphictypes requires a change. Leftover from how throwables are handled. 
