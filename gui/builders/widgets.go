@@ -63,10 +63,6 @@ func CreateButtonGroup(config ButtonGroupConfig) *widget.Container {
 // TEXT WIDGETS
 // ============================================
 
-type StringDisplay interface {
-	DisplayString()
-}
-
 // TextConfig provides declarative text widget configuration
 type TextConfig struct {
 	Text       string
