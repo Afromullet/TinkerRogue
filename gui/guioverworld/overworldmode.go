@@ -22,8 +22,8 @@ import (
 type OverworldMode struct {
 	framework.BaseMode // Embed common mode infrastructure
 
-	// UI State
-	state *OverworldState
+	// UI State (owned by GameModeCoordinator, shared across overworld modes)
+	state *framework.OverworldState
 
 	// Renderer
 	renderer *OverworldRenderer
@@ -43,7 +43,6 @@ type OverworldMode struct {
 
 func NewOverworldMode(modeManager *framework.UIModeManager, encounterService *encounter.EncounterService) *OverworldMode {
 	om := &OverworldMode{
-		state:            NewOverworldState(),
 		encounterService: encounterService,
 	}
 	om.SetModeName("overworld")
@@ -54,6 +53,9 @@ func NewOverworldMode(modeManager *framework.UIModeManager, encounterService *en
 }
 
 func (om *OverworldMode) Initialize(ctx *framework.UIContext) error {
+	// Get persistent state from coordinator
+	om.state = ctx.ModeCoordinator.GetOverworldState()
+
 	// Build base UI using ModeBuilder
 	err := framework.NewModeBuilder(&om.BaseMode, framework.ModeConfig{
 		ModeName:   "overworld",

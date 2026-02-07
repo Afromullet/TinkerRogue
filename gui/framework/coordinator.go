@@ -36,7 +36,8 @@ type GameModeCoordinator struct {
 	activeManager    *UIModeManager // Points to currently active manager
 	currentContext   GameContext    // Tracks which context is active
 
-	battleMapState *BattleMapState // Persistent battle data
+	battleMapState  *BattleMapState  // Persistent battle data
+	overworldState  *OverworldState  // Persistent overworld data
 
 	context *UIContext // Reference to shared UIContext for cache management
 }
@@ -53,6 +54,7 @@ func NewGameModeCoordinator(ctx *UIContext) *GameModeCoordinator {
 		currentContext:   ContextBattleMap,
 
 		battleMapState: NewBattleMapState(),
+		overworldState: NewOverworldState(),
 		context:        ctx, // Store reference to UIContext for cache management
 	}
 
@@ -170,6 +172,11 @@ func (gmc *GameModeCoordinator) GetBattleMapManager() *UIModeManager {
 // GetBattleMapState returns the persistent battle map state for UI modes
 func (gmc *GameModeCoordinator) GetBattleMapState() *BattleMapState {
 	return gmc.battleMapState
+}
+
+// GetOverworldState returns the persistent overworld state for UI modes
+func (gmc *GameModeCoordinator) GetOverworldState() *OverworldState {
+	return gmc.overworldState
 }
 
 // GetPlayerData returns the player data from the UI context

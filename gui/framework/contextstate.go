@@ -1,6 +1,8 @@
 package framework
 
 import (
+	"game_main/world/coords"
+
 	"github.com/bytearena/ecs"
 )
 
@@ -68,4 +70,40 @@ func (bms *BattleMapState) DebugMap() map[string]interface{} {
 		"showHealthBars": bms.ShowHealthBars,
 		"encounterID":    bms.TriggeredEncounterID,
 	}
+}
+
+// OverworldState holds UI-specific state for the overworld context
+// This contains ONLY transient UI selection and visualization state
+//
+// IMPORTANT: This is UI STATE ONLY - do not cache computed game data here
+// - UI state: Camera position, selections, display toggles
+// - Game state: Tick data, threats, travel (stored in ECS)
+type OverworldState struct {
+	CameraX          int
+	CameraY          int
+	SelectedThreatID ecs.EntityID            // Selected threat node for inspection
+	HoveredPosition  *coords.LogicalPosition // Current mouse hover position
+	ShowInfluence    bool                    // Toggle influence visualization
+	IsAutoTraveling  bool                    // Auto-advance ticks during travel
+}
+
+// NewOverworldState creates a default overworld state
+func NewOverworldState() *OverworldState {
+	return &OverworldState{
+		CameraX:          0,
+		CameraY:          0,
+		SelectedThreatID: 0,
+		HoveredPosition:  nil,
+		ShowInfluence:    false,
+	}
+}
+
+// ClearSelection clears the currently selected threat
+func (os *OverworldState) ClearSelection() {
+	os.SelectedThreatID = 0
+}
+
+// HasSelection returns true if a threat is currently selected
+func (os *OverworldState) HasSelection() bool {
+	return os.SelectedThreatID != 0
 }
