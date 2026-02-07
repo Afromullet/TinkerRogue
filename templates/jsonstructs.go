@@ -27,24 +27,6 @@ func (attr JSONAttributes) NewAttributesFromJson() common.Attributes {
 	)
 }
 
-type JSONMeleeWeapon struct {
-	Name        string `json:"name,omitempty"`
-	ImgName     string `json:"imgname,omitempty"`
-	MinDamage   int    `json:"minDamage"`
-	MaxDamage   int    `json:"maxDamage"`
-	AttackSpeed int    `json:"attackSpeed"`
-}
-
-func NewJSONMeleeWeapon(w JSONWeapon) JSONMeleeWeapon {
-	return JSONMeleeWeapon{
-		ImgName:     w.ImgName,
-		Name:        w.Name,
-		MinDamage:   w.MinDamage,
-		MaxDamage:   w.MaxDamage,
-		AttackSpeed: w.AttackSpeed,
-	}
-}
-
 // Different TileShapes require different parameters
 // The JSONTargetArea struct contains optional fields for all of the options
 type JSONTargetArea struct {
@@ -87,33 +69,6 @@ func CreateTargetArea(area *JSONTargetArea) graphics.TileBasedShape {
 	}
 
 	return s
-
-}
-
-type JSONRangedWeapon struct {
-	Name            string          `json:"name,omitempty"`
-	ShootingVXXName string          `json:"shootingVX"`
-	ImgName         string          `json:"imgname,omitempty"`
-	MinDamage       int             `json:"minDamage"`
-	MaxDamage       int             `json:"maxDamage"`
-	ShootingRange   int             `json:"shootingRange"`
-	AttackSpeed     int             `json:"attackSpeed"`
-	TargetArea      *JSONTargetArea `json:"targetArea"`
-}
-
-func NewJSONRangedWeapon(r JSONWeapon) JSONRangedWeapon {
-
-	return JSONRangedWeapon{
-
-		Name:            r.Name,
-		ShootingVXXName: r.ShootingVX,
-		ImgName:         r.ImgName,
-		MinDamage:       r.MinDamage,
-		MaxDamage:       r.MaxDamage,
-		ShootingRange:   r.ShootingRange,
-		AttackSpeed:     r.AttackSpeed,
-		TargetArea:      r.TargetArea,
-	}
 
 }
 
@@ -169,22 +124,6 @@ func NewJSONMonster(m JSONMonster) JSONMonster {
 	}
 }
 
-// Intermediate struct for reading data from weapondata.json
-// The json file contains both melee and ranged weapons, which
-// Is why we have optional fields.
-type JSONWeapon struct {
-	Type          string          `json:"type"` // Can be "MeleeWeapon" or "RangedWeapon"
-	Name          string          `json:"name"` // Weapon name
-	ImgName       string          `json:"imgname"`
-	MinDamage     int             `json:"minDamage"`               // Minimum damage
-	MaxDamage     int             `json:"maxDamage"`               // Maximum damage
-	AttackSpeed   int             `json:"attackSpeed"`             // Attack speed
-	ShootingRange int             `json:"shootingRange,omitempty"` // For ranged weapons only
-	AmmoType      string          `json:"ammoType,omitempty"`      // For ranged weapons only
-	ShootingVX    string          `json:"shootingvx,omitempty"`
-	TargetArea    *JSONTargetArea `json:"targetArea"`
-}
-
 type JSONAttributeModifier struct {
 	Name       string `json:"name"`
 	ImgName    string `json:"imgname"`
@@ -225,50 +164,16 @@ func CreateAttributesFromJSON(a JSONAttributeModifier) common.Attributes {
 	}
 }
 
-type JSONCreatureModifier struct {
-	Name              string   `json:"name"`
-	AttackBonus       int      `json:"attackBonus"`
-	MaxHealth         int      `json:"maxHealth"`
-	CurrentHealth     int      `json:"currentHealth"`
-	BaseArmorClass    int      `json:"baseArmorClass"`
-	BaseProtection    int      `json:"baseProtection"`
-	BaseMovementSpeed int      `json:"baseMovementSpeed"`
-	BaseDodgeChance   float32  `json:"baseDodgeChance"`
-	DamageBonus       int      `json:"damagebonus"`
-	Width             int      `json:"width"`
-	Height            int      `json:"height"`
-	Role              string   `json:"role"`
-	TargetCells       [][2]int `json:"targetCells"` // Cell-based targeting pattern
-}
-
-func CreatureModifierFromJSON(a JSONCreatureModifier) JSONCreatureModifier {
-	return JSONCreatureModifier{
-		Name:              a.Name,
-		MaxHealth:         a.MaxHealth,
-		CurrentHealth:     a.CurrentHealth,
-		AttackBonus:       a.AttackBonus,
-		BaseArmorClass:    a.BaseArmorClass,
-		BaseProtection:    a.BaseProtection,
-		BaseDodgeChance:   a.BaseDodgeChance,
-		BaseMovementSpeed: a.BaseMovementSpeed,
-		DamageBonus:       a.DamageBonus,
-		Width:             a.Width,
-		Height:            a.Height,
-		Role:              a.Role,
-		TargetCells:       a.TargetCells,
-	}
-}
-
 // JSONEncounterDifficulty defines difficulty scaling for encounters
 type JSONEncounterDifficulty struct {
-	Level           int     `json:"level"`
-	Name            string  `json:"name"`
-	PowerMultiplier float64 `json:"powerMultiplier"`
-	SquadCount      int     `json:"squadCount"`
-	MinUnitsPerSquad int    `json:"minUnitsPerSquad"`
-	MaxUnitsPerSquad int    `json:"maxUnitsPerSquad"`
-	MinTargetPower  float64 `json:"minTargetPower"`
-	MaxTargetPower  float64 `json:"maxTargetPower"`
+	Level            int     `json:"level"`
+	Name             string  `json:"name"`
+	PowerMultiplier  float64 `json:"powerMultiplier"`
+	SquadCount       int     `json:"squadCount"`
+	MinUnitsPerSquad int     `json:"minUnitsPerSquad"`
+	MaxUnitsPerSquad int     `json:"maxUnitsPerSquad"`
+	MinTargetPower   float64 `json:"minTargetPower"`
+	MaxTargetPower   float64 `json:"maxTargetPower"`
 }
 
 // JSONSquadType defines squad type metadata (for future filtering/validation)
@@ -280,11 +185,11 @@ type JSONSquadType struct {
 
 // JSONAIConfig is the root container for AI behavior configuration
 type JSONAIConfig struct {
-	ThreatCalculation    ThreatCalculationConfig `json:"threatCalculation"`
-	RoleBehaviors        []RoleBehaviorConfig    `json:"roleBehaviors"`
-	SupportLayer         SupportLayerConfig      `json:"supportLayer"`
-	SharedRangedWeight   float64                 `json:"sharedRangedWeight"`   // Shared ranged threat weight (all roles)
-	SharedPositionalWeight float64               `json:"sharedPositionalWeight"` // Shared positional awareness weight (all roles)
+	ThreatCalculation      ThreatCalculationConfig `json:"threatCalculation"`
+	RoleBehaviors          []RoleBehaviorConfig    `json:"roleBehaviors"`
+	SupportLayer           SupportLayerConfig      `json:"supportLayer"`
+	SharedRangedWeight     float64                 `json:"sharedRangedWeight"`     // Shared ranged threat weight (all roles)
+	SharedPositionalWeight float64                 `json:"sharedPositionalWeight"` // Shared positional awareness weight (all roles)
 }
 
 // ThreatCalculationConfig defines threat calculation parameters
@@ -347,14 +252,14 @@ type CompositionBonusConfig struct {
 
 // JSONOverworldConfig is the root container for overworld configuration
 type JSONOverworldConfig struct {
-	ThreatGrowth          ThreatGrowthConfig          `json:"threatGrowth"`
-	FactionAI             FactionAIConfig             `json:"factionAI"`
-	SpawnProbabilities    SpawnProbabilitiesConfig    `json:"spawnProbabilities"`
-	MapDimensions         MapDimensionsConfig         `json:"mapDimensions"`
-	FactionScoring        FactionScoringConfig        `json:"factionScoring"`
-	StrengthThresholds    StrengthThresholdsConfig    `json:"strengthThresholds"`
-	VictoryConditions     VictoryConditionsConfig     `json:"victoryConditions"`
-	FactionScoringControl FactionScoringControlConfig `json:"factionScoringControl"`
+	ThreatGrowth          ThreatGrowthConfig             `json:"threatGrowth"`
+	FactionAI             FactionAIConfig                `json:"factionAI"`
+	SpawnProbabilities    SpawnProbabilitiesConfig       `json:"spawnProbabilities"`
+	MapDimensions         MapDimensionsConfig            `json:"mapDimensions"`
+	FactionScoring        FactionScoringConfig           `json:"factionScoring"`
+	StrengthThresholds    StrengthThresholdsConfig       `json:"strengthThresholds"`
+	VictoryConditions     VictoryConditionsConfig        `json:"victoryConditions"`
+	FactionScoringControl FactionScoringControlConfig    `json:"factionScoringControl"`
 	StrategyBonuses       map[string]StrategyBonusConfig `json:"strategyBonuses"`
 }
 
@@ -491,10 +396,10 @@ type JSONNodeDefinition struct {
 	Category    string `json:"category"`    // "threat", "settlement", "fortress"
 	DisplayName string `json:"displayName"` // Human-readable name
 
-	Color       JSONColor         `json:"color"`                 // Display color on overworld map
-	Overworld   JSONNodeOverworld `json:"overworld"`             // Overworld behavior
-	Services    []string          `json:"services,omitempty"`    // For settlements: available services
-	FactionID   string            `json:"factionId,omitempty"`   // Faction this node belongs to (for threat nodes)
+	Color     JSONColor         `json:"color"`               // Display color on overworld map
+	Overworld JSONNodeOverworld `json:"overworld"`           // Overworld behavior
+	Services  []string          `json:"services,omitempty"`  // For settlements: available services
+	FactionID string            `json:"factionId,omitempty"` // Faction this node belongs to (for threat nodes)
 }
 
 // JSONDefaultNode defines fallback configuration for unknown nodes

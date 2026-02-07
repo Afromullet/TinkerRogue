@@ -10,25 +10,8 @@ type MonstersData struct {
 	Monsters []JSONMonster `json:"monsters"`
 }
 
-// WeaponList struct to hold all weapons
-type WeaponData struct {
-	Weps []JSONWeapon `json:"weapons"` // List of weapons
-}
-
-type MeleeWeapons struct {
-	Weapons []JSONMeleeWeapon
-}
-
-type RangedWeapons struct {
-	Weapons []JSONRangedWeapon
-}
-
 type ConsumableData struct {
 	Consumables []JSONAttributeModifier
-}
-
-type CreatureModifiers struct {
-	CreatureMods []JSONCreatureModifier
 }
 
 // EncounterDataWithNew is the root container for encounter configuration
@@ -61,39 +44,6 @@ func ReadMonsterData() {
 
 }
 
-func ReadWeaponData() {
-	data, err := os.ReadFile("../assets//gamedata/weapondata.json")
-	if err != nil {
-		panic(err)
-	}
-
-	// Parse JSON
-	var weaponData WeaponData
-	err = json.Unmarshal(data, &weaponData)
-
-	if err != nil {
-		panic(err)
-	}
-
-	// Iterate over monsters
-	for _, w := range weaponData.Weps {
-
-		if w.Type == "MeleeWeapon" {
-			wep := NewJSONMeleeWeapon(w)
-			MeleeWeaponTemplates = append(MeleeWeaponTemplates, wep)
-
-		} else if w.Type == "RangedWeapon" {
-
-			wep := NewJSONRangedWeapon(w)
-			RangedWeaponTemplates = append(RangedWeaponTemplates, wep)
-
-		} else {
-			// ERROR HANDLING IN FUTURE
-		}
-	}
-
-}
-
 func ReadConsumableData() {
 	data, err := os.ReadFile("../assets//gamedata/consumabledata.json")
 	if err != nil {
@@ -112,29 +62,6 @@ func ReadConsumableData() {
 	for _, c := range consumables.Consumables {
 
 		ConsumableTemplates = append(ConsumableTemplates, NewJSONAttributeModifier(c))
-
-	}
-
-}
-
-func ReadCreatureModifiers() {
-	data, err := os.ReadFile("../assets//gamedata/creaturemodifiers.json")
-	if err != nil {
-		panic(err)
-	}
-
-	// Parse JSON
-	var mod CreatureModifiers
-	err = json.Unmarshal(data, &mod)
-
-	if err != nil {
-		panic(err)
-	}
-
-	// Iterate over monsters
-	for _, c := range mod.CreatureMods {
-
-		CreatureModifierTemplates = append(CreatureModifierTemplates, CreatureModifierFromJSON(c))
 
 	}
 
@@ -376,7 +303,7 @@ func validateEncounterDefinitions(data *EncounterDataWithNew, validSquadTypes ma
 	// Log factions with multiple encounters (informational, not an error)
 	for factionID, encounterIDs := range encountersPerFaction {
 		if len(encounterIDs) > 1 {
-			println("Faction '" + factionID + "' has multiple encounters:", len(encounterIDs))
+			println("Faction '"+factionID+"' has multiple encounters:", len(encounterIDs))
 		}
 	}
 }

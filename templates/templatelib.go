@@ -2,10 +2,8 @@ package templates
 
 // We are not creating the entities yet, so we use the JSON struct to store the template data.
 var MonsterTemplates []JSONMonster
-var MeleeWeaponTemplates []JSONMeleeWeapon
-var RangedWeaponTemplates []JSONRangedWeapon
 var ConsumableTemplates []JSONAttributeModifier
-var CreatureModifierTemplates []JSONCreatureModifier
+
 var EncounterDifficultyTemplates []JSONEncounterDifficulty
 var SquadTypeTemplates []JSONSquadType
 var AIConfigTemplate JSONAIConfig
@@ -25,9 +23,8 @@ var DefaultEncounterTemplate *JSONDefaultEncounter
 func ReadGameData() {
 
 	ReadMonsterData()
-	ReadWeaponData()
 	ReadConsumableData()
-	ReadCreatureModifiers()
+
 	ReadNodeDefinitions() // Load node definitions first
 	ReadEncounterData()   // Then encounter data (validates links)
 	ReadAIConfig()
