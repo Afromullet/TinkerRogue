@@ -58,7 +58,7 @@ func (c *ChangeLeaderCommand) Execute() error {
 	if c.oldLeaderID != 0 {
 		oldLeaderEntity := c.manager.FindEntityByID(c.oldLeaderID)
 		if oldLeaderEntity != nil {
-			removeLeaderComponents(oldLeaderEntity)
+			squads.RemoveLeaderComponents(oldLeaderEntity)
 		}
 	}
 
@@ -68,10 +68,7 @@ func (c *ChangeLeaderCommand) Execute() error {
 		return fmt.Errorf("new leader entity not found")
 	}
 
-	addLeaderComponents(newLeaderEntity)
-
-	// Update squad capacity based on new leader
-	squads.UpdateSquadCapacity(c.squadID, c.manager)
+	squads.AddLeaderComponents(newLeaderEntity)
 
 	return nil
 }
@@ -80,19 +77,16 @@ func (c *ChangeLeaderCommand) Undo() error {
 	// Remove leader component from new leader
 	newLeaderEntity := c.manager.FindEntityByID(c.newLeaderID)
 	if newLeaderEntity != nil {
-		removeLeaderComponents(newLeaderEntity)
+		squads.RemoveLeaderComponents(newLeaderEntity)
 	}
 
 	// Restore old leader (if there was one)
 	if c.oldLeaderID != 0 {
 		oldLeaderEntity := c.manager.FindEntityByID(c.oldLeaderID)
 		if oldLeaderEntity != nil {
-			addLeaderComponents(oldLeaderEntity)
+			squads.AddLeaderComponents(oldLeaderEntity)
 		}
 	}
-
-	// Update squad capacity
-	squads.UpdateSquadCapacity(c.squadID, c.manager)
 
 	return nil
 }

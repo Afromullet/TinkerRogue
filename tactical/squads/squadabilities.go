@@ -80,7 +80,7 @@ func evaluateTrigger(slot *AbilitySlot, squadID ecs.EntityID, ecsmanager *common
 
 	switch slot.TriggerType {
 	case TriggerSquadHPBelow:
-		avgHP := calculateAverageHP(squadID, ecsmanager)
+		avgHP := GetSquadHealthPercent(squadID, ecsmanager)
 		return avgHP < slot.Threshold
 
 	case TriggerTurnCount:
@@ -99,36 +99,6 @@ func evaluateTrigger(slot *AbilitySlot, squadID ecs.EntityID, ecsmanager *common
 	default:
 		return false
 	}
-}
-
-// calculateAverageHP computes the squad's average HP as a percentage (0.0 - 1.0)
-
-func calculateAverageHP(squadID ecs.EntityID, ecsmanager *common.EntityManager) float64 {
-	unitIDs := GetUnitIDsInSquad(squadID, ecsmanager)
-
-	totalHP := 0
-	totalMaxHP := 0
-
-	for _, unitID := range unitIDs {
-		entity := ecsmanager.FindEntityByID(unitID)
-		if entity == nil {
-			continue
-		}
-
-		attr := common.GetComponentType[*common.Attributes](entity, common.AttributeComponent)
-		if attr == nil {
-			continue
-		}
-
-		totalHP += attr.CurrentHealth
-		totalMaxHP += attr.MaxHealth
-	}
-
-	if totalMaxHP == 0 {
-		return 0.0
-	}
-
-	return float64(totalHP) / float64(totalMaxHP)
 }
 
 // countEnemySquads counts the number of enemy squads on the map

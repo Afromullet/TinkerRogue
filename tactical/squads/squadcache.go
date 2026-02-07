@@ -1,13 +1,25 @@
 package squads
 
+// This file provides a View-based cached API for squad queries, intended for GUI hot paths.
+//
+// Canonical API (squadqueries.go): Uses World.Query() on every call. Works anywhere,
+// no setup required. Preferred for game logic, systems, and tests.
+//
+// Cached API (this file): Uses ECS Views which are automatically maintained by the
+// library when components change. O(k) where k = matching entities, vs O(n) for
+// World.Query(). Use when you have a SquadQueryCache instance (typically in GUI code).
+//
+// Both APIs return identical results. The cached versions are thin wrappers that
+// iterate Views instead of running queries.
+
 import (
 	"game_main/common"
 
 	"github.com/bytearena/ecs"
 )
 
-// SquadQueryCache provides cached access to squad-related queries using ECS Views
-// Views are automatically maintained by the ECS library when components are added/removed
+// SquadQueryCache provides cached access to squad-related queries using ECS Views.
+// Views are automatically maintained by the ECS library when components are added/removed.
 type SquadQueryCache struct {
 	// ECS Views (automatically maintained by ECS library)
 	// Exported so they can be accessed by other systems (e.g., BuildSquadInfoCache)

@@ -81,13 +81,11 @@ func CreateHighCapacitySquad(manager *common.EntityManager, squadName string, ca
 	squadID := squadEntity.GetID()
 
 	squadEntity.AddComponent(SquadComponent, &SquadData{
-		SquadID:       squadID,
-		Name:          squadName,
-		Morale:        100,
-		TurnCount:     0,
-		MaxUnits:      9,
-		UsedCapacity:  0.0,
-		TotalCapacity: 9, // Will be recalculated based on leader
+		SquadID:  squadID,
+		Name:     squadName,
+		Morale:   100,
+		TurnCount: 0,
+		MaxUnits: 9,
 	})
 
 	squadEntity.AddComponent(common.PositionComponent, &coords.LogicalPosition{})
@@ -110,16 +108,8 @@ func CreateHighCapacitySquad(manager *common.EntityManager, squadName string, ca
 	)
 	leaderEntity.AddComponent(common.AttributeComponent, &leaderAttr)
 
-	// Add leader component with abilities
-	leaderEntity.AddComponent(LeaderComponent, &LeaderData{
-		Leadership: 9,
-		Experience: 0,
-	})
-	leaderEntity.AddComponent(AbilitySlotComponent, &AbilitySlotData{Slots: [4]AbilitySlot{}})
-	leaderEntity.AddComponent(CooldownTrackerComponent, &CooldownTrackerData{
-		Cooldowns:    [4]int{0, 0, 0, 0},
-		MaxCooldowns: [4]int{0, 0, 0, 0},
-	})
+	// Add leader components (LeaderComponent, AbilitySlotComponent, CooldownTrackerComponent)
+	AddLeaderComponents(leaderEntity)
 
 	// Add GridPositionComponent at invalid position so it doesn't interfere with grid
 	// and UnitRoleComponent for visualization compatibility
@@ -132,9 +122,6 @@ func CreateHighCapacitySquad(manager *common.EntityManager, squadName string, ca
 	leaderEntity.AddComponent(UnitRoleComponent, &UnitRoleData{
 		Role: RoleTank, // Arbitrary role for the invisible leader
 	})
-
-	// Update squad capacity to reflect the leader
-	UpdateSquadCapacity(squadID, manager)
 
 	return squadID
 }

@@ -33,6 +33,9 @@ var (
 	LeaderTag      ecs.Tag
 )
 
+// DefaultSquadCapacity is the base capacity for squads without a leader.
+const DefaultSquadCapacity = 6
+
 // ========================================
 // SQUAD ENTITY COMPONENTS
 // ========================================
@@ -45,11 +48,8 @@ type SquadData struct {
 	Morale        int           // Squad-wide morale (0-100)
 	SquadLevel    int           // Average level for spawning
 	TurnCount     int           // Number of turns this squad has taken
-	MaxUnits      int           // Maximum squad size (typically 9)
-	UsedCapacity  float64       // Current capacity consumed by units
-	TotalCapacity int           // Total capacity from leader's Leadership stat
-	IsDestroyed   bool          // Cached destruction state (all units dead)
-	IsDeployed    bool          // true if squad is on battle map, false if in reserves
+	MaxUnits   int  // Maximum squad size (typically 9)
+	IsDeployed bool // true if squad is on battle map, false if in reserves
 }
 
 // FormationType defines squad layout presets

@@ -58,15 +58,13 @@ func createTestSquad(manager *common.EntityManager, name string) ecs.EntityID {
 	squadID := squad.GetID()
 
 	squadData := &SquadData{
-		SquadID:       squadID,
-		Formation:     FormationBalanced,
-		Name:          name,
-		Morale:        100,
-		SquadLevel:    1,
-		TurnCount:     0,
-		MaxUnits:      9,
-		UsedCapacity:  0,
-		TotalCapacity: 6,
+		SquadID:    squadID,
+		Formation:  FormationBalanced,
+		Name:       name,
+		Morale:     100,
+		SquadLevel: 1,
+		TurnCount:  0,
+		MaxUnits:   9,
 	}
 
 	squad.AddComponent(SquadComponent, squadData)

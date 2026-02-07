@@ -217,9 +217,7 @@ func (gsc *gameSquadChecker) HasActiveSquads(manager *common.EntityManager) bool
 			continue
 		}
 
-		// Check if this squad is destroyed
-		// IsDestroyed is maintained by squad system when units die
-		if !squadData.IsDestroyed {
+		if !squads.IsSquadDestroyed(squadData.SquadID, manager) {
 			return true // Found at least one active squad
 		}
 	}

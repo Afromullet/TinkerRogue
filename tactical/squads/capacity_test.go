@@ -222,7 +222,7 @@ func TestCapacitySystem_CanAddUnitToSquad(t *testing.T) {
 	}
 }
 
-func TestCapacitySystem_UpdateSquadCapacity(t *testing.T) {
+func TestCapacitySystem_ComputedCapacityAfterAddingUnit(t *testing.T) {
 	manager := setupTestManager(t)
 
 	CreateEmptySquad(manager, "Test Squad")
@@ -255,16 +255,15 @@ func TestCapacitySystem_UpdateSquadCapacity(t *testing.T) {
 	unit, _ := CreateUnitTemplates(jsonMonster)
 	_, _ = AddUnitToSquad(squadID, manager, unit, 0, 0)
 
-	// Check SquadData fields were updated
-	squadEntity := GetSquadEntity(squadID, manager)
-	squadData := common.GetComponentType[*SquadData](squadEntity, SquadComponent)
-
-	if squadData.TotalCapacity != 6 {
-		t.Errorf("Expected TotalCapacity 6, got %d", squadData.TotalCapacity)
+	// Check computed capacity functions
+	totalCapacity := GetSquadTotalCapacity(squadID, manager)
+	if totalCapacity != DefaultSquadCapacity {
+		t.Errorf("Expected TotalCapacity %d, got %d", DefaultSquadCapacity, totalCapacity)
 	}
 
 	expectedUsed := 1.0 // (3+1+1)/5
-	if squadData.UsedCapacity != expectedUsed {
-		t.Errorf("Expected UsedCapacity %.2f, got %.2f", expectedUsed, squadData.UsedCapacity)
+	usedCapacity := GetSquadUsedCapacity(squadID, manager)
+	if usedCapacity != expectedUsed {
+		t.Errorf("Expected UsedCapacity %.2f, got %.2f", expectedUsed, usedCapacity)
 	}
 }

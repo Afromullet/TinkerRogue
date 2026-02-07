@@ -147,14 +147,12 @@ func (cas *CombatActionSystem) ExecuteAttackAction(attackerID, defenderID ecs.En
 		cas.battleRecorder.RecordEngagement(result.CombatLog)
 	}
 
-	// Update squad destroyed flags (state modification)
+	// Remove destroyed squads from map
 	if attackerDestroyed {
-		squads.UpdateSquadDestroyedStatus(attackerID, cas.manager)
 		removeSquadFromMap(attackerID, cas.manager)
 	}
 
 	if defenderDestroyed {
-		squads.UpdateSquadDestroyedStatus(defenderID, cas.manager)
 		removeSquadFromMap(defenderID, cas.manager)
 	}
 

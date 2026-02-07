@@ -70,8 +70,6 @@ func executeCombatPhase(
 	// Apply recorded damage to units (for backward compatibility with tests/simulator)
 	ApplyRecordedDamage(result, squadmanager)
 
-	UpdateSquadDestroyedStatus(defenderSquadID, squadmanager)
-
 	// Finalize combat log with summary
 	FinalizeCombatLog(result, combatLog, defenderSquadID, attackerSquadID, squadmanager)
 
@@ -766,31 +764,15 @@ func sumDamageMap(damageMap map[ecs.EntityID]int) int {
 func calculateSquadStatus(squadID ecs.EntityID, manager *common.EntityManager) SquadStatus {
 	unitIDs := GetUnitIDsInSquad(squadID, manager)
 	aliveCount := 0
-	totalHP := 0
-	totalMaxHP := 0
 
 	for _, unitID := range unitIDs {
-		entity := manager.FindEntityByID(unitID)
-		if entity == nil {
-			continue
-		}
-
-		attr := common.GetComponentType[*common.Attributes](entity, common.AttributeComponent)
-		if attr == nil {
-			continue
-		}
-
-		if attr.CurrentHealth > 0 {
+		if getAliveUnitAttributes(unitID, manager) != nil {
 			aliveCount++
-			totalHP += attr.CurrentHealth
-			totalMaxHP += attr.MaxHealth
 		}
 	}
 
-	avgHP := 0
-	if totalMaxHP > 0 {
-		avgHP = (totalHP * 100) / totalMaxHP
-	}
+	hpPercent := GetSquadHealthPercent(squadID, manager)
+	avgHP := int(hpPercent * 100)
 
 	return SquadStatus{
 		AliveUnits: aliveCount,

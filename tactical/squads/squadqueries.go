@@ -89,21 +89,21 @@ func GetLeaderID(squadID ecs.EntityID, squadmanager *common.EntityManager) ecs.E
 	return 0
 }
 
-// IsSquadDestroyed checks if all units are dead
-// O(1) operation - uses cached IsDestroyed flag from SquadData
-// The flag is maintained by UpdateSquadDestroyedStatus() when units die or are removed
+// IsSquadDestroyed checks if all units are dead by iterating alive units.
+// Returns true if squad not found, has no units, or all units are dead.
 func IsSquadDestroyed(squadID ecs.EntityID, squadmanager *common.EntityManager) bool {
-	squadEntity := GetSquadEntity(squadID, squadmanager)
-	if squadEntity == nil {
-		return true // Squad not found, consider destroyed
+	unitIDs := GetUnitIDsInSquad(squadID, squadmanager)
+	if len(unitIDs) == 0 {
+		return true
 	}
 
-	squadData := common.GetComponentType[*SquadData](squadEntity, SquadComponent)
-	if squadData == nil {
-		return true // Invalid squad data, consider destroyed
+	for _, unitID := range unitIDs {
+		if getAliveUnitAttributes(unitID, squadmanager) != nil {
+			return false
+		}
 	}
 
-	return squadData.IsDestroyed
+	return true
 }
 
 // WouldSquadSurvive checks if a squad would have any survivors after predicted damage is applied
@@ -190,12 +190,12 @@ func GetSquadTotalCapacity(squadID ecs.EntityID, squadmanager *common.EntityMana
 	leaderID := GetLeaderID(squadID, squadmanager)
 	if leaderID == 0 {
 		// No leader found - return default minimum capacity
-		return 6
+		return DefaultSquadCapacity
 	}
 
 	attr := getUnitAttributes(leaderID, squadmanager)
 	if attr == nil {
-		return 6
+		return DefaultSquadCapacity
 	}
 
 	return attr.GetUnitCapacity()
@@ -219,19 +219,6 @@ func CanAddUnitToSquad(squadID ecs.EntityID, unitCapacityCost float64, squadmana
 // Used for displaying warnings when leader changes or dies
 func IsSquadOverCapacity(squadID ecs.EntityID, squadmanager *common.EntityManager) bool {
 	return GetSquadRemainingCapacity(squadID, squadmanager) < 0
-}
-
-// UpdateSquadCapacity recalculates and updates the cached capacity values in SquadData
-// Should be called when: adding/removing units, leader changes, or leader attributes change
-func UpdateSquadCapacity(squadID ecs.EntityID, squadmanager *common.EntityManager) {
-	squadEntity := GetSquadEntity(squadID, squadmanager)
-	if squadEntity == nil {
-		return
-	}
-
-	squadData := common.GetComponentType[*SquadData](squadEntity, SquadComponent)
-	squadData.TotalCapacity = GetSquadTotalCapacity(squadID, squadmanager)
-	squadData.UsedCapacity = GetSquadUsedCapacity(squadID, squadmanager)
 }
 
 // ========================================
@@ -308,40 +295,6 @@ func GetSquadName(squadID ecs.EntityID, squadmanager *common.EntityManager) stri
 
 	squadData := common.GetComponentType[*SquadData](squadEntity, SquadComponent)
 	return squadData.Name
-}
-
-// UpdateSquadDestroyedStatus updates the cached IsDestroyed flag for a squad
-// This should be called whenever unit health changes or units are added/removed
-// O(n) where n = number of units in squad, but only called when needed
-func UpdateSquadDestroyedStatus(squadID ecs.EntityID, manager *common.EntityManager) {
-	squadEntity := GetSquadEntity(squadID, manager)
-	if squadEntity == nil {
-		return
-	}
-
-	squadData := common.GetComponentType[*SquadData](squadEntity, SquadComponent)
-	if squadData == nil {
-		return
-	}
-
-	// Get all units in the squad
-	unitIDs := GetUnitIDsInSquad(squadID, manager)
-	if len(unitIDs) == 0 {
-		// No units means destroyed
-		squadData.IsDestroyed = true
-		return
-	}
-
-	// Check if any unit is alive using helper
-	hasAliveUnit := false
-	for _, unitID := range unitIDs {
-		if getAliveUnitAttributes(unitID, manager) != nil {
-			hasAliveUnit = true
-			break
-		}
-	}
-
-	squadData.IsDestroyed = !hasAliveUnit
 }
 
 // ========================================

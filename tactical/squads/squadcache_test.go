@@ -26,11 +26,8 @@ func setupTestSquads(t *testing.B, numSquads, unitsPerSquad int) (*common.Entity
 
 		// Add squad component
 		squadData := &SquadData{
-			SquadID:       squadID,
-			Name:          "Test Squad",
-			IsDestroyed:   false,
-			TotalCapacity: 10,
-			UsedCapacity:  float64(unitsPerSquad),
+			SquadID: squadID,
+			Name:    "Test Squad",
 		}
 		squadEntity.AddComponent(SquadComponent, squadData)
 

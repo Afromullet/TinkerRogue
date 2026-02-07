@@ -269,10 +269,6 @@ func (cih *CombatInputHandler) killAllEnemySquads() {
 		killed := cih.killAllUnitsInSquad(squadID)
 		totalKilled += killed
 		println("[DEBUG] Killed", killed, "units in squad", squadID)
-
-		// Update squad's destroyed status
-		squads.UpdateSquadDestroyedStatus(squadID, cih.deps.Queries.ECSManager)
-		println("[DEBUG] Updated destroyed status for squad", squadID)
 	}
 
 	println("[DEBUG] Total units killed:", totalKilled)

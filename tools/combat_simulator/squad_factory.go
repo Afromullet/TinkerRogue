@@ -29,9 +29,8 @@ func createSimSquad(
 		Formation:   formation,
 		Morale:      100,
 		TurnCount:   0,
-		MaxUnits:    9,
-		IsDestroyed: false,
-		IsDeployed:  false,
+		MaxUnits:   9,
+		IsDeployed: false,
 	})
 	squadEntity.AddComponent(common.PositionComponent, &coords.LogicalPosition{
 		X: worldPos.X,

@@ -109,7 +109,7 @@ func (sc *SquadInfoCache) buildSquadInfo(squadID ecs.EntityID) *SquadInfo {
 		MaxHP:             maxHP,
 		Position:          position,
 		FactionID:         factionID,
-		IsDestroyed:       squadData.IsDestroyed,
+		IsDestroyed:       aliveUnits == 0,
 		HasActed:          hasActed,
 		HasMoved:          hasMoved,
 		MovementRemaining: movementRemaining,

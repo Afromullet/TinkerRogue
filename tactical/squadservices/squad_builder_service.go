@@ -75,8 +75,8 @@ func (sbs *SquadBuilderService) DesignateLeader(unitID ecs.EntityID) *DesignateL
 		return result
 	}
 
-	// Add LeaderComponent
-	unitEntity.AddComponent(squads.LeaderComponent, &squads.LeaderData{})
+	// Add all leader components (LeaderComponent, AbilitySlotComponent, CooldownTrackerComponent)
+	squads.AddLeaderComponents(unitEntity)
 
 	result.Success = true
 	return result
@@ -94,23 +94,13 @@ type SquadCapacityInfo struct {
 func (sbs *SquadBuilderService) GetCapacityInfo(squadID ecs.EntityID) *SquadCapacityInfo {
 	info := &SquadCapacityInfo{}
 
-	squadData := common.GetComponentTypeByID[*squads.SquadData](sbs.entityManager, squadID, squads.SquadComponent)
-	if squadData == nil {
-		return info
-	}
-
-	info.UsedCapacity = squadData.UsedCapacity
-	info.TotalCapacity = squadData.TotalCapacity
-	info.RemainingCapacity = float64(squadData.TotalCapacity) - squadData.UsedCapacity
+	info.UsedCapacity = squads.GetSquadUsedCapacity(squadID, sbs.entityManager)
+	info.TotalCapacity = squads.GetSquadTotalCapacity(squadID, sbs.entityManager)
+	info.RemainingCapacity = squads.GetSquadRemainingCapacity(squadID, sbs.entityManager)
 
 	// Check for leader
-	unitIDs := squads.GetUnitIDsInSquad(squadID, sbs.entityManager)
-	for _, unitID := range unitIDs {
-		if sbs.entityManager.HasComponent(unitID, squads.LeaderComponent) {
-			info.HasLeader = true
-			break
-		}
-	}
+	leaderID := squads.GetLeaderID(squadID, sbs.entityManager)
+	info.HasLeader = leaderID != 0
 
 	return info
 }
@@ -321,9 +311,6 @@ func (sbs *SquadBuilderService) ClearSquadAndReturnAllUnits(
 		sbs.entityManager.CleanDisposeEntity(unitEntity, pos)
 		result.UnitsCleared++
 	}
-
-	// Update squad capacity after clearing
-	squads.UpdateSquadCapacity(squadID, sbs.entityManager)
 
 	result.Success = true
 	return result

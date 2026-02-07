@@ -11,6 +11,41 @@ import (
 )
 
 // ========================================
+// LEADER COMPONENT HELPERS
+// ========================================
+
+// AddLeaderComponents adds all leader-related components to a unit entity.
+// Includes LeaderComponent, AbilitySlotComponent, and CooldownTrackerComponent.
+func AddLeaderComponents(entity *ecs.Entity) {
+	entity.AddComponent(LeaderComponent, &LeaderData{
+		Leadership: 10,
+		Experience: 0,
+	})
+
+	entity.AddComponent(AbilitySlotComponent, &AbilitySlotData{
+		Slots: [4]AbilitySlot{},
+	})
+
+	entity.AddComponent(CooldownTrackerComponent, &CooldownTrackerData{
+		Cooldowns:    [4]int{0, 0, 0, 0},
+		MaxCooldowns: [4]int{0, 0, 0, 0},
+	})
+}
+
+// RemoveLeaderComponents removes all leader-related components from a unit entity.
+func RemoveLeaderComponents(entity *ecs.Entity) {
+	if entity.HasComponent(LeaderComponent) {
+		entity.RemoveComponent(LeaderComponent)
+	}
+	if entity.HasComponent(AbilitySlotComponent) {
+		entity.RemoveComponent(AbilitySlotComponent)
+	}
+	if entity.HasComponent(CooldownTrackerComponent) {
+		entity.RemoveComponent(CooldownTrackerComponent)
+	}
+}
+
+// ========================================
 // SQUAD RELATED
 // ========================================
 
@@ -22,15 +57,12 @@ func CreateEmptySquad(squadmanager *common.EntityManager,
 	squadID := squadEntity.GetID()
 
 	squadEntity.AddComponent(SquadComponent, &SquadData{
-		SquadID:       squadID,
-		Name:          squadName,
-		Morale:        100,
-		TurnCount:     0,
-		MaxUnits:      9,
-		UsedCapacity:  0.0,
-		TotalCapacity: 6,     // Default capacity (no leader yet)
-		IsDestroyed:   false, // Empty squad is not destroyed (yet)
-		IsDeployed:    false, // New squads start in reserves (not on map)
+		SquadID:    squadID,
+		Name:       squadName,
+		Morale:     100,
+		TurnCount:  0,
+		MaxUnits:   9,
+		IsDeployed: false, // New squads start in reserves (not on map)
 	})
 
 	squadEntity.AddComponent(common.PositionComponent, &coords.LogicalPosition{})
@@ -80,9 +112,6 @@ func AddUnitToSquad(
 	gridPos.AnchorRow = gridRow
 	gridPos.AnchorCol = gridCol
 
-	// Update squad capacity tracking
-	UpdateSquadCapacity(squadID, squadmanager)
-
 	return unitEntity.GetID(), nil
 }
 
@@ -90,14 +119,6 @@ func RemoveUnitFromSquad(unitEntityID ecs.EntityID, squadmanager *common.EntityM
 	if !squadmanager.HasComponent(unitEntityID, SquadMemberComponent) {
 		return fmt.Errorf("unit is not in a squad")
 	}
-
-	// Get the squad ID before removing to update capacity
-	memberData := common.GetComponentTypeByID[*SquadMemberData](squadmanager, unitEntityID, SquadMemberComponent)
-	if memberData == nil {
-		return fmt.Errorf("unit entity not found")
-	}
-
-	squadID := memberData.SquadID
 
 	// Find the unit entity and dispose it
 	unitEntity := squadmanager.FindEntityByID(unitEntityID)
@@ -107,12 +128,6 @@ func RemoveUnitFromSquad(unitEntityID ecs.EntityID, squadmanager *common.EntityM
 		// Use CleanDisposeEntity for consistent cleanup
 		squadmanager.CleanDisposeEntity(unitEntity, pos)
 	}
-
-	// Update squad capacity tracking after removal
-	UpdateSquadCapacity(squadID, squadmanager)
-
-	// Update squad destroyed status cache after unit removal
-	UpdateSquadDestroyedStatus(squadID, squadmanager)
 
 	return nil
 }
@@ -191,9 +206,8 @@ func CreateSquadFromTemplate(
 		Formation:   formation,
 		Morale:      100,
 		TurnCount:   0,
-		MaxUnits:    9,
-		IsDestroyed: false, // New squad with units is not destroyed
-		IsDeployed:  false, // New squads start in reserves (not on map)
+		MaxUnits:   9,
+		IsDeployed: false, // New squads start in reserves (not on map)
 	})
 	squadEntity.AddComponent(common.PositionComponent, &worldPos)
 
@@ -330,21 +344,7 @@ func CreateSquadFromTemplate(
 
 		// Add leader component if needed
 		if template.IsLeader {
-			unitEntity.AddComponent(LeaderComponent, &LeaderData{
-				Leadership: 10,
-				Experience: 0,
-			})
-
-			// Add ability slots
-			unitEntity.AddComponent(AbilitySlotComponent, &AbilitySlotData{
-				Slots: [4]AbilitySlot{},
-			})
-
-			// Add cooldown tracker
-			unitEntity.AddComponent(CooldownTrackerComponent, &CooldownTrackerData{
-				Cooldowns:    [4]int{0, 0, 0, 0},
-				MaxCooldowns: [4]int{0, 0, 0, 0},
-			})
+			AddLeaderComponents(unitEntity)
 		}
 
 		// Mark ALL cells as occupied
@@ -414,11 +414,6 @@ func DisposeDeadUnitsInSquad(squadID ecs.EntityID, manager *common.EntityManager
 			manager.CleanDisposeEntity(entity, pos)
 			disposedCount++
 		}
-	}
-
-	// Update squad capacity after disposing units
-	if disposedCount > 0 {
-		UpdateSquadCapacity(squadID, manager)
 	}
 
 	return disposedCount
