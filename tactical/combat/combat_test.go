@@ -233,7 +233,7 @@ func TestGetSquadAttackRange_ReturnsMaxRange(t *testing.T) {
 
 	cache := NewCombatQueryCache(manager)
 	combatSys := NewCombatActionSystem(manager, cache)
-	maxRange := combatSys.GetSquadAttackRange(squadID)
+	maxRange := combatSys.getSquadAttackRange(squadID)
 
 	if maxRange != 3 {
 		t.Errorf("Expected max range 3, got %d", maxRange)
@@ -267,6 +267,58 @@ func TestExecuteAttackAction_MeleeAttack(t *testing.T) {
 	// Verify squad marked as acted (using cache for O(k) lookup instead of O(n) query)
 	if canSquadAct(cache, playerSquad, manager) {
 		t.Error("Squad should be marked as acted")
+	}
+}
+
+func TestCounterattack_DamagePredictionPreventsDeadUnits(t *testing.T) {
+	manager := CreateTestCombatManager()
+
+	cache := NewCombatQueryCache(manager)
+	fm := NewCombatFactionManager(manager, cache)
+	playerFaction := fm.CreateCombatFaction("Player", true)
+	enemyFaction := fm.CreateCombatFaction("Enemy", false)
+
+	playerSquad := CreateTestSquad(manager, "Player Squad", 3)
+	enemySquad := CreateTestSquad(manager, "Enemy Squad", 3)
+
+	fm.AddSquadToFaction(playerFaction, playerSquad, coords.LogicalPosition{X: 5, Y: 5})
+	fm.AddSquadToFaction(enemyFaction, enemySquad, coords.LogicalPosition{X: 6, Y: 5})
+
+	turnMgr := NewTurnManager(manager, cache)
+	turnMgr.InitializeCombat([]ecs.EntityID{playerFaction, enemyFaction})
+
+	combatSys := NewCombatActionSystem(manager, cache)
+	result := combatSys.ExecuteAttackAction(playerSquad, enemySquad)
+	if !result.Success {
+		t.Fatalf("Failed to execute attack: %s", result.ErrorReason)
+	}
+
+	// Verify that counterattack events only come from units that would survive
+	if result.CombatLog != nil {
+		for _, event := range result.CombatLog.AttackEvents {
+			if !event.IsCounterattack {
+				continue
+			}
+			// The counterattacker should have predicted HP > 0 after main attack damage
+			counterAttackerID := event.AttackerID
+			dmgFromMainAttack := result.DamageByUnit[counterAttackerID]
+			entity := manager.FindEntityByID(counterAttackerID)
+			if entity == nil {
+				continue // Entity already disposed
+			}
+			attr := common.GetComponentType[*common.Attributes](entity, common.AttributeComponent)
+			if attr == nil {
+				continue
+			}
+			// After damage is applied, current health reflects post-combat state.
+			// But the original HP was MaxHealth (30 from test fixtures).
+			// A valid counterattacker must have had (originalHP - mainAttackDmg) > 0.
+			originalHP := attr.MaxHealth
+			if originalHP-dmgFromMainAttack <= 0 {
+				t.Errorf("Unit %d counterattacked but would have died from main attack (hp=%d, damage=%d)",
+					counterAttackerID, originalHP, dmgFromMainAttack)
+			}
+		}
 	}
 }
 

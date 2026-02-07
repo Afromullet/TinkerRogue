@@ -30,7 +30,7 @@ func (cas *CombatActionSystem) SetBattleRecorder(recorder *battlelog.BattleRecor
 func (cas *CombatActionSystem) ExecuteAttackAction(attackerID, defenderID ecs.EntityID) *squads.CombatResult {
 
 	//Validation
-	reason, canAttack := cas.CanSquadAttackWithReason(attackerID, defenderID)
+	reason, canAttack := cas.canSquadAttackWithReason(attackerID, defenderID)
 	if !canAttack {
 		return &squads.CombatResult{
 			Success:     false,
@@ -81,43 +81,28 @@ func (cas *CombatActionSystem) ExecuteAttackAction(attackerID, defenderID ecs.En
 	defenderWouldSurvive := squads.WouldSquadSurvive(defenderID, result.DamageByUnit, cas.manager)
 
 	if defenderWouldSurvive {
-		// Check if any defender units can reach the attacker
+		// Get defender units that are alive and in range (already filtered)
 		counterattackers := cas.getCounterattackingUnits(defenderID, attackerID)
 
-		if len(counterattackers) > 0 {
-			// Process each counterattacking unit (using same distance)
-			defenderUnitIDs := squads.GetUnitIDsInSquad(defenderID, cas.manager)
-
-			for _, counterAttackerID := range defenderUnitIDs {
-				// Check if unit can counterattack (alive after main attack, in range)
+		for _, counterAttackerID := range counterattackers {
+			// Additional check: would this unit survive the main attack damage?
+			damageToThisUnit := result.DamageByUnit[counterAttackerID]
+			if damageToThisUnit > 0 {
 				entity := cas.manager.FindEntityByID(counterAttackerID)
 				if entity == nil {
 					continue
 				}
-
 				attr := common.GetComponentType[*common.Attributes](entity, common.AttributeComponent)
-				if attr == nil {
+				if attr == nil || attr.CurrentHealth-damageToThisUnit <= 0 {
 					continue
 				}
-
-				// Check if unit would survive the main attack damage
-				damageToThisUnit := result.DamageByUnit[counterAttackerID]
-				if attr.CurrentHealth-damageToThisUnit <= 0 {
-					continue // Unit would be dead, can't counterattack
-				}
-
-				rangeData := common.GetComponentType[*squads.AttackRangeData](entity, squads.AttackRangeComponent)
-				if rangeData == nil || rangeData.Range < combatLog.SquadDistance {
-					continue
-				}
-
-				// Get targets (same targeting logic as normal attacks)
-				targetIDs := squads.SelectTargetUnits(counterAttackerID, attackerID, cas.manager)
-
-				// Counterattack each target with penalties
-				attackIndex = squads.ProcessCounterattackOnTargets(counterAttackerID, targetIDs, result, combatLog, attackIndex, cas.manager)
 			}
 
+			// Get targets (same targeting logic as normal attacks)
+			targetIDs := squads.SelectTargetUnits(counterAttackerID, attackerID, cas.manager)
+
+			// Counterattack each target with penalties
+			attackIndex = squads.ProcessCounterattackOnTargets(counterAttackerID, targetIDs, result, combatLog, attackIndex, cas.manager)
 		}
 	}
 
@@ -125,7 +110,7 @@ func (cas *CombatActionSystem) ExecuteAttackAction(attackerID, defenderID ecs.En
 	squads.FinalizeCombatLog(result, combatLog, defenderID, attackerID, cas.manager)
 	result.CombatLog = combatLog
 
-	// Determien Destruction Status
+	// Determine Destruction Status
 
 	// Predict destruction based on recorded damage (before applying)
 	// Reuse defenderWouldSurvive from Phase 3 (already calculated)
@@ -172,8 +157,8 @@ func (cas *CombatActionSystem) ExecuteAttackAction(attackerID, defenderID ecs.En
 	return result
 }
 
-// GetSquadAttackRange returns the maximum attack range of any unit in the squad
-func (cas *CombatActionSystem) GetSquadAttackRange(squadID ecs.EntityID) int {
+// getSquadAttackRange returns the maximum attack range of any unit in the squad
+func (cas *CombatActionSystem) getSquadAttackRange(squadID ecs.EntityID) int {
 	unitIDs := squads.GetUnitIDsInSquad(squadID, cas.manager)
 
 	maxRange := 1 // Default melee
@@ -256,8 +241,8 @@ func (cas *CombatActionSystem) getCounterattackingUnits(defenderID, attackerID e
 	return cas.getUnitsInRange(defenderID, attackerID, false)
 }
 
-// CanSquadAttackWithReason returns detailed info about why an attack can/cannot happen
-func (cas *CombatActionSystem) CanSquadAttackWithReason(squadID, targetID ecs.EntityID) (string, bool) {
+// canSquadAttackWithReason returns detailed info about why an attack can/cannot happen
+func (cas *CombatActionSystem) canSquadAttackWithReason(squadID, targetID ecs.EntityID) (string, bool) {
 	// Check if squad has action available
 	if !canSquadAct(cas.combatCache, squadID, cas.manager) {
 		return "Squad has already acted this turn", false
@@ -290,7 +275,7 @@ func (cas *CombatActionSystem) CanSquadAttackWithReason(squadID, targetID ecs.En
 	distance := attackerPos.ChebyshevDistance(&defenderPos)
 
 	// Check range
-	maxRange := cas.GetSquadAttackRange(squadID)
+	maxRange := cas.getSquadAttackRange(squadID)
 	if distance > maxRange {
 		return fmt.Sprintf("Target out of range: %d tiles away (max range %d)", distance, maxRange), false
 	}

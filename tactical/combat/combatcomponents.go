@@ -6,6 +6,9 @@ import (
 	"github.com/bytearena/ecs"
 )
 
+// DefaultMovementSpeed is the fallback movement speed for squads with no valid units.
+const DefaultMovementSpeed = 3
+
 // Component and tag variables
 var (
 	CombatFactionComponent     *ecs.Component

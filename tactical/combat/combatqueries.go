@@ -78,23 +78,17 @@ func GetActiveSquadsForFaction(factionID ecs.EntityID, manager *common.EntityMan
 	return active
 }
 
-// GetSquadAtPosition returns the squad entity ID at the given position
-// Returns 0 if no squad at position or squad is destroyed
+// GetSquadAtPosition returns the squad entity ID at the given position.
+// Uses PositionSystem for O(1) lookup instead of iterating all squads.
+// Returns 0 if no combat squad at position or squad is destroyed.
 func GetSquadAtPosition(pos coords.LogicalPosition, manager *common.EntityManager) ecs.EntityID {
-	// Query all squads and filter by combat squads only
-	for _, result := range manager.World.Query(squads.SquadTag) {
-		// Only consider squads in combat
-		combatFaction := common.GetComponentType[*CombatFactionData](result.Entity, FactionMembershipComponent)
-		if combatFaction == nil {
+	entityIDs := common.GlobalPositionSystem.GetAllEntityIDsAt(pos)
+	for _, entityID := range entityIDs {
+		if !isSquad(entityID, manager) {
 			continue
 		}
-
-		squadPos := common.GetComponentType[*coords.LogicalPosition](result.Entity, common.PositionComponent)
-		if squadPos != nil && squadPos.X == pos.X && squadPos.Y == pos.Y {
-			squadID := result.Entity.GetID()
-			if !squads.IsSquadDestroyed(squadID, manager) {
-				return squadID
-			}
+		if !squads.IsSquadDestroyed(entityID, manager) {
+			return entityID
 		}
 	}
 	return 0
@@ -116,6 +110,23 @@ func isSquad(entityID ecs.EntityID, manager *common.EntityManager) bool {
 // ========================================
 // ACTION STATE HELPERS
 // ========================================
+
+// CreateActionStateForSquad creates an ActionStateData entity for a squad.
+// MovementRemaining is initialized from the squad's actual speed.
+func CreateActionStateForSquad(manager *common.EntityManager, squadID ecs.EntityID) {
+	movementSpeed := squads.GetSquadMovementSpeed(squadID, manager)
+	if movementSpeed == 0 {
+		movementSpeed = DefaultMovementSpeed
+	}
+
+	actionEntity := manager.World.NewEntity()
+	actionEntity.AddComponent(ActionStateComponent, &ActionStateData{
+		SquadID:           squadID,
+		HasMoved:          false,
+		HasActed:          false,
+		MovementRemaining: movementSpeed,
+	})
+}
 
 // canSquadAct checks if a squad can perform an action this turn (uses cached query for O(k) performance)
 func canSquadAct(cache *CombatQueryCache, squadID ecs.EntityID, manager *common.EntityManager) bool {

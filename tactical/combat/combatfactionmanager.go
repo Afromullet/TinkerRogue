@@ -93,37 +93,6 @@ func (fm *CombatFactionManager) AddSquadToFaction(factionID, squadID ecs.EntityI
 	return nil
 }
 
-func (fm *CombatFactionManager) RemoveSquadFromFaction(factionID, squadID ecs.EntityID) error {
-	// Find squad entity
-	squad := fm.manager.FindEntityByID(squadID)
-	if squad == nil {
-		return fmt.Errorf("squad %d not found", squadID)
-	}
-
-	// Verify squad has FactionMembershipComponent
-	combatFaction := common.GetComponentType[*CombatFactionData](squad, FactionMembershipComponent)
-	if combatFaction == nil {
-		return fmt.Errorf("squad %d is not in combat", squadID)
-	}
-
-	// Verify squad belongs to this faction
-	if combatFaction.FactionID != factionID {
-		return fmt.Errorf("squad %d does not belong to faction %d", squadID, factionID)
-	}
-
-	// Get position before removal for PositionSystem cleanup
-	position := common.GetComponentType[*coords.LogicalPosition](squad, common.PositionComponent)
-	if position != nil {
-		// Remove from PositionSystem spatial grid
-		common.GlobalPositionSystem.RemoveEntity(squadID, *position)
-	}
-
-	// Remove FactionMembershipComponent from squad (squad exits combat)
-	squad.RemoveComponent(FactionMembershipComponent)
-
-	return nil
-}
-
 func (fm *CombatFactionManager) GetFactionMana(factionID ecs.EntityID) (current, max int) {
 	// Find faction entity (using cached query for performance)
 	faction := fm.combatCache.FindFactionByID(factionID, fm.manager)
@@ -151,14 +120,3 @@ func (fm *CombatFactionManager) GetFactionName(factionID ecs.EntityID) string {
 	return "Unknown"
 }
 
-// GetPlayerFactions returns all factions controlled by human players
-func (fm *CombatFactionManager) GetPlayerFactions() []ecs.EntityID {
-	var playerFactions []ecs.EntityID
-	for _, result := range fm.manager.World.Query(FactionTag) {
-		factionData := common.GetComponentType[*FactionData](result.Entity, CombatFactionComponent)
-		if factionData != nil && factionData.PlayerID > 0 {
-			playerFactions = append(playerFactions, result.Entity.GetID())
-		}
-	}
-	return playerFactions
-}

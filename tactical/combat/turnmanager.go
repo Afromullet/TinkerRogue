@@ -46,7 +46,7 @@ func (tm *TurnManager) InitializeCombat(factionIDs []ecs.EntityID) error {
 	for _, factionID := range factionIDs {
 		factionSquads := GetSquadsForFaction(factionID, tm.manager)
 		for _, squadID := range factionSquads {
-			tm.createActionStateForSquad(squadID)
+			CreateActionStateForSquad(tm.manager, squadID)
 
 			// Check for combat-start abilities (like Battle Cry)
 			squads.CheckAndTriggerAbilities(squadID, tm.manager)
@@ -58,16 +58,6 @@ func (tm *TurnManager) InitializeCombat(factionIDs []ecs.EntityID) error {
 	tm.ResetSquadActions(firstFaction)
 
 	return nil
-}
-
-func (tm *TurnManager) createActionStateForSquad(squadID ecs.EntityID) {
-	actionEntity := tm.manager.World.NewEntity()
-	actionEntity.AddComponent(ActionStateComponent, &ActionStateData{
-		SquadID:           squadID,
-		HasMoved:          false,
-		HasActed:          false,
-		MovementRemaining: 0, // Set by ResetSquadActions
-	})
 }
 
 func (tm *TurnManager) ResetSquadActions(factionID ecs.EntityID) error {

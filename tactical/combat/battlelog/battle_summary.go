@@ -161,34 +161,27 @@ func filterCounterattackEventsByAttacker(unitID ecs.EntityID, events []squads.At
 	return filtered
 }
 
-// uniqueRows extracts unique TargetRow values.
-func uniqueRows(events []squads.AttackEvent) []int {
-	rowSet := make(map[int]bool)
+// uniqueInts extracts unique integer values from events using the given extractor.
+func uniqueInts(events []squads.AttackEvent, extractor func(squads.AttackEvent) int) []int {
+	seen := make(map[int]bool)
 	for _, event := range events {
-		rowSet[event.TargetInfo.TargetRow] = true
+		seen[extractor(event)] = true
 	}
 
-	rows := make([]int, 0, len(rowSet))
-	for row := range rowSet {
-		rows = append(rows, row)
+	result := make([]int, 0, len(seen))
+	for v := range seen {
+		result = append(result, v)
 	}
-	sort.Ints(rows)
-	return rows
+	sort.Ints(result)
+	return result
 }
 
-// uniqueCols extracts unique TargetCol values.
-func uniqueCols(events []squads.AttackEvent) []int {
-	colSet := make(map[int]bool)
-	for _, event := range events {
-		colSet[event.TargetInfo.TargetCol] = true
-	}
+func uniqueRows(events []squads.AttackEvent) []int {
+	return uniqueInts(events, func(e squads.AttackEvent) int { return e.TargetInfo.TargetRow })
+}
 
-	cols := make([]int, 0, len(colSet))
-	for col := range colSet {
-		cols = append(cols, col)
-	}
-	sort.Ints(cols)
-	return cols
+func uniqueCols(events []squads.AttackEvent) []int {
+	return uniqueInts(events, func(e squads.AttackEvent) int { return e.TargetInfo.TargetCol })
 }
 
 // uniqueCells extracts unique (row, col) pairs for Magic attacks.

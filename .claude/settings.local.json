@@ -21,7 +21,8 @@
       "Bash(go list:*)",
       "Bash(./combatsim_test.exe:*)",
       "Bash(mkdir:*)",
-      "Bash(dir:*)"
+      "Bash(dir:*)",
+      "Bash(go clean:*)"
     ],
     "deny": [],
     "ask": []

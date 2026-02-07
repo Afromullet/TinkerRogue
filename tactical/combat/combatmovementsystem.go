@@ -31,7 +31,7 @@ func (ms *CombatMovementSystem) GetSquadMovementSpeed(squadID ecs.EntityID) int 
 	speed := squads.GetSquadMovementSpeed(squadID, ms.manager)
 	// If squads returns 0 (no units or no movement components), use default
 	if speed == 0 {
-		return 3 // Default movement speed for empty/invalid squads
+		return DefaultMovementSpeed
 	}
 	return speed
 }
@@ -50,24 +50,6 @@ func (ms *CombatMovementSystem) CanMoveTo(squadID ecs.EntityID, targetPos coords
 
 	// Squads cannot occupy the same square as another squad, even friendlies
 	return false
-}
-
-// CanPassThrough checks if a squad can pass through a tile during pathfinding.
-// Friendlies can be passed through, enemies cannot.
-func (ms *CombatMovementSystem) CanPassThrough(squadID ecs.EntityID, pos coords.LogicalPosition) bool {
-	occupyingID := ms.posSystem.GetEntityIDAt(pos)
-	if occupyingID == 0 {
-		return true // Empty tile
-	}
-
-	if !isSquad(occupyingID, ms.manager) {
-		return false // Terrain/obstacle blocks passage
-	}
-
-	// Can pass through friendlies, not enemies
-	occupyingFaction := GetSquadFaction(occupyingID, ms.manager)
-	squadFaction := GetSquadFaction(squadID, ms.manager)
-	return occupyingFaction == squadFaction
 }
 
 func (ms *CombatMovementSystem) MoveSquad(squadID ecs.EntityID, targetPos coords.LogicalPosition) error {

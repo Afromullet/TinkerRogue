@@ -43,11 +43,13 @@ func (c *CombatQueryCache) FindActionStateEntity(squadID ecs.EntityID, manager *
 
 // FindActionStateBySquadID returns ActionStateData for a squad using cached view
 func (c *CombatQueryCache) FindActionStateBySquadID(squadID ecs.EntityID, manager *common.EntityManager) *ActionStateData {
-	entity := c.FindActionStateEntity(squadID, manager)
-	if entity == nil {
-		return nil
+	for _, result := range c.ActionStateView.Get() {
+		actionState := common.GetComponentType[*ActionStateData](result.Entity, ActionStateComponent)
+		if actionState != nil && actionState.SquadID == squadID {
+			return actionState
+		}
 	}
-	return common.GetComponentType[*ActionStateData](entity, ActionStateComponent)
+	return nil
 }
 
 // ========================================
@@ -70,9 +72,11 @@ func (c *CombatQueryCache) FindFactionByID(factionID ecs.EntityID, manager *comm
 
 // FindFactionDataByID returns FactionData for a faction ID using cached view
 func (c *CombatQueryCache) FindFactionDataByID(factionID ecs.EntityID, manager *common.EntityManager) *FactionData {
-	entity := c.FindFactionByID(factionID, manager)
-	if entity == nil {
-		return nil
+	for _, result := range c.FactionView.Get() {
+		factionData := common.GetComponentType[*FactionData](result.Entity, CombatFactionComponent)
+		if factionData != nil && factionData.FactionID == factionID {
+			return factionData
+		}
 	}
-	return common.GetComponentType[*FactionData](entity, CombatFactionComponent)
+	return nil
 }

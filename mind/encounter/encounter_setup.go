@@ -52,9 +52,7 @@ func SpawnCombatEntities(
 		if err := fm.AddSquadToFaction(enemyFactionID, enemySpec.SquadID, enemySpec.Position); err != nil {
 			return nil, fmt.Errorf("failed to add enemy squad %d to faction: %w", i, err)
 		}
-		if err := combat.CreateActionStateForSquad(manager, enemySpec.SquadID); err != nil {
-			return nil, fmt.Errorf("failed to create action state for enemy squad %d: %w", i, err)
-		}
+		combat.CreateActionStateForSquad(manager, enemySpec.SquadID)
 		createdEnemySquadIDs = append(createdEnemySquadIDs, enemySpec.SquadID)
 	}
 
@@ -124,9 +122,7 @@ func assignPlayerSquadsToFaction(
 		ensureUnitPositions(manager, squadID, pos)
 
 		// Create action state
-		if err := combat.CreateActionStateForSquad(manager, squadID); err != nil {
-			return fmt.Errorf("failed to create action state for squad %d: %w", squadID, err)
-		}
+		combat.CreateActionStateForSquad(manager, squadID)
 	}
 
 	return nil
@@ -429,3 +425,4 @@ func clampPosition(value, min, max int) int {
 	}
 	return value
 }
+
