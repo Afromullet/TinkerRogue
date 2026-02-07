@@ -17,13 +17,12 @@ import (
 
 // Note: EnemySquadSpec is defined in types.go and used for all enemy squad generation
 
-// SetupEncounter creates player and enemy factions with power-based squad generation.
-// Replaces SetupGameplayFactions with dynamic encounter balancing.
+// SpawnCombatEntities creates player and enemy factions with power-based squad generation.
 // Returns a list of enemy squad IDs created for this encounter.
 //
 // This function delegates to GenerateEncounterSpec for the core generation logic,
 // then sets up combat factions and action states.
-func SetupEncounter(
+func SpawnCombatEntities(
 	manager *common.EntityManager,
 	playerEntityID ecs.EntityID,
 	playerStartPos coords.LogicalPosition,

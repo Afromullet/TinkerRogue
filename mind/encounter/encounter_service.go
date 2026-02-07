@@ -186,7 +186,7 @@ func (es *EncounterService) StartEncounter(
 
 	// Spawn enemies using balanced encounter system
 	fmt.Println("Starting combat encounter - spawning entities")
-	enemySquadIDs, err := SetupEncounter(es.manager, playerEntityID, playerPos, encounterData, encounterID)
+	enemySquadIDs, err := SpawnCombatEntities(es.manager, playerEntityID, playerPos, encounterData, encounterID)
 	if err != nil {
 		// Rollback sprite hiding on spawn failure
 		if renderable != nil {

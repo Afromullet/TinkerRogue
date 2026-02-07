@@ -516,7 +516,7 @@ func (cm *CombatMode) Enter(fromMode framework.UIMode) error {
 		cm.debugLogger.Log("Fresh combat start - initializing")
 		cm.logManager.UpdateTextArea(combatLogArea, "=== COMBAT STARTED ===")
 
-		// Refresh threat manager with newly created factions (must be after SetupEncounter)
+		// Refresh threat manager with newly created factions (must be after SpawnCombatEntities)
 		cm.visualization.RefreshFactions(cm.Queries)
 
 		// Start battle recording if enabled
