@@ -131,6 +131,28 @@ func (r *OverworldRenderer) renderInfluenceZones(screen *ebiten.Image) {
 
 		vector.DrawFilledCircle(screen, centerX, centerY, influenceRadius, influenceColor, true)
 	}
+
+	// Query player nodes and draw their influence zones in blue-green
+	for _, result := range r.manager.World.Query(core.PlayerNodeTag) {
+		playerEntity := result.Entity
+		pos := common.GetComponentType[*coords.LogicalPosition](playerEntity, common.PositionComponent)
+		influenceData := common.GetComponentType[*core.InfluenceData](playerEntity, core.InfluenceComponent)
+
+		if pos == nil || influenceData == nil {
+			continue
+		}
+
+		screenX := (pos.X - r.state.CameraX) * r.tileSize
+		screenY := (pos.Y - r.state.CameraY) * r.tileSize
+
+		centerX := float32(screenX) + float32(r.tileSize)/2
+		centerY := float32(screenY) + float32(r.tileSize)/2
+		influenceRadius := float32(influenceData.Radius * r.tileSize)
+
+		playerInfluenceColor := color.RGBA{100, 200, 255, 50}
+
+		vector.DrawFilledCircle(screen, centerX, centerY, influenceRadius, playerInfluenceColor, true)
+	}
 }
 
 // renderPlayerAvatar draws the player sprite at their current position
