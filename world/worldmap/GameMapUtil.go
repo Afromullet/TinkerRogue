@@ -34,7 +34,7 @@ func LoadTileImages() TileImageSet {
 	}
 
 	// Load floor tiles
-	dir := filepath.Join("..", "assets", "tiles", "floors", "limestone")
+	dir := defaultFloorPath()
 	files, _ := os.ReadDir(dir)
 
 	for _, file := range files {
@@ -45,8 +45,8 @@ func LoadTileImages() TileImageSet {
 		}
 	}
 
-	// Load wall tiles (from marble directory)
-	dir = filepath.Join("..", "assets", "tiles", "walls", "marble")
+	// Load wall tiles
+	dir = defaultWallPath()
 	files, _ = os.ReadDir(dir)
 
 	for _, file := range files {
@@ -58,24 +58,17 @@ func LoadTileImages() TileImageSet {
 	}
 
 	// Load stairs
-	fn := filepath.Join("..", "assets", "tiles", "stairs1.png")
-	s, _, _ := ebitenutil.NewImageFromFile(fn)
+	s, _, _ := ebitenutil.NewImageFromFile(stairsPath())
 	images.StairsDown = s
 
 	// Load biome-specific images
-	biomes := []Biome{BiomeGrassland, BiomeForest, BiomeDesert, BiomeMountain, BiomeSwamp}
-	for _, biome := range biomes {
+	for _, biome := range allBiomes {
 		images.BiomeImages[biome] = loadBiomeTiles(biome)
 	}
 
 	// Load POI-specific images
-	poiAssets := map[string]string{
-		"town":       filepath.Join("..", "assets", "tiles", "maptiles", "town", "dithmenos2.png"),
-		"temple":     filepath.Join("..", "assets", "tiles", "maptiles", "temple", "golden_statue_1.png"),
-		"guild_hall": filepath.Join("..", "assets", "tiles", "maptiles", "guild_hall", "machine_tukima.png"),
-		"watchtower": filepath.Join("..", "assets", "tiles", "maptiles", "watchtower", "crumbled_column_1.png"),
-	}
-	for poiType, assetPath := range poiAssets {
+	for poiType := range poiAssetConfig {
+		assetPath := poiAssetPath(poiType)
 		if img, _, err := ebitenutil.NewImageFromFile(assetPath); err == nil {
 			images.POIImages[poiType] = img
 		}
@@ -91,10 +84,8 @@ func loadBiomeTiles(biome Biome) *BiomeTileSet {
 		FloorImages: make([]*ebiten.Image, 0),
 	}
 
-	biomeName := biome.String()
-
 	// Load floor tiles for this biome
-	floorDir := filepath.Join("..", "assets", "tiles", "floors", biomeName)
+	floorDir := biomeFloorPath(biome)
 	if files, err := os.ReadDir(floorDir); err == nil {
 		for _, file := range files {
 			if !file.IsDir() {
@@ -107,7 +98,7 @@ func loadBiomeTiles(biome Biome) *BiomeTileSet {
 	}
 
 	// Load wall tiles for this biome
-	wallDir := filepath.Join("..", "assets", "tiles", "walls", biomeName)
+	wallDir := biomeWallPath(biome)
 	if files, err := os.ReadDir(wallDir); err == nil {
 		for _, file := range files {
 			if !file.IsDir() {

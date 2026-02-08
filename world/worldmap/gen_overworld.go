@@ -388,15 +388,15 @@ func (g *StrategicOverworldGenerator) placeTypedPOIs(result *GenerationResult, w
 	placedPositions := make([]coords.LogicalPosition, 0)
 
 	// Towns first (guild halls depend on them)
-	placedTowns := g.placePOIType(result, width, height, elevationMap, moistureMap, "town", g.config.TownCount, g.config.POIMinDistance, placedPositions, images)
+	placedTowns := g.placePOIType(result, width, height, elevationMap, moistureMap, POITown, g.config.TownCount, g.config.POIMinDistance, placedPositions, images)
 	placedPositions = append(placedPositions, placedTowns...)
 
 	// Temples
-	placedTemples := g.placePOIType(result, width, height, elevationMap, moistureMap, "temple", g.config.TempleCount, 15, placedPositions, images)
+	placedTemples := g.placePOIType(result, width, height, elevationMap, moistureMap, POITemple, g.config.TempleCount, 15, placedPositions, images)
 	placedPositions = append(placedPositions, placedTemples...)
 
 	// Watchtowers
-	placedWatchtowers := g.placePOIType(result, width, height, elevationMap, moistureMap, "watchtower", g.config.WatchtowerCount, 10, placedPositions, images)
+	placedWatchtowers := g.placePOIType(result, width, height, elevationMap, moistureMap, POIWatchtower, g.config.WatchtowerCount, 10, placedPositions, images)
 	placedPositions = append(placedPositions, placedWatchtowers...)
 
 	// Guild halls (must be near towns)
@@ -498,13 +498,13 @@ func (g *StrategicOverworldGenerator) placeGuildHalls(result *GenerationResult, 
 
 		result.POIs = append(result.POIs, POIData{
 			Position: pos,
-			NodeID:   "guild_hall",
+			NodeID:   POIGuildHall,
 			Biome:    result.BiomeMap[idx],
 		})
 
 		// Set POI-specific tile image so the renderer draws it
-		if poiImg, ok := images.POIImages["guild_hall"]; ok {
-			result.Tiles[idx].POIType = "guild_hall"
+		if poiImg, ok := images.POIImages[POIGuildHall]; ok {
+			result.Tiles[idx].POIType = POIGuildHall
 			result.Tiles[idx].Image = poiImg
 		}
 
@@ -517,15 +517,15 @@ func (g *StrategicOverworldGenerator) placeGuildHalls(result *GenerationResult, 
 // isValidPOITerrain checks terrain-specific placement rules per POI type
 func (g *StrategicOverworldGenerator) isValidPOITerrain(nodeID string, biome Biome, elevation, moisture float64) bool {
 	switch nodeID {
-	case "town":
+	case POITown:
 		// Towns: grassland or forest edge
 		return biome == BiomeGrassland || biome == BiomeForest
 
-	case "temple":
+	case POITemple:
 		// Temples: elevated terrain or desert, prefer isolated
 		return (elevation > 0.55 && biome != BiomeSwamp && biome != BiomeMountain) || biome == BiomeDesert
 
-	case "watchtower":
+	case POIWatchtower:
 		// Watchtowers: elevated walkable terrain near mountain borders
 		return elevation > 0.50 && biome != BiomeSwamp && biome != BiomeMountain
 

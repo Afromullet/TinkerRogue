@@ -76,9 +76,8 @@ func (g *TacticalBiomeGenerator) Generate(width, height int, images TileImageSet
 
 // selectBiome chooses a biome based on the seed
 func (g *TacticalBiomeGenerator) selectBiome() Biome {
-	biomes := []Biome{BiomeGrassland, BiomeForest, BiomeDesert, BiomeMountain, BiomeSwamp}
-	idx := common.GetDiceRoll(len(biomes)) - 1 // GetDiceRoll returns 1 to n
-	return biomes[idx]
+	idx := common.GetDiceRoll(len(allBiomes)) - 1 // GetDiceRoll returns 1 to n
+	return allBiomes[idx]
 }
 
 // getBiomeProfile returns tactical characteristics for a biome

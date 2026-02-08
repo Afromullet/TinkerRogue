@@ -7,7 +7,7 @@ import (
 // POIData describes a placed point of interest with type and terrain info
 type POIData struct {
 	Position coords.LogicalPosition
-	NodeID   string // Maps to nodeDefinitions.json ID: "town", "temple", "guild_hall", "watchtower"
+	NodeID   string // Maps to nodeDefinitions.json ID: POITown, POITemple, POIGuildHall, POIWatchtower
 	Biome    Biome
 }
 
