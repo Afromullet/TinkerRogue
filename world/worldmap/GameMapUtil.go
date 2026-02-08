@@ -14,6 +14,7 @@ type TileImageSet struct {
 	FloorImages []*ebiten.Image
 	StairsDown  *ebiten.Image
 	BiomeImages map[Biome]*BiomeTileSet
+	POIImages   map[string]*ebiten.Image
 }
 
 // BiomeTileSet holds images for a specific biome
@@ -29,6 +30,7 @@ func LoadTileImages() TileImageSet {
 		WallImages:  make([]*ebiten.Image, 0),
 		FloorImages: make([]*ebiten.Image, 0),
 		BiomeImages: make(map[Biome]*BiomeTileSet),
+		POIImages:   make(map[string]*ebiten.Image),
 	}
 
 	// Load floor tiles
@@ -64,6 +66,19 @@ func LoadTileImages() TileImageSet {
 	biomes := []Biome{BiomeGrassland, BiomeForest, BiomeDesert, BiomeMountain, BiomeSwamp}
 	for _, biome := range biomes {
 		images.BiomeImages[biome] = loadBiomeTiles(biome)
+	}
+
+	// Load POI-specific images
+	poiAssets := map[string]string{
+		"town":       filepath.Join("..", "assets", "tiles", "maptiles", "town", "dithmenos2.png"),
+		"temple":     filepath.Join("..", "assets", "tiles", "maptiles", "temple", "golden_statue_1.png"),
+		"guild_hall": filepath.Join("..", "assets", "tiles", "maptiles", "guild_hall", "machine_tukima.png"),
+		"watchtower": filepath.Join("..", "assets", "tiles", "maptiles", "watchtower", "crumbled_column_1.png"),
+	}
+	for poiType, assetPath := range poiAssets {
+		if img, _, err := ebitenutil.NewImageFromFile(assetPath); err == nil {
+			images.POIImages[poiType] = img
+		}
 	}
 
 	return images

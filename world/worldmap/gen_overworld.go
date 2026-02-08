@@ -442,6 +442,12 @@ func (g *StrategicOverworldGenerator) placePOIType(result *GenerationResult, wid
 			Biome:    biome,
 		})
 
+		// Set POI-specific tile image so the renderer draws it
+		if poiImg, ok := images.POIImages[nodeID]; ok {
+			result.Tiles[idx].POIType = nodeID
+			result.Tiles[idx].Image = poiImg
+		}
+
 		// Add as a 1x1 Rect for backward compat with StartingPosition()/PlaceStairs()
 		result.Rooms = append(result.Rooms, NewRect(pos.X, pos.Y, 1, 1))
 		placed = append(placed, pos)
@@ -495,6 +501,13 @@ func (g *StrategicOverworldGenerator) placeGuildHalls(result *GenerationResult, 
 			NodeID:   "guild_hall",
 			Biome:    result.BiomeMap[idx],
 		})
+
+		// Set POI-specific tile image so the renderer draws it
+		if poiImg, ok := images.POIImages["guild_hall"]; ok {
+			result.Tiles[idx].POIType = "guild_hall"
+			result.Tiles[idx].Image = poiImg
+		}
+
 		result.Rooms = append(result.Rooms, NewRect(pos.X, pos.Y, 1, 1))
 		existingPOIs = append(existingPOIs, pos)
 		placed++
