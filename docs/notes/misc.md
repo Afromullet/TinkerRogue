@@ -118,9 +118,19 @@ from exported JSON logs. It displays squad formations, attack flows, and detaile
 
 # Running from Tinker Rogue root dir
 
-tools\combat_visualizer\combat_visualizer.exe game_main\combat_logs\battle_20260207_070651.948.json >> all_battles.txt
+tools\combat_visualizer\combat_visualizer.exe game_main\simulation_logs\battle_20260208_081424.628.json >> all_battles.txt
 
 
 # Running comabt sim from TinkerRogue Dir
 
  cd game_main && go run ../tools/combat_simulator/
+
+
+ ____
+
+
+ # Running Combat Balance Report Creator
+
+ - Requires simulation logs from the combat sim
+
+   cd tools/combat_balance && go run .
