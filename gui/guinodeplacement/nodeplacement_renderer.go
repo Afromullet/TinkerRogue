@@ -1,12 +1,15 @@
 package guinodeplacement
 
 import (
+	"fmt"
 	"image/color"
 
+	"game_main/gui/guiresources"
 	"game_main/overworld/core"
 	"game_main/overworld/playernode"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/text"
 	"github.com/hajimehoshi/ebiten/v2/vector"
 )
 
@@ -56,4 +59,69 @@ func (npm *NodePlacementMode) renderPlacementPreview(screen *ebiten.Image) {
 		borderColor = color.RGBA{R: 255, G: 50, B: 50, A: 200}
 	}
 	vector.StrokeRect(screen, centerX-halfSize, centerY-halfSize, halfSize*2, halfSize*2, 2, borderColor, true)
+
+	// Draw node type label above the cursor preview
+	displayName := string(npm.selectedNodeType)
+	if nodeDef != nil {
+		displayName = nodeDef.DisplayName
+	}
+
+	face := guiresources.SmallFace
+	bounds := text.BoundString(face, displayName)
+	labelX := int(centerX) - bounds.Dx()/2
+	labelY := screenY - 8
+	text.Draw(screen, displayName, face, labelX, labelY, color.White)
+}
+
+// renderSelectionHUD draws a persistent header showing the currently selected node type.
+func (npm *NodePlacementMode) renderSelectionHUD(screen *ebiten.Image) {
+	if npm.selectedNodeType == "" {
+		return
+	}
+
+	nodeDef := core.GetNodeRegistry().GetNodeByID(string(npm.selectedNodeType))
+	displayName := string(npm.selectedNodeType)
+	category := ""
+	if nodeDef != nil {
+		displayName = nodeDef.DisplayName
+		category = string(nodeDef.Category)
+	}
+
+	// Find current selection index for display
+	selIndex := 0
+	for i, node := range npm.nodeTypes {
+		if node.ID == string(npm.selectedNodeType) {
+			selIndex = i + 1
+			break
+		}
+	}
+
+	maxKey := len(npm.nodeTypes)
+	if maxKey > 4 {
+		maxKey = 4
+	}
+
+	hudText := fmt.Sprintf("Node Placement  |  Selected: %s (%s)  [%d/%d]  |  Tab=cycle  1-%d=select  ESC=cancel",
+		displayName, category, selIndex, len(npm.nodeTypes), maxKey)
+
+	face := guiresources.SmallFace
+	metrics := face.Metrics()
+	barHeight := float32(metrics.Height.Round() + 12)
+
+	// Draw background bar
+	vector.DrawFilledRect(screen, 0, 0, float32(screen.Bounds().Dx()), barHeight, color.RGBA{R: 0, G: 0, B: 0, A: 200}, false)
+
+	// Draw node color swatch
+	swatchSize := float32(metrics.Height.Round() - 4)
+	swatchX := float32(8)
+	swatchY := float32(6)
+	if nodeDef != nil {
+		vector.DrawFilledRect(screen, swatchX, swatchY, swatchSize, swatchSize, nodeDef.Color, false)
+		vector.StrokeRect(screen, swatchX, swatchY, swatchSize, swatchSize, 1, color.RGBA{R: 255, G: 255, B: 255, A: 200}, false)
+	}
+
+	// Draw text baseline-aligned within the bar
+	textX := int(swatchX+swatchSize) + 10
+	textY := int(barHeight) - 8
+	text.Draw(screen, hudText, face, textX, textY, color.White)
 }

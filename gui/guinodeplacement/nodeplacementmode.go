@@ -111,6 +111,9 @@ func (npm *NodePlacementMode) Render(screen *ebiten.Image) {
 
 	// Render placement preview overlay
 	npm.renderPlacementPreview(screen)
+
+	// Render HUD showing selected node type
+	npm.renderSelectionHUD(screen)
 }
 
 func (npm *NodePlacementMode) HandleInput(inputState *framework.InputState) bool {
@@ -119,7 +122,13 @@ func (npm *NodePlacementMode) HandleInput(inputState *framework.InputState) bool
 		return true
 	}
 
-	// Number keys 1-4 to select node type
+	// Tab to cycle through node types
+	if inputState.KeysJustPressed[ebiten.KeyTab] && len(npm.nodeTypes) > 0 {
+		npm.cycleNodeType()
+		return true
+	}
+
+	// Number keys 1-4 to select node type directly
 	numberKeys := []ebiten.Key{ebiten.Key1, ebiten.Key2, ebiten.Key3, ebiten.Key4}
 	for i, key := range numberKeys {
 		if inputState.KeysJustPressed[key] && i < len(npm.nodeTypes) {
@@ -176,6 +185,21 @@ func (npm *NodePlacementMode) handlePlaceNode(pos coords.LogicalPosition) {
 	npm.refreshNodeList()
 }
 
+func (npm *NodePlacementMode) cycleNodeType() {
+	currentIdx := -1
+	for i, node := range npm.nodeTypes {
+		if node.ID == string(npm.selectedNodeType) {
+			currentIdx = i
+			break
+		}
+	}
+
+	nextIdx := (currentIdx + 1) % len(npm.nodeTypes)
+	npm.selectedNodeType = core.NodeTypeID(npm.nodeTypes[nextIdx].ID)
+	npm.refreshNodeList()
+	npm.refreshPlacementInfo()
+}
+
 func (npm *NodePlacementMode) refreshNodeList() {
 	if npm.nodeListText == nil {
 		return
@@ -223,7 +247,7 @@ func (npm *NodePlacementMode) refreshPlacementInfo() {
 	}
 
 	text += fmt.Sprintf("\nMax Range: %d tiles\n", core.GetMaxPlacementRange())
-	text += "\nClick map to place, ESC to cancel"
+	text += "\nTab: cycle type, 1-4: select type\nClick map to place, ESC to cancel"
 
 	npm.placementInfoText.SetText(text)
 }
