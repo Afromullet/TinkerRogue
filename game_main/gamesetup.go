@@ -10,6 +10,7 @@ import (
 	"game_main/gui/framework"
 	"game_main/gui/guicombat"
 	"game_main/gui/guiexploration"
+	"game_main/gui/guinodeplacement"
 	"game_main/gui/guioverworld"
 
 	"game_main/gui/guiresources"
@@ -300,6 +301,7 @@ func registerBattleMapModes(coordinator *framework.GameModeCoordinator, manager 
 func registerOverworldModes(coordinator *framework.GameModeCoordinator, manager *framework.UIModeManager, encounterService *encounter.EncounterService) {
 	modes := []framework.UIMode{
 		guioverworld.NewOverworldMode(manager, encounterService),
+		guinodeplacement.NewNodePlacementMode(manager),
 		guisquads.NewSquadManagementMode(manager),
 		guisquads.NewSquadBuilderMode(manager),
 		guisquads.NewUnitPurchaseMode(manager),

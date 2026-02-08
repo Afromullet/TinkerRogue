@@ -203,6 +203,12 @@ func (om *OverworldMode) HandleInput(inputState *framework.InputState) bool {
 		return true
 	}
 
+	// Handle 'N' key to enter node placement mode
+	if inputState.KeysJustPressed[ebiten.KeyN] {
+		om.ModeManager.SetMode("node_placement")
+		return true
+	}
+
 	// Handle custom hotkeys
 	if inputState.KeysJustPressed[ebiten.KeySpace] {
 		om.handleAdvanceTick()

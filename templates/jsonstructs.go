@@ -250,6 +250,12 @@ type CompositionBonusConfig struct {
 	Bonus       float64 `json:"bonus"`
 }
 
+// PlayerNodeConfig defines player node placement rules
+type PlayerNodeConfig struct {
+	MaxPlacementRange int `json:"maxPlacementRange"`
+	MaxNodes          int `json:"maxNodes"`
+}
+
 // JSONOverworldConfig is the root container for overworld configuration
 type JSONOverworldConfig struct {
 	ThreatGrowth          ThreatGrowthConfig             `json:"threatGrowth"`
@@ -260,6 +266,7 @@ type JSONOverworldConfig struct {
 	StrengthThresholds    StrengthThresholdsConfig       `json:"strengthThresholds"`
 	VictoryConditions     VictoryConditionsConfig        `json:"victoryConditions"`
 	FactionScoringControl FactionScoringControlConfig    `json:"factionScoringControl"`
+	PlayerNodes           PlayerNodeConfig               `json:"playerNodes"`
 	StrategyBonuses       map[string]StrategyBonusConfig `json:"strategyBonuses"`
 }
 

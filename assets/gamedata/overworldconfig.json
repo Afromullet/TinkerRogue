@@ -54,6 +54,10 @@
       "minTerritorySize": 1
     }
   },
+  "playerNodes": {
+    "maxPlacementRange": 15,
+    "maxNodes": 10
+  },
   "strategyBonuses": {
     "Expansionist": { "expansionBonus": 3.0, "fortificationBonus": 0.0, "raidingBonus": 1.0, "retreatPenalty": 0.0 },
     "Aggressor": { "expansionBonus": 2.0, "fortificationBonus": 0.0, "raidingBonus": 4.0, "retreatPenalty": 0.0 },

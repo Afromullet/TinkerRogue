@@ -148,6 +148,18 @@ func GetStrategyBonuses() map[string]templates.StrategyBonusConfig {
 	return templates.OverworldConfigTemplate.StrategyBonuses
 }
 
+// --- Player Node Config ---
+
+// GetMaxPlacementRange returns the max distance from player/existing nodes for placement.
+func GetMaxPlacementRange() int {
+	return templates.OverworldConfigTemplate.PlayerNodes.MaxPlacementRange
+}
+
+// GetMaxPlayerNodes returns the max number of player nodes allowed.
+func GetMaxPlayerNodes() int {
+	return templates.OverworldConfigTemplate.PlayerNodes.MaxNodes
+}
+
 // --- Threat Type Config ---
 
 // GetThreatTypeParamsFromConfig returns parameters for a threat type.

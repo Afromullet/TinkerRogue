@@ -47,7 +47,10 @@ func init() {
 					{Text: "Engage Threat (E)", OnClick: func() {
 						om.handleEngageThreat()
 					}},
-					{Text: "Return (ESC)", OnClick: func() {
+					{Text: "Place Nodes (N)", OnClick: func() {
+					om.ModeManager.SetMode("node_placement")
+				}},
+				{Text: "Return (ESC)", OnClick: func() {
 						if om.Context.ModeCoordinator != nil {
 							if err := om.Context.ModeCoordinator.EnterBattleMap("exploration"); err != nil {
 								fmt.Printf("ERROR: Failed to return to battle map: %v\n", err)

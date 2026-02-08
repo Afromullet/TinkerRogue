@@ -63,6 +63,28 @@ func IsThreatAtPosition(manager *common.EntityManager, pos coords.LogicalPositio
 	return GetThreatNodeAt(manager, pos) != 0
 }
 
+// GetPlayerNodeAt returns the EntityID of a player node at a specific position.
+// Returns 0 if no player node exists at the position.
+func GetPlayerNodeAt(manager *common.EntityManager, pos coords.LogicalPosition) ecs.EntityID {
+	entityIDs := common.GlobalPositionSystem.GetAllEntityIDsAt(pos)
+	for _, entityID := range entityIDs {
+		if manager.HasComponent(entityID, PlayerNodeComponent) {
+			return entityID
+		}
+	}
+	return 0
+}
+
+// IsPlayerNodeAtPosition checks if any player node exists at the given position.
+func IsPlayerNodeAtPosition(manager *common.EntityManager, pos coords.LogicalPosition) bool {
+	return GetPlayerNodeAt(manager, pos) != 0
+}
+
+// IsAnyNodeAtPosition checks if any node (threat or player) exists at the given position.
+func IsAnyNodeAtPosition(manager *common.EntityManager, pos coords.LogicalPosition) bool {
+	return IsThreatAtPosition(manager, pos) || IsPlayerNodeAtPosition(manager, pos)
+}
+
 // GetThreatNodeAt returns the EntityID of a threat node at a specific position.
 // Returns 0 if no threat exists at the position.
 // Prefer using queries directly when iterating over multiple threats.

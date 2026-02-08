@@ -27,6 +27,25 @@ func (t ThreatType) EncounterTypeID() string {
 	return GetNodeRegistry().GetEncounterTypeID(t)
 }
 
+// NodeTypeID identifies a placeable node type from nodeDefinitions.json
+type NodeTypeID string
+
+const (
+	NodeTypeTown       NodeTypeID = "town"
+	NodeTypeGuildHall  NodeTypeID = "guild_hall"
+	NodeTypeTemple     NodeTypeID = "temple"
+	NodeTypeWatchtower NodeTypeID = "watchtower"
+)
+
+// String returns the display name for this node type.
+func (n NodeTypeID) String() string {
+	node := GetNodeRegistry().GetNodeByID(string(n))
+	if node != nil {
+		return node.DisplayName
+	}
+	return string(n)
+}
+
 // FactionType represents different faction types
 type FactionType int
 
@@ -131,6 +150,7 @@ const (
 	EventVictory                          // Player won
 	EventDefeat                           // Player lost
 	EventCombatResolved                   // Combat outcome applied
+	EventPlayerNodePlaced                 // Player placed a node
 )
 
 func (e EventType) String() string {
@@ -153,6 +173,8 @@ func (e EventType) String() string {
 		return "Defeat"
 	case EventCombatResolved:
 		return "Combat Resolved"
+	case EventPlayerNodePlaced:
+		return "Player Node Placed"
 	default:
 		return "Unknown Event"
 	}

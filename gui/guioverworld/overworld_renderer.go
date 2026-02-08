@@ -49,6 +49,9 @@ func (r *OverworldRenderer) Render(screen *ebiten.Image) {
 	// Render threat nodes
 	r.renderThreatNodes(screen)
 
+	// Render player nodes
+	r.renderPlayerNodes(screen)
+
 	// Render player avatar (above threats)
 	r.renderPlayerAvatar(screen)
 
@@ -194,6 +197,48 @@ func (r *OverworldRenderer) renderSelectionHighlight(screen *ebiten.Image) {
 	vector.StrokeCircle(screen, centerX, centerY, radius, 2, selectionColor, true)
 }
 
+// renderPlayerNodes draws all player-placed nodes as colored squares
+func (r *OverworldRenderer) renderPlayerNodes(screen *ebiten.Image) {
+	for _, result := range r.manager.World.Query(core.PlayerNodeTag) {
+		nodeEntity := result.Entity
+		pos := common.GetComponentType[*coords.LogicalPosition](nodeEntity, common.PositionComponent)
+		data := common.GetComponentType[*core.PlayerNodeData](nodeEntity, core.PlayerNodeComponent)
+
+		if pos == nil || data == nil {
+			continue
+		}
+
+		// Calculate screen position (accounting for camera)
+		screenX := (pos.X - r.state.CameraX) * r.tileSize
+		screenY := (pos.Y - r.state.CameraY) * r.tileSize
+
+		// Get node color from registry
+		nodeDef := core.GetNodeRegistry().GetNodeByID(string(data.NodeTypeID))
+		nodeColor := color.RGBA{R: 100, G: 200, B: 100, A: 255} // default green
+		if nodeDef != nil {
+			nodeColor = nodeDef.Color
+		}
+
+		// Draw square for player node (distinguishes from threat circles)
+		halfSize := float32(r.tileSize) / 2
+		centerX := float32(screenX) + halfSize
+		centerY := float32(screenY) + halfSize
+
+		vector.DrawFilledRect(screen, centerX-halfSize, centerY-halfSize, halfSize*2, halfSize*2, nodeColor, true)
+
+		// Draw white border to distinguish from map tiles
+		borderColor := color.RGBA{R: 255, G: 255, B: 255, A: 180}
+		vector.StrokeRect(screen, centerX-halfSize, centerY-halfSize, halfSize*2, halfSize*2, 2, borderColor, true)
+	}
+}
+
+// ScreenToLogical converts screen coordinates to logical tile position (accounting for camera).
+func (r *OverworldRenderer) ScreenToLogical(screenX, screenY int) coords.LogicalPosition {
+	logicalX := (screenX / r.tileSize) + r.state.CameraX
+	logicalY := (screenY / r.tileSize) + r.state.CameraY
+	return coords.LogicalPosition{X: logicalX, Y: logicalY}
+}
+
 // getThreatColor returns color for each threat type.
 // Uses NodeRegistry for data-driven lookup.
 func (r *OverworldRenderer) getThreatColor(threatType core.ThreatType) color.RGBA {
@@ -202,13 +247,7 @@ func (r *OverworldRenderer) getThreatColor(threatType core.ThreatType) color.RGB
 
 // GetThreatAtPosition returns threat entity at screen coordinates (for mouse clicks)
 func (r *OverworldRenderer) GetThreatAtPosition(screenX, screenY int) ecs.EntityID {
-	// Convert screen to logical position
-	logicalX := (screenX / r.tileSize) + r.state.CameraX
-	logicalY := (screenY / r.tileSize) + r.state.CameraY
-
-	logicalPos := coords.LogicalPosition{X: logicalX, Y: logicalY}
-
-	// Check if threat exists at this position
+	logicalPos := r.ScreenToLogical(screenX, screenY)
 	return core.GetThreatNodeAt(r.manager, logicalPos)
 }
 

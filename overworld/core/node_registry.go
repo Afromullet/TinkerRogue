@@ -19,7 +19,7 @@ type NodeCategory string
 
 const (
 	NodeCategoryThreat     NodeCategory = "threat"
-	NodeCategorySETTLEMENT NodeCategory = "settlement"
+	NodeCategorySettlement NodeCategory = "settlement"
 	NodeCategoryFortress   NodeCategory = "fortress"
 )
 
@@ -198,6 +198,17 @@ func (r *NodeRegistry) GetNodesByCategory(category NodeCategory) []*NodeDefiniti
 	var nodes []*NodeDefinition
 	for _, node := range r.nodesByID {
 		if node.Category == category {
+			nodes = append(nodes, node)
+		}
+	}
+	return nodes
+}
+
+// GetPlaceableNodeTypes returns all settlement and fortress nodes available for player placement.
+func (r *NodeRegistry) GetPlaceableNodeTypes() []*NodeDefinition {
+	var nodes []*NodeDefinition
+	for _, node := range r.nodesByID {
+		if node.Category == NodeCategorySettlement || node.Category == NodeCategoryFortress {
 			nodes = append(nodes, node)
 		}
 	}

@@ -16,12 +16,14 @@ var (
 	StrategicIntentComponent  *ecs.Component
 	VictoryStateComponent     *ecs.Component
 	TravelStateComponent      *ecs.Component
+	PlayerNodeComponent       *ecs.Component
 
 	ThreatNodeTag       ecs.Tag
 	OverworldFactionTag ecs.Tag
 	TickStateTag        ecs.Tag
 	VictoryStateTag     ecs.Tag
 	TravelStateTag      ecs.Tag
+	PlayerNodeTag       ecs.Tag
 )
 
 // OverworldEncounterComponent and tag for encounter entities
@@ -100,4 +102,11 @@ type OverworldEncounterData struct {
 	EncounterType string       // Type identifier for spawn logic
 	IsDefeated    bool         // Marked true after victory
 	ThreatNodeID  ecs.EntityID // Link to overworld threat node (0 if not from threat)
+}
+
+// PlayerNodeData - Pure data component for player-placed nodes (settlements, fortresses)
+type PlayerNodeData struct {
+	NodeID     ecs.EntityID // Entity ID of this player node
+	NodeTypeID NodeTypeID   // References nodeDefinitions.json ID (e.g., "town", "watchtower")
+	PlacedTick int64        // Tick when placed
 }
