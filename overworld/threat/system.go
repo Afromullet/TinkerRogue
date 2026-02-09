@@ -62,9 +62,8 @@ func CreateThreatNode(
 
 	// Add influence component
 	entity.AddComponent(core.InfluenceComponent, &core.InfluenceData{
-		Radius:         params.BaseRadius + initialIntensity,
-		EffectType:     params.PrimaryEffect,
-		EffectStrength: float64(initialIntensity) * 0.1,
+		Radius:        params.BaseRadius + initialIntensity,
+		BaseMagnitude: core.CalculateBaseMagnitude(initialIntensity),
 	})
 
 	// Register in position system
@@ -94,6 +93,14 @@ func UpdateThreatNodes(manager *common.EntityManager, currentTick int64) error {
 			growthAmount *= core.GetContainmentSlowdown() // Player presence slows growth
 		}
 
+		// Apply influence interaction modifier (synergy boosts, competition/suppression slows)
+		if manager.HasComponent(entity.GetID(), core.InteractionComponent) {
+			interactionData := common.GetComponentType[*core.InteractionData](entity, core.InteractionComponent)
+			if interactionData != nil {
+				growthAmount *= interactionData.NetModifier
+			}
+		}
+
 		threatData.GrowthProgress += growthAmount
 
 		// Check for evolution
@@ -118,7 +125,7 @@ func EvolveThreatNode(manager *common.EntityManager, entity *ecs.Entity, threatD
 		influenceData := common.GetComponentType[*core.InfluenceData](entity, core.InfluenceComponent)
 		if influenceData != nil {
 			influenceData.Radius = params.BaseRadius + threatData.Intensity
-			influenceData.EffectStrength = float64(threatData.Intensity) * 0.1
+			influenceData.BaseMagnitude = core.CalculateBaseMagnitude(threatData.Intensity)
 		}
 
 		// Log evolution event
@@ -162,7 +169,7 @@ func ExecuteThreatEvolutionEffect(manager *common.EntityManager, entity *ecs.Ent
 // Returns true if spawn succeeded, false if no valid position found.
 func SpawnChildThreatNode(manager *common.EntityManager, parentPos coords.LogicalPosition, threatType core.ThreatType, intensity int) bool {
 	// Find nearby unoccupied position (within radius 3)
-	maxAttempts := core.GetMaxChildNodeSpawnAttempts()
+	const maxAttempts = 10
 	for attempts := 0; attempts < maxAttempts; attempts++ {
 		offsetX := common.RandomInt(7) - 3 // -3 to 3
 		offsetY := common.RandomInt(7) - 3

@@ -43,7 +43,7 @@ func NewCompositeThreatEvaluator(
 		cache:           cache,
 		factionID:       factionID,
 		combatThreat:    combatLayer,
-		supportValue:    NewSupportValueLayer(factionID, manager, cache, baseThreatMgr),
+		supportValue:    NewSupportValueLayer(factionID, manager, cache),
 		positionalRisk:  NewPositionalRiskLayer(factionID, manager, cache, baseThreatMgr, combatLayer),
 		lastUpdateRound: -1,
 		isDirty:         true,

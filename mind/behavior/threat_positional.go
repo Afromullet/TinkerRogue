@@ -163,7 +163,7 @@ func (prl *PositionalRiskLayer) computeIsolationRisk(alliedSquads []ecs.EntityID
 	}
 
 	threshold := GetIsolationThreshold()
-	maxDist := GetIsolationMaxDistance()
+	maxDist := isolationMaxDistance
 
 	// For each position, find distance to nearest ally
 	IterateMapGrid(func(pos coords.LogicalPosition) {
@@ -188,7 +188,7 @@ func (prl *PositionalRiskLayer) computeIsolationRisk(alliedSquads []ecs.EntityID
 
 // computeEngagementPressure combines melee and ranged threat for net pressure
 func (prl *PositionalRiskLayer) computeEngagementPressure() {
-	maxPressure := float64(GetEngagementPressureMax())
+	maxPressure := float64(engagementPressureMax)
 
 	IterateMapGrid(func(pos coords.LogicalPosition) {
 		meleeThreat := prl.combatLayer.GetMeleeThreatAt(pos)
@@ -257,21 +257,11 @@ func (prl *PositionalRiskLayer) GetRetreatQuality(pos coords.LogicalPosition) fl
 	return prl.retreatQuality[pos]
 }
 
-// GetTotalRiskAt returns combined positional risk
+// GetTotalRiskAt returns combined positional risk as a simple average
 func (prl *PositionalRiskLayer) GetTotalRiskAt(pos coords.LogicalPosition) float64 {
 	flanking := prl.flankingRisk[pos]
 	isolation := prl.isolationRisk[pos]
 	pressure := prl.engagementPressure[pos]
-	retreatPenalty := 1.0 - prl.retreatQuality[pos] // Invert: low quality = high risk
-
-	// Weighted combination using configured weights
-	flankingWeight, isolationWeight, pressureWeight, retreatWeight := GetPositionalRiskWeights()
-	return (flanking*flankingWeight + isolation*isolationWeight + pressure*pressureWeight + retreatPenalty*retreatWeight)
-}
-
-// IsFlankingPosition checks if attacking from pos would flank target
-func (prl *PositionalRiskLayer) IsFlankingPosition(pos, targetPos coords.LogicalPosition) bool {
-	// Simple heuristic: flanking if attacking from side or behind relative to target's allies
-	// For now, just check if position has low flanking risk (safe to attack from)
-	return prl.flankingRisk[pos] < 0.3
+	retreatPenalty := 1.0 - prl.retreatQuality[pos]
+	return (flanking + isolation + pressure + retreatPenalty) * 0.25
 }

@@ -34,14 +34,13 @@ func CreatePlayerNode(manager *common.EntityManager, pos coords.LogicalPosition,
 
 	// Add influence component using baseRadius from NodeRegistry
 	nodeDef := core.GetNodeRegistry().GetNodeByID(string(nodeTypeID))
-	baseRadius := 3 // default
+	baseRadius := core.GetDefaultPlayerNodeRadius()
 	if nodeDef != nil {
 		baseRadius = nodeDef.BaseRadius
 	}
 	entity.AddComponent(core.InfluenceComponent, &core.InfluenceData{
-		Radius:         baseRadius,
-		EffectType:     core.InfluenceSpawnBoost,
-		EffectStrength: 0.1,
+		Radius:        baseRadius,
+		BaseMagnitude: core.GetDefaultPlayerNodeMagnitude(),
 	})
 
 	// Register in position system

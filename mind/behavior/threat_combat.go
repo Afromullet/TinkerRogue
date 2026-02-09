@@ -18,9 +18,8 @@ type CombatThreatLayer struct {
 	*ThreatLayerBase
 
 	// Melee threat data
-	meleeThreatByPos    map[coords.LogicalPosition]float64 // Position -> melee threat value
-	meleeThreatBySquad  map[ecs.EntityID]float64           // Squad -> total melee threat emitted
-	meleeEffectiveRange map[ecs.EntityID]int               // Squad -> max melee engagement range
+	meleeThreatByPos   map[coords.LogicalPosition]float64 // Position -> melee threat value
+	meleeThreatBySquad map[ecs.EntityID]float64           // Squad -> total melee threat emitted
 
 	// Ranged threat data
 	rangedPressureByPos map[coords.LogicalPosition]float64        // Position -> ranged pressure
@@ -41,7 +40,6 @@ func NewCombatThreatLayer(
 		ThreatLayerBase:     NewThreatLayerBase(factionID, manager, cache),
 		meleeThreatByPos:    make(map[coords.LogicalPosition]float64),
 		meleeThreatBySquad:  make(map[ecs.EntityID]float64),
-		meleeEffectiveRange: make(map[ecs.EntityID]int),
 		rangedPressureByPos: make(map[coords.LogicalPosition]float64),
 		lineOfFireZones:     make(map[ecs.EntityID][]coords.LogicalPosition),
 		baseThreatMgr:       baseThreatMgr,
@@ -53,7 +51,6 @@ func (ctl *CombatThreatLayer) Compute() {
 	// Clear existing data (reuse maps to reduce GC pressure)
 	clear(ctl.meleeThreatByPos)
 	clear(ctl.meleeThreatBySquad)
-	clear(ctl.meleeEffectiveRange)
 	clear(ctl.rangedPressureByPos)
 	clear(ctl.lineOfFireZones)
 
@@ -108,7 +105,6 @@ func (ctl *CombatThreatLayer) computeMeleeThreat(
 
 	// Store squad data
 	ctl.meleeThreatBySquad[squadID] = totalThreat
-	ctl.meleeEffectiveRange[squadID] = threatRadius
 
 	// Paint threat on map with linear falloff
 	PaintThreatToMap(ctl.meleeThreatByPos, squadPos, threatRadius, totalThreat, LinearFalloff, false)
@@ -146,16 +142,6 @@ func (ctl *CombatThreatLayer) GetMeleeThreatAt(pos coords.LogicalPosition) float
 	return ctl.meleeThreatByPos[pos]
 }
 
-// GetMeleeThreatFrom returns total melee threat emitted by a squad
-func (ctl *CombatThreatLayer) GetMeleeThreatFrom(squadID ecs.EntityID) float64 {
-	return ctl.meleeThreatBySquad[squadID]
-}
-
-// IsInMeleeZone checks if a position is within any melee threat zone
-func (ctl *CombatThreatLayer) IsInMeleeZone(pos coords.LogicalPosition) bool {
-	return ctl.meleeThreatByPos[pos] > 0.0
-}
-
 // =========================================
 // Ranged Query API (backward compatible)
 // =========================================
@@ -163,39 +149,4 @@ func (ctl *CombatThreatLayer) IsInMeleeZone(pos coords.LogicalPosition) bool {
 // GetRangedPressureAt returns ranged pressure at a position
 func (ctl *CombatThreatLayer) GetRangedPressureAt(pos coords.LogicalPosition) float64 {
 	return ctl.rangedPressureByPos[pos]
-}
-
-// GetRangedThreatsToPosition returns all squads that threaten a position with ranged attacks
-func (ctl *CombatThreatLayer) GetRangedThreatsToPosition(pos coords.LogicalPosition) []ecs.EntityID {
-	var threats []ecs.EntityID
-
-	for squadID, zone := range ctl.lineOfFireZones {
-		for _, zonePos := range zone {
-			if zonePos.X == pos.X && zonePos.Y == pos.Y {
-				threats = append(threats, squadID)
-				break
-			}
-		}
-	}
-
-	return threats
-}
-
-// IsInRangedZone checks if position is under ranged fire
-func (ctl *CombatThreatLayer) IsInRangedZone(pos coords.LogicalPosition) bool {
-	return ctl.rangedPressureByPos[pos] > 0.0
-}
-
-// =========================================
-// Combined Query API
-// =========================================
-
-// GetCombinedThreatAt returns total threat (melee + ranged) at a position
-func (ctl *CombatThreatLayer) GetCombinedThreatAt(pos coords.LogicalPosition) float64 {
-	return ctl.meleeThreatByPos[pos] + ctl.rangedPressureByPos[pos]
-}
-
-// IsInAnyThreatZone checks if position is threatened by either melee or ranged
-func (ctl *CombatThreatLayer) IsInAnyThreatZone(pos coords.LogicalPosition) bool {
-	return ctl.IsInMeleeZone(pos) || ctl.IsInRangedZone(pos)
 }

@@ -22,8 +22,7 @@
     }
   ],
   "supportLayer": {
-    "healRadius": 3,
-    "buffPriorityEngagementRange": 4
+    "healRadius": 3
   },
   "sharedRangedWeight": 0.5,
   "sharedPositionalWeight": 0.5

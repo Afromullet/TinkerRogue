@@ -14,20 +14,20 @@ func CheckVictoryCondition(manager *common.EntityManager) core.VictoryCondition 
 	// Get victory state (if configured)
 	victoryState := GetVictoryState(manager)
 
-	// Check defeat conditions first (highest priority) - single check replaces duplicate logic
-	defeatCheck := CheckPlayerDefeat(manager)
-	if defeatCheck.IsDefeated {
+	// Check defeat conditions first (highest priority)
+	isDefeated, defeatMessage := CheckPlayerDefeat(manager)
+	if isDefeated {
 		if victoryState != nil {
 			victoryState.Condition = core.VictoryPlayerLoses
 			victoryState.VictoryAchieved = true
-			victoryState.DefeatReason = defeatCheck.DefeatMessage
+			victoryState.DefeatReason = defeatMessage
 		}
 
 		// Log defeat event
-		core.LogEvent(core.EventDefeat, core.GetCurrentTick(manager), 0, defeatCheck.DefeatMessage, nil)
+		core.LogEvent(core.EventDefeat, core.GetCurrentTick(manager), 0, defeatMessage, nil)
 
 		// Export overworld log on defeat
-		if err := core.FinalizeRecording("Defeat", defeatCheck.DefeatMessage); err != nil {
+		if err := core.FinalizeRecording("Defeat", defeatMessage); err != nil {
 			fmt.Printf("WARNING: Failed to export overworld log: %v\n", err)
 		}
 		core.ClearRecording()

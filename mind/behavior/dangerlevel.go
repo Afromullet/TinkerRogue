@@ -4,7 +4,6 @@ import (
 	"game_main/common"
 	"game_main/mind/evaluation"
 	"game_main/tactical/combat"
-	"game_main/tactical/squads"
 
 	"github.com/bytearena/ecs"
 )
@@ -46,9 +45,9 @@ func (ftlm *FactionThreatLevelManager) UpdateAllFactions() {
 }
 
 type FactionThreatLevel struct {
-	manager          *common.EntityManager
-	cache            *combat.CombatQueryCache
-	factionID        ecs.EntityID
+	manager           *common.EntityManager
+	cache             *combat.CombatQueryCache
+	factionID         ecs.EntityID
 	squadThreatLevels map[ecs.EntityID]*SquadThreatLevel //Key is the squad ID. Value is the danger level
 }
 
@@ -58,10 +57,10 @@ func NewFactionThreatLevel(factionID ecs.EntityID, manager *common.EntityManager
 
 	ftl := &FactionThreatLevel{
 
-		factionID:        factionID,
+		factionID:         factionID,
 		squadThreatLevels: make(map[ecs.EntityID]*SquadThreatLevel, len(squadIDs)),
-		manager:          manager,
-		cache:            cache,
+		manager:           manager,
+		cache:             cache,
 	}
 
 	for _, ID := range squadIDs {
@@ -83,59 +82,13 @@ func (ftr *FactionThreatLevel) UpdateThreatRatings() {
 
 }
 
-func (ftr *FactionThreatLevel) UpdateThreatRatingForSquad(squadID ecs.EntityID) {
-	ftr.squadThreatLevels[squadID].CalculateThreatLevels()
-
-}
-
-// GetSquadDistanceTracker retrieves distance tracker for specific squad
-// Returns nil if squad not found in this faction
-func (ftr *FactionThreatLevel) GetSquadDistanceTracker(squadID ecs.EntityID) *SquadDistanceTracker {
-	if stl, exists := ftr.squadThreatLevels[squadID]; exists {
-		return stl.SquadDistances
-	}
-	return nil
-}
-
-// MarkAllSquadDistancesDirty marks all squad distance trackers as needing recalculation
-// Call this when squad positions change (e.g., after movement phase)
-func (ftr *FactionThreatLevel) MarkAllSquadDistancesDirty() {
-	for _, squadThreatLevel := range ftr.squadThreatLevels {
-		squadThreatLevel.SquadDistances.isDirty = true
-	}
-}
-
-// UpdateSquadDistancesIfNeeded updates distances only if needed (lazy evaluation)
-// Pass current round to enable round-based caching
-func (ftr *FactionThreatLevel) UpdateSquadDistancesIfNeeded(squadID ecs.EntityID, currentRound int) {
-	if stl, exists := ftr.squadThreatLevels[squadID]; exists {
-		stl.SquadDistances.UpdateSquadDistances(ftr.manager, currentRound)
-	}
-}
-
 // ========================================
 // SQUAD DISTANCE TRACKING STRUCTURES
 // ========================================
 
-// SquadDistanceInfo stores distance data for a single squad
-type SquadDistanceInfo struct {
-	SquadID  ecs.EntityID // Target squad ID
-	Distance int          // Chebyshev distance from source squad
-}
-
-// FactionSquadDistances groups all squads in a faction by distance
-type FactionSquadDistances struct {
-	FactionID        ecs.EntityID
-	Squads           []SquadDistanceInfo
-	SquadsByDistance map[int][]ecs.EntityID // Quick lookup by distance
-}
-
-// SquadDistanceTracker tracks distances from one squad to all other squads
+// SquadDistanceTracker tracks distances from one squad to all enemy squads
 type SquadDistanceTracker struct {
 	SourceSquadID     ecs.EntityID
-	ByFaction         map[ecs.EntityID]*FactionSquadDistances
-	AllSquads         []SquadDistanceInfo
-	AlliesByDistance  map[int][]ecs.EntityID
 	EnemiesByDistance map[int][]ecs.EntityID
 
 	// Optimization: Cache to avoid unnecessary recalculations
@@ -162,9 +115,6 @@ func NewSquadThreatLevel(manager *common.EntityManager, cache *combat.CombatQuer
 		squadID: squadID,
 		SquadDistances: &SquadDistanceTracker{
 			SourceSquadID:     squadID,
-			ByFaction:         make(map[ecs.EntityID]*FactionSquadDistances),
-			AllSquads:         make([]SquadDistanceInfo, 0),
-			AlliesByDistance:  make(map[int][]ecs.EntityID),
 			EnemiesByDistance: make(map[int][]ecs.EntityID),
 			lastUpdateRound:   -1,
 			isDirty:           true,  // Start as dirty so first access calculates
@@ -173,115 +123,10 @@ func NewSquadThreatLevel(manager *common.EntityManager, cache *combat.CombatQuer
 	}
 }
 
-
 // CalculateThreatLevels computes threat ratings for the squad.
 // Uses shared power calculation from evaluation package for ThreatByRange.
 func (stl *SquadThreatLevel) CalculateThreatLevels() {
 	// Use shared power calculation for ThreatByRange
 	config := evaluation.GetPowerConfigByProfile("Balanced")
 	stl.ThreatByRange = evaluation.CalculateSquadPowerByRange(stl.squadID, stl.manager, config)
-}
-
-// ========================================
-// SQUAD DISTANCE TRACKING SYSTEM FUNCTIONS
-// ========================================
-
-// UpdateSquadDistances calculates distances from source squad to all other squads
-// Organizes results by faction for easy querying
-
-func (tracker *SquadDistanceTracker) UpdateSquadDistances(manager *common.EntityManager, currentRound int) {
-	//Check if we need to recalculate
-	if tracker.isInitialized && !tracker.isDirty && tracker.lastUpdateRound == currentRound {
-		return // Data is still valid, skip recalculation
-	}
-
-	// Clear existing data
-	tracker.ByFaction = make(map[ecs.EntityID]*FactionSquadDistances)
-
-	// Get source squad's faction for ally/enemy classification
-	sourceFactionID := combat.GetSquadFaction(tracker.SourceSquadID, manager)
-
-	// Iterate all factions in the game
-	allFactionIDs := combat.GetAllFactions(manager)
-
-	for _, factionID := range allFactionIDs {
-		// Get all squads in this faction
-		squadIDs := combat.GetSquadsForFaction(factionID, manager)
-
-		// Initialize faction distance data
-		factionDistances := &FactionSquadDistances{
-			FactionID:        factionID,
-			Squads:           make([]SquadDistanceInfo, 0),
-			SquadsByDistance: make(map[int][]ecs.EntityID),
-		}
-
-		// Calculate distance to each squad in this faction
-		for _, targetSquadID := range squadIDs {
-			// Skip self
-			if targetSquadID == tracker.SourceSquadID {
-				continue
-			}
-
-			// Calculate distance
-			distance := squads.GetSquadDistance(tracker.SourceSquadID, targetSquadID, manager)
-
-			if distance < 0 {
-				continue // Skip invalid distances
-			}
-
-			squadInfo := SquadDistanceInfo{
-				SquadID:  targetSquadID,
-				Distance: distance,
-			}
-
-			factionDistances.Squads = append(factionDistances.Squads, squadInfo)
-			factionDistances.SquadsByDistance[distance] = append(
-				factionDistances.SquadsByDistance[distance],
-				targetSquadID,
-			)
-
-		}
-
-		tracker.ByFaction[factionID] = factionDistances
-	}
-
-	// Build convenience caches
-	tracker.buildDistanceCaches(sourceFactionID)
-
-	// OPTIMIZATION: Mark as clean and initialized
-	tracker.isDirty = false
-	tracker.isInitialized = true
-	tracker.lastUpdateRound = currentRound
-}
-
-// buildDistanceCaches rebuilds the cached lookup maps in SquadDistanceTracker
-// Called internally after UpdateSquadDistances completes
-func (tracker *SquadDistanceTracker) buildDistanceCaches(sourceFactionID ecs.EntityID) {
-	// Clear caches
-	tracker.AllSquads = make([]SquadDistanceInfo, 0)
-	tracker.AlliesByDistance = make(map[int][]ecs.EntityID)
-	tracker.EnemiesByDistance = make(map[int][]ecs.EntityID)
-
-	// Iterate all factions
-	for factionID, factionDistances := range tracker.ByFaction {
-		isAlly := (factionID == sourceFactionID)
-
-		// Add all squads to AllSquads
-		tracker.AllSquads = append(tracker.AllSquads, factionDistances.Squads...)
-
-		// Categorize by ally/enemy
-		for _, squadInfo := range factionDistances.Squads {
-			if isAlly {
-				tracker.AlliesByDistance[squadInfo.Distance] = append(
-					tracker.AlliesByDistance[squadInfo.Distance],
-					squadInfo.SquadID,
-				)
-			} else {
-				tracker.EnemiesByDistance[squadInfo.Distance] = append(
-					tracker.EnemiesByDistance[squadInfo.Distance],
-					squadInfo.SquadID,
-				)
-			}
-		}
-	}
 }

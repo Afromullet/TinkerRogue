@@ -1,0 +1,30 @@
+{
+  "baseMagnitudeMultiplier": 0.1,
+  "defaultPlayerNodeMagnitude": 0.1,
+  "defaultPlayerNodeRadius": 3,
+  "synergy": {
+    "growthBonus": 0.25
+  },
+  "competition": {
+    "growthPenalty": 0.20
+  },
+  "suppression": {
+    "growthPenalty": 0.40,
+    "nodeTypeMultipliers": {
+      "watchtower": 1.5,
+      "guild_hall": 1.0,
+      "temple": 1.2,
+      "town": 0.8
+    }
+  },
+  "playerSynergy": {
+    "baseBonus": 0.15,
+    "complementaryBonus": 0.25,
+    "complementaryPairs": [
+      ["town", "guild_hall"],
+      ["guild_hall", "temple"],
+      ["watchtower", "town"]
+    ]
+  },
+  "diminishingFactor": 0.75
+}

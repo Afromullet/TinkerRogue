@@ -16,11 +16,6 @@ func GetChildNodeSpawnThreshold() int {
 	return templates.OverworldConfigTemplate.ThreatGrowth.ChildNodeSpawnThreshold
 }
 
-// GetMaxChildNodeSpawnAttempts returns the max child node spawn attempts.
-func GetMaxChildNodeSpawnAttempts() int {
-	return templates.OverworldConfigTemplate.ThreatGrowth.MaxChildNodeSpawnAttempts
-}
-
 // GetMaxThreatIntensity returns the global max threat intensity.
 func GetMaxThreatIntensity() int {
 	return templates.OverworldConfigTemplate.ThreatGrowth.MaxThreatIntensity
@@ -131,8 +126,9 @@ func GetFortificationScoringParams() (weakBonus, baseValue float64) {
 }
 
 // GetRaidingScoringParams returns raiding scoring parameters.
-func GetRaidingScoringParams() float64 {
-	return templates.OverworldConfigTemplate.FactionScoring.Raiding.StrongBonus
+func GetRaidingScoringParams() (strongBonus float64, veryStrongOffset int) {
+	raid := templates.OverworldConfigTemplate.FactionScoring.Raiding
+	return raid.StrongBonus, raid.VeryStrongOffset
 }
 
 // GetRetreatScoringParams returns retreat scoring parameters.
@@ -165,6 +161,23 @@ func GetMaxPlayerNodes() int {
 // GetThreatTypeParamsFromConfig returns parameters for a threat type.
 func GetThreatTypeParamsFromConfig(threatType ThreatType) ThreatTypeParams {
 	return GetNodeRegistry().GetOverworldParams(threatType)
+}
+
+// --- Influence Config ---
+
+// GetBaseMagnitudeMultiplier returns the multiplier for deriving base magnitude from intensity.
+func GetBaseMagnitudeMultiplier() float64 {
+	return templates.InfluenceConfigTemplate.BaseMagnitudeMultiplier
+}
+
+// GetDefaultPlayerNodeMagnitude returns the default base magnitude for player nodes.
+func GetDefaultPlayerNodeMagnitude() float64 {
+	return templates.InfluenceConfigTemplate.DefaultPlayerNodeMagnitude
+}
+
+// GetDefaultPlayerNodeRadius returns the default influence radius for player nodes.
+func GetDefaultPlayerNodeRadius() int {
+	return templates.InfluenceConfigTemplate.DefaultPlayerNodeRadius
 }
 
 // stringToInfluenceEffect converts string to InfluenceEffect enum

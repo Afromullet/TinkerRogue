@@ -20,6 +20,9 @@ var NodeCategories []string
 var EncounterDefinitionTemplates []JSONEncounterDefinition
 var DefaultEncounterTemplate *JSONDefaultEncounter
 
+// Influence interaction configuration
+var InfluenceConfigTemplate JSONInfluenceConfig
+
 func ReadGameData() {
 
 	ReadMonsterData()
@@ -30,5 +33,6 @@ func ReadGameData() {
 	ReadAIConfig()
 	ReadPowerConfig()
 	ReadOverworldConfig()
+	ReadInfluenceConfig()
 
 }

@@ -285,8 +285,8 @@ func (om *OverworldMode) handleAdvanceTick() {
 
 	// Log appropriate message
 	if travelState != nil && travelState.IsTraveling {
-		om.logEvent(fmt.Sprintf("Tick %d - Distance remaining: %.1f",
-			tickState.CurrentTick, travelState.RemainingDistance))
+		om.logEvent(fmt.Sprintf("Tick %d - %d ticks remaining",
+			tickState.CurrentTick, travelState.TicksRemaining))
 	} else {
 		om.logEvent(fmt.Sprintf("Tick advanced to %d", tickState.CurrentTick))
 	}

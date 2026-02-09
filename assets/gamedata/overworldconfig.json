@@ -2,8 +2,7 @@
   "threatGrowth": {
     "containmentSlowdown": 0.5,
     "maxThreatIntensity": 5,
-    "childNodeSpawnThreshold": 3,
-    "maxChildNodeSpawnAttempts": 10
+    "childNodeSpawnThreshold": 3
   },
   "factionAI": {
     "defaultIntentTickDuration": 10,
@@ -46,7 +45,8 @@
       "baseValue": 2.0
     },
     "raiding": {
-      "strongBonus": 3.0
+      "strongBonus": 3.0,
+      "veryStrongOffset": 3
     },
     "retreat": {
       "criticalWeakBonus": 8.0,

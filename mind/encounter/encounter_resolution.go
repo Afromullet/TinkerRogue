@@ -116,7 +116,7 @@ func applyCombatOutcome(
 		if influenceData != nil {
 			params := core.GetThreatTypeParamsFromConfig(threatData.ThreatType)
 			influenceData.Radius = params.BaseRadius + threatData.Intensity
-			influenceData.EffectStrength = float64(threatData.Intensity) * 0.1
+			influenceData.BaseMagnitude = core.CalculateBaseMagnitude(threatData.Intensity)
 		}
 
 		// Log combat resolution event

@@ -6,54 +6,34 @@ import (
 	"game_main/overworld/threat"
 )
 
-// CheckPlayerDefeat checks if player has lost and returns structured result.
-// Single source of truth for defeat determination - runs checks once and caches results.
-// Thresholds are loaded from config for designer-friendly tuning.
-func CheckPlayerDefeat(manager *common.EntityManager) *core.DefeatCheckResult {
-	result := &core.DefeatCheckResult{
-		IsDefeated:   false,
-		DefeatReason: core.DefeatNone,
+// CheckPlayerDefeat checks if player has lost.
+// Returns (isDefeated, defeatMessage). Empty message means not defeated.
+func CheckPlayerDefeat(manager *common.EntityManager) (bool, string) {
+	// Check threat influence
+	totalInfluence := GetTotalThreatInfluence(manager)
+	if totalInfluence > core.GetMaxThreatInfluence() {
+		return true, core.FormatEventString("Defeat! Overwhelmed by threat influence (%.1f)", totalInfluence)
 	}
 
-	// Get thresholds from config
-	maxInfluence := core.GetMaxThreatInfluence()
+	// Check high-intensity threats
 	highIntensityThreshold := core.GetHighIntensityThreshold()
-	maxHighIntensityThreats := core.GetMaxHighIntensityThreats()
-
-	// Check threat influence (run query once and cache result)
-	result.TotalInfluence = GetTotalThreatInfluence(manager)
-	if result.TotalInfluence > maxInfluence {
-		result.IsDefeated = true
-		result.DefeatReason = core.DefeatByInfluence
-		result.DefeatMessage = core.FormatEventString("Defeat! Overwhelmed by threat influence (%.1f)", result.TotalInfluence)
-		return result
+	highCount := threat.CountHighIntensityThreats(manager, highIntensityThreshold)
+	if highCount >= core.GetMaxHighIntensityThreats() {
+		return true, core.FormatEventString("Defeat! Too many powerful threats (%d tier-%d+ threats)",
+			highCount, highIntensityThreshold)
 	}
 
-	// Check high-intensity threats (run query once and cache result)
-	result.HighIntensityCount = threat.CountHighIntensityThreats(manager, highIntensityThreshold)
-	if result.HighIntensityCount >= maxHighIntensityThreats {
-		result.IsDefeated = true
-		result.DefeatReason = core.DefeatByHighIntensityThreats
-		result.DefeatMessage = core.FormatEventString("Defeat! Too many powerful threats (%d tier-%d+ threats)",
-			result.HighIntensityCount, highIntensityThreshold)
-		return result
-	}
-
-	return result
+	return false, ""
 }
 
-// GetTotalThreatInfluence calculates combined threat pressure
+// GetTotalThreatInfluence calculates combined threat pressure as sum of intensities
 func GetTotalThreatInfluence(manager *common.EntityManager) float64 {
 	total := 0.0
 
 	for _, result := range manager.World.Query(core.ThreatNodeTag) {
 		threatData := common.GetComponentType[*core.ThreatNodeData](result.Entity, core.ThreatNodeComponent)
-		influenceData := common.GetComponentType[*core.InfluenceData](result.Entity, core.InfluenceComponent)
-
-		if threatData != nil && influenceData != nil {
-			// Influence value = intensity × radius × strength
-			influence := float64(threatData.Intensity) * float64(influenceData.Radius) * influenceData.EffectStrength
-			total += influence
+		if threatData != nil {
+			total += float64(threatData.Intensity)
 		}
 	}
 

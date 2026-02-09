@@ -47,7 +47,3 @@ func GetFactionBonuses(factionType core.FactionType) FactionBonuses {
 	return FactionBonuses{}
 }
 
-// GetFactionAggression returns the aggression level for a faction type.
-func GetFactionAggression(factionType core.FactionType) float64 {
-	return GetFactionArchetype(factionType).Aggression
-}

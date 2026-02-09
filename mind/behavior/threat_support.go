@@ -16,12 +16,8 @@ type SupportValueLayer struct {
 
 	// Core support data
 	healPriority    map[ecs.EntityID]float64           // Squad -> heal urgency (0-1)
-	buffPriority    map[ecs.EntityID]float64           // Squad -> buff value
 	supportValuePos map[coords.LogicalPosition]float64 // Position -> support value
 	allyProximity   map[coords.LogicalPosition]int     // Position -> count of nearby allies
-
-	// Dependencies
-	baseThreatMgr *FactionThreatLevelManager
 }
 
 // NewSupportValueLayer creates a new support value layer for a faction
@@ -29,15 +25,12 @@ func NewSupportValueLayer(
 	factionID ecs.EntityID,
 	manager *common.EntityManager,
 	cache *combat.CombatQueryCache,
-	baseThreatMgr *FactionThreatLevelManager,
 ) *SupportValueLayer {
 	return &SupportValueLayer{
 		ThreatLayerBase: NewThreatLayerBase(factionID, manager, cache),
 		healPriority:    make(map[ecs.EntityID]float64),
-		buffPriority:    make(map[ecs.EntityID]float64),
 		supportValuePos: make(map[coords.LogicalPosition]float64),
 		allyProximity:   make(map[coords.LogicalPosition]int),
-		baseThreatMgr:   baseThreatMgr,
 	}
 }
 
@@ -46,7 +39,6 @@ func NewSupportValueLayer(
 func (svl *SupportValueLayer) Compute() {
 	// Clear existing data (reuse maps to reduce GC pressure)
 	clear(svl.healPriority)
-	clear(svl.buffPriority)
 	clear(svl.supportValuePos)
 	clear(svl.allyProximity)
 
@@ -58,9 +50,6 @@ func (svl *SupportValueLayer) Compute() {
 		// Use centralized squad health calculation
 		avgHP := squads.GetSquadHealthPercent(squadID, svl.manager)
 		svl.healPriority[squadID] = 1.0 - avgHP
-
-		// Calculate buff priority based on engagement state
-		svl.buffPriority[squadID] = svl.calculateBuffPriority(squadID)
 
 		// Get squad position
 		squadPos, err := combat.GetSquadMapPosition(squadID, svl.manager)
@@ -77,36 +66,6 @@ func (svl *SupportValueLayer) Compute() {
 	svl.markClean(0)
 }
 
-// NOTE: calculateAverageHP has been moved to squads.GetSquadHealthPercent()
-// This centralizes health calculations and eliminates code duplication.
-
-// calculateBuffPriority returns priority for buffing this squad
-// Higher if squad is about to engage or is in active combat
-func (svl *SupportValueLayer) calculateBuffPriority(squadID ecs.EntityID) float64 {
-	// Get distance tracker for this squad
-	factionThreat, exists := svl.baseThreatMgr.factions[svl.factionID]
-	if !exists {
-		return 0.0
-	}
-
-	squadThreat, exists := factionThreat.squadThreatLevels[squadID]
-	if !exists || squadThreat.SquadDistances == nil {
-		return 0.0
-	}
-
-	// Check if enemy is within engagement range
-	// Buff priority increases as enemies get closer
-	_, _, buffRange := GetSupportLayerParams()
-	for distance := 1; distance <= buffRange; distance++ {
-		if enemies, exists := squadThreat.SquadDistances.EnemiesByDistance[distance]; exists && len(enemies) > 0 {
-			// Closer enemies = higher buff priority
-			return 1.0 - (float64(distance) / float64(buffRange+1))
-		}
-	}
-
-	return 0.1 // Default low priority if no nearby enemies
-}
-
 // paintSupportValue paints support value around a position
 // Support value radiates from wounded squads (healers want to be near them)
 func (svl *SupportValueLayer) paintSupportValue(
@@ -114,7 +73,7 @@ func (svl *SupportValueLayer) paintSupportValue(
 	healPriority float64,
 ) {
 	// Paint support value with linear falloff using configured radius
-	healRadius, proximityRadius, _ := GetSupportLayerParams()
+	healRadius, proximityRadius := GetSupportLayerParams()
 	PaintThreatToMap(svl.supportValuePos, center, healRadius, healPriority, LinearFalloff, false)
 
 	// Track ally proximity separately

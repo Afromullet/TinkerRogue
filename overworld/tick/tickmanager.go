@@ -10,6 +10,7 @@ import (
 	"game_main/common"
 	"game_main/overworld/core"
 	"game_main/overworld/faction"
+	"game_main/overworld/influence"
 	"game_main/overworld/threat"
 	"game_main/overworld/travel"
 
@@ -60,6 +61,9 @@ func AdvanceTick(manager *common.EntityManager, playerData *common.PlayerData) (
 	if err != nil {
 		return false, fmt.Errorf("travel update failed: %w", err)
 	}
+
+	// Resolve influence interactions before subsystems use the results
+	influence.UpdateInfluenceInteractions(manager, tick)
 
 	// Execute subsystems in order (world continues evolving during travel)
 	if err := threat.UpdateThreatNodes(manager, tick); err != nil {

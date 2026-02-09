@@ -108,16 +108,6 @@ const (
 	VictoryFactionDefeat                         // Defeated specific faction
 )
 
-// DefeatReasonType categorizes why the player was defeated
-type DefeatReasonType int
-
-const (
-	DefeatNone                   DefeatReasonType = iota // Not defeated
-	DefeatByInfluence                                    // Overwhelmed by threat influence
-	DefeatByHighIntensityThreats                         // Too many powerful threats
-	DefeatBySquadLoss                                    // All squads destroyed
-)
-
 // VictoryStateData tracks victory condition progress
 type VictoryStateData struct {
 	Condition         VictoryCondition
@@ -125,16 +115,6 @@ type VictoryStateData struct {
 	TargetFactionType FactionType
 	VictoryAchieved   bool
 	DefeatReason      string
-}
-
-// DefeatCheckResult contains the result of checking defeat conditions.
-// Single source of truth for defeat determination - avoids duplicate checks.
-type DefeatCheckResult struct {
-	IsDefeated         bool
-	DefeatReason       DefeatReasonType
-	DefeatMessage      string
-	TotalInfluence     float64 // Cached value to avoid recalculation
-	HighIntensityCount int     // Cached value to avoid recalculation
 }
 
 // EventType categorizes overworld events
@@ -149,8 +129,11 @@ const (
 	EventFactionDefeated                  // Faction eliminated
 	EventVictory                          // Player won
 	EventDefeat                           // Player lost
-	EventCombatResolved                   // Combat outcome applied
-	EventPlayerNodePlaced                 // Player placed a node
+	EventCombatResolved                    // Combat outcome applied
+	EventPlayerNodePlaced                  // Player placed a node
+	EventInfluenceSynergy                  // Synergy cluster formed
+	EventInfluenceCompetition              // Faction rivalry detected
+	EventInfluenceSuppression              // Player node suppressing threat
 )
 
 func (e EventType) String() string {
@@ -175,6 +158,12 @@ func (e EventType) String() string {
 		return "Combat Resolved"
 	case EventPlayerNodePlaced:
 		return "Player Node Placed"
+	case EventInfluenceSynergy:
+		return "Influence Synergy"
+	case EventInfluenceCompetition:
+		return "Influence Competition"
+	case EventInfluenceSuppression:
+		return "Influence Suppression"
 	default:
 		return "Unknown Event"
 	}

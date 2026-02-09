@@ -2,7 +2,6 @@ package behavior
 
 import (
 	"game_main/common"
-	"game_main/mind/evaluation"
 	"game_main/tactical/squads"
 
 	"github.com/bytearena/ecs"
@@ -18,12 +17,8 @@ type UnitCombatData struct {
 	Role        squads.UnitRole
 	AttackType  squads.AttackType
 	AttackRange int
-	Attributes  *common.Attributes
-	IsLeader    bool
-
-	// Pre-calculated values for power/threat calculations
-	BasePower      float64 // Weapon + Dexterity/2
-	RoleMultiplier float64 // From evaluation.GetRoleMultiplier
+	Attributes *common.Attributes
+	IsLeader   bool
 }
 
 // GetUnitCombatData retrieves all combat-relevant data for a unit.
@@ -56,20 +51,14 @@ func GetUnitCombatData(unitID ecs.EntityID, manager *common.EntityManager) *Unit
 		attackRange = rangeData.Range
 	}
 
-	// Pre-calculate power-related values
-	basePower := float64(attr.Weapon + attr.Dexterity/2)
-	roleMultiplier := evaluation.GetRoleMultiplierFromConfig(roleData.Role)
-
 	return &UnitCombatData{
-		Entity:         entity,
-		EntityID:       unitID,
-		Role:           roleData.Role,
-		AttackType:     targetRowData.AttackType,
-		AttackRange:    attackRange,
-		Attributes:     attr,
-		IsLeader:       entity.HasComponent(squads.LeaderComponent),
-		BasePower:      basePower,
-		RoleMultiplier: roleMultiplier,
+		Entity:     entity,
+		EntityID:   unitID,
+		Role:       roleData.Role,
+		AttackType: targetRowData.AttackType,
+		AttackRange: attackRange,
+		Attributes: attr,
+		IsLeader:   entity.HasComponent(squads.LeaderComponent),
 	}
 }
 

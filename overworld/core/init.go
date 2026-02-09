@@ -28,6 +28,7 @@ func InitOverworldComponents(manager *common.EntityManager) {
 	TravelStateComponent = manager.World.NewComponent()
 	OverworldEncounterComponent = manager.World.NewComponent()
 	PlayerNodeComponent = manager.World.NewComponent()
+	InteractionComponent = manager.World.NewComponent()
 }
 
 // InitOverworldTags creates tags for querying overworld-related entities.
@@ -39,6 +40,7 @@ func InitOverworldTags(manager *common.EntityManager) {
 	TravelStateTag = ecs.BuildTag(TravelStateComponent)
 	OverworldEncounterTag = ecs.BuildTag(OverworldEncounterComponent)
 	PlayerNodeTag = ecs.BuildTag(PlayerNodeComponent)
+	InteractionTag = ecs.BuildTag(InteractionComponent)
 
 	// Register tags in WorldTags for easier lookup
 	manager.WorldTags["threatnode"] = ThreatNodeTag
@@ -48,4 +50,5 @@ func InitOverworldTags(manager *common.EntityManager) {
 	manager.WorldTags["travelstate"] = TravelStateTag
 	manager.WorldTags["overworldencounter"] = OverworldEncounterTag
 	manager.WorldTags["playernode"] = PlayerNodeTag
+	manager.WorldTags["interaction"] = InteractionTag
 }

@@ -38,6 +38,12 @@ func MapFactionToThreatType(factionType FactionType) ThreatType {
 	return GetNodeRegistry().GetThreatTypeForFaction(factionType)
 }
 
+// CalculateBaseMagnitude derives the influence base magnitude from threat intensity.
+// Single source of truth for this formula — used at creation, evolution, and post-combat.
+func CalculateBaseMagnitude(intensity int) float64 {
+	return float64(intensity) * GetBaseMagnitudeMultiplier()
+}
+
 // GetCardinalNeighbors returns the 4 adjacent positions (up, down, left, right)
 // Use this instead of manually constructing adjacent position arrays
 func GetCardinalNeighbors(pos coords.LogicalPosition) []coords.LogicalPosition {

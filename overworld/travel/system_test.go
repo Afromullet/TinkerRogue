@@ -63,44 +63,44 @@ func setupTestEnvironment() (*common.EntityManager, *common.PlayerData) {
 	return manager, playerData
 }
 
-func TestEuclideanDistance(t *testing.T) {
+func TestManhattanDistance(t *testing.T) {
 	tests := []struct {
 		name     string
 		from     coords.LogicalPosition
 		to       coords.LogicalPosition
-		expected float64
+		expected int
 	}{
 		{
-			name:     "Origin to (3,4) should be 5.0",
+			name:     "Origin to (3,4) should be 7",
 			from:     coords.LogicalPosition{X: 0, Y: 0},
 			to:       coords.LogicalPosition{X: 3, Y: 4},
-			expected: 5.0,
+			expected: 7,
 		},
 		{
-			name:     "Same position should be 0.0",
+			name:     "Same position should be 0",
 			from:     coords.LogicalPosition{X: 5, Y: 5},
 			to:       coords.LogicalPosition{X: 5, Y: 5},
-			expected: 0.0,
+			expected: 0,
 		},
 		{
-			name:     "Horizontal distance (10,0) to (15,0) should be 5.0",
+			name:     "Horizontal distance (10,0) to (15,0) should be 5",
 			from:     coords.LogicalPosition{X: 10, Y: 0},
 			to:       coords.LogicalPosition{X: 15, Y: 0},
-			expected: 5.0,
+			expected: 5,
 		},
 		{
-			name:     "Vertical distance (0,10) to (0,20) should be 10.0",
+			name:     "Vertical distance (0,10) to (0,20) should be 10",
 			from:     coords.LogicalPosition{X: 0, Y: 10},
 			to:       coords.LogicalPosition{X: 0, Y: 20},
-			expected: 10.0,
+			expected: 10,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := calculateEuclideanDistance(tt.from, tt.to)
-			if math.Abs(result-tt.expected) > 0.001 {
-				t.Errorf("calculateEuclideanDistance() = %.2f, want %.2f", result, tt.expected)
+			result := manhattanDistance(tt.from, tt.to)
+			if result != tt.expected {
+				t.Errorf("manhattanDistance() = %d, want %d", result, tt.expected)
 			}
 		})
 	}
@@ -117,7 +117,7 @@ func TestStartTravel(t *testing.T) {
 	encounterEntity := manager.World.NewEntity()
 	encounterID := encounterEntity.GetID()
 
-	// Test starting travel
+	// Test starting travel to (3,4) — Manhattan distance = 7, speed 3 → ceil(7/3) = 3 ticks
 	destination := coords.LogicalPosition{X: 3, Y: 4}
 	err := StartTravel(manager, playerData, destination, threatID, encounterID)
 
@@ -135,13 +135,10 @@ func TestStartTravel(t *testing.T) {
 		t.Error("Expected IsTraveling to be true")
 	}
 
-	expectedDistance := 5.0 // sqrt(3^2 + 4^2)
-	if math.Abs(travelState.TotalDistance-expectedDistance) > 0.001 {
-		t.Errorf("TotalDistance = %.2f, want %.2f", travelState.TotalDistance, expectedDistance)
-	}
-
-	if math.Abs(travelState.RemainingDistance-expectedDistance) > 0.001 {
-		t.Errorf("RemainingDistance = %.2f, want %.2f", travelState.RemainingDistance, expectedDistance)
+	// Manhattan distance = 7, speed = 3, ceil(7/3) = 3 ticks
+	expectedTicks := int(math.Ceil(7.0 / 3.0))
+	if travelState.TicksRemaining != expectedTicks {
+		t.Errorf("TicksRemaining = %d, want %d", travelState.TicksRemaining, expectedTicks)
 	}
 
 	if travelState.TargetThreatID != threatID {
@@ -162,7 +159,7 @@ func TestTravelProgression(t *testing.T) {
 	encounterEntity := manager.World.NewEntity()
 	encounterID := encounterEntity.GetID()
 
-	// Start travel with distance 15 (from 0,0 to 12,9: sqrt(144+81) = 15)
+	// Start travel: Manhattan distance from (0,0) to (12,9) = 21, speed 3 → 7 ticks
 	destination := coords.LogicalPosition{X: 12, Y: 9}
 	err := StartTravel(manager, playerData, destination, threatID, encounterID)
 	if err != nil {
@@ -170,10 +167,7 @@ func TestTravelProgression(t *testing.T) {
 	}
 
 	travelState := GetTravelState(manager)
-	initialDistance := travelState.TotalDistance
-
-	// With MovementSpeed 3, should take 5 ticks (15 / 3)
-	expectedTicks := int(math.Ceil(initialDistance / 3.0))
+	expectedTicks := travelState.TicksRemaining
 
 	// Advance ticks
 	for tick := 1; tick <= expectedTicks; tick++ {
@@ -230,18 +224,12 @@ func TestTravelCancellation(t *testing.T) {
 		t.Fatalf("StartTravel() failed: %v", err)
 	}
 
-	// Advance 2 ticks
+	// Advance 2 ticks (player doesn't move until arrival in tick-based system)
 	for i := 0; i < 2; i++ {
 		_, err := AdvanceTravelTick(manager, playerData)
 		if err != nil {
 			t.Fatalf("AdvanceTravelTick() failed: %v", err)
 		}
-	}
-
-	// Verify player has moved
-	currentPos := common.GetComponentType[*coords.LogicalPosition](playerEntity, common.PositionComponent)
-	if currentPos.X == originPos.X && currentPos.Y == originPos.Y {
-		t.Error("Player did not move during travel")
 	}
 
 	// Cancel travel

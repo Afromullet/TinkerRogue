@@ -9,11 +9,11 @@ import (
 	"github.com/bytearena/ecs"
 )
 
-// CalculateUnitPower computes the power rating for a single unit.
+// calculateUnitPower computes the power rating for a single unit.
 // Uses configurable weights to balance offensive, defensive, and utility stats.
 // Returns a float64 power score (higher = more powerful).
 // Used by both encounter generation and AI threat assessment.
-func CalculateUnitPower(
+func calculateUnitPower(
 	unitID ecs.EntityID,
 	manager *common.EntityManager,
 	config *PowerConfig,
@@ -170,7 +170,7 @@ func CalculateSquadPower(
 
 	totalUnitPower := 0.0
 	for _, unitID := range unitIDs {
-		unitPower := CalculateUnitPower(unitID, manager, config)
+		unitPower := calculateUnitPower(unitID, manager, config)
 		totalUnitPower += unitPower
 	}
 
@@ -387,90 +387,3 @@ func EstimateUnitPowerFromTemplate(unit squads.UnitTemplate, config *PowerConfig
 	return totalPower
 }
 
-// CalculateRosterPower computes the total power for a player's squad roster.
-// Weighs deployed squads higher than reserves.
-// Uses the shared evaluation package for power calculations.
-func CalculateRosterPower(
-	playerID ecs.EntityID,
-	manager *common.EntityManager,
-	config *PowerConfig,
-) float64 {
-	roster := squads.GetPlayerSquadRoster(playerID, manager)
-	if roster == nil {
-		return 0.0
-	}
-
-	totalPower := 0.0
-
-	for _, squadID := range roster.OwnedSquads {
-		squadPower := CalculateSquadPower(squadID, manager, config)
-		totalPower += squadPower
-	}
-
-	return totalPower
-}
-
-// CalculateDeployedSquadsPower computes power for only deployed squads.
-// Useful for combat encounter balancing.
-func CalculateDeployedSquadsPower(
-	playerID ecs.EntityID,
-	manager *common.EntityManager,
-	config *PowerConfig,
-) float64 {
-	roster := squads.GetPlayerSquadRoster(playerID, manager)
-	if roster == nil {
-		return 0.0
-	}
-
-	deployedSquads := roster.GetDeployedSquads(manager)
-
-	totalPower := 0.0
-	for _, squadID := range deployedSquads {
-		squadPower := CalculateSquadPower(squadID, manager, config)
-		totalPower += squadPower
-	}
-
-	return totalPower
-}
-
-// PowerBreakdown provides detailed power breakdown for analysis.
-type PowerBreakdown struct {
-	TotalPower     float64                  // Combined roster power
-	DeployedPower  float64                  // Power from deployed squads
-	ReservePower   float64                  // Power from reserve squads
-	SquadBreakdown map[ecs.EntityID]float64 // SquadID → power
-}
-
-// CalculateRosterPowerBreakdown returns detailed power analysis.
-func CalculateRosterPowerBreakdown(
-	playerID ecs.EntityID,
-	manager *common.EntityManager,
-	config *PowerConfig,
-) PowerBreakdown {
-	roster := squads.GetPlayerSquadRoster(playerID, manager)
-	if roster == nil {
-		return PowerBreakdown{}
-	}
-
-	breakdown := PowerBreakdown{
-		SquadBreakdown: make(map[ecs.EntityID]float64),
-	}
-
-	for _, squadID := range roster.OwnedSquads {
-		squadPower := CalculateSquadPower(squadID, manager, config)
-		breakdown.SquadBreakdown[squadID] = squadPower
-
-		squadData := common.GetComponentTypeByID[*squads.SquadData](manager, squadID, squads.SquadComponent)
-		if squadData != nil {
-			if squadData.IsDeployed {
-				breakdown.DeployedPower += squadPower
-			} else {
-				breakdown.ReservePower += squadPower
-			}
-		}
-	}
-
-	breakdown.TotalPower = breakdown.DeployedPower + breakdown.ReservePower
-
-	return breakdown
-}

@@ -209,8 +209,7 @@ type RoleBehaviorConfig struct {
 
 // SupportLayerConfig defines support layer parameters
 type SupportLayerConfig struct {
-	HealRadius                  int `json:"healRadius"`
-	BuffPriorityEngagementRange int `json:"buffPriorityEngagementRange"`
+	HealRadius int `json:"healRadius"`
 }
 
 // JSONPowerConfig is the root container for power evaluation configuration
@@ -272,10 +271,9 @@ type JSONOverworldConfig struct {
 
 // ThreatGrowthConfig defines threat growth parameters
 type ThreatGrowthConfig struct {
-	ContainmentSlowdown       float64 `json:"containmentSlowdown"`
-	MaxThreatIntensity        int     `json:"maxThreatIntensity"`
-	ChildNodeSpawnThreshold   int     `json:"childNodeSpawnThreshold"`
-	MaxChildNodeSpawnAttempts int     `json:"maxChildNodeSpawnAttempts"`
+	ContainmentSlowdown     float64 `json:"containmentSlowdown"`
+	MaxThreatIntensity      int     `json:"maxThreatIntensity"`
+	ChildNodeSpawnThreshold int     `json:"childNodeSpawnThreshold"`
 }
 
 // FactionAIConfig defines faction AI behavior parameters
@@ -322,7 +320,8 @@ type FortificationScoringConfig struct {
 
 // RaidingScoringConfig defines raiding scoring parameters
 type RaidingScoringConfig struct {
-	StrongBonus float64 `json:"strongBonus"`
+	StrongBonus      float64 `json:"strongBonus"`
+	VeryStrongOffset int     `json:"veryStrongOffset"` // Offset above strong threshold for bonus raid score
 }
 
 // RetreatScoringConfig defines retreat scoring parameters
@@ -443,4 +442,41 @@ type JSONEncounterDefinition struct {
 type JSONDefaultEncounter struct {
 	BasicDrops    []string `json:"basicDrops"`
 	HighTierDrops []string `json:"highTierDrops"`
+}
+
+// --- Influence Interaction Config Structs ---
+
+// JSONInfluenceConfig is the root container for influence interaction configuration
+type JSONInfluenceConfig struct {
+	BaseMagnitudeMultiplier    float64                      `json:"baseMagnitudeMultiplier"`
+	DefaultPlayerNodeMagnitude float64                      `json:"defaultPlayerNodeMagnitude"`
+	DefaultPlayerNodeRadius    int                          `json:"defaultPlayerNodeRadius"`
+	Synergy                    InfluenceSynergyConfig       `json:"synergy"`
+	Competition                InfluenceCompetitionConfig   `json:"competition"`
+	Suppression                InfluenceSuppressionConfig   `json:"suppression"`
+	PlayerSynergy              InfluencePlayerSynergyConfig `json:"playerSynergy"`
+	DiminishingFactor          float64                      `json:"diminishingFactor"`
+}
+
+// InfluenceSynergyConfig defines same-faction threat synergy parameters
+type InfluenceSynergyConfig struct {
+	GrowthBonus float64 `json:"growthBonus"`
+}
+
+// InfluenceCompetitionConfig defines rival-faction competition parameters
+type InfluenceCompetitionConfig struct {
+	GrowthPenalty float64 `json:"growthPenalty"`
+}
+
+// InfluenceSuppressionConfig defines player node suppression parameters
+type InfluenceSuppressionConfig struct {
+	GrowthPenalty       float64            `json:"growthPenalty"`
+	NodeTypeMultipliers map[string]float64 `json:"nodeTypeMultipliers"`
+}
+
+// InfluencePlayerSynergyConfig defines player node synergy parameters
+type InfluencePlayerSynergyConfig struct {
+	BaseBonus          float64    `json:"baseBonus"`
+	ComplementaryBonus float64    `json:"complementaryBonus"`
+	ComplementaryPairs [][]string `json:"complementaryPairs"`
 }

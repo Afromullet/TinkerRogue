@@ -17,6 +17,7 @@ var (
 	VictoryStateComponent     *ecs.Component
 	TravelStateComponent      *ecs.Component
 	PlayerNodeComponent       *ecs.Component
+	InteractionComponent      *ecs.Component
 
 	ThreatNodeTag       ecs.Tag
 	OverworldFactionTag ecs.Tag
@@ -24,6 +25,7 @@ var (
 	VictoryStateTag     ecs.Tag
 	TravelStateTag      ecs.Tag
 	PlayerNodeTag       ecs.Tag
+	InteractionTag      ecs.Tag
 )
 
 // OverworldEncounterComponent and tag for encounter entities
@@ -64,9 +66,8 @@ type TickStateData struct {
 
 // InfluenceData - Cached influence radius
 type InfluenceData struct {
-	Radius         int // Tiles affected by this threat
-	EffectType     InfluenceEffect
-	EffectStrength float64 // Magnitude of effect
+	Radius        int     // Tiles affected by this threat
+	BaseMagnitude float64 // Magnitude of effect (derived from intensity)
 }
 
 // TerritoryData - Tiles controlled by a faction
@@ -87,10 +88,9 @@ type StrategicIntentData struct {
 // TravelStateData - Singleton component tracking player travel state
 type TravelStateData struct {
 	IsTraveling       bool                   // Currently traveling
-	Origin            coords.LogicalPosition // Starting position
+	Origin            coords.LogicalPosition // Starting position (for cancel)
 	Destination       coords.LogicalPosition // Target position (threat node)
-	TotalDistance     float64                // Euclidean distance (calculated once at start)
-	RemainingDistance float64                // Distance left to travel
+	TicksRemaining    int                    // Ticks until arrival
 	TargetThreatID    ecs.EntityID           // Threat being traveled to
 	TargetEncounterID ecs.EntityID           // Encounter entity created for this travel
 }
@@ -109,4 +109,28 @@ type PlayerNodeData struct {
 	NodeID     ecs.EntityID // Entity ID of this player node
 	NodeTypeID NodeTypeID   // References nodeDefinitions.json ID (e.g., "town", "watchtower")
 	PlacedTick int64        // Tick when placed
+}
+
+// InteractionType classifies how two overlapping influence nodes interact
+type InteractionType int
+
+const (
+	InteractionSynergy     InteractionType = iota // Same-faction threats boost each other
+	InteractionCompetition                        // Rival faction threats slow each other
+	InteractionSuppression                        // Player nodes suppress threats
+	InteractionPlayerBoost                        // Player nodes synergize with each other
+)
+
+// NodeInteraction records a single interaction between two nodes
+type NodeInteraction struct {
+	TargetID     ecs.EntityID    // The other node in this interaction
+	Relationship InteractionType // Type of interaction
+	Modifier     float64         // Additive: positive = boost, negative = suppress
+	Distance     int             // Manhattan distance between nodes
+}
+
+// InteractionData - Pure data component tracking all influence interactions for a node
+type InteractionData struct {
+	Interactions []NodeInteraction // All active interactions
+	NetModifier  float64           // Combined modifier (1.0 = no effect)
 }

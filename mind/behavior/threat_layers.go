@@ -8,20 +8,6 @@ import (
 	"github.com/bytearena/ecs"
 )
 
-// ThreatLayer is the base interface for all threat computation layers
-// Each layer computes one aspect of tactical threat (melee, ranged, support, positional)
-type ThreatLayer interface {
-	// Compute recalculates threat values for all positions
-	// Called once per AI turn before action evaluation
-	Compute()
-
-	// IsValid checks if layer data is current (not dirty)
-	IsValid(currentRound int) bool
-
-	// MarkDirty forces recomputation on next Compute()
-	MarkDirty()
-}
-
 // ThreatLayerBase provides common functionality for all layers
 // Uses composition pattern - embed this in concrete layers
 type ThreatLayerBase struct {

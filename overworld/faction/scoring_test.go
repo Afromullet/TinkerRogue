@@ -55,7 +55,8 @@ func init() {
 			BaseValue: 2.0,
 		},
 		Raiding: templates.RaidingScoringConfig{
-			StrongBonus: 3.0,
+			StrongBonus:      3.0,
+			VeryStrongOffset: 3,
 		},
 		Retreat: templates.RetreatScoringConfig{
 			CriticalWeakBonus:     8.0,
@@ -194,83 +195,51 @@ func TestScoreRetreat_CriticallyWeakRetreats(t *testing.T) {
 	}
 }
 
-// TestAggressionAffectsAllScores verifies that aggression modifier affects
-// all four scoring functions appropriately.
-func TestAggressionAffectsAllScores(t *testing.T) {
-	// High aggression faction (Orcs: 0.9)
-	highAggFaction := &core.OverworldFactionData{
+// TestArchetypeDifferentiatesAllScores verifies that different archetypes
+// produce different scoring outcomes across all four intent types.
+func TestArchetypeDifferentiatesAllScores(t *testing.T) {
+	// Orcs (Aggressor): raiding bonus +4.0, expansion bonus +2.0
+	orcFaction := &core.OverworldFactionData{
 		Strength:      10,
 		TerritorySize: 5,
 		FactionType:   core.FactionOrcs,
 	}
 
-	// Low aggression faction (Necromancers: 0.3)
-	lowAggFaction := &core.OverworldFactionData{
+	// Necromancers (Defensive): fortification bonus +2.0, retreat penalty +2.0
+	necroFaction := &core.OverworldFactionData{
 		Strength:      10,
 		TerritorySize: 5,
 		FactionType:   core.FactionNecromancers,
 	}
 
-	// Test expansion: high aggression should give higher score
-	highAggExpand := ScoreExpansion(nil, nil, highAggFaction)
-	lowAggExpand := ScoreExpansion(nil, nil, lowAggFaction)
-
-	// Orcs (Aggressor, 0.9 aggression) vs Necromancers (Defensive, 0.3 aggression)
-	// After archetype bonuses and aggression scaling, Orcs should expand more
-	if highAggExpand <= 0 || lowAggExpand < 0 {
-		t.Errorf("Factions should have non-negative expansion scores: high=%.2f, low=%.2f", highAggExpand, lowAggExpand)
+	// Aggressor should raid more than Defensive
+	orcRaid := ScoreRaiding(nil, nil, orcFaction)
+	necroRaid := ScoreRaiding(nil, nil, necroFaction)
+	if orcRaid <= necroRaid {
+		t.Errorf("Orcs (Aggressor) should raid more than Necromancers (Defensive): orcs=%.2f, necro=%.2f",
+			orcRaid, necroRaid)
 	}
 
-	// Test fortification: low aggression should give higher score
-	highAggFort := ScoreFortification(nil, nil, highAggFaction)
-	lowAggFort := ScoreFortification(nil, nil, lowAggFaction)
-
-	// Low aggression should favor fortification (inverse relationship)
-	if lowAggFort <= highAggFort {
-		t.Errorf("Low aggression factions should fortify more: high=%.2f, low=%.2f",
-			highAggFort, lowAggFort)
+	// Defensive should fortify more than Aggressor
+	orcFort := ScoreFortification(nil, nil, orcFaction)
+	necroFort := ScoreFortification(nil, nil, necroFaction)
+	if necroFort <= orcFort {
+		t.Errorf("Necromancers (Defensive) should fortify more than Orcs (Aggressor): necro=%.2f, orcs=%.2f",
+			necroFort, orcFort)
 	}
 
-	// Test raiding: high aggression should give higher score
-	highAggRaid := ScoreRaiding(nil, nil, highAggFaction)
-	lowAggRaid := ScoreRaiding(nil, nil, lowAggFaction)
-
-	if highAggRaid <= lowAggRaid {
-		t.Errorf("High aggression factions should raid more: high=%.2f, low=%.2f",
-			highAggRaid, lowAggRaid)
-	}
-
-	// Test retreat: aggression affects retreat modifier
-	// Create critically weak versions
+	// Beasts (Territorial, retreat penalty -3.0) should retreat more than Orcs (retreat penalty 0.0)
 	criticalThreshold := core.GetCriticalThreshold()
-	highAggFaction.Strength = criticalThreshold - 1
-	lowAggFaction.Strength = criticalThreshold - 1
-
-	highAggRetreat := ScoreRetreat(nil, nil, highAggFaction)
-	lowAggRetreat := ScoreRetreat(nil, nil, lowAggFaction)
-
-	// Note: Low aggression doesn't necessarily mean higher retreat scores
-	// because archetype bonuses also affect retreat (Defensive has RetreatPenalty +2.0
-	// which SUBTRACTS from score). The aggression multiplier is applied after.
-	// Both should be positive when critically weak with sufficient territory.
-	if highAggRetreat <= 0 || lowAggRetreat <= 0 {
-		t.Errorf("Critically weak factions should have positive retreat scores: high=%.2f, low=%.2f",
-			highAggRetreat, lowAggRetreat)
-	}
-
-	// Test aggression effect directly: same faction type, different aggression
-	// Use Beasts (Territorial, 0.5) as baseline - moderate retreat penalty
+	orcFaction.Strength = criticalThreshold - 1
 	beastFaction := &core.OverworldFactionData{
 		Strength:      criticalThreshold - 1,
 		TerritorySize: 10,
 		FactionType:   core.FactionBeasts,
 	}
 	beastRetreat := ScoreRetreat(nil, nil, beastFaction)
-
-	// Beasts (Territorial) have RetreatPenalty -3.0 which adds to score
-	// This makes them more willing to retreat than Orcs (Aggressor) with 0.0
-	if beastRetreat <= highAggRetreat {
+	orcRetreat := ScoreRetreat(nil, nil, orcFaction)
+	if beastRetreat <= orcRetreat {
 		t.Errorf("Beasts (Territorial, retreat penalty -3) should retreat more than Orcs (Aggressor, 0): beasts=%.2f, orcs=%.2f",
-			beastRetreat, highAggRetreat)
+			beastRetreat, orcRetreat)
 	}
 }

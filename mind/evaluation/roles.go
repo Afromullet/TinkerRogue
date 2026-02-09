@@ -10,7 +10,6 @@ import (
 // They convert raw stat values to comparable power scores.
 const (
 	RoleScalingFactor          = 10.0  // Base multiplier for role value
-	DodgeScalingFactor         = 100.0 // Scale dodge (0.0-0.4) to comparable range (0-40)
 	CoverScalingFactor         = 100.0 // Scale cover value (0.0-0.5) to comparable range (0-50)
 	CoverBeneficiaryMultiplier = 2.5   // Average units protected per cover provider
 )
@@ -103,10 +102,8 @@ func GetCompositionBonusFromConfig(uniqueAttackTypes int) float64 {
 // These are internal implementation details, not configurable parameters.
 type ScalingConstants struct {
 	RoleScaling                float64
-	DodgeScaling               float64
 	CoverScaling               float64
 	CoverBeneficiaryMultiplier float64
-	LeaderBonus                float64
 }
 
 // GetScalingConstants returns the hardcoded scaling constants.
@@ -114,9 +111,7 @@ type ScalingConstants struct {
 func GetScalingConstants() ScalingConstants {
 	return ScalingConstants{
 		RoleScaling:                RoleScalingFactor,
-		DodgeScaling:               DodgeScalingFactor,
 		CoverScaling:               CoverScalingFactor,
 		CoverBeneficiaryMultiplier: CoverBeneficiaryMultiplier,
-		LeaderBonus:                GetLeaderBonusFromConfig(),
 	}
 }

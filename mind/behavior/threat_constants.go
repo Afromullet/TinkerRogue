@@ -1,12 +1,8 @@
 package behavior
 
 import (
-	"game_main/common"
-	"game_main/mind/evaluation"
 	"game_main/tactical/squads"
 	"game_main/templates"
-
-	"github.com/bytearena/ecs"
 )
 
 // Max isolation distance for linear gradient calculation (internal constant)
@@ -50,18 +46,6 @@ type RoleThreatWeights struct {
 	PositionalWeight float64
 }
 
-// GetRoleModifier returns threat multiplier for a role.
-// Delegates to shared evaluation package.
-func GetRoleModifier(role squads.UnitRole) float64 {
-	return evaluation.GetRoleMultiplierFromConfig(role)
-}
-
-// GetSquadRoleModifier returns threat modifier based on squad's primary role.
-func GetSquadRoleModifier(squadID ecs.EntityID, manager *common.EntityManager) float64 {
-	role := squads.GetSquadPrimaryRole(squadID, manager)
-	return GetRoleModifier(role)
-}
-
 // --- Data-Driven Accessor Functions ---
 // These functions retrieve AI behavior configuration from JSON templates.
 // They replace direct constant access to enable designer-friendly tuning.
@@ -84,18 +68,6 @@ func GetIsolationThreshold() int {
 		return tc.IsolationThreshold
 	}
 	return 3 // Default isolation threshold
-}
-
-// GetIsolationMaxDistance returns the max distance for isolation risk calculation.
-// At this distance, isolation risk is 1.0 (fully isolated).
-func GetIsolationMaxDistance() int {
-	return isolationMaxDistance
-}
-
-// GetEngagementPressureMax returns the normalizer for engagement pressure.
-// This is a cosmetic value that converts raw pressure to 0-1 range.
-func GetEngagementPressureMax() int {
-	return engagementPressureMax
 }
 
 // GetRetreatSafeThreatThreshold returns the retreat safety threshold from config.
@@ -158,25 +130,15 @@ func GetRoleBehaviorWeights(role squads.UnitRole) RoleThreatWeights {
 	}
 }
 
-// GetPositionalRiskWeights returns positional risk evaluation weights.
-// Returns equal weights (0.25 each) for balanced risk evaluation.
-// These are hardcoded since the role's positionalWeight already controls overall importance.
-func GetPositionalRiskWeights() (flanking, isolation, pressure, retreat float64) {
-	return 0.25, 0.25, 0.25, 0.25
-}
-
 // GetSupportLayerParams returns support layer configuration parameters from config.
-// Returns (healRadius, proximityRadius, buffRange).
+// Returns (healRadius, proximityRadius).
 // proximityRadius is derived as healRadius - 1.
 // Falls back to default values if template lookup fails.
-func GetSupportLayerParams() (healRadius, proximityRadius, buffRange int) {
+func GetSupportLayerParams() (healRadius, proximityRadius int) {
 	sl := templates.AIConfigTemplate.SupportLayer
-	if sl.HealRadius > 0 && sl.BuffPriorityEngagementRange > 0 {
-		// Derive proximityRadius from healRadius
-		return sl.HealRadius, sl.HealRadius - 1, sl.BuffPriorityEngagementRange
+	if sl.HealRadius > 0 {
+		return sl.HealRadius, sl.HealRadius - 1
 	}
-	// Default values
 	const defaultHealRadius = 3
-	const defaultBuffRange = 4
-	return defaultHealRadius, defaultHealRadius - 1, defaultBuffRange
+	return defaultHealRadius, defaultHealRadius - 1
 }

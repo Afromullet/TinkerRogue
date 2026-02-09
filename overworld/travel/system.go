@@ -43,30 +43,17 @@ func IsTraveling(manager *common.EntityManager) bool {
 	return travelState.IsTraveling
 }
 
-// calculateEuclideanDistance calculates straight-line distance between two points
-func calculateEuclideanDistance(from, to coords.LogicalPosition) float64 {
-	dx := float64(to.X - from.X)
-	dy := float64(to.Y - from.Y)
-	return math.Sqrt(dx*dx + dy*dy)
-}
-
-// lerpPosition linearly interpolates between two positions based on progress (0.0 to 1.0)
-func lerpPosition(from, to coords.LogicalPosition, progress float64) coords.LogicalPosition {
-	// Clamp progress
-	if progress < 0.0 {
-		progress = 0.0
+// manhattanDistance returns the Manhattan distance between two positions
+func manhattanDistance(from, to coords.LogicalPosition) int {
+	dx := from.X - to.X
+	if dx < 0 {
+		dx = -dx
 	}
-	if progress > 1.0 {
-		progress = 1.0
+	dy := from.Y - to.Y
+	if dy < 0 {
+		dy = -dy
 	}
-
-	x := float64(from.X) + float64(to.X-from.X)*progress
-	y := float64(from.Y) + float64(to.Y-from.Y)*progress
-
-	return coords.LogicalPosition{
-		X: int(math.Round(x)),
-		Y: int(math.Round(y)),
-	}
+	return dx + dy
 }
 
 // StartTravel initiates travel to a threat node
@@ -98,21 +85,28 @@ func StartTravel(
 		return fmt.Errorf("player has no position component")
 	}
 
-	// 3. Calculate Euclidean distance
-	distance := calculateEuclideanDistance(*playerPos, destinationPos)
+	// 3. Get movement speed
+	attributes := common.GetComponentType[*common.Attributes](playerEntity, common.AttributeComponent)
+	movementSpeed := 1
+	if attributes != nil && attributes.MovementSpeed > 0 {
+		movementSpeed = attributes.MovementSpeed
+	}
 
-	// 4. Initialize travel state
+	// 4. Calculate ticks needed (Manhattan distance / movement speed, rounded up)
+	distance := manhattanDistance(*playerPos, destinationPos)
+	ticksNeeded := int(math.Ceil(float64(distance) / float64(movementSpeed)))
+
+	// 5. Initialize travel state
 	travelState.IsTraveling = true
 	travelState.Origin = *playerPos
 	travelState.Destination = destinationPos
-	travelState.TotalDistance = distance
-	travelState.RemainingDistance = distance
+	travelState.TicksRemaining = ticksNeeded
 	travelState.TargetThreatID = targetThreatID
 	travelState.TargetEncounterID = encounterID
 
-	// 5. Log travel start
-	fmt.Printf("Travel started: distance %.2f from (%d,%d) to (%d,%d)\n",
-		distance, playerPos.X, playerPos.Y, destinationPos.X, destinationPos.Y)
+	// 6. Log travel start
+	fmt.Printf("Travel started: %d ticks from (%d,%d) to (%d,%d)\n",
+		ticksNeeded, playerPos.X, playerPos.Y, destinationPos.X, destinationPos.Y)
 
 	return nil
 }
@@ -129,51 +123,32 @@ func AdvanceTravelTick(
 		return false, nil
 	}
 
-	// 2. Get player entity and attributes
-	playerEntity := manager.FindEntityByID(playerData.PlayerEntityID)
-	if playerEntity == nil {
-		return false, fmt.Errorf("player entity not found")
-	}
+	// 2. Decrement tick counter
+	travelState.TicksRemaining--
 
-	attributes := common.GetComponentType[*common.Attributes](playerEntity, common.AttributeComponent)
-	if attributes == nil {
-		return false, fmt.Errorf("player has no attributes component")
-	}
+	// 3. Check if arrived
+	if travelState.TicksRemaining <= 0 {
+		// Move player to exact destination
+		playerEntity := manager.FindEntityByID(playerData.PlayerEntityID)
+		if playerEntity == nil {
+			return false, fmt.Errorf("player entity not found")
+		}
 
-	movementSpeed := float64(attributes.MovementSpeed)
+		currentPos := common.GetComponentType[*coords.LogicalPosition](playerEntity, common.PositionComponent)
+		if currentPos != nil && (currentPos.X != travelState.Destination.X || currentPos.Y != travelState.Destination.Y) {
+			manager.MoveEntity(playerData.PlayerEntityID, playerEntity, *currentPos, travelState.Destination)
+		}
 
-	// 3. Reduce remaining distance
-	travelState.RemainingDistance -= movementSpeed
+		fmt.Printf("Travel completed: arrived at (%d,%d)\n",
+			travelState.Destination.X, travelState.Destination.Y)
 
-	// 4. Update player position based on progress
-	var newPos coords.LogicalPosition
-	if travelState.RemainingDistance <= 0 {
-		// Arrived - set exact destination
-		newPos = travelState.Destination
-	} else {
-		// Still traveling - interpolate position
-		progress := (travelState.TotalDistance - travelState.RemainingDistance) / travelState.TotalDistance
-		newPos = lerpPosition(travelState.Origin, travelState.Destination, progress)
-	}
-
-	// Update player position if it changed
-	currentPos := common.GetComponentType[*coords.LogicalPosition](playerEntity, common.PositionComponent)
-	if currentPos != nil && (currentPos.X != newPos.X || currentPos.Y != newPos.Y) {
-		manager.MoveEntity(playerData.PlayerEntityID, playerEntity, *currentPos, newPos)
-	}
-
-	// 5. Check if arrived
-	if travelState.RemainingDistance <= 0 {
-		fmt.Printf("Travel completed: arrived at (%d,%d)\n", newPos.X, newPos.Y)
-		// Clear travel state
 		travelState.IsTraveling = false
-		travelState.RemainingDistance = 0
+		travelState.TicksRemaining = 0
 		return true, nil
 	}
 
-	// 6. Log progress
-	fmt.Printf("Travel progress: %.2f remaining (moved at speed %.1f)\n",
-		travelState.RemainingDistance, movementSpeed)
+	// 4. Log progress
+	fmt.Printf("Travel progress: %d ticks remaining\n", travelState.TicksRemaining)
 
 	return false, nil
 }
@@ -217,7 +192,7 @@ func CancelTravel(
 	fmt.Printf("Travel cancelled: returned to origin (%d,%d)\n",
 		travelState.Origin.X, travelState.Origin.Y)
 	travelState.IsTraveling = false
-	travelState.RemainingDistance = 0
+	travelState.TicksRemaining = 0
 
 	return nil
 }

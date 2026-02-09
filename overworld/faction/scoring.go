@@ -33,10 +33,6 @@ func ScoreExpansion(manager *common.EntityManager, entity *ecs.Entity, factionDa
 	// Apply faction archetype bonus
 	score += GetFactionBonuses(factionData.FactionType).ExpansionBonus
 
-	// Apply aggression modifier: high aggression = more territorial (70-100%)
-	aggression := GetFactionAggression(factionData.FactionType)
-	score *= (0.7 + aggression*0.3)
-
 	return score
 }
 
@@ -59,10 +55,6 @@ func ScoreFortification(manager *common.EntityManager, entity *ecs.Entity, facti
 	// Apply faction archetype bonus
 	score += GetFactionBonuses(factionData.FactionType).FortificationBonus
 
-	// Apply aggression modifier: low aggression = more defensive (100-130%)
-	aggression := GetFactionAggression(factionData.FactionType)
-	score *= (1.3 - aggression*0.3)
-
 	return score
 }
 
@@ -72,7 +64,7 @@ func ScoreRaiding(manager *common.EntityManager, entity *ecs.Entity, factionData
 	score := 0.0
 
 	// Get config parameters
-	strongBonus := core.GetRaidingScoringParams()
+	strongBonus, veryStrongOffset := core.GetRaidingScoringParams()
 
 	// Need minimum strength to raid (use unified strong threshold)
 	if factionData.Strength < core.GetStrongThreshold() {
@@ -80,15 +72,10 @@ func ScoreRaiding(manager *common.EntityManager, entity *ecs.Entity, factionData
 	}
 
 	// Apply faction archetype bonus
-	bonuses := GetFactionBonuses(factionData.FactionType)
-	score += bonuses.RaidingBonus
-
-	// Apply aggression modifier to raiding intensity
-	aggression := GetFactionAggression(factionData.FactionType)
-	score *= (0.5 + aggression*0.5) // Scale raiding by aggression (0.5-1.0x)
+	score += GetFactionBonuses(factionData.FactionType).RaidingBonus
 
 	// Raid if very strong (use unified strong threshold + offset)
-	if factionData.Strength > core.GetStrongThreshold()+3 {
+	if factionData.Strength > core.GetStrongThreshold()+veryStrongOffset {
 		score += strongBonus
 	}
 
@@ -115,10 +102,6 @@ func ScoreRetreat(manager *common.EntityManager, entity *ecs.Entity, factionData
 
 	// Apply faction archetype penalty
 	score -= GetFactionBonuses(factionData.FactionType).RetreatPenalty
-
-	// Apply aggression modifier: high aggression = less likely to retreat (80-120%)
-	aggression := GetFactionAggression(factionData.FactionType)
-	score *= (1.2 - aggression*0.4)
 
 	return score
 }

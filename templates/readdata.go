@@ -380,7 +380,7 @@ func validateAIConfig(config *JSONAIConfig) {
 
 	// Validate support layer parameters are positive
 	sl := config.SupportLayer
-	if sl.HealRadius <= 0 || sl.BuffPriorityEngagementRange <= 0 {
+	if sl.HealRadius <= 0 {
 		panic("All support layer parameters must be positive")
 	}
 }
@@ -471,6 +471,55 @@ func validatePowerConfig(config *JSONPowerConfig) {
 	}
 }
 
+func ReadInfluenceConfig() {
+	data, err := os.ReadFile("../assets//gamedata/influenceconfig.json")
+	if err != nil {
+		panic(err)
+	}
+
+	err = json.Unmarshal(data, &InfluenceConfigTemplate)
+	if err != nil {
+		panic(err)
+	}
+
+	validateInfluenceConfig(&InfluenceConfigTemplate)
+
+	println("Influence config loaded")
+}
+
+func validateInfluenceConfig(config *JSONInfluenceConfig) {
+	// Validate base magnitude
+	if config.BaseMagnitudeMultiplier <= 0 {
+		panic("Influence baseMagnitudeMultiplier must be positive")
+	}
+	if config.DefaultPlayerNodeMagnitude < 0 {
+		panic("Influence defaultPlayerNodeMagnitude must be non-negative")
+	}
+	if config.DefaultPlayerNodeRadius <= 0 {
+		panic("Influence defaultPlayerNodeRadius must be positive")
+	}
+
+	// Validate synergy
+	if config.Synergy.GrowthBonus < 0 {
+		panic("Influence synergy growthBonus must be non-negative")
+	}
+
+	// Validate competition
+	if config.Competition.GrowthPenalty < 0 {
+		panic("Influence competition growthPenalty must be non-negative")
+	}
+
+	// Validate suppression
+	if config.Suppression.GrowthPenalty < 0 {
+		panic("Influence suppression growthPenalty must be non-negative")
+	}
+
+	// Validate diminishing factor
+	if config.DiminishingFactor <= 0 || config.DiminishingFactor > 1.0 {
+		panic("Influence diminishingFactor must be > 0 and <= 1.0")
+	}
+}
+
 func ReadOverworldConfig() {
 	data, err := os.ReadFile("../assets//gamedata/overworldconfig.json")
 	if err != nil {
@@ -494,7 +543,7 @@ func validateOverworldConfig(config *JSONOverworldConfig) {
 	// Validate threat growth parameters are positive
 	tg := config.ThreatGrowth
 	if tg.ContainmentSlowdown <= 0 || tg.MaxThreatIntensity <= 0 ||
-		tg.ChildNodeSpawnThreshold <= 0 || tg.MaxChildNodeSpawnAttempts <= 0 {
+		tg.ChildNodeSpawnThreshold <= 0 {
 		panic("All threat growth parameters must be positive")
 	}
 
