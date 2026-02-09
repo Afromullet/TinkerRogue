@@ -29,6 +29,7 @@ type UIModeManager struct {
 	context           *UIContext
 	pendingTransition *ModeTransition
 	inputState        *InputState
+	prevKeysPressed   map[ebiten.Key]bool // Previous frame's key state (avoids per-frame allocation)
 }
 
 func NewUIModeManager(ctx *UIContext) *UIModeManager {
@@ -40,6 +41,7 @@ func NewUIModeManager(ctx *UIContext) *UIModeManager {
 			KeysJustPressed:   make(map[ebiten.Key]bool),
 			PlayerInputStates: &ctx.PlayerData.InputStates,
 		},
+		prevKeysPressed: make(map[ebiten.Key]bool),
 	}
 }
 
@@ -138,7 +140,6 @@ func (umm *UIModeManager) Render(screen *ebiten.Image) {
 }
 
 // updateInputState captures current frame's input
-// SKH Input
 func (umm *UIModeManager) updateInputState() {
 	// Mouse position
 	umm.inputState.MouseX, umm.inputState.MouseY = ebiten.CursorPosition()
@@ -153,20 +154,16 @@ func (umm *UIModeManager) updateInputState() {
 	} else {
 		umm.inputState.MousePressed = false
 	}
-	umm.inputState.MouseReleased = !umm.inputState.MousePressed
-
-	prevPressed := make(map[ebiten.Key]bool)
-	for k, v := range umm.inputState.KeysPressed {
-		prevPressed[k] = v
-	}
 
 	for _, key := range keysToTrack {
 		isPressed := ebiten.IsKeyPressed(key)
-		umm.inputState.KeysPressed[key] = isPressed
 
 		// Just pressed = pressed now but not last frame
-		wasPressed := prevPressed[key]
+		wasPressed := umm.prevKeysPressed[key]
 		umm.inputState.KeysJustPressed[key] = isPressed && !wasPressed
+
+		umm.inputState.KeysPressed[key] = isPressed
+		umm.prevKeysPressed[key] = isPressed
 	}
 
 	// Sync with PlayerInputStates (bridge to existing system)

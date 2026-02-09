@@ -11,7 +11,6 @@ import (
 	"game_main/mind/encounter"
 	"game_main/tactical/combat/battlelog"
 	"game_main/tactical/combatservices"
-	"game_main/world/worldmap"
 
 	"github.com/bytearena/ecs"
 	"github.com/ebitenui/ebitenui/widget"
@@ -103,8 +102,7 @@ func (cm *CombatMode) Initialize(ctx *framework.UIContext) error {
 	cm.inputHandler = NewCombatInputHandler(cm.actionHandler, cm.deps)
 
 	// Initialize visualization systems
-	gameMap := ctx.GameMap.(*worldmap.GameMap)
-	cm.visualization = NewCombatVisualizationManager(ctx, cm.Queries, gameMap)
+	cm.visualization = NewCombatVisualizationManager(ctx, cm.Queries, ctx.GameMap)
 
 	// Wire visualization input support into input handler
 	cm.inputHandler.SetVisualization(cm.visualization, cm.Panels, cm.logManager)

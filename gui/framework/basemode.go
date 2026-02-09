@@ -110,13 +110,12 @@ func (bm *BaseMode) RegisterHotkey(key ebiten.Key, targetMode string) {
 	}
 }
 
-// SetStatus updates the status label with a message and logs to console.
+// SetStatus updates the status label with a message.
 // Modes should assign their status label to StatusLabel in Initialize() to use this.
 func (bm *BaseMode) SetStatus(message string) {
 	if bm.StatusLabel != nil {
 		bm.StatusLabel.Label = message
 	}
-	fmt.Println(message) // Also log to console
 }
 
 // InitializeCommandHistory creates and initializes CommandHistory for this mode.

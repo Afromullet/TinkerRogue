@@ -237,7 +237,7 @@ func SetupUI(g *Game) {
 	uiContext := &framework.UIContext{
 		ECSManager:   &g.em,
 		PlayerData:   &g.playerData,
-		GameMap:      &g.gameMap, //Todo, remove in future. Used by dangervisualizer, which is for debugging
+		GameMap:      &g.gameMap,
 		ScreenWidth:  graphics.ScreenInfo.GetCanvasWidth(),
 		ScreenHeight: graphics.ScreenInfo.GetCanvasHeight(),
 		TileSize:     graphics.ScreenInfo.TileSize,

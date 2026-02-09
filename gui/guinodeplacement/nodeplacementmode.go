@@ -8,7 +8,6 @@ import (
 	"game_main/overworld/core"
 	"game_main/overworld/playernode"
 	"game_main/world/coords"
-	"game_main/world/worldmap"
 
 	"github.com/ebitenui/ebitenui/widget"
 	"github.com/hajimehoshi/ebiten/v2"
@@ -66,11 +65,7 @@ func (npm *NodePlacementMode) Initialize(ctx *framework.UIContext) error {
 	npm.placementInfoText = GetPlacementInfoText(npm.Panels)
 
 	// Create renderer (reuse overworld renderer for map + threat drawing)
-	gameMap, ok := ctx.GameMap.(*worldmap.GameMap)
-	if !ok {
-		return fmt.Errorf("GameMap is not *worldmap.GameMap")
-	}
-	npm.renderer = guioverworld.NewOverworldRenderer(ctx.ECSManager, npm.state, gameMap, ctx.TileSize, ctx)
+	npm.renderer = guioverworld.NewOverworldRenderer(ctx.ECSManager, npm.state, ctx.GameMap, ctx.TileSize, ctx)
 
 	return nil
 }

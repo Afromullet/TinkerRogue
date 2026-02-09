@@ -2,6 +2,7 @@ package framework
 
 import (
 	"game_main/common"
+	"game_main/world/worldmap"
 
 	"github.com/ebitenui/ebitenui"
 	"github.com/hajimehoshi/ebiten/v2"
@@ -43,7 +44,7 @@ type UIMode interface {
 type UIContext struct {
 	ECSManager      *common.EntityManager
 	PlayerData      *common.PlayerData
-	GameMap         interface{} // Todo, remove in future. Here for dangervisualzier, so that we can debug
+	GameMap         *worldmap.GameMap
 	ScreenWidth     int
 	ScreenHeight    int
 	TileSize        int
@@ -57,7 +58,6 @@ type InputState struct {
 	MouseX            int
 	MouseY            int
 	MousePressed      bool
-	MouseReleased     bool
 	MouseButton       ebiten.MouseButton
 	KeysPressed       map[ebiten.Key]bool
 	KeysJustPressed   map[ebiten.Key]bool

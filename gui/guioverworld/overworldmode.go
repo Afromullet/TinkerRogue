@@ -11,7 +11,6 @@ import (
 	"game_main/overworld/tick"
 	"game_main/overworld/travel"
 	"game_main/world/coords"
-	"game_main/world/worldmap"
 
 	"github.com/bytearena/ecs"
 	"github.com/ebitenui/ebitenui/widget"
@@ -81,12 +80,7 @@ func (om *OverworldMode) Initialize(ctx *framework.UIContext) error {
 	// Initialize widget references
 	om.initializeWidgetReferences()
 
-	// Create renderer (need to cast GameMap interface to *worldmap.GameMap)
-	gameMap, ok := ctx.GameMap.(*worldmap.GameMap)
-	if !ok {
-		return fmt.Errorf("GameMap is not *worldmap.GameMap")
-	}
-	om.renderer = NewOverworldRenderer(ctx.ECSManager, om.state, gameMap, ctx.TileSize, ctx)
+	om.renderer = NewOverworldRenderer(ctx.ECSManager, om.state, ctx.GameMap, ctx.TileSize, ctx)
 
 	// Ensure tick state exists
 	tickState := core.GetTickState(ctx.ECSManager)
