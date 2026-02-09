@@ -8,48 +8,17 @@ import (
 	"github.com/ebitenui/ebitenui/widget"
 )
 
-// PanelType identifies a type of panel in the registry
+// PanelType identifies a type of panel in the registry.
+// Each mode package defines its own PanelType constants.
 type PanelType string
-
-// Standard panel types used across modes
-const (
-	// Combat mode panels
-	PanelTypeTurnOrder     PanelType = "turn_order"
-	PanelTypeFactionInfo   PanelType = "faction_info"
-	PanelTypeSquadList     PanelType = "squad_list"
-	PanelTypeSquadDetail   PanelType = "squad_detail"
-	PanelTypeCombatLog     PanelType = "combat_log"
-	PanelTypeCombatActions PanelType = "combat_actions"
-	PanelTypeLayerStatus   PanelType = "layer_status"
-
-	// Squad editor panels
-	PanelTypeSquadNavigation PanelType = "squad_navigation"
-	PanelTypeSquadSelector   PanelType = "squad_selector"
-	PanelTypeGridEditor      PanelType = "grid_editor"
-	PanelTypeUnitList        PanelType = "unit_list"
-	PanelTypeRosterList      PanelType = "roster_list"
-	PanelTypeEditorActions   PanelType = "editor_actions"
-
-	// Exploration mode panels
-	PanelTypeMessageLog  PanelType = "message_log"
-	PanelTypeExploreInfo PanelType = "explore_info"
-
-	// Common panels
-	PanelTypeStatus  PanelType = "status"
-	PanelTypeActions PanelType = "actions"
-)
 
 // PanelContentType specifies what widget goes inside the panel
 type PanelContentType int
 
 const (
-	ContentEmpty       PanelContentType = iota // Just container
-	ContentText                                // Text label
-	ContentTextArea                            // TextArea for scrollable text
-	ContentList                                // List widget
-	ContentButtonGroup                         // Button group
-	ContentGrid                                // Grid layout (e.g., 3x3 formation)
-	ContentCustom                              // Custom widget tree via callback
+	ContentEmpty  PanelContentType = iota // Just container
+	ContentText                           // Text label
+	ContentCustom                         // Custom widget tree via callback
 )
 
 // PanelDescriptor defines how to build a panel
@@ -82,10 +51,6 @@ type PanelResult struct {
 
 	// Widget references (populated based on ContentType)
 	TextLabel *widget.Text
-	TextArea  *widget.TextArea
-	List      *widget.List
-	Buttons   []*widget.Button
-	GridCells [][]*widget.Button // For grid panels
 
 	// Custom widgets (for ContentCustom)
 	Custom map[string]interface{}
@@ -96,23 +61,8 @@ var panelRegistry = make(map[PanelType]PanelDescriptor)
 
 // RegisterPanel adds a panel type to the global registry.
 // Call this in init() functions to define panel types.
-//
-// Example:
-//
-//	func init() {
-//	    RegisterPanel(PanelTypeTurnOrder, PanelDescriptor{
-//	        SpecName: "turn_order",
-//	        Content:  ContentText,
-//	    })
-//	}
 func RegisterPanel(ptype PanelType, desc PanelDescriptor) {
 	panelRegistry[ptype] = desc
-}
-
-// GetPanelDescriptor returns the descriptor for a panel type
-func GetPanelDescriptor(ptype PanelType) (PanelDescriptor, bool) {
-	desc, ok := panelRegistry[ptype]
-	return desc, ok
 }
 
 // BuildRegisteredPanel creates a panel from the registry.

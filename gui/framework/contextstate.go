@@ -60,18 +60,6 @@ func (bms *BattleMapState) Reset() {
 	bms.TriggeredEncounterID = ecs.EntityID(0)
 }
 
-// DebugMap returns state as a map for structured logging
-func (bms *BattleMapState) DebugMap() map[string]interface{} {
-	return map[string]interface{}{
-		"selectedSquad":  bms.SelectedSquadID,
-		"selectedTarget": bms.SelectedTargetID,
-		"inAttackMode":   bms.InAttackMode,
-		"inMoveMode":     bms.InMoveMode,
-		"showHealthBars": bms.ShowHealthBars,
-		"encounterID":    bms.TriggeredEncounterID,
-	}
-}
-
 // OverworldState holds UI-specific state for the overworld context
 // This contains ONLY transient UI selection and visualization state
 //

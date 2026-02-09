@@ -200,7 +200,6 @@ func (gq *GUIQueries) FilterSquadsAlive() SquadFilter {
 // ApplyFilterToSquads applies a filter to a slice of squad IDs
 // Returns filtered squad IDs as a new slice
 // If filter is nil, returns all squads unchanged
-// Note: For performance-critical paths, use ApplyFilterToSquadsCached instead
 func (gq *GUIQueries) ApplyFilterToSquads(squadIDs []ecs.EntityID, filter SquadFilter) []ecs.EntityID {
 	if filter == nil {
 		return squadIDs
@@ -216,36 +215,3 @@ func (gq *GUIQueries) ApplyFilterToSquads(squadIDs []ecs.EntityID, filter SquadF
 	return filtered
 }
 
-// ===== TILE QUERIES =====
-
-// TileInfo encapsulates tile data needed by UI
-type TileInfo struct {
-	Position     coords.LogicalPosition
-	TileType     string
-	MovementCost int
-	IsWalkable   bool
-	HasEntity    bool
-	EntityID     ecs.EntityID
-}
-
-// GetTileInfo returns information about a tile at a specific position
-// This is a basic implementation - extend based on your tile system
-func (gq *GUIQueries) GetTileInfo(pos coords.LogicalPosition) *TileInfo {
-	info := &TileInfo{
-		Position:     pos,
-		TileType:     "Floor", // Default - extend with actual tile system
-		MovementCost: 1,       // Default - extend with actual tile system
-		IsWalkable:   true,    // Default - extend with actual tile system
-	}
-
-	// Check if there's an entity at this position
-	if common.GlobalPositionSystem != nil {
-		entityID := common.GlobalPositionSystem.GetEntityIDAt(pos)
-		if entityID != 0 {
-			info.HasEntity = true
-			info.EntityID = entityID
-		}
-	}
-
-	return info
-}

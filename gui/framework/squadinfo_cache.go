@@ -125,14 +125,6 @@ func (sc *SquadInfoCache) MarkSquadDirty(squadID ecs.EntityID) {
 	sc.dirtySquads[squadID] = true
 }
 
-// MarkSquadsDirty marks multiple squads as dirty at once.
-// Useful for batch invalidations (e.g., all squads in a faction).
-func (sc *SquadInfoCache) MarkSquadsDirty(squadIDs []ecs.EntityID) {
-	for _, squadID := range squadIDs {
-		sc.dirtySquads[squadID] = true
-	}
-}
-
 // MarkAllDirty marks all cached squads as dirty.
 // Call when: turn starts/ends, combat begins/ends, global state changes.
 func (sc *SquadInfoCache) MarkAllDirty() {
@@ -148,24 +140,3 @@ func (sc *SquadInfoCache) InvalidateSquad(squadID ecs.EntityID) {
 	delete(sc.dirtySquads, squadID)
 }
 
-// InvalidateAll completely clears the cache.
-// Call when: major game state changes (scene transitions, combat end).
-func (sc *SquadInfoCache) InvalidateAll() {
-	sc.cache = make(map[ecs.EntityID]*SquadInfo)
-	sc.dirtySquads = make(map[ecs.EntityID]bool)
-}
-
-// ===== UTILITY METHODS =====
-
-// GetCacheStats returns cache statistics for debugging/profiling.
-func (sc *SquadInfoCache) GetCacheStats() (cached int, dirty int) {
-	return len(sc.cache), len(sc.dirtySquads)
-}
-
-// PreloadSquads pre-builds cache for a list of squads.
-// Useful for pre-warming cache before expensive operations.
-func (sc *SquadInfoCache) PreloadSquads(squadIDs []ecs.EntityID) {
-	for _, squadID := range squadIDs {
-		sc.GetSquadInfo(squadID) // Triggers build if not cached
-	}
-}

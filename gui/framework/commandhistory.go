@@ -2,10 +2,8 @@ package framework
 
 import (
 	"fmt"
-	"game_main/gui/builders"
 	"game_main/tactical/squadcommands"
 
-	"github.com/ebitenui/ebitenui/widget"
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
@@ -102,32 +100,3 @@ func (ch *CommandHistory) HandleInput(inputState *InputState) bool {
 	return false
 }
 
-// CreateUndoButton creates a standard undo button
-func (ch *CommandHistory) CreateUndoButton() *widget.Button {
-	return builders.CreateButtonWithConfig(builders.ButtonConfig{
-		Text: "Undo (Ctrl+Z)",
-		OnClick: func() {
-			ch.Undo()
-		},
-	})
-}
-
-// CreateRedoButton creates a standard redo button
-func (ch *CommandHistory) CreateRedoButton() *widget.Button {
-	return builders.CreateButtonWithConfig(builders.ButtonConfig{
-		Text: "Redo (Ctrl+Y)",
-		OnClick: func() {
-			ch.Redo()
-		},
-	})
-}
-
-// CanUndo returns whether there are commands available to undo
-func (ch *CommandHistory) CanUndo() bool {
-	return ch.executor.CanUndo()
-}
-
-// CanRedo returns whether there are commands available to redo
-func (ch *CommandHistory) CanRedo() bool {
-	return ch.executor.CanRedo()
-}

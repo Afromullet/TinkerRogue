@@ -49,14 +49,11 @@ type CombatMode struct {
 	lastFactionID     ecs.EntityID
 	lastSelectedSquad ecs.EntityID
 
-	// Debug support
-	debugLogger *framework.DebugLogger
 }
 
 func NewCombatMode(modeManager *framework.UIModeManager, encounterService *encounter.EncounterService) *CombatMode {
 	cm := &CombatMode{
 		logManager:       NewCombatLogManager(),
-		debugLogger:      framework.NewDebugLogger("combat"),
 		encounterService: encounterService,
 	}
 	cm.SetModeName("combat")
@@ -67,8 +64,6 @@ func NewCombatMode(modeManager *framework.UIModeManager, encounterService *encou
 }
 
 func (cm *CombatMode) Initialize(ctx *framework.UIContext) error {
-	cm.debugLogger.Log("Initialize starting")
-
 	// Create combat service before ModeBuilder
 	cm.combatService = combatservices.NewCombatService(ctx.ECSManager)
 
@@ -128,7 +123,6 @@ func (cm *CombatMode) Initialize(ctx *framework.UIContext) error {
 
 	cm.initializeUpdateComponents()
 
-	cm.debugLogger.Log("Initialize complete")
 	return nil
 }
 
@@ -298,19 +292,12 @@ func (cm *CombatMode) makeCurrentFactionSquadFilter() framework.SquadFilter {
 }
 
 func (cm *CombatMode) Enter(fromMode framework.UIMode) error {
-	fromModeName := "nil"
-	if fromMode != nil {
-		fromModeName = fromMode.GetModeName()
-	}
-	cm.debugLogger.LogModeTransition("ENTER", fromModeName)
-
 	isComingFromAnimation := fromMode != nil && fromMode.GetModeName() == "combat_animation"
 	shouldInitialize := !isComingFromAnimation
 
 	combatLogArea := GetCombatLogTextArea(cm.Panels)
 
 	if shouldInitialize {
-		cm.debugLogger.Log("Fresh combat start - initializing")
 		cm.logManager.UpdateTextArea(combatLogArea, "=== COMBAT STARTED ===")
 
 		// Refresh threat manager with newly created factions (must be after SpawnCombatEntities)
@@ -355,17 +342,9 @@ func (cm *CombatMode) Enter(fromMode framework.UIMode) error {
 }
 
 func (cm *CombatMode) Exit(toMode framework.UIMode) error {
-	toModeName := "nil"
-	if toMode != nil {
-		toModeName = toMode.GetModeName()
-	}
-	cm.debugLogger.LogModeTransition("EXIT", toModeName)
-
 	isToAnimation := toMode != nil && toMode.GetModeName() == "combat_animation"
 
 	if !isToAnimation {
-		cm.debugLogger.Log("Full cleanup - returning to exploration")
-
 		// Get victory result (use cached if available, otherwise check now)
 		victor := cm.turnFlow.GetVictoryResult()
 		if victor == nil {
@@ -402,7 +381,7 @@ func (cm *CombatMode) Exit(toMode framework.UIMode) error {
 			}
 			record := cm.combatService.BattleRecorder.Finalize(victoryInfo)
 			if err := battlelog.ExportBattleJSON(record, config.COMBAT_LOG_EXPORT_DIR); err != nil {
-				cm.debugLogger.LogError("ExportBattleLog", err, nil)
+				fmt.Printf("Error exporting battle log: %v\n", err)
 			}
 			cm.combatService.BattleRecorder.Clear()
 			cm.combatService.BattleRecorder.SetEnabled(false)

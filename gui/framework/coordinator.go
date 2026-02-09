@@ -114,20 +114,6 @@ func (gmc *GameModeCoordinator) switchToContext(targetContext GameContext, targe
 	return nil
 }
 
-// ToggleContext switches between Overworld and BattleMap contexts
-func (gmc *GameModeCoordinator) ToggleContext() error {
-	switch gmc.currentContext {
-	case ContextOverworld:
-		// Switch to battle map with default mode
-		return gmc.EnterBattleMap("exploration")
-	case ContextBattleMap:
-		// Switch to overworld with default mode
-		return gmc.ReturnToOverworld("squad_management")
-	default:
-		return fmt.Errorf("unknown context: %v", gmc.currentContext)
-	}
-}
-
 // Update updates the active manager and handles context switching
 func (gmc *GameModeCoordinator) Update(deltaTime float64) error {
 
@@ -144,11 +130,6 @@ func (gmc *GameModeCoordinator) Render(screen *ebiten.Image) {
 		gmc.activeManager.Render(screen)
 	}
 
-}
-
-// GetCurrentContext returns the active game context
-func (gmc *GameModeCoordinator) GetCurrentContext() GameContext {
-	return gmc.currentContext
 }
 
 // GetCurrentMode returns the active mode from the active manager
