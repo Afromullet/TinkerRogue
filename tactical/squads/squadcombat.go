@@ -12,6 +12,13 @@ const (
 	counterattackHitPenalty       = 20  // -20% hit chance on counterattack
 )
 
+// DamageModifiers holds modifiers for damage calculation
+type DamageModifiers struct {
+	HitPenalty       int
+	DamageMultiplier float64
+	IsCounterattack  bool
+}
+
 // CombatResult - Unified result type for combat operations
 // Contains both combat execution data and orchestration status
 type CombatResult struct {
@@ -89,18 +96,15 @@ func ExecuteSquadCounterattack(defenderSquadID, attackerSquadID ecs.EntityID, sq
 	return executeCombatPhase(defenderSquadID, attackerSquadID, ProcessCounterattackOnTargets, squadmanager)
 }
 
-// ProcessCounterattackOnTargets applies counterattack damage with penalties
-func ProcessCounterattackOnTargets(attackerID ecs.EntityID, targetIDs []ecs.EntityID, result *CombatResult,
-	log *CombatLog, attackIndex int, manager *common.EntityManager) int {
+// processAttackWithModifiers is the unified attack processing function
+func processAttackWithModifiers(attackerID ecs.EntityID, targetIDs []ecs.EntityID, result *CombatResult,
+	log *CombatLog, attackIndex int, modifiers DamageModifiers, manager *common.EntityManager) int {
 
 	for _, defenderID := range targetIDs {
 		attackIndex++
 
-		// Calculate damage WITH COUNTERATTACK PENALTIES
-		damage, event := calculateCounterattackDamage(attackerID, defenderID, manager)
-
-		// Mark as counterattack
-		event.IsCounterattack = true
+		// Calculate damage with modifiers
+		damage, event := calculateDamage(attackerID, defenderID, modifiers, manager)
 
 		// Add targeting info
 		defenderPos := common.GetComponentTypeByID[*GridPositionData](manager, defenderID, GridPositionComponent)
@@ -126,17 +130,27 @@ func ProcessCounterattackOnTargets(attackerID ecs.EntityID, targetIDs []ecs.Enti
 	return attackIndex
 }
 
-// calculateCounterattackDamage calculates damage with BOTH penalties:
-// 1. Reduced hit chance (-20%)
-// 2. Reduced damage (50% multiplier)
-func calculateCounterattackDamage(attackerID, defenderID ecs.EntityID, squadmanager *common.EntityManager) (int, *AttackEvent) {
+// ProcessCounterattackOnTargets applies counterattack damage with penalties
+func ProcessCounterattackOnTargets(attackerID ecs.EntityID, targetIDs []ecs.EntityID, result *CombatResult,
+	log *CombatLog, attackIndex int, manager *common.EntityManager) int {
+
+	modifiers := DamageModifiers{
+		HitPenalty:       counterattackHitPenalty,
+		DamageMultiplier: counterattackDamageMultiplier,
+		IsCounterattack:  true,
+	}
+	return processAttackWithModifiers(attackerID, targetIDs, result, log, attackIndex, modifiers, manager)
+}
+
+// calculateDamage is the unified damage calculation function with optional modifiers
+func calculateDamage(attackerID, defenderID ecs.EntityID, modifiers DamageModifiers, squadmanager *common.EntityManager) (int, *AttackEvent) {
 	attackerAttr := common.GetComponentTypeByID[*common.Attributes](squadmanager, attackerID, common.AttributeComponent)
 	defenderAttr := common.GetComponentTypeByID[*common.Attributes](squadmanager, defenderID, common.AttributeComponent)
 
 	event := &AttackEvent{
 		AttackerID:      attackerID,
 		DefenderID:      defenderID,
-		IsCounterattack: true,
+		IsCounterattack: modifiers.IsCounterattack,
 	}
 
 	if defenderAttr != nil {
@@ -148,9 +162,9 @@ func calculateCounterattackDamage(attackerID, defenderID ecs.EntityID, squadmana
 		return 0, event
 	}
 
-	// PENALTY #1: Reduced hit chance (-20%)
+	// Hit roll with optional penalty
 	baseHitThreshold := attackerAttr.GetHitRate()
-	hitThreshold := baseHitThreshold - counterattackHitPenalty
+	hitThreshold := baseHitThreshold - modifiers.HitPenalty
 	if hitThreshold < 0 {
 		hitThreshold = 0
 	}
@@ -164,7 +178,7 @@ func calculateCounterattackDamage(attackerID, defenderID ecs.EntityID, squadmana
 		return 0, event
 	}
 
-	// Dodge roll (no penalty)
+	// Dodge roll
 	dodgeThreshold := defenderAttr.GetDodgeChance()
 	dodgeRoll, wasDodged := rollDodge(dodgeThreshold)
 	event.HitResult.DodgeRoll = dodgeRoll
@@ -175,12 +189,27 @@ func calculateCounterattackDamage(attackerID, defenderID ecs.EntityID, squadmana
 		return 0, event
 	}
 
-	// Calculate base damage
-	baseDamage := attackerAttr.GetPhysicalDamage()
+	// Get attacker's attack type to determine damage formula
+	attackerTargetData := common.GetComponentTypeByID[*TargetRowData](squadmanager, attackerID, TargetRowComponent)
+
+	// Calculate base damage based on attack type
+	var baseDamage int
+	var resistance int
+
+	if attackerTargetData != nil && attackerTargetData.AttackType == AttackTypeMagic {
+		// Magic damage path
+		baseDamage = attackerAttr.GetMagicDamage()
+		resistance = defenderAttr.GetMagicDefense()
+	} else {
+		// Physical damage path (Melee, Ranged, or fallback)
+		baseDamage = attackerAttr.GetPhysicalDamage()
+		resistance = defenderAttr.GetPhysicalResistance()
+	}
+
 	event.BaseDamage = baseDamage
 	event.CritMultiplier = 1.0
 
-	// Crit roll (no penalty)
+	// Crit roll
 	critThreshold := attackerAttr.GetCritChance()
 	critRoll, wasCrit := rollCrit(critThreshold)
 	event.HitResult.CritRoll = critRoll
@@ -191,24 +220,27 @@ func calculateCounterattackDamage(attackerID, defenderID ecs.EntityID, squadmana
 		event.CritMultiplier = 1.5
 		event.HitResult.Type = HitTypeCritical
 	} else {
-		event.HitResult.Type = HitTypeCounterattack
+		if modifiers.IsCounterattack {
+			event.HitResult.Type = HitTypeCounterattack
+		} else {
+			event.HitResult.Type = HitTypeNormal
+		}
 	}
 
-	// PENALTY #2: Reduced damage (50%)
-	baseDamage = int(float64(baseDamage) * counterattackDamageMultiplier)
+	// Apply damage multiplier
+	baseDamage = int(float64(baseDamage) * modifiers.DamageMultiplier)
 	if baseDamage < 1 {
 		baseDamage = 1
 	}
 
-	// Apply resistance (normal)
-	resistance := defenderAttr.GetPhysicalResistance()
+	// Apply resistance
 	event.ResistanceAmount = resistance
 	totalDamage := baseDamage - resistance
 	if totalDamage < 1 {
 		totalDamage = 1
 	}
 
-	// Apply cover (normal)
+	// Apply cover
 	coverBreakdown := CalculateCoverBreakdown(defenderID, squadmanager)
 	event.CoverReduction = coverBreakdown
 
@@ -226,6 +258,16 @@ func calculateCounterattackDamage(attackerID, defenderID ecs.EntityID, squadmana
 	}
 
 	return totalDamage, event
+}
+
+// calculateCounterattackDamage calculates damage with counterattack penalties
+func calculateCounterattackDamage(attackerID, defenderID ecs.EntityID, squadmanager *common.EntityManager) (int, *AttackEvent) {
+	modifiers := DamageModifiers{
+		HitPenalty:       counterattackHitPenalty,
+		DamageMultiplier: counterattackDamageMultiplier,
+		IsCounterattack:  true,
+	}
+	return calculateDamage(attackerID, defenderID, modifiers, squadmanager)
 }
 
 // InitializeCombatLog creates the combat log structure with squad information
@@ -390,12 +432,7 @@ func selectMeleeRowTargets(attackerID, defenderSquadID ecs.EntityID, manager *co
 // selectMeleeColumnTargets targets column directly across from attacker, piercing to next column if empty
 // Always targets all units in the column (piercing attack)
 func selectMeleeColumnTargets(attackerID, defenderSquadID ecs.EntityID, manager *common.EntityManager) []ecs.EntityID {
-	attackerEntity := manager.FindEntityByID(attackerID)
-	if attackerEntity == nil {
-		return []ecs.EntityID{}
-	}
-
-	attackerPos := common.GetComponentType[*GridPositionData](attackerEntity, GridPositionComponent)
+	attackerPos := common.GetComponentTypeByID[*GridPositionData](manager, attackerID, GridPositionComponent)
 	if attackerPos == nil {
 		return []ecs.EntityID{}
 	}
@@ -418,12 +455,7 @@ func selectMeleeColumnTargets(attackerID, defenderSquadID ecs.EntityID, manager 
 
 // selectRangedTargets targets same row as attacker (all units), with fallback logic
 func selectRangedTargets(attackerID, defenderSquadID ecs.EntityID, manager *common.EntityManager) []ecs.EntityID {
-	attackerEntity := manager.FindEntityByID(attackerID)
-	if attackerEntity == nil {
-		return []ecs.EntityID{}
-	}
-
-	attackerPos := common.GetComponentType[*GridPositionData](attackerEntity, GridPositionComponent)
+	attackerPos := common.GetComponentTypeByID[*GridPositionData](manager, attackerID, GridPositionComponent)
 	if attackerPos == nil {
 		return []ecs.EntityID{}
 	}
@@ -558,137 +590,22 @@ func selectLowestArmorTarget(squadID ecs.EntityID, manager *common.EntityManager
 func ProcessAttackOnTargets(attackerID ecs.EntityID, targetIDs []ecs.EntityID, result *CombatResult,
 	log *CombatLog, attackIndex int, manager *common.EntityManager) int {
 
-	for _, defenderID := range targetIDs {
-		attackIndex++
-
-		// Calculate damage and create event
-		damage, event := calculateUnitDamageByID(attackerID, defenderID, manager)
-
-		// Add targeting info to event
-		defenderPos := common.GetComponentTypeByID[*GridPositionData](manager, defenderID, GridPositionComponent)
-		event.AttackIndex = attackIndex
-		if defenderPos != nil {
-			event.TargetInfo.TargetRow = defenderPos.AnchorRow
-			event.TargetInfo.TargetCol = defenderPos.AnchorCol
-		}
-
-		// Set target mode from attacker's attack type
-		targetData := common.GetComponentTypeByID[*TargetRowData](manager, attackerID, TargetRowComponent)
-		if targetData != nil {
-			event.TargetInfo.TargetMode = targetData.AttackType.String()
-		}
-
-		// Apply damage
-		recordDamageToUnit(defenderID, damage, result, manager)
-
-		// Store event
-		log.AttackEvents = append(log.AttackEvents, *event)
+	modifiers := DamageModifiers{
+		HitPenalty:       0,
+		DamageMultiplier: 1.0,
+		IsCounterattack:  false,
 	}
-
-	return attackIndex
+	return processAttackWithModifiers(attackerID, targetIDs, result, log, attackIndex, modifiers, manager)
 }
 
 // calculateUnitDamageByID calculates damage using new attribute system and returns detailed event data
 func calculateUnitDamageByID(attackerID, defenderID ecs.EntityID, squadmanager *common.EntityManager) (int, *AttackEvent) {
-	attackerAttr := common.GetComponentTypeByID[*common.Attributes](squadmanager, attackerID, common.AttributeComponent)
-	defenderAttr := common.GetComponentTypeByID[*common.Attributes](squadmanager, defenderID, common.AttributeComponent)
-
-	// Create event to track damage pipeline
-	event := &AttackEvent{
-		AttackerID: attackerID,
-		DefenderID: defenderID,
+	modifiers := DamageModifiers{
+		HitPenalty:       0,
+		DamageMultiplier: 1.0,
+		IsCounterattack:  false,
 	}
-
-	if defenderAttr != nil {
-		event.DefenderHPBefore = defenderAttr.CurrentHealth
-	}
-
-	if attackerAttr == nil || defenderAttr == nil {
-		event.HitResult.Type = HitTypeMiss
-		return 0, event
-	}
-
-	// Hit roll
-	hitThreshold := attackerAttr.GetHitRate()
-	hitRoll, didHit := rollHit(hitThreshold)
-	event.HitResult.HitRoll = hitRoll
-	event.HitResult.HitThreshold = hitThreshold
-
-	if !didHit {
-		event.HitResult.Type = HitTypeMiss
-		return 0, event
-	}
-
-	// Dodge roll
-	dodgeThreshold := defenderAttr.GetDodgeChance()
-	dodgeRoll, wasDodged := rollDodge(dodgeThreshold)
-	event.HitResult.DodgeRoll = dodgeRoll
-	event.HitResult.DodgeThreshold = dodgeThreshold
-
-	if wasDodged {
-		event.HitResult.Type = HitTypeDodge
-		return 0, event
-	}
-
-	// Get attacker's attack type to determine damage formula
-	attackerTargetData := common.GetComponentTypeByID[*TargetRowData](squadmanager, attackerID, TargetRowComponent)
-
-	// Calculate base damage based on attack type
-	var baseDamage int
-	var resistance int
-
-	if attackerTargetData != nil && attackerTargetData.AttackType == AttackTypeMagic {
-		// Magic damage path
-		baseDamage = attackerAttr.GetMagicDamage()
-		resistance = defenderAttr.GetMagicDefense()
-	} else {
-		// Physical damage path (Melee, Ranged, or fallback)
-		baseDamage = attackerAttr.GetPhysicalDamage()
-		resistance = defenderAttr.GetPhysicalResistance()
-	}
-
-	event.BaseDamage = baseDamage
-	event.CritMultiplier = 1.0
-
-	// Crit roll
-	critThreshold := attackerAttr.GetCritChance()
-	critRoll, wasCrit := rollCrit(critThreshold)
-	event.HitResult.CritRoll = critRoll
-	event.HitResult.CritThreshold = critThreshold
-
-	if wasCrit {
-		baseDamage = int(float64(baseDamage) * 1.5)
-		event.CritMultiplier = 1.5
-		event.HitResult.Type = HitTypeCritical
-	} else {
-		event.HitResult.Type = HitTypeNormal
-	}
-
-	// Apply resistance (now type-appropriate)
-	event.ResistanceAmount = resistance
-	totalDamage := baseDamage - resistance
-	if totalDamage < 1 {
-		totalDamage = 1
-	}
-
-	// Apply cover with detailed breakdown
-	coverBreakdown := CalculateCoverBreakdown(defenderID, squadmanager)
-	event.CoverReduction = coverBreakdown
-
-	if coverBreakdown.TotalReduction > 0.0 {
-		totalDamage = int(float64(totalDamage) * (1.0 - coverBreakdown.TotalReduction))
-		if totalDamage < 1 {
-			totalDamage = 1
-		}
-	}
-
-	event.FinalDamage = totalDamage
-	event.DefenderHPAfter = defenderAttr.CurrentHealth - totalDamage
-	if event.DefenderHPAfter <= 0 {
-		event.WasKilled = true
-	}
-
-	return totalDamage, event
+	return calculateDamage(attackerID, defenderID, modifiers, squadmanager)
 }
 
 // rollHit returns the roll value and whether the attack hit
