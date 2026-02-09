@@ -3,6 +3,7 @@ package guicombat
 import (
 	"game_main/gui/builders"
 	"game_main/gui/framework"
+	"game_main/visual/rendering"
 
 	"github.com/ebitenui/ebitenui/widget"
 )
@@ -21,7 +22,7 @@ func init() {
 
 			// Create squad renderer (needs Queries which is set by ModeBuilder)
 			if cam.squadRenderer == nil {
-				cam.squadRenderer = NewSquadCombatRenderer(cam.Queries)
+				cam.squadRenderer = rendering.NewSquadCombatRenderer(cam.Queries)
 			}
 
 			// Create prompt label (centered at bottom)

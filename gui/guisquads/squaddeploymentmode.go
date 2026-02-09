@@ -9,6 +9,7 @@ import (
 	"game_main/tactical/squads"
 	"game_main/tactical/squadservices"
 	"game_main/visual/graphics"
+	"game_main/visual/rendering"
 	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"
@@ -36,7 +37,7 @@ type SquadDeploymentMode struct {
 	pendingPlacement bool
 
 	// Rendering systems
-	highlightRenderer *framework.SquadHighlightRenderer
+	highlightRenderer *rendering.SquadHighlightRenderer
 }
 
 func NewSquadDeploymentMode(modeManager *framework.UIModeManager) *SquadDeploymentMode {
@@ -76,7 +77,7 @@ func (sdm *SquadDeploymentMode) Initialize(ctx *framework.UIContext) error {
 	sdm.initializeWidgetReferences()
 
 	// Initialize rendering system AFTER BaseMode is initialized (so Queries is available)
-	sdm.highlightRenderer = framework.NewSquadHighlightRenderer(sdm.Queries)
+	sdm.highlightRenderer = rendering.NewSquadHighlightRenderer(sdm.Queries)
 
 	return nil
 }

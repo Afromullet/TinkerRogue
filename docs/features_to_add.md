@@ -6,6 +6,10 @@
 - Perks
 
 
+# 
+
+- Better Reward system - Need resources to build nodes
+
 # Faction Differences
 
 - Unit composition changes based off the squads
@@ -20,8 +24,7 @@ dsd
 
 # Overworld
 
-- When a player overtakes a node, they can gain control of it and place squads for defense
-
+- Non combat nodes can be conquered
 
 ## Player avatar vs non avatar Movement
 

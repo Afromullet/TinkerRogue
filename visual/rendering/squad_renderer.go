@@ -1,11 +1,6 @@
-package guicombat
+package rendering
 
 import (
-	"game_main/common"
-	"game_main/gui/framework"
-	"game_main/visual/rendering"
-	"game_main/tactical/squads"
-
 	"github.com/bytearena/ecs"
 	"github.com/hajimehoshi/ebiten/v2"
 )
@@ -13,13 +8,13 @@ import (
 // SquadCombatRenderer handles rendering a squad's 3x3 grid of units
 // for the combat animation screen.
 type SquadCombatRenderer struct {
-	queries *framework.GUIQueries
+	unitProvider UnitInfoProvider
 }
 
 // NewSquadCombatRenderer creates a new squad combat renderer
-func NewSquadCombatRenderer(queries *framework.GUIQueries) *SquadCombatRenderer {
+func NewSquadCombatRenderer(unitProvider UnitInfoProvider) *SquadCombatRenderer {
 	return &SquadCombatRenderer{
-		queries: queries,
+		unitProvider: unitProvider,
 	}
 }
 
@@ -37,8 +32,7 @@ func (r *SquadCombatRenderer) RenderSquad(
 	cellSize int,
 	facingLeft bool,
 ) {
-	// Get all units in the squad
-	unitIDs := r.queries.SquadCache.GetUnitIDsInSquad(squadID)
+	unitIDs := r.unitProvider.GetUnitIDsInSquad(squadID)
 
 	for _, unitID := range unitIDs {
 		r.RenderUnit(screen, unitID, baseX, baseY, cellSize, facingLeft)
@@ -53,7 +47,6 @@ func (r *SquadCombatRenderer) RenderUnit(
 	cellSize int,
 	facingLeft bool,
 ) {
-	// Delegate to RenderUnitWithColor with no color overlay
 	r.RenderUnitWithColor(screen, unitID, baseX, baseY, cellSize, facingLeft, nil)
 }
 
@@ -68,11 +61,9 @@ func (r *SquadCombatRenderer) RenderSquadWithHighlight(
 	highlightUnits []ecs.EntityID,
 	highlightColor *ebiten.ColorScale,
 ) {
-	// Get all units in the squad
-	unitIDs := r.queries.SquadCache.GetUnitIDsInSquad(squadID)
+	unitIDs := r.unitProvider.GetUnitIDsInSquad(squadID)
 
 	for _, unitID := range unitIDs {
-		// Check if this unit should be highlighted
 		shouldHighlight := false
 		for _, hID := range highlightUnits {
 			if hID == unitID {
@@ -98,57 +89,35 @@ func (r *SquadCombatRenderer) RenderUnitWithColor(
 	facingLeft bool,
 	colorScale *ebiten.ColorScale,
 ) {
-	// Get the unit entity
-	entity := r.queries.ECSManager.FindEntityByID(unitID)
-	if entity == nil {
-		return
-	}
-
-	// Get grid position
-	gridPos := common.GetComponentType[*squads.GridPositionData](entity, squads.GridPositionComponent)
-	if gridPos == nil {
-		return
-	}
-
-	// Get renderable (sprite) - ignore Visible flag since combat animation
-	// should show all units regardless of world map visibility
-	renderable := common.GetComponentType[*rendering.Renderable](entity, rendering.RenderableComponent)
-	if renderable == nil || renderable.Image == nil {
-		return
-	}
-
-	// Check if unit is alive
-	attr := common.GetComponentType[*common.Attributes](entity, common.AttributeComponent)
-	if attr == nil || attr.CurrentHealth <= 0 {
+	info := r.unitProvider.GetUnitRenderInfo(unitID)
+	if info == nil || !info.IsAlive || info.Image == nil {
 		return
 	}
 
 	// Calculate pixel position from grid position
-	// Apply 90° rotation so squads face each other
+	// Apply 90 degree rotation so squads face each other
 	var displayCol, displayRow int
 
 	if facingLeft {
-		// Defender: 90° clockwise rotation
-		// Row 0 units appear on left side (facing attacker)
-		displayCol = gridPos.AnchorRow
-		displayRow = 2 - gridPos.AnchorCol
+		// Defender: 90 degree clockwise rotation
+		displayCol = info.AnchorRow
+		displayRow = 2 - info.AnchorCol
 	} else {
-		// Attacker: 90° counter-clockwise rotation
-		// Row 0 units appear on right side (facing defender)
-		displayCol = 2 - gridPos.AnchorRow
-		displayRow = gridPos.AnchorCol
+		// Attacker: 90 degree counter-clockwise rotation
+		displayCol = 2 - info.AnchorRow
+		displayRow = info.AnchorCol
 	}
 
 	pixelX := baseX + (displayCol * cellSize)
 	pixelY := baseY + (displayRow * cellSize)
 
 	// Get sprite dimensions
-	spriteWidth := renderable.Image.Bounds().Dx()
-	spriteHeight := renderable.Image.Bounds().Dy()
+	spriteWidth := info.Image.Bounds().Dx()
+	spriteHeight := info.Image.Bounds().Dy()
 
 	// Calculate cell dimensions
-	unitCellWidth := gridPos.Width * cellSize
-	unitCellHeight := gridPos.Height * cellSize
+	unitCellWidth := info.Width * cellSize
+	unitCellHeight := info.Height * cellSize
 
 	// Calculate scale
 	scaleX := float64(unitCellWidth) / float64(spriteWidth)
@@ -181,5 +150,5 @@ func (r *SquadCombatRenderer) RenderUnitWithColor(
 		op.ColorScale = *colorScale
 	}
 
-	screen.DrawImage(renderable.Image, op)
+	screen.DrawImage(info.Image, op)
 }

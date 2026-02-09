@@ -9,6 +9,7 @@ import (
 	"game_main/gui/framework"
 	"game_main/tactical/combat"
 	"game_main/tactical/squads"
+	"game_main/visual/rendering"
 
 	"github.com/bytearena/ecs"
 	"github.com/ebitenui/ebitenui/widget"
@@ -76,7 +77,7 @@ type CombatAnimationMode struct {
 	autoPlay bool
 
 	// Renderer
-	squadRenderer *SquadCombatRenderer
+	squadRenderer *rendering.SquadCombatRenderer
 
 	// UI elements
 	promptLabel *widget.Text

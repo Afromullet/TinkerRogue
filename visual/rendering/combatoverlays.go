@@ -1,7 +1,6 @@
-package guicombat
+package rendering
 
 import (
-	"game_main/gui/framework"
 	"game_main/world/coords"
 	"image"
 	"image/color"
@@ -12,7 +11,7 @@ import (
 // MovementTileRenderer renders valid movement tiles
 type MovementTileRenderer struct {
 	fillColor color.Color
-	viewport  framework.CachedViewport
+	viewport  CachedViewport
 }
 
 // NewMovementTileRenderer creates a renderer for movement tiles
@@ -33,22 +32,22 @@ func (mtr *MovementTileRenderer) Render(screen *ebiten.Image, centerPos coords.L
 
 // HealthBarRenderer renders health bars above squads
 type HealthBarRenderer struct {
-	queries        *framework.GUIQueries
+	dataProvider   SquadInfoProvider
 	bgColor        color.Color
 	fillColor      color.Color
 	barHeight      int
 	barWidthRatio  float64 // Ratio of tile width for bar width
 	yOffset        int     // Offset above the tile (negative = above)
-	viewport       framework.CachedViewport
+	viewport       CachedViewport
 	bgImage        *ebiten.Image // Cached background bar image
 	fillImage      *ebiten.Image // Cached fill bar image
 	cachedBarWidth int           // Cached bar width for invalidation
 }
 
 // NewHealthBarRenderer creates a renderer for squad health bars
-func NewHealthBarRenderer(queries *framework.GUIQueries) *HealthBarRenderer {
+func NewHealthBarRenderer(dataProvider SquadInfoProvider) *HealthBarRenderer {
 	return &HealthBarRenderer{
-		queries:       queries,
+		dataProvider:  dataProvider,
 		bgColor:       color.RGBA{R: 40, G: 40, B: 40, A: 200},  // Dark gray background
 		fillColor:     color.RGBA{R: 220, G: 40, B: 40, A: 255}, // Red health fill
 		barHeight:     5,
@@ -74,26 +73,26 @@ func (hbr *HealthBarRenderer) Render(screen *ebiten.Image, centerPos coords.Logi
 	}
 
 	// Get all squads
-	allSquads := hbr.queries.SquadCache.FindAllSquads()
+	allSquads := hbr.dataProvider.GetAllSquadIDs()
 
 	for _, squadID := range allSquads {
-		squadInfo := hbr.queries.GetSquadInfo(squadID)
-		if squadInfo == nil || squadInfo.IsDestroyed || squadInfo.Position == nil {
+		info := hbr.dataProvider.GetSquadRenderInfo(squadID)
+		if info == nil || info.IsDestroyed || info.Position == nil {
 			continue
 		}
 
 		// Calculate health ratio
 		healthRatio := 0.0
-		if squadInfo.MaxHP > 0 {
-			healthRatio = float64(squadInfo.CurrentHP) / float64(squadInfo.MaxHP)
+		if info.MaxHP > 0 {
+			healthRatio = float64(info.CurrentHP) / float64(info.MaxHP)
 		}
 
-		hbr.drawHealthBar(screen, vr, *squadInfo.Position, healthRatio, barWidth, tileSize)
+		hbr.drawHealthBar(screen, vr, *info.Position, healthRatio, barWidth, tileSize)
 	}
 }
 
 // drawHealthBar draws a single health bar at the given position
-func (hbr *HealthBarRenderer) drawHealthBar(screen *ebiten.Image, vr *framework.ViewportRenderer, pos coords.LogicalPosition, healthRatio float64, barWidth, tileSize int) {
+func (hbr *HealthBarRenderer) drawHealthBar(screen *ebiten.Image, vr *ViewportRenderer, pos coords.LogicalPosition, healthRatio float64, barWidth, tileSize int) {
 	screenX, screenY := vr.LogicalToScreen(pos)
 
 	// Center the bar horizontally above the tile

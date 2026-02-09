@@ -5,6 +5,7 @@ import (
 	"game_main/gui/framework"
 	"game_main/mind/behavior"
 	"game_main/tactical/combatservices"
+	"game_main/visual/rendering"
 	"game_main/world/coords"
 	"game_main/world/worldmap"
 
@@ -16,9 +17,9 @@ import (
 // threat visualization (both danger and layer modes) and threat evaluation.
 type CombatVisualizationManager struct {
 	// Rendering systems
-	movementRenderer  *MovementTileRenderer
-	highlightRenderer *framework.SquadHighlightRenderer
-	healthBarRenderer *HealthBarRenderer
+	movementRenderer  *rendering.MovementTileRenderer
+	highlightRenderer *rendering.SquadHighlightRenderer
+	healthBarRenderer *rendering.HealthBarRenderer
 	threatVisualizer  *behavior.ThreatVisualizer
 
 	// Threat management
@@ -38,9 +39,9 @@ func NewCombatVisualizationManager(
 	gameMap *worldmap.GameMap,
 ) *CombatVisualizationManager {
 	cvm := &CombatVisualizationManager{
-		movementRenderer:  NewMovementTileRenderer(),
-		highlightRenderer: framework.NewSquadHighlightRenderer(queries),
-		healthBarRenderer: NewHealthBarRenderer(queries),
+		movementRenderer:  rendering.NewMovementTileRenderer(),
+		highlightRenderer: rendering.NewSquadHighlightRenderer(queries),
+		healthBarRenderer: rendering.NewHealthBarRenderer(queries),
 		ecsManager:        ctx.ECSManager,
 		gameMap:           gameMap,
 		queries:           queries,
