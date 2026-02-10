@@ -8,6 +8,18 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
+// factionColorPalette is the palette of distinct colors for faction highlights.
+var factionColorPalette = []color.Color{
+	color.RGBA{R: 0, G: 150, B: 255, A: 150},   // Blue
+	color.RGBA{R: 255, G: 0, B: 0, A: 150},     // Red
+	color.RGBA{R: 0, G: 200, B: 0, A: 150},     // Green
+	color.RGBA{R: 255, G: 215, B: 0, A: 150},   // Gold/Yellow
+	color.RGBA{R: 200, G: 0, B: 200, A: 150},   // Purple/Magenta
+	color.RGBA{R: 255, G: 140, B: 0, A: 150},   // Orange
+	color.RGBA{R: 0, G: 255, B: 255, A: 150},   // Cyan
+	color.RGBA{R: 255, G: 105, B: 180, A: 150}, // Pink
+}
+
 // SquadHighlightRenderer renders squad position highlights
 type SquadHighlightRenderer struct {
 	dataProvider    SquadInfoProvider
@@ -36,21 +48,9 @@ func (shr *SquadHighlightRenderer) GetFactionColor(factionID ecs.EntityID) color
 		return c
 	}
 
-	// Palette of distinct colors for factions
-	colorPalette := []color.Color{
-		color.RGBA{R: 0, G: 150, B: 255, A: 150},   // Blue
-		color.RGBA{R: 255, G: 0, B: 0, A: 150},     // Red
-		color.RGBA{R: 0, G: 200, B: 0, A: 150},     // Green
-		color.RGBA{R: 255, G: 215, B: 0, A: 150},   // Gold/Yellow
-		color.RGBA{R: 200, G: 0, B: 200, A: 150},   // Purple/Magenta
-		color.RGBA{R: 255, G: 140, B: 0, A: 150},   // Orange
-		color.RGBA{R: 0, G: 255, B: 255, A: 150},   // Cyan
-		color.RGBA{R: 255, G: 105, B: 180, A: 150}, // Pink
-	}
-
 	// Assign color based on number of factions already assigned
-	colorIndex := len(shr.factionColors) % len(colorPalette)
-	assignedColor := colorPalette[colorIndex]
+	colorIndex := len(shr.factionColors) % len(factionColorPalette)
+	assignedColor := factionColorPalette[colorIndex]
 	shr.factionColors[factionID] = assignedColor
 
 	return assignedColor

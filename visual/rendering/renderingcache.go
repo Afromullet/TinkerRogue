@@ -14,7 +14,7 @@ type RenderingCache struct {
 	RenderablesView *ecs.View // All RenderablesTag entities
 
 	// Sprite Batching (for performance optimization)
-	spriteBatches map[*ebiten.Image]*SpriteBatch // Batches grouped by image
+	spriteBatches map[*ebiten.Image]*QuadBatch // Batches grouped by image
 }
 
 // NewRenderingCache creates a cache with new ECS Views
@@ -26,15 +26,15 @@ func NewRenderingCache(manager *common.EntityManager) *RenderingCache {
 		RenderablesView: manager.World.CreateView(RenderablesTag),
 
 		// Pre-allocate sprite batch map (typical games have 5-20 unique sprite images)
-		spriteBatches: make(map[*ebiten.Image]*SpriteBatch, 20),
+		spriteBatches: make(map[*ebiten.Image]*QuadBatch, 20),
 	}
 }
 
 // GetOrCreateSpriteBatch returns the batch for an image, creating one if needed
-func (rc *RenderingCache) GetOrCreateSpriteBatch(image *ebiten.Image) *SpriteBatch {
+func (rc *RenderingCache) GetOrCreateSpriteBatch(image *ebiten.Image) *QuadBatch {
 	batch, exists := rc.spriteBatches[image]
 	if !exists {
-		batch = NewSpriteBatch(image)
+		batch = NewQuadBatch(image, SpriteVerticesBatchSize, SpriteIndicesBatchSize)
 		rc.spriteBatches[image] = batch
 	}
 	return batch

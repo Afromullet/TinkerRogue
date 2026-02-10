@@ -39,7 +39,7 @@ _____________________
 Open the pprof URL in a browser:
 bash
 Copy code
-http://localhost:6060/debug/pprof/profile?seconds=30
+http://localhost:6060/debug/pprof/profile?seconds=60
 This command collects a CPU profile for 30 seconds. Once the profile is captured, a file named profile.pb.gz will be downloaded.
 
 

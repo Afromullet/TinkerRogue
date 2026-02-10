@@ -35,19 +35,8 @@ func (r *SquadCombatRenderer) RenderSquad(
 	unitIDs := r.unitProvider.GetUnitIDsInSquad(squadID)
 
 	for _, unitID := range unitIDs {
-		r.RenderUnit(screen, unitID, baseX, baseY, cellSize, facingLeft)
+		r.RenderUnitWithColor(screen, unitID, baseX, baseY, cellSize, facingLeft, nil)
 	}
-}
-
-// RenderUnit draws a single unit at its grid position
-func (r *SquadCombatRenderer) RenderUnit(
-	screen *ebiten.Image,
-	unitID ecs.EntityID,
-	baseX, baseY int,
-	cellSize int,
-	facingLeft bool,
-) {
-	r.RenderUnitWithColor(screen, unitID, baseX, baseY, cellSize, facingLeft, nil)
 }
 
 // RenderSquadWithHighlight draws a squad with an optional highlight color overlay
@@ -72,11 +61,11 @@ func (r *SquadCombatRenderer) RenderSquadWithHighlight(
 			}
 		}
 
-		if shouldHighlight && highlightColor != nil {
-			r.RenderUnitWithColor(screen, unitID, baseX, baseY, cellSize, facingLeft, highlightColor)
-		} else {
-			r.RenderUnit(screen, unitID, baseX, baseY, cellSize, facingLeft)
+		var unitColor *ebiten.ColorScale
+		if shouldHighlight {
+			unitColor = highlightColor
 		}
+		r.RenderUnitWithColor(screen, unitID, baseX, baseY, cellSize, facingLeft, unitColor)
 	}
 }
 

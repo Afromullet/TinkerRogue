@@ -52,13 +52,19 @@ type Renderable struct {
 	Visible bool
 }
 
-// Draw everything with a renderable component that's visible
-// Uses sprite batching to reduce draw calls from hundreds to a few per frame
-func ProcessRenderables(ecsmanager *common.EntityManager, gameMap worldmap.GameMap, screen *ebiten.Image, debugMode bool, cache *RenderingCache) {
-	// Clear sprite batches from previous frame
+// viewportParams holds viewport filtering/scaling parameters.
+// nil means full-map mode (no filtering, no scaling).
+type viewportParams struct {
+	centerPos *coords.LogicalPosition
+	section   coords.DrawableSection
+}
+
+// processRenderablesCore collects visible sprites into batches.
+// When vp is nil, renders all entities at pixel positions with no scaling.
+// When vp is non-nil, filters to viewport bounds and applies coordinate transform + scaling.
+func processRenderablesCore(cache *RenderingCache, gameMap worldmap.GameMap, screen *ebiten.Image, vp *viewportParams) {
 	cache.ClearSpriteBatches()
 
-	// Collect all sprites into batches (grouped by image)
 	for _, result := range cache.RenderablesView.Get() {
 		pos := common.GetComponentType[*coords.LogicalPosition](result.Entity, common.PositionComponent)
 		renderable := common.GetComponentType[*Renderable](result.Entity, RenderableComponent)
@@ -68,77 +74,55 @@ func ProcessRenderables(ecsmanager *common.EntityManager, gameMap worldmap.GameM
 			continue
 		}
 
-		logicalPos := coords.LogicalPosition{X: pos.X, Y: pos.Y}
-		index := coords.CoordManager.LogicalToIndex(logicalPos)
-		tile := gameMap.Tiles[index]
-
-		// Get sprite dimensions
 		bounds := img.Bounds()
 		srcX := float32(bounds.Min.X)
 		srcY := float32(bounds.Min.Y)
 		srcW := float32(bounds.Dx())
 		srcH := float32(bounds.Dy())
 
-		// Destination position and size (no scaling in this mode)
-		dstX := float32(tile.PixelX)
-		dstY := float32(tile.PixelY)
-		dstW := srcW
-		dstH := srcH
+		var dstX, dstY, dstW, dstH float32
 
-		// Add sprite to batch (grouped by image)
+		if vp != nil {
+			// Viewport mode: bounds check + scaled position
+			if pos.X < vp.section.StartX || pos.X > vp.section.EndX ||
+				pos.Y < vp.section.StartY || pos.Y > vp.section.EndY {
+				continue
+			}
+			logicalPos := coords.LogicalPosition{X: pos.X, Y: pos.Y}
+			screenX, screenY := coords.CoordManager.LogicalToScreen(logicalPos, vp.centerPos)
+			scale := float32(graphics.ScreenInfo.ScaleFactor)
+			dstX = float32(screenX)
+			dstY = float32(screenY)
+			dstW = srcW * scale
+			dstH = srcH * scale
+		} else {
+			// Full map mode: direct pixel position, no scaling
+			logicalPos := coords.LogicalPosition{X: pos.X, Y: pos.Y}
+			index := coords.CoordManager.LogicalToIndex(logicalPos)
+			tile := gameMap.Tiles[index]
+			dstX = float32(tile.PixelX)
+			dstY = float32(tile.PixelY)
+			dstW = srcW
+			dstH = srcH
+		}
+
 		batch := cache.GetOrCreateSpriteBatch(img)
-		batch.AddSprite(dstX, dstY, srcX, srcY, srcW, srcH, dstW, dstH, 1.0, 1.0, 1.0, 1.0)
+		batch.Add(dstX, dstY, srcX, srcY, srcW, srcH, dstW, dstH, 1.0, 1.0, 1.0, 1.0)
 	}
 
-	// Draw all batches in a single pass
 	cache.DrawSpriteBatches(screen)
 }
 
-// ProcessRenderablesInSquare renders entities in a square region around playerPos
+// ProcessRenderables draws all visible renderable entities (full map, no viewport).
+func ProcessRenderables(ecsmanager *common.EntityManager, gameMap worldmap.GameMap, screen *ebiten.Image, debugMode bool, cache *RenderingCache) {
+	processRenderablesCore(cache, gameMap, screen, nil)
+}
+
+// ProcessRenderablesInSquare renders entities in a square region around playerPos.
 func ProcessRenderablesInSquare(ecsmanager *common.EntityManager, gameMap worldmap.GameMap, screen *ebiten.Image, playerPos *coords.LogicalPosition, squareSize int, debugMode bool, cache *RenderingCache) {
-	// Clear sprite batches from previous frame
-	cache.ClearSpriteBatches()
-
-	// Calculate the starting and ending coordinates of the square
 	sq := coords.NewDrawableSection(playerPos.X, playerPos.Y, squareSize)
-
-	// Collect all sprites into batches (grouped by image)
-	for _, result := range cache.RenderablesView.Get() {
-		pos := common.GetComponentType[*coords.LogicalPosition](result.Entity, common.PositionComponent)
-		renderable := common.GetComponentType[*Renderable](result.Entity, RenderableComponent)
-		img := renderable.Image
-
-		if !renderable.Visible || img == nil {
-			continue
-		}
-
-		// Check if the entity's position is within the square bounds
-		if pos.X >= sq.StartX && pos.X <= sq.EndX && pos.Y >= sq.StartY && pos.Y <= sq.EndY {
-			logicalPos := coords.LogicalPosition{X: pos.X, Y: pos.Y}
-
-			// Use unified coordinate transformation - handles scrolling mode and viewport centering automatically
-			screenX, screenY := coords.CoordManager.LogicalToScreen(logicalPos, playerPos)
-
-			// Get sprite dimensions
-			bounds := img.Bounds()
-			srcX := float32(bounds.Min.X)
-			srcY := float32(bounds.Min.Y)
-			srcW := float32(bounds.Dx())
-			srcH := float32(bounds.Dy())
-
-			// Apply scaling to destination size
-			scale := float32(graphics.ScreenInfo.ScaleFactor)
-			dstX := float32(screenX)
-			dstY := float32(screenY)
-			dstW := srcW * scale
-			dstH := srcH * scale
-
-			// Add sprite to batch (grouped by image)
-			batch := cache.GetOrCreateSpriteBatch(img)
-			batch.AddSprite(dstX, dstY, srcX, srcY, srcW, srcH, dstW, dstH, 1.0, 1.0, 1.0, 1.0)
-		}
-	}
-
-	// Draw all batches in a single pass
-	cache.DrawSpriteBatches(screen)
+	processRenderablesCore(cache, gameMap, screen, &viewportParams{
+		centerPos: playerPos,
+		section:   sq,
+	})
 }

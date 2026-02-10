@@ -490,15 +490,9 @@ func (cam *CombatAnimationMode) renderSquadWithUnitColors(
 			colorScale = cam.getDefenderHighlightColor(unitID)
 		}
 
-		if colorScale != nil {
-			cam.squadRenderer.RenderUnitWithColor(
-				screen, unitID, baseX, baseY, cellSize, facingLeft, colorScale,
-			)
-		} else {
-			cam.squadRenderer.RenderUnit(
-				screen, unitID, baseX, baseY, cellSize, facingLeft,
-			)
-		}
+		cam.squadRenderer.RenderUnitWithColor(
+			screen, unitID, baseX, baseY, cellSize, facingLeft, colorScale,
+		)
 	}
 }
 

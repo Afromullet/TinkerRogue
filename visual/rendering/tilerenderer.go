@@ -10,10 +10,8 @@ import (
 
 // TileRenderer handles rendering of map tiles with batching for performance
 type TileRenderer struct {
-	tiles      []*worldmap.Tile
-	colorScale ebiten.ColorScale
-	drawOpts   ebiten.DrawImageOptions      // Reusable draw options (eliminates 2,000 allocations/frame)
-	batches    map[*ebiten.Image]*TileBatch // Batches tiles by image for efficient rendering
+	tiles   []*worldmap.Tile
+	batches map[*ebiten.Image]*QuadBatch // Batches tiles by image for efficient rendering
 
 	// Cache state to avoid rebuilding batches every frame
 	lastCenterX      int
@@ -26,7 +24,7 @@ type TileRenderer struct {
 func NewTileRenderer(tiles []*worldmap.Tile) *TileRenderer {
 	return &TileRenderer{
 		tiles:   tiles,
-		batches: make(map[*ebiten.Image]*TileBatch, TileBatchDefaultNumImages), // Pre-allocate for ~20 unique images
+		batches: make(map[*ebiten.Image]*QuadBatch, TileBatchDefaultNumImages), // Pre-allocate for ~20 unique images
 	}
 }
 
@@ -108,7 +106,7 @@ func (r *TileRenderer) addTileToBatch(x, y int, opts RenderOptions, bounds *Rend
 
 	// Get or create batch for this tile's image
 	if r.batches[tile.Image] == nil {
-		r.batches[tile.Image] = NewTileBatch(tile.Image)
+		r.batches[tile.Image] = NewQuadBatch(tile.Image, TileVerticeBatchSize, TileIndicesBatchSize)
 	}
 	batch := r.batches[tile.Image]
 
@@ -147,7 +145,7 @@ func (r *TileRenderer) addTileToBatch(x, y int, opts RenderOptions, bounds *Rend
 	srcH := float32(tileBounds.Dy())
 
 	// Add tile to batch with both source dimensions (texture) and destination dimensions (scaled for rendering)
-	batch.AddTile(screenX, screenY, srcX, srcY, srcW, srcH, tileW, tileH, colorR, colorG, colorB, colorA)
+	batch.Add(screenX, screenY, srcX, srcY, srcW, srcH, tileW, tileH, colorR, colorG, colorB, colorA)
 }
 
 // calculateViewportPosition computes screen position for viewport-centered rendering
@@ -178,20 +176,6 @@ func (r *TileRenderer) calculateViewportPosition(tile *worldmap.Tile, center *co
 	}
 
 	return float32(screenX), float32(screenY)
-}
-
-// applyColorMatrix applies tile-specific color effects
-func (r *TileRenderer) applyColorMatrix(opts *ebiten.DrawImageOptions, tile *worldmap.Tile) {
-	cm := tile.GetColorMatrix()
-	if cm.IsEmpty() {
-		return
-	}
-
-	r.colorScale.SetR(cm.R)
-	r.colorScale.SetG(cm.G)
-	r.colorScale.SetB(cm.B)
-	r.colorScale.SetA(cm.A)
-	opts.ColorScale.ScaleWithColorScale(r.colorScale)
 }
 
 // calculateBounds determines rendering area
