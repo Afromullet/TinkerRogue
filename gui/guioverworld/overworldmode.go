@@ -336,7 +336,7 @@ func (om *OverworldMode) handleEngageThreat() {
 	}
 
 	// Validate threat data
-	threatData := common.GetComponentType[*core.ThreatNodeData](threatEntity, core.ThreatNodeComponent)
+	threatData := common.GetComponentType[*core.OverworldNodeData](threatEntity, core.OverworldNodeComponent)
 	if threatData == nil {
 		om.logEvent("ERROR: Invalid threat entity")
 		return
@@ -368,8 +368,12 @@ func (om *OverworldMode) handleEngageThreat() {
 		return
 	}
 
-	threatName := threatData.ThreatType.String()
-	om.logEvent(fmt.Sprintf("Traveling to %s (Press C to cancel)...", threatName))
+	travelNodeDef := core.GetNodeRegistry().GetNodeByID(threatData.NodeTypeID)
+	travelDisplayName := threatData.NodeTypeID
+	if travelNodeDef != nil {
+		travelDisplayName = travelNodeDef.DisplayName
+	}
+	om.logEvent(fmt.Sprintf("Traveling to %s (Press C to cancel)...", travelDisplayName))
 	om.state.ClearSelection()
 }
 
@@ -405,8 +409,8 @@ func (om *OverworldMode) startCombatAfterTravel() {
 		return
 	}
 
-	threatData := common.GetComponentType[*core.ThreatNodeData](
-		threatEntity, core.ThreatNodeComponent)
+	threatData := common.GetComponentType[*core.OverworldNodeData](
+		threatEntity, core.OverworldNodeComponent)
 	posData := common.GetComponentType[*coords.LogicalPosition](
 		threatEntity, common.PositionComponent)
 
@@ -415,8 +419,13 @@ func (om *OverworldMode) startCombatAfterTravel() {
 		return
 	}
 
+	nodeDef := core.GetNodeRegistry().GetNodeByID(threatData.NodeTypeID)
+	displayName := threatData.NodeTypeID
+	if nodeDef != nil {
+		displayName = nodeDef.DisplayName
+	}
 	threatName := fmt.Sprintf("%s (Level %d)",
-		threatData.ThreatType.String(), threatData.Intensity)
+		displayName, threatData.Intensity)
 
 	playerEntityID := ecs.EntityID(0)
 	if om.Context.PlayerData != nil {

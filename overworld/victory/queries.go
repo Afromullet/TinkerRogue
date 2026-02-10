@@ -26,14 +26,15 @@ func CheckPlayerDefeat(manager *common.EntityManager) (bool, string) {
 	return false, ""
 }
 
-// GetTotalThreatInfluence calculates combined threat pressure as sum of intensities
+// GetTotalThreatInfluence calculates combined threat pressure as sum of intensities.
+// Uses unified OverworldNodeComponent, filters by threat category.
 func GetTotalThreatInfluence(manager *common.EntityManager) float64 {
 	total := 0.0
 
-	for _, result := range manager.World.Query(core.ThreatNodeTag) {
-		threatData := common.GetComponentType[*core.ThreatNodeData](result.Entity, core.ThreatNodeComponent)
-		if threatData != nil {
-			total += float64(threatData.Intensity)
+	for _, result := range manager.World.Query(core.OverworldNodeTag) {
+		nodeData := common.GetComponentType[*core.OverworldNodeData](result.Entity, core.OverworldNodeComponent)
+		if nodeData != nil && nodeData.Category == core.NodeCategoryThreat {
+			total += float64(nodeData.Intensity)
 		}
 	}
 

@@ -387,15 +387,15 @@ func (es *EncounterService) resolveCombatToOverworld(
 		return
 	}
 
-	threatData := common.GetComponentType[*core.ThreatNodeData](threatEntity, core.ThreatNodeComponent)
-	if threatData == nil {
-		fmt.Printf("WARNING: Entity %d is not a threat node\n", threatNodeID)
+	nodeData := common.GetComponentType[*core.OverworldNodeData](threatEntity, core.OverworldNodeComponent)
+	if nodeData == nil {
+		fmt.Printf("WARNING: Entity %d is not an overworld node\n", threatNodeID)
 		return
 	}
 
-	// Get the specific encounter that was assigned to this threat node
-	selectedEncounter := core.GetNodeRegistry().GetEncounterByID(threatData.EncounterID)
-	rewards := calculateRewards(threatData.Intensity, selectedEncounter)
+	// Get the specific encounter that was assigned to this node
+	selectedEncounter := core.GetNodeRegistry().GetEncounterByID(nodeData.EncounterID)
+	rewards := calculateRewards(nodeData.Intensity, selectedEncounter)
 
 	// Create combat outcome
 	outcome := createCombatOutcome(

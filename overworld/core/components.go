@@ -8,7 +8,6 @@ import (
 
 // Component and tag variables - shared across all overworld subsystems
 var (
-	ThreatNodeComponent       *ecs.Component
 	OverworldFactionComponent *ecs.Component
 	TickStateComponent        *ecs.Component
 	InfluenceComponent        *ecs.Component
@@ -16,16 +15,15 @@ var (
 	StrategicIntentComponent  *ecs.Component
 	VictoryStateComponent     *ecs.Component
 	TravelStateComponent      *ecs.Component
-	PlayerNodeComponent       *ecs.Component
 	InteractionComponent      *ecs.Component
+	OverworldNodeComponent    *ecs.Component
 
-	ThreatNodeTag       ecs.Tag
 	OverworldFactionTag ecs.Tag
 	TickStateTag        ecs.Tag
 	VictoryStateTag     ecs.Tag
 	TravelStateTag      ecs.Tag
-	PlayerNodeTag       ecs.Tag
 	InteractionTag      ecs.Tag
+	OverworldNodeTag    ecs.Tag
 )
 
 // OverworldEncounterComponent and tag for encounter entities
@@ -33,18 +31,6 @@ var (
 	OverworldEncounterTag       ecs.Tag
 	OverworldEncounterComponent *ecs.Component
 )
-
-// ThreatNodeData - Pure data component for threat nodes
-type ThreatNodeData struct {
-	ThreatID       ecs.EntityID // Entity ID of this threat node
-	ThreatType     ThreatType   // Enum: Necromancer, Bandit, Corruption, etc.
-	EncounterID    string       // Specific encounter variant (e.g., "necromancer_elite")
-	Intensity      int          // Current power level (0-10)
-	GrowthProgress float64      // 0.0-1.0 progress to next intensity level
-	GrowthRate     float64      // Growth per tick (e.g., 0.05)
-	IsContained    bool         // Player nearby, slows growth
-	SpawnedTick    int64        // Tick when threat was created
-}
 
 // OverworldFactionData - Renamed to avoid conflict with combat.FactionComponent
 // Represents persistent strategic factions on the overworld
@@ -104,13 +90,6 @@ type OverworldEncounterData struct {
 	ThreatNodeID  ecs.EntityID // Link to overworld threat node (0 if not from threat)
 }
 
-// PlayerNodeData - Pure data component for player-placed nodes (settlements, fortresses)
-type PlayerNodeData struct {
-	NodeID     ecs.EntityID // Entity ID of this player node
-	NodeTypeID NodeTypeID   // References nodeDefinitions.json ID (e.g., "town", "watchtower")
-	PlacedTick int64        // Tick when placed
-}
-
 // InteractionType classifies how two overlapping influence nodes interact
 type InteractionType int
 
@@ -133,4 +112,19 @@ type NodeInteraction struct {
 type InteractionData struct {
 	Interactions []NodeInteraction // All active interactions
 	NetModifier  float64           // Combined modifier (1.0 = no effect)
+}
+
+// OverworldNodeData - Unified data component for all overworld nodes (threats, settlements, POIs).
+// Replaces both ThreatNodeData and PlayerNodeData with explicit faction ownership.
+type OverworldNodeData struct {
+	NodeID         ecs.EntityID // Entity ID of this node
+	NodeTypeID     string       // "necromancer", "town", "watchtower", etc.
+	Category       NodeCategory // Cached: "threat", "settlement", "fortress"
+	OwnerID        string       // "player", "Neutral", "Necromancers", etc.
+	EncounterID    string       // Empty for non-combat nodes
+	Intensity      int          // 0 for settlements
+	GrowthProgress float64      // 0.0 for non-growing nodes
+	GrowthRate     float64      // 0.0 for settlements
+	IsContained    bool
+	CreatedTick    int64
 }

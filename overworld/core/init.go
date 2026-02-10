@@ -18,7 +18,6 @@ func init() {
 
 // InitOverworldComponents registers all overworld-related components with the ECS manager.
 func InitOverworldComponents(manager *common.EntityManager) {
-	ThreatNodeComponent = manager.World.NewComponent()
 	OverworldFactionComponent = manager.World.NewComponent()
 	TickStateComponent = manager.World.NewComponent()
 	InfluenceComponent = manager.World.NewComponent()
@@ -27,28 +26,26 @@ func InitOverworldComponents(manager *common.EntityManager) {
 	VictoryStateComponent = manager.World.NewComponent()
 	TravelStateComponent = manager.World.NewComponent()
 	OverworldEncounterComponent = manager.World.NewComponent()
-	PlayerNodeComponent = manager.World.NewComponent()
 	InteractionComponent = manager.World.NewComponent()
+	OverworldNodeComponent = manager.World.NewComponent()
 }
 
 // InitOverworldTags creates tags for querying overworld-related entities.
 func InitOverworldTags(manager *common.EntityManager) {
-	ThreatNodeTag = ecs.BuildTag(ThreatNodeComponent)
 	OverworldFactionTag = ecs.BuildTag(OverworldFactionComponent)
 	TickStateTag = ecs.BuildTag(TickStateComponent)
 	VictoryStateTag = ecs.BuildTag(VictoryStateComponent)
 	TravelStateTag = ecs.BuildTag(TravelStateComponent)
 	OverworldEncounterTag = ecs.BuildTag(OverworldEncounterComponent)
-	PlayerNodeTag = ecs.BuildTag(PlayerNodeComponent)
 	InteractionTag = ecs.BuildTag(InteractionComponent)
+	OverworldNodeTag = ecs.BuildTag(OverworldNodeComponent)
 
 	// Register tags in WorldTags for easier lookup
-	manager.WorldTags["threatnode"] = ThreatNodeTag
 	manager.WorldTags["overworldfaction"] = OverworldFactionTag
 	manager.WorldTags["tickstate"] = TickStateTag
 	manager.WorldTags["victorystate"] = VictoryStateTag
 	manager.WorldTags["travelstate"] = TravelStateTag
 	manager.WorldTags["overworldencounter"] = OverworldEncounterTag
-	manager.WorldTags["playernode"] = PlayerNodeTag
 	manager.WorldTags["interaction"] = InteractionTag
+	manager.WorldTags["overworldnode"] = OverworldNodeTag
 }

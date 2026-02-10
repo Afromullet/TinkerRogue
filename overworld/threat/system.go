@@ -47,23 +47,32 @@ func CreateThreatNode(
 	// Randomly select an encounter variant for this specific node
 	encounterID := selectRandomEncounterForNode(threatType)
 
-	// Add threat node data (use config)
+	// Get config for this threat type
 	params := core.GetThreatTypeParamsFromConfig(threatType)
-	entity.AddComponent(core.ThreatNodeComponent, &core.ThreatNodeData{
-		ThreatID:       entity.GetID(),
-		ThreatType:     threatType,
-		EncounterID:    encounterID,
-		Intensity:      initialIntensity,
-		GrowthProgress: 0.0,
-		GrowthRate:     params.BaseGrowthRate,
-		IsContained:    false,
-		SpawnedTick:    currentTick,
-	})
 
 	// Add influence component
 	entity.AddComponent(core.InfluenceComponent, &core.InfluenceData{
 		Radius:        params.BaseRadius + initialIntensity,
 		BaseMagnitude: core.CalculateBaseMagnitude(initialIntensity),
+	})
+
+	// Add unified OverworldNodeComponent
+	nodeDef := core.GetNodeRegistry().GetNodeByType(threatType)
+	ownerID := ""
+	if nodeDef != nil {
+		ownerID = nodeDef.FactionID
+	}
+	entity.AddComponent(core.OverworldNodeComponent, &core.OverworldNodeData{
+		NodeID:         entity.GetID(),
+		NodeTypeID:     string(threatType),
+		Category:       core.NodeCategoryThreat,
+		OwnerID:        ownerID,
+		EncounterID:    encounterID,
+		Intensity:      initialIntensity,
+		GrowthProgress: 0.0,
+		GrowthRate:     params.BaseGrowthRate,
+		IsContained:    false,
+		CreatedTick:    currentTick,
 	})
 
 	// Register in position system
@@ -77,19 +86,20 @@ func CreateThreatNode(
 	return entity.GetID()
 }
 
-// UpdateThreatNodes evolves all threat nodes by one tick
+// UpdateThreatNodes evolves all threat nodes by one tick.
+// Uses unified OverworldNodeComponent, filters by threat category.
 func UpdateThreatNodes(manager *common.EntityManager, currentTick int64) error {
-	for _, result := range manager.World.Query(core.ThreatNodeTag) {
+	for _, result := range manager.World.Query(core.OverworldNodeTag) {
 		entity := result.Entity
-		threatData := common.GetComponentType[*core.ThreatNodeData](entity, core.ThreatNodeComponent)
+		nodeData := common.GetComponentType[*core.OverworldNodeData](entity, core.OverworldNodeComponent)
 
-		if threatData == nil {
+		if nodeData == nil || nodeData.Category != core.NodeCategoryThreat {
 			continue
 		}
 
 		// Apply growth
-		growthAmount := threatData.GrowthRate
-		if threatData.IsContained {
+		growthAmount := nodeData.GrowthRate
+		if nodeData.IsContained {
 			growthAmount *= core.GetContainmentSlowdown() // Player presence slows growth
 		}
 
@@ -101,59 +111,58 @@ func UpdateThreatNodes(manager *common.EntityManager, currentTick int64) error {
 			}
 		}
 
-		threatData.GrowthProgress += growthAmount
+		nodeData.GrowthProgress += growthAmount
 
 		// Check for evolution
-		if threatData.GrowthProgress >= 1.0 {
-			EvolveThreatNode(manager, entity, threatData)
-			threatData.GrowthProgress = 0.0
+		if nodeData.GrowthProgress >= 1.0 {
+			EvolveThreatNode(manager, entity, nodeData)
+			nodeData.GrowthProgress = 0.0
 		}
 	}
 	return nil
 }
 
-// EvolveThreatNode increases threat intensity
-func EvolveThreatNode(manager *common.EntityManager, entity *ecs.Entity, threatData *core.ThreatNodeData) {
-	params := core.GetThreatTypeParamsFromConfig(threatData.ThreatType)
+// EvolveThreatNode increases threat intensity.
+// Uses unified OverworldNodeData.
+func EvolveThreatNode(manager *common.EntityManager, entity *ecs.Entity, nodeData *core.OverworldNodeData) {
+	params := core.GetThreatTypeParamsFromConfig(core.ThreatType(nodeData.NodeTypeID))
 
 	// Increase intensity (cap at global max)
-	if threatData.Intensity < core.GetMaxThreatIntensity() {
-		oldIntensity := threatData.Intensity
-		threatData.Intensity++
+	if nodeData.Intensity < core.GetMaxThreatIntensity() {
+		oldIntensity := nodeData.Intensity
+		nodeData.Intensity++
 
 		// Update influence radius
 		influenceData := common.GetComponentType[*core.InfluenceData](entity, core.InfluenceComponent)
 		if influenceData != nil {
-			influenceData.Radius = params.BaseRadius + threatData.Intensity
-			influenceData.BaseMagnitude = core.CalculateBaseMagnitude(threatData.Intensity)
+			influenceData.Radius = params.BaseRadius + nodeData.Intensity
+			influenceData.BaseMagnitude = core.CalculateBaseMagnitude(nodeData.Intensity)
 		}
 
 		// Log evolution event
 		core.LogEvent(core.EventThreatEvolved, core.GetCurrentTick(manager), entity.GetID(),
-			core.FormatEventString("Threat evolved %d -> %d", oldIntensity, threatData.Intensity), nil)
+			core.FormatEventString("Threat evolved %d -> %d", oldIntensity, nodeData.Intensity), nil)
 
 		// Trigger evolution effect (spawn child nodes, etc.)
-		ExecuteThreatEvolutionEffect(manager, entity, threatData)
+		ExecuteThreatEvolutionEffect(manager, entity, nodeData)
 	}
 }
 
 // ExecuteThreatEvolutionEffect applies type-specific evolution behavior
-// TODO, need to expand on this
-func ExecuteThreatEvolutionEffect(manager *common.EntityManager, entity *ecs.Entity, threatData *core.ThreatNodeData) {
-	params := core.GetThreatTypeParamsFromConfig(threatData.ThreatType)
+func ExecuteThreatEvolutionEffect(manager *common.EntityManager, entity *ecs.Entity, nodeData *core.OverworldNodeData) {
+	params := core.GetThreatTypeParamsFromConfig(core.ThreatType(nodeData.NodeTypeID))
 
 	if !params.CanSpawnChildren {
 		return
 	}
 
-	switch threatData.ThreatType {
+	switch nodeData.NodeTypeID {
 	case "necromancer":
 		// Spawn child node at tier 3 (with max intensity 5, only spawns once)
-		if threatData.Intensity%core.GetChildNodeSpawnThreshold() == 0 {
+		if nodeData.Intensity%core.GetChildNodeSpawnThreshold() == 0 {
 			pos := common.GetComponentType[*coords.LogicalPosition](entity, common.PositionComponent)
 			if pos != nil {
 				if !SpawnChildThreatNode(manager, *pos, "necromancer", 1) {
-					// Log warning if spawn failed (no valid positions available)
 					core.LogEvent(core.EventThreatEvolved, core.GetCurrentTick(manager), entity.GetID(),
 						core.FormatEventString("Failed to spawn child node (no valid positions)"), nil)
 				}
@@ -161,7 +170,7 @@ func ExecuteThreatEvolutionEffect(manager *common.EntityManager, entity *ecs.Ent
 		}
 	case "corruption":
 		// Spread to adjacent tiles
-		SpreadCorruption(manager, entity, threatData)
+		SpreadCorruption(manager, entity)
 	}
 }
 
@@ -189,7 +198,7 @@ func SpawnChildThreatNode(manager *common.EntityManager, parentPos coords.Logica
 }
 
 // SpreadCorruption spreads corruption to adjacent tiles
-func SpreadCorruption(manager *common.EntityManager, entity *ecs.Entity, threatData *core.ThreatNodeData) {
+func SpreadCorruption(manager *common.EntityManager, entity *ecs.Entity) {
 	pos := common.GetComponentType[*coords.LogicalPosition](entity, common.PositionComponent)
 	if pos == nil {
 		return
@@ -210,22 +219,27 @@ func SpreadCorruption(manager *common.EntityManager, entity *ecs.Entity, threatD
 	CreateThreatNode(manager, targetPos, "corruption", 1, core.GetCurrentTick(manager))
 }
 
-// DestroyThreatNode removes a threat from the overworld
+// DestroyThreatNode removes a threat from the overworld.
+// Uses unified OverworldNodeData for logging.
 func DestroyThreatNode(manager *common.EntityManager, threatEntity *ecs.Entity) {
-	// Get threat data for logging before destruction
-	threatData := common.GetComponentType[*core.ThreatNodeData](threatEntity, core.ThreatNodeComponent)
+	nodeData := common.GetComponentType[*core.OverworldNodeData](threatEntity, core.OverworldNodeComponent)
 	pos := common.GetComponentType[*coords.LogicalPosition](threatEntity, common.PositionComponent)
 
 	// Log destruction event
-	if threatData != nil {
+	if nodeData != nil {
 		location := "unknown"
 		if pos != nil {
 			location = core.FormatEventString("(%d, %d)", pos.X, pos.Y)
 		}
 
+		nodeDef := core.GetNodeRegistry().GetNodeByID(nodeData.NodeTypeID)
+		displayName := nodeData.NodeTypeID
+		if nodeDef != nil {
+			displayName = nodeDef.DisplayName
+		}
+
 		core.LogEvent(core.EventThreatDestroyed, core.GetCurrentTick(manager), threatEntity.GetID(),
-			core.FormatEventString("%s destroyed at %s",
-				threatData.ThreatType.String(), location), nil)
+			core.FormatEventString("%s destroyed at %s", displayName, location), nil)
 	}
 
 	// Remove entity

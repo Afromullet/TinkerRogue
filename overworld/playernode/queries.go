@@ -9,18 +9,27 @@ import (
 )
 
 // CountPlayerNodes returns the total number of player-placed nodes.
+// Uses unified OverworldNodeComponent, filters by player owner.
 func CountPlayerNodes(manager *common.EntityManager) int {
 	count := 0
-	for range manager.World.Query(core.PlayerNodeTag) {
-		count++
+	for _, result := range manager.World.Query(core.OverworldNodeTag) {
+		data := common.GetComponentType[*core.OverworldNodeData](result.Entity, core.OverworldNodeComponent)
+		if data != nil && data.OwnerID == core.OwnerPlayer {
+			count++
+		}
 	}
 	return count
 }
 
 // GetAllPlayerNodePositions returns positions of all player nodes.
+// Uses unified OverworldNodeComponent, filters by player owner.
 func GetAllPlayerNodePositions(manager *common.EntityManager) []coords.LogicalPosition {
 	var positions []coords.LogicalPosition
-	for _, result := range manager.World.Query(core.PlayerNodeTag) {
+	for _, result := range manager.World.Query(core.OverworldNodeTag) {
+		data := common.GetComponentType[*core.OverworldNodeData](result.Entity, core.OverworldNodeComponent)
+		if data == nil || data.OwnerID != core.OwnerPlayer {
+			continue
+		}
 		pos := common.GetComponentType[*coords.LogicalPosition](result.Entity, common.PositionComponent)
 		if pos != nil {
 			positions = append(positions, *pos)
@@ -31,9 +40,14 @@ func GetAllPlayerNodePositions(manager *common.EntityManager) []coords.LogicalPo
 
 // GetNearestPlayerNodeDistance returns the distance to the nearest player node from pos.
 // Returns math.MaxFloat64 if no player nodes exist.
+// Uses unified OverworldNodeComponent, filters by player owner.
 func GetNearestPlayerNodeDistance(manager *common.EntityManager, pos coords.LogicalPosition) float64 {
 	nearest := math.MaxFloat64
-	for _, result := range manager.World.Query(core.PlayerNodeTag) {
+	for _, result := range manager.World.Query(core.OverworldNodeTag) {
+		data := common.GetComponentType[*core.OverworldNodeData](result.Entity, core.OverworldNodeComponent)
+		if data == nil || data.OwnerID != core.OwnerPlayer {
+			continue
+		}
 		nodePos := common.GetComponentType[*coords.LogicalPosition](result.Entity, common.PositionComponent)
 		if nodePos == nil {
 			continue

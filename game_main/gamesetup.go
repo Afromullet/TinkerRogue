@@ -21,6 +21,7 @@ import (
 
 	"game_main/overworld/core"
 	"game_main/overworld/faction"
+	"game_main/overworld/node"
 	"game_main/overworld/tick"
 	"game_main/overworld/travel"
 	"game_main/testing"
@@ -118,6 +119,29 @@ func (gb *GameBootstrap) InitializeGameplay(em *common.EntityManager, pd *common
 
 	// Create initial overworld factions (they will spawn threats dynamically)
 	gb.InitializeOverworldFactions(em, pd, gm)
+
+	// Convert POIs from world generation into neutral overworld nodes
+	gb.ConvertPOIsToNodes(em, gm)
+}
+
+// ConvertPOIsToNodes converts POIs from world generation into neutral overworld nodes.
+// This allows POIs to participate in the influence system (mildly suppress nearby threats).
+func (gb *GameBootstrap) ConvertPOIsToNodes(em *common.EntityManager, gm *worldmap.GameMap) {
+	currentTick := core.GetCurrentTick(em)
+	for _, poi := range gm.POIs {
+		nodeID, err := node.CreateNode(em, node.CreateNodeParams{
+			Position:    poi.Position,
+			NodeTypeID:  poi.NodeID,
+			OwnerID:     core.OwnerNeutral,
+			CurrentTick: currentTick,
+		})
+		if err != nil {
+			log.Printf("Failed to convert POI '%s' to node: %v", poi.NodeID, err)
+			continue
+		}
+		log.Printf("Converted POI '%s' at (%d, %d) to neutral node (ID: %d)",
+			poi.NodeID, poi.Position.X, poi.Position.Y, nodeID)
+	}
 }
 
 // InitializeOverworldFactions creates starting NPC factions on the overworld.

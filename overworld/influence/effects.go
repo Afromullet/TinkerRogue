@@ -8,49 +8,33 @@ import (
 )
 
 // ClassifyInteraction determines the interaction type between two nodes.
+// Uses OwnerID from the unified OverworldNodeData for classification.
 func ClassifyInteraction(manager *common.EntityManager, entityA, entityB *ecs.Entity) core.InteractionType {
-	aIsThreat := manager.HasComponent(entityA.GetID(), core.ThreatNodeComponent)
-	bIsThreat := manager.HasComponent(entityB.GetID(), core.ThreatNodeComponent)
-	aIsPlayer := manager.HasComponent(entityA.GetID(), core.PlayerNodeComponent)
-	bIsPlayer := manager.HasComponent(entityB.GetID(), core.PlayerNodeComponent)
+	dataA := common.GetComponentType[*core.OverworldNodeData](entityA, core.OverworldNodeComponent)
+	dataB := common.GetComponentType[*core.OverworldNodeData](entityB, core.OverworldNodeComponent)
 
-	// Both threats
-	if aIsThreat && bIsThreat {
-		if sameFaction(manager, entityA, entityB) {
+	if dataA == nil || dataB == nil {
+		return core.InteractionCompetition
+	}
+
+	aHostile := core.IsHostileOwner(dataA.OwnerID)
+	bHostile := core.IsHostileOwner(dataB.OwnerID)
+
+	// Both hostile (threat factions)
+	if aHostile && bHostile {
+		if dataA.OwnerID == dataB.OwnerID {
 			return core.InteractionSynergy
 		}
 		return core.InteractionCompetition
 	}
 
-	// Both player nodes
-	if aIsPlayer && bIsPlayer {
+	// Both friendly/neutral (player or neutral)
+	if !aHostile && !bHostile {
 		return core.InteractionPlayerBoost
 	}
 
-	// One player, one threat -> suppression
-	if (aIsPlayer && bIsThreat) || (aIsThreat && bIsPlayer) {
-		return core.InteractionSuppression
-	}
-
-	// Fallback (shouldn't happen with valid nodes)
-	return core.InteractionCompetition
-}
-
-// sameFaction checks if two threat nodes belong to the same faction.
-func sameFaction(manager *common.EntityManager, entityA, entityB *ecs.Entity) bool {
-	threatA := common.GetComponentType[*core.ThreatNodeData](entityA, core.ThreatNodeComponent)
-	threatB := common.GetComponentType[*core.ThreatNodeData](entityB, core.ThreatNodeComponent)
-	if threatA == nil || threatB == nil {
-		return false
-	}
-
-	nodeA := core.GetNodeRegistry().GetNodeByType(threatA.ThreatType)
-	nodeB := core.GetNodeRegistry().GetNodeByType(threatB.ThreatType)
-	if nodeA == nil || nodeB == nil {
-		return false
-	}
-
-	return nodeA.FactionID != "" && nodeA.FactionID == nodeB.FactionID
+	// Mixed (one friendly/neutral + one hostile) -> suppression
+	return core.InteractionSuppression
 }
 
 // CalculateInteractionModifier returns the additive modifier for a given interaction.
@@ -84,32 +68,35 @@ func calculateCompetitionPenalty() float64 {
 	return -getCompetitionGrowthPenalty()
 }
 
-// calculateSuppressionPenalty returns growth penalty from player nodes on threats.
-// Scaled by node type multiplier.
+// calculateSuppressionPenalty returns growth penalty from player/neutral nodes on threats.
+// Scaled by node type multiplier. Uses unified OverworldNodeData.
 func calculateSuppressionPenalty(manager *common.EntityManager, entityA, entityB *ecs.Entity) float64 {
-	// Find which entity is the player node
-	playerEntity := entityA
-	if !manager.HasComponent(entityA.GetID(), core.PlayerNodeComponent) {
-		playerEntity = entityB
+	// Find the friendly/neutral entity (the suppressor)
+	dataA := common.GetComponentType[*core.OverworldNodeData](entityA, core.OverworldNodeComponent)
+	dataB := common.GetComponentType[*core.OverworldNodeData](entityB, core.OverworldNodeComponent)
+
+	var suppressorData *core.OverworldNodeData
+	if dataA != nil && !core.IsHostileOwner(dataA.OwnerID) {
+		suppressorData = dataA
+	} else if dataB != nil && !core.IsHostileOwner(dataB.OwnerID) {
+		suppressorData = dataB
 	}
 
-	// Get node type multiplier
 	nodeTypeMult := 1.0
-	playerData := common.GetComponentType[*core.PlayerNodeData](playerEntity, core.PlayerNodeComponent)
-	if playerData != nil {
-		nodeTypeMult = getSuppressionNodeTypeMultiplier(string(playerData.NodeTypeID))
+	if suppressorData != nil {
+		nodeTypeMult = getSuppressionNodeTypeMultiplier(suppressorData.NodeTypeID)
 	}
 
 	return -getSuppressionGrowthPenalty() * nodeTypeMult
 }
 
-// calculatePlayerSynergyBonus computes bonus for adjacent player nodes.
+// calculatePlayerSynergyBonus computes bonus for adjacent friendly/neutral nodes.
 // Returns base bonus, or complementary bonus if types are a complementary pair.
+// Uses unified OverworldNodeData.
 func calculatePlayerSynergyBonus(entityA, entityB *ecs.Entity) float64 {
-	// Check if complementary pair
-	playerA := common.GetComponentType[*core.PlayerNodeData](entityA, core.PlayerNodeComponent)
-	playerB := common.GetComponentType[*core.PlayerNodeData](entityB, core.PlayerNodeComponent)
-	if playerA != nil && playerB != nil && isComplementaryPair(string(playerA.NodeTypeID), string(playerB.NodeTypeID)) {
+	dataA := common.GetComponentType[*core.OverworldNodeData](entityA, core.OverworldNodeComponent)
+	dataB := common.GetComponentType[*core.OverworldNodeData](entityB, core.OverworldNodeComponent)
+	if dataA != nil && dataB != nil && isComplementaryPair(dataA.NodeTypeID, dataB.NodeTypeID) {
 		return getPlayerSynergyComplementaryBonus()
 	}
 

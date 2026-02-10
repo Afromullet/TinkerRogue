@@ -45,17 +45,11 @@ func FindOverlappingNodes(manager *common.EntityManager) []NodePair {
 	return pairs
 }
 
-// collectAllNodes gathers all threat and player nodes with their positions and influence radii.
+// collectAllNodes gathers all overworld nodes with their positions and influence radii.
+// Uses the unified OverworldNodeTag for a single query instead of querying two separate tags.
 func collectAllNodes(manager *common.EntityManager) []overworldNode {
 	var nodes []overworldNode
-	nodes = appendNodesFromTag(nodes, manager, core.ThreatNodeTag)
-	nodes = appendNodesFromTag(nodes, manager, core.PlayerNodeTag)
-	return nodes
-}
-
-// appendNodesFromTag queries entities by tag and appends those with position + influence data.
-func appendNodesFromTag(nodes []overworldNode, manager *common.EntityManager, tag ecs.Tag) []overworldNode {
-	for _, result := range manager.World.Query(tag) {
+	for _, result := range manager.World.Query(core.OverworldNodeTag) {
 		entity := result.Entity
 		pos := common.GetComponentType[*coords.LogicalPosition](entity, common.PositionComponent)
 		inf := common.GetComponentType[*core.InfluenceData](entity, core.InfluenceComponent)
@@ -72,11 +66,16 @@ func appendNodesFromTag(nodes []overworldNode, manager *common.EntityManager, ta
 	return nodes
 }
 
-// getNodesInRadius returns all entity IDs matching a tag within Manhattan distance of pos.
-func getNodesInRadius(manager *common.EntityManager, pos coords.LogicalPosition, radius int, tag ecs.Tag) []ecs.EntityID {
+// GetThreatNodesInRadius returns all threat node entity IDs within Manhattan distance of pos.
+// Uses unified OverworldNodeTag, filters by hostile owner.
+func GetThreatNodesInRadius(manager *common.EntityManager, pos coords.LogicalPosition, radius int) []ecs.EntityID {
 	var result []ecs.EntityID
-	for _, qr := range manager.World.Query(tag) {
+	for _, qr := range manager.World.Query(core.OverworldNodeTag) {
 		entity := qr.Entity
+		nodeData := common.GetComponentType[*core.OverworldNodeData](entity, core.OverworldNodeComponent)
+		if nodeData == nil || !core.IsHostileOwner(nodeData.OwnerID) {
+			continue
+		}
 		nodePos := common.GetComponentType[*coords.LogicalPosition](entity, common.PositionComponent)
 		if nodePos == nil {
 			continue
@@ -88,12 +87,23 @@ func getNodesInRadius(manager *common.EntityManager, pos coords.LogicalPosition,
 	return result
 }
 
-// GetThreatNodesInRadius returns all threat node entity IDs within Manhattan distance of pos.
-func GetThreatNodesInRadius(manager *common.EntityManager, pos coords.LogicalPosition, radius int) []ecs.EntityID {
-	return getNodesInRadius(manager, pos, radius, core.ThreatNodeTag)
-}
-
 // GetPlayerNodesInRadius returns all player node entity IDs within Manhattan distance of pos.
+// Uses unified OverworldNodeTag, filters by player owner.
 func GetPlayerNodesInRadius(manager *common.EntityManager, pos coords.LogicalPosition, radius int) []ecs.EntityID {
-	return getNodesInRadius(manager, pos, radius, core.PlayerNodeTag)
+	var result []ecs.EntityID
+	for _, qr := range manager.World.Query(core.OverworldNodeTag) {
+		entity := qr.Entity
+		nodeData := common.GetComponentType[*core.OverworldNodeData](entity, core.OverworldNodeComponent)
+		if nodeData == nil || nodeData.OwnerID != core.OwnerPlayer {
+			continue
+		}
+		nodePos := common.GetComponentType[*coords.LogicalPosition](entity, common.PositionComponent)
+		if nodePos == nil {
+			continue
+		}
+		if pos.ManhattanDistance(nodePos) <= radius {
+			result = append(result, entity.GetID())
+		}
+	}
+	return result
 }

@@ -25,22 +25,26 @@ func CreatePlayerNode(manager *common.EntityManager, pos coords.LogicalPosition,
 		Y: pos.Y,
 	})
 
-	// Add player node data
-	entity.AddComponent(core.PlayerNodeComponent, &core.PlayerNodeData{
-		NodeID:     entity.GetID(),
-		NodeTypeID: nodeTypeID,
-		PlacedTick: currentTick,
-	})
-
 	// Add influence component using baseRadius from NodeRegistry
 	nodeDef := core.GetNodeRegistry().GetNodeByID(string(nodeTypeID))
 	baseRadius := core.GetDefaultPlayerNodeRadius()
+	category := core.NodeCategorySettlement
 	if nodeDef != nil {
 		baseRadius = nodeDef.BaseRadius
+		category = nodeDef.Category
 	}
 	entity.AddComponent(core.InfluenceComponent, &core.InfluenceData{
 		Radius:        baseRadius,
 		BaseMagnitude: core.GetDefaultPlayerNodeMagnitude(),
+	})
+
+	// Add unified OverworldNodeComponent
+	entity.AddComponent(core.OverworldNodeComponent, &core.OverworldNodeData{
+		NodeID:      entity.GetID(),
+		NodeTypeID:  string(nodeTypeID),
+		Category:    category,
+		OwnerID:     core.OwnerPlayer,
+		CreatedTick: currentTick,
 	})
 
 	// Register in position system

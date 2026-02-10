@@ -87,6 +87,23 @@ func (f FactionType) String() string {
 	}
 }
 
+// --- Owner Constants ---
+
+const (
+	OwnerPlayer  = "player"
+	OwnerNeutral = "Neutral"
+)
+
+// IsHostileOwner returns true if the owner is neither player nor neutral.
+func IsHostileOwner(ownerID string) bool {
+	return ownerID != OwnerPlayer && ownerID != OwnerNeutral
+}
+
+// IsFriendlyOwner returns true if the owner is the player.
+func IsFriendlyOwner(ownerID string) bool {
+	return ownerID == OwnerPlayer
+}
+
 // InfluenceEffect represents type of influence
 type InfluenceEffect int
 

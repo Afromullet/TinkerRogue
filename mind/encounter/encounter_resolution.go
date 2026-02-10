@@ -39,9 +39,9 @@ func applyCombatOutcome(
 		return fmt.Errorf("threat node %d not found", outcome.ThreatNodeID)
 	}
 
-	threatData := common.GetComponentType[*core.ThreatNodeData](threatEntity, core.ThreatNodeComponent)
-	if threatData == nil {
-		return fmt.Errorf("entity is not a threat node")
+	nodeData := common.GetComponentType[*core.OverworldNodeData](threatEntity, core.OverworldNodeComponent)
+	if nodeData == nil {
+		return fmt.Errorf("entity is not an overworld node")
 	}
 
 	// Get current tick for event logging
@@ -54,10 +54,10 @@ func applyCombatOutcome(
 	if outcome.PlayerVictory {
 		// Player won - reduce or destroy threat
 		damageDealt := calculateThreatDamage(outcome.Casualties.EnemyUnitsKilled)
-		oldIntensity := threatData.Intensity
-		threatData.Intensity -= damageDealt
+		oldIntensity := nodeData.Intensity
+		nodeData.Intensity -= damageDealt
 
-		if threatData.Intensity <= 0 {
+		if nodeData.Intensity <= 0 {
 			// Destroy threat node completely
 			threat.DestroyThreatNode(manager, threatEntity)
 
@@ -87,15 +87,15 @@ func applyCombatOutcome(
 			grantRewards(manager, outcome, partialRewards)
 
 			// Reset growth progress (player setback the threat)
-			threatData.GrowthProgress = 0.0
+			nodeData.GrowthProgress = 0.0
 
 			// Log combat resolution event
 			core.LogEvent(core.EventCombatResolved, currentTick, outcome.ThreatNodeID,
-				fmt.Sprintf("Combat victory - Threat %d weakened to intensity %d", outcome.ThreatNodeID, threatData.Intensity),
+				fmt.Sprintf("Combat victory - Threat %d weakened to intensity %d", outcome.ThreatNodeID, nodeData.Intensity),
 				map[string]interface{}{
 					"victory":            true,
 					"intensity_reduced":  damageDealt,
-					"new_intensity":      threatData.Intensity,
+					"new_intensity":      nodeData.Intensity,
 					"rewards_gold":       partialRewards.Gold,
 					"rewards_xp":         partialRewards.Experience,
 					"player_units_lost":  outcome.Casualties.PlayerUnitsLost,
@@ -103,37 +103,35 @@ func applyCombatOutcome(
 				})
 
 			fmt.Printf("Threat %d weakened to intensity %d. Partial rewards: %d gold, %d XP\n",
-				outcome.ThreatNodeID, threatData.Intensity, partialRewards.Gold, partialRewards.Experience)
+				outcome.ThreatNodeID, nodeData.Intensity, partialRewards.Gold, partialRewards.Experience)
 		}
 	} else {
 		// Player defeat - threat grows stronger
-		oldIntensity := threatData.Intensity
-		threatData.Intensity += 1
-		threatData.GrowthProgress = 0.0
+		oldIntensity := nodeData.Intensity
+		nodeData.Intensity += 1
+		nodeData.GrowthProgress = 0.0
 
 		// Update influence radius
 		influenceData := common.GetComponentType[*core.InfluenceData](threatEntity, core.InfluenceComponent)
 		if influenceData != nil {
-			params := core.GetThreatTypeParamsFromConfig(threatData.ThreatType)
-			influenceData.Radius = params.BaseRadius + threatData.Intensity
-			influenceData.BaseMagnitude = core.CalculateBaseMagnitude(threatData.Intensity)
+			params := core.GetThreatTypeParamsFromConfig(core.ThreatType(nodeData.NodeTypeID))
+			influenceData.Radius = params.BaseRadius + nodeData.Intensity
+			influenceData.BaseMagnitude = core.CalculateBaseMagnitude(nodeData.Intensity)
 		}
 
 		// Log combat resolution event
 		core.LogEvent(core.EventCombatResolved, currentTick, outcome.ThreatNodeID,
-			fmt.Sprintf("Combat defeat - Threat %d grew to intensity %d", outcome.ThreatNodeID, threatData.Intensity),
+			fmt.Sprintf("Combat defeat - Threat %d grew to intensity %d", outcome.ThreatNodeID, nodeData.Intensity),
 			map[string]interface{}{
 				"victory":            false,
 				"old_intensity":      oldIntensity,
-				"new_intensity":      threatData.Intensity,
+				"new_intensity":      nodeData.Intensity,
 				"player_units_lost":  outcome.Casualties.PlayerUnitsLost,
 				"enemy_units_killed": outcome.Casualties.EnemyUnitsKilled,
 			})
 
 		fmt.Printf("Defeated by threat %d! Threat grew to intensity %d\n",
-			outcome.ThreatNodeID, threatData.Intensity)
-
-		// TODO: Player suffers additional penalties (resource loss, morale, etc.)
+			outcome.ThreatNodeID, nodeData.Intensity)
 	}
 
 	return nil

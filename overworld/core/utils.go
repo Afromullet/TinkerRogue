@@ -64,17 +64,23 @@ func GetRandomTileFromSlice(tiles []coords.LogicalPosition) *coords.LogicalPosit
 	return &tile
 }
 
-// IsThreatAtPosition checks if any threat node exists at the given position
+// IsThreatAtPosition checks if any threat node exists at the given position.
+// Uses unified OverworldNodeComponent, filters by hostile owner.
 func IsThreatAtPosition(manager *common.EntityManager, pos coords.LogicalPosition) bool {
 	return GetThreatNodeAt(manager, pos) != 0
 }
 
 // GetPlayerNodeAt returns the EntityID of a player node at a specific position.
 // Returns 0 if no player node exists at the position.
+// Uses unified OverworldNodeComponent, filters by player owner.
 func GetPlayerNodeAt(manager *common.EntityManager, pos coords.LogicalPosition) ecs.EntityID {
 	entityIDs := common.GlobalPositionSystem.GetAllEntityIDsAt(pos)
 	for _, entityID := range entityIDs {
-		if manager.HasComponent(entityID, PlayerNodeComponent) {
+		if !manager.HasComponent(entityID, OverworldNodeComponent) {
+			continue
+		}
+		data := common.GetComponentTypeByID[*OverworldNodeData](manager, entityID, OverworldNodeComponent)
+		if data != nil && data.OwnerID == OwnerPlayer {
 			return entityID
 		}
 	}
@@ -86,18 +92,29 @@ func IsPlayerNodeAtPosition(manager *common.EntityManager, pos coords.LogicalPos
 	return GetPlayerNodeAt(manager, pos) != 0
 }
 
-// IsAnyNodeAtPosition checks if any node (threat or player) exists at the given position.
+// IsAnyNodeAtPosition checks if any overworld node exists at the given position.
+// Uses unified OverworldNodeComponent.
 func IsAnyNodeAtPosition(manager *common.EntityManager, pos coords.LogicalPosition) bool {
-	return IsThreatAtPosition(manager, pos) || IsPlayerNodeAtPosition(manager, pos)
+	entityIDs := common.GlobalPositionSystem.GetAllEntityIDsAt(pos)
+	for _, entityID := range entityIDs {
+		if manager.HasComponent(entityID, OverworldNodeComponent) {
+			return true
+		}
+	}
+	return false
 }
 
 // GetThreatNodeAt returns the EntityID of a threat node at a specific position.
 // Returns 0 if no threat exists at the position.
-// Prefer using queries directly when iterating over multiple threats.
+// Uses unified OverworldNodeComponent, filters by hostile owner.
 func GetThreatNodeAt(manager *common.EntityManager, pos coords.LogicalPosition) ecs.EntityID {
 	entityIDs := common.GlobalPositionSystem.GetAllEntityIDsAt(pos)
 	for _, entityID := range entityIDs {
-		if manager.HasComponent(entityID, ThreatNodeComponent) {
+		if !manager.HasComponent(entityID, OverworldNodeComponent) {
+			continue
+		}
+		data := common.GetComponentTypeByID[*OverworldNodeData](manager, entityID, OverworldNodeComponent)
+		if data != nil && IsHostileOwner(data.OwnerID) {
 			return entityID
 		}
 	}

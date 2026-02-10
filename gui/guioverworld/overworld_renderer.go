@@ -16,7 +16,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/vector"
 )
 
-// OverworldRenderer handles rendering threat nodes and influence zones
+// OverworldRenderer handles rendering overworld nodes and influence zones
 type OverworldRenderer struct {
 	manager  *common.EntityManager
 	state    *framework.OverworldState
@@ -36,7 +36,7 @@ func NewOverworldRenderer(manager *common.EntityManager, state *framework.Overwo
 	}
 }
 
-// Render draws all overworld elements (map tiles, threat nodes, influence, etc.)
+// Render draws all overworld elements (map tiles, nodes, influence, etc.)
 func (r *OverworldRenderer) Render(screen *ebiten.Image) {
 	// Render map tiles first (background)
 	r.renderOverworldMap(screen)
@@ -46,13 +46,10 @@ func (r *OverworldRenderer) Render(screen *ebiten.Image) {
 		r.renderInfluenceZones(screen)
 	}
 
-	// Render threat nodes
-	r.renderThreatNodes(screen)
+	// Render all nodes (threats, settlements, neutral POIs)
+	r.renderNodes(screen)
 
-	// Render player nodes
-	r.renderPlayerNodes(screen)
-
-	// Render player avatar (above threats)
+	// Render player avatar (above nodes)
 	r.renderPlayerAvatar(screen)
 
 	// Render selection highlight on top (last)
@@ -71,186 +68,155 @@ func (r *OverworldRenderer) renderOverworldMap(screen *ebiten.Image) {
 	rendering.DrawMap(screen, r.gameMap, true)
 }
 
-// renderThreatNodes draws all threat nodes as colored circles
-func (r *OverworldRenderer) renderThreatNodes(screen *ebiten.Image) {
-	// Query threats directly following ECS best practices
-	for _, result := range r.manager.World.Query(core.ThreatNodeTag) {
-		threatEntity := result.Entity
-		pos := common.GetComponentType[*coords.LogicalPosition](threatEntity, common.PositionComponent)
-		data := common.GetComponentType[*core.ThreatNodeData](threatEntity, core.ThreatNodeComponent)
+// renderNodes draws all overworld nodes using the unified OverworldNodeComponent.
+// Threats render as circles (size scales with intensity).
+// Settlements/fortresses render as squares with owner-colored borders.
+func (r *OverworldRenderer) renderNodes(screen *ebiten.Image) {
+	for _, result := range r.manager.World.Query(core.OverworldNodeTag) {
+		entity := result.Entity
+		pos := common.GetComponentType[*coords.LogicalPosition](entity, common.PositionComponent)
+		data := common.GetComponentType[*core.OverworldNodeData](entity, core.OverworldNodeComponent)
 
 		if pos == nil || data == nil {
 			continue
 		}
 
-		// Calculate screen position (accounting for camera)
 		screenX := (pos.X - r.state.CameraX) * r.tileSize
 		screenY := (pos.Y - r.state.CameraY) * r.tileSize
-
-		// Size scales with intensity (minimum 8px, maximum 32px)
-		radius := float32(8 + (data.Intensity * 2))
-
-		// Color based on threat type
-		threatColor := r.getThreatColor(data.ThreatType)
-
-		// Draw circle for threat node
 		centerX := float32(screenX) + float32(r.tileSize)/2
 		centerY := float32(screenY) + float32(r.tileSize)/2
 
-		vector.DrawFilledCircle(screen, centerX, centerY, radius, threatColor, true)
+		switch data.Category {
+		case core.NodeCategoryThreat:
+			// Threats: circles, size scales with intensity
+			radius := float32(8 + (data.Intensity * 2))
+			nodeDef := core.GetNodeRegistry().GetNodeByID(data.NodeTypeID)
+			threatColor := color.RGBA{R: 200, G: 50, B: 50, A: 255}
+			if nodeDef != nil {
+				threatColor = nodeDef.Color
+			}
+			vector.DrawFilledCircle(screen, centerX, centerY, radius, threatColor, true)
 
-		// Draw intensity number in center
-		// Note: Text rendering requires a different approach - would need ebitenutil.DebugPrintAt
-		// For Phase 1, just draw the circle
+		case core.NodeCategorySettlement, core.NodeCategoryFortress:
+			// Settlements/fortresses: squares with owner-colored border
+			nodeDef := core.GetNodeRegistry().GetNodeByID(data.NodeTypeID)
+			nodeColor := color.RGBA{R: 100, G: 200, B: 100, A: 255}
+			if nodeDef != nil {
+				nodeColor = nodeDef.Color
+			}
+
+			halfSize := float32(r.tileSize) / 2
+			vector.DrawFilledRect(screen, centerX-halfSize, centerY-halfSize, halfSize*2, halfSize*2, nodeColor, true)
+
+			// Border color based on owner
+			borderColor := r.getOwnerBorderColor(data.OwnerID)
+			vector.StrokeRect(screen, centerX-halfSize, centerY-halfSize, halfSize*2, halfSize*2, 2, borderColor, true)
+		}
 	}
 }
 
-// renderInfluenceZones draws influence radius for threats
+// renderInfluenceZones draws influence radius for all nodes using a single unified query.
 func (r *OverworldRenderer) renderInfluenceZones(screen *ebiten.Image) {
-	// Query threats directly following ECS best practices
-	for _, result := range r.manager.World.Query(core.ThreatNodeTag) {
-		threatEntity := result.Entity
-		pos := common.GetComponentType[*coords.LogicalPosition](threatEntity, common.PositionComponent)
-		influenceData := common.GetComponentType[*core.InfluenceData](threatEntity, core.InfluenceComponent)
+	for _, result := range r.manager.World.Query(core.OverworldNodeTag) {
+		entity := result.Entity
+		pos := common.GetComponentType[*coords.LogicalPosition](entity, common.PositionComponent)
+		influenceData := common.GetComponentType[*core.InfluenceData](entity, core.InfluenceComponent)
+		nodeData := common.GetComponentType[*core.OverworldNodeData](entity, core.OverworldNodeComponent)
 
-		if pos == nil || influenceData == nil {
+		if pos == nil || influenceData == nil || nodeData == nil {
 			continue
 		}
 
-		// Calculate screen position
 		screenX := (pos.X - r.state.CameraX) * r.tileSize
 		screenY := (pos.Y - r.state.CameraY) * r.tileSize
-
-		// Draw semi-transparent circle for influence radius
 		centerX := float32(screenX) + float32(r.tileSize)/2
 		centerY := float32(screenY) + float32(r.tileSize)/2
 		influenceRadius := float32(influenceData.Radius * r.tileSize)
 
-		// Semi-transparent red/yellow tint
-		influenceColor := color.RGBA{255, 200, 100, 50}
+		// Color based on owner type
+		var influenceColor color.RGBA
+		if core.IsHostileOwner(nodeData.OwnerID) {
+			influenceColor = color.RGBA{255, 200, 100, 50} // warm for hostile
+		} else if nodeData.OwnerID == core.OwnerNeutral {
+			influenceColor = color.RGBA{220, 200, 100, 40} // muted yellow for neutral
+		} else {
+			influenceColor = color.RGBA{100, 200, 255, 50} // cool for player
+		}
 
 		vector.DrawFilledCircle(screen, centerX, centerY, influenceRadius, influenceColor, true)
-	}
-
-	// Query player nodes and draw their influence zones in blue-green
-	for _, result := range r.manager.World.Query(core.PlayerNodeTag) {
-		playerEntity := result.Entity
-		pos := common.GetComponentType[*coords.LogicalPosition](playerEntity, common.PositionComponent)
-		influenceData := common.GetComponentType[*core.InfluenceData](playerEntity, core.InfluenceComponent)
-
-		if pos == nil || influenceData == nil {
-			continue
-		}
-
-		screenX := (pos.X - r.state.CameraX) * r.tileSize
-		screenY := (pos.Y - r.state.CameraY) * r.tileSize
-
-		centerX := float32(screenX) + float32(r.tileSize)/2
-		centerY := float32(screenY) + float32(r.tileSize)/2
-		influenceRadius := float32(influenceData.Radius * r.tileSize)
-
-		playerInfluenceColor := color.RGBA{100, 200, 255, 50}
-
-		vector.DrawFilledCircle(screen, centerX, centerY, influenceRadius, playerInfluenceColor, true)
 	}
 }
 
 // renderPlayerAvatar draws the player sprite at their current position
 func (r *OverworldRenderer) renderPlayerAvatar(screen *ebiten.Image) {
-	// 1. Get player entity from manager
 	if r.context == nil || r.context.PlayerData == nil {
 		return
 	}
 
 	playerEntity := r.manager.FindEntityByID(r.context.PlayerData.PlayerEntityID)
 	if playerEntity == nil {
-		return // Player not initialized yet
+		return
 	}
 
-	// 2. Get player position component
 	pos := common.GetComponentType[*coords.LogicalPosition](playerEntity, common.PositionComponent)
 	if pos == nil {
 		return
 	}
 
-	// 3. Get player renderable component (has sprite image)
 	renderable := common.GetComponentType[*rendering.Renderable](playerEntity, rendering.RenderableComponent)
 	if renderable == nil || renderable.Image == nil || !renderable.Visible {
 		return
 	}
 
-	// 4. Calculate screen position (using camera offset)
 	screenX := float64((pos.X - r.state.CameraX) * r.tileSize)
 	screenY := float64((pos.Y - r.state.CameraY) * r.tileSize)
 
-	// 5. Draw player sprite
 	op := &ebiten.DrawImageOptions{}
 	op.GeoM.Translate(screenX, screenY)
 
 	screen.DrawImage(renderable.Image, op)
 }
 
-// renderSelectionHighlight draws a highlight around the selected threat
+// renderSelectionHighlight draws a highlight around the selected node.
+// Uses unified OverworldNodeData.
 func (r *OverworldRenderer) renderSelectionHighlight(screen *ebiten.Image) {
-	threat := r.manager.FindEntityByID(r.state.SelectedThreatID)
-	if threat == nil {
+	selected := r.manager.FindEntityByID(r.state.SelectedThreatID)
+	if selected == nil {
 		return
 	}
 
-	pos := common.GetComponentType[*coords.LogicalPosition](threat, common.PositionComponent)
-	data := common.GetComponentType[*core.ThreatNodeData](threat, core.ThreatNodeComponent)
+	pos := common.GetComponentType[*coords.LogicalPosition](selected, common.PositionComponent)
+	data := common.GetComponentType[*core.OverworldNodeData](selected, core.OverworldNodeComponent)
 
 	if pos == nil || data == nil {
 		return
 	}
 
-	// Calculate screen position
 	screenX := (pos.X - r.state.CameraX) * r.tileSize
 	screenY := (pos.Y - r.state.CameraY) * r.tileSize
-
-	// Draw selection ring
 	centerX := float32(screenX) + float32(r.tileSize)/2
 	centerY := float32(screenY) + float32(r.tileSize)/2
-	radius := float32(8 + (data.Intensity * 2) + 4)
 
 	selectionColor := color.RGBA{255, 255, 255, 200}
 
-	// Draw ring (circle outline)
-	vector.StrokeCircle(screen, centerX, centerY, radius, 2, selectionColor, true)
+	if data.Category == core.NodeCategoryThreat {
+		radius := float32(8 + (data.Intensity * 2) + 4)
+		vector.StrokeCircle(screen, centerX, centerY, radius, 2, selectionColor, true)
+	} else {
+		halfSize := float32(r.tileSize)/2 + 2
+		vector.StrokeRect(screen, centerX-halfSize, centerY-halfSize, halfSize*2, halfSize*2, 2, selectionColor, true)
+	}
 }
 
-// renderPlayerNodes draws all player-placed nodes as colored squares
-func (r *OverworldRenderer) renderPlayerNodes(screen *ebiten.Image) {
-	for _, result := range r.manager.World.Query(core.PlayerNodeTag) {
-		nodeEntity := result.Entity
-		pos := common.GetComponentType[*coords.LogicalPosition](nodeEntity, common.PositionComponent)
-		data := common.GetComponentType[*core.PlayerNodeData](nodeEntity, core.PlayerNodeComponent)
-
-		if pos == nil || data == nil {
-			continue
-		}
-
-		// Calculate screen position (accounting for camera)
-		screenX := (pos.X - r.state.CameraX) * r.tileSize
-		screenY := (pos.Y - r.state.CameraY) * r.tileSize
-
-		// Get node color from registry
-		nodeDef := core.GetNodeRegistry().GetNodeByID(string(data.NodeTypeID))
-		nodeColor := color.RGBA{R: 100, G: 200, B: 100, A: 255} // default green
-		if nodeDef != nil {
-			nodeColor = nodeDef.Color
-		}
-
-		// Draw square for player node (distinguishes from threat circles)
-		halfSize := float32(r.tileSize) / 2
-		centerX := float32(screenX) + halfSize
-		centerY := float32(screenY) + halfSize
-
-		vector.DrawFilledRect(screen, centerX-halfSize, centerY-halfSize, halfSize*2, halfSize*2, nodeColor, true)
-
-		// Draw white border to distinguish from map tiles
-		borderColor := color.RGBA{R: 255, G: 255, B: 255, A: 180}
-		vector.StrokeRect(screen, centerX-halfSize, centerY-halfSize, halfSize*2, halfSize*2, 2, borderColor, true)
+// getOwnerBorderColor returns the border color based on node owner.
+func (r *OverworldRenderer) getOwnerBorderColor(ownerID string) color.RGBA {
+	switch {
+	case ownerID == core.OwnerPlayer:
+		return color.RGBA{R: 255, G: 255, B: 255, A: 180} // white for player
+	case ownerID == core.OwnerNeutral:
+		return color.RGBA{R: 218, G: 165, B: 32, A: 200} // gold for neutral
+	default:
+		return color.RGBA{R: 255, G: 50, B: 50, A: 180} // red for hostile
 	}
 }
 
@@ -261,50 +227,65 @@ func (r *OverworldRenderer) ScreenToLogical(screenX, screenY int) coords.Logical
 	return coords.LogicalPosition{X: logicalX, Y: logicalY}
 }
 
-// getThreatColor returns color for each threat type.
-// Uses NodeRegistry for data-driven lookup.
-func (r *OverworldRenderer) getThreatColor(threatType core.ThreatType) color.RGBA {
-	return core.GetNodeRegistry().GetColor(threatType)
-}
-
 // GetThreatAtPosition returns threat entity at screen coordinates (for mouse clicks)
 func (r *OverworldRenderer) GetThreatAtPosition(screenX, screenY int) ecs.EntityID {
 	logicalPos := r.ScreenToLogical(screenX, screenY)
 	return core.GetThreatNodeAt(r.manager, logicalPos)
 }
 
-// FormatThreatInfo returns formatted string for threat details
+// FormatThreatInfo returns formatted string for threat/node details.
+// Uses unified OverworldNodeData.
 func FormatThreatInfo(threat *ecs.Entity, manager *common.EntityManager) string {
 	if threat == nil {
 		return "Select a threat to view details"
 	}
 
-	data := common.GetComponentType[*core.ThreatNodeData](threat, core.ThreatNodeComponent)
+	data := common.GetComponentType[*core.OverworldNodeData](threat, core.OverworldNodeComponent)
 	pos := common.GetComponentType[*coords.LogicalPosition](threat, common.PositionComponent)
 
 	if data == nil {
-		return "Invalid threat"
+		return "Invalid node"
 	}
 
-	threatTypeName := data.ThreatType.String()
-	containedStatus := ""
-	if data.IsContained {
-		containedStatus = " (CONTAINED)"
+	nodeDef := core.GetNodeRegistry().GetNodeByID(data.NodeTypeID)
+	displayName := data.NodeTypeID
+	if nodeDef != nil {
+		displayName = nodeDef.DisplayName
+	}
+
+	if data.Category == core.NodeCategoryThreat {
+		containedStatus := ""
+		if data.IsContained {
+			containedStatus = " (CONTAINED)"
+		}
+
+		return fmt.Sprintf(
+			"=== Threat Details ===\n"+
+				"Type: %s%s\n"+
+				"Owner: %s\n"+
+				"Position: (%d, %d)\n"+
+				"Intensity: %d / %d\n"+
+				"Growth: %.1f%%\n"+
+				"Age: %d ticks",
+			displayName,
+			containedStatus,
+			data.OwnerID,
+			pos.X, pos.Y,
+			data.Intensity,
+			core.GetMaxThreatIntensity(),
+			data.GrowthProgress*100,
+			data.CreatedTick,
+		)
 	}
 
 	return fmt.Sprintf(
-		"=== Threat Details ===\n"+
-			"Type: %s%s\n"+
-			"Position: (%d, %d)\n"+
-			"Intensity: %d / %d\n"+
-			"Growth: %.1f%%\n"+
-			"Age: %d ticks",
-		threatTypeName,
-		containedStatus,
+		"=== Node Details ===\n"+
+			"Type: %s (%s)\n"+
+			"Owner: %s\n"+
+			"Position: (%d, %d)",
+		displayName,
+		data.Category,
+		data.OwnerID,
 		pos.X, pos.Y,
-		data.Intensity,
-		core.GetMaxThreatIntensity(),
-		data.GrowthProgress*100,
-		data.SpawnedTick,
 	)
 }

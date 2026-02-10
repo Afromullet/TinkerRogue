@@ -26,25 +26,25 @@ func translateThreatToEncounter(
 	manager *common.EntityManager,
 	threatEntity *ecs.Entity,
 ) (*encounterParams, error) {
-	threatData := common.GetComponentType[*core.ThreatNodeData](threatEntity, core.ThreatNodeComponent)
-	if threatData == nil {
-		return nil, fmt.Errorf("entity is not a threat node")
+	nodeData := common.GetComponentType[*core.OverworldNodeData](threatEntity, core.OverworldNodeComponent)
+	if nodeData == nil {
+		return nil, fmt.Errorf("entity is not an overworld node")
 	}
 
 	// Get the encounter that was assigned to this node when it was created
-	selectedEncounter := core.GetNodeRegistry().GetEncounterByID(threatData.EncounterID)
+	selectedEncounter := core.GetNodeRegistry().GetEncounterByID(nodeData.EncounterID)
 	if selectedEncounter == nil {
-		return nil, fmt.Errorf("encounter %s not found for threat node", threatData.EncounterID)
+		return nil, fmt.Errorf("encounter %s not found for node", nodeData.EncounterID)
 	}
 
 	// Create encounter name using the selected encounter's name
 	encounterName := fmt.Sprintf("%s (Level %d)",
-		getEncounterDisplayName(selectedEncounter, threatData.ThreatType),
-		threatData.Intensity)
+		getEncounterDisplayName(selectedEncounter, nodeData.NodeTypeID),
+		nodeData.Intensity)
 
 	return &encounterParams{
-		ThreatNodeID:  threatData.ThreatID,
-		Difficulty:    threatData.Intensity,
+		ThreatNodeID:  nodeData.NodeID,
+		Difficulty:    nodeData.Intensity,
 		EncounterName: encounterName,
 		EncounterType: selectedEncounter.EncounterTypeID,
 	}, nil
@@ -72,12 +72,16 @@ func createOverworldEncounter(
 
 // getEncounterDisplayName returns the display name for an encounter.
 // Falls back to threat type name if encounter is nil.
-func getEncounterDisplayName(encounter *core.EncounterDefinition, threatType core.ThreatType) string {
+func getEncounterDisplayName(encounter *core.EncounterDefinition, nodeTypeID string) string {
 	if encounter != nil && encounter.EncounterTypeName != "" {
 		return encounter.EncounterTypeName
 	}
-	// Fallback to threat type display name
-	return threatType.String()
+	// Fallback to node display name from registry
+	nodeDef := core.GetNodeRegistry().GetNodeByID(nodeTypeID)
+	if nodeDef != nil {
+		return nodeDef.DisplayName
+	}
+	return nodeTypeID
 }
 
 // TriggerCombatFromThreat initiates combat when player engages a threat
