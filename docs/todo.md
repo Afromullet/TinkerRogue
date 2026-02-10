@@ -3,6 +3,8 @@ __________________________________________
 # # # **IMPORTANT** # # # 
 
 
+- Checks if ECS related caches are really needed. To a performance profile before and after using Views rather than the custom cache
+
 - GetUnitIDsInSquad takes too much time with a large number squads
 
 - Need better node management system. Non-combat nodes, player nodes, and POIs in the overworld map gen are too separate. Different ways to do the same thigns

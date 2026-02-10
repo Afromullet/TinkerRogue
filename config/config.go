@@ -12,7 +12,7 @@ const (
 	DEBUG_MODE = true
 
 	// ENABLE_BENCHMARKING enables pprof profiling server on localhost:6060
-	ENABLE_BENCHMARKING = false
+	ENABLE_BENCHMARKING = true
 
 	// ENABLE_COMBAT_LOG enables the combat log UI and logging during combat
 	// When disabled, no combat log panel is created and no log messages are recorded

@@ -11,6 +11,10 @@ import (
 
 var Units = make([]UnitTemplate, 0, len(templates.MonsterTemplates))
 
+// squadMemberView is a package-level ECS View for zero-allocation squad member queries.
+// Initialized once during subsystem registration; automatically maintained by the ECS library.
+var squadMemberView *ecs.View
+
 // init registers the squads subsystem with the ECS component registry.
 // This allows the squads package to self-register its components without
 // game_main needing to know about squad internals.
@@ -18,6 +22,7 @@ func init() {
 	common.RegisterSubsystem(func(em *common.EntityManager) {
 		InitSquadComponents(em)
 		InitSquadTags(em)
+		squadMemberView = em.World.CreateView(SquadMemberTag)
 	})
 }
 

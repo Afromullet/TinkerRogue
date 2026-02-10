@@ -37,17 +37,17 @@ func GetUnitIDsAtGridPosition(squadID ecs.EntityID, row, col int, squadmanager *
 }
 
 // GetUnitIDsInSquad returns unit IDs belonging to a squad
-// NOTE: This is the non-cached version (O(n)). Prefer using SquadQueryCache.GetUnitIDsInSquad() when available for better performance.
+// Uses package-level ecs.View for zero-allocation reads instead of World.Query.
 // Returns ecs.EntityID (native type), not entity pointers
 func GetUnitIDsInSquad(squadID ecs.EntityID, squadmanager *common.EntityManager) []ecs.EntityID {
 	var unitIDs []ecs.EntityID
 
-	for _, result := range squadmanager.World.Query(SquadMemberTag) {
+	for _, result := range squadMemberView.Get() {
 		unitEntity := result.Entity
 		memberData := common.GetComponentType[*SquadMemberData](unitEntity, SquadMemberComponent)
 
 		if memberData.SquadID == squadID {
-			unitID := unitEntity.GetID() //  Native method!
+			unitID := unitEntity.GetID()
 			unitIDs = append(unitIDs, unitID)
 		}
 	}
