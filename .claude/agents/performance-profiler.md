@@ -1,7 +1,7 @@
 ---
 name: performance-profiler
 description: Analyze Go game code for performance bottlenecks and optimization opportunities. Specializes in ECS query patterns, allocation hotspots, spatial grid performance, caching strategies, and benchmark comparisons.
-model: sonnet
+model: opus
 color: red
 ---
 

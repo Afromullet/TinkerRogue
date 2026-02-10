@@ -1,7 +1,7 @@
 ---
 name: mapgen-architect
 description: Design, implement, and evaluate procedural map generation for tactical combat maps and strategic overworld maps. Expert in 13 generation algorithms — noise, cellular automata, BSP, WFC, Voronoi, Poisson disk, diamond-square, graph/grammar, region growing, L-systems, maze algorithms, template assembly, and erosion simulation — with deep knowledge of the TinkerRogue MapGenerator interface and registry pattern.
-model: sonnet
+model: opus
 color: green
 ---
 

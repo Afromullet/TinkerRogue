@@ -1,7 +1,7 @@
 ---
 name: tactical-ai-architect
 description: Full-stack AI specialist for turn-based tactical RPGs - from architecture to balancing. Designs, implements, tests, and balances AI decision-making systems using Utility AI, Behavior Trees, GOAP, or MCTS based on tactical complexity.
-model: sonnet
+model: opus
 color: red
 ---
 
