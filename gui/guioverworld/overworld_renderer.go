@@ -72,7 +72,7 @@ func (r *OverworldRenderer) renderOverworldMap(screen *ebiten.Image) {
 // Threats render as circles (size scales with intensity).
 // Settlements/fortresses render as squares with owner-colored borders.
 func (r *OverworldRenderer) renderNodes(screen *ebiten.Image) {
-	for _, result := range r.manager.World.Query(core.OverworldNodeTag) {
+	for _, result := range core.OverworldNodeView.Get() {
 		entity := result.Entity
 		pos := common.GetComponentType[*coords.LogicalPosition](entity, common.PositionComponent)
 		data := common.GetComponentType[*core.OverworldNodeData](entity, core.OverworldNodeComponent)
@@ -117,7 +117,7 @@ func (r *OverworldRenderer) renderNodes(screen *ebiten.Image) {
 
 // renderInfluenceZones draws influence radius for all nodes using a single unified query.
 func (r *OverworldRenderer) renderInfluenceZones(screen *ebiten.Image) {
-	for _, result := range r.manager.World.Query(core.OverworldNodeTag) {
+	for _, result := range core.OverworldNodeView.Get() {
 		entity := result.Entity
 		pos := common.GetComponentType[*coords.LogicalPosition](entity, common.PositionComponent)
 		influenceData := common.GetComponentType[*core.InfluenceData](entity, core.InfluenceComponent)

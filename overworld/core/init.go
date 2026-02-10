@@ -6,6 +6,10 @@ import (
 	"github.com/bytearena/ecs"
 )
 
+// OverworldNodeView is a package-level ECS View for zero-allocation overworld node queries.
+// Initialized once during subsystem registration; automatically maintained by the ECS library.
+var OverworldNodeView *ecs.View
+
 // init registers the overworld core subsystem with the ECS component registry.
 // This allows the overworld package to self-register its components without
 // game_main needing to know about overworld internals.
@@ -13,6 +17,7 @@ func init() {
 	common.RegisterSubsystem(func(em *common.EntityManager) {
 		InitOverworldComponents(em)
 		InitOverworldTags(em)
+		OverworldNodeView = em.World.CreateView(OverworldNodeTag)
 	})
 }
 

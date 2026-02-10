@@ -2,6 +2,7 @@ package combat
 
 import (
 	"game_main/common"
+	"game_main/tactical/squads"
 
 	"github.com/bytearena/ecs"
 )
@@ -20,6 +21,13 @@ var (
 	TurnStateTag     ecs.Tag
 	ActionStateTag   ecs.Tag
 	CombatFactionTag ecs.Tag
+)
+
+// Package-level Views for zero-allocation queries.
+// Initialized in init(); automatically maintained by the ECS library.
+var (
+	factionView  *ecs.View
+	combatSquadView *ecs.View // View on squads.SquadTag, used by GetSquadsForFaction
 )
 
 type FactionData struct {
@@ -61,6 +69,8 @@ func init() {
 	common.RegisterSubsystem(func(em *common.EntityManager) {
 		InitCombatComponents(em)
 		InitCombatTags(em)
+		factionView = em.World.CreateView(FactionTag)
+		combatSquadView = em.World.CreateView(squads.SquadTag)
 	})
 }
 

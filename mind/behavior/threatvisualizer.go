@@ -216,6 +216,16 @@ func (tv *ThreatVisualizer) Update(
 		tv.threatEvaluator.Update(currentRound)
 	}
 
+	// Pre-compute squad lists once per update (invariant across all tiles)
+	var relevantSquads []ecs.EntityID
+	if tv.mode == VisualizerModeThreat {
+		if tv.threatViewMode == ViewEnemyThreats {
+			relevantSquads = tv.getEnemySquads(currentFactionID)
+		} else {
+			relevantSquads = tv.getPlayerSquads(currentFactionID)
+		}
+	}
+
 	// Visualize based on current mode
 	IterateViewport(playerPos, viewportSize, func(pos coords.LogicalPosition) {
 		if !tv.gameMap.InBounds(pos.X, pos.Y) {
@@ -227,7 +237,7 @@ func (tv *ThreatVisualizer) Update(
 
 		switch tv.mode {
 		case VisualizerModeThreat:
-			value = tv.calculateThreatValue(pos, currentFactionID)
+			value = tv.calculateThreatValueForSquads(pos, relevantSquads)
 			colorMatrix = tv.threatValueToColorMatrix(value)
 		case VisualizerModeLayer:
 			value = tv.getLayerValueAt(pos)
@@ -263,19 +273,29 @@ func (tv *ThreatVisualizer) GetThreatViewMode() ThreatViewMode {
 	return tv.threatViewMode
 }
 
-// calculateThreatValue calculates danger at a position using ThreatByRange
+// calculateThreatValue calculates danger at a position using ThreatByRange.
+// This variant resolves squad lists per-call. Prefer calculateThreatValueForSquads
+// when calling in a loop with a pre-computed squad list.
 func (tv *ThreatVisualizer) calculateThreatValue(pos coords.LogicalPosition, currentFactionID ecs.EntityID) float64 {
-	// Guard against nil threatManager (can happen when using layer mode only)
 	if tv.threatManager == nil {
 		return 0.0
 	}
 
-	// Get relevant squads based on view mode
 	var relevantSquads []ecs.EntityID
 	if tv.threatViewMode == ViewEnemyThreats {
 		relevantSquads = tv.getEnemySquads(currentFactionID)
 	} else {
 		relevantSquads = tv.getPlayerSquads(currentFactionID)
+	}
+
+	return tv.calculateThreatValueForSquads(pos, relevantSquads)
+}
+
+// calculateThreatValueForSquads calculates danger at a position for a pre-computed squad list.
+// Used by Update() to avoid re-querying squad lists on every tile.
+func (tv *ThreatVisualizer) calculateThreatValueForSquads(pos coords.LogicalPosition, relevantSquads []ecs.EntityID) float64 {
+	if tv.threatManager == nil {
+		return 0.0
 	}
 
 	totalValue := 0.0

@@ -14,6 +14,7 @@ import (
 	"github.com/bytearena/ecs"
 	"github.com/ebitenui/ebitenui/widget"
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/vector"
 )
 
 // AnimationPhase represents the current state of the combat animation
@@ -98,6 +99,10 @@ type CombatAnimationMode struct {
 	defenderColorList  map[ecs.EntityID][]ebiten.ColorScale
 	defenderFlashIndex map[ecs.EntityID]int
 	flashTimer         float64
+
+	// Cached grid background image (regenerated only when cellSize changes)
+	cachedGridImage    *ebiten.Image
+	cachedGridCellSize int
 }
 
 // NewCombatAnimationMode creates a new combat animation mode
@@ -394,25 +399,36 @@ func (cam *CombatAnimationMode) Render(screen *ebiten.Image) {
 	cam.drawSquadNames(screen)
 }
 
-// drawGridBackground draws subtle cell outlines for the grid
-func (cam *CombatAnimationMode) drawGridBackground(screen *ebiten.Image, baseX, baseY int) {
+// ensureGridImageCached creates or recreates the cached grid image when cellSize changes.
+func (cam *CombatAnimationMode) ensureGridImageCached() {
+	if cam.cachedGridImage != nil && cam.cachedGridCellSize == cam.cellSize {
+		return
+	}
+
+	cam.cachedGridImage = ebiten.NewImage(cam.gridWidth, cam.gridHeight)
+	cam.cachedGridCellSize = cam.cellSize
+
 	gridColor := color.RGBA{R: 60, G: 60, B: 70, A: 255}
 
 	// Draw horizontal lines
 	for row := 0; row <= 3; row++ {
-		y := baseY + row*cam.cellSize
-		for x := baseX; x < baseX+cam.gridWidth; x++ {
-			screen.Set(x, y, gridColor)
-		}
+		y := float32(row * cam.cellSize)
+		vector.StrokeLine(cam.cachedGridImage, 0, y, float32(cam.gridWidth), y, 1, gridColor, false)
 	}
 
 	// Draw vertical lines
 	for col := 0; col <= 3; col++ {
-		x := baseX + col*cam.cellSize
-		for y := baseY; y < baseY+cam.gridHeight; y++ {
-			screen.Set(x, y, gridColor)
-		}
+		x := float32(col * cam.cellSize)
+		vector.StrokeLine(cam.cachedGridImage, x, 0, x, float32(cam.gridHeight), 1, gridColor, false)
 	}
+}
+
+// drawGridBackground draws subtle cell outlines for the grid using a cached image.
+func (cam *CombatAnimationMode) drawGridBackground(screen *ebiten.Image, baseX, baseY int) {
+	cam.ensureGridImageCached()
+	op := &ebiten.DrawImageOptions{}
+	op.GeoM.Translate(float64(baseX), float64(baseY))
+	screen.DrawImage(cam.cachedGridImage, op)
 }
 
 // drawSquadNames draws the squad names above each grid

@@ -39,23 +39,24 @@ func GetSquadMapPosition(squadID ecs.EntityID, manager *common.EntityManager) (c
 	return *pos, nil
 }
 
-// GetAllFactions returns all factions in the combat system
+// GetAllFactions returns all factions in the combat system.
+// Uses package-level ecs.View for zero-allocation reads.
 func GetAllFactions(manager *common.EntityManager) []ecs.EntityID {
 	var factionIDs []ecs.EntityID
 
-	for _, result := range manager.World.Query(FactionTag) {
+	for _, result := range factionView.Get() {
 		factionIDs = append(factionIDs, result.Entity.GetID())
 	}
 
 	return factionIDs
 }
 
-// GetSquadsForFaction returns all squads owned by a faction
+// GetSquadsForFaction returns all squads owned by a faction.
+// Uses package-level ecs.View for zero-allocation reads.
 func GetSquadsForFaction(factionID ecs.EntityID, manager *common.EntityManager) []ecs.EntityID {
 	var squadIDs []ecs.EntityID
 
-	// Query all squads and filter by FactionMembershipComponent
-	for _, result := range manager.World.Query(squads.SquadTag) {
+	for _, result := range combatSquadView.Get() {
 		combatFaction := common.GetComponentType[*CombatFactionData](result.Entity, FactionMembershipComponent)
 		if combatFaction != nil && combatFaction.FactionID == factionID {
 			squadIDs = append(squadIDs, result.Entity.GetID())
