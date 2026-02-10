@@ -640,42 +640,51 @@ func (t StatusEffectType) String() string {
 
 ### Step 2: Register Components and Tags
 
-**Goal:** Initialize components in the ECS world using self-registration.
+**Goal:** Initialize components in the ECS world and create tags for querying.
 
-**File: `statuseffects/init.go`**
+**File: `statuseffects/components.go`** (continued)
 
 ```go
-package statuseffects
+// ========================================
+// INITIALIZATION
+// ========================================
 
-import (
-    "game_main/common"
-    "github.com/bytearena/ecs"
-)
+func InitializeComponents(manager *ecs.Manager) {
+    // Create component types
+    StatusEffectComponent = manager.NewComponent()
 
-// Package-level view for status effect queries
-var statusEffectView *ecs.View
+    // Create tags for querying
+    StatusEffectTag = manager.NewTag(StatusEffectComponent)
 
-func init() {
-    common.RegisterSubsystem(func(em *common.EntityManager) {
-        // Create component types
-        StatusEffectComponent = em.World.NewComponent()
-
-        // Create tags for querying
-        StatusEffectTag = ecs.BuildTag(StatusEffectComponent)
-
-        // Create views during init (not at runtime)
-        statusEffectView = em.World.CreateView(StatusEffectTag)
-    })
+    fmt.Println("Status Effect components initialized")
 }
 ```
 
-Components are automatically initialized when `common.InitializeSubsystems(manager)` is called during game startup. No manual wiring in `NewEntityManager()` needed.
+**File: `common/EntityManager.go`** (update)
+
+Add to `NewEntityManager()` function:
+
+```go
+func NewEntityManager() *EntityManager {
+    manager := &EntityManager{
+        World:         ecs.NewManager(),
+        WorldTags:     &worldtags.Tags{},
+        CreatureCount: 0,
+    }
+
+    // ... existing initializations ...
+
+    // Initialize status effect components
+    statuseffects.InitializeComponents(manager.World)
+
+    return manager
+}
+```
 
 **✅ Best Practices Applied:**
-- Self-registration via `init()` + `common.RegisterSubsystem()`
-- View created during subsystem init (not at runtime)
-- Package-level view variable for internal queries
-- Tags built with `ecs.BuildTag()` (not `manager.NewTag()`)
+- Components registered during manager initialization
+- Tags created with `NewTag(components...)`
+- Single source of truth for component registration
 
 ---
 
@@ -1883,8 +1892,7 @@ func GetUnitIDsInSquad(squadID ecs.EntityID, manager *EntityManager) []ecs.Entit
 
 // Can be tested easily
 func TestGetUnitIDsInSquad(t *testing.T) {
-    manager := testfx.NewTestEntityManager()
-    common.InitializeSubsystems(manager)
+    manager := CreateTestEntityManager()
     squadID := CreateSquad("Test", FormationBalanced, manager)
     unitID := AddUnitToSquad(squadID, template, 0, 0, manager)
 
@@ -2853,42 +2861,245 @@ common.GlobalPositionSystem.MoveEntity(entityID, oldPos, newPos)
 common.GlobalPositionSystem.RemoveEntity(entityID, position)
 ```
 
-### ECS Views (Performance Impact)
+### ECS Views (50-200x Speedup for Cached Queries)
 
-For a full treatment of Views, the two-tier query API, package-level views, and QueryCache structs, see the dedicated [ECS Views and Query Caching](#ecs-views-and-query-caching) section.
+**Historical Context**: Frequent Query Optimization (2025-11-30)
 
-**Summary of performance gains:**
+ECS Views are automatically-maintained caches that filter entities by tag. Instead of scanning all world entities with `World.Query()`, views maintain a subset of matching entities, making repeated queries dramatically faster.
 
-| Query | World.Query() | View | Speedup |
-|-------|--------------|------|---------|
-| GetSquadEntity | 340us | 2.5us | **136x** |
-| GetUnitIDsInSquad | 280us | 4us | **70x** |
-| GetLeaderID | 200us | 1us | **200x** |
+#### What Are Views?
 
-*Conditions: 20 squads, 9 units/squad, 1000+ total entities*
-
-#### GetComponentTypeByID O(1) Optimization
-
-Views alone aren't enough — you also need O(1) component lookups by EntityID:
+A View is like a pre-filtered query result that stays up-to-date automatically:
 
 ```go
-// common/ecsutil.go — Uses ECS library's O(1) entitiesByID map lookup
-func GetComponentTypeByID[T any](manager *EntityManager, entityID ecs.EntityID, component *ecs.Component) T {
-    queryResult := manager.World.GetEntityByID(entityID)
-    if queryResult == nil {
-        var nilValue T
-        return nilValue
-    }
-    entity := queryResult.Entity
-    if c, ok := entity.GetComponentData(component); ok {
-        return c.(T)
-    }
-    var nilValue T
-    return nilValue
+// Creating a view (one-time O(n) cost)
+squadView := manager.World.CreateView(SquadTag)
+
+// Using the view (O(k) where k = number of squad entities, typically 10-50)
+for _, result := range squadView.Get() {
+    entity := result.Entity
+    data := common.GetComponentType[*SquadData](entity, SquadComponent)
+    // Process squad
 }
 ```
 
-This change benefits the entire codebase — any code using `GetComponentTypeByID` gets O(1) instead of O(n).
+#### How Views Improve Performance
+
+**Without Views** (full world scan):
+```go
+// O(n) - Searches ALL entities (1000+)
+for _, result := range manager.World.Query(SquadTag) {  // Scans 1000 entities
+    squadData := common.GetComponentType[*SquadData](result.Entity, SquadComponent)
+    if squadData.SquadID == targetID {
+        return result.Entity
+    }
+}
+
+// Benchmark: 340µs per query
+```
+
+**With Views** (filtered cache):
+```go
+// O(k) - Searches only SquadTag entities (10-50)
+squadView := manager.World.CreateView(SquadTag)  // Created once during init
+for _, result := range squadView.Get() {         // Only ~20 squads to check
+    squadData := common.GetComponentType[*SquadData](result.Entity, SquadComponent)
+    if squadData.SquadID == targetID {
+        return result.Entity
+    }
+}
+
+// Benchmark: 2.5µs per query
+// Speedup: 136x faster!
+```
+
+#### View Lifecycle
+
+Views are **automatically maintained** by the ECS library:
+
+1. **Creation** (one-time cost):
+   ```go
+   // squads/squadcache.go:32-39
+   func NewSquadQueryCache(manager *common.EntityManager) *SquadQueryCache {
+       return &SquadQueryCache{
+           SquadView:       manager.World.CreateView(SquadTag),
+           SquadMemberView: manager.World.CreateView(SquadMemberTag),
+           LeaderView:      manager.World.CreateView(LeaderTag),
+       }
+   }
+   ```
+
+2. **Automatic Updates**:
+   - When `SquadComponent` is added to entity → auto-added to `SquadView`
+   - When `SquadComponent` is removed from entity → auto-removed from `SquadView`
+   - No manual invalidation needed
+
+3. **Thread-Safe**:
+   - Views have built-in `RWMutex` locks
+   - Safe to use from multiple goroutines
+
+#### Common View Patterns
+
+**Pattern 1: Basic View Query**
+```go
+// combat/combatqueriescache.go:24-36
+type CombatQueryCache struct {
+    ActionStateView *ecs.View  // All ActionStateTag entities
+    FactionView     *ecs.View  // All FactionTag entities
+}
+
+// Usage
+func (c *CombatQueryCache) FindActionStateEntity(squadID ecs.EntityID) *ecs.Entity {
+    for _, result := range c.ActionStateView.Get() {
+        actionState := common.GetComponentType[*ActionStateData](result.Entity, ActionStateComponent)
+        if actionState != nil && actionState.SquadID == squadID {
+            return result.Entity
+        }
+    }
+    return nil
+}
+```
+
+**Pattern 2: Multiple Views for Related Queries**
+```go
+// squads/squadcache.go:22-28
+type SquadQueryCache struct {
+    SquadView       *ecs.View  // GetSquadEntity queries
+    SquadMemberView *ecs.View  // GetUnitIDsInSquad queries
+    LeaderView      *ecs.View  // GetLeaderID queries
+}
+```
+
+**Pattern 3: Exposing Views Across Packages**
+```go
+// squads/squadcache.go:23-26
+type SquadQueryCache struct {
+    // Exported so they can be accessed by other systems (e.g., GUI rendering)
+    SquadView       *ecs.View
+    SquadMemberView *ecs.View
+    LeaderView      *ecs.View
+}
+```
+
+#### Performance Benchmarks
+
+Real-world benchmarks from TinkerRogue:
+
+| Query | Before (World.Query) | After (View) | Speedup |
+|-------|---------------------|--------------|---------|
+| GetSquadEntity | 340µs | 2.5µs | **136x** |
+| GetUnitIDsInSquad | 280µs | 4µs | **70x** |
+| GetLeaderID | 200µs | 1µs | **200x** |
+| FindActionStateEntity | O(n) | O(k) | **50-200x** |
+| FindFactionByID | O(n) | O(k) | **100-500x** |
+
+*Conditions: World with 1000+ entities, 20-180 entities per view*
+
+#### When to Use Views
+
+**Use Views when:**
+- Query is called **frequently** (every frame or multiple times per frame)
+- World has **1000+ entities** (more entities = greater speedup)
+- Query filters by **specific tag** (SquadTag, FactionTag, ActionStateTag)
+- You need **consistent performance** (not O(n) variance)
+
+**Example use cases:**
+- GUI rendering loops
+- Combat system queries
+- Squad management queries
+- Frame-by-frame entity processing
+
+**Don't use Views when:**
+- Query called **once or twice** in entire application
+- World is **small** (< 100 entities)
+- Query has **complex multi-component filtering**
+
+#### Implementation Pattern: Query Cache
+
+Wrap views in a cache struct for clean API:
+
+```go
+// squads/squadcache.go (complete example)
+type SquadQueryCache struct {
+    SquadView       *ecs.View
+    SquadMemberView *ecs.View
+    LeaderView      *ecs.View
+}
+
+func NewSquadQueryCache(manager *common.EntityManager) *SquadQueryCache {
+    return &SquadQueryCache{
+        SquadView:       manager.World.CreateView(SquadTag),
+        SquadMemberView: manager.World.CreateView(SquadMemberTag),
+        LeaderView:      manager.World.CreateView(LeaderTag),
+    }
+}
+
+// Query functions use views instead of World.Query()
+func (c *SquadQueryCache) GetSquadEntity(squadID ecs.EntityID) *ecs.Entity {
+    for _, result := range c.SquadView.Get() {  // ✅ Uses view, not World.Query
+        squadData := common.GetComponentType[*SquadData](result.Entity, SquadComponent)
+        if squadData != nil && squadData.SquadID == squadID {
+            return result.Entity
+        }
+    }
+    return nil
+}
+```
+
+#### Reference Implementations
+
+- **squads/squadcache.go** - Squad query cache with 3 views
+- **combat/combatqueriescache.go** - Combat query cache with action state and faction views
+- **rendering/renderingcache.go** - Rendering cache with spatial queries
+
+#### Best Practices for Views
+
+1. **Create views once during initialization**
+   ```go
+   // ✅ Good: Create once
+   cache := NewSquadQueryCache(manager)
+
+   // ❌ Bad: Creating new view every frame
+   for {
+       view := manager.World.CreateView(SquadTag)  // Don't do this!
+   }
+   ```
+
+2. **Use specific tags, not AllEntitiesTag**
+   ```go
+   // ✅ Good: Specific tag
+   view := manager.World.CreateView(SquadTag)
+
+   // ❌ Bad: All entities
+   view := manager.World.CreateView(AllEntitiesTag)
+   ```
+
+3. **Store views in persistent structs**
+   ```go
+   // ✅ Good: Cache struct with views
+   type SquadQueryCache struct {
+       SquadView *ecs.View
+   }
+
+   // ❌ Bad: Local variable that's recreated
+   func ProcessSquads() {
+       view := manager.World.CreateView(SquadTag)
+       // ...
+   }
+   ```
+
+4. **Export views only when needed across packages**
+   ```go
+   // ✅ Good: Exported for cross-package use
+   type SquadQueryCache struct {
+       SquadView *ecs.View  // Exported for GUI to access
+   }
+
+   // ❌ Bad: Unnecessary visibility
+   type privateCache struct {
+       view *ecs.View
+   }
+   ```
 
 ### Query Optimization Patterns
 
@@ -2982,6 +3193,380 @@ func (cs *CachedSystem) rebuildCache() {
 }
 ```
 
+### ECS Views for Query Caching (100-1000x Speedup)
+
+**Historical Context**: GetSquadInfo Optimization (2025-12-08)
+
+ECS Views provide **automatic query caching** maintained by the ECS library. Use Views when queries are called repeatedly (e.g., every frame) to eliminate O(n) scans.
+
+#### The Problem: Repeated Query Scans
+
+**Before** (O(N×M) catastrophe):
+```go
+// Called EVERY FRAME for EVERY visible squad
+func (shr *SquadHighlightRenderer) Render(...) {
+    allSquads := squads.FindAllSquads(shr.queries.ECSManager)
+
+    for _, squadID := range allSquads {
+        // Each call scans ALL entities multiple times!
+        squadInfo := shr.queries.GetSquadInfo(squadID)
+        // ... rendering logic
+    }
+}
+
+// GetSquadInfo internally does:
+// - Query ALL entities for name (O(n))
+// - Query ALL units for members (O(m))
+// - Query ALL entities per unit for attributes (O(u×n))
+// Total: O(squads × (n + m + u×n))
+```
+
+**Benchmark** (10 squads, 5 units/squad, 500 entities):
+- Entity scans per frame: **25,000+**
+- Frame time: 30-50ms
+- Result: **FPS drops to 20-30 with many squads**
+
+#### The Solution: ECS Views
+
+**Step 1: Create Views at Initialization**
+
+Views cache query results and automatically update when entities are added/removed:
+
+```go
+// gui/guicomponents/guiqueries.go:15-35
+type GUIQueries struct {
+    ECSManager      *common.EntityManager
+    factionManager  *combat.FactionManager
+
+    // Cached ECS Views (automatically maintained by library)
+    squadView       *ecs.View  // All SquadTag entities
+    squadMemberView *ecs.View  // All SquadMemberTag entities
+    actionStateView *ecs.View  // All ActionStateTag entities
+}
+
+func NewGUIQueries(ecsManager *common.EntityManager) *GUIQueries {
+    return &GUIQueries{
+        ECSManager:     ecsManager,
+        factionManager: combat.NewFactionManager(ecsManager),
+
+        // Initialize Views (one-time O(n) cost, then O(1) access)
+        squadView:       ecsManager.World.CreateView(squads.SquadTag),
+        squadMemberView: ecsManager.World.CreateView(squads.SquadMemberTag),
+        actionStateView: ecsManager.World.CreateView(combat.ActionStateTag),
+    }
+}
+```
+
+**How Views Work:**
+1. `CreateView(tag)` builds initial cache from Query results
+2. Library automatically calls `view.add(entity)` when entities added
+3. Library automatically calls `view.remove(entity)` when entities removed
+4. Thread-safe with RWMutex
+5. **No manual invalidation needed!**
+
+**Step 2: Build Lookup Maps from Views**
+
+Instead of repeated queries, iterate Views once per frame to build O(1) lookup maps:
+
+```go
+// gui/guicomponents/guiqueries.go:359-401
+type SquadInfoCache struct {
+    squadNames      map[ecs.EntityID]string
+    squadMembers    map[ecs.EntityID][]ecs.EntityID
+    actionStates    map[ecs.EntityID]*combat.ActionStateData
+    squadFactions   map[ecs.EntityID]ecs.EntityID
+    destroyedStatus map[ecs.EntityID]bool
+}
+
+func (gq *GUIQueries) BuildSquadInfoCache() *SquadInfoCache {
+    cache := &SquadInfoCache{
+        squadNames:      make(map[ecs.EntityID]string),
+        squadMembers:    make(map[ecs.EntityID][]ecs.EntityID),
+        actionStates:    make(map[ecs.EntityID]*combat.ActionStateData),
+        squadFactions:   make(map[ecs.EntityID]ecs.EntityID),
+        destroyedStatus: make(map[ecs.EntityID]bool),
+    }
+
+    // Single pass over squads View (not fresh query!)
+    for _, result := range gq.squadView.Get() {
+        entity := result.Entity
+        squadData := common.GetComponentType[*squads.SquadData](entity, squads.SquadComponent)
+        squadID := squadData.SquadID
+
+        cache.squadNames[squadID] = squadData.Name
+        cache.destroyedStatus[squadID] = squadData.IsDestroyed
+
+        // Get faction if squad is in combat
+        combatFaction := common.GetComponentType[*combat.CombatFactionData](entity, combat.FactionMembershipComponent)
+        if combatFaction != nil {
+            cache.squadFactions[squadID] = combatFaction.FactionID
+        }
+    }
+
+    // Single pass over squad members View
+    for _, result := range gq.squadMemberView.Get() {
+        memberData := common.GetComponentType[*squads.SquadMemberData](result.Entity, squads.SquadMemberComponent)
+        cache.squadMembers[memberData.SquadID] = append(cache.squadMembers[memberData.SquadID], result.Entity.GetID())
+    }
+
+    // Single pass over action states View
+    for _, result := range gq.actionStateView.Get() {
+        actionState := common.GetComponentType[*combat.ActionStateData](result.Entity, combat.ActionStateComponent)
+        cache.actionStates[actionState.SquadID] = actionState
+    }
+
+    return cache
+}
+```
+
+**Complexity Analysis:**
+- **Before:** O(N × M) where N = squads, M = all entities
+- **After:** O(S + U + A) where S = squads, U = units, A = action states
+- **Speedup:** 100-1000x for typical scenarios
+
+**Step 3: Use Cache for Queries**
+
+```go
+// gui/guicomponents/guiqueries.go:407-463
+func (gq *GUIQueries) GetSquadInfoCached(squadID ecs.EntityID, cache *SquadInfoCache) *SquadInfo {
+    // All lookups are O(1) map access (no queries!)
+    name := cache.squadNames[squadID]
+    unitIDs := cache.squadMembers[squadID]
+    factionID := cache.squadFactions[squadID]
+    isDestroyed := cache.destroyedStatus[squadID]
+    actionState := cache.actionStates[squadID]
+
+    // Calculate HP (now uses O(1) GetComponentTypeByID - see below)
+    aliveUnits := 0
+    totalHP := 0
+    maxHP := 0
+    for _, unitID := range unitIDs {
+        attrs := common.GetAttributesByIDWithTag(gq.ECSManager, unitID, squads.SquadMemberTag)
+        if attrs != nil {
+            if attrs.CanAct {
+                aliveUnits++
+            }
+            totalHP += attrs.CurrentHealth
+            maxHP += attrs.MaxHealth
+        }
+    }
+
+    // Position lookup (O(1) - see GetComponentTypeByID optimization)
+    var position *coords.LogicalPosition
+    squadPos := common.GetComponentTypeByID[*coords.LogicalPosition](gq.ECSManager, squadID, common.PositionComponent)
+    if squadPos != nil {
+        pos := *squadPos
+        position = &pos
+    }
+
+    // Extract action state fields
+    hasActed := false
+    hasMoved := false
+    movementRemaining := 0
+    if actionState != nil {
+        hasActed = actionState.HasActed
+        hasMoved = actionState.HasMoved
+        movementRemaining = actionState.MovementRemaining
+    }
+
+    return &SquadInfo{
+        ID:                squadID,
+        Name:              name,
+        UnitIDs:           unitIDs,
+        AliveUnits:        aliveUnits,
+        TotalUnits:        len(unitIDs),
+        CurrentHP:         totalHP,
+        MaxHP:             maxHP,
+        Position:          position,
+        FactionID:         factionID,
+        IsDestroyed:       isDestroyed,
+        HasActed:          hasActed,
+        HasMoved:          hasMoved,
+        MovementRemaining: movementRemaining,
+    }
+}
+```
+
+**Step 4: Use in Performance-Critical Code**
+
+```go
+// gui/guimodes/guirenderers.go:169-195
+func (shr *SquadHighlightRenderer) Render(screen *ebiten.Image, ...) {
+    vr := shr.cachedRenderer
+
+    // BUILD CACHE ONCE per render call (O(squads + units + states))
+    cache := shr.queries.BuildSquadInfoCache()
+
+    allSquads := squads.FindAllSquads(shr.queries.ECSManager)
+
+    for _, squadID := range allSquads {
+        // Use cached version (O(units_in_squad) vs O(all_entities))
+        squadInfo := shr.queries.GetSquadInfoCached(squadID, cache)
+        if squadInfo == nil || squadInfo.IsDestroyed || squadInfo.Position == nil {
+            continue
+        }
+
+        // ... render with squadInfo ...
+    }
+}
+```
+
+**Performance Results:**
+- Cache built once: ~100 operations
+- Per-squad lookup: ~5-10 operations
+- **Before:** 10 squads × 2500 ops = 25,000 ops/frame
+- **After:** 100 + (10 × 10) = 200 ops/frame
+- **Speedup: 125x for rendering alone**
+
+#### Critical Fix: GetComponentTypeByID O(1) Optimization
+
+Views alone aren't enough - you also need O(1) component lookups by EntityID:
+
+**Before** (O(n) scan):
+```go
+// common/ecsutil.go:113-132 (OLD)
+func GetComponentTypeByID[T any](manager *EntityManager, entityID ecs.EntityID, component *ecs.Component) T {
+    for _, result := range manager.World.Query(AllEntitiesTag) {  // ❌ Scans ALL entities!
+        if result.Entity.GetID() == entityID {
+            if c, ok := result.Entity.GetComponentData(component); ok {
+                return c.(T)
+            }
+        }
+    }
+    var nilValue T
+    return nilValue
+}
+```
+
+**After** (O(1) lookup):
+```go
+// common/ecsutil.go:113-135 (OPTIMIZED)
+func GetComponentTypeByID[T any](manager *EntityManager, entityID ecs.EntityID, component *ecs.Component) T {
+    defer func() {
+        if r := recover(); r != nil {
+            // ERROR HANDLING IN FUTURE
+        }
+    }()
+
+    // Use ECS library's O(1) entitiesByID map lookup
+    queryResult := manager.World.GetEntityByID(entityID)
+    if queryResult == nil {
+        var nilValue T
+        return nilValue
+    }
+
+    entity := queryResult.Entity
+    if c, ok := entity.GetComponentData(component); ok {
+        return c.(T)
+    }
+
+    var nilValue T
+    return nilValue
+}
+```
+
+**Why This Matters:**
+- ECS library maintains `entitiesByID map[EntityID]*Entity` internally
+- `GetEntityByID()` does direct map lookup, not query scan
+- **This change benefits the ENTIRE codebase** - any code using `GetComponentTypeByID`
+- Speedup: 10-50x for individual component lookups
+
+#### When to Use Views
+
+**Use Views when:**
+1. ✅ Query called **every frame** or in tight loops
+2. ✅ Querying same tag repeatedly (SquadTag, UnitTag, etc.)
+3. ✅ Building UI lists/filters that iterate all entities of a type
+4. ✅ Profiling shows query as bottleneck (>10% frame time)
+
+**Don't Use Views when:**
+1. ❌ Query called infrequently (once per user click)
+2. ❌ Single entity lookup (use `GetComponentTypeByID` instead)
+3. ❌ Data changes every iteration (defeats caching)
+4. ❌ Premature optimization (no profiling data)
+
+#### View Lifecycle Management
+
+**No Manual Invalidation Needed:**
+```go
+// Creating entities - View automatically updated
+squad := manager.World.NewEntity()
+squad.AddComponent(SquadComponent, squadData)
+// ✅ squadView.add(squad) called automatically by library
+
+// Destroying entities - View automatically updated
+manager.World.DisposeEntities(squad)
+// ✅ squadView.remove(squad) called automatically by library
+```
+
+**Thread Safety:**
+- Views use `sync.RWMutex` internally
+- Safe to call `view.Get()` from multiple goroutines
+- Cache building should be single-threaded per frame
+
+**Memory Overhead:**
+- Each View stores slice of QueryResult pointers
+- ~100 entities × 8 bytes = 800 bytes per View
+- Negligible compared to performance gain
+
+#### Real-World Example: UI List Building
+
+**Before** (repeated queries):
+```go
+// gui/guicomponents/guicomponents.go:62-76 (OLD)
+func (slc *SquadListComponent) Refresh() {
+    allSquads := squads.FindAllSquads(slc.queries.ECSManager)
+
+    for _, squadID := range allSquads {
+        // Queries all entities for EACH squad!
+        squadInfo := slc.queries.GetSquadInfo(squadID)
+        squadName := squads.GetSquadName(squadID, slc.queries.ECSManager)  // Another full query!
+        // ... create UI button
+    }
+}
+```
+
+**After** (View-based caching):
+```go
+// gui/guicomponents/guicomponents.go:62-79 (OPTIMIZED)
+func (slc *SquadListComponent) Refresh() {
+    // Build cache once for all squad queries
+    cache := slc.queries.BuildSquadInfoCache()
+
+    allSquads := squads.FindAllSquads(slc.queries.ECSManager)
+
+    for _, squadID := range allSquads {
+        // O(1) map lookup instead of O(n) query
+        squadInfo := slc.queries.GetSquadInfoCached(squadID, cache)
+        squadName := cache.squadNames[squadID]  // Direct map access!
+        // ... create UI button
+    }
+}
+```
+
+**Performance Impact:**
+- **Before:** N squads × 2 queries × M entities = 2NM operations
+- **After:** 1 cache build (S+U+A) + N lookups = S+U+A+N operations
+- **Example:** 20 squads, 100 units, 500 entities
+  - Before: 20 × 2 × 500 = 20,000 ops
+  - After: 20 + 100 + 10 + 20 = 150 ops
+  - **Speedup: 133x**
+
+#### Summary: Views Best Practices
+
+1. **Create Views at initialization** - One-time setup cost
+2. **Build lookup maps once per frame** - Single O(n) pass
+3. **Reuse cache for all queries** - O(1) map lookups
+4. **Combine with GetComponentTypeByID optimization** - O(1) component access
+5. **Keep original methods for compatibility** - Gradual migration
+6. **Profile before and after** - Verify actual performance gains
+
+**Expected Results:**
+- Rendering: 100-1000x faster
+- UI building: 10-100x faster
+- Filtering: 10-100x faster
+- Frame time: 30-50ms → <16ms (60 FPS)
+
 ---
 
 ## File Organization
@@ -2993,21 +3578,16 @@ One major system per package with consistent file naming:
 ```
 squads/
 ├── squadcomponents.go     # Component data definitions
-├── squadmanager.go        # Initialization, package-level views
-├── squadqueries.go        # Canonical query functions (World.Query)
-├── squadcache.go          # Cached query functions (ECS Views)
+├── squadmanager.go        # Initialization functions
+├── squadqueries.go        # Query functions (read-only)
 ├── squadcombat.go         # Combat system logic
 ├── squadabilities.go      # Ability system logic
-├── squadcreation.go       # Creation system logic
-├── squadroster.go         # Player-owned entity tracking
+├── squadcreation.go       # Creation system logic (example)
 ├── squads_test.go         # Tests
-├── squadcache_test.go     # View benchmarks
-├── squadservices/         # Service layer (business logic + validation)
-│   ├── squad_builder_service.go
-│   └── unit_purchase_service.go
-└── squadcommands/         # Command pattern (undo/redo operations)
-    ├── command.go             # SquadCommand interface
-    ├── command_executor.go    # History + redo stack
+├── squadservices/         # Service layer (optional)
+│   └── squad_builder_service.go
+└── squadcommands/         # Command pattern (optional)
+    ├── command.go
     └── rename_squad_command.go
 ```
 
@@ -3188,7 +3768,7 @@ import (
 )
 
 func TestCreateSquad(t *testing.T) {
-    manager := testfx.NewTestEntityManager()
+    manager := common.CreateTestEntityManager()
     InitializeSquadData(manager)
 
     squadID := CreateSquad("Test Squad", FormationBalanced, manager)
@@ -3274,32 +3854,31 @@ squads/
 **Command Pattern:**
 ```go
 // squadcommands/command.go
-type SquadCommand interface {
-    Validate() error     // Pre-execution validation
-    Execute() error      // Manager stored in struct
-    Undo() error
-    Description() string
+type Command interface {
+    Execute(manager *common.EntityManager) error
+    Undo(manager *common.EntityManager) error
 }
 
 // squadcommands/rename_squad_command.go
 type RenameSquadCommand struct {
-    manager *common.EntityManager
-    SquadID ecs.EntityID
-    NewName string
-    OldName string
+    SquadID  ecs.EntityID
+    NewName  string
+    OldName  string
 }
 
-func (cmd *RenameSquadCommand) Execute() error {
-    squadData := common.GetComponentTypeByID[*squads.SquadData](
-        cmd.manager, cmd.SquadID, squads.SquadComponent)
+func (cmd *RenameSquadCommand) Execute(manager *common.EntityManager) error {
+    squadEntity := squads.GetSquadEntity(cmd.SquadID, manager)
+    squadData := common.GetComponentType[*squads.SquadData](squadEntity, squads.SquadComponent)
+
     cmd.OldName = squadData.Name
     squadData.Name = cmd.NewName
     return nil
 }
 
-func (cmd *RenameSquadCommand) Undo() error {
-    squadData := common.GetComponentTypeByID[*squads.SquadData](
-        cmd.manager, cmd.SquadID, squads.SquadComponent)
+func (cmd *RenameSquadCommand) Undo(manager *common.EntityManager) error {
+    squadEntity := squads.GetSquadEntity(cmd.SquadID, manager)
+    squadData := common.GetComponentType[*squads.SquadData](squadEntity, squads.SquadComponent)
+
     squadData.Name = cmd.OldName
     return nil
 }
@@ -3647,315 +4226,140 @@ type SquadData struct {
 
 ### ECS and Service Layer Integration
 
-Services encapsulate business logic, wrapping ECS system functions with validation, error handling, and structured results. The service layer sits between the GUI and the ECS core.
-
-#### Structured Result Types
-
-Services return result structs instead of raw errors, providing rich feedback to callers:
+Services encapsulate business logic and wrap system functions:
 
 ```go
-// tactical/squadservices/unit_purchase_service.go
-type PurchaseResult struct {
-    Success        bool
-    Error          string
-    UnitID         ecs.EntityID
-    UnitName       string
-    CostPaid       int
-    RemainingGold  int
-    RosterCount    int
-    RosterCapacity int
-}
-```
-
-```go
-// tactical/combatservices/combat_service.go
-type VictoryCheckResult struct {
-    BattleOver       bool
-    VictorFaction    ecs.EntityID
-    VictorName       string
-    IsPlayerVictory  bool
-    DefeatedFactions []ecs.EntityID
-    RoundsCompleted  int
-}
-```
-
-**Pattern:** `Success bool` + `Error string` as common fields, plus domain-specific data. Callers check `result.Success` rather than `err != nil`.
-
-#### Service Owning Subsystems
-
-Complex services own and coordinate multiple ECS subsystems:
-
-```go
-// tactical/combatservices/combat_service.go
-type CombatService struct {
-    EntityManager   *common.EntityManager
-    TurnManager     *combat.TurnManager
-    FactionManager  *combat.CombatFactionManager
-    MovementSystem  *combat.CombatMovementSystem
-    CombatCache     *combat.CombatQueryCache
-    CombatActSystem *combat.CombatActionSystem
-    BattleRecorder  *battlelog.BattleRecorder
-    ThreatManager   *behavior.FactionThreatLevelManager
-    // ... AI components
-}
-
-func NewCombatService(manager *common.EntityManager) *CombatService {
-    cache := combat.NewCombatQueryCache(manager)
-    return &CombatService{
-        EntityManager:  manager,
-        TurnManager:    combat.NewTurnManager(manager, cache),
-        FactionManager: combat.NewCombatFactionManager(manager, cache),
-        MovementSystem: combat.NewMovementSystem(manager, common.GlobalPositionSystem, cache),
-        CombatCache:    cache,
-        // ... other subsystems share the same cache
-    }
-}
-```
-
-**Pattern:** The service creates a shared `CombatQueryCache` and passes it to all subsystems, ensuring consistent View-based performance throughout.
-
-#### Atomic Operations with Rollback
-
-Services handle multi-step transactions with explicit rollback on failure:
-
-```go
-// tactical/squadservices/unit_purchase_service.go
-func (ups *UnitPurchaseService) PurchaseUnit(playerID ecs.EntityID, template squads.UnitTemplate) *PurchaseResult {
-    result := &PurchaseResult{UnitName: template.Name}
-
-    // Validate first
-    validation := ups.CanPurchaseUnit(playerID, template)
-    if !validation.CanPurchase {
-        result.Error = validation.Error
-        return result
-    }
-
-    resources := common.GetPlayerResources(playerID, ups.entityManager)
-    roster := squads.GetPlayerRoster(playerID, ups.entityManager)
-    cost := ups.GetUnitCost(template)
-
-    // Step 1: Create unit entity
-    unitEntity, err := squads.CreateUnitEntity(ups.entityManager, template)
-    if err != nil {
-        result.Error = fmt.Sprintf("failed to create unit: %v", err)
-        return result
-    }
-
-    // Step 2: Add to roster (rollback Step 1 on failure)
-    if err := roster.AddUnit(unitEntity.GetID(), template.Name); err != nil {
-        ups.entityManager.CleanDisposeEntity(unitEntity, nil)  // Rollback
-        result.Error = fmt.Sprintf("failed to add to roster: %v", err)
-        return result
-    }
-
-    // Step 3: Spend gold (rollback Steps 1+2 on failure)
-    if err := resources.SpendGold(cost); err != nil {
-        roster.RemoveUnit(unitEntity.GetID())                   // Rollback Step 2
-        ups.entityManager.CleanDisposeEntity(unitEntity, nil)   // Rollback Step 1
-        result.Error = fmt.Sprintf("failed to spend gold: %v", err)
-        return result
-    }
-
-    // Success
-    result.Success = true
-    result.UnitID = unitEntity.GetID()
-    result.CostPaid = cost
-    result.RemainingGold = resources.Gold
-    return result
-}
-```
-
-**Pattern:** Each step has a corresponding rollback. If Step N fails, undo Steps N-1 through 1 in reverse order.
-
-#### Simple Service (Basic Wrapper)
-
-```go
-// tactical/squadservices/squad_builder_service.go
+// squads/squadservices/squad_builder_service.go:11-21
 type SquadBuilderService struct {
     entityManager *common.EntityManager
 }
 
+func NewSquadBuilderService(manager *common.EntityManager) *SquadBuilderService {
+    return &SquadBuilderService{entityManager: manager}
+}
+
+// Service method wraps system function with validation
 func (sbs *SquadBuilderService) PlaceUnit(
-    squadID ecs.EntityID, unit UnitTemplate, gridRow, gridCol int,
+    squadID ecs.EntityID,
+    unit UnitTemplate,
+    gridRow, gridCol int,
 ) *PlaceUnitResult {
     result := &PlaceUnitResult{UnitName: unit.Name}
 
+    // Validation layer
     if gridRow < 0 || gridRow > 2 {
         result.Error = "invalid row"
         return result
     }
 
+    // Call ECS system function
     err := squads.AddUnitToSquad(squadID, sbs.entityManager, unit, gridRow, gridCol)
     if err != nil {
         result.Error = err.Error()
+        result.RemainingCapacity = squads.GetSquadRemainingCapacity(squadID, sbs.entityManager)
         return result
     }
 
+    // Post-processing
     result.Success = true
     result.RemainingCapacity = squads.GetSquadRemainingCapacity(squadID, sbs.entityManager)
     return result
 }
 ```
 
-**Benefits of the Service Layer:**
+**Benefits:**
 - Business logic separate from ECS mechanics
-- Structured result types for rich error handling
-- Atomic operations with explicit rollback
-- GUI-friendly return types (no raw errors)
-- Services own and coordinate subsystems
+- Result structs for rich error handling
+- Atomic operations with rollback support
+- GUI-friendly return types
 
 ### ECS and Command Pattern Integration
 
-Commands provide undo/redo support for squad management operations.
+Commands provide undo/redo support:
 
-**Command Interface** (`tactical/squadcommands/command.go`):
 ```go
-type SquadCommand interface {
-    Validate() error     // Pre-execution validation
-    Execute() error      // Perform operation (manager stored in struct, not passed)
-    Undo() error         // Reverse operation using captured state
-    Description() string // Human-readable description for logging
-}
-```
-
-**Key design:** Commands store the `*EntityManager` reference in the struct itself — `Execute()` takes no parameters. This keeps the interface clean and allows commands to capture all context at creation time.
-
-**Command Example:**
-```go
-// tactical/squadcommands/rename_squad_command.go
+// squads/squadcommands/rename_squad_command.go
 type RenameSquadCommand struct {
-    manager *common.EntityManager
     SquadID ecs.EntityID
     NewName string
-    OldName string  // Captured during Execute for Undo
+    OldName string  // Stored during Execute for Undo
 }
 
-func (cmd *RenameSquadCommand) Validate() error {
-    entity := cmd.manager.FindEntityByID(cmd.SquadID)
-    if entity == nil {
-        return fmt.Errorf("squad %d not found", cmd.SquadID)
-    }
-    return nil
-}
-
-func (cmd *RenameSquadCommand) Execute() error {
-    squadData := common.GetComponentTypeByID[*squads.SquadData](
-        cmd.manager, cmd.SquadID, squads.SquadComponent)
+func (cmd *RenameSquadCommand) Execute(manager *common.EntityManager) error {
+    squadData := common.GetComponentTypeByIDWithTag[*squads.SquadData](
+        manager, cmd.SquadID, squads.SquadTag, squads.SquadComponent)
     if squadData == nil {
         return fmt.Errorf("squad not found")
     }
+
+    // Store old value for undo
     cmd.OldName = squadData.Name
+
+    // Apply change
     squadData.Name = cmd.NewName
     return nil
 }
 
-func (cmd *RenameSquadCommand) Undo() error {
-    squadData := common.GetComponentTypeByID[*squads.SquadData](
-        cmd.manager, cmd.SquadID, squads.SquadComponent)
+func (cmd *RenameSquadCommand) Undo(manager *common.EntityManager) error {
+    squadData := common.GetComponentTypeByIDWithTag[*squads.SquadData](
+        manager, cmd.SquadID, squads.SquadTag, squads.SquadComponent)
     if squadData == nil {
         return fmt.Errorf("squad not found")
     }
+
     squadData.Name = cmd.OldName
     return nil
 }
-
-func (cmd *RenameSquadCommand) Description() string {
-    return fmt.Sprintf("Rename squad to '%s'", cmd.NewName)
-}
 ```
 
-**CommandExecutor** (`tactical/squadcommands/command_executor.go`):
-
-The executor manages history and redo stacks, returning structured `*CommandResult` values:
-
+**Command Executor:**
 ```go
-type CommandResult struct {
-    Success     bool
-    Error       string
-    Description string
-}
-
+// squads/squadcommands/command_executor.go
 type CommandExecutor struct {
-    history    []SquadCommand // Executed commands (most recent at end)
-    redoStack  []SquadCommand // Undone commands available for redo
-    maxHistory int
+    manager        *common.EntityManager
+    commandHistory []Command
+    currentIndex   int
 }
 
-func (ce *CommandExecutor) Execute(cmd SquadCommand) *CommandResult {
-    result := &CommandResult{Description: cmd.Description()}
-
-    if err := cmd.Validate(); err != nil {
-        result.Error = fmt.Sprintf("Validation failed: %v", err)
-        return result
+func (ce *CommandExecutor) Execute(cmd Command) error {
+    if err := cmd.Execute(ce.manager); err != nil {
+        return err
     }
 
-    if err := cmd.Execute(); err != nil {
-        result.Error = fmt.Sprintf("Execution failed: %v", err)
-        return result
+    // Truncate history if we're not at the end
+    ce.commandHistory = ce.commandHistory[:ce.currentIndex+1]
+
+    // Add command to history
+    ce.commandHistory = append(ce.commandHistory, cmd)
+    ce.currentIndex++
+
+    return nil
+}
+
+func (ce *CommandExecutor) Undo() error {
+    if ce.currentIndex < 0 {
+        return fmt.Errorf("nothing to undo")
     }
 
-    ce.history = append(ce.history, cmd)
-    ce.redoStack = ce.redoStack[:0]  // New action invalidates redo
-    result.Success = true
-    return result
-}
-```
-
-The executor uses slice-based history/redo stacks (not index-based navigation). `Undo()` pops from history and pushes to redo; `Redo()` does the reverse.
-
-### Event-Driven GUI Caching
-
-For turn-based games, frame-level cache rebuilds are wasteful — game state only changes on discrete events (damage, movement, turn changes). TinkerRogue uses an event-driven dirty-tracking pattern for GUI caches.
-
-**SquadInfoCache** (`gui/framework/squadinfo_cache.go`):
-
-```go
-type SquadInfoCache struct {
-    cache       map[ecs.EntityID]*SquadInfo
-    dirtySquads map[ecs.EntityID]bool
-    queries     *GUIQueries
-}
-
-func (sc *SquadInfoCache) GetSquadInfo(squadID ecs.EntityID) *SquadInfo {
-    if sc.dirtySquads[squadID] || sc.cache[squadID] == nil {
-        sc.cache[squadID] = sc.buildSquadInfo(squadID)  // Rebuild only when dirty
-        delete(sc.dirtySquads, squadID)
+    cmd := ce.commandHistory[ce.currentIndex]
+    if err := cmd.Undo(ce.manager); err != nil {
+        return err
     }
-    return sc.cache[squadID]
+
+    ce.currentIndex--
+    return nil
+}
+
+func (ce *CommandExecutor) Redo() error {
+    if ce.currentIndex >= len(ce.commandHistory)-1 {
+        return fmt.Errorf("nothing to redo")
+    }
+
+    ce.currentIndex++
+    cmd := ce.commandHistory[ce.currentIndex]
+    return cmd.Execute(ce.manager)
 }
 ```
-
-**Invalidation API:**
-```go
-// Mark single squad dirty — call on: damage, movement, action use, unit death
-sc.MarkSquadDirty(squadID)
-
-// Mark all squads dirty — call on: turn start/end, combat begin/end
-sc.MarkAllDirty()
-
-// Remove squad entirely — call on: squad destroyed or removed from game
-sc.InvalidateSquad(squadID)
-```
-
-**GUIQueries composition** (`gui/framework/guiqueries.go`):
-
-```go
-type GUIQueries struct {
-    ECSManager     *common.EntityManager
-    SquadCache     *squads.SquadQueryCache     // View-based ECS queries
-    CombatCache    *combat.CombatQueryCache    // View-based ECS queries
-    squadInfoCache *SquadInfoCache             // Event-driven dirty tracking
-}
-```
-
-`GUIQueries` composes both View-based query caches (for ECS-level iteration) and the event-driven `SquadInfoCache` (for pre-built UI data). The View caches are always up-to-date automatically; the `SquadInfoCache` rebuilds on-demand when game events mark entries dirty.
-
-**Key invalidation events:**
-- **Damage dealt** → `MarkSquadDirty(attackerID)`, `MarkSquadDirty(defenderID)`
-- **Squad movement** → `MarkSquadDirty(squadID)`
-- **Turn change** → `MarkAllSquadsDirty()`
-- **Unit death** → `MarkSquadDirty(squadID)`
-- **Squad destroyed** → `InvalidateSquad(squadID)`
 
 ### ECS and Turn Manager Integration
 
@@ -4344,7 +4748,7 @@ Query functions need EntityManager setup:
 ```go
 func TestGetUnitIDsInSquad(t *testing.T) {
     // Setup
-    manager := testfx.NewTestEntityManager()
+    manager := common.CreateTestEntityManager()
     InitializeSquadData(manager)
 
     // Create test squad
@@ -4383,7 +4787,7 @@ System functions test game logic:
 ```go
 func TestExecuteSquadAttack(t *testing.T) {
     // Setup
-    manager := testfx.NewTestEntityManager()
+    manager := common.CreateTestEntityManager()
     InitializeSquadData(manager)
 
     // Create attacker squad
@@ -4425,7 +4829,7 @@ Test multiple systems working together:
 ```go
 func TestSquadCombatIntegration(t *testing.T) {
     // Setup
-    manager := testfx.NewTestEntityManager()
+    manager := common.CreateTestEntityManager()
     InitializeSquadData(manager)
     common.GlobalPositionSystem = systems.NewPositionSystem(manager.World)
 
@@ -4466,22 +4870,14 @@ Create test utilities for common setup:
 
 ```go
 // testing/fixtures.go
-import testfx "game_main/testing"
-
-// NewTestEntityManager creates a fully initialized EntityManager for testing.
-// Use with common.InitializeSubsystems(manager) to register all subsystem components.
-func NewTestEntityManager() *common.EntityManager {
+func CreateTestEntityManager() *common.EntityManager {
     manager := common.NewEntityManager()
 
     // Initialize common components
     common.PositionComponent = manager.World.NewComponent()
-    common.AttributeComponent = manager.World.NewComponent()
     common.NameComponent = manager.World.NewComponent()
-    common.PlayerComponent = manager.World.NewComponent()
-    common.PlayerResourcesComponent = manager.World.NewComponent()
-
-    // Initialize PositionSystem (fresh instance for each test)
-    common.GlobalPositionSystem = common.NewPositionSystem(manager.World)
+    common.AttributeComponent = manager.World.NewComponent()
+    common.AllEntitiesTag = ecs.BuildTag()
 
     return manager
 }
@@ -4506,7 +4902,7 @@ Measure performance of query functions:
 ```go
 func BenchmarkGetUnitIDsInSquad(b *testing.B) {
     // Setup
-    manager := testfx.NewTestEntityManager()
+    manager := common.CreateTestEntityManager()
     InitializeSquadData(manager)
 
     // Create squad with 9 units
@@ -4520,7 +4916,7 @@ func BenchmarkGetUnitIDsInSquad(b *testing.B) {
 }
 
 func BenchmarkSpatialLookup(b *testing.B) {
-    manager := testfx.NewTestEntityManager()
+    manager := common.CreateTestEntityManager()
     posSystem := systems.NewPositionSystem(manager.World)
 
     // Add 100 entities
@@ -4537,39 +4933,6 @@ func BenchmarkSpatialLookup(b *testing.B) {
     }
 }
 ```
-
-### View Benchmarking Pattern
-
-Compare `World.Query()` vs View performance using paired benchmarks (`tactical/squads/squadcache_test.go`):
-
-```go
-import testfx "game_main/testing"
-
-func BenchmarkGetSquadEntity_NoCache(b *testing.B) {
-    manager := testfx.NewTestEntityManager()
-    common.InitializeSubsystems(manager)
-    // ... create test data ...
-
-    b.ResetTimer()
-    for i := 0; i < b.N; i++ {
-        _ = GetSquadEntity(targetSquadID, manager)
-    }
-}
-
-func BenchmarkGetSquadEntity_WithCache(b *testing.B) {
-    manager := testfx.NewTestEntityManager()
-    common.InitializeSubsystems(manager)
-    cache := NewSquadQueryCache(manager)
-    // ... create test data ...
-
-    b.ResetTimer()
-    for i := 0; i < b.N; i++ {
-        _ = cache.GetSquadEntity(targetSquadID)
-    }
-}
-```
-
-Run with: `go test -bench=. ./tactical/squads/`
 
 ---
 
@@ -4798,7 +5161,6 @@ func BenchmarkComponentAccess(b *testing.B) {
 - [ ] Named with `*Data` suffix (e.g., `SquadData`)
 - [ ] Component variable named with `*Component` suffix (e.g., `SquadComponent`)
 - [ ] Tag variable named with `*Tag` suffix (e.g., `SquadTag`)
-- [ ] Views created during `init()` registration (not at runtime)
 
 ### System Function Checklist
 
@@ -4808,7 +5170,6 @@ func BenchmarkComponentAccess(b *testing.B) {
 - [ ] Proper naming: `Get*`, `Find*`, `Is*`, `Execute*`, `Update*`
 - [ ] Lives in `*queries.go` (read-only) or `*system.go` (modifies state)
 - [ ] Entity cleanup includes `GlobalPositionSystem.RemoveEntity()`
-- [ ] Uses canonical query API (`*queries.go`) for logic, cached API (`*cache.go`) for hot paths
 
 ### Query Checklist
 
@@ -4817,8 +5178,6 @@ func BenchmarkComponentAccess(b *testing.B) {
 - [ ] Returns `[]ecs.EntityID`, not `[]*ecs.Entity`
 - [ ] Returns `nil` or empty slice when not found (not error)
 - [ ] Filters applied during iteration (not separate pass)
-- [ ] Paired `*queries.go` + `*cache.go` files follow naming convention
-- [ ] Cache file has header comment explaining canonical vs cached API
 
 ### Performance Checklist
 
@@ -4828,34 +5187,15 @@ func BenchmarkComponentAccess(b *testing.B) {
 - [ ] Pre-allocated slices when capacity known
 - [ ] Early exit in boolean queries
 - [ ] Deduplication when needed (multi-cell units, etc.)
-- [ ] Package-level views for frequently-queried tags
-- [ ] QueryCache structs for cross-package view sharing
 
 ### File Organization Checklist
 
 - [ ] `components.go` - Only component definitions
 - [ ] `*manager.go` - Only initialization functions
 - [ ] `*queries.go` - Only read-only query functions
-- [ ] `*cache.go` - View-based cached query functions
 - [ ] `*system.go` - Only state-modifying logic
-- [ ] `*roster.go` - Player-owned entity tracking (if applicable)
 - [ ] `*_test.go` - Tests with proper setup
 - [ ] Package contains one cohesive system
-
-### Service Layer Checklist
-
-- [ ] Result types use `Success bool` + `Error string` + domain fields
-- [ ] Multi-step operations have explicit rollback on failure
-- [ ] Service owns and coordinates its subsystems
-- [ ] Shared QueryCache passed to all owned subsystems
-- [ ] Validation separated from execution (`CanX()` + `DoX()`)
-
-### Command Pattern Checklist
-
-- [ ] Implements `SquadCommand` interface: `Validate()`, `Execute()`, `Undo()`, `Description()`
-- [ ] Manager reference stored in struct (not passed to Execute)
-- [ ] Old state captured during Execute for Undo
-- [ ] CommandExecutor returns `*CommandResult` (not raw error)
 
 ---
 
