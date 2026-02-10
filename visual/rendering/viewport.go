@@ -45,6 +45,7 @@ type ViewportRenderer struct {
 	overlayCache    *ebiten.Image              // Reusable overlay image to avoid allocations
 	overlayTileSize int                        // Track size for invalidation
 	borderDrawOpts  [4]ebiten.DrawImageOptions // Reusable draw options for borders [top, bottom, left, right]
+	overlayDrawOpts ebiten.DrawImageOptions   // Reusable draw options for overlays
 }
 
 // NewViewportRenderer creates a renderer for the current screen
@@ -87,9 +88,9 @@ func (vr *ViewportRenderer) DrawTileOverlay(screen *ebiten.Image, pos coords.Log
 	// Fill with color (still necessary but much faster on existing image)
 	vr.overlayCache.Fill(fillColor)
 
-	op := &ebiten.DrawImageOptions{}
-	op.GeoM.Translate(screenX, screenY)
-	screen.DrawImage(vr.overlayCache, op)
+	vr.overlayDrawOpts.GeoM.Reset()
+	vr.overlayDrawOpts.GeoM.Translate(screenX, screenY)
+	screen.DrawImage(vr.overlayCache, &vr.overlayDrawOpts)
 }
 
 // DrawTileBorder draws a colored border around a logical position

@@ -4,7 +4,7 @@ __________________________________________
 
 
 
-PO
+
 - Need better node management system. Non-combat nodes, player nodes, and POIs in the overworld map gen are too separate. Different ways to do the same thigns
 
 - Consider using an interface for intent in overworld

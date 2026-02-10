@@ -88,11 +88,11 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	if coords.MAP_SCROLLING_ENABLED {
 		bounds := rendering.DrawMapCentered(screen, &g.gameMap, g.playerData.Pos, config.DefaultZoomNumberOfSquare, config.DEBUG_MODE)
 		g.gameMap.RightEdgeX = bounds.RightEdgeX
-		g.gameMap.RightEdgeY = bounds.RightEdgeY
-		rendering.ProcessRenderablesInSquare(&g.em, g.gameMap, screen, g.playerData.Pos, config.DefaultZoomNumberOfSquare, config.DEBUG_MODE, g.renderingCache)
+		g.gameMap.TopEdgeY = bounds.TopEdgeY
+		rendering.ProcessRenderablesInSquare(g.gameMap, screen, g.playerData.Pos, config.DefaultZoomNumberOfSquare, g.renderingCache)
 	} else {
 		rendering.DrawMap(screen, &g.gameMap, config.DEBUG_MODE)
-		rendering.ProcessRenderables(&g.em, g.gameMap, screen, config.DEBUG_MODE, g.renderingCache)
+		rendering.ProcessRenderables(g.gameMap, screen, g.renderingCache)
 	}
 
 	graphics.VXHandler.DrawVisualEffects(screen)

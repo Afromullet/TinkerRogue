@@ -41,14 +41,14 @@ type RenderedBounds struct {
 	MinX, MaxX int
 	MinY, MaxY int
 	RightEdgeX int
-	RightEdgeY int
+	TopEdgeY int
 }
 
 // Render draws tiles to screen based on options using batching for performance
 func (r *TileRenderer) Render(opts RenderOptions) RenderedBounds {
 	bounds := r.calculateBounds(opts)
 	bounds.RightEdgeX = 0
-	bounds.RightEdgeY = 0
+	bounds.TopEdgeY = 0
 
 	// Check if we need to rebuild batches (only rebuild when viewport changes or first render)
 	needsRebuild := !r.batchesBuilt
@@ -100,9 +100,6 @@ func (r *TileRenderer) addTileToBatch(x, y int, opts RenderOptions, bounds *Rend
 	logicalPos := coords.LogicalPosition{X: x, Y: y}
 	idx := coords.CoordManager.LogicalToIndex(logicalPos)
 	tile := r.tiles[idx]
-
-	// Always reveal tiles (no FOV system)
-	tile.IsRevealed = true
 
 	// Get or create batch for this tile's image
 	if r.batches[tile.Image] == nil {
@@ -171,8 +168,8 @@ func (r *TileRenderer) calculateViewportPosition(tile *worldmap.Tile, center *co
 	}
 
 	tileTopEdge := int(screenY)
-	if tileTopEdge < bounds.RightEdgeY {
-		bounds.RightEdgeY = tileTopEdge
+	if tileTopEdge < bounds.TopEdgeY {
+		bounds.TopEdgeY = tileTopEdge
 	}
 
 	return float32(screenX), float32(screenY)

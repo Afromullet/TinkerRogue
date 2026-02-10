@@ -114,12 +114,12 @@ func processRenderablesCore(cache *RenderingCache, gameMap worldmap.GameMap, scr
 }
 
 // ProcessRenderables draws all visible renderable entities (full map, no viewport).
-func ProcessRenderables(ecsmanager *common.EntityManager, gameMap worldmap.GameMap, screen *ebiten.Image, debugMode bool, cache *RenderingCache) {
+func ProcessRenderables(gameMap worldmap.GameMap, screen *ebiten.Image, cache *RenderingCache) {
 	processRenderablesCore(cache, gameMap, screen, nil)
 }
 
 // ProcessRenderablesInSquare renders entities in a square region around playerPos.
-func ProcessRenderablesInSquare(ecsmanager *common.EntityManager, gameMap worldmap.GameMap, screen *ebiten.Image, playerPos *coords.LogicalPosition, squareSize int, debugMode bool, cache *RenderingCache) {
+func ProcessRenderablesInSquare(gameMap worldmap.GameMap, screen *ebiten.Image, playerPos *coords.LogicalPosition, squareSize int, cache *RenderingCache) {
 	sq := coords.NewDrawableSection(playerPos.X, playerPos.Y, squareSize)
 	processRenderablesCore(cache, gameMap, screen, &viewportParams{
 		centerPos: playerPos,

@@ -87,7 +87,7 @@ type GameMap struct {
 	Rooms                 []Rect
 	NumTiles              int
 	RightEdgeX            int
-	RightEdgeY            int
+	TopEdgeY            int
 	ValidPositions        []coords.LogicalPosition
 	BiomeMap              []Biome
 	POIs                  []POIData
