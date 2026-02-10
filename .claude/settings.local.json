@@ -33,7 +33,19 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash scripts/log-agent-usage.sh",
+            "command": "bash scripts/track-usage.sh",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Skill",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash scripts/track-usage.sh",
             "timeout": 5
           }
         ]
