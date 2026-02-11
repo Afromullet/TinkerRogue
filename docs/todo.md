@@ -2,7 +2,9 @@ __________________________________________
 #
 # # # **IMPORTANT** # # # 
 
-- Need more variet unit movement speeds. Everything has teh same movement speed
+- Review caches
+
+- Need some calvary untis
 
 - Overworld node spawning is far too clustered together. All nodes spawn close to eachother. 
 

@@ -20,11 +20,11 @@ import (
 	"game_main/templates"
 
 	"game_main/overworld/core"
-	"game_main/overworld/faction"
 	"game_main/overworld/node"
 	"game_main/overworld/tick"
 	"game_main/overworld/travel"
 	"game_main/testing"
+	"game_main/testing/bootstrap"
 	"game_main/visual/rendering"
 	"game_main/world/worldmap"
 	"log"
@@ -84,7 +84,7 @@ func (gb *GameBootstrap) CreatePlayer(em *common.EntityManager, pd *common.Playe
 	}
 
 	// Create initial squads for player (in reserves, not deployed)
-	if err := squads.CreateInitialPlayerSquads(pd.PlayerEntityID, em); err != nil {
+	if err := bootstrap.CreateInitialPlayerSquads(pd.PlayerEntityID, em); err != nil {
 		log.Fatalf("Failed to create initial player squads: %v", err)
 	}
 }
@@ -118,7 +118,7 @@ func (gb *GameBootstrap) InitializeGameplay(em *common.EntityManager, pd *common
 	}
 
 	// Create initial overworld factions (they will spawn threats dynamically)
-	gb.InitializeOverworldFactions(em, pd, gm)
+	bootstrap.InitializeOverworldFactions(em, pd, gm)
 
 	// Convert POIs from world generation into neutral overworld nodes
 	gb.ConvertPOIsToNodes(em, gm)
@@ -141,33 +141,6 @@ func (gb *GameBootstrap) ConvertPOIsToNodes(em *common.EntityManager, gm *worldm
 		}
 		log.Printf("Converted POI '%s' at (%d, %d) to neutral node (ID: %d)",
 			poi.NodeID, poi.Position.X, poi.Position.Y, nodeID)
-	}
-}
-
-// InitializeOverworldFactions creates starting NPC factions on the overworld.
-// Uses generator-provided positions when available, falls back to hardcoded positions.
-func (gb *GameBootstrap) InitializeOverworldFactions(em *common.EntityManager, pd *common.PlayerData, gm *worldmap.GameMap) {
-	factionTypes := []core.FactionType{
-		core.FactionNecromancers,
-		core.FactionBandits,
-		core.FactionOrcs,
-		core.FactionCultists,
-	}
-
-	for i, fType := range factionTypes {
-		var pos coords.LogicalPosition
-		strength := 6 + common.RandomInt(5)
-
-		if i < len(gm.FactionStartPositions) {
-			pos = gm.FactionStartPositions[i].Position
-		} else {
-			// Fallback hardcoded positions
-			pos = coords.LogicalPosition{X: 15 + i*35, Y: 15 + (i%2)*50}
-		}
-
-		factionID := faction.CreateFaction(em, fType, pos, strength)
-		log.Printf("Created %s faction at (%d, %d) with strength %d (ID: %d)\n",
-			fType.String(), pos.X, pos.Y, strength, factionID)
 	}
 }
 

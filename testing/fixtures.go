@@ -34,10 +34,8 @@ func NewTestEntityManager() *common.EntityManager {
 	// Initialize PositionSystem (fresh instance for each test)
 	common.GlobalPositionSystem = common.NewPositionSystem(manager.World)
 
-	// Initialize squad system components and tags
-	// This is imported dynamically to avoid import cycles
-	// Squad tests will handle this via their own test helpers
-	// (See squads package for squad-specific test setup)
+	// Initialize all registered subsystems (squads, combat, gear, etc.)
+	common.InitializeSubsystems(manager)
 
 	return manager
 }
