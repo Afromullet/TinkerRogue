@@ -35,7 +35,7 @@ func GetFactionArchetype(factionType core.FactionType) FactionArchetype {
 // GetFactionBonuses returns behavior bonuses for a faction type based on its archetype.
 func GetFactionBonuses(factionType core.FactionType) FactionBonuses {
 	archetype := GetFactionArchetype(factionType)
-	bonuses := core.GetStrategyBonuses()
+	bonuses := templates.OverworldConfigTemplate.StrategyBonuses
 	if cfg, ok := bonuses[archetype.Strategy]; ok {
 		return FactionBonuses{
 			ExpansionBonus:     cfg.ExpansionBonus,

@@ -22,29 +22,28 @@ func GetNodeAt(manager *common.EntityManager, pos coords.LogicalPosition) ecs.En
 	return 0
 }
 
-// IsAnyNodeAtPosition checks if any unified overworld node exists at the given position.
-func IsAnyNodeAtPosition(manager *common.EntityManager, pos coords.LogicalPosition) bool {
-	return GetNodeAt(manager, pos) != 0
+// CountPlayerNodes returns the total number of player-placed nodes.
+func CountPlayerNodes(manager *common.EntityManager) int {
+	return CountNodesByOwner(manager, core.OwnerPlayer)
+}
+
+// GetAllPlayerNodePositions returns positions of all player nodes.
+func GetAllPlayerNodePositions(manager *common.EntityManager) []coords.LogicalPosition {
+	return GetNodePositionsByOwner(manager, core.OwnerPlayer)
+}
+
+// GetNearestPlayerNodeDistance returns the distance to the nearest player node from pos.
+// Returns math.MaxFloat64 if no player nodes exist.
+func GetNearestPlayerNodeDistance(manager *common.EntityManager, pos coords.LogicalPosition) float64 {
+	return GetNearestNodeDistance(manager, pos, core.OwnerPlayer)
 }
 
 // CountNodesByOwner returns the number of nodes owned by a specific owner.
 func CountNodesByOwner(manager *common.EntityManager, ownerID string) int {
 	count := 0
-	for _, result := range manager.World.Query(core.OverworldNodeTag) {
+	for _, result := range core.OverworldNodeView.Get() {
 		data := common.GetComponentType[*core.OverworldNodeData](result.Entity, core.OverworldNodeComponent)
 		if data != nil && data.OwnerID == ownerID {
-			count++
-		}
-	}
-	return count
-}
-
-// CountNodesByCategory returns the number of nodes in a specific category.
-func CountNodesByCategory(manager *common.EntityManager, category core.NodeCategory) int {
-	count := 0
-	for _, result := range manager.World.Query(core.OverworldNodeTag) {
-		data := common.GetComponentType[*core.OverworldNodeData](result.Entity, core.OverworldNodeComponent)
-		if data != nil && data.Category == category {
 			count++
 		}
 	}
@@ -54,7 +53,7 @@ func CountNodesByCategory(manager *common.EntityManager, category core.NodeCateg
 // GetNodePositionsByOwner returns all positions of nodes owned by a specific owner.
 func GetNodePositionsByOwner(manager *common.EntityManager, ownerID string) []coords.LogicalPosition {
 	var positions []coords.LogicalPosition
-	for _, result := range manager.World.Query(core.OverworldNodeTag) {
+	for _, result := range core.OverworldNodeView.Get() {
 		data := common.GetComponentType[*core.OverworldNodeData](result.Entity, core.OverworldNodeComponent)
 		if data == nil || data.OwnerID != ownerID {
 			continue
@@ -71,7 +70,7 @@ func GetNodePositionsByOwner(manager *common.EntityManager, ownerID string) []co
 // Returns math.MaxFloat64 if no matching nodes exist.
 func GetNearestNodeDistance(manager *common.EntityManager, pos coords.LogicalPosition, ownerID string) float64 {
 	nearest := math.MaxFloat64
-	for _, result := range manager.World.Query(core.OverworldNodeTag) {
+	for _, result := range core.OverworldNodeView.Get() {
 		data := common.GetComponentType[*core.OverworldNodeData](result.Entity, core.OverworldNodeComponent)
 		if data == nil || data.OwnerID != ownerID {
 			continue
@@ -90,31 +89,3 @@ func GetNearestNodeDistance(manager *common.EntityManager, pos coords.LogicalPos
 	return nearest
 }
 
-// CountHighIntensityNodes returns the number of nodes at or above the intensity threshold.
-func CountHighIntensityNodes(manager *common.EntityManager, threshold int) int {
-	count := 0
-	for _, result := range manager.World.Query(core.OverworldNodeTag) {
-		data := common.GetComponentType[*core.OverworldNodeData](result.Entity, core.OverworldNodeComponent)
-		if data != nil && data.Intensity >= threshold {
-			count++
-		}
-	}
-	return count
-}
-
-// CalculateAverageIntensity returns the average intensity of all nodes with intensity > 0.
-func CalculateAverageIntensity(manager *common.EntityManager) float64 {
-	totalIntensity := 0
-	count := 0
-	for _, result := range manager.World.Query(core.OverworldNodeTag) {
-		data := common.GetComponentType[*core.OverworldNodeData](result.Entity, core.OverworldNodeComponent)
-		if data != nil && data.Category == core.NodeCategoryThreat {
-			totalIntensity += data.Intensity
-			count++
-		}
-	}
-	if count == 0 {
-		return 0.0
-	}
-	return float64(totalIntensity) / float64(count)
-}

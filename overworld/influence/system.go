@@ -1,11 +1,13 @@
 package influence
 
 import (
+	"fmt"
 	"math"
 	"sort"
 
 	"game_main/common"
 	"game_main/overworld/core"
+	"game_main/templates"
 
 	"github.com/bytearena/ecs"
 )
@@ -84,7 +86,7 @@ func addInteraction(manager *common.EntityManager, entity *ecs.Entity, interacti
 // with diminishing returns per interaction type.
 // NetModifier = 1.0 + sum of (modifier * diminishingFactor^i) for each type group.
 func finalizeNetModifiers(manager *common.EntityManager) {
-	diminishing := getDiminishingFactor()
+	diminishing := templates.InfluenceConfigTemplate.DiminishingFactor
 
 	for _, result := range manager.World.Query(core.InteractionTag) {
 		data := common.GetComponentType[*core.InteractionData](result.Entity, core.InteractionComponent)
@@ -122,15 +124,15 @@ func logInteractionEvent(interactionType core.InteractionType, pair NodePair, cu
 	switch interactionType {
 	case core.InteractionSynergy:
 		core.LogEvent(core.EventInfluenceSynergy, currentTick, pair.EntityA.GetID(),
-			core.FormatEventString("Synergy cluster: nodes %d and %d (dist %d)",
+			fmt.Sprintf("Synergy cluster: nodes %d and %d (dist %d)",
 				pair.EntityA.GetID(), pair.EntityB.GetID(), pair.Distance), nil)
 	case core.InteractionCompetition:
 		core.LogEvent(core.EventInfluenceCompetition, currentTick, pair.EntityA.GetID(),
-			core.FormatEventString("Faction rivalry: nodes %d and %d (dist %d)",
+			fmt.Sprintf("Faction rivalry: nodes %d and %d (dist %d)",
 				pair.EntityA.GetID(), pair.EntityB.GetID(), pair.Distance), nil)
 	case core.InteractionSuppression:
 		core.LogEvent(core.EventInfluenceSuppression, currentTick, pair.EntityA.GetID(),
-			core.FormatEventString("Player suppression: nodes %d and %d (dist %d)",
+			fmt.Sprintf("Player suppression: nodes %d and %d (dist %d)",
 				pair.EntityA.GetID(), pair.EntityB.GetID(), pair.Distance), nil)
 	}
 }

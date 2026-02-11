@@ -1,10 +1,12 @@
 package faction
 
 import (
+	"fmt"
+
 	"game_main/common"
-	"game_main/config"
 	"game_main/overworld/core"
 	"game_main/overworld/threat"
+	"game_main/templates"
 	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"
@@ -30,14 +32,13 @@ func CreateFaction(
 	}
 
 	territoryData := &core.TerritoryData{
-		OwnedTiles:  []coords.LogicalPosition{homePosition},
-		BorderTiles: []coords.LogicalPosition{},
+		OwnedTiles: []coords.LogicalPosition{homePosition},
 	}
 
 	intentData := &core.StrategicIntentData{
 		Intent:         core.FactionIntent(core.IntentExpand),
 		TargetPosition: nil,
-		TicksRemaining: core.GetDefaultIntentTickDuration(),
+		TicksRemaining: templates.OverworldConfigTemplate.FactionAI.DefaultIntentTickDuration,
 		Priority:       0.5,
 	}
 
@@ -53,7 +54,7 @@ func CreateFaction(
 
 // UpdateFactions executes faction AI for all factions
 func UpdateFactions(manager *common.EntityManager, currentTick int64) error {
-	for _, result := range manager.World.Query(core.OverworldFactionTag) {
+	for _, result := range core.OverworldFactionView.Get() {
 		entity := result.Entity
 		factionData := common.GetComponentType[*core.OverworldFactionData](entity, core.OverworldFactionComponent)
 		intentData := common.GetComponentType[*core.StrategicIntentData](entity, core.StrategicIntentComponent)
@@ -68,7 +69,7 @@ func UpdateFactions(manager *common.EntityManager, currentTick int64) error {
 		// Re-evaluate intent if timer expired
 		if intentData.TicksRemaining <= 0 {
 			EvaluateFactionIntent(manager, entity, factionData, intentData)
-			intentData.TicksRemaining = core.GetDefaultIntentTickDuration()
+			intentData.TicksRemaining = templates.OverworldConfigTemplate.FactionAI.DefaultIntentTickDuration
 		}
 
 		// Execute current intent
@@ -86,10 +87,10 @@ func EvaluateFactionIntent(
 	intentData *core.StrategicIntentData,
 ) {
 	// Score possible actions
-	expandScore := ScoreExpansion(manager, entity, factionData)
-	fortifyScore := ScoreFortification(manager, entity, factionData)
-	raidScore := ScoreRaiding(manager, entity, factionData)
-	retreatScore := ScoreRetreat(manager, entity, factionData)
+	expandScore := ScoreExpansion(factionData)
+	fortifyScore := ScoreFortification(factionData)
+	raidScore := ScoreRaiding(factionData)
+	retreatScore := ScoreRetreat(factionData)
 
 	// Choose highest-scoring action
 	maxScore := expandScore
@@ -110,7 +111,7 @@ func EvaluateFactionIntent(
 	}
 
 	// If all scores are low, go idle (threshold from config)
-	if maxScore < core.GetIdleScoreThreshold() {
+	if maxScore < templates.OverworldConfigTemplate.FactionScoringControl.IdleScoreThreshold {
 		newIntent = core.IntentIdle
 	}
 
@@ -149,7 +150,7 @@ func ExpandTerritory(manager *common.EntityManager, entity *ecs.Entity, factionD
 	}
 
 	// Don't expand beyond limit
-	if factionData.TerritorySize >= core.GetMaxTerritorySize() {
+	if factionData.TerritorySize >= templates.OverworldConfigTemplate.FactionAI.MaxTerritorySize {
 		return
 	}
 
@@ -164,7 +165,7 @@ func ExpandTerritory(manager *common.EntityManager, entity *ecs.Entity, factionD
 
 	for _, adj := range adjacents {
 		// Check bounds using configured map dimensions
-		if adj.X < 0 || adj.X >= config.DefaultMapWidth || adj.Y < 0 || adj.Y >= config.DefaultMapHeight {
+		if adj.X < 0 || adj.X >= coords.CoordManager.GetDungeonWidth() || adj.Y < 0 || adj.Y >= coords.CoordManager.GetDungeonHeight() {
 			continue
 		}
 
@@ -180,11 +181,11 @@ func ExpandTerritory(manager *common.EntityManager, entity *ecs.Entity, factionD
 
 			// Log expansion event
 			core.LogEvent(core.EventFactionExpanded, core.GetCurrentTick(manager), entity.GetID(),
-				core.FormatEventString("%s expanded to (%d, %d)",
+				fmt.Sprintf("%s expanded to (%d, %d)",
 					factionData.FactionType.String(), adj.X, adj.Y), nil)
 
 			// Spawn threat on newly claimed tile
-			if common.RandomInt(100) < core.GetExpansionThreatSpawnChance() {
+			if common.RandomInt(100) < templates.OverworldConfigTemplate.SpawnProbabilities.ExpansionThreatSpawnChance {
 				SpawnThreatForFaction(manager, entity, adj, factionData.FactionType)
 			}
 
@@ -201,10 +202,10 @@ func FortifyTerritory(manager *common.EntityManager, entity *ecs.Entity, faction
 	}
 
 	// Increase strength
-	factionData.Strength += core.GetFortificationStrengthGain()
+	factionData.Strength += templates.OverworldConfigTemplate.FactionAI.FortificationStrengthGain
 
 	// Spawn threat on random owned tile
-	if common.RandomInt(100) < core.GetFortifyThreatSpawnChance() {
+	if common.RandomInt(100) < templates.OverworldConfigTemplate.SpawnProbabilities.FortifyThreatSpawnChance {
 		randomTile := core.GetRandomTileFromSlice(territoryData.OwnedTiles)
 		if randomTile != nil {
 			SpawnThreatForFaction(manager, entity, *randomTile, factionData.FactionType)
@@ -228,8 +229,8 @@ func ExecuteRaid(manager *common.EntityManager, entity *ecs.Entity, factionData 
 
 	// Spawn higher-intensity threat for raids (formula from config)
 	threatType := core.MapFactionToThreatType(factionData.FactionType)
-	baseIntensity := core.GetRaidBaseIntensity()
-	intensityScale := core.GetRaidIntensityScale()
+	baseIntensity := templates.OverworldConfigTemplate.FactionScoringControl.RaidBaseIntensity
+	intensityScale := templates.OverworldConfigTemplate.FactionScoringControl.RaidIntensityScale
 	intensity := baseIntensity + int(float64(factionData.Strength)*intensityScale)
 	currentTick := core.GetCurrentTick(manager)
 
@@ -237,7 +238,7 @@ func ExecuteRaid(manager *common.EntityManager, entity *ecs.Entity, factionData 
 
 	// Log raid event
 	core.LogEvent(core.EventFactionRaid, currentTick, entity.GetID(),
-		core.FormatEventString("%s launched raid! Spawned intensity %d %s at (%d, %d)",
+		fmt.Sprintf("%s launched raid! Spawned intensity %d %s at (%d, %d)",
 			factionData.FactionType.String(), intensity, threatType.String(),
 			randomTile.X, randomTile.Y), nil)
 }
@@ -256,7 +257,7 @@ func AbandonTerritory(manager *common.EntityManager, entity *ecs.Entity, faction
 
 // IsTileOwnedByAnyFaction checks if a tile is controlled
 func IsTileOwnedByAnyFaction(manager *common.EntityManager, pos coords.LogicalPosition) bool {
-	for _, result := range manager.World.Query(core.OverworldFactionTag) {
+	for _, result := range core.OverworldFactionView.Get() {
 		territoryData := common.GetComponentType[*core.TerritoryData](result.Entity, core.TerritoryComponent)
 		if territoryData != nil {
 			for _, tile := range territoryData.OwnedTiles {

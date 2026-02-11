@@ -6,7 +6,8 @@ import (
 	"game_main/gui/framework"
 	"game_main/gui/guioverworld"
 	"game_main/overworld/core"
-	"game_main/overworld/playernode"
+	"game_main/overworld/node"
+	"game_main/templates"
 	"game_main/world/coords"
 
 	"github.com/ebitenui/ebitenui/widget"
@@ -24,7 +25,7 @@ type NodePlacementMode struct {
 	selectedNodeType core.NodeTypeID
 	nodeTypes        []*core.NodeDefinition
 	cursorPos        *coords.LogicalPosition
-	lastValidation   *playernode.PlacementResult
+	lastValidation   *node.PlacementResult
 
 	// Widget references
 	nodeListText      *widget.TextArea
@@ -139,7 +140,7 @@ func (npm *NodePlacementMode) HandleInput(inputState *framework.InputState) bool
 	npm.cursorPos = &logicalPos
 
 	// Validate on hover for preview feedback
-	result := playernode.ValidatePlacement(npm.Context.ECSManager, logicalPos, npm.Context.PlayerData)
+	result := node.ValidatePlayerPlacement(npm.Context.ECSManager, logicalPos, npm.Context.PlayerData)
 	npm.lastValidation = &result
 
 	// Left click to place node
@@ -157,14 +158,14 @@ func (npm *NodePlacementMode) handlePlaceNode(pos coords.LogicalPosition) {
 		return
 	}
 
-	result := playernode.ValidatePlacement(npm.Context.ECSManager, pos, npm.Context.PlayerData)
+	result := node.ValidatePlayerPlacement(npm.Context.ECSManager, pos, npm.Context.PlayerData)
 	if !result.Valid {
 		npm.setInfo(fmt.Sprintf("Cannot place: %s", result.Reason))
 		return
 	}
 
 	currentTick := core.GetCurrentTick(npm.Context.ECSManager)
-	_, err := playernode.CreatePlayerNode(npm.Context.ECSManager, pos, npm.selectedNodeType, currentTick)
+	_, err := node.CreatePlayerNode(npm.Context.ECSManager, pos, npm.selectedNodeType, currentTick)
 	if err != nil {
 		npm.setInfo(fmt.Sprintf("Failed to place node: %v", err))
 		return
@@ -200,8 +201,8 @@ func (npm *NodePlacementMode) refreshNodeList() {
 		return
 	}
 
-	count := playernode.CountPlayerNodes(npm.Context.ECSManager)
-	maxNodes := core.GetMaxPlayerNodes()
+	count := node.CountPlayerNodes(npm.Context.ECSManager)
+	maxNodes := templates.OverworldConfigTemplate.PlayerNodes.MaxNodes
 
 	text := fmt.Sprintf("=== Node Types ===\nPlaced: %d / %d\n\n", count, maxNodes)
 
@@ -241,7 +242,7 @@ func (npm *NodePlacementMode) refreshPlacementInfo() {
 		text += "No type selected\n"
 	}
 
-	text += fmt.Sprintf("\nMax Range: %d tiles\n", core.GetMaxPlacementRange())
+	text += fmt.Sprintf("\nMax Range: %d tiles\n", templates.OverworldConfigTemplate.PlayerNodes.MaxPlacementRange)
 	text += "\nTab: cycle type, 1-4: select type\nClick map to place, ESC to cancel"
 
 	npm.placementInfoText.SetText(text)

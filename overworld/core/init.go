@@ -9,6 +9,7 @@ import (
 // OverworldNodeView is a package-level ECS View for zero-allocation overworld node queries.
 // Initialized once during subsystem registration; automatically maintained by the ECS library.
 var OverworldNodeView *ecs.View
+var OverworldFactionView *ecs.View
 
 // init registers the overworld core subsystem with the ECS component registry.
 // This allows the overworld package to self-register its components without
@@ -18,6 +19,7 @@ func init() {
 		InitOverworldComponents(em)
 		InitOverworldTags(em)
 		OverworldNodeView = em.World.CreateView(OverworldNodeTag)
+		OverworldFactionView = em.World.CreateView(OverworldFactionTag)
 	})
 }
 

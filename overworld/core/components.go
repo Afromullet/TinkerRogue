@@ -58,9 +58,7 @@ type InfluenceData struct {
 
 // TerritoryData - Tiles controlled by a faction
 type TerritoryData struct {
-	OwnedTiles    []coords.LogicalPosition // List of controlled tiles
-	BorderTiles   []coords.LogicalPosition // Tiles adjacent to territory (cached)
-	ContestedTile *coords.LogicalPosition  // Tile currently being fought over
+	OwnedTiles []coords.LogicalPosition // List of controlled tiles
 }
 
 // StrategicIntentData - Current faction objective

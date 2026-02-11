@@ -9,7 +9,7 @@ import (
 // Uses unified OverworldNodeComponent, filters by threat category.
 func CountThreatNodes(manager *common.EntityManager) int {
 	count := 0
-	for _, result := range manager.World.Query(core.OverworldNodeTag) {
+	for _, result := range core.OverworldNodeView.Get() {
 		data := common.GetComponentType[*core.OverworldNodeData](result.Entity, core.OverworldNodeComponent)
 		if data != nil && data.Category == core.NodeCategoryThreat {
 			count++
@@ -22,7 +22,7 @@ func CountThreatNodes(manager *common.EntityManager) int {
 // Uses unified OverworldNodeComponent.
 func CountHighIntensityThreats(manager *common.EntityManager, threshold int) int {
 	count := 0
-	for _, result := range manager.World.Query(core.OverworldNodeTag) {
+	for _, result := range core.OverworldNodeView.Get() {
 		data := common.GetComponentType[*core.OverworldNodeData](result.Entity, core.OverworldNodeComponent)
 		if data != nil && data.Category == core.NodeCategoryThreat && data.Intensity >= threshold {
 			count++
@@ -37,7 +37,7 @@ func CalculateAverageIntensity(manager *common.EntityManager) float64 {
 	totalIntensity := 0
 	count := 0
 
-	for _, result := range manager.World.Query(core.OverworldNodeTag) {
+	for _, result := range core.OverworldNodeView.Get() {
 		data := common.GetComponentType[*core.OverworldNodeData](result.Entity, core.OverworldNodeComponent)
 		if data != nil && data.Category == core.NodeCategoryThreat {
 			totalIntensity += data.Intensity

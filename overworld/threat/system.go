@@ -1,8 +1,12 @@
 package threat
 
 import (
+	"fmt"
+
 	"game_main/common"
 	"game_main/overworld/core"
+	"game_main/overworld/node"
+	"game_main/templates"
 	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"
@@ -28,7 +32,8 @@ func selectRandomEncounterForNode(threatType core.ThreatType) string {
 	return selectedEncounter.ID
 }
 
-// CreateThreatNode spawns a new threat at a position
+// CreateThreatNode spawns a new threat at a position.
+// Delegates to node.CreateNode with threat-specific setup (encounter selection, faction owner).
 func CreateThreatNode(
 	manager *common.EntityManager,
 	pos coords.LogicalPosition,
@@ -36,60 +41,41 @@ func CreateThreatNode(
 	initialIntensity int,
 	currentTick int64,
 ) ecs.EntityID {
-	entity := manager.World.NewEntity()
-
-	// Add position component
-	entity.AddComponent(common.PositionComponent, &coords.LogicalPosition{
-		X: pos.X,
-		Y: pos.Y,
-	})
-
-	// Randomly select an encounter variant for this specific node
-	encounterID := selectRandomEncounterForNode(threatType)
-
-	// Get config for this threat type
-	params := core.GetThreatTypeParamsFromConfig(threatType)
-
-	// Add influence component
-	entity.AddComponent(core.InfluenceComponent, &core.InfluenceData{
-		Radius:        params.BaseRadius + initialIntensity,
-		BaseMagnitude: core.CalculateBaseMagnitude(initialIntensity),
-	})
-
-	// Add unified OverworldNodeComponent
+	// Determine faction owner from node definition
 	nodeDef := core.GetNodeRegistry().GetNodeByType(threatType)
 	ownerID := ""
 	if nodeDef != nil {
 		ownerID = nodeDef.FactionID
 	}
-	entity.AddComponent(core.OverworldNodeComponent, &core.OverworldNodeData{
-		NodeID:         entity.GetID(),
-		NodeTypeID:     string(threatType),
-		Category:       core.NodeCategoryThreat,
-		OwnerID:        ownerID,
-		EncounterID:    encounterID,
-		Intensity:      initialIntensity,
-		GrowthProgress: 0.0,
-		GrowthRate:     params.BaseGrowthRate,
-		IsContained:    false,
-		CreatedTick:    currentTick,
-	})
 
-	// Register in position system
-	common.GlobalPositionSystem.AddEntity(entity.GetID(), pos)
+	// Select random encounter variant
+	encounterID := selectRandomEncounterForNode(threatType)
+
+	entityID, err := node.CreateNode(manager, node.CreateNodeParams{
+		Position:         pos,
+		NodeTypeID:       string(threatType),
+		OwnerID:          ownerID,
+		InitialIntensity: initialIntensity,
+		EncounterID:      encounterID,
+		CurrentTick:      currentTick,
+	})
+	if err != nil {
+		fmt.Printf("WARNING: CreateThreatNode failed: %v\n", err)
+		return 0
+	}
 
 	// Log threat spawn event
-	core.LogEvent(core.EventThreatSpawned, currentTick, entity.GetID(),
-		core.FormatEventString("%s spawned at (%d, %d) with intensity %d",
+	core.LogEvent(core.EventThreatSpawned, currentTick, entityID,
+		fmt.Sprintf("%s spawned at (%d, %d) with intensity %d",
 			threatType.String(), pos.X, pos.Y, initialIntensity), nil)
 
-	return entity.GetID()
+	return entityID
 }
 
 // UpdateThreatNodes evolves all threat nodes by one tick.
 // Uses unified OverworldNodeComponent, filters by threat category.
 func UpdateThreatNodes(manager *common.EntityManager, currentTick int64) error {
-	for _, result := range manager.World.Query(core.OverworldNodeTag) {
+	for _, result := range core.OverworldNodeView.Get() {
 		entity := result.Entity
 		nodeData := common.GetComponentType[*core.OverworldNodeData](entity, core.OverworldNodeComponent)
 
@@ -100,7 +86,7 @@ func UpdateThreatNodes(manager *common.EntityManager, currentTick int64) error {
 		// Apply growth
 		growthAmount := nodeData.GrowthRate
 		if nodeData.IsContained {
-			growthAmount *= core.GetContainmentSlowdown() // Player presence slows growth
+			growthAmount *= templates.OverworldConfigTemplate.ThreatGrowth.ContainmentSlowdown // Player presence slows growth
 		}
 
 		// Apply influence interaction modifier (synergy boosts, competition/suppression slows)
@@ -128,7 +114,7 @@ func EvolveThreatNode(manager *common.EntityManager, entity *ecs.Entity, nodeDat
 	params := core.GetThreatTypeParamsFromConfig(core.ThreatType(nodeData.NodeTypeID))
 
 	// Increase intensity (cap at global max)
-	if nodeData.Intensity < core.GetMaxThreatIntensity() {
+	if nodeData.Intensity < templates.OverworldConfigTemplate.ThreatGrowth.MaxThreatIntensity {
 		oldIntensity := nodeData.Intensity
 		nodeData.Intensity++
 
@@ -141,7 +127,7 @@ func EvolveThreatNode(manager *common.EntityManager, entity *ecs.Entity, nodeDat
 
 		// Log evolution event
 		core.LogEvent(core.EventThreatEvolved, core.GetCurrentTick(manager), entity.GetID(),
-			core.FormatEventString("Threat evolved %d -> %d", oldIntensity, nodeData.Intensity), nil)
+			fmt.Sprintf("Threat evolved %d -> %d", oldIntensity, nodeData.Intensity), nil)
 
 		// Trigger evolution effect (spawn child nodes, etc.)
 		ExecuteThreatEvolutionEffect(manager, entity, nodeData)
@@ -157,18 +143,18 @@ func ExecuteThreatEvolutionEffect(manager *common.EntityManager, entity *ecs.Ent
 	}
 
 	switch nodeData.NodeTypeID {
-	case "necromancer":
+	case string(core.ThreatNecromancer):
 		// Spawn child node at tier 3 (with max intensity 5, only spawns once)
-		if nodeData.Intensity%core.GetChildNodeSpawnThreshold() == 0 {
+		if nodeData.Intensity%templates.OverworldConfigTemplate.ThreatGrowth.ChildNodeSpawnThreshold == 0 {
 			pos := common.GetComponentType[*coords.LogicalPosition](entity, common.PositionComponent)
 			if pos != nil {
 				if !SpawnChildThreatNode(manager, *pos, "necromancer", 1) {
 					core.LogEvent(core.EventThreatEvolved, core.GetCurrentTick(manager), entity.GetID(),
-						core.FormatEventString("Failed to spawn child node (no valid positions)"), nil)
+						fmt.Sprintf("Failed to spawn child node (no valid positions)"), nil)
 				}
 			}
 		}
-	case "corruption":
+	case string(core.ThreatCorruption):
 		// Spread to adjacent tiles
 		SpreadCorruption(manager, entity)
 	}
@@ -187,8 +173,8 @@ func SpawnChildThreatNode(manager *common.EntityManager, parentPos coords.Logica
 			Y: parentPos.Y + offsetY,
 		}
 
-		// Check if position is free (no other threat nodes)
-		if !core.IsThreatAtPosition(manager, newPos) {
+		// Check if position is walkable and free (no other threat nodes)
+		if core.IsTileWalkable(newPos) && !core.IsThreatAtPosition(manager, newPos) {
 			CreateThreatNode(manager, newPos, threatType, intensity, core.GetCurrentTick(manager))
 			return true
 		}
@@ -210,9 +196,9 @@ func SpreadCorruption(manager *common.EntityManager, entity *ecs.Entity) {
 	// Pick random adjacent
 	targetPos := adjacents[common.RandomInt(len(adjacents))]
 
-	// Check if already corrupted
-	if core.IsThreatAtPosition(manager, targetPos) {
-		return // Already has a threat
+	// Check if walkable and not already corrupted
+	if !core.IsTileWalkable(targetPos) || core.IsThreatAtPosition(manager, targetPos) {
+		return
 	}
 
 	// Spawn new corruption
@@ -220,16 +206,16 @@ func SpreadCorruption(manager *common.EntityManager, entity *ecs.Entity) {
 }
 
 // DestroyThreatNode removes a threat from the overworld.
-// Uses unified OverworldNodeData for logging.
+// Logs the destruction event, then delegates to node.DestroyNode for cleanup.
 func DestroyThreatNode(manager *common.EntityManager, threatEntity *ecs.Entity) {
 	nodeData := common.GetComponentType[*core.OverworldNodeData](threatEntity, core.OverworldNodeComponent)
-	pos := common.GetComponentType[*coords.LogicalPosition](threatEntity, common.PositionComponent)
 
-	// Log destruction event
+	// Log destruction event before disposal
 	if nodeData != nil {
+		pos := common.GetComponentType[*coords.LogicalPosition](threatEntity, common.PositionComponent)
 		location := "unknown"
 		if pos != nil {
-			location = core.FormatEventString("(%d, %d)", pos.X, pos.Y)
+			location = fmt.Sprintf("(%d, %d)", pos.X, pos.Y)
 		}
 
 		nodeDef := core.GetNodeRegistry().GetNodeByID(nodeData.NodeTypeID)
@@ -239,13 +225,8 @@ func DestroyThreatNode(manager *common.EntityManager, threatEntity *ecs.Entity) 
 		}
 
 		core.LogEvent(core.EventThreatDestroyed, core.GetCurrentTick(manager), threatEntity.GetID(),
-			core.FormatEventString("%s destroyed at %s", displayName, location), nil)
+			fmt.Sprintf("%s destroyed at %s", displayName, location), nil)
 	}
 
-	// Remove entity
-	if pos != nil {
-		manager.CleanDisposeEntity(threatEntity, pos)
-	} else {
-		manager.World.DisposeEntities(threatEntity)
-	}
+	node.DestroyNode(manager, threatEntity)
 }

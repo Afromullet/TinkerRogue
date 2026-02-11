@@ -49,7 +49,7 @@ func FindOverlappingNodes(manager *common.EntityManager) []NodePair {
 // Uses the unified OverworldNodeTag for a single query instead of querying two separate tags.
 func collectAllNodes(manager *common.EntityManager) []overworldNode {
 	var nodes []overworldNode
-	for _, result := range manager.World.Query(core.OverworldNodeTag) {
+	for _, result := range core.OverworldNodeView.Get() {
 		entity := result.Entity
 		pos := common.GetComponentType[*coords.LogicalPosition](entity, common.PositionComponent)
 		inf := common.GetComponentType[*core.InfluenceData](entity, core.InfluenceComponent)
@@ -70,7 +70,7 @@ func collectAllNodes(manager *common.EntityManager) []overworldNode {
 // Uses unified OverworldNodeTag, filters by hostile owner.
 func GetThreatNodesInRadius(manager *common.EntityManager, pos coords.LogicalPosition, radius int) []ecs.EntityID {
 	var result []ecs.EntityID
-	for _, qr := range manager.World.Query(core.OverworldNodeTag) {
+	for _, qr := range core.OverworldNodeView.Get() {
 		entity := qr.Entity
 		nodeData := common.GetComponentType[*core.OverworldNodeData](entity, core.OverworldNodeComponent)
 		if nodeData == nil || !core.IsHostileOwner(nodeData.OwnerID) {
@@ -91,7 +91,7 @@ func GetThreatNodesInRadius(manager *common.EntityManager, pos coords.LogicalPos
 // Uses unified OverworldNodeTag, filters by player owner.
 func GetPlayerNodesInRadius(manager *common.EntityManager, pos coords.LogicalPosition, radius int) []ecs.EntityID {
 	var result []ecs.EntityID
-	for _, qr := range manager.World.Query(core.OverworldNodeTag) {
+	for _, qr := range core.OverworldNodeView.Get() {
 		entity := qr.Entity
 		nodeData := common.GetComponentType[*core.OverworldNodeData](entity, core.OverworldNodeComponent)
 		if nodeData == nil || nodeData.OwnerID != core.OwnerPlayer {

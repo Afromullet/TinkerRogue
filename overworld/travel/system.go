@@ -43,19 +43,6 @@ func IsTraveling(manager *common.EntityManager) bool {
 	return travelState.IsTraveling
 }
 
-// manhattanDistance returns the Manhattan distance between two positions
-func manhattanDistance(from, to coords.LogicalPosition) int {
-	dx := from.X - to.X
-	if dx < 0 {
-		dx = -dx
-	}
-	dy := from.Y - to.Y
-	if dy < 0 {
-		dy = -dy
-	}
-	return dx + dy
-}
-
 // StartTravel initiates travel to a threat node
 func StartTravel(
 	manager *common.EntityManager,
@@ -93,7 +80,7 @@ func StartTravel(
 	}
 
 	// 4. Calculate ticks needed (Manhattan distance / movement speed, rounded up)
-	distance := manhattanDistance(*playerPos, destinationPos)
+	distance := playerPos.ManhattanDistance(&destinationPos)
 	ticksNeeded := int(math.Ceil(float64(distance) / float64(movementSpeed)))
 
 	// 5. Initialize travel state

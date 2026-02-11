@@ -1,9 +1,12 @@
 package victory
 
 import (
+	"fmt"
+
 	"game_main/common"
 	"game_main/overworld/core"
 	"game_main/overworld/threat"
+	"game_main/templates"
 )
 
 // CheckPlayerDefeat checks if player has lost.
@@ -11,15 +14,15 @@ import (
 func CheckPlayerDefeat(manager *common.EntityManager) (bool, string) {
 	// Check threat influence
 	totalInfluence := GetTotalThreatInfluence(manager)
-	if totalInfluence > core.GetMaxThreatInfluence() {
-		return true, core.FormatEventString("Defeat! Overwhelmed by threat influence (%.1f)", totalInfluence)
+	if totalInfluence > templates.OverworldConfigTemplate.VictoryConditions.MaxThreatInfluence {
+		return true, fmt.Sprintf("Defeat! Overwhelmed by threat influence (%.1f)", totalInfluence)
 	}
 
 	// Check high-intensity threats
-	highIntensityThreshold := core.GetHighIntensityThreshold()
+	highIntensityThreshold := templates.OverworldConfigTemplate.VictoryConditions.HighIntensityThreshold
 	highCount := threat.CountHighIntensityThreats(manager, highIntensityThreshold)
-	if highCount >= core.GetMaxHighIntensityThreats() {
-		return true, core.FormatEventString("Defeat! Too many powerful threats (%d tier-%d+ threats)",
+	if highCount >= templates.OverworldConfigTemplate.VictoryConditions.MaxHighIntensityThreats {
+		return true, fmt.Sprintf("Defeat! Too many powerful threats (%d tier-%d+ threats)",
 			highCount, highIntensityThreshold)
 	}
 
@@ -31,7 +34,7 @@ func CheckPlayerDefeat(manager *common.EntityManager) (bool, string) {
 func GetTotalThreatInfluence(manager *common.EntityManager) float64 {
 	total := 0.0
 
-	for _, result := range manager.World.Query(core.OverworldNodeTag) {
+	for _, result := range core.OverworldNodeView.Get() {
 		nodeData := common.GetComponentType[*core.OverworldNodeData](result.Entity, core.OverworldNodeComponent)
 		if nodeData != nil && nodeData.Category == core.NodeCategoryThreat {
 			total += float64(nodeData.Intensity)

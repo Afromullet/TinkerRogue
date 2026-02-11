@@ -77,15 +77,15 @@ func TestScoreExpansion_FactionDifferentiation(t *testing.T) {
 
 	// Test Cultists (Expansionist archetype, aggression 0.7)
 	strongFaction.FactionType = core.FactionCultists
-	cultistScore := ScoreExpansion(nil, nil, strongFaction)
+	cultistScore := ScoreExpansion(strongFaction)
 
 	// Test Necromancers (Defensive archetype, aggression 0.3)
 	strongFaction.FactionType = core.FactionNecromancers
-	necromancerScore := ScoreExpansion(nil, nil, strongFaction)
+	necromancerScore := ScoreExpansion(strongFaction)
 
 	// Test Bandits (Raider archetype, aggression 0.8)
 	strongFaction.FactionType = core.FactionBandits
-	banditScore := ScoreExpansion(nil, nil, strongFaction)
+	banditScore := ScoreExpansion(strongFaction)
 
 	// Expansionist Cultists should score higher than Defensive Necromancers
 	if cultistScore <= necromancerScore {
@@ -103,7 +103,7 @@ func TestScoreExpansion_FactionDifferentiation(t *testing.T) {
 // TestScoreFortification_WeakFactionsFortifyMore verifies that weak factions
 // get higher fortification scores.
 func TestScoreFortification_WeakFactionsFortifyMore(t *testing.T) {
-	weakThreshold := core.GetWeakThreshold()
+	weakThreshold := templates.OverworldConfigTemplate.StrengthThresholds.Weak
 
 	// Create weak faction (below weak threshold)
 	weakFaction := &core.OverworldFactionData{
@@ -119,8 +119,8 @@ func TestScoreFortification_WeakFactionsFortifyMore(t *testing.T) {
 		FactionType:   core.FactionNecromancers,
 	}
 
-	weakScore := ScoreFortification(nil, nil, weakFaction)
-	strongScore := ScoreFortification(nil, nil, strongFaction)
+	weakScore := ScoreFortification(weakFaction)
+	strongScore := ScoreFortification(strongFaction)
 
 	// Weak factions should score higher on fortification
 	if weakScore <= strongScore {
@@ -136,7 +136,7 @@ func TestScoreFortification_WeakFactionsFortifyMore(t *testing.T) {
 
 // TestScoreRaiding_RequiresStrength verifies that raiding requires minimum strength.
 func TestScoreRaiding_RequiresStrength(t *testing.T) {
-	strongThreshold := core.GetStrongThreshold()
+	strongThreshold := templates.OverworldConfigTemplate.StrengthThresholds.Strong
 
 	// Create weak faction (below strong threshold)
 	weakFaction := &core.OverworldFactionData{
@@ -152,8 +152,8 @@ func TestScoreRaiding_RequiresStrength(t *testing.T) {
 		FactionType:   core.FactionBandits,
 	}
 
-	weakScore := ScoreRaiding(nil, nil, weakFaction)
-	strongScore := ScoreRaiding(nil, nil, strongFaction)
+	weakScore := ScoreRaiding(weakFaction)
+	strongScore := ScoreRaiding(strongFaction)
 
 	// Weak factions should not be able to raid
 	if weakScore != 0.0 {
@@ -169,7 +169,7 @@ func TestScoreRaiding_RequiresStrength(t *testing.T) {
 // TestScoreRetreat_CriticallyWeakRetreats verifies that critically weak factions
 // get high retreat scores.
 func TestScoreRetreat_CriticallyWeakRetreats(t *testing.T) {
-	criticalThreshold := core.GetCriticalThreshold()
+	criticalThreshold := templates.OverworldConfigTemplate.StrengthThresholds.Critical
 
 	// Create critically weak faction
 	criticallyWeakFaction := &core.OverworldFactionData{
@@ -185,8 +185,8 @@ func TestScoreRetreat_CriticallyWeakRetreats(t *testing.T) {
 		FactionType:   core.FactionBeasts,
 	}
 
-	criticalScore := ScoreRetreat(nil, nil, criticallyWeakFaction)
-	healthyScore := ScoreRetreat(nil, nil, healthyFaction)
+	criticalScore := ScoreRetreat(criticallyWeakFaction)
+	healthyScore := ScoreRetreat(healthyFaction)
 
 	// Critically weak factions should score higher on retreat
 	if criticalScore <= healthyScore {
@@ -213,31 +213,31 @@ func TestArchetypeDifferentiatesAllScores(t *testing.T) {
 	}
 
 	// Aggressor should raid more than Defensive
-	orcRaid := ScoreRaiding(nil, nil, orcFaction)
-	necroRaid := ScoreRaiding(nil, nil, necroFaction)
+	orcRaid := ScoreRaiding(orcFaction)
+	necroRaid := ScoreRaiding(necroFaction)
 	if orcRaid <= necroRaid {
 		t.Errorf("Orcs (Aggressor) should raid more than Necromancers (Defensive): orcs=%.2f, necro=%.2f",
 			orcRaid, necroRaid)
 	}
 
 	// Defensive should fortify more than Aggressor
-	orcFort := ScoreFortification(nil, nil, orcFaction)
-	necroFort := ScoreFortification(nil, nil, necroFaction)
+	orcFort := ScoreFortification(orcFaction)
+	necroFort := ScoreFortification(necroFaction)
 	if necroFort <= orcFort {
 		t.Errorf("Necromancers (Defensive) should fortify more than Orcs (Aggressor): necro=%.2f, orcs=%.2f",
 			necroFort, orcFort)
 	}
 
 	// Beasts (Territorial, retreat penalty -3.0) should retreat more than Orcs (retreat penalty 0.0)
-	criticalThreshold := core.GetCriticalThreshold()
+	criticalThreshold := templates.OverworldConfigTemplate.StrengthThresholds.Critical
 	orcFaction.Strength = criticalThreshold - 1
 	beastFaction := &core.OverworldFactionData{
 		Strength:      criticalThreshold - 1,
 		TerritorySize: 10,
 		FactionType:   core.FactionBeasts,
 	}
-	beastRetreat := ScoreRetreat(nil, nil, beastFaction)
-	orcRetreat := ScoreRetreat(nil, nil, orcFaction)
+	beastRetreat := ScoreRetreat(beastFaction)
+	orcRetreat := ScoreRetreat(orcFaction)
 	if beastRetreat <= orcRetreat {
 		t.Errorf("Beasts (Territorial, retreat penalty -3) should retreat more than Orcs (Aggressor, 0): beasts=%.2f, orcs=%.2f",
 			beastRetreat, orcRetreat)

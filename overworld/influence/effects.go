@@ -3,6 +3,7 @@ package influence
 import (
 	"game_main/common"
 	"game_main/overworld/core"
+	"game_main/templates"
 
 	"github.com/bytearena/ecs"
 )
@@ -60,12 +61,12 @@ func CalculateInteractionModifier(
 
 // calculateSynergyBonus returns flat growth bonus for same-faction threats.
 func calculateSynergyBonus() float64 {
-	return getSynergyGrowthBonus()
+	return templates.InfluenceConfigTemplate.Synergy.GrowthBonus
 }
 
 // calculateCompetitionPenalty returns flat growth penalty for rival-faction threats.
 func calculateCompetitionPenalty() float64 {
-	return -getCompetitionGrowthPenalty()
+	return -templates.InfluenceConfigTemplate.Competition.GrowthPenalty
 }
 
 // calculateSuppressionPenalty returns growth penalty from player/neutral nodes on threats.
@@ -84,10 +85,12 @@ func calculateSuppressionPenalty(manager *common.EntityManager, entityA, entityB
 
 	nodeTypeMult := 1.0
 	if suppressorData != nil {
-		nodeTypeMult = getSuppressionNodeTypeMultiplier(suppressorData.NodeTypeID)
+		if mult, ok := templates.InfluenceConfigTemplate.Suppression.NodeTypeMultipliers[suppressorData.NodeTypeID]; ok {
+			nodeTypeMult = mult
+		}
 	}
 
-	return -getSuppressionGrowthPenalty() * nodeTypeMult
+	return -templates.InfluenceConfigTemplate.Suppression.GrowthPenalty * nodeTypeMult
 }
 
 // calculatePlayerSynergyBonus computes bonus for adjacent friendly/neutral nodes.
@@ -97,15 +100,15 @@ func calculatePlayerSynergyBonus(entityA, entityB *ecs.Entity) float64 {
 	dataA := common.GetComponentType[*core.OverworldNodeData](entityA, core.OverworldNodeComponent)
 	dataB := common.GetComponentType[*core.OverworldNodeData](entityB, core.OverworldNodeComponent)
 	if dataA != nil && dataB != nil && isComplementaryPair(dataA.NodeTypeID, dataB.NodeTypeID) {
-		return getPlayerSynergyComplementaryBonus()
+		return templates.InfluenceConfigTemplate.PlayerSynergy.ComplementaryBonus
 	}
 
-	return getPlayerSynergyBaseBonus()
+	return templates.InfluenceConfigTemplate.PlayerSynergy.BaseBonus
 }
 
 // isComplementaryPair checks if two node types form a complementary pair from config.
 func isComplementaryPair(typeA, typeB string) bool {
-	for _, pair := range getComplementaryPairs() {
+	for _, pair := range templates.InfluenceConfigTemplate.PlayerSynergy.ComplementaryPairs {
 		if len(pair) != 2 {
 			continue
 		}

@@ -1,32 +1,30 @@
 package faction
 
 import (
-	"game_main/common"
 	"game_main/overworld/core"
-
-	"github.com/bytearena/ecs"
+	"game_main/templates"
 )
 
 // ScoreExpansion evaluates how good expansion is right now.
 // Uses unified strength thresholds and faction archetype system.
-func ScoreExpansion(manager *common.EntityManager, entity *ecs.Entity, factionData *core.OverworldFactionData) float64 {
+func ScoreExpansion(factionData *core.OverworldFactionData) float64 {
 	score := 0.0
 
 	// Get config parameters
 	strongBonus, smallTerritoryBonus, maxTerritoryPenalty := core.GetExpansionScoringParams()
 
 	// Favor expansion when strong (use unified threshold)
-	if factionData.Strength >= core.GetStrongThreshold() {
+	if factionData.Strength >= templates.OverworldConfigTemplate.StrengthThresholds.Strong {
 		score += strongBonus
 	}
 
 	// Favor expansion when territory is small
-	if factionData.TerritorySize < core.GetExpansionTerritoryLimit() {
+	if factionData.TerritorySize < templates.OverworldConfigTemplate.FactionAI.ExpansionTerritoryLimit {
 		score += smallTerritoryBonus
 	}
 
 	// Penalize if at territory limit
-	if factionData.TerritorySize >= core.GetMaxTerritorySize() {
+	if factionData.TerritorySize >= templates.OverworldConfigTemplate.FactionAI.MaxTerritorySize {
 		score += maxTerritoryPenalty
 	}
 
@@ -38,14 +36,14 @@ func ScoreExpansion(manager *common.EntityManager, entity *ecs.Entity, factionDa
 
 // ScoreFortification evaluates defensive posture.
 // Uses unified strength thresholds and faction archetype system.
-func ScoreFortification(manager *common.EntityManager, entity *ecs.Entity, factionData *core.OverworldFactionData) float64 {
+func ScoreFortification(factionData *core.OverworldFactionData) float64 {
 	score := 0.0
 
 	// Get config parameters
 	weakBonus, baseValue := core.GetFortificationScoringParams()
 
 	// Favor fortify when weak (use unified threshold)
-	if factionData.Strength < core.GetWeakThreshold() {
+	if factionData.Strength < templates.OverworldConfigTemplate.StrengthThresholds.Weak {
 		score += weakBonus
 	}
 
@@ -60,14 +58,14 @@ func ScoreFortification(manager *common.EntityManager, entity *ecs.Entity, facti
 
 // ScoreRaiding evaluates attacking player/other factions.
 // Uses unified strength thresholds and faction archetype system.
-func ScoreRaiding(manager *common.EntityManager, entity *ecs.Entity, factionData *core.OverworldFactionData) float64 {
+func ScoreRaiding(factionData *core.OverworldFactionData) float64 {
 	score := 0.0
 
 	// Get config parameters
 	strongBonus, veryStrongOffset := core.GetRaidingScoringParams()
 
 	// Need minimum strength to raid (use unified strong threshold)
-	if factionData.Strength < core.GetStrongThreshold() {
+	if factionData.Strength < templates.OverworldConfigTemplate.StrengthThresholds.Strong {
 		return 0.0
 	}
 
@@ -75,7 +73,7 @@ func ScoreRaiding(manager *common.EntityManager, entity *ecs.Entity, factionData
 	score += GetFactionBonuses(factionData.FactionType).RaidingBonus
 
 	// Raid if very strong (use unified strong threshold + offset)
-	if factionData.Strength > core.GetStrongThreshold()+veryStrongOffset {
+	if factionData.Strength > templates.OverworldConfigTemplate.StrengthThresholds.Strong+veryStrongOffset {
 		score += strongBonus
 	}
 
@@ -84,14 +82,14 @@ func ScoreRaiding(manager *common.EntityManager, entity *ecs.Entity, factionData
 
 // ScoreRetreat evaluates abandoning territory.
 // Uses unified strength thresholds and faction archetype system.
-func ScoreRetreat(manager *common.EntityManager, entity *ecs.Entity, factionData *core.OverworldFactionData) float64 {
+func ScoreRetreat(factionData *core.OverworldFactionData) float64 {
 	score := 0.0
 
 	// Get config parameters
 	criticalWeakBonus, smallTerritoryPenalty, minTerritorySize := core.GetRetreatScoringParams()
 
 	// Only retreat if critically weak (use unified threshold)
-	if factionData.Strength < core.GetCriticalThreshold() {
+	if factionData.Strength < templates.OverworldConfigTemplate.StrengthThresholds.Critical {
 		score += criticalWeakBonus
 	}
 

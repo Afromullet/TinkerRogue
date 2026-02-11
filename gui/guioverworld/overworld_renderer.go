@@ -7,6 +7,7 @@ import (
 	"game_main/common"
 	"game_main/gui/framework"
 	"game_main/overworld/core"
+	"game_main/templates"
 	"game_main/visual/rendering"
 	"game_main/world/coords"
 	"game_main/world/worldmap"
@@ -272,7 +273,7 @@ func FormatThreatInfo(threat *ecs.Entity, manager *common.EntityManager) string 
 			data.OwnerID,
 			pos.X, pos.Y,
 			data.Intensity,
-			core.GetMaxThreatIntensity(),
+			templates.OverworldConfigTemplate.ThreatGrowth.MaxThreatIntensity,
 			data.GrowthProgress*100,
 			data.CreatedTick,
 		)

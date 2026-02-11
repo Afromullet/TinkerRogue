@@ -43,7 +43,7 @@ func CheckVictoryCondition(manager *common.EntityManager) core.VictoryCondition 
 			victoryState.VictoryAchieved = true
 
 			// Log victory event
-			victoryReason := core.FormatEventString("Victory! Survived %d ticks", victoryState.TicksToSurvive)
+			victoryReason := fmt.Sprintf("Victory! Survived %d ticks", victoryState.TicksToSurvive)
 			core.LogEvent(core.EventVictory, currentTick, 0, victoryReason, nil)
 
 			// Export overworld log on survival victory
@@ -85,7 +85,7 @@ func CheckVictoryCondition(manager *common.EntityManager) core.VictoryCondition 
 			victoryState.VictoryAchieved = true
 
 			// Log victory event
-			victoryReason := core.FormatEventString("Victory! Defeated all %s factions", victoryState.TargetFactionType.String())
+			victoryReason := fmt.Sprintf("Victory! Defeated all %s factions", victoryState.TargetFactionType.String())
 			core.LogEvent(core.EventVictory, core.GetCurrentTick(manager), 0, victoryReason, nil)
 
 			// Export overworld log on faction victory
@@ -128,7 +128,7 @@ func HasPlayerEliminatedAllThreats(manager *common.EntityManager) bool {
 
 // HasPlayerDefeatedFactionType checks if specific faction type is eliminated
 func HasPlayerDefeatedFactionType(manager *common.EntityManager, factionType core.FactionType) bool {
-	for _, result := range manager.World.Query(core.OverworldFactionTag) {
+	for _, result := range core.OverworldFactionView.Get() {
 		factionData := common.GetComponentType[*core.OverworldFactionData](result.Entity, core.OverworldFactionComponent)
 		if factionData != nil && factionData.FactionType == factionType {
 			return false // Faction still exists

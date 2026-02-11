@@ -5,6 +5,7 @@ import (
 
 	"game_main/common"
 	"game_main/overworld/core"
+	"game_main/templates"
 	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"
@@ -58,7 +59,7 @@ func CreateNode(manager *common.EntityManager, params CreateNodeParams) (ecs.Ent
 
 	// Add influence component
 	radius := nodeDef.BaseRadius
-	magnitude := core.GetDefaultPlayerNodeMagnitude()
+	magnitude := templates.InfluenceConfigTemplate.DefaultPlayerNodeMagnitude
 	if nodeDef.Category == core.NodeCategoryThreat {
 		radius += params.InitialIntensity
 		magnitude = core.CalculateBaseMagnitude(params.InitialIntensity)
@@ -73,6 +74,26 @@ func CreateNode(manager *common.EntityManager, params CreateNodeParams) (ecs.Ent
 	common.GlobalPositionSystem.AddEntity(entity.GetID(), params.Position)
 
 	return entity.GetID(), nil
+}
+
+// CreatePlayerNode creates a new player-owned node at the given position.
+// Delegates to CreateNode with player-specific defaults, then logs the event.
+func CreatePlayerNode(manager *common.EntityManager, pos coords.LogicalPosition, nodeTypeID core.NodeTypeID, currentTick int64) (ecs.EntityID, error) {
+	entityID, err := CreateNode(manager, CreateNodeParams{
+		Position:    pos,
+		NodeTypeID:  string(nodeTypeID),
+		OwnerID:     core.OwnerPlayer,
+		CurrentTick: currentTick,
+	})
+	if err != nil {
+		return 0, err
+	}
+
+	core.LogEvent(core.EventPlayerNodePlaced, currentTick, entityID,
+		fmt.Sprintf("Player node '%s' placed at (%d, %d)",
+			string(nodeTypeID), pos.X, pos.Y), nil)
+
+	return entityID, nil
 }
 
 // DestroyNode removes a unified overworld node from the world.

@@ -1,7 +1,6 @@
 package core
 
 import (
-	"game_main/config"
 	"game_main/world/coords"
 )
 
@@ -16,7 +15,7 @@ func InitWalkableGrid(width, height int) {
 
 // SetTileWalkable marks a tile as walkable or not
 func SetTileWalkable(pos coords.LogicalPosition, walkable bool) {
-	idx := pos.Y*config.DefaultMapWidth + pos.X
+	idx := coords.CoordManager.LogicalToIndex(pos)
 	if idx >= 0 && idx < len(WalkableGrid) {
 		WalkableGrid[idx] = walkable
 	}
@@ -28,7 +27,7 @@ func IsTileWalkable(pos coords.LogicalPosition) bool {
 	if WalkableGrid == nil {
 		return true
 	}
-	idx := pos.Y*config.DefaultMapWidth + pos.X
+	idx := coords.CoordManager.LogicalToIndex(pos)
 	if idx < 0 || idx >= len(WalkableGrid) {
 		return false
 	}

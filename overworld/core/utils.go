@@ -1,18 +1,12 @@
 package core
 
 import (
-	"fmt"
 	"game_main/common"
+	"game_main/templates"
 	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"
 )
-
-// FormatEventString is a helper for formatting event descriptions
-// Centralizes string formatting for event logging
-func FormatEventString(format string, args ...interface{}) string {
-	return fmt.Sprintf(format, args...)
-}
 
 // GetCurrentTick returns the current tick from the tick state singleton.
 // Returns 0 if no tick state exists.
@@ -41,7 +35,7 @@ func MapFactionToThreatType(factionType FactionType) ThreatType {
 // CalculateBaseMagnitude derives the influence base magnitude from threat intensity.
 // Single source of truth for this formula — used at creation, evolution, and post-combat.
 func CalculateBaseMagnitude(intensity int) float64 {
-	return float64(intensity) * GetBaseMagnitudeMultiplier()
+	return float64(intensity) * templates.InfluenceConfigTemplate.BaseMagnitudeMultiplier
 }
 
 // GetCardinalNeighbors returns the 4 adjacent positions (up, down, left, right)
@@ -68,28 +62,6 @@ func GetRandomTileFromSlice(tiles []coords.LogicalPosition) *coords.LogicalPosit
 // Uses unified OverworldNodeComponent, filters by hostile owner.
 func IsThreatAtPosition(manager *common.EntityManager, pos coords.LogicalPosition) bool {
 	return GetThreatNodeAt(manager, pos) != 0
-}
-
-// GetPlayerNodeAt returns the EntityID of a player node at a specific position.
-// Returns 0 if no player node exists at the position.
-// Uses unified OverworldNodeComponent, filters by player owner.
-func GetPlayerNodeAt(manager *common.EntityManager, pos coords.LogicalPosition) ecs.EntityID {
-	entityIDs := common.GlobalPositionSystem.GetAllEntityIDsAt(pos)
-	for _, entityID := range entityIDs {
-		if !manager.HasComponent(entityID, OverworldNodeComponent) {
-			continue
-		}
-		data := common.GetComponentTypeByID[*OverworldNodeData](manager, entityID, OverworldNodeComponent)
-		if data != nil && data.OwnerID == OwnerPlayer {
-			return entityID
-		}
-	}
-	return 0
-}
-
-// IsPlayerNodeAtPosition checks if any player node exists at the given position.
-func IsPlayerNodeAtPosition(manager *common.EntityManager, pos coords.LogicalPosition) bool {
-	return GetPlayerNodeAt(manager, pos) != 0
 }
 
 // IsAnyNodeAtPosition checks if any overworld node exists at the given position.

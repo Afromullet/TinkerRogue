@@ -5,6 +5,7 @@ import (
 
 	"game_main/common"
 	"game_main/overworld/core"
+	"game_main/templates"
 	"game_main/world/coords"
 )
 
@@ -24,18 +25,18 @@ func ValidatePlacement(manager *common.EntityManager, pos coords.LogicalPosition
 	}
 
 	// Check no existing node at position
-	if IsAnyNodeAtPosition(manager, pos) {
+	if core.IsAnyNodeAtPosition(manager, pos) {
 		return PlacementResult{Valid: false, Reason: "Position already occupied by a node"}
 	}
 
 	// Check max node limit (uses same config for all owners)
-	maxNodes := core.GetMaxPlayerNodes()
+	maxNodes := templates.OverworldConfigTemplate.PlayerNodes.MaxNodes
 	if CountNodesByOwner(manager, ownerID) >= maxNodes {
 		return PlacementResult{Valid: false, Reason: "Maximum node limit reached"}
 	}
 
 	// Check placement range from any anchor position
-	maxRange := float64(core.GetMaxPlacementRange())
+	maxRange := float64(templates.OverworldConfigTemplate.PlayerNodes.MaxPlacementRange)
 	inRange := false
 	for _, anchor := range anchorPositions {
 		dx := float64(pos.X - anchor.X)
@@ -49,6 +50,54 @@ func ValidatePlacement(manager *common.EntityManager, pos coords.LogicalPosition
 
 	if !inRange {
 		return PlacementResult{Valid: false, Reason: "Too far from anchor positions"}
+	}
+
+	return PlacementResult{Valid: true, Reason: ""}
+}
+
+// ValidatePlayerPlacement checks whether a player node can be placed at the given position.
+// Uses the player's position and existing player node positions as anchors.
+func ValidatePlayerPlacement(manager *common.EntityManager, pos coords.LogicalPosition, playerData *common.PlayerData) PlacementResult {
+	// Check walkable terrain
+	if !core.IsTileWalkable(pos) {
+		return PlacementResult{Valid: false, Reason: "Terrain is not walkable"}
+	}
+
+	// Check no existing node at position
+	if core.IsAnyNodeAtPosition(manager, pos) {
+		return PlacementResult{Valid: false, Reason: "Position already occupied by a node"}
+	}
+
+	// Check max node limit
+	maxNodes := templates.OverworldConfigTemplate.PlayerNodes.MaxNodes
+	if CountPlayerNodes(manager) >= maxNodes {
+		return PlacementResult{Valid: false, Reason: "Maximum node limit reached"}
+	}
+
+	// Check placement range from player position or any existing player node
+	maxRange := float64(templates.OverworldConfigTemplate.PlayerNodes.MaxPlacementRange)
+	inRange := false
+
+	// Check distance from player position
+	if playerData != nil && playerData.Pos != nil {
+		dx := float64(pos.X - playerData.Pos.X)
+		dy := float64(pos.Y - playerData.Pos.Y)
+		dist := math.Sqrt(dx*dx + dy*dy)
+		if dist <= maxRange {
+			inRange = true
+		}
+	}
+
+	// Check distance from any existing player node
+	if !inRange {
+		nearestDist := GetNearestPlayerNodeDistance(manager, pos)
+		if nearestDist <= maxRange {
+			inRange = true
+		}
+	}
+
+	if !inRange {
+		return PlacementResult{Valid: false, Reason: "Too far from player or existing nodes"}
 	}
 
 	return PlacementResult{Valid: true, Reason: ""}

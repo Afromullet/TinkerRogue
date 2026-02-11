@@ -6,7 +6,7 @@ import (
 
 	"game_main/gui/guiresources"
 	"game_main/overworld/core"
-	"game_main/overworld/playernode"
+	"game_main/overworld/node"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/text"
@@ -41,7 +41,7 @@ func (npm *NodePlacementMode) renderPlacementPreview(screen *ebiten.Image) {
 		valid = npm.lastValidation.Valid
 	} else {
 		// Re-validate
-		result := playernode.ValidatePlacement(npm.Context.ECSManager, *npm.cursorPos, npm.Context.PlayerData)
+		result := node.ValidatePlayerPlacement(npm.Context.ECSManager, *npm.cursorPos, npm.Context.PlayerData)
 		valid = result.Valid
 	}
 
