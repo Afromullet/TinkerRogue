@@ -24,7 +24,25 @@ type SquadSpec struct {
 	CreateFn squadCreateFn
 }
 
-// AllScenarios returns all predefined combat scenarios.
+// Suite is a named collection of related scenarios.
+type Suite struct {
+	Name      string
+	Scenarios []Scenario
+}
+
+// AllSuites returns all scenario suites including the legacy suite.
+func AllSuites() []Suite {
+	pool := NewUnitPool()
+	return []Suite{
+		{Name: "duels", Scenarios: GenerateDuelSuite(pool)},
+		{Name: "compositions", Scenarios: GenerateCompositionSuite(pool)},
+		{Name: "encounters", Scenarios: GenerateEncounterSuite(pool)},
+		{Name: "stress", Scenarios: GenerateStressSuite(pool)},
+		{Name: "legacy", Scenarios: AllScenarios()},
+	}
+}
+
+// AllScenarios returns all predefined combat scenarios (legacy).
 func AllScenarios() []Scenario {
 	return []Scenario{
 		scenario1SmallBalanced(),
