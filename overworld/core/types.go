@@ -151,6 +151,11 @@ const (
 	EventInfluenceSynergy                  // Synergy cluster formed
 	EventInfluenceCompetition              // Faction rivalry detected
 	EventInfluenceSuppression              // Player node suppressing threat
+	EventGarrisonAssigned                  // Squad assigned to garrison
+	EventGarrisonRemoved                   // Squad removed from garrison
+	EventGarrisonAttacked                  // Enemy faction attacking a garrisoned node
+	EventGarrisonDefended                  // Garrison successfully defended
+	EventNodeCaptured                      // Node ownership changed after garrison defeat
 )
 
 func (e EventType) String() string {
@@ -181,6 +186,16 @@ func (e EventType) String() string {
 		return "Influence Competition"
 	case EventInfluenceSuppression:
 		return "Influence Suppression"
+	case EventGarrisonAssigned:
+		return "Garrison Assigned"
+	case EventGarrisonRemoved:
+		return "Garrison Removed"
+	case EventGarrisonAttacked:
+		return "Garrison Attacked"
+	case EventGarrisonDefended:
+		return "Garrison Defended"
+	case EventNodeCaptured:
+		return "Node Captured"
 	default:
 		return "Unknown Event"
 	}

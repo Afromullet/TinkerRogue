@@ -92,3 +92,15 @@ func GetThreatNodeAt(manager *common.EntityManager, pos coords.LogicalPosition) 
 	}
 	return 0
 }
+
+// GetNodeAtPosition returns the EntityID of any overworld node at a position.
+// Returns 0 if no node exists. Unlike GetThreatNodeAt, this returns any node (threats, settlements, etc).
+func GetNodeAtPosition(manager *common.EntityManager, pos coords.LogicalPosition) ecs.EntityID {
+	entityIDs := common.GlobalPositionSystem.GetAllEntityIDsAt(pos)
+	for _, entityID := range entityIDs {
+		if manager.HasComponent(entityID, OverworldNodeComponent) {
+			return entityID
+		}
+	}
+	return 0
+}

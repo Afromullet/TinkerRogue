@@ -5,6 +5,7 @@ import (
 	"game_main/common"
 	"game_main/mind/evaluation"
 	"game_main/overworld/core"
+	"game_main/overworld/garrison"
 	"game_main/tactical/combat"
 	"game_main/tactical/squads"
 	"game_main/templates"
@@ -20,6 +21,9 @@ import (
 // SpawnCombatEntities creates player and enemy factions with power-based squad generation.
 // Returns a list of enemy squad IDs created for this encounter.
 //
+// If the threat node has an NPC garrison, garrison squads are used as enemies
+// instead of generating enemies from power budget.
+//
 // This function delegates to GenerateEncounterSpec for the core generation logic,
 // then sets up combat factions and action states.
 func SpawnCombatEntities(
@@ -29,6 +33,15 @@ func SpawnCombatEntities(
 	encounterData *core.OverworldEncounterData,
 	encounterID ecs.EntityID,
 ) ([]ecs.EntityID, error) {
+	// Check if the threat node has an NPC garrison
+	if encounterData.ThreatNodeID != 0 {
+		garrisonData := garrison.GetGarrisonAtNode(manager, encounterData.ThreatNodeID)
+		if garrisonData != nil && len(garrisonData.SquadIDs) > 0 {
+			return spawnGarrisonEncounter(manager, playerEntityID, playerStartPos, garrisonData, encounterID)
+		}
+	}
+
+	// Standard path: Generate encounter from power budget
 	// 1. Generate encounter specification (handles validation, power calculation, squad creation)
 	spec, err := GenerateEncounterSpec(manager, playerEntityID, playerStartPos, encounterData)
 	if err != nil {
@@ -58,6 +71,46 @@ func SpawnCombatEntities(
 
 	fmt.Printf("Created encounter: Player Faction (%d) vs Enemy Faction (%d) with %d squads\n",
 		playerFactionID, enemyFactionID, len(spec.EnemySquads))
+
+	return createdEnemySquadIDs, nil
+}
+
+// spawnGarrisonEncounter uses existing garrison squads as enemies instead of generating new ones.
+// This is used when the player attacks a node that has an NPC garrison.
+func spawnGarrisonEncounter(
+	manager *common.EntityManager,
+	playerEntityID ecs.EntityID,
+	playerStartPos coords.LogicalPosition,
+	garrisonData *core.GarrisonData,
+	encounterID ecs.EntityID,
+) ([]ecs.EntityID, error) {
+	// Create factions
+	cache := combat.NewCombatQueryCache(manager)
+	fm := combat.NewCombatFactionManager(manager, cache)
+	playerFactionID := fm.CreateFactionWithPlayer("Player Forces", 1, "Player 1", encounterID)
+	enemyFactionID := fm.CreateFactionWithPlayer("Garrison Forces", 0, "", encounterID)
+
+	// Add player squads
+	if err := assignPlayerSquadsToFaction(fm, playerEntityID, manager, playerFactionID, playerStartPos); err != nil {
+		return nil, fmt.Errorf("failed to assign player squads: %w", err)
+	}
+
+	// Add garrison squads as enemies
+	enemyPositions := generatePositionsAroundPoint(playerStartPos, len(garrisonData.SquadIDs), 0, 2*math.Pi, EnemySpacingDistance, EnemySpacingDistance)
+
+	createdEnemySquadIDs := make([]ecs.EntityID, 0, len(garrisonData.SquadIDs))
+	for i, squadID := range garrisonData.SquadIDs {
+		pos := enemyPositions[i]
+		if err := fm.AddSquadToFaction(enemyFactionID, squadID, pos); err != nil {
+			return nil, fmt.Errorf("failed to add garrison squad %d to faction: %w", squadID, err)
+		}
+		ensureUnitPositions(manager, squadID, pos)
+		combat.CreateActionStateForSquad(manager, squadID)
+		createdEnemySquadIDs = append(createdEnemySquadIDs, squadID)
+	}
+
+	fmt.Printf("Created garrison encounter: Player Faction (%d) vs Garrison (%d) with %d garrison squads\n",
+		playerFactionID, enemyFactionID, len(garrisonData.SquadIDs))
 
 	return createdEnemySquadIDs, nil
 }
@@ -184,9 +237,11 @@ func generateEnemySquadsByPower(
 	// Get squad composition preferences
 	squadTypes := getSquadComposition(encounterData, squadCount)
 
+	// Pre-compute all enemy positions once (avoids N² allocation)
+	enemyPositions := generatePositionsAroundPoint(playerPos, squadCount, 0, 2*math.Pi, EnemySpacingDistance, EnemySpacingDistance)
+
 	for i := 0; i < squadCount; i++ {
-		// Generate position around player (circular distribution)
-		pos := generateEnemyPosition(playerPos, i, squadCount)
+		pos := enemyPositions[i]
 		squadName := fmt.Sprintf("Enemy Squad %d", i+1)
 
 		// Each enemy squad targets the same power (average player squad power * difficulty)
@@ -243,14 +298,6 @@ func generateRandomComposition(count int) []string {
 		result[i] = types[common.RandomInt(len(types))]
 	}
 	return result
-}
-
-// generateEnemyPosition scatters enemies around player using circular distribution
-func generateEnemyPosition(playerPos coords.LogicalPosition, index, total int) coords.LogicalPosition {
-	// Enemy squads: full circle (0 to 2*Pi), fixed distance
-	// Generate all positions and return the one at this index
-	positions := generatePositionsAroundPoint(playerPos, total, 0, 2*math.Pi, EnemySpacingDistance, EnemySpacingDistance)
-	return positions[index]
 }
 
 // createSquadForPowerBudget creates a squad matching target power.

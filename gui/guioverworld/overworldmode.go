@@ -3,14 +3,12 @@ package guioverworld
 import (
 	"fmt"
 
-	"game_main/common"
 	"game_main/gui/framework"
 	"game_main/mind/encounter"
 	"game_main/overworld/core"
 	"game_main/overworld/threat"
 	"game_main/overworld/tick"
 	"game_main/overworld/travel"
-	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"
 	"github.com/ebitenui/ebitenui/widget"
@@ -30,11 +28,19 @@ type OverworldMode struct {
 	// Services
 	encounterService *encounter.EncounterService
 
+	// Handlers
+	actionHandler *OverworldActionHandler
+	inputHandler  *OverworldInputHandler
+
 	// Widget references (populated from panel registry)
 	threatInfoText  *widget.TextArea
 	tickStatusText  *widget.TextArea
 	eventLogText    *widget.TextArea
 	threatStatsText *widget.TextArea
+
+	// Dirty tracking for event-driven refresh
+	lastTick         int64
+	lastSelectedNode ecs.EntityID
 
 	// Initialization tracking
 	initialized bool
@@ -59,7 +65,6 @@ func (om *OverworldMode) Initialize(ctx *framework.UIContext) error {
 	err := framework.NewModeBuilder(&om.BaseMode, framework.ModeConfig{
 		ModeName:   "overworld",
 		ReturnMode: "", // Uses context switching instead of simple mode transition
-		// Hotkeys handled in HandleInput (Space, P, I are custom actions, not mode transitions)
 	}).Build(ctx)
 
 	if err != nil {
@@ -81,6 +86,21 @@ func (om *OverworldMode) Initialize(ctx *framework.UIContext) error {
 	om.initializeWidgetReferences()
 
 	om.renderer = NewOverworldRenderer(ctx.ECSManager, om.state, ctx.GameMap, ctx.TileSize, ctx)
+
+	// Create deps + handlers
+	deps := &OverworldModeDeps{
+		State:            om.state,
+		Manager:          ctx.ECSManager,
+		PlayerData:       ctx.PlayerData,
+		EncounterService: om.encounterService,
+		Renderer:         om.renderer,
+		ModeManager:      om.ModeManager,
+		ModeCoordinator:  ctx.ModeCoordinator,
+		LogEvent:         om.logEvent,
+		RefreshPanels:    om.refreshAllPanels,
+	}
+	om.actionHandler = NewOverworldActionHandler(deps)
+	om.inputHandler = NewOverworldInputHandler(om.actionHandler, deps, om.GetEbitenUI())
 
 	// Ensure tick state exists
 	tickState := core.GetTickState(ctx.ECSManager)
@@ -104,49 +124,17 @@ func (om *OverworldMode) initializeWidgetReferences() {
 
 func (om *OverworldMode) Enter(fromMode framework.UIMode) error {
 	fmt.Println("Entering Overworld Mode")
-
-	// Ensure recording is active when entering overworld
-	ctx := core.GetContext()
-	if ctx.Recorder != nil && ctx.Recorder.IsEnabled() {
-		tickState := core.GetTickState(om.Context.ECSManager)
-		if tickState != nil && ctx.Recorder.EventCount() == 0 {
-			// Start new recording session if recorder is empty
-			core.StartRecordingSession(tickState.CurrentTick)
-		}
-	}
+	om.startRecordingIfNeeded()
 
 	// Refresh UI displays
-	om.refreshThreatInfo()
-	om.refreshTickStatus()
-	om.refreshThreatStats()
+	om.refreshAllPanels()
 
 	return nil
 }
 
 func (om *OverworldMode) Exit(toMode framework.UIMode) error {
 	fmt.Println("Exiting Overworld Mode")
-
-	// Export overworld log when leaving overworld mode
-	ctx := core.GetContext()
-	if ctx.Recorder != nil && ctx.Recorder.IsEnabled() {
-		tickState := core.GetTickState(om.Context.ECSManager)
-
-		// Only export if game isn't over (victory/defeat already exported)
-		if tickState != nil && !tickState.IsGameOver {
-			// Only export if we actually have events recorded
-			if ctx.Recorder.EventCount() > 0 {
-				tickMsg := fmt.Sprintf("tick %d", tickState.CurrentTick)
-
-				// Export with "Session Paused" outcome (game continues, not victory/defeat)
-				if err := core.FinalizeRecording("Session Paused", fmt.Sprintf("Left overworld at %s", tickMsg)); err != nil {
-					fmt.Printf("WARNING: Failed to export overworld log on exit: %v\n", err)
-				}
-
-				// Clear recording for next session (will restart on next Enter)
-				core.ClearRecording()
-			}
-		}
-	}
+	om.exportRecordingIfNeeded()
 
 	// Clear selection when leaving
 	om.state.ClearSelection()
@@ -155,296 +143,45 @@ func (om *OverworldMode) Exit(toMode framework.UIMode) error {
 }
 
 func (om *OverworldMode) Update(deltaTime float64) error {
-	// Update tick status display every frame
-	om.refreshTickStatus()
+	// Dirty-check: only refresh tick/stats panels when tick changes
+	tickState := core.GetTickState(om.Context.ECSManager)
+	if tickState != nil && tickState.CurrentTick != om.lastTick {
+		om.lastTick = tickState.CurrentTick
+		om.refreshTickStatus()
+		om.refreshThreatStats()
+	}
 
-	// Update threat stats
-	om.refreshThreatStats()
-
-	// Update threat info if selection active
-	if om.state.HasSelection() {
+	// Dirty-check: only refresh threat info when selection changes
+	if om.state.SelectedNodeID != om.lastSelectedNode {
+		om.lastSelectedNode = om.state.SelectedNodeID
 		om.refreshThreatInfo()
 	}
 
 	// Auto-travel: automatically advance ticks when traveling
 	if om.state.IsAutoTraveling && travel.IsTraveling(om.Context.ECSManager) {
-		om.handleAdvanceTick()
+		om.actionHandler.AdvanceTick()
 	}
 
 	return nil
 }
 
 func (om *OverworldMode) Render(screen *ebiten.Image) {
-	// Render overworld visualization (threat nodes, influence, etc.)
 	if om.renderer != nil {
 		om.renderer.Render(screen)
 	}
 }
 
 func (om *OverworldMode) HandleInput(inputState *framework.InputState) bool {
-	// Handle ESC key for context switch
-	if inputState.KeysJustPressed[ebiten.KeyEscape] {
-		if om.Context.ModeCoordinator != nil {
-			if err := om.Context.ModeCoordinator.EnterBattleMap("exploration"); err != nil {
-				fmt.Printf("ERROR: Failed to return to battle map: %v\n", err)
-			}
-			return true
-		}
-	}
-
-	// Handle common input (registered hotkeys)
-	if om.HandleCommonInput(inputState) {
-		return true
-	}
-
-	// Handle 'N' key to enter node placement mode
-	if inputState.KeysJustPressed[ebiten.KeyN] {
-		om.ModeManager.SetMode("node_placement")
-		return true
-	}
-
-	// Handle custom hotkeys
-	if inputState.KeysJustPressed[ebiten.KeySpace] {
-		om.handleAdvanceTick()
-		return true
-	}
-
-	if inputState.KeysJustPressed[ebiten.KeyA] {
-		om.handleToggleAutoTravel()
-		return true
-	}
-
-	if inputState.KeysJustPressed[ebiten.KeyI] {
-		om.handleToggleInfluence()
-		return true
-	}
-
-	// Handle 'E' key to engage selected threat
-	if inputState.KeysJustPressed[ebiten.KeyE] {
-		if om.state.HasSelection() {
-			om.handleEngageThreat()
-			return true
-		}
-	}
-
-	// Handle 'C' key to cancel travel
-	if inputState.KeysJustPressed[ebiten.KeyC] {
-		if travel.IsTraveling(om.Context.ECSManager) {
-			om.handleCancelTravel()
-			return true
-		}
-	}
-
-	// Movement keys advance time in overworld (WASD + diagonals)
-	//Todo, the keys have to be added to keys to track
-	// Note: A, E, C are reserved for other commands, so we handle them separately above
-	if inputState.KeysJustPressed[ebiten.KeyW] ||
-		inputState.KeysJustPressed[ebiten.KeyS] ||
-		inputState.KeysJustPressed[ebiten.KeyD] ||
-		inputState.KeysJustPressed[ebiten.KeyQ] ||
-		inputState.KeysJustPressed[ebiten.KeyZ] {
-		om.handleAdvanceTick()
-		return true
-	}
-
-	// Handle mouse clicks for threat selection
-	if inputState.MousePressed && inputState.MouseButton == ebiten.MouseButtonLeft {
-		threatID := om.renderer.GetThreatAtPosition(inputState.MouseX, inputState.MouseY)
-		if threatID != 0 {
-			om.state.SelectedThreatID = threatID
-			om.refreshThreatInfo()
-			om.logEvent(fmt.Sprintf("Selected threat %d (Press E to engage)", threatID))
-			return true
-		} else {
-			// Click on empty space clears selection
-			om.state.ClearSelection()
-			om.refreshThreatInfo()
-		}
-	}
-
-	return false
-}
-
-// Button click handlers
-
-func (om *OverworldMode) handleAdvanceTick() {
-	travelCompleted, err := tick.AdvanceTick(om.Context.ECSManager, om.Context.PlayerData)
-	if err != nil {
-		om.logEvent(fmt.Sprintf("ERROR: %v", err))
-		return
-	}
-
-	tickState := core.GetTickState(om.Context.ECSManager)
-	travelState := travel.GetTravelState(om.Context.ECSManager)
-
-	// Log appropriate message
-	if travelState != nil && travelState.IsTraveling {
-		om.logEvent(fmt.Sprintf("Tick %d - %d ticks remaining",
-			tickState.CurrentTick, travelState.TicksRemaining))
-	} else {
-		om.logEvent(fmt.Sprintf("Tick advanced to %d", tickState.CurrentTick))
-	}
-
-	om.refreshTickStatus()
-	om.refreshThreatStats()
-
-	// If travel completed, stop auto-travel and start combat
-	if travelCompleted {
-		om.state.IsAutoTraveling = false
-		om.startCombatAfterTravel()
-	}
-}
-
-func (om *OverworldMode) handleToggleInfluence() {
-	om.state.ShowInfluence = !om.state.ShowInfluence
-
-	if om.state.ShowInfluence {
-		om.logEvent("Influence zones visible")
-	} else {
-		om.logEvent("Influence zones hidden")
-	}
-}
-
-func (om *OverworldMode) handleToggleAutoTravel() {
-	// Only allow auto-travel when actually traveling
-	if !travel.IsTraveling(om.Context.ECSManager) {
-		om.logEvent("Auto-travel only available during travel")
-		return
-	}
-
-	om.state.IsAutoTraveling = !om.state.IsAutoTraveling
-
-	if om.state.IsAutoTraveling {
-		om.logEvent("Auto-travel enabled - automatically advancing ticks")
-	} else {
-		om.logEvent("Auto-travel disabled")
-	}
-}
-
-func (om *OverworldMode) handleEngageThreat() {
-	// Validate selection
-	if !om.state.HasSelection() {
-		om.logEvent("No threat selected")
-		return
-	}
-
-	// Get threat entity
-	threatEntity := om.Context.ECSManager.FindEntityByID(om.state.SelectedThreatID)
-	if threatEntity == nil {
-		om.logEvent("ERROR: Threat entity not found")
-		return
-	}
-
-	// Validate threat data
-	threatData := common.GetComponentType[*core.OverworldNodeData](threatEntity, core.OverworldNodeComponent)
-	if threatData == nil {
-		om.logEvent("ERROR: Invalid threat entity")
-		return
-	}
-
-	// Get threat position
-	posData := common.GetComponentType[*coords.LogicalPosition](threatEntity, common.PositionComponent)
-	if posData == nil {
-		om.logEvent("ERROR: Threat has no position")
-		return
-	}
-
-	// Create encounter entity from threat
-	encounterID, err := encounter.TriggerCombatFromThreat(om.Context.ECSManager, threatEntity, *posData)
-	if err != nil {
-		om.logEvent(fmt.Sprintf("ERROR: Failed to create encounter: %v", err))
-		return
-	}
-
-	// Start travel instead of immediate combat
-	if err := travel.StartTravel(
-		om.Context.ECSManager,
-		om.Context.PlayerData,
-		*posData,
-		om.state.SelectedThreatID,
-		encounterID,
-	); err != nil {
-		om.logEvent(fmt.Sprintf("ERROR: %v", err))
-		return
-	}
-
-	travelNodeDef := core.GetNodeRegistry().GetNodeByID(threatData.NodeTypeID)
-	travelDisplayName := threatData.NodeTypeID
-	if travelNodeDef != nil {
-		travelDisplayName = travelNodeDef.DisplayName
-	}
-	om.logEvent(fmt.Sprintf("Traveling to %s (Press C to cancel)...", travelDisplayName))
-	om.state.ClearSelection()
-}
-
-func (om *OverworldMode) handleCancelTravel() {
-	if !travel.IsTraveling(om.Context.ECSManager) {
-		om.logEvent("Not currently traveling")
-		return
-	}
-
-	if err := travel.CancelTravel(
-		om.Context.ECSManager,
-		om.Context.PlayerData,
-	); err != nil {
-		om.logEvent(fmt.Sprintf("ERROR: %v", err))
-		return
-	}
-
-	// Stop auto-travel when travel is cancelled
-	om.state.IsAutoTraveling = false
-
-	om.logEvent("Travel cancelled - returned to origin")
-}
-
-func (om *OverworldMode) startCombatAfterTravel() {
-	travelState := travel.GetTravelState(om.Context.ECSManager)
-	if travelState == nil {
-		return
-	}
-
-	threatEntity := om.Context.ECSManager.FindEntityByID(travelState.TargetThreatID)
-	if threatEntity == nil {
-		om.logEvent("ERROR: Threat not found")
-		return
-	}
-
-	threatData := common.GetComponentType[*core.OverworldNodeData](
-		threatEntity, core.OverworldNodeComponent)
-	posData := common.GetComponentType[*coords.LogicalPosition](
-		threatEntity, common.PositionComponent)
-
-	if threatData == nil || posData == nil {
-		om.logEvent("ERROR: Invalid threat entity")
-		return
-	}
-
-	nodeDef := core.GetNodeRegistry().GetNodeByID(threatData.NodeTypeID)
-	displayName := threatData.NodeTypeID
-	if nodeDef != nil {
-		displayName = nodeDef.DisplayName
-	}
-	threatName := fmt.Sprintf("%s (Level %d)",
-		displayName, threatData.Intensity)
-
-	playerEntityID := ecs.EntityID(0)
-	if om.Context.PlayerData != nil {
-		playerEntityID = om.Context.PlayerData.PlayerEntityID
-	}
-
-	// Start encounter (existing flow)
-	if err := om.encounterService.StartEncounter(
-		travelState.TargetEncounterID,
-		travelState.TargetThreatID,
-		threatName,
-		*posData,
-		playerEntityID,
-	); err != nil {
-		om.logEvent(fmt.Sprintf("ERROR: %v", err))
-	}
+	return om.inputHandler.HandleInput(inputState)
 }
 
 // UI refresh functions
+
+func (om *OverworldMode) refreshAllPanels() {
+	om.refreshThreatInfo()
+	om.refreshTickStatus()
+	om.refreshThreatStats()
+}
 
 func (om *OverworldMode) refreshThreatInfo() {
 	if om.threatInfoText == nil {
@@ -456,8 +193,8 @@ func (om *OverworldMode) refreshThreatInfo() {
 		return
 	}
 
-	threat := om.Context.ECSManager.FindEntityByID(om.state.SelectedThreatID)
-	infoText := FormatThreatInfo(threat, om.Context.ECSManager)
+	nodeEntity := om.Context.ECSManager.FindEntityByID(om.state.SelectedNodeID)
+	infoText := FormatThreatInfo(nodeEntity, om.Context.ECSManager)
 	om.threatInfoText.SetText(infoText)
 }
 
@@ -504,15 +241,47 @@ func (om *OverworldMode) logEvent(message string) {
 		return
 	}
 
-	// Append to existing log
 	currentText := om.eventLogText.GetText()
 	newText := message + "\n" + currentText
 
-	// Keep only last 10 lines (approximately 200 chars per line)
 	maxChars := 2000
 	if len(newText) > maxChars {
 		newText = newText[:maxChars]
 	}
 
 	om.eventLogText.SetText(newText)
+}
+
+// Recording helpers
+
+func (om *OverworldMode) startRecordingIfNeeded() {
+	ctx := core.GetContext()
+	if ctx.Recorder != nil && ctx.Recorder.IsEnabled() {
+		tickState := core.GetTickState(om.Context.ECSManager)
+		if tickState != nil && ctx.Recorder.EventCount() == 0 {
+			core.StartRecordingSession(tickState.CurrentTick)
+		}
+	}
+}
+
+func (om *OverworldMode) exportRecordingIfNeeded() {
+	ctx := core.GetContext()
+	if ctx.Recorder == nil || !ctx.Recorder.IsEnabled() {
+		return
+	}
+
+	tickState := core.GetTickState(om.Context.ECSManager)
+	if tickState == nil || tickState.IsGameOver {
+		return
+	}
+
+	if ctx.Recorder.EventCount() == 0 {
+		return
+	}
+
+	tickMsg := fmt.Sprintf("tick %d", tickState.CurrentTick)
+	if err := core.FinalizeRecording("Session Paused", fmt.Sprintf("Left overworld at %s", tickMsg)); err != nil {
+		fmt.Printf("WARNING: Failed to export overworld log on exit: %v\n", err)
+	}
+	core.ClearRecording()
 }

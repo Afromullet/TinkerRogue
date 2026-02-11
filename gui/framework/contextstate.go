@@ -67,31 +67,31 @@ func (bms *BattleMapState) Reset() {
 // - UI state: Camera position, selections, display toggles
 // - Game state: Tick data, threats, travel (stored in ECS)
 type OverworldState struct {
-	CameraX          int
-	CameraY          int
-	SelectedThreatID ecs.EntityID            // Selected threat node for inspection
-	HoveredPosition  *coords.LogicalPosition // Current mouse hover position
-	ShowInfluence    bool                    // Toggle influence visualization
-	IsAutoTraveling  bool                    // Auto-advance ticks during travel
+	CameraX         int
+	CameraY         int
+	SelectedNodeID  ecs.EntityID            // Currently selected node (threat or friendly)
+	HoveredPosition *coords.LogicalPosition // Current mouse hover position
+	ShowInfluence   bool                    // Toggle influence visualization
+	IsAutoTraveling bool                    // Auto-advance ticks during travel
 }
 
 // NewOverworldState creates a default overworld state
 func NewOverworldState() *OverworldState {
 	return &OverworldState{
-		CameraX:          0,
-		CameraY:          0,
-		SelectedThreatID: 0,
-		HoveredPosition:  nil,
-		ShowInfluence:    false,
+		CameraX:        0,
+		CameraY:        0,
+		SelectedNodeID: 0,
+		HoveredPosition: nil,
+		ShowInfluence:  false,
 	}
 }
 
-// ClearSelection clears the currently selected threat
+// ClearSelection clears the currently selected node
 func (os *OverworldState) ClearSelection() {
-	os.SelectedThreatID = 0
+	os.SelectedNodeID = 0
 }
 
-// HasSelection returns true if a threat is currently selected
+// HasSelection returns true if a node is currently selected
 func (os *OverworldState) HasSelection() bool {
-	return os.SelectedThreatID != 0
+	return os.SelectedNodeID != 0
 }

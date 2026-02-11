@@ -32,6 +32,11 @@ var (
 	OverworldEncounterComponent *ecs.Component
 )
 
+// GarrisonComponent tracks squads garrisoned at a node
+var (
+	GarrisonComponent *ecs.Component
+)
+
 // OverworldFactionData - Renamed to avoid conflict with combat.FactionComponent
 // Represents persistent strategic factions on the overworld
 type OverworldFactionData struct {
@@ -86,6 +91,25 @@ type OverworldEncounterData struct {
 	EncounterType string       // Type identifier for spawn logic
 	IsDefeated    bool         // Marked true after victory
 	ThreatNodeID  ecs.EntityID // Link to overworld threat node (0 if not from threat)
+
+	// Garrison defense fields
+	IsGarrisonDefense    bool        // True if this is a garrison defense encounter
+	AttackingFactionType FactionType // Faction attacking the garrisoned node
+}
+
+// GarrisonData tracks squads garrisoned at an overworld node.
+// Attached to node entities that have a garrison. Not all nodes need it.
+type GarrisonData struct {
+	SquadIDs []ecs.EntityID // Squads assigned to garrison this node
+}
+
+// PendingRaid describes an NPC faction raid targeting a player-owned garrisoned node.
+// Propagated from faction AI through the tick system to the GUI layer.
+type PendingRaid struct {
+	AttackingFactionType FactionType
+	AttackingStrength    int
+	TargetNodeID         ecs.EntityID
+	TargetNodePosition   coords.LogicalPosition
 }
 
 // InteractionType classifies how two overlapping influence nodes interact

@@ -36,21 +36,24 @@ func init() {
 			buttonContainer := builders.CreateButtonGroup(builders.ButtonGroupConfig{
 				Buttons: []builders.ButtonSpec{
 					{Text: "Advance Tick (Space)", OnClick: func() {
-						om.handleAdvanceTick()
+						om.actionHandler.AdvanceTick()
 					}},
 					{Text: "Auto-Travel (A)", OnClick: func() {
-						om.handleToggleAutoTravel()
+						om.actionHandler.ToggleAutoTravel()
 					}},
 					{Text: "Toggle Influence (I)", OnClick: func() {
-						om.handleToggleInfluence()
+						om.actionHandler.ToggleInfluence()
 					}},
 					{Text: "Engage Threat (E)", OnClick: func() {
-						om.handleEngageThreat()
+						om.actionHandler.EngageThreat(om.state.SelectedNodeID)
+					}},
+					{Text: "Garrison (G)", OnClick: func() {
+						om.inputHandler.handleGarrison()
 					}},
 					{Text: "Place Nodes (N)", OnClick: func() {
-					om.ModeManager.SetMode("node_placement")
-				}},
-				{Text: "Return (ESC)", OnClick: func() {
+						om.ModeManager.SetMode("node_placement")
+					}},
+					{Text: "Return (ESC)", OnClick: func() {
 						if om.Context.ModeCoordinator != nil {
 							if err := om.Context.ModeCoordinator.EnterBattleMap("exploration"); err != nil {
 								fmt.Printf("ERROR: Failed to return to battle map: %v\n", err)

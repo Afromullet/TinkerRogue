@@ -35,6 +35,7 @@ func InitOverworldComponents(manager *common.EntityManager) {
 	OverworldEncounterComponent = manager.World.NewComponent()
 	InteractionComponent = manager.World.NewComponent()
 	OverworldNodeComponent = manager.World.NewComponent()
+	GarrisonComponent = manager.World.NewComponent()
 }
 
 // InitOverworldTags creates tags for querying overworld-related entities.

@@ -5,7 +5,6 @@ import (
 
 	"game_main/common"
 	"game_main/overworld/core"
-	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"
 )
@@ -90,7 +89,6 @@ func getEncounterDisplayName(encounter *core.EncounterDefinition, nodeTypeID str
 func TriggerCombatFromThreat(
 	manager *common.EntityManager,
 	threatEntity *ecs.Entity,
-	playerPos coords.LogicalPosition,
 ) (ecs.EntityID, error) {
 	// 1. Translate threat to encounter
 	params, err := translateThreatToEncounter(manager, threatEntity)
@@ -110,6 +108,35 @@ func TriggerCombatFromThreat(
 	// 3. Combat system will call SetupBalancedEncounter with the encounter data
 	// This happens in the combat mode transition (handled by GUI/mode coordinator)
 	// The encounter ID is stored and passed to combat lifecycle for resolution
+
+	return encounterID, nil
+}
+
+// TriggerGarrisonDefense creates an encounter entity for a garrison defense scenario.
+// The attacking faction generates enemies via power budget. The garrison squads defend.
+func TriggerGarrisonDefense(
+	manager *common.EntityManager,
+	targetNodeID ecs.EntityID,
+	attackingFactionType core.FactionType,
+	attackingStrength int,
+) (ecs.EntityID, error) {
+	entity := manager.World.NewEntity()
+
+	encounterData := &core.OverworldEncounterData{
+		Name:                 fmt.Sprintf("%s Raid on Garrison", attackingFactionType.String()),
+		Level:                1 + (attackingStrength / 20),
+		EncounterType:        string(core.MapFactionToThreatType(attackingFactionType)),
+		IsDefeated:           false,
+		ThreatNodeID:         targetNodeID,
+		IsGarrisonDefense:    true,
+		AttackingFactionType: attackingFactionType,
+	}
+
+	entity.AddComponent(core.OverworldEncounterComponent, encounterData)
+
+	encounterID := entity.GetID()
+	fmt.Printf("Garrison defense encounter created: ID %d, node %d, attacker %s\n",
+		encounterID, targetNodeID, attackingFactionType.String())
 
 	return encounterID, nil
 }

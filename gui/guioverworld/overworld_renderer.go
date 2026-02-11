@@ -1,13 +1,11 @@
 package guioverworld
 
 import (
-	"fmt"
 	"image/color"
 
 	"game_main/common"
 	"game_main/gui/framework"
 	"game_main/overworld/core"
-	"game_main/templates"
 	"game_main/visual/rendering"
 	"game_main/world/coords"
 	"game_main/world/worldmap"
@@ -181,7 +179,7 @@ func (r *OverworldRenderer) renderPlayerAvatar(screen *ebiten.Image) {
 // renderSelectionHighlight draws a highlight around the selected node.
 // Uses unified OverworldNodeData.
 func (r *OverworldRenderer) renderSelectionHighlight(screen *ebiten.Image) {
-	selected := r.manager.FindEntityByID(r.state.SelectedThreatID)
+	selected := r.manager.FindEntityByID(r.state.SelectedNodeID)
 	if selected == nil {
 		return
 	}
@@ -234,59 +232,9 @@ func (r *OverworldRenderer) GetThreatAtPosition(screenX, screenY int) ecs.Entity
 	return core.GetThreatNodeAt(r.manager, logicalPos)
 }
 
-// FormatThreatInfo returns formatted string for threat/node details.
-// Uses unified OverworldNodeData.
-func FormatThreatInfo(threat *ecs.Entity, manager *common.EntityManager) string {
-	if threat == nil {
-		return "Select a threat to view details"
-	}
-
-	data := common.GetComponentType[*core.OverworldNodeData](threat, core.OverworldNodeComponent)
-	pos := common.GetComponentType[*coords.LogicalPosition](threat, common.PositionComponent)
-
-	if data == nil {
-		return "Invalid node"
-	}
-
-	nodeDef := core.GetNodeRegistry().GetNodeByID(data.NodeTypeID)
-	displayName := data.NodeTypeID
-	if nodeDef != nil {
-		displayName = nodeDef.DisplayName
-	}
-
-	if data.Category == core.NodeCategoryThreat {
-		containedStatus := ""
-		if data.IsContained {
-			containedStatus = " (CONTAINED)"
-		}
-
-		return fmt.Sprintf(
-			"=== Threat Details ===\n"+
-				"Type: %s%s\n"+
-				"Owner: %s\n"+
-				"Position: (%d, %d)\n"+
-				"Intensity: %d / %d\n"+
-				"Growth: %.1f%%\n"+
-				"Age: %d ticks",
-			displayName,
-			containedStatus,
-			data.OwnerID,
-			pos.X, pos.Y,
-			data.Intensity,
-			templates.OverworldConfigTemplate.ThreatGrowth.MaxThreatIntensity,
-			data.GrowthProgress*100,
-			data.CreatedTick,
-		)
-	}
-
-	return fmt.Sprintf(
-		"=== Node Details ===\n"+
-			"Type: %s (%s)\n"+
-			"Owner: %s\n"+
-			"Position: (%d, %d)",
-		displayName,
-		data.Category,
-		data.OwnerID,
-		pos.X, pos.Y,
-	)
+// GetNodeAtPosition returns any overworld node at screen coordinates (threats, settlements, etc.)
+func (r *OverworldRenderer) GetNodeAtPosition(screenX, screenY int) ecs.EntityID {
+	logicalPos := r.ScreenToLogical(screenX, screenY)
+	return core.GetNodeAtPosition(r.manager, logicalPos)
 }
+

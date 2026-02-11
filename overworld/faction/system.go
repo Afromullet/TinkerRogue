@@ -5,6 +5,7 @@ import (
 
 	"game_main/common"
 	"game_main/overworld/core"
+	"game_main/overworld/garrison"
 	"game_main/overworld/threat"
 	"game_main/templates"
 	"game_main/world/coords"
@@ -52,8 +53,11 @@ func CreateFaction(
 	return entity.GetID()
 }
 
-// UpdateFactions executes faction AI for all factions
-func UpdateFactions(manager *common.EntityManager, currentTick int64) error {
+// UpdateFactions executes faction AI for all factions.
+// Returns a PendingRaid if a faction raids a garrisoned player node this tick.
+func UpdateFactions(manager *common.EntityManager, currentTick int64) (*core.PendingRaid, error) {
+	var pendingRaid *core.PendingRaid
+
 	for _, result := range core.OverworldFactionView.Get() {
 		entity := result.Entity
 		factionData := common.GetComponentType[*core.OverworldFactionData](entity, core.OverworldFactionComponent)
@@ -72,11 +76,14 @@ func UpdateFactions(manager *common.EntityManager, currentTick int64) error {
 			intentData.TicksRemaining = templates.OverworldConfigTemplate.FactionAI.DefaultIntentTickDuration
 		}
 
-		// Execute current intent
-		ExecuteFactionIntent(manager, entity, factionData, intentData)
+		// Execute current intent, collecting any raid result
+		raid := ExecuteFactionIntent(manager, entity, factionData, intentData)
+		if raid != nil && pendingRaid == nil {
+			pendingRaid = raid // Only one raid per tick
+		}
 	}
 
-	return nil
+	return pendingRaid, nil
 }
 
 // EvaluateFactionIntent determines what faction should do next
@@ -121,25 +128,27 @@ func EvaluateFactionIntent(
 }
 
 // TODO, consider using an interface for intent
-// ExecuteFactionIntent performs the chosen action
+// ExecuteFactionIntent performs the chosen action.
+// Returns a PendingRaid if a raid targets a garrisoned player node.
 func ExecuteFactionIntent(
 	manager *common.EntityManager,
 	entity *ecs.Entity,
 	factionData *core.OverworldFactionData,
 	intentData *core.StrategicIntentData,
-) {
+) *core.PendingRaid {
 	switch intentData.Intent {
 	case core.IntentExpand:
 		ExpandTerritory(manager, entity, factionData)
 	case core.IntentFortify:
 		FortifyTerritory(manager, entity, factionData)
 	case core.IntentRaid:
-		ExecuteRaid(manager, entity, factionData)
+		return ExecuteRaid(manager, entity, factionData)
 	case core.IntentRetreat:
 		AbandonTerritory(manager, entity, factionData)
 	case core.IntentIdle:
 		// Do nothing
 	}
+	return nil
 }
 
 // ExpandTerritory claims adjacent tiles
@@ -194,7 +203,7 @@ func ExpandTerritory(manager *common.EntityManager, entity *ecs.Entity, factionD
 	}
 }
 
-// FortifyTerritory increases faction strength and spawns threats
+// FortifyTerritory increases faction strength, spawns threats, and garrisons nodes
 func FortifyTerritory(manager *common.EntityManager, entity *ecs.Entity, factionData *core.OverworldFactionData) {
 	territoryData := common.GetComponentType[*core.TerritoryData](entity, core.TerritoryComponent)
 	if territoryData == nil || len(territoryData.OwnedTiles) == 0 {
@@ -211,20 +220,65 @@ func FortifyTerritory(manager *common.EntityManager, entity *ecs.Entity, faction
 			SpawnThreatForFaction(manager, entity, *randomTile, factionData.FactionType)
 		}
 	}
+
+	// Create NPC garrisons on ungarrisoned hostile nodes owned by this faction
+	for _, result := range core.OverworldNodeView.Get() {
+		nodeEntity := result.Entity
+		nodeData := common.GetComponentType[*core.OverworldNodeData](nodeEntity, core.OverworldNodeComponent)
+		if nodeData == nil {
+			continue
+		}
+		// Only garrison nodes owned by this faction
+		if nodeData.OwnerID != factionData.FactionType.String() {
+			continue
+		}
+		// Only garrison if not already garrisoned (30% chance per tick)
+		if !garrison.IsNodeGarrisoned(manager, nodeEntity.GetID()) && common.RandomInt(100) < 30 {
+			garrison.CreateNPCGarrison(manager, nodeEntity, factionData.FactionType, factionData.Strength)
+		}
+	}
 }
 
-// ExecuteRaid attacks player or rival faction
-func ExecuteRaid(manager *common.EntityManager, entity *ecs.Entity, factionData *core.OverworldFactionData) {
+// ExecuteRaid attacks player or rival faction.
+// Returns a PendingRaid if a garrisoned player node is targeted.
+func ExecuteRaid(manager *common.EntityManager, entity *ecs.Entity, factionData *core.OverworldFactionData) *core.PendingRaid {
 	territoryData := common.GetComponentType[*core.TerritoryData](entity, core.TerritoryComponent)
 	if territoryData == nil || len(territoryData.OwnedTiles) == 0 {
-		return
+		return nil
 	}
 
-	// Spawn aggressive threat near faction border
-	// Pick random border tile
+	// Check for nearby garrisoned player nodes to target
+	playerNodes := garrison.FindPlayerNodesNearFaction(manager, territoryData.OwnedTiles)
+	for _, nodeID := range playerNodes {
+		if garrison.IsNodeGarrisoned(manager, nodeID) {
+			// Target this garrisoned node with a raid
+			nodeEntity := manager.FindEntityByID(nodeID)
+			if nodeEntity == nil {
+				continue
+			}
+			pos := common.GetComponentType[*coords.LogicalPosition](nodeEntity, common.PositionComponent)
+			if pos == nil {
+				continue
+			}
+
+			currentTick := core.GetCurrentTick(manager)
+			core.LogEvent(core.EventGarrisonAttacked, currentTick, entity.GetID(),
+				fmt.Sprintf("%s raiding garrisoned node %d at (%d, %d)",
+					factionData.FactionType.String(), nodeID, pos.X, pos.Y), nil)
+
+			return &core.PendingRaid{
+				AttackingFactionType: factionData.FactionType,
+				AttackingStrength:    factionData.Strength,
+				TargetNodeID:         nodeID,
+				TargetNodePosition:   *pos,
+			}
+		}
+	}
+
+	// No garrisoned target found - existing behavior: spawn threat near border
 	randomTile := core.GetRandomTileFromSlice(territoryData.OwnedTiles)
 	if randomTile == nil {
-		return
+		return nil
 	}
 
 	// Spawn higher-intensity threat for raids (formula from config)
@@ -241,6 +295,8 @@ func ExecuteRaid(manager *common.EntityManager, entity *ecs.Entity, factionData 
 		fmt.Sprintf("%s launched raid! Spawned intensity %d %s at (%d, %d)",
 			factionData.FactionType.String(), intensity, threatType.String(),
 			randomTile.X, randomTile.Y), nil)
+
+	return nil
 }
 
 // AbandonTerritory shrinks faction
