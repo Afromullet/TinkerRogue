@@ -2,12 +2,15 @@ __________________________________________
 #
 # # # **IMPORTANT** # # # 
 
+- Need more variet unit movement speeds. Everything has teh same movement speed
 
-- Checks if ECS related caches are really needed. To a performance profile before and after using Views rather than the custom cache
+- Overworld node spawning is far too clustered together. All nodes spawn close to eachother. 
 
-- GetUnitIDsInSquad takes too much time with a large number squads
+- Add resources, so that a player can only build if they have sources
 
-- Need better node management system. Non-combat nodes, player nodes, and POIs in the overworld map gen are too separate. Different ways to do the same thigns
+- Clear overowlrd encounter reward system. 
+
+- Lots of Empty Claude relate directories. See if there are any issues when removing them
 
 - Consider using an interface for intent in overworld
 
@@ -15,7 +18,7 @@ __________________________________________
 
 -  ExecuteThreatEvolutionEffect needs to changed base off threat type/data.  
 
-- Reneable victory conditions in tickmanager.go. They are disabled for testing
+- Re-neable victory conditions in tickmanager.go. They are disabled for testing
 
 - encounter service should not have mode coordinator. It overlaps too much with what the GUI is doing
 
