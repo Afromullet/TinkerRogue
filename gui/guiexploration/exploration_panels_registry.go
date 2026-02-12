@@ -53,11 +53,6 @@ func init() {
 
 			buttonContainer := builders.CreateButtonGroup(builders.ButtonGroupConfig{
 				Buttons: []builders.ButtonSpec{
-					{Text: "Throwables", OnClick: func() {
-						if mode, exists := em.ModeManager.GetMode("inventory"); exists {
-							em.ModeManager.RequestTransition(mode, "Throwables clicked")
-						}
-					}},
 					{Text: "Overworld (O)", OnClick: func() {
 						if em.Context.ModeCoordinator != nil {
 							if err := em.Context.ModeCoordinator.ReturnToOverworld("overworld"); err != nil {
@@ -75,16 +70,6 @@ func init() {
 					{Text: "Inventory (I)", OnClick: func() {
 						if mode, exists := em.ModeManager.GetMode("inventory"); exists {
 							em.ModeManager.RequestTransition(mode, "Inventory clicked")
-						}
-					}},
-					{Text: "Deploy (D)", OnClick: func() {
-						if mode, exists := em.ModeManager.GetMode("squad_deployment"); exists {
-							em.ModeManager.RequestTransition(mode, "Deploy clicked")
-						}
-					}},
-					{Text: "Combat (C)", OnClick: func() {
-						if mode, exists := em.ModeManager.GetMode("combat"); exists {
-							em.ModeManager.RequestTransition(mode, "Combat clicked")
 						}
 					}},
 				},

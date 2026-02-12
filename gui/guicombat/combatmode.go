@@ -33,7 +33,6 @@ type CombatMode struct {
 	encounterService *encounter.EncounterService
 
 	// Update components (stored for refresh calls)
-	squadListComponent   *guisquads.SquadListComponent
 	squadDetailComponent *guisquads.DetailPanelComponent
 	factionInfoComponent *guisquads.DetailPanelComponent
 	turnOrderComponent   *widgets.TextDisplayComponent
@@ -130,7 +129,6 @@ func (cm *CombatMode) buildPanelsFromRegistry() error {
 	panels := []framework.PanelType{
 		CombatPanelTurnOrder,
 		CombatPanelFactionInfo,
-		CombatPanelSquadList,
 		CombatPanelSquadDetail,
 		CombatPanelLayerStatus,
 	}
@@ -197,7 +195,6 @@ func (cm *CombatMode) initializeUpdateComponents() {
 	turnOrderLabel := cm.GetTextLabel(CombatPanelTurnOrder)
 	factionInfoText := cm.GetTextLabel(CombatPanelFactionInfo)
 	squadDetailText := cm.GetTextLabel(CombatPanelSquadDetail)
-	squadListPanel := cm.GetPanelContainer(CombatPanelSquadList)
 
 	// Turn order component - displays current faction and round
 	cm.turnOrderComponent = widgets.NewTextDisplayComponent(
@@ -254,40 +251,14 @@ func (cm *CombatMode) initializeUpdateComponents() {
 		nil, // Use default formatter
 	)
 
-	// Squad list component - filter for current faction squads
-	cm.squadListComponent = guisquads.NewSquadListComponent(
-		squadListPanel,
-		cm.Queries,
-		cm.makeCurrentFactionSquadFilter(),
-		func(squadID ecs.EntityID) {
-			cm.actionHandler.SelectSquad(squadID)
-			cm.squadDetailComponent.ShowSquad(squadID)
-		},
-	)
-
 	// Pass UI component refs to turn flow manager
 	cm.turnFlow.SetUIComponents(
 		cm.turnOrderComponent,
 		cm.factionInfoComponent,
-		cm.squadListComponent,
 		cm.squadDetailComponent,
 	)
 }
 
-// makeCurrentFactionSquadFilter creates a filter for squads from the current faction
-func (cm *CombatMode) makeCurrentFactionSquadFilter() framework.SquadFilter {
-	return func(info *framework.SquadInfo) bool {
-		currentFactionID := cm.combatService.TurnManager.GetCurrentFaction()
-		if currentFactionID == 0 {
-			return false
-		}
-		factionData := cm.Queries.CombatCache.FindFactionDataByID(currentFactionID, cm.Queries.ECSManager)
-		if factionData == nil || !factionData.IsPlayerControlled {
-			return false
-		}
-		return !info.IsDestroyed && info.FactionID == currentFactionID
-	}
-}
 
 func (cm *CombatMode) Enter(fromMode framework.UIMode) error {
 	isComingFromAnimation := fromMode != nil && fromMode.GetModeName() == "combat_animation"
@@ -333,7 +304,6 @@ func (cm *CombatMode) Enter(fromMode framework.UIMode) error {
 	if currentFactionID != 0 {
 		cm.turnOrderComponent.Refresh()
 		cm.factionInfoComponent.ShowFaction(currentFactionID)
-		cm.squadListComponent.Refresh()
 	}
 
 	return nil

@@ -16,7 +16,6 @@ import (
 const (
 	CombatPanelTurnOrder   framework.PanelType = "combat_turn_order"
 	CombatPanelFactionInfo framework.PanelType = "combat_faction_info"
-	CombatPanelSquadList   framework.PanelType = "combat_squad_list"
 	CombatPanelSquadDetail framework.PanelType = "combat_squad_detail"
 	CombatPanelCombatLog   framework.PanelType = "combat_log"
 	CombatPanelLayerStatus framework.PanelType = "combat_layer_status"
@@ -86,37 +85,6 @@ func init() {
 		},
 	})
 
-	framework.RegisterPanel(CombatPanelSquadList, framework.PanelDescriptor{
-		Content: framework.ContentEmpty, // List populated by component
-		OnCreate: func(result *framework.PanelResult, mode framework.UIMode) error {
-			bm := mode.(*CombatMode)
-			layout := bm.Layout
-
-			panelWidth := int(float64(layout.ScreenWidth) * specs.CombatSquadListWidth)
-			panelHeight := int(float64(layout.ScreenHeight) * specs.CombatSquadListHeight)
-
-			result.Container = builders.CreatePanelWithConfig(builders.ContainerConfig{
-				MinWidth:   panelWidth,
-				MinHeight:  panelHeight,
-				Background: guiresources.PanelRes.Image,
-				Layout: widget.NewRowLayout(
-					widget.RowLayoutOpts.Direction(widget.DirectionVertical),
-					widget.RowLayoutOpts.Spacing(5),
-					widget.RowLayoutOpts.Padding(builders.NewResponsiveRowPadding(layout, specs.PaddingExtraSmall)),
-				),
-			})
-
-			leftPad := int(float64(layout.ScreenWidth) * specs.PaddingTight)
-			topOffset := int(float64(layout.ScreenHeight) * (specs.CombatFactionInfoHeight + specs.PaddingTight))
-			result.Container.GetWidget().LayoutData = builders.AnchorStartStart(leftPad, topOffset)
-
-			listLabel := builders.CreateSmallLabel("Your Squads:")
-			result.Container.AddChild(listLabel)
-
-			return nil
-		},
-	})
-
 	framework.RegisterPanel(CombatPanelSquadDetail, framework.PanelDescriptor{
 		Content: framework.ContentText,
 		OnCreate: func(result *framework.PanelResult, mode framework.UIMode) error {
@@ -138,7 +106,7 @@ func init() {
 			})
 
 			leftPad := int(float64(layout.ScreenWidth) * specs.PaddingTight)
-			topOffset := int(float64(layout.ScreenHeight) * (specs.CombatFactionInfoHeight + specs.CombatSquadListHeight + specs.PaddingTight*3))
+			topOffset := int(float64(layout.ScreenHeight) * (specs.CombatFactionInfoHeight + specs.PaddingTight))
 			result.Container.GetWidget().LayoutData = builders.AnchorStartStart(leftPad, topOffset)
 
 			result.TextLabel = builders.CreateSmallLabel("Select a squad\nto view details")

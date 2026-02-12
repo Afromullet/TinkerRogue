@@ -39,8 +39,6 @@ func (em *ExplorationMode) Initialize(ctx *framework.UIContext) error {
 		// Register hotkeys for mode transitions (Battle Map context only)
 		Hotkeys: []framework.HotkeySpec{
 			{Key: ebiten.KeyI, TargetMode: "inventory"},
-			{Key: ebiten.KeyC, TargetMode: "combat"},
-			{Key: ebiten.KeyD, TargetMode: "squad_deployment"},
 			// Note: 'E' key for squads requires context switch - handled in button
 		},
 	}).Build(ctx)
@@ -94,7 +92,7 @@ func (em *ExplorationMode) Render(screen *ebiten.Image) {
 }
 
 func (em *ExplorationMode) HandleInput(inputState *framework.InputState) bool {
-	// Handle common input first (ESC key, registered hotkeys like I/C/D)
+	// Handle common input first (ESC key, registered hotkeys like I)
 	if em.HandleCommonInput(inputState) {
 		return true
 	}

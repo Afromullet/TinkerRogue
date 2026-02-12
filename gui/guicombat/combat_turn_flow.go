@@ -25,7 +25,6 @@ type CombatTurnFlow struct {
 	// UI components for refresh
 	turnOrderComponent   *widgets.TextDisplayComponent
 	factionInfoComponent *guisquads.DetailPanelComponent
-	squadListComponent   *guisquads.SquadListComponent
 	squadDetailComponent *guisquads.DetailPanelComponent
 
 	// Victory tracking
@@ -60,12 +59,10 @@ func NewCombatTurnFlow(
 func (tf *CombatTurnFlow) SetUIComponents(
 	turnOrder *widgets.TextDisplayComponent,
 	factionInfo *guisquads.DetailPanelComponent,
-	squadList *guisquads.SquadListComponent,
 	squadDetail *guisquads.DetailPanelComponent,
 ) {
 	tf.turnOrderComponent = turnOrder
 	tf.factionInfoComponent = factionInfo
-	tf.squadListComponent = squadList
 	tf.squadDetailComponent = squadDetail
 }
 
@@ -118,7 +115,6 @@ func (tf *CombatTurnFlow) HandleEndTurn() {
 
 	tf.turnOrderComponent.Refresh()
 	tf.factionInfoComponent.ShowFaction(currentFactionID)
-	tf.squadListComponent.Refresh()
 	tf.squadDetailComponent.SetText("Select a squad\nto view details")
 
 	tf.visualization.UpdateThreatManagers()
@@ -294,7 +290,6 @@ func (tf *CombatTurnFlow) advanceAfterAITurn() {
 
 	tf.turnOrderComponent.Refresh()
 	tf.factionInfoComponent.ShowFaction(newFactionID)
-	tf.squadListComponent.Refresh()
 
 	tf.visualization.UpdateThreatManagers()
 
