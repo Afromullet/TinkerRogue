@@ -82,20 +82,20 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	graphics.ScreenInfo.ScreenHeight = screen.Bounds().Dy()
 	coords.CoordManager.UpdateScreenDimensions(screen.Bounds().Dx(), screen.Bounds().Dy())
 
-	// Phase 1: Ebiten rendering (game world)
-	// TODO. This just needs to be one call. Handle the coords.MAP_SCROLLING_ENABLED a different way.
-	// Update: Reconsider whether that todoo really matters
-	if coords.MAP_SCROLLING_ENABLED {
-		bounds := rendering.DrawMapCentered(screen, &g.gameMap, g.playerData.Pos, config.DefaultZoomNumberOfSquare, config.DEBUG_MODE)
-		g.gameMap.RightEdgeX = bounds.RightEdgeX
-		g.gameMap.TopEdgeY = bounds.TopEdgeY
-		rendering.ProcessRenderablesInSquare(g.gameMap, screen, g.playerData.Pos, config.DefaultZoomNumberOfSquare, g.renderingCache)
-	} else {
-		rendering.DrawMap(screen, &g.gameMap, config.DEBUG_MODE)
-		rendering.ProcessRenderables(g.gameMap, screen, g.renderingCache)
-	}
+	// Phase 1: Render tactical map only when in tactical context
+	if g.gameModeCoordinator.GetCurrentContext() == framework.ContextTactical {
+		if coords.MAP_SCROLLING_ENABLED {
+			bounds := rendering.DrawMapCentered(screen, &g.gameMap, g.playerData.Pos, config.DefaultZoomNumberOfSquare, config.DEBUG_MODE)
+			g.gameMap.RightEdgeX = bounds.RightEdgeX
+			g.gameMap.TopEdgeY = bounds.TopEdgeY
+			rendering.ProcessRenderablesInSquare(g.gameMap, screen, g.playerData.Pos, config.DefaultZoomNumberOfSquare, g.renderingCache)
+		} else {
+			rendering.DrawMap(screen, &g.gameMap, config.DEBUG_MODE)
+			rendering.ProcessRenderables(g.gameMap, screen, g.renderingCache)
+		}
 
-	graphics.VXHandler.DrawVisualEffects(screen)
+		graphics.VXHandler.DrawVisualEffects(screen)
+	}
 
 	// Phase 2: EbitenUI rendering (modal UI via coordinator)
 	g.gameModeCoordinator.Render(screen)

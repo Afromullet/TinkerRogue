@@ -155,6 +155,11 @@ func (gmc *GameModeCoordinator) GetTacticalState() *TacticalState {
 	return gmc.tacticalState
 }
 
+// GetCurrentContext returns the currently active game context
+func (gmc *GameModeCoordinator) GetCurrentContext() GameContext {
+	return gmc.currentContext
+}
+
 // GetOverworldState returns the persistent overworld state for UI modes
 func (gmc *GameModeCoordinator) GetOverworldState() *OverworldState {
 	return gmc.overworldState
