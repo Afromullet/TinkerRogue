@@ -13,7 +13,7 @@ import (
 // Panel type constants for exploration mode
 const (
 	ExplorationPanelMessageLog     framework.PanelType = "exploration_message_log"
-	ExplorationPanelQuickInventory framework.PanelType = "exploration_quick_inventory"
+	ExplorationPanelActionButtons framework.PanelType = "exploration_action_buttons"
 )
 
 func init() {
@@ -37,8 +37,8 @@ func init() {
 		},
 	})
 
-	// Register quick inventory (action buttons) panel
-	framework.RegisterPanel(ExplorationPanelQuickInventory, framework.PanelDescriptor{
+	// Register action buttons panel
+	framework.RegisterPanel(ExplorationPanelActionButtons, framework.PanelDescriptor{
 		Content: framework.ContentCustom,
 		OnCreate: func(result *framework.PanelResult, mode framework.UIMode) error {
 			em := mode.(*ExplorationMode)
@@ -60,18 +60,6 @@ func init() {
 							}
 						}
 					}},
-					{Text: "Squads (E)", OnClick: func() {
-						if em.Context.ModeCoordinator != nil {
-							if err := em.Context.ModeCoordinator.ReturnToOverworld("squad_management"); err != nil {
-								fmt.Printf("ERROR: Failed to return to overworld: %v\n", err)
-							}
-						}
-					}},
-					{Text: "Inventory (I)", OnClick: func() {
-						if mode, exists := em.ModeManager.GetMode("inventory"); exists {
-							em.ModeManager.RequestTransition(mode, "Inventory clicked")
-						}
-					}},
 				},
 				Direction:  widget.DirectionHorizontal,
 				Spacing:    spacing,
@@ -80,7 +68,6 @@ func init() {
 			})
 
 			result.Container = buttonContainer
-			result.Custom["quickInventory"] = buttonContainer
 
 			return nil
 		},
@@ -98,11 +85,3 @@ func GetExplorationMessageLog(panels *framework.PanelRegistry) *widget.TextArea 
 	return nil
 }
 
-func GetExplorationQuickInventory(panels *framework.PanelRegistry) *widget.Container {
-	if result := panels.Get(ExplorationPanelQuickInventory); result != nil {
-		if container, ok := result.Custom["quickInventory"].(*widget.Container); ok {
-			return container
-		}
-	}
-	return nil
-}

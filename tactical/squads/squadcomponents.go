@@ -49,7 +49,7 @@ type SquadData struct {
 	SquadLevel    int           // Average level for spawning
 	TurnCount     int           // Number of turns this squad has taken
 	MaxUnits           int          // Maximum squad size (typically 9)
-	IsDeployed         bool         // true if squad is on battle map, false if in reserves
+	IsDeployed         bool         // true if squad is on the tactical map, false if in reserves
 	GarrisonedAtNodeID ecs.EntityID // 0 = not garrisoned, >0 = garrisoned at this node entity
 }
 

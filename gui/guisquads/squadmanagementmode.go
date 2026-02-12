@@ -4,15 +4,12 @@ import (
 	"fmt"
 	"game_main/gui/framework"
 
-	"github.com/ebitenui/ebitenui/widget"
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
 // SquadManagementMode shows one squad at a time with navigation controls
 type SquadManagementMode struct {
 	framework.BaseMode // Embed common mode infrastructure
-
-	commandContainer *widget.Container // Container for command buttons
 }
 
 func NewSquadManagementMode(modeManager *framework.UIModeManager) *SquadManagementMode {
@@ -24,10 +21,18 @@ func NewSquadManagementMode(modeManager *framework.UIModeManager) *SquadManageme
 }
 
 func (smm *SquadManagementMode) Initialize(ctx *framework.UIContext) error {
+	// Determine return mode based on context:
+	// In overworld context, ESC returns to overworld mode
+	// In tactical context, ESC is handled by the "Exploration" button (context switch)
+	returnMode := ""
+	if _, exists := smm.ModeManager.GetMode("overworld"); exists {
+		returnMode = "overworld"
+	}
+
 	// Build base UI using ModeBuilder (minimal config - panels handled by registry)
 	err := framework.NewModeBuilder(&smm.BaseMode, framework.ModeConfig{
 		ModeName:   "squad_management",
-		ReturnMode: "", // Context switch handled separately
+		ReturnMode: returnMode,
 
 		Hotkeys: []framework.HotkeySpec{
 			{Key: ebiten.KeyB, TargetMode: "squad_builder"},
@@ -89,7 +94,7 @@ func (smm *SquadManagementMode) HandleInput(inputState *framework.InputState) bo
 	return false
 }
 
-// refreshAfterUndoRedo is called after successful undo/redo operations
+// refresh is called after successful undo/redo operations
 func (smm *SquadManagementMode) refresh() {
 
 }

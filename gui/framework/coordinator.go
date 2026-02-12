@@ -13,7 +13,7 @@ type GameContext int
 
 const (
 	ContextOverworld GameContext = iota // Strategic layer (squad management, world map)
-	ContextBattleMap                    // Tactical layer (dungeon exploration, combat)
+	ContextTactical                     // Tactical layer (dungeon exploration, combat)
 )
 
 // String returns a human-readable name for the context
@@ -21,23 +21,23 @@ func (gc GameContext) String() string {
 	switch gc {
 	case ContextOverworld:
 		return "Overworld"
-	case ContextBattleMap:
-		return "BattleMap"
+	case ContextTactical:
+		return "Tactical"
 	default:
 		return "Unknown"
 	}
 }
 
 // GameModeCoordinator manages two independent UIModeManagers - one for Overworld context
-// and one for BattleMap context. It handles context switching and state persistence.
+// and one for Tactical context. It handles context switching and state persistence.
 type GameModeCoordinator struct {
 	overworldManager *UIModeManager // Manages overworld modes (squad management, etc.)
-	battleMapManager *UIModeManager // Manages battle map modes (exploration, combat)
+	tacticalManager  *UIModeManager // Manages tactical modes (exploration, combat)
 	activeManager    *UIModeManager // Points to currently active manager
 	currentContext   GameContext    // Tracks which context is active
 
-	battleMapState  *BattleMapState  // Persistent battle data
-	overworldState  *OverworldState  // Persistent overworld data
+	tacticalState  *TacticalState  // Persistent tactical data
+	overworldState *OverworldState // Persistent overworld data
 
 	context *UIContext // Reference to shared UIContext for cache management
 }
@@ -45,15 +45,15 @@ type GameModeCoordinator struct {
 // NewGameModeCoordinator creates a new coordinator with two separate mode managers
 func NewGameModeCoordinator(ctx *UIContext) *GameModeCoordinator {
 	overworldMgr := NewUIModeManager(ctx)
-	battleMapMgr := NewUIModeManager(ctx)
+	tacticalMgr := NewUIModeManager(ctx)
 
 	coordinator := &GameModeCoordinator{
 		overworldManager: overworldMgr,
-		battleMapManager: battleMapMgr,
-		activeManager:    battleMapMgr, // Start in battle map context by default
-		currentContext:   ContextBattleMap,
+		tacticalManager:  tacticalMgr,
+		activeManager:    tacticalMgr, // Start in tactical context by default
+		currentContext:   ContextTactical,
 
-		battleMapState: NewBattleMapState(),
+		tacticalState:  NewTacticalState(),
 		overworldState: NewOverworldState(),
 		context:        ctx, // Store reference to UIContext for cache management
 	}
@@ -69,17 +69,17 @@ func (gmc *GameModeCoordinator) RegisterOverworldMode(mode UIMode) error {
 	return nil
 }
 
-// RegisterBattleMapMode registers a mode to the battle map manager
-func (gmc *GameModeCoordinator) RegisterBattleMapMode(mode UIMode) error {
-	if err := gmc.battleMapManager.RegisterMode(mode); err != nil {
-		return fmt.Errorf("failed to register battle map mode %s: %w", mode.GetModeName(), err)
+// RegisterTacticalMode registers a mode to the tactical manager
+func (gmc *GameModeCoordinator) RegisterTacticalMode(mode UIMode) error {
+	if err := gmc.tacticalManager.RegisterMode(mode); err != nil {
+		return fmt.Errorf("failed to register tactical mode %s: %w", mode.GetModeName(), err)
 	}
 	return nil
 }
 
-// EnterBattleMap switches to the battle map context
-func (gmc *GameModeCoordinator) EnterBattleMap(initialMode string) error {
-	return gmc.switchToContext(ContextBattleMap, gmc.battleMapManager, initialMode)
+// EnterTactical switches to the tactical context
+func (gmc *GameModeCoordinator) EnterTactical(initialMode string) error {
+	return gmc.switchToContext(ContextTactical, gmc.tacticalManager, initialMode)
 }
 
 // ReturnToOverworld switches back to the overworld context
@@ -145,14 +145,14 @@ func (gmc *GameModeCoordinator) GetOverworldManager() *UIModeManager {
 	return gmc.overworldManager
 }
 
-// GetBattleMapManager returns the battle map mode manager (for registration)
-func (gmc *GameModeCoordinator) GetBattleMapManager() *UIModeManager {
-	return gmc.battleMapManager
+// GetTacticalManager returns the tactical mode manager (for registration)
+func (gmc *GameModeCoordinator) GetTacticalManager() *UIModeManager {
+	return gmc.tacticalManager
 }
 
-// GetBattleMapState returns the persistent battle map state for UI modes
-func (gmc *GameModeCoordinator) GetBattleMapState() *BattleMapState {
-	return gmc.battleMapState
+// GetTacticalState returns the persistent tactical state for UI modes
+func (gmc *GameModeCoordinator) GetTacticalState() *TacticalState {
+	return gmc.tacticalState
 }
 
 // GetOverworldState returns the persistent overworld state for UI modes

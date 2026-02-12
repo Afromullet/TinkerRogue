@@ -62,7 +62,7 @@ func NewEncounterService(
 // 2. Validates encounter entity exists
 // 3. Spawns enemies and hides encounter sprite
 // 4. Tracks encounter context (including enemy squad IDs)
-// 5. Sets BattleMapState for combat mode handoff
+// 5. Sets TacticalState for combat mode handoff
 // 6. Transitions to combat mode
 func (es *EncounterService) StartEncounter(
 	encounterID ecs.EntityID,
@@ -440,10 +440,10 @@ func (es *EncounterService) beginCombatTransition(encounterID ecs.EntityID, comb
 	}
 
 	if es.modeCoordinator != nil {
-		// Setup battle state for GUI handoff to CombatMode
-		battleMapState := es.modeCoordinator.GetBattleMapState()
-		battleMapState.TriggeredEncounterID = encounterID
-		battleMapState.Reset()
+		// Setup tactical state for GUI handoff to CombatMode
+		tacticalState := es.modeCoordinator.GetTacticalState()
+		tacticalState.TriggeredEncounterID = encounterID
+		tacticalState.Reset()
 
 		// Move player camera to encounter position so map zooms correctly
 		if pos := es.getPlayerPosition(); pos != nil {
@@ -451,7 +451,7 @@ func (es *EncounterService) beginCombatTransition(encounterID ecs.EntityID, comb
 		}
 
 		// Transition to combat mode
-		if err := es.modeCoordinator.EnterBattleMap("combat"); err != nil {
+		if err := es.modeCoordinator.EnterTactical("combat"); err != nil {
 			return originalPlayerPos, fmt.Errorf("failed to enter combat mode: %w", err)
 		}
 	}

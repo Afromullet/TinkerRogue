@@ -87,7 +87,7 @@ func (cm *CombatMode) Initialize(ctx *framework.UIContext) error {
 
 	// Create consolidated dependencies for handlers
 	cm.deps = NewCombatModeDeps(
-		ctx.ModeCoordinator.GetBattleMapState(),
+		ctx.ModeCoordinator.GetTacticalState(),
 		cm.combatService,
 		cm.encounterService,
 		cm.Queries,
@@ -374,7 +374,7 @@ func (cm *CombatMode) Update(deltaTime float64) error {
 		}
 	}
 
-	battleState := cm.Context.ModeCoordinator.GetBattleMapState()
+	battleState := cm.Context.ModeCoordinator.GetTacticalState()
 	if cm.lastSelectedSquad != battleState.SelectedSquadID {
 		cm.lastSelectedSquad = battleState.SelectedSquadID
 		if cm.lastSelectedSquad != 0 {
@@ -394,7 +394,7 @@ func (cm *CombatMode) Update(deltaTime float64) error {
 func (cm *CombatMode) Render(screen *ebiten.Image) {
 	playerPos := *cm.Context.PlayerData.Pos
 	currentFactionID := cm.combatService.TurnManager.GetCurrentFaction()
-	battleState := cm.Context.ModeCoordinator.GetBattleMapState()
+	battleState := cm.Context.ModeCoordinator.GetTacticalState()
 	cm.visualization.RenderAll(screen, playerPos, currentFactionID, battleState, cm.combatService)
 }
 

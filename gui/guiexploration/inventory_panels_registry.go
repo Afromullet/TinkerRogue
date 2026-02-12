@@ -169,8 +169,8 @@ func init() {
 			result.Container = builders.CreateButtonGroup(builders.ButtonGroupConfig{
 				Buttons: []builders.ButtonSpec{
 					{Text: "Close (ESC)", OnClick: func() {
-						if exploreMode, exists := im.ModeManager.GetMode("exploration"); exists {
-							im.ModeManager.RequestTransition(exploreMode, "Close Inventory")
+						if returnMode, exists := im.ModeManager.GetMode(im.GetReturnMode()); exists {
+							im.ModeManager.RequestTransition(returnMode, "Close Inventory")
 						}
 					}},
 				},

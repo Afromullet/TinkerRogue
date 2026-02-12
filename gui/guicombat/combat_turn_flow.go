@@ -111,7 +111,7 @@ func (tf *CombatTurnFlow) HandleEndTurn() {
 	combatLogArea := GetCombatLogTextArea(tf.panels)
 	tf.logManager.UpdateTextArea(combatLogArea, turnMessage)
 
-	tf.context.ModeCoordinator.GetBattleMapState().Reset()
+	tf.context.ModeCoordinator.GetTacticalState().Reset()
 
 	tf.turnOrderComponent.Refresh()
 	tf.factionInfoComponent.ShowFaction(currentFactionID)

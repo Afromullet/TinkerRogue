@@ -34,11 +34,11 @@ func NewOverworldInputHandler(actionHandler *OverworldActionHandler, deps *Overw
 
 // HandleInput processes all keyboard and mouse input. Returns true if consumed.
 func (ih *OverworldInputHandler) HandleInput(inputState *framework.InputState) bool {
-	// ESC - context switch back to battle map
+	// ESC - context switch back to tactical context
 	if inputState.KeysJustPressed[ebiten.KeyEscape] {
 		if ih.deps.ModeCoordinator != nil {
-			if err := ih.deps.ModeCoordinator.EnterBattleMap("exploration"); err != nil {
-				fmt.Printf("ERROR: Failed to return to battle map: %v\n", err)
+			if err := ih.deps.ModeCoordinator.EnterTactical("exploration"); err != nil {
+				fmt.Printf("ERROR: Failed to return to tactical context: %v\n", err)
 			}
 			return true
 		}

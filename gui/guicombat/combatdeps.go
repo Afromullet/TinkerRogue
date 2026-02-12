@@ -16,7 +16,7 @@ import (
 //   - Easier to mock for testing.
 type CombatModeDeps struct {
 	// State (shared across all handlers)
-	BattleState *framework.BattleMapState
+	BattleState *framework.TacticalState
 
 	// Services (game logic)
 	CombatService    *combatservices.CombatService
@@ -35,7 +35,7 @@ type CombatModeDeps struct {
 
 // NewCombatModeDeps creates a new dependencies container
 func NewCombatModeDeps(
-	battleState *framework.BattleMapState,
+	battleState *framework.TacticalState,
 	combatService *combatservices.CombatService,
 	encounterService *encounter.EncounterService,
 	queries *framework.GUIQueries,

@@ -17,8 +17,7 @@ type ExplorationMode struct {
 
 	// Interactive widget references (stored here for refresh/access)
 	// These are populated from panel registry after BuildPanels()
-	messageLog     *widget.TextArea
-	quickInventory *widget.Container
+	messageLog *widget.TextArea
 }
 
 func NewExplorationMode(modeManager *framework.UIModeManager) *ExplorationMode {
@@ -36,11 +35,7 @@ func (em *ExplorationMode) Initialize(ctx *framework.UIContext) error {
 		ModeName:   "exploration",
 		ReturnMode: "", // No return mode - exploration is the main mode
 
-		// Register hotkeys for mode transitions (Battle Map context only)
-		Hotkeys: []framework.HotkeySpec{
-			{Key: ebiten.KeyI, TargetMode: "inventory"},
-			// Note: 'E' key for squads requires context switch - handled in button
-		},
+		// Squads and inventory are accessed from overworld Management menu
 	}).Build(ctx)
 
 	if err != nil {
@@ -50,7 +45,7 @@ func (em *ExplorationMode) Initialize(ctx *framework.UIContext) error {
 	// Build panels from registry
 	if err := em.BuildPanels(
 		ExplorationPanelMessageLog,
-		ExplorationPanelQuickInventory,
+		ExplorationPanelActionButtons,
 	); err != nil {
 		return err
 	}
@@ -65,7 +60,6 @@ func (em *ExplorationMode) Initialize(ctx *framework.UIContext) error {
 // initializeWidgetReferences populates mode fields from panel registry
 func (em *ExplorationMode) initializeWidgetReferences() {
 	em.messageLog = GetExplorationMessageLog(em.Panels)
-	em.quickInventory = GetExplorationQuickInventory(em.Panels)
 }
 
 func (em *ExplorationMode) Enter(fromMode framework.UIMode) error {
@@ -92,7 +86,7 @@ func (em *ExplorationMode) Render(screen *ebiten.Image) {
 }
 
 func (em *ExplorationMode) HandleInput(inputState *framework.InputState) bool {
-	// Handle common input first (ESC key, registered hotkeys like I)
+	// Handle common input first (ESC key, registered hotkeys)
 	if em.HandleCommonInput(inputState) {
 		return true
 	}

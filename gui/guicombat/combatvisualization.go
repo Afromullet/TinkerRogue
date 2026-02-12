@@ -82,7 +82,7 @@ func (cvm *CombatVisualizationManager) RenderAll(
 	screen *ebiten.Image,
 	playerPos coords.LogicalPosition,
 	currentFactionID ecs.EntityID,
-	battleState *framework.BattleMapState,
+	battleState *framework.TacticalState,
 	combatService *combatservices.CombatService,
 ) {
 	cvm.highlightRenderer.Render(screen, playerPos, currentFactionID, battleState.SelectedSquadID)

@@ -6,14 +6,14 @@ import (
 	"github.com/bytearena/ecs"
 )
 
-// BattleMapState holds UI state for the battle map context
+// TacticalState holds UI state for the tactical context
 // This contains ONLY transient UI selection and mode state used during combat
 //
 // IMPORTANT: This is UI STATE ONLY - do not cache computed game data here
 // - UI state: User selections, mode flags, display preferences
 // - Game state: Combat data, positions, stats (stored in ECS)
 // - Computed data: Calculate on-demand from ECS via services
-type BattleMapState struct {
+type TacticalState struct {
 	// UI Selection State
 	SelectedSquadID  ecs.EntityID // Currently selected squad
 	SelectedTargetID ecs.EntityID // Target squad for attacks
@@ -28,9 +28,9 @@ type BattleMapState struct {
 	TriggeredEncounterID ecs.EntityID // Encounter that triggered this combat (0 if none)
 }
 
-// NewBattleMapState creates a default battle map state
-func NewBattleMapState() *BattleMapState {
-	return &BattleMapState{
+// NewTacticalState creates a default tactical state
+func NewTacticalState() *TacticalState {
+	return &TacticalState{
 		// UI Selection State
 		SelectedSquadID:  ecs.EntityID(0),
 		SelectedTargetID: ecs.EntityID(0),
@@ -45,19 +45,19 @@ func NewBattleMapState() *BattleMapState {
 	}
 }
 
-// Reset clears the battle map state (for starting a new battle)
-func (bms *BattleMapState) Reset() {
+// Reset clears the tactical state (for starting a new battle)
+func (ts *TacticalState) Reset() {
 	// Clear UI selection state
-	bms.SelectedSquadID = ecs.EntityID(0)
-	bms.SelectedTargetID = ecs.EntityID(0)
+	ts.SelectedSquadID = ecs.EntityID(0)
+	ts.SelectedTargetID = ecs.EntityID(0)
 
 	// Clear UI mode flags
-	bms.InAttackMode = false
-	bms.InMoveMode = false
-	bms.ShowHealthBars = false
+	ts.InAttackMode = false
+	ts.InMoveMode = false
+	ts.ShowHealthBars = false
 
 	// Clear encounter tracking
-	bms.TriggeredEncounterID = ecs.EntityID(0)
+	ts.TriggeredEncounterID = ecs.EntityID(0)
 }
 
 // OverworldState holds UI-specific state for the overworld context

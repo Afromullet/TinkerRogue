@@ -33,7 +33,6 @@ func NewInventoryMode(modeManager *framework.UIModeManager) *InventoryMode {
 		currentFilter: "all",
 	}
 	mode.SetModeName("inventory")
-	mode.SetReturnMode("exploration")
 	mode.ModeManager = modeManager
 	mode.SetSelf(mode) // Required for panel registry building
 	return mode
@@ -45,11 +44,8 @@ func (im *InventoryMode) Initialize(ctx *framework.UIContext) error {
 
 	// Build base UI using ModeBuilder (minimal config - panels handled by registry)
 	err := framework.NewModeBuilder(&im.BaseMode, framework.ModeConfig{
-		ModeName:   "inventory",
-		ReturnMode: "exploration",
-		Hotkeys: []framework.HotkeySpec{
-			{Key: ebiten.KeyI, TargetMode: "exploration"},
-		},
+		ModeName: "inventory",
+		// ReturnMode is set externally via SetReturnMode (e.g., "overworld")
 	}).Build(ctx)
 
 	if err != nil {
@@ -133,8 +129,8 @@ func (im *InventoryMode) HandleInput(inputState *framework.InputState) bool {
 
 	// I key to close (inventory-specific hotkey)
 	if inputState.KeysJustPressed[ebiten.KeyI] {
-		if exploreMode, exists := im.ModeManager.GetMode("exploration"); exists {
-			im.ModeManager.RequestTransition(exploreMode, "Close Inventory")
+		if returnMode, exists := im.ModeManager.GetMode(im.GetReturnMode()); exists {
+			im.ModeManager.RequestTransition(returnMode, "Close Inventory")
 			return true
 		}
 	}
@@ -172,8 +168,8 @@ func (im *InventoryMode) handleThrowableSelection(entry gear.InventoryListEntry)
 
 	fmt.Printf("Throwable prepared: %s\n", result.ItemName)
 
-	// Close inventory and return to exploration
-	if exploreMode, exists := im.ModeManager.GetMode("exploration"); exists {
-		im.ModeManager.RequestTransition(exploreMode, "Throwable selected")
+	// Close inventory and return to previous mode
+	if returnMode, exists := im.ModeManager.GetMode(im.GetReturnMode()); exists {
+		im.ModeManager.RequestTransition(returnMode, "Throwable selected")
 	}
 }

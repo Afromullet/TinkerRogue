@@ -30,12 +30,24 @@ func init() {
 			bottomPad := int(float64(layout.ScreenHeight) * specs.BottomButtonOffset)
 			anchorLayout := builders.AnchorCenterEnd(bottomPad)
 
+			// Determine return behavior based on context:
+			// In overworld context, returnMode is "overworld" → return to it
+			// In tactical context, returnMode is "" → context switch to tactical
+			returnText := "Exploration (ESC)"
+			if smm.GetReturnMode() != "" {
+				returnText = "Overworld (ESC)"
+			}
+
 			result.Container = builders.CreateButtonGroup(builders.ButtonGroupConfig{
 				Buttons: []builders.ButtonSpec{
-					{Text: "Battle Map (ESC)", OnClick: func() {
+					{Text: returnText, OnClick: func() {
+						if returnMode, exists := smm.ModeManager.GetMode(smm.GetReturnMode()); exists {
+							smm.ModeManager.RequestTransition(returnMode, "Return from squad management")
+							return
+						}
 						if smm.Context.ModeCoordinator != nil {
-							if err := smm.Context.ModeCoordinator.EnterBattleMap("exploration"); err != nil {
-								fmt.Printf("ERROR: Failed to enter battle map: %v\n", err)
+							if err := smm.Context.ModeCoordinator.EnterTactical("exploration"); err != nil {
+								fmt.Printf("ERROR: Failed to enter tactical context: %v\n", err)
 							}
 						}
 					}},

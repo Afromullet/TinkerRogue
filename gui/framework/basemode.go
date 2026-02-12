@@ -53,6 +53,11 @@ func (bm *BaseMode) SetReturnMode(name string) {
 	bm.returnMode = name
 }
 
+// GetReturnMode returns the mode name to return to on ESC/close
+func (bm *BaseMode) GetReturnMode() string {
+	return bm.returnMode
+}
+
 // SetSelf stores a reference to the concrete mode for panel building.
 // Call this in the concrete mode's constructor after embedding BaseMode.
 func (bm *BaseMode) SetSelf(mode UIMode) {

@@ -31,7 +31,7 @@ import (
 // It is the main struct passed to the Ebiten game engine.
 type Game struct {
 	em                  common.EntityManager
-	gameModeCoordinator *framework.GameModeCoordinator // Coordinates Overworld and BattleMap UI contexts
+	gameModeCoordinator *framework.GameModeCoordinator // Coordinates Overworld and Tactical UI contexts
 	playerData          common.PlayerData
 	gameMap             worldmap.GameMap
 	inputCoordinator    *input.InputCoordinator

@@ -12,15 +12,150 @@ import (
 
 // Panel type constants for overworld mode
 const (
-	OverworldPanelTickControls framework.PanelType = "overworld_tick_controls"
-	OverworldPanelThreatInfo   framework.PanelType = "overworld_threat_info"
-	OverworldPanelTickStatus   framework.PanelType = "overworld_tick_status"
-	OverworldPanelEventLog     framework.PanelType = "overworld_event_log"
-	OverworldPanelThreatStats  framework.PanelType = "overworld_threat_stats"
+	OverworldPanelTickControls   framework.PanelType = "overworld_tick_controls"
+	OverworldPanelThreatInfo     framework.PanelType = "overworld_threat_info"
+	OverworldPanelTickStatus     framework.PanelType = "overworld_tick_status"
+	OverworldPanelEventLog       framework.PanelType = "overworld_event_log"
+	OverworldPanelThreatStats    framework.PanelType = "overworld_threat_stats"
+	OverworldPanelDebugMenu      framework.PanelType = "overworld_debug_menu"
+	OverworldPanelNodeMenu       framework.PanelType = "overworld_node_menu"
+	OverworldPanelManagementMenu framework.PanelType = "overworld_management_menu"
 )
 
+// subMenuController manages sub-menu visibility. Only one sub-menu can be open at a time.
+type subMenuController struct {
+	menus  map[string]*widget.Container
+	active string
+}
+
+func newSubMenuController() *subMenuController {
+	return &subMenuController{
+		menus: make(map[string]*widget.Container),
+	}
+}
+
+func (sc *subMenuController) Register(name string, container *widget.Container) {
+	sc.menus[name] = container
+}
+
+// Toggle returns a callback that toggles the named sub-menu.
+// Opening one menu closes any other open menu.
+func (sc *subMenuController) Toggle(name string) func() {
+	return func() {
+		if sc.active == name {
+			sc.menus[name].GetWidget().Visibility = widget.Visibility_Hide
+			sc.active = ""
+			return
+		}
+		sc.CloseAll()
+		if c, ok := sc.menus[name]; ok {
+			c.GetWidget().Visibility = widget.Visibility_Show
+			sc.active = name
+		}
+	}
+}
+
+func (sc *subMenuController) CloseAll() {
+	for _, c := range sc.menus {
+		c.GetWidget().Visibility = widget.Visibility_Hide
+	}
+	sc.active = ""
+}
+
+// createOverworldSubMenu creates a vertical sub-menu panel, registers it with the controller, and returns it.
+func createOverworldSubMenu(om *OverworldMode, name string, buttons []builders.ButtonConfig) *widget.Container {
+	spacing := int(float64(om.Layout.ScreenWidth) * specs.PaddingTight)
+	subMenuBottomPad := int(float64(om.Layout.ScreenHeight) * (specs.BottomButtonOffset + 0.15))
+	anchorLayout := builders.AnchorCenterEnd(subMenuBottomPad)
+
+	panel := builders.CreatePanelWithConfig(builders.ContainerConfig{
+		Layout: widget.NewRowLayout(
+			widget.RowLayoutOpts.Direction(widget.DirectionVertical),
+			widget.RowLayoutOpts.Spacing(spacing),
+			widget.RowLayoutOpts.Padding(widget.NewInsetsSimple(10)),
+		),
+		LayoutData: anchorLayout,
+	})
+	for _, btn := range buttons {
+		panel.AddChild(builders.CreateButtonWithConfig(btn))
+	}
+	panel.GetWidget().Visibility = widget.Visibility_Hide
+	om.subMenus.Register(name, panel)
+	return panel
+}
+
+// getOverworldTextArea retrieves a TextArea widget from the panel registry by panel type and custom key.
+func getOverworldTextArea(panels *framework.PanelRegistry, panelType framework.PanelType, key string) *widget.TextArea {
+	if result := panels.Get(panelType); result != nil {
+		if textArea, ok := result.Custom[key].(*widget.TextArea); ok {
+			return textArea
+		}
+	}
+	return nil
+}
+
 func init() {
-	// Register tick controls panel (manual tick button + pause/resume)
+	// Register debug sub-menu (Advance Tick, Toggle Influence)
+	framework.RegisterPanel(OverworldPanelDebugMenu, framework.PanelDescriptor{
+		Content: framework.ContentCustom,
+		OnCreate: func(result *framework.PanelResult, mode framework.UIMode) error {
+			om := mode.(*OverworldMode)
+
+			result.Container = createOverworldSubMenu(om, "debug", []builders.ButtonConfig{
+				{Text: "Advance Tick (Space)", OnClick: func() {
+					om.actionHandler.AdvanceTick()
+					om.subMenus.CloseAll()
+				}},
+				{Text: "Toggle Influence (I)", OnClick: func() {
+					om.actionHandler.ToggleInfluence()
+					om.subMenus.CloseAll()
+				}},
+			})
+			return nil
+		},
+	})
+
+	// Register node sub-menu (Place Nodes, Garrison)
+	framework.RegisterPanel(OverworldPanelNodeMenu, framework.PanelDescriptor{
+		Content: framework.ContentCustom,
+		OnCreate: func(result *framework.PanelResult, mode framework.UIMode) error {
+			om := mode.(*OverworldMode)
+
+			result.Container = createOverworldSubMenu(om, "node", []builders.ButtonConfig{
+				{Text: "Place Nodes (N)", OnClick: func() {
+					om.ModeManager.SetMode("node_placement")
+					om.subMenus.CloseAll()
+				}},
+				{Text: "Garrison (G)", OnClick: func() {
+					om.inputHandler.handleGarrison()
+					om.subMenus.CloseAll()
+				}},
+			})
+			return nil
+		},
+	})
+
+	// Register management sub-menu (Squads, Inventory)
+	framework.RegisterPanel(OverworldPanelManagementMenu, framework.PanelDescriptor{
+		Content: framework.ContentCustom,
+		OnCreate: func(result *framework.PanelResult, mode framework.UIMode) error {
+			om := mode.(*OverworldMode)
+
+			result.Container = createOverworldSubMenu(om, "management", []builders.ButtonConfig{
+				{Text: "Squads", OnClick: func() {
+					om.ModeManager.SetMode("squad_management")
+					om.subMenus.CloseAll()
+				}},
+				{Text: "Inventory", OnClick: func() {
+					om.ModeManager.SetMode("inventory")
+					om.subMenus.CloseAll()
+				}},
+			})
+			return nil
+		},
+	})
+
+	// Register tick controls panel (main button bar)
 	framework.RegisterPanel(OverworldPanelTickControls, framework.PanelDescriptor{
 		Content: framework.ContentCustom,
 		OnCreate: func(result *framework.PanelResult, mode framework.UIMode) error {
@@ -32,31 +167,22 @@ func init() {
 			bottomPad := int(float64(layout.ScreenHeight) * specs.BottomButtonOffset)
 			anchorLayout := builders.AnchorCenterEnd(bottomPad)
 
-			// Create button group
+			// Create button group with parent menu buttons + direct action buttons
 			buttonContainer := builders.CreateButtonGroup(builders.ButtonGroupConfig{
 				Buttons: []builders.ButtonSpec{
-					{Text: "Advance Tick (Space)", OnClick: func() {
-						om.actionHandler.AdvanceTick()
-					}},
+					{Text: "Debug", OnClick: om.subMenus.Toggle("debug")},
+					{Text: "Node", OnClick: om.subMenus.Toggle("node")},
+					{Text: "Management", OnClick: om.subMenus.Toggle("management")},
 					{Text: "Auto-Travel (A)", OnClick: func() {
 						om.actionHandler.ToggleAutoTravel()
-					}},
-					{Text: "Toggle Influence (I)", OnClick: func() {
-						om.actionHandler.ToggleInfluence()
 					}},
 					{Text: "Engage Threat (E)", OnClick: func() {
 						om.actionHandler.EngageThreat(om.state.SelectedNodeID)
 					}},
-					{Text: "Garrison (G)", OnClick: func() {
-						om.inputHandler.handleGarrison()
-					}},
-					{Text: "Place Nodes (N)", OnClick: func() {
-						om.ModeManager.SetMode("node_placement")
-					}},
 					{Text: "Return (ESC)", OnClick: func() {
 						if om.Context.ModeCoordinator != nil {
-							if err := om.Context.ModeCoordinator.EnterBattleMap("exploration"); err != nil {
-								fmt.Printf("ERROR: Failed to return to battle map: %v\n", err)
+							if err := om.Context.ModeCoordinator.EnterTactical("exploration"); err != nil {
+								fmt.Printf("ERROR: Failed to return to tactical context: %v\n", err)
 							}
 						}
 					}},
@@ -154,39 +280,19 @@ func init() {
 // Helper functions to retrieve widgets from panel registry
 
 func GetOverworldThreatInfo(panels *framework.PanelRegistry) *widget.TextArea {
-	if result := panels.Get(OverworldPanelThreatInfo); result != nil {
-		if textArea, ok := result.Custom["threatInfoText"].(*widget.TextArea); ok {
-			return textArea
-		}
-	}
-	return nil
+	return getOverworldTextArea(panels, OverworldPanelThreatInfo, "threatInfoText")
 }
 
 func GetOverworldTickStatus(panels *framework.PanelRegistry) *widget.TextArea {
-	if result := panels.Get(OverworldPanelTickStatus); result != nil {
-		if textArea, ok := result.Custom["tickStatusText"].(*widget.TextArea); ok {
-			return textArea
-		}
-	}
-	return nil
+	return getOverworldTextArea(panels, OverworldPanelTickStatus, "tickStatusText")
 }
 
 func GetOverworldEventLog(panels *framework.PanelRegistry) *widget.TextArea {
-	if result := panels.Get(OverworldPanelEventLog); result != nil {
-		if textArea, ok := result.Custom["eventLogText"].(*widget.TextArea); ok {
-			return textArea
-		}
-	}
-	return nil
+	return getOverworldTextArea(panels, OverworldPanelEventLog, "eventLogText")
 }
 
 func GetOverworldThreatStats(panels *framework.PanelRegistry) *widget.TextArea {
-	if result := panels.Get(OverworldPanelThreatStats); result != nil {
-		if textArea, ok := result.Custom["threatStatsText"].(*widget.TextArea); ok {
-			return textArea
-		}
-	}
-	return nil
+	return getOverworldTextArea(panels, OverworldPanelThreatStats, "threatStatsText")
 }
 
 func GetOverworldTickControls(panels *framework.PanelRegistry) *widget.Container {
@@ -195,6 +301,5 @@ func GetOverworldTickControls(panels *framework.PanelRegistry) *widget.Container
 			return container
 		}
 	}
-	fmt.Println("WARNING: Could not retrieve tick controls container")
 	return nil
 }

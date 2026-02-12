@@ -37,8 +37,8 @@ const (
 
 // ModeCoordinator defines the interface for switching game modes and accessing state
 type ModeCoordinator interface {
-	GetBattleMapState() *framework.BattleMapState
-	EnterBattleMap(mode string) error
+	GetTacticalState() *framework.TacticalState
+	EnterTactical(mode string) error
 	GetPlayerData() *common.PlayerData
 }
 

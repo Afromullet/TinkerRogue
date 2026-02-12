@@ -254,18 +254,18 @@ func SetupUI(g *Game) {
 	encounterService := encounter.NewEncounterService(&g.em, g.gameModeCoordinator)
 
 	// Get references to both managers for registration
-	battleMapManager := g.gameModeCoordinator.GetBattleMapManager()
+	tacticalManager := g.gameModeCoordinator.GetTacticalManager()
 	overworldManager := g.gameModeCoordinator.GetOverworldManager()
 
-	// Register all battle map modes (tactical layer)
-	registerBattleMapModes(g.gameModeCoordinator, battleMapManager, encounterService)
+	// Register all tactical modes (tactical layer)
+	registerTacticalModes(g.gameModeCoordinator, tacticalManager, encounterService)
 
 	// Register all overworld modes (strategic layer)
 	registerOverworldModes(g.gameModeCoordinator, overworldManager, encounterService)
 
-	// Set initial context and mode (start in battle map, exploration mode)
-	if err := g.gameModeCoordinator.EnterBattleMap("exploration"); err != nil {
-		log.Fatalf("Failed to set initial battle map mode: %v", err)
+	// Set initial context and mode (start in tactical context, exploration mode)
+	if err := g.gameModeCoordinator.EnterTactical("exploration"); err != nil {
+		log.Fatalf("Failed to set initial tactical mode: %v", err)
 	}
 }
 
@@ -276,19 +276,18 @@ func SetupInputCoordinator(g *Game) {
 	g.inputCoordinator = input.NewInputCoordinator(&g.em, &g.playerData, &g.gameMap, g.gameModeCoordinator)
 }
 
-// registerBattleMapModes registers all battle map UI modes with the coordinator.
-func registerBattleMapModes(coordinator *framework.GameModeCoordinator, manager *framework.UIModeManager, encounterService *encounter.EncounterService) {
+// registerTacticalModes registers all tactical UI modes with the coordinator.
+func registerTacticalModes(coordinator *framework.GameModeCoordinator, manager *framework.UIModeManager, encounterService *encounter.EncounterService) {
 	modes := []framework.UIMode{
 		guiexploration.NewExplorationMode(manager),
 		guicombat.NewCombatMode(manager, encounterService),
 		guicombat.NewCombatAnimationMode(manager),
 		guisquads.NewSquadDeploymentMode(manager),
-		newInventoryModeWithReturn(manager, "exploration"),
 	}
 
 	for _, mode := range modes {
-		if err := coordinator.RegisterBattleMapMode(mode); err != nil {
-			log.Fatalf("Failed to register battle map mode '%s': %v", mode.GetModeName(), err)
+		if err := coordinator.RegisterTacticalMode(mode); err != nil {
+			log.Fatalf("Failed to register tactical mode '%s': %v", mode.GetModeName(), err)
 		}
 	}
 }
@@ -303,7 +302,7 @@ func registerOverworldModes(coordinator *framework.GameModeCoordinator, manager 
 		guisquads.NewSquadBuilderMode(manager),
 		guisquads.NewUnitPurchaseMode(manager),
 		guisquads.NewSquadEditorMode(manager),
-		newInventoryModeWithReturn(manager, "squad_management"),
+		newInventoryModeWithReturn(manager, "overworld"),
 	}
 
 	for _, mode := range modes {
@@ -314,7 +313,6 @@ func registerOverworldModes(coordinator *framework.GameModeCoordinator, manager 
 }
 
 // newInventoryModeWithReturn creates an inventory mode configured with a return mode.
-// This helper eliminates duplicate inventory mode setup code.
 func newInventoryModeWithReturn(manager *framework.UIModeManager, returnMode string) framework.UIMode {
 	mode := guiexploration.NewInventoryMode(manager)
 	mode.SetReturnMode(returnMode)
