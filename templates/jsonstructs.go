@@ -370,6 +370,13 @@ type FactionScoringControlConfig struct {
 // These structs enable loading ALL threat configuration from a single JSON array,
 // replacing the need to edit 6-8 files when adding a new threat type.
 
+// JSONResourceCost represents a resource cost in JSON (iron, wood, stone)
+type JSONResourceCost struct {
+	Iron  int `json:"iron"`
+	Wood  int `json:"wood"`
+	Stone int `json:"stone"`
+}
+
 // JSONColor represents an RGBA color in JSON
 type JSONColor struct {
 	R uint8 `json:"r"`
@@ -406,6 +413,7 @@ type JSONNodeDefinition struct {
 	Overworld JSONNodeOverworld `json:"overworld"`           // Overworld behavior
 	Services  []string          `json:"services,omitempty"`  // For settlements: available services
 	FactionID string            `json:"factionId,omitempty"` // Faction this node belongs to (for threat nodes)
+	Cost      *JSONResourceCost `json:"cost,omitempty"`      // Resource cost to place this node
 }
 
 // JSONDefaultNode defines fallback configuration for unknown nodes

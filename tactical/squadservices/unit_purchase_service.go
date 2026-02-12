@@ -67,7 +67,7 @@ func (ups *UnitPurchaseService) CanPurchaseUnit(playerID ecs.EntityID, template 
 	result := &PurchaseValidationResult{}
 
 	// Get player resources
-	resources := common.GetPlayerResources(playerID, ups.entityManager)
+	resources := common.GetResourceStockpile(playerID, ups.entityManager)
 	if resources == nil {
 		result.Error = "player resources not found"
 		return result
@@ -89,7 +89,7 @@ func (ups *UnitPurchaseService) CanPurchaseUnit(playerID ecs.EntityID, template 
 	result.RosterCount, result.RosterCapacity = roster.GetUnitCount()
 
 	// Check affordability
-	if !resources.CanAfford(cost) {
+	if !common.CanAffordGold(resources, cost) {
 		result.Error = fmt.Sprintf("insufficient gold: need %d, have %d", cost, resources.Gold)
 		return result
 	}
@@ -119,7 +119,7 @@ func (ups *UnitPurchaseService) PurchaseUnit(playerID ecs.EntityID, template squ
 	}
 
 	// Get resources and roster
-	resources := common.GetPlayerResources(playerID, ups.entityManager)
+	resources := common.GetResourceStockpile(playerID, ups.entityManager)
 	roster := squads.GetPlayerRoster(playerID, ups.entityManager)
 	cost := ups.GetUnitCost(template)
 
@@ -141,7 +141,7 @@ func (ups *UnitPurchaseService) PurchaseUnit(playerID ecs.EntityID, template squ
 	}
 
 	// Step 3: Spend gold (with rollback on failure)
-	if err := resources.SpendGold(cost); err != nil {
+	if err := common.SpendGold(resources, cost); err != nil {
 		// Rollback: Remove from roster and dispose entity
 		roster.RemoveUnit(unitID)
 		pos := common.GetComponentType[*coords.LogicalPosition](unitEntity, common.PositionComponent)
@@ -167,7 +167,7 @@ func (ups *UnitPurchaseService) GetPlayerPurchaseInfo(playerID ecs.EntityID) *Pl
 	info := &PlayerPurchaseInfo{}
 
 	// Get player resources
-	resources := common.GetPlayerResources(playerID, ups.entityManager)
+	resources := common.GetResourceStockpile(playerID, ups.entityManager)
 	if resources != nil {
 		info.Gold = resources.Gold
 	}
@@ -214,7 +214,7 @@ func (ups *UnitPurchaseService) RefundUnitPurchase(playerID ecs.EntityID, unitID
 	result := &RefundResult{}
 
 	// Get player resources
-	resources := common.GetPlayerResources(playerID, ups.entityManager)
+	resources := common.GetResourceStockpile(playerID, ups.entityManager)
 	if resources == nil {
 		result.Error = "player resources not found"
 		return result
@@ -242,7 +242,7 @@ func (ups *UnitPurchaseService) RefundUnitPurchase(playerID ecs.EntityID, unitID
 	}
 
 	// Step 2: Refund gold
-	resources.AddGold(costPaid)
+	common.AddGold(resources, costPaid)
 
 	// Step 3: Dispose unit entity
 	pos := common.GetComponentType[*coords.LogicalPosition](unitEntity, common.PositionComponent)

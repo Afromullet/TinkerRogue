@@ -4,7 +4,7 @@ import (
 	"image"
 	"image/color"
 
-	"game_main/gui/guiresources"
+	"game_main/gui/widgetresources"
 
 	"github.com/ebitenui/ebitenui/widget"
 )
@@ -28,7 +28,7 @@ type dialogBaseConfig struct {
 // createDialogContainer creates the common dialog container with background and layout.
 func createDialogContainer() *widget.Container {
 	return widget.NewContainer(
-		widget.ContainerOpts.BackgroundImage(guiresources.PanelRes.Image),
+		widget.ContainerOpts.BackgroundImage(widgetresources.PanelRes.Image),
 		widget.ContainerOpts.Layout(widget.NewRowLayout(
 			widget.RowLayoutOpts.Direction(widget.DirectionVertical),
 			widget.RowLayoutOpts.Spacing(15),
@@ -52,7 +52,7 @@ func addDialogHeader(container *widget.Container, title, message string, wrapMes
 		if wrapMessage {
 			// Use widget.NewText with MaxWidth for message dialogs
 			messageLabel := widget.NewText(
-				widget.TextOpts.Text(message, guiresources.SmallFace, color.White),
+				widget.TextOpts.Text(message, widgetresources.SmallFace, color.White),
 				widget.TextOpts.MaxWidth(350), // Wrap text
 			)
 			container.AddChild(messageLabel)

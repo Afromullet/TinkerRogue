@@ -2,6 +2,8 @@ __________________________________________
 #
 # # # **IMPORTANT** # # # 
 
+ - System for gaining resources. Whether it's through battle or territory tbd
+
 - Review caches
 
 - Need some calvary untis
@@ -27,7 +29,6 @@ __________________________________________
 
 - calculateEntryIndexAtPosition in squadeditor_movesquad.go is not accurately calculating the position to move the squad to. Check if there is an ebitenui var (such as entryselected) you can use instead of calculating with pixel positions
 
-- Check if we have to mark the caches as dirty, or whether the way the ecs library implements views handles that automatically
 
 - Overworld needs difficulty setting
 
@@ -43,17 +44,9 @@ __________________________________________
 
 - Creating a new squad breaks the threat map. Fix this
 
-
 - Need to be able to toggle threat layer visualzation to player faction.
 
 - Enemy squads appear to attack when they're out of range
-
-- Encounted difficulty should partially be based on overworld stuff
-
-- Fully explor encoutner types from encounterdata.json - determine how squad composition works in encounters
-
-
-
 
 - Check if counter attack in ExecuteAttackAction accounts for dead units. Dead units should  not be part of the counter attack damage calculation
 ________________________________________________

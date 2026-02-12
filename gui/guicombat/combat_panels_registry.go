@@ -5,8 +5,8 @@ import (
 
 	"game_main/gui/builders"
 	"game_main/gui/framework"
-	"game_main/gui/guiresources"
 	"game_main/gui/specs"
+	"game_main/gui/widgetresources"
 	"game_main/gui/widgets"
 
 	"github.com/ebitenui/ebitenui/widget"
@@ -35,7 +35,7 @@ func init() {
 			result.Container = builders.CreatePanelWithConfig(builders.ContainerConfig{
 				MinWidth:   panelWidth,
 				MinHeight:  panelHeight,
-				Background: guiresources.PanelRes.Image,
+				Background: widgetresources.PanelRes.Image,
 				Layout: widget.NewRowLayout(
 					widget.RowLayoutOpts.Direction(widget.DirectionHorizontal),
 					widget.RowLayoutOpts.Spacing(10),
@@ -66,7 +66,7 @@ func init() {
 			result.Container = builders.CreatePanelWithConfig(builders.ContainerConfig{
 				MinWidth:   panelWidth,
 				MinHeight:  panelHeight,
-				Background: guiresources.PanelRes.Image,
+				Background: widgetresources.PanelRes.Image,
 				Layout: widget.NewRowLayout(
 					widget.RowLayoutOpts.Direction(widget.DirectionVertical),
 					widget.RowLayoutOpts.Spacing(5),
@@ -97,7 +97,7 @@ func init() {
 			result.Container = builders.CreatePanelWithConfig(builders.ContainerConfig{
 				MinWidth:   panelWidth,
 				MinHeight:  panelHeight,
-				Background: guiresources.PanelRes.Image,
+				Background: widgetresources.PanelRes.Image,
 				Layout: widget.NewRowLayout(
 					widget.RowLayoutOpts.Direction(widget.DirectionVertical),
 					widget.RowLayoutOpts.Spacing(5),
@@ -128,7 +128,7 @@ func init() {
 			result.Container = builders.CreatePanelWithConfig(builders.ContainerConfig{
 				MinWidth:   panelWidth,
 				MinHeight:  panelHeight,
-				Background: guiresources.PanelRes.Image,
+				Background: widgetresources.PanelRes.Image,
 				Layout:     widget.NewAnchorLayout(),
 			})
 
@@ -164,7 +164,7 @@ func init() {
 			result.Container = builders.CreatePanelWithConfig(builders.ContainerConfig{
 				MinWidth:   panelWidth,
 				MinHeight:  panelHeight,
-				Background: guiresources.PanelRes.Image,
+				Background: widgetresources.PanelRes.Image,
 				Layout: widget.NewRowLayout(
 					widget.RowLayoutOpts.Direction(widget.DirectionVertical),
 					widget.RowLayoutOpts.Spacing(3),

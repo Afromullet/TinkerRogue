@@ -39,7 +39,7 @@ func registerCoreComponents(manager *ecs.Manager) {
 	common.NameComponent = manager.NewComponent()
 	common.AttributeComponent = manager.NewComponent()
 	common.PlayerComponent = manager.NewComponent()
-	common.PlayerResourcesComponent = manager.NewComponent()
+	common.ResourceStockpileComponent = manager.NewComponent()
 }
 
 // buildCoreTags creates tags for querying core entity types.

@@ -78,7 +78,22 @@ func CreateNode(manager *common.EntityManager, params CreateNodeParams) (ecs.Ent
 
 // CreatePlayerNode creates a new player-owned node at the given position.
 // Delegates to CreateNode with player-specific defaults, then logs the event.
-func CreatePlayerNode(manager *common.EntityManager, pos coords.LogicalPosition, nodeTypeID core.NodeTypeID, currentTick int64) (ecs.EntityID, error) {
+// If playerEntityID is non-zero, deducts the node's resource cost from the player's stockpile.
+func CreatePlayerNode(manager *common.EntityManager, pos coords.LogicalPosition, nodeTypeID core.NodeTypeID, currentTick int64, playerEntityID ecs.EntityID) (ecs.EntityID, error) {
+	// Deduct resource cost if player entity is provided
+	if playerEntityID != 0 {
+		nodeDef := core.GetNodeRegistry().GetNodeByID(string(nodeTypeID))
+		if nodeDef == nil {
+			return 0, fmt.Errorf("unknown node type ID: %q", string(nodeTypeID))
+		}
+		stockpile := common.GetResourceStockpile(playerEntityID, manager)
+		if stockpile != nil {
+			if err := core.SpendResources(stockpile, nodeDef.Cost); err != nil {
+				return 0, fmt.Errorf("cannot place node: %w", err)
+			}
+		}
+	}
+
 	entityID, err := CreateNode(manager, CreateNodeParams{
 		Position:    pos,
 		NodeTypeID:  string(nodeTypeID),

@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"image/color"
 
-	"game_main/gui/guiresources"
 	"game_main/gui/specs"
+	"game_main/gui/widgetresources"
 
 	e_image "github.com/ebitenui/ebitenui/image"
 	"github.com/ebitenui/ebitenui/widget"
@@ -224,7 +224,7 @@ func (pb *PanelBuilders) BuildPanel(opts ...PanelOption) *widget.Container {
 	config := panelConfig{
 		widthPercent:  0.2,
 		heightPercent: 0.3,
-		background:    guiresources.PanelRes.Image,
+		background:    widgetresources.PanelRes.Image,
 		layout: widget.NewRowLayout(
 			widget.RowLayoutOpts.Direction(widget.DirectionVertical),
 			widget.RowLayoutOpts.Spacing(5),
@@ -304,7 +304,7 @@ func (pb *PanelBuilders) BuildPanel(opts ...PanelOption) *widget.Container {
 	// Pre-cache background if caching is enabled
 	// This warms the cache so the first render is faster
 	if config.enableCaching && config.background != nil {
-		_ = guiresources.GetPanelBackground(width, height)
+		_ = widgetresources.GetPanelBackground(width, height)
 	}
 
 	// Build the panel
@@ -496,7 +496,7 @@ func (pb *PanelBuilders) BuildGridEditor(config GridEditorConfig) (*widget.Conta
 
 	// Grid editors are static - enable caching
 	gridContainer := CreateStaticPanel(ContainerConfig{
-		Background: guiresources.PanelRes.Image,
+		Background: widgetresources.PanelRes.Image,
 		Layout: widget.NewGridLayout(
 			widget.GridLayoutOpts.Columns(3),
 			widget.GridLayoutOpts.Stretch([]bool{true, true, true}, []bool{true, true, true}),
@@ -518,7 +518,7 @@ func (pb *PanelBuilders) BuildGridEditor(config GridEditorConfig) (*widget.Conta
 
 			cellBtn := CreateButtonWithConfig(ButtonConfig{
 				Text:      cellText,
-				FontFace:  guiresources.SmallFace,
+				FontFace:  widgetresources.SmallFace,
 				MinWidth:  0, // Let grid layout handle sizing
 				MinHeight: 0, // Let grid layout handle sizing
 				Padding:   widget.Insets{Left: cellPadding, Right: cellPadding, Top: cellPadding, Bottom: cellPadding},

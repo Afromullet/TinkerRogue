@@ -42,9 +42,20 @@ const (
 
 // Default player resources and roster limits
 const (
-	DefaultPlayerStartingGold = 100000 // Starting gold for purchasing units
-	DefaultPlayerMaxUnits     = 50     // Maximum units player can own
-	DefaultPlayerMaxSquads    = 10     // Maximum squads player can own
+	DefaultPlayerStartingGold  = 100000 // Starting gold for purchasing units
+	DefaultPlayerMaxUnits      = 50     // Maximum units player can own
+	DefaultPlayerMaxSquads     = 10     // Maximum squads player can own
+	DefaultPlayerStartingIron  = 50     // Starting iron for node placement
+	DefaultPlayerStartingWood  = 50     // Starting wood for node placement
+	DefaultPlayerStartingStone = 50     // Starting stone for node placement
+)
+
+// Default faction AI starting resources
+const (
+	DefaultFactionStartingGold  = 100000
+	DefaultFactionStartingIron  = 30
+	DefaultFactionStartingWood  = 30
+	DefaultFactionStartingStone = 30
 )
 
 // Default Unit Attributes

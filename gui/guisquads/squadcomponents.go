@@ -6,7 +6,7 @@ import (
 
 	"game_main/gui/builders"
 	"game_main/gui/framework"
-	"game_main/gui/guiresources"
+	"game_main/gui/widgetresources"
 
 	"github.com/bytearena/ecs"
 	"github.com/ebitenui/ebitenui/widget"
@@ -161,7 +161,7 @@ func (slc *SquadListComponent) updateButtonWidgets(squadIDs []ecs.EntityID) {
 		if slc.noSquadsText == nil {
 			slc.noSquadsText = builders.CreateTextWithConfig(builders.TextConfig{
 				Text:     "AI Turn",
-				FontFace: guiresources.SmallFace,
+				FontFace: widgetresources.SmallFace,
 				Color:    color.Gray{Y: 128},
 			})
 		}

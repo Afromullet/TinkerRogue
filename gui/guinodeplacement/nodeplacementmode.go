@@ -3,6 +3,7 @@ package guinodeplacement
 import (
 	"fmt"
 
+	"game_main/common"
 	"game_main/gui/framework"
 	"game_main/gui/guioverworld"
 	"game_main/overworld/core"
@@ -139,8 +140,8 @@ func (npm *NodePlacementMode) HandleInput(inputState *framework.InputState) bool
 	logicalPos := npm.renderer.ScreenToLogical(inputState.MouseX, inputState.MouseY)
 	npm.cursorPos = &logicalPos
 
-	// Validate on hover for preview feedback
-	result := node.ValidatePlayerPlacement(npm.Context.ECSManager, logicalPos, npm.Context.PlayerData)
+	// Validate on hover for preview feedback (includes resource check)
+	result := node.ValidatePlayerPlacementWithCost(npm.Context.ECSManager, logicalPos, npm.Context.PlayerData, npm.Context.PlayerData.PlayerEntityID, string(npm.selectedNodeType))
 	npm.lastValidation = &result
 
 	// Left click to place node
@@ -158,14 +159,15 @@ func (npm *NodePlacementMode) handlePlaceNode(pos coords.LogicalPosition) {
 		return
 	}
 
-	result := node.ValidatePlayerPlacement(npm.Context.ECSManager, pos, npm.Context.PlayerData)
+	playerEntityID := npm.Context.PlayerData.PlayerEntityID
+	result := node.ValidatePlayerPlacementWithCost(npm.Context.ECSManager, pos, npm.Context.PlayerData, playerEntityID, string(npm.selectedNodeType))
 	if !result.Valid {
 		npm.setInfo(fmt.Sprintf("Cannot place: %s", result.Reason))
 		return
 	}
 
 	currentTick := core.GetCurrentTick(npm.Context.ECSManager)
-	_, err := node.CreatePlayerNode(npm.Context.ECSManager, pos, npm.selectedNodeType, currentTick)
+	_, err := node.CreatePlayerNode(npm.Context.ECSManager, pos, npm.selectedNodeType, currentTick, playerEntityID)
 	if err != nil {
 		npm.setInfo(fmt.Sprintf("Failed to place node: %v", err))
 		return
@@ -179,6 +181,7 @@ func (npm *NodePlacementMode) handlePlaceNode(pos coords.LogicalPosition) {
 
 	npm.setInfo(fmt.Sprintf("Placed %s at (%d, %d)", displayName, pos.X, pos.Y))
 	npm.refreshNodeList()
+	npm.refreshPlacementInfo()
 }
 
 func (npm *NodePlacementMode) cycleNodeType() {
@@ -206,12 +209,23 @@ func (npm *NodePlacementMode) refreshNodeList() {
 
 	text := fmt.Sprintf("=== Node Types ===\nPlaced: %d / %d\n\n", count, maxNodes)
 
-	for i, node := range npm.nodeTypes {
+	// Get player stockpile for affordability display
+	var stockpile *common.ResourceStockpile
+	if npm.Context.PlayerData != nil {
+		stockpile = common.GetResourceStockpile(npm.Context.PlayerData.PlayerEntityID, npm.Context.ECSManager)
+	}
+
+	for i, nodeDef := range npm.nodeTypes {
 		marker := "  "
-		if node.ID == string(npm.selectedNodeType) {
+		if nodeDef.ID == string(npm.selectedNodeType) {
 			marker = "> "
 		}
-		text += fmt.Sprintf("%s[%d] %s (%s)\n", marker, i+1, node.DisplayName, node.Category)
+		costStr := fmt.Sprintf("I:%d W:%d S:%d", nodeDef.Cost.Iron, nodeDef.Cost.Wood, nodeDef.Cost.Stone)
+		affordable := ""
+		if stockpile != nil && !core.CanAfford(stockpile, nodeDef.Cost) {
+			affordable = " [!]"
+		}
+		text += fmt.Sprintf("%s[%d] %s - %s%s\n", marker, i+1, nodeDef.DisplayName, costStr, affordable)
 	}
 
 	if len(npm.nodeTypes) == 0 {
@@ -228,12 +242,21 @@ func (npm *NodePlacementMode) refreshPlacementInfo() {
 
 	text := "=== Placement Info ===\n"
 
+	// Show current resources
+	if npm.Context.PlayerData != nil {
+		stockpile := common.GetResourceStockpile(npm.Context.PlayerData.PlayerEntityID, npm.Context.ECSManager)
+		if stockpile != nil {
+			text += fmt.Sprintf("Resources: Iron %d | Wood %d | Stone %d\n\n", stockpile.Iron, stockpile.Wood, stockpile.Stone)
+		}
+	}
+
 	if npm.selectedNodeType != "" {
 		nodeDef := core.GetNodeRegistry().GetNodeByID(string(npm.selectedNodeType))
 		if nodeDef != nil {
 			text += fmt.Sprintf("Selected: %s\n", nodeDef.DisplayName)
 			text += fmt.Sprintf("Category: %s\n", nodeDef.Category)
 			text += fmt.Sprintf("Radius: %d\n", nodeDef.BaseRadius)
+			text += fmt.Sprintf("Cost: Iron %d | Wood %d | Stone %d\n", nodeDef.Cost.Iron, nodeDef.Cost.Wood, nodeDef.Cost.Stone)
 			if len(nodeDef.Services) > 0 {
 				text += fmt.Sprintf("Services: %v\n", nodeDef.Services)
 			}

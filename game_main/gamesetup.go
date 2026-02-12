@@ -13,8 +13,8 @@ import (
 	"game_main/gui/guinodeplacement"
 	"game_main/gui/guioverworld"
 
-	"game_main/gui/guiresources"
 	"game_main/gui/guisquads"
+	"game_main/gui/widgetresources"
 	"game_main/input"
 	"game_main/mind/encounter"
 	"game_main/templates"
@@ -228,7 +228,7 @@ func (gsc *gameSquadChecker) HasActiveSquads(manager *common.EntityManager) bool
 func SetupUI(g *Game) {
 	// Pre-cache ScrollContainer backgrounds for performance (reduces NineSlice overhead by 80%)
 	// This warms the cache before UI creation to avoid first-frame rendering stutter
-	guiresources.PreCacheScrollContainerBackgrounds()
+	widgetresources.PreCacheScrollContainerBackgrounds()
 
 	// Create UI context with shared game state
 	uiContext := &framework.UIContext{
@@ -242,7 +242,7 @@ func SetupUI(g *Game) {
 	}
 
 	// Pre-cache based on actual screen dimensions for optimal cache hit rate
-	guiresources.PreCacheScrollContainerSizes(uiContext.ScreenWidth, uiContext.ScreenHeight)
+	widgetresources.PreCacheScrollContainerSizes(uiContext.ScreenWidth, uiContext.ScreenHeight)
 
 	// Create game mode coordinator (manages two separate contexts)
 	g.gameModeCoordinator = framework.NewGameModeCoordinator(uiContext)

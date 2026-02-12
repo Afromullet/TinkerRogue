@@ -12,7 +12,8 @@
         "primaryEffect": "SpawnBoost",
         "canSpawnChildren": true
       },
-      "factionId": "Necromancers"
+      "factionId": "Necromancers",
+      "cost": { "iron": 0, "wood": 0, "stone": 0 }
     },
     {
       "id": "banditcamp",
@@ -25,7 +26,8 @@
         "primaryEffect": "ResourceDrain",
         "canSpawnChildren": false
       },
-      "factionId": "Bandits"
+      "factionId": "Bandits",
+      "cost": { "iron": 0, "wood": 0, "stone": 0 }
     },
     {
       "id": "corruption",
@@ -38,7 +40,8 @@
         "primaryEffect": "TerrainCorruption",
         "canSpawnChildren": true
       },
-      "factionId": "Cultists"
+      "factionId": "Cultists",
+      "cost": { "iron": 0, "wood": 0, "stone": 0 }
     },
     {
       "id": "beastnest",
@@ -51,7 +54,8 @@
         "primaryEffect": "SpawnBoost",
         "canSpawnChildren": false
       },
-      "factionId": "Beasts"
+      "factionId": "Beasts",
+      "cost": { "iron": 0, "wood": 0, "stone": 0 }
     },
     {
       "id": "orcwarband",
@@ -64,7 +68,8 @@
         "primaryEffect": "CombatDebuff",
         "canSpawnChildren": false
       },
-      "factionId": "Orcs"
+      "factionId": "Orcs",
+      "cost": { "iron": 0, "wood": 0, "stone": 0 }
     },
     {
       "id": "town",
@@ -74,7 +79,8 @@
       "overworld": {
         "baseRadius": 1
       },
-      "services": ["trade", "repair"]
+      "services": ["trade", "repair"],
+      "cost": { "iron": 5, "wood": 15, "stone": 5 }
     },
     {
       "id": "guild_hall",
@@ -84,7 +90,8 @@
       "overworld": {
         "baseRadius": 2
       },
-      "services": ["recruit", "train"]
+      "services": ["recruit", "train"],
+      "cost": { "iron": 10, "wood": 10, "stone": 10 }
     },
     {
       "id": "temple",
@@ -94,8 +101,9 @@
       "overworld": {
         "baseRadius": 2
       },
-      "services": ["heal", "buffs"]
-    },    
+      "services": ["heal", "buffs"],
+      "cost": { "iron": 5, "wood": 10, "stone": 15 }
+    },
     {
       "id": "watchtower",
       "category": "fortress",
@@ -104,7 +112,8 @@
       "overworld": {
         "baseRadius": 4,
         "primaryEffect": "SpawnBoost"
-      }
+      },
+      "cost": { "iron": 15, "wood": 10, "stone": 20 }
     }
   ],
   "defaultNode": {

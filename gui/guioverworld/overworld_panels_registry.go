@@ -20,6 +20,7 @@ const (
 	OverworldPanelDebugMenu      framework.PanelType = "overworld_debug_menu"
 	OverworldPanelNodeMenu       framework.PanelType = "overworld_node_menu"
 	OverworldPanelManagementMenu framework.PanelType = "overworld_management_menu"
+	OverworldPanelResources      framework.PanelType = "overworld_resources"
 )
 
 // subMenuController manages sub-menu visibility. Only one sub-menu can be open at a time.
@@ -200,6 +201,25 @@ func init() {
 		},
 	})
 
+	// Register player resources panel (top-left, shows Gold/Iron/Wood/Stone)
+	framework.RegisterPanel(OverworldPanelResources, framework.PanelDescriptor{
+		Content: framework.ContentCustom,
+		OnCreate: func(result *framework.PanelResult, mode framework.UIMode) error {
+			om := mode.(*OverworldMode)
+
+			typedResult := om.PanelBuilders.BuildTypedPanel(builders.TypedPanelConfig{
+				Type:       builders.PanelTypeDetail,
+				SpecName:   "player_resources",
+				DetailText: "Resources: ---",
+			})
+
+			result.Container = typedResult.Panel
+			result.Custom["resourcesText"] = typedResult.TextArea
+
+			return nil
+		},
+	})
+
 	// Register threat info panel (shows selected threat details)
 	framework.RegisterPanel(OverworldPanelThreatInfo, framework.PanelDescriptor{
 		Content: framework.ContentCustom,
@@ -293,6 +313,10 @@ func GetOverworldEventLog(panels *framework.PanelRegistry) *widget.TextArea {
 
 func GetOverworldThreatStats(panels *framework.PanelRegistry) *widget.TextArea {
 	return getOverworldTextArea(panels, OverworldPanelThreatStats, "threatStatsText")
+}
+
+func GetOverworldResources(panels *framework.PanelRegistry) *widget.TextArea {
+	return getOverworldTextArea(panels, OverworldPanelResources, "resourcesText")
 }
 
 func GetOverworldTickControls(panels *framework.PanelRegistry) *widget.Container {

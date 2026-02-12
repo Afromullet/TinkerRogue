@@ -109,9 +109,9 @@ func grantRewards(manager *common.EntityManager, outcome *combatOutcome, rewards
 
 	// Grant gold to the player
 	if rewards.Gold > 0 && outcome.PlayerEntityID != 0 {
-		resources := common.GetPlayerResources(outcome.PlayerEntityID, manager)
+		resources := common.GetResourceStockpile(outcome.PlayerEntityID, manager)
 		if resources != nil {
-			resources.AddGold(rewards.Gold)
+			common.AddGold(resources, rewards.Gold)
 			fmt.Printf("Granted %d gold to player %d\n", rewards.Gold, outcome.PlayerEntityID)
 		}
 	}

@@ -1,12 +1,15 @@
 package node
 
 import (
+	"fmt"
 	"math"
 
 	"game_main/common"
 	"game_main/overworld/core"
 	"game_main/templates"
 	"game_main/world/coords"
+
+	"github.com/bytearena/ecs"
 )
 
 // PlacementResult indicates whether a placement is valid and why.
@@ -98,6 +101,34 @@ func ValidatePlayerPlacement(manager *common.EntityManager, pos coords.LogicalPo
 
 	if !inRange {
 		return PlacementResult{Valid: false, Reason: "Too far from player or existing nodes"}
+	}
+
+	return PlacementResult{Valid: true, Reason: ""}
+}
+
+// ValidatePlayerPlacementWithCost extends ValidatePlayerPlacement with a resource affordability check.
+// Returns invalid if the player cannot afford the node type's resource cost.
+func ValidatePlayerPlacementWithCost(manager *common.EntityManager, pos coords.LogicalPosition, playerData *common.PlayerData, playerEntityID ecs.EntityID, nodeTypeID string) PlacementResult {
+	// Run all existing placement checks first
+	result := ValidatePlayerPlacement(manager, pos, playerData)
+	if !result.Valid {
+		return result
+	}
+
+	// Check resource affordability
+	nodeDef := core.GetNodeRegistry().GetNodeByID(nodeTypeID)
+	if nodeDef == nil {
+		return PlacementResult{Valid: false, Reason: "Unknown node type"}
+	}
+
+	stockpile := common.GetResourceStockpile(playerEntityID, manager)
+	if stockpile == nil {
+		return PlacementResult{Valid: false, Reason: "No resource stockpile found"}
+	}
+
+	if !core.CanAfford(stockpile, nodeDef.Cost) {
+		return PlacementResult{Valid: false, Reason: fmt.Sprintf("Insufficient resources (need %d/%d/%d Iron/Wood/Stone)",
+			nodeDef.Cost.Iron, nodeDef.Cost.Wood, nodeDef.Cost.Stone)}
 	}
 
 	return PlacementResult{Valid: true, Reason: ""}

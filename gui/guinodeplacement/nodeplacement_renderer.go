@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"image/color"
 
-	"game_main/gui/guiresources"
+	"game_main/gui/widgetresources"
 	"game_main/overworld/core"
 	"game_main/overworld/node"
 
@@ -66,7 +66,7 @@ func (npm *NodePlacementMode) renderPlacementPreview(screen *ebiten.Image) {
 		displayName = nodeDef.DisplayName
 	}
 
-	face := guiresources.SmallFace
+	face := widgetresources.SmallFace
 	bounds := text.BoundString(face, displayName)
 	labelX := int(centerX) - bounds.Dx()/2
 	labelY := screenY - 8
@@ -104,7 +104,7 @@ func (npm *NodePlacementMode) renderSelectionHUD(screen *ebiten.Image) {
 	hudText := fmt.Sprintf("Node Placement  |  Selected: %s (%s)  [%d/%d]  |  Tab=cycle  1-%d=select  ESC=cancel",
 		displayName, category, selIndex, len(npm.nodeTypes), maxKey)
 
-	face := guiresources.SmallFace
+	face := widgetresources.SmallFace
 	metrics := face.Metrics()
 	barHeight := float32(metrics.Height.Round() + 12)
 

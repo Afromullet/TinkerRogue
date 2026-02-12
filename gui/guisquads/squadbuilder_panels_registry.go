@@ -6,8 +6,8 @@ import (
 
 	"game_main/gui/builders"
 	"game_main/gui/framework"
-	"game_main/gui/guiresources"
 	"game_main/gui/specs"
+	"game_main/gui/widgetresources"
 	"game_main/gui/widgets"
 	"game_main/tactical/squads"
 
@@ -47,7 +47,7 @@ func init() {
 			squadNameInput := builders.CreateTextInputWithConfig(builders.TextInputConfig{
 				MinWidth:    300,
 				MinHeight:   50,
-				FontFace:    guiresources.SmallFace,
+				FontFace:    widgetresources.SmallFace,
 				Placeholder: "Enter squad name...",
 				OnChanged: func(text string) {
 					sbm.currentSquadName = text
@@ -260,4 +260,3 @@ func init() {
 		},
 	})
 }
-

@@ -44,6 +44,9 @@ type NodeDefinition struct {
 
 	// Faction (for threat nodes)
 	FactionID string
+
+	// Resource cost to place this node
+	Cost ResourceCost
 }
 
 // EncounterDefinition is the runtime representation of combat mechanics.
@@ -111,6 +114,15 @@ func newNodeRegistry() *NodeRegistry {
 			CanSpawnChildren: jsonDef.Overworld.CanSpawnChildren,
 			Services:         jsonDef.Services,
 			FactionID:        jsonDef.FactionID,
+		}
+
+		// Copy resource cost from JSON if present
+		if jsonDef.Cost != nil {
+			def.Cost = ResourceCost{
+				Iron:  jsonDef.Cost.Iron,
+				Wood:  jsonDef.Cost.Wood,
+				Stone: jsonDef.Cost.Stone,
+			}
 		}
 
 		// Register by ID (ID is the ThreatType)

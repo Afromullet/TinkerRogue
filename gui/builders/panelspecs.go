@@ -116,6 +116,18 @@ var StandardPanels = map[string]PanelLayoutSpec{
 	},
 
 	// ============================================
+	// Overworld Panels
+	// ============================================
+	"player_resources": {
+		Name:     "Player Resources",
+		Position: TopLeft(),
+		Width:    specs.PanelWidthNarrow,
+		Height:   specs.PanelHeightSmall,
+		Padding:  specs.PaddingTight,
+		Layout:   AnchorLayout(),
+	},
+
+	// ============================================
 	// Detail Panels (TextArea Containers)
 	// ============================================
 	"inventory_detail": {

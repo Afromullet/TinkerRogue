@@ -3,6 +3,7 @@ package guioverworld
 import (
 	"fmt"
 
+	"game_main/common"
 	"game_main/gui/framework"
 	"game_main/mind/encounter"
 	"game_main/overworld/core"
@@ -36,6 +37,7 @@ type OverworldMode struct {
 	subMenus *subMenuController
 
 	// Widget references (populated from panel registry)
+	resourcesText   *widget.TextArea
 	threatInfoText  *widget.TextArea
 	tickStatusText  *widget.TextArea
 	eventLogText    *widget.TextArea
@@ -83,6 +85,7 @@ func (om *OverworldMode) Initialize(ctx *framework.UIContext) error {
 		OverworldPanelNodeMenu,
 		OverworldPanelManagementMenu,
 		OverworldPanelTickControls,
+		OverworldPanelResources,
 		OverworldPanelThreatInfo,
 		OverworldPanelTickStatus,
 		OverworldPanelEventLog,
@@ -125,6 +128,7 @@ func (om *OverworldMode) Initialize(ctx *framework.UIContext) error {
 
 // initializeWidgetReferences populates mode fields from panel registry
 func (om *OverworldMode) initializeWidgetReferences() {
+	om.resourcesText = GetOverworldResources(om.Panels)
 	om.threatInfoText = GetOverworldThreatInfo(om.Panels)
 	om.tickStatusText = GetOverworldTickStatus(om.Panels)
 	om.eventLogText = GetOverworldEventLog(om.Panels)
@@ -156,6 +160,7 @@ func (om *OverworldMode) Update(deltaTime float64) error {
 	tickState := core.GetTickState(om.Context.ECSManager)
 	if tickState != nil && tickState.CurrentTick != om.lastTick {
 		om.lastTick = tickState.CurrentTick
+		om.refreshResources()
 		om.refreshTickStatus()
 		om.refreshThreatStats()
 	}
@@ -187,9 +192,27 @@ func (om *OverworldMode) HandleInput(inputState *framework.InputState) bool {
 // UI refresh functions
 
 func (om *OverworldMode) refreshAllPanels() {
+	om.refreshResources()
 	om.refreshThreatInfo()
 	om.refreshTickStatus()
 	om.refreshThreatStats()
+}
+
+func (om *OverworldMode) refreshResources() {
+	if om.resourcesText == nil {
+		return
+	}
+
+	stockpile := common.GetResourceStockpile(om.Context.PlayerData.PlayerEntityID, om.Context.ECSManager)
+	if stockpile == nil {
+		om.resourcesText.SetText("Resources: N/A")
+		return
+	}
+
+	om.resourcesText.SetText(fmt.Sprintf(
+		"Gold: %d\nIron: %d\nWood: %d\nStone: %d",
+		stockpile.Gold, stockpile.Iron, stockpile.Wood, stockpile.Stone,
+	))
 }
 
 func (om *OverworldMode) refreshThreatInfo() {

@@ -33,9 +33,7 @@ var (
 )
 
 // GarrisonComponent tracks squads garrisoned at a node
-var (
-	GarrisonComponent *ecs.Component
-)
+var GarrisonComponent *ecs.Component
 
 // OverworldFactionData - Renamed to avoid conflict with combat.FactionComponent
 // Represents persistent strategic factions on the overworld

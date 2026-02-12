@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"game_main/common"
+	"game_main/config"
 	"game_main/overworld/core"
 	"game_main/overworld/garrison"
 	"game_main/overworld/threat"
@@ -46,6 +47,12 @@ func CreateFaction(
 	entity.AddComponent(core.OverworldFactionComponent, factionData)
 	entity.AddComponent(core.TerritoryComponent, territoryData)
 	entity.AddComponent(core.StrategicIntentComponent, intentData)
+	entity.AddComponent(common.ResourceStockpileComponent, common.NewResourceStockpile(
+		config.DefaultFactionStartingGold,
+		config.DefaultFactionStartingIron,
+		config.DefaultFactionStartingWood,
+		config.DefaultFactionStartingStone,
+	))
 
 	// Spawn initial threat at home position
 	SpawnThreatForFaction(manager, entity, homePosition, factionType)
@@ -326,7 +333,8 @@ func IsTileOwnedByAnyFaction(manager *common.EntityManager, pos coords.LogicalPo
 	return false
 }
 
-// SpawnThreatForFaction creates a threat matching faction type
+// SpawnThreatForFaction creates a threat matching faction type.
+// Checks and deducts resource cost from the faction's stockpile. Returns 0 if unaffordable.
 func SpawnThreatForFaction(
 	manager *common.EntityManager,
 	factionEntity *ecs.Entity,
@@ -334,7 +342,19 @@ func SpawnThreatForFaction(
 	factionType core.FactionType,
 ) ecs.EntityID {
 	threatType := core.MapFactionToThreatType(factionType)
-	intensity := 1 + common.RandomInt(3) // Random intensity 1-3
 
+	// Check resource cost
+	nodeDef := core.GetNodeRegistry().GetNodeByID(string(threatType))
+	if nodeDef != nil {
+		stockpile := common.GetComponentType[*common.ResourceStockpile](factionEntity, common.ResourceStockpileComponent)
+		if stockpile != nil && !core.CanAfford(stockpile, nodeDef.Cost) {
+			return 0 // Cannot afford, skip spawn
+		}
+		if stockpile != nil {
+			core.SpendResources(stockpile, nodeDef.Cost)
+		}
+	}
+
+	intensity := 1 + common.RandomInt(3) // Random intensity 1-3
 	return threat.CreateThreatNode(manager, position, threatType, intensity, core.GetCurrentTick(manager))
 }

@@ -5,7 +5,7 @@ import (
 	"image/color"
 	_ "image/png"
 
-	"game_main/gui/guiresources"
+	"game_main/gui/widgetresources"
 	"game_main/gui/widgets"
 
 	e_image "github.com/ebitenui/ebitenui/image"
@@ -75,7 +75,7 @@ type TextConfig struct {
 func CreateTextWithConfig(config TextConfig) *widget.Text {
 	// Apply defaults
 	if config.FontFace == nil {
-		config.FontFace = guiresources.SmallFace
+		config.FontFace = widgetresources.SmallFace
 	}
 	if config.Color == nil {
 		config.Color = color.White
@@ -99,7 +99,7 @@ func CreateTextWithConfig(config TextConfig) *widget.Text {
 func CreateLargeLabel(text string) *widget.Text {
 	return CreateTextWithConfig(TextConfig{
 		Text:     text,
-		FontFace: guiresources.LargeFace,
+		FontFace: widgetresources.LargeFace,
 		Color:    color.White,
 	})
 }
@@ -108,7 +108,7 @@ func CreateLargeLabel(text string) *widget.Text {
 func CreateSmallLabel(text string) *widget.Text {
 	return CreateTextWithConfig(TextConfig{
 		Text:     text,
-		FontFace: guiresources.SmallFace,
+		FontFace: widgetresources.SmallFace,
 		Color:    color.White,
 	})
 }
@@ -135,14 +135,14 @@ func CreateTextAreaWithConfig(config TextAreaConfig) *widget.TextArea {
 		widget.TextAreaOpts.ControlWidgetSpacing(2),
 		widget.TextAreaOpts.ProcessBBCode(true),
 		widget.TextAreaOpts.FontColor(config.FontColor),
-		widget.TextAreaOpts.FontFace(guiresources.TextAreaRes.Face),
-		widget.TextAreaOpts.TextPadding(guiresources.TextAreaRes.EntryPadding),
+		widget.TextAreaOpts.FontFace(widgetresources.TextAreaRes.Face),
+		widget.TextAreaOpts.TextPadding(widgetresources.TextAreaRes.EntryPadding),
 		widget.TextAreaOpts.ScrollContainerOpts(
-			widget.ScrollContainerOpts.Image(guiresources.ListRes.Image)),
+			widget.ScrollContainerOpts.Image(widgetresources.ListRes.Image)),
 		widget.TextAreaOpts.SliderOpts(
-			widget.SliderOpts.Images(guiresources.ListRes.Track, guiresources.ListRes.Handle),
-			widget.SliderOpts.MinHandleSize(guiresources.ListRes.HandleSize),
-			widget.SliderOpts.TrackPadding(guiresources.ListRes.TrackPadding),
+			widget.SliderOpts.Images(widgetresources.ListRes.Track, widgetresources.ListRes.Handle),
+			widget.SliderOpts.MinHandleSize(widgetresources.ListRes.HandleSize),
+			widget.SliderOpts.TrackPadding(widgetresources.ListRes.TrackPadding),
 		),
 	)
 }
@@ -182,7 +182,7 @@ func CreateButtonWithConfig(config ButtonConfig) *widget.Button {
 		config.MinHeight = 100
 	}
 	if config.FontFace == nil {
-		config.FontFace = guiresources.LargeFace
+		config.FontFace = widgetresources.LargeFace
 	}
 	if config.TextColor == nil {
 		config.TextColor = &widget.ButtonTextColor{
@@ -190,7 +190,7 @@ func CreateButtonWithConfig(config ButtonConfig) *widget.Button {
 		}
 	}
 	if config.Image == nil {
-		config.Image = guiresources.ButtonImage
+		config.Image = widgetresources.ButtonImage
 	}
 	if config.Padding.Left == 0 {
 		config.Padding = widget.Insets{Left: 30, Right: 30, Top: 30, Bottom: 30}
@@ -260,15 +260,15 @@ func CreateListWithConfig(config ListConfig) *widget.List {
 			),
 		),
 		widget.ListOpts.ScrollContainerOpts(
-			widget.ScrollContainerOpts.Image(guiresources.ListRes.Image),
+			widget.ScrollContainerOpts.Image(widgetresources.ListRes.Image),
 		),
 		widget.ListOpts.SliderOpts(
-			widget.SliderOpts.Images(guiresources.ListRes.Track, guiresources.ListRes.Handle),
-			widget.SliderOpts.MinHandleSize(guiresources.ListRes.HandleSize),
-			widget.SliderOpts.TrackPadding(guiresources.ListRes.TrackPadding),
+			widget.SliderOpts.Images(widgetresources.ListRes.Track, widgetresources.ListRes.Handle),
+			widget.SliderOpts.MinHandleSize(widgetresources.ListRes.HandleSize),
+			widget.SliderOpts.TrackPadding(widgetresources.ListRes.TrackPadding),
 		),
-		widget.ListOpts.EntryColor(guiresources.ListRes.Entry),
-		widget.ListOpts.EntryFontFace(guiresources.ListRes.Face),
+		widget.ListOpts.EntryColor(widgetresources.ListRes.Entry),
+		widget.ListOpts.EntryFontFace(widgetresources.ListRes.Face),
 	}
 
 	// Add layout data if provided
@@ -313,7 +313,7 @@ type ContainerConfig struct {
 func CreatePanelWithConfig(config ContainerConfig) *widget.Container {
 	// Apply defaults
 	if config.Background == nil {
-		config.Background = guiresources.PanelRes.Image
+		config.Background = widgetresources.PanelRes.Image
 	}
 	if config.Padding.Left == 0 {
 		config.Padding = widget.Insets{Left: 15, Right: 15, Top: 15, Bottom: 15}
@@ -326,7 +326,7 @@ func CreatePanelWithConfig(config ContainerConfig) *widget.Container {
 	// Note: EnableCaching defaults to false for backward compatibility
 	// Use CreateStaticPanel() or set EnableCaching=true explicitly for caching
 	if config.EnableCaching && config.Background != nil && config.MinWidth > 0 && config.MinHeight > 0 {
-		_ = guiresources.GetPanelBackground(config.MinWidth, config.MinHeight)
+		_ = widgetresources.GetPanelBackground(config.MinWidth, config.MinHeight)
 	}
 
 	opts := []widget.ContainerOpt{
@@ -351,7 +351,7 @@ func CreatePanelWithConfig(config ContainerConfig) *widget.Container {
 	// Add title if provided
 	if config.Title != "" {
 		titleLabel := widget.NewText(
-			widget.TextOpts.Text(config.Title, guiresources.LargeFace, color.White),
+			widget.TextOpts.Text(config.Title, widgetresources.LargeFace, color.White),
 		)
 		container.AddChild(titleLabel)
 	}
@@ -387,18 +387,18 @@ func CreateTextInputWithConfig(config TextInputConfig) *widget.TextInput {
 		config.MinHeight = 50
 	}
 	if config.FontFace == nil {
-		config.FontFace = guiresources.SmallFace
+		config.FontFace = widgetresources.SmallFace
 	}
 	if config.Image == nil {
 		config.Image = &widget.TextInputImage{
-			Idle:     guiresources.DefaultWidgetColor,
-			Disabled: guiresources.DefaultWidgetColor,
+			Idle:     widgetresources.DefaultWidgetColor,
+			Disabled: widgetresources.DefaultWidgetColor,
 		}
 	}
 	if config.TextColor == nil {
 		config.TextColor = &widget.TextInputColor{
 			Idle:     color.White,
-			Disabled: guiresources.HexToColor(guiresources.TextDisabledColor),
+			Disabled: widgetresources.HexToColor(widgetresources.TextDisabledColor),
 			Caret:    color.White,
 		}
 	}
