@@ -1,0 +1,1069 @@
+Attacker,Defender,AttackType,TotalAttacks,Hits,Misses,Dodges,Criticals,HitRate,DodgeRate,CritRate,TotalDamage,AvgDmgPerAttack,AvgDmgPerHit,TotalKills,BattlesSampled
+Archer,Archer,Regular,14,11,0,1,2,0.929,0.071,0.143,334,23.86,25.69,0,14
+Archer,Assassin,Regular,3,2,0,0,1,1.000,0.000,0.333,83,27.67,27.67,0,1
+Archer,Battle Mage,Regular,9,7,0,0,2,1.000,0.000,0.222,160,17.78,17.78,0,2
+Archer,Battle Mage,Counterattack,7,6,1,0,0,0.857,0.000,0.000,21,3.00,3.50,0,3
+Archer,Cleric,Regular,15,9,0,3,3,0.800,0.200,0.200,239,15.93,19.92,6,3
+Archer,Cleric,Counterattack,9,5,1,1,2,0.778,0.111,0.222,43,4.78,6.14,1,3
+Archer,Crossbowman,Regular,13,10,0,1,2,0.923,0.077,0.154,253,19.46,21.08,4,4
+Archer,Crossbowman,Counterattack,11,6,1,1,3,0.818,0.091,0.273,54,4.91,6.00,0,5
+Archer,Fighter,Regular,9,3,0,1,5,0.889,0.111,0.556,164,18.22,20.50,1,8
+Archer,Fighter,Counterattack,9,6,1,2,0,0.667,0.222,0.000,6,0.67,1.00,0,7
+Archer,Goblin Raider,Regular,12,7,0,2,3,0.833,0.167,0.250,275,22.92,27.50,5,5
+Archer,Goblin Raider,Counterattack,11,6,1,3,1,0.636,0.273,0.091,67,6.09,9.57,1,5
+Archer,Knight,Regular,35,24,0,5,6,0.857,0.143,0.171,280,8.00,9.33,0,25
+Archer,Knight,Counterattack,9,5,1,2,1,0.667,0.222,0.111,6,0.67,1.00,0,5
+Archer,Mage,Regular,17,12,0,1,4,0.941,0.059,0.235,317,18.65,19.81,3,5
+Archer,Mage,Counterattack,14,9,1,0,4,0.929,0.000,0.286,66,4.71,5.08,2,4
+Archer,Marksman,Regular,10,8,0,1,1,0.900,0.100,0.100,236,23.60,26.22,5,3
+Archer,Marksman,Counterattack,12,6,4,1,1,0.583,0.083,0.083,74,6.17,10.57,1,5
+Archer,Ogre,Regular,16,12,0,2,2,0.875,0.125,0.125,123,7.69,8.79,3,2
+Archer,Ogre,Counterattack,13,6,5,1,1,0.538,0.077,0.077,8,0.62,1.14,0,2
+Archer,Orc Warrior,Regular,9,9,0,0,0,1.000,0.000,0.000,29,3.22,3.22,0,2
+Archer,Orc Warrior,Counterattack,6,3,1,0,2,0.833,0.000,0.333,6,1.00,1.20,0,2
+Archer,Paladin,Regular,45,35,0,3,7,0.933,0.067,0.156,479,10.64,11.40,6,22
+Archer,Paladin,Counterattack,31,20,2,3,6,0.839,0.097,0.194,34,1.10,1.31,0,15
+Archer,Priest,Regular,17,12,0,2,3,0.882,0.118,0.176,303,17.82,20.20,7,4
+Archer,Priest,Counterattack,24,11,7,1,5,0.667,0.042,0.208,125,5.21,7.81,1,5
+Archer,Ranger,Regular,15,9,0,4,2,0.733,0.267,0.133,233,15.53,21.18,6,2
+Archer,Ranger,Counterattack,15,11,0,1,3,0.933,0.067,0.200,81,5.40,5.79,2,2
+Archer,Rogue,Regular,4,3,0,0,1,1.000,0.000,0.250,100,25.00,25.00,1,2
+Archer,Rogue,Counterattack,1,0,0,0,1,1.000,0.000,1.000,15,15.00,15.00,0,1
+Archer,Scout,Regular,12,9,0,1,2,0.917,0.083,0.167,263,21.92,23.91,5,2
+Archer,Scout,Counterattack,12,5,4,2,1,0.500,0.167,0.083,53,4.42,8.83,1,2
+Archer,Skeleton Archer,Regular,7,5,0,0,2,1.000,0.000,0.286,213,30.43,30.43,3,2
+Archer,Skeleton Archer,Counterattack,5,1,1,0,3,0.800,0.000,0.600,67,13.40,16.75,4,2
+Archer,Sorcerer,Regular,18,11,0,3,4,0.833,0.167,0.222,389,21.61,25.93,7,5
+Archer,Sorcerer,Counterattack,12,6,4,1,1,0.583,0.083,0.083,53,4.42,7.57,0,2
+Archer,Spearman,Regular,14,13,0,0,1,1.000,0.000,0.071,174,12.43,12.43,0,9
+Archer,Spearman,Counterattack,21,11,5,0,5,0.762,0.000,0.238,53,2.52,3.31,0,12
+Archer,Swordsman,Regular,25,15,0,2,8,0.920,0.080,0.320,510,20.40,22.17,3,20
+Archer,Swordsman,Counterattack,3,0,0,1,2,0.667,0.333,0.667,19,6.33,9.50,0,3
+Archer,Warlock,Regular,12,10,0,1,1,0.917,0.083,0.083,240,20.00,21.82,5,2
+Archer,Warlock,Counterattack,9,8,1,0,0,0.889,0.000,0.000,43,4.78,5.38,0,2
+Archer,Warrior,Regular,22,21,0,0,1,1.000,0.000,0.045,317,14.41,14.41,2,9
+Archer,Warrior,Counterattack,14,9,3,1,1,0.714,0.071,0.071,11,0.79,1.10,0,8
+Archer,Wizard,Regular,16,8,0,0,8,1.000,0.000,0.500,462,28.88,28.88,6,8
+Archer,Wizard,Counterattack,11,6,2,2,1,0.636,0.182,0.091,57,5.18,8.14,2,5
+Assassin,Archer,Regular,20,15,0,2,3,0.900,0.100,0.150,333,16.65,18.50,3,10
+Assassin,Archer,Counterattack,14,6,3,3,2,0.571,0.214,0.143,59,4.21,7.38,0,6
+Assassin,Assassin,Regular,4,2,0,2,0,0.500,0.500,0.000,36,9.00,18.00,0,2
+Assassin,Assassin,Counterattack,3,1,0,0,2,1.000,0.000,0.667,31,10.33,10.33,1,2
+Assassin,Battle Mage,Regular,29,20,0,5,4,0.828,0.172,0.138,321,11.07,13.38,2,4
+Assassin,Battle Mage,Counterattack,14,6,3,1,4,0.714,0.071,0.286,38,2.71,3.80,2,3
+Assassin,Cleric,Regular,29,15,0,5,9,0.828,0.172,0.310,359,12.38,14.96,6,9
+Assassin,Cleric,Counterattack,16,7,5,0,4,0.688,0.000,0.250,46,2.88,4.18,0,7
+Assassin,Crossbowman,Regular,24,12,0,2,10,0.917,0.083,0.417,414,17.25,18.82,2,5
+Assassin,Crossbowman,Counterattack,13,6,3,2,2,0.615,0.154,0.154,30,2.31,3.75,0,4
+Assassin,Fighter,Regular,10,9,0,0,1,1.000,0.000,0.100,61,6.10,6.10,0,6
+Assassin,Fighter,Counterattack,6,3,0,0,3,1.000,0.000,0.500,7,1.17,1.17,0,2
+Assassin,Goblin Raider,Regular,24,16,0,6,2,0.750,0.250,0.083,349,14.54,19.39,5,8
+Assassin,Goblin Raider,Counterattack,11,6,2,2,1,0.636,0.182,0.091,47,4.27,6.71,1,4
+Assassin,Knight,Regular,53,36,0,4,13,0.925,0.075,0.245,210,3.96,4.29,2,11
+Assassin,Knight,Counterattack,28,18,3,3,4,0.786,0.107,0.143,22,0.79,1.00,0,5
+Assassin,Mage,Regular,29,21,0,1,7,0.966,0.034,0.241,445,15.34,15.89,4,8
+Assassin,Mage,Counterattack,15,8,4,1,2,0.667,0.067,0.133,27,1.80,2.70,0,5
+Assassin,Marksman,Regular,11,9,0,2,0,0.818,0.182,0.000,172,15.64,19.11,3,3
+Assassin,Marksman,Counterattack,10,6,0,3,1,0.700,0.300,0.100,55,5.50,7.86,0,2
+Assassin,Ogre,Regular,19,15,0,0,4,1.000,0.000,0.211,105,5.53,5.53,1,4
+Assassin,Ogre,Counterattack,17,9,4,0,4,0.765,0.000,0.235,13,0.76,1.00,0,4
+Assassin,Orc Warrior,Regular,21,11,0,3,7,0.857,0.143,0.333,97,4.62,5.39,0,2
+Assassin,Orc Warrior,Counterattack,21,14,1,3,3,0.810,0.143,0.143,18,0.86,1.06,0,2
+Assassin,Paladin,Regular,38,28,0,2,8,0.947,0.053,0.211,210,5.53,5.83,0,12
+Assassin,Paladin,Counterattack,22,14,3,0,5,0.864,0.000,0.227,20,0.91,1.05,1,6
+Assassin,Priest,Regular,23,17,0,1,5,0.957,0.043,0.217,355,15.43,16.14,3,8
+Assassin,Priest,Counterattack,12,6,4,0,2,0.667,0.000,0.167,48,4.00,6.00,1,4
+Assassin,Ranger,Regular,23,11,0,4,8,0.826,0.174,0.348,325,14.13,17.11,7,4
+Assassin,Ranger,Counterattack,17,9,2,3,3,0.706,0.176,0.176,37,2.18,3.08,2,3
+Assassin,Rogue,Regular,19,11,0,3,5,0.842,0.158,0.263,326,17.16,20.38,3,6
+Assassin,Rogue,Counterattack,8,4,0,0,4,1.000,0.000,0.500,70,8.75,8.75,0,3
+Assassin,Scout,Regular,20,16,0,1,3,0.950,0.050,0.150,353,17.65,18.58,4,4
+Assassin,Scout,Counterattack,12,6,1,3,2,0.667,0.250,0.167,57,4.75,7.12,3,2
+Assassin,Skeleton Archer,Regular,16,9,0,1,6,0.938,0.062,0.375,393,24.56,26.20,5,5
+Assassin,Skeleton Archer,Counterattack,4,2,0,1,1,0.750,0.250,0.250,36,9.00,12.00,0,1
+Assassin,Sorcerer,Regular,19,13,0,1,5,0.947,0.053,0.263,364,19.16,20.22,3,5
+Assassin,Sorcerer,Counterattack,11,4,1,2,4,0.727,0.182,0.364,64,5.82,8.00,2,3
+Assassin,Spearman,Regular,20,13,0,2,5,0.900,0.100,0.250,187,9.35,10.39,0,9
+Assassin,Spearman,Counterattack,14,10,2,0,2,0.857,0.000,0.143,15,1.07,1.25,0,4
+Assassin,Swordsman,Regular,6,5,0,1,0,0.833,0.167,0.000,64,10.67,12.80,0,4
+Assassin,Swordsman,Counterattack,3,1,1,0,1,0.667,0.000,0.333,6,2.00,3.00,0,2
+Assassin,Warlock,Regular,22,17,0,1,4,0.955,0.045,0.182,367,16.68,17.48,3,6
+Assassin,Warlock,Counterattack,21,11,2,2,6,0.810,0.095,0.286,92,4.38,5.41,0,4
+Assassin,Warrior,Regular,33,21,0,2,10,0.939,0.061,0.303,355,10.76,11.45,2,5
+Assassin,Warrior,Counterattack,13,10,3,0,0,0.769,0.000,0.000,10,0.77,1.00,0,3
+Assassin,Wizard,Regular,23,19,0,0,4,1.000,0.000,0.174,414,18.00,18.00,0,7
+Assassin,Wizard,Counterattack,2,2,0,0,0,1.000,0.000,0.000,8,4.00,4.00,1,1
+Battle Mage,Archer,Regular,33,25,0,7,1,0.788,0.212,0.030,308,9.33,11.85,10,4
+Battle Mage,Archer,Counterattack,30,16,7,3,4,0.667,0.100,0.133,64,2.13,3.20,3,4
+Battle Mage,Assassin,Regular,14,10,0,3,1,0.786,0.214,0.071,134,9.57,12.18,0,3
+Battle Mage,Assassin,Counterattack,12,8,2,2,0,0.667,0.167,0.000,20,1.67,2.50,0,2
+Battle Mage,Cleric,Regular,36,32,0,2,2,0.944,0.056,0.056,236,6.56,6.94,5,3
+Battle Mage,Cleric,Counterattack,26,21,2,0,3,0.923,0.000,0.115,30,1.15,1.25,1,2
+Battle Mage,Crossbowman,Regular,39,29,0,6,4,0.846,0.154,0.103,230,5.90,6.97,6,2
+Battle Mage,Crossbowman,Counterattack,33,20,9,2,2,0.667,0.061,0.061,22,0.67,1.00,3,2
+Battle Mage,Fighter,Regular,21,17,0,2,2,0.905,0.095,0.095,32,1.52,1.68,0,2
+Battle Mage,Fighter,Counterattack,12,7,2,1,2,0.750,0.083,0.167,9,0.75,1.00,0,2
+Battle Mage,Goblin Raider,Regular,24,14,0,4,6,0.833,0.167,0.250,278,11.58,13.90,1,4
+Battle Mage,Goblin Raider,Counterattack,6,2,1,2,1,0.500,0.333,0.167,10,1.67,3.33,0,2
+Battle Mage,Knight,Regular,48,35,0,5,8,0.896,0.104,0.167,51,1.06,1.19,0,2
+Battle Mage,Knight,Counterattack,39,25,9,2,3,0.718,0.051,0.077,28,0.72,1.00,0,2
+Battle Mage,Mage,Regular,41,34,0,2,5,0.951,0.049,0.122,280,6.83,7.18,6,2
+Battle Mage,Mage,Counterattack,36,26,4,0,6,0.889,0.000,0.167,37,1.03,1.16,4,2
+Battle Mage,Marksman,Regular,9,5,0,2,2,0.778,0.222,0.222,107,11.89,15.29,0,1
+Battle Mage,Marksman,Counterattack,3,3,0,0,0,1.000,0.000,0.000,12,4.00,4.00,0,1
+Battle Mage,Ogre,Regular,26,25,0,0,1,1.000,0.000,0.038,31,1.19,1.19,0,2
+Battle Mage,Ogre,Counterattack,26,13,6,4,3,0.615,0.154,0.115,16,0.62,1.00,0,2
+Battle Mage,Orc Warrior,Regular,36,30,0,2,4,0.944,0.056,0.111,41,1.14,1.21,0,2
+Battle Mage,Orc Warrior,Counterattack,36,24,7,2,3,0.750,0.056,0.083,27,0.75,1.00,0,2
+Battle Mage,Paladin,Regular,107,82,0,10,15,0.907,0.093,0.140,165,1.54,1.70,0,6
+Battle Mage,Paladin,Counterattack,72,48,13,4,7,0.764,0.056,0.097,55,0.76,1.00,0,5
+Battle Mage,Priest,Regular,23,19,0,0,4,1.000,0.000,0.174,222,9.65,9.65,6,2
+Battle Mage,Priest,Counterattack,14,9,3,0,2,0.786,0.000,0.143,22,1.57,2.00,0,2
+Battle Mage,Ranger,Regular,39,30,0,8,1,0.795,0.205,0.026,213,5.46,6.87,6,2
+Battle Mage,Ranger,Counterattack,41,30,6,2,3,0.805,0.049,0.073,36,0.88,1.09,0,2
+Battle Mage,Rogue,Regular,27,19,0,3,5,0.889,0.111,0.185,282,10.44,11.75,3,2
+Battle Mage,Rogue,Counterattack,12,3,4,2,3,0.500,0.167,0.250,19,1.58,3.17,2,2
+Battle Mage,Scout,Regular,27,22,0,4,1,0.852,0.148,0.037,241,8.93,10.48,3,2
+Battle Mage,Scout,Counterattack,21,9,6,3,3,0.571,0.143,0.143,27,1.29,2.25,0,2
+Battle Mage,Skeleton Archer,Regular,18,15,0,1,2,0.944,0.056,0.111,263,14.61,15.47,0,2
+Battle Mage,Sorcerer,Regular,34,30,0,2,2,0.941,0.059,0.059,330,9.71,10.31,8,3
+Battle Mage,Sorcerer,Counterattack,16,10,2,4,0,0.625,0.250,0.000,15,0.94,1.50,2,2
+Battle Mage,Spearman,Regular,18,16,0,0,2,1.000,0.000,0.111,57,3.17,3.17,0,2
+Battle Mage,Spearman,Counterattack,18,13,5,0,0,0.722,0.000,0.000,13,0.72,1.00,0,2
+Battle Mage,Swordsman,Regular,33,25,0,3,5,0.909,0.091,0.152,196,5.94,6.53,0,3
+Battle Mage,Swordsman,Counterattack,14,8,3,2,1,0.643,0.143,0.071,9,0.64,1.00,0,2
+Battle Mage,Warlock,Regular,24,17,0,0,7,1.000,0.000,0.292,257,10.71,10.71,6,2
+Battle Mage,Warlock,Counterattack,30,15,10,2,3,0.600,0.067,0.100,26,0.87,1.44,2,2
+Battle Mage,Warrior,Regular,40,35,0,2,3,0.950,0.050,0.075,113,2.83,2.97,0,4
+Battle Mage,Warrior,Counterattack,21,14,2,3,2,0.762,0.143,0.095,16,0.76,1.00,0,3
+Battle Mage,Wizard,Regular,38,33,0,1,4,0.974,0.026,0.105,399,10.50,10.78,9,5
+Battle Mage,Wizard,Counterattack,9,6,2,0,1,0.778,0.000,0.111,14,1.56,2.00,0,2
+Cleric,Archer,Regular,19,13,0,2,4,0.895,0.105,0.211,559,29.42,32.88,13,9
+Cleric,Archer,Counterattack,15,8,3,3,1,0.600,0.200,0.067,119,7.93,13.22,1,5
+Cleric,Assassin,Regular,11,9,0,0,2,1.000,0.000,0.182,377,34.27,34.27,4,4
+Cleric,Assassin,Counterattack,4,2,1,1,0,0.500,0.250,0.000,26,6.50,13.00,0,3
+Cleric,Battle Mage,Regular,12,11,0,1,0,0.917,0.083,0.000,220,18.33,20.00,0,2
+Cleric,Battle Mage,Counterattack,6,3,0,2,1,0.667,0.333,0.167,31,5.17,7.75,0,1
+Cleric,Cleric,Regular,8,7,0,0,1,1.000,0.000,0.125,175,21.88,21.88,2,3
+Cleric,Cleric,Counterattack,4,2,1,1,0,0.500,0.250,0.000,8,2.00,4.00,0,2
+Cleric,Crossbowman,Regular,13,13,0,0,0,1.000,0.000,0.000,403,31.00,31.00,1,3
+Cleric,Fighter,Regular,10,7,0,2,1,0.800,0.200,0.100,195,19.50,24.38,0,3
+Cleric,Fighter,Counterattack,2,1,1,0,0,0.500,0.000,0.000,7,3.50,7.00,0,2
+Cleric,Goblin Raider,Regular,10,9,0,1,0,0.900,0.100,0.000,263,26.30,29.22,3,3
+Cleric,Goblin Raider,Counterattack,6,5,1,0,0,0.833,0.000,0.000,65,10.83,13.00,0,1
+Cleric,Knight,Regular,16,16,0,0,0,1.000,0.000,0.000,216,13.50,13.50,2,2
+Cleric,Knight,Counterattack,4,3,1,0,0,0.750,0.000,0.000,21,5.25,7.00,0,2
+Cleric,Mage,Regular,22,17,0,3,2,0.864,0.136,0.091,448,20.36,23.58,5,7
+Cleric,Mage,Counterattack,11,7,3,0,1,0.727,0.000,0.091,54,4.91,6.75,1,3
+Cleric,Marksman,Regular,13,9,0,2,2,0.846,0.154,0.154,377,29.00,34.27,6,3
+Cleric,Marksman,Counterattack,7,4,2,1,0,0.571,0.143,0.000,52,7.43,13.00,0,2
+Cleric,Ogre,Regular,7,6,0,0,1,1.000,0.000,0.143,235,33.57,33.57,0,3
+Cleric,Orc Warrior,Regular,16,13,0,2,1,0.875,0.125,0.062,177,11.06,12.64,0,2
+Cleric,Orc Warrior,Counterattack,15,10,2,1,2,0.800,0.067,0.133,54,3.60,4.50,3,2
+Cleric,Paladin,Regular,17,11,0,1,5,0.941,0.059,0.294,414,24.35,25.88,3,6
+Cleric,Paladin,Counterattack,7,4,3,0,0,0.571,0.000,0.000,24,3.43,6.00,0,2
+Cleric,Priest,Regular,13,9,0,1,3,0.923,0.077,0.231,260,20.00,21.67,5,5
+Cleric,Priest,Counterattack,5,3,1,1,0,0.600,0.200,0.000,16,3.20,5.33,0,2
+Cleric,Ranger,Regular,15,13,0,2,0,0.867,0.133,0.000,332,22.13,25.54,5,5
+Cleric,Ranger,Counterattack,10,5,2,0,3,0.800,0.000,0.300,89,8.90,11.12,2,3
+Cleric,Rogue,Regular,8,5,0,1,2,0.875,0.125,0.250,253,31.62,36.14,6,4
+Cleric,Rogue,Counterattack,6,5,0,1,0,0.833,0.167,0.000,65,10.83,13.00,0,2
+Cleric,Scout,Regular,16,14,0,1,1,0.938,0.062,0.062,438,27.38,29.20,6,5
+Cleric,Scout,Counterattack,6,3,1,2,0,0.500,0.333,0.000,33,5.50,11.00,0,1
+Cleric,Skeleton Archer,Regular,13,10,0,0,3,1.000,0.000,0.231,405,31.15,31.15,11,4
+Cleric,Skeleton Archer,Counterattack,10,8,2,0,0,0.800,0.000,0.000,72,7.20,9.00,0,2
+Cleric,Sorcerer,Regular,14,13,0,1,0,0.929,0.071,0.000,306,21.86,23.54,0,6
+Cleric,Sorcerer,Counterattack,6,4,2,0,0,0.667,0.000,0.000,24,4.00,6.00,0,3
+Cleric,Spearman,Regular,18,14,0,3,1,0.833,0.167,0.056,322,17.89,21.47,2,4
+Cleric,Spearman,Counterattack,6,6,0,0,0,1.000,0.000,0.000,44,7.33,7.33,2,3
+Cleric,Swordsman,Regular,16,13,0,2,1,0.875,0.125,0.062,452,28.25,32.29,5,5
+Cleric,Swordsman,Counterattack,4,2,1,1,0,0.500,0.250,0.000,26,6.50,13.00,0,2
+Cleric,Warlock,Regular,20,18,0,1,1,0.950,0.050,0.050,485,24.25,25.53,13,9
+Cleric,Warlock,Counterattack,19,11,6,0,2,0.684,0.000,0.105,107,5.63,8.23,0,7
+Cleric,Warrior,Regular,20,17,0,1,2,0.950,0.050,0.100,581,29.05,30.58,5,5
+Cleric,Warrior,Counterattack,2,2,0,0,0,1.000,0.000,0.000,16,8.00,8.00,0,1
+Cleric,Wizard,Regular,17,17,0,0,0,1.000,0.000,0.000,408,24.00,24.00,2,6
+Cleric,Wizard,Counterattack,2,1,1,0,0,0.500,0.000,0.000,6,3.00,6.00,0,2
+Crossbowman,Archer,Regular,25,18,0,2,5,0.920,0.080,0.200,558,22.32,24.26,9,8
+Crossbowman,Archer,Counterattack,6,1,1,1,3,0.667,0.167,0.500,50,8.33,12.50,0,2
+Crossbowman,Assassin,Regular,4,2,0,0,2,1.000,0.000,0.500,113,28.25,28.25,1,2
+Crossbowman,Assassin,Counterattack,1,0,0,0,1,1.000,0.000,1.000,14,14.00,14.00,0,1
+Crossbowman,Battle Mage,Regular,14,10,0,0,4,1.000,0.000,0.286,246,17.57,17.57,3,2
+Crossbowman,Battle Mage,Counterattack,11,6,3,0,2,0.727,0.000,0.182,30,2.73,3.75,1,2
+Crossbowman,Cleric,Regular,13,8,0,1,4,0.923,0.077,0.308,247,19.00,20.58,6,2
+Crossbowman,Cleric,Counterattack,13,5,6,1,1,0.462,0.077,0.077,27,2.08,4.50,0,2
+Crossbowman,Fighter,Regular,10,7,0,3,0,0.700,0.300,0.000,52,5.20,7.43,0,5
+Crossbowman,Fighter,Counterattack,4,2,1,0,1,0.750,0.000,0.250,3,0.75,1.00,0,3
+Crossbowman,Goblin Raider,Regular,9,5,0,2,2,0.778,0.222,0.222,174,19.33,24.86,3,2
+Crossbowman,Goblin Raider,Counterattack,7,4,0,2,1,0.714,0.286,0.143,43,6.14,8.60,2,3
+Crossbowman,Knight,Regular,59,47,0,1,11,0.983,0.017,0.186,422,7.15,7.28,7,12
+Crossbowman,Knight,Counterattack,24,17,4,0,3,0.833,0.000,0.125,20,0.83,1.00,0,9
+Crossbowman,Mage,Regular,19,16,0,0,3,1.000,0.000,0.158,337,17.74,17.74,7,3
+Crossbowman,Mage,Counterattack,16,13,2,0,1,0.875,0.000,0.062,36,2.25,2.57,2,2
+Crossbowman,Marksman,Regular,14,8,0,5,1,0.643,0.357,0.071,215,15.36,23.89,5,3
+Crossbowman,Marksman,Counterattack,13,8,3,2,0,0.615,0.154,0.000,66,5.08,8.25,0,2
+Crossbowman,Ogre,Regular,17,12,0,0,5,1.000,0.000,0.294,146,8.59,8.59,5,3
+Crossbowman,Ogre,Counterattack,13,12,0,0,1,1.000,0.000,0.077,13,1.00,1.00,0,2
+Crossbowman,Orc Warrior,Regular,18,17,0,1,0,0.944,0.056,0.000,62,3.44,3.65,0,3
+Crossbowman,Orc Warrior,Counterattack,14,8,3,2,1,0.643,0.143,0.071,10,0.71,1.11,0,2
+Crossbowman,Paladin,Regular,44,31,0,1,12,0.977,0.023,0.273,421,9.57,9.79,5,11
+Crossbowman,Paladin,Counterattack,28,17,4,3,4,0.750,0.107,0.143,28,1.00,1.33,0,10
+Crossbowman,Priest,Regular,13,9,0,2,2,0.846,0.154,0.154,196,15.08,17.82,5,2
+Crossbowman,Priest,Counterattack,8,3,3,1,1,0.500,0.125,0.125,28,3.50,7.00,1,2
+Crossbowman,Ranger,Regular,16,11,0,3,2,0.812,0.188,0.125,239,14.94,18.38,7,2
+Crossbowman,Ranger,Counterattack,13,6,3,4,0,0.462,0.308,0.000,22,1.69,3.67,0,2
+Crossbowman,Rogue,Regular,2,2,0,0,0,1.000,0.000,0.000,40,20.00,20.00,0,2
+Crossbowman,Rogue,Counterattack,2,1,1,0,0,0.500,0.000,0.000,5,2.50,5.00,0,2
+Crossbowman,Scout,Regular,12,8,0,3,1,0.750,0.250,0.083,186,15.50,20.67,3,2
+Crossbowman,Scout,Counterattack,15,9,1,2,3,0.800,0.133,0.200,96,6.40,8.00,6,2
+Crossbowman,Skeleton Archer,Regular,10,7,0,3,0,0.700,0.300,0.000,172,17.20,24.57,4,2
+Crossbowman,Skeleton Archer,Counterattack,8,4,1,2,1,0.625,0.250,0.125,59,7.38,11.80,2,2
+Crossbowman,Sorcerer,Regular,18,12,0,4,2,0.778,0.222,0.111,310,17.22,22.14,6,3
+Crossbowman,Sorcerer,Counterattack,16,8,6,0,2,0.625,0.000,0.125,70,4.38,7.00,3,2
+Crossbowman,Spearman,Regular,2,1,0,0,1,1.000,0.000,0.500,29,14.50,14.50,0,1
+Crossbowman,Spearman,Counterattack,2,2,0,0,0,1.000,0.000,0.000,2,1.00,1.00,0,1
+Crossbowman,Swordsman,Regular,15,10,0,2,3,0.867,0.133,0.200,215,14.33,16.54,3,10
+Crossbowman,Swordsman,Counterattack,4,2,2,0,0,0.500,0.000,0.000,2,0.50,1.00,0,4
+Crossbowman,Warlock,Regular,13,10,0,0,3,1.000,0.000,0.231,280,21.54,21.54,6,3
+Crossbowman,Warlock,Counterattack,9,4,0,1,4,0.889,0.111,0.444,66,7.33,8.25,2,2
+Crossbowman,Warrior,Regular,32,24,0,7,1,0.781,0.219,0.031,265,8.28,10.60,2,7
+Crossbowman,Warrior,Counterattack,21,11,4,1,5,0.762,0.048,0.238,34,1.62,2.12,0,6
+Crossbowman,Wizard,Regular,18,15,0,1,2,0.944,0.056,0.111,365,20.28,21.47,6,8
+Crossbowman,Wizard,Counterattack,13,6,3,2,2,0.615,0.154,0.154,64,4.92,8.00,1,2
+Fighter,Archer,Regular,32,23,0,2,7,0.938,0.062,0.219,591,18.47,19.70,4,12
+Fighter,Archer,Counterattack,12,6,3,1,2,0.667,0.083,0.167,53,4.42,6.62,2,7
+Fighter,Assassin,Regular,28,24,0,4,0,0.857,0.143,0.000,419,14.96,17.46,2,9
+Fighter,Assassin,Counterattack,9,2,2,3,2,0.444,0.333,0.222,34,3.78,8.50,2,5
+Fighter,Battle Mage,Regular,31,24,0,3,4,0.903,0.097,0.129,336,10.84,12.00,6,3
+Fighter,Battle Mage,Counterattack,22,14,2,3,3,0.773,0.136,0.136,37,1.68,2.18,0,3
+Fighter,Cleric,Regular,20,11,0,7,2,0.650,0.350,0.100,151,7.55,11.62,3,5
+Fighter,Cleric,Counterattack,20,12,2,2,4,0.800,0.100,0.200,32,1.60,2.00,1,4
+Fighter,Crossbowman,Regular,25,19,0,2,4,0.920,0.080,0.160,324,12.96,14.09,4,5
+Fighter,Crossbowman,Counterattack,20,12,4,0,4,0.800,0.000,0.200,40,2.00,2.50,4,4
+Fighter,Fighter,Regular,51,41,0,3,7,0.941,0.059,0.137,287,5.63,5.98,5,9
+Fighter,Fighter,Counterattack,36,19,10,4,3,0.611,0.111,0.083,22,0.61,1.00,0,9
+Fighter,Goblin Raider,Regular,24,16,0,6,2,0.750,0.250,0.083,315,13.12,17.50,1,8
+Fighter,Goblin Raider,Counterattack,24,15,5,1,3,0.750,0.042,0.125,117,4.88,6.50,1,5
+Fighter,Knight,Regular,143,116,0,11,16,0.923,0.077,0.112,369,2.58,2.80,7,19
+Fighter,Knight,Counterattack,115,68,25,11,11,0.687,0.096,0.096,79,0.69,1.00,0,11
+Fighter,Mage,Regular,34,23,0,5,6,0.853,0.147,0.176,395,11.62,13.62,5,11
+Fighter,Mage,Counterattack,29,20,4,0,5,0.862,0.000,0.172,52,1.79,2.08,0,5
+Fighter,Marksman,Regular,24,16,0,2,6,0.917,0.083,0.250,467,19.46,21.23,9,7
+Fighter,Marksman,Counterattack,21,10,7,2,2,0.571,0.095,0.095,89,4.24,7.42,0,5
+Fighter,Ogre,Regular,35,31,0,1,3,0.971,0.029,0.086,99,2.83,2.91,3,2
+Fighter,Ogre,Counterattack,29,19,8,0,2,0.724,0.000,0.069,21,0.72,1.00,0,2
+Fighter,Orc Warrior,Regular,87,64,0,10,13,0.885,0.115,0.149,295,3.39,3.83,5,2
+Fighter,Orc Warrior,Counterattack,87,46,22,11,8,0.621,0.126,0.092,54,0.62,1.00,0,2
+Fighter,Paladin,Regular,118,103,0,5,10,0.958,0.042,0.085,434,3.68,3.84,5,12
+Fighter,Paladin,Counterattack,96,67,13,3,13,0.833,0.031,0.135,80,0.83,1.00,4,7
+Fighter,Priest,Regular,17,15,0,0,2,1.000,0.000,0.118,238,14.00,14.00,3,4
+Fighter,Priest,Counterattack,11,9,0,0,2,1.000,0.000,0.182,62,5.64,5.64,2,3
+Fighter,Ranger,Regular,36,23,0,8,5,0.778,0.222,0.139,406,11.28,14.50,11,7
+Fighter,Ranger,Counterattack,22,14,6,0,2,0.727,0.000,0.091,32,1.45,2.00,0,3
+Fighter,Rogue,Regular,27,18,0,7,2,0.741,0.259,0.074,344,12.74,17.20,3,6
+Fighter,Rogue,Counterattack,24,12,7,4,1,0.542,0.167,0.042,53,2.21,4.08,0,4
+Fighter,Scout,Regular,29,25,0,1,3,0.966,0.034,0.103,489,16.86,17.46,5,7
+Fighter,Scout,Counterattack,21,9,2,8,2,0.524,0.381,0.095,58,2.76,5.27,0,5
+Fighter,Skeleton Archer,Regular,14,11,0,2,1,0.857,0.143,0.071,255,18.21,21.25,5,3
+Fighter,Skeleton Archer,Counterattack,15,10,3,1,1,0.733,0.067,0.067,101,6.73,9.18,2,3
+Fighter,Sorcerer,Regular,16,14,0,1,1,0.938,0.062,0.062,242,15.12,16.13,4,5
+Fighter,Sorcerer,Counterattack,2,2,0,0,0,1.000,0.000,0.000,6,3.00,3.00,0,1
+Fighter,Spearman,Regular,64,51,0,4,9,0.938,0.062,0.141,438,6.84,7.30,7,6
+Fighter,Spearman,Counterattack,53,30,13,4,6,0.679,0.075,0.113,47,0.89,1.31,0,6
+Fighter,Swordsman,Regular,67,49,0,7,11,0.896,0.104,0.164,808,12.06,13.47,9,20
+Fighter,Swordsman,Counterattack,23,13,4,2,4,0.739,0.087,0.174,32,1.39,1.88,0,8
+Fighter,Warlock,Regular,14,14,0,0,0,1.000,0.000,0.000,196,14.00,14.00,1,6
+Fighter,Warlock,Counterattack,10,7,0,0,3,1.000,0.000,0.300,36,3.60,3.60,0,2
+Fighter,Warrior,Regular,49,40,0,1,8,0.980,0.020,0.163,446,9.10,9.29,7,14
+Fighter,Warrior,Counterattack,30,15,7,2,6,0.700,0.067,0.200,30,1.00,1.43,0,6
+Fighter,Wizard,Regular,43,39,0,3,1,0.930,0.070,0.023,649,15.09,16.23,4,13
+Fighter,Wizard,Counterattack,14,9,1,3,1,0.714,0.214,0.071,38,2.71,3.80,2,2
+Goblin Raider,Archer,Regular,42,29,0,6,7,0.857,0.143,0.167,750,17.86,20.83,10,13
+Goblin Raider,Archer,Counterattack,11,7,3,1,0,0.636,0.091,0.000,46,4.18,6.57,0,5
+Goblin Raider,Assassin,Regular,8,7,0,0,1,1.000,0.000,0.125,161,20.12,20.12,1,6
+Goblin Raider,Assassin,Counterattack,1,0,0,0,1,1.000,0.000,1.000,12,12.00,12.00,0,1
+Goblin Raider,Battle Mage,Regular,2,0,0,0,2,1.000,0.000,1.000,48,24.00,24.00,0,1
+Goblin Raider,Battle Mage,Counterattack,2,1,1,0,0,0.500,0.000,0.000,1,0.50,1.00,0,1
+Goblin Raider,Cleric,Regular,16,10,0,4,2,0.750,0.250,0.125,204,12.75,17.00,4,2
+Goblin Raider,Cleric,Counterattack,15,10,4,0,1,0.733,0.000,0.067,36,2.40,3.27,2,3
+Goblin Raider,Crossbowman,Regular,15,9,0,2,4,0.867,0.133,0.267,234,15.60,18.00,0,5
+Goblin Raider,Crossbowman,Counterattack,11,7,2,1,1,0.727,0.091,0.091,26,2.36,3.25,0,4
+Goblin Raider,Fighter,Regular,13,9,0,0,4,1.000,0.000,0.308,133,10.23,10.23,1,6
+Goblin Raider,Fighter,Counterattack,3,2,1,0,0,0.667,0.000,0.000,2,0.67,1.00,0,3
+Goblin Raider,Knight,Regular,95,75,0,4,16,0.958,0.042,0.168,448,4.72,4.92,7,14
+Goblin Raider,Knight,Counterattack,18,10,4,1,3,0.722,0.056,0.167,13,0.72,1.00,0,8
+Goblin Raider,Mage,Regular,21,17,0,1,3,0.952,0.048,0.143,314,14.95,15.70,4,3
+Goblin Raider,Mage,Counterattack,14,5,6,0,3,0.571,0.000,0.214,30,2.14,3.75,2,2
+Goblin Raider,Marksman,Regular,20,16,0,3,1,0.850,0.150,0.050,344,17.20,20.24,6,5
+Goblin Raider,Marksman,Counterattack,11,8,2,1,0,0.727,0.091,0.000,61,5.55,7.62,0,4
+Goblin Raider,Ogre,Regular,21,16,0,1,4,0.952,0.048,0.190,96,4.57,4.80,1,2
+Goblin Raider,Ogre,Counterattack,18,12,4,0,2,0.778,0.000,0.111,14,0.78,1.00,0,2
+Goblin Raider,Orc Warrior,Regular,9,6,0,1,2,0.889,0.111,0.222,68,7.56,8.50,0,2
+Goblin Raider,Orc Warrior,Counterattack,9,5,4,0,0,0.556,0.000,0.000,5,0.56,1.00,0,2
+Goblin Raider,Paladin,Regular,63,38,0,10,15,0.841,0.159,0.238,434,6.89,8.19,6,11
+Goblin Raider,Paladin,Counterattack,28,19,4,0,5,0.857,0.000,0.179,25,0.89,1.04,0,9
+Goblin Raider,Priest,Regular,14,10,0,1,3,0.929,0.071,0.214,271,19.36,20.85,4,2
+Goblin Raider,Priest,Counterattack,8,6,0,2,0,0.750,0.250,0.000,34,4.25,5.67,0,2
+Goblin Raider,Ranger,Regular,15,11,0,1,3,0.933,0.067,0.200,244,16.27,17.43,2,2
+Goblin Raider,Ranger,Counterattack,15,8,4,1,2,0.667,0.067,0.133,42,2.80,4.20,0,2
+Goblin Raider,Rogue,Regular,2,2,0,0,0,1.000,0.000,0.000,34,17.00,17.00,0,2
+Goblin Raider,Rogue,Counterattack,2,2,0,0,0,1.000,0.000,0.000,10,5.00,5.00,0,2
+Goblin Raider,Scout,Regular,18,14,0,2,2,0.889,0.111,0.111,312,17.33,19.50,4,2
+Goblin Raider,Scout,Counterattack,12,6,3,3,0,0.500,0.250,0.000,38,3.17,6.33,0,2
+Goblin Raider,Skeleton Archer,Regular,14,12,0,1,1,0.929,0.071,0.071,291,20.79,22.38,4,4
+Goblin Raider,Skeleton Archer,Counterattack,14,10,2,2,0,0.714,0.143,0.000,97,6.93,9.70,2,3
+Goblin Raider,Sorcerer,Regular,18,8,0,1,9,0.944,0.056,0.500,396,22.00,23.29,7,5
+Goblin Raider,Sorcerer,Counterattack,15,6,4,0,5,0.733,0.000,0.333,82,5.47,7.45,0,5
+Goblin Raider,Spearman,Regular,1,1,0,0,0,1.000,0.000,0.000,12,12.00,12.00,0,1
+Goblin Raider,Spearman,Counterattack,1,0,0,1,0,0.000,1.000,0.000,0,0.00,0.00,0,1
+Goblin Raider,Swordsman,Regular,37,26,0,3,8,0.919,0.081,0.216,518,14.00,15.24,10,9
+Goblin Raider,Swordsman,Counterattack,4,4,0,0,0,1.000,0.000,0.000,6,1.50,1.50,0,4
+Goblin Raider,Warlock,Regular,20,16,0,1,3,0.950,0.050,0.150,330,16.50,17.37,2,4
+Goblin Raider,Warlock,Counterattack,20,12,6,0,2,0.700,0.000,0.100,59,2.95,4.21,0,4
+Goblin Raider,Warrior,Regular,9,6,0,2,1,0.778,0.222,0.111,81,9.00,11.57,0,2
+Goblin Raider,Warrior,Counterattack,6,4,2,0,0,0.667,0.000,0.000,4,0.67,1.00,0,2
+Goblin Raider,Wizard,Regular,42,31,0,3,8,0.929,0.071,0.190,756,18.00,19.38,13,11
+Goblin Raider,Wizard,Counterattack,18,9,4,2,3,0.667,0.111,0.167,72,4.00,6.00,0,7
+Knight,Archer,Regular,41,34,0,3,4,0.927,0.073,0.098,709,17.29,18.66,6,21
+Knight,Archer,Counterattack,25,20,4,0,1,0.840,0.000,0.040,119,4.76,5.67,0,9
+Knight,Assassin,Regular,26,21,0,4,1,0.846,0.154,0.038,395,15.19,17.95,1,10
+Knight,Assassin,Counterattack,23,11,4,6,2,0.565,0.261,0.087,83,3.61,6.38,1,7
+Knight,Battle Mage,Regular,30,26,0,3,1,0.900,0.100,0.033,341,11.37,12.63,9,2
+Knight,Battle Mage,Counterattack,27,20,4,2,1,0.778,0.074,0.037,32,1.19,1.52,0,2
+Knight,Cleric,Regular,17,13,0,2,2,0.882,0.118,0.118,229,13.47,15.27,4,3
+Knight,Cleric,Counterattack,16,11,3,0,2,0.812,0.000,0.125,37,2.31,2.85,0,2
+Knight,Crossbowman,Regular,45,34,0,4,7,0.911,0.089,0.156,579,12.87,14.12,11,12
+Knight,Crossbowman,Counterattack,51,28,12,8,3,0.608,0.157,0.059,54,1.06,1.74,0,12
+Knight,Fighter,Regular,94,77,0,6,11,0.936,0.064,0.117,601,6.39,6.83,11,15
+Knight,Fighter,Counterattack,102,61,25,12,4,0.637,0.118,0.039,66,0.65,1.02,0,20
+Knight,Goblin Raider,Regular,32,24,0,4,4,0.875,0.125,0.125,533,16.66,19.04,11,9
+Knight,Goblin Raider,Counterattack,48,30,5,8,5,0.729,0.167,0.104,217,4.52,6.20,1,12
+Knight,Knight,Regular,83,71,0,7,5,0.916,0.084,0.060,256,3.08,3.37,1,21
+Knight,Knight,Counterattack,61,46,5,5,5,0.836,0.082,0.082,51,0.84,1.00,0,10
+Knight,Mage,Regular,34,28,0,2,4,0.941,0.059,0.118,452,13.29,14.12,9,8
+Knight,Mage,Counterattack,27,22,2,1,2,0.889,0.037,0.074,45,1.67,1.88,0,6
+Knight,Marksman,Regular,30,19,0,7,4,0.767,0.233,0.133,469,15.63,20.39,11,12
+Knight,Marksman,Counterattack,27,17,4,2,4,0.778,0.074,0.148,161,5.96,7.67,0,10
+Knight,Ogre,Regular,27,23,0,0,4,1.000,0.000,0.148,92,3.41,3.41,1,2
+Knight,Ogre,Counterattack,31,25,1,3,2,0.871,0.097,0.065,27,0.87,1.00,3,3
+Knight,Orc Warrior,Regular,56,45,0,6,5,0.893,0.107,0.089,257,4.59,5.14,5,3
+Knight,Orc Warrior,Counterattack,56,35,13,4,4,0.696,0.071,0.071,39,0.70,1.00,1,2
+Knight,Paladin,Regular,117,99,0,3,15,0.974,0.026,0.128,593,5.07,5.20,6,22
+Knight,Paladin,Counterattack,115,78,18,9,10,0.765,0.078,0.087,88,0.77,1.00,1,22
+Knight,Priest,Regular,22,19,0,2,1,0.909,0.091,0.045,353,16.05,17.65,9,6
+Knight,Priest,Counterattack,34,23,7,1,3,0.765,0.029,0.088,148,4.35,5.69,0,8
+Knight,Ranger,Regular,27,20,0,4,3,0.852,0.148,0.111,352,13.04,15.30,9,6
+Knight,Ranger,Counterattack,21,15,3,0,3,0.857,0.000,0.143,54,2.57,3.00,0,2
+Knight,Rogue,Regular,27,17,0,6,4,0.778,0.222,0.148,369,13.67,17.57,9,7
+Knight,Rogue,Counterattack,28,14,6,6,2,0.571,0.214,0.071,70,2.50,4.38,0,6
+Knight,Scout,Regular,26,18,0,5,3,0.808,0.192,0.115,393,15.12,18.71,7,5
+Knight,Scout,Counterattack,20,11,4,4,1,0.600,0.200,0.050,64,3.20,5.33,0,4
+Knight,Skeleton Archer,Regular,22,18,0,3,1,0.864,0.136,0.045,399,18.14,21.00,11,9
+Knight,Skeleton Archer,Counterattack,21,16,2,1,2,0.857,0.048,0.095,165,7.86,9.17,3,5
+Knight,Sorcerer,Regular,24,20,0,2,2,0.917,0.083,0.083,374,15.58,17.00,4,9
+Knight,Sorcerer,Counterattack,15,9,2,2,2,0.733,0.133,0.133,57,3.80,5.18,1,3
+Knight,Spearman,Regular,38,25,0,4,9,0.895,0.105,0.237,407,10.71,11.97,10,4
+Knight,Spearman,Counterattack,53,34,10,6,3,0.698,0.113,0.057,43,0.81,1.16,1,10
+Knight,Swordsman,Regular,52,39,0,5,8,0.904,0.096,0.154,633,12.17,13.47,10,23
+Knight,Swordsman,Counterattack,34,19,9,4,2,0.618,0.118,0.059,27,0.79,1.29,1,12
+Knight,Warlock,Regular,23,17,0,3,3,0.870,0.130,0.130,322,14.00,16.10,4,6
+Knight,Warlock,Counterattack,17,12,2,0,3,0.882,0.000,0.176,57,3.35,3.80,0,4
+Knight,Warrior,Regular,58,44,0,5,9,0.914,0.086,0.155,513,8.84,9.68,6,16
+Knight,Warrior,Counterattack,48,28,9,7,4,0.667,0.146,0.083,32,0.67,1.00,0,13
+Knight,Wizard,Regular,28,25,0,1,2,0.964,0.036,0.071,443,15.82,16.41,6,6
+Knight,Wizard,Counterattack,16,10,4,0,2,0.750,0.000,0.125,56,3.50,4.67,1,4
+Mage,Archer,Regular,10,7,0,2,1,0.800,0.200,0.100,291,29.10,36.38,4,7
+Mage,Archer,Counterattack,7,5,1,1,0,0.714,0.143,0.000,70,10.00,14.00,0,4
+Mage,Assassin,Regular,7,3,0,2,2,0.714,0.286,0.286,208,29.71,41.60,3,4
+Mage,Assassin,Counterattack,4,3,1,0,0,0.750,0.000,0.000,42,10.50,14.00,0,3
+Mage,Battle Mage,Regular,6,6,0,0,0,1.000,0.000,0.000,174,29.00,29.00,3,2
+Mage,Battle Mage,Counterattack,3,3,0,0,0,1.000,0.000,0.000,27,9.00,9.00,0,1
+Mage,Cleric,Regular,4,3,0,0,1,1.000,0.000,0.250,131,32.75,32.75,2,2
+Mage,Cleric,Counterattack,1,1,0,0,0,1.000,0.000,0.000,8,8.00,8.00,0,1
+Mage,Crossbowman,Regular,6,4,0,1,1,0.833,0.167,0.167,189,31.50,37.80,3,2
+Mage,Crossbowman,Counterattack,4,2,1,0,1,0.750,0.000,0.250,52,13.00,17.33,0,2
+Mage,Fighter,Regular,21,17,0,2,2,0.905,0.095,0.095,684,32.57,36.00,8,12
+Mage,Fighter,Counterattack,7,4,2,0,1,0.714,0.000,0.143,80,11.43,16.00,1,5
+Mage,Goblin Raider,Regular,5,5,0,0,0,1.000,0.000,0.000,170,34.00,34.00,5,3
+Mage,Goblin Raider,Counterattack,4,3,0,1,0,0.750,0.250,0.000,42,10.50,14.00,0,2
+Mage,Knight,Regular,30,28,0,2,0,0.933,0.067,0.000,952,31.73,34.00,12,17
+Mage,Knight,Counterattack,13,7,3,2,1,0.615,0.154,0.077,122,9.38,15.25,3,10
+Mage,Mage,Regular,2,2,0,0,0,1.000,0.000,0.000,56,28.00,28.00,0,2
+Mage,Marksman,Regular,6,4,0,2,0,0.667,0.333,0.000,136,22.67,34.00,4,2
+Mage,Marksman,Counterattack,6,4,2,0,0,0.667,0.000,0.000,56,9.33,14.00,0,2
+Mage,Ogre,Regular,7,6,0,0,1,1.000,0.000,0.143,257,36.71,36.71,4,3
+Mage,Ogre,Counterattack,7,3,2,1,1,0.571,0.143,0.143,66,9.43,16.50,0,3
+Mage,Orc Warrior,Regular,7,6,0,0,1,1.000,0.000,0.143,257,36.71,36.71,5,3
+Mage,Orc Warrior,Counterattack,6,3,2,0,1,0.667,0.000,0.167,66,11.00,16.50,0,2
+Mage,Paladin,Regular,21,18,0,0,3,1.000,0.000,0.143,687,32.71,32.71,10,10
+Mage,Paladin,Counterattack,14,10,1,1,2,0.857,0.071,0.143,140,10.00,11.67,2,7
+Mage,Priest,Regular,3,2,0,1,0,0.667,0.333,0.000,58,19.33,29.00,2,2
+Mage,Priest,Counterattack,3,3,0,0,0,1.000,0.000,0.000,27,9.00,9.00,0,2
+Mage,Ranger,Regular,3,1,0,1,1,0.667,0.333,0.333,79,26.33,39.50,1,1
+Mage,Ranger,Counterattack,3,3,0,0,0,1.000,0.000,0.000,36,12.00,12.00,0,1
+Mage,Rogue,Regular,3,3,0,0,0,1.000,0.000,0.000,102,34.00,34.00,0,1
+Mage,Rogue,Counterattack,3,1,0,1,1,0.667,0.333,0.333,38,12.67,19.00,0,1
+Mage,Scout,Regular,7,3,0,1,3,0.857,0.143,0.429,261,37.29,43.50,6,3
+Mage,Scout,Counterattack,6,4,1,1,0,0.667,0.167,0.000,56,9.33,14.00,0,2
+Mage,Skeleton Archer,Regular,6,5,0,0,1,1.000,0.000,0.167,199,33.17,33.17,1,2
+Mage,Sorcerer,Regular,5,4,0,0,1,1.000,0.000,0.200,154,30.80,30.80,2,2
+Mage,Sorcerer,Counterattack,5,4,0,0,1,1.000,0.000,0.200,45,9.00,9.00,0,2
+Mage,Spearman,Regular,6,6,0,0,0,1.000,0.000,0.000,204,34.00,34.00,0,2
+Mage,Swordsman,Regular,12,8,0,3,1,0.750,0.250,0.083,325,27.08,36.11,3,8
+Mage,Swordsman,Counterattack,5,3,2,0,0,0.600,0.000,0.000,42,8.40,14.00,1,4
+Mage,Warlock,Regular,6,6,0,0,0,1.000,0.000,0.000,168,28.00,28.00,6,2
+Mage,Warlock,Counterattack,6,5,1,0,0,0.833,0.000,0.000,40,6.67,8.00,0,2
+Mage,Warrior,Regular,12,10,0,2,0,0.833,0.167,0.000,340,28.33,34.00,6,8
+Mage,Warrior,Counterattack,7,4,1,2,0,0.571,0.286,0.000,56,8.00,14.00,0,3
+Mage,Wizard,Regular,4,4,0,0,0,1.000,0.000,0.000,108,27.00,27.00,0,2
+Mage,Wizard,Counterattack,2,2,0,0,0,1.000,0.000,0.000,14,7.00,7.00,1,1
+Marksman,Archer,Regular,24,19,0,1,4,0.958,0.042,0.167,494,20.58,21.48,8,6
+Marksman,Archer,Counterattack,8,5,1,1,1,0.750,0.125,0.125,44,5.50,7.33,1,3
+Marksman,Assassin,Regular,4,3,0,1,0,0.750,0.250,0.000,57,14.25,19.00,0,2
+Marksman,Battle Mage,Regular,2,2,0,0,0,1.000,0.000,0.000,32,16.00,16.00,1,2
+Marksman,Battle Mage,Counterattack,1,1,0,0,0,1.000,0.000,0.000,3,3.00,3.00,0,1
+Marksman,Cleric,Regular,17,10,0,2,5,0.882,0.118,0.294,243,14.29,16.20,5,4
+Marksman,Cleric,Counterattack,13,8,1,1,3,0.846,0.077,0.231,42,3.23,3.82,1,2
+Marksman,Crossbowman,Regular,15,10,0,1,4,0.933,0.067,0.267,254,16.93,18.14,4,2
+Marksman,Crossbowman,Counterattack,9,6,3,0,0,0.667,0.000,0.000,14,1.56,2.33,0,2
+Marksman,Fighter,Regular,9,6,0,1,2,0.889,0.111,0.222,72,8.00,9.00,0,5
+Marksman,Goblin Raider,Regular,20,13,0,3,4,0.850,0.150,0.200,331,16.55,19.47,8,10
+Marksman,Goblin Raider,Counterattack,17,11,1,3,2,0.765,0.176,0.118,83,4.88,6.38,0,7
+Marksman,Knight,Regular,36,24,0,5,7,0.861,0.139,0.194,169,4.69,5.45,2,15
+Marksman,Knight,Counterattack,20,12,4,1,3,0.750,0.050,0.150,15,0.75,1.00,0,9
+Marksman,Mage,Regular,17,9,0,2,6,0.882,0.118,0.353,277,16.29,18.47,2,3
+Marksman,Mage,Counterattack,12,3,2,2,5,0.667,0.167,0.417,40,3.33,5.00,4,2
+Marksman,Ogre,Regular,13,5,0,1,7,0.923,0.077,0.538,121,9.31,10.08,0,3
+Marksman,Ogre,Counterattack,6,4,1,0,1,0.833,0.000,0.167,5,0.83,1.00,0,2
+Marksman,Orc Warrior,Regular,12,7,0,1,4,0.917,0.083,0.333,39,3.25,3.55,0,2
+Marksman,Orc Warrior,Counterattack,6,3,1,1,1,0.667,0.167,0.167,4,0.67,1.00,0,2
+Marksman,Paladin,Regular,24,19,0,0,5,1.000,0.000,0.208,171,7.12,7.12,4,11
+Marksman,Paladin,Counterattack,15,12,1,1,1,0.867,0.067,0.067,13,0.87,1.00,1,8
+Marksman,Priest,Regular,13,9,0,1,3,0.923,0.077,0.231,185,14.23,15.42,4,2
+Marksman,Priest,Counterattack,14,7,5,0,2,0.643,0.000,0.143,47,3.36,5.22,2,2
+Marksman,Ranger,Regular,18,9,0,4,5,0.778,0.222,0.278,258,14.33,18.43,8,3
+Marksman,Ranger,Counterattack,12,7,2,2,1,0.667,0.167,0.083,28,2.33,3.50,0,4
+Marksman,Rogue,Regular,3,1,0,2,0,0.333,0.667,0.000,19,6.33,19.00,0,1
+Marksman,Rogue,Counterattack,2,1,1,0,0,0.500,0.000,0.000,4,2.00,4.00,0,2
+Marksman,Scout,Regular,15,8,0,3,4,0.800,0.200,0.267,256,17.07,21.33,5,3
+Marksman,Scout,Counterattack,11,5,2,1,3,0.727,0.091,0.273,62,5.64,7.75,1,2
+Marksman,Skeleton Archer,Regular,9,6,0,1,2,0.889,0.111,0.222,204,22.67,25.50,4,3
+Marksman,Skeleton Archer,Counterattack,8,6,2,0,0,0.750,0.000,0.000,56,7.00,9.33,2,2
+Marksman,Sorcerer,Regular,19,11,0,1,7,0.947,0.053,0.368,406,21.37,22.56,9,4
+Marksman,Sorcerer,Counterattack,16,10,5,1,0,0.625,0.062,0.000,48,3.00,4.80,0,4
+Marksman,Spearman,Regular,9,9,0,0,0,1.000,0.000,0.000,89,9.89,9.89,1,8
+Marksman,Spearman,Counterattack,5,2,2,0,1,0.600,0.000,0.200,4,0.80,1.33,0,4
+Marksman,Swordsman,Regular,11,5,0,1,5,0.909,0.091,0.455,189,17.18,18.90,1,8
+Marksman,Swordsman,Counterattack,2,1,0,1,0,0.500,0.500,0.000,1,0.50,1.00,0,2
+Marksman,Warlock,Regular,16,13,0,0,3,1.000,0.000,0.188,300,18.75,18.75,8,4
+Marksman,Warlock,Counterattack,12,6,1,1,4,0.833,0.083,0.333,60,5.00,6.00,0,4
+Marksman,Warrior,Regular,15,10,0,1,4,0.933,0.067,0.267,180,12.00,12.86,0,7
+Marksman,Warrior,Counterattack,9,6,2,0,1,0.778,0.000,0.111,7,0.78,1.00,0,3
+Marksman,Wizard,Regular,18,13,0,1,4,0.944,0.056,0.222,353,19.61,20.76,9,6
+Marksman,Wizard,Counterattack,13,7,2,1,3,0.769,0.077,0.231,70,5.38,7.00,0,4
+Ogre,Archer,Regular,5,3,0,2,0,0.600,0.400,0.000,64,12.80,21.33,1,2
+Ogre,Archer,Counterattack,4,3,1,0,0,0.750,0.000,0.000,22,5.50,7.33,0,2
+Ogre,Assassin,Regular,12,10,0,0,2,1.000,0.000,0.167,283,23.58,23.58,5,4
+Ogre,Assassin,Counterattack,10,5,4,0,1,0.600,0.000,0.100,52,5.20,8.67,1,4
+Ogre,Battle Mage,Regular,16,14,0,1,1,0.938,0.062,0.062,256,16.00,17.07,6,2
+Ogre,Battle Mage,Counterattack,14,11,0,2,1,0.857,0.143,0.071,34,2.43,2.83,0,2
+Ogre,Crossbowman,Regular,5,4,0,0,1,1.000,0.000,0.200,91,18.20,18.20,1,2
+Ogre,Crossbowman,Counterattack,4,2,1,0,1,0.750,0.000,0.250,13,3.25,4.33,0,2
+Ogre,Fighter,Regular,13,9,0,2,2,0.846,0.154,0.154,122,9.38,11.09,1,3
+Ogre,Fighter,Counterattack,12,8,1,2,1,0.750,0.167,0.083,9,0.75,1.00,0,2
+Ogre,Goblin Raider,Regular,10,8,0,1,1,0.900,0.100,0.100,207,20.70,23.00,3,2
+Ogre,Goblin Raider,Counterattack,10,6,3,1,0,0.600,0.100,0.000,45,4.50,7.50,2,2
+Ogre,Knight,Regular,11,11,0,0,0,1.000,0.000,0.000,64,5.82,5.82,0,3
+Ogre,Knight,Counterattack,8,4,2,2,0,0.500,0.250,0.000,4,0.50,1.00,0,2
+Ogre,Mage,Regular,4,4,0,0,0,1.000,0.000,0.000,70,17.50,17.50,1,4
+Ogre,Marksman,Regular,2,2,0,0,0,1.000,0.000,0.000,45,22.50,22.50,0,2
+Ogre,Marksman,Counterattack,3,3,0,0,0,1.000,0.000,0.000,25,8.33,8.33,0,3
+Ogre,Orc Warrior,Regular,13,12,0,1,0,0.923,0.077,0.000,104,8.00,8.67,1,2
+Ogre,Orc Warrior,Counterattack,11,7,2,0,2,0.818,0.000,0.182,15,1.36,1.67,1,2
+Ogre,Paladin,Regular,21,18,0,3,0,0.857,0.143,0.000,153,7.29,8.50,3,3
+Ogre,Paladin,Counterattack,19,15,2,2,0,0.789,0.105,0.000,15,0.79,1.00,0,2
+Ogre,Ranger,Regular,5,5,0,0,0,1.000,0.000,0.000,93,18.60,18.60,1,4
+Ogre,Ranger,Counterattack,2,2,0,0,0,1.000,0.000,0.000,8,4.00,4.00,0,2
+Ogre,Rogue,Regular,9,7,0,2,0,0.778,0.222,0.000,139,15.44,19.86,3,3
+Ogre,Rogue,Counterattack,8,6,1,1,0,0.750,0.125,0.000,36,4.50,6.00,0,3
+Ogre,Scout,Regular,11,10,0,1,0,0.909,0.091,0.000,210,19.09,21.00,4,2
+Ogre,Scout,Counterattack,12,8,2,1,1,0.750,0.083,0.083,69,5.75,7.67,2,2
+Ogre,Skeleton Archer,Regular,6,6,0,0,0,1.000,0.000,0.000,149,24.83,24.83,2,4
+Ogre,Skeleton Archer,Counterattack,3,2,0,1,0,0.667,0.333,0.000,22,7.33,11.00,0,1
+Ogre,Sorcerer,Regular,1,0,0,0,1,1.000,0.000,1.000,32,32.00,32.00,0,1
+Ogre,Spearman,Regular,11,9,0,0,2,1.000,0.000,0.182,167,15.18,15.18,2,2
+Ogre,Spearman,Counterattack,9,5,1,0,3,0.889,0.000,0.333,20,2.22,2.50,1,2
+Ogre,Swordsman,Regular,12,10,0,2,0,0.833,0.167,0.000,152,12.67,15.20,2,2
+Ogre,Swordsman,Counterattack,11,6,4,1,0,0.545,0.091,0.000,14,1.27,2.33,0,2
+Ogre,Warlock,Regular,2,2,0,0,0,1.000,0.000,0.000,38,19.00,19.00,0,2
+Ogre,Warrior,Regular,5,5,0,0,0,1.000,0.000,0.000,54,10.80,10.80,0,2
+Ogre,Warrior,Counterattack,4,1,2,1,0,0.250,0.250,0.000,1,0.25,1.00,0,2
+Ogre,Wizard,Regular,2,2,0,0,0,1.000,0.000,0.000,40,20.00,20.00,0,2
+Orc Warrior,Archer,Regular,19,13,0,2,4,0.895,0.105,0.211,325,17.11,19.12,2,3
+Orc Warrior,Archer,Counterattack,15,10,2,2,1,0.733,0.133,0.067,64,4.27,5.82,0,2
+Orc Warrior,Assassin,Regular,18,14,0,2,2,0.889,0.111,0.111,286,15.89,17.88,3,2
+Orc Warrior,Assassin,Counterattack,12,5,2,4,1,0.500,0.333,0.083,39,3.25,6.50,1,2
+Orc Warrior,Battle Mage,Regular,24,18,0,2,4,0.917,0.083,0.167,297,12.38,13.50,3,2
+Orc Warrior,Battle Mage,Counterattack,18,11,3,3,1,0.667,0.167,0.056,21,1.17,1.75,3,2
+Orc Warrior,Cleric,Regular,21,17,0,4,0,0.810,0.190,0.000,220,10.48,12.94,5,2
+Orc Warrior,Cleric,Counterattack,18,8,4,2,4,0.667,0.111,0.222,44,2.44,3.67,0,2
+Orc Warrior,Crossbowman,Regular,27,20,0,4,3,0.852,0.148,0.111,296,10.96,12.87,4,2
+Orc Warrior,Crossbowman,Counterattack,24,13,4,4,3,0.667,0.167,0.125,31,1.29,1.94,0,2
+Orc Warrior,Fighter,Regular,43,33,0,5,5,0.884,0.116,0.116,205,4.77,5.39,2,2
+Orc Warrior,Fighter,Counterattack,38,18,15,4,1,0.500,0.105,0.026,19,0.50,1.00,0,3
+Orc Warrior,Goblin Raider,Regular,21,13,0,5,3,0.762,0.238,0.143,296,14.10,18.50,3,2
+Orc Warrior,Goblin Raider,Counterattack,15,11,3,1,0,0.733,0.067,0.000,61,4.07,5.55,3,2
+Orc Warrior,Knight,Regular,65,48,0,4,13,0.938,0.062,0.200,253,3.89,4.15,4,2
+Orc Warrior,Knight,Counterattack,60,40,12,2,6,0.767,0.033,0.100,46,0.77,1.00,0,3
+Orc Warrior,Mage,Regular,30,26,0,1,3,0.967,0.033,0.100,382,12.73,13.17,11,3
+Orc Warrior,Mage,Counterattack,24,14,6,1,3,0.708,0.042,0.125,41,1.71,2.41,0,3
+Orc Warrior,Marksman,Regular,18,14,0,1,3,0.944,0.056,0.167,331,18.39,19.47,6,2
+Orc Warrior,Marksman,Counterattack,18,10,3,4,1,0.611,0.222,0.056,78,4.33,7.09,0,2
+Orc Warrior,Ogre,Regular,35,30,0,2,3,0.943,0.057,0.086,84,2.40,2.55,0,2
+Orc Warrior,Ogre,Counterattack,37,27,7,0,3,0.811,0.000,0.081,30,0.81,1.00,0,2
+Orc Warrior,Paladin,Regular,67,56,0,5,6,0.925,0.075,0.090,248,3.70,4.00,7,2
+Orc Warrior,Paladin,Counterattack,68,44,15,5,4,0.706,0.074,0.059,48,0.71,1.00,1,3
+Orc Warrior,Priest,Regular,11,11,0,0,0,1.000,0.000,0.000,175,15.91,15.91,5,2
+Orc Warrior,Priest,Counterattack,12,9,2,0,1,0.833,0.000,0.083,57,4.75,5.70,1,2
+Orc Warrior,Ranger,Regular,23,16,0,3,4,0.870,0.130,0.174,310,13.48,15.50,4,3
+Orc Warrior,Ranger,Counterattack,13,8,2,3,0,0.615,0.231,0.000,16,1.23,2.00,2,2
+Orc Warrior,Rogue,Regular,21,15,0,4,2,0.810,0.190,0.095,276,13.14,16.24,4,2
+Orc Warrior,Rogue,Counterattack,21,7,8,4,2,0.429,0.190,0.095,43,2.05,4.78,1,2
+Orc Warrior,Scout,Regular,18,13,0,3,2,0.833,0.167,0.111,259,14.39,17.27,5,2
+Orc Warrior,Scout,Counterattack,15,11,1,1,2,0.867,0.067,0.133,72,4.80,5.54,0,2
+Orc Warrior,Skeleton Archer,Regular,15,10,0,2,3,0.867,0.133,0.200,290,19.33,22.31,10,3
+Orc Warrior,Skeleton Archer,Counterattack,8,7,0,0,1,1.000,0.000,0.125,74,9.25,9.25,0,2
+Orc Warrior,Sorcerer,Regular,18,13,0,3,2,0.833,0.167,0.111,246,13.67,16.40,4,2
+Orc Warrior,Sorcerer,Counterattack,21,16,1,1,3,0.905,0.048,0.143,88,4.19,4.63,1,3
+Orc Warrior,Spearman,Regular,29,22,0,3,4,0.897,0.103,0.138,253,8.72,9.73,2,2
+Orc Warrior,Spearman,Counterattack,26,11,13,0,2,0.500,0.000,0.077,13,0.50,1.00,0,2
+Orc Warrior,Swordsman,Regular,51,42,0,2,7,0.961,0.039,0.137,566,11.10,11.55,8,4
+Orc Warrior,Swordsman,Counterattack,51,33,7,5,6,0.765,0.098,0.118,57,1.12,1.46,2,4
+Orc Warrior,Warlock,Regular,18,18,0,0,0,1.000,0.000,0.000,244,13.56,13.56,4,3
+Orc Warrior,Warlock,Counterattack,17,14,0,1,2,0.941,0.059,0.118,53,3.12,3.31,1,3
+Orc Warrior,Warrior,Regular,22,16,0,3,3,0.864,0.136,0.136,164,7.45,8.63,3,2
+Orc Warrior,Warrior,Counterattack,22,13,7,2,0,0.591,0.091,0.000,13,0.59,1.00,2,2
+Orc Warrior,Wizard,Regular,18,14,0,3,1,0.833,0.167,0.056,233,12.94,15.53,4,3
+Orc Warrior,Wizard,Counterattack,20,11,5,2,2,0.650,0.100,0.100,67,3.35,5.15,3,3
+Paladin,Archer,Regular,65,49,0,12,4,0.815,0.185,0.062,805,12.38,15.19,4,21
+Paladin,Archer,Counterattack,47,28,10,2,7,0.745,0.043,0.149,188,4.00,5.37,3,20
+Paladin,Assassin,Regular,28,20,0,2,6,0.929,0.071,0.214,438,15.64,16.85,2,12
+Paladin,Assassin,Counterattack,22,12,6,3,1,0.591,0.136,0.045,63,2.86,4.85,0,9
+Paladin,Battle Mage,Regular,42,36,0,4,2,0.905,0.095,0.048,375,8.93,9.87,8,5
+Paladin,Battle Mage,Counterattack,48,25,15,4,4,0.604,0.083,0.083,46,0.96,1.59,1,6
+Paladin,Cleric,Regular,22,20,0,0,2,1.000,0.000,0.091,260,11.82,11.82,5,5
+Paladin,Cleric,Counterattack,17,9,5,0,3,0.706,0.000,0.176,30,1.76,2.50,0,3
+Paladin,Crossbowman,Regular,40,32,0,3,5,0.925,0.075,0.125,388,9.70,10.49,9,9
+Paladin,Crossbowman,Counterattack,47,24,9,9,5,0.617,0.191,0.106,42,0.89,1.45,1,10
+Paladin,Fighter,Regular,70,54,0,8,8,0.886,0.114,0.114,238,3.40,3.84,3,14
+Paladin,Fighter,Counterattack,55,32,13,5,5,0.673,0.091,0.091,37,0.67,1.00,0,19
+Paladin,Goblin Raider,Regular,46,33,0,8,5,0.826,0.174,0.109,598,13.00,15.74,12,13
+Paladin,Goblin Raider,Counterattack,78,45,11,10,12,0.731,0.128,0.154,308,3.95,5.40,3,12
+Paladin,Knight,Regular,125,112,0,3,10,0.976,0.024,0.080,234,1.87,1.92,0,23
+Paladin,Knight,Counterattack,87,50,20,6,11,0.701,0.069,0.126,61,0.70,1.00,0,23
+Paladin,Mage,Regular,41,37,0,1,3,0.976,0.024,0.073,430,10.49,10.75,10,11
+Paladin,Mage,Counterattack,28,19,6,1,2,0.750,0.036,0.071,29,1.04,1.38,0,5
+Paladin,Marksman,Regular,30,19,0,7,4,0.767,0.233,0.133,397,13.23,17.26,7,12
+Paladin,Marksman,Counterattack,27,12,8,3,4,0.593,0.111,0.148,106,3.93,6.62,1,11
+Paladin,Ogre,Regular,50,41,0,4,5,0.920,0.080,0.100,76,1.52,1.65,1,2
+Paladin,Ogre,Counterattack,49,36,5,3,5,0.837,0.061,0.102,41,0.84,1.00,1,3
+Paladin,Orc Warrior,Regular,76,58,0,9,9,0.882,0.118,0.118,200,2.63,2.99,1,3
+Paladin,Orc Warrior,Counterattack,70,51,15,1,3,0.771,0.014,0.043,54,0.77,1.00,2,2
+Paladin,Paladin,Regular,87,76,0,6,5,0.931,0.069,0.057,180,2.07,2.22,3,21
+Paladin,Paladin,Counterattack,74,56,11,1,6,0.838,0.014,0.081,62,0.84,1.00,1,20
+Paladin,Priest,Regular,29,24,0,1,4,0.966,0.034,0.138,432,14.90,15.43,15,7
+Paladin,Priest,Counterattack,53,30,12,2,9,0.736,0.038,0.170,186,3.51,4.77,1,9
+Paladin,Ranger,Regular,30,20,0,5,5,0.833,0.167,0.167,320,10.67,12.80,6,5
+Paladin,Ranger,Counterattack,34,22,4,8,0,0.647,0.235,0.000,30,0.88,1.36,0,4
+Paladin,Rogue,Regular,20,15,0,4,1,0.800,0.200,0.050,212,10.60,13.25,6,2
+Paladin,Rogue,Counterattack,16,4,8,3,1,0.312,0.188,0.062,15,0.94,3.00,0,4
+Paladin,Scout,Regular,25,17,0,4,4,0.840,0.160,0.160,337,13.48,16.05,7,4
+Paladin,Scout,Counterattack,21,14,3,3,1,0.714,0.143,0.048,66,3.14,4.40,0,2
+Paladin,Skeleton Archer,Regular,19,13,0,3,3,0.842,0.158,0.158,312,16.42,19.50,8,5
+Paladin,Skeleton Archer,Counterattack,12,9,1,0,2,0.917,0.000,0.167,93,7.75,8.45,2,3
+Paladin,Sorcerer,Regular,73,59,0,7,7,0.904,0.096,0.096,924,12.66,14.00,27,13
+Paladin,Sorcerer,Counterattack,116,74,26,4,12,0.741,0.034,0.103,294,2.53,3.42,0,10
+Paladin,Spearman,Regular,39,25,0,9,5,0.769,0.231,0.128,218,5.59,7.27,2,6
+Paladin,Spearman,Counterattack,54,31,13,5,5,0.667,0.093,0.093,40,0.74,1.11,0,11
+Paladin,Swordsman,Regular,73,58,0,10,5,0.863,0.137,0.068,563,7.71,8.94,4,24
+Paladin,Swordsman,Counterattack,57,31,10,11,5,0.632,0.193,0.088,44,0.77,1.22,1,24
+Paladin,Warlock,Regular,38,30,0,2,6,0.947,0.053,0.158,472,12.42,13.11,8,10
+Paladin,Warlock,Counterattack,49,33,11,1,4,0.755,0.020,0.082,73,1.49,1.97,1,10
+Paladin,Warrior,Regular,52,42,0,3,7,0.942,0.058,0.135,301,5.79,6.14,3,17
+Paladin,Warrior,Counterattack,55,35,14,4,2,0.673,0.073,0.036,37,0.67,1.00,1,13
+Paladin,Wizard,Regular,29,25,0,3,1,0.897,0.103,0.034,342,11.79,13.15,8,8
+Paladin,Wizard,Counterattack,29,21,7,1,0,0.724,0.034,0.000,54,1.86,2.57,1,9
+Priest,Archer,Regular,12,10,0,1,1,0.917,0.083,0.083,324,27.00,29.45,1,2
+Priest,Assassin,Regular,9,4,0,3,2,0.667,0.333,0.222,200,22.22,33.33,2,4
+Priest,Assassin,Counterattack,4,1,2,0,1,0.500,0.000,0.250,30,7.50,15.00,2,3
+Priest,Battle Mage,Regular,8,7,0,1,0,0.875,0.125,0.000,141,17.62,20.14,0,2
+Priest,Battle Mage,Counterattack,2,1,1,0,0,0.500,0.000,0.000,6,3.00,6.00,0,1
+Priest,Cleric,Regular,9,7,0,1,1,0.889,0.111,0.111,169,18.78,21.12,1,2
+Priest,Cleric,Counterattack,4,3,1,0,0,0.750,0.000,0.000,13,3.25,4.33,1,1
+Priest,Crossbowman,Regular,11,10,0,1,0,0.909,0.091,0.000,280,25.45,28.00,10,3
+Priest,Crossbowman,Counterattack,10,8,1,0,1,0.900,0.000,0.100,107,10.70,11.89,0,2
+Priest,Fighter,Regular,10,10,0,0,0,1.000,0.000,0.000,252,25.20,25.20,0,4
+Priest,Fighter,Counterattack,2,1,1,0,0,0.500,0.000,0.000,11,5.50,11.00,0,1
+Priest,Goblin Raider,Regular,8,7,0,0,1,1.000,0.000,0.125,240,30.00,30.00,8,2
+Priest,Goblin Raider,Counterattack,8,6,1,0,1,0.875,0.000,0.125,85,10.62,12.14,0,2
+Priest,Knight,Regular,10,9,0,1,0,0.900,0.100,0.000,192,19.20,21.33,1,2
+Priest,Knight,Counterattack,5,3,0,1,1,0.800,0.200,0.200,44,8.80,11.00,1,1
+Priest,Mage,Regular,13,11,0,1,1,0.923,0.077,0.077,264,20.31,22.00,0,3
+Priest,Mage,Counterattack,2,2,0,0,0,1.000,0.000,0.000,10,5.00,5.00,0,1
+Priest,Marksman,Regular,17,11,0,4,2,0.765,0.235,0.118,396,23.29,30.46,5,6
+Priest,Marksman,Counterattack,4,2,1,1,0,0.500,0.250,0.000,22,5.50,11.00,0,4
+Priest,Ogre,Regular,3,3,0,0,0,1.000,0.000,0.000,84,28.00,28.00,0,1
+Priest,Orc Warrior,Regular,12,10,0,0,2,1.000,0.000,0.167,276,23.00,23.00,0,2
+Priest,Paladin,Regular,12,7,0,0,5,1.000,0.000,0.417,318,26.50,26.50,4,3
+Priest,Paladin,Counterattack,5,5,0,0,0,1.000,0.000,0.000,29,5.80,5.80,0,1
+Priest,Ranger,Regular,12,8,0,1,3,0.917,0.083,0.250,298,24.83,27.09,5,2
+Priest,Ranger,Counterattack,6,3,2,1,0,0.500,0.167,0.000,25,4.17,8.33,0,1
+Priest,Rogue,Regular,8,5,0,2,1,0.750,0.250,0.125,184,23.00,30.67,2,2
+Priest,Rogue,Counterattack,4,1,2,0,1,0.500,0.000,0.250,30,7.50,15.00,1,2
+Priest,Scout,Regular,12,10,0,1,1,0.917,0.083,0.083,307,25.58,27.91,6,2
+Priest,Scout,Counterattack,6,6,0,0,0,1.000,0.000,0.000,60,10.00,10.00,0,1
+Priest,Skeleton Archer,Regular,8,5,0,1,2,0.875,0.125,0.250,200,25.00,28.57,7,2
+Priest,Skeleton Archer,Counterattack,8,5,1,0,2,0.875,0.000,0.250,65,8.12,9.29,0,2
+Priest,Sorcerer,Regular,15,11,0,4,0,0.733,0.267,0.000,231,15.40,21.00,2,5
+Priest,Sorcerer,Counterattack,9,6,0,1,2,0.889,0.111,0.222,48,5.33,6.00,0,3
+Priest,Spearman,Regular,10,8,0,2,0,0.800,0.200,0.000,179,17.90,22.38,1,2
+Priest,Spearman,Counterattack,4,4,0,0,0,1.000,0.000,0.000,36,9.00,9.00,0,1
+Priest,Swordsman,Regular,17,11,0,2,4,0.882,0.118,0.235,484,28.47,32.27,6,7
+Priest,Swordsman,Counterattack,3,2,1,0,0,0.667,0.000,0.000,22,7.33,11.00,0,2
+Priest,Warlock,Regular,15,11,0,2,2,0.867,0.133,0.133,318,21.20,24.46,4,5
+Priest,Warlock,Counterattack,13,6,6,1,0,0.462,0.077,0.000,30,2.31,5.00,0,3
+Priest,Warrior,Regular,12,9,0,2,1,0.833,0.167,0.083,273,22.75,27.30,4,6
+Priest,Warrior,Counterattack,10,7,1,1,1,0.800,0.100,0.100,96,9.60,12.00,1,3
+Priest,Wizard,Regular,34,26,0,4,4,0.882,0.118,0.118,694,20.41,23.13,11,12
+Priest,Wizard,Counterattack,13,9,4,0,0,0.692,0.000,0.000,36,2.77,4.00,0,5
+Ranger,Archer,Regular,10,6,0,0,4,1.000,0.000,0.400,160,16.00,16.00,3,3
+Ranger,Archer,Counterattack,3,1,0,1,1,0.667,0.333,0.333,8,2.67,4.00,0,1
+Ranger,Assassin,Regular,6,3,0,1,2,0.833,0.167,0.333,92,15.33,18.40,0,2
+Ranger,Assassin,Counterattack,3,2,1,0,0,0.667,0.000,0.000,4,1.33,2.00,0,1
+Ranger,Battle Mage,Regular,9,5,0,0,4,1.000,0.000,0.444,81,9.00,9.00,0,2
+Ranger,Battle Mage,Counterattack,3,2,0,0,1,1.000,0.000,0.333,3,1.00,1.00,0,1
+Ranger,Cleric,Regular,12,9,0,0,3,1.000,0.000,0.250,80,6.67,6.67,2,3
+Ranger,Cleric,Counterattack,9,6,2,0,1,0.778,0.000,0.111,7,0.78,1.00,0,3
+Ranger,Crossbowman,Regular,6,3,0,0,3,1.000,0.000,0.500,118,19.67,19.67,0,2
+Ranger,Crossbowman,Counterattack,5,2,3,0,0,0.400,0.000,0.000,4,0.80,2.00,1,1
+Ranger,Fighter,Regular,10,6,0,0,4,1.000,0.000,0.400,129,12.90,12.90,1,3
+Ranger,Fighter,Counterattack,5,3,1,0,1,0.800,0.000,0.200,20,4.00,5.00,0,2
+Ranger,Goblin Raider,Regular,8,7,0,0,1,1.000,0.000,0.125,119,14.88,14.88,2,2
+Ranger,Goblin Raider,Counterattack,2,0,1,1,0,0.000,0.500,0.000,0,0.00,0.00,0,1
+Ranger,Knight,Regular,20,10,0,2,8,0.900,0.100,0.400,250,12.50,13.89,5,8
+Ranger,Knight,Counterattack,11,4,4,0,3,0.636,0.000,0.273,26,2.36,3.71,0,5
+Ranger,Mage,Regular,18,15,0,0,3,1.000,0.000,0.167,127,7.06,7.06,1,4
+Ranger,Mage,Counterattack,13,5,4,1,3,0.615,0.077,0.231,13,1.00,1.62,0,3
+Ranger,Marksman,Regular,9,9,0,0,0,1.000,0.000,0.000,133,14.78,14.78,1,4
+Ranger,Marksman,Counterattack,8,2,1,3,2,0.500,0.375,0.250,28,3.50,7.00,0,4
+Ranger,Ogre,Regular,12,9,0,1,2,0.917,0.083,0.167,142,11.83,12.91,1,4
+Ranger,Ogre,Counterattack,10,5,3,0,2,0.700,0.000,0.200,44,4.40,6.29,0,4
+Ranger,Orc Warrior,Regular,15,8,0,3,4,0.800,0.200,0.267,148,9.87,12.33,1,2
+Ranger,Orc Warrior,Counterattack,16,9,3,2,2,0.688,0.125,0.125,42,2.62,3.82,0,3
+Ranger,Paladin,Regular,15,9,0,1,5,0.933,0.067,0.333,97,6.47,6.93,1,2
+Ranger,Paladin,Counterattack,9,4,0,2,3,0.778,0.222,0.333,11,1.22,1.57,0,2
+Ranger,Priest,Regular,10,6,0,1,3,0.900,0.100,0.300,69,6.90,7.67,2,2
+Ranger,Priest,Counterattack,7,4,2,0,1,0.714,0.000,0.143,5,0.71,1.00,0,2
+Ranger,Ranger,Regular,4,2,0,2,0,0.500,0.500,0.000,30,7.50,15.00,0,1
+Ranger,Ranger,Counterattack,4,0,3,1,0,0.000,0.250,0.000,0,0.00,0.00,0,1
+Ranger,Rogue,Regular,6,3,0,0,3,1.000,0.000,0.500,118,19.67,19.67,0,2
+Ranger,Scout,Regular,8,7,0,0,1,1.000,0.000,0.125,113,14.12,14.12,0,4
+Ranger,Scout,Counterattack,4,2,1,1,0,0.500,0.250,0.000,2,0.50,1.00,2,2
+Ranger,Skeleton Archer,Regular,7,5,0,0,2,1.000,0.000,0.286,83,11.86,11.86,2,3
+Ranger,Skeleton Archer,Counterattack,3,3,0,0,0,1.000,0.000,0.000,7,2.33,2.33,0,2
+Ranger,Sorcerer,Regular,16,13,0,1,2,0.938,0.062,0.125,86,5.38,5.73,2,4
+Ranger,Sorcerer,Counterattack,12,5,3,0,4,0.750,0.000,0.333,24,2.00,2.67,0,2
+Ranger,Spearman,Regular,5,4,0,0,1,1.000,0.000,0.200,61,12.20,12.20,0,2
+Ranger,Spearman,Counterattack,2,1,1,0,0,0.500,0.000,0.000,1,0.50,1.00,0,1
+Ranger,Swordsman,Regular,5,3,0,1,1,0.800,0.200,0.200,79,15.80,19.75,0,2
+Ranger,Swordsman,Counterattack,2,2,0,0,0,1.000,0.000,0.000,4,2.00,2.00,0,1
+Ranger,Warlock,Regular,15,13,0,1,1,0.933,0.067,0.067,108,7.20,7.71,1,3
+Ranger,Warlock,Counterattack,14,8,1,4,1,0.643,0.286,0.071,9,0.64,1.00,0,3
+Ranger,Warrior,Regular,17,12,0,1,4,0.941,0.059,0.235,236,13.88,14.75,1,8
+Ranger,Warrior,Counterattack,9,7,0,1,1,0.889,0.111,0.111,28,3.11,3.50,0,5
+Ranger,Wizard,Regular,14,10,0,2,2,0.857,0.143,0.143,95,6.79,7.92,1,4
+Ranger,Wizard,Counterattack,7,5,1,0,1,0.857,0.000,0.143,6,0.86,1.00,1,2
+Rogue,Archer,Regular,18,11,0,3,4,0.833,0.167,0.222,292,16.22,19.47,2,2
+Rogue,Archer,Counterattack,11,5,2,0,4,0.818,0.000,0.364,66,6.00,7.33,1,2
+Rogue,Assassin,Regular,13,9,0,3,1,0.769,0.231,0.077,179,13.77,17.90,1,3
+Rogue,Assassin,Counterattack,4,0,0,1,3,0.750,0.250,0.750,32,8.00,10.67,2,3
+Rogue,Battle Mage,Regular,12,6,0,3,3,0.750,0.250,0.250,115,9.58,12.78,0,2
+Rogue,Battle Mage,Counterattack,12,6,4,1,1,0.583,0.083,0.083,11,0.92,1.57,0,2
+Rogue,Cleric,Regular,21,14,0,1,6,0.952,0.048,0.286,262,12.48,13.10,2,2
+Rogue,Cleric,Counterattack,4,0,2,0,2,0.500,0.000,0.500,10,2.50,5.00,1,2
+Rogue,Crossbowman,Regular,21,11,0,2,8,0.905,0.095,0.381,302,14.38,15.89,3,2
+Rogue,Crossbowman,Counterattack,6,3,2,1,0,0.500,0.167,0.000,5,0.83,1.67,0,2
+Rogue,Fighter,Regular,24,16,0,1,7,0.958,0.042,0.292,144,6.00,6.26,0,4
+Rogue,Fighter,Counterattack,5,3,1,0,1,0.800,0.000,0.200,4,0.80,1.00,0,3
+Rogue,Goblin Raider,Regular,21,12,0,5,4,0.762,0.238,0.190,307,14.62,19.19,2,2
+Rogue,Goblin Raider,Counterattack,6,2,2,0,2,0.667,0.000,0.333,32,5.33,8.00,2,2
+Rogue,Knight,Regular,67,37,0,9,21,0.866,0.134,0.313,248,3.70,4.28,2,6
+Rogue,Knight,Counterattack,37,23,6,0,8,0.838,0.000,0.216,31,0.84,1.00,0,6
+Rogue,Mage,Regular,27,19,0,3,5,0.889,0.111,0.185,307,11.37,12.79,7,2
+Rogue,Mage,Counterattack,18,10,2,0,6,0.889,0.000,0.333,44,2.44,2.75,0,2
+Rogue,Marksman,Regular,19,12,0,2,5,0.895,0.105,0.263,351,18.47,20.65,4,3
+Rogue,Marksman,Counterattack,9,5,2,1,1,0.667,0.111,0.111,47,5.22,7.83,0,1
+Rogue,Ogre,Regular,24,13,0,0,11,1.000,0.000,0.458,148,6.17,6.17,1,4
+Rogue,Ogre,Counterattack,21,14,3,1,3,0.810,0.048,0.143,17,0.81,1.00,0,4
+Rogue,Orc Warrior,Regular,39,29,0,2,8,0.949,0.051,0.205,131,3.36,3.54,0,2
+Rogue,Orc Warrior,Counterattack,30,14,5,3,8,0.733,0.100,0.267,22,0.73,1.00,0,2
+Rogue,Paladin,Regular,43,26,0,3,14,0.930,0.070,0.326,247,5.74,6.17,3,6
+Rogue,Paladin,Counterattack,37,23,9,3,2,0.676,0.081,0.054,25,0.68,1.00,0,5
+Rogue,Priest,Regular,17,12,0,1,4,0.941,0.059,0.235,227,13.35,14.19,1,2
+Rogue,Priest,Counterattack,11,6,2,2,1,0.636,0.182,0.091,35,3.18,5.00,3,2
+Rogue,Ranger,Regular,16,10,0,4,2,0.750,0.250,0.125,159,9.94,13.25,2,2
+Rogue,Ranger,Counterattack,20,10,0,1,9,0.950,0.050,0.450,73,3.65,3.84,1,2
+Rogue,Scout,Regular,18,14,0,2,2,0.889,0.111,0.111,252,14.00,15.75,0,2
+Rogue,Scout,Counterattack,18,6,6,4,2,0.444,0.222,0.111,43,2.39,5.38,0,2
+Rogue,Skeleton Archer,Regular,12,7,0,1,4,0.917,0.083,0.333,256,21.33,23.27,1,2
+Rogue,Skeleton Archer,Counterattack,5,4,1,0,0,0.800,0.000,0.000,36,7.20,9.00,2,1
+Rogue,Sorcerer,Regular,18,12,0,0,6,1.000,0.000,0.333,336,18.67,18.67,0,2
+Rogue,Spearman,Regular,6,4,0,1,1,0.833,0.167,0.167,36,6.00,7.20,0,3
+Rogue,Spearman,Counterattack,5,2,2,0,1,0.600,0.000,0.200,6,1.20,2.00,0,3
+Rogue,Swordsman,Regular,18,12,0,3,3,0.833,0.167,0.167,189,10.50,12.60,0,2
+Rogue,Warlock,Regular,18,12,0,1,5,0.944,0.056,0.278,284,15.78,16.71,0,2
+Rogue,Warlock,Counterattack,9,6,1,1,1,0.778,0.111,0.111,26,2.89,3.71,0,1
+Rogue,Warrior,Regular,26,15,0,3,8,0.885,0.115,0.308,235,9.04,10.22,3,2
+Rogue,Warrior,Counterattack,17,8,4,0,5,0.765,0.000,0.294,19,1.12,1.46,0,2
+Rogue,Wizard,Regular,20,14,0,1,5,0.950,0.050,0.250,339,16.95,17.84,8,4
+Rogue,Wizard,Counterattack,17,13,1,1,2,0.882,0.059,0.118,69,4.06,4.60,0,4
+Scout,Archer,Regular,11,7,0,1,3,0.909,0.091,0.273,115,10.45,11.50,0,3
+Scout,Archer,Counterattack,7,4,1,0,2,0.857,0.000,0.286,17,2.43,2.83,0,2
+Scout,Assassin,Regular,4,2,0,1,1,0.750,0.250,0.250,37,9.25,12.33,0,2
+Scout,Assassin,Counterattack,1,0,0,0,1,1.000,0.000,1.000,5,5.00,5.00,0,1
+Scout,Battle Mage,Regular,7,5,0,0,2,1.000,0.000,0.286,32,4.57,4.57,0,2
+Scout,Battle Mage,Counterattack,4,3,0,1,0,0.750,0.250,0.000,3,0.75,1.00,0,2
+Scout,Cleric,Regular,37,29,0,3,5,0.919,0.081,0.135,210,5.68,6.18,5,2
+Scout,Cleric,Counterattack,35,13,11,4,7,0.571,0.114,0.200,25,0.71,1.25,1,2
+Scout,Crossbowman,Regular,12,6,0,0,6,1.000,0.000,0.500,90,7.50,7.50,0,2
+Scout,Crossbowman,Counterattack,9,5,3,0,1,0.667,0.000,0.111,7,0.78,1.17,0,2
+Scout,Fighter,Regular,10,6,0,1,3,0.900,0.100,0.300,23,2.30,2.56,0,6
+Scout,Fighter,Counterattack,2,2,0,0,0,1.000,0.000,0.000,2,1.00,1.00,0,2
+Scout,Goblin Raider,Regular,7,3,0,1,3,0.857,0.143,0.429,77,11.00,12.83,1,3
+Scout,Goblin Raider,Counterattack,7,1,4,0,2,0.429,0.000,0.286,12,1.71,4.00,0,3
+Scout,Knight,Regular,10,7,0,0,3,1.000,0.000,0.300,10,1.00,1.00,0,3
+Scout,Knight,Counterattack,7,5,1,1,0,0.714,0.143,0.000,5,0.71,1.00,0,3
+Scout,Mage,Regular,43,29,0,0,14,1.000,0.000,0.326,273,6.35,6.35,7,3
+Scout,Mage,Counterattack,36,18,6,1,11,0.806,0.028,0.306,30,0.83,1.03,0,2
+Scout,Marksman,Regular,10,5,0,2,3,0.800,0.200,0.300,105,10.50,13.12,1,3
+Scout,Marksman,Counterattack,9,7,1,0,1,0.889,0.000,0.111,24,2.67,3.00,0,2
+Scout,Ogre,Regular,24,18,0,0,6,1.000,0.000,0.250,30,1.25,1.25,0,2
+Scout,Ogre,Counterattack,18,8,6,0,4,0.667,0.000,0.222,12,0.67,1.00,0,2
+Scout,Orc Warrior,Regular,10,6,0,2,2,0.800,0.200,0.200,8,0.80,1.00,0,3
+Scout,Orc Warrior,Counterattack,6,4,2,0,0,0.667,0.000,0.000,4,0.67,1.00,0,2
+Scout,Paladin,Regular,21,16,0,3,2,0.857,0.143,0.095,25,1.19,1.39,0,8
+Scout,Paladin,Counterattack,9,6,3,0,0,0.667,0.000,0.000,6,0.67,1.00,0,4
+Scout,Priest,Regular,26,21,0,0,5,1.000,0.000,0.192,188,7.23,7.23,5,2
+Scout,Priest,Counterattack,23,10,8,0,5,0.652,0.000,0.217,25,1.09,1.67,1,2
+Scout,Ranger,Regular,35,23,0,5,7,0.857,0.143,0.200,207,5.91,6.90,6,2
+Scout,Ranger,Counterattack,35,13,8,5,9,0.629,0.143,0.257,28,0.80,1.27,1,2
+Scout,Rogue,Regular,6,4,0,1,1,0.833,0.167,0.167,48,8.00,9.60,0,2
+Scout,Skeleton Archer,Regular,13,9,0,0,4,1.000,0.000,0.308,190,14.62,14.62,5,2
+Scout,Skeleton Archer,Counterattack,13,6,4,1,2,0.615,0.077,0.154,45,3.46,5.62,1,2
+Scout,Sorcerer,Regular,34,28,0,1,5,0.971,0.029,0.147,277,8.15,8.39,4,5
+Scout,Sorcerer,Counterattack,33,18,7,1,7,0.758,0.030,0.212,45,1.36,1.80,2,4
+Scout,Spearman,Regular,1,1,0,0,0,1.000,0.000,0.000,1,1.00,1.00,0,1
+Scout,Spearman,Counterattack,1,0,0,1,0,0.000,1.000,0.000,0,0.00,0.00,0,1
+Scout,Swordsman,Regular,17,9,0,2,6,0.882,0.118,0.353,99,5.82,6.60,1,7
+Scout,Swordsman,Counterattack,7,4,1,0,2,0.857,0.000,0.286,6,0.86,1.00,0,4
+Scout,Warlock,Regular,33,22,0,4,7,0.879,0.121,0.212,238,7.21,8.21,9,2
+Scout,Warlock,Counterattack,27,14,6,0,7,0.778,0.000,0.259,32,1.19,1.52,0,2
+Scout,Warrior,Regular,14,10,0,2,2,0.857,0.143,0.143,25,1.79,2.08,0,4
+Scout,Warrior,Counterattack,7,4,2,1,0,0.571,0.143,0.000,4,0.57,1.00,0,3
+Scout,Wizard,Regular,27,16,0,3,8,0.889,0.111,0.296,246,9.11,10.25,6,2
+Scout,Wizard,Counterattack,24,12,6,1,5,0.708,0.042,0.208,29,1.21,1.71,0,2
+Skeleton Archer,Archer,Regular,8,6,0,1,1,0.875,0.125,0.125,167,20.88,23.86,2,2
+Skeleton Archer,Archer,Counterattack,8,6,1,0,1,0.875,0.000,0.125,63,7.88,9.00,0,2
+Skeleton Archer,Assassin,Regular,8,7,0,1,0,0.875,0.125,0.000,154,19.25,22.00,2,3
+Skeleton Archer,Cleric,Regular,16,10,0,3,3,0.812,0.188,0.188,195,12.19,15.00,3,2
+Skeleton Archer,Cleric,Counterattack,4,2,1,0,1,0.750,0.000,0.250,7,1.75,2.33,0,2
+Skeleton Archer,Crossbowman,Regular,12,10,0,2,0,0.833,0.167,0.000,220,18.33,22.00,5,2
+Skeleton Archer,Crossbowman,Counterattack,6,4,0,0,2,1.000,0.000,0.333,62,10.33,10.33,0,1
+Skeleton Archer,Fighter,Regular,12,12,0,0,0,1.000,0.000,0.000,228,19.00,19.00,0,2
+Skeleton Archer,Fighter,Counterattack,2,1,1,0,0,0.500,0.000,0.000,6,3.00,6.00,1,1
+Skeleton Archer,Goblin Raider,Regular,16,10,0,4,2,0.750,0.250,0.125,250,15.62,20.83,0,4
+Skeleton Archer,Goblin Raider,Counterattack,6,5,0,1,0,0.833,0.167,0.000,36,6.00,7.20,0,2
+Skeleton Archer,Knight,Regular,22,15,0,3,4,0.864,0.136,0.182,291,13.23,15.32,0,6
+Skeleton Archer,Knight,Counterattack,10,6,1,1,2,0.800,0.100,0.200,58,5.80,7.25,1,4
+Skeleton Archer,Mage,Regular,14,12,0,1,1,0.929,0.071,0.071,210,15.00,16.15,4,2
+Skeleton Archer,Mage,Counterattack,18,11,3,3,1,0.667,0.167,0.056,25,1.39,2.08,1,2
+Skeleton Archer,Marksman,Regular,8,5,0,0,3,1.000,0.000,0.375,215,26.88,26.88,4,2
+Skeleton Archer,Marksman,Counterattack,2,1,0,0,1,1.000,0.000,0.500,23,11.50,11.50,0,1
+Skeleton Archer,Ogre,Regular,13,13,0,0,0,1.000,0.000,0.000,244,18.77,18.77,0,4
+Skeleton Archer,Ogre,Counterattack,12,6,2,1,3,0.750,0.083,0.250,87,7.25,9.67,0,4
+Skeleton Archer,Orc Warrior,Regular,27,24,0,1,2,0.963,0.037,0.074,402,14.89,15.46,5,4
+Skeleton Archer,Orc Warrior,Counterattack,17,14,3,0,0,0.824,0.000,0.000,67,3.94,4.79,1,3
+Skeleton Archer,Paladin,Regular,20,9,0,2,9,0.900,0.100,0.450,394,19.70,21.89,5,8
+Skeleton Archer,Paladin,Counterattack,13,9,2,0,2,0.846,0.000,0.154,44,3.38,4.00,0,4
+Skeleton Archer,Priest,Regular,22,13,0,4,5,0.818,0.182,0.227,277,12.59,15.39,4,5
+Skeleton Archer,Priest,Counterattack,8,5,3,0,0,0.625,0.000,0.000,11,1.38,2.20,0,4
+Skeleton Archer,Ranger,Regular,12,7,0,4,1,0.667,0.333,0.083,151,12.58,18.88,2,2
+Skeleton Archer,Ranger,Counterattack,6,3,1,1,1,0.667,0.167,0.167,30,5.00,7.50,0,1
+Skeleton Archer,Rogue,Regular,6,6,0,0,0,1.000,0.000,0.000,132,22.00,22.00,0,1
+Skeleton Archer,Scout,Regular,12,9,0,2,1,0.833,0.167,0.083,218,18.17,21.80,1,2
+Skeleton Archer,Sorcerer,Regular,12,8,0,1,3,0.917,0.083,0.250,204,17.00,18.55,0,2
+Skeleton Archer,Sorcerer,Counterattack,6,4,0,1,1,0.833,0.167,0.167,12,2.00,2.40,0,1
+Skeleton Archer,Spearman,Regular,6,5,0,0,1,1.000,0.000,0.167,120,20.00,20.00,0,1
+Skeleton Archer,Swordsman,Regular,12,8,0,3,1,0.750,0.250,0.083,211,17.58,23.44,4,7
+Skeleton Archer,Swordsman,Counterattack,5,3,2,0,0,0.600,0.000,0.000,24,4.80,8.00,0,3
+Skeleton Archer,Warlock,Regular,12,9,0,0,3,1.000,0.000,0.250,231,19.25,19.25,3,2
+Skeleton Archer,Warlock,Counterattack,12,3,3,2,4,0.583,0.167,0.333,42,3.50,6.00,0,2
+Skeleton Archer,Warrior,Regular,14,11,0,0,3,1.000,0.000,0.214,347,24.79,24.79,1,3
+Skeleton Archer,Warrior,Counterattack,1,0,0,0,1,1.000,0.000,1.000,15,15.00,15.00,0,1
+Skeleton Archer,Wizard,Regular,12,10,0,1,1,0.917,0.083,0.083,178,14.83,16.18,1,2
+Skeleton Archer,Wizard,Counterattack,7,5,1,0,1,0.857,0.000,0.143,13,1.86,2.17,1,1
+Sorcerer,Archer,Regular,19,16,0,1,2,0.947,0.053,0.105,708,37.26,39.33,5,9
+Sorcerer,Archer,Counterattack,7,4,0,1,2,0.857,0.143,0.286,116,16.57,19.33,0,5
+Sorcerer,Assassin,Regular,4,2,0,2,0,0.500,0.500,0.000,74,18.50,37.00,0,2
+Sorcerer,Assassin,Counterattack,1,1,0,0,0,1.000,0.000,0.000,16,16.00,16.00,0,1
+Sorcerer,Battle Mage,Regular,8,7,0,0,1,1.000,0.000,0.125,277,34.62,34.62,8,4
+Sorcerer,Battle Mage,Counterattack,8,4,1,2,1,0.625,0.250,0.125,65,8.12,13.00,0,3
+Sorcerer,Cleric,Regular,4,3,0,0,1,1.000,0.000,0.250,145,36.25,36.25,1,2
+Sorcerer,Cleric,Counterattack,2,2,0,0,0,1.000,0.000,0.000,20,10.00,10.00,0,2
+Sorcerer,Crossbowman,Regular,8,7,0,1,0,0.875,0.125,0.000,259,32.38,37.00,4,3
+Sorcerer,Crossbowman,Counterattack,4,2,1,1,0,0.500,0.250,0.000,32,8.00,16.00,0,2
+Sorcerer,Fighter,Regular,13,12,0,1,0,0.923,0.077,0.000,444,34.15,37.00,7,10
+Sorcerer,Fighter,Counterattack,7,4,2,0,1,0.714,0.000,0.143,90,12.86,18.00,0,5
+Sorcerer,Goblin Raider,Regular,8,6,0,1,1,0.875,0.125,0.125,280,35.00,40.00,7,5
+Sorcerer,Goblin Raider,Counterattack,2,1,1,0,0,0.500,0.000,0.000,16,8.00,16.00,0,1
+Sorcerer,Knight,Regular,40,35,0,1,4,0.975,0.025,0.100,1527,38.17,39.15,14,23
+Sorcerer,Knight,Counterattack,13,10,2,1,0,0.769,0.077,0.000,160,12.31,16.00,0,9
+Sorcerer,Mage,Regular,6,6,0,0,0,1.000,0.000,0.000,186,31.00,31.00,1,3
+Sorcerer,Mage,Counterattack,4,3,1,0,0,0.750,0.000,0.000,30,7.50,10.00,0,2
+Sorcerer,Marksman,Regular,3,3,0,0,0,1.000,0.000,0.000,111,37.00,37.00,3,1
+Sorcerer,Marksman,Counterattack,3,3,0,0,0,1.000,0.000,0.000,48,16.00,16.00,0,1
+Sorcerer,Ogre,Regular,8,8,0,0,0,1.000,0.000,0.000,296,37.00,37.00,4,4
+Sorcerer,Ogre,Counterattack,5,4,0,1,0,0.800,0.200,0.000,64,12.80,16.00,0,2
+Sorcerer,Orc Warrior,Regular,7,6,0,0,1,1.000,0.000,0.143,280,40.00,40.00,2,3
+Sorcerer,Orc Warrior,Counterattack,1,0,1,0,0,0.000,0.000,0.000,0,0.00,0.00,0,1
+Sorcerer,Paladin,Regular,18,16,0,1,1,0.944,0.056,0.056,582,32.33,34.24,8,12
+Sorcerer,Paladin,Counterattack,8,4,3,1,0,0.500,0.125,0.000,48,6.00,12.00,0,5
+Sorcerer,Priest,Regular,5,5,0,0,0,1.000,0.000,0.000,160,32.00,32.00,5,2
+Sorcerer,Priest,Counterattack,2,2,0,0,0,1.000,0.000,0.000,22,11.00,11.00,0,1
+Sorcerer,Ranger,Regular,7,5,0,1,1,0.857,0.143,0.143,225,32.14,37.50,1,3
+Sorcerer,Ranger,Counterattack,1,0,0,1,0,0.000,1.000,0.000,0,0.00,0.00,0,1
+Sorcerer,Rogue,Regular,2,2,0,0,0,1.000,0.000,0.000,74,37.00,37.00,2,2
+Sorcerer,Scout,Regular,6,2,0,3,1,0.500,0.500,0.167,132,22.00,44.00,3,2
+Sorcerer,Skeleton Archer,Regular,5,4,0,1,0,0.800,0.200,0.000,132,26.40,33.00,1,3
+Sorcerer,Skeleton Archer,Counterattack,2,2,0,0,0,1.000,0.000,0.000,24,12.00,12.00,0,2
+Sorcerer,Spearman,Regular,5,4,0,1,0,0.800,0.200,0.000,148,29.60,37.00,1,2
+Sorcerer,Spearman,Counterattack,1,0,1,0,0,0.000,0.000,0.000,0,0.00,0.00,0,1
+Sorcerer,Swordsman,Regular,25,18,0,2,5,0.920,0.080,0.200,956,38.24,41.57,9,12
+Sorcerer,Swordsman,Counterattack,2,1,1,0,0,0.500,0.000,0.000,16,8.00,16.00,0,2
+Sorcerer,Warlock,Regular,16,14,0,1,1,0.938,0.062,0.062,486,30.38,32.40,7,7
+Sorcerer,Warlock,Counterattack,3,2,0,1,0,0.667,0.333,0.000,20,6.67,10.00,0,1
+Sorcerer,Warrior,Regular,8,8,0,0,0,1.000,0.000,0.000,296,37.00,37.00,5,4
+Sorcerer,Warrior,Counterattack,2,2,0,0,0,1.000,0.000,0.000,32,16.00,16.00,0,1
+Sorcerer,Wizard,Regular,2,2,0,0,0,1.000,0.000,0.000,60,30.00,30.00,0,2
+Sorcerer,Wizard,Counterattack,4,4,0,0,0,1.000,0.000,0.000,36,9.00,9.00,2,2
+Spearman,Archer,Regular,30,19,0,7,4,0.767,0.233,0.133,425,14.17,18.48,7,5
+Spearman,Archer,Counterattack,19,13,2,4,0,0.684,0.211,0.000,71,3.74,5.46,0,5
+Spearman,Assassin,Regular,34,18,0,10,6,0.706,0.294,0.176,462,13.59,19.25,3,8
+Spearman,Assassin,Counterattack,17,8,4,2,3,0.647,0.118,0.176,73,4.29,6.64,0,7
+Spearman,Battle Mage,Regular,33,25,0,5,3,0.848,0.152,0.091,308,9.33,11.00,3,2
+Spearman,Battle Mage,Counterattack,18,9,5,1,3,0.667,0.056,0.167,23,1.28,1.92,2,2
+Spearman,Cleric,Regular,27,24,0,0,3,1.000,0.000,0.111,313,11.59,11.59,6,6
+Spearman,Cleric,Counterattack,26,17,4,0,5,0.846,0.000,0.192,52,2.00,2.36,0,6
+Spearman,Crossbowman,Regular,24,13,0,5,6,0.792,0.208,0.250,286,11.92,15.05,2,2
+Spearman,Crossbowman,Counterattack,6,4,1,1,0,0.667,0.167,0.000,8,1.33,2.00,0,1
+Spearman,Fighter,Regular,56,42,0,5,9,0.911,0.089,0.161,257,4.59,5.04,1,4
+Spearman,Fighter,Counterattack,45,36,6,0,3,0.867,0.000,0.067,39,0.87,1.00,0,4
+Spearman,Goblin Raider,Regular,18,13,0,2,3,0.889,0.111,0.167,297,16.50,18.56,0,2
+Spearman,Goblin Raider,Counterattack,3,1,1,0,1,0.667,0.000,0.333,17,5.67,8.50,2,1
+Spearman,Knight,Regular,102,84,0,6,12,0.941,0.059,0.118,262,2.57,2.73,5,6
+Spearman,Knight,Counterattack,71,48,13,3,7,0.775,0.042,0.099,55,0.77,1.00,0,5
+Spearman,Mage,Regular,39,31,0,3,5,0.923,0.077,0.128,435,11.15,12.08,7,6
+Spearman,Mage,Counterattack,41,33,3,2,3,0.878,0.049,0.073,56,1.37,1.56,2,6
+Spearman,Marksman,Regular,21,17,0,0,4,1.000,0.000,0.190,412,19.62,19.62,1,4
+Spearman,Marksman,Counterattack,2,1,1,0,0,0.500,0.000,0.000,7,3.50,7.00,0,2
+Spearman,Ogre,Regular,21,12,0,2,7,0.905,0.095,0.333,96,4.57,5.05,0,2
+Spearman,Ogre,Counterattack,24,17,7,0,0,0.708,0.000,0.000,17,0.71,1.00,3,2
+Spearman,Orc Warrior,Regular,64,49,0,5,10,0.922,0.078,0.156,220,3.44,3.73,3,2
+Spearman,Orc Warrior,Counterattack,55,36,13,1,5,0.745,0.018,0.091,41,0.75,1.00,0,2
+Spearman,Paladin,Regular,164,121,0,18,25,0.890,0.110,0.152,567,3.46,3.88,15,12
+Spearman,Paladin,Counterattack,94,61,15,11,7,0.723,0.117,0.074,68,0.72,1.00,1,7
+Spearman,Priest,Regular,24,18,0,4,2,0.833,0.167,0.083,273,11.38,13.65,6,4
+Spearman,Priest,Counterattack,16,9,4,1,2,0.688,0.062,0.125,50,3.12,4.55,1,4
+Spearman,Ranger,Regular,27,19,0,5,3,0.815,0.185,0.111,281,10.41,12.77,8,2
+Spearman,Ranger,Counterattack,18,9,4,2,3,0.667,0.111,0.167,35,1.94,2.92,0,2
+Spearman,Rogue,Regular,25,17,0,6,2,0.760,0.240,0.080,306,12.24,16.11,3,4
+Spearman,Rogue,Counterattack,6,3,3,0,0,0.500,0.000,0.000,11,1.83,3.67,0,3
+Spearman,Scout,Regular,18,15,0,2,1,0.889,0.111,0.056,244,13.56,15.25,0,2
+Spearman,Scout,Counterattack,3,2,0,1,0,0.667,0.333,0.000,8,2.67,4.00,0,1
+Spearman,Skeleton Archer,Regular,13,11,0,0,2,1.000,0.000,0.154,278,21.38,21.38,1,2
+Spearman,Skeleton Archer,Counterattack,6,4,2,0,0,0.667,0.000,0.000,32,5.33,8.00,2,1
+Spearman,Sorcerer,Regular,22,19,0,2,1,0.909,0.091,0.045,305,13.86,15.25,1,6
+Spearman,Sorcerer,Counterattack,14,9,3,1,1,0.714,0.071,0.071,51,3.64,5.10,2,4
+Spearman,Spearman,Regular,22,19,0,0,3,1.000,0.000,0.136,75,3.41,3.41,0,2
+Spearman,Spearman,Counterattack,21,11,5,3,2,0.619,0.143,0.095,15,0.71,1.15,0,2
+Spearman,Swordsman,Regular,46,37,0,6,3,0.870,0.130,0.065,444,9.65,11.10,6,12
+Spearman,Swordsman,Counterattack,19,11,5,2,1,0.632,0.105,0.053,14,0.74,1.17,0,5
+Spearman,Warlock,Regular,14,12,0,2,0,0.857,0.143,0.000,156,11.14,13.00,0,2
+Spearman,Warlock,Counterattack,6,2,0,2,2,0.667,0.333,0.333,18,3.00,4.50,1,2
+Spearman,Warrior,Regular,33,26,0,3,4,0.909,0.091,0.121,254,7.70,8.47,1,2
+Spearman,Warrior,Counterattack,24,17,3,1,3,0.833,0.042,0.125,22,0.92,1.10,0,2
+Spearman,Wizard,Regular,42,33,0,1,8,0.976,0.024,0.190,694,16.52,16.93,11,12
+Spearman,Wizard,Counterattack,15,10,3,1,1,0.733,0.067,0.067,52,3.47,4.73,0,6
+Swordsman,Archer,Regular,26,17,0,4,5,0.846,0.154,0.192,467,17.96,21.23,2,7
+Swordsman,Archer,Counterattack,16,7,2,2,5,0.750,0.125,0.312,105,6.56,8.75,2,6
+Swordsman,Assassin,Regular,23,15,0,2,6,0.913,0.087,0.261,461,20.04,21.95,2,4
+Swordsman,Assassin,Counterattack,4,2,1,1,0,0.500,0.250,0.000,13,3.25,6.50,0,2
+Swordsman,Battle Mage,Regular,24,18,0,1,5,0.958,0.042,0.208,310,12.92,13.48,4,2
+Swordsman,Battle Mage,Counterattack,30,22,3,3,2,0.800,0.100,0.067,43,1.43,1.79,5,3
+Swordsman,Cleric,Regular,27,23,0,2,2,0.926,0.074,0.074,308,11.41,12.32,5,8
+Swordsman,Cleric,Counterattack,20,13,1,2,4,0.850,0.100,0.200,54,2.70,3.18,2,9
+Swordsman,Crossbowman,Regular,38,27,0,4,7,0.895,0.105,0.184,534,14.05,15.71,2,12
+Swordsman,Crossbowman,Counterattack,24,14,5,2,3,0.708,0.083,0.125,38,1.58,2.24,0,11
+Swordsman,Fighter,Regular,23,13,0,5,5,0.783,0.217,0.217,155,6.74,8.61,0,7
+Swordsman,Fighter,Counterattack,25,13,5,3,4,0.680,0.120,0.160,20,0.80,1.18,0,8
+Swordsman,Goblin Raider,Regular,28,17,0,6,5,0.786,0.214,0.179,447,15.96,20.32,3,8
+Swordsman,Goblin Raider,Counterattack,28,12,10,3,3,0.536,0.107,0.107,111,3.96,7.40,1,11
+Swordsman,Knight,Regular,70,47,0,6,17,0.914,0.086,0.243,303,4.33,4.73,6,13
+Swordsman,Knight,Counterattack,59,38,12,3,6,0.746,0.051,0.102,44,0.75,1.00,0,10
+Swordsman,Mage,Regular,39,27,0,1,11,0.974,0.026,0.282,620,15.90,16.32,11,13
+Swordsman,Mage,Counterattack,31,20,5,1,5,0.806,0.032,0.161,79,2.55,3.16,0,13
+Swordsman,Marksman,Regular,11,7,0,2,2,0.818,0.182,0.182,196,17.82,21.78,5,3
+Swordsman,Marksman,Counterattack,17,10,2,3,2,0.706,0.176,0.118,98,5.76,8.17,0,5
+Swordsman,Ogre,Regular,34,24,0,5,5,0.853,0.147,0.147,129,3.79,4.45,1,4
+Swordsman,Ogre,Counterattack,34,26,6,0,2,0.824,0.000,0.059,28,0.82,1.00,4,5
+Swordsman,Orc Warrior,Regular,112,83,0,11,18,0.902,0.098,0.161,458,4.09,4.53,6,5
+Swordsman,Orc Warrior,Counterattack,84,50,19,3,12,0.738,0.036,0.143,63,0.75,1.02,0,4
+Swordsman,Paladin,Regular,142,111,0,5,26,0.965,0.035,0.183,858,6.04,6.26,10,30
+Swordsman,Paladin,Counterattack,117,70,27,2,18,0.752,0.017,0.154,97,0.83,1.10,0,29
+Swordsman,Priest,Regular,22,18,0,0,4,1.000,0.000,0.182,358,16.27,16.27,5,7
+Swordsman,Priest,Counterattack,13,10,2,0,1,0.846,0.000,0.077,54,4.15,4.91,4,5
+Swordsman,Ranger,Regular,22,17,0,3,2,0.864,0.136,0.091,271,12.32,14.26,1,3
+Swordsman,Ranger,Counterattack,17,10,3,3,1,0.647,0.176,0.059,35,2.06,3.18,0,5
+Swordsman,Rogue,Regular,15,12,0,1,2,0.933,0.067,0.133,264,17.60,18.86,7,2
+Swordsman,Rogue,Counterattack,15,10,2,1,2,0.800,0.067,0.133,76,5.07,6.33,0,2
+Swordsman,Scout,Regular,23,16,0,2,5,0.913,0.087,0.217,410,17.83,19.52,16,5
+Swordsman,Scout,Counterattack,21,13,1,1,6,0.905,0.048,0.286,136,6.48,7.16,0,4
+Swordsman,Skeleton Archer,Regular,19,13,0,5,1,0.737,0.263,0.053,314,16.53,22.43,1,3
+Swordsman,Skeleton Archer,Counterattack,7,3,1,0,3,0.857,0.000,0.429,74,10.57,12.33,2,3
+Swordsman,Sorcerer,Regular,19,16,0,1,2,0.947,0.053,0.105,324,17.05,18.00,2,8
+Swordsman,Sorcerer,Counterattack,16,8,3,1,4,0.750,0.062,0.250,76,4.75,6.33,0,7
+Swordsman,Spearman,Regular,32,21,0,5,6,0.844,0.156,0.188,260,8.12,9.63,1,7
+Swordsman,Spearman,Counterattack,30,15,7,4,4,0.633,0.133,0.133,28,0.93,1.47,0,9
+Swordsman,Swordsman,Regular,75,53,0,8,14,0.893,0.107,0.187,1007,13.43,15.03,13,22
+Swordsman,Swordsman,Counterattack,48,29,8,5,6,0.729,0.104,0.125,76,1.58,2.17,0,10
+Swordsman,Warlock,Regular,27,15,0,1,11,0.963,0.037,0.407,536,19.85,20.62,5,7
+Swordsman,Warlock,Counterattack,18,11,0,3,4,0.833,0.167,0.222,72,4.00,4.80,0,5
+Swordsman,Warrior,Regular,115,89,0,5,21,0.957,0.043,0.183,1025,8.91,9.32,9,19
+Swordsman,Warrior,Counterattack,81,49,16,6,10,0.728,0.074,0.123,71,0.88,1.20,0,18
+Swordsman,Wizard,Regular,35,27,0,3,5,0.914,0.086,0.143,562,16.06,17.56,3,19
+Swordsman,Wizard,Counterattack,11,5,4,1,1,0.545,0.091,0.091,35,3.18,5.83,0,6
+Warlock,Archer,Regular,1,1,0,0,0,1.000,0.000,0.000,34,34.00,34.00,0,1
+Warlock,Fighter,Regular,8,7,0,1,0,0.875,0.125,0.000,238,29.75,34.00,1,5
+Warlock,Knight,Regular,23,21,0,1,1,0.957,0.043,0.043,767,33.35,34.86,10,18
+Warlock,Knight,Counterattack,3,3,0,0,0,1.000,0.000,0.000,42,14.00,14.00,1,3
+Warlock,Mage,Regular,1,1,0,0,0,1.000,0.000,0.000,28,28.00,28.00,0,1
+Warlock,Marksman,Regular,1,1,0,0,0,1.000,0.000,0.000,34,34.00,34.00,1,1
+Warlock,Ogre,Regular,8,7,0,0,1,1.000,0.000,0.125,291,36.38,36.38,5,3
+Warlock,Ogre,Counterattack,5,2,1,1,1,0.600,0.200,0.200,52,10.40,17.33,0,2
+Warlock,Orc Warrior,Regular,21,17,0,2,2,0.905,0.095,0.095,416,19.81,21.89,8,3
+Warlock,Orc Warrior,Counterattack,15,11,2,0,2,0.867,0.000,0.133,136,9.07,10.46,1,3
+Warlock,Paladin,Regular,3,2,0,0,1,1.000,0.000,0.333,109,36.33,36.33,1,3
+Warlock,Ranger,Regular,1,1,0,0,0,1.000,0.000,0.000,32,32.00,32.00,1,1
+Warlock,Scout,Regular,1,1,0,0,0,1.000,0.000,0.000,34,34.00,34.00,1,1
+Warlock,Scout,Counterattack,1,0,1,0,0,0.000,0.000,0.000,0,0.00,0.00,0,1
+Warlock,Skeleton Archer,Regular,1,1,0,0,0,1.000,0.000,0.000,30,30.00,30.00,1,1
+Warlock,Spearman,Regular,3,3,0,0,0,1.000,0.000,0.000,102,34.00,34.00,0,3
+Warlock,Swordsman,Regular,2,1,0,1,0,0.500,0.500,0.000,34,17.00,34.00,0,2
+Warlock,Warrior,Regular,3,3,0,0,0,1.000,0.000,0.000,102,34.00,34.00,2,3
+Warlock,Warrior,Counterattack,1,0,0,0,1,1.000,0.000,1.000,24,24.00,24.00,0,1
+Warlock,Wizard,Regular,1,1,0,0,0,1.000,0.000,0.000,27,27.00,27.00,0,1
+Warlock,Wizard,Counterattack,1,0,1,0,0,0.000,0.000,0.000,0,0.00,0.00,0,1
+Warrior,Archer,Regular,47,35,0,8,4,0.830,0.170,0.085,933,19.85,23.92,18,15
+Warrior,Archer,Counterattack,32,22,4,3,3,0.781,0.094,0.094,231,7.22,9.24,0,9
+Warrior,Assassin,Regular,7,6,0,0,1,1.000,0.000,0.143,169,24.14,24.14,0,4
+Warrior,Assassin,Counterattack,4,2,1,1,0,0.500,0.250,0.000,16,4.00,8.00,0,1
+Warrior,Battle Mage,Regular,18,17,0,0,1,1.000,0.000,0.056,329,18.28,18.28,1,2
+Warrior,Battle Mage,Counterattack,18,11,2,5,0,0.611,0.278,0.000,37,2.06,3.36,0,2
+Warrior,Cleric,Regular,11,8,0,0,3,1.000,0.000,0.273,252,22.91,22.91,6,3
+Warrior,Cleric,Counterattack,10,9,0,1,0,0.900,0.100,0.000,46,4.60,5.11,0,2
+Warrior,Crossbowman,Regular,32,24,0,4,4,0.875,0.125,0.125,528,16.50,18.86,8,5
+Warrior,Crossbowman,Counterattack,30,23,5,2,0,0.767,0.067,0.000,64,2.13,2.78,1,5
+Warrior,Fighter,Regular,57,42,0,2,13,0.965,0.035,0.228,769,13.49,13.98,12,12
+Warrior,Fighter,Counterattack,55,36,9,5,5,0.745,0.091,0.091,58,1.05,1.41,0,12
+Warrior,Goblin Raider,Regular,16,13,0,2,1,0.875,0.125,0.062,328,20.50,23.43,10,2
+Warrior,Goblin Raider,Counterattack,14,10,1,2,1,0.786,0.143,0.071,101,7.21,9.18,0,3
+Warrior,Knight,Regular,130,101,0,10,19,0.923,0.077,0.146,1091,8.39,9.09,16,18
+Warrior,Knight,Counterattack,94,55,22,8,9,0.681,0.085,0.096,68,0.72,1.06,2,15
+Warrior,Mage,Regular,29,28,0,1,0,0.966,0.034,0.000,500,17.24,17.86,6,9
+Warrior,Mage,Counterattack,17,12,1,0,4,0.941,0.000,0.235,90,5.29,5.62,3,5
+Warrior,Marksman,Regular,20,12,0,4,4,0.800,0.200,0.200,431,21.55,26.94,10,7
+Warrior,Marksman,Counterattack,18,8,4,4,2,0.556,0.222,0.111,108,6.00,10.80,0,5
+Warrior,Ogre,Regular,18,15,0,1,2,0.944,0.056,0.111,121,6.72,7.12,1,2
+Warrior,Ogre,Counterattack,16,9,4,0,3,0.750,0.000,0.188,13,0.81,1.08,0,3
+Warrior,Orc Warrior,Regular,34,27,0,2,5,0.941,0.059,0.147,390,11.47,12.19,7,3
+Warrior,Orc Warrior,Counterattack,27,19,4,1,3,0.815,0.037,0.111,26,0.96,1.18,0,2
+Warrior,Paladin,Regular,103,85,0,5,13,0.951,0.049,0.126,1053,10.22,10.74,17,15
+Warrior,Paladin,Counterattack,84,47,24,4,9,0.667,0.048,0.107,68,0.81,1.21,0,13
+Warrior,Priest,Regular,12,9,0,0,3,1.000,0.000,0.250,304,25.33,25.33,8,2
+Warrior,Priest,Counterattack,6,3,2,0,1,0.667,0.000,0.167,39,6.50,9.75,0,2
+Warrior,Ranger,Regular,19,12,0,3,4,0.842,0.158,0.211,358,18.84,22.38,1,5
+Warrior,Ranger,Counterattack,12,8,4,0,0,0.667,0.000,0.000,44,3.67,5.50,2,3
+Warrior,Rogue,Regular,13,10,0,2,1,0.846,0.154,0.077,250,19.23,22.73,6,2
+Warrior,Rogue,Counterattack,10,5,3,2,0,0.500,0.200,0.000,38,3.80,7.60,0,2
+Warrior,Scout,Regular,23,16,0,2,5,0.913,0.087,0.217,533,23.17,25.38,18,4
+Warrior,Scout,Counterattack,23,12,9,1,1,0.565,0.043,0.043,114,4.96,8.77,0,5
+Warrior,Skeleton Archer,Regular,12,10,0,1,1,0.917,0.083,0.083,294,24.50,26.73,9,6
+Warrior,Skeleton Archer,Counterattack,11,7,2,1,1,0.727,0.091,0.091,100,9.09,12.50,3,4
+Warrior,Sorcerer,Regular,27,21,0,3,3,0.889,0.111,0.111,542,20.07,22.58,8,12
+Warrior,Sorcerer,Counterattack,23,12,4,4,3,0.652,0.174,0.130,127,5.52,8.47,1,11
+Warrior,Spearman,Regular,17,14,0,0,3,1.000,0.000,0.176,269,15.82,15.82,6,2
+Warrior,Spearman,Counterattack,14,11,3,0,0,0.786,0.000,0.000,13,0.93,1.18,0,2
+Warrior,Swordsman,Regular,32,23,0,5,4,0.844,0.156,0.125,503,15.72,18.63,3,15
+Warrior,Swordsman,Counterattack,18,13,4,1,0,0.722,0.056,0.000,31,1.72,2.38,0,10
+Warrior,Warlock,Regular,29,26,0,0,3,1.000,0.000,0.103,606,20.90,20.90,12,8
+Warrior,Warlock,Counterattack,31,14,7,3,7,0.677,0.097,0.226,162,5.23,7.71,0,10
+Warrior,Warrior,Regular,13,12,0,0,1,1.000,0.000,0.077,181,13.92,13.92,6,7
+Warrior,Warrior,Counterattack,5,2,3,0,0,0.400,0.000,0.000,2,0.40,1.00,0,3
+Warrior,Wizard,Regular,29,28,0,0,1,1.000,0.000,0.034,620,21.38,21.38,10,8
+Warrior,Wizard,Counterattack,26,16,5,1,4,0.769,0.038,0.154,166,6.38,8.30,1,8
+Wizard,Archer,Regular,38,24,0,7,7,0.816,0.184,0.184,1356,35.68,43.74,14,23
+Wizard,Archer,Counterattack,12,6,2,1,3,0.750,0.083,0.250,179,14.92,19.89,1,7
+Wizard,Assassin,Regular,5,4,0,0,1,1.000,0.000,0.200,222,44.40,44.40,5,5
+Wizard,Assassin,Counterattack,2,1,0,1,0,0.500,0.500,0.000,17,8.50,17.00,0,2
+Wizard,Battle Mage,Regular,10,7,0,2,1,0.800,0.200,0.100,269,26.90,33.62,7,2
+Wizard,Battle Mage,Counterattack,15,11,3,0,1,0.800,0.000,0.067,140,9.33,11.67,0,5
+Wizard,Cleric,Regular,9,7,0,1,1,0.889,0.111,0.111,251,27.89,31.38,4,4
+Wizard,Cleric,Counterattack,9,4,3,2,0,0.444,0.222,0.000,34,3.78,8.50,1,4
+Wizard,Crossbowman,Regular,20,16,0,1,3,0.950,0.050,0.150,826,41.30,43.47,19,8
+Wizard,Crossbowman,Counterattack,8,6,2,0,0,0.750,0.000,0.000,102,12.75,17.00,0,6
+Wizard,Fighter,Regular,21,19,0,2,0,0.905,0.095,0.000,640,30.48,33.68,2,12
+Wizard,Fighter,Counterattack,4,2,1,0,1,0.750,0.000,0.250,50,12.50,16.67,1,3
+Wizard,Goblin Raider,Regular,31,24,0,3,4,0.903,0.097,0.129,1208,38.97,43.14,28,10
+Wizard,Goblin Raider,Counterattack,49,28,11,7,3,0.633,0.143,0.061,560,11.43,18.06,1,9
+Wizard,Knight,Regular,61,47,0,8,6,0.869,0.131,0.098,2211,36.25,41.72,20,38
+Wizard,Knight,Counterattack,20,12,4,0,4,0.800,0.000,0.200,302,15.10,18.88,1,12
+Wizard,Mage,Regular,14,14,0,0,0,1.000,0.000,0.000,450,32.14,32.14,3,4
+Wizard,Mage,Counterattack,5,4,1,0,0,0.800,0.000,0.000,40,8.00,10.00,0,2
+Wizard,Marksman,Regular,10,8,0,0,2,1.000,0.000,0.200,444,44.40,44.40,10,3
+Wizard,Marksman,Counterattack,6,3,3,0,0,0.500,0.000,0.000,51,8.50,17.00,0,1
+Wizard,Ogre,Regular,3,3,0,0,0,1.000,0.000,0.000,120,40.00,40.00,1,1
+Wizard,Ogre,Counterattack,3,2,0,0,1,1.000,0.000,0.333,62,20.67,20.67,0,2
+Wizard,Orc Warrior,Regular,16,12,0,1,3,0.938,0.062,0.188,548,34.25,36.53,5,4
+Wizard,Orc Warrior,Counterattack,5,3,1,0,1,0.800,0.000,0.200,71,14.20,17.75,2,3
+Wizard,Paladin,Regular,24,24,0,0,0,1.000,0.000,0.000,756,31.50,31.50,9,9
+Wizard,Paladin,Counterattack,13,7,4,1,1,0.615,0.077,0.077,99,7.62,12.38,1,6
+Wizard,Priest,Regular,15,12,0,2,1,0.867,0.133,0.067,423,28.20,32.54,7,4
+Wizard,Ranger,Regular,7,5,0,1,1,0.857,0.143,0.143,244,34.86,40.67,6,3
+Wizard,Ranger,Counterattack,14,8,3,0,3,0.786,0.000,0.214,168,12.00,15.27,0,4
+Wizard,Rogue,Regular,14,12,0,2,0,0.857,0.143,0.000,480,34.29,40.00,12,4
+Wizard,Scout,Regular,9,7,0,1,1,0.889,0.111,0.111,330,36.67,41.25,8,2
+Wizard,Scout,Counterattack,6,4,1,1,0,0.667,0.167,0.000,64,10.67,16.00,0,1
+Wizard,Skeleton Archer,Regular,11,9,0,0,2,1.000,0.000,0.182,440,40.00,40.00,11,5
+Wizard,Skeleton Archer,Counterattack,3,3,0,0,0,1.000,0.000,0.000,39,13.00,13.00,0,2
+Wizard,Sorcerer,Regular,34,30,0,2,2,0.941,0.059,0.059,1100,32.35,34.38,17,8
+Wizard,Sorcerer,Counterattack,50,30,9,5,6,0.720,0.100,0.120,426,8.52,11.83,3,5
+Wizard,Spearman,Regular,16,14,0,1,1,0.938,0.062,0.062,550,34.38,36.67,2,8
+Wizard,Spearman,Counterattack,4,3,1,0,0,0.750,0.000,0.000,45,11.25,15.00,1,3
+Wizard,Swordsman,Regular,35,27,0,3,5,0.914,0.086,0.143,1380,39.43,43.12,12,23
+Wizard,Swordsman,Counterattack,8,5,3,0,0,0.625,0.000,0.000,85,10.62,17.00,3,5
+Wizard,Warlock,Regular,19,16,0,2,1,0.895,0.105,0.053,600,31.58,35.29,12,6
+Wizard,Warlock,Counterattack,21,14,3,3,1,0.714,0.143,0.048,176,8.38,11.73,0,6
+Wizard,Warrior,Regular,35,26,0,5,4,0.857,0.143,0.114,1208,34.51,40.27,10,17
+Wizard,Warrior,Counterattack,16,11,2,0,3,0.875,0.000,0.188,257,16.06,18.36,1,9
+Wizard,Wizard,Regular,15,13,0,1,1,0.933,0.067,0.067,484,32.27,34.57,2,13
+Wizard,Wizard,Counterattack,3,2,1,0,0,0.667,0.000,0.000,20,6.67,10.00,1,2

@@ -262,41 +262,38 @@ MaxHealth = 20 + Strength*2
 
 ## 4. Pipeline Commands
 
-### Run Simulations (generates battle JSON logs)
+### Clean Previous Logs
 
-```bash
-cd game_main
-go build -o game_main.exe *.go && cd ../tools/combat_simulator && go build -o combat_sim.exe . && ./combat_sim.exe
+Always delete old simulation logs before running a new simulation to avoid mixing data from different balance patches.
+
+```cmd
+del /Q simulation_logs\*.json
 ```
 
-Or from the project root:
-```bash
-go build -o game_main/game_main.exe game_main/*.go
-cd tools/combat_simulator && go build -o combat_sim.exe . && ./combat_sim.exe
+### Full Pipeline (bat script)
+
+From the TinkerRogue directory:
+```cmd
+scripts\run_combat_pipeline.bat
 ```
 
-### Generate Balance CSV (from battle logs)
+This runs all three steps: simulate, generate balance report, compress report. The script cleans old logs automatically.
 
-```bash
-cd tools/combat_balance
-go build -o combat_balance.exe . && ./combat_balance.exe
+### Individual Steps (manual)
+
+Run simulations (from project root):
+```cmd
+go run ./tools/combat_simulator
 ```
 
-With custom paths:
-```bash
-./combat_balance.exe --dir ../../game_main/simulation_logs --output combat_balance_report.csv
+Generate balance CSV:
+```cmd
+go run ./tools/combat_balance --dir ./simulation_logs --output ./docs/combat_balance_report.csv
 ```
 
-### Copy Report to Docs
-
-```bash
-cp tools/combat_balance/combat_balance_report.csv docs/combat_balance_compressed.csv
-```
-
-### Full Pipeline (simulate then analyze)
-
-```bash
-cd tools/combat_simulator && go build -o combat_sim.exe . && ./combat_sim.exe && cd ../combat_balance && go build -o combat_balance.exe . && ./combat_balance.exe && cp combat_balance_report.csv ../../docs/combat_balance_compressed.csv
+Compress report:
+```cmd
+go run ./tools/report_compressor --input ./docs/combat_balance_report.csv --output ./docs/combat_balance_compressed.csv
 ```
 
 ---

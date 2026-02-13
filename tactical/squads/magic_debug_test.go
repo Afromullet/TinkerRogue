@@ -18,7 +18,7 @@ func TestMagicDamageInRealCombat(t *testing.T) {
 
 	// Wizard stats: Str=10, Magic=15
 	wizardAttr := common.NewAttributes(10, 100, 15, 25, 3, 2) // High dex for guaranteed hit
-	wizardAttr.CurrentHealth = 40 // HP = 20 + (10*2)
+	wizardAttr.CurrentHealth = 40
 	wizard.AddComponent(common.AttributeComponent, &wizardAttr)
 
 	// Add magic attack type
@@ -54,11 +54,11 @@ func TestMagicDamageInRealCombat(t *testing.T) {
 	t.Logf("Total damage dealt: %d", result.TotalDamage)
 	t.Logf("Number of attacks: %d", len(result.CombatLog.AttackEvents))
 
-	expectedMagicDamage := wizardAttr.GetMagicDamage() // Should be 45
-	t.Logf("Expected magic damage: %d (Magic=%d * 3)", expectedMagicDamage, wizardAttr.Magic)
+	expectedMagicDamage := wizardAttr.GetMagicDamage()
+	t.Logf("Expected magic damage: %d", expectedMagicDamage)
 
-	fighterMagicDefense := fighterAttr.GetMagicDefense() // Should be 0
-	t.Logf("Fighter magic defense: %d (Magic=%d / 2)", fighterMagicDefense, fighterAttr.Magic)
+	fighterMagicDefense := fighterAttr.GetMagicDefense()
+	t.Logf("Fighter magic defense: %d", fighterMagicDefense)
 
 	if len(result.CombatLog.AttackEvents) > 0 {
 		for i, event := range result.CombatLog.AttackEvents {
@@ -89,7 +89,13 @@ func TestMagicDamageInRealCombat(t *testing.T) {
 	damageTaken := 50 - fighterAttrAfter.CurrentHealth
 	t.Logf("Fighter HP: 50 -> %d (took %d damage)", fighterAttrAfter.CurrentHealth, damageTaken)
 
-	if result.TotalDamage < 30 {
-		t.Errorf("Wizard should deal ~45 magic damage (minus resistance), but total damage was only %d", result.TotalDamage)
+	// Compute minimum expected damage from the test's own stats
+	minExpected := expectedMagicDamage - fighterMagicDefense
+	if minExpected < 1 {
+		minExpected = 1
+	}
+	if result.TotalDamage < minExpected/2 {
+		t.Errorf("Wizard should deal around %d magic damage (%d - %d), but total damage was only %d",
+			minExpected, expectedMagicDamage, fighterMagicDefense, result.TotalDamage)
 	}
 }

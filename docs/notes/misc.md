@@ -93,3 +93,13 @@ Generates balance analysis reports from combat simulation logs.
 ```bash
 cd tools/combat_balance && go run .
 ```
+
+
+
+# Running the Combat Simlulation Pipelien Script
+
+Run it from the game_main directory
+
+  scripts\run_combat_pipeline.bat
+
+    Extra arguments get forwarded to the simulator, e.g. scripts\run_combat_pipeline.bat --suite duels.

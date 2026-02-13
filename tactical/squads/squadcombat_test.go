@@ -341,8 +341,7 @@ func TestCalculateUnitDamageByID_PhysicalResistanceReducesDamage(t *testing.T) {
 	attackerAttr := common.GetComponentType[*common.Attributes](attacker, common.AttributeComponent)
 	defenderAttr := common.GetComponentType[*common.Attributes](defender, common.AttributeComponent)
 
-	// Note: PhysicalResistance is derived from Strength/4 + Armor*2
-	// Defender: (20/4) + (10*2) = 5 + 20 = 25 resistance
+	// PhysicalResistance is derived from Strength/4 + Armor*3/2
 
 	damage, _ := calculateUnitDamageByID(attacker.GetID(), defender.GetID(), manager)
 
@@ -372,9 +371,8 @@ func TestCalculateUnitDamageByID_MinimumDamageIsOne(t *testing.T) {
 	attackerAttr := common.GetComponentType[*common.Attributes](attacker, common.AttributeComponent)
 	defenderAttr := common.GetComponentType[*common.Attributes](defender, common.AttributeComponent)
 
-	// Attacker damage: (1/2) + (0*2) = 0
-	// Defender resistance: (50/4) + (50*2) = 12 + 100 = 112
-	// Expected: 0 - 112 = minimum 1
+	// Attacker has very low stats, defender has very high resistance
+	// Expected: minimum 1 damage
 
 	damage, _ := calculateUnitDamageByID(attacker.GetID(), defender.GetID(), manager)
 
@@ -429,16 +427,13 @@ func TestCalculateUnitDamageByID_MagicDamageUsesMagicFormula(t *testing.T) {
 	defender.AddComponent(GridPositionComponent, &GridPositionData{AnchorRow: 0, AnchorCol: 1, Width: 1, Height: 1})
 	defender.AddComponent(common.NameComponent, &common.Name{NameStr: "Fighter"})
 
-	defenderAttr := common.NewAttributes(10, 0, 0, 0, 2, 10) // Magic=0, so MagicDefense=0
+	defenderAttr := common.NewAttributes(10, 0, 0, 0, 2, 10) // Magic=0, defense comes from BaseMagicResist only
 	defenderAttr.CurrentHealth = 100
 	defender.AddComponent(common.AttributeComponent, &defenderAttr)
 
 	damage, event := calculateUnitDamageByID(attacker.GetID(), defender.GetID(), manager)
 
 	// Verify magic damage formula was used
-	// Magic=15 → GetMagicDamage() = 45
-	// Defender MagicDefense = 0/2 = 0
-	// Expected: 45 - 0 = 45 (or 45*1.5=67 if crit)
 
 	if event.HitResult.Type != HitTypeMiss && event.HitResult.Type != HitTypeDodge {
 		expectedBaseDamage := attackerAttr.GetMagicDamage() // Should be 45
@@ -506,7 +501,7 @@ func TestCalculateUnitDamageByID_MagicDefenseApplied(t *testing.T) {
 	defender.AddComponent(GridPositionComponent, &GridPositionData{AnchorRow: 0, AnchorCol: 1, Width: 1, Height: 1})
 	defender.AddComponent(common.NameComponent, &common.Name{NameStr: "Sorcerer"})
 
-	defenderAttr := common.NewAttributes(4, 0, 14, 0, 1, 3) // Magic=14, so MagicDefense=7
+	defenderAttr := common.NewAttributes(4, 0, 14, 0, 1, 3) // Magic=14
 	defenderAttr.CurrentHealth = 100
 	defender.AddComponent(common.AttributeComponent, &defenderAttr)
 
@@ -514,7 +509,7 @@ func TestCalculateUnitDamageByID_MagicDefenseApplied(t *testing.T) {
 
 	// Verify magic defense was used (not physical resistance)
 	if event.HitResult.Type != HitTypeMiss && event.HitResult.Type != HitTypeDodge {
-		expectedMagicDefense := defenderAttr.GetMagicDefense() // Should be 7
+		expectedMagicDefense := defenderAttr.GetMagicDefense() // Should be 12 (14/2 + 5)
 		if event.ResistanceAmount != expectedMagicDefense {
 			t.Errorf("Expected magic defense %d, got resistance %d", expectedMagicDefense, event.ResistanceAmount)
 		}

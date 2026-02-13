@@ -68,6 +68,7 @@ const (
 	DefaultMaxDodgeChance = 30
 	DefaultBaseCapacity   = 6
 	DefaultMaxCapacity    = 9
+	BaseMagicResist       = 5
 )
 
 // Critical hit constants

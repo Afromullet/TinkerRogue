@@ -70,7 +70,7 @@ func (a *Attributes) GetPhysicalDamage() int {
 
 // GetPhysicalResistance calculates physical damage reduction
 func (a *Attributes) GetPhysicalResistance() int {
-	return (a.Strength / 4) + (a.Armor * 2)
+	return (a.Strength / 4) + (a.Armor * 3 / 2)
 }
 
 // GetMaxHealth calculates maximum health points
@@ -120,7 +120,7 @@ func (a *Attributes) GetMagicDamage() int {
 
 // GetMagicDefense calculates magic damage reduction
 func (a *Attributes) GetMagicDefense() int {
-	return a.Magic / 2
+	return (a.Magic / 2) + config.BaseMagicResist
 }
 
 // GetHealingAmount calculates healing power

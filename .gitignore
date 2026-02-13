@@ -6,3 +6,4 @@
 .claude/agent-usage.csv
 .claude/hook-debug.log
 .claude/plans/
+/simulation_logs
