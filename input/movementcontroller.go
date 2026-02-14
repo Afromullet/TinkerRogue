@@ -33,9 +33,7 @@ func NewMovementController(ecsManager *common.EntityManager, playerData *common.
 }
 
 func (mc *MovementController) CanHandle() bool {
-	// Movement is always available unless in specific states
-	return !mc.playerData.InputStates.IsThrowing
-
+	return true
 }
 
 func (mc *MovementController) OnActivate() {

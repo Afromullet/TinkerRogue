@@ -215,7 +215,7 @@ func SetupNewGame(g *Game) {
 // SetupTestData creates test items and content for debugging.
 // Only called when DEBUG_MODE is enabled.
 func SetupTestData(em *common.EntityManager, gm *worldmap.GameMap, pd *common.PlayerData) {
-	testing.CreateTestItems(em.World, em.WorldTags, gm)
+	testing.CreateTestItems(gm)
 	testing.InitTestActionManager(em, pd)
 }
 

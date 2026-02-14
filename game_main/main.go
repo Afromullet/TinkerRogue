@@ -123,7 +123,7 @@ func main() {
 	SetupUI(g)
 	SetupInputCoordinator(g)
 
-	testing.CreateTestItems(g.em.World, g.em.WorldTags, &g.gameMap)
+	testing.CreateTestItems(&g.gameMap)
 
 	testing.UpdateContentsForTest(&g.em, &g.gameMap)
 

@@ -82,13 +82,7 @@ func (im *InventoryMode) handleItemSelection(selectedEntry interface{}) {
 	// Handle InventoryListEntry type
 	if entry, ok := selectedEntry.(gear.InventoryListEntry); ok {
 		fmt.Printf("Selected item: %s (index %d)\n", entry.Name, entry.Index)
-
-		// If in throwables mode, prepare the throwable
-		if im.currentFilter == "Throwables" && im.Context.PlayerData != nil {
-			im.handleThrowableSelection(entry)
-		} else {
-			im.detailTextArea.SetText(fmt.Sprintf("Selected: %s x%d", entry.Name, entry.Count))
-		}
+		im.detailTextArea.SetText(fmt.Sprintf("Selected: %s x%d", entry.Name, entry.Count))
 	} else if str, ok := selectedEntry.(string); ok {
 		// Handle string messages
 		im.detailTextArea.SetText(str)
@@ -138,38 +132,3 @@ func (im *InventoryMode) HandleInput(inputState *framework.InputState) bool {
 	return false
 }
 
-// handleThrowableSelection handles selecting a throwable item using the service layer
-// This replaces direct ECS manipulation in the UI code
-func (im *InventoryMode) handleThrowableSelection(entry gear.InventoryListEntry) {
-	// Use service to validate and prepare throwable selection
-	result := im.inventoryService.SelectThrowable(im.Context.PlayerData.PlayerEntityID, entry.Index)
-
-	if !result.Success {
-		// Display error message
-		im.detailTextArea.SetText(fmt.Sprintf("Cannot select throwable: %s", result.Error))
-		fmt.Printf("Throwable selection failed: %s\n", result.Error)
-		return
-	}
-
-	// Update player data with throwable selection (UI state only)
-	im.Context.PlayerData.Throwables.SelectedThrowableID = result.ItemEntityID
-	im.Context.PlayerData.Throwables.ThrowableItemEntityID = result.ItemEntityID
-	im.Context.PlayerData.Throwables.ThrowableItemIndex = result.ItemIndex
-	im.Context.PlayerData.InputStates.IsThrowing = true
-
-	// Display item details with effects
-	effectStr := ""
-	for _, effectName := range result.EffectDescriptions {
-		effectStr += fmt.Sprintf("%s\n", effectName)
-	}
-
-	detailText := fmt.Sprintf("Selected: %s\n\n%s", result.ItemName, effectStr)
-	im.detailTextArea.SetText(detailText)
-
-	fmt.Printf("Throwable prepared: %s\n", result.ItemName)
-
-	// Close inventory and return to previous mode
-	if returnMode, exists := im.ModeManager.GetMode(im.GetReturnMode()); exists {
-		im.ModeManager.RequestTransition(returnMode, "Throwable selected")
-	}
-}

@@ -101,8 +101,7 @@ func RemoveItem(manager *common.EntityManager, inv *Inventory, index int) {
 }
 
 // GetInventoryForDisplay builds the list needed for displaying the inventory to the player (system function)
-// itemPropertiesFilter StatusEffects lets us filter by status effects
-func GetInventoryForDisplay(manager *common.EntityManager, inv *Inventory, indicesToSelect []int, itemPropertiesFilter ...StatusEffects) []any {
+func GetInventoryForDisplay(manager *common.EntityManager, inv *Inventory, indicesToSelect []int) []any {
 	inventoryItems := make([]any, 0)
 
 	if len(indicesToSelect) == 0 {
@@ -116,7 +115,7 @@ func GetInventoryForDisplay(manager *common.EntityManager, inv *Inventory, indic
 			itemName := common.GetComponentType[*common.Name](itemEntity, common.NameComponent)
 			itemComp := GetItemByID(manager, itemID)
 
-			if itemComp != nil && HasAllEffects(manager, itemComp, itemPropertiesFilter...) {
+			if itemComp != nil {
 				inventoryItems = append(inventoryItems, InventoryListEntry{
 					Index: index,
 					Name:  itemName.NameStr,
@@ -140,7 +139,7 @@ func GetInventoryForDisplay(manager *common.EntityManager, inv *Inventory, indic
 			itemName := common.GetComponentType[*common.Name](itemEntity, common.NameComponent)
 			itemComp := GetItemByID(manager, itemID)
 
-			if itemComp != nil && HasAllEffects(manager, itemComp, itemPropertiesFilter...) {
+			if itemComp != nil {
 				inventoryItems = append(inventoryItems, InventoryListEntry{
 					Index: index,
 					Name:  itemName.NameStr,
@@ -151,78 +150,4 @@ func GetInventoryForDisplay(manager *common.EntityManager, inv *Inventory, indic
 	}
 
 	return inventoryItems
-}
-
-// GetInventoryByAction filters inventory items by their ItemAction capabilities (system function)
-// actionName is the name of the action to filter by (e.g., "Throwable")
-func GetInventoryByAction(manager *common.EntityManager, inv *Inventory, indicesToSelect []int, actionName string) []any {
-	inventoryItems := make([]any, 0)
-
-	if len(indicesToSelect) == 0 {
-		// Show all items with the specified action
-		for index, itemID := range inv.ItemEntityIDs {
-			itemEntity := manager.FindEntityByID(itemID)
-			if itemEntity == nil {
-				continue
-			}
-
-			itemName := common.GetComponentType[*common.Name](itemEntity, common.NameComponent)
-			itemComp := GetItemByID(manager, itemID)
-
-			if itemComp != nil && HasAction(itemComp, actionName) {
-				inventoryItems = append(inventoryItems, InventoryListEntry{
-					Index: index,
-					Name:  itemName.NameStr,
-					Count: itemComp.Count,
-				})
-			}
-		}
-	} else {
-		// Show selected indices with the specified action
-		for _, index := range indicesToSelect {
-			if index < 0 || index >= len(inv.ItemEntityIDs) {
-				continue
-			}
-
-			itemID := inv.ItemEntityIDs[index]
-			itemEntity := manager.FindEntityByID(itemID)
-			if itemEntity == nil {
-				continue
-			}
-
-			itemName := common.GetComponentType[*common.Name](itemEntity, common.NameComponent)
-			itemComp := GetItemByID(manager, itemID)
-
-			if itemComp != nil && HasAction(itemComp, actionName) {
-				inventoryItems = append(inventoryItems, InventoryListEntry{
-					Index: index,
-					Name:  itemName.NameStr,
-					Count: itemComp.Count,
-				})
-			}
-		}
-	}
-
-	return inventoryItems
-}
-
-// GetThrowableItems returns all items that have throwable actions (system function)
-func GetThrowableItems(manager *common.EntityManager, inv *Inventory, indicesToSelect []int) []any {
-	return GetInventoryByAction(manager, inv, indicesToSelect, THROWABLE_ACTION_NAME)
-}
-
-// HasItemsWithAction checks if the inventory contains any items with the specified action (system function)
-func HasItemsWithAction(manager *common.EntityManager, inv *Inventory, actionName string) bool {
-	for _, itemID := range inv.ItemEntityIDs {
-		itemComp := GetItemByID(manager, itemID)
-		if itemComp != nil && HasAction(itemComp, actionName) {
-			return true
-		}
-	}
-	return false
-}
-
-// HasThrowableItems checks if the inventory contains any throwable items (system function)
-func HasThrowableItems(manager *common.EntityManager, inv *Inventory) bool {
-	return HasItemsWithAction(manager, inv, THROWABLE_ACTION_NAME)
 }

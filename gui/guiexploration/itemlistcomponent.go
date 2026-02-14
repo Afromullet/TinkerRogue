@@ -59,18 +59,6 @@ func (ilc *ItemListComponent) Refresh() {
 
 	// Query inventory based on current filter
 	switch ilc.currentFilter {
-	case "Throwables":
-		// Get throwable items
-		throwableEntries := gear.GetThrowableItems(ilc.ecsManager, inv, []int{})
-		if len(throwableEntries) == 0 {
-			entries = []interface{}{"No throwable items"}
-		} else {
-			entries = make([]interface{}, len(throwableEntries))
-			for i, e := range throwableEntries {
-				entries[i] = e
-			}
-		}
-
 	case "All":
 		// Get all items
 		allEntries := gear.GetInventoryForDisplay(ilc.ecsManager, inv, []int{})

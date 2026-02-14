@@ -6,9 +6,6 @@ import (
 	"game_main/visual/graphics"
 	"game_main/world/coords"
 	"game_main/world/worldmap"
-	"strconv"
-
-	"github.com/bytearena/ecs"
 )
 
 var TestSquare = graphics.NewSquare(0, 0, graphics.MediumShape)
@@ -16,9 +13,6 @@ var TestLine = graphics.NewLine(0, 0, graphics.LinedDiagonalDownLeft, graphics.M
 var TestCone = graphics.NewCone(0, 0, graphics.LineDiagonalUpRight, graphics.MediumShape)
 var TestCircle = graphics.NewCircle(0, 0, graphics.MediumShape)
 var TestRect = graphics.NewRectangle(0, 0, graphics.MediumShape)
-var TestBurning = gear.NewBurning(5, 2)
-var TestSticky = gear.NewSticky(5, 2)
-var TestFreezing = gear.NewFreezing(3, 5)
 
 var TestFireEffect = graphics.NewFireEffect(0, 0, 2)
 var TestCloudEffect = graphics.NewCloudEffect(0, 0, 2)
@@ -26,54 +20,8 @@ var TestIceEffect = graphics.NewIceEffect(0, 0, 2)
 var TestElectricEffect = graphics.NewElectricityEffect(0, 0, 2)
 var TestStickyEffect = graphics.NewStickyGroundEffect(0, 0, 2)
 
-func CreateTestThrowable(shape graphics.TileBasedShape, vx graphics.VisualEffect) *gear.ThrowableAction {
-
-	t := gear.NewThrowableAction(1, 2, 3, shape)
-	t.VX = vx
-	return t
-}
-
-func CreateTestItems(manager *ecs.Manager, tags map[string]ecs.Tag, gameMap *worldmap.GameMap) {
-
-	itemImageLoc := "../assets/items/sword.png"
-
-	//todo add testing location back
-
-	startingPos := gameMap.StartingPosition()
-
-	throwItem := CreateTestThrowable(TestSquare, TestFireEffect)
-
-	gear.CreateItemWithActions(manager, "SquareThrow"+strconv.Itoa(1), coords.LogicalPosition{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
-		[]gear.ItemAction{throwItem}, TestFreezing)
-
-	gear.CreateItemWithActions(manager, "SquareThrow"+strconv.Itoa(1), coords.LogicalPosition{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
-		[]gear.ItemAction{throwItem}, TestSticky)
-
-	gear.CreateItemWithActions(manager, "SquareThrow"+strconv.Itoa(1), coords.LogicalPosition{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
-		[]gear.ItemAction{throwItem}, TestFreezing, TestFreezing)
-
-	throwItem = CreateTestThrowable(TestCircle, TestIceEffect)
-
-	gear.CreateItemWithActions(manager, "CircleThrow"+strconv.Itoa(1), coords.LogicalPosition{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
-		[]gear.ItemAction{throwItem}, TestBurning, TestFreezing)
-
-	throwItem = CreateTestThrowable(TestLine, TestFireEffect)
-
-	gear.CreateItemWithActions(manager, "LineThrow"+strconv.Itoa(1), coords.LogicalPosition{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
-		[]gear.ItemAction{throwItem}, TestFreezing, TestFreezing)
-
-	throwItem = CreateTestThrowable(TestRect, TestElectricEffect)
-
-	gear.CreateItemWithActions(manager, "RectThrow"+strconv.Itoa(1), coords.LogicalPosition{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
-		[]gear.ItemAction{throwItem}, TestSticky, TestFreezing)
-
-	throwItem = CreateTestThrowable(TestCone, TestStickyEffect)
-
-	gear.CreateItemWithActions(manager, "ConeThrow"+strconv.Itoa(1), coords.LogicalPosition{X: startingPos.X, Y: startingPos.Y}, itemImageLoc,
-		[]gear.ItemAction{throwItem}, TestBurning, TestFreezing)
-
-	//CreateItem(manager, "Item"+strconv.Itoa(2), coords.LogicalPosition{X: startingPos.X, Y: startingPos.Y}, itemImageLoc, NewBurning(1, 1), NewFreezing(1, 2))
-
+func CreateTestItems(manager *worldmap.GameMap) {
+	// No throwable items to create - squad system handles combat
 }
 
 func UpdateContentsForTest(ecsmanager *common.EntityManager, gm *worldmap.GameMap) {

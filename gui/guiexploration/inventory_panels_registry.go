@@ -36,7 +36,7 @@ func init() {
 			)
 
 			// Filter buttons - use component's SetFilter when clicked
-			filters := []string{"All", "Throwables", "Equipment", "Consumables"}
+			filters := []string{"All", "Equipment", "Consumables"}
 			for _, filterName := range filters {
 				filterNameCopy := filterName // Capture for closure
 				btn := builders.CreateButtonWithConfig(builders.ButtonConfig{
