@@ -117,7 +117,6 @@ const (
 	InteractionSynergy     InteractionType = iota // Same-faction threats boost each other
 	InteractionCompetition                        // Rival faction threats slow each other
 	InteractionSuppression                        // Player nodes suppress threats
-	InteractionPlayerBoost                        // Player nodes synergize with each other
 )
 
 // NodeInteraction records a single interaction between two nodes

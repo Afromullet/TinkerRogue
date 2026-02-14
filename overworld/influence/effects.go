@@ -29,9 +29,9 @@ func ClassifyInteraction(manager *common.EntityManager, entityA, entityB *ecs.En
 		return core.InteractionCompetition
 	}
 
-	// Both friendly/neutral (player or neutral)
+	// Both friendly/neutral (player or neutral) — use normal synergy path
 	if !aHostile && !bHostile {
-		return core.InteractionPlayerBoost
+		return core.InteractionSynergy
 	}
 
 	// Mixed (one friendly/neutral + one hostile) -> suppression
@@ -52,8 +52,6 @@ func CalculateInteractionModifier(
 		return calculateCompetitionPenalty()
 	case core.InteractionSuppression:
 		return calculateSuppressionPenalty(manager, entityA, entityB)
-	case core.InteractionPlayerBoost:
-		return calculatePlayerSynergyBonus(entityA, entityB)
 	default:
 		return 0.0
 	}
@@ -91,30 +89,4 @@ func calculateSuppressionPenalty(manager *common.EntityManager, entityA, entityB
 	}
 
 	return -templates.InfluenceConfigTemplate.Suppression.GrowthPenalty * nodeTypeMult
-}
-
-// calculatePlayerSynergyBonus computes bonus for adjacent friendly/neutral nodes.
-// Returns base bonus, or complementary bonus if types are a complementary pair.
-// Uses unified OverworldNodeData.
-func calculatePlayerSynergyBonus(entityA, entityB *ecs.Entity) float64 {
-	dataA := common.GetComponentType[*core.OverworldNodeData](entityA, core.OverworldNodeComponent)
-	dataB := common.GetComponentType[*core.OverworldNodeData](entityB, core.OverworldNodeComponent)
-	if dataA != nil && dataB != nil && isComplementaryPair(dataA.NodeTypeID, dataB.NodeTypeID) {
-		return templates.InfluenceConfigTemplate.PlayerSynergy.ComplementaryBonus
-	}
-
-	return templates.InfluenceConfigTemplate.PlayerSynergy.BaseBonus
-}
-
-// isComplementaryPair checks if two node types form a complementary pair from config.
-func isComplementaryPair(typeA, typeB string) bool {
-	for _, pair := range templates.InfluenceConfigTemplate.PlayerSynergy.ComplementaryPairs {
-		if len(pair) != 2 {
-			continue
-		}
-		if (pair[0] == typeA && pair[1] == typeB) || (pair[0] == typeB && pair[1] == typeA) {
-			return true
-		}
-	}
-	return false
 }

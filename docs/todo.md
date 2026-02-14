@@ -14,7 +14,6 @@ __________________________________________
 
 - Overworld node spawning is far too clustered together. All nodes spawn close to eachother. 
 
-- Add resources, so that a player can only build if they have sources
 
 - Clear overowlrd encounter reward system. 
 
@@ -38,7 +37,7 @@ __________________________________________
 
 - Handle Entity Cleanup
 
-- config.go in the Overworld package requires error handling in case there is an issue with the JSON file. Also add error handling for every other case of JSON loading
+- JSON file error handling
 
 
 - combat life cycle manager changes only support one player at the moment, de to storing the playerEntityID. Consider changing that for multiplayer
@@ -52,9 +51,8 @@ __________________________________________
 
 - Enemy squads appear to attack when they're out of range
 
-- Check if counter attack in ExecuteAttackAction accounts for dead units. Dead units should  not be part of the counter attack damage calculation
+
 ________________________________________________
-# Testing 
 
 
 
@@ -62,6 +60,7 @@ ________________________________________________
 
 
 - Need a better job of highlighting was data comes from JSON files
+
 - The way the GUI handles keys to track and keyboard presses need to improve
 
 
@@ -73,9 +72,6 @@ ________________________________________________
 
 
 - Input Package has a lot of leftovers from the old roguelike
-
-- Review anything that was done to deal with circular dependencies
-
 
 - combatqueries.go still has functions which search the entire ecs space
 
@@ -108,17 +104,9 @@ ____
 - Look at all of the const. See which ones should be defined in a file
 
 
-
-
-- behavor and ai package
-
-
-- Look into GameBootStrap
-
-
 - Look at keysToTrack
 
-- Review enounter and overworld package
+
 
 # Additions 
 

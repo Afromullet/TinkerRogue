@@ -17,14 +17,5 @@
       "town": 0.8
     }
   },
-  "playerSynergy": {
-    "baseBonus": 0.15,
-    "complementaryBonus": 0.25,
-    "complementaryPairs": [
-      ["town", "guild_hall"],
-      ["guild_hall", "temple"],
-      ["watchtower", "town"]
-    ]
-  },
   "diminishingFactor": 0.75
 }

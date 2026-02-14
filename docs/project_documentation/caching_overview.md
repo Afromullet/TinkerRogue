@@ -1,6 +1,6 @@
 # TinkerRogue Caching Mechanisms
 
-**Last Updated:** 2026-02-11
+**Last Updated:** 2026-02-14
 
 This document provides a comprehensive overview of all caching mechanisms used throughout the TinkerRogue codebase. Caching is critical for performance in this ECS-based roguelike, reducing O(n) queries to O(1) or O(k) lookups where k is the number of matching entities.
 
@@ -179,6 +179,21 @@ combatSquadView = em.World.CreateView(squads.SquadTag)
 ```
 
 **Usage:** Internal combat system queries
+
+---
+
+#### Commander View
+**File:** `tactical/commander/components.go`, `tactical/commander/init.go`
+
+```go
+var CommanderView *ecs.View
+
+// Initialized in init():
+CommanderView = em.World.CreateView(CommanderTag)
+```
+
+**Usage:** Zero-allocation commander queries for the overworld commander system
+**Purpose:** Supports the commander system where each commander controls their own squad roster
 
 ---
 
@@ -420,7 +435,7 @@ batch.AddQuad(...) // Accumulate vertices
 
 ### 4.2 CachedBackground (NineSlice Cache)
 
-**File:** `gui/guiresources/cachedbackground.go`
+**File:** `gui/widgetresources/cachedbackground.go`
 
 **Purpose:** Pre-render NineSlice backgrounds to reduce UI rendering overhead.
 
@@ -471,6 +486,89 @@ Caches backgrounds at multiple sizes (e.g., different button sizes) for reuse.
 - 576x756 - Squad deployment list
 - 384x540 - Squad editor unit list
 - 480x648 - Formation editor list
+
+---
+
+### 4.3 BorderImageCache
+
+**File:** `visual/rendering/viewport.go`
+
+**Purpose:** Cache border images for tile highlighting to avoid GPU allocations in the render loop.
+
+**Structure:**
+```go
+type BorderImageCache struct {
+    top, bottom, left, right *ebiten.Image
+    tileSize, thickness      int
+}
+```
+
+**Cache Strategy:** Create-once per size configuration
+- Border images (top, bottom, left, right) are created and filled with white
+- Images are recreated only when tile size or border thickness changes (e.g., window resize)
+- Tinted using ColorScale at draw time for different border colors
+
+**Invalidation:**
+```go
+// Automatic invalidation when dimensions change:
+if cache.top == nil || cache.tileSize != tileSize || cache.thickness != thickness {
+    // Recreate border images
+}
+```
+
+**Performance Impact:** Eliminates per-frame image allocations for tile borders, reducing GC pressure
+
+**Usage:**
+```go
+top, bottom, left, right := cache.GetOrCreate(tileSize, thickness)
+// Draw with ColorScale for different colors
+```
+
+---
+
+### 4.4 ViewportRenderer Overlay Cache
+
+**File:** `visual/rendering/viewport.go`
+
+**Purpose:** Reusable image and DrawImageOptions to avoid allocations when drawing tile overlays and borders.
+
+**Structure:**
+```go
+type ViewportRenderer struct {
+    centerPos       coords.LogicalPosition
+    borderImages    BorderImageCache
+    overlayCache    *ebiten.Image              // Reusable overlay image
+    overlayTileSize int                        // Track size for invalidation
+    borderDrawOpts  [4]ebiten.DrawImageOptions // Reusable for borders [top, bottom, left, right]
+    overlayDrawOpts ebiten.DrawImageOptions    // Reusable for overlays
+}
+```
+
+**Cache Strategy:** Object pooling pattern
+- `overlayCache` - Single reusable image for tile overlays, recreated only when tile size changes
+- `borderDrawOpts` and `overlayDrawOpts` - Reused DrawImageOptions to avoid allocations
+
+**Invalidation:**
+```go
+// Overlay cache invalidated when tile size changes:
+if vr.overlayCache == nil || vr.overlayTileSize != tileSize {
+    vr.overlayCache = ebiten.NewImage(tileSize, tileSize)
+    vr.overlayTileSize = tileSize
+}
+```
+
+**Performance Impact:**
+- Reduces per-frame allocations for DrawImageOptions
+- Avoids creating new overlay images every draw call
+- Critical for performance when highlighting many tiles (movement range, ability targets, etc.)
+
+**Usage:**
+```go
+// DrawImageOptions are reset and reused:
+vr.overlayDrawOpts.GeoM.Reset()
+vr.overlayDrawOpts.GeoM.Translate(screenX, screenY)
+screen.DrawImage(vr.overlayCache, &vr.overlayDrawOpts)
+```
 
 ---
 
@@ -714,7 +812,7 @@ ECS Views (auto-maintained):
   SquadQueryCache
   CombatQueryCache
   RenderingCache.RenderablesView
-  Package-level Views (OverworldNodeView, etc.)
+  Package-level Views (OverworldNodeView, CommanderView, etc.)
     ↓
     Used by: GUIQueries, threat evaluators, rendering pipeline
 
@@ -738,6 +836,8 @@ Rendering:
   TileRenderer (viewport position cache)
   RenderingCache.spriteBatches (image-based batching)
   CachedBackground (NineSlice pre-rendering)
+  BorderImageCache (viewport border images)
+  ViewportRenderer (overlay cache, reusable DrawImageOptions)
   CachedListWrapper / CachedTextAreaWrapper (widget output)
 ```
 
@@ -787,6 +887,8 @@ Rendering:
 | ThreatLayers | O(1) per position | O(map size × units) | O(map size) | AI decision-making |
 | TileRenderer | 0 (skipped) | O(visible tiles) | O(unique images) | Static camera scenarios |
 | CachedBackground | 0 (skipped) | O(width × height) | O(num sizes) | Static UI panels |
+| BorderImageCache | 0 (skipped) | O(1) | O(4 images) | Tile border rendering |
+| ViewportRenderer | 0 (reused) | 0 | O(1 image + opts) | Tile overlay/border drawing |
 | Widget Caches | 0 (skipped) | O(widget complexity) | O(widget size) | Static UI content |
 
 **k** = entities with matching component
@@ -816,6 +918,14 @@ Rendering:
 - 70% reduction in NineSlice allocations
 - Measured impact: ~1ms saved per large ScrollContainer per frame
 
+**BorderImageCache:**
+- Eliminates per-frame GPU image allocations for tile borders
+- Critical for reducing GC pressure when highlighting many tiles
+
+**ViewportRenderer:**
+- Eliminates DrawImageOptions allocations (previously ~100+ per frame for movement highlighting)
+- Reduces per-frame allocation overhead by reusing single overlay image
+
 **Widget Caches:**
 - 90% CPU reduction for static lists/textareas
 - Combat log with 100 entries: ~3ms (uncached) vs ~0.3ms (cached)
@@ -840,10 +950,13 @@ Rendering:
 - O(map tiles) × 4 floats per layer
 - 100×100 map × 3 layers × 4 bytes = 120KB per faction
 
-**Rendering Caches:** High
+**Rendering Caches:** Moderate to High
 - Cached images: width × height × 4 bytes per pixel
-- 1920×1080 screen buffer = 8MB
-- Multiple UI panels can accumulate significant memory
+- BorderImageCache: 4 small images per tile size configuration (~1KB total)
+- ViewportRenderer: 1 overlay image per tile size (~256KB for 256x256 tile)
+- TileRenderer batches: Pre-allocated vertex/index buffers per image
+- Widget caches: Can accumulate significant memory with many large widgets
+- 1920×1080 full-screen buffer = 8MB
 
 **Recommendation:** Monitor texture memory usage if caching many large widgets.
 
@@ -985,6 +1098,7 @@ The key insight is matching cache invalidation strategy to data access patterns:
 - **Event-driven:** Invalidate on specific game events (SquadInfoCache)
 - **Round-based:** Recompute per turn (threat layers)
 - **Viewport-based:** Rebuild on camera movement (tile renderer)
+- **Size-based:** Rebuild on dimension changes (border cache, overlay cache)
 - **Automatic:** ECS Views (no manual management)
 
 When in doubt, start without caching and profile. Premature caching adds complexity without guaranteed benefit. Let the profiler guide optimization efforts.

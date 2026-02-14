@@ -462,7 +462,6 @@ type JSONInfluenceConfig struct {
 	Synergy                    InfluenceSynergyConfig       `json:"synergy"`
 	Competition                InfluenceCompetitionConfig   `json:"competition"`
 	Suppression                InfluenceSuppressionConfig   `json:"suppression"`
-	PlayerSynergy              InfluencePlayerSynergyConfig `json:"playerSynergy"`
 	DiminishingFactor          float64                      `json:"diminishingFactor"`
 }
 
@@ -482,9 +481,3 @@ type InfluenceSuppressionConfig struct {
 	NodeTypeMultipliers map[string]float64 `json:"nodeTypeMultipliers"`
 }
 
-// InfluencePlayerSynergyConfig defines player node synergy parameters
-type InfluencePlayerSynergyConfig struct {
-	BaseBonus          float64    `json:"baseBonus"`
-	ComplementaryBonus float64    `json:"complementaryBonus"`
-	ComplementaryPairs [][]string `json:"complementaryPairs"`
-}
