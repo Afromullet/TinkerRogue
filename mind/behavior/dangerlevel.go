@@ -85,29 +85,11 @@ func (ftr *FactionThreatLevel) UpdateThreatRatings() {
 
 }
 
-// ========================================
-// SQUAD DISTANCE TRACKING STRUCTURES
-// ========================================
-
-// SquadDistanceTracker tracks distances from one squad to all enemy squads
-type SquadDistanceTracker struct {
-	SourceSquadID     ecs.EntityID
-	EnemiesByDistance map[int][]ecs.EntityID
-
-	// Optimization: Cache to avoid unnecessary recalculations
-	lastUpdateRound int  // Last combat round when distances were calculated
-	isDirty         bool // Mark as dirty when squad moves
-	isInitialized   bool // Track if distances have been calculated at least once
-}
-
 type SquadThreatLevel struct {
 	manager       *common.EntityManager
 	cache         *combat.CombatQueryCache
 	squadID       ecs.EntityID
 	ThreatByRange map[int]float64 //Key is the range. Value is the danger level. How dangerous the squad is at each range
-
-	// Distance tracking to all other squads in the game grouped by faction
-	SquadDistances *SquadDistanceTracker
 }
 
 func NewSquadThreatLevel(manager *common.EntityManager, cache *combat.CombatQueryCache, squadID ecs.EntityID) *SquadThreatLevel {
@@ -116,13 +98,6 @@ func NewSquadThreatLevel(manager *common.EntityManager, cache *combat.CombatQuer
 		manager: manager,
 		cache:   cache,
 		squadID: squadID,
-		SquadDistances: &SquadDistanceTracker{
-			SourceSquadID:     squadID,
-			EnemiesByDistance: make(map[int][]ecs.EntityID),
-			lastUpdateRound:   -1,
-			isDirty:           true,  // Start as dirty so first access calculates
-			isInitialized:     false, // Not initialized until first calculation
-		},
 	}
 }
 

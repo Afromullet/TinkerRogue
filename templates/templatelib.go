@@ -5,7 +5,6 @@ var MonsterTemplates []JSONMonster
 var ConsumableTemplates []JSONAttributeModifier
 
 var EncounterDifficultyTemplates []JSONEncounterDifficulty
-var SquadTypeTemplates []JSONSquadType
 var AIConfigTemplate JSONAIConfig
 var PowerConfigTemplate JSONPowerConfig
 var OverworldConfigTemplate JSONOverworldConfig

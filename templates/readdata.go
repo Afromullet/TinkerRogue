@@ -224,7 +224,6 @@ func ReadEncounterData() {
 
 	// Store in global template arrays
 	EncounterDifficultyTemplates = encounterData.DifficultyLevels
-	SquadTypeTemplates = encounterData.SquadTypes
 	FactionArchetypeTemplates = encounterData.Factions
 
 	// Store new encounter definitions
@@ -238,7 +237,6 @@ func ReadEncounterData() {
 
 	// Log successful load
 	println("Encounter data loaded:", len(EncounterDifficultyTemplates), "difficulty levels,",
-		len(SquadTypeTemplates), "squad types,",
 		len(EncounterDefinitionTemplates), "encounter definitions,",
 		len(FactionArchetypeTemplates), "factions")
 }

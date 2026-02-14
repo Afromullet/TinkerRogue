@@ -2,6 +2,8 @@ __________________________________________
 #
 # # # **IMPORTANT** # # # 
 
+- There has to be a tradeoff between casting spells and moving squads/engaging in combat. Doing both will feel too mechanical. 
+
 - type EventType int in Overworld types is growing too large
 
 

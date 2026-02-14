@@ -12,7 +12,6 @@ import (
 // eliminating repetitive nil-checking across multiple component accesses.
 // Used by both threat assessment (behavior) and power calculation (evaluation).
 type UnitCombatData struct {
-	Entity      *ecs.Entity
 	EntityID    ecs.EntityID
 	Role        squads.UnitRole
 	AttackType  squads.AttackType
@@ -52,7 +51,6 @@ func GetUnitCombatData(unitID ecs.EntityID, manager *common.EntityManager) *Unit
 	}
 
 	return &UnitCombatData{
-		Entity:      entity,
 		EntityID:    unitID,
 		Role:        roleData.Role,
 		AttackType:  targetRowData.AttackType,
@@ -111,7 +109,14 @@ func hasUnitsWithAttackType(
 	manager *common.EntityManager,
 	attackTypes AttackTypeFilter,
 ) bool {
-	return len(getUnitsWithAttackTypes(squadID, manager, attackTypes)) > 0
+	unitIDs := squads.GetUnitIDsInSquad(squadID, manager)
+	for _, unitID := range unitIDs {
+		data := GetUnitCombatData(unitID, manager)
+		if data != nil && attackTypes.Matches(data.AttackType) {
+			return true
+		}
+	}
+	return false
 }
 
 // getMaxRangeForAttackTypes returns maximum attack range among matching units

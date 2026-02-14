@@ -273,24 +273,6 @@ func (tv *ThreatVisualizer) GetThreatViewMode() ThreatViewMode {
 	return tv.threatViewMode
 }
 
-// calculateThreatValue calculates danger at a position using ThreatByRange.
-// This variant resolves squad lists per-call. Prefer calculateThreatValueForSquads
-// when calling in a loop with a pre-computed squad list.
-func (tv *ThreatVisualizer) calculateThreatValue(pos coords.LogicalPosition, currentFactionID ecs.EntityID) float64 {
-	if tv.threatManager == nil {
-		return 0.0
-	}
-
-	var relevantSquads []ecs.EntityID
-	if tv.threatViewMode == ViewEnemyThreats {
-		relevantSquads = tv.getEnemySquads(currentFactionID)
-	} else {
-		relevantSquads = tv.getPlayerSquads(currentFactionID)
-	}
-
-	return tv.calculateThreatValueForSquads(pos, relevantSquads)
-}
-
 // calculateThreatValueForSquads calculates danger at a position for a pre-computed squad list.
 // Used by Update() to avoid re-querying squad lists on every tile.
 func (tv *ThreatVisualizer) calculateThreatValueForSquads(pos coords.LogicalPosition, relevantSquads []ecs.EntityID) float64 {

@@ -106,8 +106,7 @@ func CalculateUtilityPower(
 // calculateRoleValue returns power value based on unit role.
 func calculateRoleValue(roleData *squads.UnitRoleData) float64 {
 	roleMultiplier := GetRoleMultiplierFromConfig(roleData.Role)
-	scalingConstants := GetScalingConstants()
-	return roleMultiplier * scalingConstants.RoleScaling
+	return roleMultiplier * RoleScalingFactor
 }
 
 // calculateAbilityValue returns power value from leader abilities.
@@ -141,8 +140,7 @@ func calculateCoverValue(entity *ecs.Entity) float64 {
 	}
 
 	// Cover value scaled by how many units it can protect
-	scalingConstants := GetScalingConstants()
-	return coverData.CoverValue * scalingConstants.CoverScaling * scalingConstants.CoverBeneficiaryMultiplier
+	return coverData.CoverValue * CoverScalingFactor * CoverBeneficiaryMultiplier
 }
 
 // CalculateSquadPower computes the power rating for a full squad.
@@ -240,7 +238,6 @@ func CalculateSquadPowerByRange(
 	type unitPowerData struct {
 		power       float64
 		attackRange int
-		isLeader    bool
 	}
 	units := []unitPowerData{}
 	attackTypeCount := make(map[squads.AttackType]int)
@@ -250,16 +247,6 @@ func CalculateSquadPowerByRange(
 	for _, unitID := range unitIDs {
 		entity := manager.FindEntityByID(unitID)
 		if entity == nil {
-			continue
-		}
-
-		attr := common.GetComponentType[*common.Attributes](entity, common.AttributeComponent)
-		if attr == nil {
-			continue
-		}
-
-		roleData := common.GetComponentType[*squads.UnitRoleData](entity, squads.UnitRoleComponent)
-		if roleData == nil {
 			continue
 		}
 
@@ -274,14 +261,15 @@ func CalculateSquadPowerByRange(
 			attackTypeCount[targetRowData.AttackType]++
 		}
 
-		// Calculate base unit power (simplified - weapon + dex/2 for threat)
-		basePower := float64(attr.Weapon + attr.Dexterity/2)
-		roleMultiplier := GetRoleMultiplierFromConfig(roleData.Role)
+		// Use shared power calculation (includes role multiplier, leader bonus, etc.)
+		unitPower := calculateUnitPower(unitID, manager, config)
+		if unitPower == 0 {
+			continue
+		}
 
 		units = append(units, unitPowerData{
-			power:       basePower * roleMultiplier,
+			power:       unitPower,
 			attackRange: attackRange,
-			isLeader:    entity.HasComponent(squads.LeaderComponent),
 		})
 	}
 
@@ -310,15 +298,7 @@ func CalculateSquadPowerByRange(
 			effectiveThreatRange := movementRange + ud.attackRange
 
 			if effectiveThreatRange >= currentRange {
-				// Apply leader bonus
-				leaderBonus := 1.0
-				if ud.isLeader {
-					leaderBonus = GetLeaderBonusFromConfig()
-				}
-
-				// Calculate unit power contribution at this range
-				unitPower := ud.power * leaderBonus
-				rangePower += unitPower
+				rangePower += ud.power
 			}
 		}
 
@@ -359,11 +339,9 @@ func EstimateUnitPowerFromTemplate(unit squads.UnitTemplate, config *PowerConfig
 	defensivePower := (effectiveHealth * dodgeMultiplier) + avgResistance
 
 	// === UTILITY POWER ===
-	scalingConstants := GetScalingConstants()
-
 	// Role value
 	roleMultiplier := GetRoleMultiplierFromConfig(unit.Role)
-	roleValue := roleMultiplier * scalingConstants.RoleScaling
+	roleValue := roleMultiplier * RoleScalingFactor
 
 	// Ability value (simplified - assume leader gets average ability value)
 	abilityValue := 0.0
@@ -374,7 +352,7 @@ func EstimateUnitPowerFromTemplate(unit squads.UnitTemplate, config *PowerConfig
 	// Cover value
 	coverValue := 0.0
 	if unit.CoverValue > 0 {
-		coverValue = unit.CoverValue * scalingConstants.CoverScaling * scalingConstants.CoverBeneficiaryMultiplier
+		coverValue = unit.CoverValue * CoverScalingFactor * CoverBeneficiaryMultiplier
 	}
 
 	utilityPower := roleValue + abilityValue + coverValue

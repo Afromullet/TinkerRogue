@@ -16,16 +16,11 @@ import (
 type rewardTable struct {
 	Gold       int
 	Experience int
-	Items      []string // Future: item IDs
 }
-
-// highTierIntensityThreshold is the minimum intensity for high-tier drops
-const highTierIntensityThreshold = 5
 
 // calculateRewards determines loot from defeating a threat.
 // Reward multiplier is now derived from intensity instead of hardcoded per-type values.
 // Formula: 1.0 + (intensity x 0.1) gives 1.1x-1.5x for intensity 1-5.
-// Uses the selected encounter's drop table for items.
 func calculateRewards(intensity int, encounter *core.EncounterDefinition) rewardTable {
 	baseGold := 100 + (intensity * 50)
 	baseXP := 50 + (intensity * 25)
@@ -34,70 +29,10 @@ func calculateRewards(intensity int, encounter *core.EncounterDefinition) reward
 	// Higher intensity threats give proportionally better rewards
 	typeMultiplier := 1.0 + (float64(intensity) * 0.1)
 
-	// Generate item drops based on selected encounter and intensity
-	items := generateItemDrops(intensity, encounter)
-
 	return rewardTable{
 		Gold:       int(float64(baseGold) * typeMultiplier),
 		Experience: int(float64(baseXP) * typeMultiplier),
-		Items:      items,
 	}
-}
-
-// generateItemDrops creates item rewards based on selected encounter and intensity
-func generateItemDrops(intensity int, encounter *core.EncounterDefinition) []string {
-	items := []string{}
-
-	// Higher intensity threats drop more items
-	numDrops := 0
-	if intensity >= 5 {
-		numDrops = 3 // High-tier threats (level 5) drop 3 items
-	} else if intensity >= 4 {
-		numDrops = 2 // Mid-tier threats (level 4) drop 2 items
-	} else if intensity >= 2 {
-		numDrops = 1 // Low-tier threats (level 2-3) drop 1 item
-	}
-	// Intensity 1 drops nothing (no guaranteed drops)
-
-	// Random chance for bonus drop (30% base chance)
-	if common.RandomInt(100) < 30 {
-		numDrops++
-	}
-
-	// Generate items from the selected encounter's drop table
-	for i := 0; i < numDrops; i++ {
-		item := generateItemFromEncounter(encounter, intensity)
-		if item != "" {
-			items = append(items, item)
-		}
-	}
-
-	return items
-}
-
-// generateItemFromEncounter returns an item name from the encounter's drop table.
-// Uses the selected encounter's specific item pools.
-func generateItemFromEncounter(encounter *core.EncounterDefinition, intensity int) string {
-	if encounter == nil {
-		return "Unknown Item"
-	}
-
-	basic := encounter.BasicItems
-	highTier := encounter.HighTierItems
-
-	if len(basic) == 0 {
-		return "Unknown Item"
-	}
-
-	options := make([]string, len(basic))
-	copy(options, basic)
-
-	// High-tier drops available at max intensity (level 5)
-	if intensity >= highTierIntensityThreshold && len(highTier) > 0 {
-		options = append(options, highTier...)
-	}
-
-	return options[common.RandomInt(len(options))]
 }
 
 // grantRewards distributes rewards to all surviving units across all player squads

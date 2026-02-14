@@ -18,12 +18,10 @@ type CombatThreatLayer struct {
 	*ThreatLayerBase
 
 	// Melee threat data
-	meleeThreatByPos   map[coords.LogicalPosition]float64 // Position -> melee threat value
-	meleeThreatBySquad map[ecs.EntityID]float64           // Squad -> total melee threat emitted
+	meleeThreatByPos map[coords.LogicalPosition]float64 // Position -> melee threat value
 
 	// Ranged threat data
-	rangedPressureByPos map[coords.LogicalPosition]float64        // Position -> ranged pressure
-	lineOfFireZones     map[ecs.EntityID][]coords.LogicalPosition // Squad -> threatened positions
+	rangedPressureByPos map[coords.LogicalPosition]float64 // Position -> ranged pressure
 
 	// Dependencies
 	baseThreatMgr *FactionThreatLevelManager
@@ -39,9 +37,7 @@ func NewCombatThreatLayer(
 	return &CombatThreatLayer{
 		ThreatLayerBase:     NewThreatLayerBase(factionID, manager, cache),
 		meleeThreatByPos:    make(map[coords.LogicalPosition]float64),
-		meleeThreatBySquad:  make(map[ecs.EntityID]float64),
 		rangedPressureByPos: make(map[coords.LogicalPosition]float64),
-		lineOfFireZones:     make(map[ecs.EntityID][]coords.LogicalPosition),
 		baseThreatMgr:       baseThreatMgr,
 	}
 }
@@ -50,9 +46,7 @@ func NewCombatThreatLayer(
 func (ctl *CombatThreatLayer) Compute(currentRound int) {
 	// Clear existing data (reuse maps to reduce GC pressure)
 	clear(ctl.meleeThreatByPos)
-	clear(ctl.meleeThreatBySquad)
 	clear(ctl.rangedPressureByPos)
-	clear(ctl.lineOfFireZones)
 
 	enemyFactions := ctl.getEnemyFactions()
 
@@ -103,9 +97,6 @@ func (ctl *CombatThreatLayer) computeMeleeThreat(
 	// Use danger at range 1 (melee range) - already includes role multipliers
 	totalThreat := squadThreat.ThreatByRange[1]
 
-	// Store squad data
-	ctl.meleeThreatBySquad[squadID] = totalThreat
-
 	// Paint threat on map with linear falloff
 	PaintThreatToMap(ctl.meleeThreatByPos, squadPos, threatRadius, totalThreat, LinearFalloff, false)
 }
@@ -122,14 +113,14 @@ func (ctl *CombatThreatLayer) computeRangedThreat(
 	// Use danger at max range - already includes role multipliers
 	rangedDanger := squadThreat.ThreatByRange[maxRange]
 
-	// Paint ranged pressure with no falloff and track positions for line-of-fire zones
-	ctl.lineOfFireZones[squadID] = PaintThreatToMap(
+	// Paint ranged pressure with no falloff
+	PaintThreatToMap(
 		ctl.rangedPressureByPos,
 		squadPos,
 		maxRange,
 		rangedDanger,
 		NoFalloff,
-		true, // Track positions for line-of-fire zones
+		false,
 	)
 }
 

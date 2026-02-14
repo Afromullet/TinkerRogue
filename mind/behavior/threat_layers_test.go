@@ -45,20 +45,12 @@ func TestCombatThreatLayer_Compute(t *testing.T) {
 		t.Error("Layer should be valid after Compute()")
 	}
 
-	// Verify melee data structures initialized
+	// Verify data structures initialized
 	if combatLayer.meleeThreatByPos == nil {
 		t.Error("meleeThreatByPos should be initialized")
 	}
-	if combatLayer.meleeThreatBySquad == nil {
-		t.Error("meleeThreatBySquad should be initialized")
-	}
-
-	// Verify ranged data structures initialized
 	if combatLayer.rangedPressureByPos == nil {
 		t.Error("rangedPressureByPos should be initialized")
-	}
-	if combatLayer.lineOfFireZones == nil {
-		t.Error("lineOfFireZones should be initialized")
 	}
 }
 

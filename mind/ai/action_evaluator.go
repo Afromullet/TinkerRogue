@@ -13,15 +13,13 @@ import (
 
 // ScoredAction represents a possible action with its utility score
 type ScoredAction struct {
-	Action      SquadAction
-	Score       float64
-	Description string
+	Action SquadAction
+	Score  float64
 }
 
 // SquadAction interface for executable actions
 type SquadAction interface {
 	Execute(manager *common.EntityManager, movementSystem *combat.CombatMovementSystem, combatActSystem *combat.CombatActionSystem, cache *combat.CombatQueryCache) bool
-	GetDescription() string
 }
 
 // MoveAction represents a movement decision
@@ -41,10 +39,6 @@ func (ma *MoveAction) Execute(manager *common.EntityManager, movementSystem *com
 
 	err := cmd.Execute()
 	return err == nil
-}
-
-func (ma *MoveAction) GetDescription() string {
-	return fmt.Sprintf("Move to %v", ma.target)
 }
 
 // AttackAction represents an attack decision
@@ -83,10 +77,6 @@ func (aa *AttackAction) Execute(manager *common.EntityManager, movementSystem *c
 	return result.Success
 }
 
-func (aa *AttackAction) GetDescription() string {
-	return fmt.Sprintf("Attack squad %d", aa.targetID)
-}
-
 // WaitAction represents doing nothing (skip turn)
 type WaitAction struct {
 	squadID ecs.EntityID
@@ -104,10 +94,6 @@ func (wa *WaitAction) Execute(manager *common.EntityManager, movementSystem *com
 	}
 
 	return false // Action state not found
-}
-
-func (wa *WaitAction) GetDescription() string {
-	return "Wait"
 }
 
 // ActionEvaluator generates and scores possible actions
@@ -136,9 +122,8 @@ func (ae *ActionEvaluator) EvaluateAllActions() []ScoredAction {
 
 	// Always have wait as fallback
 	actions = append(actions, ScoredAction{
-		Action:      &WaitAction{squadID: ae.ctx.SquadID},
-		Score:       0.0, // Lowest priority
-		Description: "Wait (fallback)",
+		Action: &WaitAction{squadID: ae.ctx.SquadID},
+		Score:  0.0, // Lowest priority
 	})
 
 	return actions
@@ -160,9 +145,8 @@ func (ae *ActionEvaluator) evaluateMovement() []ScoredAction {
 		score := ae.scoreMovementPosition(pos)
 
 		actions = append(actions, ScoredAction{
-			Action:      &MoveAction{squadID: ae.ctx.SquadID, target: pos},
-			Score:       score,
-			Description: fmt.Sprintf("Move to %v (role-aware)", pos),
+			Action: &MoveAction{squadID: ae.ctx.SquadID, target: pos},
+			Score:  score,
 		})
 	}
 
@@ -314,8 +298,7 @@ func (ae *ActionEvaluator) evaluateAttacks() []ScoredAction {
 				targetID:     targetID,
 				aiController: ae.ctx.AIController, // Pass reference for queueing
 			},
-			Score:       score,
-			Description: fmt.Sprintf("Attack squad %d", targetID),
+			Score: score,
 		})
 	}
 

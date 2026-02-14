@@ -98,20 +98,3 @@ func GetCompositionBonusFromConfig(uniqueAttackTypes int) float64 {
 	}
 }
 
-// ScalingConstants holds scaling factors for power calculations.
-// These are internal implementation details, not configurable parameters.
-type ScalingConstants struct {
-	RoleScaling                float64
-	CoverScaling               float64
-	CoverBeneficiaryMultiplier float64
-}
-
-// GetScalingConstants returns the hardcoded scaling constants.
-// These are cosmetic multipliers that convert raw stats to comparable ranges.
-func GetScalingConstants() ScalingConstants {
-	return ScalingConstants{
-		RoleScaling:                RoleScalingFactor,
-		CoverScaling:               CoverScalingFactor,
-		CoverBeneficiaryMultiplier: CoverBeneficiaryMultiplier,
-	}
-}

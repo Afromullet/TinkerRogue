@@ -180,9 +180,8 @@ type ActionContext struct {
 	AIController   *AIController                // Reference to AI controller for attack queueing
 
 	// Cached squad info
-	SquadRole   squads.UnitRole
-	CurrentPos  coords.LogicalPosition
-	SquadHealth float64 // Average HP percentage (0-1)
+	SquadRole  squads.UnitRole
+	CurrentPos coords.LogicalPosition
 }
 
 // NewActionContext creates a new action context for a squad
@@ -210,9 +209,6 @@ func NewActionContext(
 	if pos, err := combat.GetSquadMapPosition(squadID, aic.entityManager); err == nil {
 		ctx.CurrentPos = pos
 	}
-
-	// Calculate squad health using centralized function
-	ctx.SquadHealth = squads.GetSquadHealthPercent(squadID, aic.entityManager)
 
 	return ctx
 }
