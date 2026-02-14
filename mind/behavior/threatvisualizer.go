@@ -110,10 +110,10 @@ type ThreatVisualizer struct {
 
 	// State
 	*evaluation.DirtyCache
-	isActive        bool
-	mode            VisualizerMode
-	threatViewMode  ThreatViewMode // For danger mode: enemy vs player
-	layerMode       LayerMode      // For layer mode: which layer
+	isActive         bool
+	mode             VisualizerMode
+	threatViewMode   ThreatViewMode // For danger mode: enemy vs player
+	layerMode        LayerMode      // For layer mode: which layer
 	currentFactionID ecs.EntityID
 }
 

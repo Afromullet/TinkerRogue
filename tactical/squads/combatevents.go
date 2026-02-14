@@ -78,7 +78,7 @@ func (h HitType) String() string {
 
 // CoverBreakdown tracks which units provided cover and how much
 type CoverBreakdown struct {
-	TotalReduction float64         // Final percentage (0.0-1.0)
+	TotalReduction float64 // Final percentage (0.0-1.0)
 	Providers      []CoverProvider
 }
 

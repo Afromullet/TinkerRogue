@@ -6,26 +6,26 @@ import (
 
 // ThreatActivitySummary aggregates threat-related events.
 type ThreatActivitySummary struct {
-	TotalSpawned      int                        `json:"total_spawned"`
-	TotalDestroyed    int                        `json:"total_destroyed"`
-	TotalEvolved      int                        `json:"total_evolved"`
-	MaxIntensity      int                        `json:"max_intensity"`
-	ThreatTypeStats   map[string]*ThreatTypeStats `json:"threat_type_stats"` // Stats per threat type
+	TotalSpawned    int                         `json:"total_spawned"`
+	TotalDestroyed  int                         `json:"total_destroyed"`
+	TotalEvolved    int                         `json:"total_evolved"`
+	MaxIntensity    int                         `json:"max_intensity"`
+	ThreatTypeStats map[string]*ThreatTypeStats `json:"threat_type_stats"` // Stats per threat type
 }
 
 // ThreatTypeStats tracks statistics for a specific threat type.
 type ThreatTypeStats struct {
-	Spawned      int `json:"spawned"`
-	Destroyed    int `json:"destroyed"`
-	Evolved      int `json:"evolved"`
+	Spawned   int `json:"spawned"`
+	Destroyed int `json:"destroyed"`
+	Evolved   int `json:"evolved"`
 }
 
 // FactionActivitySummary aggregates faction-related events.
 type FactionActivitySummary struct {
-	TotalExpansions     int                          `json:"total_expansions"`
-	TotalRaids          int                          `json:"total_raids"`
-	TotalDefeated       int                          `json:"total_defeated"`
-	FactionStats        map[ecs.EntityID]*FactionStats `json:"faction_stats"` // Stats per faction
+	TotalExpansions int                            `json:"total_expansions"`
+	TotalRaids      int                            `json:"total_raids"`
+	TotalDefeated   int                            `json:"total_defeated"`
+	FactionStats    map[ecs.EntityID]*FactionStats `json:"faction_stats"` // Stats per faction
 }
 
 // FactionStats tracks statistics for a specific faction.
@@ -39,10 +39,10 @@ type FactionStats struct {
 
 // CombatActivitySummary aggregates combat-related events.
 type CombatActivitySummary struct {
-	TotalCombats      int `json:"total_combats"`
-	Victories         int `json:"victories"`
-	Defeats           int `json:"defeats"`
-	IntensityReduced  int `json:"intensity_reduced"`
+	TotalCombats     int `json:"total_combats"`
+	Victories        int `json:"victories"`
+	Defeats          int `json:"defeats"`
+	IntensityReduced int `json:"intensity_reduced"`
 }
 
 // GenerateThreatSummary creates threat activity statistics from event records.

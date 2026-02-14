@@ -9,7 +9,7 @@ import (
 	"game_main/overworld/core"
 	"game_main/overworld/threat"
 	"game_main/overworld/tick"
-	"game_main/overworld/travel"
+	"game_main/tactical/commander"
 
 	"github.com/bytearena/ecs"
 	"github.com/ebitenui/ebitenui/widget"
@@ -99,17 +99,21 @@ func (om *OverworldMode) Initialize(ctx *framework.UIContext) error {
 
 	om.renderer = NewOverworldRenderer(ctx.ECSManager, om.state, ctx.GameMap, ctx.TileSize, ctx)
 
+	// Create commander movement system
+	cmdMovement := commander.NewCommanderMovementSystem(ctx.ECSManager, common.GlobalPositionSystem)
+
 	// Create deps + handlers
 	deps := &OverworldModeDeps{
-		State:            om.state,
-		Manager:          ctx.ECSManager,
-		PlayerData:       ctx.PlayerData,
-		EncounterService: om.encounterService,
-		Renderer:         om.renderer,
-		ModeManager:      om.ModeManager,
-		ModeCoordinator:  ctx.ModeCoordinator,
-		LogEvent:         om.logEvent,
-		RefreshPanels:    om.refreshAllPanels,
+		State:             om.state,
+		Manager:           ctx.ECSManager,
+		PlayerData:        ctx.PlayerData,
+		EncounterService:  om.encounterService,
+		Renderer:          om.renderer,
+		ModeManager:       om.ModeManager,
+		ModeCoordinator:   ctx.ModeCoordinator,
+		CommanderMovement: cmdMovement,
+		LogEvent:          om.logEvent,
+		RefreshPanels:     om.refreshAllPanels,
 	}
 	om.actionHandler = NewOverworldActionHandler(deps)
 	om.inputHandler = NewOverworldInputHandler(om.actionHandler, deps, om.GetEbitenUI())
@@ -136,8 +140,15 @@ func (om *OverworldMode) initializeWidgetReferences() {
 }
 
 func (om *OverworldMode) Enter(fromMode framework.UIMode) error {
-	fmt.Println("Entering Overworld Mode")
 	om.startRecordingIfNeeded()
+
+	// Auto-select first commander if none selected
+	if om.state.SelectedCommanderID == 0 && om.Context.PlayerData != nil {
+		commanders := commander.GetAllCommanders(om.Context.PlayerData.PlayerEntityID, om.Context.ECSManager)
+		if len(commanders) > 0 {
+			om.state.SelectedCommanderID = commanders[0]
+		}
+	}
 
 	// Refresh UI displays
 	om.refreshAllPanels()
@@ -146,7 +157,6 @@ func (om *OverworldMode) Enter(fromMode framework.UIMode) error {
 }
 
 func (om *OverworldMode) Exit(toMode framework.UIMode) error {
-	fmt.Println("Exiting Overworld Mode")
 	om.exportRecordingIfNeeded()
 
 	// Clear selection when leaving
@@ -169,11 +179,6 @@ func (om *OverworldMode) Update(deltaTime float64) error {
 	if om.state.SelectedNodeID != om.lastSelectedNode {
 		om.lastSelectedNode = om.state.SelectedNodeID
 		om.refreshThreatInfo()
-	}
-
-	// Auto-travel: automatically advance ticks when traveling
-	if om.state.IsAutoTraveling && travel.IsTraveling(om.Context.ECSManager) {
-		om.actionHandler.AdvanceTick()
 	}
 
 	return nil
@@ -246,8 +251,15 @@ func (om *OverworldMode) refreshTickStatus() {
 		statusText = "Game Over"
 	}
 
+	turnState := commander.GetOverworldTurnState(om.Context.ECSManager)
+	turnStr := ""
+	if turnState != nil {
+		turnStr = fmt.Sprintf("Turn: %d | ", turnState.CurrentTurn)
+	}
+
 	om.tickStatusText.SetText(fmt.Sprintf(
-		"Tick: %d | Status: %s",
+		"%sTick: %d | Status: %s",
+		turnStr,
 		tickState.CurrentTick,
 		statusText,
 	))

@@ -42,15 +42,15 @@ const DefaultSquadCapacity = 6
 
 // SquadData represents the squad entity's component data.
 type SquadData struct {
-	SquadID       ecs.EntityID  // Unique squad identifier (native entity ID)
-	Formation     FormationType // Current formation layout
-	Name          string        // Squad display name
-	Morale        int           // Squad-wide morale (0-100)
-	SquadLevel    int           // Average level for spawning
-	TurnCount     int           // Number of turns this squad has taken
-	MaxUnits           int          // Maximum squad size (typically 9)
-	IsDeployed         bool         // true if squad is on the tactical map, false if in reserves
-	GarrisonedAtNodeID ecs.EntityID // 0 = not garrisoned, >0 = garrisoned at this node entity
+	SquadID            ecs.EntityID  // Unique squad identifier (native entity ID)
+	Formation          FormationType // Current formation layout
+	Name               string        // Squad display name
+	Morale             int           // Squad-wide morale (0-100)
+	SquadLevel         int           // Average level for spawning
+	TurnCount          int           // Number of turns this squad has taken
+	MaxUnits           int           // Maximum squad size (typically 9)
+	IsDeployed         bool          // true if squad is on the tactical map, false if in reserves
+	GarrisonedAtNodeID ecs.EntityID  // 0 = not garrisoned, >0 = garrisoned at this node entity
 }
 
 // FormationType defines squad layout presets
@@ -338,8 +338,8 @@ func GetAbilityParams(abilityType AbilityType) AbilityParams {
 
 // ExperienceData tracks a unit's level and XP progress.
 type ExperienceData struct {
-	Level        int // Current level (starts at 1)
-	CurrentXP    int // XP accumulated toward next level
+	Level         int // Current level (starts at 1)
+	CurrentXP     int // XP accumulated toward next level
 	XPToNextLevel int // XP required to level up (fixed 100)
 }
 

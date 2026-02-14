@@ -31,11 +31,13 @@ var poiAssetConfig = map[string]string{
 	POIWatchtower: filepath.Join("maptiles", POIWatchtower, "crumbled_column_1.png"),
 }
 
-func defaultFloorPath() string        { return filepath.Join(tileAssetBase, "floors", defaultFloorDir) }
-func defaultWallPath() string          { return filepath.Join(tileAssetBase, "walls", defaultWallDir) }
-func stairsPath() string              { return filepath.Join(tileAssetBase, stairsFile) }
-func biomeFloorPath(biome Biome) string { return filepath.Join(tileAssetBase, "floors", biome.String()) }
-func biomeWallPath(biome Biome) string  { return filepath.Join(tileAssetBase, "walls", biome.String()) }
+func defaultFloorPath() string { return filepath.Join(tileAssetBase, "floors", defaultFloorDir) }
+func defaultWallPath() string  { return filepath.Join(tileAssetBase, "walls", defaultWallDir) }
+func stairsPath() string       { return filepath.Join(tileAssetBase, stairsFile) }
+func biomeFloorPath(biome Biome) string {
+	return filepath.Join(tileAssetBase, "floors", biome.String())
+}
+func biomeWallPath(biome Biome) string { return filepath.Join(tileAssetBase, "walls", biome.String()) }
 
 func poiAssetPath(poiType string) string {
 	if rel, ok := poiAssetConfig[poiType]; ok {

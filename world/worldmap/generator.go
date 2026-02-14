@@ -23,9 +23,9 @@ type GenerationResult struct {
 	Tiles                 []*Tile
 	Rooms                 []Rect
 	ValidPositions        []coords.LogicalPosition
-	POIs                  []POIData             // Typed points of interest
+	POIs                  []POIData              // Typed points of interest
 	FactionStartPositions []FactionStartPosition // Generator-chosen faction positions
-	BiomeMap              []Biome               // Flat array indexed by positionToIndex
+	BiomeMap              []Biome                // Flat array indexed by positionToIndex
 }
 
 // MapGenerator defines the interface for all map generation algorithms

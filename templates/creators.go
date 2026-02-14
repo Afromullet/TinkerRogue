@@ -57,8 +57,6 @@ func createFromTemplate(manager common.EntityManager, name, imagePath, assetDir 
 
 func addCreatureComponents(m JSONMonster) ComponentAdder {
 	return func(entity *ecs.Entity) {
-		// Mark as monster for ECS queries
-
 		// Use the NewAttributesFromJson method to create attributes with proper derivation
 		attr := m.Attributes.NewAttributesFromJson()
 

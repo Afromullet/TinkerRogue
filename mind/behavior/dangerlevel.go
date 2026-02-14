@@ -75,9 +75,12 @@ func (ftr *FactionThreatLevel) UpdateThreatRatings() {
 	squadIDs := combat.GetSquadsForFaction(ftr.factionID, ftr.manager)
 
 	for _, squadID := range squadIDs {
+		// Create threat level entry if squad wasn't tracked at creation time
+		if _, exists := ftr.squadThreatLevels[squadID]; !exists {
+			ftr.squadThreatLevels[squadID] = NewSquadThreatLevel(ftr.manager, ftr.cache, squadID)
+		}
 		// Update threat calculations
 		ftr.squadThreatLevels[squadID].CalculateThreatLevels()
-
 	}
 
 }

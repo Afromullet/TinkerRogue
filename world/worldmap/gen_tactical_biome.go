@@ -3,8 +3,8 @@ package worldmap
 
 import (
 	"game_main/common"
-	"game_main/world/coords"
 	"game_main/visual/graphics"
+	"game_main/world/coords"
 
 	"github.com/hajimehoshi/ebiten/v2"
 )
@@ -20,11 +20,11 @@ type BiomeTacticalProfile struct {
 	// Terrain density (0.0 = all open, 1.0 = all obstacles)
 	obstacleDensity float64
 	// Tactical features
-	hasCover         bool // Trees, rocks, ruins for protection
-	hasElevation     bool // Hills, high ground
-	hasChokePoints   bool // Natural bottlenecks
-	hasOpenSpace     bool // Wide maneuvering areas
-	hasRoughTerrain  bool // Difficult terrain that slows movement
+	hasCover        bool // Trees, rocks, ruins for protection
+	hasElevation    bool // Hills, high ground
+	hasChokePoints  bool // Natural bottlenecks
+	hasOpenSpace    bool // Wide maneuvering areas
+	hasRoughTerrain bool // Difficult terrain that slows movement
 	// Visual variety
 	floorVariants int // Number of different floor tile variants
 	wallVariants  int // Number of different obstacle variants
@@ -85,62 +85,62 @@ func (g *TacticalBiomeGenerator) getBiomeProfile(biome Biome) BiomeTacticalProfi
 	switch biome {
 	case BiomeGrassland:
 		return BiomeTacticalProfile{
-			obstacleDensity:  0.20, // Mostly open
-			hasCover:         true, // Scattered trees, rocks
-			hasElevation:     true, // Gentle hills
-			hasChokePoints:   false,
-			hasOpenSpace:     true, // Wide maneuvering
-			hasRoughTerrain:  false,
-			floorVariants:    3,
-			wallVariants:     2,
+			obstacleDensity: 0.20, // Mostly open
+			hasCover:        true, // Scattered trees, rocks
+			hasElevation:    true, // Gentle hills
+			hasChokePoints:  false,
+			hasOpenSpace:    true, // Wide maneuvering
+			hasRoughTerrain: false,
+			floorVariants:   3,
+			wallVariants:    2,
 		}
 
 	case BiomeForest:
 		return BiomeTacticalProfile{
-			obstacleDensity:  0.35, // Dense trees
-			hasCover:         true, // Many trees for cover
-			hasElevation:     false,
-			hasChokePoints:   true, // Tree clusters create paths
-			hasOpenSpace:     false,
-			hasRoughTerrain:  true, // Undergrowth
-			floorVariants:    2,
-			wallVariants:     3,
+			obstacleDensity: 0.35, // Dense trees
+			hasCover:        true, // Many trees for cover
+			hasElevation:    false,
+			hasChokePoints:  true, // Tree clusters create paths
+			hasOpenSpace:    false,
+			hasRoughTerrain: true, // Undergrowth
+			floorVariants:   2,
+			wallVariants:    3,
 		}
 
 	case BiomeDesert:
 		return BiomeTacticalProfile{
-			obstacleDensity:  0.15, // Very open
-			hasCover:         false, // Minimal cover
-			hasElevation:     true, // Sand dunes
-			hasChokePoints:   false,
-			hasOpenSpace:     true, // Wide open spaces
-			hasRoughTerrain:  true, // Sand slows movement
-			floorVariants:    2,
-			wallVariants:     2,
+			obstacleDensity: 0.15,  // Very open
+			hasCover:        false, // Minimal cover
+			hasElevation:    true,  // Sand dunes
+			hasChokePoints:  false,
+			hasOpenSpace:    true, // Wide open spaces
+			hasRoughTerrain: true, // Sand slows movement
+			floorVariants:   2,
+			wallVariants:    2,
 		}
 
 	case BiomeMountain:
 		return BiomeTacticalProfile{
-			obstacleDensity:  0.45, // Rocky, many obstacles
-			hasCover:         true, // Boulders, cliffs
-			hasElevation:     true, // High ground advantage
-			hasChokePoints:   true, // Mountain passes
-			hasOpenSpace:     false,
-			hasRoughTerrain:  true, // Rocky terrain
-			floorVariants:    2,
-			wallVariants:     4,
+			obstacleDensity: 0.45, // Rocky, many obstacles
+			hasCover:        true, // Boulders, cliffs
+			hasElevation:    true, // High ground advantage
+			hasChokePoints:  true, // Mountain passes
+			hasOpenSpace:    false,
+			hasRoughTerrain: true, // Rocky terrain
+			floorVariants:   2,
+			wallVariants:    4,
 		}
 
 	case BiomeSwamp:
 		return BiomeTacticalProfile{
-			obstacleDensity:  0.30, // Water + vegetation
-			hasCover:         true, // Reeds, trees
-			hasElevation:     false,
-			hasChokePoints:   true, // Islands of dry land
-			hasOpenSpace:     false,
-			hasRoughTerrain:  true, // Muddy, wet
-			floorVariants:    3,
-			wallVariants:     3,
+			obstacleDensity: 0.30, // Water + vegetation
+			hasCover:        true, // Reeds, trees
+			hasElevation:    false,
+			hasChokePoints:  true, // Islands of dry land
+			hasOpenSpace:    false,
+			hasRoughTerrain: true, // Muddy, wet
+			floorVariants:   3,
+			wallVariants:    3,
 		}
 
 	default:

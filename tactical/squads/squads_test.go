@@ -81,11 +81,11 @@ func CreateHighCapacitySquad(manager *common.EntityManager, squadName string, ca
 	squadID := squadEntity.GetID()
 
 	squadEntity.AddComponent(SquadComponent, &SquadData{
-		SquadID:  squadID,
-		Name:     squadName,
-		Morale:   100,
+		SquadID:   squadID,
+		Name:      squadName,
+		Morale:    100,
 		TurnCount: 0,
-		MaxUnits: 9,
+		MaxUnits:  9,
 	})
 
 	squadEntity.AddComponent(common.PositionComponent, &coords.LogicalPosition{})

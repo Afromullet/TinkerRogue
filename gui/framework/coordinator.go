@@ -97,8 +97,6 @@ func (gmc *GameModeCoordinator) switchToContext(targetContext GameContext, targe
 		return nil
 	}
 
-	fromContext := gmc.currentContext
-
 	// Switch to target manager
 	gmc.activeManager = targetManager
 	gmc.currentContext = targetContext
@@ -110,7 +108,6 @@ func (gmc *GameModeCoordinator) switchToContext(targetContext GameContext, targe
 		}
 	}
 
-	fmt.Printf("Context Switch: %s -> %s (mode: %s)\n", fromContext, targetContext, initialMode)
 	return nil
 }
 

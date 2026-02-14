@@ -33,8 +33,7 @@ var (
 	FreezingComponent  *ecs.Component
 	ThrowableComponent *ecs.Component
 
-	ItemsTag    ecs.Tag // Tag for querying item entities
-	MonstersTag ecs.Tag // Tag for querying monster entities
+	ItemsTag ecs.Tag // Tag for querying item entities
 )
 
 /*

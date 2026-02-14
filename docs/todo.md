@@ -2,6 +2,10 @@ __________________________________________
 #
 # # # **IMPORTANT** # # # 
 
+- type EventType int in Overworld types is growing too large
+
+- Encounter package calculations should be based off the commanders strength, not the strength of the player. Make sure that it isn't using every squad, owned by every commander, to determine encounter difficulty
+
  - System for gaining resources. Whether it's through battle or territory tbd
 
 - Review caches
@@ -83,6 +87,17 @@ ________________________________________________
 
 
 # Review
+
+## The following packages need review
+
+- Guioverworld
+- Commander
+- GUISquads
+- GUIOverworld
+
+____
+
+- Make sure threat map is local to the current encounter, based off the comanders squads
 
 - Identify where there is a possiblity of cache invalidation errors. We started to cache things used for ECS query, so we need to 
 

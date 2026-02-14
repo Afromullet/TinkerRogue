@@ -73,8 +73,6 @@ func (npm *NodePlacementMode) Initialize(ctx *framework.UIContext) error {
 }
 
 func (npm *NodePlacementMode) Enter(fromMode framework.UIMode) error {
-	fmt.Println("Entering Node Placement Mode")
-
 	// Load placeable node types
 	npm.nodeTypes = core.GetNodeRegistry().GetPlaceableNodeTypes()
 
@@ -90,7 +88,6 @@ func (npm *NodePlacementMode) Enter(fromMode framework.UIMode) error {
 }
 
 func (npm *NodePlacementMode) Exit(toMode framework.UIMode) error {
-	fmt.Println("Exiting Node Placement Mode")
 	npm.cursorPos = nil
 	npm.lastValidation = nil
 	return nil
@@ -141,7 +138,8 @@ func (npm *NodePlacementMode) HandleInput(inputState *framework.InputState) bool
 	npm.cursorPos = &logicalPos
 
 	// Validate on hover for preview feedback (includes resource check)
-	result := node.ValidatePlayerPlacementWithCost(npm.Context.ECSManager, logicalPos, npm.Context.PlayerData, npm.Context.PlayerData.PlayerEntityID, string(npm.selectedNodeType))
+	commanderPos := npm.getSelectedCommanderPos()
+	result := node.ValidatePlayerPlacementWithCost(npm.Context.ECSManager, logicalPos, commanderPos, npm.Context.PlayerData.PlayerEntityID, string(npm.selectedNodeType))
 	npm.lastValidation = &result
 
 	// Left click to place node
@@ -160,7 +158,8 @@ func (npm *NodePlacementMode) handlePlaceNode(pos coords.LogicalPosition) {
 	}
 
 	playerEntityID := npm.Context.PlayerData.PlayerEntityID
-	result := node.ValidatePlayerPlacementWithCost(npm.Context.ECSManager, pos, npm.Context.PlayerData, playerEntityID, string(npm.selectedNodeType))
+	commanderPos := npm.getSelectedCommanderPos()
+	result := node.ValidatePlayerPlacementWithCost(npm.Context.ECSManager, pos, commanderPos, playerEntityID, string(npm.selectedNodeType))
 	if !result.Valid {
 		npm.setInfo(fmt.Sprintf("Cannot place: %s", result.Reason))
 		return
@@ -271,10 +270,20 @@ func (npm *NodePlacementMode) refreshPlacementInfo() {
 	npm.placementInfoText.SetText(text)
 }
 
+// getSelectedCommanderPos returns the selected commander's position for placement range checks.
+func (npm *NodePlacementMode) getSelectedCommanderPos() *coords.LogicalPosition {
+	if npm.state != nil && npm.state.SelectedCommanderID != 0 {
+		entity := npm.Context.ECSManager.FindEntityByID(npm.state.SelectedCommanderID)
+		if entity != nil {
+			return common.GetComponentType[*coords.LogicalPosition](entity, common.PositionComponent)
+		}
+	}
+	return nil
+}
+
 func (npm *NodePlacementMode) setInfo(msg string) {
 	if npm.placementInfoText != nil {
 		npm.placementInfoText.SetText(msg)
 	}
 	fmt.Println(msg)
 }
-

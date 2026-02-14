@@ -83,7 +83,6 @@ func (gem *GridEditorManager) UpdateDisplayForPlacedUnit(unitID ecs.EntityID, un
 		}
 	}
 
-	fmt.Printf("Displayed %s (size %dx%d) at anchor [%d,%d]\n", unitTemplate.Name, unitTemplate.GridWidth, unitTemplate.GridHeight, row, col)
 	return nil
 }
 
@@ -106,7 +105,6 @@ func (gem *GridEditorManager) UpdateDisplayForRemovedUnit(unitID ecs.EntityID) {
 		gem.currentLeaderID = 0
 	}
 
-	fmt.Printf("Updated display for removed unit %d\n", unitID)
 }
 
 // SetLeader sets a unit as the squad leader

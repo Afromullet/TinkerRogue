@@ -16,10 +16,6 @@ var (
 type Player struct {
 }
 
-// Monster is a component marker for monster/creature entities
-type Monster struct {
-}
-
 // PlayerInputStates tracks input-related state for the player.
 // Used in the input package to determine when button inputs are valid.
 type PlayerInputStates struct {

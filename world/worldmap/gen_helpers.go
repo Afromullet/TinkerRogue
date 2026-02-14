@@ -2,8 +2,8 @@ package worldmap
 
 import (
 	"game_main/common"
-	"game_main/world/coords"
 	"game_main/visual/graphics"
+	"game_main/world/coords"
 
 	"github.com/hajimehoshi/ebiten/v2"
 )

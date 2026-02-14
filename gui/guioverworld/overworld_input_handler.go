@@ -8,7 +8,7 @@ import (
 	"game_main/gui/framework"
 	"game_main/overworld/core"
 	"game_main/overworld/garrison"
-	"game_main/overworld/travel"
+	"game_main/tactical/commander"
 	"game_main/tactical/squads"
 
 	"github.com/bytearena/ecs"
@@ -34,8 +34,13 @@ func NewOverworldInputHandler(actionHandler *OverworldActionHandler, deps *Overw
 
 // HandleInput processes all keyboard and mouse input. Returns true if consumed.
 func (ih *OverworldInputHandler) HandleInput(inputState *framework.InputState) bool {
-	// ESC - context switch back to tactical context
+	// ESC - exit move mode first, otherwise context switch back to tactical
 	if inputState.KeysJustPressed[ebiten.KeyEscape] {
+		if ih.deps.State.InMoveMode {
+			ih.deps.State.ExitMoveMode()
+			ih.deps.LogEvent("Movement mode cancelled")
+			return true
+		}
 		if ih.deps.ModeCoordinator != nil {
 			if err := ih.deps.ModeCoordinator.EnterTactical("exploration"); err != nil {
 				fmt.Printf("ERROR: Failed to return to tactical context: %v\n", err)
@@ -50,15 +55,21 @@ func (ih *OverworldInputHandler) HandleInput(inputState *framework.InputState) b
 		return true
 	}
 
-	// Space - advance tick
-	if inputState.KeysJustPressed[ebiten.KeySpace] {
-		ih.actionHandler.AdvanceTick()
+	// Space or Enter - end turn
+	if inputState.KeysJustPressed[ebiten.KeySpace] || inputState.KeysJustPressed[ebiten.KeyEnter] {
+		ih.actionHandler.EndTurn()
 		return true
 	}
 
-	// A - toggle auto-travel
-	if inputState.KeysJustPressed[ebiten.KeyA] {
-		ih.actionHandler.ToggleAutoTravel()
+	// M - toggle movement mode for selected commander
+	if inputState.KeysJustPressed[ebiten.KeyM] {
+		ih.toggleMoveMode()
+		return true
+	}
+
+	// Tab - cycle to next commander
+	if inputState.KeysJustPressed[ebiten.KeyTab] {
+		ih.cycleCommander()
 		return true
 	}
 
@@ -74,7 +85,23 @@ func (ih *OverworldInputHandler) HandleInput(inputState *framework.InputState) b
 		return true
 	}
 
-	// E - engage selected threat
+	// R - recruit new commander
+	if inputState.KeysJustPressed[ebiten.KeyR] {
+		ih.actionHandler.RecruitCommander()
+		return true
+	}
+
+	// S - open squad management for selected commander
+	if inputState.KeysJustPressed[ebiten.KeyS] {
+		if ih.deps.State.SelectedCommanderID != 0 {
+			ih.deps.ModeManager.SetMode("squad_management")
+			return true
+		}
+		ih.deps.LogEvent("No commander selected - click a commander first")
+		return true
+	}
+
+	// E - engage selected threat (commander must be on same tile)
 	if inputState.KeysJustPressed[ebiten.KeyE] {
 		if ih.deps.State.HasSelection() {
 			ih.actionHandler.EngageThreat(ih.deps.State.SelectedNodeID)
@@ -82,25 +109,7 @@ func (ih *OverworldInputHandler) HandleInput(inputState *framework.InputState) b
 		}
 	}
 
-	// C - cancel travel
-	if inputState.KeysJustPressed[ebiten.KeyC] {
-		if travel.IsTraveling(ih.deps.Manager) {
-			ih.actionHandler.CancelTravel()
-			return true
-		}
-	}
-
-	// Movement keys advance time (W/S/D/Q/Z)
-	if inputState.KeysJustPressed[ebiten.KeyW] ||
-		inputState.KeysJustPressed[ebiten.KeyS] ||
-		inputState.KeysJustPressed[ebiten.KeyD] ||
-		inputState.KeysJustPressed[ebiten.KeyQ] ||
-		inputState.KeysJustPressed[ebiten.KeyZ] {
-		ih.actionHandler.AdvanceTick()
-		return true
-	}
-
-	// Mouse click - node selection
+	// Mouse click
 	if inputState.MousePressed && inputState.MouseButton == ebiten.MouseButtonLeft {
 		return ih.handleMouseClick(inputState)
 	}
@@ -108,14 +117,61 @@ func (ih *OverworldInputHandler) HandleInput(inputState *framework.InputState) b
 	return false
 }
 
-// handleMouseClick handles node selection via mouse.
+// handleMouseClick handles commander selection, movement, and node selection.
 func (ih *OverworldInputHandler) handleMouseClick(inputState *framework.InputState) bool {
-	// Check for threat first
+	// In move mode: click on valid tile to move
+	if ih.deps.State.InMoveMode && ih.deps.State.SelectedCommanderID != 0 {
+		logicalPos := ih.deps.Renderer.ScreenToLogical(inputState.MouseX, inputState.MouseY)
+
+		// Check if clicked position is a valid move tile
+		for _, validPos := range ih.deps.State.ValidMoveTiles {
+			if validPos.X == logicalPos.X && validPos.Y == logicalPos.Y {
+				ih.actionHandler.MoveSelectedCommander(logicalPos)
+				return true
+			}
+		}
+
+		// Click outside valid tiles exits move mode
+		ih.deps.State.ExitMoveMode()
+		ih.deps.LogEvent("Movement mode cancelled")
+		return true
+	}
+
+	// Check for commander at clicked position
+	commanderID := ih.deps.Renderer.GetCommanderAtPosition(inputState.MouseX, inputState.MouseY)
+	if commanderID != 0 {
+		ih.deps.State.SelectedCommanderID = commanderID
+		cmdData := commander.GetCommanderData(commanderID, ih.deps.Manager)
+		name := "Commander"
+		if cmdData != nil {
+			name = cmdData.Name
+		}
+
+		// Also select any threat/node at the same tile so E/G work immediately
+		threatID := ih.deps.Renderer.GetThreatAtPosition(inputState.MouseX, inputState.MouseY)
+		if threatID != 0 {
+			ih.deps.State.SelectedNodeID = threatID
+			ih.deps.LogEvent(fmt.Sprintf("Selected %s on threat (Press E to engage)", name))
+		} else {
+			nodeID := ih.deps.Renderer.GetNodeAtPosition(inputState.MouseX, inputState.MouseY)
+			if nodeID != 0 {
+				ih.deps.State.SelectedNodeID = nodeID
+				ih.deps.LogEvent(fmt.Sprintf("Selected %s at node (Press G to garrison)", name))
+			} else {
+				ih.deps.LogEvent(fmt.Sprintf("Selected %s (M=Move, S=Squads)", name))
+			}
+		}
+
+		ih.deps.RefreshPanels()
+		return true
+	}
+
+	// Check for threat (no commander on tile)
 	threatID := ih.deps.Renderer.GetThreatAtPosition(inputState.MouseX, inputState.MouseY)
 	if threatID != 0 {
 		ih.deps.State.SelectedNodeID = threatID
 		ih.deps.RefreshPanels()
-		ih.deps.LogEvent(fmt.Sprintf("Selected threat %d (Press E to engage)", threatID))
+		ih.deps.LogEvent(fmt.Sprintf("Selected threat %d (Move a commander here to engage)", threatID))
 		return true
 	}
 
@@ -132,6 +188,68 @@ func (ih *OverworldInputHandler) handleMouseClick(inputState *framework.InputSta
 	ih.deps.State.ClearSelection()
 	ih.deps.RefreshPanels()
 	return false
+}
+
+// toggleMoveMode toggles movement overlay for the selected commander.
+func (ih *OverworldInputHandler) toggleMoveMode() {
+	if ih.deps.State.SelectedCommanderID == 0 {
+		ih.deps.LogEvent("No commander selected - click a commander first")
+		return
+	}
+
+	if ih.deps.State.InMoveMode {
+		ih.deps.State.ExitMoveMode()
+		ih.deps.LogEvent("Movement mode cancelled")
+		return
+	}
+
+	// Calculate valid tiles
+	if ih.deps.CommanderMovement != nil {
+		tiles := ih.deps.CommanderMovement.GetValidMovementTiles(ih.deps.State.SelectedCommanderID)
+		if len(tiles) == 0 {
+			ih.deps.LogEvent("No movement remaining this turn")
+			return
+		}
+		ih.deps.State.InMoveMode = true
+		ih.deps.State.ValidMoveTiles = tiles
+		ih.deps.LogEvent("Movement mode active - click a blue tile to move")
+	}
+}
+
+// cycleCommander cycles SelectedCommanderID to the next commander in the roster.
+func (ih *OverworldInputHandler) cycleCommander() {
+	if ih.deps.PlayerData == nil {
+		return
+	}
+
+	commanders := commander.GetAllCommanders(ih.deps.PlayerData.PlayerEntityID, ih.deps.Manager)
+	if len(commanders) == 0 {
+		return
+	}
+
+	// Exit move mode when switching
+	ih.deps.State.ExitMoveMode()
+
+	// Find current index
+	currentIdx := -1
+	for i, id := range commanders {
+		if id == ih.deps.State.SelectedCommanderID {
+			currentIdx = i
+			break
+		}
+	}
+
+	// Cycle to next
+	nextIdx := (currentIdx + 1) % len(commanders)
+	ih.deps.State.SelectedCommanderID = commanders[nextIdx]
+
+	cmdData := commander.GetCommanderData(ih.deps.State.SelectedCommanderID, ih.deps.Manager)
+	name := "Commander"
+	if cmdData != nil {
+		name = cmdData.Name
+	}
+	ih.deps.LogEvent(fmt.Sprintf("Selected %s (%d/%d)", name, nextIdx+1, len(commanders)))
+	ih.deps.RefreshPanels()
 }
 
 // handleGarrison validates the selected node and opens the garrison dialog.
@@ -159,20 +277,21 @@ func (ih *OverworldInputHandler) handleGarrison() {
 		return
 	}
 
-	playerEntityID := ecs.EntityID(0)
-	if ih.deps.PlayerData != nil {
-		playerEntityID = ih.deps.PlayerData.PlayerEntityID
+	commanderID := ih.deps.State.SelectedCommanderID
+	if commanderID == 0 {
+		ih.deps.LogEvent("No commander selected - select a commander first")
+		return
 	}
 
-	ih.showGarrisonDialog(nodeID, playerEntityID)
+	ih.showGarrisonDialog(nodeID, commanderID)
 }
 
 // showGarrisonDialog builds and displays the garrison management dialog.
-func (ih *OverworldInputHandler) showGarrisonDialog(nodeID ecs.EntityID, playerEntityID ecs.EntityID) {
+func (ih *OverworldInputHandler) showGarrisonDialog(nodeID ecs.EntityID, rosterOwnerID ecs.EntityID) {
 	manager := ih.deps.Manager
 
 	garrisonData := garrison.GetGarrisonAtNode(manager, nodeID)
-	availableSquads := garrison.GetAvailableSquadsForGarrison(manager, playerEntityID)
+	availableSquads := garrison.GetAvailableSquadsForGarrison(manager, rosterOwnerID)
 
 	type garrisonEntry struct {
 		SquadID      ecs.EntityID

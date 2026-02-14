@@ -139,7 +139,7 @@ func applyCombatOutcome(
 
 // calculateThreatDamage converts enemy casualties to threat intensity damage
 // Every 5 enemies killed = 1 intensity reduction
-// TODO, thi will require mroe thought
+// TODO: Threat damage calculation may need non-linear scaling based on threat level
 func calculateThreatDamage(enemiesKilled int) int {
 	return enemiesKilled / 5
 }
@@ -226,24 +226,9 @@ func (es *EncounterService) calculateCasualties(
 	victorFaction ecs.EntityID,
 	defeatedFactions []ecs.EntityID,
 ) (playerUnitsLost int, enemyUnitsKilled int) {
-	// Find player and enemy factions from combat
-	// Note: We rely on faction data that still exists during this call
-	playerFactionID := ecs.EntityID(0)
-	enemyFactionID := ecs.EntityID(0)
-
-	// Find player and enemy factions
-	// The factions still exist at this point (cleaned up after this call)
-	for _, result := range es.manager.World.Query(combat.FactionTag) {
-		entity := result.Entity
-		factionData := common.GetComponentType[*combat.FactionData](entity, combat.CombatFactionComponent)
-		if factionData != nil {
-			if factionData.IsPlayerControlled {
-				playerFactionID = entity.GetID()
-			} else {
-				enemyFactionID = entity.GetID()
-			}
-		}
-	}
+	// Use cached faction IDs from encounter creation (avoids O(n) query)
+	playerFactionID := es.activeEncounter.PlayerFactionID
+	enemyFactionID := es.activeEncounter.EnemyFactionID
 
 	// Count dead units in each faction
 	for _, result := range es.manager.World.Query(squads.SquadMemberTag) {
@@ -284,7 +269,7 @@ func (es *EncounterService) getAllPlayerSquadIDs() []ecs.EntityID {
 		return nil
 	}
 
-	roster := squads.GetPlayerSquadRoster(es.activeEncounter.PlayerEntityID, es.manager)
+	roster := squads.GetPlayerSquadRoster(es.activeEncounter.RosterOwnerID, es.manager)
 	if roster != nil && len(roster.OwnedSquads) > 0 {
 		return roster.OwnedSquads
 	}

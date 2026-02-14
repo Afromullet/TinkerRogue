@@ -1,7 +1,6 @@
 package guisquads
 
 import (
-	"fmt"
 	"game_main/gui/framework"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -58,14 +57,10 @@ func (smm *SquadManagementMode) Initialize(ctx *framework.UIContext) error {
 }
 
 func (smm *SquadManagementMode) Enter(fromMode framework.UIMode) error {
-	fmt.Println("Entering Squad Management Mode")
-
 	return nil
 }
 
 func (smm *SquadManagementMode) Exit(toMode framework.UIMode) error {
-	fmt.Println("Exiting Squad Management Mode")
-
 	return nil
 }
 

@@ -222,8 +222,6 @@ func (upm *UnitPurchaseMode) refreshAfterUndoRedo() {
 }
 
 func (upm *UnitPurchaseMode) Enter(fromMode framework.UIMode) error {
-	fmt.Println("Entering Unit Purchase Mode")
-
 	// Populate unit list with all available templates
 	entries := make([]interface{}, 0, len(squads.Units))
 	for i := range squads.Units {
@@ -244,7 +242,6 @@ func (upm *UnitPurchaseMode) Enter(fromMode framework.UIMode) error {
 }
 
 func (upm *UnitPurchaseMode) Exit(toMode framework.UIMode) error {
-	fmt.Println("Exiting Unit Purchase Mode")
 	return nil
 }
 

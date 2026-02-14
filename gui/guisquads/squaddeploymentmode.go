@@ -126,8 +126,13 @@ func (sdm *SquadDeploymentMode) updateDetailPanel() {
 }
 
 func (sdm *SquadDeploymentMode) refreshSquadList() {
-	// Repopulate squad list to update placement status in labels
-	allSquads := sdm.Queries.SquadCache.FindAllSquads()
+	// Get squads from the active commander's roster (not all squads globally)
+	rosterOwnerID := sdm.Context.GetSquadRosterOwnerID()
+	squadRoster := squads.GetPlayerSquadRoster(rosterOwnerID, sdm.Context.ECSManager)
+	var allSquads []ecs.EntityID
+	if squadRoster != nil {
+		allSquads = squadRoster.OwnedSquads
+	}
 	aliveSquads := sdm.Queries.ApplyFilterToSquads(allSquads, sdm.Queries.FilterSquadsAlive())
 
 	entries := make([]interface{}, 0, len(aliveSquads))
@@ -139,8 +144,6 @@ func (sdm *SquadDeploymentMode) refreshSquadList() {
 }
 
 func (sdm *SquadDeploymentMode) Enter(fromMode framework.UIMode) error {
-	fmt.Println("Entering Squad Deployment Mode")
-
 	sdm.refreshSquadList()
 
 	sdm.selectedSquadID = 0
@@ -152,7 +155,6 @@ func (sdm *SquadDeploymentMode) Enter(fromMode framework.UIMode) error {
 }
 
 func (sdm *SquadDeploymentMode) Exit(toMode framework.UIMode) error {
-	fmt.Println("Exiting Squad Deployment Mode")
 	return nil
 }
 

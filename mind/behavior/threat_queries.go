@@ -17,8 +17,8 @@ type UnitCombatData struct {
 	Role        squads.UnitRole
 	AttackType  squads.AttackType
 	AttackRange int
-	Attributes *common.Attributes
-	IsLeader   bool
+	Attributes  *common.Attributes
+	IsLeader    bool
 }
 
 // GetUnitCombatData retrieves all combat-relevant data for a unit.
@@ -52,13 +52,13 @@ func GetUnitCombatData(unitID ecs.EntityID, manager *common.EntityManager) *Unit
 	}
 
 	return &UnitCombatData{
-		Entity:     entity,
-		EntityID:   unitID,
-		Role:       roleData.Role,
-		AttackType: targetRowData.AttackType,
+		Entity:      entity,
+		EntityID:    unitID,
+		Role:        roleData.Role,
+		AttackType:  targetRowData.AttackType,
 		AttackRange: attackRange,
-		Attributes: attr,
-		IsLeader:   entity.HasComponent(squads.LeaderComponent),
+		Attributes:  attr,
+		IsLeader:    entity.HasComponent(squads.LeaderComponent),
 	}
 }
 

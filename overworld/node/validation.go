@@ -59,8 +59,9 @@ func ValidatePlacement(manager *common.EntityManager, pos coords.LogicalPosition
 }
 
 // ValidatePlayerPlacement checks whether a player node can be placed at the given position.
-// Uses the player's position and existing player node positions as anchors.
-func ValidatePlayerPlacement(manager *common.EntityManager, pos coords.LogicalPosition, playerData *common.PlayerData) PlacementResult {
+// Uses commander positions and existing player node positions as anchors.
+// commanderPos is the selected commander's position (placement range is measured from commanders, not the player avatar).
+func ValidatePlayerPlacement(manager *common.EntityManager, pos coords.LogicalPosition, commanderPos *coords.LogicalPosition) PlacementResult {
 	// Check walkable terrain
 	if !core.IsTileWalkable(pos) {
 		return PlacementResult{Valid: false, Reason: "Terrain is not walkable"}
@@ -77,14 +78,14 @@ func ValidatePlayerPlacement(manager *common.EntityManager, pos coords.LogicalPo
 		return PlacementResult{Valid: false, Reason: "Maximum node limit reached"}
 	}
 
-	// Check placement range from player position or any existing player node
+	// Check placement range from selected commander or any existing player node
 	maxRange := float64(templates.OverworldConfigTemplate.PlayerNodes.MaxPlacementRange)
 	inRange := false
 
-	// Check distance from player position
-	if playerData != nil && playerData.Pos != nil {
-		dx := float64(pos.X - playerData.Pos.X)
-		dy := float64(pos.Y - playerData.Pos.Y)
+	// Check distance from selected commander's position
+	if commanderPos != nil {
+		dx := float64(pos.X - commanderPos.X)
+		dy := float64(pos.Y - commanderPos.Y)
 		dist := math.Sqrt(dx*dx + dy*dy)
 		if dist <= maxRange {
 			inRange = true
@@ -100,7 +101,7 @@ func ValidatePlayerPlacement(manager *common.EntityManager, pos coords.LogicalPo
 	}
 
 	if !inRange {
-		return PlacementResult{Valid: false, Reason: "Too far from player or existing nodes"}
+		return PlacementResult{Valid: false, Reason: "Too far from commander or existing nodes"}
 	}
 
 	return PlacementResult{Valid: true, Reason: ""}
@@ -108,9 +109,10 @@ func ValidatePlayerPlacement(manager *common.EntityManager, pos coords.LogicalPo
 
 // ValidatePlayerPlacementWithCost extends ValidatePlayerPlacement with a resource affordability check.
 // Returns invalid if the player cannot afford the node type's resource cost.
-func ValidatePlayerPlacementWithCost(manager *common.EntityManager, pos coords.LogicalPosition, playerData *common.PlayerData, playerEntityID ecs.EntityID, nodeTypeID string) PlacementResult {
+// commanderPos is the selected commander's position used for range validation.
+func ValidatePlayerPlacementWithCost(manager *common.EntityManager, pos coords.LogicalPosition, commanderPos *coords.LogicalPosition, playerEntityID ecs.EntityID, nodeTypeID string) PlacementResult {
 	// Run all existing placement checks first
-	result := ValidatePlayerPlacement(manager, pos, playerData)
+	result := ValidatePlayerPlacement(manager, pos, commanderPos)
 	if !result.Valid {
 		return result
 	}

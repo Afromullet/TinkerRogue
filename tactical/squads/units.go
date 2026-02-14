@@ -14,27 +14,27 @@ import (
 
 // UnitTemplate defines a unit to be created in a squad
 type UnitTemplate struct {
-	Name           string
-	Attributes     common.Attributes
-	EntityType     templates.EntityType
-	EntityConfig   templates.EntityConfig
-	EntityData     any      // JSONMonster, etc.
-	GridRow        int      // Anchor row (0-2)
-	GridCol        int      // Anchor col (0-2)
-	GridWidth      int      // Width in cells (1-3), defaults to 1
-	GridHeight     int      // Height in cells (1-3), defaults to 1
-	Role           UnitRole // Tank, DPS, Support
+	Name         string
+	Attributes   common.Attributes
+	EntityType   templates.EntityType
+	EntityConfig templates.EntityConfig
+	EntityData   any      // JSONMonster, etc.
+	GridRow      int      // Anchor row (0-2)
+	GridCol      int      // Anchor col (0-2)
+	GridWidth    int      // Width in cells (1-3), defaults to 1
+	GridHeight   int      // Height in cells (1-3), defaults to 1
+	Role         UnitRole // Tank, DPS, Support
 
 	// Targeting fields
 	AttackType  AttackType // MeleeRow, MeleeColumn, Ranged, or Magic
 	TargetCells [][2]int   // For magic: pattern cells
 
-	IsLeader       bool    // Squad leader flag
-	CoverValue     float64 // Damage reduction provided (0.0-1.0, 0 = no cover)
-	CoverRange     int     // Rows behind that receive cover (1-3)
-	RequiresActive bool    // If true, dead/stunned units don't provide cover
-	AttackRange    int     // World-based attack range (Melee=1, Ranged=3, Magic=4)
-	MovementSpeed  int     // Movement speed on world map (1 tile per speed point)
+	IsLeader       bool           // Squad leader flag
+	CoverValue     float64        // Damage reduction provided (0.0-1.0, 0 = no cover)
+	CoverRange     int            // Rows behind that receive cover (1-3)
+	RequiresActive bool           // If true, dead/stunned units don't provide cover
+	AttackRange    int            // World-based attack range (Melee=1, Ranged=3, Magic=4)
+	MovementSpeed  int            // Movement speed on world map (1 tile per speed point)
 	StatGrowths    StatGrowthData // Per-stat growth rates for leveling
 }
 
@@ -173,7 +173,6 @@ func GetAttackType(attackTypeString string, attackRange int) (AttackType, error)
 		return 0, fmt.Errorf("cannot determine attack type: attackType is empty and attackRange %d is invalid", attackRange)
 	}
 }
-
 
 // GetTemplateByName finds a unit template by its name.
 // Returns nil if no template with the given name is found.

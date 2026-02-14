@@ -4,8 +4,9 @@ import (
 	"game_main/common"
 	"game_main/config"
 	"game_main/gear"
-	"game_main/tactical/squads"
+	"game_main/tactical/commander"
 	_ "game_main/tactical/squadcommands" // Blank import to trigger init() for command queue components
+	"game_main/tactical/squads"
 	"game_main/visual/rendering"
 	"game_main/world/coords"
 	"game_main/world/worldmap"
@@ -58,7 +59,10 @@ func InitializePlayerData(ecsmanager *common.EntityManager, pl *common.PlayerDat
 			config.DefaultPlayerStartingStone,
 		)).
 		AddComponent(squads.UnitRosterComponent, squads.NewUnitRoster(config.DefaultPlayerMaxUnits)).
-		AddComponent(squads.SquadRosterComponent, squads.NewSquadRoster(config.DefaultPlayerMaxSquads))
+		AddComponent(commander.CommanderRosterComponent, &commander.CommanderRosterData{
+			CommanderIDs:  make([]ecs.EntityID, 0),
+			MaxCommanders: config.DefaultMaxCommanders,
+		})
 
 	players := ecs.BuildTag(common.PlayerComponent, common.PositionComponent, gear.InventoryComponent)
 	ecsmanager.WorldTags["players"] = players
@@ -85,21 +89,3 @@ func InitializePlayerData(ecsmanager *common.EntityManager, pl *common.PlayerDat
 
 }
 
-// AddCreaturesToTracker registers all existing monster entities with the creature tracking system.
-// It queries for all monsters in the ECS world and adds them to both the global CreatureTracker
-// and the new PositionSystem for O(1) position lookups.
-func AddCreaturesToTracker(ecsmanger *common.EntityManager) {
-
-	for _, c := range ecsmanger.World.Query(gear.MonstersTag) {
-
-		// Also add to new PositionSystem for O(1) lookups
-		if common.GlobalPositionSystem != nil {
-			pos := common.GetComponentType[*coords.LogicalPosition](c.Entity, common.PositionComponent)
-			if pos != nil {
-				common.GlobalPositionSystem.AddEntity(c.Entity.GetID(), *pos)
-			}
-		}
-
-	}
-
-}

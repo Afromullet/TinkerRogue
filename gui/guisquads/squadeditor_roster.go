@@ -215,8 +215,13 @@ func (sem *SquadEditorMode) backfillRosterWithSquadUnits() {
 		return
 	}
 
-	// Get all squads
-	allSquads := sem.Queries.SquadCache.FindAllSquads()
+	// Get squads from the active commander's roster (not all squads globally)
+	rosterOwnerID := sem.Context.GetSquadRosterOwnerID()
+	squadRoster := squads.GetPlayerSquadRoster(rosterOwnerID, sem.Queries.ECSManager)
+	if squadRoster == nil {
+		return
+	}
+	allSquads := squadRoster.OwnedSquads
 
 	for _, squadID := range allSquads {
 		// Get all units in this squad

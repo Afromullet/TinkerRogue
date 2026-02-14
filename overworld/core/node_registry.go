@@ -14,19 +14,10 @@ type ThreatTypeParams struct {
 	CanSpawnChildren bool
 }
 
-// NodeCategory represents the type of overworld node
-type NodeCategory string
-
-const (
-	NodeCategoryThreat     NodeCategory = "threat"
-	NodeCategorySettlement NodeCategory = "settlement"
-	NodeCategoryFortress   NodeCategory = "fortress"
-)
-
 // NodeDefinition is the runtime representation of an overworld node.
 // This is the new format that separates node properties from encounter properties.
 type NodeDefinition struct {
-	ID          string       // The node type ID (e.g., "necromancer")
+	ID          string // The node type ID (e.g., "necromancer")
 	Category    NodeCategory
 	DisplayName string
 

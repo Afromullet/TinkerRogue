@@ -30,7 +30,7 @@ type StrategicOverworldConfig struct {
 	TempleCount     int
 	GuildHallCount  int
 	WatchtowerCount int
-	POIMinDistance   int
+	POIMinDistance  int
 
 	// Faction
 	FactionCount      int
@@ -58,7 +58,7 @@ func DefaultStrategicOverworldConfig() StrategicOverworldConfig {
 		TempleCount:     2,
 		GuildHallCount:  2,
 		WatchtowerCount: 3,
-		POIMinDistance:   12,
+		POIMinDistance:  12,
 
 		FactionCount:      4,
 		FactionMinSpacing: 25,
@@ -307,10 +307,10 @@ func (g *StrategicOverworldGenerator) placeFactionStartPositions(result *Generat
 	}
 
 	sectors := []sectorBounds{
-		{10, 30, 10, 25},                     // Sector 0: top-left
-		{width - 30, width - 10, 10, 25},     // Sector 1: top-right
+		{10, 30, 10, 25},                                   // Sector 0: top-left
+		{width - 30, width - 10, 10, 25},                   // Sector 1: top-right
 		{width - 30, width - 10, height - 25, height - 10}, // Sector 2: bottom-right
-		{10, 30, height - 25, height - 10},   // Sector 3: bottom-left
+		{10, 30, height - 25, height - 10},                 // Sector 3: bottom-left
 	}
 
 	for i := 0; i < g.config.FactionCount && i < len(sectors); i++ {

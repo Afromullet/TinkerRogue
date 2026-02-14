@@ -1,8 +1,8 @@
 package worldmap
 
 import (
-	"game_main/world/coords"
 	"game_main/visual/graphics"
+	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"
 	"github.com/hajimehoshi/ebiten/v2"
@@ -31,7 +31,7 @@ type Tile struct {
 	PixelY       int
 	TileCords    coords.LogicalPosition
 	Blocked      bool
-	Image        *ebiten.Image  // Exported for rendering package
+	Image        *ebiten.Image // Exported for rendering package
 	tileContents TileContents
 	TileType     TileType
 	IsRevealed   bool

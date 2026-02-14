@@ -50,7 +50,6 @@ func (g *RoomsAndCorridorsGenerator) Generate(width, height int, images TileImag
 	return result
 }
 
-
 // generateRandomRoom creates a room with random size and position
 func (g *RoomsAndCorridorsGenerator) generateRandomRoom(mapWidth, mapHeight int) Rect {
 	w := common.GetRandomBetween(g.config.MinRoomSize, g.config.MaxRoomSize)
@@ -70,7 +69,6 @@ func (g *RoomsAndCorridorsGenerator) canPlaceRoom(room Rect, existing []Rect) bo
 	return true
 }
 
-
 // connectRooms creates L-shaped corridor between two rooms
 func (g *RoomsAndCorridorsGenerator) connectRooms(result *GenerationResult, room1, room2 Rect, width int, images TileImageSet) {
 	x1, y1 := room1.Center()
@@ -85,7 +83,6 @@ func (g *RoomsAndCorridorsGenerator) connectRooms(result *GenerationResult, room
 		carveHorizontalTunnel(result, x1, x2, y2, width, images)
 	}
 }
-
 
 // Register this generator on package initialization
 func init() {

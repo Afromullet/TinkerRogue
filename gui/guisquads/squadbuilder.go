@@ -1,13 +1,12 @@
 package guisquads
 
 import (
-	"game_main/gui/framework"
-	"game_main/gui/widgets"
-	"game_main/tactical/squadservices"
-
 	"fmt"
 
+	"game_main/gui/framework"
+	"game_main/gui/widgets"
 	"game_main/tactical/squads"
+	"game_main/tactical/squadservices"
 
 	"github.com/bytearena/ecs"
 	"github.com/ebitenui/ebitenui/widget"
@@ -329,10 +328,27 @@ func (sbm *SquadBuilderMode) onCreateSquad() {
 		fmt.Printf("Warning: %s\n", leaderResult.Error)
 	}
 
+	// Add squad to the active commander's squad roster
+	rosterOwnerID := sbm.Context.GetSquadRosterOwnerID()
+	squadRoster := squads.GetPlayerSquadRoster(rosterOwnerID, sbm.Queries.ECSManager)
+	if squadRoster != nil {
+		if err := squadRoster.AddSquad(sbm.currentSquadID); err != nil {
+			fmt.Printf("Warning: Failed to add squad to roster: %v\n", err)
+		}
+	}
+
 	fmt.Printf("Squad created: %s with %d units\n", sbm.currentSquadName, unitCount)
 
-	// Clear the builder for next squad
-	sbm.onClearGrid()
+	// Reset builder state for next squad WITHOUT destroying the created squad's units.
+	// onClearGrid() would dispose the units we just placed, so we only reset UI state here.
+	sbm.currentSquadID = 0
+	sbm.currentSquadName = ""
+	sbm.squadNameInput.SetText("")
+	sbm.selectedRosterEntry = nil
+	sbm.gridManager.ClearGrid()
+	sbm.refreshUnitPalette()
+	sbm.updateCapacityDisplay()
+	sbm.updateUnitDetails()
 }
 
 func (sbm *SquadBuilderMode) onToggleLeader() {

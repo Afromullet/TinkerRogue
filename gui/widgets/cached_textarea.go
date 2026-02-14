@@ -15,22 +15,23 @@ import (
 // - Trades memory (cached render buffer) for CPU (skip redundant renders)
 //
 // Usage:
-//   textarea := builders.CreateTextAreaWithConfig(...)
-//   cachedTextArea := NewCachedTextAreaWrapper(textarea)
-//   // Mark dirty when content changes:
-//   cachedTextArea.MarkDirty()
+//
+//	textarea := builders.CreateTextAreaWithConfig(...)
+//	cachedTextArea := NewCachedTextAreaWrapper(textarea)
+//	// Mark dirty when content changes:
+//	cachedTextArea.MarkDirty()
 //
 // IMPORTANT: You MUST call MarkDirty() whenever:
 // - Text content changes
 // - Scrolling occurs (if you want smooth scrolling)
 // - For frequently updating text (combat logs), consider NOT using cache
 type CachedTextAreaWrapper struct {
-	textarea     *widget.TextArea
-	cachedImage  *ebiten.Image
-	dirty        bool
-	lastWidth    int
-	lastHeight   int
-	renderCount  int // For debugging/profiling
+	textarea    *widget.TextArea
+	cachedImage *ebiten.Image
+	dirty       bool
+	lastWidth   int
+	lastHeight  int
+	renderCount int // For debugging/profiling
 }
 
 // NewCachedTextAreaWrapper creates a new cached textarea wrapper.

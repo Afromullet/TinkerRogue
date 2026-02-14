@@ -1,7 +1,6 @@
 package guisquads
 
 import (
-	"fmt"
 	"game_main/gui/builders"
 	"game_main/gui/framework"
 	"game_main/gui/specs"
@@ -152,8 +151,6 @@ func (sem *SquadEditorMode) buildActionButtons() *widget.Container {
 }
 
 func (sem *SquadEditorMode) Enter(fromMode framework.UIMode) error {
-	fmt.Println("Entering Squad Editor Mode")
-
 	// Backfill roster with any existing squad units
 	// This handles units created before roster tracking was implemented
 	sem.backfillRosterWithSquadUnits()
@@ -179,7 +176,6 @@ func (sem *SquadEditorMode) Enter(fromMode framework.UIMode) error {
 }
 
 func (sem *SquadEditorMode) Exit(toMode framework.UIMode) error {
-	fmt.Println("Exiting Squad Editor Mode")
 	sem.selectedGridCell = nil
 	sem.selectedUnitID = 0
 	sem.swapState.Reset()

@@ -140,9 +140,10 @@ const (
 
 // CombatModeLayout defines layout constants for combat mode
 // Layout structure:
-//   Top: TurnOrder (center, 8%), FactionInfo (top-left, 10%)
-//   Left: SquadList (35%) + SquadDetail (25%) = 60% middle section
-//   Bottom: ActionButtons (center, 15%), CombatLog (right, 15%)
+//
+//	Top: TurnOrder (center, 8%), FactionInfo (top-left, 10%)
+//	Left: SquadList (35%) + SquadDetail (25%) = 60% middle section
+//	Bottom: ActionButtons (center, 15%), CombatLog (right, 15%)
 const (
 	// Panel widths
 	CombatTurnOrderWidth    = 0.4  // Top center turn order bar

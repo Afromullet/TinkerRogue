@@ -35,7 +35,6 @@ func getSharedPositionalWeight() float64 {
 	return defaultSharedPositionalWeight
 }
 
-
 // RoleThreatWeights defines how each role weighs different threat layers.
 // Negative weights = attraction (e.g., tanks seek melee danger, support seeks wounded allies)
 // Positive weights = avoidance (e.g., support avoids all danger)
@@ -101,23 +100,23 @@ func GetRoleBehaviorWeights(role squads.UnitRole) RoleThreatWeights {
 	switch role {
 	case squads.RoleTank:
 		return RoleThreatWeights{
-			MeleeWeight:      -0.5,           // Tanks SEEK melee danger
-			RangedWeight:     rangedWeight,   // Shared config value
-			SupportWeight:    0.2,            // Stay near support for heals
+			MeleeWeight:      -0.5,         // Tanks SEEK melee danger
+			RangedWeight:     rangedWeight, // Shared config value
+			SupportWeight:    0.2,          // Stay near support for heals
 			PositionalWeight: positionalWeight,
 		}
 	case squads.RoleDPS:
 		return RoleThreatWeights{
-			MeleeWeight:      0.7,            // Avoid melee danger
-			RangedWeight:     rangedWeight,   // Shared config value
-			SupportWeight:    0.1,            // Low support priority
+			MeleeWeight:      0.7,          // Avoid melee danger
+			RangedWeight:     rangedWeight, // Shared config value
+			SupportWeight:    0.1,          // Low support priority
 			PositionalWeight: positionalWeight,
 		}
 	case squads.RoleSupport:
 		return RoleThreatWeights{
-			MeleeWeight:      1.0,            // Strongly avoid melee danger
-			RangedWeight:     rangedWeight,   // Shared config value
-			SupportWeight:    -1.0,           // SEEK high support value positions
+			MeleeWeight:      1.0,          // Strongly avoid melee danger
+			RangedWeight:     rangedWeight, // Shared config value
+			SupportWeight:    -1.0,         // SEEK high support value positions
 			PositionalWeight: positionalWeight,
 		}
 	default:

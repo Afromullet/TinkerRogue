@@ -41,7 +41,7 @@ func (npm *NodePlacementMode) renderPlacementPreview(screen *ebiten.Image) {
 		valid = npm.lastValidation.Valid
 	} else {
 		// Re-validate
-		result := node.ValidatePlayerPlacement(npm.Context.ECSManager, *npm.cursorPos, npm.Context.PlayerData)
+		result := node.ValidatePlayerPlacement(npm.Context.ECSManager, *npm.cursorPos, npm.getSelectedCommanderPos())
 		valid = result.Valid
 	}
 

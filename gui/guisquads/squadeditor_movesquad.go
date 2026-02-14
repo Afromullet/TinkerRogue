@@ -46,7 +46,7 @@ func (sem *SquadEditorMode) handleSwapCancel(inputState *framework.InputState) b
 func (sem *SquadEditorMode) executeSquadReorder(fromIndex, toIndex int) {
 	cmd := squadcommands.NewReorderSquadsCommand(
 		sem.Context.ECSManager,
-		sem.Context.PlayerData.PlayerEntityID,
+		sem.Context.GetSquadRosterOwnerID(),
 		fromIndex,
 		toIndex,
 	)
@@ -173,11 +173,11 @@ func (sem *SquadEditorMode) getSquadListBounds() image.Rectangle {
 
 // syncSquadOrderFromRoster updates allSquadIDs from the roster (source of truth)
 func (sem *SquadEditorMode) syncSquadOrderFromRoster() {
-	playerID := sem.Context.PlayerData.PlayerEntityID
+	rosterOwnerID := sem.Context.GetSquadRosterOwnerID()
 	manager := sem.Context.ECSManager
 
-	// Get roster
-	roster := squads.GetPlayerSquadRoster(playerID, manager)
+	// Get roster from active squad roster owner (commander or player)
+	roster := squads.GetPlayerSquadRoster(rosterOwnerID, manager)
 	if roster == nil {
 		return
 	}

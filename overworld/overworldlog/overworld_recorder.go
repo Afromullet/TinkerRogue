@@ -10,18 +10,18 @@ import (
 // OverworldRecord is the root structure exported to JSON for post-game analysis.
 // It aggregates all overworld events from a single game session.
 type OverworldRecord struct {
-	SessionID      string                    `json:"session_id"`
-	StartTime      time.Time                 `json:"start_time"`
-	EndTime        time.Time                 `json:"end_time"`
-	StartTick      int64                     `json:"start_tick"`
-	FinalTick      int64                     `json:"final_tick"`
-	TotalTicks     int64                     `json:"total_ticks"`
-	Outcome        string                    `json:"outcome"`          // "Victory", "Defeat", etc.
-	OutcomeReason  string                    `json:"outcome_reason"`
-	Events         []EventRecord             `json:"events"`
-	ThreatSummary  *ThreatActivitySummary    `json:"threat_summary"`
-	FactionSummary *FactionActivitySummary   `json:"faction_summary"`
-	CombatSummary  *CombatActivitySummary    `json:"combat_summary"`
+	SessionID      string                  `json:"session_id"`
+	StartTime      time.Time               `json:"start_time"`
+	EndTime        time.Time               `json:"end_time"`
+	StartTick      int64                   `json:"start_tick"`
+	FinalTick      int64                   `json:"final_tick"`
+	TotalTicks     int64                   `json:"total_ticks"`
+	Outcome        string                  `json:"outcome"` // "Victory", "Defeat", etc.
+	OutcomeReason  string                  `json:"outcome_reason"`
+	Events         []EventRecord           `json:"events"`
+	ThreatSummary  *ThreatActivitySummary  `json:"threat_summary"`
+	FactionSummary *FactionActivitySummary `json:"faction_summary"`
+	CombatSummary  *CombatActivitySummary  `json:"combat_summary"`
 }
 
 // EventRecord wraps an OverworldEvent with metadata for JSON export.
@@ -29,7 +29,7 @@ type OverworldRecord struct {
 type EventRecord struct {
 	Index       int                    `json:"index"`
 	Tick        int64                  `json:"tick"`
-	Type        string                 `json:"type"`        // Stringified EventType
+	Type        string                 `json:"type"` // Stringified EventType
 	EntityID    ecs.EntityID           `json:"entity_id"`
 	Description string                 `json:"description"`
 	Data        map[string]interface{} `json:"data"`

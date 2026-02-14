@@ -43,11 +43,19 @@ const (
 // Default player resources and roster limits
 const (
 	DefaultPlayerStartingGold  = 100000 // Starting gold for purchasing units
-	DefaultPlayerMaxUnits      = 50     // Maximum units player can own
-	DefaultPlayerMaxSquads     = 10     // Maximum squads player can own
+	DefaultPlayerMaxUnits      = 500    // Maximum units player can own
+	DefaultPlayerMaxSquads     = 50     // Maximum squads player can own
 	DefaultPlayerStartingIron  = 50     // Starting iron for node placement
 	DefaultPlayerStartingWood  = 50     // Starting wood for node placement
 	DefaultPlayerStartingStone = 50     // Starting stone for node placement
+)
+
+// Commander system defaults
+const (
+	DefaultCommanderMovementSpeed = 25   // Tiles per overworld turn
+	DefaultMaxCommanders          = 3    // Maximum commanders player can control
+	DefaultCommanderCost          = 5000 // Gold cost to recruit a new commander
+	DefaultCommanderMaxSquads     = 50   // Max squads per commander
 )
 
 // Default faction AI starting resources

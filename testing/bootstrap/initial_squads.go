@@ -9,25 +9,34 @@ import (
 	"github.com/bytearena/ecs"
 )
 
-// CreateInitialPlayerSquads creates starting squads for the player at game launch.
-// Creates 10 diverse squads in player reserves (not deployed on map).
-// All squads are marked with IsDeployed = false and added to player's SquadRoster.
-func CreateInitialPlayerSquads(playerID ecs.EntityID, manager *common.EntityManager) error {
+// CreateInitialPlayerSquads creates starting squads for a roster owner at game launch.
+// Creates 10 diverse squads in reserves (not deployed on map).
+// All squads are marked with IsDeployed = false and added to the owner's SquadRoster.
+// rosterOwnerID is the entity that holds the SquadRosterComponent (commander or player).
+// unitRosterOwnerID is the entity that holds the UnitRosterComponent (always the player).
+// prefix is prepended to squad names (e.g. "Vanguard" -> "Vanguard Balanced 1").
+func CreateInitialPlayerSquads(rosterOwnerID ecs.EntityID, unitRosterOwnerID ecs.EntityID, manager *common.EntityManager, prefix ...string) error {
 	// 1. Verify unit templates are loaded
 	if len(squads.Units) == 0 {
 		return fmt.Errorf("no unit templates available - call InitUnitTemplatesFromJSON() first")
 	}
 
-	// 2. Get player's squad roster
-	roster := squads.GetPlayerSquadRoster(playerID, manager)
+	// 2. Get squad roster from owner entity
+	roster := squads.GetPlayerSquadRoster(rosterOwnerID, manager)
 	if roster == nil {
-		return fmt.Errorf("player has no squad roster component")
+		return fmt.Errorf("entity %d has no squad roster component", rosterOwnerID)
 	}
 
-	// 3. Get player's unit roster for tracking unit ownership
-	unitRoster := squads.GetPlayerRoster(playerID, manager)
+	// 3. Get unit roster for tracking unit ownership (from player entity)
+	unitRoster := squads.GetPlayerRoster(unitRosterOwnerID, manager)
 	if unitRoster == nil {
-		return fmt.Errorf("player has no unit roster component")
+		return fmt.Errorf("entity %d has no unit roster component", unitRosterOwnerID)
+	}
+
+	// Determine name prefix
+	namePrefix := "Commander"
+	if len(prefix) > 0 && prefix[0] != "" {
+		namePrefix = prefix[0]
 	}
 
 	// 4. Create 10 diverse squads
@@ -35,16 +44,16 @@ func CreateInitialPlayerSquads(playerID ecs.EntityID, manager *common.EntityMana
 		name     string
 		createFn func(*common.EntityManager, string) (ecs.EntityID, error)
 	}{
-		{"Player Balanced Squad 1", createBalancedSquad},
-		{"Player Ranged Squad", createRangedSquad},
-		{"Player Magic Squad", createMagicSquad},
-		{"Player Balanced Squad 2", createBalancedSquad},
-		{"Player Mixed Squad", createMixedSquad},
-		{"Player Balanced Squad 3", createBalancedSquad},
-		{"Player Ranged Squad 2", createRangedSquad},
-		{"Player Magic Squad 2", createMagicSquad},
-		{"Player Mixed Squad 2", createMixedSquad},
-		{"Player Balanced Squad 4", createBalancedSquad},
+		{fmt.Sprintf("%s Balanced 1", namePrefix), createBalancedSquad},
+		{fmt.Sprintf("%s Ranged 1", namePrefix), createRangedSquad},
+		{fmt.Sprintf("%s Magic 1", namePrefix), createMagicSquad},
+		{fmt.Sprintf("%s Balanced 2", namePrefix), createBalancedSquad},
+		{fmt.Sprintf("%s Mixed 1", namePrefix), createMixedSquad},
+		{fmt.Sprintf("%s Balanced 3", namePrefix), createBalancedSquad},
+		{fmt.Sprintf("%s Ranged 2", namePrefix), createRangedSquad},
+		{fmt.Sprintf("%s Magic 2", namePrefix), createMagicSquad},
+		{fmt.Sprintf("%s Mixed 2", namePrefix), createMixedSquad},
+		{fmt.Sprintf("%s Balanced 4", namePrefix), createBalancedSquad},
 	}
 
 	for _, config := range squadConfigs {
@@ -142,7 +151,7 @@ func createBalancedSquad(manager *common.EntityManager, squadName string) (ecs.E
 // createRangedSquad creates a squad with only ranged units
 func createRangedSquad(manager *common.EntityManager, squadName string) (ecs.EntityID, error) {
 	// Filter ranged units (AttackRange >= 3)
-	rangedUnits := filterUnitsByAttackRange(3)
+	rangedUnits := squads.FilterByAttackRange(3)
 	if len(rangedUnits) == 0 {
 		return 0, fmt.Errorf("no ranged units available (AttackRange >= 3)")
 	}
@@ -191,7 +200,7 @@ func createRangedSquad(manager *common.EntityManager, squadName string) (ecs.Ent
 // createMagicSquad creates a squad with magic units
 func createMagicSquad(manager *common.EntityManager, squadName string) (ecs.EntityID, error) {
 	// Filter magic units (AttackType == Magic)
-	magicUnits := filterUnitsByAttackType(squads.AttackTypeMagic)
+	magicUnits := squads.FilterByAttackType(squads.AttackTypeMagic)
 	if len(magicUnits) == 0 {
 		return 0, fmt.Errorf("no magic units available (AttackType == Magic)")
 	}
@@ -236,8 +245,8 @@ func createMagicSquad(manager *common.EntityManager, squadName string) (ecs.Enti
 
 // createMixedSquad creates a squad with mixed ranged and magic units
 func createMixedSquad(manager *common.EntityManager, squadName string) (ecs.EntityID, error) {
-	rangedUnits := filterUnitsByAttackRange(3)
-	magicUnits := filterUnitsByAttackType(squads.AttackTypeMagic)
+	rangedUnits := squads.FilterByAttackRange(3)
+	magicUnits := squads.FilterByAttackType(squads.AttackTypeMagic)
 
 	if len(rangedUnits) == 0 || len(magicUnits) == 0 {
 		// Fallback to balanced squad if we don't have both types
@@ -293,28 +302,6 @@ func createMixedSquad(manager *common.EntityManager, squadName string) (ecs.Enti
 	)
 
 	return squadID, nil
-}
-
-// filterUnitsByAttackRange returns units matching the specified attack range
-func filterUnitsByAttackRange(minRange int) []squads.UnitTemplate {
-	var filtered []squads.UnitTemplate
-	for _, unit := range squads.Units {
-		if unit.AttackRange >= minRange {
-			filtered = append(filtered, unit)
-		}
-	}
-	return filtered
-}
-
-// filterUnitsByAttackType returns units matching the specified attack type
-func filterUnitsByAttackType(attackType squads.AttackType) []squads.UnitTemplate {
-	var filtered []squads.UnitTemplate
-	for _, unit := range squads.Units {
-		if unit.AttackType == attackType {
-			filtered = append(filtered, unit)
-		}
-	}
-	return filtered
 }
 
 // registerSquadUnitsInRoster registers all units in a squad with the player's unit roster

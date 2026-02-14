@@ -7,7 +7,7 @@ import (
 	"github.com/bytearena/ecs"
 )
 
-// CheckAndTriggerAbilities - 
+// CheckAndTriggerAbilities -
 
 func CheckAndTriggerAbilities(squadID ecs.EntityID, ecsmanager *common.EntityManager) {
 	// Find leader via query (not stored reference)
@@ -268,7 +268,7 @@ func applyFireballEffect(squadID ecs.EntityID, params AbilityParams, ecsmanager 
 	fmt.Printf("[ABILITY] Fireball! %d damage dealt, %d units killed\n", params.BaseDamage, killed)
 }
 
-// EquipAbilityToLeader - 
+// EquipAbilityToLeader -
 
 func EquipAbilityToLeader(
 	leaderEntityID ecs.EntityID,

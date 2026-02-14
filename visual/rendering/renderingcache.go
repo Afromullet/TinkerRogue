@@ -21,7 +21,7 @@ type RenderingCache struct {
 // Call this during game initialization
 func NewRenderingCache(manager *common.EntityManager) *RenderingCache {
 	return &RenderingCache{
-	
+
 		// View is automatically maintained when RenderableComponent added/removed
 		RenderablesView: manager.World.CreateView(RenderablesTag),
 

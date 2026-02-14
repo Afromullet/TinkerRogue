@@ -41,7 +41,7 @@ type RenderedBounds struct {
 	MinX, MaxX int
 	MinY, MaxY int
 	RightEdgeX int
-	TopEdgeY int
+	TopEdgeY   int
 }
 
 // Render draws tiles to screen based on options using batching for performance

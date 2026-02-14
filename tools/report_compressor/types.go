@@ -2,22 +2,22 @@ package main
 
 // InputRow represents a single parsed row from the combat_balance_report CSV.
 type InputRow struct {
-	Attacker       string
-	Defender       string
-	AttackType     string // "Regular" or "Counterattack"
-	TotalAttacks   int
-	Hits           int
-	Misses         int
-	Dodges         int
-	Criticals      int
-	HitRate        float64
-	DodgeRate      float64
-	CritRate       float64
-	TotalDamage    int
+	Attacker        string
+	Defender        string
+	AttackType      string // "Regular" or "Counterattack"
+	TotalAttacks    int
+	Hits            int
+	Misses          int
+	Dodges          int
+	Criticals       int
+	HitRate         float64
+	DodgeRate       float64
+	CritRate        float64
+	TotalDamage     int
 	AvgDmgPerAttack float64
-	AvgDmgPerHit   float64
-	TotalKills     int
-	BattlesSampled int
+	AvgDmgPerHit    float64
+	TotalKills      int
+	BattlesSampled  int
 }
 
 // UnitStats holds aggregated offense/defense stats for a single unit.

@@ -1,5 +1,14 @@
 package core
 
+// NodeCategory represents the type of overworld node
+type NodeCategory string
+
+const (
+	NodeCategoryThreat     NodeCategory = "threat"
+	NodeCategorySettlement NodeCategory = "settlement"
+	NodeCategoryFortress   NodeCategory = "fortress"
+)
+
 // ThreatType represents different categories of threats.
 // Now string-based for flexibility - can add new types via JSON without code changes.
 type ThreatType string
@@ -138,24 +147,24 @@ type VictoryStateData struct {
 type EventType int
 
 const (
-	EventThreatSpawned   EventType = iota // New threat appeared
-	EventThreatEvolved                    // Threat gained intensity
-	EventThreatDestroyed                  // Threat eliminated
-	EventFactionExpanded                  // Faction claimed territory
-	EventFactionRaid                      // Faction launched raid
-	EventFactionDefeated                  // Faction eliminated
-	EventVictory                          // Player won
-	EventDefeat                           // Player lost
-	EventCombatResolved                    // Combat outcome applied
-	EventPlayerNodePlaced                  // Player placed a node
-	EventInfluenceSynergy                  // Synergy cluster formed
-	EventInfluenceCompetition              // Faction rivalry detected
-	EventInfluenceSuppression              // Player node suppressing threat
-	EventGarrisonAssigned                  // Squad assigned to garrison
-	EventGarrisonRemoved                   // Squad removed from garrison
-	EventGarrisonAttacked                  // Enemy faction attacking a garrisoned node
-	EventGarrisonDefended                  // Garrison successfully defended
-	EventNodeCaptured                      // Node ownership changed after garrison defeat
+	EventThreatSpawned        EventType = iota // New threat appeared
+	EventThreatEvolved                         // Threat gained intensity
+	EventThreatDestroyed                       // Threat eliminated
+	EventFactionExpanded                       // Faction claimed territory
+	EventFactionRaid                           // Faction launched raid
+	EventFactionDefeated                       // Faction eliminated
+	EventVictory                               // Player won
+	EventDefeat                                // Player lost
+	EventCombatResolved                        // Combat outcome applied
+	EventPlayerNodePlaced                      // Player placed a node
+	EventInfluenceSynergy                      // Synergy cluster formed
+	EventInfluenceCompetition                  // Faction rivalry detected
+	EventInfluenceSuppression                  // Player node suppressing threat
+	EventGarrisonAssigned                      // Squad assigned to garrison
+	EventGarrisonRemoved                       // Squad removed from garrison
+	EventGarrisonAttacked                      // Enemy faction attacking a garrisoned node
+	EventGarrisonDefended                      // Garrison successfully defended
+	EventNodeCaptured                          // Node ownership changed after garrison defeat
 )
 
 func (e EventType) String() string {

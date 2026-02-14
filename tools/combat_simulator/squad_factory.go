@@ -24,11 +24,11 @@ func createSimSquad(
 	squadID := squadEntity.GetID()
 
 	squadEntity.AddComponent(squads.SquadComponent, &squads.SquadData{
-		SquadID:     squadID,
-		Name:        squadName,
-		Formation:   formation,
-		Morale:      100,
-		TurnCount:   0,
+		SquadID:    squadID,
+		Name:       squadName,
+		Formation:  formation,
+		Morale:     100,
+		TurnCount:  0,
 		MaxUnits:   9,
 		IsDeployed: false,
 	})

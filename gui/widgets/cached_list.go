@@ -15,22 +15,23 @@ import (
 // - Trades memory (cached render buffer) for CPU (skip redundant renders)
 //
 // Usage:
-//   list := builders.CreateListWithConfig(...)
-//   cachedList := NewCachedListWrapper(list)
-//   // Mark dirty when entries change:
-//   cachedList.MarkDirty()
+//
+//	list := builders.CreateListWithConfig(...)
+//	cachedList := NewCachedListWrapper(list)
+//	// Mark dirty when entries change:
+//	cachedList.MarkDirty()
 //
 // IMPORTANT: You MUST call MarkDirty() whenever:
 // - List entries are added/removed
 // - Entry content changes
 // - Selection changes (if you want to show selection immediately)
 type CachedListWrapper struct {
-	list         *widget.List
-	cachedImage  *ebiten.Image
-	dirty        bool
-	lastWidth    int
-	lastHeight   int
-	renderCount  int // For debugging/profiling
+	list        *widget.List
+	cachedImage *ebiten.Image
+	dirty       bool
+	lastWidth   int
+	lastHeight  int
+	renderCount int // For debugging/profiling
 }
 
 // NewCachedListWrapper creates a new cached list wrapper.

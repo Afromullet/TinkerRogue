@@ -1,9 +1,12 @@
 package framework
 
 import (
+	"fmt"
+
 	"game_main/common"
 	"game_main/world/worldmap"
 
+	"github.com/bytearena/ecs"
 	"github.com/ebitenui/ebitenui"
 	"github.com/hajimehoshi/ebiten/v2"
 )
@@ -50,7 +53,22 @@ type UIContext struct {
 	TileSize        int
 	ModeCoordinator *GameModeCoordinator // For context switching
 	Queries         *GUIQueries          // Shared queries for all UI modes
-	// Add other commonly needed game state
+}
+
+// GetSquadRosterOwnerID returns the entity that owns the active squad roster.
+// In overworld context, this is the selected commander. Falls back to player entity ID.
+func (ctx *UIContext) GetSquadRosterOwnerID() ecs.EntityID {
+	if ctx.ModeCoordinator != nil {
+		owState := ctx.ModeCoordinator.GetOverworldState()
+		if owState != nil && owState.SelectedCommanderID != 0 {
+			return owState.SelectedCommanderID
+		}
+	}
+	fmt.Println("WARNING: GetSquadRosterOwnerID - no commander selected, falling back to player entity")
+	if ctx.PlayerData != nil {
+		return ctx.PlayerData.PlayerEntityID
+	}
+	return 0
 }
 
 // InputState captures current frame's input

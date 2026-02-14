@@ -6,6 +6,7 @@ import (
 	"game_main/common"
 	"game_main/gui/framework"
 	"game_main/overworld/core"
+	"game_main/tactical/commander"
 	"game_main/visual/rendering"
 	"game_main/world/coords"
 	"game_main/world/worldmap"
@@ -45,11 +46,16 @@ func (r *OverworldRenderer) Render(screen *ebiten.Image) {
 		r.renderInfluenceZones(screen)
 	}
 
+	// Render valid movement tiles overlay (below nodes)
+	if r.state.InMoveMode && len(r.state.ValidMoveTiles) > 0 {
+		r.renderValidMovementTiles(screen)
+	}
+
 	// Render all nodes (threats, settlements, neutral POIs)
 	r.renderNodes(screen)
 
-	// Render player avatar (above nodes)
-	r.renderPlayerAvatar(screen)
+	// Render all commanders (above nodes)
+	r.renderCommanders(screen)
 
 	// Render selection highlight on top (last)
 	if r.state.HasSelection() {
@@ -146,34 +152,84 @@ func (r *OverworldRenderer) renderInfluenceZones(screen *ebiten.Image) {
 	}
 }
 
-// renderPlayerAvatar draws the player sprite at their current position
-func (r *OverworldRenderer) renderPlayerAvatar(screen *ebiten.Image) {
-	if r.context == nil || r.context.PlayerData == nil {
-		return
+// commanderColors provides distinct border colors for each commander in the roster.
+var commanderColors = []color.RGBA{
+	{R: 0, G: 200, B: 255, A: 200},   // Cyan (first commander)
+	{R: 255, G: 165, B: 0, A: 200},   // Orange
+	{R: 150, G: 255, B: 0, A: 200},   // Lime
+	{R: 255, G: 100, B: 255, A: 200}, // Pink
+	{R: 255, G: 255, B: 100, A: 200}, // Yellow
+}
+
+// getCommanderColor returns the color for a commander based on roster index.
+func (r *OverworldRenderer) getCommanderColor(commanderID ecs.EntityID) color.RGBA {
+	if r.context.PlayerData == nil {
+		return commanderColors[0]
 	}
-
-	playerEntity := r.manager.FindEntityByID(r.context.PlayerData.PlayerEntityID)
-	if playerEntity == nil {
-		return
+	roster := commander.GetPlayerCommanderRoster(r.context.PlayerData.PlayerEntityID, r.manager)
+	if roster == nil {
+		return commanderColors[0]
 	}
-
-	pos := common.GetComponentType[*coords.LogicalPosition](playerEntity, common.PositionComponent)
-	if pos == nil {
-		return
+	for i, id := range roster.CommanderIDs {
+		if id == commanderID {
+			return commanderColors[i%len(commanderColors)]
+		}
 	}
+	return commanderColors[0]
+}
 
-	renderable := common.GetComponentType[*rendering.Renderable](playerEntity, rendering.RenderableComponent)
-	if renderable == nil || renderable.Image == nil || !renderable.Visible {
-		return
+// renderCommanders draws all commander entities on the overworld map.
+// Each commander gets a colored border based on roster position. The selected one gets a brighter highlight.
+func (r *OverworldRenderer) renderCommanders(screen *ebiten.Image) {
+	for _, result := range commander.CommanderView.Get() {
+		entity := result.Entity
+		pos := common.GetComponentType[*coords.LogicalPosition](entity, common.PositionComponent)
+		if pos == nil {
+			continue
+		}
+
+		renderable := common.GetComponentType[*rendering.Renderable](entity, rendering.RenderableComponent)
+		if renderable == nil || renderable.Image == nil || !renderable.Visible {
+			continue
+		}
+
+		screenX := float64((pos.X - r.state.CameraX) * r.tileSize)
+		screenY := float64((pos.Y - r.state.CameraY) * r.tileSize)
+
+		op := &ebiten.DrawImageOptions{}
+		op.GeoM.Translate(screenX, screenY)
+		screen.DrawImage(renderable.Image, op)
+
+		halfSize := float32(r.tileSize) / 2
+		centerX := float32(screenX) + halfSize
+		centerY := float32(screenY) + halfSize
+
+		// Draw commander-colored border (always visible for identification)
+		cmdColor := r.getCommanderColor(entity.GetID())
+		vector.StrokeRect(screen, centerX-halfSize, centerY-halfSize, halfSize*2, halfSize*2, 1, cmdColor, true)
+
+		// Draw brighter selection highlight for selected commander
+		if entity.GetID() == r.state.SelectedCommanderID {
+			selectionColor := color.RGBA{R: 255, G: 255, B: 255, A: 255}
+			vector.StrokeRect(screen, centerX-halfSize-2, centerY-halfSize-2, halfSize*2+4, halfSize*2+4, 2, selectionColor, true)
+		}
 	}
+}
 
-	screenX := float64((pos.X - r.state.CameraX) * r.tileSize)
-	screenY := float64((pos.Y - r.state.CameraY) * r.tileSize)
+// renderValidMovementTiles draws tile overlays for valid movement positions.
+func (r *OverworldRenderer) renderValidMovementTiles(screen *ebiten.Image) {
+	moveColor := color.RGBA{R: 0, G: 150, B: 255, A: 80}
+	for _, pos := range r.state.ValidMoveTiles {
+		screenX := float32((pos.X - r.state.CameraX) * r.tileSize)
+		screenY := float32((pos.Y - r.state.CameraY) * r.tileSize)
+		vector.DrawFilledRect(screen, screenX, screenY, float32(r.tileSize), float32(r.tileSize), moveColor, true)
+	}
+}
 
-	op := &ebiten.DrawImageOptions{}
-	op.GeoM.Translate(screenX, screenY)
-
-	screen.DrawImage(renderable.Image, op)
+// GetCommanderAtPosition returns commander entity ID at screen coordinates (for mouse clicks)
+func (r *OverworldRenderer) GetCommanderAtPosition(screenX, screenY int) ecs.EntityID {
+	logicalPos := r.ScreenToLogical(screenX, screenY)
+	return commander.GetCommanderAt(logicalPos, r.manager)
 }
 
 // renderSelectionHighlight draws a highlight around the selected node.
@@ -237,4 +293,3 @@ func (r *OverworldRenderer) GetNodeAtPosition(screenX, screenY int) ecs.EntityID
 	logicalPos := r.ScreenToLogical(screenX, screenY)
 	return core.GetNodeAtPosition(r.manager, logicalPos)
 }
-

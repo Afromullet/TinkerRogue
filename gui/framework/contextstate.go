@@ -67,23 +67,35 @@ func (ts *TacticalState) Reset() {
 // - UI state: Camera position, selections, display toggles
 // - Game state: Tick data, threats, travel (stored in ECS)
 type OverworldState struct {
-	CameraX         int
-	CameraY         int
-	SelectedNodeID  ecs.EntityID            // Currently selected node (threat or friendly)
-	HoveredPosition *coords.LogicalPosition // Current mouse hover position
-	ShowInfluence   bool                    // Toggle influence visualization
-	IsAutoTraveling bool                    // Auto-advance ticks during travel
+	CameraX        int
+	CameraY        int
+	SelectedNodeID ecs.EntityID // Currently selected node (threat or friendly)
+
+	ShowInfluence bool // Toggle influence visualization
+
+	// Commander UI state
+	SelectedCommanderID ecs.EntityID             // Currently selected commander
+	InMoveMode          bool                     // Movement overlay showing
+	ValidMoveTiles      []coords.LogicalPosition // Cached valid tiles for movement
 }
 
 // NewOverworldState creates a default overworld state
 func NewOverworldState() *OverworldState {
 	return &OverworldState{
-		CameraX:        0,
-		CameraY:        0,
-		SelectedNodeID: 0,
-		HoveredPosition: nil,
-		ShowInfluence:  false,
+		CameraX:             0,
+		CameraY:             0,
+		SelectedNodeID:      0,
+		ShowInfluence:       false,
+		SelectedCommanderID: 0,
+		InMoveMode:          false,
+		ValidMoveTiles:      nil,
 	}
+}
+
+// ExitMoveMode clears move mode state
+func (os *OverworldState) ExitMoveMode() {
+	os.InMoveMode = false
+	os.ValidMoveTiles = nil
 }
 
 // ClearSelection clears the currently selected node

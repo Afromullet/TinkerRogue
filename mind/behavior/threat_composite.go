@@ -19,7 +19,7 @@ type CompositeThreatEvaluator struct {
 	factionID ecs.EntityID
 
 	// Individual layers
-	combatThreat   *CombatThreatLayer   // Unified melee + ranged layer
+	combatThreat   *CombatThreatLayer // Unified melee + ranged layer
 	supportValue   *SupportValueLayer
 	positionalRisk *PositionalRiskLayer
 

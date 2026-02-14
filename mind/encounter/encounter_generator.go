@@ -18,23 +18,23 @@ import (
 // Returns an EncounterSpec that can be passed to combat.SetupCombatFromEncounter.
 func GenerateEncounterSpec(
 	manager *common.EntityManager,
-	playerEntityID ecs.EntityID,
+	rosterOwnerID ecs.EntityID,
 	playerStartPos coords.LogicalPosition,
 	encounterData *core.OverworldEncounterData,
 ) (*EncounterSpec, error) {
 	// Validate player
-	if playerEntityID == 0 {
-		return nil, fmt.Errorf("invalid player entity ID")
+	if rosterOwnerID == 0 {
+		return nil, fmt.Errorf("invalid roster owner entity ID")
 	}
 
-	// Ensure player has deployed squads
-	if err := ensurePlayerSquadsDeployed(playerEntityID, manager); err != nil {
+	// Ensure roster owner has deployed squads
+	if err := ensurePlayerSquadsDeployed(rosterOwnerID, manager); err != nil {
 		return nil, fmt.Errorf("failed to deploy player squads: %w", err)
 	}
 
 	// Get player's roster
 	config := evaluation.GetPowerConfigByProfile(DefaultPowerProfile)
-	roster := squads.GetPlayerSquadRoster(playerEntityID, manager)
+	roster := squads.GetPlayerSquadRoster(rosterOwnerID, manager)
 	if roster == nil {
 		return nil, fmt.Errorf("player has no squad roster")
 	}
@@ -68,9 +68,6 @@ func GenerateEncounterSpec(
 	if targetEnemySquadPower > difficultyMod.MaxTargetPower {
 		targetEnemySquadPower = difficultyMod.MaxTargetPower
 	}
-
-	fmt.Printf("Generating encounter spec: Avg Power %.2f, Target Power %.2f\n",
-		avgPlayerSquadPower, targetEnemySquadPower)
 
 	// Generate enemy squad specifications using shared function
 	enemySquadSpecs := generateEnemySquadsByPower(

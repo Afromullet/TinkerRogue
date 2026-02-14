@@ -1,8 +1,10 @@
 package main
 
 import (
+	"fmt"
 	"game_main/common"
 	"game_main/config"
+	"game_main/tactical/commander"
 	"game_main/tactical/squads"
 	"game_main/visual/graphics"
 	"game_main/world/coords"
@@ -22,7 +24,6 @@ import (
 	"game_main/overworld/core"
 	"game_main/overworld/node"
 	"game_main/overworld/tick"
-	"game_main/overworld/travel"
 	"game_main/testing"
 	"game_main/testing/bootstrap"
 	"game_main/visual/rendering"
@@ -31,6 +32,8 @@ import (
 	"net/http"
 	_ "net/http/pprof" // Blank import to register pprof handlers
 	"runtime"
+
+	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 )
 
 // GameBootstrap encapsulates game initialization logic with explicit phases.
@@ -72,21 +75,46 @@ func (gb *GameBootstrap) CreateWorld(gm *worldmap.GameMap) {
 	*gm = worldmap.NewGameMap("overworld")
 }
 
-// CreatePlayer initializes the player entity and adds creatures to position system.
+// CreatePlayer initializes the player entity, creates the initial commander, and adds creatures to position system.
 // Phase 4: Depends on CreateWorld for starting position.
 func (gb *GameBootstrap) CreatePlayer(em *common.EntityManager, pd *common.PlayerData, gm *worldmap.GameMap) {
 	InitializePlayerData(em, pd, gm)
-	AddCreaturesToTracker(em)
 
 	// Initialize unit templates before creating initial squads
 	if err := squads.InitUnitTemplatesFromJSON(); err != nil {
 		log.Fatalf("Failed to load unit templates: %v", err)
 	}
 
-	// Create initial squads for player (in reserves, not deployed)
-	if err := bootstrap.CreateInitialPlayerSquads(pd.PlayerEntityID, em); err != nil {
+	// Create initial commander at the player's starting position
+	commanderImage, _, err := ebitenutil.NewImageFromFile(config.PlayerImagePath)
+	if err != nil {
+		log.Fatalf("Failed to load commander image: %v", err)
+	}
+
+	commanderID := commander.CreateCommander(
+		em,
+		"Commander",
+		*pd.Pos,
+		config.DefaultCommanderMovementSpeed,
+		config.DefaultCommanderMaxSquads,
+		commanderImage,
+	)
+
+	// Add commander to player's roster
+	roster := commander.GetPlayerCommanderRoster(pd.PlayerEntityID, em)
+	if roster == nil {
+		log.Fatal("Player has no commander roster component")
+	}
+	if err := roster.AddCommander(commanderID); err != nil {
+		log.Fatalf("Failed to add initial commander: %v", err)
+	}
+
+	// Create initial squads on the commander (squad roster) using player's unit roster
+	if err := bootstrap.CreateInitialPlayerSquads(commanderID, pd.PlayerEntityID, em, "Commander"); err != nil {
 		log.Fatalf("Failed to create initial player squads: %v", err)
 	}
+
+	fmt.Printf("Created initial commander (ID: %d) at (%d,%d)\n", commanderID, pd.Pos.X, pd.Pos.Y)
 }
 
 // SetupDebugContent creates test items and spawns debug content.
@@ -108,8 +136,14 @@ func (gb *GameBootstrap) InitializeGameplay(em *common.EntityManager, pd *common
 	// Initialize overworld tick state
 	tick.CreateTickStateEntity(em)
 
-	// Initialize travel state
-	travel.CreateTravelStateEntity(em)
+	// Create additional starting commanders near player position
+	if err := bootstrap.CreateTestCommanders(em, pd, *pd.Pos); err != nil {
+		fmt.Printf("WARNING: Failed to create test commanders: %v\n", err)
+	}
+
+	// Initialize commander turn state and action states
+	commander.CreateOverworldTurnState(em)
+	commander.StartNewTurn(em, pd.PlayerEntityID)
 
 	// Initialize walkable grid from map tiles
 	core.InitWalkableGrid(config.DefaultMapWidth, config.DefaultMapHeight)

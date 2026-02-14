@@ -97,7 +97,12 @@ type ActiveEncounter struct {
 
 	// Combat tracking (for cleanup coordination)
 	EnemySquadIDs  []ecs.EntityID
-	PlayerEntityID ecs.EntityID
+	RosterOwnerID  ecs.EntityID // Commander entity (owns squad roster)
+	PlayerEntityID ecs.EntityID // Player entity (owns resource stockpile)
+
+	// Cached faction IDs (avoid O(n) query during resolution)
+	PlayerFactionID ecs.EntityID // Player's combat faction
+	EnemyFactionID  ecs.EntityID // Enemy's combat faction
 
 	// Garrison defense tracking
 	IsGarrisonDefense bool         // True if defending a garrisoned node

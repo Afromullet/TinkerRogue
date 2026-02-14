@@ -12,16 +12,16 @@ var UnitRosterComponent *ecs.Component
 
 // UnitRosterEntry represents a count of units of a specific template
 type UnitRosterEntry struct {
-	TemplateName  string                  // Name of the template
-	TotalOwned    int                     // Total number of this unit type owned
-	UnitsInSquads map[ecs.EntityID]int    // Map of squadID -> count of units in that squad
-	UnitEntities  []ecs.EntityID          // Individual unit entity IDs for this template
+	TemplateName  string               // Name of the template
+	TotalOwned    int                  // Total number of this unit type owned
+	UnitsInSquads map[ecs.EntityID]int // Map of squadID -> count of units in that squad
+	UnitEntities  []ecs.EntityID       // Individual unit entity IDs for this template
 }
 
 // UnitRoster tracks all units owned by the player
 type UnitRoster struct {
 	Units    map[string]*UnitRosterEntry // Map of template name -> roster entry
-	MaxUnits int                          // Maximum number of units player can own
+	MaxUnits int                         // Maximum number of units player can own
 }
 
 // NewUnitRoster creates a new unit roster with a maximum capacity
@@ -207,4 +207,3 @@ func RegisterSquadUnitInRoster(roster *UnitRoster, unitID ecs.EntityID, squadID 
 
 	return nil
 }
-

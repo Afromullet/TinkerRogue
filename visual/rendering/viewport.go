@@ -45,7 +45,7 @@ type ViewportRenderer struct {
 	overlayCache    *ebiten.Image              // Reusable overlay image to avoid allocations
 	overlayTileSize int                        // Track size for invalidation
 	borderDrawOpts  [4]ebiten.DrawImageOptions // Reusable draw options for borders [top, bottom, left, right]
-	overlayDrawOpts ebiten.DrawImageOptions   // Reusable draw options for overlays
+	overlayDrawOpts ebiten.DrawImageOptions    // Reusable draw options for overlays
 }
 
 // NewViewportRenderer creates a renderer for the current screen

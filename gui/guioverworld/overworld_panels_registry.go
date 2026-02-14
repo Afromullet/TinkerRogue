@@ -96,15 +96,15 @@ func getOverworldTextArea(panels *framework.PanelRegistry, panelType framework.P
 }
 
 func init() {
-	// Register debug sub-menu (Advance Tick, Toggle Influence)
+	// Register debug sub-menu (End Turn, Toggle Influence)
 	framework.RegisterPanel(OverworldPanelDebugMenu, framework.PanelDescriptor{
 		Content: framework.ContentCustom,
 		OnCreate: func(result *framework.PanelResult, mode framework.UIMode) error {
 			om := mode.(*OverworldMode)
 
 			result.Container = createOverworldSubMenu(om, "debug", []builders.ButtonConfig{
-				{Text: "Advance Tick (Space)", OnClick: func() {
-					om.actionHandler.AdvanceTick()
+				{Text: "End Turn (Space)", OnClick: func() {
+					om.actionHandler.EndTurn()
 					om.subMenus.CloseAll()
 				}},
 				{Text: "Toggle Influence (I)", OnClick: func() {
@@ -151,6 +151,10 @@ func init() {
 					om.ModeManager.SetMode("inventory")
 					om.subMenus.CloseAll()
 				}},
+				{Text: "Recruit (R)", OnClick: func() {
+					om.actionHandler.RecruitCommander()
+					om.subMenus.CloseAll()
+				}},
 			})
 			return nil
 		},
@@ -174,11 +178,14 @@ func init() {
 					{Text: "Debug", OnClick: om.subMenus.Toggle("debug")},
 					{Text: "Node", OnClick: om.subMenus.Toggle("node")},
 					{Text: "Management", OnClick: om.subMenus.Toggle("management")},
-					{Text: "Auto-Travel (A)", OnClick: func() {
-						om.actionHandler.ToggleAutoTravel()
+					{Text: "Move (M)", OnClick: func() {
+						om.inputHandler.toggleMoveMode()
 					}},
-					{Text: "Engage Threat (E)", OnClick: func() {
+					{Text: "Engage (E)", OnClick: func() {
 						om.actionHandler.EngageThreat(om.state.SelectedNodeID)
+					}},
+					{Text: "End Turn (Space)", OnClick: func() {
+						om.actionHandler.EndTurn()
 					}},
 					{Text: "Return (ESC)", OnClick: func() {
 						if om.Context.ModeCoordinator != nil {

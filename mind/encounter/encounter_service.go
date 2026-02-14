@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"game_main/common"
+	"game_main/mind/evaluation"
 	"game_main/overworld/core"
 	"game_main/overworld/garrison"
 	"game_main/tactical/combat"
@@ -69,7 +70,7 @@ func (es *EncounterService) StartEncounter(
 	threatID ecs.EntityID,
 	threatName string,
 	playerPos coords.LogicalPosition,
-	playerEntityID ecs.EntityID,
+	rosterOwnerID ecs.EntityID,
 ) error {
 	// Validate no active encounter
 	if es.IsEncounterActive() {
@@ -103,7 +104,7 @@ func (es *EncounterService) StartEncounter(
 
 	// Spawn enemies using balanced encounter system
 	fmt.Println("Starting combat encounter - spawning entities")
-	enemySquadIDs, err := SpawnCombatEntities(es.manager, playerEntityID, playerPos, encounterData, encounterID)
+	enemySquadIDs, playerFactionID, enemyFactionID, err := SpawnCombatEntities(es.manager, rosterOwnerID, playerPos, encounterData, encounterID)
 	if err != nil {
 		// Rollback sprite hiding on spawn failure
 		if renderable != nil {
@@ -123,6 +124,14 @@ func (es *EncounterService) StartEncounter(
 	}
 
 	// Track active encounter with combat data
+	// RosterOwnerID = commander (owns squad roster)
+	// PlayerEntityID = player (owns resource stockpile for gold rewards)
+	playerEntityID := ecs.EntityID(0)
+	if es.modeCoordinator != nil {
+		if pd := es.modeCoordinator.GetPlayerData(); pd != nil {
+			playerEntityID = pd.PlayerEntityID
+		}
+	}
 	es.activeEncounter = &ActiveEncounter{
 		EncounterID:            encounterID,
 		ThreatID:               threatID,
@@ -131,7 +140,10 @@ func (es *EncounterService) StartEncounter(
 		OriginalPlayerPosition: originalPlayerPos,
 		StartTime:              time.Now(),
 		EnemySquadIDs:          enemySquadIDs,
+		RosterOwnerID:          rosterOwnerID,
 		PlayerEntityID:         playerEntityID,
+		PlayerFactionID:        playerFactionID,
+		EnemyFactionID:         enemyFactionID,
 	}
 
 	fmt.Printf("EncounterService: Encounter %d started, entering combat\n", encounterID)
@@ -144,7 +156,6 @@ func (es *EncounterService) StartEncounter(
 func (es *EncounterService) StartGarrisonDefense(
 	encounterID ecs.EntityID,
 	targetNodeID ecs.EntityID,
-	playerEntityID ecs.EntityID,
 ) error {
 	if es.IsEncounterActive() {
 		return fmt.Errorf("encounter already in progress")
@@ -201,14 +212,32 @@ func (es *EncounterService) StartGarrisonDefense(
 		}
 	}
 
-	// Generate attacker squads from power budget
-	spec, err := GenerateEncounterSpec(es.manager, playerEntityID, *nodePos, encounterData)
-	if err != nil {
-		return fmt.Errorf("failed to generate attacker spec: %w", err)
+	// Calculate attacker power from garrison strength (not roster owner)
+	powerConfig := evaluation.GetPowerConfigByProfile(DefaultPowerProfile)
+	totalGarrisonPower := 0.0
+	for _, squadID := range garrisonData.SquadIDs {
+		totalGarrisonPower += evaluation.CalculateSquadPower(squadID, es.manager, powerConfig)
+	}
+	avgGarrisonPower := totalGarrisonPower / float64(len(garrisonData.SquadIDs))
+
+	difficultyMod := getDifficultyModifier(encounterData.Level)
+	targetEnemyPower := avgGarrisonPower * difficultyMod.PowerMultiplier
+	if avgGarrisonPower <= 0.0 {
+		targetEnemyPower = difficultyMod.MinTargetPower
+	}
+	if targetEnemyPower > difficultyMod.MaxTargetPower {
+		targetEnemyPower = difficultyMod.MaxTargetPower
 	}
 
-	enemySquadIDs := make([]ecs.EntityID, 0, len(spec.EnemySquads))
-	for i, enemySpec := range spec.EnemySquads {
+	fmt.Printf("Garrison defense: avg garrison power %.2f, target enemy power %.2f\n",
+		avgGarrisonPower, targetEnemyPower)
+
+	enemySquadSpecs := generateEnemySquadsByPower(
+		es.manager, targetEnemyPower, difficultyMod, encounterData, *nodePos, powerConfig,
+	)
+
+	enemySquadIDs := make([]ecs.EntityID, 0, len(enemySquadSpecs))
+	for i, enemySpec := range enemySquadSpecs {
 		if err := fm.AddSquadToFaction(enemyFactionID, enemySpec.SquadID, enemySpec.Position); err != nil {
 			return fmt.Errorf("failed to add enemy squad %d: %w", i, err)
 		}
@@ -223,6 +252,12 @@ func (es *EncounterService) StartGarrisonDefense(
 	}
 
 	// Track active encounter
+	playerEntityID := ecs.EntityID(0)
+	if es.modeCoordinator != nil {
+		if pd := es.modeCoordinator.GetPlayerData(); pd != nil {
+			playerEntityID = pd.PlayerEntityID
+		}
+	}
 	es.activeEncounter = &ActiveEncounter{
 		EncounterID:            encounterID,
 		ThreatID:               targetNodeID,
@@ -231,7 +266,10 @@ func (es *EncounterService) StartGarrisonDefense(
 		OriginalPlayerPosition: originalPlayerPos,
 		StartTime:              time.Now(),
 		EnemySquadIDs:          enemySquadIDs,
+		RosterOwnerID:          0,
 		PlayerEntityID:         playerEntityID,
+		PlayerFactionID:        playerFactionID,
+		EnemyFactionID:         enemyFactionID,
 		IsGarrisonDefense:      true,
 		DefendedNodeID:         targetNodeID,
 	}

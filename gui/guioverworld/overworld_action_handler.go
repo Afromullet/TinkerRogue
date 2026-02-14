@@ -4,15 +4,16 @@ import (
 	"fmt"
 
 	"game_main/common"
+	"game_main/config"
 	"game_main/mind/encounter"
 	"game_main/overworld/core"
 	"game_main/overworld/garrison"
-	"game_main/overworld/tick"
-	"game_main/overworld/travel"
+	"game_main/tactical/commander"
 	"game_main/tactical/squads"
 	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"
+	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 )
 
 // OverworldActionHandler handles all game-state-changing logic for the overworld.
@@ -25,43 +26,82 @@ func NewOverworldActionHandler(deps *OverworldModeDeps) *OverworldActionHandler 
 	return &OverworldActionHandler{deps: deps}
 }
 
-// AdvanceTick advances the overworld tick and handles travel completion / raids.
-func (ah *OverworldActionHandler) AdvanceTick() {
-	tickResult, err := tick.AdvanceTick(ah.deps.Manager, ah.deps.PlayerData)
+// EndTurn ends the overworld turn: advances tick simulation and resets all commanders.
+func (ah *OverworldActionHandler) EndTurn() {
+	tickResult, err := commander.EndTurn(ah.deps.Manager, ah.deps.PlayerData)
 	if err != nil {
 		ah.deps.LogEvent(fmt.Sprintf("ERROR: %v", err))
 		return
 	}
 
 	tickState := core.GetTickState(ah.deps.Manager)
-	travelState := travel.GetTravelState(ah.deps.Manager)
+	turnState := commander.GetOverworldTurnState(ah.deps.Manager)
 
-	if travelState != nil && travelState.IsTraveling {
-		ah.deps.LogEvent(fmt.Sprintf("Tick %d - %d ticks remaining",
-			tickState.CurrentTick, travelState.TicksRemaining))
-	} else {
-		ah.deps.LogEvent(fmt.Sprintf("Tick advanced to %d", tickState.CurrentTick))
+	turnStr := ""
+	if turnState != nil {
+		turnStr = fmt.Sprintf("Turn %d | ", turnState.CurrentTurn)
 	}
+	ah.deps.LogEvent(fmt.Sprintf("%sTick advanced to %d", turnStr, tickState.CurrentTick))
+
+	// Clear move mode on turn end
+	ah.deps.State.ExitMoveMode()
 
 	ah.deps.RefreshPanels()
 
 	// Handle pending raid on a garrisoned player node
 	if tickResult.PendingRaid != nil {
 		ah.HandleRaid(tickResult.PendingRaid)
-		return
-	}
-
-	// If travel completed, stop auto-travel and start combat
-	if tickResult.TravelCompleted {
-		ah.deps.State.IsAutoTraveling = false
-		ah.StartCombatAfterTravel()
 	}
 }
 
-// EngageThreat validates the selected node and starts travel toward it.
+// MoveSelectedCommander moves the selected commander to the target position.
+func (ah *OverworldActionHandler) MoveSelectedCommander(targetPos coords.LogicalPosition) {
+	cmdID := ah.deps.State.SelectedCommanderID
+	if cmdID == 0 {
+		ah.deps.LogEvent("No commander selected")
+		return
+	}
+
+	if ah.deps.CommanderMovement == nil {
+		ah.deps.LogEvent("ERROR: Commander movement system not initialized")
+		return
+	}
+
+	if err := ah.deps.CommanderMovement.MoveCommander(cmdID, targetPos); err != nil {
+		ah.deps.LogEvent(fmt.Sprintf("Move failed: %v", err))
+		return
+	}
+
+	// Update valid tiles after move
+	tiles := ah.deps.CommanderMovement.GetValidMovementTiles(cmdID)
+	if len(tiles) == 0 {
+		// No movement left - exit move mode
+		ah.deps.State.ExitMoveMode()
+		ah.deps.LogEvent("Moved - no movement remaining")
+	} else {
+		ah.deps.State.ValidMoveTiles = tiles
+		actionState := commander.GetCommanderActionState(cmdID, ah.deps.Manager)
+		remaining := 0
+		if actionState != nil {
+			remaining = actionState.MovementRemaining
+		}
+		ah.deps.LogEvent(fmt.Sprintf("Moved to (%d,%d) - %d movement remaining", targetPos.X, targetPos.Y, remaining))
+	}
+
+	ah.deps.RefreshPanels()
+}
+
+// EngageThreat validates the selected threat and starts combat.
+// Commander must be on the same tile as the threat.
 func (ah *OverworldActionHandler) EngageThreat(nodeID ecs.EntityID) {
 	if nodeID == 0 {
 		ah.deps.LogEvent("No threat selected")
+		return
+	}
+
+	cmdID := ah.deps.State.SelectedCommanderID
+	if cmdID == 0 {
+		ah.deps.LogEvent("No commander selected - select a commander first")
 		return
 	}
 
@@ -77,74 +117,27 @@ func (ah *OverworldActionHandler) EngageThreat(nodeID ecs.EntityID) {
 		return
 	}
 
-	posData := common.GetComponentType[*coords.LogicalPosition](threatEntity, common.PositionComponent)
-	if posData == nil {
+	threatPos := common.GetComponentType[*coords.LogicalPosition](threatEntity, common.PositionComponent)
+	if threatPos == nil {
 		ah.deps.LogEvent("ERROR: Threat has no position")
+		return
+	}
+
+	// Commander must be on the same tile as the threat
+	cmdEntity := ah.deps.Manager.FindEntityByID(cmdID)
+	if cmdEntity == nil {
+		ah.deps.LogEvent("ERROR: Commander entity not found")
+		return
+	}
+	cmdPos := common.GetComponentType[*coords.LogicalPosition](cmdEntity, common.PositionComponent)
+	if cmdPos == nil || cmdPos.X != threatPos.X || cmdPos.Y != threatPos.Y {
+		ah.deps.LogEvent("Commander must be on the same tile as the threat to engage")
 		return
 	}
 
 	encounterID, err := encounter.TriggerCombatFromThreat(ah.deps.Manager, threatEntity)
 	if err != nil {
 		ah.deps.LogEvent(fmt.Sprintf("ERROR: Failed to create encounter: %v", err))
-		return
-	}
-
-	if err := travel.StartTravel(
-		ah.deps.Manager,
-		ah.deps.PlayerData,
-		*posData,
-		nodeID,
-		encounterID,
-	); err != nil {
-		ah.deps.LogEvent(fmt.Sprintf("ERROR: %v", err))
-		return
-	}
-
-	travelNodeDef := core.GetNodeRegistry().GetNodeByID(threatData.NodeTypeID)
-	travelDisplayName := threatData.NodeTypeID
-	if travelNodeDef != nil {
-		travelDisplayName = travelNodeDef.DisplayName
-	}
-	ah.deps.LogEvent(fmt.Sprintf("Traveling to %s (Press C to cancel)...", travelDisplayName))
-	ah.deps.State.ClearSelection()
-}
-
-// CancelTravel cancels active travel and resets auto-travel.
-func (ah *OverworldActionHandler) CancelTravel() {
-	if !travel.IsTraveling(ah.deps.Manager) {
-		ah.deps.LogEvent("Not currently traveling")
-		return
-	}
-
-	if err := travel.CancelTravel(ah.deps.Manager, ah.deps.PlayerData); err != nil {
-		ah.deps.LogEvent(fmt.Sprintf("ERROR: %v", err))
-		return
-	}
-
-	ah.deps.State.IsAutoTraveling = false
-	ah.deps.LogEvent("Travel cancelled - returned to origin")
-}
-
-// StartCombatAfterTravel initiates combat once travel completes.
-func (ah *OverworldActionHandler) StartCombatAfterTravel() {
-	travelState := travel.GetTravelState(ah.deps.Manager)
-	if travelState == nil {
-		return
-	}
-
-	threatEntity := ah.deps.Manager.FindEntityByID(travelState.TargetThreatID)
-	if threatEntity == nil {
-		ah.deps.LogEvent("ERROR: Threat not found")
-		return
-	}
-
-	threatData := common.GetComponentType[*core.OverworldNodeData](
-		threatEntity, core.OverworldNodeComponent)
-	posData := common.GetComponentType[*coords.LogicalPosition](
-		threatEntity, common.PositionComponent)
-
-	if threatData == nil || posData == nil {
-		ah.deps.LogEvent("ERROR: Invalid threat entity")
 		return
 	}
 
@@ -155,30 +148,26 @@ func (ah *OverworldActionHandler) StartCombatAfterTravel() {
 	}
 	threatName := fmt.Sprintf("%s (Level %d)", displayName, threatData.Intensity)
 
-	playerEntityID := ecs.EntityID(0)
-	if ah.deps.PlayerData != nil {
-		playerEntityID = ah.deps.PlayerData.PlayerEntityID
-	}
-
+	// Pass commander ID for roster access (commander owns the squads)
 	if err := ah.deps.EncounterService.StartEncounter(
-		travelState.TargetEncounterID,
-		travelState.TargetThreatID,
+		encounterID,
+		nodeID,
 		threatName,
-		*posData,
-		playerEntityID,
+		*threatPos,
+		cmdID, // Commander instead of player - squads are on the commander
 	); err != nil {
 		ah.deps.LogEvent(fmt.Sprintf("ERROR: %v", err))
+		return
 	}
+
+	// Clear move mode on combat start
+	ah.deps.State.ExitMoveMode()
+	ah.deps.State.ClearSelection()
 }
 
 // HandleRaid creates and starts a garrison defense encounter.
 func (ah *OverworldActionHandler) HandleRaid(raid *core.PendingRaid) {
 	ah.deps.LogEvent(fmt.Sprintf("%s faction raiding garrisoned node %d!", raid.AttackingFactionType.String(), raid.TargetNodeID))
-
-	playerEntityID := ecs.EntityID(0)
-	if ah.deps.PlayerData != nil {
-		playerEntityID = ah.deps.PlayerData.PlayerEntityID
-	}
 
 	encounterID, err := encounter.TriggerGarrisonDefense(
 		ah.deps.Manager,
@@ -194,7 +183,6 @@ func (ah *OverworldActionHandler) HandleRaid(raid *core.PendingRaid) {
 	if err := ah.deps.EncounterService.StartGarrisonDefense(
 		encounterID,
 		raid.TargetNodeID,
-		playerEntityID,
 	); err != nil {
 		ah.deps.LogEvent(fmt.Sprintf("ERROR: Failed to start garrison defense: %v", err))
 		return
@@ -209,22 +197,6 @@ func (ah *OverworldActionHandler) ToggleInfluence() {
 		ah.deps.LogEvent("Influence zones visible")
 	} else {
 		ah.deps.LogEvent("Influence zones hidden")
-	}
-}
-
-// ToggleAutoTravel toggles automatic tick advancement during travel.
-func (ah *OverworldActionHandler) ToggleAutoTravel() {
-	if !travel.IsTraveling(ah.deps.Manager) {
-		ah.deps.LogEvent("Auto-travel only available during travel")
-		return
-	}
-
-	ah.deps.State.IsAutoTraveling = !ah.deps.State.IsAutoTraveling
-
-	if ah.deps.State.IsAutoTraveling {
-		ah.deps.LogEvent("Auto-travel enabled - automatically advancing ticks")
-	} else {
-		ah.deps.LogEvent("Auto-travel disabled")
 	}
 }
 
@@ -248,4 +220,114 @@ func (ah *OverworldActionHandler) RemoveSquadFromGarrison(squadID, nodeID ecs.En
 	ah.deps.LogEvent(fmt.Sprintf("Removed %s from garrison", squadName))
 	ah.deps.RefreshPanels()
 	return nil
+}
+
+// RecruitCommander creates a new commander at the selected commander's position.
+// Requires the selected commander to be on a friendly settlement or fortress node.
+// Costs gold from the player's resource stockpile.
+func (ah *OverworldActionHandler) RecruitCommander() {
+	cmdID := ah.deps.State.SelectedCommanderID
+	if cmdID == 0 {
+		ah.deps.LogEvent("No commander selected - select a commander first")
+		return
+	}
+
+	playerID := ah.deps.PlayerData.PlayerEntityID
+
+	// Check commander roster capacity
+	roster := commander.GetPlayerCommanderRoster(playerID, ah.deps.Manager)
+	if roster == nil {
+		ah.deps.LogEvent("ERROR: No commander roster found")
+		return
+	}
+	current, max := roster.GetCommanderCount()
+	if current >= max {
+		ah.deps.LogEvent(fmt.Sprintf("Commander limit reached (%d/%d)", current, max))
+		return
+	}
+
+	// Get selected commander's position
+	cmdEntity := ah.deps.Manager.FindEntityByID(cmdID)
+	if cmdEntity == nil {
+		ah.deps.LogEvent("ERROR: Commander entity not found")
+		return
+	}
+	cmdPos := common.GetComponentType[*coords.LogicalPosition](cmdEntity, common.PositionComponent)
+	if cmdPos == nil {
+		ah.deps.LogEvent("ERROR: Commander has no position")
+		return
+	}
+
+	// Check for friendly settlement/fortress at commander's position
+	nodeID := core.GetNodeAtPosition(ah.deps.Manager, *cmdPos)
+	if nodeID == 0 {
+		ah.deps.LogEvent("Must be at a settlement or fortress to recruit")
+		return
+	}
+	nodeEntity := ah.deps.Manager.FindEntityByID(nodeID)
+	if nodeEntity == nil {
+		ah.deps.LogEvent("ERROR: Node entity not found")
+		return
+	}
+	nodeData := common.GetComponentType[*core.OverworldNodeData](nodeEntity, core.OverworldNodeComponent)
+	if nodeData == nil || !core.IsFriendlyOwner(nodeData.OwnerID) {
+		ah.deps.LogEvent("Must be at a player-owned settlement or fortress to recruit")
+		return
+	}
+	if nodeData.Category != core.NodeCategorySettlement && nodeData.Category != core.NodeCategoryFortress {
+		ah.deps.LogEvent("Must be at a settlement or fortress to recruit")
+		return
+	}
+
+	// Check gold cost
+	stockpile := common.GetResourceStockpile(playerID, ah.deps.Manager)
+	if stockpile == nil {
+		ah.deps.LogEvent("ERROR: No resource stockpile found")
+		return
+	}
+	cost := config.DefaultCommanderCost
+	if !common.CanAffordGold(stockpile, cost) {
+		ah.deps.LogEvent(fmt.Sprintf("Not enough gold (need %d, have %d)", cost, stockpile.Gold))
+		return
+	}
+
+	// Spend gold
+	if err := common.SpendGold(stockpile, cost); err != nil {
+		ah.deps.LogEvent(fmt.Sprintf("ERROR: %v", err))
+		return
+	}
+
+	// Load commander image
+	commanderImage, _, err := ebitenutil.NewImageFromFile(config.PlayerImagePath)
+	if err != nil {
+		ah.deps.LogEvent(fmt.Sprintf("ERROR: Failed to load commander image: %v", err))
+		// Refund gold on failure
+		common.AddGold(stockpile, cost)
+		return
+	}
+
+	// Create new commander
+	name := fmt.Sprintf("Commander %d", current+1)
+	newCmdID := commander.CreateCommander(
+		ah.deps.Manager,
+		name,
+		*cmdPos,
+		config.DefaultCommanderMovementSpeed,
+		config.DefaultCommanderMaxSquads,
+		commanderImage,
+	)
+
+	// Add to roster
+	if err := roster.AddCommander(newCmdID); err != nil {
+		ah.deps.LogEvent(fmt.Sprintf("ERROR: %v", err))
+		common.AddGold(stockpile, cost)
+		return
+	}
+
+	// Select the new commander
+	ah.deps.State.SelectedCommanderID = newCmdID
+	ah.deps.State.ExitMoveMode()
+
+	ah.deps.LogEvent(fmt.Sprintf("Recruited %s (cost: %d gold)", name, cost))
+	ah.deps.RefreshPanels()
 }

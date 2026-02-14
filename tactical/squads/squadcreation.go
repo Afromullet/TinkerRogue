@@ -201,11 +201,11 @@ func CreateSquadFromTemplate(
 	squadID := squadEntity.GetID()
 
 	squadEntity.AddComponent(SquadComponent, &SquadData{
-		SquadID:     squadID,
-		Name:        squadName,
-		Formation:   formation,
-		Morale:      100,
-		TurnCount:   0,
+		SquadID:    squadID,
+		Name:       squadName,
+		Formation:  formation,
+		Morale:     100,
+		TurnCount:  0,
 		MaxUnits:   9,
 		IsDeployed: false, // New squads start in reserves (not on map)
 	})

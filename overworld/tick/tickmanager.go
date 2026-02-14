@@ -12,15 +12,13 @@ import (
 	"game_main/overworld/faction"
 	"game_main/overworld/influence"
 	"game_main/overworld/threat"
-	"game_main/overworld/travel"
 
 	"github.com/bytearena/ecs"
 )
 
 // TickResult captures the outcome of a single tick advancement.
 type TickResult struct {
-	TravelCompleted bool             // True if player travel finished this tick
-	PendingRaid     *core.PendingRaid // Non-nil if a faction raid targets a garrisoned player node
+	PendingRaid *core.PendingRaid // Non-nil if a faction raid targets a garrisoned player node
 }
 
 // CreateTickStateEntity creates singleton tick state entity
@@ -62,13 +60,6 @@ func AdvanceTick(manager *common.EntityManager, playerData *common.PlayerData) (
 	tickState.CurrentTick++
 	tick := tickState.CurrentTick
 
-	// Advance travel if active (before other subsystems)
-	var err error
-	result.TravelCompleted, err = travel.AdvanceTravelTick(manager, playerData)
-	if err != nil {
-		return result, fmt.Errorf("travel update failed: %w", err)
-	}
-
 	// Resolve influence interactions before subsystems use the results
 	influence.UpdateInfluenceInteractions(manager, tick)
 
@@ -88,17 +79,6 @@ func AdvanceTick(manager *common.EntityManager, playerData *common.PlayerData) (
 
 	// Note: Events are logged inline by individual systems via LogEvent()
 	// No batch event processing needed currently
-
-	// Check victory/loss conditions
-
-	//todo re-enable this
-	/*
-		victoryCondition := victory.CheckVictoryCondition(manager)
-		if victoryCondition != core.VictoryNone {
-			// Victory or defeat achieved - set game over flag
-			tickState.IsGameOver = true
-		}
-	*/
 
 	return result, nil
 }
