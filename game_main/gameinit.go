@@ -3,7 +3,7 @@ package main
 import (
 	"game_main/common"
 	"game_main/config"
-	"game_main/gear"
+
 	"game_main/tactical/commander"
 	_ "game_main/tactical/squadcommands" // Blank import to trigger init() for command queue components
 	"game_main/tactical/squads"
@@ -48,9 +48,6 @@ func InitializePlayerData(ecsmanager *common.EntityManager, pl *common.PlayerDat
 			X: 40,
 			Y: 45,
 		}).
-		AddComponent(gear.InventoryComponent, &gear.Inventory{
-			ItemEntityIDs: make([]ecs.EntityID, 0),
-		}).
 		AddComponent(common.AttributeComponent, &attr).
 		AddComponent(common.ResourceStockpileComponent, common.NewResourceStockpile(
 			config.DefaultPlayerStartingGold,
@@ -64,7 +61,7 @@ func InitializePlayerData(ecsmanager *common.EntityManager, pl *common.PlayerDat
 			MaxCommanders: config.DefaultMaxCommanders,
 		})
 
-	players := ecs.BuildTag(common.PlayerComponent, common.PositionComponent, gear.InventoryComponent)
+	players := ecs.BuildTag(common.PlayerComponent, common.PositionComponent)
 	ecsmanager.WorldTags["players"] = players
 
 	//g.playerData = PlayerData{}
@@ -88,4 +85,3 @@ func InitializePlayerData(ecsmanager *common.EntityManager, pl *common.PlayerDat
 	}
 
 }
-

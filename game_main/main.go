@@ -125,8 +125,6 @@ func main() {
 
 	testing.CreateTestItems(&g.gameMap)
 
-	testing.UpdateContentsForTest(&g.em, &g.gameMap)
-
 	// Configure window
 	ebiten.SetWindowResizable(true)
 	ebiten.SetWindowTitle("Tower")

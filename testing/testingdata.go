@@ -2,9 +2,8 @@ package testing
 
 import (
 	"game_main/common"
-	"game_main/gear"
+
 	"game_main/visual/graphics"
-	"game_main/world/coords"
 	"game_main/world/worldmap"
 )
 
@@ -22,23 +21,6 @@ var TestStickyEffect = graphics.NewStickyGroundEffect(0, 0, 2)
 
 func CreateTestItems(manager *worldmap.GameMap) {
 	// No throwable items to create - squad system handles combat
-}
-
-func UpdateContentsForTest(ecsmanager *common.EntityManager, gm *worldmap.GameMap) {
-
-	for _, item := range ecsmanager.World.Query(gear.ItemsTag) {
-
-		item_pos := common.GetComponentType[*coords.LogicalPosition](item.Entity, common.PositionComponent)
-
-		gm.AddEntityToTile(item.Entity, item_pos)
-
-		// Register item with PositionSystem for proper tracking
-		if common.GlobalPositionSystem != nil {
-			common.GlobalPositionSystem.AddEntity(item.Entity.GetID(), *item_pos)
-		}
-
-	}
-
 }
 
 // REMOVED: CreateWeapon, CreateArmor, CreatedRangedWeapon - weapon/armor system replaced by squad system

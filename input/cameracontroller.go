@@ -2,10 +2,8 @@ package input
 
 import (
 	"game_main/common"
-	"game_main/gear"
 	"game_main/gui/framework"
 	"game_main/visual/graphics"
-	"game_main/visual/rendering"
 	"game_main/world/coords"
 	"game_main/world/worldmap"
 
@@ -81,13 +79,6 @@ func (mc *CameraController) HandleInput() bool {
 		inputHandled = true
 	}
 
-	// Pickup item
-	if inpututil.IsKeyJustReleased(ebiten.KeyG) {
-		mc.playerPickupItem()
-		mc.playerData.InputStates.HasKeyInput = true
-		inputHandled = true
-	}
-
 	// Debug tile highlighting
 	if inpututil.IsKeyJustReleased(ebiten.KeyB) {
 		mc.highlightCurrentTile()
@@ -135,23 +126,6 @@ func (mc *CameraController) movePlayer(xOffset, yOffset int) {
 	} else {
 		// Melee combat removed - squad system will handle combat
 		// Creature detection still available via common.GetCreatureAtPosition()
-	}
-}
-
-func (mc *CameraController) playerPickupItem() {
-	itemEntityID, err := mc.gameMap.RemoveItemFromTile(0, mc.playerData.Pos)
-
-	if err == nil && itemEntityID != 0 {
-		itemEntity := mc.ecsManager.FindEntityByID(itemEntityID)
-		if itemEntity != nil {
-			renderable := common.GetComponentType[*rendering.Renderable](itemEntity, rendering.RenderableComponent)
-			renderable.Visible = false
-			// Query inventory from player entity via ECS instead of using interface{}
-			inv := common.GetComponentTypeByID[*gear.Inventory](mc.ecsManager, mc.playerData.PlayerEntityID, gear.InventoryComponent)
-			if inv != nil {
-				gear.AddItem(mc.ecsManager, inv, itemEntityID)
-			}
-		}
 	}
 }
 

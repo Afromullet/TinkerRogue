@@ -127,8 +127,6 @@ func (gb *GameBootstrap) SetupDebugContent(em *common.EntityManager, gm *worldma
 		SetupTestData(em, gm, pd)
 	}
 
-	// Spawn starting content (test enemies, items, etc.)
-	testing.UpdateContentsForTest(em, gm)
 }
 
 // InitializeGameplay sets up squad system and exploration squads.
@@ -341,7 +339,6 @@ func registerOverworldModes(coordinator *framework.GameModeCoordinator, manager 
 		guisquads.NewSquadBuilderMode(manager),
 		guisquads.NewUnitPurchaseMode(manager),
 		guisquads.NewSquadEditorMode(manager),
-		newInventoryModeWithReturn(manager, "overworld"),
 	}
 
 	for _, mode := range modes {
@@ -349,11 +346,4 @@ func registerOverworldModes(coordinator *framework.GameModeCoordinator, manager 
 			log.Fatalf("Failed to register overworld mode '%s': %v", mode.GetModeName(), err)
 		}
 	}
-}
-
-// newInventoryModeWithReturn creates an inventory mode configured with a return mode.
-func newInventoryModeWithReturn(manager *framework.UIModeManager, returnMode string) framework.UIMode {
-	mode := guiexploration.NewInventoryMode(manager)
-	mode.SetReturnMode(returnMode)
-	return mode
 }
