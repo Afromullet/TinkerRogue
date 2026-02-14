@@ -2,6 +2,8 @@ __________________________________________
 #
 # # # **IMPORTANT** # # # 
 
+- Encounters seem to be too skewed towards ranged threats. Using the threat layer visualization as baseline. Rectify that. 
+
 - There has to be a tradeoff between casting spells and moving squads/engaging in combat. Doing both will feel too mechanical. 
 
 - type EventType int in Overworld types is growing too large

@@ -40,15 +40,6 @@ func GetRoleMultiplierFromConfig(role squads.UnitRole) float64 {
 	}
 }
 
-// GetLeaderBonusFromConfig returns the leader bonus multiplier from JSON config.
-// Falls back to default value if not found in config.
-func GetLeaderBonusFromConfig() float64 {
-	if templates.PowerConfigTemplate.LeaderBonus > 0 {
-		return templates.PowerConfigTemplate.LeaderBonus
-	}
-	return 1.3 // Default leader bonus
-}
-
 // GetAbilityPowerValue returns the power value for a specific ability from JSON config.
 // Falls back to default values if not found in config.
 func GetAbilityPowerValue(ability squads.AbilityType) float64 {
@@ -97,4 +88,3 @@ func GetCompositionBonusFromConfig(uniqueAttackTypes int) float64 {
 		return 1.0
 	}
 }
-

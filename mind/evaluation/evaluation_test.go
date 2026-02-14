@@ -35,13 +35,6 @@ func TestGetRoleMultiplierFromConfig_UnknownRole(t *testing.T) {
 	}
 }
 
-func TestGetLeaderBonusFromConfig(t *testing.T) {
-	result := GetLeaderBonusFromConfig()
-	if result != 1.3 {
-		t.Errorf("GetLeaderBonusFromConfig() = %v, want 1.3", result)
-	}
-}
-
 func TestDirtyCache_NewCache(t *testing.T) {
 	cache := NewDirtyCache()
 

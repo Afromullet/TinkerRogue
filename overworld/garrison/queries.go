@@ -20,20 +20,6 @@ func IsNodeGarrisoned(manager *common.EntityManager, nodeID ecs.EntityID) bool {
 	return data != nil && len(data.SquadIDs) > 0
 }
 
-// IsSquadGarrisoned checks if a squad is currently garrisoned at any node.
-func IsSquadGarrisoned(squadData *squads.SquadData) bool {
-	return squadData != nil && squadData.GarrisonedAtNodeID != 0
-}
-
-// GetGarrisonSquadCount returns the number of squads garrisoned at a node.
-func GetGarrisonSquadCount(manager *common.EntityManager, nodeID ecs.EntityID) int {
-	data := GetGarrisonAtNode(manager, nodeID)
-	if data == nil {
-		return 0
-	}
-	return len(data.SquadIDs)
-}
-
 // GetAvailableSquadsForGarrison returns player squads that are not garrisoned and not deployed in combat.
 func GetAvailableSquadsForGarrison(manager *common.EntityManager, playerEntityID ecs.EntityID) []ecs.EntityID {
 	roster := squads.GetPlayerSquadRoster(playerEntityID, manager)

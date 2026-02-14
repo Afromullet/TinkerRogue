@@ -179,26 +179,6 @@ func (r *NodeRegistry) GetNodeByType(threatType ThreatType) *NodeDefinition {
 	return r.GetNodeByID(string(threatType))
 }
 
-// GetAllNodes returns all registered node definitions.
-func (r *NodeRegistry) GetAllNodes() []*NodeDefinition {
-	nodes := make([]*NodeDefinition, 0, len(r.nodesByID))
-	for _, node := range r.nodesByID {
-		nodes = append(nodes, node)
-	}
-	return nodes
-}
-
-// GetNodesByCategory returns all nodes of a specific category.
-func (r *NodeRegistry) GetNodesByCategory(category NodeCategory) []*NodeDefinition {
-	var nodes []*NodeDefinition
-	for _, node := range r.nodesByID {
-		if node.Category == category {
-			nodes = append(nodes, node)
-		}
-	}
-	return nodes
-}
-
 // GetPlaceableNodeTypes returns all settlement and fortress nodes available for player placement.
 func (r *NodeRegistry) GetPlaceableNodeTypes() []*NodeDefinition {
 	var nodes []*NodeDefinition
@@ -210,12 +190,6 @@ func (r *NodeRegistry) GetPlaceableNodeTypes() []*NodeDefinition {
 	return nodes
 }
 
-// HasNode returns true if a node with the given ID exists.
-func (r *NodeRegistry) HasNode(id string) bool {
-	_, ok := r.nodesByID[id]
-	return ok
-}
-
 // --- Encounter Lookup Methods ---
 
 // GetEncounterByID returns an encounter definition by its string ID.
@@ -225,20 +199,6 @@ func (r *NodeRegistry) GetEncounterByID(id string) *EncounterDefinition {
 		return enc
 	}
 	return r.defaultEncounter
-}
-
-// GetEncounterForNode returns an encounter definition linked to a node via faction.
-// Returns nil if the node has no faction (non-combat node).
-func (r *NodeRegistry) GetEncounterForNode(nodeID string) *EncounterDefinition {
-	node := r.GetNodeByID(nodeID)
-	if node == nil || node.FactionID == "" {
-		return nil
-	}
-	encounters := r.GetEncountersByFaction(node.FactionID)
-	if len(encounters) == 0 {
-		return r.defaultEncounter
-	}
-	return encounters[0]
 }
 
 // GetEncounterForThreatType returns the encounter definition for a threat type.
@@ -288,12 +248,6 @@ func (r *NodeRegistry) GetAllEncounters() []*EncounterDefinition {
 	return encounters
 }
 
-// HasEncounter returns true if an encounter with the given ID exists.
-func (r *NodeRegistry) HasEncounter(id string) bool {
-	_, ok := r.encountersByID[id]
-	return ok
-}
-
 // GetEncounterByTypeID returns an encounter definition by its EncounterTypeID field.
 // Linear scan — returns first match or default.
 func (r *NodeRegistry) GetEncounterByTypeID(encounterTypeID string) *EncounterDefinition {
@@ -324,11 +278,6 @@ func (r *NodeRegistry) GetDisplayName(threatType ThreatType) string {
 	return r.GetNodeByType(threatType).DisplayName
 }
 
-// GetColor returns the display color for a threat type.
-func (r *NodeRegistry) GetColor(threatType ThreatType) color.RGBA {
-	return r.GetNodeByType(threatType).Color
-}
-
 // GetOverworldParams returns the overworld parameters for a threat type.
 func (r *NodeRegistry) GetOverworldParams(threatType ThreatType) ThreatTypeParams {
 	node := r.GetNodeByType(threatType)
@@ -346,22 +295,4 @@ func (r *NodeRegistry) GetEncounterTypeID(threatType ThreatType) string {
 		return ""
 	}
 	return enc.EncounterTypeID
-}
-
-// GetSquadPreferences returns the squad preferences for a threat type.
-func (r *NodeRegistry) GetSquadPreferences(threatType ThreatType) []string {
-	enc := r.GetEncounterForThreatType(threatType)
-	if enc == nil {
-		return nil
-	}
-	return enc.SquadPreferences
-}
-
-// GetItemDropTable returns the item drop tables for a threat type.
-func (r *NodeRegistry) GetItemDropTable(threatType ThreatType) (basic, highTier []string) {
-	enc := r.GetEncounterForThreatType(threatType)
-	if enc == nil {
-		return nil, nil
-	}
-	return enc.BasicItems, enc.HighTierItems
 }
