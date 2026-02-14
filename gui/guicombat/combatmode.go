@@ -14,8 +14,6 @@ import (
 	"game_main/tactical/combatservices"
 	"game_main/tactical/spells"
 	"game_main/tactical/squads"
-	"game_main/templates"
-
 	"github.com/bytearena/ecs"
 	"github.com/ebitenui/ebitenui/widget"
 	"github.com/hajimehoshi/ebiten/v2"
@@ -41,8 +39,8 @@ type CombatMode struct {
 	factionInfoComponent *guisquads.DetailPanelComponent
 	turnOrderComponent   *widgets.TextDisplayComponent
 
-	// Spell casting
-	spellHandler *guispells.SpellCastingHandler
+	// Spell panel controller (owns spell selection UI + handler)
+	spellPanel *guispells.SpellPanelController
 
 	// Visualization systems
 	visualization *CombatVisualizationManager
@@ -52,13 +50,6 @@ type CombatMode struct {
 
 	// Turn lifecycle management
 	turnFlow *CombatTurnFlow
-
-	// Spell selection panel widgets
-	spellList        *widgets.CachedListWrapper
-	spellDetailArea  *widgets.CachedTextAreaWrapper
-	spellManaLabel   *widget.Text
-	spellCastButton  *widget.Button
-	selectedSpellDef *templates.SpellDefinition
 
 	// State tracking for UI updates (GUI_PERFORMANCE_ANALYSIS.md)
 	lastFactionID     ecs.EntityID
@@ -120,7 +111,7 @@ func (cm *CombatMode) Initialize(ctx *framework.UIContext) error {
 	cm.actionHandler = NewCombatActionHandler(cm.deps)
 	cm.inputHandler = NewCombatInputHandler(cm.actionHandler, cm.deps)
 
-	// Create spell handler with its own focused deps
+	// Create spell handler and panel controller
 	spellDeps := &guispells.SpellCastingDeps{
 		BattleState:      cm.deps.BattleState,
 		ECSManager:       cm.deps.Queries.ECSManager,
@@ -130,12 +121,25 @@ func (cm *CombatMode) Initialize(ctx *framework.UIContext) error {
 		AddCombatLog:     cm.deps.AddCombatLog,
 		Queries:          cm.deps.Queries,
 	}
-	cm.spellHandler = guispells.NewSpellCastingHandler(spellDeps)
-	cm.inputHandler.SetSpellHandler(cm.spellHandler)
+	spellHandler := guispells.NewSpellCastingHandler(spellDeps)
+	cm.spellPanel = guispells.NewSpellPanelController(&guispells.SpellPanelDeps{
+		Handler:      spellHandler,
+		BattleState:  cm.deps.BattleState,
+		AddCombatLog: cm.deps.AddCombatLog,
+		ShowSubmenu:  func() { cm.subMenus.Show("spell") },
+		CloseSubmenu: func() { cm.subMenus.CloseAll() },
+	})
 
-	// Extract spell panel widget references and wire input callbacks
-	cm.initializeSpellWidgetReferences()
-	cm.inputHandler.SetSpellPanelCallbacks(cm.showSpellPanel, cm.hideSpellPanel)
+	// Extract spell panel widget references
+	cm.spellPanel.SetWidgets(
+		framework.GetPanelWidget[*widgets.CachedListWrapper](cm.Panels, CombatPanelSpellSelection, "spellList"),
+		framework.GetPanelWidget[*widgets.CachedTextAreaWrapper](cm.Panels, CombatPanelSpellSelection, "detailArea"),
+		framework.GetPanelWidget[*widget.Text](cm.Panels, CombatPanelSpellSelection, "manaLabel"),
+		framework.GetPanelWidget[*widget.Button](cm.Panels, CombatPanelSpellSelection, "castButton"),
+	)
+
+	// Wire spell panel into input handler
+	cm.inputHandler.SetSpellPanel(cm.spellPanel)
 
 	// Register cache invalidation callbacks (automatic, fires for both GUI and AI actions)
 	cm.combatService.RegisterOnAttackComplete(func(attackerID, defenderID ecs.EntityID, result *squads.CombatResult) {
@@ -242,12 +246,7 @@ func (cm *CombatMode) handleMoveClick() {
 }
 
 func (cm *CombatMode) handleSpellClick() {
-	if cm.spellHandler.IsInSpellMode() {
-		cm.spellHandler.CancelSpellMode()
-		cm.hideSpellPanel()
-		return
-	}
-	cm.showSpellPanel()
+	cm.spellPanel.Toggle()
 }
 
 func (cm *CombatMode) handleUndoMove() {
@@ -264,122 +263,6 @@ func (cm *CombatMode) handleEndTurnClick() {
 
 func (cm *CombatMode) handleFleeClick() {
 	cm.turnFlow.HandleFlee()
-}
-
-// --- Spell panel methods ---
-
-// initializeSpellWidgetReferences extracts widget references from the panel registry.
-func (cm *CombatMode) initializeSpellWidgetReferences() {
-	cm.spellList = framework.GetPanelWidget[*widgets.CachedListWrapper](cm.Panels, CombatPanelSpellSelection, "spellList")
-	cm.spellDetailArea = framework.GetPanelWidget[*widgets.CachedTextAreaWrapper](cm.Panels, CombatPanelSpellSelection, "detailArea")
-	cm.spellManaLabel = framework.GetPanelWidget[*widget.Text](cm.Panels, CombatPanelSpellSelection, "manaLabel")
-	cm.spellCastButton = framework.GetPanelWidget[*widget.Button](cm.Panels, CombatPanelSpellSelection, "castButton")
-}
-
-// onSpellSelected is the list click callback — updates detail area and cast button.
-func (cm *CombatMode) onSpellSelected(spell *templates.SpellDefinition) {
-	cm.selectedSpellDef = spell
-	cm.updateSpellDetailPanel()
-}
-
-// updateSpellDetailPanel shows spell details and checks mana affordability.
-func (cm *CombatMode) updateSpellDetailPanel() {
-	spell := cm.selectedSpellDef
-	if spell == nil || cm.spellDetailArea == nil {
-		return
-	}
-
-	currentMana, _ := cm.spellHandler.GetCommanderMana()
-	canAfford := currentMana >= spell.ManaCost
-
-	targetType := "Single Target"
-	if spell.IsAoE() {
-		targetType = "AoE"
-	}
-
-	detail := fmt.Sprintf("=== %s ===\nCost: %d MP\nDamage: %d\nTarget: %s\n\n%s",
-		spell.Name, spell.ManaCost, spell.Damage, targetType, spell.Description)
-
-	if !canAfford {
-		detail += "\n\n[color=ff4444]Not enough mana![/color]"
-	}
-
-	cm.spellDetailArea.SetText(detail)
-
-	if cm.spellCastButton != nil {
-		cm.spellCastButton.GetWidget().Disabled = !canAfford
-	}
-}
-
-// refreshSpellPanel populates the list from the spell handler, updates mana label, clears selection.
-func (cm *CombatMode) refreshSpellPanel() {
-	allSpells := cm.spellHandler.GetAllSpells()
-	currentMana, maxMana := cm.spellHandler.GetCommanderMana()
-
-	// Update mana label
-	if cm.spellManaLabel != nil {
-		cm.spellManaLabel.Label = fmt.Sprintf("Mana: %d/%d", currentMana, maxMana)
-	}
-
-	// Populate spell list
-	if cm.spellList != nil {
-		entries := make([]interface{}, len(allSpells))
-		for i, spell := range allSpells {
-			entries[i] = spell
-		}
-		cm.spellList.GetList().SetEntries(entries)
-		cm.spellList.MarkDirty()
-	}
-
-	// Clear selection
-	cm.selectedSpellDef = nil
-	if cm.spellDetailArea != nil {
-		cm.spellDetailArea.SetText("Select a spell to view details")
-	}
-	if cm.spellCastButton != nil {
-		cm.spellCastButton.GetWidget().Disabled = true
-	}
-}
-
-// showSpellPanel validates preconditions, refreshes data, and shows the panel.
-func (cm *CombatMode) showSpellPanel() {
-	// Validate: already cast this turn?
-	if cm.deps.BattleState.HasCastSpell {
-		cm.deps.AddCombatLog("Already cast a spell this turn")
-		return
-	}
-
-	// Validate: has spells?
-	allSpells := cm.spellHandler.GetAllSpells()
-	if len(allSpells) == 0 {
-		cm.deps.AddCombatLog("No spells available")
-		return
-	}
-
-	cm.deps.BattleState.InSpellMode = true
-	cm.refreshSpellPanel()
-	cm.subMenus.Show("spell")
-}
-
-// hideSpellPanel hides the panel and clears selection.
-func (cm *CombatMode) hideSpellPanel() {
-	cm.selectedSpellDef = nil
-	cm.subMenus.CloseAll()
-}
-
-// onCastButtonClicked selects the spell for targeting and hides the panel.
-func (cm *CombatMode) onCastButtonClicked() {
-	if cm.selectedSpellDef == nil {
-		return
-	}
-	cm.spellHandler.SelectSpell(cm.selectedSpellDef.ID)
-	cm.hideSpellPanel()
-}
-
-// onSpellCancelClicked cancels spell mode and hides the panel.
-func (cm *CombatMode) onSpellCancelClicked() {
-	cm.spellHandler.CancelSpellMode()
-	cm.hideSpellPanel()
 }
 
 func (cm *CombatMode) initializeUpdateComponents() {
@@ -592,9 +475,9 @@ func (cm *CombatMode) Update(deltaTime float64) error {
 	cm.visualization.UpdateThreatVisualization(currentFactionID, currentRound, playerPos, viewportSize)
 
 	// Update AoE spell targeting overlay each frame
-	if cm.spellHandler != nil && cm.spellHandler.IsAoETargeting() {
+	if cm.spellPanel != nil && cm.spellPanel.Handler().IsAoETargeting() {
 		mouseX, mouseY := ebiten.CursorPosition()
-		cm.spellHandler.HandleAoETargetingFrame(mouseX, mouseY)
+		cm.spellPanel.Handler().HandleAoETargetingFrame(mouseX, mouseY)
 	}
 
 	return nil

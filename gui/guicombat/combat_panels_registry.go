@@ -327,7 +327,7 @@ func init() {
 				},
 				OnEntrySelected: func(e interface{}) {
 					if spell, ok := e.(*templates.SpellDefinition); ok {
-						cm.onSpellSelected(spell)
+						cm.spellPanel.OnSpellSelected(spell)
 					}
 				},
 			})
@@ -351,7 +351,7 @@ func init() {
 			castButton := builders.CreateButtonWithConfig(builders.ButtonConfig{
 				Text: "Cast",
 				OnClick: func() {
-					cm.onCastButtonClicked()
+					cm.spellPanel.OnCastClicked()
 				},
 			})
 			castButton.GetWidget().Disabled = true
@@ -362,7 +362,7 @@ func init() {
 			cancelButton := builders.CreateButtonWithConfig(builders.ButtonConfig{
 				Text: "Cancel (ESC)",
 				OnClick: func() {
-					cm.onSpellCancelClicked()
+					cm.spellPanel.OnCancelClicked()
 				},
 			})
 			result.Container.AddChild(cancelButton)
