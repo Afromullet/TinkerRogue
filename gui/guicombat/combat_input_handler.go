@@ -23,6 +23,9 @@ type CombatInputHandler struct {
 	playerPos        *coords.LogicalPosition
 	currentFactionID ecs.EntityID
 
+	// Debug kill mode
+	inDebugKillMode bool
+
 	// Visualization input support
 	visualization *CombatVisualizationManager
 	panels        *framework.PanelRegistry
@@ -54,10 +57,47 @@ func (cih *CombatInputHandler) SetVisualization(viz *CombatVisualizationManager,
 	cih.logManager = logManager
 }
 
+// EnterDebugKillMode activates click-to-kill mode for debug purposes.
+func (cih *CombatInputHandler) EnterDebugKillMode() {
+	cih.inDebugKillMode = true
+	cih.actionHandler.addLog("[DEBUG] Kill mode active - click a squad to remove it")
+}
+
+// handleDebugKillClick processes a click while in debug kill mode.
+func (cih *CombatInputHandler) handleDebugKillClick(mouseX, mouseY int) {
+	if cih.playerPos == nil {
+		return
+	}
+
+	clickedPos := graphics.MouseToLogicalPosition(mouseX, mouseY, *cih.playerPos)
+	clickedSquadID := combat.GetSquadAtPosition(clickedPos, cih.deps.Queries.ECSManager)
+
+	if clickedSquadID == 0 {
+		cih.actionHandler.addLog("[DEBUG] No squad at that position")
+		return
+	}
+
+	cih.actionHandler.DebugKillSquad(clickedSquadID)
+}
+
 // HandleInput processes input and returns true if input was consumed
 func (cih *CombatInputHandler) HandleInput(inputState *framework.InputState) bool {
+	// ESC cancels debug kill mode
+	if cih.inDebugKillMode && inputState.KeysJustPressed[ebiten.KeyEscape] {
+		cih.inDebugKillMode = false
+		cih.actionHandler.addLog("[DEBUG] Kill mode cancelled")
+		return true
+	}
+
 	// Handle mouse clicks
 	if inputState.MouseButton == ebiten.MouseButtonLeft && inputState.MousePressed {
+		// Debug kill mode takes priority over all other click handling
+		if cih.inDebugKillMode {
+			defer func() { cih.inDebugKillMode = false }()
+			cih.handleDebugKillClick(inputState.MouseX, inputState.MouseY)
+			return true
+		}
+
 		if cih.deps.BattleState.InMoveMode {
 			// In move mode: click to move squad
 			cih.handleMovementClick(inputState.MouseX, inputState.MouseY)

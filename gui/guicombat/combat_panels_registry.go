@@ -19,9 +19,88 @@ const (
 	CombatPanelSquadDetail framework.PanelType = "combat_squad_detail"
 	CombatPanelCombatLog   framework.PanelType = "combat_log"
 	CombatPanelLayerStatus framework.PanelType = "combat_layer_status"
+	CombatPanelDebugMenu   framework.PanelType = "combat_debug_menu"
 )
 
+// combatSubMenuController manages sub-menu visibility. Only one sub-menu can be open at a time.
+type combatSubMenuController struct {
+	menus  map[string]*widget.Container
+	active string
+}
+
+func newCombatSubMenuController() *combatSubMenuController {
+	return &combatSubMenuController{
+		menus: make(map[string]*widget.Container),
+	}
+}
+
+func (sc *combatSubMenuController) Register(name string, container *widget.Container) {
+	sc.menus[name] = container
+}
+
+// Toggle returns a callback that toggles the named sub-menu.
+// Opening one menu closes any other open menu.
+func (sc *combatSubMenuController) Toggle(name string) func() {
+	return func() {
+		if sc.active == name {
+			sc.menus[name].GetWidget().Visibility = widget.Visibility_Hide
+			sc.active = ""
+			return
+		}
+		sc.CloseAll()
+		if c, ok := sc.menus[name]; ok {
+			c.GetWidget().Visibility = widget.Visibility_Show
+			sc.active = name
+		}
+	}
+}
+
+func (sc *combatSubMenuController) CloseAll() {
+	for _, c := range sc.menus {
+		c.GetWidget().Visibility = widget.Visibility_Hide
+	}
+	sc.active = ""
+}
+
+// createCombatSubMenu creates a vertical sub-menu panel, registers it with the controller, and returns it.
+func createCombatSubMenu(cm *CombatMode, name string, buttons []builders.ButtonConfig) *widget.Container {
+	spacing := int(float64(cm.Layout.ScreenWidth) * specs.PaddingTight)
+	subMenuBottomPad := int(float64(cm.Layout.ScreenHeight) * (specs.BottomButtonOffset + 0.15))
+	anchorLayout := builders.AnchorCenterEnd(subMenuBottomPad)
+
+	panel := builders.CreatePanelWithConfig(builders.ContainerConfig{
+		Layout: widget.NewRowLayout(
+			widget.RowLayoutOpts.Direction(widget.DirectionVertical),
+			widget.RowLayoutOpts.Spacing(spacing),
+			widget.RowLayoutOpts.Padding(widget.NewInsetsSimple(10)),
+		),
+		LayoutData: anchorLayout,
+	})
+	for _, btn := range buttons {
+		panel.AddChild(builders.CreateButtonWithConfig(btn))
+	}
+	panel.GetWidget().Visibility = widget.Visibility_Hide
+	cm.subMenus.Register(name, panel)
+	return panel
+}
+
 func init() {
+	// Register debug sub-menu panel
+	framework.RegisterPanel(CombatPanelDebugMenu, framework.PanelDescriptor{
+		Content: framework.ContentCustom,
+		OnCreate: func(result *framework.PanelResult, mode framework.UIMode) error {
+			cm := mode.(*CombatMode)
+
+			result.Container = createCombatSubMenu(cm, "debug", []builders.ButtonConfig{
+				{Text: "Kill Squad", OnClick: func() {
+					cm.inputHandler.EnterDebugKillMode()
+					cm.subMenus.CloseAll()
+				}},
+			})
+			return nil
+		},
+	})
+
 	// Register all combat panels
 	framework.RegisterPanel(CombatPanelTurnOrder, framework.PanelDescriptor{
 		Content: framework.ContentText,

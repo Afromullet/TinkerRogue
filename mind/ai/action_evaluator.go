@@ -74,6 +74,14 @@ func (aa *AttackAction) Execute(manager *common.EntityManager, movementSystem *c
 		// Queue this attack for animation playback after AI turn completes
 		if aa.aiController != nil {
 			aa.aiController.QueueAttack(aa.attackerID, aa.targetID)
+
+			// Track destroyed squads for cache invalidation
+			if result.TargetDestroyed {
+				aa.aiController.TrackDestroyedSquad(aa.targetID)
+			}
+			if result.AttackerDestroyed {
+				aa.aiController.TrackDestroyedSquad(aa.attackerID)
+			}
 		}
 	} else {
 		fmt.Printf("[AI] Attack failed: %s\n", result.ErrorReason)

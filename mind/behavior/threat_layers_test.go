@@ -32,10 +32,10 @@ func TestCombatThreatLayer_Compute(t *testing.T) {
 	}
 
 	// Compute threats
-	combatLayer.Compute()
+	currentRound := 1
+	combatLayer.Compute(currentRound)
 
 	// Verify layer marked as clean
-	currentRound := 0
 	if !combatLayer.IsValid(currentRound) {
 		t.Error("Layer should be valid after Compute()")
 	}

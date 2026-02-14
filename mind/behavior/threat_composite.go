@@ -59,11 +59,11 @@ func (cte *CompositeThreatEvaluator) Update(currentRound int) {
 	}
 
 	// Compute unified combat threat layer first (provides melee + ranged)
-	cte.combatThreat.Compute()
+	cte.combatThreat.Compute(currentRound)
 
 	// Then compute derived layers (support/positional depend on combat layer)
-	cte.supportValue.Compute()
-	cte.positionalRisk.Compute()
+	cte.supportValue.Compute(currentRound)
+	cte.positionalRisk.Compute(currentRound)
 
 	// Mark as clean
 	cte.lastUpdateRound = currentRound

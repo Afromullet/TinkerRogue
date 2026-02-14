@@ -47,7 +47,7 @@ func NewCombatThreatLayer(
 }
 
 // Compute recalculates both melee and ranged threat for all enemy squads
-func (ctl *CombatThreatLayer) Compute() {
+func (ctl *CombatThreatLayer) Compute(currentRound int) {
 	// Clear existing data (reuse maps to reduce GC pressure)
 	clear(ctl.meleeThreatByPos)
 	clear(ctl.meleeThreatBySquad)
@@ -87,7 +87,7 @@ func (ctl *CombatThreatLayer) Compute() {
 		}
 	}
 
-	ctl.markClean(0)
+	ctl.markClean(currentRound)
 }
 
 // computeMeleeThreat computes melee threat for a single squad

@@ -46,7 +46,7 @@ func NewPositionalRiskLayer(
 }
 
 // Compute recalculates positional risks
-func (prl *PositionalRiskLayer) Compute() {
+func (prl *PositionalRiskLayer) Compute(currentRound int) {
 	// Clear existing data (reuse maps to reduce GC pressure)
 	clear(prl.flankingRisk)
 	clear(prl.isolationRisk)
@@ -69,7 +69,7 @@ func (prl *PositionalRiskLayer) Compute() {
 	// Compute retreat path quality
 	prl.computeRetreatQuality(alliedSquads)
 
-	prl.markClean(0)
+	prl.markClean(currentRound)
 }
 
 // computeFlankingRisk identifies positions that can be attacked from multiple directions

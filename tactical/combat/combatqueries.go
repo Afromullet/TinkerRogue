@@ -182,9 +182,9 @@ func decrementMovementRemaining(cache *CombatQueryCache, squadID ecs.EntityID, a
 // COMBAT STATE HELPERS
 // ========================================
 
-// removeSquadFromMap removes a destroyed squad from the combat map and disposes all entities.
+// RemoveSquadFromMap removes a destroyed squad from the combat map and disposes all entities.
 // This performs complete cleanup: removes from position system, disposes all units, and disposes the squad.
-func removeSquadFromMap(squadID ecs.EntityID, manager *common.EntityManager) error {
+func RemoveSquadFromMap(squadID ecs.EntityID, manager *common.EntityManager) error {
 	squad := manager.FindEntityByID(squadID)
 	if squad == nil {
 		return fmt.Errorf("squad %d not found", squadID)

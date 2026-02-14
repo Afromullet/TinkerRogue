@@ -28,6 +28,9 @@ type AIController struct {
 
 	// Attack queue for animations (populated during AI turn)
 	attackQueue []QueuedAttack
+
+	// Squads destroyed during AI turn (for cache invalidation)
+	destroyedSquads []ecs.EntityID
 }
 
 // NewAIController creates a new AI controller
@@ -55,8 +58,9 @@ func NewAIController(
 // DecideFactionTurn executes AI turn for a faction
 // Returns true if any actions were executed, false if faction has no actions
 func (aic *AIController) DecideFactionTurn(factionID ecs.EntityID) bool {
-	// Clear attack queue from previous turn
+	// Clear attack queue and destroyed squads from previous turn
 	aic.attackQueue = aic.attackQueue[:0]
+	aic.destroyedSquads = aic.destroyedSquads[:0]
 
 	// Update threat layers at start of AI turn
 	currentRound := aic.turnManager.GetCurrentRound()
@@ -97,7 +101,11 @@ func (aic *AIController) DecideFactionTurn(factionID ecs.EntityID) bool {
 
 			actionExecuted = true
 
-			// Mark threat layers dirty after each action (positions changed)
+			// Mark threat layers dirty after each action (positions changed).
+			// NOTE: Layers are NOT recomputed here for performance reasons.
+			// Subsequent squads use slightly stale threat data from start-of-turn.
+			// This is acceptable because threat maps change gradually and
+			// recomputing after every action would be expensive (IterateMapGrid).
 			for _, evaluator := range aic.layerEvaluators {
 				evaluator.MarkDirty()
 			}
@@ -247,6 +255,16 @@ func (aic *AIController) HasQueuedAttacks() bool {
 // ClearAttackQueue clears all queued attacks
 func (aic *AIController) ClearAttackQueue() {
 	aic.attackQueue = aic.attackQueue[:0]
+}
+
+// TrackDestroyedSquad records a squad destroyed during the AI turn
+func (aic *AIController) TrackDestroyedSquad(squadID ecs.EntityID) {
+	aic.destroyedSquads = append(aic.destroyedSquads, squadID)
+}
+
+// GetDestroyedSquads returns squads destroyed during the current AI turn
+func (aic *AIController) GetDestroyedSquads() []ecs.EntityID {
+	return aic.destroyedSquads
 }
 
 // NOTE: getSquadPrimaryRole and calculateSquadHealthPercent have been moved to

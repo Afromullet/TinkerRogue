@@ -36,7 +36,7 @@ func NewSupportValueLayer(
 
 // Compute recalculates support value for all allied squads
 // Wounded allies create high support value in nearby positions
-func (svl *SupportValueLayer) Compute() {
+func (svl *SupportValueLayer) Compute(currentRound int) {
 	// Clear existing data (reuse maps to reduce GC pressure)
 	clear(svl.healPriority)
 	clear(svl.supportValuePos)
@@ -63,7 +63,7 @@ func (svl *SupportValueLayer) Compute() {
 		svl.paintSupportValue(squadPos, healPriority)
 	}
 
-	svl.markClean(0)
+	svl.markClean(currentRound)
 }
 
 // paintSupportValue paints support value around a position

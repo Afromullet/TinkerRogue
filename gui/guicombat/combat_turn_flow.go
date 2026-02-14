@@ -195,6 +195,11 @@ func (tf *CombatTurnFlow) executeAITurnIfNeeded() {
 	aiController := tf.combatService.GetAIController()
 	aiExecutedActions := aiController.DecideFactionTurn(currentFactionID)
 
+	// Invalidate destroyed squads from cache
+	for _, destroyedID := range aiController.GetDestroyedSquads() {
+		tf.queries.InvalidateSquad(destroyedID)
+	}
+
 	combatLogArea := GetCombatLogTextArea(tf.panels)
 	if aiExecutedActions {
 		tf.logManager.UpdateTextArea(combatLogArea, fmt.Sprintf("%s (AI) executed actions", factionData.Name))
@@ -292,6 +297,7 @@ func (tf *CombatTurnFlow) advanceAfterAITurn() {
 	tf.factionInfoComponent.ShowFaction(newFactionID)
 
 	tf.visualization.UpdateThreatManagers()
+	tf.visualization.UpdateThreatEvaluator(round)
 
 	tf.executeAITurnIfNeeded()
 }

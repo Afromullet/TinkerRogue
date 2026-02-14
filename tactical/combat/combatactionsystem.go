@@ -118,6 +118,7 @@ func (cas *CombatActionSystem) ExecuteAttackAction(attackerID, defenderID ecs.En
 	defenderDestroyed := !defenderWouldSurvive // Reuse cached value
 
 	result.TargetDestroyed = defenderDestroyed
+	result.AttackerDestroyed = attackerDestroyed
 
 	// post combat
 
@@ -134,11 +135,11 @@ func (cas *CombatActionSystem) ExecuteAttackAction(attackerID, defenderID ecs.En
 
 	// Remove destroyed squads from map
 	if attackerDestroyed {
-		removeSquadFromMap(attackerID, cas.manager)
+		RemoveSquadFromMap(attackerID, cas.manager)
 	}
 
 	if defenderDestroyed {
-		removeSquadFromMap(defenderID, cas.manager)
+		RemoveSquadFromMap(defenderID, cas.manager)
 	}
 
 	// Trigger abilities for surviving squads

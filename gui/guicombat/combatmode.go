@@ -40,6 +40,9 @@ type CombatMode struct {
 	// Visualization systems
 	visualization *CombatVisualizationManager
 
+	// Sub-menu controller (manages debug sub-menu visibility)
+	subMenus *combatSubMenuController
+
 	// Turn lifecycle management
 	turnFlow *CombatTurnFlow
 
@@ -73,6 +76,9 @@ func (cm *CombatMode) Initialize(ctx *framework.UIContext) error {
 	if err != nil {
 		return err
 	}
+
+	// Initialize sub-menu controller before building panels (panels register with it)
+	cm.subMenus = newCombatSubMenuController()
 
 	// Build panels using registry
 	if err := cm.buildPanelsFromRegistry(); err != nil {
@@ -125,8 +131,10 @@ func (cm *CombatMode) Initialize(ctx *framework.UIContext) error {
 
 // buildPanelsFromRegistry builds all combat panels using the Panel Registry
 func (cm *CombatMode) buildPanelsFromRegistry() error {
-	// Build standard panels
+	// Build sub-menu panels first (they register with subMenus controller)
+	// Then build standard panels
 	panels := []framework.PanelType{
+		CombatPanelDebugMenu,
 		CombatPanelTurnOrder,
 		CombatPanelFactionInfo,
 		CombatPanelSquadDetail,
@@ -149,6 +157,7 @@ func (cm *CombatMode) buildActionButtons() {
 
 	buttonContainer := builders.CreateButtonGroup(builders.ButtonGroupConfig{
 		Buttons: []builders.ButtonSpec{
+			{Text: "Debug", OnClick: cm.subMenus.Toggle("debug")},
 			{Text: "Attack (A)", OnClick: cm.handleAttackClick},
 			{Text: "Move (M)", OnClick: cm.handleMoveClick},
 			{Text: "Undo (Ctrl+Z)", OnClick: cm.handleUndoMove},

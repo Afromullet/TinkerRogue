@@ -2,6 +2,7 @@ package guicombat
 
 import (
 	"fmt"
+	"game_main/tactical/combat"
 	"game_main/tactical/squadcommands"
 	"game_main/world/coords"
 
@@ -118,6 +119,14 @@ func (cah *CombatActionHandler) ExecuteAttack() {
 	// Invalidate cache for both squads (attacker and defender) since their HP/status changed
 	cah.deps.Queries.MarkSquadDirty(selectedSquad)
 	cah.deps.Queries.MarkSquadDirty(selectedTarget)
+
+	// Clean up cache for destroyed squads to prevent stale entries
+	if result.AttackerDestroyed {
+		cah.deps.Queries.InvalidateSquad(selectedSquad)
+	}
+	if result.TargetDestroyed {
+		cah.deps.Queries.InvalidateSquad(selectedTarget)
+	}
 
 	// Reset UI state
 	cah.deps.BattleState.InAttackMode = false
@@ -281,6 +290,28 @@ func (cah *CombatActionHandler) CycleSquadSelection() {
 	// Select next squad
 	nextIndex := (currentIndex + 1) % len(aliveSquads)
 	cah.SelectSquad(aliveSquads[nextIndex])
+}
+
+// DebugKillSquad removes a squad from the combat map using the normal death cleanup flow.
+func (cah *CombatActionHandler) DebugKillSquad(squadID ecs.EntityID) {
+	// Get squad name before disposal
+	squadName := cah.deps.Queries.SquadCache.GetSquadName(squadID)
+
+	// Clear selection if the killed squad was selected
+	if cah.deps.BattleState.SelectedSquadID == squadID {
+		cah.deps.BattleState.SelectedSquadID = 0
+	}
+
+	// Use the same cleanup path as normal combat death
+	if err := combat.RemoveSquadFromMap(squadID, cah.deps.Queries.ECSManager); err != nil {
+		cah.addLog(fmt.Sprintf("[DEBUG] Kill failed: %v", err))
+		return
+	}
+
+	// Invalidate cache for the removed squad
+	cah.deps.Queries.InvalidateSquad(squadID)
+
+	cah.addLog(fmt.Sprintf("[DEBUG] Killed squad: %s", squadName))
 }
 
 // addLog adds a message to the combat log

@@ -23,9 +23,10 @@ type DamageModifiers struct {
 // Contains both combat execution data and orchestration status
 type CombatResult struct {
 	// Orchestration status (set by combat action system)
-	Success         bool
-	ErrorReason     string
-	TargetDestroyed bool
+	Success           bool
+	ErrorReason       string
+	TargetDestroyed   bool
+	AttackerDestroyed bool
 
 	// Combat execution data (set by combat calculation logic)
 	TotalDamage  int
