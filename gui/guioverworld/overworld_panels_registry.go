@@ -140,7 +140,7 @@ func init() {
 		},
 	})
 
-	// Register management sub-menu (Squads, Inventory)
+	// Register management sub-menu (Squads)
 	framework.RegisterPanel(OverworldPanelManagementMenu, framework.PanelDescriptor{
 		Content: framework.ContentCustom,
 		OnCreate: func(result *framework.PanelResult, mode framework.UIMode) error {
@@ -149,10 +149,6 @@ func init() {
 			result.Container = createOverworldSubMenu(om, "management", []builders.ButtonConfig{
 				{Text: "Squads", OnClick: func() {
 					om.ModeManager.SetMode("squad_management")
-					om.subMenus.CloseAll()
-				}},
-				{Text: "Inventory", OnClick: func() {
-					om.ModeManager.SetMode("inventory")
 					om.subMenus.CloseAll()
 				}},
 				{Text: "Recruit (R)", OnClick: func() {
