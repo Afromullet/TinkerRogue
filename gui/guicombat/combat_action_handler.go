@@ -114,19 +114,8 @@ func (cah *CombatActionHandler) ExecuteAttack() {
 	}
 
 	// Validate attack BEFORE triggering animation (prevents animation on invalid attacks)
+	// Cache invalidation is handled automatically by the onAttackComplete hook.
 	result := cah.deps.CombatService.CombatActSystem.ExecuteAttackAction(selectedSquad, selectedTarget)
-
-	// Invalidate cache for both squads (attacker and defender) since their HP/status changed
-	cah.deps.Queries.MarkSquadDirty(selectedSquad)
-	cah.deps.Queries.MarkSquadDirty(selectedTarget)
-
-	// Clean up cache for destroyed squads to prevent stale entries
-	if result.AttackerDestroyed {
-		cah.deps.Queries.InvalidateSquad(selectedSquad)
-	}
-	if result.TargetDestroyed {
-		cah.deps.Queries.InvalidateSquad(selectedTarget)
-	}
 
 	// Reset UI state
 	cah.deps.BattleState.InAttackMode = false
@@ -197,9 +186,7 @@ func (cah *CombatActionHandler) MoveSquad(squadID ecs.EntityID, newPos coords.Lo
 		return fmt.Errorf(result.Error)
 	}
 
-	// Invalidate cache for the moved squad (position and movement remaining changed)
-	cah.deps.Queries.MarkSquadDirty(squadID)
-
+	// Cache invalidation is handled automatically by the onMoveComplete hook.
 	cah.addLog(fmt.Sprintf("✓ %s", result.Description))
 
 	// Exit move mode
@@ -265,7 +252,7 @@ func (cah *CombatActionHandler) ClearMoveHistory() {
 // CycleSquadSelection selects the next squad in the faction
 func (cah *CombatActionHandler) CycleSquadSelection() {
 	currentFactionID := cah.deps.CombatService.TurnManager.GetCurrentFaction()
-	factionData := cah.deps.Queries.CombatCache.FindFactionDataByID(currentFactionID, cah.deps.Queries.ECSManager)
+	factionData := cah.deps.Queries.CombatCache.FindFactionDataByID(currentFactionID)
 	if currentFactionID == 0 || factionData == nil || !factionData.IsPlayerControlled {
 		return
 	}

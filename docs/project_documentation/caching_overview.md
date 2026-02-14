@@ -16,6 +16,7 @@ This document provides a comprehensive overview of all caching mechanisms used t
 6. [Widget Render Caches](#widget-render-caches)
 7. [Cache Relationships](#cache-relationships)
 8. [Performance Characteristics](#performance-characteristics)
+9. [Hook-Based Cache Invalidation System](#hook-based-cache-invalidation-system)
 
 ---
 
@@ -821,7 +822,18 @@ Event-Driven:
     ↓ Depends on
     SquadQueryCache + CombatQueryCache
     ↓ Invalidated by
-    Game events (damage, movement, turn start/end)
+    Hook-based invalidation system (OnAttackComplete, OnMoveComplete, OnTurnEnd)
+
+Hook-Based Invalidation:
+  CombatActionSystem → fires OnAttackComplete hook
+  CombatMovementSystem → fires OnMoveComplete hook
+  TurnManager → fires OnTurnEnd hook
+    ↓ Registered at
+    CombatService (forwards to GUI callbacks)
+    ↓ GUI callbacks invoke
+    SquadInfoCache.MarkSquadDirty() / InvalidateSquad() / MarkAllSquadsDirty()
+    ↓ Also triggers
+    Threat layer updates (UpdateThreatManagers, UpdateThreatEvaluator)
 
 Threat Evaluation:
   CompositeThreatEvaluator
@@ -831,6 +843,8 @@ Threat Evaluation:
     DirtyCache (round-based invalidation)
     ↓ Depends on
     CombatQueryCache (for squad positions, action states)
+    ↓ Invalidated by
+    OnTurnEnd hook (round-based updates)
 
 Rendering:
   TileRenderer (viewport position cache)
@@ -852,26 +866,28 @@ Rendering:
    ↓
 2. MoveSquadCommand.Execute()
    ↓
-3. EntityManager.MoveSquadAndMembers(squadID, oldPos, newPos)
+3. CombatMovementSystem.MoveSquad()
    ↓
-4. Updates PositionComponent on all squad members
+4. EntityManager.MoveSquadAndMembers(squadID, oldPos, newPos)
    ↓
-5. GlobalPositionSystem.MoveEntity() for each member (spatial grid update)
+5. Updates PositionComponent on all squad members
    ↓
-6. ECS library auto-updates all Views (SquadQueryCache, CombatQueryCache, RenderingCache)
+6. GlobalPositionSystem.MoveEntity() for each member (spatial grid update)
    ↓
-7. GUI code calls guiQueries.MarkSquadDirty(squadID)
+7. ECS library auto-updates all Views (SquadQueryCache, CombatQueryCache, RenderingCache)
    ↓
-8. SquadInfoCache invalidates squad's entry
+8. CombatMovementSystem fires OnMoveComplete hook
    ↓
-9. AI controller calls threatEvaluator.MarkDirty()
+9. CombatService forwards hook to registered GUI callbacks
    ↓
-10. All threat layers marked dirty
+10. GUI callback: cm.Queries.MarkSquadDirty(squadID)
    ↓
-11. Next AI turn: threatEvaluator.Update(currentRound) recomputes layers
+11. SquadInfoCache marks squad's entry dirty
+   ↓
+12. Next UI update: SquadInfoCache recomputes squad info from ECS
 ```
 
-**Key Insight:** Most caches update automatically (ECS Views), but event-driven caches require manual invalidation calls.
+**Key Insight:** Hook-based invalidation eliminates manual cache invalidation calls in combat logic. Caches update automatically via registered callbacks.
 
 ---
 
@@ -962,6 +978,531 @@ Rendering:
 
 ---
 
+## 9. Hook-Based Cache Invalidation System
+
+The combat cache invalidation system uses a hook-based architecture to automatically invalidate caches when game state changes occur. This ensures cache coherence without requiring manual invalidation calls scattered throughout combat logic.
+
+### 9.1 Architecture Overview
+
+The hook system creates a clean separation between combat logic (write path) and cache management (invalidation path):
+
+```
+Combat System (Write Path)          Hook System (Connector)          Cache Layer (Read Path)
+────────────────────────            ───────────────────────          ──────────────────────
+CombatActionSystem.ExecuteAttack    →  OnAttackComplete hook   →    SquadInfoCache.MarkDirty()
+CombatMovementSystem.MoveSquad      →  OnMoveComplete hook     →    SquadInfoCache.MarkDirty()
+TurnManager.EndTurn                 →  OnTurnEnd hook          →    SquadInfoCache.MarkAllDirty()
+```
+
+**Key Design Principles:**
+- **Orthogonal Concerns:** Combat logic focuses on game rules; cache invalidation is handled separately via hooks
+- **Single Registration Point:** All cache invalidation callbacks registered in one place (combatmode.go)
+- **Automatic Propagation:** Hooks fire for both player actions and AI actions (no special cases)
+- **Lifecycle Management:** Callbacks cleared on combat exit to prevent stale references
+
+**Files Involved:**
+- `tactical/combatservices/combat_events.go` - Hook callback type definitions
+- `tactical/combatservices/combat_service.go` - Hook registration and callback storage
+- `tactical/combat/combatactionsystem.go` - Fires OnAttackComplete
+- `tactical/combat/combatmovementsystem.go` - Fires OnMoveComplete
+- `tactical/combat/turnmanager.go` - Fires OnTurnEnd
+- `gui/guicombat/combatmode.go` - Registers cache invalidation callbacks
+
+---
+
+### 9.2 The Three Combat Hooks
+
+#### 9.2.1 OnAttackComplete Hook
+
+**Purpose:** Invalidate squad caches after combat damage is applied.
+
+**Fired By:** `CombatActionSystem.ExecuteAttackAction()` (combatactionsystem.go:168-170)
+```go
+// After all damage applied and squads potentially destroyed
+if cas.onAttackComplete != nil {
+    cas.onAttackComplete(attackerID, defenderID, result)
+}
+```
+
+**Registered At:** `CombatService.NewCombatService()` (combat_service.go:71-75)
+```go
+combatActSystem.SetOnAttackComplete(func(attackerID, defenderID ecs.EntityID, result *squads.CombatResult) {
+    for _, fn := range cs.onAttackComplete {
+        fn(attackerID, defenderID, result)
+    }
+})
+```
+
+**GUI Callback:** `combatmode.go:111-120`
+```go
+cm.combatService.RegisterOnAttackComplete(func(attackerID, defenderID ecs.EntityID, result *squads.CombatResult) {
+    cm.Queries.MarkSquadDirty(attackerID)  // Attacker HP/action state changed
+    cm.Queries.MarkSquadDirty(defenderID)  // Defender HP changed
+    if result.AttackerDestroyed {
+        cm.Queries.InvalidateSquad(attackerID)  // Complete removal
+    }
+    if result.TargetDestroyed {
+        cm.Queries.InvalidateSquad(defenderID)  // Complete removal
+    }
+})
+```
+
+**What Gets Invalidated:**
+- Attacker squad cache (HP, action state)
+- Defender squad cache (HP, potentially destroyed units)
+- Complete removal for destroyed squads (InvalidateSquad vs MarkDirty)
+
+**When It Fires:**
+- After all unit attacks processed
+- After counterattacks resolved
+- After damage applied to ECS components
+- After dead units disposed
+- After squads potentially destroyed
+
+---
+
+#### 9.2.2 OnMoveComplete Hook
+
+**Purpose:** Invalidate squad caches after movement completes.
+
+**Fired By:** `CombatMovementSystem.MoveSquad()` (combatmovementsystem.go:109-112)
+```go
+// After squad and members moved atomically
+if ms.onMoveComplete != nil {
+    ms.onMoveComplete(squadID)
+}
+```
+
+**Registered At:** `CombatService.NewCombatService()` (combat_service.go:77-81)
+```go
+movementSystem.SetOnMoveComplete(func(squadID ecs.EntityID) {
+    for _, fn := range cs.onMoveComplete {
+        fn(squadID)
+    }
+})
+```
+
+**GUI Callback:** `combatmode.go:122-124`
+```go
+cm.combatService.RegisterOnMoveComplete(func(squadID ecs.EntityID) {
+    cm.Queries.MarkSquadDirty(squadID)  // Position and movement remaining changed
+})
+```
+
+**What Gets Invalidated:**
+- Squad position cache
+- Movement remaining (action state)
+- HasMoved flag
+
+**When It Fires:**
+- After PositionComponent updated
+- After PositionSystem updated
+- After movement cost deducted
+- After HasMoved flag set
+
+---
+
+#### 9.2.3 OnTurnEnd Hook
+
+**Purpose:** Invalidate all caches and update threat evaluations at turn boundaries.
+
+**Fired By:** `TurnManager.EndTurn()` (turnmanager.go:145-148)
+```go
+// After turn index advanced and action states reset
+if tm.onTurnEnd != nil {
+    tm.onTurnEnd(turnState.CurrentRound)
+}
+```
+
+**Registered At:** `CombatService.NewCombatService()` (combat_service.go:83-87)
+```go
+turnManager.SetOnTurnEnd(func(round int) {
+    for _, fn := range cs.onTurnEnd {
+        fn(round)
+    }
+})
+```
+
+**GUI Callback:** `combatmode.go:126-130`
+```go
+cm.combatService.RegisterOnTurnEnd(func(round int) {
+    cm.Queries.MarkAllSquadsDirty()            // All action states reset
+    cm.visualization.UpdateThreatManagers()     // Recalculate threat layers
+    cm.visualization.UpdateThreatEvaluator(round)  // Update AI evaluation
+})
+```
+
+**What Gets Invalidated:**
+- All squad caches (action states reset for new faction)
+- Threat evaluation layers (AI needs fresh data)
+- Composite threat evaluators (position-based AI scoring)
+
+**When It Fires:**
+- After turn index incremented
+- After round number potentially incremented
+- After new faction's action states reset
+
+---
+
+### 9.3 Hook Registration Flow
+
+**Step 1: Combat Service Construction** (`combat_service.go:48-89`)
+
+The CombatService constructor creates all combat systems and wires their internal hooks to forward to registered GUI callbacks:
+
+```go
+func NewCombatService(manager *common.EntityManager) *CombatService {
+    // ... create systems ...
+
+    cs := &CombatService{
+        // ... system fields ...
+        onAttackComplete: []OnAttackCompleteFunc{},  // Empty callback slices
+        onMoveComplete:   []OnMoveCompleteFunc{},
+        onTurnEnd:        []OnTurnEndFunc{},
+    }
+
+    // Wire system hooks to forward to registered callbacks
+    combatActSystem.SetOnAttackComplete(func(...) {
+        for _, fn := range cs.onAttackComplete { fn(...) }
+    })
+
+    movementSystem.SetOnMoveComplete(func(...) {
+        for _, fn := range cs.onMoveComplete { fn(...) }
+    })
+
+    turnManager.SetOnTurnEnd(func(...) {
+        for _, fn := range cs.onTurnEnd { fn(...) }
+    })
+
+    return cs
+}
+```
+
+**Step 2: GUI Registration** (`combatmode.go:110-130`)
+
+During combat mode initialization, the GUI registers cache invalidation callbacks:
+
+```go
+func (cm *CombatMode) Initialize(ctx *framework.UIContext) error {
+    // ... create combat service and UI ...
+
+    // Register cache invalidation callbacks
+    cm.combatService.RegisterOnAttackComplete(func(attackerID, defenderID ecs.EntityID, result *squads.CombatResult) {
+        cm.Queries.MarkSquadDirty(attackerID)
+        cm.Queries.MarkSquadDirty(defenderID)
+        if result.AttackerDestroyed { cm.Queries.InvalidateSquad(attackerID) }
+        if result.TargetDestroyed { cm.Queries.InvalidateSquad(defenderID) }
+    })
+
+    cm.combatService.RegisterOnMoveComplete(func(squadID ecs.EntityID) {
+        cm.Queries.MarkSquadDirty(squadID)
+    })
+
+    cm.combatService.RegisterOnTurnEnd(func(round int) {
+        cm.Queries.MarkAllSquadsDirty()
+        cm.visualization.UpdateThreatManagers()
+        cm.visualization.UpdateThreatEvaluator(round)
+    })
+
+    return nil
+}
+```
+
+**Step 3: Hook Firing During Combat**
+
+When combat actions occur, the systems fire their hooks which propagate to all registered callbacks:
+
+```go
+// Example: Attack flow
+ExecuteAttackAction() → applies damage → cas.onAttackComplete(attackerID, defenderID, result)
+    → CombatService forwards to registered callbacks
+    → GUI callback: cm.Queries.MarkSquadDirty(attackerID)
+    → SquadInfoCache marks squad dirty
+    → Next UI update recomputes squad info from ECS
+```
+
+---
+
+### 9.4 Manual Invalidation Bypass Cases
+
+Three special cases bypass the hook system and manually invalidate caches because they modify game state outside normal combat flow:
+
+#### 9.4.1 Undo Move
+
+**Location:** `combat_action_handler.go:199-214`
+
+**Why Manual:** Undo reverses a move that already fired OnMoveComplete. Re-firing the hook would be incorrect.
+
+```go
+func (cah *CombatActionHandler) UndoLastMove() {
+    result := cah.commandExecutor.Undo()
+
+    if result.Success {
+        // Manual invalidation - undo doesn't fire hooks
+        cah.deps.Queries.MarkAllSquadsDirty()
+        cah.addLog(fmt.Sprintf("⟲ Undid: %s", result.Description))
+    }
+}
+```
+
+**Invalidation Strategy:** MarkAllSquadsDirty() instead of per-squad (conservative, ensures correctness)
+
+---
+
+#### 9.4.2 Redo Move
+
+**Location:** `combat_action_handler.go:217-232`
+
+**Why Manual:** Redo re-applies a move that was undone. Hook already fired during original move.
+
+```go
+func (cah *CombatActionHandler) RedoLastMove() {
+    result := cah.commandExecutor.Redo()
+
+    if result.Success {
+        // Manual invalidation - redo doesn't fire hooks
+        cah.deps.Queries.MarkAllSquadsDirty()
+        cah.addLog(fmt.Sprintf("⟳ Redid: %s", result.Description))
+    }
+}
+```
+
+**Invalidation Strategy:** MarkAllSquadsDirty() for safety
+
+---
+
+#### 9.4.3 Debug Kill Squad
+
+**Location:** `combat_action_handler.go:283-302`
+
+**Why Manual:** Debug action bypasses normal combat flow. No damage applied, squad just removed.
+
+```go
+func (cah *CombatActionHandler) DebugKillSquad(squadID ecs.EntityID) {
+    // Use normal cleanup path
+    combat.RemoveSquadFromMap(squadID, cah.deps.Queries.ECSManager)
+
+    // Manual invalidation - debug actions don't fire hooks
+    cah.deps.Queries.InvalidateSquad(squadID)
+
+    cah.addLog(fmt.Sprintf("[DEBUG] Killed squad: %s", squadName))
+}
+```
+
+**Invalidation Strategy:** InvalidateSquad() (complete removal, not MarkDirty)
+
+---
+
+### 9.5 Cleanup and Lifecycle Management
+
+#### Clearing Callbacks on Combat Exit
+
+**Location:** `combat_service.go:269` (called from `CleanupCombat()`)
+
+```go
+func (cs *CombatService) ClearCallbacks() {
+    cs.onAttackComplete = nil
+    cs.onMoveComplete = nil
+    cs.onTurnEnd = nil
+}
+```
+
+**Why This Matters:**
+- GUI state is torn down when exiting combat mode
+- Callbacks reference `cm.Queries` and `cm.visualization` which become invalid
+- Leaving callbacks registered would cause nil pointer dereferences if systems fire hooks after mode exit
+- Called during `CleanupCombat()` before entity disposal
+
+**Call Site:** `combat_service.go:266-289`
+```go
+func (cs *CombatService) CleanupCombat(enemySquadIDs []ecs.EntityID) {
+    // Clear registered callbacks (they reference GUI state being torn down)
+    cs.ClearCallbacks()
+
+    // ... rest of cleanup ...
+}
+```
+
+---
+
+### 9.6 Read Path vs Write Path Separation
+
+The hook system maintains a clean separation between data access patterns:
+
+#### Write Path (Combat Logic)
+- `CombatActionSystem.ExecuteAttackAction()` - Modifies HP, action states
+- `CombatMovementSystem.MoveSquad()` - Modifies positions, movement remaining
+- `TurnManager.EndTurn()` - Modifies turn state, resets actions
+- These systems NEVER query caches or invalidate caches
+- They only fire hooks at completion boundaries
+
+#### Read Path (GUI and AI)
+- `SquadInfoCache.GetSquadInfo()` - Reads aggregate HP, action states
+- `CombatQueryCache.FindActionStateBySquadID()` - Reads action availability
+- `GUIQueries.GetSquadInfo()` - Reads comprehensive squad data
+- These systems NEVER modify game state
+- They only react to hook callbacks by marking dirty flags
+
+#### Hook System (Connector)
+- Bridges write path to read path
+- Fires at discrete event boundaries (attack complete, move complete, turn end)
+- Allows multiple observers (GUI cache, AI cache, visualization)
+- Decouples combat logic from cache management
+
+**Benefit:** Combat systems can be tested without GUI, AI can be tested without graphics, caches can be validated independently.
+
+---
+
+### 9.7 Hook System Benefits
+
+**Automatic Invalidation:**
+- No manual invalidation calls scattered in combat logic
+- Hooks fire for both player and AI actions (no special cases)
+- Single registration point makes invalidation logic auditable
+
+**Correct Timing:**
+- Hooks fire AFTER state modifications complete
+- Caches never see intermediate/invalid state
+- Hooks fire atomically (no interleaving with game logic)
+
+**Multiple Observers:**
+- GUI caches invalidate on hooks
+- AI threat layers invalidate on hooks
+- Visualization updates on hooks
+- Easy to add new observers without modifying combat systems
+
+**Lifecycle Safety:**
+- Callbacks cleared on combat exit
+- No stale references to torn-down GUI state
+- Systems can be tested without GUI (hooks optional)
+
+**Performance:**
+- Invalidation only at discrete events (not every frame)
+- Lazy recomputation (caches rebuild on next access, not immediately)
+- Minimal overhead (simple function calls, no complex event systems)
+
+---
+
+### 9.8 Common Patterns
+
+#### Pattern 1: Marking Individual Squads Dirty
+
+Use when squad state changes but squad still exists:
+
+```go
+cm.combatService.RegisterOnAttackComplete(func(attackerID, defenderID ecs.EntityID, result *squads.CombatResult) {
+    cm.Queries.MarkSquadDirty(attackerID)   // HP or action state changed
+    cm.Queries.MarkSquadDirty(defenderID)   // HP changed
+})
+```
+
+#### Pattern 2: Invalidating Destroyed Squads
+
+Use when squad is completely removed from combat:
+
+```go
+if result.TargetDestroyed {
+    cm.Queries.InvalidateSquad(defenderID)  // Complete removal from cache
+}
+```
+
+**Difference:**
+- `MarkSquadDirty()` - Flags for recomputation, squad still exists
+- `InvalidateSquad()` - Complete removal, squad no longer queryable
+
+#### Pattern 3: Marking All Squads Dirty
+
+Use when global state changes (turn boundaries, undo/redo):
+
+```go
+cm.combatService.RegisterOnTurnEnd(func(round int) {
+    cm.Queries.MarkAllSquadsDirty()  // All action states reset
+})
+```
+
+#### Pattern 4: Hook + Cache Update
+
+Use when hooks trigger both cache invalidation and visualization updates:
+
+```go
+cm.combatService.RegisterOnTurnEnd(func(round int) {
+    cm.Queries.MarkAllSquadsDirty()            // Cache invalidation
+    cm.visualization.UpdateThreatManagers()     // Visualization update
+})
+```
+
+---
+
+### 9.9 Testing Cache Invalidation
+
+#### Verifying Hook Firing
+
+```go
+func TestAttackFiresHook(t *testing.T) {
+    hookFired := false
+    attackerID := ecs.EntityID(0)
+
+    combatService.RegisterOnAttackComplete(func(attacker, defender ecs.EntityID, result *squads.CombatResult) {
+        hookFired = true
+        attackerID = attacker
+    })
+
+    combatService.CombatActSystem.ExecuteAttackAction(squadA, squadB)
+
+    assert.True(t, hookFired, "OnAttackComplete should fire")
+    assert.Equal(t, squadA, attackerID, "Hook should receive correct attacker ID")
+}
+```
+
+#### Verifying Cache Invalidation
+
+```go
+func TestCacheInvalidationOnAttack(t *testing.T) {
+    // Get initial cached data
+    info1 := guiQueries.GetSquadInfo(squadA)
+
+    // Perform attack
+    combatService.CombatActSystem.ExecuteAttackAction(squadA, squadB)
+
+    // Get updated cached data
+    info2 := guiQueries.GetSquadInfo(squadA)
+
+    // Verify action state changed
+    assert.NotEqual(t, info1.HasActed, info2.HasActed, "Cache should reflect new action state")
+}
+```
+
+#### Verifying Callback Cleanup
+
+```go
+func TestCallbacksClearedOnExit(t *testing.T) {
+    combatService.RegisterOnAttackComplete(func(...) { /* callback */ })
+
+    combatService.CleanupCombat(enemySquads)
+
+    // Verify no callbacks remain
+    assert.Empty(t, combatService.onAttackComplete, "Callbacks should be cleared")
+}
+```
+
+---
+
+### 9.10 Future Improvements
+
+**Potential Enhancements:**
+1. **Hook Metrics** - Track hook firing frequency for performance analysis
+2. **Conditional Callbacks** - Register callbacks with predicates (only fire for specific factions)
+3. **Priority Ordering** - Allow callbacks to specify execution order
+4. **Deferred Invalidation** - Batch invalidations at frame boundaries
+5. **Hook Replay** - Record and replay hook sequences for testing
+
+**Current Limitations:**
+- No ordering guarantees for multiple registered callbacks
+- No error handling if callback throws (would need panic recovery)
+- No way to unregister specific callbacks (only ClearCallbacks() clears all)
+
+---
+
 ## Best Practices
 
 ### When to Add a Cache
@@ -994,12 +1535,42 @@ pos.X = newX
 pos.Y = newY
 ```
 
-**Event-Driven Caches:** Explicit invalidation at event sites
+**Hook-Based Invalidation (Combat Systems):** Register callbacks once, fire automatically
 ```go
-// After damage
+// ✅ CORRECT - Register callbacks during mode initialization
+cm.combatService.RegisterOnAttackComplete(func(attackerID, defenderID ecs.EntityID, result *squads.CombatResult) {
+    cm.Queries.MarkSquadDirty(attackerID)
+    cm.Queries.MarkSquadDirty(defenderID)
+    if result.TargetDestroyed { cm.Queries.InvalidateSquad(defenderID) }
+})
+
+// ✅ CORRECT - Combat systems fire hooks, don't invalidate caches directly
+if cas.onAttackComplete != nil {
+    cas.onAttackComplete(attackerID, defenderID, result)
+}
+
+// ❌ WRONG - Combat logic should NOT invalidate caches directly
+combatActSystem.ExecuteAttack(...)
+guiQueries.MarkSquadDirty(squadID)  // This should be in a hook callback
+```
+
+**Manual Invalidation (Special Cases):** Only for actions that bypass hooks
+```go
+// Undo/Redo - hooks already fired during original action
+cah.commandExecutor.Undo()
+cah.deps.Queries.MarkAllSquadsDirty()  // Manual invalidation required
+
+// Debug actions - bypass normal combat flow
+combat.RemoveSquadFromMap(squadID, manager)
+queries.InvalidateSquad(squadID)  // Manual invalidation required
+```
+
+**Event-Driven Caches (Non-Combat):** Explicit invalidation at event sites
+```go
+// After damage (non-combat)
 guiQueries.MarkSquadDirty(squadID)
 
-// After turn end
+// After turn end (via hook callback)
 guiQueries.MarkAllSquadsDirty()
 
 // After squad destroyed
@@ -1018,12 +1589,15 @@ renderingCache.RefreshRenderablesView(manager)
 cachedList.MarkDirty()
 ```
 
-**Threat Layers:** Invalidate on game state changes
+**Threat Layers:** Invalidate on game state changes (via hook callbacks)
 ```go
-// After any squad movement or destruction
-threatEvaluator.MarkDirty()
+// Via OnTurnEnd hook (automatic)
+cm.combatService.RegisterOnTurnEnd(func(round int) {
+    cm.visualization.UpdateThreatManagers()
+    cm.visualization.UpdateThreatEvaluator(round)
+})
 
-// At start of AI turn
+// Manual update at AI turn start
 threatEvaluator.Update(currentRound)
 ```
 
@@ -1090,15 +1664,24 @@ TinkerRogue uses a layered caching strategy:
 1. **ECS Views** - Automatic, always-correct, O(k) queries (foundation)
 2. **Spatial Grids** - O(1) position lookups (critical for gameplay)
 3. **Event-Driven Caches** - Turn-based aggregates (optimal for UI)
-4. **Threat Layers** - Round-based AI (expensive computations)
-5. **Rendering Caches** - Frame-level drawing (GPU bottleneck mitigation)
+4. **Hook-Based Invalidation** - Automatic cache invalidation via combat events (clean separation)
+5. **Threat Layers** - Round-based AI (expensive computations)
+6. **Rendering Caches** - Frame-level drawing (GPU bottleneck mitigation)
 
 The key insight is matching cache invalidation strategy to data access patterns:
 - **Frame-level:** Clear every frame (sprite batches)
 - **Event-driven:** Invalidate on specific game events (SquadInfoCache)
+- **Hook-based:** Automatic invalidation via registered callbacks (combat caches)
 - **Round-based:** Recompute per turn (threat layers)
 - **Viewport-based:** Rebuild on camera movement (tile renderer)
 - **Size-based:** Rebuild on dimension changes (border cache, overlay cache)
 - **Automatic:** ECS Views (no manual management)
+
+**Hook-Based Invalidation Benefits:**
+- Eliminates manual cache invalidation in combat logic
+- Works for both player and AI actions automatically
+- Clean separation between combat systems (write path) and caches (read path)
+- Single registration point makes invalidation auditable
+- Easy to add new cache observers without modifying combat code
 
 When in doubt, start without caching and profile. Premature caching adds complexity without guaranteed benefit. Let the profiler guide optimization efforts.

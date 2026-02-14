@@ -61,7 +61,7 @@ func TestCreateFaction(t *testing.T) {
 	}
 
 	// Verify faction data (using cache for O(1) lookup instead of O(n) query)
-	faction := fm.combatCache.FindFactionByID(factionID, manager)
+	faction := fm.combatCache.FindFactionByID(factionID)
 	if faction == nil {
 		t.Fatal("Cannot find created faction")
 	}

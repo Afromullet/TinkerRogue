@@ -131,7 +131,7 @@ func CreateActionStateForSquad(manager *common.EntityManager, squadID ecs.Entity
 
 // canSquadAct checks if a squad can perform an action this turn (uses cached query for O(k) performance)
 func canSquadAct(cache *CombatQueryCache, squadID ecs.EntityID, manager *common.EntityManager) bool {
-	actionState := cache.FindActionStateBySquadID(squadID, manager)
+	actionState := cache.FindActionStateBySquadID(squadID)
 	if actionState == nil {
 		return false
 	}
@@ -140,7 +140,7 @@ func canSquadAct(cache *CombatQueryCache, squadID ecs.EntityID, manager *common.
 
 // canSquadMove checks if a squad can still move this turn (uses cached query for O(k) performance)
 func canSquadMove(cache *CombatQueryCache, squadID ecs.EntityID, manager *common.EntityManager) bool {
-	actionState := cache.FindActionStateBySquadID(squadID, manager)
+	actionState := cache.FindActionStateBySquadID(squadID)
 	if actionState == nil {
 		return false
 	}
@@ -150,7 +150,7 @@ func canSquadMove(cache *CombatQueryCache, squadID ecs.EntityID, manager *common
 
 // markSquadAsActed marks a squad as having used its combat action
 func markSquadAsActed(cache *CombatQueryCache, squadID ecs.EntityID, manager *common.EntityManager) {
-	actionState := cache.FindActionStateBySquadID(squadID, manager)
+	actionState := cache.FindActionStateBySquadID(squadID)
 	if actionState == nil {
 		return
 	}
@@ -159,7 +159,7 @@ func markSquadAsActed(cache *CombatQueryCache, squadID ecs.EntityID, manager *co
 
 // markSquadAsMoved marks a squad as having used movement
 func markSquadAsMoved(cache *CombatQueryCache, squadID ecs.EntityID, manager *common.EntityManager) {
-	actionState := cache.FindActionStateBySquadID(squadID, manager)
+	actionState := cache.FindActionStateBySquadID(squadID)
 	if actionState == nil {
 		return
 	}
@@ -168,7 +168,7 @@ func markSquadAsMoved(cache *CombatQueryCache, squadID ecs.EntityID, manager *co
 
 // decrementMovementRemaining reduces squad's remaining movement
 func decrementMovementRemaining(cache *CombatQueryCache, squadID ecs.EntityID, amount int, manager *common.EntityManager) {
-	actionState := cache.FindActionStateBySquadID(squadID, manager)
+	actionState := cache.FindActionStateBySquadID(squadID)
 	if actionState == nil {
 		return
 	}

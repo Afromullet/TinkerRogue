@@ -81,7 +81,7 @@ type FactionInfo struct {
 // GetFactionInfo returns complete faction information for UI display
 func (gq *GUIQueries) GetFactionInfo(factionID ecs.EntityID) *FactionInfo {
 	// Use cached query (100-500x faster than full World.Query)
-	factionData := gq.CombatCache.FindFactionDataByID(factionID, gq.ECSManager)
+	factionData := gq.CombatCache.FindFactionDataByID(factionID)
 	if factionData == nil {
 		return nil
 	}

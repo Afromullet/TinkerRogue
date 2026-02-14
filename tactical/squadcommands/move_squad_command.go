@@ -82,7 +82,7 @@ func (cmd *MoveSquadCommand) Execute() error {
 	cmd.oldPosition = *posPtr
 
 	// Capture old ActionState (CRITICAL for undo)
-	actionStateEntity := cmd.combatCache.FindActionStateEntity(cmd.squadID, cmd.entityManager)
+	actionStateEntity := cmd.combatCache.FindActionStateEntity(cmd.squadID)
 	if actionStateEntity != nil {
 		actionState := common.GetComponentType[*combat.ActionStateData](actionStateEntity, combat.ActionStateComponent)
 		if actionState != nil {
@@ -129,7 +129,7 @@ func (cmd *MoveSquadCommand) Undo() error {
 	}
 
 	// Restore ActionState (CRITICAL - undo must restore full state)
-	actionStateEntity := cmd.combatCache.FindActionStateEntity(cmd.squadID, cmd.entityManager)
+	actionStateEntity := cmd.combatCache.FindActionStateEntity(cmd.squadID)
 	if actionStateEntity != nil {
 		actionState := common.GetComponentType[*combat.ActionStateData](actionStateEntity, combat.ActionStateComponent)
 		if actionState != nil {

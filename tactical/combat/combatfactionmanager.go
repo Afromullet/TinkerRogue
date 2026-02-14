@@ -53,7 +53,7 @@ func (fm *CombatFactionManager) CreateFactionWithPlayer(name string, playerID in
 
 func (fm *CombatFactionManager) AddSquadToFaction(factionID, squadID ecs.EntityID, position coords.LogicalPosition) error {
 
-	faction := fm.combatCache.FindFactionByID(factionID, fm.manager)
+	faction := fm.combatCache.FindFactionByID(factionID)
 	if faction == nil {
 		return fmt.Errorf("faction %d not found", factionID)
 	}
@@ -95,7 +95,7 @@ func (fm *CombatFactionManager) AddSquadToFaction(factionID, squadID ecs.EntityI
 
 func (fm *CombatFactionManager) GetFactionMana(factionID ecs.EntityID) (current, max int) {
 	// Find faction entity (using cached query for performance)
-	faction := fm.combatCache.FindFactionByID(factionID, fm.manager)
+	faction := fm.combatCache.FindFactionByID(factionID)
 	if faction == nil {
 		return 0, 0 // Faction not found
 	}
@@ -107,7 +107,7 @@ func (fm *CombatFactionManager) GetFactionMana(factionID ecs.EntityID) (current,
 
 func (fm *CombatFactionManager) GetFactionName(factionID ecs.EntityID) string {
 	// Find faction entity (using cached query for performance)
-	faction := fm.combatCache.FindFactionByID(factionID, fm.manager)
+	faction := fm.combatCache.FindFactionByID(factionID)
 	if faction == nil {
 		return "Unknown"
 	}

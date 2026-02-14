@@ -11,6 +11,7 @@ import (
 	"game_main/mind/encounter"
 	"game_main/tactical/combat/battlelog"
 	"game_main/tactical/combatservices"
+	"game_main/tactical/squads"
 
 	"github.com/bytearena/ecs"
 	"github.com/ebitenui/ebitenui/widget"
@@ -105,6 +106,28 @@ func (cm *CombatMode) Initialize(ctx *framework.UIContext) error {
 	// Create handlers with deps
 	cm.actionHandler = NewCombatActionHandler(cm.deps)
 	cm.inputHandler = NewCombatInputHandler(cm.actionHandler, cm.deps)
+
+	// Register cache invalidation callbacks (automatic, fires for both GUI and AI actions)
+	cm.combatService.RegisterOnAttackComplete(func(attackerID, defenderID ecs.EntityID, result *squads.CombatResult) {
+		cm.Queries.MarkSquadDirty(attackerID)
+		cm.Queries.MarkSquadDirty(defenderID)
+		if result.AttackerDestroyed {
+			cm.Queries.InvalidateSquad(attackerID)
+		}
+		if result.TargetDestroyed {
+			cm.Queries.InvalidateSquad(defenderID)
+		}
+	})
+
+	cm.combatService.RegisterOnMoveComplete(func(squadID ecs.EntityID) {
+		cm.Queries.MarkSquadDirty(squadID)
+	})
+
+	cm.combatService.RegisterOnTurnEnd(func(round int) {
+		cm.Queries.MarkAllSquadsDirty()
+		cm.visualization.UpdateThreatManagers()
+		cm.visualization.UpdateThreatEvaluator(round)
+	})
 
 	// Initialize visualization systems
 	cm.visualization = NewCombatVisualizationManager(ctx, cm.Queries, ctx.GameMap)
@@ -215,7 +238,7 @@ func (cm *CombatMode) initializeUpdateComponents() {
 			}
 
 			round := cm.combatService.TurnManager.GetCurrentRound()
-			factionData := cm.Queries.CombatCache.FindFactionDataByID(currentFactionID, cm.Queries.ECSManager)
+			factionData := cm.Queries.CombatCache.FindFactionDataByID(currentFactionID)
 			factionName := "Unknown"
 			turnIndicator := ""
 
@@ -239,7 +262,7 @@ func (cm *CombatMode) initializeUpdateComponents() {
 		cm.Queries,
 		func(data interface{}) string {
 			factionInfo := data.(*framework.FactionInfo)
-			factionData := cm.Queries.CombatCache.FindFactionDataByID(factionInfo.ID, cm.Queries.ECSManager)
+			factionData := cm.Queries.CombatCache.FindFactionDataByID(factionInfo.ID)
 
 			infoText := fmt.Sprintf("%s\n", factionInfo.Name)
 
@@ -298,7 +321,7 @@ func (cm *CombatMode) Enter(fromMode framework.UIMode) error {
 
 			// Log initial faction
 			currentFactionID := cm.combatService.TurnManager.GetCurrentFaction()
-			factionData := cm.Queries.CombatCache.FindFactionDataByID(currentFactionID, cm.Queries.ECSManager)
+			factionData := cm.Queries.CombatCache.FindFactionDataByID(currentFactionID)
 			factionName := "Unknown"
 			if factionData != nil {
 				factionName = factionData.Name

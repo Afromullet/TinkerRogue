@@ -14,6 +14,9 @@ type CombatMovementSystem struct {
 	manager     *common.EntityManager
 	posSystem   *common.PositionSystem // For O(1) collision detection
 	combatCache *CombatQueryCache
+
+	// Post-move hook (fired after successful squad movement)
+	onMoveComplete func(squadID ecs.EntityID)
 }
 
 // Constructor
@@ -23,6 +26,11 @@ func NewMovementSystem(manager *common.EntityManager, posSystem *common.Position
 		posSystem:   posSystem,
 		combatCache: cache,
 	}
+}
+
+// SetOnMoveComplete sets the callback fired after a successful squad move.
+func (cms *CombatMovementSystem) SetOnMoveComplete(fn func(ecs.EntityID)) {
+	cms.onMoveComplete = fn
 }
 
 // GetSquadMovementSpeed delegates to squads package for consistent speed calculation
@@ -66,7 +74,7 @@ func (ms *CombatMovementSystem) MoveSquad(squadID ecs.EntityID, targetPos coords
 	movementCost := currentPos.ChebyshevDistance(&targetPos)
 
 	// Check if squad has enough movement (using cached query for performance)
-	actionStateEntity := ms.combatCache.FindActionStateEntity(squadID, ms.manager)
+	actionStateEntity := ms.combatCache.FindActionStateEntity(squadID)
 	if actionStateEntity == nil {
 		return fmt.Errorf("no action state for squad")
 	}
@@ -98,6 +106,11 @@ func (ms *CombatMovementSystem) MoveSquad(squadID ecs.EntityID, targetPos coords
 	decrementMovementRemaining(ms.combatCache, squadID, movementCost, ms.manager)
 	markSquadAsMoved(ms.combatCache, squadID, ms.manager)
 
+	// Fire post-move hook
+	if ms.onMoveComplete != nil {
+		ms.onMoveComplete(squadID)
+	}
+
 	return nil
 }
 
@@ -108,7 +121,7 @@ func (ms *CombatMovementSystem) GetValidMovementTiles(squadID ecs.EntityID) []co
 	}
 
 	// Get remaining movement (using cached query for performance)
-	actionStateEntity := ms.combatCache.FindActionStateEntity(squadID, ms.manager)
+	actionStateEntity := ms.combatCache.FindActionStateEntity(squadID)
 	if actionStateEntity == nil {
 		return []coords.LogicalPosition{}
 	}

@@ -8,7 +8,6 @@ __________________________________________
 
  - System for gaining resources. Whether it's through battle or territory tbd
 
-- Review caches
 
 - Need some calvary untis
 
@@ -94,8 +93,6 @@ ________________________________________________
 ____
 
 - Make sure threat map is local to the current encounter, based off the comanders squads
-
-- Identify where there is a possiblity of cache invalidation errors. We started to cache things used for ECS query, so we need to 
 
 
 

@@ -37,6 +37,11 @@ type CombatService struct {
 
 	// AI decision-making
 	aiController *ai.AIController
+
+	// Post-action callbacks (registered by GUI layer)
+	onAttackComplete []OnAttackCompleteFunc
+	onMoveComplete   []OnMoveCompleteFunc
+	onTurnEnd        []OnTurnEndFunc
 }
 
 // NewCombatService creates a new combat service
@@ -44,21 +49,44 @@ func NewCombatService(manager *common.EntityManager) *CombatService {
 	cache := combat.NewCombatQueryCache(manager)
 	battleRecorder := battlelog.NewBattleRecorder()
 	combatActSystem := combat.NewCombatActionSystem(manager, cache)
+	movementSystem := combat.NewMovementSystem(manager, common.GlobalPositionSystem, cache)
+	turnManager := combat.NewTurnManager(manager, cache)
 
 	// Wire up battle recorder to combat action system
 	combatActSystem.SetBattleRecorder(battleRecorder)
 
-	return &CombatService{
+	cs := &CombatService{
 		EntityManager:   manager,
-		TurnManager:     combat.NewTurnManager(manager, cache),
+		TurnManager:     turnManager,
 		FactionManager:  combat.NewCombatFactionManager(manager, cache),
-		MovementSystem:  combat.NewMovementSystem(manager, common.GlobalPositionSystem, cache),
+		MovementSystem:  movementSystem,
 		CombatCache:     cache,
 		CombatActSystem: combatActSystem,
 		BattleRecorder:  battleRecorder,
 		ThreatManager:   behavior.NewFactionThreatLevelManager(manager, cache),
 		LayerEvaluators: make(map[ecs.EntityID]*behavior.CompositeThreatEvaluator),
 	}
+
+	// Wire system hooks to forward to registered callbacks
+	combatActSystem.SetOnAttackComplete(func(attackerID, defenderID ecs.EntityID, result *squads.CombatResult) {
+		for _, fn := range cs.onAttackComplete {
+			fn(attackerID, defenderID, result)
+		}
+	})
+
+	movementSystem.SetOnMoveComplete(func(squadID ecs.EntityID) {
+		for _, fn := range cs.onMoveComplete {
+			fn(squadID)
+		}
+	})
+
+	turnManager.SetOnTurnEnd(func(round int) {
+		for _, fn := range cs.onTurnEnd {
+			fn(round)
+		}
+	})
+
+	return cs
 }
 
 // InitializeCombat initializes combat with the given factions
@@ -69,7 +97,7 @@ func (cs *CombatService) InitializeCombat(factionIDs []ecs.EntityID) error {
 	var playerFactionID ecs.EntityID
 	for _, factionID := range factionIDs {
 		// Use cached query for performance
-		factionData := cs.CombatCache.FindFactionDataByID(factionID, cs.EntityManager)
+		factionData := cs.CombatCache.FindFactionDataByID(factionID)
 		if factionData != nil && factionData.IsPlayerControlled {
 			playerFactionID = factionID
 			break
@@ -163,7 +191,7 @@ func (cs *CombatService) CheckVictoryCondition() *VictoryCheckResult {
 		result.VictorFaction = victorFaction
 
 		// Get faction data to determine victor name and if player won
-		factionData := cs.CombatCache.FindFactionDataByID(victorFaction, cs.EntityManager)
+		factionData := cs.CombatCache.FindFactionDataByID(victorFaction)
 		if factionData != nil {
 			// Set player victory flag (SINGLE SOURCE OF TRUTH)
 			result.IsPlayerVictory = factionData.IsPlayerControlled
@@ -236,6 +264,9 @@ func (cs *CombatService) GetAIController() *ai.AIController {
 // Enemy squads must be provided by the encounter service for cleanup
 func (cs *CombatService) CleanupCombat(enemySquadIDs []ecs.EntityID) {
 	fmt.Println("=== Combat Cleanup Starting ===")
+
+	// Clear registered callbacks (they reference GUI state that's being torn down)
+	cs.ClearCallbacks()
 
 	// Remove player squads from map and remove combat components
 	// Uses faction-based filtering instead of roster lookup

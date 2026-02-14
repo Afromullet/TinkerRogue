@@ -13,6 +13,9 @@ type CombatActionSystem struct {
 	manager        *common.EntityManager
 	combatCache    *CombatQueryCache
 	battleRecorder *battlelog.BattleRecorder
+
+	// Post-action hook (fired after successful attack)
+	onAttackComplete func(attackerID, defenderID ecs.EntityID, result *squads.CombatResult)
 }
 
 func NewCombatActionSystem(manager *common.EntityManager, cache *CombatQueryCache) *CombatActionSystem {
@@ -25,6 +28,11 @@ func NewCombatActionSystem(manager *common.EntityManager, cache *CombatQueryCach
 // SetBattleRecorder sets the battle recorder for combat log export.
 func (cas *CombatActionSystem) SetBattleRecorder(recorder *battlelog.BattleRecorder) {
 	cas.battleRecorder = recorder
+}
+
+// SetOnAttackComplete sets the callback fired after a successful attack.
+func (cas *CombatActionSystem) SetOnAttackComplete(fn func(ecs.EntityID, ecs.EntityID, *squads.CombatResult)) {
+	cas.onAttackComplete = fn
 }
 
 func (cas *CombatActionSystem) ExecuteAttackAction(attackerID, defenderID ecs.EntityID) *squads.CombatResult {
@@ -155,6 +163,12 @@ func (cas *CombatActionSystem) ExecuteAttackAction(attackerID, defenderID ecs.En
 
 	// Mark as successful
 	result.Success = true
+
+	// Fire post-attack hook
+	if cas.onAttackComplete != nil {
+		cas.onAttackComplete(attackerID, defenderID, result)
+	}
+
 	return result
 }
 

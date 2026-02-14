@@ -93,7 +93,7 @@ func (tf *CombatTurnFlow) HandleEndTurn() {
 		return
 	}
 
-	tf.queries.MarkAllSquadsDirty()
+	// Cache invalidation and threat updates are handled automatically by the onTurnEnd hook.
 
 	// Check for victory after player ends turn
 	if tf.CheckAndHandleVictory() {
@@ -116,9 +116,6 @@ func (tf *CombatTurnFlow) HandleEndTurn() {
 	tf.turnOrderComponent.Refresh()
 	tf.factionInfoComponent.ShowFaction(currentFactionID)
 	tf.squadDetailComponent.SetText("Select a squad\nto view details")
-
-	tf.visualization.UpdateThreatManagers()
-	tf.visualization.UpdateThreatEvaluator(round)
 
 	tf.executeAITurnIfNeeded()
 }
@@ -187,18 +184,14 @@ func (tf *CombatTurnFlow) executeAITurnIfNeeded() {
 		return
 	}
 
-	factionData := tf.queries.CombatCache.FindFactionDataByID(currentFactionID, tf.queries.ECSManager)
+	factionData := tf.queries.CombatCache.FindFactionDataByID(currentFactionID)
 	if factionData == nil || factionData.IsPlayerControlled {
 		return
 	}
 
 	aiController := tf.combatService.GetAIController()
+	// Cache invalidation for destroyed squads is handled automatically by the onAttackComplete hook.
 	aiExecutedActions := aiController.DecideFactionTurn(currentFactionID)
-
-	// Invalidate destroyed squads from cache
-	for _, destroyedID := range aiController.GetDestroyedSquads() {
-		tf.queries.InvalidateSquad(destroyedID)
-	}
 
 	combatLogArea := GetCombatLogTextArea(tf.panels)
 	if aiExecutedActions {
@@ -275,7 +268,7 @@ func (tf *CombatTurnFlow) advanceAfterAITurn() {
 		return
 	}
 
-	tf.queries.MarkAllSquadsDirty()
+	// Cache invalidation and threat updates are handled automatically by the onTurnEnd hook.
 
 	// Check for victory after AI turn
 	if tf.CheckAndHandleVictory() {
@@ -296,15 +289,12 @@ func (tf *CombatTurnFlow) advanceAfterAITurn() {
 	tf.turnOrderComponent.Refresh()
 	tf.factionInfoComponent.ShowFaction(newFactionID)
 
-	tf.visualization.UpdateThreatManagers()
-	tf.visualization.UpdateThreatEvaluator(round)
-
 	tf.executeAITurnIfNeeded()
 }
 
 // formatTurnMessage creates the turn transition message for combat log
 func (tf *CombatTurnFlow) formatTurnMessage(factionID ecs.EntityID, round int) string {
-	factionData := tf.queries.CombatCache.FindFactionDataByID(factionID, tf.queries.ECSManager)
+	factionData := tf.queries.CombatCache.FindFactionDataByID(factionID)
 	factionName := "Unknown"
 
 	if factionData != nil {

@@ -29,7 +29,7 @@ func NewCombatQueryCache(manager *common.EntityManager) *CombatQueryCache {
 // ========================================
 
 // FindActionStateEntity finds ActionStateData for a squad using cached view
-func (c *CombatQueryCache) FindActionStateEntity(squadID ecs.EntityID, manager *common.EntityManager) *ecs.Entity {
+func (c *CombatQueryCache) FindActionStateEntity(squadID ecs.EntityID) *ecs.Entity {
 	// Iterate through cached view results (not full World.Query)
 	// View automatically updated when ActionStateComponent added/removed
 	for _, result := range c.ActionStateView.Get() {
@@ -42,7 +42,7 @@ func (c *CombatQueryCache) FindActionStateEntity(squadID ecs.EntityID, manager *
 }
 
 // FindActionStateBySquadID returns ActionStateData for a squad using cached view
-func (c *CombatQueryCache) FindActionStateBySquadID(squadID ecs.EntityID, manager *common.EntityManager) *ActionStateData {
+func (c *CombatQueryCache) FindActionStateBySquadID(squadID ecs.EntityID) *ActionStateData {
 	for _, result := range c.ActionStateView.Get() {
 		actionState := common.GetComponentType[*ActionStateData](result.Entity, ActionStateComponent)
 		if actionState != nil && actionState.SquadID == squadID {
@@ -57,7 +57,7 @@ func (c *CombatQueryCache) FindActionStateBySquadID(squadID ecs.EntityID, manage
 // ========================================
 
 // FindFactionByID finds a faction entity by faction ID using cached view
-func (c *CombatQueryCache) FindFactionByID(factionID ecs.EntityID, manager *common.EntityManager) *ecs.Entity {
+func (c *CombatQueryCache) FindFactionByID(factionID ecs.EntityID) *ecs.Entity {
 	// Iterate through cached view results (not full World.Query)
 	// View automatically updated when FactionComponent added/removed
 	for _, result := range c.FactionView.Get() {
@@ -71,7 +71,7 @@ func (c *CombatQueryCache) FindFactionByID(factionID ecs.EntityID, manager *comm
 }
 
 // FindFactionDataByID returns FactionData for a faction ID using cached view
-func (c *CombatQueryCache) FindFactionDataByID(factionID ecs.EntityID, manager *common.EntityManager) *FactionData {
+func (c *CombatQueryCache) FindFactionDataByID(factionID ecs.EntityID) *FactionData {
 	for _, result := range c.FactionView.Get() {
 		factionData := common.GetComponentType[*FactionData](result.Entity, CombatFactionComponent)
 		if factionData != nil && factionData.FactionID == factionID {

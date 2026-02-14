@@ -92,7 +92,7 @@ func (sc *SquadInfoCache) buildSquadInfo(squadID ecs.EntityID) *SquadInfo {
 	hasActed := false
 	hasMoved := false
 	movementRemaining := 0
-	actionState := sc.queries.CombatCache.FindActionStateBySquadID(squadID, manager)
+	actionState := sc.queries.CombatCache.FindActionStateBySquadID(squadID)
 	if actionState != nil {
 		hasActed = actionState.HasActed
 		hasMoved = actionState.HasMoved

@@ -28,9 +28,6 @@ type AIController struct {
 
 	// Attack queue for animations (populated during AI turn)
 	attackQueue []QueuedAttack
-
-	// Squads destroyed during AI turn (for cache invalidation)
-	destroyedSquads []ecs.EntityID
 }
 
 // NewAIController creates a new AI controller
@@ -58,9 +55,8 @@ func NewAIController(
 // DecideFactionTurn executes AI turn for a faction
 // Returns true if any actions were executed, false if faction has no actions
 func (aic *AIController) DecideFactionTurn(factionID ecs.EntityID) bool {
-	// Clear attack queue and destroyed squads from previous turn
+	// Clear attack queue from previous turn
 	aic.attackQueue = aic.attackQueue[:0]
-	aic.destroyedSquads = aic.destroyedSquads[:0]
 
 	// Update threat layers at start of AI turn
 	currentRound := aic.turnManager.GetCurrentRound()
@@ -80,7 +76,7 @@ func (aic *AIController) DecideFactionTurn(factionID ecs.EntityID) bool {
 		// Keep executing actions for this squad until it has no actions remaining
 		for {
 			// Get current action state
-			actionState := aic.combatCache.FindActionStateBySquadID(squadID, aic.entityManager)
+			actionState := aic.combatCache.FindActionStateBySquadID(squadID)
 			if actionState == nil {
 				break
 			}
@@ -198,7 +194,7 @@ func NewActionContext(
 	ctx := ActionContext{
 		SquadID:        squadID,
 		FactionID:      factionID,
-		ActionState:    aic.combatCache.FindActionStateBySquadID(squadID, aic.entityManager),
+		ActionState:    aic.combatCache.FindActionStateBySquadID(squadID),
 		ThreatEval:     evaluator,
 		Manager:        aic.entityManager,
 		MovementSystem: aic.movementSystem, // For validating movement tiles
@@ -255,16 +251,6 @@ func (aic *AIController) HasQueuedAttacks() bool {
 // ClearAttackQueue clears all queued attacks
 func (aic *AIController) ClearAttackQueue() {
 	aic.attackQueue = aic.attackQueue[:0]
-}
-
-// TrackDestroyedSquad records a squad destroyed during the AI turn
-func (aic *AIController) TrackDestroyedSquad(squadID ecs.EntityID) {
-	aic.destroyedSquads = append(aic.destroyedSquads, squadID)
-}
-
-// GetDestroyedSquads returns squads destroyed during the current AI turn
-func (aic *AIController) GetDestroyedSquads() []ecs.EntityID {
-	return aic.destroyedSquads
 }
 
 // NOTE: getSquadPrimaryRole and calculateSquadHealthPercent have been moved to

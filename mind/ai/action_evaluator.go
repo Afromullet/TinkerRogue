@@ -72,16 +72,9 @@ func (aa *AttackAction) Execute(manager *common.EntityManager, movementSystem *c
 		}
 
 		// Queue this attack for animation playback after AI turn completes
+		// Cache invalidation for destroyed squads is handled automatically by the onAttackComplete hook.
 		if aa.aiController != nil {
 			aa.aiController.QueueAttack(aa.attackerID, aa.targetID)
-
-			// Track destroyed squads for cache invalidation
-			if result.TargetDestroyed {
-				aa.aiController.TrackDestroyedSquad(aa.targetID)
-			}
-			if result.AttackerDestroyed {
-				aa.aiController.TrackDestroyedSquad(aa.attackerID)
-			}
 		}
 	} else {
 		fmt.Printf("[AI] Attack failed: %s\n", result.ErrorReason)
@@ -102,7 +95,7 @@ type WaitAction struct {
 func (wa *WaitAction) Execute(manager *common.EntityManager, movementSystem *combat.CombatMovementSystem, combatActSystem *combat.CombatActionSystem, cache *combat.CombatQueryCache) bool {
 	// CRITICAL: Mark the squad's turn as complete to prevent infinite loops
 	// Use cached query for better performance
-	actionState := cache.FindActionStateBySquadID(wa.squadID, manager)
+	actionState := cache.FindActionStateBySquadID(wa.squadID)
 	if actionState != nil {
 		// Mark both actions as used so squad finishes turn
 		actionState.HasMoved = true

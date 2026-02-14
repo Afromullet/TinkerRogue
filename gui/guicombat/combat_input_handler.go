@@ -260,7 +260,7 @@ func (cih *CombatInputHandler) handleSquadClick(mouseX, mouseY int) {
 	}
 
 	// If it's the player's turn
-	factionData := cih.deps.Queries.CombatCache.FindFactionDataByID(cih.currentFactionID, cih.deps.Queries.ECSManager)
+	factionData := cih.deps.Queries.CombatCache.FindFactionDataByID(cih.currentFactionID)
 	if factionData != nil && factionData.IsPlayerControlled {
 		// If clicking an allied squad: select it
 		if clickedFactionID == cih.currentFactionID {
@@ -346,7 +346,7 @@ func (cih *CombatInputHandler) killAllUnitsInSquad(squadID ecs.EntityID) int {
 func (cih *CombatInputHandler) getPlayerFactionID(encounterID ecs.EntityID) ecs.EntityID {
 	encounterFactions := cih.deps.Queries.GetFactionsForEncounter(encounterID)
 	for _, factionID := range encounterFactions {
-		factionData := cih.deps.Queries.CombatCache.FindFactionDataByID(factionID, cih.deps.Queries.ECSManager)
+		factionData := cih.deps.Queries.CombatCache.FindFactionDataByID(factionID)
 		if factionData != nil && factionData.IsPlayerControlled {
 			return factionID
 		}

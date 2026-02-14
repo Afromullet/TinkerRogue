@@ -13,6 +13,9 @@ type TurnManager struct {
 	combatCache       *CombatQueryCache
 	turnStateEntityID ecs.EntityID
 	movementSystem    *CombatMovementSystem
+
+	// Post-turn hook (fired after successful turn end)
+	onTurnEnd func(round int)
 }
 
 func NewTurnManager(manager *common.EntityManager, cache *CombatQueryCache) *TurnManager {
@@ -21,6 +24,11 @@ func NewTurnManager(manager *common.EntityManager, cache *CombatQueryCache) *Tur
 		combatCache:    cache,
 		movementSystem: NewMovementSystem(manager, common.GlobalPositionSystem, cache),
 	}
+}
+
+// SetOnTurnEnd sets the callback fired after a successful turn end.
+func (tm *TurnManager) SetOnTurnEnd(fn func(int)) {
+	tm.onTurnEnd = fn
 }
 
 func (tm *TurnManager) InitializeCombat(factionIDs []ecs.EntityID) error {
@@ -64,7 +72,7 @@ func (tm *TurnManager) ResetSquadActions(factionID ecs.EntityID) error {
 	factionSquads := GetSquadsForFaction(factionID, tm.manager)
 
 	for _, squadID := range factionSquads {
-		actionEntity := tm.combatCache.FindActionStateEntity(squadID, tm.manager)
+		actionEntity := tm.combatCache.FindActionStateEntity(squadID)
 		if actionEntity == nil {
 			continue
 		}
@@ -132,6 +140,11 @@ func (tm *TurnManager) EndTurn() error {
 	newFactionID := turnState.TurnOrder[turnState.CurrentTurnIndex]
 	if err := tm.ResetSquadActions(newFactionID); err != nil {
 		return fmt.Errorf("failed to reset squad actions: %w", err)
+	}
+
+	// Fire post-turn hook
+	if tm.onTurnEnd != nil {
+		tm.onTurnEnd(turnState.CurrentRound)
 	}
 
 	return nil
