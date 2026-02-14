@@ -5,10 +5,9 @@ import (
 	"game_main/templates"
 )
 
-// FactionArchetype defines strategic archetype and aggression level
+// FactionArchetype defines strategic archetype for a faction
 type FactionArchetype struct {
-	Strategy   string
-	Aggression float64
+	Strategy string
 }
 
 // FactionBonuses defines behavior bonuses derived from archetype
@@ -24,12 +23,11 @@ func GetFactionArchetype(factionType core.FactionType) FactionArchetype {
 	factionName := factionType.String()
 	if a, ok := templates.FactionArchetypeTemplates[factionName]; ok {
 		return FactionArchetype{
-			Strategy:   a.Strategy,
-			Aggression: a.Aggression,
+			Strategy: a.Strategy,
 		}
 	}
 	// Default: neutral archetype
-	return FactionArchetype{Strategy: "Defensive", Aggression: 0.5}
+	return FactionArchetype{Strategy: "Defensive"}
 }
 
 // GetFactionBonuses returns behavior bonuses for a faction type based on its archetype.

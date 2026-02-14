@@ -113,16 +113,6 @@ func IsFriendlyOwner(ownerID string) bool {
 	return ownerID == OwnerPlayer
 }
 
-// InfluenceEffect represents type of influence
-type InfluenceEffect int
-
-const (
-	InfluenceSpawnBoost InfluenceEffect = iota
-	InfluenceResourceDrain
-	InfluenceTerrainCorruption
-	InfluenceCombatDebuff
-)
-
 // VictoryCondition represents win/loss state
 type VictoryCondition int
 

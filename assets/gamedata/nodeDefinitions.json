@@ -9,7 +9,6 @@
       "overworld": {
         "baseGrowthRate": 0.05,
         "baseRadius": 3,
-        "primaryEffect": "SpawnBoost",
         "canSpawnChildren": true
       },
       "factionId": "Necromancers",
@@ -23,7 +22,6 @@
       "overworld": {
         "baseGrowthRate": 0.08,
         "baseRadius": 2,
-        "primaryEffect": "ResourceDrain",
         "canSpawnChildren": false
       },
       "factionId": "Bandits",
@@ -37,7 +35,6 @@
       "overworld": {
         "baseGrowthRate": 0.03,
         "baseRadius": 5,
-        "primaryEffect": "TerrainCorruption",
         "canSpawnChildren": true
       },
       "factionId": "Cultists",
@@ -51,7 +48,6 @@
       "overworld": {
         "baseGrowthRate": 0.06,
         "baseRadius": 2,
-        "primaryEffect": "SpawnBoost",
         "canSpawnChildren": false
       },
       "factionId": "Beasts",
@@ -65,7 +61,6 @@
       "overworld": {
         "baseGrowthRate": 0.07,
         "baseRadius": 3,
-        "primaryEffect": "CombatDebuff",
         "canSpawnChildren": false
       },
       "factionId": "Orcs",
@@ -79,7 +74,6 @@
       "overworld": {
         "baseRadius": 1
       },
-      "services": ["trade", "repair"],
       "cost": { "iron": 5, "wood": 15, "stone": 5 }
     },
     {
@@ -90,18 +84,16 @@
       "overworld": {
         "baseRadius": 2
       },
-      "services": ["recruit", "train"],
       "cost": { "iron": 10, "wood": 10, "stone": 10 }
     },
     {
       "id": "temple",
       "category": "settlement",
-      "displayName": "Guild Hall",
+      "displayName": "Temple",
       "color": { "r": 100, "g": 100, "b": 200, "a": 255 },
       "overworld": {
         "baseRadius": 2
       },
-      "services": ["heal", "buffs"],
       "cost": { "iron": 5, "wood": 10, "stone": 15 }
     },
     {
@@ -110,8 +102,7 @@
       "displayName": "Watchtower",
       "color": { "r": 180, "g": 180, "b": 180, "a": 255 },
       "overworld": {
-        "baseRadius": 4,
-        "primaryEffect": "SpawnBoost"
+        "baseRadius": 4
       },
       "cost": { "iron": 15, "wood": 10, "stone": 20 }
     }

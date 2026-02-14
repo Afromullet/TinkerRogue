@@ -7,7 +7,6 @@ import (
 
 	"game_main/common"
 	"game_main/overworld/core"
-	"game_main/templates"
 
 	"github.com/bytearena/ecs"
 )
@@ -82,12 +81,10 @@ func addInteraction(manager *common.EntityManager, entity *ecs.Entity, interacti
 	}
 }
 
-// finalizeNetModifiers computes the combined modifier using additive stacking
-// with diminishing returns per interaction type.
-// NetModifier = 1.0 + sum of (modifier * diminishingFactor^i) for each type group.
+// finalizeNetModifiers computes the combined modifier by keeping the top 2
+// strongest interactions per type (simple sum, no exponential decay).
+// NetModifier = 1.0 + sum of top-2 modifiers per type group.
 func finalizeNetModifiers(manager *common.EntityManager) {
-	diminishing := templates.InfluenceConfigTemplate.DiminishingFactor
-
 	for _, result := range manager.World.Query(core.InteractionTag) {
 		data := common.GetComponentType[*core.InteractionData](result.Entity, core.InteractionComponent)
 		if data == nil || len(data.Interactions) == 0 {
@@ -101,17 +98,19 @@ func finalizeNetModifiers(manager *common.EntityManager) {
 			groups[interaction.Relationship] = append(groups[interaction.Relationship], interaction.Modifier)
 		}
 
-		// Additive stacking with diminishing returns per type
+		// Keep top 2 strongest per type, simple sum
 		netEffect := 0.0
 		for _, modifiers := range groups {
-			// Sort by absolute value descending so strongest effect gets full weight
+			// Sort by absolute value descending so strongest effects are first
 			sort.Slice(modifiers, func(i, j int) bool {
 				return math.Abs(modifiers[i]) > math.Abs(modifiers[j])
 			})
-			factor := 1.0
-			for _, mod := range modifiers {
-				netEffect += mod * factor
-				factor *= diminishing
+			limit := len(modifiers)
+			if limit > 2 {
+				limit = 2
+			}
+			for i := 0; i < limit; i++ {
+				netEffect += modifiers[i]
 			}
 		}
 

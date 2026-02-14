@@ -256,9 +256,6 @@ func (npm *NodePlacementMode) refreshPlacementInfo() {
 			text += fmt.Sprintf("Category: %s\n", nodeDef.Category)
 			text += fmt.Sprintf("Radius: %d\n", nodeDef.BaseRadius)
 			text += fmt.Sprintf("Cost: Iron %d | Wood %d | Stone %d\n", nodeDef.Cost.Iron, nodeDef.Cost.Wood, nodeDef.Cost.Stone)
-			if len(nodeDef.Services) > 0 {
-				text += fmt.Sprintf("Services: %v\n", nodeDef.Services)
-			}
 		}
 	} else {
 		text += "No type selected\n"

@@ -59,8 +59,8 @@ func generateItemDrops(intensity int, encounter *core.EncounterDefinition) []str
 	}
 	// Intensity 1 drops nothing (no guaranteed drops)
 
-	// Random chance for bonus drop
-	if common.RandomInt(100) < core.GetBonusItemDropChance() {
+	// Random chance for bonus drop (30% base chance)
+	if common.RandomInt(100) < 30 {
 		numDrops++
 	}
 

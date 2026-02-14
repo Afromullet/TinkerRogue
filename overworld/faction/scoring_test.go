@@ -15,11 +15,11 @@ func init() {
 
 	// Set up faction archetypes (now stored in FactionArchetypeTemplates)
 	templates.FactionArchetypeTemplates = map[string]templates.FactionArchetypeConfig{
-		"Cultists":     {Strategy: "Expansionist", Aggression: 0.7},
-		"Orcs":         {Strategy: "Aggressor", Aggression: 0.9},
-		"Bandits":      {Strategy: "Raider", Aggression: 0.8},
-		"Necromancers": {Strategy: "Defensive", Aggression: 0.3},
-		"Beasts":       {Strategy: "Territorial", Aggression: 0.5},
+		"Cultists":     {Strategy: "Expansionist"},
+		"Orcs":         {Strategy: "Aggressor"},
+		"Bandits":      {Strategy: "Raider"},
+		"Necromancers": {Strategy: "Defensive"},
+		"Beasts":       {Strategy: "Territorial"},
 	}
 
 	// Set up strength thresholds
@@ -32,8 +32,6 @@ func init() {
 	// Set up faction AI config
 	templates.OverworldConfigTemplate.FactionAI = templates.FactionAIConfig{
 		DefaultIntentTickDuration: 10,
-		ExpansionTerritoryLimit:   20,
-		FortificationStrengthGain: 1,
 		MaxTerritorySize:          30,
 	}
 

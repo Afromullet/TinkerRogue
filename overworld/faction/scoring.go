@@ -18,8 +18,8 @@ func ScoreExpansion(factionData *core.OverworldFactionData) float64 {
 		score += strongBonus
 	}
 
-	// Favor expansion when territory is small
-	if factionData.TerritorySize < templates.OverworldConfigTemplate.FactionAI.ExpansionTerritoryLimit {
+	// Favor expansion when territory is small (below 2/3 of max)
+	if factionData.TerritorySize < templates.OverworldConfigTemplate.FactionAI.MaxTerritorySize*2/3 {
 		score += smallTerritoryBonus
 	}
 

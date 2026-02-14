@@ -60,7 +60,6 @@ The **Overworld System** is TinkerRogue's strategic layer, providing a turn-base
 │                    Overworld Layer                          │
 │  ┌──────────────────────────────────────────────────────┐   │
 │  │  Tick Manager (Orchestration)                        │   │
-│  │    ├─ Travel System                                  │   │
 │  │    ├─ Influence System                               │   │
 │  │    ├─ Threat System (Growth & Evolution)             │   │
 │  │    ├─ Faction System (AI & Territory)                │   │
@@ -97,7 +96,6 @@ The **Overworld System** is TinkerRogue's strategic layer, providing a turn-base
 | **Faction System** | NPC faction AI, territory management, raiding | `overworld/faction` |
 | **Influence System** | Calculates spatial interactions between nodes | `overworld/influence` |
 | **Garrison System** | Squad assignment, garrison defense encounters | `overworld/garrison` |
-| **Travel System** | Player movement to threat nodes, combat initiation | `overworld/travel` |
 | **Victory System** | Win/loss condition evaluation | `overworld/victory` |
 | **Node Registry** | Data-driven node definitions from JSON | `overworld/core` |
 | **Overworld GUI** | Rendering, input handling, panel management | `gui/guioverworld` |
@@ -184,9 +182,6 @@ overworld/
 ├── garrison/                   # Garrison system
 │   ├── system.go              # Squad assignment, NPC garrison creation
 │   └── queries.go             # Garrison lookup queries
-│
-├── travel/                     # Player travel system
-│   └── system.go              # Travel initiation, progress, cancellation
 │
 ├── victory/                    # Victory condition evaluation
 │   ├── system.go              # Condition checking

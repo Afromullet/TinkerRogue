@@ -10,7 +10,6 @@ import (
 type ThreatTypeParams struct {
 	BaseGrowthRate   float64
 	BaseRadius       int
-	PrimaryEffect    InfluenceEffect
 	CanSpawnChildren bool
 }
 
@@ -27,11 +26,7 @@ type NodeDefinition struct {
 	// Overworld behavior
 	BaseGrowthRate   float64
 	BaseRadius       int
-	PrimaryEffect    InfluenceEffect
 	CanSpawnChildren bool
-
-	// Settlement services (for settlement nodes)
-	Services []string
 
 	// Faction (for threat nodes)
 	FactionID string
@@ -101,9 +96,7 @@ func newNodeRegistry() *NodeRegistry {
 			},
 			BaseGrowthRate:   jsonDef.Overworld.BaseGrowthRate,
 			BaseRadius:       jsonDef.Overworld.BaseRadius,
-			PrimaryEffect:    stringToInfluenceEffect(jsonDef.Overworld.PrimaryEffect),
 			CanSpawnChildren: jsonDef.Overworld.CanSpawnChildren,
-			Services:         jsonDef.Services,
 			FactionID:        jsonDef.FactionID,
 		}
 
@@ -134,7 +127,6 @@ func newNodeRegistry() *NodeRegistry {
 			},
 			BaseGrowthRate:   templates.DefaultNodeTemplate.Overworld.BaseGrowthRate,
 			BaseRadius:       templates.DefaultNodeTemplate.Overworld.BaseRadius,
-			PrimaryEffect:    stringToInfluenceEffect(templates.DefaultNodeTemplate.Overworld.PrimaryEffect),
 			CanSpawnChildren: false,
 		}
 	}
@@ -343,7 +335,6 @@ func (r *NodeRegistry) GetOverworldParams(threatType ThreatType) ThreatTypeParam
 	return ThreatTypeParams{
 		BaseGrowthRate:   node.BaseGrowthRate,
 		BaseRadius:       node.BaseRadius,
-		PrimaryEffect:    node.PrimaryEffect,
 		CanSpawnChildren: node.CanSpawnChildren,
 	}
 }

@@ -285,16 +285,13 @@ type ThreatGrowthConfig struct {
 // FactionAIConfig defines faction AI behavior parameters
 type FactionAIConfig struct {
 	DefaultIntentTickDuration int `json:"defaultIntentTickDuration"`
-	ExpansionTerritoryLimit   int `json:"expansionTerritoryLimit"`
-	FortificationStrengthGain int `json:"fortificationStrengthGain"`
 	MaxTerritorySize          int `json:"maxTerritorySize"`
 }
 
-// SpawnProbabilitiesConfig defines spawn and drop probabilities
+// SpawnProbabilitiesConfig defines spawn probabilities
 type SpawnProbabilitiesConfig struct {
 	ExpansionThreatSpawnChance int `json:"expansionThreatSpawnChance"`
 	FortifyThreatSpawnChance   int `json:"fortifyThreatSpawnChance"`
-	BonusItemDropChance        int `json:"bonusItemDropChance"`
 }
 
 // MapDimensionsConfig defines default map dimensions
@@ -346,8 +343,7 @@ type StrengthThresholdsConfig struct {
 
 // FactionArchetypeConfig defines strategic archetype per faction
 type FactionArchetypeConfig struct {
-	Strategy   string  `json:"strategy"`
-	Aggression float64 `json:"aggression"`
+	Strategy string `json:"strategy"`
 }
 
 // VictoryConditionsConfig defines victory/defeat thresholds
@@ -399,13 +395,7 @@ type JSONColor struct {
 type JSONNodeOverworld struct {
 	BaseGrowthRate   float64 `json:"baseGrowthRate,omitempty"`   // Growth rate per tick
 	BaseRadius       int     `json:"baseRadius"`                 // Influence radius
-	PrimaryEffect    string  `json:"primaryEffect,omitempty"`    // "SpawnBoost", "ResourceDrain", etc.
 	CanSpawnChildren bool    `json:"canSpawnChildren,omitempty"` // Can spawn child nodes
-}
-
-// JSONSettlementServices defines services available at a settlement
-type JSONSettlementServices struct {
-	Services []string `json:"services,omitempty"` // e.g., ["trade", "repair", "recruit"]
 }
 
 // JSONNodeDefinition is the unified node configuration
@@ -417,7 +407,6 @@ type JSONNodeDefinition struct {
 
 	Color     JSONColor         `json:"color"`               // Display color on overworld map
 	Overworld JSONNodeOverworld `json:"overworld"`           // Overworld behavior
-	Services  []string          `json:"services,omitempty"`  // For settlements: available services
 	FactionID string            `json:"factionId,omitempty"` // Faction this node belongs to (for threat nodes)
 	Cost      *JSONResourceCost `json:"cost,omitempty"`      // Resource cost to place this node
 }
@@ -462,13 +451,12 @@ type JSONDefaultEncounter struct {
 
 // JSONInfluenceConfig is the root container for influence interaction configuration
 type JSONInfluenceConfig struct {
-	BaseMagnitudeMultiplier    float64                      `json:"baseMagnitudeMultiplier"`
-	DefaultPlayerNodeMagnitude float64                      `json:"defaultPlayerNodeMagnitude"`
-	DefaultPlayerNodeRadius    int                          `json:"defaultPlayerNodeRadius"`
-	Synergy                    InfluenceSynergyConfig       `json:"synergy"`
-	Competition                InfluenceCompetitionConfig   `json:"competition"`
-	Suppression                InfluenceSuppressionConfig   `json:"suppression"`
-	DiminishingFactor          float64                      `json:"diminishingFactor"`
+	BaseMagnitudeMultiplier    float64                    `json:"baseMagnitudeMultiplier"`
+	DefaultPlayerNodeMagnitude float64                    `json:"defaultPlayerNodeMagnitude"`
+	DefaultPlayerNodeRadius    int                        `json:"defaultPlayerNodeRadius"`
+	Synergy                    InfluenceSynergyConfig     `json:"synergy"`
+	Competition                InfluenceCompetitionConfig `json:"competition"`
+	Suppression                InfluenceSuppressionConfig `json:"suppression"`
 }
 
 // InfluenceSynergyConfig defines same-faction threat synergy parameters

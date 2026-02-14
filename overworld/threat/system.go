@@ -51,6 +51,11 @@ func CreateThreatNode(
 	// Select random encounter variant
 	encounterID := selectRandomEncounterForNode(threatType)
 
+	// Cap intensity at max allowed
+	if maxIntensity := core.GetMaxThreatIntensity(); initialIntensity > maxIntensity {
+		initialIntensity = maxIntensity
+	}
+
 	entityID, err := node.CreateNode(manager, node.CreateNodeParams{
 		Position:         pos,
 		NodeTypeID:       string(threatType),

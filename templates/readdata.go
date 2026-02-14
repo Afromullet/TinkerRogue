@@ -137,15 +137,6 @@ func validateNodeDefinitions(data *NodeDefinitionsData) {
 		"orcwarband":  false,
 	}
 
-	// Valid primary effects
-	validEffects := map[string]bool{
-		"SpawnBoost":        true,
-		"ResourceDrain":     true,
-		"TerrainCorruption": true,
-		"CombatDebuff":      true,
-		"":                  true, // Allow empty for non-combat nodes
-	}
-
 	for _, node := range data.Nodes {
 		// Required fields
 		if node.ID == "" {
@@ -167,11 +158,6 @@ func validateNodeDefinitions(data *NodeDefinitionsData) {
 		// Validate category
 		if !validCategories[node.Category] {
 			panic("Node '" + node.ID + "' has invalid category: " + node.Category)
-		}
-
-		// Validate primary effect
-		if !validEffects[node.Overworld.PrimaryEffect] {
-			panic("Node '" + node.ID + "' has invalid primary effect: " + node.Overworld.PrimaryEffect)
 		}
 
 		// Threat nodes must have a factionId
@@ -539,10 +525,6 @@ func validateInfluenceConfig(config *JSONInfluenceConfig) {
 		panic("Influence suppression growthPenalty must be non-negative")
 	}
 
-	// Validate diminishing factor
-	if config.DiminishingFactor <= 0 || config.DiminishingFactor > 1.0 {
-		panic("Influence diminishingFactor must be > 0 and <= 1.0")
-	}
 }
 
 func ReadOverworldConfig() {
@@ -575,8 +557,6 @@ func validateOverworldConfig(config *JSONOverworldConfig) {
 	// Validate faction AI parameters are positive
 	fa := config.FactionAI
 	if fa.DefaultIntentTickDuration <= 0 ||
-		fa.ExpansionTerritoryLimit <= 0 ||
-		fa.FortificationStrengthGain <= 0 ||
 		fa.MaxTerritorySize <= 0 {
 		panic("All faction AI parameters must be positive")
 	}
@@ -607,8 +587,7 @@ func validateOverworldConfig(config *JSONOverworldConfig) {
 	// Validate spawn probabilities are in valid range [0-100]
 	sp := config.SpawnProbabilities
 	if sp.ExpansionThreatSpawnChance < 0 || sp.ExpansionThreatSpawnChance > 100 ||
-		sp.FortifyThreatSpawnChance < 0 || sp.FortifyThreatSpawnChance > 100 ||
-		sp.BonusItemDropChance < 0 || sp.BonusItemDropChance > 100 {
+		sp.FortifyThreatSpawnChance < 0 || sp.FortifyThreatSpawnChance > 100 {
 		panic("Spawn probabilities must be between 0 and 100")
 	}
 

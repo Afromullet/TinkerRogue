@@ -6,8 +6,6 @@
   },
   "factionAI": {
     "defaultIntentTickDuration": 10,
-    "expansionTerritoryLimit": 20,
-    "fortificationStrengthGain": 1,
     "maxTerritorySize": 30
   },
   "strengthThresholds": {
@@ -27,8 +25,7 @@
   },
   "spawnProbabilities": {
     "expansionThreatSpawnChance": 20,
-    "fortifyThreatSpawnChance": 30,
-    "bonusItemDropChance": 30
+    "fortifyThreatSpawnChance": 30
   },
   "mapDimensions": {
     "defaultMapWidth": 100,

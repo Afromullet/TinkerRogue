@@ -1,10 +1,10 @@
 {
   "factions": {
-    "Necromancers": { "strategy": "Defensive", "aggression": 0.3 },
-    "Cultists": { "strategy": "Expansionist", "aggression": 0.7 },
-    "Orcs": { "strategy": "Aggressor", "aggression": 0.9 },
-    "Bandits": { "strategy": "Raider", "aggression": 0.8 },
-    "Beasts": { "strategy": "Territorial", "aggression": 0.5 }
+    "Necromancers": { "strategy": "Defensive" },
+    "Cultists": { "strategy": "Expansionist" },
+    "Orcs": { "strategy": "Aggressor" },
+    "Bandits": { "strategy": "Raider" },
+    "Beasts": { "strategy": "Territorial" }
   },
   "difficultyLevels": [
     {

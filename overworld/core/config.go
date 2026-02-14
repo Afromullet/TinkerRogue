@@ -76,8 +76,7 @@ func GetFortifyThreatSpawnChance() int {
 
 // GetFortificationStrengthGain returns the fortification strength gain scaled by difficulty, min 1.
 func GetFortificationStrengthGain() int {
-	base := templates.OverworldConfigTemplate.FactionAI.FortificationStrengthGain
-	result := int(float64(base) * templates.GlobalDifficulty.Overworld().FortificationStrengthGainScale)
+	result := int(templates.GlobalDifficulty.Overworld().FortificationStrengthGainScale)
 	if result < 1 {
 		return 1
 	}
@@ -90,11 +89,6 @@ func GetRaidBaseIntensity() int {
 	return int(float64(base) * templates.GlobalDifficulty.Overworld().RaidIntensityScale)
 }
 
-// GetBonusItemDropChance returns the bonus item drop chance (not difficulty-scaled).
-func GetBonusItemDropChance() int {
-	return templates.OverworldConfigTemplate.SpawnProbabilities.BonusItemDropChance
-}
-
 // --- Threat Type Config ---
 
 // GetThreatTypeParamsFromConfig returns parameters for a threat type.
@@ -103,18 +97,3 @@ func GetThreatTypeParamsFromConfig(threatType ThreatType) ThreatTypeParams {
 	return GetNodeRegistry().GetOverworldParams(threatType)
 }
 
-// stringToInfluenceEffect converts string to InfluenceEffect enum
-func stringToInfluenceEffect(s string) InfluenceEffect {
-	switch s {
-	case "SpawnBoost":
-		return InfluenceSpawnBoost
-	case "ResourceDrain":
-		return InfluenceResourceDrain
-	case "TerrainCorruption":
-		return InfluenceTerrainCorruption
-	case "CombatDebuff":
-		return InfluenceCombatDebuff
-	default:
-		return InfluenceSpawnBoost
-	}
-}
