@@ -34,7 +34,7 @@ type Game struct {
 	gameModeCoordinator *framework.GameModeCoordinator // Coordinates Overworld and Tactical UI contexts
 	playerData          common.PlayerData
 	gameMap             worldmap.GameMap
-	inputCoordinator    *input.InputCoordinator
+	cameraController    *input.CameraController
 	renderingCache      *rendering.RenderingCache // Cached view for rendering hot path (3-5x faster)
 }
 
@@ -51,7 +51,7 @@ func NewGame() *Game {
 // updates player stats, processes status effects, and cleans up dead entities.
 func HandleInput(g *Game) {
 	// Handle all input through the InputCoordinator
-	g.inputCoordinator.HandleInput()
+	g.cameraController.HandleInput()
 
 	if g.playerData.InputStates.HasKeyInput {
 		g.playerData.InputStates.HasKeyInput = false

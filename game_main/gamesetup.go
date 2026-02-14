@@ -310,7 +310,9 @@ func SetupUI(g *Game) {
 // Must be called after UI is created.
 func SetupInputCoordinator(g *Game) {
 	// Pass ModeCoordinator for context switching
-	g.inputCoordinator = input.NewInputCoordinator(&g.em, &g.playerData, &g.gameMap, g.gameModeCoordinator)
+
+	g.cameraController = input.NewCameraController(&g.em, &g.playerData, &g.gameMap, g.gameModeCoordinator)
+
 }
 
 // registerTacticalModes registers all tactical UI modes with the coordinator.

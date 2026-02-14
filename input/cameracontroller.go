@@ -13,38 +13,22 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 )
 
-type MovementController struct {
-	ecsManager      *common.EntityManager
-	playerData      *common.PlayerData
-	gameMap         *worldmap.GameMap
-	modeCoordinator *framework.GameModeCoordinator
-	sharedState     *SharedInputState
+type CameraController struct {
+	ecsManager *common.EntityManager
+	playerData *common.PlayerData
+	gameMap    *worldmap.GameMap
 }
 
-func NewMovementController(ecsManager *common.EntityManager, playerData *common.PlayerData,
-	gameMap *worldmap.GameMap, coordinator *framework.GameModeCoordinator, sharedState *SharedInputState) *MovementController {
-	return &MovementController{
-		ecsManager:      ecsManager,
-		playerData:      playerData,
-		gameMap:         gameMap,
-		modeCoordinator: coordinator,
-		sharedState:     sharedState,
+func NewCameraController(ecsManager *common.EntityManager, playerData *common.PlayerData,
+	gameMap *worldmap.GameMap, coordinator *framework.GameModeCoordinator) *CameraController {
+	return &CameraController{
+		ecsManager: ecsManager,
+		playerData: playerData,
+		gameMap:    gameMap,
 	}
 }
 
-func (mc *MovementController) CanHandle() bool {
-	return true
-}
-
-func (mc *MovementController) OnActivate() {
-	// No special activation needed for movement
-}
-
-func (mc *MovementController) OnDeactivate() {
-	// No special deactivation needed for movement
-}
-
-func (mc *MovementController) HandleInput() bool {
+func (mc *CameraController) HandleInput() bool {
 	inputHandled := false
 
 	// Movement controls
@@ -119,7 +103,7 @@ func (mc *MovementController) HandleInput() bool {
 	return inputHandled
 }
 
-func (mc *MovementController) movePlayer(xOffset, yOffset int) {
+func (mc *CameraController) movePlayer(xOffset, yOffset int) {
 	nextPosition := coords.LogicalPosition{
 		X: mc.playerData.Pos.X + xOffset,
 		Y: mc.playerData.Pos.Y + yOffset,
@@ -154,7 +138,7 @@ func (mc *MovementController) movePlayer(xOffset, yOffset int) {
 	}
 }
 
-func (mc *MovementController) playerPickupItem() {
+func (mc *CameraController) playerPickupItem() {
 	itemEntityID, err := mc.gameMap.RemoveItemFromTile(0, mc.playerData.Pos)
 
 	if err == nil && itemEntityID != 0 {
@@ -171,9 +155,8 @@ func (mc *MovementController) playerPickupItem() {
 	}
 }
 
-func (mc *MovementController) highlightCurrentTile() {
+func (mc *CameraController) highlightCurrentTile() {
 	logicalPos := coords.LogicalPosition{X: mc.playerData.Pos.X, Y: mc.playerData.Pos.Y}
 	ind := coords.CoordManager.LogicalToIndex(logicalPos)
 	mc.gameMap.ApplyColorMatrixToIndex(ind, graphics.GreenColorMatrix)
 }
-
