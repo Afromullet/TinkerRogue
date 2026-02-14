@@ -6,6 +6,8 @@
 - Perks
 
 
+- Spell and perk unlock
+
 # 
 
 - Better Reward system - Need resources to build nodes

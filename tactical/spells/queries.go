@@ -51,6 +51,20 @@ func GetCastableSpells(entityID ecs.EntityID, manager *common.EntityManager) []*
 	return castable
 }
 
+// HasSpellInBook checks if a spell is in the entity's spellbook.
+func HasSpellInBook(entityID ecs.EntityID, spellID string, manager *common.EntityManager) bool {
+	book := GetSpellBook(entityID, manager)
+	if book == nil {
+		return false
+	}
+	for _, id := range book.SpellIDs {
+		if id == spellID {
+			return true
+		}
+	}
+	return false
+}
+
 // GetAllSpells returns all spells in the entity's spellbook (regardless of mana).
 func GetAllSpells(entityID ecs.EntityID, manager *common.EntityManager) []*templates.SpellDefinition {
 	book := GetSpellBook(entityID, manager)

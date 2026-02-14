@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"game_main/common"
 	"game_main/tactical/combat"
+	"game_main/tactical/effects"
 	"game_main/tactical/squads"
 	"game_main/templates"
 
@@ -19,10 +20,7 @@ func ExecuteSpellCast(
 	targetSquadIDs []ecs.EntityID,
 	manager *common.EntityManager,
 ) *SpellCastResult {
-	result := &SpellCastResult{
-		SpellID:      spellID,
-		DamageByUnit: make(map[ecs.EntityID]int),
-	}
+	result := &SpellCastResult{}
 
 	// Look up spell definition
 	spell := templates.GetSpellDefinition(spellID)
@@ -30,7 +28,6 @@ func ExecuteSpellCast(
 		result.ErrorReason = fmt.Sprintf("unknown spell: %s", spellID)
 		return result
 	}
-	result.SpellName = spell.Name
 
 	// Get mana data
 	mana := GetManaData(casterEntityID, manager)
@@ -46,19 +43,7 @@ func ExecuteSpellCast(
 	}
 
 	// Validate spell is in spellbook
-	book := GetSpellBook(casterEntityID, manager)
-	if book == nil {
-		result.ErrorReason = "caster has no spellbook"
-		return result
-	}
-	hasSpell := false
-	for _, id := range book.SpellIDs {
-		if id == spellID {
-			hasSpell = true
-			break
-		}
-	}
-	if !hasSpell {
+	if !HasSpellInBook(casterEntityID, spellID, manager) {
 		result.ErrorReason = fmt.Sprintf("spell %s not in caster's spellbook", spellID)
 		return result
 	}
@@ -66,7 +51,25 @@ func ExecuteSpellCast(
 	// Deduct mana
 	mana.CurrentMana -= spell.ManaCost
 
-	// Apply damage to each target squad
+	// Apply effect based on spell type
+	switch spell.EffectType {
+	case templates.EffectDamage:
+		applyDamageSpell(spell, targetSquadIDs, result, manager)
+	case templates.EffectBuff, templates.EffectDebuff:
+		applyBuffDebuffSpell(spell, targetSquadIDs, result, manager)
+	}
+
+	result.Success = true
+	return result
+}
+
+// applyDamageSpell applies damage to all units in target squads.
+func applyDamageSpell(
+	spell *templates.SpellDefinition,
+	targetSquadIDs []ecs.EntityID,
+	result *SpellCastResult,
+	manager *common.EntityManager,
+) {
 	for _, squadID := range targetSquadIDs {
 		unitIDs := squads.GetUnitIDsInSquad(squadID, manager)
 		squadDamaged := false
@@ -94,7 +97,6 @@ func ExecuteSpellCast(
 				attr.CurrentHealth = 0
 			}
 
-			result.DamageByUnit[unitID] = damage
 			result.TotalDamageDealt += damage
 			squadDamaged = true
 		}
@@ -112,9 +114,38 @@ func ExecuteSpellCast(
 		}
 	}
 
-	result.Success = true
 	fmt.Printf("Spell cast: %s dealt %d total damage to %d squads (%d destroyed)\n",
 		spell.Name, result.TotalDamageDealt, len(result.AffectedSquadIDs), len(result.SquadsDestroyed))
+}
 
-	return result
+// applyBuffDebuffSpell applies stat modifiers to all units in target squads.
+func applyBuffDebuffSpell(
+	spell *templates.SpellDefinition,
+	targetSquadIDs []ecs.EntityID,
+	result *SpellCastResult,
+	manager *common.EntityManager,
+) {
+	effectsApplied := 0
+	for _, squadID := range targetSquadIDs {
+		unitIDs := squads.GetUnitIDsInSquad(squadID, manager)
+		for _, mod := range spell.StatModifiers {
+			effect := effects.ActiveEffect{
+				Name:           spell.Name,
+				Source:         effects.SourceSpell,
+				Stat:           effects.ParseStatType(mod.Stat),
+				Modifier:       mod.Modifier,
+				RemainingTurns: spell.Duration,
+			}
+			effects.ApplyEffectToUnits(unitIDs, effect, manager)
+			effectsApplied++
+		}
+		result.AffectedSquadIDs = append(result.AffectedSquadIDs, squadID)
+	}
+
+	effectType := "buff"
+	if spell.EffectType != templates.EffectBuff {
+		effectType = "debuff"
+	}
+	fmt.Printf("Spell cast: %s applied %d %s effects to %d squads\n",
+		spell.Name, effectsApplied, effectType, len(result.AffectedSquadIDs))
 }

@@ -3,6 +3,7 @@ package squads
 import (
 	"fmt"
 	"game_main/common"
+	"game_main/tactical/effects"
 
 	"github.com/bytearena/ecs"
 )
@@ -137,24 +138,15 @@ func executeAbility(slot *AbilitySlot, squadID ecs.EntityID, ecsmanager *common.
 
 // RallyEffect: Temporary damage buff to own squad
 func applyRallyEffect(squadID ecs.EntityID, params AbilityParams, ecsmanager *common.EntityManager) {
-	unitIDs := GetUnitIDsInSquad(squadID, ecsmanager)
-
-	for _, unitID := range unitIDs {
-		entity := ecsmanager.FindEntityByID(unitID)
-		if entity == nil {
-			continue
-		}
-
-		attr := common.GetComponentType[*common.Attributes](entity, common.AttributeComponent)
-		if attr == nil {
-			continue
-		}
-
-		if attr.CurrentHealth > 0 {
-			attr.Strength += params.StrengthBonus
-			// TODO: Track buff duration (requires turn/buff system)
-		}
+	effect := effects.ActiveEffect{
+		Name:           "Rally",
+		Source:         effects.SourceAbility,
+		Stat:           effects.StatStrength,
+		Modifier:       params.StrengthBonus,
+		RemainingTurns: params.Duration,
 	}
+	unitIDs := GetUnitIDsInSquad(squadID, ecsmanager)
+	effects.ApplyEffectToUnits(unitIDs, effect, ecsmanager)
 
 	fmt.Printf("[ABILITY] Rally! +%d damage for %d turns\n", params.StrengthBonus, params.Duration)
 }
@@ -199,26 +191,19 @@ func applyBattleCryEffect(squadID ecs.EntityID, params AbilityParams, ecsmanager
 
 	squadData := common.GetComponentType[*SquadData](squadEntity, SquadComponent)
 
-	// Boost morale
+	// Boost morale (morale is a squad-level stat, not per-unit, stays as direct modification)
 	squadData.Morale += params.MoraleBonus
 
-	// Boost damage
-	unitIDs := GetUnitIDsInSquad(squadID, ecsmanager)
-	for _, unitID := range unitIDs {
-		entity := ecsmanager.FindEntityByID(unitID)
-		if entity == nil {
-			continue
-		}
-
-		attr := common.GetComponentType[*common.Attributes](entity, common.AttributeComponent)
-		if attr == nil {
-			continue
-		}
-
-		if attr.CurrentHealth > 0 {
-			attr.Strength += params.StrengthBonus
-		}
+	// Boost damage via effects system
+	effect := effects.ActiveEffect{
+		Name:           "Battle Cry",
+		Source:         effects.SourceAbility,
+		Stat:           effects.StatStrength,
+		Modifier:       params.StrengthBonus,
+		RemainingTurns: params.Duration,
 	}
+	unitIDs := GetUnitIDsInSquad(squadID, ecsmanager)
+	effects.ApplyEffectToUnits(unitIDs, effect, ecsmanager)
 
 	fmt.Printf("[ABILITY] Battle Cry! Morale and damage increased!\n")
 }

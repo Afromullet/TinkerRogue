@@ -3,6 +3,7 @@ package combat
 import (
 	"fmt"
 	"game_main/common"
+	"game_main/tactical/effects"
 	"game_main/tactical/squads"
 
 	"github.com/bytearena/ecs"
@@ -85,6 +86,10 @@ func (tm *TurnManager) ResetSquadActions(factionID ecs.EntityID) error {
 		// Initialize MovementRemaining from squad speed
 		squadSpeed := tm.movementSystem.GetSquadMovementSpeed(squadID)
 		actionState.MovementRemaining = squadSpeed
+
+		// Tick effects at start of turn (decrements duration, removes expired)
+		unitIDs := squads.GetUnitIDsInSquad(squadID, tm.manager)
+		effects.TickEffectsForUnits(unitIDs, tm.manager)
 
 		// Check and trigger abilities at start of turn
 		squads.CheckAndTriggerAbilities(squadID, tm.manager)

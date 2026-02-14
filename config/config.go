@@ -50,16 +50,6 @@ const (
 	DefaultPlayerStartingStone = 50     // Starting stone for node placement
 )
 
-// DefaultCommanderStartingSpells is the default spell list for new commanders.
-var DefaultCommanderStartingSpells = []string{
-	"fireball", "lightning_bolt", "blizzard",
-	"spark", "singe", "frost_snap",
-	"chain_lightning", "ice_lance", "miasma",
-	"scalding_gust", "wall_of_flame", "fog_of_ruin",
-	"thunder_cone", "noxious_eruption", "immolation",
-	"obliterate", "firestorm", "absolute_zero",
-}
-
 // Commander system defaults
 const (
 	DefaultCommanderMovementSpeed = 25   // Tiles per overworld turn

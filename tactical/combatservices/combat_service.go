@@ -7,6 +7,7 @@ import (
 	"game_main/mind/behavior"
 	"game_main/tactical/combat"
 	"game_main/tactical/combat/battlelog"
+	"game_main/tactical/effects"
 	"game_main/tactical/squads"
 	"game_main/world/coords"
 
@@ -268,6 +269,9 @@ func (cs *CombatService) CleanupCombat(enemySquadIDs []ecs.EntityID) {
 	// Clear registered callbacks (they reference GUI state that's being torn down)
 	cs.ClearCallbacks()
 
+	// Remove all active effects from player units before leaving combat
+	cs.cleanupEffects()
+
 	// Remove player squads from map and remove combat components
 	// Uses faction-based filtering instead of roster lookup
 	cs.resetPlayerSquadsToOverworld()
@@ -286,6 +290,22 @@ func (cs *CombatService) CleanupCombat(enemySquadIDs []ecs.EntityID) {
 	cs.disposeEnemyUnits(enemySquadSet)
 
 	fmt.Println("=== Combat Cleanup Complete ===")
+}
+
+// cleanupEffects removes all active effects from all player squad units.
+// This ensures no stale buffs/debuffs persist between battles.
+func (cs *CombatService) cleanupEffects() {
+	cleaned := 0
+	for _, result := range cs.EntityManager.World.Query(squads.SquadMemberTag) {
+		unitID := result.Entity.GetID()
+		if effects.HasActiveEffects(unitID, cs.EntityManager) {
+			effects.RemoveAllEffects(unitID, cs.EntityManager)
+			cleaned++
+		}
+	}
+	if cleaned > 0 {
+		fmt.Printf("Cleaned up effects from %d units\n", cleaned)
+	}
 }
 
 // ================================

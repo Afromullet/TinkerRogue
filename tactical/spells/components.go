@@ -30,10 +30,7 @@ type SpellBookData struct {
 type SpellCastResult struct {
 	Success          bool
 	ErrorReason      string
-	SpellID          string
-	SpellName        string
-	DamageByUnit     map[ecs.EntityID]int // damage dealt to each unit
-	SquadsDestroyed  []ecs.EntityID
 	TotalDamageDealt int
 	AffectedSquadIDs []ecs.EntityID
+	SquadsDestroyed  []ecs.EntityID
 }

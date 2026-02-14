@@ -5,6 +5,7 @@ import (
 	"game_main/common"
 	"game_main/config"
 	"game_main/tactical/commander"
+	"game_main/templates"
 	"game_main/world/coords"
 
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
@@ -47,7 +48,7 @@ func CreateTestCommanders(em *common.EntityManager, pd *common.PlayerData, start
 			commanderImage,
 			config.DefaultCommanderStartingMana,
 			config.DefaultCommanderMaxMana,
-			config.DefaultCommanderStartingSpells,
+			templates.GetAllSpellIDs(),
 		)
 
 		if err := roster.AddCommander(cmdID); err != nil {

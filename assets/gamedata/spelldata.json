@@ -211,6 +211,63 @@
       "shape": { "type": "Square", "size": 3 },
       "vxType": "ice",
       "vxDuration": 5
+    },
+    {
+      "id": "war_cry",
+      "name": "War Cry",
+      "description": "Bolsters a squad's fighting spirit, increasing their strength",
+      "manaCost": 10,
+      "targetType": "single",
+      "effectType": "buff",
+      "duration": 3,
+      "statModifiers": [
+        { "stat": "strength", "modifier": 4 }
+      ],
+      "vxType": "fire",
+      "vxDuration": 2
+    },
+    {
+      "id": "arcane_shield",
+      "name": "Arcane Shield",
+      "description": "Wraps a squad in protective magic, increasing their armor",
+      "manaCost": 12,
+      "targetType": "single",
+      "effectType": "buff",
+      "duration": 3,
+      "statModifiers": [
+        { "stat": "armor", "modifier": 3 }
+      ],
+      "vxType": "ice",
+      "vxDuration": 2
+    },
+    {
+      "id": "weaken",
+      "name": "Weaken",
+      "description": "Saps the strength from an enemy squad",
+      "manaCost": 8,
+      "targetType": "single",
+      "effectType": "debuff",
+      "duration": 2,
+      "statModifiers": [
+        { "stat": "strength", "modifier": -3 }
+      ],
+      "vxType": "cloud",
+      "vxDuration": 2
+    },
+    {
+      "id": "frost_slow",
+      "name": "Frost Slow",
+      "description": "Chills enemies, reducing their dexterity and movement speed",
+      "manaCost": 10,
+      "targetType": "single",
+      "effectType": "debuff",
+      "duration": 2,
+      "statModifiers": [
+        { "stat": "dexterity", "modifier": -2 },
+        { "stat": "movementspeed", "modifier": -1 }
+      ],
+      "vxType": "ice",
+      "vxDuration": 2
     }
   ]
 }

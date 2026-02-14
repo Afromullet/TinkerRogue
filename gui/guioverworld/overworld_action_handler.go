@@ -6,6 +6,7 @@ import (
 	"game_main/common"
 	"game_main/config"
 	"game_main/mind/encounter"
+	"game_main/templates"
 	"game_main/overworld/core"
 	"game_main/overworld/garrison"
 	"game_main/tactical/commander"
@@ -353,7 +354,7 @@ func (ah *OverworldActionHandler) RecruitCommander() {
 		commanderImage,
 		config.DefaultCommanderStartingMana,
 		config.DefaultCommanderMaxMana,
-		config.DefaultCommanderStartingSpells,
+		templates.GetAllSpellIDs(),
 	)
 
 	// Add to roster
