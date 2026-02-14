@@ -65,7 +65,7 @@ type StatusEffects interface {
 func GetVisualEffect(eff StatusEffects) graphics.VisualEffect {
 	switch eff.(type) {
 	case *Burning: // Check if it's of type Burning
-		return graphics.NewFireEffect(0, 0, 1, 2, 1, 0.5)
+		return graphics.NewFireEffect(0, 0, 2)
 	case *Freezing: // Check if it's of type Freezing
 		return graphics.NewIceEffect(0, 0, 2)
 	case *Sticky: // Check if it's of type Sticky

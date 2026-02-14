@@ -20,7 +20,7 @@ var TestBurning = gear.NewBurning(5, 2)
 var TestSticky = gear.NewSticky(5, 2)
 var TestFreezing = gear.NewFreezing(3, 5)
 
-var TestFireEffect = graphics.NewFireEffect(0, 0, 1, 2, 1, 0.5)
+var TestFireEffect = graphics.NewFireEffect(0, 0, 2)
 var TestCloudEffect = graphics.NewCloudEffect(0, 0, 2)
 var TestIceEffect = graphics.NewIceEffect(0, 0, 2)
 var TestElectricEffect = graphics.NewElectricityEffect(0, 0, 2)
