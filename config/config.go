@@ -50,12 +50,17 @@ const (
 	DefaultPlayerStartingStone = 50     // Starting stone for node placement
 )
 
+// DefaultCommanderStartingSpells is the default spell list for new commanders.
+var DefaultCommanderStartingSpells = []string{"fireball", "lightning_bolt", "blizzard"}
+
 // Commander system defaults
 const (
 	DefaultCommanderMovementSpeed = 25   // Tiles per overworld turn
 	DefaultMaxCommanders          = 3    // Maximum commanders player can control
 	DefaultCommanderCost          = 5000 // Gold cost to recruit a new commander
 	DefaultCommanderMaxSquads     = 50   // Max squads per commander
+	DefaultCommanderStartingMana  = 50   // Starting mana for new commanders
+	DefaultCommanderMaxMana       = 50   // Maximum mana pool for new commanders
 )
 
 // Default faction AI starting resources

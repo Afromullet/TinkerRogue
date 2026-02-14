@@ -23,6 +23,9 @@ var DefaultEncounterTemplate *JSONDefaultEncounter
 // Influence interaction configuration
 var InfluenceConfigTemplate JSONInfluenceConfig
 
+// SpellDataPath is the relative path within assets to the spell data file.
+const SpellDataPath = "gamedata/spelldata.json"
+
 func ReadGameData() {
 
 	ReadMonsterData()
@@ -34,5 +37,7 @@ func ReadGameData() {
 	ReadPowerConfig()
 	ReadOverworldConfig()
 	ReadInfluenceConfig()
+	LoadSpellDefinitions()
 
 }
+

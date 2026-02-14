@@ -58,6 +58,10 @@ func (aic *AIController) DecideFactionTurn(factionID ecs.EntityID) bool {
 	// Clear attack queue from previous turn
 	aic.attackQueue = aic.attackQueue[:0]
 
+	// TODO: AI spell casting - enemy commanders don't cast spells yet.
+	// When implemented: check if faction has a commander with mana/spells,
+	// evaluate spell value vs saving mana, pick target, call spells.ExecuteSpellCast.
+
 	// Update threat layers at start of AI turn
 	currentRound := aic.turnManager.GetCurrentRound()
 	aic.updateThreatLayers(currentRound)

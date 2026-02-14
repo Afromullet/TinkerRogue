@@ -24,6 +24,11 @@ type TacticalState struct {
 	InMoveMode     bool // Whether movement overlay is showing
 	ShowHealthBars bool // Whether health bars are displayed above squads
 
+	// Spell Casting State
+	InSpellMode     bool   // Whether spell mode is active
+	SelectedSpellID string // Which spell is being targeted
+	HasCastSpell    bool   // One spell per turn limit
+
 	// Encounter Tracking
 	TriggeredEncounterID ecs.EntityID // Encounter that triggered this combat (0 if none)
 }
@@ -40,6 +45,11 @@ func NewTacticalState() *TacticalState {
 		InMoveMode:     false,
 		ShowHealthBars: false,
 
+		// Spell Casting State
+		InSpellMode:     false,
+		SelectedSpellID: "",
+		HasCastSpell:    false,
+
 		// Encounter Tracking
 		TriggeredEncounterID: ecs.EntityID(0),
 	}
@@ -55,6 +65,11 @@ func (ts *TacticalState) Reset() {
 	ts.InAttackMode = false
 	ts.InMoveMode = false
 	ts.ShowHealthBars = false
+
+	// Clear spell casting state
+	ts.InSpellMode = false
+	ts.SelectedSpellID = ""
+	ts.HasCastSpell = false
 
 	// Clear encounter tracking
 	ts.TriggeredEncounterID = ecs.EntityID(0)

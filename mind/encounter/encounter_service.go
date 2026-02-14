@@ -339,6 +339,15 @@ func (es *EncounterService) GetCurrentEncounterID() ecs.EntityID {
 	return 0
 }
 
+// GetRosterOwnerID returns the commander entity ID for the current encounter.
+// Returns 0 if no encounter is active.
+func (es *EncounterService) GetRosterOwnerID() ecs.EntityID {
+	if es.activeEncounter != nil {
+		return es.activeEncounter.RosterOwnerID
+	}
+	return 0
+}
+
 // GetEnemySquadIDs returns the enemy squad IDs for the current encounter (for cleanup coordination)
 func (es *EncounterService) GetEnemySquadIDs() []ecs.EntityID {
 	if es.activeEncounter != nil {

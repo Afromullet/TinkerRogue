@@ -30,10 +30,11 @@ func NewTileRenderer(tiles []*worldmap.Tile) *TileRenderer {
 
 // RenderOptions configures the rendering behavior
 type RenderOptions struct {
-	RevealAll    bool
-	CenterOn     *coords.LogicalPosition // nil for full map
-	ViewportSize int
-	Screen       *ebiten.Image
+	RevealAll       bool
+	CenterOn        *coords.LogicalPosition // nil for full map
+	ViewportSize    int
+	Screen          *ebiten.Image
+	TileColorsDirty bool
 }
 
 // RenderedBounds tracks what was drawn and edge information
@@ -51,7 +52,7 @@ func (r *TileRenderer) Render(opts RenderOptions) RenderedBounds {
 	bounds.TopEdgeY = 0
 
 	// Check if we need to rebuild batches (only rebuild when viewport changes or first render)
-	needsRebuild := !r.batchesBuilt
+	needsRebuild := !r.batchesBuilt || opts.TileColorsDirty
 	if opts.CenterOn != nil {
 		if r.lastCenterX != opts.CenterOn.X || r.lastCenterY != opts.CenterOn.Y || r.lastViewportSize != opts.ViewportSize {
 			needsRebuild = true

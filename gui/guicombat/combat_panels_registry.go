@@ -1,6 +1,7 @@
 package guicombat
 
 import (
+	"fmt"
 	"image/color"
 
 	"game_main/gui/builders"
@@ -8,6 +9,7 @@ import (
 	"game_main/gui/specs"
 	"game_main/gui/widgetresources"
 	"game_main/gui/widgets"
+	"game_main/templates"
 
 	"github.com/ebitenui/ebitenui/widget"
 )
@@ -19,7 +21,8 @@ const (
 	CombatPanelSquadDetail framework.PanelType = "combat_squad_detail"
 	CombatPanelCombatLog   framework.PanelType = "combat_log"
 	CombatPanelLayerStatus framework.PanelType = "combat_layer_status"
-	CombatPanelDebugMenu   framework.PanelType = "combat_debug_menu"
+	CombatPanelDebugMenu        framework.PanelType = "combat_debug_menu"
+	CombatPanelSpellSelection   framework.PanelType = "combat_spell_selection"
 )
 
 // combatSubMenuController manages sub-menu visibility. Only one sub-menu can be open at a time.
@@ -53,6 +56,20 @@ func (sc *combatSubMenuController) Toggle(name string) func() {
 			sc.active = name
 		}
 	}
+}
+
+// Show opens the named sub-menu, closing any other open menu first.
+func (sc *combatSubMenuController) Show(name string) {
+	sc.CloseAll()
+	if c, ok := sc.menus[name]; ok {
+		c.GetWidget().Visibility = widget.Visibility_Show
+		sc.active = name
+	}
+}
+
+// IsActive returns true if the named sub-menu is currently open.
+func (sc *combatSubMenuController) IsActive(name string) bool {
+	return sc.active == name
 }
 
 func (sc *combatSubMenuController) CloseAll() {
@@ -260,6 +277,101 @@ func init() {
 
 			// Hide initially
 			result.Container.GetWidget().Visibility = widget.Visibility_Hide
+
+			return nil
+		},
+	})
+
+	// Register spell selection panel (right side, shown during spell mode)
+	framework.RegisterPanel(CombatPanelSpellSelection, framework.PanelDescriptor{
+		Content: framework.ContentCustom,
+		OnCreate: func(result *framework.PanelResult, mode framework.UIMode) error {
+			cm := mode.(*CombatMode)
+			layout := cm.Layout
+
+			panelWidth := int(float64(layout.ScreenWidth) * specs.CombatSpellPanelWidth)
+			panelHeight := int(float64(layout.ScreenHeight) * specs.CombatSpellPanelHeight)
+
+			result.Container = builders.CreatePanelWithConfig(builders.ContainerConfig{
+				MinWidth:   panelWidth,
+				MinHeight:  panelHeight,
+				Background: widgetresources.PanelRes.Image,
+				Layout: widget.NewRowLayout(
+					widget.RowLayoutOpts.Direction(widget.DirectionVertical),
+					widget.RowLayoutOpts.Spacing(5),
+					widget.RowLayoutOpts.Padding(builders.NewResponsiveRowPadding(layout, specs.PaddingExtraSmall)),
+				),
+			})
+
+			rightPad := int(float64(layout.ScreenWidth) * specs.PaddingTight)
+			result.Container.GetWidget().LayoutData = builders.AnchorEndCenter(rightPad)
+
+			// Mana label
+			manaLabel := builders.CreateSmallLabel("Mana: 0/0")
+			result.Container.AddChild(manaLabel)
+			result.Custom["manaLabel"] = manaLabel
+
+			// Spell list
+			listWidth := panelWidth - 20
+			listHeight := int(float64(layout.ScreenHeight) * specs.CombatSpellListHeight)
+
+			spellList := builders.CreateListWithConfig(builders.ListConfig{
+				Entries:    []interface{}{},
+				MinWidth:   listWidth,
+				MinHeight:  listHeight,
+				EntryLabelFunc: func(e interface{}) string {
+					if spell, ok := e.(*templates.SpellDefinition); ok {
+						return fmt.Sprintf("%s (%d MP)", spell.Name, spell.ManaCost)
+					}
+					return "???"
+				},
+				OnEntrySelected: func(e interface{}) {
+					if spell, ok := e.(*templates.SpellDefinition); ok {
+						cm.onSpellSelected(spell)
+					}
+				},
+			})
+			cachedList := widgets.NewCachedListWrapper(spellList)
+			result.Container.AddChild(spellList)
+			result.Custom["spellList"] = cachedList
+
+			// Detail text area
+			detailWidth := panelWidth - 20
+			detailHeight := int(float64(layout.ScreenHeight) * specs.CombatSpellDetailHeight)
+			detailArea := builders.CreateCachedTextArea(builders.TextAreaConfig{
+				MinWidth:  detailWidth,
+				MinHeight: detailHeight,
+				FontColor: color.White,
+			})
+			detailArea.SetText("Select a spell to view details")
+			result.Container.AddChild(detailArea)
+			result.Custom["detailArea"] = detailArea
+
+			// Cast button
+			castButton := builders.CreateButtonWithConfig(builders.ButtonConfig{
+				Text: "Cast",
+				OnClick: func() {
+					cm.onCastButtonClicked()
+				},
+			})
+			castButton.GetWidget().Disabled = true
+			result.Container.AddChild(castButton)
+			result.Custom["castButton"] = castButton
+
+			// Cancel button
+			cancelButton := builders.CreateButtonWithConfig(builders.ButtonConfig{
+				Text: "Cancel (ESC)",
+				OnClick: func() {
+					cm.onSpellCancelClicked()
+				},
+			})
+			result.Container.AddChild(cancelButton)
+
+			// Hidden by default
+			result.Container.GetWidget().Visibility = widget.Visibility_Hide
+
+			// Register with sub-menu controller
+			cm.subMenus.Register("spell", result.Container)
 
 			return nil
 		},

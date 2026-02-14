@@ -83,6 +83,19 @@ func getEncounterDisplayName(encounter *core.EncounterDefinition, nodeTypeID str
 	return nodeTypeID
 }
 
+// TriggerRandomEncounter creates a debug encounter entity directly, bypassing threat-node lookup.
+// ThreatNodeID 0 means EndEncounter skips overworld resolution (no side effects).
+// Empty EncounterType falls back to generateRandomComposition.
+func TriggerRandomEncounter(manager *common.EntityManager, difficulty int) (ecs.EntityID, error) {
+	params := &encounterParams{
+		ThreatNodeID:  0,
+		Difficulty:    difficulty,
+		EncounterName: fmt.Sprintf("Random Encounter (Level %d)", difficulty),
+		EncounterType: "",
+	}
+	return createOverworldEncounter(manager, params)
+}
+
 // TriggerCombatFromThreat initiates combat when player engages a threat
 // This function bridges the overworld -> combat transition
 // Returns the created encounter ID

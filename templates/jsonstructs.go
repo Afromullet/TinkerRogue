@@ -38,38 +38,44 @@ type JSONTargetArea struct {
 	Radius int    `json:"radius,omitempty"`
 }
 
-// For creating the TileBasedShape from JSON data
+// CreateTargetArea creates a TileBasedShape from JSON data with deterministic sizes.
+// Uses SmallShape as base then overrides with JSON-specified dimensions.
 func CreateTargetArea(area *JSONTargetArea) graphics.TileBasedShape {
-
-	var s graphics.TileBasedShape
-
-	//Default to a 1x1 square if the area is nil
 	if area == nil {
-		s = graphics.NewSquare(0, 0, graphics.MediumShape)
-	} else if area.Type == "Rectangle" {
-
-		s = graphics.NewRectangle(0, 0, graphics.MediumShape)
-
-	} else if area.Type == "Cone" {
-
-		s = graphics.NewCone(0, 0, graphics.LineDown, graphics.MediumShape)
-
-	} else if area.Type == "Square" {
-
-		s = graphics.NewSquare(0, 0, graphics.MediumShape)
-
-	} else if area.Type == "Line" {
-
-		s = graphics.NewLine(0, 0, graphics.LineDown, graphics.MediumShape)
-
-	} else if area.Type == "Circle" {
-
-		s = graphics.NewCircle(0, 0, graphics.MediumShape)
-
+		return graphics.NewSquare(0, 0, graphics.SmallShape)
 	}
 
+	var s *graphics.BaseShape
+	switch area.Type {
+	case "Circle":
+		s = graphics.NewCircle(0, 0, graphics.SmallShape)
+		if area.Size > 0 {
+			s.UpdateSize(area.Size)
+		}
+	case "Square":
+		s = graphics.NewSquare(0, 0, graphics.SmallShape)
+		if area.Size > 0 {
+			s.UpdateSize(area.Size)
+		}
+	case "Rectangle":
+		s = graphics.NewRectangle(0, 0, graphics.SmallShape)
+		if area.Width > 0 && area.Height > 0 {
+			s.UpdateDimensions(area.Width, area.Height)
+		}
+	case "Line":
+		s = graphics.NewLine(0, 0, graphics.LineDown, graphics.SmallShape)
+		if area.Length > 0 {
+			s.UpdateSize(area.Length)
+		}
+	case "Cone":
+		s = graphics.NewCone(0, 0, graphics.LineDown, graphics.SmallShape)
+		if area.Length > 0 {
+			s.UpdateSize(area.Length)
+		}
+	default:
+		return graphics.NewSquare(0, 0, graphics.SmallShape)
+	}
 	return s
-
 }
 
 // JSONStatGrowths defines per-stat growth rate grades for leveling.

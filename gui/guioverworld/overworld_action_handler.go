@@ -200,6 +200,42 @@ func (ah *OverworldActionHandler) ToggleInfluence() {
 	}
 }
 
+// StartRandomEncounter creates a debug encounter at the selected commander's position.
+func (ah *OverworldActionHandler) StartRandomEncounter() {
+	cmdID := ah.deps.State.SelectedCommanderID
+	if cmdID == 0 {
+		ah.deps.LogEvent("No commander selected")
+		return
+	}
+
+	cmdEntity := ah.deps.Manager.FindEntityByID(cmdID)
+	if cmdEntity == nil {
+		ah.deps.LogEvent("ERROR: Commander entity not found")
+		return
+	}
+	cmdPos := common.GetComponentType[*coords.LogicalPosition](cmdEntity, common.PositionComponent)
+	if cmdPos == nil {
+		ah.deps.LogEvent("ERROR: Commander has no position")
+		return
+	}
+
+	encounterID, err := encounter.TriggerRandomEncounter(ah.deps.Manager, 1)
+	if err != nil {
+		ah.deps.LogEvent(fmt.Sprintf("ERROR: %v", err))
+		return
+	}
+
+	if err := ah.deps.EncounterService.StartEncounter(
+		encounterID, 0, "Random Encounter", *cmdPos, cmdID,
+	); err != nil {
+		ah.deps.LogEvent(fmt.Sprintf("ERROR: %v", err))
+		return
+	}
+
+	ah.deps.State.ExitMoveMode()
+	ah.deps.State.ClearSelection()
+}
+
 // AssignSquadToGarrison assigns a squad to a node's garrison.
 func (ah *OverworldActionHandler) AssignSquadToGarrison(squadID, nodeID ecs.EntityID) error {
 	if err := garrison.AssignSquadToNode(ah.deps.Manager, squadID, nodeID); err != nil {
@@ -315,6 +351,9 @@ func (ah *OverworldActionHandler) RecruitCommander() {
 		config.DefaultCommanderMovementSpeed,
 		config.DefaultCommanderMaxSquads,
 		commanderImage,
+		config.DefaultCommanderStartingMana,
+		config.DefaultCommanderMaxMana,
+		config.DefaultCommanderStartingSpells,
 	)
 
 	// Add to roster

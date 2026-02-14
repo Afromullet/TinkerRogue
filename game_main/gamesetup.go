@@ -98,6 +98,9 @@ func (gb *GameBootstrap) CreatePlayer(em *common.EntityManager, pd *common.Playe
 		config.DefaultCommanderMovementSpeed,
 		config.DefaultCommanderMaxSquads,
 		commanderImage,
+		config.DefaultCommanderStartingMana,
+		config.DefaultCommanderMaxMana,
+		config.DefaultCommanderStartingSpells,
 	)
 
 	// Add commander to player's roster

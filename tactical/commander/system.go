@@ -2,6 +2,7 @@ package commander
 
 import (
 	"game_main/common"
+	"game_main/tactical/spells"
 	"game_main/tactical/squads"
 	"game_main/visual/rendering"
 	"game_main/world/coords"
@@ -19,6 +20,9 @@ func CreateCommander(
 	movementSpeed int,
 	maxSquads int,
 	commanderImage *ebiten.Image,
+	startingMana int,
+	maxMana int,
+	initialSpells []string,
 ) ecs.EntityID {
 	entity := manager.World.NewEntity()
 	commanderID := entity.GetID()
@@ -46,7 +50,14 @@ func CreateCommander(
 		AddComponent(common.AttributeComponent, &common.Attributes{
 			MovementSpeed: movementSpeed,
 		}).
-		AddComponent(squads.SquadRosterComponent, squads.NewSquadRoster(maxSquads))
+		AddComponent(squads.SquadRosterComponent, squads.NewSquadRoster(maxSquads)).
+		AddComponent(spells.ManaComponent, &spells.ManaData{
+			CurrentMana: startingMana,
+			MaxMana:     maxMana,
+		}).
+		AddComponent(spells.SpellBookComponent, &spells.SpellBookData{
+			SpellIDs: initialSpells,
+		})
 
 	// Add to position system
 	if common.GlobalPositionSystem != nil {

@@ -1,0 +1,39 @@
+{
+  "spells": [
+    {
+      "id": "fireball",
+      "name": "Fireball",
+      "description": "Hurls a ball of fire at a target area",
+      "manaCost": 15,
+      "damage": 20,
+      "targetType": "aoe",
+      "effectType": "damage",
+      "shape": { "type": "Circle", "size": 1 },
+      "vxType": "fire",
+      "vxDuration": 3
+    },
+    {
+      "id": "lightning_bolt",
+      "name": "Lightning Bolt",
+      "description": "Strikes a single enemy squad with lightning",
+      "manaCost": 10,
+      "damage": 30,
+      "targetType": "single",
+      "effectType": "damage",
+      "vxType": "electricity",
+      "vxDuration": 2
+    },
+    {
+      "id": "blizzard",
+      "name": "Blizzard",
+      "description": "Unleashes a freezing storm across a wide area",
+      "manaCost": 25,
+      "damage": 15,
+      "targetType": "aoe",
+      "effectType": "damage",
+      "shape": { "type": "Square", "size": 2 },
+      "vxType": "ice",
+      "vxDuration": 4
+    }
+  ]
+}

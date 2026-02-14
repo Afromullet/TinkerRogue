@@ -45,6 +45,9 @@ func CreateTestCommanders(em *common.EntityManager, pd *common.PlayerData, start
 			config.DefaultCommanderMovementSpeed,
 			config.DefaultCommanderMaxSquads,
 			commanderImage,
+			config.DefaultCommanderStartingMana,
+			config.DefaultCommanderMaxMana,
+			config.DefaultCommanderStartingSpells,
 		)
 
 		if err := roster.AddCommander(cmdID); err != nil {

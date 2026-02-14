@@ -111,6 +111,10 @@ func init() {
 					om.actionHandler.ToggleInfluence()
 					om.subMenus.CloseAll()
 				}},
+				{Text: "Start Random Encounter", OnClick: func() {
+					om.actionHandler.StartRandomEncounter()
+					om.subMenus.CloseAll()
+				}},
 			})
 			return nil
 		},

@@ -92,6 +92,7 @@ type GameMap struct {
 	BiomeMap              []Biome
 	POIs                  []POIData
 	FactionStartPositions []FactionStartPosition
+	TileColorsDirty       bool
 }
 
 // NewGameMap creates a new game map using the specified generator algorithm
@@ -246,7 +247,7 @@ func (gameMap *GameMap) ApplyColorMatrix(indices []int, m graphics.ColorMatrix) 
 			gameMap.Tiles[ind].SetColorMatrix(m)
 		}
 	}
-
+	gameMap.TileColorsDirty = true
 }
 
 // Applies the scaling ColorMatrix to the tiles at the Indices
@@ -255,7 +256,7 @@ func (gameMap *GameMap) ApplyColorMatrixToIndex(index int, m graphics.ColorMatri
 	if index < gameMap.NumTiles {
 		gameMap.Tiles[index].SetColorMatrix(m)
 	}
-
+	gameMap.TileColorsDirty = true
 }
 
 func (gameMap GameMap) InBounds(x, y int) bool {

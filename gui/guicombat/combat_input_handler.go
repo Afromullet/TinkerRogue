@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"game_main/common"
 	"game_main/gui/framework"
+	"game_main/gui/guispells"
 	"game_main/mind/behavior"
 	"game_main/tactical/combat"
 	"game_main/tactical/squads"
@@ -25,6 +26,13 @@ type CombatInputHandler struct {
 
 	// Debug kill mode
 	inDebugKillMode bool
+
+	// Spell casting
+	spellHandler *guispells.SpellCastingHandler
+
+	// Spell panel callbacks
+	showSpellPanelFn func()
+	hideSpellPanelFn func()
 
 	// Visualization input support
 	visualization *CombatVisualizationManager
@@ -48,6 +56,17 @@ func (cih *CombatInputHandler) SetPlayerPosition(playerPos *coords.LogicalPositi
 // SetCurrentFactionID sets the current faction ID for turn checking
 func (cih *CombatInputHandler) SetCurrentFactionID(factionID ecs.EntityID) {
 	cih.currentFactionID = factionID
+}
+
+// SetSpellHandler sets the spell casting handler for input delegation.
+func (cih *CombatInputHandler) SetSpellHandler(handler *guispells.SpellCastingHandler) {
+	cih.spellHandler = handler
+}
+
+// SetSpellPanelCallbacks wires the GUI spell panel show/hide into the input handler.
+func (cih *CombatInputHandler) SetSpellPanelCallbacks(show, hide func()) {
+	cih.showSpellPanelFn = show
+	cih.hideSpellPanelFn = hide
 }
 
 // SetVisualization sets the visualization manager and related dependencies for keybinding handling
@@ -89,6 +108,44 @@ func (cih *CombatInputHandler) HandleInput(inputState *framework.InputState) boo
 		return true
 	}
 
+	// Spell mode input handling (takes priority over normal clicks)
+	if cih.spellHandler != nil && cih.spellHandler.IsInSpellMode() {
+		// ESC cancels spell mode
+		if inputState.KeysJustPressed[ebiten.KeyEscape] {
+			cih.spellHandler.CancelSpellMode()
+			if cih.hideSpellPanelFn != nil {
+				cih.hideSpellPanelFn()
+			}
+			return true
+		}
+
+		if cih.spellHandler.HasSelectedSpell() {
+			// Spell is selected - AoE shape rotation
+			if cih.spellHandler.IsAoETargeting() {
+				if inputState.KeysJustPressed[ebiten.Key1] {
+					cih.spellHandler.RotateShapeLeft()
+					return true
+				}
+				if inputState.KeysJustPressed[ebiten.Key2] {
+					cih.spellHandler.RotateShapeRight()
+					return true
+				}
+			}
+
+			// Click to cast
+			if inputState.MouseButton == ebiten.MouseButtonLeft && inputState.MousePressed {
+				if cih.spellHandler.IsAoETargeting() {
+					cih.spellHandler.HandleAoEConfirmClick(inputState.MouseX, inputState.MouseY)
+				} else {
+					cih.spellHandler.HandleSingleTargetClick(inputState.MouseX, inputState.MouseY)
+				}
+				return true
+			}
+		}
+		// Suppress other input while in spell mode
+		return false
+	}
+
 	// Handle mouse clicks
 	if inputState.MouseButton == ebiten.MouseButtonLeft && inputState.MousePressed {
 		// Debug kill mode takes priority over all other click handling
@@ -112,6 +169,21 @@ func (cih *CombatInputHandler) HandleInput(inputState *framework.InputState) boo
 	if inputState.KeysJustPressed[ebiten.KeySpace] {
 		// This is handled at a higher level
 		return false
+	}
+
+	// S key to toggle spell panel
+	if inputState.KeysJustPressed[ebiten.KeyS] {
+		if cih.spellHandler != nil {
+			if cih.spellHandler.IsInSpellMode() {
+				cih.spellHandler.CancelSpellMode()
+				if cih.hideSpellPanelFn != nil {
+					cih.hideSpellPanelFn()
+				}
+			} else if cih.showSpellPanelFn != nil {
+				cih.showSpellPanelFn()
+			}
+			return true
+		}
 	}
 
 	// A key to toggle attack mode

@@ -160,6 +160,12 @@ const (
 	CombatSquadDetailHeight  = 0.25 // Squad detail (25% of middle area)
 	CombatLogHeight          = 0.15 // Combat log (15% at bottom)
 	CombatActionButtonHeight = 0.08 // Button strip (8%)
+
+	// Spell selection panel (right side, shown during spell mode)
+	CombatSpellPanelWidth   = 0.25
+	CombatSpellPanelHeight  = 0.55
+	CombatSpellListHeight   = 0.25
+	CombatSpellDetailHeight = 0.15
 )
 
 // InventoryModeLayout defines layout constants for inventory mode
