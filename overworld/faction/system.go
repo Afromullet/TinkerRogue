@@ -201,7 +201,7 @@ func ExpandTerritory(manager *common.EntityManager, entity *ecs.Entity, factionD
 					factionData.FactionType.String(), adj.X, adj.Y), nil)
 
 			// Spawn threat on newly claimed tile
-			if common.RandomInt(100) < templates.OverworldConfigTemplate.SpawnProbabilities.ExpansionThreatSpawnChance {
+			if common.RandomInt(100) < core.GetExpansionThreatSpawnChance() {
 				SpawnThreatForFaction(manager, entity, adj, factionData.FactionType)
 			}
 
@@ -218,10 +218,10 @@ func FortifyTerritory(manager *common.EntityManager, entity *ecs.Entity, faction
 	}
 
 	// Increase strength
-	factionData.Strength += templates.OverworldConfigTemplate.FactionAI.FortificationStrengthGain
+	factionData.Strength += core.GetFortificationStrengthGain()
 
 	// Spawn threat on random owned tile
-	if common.RandomInt(100) < templates.OverworldConfigTemplate.SpawnProbabilities.FortifyThreatSpawnChance {
+	if common.RandomInt(100) < core.GetFortifyThreatSpawnChance() {
 		randomTile := core.GetRandomTileFromSlice(territoryData.OwnedTiles)
 		if randomTile != nil {
 			SpawnThreatForFaction(manager, entity, *randomTile, factionData.FactionType)
@@ -288,9 +288,9 @@ func ExecuteRaid(manager *common.EntityManager, entity *ecs.Entity, factionData 
 		return nil
 	}
 
-	// Spawn higher-intensity threat for raids (formula from config)
+	// Spawn higher-intensity threat for raids (formula from config, difficulty-adjusted)
 	threatType := core.MapFactionToThreatType(factionData.FactionType)
-	baseIntensity := templates.OverworldConfigTemplate.FactionScoringControl.RaidBaseIntensity
+	baseIntensity := core.GetRaidBaseIntensity()
 	intensityScale := templates.OverworldConfigTemplate.FactionScoringControl.RaidIntensityScale
 	intensity := baseIntensity + int(float64(factionData.Strength)*intensityScale)
 	currentTick := core.GetCurrentTick(manager)

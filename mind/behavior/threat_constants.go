@@ -17,22 +17,24 @@ const (
 	defaultSharedPositionalWeight = 0.5
 )
 
-// getSharedRangedWeight returns the shared ranged threat weight from config.
-// Falls back to default if not configured.
+// getSharedRangedWeight returns the shared ranged threat weight from config,
+// scaled by the active difficulty multiplier.
 func getSharedRangedWeight() float64 {
+	base := defaultSharedRangedWeight
 	if templates.AIConfigTemplate.SharedRangedWeight > 0 {
-		return templates.AIConfigTemplate.SharedRangedWeight
+		base = templates.AIConfigTemplate.SharedRangedWeight
 	}
-	return defaultSharedRangedWeight
+	return base * templates.GlobalDifficulty.AI().SharedRangedWeightScale
 }
 
-// getSharedPositionalWeight returns the shared positional awareness weight from config.
-// Falls back to default if not configured.
+// getSharedPositionalWeight returns the shared positional awareness weight from config,
+// scaled by the active difficulty multiplier.
 func getSharedPositionalWeight() float64 {
+	base := defaultSharedPositionalWeight
 	if templates.AIConfigTemplate.SharedPositionalWeight > 0 {
-		return templates.AIConfigTemplate.SharedPositionalWeight
+		base = templates.AIConfigTemplate.SharedPositionalWeight
 	}
-	return defaultSharedPositionalWeight
+	return base * templates.GlobalDifficulty.AI().SharedPositionalWeightScale
 }
 
 // RoleThreatWeights defines how each role weighs different threat layers.
@@ -49,33 +51,47 @@ type RoleThreatWeights struct {
 // These functions retrieve AI behavior configuration from JSON templates.
 // They replace direct constant access to enable designer-friendly tuning.
 
-// GetFlankingThreatRangeBonus returns the flanking threat range bonus from config.
-// Returns default value if template lookup fails.
+// GetFlankingThreatRangeBonus returns the flanking threat range bonus from config,
+// adjusted by the active difficulty offset.
 func GetFlankingThreatRangeBonus() int {
+	base := 3 // Default flanking threat range bonus
 	if templates.AIConfigTemplate.ThreatCalculation.FlankingThreatRangeBonus > 0 {
-		return templates.AIConfigTemplate.ThreatCalculation.FlankingThreatRangeBonus
+		base = templates.AIConfigTemplate.ThreatCalculation.FlankingThreatRangeBonus
 	}
-	return 3 // Default flanking threat range bonus
+	result := base + templates.GlobalDifficulty.AI().FlankingRangeBonusOffset
+	if result < 1 {
+		return 1
+	}
+	return result
 }
 
-// GetIsolationThreshold returns the isolation distance threshold from config.
-// Units farther than this from allies start accumulating isolation risk.
-// Returns default value if template lookup fails.
+// GetIsolationThreshold returns the isolation distance threshold from config,
+// adjusted by the active difficulty offset.
 func GetIsolationThreshold() int {
+	base := 3 // Default isolation threshold
 	tc := templates.AIConfigTemplate.ThreatCalculation
 	if tc.IsolationThreshold > 0 {
-		return tc.IsolationThreshold
+		base = tc.IsolationThreshold
 	}
-	return 3 // Default isolation threshold
+	result := base + templates.GlobalDifficulty.AI().IsolationThresholdOffset
+	if result < 1 {
+		return 1
+	}
+	return result
 }
 
-// GetRetreatSafeThreatThreshold returns the retreat safety threshold from config.
-// Returns default value if template lookup fails.
+// GetRetreatSafeThreatThreshold returns the retreat safety threshold from config,
+// adjusted by the active difficulty offset.
 func GetRetreatSafeThreatThreshold() int {
+	base := 10 // Default retreat safe threat threshold
 	if templates.AIConfigTemplate.ThreatCalculation.RetreatSafeThreatThreshold > 0 {
-		return templates.AIConfigTemplate.ThreatCalculation.RetreatSafeThreatThreshold
+		base = templates.AIConfigTemplate.ThreatCalculation.RetreatSafeThreatThreshold
 	}
-	return 10 // Default retreat safe threat threshold
+	result := base + templates.GlobalDifficulty.AI().RetreatSafeThresholdOffset
+	if result < 1 {
+		return 1
+	}
+	return result
 }
 
 // GetRoleBehaviorWeights returns threat layer weights for a specific role from config.

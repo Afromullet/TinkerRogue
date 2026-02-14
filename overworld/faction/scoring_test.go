@@ -10,6 +10,9 @@ import (
 // We populate the template directly rather than loading from JSON
 // since tests run from different directories.
 func init() {
+	// Initialize difficulty manager for tests (Medium defaults)
+	templates.GlobalDifficulty = templates.NewDefaultDifficultyManager()
+
 	// Set up faction archetypes (now stored in FactionArchetypeTemplates)
 	templates.FactionArchetypeTemplates = map[string]templates.FactionArchetypeConfig{
 		"Cultists":     {Strategy: "Expansionist", Aggression: 0.7},

@@ -8,7 +8,6 @@ import (
 	"game_main/common"
 	"game_main/overworld/core"
 	"game_main/tactical/squads"
-	"game_main/templates"
 
 	"github.com/bytearena/ecs"
 )
@@ -61,7 +60,7 @@ func generateItemDrops(intensity int, encounter *core.EncounterDefinition) []str
 	// Intensity 1 drops nothing (no guaranteed drops)
 
 	// Random chance for bonus drop
-	if common.RandomInt(100) < templates.OverworldConfigTemplate.SpawnProbabilities.BonusItemDropChance {
+	if common.RandomInt(100) < core.GetBonusItemDropChance() {
 		numDrops++
 	}
 

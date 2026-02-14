@@ -3,9 +3,14 @@ package behavior
 import (
 	"game_main/tactical/combat"
 	"game_main/tactical/squads"
+	"game_main/templates"
 	"game_main/world/coords"
 	"testing"
 )
+
+func init() {
+	templates.GlobalDifficulty = templates.NewDefaultDifficultyManager()
+}
 
 // TestCombatThreatLayer_Compute tests basic combat threat computation
 func TestCombatThreatLayer_Compute(t *testing.T) {

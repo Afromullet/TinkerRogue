@@ -7,32 +7,65 @@ import (
 
 // getDifficultyModifier retrieves difficulty settings for a given encounter level.
 // Falls back to level 3 (fair fight) if level is invalid.
+// Applies global difficulty overlay (power scale, squad/unit count offsets).
 func getDifficultyModifier(level int) templates.JSONEncounterDifficulty {
+	var result templates.JSONEncounterDifficulty
+
 	// Search for matching difficulty level in templates
+	found := false
 	for _, t := range templates.EncounterDifficultyTemplates {
 		if t.Level == level {
-			return t
+			result = t
+			found = true
+			break
 		}
 	}
 
-	// Fallback to level 3 (fair fight) if not found
-	for _, t := range templates.EncounterDifficultyTemplates {
-		if t.Level == 3 {
-			return t
+	if !found {
+		// Fallback to level 3 (fair fight) if not found
+		for _, t := range templates.EncounterDifficultyTemplates {
+			if t.Level == 3 {
+				result = t
+				found = true
+				break
+			}
 		}
 	}
 
-	// Last resort fallback (should never happen if JSON loads correctly)
-	return templates.JSONEncounterDifficulty{
-		Level:            3,
-		Name:             "Fair Fight",
-		PowerMultiplier:  1.0,
-		SquadCount:       4,
-		MinUnitsPerSquad: 3,
-		MaxUnitsPerSquad: 5,
-		MinTargetPower:   50.0,
-		MaxTargetPower:   2000.0,
+	if !found {
+		// Last resort fallback (should never happen if JSON loads correctly)
+		result = templates.JSONEncounterDifficulty{
+			Level:            3,
+			Name:             "Fair Fight",
+			PowerMultiplier:  1.0,
+			SquadCount:       4,
+			MinUnitsPerSquad: 3,
+			MaxUnitsPerSquad: 5,
+			MinTargetPower:   50.0,
+			MaxTargetPower:   2000.0,
+		}
 	}
+
+	// Apply global difficulty overlay
+	diff := templates.GlobalDifficulty.Encounter()
+	result.PowerMultiplier *= diff.PowerMultiplierScale
+
+	result.SquadCount += diff.SquadCountOffset
+	if result.SquadCount < 1 {
+		result.SquadCount = 1
+	}
+
+	result.MinUnitsPerSquad += diff.MinUnitsPerSquadOffset
+	if result.MinUnitsPerSquad < 1 {
+		result.MinUnitsPerSquad = 1
+	}
+
+	result.MaxUnitsPerSquad += diff.MaxUnitsPerSquadOffset
+	if result.MaxUnitsPerSquad < result.MinUnitsPerSquad {
+		result.MaxUnitsPerSquad = result.MinUnitsPerSquad
+	}
+
+	return result
 }
 
 // GetSquadPreferences retrieves preferred squad composition for an encounter type.

@@ -83,10 +83,10 @@ func UpdateThreatNodes(manager *common.EntityManager, currentTick int64) error {
 			continue
 		}
 
-		// Apply growth
-		growthAmount := nodeData.GrowthRate
+		// Apply growth (scaled by difficulty)
+		growthAmount := nodeData.GrowthRate * templates.GlobalDifficulty.Overworld().ThreatGrowthScale
 		if nodeData.IsContained {
-			growthAmount *= templates.OverworldConfigTemplate.ThreatGrowth.ContainmentSlowdown // Player presence slows growth
+			growthAmount *= core.GetContainmentSlowdown() // Player presence slows growth
 		}
 
 		// Apply influence interaction modifier (synergy boosts, competition/suppression slows)
@@ -113,8 +113,8 @@ func UpdateThreatNodes(manager *common.EntityManager, currentTick int64) error {
 func EvolveThreatNode(manager *common.EntityManager, entity *ecs.Entity, nodeData *core.OverworldNodeData) {
 	params := core.GetThreatTypeParamsFromConfig(core.ThreatType(nodeData.NodeTypeID))
 
-	// Increase intensity (cap at global max)
-	if nodeData.Intensity < templates.OverworldConfigTemplate.ThreatGrowth.MaxThreatIntensity {
+	// Increase intensity (cap at difficulty-adjusted max)
+	if nodeData.Intensity < core.GetMaxThreatIntensity() {
 		oldIntensity := nodeData.Intensity
 		nodeData.Intensity++
 

@@ -4,7 +4,6 @@ __________________________________________
 
 - type EventType int in Overworld types is growing too large
 
-- Encounter package calculations should be based off the commanders strength, not the strength of the player. Make sure that it isn't using every squad, owned by every commander, to determine encounter difficulty
 
  - System for gaining resources. Whether it's through battle or territory tbd
 
@@ -31,8 +30,6 @@ __________________________________________
 
 - calculateEntryIndexAtPosition in squadeditor_movesquad.go is not accurately calculating the position to move the squad to. Check if there is an ebitenui var (such as entryselected) you can use instead of calculating with pixel positions
 
-
-- Overworld needs difficulty setting
 
 - Handle Entity Cleanup
 
@@ -92,16 +89,11 @@ ________________________________________________
 
 ____
 
-- Make sure threat map is local to the current encounter, based off the comanders squads
-
-
-
 - The Inventory is a leftover prior to shifting the game to a turn based squad tactics game from a regular roguelike. Think of what you want to do with the inventory
 
 - Look at all of the const. See which ones should be defined in a file
 
 
-- Look at keysToTrack
 
 
 

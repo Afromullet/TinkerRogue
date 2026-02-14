@@ -1,0 +1,8 @@
+{
+  "difficulties": [
+    { "name": "Easy",   "combatIntensity": 0.7, "overworldPressure": 0.6, "aiCompetence": 0.7, "encounterSizeOffset": -1 },
+    { "name": "Medium", "combatIntensity": 1.0, "overworldPressure": 1.0, "aiCompetence": 1.0, "encounterSizeOffset": 0 },
+    { "name": "Hard",   "combatIntensity": 1.4, "overworldPressure": 1.4, "aiCompetence": 1.3, "encounterSizeOffset": 1 }
+  ],
+  "defaultDifficulty": "Medium"
+}

@@ -7,7 +7,6 @@ import (
 	"game_main/overworld/core"
 	"game_main/overworld/garrison"
 	"game_main/tactical/squads"
-	"game_main/templates"
 	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"
@@ -52,7 +51,7 @@ func FormatThreatInfo(threat *ecs.Entity, manager *common.EntityManager) string 
 			data.OwnerID,
 			pos.X, pos.Y,
 			data.Intensity,
-			templates.OverworldConfigTemplate.ThreatGrowth.MaxThreatIntensity,
+			core.GetMaxThreatIntensity(),
 			data.GrowthProgress*100,
 			data.CreatedTick,
 		)
