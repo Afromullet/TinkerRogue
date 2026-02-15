@@ -83,7 +83,6 @@ func (om *OverworldMode) Initialize(ctx *framework.UIContext) error {
 	if err := om.BuildPanels(
 		OverworldPanelDebugMenu,
 		OverworldPanelNodeMenu,
-		OverworldPanelManagementMenu,
 		OverworldPanelTickControls,
 		OverworldPanelResources,
 		OverworldPanelThreatInfo,

@@ -35,7 +35,6 @@ func (em *ExplorationMode) Initialize(ctx *framework.UIContext) error {
 		ModeName:   "exploration",
 		ReturnMode: "", // No return mode - exploration is the main mode
 
-		// Squads and inventory are accessed from overworld Management menu
 	}).Build(ctx)
 
 	if err != nil {

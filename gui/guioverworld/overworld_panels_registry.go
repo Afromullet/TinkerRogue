@@ -17,10 +17,9 @@ const (
 	OverworldPanelTickStatus     framework.PanelType = "overworld_tick_status"
 	OverworldPanelEventLog       framework.PanelType = "overworld_event_log"
 	OverworldPanelThreatStats    framework.PanelType = "overworld_threat_stats"
-	OverworldPanelDebugMenu      framework.PanelType = "overworld_debug_menu"
-	OverworldPanelNodeMenu       framework.PanelType = "overworld_node_menu"
-	OverworldPanelManagementMenu framework.PanelType = "overworld_management_menu"
-	OverworldPanelResources      framework.PanelType = "overworld_resources"
+	OverworldPanelDebugMenu framework.PanelType = "overworld_debug_menu"
+	OverworldPanelNodeMenu  framework.PanelType = "overworld_node_menu"
+	OverworldPanelResources framework.PanelType = "overworld_resources"
 )
 
 // subMenuController manages sub-menu visibility. Only one sub-menu can be open at a time.
@@ -120,7 +119,7 @@ func init() {
 		},
 	})
 
-	// Register node sub-menu (Place Nodes, Garrison)
+	// Register node sub-menu (Place Nodes, Garrison, Recruit)
 	framework.RegisterPanel(OverworldPanelNodeMenu, framework.PanelDescriptor{
 		Content: framework.ContentCustom,
 		OnCreate: func(result *framework.PanelResult, mode framework.UIMode) error {
@@ -133,22 +132,6 @@ func init() {
 				}},
 				{Text: "Garrison (G)", OnClick: func() {
 					om.inputHandler.handleGarrison()
-					om.subMenus.CloseAll()
-				}},
-			})
-			return nil
-		},
-	})
-
-	// Register management sub-menu (Squads)
-	framework.RegisterPanel(OverworldPanelManagementMenu, framework.PanelDescriptor{
-		Content: framework.ContentCustom,
-		OnCreate: func(result *framework.PanelResult, mode framework.UIMode) error {
-			om := mode.(*OverworldMode)
-
-			result.Container = createOverworldSubMenu(om, "management", []builders.ButtonConfig{
-				{Text: "Squads", OnClick: func() {
-					om.ModeManager.SetMode("squad_editor")
 					om.subMenus.CloseAll()
 				}},
 				{Text: "Recruit (R)", OnClick: func() {
@@ -177,7 +160,6 @@ func init() {
 				Buttons: []builders.ButtonSpec{
 					{Text: "Debug", OnClick: om.subMenus.Toggle("debug")},
 					{Text: "Node", OnClick: om.subMenus.Toggle("node")},
-					{Text: "Management", OnClick: om.subMenus.Toggle("management")},
 					{Text: "Move (M)", OnClick: func() {
 						om.inputHandler.toggleMoveMode()
 					}},

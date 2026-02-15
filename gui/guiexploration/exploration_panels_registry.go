@@ -12,7 +12,7 @@ import (
 
 // Panel type constants for exploration mode
 const (
-	ExplorationPanelMessageLog     framework.PanelType = "exploration_message_log"
+	ExplorationPanelMessageLog    framework.PanelType = "exploration_message_log"
 	ExplorationPanelActionButtons framework.PanelType = "exploration_action_buttons"
 )
 
@@ -60,6 +60,13 @@ func init() {
 							}
 						}
 					}},
+					{Text: "Squad", OnClick: func() {
+						if em.Context.ModeCoordinator != nil {
+							if err := em.Context.ModeCoordinator.ReturnToOverworld("squad_editor"); err != nil {
+								fmt.Printf("ERROR: Failed to switch to squad editor: %v\n", err)
+							}
+						}
+					}},
 				},
 				Direction:  widget.DirectionHorizontal,
 				Spacing:    spacing,
@@ -84,4 +91,3 @@ func GetExplorationMessageLog(panels *framework.PanelRegistry) *widget.TextArea 
 	}
 	return nil
 }
-
