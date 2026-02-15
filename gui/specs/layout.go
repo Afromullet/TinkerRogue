@@ -196,20 +196,6 @@ const (
 	SquadMgmtButtonHeight = 0.08
 )
 
-// SquadBuilderLayout defines layout constants for squad builder mode
-const (
-	// Grid area (left side)
-	SquadBuilderGridWidth = 0.5
-
-	// Unit list panel (right side)
-	SquadBuilderUnitListWidth  = 0.25
-	SquadBuilderUnitListHeight = PanelHeightTall
-
-	// Squad info panel (right side, above unit list)
-	SquadBuilderInfoWidth  = 0.25
-	SquadBuilderInfoHeight = 0.2
-)
-
 // SquadEditorLayout defines layout constants for squad editor mode
 const (
 	// Commander selector bar (very top)

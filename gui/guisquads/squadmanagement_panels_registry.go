@@ -51,19 +51,14 @@ func init() {
 							}
 						}
 					}},
-					{Text: "Squad Builder (B)", OnClick: func() {
-						if mode, exists := smm.ModeManager.GetMode("squad_builder"); exists {
-							smm.ModeManager.RequestTransition(mode, "Squad Builder clicked")
-						}
-					}},
 					{Text: "Buy Units (P)", OnClick: func() {
 						if mode, exists := smm.ModeManager.GetMode("unit_purchase"); exists {
 							smm.ModeManager.RequestTransition(mode, "Buy Units clicked")
 						}
 					}},
-					{Text: "Edit Squad (E)", OnClick: func() {
+					{Text: "Squads (E)", OnClick: func() {
 						if mode, exists := smm.ModeManager.GetMode("squad_editor"); exists {
-							smm.ModeManager.RequestTransition(mode, "Edit Squad clicked")
+							smm.ModeManager.RequestTransition(mode, "Squads clicked")
 						}
 					}},
 				},

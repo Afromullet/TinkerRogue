@@ -148,6 +148,7 @@ func (sem *SquadEditorMode) buildActionButtons() *widget.Container {
 
 	buttonContainer := builders.CreateButtonGroup(builders.ButtonGroupConfig{
 		Buttons: []builders.ButtonSpec{
+			{Text: "New Squad (N)", OnClick: func() { sem.onNewSquad() }},
 			{Text: "Rename Squad", OnClick: func() { sem.onRenameSquad() }},
 			{Text: "Undo (Ctrl+Z)", OnClick: func() { sem.CommandHistory.Undo() }},
 			{Text: "Redo (Ctrl+Y)", OnClick: func() { sem.CommandHistory.Redo() }},
@@ -222,6 +223,12 @@ func (sem *SquadEditorMode) HandleInput(inputState *framework.InputState) bool {
 
 	// Handle undo/redo input (Ctrl+Z, Ctrl+Y)
 	if sem.CommandHistory.HandleInput(inputState) {
+		return true
+	}
+
+	// N key creates new squad
+	if inputState.KeysJustPressed[ebiten.KeyN] {
+		sem.onNewSquad()
 		return true
 	}
 

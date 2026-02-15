@@ -14,6 +14,65 @@ func (sem *SquadEditorMode) defaultDialogPosition() (width, height, centerX, cen
 	return 400, 200, sem.Layout.ScreenWidth / 2, sem.Layout.ScreenHeight / 3
 }
 
+// onNewSquad creates a new empty squad and adds it to the active commander's roster
+func (sem *SquadEditorMode) onNewSquad() {
+	rosterOwnerID := sem.Context.GetSquadRosterOwnerID()
+	squadRoster := squads.GetPlayerSquadRoster(rosterOwnerID, sem.Queries.ECSManager)
+	if squadRoster == nil {
+		sem.SetStatus("No squad roster found")
+		return
+	}
+
+	if !squadRoster.CanAddSquad() {
+		current, max := squadRoster.GetSquadCount()
+		sem.SetStatus(fmt.Sprintf("Squad roster full (%d/%d)", current, max))
+		return
+	}
+
+	// Show text input dialog for squad name
+	dialog := builders.CreateTextInputDialog(builders.TextInputDialogConfig{
+		Title:       "New Squad",
+		Message:     "Enter squad name:",
+		Placeholder: "Squad name",
+		InitialText: "",
+		OnConfirm: func(name string) {
+			if name == "" {
+				sem.SetStatus("Squad creation cancelled")
+				return
+			}
+
+			// Create empty squad and add to roster
+			squadID := squads.CreateEmptySquad(sem.Context.ECSManager, name)
+			if err := squadRoster.AddSquad(squadID); err != nil {
+				sem.SetStatus(fmt.Sprintf("Failed to add squad: %v", err))
+				return
+			}
+
+			// Refresh UI
+			sem.syncSquadOrderFromRoster()
+			sem.refreshSquadSelector()
+
+			// Auto-select the new squad (it's the last one added)
+			for i, id := range sem.allSquadIDs {
+				if id == squadID {
+					sem.currentSquadIndex = i
+					break
+				}
+			}
+
+			sem.refreshCurrentSquad()
+			sem.updateNavigationButtons()
+			sem.refreshRosterList()
+			sem.SetStatus(fmt.Sprintf("Created squad: %s", name))
+		},
+		OnCancel: func() {
+			sem.SetStatus("Squad creation cancelled")
+		},
+	})
+
+	sem.GetEbitenUI().AddWindow(dialog)
+}
+
 // onAddUnitFromRoster adds a unit from the roster to the squad
 func (sem *SquadEditorMode) onAddUnitFromRoster() {
 	if len(sem.allSquadIDs) == 0 {

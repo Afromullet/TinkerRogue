@@ -336,7 +336,6 @@ func registerOverworldModes(coordinator *framework.GameModeCoordinator, manager 
 		guioverworld.NewOverworldMode(manager, encounterService),
 		guinodeplacement.NewNodePlacementMode(manager),
 		guisquads.NewSquadManagementMode(manager),
-		guisquads.NewSquadBuilderMode(manager),
 		guisquads.NewUnitPurchaseMode(manager),
 		guisquads.NewSquadEditorMode(manager),
 	}

@@ -34,7 +34,6 @@ func (smm *SquadManagementMode) Initialize(ctx *framework.UIContext) error {
 		ReturnMode: returnMode,
 
 		Hotkeys: []framework.HotkeySpec{
-			{Key: ebiten.KeyB, TargetMode: "squad_builder"},
 			{Key: ebiten.KeyP, TargetMode: "unit_purchase"},
 			{Key: ebiten.KeyE, TargetMode: "squad_editor"},
 		},
