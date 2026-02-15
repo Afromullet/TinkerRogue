@@ -94,7 +94,7 @@ func (ih *OverworldInputHandler) HandleInput(inputState *framework.InputState) b
 	// S - open squad management for selected commander
 	if inputState.KeysJustPressed[ebiten.KeyS] {
 		if ih.deps.State.SelectedCommanderID != 0 {
-			ih.deps.ModeManager.SetMode("squad_management")
+			ih.deps.ModeManager.SetMode("squad_editor")
 			return true
 		}
 		ih.deps.LogEvent("No commander selected - click a commander first")

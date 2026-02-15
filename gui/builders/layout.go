@@ -214,3 +214,20 @@ func AnchorCenterEnd(bottomPadding int) widget.AnchorLayoutData {
 		Padding:            widget.Insets{Bottom: bottomPadding},
 	}
 }
+
+// CreateBottomActionBar creates a horizontally-laid-out button group anchored at bottom-center.
+// Replaces the ~7 lines of boilerplate (spacing calc, bottomPad calc, anchor, CreateButtonGroup)
+// that is repeated across multiple panel registries.
+func CreateBottomActionBar(layout *specs.LayoutConfig, buttons []ButtonSpec) *widget.Container {
+	spacing := int(float64(layout.ScreenWidth) * specs.PaddingTight)
+	bottomPad := int(float64(layout.ScreenHeight) * specs.BottomButtonOffset)
+	anchorLayout := AnchorCenterEnd(bottomPad)
+
+	return CreateButtonGroup(ButtonGroupConfig{
+		Buttons:    buttons,
+		Direction:  widget.DirectionHorizontal,
+		Spacing:    spacing,
+		Padding:    NewResponsiveHorizontalPadding(layout, specs.PaddingExtraSmall),
+		LayoutData: &anchorLayout,
+	})
+}

@@ -28,13 +28,7 @@ func (sem *SquadEditorMode) onGridCellClicked(row, col int) {
 		sem.selectedUnitID = unitIDs[0]
 		sem.selectedGridCell = nil
 
-		// Get unit name
-		nameStr := "Unit"
-		if nameComp, ok := sem.Queries.ECSManager.GetComponent(sem.selectedUnitID, common.NameComponent); ok {
-			if name := nameComp.(*common.Name); name != nil {
-				nameStr = name.NameStr
-			}
-		}
+		nameStr := common.GetEntityName(sem.Queries.ECSManager, sem.selectedUnitID, "Unit")
 
 		sem.SetStatus(fmt.Sprintf("Selected unit: %s. Click another cell to move", nameStr))
 	} else if sem.selectedUnitID != 0 {
@@ -88,13 +82,7 @@ func (sem *SquadEditorMode) loadSquadFormation(squadID ecs.EntityID) {
 			continue
 		}
 
-		// Get unit name
-		nameStr := "Unit"
-		if nameComp, ok := sem.Queries.ECSManager.GetComponent(unitID, common.NameComponent); ok {
-			if name := nameComp.(*common.Name); name != nil {
-				nameStr = name.NameStr
-			}
-		}
+		nameStr := common.GetEntityName(sem.Queries.ECSManager, unitID, "Unit")
 
 		// Check if leader
 		isLeader := sem.Queries.ECSManager.HasComponent(unitID, squads.LeaderComponent)

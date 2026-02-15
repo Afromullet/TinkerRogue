@@ -148,7 +148,7 @@ func init() {
 
 			result.Container = createOverworldSubMenu(om, "management", []builders.ButtonConfig{
 				{Text: "Squads", OnClick: func() {
-					om.ModeManager.SetMode("squad_management")
+					om.ModeManager.SetMode("squad_editor")
 					om.subMenus.CloseAll()
 				}},
 				{Text: "Recruit (R)", OnClick: func() {

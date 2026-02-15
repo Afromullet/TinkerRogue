@@ -175,27 +175,6 @@ const (
 	InventoryListHeight = PanelHeightTall
 )
 
-// SquadManagementLayout defines layout constants for squad management mode
-const (
-	// Center squad panel
-	SquadMgmtPanelWidth  = 0.6
-	SquadMgmtPanelHeight = 0.5
-
-	// Navigation bar (Previous/Next buttons)
-	SquadMgmtNavWidth  = 0.5
-	SquadMgmtNavHeight = 0.08
-
-	// Command bar (Disband, Merge, Undo, Redo)
-	SquadMgmtCmdWidth  = 0.6
-	SquadMgmtCmdHeight = 0.08
-
-	// Status label
-	SquadMgmtStatusHeight = 0.05
-
-	// Action buttons (bottom)
-	SquadMgmtButtonHeight = 0.08
-)
-
 // SquadEditorLayout defines layout constants for squad editor mode
 const (
 	// Commander selector bar (very top)

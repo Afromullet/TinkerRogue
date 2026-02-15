@@ -92,6 +92,6 @@ func (c *ChangeLeaderCommand) Undo() error {
 }
 
 func (c *ChangeLeaderCommand) Description() string {
-	newLeaderName := getUnitName(c.newLeaderID, c.manager)
+	newLeaderName := common.GetEntityName(c.manager, c.newLeaderID, "Unit")
 	return fmt.Sprintf("Change leader to '%s'", newLeaderName)
 }

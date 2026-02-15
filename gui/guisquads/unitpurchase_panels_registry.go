@@ -179,27 +179,16 @@ func init() {
 		Content: framework.ContentCustom,
 		OnCreate: func(result *framework.PanelResult, mode framework.UIMode) error {
 			upm := mode.(*UnitPurchaseMode)
-			layout := upm.Layout
 
-			spacing := int(float64(layout.ScreenWidth) * specs.PaddingTight)
-			bottomPad := int(float64(layout.ScreenHeight) * specs.BottomButtonOffset)
-			anchorLayout := builders.AnchorCenterEnd(bottomPad)
-
-			result.Container = builders.CreateButtonGroup(builders.ButtonGroupConfig{
-				Buttons: []builders.ButtonSpec{
-					{Text: "Buy Unit", OnClick: func() { upm.purchaseUnit() }},
-					{Text: "Undo (Ctrl+Z)", OnClick: func() { upm.CommandHistory.Undo() }},
-					{Text: "Redo (Ctrl+Y)", OnClick: func() { upm.CommandHistory.Redo() }},
-					{Text: "Back (ESC)", OnClick: func() {
-						if mode, exists := upm.ModeManager.GetMode("squad_management"); exists {
-							upm.ModeManager.RequestTransition(mode, "Back button pressed")
-						}
-					}},
-				},
-				Direction:  widget.DirectionHorizontal,
-				Spacing:    spacing,
-				Padding:    builders.NewResponsiveHorizontalPadding(layout, specs.PaddingExtraSmall),
-				LayoutData: &anchorLayout,
+			result.Container = builders.CreateBottomActionBar(upm.Layout, []builders.ButtonSpec{
+				{Text: "Buy Unit", OnClick: func() { upm.purchaseUnit() }},
+				{Text: "Undo (Ctrl+Z)", OnClick: func() { upm.CommandHistory.Undo() }},
+				{Text: "Redo (Ctrl+Y)", OnClick: func() { upm.CommandHistory.Redo() }},
+				{Text: "Back (ESC)", OnClick: func() {
+					if mode, exists := upm.ModeManager.GetMode("squad_editor"); exists {
+						upm.ModeManager.RequestTransition(mode, "Back button pressed")
+					}
+				}},
 			})
 
 			// Store buy button reference for enable/disable control

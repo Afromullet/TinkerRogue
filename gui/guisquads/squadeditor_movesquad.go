@@ -35,7 +35,7 @@ func (sem *SquadEditorMode) handleSwapCancel(inputState *framework.InputState) b
 	if sem.swapState.SelectedIndex >= 0 {
 		if escPressed, ok := inputState.KeysJustPressed[ebiten.KeyEscape]; ok && escPressed {
 			sem.swapState.Reset()
-			sem.updateStatusLabel("Selection cancelled")
+			sem.SetStatus("Selection cancelled")
 			return true
 		}
 	}
@@ -52,14 +52,14 @@ func (sem *SquadEditorMode) executeSquadReorder(fromIndex, toIndex int) {
 	)
 
 	if !sem.CommandHistory.Execute(cmd) {
-		sem.updateStatusLabel("Error: Failed to move squad")
+		sem.SetStatus("Error: Failed to move squad")
 		return
 	}
 
 	// Sync from roster and refresh UI
 	sem.syncSquadOrderFromRoster()
 	sem.refreshSquadSelector()
-	sem.updateStatusLabel("Squad moved")
+	sem.SetStatus("Squad moved")
 
 	// Adjust current index if needed
 	if sem.currentSquadIndex == fromIndex {
@@ -121,14 +121,14 @@ func (sem *SquadEditorMode) handleSwapInput(inputState *framework.InputState) bo
 		if sem.swapState.SelectedIndex < 0 {
 			sem.swapState.SelectedIndex = clickedIndex
 			squadName := sem.Queries.SquadCache.GetSquadName(sem.allSquadIDs[clickedIndex])
-			sem.updateStatusLabel(fmt.Sprintf("Selected '%s' - right-click where to move", squadName))
+			sem.SetStatus(fmt.Sprintf("Selected '%s' - right-click where to move", squadName))
 			return true
 		}
 
 		// Right-click on same position: cancel selection
 		if clickedIndex == sem.swapState.SelectedIndex {
 			sem.swapState.Reset()
-			sem.updateStatusLabel("Selection cancelled")
+			sem.SetStatus("Selection cancelled")
 			return true
 		}
 
@@ -187,9 +187,3 @@ func (sem *SquadEditorMode) syncSquadOrderFromRoster() {
 	copy(sem.allSquadIDs, roster.OwnedSquads)
 }
 
-// updateStatusLabel updates the status label text
-func (sem *SquadEditorMode) updateStatusLabel(text string) {
-	if sem.StatusLabel != nil {
-		sem.StatusLabel.Label = text
-	}
-}

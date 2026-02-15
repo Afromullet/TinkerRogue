@@ -145,30 +145,19 @@ func init() {
 		Content: framework.ContentCustom,
 		OnCreate: func(result *framework.PanelResult, mode framework.UIMode) error {
 			sdm := mode.(*SquadDeploymentMode)
-			layout := sdm.Layout
 
-			spacing := int(float64(layout.ScreenWidth) * specs.PaddingTight)
-			bottomPad := int(float64(layout.ScreenHeight) * specs.BottomButtonOffset)
-			anchorLayout := builders.AnchorCenterEnd(bottomPad)
-
-			result.Container = builders.CreateButtonGroup(builders.ButtonGroupConfig{
-				Buttons: []builders.ButtonSpec{
-					{Text: "Clear All", OnClick: func() { sdm.clearAllSquadPositions() }},
-					{Text: "Start Combat", OnClick: func() {
-						if combatMode, exists := sdm.ModeManager.GetMode("combat"); exists {
-							sdm.ModeManager.RequestTransition(combatMode, "Squads deployed, starting combat")
-						}
-					}},
-					{Text: "Close (ESC)", OnClick: func() {
-						if mode, exists := sdm.ModeManager.GetMode("exploration"); exists {
-							sdm.ModeManager.RequestTransition(mode, "Close button pressed")
-						}
-					}},
-				},
-				Direction:  widget.DirectionHorizontal,
-				Spacing:    spacing,
-				Padding:    builders.NewResponsiveHorizontalPadding(layout, specs.PaddingExtraSmall),
-				LayoutData: &anchorLayout,
+			result.Container = builders.CreateBottomActionBar(sdm.Layout, []builders.ButtonSpec{
+				{Text: "Clear All", OnClick: func() { sdm.clearAllSquadPositions() }},
+				{Text: "Start Combat", OnClick: func() {
+					if combatMode, exists := sdm.ModeManager.GetMode("combat"); exists {
+						sdm.ModeManager.RequestTransition(combatMode, "Squads deployed, starting combat")
+					}
+				}},
+				{Text: "Close (ESC)", OnClick: func() {
+					if mode, exists := sdm.ModeManager.GetMode("exploration"); exists {
+						sdm.ModeManager.RequestTransition(mode, "Close button pressed")
+					}
+				}},
 			})
 
 			return nil

@@ -102,14 +102,4 @@ func getGridPositionOrError(unitID ecs.EntityID, manager *common.EntityManager) 
 	return gridPos, nil
 }
 
-// getUnitName retrieves the name of a unit entity, with fallback to default
-// Returns "Unit" if no name component exists or if retrieval fails
-func getUnitName(unitID ecs.EntityID, manager *common.EntityManager) string {
-	if nameComp, ok := manager.GetComponent(unitID, common.NameComponent); ok {
-		if name := nameComp.(*common.Name); name != nil {
-			return name.NameStr
-		}
-	}
-	return "Unit"
-}
 

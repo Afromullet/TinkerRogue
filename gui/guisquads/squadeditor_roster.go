@@ -92,7 +92,11 @@ func (sem *SquadEditorMode) onAddUnitFromRoster() {
 	}
 
 	// Parse template name from entry (format: "TemplateName (xN)")
-	entryStr := selectedEntry.(string)
+	entryStr, ok := selectedEntry.(string)
+	if !ok {
+		sem.SetStatus("Invalid roster selection")
+		return
+	}
 	if entryStr == "No units available" {
 		return
 	}
@@ -136,7 +140,11 @@ func (sem *SquadEditorMode) onRemoveUnit() {
 	}
 
 	// Get unit ID from selected entry (entry is the UnitIdentity)
-	unitIdentity := selectedEntry.(squads.UnitIdentity)
+	unitIdentity, ok := selectedEntry.(squads.UnitIdentity)
+	if !ok {
+		sem.SetStatus("Invalid unit selection")
+		return
+	}
 	unitID := unitIdentity.ID
 
 	// Check if this is the leader
@@ -189,7 +197,11 @@ func (sem *SquadEditorMode) onMakeLeader() {
 	}
 
 	// Get unit ID from selected entry
-	unitIdentity := selectedEntry.(squads.UnitIdentity)
+	unitIdentity, ok := selectedEntry.(squads.UnitIdentity)
+	if !ok {
+		sem.SetStatus("Invalid unit selection")
+		return
+	}
 	unitID := unitIdentity.ID
 
 	// Check if already leader

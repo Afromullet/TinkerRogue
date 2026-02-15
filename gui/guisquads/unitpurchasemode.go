@@ -29,15 +29,12 @@ type UnitPurchaseMode struct {
 	viewStatsButton *widget.Button
 
 	selectedTemplate *squads.UnitTemplate
-	selectedIndex    int
 }
 
 func NewUnitPurchaseMode(modeManager *framework.UIModeManager) *UnitPurchaseMode {
-	mode := &UnitPurchaseMode{
-		selectedIndex: -1,
-	}
+	mode := &UnitPurchaseMode{}
 	mode.SetModeName("unit_purchase")
-	mode.SetReturnMode("squad_management") // ESC returns to squad management
+	mode.SetReturnMode("squad_editor") // ESC returns to squad management
 	mode.ModeManager = modeManager
 	mode.SetSelf(mode) // Required for panel registry building
 	return mode
@@ -50,7 +47,7 @@ func (upm *UnitPurchaseMode) Initialize(ctx *framework.UIContext) error {
 	// Build base UI using ModeBuilder (minimal config - panels handled by registry)
 	err := framework.NewModeBuilder(&upm.BaseMode, framework.ModeConfig{
 		ModeName:   "unit_purchase",
-		ReturnMode: "squad_management",
+		ReturnMode: "squad_editor",
 		Commands:   true,
 		OnRefresh:  upm.refreshAfterUndoRedo,
 	}).Build(ctx)
@@ -235,7 +232,6 @@ func (upm *UnitPurchaseMode) Enter(fromMode framework.UIMode) error {
 
 	// Clear selection
 	upm.selectedTemplate = nil
-	upm.selectedIndex = -1
 	upm.updateDetailPanel()
 
 	return nil

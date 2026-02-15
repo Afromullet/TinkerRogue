@@ -5,7 +5,6 @@ import (
 
 	"game_main/gui/builders"
 	"game_main/gui/framework"
-	"game_main/gui/specs"
 	"game_main/tactical/commander"
 
 	"github.com/bytearena/ecs"
@@ -44,11 +43,7 @@ type SquadEditorMode struct {
 	nextButton        *widget.Button
 
 	// Commander selector
-	allCommanderIDs     []ecs.EntityID
-	currentCommanderIdx int
-	commanderLabel      *widget.Text
-	commanderPrevBtn    *widget.Button
-	commanderNextBtn    *widget.Button
+	commanderSelector *CommanderSelector
 
 	// State
 	selectedGridCell *GridCell    // Currently selected grid cell
@@ -69,20 +64,31 @@ func NewSquadEditorMode(modeManager *framework.UIModeManager) *SquadEditorMode {
 		swapState:         NewSwapState(),
 	}
 	mode.SetModeName("squad_editor")
-	mode.SetReturnMode("squad_management")
 	mode.ModeManager = modeManager
 	mode.SetSelf(mode) // Required for panel registry building
 	return mode
 }
 
 func (sem *SquadEditorMode) Initialize(ctx *framework.UIContext) error {
+	// Determine return mode based on context:
+	// In overworld context, ESC returns to overworld mode
+	// In tactical context, ESC is handled by the close button (context switch)
+	returnMode := ""
+	if _, exists := sem.ModeManager.GetMode("overworld"); exists {
+		returnMode = "overworld"
+	}
+
 	// Build base UI using ModeBuilder (minimal config - panels handled by registry)
 	err := framework.NewModeBuilder(&sem.BaseMode, framework.ModeConfig{
-		ModeName:    "squad_editor",
-		ReturnMode:  "squad_management",
+		ModeName:   "squad_editor",
+		ReturnMode: returnMode,
 		StatusLabel: true,
 		Commands:    true,
 		OnRefresh:   sem.refreshAfterUndoRedo,
+
+		Hotkeys: []framework.HotkeySpec{
+			{Key: ebiten.KeyP, TargetMode: "unit_purchase"},
+		},
 	}).Build(ctx)
 
 	if err != nil {
@@ -118,10 +124,12 @@ func (sem *SquadEditorMode) buildPanelsFromRegistry() error {
 
 // initializeWidgetReferences populates mode fields from panel registry
 func (sem *SquadEditorMode) initializeWidgetReferences() {
-	// Commander selector widgets
-	sem.commanderPrevBtn = framework.GetPanelWidget[*widget.Button](sem.Panels, SquadEditorPanelCommanderSelector, "commanderPrevBtn")
-	sem.commanderNextBtn = framework.GetPanelWidget[*widget.Button](sem.Panels, SquadEditorPanelCommanderSelector, "commanderNextBtn")
-	sem.commanderLabel = framework.GetPanelWidget[*widget.Text](sem.Panels, SquadEditorPanelCommanderSelector, "commanderLabel")
+	// Commander selector
+	sem.commanderSelector = NewCommanderSelector(
+		framework.GetPanelWidget[*widget.Text](sem.Panels, SquadEditorPanelCommanderSelector, "commanderLabel"),
+		framework.GetPanelWidget[*widget.Button](sem.Panels, SquadEditorPanelCommanderSelector, "commanderPrevBtn"),
+		framework.GetPanelWidget[*widget.Button](sem.Panels, SquadEditorPanelCommanderSelector, "commanderNextBtn"),
+	)
 
 	// Navigation widgets
 	sem.prevButton = framework.GetPanelWidget[*widget.Button](sem.Panels, SquadEditorPanelNavigation, "prevButton")
@@ -137,34 +145,38 @@ func (sem *SquadEditorMode) initializeWidgetReferences() {
 	sem.gridCells = framework.GetPanelWidget[[3][3]*widget.Button](sem.Panels, SquadEditorPanelGridEditor, "gridCells")
 }
 
+// getCloseButtonText returns context-aware text for the close button
+func (sem *SquadEditorMode) getCloseButtonText() string {
+	if sem.GetReturnMode() != "" {
+		return "Overworld (ESC)"
+	}
+	return "Exploration (ESC)"
+}
+
 // buildActionButtons creates bottom action buttons (needs callbacks, so done separately)
 func (sem *SquadEditorMode) buildActionButtons() *widget.Container {
-	// Calculate responsive spacing
-	spacing := int(float64(sem.Layout.ScreenWidth) * specs.PaddingTight)
-
-	// Create button group using builders.CreateButtonGroup with LayoutData
-	bottomPad := int(float64(sem.Layout.ScreenHeight) * specs.BottomButtonOffset)
-	anchorLayout := builders.AnchorCenterEnd(bottomPad)
-
-	buttonContainer := builders.CreateButtonGroup(builders.ButtonGroupConfig{
-		Buttons: []builders.ButtonSpec{
-			{Text: "New Squad (N)", OnClick: func() { sem.onNewSquad() }},
-			{Text: "Rename Squad", OnClick: func() { sem.onRenameSquad() }},
-			{Text: "Undo (Ctrl+Z)", OnClick: func() { sem.CommandHistory.Undo() }},
-			{Text: "Redo (Ctrl+Y)", OnClick: func() { sem.CommandHistory.Redo() }},
-			{Text: "Close (ESC)", OnClick: func() {
-				if mode, exists := sem.ModeManager.GetMode("squad_management"); exists {
-					sem.ModeManager.RequestTransition(mode, "Close button pressed")
+	return builders.CreateBottomActionBar(sem.Layout, []builders.ButtonSpec{
+		{Text: "New Squad (N)", OnClick: func() { sem.onNewSquad() }},
+		{Text: "Rename Squad", OnClick: func() { sem.onRenameSquad() }},
+		{Text: "Buy Units (P)", OnClick: func() {
+			if mode, exists := sem.ModeManager.GetMode("unit_purchase"); exists {
+				sem.ModeManager.RequestTransition(mode, "Buy Units clicked")
+			}
+		}},
+		{Text: "Undo (Ctrl+Z)", OnClick: func() { sem.CommandHistory.Undo() }},
+		{Text: "Redo (Ctrl+Y)", OnClick: func() { sem.CommandHistory.Redo() }},
+		{Text: sem.getCloseButtonText(), OnClick: func() {
+			if returnMode, exists := sem.ModeManager.GetMode(sem.GetReturnMode()); exists {
+				sem.ModeManager.RequestTransition(returnMode, "Close button pressed")
+				return
+			}
+			if sem.Context.ModeCoordinator != nil {
+				if err := sem.Context.ModeCoordinator.EnterTactical("exploration"); err != nil {
+					fmt.Printf("ERROR: Failed to enter tactical context: %v\n", err)
 				}
-			}},
-		},
-		Direction:  widget.DirectionHorizontal,
-		Spacing:    spacing,
-		Padding:    builders.NewResponsiveHorizontalPadding(sem.Layout, specs.PaddingExtraSmall),
-		LayoutData: &anchorLayout,
+			}
+		}},
 	})
-
-	return buttonContainer
 }
 
 func (sem *SquadEditorMode) Enter(fromMode framework.UIMode) error {
@@ -290,51 +302,26 @@ func (sem *SquadEditorMode) updateNavigationButtons() {
 
 // loadCommanders enumerates all commanders and finds the current one
 func (sem *SquadEditorMode) loadCommanders() {
-	sem.allCommanderIDs = commander.GetAllCommanders(sem.Context.PlayerData.PlayerEntityID, sem.Context.ECSManager)
-
-	// Find index of currently selected commander
 	owState := sem.Context.ModeCoordinator.GetOverworldState()
-	selectedID := owState.SelectedCommanderID
-	sem.currentCommanderIdx = 0
-	for i, id := range sem.allCommanderIDs {
-		if id == selectedID {
-			sem.currentCommanderIdx = i
-			break
-		}
-	}
-
-	sem.updateCommanderLabel()
-	sem.updateCommanderButtons()
+	sem.commanderSelector.Load(
+		sem.Context.PlayerData.PlayerEntityID,
+		owState.SelectedCommanderID,
+		sem.Context.ECSManager,
+	)
 }
 
 // showPreviousCommander cycles to the previous commander
 func (sem *SquadEditorMode) showPreviousCommander() {
-	if len(sem.allCommanderIDs) <= 1 {
-		return
-	}
-	sem.currentCommanderIdx--
-	if sem.currentCommanderIdx < 0 {
-		sem.currentCommanderIdx = len(sem.allCommanderIDs) - 1
-	}
-	sem.applyCommanderSwitch()
+	sem.commanderSelector.ShowPrevious(sem.Context.ECSManager, sem.onCommanderSwitched)
 }
 
 // showNextCommander cycles to the next commander
 func (sem *SquadEditorMode) showNextCommander() {
-	if len(sem.allCommanderIDs) <= 1 {
-		return
-	}
-	sem.currentCommanderIdx++
-	if sem.currentCommanderIdx >= len(sem.allCommanderIDs) {
-		sem.currentCommanderIdx = 0
-	}
-	sem.applyCommanderSwitch()
+	sem.commanderSelector.ShowNext(sem.Context.ECSManager, sem.onCommanderSwitched)
 }
 
-// applyCommanderSwitch updates OverworldState and refreshes all mode data
-func (sem *SquadEditorMode) applyCommanderSwitch() {
-	newCommanderID := sem.allCommanderIDs[sem.currentCommanderIdx]
-
+// onCommanderSwitched updates OverworldState and refreshes all mode data
+func (sem *SquadEditorMode) onCommanderSwitched(newCommanderID ecs.EntityID) {
 	// Update overworld state so GetSquadRosterOwnerID() returns the new commander
 	owState := sem.Context.ModeCoordinator.GetOverworldState()
 	owState.SelectedCommanderID = newCommanderID
@@ -355,41 +342,10 @@ func (sem *SquadEditorMode) applyCommanderSwitch() {
 
 	sem.updateNavigationButtons()
 	sem.refreshRosterList()
-	sem.updateCommanderLabel()
-	sem.updateCommanderButtons()
 
 	cmdrData := commander.GetCommanderData(newCommanderID, sem.Context.ECSManager)
 	if cmdrData != nil {
 		sem.SetStatus(fmt.Sprintf("Switched to commander: %s", cmdrData.Name))
-	}
-}
-
-// updateCommanderLabel updates the commander name display
-func (sem *SquadEditorMode) updateCommanderLabel() {
-	if sem.commanderLabel == nil {
-		return
-	}
-	if len(sem.allCommanderIDs) == 0 {
-		sem.commanderLabel.Label = "No Commanders"
-		return
-	}
-	cmdrID := sem.allCommanderIDs[sem.currentCommanderIdx]
-	cmdrData := commander.GetCommanderData(cmdrID, sem.Context.ECSManager)
-	if cmdrData != nil {
-		sem.commanderLabel.Label = fmt.Sprintf("Commander: %s", cmdrData.Name)
-	} else {
-		sem.commanderLabel.Label = "Commander: ???"
-	}
-}
-
-// updateCommanderButtons disables prev/next when only one commander exists
-func (sem *SquadEditorMode) updateCommanderButtons() {
-	hasMultiple := len(sem.allCommanderIDs) > 1
-	if sem.commanderPrevBtn != nil {
-		sem.commanderPrevBtn.GetWidget().Disabled = !hasMultiple
-	}
-	if sem.commanderNextBtn != nil {
-		sem.commanderNextBtn.GetWidget().Disabled = !hasMultiple
 	}
 }
 

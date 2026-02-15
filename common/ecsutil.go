@@ -220,3 +220,13 @@ func InitializeSubsystems(em *EntityManager) {
 		registrar(em)
 	}
 }
+
+// GetEntityName retrieves the name of an entity. Returns defaultName if not found.
+func GetEntityName(manager *EntityManager, entityID ecs.EntityID, defaultName string) string {
+	if nameComp, ok := manager.GetComponent(entityID, NameComponent); ok {
+		if name := nameComp.(*Name); name != nil {
+			return name.NameStr
+		}
+	}
+	return defaultName
+}

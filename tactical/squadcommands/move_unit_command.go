@@ -86,6 +86,6 @@ func (c *MoveUnitCommand) Undo() error {
 }
 
 func (c *MoveUnitCommand) Description() string {
-	unitName := getUnitName(c.unitID, c.manager)
+	unitName := common.GetEntityName(c.manager, c.unitID, "Unit")
 	return fmt.Sprintf("Move '%s' to [%d,%d]", unitName, c.newRow, c.newCol)
 }

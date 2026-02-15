@@ -3,12 +3,37 @@ package guisquads
 import (
 	"fmt"
 	"game_main/gui/builders"
+	"game_main/gui/framework"
 	"game_main/tactical/squads"
 
 	"github.com/bytearena/ecs"
+	"github.com/ebitenui/ebitenui/widget"
 )
 
 // UI refresh logic for SquadEditorMode
+
+// replaceListInPanel removes an old list widget from a panel, creates a new one,
+// and re-inserts it after the title label while preserving any trailing children (buttons, etc).
+func (sem *SquadEditorMode) replaceListInPanel(
+	panelType framework.PanelType,
+	oldWidget *widget.List,
+	createNew func() *widget.List,
+) *widget.List {
+	container := sem.GetPanelContainer(panelType)
+	if container == nil {
+		return oldWidget
+	}
+	container.RemoveChild(oldWidget)
+	newWidget := createNew()
+	children := container.Children()
+	container.RemoveChildren()
+	container.AddChild(children[0]) // Title label
+	container.AddChild(newWidget)
+	for i := 1; i < len(children); i++ {
+		container.AddChild(children[i])
+	}
+	return newWidget
+}
 
 // refreshCurrentSquad loads the current squad's data into the UI
 func (sem *SquadEditorMode) refreshCurrentSquad() {
@@ -35,76 +60,39 @@ func (sem *SquadEditorMode) refreshCurrentSquad() {
 
 // refreshSquadSelector updates the squad selector list (rebuilds widget)
 func (sem *SquadEditorMode) refreshSquadSelector() {
-	// Get container from panel registry
-	container := sem.GetPanelContainer(SquadEditorPanelSquadSelector)
-	if container == nil {
-		return
-	}
-
-	// Remove old list widget
-	container.RemoveChild(sem.squadSelector)
-
-	// Create new squad list
-	sem.squadSelector = builders.CreateSquadList(builders.SquadListConfig{
-		SquadIDs:      sem.allSquadIDs,
-		Manager:       sem.Context.ECSManager,
-		ScreenWidth:   sem.Layout.ScreenWidth,
-		ScreenHeight:  sem.Layout.ScreenHeight,
-		WidthPercent:  0.2,
-		HeightPercent: 0.4,
-		OnSelect: func(squadID ecs.EntityID) {
-			sem.onSquadSelected(squadID)
-		},
+	sem.squadSelector = sem.replaceListInPanel(SquadEditorPanelSquadSelector, sem.squadSelector, func() *widget.List {
+		return builders.CreateSquadList(builders.SquadListConfig{
+			SquadIDs:      sem.allSquadIDs,
+			Manager:       sem.Context.ECSManager,
+			ScreenWidth:   sem.Layout.ScreenWidth,
+			ScreenHeight:  sem.Layout.ScreenHeight,
+			WidthPercent:  0.2,
+			HeightPercent: 0.4,
+			OnSelect: func(squadID ecs.EntityID) {
+				sem.onSquadSelected(squadID)
+			},
+		})
 	})
-
-	// Insert at position 1 (after title label)
-	children := container.Children()
-	container.RemoveChildren()
-	container.AddChild(children[0]) // Title label
-	container.AddChild(sem.squadSelector)
 }
 
 // rebuildUnitListWidget updates the unit list for the current squad (rebuilds widget)
 func (sem *SquadEditorMode) rebuildUnitListWidget(squadID ecs.EntityID) {
-	// Get container from panel registry
-	container := sem.GetPanelContainer(SquadEditorPanelUnitList)
-	if container == nil {
-		return
-	}
-
 	unitIDs := sem.Queries.SquadCache.GetUnitIDsInSquad(squadID)
 
-	// Remove old list widget
-	container.RemoveChild(sem.unitList)
-
-	// Create new unit list
-	sem.unitList = builders.CreateUnitList(builders.UnitListConfig{
-		UnitIDs:       unitIDs,
-		Manager:       sem.Queries.ECSManager,
-		ScreenWidth:   400,
-		ScreenHeight:  300,
-		WidthPercent:  1.0,
-		HeightPercent: 1.0,
+	sem.unitList = sem.replaceListInPanel(SquadEditorPanelUnitList, sem.unitList, func() *widget.List {
+		return builders.CreateUnitList(builders.UnitListConfig{
+			UnitIDs:       unitIDs,
+			Manager:       sem.Queries.ECSManager,
+			ScreenWidth:   400,
+			ScreenHeight:  300,
+			WidthPercent:  1.0,
+			HeightPercent: 1.0,
+		})
 	})
-
-	// Insert at position 1 (after title label)
-	children := container.Children()
-	container.RemoveChildren()
-	container.AddChild(children[0]) // Title label
-	container.AddChild(sem.unitList)
-	for i := 1; i < len(children); i++ {
-		container.AddChild(children[i])
-	}
 }
 
 // refreshRosterList updates the available units from player's roster (rebuilds widget)
 func (sem *SquadEditorMode) refreshRosterList() {
-	// Get container from panel registry
-	container := sem.GetPanelContainer(SquadEditorPanelRosterList)
-	if container == nil {
-		return
-	}
-
 	roster := squads.GetPlayerRoster(sem.Context.PlayerData.PlayerEntityID, sem.Queries.ECSManager)
 	if roster == nil {
 		return
@@ -122,26 +110,15 @@ func (sem *SquadEditorMode) refreshRosterList() {
 		entries = append(entries, "No units available")
 	}
 
-	// Remove old list widget
-	container.RemoveChild(sem.rosterList)
-
-	// Create new roster list
-	sem.rosterList = builders.CreateSimpleStringList(builders.SimpleStringListConfig{
-		Entries:       entries,
-		ScreenWidth:   400,
-		ScreenHeight:  200,
-		WidthPercent:  1.0,
-		HeightPercent: 1.0,
+	sem.rosterList = sem.replaceListInPanel(SquadEditorPanelRosterList, sem.rosterList, func() *widget.List {
+		return builders.CreateSimpleStringList(builders.SimpleStringListConfig{
+			Entries:       entries,
+			ScreenWidth:   400,
+			ScreenHeight:  200,
+			WidthPercent:  1.0,
+			HeightPercent: 1.0,
+		})
 	})
-
-	// Insert at position 1 (after title label)
-	children := container.Children()
-	container.RemoveChildren()
-	container.AddChild(children[0]) // Title label
-	container.AddChild(sem.rosterList)
-	for i := 1; i < len(children); i++ {
-		container.AddChild(children[i])
-	}
 }
 
 // refreshAfterUndoRedo is called after successful undo/redo operations

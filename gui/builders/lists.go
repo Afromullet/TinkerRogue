@@ -102,12 +102,7 @@ func CreateUnitList(config UnitListConfig) *widget.List {
 		if attrRaw, ok := config.Manager.GetComponent(unitID, common.AttributeComponent); ok {
 			attr := attrRaw.(*common.Attributes)
 
-			// Get unit name
-			nameStr := "Unknown"
-			if nameRaw, ok := config.Manager.GetComponent(unitID, common.NameComponent); ok {
-				name := nameRaw.(*common.Name)
-				nameStr = name.NameStr
-			}
+			nameStr := common.GetEntityName(config.Manager, unitID, "Unknown")
 
 			// Store UnitIdentity object instead of string
 			entries = append(entries, squads.UnitIdentity{
