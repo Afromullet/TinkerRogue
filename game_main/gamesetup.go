@@ -36,6 +36,8 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 )
 
+var maptype = "overworld"
+
 // GameBootstrap encapsulates game initialization logic with explicit phases.
 // Each phase method represents a discrete initialization step with clear dependencies.
 type GameBootstrap struct{}
@@ -72,7 +74,7 @@ func (gb *GameBootstrap) CreateWorld(gm *worldmap.GameMap) {
 	// Multiple map generation algorithms available:
 	// - "overworld" (default)
 	// - "hybrid_tactical"
-	*gm = worldmap.NewGameMap("overworld")
+	*gm = worldmap.NewGameMap(maptype)
 }
 
 // CreatePlayer initializes the player entity, creates the initial commander, and adds creatures to position system.
