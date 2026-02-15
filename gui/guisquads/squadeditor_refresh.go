@@ -3,7 +3,6 @@ package guisquads
 import (
 	"fmt"
 	"game_main/gui/builders"
-	"game_main/gui/framework"
 	"game_main/tactical/squads"
 
 	"github.com/bytearena/ecs"
@@ -12,14 +11,13 @@ import (
 
 // UI refresh logic for SquadEditorMode
 
-// replaceListInPanel removes an old list widget from a panel, creates a new one,
+// replaceListInContainer removes an old list widget from a container, creates a new one,
 // and re-inserts it after the title label while preserving any trailing children (buttons, etc).
-func (sem *SquadEditorMode) replaceListInPanel(
-	panelType framework.PanelType,
+func (sem *SquadEditorMode) replaceListInContainer(
+	container *widget.Container,
 	oldWidget *widget.List,
 	createNew func() *widget.List,
 ) *widget.List {
-	container := sem.GetPanelContainer(panelType)
 	if container == nil {
 		return oldWidget
 	}
@@ -41,7 +39,7 @@ func (sem *SquadEditorMode) refreshCurrentSquad() {
 		return
 	}
 
-	currentSquadID := sem.allSquadIDs[sem.currentSquadIndex]
+	currentSquadID := sem.currentSquadID()
 
 	// Update squad counter
 	counterText := fmt.Sprintf("Squad %d of %d", sem.currentSquadIndex+1, len(sem.allSquadIDs))
@@ -60,7 +58,8 @@ func (sem *SquadEditorMode) refreshCurrentSquad() {
 
 // refreshSquadSelector updates the squad selector list (rebuilds widget)
 func (sem *SquadEditorMode) refreshSquadSelector() {
-	sem.squadSelector = sem.replaceListInPanel(SquadEditorPanelSquadSelector, sem.squadSelector, func() *widget.List {
+	container := sem.GetPanelContainer(SquadEditorPanelSquadSelector)
+	sem.squadSelector = sem.replaceListInContainer(container, sem.squadSelector, func() *widget.List {
 		return builders.CreateSquadList(builders.SquadListConfig{
 			SquadIDs:      sem.allSquadIDs,
 			Manager:       sem.Context.ECSManager,
@@ -79,7 +78,7 @@ func (sem *SquadEditorMode) refreshSquadSelector() {
 func (sem *SquadEditorMode) rebuildUnitListWidget(squadID ecs.EntityID) {
 	unitIDs := sem.Queries.SquadCache.GetUnitIDsInSquad(squadID)
 
-	sem.unitList = sem.replaceListInPanel(SquadEditorPanelUnitList, sem.unitList, func() *widget.List {
+	sem.unitList = sem.replaceListInContainer(sem.unitContent, sem.unitList, func() *widget.List {
 		return builders.CreateUnitList(builders.UnitListConfig{
 			UnitIDs:       unitIDs,
 			Manager:       sem.Queries.ECSManager,
@@ -110,7 +109,7 @@ func (sem *SquadEditorMode) refreshRosterList() {
 		entries = append(entries, "No units available")
 	}
 
-	sem.rosterList = sem.replaceListInPanel(SquadEditorPanelRosterList, sem.rosterList, func() *widget.List {
+	sem.rosterList = sem.replaceListInContainer(sem.rosterContent, sem.rosterList, func() *widget.List {
 		return builders.CreateSimpleStringList(builders.SimpleStringListConfig{
 			Entries:       entries,
 			ScreenWidth:   400,
@@ -121,19 +120,27 @@ func (sem *SquadEditorMode) refreshRosterList() {
 	})
 }
 
-// refreshAfterUndoRedo is called after successful undo/redo operations
-func (sem *SquadEditorMode) refreshAfterUndoRedo() {
-	// Sync from roster (source of truth for order and contents)
+// refreshAllUI syncs squad data and refreshes all UI elements.
+// If resetIndex is true, the squad index is reset to 0.
+// Otherwise, the index is clamped to valid range.
+func (sem *SquadEditorMode) refreshAllUI(resetIndex bool) {
 	sem.syncSquadOrderFromRoster()
 
-	// Adjust index if needed
-	if sem.currentSquadIndex >= len(sem.allSquadIDs) && len(sem.allSquadIDs) > 0 {
+	if resetIndex {
+		sem.currentSquadIndex = 0
+	} else if sem.currentSquadIndex >= len(sem.allSquadIDs) && len(sem.allSquadIDs) > 0 {
 		sem.currentSquadIndex = 0
 	}
 
-	// Refresh all UI elements (squad list, formation grid, status)
 	sem.refreshSquadSelector()
-	sem.refreshCurrentSquad()
+	if len(sem.allSquadIDs) > 0 {
+		sem.refreshCurrentSquad()
+	}
 	sem.refreshRosterList()
 	sem.updateNavigationButtons()
+}
+
+// refreshAfterCommand is called after successful command execution to update the UI
+func (sem *SquadEditorMode) refreshAfterCommand() {
+	sem.refreshAllUI(false)
 }

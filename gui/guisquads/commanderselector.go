@@ -49,32 +49,26 @@ func (cs *CommanderSelector) CurrentID() ecs.EntityID {
 	return cs.AllIDs[cs.CurrentIdx]
 }
 
-// ShowPrevious cycles to the previous commander. Calls onSwitch with the new ID if changed.
-func (cs *CommanderSelector) ShowPrevious(manager *common.EntityManager, onSwitch func(ecs.EntityID)) {
+// Cycle advances the commander index by delta (-1 for previous, +1 for next).
+// Calls onSwitch with the new ID if changed.
+func (cs *CommanderSelector) Cycle(delta int, manager *common.EntityManager, onSwitch func(ecs.EntityID)) {
 	if len(cs.AllIDs) <= 1 {
 		return
 	}
-	cs.CurrentIdx--
-	if cs.CurrentIdx < 0 {
-		cs.CurrentIdx = len(cs.AllIDs) - 1
-	}
+	cs.CurrentIdx = (cs.CurrentIdx + delta + len(cs.AllIDs)) % len(cs.AllIDs)
 	onSwitch(cs.CurrentID())
 	cs.UpdateLabel(manager)
 	cs.UpdateButtons()
 }
 
+// ShowPrevious cycles to the previous commander. Calls onSwitch with the new ID if changed.
+func (cs *CommanderSelector) ShowPrevious(manager *common.EntityManager, onSwitch func(ecs.EntityID)) {
+	cs.Cycle(-1, manager, onSwitch)
+}
+
 // ShowNext cycles to the next commander. Calls onSwitch with the new ID if changed.
 func (cs *CommanderSelector) ShowNext(manager *common.EntityManager, onSwitch func(ecs.EntityID)) {
-	if len(cs.AllIDs) <= 1 {
-		return
-	}
-	cs.CurrentIdx++
-	if cs.CurrentIdx >= len(cs.AllIDs) {
-		cs.CurrentIdx = 0
-	}
-	onSwitch(cs.CurrentID())
-	cs.UpdateLabel(manager)
-	cs.UpdateButtons()
+	cs.Cycle(1, manager, onSwitch)
 }
 
 // UpdateLabel refreshes the commander name display.

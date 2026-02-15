@@ -45,10 +45,20 @@ type SquadEditorMode struct {
 	// Commander selector
 	commanderSelector *CommanderSelector
 
+	// Tabbed unit/roster panel
+	activeTab     string             // "units" or "roster"
+	unitContent   *widget.Container
+	rosterContent *widget.Container
+
 	// State
 	selectedGridCell *GridCell    // Currently selected grid cell
 	selectedUnitID   ecs.EntityID // Currently selected unit in squad
 	swapState        *SwapState   // Click-to-swap state for squad reordering
+}
+
+// currentSquadID returns the entity ID of the currently selected squad.
+func (sem *SquadEditorMode) currentSquadID() ecs.EntityID {
+	return sem.allSquadIDs[sem.currentSquadIndex]
 }
 
 // GridCell represents a selected cell in the 3x3 grid
@@ -84,7 +94,7 @@ func (sem *SquadEditorMode) Initialize(ctx *framework.UIContext) error {
 		ReturnMode: returnMode,
 		StatusLabel: true,
 		Commands:    true,
-		OnRefresh:   sem.refreshAfterUndoRedo,
+		OnRefresh:   sem.refreshAfterCommand,
 
 		Hotkeys: []framework.HotkeySpec{
 			{Key: ebiten.KeyP, TargetMode: "unit_purchase"},
@@ -96,7 +106,12 @@ func (sem *SquadEditorMode) Initialize(ctx *framework.UIContext) error {
 	}
 
 	// Build panels from registry
-	if err := sem.buildPanelsFromRegistry(); err != nil {
+	if err := sem.BuildPanels(
+		SquadEditorPanelCommanderSelector,
+		SquadEditorPanelSquadSelector,
+		SquadEditorPanelGridEditor,
+		SquadEditorPanelUnitRoster,
+	); err != nil {
 		return err
 	}
 
@@ -110,18 +125,6 @@ func (sem *SquadEditorMode) Initialize(ctx *framework.UIContext) error {
 	return nil
 }
 
-// buildPanelsFromRegistry builds all squad editor panels from the global registry
-func (sem *SquadEditorMode) buildPanelsFromRegistry() error {
-	return sem.BuildPanels(
-		SquadEditorPanelCommanderSelector,
-		SquadEditorPanelNavigation,
-		SquadEditorPanelSquadSelector,
-		SquadEditorPanelGridEditor,
-		SquadEditorPanelUnitList,
-		SquadEditorPanelRosterList,
-	)
-}
-
 // initializeWidgetReferences populates mode fields from panel registry
 func (sem *SquadEditorMode) initializeWidgetReferences() {
 	// Commander selector
@@ -131,30 +134,32 @@ func (sem *SquadEditorMode) initializeWidgetReferences() {
 		framework.GetPanelWidget[*widget.Button](sem.Panels, SquadEditorPanelCommanderSelector, "commanderNextBtn"),
 	)
 
-	// Navigation widgets
-	sem.prevButton = framework.GetPanelWidget[*widget.Button](sem.Panels, SquadEditorPanelNavigation, "prevButton")
-	sem.nextButton = framework.GetPanelWidget[*widget.Button](sem.Panels, SquadEditorPanelNavigation, "nextButton")
-	sem.squadCounterLabel = framework.GetPanelWidget[*widget.Text](sem.Panels, SquadEditorPanelNavigation, "counterLabel")
+	// Navigation widgets (merged into squad selector panel)
+	sem.prevButton = framework.GetPanelWidget[*widget.Button](sem.Panels, SquadEditorPanelSquadSelector, "prevButton")
+	sem.nextButton = framework.GetPanelWidget[*widget.Button](sem.Panels, SquadEditorPanelSquadSelector, "nextButton")
+	sem.squadCounterLabel = framework.GetPanelWidget[*widget.Text](sem.Panels, SquadEditorPanelSquadSelector, "counterLabel")
 
 	// List widgets
 	sem.squadSelector = framework.GetPanelWidget[*widget.List](sem.Panels, SquadEditorPanelSquadSelector, "squadList")
-	sem.unitList = framework.GetPanelWidget[*widget.List](sem.Panels, SquadEditorPanelUnitList, "unitList")
-	sem.rosterList = framework.GetPanelWidget[*widget.List](sem.Panels, SquadEditorPanelRosterList, "rosterList")
+	sem.unitList = framework.GetPanelWidget[*widget.List](sem.Panels, SquadEditorPanelUnitRoster, "unitList")
+	sem.rosterList = framework.GetPanelWidget[*widget.List](sem.Panels, SquadEditorPanelUnitRoster, "rosterList")
+
+	// Tabbed panel containers
+	sem.unitContent = framework.GetPanelWidget[*widget.Container](sem.Panels, SquadEditorPanelUnitRoster, "unitContent")
+	sem.rosterContent = framework.GetPanelWidget[*widget.Container](sem.Panels, SquadEditorPanelUnitRoster, "rosterContent")
+	sem.activeTab = "units"
 
 	// Grid cells
 	sem.gridCells = framework.GetPanelWidget[[3][3]*widget.Button](sem.Panels, SquadEditorPanelGridEditor, "gridCells")
 }
 
-// getCloseButtonText returns context-aware text for the close button
-func (sem *SquadEditorMode) getCloseButtonText() string {
-	if sem.GetReturnMode() != "" {
-		return "Overworld (ESC)"
-	}
-	return "Exploration (ESC)"
-}
-
 // buildActionButtons creates bottom action buttons (needs callbacks, so done separately)
 func (sem *SquadEditorMode) buildActionButtons() *widget.Container {
+	closeText := "Exploration (ESC)"
+	if sem.GetReturnMode() != "" {
+		closeText = "Overworld (ESC)"
+	}
+
 	return builders.CreateBottomActionBar(sem.Layout, []builders.ButtonSpec{
 		{Text: "New Squad (N)", OnClick: func() { sem.onNewSquad() }},
 		{Text: "Rename Squad", OnClick: func() { sem.onRenameSquad() }},
@@ -163,9 +168,7 @@ func (sem *SquadEditorMode) buildActionButtons() *widget.Container {
 				sem.ModeManager.RequestTransition(mode, "Buy Units clicked")
 			}
 		}},
-		{Text: "Undo (Ctrl+Z)", OnClick: func() { sem.CommandHistory.Undo() }},
-		{Text: "Redo (Ctrl+Y)", OnClick: func() { sem.CommandHistory.Redo() }},
-		{Text: sem.getCloseButtonText(), OnClick: func() {
+		{Text: closeText, OnClick: func() {
 			if returnMode, exists := sem.ModeManager.GetMode(sem.GetReturnMode()); exists {
 				sem.ModeManager.RequestTransition(returnMode, "Close button pressed")
 				return
@@ -187,22 +190,11 @@ func (sem *SquadEditorMode) Enter(fromMode framework.UIMode) error {
 	// This handles units created before roster tracking was implemented
 	sem.backfillRosterWithSquadUnits()
 
-	// Sync from roster (source of truth)
-	sem.syncSquadOrderFromRoster()
-
-	// Refresh squad selector with current squads
-	sem.refreshSquadSelector()
-
-	// Reset to first squad if we have any
-	if len(sem.allSquadIDs) > 0 {
-		sem.currentSquadIndex = 0
-		sem.refreshCurrentSquad()
-	} else {
+	// Refresh all UI with index reset (entering mode starts at first squad)
+	sem.refreshAllUI(true)
+	if len(sem.allSquadIDs) == 0 {
 		sem.SetStatus("No squads available")
 	}
-
-	sem.updateNavigationButtons()
-	sem.refreshRosterList()
 
 	return nil
 }
@@ -233,11 +225,6 @@ func (sem *SquadEditorMode) HandleInput(inputState *framework.InputState) bool {
 		return true
 	}
 
-	// Handle undo/redo input (Ctrl+Z, Ctrl+Y)
-	if sem.CommandHistory.HandleInput(inputState) {
-		return true
-	}
-
 	// N key creates new squad
 	if inputState.KeysJustPressed[ebiten.KeyN] {
 		sem.onNewSquad()
@@ -255,32 +242,12 @@ func (sem *SquadEditorMode) HandleInput(inputState *framework.InputState) bool {
 
 // === Navigation Functions ===
 
-// showPreviousSquad cycles to previous squad
-func (sem *SquadEditorMode) showPreviousSquad() {
+// cycleSquad advances the squad index by delta (use -1 for previous, +1 for next)
+func (sem *SquadEditorMode) cycleSquad(delta int) {
 	if len(sem.allSquadIDs) == 0 {
 		return
 	}
-
-	sem.currentSquadIndex--
-	if sem.currentSquadIndex < 0 {
-		sem.currentSquadIndex = len(sem.allSquadIDs) - 1
-	}
-
-	sem.refreshCurrentSquad()
-	sem.updateNavigationButtons()
-}
-
-// showNextSquad cycles to next squad
-func (sem *SquadEditorMode) showNextSquad() {
-	if len(sem.allSquadIDs) == 0 {
-		return
-	}
-
-	sem.currentSquadIndex++
-	if sem.currentSquadIndex >= len(sem.allSquadIDs) {
-		sem.currentSquadIndex = 0
-	}
-
+	sem.currentSquadIndex = (sem.currentSquadIndex + delta + len(sem.allSquadIDs)) % len(sem.allSquadIDs)
 	sem.refreshCurrentSquad()
 	sem.updateNavigationButtons()
 }
@@ -295,6 +262,24 @@ func (sem *SquadEditorMode) updateNavigationButtons() {
 
 	if sem.nextButton != nil {
 		sem.nextButton.GetWidget().Disabled = !hasMultipleSquads
+	}
+}
+
+// === Tab Switching Functions ===
+
+// switchTab switches the combined panel to show either "units" or "roster"
+func (sem *SquadEditorMode) switchTab(tabName string) {
+	if sem.activeTab == tabName {
+		return
+	}
+	sem.activeTab = tabName
+	showUnits := tabName == "units"
+	if showUnits {
+		sem.unitContent.GetWidget().Visibility = widget.Visibility_Show
+		sem.rosterContent.GetWidget().Visibility = widget.Visibility_Hide
+	} else {
+		sem.unitContent.GetWidget().Visibility = widget.Visibility_Hide
+		sem.rosterContent.GetWidget().Visibility = widget.Visibility_Show
 	}
 }
 
@@ -326,22 +311,8 @@ func (sem *SquadEditorMode) onCommanderSwitched(newCommanderID ecs.EntityID) {
 	owState := sem.Context.ModeCoordinator.GetOverworldState()
 	owState.SelectedCommanderID = newCommanderID
 
-	// Clear command history (commands are commander-scoped)
-	sem.CommandHistory.Clear()
-
 	// Refresh all mode data for the new commander
-	sem.syncSquadOrderFromRoster()
-	sem.refreshSquadSelector()
-
-	if len(sem.allSquadIDs) > 0 {
-		sem.currentSquadIndex = 0
-		sem.refreshCurrentSquad()
-	} else {
-		sem.SetStatus("No squads available")
-	}
-
-	sem.updateNavigationButtons()
-	sem.refreshRosterList()
+	sem.refreshAllUI(true)
 
 	cmdrData := commander.GetCommanderData(newCommanderID, sem.Context.ECSManager)
 	if cmdrData != nil {

@@ -110,7 +110,7 @@ func (sem *SquadEditorMode) onAddUnitFromRoster() {
 		}
 	}
 
-	currentSquadID := sem.allSquadIDs[sem.currentSquadIndex]
+	currentSquadID := sem.currentSquadID()
 
 	// Create and execute add unit command
 	cmd := squadcommands.NewAddUnitCommand(
@@ -126,23 +126,32 @@ func (sem *SquadEditorMode) onAddUnitFromRoster() {
 	sem.selectedGridCell = nil
 }
 
-// onRemoveUnit removes the selected unit from the squad
-func (sem *SquadEditorMode) onRemoveUnit() {
+// getSelectedUnitForAction validates that a squad and unit are selected, returning the UnitIdentity.
+// Returns false if any guard fails (status message is set automatically).
+func (sem *SquadEditorMode) getSelectedUnitForAction() (squads.UnitIdentity, bool) {
 	if len(sem.allSquadIDs) == 0 {
 		sem.SetStatus("No squad selected")
-		return
+		return squads.UnitIdentity{}, false
 	}
 
 	selectedEntry := sem.unitList.SelectedEntry()
 	if selectedEntry == nil {
 		sem.SetStatus("No unit selected")
-		return
+		return squads.UnitIdentity{}, false
 	}
 
-	// Get unit ID from selected entry (entry is the UnitIdentity)
 	unitIdentity, ok := selectedEntry.(squads.UnitIdentity)
 	if !ok {
 		sem.SetStatus("Invalid unit selection")
+		return squads.UnitIdentity{}, false
+	}
+	return unitIdentity, true
+}
+
+// onRemoveUnit removes the selected unit from the squad
+func (sem *SquadEditorMode) onRemoveUnit() {
+	unitIdentity, ok := sem.getSelectedUnitForAction()
+	if !ok {
 		return
 	}
 	unitID := unitIdentity.ID
@@ -154,7 +163,7 @@ func (sem *SquadEditorMode) onRemoveUnit() {
 		return
 	}
 
-	currentSquadID := sem.allSquadIDs[sem.currentSquadIndex]
+	currentSquadID := sem.currentSquadID()
 	dialogWidth, dialogHeight, centerX, centerY := sem.defaultDialogPosition()
 
 	// Show confirmation dialog
@@ -185,21 +194,8 @@ func (sem *SquadEditorMode) onRemoveUnit() {
 
 // onMakeLeader changes the squad leader to the selected unit
 func (sem *SquadEditorMode) onMakeLeader() {
-	if len(sem.allSquadIDs) == 0 {
-		sem.SetStatus("No squad selected")
-		return
-	}
-
-	selectedEntry := sem.unitList.SelectedEntry()
-	if selectedEntry == nil {
-		sem.SetStatus("No unit selected")
-		return
-	}
-
-	// Get unit ID from selected entry
-	unitIdentity, ok := selectedEntry.(squads.UnitIdentity)
+	unitIdentity, ok := sem.getSelectedUnitForAction()
 	if !ok {
-		sem.SetStatus("Invalid unit selection")
 		return
 	}
 	unitID := unitIdentity.ID
@@ -211,7 +207,7 @@ func (sem *SquadEditorMode) onMakeLeader() {
 		return
 	}
 
-	currentSquadID := sem.allSquadIDs[sem.currentSquadIndex]
+	currentSquadID := sem.currentSquadID()
 	dialogWidth, dialogHeight, centerX, centerY := sem.defaultDialogPosition()
 
 	// Show confirmation dialog
@@ -246,7 +242,7 @@ func (sem *SquadEditorMode) onRenameSquad() {
 		return
 	}
 
-	currentSquadID := sem.allSquadIDs[sem.currentSquadIndex]
+	currentSquadID := sem.currentSquadID()
 	currentName := sem.Queries.SquadCache.GetSquadName(currentSquadID)
 
 	// Show text input dialog

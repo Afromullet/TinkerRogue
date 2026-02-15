@@ -180,20 +180,13 @@ const (
 	// Commander selector bar (very top)
 	CommanderSelectorHeight = 0.06
 
-	// Navigation bar (top-center)
-	SquadEditorNavHeight = 0.08
-
 	// Squad selector list (left)
 	SquadEditorSquadListWidth  = 0.25
 	SquadEditorSquadListHeight = 0.7
 
-	// Unit list (center-left)
+	// Unit + Roster combined panel (right side)
 	SquadEditorUnitListWidth  = 0.25
 	SquadEditorUnitListHeight = 0.7
-
-	// Roster list (center-right)
-	SquadEditorRosterListWidth  = 0.25
-	SquadEditorRosterListHeight = 0.7
 )
 
 // UnitPurchaseLayout defines layout constants for unit purchase mode

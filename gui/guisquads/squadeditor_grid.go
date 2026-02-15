@@ -18,7 +18,7 @@ func (sem *SquadEditorMode) onGridCellClicked(row, col int) {
 		return
 	}
 
-	currentSquadID := sem.allSquadIDs[sem.currentSquadIndex]
+	currentSquadID := sem.currentSquadID()
 
 	// Check if there's a unit at this position
 	unitIDs := squads.GetUnitIDsAtGridPosition(currentSquadID, row, col, sem.Queries.ECSManager)
@@ -49,7 +49,7 @@ func (sem *SquadEditorMode) moveSelectedUnitToCell(row, col int) {
 		return
 	}
 
-	currentSquadID := sem.allSquadIDs[sem.currentSquadIndex]
+	currentSquadID := sem.currentSquadID()
 
 	// Create and execute move command
 	cmd := squadcommands.NewMoveUnitCommand(

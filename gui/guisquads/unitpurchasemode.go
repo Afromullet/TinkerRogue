@@ -103,7 +103,7 @@ func (upm *UnitPurchaseMode) updateDetailPanel() {
 	info := fmt.Sprintf("Unit: %s\nCost: %d Gold\n\nRole: %s\nSize: %dx%d",
 		upm.selectedTemplate.Name,
 		cost,
-		upm.getRoleName(upm.selectedTemplate.Role),
+		upm.selectedTemplate.Role.String(),
 		upm.selectedTemplate.GridWidth,
 		upm.selectedTemplate.GridHeight)
 
@@ -196,19 +196,6 @@ func (upm *UnitPurchaseMode) refreshResourceDisplay() {
 
 	upm.goldLabel.Label = fmt.Sprintf("Gold: %d", info.Gold)
 	upm.rosterLabel.Label = fmt.Sprintf("Roster: %d/%d", info.RosterCount, info.RosterCapacity)
-}
-
-func (upm *UnitPurchaseMode) getRoleName(role squads.UnitRole) string {
-	switch role {
-	case squads.RoleTank:
-		return "Tank"
-	case squads.RoleDPS:
-		return "DPS"
-	case squads.RoleSupport:
-		return "Support"
-	default:
-		return "Unknown"
-	}
 }
 
 // refreshAfterUndoRedo is called after successful undo/redo operations
