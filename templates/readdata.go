@@ -45,7 +45,6 @@ type EncounterDataWithNew struct {
 	DifficultyLevels     []JSONEncounterDifficulty         `json:"difficultyLevels"`
 	SquadTypes           []JSONSquadType                   `json:"squadTypes"`
 	EncounterDefinitions []JSONEncounterDefinition         `json:"encounterDefinitions"`
-	DefaultEncounter     *JSONDefaultEncounter             `json:"defaultEncounter"`
 }
 
 func ReadMonsterData() {
@@ -228,7 +227,6 @@ func ReadEncounterData() {
 
 	// Store new encounter definitions
 	EncounterDefinitionTemplates = encounterData.EncounterDefinitions
-	DefaultEncounterTemplate = encounterData.DefaultEncounter
 
 	// Cross-validate node-encounter links if both are loaded
 	if len(NodeDefinitionTemplates) > 0 && len(EncounterDefinitionTemplates) > 0 {

@@ -83,8 +83,6 @@
       "squadPreferences": ["melee", "melee", "magic"],
       "defaultDifficulty": 3,
       "tags": ["common", "undead"],
-      "basicDrops": ["Dark Essence", "Necromantic Scroll", "Bone Fragment", "Soul Gem", "Cursed Tome"],
-      "highTierDrops": ["Lich Phylactery", "Staff of Undeath"],
       "factionId": "Necromancers"
     },
     {
@@ -94,8 +92,6 @@
       "squadPreferences": ["melee", "magic", "magic"],
       "defaultDifficulty": 4,
       "tags": ["elite", "undead"],
-      "basicDrops": ["Ancient Bones", "Spectral Essence", "Crypt Key", "Embalming Fluid", "Tombstone Fragment"],
-      "highTierDrops": ["Crypt Lord's Armor", "Necromancer's Ring"],
       "factionId": "Necromancers"
     },
     {
@@ -105,8 +101,6 @@
       "squadPreferences": ["magic", "magic", "melee"],
       "defaultDifficulty": 5,
       "tags": ["boss", "undead"],
-      "basicDrops": ["Phylactery Fragment", "Lich Dust", "Death Magic Tome", "Soul Crystal", "Bone Crown"],
-      "highTierDrops": ["Lich's Phylactery", "Staff of Death"],
       "factionId": "Necromancers"
     },
     {
@@ -116,8 +110,6 @@
       "squadPreferences": ["melee", "ranged", "ranged"],
       "defaultDifficulty": 3,
       "tags": ["common", "ranged-focused"],
-      "basicDrops": ["Rusty Sword", "Leather Armor", "Iron Dagger", "Stolen Goods", "Lockpicks"],
-      "highTierDrops": ["Masterwork Blade", "Bandit King's Crown"],
       "factionId": "Bandits"
     },
     {
@@ -127,8 +119,6 @@
       "squadPreferences": ["ranged", "ranged", "melee"],
       "defaultDifficulty": 4,
       "tags": ["elite", "ranged-focused"],
-      "basicDrops": ["Fine Sword", "Reinforced Leather", "Silver Dagger", "Treasure Map", "Master Lockpicks"],
-      "highTierDrops": ["Raider's Longbow", "Captain's Medallion"],
       "factionId": "Bandits"
     },
     {
@@ -138,8 +128,6 @@
       "squadPreferences": ["melee", "ranged", "ranged"],
       "defaultDifficulty": 5,
       "tags": ["boss", "fortified"],
-      "basicDrops": ["Bandit King's Seal", "War Plunder", "Elite Crossbow", "Heavy Armor Scraps", "Golden Key"],
-      "highTierDrops": ["King's Warblade", "Fortress Treasury Key"],
       "factionId": "Bandits"
     },
     {
@@ -149,8 +137,6 @@
       "squadPreferences": ["magic", "ranged", "melee"],
       "defaultDifficulty": 3,
       "tags": ["common", "corruption"],
-      "basicDrops": ["Tainted Crystal", "Corrupted Seed", "Void Essence", "Shadow Fragment", "Blighted Herb"],
-      "highTierDrops": ["Heart of Corruption", "Void Shard"],
       "factionId": "Cultists"
     },
     {
@@ -160,8 +146,6 @@
       "squadPreferences": ["magic", "magic", "ranged"],
       "defaultDifficulty": 4,
       "tags": ["elite", "corruption", "magic-focused"],
-      "basicDrops": ["Ritual Blade", "Cursed Candle", "Forbidden Scroll", "Dark Incense", "Cultist Robe"],
-      "highTierDrops": ["Ritual Focus", "Dark Grimoire"],
       "factionId": "Cultists"
     },
     {
@@ -171,8 +155,6 @@
       "squadPreferences": ["magic", "magic", "magic"],
       "defaultDifficulty": 5,
       "tags": ["boss", "corruption"],
-      "basicDrops": ["Void Heart", "Temple Artifact", "Corruption Essence", "Dark Prophet's Tome", "Shadow Stone"],
-      "highTierDrops": ["Corruption's Heart", "Void Lord's Crown"],
       "factionId": "Cultists"
     },
     {
@@ -182,8 +164,6 @@
       "squadPreferences": ["melee", "melee", "melee"],
       "defaultDifficulty": 3,
       "tags": ["common", "swarm"],
-      "basicDrops": ["Beast Pelt", "Sharp Claw", "Fang", "Beast Horn", "Hide Scraps"],
-      "highTierDrops": ["Alpha Pelt", "Primal Essence"],
       "factionId": "Beasts"
     },
     {
@@ -193,8 +173,6 @@
       "squadPreferences": ["melee", "melee", "melee"],
       "defaultDifficulty": 4,
       "tags": ["elite", "swarm"],
-      "basicDrops": ["Alpha Fang", "Dire Claw", "Beast Skull", "Primal Horn", "Thick Hide"],
-      "highTierDrops": ["Alpha Crown", "Beast Lord Totem"],
       "factionId": "Beasts"
     },
     {
@@ -204,8 +182,6 @@
       "squadPreferences": ["melee", "melee", "melee"],
       "defaultDifficulty": 5,
       "tags": ["boss", "swarm"],
-      "basicDrops": ["Primal Heart", "Ancient Fang", "Beast God Idol", "Primordial Claw", "Spirit Hide"],
-      "highTierDrops": ["Primal Essence Core", "Beast Lord's Mane"],
       "factionId": "Beasts"
     },
     {
@@ -215,8 +191,6 @@
       "squadPreferences": ["melee", "ranged", "magic"],
       "defaultDifficulty": 3,
       "tags": ["common", "balanced"],
-      "basicDrops": ["Orcish Axe", "Crude Shield", "War Paint", "Tusk Trophy", "Bone Club"],
-      "highTierDrops": ["Warlord's Greataxe", "Berserker Totem"],
       "factionId": "Orcs"
     },
     {
@@ -226,8 +200,6 @@
       "squadPreferences": ["melee", "melee", "ranged"],
       "defaultDifficulty": 4,
       "tags": ["elite", "balanced"],
-      "basicDrops": ["Heavy Orcish Axe", "Iron Shield", "Battle Standard", "Chief's Tusk", "War Drum"],
-      "highTierDrops": ["Raider's Cleaver", "Blood Banner"],
       "factionId": "Orcs"
     },
     {
@@ -237,13 +209,7 @@
       "squadPreferences": ["melee", "melee", "magic"],
       "defaultDifficulty": 5,
       "tags": ["boss", "balanced"],
-      "basicDrops": ["Warlord's Blade", "Chieftain's Helm", "Orcish Crown", "War Horn", "Champion's Banner"],
-      "highTierDrops": ["Warlord's Doom Axe", "Conqueror's Plate"],
       "factionId": "Orcs"
     }
-  ],
-  "defaultEncounter": {
-    "basicDrops": ["Unknown Item"],
-    "highTierDrops": []
-  }
+  ]
 }

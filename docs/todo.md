@@ -68,11 +68,6 @@ ________________________________________________
 - func CursorPosition(playerPos coords.LogicalPosition) (int, int) in graphictypes requires a change. Leftover from how throwables are handled. 
 
 
-- CombatController has a lot of artifacts of the old roguelike prior to the change. Specifically in regards to throwables. Find a way tohandle that. 
-
-
-- Input Package has a lot of leftovers from the old roguelike
-
 - combatqueries.go still has functions which search the entire ecs space
 
 
@@ -93,8 +88,7 @@ ________________________________________________
 
 ____
 
-- The Inventory is a leftover prior to shifting the game to a turn based squad tactics game from a regular roguelike. Think of what you want to do with the inventory
-
+x
 - Look at all of the const. See which ones should be defined in a file
 
 

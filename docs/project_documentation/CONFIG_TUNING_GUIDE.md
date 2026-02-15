@@ -313,8 +313,6 @@ Each encounter definition ties a node type to combat configuration. Multiple enc
 | `squadPreferences` | Determines what types of enemy squads spawn: "melee", "ranged", or "magic" | More melee = aggressive encounters, more magic = caster-heavy |
 | `defaultDifficulty` | Which difficulty level to use (1-5) | Higher = harder encounters |
 | `tags` | Used for filtering/selecting encounters | Add new tags for conditional spawning |
-| `basicDrops` | Normal item drops from this encounter | Add/remove items to adjust loot tables |
-| `highTierDrops` | Drops at high threat intensity | Rare/powerful items as rewards |
 | `factionId` | Links encounter to a faction (must match a faction in `factions`) | Required for faction-based encounter selection |
 
 **Tuning Tips:**
@@ -334,17 +332,6 @@ Definitions for enemy squad archetypes. Referenced by `squadPreferences` in enco
 | melee | Melee Squad | Close-range combat units | Front-line fighters |
 | ranged | Ranged Squad | Long-range attackers | Archers, crossbowmen |
 | magic | Magic Squad | Spellcasters and support | Casters, healers |
-
----
-
-### defaultEncounter
-
-Fallback configuration when an encounter definition is not found.
-
-| Parameter | Default | Description |
-|-----------|---------|-------------|
-| `basicDrops` | ["Unknown Item"] | Generic drop for unrecognized encounters |
-| `highTierDrops` | [] | No high-tier drops for unknown encounters |
 
 ---
 

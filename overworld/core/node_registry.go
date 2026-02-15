@@ -45,10 +45,6 @@ type EncounterDefinition struct {
 	DefaultDifficulty int
 	Tags              []string
 
-	// Item drops
-	BasicItems    []string
-	HighTierItems []string
-
 	// Faction
 	FactionID string
 }
@@ -140,21 +136,15 @@ func newNodeRegistry() *NodeRegistry {
 			SquadPreferences:  jsonEnc.SquadPreferences,
 			DefaultDifficulty: jsonEnc.DefaultDifficulty,
 			Tags:              jsonEnc.Tags,
-			BasicItems:        jsonEnc.BasicDrops,
-			HighTierItems:     jsonEnc.HighTierDrops,
 			FactionID:         jsonEnc.FactionID,
 		}
 
 		registry.encountersByID[enc.ID] = enc
 	}
 
-	// Load default encounter from JSON
-	if templates.DefaultEncounterTemplate != nil {
-		registry.defaultEncounter = &EncounterDefinition{
-			ID:            "default",
-			BasicItems:    templates.DefaultEncounterTemplate.BasicDrops,
-			HighTierItems: templates.DefaultEncounterTemplate.HighTierDrops,
-		}
+	// Set bare default encounter as fallback
+	registry.defaultEncounter = &EncounterDefinition{
+		ID: "default",
 	}
 
 	registry.initialized = true

@@ -436,15 +436,7 @@ type JSONEncounterDefinition struct {
 	SquadPreferences  []string `json:"squadPreferences"`  // e.g., ["melee", "melee", "magic"]
 	DefaultDifficulty int      `json:"defaultDifficulty"` // Default difficulty level
 	Tags              []string `json:"tags"`              // e.g., ["common", "undead"]
-	BasicDrops        []string `json:"basicDrops"`        // Normal item drops
-	HighTierDrops     []string `json:"highTierDrops"`     // Drops at high intensity
 	FactionID         string   `json:"factionId"`         // Faction mapping
-}
-
-// JSONDefaultEncounter defines fallback configuration for unknown encounters
-type JSONDefaultEncounter struct {
-	BasicDrops    []string `json:"basicDrops"`
-	HighTierDrops []string `json:"highTierDrops"`
 }
 
 // --- Influence Interaction Config Structs ---

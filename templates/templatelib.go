@@ -17,7 +17,6 @@ var NodeCategories []string
 
 // Encounter definition templates (combat-only configuration)
 var EncounterDefinitionTemplates []JSONEncounterDefinition
-var DefaultEncounterTemplate *JSONDefaultEncounter
 
 // Influence interaction configuration
 var InfluenceConfigTemplate JSONInfluenceConfig
