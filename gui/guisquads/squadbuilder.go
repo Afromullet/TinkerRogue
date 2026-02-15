@@ -5,6 +5,7 @@ import (
 
 	"game_main/gui/framework"
 	"game_main/gui/widgets"
+	"game_main/tactical/commander"
 	"game_main/tactical/squads"
 	"game_main/tactical/squadservices"
 
@@ -30,6 +31,13 @@ type SquadBuilderMode struct {
 
 	// Grid cells for UI updates (wrapped with metadata)
 	gridCells [3][3]*GridCellButton
+
+	// Commander selector
+	allCommanderIDs     []ecs.EntityID
+	currentCommanderIdx int
+	commanderLabel      *widget.Text
+	commanderPrevBtn    *widget.Button
+	commanderNextBtn    *widget.Button
 
 	// State
 	currentSquadID      ecs.EntityID
@@ -74,6 +82,7 @@ func (sbm *SquadBuilderMode) Initialize(ctx *framework.UIContext) error {
 
 	// Build panels from registry
 	if err := sbm.BuildPanels(
+		SquadBuilderPanelCommanderSelector,
 		SquadBuilderPanelNameInput,
 		SquadBuilderPanelGrid,
 		SquadBuilderPanelRosterPalette,
@@ -95,6 +104,11 @@ func (sbm *SquadBuilderMode) Initialize(ctx *framework.UIContext) error {
 
 // initializeWidgetReferences populates mode fields from panel registry
 func (sbm *SquadBuilderMode) initializeWidgetReferences() {
+	// Commander selector widgets
+	sbm.commanderPrevBtn = framework.GetPanelWidget[*widget.Button](sbm.Panels, SquadBuilderPanelCommanderSelector, "commanderPrevBtn")
+	sbm.commanderNextBtn = framework.GetPanelWidget[*widget.Button](sbm.Panels, SquadBuilderPanelCommanderSelector, "commanderNextBtn")
+	sbm.commanderLabel = framework.GetPanelWidget[*widget.Text](sbm.Panels, SquadBuilderPanelCommanderSelector, "commanderLabel")
+
 	sbm.squadNameInput = framework.GetPanelWidget[*widget.TextInput](sbm.Panels, SquadBuilderPanelNameInput, "squadNameInput")
 	sbm.unitPalette = framework.GetPanelWidget[*widgets.CachedListWrapper](sbm.Panels, SquadBuilderPanelRosterPalette, "unitPalette")
 	sbm.capacityDisplay = framework.GetPanelWidget[*widget.TextArea](sbm.Panels, SquadBuilderPanelCapacity, "capacityDisplay")
@@ -458,6 +472,9 @@ func (sbm *SquadBuilderMode) refreshUnitPalette() {
 func (sbm *SquadBuilderMode) Enter(fromMode framework.UIMode) error {
 	fmt.Println("Entering Squad Builder Mode")
 
+	// Load commander list and sync current selection
+	sbm.loadCommanders()
+
 	// Reset state on entry
 	sbm.onClearGrid()
 
@@ -492,5 +509,108 @@ func (sbm *SquadBuilderMode) HandleInput(inputState *framework.InputState) bool 
 		return true
 	}
 
+	// Tab key cycles to next commander
+	if inputState.KeysJustPressed[ebiten.KeyTab] {
+		sbm.showNextCommander()
+		return true
+	}
+
 	return false
+}
+
+// === Commander Selector Functions ===
+
+// loadCommanders enumerates all commanders and finds the current one
+func (sbm *SquadBuilderMode) loadCommanders() {
+	sbm.allCommanderIDs = commander.GetAllCommanders(sbm.Context.PlayerData.PlayerEntityID, sbm.Context.ECSManager)
+
+	// Find index of currently selected commander
+	owState := sbm.Context.ModeCoordinator.GetOverworldState()
+	selectedID := owState.SelectedCommanderID
+	sbm.currentCommanderIdx = 0
+	for i, id := range sbm.allCommanderIDs {
+		if id == selectedID {
+			sbm.currentCommanderIdx = i
+			break
+		}
+	}
+
+	sbm.updateCommanderLabel()
+	sbm.updateCommanderButtons()
+}
+
+// showPreviousCommander cycles to the previous commander
+func (sbm *SquadBuilderMode) showPreviousCommander() {
+	if len(sbm.allCommanderIDs) <= 1 {
+		return
+	}
+	sbm.currentCommanderIdx--
+	if sbm.currentCommanderIdx < 0 {
+		sbm.currentCommanderIdx = len(sbm.allCommanderIDs) - 1
+	}
+	sbm.applyCommanderSwitch()
+}
+
+// showNextCommander cycles to the next commander
+func (sbm *SquadBuilderMode) showNextCommander() {
+	if len(sbm.allCommanderIDs) <= 1 {
+		return
+	}
+	sbm.currentCommanderIdx++
+	if sbm.currentCommanderIdx >= len(sbm.allCommanderIDs) {
+		sbm.currentCommanderIdx = 0
+	}
+	sbm.applyCommanderSwitch()
+}
+
+// applyCommanderSwitch updates OverworldState and refreshes builder data
+func (sbm *SquadBuilderMode) applyCommanderSwitch() {
+	newCommanderID := sbm.allCommanderIDs[sbm.currentCommanderIdx]
+
+	// Update overworld state so GetSquadRosterOwnerID() returns the new commander
+	owState := sbm.Context.ModeCoordinator.GetOverworldState()
+	owState.SelectedCommanderID = newCommanderID
+
+	// Clear any in-progress squad before switching
+	sbm.onClearGrid()
+
+	// Refresh unit palette for the new commander's roster
+	sbm.refreshUnitPalette()
+
+	sbm.updateCommanderLabel()
+	sbm.updateCommanderButtons()
+
+	cmdrData := commander.GetCommanderData(newCommanderID, sbm.Context.ECSManager)
+	if cmdrData != nil {
+		fmt.Printf("Switched to commander: %s\n", cmdrData.Name)
+	}
+}
+
+// updateCommanderLabel updates the commander name display
+func (sbm *SquadBuilderMode) updateCommanderLabel() {
+	if sbm.commanderLabel == nil {
+		return
+	}
+	if len(sbm.allCommanderIDs) == 0 {
+		sbm.commanderLabel.Label = "No Commanders"
+		return
+	}
+	cmdrID := sbm.allCommanderIDs[sbm.currentCommanderIdx]
+	cmdrData := commander.GetCommanderData(cmdrID, sbm.Context.ECSManager)
+	if cmdrData != nil {
+		sbm.commanderLabel.Label = fmt.Sprintf("Commander: %s", cmdrData.Name)
+	} else {
+		sbm.commanderLabel.Label = "Commander: ???"
+	}
+}
+
+// updateCommanderButtons disables prev/next when only one commander exists
+func (sbm *SquadBuilderMode) updateCommanderButtons() {
+	hasMultiple := len(sbm.allCommanderIDs) > 1
+	if sbm.commanderPrevBtn != nil {
+		sbm.commanderPrevBtn.GetWidget().Disabled = !hasMultiple
+	}
+	if sbm.commanderNextBtn != nil {
+		sbm.commanderNextBtn.GetWidget().Disabled = !hasMultiple
+	}
 }

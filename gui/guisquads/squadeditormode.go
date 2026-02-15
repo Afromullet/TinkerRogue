@@ -1,9 +1,12 @@
 package guisquads
 
 import (
+	"fmt"
+
 	"game_main/gui/builders"
 	"game_main/gui/framework"
 	"game_main/gui/specs"
+	"game_main/tactical/commander"
 
 	"github.com/bytearena/ecs"
 	"github.com/ebitenui/ebitenui/widget"
@@ -39,6 +42,13 @@ type SquadEditorMode struct {
 	squadCounterLabel *widget.Text
 	prevButton        *widget.Button
 	nextButton        *widget.Button
+
+	// Commander selector
+	allCommanderIDs     []ecs.EntityID
+	currentCommanderIdx int
+	commanderLabel      *widget.Text
+	commanderPrevBtn    *widget.Button
+	commanderNextBtn    *widget.Button
 
 	// State
 	selectedGridCell *GridCell    // Currently selected grid cell
@@ -97,6 +107,7 @@ func (sem *SquadEditorMode) Initialize(ctx *framework.UIContext) error {
 // buildPanelsFromRegistry builds all squad editor panels from the global registry
 func (sem *SquadEditorMode) buildPanelsFromRegistry() error {
 	return sem.BuildPanels(
+		SquadEditorPanelCommanderSelector,
 		SquadEditorPanelNavigation,
 		SquadEditorPanelSquadSelector,
 		SquadEditorPanelGridEditor,
@@ -107,6 +118,11 @@ func (sem *SquadEditorMode) buildPanelsFromRegistry() error {
 
 // initializeWidgetReferences populates mode fields from panel registry
 func (sem *SquadEditorMode) initializeWidgetReferences() {
+	// Commander selector widgets
+	sem.commanderPrevBtn = framework.GetPanelWidget[*widget.Button](sem.Panels, SquadEditorPanelCommanderSelector, "commanderPrevBtn")
+	sem.commanderNextBtn = framework.GetPanelWidget[*widget.Button](sem.Panels, SquadEditorPanelCommanderSelector, "commanderNextBtn")
+	sem.commanderLabel = framework.GetPanelWidget[*widget.Text](sem.Panels, SquadEditorPanelCommanderSelector, "commanderLabel")
+
 	// Navigation widgets
 	sem.prevButton = framework.GetPanelWidget[*widget.Button](sem.Panels, SquadEditorPanelNavigation, "prevButton")
 	sem.nextButton = framework.GetPanelWidget[*widget.Button](sem.Panels, SquadEditorPanelNavigation, "nextButton")
@@ -151,6 +167,9 @@ func (sem *SquadEditorMode) buildActionButtons() *widget.Container {
 }
 
 func (sem *SquadEditorMode) Enter(fromMode framework.UIMode) error {
+	// Load commander list and sync current selection
+	sem.loadCommanders()
+
 	// Backfill roster with any existing squad units
 	// This handles units created before roster tracking was implemented
 	sem.backfillRosterWithSquadUnits()
@@ -206,6 +225,12 @@ func (sem *SquadEditorMode) HandleInput(inputState *framework.InputState) bool {
 		return true
 	}
 
+	// Tab key cycles to next commander
+	if inputState.KeysJustPressed[ebiten.KeyTab] {
+		sem.showNextCommander()
+		return true
+	}
+
 	return false
 }
 
@@ -251,6 +276,113 @@ func (sem *SquadEditorMode) updateNavigationButtons() {
 
 	if sem.nextButton != nil {
 		sem.nextButton.GetWidget().Disabled = !hasMultipleSquads
+	}
+}
+
+// === Commander Selector Functions ===
+
+// loadCommanders enumerates all commanders and finds the current one
+func (sem *SquadEditorMode) loadCommanders() {
+	sem.allCommanderIDs = commander.GetAllCommanders(sem.Context.PlayerData.PlayerEntityID, sem.Context.ECSManager)
+
+	// Find index of currently selected commander
+	owState := sem.Context.ModeCoordinator.GetOverworldState()
+	selectedID := owState.SelectedCommanderID
+	sem.currentCommanderIdx = 0
+	for i, id := range sem.allCommanderIDs {
+		if id == selectedID {
+			sem.currentCommanderIdx = i
+			break
+		}
+	}
+
+	sem.updateCommanderLabel()
+	sem.updateCommanderButtons()
+}
+
+// showPreviousCommander cycles to the previous commander
+func (sem *SquadEditorMode) showPreviousCommander() {
+	if len(sem.allCommanderIDs) <= 1 {
+		return
+	}
+	sem.currentCommanderIdx--
+	if sem.currentCommanderIdx < 0 {
+		sem.currentCommanderIdx = len(sem.allCommanderIDs) - 1
+	}
+	sem.applyCommanderSwitch()
+}
+
+// showNextCommander cycles to the next commander
+func (sem *SquadEditorMode) showNextCommander() {
+	if len(sem.allCommanderIDs) <= 1 {
+		return
+	}
+	sem.currentCommanderIdx++
+	if sem.currentCommanderIdx >= len(sem.allCommanderIDs) {
+		sem.currentCommanderIdx = 0
+	}
+	sem.applyCommanderSwitch()
+}
+
+// applyCommanderSwitch updates OverworldState and refreshes all mode data
+func (sem *SquadEditorMode) applyCommanderSwitch() {
+	newCommanderID := sem.allCommanderIDs[sem.currentCommanderIdx]
+
+	// Update overworld state so GetSquadRosterOwnerID() returns the new commander
+	owState := sem.Context.ModeCoordinator.GetOverworldState()
+	owState.SelectedCommanderID = newCommanderID
+
+	// Clear command history (commands are commander-scoped)
+	sem.CommandHistory.Clear()
+
+	// Refresh all mode data for the new commander
+	sem.syncSquadOrderFromRoster()
+	sem.refreshSquadSelector()
+
+	if len(sem.allSquadIDs) > 0 {
+		sem.currentSquadIndex = 0
+		sem.refreshCurrentSquad()
+	} else {
+		sem.SetStatus("No squads available")
+	}
+
+	sem.updateNavigationButtons()
+	sem.refreshRosterList()
+	sem.updateCommanderLabel()
+	sem.updateCommanderButtons()
+
+	cmdrData := commander.GetCommanderData(newCommanderID, sem.Context.ECSManager)
+	if cmdrData != nil {
+		sem.SetStatus(fmt.Sprintf("Switched to commander: %s", cmdrData.Name))
+	}
+}
+
+// updateCommanderLabel updates the commander name display
+func (sem *SquadEditorMode) updateCommanderLabel() {
+	if sem.commanderLabel == nil {
+		return
+	}
+	if len(sem.allCommanderIDs) == 0 {
+		sem.commanderLabel.Label = "No Commanders"
+		return
+	}
+	cmdrID := sem.allCommanderIDs[sem.currentCommanderIdx]
+	cmdrData := commander.GetCommanderData(cmdrID, sem.Context.ECSManager)
+	if cmdrData != nil {
+		sem.commanderLabel.Label = fmt.Sprintf("Commander: %s", cmdrData.Name)
+	} else {
+		sem.commanderLabel.Label = "Commander: ???"
+	}
+}
+
+// updateCommanderButtons disables prev/next when only one commander exists
+func (sem *SquadEditorMode) updateCommanderButtons() {
+	hasMultiple := len(sem.allCommanderIDs) > 1
+	if sem.commanderPrevBtn != nil {
+		sem.commanderPrevBtn.GetWidget().Disabled = !hasMultiple
+	}
+	if sem.commanderNextBtn != nil {
+		sem.commanderNextBtn.GetWidget().Disabled = !hasMultiple
 	}
 }
 

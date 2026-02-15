@@ -11,14 +11,68 @@ import (
 
 // Panel type constants for squad editor mode
 const (
-	SquadEditorPanelNavigation    framework.PanelType = "squadeditor_navigation"
-	SquadEditorPanelSquadSelector framework.PanelType = "squadeditor_squad_selector"
-	SquadEditorPanelGridEditor    framework.PanelType = "squadeditor_grid_editor"
-	SquadEditorPanelUnitList      framework.PanelType = "squadeditor_unit_list"
-	SquadEditorPanelRosterList    framework.PanelType = "squadeditor_roster_list"
+	SquadEditorPanelCommanderSelector framework.PanelType = "squadeditor_commander_selector"
+	SquadEditorPanelNavigation        framework.PanelType = "squadeditor_navigation"
+	SquadEditorPanelSquadSelector     framework.PanelType = "squadeditor_squad_selector"
+	SquadEditorPanelGridEditor        framework.PanelType = "squadeditor_grid_editor"
+	SquadEditorPanelUnitList          framework.PanelType = "squadeditor_unit_list"
+	SquadEditorPanelRosterList        framework.PanelType = "squadeditor_roster_list"
 )
 
 func init() {
+	// Register commander selector panel (prev/next commander + name label)
+	framework.RegisterPanel(SquadEditorPanelCommanderSelector, framework.PanelDescriptor{
+		Content: framework.ContentCustom,
+		OnCreate: func(result *framework.PanelResult, mode framework.UIMode) error {
+			sem := mode.(*SquadEditorMode)
+			layout := sem.Layout
+
+			selectorWidth := int(float64(layout.ScreenWidth) * 0.4)
+			selectorHeight := int(float64(layout.ScreenHeight) * specs.CommanderSelectorHeight)
+
+			result.Container = builders.CreateStaticPanel(builders.ContainerConfig{
+				MinWidth:  selectorWidth,
+				MinHeight: selectorHeight,
+				Layout: widget.NewRowLayout(
+					widget.RowLayoutOpts.Direction(widget.DirectionHorizontal),
+					widget.RowLayoutOpts.Spacing(15),
+					widget.RowLayoutOpts.Padding(builders.NewResponsiveRowPadding(layout, specs.PaddingExtraSmall)),
+				),
+			})
+
+			topPad := int(float64(layout.ScreenHeight) * specs.PaddingExtraSmall)
+			result.Container.GetWidget().LayoutData = builders.AnchorCenterStart(topPad)
+
+			// Previous commander button
+			prevBtn := builders.CreateButtonWithConfig(builders.ButtonConfig{
+				Text: "< Prev Cmdr",
+				OnClick: func() {
+					sem.showPreviousCommander()
+				},
+			})
+			result.Container.AddChild(prevBtn)
+
+			// Commander name label
+			cmdrLabel := builders.CreateSmallLabel("Commander: ---")
+			result.Container.AddChild(cmdrLabel)
+
+			// Next commander button
+			nextBtn := builders.CreateButtonWithConfig(builders.ButtonConfig{
+				Text: "Next Cmdr >",
+				OnClick: func() {
+					sem.showNextCommander()
+				},
+			})
+			result.Container.AddChild(nextBtn)
+
+			result.Custom["commanderPrevBtn"] = prevBtn
+			result.Custom["commanderNextBtn"] = nextBtn
+			result.Custom["commanderLabel"] = cmdrLabel
+
+			return nil
+		},
+	})
+
 	// Register navigation panel (Previous/Next buttons + counter)
 	framework.RegisterPanel(SquadEditorPanelNavigation, framework.PanelDescriptor{
 		Content: framework.ContentCustom,
@@ -39,7 +93,7 @@ func init() {
 				),
 			})
 
-			topPad := int(float64(layout.ScreenHeight) * specs.PaddingStandard)
+			topPad := int(float64(layout.ScreenHeight) * (specs.CommanderSelectorHeight + specs.PaddingExtraSmall))
 			result.Container.GetWidget().LayoutData = builders.AnchorCenterStart(topPad)
 
 			// Previous button
@@ -93,7 +147,7 @@ func init() {
 			})
 
 			leftPad := int(float64(layout.ScreenWidth) * specs.PaddingStandard)
-			topOffset := int(float64(layout.ScreenHeight) * (specs.SquadEditorNavHeight + specs.PaddingStandard*2))
+			topOffset := int(float64(layout.ScreenHeight) * (specs.CommanderSelectorHeight + specs.SquadEditorNavHeight + specs.PaddingStandard*2))
 			result.Container.GetWidget().LayoutData = builders.AnchorStartStart(leftPad, topOffset)
 
 			titleLabel := builders.CreateSmallLabel("Select Squad:")
@@ -158,7 +212,7 @@ func init() {
 			})
 
 			rightPad := int(float64(layout.ScreenWidth) * specs.PaddingStandard)
-			topOffset := int(float64(layout.ScreenHeight) * (specs.SquadEditorNavHeight + specs.PaddingStandard*2))
+			topOffset := int(float64(layout.ScreenHeight) * (specs.CommanderSelectorHeight + specs.SquadEditorNavHeight + specs.PaddingStandard*2))
 			result.Container.GetWidget().LayoutData = builders.AnchorEndStart(rightPad, topOffset)
 
 			titleLabel := builders.CreateSmallLabel("Squad Units:")
@@ -218,7 +272,7 @@ func init() {
 			})
 
 			rightPad := int(float64(layout.ScreenWidth) * specs.PaddingStandard)
-			topOffset := int(float64(layout.ScreenHeight) * (specs.SquadEditorNavHeight + 0.35 + specs.PaddingStandard*3))
+			topOffset := int(float64(layout.ScreenHeight) * (specs.CommanderSelectorHeight + specs.SquadEditorNavHeight + 0.35 + specs.PaddingStandard*3))
 			result.Container.GetWidget().LayoutData = builders.AnchorEndStart(rightPad, topOffset)
 
 			titleLabel := builders.CreateSmallLabel("Available Units (Roster):")

@@ -212,6 +212,9 @@ const (
 
 // SquadEditorLayout defines layout constants for squad editor mode
 const (
+	// Commander selector bar (very top)
+	CommanderSelectorHeight = 0.06
+
 	// Navigation bar (top-center)
 	SquadEditorNavHeight = 0.08
 

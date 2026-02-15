@@ -82,6 +82,11 @@ func (ch *CommandHistory) Redo() bool {
 	return result.Success
 }
 
+// Clear resets all command history and redo stack
+func (ch *CommandHistory) Clear() {
+	ch.executor.ClearHistory()
+}
+
 // HandleInput processes undo/redo keyboard shortcuts (Ctrl+Z, Ctrl+Y)
 // Returns true if input was handled
 func (ch *CommandHistory) HandleInput(inputState *InputState) bool {

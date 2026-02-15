@@ -16,15 +16,69 @@ import (
 
 // Panel type constants for squad builder mode
 const (
-	SquadBuilderPanelNameInput     framework.PanelType = "squadbuilder_name_input"
-	SquadBuilderPanelGrid          framework.PanelType = "squadbuilder_grid"
-	SquadBuilderPanelRosterPalette framework.PanelType = "squadbuilder_roster_palette"
-	SquadBuilderPanelCapacity      framework.PanelType = "squadbuilder_capacity"
-	SquadBuilderPanelDetails       framework.PanelType = "squadbuilder_details"
-	SquadBuilderPanelActionButtons framework.PanelType = "squadbuilder_action_buttons"
+	SquadBuilderPanelCommanderSelector framework.PanelType = "squadbuilder_commander_selector"
+	SquadBuilderPanelNameInput         framework.PanelType = "squadbuilder_name_input"
+	SquadBuilderPanelGrid              framework.PanelType = "squadbuilder_grid"
+	SquadBuilderPanelRosterPalette     framework.PanelType = "squadbuilder_roster_palette"
+	SquadBuilderPanelCapacity          framework.PanelType = "squadbuilder_capacity"
+	SquadBuilderPanelDetails           framework.PanelType = "squadbuilder_details"
+	SquadBuilderPanelActionButtons     framework.PanelType = "squadbuilder_action_buttons"
 )
 
 func init() {
+	// Register commander selector panel (prev/next commander + name label)
+	framework.RegisterPanel(SquadBuilderPanelCommanderSelector, framework.PanelDescriptor{
+		Content: framework.ContentCustom,
+		OnCreate: func(result *framework.PanelResult, mode framework.UIMode) error {
+			sbm := mode.(*SquadBuilderMode)
+			layout := sbm.Layout
+
+			selectorWidth := int(float64(layout.ScreenWidth) * 0.4)
+			selectorHeight := int(float64(layout.ScreenHeight) * specs.CommanderSelectorHeight)
+
+			result.Container = builders.CreateStaticPanel(builders.ContainerConfig{
+				MinWidth:  selectorWidth,
+				MinHeight: selectorHeight,
+				Layout: widget.NewRowLayout(
+					widget.RowLayoutOpts.Direction(widget.DirectionHorizontal),
+					widget.RowLayoutOpts.Spacing(15),
+					widget.RowLayoutOpts.Padding(builders.NewResponsiveRowPadding(layout, specs.PaddingExtraSmall)),
+				),
+			})
+
+			topPad := int(float64(layout.ScreenHeight) * specs.PaddingExtraSmall)
+			result.Container.GetWidget().LayoutData = builders.AnchorCenterStart(topPad)
+
+			// Previous commander button
+			prevBtn := builders.CreateButtonWithConfig(builders.ButtonConfig{
+				Text: "< Prev Cmdr",
+				OnClick: func() {
+					sbm.showPreviousCommander()
+				},
+			})
+			result.Container.AddChild(prevBtn)
+
+			// Commander name label
+			cmdrLabel := builders.CreateSmallLabel("Commander: ---")
+			result.Container.AddChild(cmdrLabel)
+
+			// Next commander button
+			nextBtn := builders.CreateButtonWithConfig(builders.ButtonConfig{
+				Text: "Next Cmdr >",
+				OnClick: func() {
+					sbm.showNextCommander()
+				},
+			})
+			result.Container.AddChild(nextBtn)
+
+			result.Custom["commanderPrevBtn"] = prevBtn
+			result.Custom["commanderNextBtn"] = nextBtn
+			result.Custom["commanderLabel"] = cmdrLabel
+
+			return nil
+		},
+	})
+
 	// Register squad name input panel
 	framework.RegisterPanel(SquadBuilderPanelNameInput, framework.PanelDescriptor{
 		Content: framework.ContentCustom,
@@ -55,8 +109,8 @@ func init() {
 			})
 			result.Container.AddChild(squadNameInput)
 
-			// Position at top center with responsive padding
-			vPadding := int(float64(layout.ScreenHeight) * specs.PaddingStandard)
+			// Position below commander selector
+			vPadding := int(float64(layout.ScreenHeight) * (specs.CommanderSelectorHeight + specs.PaddingExtraSmall))
 			result.Container.GetWidget().LayoutData = builders.AnchorCenterStart(vPadding)
 
 			result.Custom["squadNameInput"] = squadNameInput
