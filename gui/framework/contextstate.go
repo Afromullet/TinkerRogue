@@ -29,6 +29,10 @@ type TacticalState struct {
 	SelectedSpellID string // Which spell is being targeted
 	HasCastSpell    bool   // One spell per turn limit
 
+	// Artifact Activation State
+	InArtifactMode          bool   // Whether artifact mode is active
+	SelectedArtifactBehavior string // Which artifact behavior is being targeted
+
 	// Encounter Tracking
 	TriggeredEncounterID ecs.EntityID // Encounter that triggered this combat (0 if none)
 }
@@ -50,6 +54,10 @@ func NewTacticalState() *TacticalState {
 		SelectedSpellID: "",
 		HasCastSpell:    false,
 
+		// Artifact Activation State
+		InArtifactMode:          false,
+		SelectedArtifactBehavior: "",
+
 		// Encounter Tracking
 		TriggeredEncounterID: ecs.EntityID(0),
 	}
@@ -70,6 +78,10 @@ func (ts *TacticalState) Reset() {
 	ts.InSpellMode = false
 	ts.SelectedSpellID = ""
 	ts.HasCastSpell = false
+
+	// Clear artifact activation state
+	ts.InArtifactMode = false
+	ts.SelectedArtifactBehavior = ""
 
 	// Clear encounter tracking
 	ts.TriggeredEncounterID = ecs.EntityID(0)

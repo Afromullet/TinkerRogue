@@ -5,6 +5,7 @@ import (
 	"game_main/config"
 	"game_main/gui/builders"
 	"game_main/gui/framework"
+	"game_main/gui/guiartifacts"
 	"game_main/gui/guispells"
 	"game_main/gui/guisquads"
 	"game_main/gui/specs"
@@ -41,6 +42,9 @@ type CombatMode struct {
 
 	// Spell panel controller (owns spell selection UI + handler)
 	spellPanel *guispells.SpellPanelController
+
+	// Artifact panel controller (owns artifact activation UI + handler)
+	artifactPanel *guiartifacts.ArtifactPanelController
 
 	// Visualization systems
 	visualization *CombatVisualizationManager
@@ -141,6 +145,34 @@ func (cm *CombatMode) Initialize(ctx *framework.UIContext) error {
 	// Wire spell panel into input handler
 	cm.inputHandler.SetSpellPanel(cm.spellPanel)
 
+	// Create artifact handler and panel controller
+	artifactDeps := &guiartifacts.ArtifactActivationDeps{
+		BattleState:      cm.deps.BattleState,
+		CombatService:    cm.deps.CombatService,
+		EncounterService: cm.deps.EncounterService,
+		AddCombatLog:     cm.deps.AddCombatLog,
+		Queries:          cm.deps.Queries,
+	}
+	artifactHandler := guiartifacts.NewArtifactActivationHandler(artifactDeps)
+	artifactHandler.SetPlayerPosition(ctx.PlayerData.Pos)
+	cm.artifactPanel = guiartifacts.NewArtifactPanelController(&guiartifacts.ArtifactPanelDeps{
+		Handler:      artifactHandler,
+		BattleState:  cm.deps.BattleState,
+		AddCombatLog: cm.deps.AddCombatLog,
+		ShowSubmenu:  func() { cm.subMenus.Show("artifact") },
+		CloseSubmenu: func() { cm.subMenus.CloseAll() },
+	})
+
+	// Extract artifact panel widget references
+	cm.artifactPanel.SetWidgets(
+		framework.GetPanelWidget[*widgets.CachedListWrapper](cm.Panels, CombatPanelArtifactSelection, "artifactList"),
+		framework.GetPanelWidget[*widgets.CachedTextAreaWrapper](cm.Panels, CombatPanelArtifactSelection, "detailArea"),
+		framework.GetPanelWidget[*widget.Button](cm.Panels, CombatPanelArtifactSelection, "activateButton"),
+	)
+
+	// Wire artifact panel into input handler
+	cm.inputHandler.SetArtifactPanel(cm.artifactPanel)
+
 	// Register cache invalidation callbacks (automatic, fires for both GUI and AI actions)
 	cm.combatService.RegisterOnAttackComplete(func(attackerID, defenderID ecs.EntityID, result *squads.CombatResult) {
 		cm.Queries.MarkSquadDirty(attackerID)
@@ -196,6 +228,7 @@ func (cm *CombatMode) buildPanelsFromRegistry() error {
 	panels := []framework.PanelType{
 		CombatPanelDebugMenu,
 		CombatPanelSpellSelection,
+		CombatPanelArtifactSelection,
 		CombatPanelTurnOrder,
 		CombatPanelFactionInfo,
 		CombatPanelSquadDetail,
@@ -222,6 +255,7 @@ func (cm *CombatMode) buildActionButtons() {
 			{Text: "Attack (A)", OnClick: cm.handleAttackClick},
 			{Text: "Move (M)", OnClick: cm.handleMoveClick},
 			{Text: "Cast Spell (S)", OnClick: cm.handleSpellClick},
+			{Text: "Artifact (D)", OnClick: cm.handleArtifactClick},
 			{Text: "Undo (Ctrl+Z)", OnClick: cm.handleUndoMove},
 			{Text: "Redo (Ctrl+Y)", OnClick: cm.handleRedoMove},
 			{Text: "End Turn (Space)", OnClick: cm.handleEndTurnClick},
@@ -247,6 +281,10 @@ func (cm *CombatMode) handleMoveClick() {
 
 func (cm *CombatMode) handleSpellClick() {
 	cm.spellPanel.Toggle()
+}
+
+func (cm *CombatMode) handleArtifactClick() {
+	cm.artifactPanel.Toggle()
 }
 
 func (cm *CombatMode) handleUndoMove() {

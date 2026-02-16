@@ -112,6 +112,7 @@ func (gb *GameBootstrap) SetupDebugContent(em *common.EntityManager, gm *worldma
 	if config.DEBUG_MODE {
 		SetupTestData(em, gm, pd)
 		bootstrap.SeedAllArtifacts(pd.PlayerEntityID, 1, em)
+		bootstrap.EquipPlayerActivatedArtifacts(pd.PlayerEntityID, em)
 	}
 
 }

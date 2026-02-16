@@ -6,6 +6,7 @@ import (
 
 	"game_main/gui/builders"
 	"game_main/gui/framework"
+	"game_main/gui/guiartifacts"
 	"game_main/gui/specs"
 	"game_main/gui/widgetresources"
 	"game_main/gui/widgets"
@@ -21,8 +22,9 @@ const (
 	CombatPanelSquadDetail framework.PanelType = "combat_squad_detail"
 	CombatPanelCombatLog   framework.PanelType = "combat_log"
 	CombatPanelLayerStatus framework.PanelType = "combat_layer_status"
-	CombatPanelDebugMenu        framework.PanelType = "combat_debug_menu"
-	CombatPanelSpellSelection   framework.PanelType = "combat_spell_selection"
+	CombatPanelDebugMenu            framework.PanelType = "combat_debug_menu"
+	CombatPanelSpellSelection       framework.PanelType = "combat_spell_selection"
+	CombatPanelArtifactSelection    framework.PanelType = "combat_artifact_selection"
 )
 
 // combatSubMenuController manages sub-menu visibility. Only one sub-menu can be open at a time.
@@ -372,6 +374,100 @@ func init() {
 
 			// Register with sub-menu controller
 			cm.subMenus.Register("spell", result.Container)
+
+			return nil
+		},
+	})
+
+	// Register artifact activation panel (right side, shown during artifact mode)
+	framework.RegisterPanel(CombatPanelArtifactSelection, framework.PanelDescriptor{
+		Content: framework.ContentCustom,
+		OnCreate: func(result *framework.PanelResult, mode framework.UIMode) error {
+			cm := mode.(*CombatMode)
+			layout := cm.Layout
+
+			panelWidth := int(float64(layout.ScreenWidth) * specs.CombatArtifactPanelWidth)
+			panelHeight := int(float64(layout.ScreenHeight) * specs.CombatArtifactPanelHeight)
+
+			result.Container = builders.CreatePanelWithConfig(builders.ContainerConfig{
+				MinWidth:   panelWidth,
+				MinHeight:  panelHeight,
+				Background: widgetresources.PanelRes.Image,
+				Layout: widget.NewRowLayout(
+					widget.RowLayoutOpts.Direction(widget.DirectionVertical),
+					widget.RowLayoutOpts.Spacing(5),
+					widget.RowLayoutOpts.Padding(builders.NewResponsiveRowPadding(layout, specs.PaddingExtraSmall)),
+				),
+			})
+
+			rightPad := int(float64(layout.ScreenWidth) * specs.PaddingTight)
+			result.Container.GetWidget().LayoutData = builders.AnchorEndCenter(rightPad)
+
+			// Artifact list
+			listWidth := panelWidth - 20
+			listHeight := int(float64(layout.ScreenHeight) * specs.CombatArtifactListHeight)
+
+			artifactList := builders.CreateListWithConfig(builders.ListConfig{
+				Entries:   []interface{}{},
+				MinWidth:  listWidth,
+				MinHeight: listHeight,
+				EntryLabelFunc: func(e interface{}) string {
+					if opt, ok := e.(*guiartifacts.ArtifactOption); ok {
+						chargeStr := "Ready"
+						if !opt.Available {
+							chargeStr = "Spent"
+						}
+						return fmt.Sprintf("%s [%s]", opt.Name, chargeStr)
+					}
+					return "???"
+				},
+				OnEntrySelected: func(e interface{}) {
+					if opt, ok := e.(*guiartifacts.ArtifactOption); ok {
+						cm.artifactPanel.OnArtifactSelected(opt)
+					}
+				},
+			})
+			cachedList := widgets.NewCachedListWrapper(artifactList)
+			result.Container.AddChild(artifactList)
+			result.Custom["artifactList"] = cachedList
+
+			// Detail text area
+			detailWidth := panelWidth - 20
+			detailHeight := int(float64(layout.ScreenHeight) * specs.CombatArtifactDetailHeight)
+			detailArea := builders.CreateCachedTextArea(builders.TextAreaConfig{
+				MinWidth:  detailWidth,
+				MinHeight: detailHeight,
+				FontColor: color.White,
+			})
+			detailArea.SetText("Select an artifact to view details")
+			result.Container.AddChild(detailArea)
+			result.Custom["detailArea"] = detailArea
+
+			// Activate button
+			activateButton := builders.CreateButtonWithConfig(builders.ButtonConfig{
+				Text: "Activate",
+				OnClick: func() {
+					cm.artifactPanel.OnActivateClicked()
+				},
+			})
+			activateButton.GetWidget().Disabled = true
+			result.Container.AddChild(activateButton)
+			result.Custom["activateButton"] = activateButton
+
+			// Cancel button
+			cancelButton := builders.CreateButtonWithConfig(builders.ButtonConfig{
+				Text: "Cancel (ESC)",
+				OnClick: func() {
+					cm.artifactPanel.OnCancelClicked()
+				},
+			})
+			result.Container.AddChild(cancelButton)
+
+			// Hidden by default
+			result.Container.GetWidget().Visibility = widget.Visibility_Hide
+
+			// Register with sub-menu controller
+			cm.subMenus.Register("artifact", result.Container)
 
 			return nil
 		},

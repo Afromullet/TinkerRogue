@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"game_main/common"
 	"game_main/gui/framework"
+	"game_main/gui/guiartifacts"
 	"game_main/gui/guispells"
 	"game_main/mind/behavior"
 	"game_main/tactical/combat"
@@ -29,6 +30,9 @@ type CombatInputHandler struct {
 
 	// Spell panel controller (owns handler + panel UI)
 	spellPanel *guispells.SpellPanelController
+
+	// Artifact panel controller (owns handler + panel UI)
+	artifactPanel *guiartifacts.ArtifactPanelController
 
 	// Visualization input support
 	visualization *CombatVisualizationManager
@@ -57,6 +61,11 @@ func (cih *CombatInputHandler) SetCurrentFactionID(factionID ecs.EntityID) {
 // SetSpellPanel sets the spell panel controller for input delegation.
 func (cih *CombatInputHandler) SetSpellPanel(panel *guispells.SpellPanelController) {
 	cih.spellPanel = panel
+}
+
+// SetArtifactPanel sets the artifact panel controller for input delegation.
+func (cih *CombatInputHandler) SetArtifactPanel(panel *guiartifacts.ArtifactPanelController) {
+	cih.artifactPanel = panel
 }
 
 // SetVisualization sets the visualization manager and related dependencies for keybinding handling
@@ -135,6 +144,27 @@ func (cih *CombatInputHandler) HandleInput(inputState *framework.InputState) boo
 		return false
 	}
 
+	// Artifact mode input handling (takes priority over normal clicks)
+	if cih.artifactPanel != nil && cih.artifactPanel.Handler().IsInArtifactMode() {
+		handler := cih.artifactPanel.Handler()
+
+		// ESC cancels artifact mode
+		if inputState.KeysJustPressed[ebiten.KeyEscape] {
+			cih.artifactPanel.OnCancelClicked()
+			return true
+		}
+
+		if handler.HasSelectedArtifact() {
+			// Artifact selected and targeting - click to apply
+			if inputState.MouseButton == ebiten.MouseButtonLeft && inputState.MousePressed {
+				handler.HandleTargetClick(inputState.MouseX, inputState.MouseY)
+				return true
+			}
+		}
+		// Suppress other input while in artifact mode
+		return false
+	}
+
 	// Handle mouse clicks
 	if inputState.MouseButton == ebiten.MouseButtonLeft && inputState.MousePressed {
 		// Debug kill mode takes priority over all other click handling
@@ -163,6 +193,12 @@ func (cih *CombatInputHandler) HandleInput(inputState *framework.InputState) boo
 	// S key to toggle spell panel
 	if inputState.KeysJustPressed[ebiten.KeyS] && cih.spellPanel != nil {
 		cih.spellPanel.Toggle()
+		return true
+	}
+
+	// D key to toggle artifact panel
+	if inputState.KeysJustPressed[ebiten.KeyD] && cih.artifactPanel != nil {
+		cih.artifactPanel.Toggle()
 		return true
 	}
 

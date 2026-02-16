@@ -166,6 +166,12 @@ const (
 	CombatSpellPanelHeight  = 0.55
 	CombatSpellListHeight   = 0.25
 	CombatSpellDetailHeight = 0.15
+
+	// Artifact activation panel (right side, shown during artifact mode)
+	CombatArtifactPanelWidth   = 0.25
+	CombatArtifactPanelHeight  = 0.50
+	CombatArtifactListHeight   = 0.20
+	CombatArtifactDetailHeight = 0.15
 )
 
 // InventoryModeLayout defines layout constants for inventory mode
