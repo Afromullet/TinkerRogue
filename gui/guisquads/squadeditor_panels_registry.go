@@ -1,8 +1,6 @@
 package guisquads
 
 import (
-	"image/color"
-
 	"game_main/gui/builders"
 	"game_main/gui/framework"
 	"game_main/gui/specs"
@@ -207,14 +205,6 @@ func init() {
 				Text:    "Roster",
 				OnClick: func() { sem.switchTab("roster") },
 			}))
-			tabRow.AddChild(builders.CreateButtonWithConfig(builders.ButtonConfig{
-				Text:    "Inventory",
-				OnClick: func() { sem.switchTab("inventory") },
-			}))
-			tabRow.AddChild(builders.CreateButtonWithConfig(builders.ButtonConfig{
-				Text:    "Equipment",
-				OnClick: func() { sem.switchTab("equipment") },
-			}))
 			result.Container.AddChild(tabRow)
 
 			// === Unit content sub-container ===
@@ -275,95 +265,11 @@ func init() {
 			rosterContent.GetWidget().Visibility = widget.Visibility_Hide
 			result.Container.AddChild(rosterContent)
 
-			// === Inventory content sub-container (starts hidden) ===
-			inventoryContent := widget.NewContainer(
-				widget.ContainerOpts.Layout(widget.NewRowLayout(
-					widget.RowLayoutOpts.Direction(widget.DirectionVertical),
-					widget.RowLayoutOpts.Spacing(5),
-				)),
-			)
-
-			inventoryTitle := builders.CreateSmallLabel("Artifacts (0/20)")
-			inventoryContent.AddChild(inventoryTitle)
-
-			inventoryList := builders.CreateSimpleStringList(builders.SimpleStringListConfig{
-				Entries:       []string{"No artifacts"},
-				ScreenWidth:   400,
-				ScreenHeight:  200,
-				WidthPercent:  1.0,
-				HeightPercent: 0.5,
-			})
-			inventoryContent.AddChild(inventoryList)
-
-			inventoryDetail := builders.CreateTextAreaWithConfig(builders.TextAreaConfig{
-				MinWidth:  380,
-				MinHeight: 100,
-				FontColor: color.White,
-			})
-			inventoryDetail.SetText("Select an artifact to view details.")
-			inventoryContent.AddChild(inventoryDetail)
-
-			inventoryButton := builders.CreateButtonWithConfig(builders.ButtonConfig{
-				Text:    "Equip on Squad",
-				OnClick: func() { sem.onInventoryEquipAction() },
-			})
-			inventoryContent.AddChild(inventoryButton)
-
-			inventoryContent.GetWidget().Visibility = widget.Visibility_Hide
-			result.Container.AddChild(inventoryContent)
-
-			// === Equipment content sub-container (starts hidden) ===
-			equipmentContent := widget.NewContainer(
-				widget.ContainerOpts.Layout(widget.NewRowLayout(
-					widget.RowLayoutOpts.Direction(widget.DirectionVertical),
-					widget.RowLayoutOpts.Spacing(5),
-				)),
-			)
-
-			equipmentTitle := builders.CreateSmallLabel("Equipment (0/3)")
-			equipmentContent.AddChild(equipmentTitle)
-
-			equipmentList := builders.CreateSimpleStringList(builders.SimpleStringListConfig{
-				Entries:       []string{"No artifacts equipped"},
-				ScreenWidth:   400,
-				ScreenHeight:  200,
-				WidthPercent:  1.0,
-				HeightPercent: 0.5,
-			})
-			equipmentContent.AddChild(equipmentList)
-
-			equipmentDetail := builders.CreateTextAreaWithConfig(builders.TextAreaConfig{
-				MinWidth:  380,
-				MinHeight: 100,
-				FontColor: color.White,
-			})
-			equipmentDetail.SetText("Select an artifact to view details.")
-			equipmentContent.AddChild(equipmentDetail)
-
-			equipmentButton := builders.CreateButtonWithConfig(builders.ButtonConfig{
-				Text:    "Unequip",
-				OnClick: func() { sem.onEquipmentAction() },
-			})
-			equipmentContent.AddChild(equipmentButton)
-
-			equipmentContent.GetWidget().Visibility = widget.Visibility_Hide
-			result.Container.AddChild(equipmentContent)
-
-			// Store all references
+			// Store references
 			result.Custom["unitList"] = unitList
 			result.Custom["rosterList"] = rosterList
 			result.Custom["unitContent"] = unitContent
 			result.Custom["rosterContent"] = rosterContent
-			result.Custom["inventoryContent"] = inventoryContent
-			result.Custom["inventoryList"] = inventoryList
-			result.Custom["inventoryTitle"] = inventoryTitle
-			result.Custom["inventoryDetail"] = inventoryDetail
-			result.Custom["inventoryButton"] = inventoryButton
-			result.Custom["equipmentContent"] = equipmentContent
-			result.Custom["equipmentList"] = equipmentList
-			result.Custom["equipmentTitle"] = equipmentTitle
-			result.Custom["equipmentDetail"] = equipmentDetail
-			result.Custom["equipmentButton"] = equipmentButton
 
 			return nil
 		},

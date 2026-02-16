@@ -121,6 +121,7 @@ func registerOverworldModes(coordinator *framework.GameModeCoordinator, manager 
 		guinodeplacement.NewNodePlacementMode(manager),
 		guisquads.NewUnitPurchaseMode(manager),
 		guisquads.NewSquadEditorMode(manager),
+		guisquads.NewArtifactMode(manager),
 	}
 
 	for _, mode := range modes {

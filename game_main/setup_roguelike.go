@@ -56,6 +56,7 @@ func registerRoguelikeTacticalModes(coordinator *framework.GameModeCoordinator, 
 	modes := []framework.UIMode{
 		guisquads.NewSquadEditorMode(manager),
 		guisquads.NewUnitPurchaseMode(manager),
+		guisquads.NewArtifactMode(manager),
 		guiexploration.NewExplorationMode(manager),
 		guicombat.NewCombatMode(manager, encounterService),
 		guicombat.NewCombatAnimationMode(manager),

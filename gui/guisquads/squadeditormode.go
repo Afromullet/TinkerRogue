@@ -45,27 +45,15 @@ type SquadEditorMode struct {
 	// Commander selector
 	commanderSelector *CommanderSelector
 
-	// Tabbed unit/roster/inventory/equipment panel
-	activeTab        string             // "units", "roster", "inventory", or "equipment"
-	unitContent      *widget.Container
-	rosterContent    *widget.Container
-	inventoryContent *widget.Container
-	inventoryList    *widget.List
-	inventoryTitle   *widget.Text
-	inventoryDetail  *widget.TextArea
-	inventoryButton  *widget.Button
-	equipmentContent *widget.Container
-	equipmentList    *widget.List
-	equipmentTitle   *widget.Text
-	equipmentDetail  *widget.TextArea
-	equipmentButton  *widget.Button
+	// Tabbed unit/roster panel
+	activeTab     string // "units" or "roster"
+	unitContent   *widget.Container
+	rosterContent *widget.Container
 
 	// State
-	selectedGridCell         *GridCell    // Currently selected grid cell
-	selectedUnitID           ecs.EntityID // Currently selected unit in squad
-	swapState                *SwapState   // Click-to-swap state for squad reordering
-	selectedInventoryArtifact string      // Artifact ID selected in Inventory tab (available only)
-	selectedEquippedArtifact  string      // Artifact ID selected in Equipment tab (equipped only)
+	selectedGridCell *GridCell    // Currently selected grid cell
+	selectedUnitID   ecs.EntityID // Currently selected unit in squad
+	swapState        *SwapState   // Click-to-swap state for squad reordering
 }
 
 // currentSquadID returns the entity ID of the currently selected squad.
@@ -159,16 +147,6 @@ func (sem *SquadEditorMode) initializeWidgetReferences() {
 	// Tabbed panel containers
 	sem.unitContent = framework.GetPanelWidget[*widget.Container](sem.Panels, SquadEditorPanelUnitRoster, "unitContent")
 	sem.rosterContent = framework.GetPanelWidget[*widget.Container](sem.Panels, SquadEditorPanelUnitRoster, "rosterContent")
-	sem.inventoryContent = framework.GetPanelWidget[*widget.Container](sem.Panels, SquadEditorPanelUnitRoster, "inventoryContent")
-	sem.inventoryList = framework.GetPanelWidget[*widget.List](sem.Panels, SquadEditorPanelUnitRoster, "inventoryList")
-	sem.inventoryTitle = framework.GetPanelWidget[*widget.Text](sem.Panels, SquadEditorPanelUnitRoster, "inventoryTitle")
-	sem.inventoryDetail = framework.GetPanelWidget[*widget.TextArea](sem.Panels, SquadEditorPanelUnitRoster, "inventoryDetail")
-	sem.inventoryButton = framework.GetPanelWidget[*widget.Button](sem.Panels, SquadEditorPanelUnitRoster, "inventoryButton")
-	sem.equipmentContent = framework.GetPanelWidget[*widget.Container](sem.Panels, SquadEditorPanelUnitRoster, "equipmentContent")
-	sem.equipmentList = framework.GetPanelWidget[*widget.List](sem.Panels, SquadEditorPanelUnitRoster, "equipmentList")
-	sem.equipmentTitle = framework.GetPanelWidget[*widget.Text](sem.Panels, SquadEditorPanelUnitRoster, "equipmentTitle")
-	sem.equipmentDetail = framework.GetPanelWidget[*widget.TextArea](sem.Panels, SquadEditorPanelUnitRoster, "equipmentDetail")
-	sem.equipmentButton = framework.GetPanelWidget[*widget.Button](sem.Panels, SquadEditorPanelUnitRoster, "equipmentButton")
 	sem.activeTab = "units"
 
 	// Grid cells
@@ -188,6 +166,11 @@ func (sem *SquadEditorMode) buildActionButtons() *widget.Container {
 		{Text: "Buy Units (P)", OnClick: func() {
 			if mode, exists := sem.ModeManager.GetMode("unit_purchase"); exists {
 				sem.ModeManager.RequestTransition(mode, "Buy Units clicked")
+			}
+		}},
+		{Text: "Artifacts", OnClick: func() {
+			if mode, exists := sem.ModeManager.GetMode("artifact_manager"); exists {
+				sem.ModeManager.RequestTransition(mode, "Artifacts clicked")
 			}
 		}},
 		{Text: closeText, OnClick: func() {
@@ -289,7 +272,7 @@ func (sem *SquadEditorMode) updateNavigationButtons() {
 
 // === Tab Switching Functions ===
 
-// switchTab switches the combined panel to show "units", "roster", "inventory", or "equipment"
+// switchTab switches the combined panel to show "units" or "roster"
 func (sem *SquadEditorMode) switchTab(tabName string) {
 	if sem.activeTab == tabName {
 		return
@@ -298,20 +281,12 @@ func (sem *SquadEditorMode) switchTab(tabName string) {
 
 	sem.unitContent.GetWidget().Visibility = widget.Visibility_Hide
 	sem.rosterContent.GetWidget().Visibility = widget.Visibility_Hide
-	sem.inventoryContent.GetWidget().Visibility = widget.Visibility_Hide
-	sem.equipmentContent.GetWidget().Visibility = widget.Visibility_Hide
 
 	switch tabName {
 	case "units":
 		sem.unitContent.GetWidget().Visibility = widget.Visibility_Show
 	case "roster":
 		sem.rosterContent.GetWidget().Visibility = widget.Visibility_Show
-	case "inventory":
-		sem.inventoryContent.GetWidget().Visibility = widget.Visibility_Show
-		sem.refreshInventory()
-	case "equipment":
-		sem.equipmentContent.GetWidget().Visibility = widget.Visibility_Show
-		sem.refreshEquipment()
 	}
 }
 

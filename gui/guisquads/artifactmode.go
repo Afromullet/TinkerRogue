@@ -1,0 +1,227 @@
+package guisquads
+
+import (
+	"fmt"
+
+	"game_main/gui/framework"
+	"game_main/tactical/squads"
+
+	"github.com/bytearena/ecs"
+	"github.com/ebitenui/ebitenui/widget"
+	"github.com/hajimehoshi/ebiten/v2"
+)
+
+// ArtifactMode provides inventory and equipment management in a separate screen.
+// Opened from the squad editor via the "Artifacts" button.
+//
+// Code organization:
+// - artifactmode.go: Lifecycle, navigation, tab switching
+// - artifact_panels_registry.go: Panel registrations via init()
+// - artifact_refresh.go: UI refresh logic
+type ArtifactMode struct {
+	framework.BaseMode
+
+	// Tab switching
+	activeTab string // "inventory" or "equipment"
+
+	// Inventory tab widgets
+	inventoryContent *widget.Container
+	inventoryList    *widget.List
+	inventoryTitle   *widget.Text
+	inventoryDetail  *widget.TextArea
+	inventoryButton  *widget.Button
+
+	// Equipment tab widgets
+	equipmentContent *widget.Container
+	equipmentList    *widget.List
+	equipmentTitle   *widget.Text
+	equipmentDetail  *widget.TextArea
+	equipmentButton  *widget.Button
+
+	// Selection state
+	selectedInventoryArtifact string
+	selectedEquippedArtifact  string
+
+	// Squad navigation
+	currentSquadIndex int
+	allSquadIDs       []ecs.EntityID
+
+	// Navigation widgets
+	squadCounterLabel *widget.Text
+	prevButton        *widget.Button
+	nextButton        *widget.Button
+}
+
+func NewArtifactMode(modeManager *framework.UIModeManager) *ArtifactMode {
+	mode := &ArtifactMode{
+		currentSquadIndex: 0,
+		allSquadIDs:       make([]ecs.EntityID, 0),
+		activeTab:         "inventory",
+	}
+	mode.SetModeName("artifact_manager")
+	mode.SetReturnMode("squad_editor")
+	mode.ModeManager = modeManager
+	mode.SetSelf(mode)
+	return mode
+}
+
+func (am *ArtifactMode) Initialize(ctx *framework.UIContext) error {
+	err := framework.NewModeBuilder(&am.BaseMode, framework.ModeConfig{
+		ModeName:    "artifact_manager",
+		ReturnMode:  "squad_editor",
+		StatusLabel: true,
+	}).Build(ctx)
+
+	if err != nil {
+		return err
+	}
+
+	if err := am.BuildPanels(
+		ArtifactPanelSquadSelector,
+		ArtifactPanelContent,
+	); err != nil {
+		return err
+	}
+
+	am.initializeWidgetReferences()
+	return nil
+}
+
+// initializeWidgetReferences populates mode fields from panel registry
+func (am *ArtifactMode) initializeWidgetReferences() {
+	// Squad selector navigation
+	am.prevButton = framework.GetPanelWidget[*widget.Button](am.Panels, ArtifactPanelSquadSelector, "prevButton")
+	am.nextButton = framework.GetPanelWidget[*widget.Button](am.Panels, ArtifactPanelSquadSelector, "nextButton")
+	am.squadCounterLabel = framework.GetPanelWidget[*widget.Text](am.Panels, ArtifactPanelSquadSelector, "counterLabel")
+
+	// Inventory tab
+	am.inventoryContent = framework.GetPanelWidget[*widget.Container](am.Panels, ArtifactPanelContent, "inventoryContent")
+	am.inventoryList = framework.GetPanelWidget[*widget.List](am.Panels, ArtifactPanelContent, "inventoryList")
+	am.inventoryTitle = framework.GetPanelWidget[*widget.Text](am.Panels, ArtifactPanelContent, "inventoryTitle")
+	am.inventoryDetail = framework.GetPanelWidget[*widget.TextArea](am.Panels, ArtifactPanelContent, "inventoryDetail")
+	am.inventoryButton = framework.GetPanelWidget[*widget.Button](am.Panels, ArtifactPanelContent, "inventoryButton")
+
+	// Equipment tab
+	am.equipmentContent = framework.GetPanelWidget[*widget.Container](am.Panels, ArtifactPanelContent, "equipmentContent")
+	am.equipmentList = framework.GetPanelWidget[*widget.List](am.Panels, ArtifactPanelContent, "equipmentList")
+	am.equipmentTitle = framework.GetPanelWidget[*widget.Text](am.Panels, ArtifactPanelContent, "equipmentTitle")
+	am.equipmentDetail = framework.GetPanelWidget[*widget.TextArea](am.Panels, ArtifactPanelContent, "equipmentDetail")
+	am.equipmentButton = framework.GetPanelWidget[*widget.Button](am.Panels, ArtifactPanelContent, "equipmentButton")
+}
+
+func (am *ArtifactMode) Enter(fromMode framework.UIMode) error {
+	am.syncSquadOrderFromRoster()
+	am.currentSquadIndex = 0
+	am.activeTab = "inventory"
+
+	if len(am.allSquadIDs) == 0 {
+		am.SetStatus("No squads available")
+	} else {
+		am.refreshAllUI()
+	}
+
+	// Ensure inventory tab is visible on entry
+	am.inventoryContent.GetWidget().Visibility = widget.Visibility_Show
+	am.equipmentContent.GetWidget().Visibility = widget.Visibility_Hide
+
+	return nil
+}
+
+func (am *ArtifactMode) Exit(toMode framework.UIMode) error {
+	am.selectedInventoryArtifact = ""
+	am.selectedEquippedArtifact = ""
+	return nil
+}
+
+func (am *ArtifactMode) Update(deltaTime float64) error {
+	return nil
+}
+
+func (am *ArtifactMode) Render(screen *ebiten.Image) {
+	// No custom rendering needed
+}
+
+func (am *ArtifactMode) HandleInput(inputState *framework.InputState) bool {
+	// ESC returns to squad editor
+	if am.HandleCommonInput(inputState) {
+		return true
+	}
+
+	// Left/Right arrows cycle squads
+	if inputState.KeysJustPressed[ebiten.KeyLeft] {
+		am.cycleSquad(-1)
+		return true
+	}
+	if inputState.KeysJustPressed[ebiten.KeyRight] {
+		am.cycleSquad(1)
+		return true
+	}
+
+	return false
+}
+
+// === Navigation ===
+
+func (am *ArtifactMode) currentSquadID() ecs.EntityID {
+	return am.allSquadIDs[am.currentSquadIndex]
+}
+
+func (am *ArtifactMode) cycleSquad(delta int) {
+	if len(am.allSquadIDs) == 0 {
+		return
+	}
+	am.currentSquadIndex = (am.currentSquadIndex + delta + len(am.allSquadIDs)) % len(am.allSquadIDs)
+	am.updateSquadCounter()
+	am.refreshActiveTab()
+}
+
+func (am *ArtifactMode) updateSquadCounter() {
+	if am.squadCounterLabel != nil && len(am.allSquadIDs) > 0 {
+		am.squadCounterLabel.Label = fmt.Sprintf("Squad %d of %d", am.currentSquadIndex+1, len(am.allSquadIDs))
+	}
+	am.updateNavigationButtons()
+}
+
+func (am *ArtifactMode) updateNavigationButtons() {
+	hasMultipleSquads := len(am.allSquadIDs) > 1
+	if am.prevButton != nil {
+		am.prevButton.GetWidget().Disabled = !hasMultipleSquads
+	}
+	if am.nextButton != nil {
+		am.nextButton.GetWidget().Disabled = !hasMultipleSquads
+	}
+}
+
+func (am *ArtifactMode) syncSquadOrderFromRoster() {
+	rosterOwnerID := am.Context.GetSquadRosterOwnerID()
+	manager := am.Context.ECSManager
+
+	roster := squads.GetPlayerSquadRoster(rosterOwnerID, manager)
+	if roster == nil {
+		return
+	}
+
+	am.allSquadIDs = make([]ecs.EntityID, len(roster.OwnedSquads))
+	copy(am.allSquadIDs, roster.OwnedSquads)
+}
+
+// === Tab Switching ===
+
+func (am *ArtifactMode) switchTab(tabName string) {
+	if am.activeTab == tabName {
+		return
+	}
+	am.activeTab = tabName
+
+	am.inventoryContent.GetWidget().Visibility = widget.Visibility_Hide
+	am.equipmentContent.GetWidget().Visibility = widget.Visibility_Hide
+
+	switch tabName {
+	case "inventory":
+		am.inventoryContent.GetWidget().Visibility = widget.Visibility_Show
+		am.refreshInventory()
+	case "equipment":
+		am.equipmentContent.GetWidget().Visibility = widget.Visibility_Show
+		am.refreshEquipment()
+	}
+}
