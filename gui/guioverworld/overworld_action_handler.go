@@ -94,15 +94,31 @@ func (ah *OverworldActionHandler) MoveSelectedCommander(targetPos coords.Logical
 
 // EngageThreat validates the selected threat and starts combat.
 // Commander must be on the same tile as the threat.
+// If nodeID is 0, auto-discovers the threat at the commander's position.
 func (ah *OverworldActionHandler) EngageThreat(nodeID ecs.EntityID) {
-	if nodeID == 0 {
-		ah.deps.LogEvent("No threat selected")
-		return
-	}
-
 	cmdID := ah.deps.State.SelectedCommanderID
 	if cmdID == 0 {
 		ah.deps.LogEvent("No commander selected - select a commander first")
+		return
+	}
+
+	cmdEntity := ah.deps.Manager.FindEntityByID(cmdID)
+	if cmdEntity == nil {
+		ah.deps.LogEvent("ERROR: Commander entity not found")
+		return
+	}
+	cmdPos := common.GetComponentType[*coords.LogicalPosition](cmdEntity, common.PositionComponent)
+	if cmdPos == nil {
+		ah.deps.LogEvent("ERROR: Commander has no position")
+		return
+	}
+
+	// Auto-discover node at commander's position if none specified
+	if nodeID == 0 {
+		nodeID = core.GetThreatNodeAt(ah.deps.Manager, *cmdPos)
+	}
+	if nodeID == 0 {
+		ah.deps.LogEvent("No threat at commander's position")
 		return
 	}
 
@@ -125,13 +141,7 @@ func (ah *OverworldActionHandler) EngageThreat(nodeID ecs.EntityID) {
 	}
 
 	// Commander must be on the same tile as the threat
-	cmdEntity := ah.deps.Manager.FindEntityByID(cmdID)
-	if cmdEntity == nil {
-		ah.deps.LogEvent("ERROR: Commander entity not found")
-		return
-	}
-	cmdPos := common.GetComponentType[*coords.LogicalPosition](cmdEntity, common.PositionComponent)
-	if cmdPos == nil || cmdPos.X != threatPos.X || cmdPos.Y != threatPos.Y {
+	if cmdPos.X != threatPos.X || cmdPos.Y != threatPos.Y {
 		ah.deps.LogEvent("Commander must be on the same tile as the threat to engage")
 		return
 	}

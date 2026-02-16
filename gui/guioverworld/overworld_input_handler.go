@@ -101,12 +101,10 @@ func (ih *OverworldInputHandler) HandleInput(inputState *framework.InputState) b
 		return true
 	}
 
-	// E - engage selected threat (commander must be on same tile)
+	// E - engage threat at commander's position
 	if inputState.KeysJustPressed[ebiten.KeyE] {
-		if ih.deps.State.HasSelection() {
-			ih.actionHandler.EngageThreat(ih.deps.State.SelectedNodeID)
-			return true
-		}
+		ih.actionHandler.EngageThreat(ih.deps.State.SelectedNodeID)
+		return true
 	}
 
 	// Mouse click
