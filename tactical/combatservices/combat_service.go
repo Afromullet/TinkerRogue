@@ -3,6 +3,7 @@ package combatservices
 import (
 	"fmt"
 	"game_main/common"
+	"game_main/gear"
 	"game_main/mind/ai"
 	"game_main/mind/behavior"
 	"game_main/tactical/combat"
@@ -39,10 +40,14 @@ type CombatService struct {
 	// AI decision-making
 	aiController *ai.AIController
 
+	// Artifact charge tracking (per-battle and per-round)
+	chargeTracker *gear.ArtifactChargeTracker
+
 	// Post-action callbacks (registered by GUI layer)
 	onAttackComplete []OnAttackCompleteFunc
 	onMoveComplete   []OnMoveCompleteFunc
 	onTurnEnd        []OnTurnEndFunc
+	postResetHooks   []PostResetHookFunc
 }
 
 // NewCombatService creates a new combat service
@@ -87,13 +92,30 @@ func NewCombatService(manager *common.EntityManager) *CombatService {
 		}
 	})
 
+	// Wire post-reset hook to forward to registered callbacks
+	turnManager.SetPostResetHook(func(factionID ecs.EntityID, squadIDs []ecs.EntityID) {
+		for _, fn := range cs.postResetHooks {
+			fn(factionID, squadIDs)
+		}
+	})
+
+	// Register artifact behavior dispatch
+	setupBehaviorDispatch(cs, manager, cache)
+
 	return cs
+}
+
+// GetChargeTracker returns the artifact charge tracker for the current battle.
+func (cs *CombatService) GetChargeTracker() *gear.ArtifactChargeTracker {
+	return cs.chargeTracker
 }
 
 // InitializeCombat initializes combat with the given factions
 // Also assigns any unassigned squads (from squad deployment) to the player faction.
 // TODO: Assinging unassigned squads to the player faction is a temporary fix. remove.
 func (cs *CombatService) InitializeCombat(factionIDs []ecs.EntityID) error {
+	// Reset charge tracker for the new battle
+	cs.chargeTracker = gear.NewArtifactChargeTracker()
 	// Find player faction (has IsPlayerControlled = true)
 	var playerFactionID ecs.EntityID
 	for _, factionID := range factionIDs {
@@ -111,7 +133,23 @@ func (cs *CombatService) InitializeCombat(factionIDs []ecs.EntityID) error {
 		cs.assignDeployedSquadsToPlayerFaction(playerFactionID)
 	}
 
-	return cs.TurnManager.InitializeCombat(factionIDs)
+	// Apply minor artifact effects to all factions before combat initialization
+	for _, factionID := range factionIDs {
+		factionSquads := combat.GetSquadsForFaction(factionID, cs.EntityManager)
+		gear.ApplyArtifactStatEffects(factionSquads, cs.EntityManager)
+	}
+
+	// Check if any player squad has Commander's Initiative Badge
+	var forceFirstFactionID ecs.EntityID
+	if playerFactionID != 0 {
+		playerSquads := combat.GetSquadsForFaction(playerFactionID, cs.EntityManager)
+		if gear.HasSpecificArtifactInFaction(playerSquads, "commanders_initiative_badge", cs.EntityManager) {
+			forceFirstFactionID = playerFactionID
+			fmt.Println("[GEAR] Commander's Initiative Badge: forcing player faction first")
+		}
+	}
+
+	return cs.TurnManager.InitializeCombat(factionIDs, forceFirstFactionID)
 }
 
 // assignDeployedSquadsToPlayerFaction finds all squads with positions but no FactionMembershipComponent
@@ -137,7 +175,7 @@ func (cs *CombatService) assignDeployedSquadsToPlayerFaction(playerFactionID ecs
 
 		// Squad is unassigned and deployed - add it to player faction
 		if err := cs.FactionManager.AddSquadToFaction(playerFactionID, squadID, *position); err != nil {
-			// Log error but continue with other squads
+			fmt.Printf("WARNING: failed to assign squad %d to player faction: %v\n", squadID, err)
 			continue
 		}
 	}
@@ -255,6 +293,37 @@ func (cs *CombatService) GetAIController() *ai.AIController {
 		)
 	}
 	return cs.aiController
+}
+
+// ================================
+// Artifact Behavior Dispatch
+// ================================
+
+// setupBehaviorDispatch wires all registered artifact behaviors to the combat event system.
+func setupBehaviorDispatch(cs *CombatService, manager *common.EntityManager, cache *combat.CombatQueryCache) {
+	cs.RegisterPostResetHook(func(factionID ecs.EntityID, squadIDs []ecs.EntityID) {
+		ctx := &gear.BehaviorContext{Manager: manager, Cache: cache, ChargeTracker: cs.chargeTracker}
+		for _, b := range gear.AllBehaviors() {
+			b.OnPostReset(ctx, factionID, squadIDs)
+		}
+	})
+
+	cs.RegisterOnAttackComplete(func(attackerID, defenderID ecs.EntityID, result *squads.CombatResult) {
+		ctx := &gear.BehaviorContext{Manager: manager, Cache: cache, ChargeTracker: cs.chargeTracker}
+		for _, b := range gear.AllBehaviors() {
+			b.OnAttackComplete(ctx, attackerID, defenderID, result)
+		}
+	})
+
+	cs.RegisterOnTurnEnd(func(round int) {
+		if cs.chargeTracker != nil {
+			cs.chargeTracker.RefreshRoundCharges()
+		}
+		ctx := &gear.BehaviorContext{Manager: manager, Cache: cache, ChargeTracker: cs.chargeTracker}
+		for _, b := range gear.AllBehaviors() {
+			b.OnTurnEnd(ctx, round)
+		}
+	})
 }
 
 // ================================

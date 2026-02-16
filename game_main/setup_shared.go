@@ -111,6 +111,7 @@ func (gb *GameBootstrap) CreatePlayer(em *common.EntityManager, pd *common.Playe
 func (gb *GameBootstrap) SetupDebugContent(em *common.EntityManager, gm *worldmap.GameMap, pd *common.PlayerData) {
 	if config.DEBUG_MODE {
 		SetupTestData(em, gm, pd)
+		bootstrap.SeedAllArtifacts(pd.PlayerEntityID, 1, em)
 	}
 
 }

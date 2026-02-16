@@ -3,6 +3,7 @@ package main
 import (
 	"game_main/common"
 	"game_main/config"
+	"game_main/gear"
 
 	"game_main/tactical/commander"
 	_ "game_main/tactical/squadcommands" // Blank import to trigger init() for command queue components
@@ -59,7 +60,8 @@ func InitializePlayerData(ecsmanager *common.EntityManager, pl *common.PlayerDat
 		AddComponent(commander.CommanderRosterComponent, &commander.CommanderRosterData{
 			CommanderIDs:  make([]ecs.EntityID, 0),
 			MaxCommanders: config.DefaultMaxCommanders,
-		})
+		}).
+		AddComponent(gear.ArtifactInventoryComponent, gear.NewArtifactInventory(config.DefaultPlayerMaxArtifacts))
 
 	players := ecs.BuildTag(common.PlayerComponent, common.PositionComponent)
 	ecsmanager.WorldTags["players"] = players

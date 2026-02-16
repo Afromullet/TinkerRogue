@@ -26,6 +26,7 @@ type EffectSource int
 const (
 	SourceSpell EffectSource = iota
 	SourceAbility
+	SourceItem
 )
 
 // ActiveEffect is a single stat modifier with a duration.

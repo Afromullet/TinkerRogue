@@ -17,6 +17,9 @@ type TurnManager struct {
 
 	// Post-turn hook (fired after successful turn end)
 	onTurnEnd func(round int)
+
+	// Post-reset hook (fired after ResetSquadActions completes for a faction)
+	postResetHook func(factionID ecs.EntityID, squadIDs []ecs.EntityID)
 }
 
 func NewTurnManager(manager *common.EntityManager, cache *CombatQueryCache) *TurnManager {
@@ -32,11 +35,26 @@ func (tm *TurnManager) SetOnTurnEnd(fn func(int)) {
 	tm.onTurnEnd = fn
 }
 
-func (tm *TurnManager) InitializeCombat(factionIDs []ecs.EntityID) error {
+// SetPostResetHook sets the callback fired after ResetSquadActions completes for a faction.
+func (tm *TurnManager) SetPostResetHook(fn func(factionID ecs.EntityID, squadIDs []ecs.EntityID)) {
+	tm.postResetHook = fn
+}
+
+func (tm *TurnManager) InitializeCombat(factionIDs []ecs.EntityID, forceFirstFactionID ecs.EntityID) error {
 	//Randomize turn order using Fisher-Yates shuffle
 	turnOrder := make([]ecs.EntityID, len(factionIDs))
 	copy(turnOrder, factionIDs)
 	shuffleFactionOrder(turnOrder)
+
+	// If a faction is forced first (e.g., Commander's Initiative Badge), swap it to index 0
+	if forceFirstFactionID != 0 {
+		for i, id := range turnOrder {
+			if id == forceFirstFactionID {
+				turnOrder[0], turnOrder[i] = turnOrder[i], turnOrder[0]
+				break
+			}
+		}
+	}
 
 	turnEntity := tm.manager.World.NewEntity()
 	turnEntity.AddComponent(TurnStateComponent, &TurnStateData{
@@ -82,6 +100,7 @@ func (tm *TurnManager) ResetSquadActions(factionID ecs.EntityID) error {
 
 		actionState.HasMoved = false
 		actionState.HasActed = false
+		actionState.DoubleTimeActive = false
 
 		// Initialize MovementRemaining from squad speed
 		squadSpeed := tm.movementSystem.GetSquadMovementSpeed(squadID)
@@ -93,6 +112,11 @@ func (tm *TurnManager) ResetSquadActions(factionID ecs.EntityID) error {
 
 		// Check and trigger abilities at start of turn
 		squads.CheckAndTriggerAbilities(squadID, tm.manager)
+	}
+
+	// Fire post-reset hook (e.g., Vanguard's Oath bonus movement)
+	if tm.postResetHook != nil {
+		tm.postResetHook(factionID, factionSquads)
 	}
 
 	return nil

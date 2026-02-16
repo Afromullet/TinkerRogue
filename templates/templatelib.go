@@ -37,6 +37,7 @@ func ReadGameData() {
 	ReadOverworldConfig()
 	ReadInfluenceConfig()
 	LoadSpellDefinitions()
+	LoadArtifactDefinitions()
 
 }
 

@@ -48,6 +48,7 @@ const (
 	DefaultPlayerStartingIron  = 50     // Starting iron for node placement
 	DefaultPlayerStartingWood  = 50     // Starting wood for node placement
 	DefaultPlayerStartingStone = 50     // Starting stone for node placement
+	DefaultPlayerMaxArtifacts  = 50     // Maximum artifacts player can own
 )
 
 // Commander system defaults

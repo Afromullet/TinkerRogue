@@ -127,7 +127,7 @@ func TestEndTurn_AdvancesToNextFaction(t *testing.T) {
 	faction2 := fm.CreateCombatFaction("Faction 2", false)
 
 	turnMgr := NewTurnManager(manager, cache)
-	turnMgr.InitializeCombat([]ecs.EntityID{faction1, faction2})
+	turnMgr.InitializeCombat([]ecs.EntityID{faction1, faction2}, 0)
 
 	firstFaction := turnMgr.GetCurrentFaction()
 	err := turnMgr.EndTurn()
@@ -150,7 +150,7 @@ func TestEndTurn_WrapsAroundToFirstFaction(t *testing.T) {
 	faction2 := fm.CreateCombatFaction("Faction 2", false)
 
 	turnMgr := NewTurnManager(manager, cache)
-	turnMgr.InitializeCombat([]ecs.EntityID{faction1, faction2})
+	turnMgr.InitializeCombat([]ecs.EntityID{faction1, faction2}, 0)
 
 	initialRound := turnMgr.GetCurrentRound()
 
@@ -201,7 +201,7 @@ func TestMoveSquad_UpdatesPosition(t *testing.T) {
 
 	// Create action state
 	turnMgr := NewTurnManager(manager, cache)
-	turnMgr.InitializeCombat([]ecs.EntityID{factionID})
+	turnMgr.InitializeCombat([]ecs.EntityID{factionID}, 0)
 
 	moveSys := NewMovementSystem(manager, common.GlobalPositionSystem, cache)
 	targetPos := coords.LogicalPosition{X: 6, Y: 6}
@@ -256,7 +256,7 @@ func TestExecuteAttackAction_MeleeAttack(t *testing.T) {
 
 	// Initialize combat
 	turnMgr := NewTurnManager(manager, cache)
-	turnMgr.InitializeCombat([]ecs.EntityID{playerFaction, enemyFaction})
+	turnMgr.InitializeCombat([]ecs.EntityID{playerFaction, enemyFaction}, 0)
 
 	combatSys := NewCombatActionSystem(manager, cache)
 	result := combatSys.ExecuteAttackAction(playerSquad, enemySquad)
@@ -285,7 +285,7 @@ func TestCounterattack_DamagePredictionPreventsDeadUnits(t *testing.T) {
 	fm.AddSquadToFaction(enemyFaction, enemySquad, coords.LogicalPosition{X: 6, Y: 5})
 
 	turnMgr := NewTurnManager(manager, cache)
-	turnMgr.InitializeCombat([]ecs.EntityID{playerFaction, enemyFaction})
+	turnMgr.InitializeCombat([]ecs.EntityID{playerFaction, enemyFaction}, 0)
 
 	combatSys := NewCombatActionSystem(manager, cache)
 	result := combatSys.ExecuteAttackAction(playerSquad, enemySquad)
@@ -347,7 +347,7 @@ func TestFullCombatLoop_TwoFactions(t *testing.T) {
 	fm.AddSquadToFaction(aiID, aiSquad1, coords.LogicalPosition{X: 15, Y: 15})
 
 	// Initialize combat
-	err := turnMgr.InitializeCombat([]ecs.EntityID{playerID, aiID})
+	err := turnMgr.InitializeCombat([]ecs.EntityID{playerID, aiID}, 0)
 	if err != nil {
 		t.Fatalf("Failed to initialize combat: %v", err)
 	}
@@ -381,5 +381,79 @@ func TestFullCombatLoop_TwoFactions(t *testing.T) {
 	currentRound := turnMgr.GetCurrentRound()
 	if currentRound < 3 {
 		t.Errorf("Expected at least round 3, got %d", currentRound)
+	}
+}
+
+// ========================================
+// RESET / DOUBLE TIME TESTS
+// ========================================
+
+func TestResetSquadActions_ClearsDoubleTimeActive(t *testing.T) {
+	manager := CreateTestCombatManager()
+	cache := NewCombatQueryCache(manager)
+	fm := NewCombatFactionManager(manager, cache)
+	factionID := fm.CreateCombatFaction("Player", true)
+	squadID := CreateTestSquad(manager, "Test Squad", 3)
+
+	fm.AddSquadToFaction(factionID, squadID, coords.LogicalPosition{X: 5, Y: 5})
+
+	turnMgr := NewTurnManager(manager, cache)
+	turnMgr.InitializeCombat([]ecs.EntityID{factionID}, 0)
+
+	// Set DoubleTimeActive to true manually
+	actionState := cache.FindActionStateBySquadID(squadID)
+	if actionState == nil {
+		t.Fatal("Expected action state for squad")
+	}
+	actionState.DoubleTimeActive = true
+
+	// Reset squad actions
+	turnMgr.ResetSquadActions(factionID)
+
+	// Verify flag is cleared
+	actionState = cache.FindActionStateBySquadID(squadID)
+	if actionState.DoubleTimeActive {
+		t.Error("Expected DoubleTimeActive to be false after ResetSquadActions")
+	}
+}
+
+// ========================================
+// DOUBLE TIME FLAG TEST
+// ========================================
+
+func TestDoubleTimeFlag_ConsumesWithoutMarkingActed(t *testing.T) {
+	manager := CreateTestCombatManager()
+	cache := NewCombatQueryCache(manager)
+	fm := NewCombatFactionManager(manager, cache)
+	factionID := fm.CreateCombatFaction("Player", true)
+	squadID := CreateTestSquad(manager, "Test Squad", 3)
+
+	fm.AddSquadToFaction(factionID, squadID, coords.LogicalPosition{X: 5, Y: 5})
+
+	turnMgr := NewTurnManager(manager, cache)
+	turnMgr.InitializeCombat([]ecs.EntityID{factionID}, 0)
+
+	// Set DoubleTimeActive flag
+	actionState := cache.FindActionStateBySquadID(squadID)
+	if actionState == nil {
+		t.Fatal("Expected action state for squad")
+	}
+	actionState.DoubleTimeActive = true
+
+	// First call should consume the flag without marking acted
+	markSquadAsActed(cache, squadID, manager)
+
+	if actionState.HasActed {
+		t.Error("HasActed should be false after DoubleTime consumes the flag")
+	}
+	if actionState.DoubleTimeActive {
+		t.Error("DoubleTimeActive should be consumed (false)")
+	}
+
+	// Second call should mark as acted normally
+	markSquadAsActed(cache, squadID, manager)
+
+	if !actionState.HasActed {
+		t.Error("HasActed should be true after normal markSquadAsActed")
 	}
 }

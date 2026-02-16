@@ -148,10 +148,16 @@ func canSquadMove(cache *CombatQueryCache, squadID ecs.EntityID, manager *common
 	return actionState.MovementRemaining > 0
 }
 
-// markSquadAsActed marks a squad as having used its combat action
+// markSquadAsActed marks a squad as having used its combat action.
+// If DoubleTimeActive is set, the flag is consumed instead of marking acted.
 func markSquadAsActed(cache *CombatQueryCache, squadID ecs.EntityID, manager *common.EntityManager) {
 	actionState := cache.FindActionStateBySquadID(squadID)
 	if actionState == nil {
+		return
+	}
+	if actionState.DoubleTimeActive {
+		actionState.DoubleTimeActive = false
+		fmt.Printf("[GEAR] double_time: squad %d retains attack action\n", squadID)
 		return
 	}
 	actionState.HasActed = true
