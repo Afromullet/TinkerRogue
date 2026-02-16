@@ -51,23 +51,39 @@ func init() {
 			bottomPad := int(float64(layout.ScreenHeight) * specs.BottomButtonOffset)
 			anchorLayout := builders.AnchorCenterEnd(bottomPad)
 
-			buttonContainer := builders.CreateButtonGroup(builders.ButtonGroupConfig{
-				Buttons: []builders.ButtonSpec{
-					{Text: "Overworld (O)", OnClick: func() {
+			// Detect whether squad_editor is in the current (tactical) mode manager.
+			// When it is (roguelike mode), only show "Squad" and route within tactical context.
+			// When it isn't (overworld mode), show both buttons as today.
+			_, hasSquadInTactical := em.ModeManager.GetMode("squad_editor")
+
+			buttons := []builders.ButtonSpec{}
+
+			// Only show Overworld button when squad_editor is NOT in tactical (i.e., overworld mode)
+			if !hasSquadInTactical {
+				buttons = append(buttons, builders.ButtonSpec{
+					Text: "Overworld (O)", OnClick: func() {
 						if em.Context.ModeCoordinator != nil {
 							if err := em.Context.ModeCoordinator.ReturnToOverworld("overworld"); err != nil {
 								fmt.Printf("ERROR: Failed to switch to overworld: %v\n", err)
 							}
 						}
-					}},
-					{Text: "Squad", OnClick: func() {
-						if em.Context.ModeCoordinator != nil {
-							if err := em.Context.ModeCoordinator.ReturnToOverworld("squad_editor"); err != nil {
-								fmt.Printf("ERROR: Failed to switch to squad editor: %v\n", err)
-							}
-						}
-					}},
+					},
+				})
+			}
+
+			// Squad button: route based on whether squad_editor is a local tactical mode
+			buttons = append(buttons, builders.ButtonSpec{
+				Text: "Squad", OnClick: func() {
+					if targetMode, exists := em.ModeManager.GetMode("squad_editor"); exists {
+						em.ModeManager.RequestTransition(targetMode, "Squad button pressed")
+					} else if em.Context.ModeCoordinator != nil {
+						em.Context.ModeCoordinator.ReturnToOverworld("squad_editor")
+					}
 				},
+			})
+
+			buttonContainer := builders.CreateButtonGroup(builders.ButtonGroupConfig{
+				Buttons:    buttons,
 				Direction:  widget.DirectionHorizontal,
 				Spacing:    spacing,
 				Padding:    builders.NewResponsiveHorizontalPadding(layout, specs.PaddingExtraSmall),

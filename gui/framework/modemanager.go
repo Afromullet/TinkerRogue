@@ -45,12 +45,10 @@ func NewUIModeManager(ctx *UIContext) *UIModeManager {
 	}
 }
 
-// RegisterMode adds a mode to the available modes
+// RegisterMode adds a mode to the available modes.
+// Re-registering an existing mode replaces it (re-runs Initialize).
 func (umm *UIModeManager) RegisterMode(mode UIMode) error {
 	name := mode.GetModeName()
-	if _, exists := umm.modes[name]; exists {
-		return fmt.Errorf("mode %s already registered", name)
-	}
 
 	// Initialize the mode
 	if err := mode.Initialize(umm.context); err != nil {

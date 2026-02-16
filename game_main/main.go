@@ -12,9 +12,9 @@ import (
 	"game_main/common"
 	"game_main/config"
 	"game_main/gui/framework"
+	"game_main/gui/guistartmenu"
 	"game_main/input"
 	"game_main/overworld/core"
-	"game_main/testing"
 	"game_main/visual/graphics"
 	"game_main/visual/rendering"
 	"game_main/world/coords"
@@ -36,13 +36,15 @@ type Game struct {
 	gameMap             worldmap.GameMap
 	cameraController    *input.CameraController
 	renderingCache      *rendering.RenderingCache // Cached view for rendering hot path (3-5x faster)
+	startMenu           *guistartmenu.StartMenu
+	showStartMenu       bool
 }
 
 // NewGame creates and initializes a new Game instance.
 // All initialization logic is delegated to the setup package.
 func NewGame() *Game {
 	g := &Game{}
-	SetupNewGame(g)
+	SetupSharedSystems(g)
 	return g
 }
 
@@ -61,6 +63,19 @@ func HandleInput(g *Game) {
 // Update is called each frame by the Ebiten engine.
 // It processes UI updates, visual effects, debug input, and main game logic.
 func (g *Game) Update() error {
+	if g.showStartMenu {
+		g.startMenu.Update()
+		switch g.startMenu.GetSelection() {
+		case guistartmenu.ModeOverworld:
+			SetupOverworldMode(g)
+			g.showStartMenu = false
+		case guistartmenu.ModeRoguelike:
+			SetupRoguelikeMode(g)
+			g.showStartMenu = false
+		}
+		return nil
+	}
+
 	// Update game mode coordinator (handles input and UI state for active context)
 	deltaTime := 1.0 / 60.0 // 60 FPS
 	if err := g.gameModeCoordinator.Update(deltaTime); err != nil {
@@ -77,6 +92,11 @@ func (g *Game) Update() error {
 // Draw renders the game to the screen buffer.
 // It handles map rendering, entity rendering, UI drawing, and visual effects.
 func (g *Game) Draw(screen *ebiten.Image) {
+	if g.showStartMenu {
+		g.startMenu.Draw(screen)
+		return
+	}
+
 	// Update screen dimensions
 	graphics.ScreenInfo.ScreenWidth = screen.Bounds().Dx()
 	graphics.ScreenInfo.ScreenHeight = screen.Bounds().Dy()
@@ -116,14 +136,11 @@ func main() {
 	// Setup profiling if enabled
 	SetupBenchmarking()
 
-	// Create and initialize game
+	// Create and initialize game (shared systems only — mode-specific setup deferred)
 	g := NewGame()
 
-	// Setup UI and input systems
-	SetupUI(g)
-	SetupInputCoordinator(g)
-
-	testing.CreateTestItems(&g.gameMap)
+	g.startMenu = guistartmenu.NewStartMenu()
+	g.showStartMenu = true
 
 	// Configure window
 	ebiten.SetWindowResizable(true)
