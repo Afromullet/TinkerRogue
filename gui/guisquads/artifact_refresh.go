@@ -67,11 +67,11 @@ func (am *ArtifactMode) refreshInventory() {
 		return
 	}
 
-	current, max := inv.GetArtifactCount()
+	current, max := gear.GetArtifactCount(inv)
 	am.inventoryTitle.Label = fmt.Sprintf("Artifacts (%d/%d)", current, max)
 
 	// Get flat list of all instances and sort by definition ID + instance index
-	allInstances := inv.GetAllInstances()
+	allInstances := gear.GetAllInstances(inv)
 	sort.Slice(allInstances, func(i, j int) bool {
 		if allInstances[i].DefinitionID != allInstances[j].DefinitionID {
 			return allInstances[i].DefinitionID < allInstances[j].DefinitionID
@@ -93,7 +93,7 @@ func (am *ArtifactMode) refreshInventory() {
 			tier = strings.Title(def.Tier)
 		}
 
-		copyCount := inv.GetInstanceCount(info.DefinitionID)
+		copyCount := gear.GetInstanceCount(inv, info.DefinitionID)
 		if copyCount > 1 {
 			name = fmt.Sprintf("%s (#%d)", name, info.InstanceIndex)
 		}
@@ -213,10 +213,10 @@ func (am *ArtifactMode) refreshInventoryDetail(artifactID string) {
 
 	// Multi-instance summary
 	if inv != nil {
-		totalCopies := inv.GetInstanceCount(artifactID)
+		totalCopies := gear.GetInstanceCount(inv, artifactID)
 		availableCount := 0
 		var equippedSquads []string
-		for _, info := range inv.GetAllInstances() {
+		for _, info := range gear.GetAllInstances(inv) {
 			if info.DefinitionID != artifactID {
 				continue
 			}

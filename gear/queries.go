@@ -12,47 +12,16 @@ func GetEquipmentData(squadID ecs.EntityID, manager *common.EntityManager) *Equi
 	return common.GetComponentTypeByID[*EquipmentData](manager, squadID, EquipmentComponent)
 }
 
-// HasMinorArtifact returns true if the squad has any minor-tier artifact equipped.
-func HasMinorArtifact(squadID ecs.EntityID, manager *common.EntityManager) bool {
+// hasArtifactOfTier returns true if the squad has any equipped artifact of the given tier.
+func hasArtifactOfTier(squadID ecs.EntityID, tier string, manager *common.EntityManager) bool {
 	data := GetEquipmentData(squadID, manager)
 	if data == nil {
 		return false
 	}
 	for _, id := range data.EquippedArtifacts {
 		def := templates.GetArtifactDefinition(id)
-		if def != nil && def.Tier == TierMinor {
+		if def != nil && def.Tier == tier {
 			return true
-		}
-	}
-	return false
-}
-
-// HasMajorArtifact returns true if the squad has any major-tier artifact equipped.
-func HasMajorArtifact(squadID ecs.EntityID, manager *common.EntityManager) bool {
-	data := GetEquipmentData(squadID, manager)
-	if data == nil {
-		return false
-	}
-	for _, id := range data.EquippedArtifacts {
-		def := templates.GetArtifactDefinition(id)
-		if def != nil && def.Tier == TierMajor {
-			return true
-		}
-	}
-	return false
-}
-
-// HasSpecificArtifactInFaction checks if any squad in the given list has a specific artifact equipped.
-func HasSpecificArtifactInFaction(squadIDs []ecs.EntityID, artifactID string, manager *common.EntityManager) bool {
-	for _, squadID := range squadIDs {
-		data := GetEquipmentData(squadID, manager)
-		if data == nil {
-			continue
-		}
-		for _, equipped := range data.EquippedArtifacts {
-			if equipped == artifactID {
-				return true
-			}
 		}
 	}
 	return false
@@ -102,4 +71,56 @@ func GetFactionSquadWithBehavior(squadIDs []ecs.EntityID, behavior string, manag
 		}
 	}
 	return 0
+}
+
+// --- ArtifactInventoryData query functions (read-only) ---
+
+// CanAddArtifact returns true if the inventory has room for another artifact instance.
+func CanAddArtifact(inv *ArtifactInventoryData) bool {
+	return totalInstanceCount(inv) < inv.MaxArtifacts
+}
+
+// OwnsArtifact returns true if the artifact is in the inventory (any instances).
+func OwnsArtifact(inv *ArtifactInventoryData, artifactID string) bool {
+	instances, exists := inv.OwnedArtifacts[artifactID]
+	return exists && len(instances) > 0
+}
+
+// IsArtifactAvailable returns true if any instance of the artifact is not equipped.
+func IsArtifactAvailable(inv *ArtifactInventoryData, artifactID string) bool {
+	instances, exists := inv.OwnedArtifacts[artifactID]
+	if !exists {
+		return false
+	}
+	for _, inst := range instances {
+		if inst.EquippedOn == 0 {
+			return true
+		}
+	}
+	return false
+}
+
+// GetArtifactCount returns (total instance count, max capacity).
+func GetArtifactCount(inv *ArtifactInventoryData) (int, int) {
+	return totalInstanceCount(inv), inv.MaxArtifacts
+}
+
+// GetAllInstances returns a flat list of all artifact instances for GUI display.
+func GetAllInstances(inv *ArtifactInventoryData) []ArtifactInstanceInfo {
+	var result []ArtifactInstanceInfo
+	for defID, instances := range inv.OwnedArtifacts {
+		for i, inst := range instances {
+			result = append(result, ArtifactInstanceInfo{
+				DefinitionID:  defID,
+				EquippedOn:    inst.EquippedOn,
+				InstanceIndex: i + 1,
+			})
+		}
+	}
+	return result
+}
+
+// GetInstanceCount returns the number of instances of a specific artifact.
+func GetInstanceCount(inv *ArtifactInventoryData, artifactID string) int {
+	return len(inv.OwnedArtifacts[artifactID])
 }

@@ -143,7 +143,7 @@ func (cs *CombatService) InitializeCombat(factionIDs []ecs.EntityID) error {
 	var forceFirstFactionID ecs.EntityID
 	if playerFactionID != 0 {
 		playerSquads := combat.GetSquadsForFaction(playerFactionID, cs.EntityManager)
-		if gear.HasSpecificArtifactInFaction(playerSquads, "commanders_initiative_badge", cs.EntityManager) {
+		if gear.HasBehaviorInFaction(playerSquads, gear.BehaviorInitiativeFirst, cs.EntityManager) {
 			forceFirstFactionID = playerFactionID
 			fmt.Println("[GEAR] Commander's Initiative Badge: forcing player faction first")
 		}

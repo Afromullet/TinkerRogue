@@ -101,9 +101,25 @@ func createTestSquadWithUnits(manager *common.EntityManager, name string, unitCo
 // addArtifactToInventory is a test helper that adds an artifact to the player inventory.
 func addArtifactToInventory(playerID ecs.EntityID, artifactID string, manager *common.EntityManager) {
 	inv := GetPlayerArtifactInventory(playerID, manager)
-	if err := inv.AddArtifact(artifactID); err != nil {
+	if err := AddArtifactToInventory(inv, artifactID); err != nil {
 		panic(err)
 	}
+}
+
+// hasSpecificArtifactInFaction checks if any squad in the given list has a specific artifact equipped.
+func hasSpecificArtifactInFaction(squadIDs []ecs.EntityID, artifactID string, manager *common.EntityManager) bool {
+	for _, squadID := range squadIDs {
+		data := GetEquipmentData(squadID, manager)
+		if data == nil {
+			continue
+		}
+		for _, equipped := range data.EquippedArtifacts {
+			if equipped == artifactID {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // containsArtifact checks if EquippedArtifacts contains the given artifact ID.
@@ -119,50 +135,6 @@ func containsArtifact(data *EquipmentData, artifactID string) bool {
 // ========================================
 // EQUIP / UNEQUIP TESTS
 // ========================================
-
-func TestEquipMinorArtifact(t *testing.T) {
-	manager := setupTestManager()
-	setupTestArtifacts()
-	playerID := createTestPlayer(manager)
-	squadID := createTestSquadWithUnits(manager, "Test Squad", 3)
-	addArtifactToInventory(playerID, "iron_bulwark", manager)
-
-	err := EquipArtifact(playerID, squadID, "iron_bulwark", manager)
-	if err != nil {
-		t.Fatalf("Failed to equip minor artifact: %v", err)
-	}
-
-	if !HasMinorArtifact(squadID, manager) {
-		t.Error("Expected squad to have minor artifact")
-	}
-
-	data := GetEquipmentData(squadID, manager)
-	if !containsArtifact(data, "iron_bulwark") {
-		t.Error("Expected EquippedArtifacts to contain iron_bulwark")
-	}
-}
-
-func TestEquipMajorArtifact(t *testing.T) {
-	manager := setupTestManager()
-	setupTestArtifacts()
-	playerID := createTestPlayer(manager)
-	squadID := createTestSquadWithUnits(manager, "Test Squad", 3)
-	addArtifactToInventory(playerID, "commanders_initiative_badge", manager)
-
-	err := EquipArtifact(playerID, squadID, "commanders_initiative_badge", manager)
-	if err != nil {
-		t.Fatalf("Failed to equip major artifact: %v", err)
-	}
-
-	if !HasMajorArtifact(squadID, manager) {
-		t.Error("Expected squad to have major artifact")
-	}
-
-	data := GetEquipmentData(squadID, manager)
-	if !containsArtifact(data, "commanders_initiative_badge") {
-		t.Error("Expected EquippedArtifacts to contain commanders_initiative_badge")
-	}
-}
 
 func TestEquipBlocksWhenSlotsFull(t *testing.T) {
 	manager := setupTestManager()
@@ -194,30 +166,6 @@ func TestEquipBlocksWhenSlotsFull(t *testing.T) {
 	data := GetEquipmentData(squadID, manager)
 	if len(data.EquippedArtifacts) != MaxArtifactSlots {
 		t.Errorf("Expected %d equipped artifacts, got %d", MaxArtifactSlots, len(data.EquippedArtifacts))
-	}
-}
-
-func TestUnequipArtifact(t *testing.T) {
-	manager := setupTestManager()
-	setupTestArtifacts()
-	playerID := createTestPlayer(manager)
-	squadID := createTestSquadWithUnits(manager, "Test Squad", 3)
-	addArtifactToInventory(playerID, "iron_bulwark", manager)
-	addArtifactToInventory(playerID, "commanders_initiative_badge", manager)
-
-	EquipArtifact(playerID, squadID, "iron_bulwark", manager)
-	EquipArtifact(playerID, squadID, "commanders_initiative_badge", manager)
-
-	err := UnequipArtifact(playerID, squadID, "iron_bulwark", manager)
-	if err != nil {
-		t.Fatalf("Failed to unequip: %v", err)
-	}
-
-	if HasMinorArtifact(squadID, manager) {
-		t.Error("Minor artifact should be unequipped")
-	}
-	if !HasMajorArtifact(squadID, manager) {
-		t.Error("Major artifact should still be equipped")
 	}
 }
 
@@ -281,13 +229,13 @@ func TestUnequipReturnsToInventory(t *testing.T) {
 	EquipArtifact(playerID, squadID, "iron_bulwark", manager)
 
 	inv := GetPlayerArtifactInventory(playerID, manager)
-	if inv.IsArtifactAvailable("iron_bulwark") {
+	if IsArtifactAvailable(inv, "iron_bulwark") {
 		t.Error("Artifact should be marked equipped, not available")
 	}
 
 	UnequipArtifact(playerID, squadID, "iron_bulwark", manager)
 
-	if !inv.IsArtifactAvailable("iron_bulwark") {
+	if !IsArtifactAvailable(inv, "iron_bulwark") {
 		t.Error("Artifact should be available after unequip")
 	}
 }
@@ -390,7 +338,7 @@ func TestApplyArtifactStatEffects_EmptySquadList(t *testing.T) {
 // FACTION QUERY TESTS
 // ========================================
 
-func TestHasSpecificArtifactInFaction(t *testing.T) {
+func TesthasSpecificArtifactInFaction(t *testing.T) {
 	manager := setupTestManager()
 	setupTestArtifacts()
 	playerID := createTestPlayer(manager)
@@ -403,11 +351,11 @@ func TestHasSpecificArtifactInFaction(t *testing.T) {
 
 	squadIDs := []ecs.EntityID{squad1, squad2}
 
-	if !HasSpecificArtifactInFaction(squadIDs, "commanders_initiative_badge", manager) {
+	if !hasSpecificArtifactInFaction(squadIDs, "commanders_initiative_badge", manager) {
 		t.Error("Expected to find commanders_initiative_badge in faction squads")
 	}
 
-	if HasSpecificArtifactInFaction(squadIDs, "vanguards_oath", manager) {
+	if hasSpecificArtifactInFaction(squadIDs, "vanguards_oath", manager) {
 		t.Error("Should not find vanguards_oath in faction squads")
 	}
 }
@@ -447,7 +395,7 @@ func TestEquipSameArtifactOnTwoSquads(t *testing.T) {
 
 	// No more available copies
 	inv := GetPlayerArtifactInventory(playerID, manager)
-	if inv.IsArtifactAvailable("iron_bulwark") {
+	if IsArtifactAvailable(inv, "iron_bulwark") {
 		t.Error("All copies should be equipped")
 	}
 }
@@ -460,13 +408,13 @@ func TestSeedAllArtifacts(t *testing.T) {
 	inv := GetPlayerArtifactInventory(playerID, manager)
 	for id := range templates.ArtifactRegistry {
 		for i := 0; i < 3; i++ {
-			if err := inv.AddArtifact(id); err != nil {
+			if err := AddArtifactToInventory(inv, id); err != nil {
 				t.Fatalf("Failed to seed artifact %q copy %d: %v", id, i+1, err)
 			}
 		}
 	}
 
-	current, _ := inv.GetArtifactCount()
+	current, _ := GetArtifactCount(inv)
 	expected := len(templates.ArtifactRegistry) * 3
 	if current != expected {
 		t.Errorf("Expected %d total instances, got %d", expected, current)

@@ -182,15 +182,18 @@ func (h *ArtifactActivationHandler) HasSelectedArtifact() bool {
 	return h.deps.BattleState.SelectedArtifactBehavior != ""
 }
 
-// GetTargetType returns the targeting type for a given behavior key.
+// GetTargetType returns the targeting type for a given behavior key,
+// derived from the behavior's own TargetType() method.
 func GetTargetType(behaviorKey string) TargetType {
-	switch behaviorKey {
-	case gear.BehaviorDoubleTime, gear.BehaviorAnthemPerseverance, gear.BehaviorChainOfCommand:
-		return TargetFriendlySquad
-	case gear.BehaviorStandDown, gear.BehaviorDeadlockShackles:
-		return TargetEnemySquad
-	case gear.BehaviorSaboteurWsHourglass:
+	b := gear.GetBehavior(behaviorKey)
+	if b == nil {
 		return TargetNoTarget
+	}
+	switch b.TargetType() {
+	case gear.TargetFriendly:
+		return TargetFriendlySquad
+	case gear.TargetEnemy:
+		return TargetEnemySquad
 	default:
 		return TargetNoTarget
 	}

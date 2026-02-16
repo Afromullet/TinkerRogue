@@ -40,6 +40,5 @@ const (
 // ECS variables
 var (
 	EquipmentComponent         *ecs.Component
-	EquipmentTag               ecs.Tag
 	ArtifactInventoryComponent *ecs.Component
 )

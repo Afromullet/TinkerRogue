@@ -20,14 +20,14 @@ func SeedAllArtifacts(playerID ecs.EntityID, count int, manager *common.EntityMa
 	}
 
 	needed := len(templates.ArtifactRegistry) * count
-	current, _ := inv.GetArtifactCount()
+	current, _ := gear.GetArtifactCount(inv)
 	if current+needed > inv.MaxArtifacts {
 		inv.MaxArtifacts = current + needed
 	}
 
 	for id := range templates.ArtifactRegistry {
 		for i := 0; i < count; i++ {
-			if err := inv.AddArtifact(id); err != nil {
+			if err := gear.AddArtifactToInventory(inv, id); err != nil {
 				return fmt.Errorf("failed to seed artifact %q copy %d: %w", id, i+1, err)
 			}
 		}

@@ -35,7 +35,7 @@ func (VanguardMovementBehavior) OnPostReset(ctx *BehaviorContext, factionID ecs.
 	if len(squadIDs) == 0 {
 		return
 	}
-	if !HasSpecificArtifactInFaction(squadIDs, "vanguards_oath", ctx.Manager) {
+	if !HasBehaviorInFaction(squadIDs, BehaviorVanguardMovement, ctx.Manager) {
 		return
 	}
 	actionState := ctx.Cache.FindActionStateBySquadID(squadIDs[0])
@@ -154,6 +154,8 @@ func (SaboteursHourglassBehavior) BehaviorKey() string { return BehaviorSaboteur
 
 func (SaboteursHourglassBehavior) IsPlayerActivated() bool { return true }
 
+// OnPostReset applies -2 movement to ALL enemy squads (area-of-effect).
+// Unlike targeted behaviors, this intentionally ignores pending effect targets.
 func (SaboteursHourglassBehavior) OnPostReset(ctx *BehaviorContext, factionID ecs.EntityID, squadIDs []ecs.EntityID) {
 	if ctx.ChargeTracker == nil {
 		return
@@ -192,6 +194,7 @@ type DoubleTimeBehavior struct{ BaseBehavior }
 func (DoubleTimeBehavior) BehaviorKey() string { return BehaviorDoubleTime }
 
 func (DoubleTimeBehavior) IsPlayerActivated() bool { return true }
+func (DoubleTimeBehavior) TargetType() int         { return TargetFriendly }
 
 func (DoubleTimeBehavior) Activate(ctx *BehaviorContext, targetSquadID ecs.EntityID) error {
 	if err := requireCharge(ctx, BehaviorDoubleTime); err != nil {

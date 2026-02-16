@@ -10,6 +10,66 @@ import (
 	"github.com/bytearena/ecs"
 )
 
+// --- ArtifactInventoryData mutation functions ---
+
+// AddArtifactToInventory adds an artifact instance to the inventory as available (not equipped).
+// Multiple copies of the same artifact are allowed.
+func AddArtifactToInventory(inv *ArtifactInventoryData, artifactID string) error {
+	if !CanAddArtifact(inv) {
+		return fmt.Errorf("inventory full (%d/%d)", totalInstanceCount(inv), inv.MaxArtifacts)
+	}
+	inv.OwnedArtifacts[artifactID] = append(inv.OwnedArtifacts[artifactID], &ArtifactInstance{EquippedOn: 0})
+	return nil
+}
+
+// RemoveArtifactFromInventory removes the first unequipped instance of the given artifact.
+func RemoveArtifactFromInventory(inv *ArtifactInventoryData, artifactID string) error {
+	instances, exists := inv.OwnedArtifacts[artifactID]
+	if !exists || len(instances) == 0 {
+		return fmt.Errorf("artifact %q not in inventory", artifactID)
+	}
+	for i, inst := range instances {
+		if inst.EquippedOn == 0 {
+			inv.OwnedArtifacts[artifactID] = append(instances[:i], instances[i+1:]...)
+			if len(inv.OwnedArtifacts[artifactID]) == 0 {
+				delete(inv.OwnedArtifacts, artifactID)
+			}
+			return nil
+		}
+	}
+	return fmt.Errorf("artifact %q has no unequipped instances, unequip first", artifactID)
+}
+
+// MarkArtifactEquipped marks the first available instance of an artifact as equipped on a squad.
+func MarkArtifactEquipped(inv *ArtifactInventoryData, artifactID string, squadID ecs.EntityID) error {
+	instances, exists := inv.OwnedArtifacts[artifactID]
+	if !exists || len(instances) == 0 {
+		return fmt.Errorf("artifact %q not in inventory", artifactID)
+	}
+	for _, inst := range instances {
+		if inst.EquippedOn == 0 {
+			inst.EquippedOn = squadID
+			return nil
+		}
+	}
+	return fmt.Errorf("artifact %q has no available instances", artifactID)
+}
+
+// MarkArtifactAvailable marks the instance of an artifact equipped on the given squad as available.
+func MarkArtifactAvailable(inv *ArtifactInventoryData, artifactID string, squadID ecs.EntityID) error {
+	instances, exists := inv.OwnedArtifacts[artifactID]
+	if !exists || len(instances) == 0 {
+		return fmt.Errorf("artifact %q not in inventory", artifactID)
+	}
+	for _, inst := range instances {
+		if inst.EquippedOn == squadID {
+			inst.EquippedOn = 0
+			return nil
+		}
+	}
+	return fmt.Errorf("artifact %q not equipped on squad %d", artifactID, squadID)
+}
+
 // EquipArtifact equips an artifact on a squad. The player must own the artifact
 // and it must be available (not equipped elsewhere). The squad must have a free slot.
 func EquipArtifact(playerID, squadID ecs.EntityID, artifactID string, manager *common.EntityManager) error {
@@ -23,8 +83,8 @@ func EquipArtifact(playerID, squadID ecs.EntityID, artifactID string, manager *c
 	if inventory == nil {
 		return fmt.Errorf("player %d has no artifact inventory", playerID)
 	}
-	if !inventory.IsArtifactAvailable(artifactID) {
-		if !inventory.OwnsArtifact(artifactID) {
+	if !IsArtifactAvailable(inventory, artifactID) {
+		if !OwnsArtifact(inventory, artifactID) {
 			return fmt.Errorf("player does not own artifact %q", artifactID)
 		}
 		return fmt.Errorf("artifact %q is already equipped on another squad", artifactID)
@@ -59,7 +119,7 @@ func EquipArtifact(playerID, squadID ecs.EntityID, artifactID string, manager *c
 	data.EquippedArtifacts = append(data.EquippedArtifacts, artifactID)
 
 	// Mark as equipped in inventory
-	if err := inventory.MarkArtifactEquipped(artifactID, squadID); err != nil {
+	if err := MarkArtifactEquipped(inventory, artifactID, squadID); err != nil {
 		// Rollback: remove the artifact we just appended
 		data.EquippedArtifacts = data.EquippedArtifacts[:len(data.EquippedArtifacts)-1]
 		return fmt.Errorf("failed to mark artifact equipped: %w", err)
@@ -95,7 +155,7 @@ func UnequipArtifact(playerID, squadID ecs.EntityID, artifactID string, manager 
 		data.EquippedArtifacts = append(data.EquippedArtifacts, artifactID)
 		return fmt.Errorf("player %d has no artifact inventory", playerID)
 	}
-	if err := inventory.MarkArtifactAvailable(artifactID, squadID); err != nil {
+	if err := MarkArtifactAvailable(inventory, artifactID, squadID); err != nil {
 		// Rollback: re-add the artifact
 		data.EquippedArtifacts = append(data.EquippedArtifacts, artifactID)
 		return fmt.Errorf("failed to return artifact to inventory: %w", err)

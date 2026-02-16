@@ -82,6 +82,7 @@ type StandDownBehavior struct{ BaseBehavior }
 
 func (StandDownBehavior) BehaviorKey() string      { return BehaviorStandDown }
 func (StandDownBehavior) IsPlayerActivated() bool   { return true }
+func (StandDownBehavior) TargetType() int           { return TargetEnemy }
 
 func (StandDownBehavior) Activate(ctx *BehaviorContext, targetSquadID ecs.EntityID) error {
 	if err := activateWithPending(ctx, BehaviorStandDown, ChargeOncePerBattle, targetSquadID); err != nil {
@@ -106,6 +107,7 @@ type DeadlockShacklesBehavior struct{ BaseBehavior }
 
 func (DeadlockShacklesBehavior) BehaviorKey() string    { return BehaviorDeadlockShackles }
 func (DeadlockShacklesBehavior) IsPlayerActivated() bool { return true }
+func (DeadlockShacklesBehavior) TargetType() int         { return TargetEnemy }
 
 func (DeadlockShacklesBehavior) Activate(ctx *BehaviorContext, targetSquadID ecs.EntityID) error {
 	if err := activateWithPending(ctx, BehaviorDeadlockShackles, ChargeOncePerBattle, targetSquadID); err != nil {
@@ -132,6 +134,7 @@ type AnthemPerseveranceBehavior struct{ BaseBehavior }
 
 func (AnthemPerseveranceBehavior) BehaviorKey() string    { return BehaviorAnthemPerseverance }
 func (AnthemPerseveranceBehavior) IsPlayerActivated() bool { return true }
+func (AnthemPerseveranceBehavior) TargetType() int         { return TargetFriendly }
 
 func (AnthemPerseveranceBehavior) Activate(ctx *BehaviorContext, targetSquadID ecs.EntityID) error {
 	if err := requireCharge(ctx, BehaviorAnthemPerseverance); err != nil {
@@ -197,6 +200,7 @@ type ChainOfCommandBehavior struct{ BaseBehavior }
 
 func (ChainOfCommandBehavior) BehaviorKey() string    { return BehaviorChainOfCommand }
 func (ChainOfCommandBehavior) IsPlayerActivated() bool { return true }
+func (ChainOfCommandBehavior) TargetType() int         { return TargetFriendly }
 
 func (ChainOfCommandBehavior) Activate(ctx *BehaviorContext, targetSquadID ecs.EntityID) error {
 	if err := requireCharge(ctx, BehaviorChainOfCommand); err != nil {

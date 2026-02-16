@@ -8,6 +8,47 @@ import (
 	"github.com/bytearena/ecs"
 )
 
+// --- Test-only query helpers ---
+
+func getAvailableArtifacts(inv *ArtifactInventoryData) []string {
+	var result []string
+	for id, instances := range inv.OwnedArtifacts {
+		for _, inst := range instances {
+			if inst.EquippedOn == 0 {
+				result = append(result, id)
+				break
+			}
+		}
+	}
+	return result
+}
+
+func getEquippedArtifacts(inv *ArtifactInventoryData) []string {
+	var result []string
+	for id, instances := range inv.OwnedArtifacts {
+		for _, inst := range instances {
+			if inst.EquippedOn != 0 {
+				result = append(result, id)
+				break
+			}
+		}
+	}
+	return result
+}
+
+func getFirstSquadWithArtifact(inv *ArtifactInventoryData, artifactID string) ecs.EntityID {
+	instances, exists := inv.OwnedArtifacts[artifactID]
+	if !exists {
+		return 0
+	}
+	for _, inst := range instances {
+		if inst.EquippedOn != 0 {
+			return inst.EquippedOn
+		}
+	}
+	return 0
+}
+
 // ========================================
 // PURE DATA STRUCTURE TESTS
 // ========================================
@@ -17,7 +58,7 @@ func TestNewArtifactInventory(t *testing.T) {
 	if inv == nil {
 		t.Fatal("Expected non-nil inventory")
 	}
-	current, max := inv.GetArtifactCount()
+	current, max := GetArtifactCount(inv)
 	if current != 0 {
 		t.Errorf("Expected 0 artifacts, got %d", current)
 	}
@@ -28,14 +69,14 @@ func TestNewArtifactInventory(t *testing.T) {
 
 func TestAddArtifact(t *testing.T) {
 	inv := NewArtifactInventory(5)
-	err := inv.AddArtifact("sword_of_dawn")
+	err := AddArtifactToInventory(inv, "sword_of_dawn")
 	if err != nil {
 		t.Fatalf("Failed to add artifact: %v", err)
 	}
-	if !inv.OwnsArtifact("sword_of_dawn") {
+	if !OwnsArtifact(inv, "sword_of_dawn") {
 		t.Error("Expected to own artifact after adding")
 	}
-	current, _ := inv.GetArtifactCount()
+	current, _ := GetArtifactCount(inv)
 	if current != 1 {
 		t.Errorf("Expected 1 artifact, got %d", current)
 	}
@@ -43,12 +84,12 @@ func TestAddArtifact(t *testing.T) {
 
 func TestAddDuplicate(t *testing.T) {
 	inv := NewArtifactInventory(5)
-	inv.AddArtifact("sword_of_dawn")
-	err := inv.AddArtifact("sword_of_dawn")
+	AddArtifactToInventory(inv, "sword_of_dawn")
+	err := AddArtifactToInventory(inv, "sword_of_dawn")
 	if err != nil {
 		t.Errorf("Adding duplicate should succeed (instance-based): %v", err)
 	}
-	current, _ := inv.GetArtifactCount()
+	current, _ := GetArtifactCount(inv)
 	if current != 2 {
 		t.Errorf("Expected 2 instances, got %d", current)
 	}
@@ -56,13 +97,13 @@ func TestAddDuplicate(t *testing.T) {
 
 func TestAddOverCapacity(t *testing.T) {
 	inv := NewArtifactInventory(2)
-	inv.AddArtifact("artifact_a")
-	inv.AddArtifact("artifact_b")
-	err := inv.AddArtifact("artifact_c")
+	AddArtifactToInventory(inv, "artifact_a")
+	AddArtifactToInventory(inv, "artifact_b")
+	err := AddArtifactToInventory(inv, "artifact_c")
 	if err == nil {
 		t.Error("Expected error when exceeding capacity")
 	}
-	current, _ := inv.GetArtifactCount()
+	current, _ := GetArtifactCount(inv)
 	if current != 2 {
 		t.Errorf("Expected 2 artifacts, got %d", current)
 	}
@@ -70,20 +111,20 @@ func TestAddOverCapacity(t *testing.T) {
 
 func TestRemoveArtifact(t *testing.T) {
 	inv := NewArtifactInventory(5)
-	inv.AddArtifact("sword_of_dawn")
+	AddArtifactToInventory(inv, "sword_of_dawn")
 
-	err := inv.RemoveArtifact("sword_of_dawn")
+	err := RemoveArtifactFromInventory(inv, "sword_of_dawn")
 	if err != nil {
 		t.Fatalf("Failed to remove artifact: %v", err)
 	}
-	if inv.OwnsArtifact("sword_of_dawn") {
+	if OwnsArtifact(inv, "sword_of_dawn") {
 		t.Error("Should not own artifact after removal")
 	}
 }
 
 func TestRemoveNonexistent(t *testing.T) {
 	inv := NewArtifactInventory(5)
-	err := inv.RemoveArtifact("nonexistent")
+	err := RemoveArtifactFromInventory(inv, "nonexistent")
 	if err == nil {
 		t.Error("Expected error when removing nonexistent artifact")
 	}
@@ -91,40 +132,40 @@ func TestRemoveNonexistent(t *testing.T) {
 
 func TestRemoveEquippedFails(t *testing.T) {
 	inv := NewArtifactInventory(5)
-	inv.AddArtifact("sword_of_dawn")
-	inv.MarkArtifactEquipped("sword_of_dawn", ecs.EntityID(42))
+	AddArtifactToInventory(inv, "sword_of_dawn")
+	MarkArtifactEquipped(inv, "sword_of_dawn", ecs.EntityID(42))
 
-	err := inv.RemoveArtifact("sword_of_dawn")
+	err := RemoveArtifactFromInventory(inv, "sword_of_dawn")
 	if err == nil {
 		t.Error("Expected error when removing equipped artifact")
 	}
-	if !inv.OwnsArtifact("sword_of_dawn") {
+	if !OwnsArtifact(inv, "sword_of_dawn") {
 		t.Error("Equipped artifact should still be owned after failed removal")
 	}
 }
 
 func TestMarkEquipped(t *testing.T) {
 	inv := NewArtifactInventory(5)
-	inv.AddArtifact("sword_of_dawn")
+	AddArtifactToInventory(inv, "sword_of_dawn")
 
-	err := inv.MarkArtifactEquipped("sword_of_dawn", ecs.EntityID(10))
+	err := MarkArtifactEquipped(inv, "sword_of_dawn", ecs.EntityID(10))
 	if err != nil {
 		t.Fatalf("Failed to mark equipped: %v", err)
 	}
-	if inv.IsArtifactAvailable("sword_of_dawn") {
+	if IsArtifactAvailable(inv, "sword_of_dawn") {
 		t.Error("Equipped artifact should not be available")
 	}
-	if inv.GetSquadWithArtifact("sword_of_dawn") != ecs.EntityID(10) {
-		t.Errorf("Expected squad 10, got %d", inv.GetSquadWithArtifact("sword_of_dawn"))
+	if getFirstSquadWithArtifact(inv, "sword_of_dawn") != ecs.EntityID(10) {
+		t.Errorf("Expected squad 10, got %d", getFirstSquadWithArtifact(inv, "sword_of_dawn"))
 	}
 }
 
 func TestMarkEquippedAlreadyEquipped(t *testing.T) {
 	inv := NewArtifactInventory(5)
-	inv.AddArtifact("sword_of_dawn")
-	inv.MarkArtifactEquipped("sword_of_dawn", ecs.EntityID(10))
+	AddArtifactToInventory(inv, "sword_of_dawn")
+	MarkArtifactEquipped(inv, "sword_of_dawn", ecs.EntityID(10))
 
-	err := inv.MarkArtifactEquipped("sword_of_dawn", ecs.EntityID(20))
+	err := MarkArtifactEquipped(inv, "sword_of_dawn", ecs.EntityID(20))
 	if err == nil {
 		t.Error("Expected error when marking already-equipped artifact")
 	}
@@ -132,26 +173,26 @@ func TestMarkEquippedAlreadyEquipped(t *testing.T) {
 
 func TestMarkAvailable(t *testing.T) {
 	inv := NewArtifactInventory(5)
-	inv.AddArtifact("sword_of_dawn")
-	inv.MarkArtifactEquipped("sword_of_dawn", ecs.EntityID(10))
+	AddArtifactToInventory(inv, "sword_of_dawn")
+	MarkArtifactEquipped(inv, "sword_of_dawn", ecs.EntityID(10))
 
-	err := inv.MarkArtifactAvailable("sword_of_dawn", ecs.EntityID(10))
+	err := MarkArtifactAvailable(inv, "sword_of_dawn", ecs.EntityID(10))
 	if err != nil {
 		t.Fatalf("Failed to mark available: %v", err)
 	}
-	if !inv.IsArtifactAvailable("sword_of_dawn") {
+	if !IsArtifactAvailable(inv, "sword_of_dawn") {
 		t.Error("Artifact should be available after marking available")
 	}
 }
 
-func TestGetAvailableArtifacts(t *testing.T) {
+func TestgetAvailableArtifacts(t *testing.T) {
 	inv := NewArtifactInventory(5)
-	inv.AddArtifact("artifact_a")
-	inv.AddArtifact("artifact_b")
-	inv.AddArtifact("artifact_c")
-	inv.MarkArtifactEquipped("artifact_b", ecs.EntityID(10))
+	AddArtifactToInventory(inv, "artifact_a")
+	AddArtifactToInventory(inv, "artifact_b")
+	AddArtifactToInventory(inv, "artifact_c")
+	MarkArtifactEquipped(inv, "artifact_b", ecs.EntityID(10))
 
-	available := inv.GetAvailableArtifacts()
+	available := getAvailableArtifacts(inv)
 	if len(available) != 2 {
 		t.Errorf("Expected 2 available, got %d", len(available))
 	}
@@ -164,14 +205,14 @@ func TestGetAvailableArtifacts(t *testing.T) {
 	}
 }
 
-func TestGetEquippedArtifacts(t *testing.T) {
+func TestgetEquippedArtifacts(t *testing.T) {
 	inv := NewArtifactInventory(5)
-	inv.AddArtifact("artifact_a")
-	inv.AddArtifact("artifact_b")
-	inv.AddArtifact("artifact_c")
-	inv.MarkArtifactEquipped("artifact_b", ecs.EntityID(10))
+	AddArtifactToInventory(inv, "artifact_a")
+	AddArtifactToInventory(inv, "artifact_b")
+	AddArtifactToInventory(inv, "artifact_c")
+	MarkArtifactEquipped(inv, "artifact_b", ecs.EntityID(10))
 
-	equipped := inv.GetEquippedArtifacts()
+	equipped := getEquippedArtifacts(inv)
 	if len(equipped) != 1 {
 		t.Errorf("Expected 1 equipped, got %d", len(equipped))
 	}
@@ -182,42 +223,42 @@ func TestGetEquippedArtifacts(t *testing.T) {
 
 func TestOwnsArtifact(t *testing.T) {
 	inv := NewArtifactInventory(5)
-	if inv.OwnsArtifact("nonexistent") {
+	if OwnsArtifact(inv, "nonexistent") {
 		t.Error("Should not own artifact that was never added")
 	}
-	inv.AddArtifact("sword_of_dawn")
-	if !inv.OwnsArtifact("sword_of_dawn") {
+	AddArtifactToInventory(inv, "sword_of_dawn")
+	if !OwnsArtifact(inv, "sword_of_dawn") {
 		t.Error("Should own added artifact")
 	}
 	// Owns even when equipped
-	inv.MarkArtifactEquipped("sword_of_dawn", ecs.EntityID(10))
-	if !inv.OwnsArtifact("sword_of_dawn") {
+	MarkArtifactEquipped(inv, "sword_of_dawn", ecs.EntityID(10))
+	if !OwnsArtifact(inv, "sword_of_dawn") {
 		t.Error("Should still own equipped artifact")
 	}
 }
 
 func TestIsArtifactAvailable(t *testing.T) {
 	inv := NewArtifactInventory(5)
-	if inv.IsArtifactAvailable("nonexistent") {
+	if IsArtifactAvailable(inv, "nonexistent") {
 		t.Error("Nonexistent artifact should not be available")
 	}
-	inv.AddArtifact("sword_of_dawn")
-	if !inv.IsArtifactAvailable("sword_of_dawn") {
+	AddArtifactToInventory(inv, "sword_of_dawn")
+	if !IsArtifactAvailable(inv, "sword_of_dawn") {
 		t.Error("Newly added artifact should be available")
 	}
-	inv.MarkArtifactEquipped("sword_of_dawn", ecs.EntityID(10))
-	if inv.IsArtifactAvailable("sword_of_dawn") {
+	MarkArtifactEquipped(inv, "sword_of_dawn", ecs.EntityID(10))
+	if IsArtifactAvailable(inv, "sword_of_dawn") {
 		t.Error("Equipped artifact should not be available")
 	}
 }
 
 func TestCanAddArtifact(t *testing.T) {
 	inv := NewArtifactInventory(1)
-	if !inv.CanAddArtifact() {
+	if !CanAddArtifact(inv) {
 		t.Error("Should be able to add to empty inventory")
 	}
-	inv.AddArtifact("artifact_a")
-	if inv.CanAddArtifact() {
+	AddArtifactToInventory(inv, "artifact_a")
+	if CanAddArtifact(inv) {
 		t.Error("Should not be able to add to full inventory")
 	}
 }
@@ -239,7 +280,7 @@ func TestGetPlayerArtifactInventory(t *testing.T) {
 	if inv == nil {
 		t.Fatal("Expected non-nil inventory from player entity")
 	}
-	_, max := inv.GetArtifactCount()
+	_, max := GetArtifactCount(inv)
 	if max != 10 {
 		t.Errorf("Expected max 10, got %d", max)
 	}
@@ -265,61 +306,61 @@ func TestGetPlayerArtifactInventory_NoComponent(t *testing.T) {
 func TestAddMultipleCopies(t *testing.T) {
 	inv := NewArtifactInventory(10)
 	for i := 0; i < 3; i++ {
-		if err := inv.AddArtifact("iron_bulwark"); err != nil {
+		if err := AddArtifactToInventory(inv, "iron_bulwark"); err != nil {
 			t.Fatalf("Failed to add copy %d: %v", i+1, err)
 		}
 	}
-	current, _ := inv.GetArtifactCount()
+	current, _ := GetArtifactCount(inv)
 	if current != 3 {
 		t.Errorf("Expected 3 instances, got %d", current)
 	}
-	if inv.GetInstanceCount("iron_bulwark") != 3 {
-		t.Errorf("Expected 3 instances of iron_bulwark, got %d", inv.GetInstanceCount("iron_bulwark"))
+	if GetInstanceCount(inv, "iron_bulwark") != 3 {
+		t.Errorf("Expected 3 instances of iron_bulwark, got %d", GetInstanceCount(inv, "iron_bulwark"))
 	}
 }
 
 func TestEquipMultipleInstances(t *testing.T) {
 	inv := NewArtifactInventory(10)
-	inv.AddArtifact("iron_bulwark")
-	inv.AddArtifact("iron_bulwark")
+	AddArtifactToInventory(inv, "iron_bulwark")
+	AddArtifactToInventory(inv, "iron_bulwark")
 
 	// Equip first copy on squad 10
-	if err := inv.MarkArtifactEquipped("iron_bulwark", ecs.EntityID(10)); err != nil {
+	if err := MarkArtifactEquipped(inv, "iron_bulwark", ecs.EntityID(10)); err != nil {
 		t.Fatalf("Failed to equip on squad 10: %v", err)
 	}
 	// Equip second copy on squad 20
-	if err := inv.MarkArtifactEquipped("iron_bulwark", ecs.EntityID(20)); err != nil {
+	if err := MarkArtifactEquipped(inv, "iron_bulwark", ecs.EntityID(20)); err != nil {
 		t.Fatalf("Failed to equip on squad 20: %v", err)
 	}
 
 	// No more available
-	if inv.IsArtifactAvailable("iron_bulwark") {
+	if IsArtifactAvailable(inv, "iron_bulwark") {
 		t.Error("All instances should be equipped")
 	}
 
 	// Unequip from squad 10
-	if err := inv.MarkArtifactAvailable("iron_bulwark", ecs.EntityID(10)); err != nil {
+	if err := MarkArtifactAvailable(inv, "iron_bulwark", ecs.EntityID(10)); err != nil {
 		t.Fatalf("Failed to unequip from squad 10: %v", err)
 	}
 
 	// Now one available again
-	if !inv.IsArtifactAvailable("iron_bulwark") {
+	if !IsArtifactAvailable(inv, "iron_bulwark") {
 		t.Error("Expected one available instance after unequip")
 	}
 
 	// Squad 20 still equipped
-	if inv.GetSquadWithArtifact("iron_bulwark") != ecs.EntityID(20) {
-		t.Errorf("Expected squad 20 to still have artifact, got %d", inv.GetSquadWithArtifact("iron_bulwark"))
+	if getFirstSquadWithArtifact(inv, "iron_bulwark") != ecs.EntityID(20) {
+		t.Errorf("Expected squad 20 to still have artifact, got %d", getFirstSquadWithArtifact(inv, "iron_bulwark"))
 	}
 }
 
 func TestGetAllInstances(t *testing.T) {
 	inv := NewArtifactInventory(10)
-	inv.AddArtifact("iron_bulwark")
-	inv.AddArtifact("iron_bulwark")
-	inv.AddArtifact("berserkers_torc")
+	AddArtifactToInventory(inv, "iron_bulwark")
+	AddArtifactToInventory(inv, "iron_bulwark")
+	AddArtifactToInventory(inv, "berserkers_torc")
 
-	all := inv.GetAllInstances()
+	all := GetAllInstances(inv)
 	if len(all) != 3 {
 		t.Errorf("Expected 3 total instances, got %d", len(all))
 	}

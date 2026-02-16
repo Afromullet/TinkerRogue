@@ -11,8 +11,9 @@ import (
 )
 
 // Behavior string constants for major artifact behaviors.
-// Used as keys in charge tracking, hook BehaviorInitiativeFirstregistration, and artifact definitions.
+// Used as keys in charge tracking, hook registration, and artifact definitions.
 const (
+	// BehaviorInitiativeFirst is checked directly in combat initialization (not a per-turn hook).
 	BehaviorInitiativeFirst     = "initiative_first"    // Commander's Initiative Badge
 	BehaviorVanguardMovement    = "vanguard_movement"   // Vanguard's Oath
 	BehaviorDoubleTime          = "double_time"         // Double Time Drums
@@ -53,9 +54,17 @@ func (ctx *BehaviorContext) GetSquadSpeed(squadID ecs.EntityID) int {
 	return speed
 }
 
+// BehaviorTargetType describes what kind of target a behavior requires.
+const (
+	TargetNone     = 0
+	TargetFriendly = 1
+	TargetEnemy    = 2
+)
+
 // ArtifactBehavior defines the contract for major artifact behaviors.
 type ArtifactBehavior interface {
 	BehaviorKey() string
+	TargetType() int
 	OnPostReset(ctx *BehaviorContext, factionID ecs.EntityID, squadIDs []ecs.EntityID)
 	OnAttackComplete(ctx *BehaviorContext, attackerID, defenderID ecs.EntityID, result *squads.CombatResult)
 	OnTurnEnd(ctx *BehaviorContext, round int)
@@ -67,6 +76,7 @@ type ArtifactBehavior interface {
 // and override only the hooks they need.
 type BaseBehavior struct{}
 
+func (BaseBehavior) TargetType() int                                              { return TargetNone }
 func (BaseBehavior) OnPostReset(*BehaviorContext, ecs.EntityID, []ecs.EntityID) {}
 func (BaseBehavior) OnAttackComplete(*BehaviorContext, ecs.EntityID, ecs.EntityID, *squads.CombatResult) {
 }
