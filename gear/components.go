@@ -2,9 +2,6 @@ package gear
 
 import "github.com/bytearena/ecs"
 
-// MaxArtifactSlots is the maximum number of artifacts a squad can equip.
-const MaxArtifactSlots = 3
-
 // EquipmentData stores which artifacts are equipped on a squad.
 // EquippedArtifacts holds up to MaxArtifactSlots artifact definition IDs.
 type EquipmentData struct {

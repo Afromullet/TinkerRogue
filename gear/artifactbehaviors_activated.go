@@ -15,6 +15,7 @@ import (
 func init() {
 	RegisterBehavior(&DeadlockShacklesBehavior{})
 	RegisterBehavior(&ChainOfCommandBehavior{})
+	RegisterBehavior(&EchoDrumsBehavior{})
 }
 
 // requireCharge checks that the behavior's charge is available, returning a
@@ -158,5 +159,34 @@ func (ChainOfCommandBehavior) Activate(ctx *BehaviorContext, targetSquadID ecs.E
 
 	ctx.ChargeTracker.UseCharge(BehaviorChainOfCommand, ChargeOncePerRound)
 	fmt.Printf("[GEAR] Chain of Command: squad %d passes full action to squad %d\n", sourceSquadID, targetSquadID)
+	return nil
+}
+
+// ========================================
+// EchoDrumsBehavior — bonus movement phase after full move+attack
+// ========================================
+
+type EchoDrumsBehavior struct{ BaseBehavior }
+
+func (EchoDrumsBehavior) BehaviorKey() string      { return BehaviorEchoDrums }
+func (EchoDrumsBehavior) IsPlayerActivated() bool   { return true }
+func (EchoDrumsBehavior) TargetType() int           { return TargetFriendly }
+
+func (EchoDrumsBehavior) Activate(ctx *BehaviorContext, targetSquadID ecs.EntityID) error {
+	if err := requireCharge(ctx, BehaviorEchoDrums); err != nil {
+		return err
+	}
+	actionState := ctx.Cache.FindActionStateBySquadID(targetSquadID)
+	if actionState == nil {
+		return fmt.Errorf("squad %d has no action state", targetSquadID)
+	}
+	if !actionState.HasMoved || !actionState.HasActed {
+		return fmt.Errorf("squad %d must have moved and attacked first", targetSquadID)
+	}
+	squadSpeed := ctx.GetSquadSpeed(targetSquadID)
+	actionState.HasMoved = false
+	actionState.MovementRemaining = squadSpeed
+	ctx.ChargeTracker.UseCharge(BehaviorEchoDrums, ChargeOncePerRound)
+	fmt.Printf("[GEAR] Echo Drums: squad %d gets bonus movement phase (speed %d)\n", targetSquadID, squadSpeed)
 	return nil
 }

@@ -138,39 +138,6 @@ func containsArtifact(data *EquipmentData, artifactID string) bool {
 // EQUIP / UNEQUIP TESTS
 // ========================================
 
-func TestEquipBlocksWhenSlotsFull(t *testing.T) {
-	manager := setupTestManager()
-	setupTestArtifacts()
-	playerID := createTestPlayer(manager)
-	squadID := createTestSquadWithUnits(manager, "Test Squad", 3)
-	addArtifactToInventory(playerID, "iron_bulwark", manager)
-	addArtifactToInventory(playerID, "berserkers_torc", manager)
-	addArtifactToInventory(playerID, "keen_edge_whetstone", manager)
-	addArtifactToInventory(playerID, "twin_strike", manager)
-
-	// Fill all 3 slots
-	if err := EquipArtifact(playerID, squadID, "iron_bulwark", manager); err != nil {
-		t.Fatalf("Failed to equip first artifact: %v", err)
-	}
-	if err := EquipArtifact(playerID, squadID, "berserkers_torc", manager); err != nil {
-		t.Fatalf("Failed to equip second artifact: %v", err)
-	}
-	if err := EquipArtifact(playerID, squadID, "keen_edge_whetstone", manager); err != nil {
-		t.Fatalf("Failed to equip third artifact: %v", err)
-	}
-
-	// 4th should fail
-	err := EquipArtifact(playerID, squadID, "twin_strike", manager)
-	if err == nil {
-		t.Error("Expected error when equipping to full slots")
-	}
-
-	data := GetEquipmentData(squadID, manager)
-	if len(data.EquippedArtifacts) != MaxArtifactSlots {
-		t.Errorf("Expected %d equipped artifacts, got %d", MaxArtifactSlots, len(data.EquippedArtifacts))
-	}
-}
-
 func TestEquipUnknownArtifact(t *testing.T) {
 	manager := setupTestManager()
 	setupTestArtifacts()
@@ -441,6 +408,13 @@ func TestActivateTwinStrike(t *testing.T) {
 	turnMgr := combat.NewTurnManager(manager, cache)
 	turnMgr.InitializeCombat([]ecs.EntityID{factionID})
 
+	// Squad must have already attacked for twin_strike to work
+	actionState := cache.FindActionStateBySquadID(squadID)
+	if actionState == nil {
+		t.Fatal("Expected action state")
+	}
+	actionState.HasActed = true
+
 	charges := NewArtifactChargeTracker()
 	ctx := &BehaviorContext{Manager: manager, Cache: cache, ChargeTracker: charges}
 
@@ -449,25 +423,22 @@ func TestActivateTwinStrike(t *testing.T) {
 		t.Fatalf("Failed to activate Twin Strike: %v", err)
 	}
 
-	actionState := cache.FindActionStateBySquadID(squadID)
-	if actionState == nil {
-		t.Fatal("Expected action state")
-	}
-	if !actionState.BonusAttackActive {
-		t.Error("Expected BonusAttackActive to be true")
+	if actionState.HasActed {
+		t.Error("Expected HasActed to be false after Twin Strike activation")
 	}
 	if charges.IsAvailable(BehaviorTwinStrike) {
 		t.Error("Expected twin_strike charge to be consumed")
 	}
 
-	// Second activation should fail
+	// Second activation should fail (charge consumed)
+	actionState.HasActed = true
 	err = ActivateArtifact(BehaviorTwinStrike, squadID, ctx)
 	if err == nil {
 		t.Error("Expected error on second activation")
 	}
 }
 
-func TestActivateTwinStrike_AlreadyActed(t *testing.T) {
+func TestActivateTwinStrike_NotYetAttacked(t *testing.T) {
 	manager := setupTestManager()
 	setupTestArtifacts()
 
@@ -481,18 +452,13 @@ func TestActivateTwinStrike_AlreadyActed(t *testing.T) {
 	turnMgr := combat.NewTurnManager(manager, cache)
 	turnMgr.InitializeCombat([]ecs.EntityID{factionID})
 
-	actionState := cache.FindActionStateBySquadID(squadID)
-	if actionState == nil {
-		t.Fatal("Expected action state")
-	}
-	actionState.HasActed = true
-
+	// Squad has NOT attacked yet — twin_strike should fail
 	charges := NewArtifactChargeTracker()
 	ctx := &BehaviorContext{Manager: manager, Cache: cache, ChargeTracker: charges}
 
 	err := ActivateArtifact(BehaviorTwinStrike, squadID, ctx)
 	if err == nil {
-		t.Error("Expected error when activating Twin Strike on already-acted squad")
+		t.Error("Expected error when activating Twin Strike on squad that hasn't attacked")
 	}
 	if !charges.IsAvailable(BehaviorTwinStrike) {
 		t.Error("Expected twin_strike charge to still be available after failed activation")

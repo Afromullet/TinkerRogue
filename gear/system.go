@@ -3,6 +3,7 @@ package gear
 import (
 	"fmt"
 	"game_main/common"
+	"game_main/config"
 	"game_main/tactical/effects"
 	"game_main/tactical/squads"
 	"game_main/templates"
@@ -105,8 +106,8 @@ func EquipArtifact(playerID, squadID ecs.EntityID, artifactID string, manager *c
 	}
 
 	// Check slot availability
-	if len(data.EquippedArtifacts) >= MaxArtifactSlots {
-		return fmt.Errorf("all %d artifact slots are occupied", MaxArtifactSlots)
+	if len(data.EquippedArtifacts) >= config.DefaultMaxArtifactsPerCommander {
+		return fmt.Errorf("all %d artifact slots are occupied", config.DefaultMaxArtifactsPerCommander)
 	}
 
 	// Check not already equipped on this squad

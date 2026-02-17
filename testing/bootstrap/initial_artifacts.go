@@ -7,6 +7,7 @@ import (
 	"game_main/tactical/commander"
 	"game_main/tactical/squads"
 	"game_main/templates"
+	"sort"
 
 	"github.com/bytearena/ecs"
 )
@@ -35,43 +36,47 @@ func SeedAllArtifacts(playerID ecs.EntityID, count int, manager *common.EntityMa
 	return nil
 }
 
-// EquipPlayerActivatedArtifacts equips the 6 player-activated artifacts onto the first 2 squads.
-// Must be called after SeedAllArtifacts so the artifacts exist in inventory.
+// EquipPlayerActivatedArtifacts equips all major artifacts from the registry,
+// round-robin distributing them across every commander's squads.
+// Must be called after SeedAllArtifacts so enough artifact copies exist in inventory.
 func EquipPlayerActivatedArtifacts(playerID ecs.EntityID, manager *common.EntityManager) {
-	// Player-activated artifacts to equip (3 per squad)
-	batch1 := []string{"twin_strike", "chain_of_command"}
-	batch2 := []string{"saboteurs_hourglass", "deadlock_shackles"}
+	// Collect all major artifact IDs from the registry
+	var majorIDs []string
+	for id, def := range templates.ArtifactRegistry {
+		if def.Tier == "major" {
+			majorIDs = append(majorIDs, id)
+		}
+	}
+	sort.Strings(majorIDs) // deterministic ordering
 
-	// Get commander roster → first commander → squad roster
+	if len(majorIDs) == 0 {
+		fmt.Println("[EquipArtifacts] No major artifacts in registry, skipping")
+		return
+	}
+
+	// Get commander roster and equip each commander's squads
 	rosterData := commander.GetPlayerCommanderRoster(playerID, manager)
 	if rosterData == nil || len(rosterData.CommanderIDs) == 0 {
 		fmt.Println("[EquipArtifacts] No commanders found, skipping artifact equip")
 		return
 	}
 
-	commanderID := rosterData.CommanderIDs[0]
-	squadRoster := squads.GetPlayerSquadRoster(commanderID, manager)
-	if squadRoster == nil || len(squadRoster.OwnedSquads) < 2 {
-		fmt.Printf("[EquipArtifacts] Need at least 2 squads, have %d, skipping\n", len(squadRoster.OwnedSquads))
-		return
-	}
-
-	squad1 := squadRoster.OwnedSquads[0]
-	squad2 := squadRoster.OwnedSquads[1]
-
-	for _, id := range batch1 {
-		if err := gear.EquipArtifact(playerID, squad1, id, manager); err != nil {
-			fmt.Printf("[EquipArtifacts] Failed to equip %s on squad %d: %v\n", id, squad1, err)
-		} else {
-			fmt.Printf("[EquipArtifacts] Equipped %s on squad %d\n", id, squad1)
+	for _, commanderID := range rosterData.CommanderIDs {
+		squadRoster := squads.GetPlayerSquadRoster(commanderID, manager)
+		if squadRoster == nil || len(squadRoster.OwnedSquads) == 0 {
+			fmt.Printf("[EquipArtifacts] Commander %d has no squads, skipping\n", commanderID)
+			continue
 		}
-	}
 
-	for _, id := range batch2 {
-		if err := gear.EquipArtifact(playerID, squad2, id, manager); err != nil {
-			fmt.Printf("[EquipArtifacts] Failed to equip %s on squad %d: %v\n", id, squad2, err)
-		} else {
-			fmt.Printf("[EquipArtifacts] Equipped %s on squad %d\n", id, squad2)
+		// Round-robin artifacts across this commander's squads
+		squadList := squadRoster.OwnedSquads
+		for i, id := range majorIDs {
+			squadID := squadList[i%len(squadList)]
+			if err := gear.EquipArtifact(playerID, squadID, id, manager); err != nil {
+				fmt.Printf("[EquipArtifacts] Failed to equip %s on squad %d (commander %d): %v\n", id, squadID, commanderID, err)
+			} else {
+				fmt.Printf("[EquipArtifacts] Equipped %s on squad %d (commander %d)\n", id, squadID, commanderID)
+			}
 		}
 	}
 }

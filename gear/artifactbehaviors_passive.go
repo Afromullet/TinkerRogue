@@ -16,7 +16,6 @@ import (
 
 func init() {
 	RegisterBehavior(&EngagementChainsBehavior{})
-	RegisterBehavior(&EchoDrumsBehavior{})
 	RegisterBehavior(&SaboteursHourglassBehavior{})
 	RegisterBehavior(&TwinStrikeBehavior{})
 }
@@ -44,43 +43,6 @@ func (EngagementChainsBehavior) OnAttackComplete(ctx *BehaviorContext, attackerI
 	actionState.MovementRemaining = squadSpeed
 	actionState.HasMoved = false
 	fmt.Printf("[GEAR] Forced Engagement Chains: squad %d gets full move action (speed %d)\n", attackerID, squadSpeed)
-}
-
-// ========================================
-// EchoDrumsBehavior — bonus movement phase after full move+attack
-// ========================================
-
-type EchoDrumsBehavior struct{ BaseBehavior }
-
-func (EchoDrumsBehavior) BehaviorKey() string { return BehaviorEchoDrums }
-
-func (EchoDrumsBehavior) OnAttackComplete(ctx *BehaviorContext, attackerID, defenderID ecs.EntityID, result *squads.CombatResult) {
-	if result.AttackerDestroyed {
-		return
-	}
-	actionState := ctx.Cache.FindActionStateBySquadID(attackerID)
-	if actionState == nil {
-		return
-	}
-	if !actionState.HasMoved || !actionState.HasActed {
-		return
-	}
-	attackerFaction := ctx.GetSquadFaction(attackerID)
-	if attackerFaction == 0 {
-		return
-	}
-	factionSquads := ctx.GetFactionSquads(attackerFaction)
-	if !HasBehaviorInFaction(factionSquads, BehaviorEchoDrums, ctx.Manager) {
-		return
-	}
-	if ctx.ChargeTracker == nil || !ctx.ChargeTracker.IsAvailable(BehaviorEchoDrums) {
-		return
-	}
-	squadSpeed := ctx.GetSquadSpeed(attackerID)
-	actionState.HasMoved = false
-	actionState.MovementRemaining = squadSpeed
-	ctx.ChargeTracker.UseCharge(BehaviorEchoDrums, ChargeOncePerRound)
-	fmt.Printf("[GEAR] Echo Drums: squad %d gets bonus movement phase (speed %d)\n", attackerID, squadSpeed)
 }
 
 // ========================================
@@ -142,10 +104,10 @@ func (TwinStrikeBehavior) Activate(ctx *BehaviorContext, targetSquadID ecs.Entit
 	if actionState == nil {
 		return fmt.Errorf("squad %d has no action state", targetSquadID)
 	}
-	if actionState.HasActed {
-		return fmt.Errorf("squad %d has already acted this turn", targetSquadID)
+	if !actionState.HasActed {
+		return fmt.Errorf("squad %d has not attacked yet this turn", targetSquadID)
 	}
-	actionState.BonusAttackActive = true
+	actionState.HasActed = false
 	ctx.ChargeTracker.UseCharge(BehaviorTwinStrike, ChargeOncePerBattle)
 	fmt.Printf("[GEAR] Twin Strike Banner activated on squad %d\n", targetSquadID)
 	return nil
