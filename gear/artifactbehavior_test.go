@@ -8,16 +8,11 @@ func TestBehaviorRegistry_AllRegistered(t *testing.T) {
 	all := AllBehaviors()
 
 	expectedKeys := []string{
-		BehaviorVanguardMovement,
 		BehaviorEngagementChains,
-		BehaviorMomentumStandard,
 		BehaviorEchoDrums,
 		BehaviorSaboteurWsHourglass,
-		BehaviorDoubleTime,
-		BehaviorStandDown,
+		BehaviorTwinStrike,
 		BehaviorDeadlockShackles,
-		BehaviorAnthemPerseverance,
-		BehaviorRallyingHorn,
 		BehaviorChainOfCommand,
 	}
 

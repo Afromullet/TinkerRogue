@@ -1,0 +1,46 @@
+{
+  "artifacts": [
+    {
+      "id": "twin_strike_banner",
+      "name": "Twin Strike Banner",
+      "description": "Once per battle, one friendly squad may attack twice in a single activation",
+      "tier": "major",
+      "behavior": "twin_strike"
+    },
+    {
+      "id": "chain_of_command_scepter",
+      "name": "Chain of Command Scepter",
+      "description": "Once per round, pass your squad's entire action to any friendly squad",
+      "tier": "major",
+      "behavior": "chain_of_command"
+    },
+    {
+      "id": "forced_engagement_chains",
+      "name": "Forced Engagement Chains",
+      "description": "When your squad destroys an enemy, it gets a full move action",
+      "tier": "major",
+      "behavior": "engagement_chains"
+    },
+    {
+      "id": "saboteurs_hourglass",
+      "name": "Saboteur's Hourglass",
+      "description": "Once per battle, reduce all enemy squads' movement by 2 at the start of their turn",
+      "tier": "major",
+      "behavior": "saboteurs_hourglass"
+    },
+    {
+      "id": "deadlock_shackles",
+      "name": "Deadlock Shackles",
+      "description": "Once per battle, completely skip one enemy squad's next activation",
+      "tier": "major",
+      "behavior": "deadlock_shackles"
+    },
+    {
+      "id": "echo_drums",
+      "name": "Echo Drums",
+      "description": "Once per round, after a squad moves and attacks, it gets a full bonus movement phase",
+      "tier": "major",
+      "behavior": "echo_drums"
+    }
+  ]
+}

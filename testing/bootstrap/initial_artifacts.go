@@ -39,8 +39,8 @@ func SeedAllArtifacts(playerID ecs.EntityID, count int, manager *common.EntityMa
 // Must be called after SeedAllArtifacts so the artifacts exist in inventory.
 func EquipPlayerActivatedArtifacts(playerID ecs.EntityID, manager *common.EntityManager) {
 	// Player-activated artifacts to equip (3 per squad)
-	batch1 := []string{"double_time_drums", "stand_down_orders", "chain_of_command_scepter"}
-	batch2 := []string{"saboteurs_hourglass", "anthem_of_perseverance", "deadlock_shackles"}
+	batch1 := []string{"twin_strike_banner", "chain_of_command_scepter"}
+	batch2 := []string{"saboteurs_hourglass", "deadlock_shackles"}
 
 	// Get commander roster → first commander → squad roster
 	rosterData := commander.GetPlayerCommanderRoster(playerID, manager)

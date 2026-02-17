@@ -13,18 +13,11 @@ import (
 // Behavior string constants for major artifact behaviors.
 // Used as keys in charge tracking, hook registration, and artifact definitions.
 const (
-	// BehaviorInitiativeFirst is checked directly in combat initialization (not a per-turn hook).
-	BehaviorInitiativeFirst     = "initiative_first"    // Commander's Initiative Badge
-	BehaviorVanguardMovement    = "vanguard_movement"   // Vanguard's Oath
-	BehaviorDoubleTime          = "double_time"         // Double Time Drums
 	BehaviorEngagementChains    = "engagement_chains"   // Forced Engagement Chains
-	BehaviorMomentumStandard    = "momentum_standard"   // Momentum Standard
 	BehaviorSaboteurWsHourglass = "saboteurs_hourglass" // Saboteur's Hourglass
 	BehaviorEchoDrums           = "echo_drums"          // Echo Drums
-	BehaviorStandDown           = "stand_down"          // Stand Down Orders
 	BehaviorChainOfCommand      = "chain_of_command"    // Chain of Command Scepter
-	BehaviorRallyingHorn        = "rallying_horn"       // Rallying War Horn
-	BehaviorAnthemPerseverance  = "anthem_perseverance" // Anthem of Perseverance
+	BehaviorTwinStrike          = "twin_strike"          // Twin Strike Banner
 	BehaviorDeadlockShackles    = "deadlock_shackles"   // Deadlock Shackles
 )
 

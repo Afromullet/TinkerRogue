@@ -139,17 +139,7 @@ func (cs *CombatService) InitializeCombat(factionIDs []ecs.EntityID) error {
 		gear.ApplyArtifactStatEffects(factionSquads, cs.EntityManager)
 	}
 
-	// Check if any player squad has Commander's Initiative Badge
-	var forceFirstFactionID ecs.EntityID
-	if playerFactionID != 0 {
-		playerSquads := combat.GetSquadsForFaction(playerFactionID, cs.EntityManager)
-		if gear.HasBehaviorInFaction(playerSquads, gear.BehaviorInitiativeFirst, cs.EntityManager) {
-			forceFirstFactionID = playerFactionID
-			fmt.Println("[GEAR] Commander's Initiative Badge: forcing player faction first")
-		}
-	}
-
-	return cs.TurnManager.InitializeCombat(factionIDs, forceFirstFactionID)
+	return cs.TurnManager.InitializeCombat(factionIDs)
 }
 
 // assignDeployedSquadsToPlayerFaction finds all squads with positions but no FactionMembershipComponent

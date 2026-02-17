@@ -12,8 +12,8 @@ func TestNewChargeTracker(t *testing.T) {
 		t.Fatal("Expected non-nil charge tracker")
 	}
 	// Verify all charges are available on a fresh tracker
-	if !ct.IsAvailable(BehaviorDoubleTime) {
-		t.Error("Expected double_time to be available on fresh tracker")
+	if !ct.IsAvailable(BehaviorDeadlockShackles) {
+		t.Error("Expected deadlock_shackles to be available on fresh tracker")
 	}
 	if !ct.IsAvailable(BehaviorEchoDrums) {
 		t.Error("Expected echo_drums to be available on fresh tracker")
@@ -27,14 +27,14 @@ func TestUseAndCheckCharge(t *testing.T) {
 	ct := NewArtifactChargeTracker()
 
 	// Initially available
-	if !ct.IsAvailable(BehaviorDoubleTime) {
-		t.Error("Expected double_time to be available initially")
+	if !ct.IsAvailable(BehaviorDeadlockShackles) {
+		t.Error("Expected deadlock_shackles to be available initially")
 	}
 
 	// Use battle charge
-	ct.UseCharge(BehaviorDoubleTime, ChargeOncePerBattle)
-	if ct.IsAvailable(BehaviorDoubleTime) {
-		t.Error("Expected double_time to be unavailable after battle charge")
+	ct.UseCharge(BehaviorDeadlockShackles, ChargeOncePerBattle)
+	if ct.IsAvailable(BehaviorDeadlockShackles) {
+		t.Error("Expected deadlock_shackles to be unavailable after battle charge")
 	}
 
 	// Use round charge for a different behavior
@@ -44,21 +44,21 @@ func TestUseAndCheckCharge(t *testing.T) {
 	}
 
 	// Unrelated behavior still available
-	if !ct.IsAvailable(BehaviorMomentumStandard) {
-		t.Error("Expected momentum_standard to still be available")
+	if !ct.IsAvailable(BehaviorChainOfCommand) {
+		t.Error("Expected chain_of_command to still be available")
 	}
 }
 
 func TestRefreshRoundCharges(t *testing.T) {
 	ct := NewArtifactChargeTracker()
 
-	ct.UseCharge(BehaviorDoubleTime, ChargeOncePerBattle)
+	ct.UseCharge(BehaviorDeadlockShackles, ChargeOncePerBattle)
 	ct.UseCharge(BehaviorEchoDrums, ChargeOncePerRound)
 
 	ct.RefreshRoundCharges()
 
 	// Battle charge persists
-	if ct.IsAvailable(BehaviorDoubleTime) {
+	if ct.IsAvailable(BehaviorDeadlockShackles) {
 		t.Error("Battle charge should persist after refresh")
 	}
 
@@ -103,14 +103,14 @@ func TestPendingEffects(t *testing.T) {
 func TestReset(t *testing.T) {
 	ct := NewArtifactChargeTracker()
 
-	ct.UseCharge(BehaviorDoubleTime, ChargeOncePerBattle)
+	ct.UseCharge(BehaviorDeadlockShackles, ChargeOncePerBattle)
 	ct.UseCharge(BehaviorEchoDrums, ChargeOncePerRound)
 	ct.AddPendingEffect(BehaviorSaboteurWsHourglass, ecs.EntityID(10))
 
 	ct.Reset()
 
-	if !ct.IsAvailable(BehaviorDoubleTime) {
-		t.Error("Expected double_time available after reset")
+	if !ct.IsAvailable(BehaviorDeadlockShackles) {
+		t.Error("Expected deadlock_shackles available after reset")
 	}
 	if !ct.IsAvailable(BehaviorEchoDrums) {
 		t.Error("Expected echo_drums available after reset")

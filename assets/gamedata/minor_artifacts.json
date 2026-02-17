@@ -1,0 +1,70 @@
+{
+  "artifacts": [
+    {
+      "id": "iron_bulwark",
+      "name": "Iron Bulwark",
+      "description": "A reinforced shield fragment that hardens the squad's defenses",
+      "tier": "minor",
+      "statModifiers": [
+        { "stat": "armor", "modifier": 2 }
+      ]
+    },
+    {
+      "id": "keen_edge_whetstone",
+      "name": "Keen Edge Whetstone",
+      "description": "A razor-sharp whetstone that hones weapons to deadly precision",
+      "tier": "minor",
+      "statModifiers": [
+        { "stat": "weapon", "modifier": 2 }
+      ]
+    },
+    {
+      "id": "fleet_runners_sandals",
+      "name": "Fleet Runner's Sandals",
+      "description": "Enchanted sandals that quicken the squad's march",
+      "tier": "minor",
+      "statModifiers": [
+        { "stat": "movementspeed", "modifier": 1 }
+      ]
+    },
+    {
+      "id": "marksmans_scope",
+      "name": "Marksman's Scope",
+      "description": "A telescopic scope that extends the squad's effective range",
+      "tier": "minor",
+      "statModifiers": [
+        { "stat": "attackrange", "modifier": 1 }
+      ]
+    },
+    {
+      "id": "berserkers_torc",
+      "name": "Berserker's Torc",
+      "description": "A blood-red torc that fuels rage at the cost of protection",
+      "tier": "minor",
+      "statModifiers": [
+        { "stat": "strength", "modifier": 2 },
+        { "stat": "armor", "modifier": -1 }
+      ]
+    },
+    {
+      "id": "sentinels_plate",
+      "name": "Sentinel's Plate",
+      "description": "Heavy armor plating that bolsters defense but slows movement",
+      "tier": "minor",
+      "statModifiers": [
+        { "stat": "armor", "modifier": 2 },
+        { "stat": "movementspeed", "modifier": -1 }
+      ]
+    },
+    {
+      "id": "duelists_gloves",
+      "name": "Duelist's Gloves",
+      "description": "Fine combat gloves that enhance both strength and finesse",
+      "tier": "minor",
+      "statModifiers": [
+        { "stat": "dexterity", "modifier": 1 },
+        { "stat": "strength", "modifier": 1 }
+      ]
+    }
+  ]
+}

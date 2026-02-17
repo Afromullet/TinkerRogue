@@ -7,19 +7,13 @@ package gear
 
 import (
 	"fmt"
-	"game_main/common"
 	"game_main/tactical/combat"
-	"game_main/tactical/squads"
-	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"
 )
 
 func init() {
-	RegisterBehavior(&StandDownBehavior{})
 	RegisterBehavior(&DeadlockShacklesBehavior{})
-	RegisterBehavior(&AnthemPerseveranceBehavior{})
-	RegisterBehavior(&RallyingHornBehavior{})
 	RegisterBehavior(&ChainOfCommandBehavior{})
 }
 
@@ -33,7 +27,7 @@ func requireCharge(ctx *BehaviorContext, behaviorKey string) error {
 }
 
 // activateWithPending is the common pattern for behaviors that queue a pending
-// effect and consume a charge on activation (StandDown, Deadlock, Saboteur).
+// effect and consume a charge on activation (Deadlock, Saboteur).
 func activateWithPending(ctx *BehaviorContext, behaviorKey string, chargeType ChargeType, targetSquadID ecs.EntityID) error {
 	if err := requireCharge(ctx, behaviorKey); err != nil {
 		return err
@@ -75,31 +69,6 @@ func applyPendingToTargets(
 }
 
 // ========================================
-// StandDownBehavior — force enemy squad to skip attack
-// ========================================
-
-type StandDownBehavior struct{ BaseBehavior }
-
-func (StandDownBehavior) BehaviorKey() string      { return BehaviorStandDown }
-func (StandDownBehavior) IsPlayerActivated() bool   { return true }
-func (StandDownBehavior) TargetType() int           { return TargetEnemy }
-
-func (StandDownBehavior) Activate(ctx *BehaviorContext, targetSquadID ecs.EntityID) error {
-	if err := activateWithPending(ctx, BehaviorStandDown, ChargeOncePerBattle, targetSquadID); err != nil {
-		return err
-	}
-	fmt.Printf("[GEAR] Stand Down Orders activated targeting squad %d\n", targetSquadID)
-	return nil
-}
-
-func (StandDownBehavior) OnPostReset(ctx *BehaviorContext, factionID ecs.EntityID, squadIDs []ecs.EntityID) {
-	applyPendingToTargets(ctx, BehaviorStandDown, squadIDs, func(actionState *combat.ActionStateData, sid ecs.EntityID) {
-		actionState.HasActed = true
-		fmt.Printf("[GEAR] Stand Down Orders: squad %d cannot attack this turn\n", sid)
-	})
-}
-
-// ========================================
 // DeadlockShacklesBehavior — skip enemy squad's entire activation
 // ========================================
 
@@ -124,72 +93,6 @@ func (DeadlockShacklesBehavior) OnPostReset(ctx *BehaviorContext, factionID ecs.
 		actionState.MovementRemaining = 0
 		fmt.Printf("[GEAR] Deadlock Shackles: squad %d fully locked this turn\n", sid)
 	})
-}
-
-// ========================================
-// AnthemPerseveranceBehavior — grant friendly squad bonus attack
-// ========================================
-
-type AnthemPerseveranceBehavior struct{ BaseBehavior }
-
-func (AnthemPerseveranceBehavior) BehaviorKey() string    { return BehaviorAnthemPerseverance }
-func (AnthemPerseveranceBehavior) IsPlayerActivated() bool { return true }
-func (AnthemPerseveranceBehavior) TargetType() int         { return TargetFriendly }
-
-func (AnthemPerseveranceBehavior) Activate(ctx *BehaviorContext, targetSquadID ecs.EntityID) error {
-	if err := requireCharge(ctx, BehaviorAnthemPerseverance); err != nil {
-		return err
-	}
-	actionState := ctx.Cache.FindActionStateBySquadID(targetSquadID)
-	if actionState == nil {
-		return fmt.Errorf("squad %d has no action state", targetSquadID)
-	}
-	if !actionState.HasActed {
-		return fmt.Errorf("squad %d has not acted yet (anthem requires acted squad)", targetSquadID)
-	}
-	actionState.HasActed = false
-	ctx.ChargeTracker.UseCharge(BehaviorAnthemPerseverance, ChargeOncePerBattle)
-	fmt.Printf("[GEAR] Anthem of Perseverance: squad %d can attack again\n", targetSquadID)
-	return nil
-}
-
-// ========================================
-// RallyingHornBehavior — bonus activation when faction is attacked
-// ========================================
-
-type RallyingHornBehavior struct{ BaseBehavior }
-
-func (RallyingHornBehavior) BehaviorKey() string { return BehaviorRallyingHorn }
-
-func (RallyingHornBehavior) OnAttackComplete(ctx *BehaviorContext, attackerID, defenderID ecs.EntityID, result *squads.CombatResult) {
-	if result.AttackerDestroyed {
-		return
-	}
-	defenderFaction := ctx.GetSquadFaction(defenderID)
-	if defenderFaction == 0 {
-		return
-	}
-	factionSquads := ctx.GetFactionSquads(defenderFaction)
-	if !HasBehaviorInFaction(factionSquads, BehaviorRallyingHorn, ctx.Manager) {
-		return
-	}
-	if ctx.ChargeTracker == nil || !ctx.ChargeTracker.IsAvailable(BehaviorRallyingHorn) {
-		return
-	}
-	// Find first acted friendly squad in defender's faction and reset it
-	for _, sid := range factionSquads {
-		as := ctx.Cache.FindActionStateBySquadID(sid)
-		if as == nil || !as.HasActed {
-			continue
-		}
-		squadSpeed := ctx.GetSquadSpeed(sid)
-		as.HasActed = false
-		as.HasMoved = false
-		as.MovementRemaining = squadSpeed
-		ctx.ChargeTracker.UseCharge(BehaviorRallyingHorn, ChargeOncePerBattle)
-		fmt.Printf("[GEAR] Rallying War Horn: squad %d gets bonus activation (speed %d)\n", sid, squadSpeed)
-		return
-	}
 }
 
 // ========================================
@@ -218,10 +121,10 @@ func (ChainOfCommandBehavior) Activate(ctx *BehaviorContext, targetSquadID ecs.E
 		return fmt.Errorf("no squad with %s behavior in faction", BehaviorChainOfCommand)
 	}
 	if sourceSquadID == targetSquadID {
-		return fmt.Errorf("cannot pass attack to self")
+		return fmt.Errorf("cannot pass action to self")
 	}
 
-	// Validate source hasn't attacked
+	// Validate source is fresh (hasn't moved or acted)
 	sourceState := ctx.Cache.FindActionStateBySquadID(sourceSquadID)
 	if sourceState == nil {
 		return fmt.Errorf("source squad %d has no action state", sourceSquadID)
@@ -229,8 +132,11 @@ func (ChainOfCommandBehavior) Activate(ctx *BehaviorContext, targetSquadID ecs.E
 	if sourceState.HasActed {
 		return fmt.Errorf("source squad %d has already acted", sourceSquadID)
 	}
+	if sourceState.HasMoved {
+		return fmt.Errorf("source squad %d has already moved", sourceSquadID)
+	}
 
-	// Validate target has attacked
+	// Validate target has acted
 	targetState := ctx.Cache.FindActionStateBySquadID(targetSquadID)
 	if targetState == nil {
 		return fmt.Errorf("target squad %d has no action state", targetSquadID)
@@ -239,35 +145,18 @@ func (ChainOfCommandBehavior) Activate(ctx *BehaviorContext, targetSquadID ecs.E
 		return fmt.Errorf("target squad %d has not acted yet", targetSquadID)
 	}
 
-	// Validate adjacency (Chebyshev distance <= 2)
-	sourcePos, err := getSquadPosition(sourceSquadID, ctx.Manager)
-	if err != nil {
-		return fmt.Errorf("source squad position: %w", err)
-	}
-	targetPos, err := getSquadPosition(targetSquadID, ctx.Manager)
-	if err != nil {
-		return fmt.Errorf("target squad position: %w", err)
-	}
-	if sourcePos.ChebyshevDistance(&targetPos) > 2 {
-		return fmt.Errorf("target squad %d is too far away (max distance 2)", targetSquadID)
-	}
-
+	// Fully spend the source
 	sourceState.HasActed = true
-	targetState.HasActed = false
-	ctx.ChargeTracker.UseCharge(BehaviorChainOfCommand, ChargeOncePerRound)
-	fmt.Printf("[GEAR] Chain of Command: squad %d passes attack to squad %d\n", sourceSquadID, targetSquadID)
-	return nil
-}
+	sourceState.HasMoved = true
+	sourceState.MovementRemaining = 0
 
-// getSquadPosition returns the logical position of a squad.
-func getSquadPosition(squadID ecs.EntityID, manager *common.EntityManager) (coords.LogicalPosition, error) {
-	entity := manager.FindEntityByID(squadID)
-	if entity == nil {
-		return coords.LogicalPosition{}, fmt.Errorf("squad %d not found", squadID)
-	}
-	pos := common.GetComponentType[*coords.LogicalPosition](entity, common.PositionComponent)
-	if pos == nil {
-		return coords.LogicalPosition{}, fmt.Errorf("squad %d has no position", squadID)
-	}
-	return *pos, nil
+	// Fully reset the target
+	squadSpeed := ctx.GetSquadSpeed(targetSquadID)
+	targetState.HasActed = false
+	targetState.HasMoved = false
+	targetState.MovementRemaining = squadSpeed
+
+	ctx.ChargeTracker.UseCharge(BehaviorChainOfCommand, ChargeOncePerRound)
+	fmt.Printf("[GEAR] Chain of Command: squad %d passes full action to squad %d\n", sourceSquadID, targetSquadID)
+	return nil
 }

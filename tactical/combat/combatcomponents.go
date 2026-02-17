@@ -53,7 +53,7 @@ type ActionStateData struct {
 	HasMoved          bool         // True if squad moved this turn
 	HasActed          bool         // True if squad attacked/used skill this turn
 	MovementRemaining int          // Tiles left to move (starts at squad speed)
-	DoubleTimeActive  bool         // When true, next markSquadAsActed is consumed without setting HasActed
+	BonusAttackActive bool         // When true, next markSquadAsActed is consumed without setting HasActed
 }
 
 // CombatFactionData links a squad to its faction during combat.

@@ -30,26 +30,38 @@ func GetArtifactDefinition(id string) *ArtifactDefinition {
 	return ArtifactRegistry[id]
 }
 
-// ArtifactDataPath is the relative path within assets to the artifact data file.
-const ArtifactDataPath = "gamedata/artifactdata.json"
+// Artifact data file paths within the assets directory.
+const (
+	MinorArtifactDataPath = "gamedata/minor_artifacts.json"
+	MajorArtifactDataPath = "gamedata/major_artifacts.json"
+)
 
 // artifactDataFile is the JSON wrapper for artifact definitions.
 type artifactDataFile struct {
 	Artifacts []ArtifactDefinition `json:"artifacts"`
 }
 
-// LoadArtifactDefinitions reads artifact definitions from a JSON file and populates ArtifactRegistry.
+// LoadArtifactDefinitions reads artifact definitions from JSON files and populates ArtifactRegistry.
 func LoadArtifactDefinitions() {
-	data, err := os.ReadFile(assetPath(ArtifactDataPath))
+	total := 0
+	total += loadArtifactFile(MinorArtifactDataPath)
+	total += loadArtifactFile(MajorArtifactDataPath)
+	fmt.Printf("Loaded %d artifact definitions\n", total)
+}
+
+// loadArtifactFile reads a single artifact JSON file and adds entries to ArtifactRegistry.
+// Returns the number of artifacts loaded.
+func loadArtifactFile(path string) int {
+	data, err := os.ReadFile(assetPath(path))
 	if err != nil {
-		fmt.Printf("WARNING: Failed to read artifact data: %v\n", err)
-		return
+		fmt.Printf("WARNING: Failed to read artifact data from %s: %v\n", path, err)
+		return 0
 	}
 
 	var artifactFile artifactDataFile
 	if err := json.Unmarshal(data, &artifactFile); err != nil {
-		fmt.Printf("WARNING: Failed to parse artifact data: %v\n", err)
-		return
+		fmt.Printf("WARNING: Failed to parse artifact data from %s: %v\n", path, err)
+		return 0
 	}
 
 	for i := range artifactFile.Artifacts {
@@ -57,5 +69,5 @@ func LoadArtifactDefinitions() {
 		ArtifactRegistry[artifact.ID] = artifact
 	}
 
-	fmt.Printf("Loaded %d artifact definitions\n", len(artifactFile.Artifacts))
+	return len(artifactFile.Artifacts)
 }

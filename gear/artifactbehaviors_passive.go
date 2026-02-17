@@ -1,7 +1,7 @@
 // Package gear — event-driven behaviors (artifactbehaviors_passive.go)
 //
 // Behaviors in this file fire via event hooks (OnPostReset, OnAttackComplete) rather
-// than direct player activation. Some (SaboteursHourglass, DoubleTime) do have
+// than direct player activation. Some (SaboteursHourglass, TwinStrike) do have
 // IsPlayerActivated() = true because the player triggers them, but their effects
 // are applied through hooks or immediate state mutation, not through a separate
 // "activated" flow.
@@ -15,39 +15,14 @@ import (
 )
 
 func init() {
-	RegisterBehavior(&VanguardMovementBehavior{})
 	RegisterBehavior(&EngagementChainsBehavior{})
-	RegisterBehavior(&MomentumStandardBehavior{})
 	RegisterBehavior(&EchoDrumsBehavior{})
 	RegisterBehavior(&SaboteursHourglassBehavior{})
-	RegisterBehavior(&DoubleTimeBehavior{})
+	RegisterBehavior(&TwinStrikeBehavior{})
 }
 
 // ========================================
-// VanguardMovementBehavior — +2 movement to first squad each turn
-// ========================================
-
-type VanguardMovementBehavior struct{ BaseBehavior }
-
-func (VanguardMovementBehavior) BehaviorKey() string { return BehaviorVanguardMovement }
-
-func (VanguardMovementBehavior) OnPostReset(ctx *BehaviorContext, factionID ecs.EntityID, squadIDs []ecs.EntityID) {
-	if len(squadIDs) == 0 {
-		return
-	}
-	if !HasBehaviorInFaction(squadIDs, BehaviorVanguardMovement, ctx.Manager) {
-		return
-	}
-	actionState := ctx.Cache.FindActionStateBySquadID(squadIDs[0])
-	if actionState != nil {
-		actionState.MovementRemaining += 2
-		fmt.Printf("[GEAR] Vanguard's Oath: +2 movement to squad %d (now %d)\n",
-			squadIDs[0], actionState.MovementRemaining)
-	}
-}
-
-// ========================================
-// EngagementChainsBehavior — bonus 1-tile move after a kill
+// EngagementChainsBehavior — full move action after a kill
 // ========================================
 
 type EngagementChainsBehavior struct{ BaseBehavior }
@@ -65,46 +40,10 @@ func (EngagementChainsBehavior) OnAttackComplete(ctx *BehaviorContext, attackerI
 	if actionState == nil {
 		return
 	}
-	actionState.MovementRemaining = 1
+	squadSpeed := ctx.GetSquadSpeed(attackerID)
+	actionState.MovementRemaining = squadSpeed
 	actionState.HasMoved = false
-	fmt.Printf("[GEAR] Forced Engagement Chains: squad %d gets 1 bonus movement tile\n", attackerID)
-}
-
-// ========================================
-// MomentumStandardBehavior — +1 movement to next friendly squad after a kill
-// ========================================
-
-type MomentumStandardBehavior struct{ BaseBehavior }
-
-func (MomentumStandardBehavior) BehaviorKey() string { return BehaviorMomentumStandard }
-
-func (MomentumStandardBehavior) OnAttackComplete(ctx *BehaviorContext, attackerID, defenderID ecs.EntityID, result *squads.CombatResult) {
-	if !result.TargetDestroyed {
-		return
-	}
-	attackerFaction := ctx.GetSquadFaction(attackerID)
-	if attackerFaction == 0 {
-		return
-	}
-	factionSquads := ctx.GetFactionSquads(attackerFaction)
-	if !HasBehaviorInFaction(factionSquads, BehaviorMomentumStandard, ctx.Manager) {
-		return
-	}
-	if ctx.ChargeTracker == nil || !ctx.ChargeTracker.IsAvailable(BehaviorMomentumStandard) {
-		return
-	}
-	for _, sid := range factionSquads {
-		if sid == attackerID {
-			continue
-		}
-		as := ctx.Cache.FindActionStateBySquadID(sid)
-		if as != nil && !as.HasActed {
-			as.MovementRemaining += 1
-			ctx.ChargeTracker.UseCharge(BehaviorMomentumStandard, ChargeOncePerRound)
-			fmt.Printf("[GEAR] Momentum Standard: +1 movement to squad %d (now %d)\n", sid, as.MovementRemaining)
-			return
-		}
-	}
+	fmt.Printf("[GEAR] Forced Engagement Chains: squad %d gets full move action (speed %d)\n", attackerID, squadSpeed)
 }
 
 // ========================================
@@ -186,18 +125,17 @@ func (SaboteursHourglassBehavior) Activate(ctx *BehaviorContext, _ ecs.EntityID)
 }
 
 // ========================================
-// DoubleTimeBehavior — grants double attack flag to a squad
+// TwinStrikeBehavior — grants bonus attack flag to a squad
 // ========================================
 
-type DoubleTimeBehavior struct{ BaseBehavior }
+type TwinStrikeBehavior struct{ BaseBehavior }
 
-func (DoubleTimeBehavior) BehaviorKey() string { return BehaviorDoubleTime }
+func (TwinStrikeBehavior) BehaviorKey() string      { return BehaviorTwinStrike }
+func (TwinStrikeBehavior) IsPlayerActivated() bool   { return true }
+func (TwinStrikeBehavior) TargetType() int           { return TargetFriendly }
 
-func (DoubleTimeBehavior) IsPlayerActivated() bool { return true }
-func (DoubleTimeBehavior) TargetType() int         { return TargetFriendly }
-
-func (DoubleTimeBehavior) Activate(ctx *BehaviorContext, targetSquadID ecs.EntityID) error {
-	if err := requireCharge(ctx, BehaviorDoubleTime); err != nil {
+func (TwinStrikeBehavior) Activate(ctx *BehaviorContext, targetSquadID ecs.EntityID) error {
+	if err := requireCharge(ctx, BehaviorTwinStrike); err != nil {
 		return err
 	}
 	actionState := ctx.Cache.FindActionStateBySquadID(targetSquadID)
@@ -207,8 +145,9 @@ func (DoubleTimeBehavior) Activate(ctx *BehaviorContext, targetSquadID ecs.Entit
 	if actionState.HasActed {
 		return fmt.Errorf("squad %d has already acted this turn", targetSquadID)
 	}
-	actionState.DoubleTimeActive = true
-	ctx.ChargeTracker.UseCharge(BehaviorDoubleTime, ChargeOncePerBattle)
-	fmt.Printf("[GEAR] Double Time Drums activated on squad %d\n", targetSquadID)
+	actionState.BonusAttackActive = true
+	ctx.ChargeTracker.UseCharge(BehaviorTwinStrike, ChargeOncePerBattle)
+	fmt.Printf("[GEAR] Twin Strike Banner activated on squad %d\n", targetSquadID)
 	return nil
 }
+
