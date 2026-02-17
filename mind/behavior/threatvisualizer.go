@@ -21,16 +21,6 @@ const (
 	VisualizerModeLayer
 )
 
-// ThreatViewMode represents which faction's threats to visualize (for danger mode)
-type ThreatViewMode int
-
-const (
-	// ViewEnemyThreats shows danger from enemy squads to the current faction
-	ViewEnemyThreats ThreatViewMode = iota
-	// ViewPlayerThreats shows danger projection from player's own squads
-	ViewPlayerThreats
-)
-
 // LayerMode represents which threat layer to visualize (for layer mode)
 type LayerMode int
 
@@ -103,17 +93,22 @@ var LayerModeMetadata = map[LayerMode]LayerModeInfo{
 // Combines the functionality of the former DangerVisualizer and LayerVisualizer.
 type ThreatVisualizer struct {
 	// Dependencies
-	manager         *common.EntityManager
-	gameMap         *worldmap.GameMap
-	threatManager   *FactionThreatLevelManager
-	threatEvaluator *CompositeThreatEvaluator
+	manager       *common.EntityManager
+	gameMap       *worldmap.GameMap
+	threatManager *FactionThreatLevelManager
+
+	// Per-faction threat evaluators (for layer mode)
+	evaluators map[ecs.EntityID]*CompositeThreatEvaluator
+
+	// Faction cycling
+	factionIDs       []ecs.EntityID // All factions in combat
+	viewFactionIndex int            // Index into factionIDs for viewed faction
 
 	// State
 	*evaluation.DirtyCache
 	isActive         bool
 	mode             VisualizerMode
-	threatViewMode   ThreatViewMode // For danger mode: enemy vs player
-	layerMode        LayerMode      // For layer mode: which layer
+	layerMode        LayerMode // For layer mode: which layer
 	currentFactionID ecs.EntityID
 }
 
@@ -122,18 +117,17 @@ func NewThreatVisualizer(
 	manager *common.EntityManager,
 	gameMap *worldmap.GameMap,
 	threatManager *FactionThreatLevelManager,
-	threatEvaluator *CompositeThreatEvaluator,
 ) *ThreatVisualizer {
 	return &ThreatVisualizer{
-		manager:         manager,
-		gameMap:         gameMap,
-		threatManager:   threatManager,
-		threatEvaluator: threatEvaluator,
-		DirtyCache:      evaluation.NewDirtyCache(),
-		isActive:        false,
-		mode:            VisualizerModeThreat,
-		threatViewMode:  ViewEnemyThreats,
-		layerMode:       LayerMelee,
+		manager:          manager,
+		gameMap:           gameMap,
+		threatManager:    threatManager,
+		evaluators:       make(map[ecs.EntityID]*CompositeThreatEvaluator),
+		DirtyCache:       evaluation.NewDirtyCache(),
+		isActive:         false,
+		mode:             VisualizerModeThreat,
+		viewFactionIndex: 0,
+		layerMode:        LayerMelee,
 	}
 }
 
@@ -156,10 +150,39 @@ func (tv *ThreatVisualizer) IsActive() bool {
 	return tv.isActive
 }
 
-// SetThreatEvaluator updates the threat evaluator reference
-// Needed when the evaluator is created after the visualizer
-func (tv *ThreatVisualizer) SetThreatEvaluator(evaluator *CompositeThreatEvaluator) {
-	tv.threatEvaluator = evaluator
+// SetFactions sets the list of factions available for cycling.
+// Resets viewFactionIndex to 0 if it would be out of bounds.
+func (tv *ThreatVisualizer) SetFactions(factionIDs []ecs.EntityID) {
+	tv.factionIDs = factionIDs
+	if tv.viewFactionIndex >= len(tv.factionIDs) {
+		tv.viewFactionIndex = 0
+	}
+}
+
+// SetEvaluators sets the per-faction threat evaluators (for layer mode).
+func (tv *ThreatVisualizer) SetEvaluators(evaluators map[ecs.EntityID]*CompositeThreatEvaluator) {
+	tv.evaluators = evaluators
+}
+
+// CycleFaction advances viewFactionIndex to the next faction.
+func (tv *ThreatVisualizer) CycleFaction() {
+	if len(tv.factionIDs) == 0 {
+		return
+	}
+	tv.viewFactionIndex = (tv.viewFactionIndex + 1) % len(tv.factionIDs)
+	tv.MarkDirty()
+	if tv.isActive {
+		tv.ClearVisualization()
+	}
+}
+
+// GetViewFactionID returns the currently viewed faction ID.
+// Returns 0 if no factions are set.
+func (tv *ThreatVisualizer) GetViewFactionID() ecs.EntityID {
+	if len(tv.factionIDs) == 0 {
+		return 0
+	}
+	return tv.factionIDs[tv.viewFactionIndex]
 }
 
 // SetMode sets the primary visualization mode
@@ -171,8 +194,11 @@ func (tv *ThreatVisualizer) SetMode(mode VisualizerMode) {
 		tv.MarkDirty()
 		tv.DirtyCache = evaluation.NewDirtyCache() // Reset cache completely
 		// Also mark evaluator dirty when switching to layer mode
-		if mode == VisualizerModeLayer && tv.threatEvaluator != nil {
-			tv.threatEvaluator.MarkDirty()
+		if mode == VisualizerModeLayer {
+			factionID := tv.GetViewFactionID()
+			if eval, ok := tv.evaluators[factionID]; ok && eval != nil {
+				eval.MarkDirty()
+			}
 		}
 		if tv.isActive {
 			tv.ClearVisualization()
@@ -211,19 +237,20 @@ func (tv *ThreatVisualizer) Update(
 
 	tv.currentFactionID = currentFactionID
 
+	// Determine which faction we're viewing
+	viewFactionID := tv.GetViewFactionID()
+
 	// Ensure threat evaluator is up-to-date (for layer mode)
-	if tv.mode == VisualizerModeLayer && tv.threatEvaluator != nil {
-		tv.threatEvaluator.Update(currentRound)
+	if tv.mode == VisualizerModeLayer {
+		if eval, ok := tv.evaluators[viewFactionID]; ok && eval != nil {
+			eval.Update(currentRound)
+		}
 	}
 
 	// Pre-compute squad lists once per update (invariant across all tiles)
 	var relevantSquads []ecs.EntityID
 	if tv.mode == VisualizerModeThreat {
-		if tv.threatViewMode == ViewEnemyThreats {
-			relevantSquads = tv.getEnemySquads(currentFactionID)
-		} else {
-			relevantSquads = tv.getPlayerSquads(currentFactionID)
-		}
+		relevantSquads = combat.GetSquadsForFaction(viewFactionID, tv.manager)
 	}
 
 	// Visualize based on current mode
@@ -254,24 +281,6 @@ func (tv *ThreatVisualizer) Update(
 // =========================================
 // Threat Mode API (formerly DangerVisualizer)
 // =========================================
-
-// SwitchThreatView toggles between enemy threat view and player threat view
-func (tv *ThreatVisualizer) SwitchThreatView() {
-	if tv.threatViewMode == ViewEnemyThreats {
-		tv.threatViewMode = ViewPlayerThreats
-	} else {
-		tv.threatViewMode = ViewEnemyThreats
-	}
-	tv.MarkDirty()
-	if tv.isActive {
-		tv.ClearVisualization()
-	}
-}
-
-// GetThreatViewMode returns the current threat view mode
-func (tv *ThreatVisualizer) GetThreatViewMode() ThreatViewMode {
-	return tv.threatViewMode
-}
 
 // calculateThreatValueForSquads calculates danger at a position for a pre-computed squad list.
 // Used by Update() to avoid re-querying squad lists on every tile.
@@ -328,27 +337,6 @@ func (tv *ThreatVisualizer) threatValueToColorMatrix(value float64) graphics.Col
 	}
 }
 
-// getEnemySquads returns all squads from enemy factions
-func (tv *ThreatVisualizer) getEnemySquads(currentFactionID ecs.EntityID) []ecs.EntityID {
-	var enemySquads []ecs.EntityID
-	allFactions := combat.GetAllFactions(tv.manager)
-
-	for _, factionID := range allFactions {
-		if factionID == currentFactionID {
-			continue
-		}
-		squads := combat.GetSquadsForFaction(factionID, tv.manager)
-		enemySquads = append(enemySquads, squads...)
-	}
-
-	return enemySquads
-}
-
-// getPlayerSquads returns all squads from the current faction
-func (tv *ThreatVisualizer) getPlayerSquads(currentFactionID ecs.EntityID) []ecs.EntityID {
-	return combat.GetSquadsForFaction(currentFactionID, tv.manager)
-}
-
 // =========================================
 // Layer Mode API (formerly LayerVisualizer)
 // =========================================
@@ -374,7 +362,8 @@ func (tv *ThreatVisualizer) GetLayerModeInfo() LayerModeInfo {
 
 // getLayerValueAt returns threat layer value at position (normalized to 0-1 range)
 func (tv *ThreatVisualizer) getLayerValueAt(pos coords.LogicalPosition) float64 {
-	if tv.threatEvaluator == nil {
+	eval, ok := tv.evaluators[tv.GetViewFactionID()]
+	if !ok || eval == nil {
 		return 0.0
 	}
 
@@ -384,22 +373,22 @@ func (tv *ThreatVisualizer) getLayerValueAt(pos coords.LogicalPosition) float64 
 
 	switch tv.layerMode {
 	case LayerMelee:
-		raw := tv.threatEvaluator.GetCombatLayer().GetMeleeThreatAt(pos)
+		raw := eval.GetCombatLayer().GetMeleeThreatAt(pos)
 		return min(raw/maxThreatValue, 1.0)
 	case LayerRanged:
-		raw := tv.threatEvaluator.GetCombatLayer().GetRangedPressureAt(pos)
+		raw := eval.GetCombatLayer().GetRangedPressureAt(pos)
 		return min(raw/maxThreatValue, 1.0)
 	case LayerSupport:
 		// Support value is already in 0-1 range from heal priority
-		return tv.threatEvaluator.GetSupportLayer().GetSupportValueAt(pos)
+		return eval.GetSupportLayer().GetSupportValueAt(pos)
 	case LayerPositionalFlanking:
-		return tv.threatEvaluator.GetPositionalLayer().GetFlankingRiskAt(pos)
+		return eval.GetPositionalLayer().GetFlankingRiskAt(pos)
 	case LayerPositionalIsolation:
-		return tv.threatEvaluator.GetPositionalLayer().GetIsolationRiskAt(pos)
+		return eval.GetPositionalLayer().GetIsolationRiskAt(pos)
 	case LayerPositionalEngagement:
-		return tv.threatEvaluator.GetPositionalLayer().GetEngagementPressureAt(pos)
+		return eval.GetPositionalLayer().GetEngagementPressureAt(pos)
 	case LayerPositionalRetreat:
-		return tv.threatEvaluator.GetPositionalLayer().GetRetreatQuality(pos)
+		return eval.GetPositionalLayer().GetRetreatQuality(pos)
 	default:
 		return 0.0
 	}

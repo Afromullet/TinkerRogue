@@ -23,7 +23,6 @@ __________________________________________
 
 - Consider using an interface for intent in overworld
 
-- Need to be able to equip items to squads
 
 -  ExecuteThreatEvolutionEffect needs to changed base off threat type/data.  
 
@@ -45,11 +44,7 @@ __________________________________________
 - Can always use the move undo command, even after attacking. That's a bug
 
 
-- Creating a new squad breaks the threat map. Fix this
-
 - Need to be able to toggle threat layer visualzation to player faction.
-
-- Enemy squads appear to attack when they're out of range
 
 
 ________________________________________________

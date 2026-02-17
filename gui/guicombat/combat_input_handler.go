@@ -460,12 +460,12 @@ func (cih *CombatInputHandler) handleThreatToggle(inputState *framework.InputSta
 	combatLogArea := GetCombatLogTextArea(cih.panels)
 
 	if shiftPressed {
-		threatViz.SwitchThreatView()
-		viewName := "Enemy Threats"
-		if threatViz.GetThreatViewMode() == behavior.ViewPlayerThreats {
-			viewName = "Player Threats"
+		threatViz.CycleFaction()
+		factionName := "Unknown"
+		if factionInfo := cih.deps.Queries.GetFactionInfo(threatViz.GetViewFactionID()); factionInfo != nil {
+			factionName = factionInfo.Name
 		}
-		cih.logManager.UpdateTextArea(combatLogArea, fmt.Sprintf("Switched to %s view", viewName))
+		cih.logManager.UpdateTextArea(combatLogArea, fmt.Sprintf("Viewing faction: %s", factionName))
 	} else {
 		// If not active or in different mode: activate in Threat mode
 		// If already active in Threat mode: turn off
@@ -557,13 +557,25 @@ func (cih *CombatInputHandler) updateLayerStatusWidget() {
 		return
 	}
 
-	// Show layer status only when in layer mode and active
-	if threatViz.IsActive() && threatViz.GetMode() == behavior.VisualizerModeLayer {
-		modeInfo := threatViz.GetLayerModeInfo()
-		statusText := fmt.Sprintf("LAYER VIEW\n%s\n%s", modeInfo.Name, modeInfo.ColorKey)
-		layerStatusText.Label = statusText
-		layerStatusPanel.GetWidget().Visibility = widget.Visibility_Show
-	} else {
+	if !threatViz.IsActive() {
 		layerStatusPanel.GetWidget().Visibility = widget.Visibility_Hide
+		return
 	}
+
+	// Get faction name for display
+	factionName := "Unknown"
+	if factionInfo := cih.deps.Queries.GetFactionInfo(threatViz.GetViewFactionID()); factionInfo != nil {
+		factionName = factionInfo.Name
+	}
+
+	var statusText string
+	switch threatViz.GetMode() {
+	case behavior.VisualizerModeThreat:
+		statusText = fmt.Sprintf("THREAT VIEW\nFaction: %s", factionName)
+	case behavior.VisualizerModeLayer:
+		modeInfo := threatViz.GetLayerModeInfo()
+		statusText = fmt.Sprintf("LAYER VIEW\nFaction: %s\n%s\n%s", factionName, modeInfo.Name, modeInfo.ColorKey)
+	}
+	layerStatusText.Label = statusText
+	layerStatusPanel.GetWidget().Visibility = widget.Visibility_Show
 }

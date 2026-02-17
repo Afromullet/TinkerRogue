@@ -23,8 +23,8 @@ type CombatVisualizationManager struct {
 	threatVisualizer  *behavior.ThreatVisualizer
 
 	// Threat management
-	threatManager   *behavior.FactionThreatLevelManager
-	threatEvaluator *behavior.CompositeThreatEvaluator
+	threatManager    *behavior.FactionThreatLevelManager
+	threatEvaluators map[ecs.EntityID]*behavior.CompositeThreatEvaluator
 
 	// References needed for late initialization
 	ecsManager *common.EntityManager
@@ -53,13 +53,12 @@ func NewCombatVisualizationManager(
 		cvm.threatManager.AddFaction(factionID)
 	}
 
-	// Create threat evaluators for layer visualization
+	// Create per-faction threat evaluators for layer visualization
 	allFactions := queries.GetAllFactions()
-	if len(allFactions) > 0 {
-		// Use player faction (first faction) for threat evaluation
-		playerFactionID := allFactions[0]
-		cvm.threatEvaluator = behavior.NewCompositeThreatEvaluator(
-			playerFactionID,
+	cvm.threatEvaluators = make(map[ecs.EntityID]*behavior.CompositeThreatEvaluator)
+	for _, factionID := range allFactions {
+		cvm.threatEvaluators[factionID] = behavior.NewCompositeThreatEvaluator(
+			factionID,
 			ctx.ECSManager,
 			queries.CombatCache,
 			cvm.threatManager,
@@ -71,8 +70,9 @@ func NewCombatVisualizationManager(
 		ctx.ECSManager,
 		gameMap,
 		cvm.threatManager,
-		cvm.threatEvaluator,
 	)
+	cvm.threatVisualizer.SetFactions(allFactions)
+	cvm.threatVisualizer.SetEvaluators(cvm.threatEvaluators)
 
 	return cvm
 }
@@ -126,11 +126,6 @@ func (cvm *CombatVisualizationManager) GetThreatManager() *behavior.FactionThrea
 	return cvm.threatManager
 }
 
-// GetThreatEvaluator returns the composite threat evaluator
-func (cvm *CombatVisualizationManager) GetThreatEvaluator() *behavior.CompositeThreatEvaluator {
-	return cvm.threatEvaluator
-}
-
 // RefreshFactions adds any new factions to the threat manager
 // Should be called when combat starts and factions are created
 func (cvm *CombatVisualizationManager) RefreshFactions(queries *framework.GUIQueries) {
@@ -144,20 +139,18 @@ func (cvm *CombatVisualizationManager) RefreshFactions(queries *framework.GUIQue
 		cvm.threatManager.AddFaction(factionID)
 	}
 
-	// If threat evaluator was nil during initialization (no factions existed yet), create it now
-	if len(allFactions) > 0 && cvm.threatEvaluator == nil {
-		// Use player faction (first faction) for threat evaluation
-		playerFactionID := allFactions[0]
-		cvm.threatEvaluator = behavior.NewCompositeThreatEvaluator(
-			playerFactionID,
-			cvm.ecsManager,
-			queries.CombatCache,
-			cvm.threatManager,
-		)
-
-		// Update the existing visualizer with the new evaluator
-		if cvm.threatVisualizer != nil {
-			cvm.threatVisualizer.SetThreatEvaluator(cvm.threatEvaluator)
+	// Create evaluators for any new factions
+	if cvm.threatEvaluators == nil {
+		cvm.threatEvaluators = make(map[ecs.EntityID]*behavior.CompositeThreatEvaluator)
+	}
+	for _, factionID := range allFactions {
+		if _, exists := cvm.threatEvaluators[factionID]; !exists {
+			cvm.threatEvaluators[factionID] = behavior.NewCompositeThreatEvaluator(
+				factionID,
+				cvm.ecsManager,
+				queries.CombatCache,
+				cvm.threatManager,
+			)
 		}
 	}
 
@@ -167,9 +160,12 @@ func (cvm *CombatVisualizationManager) RefreshFactions(queries *framework.GUIQue
 			cvm.ecsManager,
 			cvm.gameMap,
 			cvm.threatManager,
-			cvm.threatEvaluator,
 		)
 	}
+
+	// Always refresh factions and evaluators on the visualizer
+	cvm.threatVisualizer.SetFactions(allFactions)
+	cvm.threatVisualizer.SetEvaluators(cvm.threatEvaluators)
 }
 
 // UpdateThreatManagers updates all threat-related systems
@@ -179,10 +175,12 @@ func (cvm *CombatVisualizationManager) UpdateThreatManagers() {
 	}
 }
 
-// UpdateThreatEvaluator updates the threat evaluator for a given round
+// UpdateThreatEvaluator updates all per-faction threat evaluators for a given round
 func (cvm *CombatVisualizationManager) UpdateThreatEvaluator(round int) {
-	if cvm.threatEvaluator != nil {
-		cvm.threatEvaluator.Update(round)
+	for _, eval := range cvm.threatEvaluators {
+		if eval != nil {
+			eval.Update(round)
+		}
 	}
 }
 
