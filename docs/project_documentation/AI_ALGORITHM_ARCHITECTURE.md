@@ -1,8 +1,15 @@
 # AI Algorithm Architecture
 
-**Last Updated:** 2026-02-11
+**Last Updated:** 2026-02-17
 
-A comprehensive technical reference for TinkerRogue's AI decision-making, threat assessment, and combat behavior systems.
+A technical reference for TinkerRogue's AI decision-making, power evaluation, action selection, and configuration systems.
+
+---
+
+## Related Documents
+
+- [Behavior & Threat Layers](BEHAVIOR_THREAT_LAYERS.md) - Threat layer subsystems, spatial analysis, visualization, and threat layer extension points
+- [Encounter System](ENCOUNTER_SYSTEM.md) - Encounter generation, lifecycle, and rewards
 
 ---
 
@@ -11,13 +18,14 @@ A comprehensive technical reference for TinkerRogue's AI decision-making, threat
 1. [Executive Summary](#executive-summary)
 2. [Architecture Overview](#architecture-overview)
 3. [Core AI Systems](#core-ai-systems)
-4. [Threat Assessment Framework](#threat-assessment-framework)
-5. [Power Evaluation System](#power-evaluation-system)
-6. [Action Selection Algorithm](#action-selection-algorithm)
-7. [Configuration System](#configuration-system)
-8. [Data Flow and Dependencies](#data-flow-and-dependencies)
-9. [Performance Considerations](#performance-considerations)
-10. [Extension Points](#extension-points)
+4. [Power Evaluation System](#power-evaluation-system)
+5. [Action Selection Algorithm](#action-selection-algorithm)
+6. [Configuration System](#configuration-system)
+7. [Data Flow and Dependencies](#data-flow-and-dependencies)
+8. [Performance Considerations](#performance-considerations)
+9. [Extension Points](#extension-points)
+10. [Troubleshooting](#troubleshooting)
+11. [Appendix: File Reference](#appendix-file-reference)
 
 ---
 
@@ -26,9 +34,9 @@ A comprehensive technical reference for TinkerRogue's AI decision-making, threat
 TinkerRogue's AI uses a **layered threat assessment** system combined with **role-based behavior weights** to create tactically-aware computer opponents. The architecture separates concerns into distinct subsystems:
 
 - **AI Controller** (`mind/ai/`) - Orchestrates turn execution and action selection
-- **Threat Evaluation** (`mind/behavior/`) - Multi-layered spatial threat analysis
+- **Threat Evaluation** (`mind/behavior/`) - Multi-layered spatial threat analysis (see [Behavior & Threat Layers](BEHAVIOR_THREAT_LAYERS.md))
 - **Power Calculation** (`mind/evaluation/`) - Unified combat power assessment
-- **Encounter Generation** (`mind/encounter/`) - Dynamic enemy creation based on power budgets
+- **Encounter Generation** (`mind/encounter/`) - Dynamic enemy creation based on power budgets (see [Encounter System](ENCOUNTER_SYSTEM.md))
 
 **Key Design Principles:**
 
@@ -37,6 +45,7 @@ TinkerRogue's AI uses a **layered threat assessment** system combined with **rol
 3. **Layer Composition** - Multiple threat layers combined via role-specific weights
 4. **Cache-Friendly** - Dirty flag invalidation prevents redundant recomputation
 5. **ECS-First** - Pure component queries, no entity pointer caching
+6. **Difficulty Scaling** - Global difficulty settings overlay all AI and encounter parameters at runtime
 
 ---
 
@@ -45,64 +54,57 @@ TinkerRogue's AI uses a **layered threat assessment** system combined with **rol
 ### System Boundaries
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    GUI / Game Loop                           │
-└───────────────────────┬─────────────────────────────────────┘
-                        │
-                        ▼
-┌─────────────────────────────────────────────────────────────┐
-│                   AIController                               │
-│  • DecideFactionTurn()                                       │
-│  • Attack queue management                                   │
-│  • Turn orchestration                                        │
-└──────────┬─────────────────────┬──────────────────┬─────────┘
-           │                     │                  │
-           ▼                     ▼                  ▼
-┌──────────────────┐  ┌──────────────────┐  ┌──────────────┐
-│ ActionEvaluator  │  │ CompositeThreat  │  │ TurnManager  │
-│                  │  │   Evaluator      │  │              │
-│ • Movement score │  │                  │  │ • Initiative │
-│ • Attack score   │  │ • Role weights   │  │ • Round mgmt │
-│ • Fallback wait  │  │ • Layer queries  │  │              │
-└──────────┬───────┘  └────────┬─────────┘  └──────────────┘
-           │                   │
-           ▼                   ▼
-┌─────────────────────────────────────────────────────────────┐
-│              Threat Layer Subsystems                         │
-│                                                              │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────┐  │
-│  │ CombatThreat │  │ SupportValue │  │ PositionalRisk   │  │
-│  │   Layer      │  │    Layer     │  │     Layer        │  │
-│  │              │  │              │  │                  │  │
-│  │ • Melee      │  │ • Heal prior │  │ • Flanking risk  │  │
-│  │ • Ranged     │  │ • Ally prox  │  │ • Isolation risk │  │
-│  └──────────────┘  └──────────────┘  └──────────────────┘  │
-└────────────────────────┬────────────────────────────────────┘
-                         │
-                         ▼
-┌─────────────────────────────────────────────────────────────┐
-│           FactionThreatLevelManager                          │
-│  • SquadThreatLevel (ThreatByRange map)                     │
-│  • Distance tracking                                         │
-│  • Uses shared power calculation                            │
-└────────────────────────┬────────────────────────────────────┘
-                         │
-                         ▼
-┌─────────────────────────────────────────────────────────────┐
-│              Power Evaluation (shared)                       │
-│  • CalculateSquadPower()                                     │
-│  • CalculateSquadPowerByRange()                              │
-│  • Used by AI threat + encounter generation                  │
-└─────────────────────────────────────────────────────────────┘
++-------------------------------------------------------------+
+|                    GUI / Game Loop                           |
++------------------------+------------------------------------+
+                         |
+                         v
++-------------------------------------------------------------+
+|                   AIController                               |
+|  * DecideFactionTurn()                                       |
+|  * Attack queue management                                   |
+|  * Turn orchestration                                        |
++----------+---------------------+------------------+---------+
+           |                     |                  |
+           v                     v                  v
++------------------+  +------------------+  +--------------+
+| ActionEvaluator  |  | CompositeThreat  |  | TurnManager  |
+|                  |  |   Evaluator      |  |              |
+| * Movement score |  |                  |  | * Initiative |
+| * Attack score   |  | * Role weights   |  | * Round mgmt |
+| * Fallback wait  |  | * Layer queries  |  |              |
++----------+-------+  +--------+---------+  +--------------+
+           |                   |
+           v                   v
++-------------------------------------------------------------+
+|              Threat Layer Subsystems                         |
+|  (see BEHAVIOR_THREAT_LAYERS.md)                            |
++------------------------+------------------------------------+
+                         |
+                         v
++-------------------------------------------------------------+
+|           FactionThreatLevelManager                          |
+|  * SquadThreatLevel (ThreatByRange map)                     |
+|  * Uses shared power calculation                            |
++------------------------+------------------------------------+
+                         |
+                         v
++-------------------------------------------------------------+
+|              Power Evaluation (shared)                       |
+|  * CalculateSquadPower()                                     |
+|  * CalculateSquadPowerByRange()                              |
+|  * Used by AI threat + encounter generation                  |
++-------------------------------------------------------------+
 ```
 
 ### Key Dependencies
 
 - **EntityManager**: ECS world access for all systems
-- **CombatQueryCache**: Optimized faction/squad queries
+- **CombatQueryCache**: Optimized faction/squad queries using ECS Views
 - **CoordinateManager**: Spatial indexing and distance calculations
 - **GlobalPositionSystem**: O(1) entity lookup by position
 - **Config Templates**: JSON-loaded weights and parameters
+- **GlobalDifficulty**: Runtime difficulty overlay applied to AI and encounter parameters
 
 ---
 
@@ -123,7 +125,7 @@ TinkerRogue's AI uses a **layered threat assessment** system combined with **rol
 ```go
 DecideFactionTurn(factionID):
   1. Clear attack queue from previous turn
-  2. Update threat layers (mark dirty after each action)
+  2. Update threat layers at start of AI turn (once per turn, not per action)
   3. Get all alive squads in faction
   4. For each squad:
      a. While squad has actions remaining:
@@ -131,15 +133,19 @@ DecideFactionTurn(factionID):
         - Generate and score all possible actions
         - Select best action (highest score)
         - Execute action
-        - Mark threat layers dirty
+        - Mark ALL faction evaluators dirty (positions may have changed)
   5. Return true if any actions executed
 ```
 
 **Key Features:**
 - **Exhaustive Action Processing**: Each squad uses ALL available actions before moving to next squad
-- **Incremental Threat Updates**: Layers marked dirty after each action (positions change)
+- **Start-of-Turn Threat Update**: Layers updated once per faction turn (not per action) for performance
+- **Post-Action Dirty Marking**: Layers marked dirty after each action, but NOT recomputed until next turn start
 - **Attack Queueing**: Stores attacks for GUI animation after AI turn completes
-- **Faction-Scoped Evaluators**: Each faction maintains separate threat evaluator
+- **Faction-Scoped Evaluators**: Each faction maintains separate threat evaluator, created lazily on first use
+
+**Important Performance Note:**
+Subsequent squads in the same turn use threat data from the start of the turn, not re-evaluated after each move. This is intentional - recomputing after every action would be expensive and the gradual nature of position changes makes slight staleness acceptable.
 
 **Performance Notes:**
 - Threat layer updates are lazy (dirty flag prevents redundant recalculation)
@@ -161,21 +167,25 @@ type ActionContext struct {
     FactionID   ecs.EntityID
     ActionState *ActionStateData  // HasMoved, HasActed flags
 
+    // Threat evaluation
     ThreatEval  *CompositeThreatEvaluator  // Role-weighted threat queries
-    Manager     *EntityManager
-    MovementSystem *CombatMovementSystem   // For validating tiles
 
-    // Cached squad data
-    SquadRole   UnitRole
-    CurrentPos  LogicalPosition
-    SquadHealth float64  // Average HP percentage (0-1)
+    // Systems access
+    Manager        *EntityManager
+    MovementSystem *CombatMovementSystem   // For validating tiles
+    AIController   *AIController           // Reference for attack queueing
+
+    // Cached squad info
+    SquadRole  UnitRole
+    CurrentPos LogicalPosition
+    // Note: SquadHealth is NOT cached here; accessed on-demand via squads.GetSquadHealthPercent()
 }
 ```
 
 **Why Context Object?**
 - Eliminates repetitive parameter passing
 - Guarantees consistent data snapshot for action evaluation
-- Pre-caches expensive queries (role, position, health)
+- Pre-caches expensive queries (role, position)
 - Provides reference to AI controller for attack queueing
 
 ---
@@ -286,6 +296,7 @@ scoreApproachEnemy(pos):
     Tank:    multiplier = 15.0   // Strongly seek melee
     DPS:     multiplier = 8.0    // Moderately engage
     Support: multiplier = -5.0   // Maintain distance
+    default: multiplier = 5.0    // Slight approach preference
 
   approachScore = distanceImprovement * multiplier
 
@@ -306,456 +317,6 @@ scoreApproachEnemy(pos):
 
 ---
 
-## Threat Assessment Framework
-
-### Composite Threat Evaluator
-
-**Location:** `mind/behavior/threat_composite.go`
-
-**Purpose:** Combines multiple threat layers with role-specific weights to produce tactical position scores.
-
-**Architecture:**
-
-```
-CompositeThreatEvaluator
-│
-├─ CombatThreatLayer (unified melee + ranged)
-│  ├─ Melee threat (linear falloff over move+attack range)
-│  └─ Ranged threat (no falloff, line-of-fire zones)
-│
-├─ SupportValueLayer
-│  ├─ Heal priority (inverse of squad health)
-│  └─ Ally proximity (count of nearby allies)
-│
-└─ PositionalRiskLayer
-   ├─ Flanking risk (attacked from multiple directions)
-   ├─ Isolation risk (distance from nearest ally)
-   ├─ Engagement pressure (normalized total threat)
-   └─ Retreat quality (low-threat adjacent tiles)
-```
-
-**Role-Weighted Threat Query:**
-
-```go
-GetRoleWeightedThreat(squadID, pos):
-  role = GetSquadPrimaryRole(squadID)
-  weights = GetRoleBehaviorWeights(role)  // From aiconfig.json
-
-  meleeThreat = CombatLayer.GetMeleeThreatAt(pos)
-  rangedThreat = CombatLayer.GetRangedPressureAt(pos)
-  supportValue = SupportLayer.GetSupportValueAt(pos)
-  positionalRisk = PositionalLayer.GetTotalRiskAt(pos)
-
-  // Combine with role-specific weights
-  // Negative weights = attraction, Positive weights = avoidance
-  totalThreat = meleeThreat * weights.MeleeWeight +
-                rangedThreat * weights.RangedWeight +
-                supportValue * weights.SupportWeight +
-                positionalRisk * weights.PositionalWeight
-
-  return totalThreat
-```
-
-**Layer Update Cycle:**
-
-```go
-Update(currentRound):
-  if !isDirty && lastUpdateRound == currentRound:
-    return  // Skip if already up-to-date
-
-  // 1. Compute combat layer (provides melee + ranged data)
-  CombatLayer.Compute()
-
-  // 2. Compute derived layers (depend on combat data)
-  SupportLayer.Compute()
-  PositionalLayer.Compute()
-
-  // 3. Mark clean
-  isDirty = false
-  lastUpdateRound = currentRound
-```
-
-**Dirty Flag Management:**
-- Marked dirty after each AI action (positions change)
-- Prevents redundant recomputation within same round
-- Each layer tracks own dirty state independently
-
----
-
-### Combat Threat Layer
-
-**Location:** `mind/behavior/threat_combat.go`
-
-**Purpose:** Unified layer computing both melee and ranged threat from enemy squads.
-
-**Data Structures:**
-
-```go
-type CombatThreatLayer struct {
-  // Melee threat data
-  meleeThreatByPos   map[LogicalPosition]float64  // Position -> melee threat
-  meleeThreatBySquad map[EntityID]float64         // Squad -> total emitted threat
-
-  // Ranged threat data
-  rangedPressureByPos map[LogicalPosition]float64  // Position -> ranged pressure
-  lineOfFireZones     map[EntityID][]LogicalPosition  // Squad -> threatened tiles
-
-  baseThreatMgr *FactionThreatLevelManager  // Source of ThreatByRange
-}
-```
-
-**Melee Threat Calculation:**
-
-```go
-computeMeleeThreat(squadID, squadPos, squadThreat):
-  moveSpeed = GetSquadMovementSpeed(squadID)
-  maxMeleeRange = getMaxRangeForAttackTypes(squadID, MeleeAttackTypes, 1)
-  threatRadius = moveSpeed + maxMeleeRange
-
-  // Use danger at range 1 (includes role multipliers from power system)
-  totalThreat = squadThreat.ThreatByRange[1]
-
-  // Paint threat with linear falloff
-  PaintThreatToMap(
-    meleeThreatByPos,
-    squadPos,
-    threatRadius,
-    totalThreat,
-    LinearFalloff,
-    trackPositions=false
-  )
-
-  meleeThreatBySquad[squadID] = totalThreat
-```
-
-**Ranged Threat Calculation:**
-
-```go
-computeRangedThreat(squadID, squadPos, squadThreat):
-  maxRange = getMaxRangeForAttackTypes(squadID, RangedAttackTypes, 3)
-
-  // Use danger at max range (includes role multipliers)
-  rangedDanger = squadThreat.ThreatByRange[maxRange]
-
-  // Paint threat with NO falloff (archers equally dangerous at all ranges)
-  lineOfFireZones[squadID] = PaintThreatToMap(
-    rangedPressureByPos,
-    squadPos,
-    maxRange,
-    rangedDanger,
-    NoFalloff,
-    trackPositions=true  // Track for visualization
-  )
-```
-
-**Why Unified Layer?**
-- Reduces code duplication (originally separate layers)
-- Shares common dependencies (baseThreatMgr, cache)
-- Simplifies layer update orchestration
-- Maintains separate query APIs for backward compatibility
-
-**Threat Painting Algorithm:**
-
-```go
-PaintThreatToMap(threatMap, center, radius, threatValue, falloffFunc, trackPositions):
-  paintedPositions = []
-
-  for dx in [-radius, radius]:
-    for dy in [-radius, radius]:
-      pos = center + (dx, dy)
-      distance = ChebyshevDistance(center, pos)
-
-      if distance > 0 && distance <= radius:
-        falloff = falloffFunc(distance, radius)
-        threatMap[pos] += threatValue * falloff
-
-        if trackPositions:
-          paintedPositions.append(pos)
-
-  return paintedPositions
-```
-
-**Falloff Functions:**
-
-```go
-// Linear: threat decreases linearly with distance
-LinearFalloff(distance, maxRange):
-  return 1.0 - (distance / (maxRange + 1))
-
-// No Falloff: full threat at all ranges
-NoFalloff(distance, maxRange):
-  return 1.0
-```
-
----
-
-### Support Value Layer
-
-**Location:** `mind/behavior/threat_support.go`
-
-**Purpose:** Identifies valuable positions for support squads (healers, buffers).
-
-**Core Concept:**
-- Wounded allies create "support value" radiating from their position
-- Support squads attracted to high-value positions (negative weight)
-- Ally proximity tracking helps all units avoid isolation
-
-**Data Structures:**
-
-```go
-type SupportValueLayer struct {
-  healPriority    map[EntityID]float64            // Squad -> heal urgency (0-1)
-  supportValuePos map[LogicalPosition]float64     // Position -> support value
-  allyProximity   map[LogicalPosition]int         // Position -> nearby ally count
-}
-```
-
-**Computation:**
-
-```go
-Compute():
-  clear(healPriority, supportValuePos, allyProximity)
-
-  squadIDs = GetActiveSquadsForFaction(factionID)
-
-  for each squadID:
-    // Calculate heal priority (inverse of health)
-    avgHP = GetSquadHealthPercent(squadID)
-    healPriority[squadID] = 1.0 - avgHP
-
-    squadPos = GetSquadMapPosition(squadID)
-
-    // Paint support value around wounded allies
-    healRadius, proximityRadius = GetSupportLayerParams()  // From config
-    PaintThreatToMap(supportValuePos, squadPos, healRadius, healPriority, LinearFalloff)
-
-    // Track ally proximity separately
-    for each position within proximityRadius:
-      allyProximity[pos]++
-```
-
-**Configuration (aiconfig.json):**
-
-```json
-{
-  "supportLayer": {
-    "healRadius": 3  // Proximity radius derived as healRadius - 1
-  }
-}
-```
-
-**Query APIs:**
-
-```go
-GetSupportValueAt(pos):
-  return supportValuePos[pos]  // Higher = better for healers
-
-GetAllyProximityAt(pos):
-  return allyProximity[pos]  // Count of nearby allies
-
-GetMostDamagedAlly():
-  return squadID with highest healPriority
-```
-
-**Role Behavior:**
-- **Support squads**: Negative weight (-1.0) attracts them to high support value
-- **Other roles**: Low positive weight (0.1-0.2) for minor heal consideration
-- Creates emergent behavior: supports move toward wounded allies
-
----
-
-### Positional Risk Layer
-
-**Location:** `mind/behavior/threat_positional.go`
-
-**Purpose:** Evaluates tactical positioning risks beyond raw damage threat.
-
-**Risk Components:**
-
-1. **Flanking Risk** - Being attacked from multiple directions
-2. **Isolation Risk** - Distance from allied support
-3. **Engagement Pressure** - Total damage exposure (normalized)
-4. **Retreat Quality** - Availability of low-threat escape routes
-
-**Data Structures:**
-
-```go
-type PositionalRiskLayer struct {
-  flankingRisk       map[LogicalPosition]float64  // 0-1 (0=safe, 1=flanked)
-  isolationRisk      map[LogicalPosition]float64  // 0-1 (0=supported, 1=isolated)
-  engagementPressure map[LogicalPosition]float64  // 0-1 (normalized)
-  retreatQuality     map[LogicalPosition]float64  // 0-1 (0=trapped, 1=safe exits)
-}
-```
-
-**Flanking Risk Computation:**
-
-```go
-computeFlankingRisk(enemyFactions):
-  threatDirections = map[LogicalPosition]map[int]bool  // pos -> set of attack angles
-
-  for each enemyFaction:
-    for each enemySquad:
-      moveSpeed = GetSquadMovementSpeed(enemySquad)
-      threatRange = moveSpeed + GetFlankingThreatRangeBonus()  // From config
-
-      // Paint threat directions (8-directional)
-      for each position in threatRange:
-        angle = getDirection(dx, dy)  // 0-7 (N, NE, E, SE, S, SW, W, NW)
-        threatDirections[pos][angle] = true
-
-  // Calculate risk based on direction count
-  for each pos, directions:
-    numDirections = len(directions)
-    if numDirections >= 3:
-      flankingRisk[pos] = 1.0  // High risk
-    else if numDirections == 2:
-      flankingRisk[pos] = 0.5  // Moderate risk
-    else:
-      flankingRisk[pos] = 0.0  // Safe (single direction)
-```
-
-**Isolation Risk Computation:**
-
-```go
-computeIsolationRisk(alliedSquads):
-  threshold = GetIsolationThreshold()  // From config (e.g., 3)
-  maxDist = 8  // Internal constant
-
-  allyPositions = collect all allied squad positions
-
-  for each map position:
-    minDistance = distance to nearest ally
-
-    if minDistance >= maxDist:
-      isolationRisk[pos] = 1.0  // Fully isolated
-    else if minDistance > threshold:
-      // Linear gradient from threshold to maxDist
-      isolationRisk[pos] = (minDistance - threshold) / (maxDist - threshold)
-    else:
-      isolationRisk[pos] = 0.0  // Well-supported
-```
-
-**Engagement Pressure Computation:**
-
-```go
-computeEngagementPressure():
-  maxPressure = 200  // Normalizer constant
-
-  for each map position:
-    meleeThreat = CombatLayer.GetMeleeThreatAt(pos)
-    rangedThreat = CombatLayer.GetRangedPressureAt(pos)
-
-    totalPressure = meleeThreat + rangedThreat
-    engagementPressure[pos] = min(totalPressure / maxPressure, 1.0)
-```
-
-**Retreat Quality Computation:**
-
-```go
-computeRetreatQuality():
-  retreatThreshold = GetRetreatSafeThreatThreshold()  // From config (e.g., 10)
-
-  for each map position:
-    retreatScore = 0.0
-    checkedDirs = 0
-
-    // Check all 8 adjacent positions
-    for each adjacent position:
-      meleeThreat = CombatLayer.GetMeleeThreatAt(adjacentPos)
-      rangedThreat = CombatLayer.GetRangedPressureAt(adjacentPos)
-
-      if meleeThreat < retreatThreshold && rangedThreat < retreatThreshold:
-        retreatScore += 1.0  // Safe exit
-      checkedDirs++
-
-    // Retreat quality = percentage of safe adjacent tiles
-    retreatQuality[pos] = retreatScore / checkedDirs
-```
-
-**Total Risk Calculation:**
-
-```go
-GetTotalRiskAt(pos):
-  flanking = flankingRisk[pos]
-  isolation = isolationRisk[pos]
-  pressure = engagementPressure[pos]
-  retreatPenalty = 1.0 - retreatQuality[pos]
-
-  // Simple average of all risk factors
-  return (flanking + isolation + pressure + retreatPenalty) * 0.25
-```
-
----
-
-### Faction Threat Level Manager
-
-**Location:** `mind/behavior/dangerlevel.go`
-
-**Purpose:** Base threat data source for all threat layers. Computes raw power-by-range for each squad.
-
-**Architecture:**
-
-```
-FactionThreatLevelManager
-│
-├─ FactionThreatLevel (per faction)
-│  └─ SquadThreatLevel (per squad)
-│     ├─ ThreatByRange map[int]float64
-│     └─ SquadDistanceTracker
-```
-
-**Data Structures:**
-
-```go
-type SquadThreatLevel struct {
-  squadID       EntityID
-  ThreatByRange map[int]float64  // Range -> threat power
-
-  SquadDistances *SquadDistanceTracker
-}
-
-type SquadDistanceTracker struct {
-  SourceSquadID     EntityID
-  EnemiesByDistance map[int][]EntityID  // Distance -> enemy squad IDs
-
-  lastUpdateRound int
-  isDirty         bool
-  isInitialized   bool
-}
-```
-
-**Threat Calculation:**
-
-```go
-CalculateThreatLevels():
-  // Use shared power calculation (mind/evaluation/power.go)
-  config = GetPowerConfigByProfile("Balanced")
-  ThreatByRange = CalculateSquadPowerByRange(squadID, manager, config)
-```
-
-**Why Shared Power System?**
-- Eliminates duplication between AI and encounter generation
-- Ensures consistent threat assessment
-- Single source of truth for combat power
-- ThreatByRange already includes role multipliers from power config
-
-**Update Cycle:**
-
-```go
-UpdateAllFactions():
-  for each faction:
-    for each squad in faction:
-      CalculateThreatLevels()  // Recomputes ThreatByRange
-```
-
-**Integration with Combat Layer:**
-- CombatThreatLayer reads `ThreatByRange[1]` for melee (close-range power)
-- CombatThreatLayer reads `ThreatByRange[maxRange]` for ranged (max-range power)
-- Powers already scaled by role multipliers (Tank=1.2, DPS=1.5, Support=1.0)
-
----
-
 ## Power Evaluation System
 
 **Location:** `mind/evaluation/`
@@ -766,19 +327,19 @@ UpdateAllFactions():
 
 ```
 Power Calculation (Shared)
-│
-├─ Unit Power
-│  ├─ Offensive Power (damage output)
-│  ├─ Defensive Power (survivability)
-│  └─ Utility Power (role, abilities, cover)
-│
-├─ Squad Power
-│  ├─ Sum unit powers
-│  ├─ Composition bonus (attack type diversity)
-│  └─ Health multiplier (wounded penalty)
-│
-└─ Squad Power By Range
-   └─ Map of range -> power (for threat assessment)
+|
++- Unit Power
+|  +- Offensive Power (damage output)
+|  +- Defensive Power (survivability)
+|  +- Utility Power (role, abilities, cover)
+|
++- Squad Power
+|  +- Sum unit powers
+|  +- Composition bonus (attack type diversity)
+|  +- Health multiplier (wounded penalty)
+|
++- Squad Power By Range
+   +- Map of range -> power (for threat assessment)
 ```
 
 ### Power Configuration
@@ -821,7 +382,7 @@ GetPowerConfigByProfile("Balanced"):
     if profile.Name == profileName:
       return PowerConfig from profile
 
-  // Fallback to defaults
+  // Fallback to defaults (DefaultOffensiveWeight=0.4, DefaultDefensiveWeight=0.4, DefaultUtilityWeight=0.2)
   return default Balanced config
 ```
 
@@ -886,11 +447,8 @@ CalculateDefensivePower(attr, config):
 
 ```go
 CalculateUtilityPower(entity, attr, roleData, config):
-  roleValue = calculateRoleValue(roleData)
-  abilityValue = calculateAbilityValue(entity)
-  coverValue = calculateCoverValue(entity)
-
-  return roleValue + abilityValue + coverValue
+  // Sum all utility components (no sub-weights, just add together)
+  return calculateRoleValue(roleData) + calculateAbilityValue(entity) + calculateCoverValue(entity)
 
 calculateRoleValue(roleData):
   roleMultiplier = GetRoleMultiplierFromConfig(role)  // From powerconfig.json
@@ -900,9 +458,10 @@ calculateAbilityValue(entity):
   if !IsLeader(entity):
     return 0.0
 
+  // Iterate AbilitySlotData.Slots (IsEquipped = true)
   totalPower = 0.0
-  for each equipped ability:
-    totalPower += GetAbilityPowerValue(ability)  // From powerconfig.json
+  for each equipped ability slot:
+    totalPower += GetAbilityPowerValue(slot.AbilityType)  // From powerconfig.json
 
   return totalPower
 
@@ -911,7 +470,8 @@ calculateCoverValue(entity):
   if coverData == nil:
     return 0.0
 
-  return coverData.CoverValue * CoverScaling * CoverBeneficiaryMultiplier
+  return coverData.CoverValue * CoverScalingFactor * CoverBeneficiaryMultiplier
+  // CoverScalingFactor=100.0, CoverBeneficiaryMultiplier=2.5
 ```
 
 ---
@@ -953,7 +513,7 @@ CalculateSquadCompositionBonus(squadID, manager):
   attackTypes = set()
 
   for each unit in squad:
-    attackTypes.add(unit.AttackType)
+    attackTypes.add(unit.AttackType)  // Via TargetRowData.AttackType
 
   uniqueTypes = len(attackTypes)
   return GetCompositionBonusFromConfig(uniqueTypes)
@@ -983,7 +543,7 @@ CalculateHealthMultiplier(healthPercent, healthPenalty):
 
 **Why Composition Matters:**
 - Encourages diverse unit types (melee row, melee column, ranged, magic)
-- Penalties mono-composition squads (0.8x)
+- Penalizes mono-composition squads (0.8x)
 - Rewards mixed squads (up to 1.3x for 4 types)
 - Applies to both player and AI squads
 
@@ -1007,28 +567,19 @@ CalculateSquadPowerByRange(squadID, manager, config):
   attackTypeCount = map[AttackType]int
 
   for each unitID:
-    attr = GetAttributes(unitID)
-    role = GetUnitRole(unitID)
-    attackRange = GetAttackRange(unitID)
+    // Get attack range (defaults to 1 if AttackRangeComponent missing)
+    attackRange = rangeData.Range  // From AttackRangeComponent
 
-    // Simplified power for threat (weapon + dex/2)
-    basePower = Weapon + Dexterity/2
-    roleMultiplier = GetRoleMultiplierFromConfig(role)
-
-    units.append({
-      power: basePower * roleMultiplier,
-      attackRange: attackRange,
-      isLeader: HasLeaderComponent(entity)
-    })
-
+    // Track attack types for composition bonus
     attackTypeCount[attackType]++
 
+    // Use FULL unit power calculation (same as CalculateSquadPower)
+    unitPower = calculateUnitPower(unitID, manager, config)
+
+    units.append({power: unitPower, attackRange: attackRange})
+
   // Find maximum threat range
-  maxThreatRange = 0
-  for each unit:
-    threatRange = movementRange + unit.attackRange
-    if threatRange > maxThreatRange:
-      maxThreatRange = threatRange
+  maxThreatRange = max(movementRange + unit.attackRange) for all units
 
   // Calculate power at each range
   powerByRange = map[int]float64
@@ -1040,9 +591,7 @@ CalculateSquadPowerByRange(squadID, manager, config):
       effectiveThreatRange = movementRange + unit.attackRange
 
       if effectiveThreatRange >= currentRange:
-        leaderBonus = unit.isLeader ? GetLeaderBonusFromConfig() : 1.0
-        unitPower = unit.power * leaderBonus
-        rangePower += unitPower
+        rangePower += unit.power  // Full unit power already includes role multiplier
 
     powerByRange[currentRange] = rangePower
 
@@ -1053,6 +602,9 @@ CalculateSquadPowerByRange(squadID, manager, config):
 
   return powerByRange
 ```
+
+**Important Implementation Note:**
+This function uses the **full** `calculateUnitPower()` calculation (including offensive, defensive, and utility components). Earlier documentation described a simplified formula (weapon + dex/2), which was a prior implementation. The current code uses the same unified power calculation as `CalculateSquadPower()`.
 
 **Example Output:**
 
@@ -1080,6 +632,16 @@ rangedThreat = squadThreat.ThreatByRange[maxRange]  // Long-range power
 ### Role Multipliers and Ability Values
 
 **Location:** `mind/evaluation/roles.go`
+
+**Scaling Constants:**
+
+```go
+const (
+    RoleScalingFactor          = 10.0   // Base multiplier for role value
+    CoverScalingFactor         = 100.0  // Scale cover value (0.0-0.5) to comparable range (0-50)
+    CoverBeneficiaryMultiplier = 2.5    // Average units protected per cover provider
+)
+```
 
 **Role Multipliers (powerconfig.json):**
 
@@ -1119,8 +681,8 @@ rangedThreat = squadThreat.ThreatByRange[maxRange]  // Long-range power
 
 **Usage:**
 - Adds to unit's utility power
-- Only leaders have abilities
-- Multiple abilities stack (sum of all equipped)
+- Only leaders have abilities (checked via `LeaderComponent`)
+- Multiple abilities stack via `AbilitySlotData.Slots` (sum of all equipped slots)
 
 **Leader Bonus (powerconfig.json):**
 
@@ -1130,10 +692,53 @@ rangedThreat = squadThreat.ThreatByRange[maxRange]  // Long-range power
 }
 ```
 
-**Applied to:**
-- Unit power in squad calculations
-- Power-by-range calculations
-- Represents command/morale boost
+**Note:** The `leaderBonus` field exists in `powerconfig.json` and is accessible via `GetLeaderBonusFromConfig()` in `roles.go`. However, the current `CalculateSquadPowerByRange()` implementation uses `calculateUnitPower()` which bundles leader ability values into utility power rather than applying a separate multiplier. The `leaderBonus` value may be used in future systems or in template-based estimation (`EstimateUnitPowerFromTemplate`).
+
+---
+
+### DirtyCache
+
+**Location:** `mind/evaluation/cache.go`
+
+**Purpose:** Lazy evaluation with round-based invalidation. Embedded in all threat layers and `ThreatVisualizer`.
+
+**Data Structure:**
+
+```go
+type DirtyCache struct {
+  lastUpdateRound int
+  isDirty         bool
+  isInitialized   bool
+}
+```
+
+**API:**
+
+```go
+NewDirtyCache() *DirtyCache  // Created in dirty state; first access triggers computation
+
+IsValid(currentRound int) bool  // True if initialized, not dirty, and round matches
+MarkDirty()                     // Invalidate; forces recomputation on next access
+MarkClean(currentRound int)     // Mark as valid for given round
+IsDirty() bool                  // Whether recomputation is needed
+IsInitialized() bool            // Whether computed at least once
+GetLastUpdateRound() int        // Round number of last update
+```
+
+**Usage Pattern:**
+
+```go
+// In a layer's Compute() method:
+func (layer *SomeLayer) Compute(currentRound int) {
+    // ... compute data ...
+    layer.markClean(currentRound)  // Calls DirtyCache.MarkClean internally
+}
+
+// In CompositeThreatEvaluator.Update():
+if !cte.isDirty && cte.lastUpdateRound == currentRound {
+    return  // Use IsValid() pattern
+}
+```
 
 ---
 
@@ -1261,34 +866,34 @@ totalScore = 100.0 + 12.0 + 10.0 + 10.0 = 132.0
 
 ```
 For each squad with actions remaining:
-│
-├─ Generate Movement Actions (if !HasMoved)
-│  │
-│  ├─ Get valid tiles (CanMoveTo validation)
-│  ├─ Score each tile:
-│  │  ├─ Base score (50.0)
-│  │  ├─ Role-weighted threat
-│  │  ├─ Ally proximity bonus
-│  │  └─ Approach enemy bonus
-│  └─ Add to action list
-│
-├─ Generate Attack Actions (if !HasActed)
-│  │
-│  ├─ Get attackable enemies (range check)
-│  ├─ Score each target:
-│  │  ├─ Base score (100.0)
-│  │  ├─ Wounded target bonus
-│  │  ├─ Threat priority bonus
-│  │  └─ Role counter bonus
-│  └─ Add to action list
-│
-├─ Add Wait Action (score 0.0)
-│
-├─ Select Best Action (highest score)
-│
-└─ Execute Action
-   ├─ Success: Mark threat layers dirty, continue
-   └─ Failure: Break (squad done)
+|
++- Generate Movement Actions (if !HasMoved)
+|  |
+|  +- Get valid tiles (CanMoveTo validation)
+|  +- Score each tile:
+|  |  +- Base score (50.0)
+|  |  +- Role-weighted threat
+|  |  +- Ally proximity bonus
+|  |  +- Approach enemy bonus
+|  +- Add to action list
+|
++- Generate Attack Actions (if !HasActed)
+|  |
+|  +- Get attackable enemies (range check)
+|  +- Score each target:
+|  |  +- Base score (100.0)
+|  |  +- Wounded target bonus
+|  |  +- Threat priority bonus
+|  |  +- Role counter bonus
+|  +- Add to action list
+|
++- Add Wait Action (score 0.0)
+|
++- Select Best Action (highest score)
+|
++- Execute Action
+   +- Success: Mark ALL faction evaluators dirty, continue
+   +- Failure: Break (squad done)
 ```
 
 ---
@@ -1395,6 +1000,8 @@ For each squad with actions remaining:
 - `meleeWeight` and `supportWeight` are role-specific
 - Allows designers to tune role differentiation without affecting shared behaviors
 
+For how difficulty scaling modifies these values at runtime, see [Behavior & Threat Layers - Difficulty Scaling](BEHAVIOR_THREAT_LAYERS.md#difficulty-scaling).
+
 ---
 
 ### Power Configuration (powerconfig.json)
@@ -1475,7 +1082,7 @@ For each squad with actions remaining:
 | 3 | 1.2 | Triple-type bonus (+20%) |
 | 4 | 1.3 | Quad-type bonus (+30%) |
 
-**Leader Bonus:** 1.3 (leaders provide +30% power multiplier)
+**Leader Bonus:** 1.3 (present in config for future use; current ECS-based calculation includes leader abilities via utility power rather than a direct multiplier)
 
 ---
 
@@ -1490,28 +1097,35 @@ For each squad with actions remaining:
 **Implementation Pattern:**
 
 ```go
-// Configuration accessor with fallback
+// Configuration accessor with fallback + difficulty scaling
 func GetParameterFromConfig() ValueType {
-  // Try to load from JSON template
-  if templates.ConfigTemplate.Parameter != nil:
-    return templates.ConfigTemplate.Parameter
+  // Load base from JSON template
+  base := defaultValue
+  if templates.ConfigTemplate.Parameter != 0:
+    base = templates.ConfigTemplate.Parameter
 
-  // Fallback to hardcoded default
-  return defaultValue
+  // Apply difficulty scaling
+  result := base + templates.GlobalDifficulty.AI().ParameterOffset
+  if result < 1:
+    return 1  // Clamp to minimum
+  return result
 }
 ```
 
 **Examples:**
 
 ```go
-// AI behavior parameter
+// AI behavior parameter (with difficulty offset)
 func GetIsolationThreshold() int {
+  base := 3
   if templates.AIConfigTemplate.ThreatCalculation.IsolationThreshold > 0:
-    return templates.AIConfigTemplate.ThreatCalculation.IsolationThreshold
-  return 3  // Default
+    base = templates.AIConfigTemplate.ThreatCalculation.IsolationThreshold
+  result := base + templates.GlobalDifficulty.AI().IsolationThresholdOffset
+  if result < 1: return 1
+  return result
 }
 
-// Power calculation parameter
+// Power calculation parameter (no difficulty scaling)
 func GetRoleMultiplierFromConfig(role UnitRole) float64 {
   roleStr := role.String()
   for _, rm := range templates.PowerConfigTemplate.RoleMultipliers:
@@ -1541,26 +1155,27 @@ func GetRoleMultiplierFromConfig(role UnitRole) float64 {
 
 ```
 Game Initialization
-│
-├─ Load Config Templates (aiconfig.json, powerconfig.json)
-│
-├─ Create EntityManager
-│
-├─ Create CombatQueryCache
-│
-├─ Create FactionThreatLevelManager
-│  └─ For each faction:
-│     └─ Create FactionThreatLevel
-│        └─ For each squad:
-│           └─ Create SquadThreatLevel (with ThreatByRange)
-│
-└─ Create AIController
-   ├─ Dependencies: EntityManager, TurnManager, MovementSystem, CombatActionSystem
-   │
-   └─ Create CompositeThreatEvaluator (per faction, lazy)
-      ├─ CombatThreatLayer
-      ├─ SupportValueLayer
-      └─ PositionalRiskLayer
+|
++- Load Config Templates (aiconfig.json, powerconfig.json)
+|
++- Create EntityManager
+|
++- Create CombatQueryCache (ECS Views: ActionStateView, FactionView)
+|
++- Create FactionThreatLevelManager
+|  +- For each faction:
+|     +- Create FactionThreatLevel
+|        +- For each squad:
+|           +- Create SquadThreatLevel (with ThreatByRange)
+|
++- Create AIController
+   +- Dependencies: EntityManager, TurnManager, MovementSystem, CombatActionSystem
+   |
+   +- layerEvaluators map (per faction, created lazily on first DecideFactionTurn)
+      +- CompositeThreatEvaluator (created via getThreatEvaluator())
+         +- CombatThreatLayer
+         +- SupportValueLayer
+         +- PositionalRiskLayer
 ```
 
 ---
@@ -1569,130 +1184,61 @@ Game Initialization
 
 ```
 GUI Calls AIController.DecideFactionTurn(factionID)
-│
-├─ 1. Clear attack queue
-│
-├─ 2. Update threat layers
-│  ├─ FactionThreatLevelManager.UpdateAllFactions()
-│  │  └─ For each squad: CalculateThreatLevels()
-│  │     └─ ThreatByRange = CalculateSquadPowerByRange()
-│  │
-│  └─ CompositeThreatEvaluator.Update(currentRound)
-│     ├─ CombatThreatLayer.Compute()
-│     │  ├─ Read ThreatByRange[1] for melee
-│     │  ├─ Read ThreatByRange[maxRange] for ranged
-│     │  └─ Paint threat maps
-│     │
-│     ├─ SupportValueLayer.Compute()
-│     │  ├─ Calculate heal priorities
-│     │  └─ Paint support value maps
-│     │
-│     └─ PositionalRiskLayer.Compute()
-│        ├─ Calculate flanking risk
-│        ├─ Calculate isolation risk
-│        ├─ Calculate engagement pressure
-│        └─ Calculate retreat quality
-│
-├─ 3. For each squad in faction:
-│  │
-│  └─ While squad has actions remaining:
-│     │
-│     ├─ Create ActionContext
-│     │  ├─ Get action state (HasMoved, HasActed)
-│     │  ├─ Get threat evaluator for faction
-│     │  ├─ Get squad role (cached)
-│     │  ├─ Get current position (cached)
-│     │  └─ Get squad health (cached)
-│     │
-│     ├─ Create ActionEvaluator
-│     │
-│     ├─ EvaluateAllActions()
-│     │  ├─ Generate movement actions (if !HasMoved)
-│     │  │  ├─ Get valid tiles (CanMoveTo validation)
-│     │  │  └─ Score each tile
-│     │  │     ├─ Base score
-│     │  │     ├─ Role-weighted threat
-│     │  │     ├─ Ally proximity bonus
-│     │  │     └─ Approach enemy bonus
-│     │  │
-│     │  ├─ Generate attack actions (if !HasActed)
-│     │  │  ├─ Get attackable enemies
-│     │  │  └─ Score each target
-│     │  │     ├─ Base score
-│     │  │     ├─ Wounded bonus
-│     │  │     ├─ Threat priority bonus
-│     │  │     └─ Role counter bonus
-│     │  │
-│     │  └─ Add Wait action (score 0.0)
-│     │
-│     ├─ SelectBestAction() (highest score)
-│     │
-│     ├─ Execute Action
-│     │  ├─ MoveAction: MovementSystem.MoveSquad()
-│     │  ├─ AttackAction: CombatActionSystem.ExecuteAttackAction()
-│     │  │  └─ Queue attack for animation
-│     │  └─ WaitAction: Mark HasMoved and HasActed
-│     │
-│     └─ Mark threat layers dirty (positions changed)
-│        ├─ CombatThreatLayer.MarkDirty()
-│        ├─ SupportValueLayer.MarkDirty()
-│        └─ PositionalRiskLayer.MarkDirty()
-│
-└─ 4. Return queued attacks to GUI for animation
+|
++- 1. Clear attack queue
+|
++- 2. Update threat layers (ONCE per faction turn)
+|  +- FactionThreatLevelManager.UpdateAllFactions()
+|  |  +- For each squad: CalculateThreatLevels()
+|  |     +- ThreatByRange = CalculateSquadPowerByRange()
+|  |
+|  +- For each faction evaluator: evaluator.Update(currentRound)
+|     (see BEHAVIOR_THREAT_LAYERS.md for layer computation details)
+|
++- 3. For each squad in faction:
+|  |
+|  +- While squad has actions remaining (HasMoved && HasActed == false):
+|     |
+|     +- Create ActionContext
+|     |  +- Get action state (HasMoved, HasActed)
+|     |  +- Get or create threat evaluator for faction
+|     |  +- Get squad role (cached in context)
+|     |  +- Get current position (cached in context)
+|     |
+|     +- Create ActionEvaluator
+|     |
+|     +- EvaluateAllActions()
+|     |  +- Generate movement actions (if !HasMoved)
+|     |  |  +- Get valid tiles (CanMoveTo validation)
+|     |  |  +- Score each tile
+|     |  |     +- Base score (50.0)
+|     |  |     +- Role-weighted threat
+|     |  |     +- Ally proximity bonus
+|     |  |     +- Approach enemy bonus
+|     |  |
+|     |  +- Generate attack actions (if !HasActed)
+|     |  |  +- Get attackable enemies
+|     |  |  +- Score each target
+|     |  |     +- Base score (100.0)
+|     |  |     +- Wounded bonus
+|     |  |     +- Threat priority bonus
+|     |  |     +- Role counter bonus
+|     |  |
+|     |  +- Add Wait action (score 0.0)
+|     |
+|     +- SelectBestAction() (highest score)
+|     |
+|     +- Execute Action
+|     |  +- MoveAction: MovementSystem.MoveSquad() via MoveSquadCommand
+|     |  +- AttackAction: CombatActionSystem.ExecuteAttackAction()
+|     |  |  +- Queue attack for animation via AIController.QueueAttack()
+|     |  +- WaitAction: Mark HasMoved and HasActed via ActionState
+|     |
+|     +- Mark ALL faction evaluators dirty (for next iteration)
+|        +- evaluator.MarkDirty() for each evaluator in layerEvaluators map
+|
++- 4. Return queued attacks to GUI for animation
 ```
-
----
-
-### Encounter Generation Flow
-
-```
-Player Triggers Encounter
-│
-├─ GenerateEncounterSpec()
-│  │
-│  ├─ Get player deployed squads
-│  │
-│  ├─ Calculate total player power
-│  │  └─ For each squad: CalculateSquadPower()
-│  │
-│  ├─ Calculate average squad power
-│  │
-│  ├─ Determine difficulty modifier (based on encounter level)
-│  │  ├─ Power multiplier (e.g., 1.2x for medium difficulty)
-│  │  ├─ Squad count (e.g., 2-3 squads)
-│  │  ├─ Min/Max target power bounds
-│  │  └─ Role distribution weights
-│  │
-│  ├─ Calculate target enemy squad power
-│  │  └─ avgPlayerPower * difficultyMultiplier
-│  │
-│  ├─ Generate enemy squads
-│  │  └─ For each enemy squad (count from difficulty):
-│  │     ├─ Select role (weighted random)
-│  │     ├─ Build squad from templates
-│  │     │  └─ Add units until power target reached
-│  │     │     └─ EstimateUnitPowerFromTemplate()
-│  │     │
-│  │     └─ Assign spawn position
-│  │
-│  └─ Return EncounterSpec
-│     ├─ PlayerSquadIDs
-│     ├─ EnemySquads (templates)
-│     ├─ Difficulty
-│     └─ EncounterType
-│
-└─ SetupCombatFromEncounter()
-   ├─ Create enemy faction
-   ├─ Instantiate enemy squads from templates
-   ├─ Deploy squads to map
-   └─ Initialize combat turn manager
-```
-
-**Key Insight:**
-- Uses same `CalculateSquadPower()` as AI threat system
-- Ensures balanced encounters (enemy power ≈ player power * modifier)
-- Enemy squad composition uses power estimation before spawning
-- Templates converted to ECS entities only after validation
 
 ---
 
@@ -1700,7 +1246,7 @@ Player Triggers Encounter
 
 ### Threat Layer Computation
 
-**Complexity:** O(factions × squads × mapRadius²)
+**Complexity:** O(factions x squads x mapRadius^2)
 
 **Optimization Techniques:**
 
@@ -1708,6 +1254,7 @@ Player Triggers Encounter
    - Layers only recompute when marked dirty
    - Prevents redundant calculations within same round
    - Invalidated after each AI action (positions change)
+   - Start-of-turn update pays the full recompute cost once
 
 2. **Map Reuse**
    - Threat maps use `clear()` instead of reallocating
@@ -1715,23 +1262,32 @@ Player Triggers Encounter
    - Go's `clear()` is optimized for map zeroing
 
 3. **Lazy Evaluator Creation**
-   - CompositeThreatEvaluator created per-faction on-demand
+   - CompositeThreatEvaluator created per-faction on-demand via `getThreatEvaluator()`
    - Not all factions may execute AI (e.g., player faction)
-   - Stored in map for reuse
+   - Stored in `layerEvaluators` map for reuse
 
-4. **Combat Query Cache**
-   - Pre-indexed faction-to-squad mappings
-   - Avoids repeated ECS queries
-   - Updated incrementally during combat
+4. **Combat Query Cache (ECS Views)**
+   - `CombatQueryCache` uses `ecs.View` objects (automatically maintained by ECS library)
+   - `ActionStateView` and `FactionView` avoid full-world queries
+   - Updated incrementally by the ECS library when components change
+
+5. **IterateMapGrid vs Sparse Painting**
+   - `PositionalRiskLayer` iterates full map grid for isolation/engagement/retreat
+   - `CombatThreatLayer` uses sparse painting (only around enemy squads)
+   - Trade-off: grid iteration is O(mapSize) but cache-friendly
 
 **Bottlenecks:**
 
-- **PaintThreatToMap()**: O(radius²) per squad
-  - Mitigated by typical small map sizes (30×30)
+- **PaintThreatToMap()**: O(radius^2) per squad
+  - Mitigated by typical small map sizes (30x30)
   - Could use spatial partitioning for massive maps
 
+- **IterateMapGrid()**: O(mapWidth x mapHeight) per layer
+  - Called 3 times per PositionalRiskLayer update (isolation, pressure, retreat)
+  - Typical cost at 30x30: 900 iterations x 3 = 2700 callback invocations
+
 - **GetRoleWeightedThreat()**: Called per movement candidate
-  - Typical AI turn: 3 squads × 10 tiles × 4 layer queries = 120 queries
+  - Typical AI turn: 3 squads x 10 tiles x 4 layer queries = 120 queries
   - Layers are precomputed, so query is O(1) map lookup
 
 ---
@@ -1748,9 +1304,9 @@ Player Triggers Encounter
    - Ensures consistent threat/power assessment
 
 2. **Component Batching**
-   - UnitCombatData bundles all components in one query
+   - `GetUnitCombatData()` bundles all components in one query
    - Reduces component access overhead
-   - Pre-calculates derived values (role multiplier)
+   - Pre-calculates derived values (role, attack type, range)
 
 3. **Config Caching**
    - PowerConfig loaded once per profile
@@ -1759,10 +1315,10 @@ Player Triggers Encounter
 
 **Bottlenecks:**
 
-- **CalculateSquadPowerByRange()**: O(units × ranges)
+- **CalculateSquadPowerByRange()**: O(units x ranges)
+  - Now uses full `calculateUnitPower()` per unit (vs. old simplified formula)
   - Called once per squad during threat update
-  - Typical cost: 4 units × 5 ranges = 20 iterations
-  - Results cached in ThreatByRange map
+  - Typical cost: 4 units x 5 ranges = 20 iterations
 
 ---
 
@@ -1770,10 +1326,10 @@ Player Triggers Encounter
 
 **Best Practices:**
 
-1. **Use Combat Cache for Repeated Queries**
+1. **Use ECS Views for Repeated Queries**
    ```go
-   // Avoid repeated ECS queries
-   squadIDs := cache.GetSquadsForFaction(factionID)  // Cached
+   // CombatQueryCache wraps ECS Views
+   actionState := cache.FindActionStateBySquadID(squadID)  // View-based, O(k)
    ```
 
 2. **Component Access by EntityID**
@@ -1803,103 +1359,27 @@ Player Triggers Encounter
 ```
 CompositeThreatEvaluator (per faction):
   CombatThreatLayer:
-    meleeThreatByPos:    ~30×30 float64 = 7.2KB
-    rangedPressureByPos: ~30×30 float64 = 7.2KB
-    lineOfFireZones:     ~5 squads × 50 positions × 16 bytes = 4KB
+    meleeThreatByPos:    ~30x30 float64 = 7.2KB
+    rangedPressureByPos: ~30x30 float64 = 7.2KB
 
   SupportValueLayer:
-    supportValuePos:     ~30×30 float64 = 7.2KB
-    allyProximity:       ~30×30 int = 3.6KB
+    supportValuePos:     ~30x30 float64 = 7.2KB
+    allyProximity:       ~30x30 int = 3.6KB
 
   PositionalRiskLayer:
-    4 maps × ~30×30 float64 = 28.8KB
+    4 maps x ~30x30 float64 = 28.8KB
 
-Total per faction: ~58KB
+Total per faction: ~54KB
 ```
 
 **Scaling:**
-- 3 factions: ~174KB
+- 3 factions: ~162KB
 - Negligible compared to ECS entity data
 - Could use sparse maps if memory becomes issue
 
 ---
 
 ## Extension Points
-
-### Adding New Threat Layers
-
-**Steps:**
-
-1. **Define Layer Struct** in `mind/behavior/`
-   ```go
-   type NewThreatLayer struct {
-     *ThreatLayerBase
-     customData map[LogicalPosition]float64
-   }
-   ```
-
-2. **Implement Compute()**
-   ```go
-   func (ntl *NewThreatLayer) Compute() {
-     clear(ntl.customData)
-
-     // Compute threat values
-     // ...
-
-     ntl.markClean(0)
-   }
-   ```
-
-3. **Add to CompositeThreatEvaluator**
-   ```go
-   type CompositeThreatEvaluator struct {
-     // Existing layers
-     combatThreat *CombatThreatLayer
-
-     // New layer
-     newThreat *NewThreatLayer
-   }
-   ```
-
-4. **Update GetRoleWeightedThreat()**
-   ```go
-   func (cte *CompositeThreatEvaluator) GetRoleWeightedThreat(...) {
-     // Existing layers
-     meleeThreat := cte.combatThreat.GetMeleeThreatAt(pos)
-
-     // New layer
-     newThreat := cte.newThreat.GetNewThreatAt(pos)
-
-     totalThreat = ... + newThreat * weights.NewWeight
-   }
-   ```
-
-5. **Add Weight to RoleThreatWeights**
-   ```go
-   type RoleThreatWeights struct {
-     MeleeWeight      float64
-     RangedWeight     float64
-     SupportWeight    float64
-     PositionalWeight float64
-     NewWeight        float64  // New weight
-   }
-   ```
-
-6. **Update aiconfig.json**
-   ```json
-   {
-     "roleBehaviors": [
-       {
-         "role": "Tank",
-         "meleeWeight": -0.5,
-         "supportWeight": 0.2,
-         "newWeight": 0.3
-       }
-     ]
-   }
-   ```
-
----
 
 ### Adding New Action Types
 
@@ -1918,10 +1398,6 @@ Total per faction: ~58KB
    func (na *NewAction) Execute(manager, movementSystem, combatActSystem, cache) bool {
      // Execute action logic
      return success
-   }
-
-   func (na *NewAction) GetDescription() string {
-     return "New action description"
    }
    ```
 
@@ -2023,6 +1499,12 @@ Total per faction: ~58KB
 
 ---
 
+### Adding New Threat Layers
+
+See [Behavior & Threat Layers - Extension Points](BEHAVIOR_THREAT_LAYERS.md#extension-points) for the step-by-step guide to adding new threat layers.
+
+---
+
 ### Tuning AI Behavior
 
 **Common Tuning Tasks:**
@@ -2057,6 +1539,8 @@ Total per faction: ~58KB
 | Fewer flanking maneuvers | Decrease flankingThreatRangeBonus |
 | DPS prioritized by AI | Increase DPS roleMultiplier |
 | Healers more valuable | Increase Heal abilityValue |
+| Harder encounters globally | Increase GlobalDifficulty encounter PowerMultiplierScale |
+| AI more aggressive globally | Decrease GlobalDifficulty AI FlankingRangeBonusOffset |
 
 ---
 
@@ -2101,7 +1585,7 @@ Total per faction: ~58KB
 
 **AI Suicidal Behavior:**
 
-**Symptoms:** AI charges into overwhelm ing threat, ignores danger.
+**Symptoms:** AI charges into overwhelming threat, ignores danger.
 
 **Possible Causes:**
 - Approach bonus too high (overpowers threat avoidance)
@@ -2111,44 +1595,16 @@ Total per faction: ~58KB
 
 **Debug Steps:**
 1. Log role weights - positive should avoid, negative should attract
-2. Visualize threat layers (check if threat values reasonable)
+2. Enable `ThreatVisualizer` in `VisualizerModeThreat` to check threat values visually
 3. Reduce approach multipliers
 4. Increase threat layer weights in role configuration
 
 ---
 
-**AI Ignores Wounded Allies:**
-
-**Symptoms:** Support squads don't move toward damaged units.
-
-**Possible Causes:**
-- SupportValueLayer not computing correctly
-- Support.supportWeight not negative (should attract)
-- Heal priority calculation wrong
-- Support value paint radius too small
-
-**Debug Steps:**
-1. Check SupportValueLayer.Compute() executes
-2. Verify Support.supportWeight is negative (-1.0)
-3. Log healPriority values (should be 1.0 - healthPercent)
-4. Increase healRadius in aiconfig.json
-
----
-
-**Threat Layers Not Updating:**
-
-**Symptoms:** AI makes decisions based on stale positions.
-
-**Possible Causes:**
-- Layers not marked dirty after actions
-- Dirty flag not checked in Update()
-- BaseThreatMgr not updating ThreatByRange
-
-**Debug Steps:**
-1. Verify `MarkDirty()` called after each action execution
-2. Check dirty flag in Update() - should skip if clean
-3. Confirm FactionThreatLevelManager.UpdateAllFactions() called
-4. Log ThreatByRange values (should change as squads move)
+For additional troubleshooting:
+- **AI Ignores Wounded Allies** - See [Behavior & Threat Layers - Troubleshooting](BEHAVIOR_THREAT_LAYERS.md#troubleshooting)
+- **Threat Layers Not Updating** - See [Behavior & Threat Layers - Troubleshooting](BEHAVIOR_THREAT_LAYERS.md#troubleshooting)
+- **Encounter Spawning Errors** - See [Encounter System - Troubleshooting](ENCOUNTER_SYSTEM.md#troubleshooting)
 
 ---
 
@@ -2158,48 +1614,33 @@ Total per faction: ~58KB
 
 | File | Purpose | Key Functions |
 |------|---------|---------------|
-| `mind/ai/ai_controller.go` | Turn orchestration | `DecideFactionTurn()`, `NewActionContext()` |
-| `mind/ai/action_evaluator.go` | Action generation and scoring | `EvaluateAllActions()`, `scoreMovementPosition()`, `scoreAttackTarget()` |
-
-### Behavior/Threat Files
-
-| File | Purpose | Key Functions |
-|------|---------|---------------|
-| `mind/behavior/threat_composite.go` | Layer composition | `GetRoleWeightedThreat()`, `Update()` |
-| `mind/behavior/threat_combat.go` | Melee/ranged threat | `Compute()`, `GetMeleeThreatAt()`, `GetRangedPressureAt()` |
-| `mind/behavior/threat_support.go` | Support positioning | `Compute()`, `GetSupportValueAt()` |
-| `mind/behavior/threat_positional.go` | Tactical risks | `Compute()`, `GetTotalRiskAt()` |
-| `mind/behavior/threat_layers.go` | Base layer utilities | `ThreatLayerBase`, `getEnemyFactions()` |
-| `mind/behavior/threat_constants.go` | Config accessors | `GetRoleBehaviorWeights()`, `GetIsolationThreshold()` |
-| `mind/behavior/threat_painting.go` | Spatial threat painting | `PaintThreatToMap()`, `LinearFalloff`, `NoFalloff` |
-| `mind/behavior/threat_queries.go` | Unit data queries | `GetUnitCombatData()`, `hasUnitsWithAttackType()` |
-| `mind/behavior/dangerlevel.go` | Base threat tracking | `FactionThreatLevelManager`, `SquadThreatLevel` |
+| `mind/ai/ai_controller.go` | Turn orchestration | `DecideFactionTurn()`, `NewActionContext()`, `QueueAttack()`, `GetQueuedAttacks()` |
+| `mind/ai/action_evaluator.go` | Action generation and scoring | `EvaluateAllActions()`, `scoreMovementPosition()`, `scoreAttackTarget()`, `scoreApproachEnemy()` |
 
 ### Evaluation Files
 
 | File | Purpose | Key Functions |
 |------|---------|---------------|
-| `mind/evaluation/power.go` | Power calculation | `CalculateSquadPower()`, `CalculateSquadPowerByRange()` |
+| `mind/evaluation/power.go` | Power calculation | `CalculateSquadPower()`, `CalculateSquadPowerByRange()`, `CalculateOffensivePower()`, `CalculateDefensivePower()`, `CalculateUtilityPower()`, `EstimateUnitPowerFromTemplate()` |
 | `mind/evaluation/power_config.go` | Config loading | `GetPowerConfigByProfile()` |
-| `mind/evaluation/roles.go` | Role/ability config | `GetRoleMultiplierFromConfig()`, `GetAbilityPowerValue()` |
-| `mind/evaluation/cache.go` | Dirty flag system | `DirtyCache`, `MarkDirty()` |
-
-### Encounter Files
-
-| File | Purpose | Key Functions |
-|------|---------|---------------|
-| `mind/encounter/encounter_generator.go` | Enemy creation | `GenerateEncounterSpec()` |
-| `mind/encounter/encounter_setup.go` | Combat initialization | `SetupBalancedEncounter()` |
-| `mind/encounter/encounter_config.go` | Difficulty config | `getDifficultyModifier()` |
+| `mind/evaluation/roles.go` | Role/ability config | `GetRoleMultiplierFromConfig()`, `GetAbilityPowerValue()`, `GetCompositionBonusFromConfig()` |
+| `mind/evaluation/cache.go` | Dirty flag system | `DirtyCache`, `MarkDirty()`, `MarkClean()`, `IsValid()`, `IsDirty()`, `IsInitialized()` |
 
 ### Combat System Files
 
 | File | Purpose | Key Functions |
 |------|---------|---------------|
-| `tactical/combat/turnmanager.go` | Turn management | `InitializeCombat()`, `EndTurn()` |
-| `tactical/combat/combatactionsystem.go` | Action execution | `ExecuteAttackAction()` |
-| `tactical/combat/combatcomponents.go` | ECS components | `ActionStateData`, `TurnStateData` |
-| `tactical/combat/combatqueries.go` | Combat queries | `GetSquadFaction()`, `GetSquadMapPosition()` |
+| `tactical/combat/turnmanager.go` | Turn management | `InitializeCombat()`, `EndTurn()`, `ResetSquadActions()`, `GetCurrentRound()`, `SetOnTurnEnd()`, `SetPostResetHook()` |
+| `tactical/combat/combatactionsystem.go` | Action execution | `ExecuteAttackAction()`, `SetOnAttackComplete()`, `SetBattleRecorder()` |
+| `tactical/combat/combatcomponents.go` | ECS components | `ActionStateData` (HasMoved, HasActed, MovementRemaining, BonusAttackActive), `TurnStateData`, `FactionData` |
+| `tactical/combat/combatqueries.go` | Combat queries | `GetSquadFaction()`, `GetSquadMapPosition()`, `GetAllFactions()`, `GetSquadsForFaction()`, `GetActiveSquadsForFaction()`, `CreateActionStateForSquad()`, `RemoveSquadFromMap()` |
+| `tactical/combat/combatqueriescache.go` | ECS View cache | `CombatQueryCache`, `FindActionStateBySquadID()`, `FindFactionByID()` |
+| `tactical/combat/combatfactionmanager.go` | Faction management | `CreateFactionWithPlayer()`, `AddSquadToFaction()` |
+
+### Additional File References
+
+- **Behavior/Threat Files** - See [Behavior & Threat Layers - File Reference](BEHAVIOR_THREAT_LAYERS.md#file-reference)
+- **Encounter Files** - See [Encounter System - File Reference](ENCOUNTER_SYSTEM.md#file-reference)
 
 ---
 

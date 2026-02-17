@@ -1,6 +1,6 @@
 # Configuration Tuning Guide
 
-**Last Updated:** 2026-02-06
+**Last Updated:** 2026-02-17
 
 This document explains all values in the game's JSON configuration files and how changing them impacts gameplay algorithms.
 
@@ -13,7 +13,9 @@ This document explains all values in the game's JSON configuration files and how
 3. [encounterdata.json](#encounterdatajson) - Combat encounter generation and faction archetypes
 4. [overworldconfig.json](#overworldconfigjson) - Overworld threat and faction systems
 5. [nodeDefinitions.json](#nodedefinitionsjson) - Overworld node types (threats, settlements, fortresses)
-6. [config.go](#configgo) - Compile-time game constants
+6. [difficultyconfig.json](#difficultyconfigjson) - Difficulty presets and scaling master knobs
+7. [influenceconfig.json](#influenceconfigjson) - Influence zone interactions between nodes
+8. [config.go](#configgo) - Compile-time game constants
 
 ---
 
@@ -34,6 +36,8 @@ Parameters for how AI calculates danger zones and tactical positioning.
 | `retreatSafeThreatThreshold` | 10 | Threat level below which an adjacent tile is considered a safe escape route | **Higher**: More tiles count as escape routes, AI feels less trapped. **Lower**: Fewer escape routes, AI more likely to feel cornered |
 
 **Note:** `engagementPressureMax` (200) and `isolationMaxDistance` (8) are hardcoded constants in `mind/behavior/threat_constants.go`, not configurable via JSON.
+
+**Note:** All three threatCalculation values are also adjusted at runtime by the active difficulty preset via `difficultyconfig.json`. The JSON values define the base, and the difficulty system applies offsets on top.
 
 **Formula Context:**
 ```
@@ -70,6 +74,8 @@ These top-level fields apply the same weight to all roles for ranged threat and 
 | `sharedRangedWeight` | 0.5 | How much ranged threat matters (all roles) | **Higher**: All roles avoid ranged fire more. **Lower**: All roles ignore ranged threats |
 | `sharedPositionalWeight` | 0.5 | How much positional risk matters (all roles) | **Higher**: All roles care more about flanking/isolation. **Lower**: All roles ignore tactical positioning |
 
+**Note:** Both shared weights are additionally scaled by `aiCompetence` from the active difficulty preset. Higher difficulty multiplies effective weight, making AI more tactically aware.
+
 **Formula Context:**
 ```
 PositionScore = (meleeThreat * meleeWeight) +
@@ -101,9 +107,8 @@ Parameters for how support units evaluate healing and ally proximity.
 | Parameter | Default | Description | Impact of Change |
 |-----------|---------|-------------|------------------|
 | `healRadius` | 3 | Distance at which support value radiates from wounded allies | **Higher**: Support units consider healing targets from further away. **Lower**: Must be closer to recognize healing opportunities |
-| `buffPriorityEngagementRange` | 4 | Range at which buff targets are considered "engaged" | **Higher**: Support buffs units further from combat. **Lower**: Only buffs units actively fighting |
 
-**Note:** `allyProximityRadius` is derived automatically as `healRadius - 1`.
+**Note:** `allyProximityRadius` is derived automatically as `healRadius - 1`. The `buffPriorityEngagementRange` field documented in older versions of this guide has been removed from the config and is no longer in use.
 
 **Formula Context:**
 ```
@@ -211,14 +216,15 @@ Bonus multiplier based on attack type diversity within a squad.
 
 ### Scaling Constants (Hardcoded)
 
-The following scaling factors are **no longer configurable via JSON**. They are internal implementation constants in `mind/evaluation/roles.go`:
+The following scaling factors are **not configurable via JSON**. They are internal implementation constants in `mind/evaluation/roles.go`:
 
 | Constant | Value | Purpose |
 |----------|-------|---------|
 | `RoleScalingFactor` | 10.0 | Converts role multiplier to comparable power range |
-| `DodgeScalingFactor` | 100.0 | Converts dodge chance to comparable power range |
-| `CoverScalingFactor` | 100.0 | Converts cover value to comparable power range |
+| `CoverScalingFactor` | 100.0 | Converts cover value (0.0–0.5) to comparable power range (0–50) |
 | `CoverBeneficiaryMultiplier` | 2.5 | Average units benefiting from cover |
+
+**Note:** `DodgeScalingFactor` was previously listed here but has been removed from the codebase. It no longer exists as a named constant.
 
 ---
 
@@ -232,20 +238,21 @@ Controls combat encounter generation, difficulty scaling, faction archetypes, an
 
 Defines strategic archetypes for each enemy faction. These control overworld AI behavior via the strategy bonus system.
 
-| Faction | Strategy | Aggression | Description |
-|---------|----------|------------|-------------|
-| Necromancers | Defensive | 0.3 | Turtles and fortifies, low aggression |
-| Cultists | Expansionist | 0.7 | Aggressively expands territory |
-| Orcs | Aggressor | 0.9 | Most aggressive faction, raids constantly |
-| Bandits | Raider | 0.8 | Focus on raiding over expanding |
-| Beasts | Territorial | 0.5 | Holds territory, moderate aggression |
+| Faction | Strategy | Description |
+|---------|----------|-------------|
+| Necromancers | Defensive | Turtles and fortifies |
+| Cultists | Expansionist | Aggressively expands territory |
+| Orcs | Aggressor | Most aggressive faction, raids constantly |
+| Bandits | Raider | Focus on raiding over expanding |
+| Beasts | Territorial | Holds territory |
+
+**Note:** The `aggression` field (previously documented with per-faction values such as 0.3, 0.7, 0.9, 0.8, 0.5) **no longer exists in this file**. Faction behavioral intensity is now controlled entirely by the `strategy` field and the corresponding `strategyBonuses` entries in `overworldconfig.json`.
 
 **Parameter Impacts:**
 
 | Parameter | Impact of Change |
 |-----------|------------------|
 | `strategy` | Which strategy bonus set from `overworldconfig.json` `strategyBonuses` applies. Must be one of: Expansionist, Aggressor, Raider, Defensive, Territorial |
-| `aggression` | 0.0-1.0 scale. Modifies scoring: high aggression boosts expansion/raiding, low aggression boosts fortification/retreat |
 
 ---
 
@@ -272,6 +279,8 @@ Defines difficulty tiers for encounters. Each level controls enemy power budget 
 | `minTargetPower` | Floor for target enemy squad power | Prevents trivially weak encounters when player power is very low |
 | `maxTargetPower` | Ceiling for target enemy squad power | Prevents impossibly strong encounters when player power is very high |
 
+**Note:** The active difficulty preset from `difficultyconfig.json` additionally scales `powerMultiplier` via `combatIntensity` and applies offsets to `squadCount`, `minUnitsPerSquad`, and `maxUnitsPerSquad` via `encounterSizeOffset`. The values in this table are the base values before difficulty scaling.
+
 **Formula Context:**
 ```
 AvgPlayerSquadPower = TotalDeployedPower / NumDeployedSquads
@@ -295,7 +304,7 @@ Each encounter definition ties a node type to combat configuration. Multiple enc
 | banditcamp_raiders | bandit_raiders | Bandit Raiders | ranged, ranged, melee | 4 | elite, ranged-focused |
 | banditcamp_fortress | bandit_fortress | Bandit Fortress | melee, ranged, ranged | 5 | boss, fortified |
 | corruption | corruption_basic | Corrupted Forces | magic, ranged, melee | 3 | common, corruption |
-| corruption_ritual | corruption_ritual | Ritual Cultists | magic, magic, ranged | 4 | elite, corruption |
+| corruption_ritual | corruption_ritual | Ritual Cultists | magic, magic, ranged | 4 | elite, corruption, magic-focused |
 | corruption_temple | corruption_temple | Corrupted Temple | magic, magic, magic | 5 | boss, corruption |
 | beastnest | beast_basic | Beast Pack | melee, melee, melee | 3 | common, swarm |
 | beastnest_alpha | beast_alpha | Alpha Beast Pack | melee, melee, melee | 4 | elite, swarm |
@@ -350,9 +359,8 @@ Parameters for how threats spread and grow on the overworld map.
 | `containmentSlowdown` | 0.5 | Growth multiplier when player nearby | **Higher (closer to 1.0)**: Player presence less effective. **Lower**: Player containment very effective |
 | `maxThreatIntensity` | 5 | Maximum threat level (1-5 scale) | **Higher**: Threats can become more dangerous. **Lower**: Caps threat severity |
 | `childNodeSpawnThreshold` | 3 | Threat level required to spawn child nodes | **Higher**: Only high threats spread. **Lower**: Threats spread at lower levels |
-| `maxChildNodeSpawnAttempts` | 10 | Max tries to find valid spawn position | **Higher**: More likely to find spawn position. **Lower**: Constrained environments block spreading |
 
-**Note:** Per-node `baseGrowthRate` is configured in `nodeDefinitions.json`, not here.
+**Note:** `maxChildNodeSpawnAttempts` previously documented here no longer exists in the config file. The `containmentSlowdown` base value is further scaled by the active difficulty preset's `overworldPressure` knob. Per-node `baseGrowthRate` is configured in `nodeDefinitions.json`, not here.
 
 **Formula Context:**
 ```
@@ -371,15 +379,15 @@ Controls how enemy factions make strategic decisions on the overworld.
 | Parameter | Default | Description | Impact of Change |
 |-----------|---------|-------------|------------------|
 | `defaultIntentTickDuration` | 10 | Ticks before faction changes intent | **Higher**: Factions commit longer to strategies. **Lower**: More reactive, changes strategy often |
-| `expansionTerritoryLimit` | 20 | Territory size that triggers expansion limit | **Higher**: Factions can grow larger before slowing. **Lower**: Small factions stop expanding earlier |
-| `fortificationStrengthGain` | 1 | Strength gained per fortify tick | **Higher**: Fortifying is more effective. **Lower**: Slower recovery |
 | `maxTerritorySize` | 30 | Hard cap on faction territory | **Higher**: Factions can control more area. **Lower**: Limits faction spread |
+
+**Note:** `expansionTerritoryLimit` and `fortificationStrengthGain` previously documented here no longer exist in the config file.
 
 ---
 
 ### strengthThresholds
 
-Unified strength thresholds used across all faction AI decisions. Replaces the old per-action thresholds.
+Unified strength thresholds used across all faction AI decisions.
 
 | Parameter | Default | Description | Impact of Change |
 |-----------|---------|-------------|------------------|
@@ -392,7 +400,7 @@ Unified strength thresholds used across all faction AI decisions. Replaces the o
 **Faction Intent Flow:**
 ```
 Scores are calculated for each action (expansion, fortification, raiding, retreat)
-Each score factors in: strength vs thresholds, territory size, faction archetype bonuses, aggression
+Each score factors in: strength vs thresholds, territory size, faction archetype bonuses
 
 SelectedIntent = highest scoring action
 If all scores < idleScoreThreshold: IDLE (do nothing)
@@ -432,7 +440,19 @@ Percentage chances for various spawn events.
 |-----------|---------|-------------|------------------|
 | `expansionThreatSpawnChance` | 20 | % chance to spawn threat when expanding | **Higher**: Expansion creates more threats. **Lower**: Safer expansion |
 | `fortifyThreatSpawnChance` | 30 | % chance to spawn threat when fortifying | **Higher**: Fortifying creates defenders. **Lower**: Fortifying is passive |
-| `bonusItemDropChance` | 30 | % chance for bonus loot | **Higher**: More loot drops. **Lower**: Scarcer rewards |
+
+**Note:** `bonusItemDropChance` previously documented here no longer exists in the config file.
+
+---
+
+### playerNodes
+
+Controls for player-placed node behavior on the overworld.
+
+| Parameter | Default | Description | Impact of Change |
+|-----------|---------|-------------|------------------|
+| `maxPlacementRange` | 15 | Maximum tile distance from commander to place a node | **Higher**: Player can place nodes further away. **Lower**: Nodes must be placed close to commander |
+| `maxNodes` | 10 | Maximum number of player-placed nodes on the map | **Higher**: Player can build more nodes. **Lower**: Limits expansion |
 
 ---
 
@@ -449,7 +469,7 @@ Default overworld map size.
 
 ### factionScoring
 
-Base scoring parameters for faction AI decisions. These are combined with faction archetype bonuses and aggression modifiers.
+Base scoring parameters for faction AI decisions. These are combined with faction archetype bonuses.
 
 #### expansion
 
@@ -470,7 +490,8 @@ Base scoring parameters for faction AI decisions. These are combined with factio
 
 | Parameter | Default | Description | Impact of Change |
 |-----------|---------|-------------|------------------|
-| `strongBonus` | 3.0 | Bonus when very strong (strong threshold + 3) | **Higher**: Strong factions prefer raiding |
+| `strongBonus` | 3.0 | Bonus applied when faction is very strong (above strong threshold + veryStrongOffset) | **Higher**: Strong factions prefer raiding |
+| `veryStrongOffset` | 3 | How far above the `strong` threshold a faction must be to gain the raid bonus | **Higher**: Requires more strength before raiding bonus activates. **Lower**: Bonus kicks in sooner |
 
 #### retreat
 
@@ -486,21 +507,16 @@ ExpansionScore = (isStrong ? strongBonus : 0) +
                  (smallTerritory ? smallTerritoryBonus : 0) +
                  (atLimit ? maxTerritoryPenalty : 0) +
                  strategyBonus.expansionBonus
-ExpansionScore *= (0.7 + aggression * 0.3)
 
 FortificationScore = (isWeak ? weakBonus : 0) + baseValue +
                      strategyBonus.fortificationBonus
-FortificationScore *= (1.3 - aggression * 0.3)
 
-RaidingScore = (notStrong ? 0) +
-               strategyBonus.raidingBonus +
-               (veryStrong ? strongBonus : 0)
-RaidingScore *= (0.5 + aggression * 0.5)
+RaidingScore = strategyBonus.raidingBonus +
+               (strength >= strong + veryStrongOffset ? strongBonus : 0)
 
 RetreatScore = (isCritical ? criticalWeakBonus : 0) +
                (tinyTerritory ? smallTerritoryPenalty : 0) -
                strategyBonus.retreatPenalty
-RetreatScore *= (1.2 - aggression * 0.4)
 
 SelectedIntent = max(all scores)
 If all < idleScoreThreshold: IDLE
@@ -531,7 +547,7 @@ Per-strategy scoring modifiers. Each faction's archetype (from `encounterdata.js
 
 ## nodeDefinitions.json
 
-Defines all overworld node types: threats, settlements, and fortresses. This replaces the old `threatTypes` section of `overworldconfig.json`.
+Defines all overworld node types: threats, settlements, and fortresses.
 
 **File Location:** `assets/gamedata/nodeDefinitions.json`
 
@@ -541,26 +557,31 @@ Valid categories: `threat`, `settlement`, `fortress`
 
 ### Threat Nodes
 
-| ID | Display Name | Growth Rate | Radius | Effect | Spawns Children | Faction |
-|----|-------------|-------------|--------|--------|-----------------|---------|
-| necromancer | Necromancer | 0.05 | 3 | SpawnBoost | Yes | Necromancers |
-| banditcamp | Bandit Camp | 0.08 | 2 | ResourceDrain | No | Bandits |
-| corruption | Corruption | 0.03 | 5 | TerrainCorruption | Yes | Cultists |
-| beastnest | Beast Nest | 0.06 | 2 | SpawnBoost | No | Beasts |
-| orcwarband | Orc Warband | 0.07 | 3 | CombatDebuff | No | Orcs |
+| ID | Display Name | Growth Rate | Radius | Spawns Children | Faction |
+|----|-------------|-------------|--------|-----------------|---------|
+| necromancer | Necromancer | 0.05 | 3 | Yes | Necromancers |
+| banditcamp | Bandit Camp | 0.08 | 2 | No | Bandits |
+| corruption | Corruption | 0.03 | 5 | Yes | Cultists |
+| beastnest | Beast Nest | 0.06 | 2 | No | Beasts |
+| orcwarband | Orc Warband | 0.07 | 3 | No | Orcs |
 
 ### Settlement Nodes
 
-| ID | Display Name | Radius | Services |
-|----|-------------|--------|----------|
-| marketplace | Marketplace | 1 | trade, repair |
-| guild_hall | Guild Hall | 2 | recruit, train |
+Settlement nodes represent locations the player can build or visit. They have a placement cost in resources (iron, wood, stone).
+
+| ID | Display Name | Radius | Cost (iron/wood/stone) |
+|----|-------------|--------|------------------------|
+| town | Marketplace | 1 | 5 / 15 / 5 |
+| guild_hall | Guild Hall | 2 | 10 / 10 / 10 |
+| temple | Temple | 2 | 5 / 10 / 15 |
+
+**Note:** Settlement nodes previously had a `services` field listed in this guide (e.g., "trade, repair"). That field does not exist in the actual JSON. Service behavior is determined by the node's `id`, not a JSON field.
 
 ### Fortress Nodes
 
-| ID | Display Name | Radius | Effect |
-|----|-------------|--------|--------|
-| watchtower | Watchtower | 4 | SpawnBoost |
+| ID | Display Name | Radius | Cost (iron/wood/stone) |
+|----|-------------|--------|------------------------|
+| watchtower | Watchtower | 4 | 15 / 10 / 20 |
 
 ### Parameter Details
 
@@ -571,11 +592,12 @@ Valid categories: `threat`, `settlement`, `fortress`
 | `displayName` | Human-readable name | Shown in UI |
 | `color` | RGBA color `{r, g, b, a}` | Display color on overworld map. Alpha 0 = invisible |
 | `overworld.baseGrowthRate` | Growth rate per tick (threat nodes only) | **Higher**: This threat type grows faster. **Lower**: Slower growth |
-| `overworld.baseRadius` | Influence radius in tiles | **Higher**: Threat affects larger area. **Lower**: More localized |
-| `overworld.primaryEffect` | Effect type: SpawnBoost, ResourceDrain, TerrainCorruption, CombatDebuff | Determines what negative effect applies to nearby tiles |
-| `overworld.canSpawnChildren` | Whether node can create satellite threats | **true**: Can create child nodes. **false**: Self-contained |
-| `factionId` | Faction this node belongs to (required for threats) | Links to faction in `encounterdata.json` |
-| `services` | Available services (settlements only) | Determines what player can do at this location |
+| `overworld.baseRadius` | Influence radius in tiles | **Higher**: Node affects larger area. **Lower**: More localized |
+| `overworld.canSpawnChildren` | Whether node can create satellite threats (threat nodes only) | **true**: Can create child nodes. **false**: Self-contained |
+| `factionId` | Faction this node belongs to (required for threat nodes) | Links to faction in `encounterdata.json` |
+| `cost` | Resource cost `{iron, wood, stone}` to place this node | Only applies to player-placeable nodes (settlements, fortresses). Threat nodes have zero cost |
+
+**Note:** The `primaryEffect` field (SpawnBoost, ResourceDrain, TerrainCorruption, CombatDebuff) previously documented here does not exist in the actual JSON. Threat effects are implicit based on faction and node type.
 
 ### defaultNode
 
@@ -583,6 +605,124 @@ Fallback configuration for unknown node types:
 - Display Name: "Unknown Location"
 - Color: Gray (128, 128, 128)
 - Radius: 1
+
+---
+
+## difficultyconfig.json
+
+Controls the three difficulty presets and their master knobs. All other systems (AI, encounters, overworld) read their active scaling from this file at runtime.
+
+**File Location:** `assets/gamedata/difficultyconfig.json`
+
+### Overview
+
+Difficulty uses four master knobs that cascade into derived multipliers used by AI, encounter, and overworld subsystems. The Medium preset with all values at 1.0 / 1.0 / 1.0 / 0 is the identity configuration -- it applies no scaling to any downstream system.
+
+### defaultDifficulty
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `defaultDifficulty` | "Medium" | Which preset is active when the game starts |
+
+### difficulties
+
+| Name | combatIntensity | overworldPressure | aiCompetence | encounterSizeOffset |
+|------|-----------------|-------------------|--------------|---------------------|
+| Easy | 0.7 | 0.6 | 0.7 | -1 |
+| Medium | 1.0 | 1.0 | 1.0 | 0 |
+| Hard | 1.4 | 1.4 | 1.3 | 1 |
+
+**Master Knob Details:**
+
+| Parameter | Description | Downstream Effect |
+|-----------|-------------|-------------------|
+| `combatIntensity` | Scales enemy squad power in encounters | Multiplied directly against encounter `powerMultiplier` |
+| `overworldPressure` | Scales threat growth rate, spawn chances, and raid intensity | Applied to `baseGrowthRate`, spawn probabilities, and raid scaling |
+| `aiCompetence` | Adjusts AI threat calculation thresholds and positional weight scales | Offsets `flankingThreatRangeBonus`, `isolationThreshold`, `retreatSafeThreatThreshold`; scales `sharedRangedWeight` and `sharedPositionalWeight` |
+| `encounterSizeOffset` | Integer offset added to squad count and units-per-squad limits | Applied to `squadCount`, `minUnitsPerSquad`, `maxUnitsPerSquad` |
+
+**Derived AI Adjustments (from aiCompetence):**
+
+The following offsets are computed automatically at load time. Medium (1.0) produces zero offset on all of these:
+
+| Derived Field | Formula | Easy (0.7) | Medium (1.0) | Hard (1.3) |
+|---------------|---------|------------|--------------|------------|
+| FlankingRangeBonusOffset | round((aiCompetence - 1.0) * 5) | -2 | 0 | +2 |
+| IsolationThresholdOffset | -round((aiCompetence - 1.0) * 3) | +1 | 0 | -1 |
+| RetreatSafeThresholdOffset | round((aiCompetence - 1.0) * 7) | -2 | 0 | +2 |
+| SharedRangedWeightScale | aiCompetence directly | 0.7x | 1.0x | 1.3x |
+| SharedPositionalWeightScale | aiCompetence directly | 0.7x | 1.0x | 1.3x |
+
+**Constraint:** All three of `combatIntensity`, `overworldPressure`, and `aiCompetence` must be positive (> 0). All three standard presets (Easy, Medium, Hard) must be present -- removing any will cause a panic at load time.
+
+**Tuning Tips:**
+- To make a custom "Very Hard" mode: add a fourth preset with values above 1.4
+- To separate AI difficulty from encounter difficulty: change `aiCompetence` without changing `combatIntensity`
+- Medium is the design baseline -- all other presets are expressed as ratios relative to it
+
+---
+
+## influenceconfig.json
+
+Controls how overlapping influence zones from different node types interact on the overworld map.
+
+**File Location:** `assets/gamedata/influenceconfig.json`
+
+### Top-Level Parameters
+
+| Parameter | Default | Description | Impact of Change |
+|-----------|---------|-------------|------------------|
+| `baseMagnitudeMultiplier` | 0.1 | Base scale factor applied to all node influence magnitudes | **Higher**: All nodes exert stronger influence. **Lower**: Influence effects are weaker overall |
+| `defaultPlayerNodeMagnitude` | 0.1 | Default influence magnitude for player-placed nodes | **Higher**: Player nodes are more impactful. **Lower**: Player nodes have less effect |
+| `defaultPlayerNodeRadius` | 3 | Default influence radius for player-placed nodes (in tiles) | **Higher**: Player node influence reaches further. **Lower**: More localized effect |
+
+### synergy
+
+Bonus applied when two nodes of the **same faction** have overlapping influence zones.
+
+| Parameter | Default | Description | Impact of Change |
+|-----------|---------|-------------|------------------|
+| `growthBonus` | 0.25 | Additional growth rate multiplier when same-faction nodes overlap | **Higher**: Clustered same-faction threats grow faster. **Lower**: Less benefit to clustering |
+
+### competition
+
+Penalty applied when two nodes of **different factions** have overlapping influence zones.
+
+| Parameter | Default | Description | Impact of Change |
+|-----------|---------|-------------|------------------|
+| `growthPenalty` | 0.20 | Growth rate reduction when rival-faction nodes overlap | **Higher**: Rival factions strongly suppress each other. **Lower**: Factions coexist more easily |
+
+### suppression
+
+Parameters for how **player-placed nodes** suppress nearby threat growth.
+
+| Parameter | Default | Description | Impact of Change |
+|-----------|---------|-------------|------------------|
+| `growthPenalty` | 0.40 | Base growth rate reduction applied by any player node | **Higher**: Player nodes are strong threat suppressors. **Lower**: Player nodes have less impact |
+
+#### suppression.nodeTypeMultipliers
+
+Per-node-type multipliers that scale the base `growthPenalty`. A value of 1.5 means that node type suppresses 50% more than the base penalty.
+
+| Node Type | Multiplier | Effect |
+|-----------|------------|--------|
+| watchtower | 1.5 | Best suppressor -- military presence |
+| temple | 1.2 | Strong suppressor -- spiritual influence |
+| guild_hall | 1.0 | Standard suppressor -- baseline |
+| town | 0.8 | Weakest suppressor -- civilian settlement |
+
+**Formula Context:**
+```
+// Same-faction overlap:
+effectiveGrowth = baseGrowth * (1.0 + synergy.growthBonus)
+
+// Rival-faction overlap:
+effectiveGrowth = baseGrowth * (1.0 - competition.growthPenalty)
+
+// Player node suppression:
+suppressionAmount = suppression.growthPenalty * nodeTypeMultipliers[nodeType]
+effectiveGrowth = baseGrowth * (1.0 - suppressionAmount)
+```
 
 ---
 
@@ -599,12 +739,14 @@ Compile-time constants defined in `config/config.go`. These require recompilatio
 | `DISPLAY_THREAT_MAP_LOG_OUTPUT` | false | Show threat map debug logging |
 | `DISPLAY_DEATAILED_COMBAT_OUTPUT` | false | Show detailed combat debug logging |
 | `DEBUG_MODE` | true | Enable debug visualization and logging |
-| `ENABLE_BENCHMARKING` | false | Enable pprof profiling server on localhost:6060 |
+| `ENABLE_BENCHMARKING` | **true** | Enable pprof profiling server on localhost:6060 |
 | `ENABLE_COMBAT_LOG` | false | Enable combat log UI panel and message recording |
 | `ENABLE_COMBAT_LOG_EXPORT` | false | Export battle logs as JSON after each battle |
 | `COMBAT_LOG_EXPORT_DIR` | "./combat_logs" | Directory for exported combat logs |
 | `ENABLE_OVERWORLD_LOG_EXPORT` | false | Export overworld session logs as JSON |
 | `OVERWORLD_LOG_EXPORT_DIR` | "./overworld_logs" | Directory for exported overworld logs |
+
+**Note:** `ENABLE_BENCHMARKING` is currently set to `true` (enabled). This starts a pprof server at `localhost:6060` on launch.
 
 ### Player Starting Attributes
 
@@ -622,8 +764,33 @@ Compile-time constants defined in `config/config.go`. These require recompilatio
 | Constant | Default | Description |
 |----------|---------|-------------|
 | `DefaultPlayerStartingGold` | 100000 | Starting gold for purchasing units |
-| `DefaultPlayerMaxUnits` | 50 | Maximum units player can own |
-| `DefaultPlayerMaxSquads` | 10 | Maximum squads player can own |
+| `DefaultPlayerMaxUnits` | 500 | Maximum units player can own |
+| `DefaultPlayerMaxSquads` | 50 | Maximum squads player can own |
+| `DefaultPlayerStartingIron` | 50 | Starting iron for node placement |
+| `DefaultPlayerStartingWood` | 50 | Starting wood for node placement |
+| `DefaultPlayerStartingStone` | 50 | Starting stone for node placement |
+| `DefaultPlayerMaxArtifacts` | 50 | Maximum artifacts player can own |
+| `DefaultMaxArtifactsPerCommander` | 30 | Maximum artifacts equippable per commander |
+
+### Commander System
+
+| Constant | Default | Description |
+|----------|---------|-------------|
+| `DefaultCommanderMovementSpeed` | 25 | Tiles per overworld turn |
+| `DefaultMaxCommanders` | 3 | Maximum commanders player can control |
+| `DefaultCommanderCost` | 5000 | Gold cost to recruit a new commander |
+| `DefaultCommanderMaxSquads` | 50 | Max squads per commander |
+| `DefaultCommanderStartingMana` | 50 | Starting mana for new commanders |
+| `DefaultCommanderMaxMana` | 50 | Maximum mana pool for new commanders |
+
+### Faction AI Starting Resources
+
+| Constant | Default | Description |
+|----------|---------|-------------|
+| `DefaultFactionStartingGold` | 100000 | Starting gold for each enemy faction |
+| `DefaultFactionStartingIron` | 30 | Starting iron for each enemy faction |
+| `DefaultFactionStartingWood` | 30 | Starting wood for each enemy faction |
+| `DefaultFactionStartingStone` | 30 | Starting stone for each enemy faction |
 
 ### Unit Defaults
 
@@ -637,6 +804,7 @@ Compile-time constants defined in `config/config.go`. These require recompilatio
 | `DefaultMaxDodgeChance` | 30 | Maximum dodge chance cap |
 | `DefaultBaseCapacity` | 6 | Base squad unit capacity |
 | `DefaultMaxCapacity` | 9 | Maximum squad unit capacity |
+| `BaseMagicResist` | 5 | Base magic resistance for all units |
 
 ### Combat Constants
 
@@ -656,6 +824,38 @@ Compile-time constants defined in `config/config.go`. These require recompilatio
 | `DefaultZoomNumberOfSquare` | 30 | Squares visible when zoomed |
 | `DefaultStaticUIOffset` | 1000 | Static UI position offset |
 
+### Asset Paths
+
+| Constant | Value | Description |
+|----------|-------|-------------|
+| `PlayerImagePath` | "../assets/creatures/player1.png" | Player sprite image path |
+| `AssetItemsDir` | "../assets/items/" | Item sprites directory |
+
+### Profiling Configuration
+
+| Constant | Value | Description |
+|----------|-------|-------------|
+| `ProfileServerAddr` | "localhost:6060" | pprof server address (active when ENABLE_BENCHMARKING = true) |
+| `CPUProfileRate` | 1000 | CPU profiling sample rate |
+| `MemoryProfileRate` | 1 | Memory profiling sample rate |
+
+---
+
+## Other Config Files in assets/gamedata/
+
+The following files exist in `assets/gamedata/` and are loaded at runtime, but are content data files rather than tuning parameters. They define the game's unit roster, items, and spells and are not covered by this tuning guide:
+
+| File | Purpose |
+|------|---------|
+| `monsterdata.json` | Unit stat blocks, roles, attack patterns, cover values, and stat growth grades for all recruitable unit types |
+| `spelldata.json` | Spell definitions: damage, mana cost, target type, AoE shape, and visual effect type |
+| `minor_artifacts.json` | Minor artifact definitions: stat modifier bundles that attach to squads |
+| `major_artifacts.json` | Major artifact definitions: unique activated abilities (e.g., Twin Strike Banner, Echo Drums) |
+| `consumabledata.json` | Consumable item definitions: temporary stat modifiers with duration |
+| `creaturemodifiers.json` | Creature modifier templates (Fast, Strong, Elusive, Dire, Sturdy) applied to enemies as suffixes |
+
+These files follow a different editing workflow: adding or changing entries directly modifies available content without affecting balance algorithms. Refer to the file comments and `assets/gamedata/notes.txt` for formatting requirements (e.g., image filenames must match files in `assets/creatures/`).
+
 ---
 
 ## Quick Reference: Common Tuning Scenarios
@@ -663,20 +863,22 @@ Compile-time constants defined in `config/config.go`. These require recompilatio
 ### "AI is too passive"
 - Decrease `meleeWeight` for Tanks (more negative) in aiconfig.json
 - Decrease `sharedPositionalWeight` in aiconfig.json
-- Increase faction `aggression` in encounterdata.json
+- Increase `aiCompetence` in difficultyconfig.json
 
 ### "AI is too aggressive"
 - Increase `sharedPositionalWeight` in aiconfig.json
 - Increase `isolationThreshold` in aiconfig.json
-- Decrease faction `aggression` in encounterdata.json
+- Decrease `aiCompetence` in difficultyconfig.json
 
 ### "Encounters are too hard"
+- Decrease `combatIntensity` in difficultyconfig.json
 - Decrease `powerMultiplier` in difficultyLevels
 - Decrease `squadCount` values
 - Decrease `maxUnitsPerSquad` values
 - Increase player `compositionBonuses`
 
 ### "Encounters are too easy"
+- Increase `combatIntensity` in difficultyconfig.json
 - Increase `powerMultiplier` in difficultyLevels
 - Increase `squadCount` values
 - Increase `minUnitsPerSquad` values
@@ -686,20 +888,22 @@ Compile-time constants defined in `config/config.go`. These require recompilatio
 - Decrease per-node `baseGrowthRate` in nodeDefinitions.json
 - Increase `containmentSlowdown` in overworldconfig.json
 - Increase `childNodeSpawnThreshold` in overworldconfig.json
+- Decrease `overworldPressure` in difficultyconfig.json
+- Increase `suppression.growthPenalty` in influenceconfig.json
 
 ### "Threats spread too slowly"
 - Increase per-node `baseGrowthRate` in nodeDefinitions.json
 - Decrease `childNodeSpawnThreshold` in overworldconfig.json
 - Decrease `containmentSlowdown` in overworldconfig.json
+- Increase `overworldPressure` in difficultyconfig.json
 
 ### "Factions are too aggressive"
 - Increase `strong` threshold in overworldconfig.json (harder to qualify for raids)
-- Decrease faction `aggression` values in encounterdata.json
 - Decrease `raidingBonus` in strategy bonuses
+- Switch aggressive factions to "Territorial" or "Defensive" strategy in encounterdata.json
 
 ### "Factions are too passive"
 - Decrease `strong` threshold in overworldconfig.json
-- Increase faction `aggression` values in encounterdata.json
 - Increase `raidingBonus` and `expansionBonus` in strategy bonuses
 - Decrease `idleScoreThreshold` in factionScoringControl
 
@@ -712,3 +916,8 @@ Compile-time constants defined in `config/config.go`. These require recompilatio
 - Increase `meleeWeight` for DPS in aiconfig.json
 - Increase `sharedPositionalWeight` in aiconfig.json
 - Decrease `isolationThreshold` (tighter formations)
+
+### "Player nodes feel weak"
+- Increase `suppression.growthPenalty` in influenceconfig.json
+- Increase the multiplier for the relevant node type in `suppression.nodeTypeMultipliers`
+- Increase `defaultPlayerNodeRadius` or `defaultPlayerNodeMagnitude` in influenceconfig.json

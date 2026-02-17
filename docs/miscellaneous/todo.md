@@ -44,7 +44,6 @@ __________________________________________
 - Can always use the move undo command, even after attacking. That's a bug
 
 
-- Need to be able to toggle threat layer visualzation to player faction.
 
 
 ________________________________________________
@@ -93,9 +92,8 @@ x
 # Additions 
 
 
-- Add Abilities. Once they are, see how they are called in combat. Detemrine how you want to call them
 - Better Combat Log
-- Add squad equipment
+
 
 
 

@@ -19,15 +19,17 @@
 6. [Entity Component System (ECS)](#entity-component-system-ecs)
 7. [Squad System](#squad-system)
 8. [Combat System](#combat-system)
-9. [GUI Architecture](#gui-architecture)
-10. [Inventory & Gear](#inventory--gear)
-11. [World Generation](#world-generation)
-12. [Overworld System](#overworld-system)
-13. [Input System](#input-system)
-14. [Data Flow Patterns](#data-flow-patterns)
-15. [Development Patterns](#development-patterns)
-16. [Performance Considerations](#performance-considerations)
-17. [Appendices](#appendices)
+9. [World Generation](#world-generation)
+10. [Input System](#input-system)
+11. [Data Flow Patterns](#data-flow-patterns)
+12. [Development Patterns](#development-patterns)
+13. [Performance Considerations](#performance-considerations)
+14. [Appendices](#appendices)
+
+**External Documentation:**
+- [GUI Architecture](docs/gui_documentation/GUI_DOCUMENTATION.md)
+- [Overworld System](docs/project_documentation/OVERWORLD_ARCHITECTURE.md)
+- [Artifact & Inventory System](docs/project_documentation/ARTIFACT_SYSTEM.md)
 
 ---
 
@@ -70,10 +72,10 @@ TinkerRogue is a turn-based tactical roguelike implemented in Go using a pure En
 **For Gameplay Programmers:**
 1. [Squad System](#squad-system) - Formation-based combat
 2. [Combat System](#combat-system) - Turn management and resolution
-3. [Inventory & Gear](#inventory--gear) - Item handling
+3. [Artifact & Inventory System](docs/project_documentation/ARTIFACT_SYSTEM.md) - Item handling
 
 **For UI Developers:**
-1. [GUI Architecture](#gui-architecture) - Mode management
+1. [GUI Architecture](docs/gui_documentation/GUI_DOCUMENTATION.md) - Mode management
 2. [Input System](#input-system) - Controller pattern
 3. [Data Flow Patterns](#data-flow-patterns) - UI to ECS integration
 
@@ -1112,494 +1114,9 @@ func (cs *CombatService) ExecuteSquadAttack(attackerID, defenderID ecs.EntityID)
 
 ---
 
-## GUI Architecture
+> **GUI Architecture** has been moved to its own document. See [`docs/gui_documentation/GUI_DOCUMENTATION.md`](../gui_documentation/GUI_DOCUMENTATION.md) for full details.
 
-> **Note**: For comprehensive GUI documentation, see `docs/gui_documentation/GUI_DOCUMENTATION.md`.
-> This section provides a high-level overview. The detailed GUI documentation covers:
-> - Complete package structure and responsibilities
-> - ModeBuilder pattern and Panel Registry system
-> - GUIQueries abstraction layer
-> - Performance optimization techniques (caching, batching)
-> - Step-by-step guide for adding new modes
-> - Common patterns and troubleshooting
-
-The GUI system uses a **mode-based architecture** with two-context separation (Overworld/BattleMap) and declarative panel building.
-
-### Modern GUI Architecture (2026 Overhaul)
-
-**Key Improvements:**
-1. **Framework Package** - Core abstractions (BaseMode, ModeBuilder, Panel Registry)
-2. **Builders Package** - Declarative panel construction with functional options
-3. **Two-Context System** - Separate Overworld (strategic) and BattleMap (tactical) contexts
-4. **GUIQueries Layer** - ECS abstraction preventing tight coupling
-5. **Panel Registry** - Type-safe, centralized panel definitions
-6. **Performance Caching** - 90% CPU reduction with cached widgets
-7. **Command Pattern** - Undo/redo support for user actions
-
-### Mode Manager Pattern
-
-```go
-// gui/framework/modemanager.go
-type UIModeManager struct {
-    currentMode       UIMode
-    modes             map[string]UIMode  // Registry
-    context           *UIContext
-    pendingTransition *ModeTransition
-    inputState        *InputState
-}
-
-// gui/framework/coordinator.go - Two-context system
-type GameModeCoordinator struct {
-    overworldManager *UIModeManager   // Strategic layer
-    battleMapManager *UIModeManager   // Tactical layer
-    activeManager    *UIModeManager
-    currentContext   GameContext
-    overworldState   *OverworldState  // Persistent UI state
-    battleMapState   *BattleMapState  // Persistent UI state
-}
-```
-
-### UI Mode Interface
-
-```go
-// gui/framework/uimode.go
-type UIMode interface {
-    GetModeName() string
-    Initialize(ctx *UIContext) error
-    Enter(fromMode UIMode) error
-    Exit(toMode UIMode) error
-    HandleInput(input *InputState) bool  // Returns true if input consumed
-    Update(deltaTime float64) error
-    Render(screen *ebiten.Image)
-    GetEbitenUI() *ebitenui.UI
-}
-```
-
-### ModeBuilder Pattern (Declarative Configuration)
-
-**File:** `gui/framework/modebuilder.go`
-
-The ModeBuilder eliminates boilerplate by providing declarative mode initialization:
-
-```go
-// Before (50+ lines of boilerplate)
-func (m *MyMode) Initialize(ctx *UIContext) error {
-    m.InitializeBase(ctx)
-    m.SetModeName("my_mode")
-    m.SetReturnMode("exploration")
-    m.RegisterHotkey(ebiten.KeyI, "inventory")
-    m.RegisterHotkey(ebiten.KeyC, "combat")
-    // ... many more lines ...
-}
-
-// After (10 lines, declarative)
-func (m *MyMode) Initialize(ctx *framework.UIContext) error {
-    err := framework.NewModeBuilder(&m.BaseMode, framework.ModeConfig{
-        ModeName:   "my_mode",
-        ReturnMode: "exploration",
-        Hotkeys: []framework.HotkeySpec{
-            {Key: ebiten.KeyI, TargetMode: "inventory"},
-            {Key: ebiten.KeyC, TargetMode: "combat"},
-        },
-        StatusLabel: true,  // Automatically creates status label
-        Commands:    true,  // Enables undo/redo
-        OnRefresh:   m.refreshUI,  // Optional refresh callback
-    }).Build(ctx)
-
-    if err != nil {
-        return err
-    }
-
-    // Build panels from registry
-    return m.BuildPanels(MyPanelType1, MyPanelType2)
-}
-```
-
-### Panel Registry System (Type-Safe Panel Building)
-
-**File:** `gui/framework/panelregistry.go`
-
-Panels are registered once globally and built declaratively:
-
-```go
-// 1. Register panel in init() (typically in *_panels_registry.go)
-func init() {
-    framework.RegisterPanel(CombatPanelTurnOrder, framework.PanelDescriptor{
-        SpecName: "turn_order",  // Uses StandardPanels specification
-        Content:  framework.ContentText,
-        OnCreate: func(pr *framework.PanelResult, mode framework.UIMode) error {
-            pr.TextLabel = builders.CreateLargeLabel("Turn Order")
-            pr.Container.AddChild(pr.TextLabel)
-            return nil
-        },
-    })
-}
-
-// 2. Build panel in mode
-func (cm *CombatMode) Initialize(ctx *framework.UIContext) error {
-    // ... ModeBuilder setup ...
-
-    // Build registered panels
-    return cm.BuildPanels(
-        CombatPanelTurnOrder,
-        CombatPanelSquadList,
-        CombatPanelCombatLog,
-    )
-}
-
-// 3. Access panel widgets type-safely
-func (cm *CombatMode) Enter(fromMode framework.UIMode) error {
-    if panel, exists := cm.Panels.Get(CombatPanelTurnOrder); exists {
-        panel.TextLabel.Label = "Round 1 - Player Turn"
-    }
-    return nil
-}
-```
-
-**Benefits:**
-- Type-safe panel types (compile-time checking)
-- Centralized panel definitions
-- No scattered UI construction code
-- Easy refactoring and maintenance
-
-### Available Modes
-
-1. **OverworldMode**: Exploration, squad movement on world map
-2. **CombatMode**: Tactical combat between squads
-3. **InventoryMode**: Item management
-4. **SquadBuilderMode**: Formation editing, unit management
-5. **ShopMode**: Purchasing units/items
-
-### UI Context
-
-The `UIContext` provides shared resources to all modes.
-
-```go
-// gui/core/contextstate.go (conceptual)
-type UIContext struct {
-    EntityManager    *common.EntityManager
-    PlayerData       *common.PlayerData
-    CurrentMap       *worldmap.GameMap
-    GUIResources     *guiresources.GUIResources
-    CombatState      *combat.CombatState
-}
-```
-
-**Critical Principle**: UI state (selections, mode flags) is separate from game state (ECS components). Never store game logic in UI structures.
-
-### Mode Transition
-
-```go
-// modemanager.go:56-81
-func (umm *UIModeManager) transitionToMode(toMode UIMode, reason string) error {
-    // Exit current mode
-    if umm.currentMode != nil {
-        if err := umm.currentMode.Exit(toMode); err != nil {
-            return fmt.Errorf("failed to exit mode %s: %w",
-                umm.currentMode.GetModeName(), err)
-        }
-    }
-
-    // Enter new mode
-    if err := toMode.Enter(umm.currentMode); err != nil {
-        return fmt.Errorf("failed to enter mode %s: %w",
-            toMode.GetModeName(), err)
-    }
-
-    umm.currentMode = toMode
-    fmt.Printf("UI Mode Transition: %s\n", reason)
-    return nil
-}
-```
-
-### Mode Update Loop
-
-```go
-// modemanager.go:84-111
-func (umm *UIModeManager) Update(deltaTime float64) error {
-    // Update input state
-    umm.updateInputState()
-
-    // Handle pending transition
-    if umm.pendingTransition != nil {
-        if err := umm.transitionToMode(umm.pendingTransition.ToMode,
-                                       umm.pendingTransition.Reason); err != nil {
-            return err
-        }
-        umm.pendingTransition = nil
-    }
-
-    // Update current mode
-    if umm.currentMode != nil {
-        umm.currentMode.HandleInput(umm.inputState)
-        if err := umm.currentMode.Update(deltaTime); err != nil {
-            return err
-        }
-        umm.currentMode.GetEbitenUI().Update()  // Process widget interactions
-    }
-
-    return nil
-}
-```
-
-### Widget System
-
-Reusable UI components in `gui/widgets/`:
-
-```go
-// gui/widgets/createwidgets.go (conceptual)
-func CreateSquadListWidget(squads []SquadInfo, onSelect func(squadID ecs.EntityID)) *widget.List {
-    entries := make([]any, len(squads))
-    for i, squad := range squads {
-        entries[i] = SquadListEntry{
-            SquadID: squad.ID,
-            Name:    squad.Name,
-            Size:    squad.UnitCount,
-        }
-    }
-
-    list := widget.NewList(
-        widget.ListOpts.Entries(entries),
-        widget.ListOpts.EntryLabelFunc(func(e any) string {
-            entry := e.(SquadListEntry)
-            return fmt.Sprintf("%s (%d units)", entry.Name, entry.Size)
-        }),
-        widget.ListOpts.EntrySelectedHandler(func(args *widget.ListEntrySelectedEventArgs) {
-            entry := args.Entry.(SquadListEntry)
-            onSelect(entry.SquadID)
-        }),
-    )
-
-    return list
-}
-```
-
-### Combat UI Example
-
-```go
-// gui/guicombat/combat_ui_factory.go (conceptual)
-type CombatUI struct {
-    container      *widget.Container
-    squadList      *widget.List
-    actionButtons  []*widget.Button
-    combatLog      *widget.TextArea
-    selectedSquad  ecs.EntityID
-}
-
-func (cui *CombatUI) Initialize(ctx *UIContext) error {
-    // Create squad list
-    cui.squadList = createSquadList(ctx, func(squadID ecs.EntityID) {
-        cui.selectedSquad = squadID
-        cui.updateActionButtons()
-    })
-
-    // Create action buttons
-    cui.actionButtons = []*widget.Button{
-        createButton("Attack", func() { cui.onAttackClicked() }),
-        createButton("Move", func() { cui.onMoveClicked() }),
-        createButton("Ability", func() { cui.onAbilityClicked() }),
-        createButton("End Turn", func() { cui.onEndTurnClicked() }),
-    }
-
-    // Layout
-    cui.container = createLayout(cui.squadList, cui.actionButtons, cui.combatLog)
-
-    return nil
-}
-```
-
----
-
-## Inventory & Gear
-
-The inventory system (`gear/`) is a **reference implementation** of pure ECS principles, demonstrating how to build a system with zero cached state.
-
-### Core Philosophy
-
-The inventory system was refactored in October 2025 to follow pure ECS patterns:
-- Uses `ecs.EntityID` for item references (not entity pointers)
-- No cached item lists (queries on demand)
-- All logic in system functions (not component methods)
-- Pure data components only
-
-### Inventory Component
-
-```go
-// gear/Inventory.go:24-26
-type Inventory struct {
-    ItemEntityIDs []ecs.EntityID  // ECS best practice: use EntityID, not pointers
-}
-```
-
-**Note**: The inventory stores only EntityIDs. To get item data, query the ECS:
-
-```go
-itemEntity := common.FindEntityByIDInManager(manager, itemEntityID)
-itemData := common.GetComponentType[*ItemData](itemEntity, ItemComponent)
-```
-
-### Inventory System Functions
-
-All inventory operations are system functions (not methods on Inventory):
-
-```go
-// Add item (increments count if exists, adds new if not)
-func AddItem(manager *ecs.Manager, inv *Inventory, itemEntityID ecs.EntityID)
-
-// Remove item (decrements count, removes if zero)
-func RemoveItem(manager *ecs.Manager, inv *Inventory, index int)
-
-// Get item entity ID by index
-func GetItemEntityID(inv *Inventory, index int) (ecs.EntityID, error)
-
-// Get inventory for display (builds list on demand)
-func GetInventoryForDisplay(manager *ecs.Manager, inv *Inventory,
-                           indicesToSelect []int,
-                           itemPropertiesFilter ...StatusEffects) []any
-
-// Filter by action capability
-func GetInventoryByAction(manager *ecs.Manager, inv *Inventory,
-                         indicesToSelect []int, actionName string) []any
-
-// Check if inventory has items with action
-func HasItemsWithAction(manager *ecs.Manager, inv *Inventory, actionName string) bool
-```
-
-### Item Components
-
-```go
-// gear/items.go (conceptual)
-type ItemData struct {
-    ItemID      ecs.EntityID
-    Count       int           // Stack size
-    ItemType    ItemType      // Consumable, Equipment, Material
-    Effects     []StatusEffect
-    Actions     []ItemAction  // Throwable, Drinkable, Equippable
-}
-
-type ItemAction struct {
-    ActionName string        // "Throwable", "Drinkable", "Equippable"
-    Range      int
-    AOERadius  int
-    Damage     int
-    // ... more fields
-}
-```
-
-### Adding Items Example
-
-```go
-// Create item entity
-itemEntity := manager.World.CreateEntity()
-itemID := itemEntity.GetID()
-
-itemEntity.AddComponent(ItemComponent, &ItemData{
-    ItemID:   itemID,
-    Count:    0,  // Will be set to 1 by AddItem
-    ItemType: ItemTypeConsumable,
-    Effects:  []StatusEffect{EffectHealing},
-    Actions:  []ItemAction{{ActionName: "Drinkable", Damage: -20}},  // Negative = heal
-})
-
-itemEntity.AddComponent(common.NameComponent, &common.Name{NameStr: "Health Potion"})
-itemEntity.AddTag(ItemTag)
-
-// Add to player inventory
-playerEntity := common.FindEntityByID(manager, playerID)
-playerInv := common.GetComponentType[*Inventory](playerEntity, InventoryComponent)
-AddItem(manager.World, playerInv, itemID)
-```
-
-### Inventory Service Layer
-
-Higher-level API for common operations:
-
-```go
-// gear/inventory_service.go (conceptual)
-type InventoryService struct {
-    manager *common.EntityManager
-}
-
-func (is *InventoryService) AddItemToPlayer(itemID ecs.EntityID) error {
-    playerEntity := is.getPlayerEntity()
-    playerInv := common.GetComponentType[*Inventory](playerEntity, InventoryComponent)
-    AddItem(is.manager.World, playerInv, itemID)
-    return nil
-}
-
-func (is *InventoryService) UseItem(inventoryIndex int) error {
-    playerEntity := is.getPlayerEntity()
-    playerInv := common.GetComponentType[*Inventory](playerEntity, InventoryComponent)
-
-    itemID, err := GetItemEntityID(playerInv, inventoryIndex)
-    if err != nil {
-        return err
-    }
-
-    itemData := GetItemByID(is.manager.World, itemID)
-    if itemData == nil {
-        return fmt.Errorf("item not found")
-    }
-
-    // Execute item actions
-    for _, action := range itemData.Actions {
-        executeItemAction(action, playerEntity, is.manager)
-    }
-
-    // Remove from inventory
-    RemoveItem(is.manager.World, playerInv, inventoryIndex)
-    return nil
-}
-```
-
-### Item Quality System
-
-```go
-// gear/itemquality.go
-type ItemQuality int
-
-const (
-    QualityCommon ItemQuality = iota
-    QualityUncommon
-    QualityRare
-    QualityEpic
-    QualityLegendary
-)
-
-func GetQualityColor(quality ItemQuality) color.RGBA {
-    // Returns color for UI display
-}
-```
-
-### Stat Effects
-
-Items can modify character attributes:
-
-```go
-// gear/stateffect.go (conceptual)
-type StatEffect struct {
-    Attribute AttributeType  // Strength, Dexterity, Vitality, etc.
-    Modifier  int            // +/- value
-    Duration  int            // Turns (0 = permanent)
-}
-
-func ApplyStatEffects(targetID ecs.EntityID, effects []StatEffect, manager *common.EntityManager) {
-    attrs := common.GetAttributesByID(manager, targetID)
-    if attrs == nil {
-        return
-    }
-
-    for _, effect := range effects {
-        switch effect.Attribute {
-        case AttributeStrength:
-            attrs.Strength += effect.Modifier
-        case AttributeDexterity:
-            attrs.Dexterity += effect.Modifier
-        // ... more attributes
-        }
-    }
-}
-```
+> **Inventory & Gear** has been moved to its own document. See [`ARTIFACT_SYSTEM.md`](ARTIFACT_SYSTEM.md) for full details.
 
 ---
 
@@ -2379,69 +1896,7 @@ func GetEntitiesWithValue(minValue int, manager *common.EntityManager) []ecs.Ent
 
 ### Adding a New UI Mode
 
-```go
-// gui/guimodes/mymode.go
-
-type MyMode struct {
-    ctx       *core.UIContext
-    ui        *ebitenui.UI
-    container *widget.Container
-}
-
-func NewMyMode() *MyMode {
-    return &MyMode{}
-}
-
-func (m *MyMode) GetModeName() string {
-    return "my_mode"
-}
-
-func (m *MyMode) Initialize(ctx *core.UIContext) error {
-    m.ctx = ctx
-    m.buildUI()
-    return nil
-}
-
-func (m *MyMode) Enter(fromMode core.UIMode) error {
-    fmt.Printf("Entering MyMode from %v\n", fromMode)
-    return nil
-}
-
-func (m *MyMode) Exit(toMode core.UIMode) error {
-    fmt.Printf("Exiting MyMode to %v\n", toMode)
-    return nil
-}
-
-func (m *MyMode) HandleInput(input *core.InputState) {
-    if input.KeysJustPressed[ebiten.KeyEscape] {
-        // Request transition back to previous mode
-        m.ctx.ModeManager.RequestTransition(previousMode, "Escape pressed")
-    }
-}
-
-func (m *MyMode) Update(deltaTime float64) error {
-    // Update mode logic
-    return nil
-}
-
-func (m *MyMode) Render(screen *ebiten.Image) {
-    // Custom rendering (background, etc.)
-}
-
-func (m *MyMode) GetEbitenUI() *ebitenui.UI {
-    return m.ui
-}
-
-func (m *MyMode) buildUI() {
-    // Build ebitenui widgets
-    m.container = widget.NewContainer(/* ... */)
-    m.ui = &ebitenui.UI{Container: m.container}
-}
-
-// Register mode during initialization
-// game_main/gameinit.go
-modeManager.RegisterMode(guimodes.NewMyMode())
-```
+> See [`docs/gui_documentation/GUI_DOCUMENTATION.md`](../gui_documentation/GUI_DOCUMENTATION.md) for the full guide on adding UI modes.
 
 ### Adding a World Generator
 
@@ -2521,17 +1976,7 @@ func (g *MyGenerator) Generate(width, height int, images TileImageSet) Generatio
 
 TinkerRogue has undergone significant performance optimization, particularly in rendering and UI systems.
 
-**GUI Performance (90% CPU Reduction):**
-
-```go
-// File: gui/widgets/cached_list.go
-// Cached lists avoid re-rendering unchanged data
-list := builders.CreateListWithConfig(...)
-cachedList := widgets.NewCachedListWrapper(list)
-
-// Mark dirty only when entries change
-cachedList.MarkDirty()
-```
+> **GUI Performance:** See [`docs/gui_documentation/GUI_DOCUMENTATION.md`](../gui_documentation/GUI_DOCUMENTATION.md) for GUI-specific performance optimizations (90% CPU reduction via cached widgets).
 
 **Rendering Performance:**
 
@@ -2797,9 +2242,6 @@ See [Squad System](#squad-system) for detailed documentation.
 | `tactical/squads/squadcomponents.go` | 331 | Reference ECS component design |
 | `tactical/squads/squadqueries.go` | ~200 | Reference query functions |
 | `gear/Inventory.go` | 229 | Reference pure ECS system |
-| `gui/framework/modemanager.go` | 176 | UI mode management |
-| `gui/framework/modebuilder.go` | ~150 | Declarative mode configuration |
-| `gui/framework/panelregistry.go` | ~200 | Type-safe panel building |
 | `tactical/combat/turnmanager.go` | 155 | Turn-based combat |
 | `tactical/ai/` | ~800 | Utility AI and threat maps |
 
@@ -2818,12 +2260,6 @@ See [Squad System](#squad-system) for detailed documentation.
 | `tactical/squadcommands/` | 8 | ~600 | Undo/redo commands |
 | `tactical/ai/` | 6 | ~800 | AI and threat maps |
 | `tactical/behavior/` | 3 | ~400 | Behavior trees |
-| `gui/framework/` | 12 | ~2000 | Mode infrastructure |
-| `gui/builders/` | 6 | ~1200 | Panel building |
-| `gui/widgets/` | 6 | ~800 | Widget utilities |
-| `gui/guicombat/` | 12 | ~2500 | Combat UI |
-| `gui/guisquads/` | 10 | ~2000 | Squad management UI |
-| `gui/guimodes/` | 8 | ~1500 | Other game modes |
 | `visual/rendering/` | 5 | ~600 | Batch rendering |
 | `gear/` | 7 | ~900 | Inventory & items |
 | `input/` | 5 | ~600 | Input handling |
@@ -2853,8 +2289,6 @@ See [Squad System](#squad-system) for detailed documentation.
 
 **Grid Position**: Unit position in 3x3 squad grid (row 0-2, col 0-2)
 
-**Mode**: UI state machine node (OverworldMode, CombatMode, etc.)
-
 **Controller**: Input handler specialized for specific game state
 
 **Generator**: Procedural map creation algorithm
@@ -2871,31 +2305,13 @@ See [Squad System](#squad-system) for detailed documentation.
 
 **Spatial Grid**: O(1) position lookup data structure
 
-**Coordinator**: Dispatcher that routes to specialized handlers
-
-**BaseMode**: Common mode infrastructure embedded in all UI modes
-
-**ModeBuilder**: Declarative configuration pattern for mode initialization
-
-**Panel Registry**: Type-safe global registry mapping panel types to build functions
-
-**GUIQueries**: Abstraction layer providing DTOs for UI to access ECS data
-
-**Two-Context System**: Separation of Overworld (strategic) and BattleMap (tactical) gameplay contexts
-
 **Threat Map**: AI tactical map showing danger levels at each battlefield position
-
-**Cached Widget**: Performance-optimized widget wrapper that avoids re-rendering unchanged data
-
-**Panel Descriptor**: Registration entry defining how to build a panel
 
 **Utility AI**: AI decision-making system that scores actions by utility value
 
 **Combat Visualization**: File-based recording system for combat testing and analysis
 
 **Command Pattern**: Undo/redo support for user actions via reversible commands
-
-**Context State**: Persistent UI state that survives context switches (e.g., OverworldState, BattleMapState)
 
 ### Appendix C: Common Mistakes
 
@@ -2972,57 +2388,9 @@ func init() {
 }
 ```
 
-#### GUI-Specific Mistakes (New in 2026)
+#### GUI-Specific Mistakes
 
-**Forgetting to Call SetSelf():**
-```go
-// ❌ WRONG - Panel building will fail
-func NewMyMode(modeManager *framework.UIModeManager) *MyMode {
-    mode := &MyMode{}
-    // Missing SetSelf()
-    return mode
-}
-
-// ✅ CORRECT - Required for panel registry
-func NewMyMode(modeManager *framework.UIModeManager) *MyMode {
-    mode := &MyMode{}
-    mode.SetSelf(mode)
-    return mode
-}
-```
-
-**Using KeysPressed Instead of KeysJustPressed:**
-```go
-// ❌ WRONG - Action repeats every frame while held
-if inputState.KeysPressed[ebiten.KeySpace] {
-    m.handleAction()  // Fires 60 times per second!
-}
-
-// ✅ CORRECT - Single action on press
-if inputState.KeysJustPressed[ebiten.KeySpace] {
-    m.handleAction()
-}
-```
-
-**Not Marking Cached Widgets Dirty:**
-```go
-// ❌ WRONG - UI shows stale data
-list.SetEntries(newEntries)
-// Forgot MarkDirty() - cache still shows old entries
-
-// ✅ CORRECT
-list.SetEntries(newEntries)
-cachedList.MarkDirty()  // Force re-render
-```
-
-**Direct ECS Access from UI:**
-```go
-// ❌ WRONG - UI coupled to ECS
-squadData := common.GetComponentType[*squads.SquadData](entity, squads.SquadComponent)
-
-// ✅ CORRECT - Use GUIQueries abstraction
-squadInfo := m.Queries.GetSquadInfo(squadID)
-```
+> See [`docs/gui_documentation/GUI_DOCUMENTATION.md`](../gui_documentation/GUI_DOCUMENTATION.md) for GUI-specific common mistakes and patterns.
 
 ### Appendix D: Testing Patterns
 
@@ -3141,14 +2509,7 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int)
 - Created `tools/` package for development tools
 - Restructured `gui/` with `framework/`, `builders/`, `widgets/`, `specs/` subpackages
 
-**GUI System Overhaul:**
-1. **ModeBuilder Pattern** - Declarative mode initialization (reduces boilerplate by ~80%)
-2. **Panel Registry** - Type-safe, centralized panel definitions
-3. **Two-Context System** - Separated Overworld and BattleMap gameplay
-4. **GUIQueries Layer** - ECS abstraction for UI code
-5. **BaseMode Infrastructure** - Common mode functionality
-6. **Command Pattern** - Undo/redo support
-7. **Performance Caching** - Cached widgets, batched rendering
+> **GUI System Overhaul:** See [`docs/gui_documentation/GUI_DOCUMENTATION.md`](../gui_documentation/GUI_DOCUMENTATION.md) for full details on the 2026 GUI changes.
 
 **Combat Enhancements:**
 1. **Threat Map System** - AI uses tactical danger maps
@@ -3177,42 +2538,9 @@ entitytemplates/ → templates/
 gui/core/ → gui/framework/
 ```
 
-**GUI Code Updates:**
-
-**Before (2025):**
-```go
-func (m *MyMode) Initialize(ctx *UIContext) error {
-    m.InitializeBase(ctx)
-    m.SetModeName("my_mode")
-    m.SetReturnMode("exploration")
-    // ... 40+ more lines ...
-}
-```
-
-**After (2026):**
-```go
-func (m *MyMode) Initialize(ctx *framework.UIContext) error {
-    err := framework.NewModeBuilder(&m.BaseMode, framework.ModeConfig{
-        ModeName:   "my_mode",
-        ReturnMode: "exploration",
-        Hotkeys:    []framework.HotkeySpec{...},
-        StatusLabel: true,
-    }).Build(ctx)
-
-    return m.BuildPanels(Panel1, Panel2)
-}
-```
-
-**Deprecated Patterns:**
-- Manual mode initialization → Use ModeBuilder
-- Scattered panel creation → Use Panel Registry
-- Direct ECS access from GUI → Use GUIQueries
-- Uncached lists in Update() → Use CachedListWrapper
-
 ---
 
-**Document Version**: 3.0 (2026 Edition)
-**Last Updated**: 2026-01-11
-**Total Sections**: 16 + Appendices (A-F)
-**Page Count**: ~95 (estimated)
-**Major Changes**: GUI architecture overhaul, package reorganization, performance optimizations
+**Document Version**: 3.1 (2026 Edition)
+**Last Updated**: 2026-02-17
+**Total Sections**: 13 + Appendices (A-F)
+**Major Changes**: Extracted GUI, Inventory/Gear, and Overworld sections to dedicated documents
