@@ -66,6 +66,10 @@ func loadArtifactFile(path string) int {
 
 	for i := range artifactFile.Artifacts {
 		artifact := &artifactFile.Artifacts[i]
+		// Major artifacts use their ID as the behavior key
+		if artifact.Tier == "major" && artifact.Behavior == "" {
+			artifact.Behavior = artifact.ID
+		}
 		ArtifactRegistry[artifact.ID] = artifact
 	}
 

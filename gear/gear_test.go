@@ -51,8 +51,8 @@ func setupTestArtifacts() {
 			{Stat: "weapon", Modifier: 2},
 		},
 	}
-	templates.ArtifactRegistry["twin_strike_banner"] = &templates.ArtifactDefinition{
-		ID:       "twin_strike_banner",
+	templates.ArtifactRegistry["twin_strike"] = &templates.ArtifactDefinition{
+		ID:       "twin_strike",
 		Name:     "Twin Strike Banner",
 		Tier:     "major",
 		Behavior: BehaviorTwinStrike,
@@ -146,7 +146,7 @@ func TestEquipBlocksWhenSlotsFull(t *testing.T) {
 	addArtifactToInventory(playerID, "iron_bulwark", manager)
 	addArtifactToInventory(playerID, "berserkers_torc", manager)
 	addArtifactToInventory(playerID, "keen_edge_whetstone", manager)
-	addArtifactToInventory(playerID, "twin_strike_banner", manager)
+	addArtifactToInventory(playerID, "twin_strike", manager)
 
 	// Fill all 3 slots
 	if err := EquipArtifact(playerID, squadID, "iron_bulwark", manager); err != nil {
@@ -160,7 +160,7 @@ func TestEquipBlocksWhenSlotsFull(t *testing.T) {
 	}
 
 	// 4th should fail
-	err := EquipArtifact(playerID, squadID, "twin_strike_banner", manager)
+	err := EquipArtifact(playerID, squadID, "twin_strike", manager)
 	if err == nil {
 		t.Error("Expected error when equipping to full slots")
 	}
@@ -347,14 +347,14 @@ func TesthasSpecificArtifactInFaction(t *testing.T) {
 
 	squad1 := createTestSquadWithUnits(manager, "Squad A", 2)
 	squad2 := createTestSquadWithUnits(manager, "Squad B", 2)
-	addArtifactToInventory(playerID, "twin_strike_banner", manager)
+	addArtifactToInventory(playerID, "twin_strike", manager)
 
-	EquipArtifact(playerID, squad2, "twin_strike_banner", manager)
+	EquipArtifact(playerID, squad2, "twin_strike", manager)
 
 	squadIDs := []ecs.EntityID{squad1, squad2}
 
-	if !hasSpecificArtifactInFaction(squadIDs, "twin_strike_banner", manager) {
-		t.Error("Expected to find twin_strike_banner in faction squads")
+	if !hasSpecificArtifactInFaction(squadIDs, "twin_strike", manager) {
+		t.Error("Expected to find twin_strike in faction squads")
 	}
 
 	if hasSpecificArtifactInFaction(squadIDs, "iron_bulwark", manager) {
@@ -597,8 +597,8 @@ func TestChainOfCommand_PassFullAction(t *testing.T) {
 	playerID := createTestPlayer(manager)
 
 	// Register chain of command artifact
-	templates.ArtifactRegistry["chain_of_command_scepter"] = &templates.ArtifactDefinition{
-		ID:       "chain_of_command_scepter",
+	templates.ArtifactRegistry["chain_of_command"] = &templates.ArtifactDefinition{
+		ID:       "chain_of_command",
 		Name:     "Chain of Command Scepter",
 		Tier:     "major",
 		Behavior: BehaviorChainOfCommand,
@@ -616,8 +616,8 @@ func TestChainOfCommand_PassFullAction(t *testing.T) {
 	fm.AddSquadToFaction(factionID, targetSquad, coords.LogicalPosition{X: 9, Y: 9})
 
 	// Equip chain of command on source squad
-	addArtifactToInventory(playerID, "chain_of_command_scepter", manager)
-	EquipArtifact(playerID, sourceSquad, "chain_of_command_scepter", manager)
+	addArtifactToInventory(playerID, "chain_of_command", manager)
+	EquipArtifact(playerID, sourceSquad, "chain_of_command", manager)
 
 	turnMgr := combat.NewTurnManager(manager, cache)
 	turnMgr.InitializeCombat([]ecs.EntityID{factionID})
