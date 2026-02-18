@@ -15,6 +15,9 @@ type ExplorationMode struct {
 
 	initialized bool
 
+	// Sub-menu controller (manages debug sub-menu visibility)
+	subMenus *framework.SubMenuController
+
 	// Interactive widget references (stored here for refresh/access)
 	// These are populated from panel registry after BuildPanels()
 	messageLog *widget.TextArea
@@ -41,8 +44,12 @@ func (em *ExplorationMode) Initialize(ctx *framework.UIContext) error {
 		return err
 	}
 
-	// Build panels from registry
+	// Initialize sub-menu controller before building panels (panels register with it)
+	em.subMenus = framework.NewSubMenuController()
+
+	// Build panels from registry (debug menu must be built before action buttons)
 	if err := em.BuildPanels(
+		ExplorationPanelDebugMenu,
 		ExplorationPanelMessageLog,
 		ExplorationPanelActionButtons,
 	); err != nil {

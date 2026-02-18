@@ -2,6 +2,12 @@ __________________________________________
 #
 # # # **IMPORTANT** # # # 
 
+
+    - Remove Input System
+
+
+- Make sure AI_ALGORITHM_ARCHITECTURE.md was reaplaced by BEHAVIOR_THREAT_LAYERS.md and ENCOUNTER_SYSTEM.md
+
 - Encounters seem to be too skewed towards ranged threats. Using the threat layer visualization as baseline. Rectify that. 
 
 - There has to be a tradeoff between casting spells and moving squads/engaging in combat. Doing both will feel too mechanical. 

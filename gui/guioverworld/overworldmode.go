@@ -34,7 +34,7 @@ type OverworldMode struct {
 	inputHandler  *OverworldInputHandler
 
 	// Sub-menu controller (manages debug/node sub-menu visibility)
-	subMenus *subMenuController
+	subMenus *framework.SubMenuController
 
 	// Widget references (populated from panel registry)
 	resourcesText   *widget.TextArea
@@ -77,7 +77,7 @@ func (om *OverworldMode) Initialize(ctx *framework.UIContext) error {
 	}
 
 	// Initialize sub-menu controller before building panels (panels register with it)
-	om.subMenus = newSubMenuController()
+	om.subMenus = framework.NewSubMenuController()
 
 	// Build panels from registry (sub-menu panels must be built before tick controls)
 	if err := om.BuildPanels(

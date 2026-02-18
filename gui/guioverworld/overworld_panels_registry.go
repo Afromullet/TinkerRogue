@@ -22,46 +22,6 @@ const (
 	OverworldPanelResources framework.PanelType = "overworld_resources"
 )
 
-// subMenuController manages sub-menu visibility. Only one sub-menu can be open at a time.
-type subMenuController struct {
-	menus  map[string]*widget.Container
-	active string
-}
-
-func newSubMenuController() *subMenuController {
-	return &subMenuController{
-		menus: make(map[string]*widget.Container),
-	}
-}
-
-func (sc *subMenuController) Register(name string, container *widget.Container) {
-	sc.menus[name] = container
-}
-
-// Toggle returns a callback that toggles the named sub-menu.
-// Opening one menu closes any other open menu.
-func (sc *subMenuController) Toggle(name string) func() {
-	return func() {
-		if sc.active == name {
-			sc.menus[name].GetWidget().Visibility = widget.Visibility_Hide
-			sc.active = ""
-			return
-		}
-		sc.CloseAll()
-		if c, ok := sc.menus[name]; ok {
-			c.GetWidget().Visibility = widget.Visibility_Show
-			sc.active = name
-		}
-	}
-}
-
-func (sc *subMenuController) CloseAll() {
-	for _, c := range sc.menus {
-		c.GetWidget().Visibility = widget.Visibility_Hide
-	}
-	sc.active = ""
-}
-
 // createOverworldSubMenu creates a vertical sub-menu panel, registers it with the controller, and returns it.
 func createOverworldSubMenu(om *OverworldMode, name string, buttons []builders.ButtonConfig) *widget.Container {
 	spacing := int(float64(om.Layout.ScreenWidth) * specs.PaddingTight)
