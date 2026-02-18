@@ -2,7 +2,7 @@
 
 **Last Updated:** 2026-01-11
 
-Quick reference for working with TinkerRogue. For detailed ECS patterns, see `docs/ecs_best_practices.md`.
+Quick reference for working with TinkerRogue. For detailed ECS patterns, see `docs/project_documentation/ECS_BEST_PRACTICES.md`.
 
 ---
 
@@ -52,7 +52,7 @@ go vet ./...                    # Check for mistakes
 
 ## ECS Quick Reference
 
-**Core Principles** (see `docs/ecs_best_practices.md` for details):
+**Core Principles** (see `docs/project_documentation/ECS_BEST_PRACTICES.md` for details):
 
 1. **Pure Data Components** - Zero logic, only fields
 2. **EntityID Only** - Never store `*ecs.Entity` pointers
@@ -275,7 +275,7 @@ func GetSquadEntity(squadID ecs.EntityID, manager *common.EntityManager) *ecs.En
 
 ### Before Coding
 1. Read existing implementation
-2. Check `docs/ecs_best_practices.md`
+2. Check `docs/project_documentation/ECS_BEST_PRACTICES.md`
 3. Search for similar patterns
 4. Consider entity lifecycle impact
 
@@ -300,6 +300,6 @@ func GetSquadEntity(squadID ecs.EntityID, manager *common.EntityManager) *ecs.En
 
 ## Resources
 
-- **Detailed ECS Guide:** `docs/ecs_best_practices.md`
+- **Detailed ECS Guide:** `docs/project_documentation/ECS_BEST_PRACTICES.md`
 - **Tests:** Run `go test ./...` frequently
 - **Reference Code:** Study `squads/`, `gear/Inventory.go`, `systems/positionsystem.go`
