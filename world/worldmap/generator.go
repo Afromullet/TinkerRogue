@@ -59,6 +59,12 @@ func DefaultRoomsCorridorsConfig() RoomsCorridorsConfig {
 	}
 }
 
+// ConfigOverride is an optional hook that returns a configured MapGenerator
+// for the given name. If set and returns non-nil, the returned generator
+// replaces the default-registered one for that generation call.
+// Set by game_main after loading JSON config.
+var ConfigOverride func(name string) MapGenerator
+
 // Generator registry for algorithm selection
 var generators = make(map[string]MapGenerator)
 

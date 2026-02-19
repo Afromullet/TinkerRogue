@@ -1,7 +1,6 @@
 # Squads and Units
 
-- Leveling System
-- Squad Equipment
+- Leveling System - expand on it
 - Abilities 
 - Perks
 
@@ -14,15 +13,15 @@
 
 # Faction Differences
 
-- Unit composition changes based off the squads
-dsd
+- Different factions use different unit compositions
+
+
 # Interaction Between enemy factions
 
-- Changes and impacts spread
+
 
 # Player Avatar
 
-- Add abilities the player avatar can use, such as spells
 
 # Overworld
 
@@ -30,7 +29,7 @@ dsd
 
 ## Player avatar vs non avatar Movement
 
-- Players can also move squads without an avatar
+
 
 
 ## Node Types

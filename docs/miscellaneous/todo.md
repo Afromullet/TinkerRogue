@@ -2,6 +2,8 @@ __________________________________________
 #
 # # # **IMPORTANT** # # # 
 
+- Explore the go fix command
+
 - Separate DOCUMENTATIOn.MD into
 
 
@@ -87,6 +89,8 @@ ________________________________________________
 - Commander
 - GUISquads
 - GUIOverworld
+- Spells
+- Worldmap
 
 ____
 

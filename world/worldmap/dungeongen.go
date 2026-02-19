@@ -60,8 +60,14 @@ func NewGameMap(generatorName string) GameMap {
 
 	dungeonMap := GameMap{}
 
-	// Get generator or fall back to default
-	gen := GetGeneratorOrDefault(generatorName)
+	// Check for config override first, then fall back to registry
+	var gen MapGenerator
+	if ConfigOverride != nil {
+		gen = ConfigOverride(generatorName)
+	}
+	if gen == nil {
+		gen = GetGeneratorOrDefault(generatorName)
+	}
 
 	// Generate the map
 	result := gen.Generate(

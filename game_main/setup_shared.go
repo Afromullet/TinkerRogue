@@ -127,6 +127,7 @@ func (gb *GameBootstrap) SetupDebugContent(em *common.EntityManager, gm *worldma
 func SetupSharedSystems(g *Game) {
 	bootstrap := NewGameBootstrap()
 	bootstrap.LoadGameData()
+	initMapGenConfigOverride()
 	bootstrap.InitializeCoreECS(&g.em)
 }
 

@@ -36,6 +36,11 @@ var garrisonSpawnCounts = map[string][4]int{
 	GarrisonRoomStairs:      {2, 2, 0, 0},
 }
 
+// SetGarrisonSpawnCounts replaces the spawn count table with values from external config.
+func SetGarrisonSpawnCounts(counts map[string][4]int) {
+	garrisonSpawnCounts = counts
+}
+
 // buildGarrisonFloorData constructs floor metadata from the DAG and placed rooms.
 func buildGarrisonFloorData(dag *FloorDAG, placedRooms map[int]Rect, floorNumber int, result *GenerationResult, width int) *GarrisonFloorData {
 	data := &GarrisonFloorData{

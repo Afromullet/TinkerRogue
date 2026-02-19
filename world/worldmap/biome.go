@@ -26,3 +26,22 @@ func (b Biome) String() string {
 		return "unknown"
 	}
 }
+
+// BiomeFromString converts a string to a Biome constant.
+// Returns BiomeGrassland for unrecognized strings.
+func BiomeFromString(s string) Biome {
+	switch s {
+	case "grassland":
+		return BiomeGrassland
+	case "forest":
+		return BiomeForest
+	case "desert":
+		return BiomeDesert
+	case "mountain":
+		return BiomeMountain
+	case "swamp":
+		return BiomeSwamp
+	default:
+		return BiomeGrassland
+	}
+}

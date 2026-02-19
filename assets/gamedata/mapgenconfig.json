@@ -1,0 +1,115 @@
+{
+  "generators": {
+    "rooms_corridors": {
+      "minRoomSize": 6,
+      "maxRoomSize": 10,
+      "maxRooms": 30
+    },
+    "cavern": {
+      "fillDensity": 0.62,
+      "numChambers": 5,
+      "minChamberRadius": 6,
+      "maxChamberRadius": 11,
+      "noiseScale": 0.15,
+      "shapeThreshold": 0.38,
+      "caPassesPhase1": 4,
+      "caPassesPhase2": 2,
+      "erosionPasses": 2,
+      "tunnelBias": 0.60,
+      "pillarDensity": 0.04,
+      "stalactiteDensity": 0.02,
+      "borderThickness": 2,
+      "targetWalkableMin": 0.42,
+      "targetWalkableMax": 0.50
+    },
+    "overworld": {
+      "elevationOctaves": 4,
+      "elevationScale": 0.035,
+      "moistureOctaves": 3,
+      "moistureScale": 0.045,
+      "persistence": 0.5,
+      "lacunarity": 2.0,
+      "waterThresh": 0.28,
+      "mountainThresh": 0.72,
+      "forestMoisture": 0.55,
+      "swampMoisture": 0.70,
+      "townCount": 3,
+      "templeCount": 2,
+      "guildHallCount": 2,
+      "watchtowerCount": 3,
+      "poiMinDistance": 12,
+      "factionCount": 4,
+      "factionMinSpacing": 25
+    },
+    "military_base": {
+      "biome": "grassland",
+      "perimeterInset": 6,
+      "wallThickness": 1,
+      "gateWidth": 4,
+      "gateSide": 0,
+      "numGuardTowers": 4,
+      "guardTowerSize": 3,
+      "drillYardMinRatio": 0.30,
+      "numSupplyAreas": 2,
+      "supplyAreaMinSize": 5,
+      "supplyAreaMaxSize": 8,
+      "coverDensity": 0.02,
+      "numPOIScatter": 5,
+      "borderThickness": 2
+    },
+    "garrison_raid": {
+      "roomSizes": {
+        "barracks": { "minW": 10, "maxW": 14, "minH": 8, "maxH": 11 },
+        "guard_post": { "minW": 8, "maxW": 11, "minH": 7, "maxH": 9 },
+        "armory": { "minW": 10, "maxW": 13, "minH": 8, "maxH": 11 },
+        "command_post": { "minW": 10, "maxW": 13, "minH": 8, "maxH": 11 },
+        "patrol_route": { "minW": 12, "maxW": 16, "minH": 7, "maxH": 9 },
+        "mage_tower": { "minW": 9, "maxW": 11, "minH": 10, "maxH": 12 },
+        "rest_room": { "minW": 7, "maxW": 9, "minH": 6, "maxH": 8 },
+        "stairs": { "minW": 6, "maxW": 8, "minH": 6, "maxH": 8 }
+      },
+      "floorScaling": [
+        {
+          "floor": 1,
+          "minCritPath": 3, "maxCritPath": 4,
+          "minTotal": 6, "maxTotal": 8,
+          "allowedTypes": ["guard_post", "barracks", "patrol_route", "rest_room", "armory"]
+        },
+        {
+          "floor": 2,
+          "minCritPath": 3, "maxCritPath": 4,
+          "minTotal": 7, "maxTotal": 9,
+          "allowedTypes": ["guard_post", "barracks", "patrol_route", "rest_room", "armory"]
+        },
+        {
+          "floor": 3,
+          "minCritPath": 4, "maxCritPath": 5,
+          "minTotal": 8, "maxTotal": 10,
+          "allowedTypes": ["guard_post", "barracks", "patrol_route", "rest_room", "armory", "command_post", "mage_tower"]
+        },
+        {
+          "floor": 4,
+          "minCritPath": 3, "maxCritPath": 4,
+          "minTotal": 7, "maxTotal": 9,
+          "allowedTypes": ["guard_post", "barracks", "patrol_route", "rest_room", "armory", "command_post", "mage_tower"]
+        },
+        {
+          "floor": 5,
+          "minCritPath": 3, "maxCritPath": 4,
+          "minTotal": 6, "maxTotal": 8,
+          "allowedTypes": ["guard_post", "barracks", "patrol_route", "rest_room", "armory", "command_post", "mage_tower"]
+        }
+      ],
+      "spawnCounts": {
+        "guard_post": { "minPlayer": 2, "maxPlayer": 3, "minDefender": 1, "maxDefender": 2 },
+        "barracks": { "minPlayer": 3, "maxPlayer": 4, "minDefender": 2, "maxDefender": 3 },
+        "armory": { "minPlayer": 2, "maxPlayer": 3, "minDefender": 1, "maxDefender": 2 },
+        "command_post": { "minPlayer": 2, "maxPlayer": 3, "minDefender": 1, "maxDefender": 2 },
+        "patrol_route": { "minPlayer": 2, "maxPlayer": 3, "minDefender": 2, "maxDefender": 3 },
+        "mage_tower": { "minPlayer": 2, "maxPlayer": 3, "minDefender": 1, "maxDefender": 2 },
+        "rest_room": { "minPlayer": 2, "maxPlayer": 3, "minDefender": 0, "maxDefender": 0 },
+        "stairs": { "minPlayer": 2, "maxPlayer": 2, "minDefender": 0, "maxDefender": 0 }
+      }
+    }
+  }
+}

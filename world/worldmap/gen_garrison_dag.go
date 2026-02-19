@@ -46,8 +46,8 @@ var garrisonRoomSizes = map[string][4]int{
 	GarrisonRoomStairs:      {6, 8, 6, 8},
 }
 
-// floorScaling defines per-floor generation parameters
-type floorScaling struct {
+// FloorScalingEntry defines per-floor generation parameters
+type FloorScalingEntry struct {
 	MinCriticalPath int
 	MaxCriticalPath int
 	MinTotalRooms   int
@@ -55,7 +55,7 @@ type floorScaling struct {
 	AllowedTypes    []string
 }
 
-var garrisonFloorScaling = map[int]floorScaling{
+var garrisonFloorScaling = map[int]FloorScalingEntry{
 	1: {3, 4, 6, 8, []string{
 		GarrisonRoomGuardPost, GarrisonRoomBarracks, GarrisonRoomPatrolRoute, GarrisonRoomRestRoom,
 		GarrisonRoomArmory,
@@ -76,6 +76,16 @@ var garrisonFloorScaling = map[int]floorScaling{
 		GarrisonRoomGuardPost, GarrisonRoomBarracks, GarrisonRoomPatrolRoute, GarrisonRoomRestRoom,
 		GarrisonRoomArmory, GarrisonRoomCommandPost, GarrisonRoomMageTower,
 	}},
+}
+
+// SetGarrisonRoomSizes replaces the room size table with values from external config.
+func SetGarrisonRoomSizes(sizes map[string][4]int) {
+	garrisonRoomSizes = sizes
+}
+
+// SetGarrisonFloorScaling replaces the floor scaling table with values from external config.
+func SetGarrisonFloorScaling(scaling map[int]FloorScalingEntry) {
+	garrisonFloorScaling = scaling
 }
 
 // buildGarrisonDAG constructs the abstract DAG for a garrison floor.

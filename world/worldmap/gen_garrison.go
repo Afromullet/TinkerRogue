@@ -24,6 +24,11 @@ type GarrisonRaidGenerator struct {
 	config GarrisonFloorConfig
 }
 
+// NewGarrisonRaidGenerator creates a new garrison raid generator with the given config.
+func NewGarrisonRaidGenerator(config GarrisonFloorConfig) *GarrisonRaidGenerator {
+	return &GarrisonRaidGenerator{config: config}
+}
+
 func (g *GarrisonRaidGenerator) Name() string        { return "garrison_raid" }
 func (g *GarrisonRaidGenerator) Description() string  { return "DAG-based garrison raid floors" }
 

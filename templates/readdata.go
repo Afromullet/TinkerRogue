@@ -523,6 +523,134 @@ func validateInfluenceConfig(config *JSONInfluenceConfig) {
 
 }
 
+// ReadMapGenConfig loads map generation configuration from JSON.
+// This file is optional — if missing, generators use their code defaults.
+func ReadMapGenConfig() {
+	data, err := os.ReadFile(assetPath("gamedata/mapgenconfig.json"))
+	if err != nil {
+		// File is optional — missing file means use code defaults
+		println("Map gen config not found, using code defaults")
+		return
+	}
+
+	var config JSONMapGenConfig
+	err = json.Unmarshal(data, &config)
+	if err != nil {
+		panic("Failed to parse mapgenconfig.json: " + err.Error())
+	}
+
+	validateMapGenConfig(&config)
+
+	MapGenConfigTemplate = &config
+	println("Map gen config loaded")
+}
+
+func validateMapGenConfig(config *JSONMapGenConfig) {
+	g := config.Generators
+
+	// Validate rooms_corridors
+	if rc := g.RoomsCorridors; rc != nil {
+		if rc.MinRoomSize <= 0 || rc.MaxRoomSize <= 0 || rc.MaxRooms <= 0 {
+			panic("mapgenconfig: rooms_corridors values must be positive")
+		}
+		if rc.MinRoomSize > rc.MaxRoomSize {
+			panic("mapgenconfig: rooms_corridors minRoomSize must be <= maxRoomSize")
+		}
+	}
+
+	// Validate cavern
+	if c := g.Cavern; c != nil {
+		if c.MinChamberRadius <= 0 || c.MaxChamberRadius <= 0 {
+			panic("mapgenconfig: cavern chamber radius must be positive")
+		}
+		if c.MinChamberRadius > c.MaxChamberRadius {
+			panic("mapgenconfig: cavern minChamberRadius must be <= maxChamberRadius")
+		}
+		if c.TargetWalkableMin > c.TargetWalkableMax {
+			panic("mapgenconfig: cavern targetWalkableMin must be <= targetWalkableMax")
+		}
+		if c.NumChambers <= 0 {
+			panic("mapgenconfig: cavern numChambers must be positive")
+		}
+		if c.BorderThickness < 0 {
+			panic("mapgenconfig: cavern borderThickness must be non-negative")
+		}
+	}
+
+	// Validate overworld
+	if ow := g.Overworld; ow != nil {
+		if ow.ElevationOctaves <= 0 || ow.MoistureOctaves <= 0 {
+			panic("mapgenconfig: overworld octaves must be positive")
+		}
+		if ow.WaterThresh >= ow.MountainThresh {
+			panic("mapgenconfig: overworld waterThresh must be < mountainThresh")
+		}
+		if ow.FactionCount < 0 || ow.FactionMinSpacing < 0 {
+			panic("mapgenconfig: overworld faction values must be non-negative")
+		}
+	}
+
+	// Validate military_base
+	if mb := g.MilitaryBase; mb != nil {
+		validBiomes := map[string]bool{
+			"grassland": true, "forest": true, "desert": true, "mountain": true, "swamp": true,
+		}
+		if mb.Biome != "" && !validBiomes[mb.Biome] {
+			panic("mapgenconfig: military_base invalid biome: " + mb.Biome)
+		}
+		if mb.SupplyAreaMinSize > mb.SupplyAreaMaxSize {
+			panic("mapgenconfig: military_base supplyAreaMinSize must be <= supplyAreaMaxSize")
+		}
+		if mb.GateSide < 0 || mb.GateSide > 3 {
+			panic("mapgenconfig: military_base gateSide must be 0-3")
+		}
+	}
+
+	// Validate garrison_raid
+	if gr := g.GarrisonRaid; gr != nil {
+		validRoomTypes := map[string]bool{
+			"barracks": true, "guard_post": true, "armory": true,
+			"command_post": true, "patrol_route": true, "mage_tower": true,
+			"rest_room": true, "stairs": true,
+		}
+
+		for key, rs := range gr.RoomSizes {
+			if !validRoomTypes[key] {
+				panic("mapgenconfig: garrison_raid roomSizes has invalid room type: " + key)
+			}
+			if rs.MinW > rs.MaxW || rs.MinH > rs.MaxH {
+				panic("mapgenconfig: garrison_raid roomSizes min must be <= max for: " + key)
+			}
+		}
+
+		for _, fs := range gr.FloorScaling {
+			if fs.Floor <= 0 {
+				panic("mapgenconfig: garrison_raid floorScaling floor must be positive")
+			}
+			if fs.MinCritPath > fs.MaxCritPath {
+				panic("mapgenconfig: garrison_raid floorScaling minCritPath must be <= maxCritPath")
+			}
+			if fs.MinTotal > fs.MaxTotal {
+				panic("mapgenconfig: garrison_raid floorScaling minTotal must be <= maxTotal")
+			}
+			for _, t := range fs.AllowedTypes {
+				if !validRoomTypes[t] {
+					panic("mapgenconfig: garrison_raid floorScaling has invalid room type: " + t)
+				}
+			}
+		}
+
+		for key, sc := range gr.SpawnCounts {
+			if !validRoomTypes[key] {
+				panic("mapgenconfig: garrison_raid spawnCounts has invalid room type: " + key)
+			}
+			if sc.MinPlayer > sc.MaxPlayer || sc.MinDefender > sc.MaxDefender {
+				panic("mapgenconfig: garrison_raid spawnCounts min must be <= max for: " + key)
+			}
+		}
+	}
+}
+
 func ReadOverworldConfig() {
 	data, err := os.ReadFile(assetPath("gamedata/overworldconfig.json"))
 	if err != nil {

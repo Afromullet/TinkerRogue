@@ -67,6 +67,11 @@ func DefaultCavernConfig() CavernConfig {
 	}
 }
 
+// NewCavernGenerator creates a new cavern generator with the given config.
+func NewCavernGenerator(config CavernConfig) *CavernGenerator {
+	return &CavernGenerator{config: config}
+}
+
 func (g *CavernGenerator) Name() string {
 	return "cavern"
 }

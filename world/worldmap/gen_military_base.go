@@ -49,6 +49,11 @@ func DefaultMilitaryBaseConfig() MilitaryBaseConfig {
 	}
 }
 
+// NewMilitaryBaseGenerator creates a new military base generator with the given config.
+func NewMilitaryBaseGenerator(config MilitaryBaseConfig) *MilitaryBaseGenerator {
+	return &MilitaryBaseGenerator{config: config}
+}
+
 func (g *MilitaryBaseGenerator) Name() string { return "military_base" }
 func (g *MilitaryBaseGenerator) Description() string {
 	return "Structured outdoor military base with perimeter wall, gate, guard towers, and drill yard"
