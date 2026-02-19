@@ -107,6 +107,9 @@ type ActiveEncounter struct {
 	// Garrison defense tracking
 	IsGarrisonDefense bool         // True if defending a garrisoned node
 	DefendedNodeID    ecs.EntityID // Node being defended (0 if not garrison defense)
+
+	// Raid combat tracking
+	IsRaidCombat bool // True if this is a raid encounter (skip overworld resolution)
 }
 
 // CompletedEncounter represents a finished encounter for history tracking

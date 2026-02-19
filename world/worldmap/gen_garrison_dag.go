@@ -88,10 +88,10 @@ func SetGarrisonFloorScaling(scaling map[int]FloorScalingEntry) {
 	garrisonFloorScaling = scaling
 }
 
-// buildGarrisonDAG constructs the abstract DAG for a garrison floor.
+// BuildGarrisonDAG constructs the abstract DAG for a garrison floor.
 // The DAG has a critical path of combat rooms from entry to stairs,
 // with optional branch chains off critical-path nodes.
-func buildGarrisonDAG(floorNumber int) *FloorDAG {
+func BuildGarrisonDAG(floorNumber int) *FloorDAG {
 	scaling, ok := garrisonFloorScaling[floorNumber]
 	if !ok {
 		scaling = garrisonFloorScaling[1]

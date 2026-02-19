@@ -35,6 +35,9 @@ type TacticalState struct {
 
 	// Encounter Tracking
 	TriggeredEncounterID ecs.EntityID // Encounter that triggered this combat (0 if none)
+
+	// Post-Combat Routing
+	PostCombatReturnMode string // Mode to return to after combat ends ("" = exploration default)
 }
 
 // NewTacticalState creates a default tactical state
@@ -85,6 +88,9 @@ func (ts *TacticalState) Reset() {
 
 	// Clear encounter tracking
 	ts.TriggeredEncounterID = ecs.EntityID(0)
+
+	// Clear post-combat routing
+	ts.PostCombatReturnMode = ""
 }
 
 // OverworldState holds UI-specific state for the overworld context

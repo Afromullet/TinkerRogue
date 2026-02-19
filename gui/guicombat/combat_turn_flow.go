@@ -134,8 +134,9 @@ func (tf *CombatTurnFlow) HandleFlee() {
 	}
 	tf.fleeRequested = true
 
-	if exploreMode, exists := tf.modeManager.GetMode("exploration"); exists {
-		tf.modeManager.RequestTransition(exploreMode, "Fled from combat")
+	returnModeName := tf.getPostCombatReturnMode()
+	if returnMode, exists := tf.modeManager.GetMode(returnModeName); exists {
+		tf.modeManager.RequestTransition(returnMode, "Fled from combat")
 	}
 }
 
@@ -169,9 +170,10 @@ func (tf *CombatTurnFlow) CheckAndHandleVictory() bool {
 
 	tf.logManager.UpdateTextArea(combatLogArea, fmt.Sprintf("Battle lasted %d rounds.", result.RoundsCompleted))
 
-	// Transition to exploration mode
-	if exploreMode, exists := tf.modeManager.GetMode("exploration"); exists {
-		tf.modeManager.RequestTransition(exploreMode, "Combat ended - "+result.VictorName+" victorious")
+	// Transition to post-combat mode (raid or exploration)
+	returnModeName := tf.getPostCombatReturnMode()
+	if returnMode, exists := tf.modeManager.GetMode(returnModeName); exists {
+		tf.modeManager.RequestTransition(returnMode, "Combat ended - "+result.VictorName+" victorious")
 	}
 
 	return true
@@ -305,4 +307,17 @@ func (tf *CombatTurnFlow) formatTurnMessage(factionID ecs.EntityID, round int) s
 		return fmt.Sprintf("=== Round %d: %s (AI) ===", round, factionName)
 	}
 	return fmt.Sprintf("=== Round %d: %s's Turn ===", round, factionName)
+}
+
+// getPostCombatReturnMode returns the mode to transition to after combat ends.
+// If PostCombatReturnMode is set on TacticalState (e.g., "raid"), uses that.
+// Otherwise defaults to "exploration".
+func (tf *CombatTurnFlow) getPostCombatReturnMode() string {
+	if tf.context != nil && tf.context.ModeCoordinator != nil {
+		tacticalState := tf.context.ModeCoordinator.GetTacticalState()
+		if tacticalState.PostCombatReturnMode != "" {
+			return tacticalState.PostCombatReturnMode
+		}
+	}
+	return "exploration"
 }

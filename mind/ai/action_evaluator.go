@@ -228,13 +228,13 @@ func (ae *ActionEvaluator) scoreApproachEnemy(pos coords.LogicalPosition) float6
 	var approachMultiplier float64
 	switch ae.ctx.SquadRole {
 	case squads.RoleTank:
-		approachMultiplier = 15.0 // Tanks strongly want to close distance
+		approachMultiplier = 15.0
 	case squads.RoleDPS:
-		approachMultiplier = 8.0 // DPS moderately want to engage
+		approachMultiplier = 8.0
 	case squads.RoleSupport:
-		approachMultiplier = -5.0 // Support wants to maintain distance
+		approachMultiplier = -5.0
 	default:
-		approachMultiplier = 5.0 // Default: slight approach preference
+		approachMultiplier = 5.0
 	}
 
 	// Base approach score from distance improvement

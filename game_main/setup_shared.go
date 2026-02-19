@@ -13,6 +13,7 @@ import (
 	"game_main/gui/widgetresources"
 	"game_main/input"
 	"game_main/mind/encounter"
+	"game_main/mind/raid"
 	"game_main/tactical/commander"
 	"game_main/tactical/squads"
 	"game_main/templates"
@@ -127,6 +128,11 @@ func (gb *GameBootstrap) SetupDebugContent(em *common.EntityManager, gm *worldma
 func SetupSharedSystems(g *Game) {
 	bootstrap := NewGameBootstrap()
 	bootstrap.LoadGameData()
+
+	if err := raid.LoadRaidConfig("assets/gamedata/raidconfig.json"); err != nil {
+		fmt.Printf("WARNING: Failed to load raid config: %v (using defaults)\n", err)
+	}
+
 	initMapGenConfigOverride()
 	bootstrap.InitializeCoreECS(&g.em)
 }

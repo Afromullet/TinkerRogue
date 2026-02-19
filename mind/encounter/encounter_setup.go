@@ -104,7 +104,7 @@ func spawnGarrisonEncounter(
 		if err := fm.AddSquadToFaction(enemyFactionID, squadID, pos); err != nil {
 			return nil, 0, 0, fmt.Errorf("failed to add garrison squad %d to faction: %w", squadID, err)
 		}
-		ensureUnitPositions(manager, squadID, pos)
+		EnsureUnitPositions(manager, squadID, pos)
 		combat.CreateActionStateForSquad(manager, squadID)
 		createdEnemySquadIDs = append(createdEnemySquadIDs, squadID)
 	}
@@ -172,7 +172,7 @@ func assignPlayerSquadsToFaction(
 		}
 
 		// Ensure all squad units have positions at the squad's location
-		ensureUnitPositions(manager, squadID, pos)
+		EnsureUnitPositions(manager, squadID, pos)
 
 		// Create action state
 		combat.CreateActionStateForSquad(manager, squadID)
@@ -390,10 +390,10 @@ func filterUnitsBySquadType(squadType string) []squads.UnitTemplate {
 
 // Helper functions
 
-// ensureUnitPositions ensures all units in a squad have position components
-// Units that already have positions are moved to the squad position
-// Units without positions get a new position component created
-func ensureUnitPositions(manager *common.EntityManager, squadID ecs.EntityID, squadPos coords.LogicalPosition) {
+// EnsureUnitPositions ensures all units in a squad have position components.
+// Units that already have positions are moved to the squad position.
+// Units without positions get a new position component created.
+func EnsureUnitPositions(manager *common.EntityManager, squadID ecs.EntityID, squadPos coords.LogicalPosition) {
 	unitIDs := squads.GetUnitIDsInSquad(squadID, manager)
 	for _, unitID := range unitIDs {
 		unitEntity := manager.FindEntityByID(unitID)

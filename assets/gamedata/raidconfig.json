@@ -1,0 +1,46 @@
+{
+  "raid": {
+    "maxPlayerSquads": 4,
+    "maxDeployedPerEncounter": 3,
+    "defaultFloorCount": 3,
+    "reservesPerFloor": 1,
+    "extraReservesAfterFloor": 3,
+    "combatPositionX": 50,
+    "combatPositionY": 40
+  },
+  "recovery": {
+    "deployedHPPercent": 12,
+    "reserveHPPercent": 27,
+    "betweenFloorMoraleBonus": 3,
+    "victoryMoraleBonus": 5,
+    "restRoomMoraleBonus": 5,
+    "restRoomHPPercent": 20,
+    "unitDeathMoralePenalty": 3,
+    "defeatMoralePenalty": 10
+  },
+  "alert": {
+    "levels": [
+      { "level": 0, "name": "Unaware",    "encounterThreshold": 0, "armorBonus": 0, "strengthBonus": 0, "weaponBonus": 0, "activatesReserves": false },
+      { "level": 1, "name": "Suspicious",  "encounterThreshold": 2, "armorBonus": 1, "strengthBonus": 0, "weaponBonus": 0, "activatesReserves": false },
+      { "level": 2, "name": "Alerted",     "encounterThreshold": 4, "armorBonus": 1, "strengthBonus": 1, "weaponBonus": 0, "activatesReserves": true },
+      { "level": 3, "name": "Lockdown",    "encounterThreshold": 6, "armorBonus": 1, "strengthBonus": 2, "weaponBonus": 1, "activatesReserves": true }
+    ]
+  },
+  "morale": {
+    "thresholds": [
+      { "minMorale": 30, "maxMorale": 100, "dexPenalty": 0,  "strPenalty": 0 },
+      { "minMorale": 10, "maxMorale": 29,  "dexPenalty": -2, "strPenalty": 0 },
+      { "minMorale": 0,  "maxMorale": 9,   "dexPenalty": -2, "strPenalty": -2 }
+    ]
+  },
+  "rewards": {
+    "commandPostManaRestore": 15
+  },
+  "archetypeAssignment": {
+    "criticalPathArchetypes": ["chokepoint_guard", "shield_wall", "orc_vanguard"],
+    "branchArchetypes": ["ranged_battery", "fast_response", "ambush_pack"],
+    "eliteArchetypes": ["mage_tower", "command_post"],
+    "eliteFloorThreshold": 3,
+    "reserveArchetypes": ["fast_response", "ambush_pack"]
+  }
+}

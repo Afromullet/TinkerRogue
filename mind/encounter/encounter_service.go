@@ -39,6 +39,10 @@ type EncounterService struct {
 	// History tracking
 	history    []*CompletedEncounter
 	maxHistory int
+
+	// PostCombatCallback is called after ExitCombat finishes processing.
+	// Set by external systems (e.g., RaidRunner) to receive combat results.
+	PostCombatCallback func(CombatExitReason, *CombatResult)
 }
 
 // NewEncounterService creates a new encounter coordinator
@@ -202,7 +206,7 @@ func (es *EncounterService) StartGarrisonDefense(
 		if err := fm.AddSquadToFaction(playerFactionID, squadID, pos); err != nil {
 			return fmt.Errorf("failed to add garrison squad %d: %w", squadID, err)
 		}
-		ensureUnitPositions(es.manager, squadID, pos)
+		EnsureUnitPositions(es.manager, squadID, pos)
 		combat.CreateActionStateForSquad(es.manager, squadID)
 
 		// Mark squad as deployed for combat
@@ -371,6 +375,11 @@ func (es *EncounterService) EndEncounter(
 		return
 	}
 
+	// Raid encounters handle their own resolution via PostCombatCallback
+	if es.activeEncounter.IsRaidCombat {
+		return
+	}
+
 	encounterID := es.activeEncounter.EncounterID
 
 	entity, encounterData := es.getEncounterData(encounterID)
@@ -472,6 +481,66 @@ func (es *EncounterService) ExitCombat(
 		}
 		combatCleaner.CleanupCombat(enemySquadIDs)
 	}
+
+	// Step 4: Notify external listeners (e.g., RaidRunner)
+	if es.PostCombatCallback != nil {
+		es.PostCombatCallback(reason, result)
+	}
+}
+
+// BeginRaidCombat initiates combat for a garrison raid encounter.
+// Factions and squad positioning must already be set up via raid.SetupRaidFactions().
+// This method registers the ActiveEncounter, sets PostCombatReturnMode, and transitions to combat mode.
+func (es *EncounterService) BeginRaidCombat(
+	raidEntityID ecs.EntityID,
+	garrisonSquadIDs []ecs.EntityID,
+	combatPos coords.LogicalPosition,
+	commanderID ecs.EntityID,
+	playerFactionID ecs.EntityID,
+	enemyFactionID ecs.EntityID,
+	returnMode string,
+) error {
+	if es.IsEncounterActive() {
+		return fmt.Errorf("encounter already in progress")
+	}
+
+	// Handle mode transition (saves position, sets TacticalState, enters combat mode)
+	originalPlayerPos, err := es.beginCombatTransition(raidEntityID, combatPos)
+	if err != nil {
+		return err
+	}
+
+	// Set post-combat return mode AFTER beginCombatTransition (which calls Reset())
+	if es.modeCoordinator != nil {
+		tacticalState := es.modeCoordinator.GetTacticalState()
+		tacticalState.PostCombatReturnMode = returnMode
+	}
+
+	// Track active encounter — garrison squads are "enemies" for cleanup purposes
+	playerEntityID := ecs.EntityID(0)
+	if es.modeCoordinator != nil {
+		if pd := es.modeCoordinator.GetPlayerData(); pd != nil {
+			playerEntityID = pd.PlayerEntityID
+		}
+	}
+
+	es.activeEncounter = &ActiveEncounter{
+		EncounterID:            raidEntityID,
+		ThreatID:               0,
+		ThreatName:             "Garrison Raid",
+		PlayerPosition:         combatPos,
+		OriginalPlayerPosition: originalPlayerPos,
+		StartTime:              time.Now(),
+		EnemySquadIDs:          garrisonSquadIDs,
+		RosterOwnerID:          commanderID,
+		PlayerEntityID:         playerEntityID,
+		PlayerFactionID:        playerFactionID,
+		EnemyFactionID:         enemyFactionID,
+		IsRaidCombat:           true,
+	}
+
+	fmt.Printf("EncounterService: Raid combat started at (%d,%d)\n", combatPos.X, combatPos.Y)
+	return nil
 }
 
 // === PRIVATE HELPER METHODS ===

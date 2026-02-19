@@ -2,6 +2,16 @@ __________________________________________
 #
 # # # **IMPORTANT** # # # 
 
+
+# Raid Package
+
+- Either define archetypes.go in a json file, or use the encounter system. Consider creating a variation of the encounter system which weighs certain units more
+    * I.E, "Ambush" - fast units have a weight, ranged battery prioritizes ranged units, etc. 
+
+
+- Need better reward system. Both raids and regular combat should have rewards. We want rewards to be mostly the same, with additional weighing applies so that raids give better rewards
+
+
 - Explore the go fix command
 
 - Separate DOCUMENTATIOn.MD into

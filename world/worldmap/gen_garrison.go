@@ -49,7 +49,7 @@ func (g *GarrisonRaidGenerator) Generate(width, height int, images TileImageSet)
 	}
 
 	// Build abstract DAG
-	dag := buildGarrisonDAG(floorNum)
+	dag := BuildGarrisonDAG(floorNum)
 
 	// Place rooms on the grid in topological order
 	sorted := topologicalSort(dag)

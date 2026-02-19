@@ -98,6 +98,12 @@ func init() {
 					regenerateMap(em, "military_base")
 					em.subMenus.CloseAll()
 				}},
+				{Text: "Start Raid", OnClick: func() {
+					em.subMenus.CloseAll()
+					if raidMode, exists := em.ModeManager.GetMode("raid"); exists {
+						em.ModeManager.RequestTransition(raidMode, "Debug: Start Raid")
+					}
+				}},
 			})
 			return nil
 		},

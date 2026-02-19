@@ -7,8 +7,10 @@ import (
 	"game_main/gui/framework"
 	"game_main/gui/guicombat"
 	"game_main/gui/guiexploration"
+	"game_main/gui/guiraid"
 	"game_main/gui/guisquads"
 	"game_main/mind/encounter"
+	"game_main/mind/raid"
 	"game_main/overworld/core"
 	"game_main/tactical/commander"
 	"game_main/testing"
@@ -39,7 +41,11 @@ func SetupRoguelikeMode(g *Game) {
 	}
 
 	tacticalManager := coordinator.GetTacticalManager()
-	registerRoguelikeTacticalModes(coordinator, tacticalManager, encounterService)
+	raidMode := registerRoguelikeTacticalModes(coordinator, tacticalManager, encounterService)
+
+	// Create raid runner and inject into raid mode
+	raidRunner := raid.NewRaidRunner(&g.em, encounterService)
+	raidMode.SetRaidRunner(raidRunner)
 
 	SetupInputCoordinator(g)
 	testing.CreateTestItems(&g.gameMap)
@@ -52,7 +58,10 @@ func SetupRoguelikeMode(g *Game) {
 // registerRoguelikeTacticalModes registers squad + core tactical modes for roguelike.
 // Squad modes are registered first so ExplorationMode.Initialize() detects squad_editor
 // in the tactical manager and shows only the "Squad" button (no overworld button).
-func registerRoguelikeTacticalModes(coordinator *framework.GameModeCoordinator, manager *framework.UIModeManager, encounterService *encounter.EncounterService) {
+// Returns the RaidMode reference for RaidRunner injection.
+func registerRoguelikeTacticalModes(coordinator *framework.GameModeCoordinator, manager *framework.UIModeManager, encounterService *encounter.EncounterService) *guiraid.RaidMode {
+	raidMode := guiraid.NewRaidMode(manager)
+
 	modes := []framework.UIMode{
 		guisquads.NewSquadEditorMode(manager),
 		guisquads.NewUnitPurchaseMode(manager),
@@ -61,6 +70,7 @@ func registerRoguelikeTacticalModes(coordinator *framework.GameModeCoordinator, 
 		guicombat.NewCombatMode(manager, encounterService),
 		guicombat.NewCombatAnimationMode(manager),
 		guisquads.NewSquadDeploymentMode(manager),
+		raidMode,
 	}
 
 	for _, mode := range modes {
@@ -68,4 +78,6 @@ func registerRoguelikeTacticalModes(coordinator *framework.GameModeCoordinator, 
 			log.Fatalf("Failed to register tactical mode '%s': %v", mode.GetModeName(), err)
 		}
 	}
+
+	return raidMode
 }
