@@ -110,13 +110,5 @@ func loadBiomeTiles(biome Biome) *BiomeTileSet {
 		}
 	}
 
-	// Fall back to default images if biome-specific images aren't available
-	if len(biomeTiles.FloorImages) == 0 {
-		biomeTiles.FloorImages = make([]*ebiten.Image, 0)
-	}
-	if len(biomeTiles.WallImages) == 0 {
-		biomeTiles.WallImages = make([]*ebiten.Image, 0)
-	}
-
 	return biomeTiles
 }

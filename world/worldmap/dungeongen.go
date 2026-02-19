@@ -21,47 +21,6 @@ type Rect struct {
 	Y2 int
 }
 
-// IsInRoom checks if the given coordinates are within this room's boundaries.
-func (r Rect) IsInRoom(x, y int) bool {
-	if x >= r.X1 && x <= r.X2 {
-		if y >= r.Y1 && y <= r.Y2 {
-			return true
-		}
-	}
-	return false
-}
-
-// GetCoordinates returns all floor positions within the room (excluding walls).
-func (r Rect) GetCoordinates() []coords.LogicalPosition {
-
-	//Adding +1 and -1 so we don't get the walls
-	pos := make([]coords.LogicalPosition, 0)
-	for y := r.Y1 + 1; y <= r.Y2-1; y++ {
-		for x := r.X1 + 1; x <= r.X2-1; x++ {
-			pos = append(pos, coords.LogicalPosition{X: x, Y: y})
-		}
-	}
-
-	return pos
-}
-
-// GetCoordinatesWithoutCenter returns all floor positions except the center.
-// Used for monster spawning to avoid placing monsters in room centers.
-// TODO: This is a temporary solution for spawning logic.
-func (r Rect) GetCoordinatesWithoutCenter() []coords.LogicalPosition {
-	allCoords := r.GetCoordinates()
-	centerX, centerY := r.Center()
-
-	result := make([]coords.LogicalPosition, 0, len(allCoords))
-	for _, pos := range allCoords {
-		if centerX != pos.X && centerY != pos.Y {
-			result = append(result, pos)
-		}
-	}
-
-	return result
-}
-
 func (r *Rect) Center() (int, int) {
 	centerX := (r.X1 + r.X2) / 2
 	centerY := (r.Y1 + r.Y2) / 2
@@ -78,7 +37,7 @@ func NewRect(x int, y int, width int, height int) Rect {
 }
 
 func (r *Rect) Intersect(other Rect) bool {
-	return (r.X1 <= other.X2 && r.X2 >= other.X1 && r.Y1 <= other.Y1 && r.Y2 >= other.Y1)
+	return (r.X1 <= other.X2 && r.X2 >= other.X1 && r.Y1 <= other.Y2 && r.Y2 >= other.Y1)
 }
 
 // Holds the Map Information
@@ -243,7 +202,7 @@ func (gameMap *GameMap) ApplyColorMatrix(indices []int, m graphics.ColorMatrix) 
 
 	for _, ind := range indices {
 
-		if ind <= len(gameMap.Tiles) {
+		if ind < len(gameMap.Tiles) {
 			gameMap.Tiles[ind].SetColorMatrix(m)
 		}
 	}
@@ -261,7 +220,7 @@ func (gameMap *GameMap) ApplyColorMatrixToIndex(index int, m graphics.ColorMatri
 
 func (gameMap GameMap) InBounds(x, y int) bool {
 
-	if x < 0 || x > graphics.ScreenInfo.DungeonWidth || y < 0 || y > graphics.ScreenInfo.DungeonHeight {
+	if x < 0 || x >= graphics.ScreenInfo.DungeonWidth || y < 0 || y >= graphics.ScreenInfo.DungeonHeight {
 		return false
 	}
 	return true
@@ -287,32 +246,3 @@ func (gameMap GameMap) IsOpaque(x, y int) bool {
 	return gameMap.Tiles[idx].TileType == WALL
 }
 
-// Gets non blocked indices of a square centered at PixelX and PixelY
-func (gameMap *GameMap) UnblockedIndices(pixelX, pixelY, size int) []int {
-	inds := make([]int, 0)
-
-	sq := graphics.NewSquare(pixelX, pixelY, graphics.MediumShape).GetIndices()
-
-	for _, i := range sq {
-
-		if !gameMap.Tiles[i].Blocked {
-			inds = append(inds, i)
-		}
-
-	}
-
-	return inds
-
-}
-
-func (gameMap *GameMap) UnblockedLogicalCoords(pixelX, pixelY, size int) []coords.LogicalPosition {
-	indices := gameMap.UnblockedIndices(pixelX, pixelY, size)
-	pos := make([]coords.LogicalPosition, 0, len(indices))
-
-	for _, i := range indices {
-		logicalPos := coords.CoordManager.IndexToLogical(i)
-		pos = append(pos, logicalPos)
-	}
-
-	return pos
-}

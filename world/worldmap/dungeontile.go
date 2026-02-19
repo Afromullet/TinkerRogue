@@ -6,7 +6,6 @@ import (
 
 	"github.com/bytearena/ecs"
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/colorm"
 )
 
 type TileType int
@@ -42,17 +41,14 @@ type Tile struct {
 
 func NewTile(pixelX, pixelY int, tileCords coords.LogicalPosition, blocked bool, img *ebiten.Image, tileType TileType, isRevealed bool) Tile {
 
-	var cm colorm.ColorM
-	cm.Reset()
-
 	tile := Tile{
 		PixelX:     pixelX,
 		PixelY:     pixelY,
 		TileCords:  tileCords,
-		Blocked:    true,
+		Blocked:    blocked,
 		Image:      img,
-		TileType:   WALL,
-		IsRevealed: false,
+		TileType:   tileType,
+		IsRevealed: isRevealed,
 		cm: graphics.ColorMatrix{
 			R:           0,
 			G:           0,

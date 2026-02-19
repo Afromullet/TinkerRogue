@@ -26,6 +26,7 @@ type GenerationResult struct {
 	POIs                  []POIData              // Typed points of interest
 	FactionStartPositions []FactionStartPosition // Generator-chosen faction positions
 	BiomeMap              []Biome                // Flat array indexed by positionToIndex
+	GarrisonData          *GarrisonFloorData     // Garrison floor metadata (nil for non-garrison generators)
 }
 
 // MapGenerator defines the interface for all map generation algorithms
@@ -40,17 +41,17 @@ type MapGenerator interface {
 	Description() string
 }
 
-// GeneratorConfig holds common parameters for generators
-type GeneratorConfig struct {
+// RoomsCorridorsConfig holds parameters for the rooms-and-corridors generator
+type RoomsCorridorsConfig struct {
 	MinRoomSize int
 	MaxRoomSize int
 	MaxRooms    int
 	Seed        int64 // 0 = use time-based seed
 }
 
-// DefaultConfig returns sensible defaults for dungeon generation
-func DefaultConfig() GeneratorConfig {
-	return GeneratorConfig{
+// DefaultRoomsCorridorsConfig returns sensible defaults for rooms-and-corridors generation
+func DefaultRoomsCorridorsConfig() RoomsCorridorsConfig {
+	return RoomsCorridorsConfig{
 		MinRoomSize: 6,
 		MaxRoomSize: 10,
 		MaxRooms:    30,

@@ -7,11 +7,11 @@ import (
 
 // RoomsAndCorridorsGenerator implements the classic roguelike generation
 type RoomsAndCorridorsGenerator struct {
-	config GeneratorConfig
+	config RoomsCorridorsConfig
 }
 
 // NewRoomsAndCorridorsGenerator creates a new rooms-and-corridors generator
-func NewRoomsAndCorridorsGenerator(config GeneratorConfig) *RoomsAndCorridorsGenerator {
+func NewRoomsAndCorridorsGenerator(config RoomsCorridorsConfig) *RoomsAndCorridorsGenerator {
 	return &RoomsAndCorridorsGenerator{config: config}
 }
 
@@ -24,6 +24,10 @@ func (g *RoomsAndCorridorsGenerator) Description() string {
 }
 
 func (g *RoomsAndCorridorsGenerator) Generate(width, height int, images TileImageSet) GenerationResult {
+	if g.config.Seed != 0 {
+		common.SetRNGSeed(uint64(g.config.Seed), uint64(g.config.Seed))
+	}
+
 	result := GenerationResult{
 		Tiles:          createEmptyTiles(width, height, images),
 		Rooms:          make([]Rect, 0, g.config.MaxRooms),
@@ -86,5 +90,5 @@ func (g *RoomsAndCorridorsGenerator) connectRooms(result *GenerationResult, room
 
 // Register this generator on package initialization
 func init() {
-	RegisterGenerator(NewRoomsAndCorridorsGenerator(DefaultConfig()))
+	RegisterGenerator(NewRoomsAndCorridorsGenerator(DefaultRoomsCorridorsConfig()))
 }

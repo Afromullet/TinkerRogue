@@ -76,6 +76,10 @@ func createEmptyTiles(width, height int, images TileImageSet) []*Tile {
 	return tiles
 }
 
+// ========================================
+// TILE CARVING HELPERS
+// ========================================
+
 // carveRoom converts wall tiles to floor tiles within room bounds
 func carveRoom(result *GenerationResult, room Rect, width int, images TileImageSet) {
 	for y := room.Y1 + 1; y < room.Y2; y++ {
@@ -169,22 +173,30 @@ func carveCorridorBetween(terrainMap []bool, width, height, fromIdx, toIdx int) 
 	// Horizontal first
 	if fromX < toX {
 		for x := fromX; x <= toX; x++ {
-			terrainMap[fromY*width+x] = true
+			if x >= 0 && x < width && fromY >= 0 && fromY < height {
+				terrainMap[fromY*width+x] = true
+			}
 		}
 	} else {
 		for x := fromX; x >= toX; x-- {
-			terrainMap[fromY*width+x] = true
+			if x >= 0 && x < width && fromY >= 0 && fromY < height {
+				terrainMap[fromY*width+x] = true
+			}
 		}
 	}
 
 	// Then vertical
 	if fromY < toY {
 		for y := fromY; y <= toY; y++ {
-			terrainMap[y*width+toX] = true
+			if toX >= 0 && toX < width && y >= 0 && y < height {
+				terrainMap[y*width+toX] = true
+			}
 		}
 	} else {
 		for y := fromY; y >= toY; y-- {
-			terrainMap[y*width+toX] = true
+			if toX >= 0 && toX < width && y >= 0 && y < height {
+				terrainMap[y*width+toX] = true
+			}
 		}
 	}
 }
@@ -238,4 +250,131 @@ func ensureTerrainConnectivity(terrainMap []bool, width, height int) {
 			}
 		}
 	}
+}
+
+// ========================================
+// SHARED TERRAIN UTILITIES
+// ========================================
+
+// convertTerrainMapToTiles converts a boolean terrain map to actual Tile objects.
+// terrainMap true = walkable floor, false = wall. Assigns biome images and populates ValidPositions.
+func convertTerrainMapToTiles(result *GenerationResult, terrainMap []bool, width, height int, images TileImageSet, biome Biome) {
+	wallImages, floorImages := getBiomeImages(images, biome)
+
+	result.BiomeMap = make([]Biome, width*height)
+
+	for y := 0; y < height; y++ {
+		for x := 0; x < width; x++ {
+			idx := positionToIndex(x, y, width)
+			logicalPos := coords.LogicalPosition{X: x, Y: y}
+			pixelX := x * graphics.ScreenInfo.TileSize
+			pixelY := y * graphics.ScreenInfo.TileSize
+
+			result.BiomeMap[idx] = biome
+
+			if terrainMap[idx] {
+				floorImage := selectRandomImage(floorImages)
+				tile := NewTile(pixelX, pixelY, logicalPos, false, floorImage, FLOOR, false)
+				tile.Biome = biome
+				result.Tiles[idx] = &tile
+				result.ValidPositions = append(result.ValidPositions, logicalPos)
+			} else {
+				wallImage := selectRandomImage(wallImages)
+				tile := NewTile(pixelX, pixelY, logicalPos, true, wallImage, WALL, false)
+				tile.Biome = biome
+				result.Tiles[idx] = &tile
+			}
+		}
+	}
+}
+
+// scoreTerrainOpenness counts walkable tiles within a radius of (cx, cy) on a terrain map.
+func scoreTerrainOpenness(terrainMap []bool, cx, cy, radius, width, height int) int {
+	score := 0
+	for dy := -radius; dy <= radius; dy++ {
+		for dx := -radius; dx <= radius; dx++ {
+			nx, ny := cx+dx, cy+dy
+			if nx >= 0 && nx < width && ny >= 0 && ny < height {
+				if terrainMap[ny*width+nx] {
+					score++
+				}
+			}
+		}
+	}
+	return score
+}
+
+// findBestOpenPosition finds the walkable position with the highest openness score
+// within the given bounding box. Returns {-1, -1} if no walkable tile is found.
+func findBestOpenPosition(terrainMap []bool, width, height, xMin, xMax, yMin, yMax, scanRadius int) coords.LogicalPosition {
+	bestScore := -1
+	bestPos := coords.LogicalPosition{X: -1, Y: -1}
+
+	// Clamp scan bounds so the radius doesn't go off-map
+	if xMin < scanRadius {
+		xMin = scanRadius
+	}
+	if yMin < scanRadius {
+		yMin = scanRadius
+	}
+	if xMax >= width-scanRadius {
+		xMax = width - scanRadius - 1
+	}
+	if yMax >= height-scanRadius {
+		yMax = height - scanRadius - 1
+	}
+
+	for y := yMin; y <= yMax; y++ {
+		for x := xMin; x <= xMax; x++ {
+			if !terrainMap[y*width+x] {
+				continue
+			}
+
+			score := scoreTerrainOpenness(terrainMap, x, y, scanRadius, width, height)
+			if score > bestScore {
+				bestScore = score
+				bestPos = coords.LogicalPosition{X: x, Y: y}
+			}
+		}
+	}
+
+	return bestPos
+}
+
+// isTooCloseToAny checks if (px, py) is within minSpacing of any position in placed
+// using Chebyshev distance (both dx AND dy must be < minSpacing to be "too close").
+func isTooCloseToAny(px, py int, placed [][2]int, minSpacing int) bool {
+	for _, pp := range placed {
+		dx := px - pp[0]
+		dy := py - pp[1]
+		if dx < 0 {
+			dx = -dx
+		}
+		if dy < 0 {
+			dy = -dy
+		}
+		if dx < minSpacing && dy < minSpacing {
+			return true
+		}
+	}
+	return false
+}
+
+// tryPlace2x2PillarOnTerrain checks that a 2x2 area at (px, py) is fully walkable,
+// then sets it to wall. Returns true if placed, false if blocked or out of bounds.
+func tryPlace2x2PillarOnTerrain(terrainMap []bool, px, py, width, height int) bool {
+	for dy := 0; dy < 2; dy++ {
+		for dx := 0; dx < 2; dx++ {
+			nx, ny := px+dx, py+dy
+			if nx < 0 || nx >= width || ny < 0 || ny >= height || !terrainMap[ny*width+nx] {
+				return false
+			}
+		}
+	}
+	for dy := 0; dy < 2; dy++ {
+		for dx := 0; dx < 2; dx++ {
+			terrainMap[(py+dy)*width+(px+dx)] = false
+		}
+	}
+	return true
 }

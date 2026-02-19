@@ -86,12 +86,16 @@ func init() {
 					regenerateMap(em, "rooms_corridors")
 					em.subMenus.CloseAll()
 				}},
-				{Text: "Tactical Biome", OnClick: func() {
-					regenerateMap(em, "tactical_biome")
-					em.subMenus.CloseAll()
-				}},
 				{Text: "Overworld", OnClick: func() {
 					regenerateMap(em, "overworld")
+					em.subMenus.CloseAll()
+				}},
+				{Text: "Garrison Raid", OnClick: func() {
+					regenerateMap(em, "garrison_raid")
+					em.subMenus.CloseAll()
+				}},
+				{Text: "Military Base", OnClick: func() {
+					regenerateMap(em, "military_base")
 					em.subMenus.CloseAll()
 				}},
 			})

@@ -301,6 +301,9 @@ func (g *StrategicOverworldGenerator) applyConnectivityFixes(result *GenerationR
 
 // placeFactionStartPositions divides the map into sectors and finds optimal starting positions
 func (g *StrategicOverworldGenerator) placeFactionStartPositions(result *GenerationResult, width, height int, elevationMap [][]float64) {
+	// Build terrain map for openness scoring
+	terrainMap := g.buildTerrainMap(result, width, height)
+
 	// Define sectors as quadrant regions offset from corners
 	type sectorBounds struct {
 		minX, maxX, minY, maxY int
@@ -346,7 +349,7 @@ func (g *StrategicOverworldGenerator) placeFactionStartPositions(result *Generat
 				}
 
 				// Score by number of walkable neighbors in 5-tile radius
-				score := g.countWalkableNeighbors(result, x, y, 5, width, height)
+				score := scoreTerrainOpenness(terrainMap, x, y, 5, width, height)
 				if score > bestScore {
 					bestScore = score
 					bestPos = coords.LogicalPosition{X: x, Y: y}
@@ -362,24 +365,6 @@ func (g *StrategicOverworldGenerator) placeFactionStartPositions(result *Generat
 			})
 		}
 	}
-}
-
-// countWalkableNeighbors counts walkable tiles within a radius
-func (g *StrategicOverworldGenerator) countWalkableNeighbors(result *GenerationResult, cx, cy, radius, width, height int) int {
-	count := 0
-	for dy := -radius; dy <= radius; dy++ {
-		for dx := -radius; dx <= radius; dx++ {
-			nx, ny := cx+dx, cy+dy
-			if nx < 0 || nx >= width || ny < 0 || ny >= height {
-				continue
-			}
-			idx := positionToIndex(nx, ny, width)
-			if idx >= 0 && idx < len(result.Tiles) && !result.Tiles[idx].Blocked {
-				count++
-			}
-		}
-	}
-	return count
 }
 
 // placeTypedPOIs places terrain-aware POIs in order: towns, temples, watchtowers, guild halls
@@ -431,7 +416,7 @@ func (g *StrategicOverworldGenerator) placePOIType(result *GenerationResult, wid
 		}
 
 		// Check distance from all existing POIs
-		if g.isTooCloseToAny(pos, existingPOIs, minDist) || g.isTooCloseToAny(pos, placed, minDist) {
+		if g.isTooCloseEuclidean(pos, existingPOIs, minDist) || g.isTooCloseEuclidean(pos, placed, minDist) {
 			continue
 		}
 
@@ -481,7 +466,7 @@ func (g *StrategicOverworldGenerator) placeGuildHalls(result *GenerationResult, 
 		// Must be within 20 tiles of a town
 		nearTown := false
 		for _, town := range townPositions {
-			dist := g.distance(pos, town)
+			dist := euclideanDistance(pos, town)
 			if dist <= 20.0 {
 				nearTown = true
 				break
@@ -492,7 +477,7 @@ func (g *StrategicOverworldGenerator) placeGuildHalls(result *GenerationResult, 
 		}
 
 		// Check distance from other POIs
-		if g.isTooCloseToAny(pos, existingPOIs, g.config.POIMinDistance) {
+		if g.isTooCloseEuclidean(pos, existingPOIs, g.config.POIMinDistance) {
 			continue
 		}
 
@@ -535,18 +520,18 @@ func (g *StrategicOverworldGenerator) isValidPOITerrain(nodeID string, biome Bio
 	}
 }
 
-// isTooCloseToAny checks if pos is within minDist of any position in the list
-func (g *StrategicOverworldGenerator) isTooCloseToAny(pos coords.LogicalPosition, positions []coords.LogicalPosition, minDist int) bool {
+// isTooCloseEuclidean checks if pos is within minDist (Euclidean) of any position in the list
+func (g *StrategicOverworldGenerator) isTooCloseEuclidean(pos coords.LogicalPosition, positions []coords.LogicalPosition, minDist int) bool {
 	for _, other := range positions {
-		if g.distance(pos, other) < float64(minDist) {
+		if euclideanDistance(pos, other) < float64(minDist) {
 			return true
 		}
 	}
 	return false
 }
 
-// distance computes Euclidean distance between two positions
-func (g *StrategicOverworldGenerator) distance(a, b coords.LogicalPosition) float64 {
+// euclideanDistance computes Euclidean distance between two positions.
+func euclideanDistance(a, b coords.LogicalPosition) float64 {
 	dx := float64(a.X - b.X)
 	dy := float64(a.Y - b.Y)
 	return math.Sqrt(dx*dx + dy*dy)
