@@ -20,12 +20,11 @@ func GenerateGarrison(manager *common.EntityManager, floorCount int, commanderID
 	raidEntityID := raidEntity.GetID()
 
 	raidState := &RaidStateData{
-		CurrentFloor:      1,
-		TotalFloors:       floorCount,
-		Status:            RaidActive,
-		CommanderID:       commanderID,
-		PlayerSquadIDs:    append([]ecs.EntityID{}, playerSquadIDs...),
-		GarrisonKillCount: 0,
+		CurrentFloor:   1,
+		TotalFloors:    floorCount,
+		Status:         RaidActive,
+		CommanderID:    commanderID,
+		PlayerSquadIDs: append([]ecs.EntityID{}, playerSquadIDs...),
 	}
 	raidEntity.AddComponent(RaidStateComponent, raidState)
 

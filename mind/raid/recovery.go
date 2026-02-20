@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"game_main/common"
-	"game_main/tactical/squads"
+	"game_main/mind/resolution"
 
 	"github.com/bytearena/ecs"
 )
@@ -26,7 +26,7 @@ func ApplyPostEncounterRecovery(manager *common.EntityManager, raidState *RaidSt
 			hpPercent = RaidConfig.Recovery.ReserveHPPercent
 		}
 
-		applyHPRecovery(manager, squadID, hpPercent)
+		resolution.ApplyHPRecovery(manager, squadID, hpPercent)
 	}
 
 	fmt.Printf("Recovery: Post-encounter recovery applied (deployed: %d%%, reserve: %d%%)\n",
@@ -41,7 +41,7 @@ func ApplyBetweenFloorRecovery(manager *common.EntityManager, raidState *RaidSta
 	}
 
 	for _, squadID := range raidState.PlayerSquadIDs {
-		applyHPRecovery(manager, squadID, RaidConfig.Recovery.DeployedHPPercent)
+		resolution.ApplyHPRecovery(manager, squadID, RaidConfig.Recovery.DeployedHPPercent)
 	}
 
 	fmt.Printf("Recovery: Between-floor recovery applied to %d squads\n", len(raidState.PlayerSquadIDs))
@@ -57,18 +57,4 @@ func isInReserve(deployment *DeploymentData, squadID ecs.EntityID) bool {
 	return false
 }
 
-// applyHPRecovery restores a percentage of max HP to all living units in a squad.
-func applyHPRecovery(manager *common.EntityManager, squadID ecs.EntityID, hpPercent int) {
-	unitIDs := squads.GetUnitIDsInSquad(squadID, manager)
-	for _, unitID := range unitIDs {
-		attr := common.GetComponentTypeByID[*common.Attributes](manager, unitID, common.AttributeComponent)
-		if attr != nil && attr.CurrentHealth > 0 {
-			heal := attr.MaxHealth * hpPercent / 100
-			attr.CurrentHealth += heal
-			if attr.CurrentHealth > attr.MaxHealth {
-				attr.CurrentHealth = attr.MaxHealth
-			}
-		}
-	}
-}
 

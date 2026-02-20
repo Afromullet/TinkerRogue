@@ -2,7 +2,6 @@ package raid
 
 import (
 	"game_main/common"
-	"game_main/tactical/squads"
 
 	"github.com/bytearena/ecs"
 )
@@ -95,17 +94,4 @@ func GetDeployment(manager *common.EntityManager) *DeploymentData {
 		return common.GetComponentType[*DeploymentData](result.Entity, DeploymentComponent)
 	}
 	return nil
-}
-
-// CountLivingUnits returns the number of units in a squad with CurrentHealth > 0.
-func CountLivingUnits(manager *common.EntityManager, squadID ecs.EntityID) int {
-	unitIDs := squads.GetUnitIDsInSquad(squadID, manager)
-	count := 0
-	for _, unitID := range unitIDs {
-		attr := common.GetComponentTypeByID[*common.Attributes](manager, unitID, common.AttributeComponent)
-		if attr != nil && attr.CurrentHealth > 0 {
-			count++
-		}
-	}
-	return count
 }

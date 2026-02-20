@@ -20,14 +20,8 @@ type combatOutcome struct {
 	PlayerVictory  bool
 	PlayerEntityID ecs.EntityID
 	PlayerSquadIDs []ecs.EntityID
-	Casualties     casualtyReport
+	Casualties     resolution.CasualtyReport
 	RewardsEarned  resolution.Reward
-}
-
-// casualtyReport tracks units lost in combat
-type casualtyReport struct {
-	PlayerUnitsLost  int
-	EnemyUnitsKilled int
 }
 
 // applyCombatOutcome applies combat outcome to overworld state
@@ -164,7 +158,7 @@ func createCombatOutcome(
 		PlayerVictory:  playerWon,
 		PlayerEntityID: playerEntityID,
 		PlayerSquadIDs: playerSquadIDs,
-		Casualties: casualtyReport{
+		Casualties: resolution.CasualtyReport{
 			PlayerUnitsLost:  playerUnitsLost,
 			EnemyUnitsKilled: enemyUnitsKilled,
 		},
@@ -200,7 +194,7 @@ func (es *EncounterService) resolveCombatToOverworld(
 		return
 	}
 
-	rewards := calculateRewards(nodeData.Intensity)
+	rewards := resolution.CalculateIntensityReward(nodeData.Intensity)
 
 	// Create combat outcome
 	outcome := createCombatOutcome(

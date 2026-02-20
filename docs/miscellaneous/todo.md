@@ -21,7 +21,7 @@ __________________________________________
 ----
 
 
-- Squad highlight renderer caching breaks things. Does not follow units
+- Start Random Encounter alwys starts the same encounter
 
 - Identify common patterns in teh different combat resolution paths. Garrison, raids, and overworld encounters follow different paths. Consider that we may be able to build upon the reward package. Having a "resolution" package with anything common, including rewards, cleanup, etc
    * The resolution package already covers some of it, but we need to integrate it more

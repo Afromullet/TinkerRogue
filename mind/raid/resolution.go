@@ -29,7 +29,6 @@ func ProcessVictory(manager *common.EntityManager, raidState *RaidStateData, roo
 		if gData != nil {
 			gData.IsDestroyed = true
 		}
-		raidState.GarrisonKillCount++
 	}
 
 	MarkRoomCleared(manager, room.NodeID, floorNumber)

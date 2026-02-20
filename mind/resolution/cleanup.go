@@ -11,6 +11,20 @@ import (
 	"github.com/bytearena/ecs"
 )
 
+// ApplyHPRecovery restores a percentage of max HP to all living units in a squad.
+func ApplyHPRecovery(manager *common.EntityManager, squadID ecs.EntityID, hpPercent int) {
+	for _, unitID := range squads.GetUnitIDsInSquad(squadID, manager) {
+		attr := common.GetComponentTypeByID[*common.Attributes](manager, unitID, common.AttributeComponent)
+		if attr != nil && attr.CurrentHealth > 0 {
+			heal := attr.MaxHealth * hpPercent / 100
+			attr.CurrentHealth += heal
+			if attr.CurrentHealth > attr.MaxHealth {
+				attr.CurrentHealth = attr.MaxHealth
+			}
+		}
+	}
+}
+
 // StripCombatComponents removes combat-related state from the given squads
 // and their units: FactionMembership, Position, and resets IsDeployed.
 // Callers decide WHICH squads to strip (by ID list).

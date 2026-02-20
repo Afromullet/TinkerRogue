@@ -25,20 +25,7 @@ func grantGold(manager *common.EntityManager, playerEntityID ecs.EntityID, amoun
 
 // grantExperience distributes XP evenly across all alive units in the given squads.
 func grantExperience(manager *common.EntityManager, squadIDs []ecs.EntityID, totalXP int) string {
-	var aliveUnitIDs []ecs.EntityID
-	for _, squadID := range squadIDs {
-		unitIDs := squads.GetUnitIDsInSquad(squadID, manager)
-		for _, unitID := range unitIDs {
-			unitEntity := manager.FindEntityByID(unitID)
-			if unitEntity == nil {
-				continue
-			}
-			attr := common.GetComponentType[*common.Attributes](unitEntity, common.AttributeComponent)
-			if attr != nil && attr.CurrentHealth > 0 {
-				aliveUnitIDs = append(aliveUnitIDs, unitID)
-			}
-		}
-	}
+	aliveUnitIDs := GetLivingUnitIDs(manager, squadIDs)
 
 	if len(aliveUnitIDs) == 0 {
 		return ""

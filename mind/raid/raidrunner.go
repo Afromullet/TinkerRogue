@@ -5,6 +5,7 @@ import (
 
 	"game_main/common"
 	"game_main/mind/encounter"
+	"game_main/mind/resolution"
 	"game_main/world/worldmap"
 
 	"github.com/bytearena/ecs"
@@ -156,7 +157,7 @@ func (rr *RaidRunner) TriggerRaidEncounter(nodeID int) error {
 	// Snapshot alive counts for post-encounter summary
 	rr.preCombatAliveCounts = make(map[ecs.EntityID]int)
 	for _, squadID := range raidState.PlayerSquadIDs {
-		rr.preCombatAliveCounts[squadID] = CountLivingUnits(rr.manager, squadID)
+		rr.preCombatAliveCounts[squadID] = resolution.CountLivingUnitsInSquad(rr.manager, squadID)
 	}
 
 	// Get deployed squads (use deployment if available, otherwise all player squads)
@@ -199,7 +200,7 @@ func (rr *RaidRunner) processRestRoom(raidState *RaidStateData, room *RoomData) 
 	// Apply rest room HP recovery from config
 	if RaidConfig != nil {
 		for _, squadID := range raidState.PlayerSquadIDs {
-			applyHPRecovery(rr.manager, squadID, RaidConfig.Recovery.RestRoomHPPercent)
+			resolution.ApplyHPRecovery(rr.manager, squadID, RaidConfig.Recovery.RestRoomHPPercent)
 		}
 	}
 
@@ -233,7 +234,7 @@ func (rr *RaidRunner) ResolveEncounter(reason encounter.CombatExitReason, result
 		for _, squadID := range raidState.PlayerSquadIDs {
 			pre, ok := rr.preCombatAliveCounts[squadID]
 			if ok {
-				post := CountLivingUnits(rr.manager, squadID)
+				post := resolution.CountLivingUnitsInSquad(rr.manager, squadID)
 				if pre > post {
 					unitsLostTotal += pre - post
 				}

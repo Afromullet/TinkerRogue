@@ -100,26 +100,3 @@ func IsFloorComplete(manager *common.EntityManager, floorNumber int) bool {
 	}
 	return false
 }
-
-// getStairsNodeID finds the stairs room node ID for a floor.
-func getStairsNodeID(manager *common.EntityManager, floorNumber int) int {
-	rooms := GetAllRoomsForFloor(manager, floorNumber)
-	for _, room := range rooms {
-		if room.RoomType == worldmap.GarrisonRoomStairs {
-			return room.NodeID
-		}
-	}
-	return -1
-}
-
-// getEntryNodeID finds the entry room node ID for a floor.
-func getEntryNodeID(manager *common.EntityManager, floorNumber int) int {
-	rooms := GetAllRoomsForFloor(manager, floorNumber)
-	for _, room := range rooms {
-		// Entry room: has no parents
-		if len(room.ParentNodeIDs) == 0 {
-			return room.NodeID
-		}
-	}
-	return -1
-}

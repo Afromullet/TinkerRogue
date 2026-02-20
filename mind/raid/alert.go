@@ -99,26 +99,3 @@ func IncrementAlert(manager *common.EntityManager, floorNumber int) {
 		ActivateReserves(manager, floorNumber)
 	}
 }
-
-// getLivingGarrisonUnitIDs collects all living unit IDs from non-destroyed
-// garrison squads on a floor.
-func getLivingGarrisonUnitIDs(manager *common.EntityManager, floorNumber int) []ecs.EntityID {
-	var unitIDs []ecs.EntityID
-
-	garrisonSquadIDs := GetGarrisonSquadsForFloor(manager, floorNumber)
-	for _, squadID := range garrisonSquadIDs {
-		if squads.IsSquadDestroyed(squadID, manager) {
-			continue
-		}
-
-		sUnitIDs := squads.GetUnitIDsInSquad(squadID, manager)
-		for _, uid := range sUnitIDs {
-			attr := common.GetComponentTypeByID[*common.Attributes](manager, uid, common.AttributeComponent)
-			if attr != nil && attr.CurrentHealth > 0 {
-				unitIDs = append(unitIDs, uid)
-			}
-		}
-	}
-
-	return unitIDs
-}
