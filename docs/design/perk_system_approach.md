@@ -1151,7 +1151,7 @@ Simple if-chain in spell system.
 Pre-battle perk management. **Must implement perk lifecycle management** (see [Landmine 5](#landmine-5-perk-lifecycle-management)).
 
 1. New mode in `gui/guisquads/`
-2. Unlocked perk pool display
+2. Unlocked perk pool display/
 3. Squad/unit/commander perk slot management
 4. Role gate and mutual exclusivity validation
 5. Perk point spending UI

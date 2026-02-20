@@ -123,6 +123,7 @@ func registerOverworldModes(coordinator *framework.GameModeCoordinator, manager 
 		guisquads.NewUnitPurchaseMode(manager),
 		guisquads.NewSquadEditorMode(manager),
 		guisquads.NewArtifactMode(manager),
+		guisquads.NewPerkMode(manager),
 		guiunitview.NewUnitViewMode(manager),
 	}
 

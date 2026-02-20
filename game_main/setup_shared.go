@@ -15,6 +15,7 @@ import (
 	"game_main/mind/encounter"
 	"game_main/mind/raid"
 	"game_main/tactical/commander"
+	"game_main/tactical/perks"
 	"game_main/tactical/squads"
 	"game_main/templates"
 	"game_main/testing"
@@ -39,6 +40,7 @@ func NewGameBootstrap() *GameBootstrap {
 // Phase 1: No dependencies, must run first.
 func (gb *GameBootstrap) LoadGameData() {
 	templates.ReadGameData()
+	perks.LoadPerkDefinitions()
 }
 
 // InitializeCoreECS initializes the ECS world and global systems.
@@ -119,6 +121,7 @@ func (gb *GameBootstrap) SetupDebugContent(em *common.EntityManager, gm *worldma
 		}
 		bootstrap.SeedAllArtifacts(pd.PlayerEntityID, seedCount, em)
 		bootstrap.EquipPlayerActivatedArtifacts(pd.PlayerEntityID, em)
+		bootstrap.EquipAllPerks(pd.PlayerEntityID, em)
 	}
 
 }

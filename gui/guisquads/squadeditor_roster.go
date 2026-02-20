@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"game_main/gui/builders"
 	"game_main/gui/guiunitview"
+	"game_main/tactical/perks"
 	"game_main/tactical/squadcommands"
 	"game_main/tactical/squads"
 )
@@ -44,6 +45,13 @@ func (sem *SquadEditorMode) onNewSquad() {
 
 			// Create empty squad and add to roster
 			squadID := squads.CreateEmptySquad(sem.Context.ECSManager, name)
+
+			// Attach perk component to the new squad
+			squadEntity := sem.Context.ECSManager.FindEntityByID(squadID)
+			if squadEntity != nil {
+				perks.AttachSquadPerkComponent(squadEntity)
+			}
+
 			if err := squadRoster.AddSquad(squadID); err != nil {
 				sem.SetStatus(fmt.Sprintf("Failed to add squad: %v", err))
 				return

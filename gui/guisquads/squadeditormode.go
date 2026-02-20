@@ -173,6 +173,11 @@ func (sem *SquadEditorMode) buildActionButtons() *widget.Container {
 				sem.ModeManager.RequestTransition(mode, "Artifacts clicked")
 			}
 		}},
+		{Text: "Perks (K)", OnClick: func() {
+			if mode, exists := sem.ModeManager.GetMode("perk_manager"); exists {
+				sem.ModeManager.RequestTransition(mode, "Perks clicked")
+			}
+		}},
 		{Text: closeText, OnClick: func() {
 			if returnMode, exists := sem.ModeManager.GetMode(sem.GetReturnMode()); exists {
 				sem.ModeManager.RequestTransition(returnMode, "Close button pressed")
@@ -233,6 +238,14 @@ func (sem *SquadEditorMode) HandleInput(inputState *framework.InputState) bool {
 	// N key creates new squad
 	if inputState.KeysJustPressed[ebiten.KeyN] {
 		sem.onNewSquad()
+		return true
+	}
+
+	// K key opens perk manager
+	if inputState.KeysJustPressed[ebiten.KeyK] {
+		if mode, exists := sem.ModeManager.GetMode("perk_manager"); exists {
+			sem.ModeManager.RequestTransition(mode, "K key pressed")
+		}
 		return true
 	}
 

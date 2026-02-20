@@ -2,6 +2,7 @@ package commander
 
 import (
 	"game_main/common"
+	"game_main/tactical/perks"
 	"game_main/tactical/spells"
 	"game_main/tactical/squads"
 	"game_main/visual/rendering"
@@ -58,6 +59,10 @@ func CreateCommander(
 		AddComponent(spells.SpellBookComponent, &spells.SpellBookData{
 			SpellIDs: initialSpells,
 		})
+
+	// Attach perk components
+	perks.AttachCommanderPerkComponent(entity)
+	perks.AttachPerkUnlockComponent(entity)
 
 	// Add to position system
 	if common.GlobalPositionSystem != nil {

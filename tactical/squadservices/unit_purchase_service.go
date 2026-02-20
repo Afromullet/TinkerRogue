@@ -3,6 +3,7 @@ package squadservices
 import (
 	"fmt"
 	"game_main/common"
+	"game_main/tactical/perks"
 	"game_main/tactical/squads"
 	"game_main/world/coords"
 
@@ -130,6 +131,9 @@ func (ups *UnitPurchaseService) PurchaseUnit(playerID ecs.EntityID, template squ
 		return result
 	}
 	unitID := unitEntity.GetID()
+
+	// Attach perk component to the new unit
+	perks.AttachUnitPerkComponent(unitEntity)
 
 	// Step 2: Add to roster (with rollback on failure)
 	if err := roster.AddUnit(unitID, template.UnitType); err != nil {
