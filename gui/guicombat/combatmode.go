@@ -174,29 +174,7 @@ func (cm *CombatMode) Initialize(ctx *framework.UIContext) error {
 	cm.inputHandler.SetArtifactPanel(cm.artifactPanel)
 
 	// Register cache invalidation callbacks (automatic, fires for both GUI and AI actions)
-	cm.combatService.RegisterOnAttackComplete(func(attackerID, defenderID ecs.EntityID, result *squads.CombatResult) {
-		cm.Queries.MarkSquadDirty(attackerID)
-		cm.Queries.MarkSquadDirty(defenderID)
-		if result.AttackerDestroyed {
-			cm.Queries.InvalidateSquad(attackerID)
-		}
-		if result.TargetDestroyed {
-			cm.Queries.InvalidateSquad(defenderID)
-		}
-	})
-
-	cm.combatService.RegisterOnMoveComplete(func(squadID ecs.EntityID) {
-		cm.Queries.MarkSquadDirty(squadID)
-	})
-
-	cm.combatService.RegisterOnTurnEnd(func(round int) {
-		cm.Queries.MarkAllSquadsDirty()
-		cm.visualization.UpdateThreatManagers()
-		cm.visualization.UpdateThreatEvaluator(round)
-
-		// Reset spell cast flag for the new turn
-		cm.deps.BattleState.HasCastSpell = false
-	})
+	cm.registerCombatCallbacks()
 
 	// Initialize visualization systems
 	cm.visualization = NewCombatVisualizationManager(ctx, cm.Queries, ctx.GameMap)
@@ -384,6 +362,34 @@ func (cm *CombatMode) initializeUpdateComponents() {
 }
 
 
+// registerCombatCallbacks registers cache invalidation callbacks on the combat service.
+// Must be called on each combat start because CleanupCombat clears all callbacks.
+func (cm *CombatMode) registerCombatCallbacks() {
+	cm.combatService.RegisterOnAttackComplete(func(attackerID, defenderID ecs.EntityID, result *squads.CombatResult) {
+		cm.Queries.MarkSquadDirty(attackerID)
+		cm.Queries.MarkSquadDirty(defenderID)
+		if result.AttackerDestroyed {
+			cm.Queries.InvalidateSquad(attackerID)
+		}
+		if result.TargetDestroyed {
+			cm.Queries.InvalidateSquad(defenderID)
+		}
+	})
+
+	cm.combatService.RegisterOnMoveComplete(func(squadID ecs.EntityID) {
+		cm.Queries.MarkSquadDirty(squadID)
+	})
+
+	cm.combatService.RegisterOnTurnEnd(func(round int) {
+		cm.Queries.MarkAllSquadsDirty()
+		cm.visualization.UpdateThreatManagers()
+		cm.visualization.UpdateThreatEvaluator(round)
+
+		// Reset spell cast flag for the new turn
+		cm.deps.BattleState.HasCastSpell = false
+	})
+}
+
 func (cm *CombatMode) Enter(fromMode framework.UIMode) error {
 	isComingFromAnimation := fromMode != nil && fromMode.GetModeName() == "combat_animation"
 	shouldInitialize := !isComingFromAnimation
@@ -392,6 +398,13 @@ func (cm *CombatMode) Enter(fromMode framework.UIMode) error {
 
 	if shouldInitialize {
 		cm.logManager.UpdateTextArea(combatLogArea, "=== COMBAT STARTED ===")
+
+		// Reset stale caches from previous combat
+		cm.Queries.ClearSquadCache()
+		cm.visualization.ResetHighlightColors()
+
+		// Re-register callbacks (cleared by previous CleanupCombat)
+		cm.registerCombatCallbacks()
 
 		// Refresh threat manager with newly created factions (must be after SpawnCombatEntities)
 		cm.visualization.RefreshFactions(cm.Queries)

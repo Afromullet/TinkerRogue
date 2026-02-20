@@ -140,3 +140,10 @@ func (sc *SquadInfoCache) InvalidateSquad(squadID ecs.EntityID) {
 	delete(sc.dirtySquads, squadID)
 }
 
+// ClearAll resets the entire cache, removing all entries and dirty flags.
+// Call when: a new combat starts to prevent stale data from previous combats.
+func (sc *SquadInfoCache) ClearAll() {
+	sc.cache = make(map[ecs.EntityID]*SquadInfo)
+	sc.dirtySquads = make(map[ecs.EntityID]bool)
+}
+

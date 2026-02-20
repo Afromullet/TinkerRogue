@@ -196,6 +196,13 @@ func (cvm *CombatVisualizationManager) UpdateThreatVisualization(
 	}
 }
 
+// ResetHighlightColors resets faction highlight colors for a new combat.
+func (cvm *CombatVisualizationManager) ResetHighlightColors() {
+	if cvm.highlightRenderer != nil {
+		cvm.highlightRenderer.ResetFactionColors()
+	}
+}
+
 // ClearAllVisualizations clears all active visualizations
 func (cvm *CombatVisualizationManager) ClearAllVisualizations() {
 	if cvm.threatVisualizer != nil {

@@ -24,9 +24,10 @@ __________________________________________
 - Squad highlight renderer caching breaks things. Does not follow units
 
 - Identify common patterns in teh different combat resolution paths. Garrison, raids, and overworld encounters follow different paths. Consider that we may be able to build upon the reward package. Having a "resolution" package with anything common, including rewards, cleanup, etc
+   * The resolution package already covers some of it, but we need to integrate it more
+   * Same also applies to startin the encounter
 
-- Try to determine if there is anything we can abstract for SetupRaidFactions,spawnGarrisonEncounter, StartGarrisonDefense, StartEncounter, SpawnCombatEntities. Overall,
-encounter_service.go, encounter_setp.go, and raidencounter.go need to be looked at more closely for abstractions
+
 
 - Encounters seem to be too skewed towards ranged threats. Using the threat layer visualization as baseline. Rectify that. 
 
@@ -43,7 +44,7 @@ encounter_service.go, encounter_setp.go, and raidencounter.go need to be looked 
 - Overworld node spawning is far too clustered together. All nodes spawn close to eachother. 
 
 
-- Clear overowlrd encounter reward system. 
+
 
 - Lots of Empty Claude relate directories. See if there are any issues when removing them
 

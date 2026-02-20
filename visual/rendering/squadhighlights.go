@@ -56,6 +56,12 @@ func (shr *SquadHighlightRenderer) GetFactionColor(factionID ecs.EntityID) color
 	return assignedColor
 }
 
+// ResetFactionColors clears the faction-to-color mapping.
+// Call when a new combat starts to prevent color index drift from previous combats.
+func (shr *SquadHighlightRenderer) ResetFactionColors() {
+	shr.factionColors = make(map[ecs.EntityID]color.Color)
+}
+
 // Render draws highlights for all squads
 func (shr *SquadHighlightRenderer) Render(
 	screen *ebiten.Image,

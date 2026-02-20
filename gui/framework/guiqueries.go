@@ -65,6 +65,12 @@ func (gq *GUIQueries) InvalidateSquad(squadID ecs.EntityID) {
 	gq.squadInfoCache.InvalidateSquad(squadID)
 }
 
+// ClearSquadCache resets the entire squad info cache.
+// Call when: a new combat starts to prevent stale data from previous combats.
+func (gq *GUIQueries) ClearSquadCache() {
+	gq.squadInfoCache.ClearAll()
+}
+
 // ===== FACTION QUERIES =====
 
 // FactionInfo encapsulates all faction data needed by UI
