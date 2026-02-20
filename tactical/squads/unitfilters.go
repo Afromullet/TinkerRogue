@@ -22,6 +22,17 @@ func FilterByMaxAttackRange(maxRange int) []UnitTemplate {
 	return filtered
 }
 
+// FilterByMinMovementSpeed returns units with movement speed >= minSpeed
+func FilterByMinMovementSpeed(minSpeed int) []UnitTemplate {
+	var filtered []UnitTemplate
+	for _, unit := range Units {
+		if unit.MovementSpeed >= minSpeed {
+			filtered = append(filtered, unit)
+		}
+	}
+	return filtered
+}
+
 // FilterByAttackType returns units matching the specified attack type
 func FilterByAttackType(attackType AttackType) []UnitTemplate {
 	var filtered []UnitTemplate

@@ -551,6 +551,144 @@
       "attackRange": 3,
       "movementSpeed": 3,
       "statGrowths": { "strength": "E", "dexterity": "B", "magic": "C", "leadership": "B", "armor": "F", "weapon": "C" }
+    },
+    {
+      "name": "Lancer",
+      "imgname": "formicid.png",
+      "attributes": {
+        "strength": 14,
+        "dexterity": 35,
+        "magic": 0,
+        "leadership": 25,
+        "armor": 7,
+        "weapon": 9
+      },
+      "width": 1,
+      "height": 1,
+      "role": "Tank",
+      "attackType": "MeleeColumn",
+      "targetCells": [],
+      "coverValue": 0.3,
+      "coverRange": 1,
+      "requiresActive": true,
+      "attackRange": 2,
+      "movementSpeed": 6,
+      "statGrowths": { "strength": "B", "dexterity": "B", "magic": "F", "leadership": "C", "armor": "B", "weapon": "B" }
+    },
+    {
+      "name": "Dragoon",
+      "imgname": "balrug.png",
+      "attributes": {
+        "strength": 15,
+        "dexterity": 38,
+        "magic": 0,
+        "leadership": 18,
+        "armor": 5,
+        "weapon": 11
+      },
+      "width": 1,
+      "height": 1,
+      "role": "DPS",
+      "attackType": "MeleeRow",
+      "targetCells": [],
+      "coverValue": 0.0,
+      "coverRange": 0,
+      "requiresActive": false,
+      "attackRange": 1,
+      "movementSpeed": 6,
+      "statGrowths": { "strength": "A", "dexterity": "B", "magic": "F", "leadership": "D", "armor": "C", "weapon": "A" }
+    },
+    {
+      "name": "Horse Archer",
+      "imgname": "anaconda.png",
+      "attributes": {
+        "strength": 9,
+        "dexterity": 48,
+        "magic": 0,
+        "leadership": 12,
+        "armor": 3,
+        "weapon": 10
+      },
+      "width": 1,
+      "height": 1,
+      "role": "DPS",
+      "attackType": "Ranged",
+      "targetCells": [],
+      "coverValue": 0.0,
+      "coverRange": 0,
+      "requiresActive": false,
+      "attackRange": 3,
+      "movementSpeed": 6,
+      "statGrowths": { "strength": "D", "dexterity": "A", "magic": "F", "leadership": "D", "armor": "E", "weapon": "A" }
+    },
+    {
+      "name": "Cataphract",
+      "imgname": "starcursed_mass.png",
+      "attributes": {
+        "strength": 16,
+        "dexterity": 28,
+        "magic": 0,
+        "leadership": 30,
+        "armor": 9,
+        "weapon": 8
+      },
+      "width": 1,
+      "height": 1,
+      "role": "Tank",
+      "attackType": "MeleeRow",
+      "targetCells": [],
+      "coverValue": 0.35,
+      "coverRange": 1,
+      "requiresActive": true,
+      "attackRange": 1,
+      "movementSpeed": 6,
+      "statGrowths": { "strength": "A", "dexterity": "C", "magic": "F", "leadership": "B", "armor": "A", "weapon": "B" }
+    },
+    {
+      "name": "Outrider",
+      "imgname": "skeleton_naga.png",
+      "attributes": {
+        "strength": 8,
+        "dexterity": 45,
+        "magic": 5,
+        "leadership": 20,
+        "armor": 3,
+        "weapon": 7
+      },
+      "width": 1,
+      "height": 1,
+      "role": "Support",
+      "attackType": "Ranged",
+      "targetCells": [],
+      "coverValue": 0.1,
+      "coverRange": 1,
+      "requiresActive": false,
+      "attackRange": 3,
+      "movementSpeed": 7,
+      "statGrowths": { "strength": "D", "dexterity": "A", "magic": "D", "leadership": "B", "armor": "D", "weapon": "C" }
+    },
+    {
+      "name": "Hussar",
+      "imgname": "unseen_horror.png",
+      "attributes": {
+        "strength": 11,
+        "dexterity": 52,
+        "magic": 0,
+        "leadership": 10,
+        "armor": 2,
+        "weapon": 10
+      },
+      "width": 1,
+      "height": 1,
+      "role": "DPS",
+      "attackType": "MeleeColumn",
+      "targetCells": [],
+      "coverValue": 0.0,
+      "coverRange": 0,
+      "requiresActive": false,
+      "attackRange": 1,
+      "movementSpeed": 7,
+      "statGrowths": { "strength": "C", "dexterity": "S", "magic": "F", "leadership": "E", "armor": "E", "weapon": "A" }
     }
   ]
 }

@@ -54,6 +54,8 @@ func CreateInitialPlayerSquads(rosterOwnerID ecs.EntityID, unitRosterOwnerID ecs
 		{fmt.Sprintf("%s Magic 2", namePrefix), createMagicSquad},
 		{fmt.Sprintf("%s Mixed 2", namePrefix), createMixedSquad},
 		{fmt.Sprintf("%s Balanced 4", namePrefix), createBalancedSquad},
+		{fmt.Sprintf("%s Cavalry 1", namePrefix), createCavalrySquad},
+		{fmt.Sprintf("%s Cavalry 2", namePrefix), createCavalrySquad},
 	}
 
 	for _, config := range squadConfigs {
@@ -297,6 +299,54 @@ func createMixedSquad(manager *common.EntityManager, squadName string) (ecs.Enti
 		manager,
 		squadName,
 		squads.FormationBalanced,
+		coords.LogicalPosition{X: 0, Y: 0},
+		unitsToCreate,
+	)
+
+	return squadID, nil
+}
+
+// createCavalrySquad creates a squad with fast cavalry units (movementSpeed >= 6)
+func createCavalrySquad(manager *common.EntityManager, squadName string) (ecs.EntityID, error) {
+	// Filter cavalry units by high movement speed
+	cavalryUnits := squads.FilterByMinMovementSpeed(6)
+	if len(cavalryUnits) == 0 {
+		return 0, fmt.Errorf("no cavalry units available (MovementSpeed >= 6)")
+	}
+
+	// Create squad with 4-5 cavalry units
+	unitCount := common.GetRandomBetween(4, 5)
+	unitsToCreate := []squads.UnitTemplate{}
+
+	gridPositions := [][2]int{
+		{0, 0}, // Row 0 - Front left
+		{0, 2}, // Row 0 - Front right
+		{1, 1}, // Row 1 - Middle center
+		{1, 0}, // Row 1 - Middle left
+		{2, 1}, // Row 2 - Back center
+	}
+
+	for i := 0; i < unitCount; i++ {
+		randomIdx := common.RandomInt(len(cavalryUnits))
+		unit := cavalryUnits[randomIdx]
+
+		unit.GridRow = gridPositions[i][0]
+		unit.GridCol = gridPositions[i][1]
+		unit.IsLeader = false
+
+		unitsToCreate = append(unitsToCreate, unit)
+	}
+
+	// Set random leader
+	leaderIndex := common.RandomInt(unitCount)
+	unitsToCreate[leaderIndex].IsLeader = true
+	unitsToCreate[leaderIndex].Attributes.Leadership = 20
+
+	// Create squad at position (0,0) - not deployed
+	squadID := squads.CreateSquadFromTemplate(
+		manager,
+		squadName,
+		squads.FormationOffensive,
 		coords.LogicalPosition{X: 0, Y: 0},
 		unitsToCreate,
 	)

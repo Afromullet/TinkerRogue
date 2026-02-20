@@ -23,9 +23,7 @@ __________________________________________
 
 - Start Random Encounter alwys starts the same encounter
 
-- Identify common patterns in teh different combat resolution paths. Garrison, raids, and overworld encounters follow different paths. Consider that we may be able to build upon the reward package. Having a "resolution" package with anything common, including rewards, cleanup, etc
-   * The resolution package already covers some of it, but we need to integrate it more
-   * Same also applies to startin the encounter
+- Identify common patterns in teh different combat start paths. Garrison, raids, and overworld encounters follow different paths.
 
 
 
@@ -38,8 +36,6 @@ __________________________________________
 
  - System for gaining resources. Whether it's through battle or territory tbd
 
-
-- Need some calvary untis
 
 - Overworld node spawning is far too clustered together. All nodes spawn close to eachother. 
 
