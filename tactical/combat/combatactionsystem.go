@@ -16,6 +16,14 @@ type CombatActionSystem struct {
 
 	// Post-action hook (fired after successful attack)
 	onAttackComplete func(attackerID, defenderID ecs.EntityID, result *squads.CombatResult)
+
+	// Perk hook runners (injected to avoid circular imports with tactical/perks)
+	PerkDamageModRunner         func(attackerID, defenderID ecs.EntityID, mods *squads.DamageModifiers, mgr *common.EntityManager)
+	PerkDefenderDamageModRunner func(attackerID, defenderID ecs.EntityID, mods *squads.DamageModifiers, mgr *common.EntityManager)
+	PerkCoverModRunner          func(attackerID, defenderID ecs.EntityID, cover *squads.CoverBreakdown, mgr *common.EntityManager)
+	PerkTargetOverrideRunner    func(attackerID, defenderSquadID ecs.EntityID, targets []ecs.EntityID, mgr *common.EntityManager) []ecs.EntityID
+	PerkPostDamageRunner        func(attackerID, defenderID ecs.EntityID, damage int, wasKill bool, mgr *common.EntityManager)
+	PerkCounterModRunner        func(defenderID, attackerID ecs.EntityID, mods *squads.DamageModifiers, mgr *common.EntityManager) bool
 }
 
 func NewCombatActionSystem(manager *common.EntityManager, cache *CombatQueryCache) *CombatActionSystem {
@@ -35,6 +43,23 @@ func (cas *CombatActionSystem) SetOnAttackComplete(fn func(ecs.EntityID, ecs.Ent
 	cas.onAttackComplete = fn
 }
 
+// buildCombatHooks creates a CombatHooks struct from the injected perk runners.
+// Returns nil if no perk runners are configured.
+func (cas *CombatActionSystem) buildCombatHooks() *squads.CombatHooks {
+	if cas.PerkDamageModRunner == nil && cas.PerkDefenderDamageModRunner == nil &&
+		cas.PerkCoverModRunner == nil && cas.PerkTargetOverrideRunner == nil &&
+		cas.PerkPostDamageRunner == nil {
+		return nil
+	}
+	return &squads.CombatHooks{
+		DamageModRunner:         cas.PerkDamageModRunner,
+		DefenderDamageModRunner: cas.PerkDefenderDamageModRunner,
+		CoverModRunner:          cas.PerkCoverModRunner,
+		TargetOverrideRunner:    cas.PerkTargetOverrideRunner,
+		PostDamageRunner:        cas.PerkPostDamageRunner,
+	}
+}
+
 func (cas *CombatActionSystem) ExecuteAttackAction(attackerID, defenderID ecs.EntityID) *squads.CombatResult {
 
 	//Validation
@@ -45,6 +70,9 @@ func (cas *CombatActionSystem) ExecuteAttackAction(attackerID, defenderID ecs.En
 			ErrorReason: reason,
 		}
 	}
+
+	// Build perk hooks for this combat
+	hooks := cas.buildCombatHooks()
 
 	// Main Attack calculation
 
@@ -79,8 +107,8 @@ func (cas *CombatActionSystem) ExecuteAttackAction(attackerID, defenderID ecs.En
 		// Get targets for this attacker
 		targetIDs := squads.SelectTargetUnits(attackerUnitID, defenderID, cas.manager)
 
-		// Attack each target
-		attackIndex = squads.ProcessAttackOnTargets(attackerUnitID, targetIDs, result, combatLog, attackIndex, cas.manager)
+		// Attack each target (with perk hooks)
+		attackIndex = squads.ProcessAttackOnTargets(attackerUnitID, defenderID, targetIDs, result, combatLog, attackIndex, cas.manager, hooks)
 	}
 
 	// Counterattack
@@ -106,11 +134,28 @@ func (cas *CombatActionSystem) ExecuteAttackAction(attackerID, defenderID ecs.En
 				}
 			}
 
+			// Build counter modifiers -- hooks can modify these
+			counterModifiers := squads.DamageModifiers{
+				HitPenalty:       20,
+				DamageMultiplier: 0.5,
+				IsCounterattack:  true,
+			}
+
+			// Run perk counter mod hooks (e.g., Riposte, Stone Wall)
+			skipCounter := false
+			if cas.PerkCounterModRunner != nil {
+				skipCounter = cas.PerkCounterModRunner(counterAttackerID, attackerID, &counterModifiers, cas.manager)
+			}
+
+			if skipCounter {
+				continue
+			}
+
 			// Get targets (same targeting logic as normal attacks)
 			targetIDs := squads.SelectTargetUnits(counterAttackerID, attackerID, cas.manager)
 
-			// Counterattack each target with penalties
-			attackIndex = squads.ProcessCounterattackOnTargets(counterAttackerID, targetIDs, result, combatLog, attackIndex, cas.manager)
+			// Counterattack with potentially modified modifiers
+			attackIndex = squads.ProcessCounterattackWithHooks(counterAttackerID, attackerID, targetIDs, result, combatLog, attackIndex, counterModifiers, cas.manager, hooks)
 		}
 	}
 

@@ -132,6 +132,33 @@ func RemoveAllEffects(entityID ecs.EntityID, manager *common.EntityManager) {
 	effectsData.Effects = nil
 }
 
+// RemoveEffectsBySource removes all effects with a given source from an entity,
+// reversing their stat modifiers.
+func RemoveEffectsBySource(entityID ecs.EntityID, source EffectSource, manager *common.EntityManager) {
+	entity := manager.FindEntityByID(entityID)
+	if entity == nil || !entity.HasComponent(ActiveEffectsComponent) {
+		return
+	}
+
+	effectsData := common.GetComponentType[*ActiveEffectsData](entity, ActiveEffectsComponent)
+	attr := common.GetComponentType[*common.Attributes](entity, common.AttributeComponent)
+	if effectsData == nil || attr == nil {
+		return
+	}
+
+	kept := effectsData.Effects[:0]
+	for i := range effectsData.Effects {
+		e := &effectsData.Effects[i]
+		if e.Source == source {
+			reverseModifierFromStat(attr, e.Stat, e.Modifier)
+			fmt.Printf("[EFFECT] Removed %s from entity %d (source: %d)\n", e.Name, entityID, source)
+		} else {
+			kept = append(kept, *e)
+		}
+	}
+	effectsData.Effects = kept
+}
+
 // applyModifierToStat adds a modifier to the corresponding Attributes field.
 func applyModifierToStat(attr *common.Attributes, stat StatType, modifier int) {
 	switch stat {

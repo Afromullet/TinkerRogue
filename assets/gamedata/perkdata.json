@@ -1,0 +1,230 @@
+{
+  "perks": [
+    {
+      "id": "iron_constitution",
+      "name": "Iron Constitution",
+      "description": "+20% max HP",
+      "level": 1,
+      "category": 3,
+      "roleGate": "",
+      "exclusiveWith": [],
+      "unlockCost": 2,
+      "statModifiers": [
+        { "stat": "strength", "percent": 0.2 }
+      ]
+    },
+    {
+      "id": "quick_reflexes",
+      "name": "Quick Reflexes",
+      "description": "+15% dodge chance",
+      "level": 1,
+      "category": 3,
+      "roleGate": "",
+      "exclusiveWith": [],
+      "unlockCost": 2,
+      "statModifiers": [
+        { "stat": "dexterity", "percent": 0.15 }
+      ]
+    },
+    {
+      "id": "precise_strikes",
+      "name": "Precise Strikes",
+      "description": "+10% hit and +10% crit chance",
+      "level": 1,
+      "category": 3,
+      "roleGate": "",
+      "exclusiveWith": [],
+      "unlockCost": 2,
+      "statModifiers": [
+        { "stat": "dexterity", "percent": 0.1 }
+      ]
+    },
+    {
+      "id": "hardened_armor",
+      "name": "Hardened Armor",
+      "description": "+4 armor",
+      "level": 1,
+      "category": 3,
+      "roleGate": "",
+      "exclusiveWith": [],
+      "unlockCost": 2,
+      "statModifiers": [
+        { "stat": "armor", "modifier": 4 }
+      ]
+    },
+    {
+      "id": "arcane_attunement",
+      "name": "Arcane Attunement",
+      "description": "+5 magic",
+      "level": 1,
+      "category": 3,
+      "roleGate": "",
+      "exclusiveWith": [],
+      "unlockCost": 2,
+      "statModifiers": [
+        { "stat": "magic", "modifier": 5 }
+      ]
+    },
+    {
+      "id": "fleet_footed",
+      "name": "Fleet Footed",
+      "description": "+1 movement speed",
+      "level": 1,
+      "category": 3,
+      "roleGate": "",
+      "exclusiveWith": [],
+      "unlockCost": 2,
+      "statModifiers": [
+        { "stat": "movementspeed", "modifier": 1 }
+      ]
+    },
+    {
+      "id": "forced_march",
+      "name": "Forced March",
+      "description": "+1 squad movement speed",
+      "level": 0,
+      "category": 3,
+      "roleGate": "",
+      "exclusiveWith": [],
+      "unlockCost": 2,
+      "statModifiers": [
+        { "stat": "movementspeed", "modifier": 1 }
+      ]
+    },
+    {
+      "id": "riposte",
+      "name": "Riposte",
+      "description": "Counterattacks deal 100% damage instead of 50%",
+      "level": 1,
+      "category": 4,
+      "roleGate": "",
+      "exclusiveWith": ["stone_wall"],
+      "unlockCost": 3,
+      "behaviorId": "riposte"
+    },
+    {
+      "id": "stone_wall",
+      "name": "Stone Wall",
+      "description": "Can't counterattack, but take 30% less damage",
+      "level": 1,
+      "category": 4,
+      "roleGate": "",
+      "exclusiveWith": ["riposte"],
+      "unlockCost": 3,
+      "behaviorId": "stone_wall"
+    },
+    {
+      "id": "berserker",
+      "name": "Berserker",
+      "description": "+30% damage when below 50% HP",
+      "level": 1,
+      "category": 0,
+      "roleGate": "DPS",
+      "exclusiveWith": [],
+      "unlockCost": 3,
+      "behaviorId": "berserker"
+    },
+    {
+      "id": "armor_piercing",
+      "name": "Armor Piercing",
+      "description": "Ignore 50% of target's armor",
+      "level": 1,
+      "category": 0,
+      "roleGate": "",
+      "exclusiveWith": [],
+      "unlockCost": 3,
+      "behaviorId": "armor_piercing"
+    },
+    {
+      "id": "glass_cannon",
+      "name": "Glass Cannon",
+      "description": "+35% damage dealt, +20% damage taken",
+      "level": 0,
+      "category": 0,
+      "roleGate": "",
+      "exclusiveWith": [],
+      "unlockCost": 3,
+      "behaviorId": "glass_cannon",
+      "params": { "damageBonus": 0.35, "damageTakenIncrease": 0.2 }
+    },
+    {
+      "id": "focus_fire",
+      "name": "Focus Fire",
+      "description": "Hit single target at 2x damage instead of row/column",
+      "level": 1,
+      "category": 2,
+      "roleGate": "",
+      "exclusiveWith": ["cleave"],
+      "unlockCost": 3,
+      "behaviorId": "focus_fire"
+    },
+    {
+      "id": "cleave",
+      "name": "Cleave",
+      "description": "Melee row attacks also hit the row behind the target",
+      "level": 1,
+      "category": 2,
+      "roleGate": "",
+      "exclusiveWith": ["focus_fire"],
+      "unlockCost": 3,
+      "behaviorId": "cleave"
+    },
+    {
+      "id": "lifesteal",
+      "name": "Lifesteal",
+      "description": "Heal 25% of damage dealt",
+      "level": 1,
+      "category": 5,
+      "roleGate": "",
+      "exclusiveWith": [],
+      "unlockCost": 3,
+      "behaviorId": "lifesteal",
+      "params": { "healPercent": 0.25 }
+    },
+    {
+      "id": "inspiration",
+      "name": "Inspiration",
+      "description": "On kill: +2 strength to all allies for 2 turns",
+      "level": 1,
+      "category": 5,
+      "roleGate": "",
+      "exclusiveWith": [],
+      "unlockCost": 3,
+      "behaviorId": "inspiration"
+    },
+    {
+      "id": "impale",
+      "name": "Impale",
+      "description": "Melee column attacks ignore cover",
+      "level": 1,
+      "category": 2,
+      "roleGate": "",
+      "exclusiveWith": [],
+      "unlockCost": 3,
+      "behaviorId": "impale"
+    },
+    {
+      "id": "war_medic",
+      "name": "War Medic",
+      "description": "Heals 3 HP to lowest-HP ally each turn",
+      "level": 1,
+      "category": 5,
+      "roleGate": "Support",
+      "exclusiveWith": [],
+      "unlockCost": 3,
+      "behaviorId": "war_medic",
+      "params": { "healAmount": 3 }
+    },
+    {
+      "id": "efficient_casting",
+      "name": "Efficient Casting",
+      "description": "-20% mana cost on all spells",
+      "level": 2,
+      "category": 6,
+      "roleGate": "",
+      "exclusiveWith": ["overcharge"],
+      "unlockCost": 3,
+      "params": { "costReduction": 0.2 }
+    }
+  ]
+}

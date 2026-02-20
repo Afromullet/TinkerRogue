@@ -27,6 +27,7 @@ const (
 	SourceSpell EffectSource = iota
 	SourceAbility
 	SourceItem
+	SourcePerk
 )
 
 // ActiveEffect is a single stat modifier with a duration.

@@ -17,6 +17,17 @@ type DamageModifiers struct {
 	HitPenalty       int
 	DamageMultiplier float64
 	IsCounterattack  bool
+	ArmorReduction   float64 // 0.0=full armor, 0.5=halve, 1.0=ignore
+}
+
+// CombatHooks holds optional callback functions for perk hook integration.
+// These are injected by combatactionsystem.go to avoid circular imports.
+type CombatHooks struct {
+	DamageModRunner         func(attackerID, defenderID ecs.EntityID, mods *DamageModifiers, mgr *common.EntityManager)
+	DefenderDamageModRunner func(attackerID, defenderID ecs.EntityID, mods *DamageModifiers, mgr *common.EntityManager)
+	CoverModRunner          func(attackerID, defenderID ecs.EntityID, cover *CoverBreakdown, mgr *common.EntityManager)
+	TargetOverrideRunner    func(attackerID, defenderSquadID ecs.EntityID, targets []ecs.EntityID, mgr *common.EntityManager) []ecs.EntityID
+	PostDamageRunner        func(attackerID, defenderID ecs.EntityID, damage int, wasKill bool, mgr *common.EntityManager)
 }
 
 // CombatResult - Unified result type for combat operations
@@ -35,11 +46,11 @@ type CombatResult struct {
 	CombatLog    *CombatLog // Contains AttackerSquadName, DefenderSquadName for display
 }
 
-// executeCombatPhase handles the common combat flow for both attacks and counterattacks
-// The attackProcessor function determines whether to use normal or counterattack damage
+// executeCombatPhase handles the common combat flow for both attacks and counterattacks.
+// The attackProcessor function determines whether to use normal or counterattack damage.
 func executeCombatPhase(
 	attackerSquadID, defenderSquadID ecs.EntityID,
-	attackProcessor func(ecs.EntityID, []ecs.EntityID, *CombatResult, *CombatLog, int, *common.EntityManager) int,
+	attackProcessor func(ecs.EntityID, ecs.EntityID, []ecs.EntityID, *CombatResult, *CombatLog, int, *common.EntityManager) int,
 	squadmanager *common.EntityManager,
 ) *CombatResult {
 	result := &CombatResult{
@@ -72,7 +83,7 @@ func executeCombatPhase(
 		targetIDs := SelectTargetUnits(attackerID, defenderSquadID, squadmanager)
 
 		// Process attack using provided processor function
-		attackIndex = attackProcessor(attackerID, targetIDs, result, combatLog, attackIndex, squadmanager)
+		attackIndex = attackProcessor(attackerID, defenderSquadID, targetIDs, result, combatLog, attackIndex, squadmanager)
 	}
 
 	// Apply recorded damage to units (for backward compatibility with tests/simulator)
@@ -85,27 +96,43 @@ func executeCombatPhase(
 	return result
 }
 
-// Only units within their attack range of the target squad can participate
+// ExecuteSquadAttack executes a squad attack. Only units within their attack range can participate.
 func ExecuteSquadAttack(attackerSquadID, defenderSquadID ecs.EntityID, squadmanager *common.EntityManager) *CombatResult {
-	return executeCombatPhase(attackerSquadID, defenderSquadID, ProcessAttackOnTargets, squadmanager)
+	processor := func(attackerID, defSquadID ecs.EntityID, targetIDs []ecs.EntityID, result *CombatResult,
+		log *CombatLog, attackIndex int, manager *common.EntityManager) int {
+		return ProcessAttackOnTargets(attackerID, defSquadID, targetIDs, result, log, attackIndex, manager, nil)
+	}
+	return executeCombatPhase(attackerSquadID, defenderSquadID, processor, squadmanager)
 }
 
-// ExecuteSquadCounterattack executes a counterattack from defender to attacker
-// Counterattacks have reduced damage (50%) and lower hit chance (-20%)
-// Only units within their attack range of the target squad can participate
+// ExecuteSquadCounterattack executes a counterattack from defender to attacker.
+// Counterattacks have reduced damage (50%) and lower hit chance (-20%).
 func ExecuteSquadCounterattack(defenderSquadID, attackerSquadID ecs.EntityID, squadmanager *common.EntityManager) *CombatResult {
-	return executeCombatPhase(defenderSquadID, attackerSquadID, ProcessCounterattackOnTargets, squadmanager)
+	processor := func(attackerID, defSquadID ecs.EntityID, targetIDs []ecs.EntityID, result *CombatResult,
+		log *CombatLog, attackIndex int, manager *common.EntityManager) int {
+		return ProcessCounterattackOnTargets(attackerID, defSquadID, targetIDs, result, log, attackIndex, manager)
+	}
+	return executeCombatPhase(defenderSquadID, attackerSquadID, processor, squadmanager)
 }
 
-// processAttackWithModifiers is the unified attack processing function
-func processAttackWithModifiers(attackerID ecs.EntityID, targetIDs []ecs.EntityID, result *CombatResult,
-	log *CombatLog, attackIndex int, modifiers DamageModifiers, manager *common.EntityManager) int {
+// processAttackWithModifiers is the unified attack processing function.
+// defenderSquadID is needed for target override hooks (e.g., Cleave).
+// hooks is optional (nil = no perk hooks).
+func processAttackWithModifiers(attackerID ecs.EntityID, defenderSquadID ecs.EntityID,
+	targetIDs []ecs.EntityID, result *CombatResult,
+	log *CombatLog, attackIndex int, modifiers DamageModifiers,
+	manager *common.EntityManager, hooks *CombatHooks) int {
+
+	// Run target override hooks (e.g., Focus Fire, Cleave)
+	if hooks != nil && hooks.TargetOverrideRunner != nil {
+		targetIDs = hooks.TargetOverrideRunner(attackerID, defenderSquadID, targetIDs, manager)
+	}
 
 	for _, defenderID := range targetIDs {
 		attackIndex++
 
 		// Calculate damage with modifiers
-		damage, event := calculateDamage(attackerID, defenderID, modifiers, manager)
+		damage, event := calculateDamage(attackerID, defenderID, modifiers, manager, hooks)
 
 		// Add targeting info
 		defenderPos := common.GetComponentTypeByID[*GridPositionData](manager, defenderID, GridPositionComponent)
@@ -124,6 +151,11 @@ func processAttackWithModifiers(attackerID ecs.EntityID, targetIDs []ecs.EntityI
 		// Apply damage
 		recordDamageToUnit(defenderID, damage, result, manager)
 
+		// Run post-damage hooks (e.g., Lifesteal, Inspiration)
+		if hooks != nil && hooks.PostDamageRunner != nil {
+			hooks.PostDamageRunner(attackerID, defenderID, damage, event.WasKilled, manager)
+		}
+
 		// Store event
 		log.AttackEvents = append(log.AttackEvents, *event)
 	}
@@ -131,8 +163,10 @@ func processAttackWithModifiers(attackerID ecs.EntityID, targetIDs []ecs.EntityI
 	return attackIndex
 }
 
-// ProcessCounterattackOnTargets applies counterattack damage with penalties
-func ProcessCounterattackOnTargets(attackerID ecs.EntityID, targetIDs []ecs.EntityID, result *CombatResult,
+// ProcessCounterattackOnTargets applies counterattack damage with penalties.
+// defenderSquadID is the squad being counterattacked (target of the counter).
+func ProcessCounterattackOnTargets(attackerID ecs.EntityID, defenderSquadID ecs.EntityID,
+	targetIDs []ecs.EntityID, result *CombatResult,
 	log *CombatLog, attackIndex int, manager *common.EntityManager) int {
 
 	modifiers := DamageModifiers{
@@ -140,11 +174,21 @@ func ProcessCounterattackOnTargets(attackerID ecs.EntityID, targetIDs []ecs.Enti
 		DamageMultiplier: counterattackDamageMultiplier,
 		IsCounterattack:  true,
 	}
-	return processAttackWithModifiers(attackerID, targetIDs, result, log, attackIndex, modifiers, manager)
+	return processAttackWithModifiers(attackerID, defenderSquadID, targetIDs, result, log, attackIndex, modifiers, manager, nil)
 }
 
-// calculateDamage is the unified damage calculation function with optional modifiers
-func calculateDamage(attackerID, defenderID ecs.EntityID, modifiers DamageModifiers, squadmanager *common.EntityManager) (int, *AttackEvent) {
+// ProcessCounterattackWithHooks applies counterattack damage with perk-modified modifiers.
+func ProcessCounterattackWithHooks(attackerID ecs.EntityID, defenderSquadID ecs.EntityID,
+	targetIDs []ecs.EntityID, result *CombatResult,
+	log *CombatLog, attackIndex int, modifiers DamageModifiers,
+	manager *common.EntityManager, hooks *CombatHooks) int {
+
+	return processAttackWithModifiers(attackerID, defenderSquadID, targetIDs, result, log, attackIndex, modifiers, manager, hooks)
+}
+
+// calculateDamage is the unified damage calculation function with optional modifiers.
+// hooks is optional (nil = no perk hooks).
+func calculateDamage(attackerID, defenderID ecs.EntityID, modifiers DamageModifiers, squadmanager *common.EntityManager, hooks *CombatHooks) (int, *AttackEvent) {
 	attackerAttr := common.GetComponentTypeByID[*common.Attributes](squadmanager, attackerID, common.AttributeComponent)
 	defenderAttr := common.GetComponentTypeByID[*common.Attributes](squadmanager, defenderID, common.AttributeComponent)
 
@@ -228,13 +272,24 @@ func calculateDamage(attackerID, defenderID ecs.EntityID, modifiers DamageModifi
 		}
 	}
 
+	// Run perk damage mod hooks BEFORE multiplier application
+	if hooks != nil && hooks.DamageModRunner != nil {
+		hooks.DamageModRunner(attackerID, defenderID, &modifiers, squadmanager)
+	}
+	if hooks != nil && hooks.DefenderDamageModRunner != nil {
+		hooks.DefenderDamageModRunner(attackerID, defenderID, &modifiers, squadmanager)
+	}
+
 	// Apply damage multiplier
 	baseDamage = int(float64(baseDamage) * modifiers.DamageMultiplier)
 	if baseDamage < 1 {
 		baseDamage = 1
 	}
 
-	// Apply resistance
+	// Apply resistance (with optional armor reduction from perks)
+	if modifiers.ArmorReduction > 0 {
+		resistance = int(float64(resistance) * (1.0 - modifiers.ArmorReduction))
+	}
 	event.ResistanceAmount = resistance
 	totalDamage := baseDamage - resistance
 	if totalDamage < 1 {
@@ -243,6 +298,12 @@ func calculateDamage(attackerID, defenderID ecs.EntityID, modifiers DamageModifi
 
 	// Apply cover
 	coverBreakdown := CalculateCoverBreakdown(defenderID, squadmanager)
+
+	// Run perk cover mod hooks
+	if hooks != nil && hooks.CoverModRunner != nil {
+		hooks.CoverModRunner(attackerID, defenderID, &coverBreakdown, squadmanager)
+	}
+
 	event.CoverReduction = coverBreakdown
 
 	if coverBreakdown.TotalReduction > 0.0 {
@@ -268,7 +329,7 @@ func calculateCounterattackDamage(attackerID, defenderID ecs.EntityID, squadmana
 		DamageMultiplier: counterattackDamageMultiplier,
 		IsCounterattack:  true,
 	}
-	return calculateDamage(attackerID, defenderID, modifiers, squadmanager)
+	return calculateDamage(attackerID, defenderID, modifiers, squadmanager, nil)
 }
 
 // InitializeCombatLog creates the combat log structure with squad information
@@ -420,7 +481,7 @@ func SelectTargetUnits(attackerID, defenderSquadID ecs.EntityID, manager *common
 func selectMeleeRowTargets(attackerID, defenderSquadID ecs.EntityID, manager *common.EntityManager) []ecs.EntityID {
 	// Try each row starting from front (0 → 1 → 2)
 	for row := 0; row <= 2; row++ {
-		targets := getUnitsInRow(defenderSquadID, row, manager)
+		targets := GetUnitsInRow(defenderSquadID, row, manager)
 
 		if len(targets) > 0 {
 			return targets // Return all units in the row
@@ -464,7 +525,7 @@ func selectRangedTargets(attackerID, defenderSquadID ecs.EntityID, manager *comm
 	attackerRow := attackerPos.AnchorRow
 
 	// Try same row as attacker - return ALL units in row
-	targets := getUnitsInRow(defenderSquadID, attackerRow, manager)
+	targets := GetUnitsInRow(defenderSquadID, attackerRow, manager)
 	if len(targets) > 0 {
 		return targets
 	}
@@ -526,8 +587,8 @@ func getUnitsInLine(squadID ecs.EntityID, lineIndex int, isRow bool, manager *co
 	return units
 }
 
-// Helper: Get all ALIVE units in a specific row
-func getUnitsInRow(squadID ecs.EntityID, row int, manager *common.EntityManager) []ecs.EntityID {
+// GetUnitsInRow returns all ALIVE units in a specific row.
+func GetUnitsInRow(squadID ecs.EntityID, row int, manager *common.EntityManager) []ecs.EntityID {
 	return getUnitsInLine(squadID, row, true, manager)
 }
 
@@ -588,15 +649,18 @@ func selectLowestArmorTarget(squadID ecs.EntityID, manager *common.EntityManager
 
 // ProcessAttackOnTargets applies damage to all targets and creates combat events
 // Returns the updated attack index
-func ProcessAttackOnTargets(attackerID ecs.EntityID, targetIDs []ecs.EntityID, result *CombatResult,
-	log *CombatLog, attackIndex int, manager *common.EntityManager) int {
+// ProcessAttackOnTargets applies normal attack damage to all targets.
+// defenderSquadID is needed for target override hooks.
+func ProcessAttackOnTargets(attackerID ecs.EntityID, defenderSquadID ecs.EntityID,
+	targetIDs []ecs.EntityID, result *CombatResult,
+	log *CombatLog, attackIndex int, manager *common.EntityManager, hooks *CombatHooks) int {
 
 	modifiers := DamageModifiers{
 		HitPenalty:       0,
 		DamageMultiplier: 1.0,
 		IsCounterattack:  false,
 	}
-	return processAttackWithModifiers(attackerID, targetIDs, result, log, attackIndex, modifiers, manager)
+	return processAttackWithModifiers(attackerID, defenderSquadID, targetIDs, result, log, attackIndex, modifiers, manager, hooks)
 }
 
 // calculateUnitDamageByID calculates damage using new attribute system and returns detailed event data
@@ -606,7 +670,7 @@ func calculateUnitDamageByID(attackerID, defenderID ecs.EntityID, squadmanager *
 		DamageMultiplier: 1.0,
 		IsCounterattack:  false,
 	}
-	return calculateDamage(attackerID, defenderID, modifiers, squadmanager)
+	return calculateDamage(attackerID, defenderID, modifiers, squadmanager, nil)
 }
 
 // rollHit returns the roll value and whether the attack hit

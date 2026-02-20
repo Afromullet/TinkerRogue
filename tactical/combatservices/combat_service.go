@@ -10,6 +10,7 @@ import (
 	"game_main/tactical/combat"
 	"game_main/tactical/combat/battlelog"
 	"game_main/tactical/effects"
+	"game_main/tactical/perks"
 	"game_main/tactical/squads"
 	"game_main/world/coords"
 
@@ -61,6 +62,14 @@ func NewCombatService(manager *common.EntityManager) *CombatService {
 
 	// Wire up battle recorder to combat action system
 	combatActSystem.SetBattleRecorder(battleRecorder)
+
+	// Wire perk hook runners into combat action system
+	combatActSystem.PerkDamageModRunner = perks.RunDamageModHooks
+	combatActSystem.PerkDefenderDamageModRunner = perks.RunDefenderDamageModHooks
+	combatActSystem.PerkCoverModRunner = perks.RunCoverModHooks
+	combatActSystem.PerkTargetOverrideRunner = perks.RunTargetOverrideHooks
+	combatActSystem.PerkPostDamageRunner = perks.RunPostDamageHooks
+	combatActSystem.PerkCounterModRunner = perks.RunCounterModHooks
 
 	cs := &CombatService{
 		EntityManager:   manager,
@@ -296,6 +305,10 @@ func setupBehaviorDispatch(cs *CombatService, manager *common.EntityManager, cac
 		ctx := &gear.BehaviorContext{Manager: manager, Cache: cache, ChargeTracker: cs.chargeTracker}
 		for _, b := range gear.AllBehaviors() {
 			b.OnPostReset(ctx, factionID, squadIDs)
+		}
+		// Run perk turn-start hooks for each squad in this faction
+		for _, squadID := range squadIDs {
+			perks.RunTurnStartHooks(squadID, manager)
 		}
 	})
 
