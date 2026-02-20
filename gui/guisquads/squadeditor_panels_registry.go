@@ -235,6 +235,10 @@ func init() {
 				Text:    "Make Leader",
 				OnClick: func() { sem.onMakeLeader() },
 			}))
+			unitContent.AddChild(builders.CreateButtonWithConfig(builders.ButtonConfig{
+				Text:    "View Unit",
+				OnClick: func() { sem.onViewUnit() },
+			}))
 
 			result.Container.AddChild(unitContent)
 

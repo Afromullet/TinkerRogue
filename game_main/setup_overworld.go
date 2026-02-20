@@ -12,6 +12,7 @@ import (
 	"game_main/gui/guinodeplacement"
 	"game_main/gui/guioverworld"
 	"game_main/gui/guisquads"
+	"game_main/gui/guiunitview"
 	"game_main/mind/encounter"
 	"game_main/overworld/core"
 	"game_main/overworld/node"
@@ -122,6 +123,7 @@ func registerOverworldModes(coordinator *framework.GameModeCoordinator, manager 
 		guisquads.NewUnitPurchaseMode(manager),
 		guisquads.NewSquadEditorMode(manager),
 		guisquads.NewArtifactMode(manager),
+		guiunitview.NewUnitViewMode(manager),
 	}
 
 	for _, mode := range modes {

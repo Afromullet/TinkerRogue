@@ -3,6 +3,7 @@ package guisquads
 import (
 	"fmt"
 	"game_main/gui/builders"
+	"game_main/gui/guiunitview"
 	"game_main/tactical/squadcommands"
 	"game_main/tactical/squads"
 )
@@ -233,6 +234,24 @@ func (sem *SquadEditorMode) onMakeLeader() {
 	})
 
 	sem.GetEbitenUI().AddWindow(dialog)
+}
+
+// onViewUnit transitions to the unit view mode for the selected unit
+func (sem *SquadEditorMode) onViewUnit() {
+	unitIdentity, ok := sem.getSelectedUnitForAction()
+	if !ok {
+		return
+	}
+
+	mode, exists := sem.ModeManager.GetMode("unit_view")
+	if !exists {
+		sem.SetStatus("Unit view mode not available")
+		return
+	}
+
+	viewMode := mode.(*guiunitview.UnitViewMode)
+	viewMode.SetUnitID(unitIdentity.ID)
+	sem.ModeManager.RequestTransition(mode, "View Unit clicked")
 }
 
 // onRenameSquad prompts for a new name and executes RenameSquadCommand

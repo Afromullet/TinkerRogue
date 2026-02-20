@@ -9,6 +9,7 @@ import (
 	"game_main/gui/guiexploration"
 	"game_main/gui/guiraid"
 	"game_main/gui/guisquads"
+	"game_main/gui/guiunitview"
 	"game_main/mind/encounter"
 	"game_main/mind/raid"
 	"game_main/overworld/core"
@@ -66,6 +67,7 @@ func registerRoguelikeTacticalModes(coordinator *framework.GameModeCoordinator, 
 		guisquads.NewSquadEditorMode(manager),
 		guisquads.NewUnitPurchaseMode(manager),
 		guisquads.NewArtifactMode(manager),
+		guiunitview.NewUnitViewMode(manager),
 		guiexploration.NewExplorationMode(manager),
 		guicombat.NewCombatMode(manager, encounterService),
 		guicombat.NewCombatAnimationMode(manager),
