@@ -87,6 +87,27 @@ func populateTestPerkRegistry() {
 		ID: "war_medic", Name: "War Medic", Level: PerkLevelUnit,
 		BehaviorID: "war_medic", RoleGate: "Support",
 	}
+
+	// Commander perks
+	PerkRegistry["efficient_casting"] = &PerkDefinition{
+		ID: "efficient_casting", Name: "Efficient Casting", Level: PerkLevelCommander,
+		ExclusiveWith: []string{"overcharge"},
+	}
+	PerkRegistry["spell_mastery"] = &PerkDefinition{
+		ID: "spell_mastery", Name: "Spell Mastery", Level: PerkLevelCommander,
+		ExclusiveWith: []string{"potent_enchantment"},
+	}
+	PerkRegistry["overcharge"] = &PerkDefinition{
+		ID: "overcharge", Name: "Overcharge", Level: PerkLevelCommander,
+		ExclusiveWith: []string{"efficient_casting"},
+	}
+	PerkRegistry["lingering_magic"] = &PerkDefinition{
+		ID: "lingering_magic", Name: "Lingering Magic", Level: PerkLevelCommander,
+	}
+	PerkRegistry["potent_enchantment"] = &PerkDefinition{
+		ID: "potent_enchantment", Name: "Potent Enchantment", Level: PerkLevelCommander,
+		ExclusiveWith: []string{"spell_mastery"},
+	}
 }
 
 // createTestSquadWithUnit creates a squad at (0,0) with a single unit.

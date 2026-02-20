@@ -225,6 +225,46 @@
       "exclusiveWith": ["overcharge"],
       "unlockCost": 3,
       "params": { "costReduction": 0.2 }
+    },
+    {
+      "id": "spell_mastery",
+      "name": "Spell Mastery",
+      "description": "+25% spell damage",
+      "level": 2,
+      "category": 6,
+      "roleGate": "",
+      "exclusiveWith": ["potent_enchantment"],
+      "unlockCost": 3
+    },
+    {
+      "id": "overcharge",
+      "name": "Overcharge",
+      "description": "+50% mana cost, +75% spell damage",
+      "level": 2,
+      "category": 6,
+      "roleGate": "",
+      "exclusiveWith": ["efficient_casting"],
+      "unlockCost": 4
+    },
+    {
+      "id": "lingering_magic",
+      "name": "Lingering Magic",
+      "description": "+2 turn duration on buffs and debuffs",
+      "level": 2,
+      "category": 6,
+      "roleGate": "",
+      "exclusiveWith": [],
+      "unlockCost": 3
+    },
+    {
+      "id": "potent_enchantment",
+      "name": "Potent Enchantment",
+      "description": "+50% buff and debuff stat modifier values",
+      "level": 2,
+      "category": 6,
+      "roleGate": "",
+      "exclusiveWith": ["spell_mastery"],
+      "unlockCost": 3
     }
   ]
 }

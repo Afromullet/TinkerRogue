@@ -5,6 +5,7 @@ import (
 	"game_main/common"
 	"game_main/tactical/combat"
 	"game_main/tactical/effects"
+	"game_main/tactical/perks"
 	"game_main/tactical/squads"
 	"game_main/templates"
 
@@ -36,9 +37,12 @@ func ExecuteSpellCast(
 		return result
 	}
 
+	// Apply commander perk cost modifiers
+	actualCost := perks.ModifySpellCost(casterEntityID, spell.ManaCost, manager)
+
 	// Validate mana
-	if mana.CurrentMana < spell.ManaCost {
-		result.ErrorReason = fmt.Sprintf("insufficient mana: have %d, need %d", mana.CurrentMana, spell.ManaCost)
+	if mana.CurrentMana < actualCost {
+		result.ErrorReason = fmt.Sprintf("insufficient mana: have %d, need %d", mana.CurrentMana, actualCost)
 		return result
 	}
 
@@ -49,14 +53,14 @@ func ExecuteSpellCast(
 	}
 
 	// Deduct mana
-	mana.CurrentMana -= spell.ManaCost
+	mana.CurrentMana -= actualCost
 
 	// Apply effect based on spell type
 	switch spell.EffectType {
 	case templates.EffectDamage:
-		applyDamageSpell(spell, targetSquadIDs, result, manager)
+		applyDamageSpell(casterEntityID, spell, targetSquadIDs, result, manager)
 	case templates.EffectBuff, templates.EffectDebuff:
-		applyBuffDebuffSpell(spell, targetSquadIDs, result, manager)
+		applyBuffDebuffSpell(casterEntityID, spell, targetSquadIDs, result, manager)
 	}
 
 	result.Success = true
@@ -65,11 +69,15 @@ func ExecuteSpellCast(
 
 // applyDamageSpell applies damage to all units in target squads.
 func applyDamageSpell(
+	casterID ecs.EntityID,
 	spell *templates.SpellDefinition,
 	targetSquadIDs []ecs.EntityID,
 	result *SpellCastResult,
 	manager *common.EntityManager,
 ) {
+	// Apply commander perk damage modifier
+	spellDamage := perks.ModifySpellDamage(casterID, spell.Damage, manager)
+
 	for _, squadID := range targetSquadIDs {
 		unitIDs := squads.GetUnitIDsInSquad(squadID, manager)
 		squadDamaged := false
@@ -87,7 +95,7 @@ func applyDamageSpell(
 
 			// Calculate damage: spell damage minus unit's magic defense, minimum 1
 			defense := attr.GetMagicDefense()
-			damage := spell.Damage - defense
+			damage := spellDamage - defense
 			if damage < 1 {
 				damage = 1
 			}
@@ -120,21 +128,27 @@ func applyDamageSpell(
 
 // applyBuffDebuffSpell applies stat modifiers to all units in target squads.
 func applyBuffDebuffSpell(
+	casterID ecs.EntityID,
 	spell *templates.SpellDefinition,
 	targetSquadIDs []ecs.EntityID,
 	result *SpellCastResult,
 	manager *common.EntityManager,
 ) {
+	// Apply commander perk duration modifier
+	duration := perks.ModifySpellDuration(casterID, spell.Duration, manager)
+
 	effectsApplied := 0
 	for _, squadID := range targetSquadIDs {
 		unitIDs := squads.GetUnitIDsInSquad(squadID, manager)
 		for _, mod := range spell.StatModifiers {
+			// Apply commander perk modifier value scaling
+			modValue := perks.ModifySpellModifier(casterID, mod.Modifier, manager)
 			effect := effects.ActiveEffect{
 				Name:           spell.Name,
 				Source:         effects.SourceSpell,
 				Stat:           effects.ParseStatType(mod.Stat),
-				Modifier:       mod.Modifier,
-				RemainingTurns: spell.Duration,
+				Modifier:       modValue,
+				RemainingTurns: duration,
 			}
 			effects.ApplyEffectToUnits(unitIDs, effect, manager)
 			effectsApplied++
