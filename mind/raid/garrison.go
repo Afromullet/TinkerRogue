@@ -115,9 +115,9 @@ func InstantiateGarrisonSquad(manager *common.EntityManager, archetype *SquadArc
 	// Build unit templates from archetype
 	var unitTemplates []squads.UnitTemplate
 	for _, au := range archetype.Units {
-		template := squads.GetTemplateByName(au.MonsterName)
+		template := squads.GetTemplateByUnitType(au.MonsterType)
 		if template == nil {
-			fmt.Printf("WARNING: Monster template '%s' not found for archetype '%s'\n", au.MonsterName, archetype.Name)
+			fmt.Printf("WARNING: Monster template '%s' not found for archetype '%s'\n", au.MonsterType, archetype.Name)
 			continue
 		}
 

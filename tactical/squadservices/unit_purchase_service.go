@@ -26,7 +26,7 @@ type PurchaseResult struct {
 	Success        bool
 	Error          string
 	UnitID         ecs.EntityID
-	UnitName       string
+	UnitType       string
 	CostPaid       int
 	RemainingGold  int
 	RosterCount    int
@@ -56,7 +56,7 @@ func (ups *UnitPurchaseService) GetUnitCost(template squads.UnitTemplate) int {
 	// Simple cost formula based on unit name hash
 	// TODO: Add cost field to UnitTemplate or JSON data
 	baseCost := 100
-	for _, c := range template.Name {
+	for _, c := range template.UnitType {
 		baseCost += int(c) % 50
 	}
 	return baseCost
@@ -108,7 +108,7 @@ func (ups *UnitPurchaseService) CanPurchaseUnit(playerID ecs.EntityID, template 
 // PurchaseUnit handles the complete purchase transaction atomically with rollback on failure
 func (ups *UnitPurchaseService) PurchaseUnit(playerID ecs.EntityID, template squads.UnitTemplate) *PurchaseResult {
 	result := &PurchaseResult{
-		UnitName: template.Name,
+		UnitType: template.UnitType,
 	}
 
 	// Validate purchase
@@ -132,7 +132,7 @@ func (ups *UnitPurchaseService) PurchaseUnit(playerID ecs.EntityID, template squ
 	unitID := unitEntity.GetID()
 
 	// Step 2: Add to roster (with rollback on failure)
-	if err := roster.AddUnit(unitID, template.Name); err != nil {
+	if err := roster.AddUnit(unitID, template.UnitType); err != nil {
 		// Rollback: Dispose entity
 		pos := common.GetComponentType[*coords.LogicalPosition](unitEntity, common.PositionComponent)
 		ups.entityManager.CleanDisposeEntity(unitEntity, pos)
@@ -183,18 +183,18 @@ func (ups *UnitPurchaseService) GetPlayerPurchaseInfo(playerID ecs.EntityID) *Pl
 }
 
 // GetUnitOwnedCount returns how many units of a template the player owns
-func (ups *UnitPurchaseService) GetUnitOwnedCount(playerID ecs.EntityID, templateName string) (totalOwned, available int) {
+func (ups *UnitPurchaseService) GetUnitOwnedCount(playerID ecs.EntityID, unitType string) (totalOwned, available int) {
 	roster := squads.GetPlayerRoster(playerID, ups.entityManager)
 	if roster == nil {
 		return 0, 0
 	}
 
-	entry, exists := roster.Units[templateName]
+	entry, exists := roster.Units[unitType]
 	if !exists {
 		return 0, 0
 	}
 
-	available = roster.GetAvailableCount(templateName)
+	available = roster.GetAvailableCount(unitType)
 	return entry.TotalOwned, available
 }
 

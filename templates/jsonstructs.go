@@ -90,7 +90,7 @@ type JSONStatGrowths struct {
 }
 
 type JSONMonster struct {
-	Name       string         `json:"name"`
+	UnitType   string         `json:"unitType"`
 	ImageName  string         `json:"imgname"`
 	Attributes JSONAttributes `json:"attributes"`
 	Width      int            `json:"width"`
@@ -112,7 +112,7 @@ type JSONMonster struct {
 
 func NewJSONMonster(m JSONMonster) JSONMonster {
 	return JSONMonster{
-		Name:       m.Name,
+		UnitType:   m.UnitType,
 		ImageName:  m.ImageName,
 		Attributes: m.Attributes,
 		Width:      m.Width,

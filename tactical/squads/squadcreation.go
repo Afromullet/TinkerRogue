@@ -93,13 +93,13 @@ func AddUnitToSquad(
 	if !CanAddUnitToSquad(squadID, unitCapacityCost, squadmanager) {
 		remaining := GetSquadRemainingCapacity(squadID, squadmanager)
 		return 0, fmt.Errorf("insufficient squad capacity: need %.2f, have %.2f remaining (unit %s costs %.2f)",
-			unitCapacityCost, remaining, unit.Name, unitCapacityCost)
+			unitCapacityCost, remaining, unit.UnitType, unitCapacityCost)
 	}
 
 	// Create unit entity (adds GridPositionComponent with default 0,0)
 	unitEntity, err := CreateUnitEntity(squadmanager, unit)
 	if err != nil {
-		return 0, fmt.Errorf("invalid unit for %s: %w", unit.Name, err)
+		return 0, fmt.Errorf("invalid unit for %s: %w", unit.UnitType, err)
 	}
 
 	// Add SquadMemberComponent to link unit to squad

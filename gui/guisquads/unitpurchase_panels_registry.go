@@ -78,12 +78,12 @@ func init() {
 					if template, ok := e.(*squads.UnitTemplate); ok {
 						totalOwned, available := upm.purchaseService.GetUnitOwnedCount(
 							upm.Context.PlayerData.PlayerEntityID,
-							template.Name,
+							template.UnitType,
 						)
 						if totalOwned > 0 {
-							return fmt.Sprintf("%s (Owned: %d, Available: %d)", template.Name, totalOwned, available)
+							return fmt.Sprintf("%s (Owned: %d, Available: %d)", template.UnitType, totalOwned, available)
 						}
-						return fmt.Sprintf("%s (Owned: 0)", template.Name)
+						return fmt.Sprintf("%s (Owned: 0)", template.UnitType)
 					}
 					return fmt.Sprintf("%v", e)
 				},

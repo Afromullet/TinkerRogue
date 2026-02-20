@@ -19,18 +19,18 @@ func GenerateDuelSuite(pool *UnitPool) []Scenario {
 			placementsA := duelPlacements(unitA)
 			placementsB := duelPlacements(unitB)
 
-			name := fmt.Sprintf("Duel: %s vs %s", unitA.Name, unitB.Name)
+			name := fmt.Sprintf("Duel: %s vs %s", unitA.UnitType, unitB.UnitType)
 
 			bp := ScenarioBlueprint{
 				Name:  name,
 				Suite: "duels",
 				SideA: []SquadBlueprint{{
-					Name:      fmt.Sprintf("%s Squad", unitA.Name),
+					Name:      fmt.Sprintf("%s Squad", unitA.UnitType),
 					Formation: squads.FormationBalanced,
 					Units:     placementsA,
 				}},
 				SideB: []SquadBlueprint{{
-					Name:      fmt.Sprintf("%s Squad", unitB.Name),
+					Name:      fmt.Sprintf("%s Squad", unitB.UnitType),
 					Formation: squads.FormationBalanced,
 					Units:     placementsB,
 				}},
@@ -61,23 +61,23 @@ func duelPlacements(tmpl squads.UnitTemplate) []UnitPlacement {
 	switch {
 	case w <= 1 && h <= 1:
 		return []UnitPlacement{
-			{Name: tmpl.Name, GridRow: 0, GridCol: 1, IsLeader: true},
-			{Name: tmpl.Name, GridRow: 1, GridCol: 1},
-			{Name: tmpl.Name, GridRow: 2, GridCol: 1},
+			{Name: tmpl.UnitType, GridRow: 0, GridCol: 1, IsLeader: true},
+			{Name: tmpl.UnitType, GridRow: 1, GridCol: 1},
+			{Name: tmpl.UnitType, GridRow: 2, GridCol: 1},
 		}
 	case w == 2 && h == 1:
 		return []UnitPlacement{
-			{Name: tmpl.Name, GridRow: 0, GridCol: 0, IsLeader: true},
-			{Name: tmpl.Name, GridRow: 1, GridCol: 0},
-			{Name: tmpl.Name, GridRow: 2, GridCol: 0},
+			{Name: tmpl.UnitType, GridRow: 0, GridCol: 0, IsLeader: true},
+			{Name: tmpl.UnitType, GridRow: 1, GridCol: 0},
+			{Name: tmpl.UnitType, GridRow: 2, GridCol: 0},
 		}
 	case w == 2 && h == 2:
 		return []UnitPlacement{
-			{Name: tmpl.Name, GridRow: 0, GridCol: 0, IsLeader: true},
+			{Name: tmpl.UnitType, GridRow: 0, GridCol: 0, IsLeader: true},
 		}
 	default:
 		return []UnitPlacement{
-			{Name: tmpl.Name, GridRow: 0, GridCol: 0, IsLeader: true},
+			{Name: tmpl.UnitType, GridRow: 0, GridCol: 0, IsLeader: true},
 		}
 	}
 }

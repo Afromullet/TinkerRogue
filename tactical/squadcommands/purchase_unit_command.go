@@ -86,5 +86,5 @@ func (cmd *PurchaseUnitCommand) Undo() error {
 
 // Description returns a human-readable description
 func (cmd *PurchaseUnitCommand) Description() string {
-	return fmt.Sprintf("Purchase %s for %d gold", cmd.unitTemplate.Name, cmd.costPaid)
+	return fmt.Sprintf("Purchase %s for %d gold", cmd.unitTemplate.UnitType, cmd.costPaid)
 }

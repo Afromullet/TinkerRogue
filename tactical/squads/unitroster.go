@@ -12,7 +12,7 @@ var UnitRosterComponent *ecs.Component
 
 // UnitRosterEntry represents a count of units of a specific template
 type UnitRosterEntry struct {
-	TemplateName  string               // Name of the template
+	UnitType      string               // Unit type identifier
 	TotalOwned    int                  // Total number of this unit type owned
 	UnitsInSquads map[ecs.EntityID]int // Map of squadID -> count of units in that squad
 	UnitEntities  []ecs.EntityID       // Individual unit entity IDs for this template
@@ -48,21 +48,21 @@ func (ur *UnitRoster) CanAddUnit() bool {
 
 // AddUnit adds a unit to the roster
 // Returns error if roster is full
-func (ur *UnitRoster) AddUnit(unitEntityID ecs.EntityID, templateName string) error {
+func (ur *UnitRoster) AddUnit(unitEntityID ecs.EntityID, unitType string) error {
 	if !ur.CanAddUnit() {
 		return fmt.Errorf("roster is full: %d/%d units", ur.getTotalUnitCount(), ur.MaxUnits)
 	}
 
 	// Get or create entry for this template
-	entry, exists := ur.Units[templateName]
+	entry, exists := ur.Units[unitType]
 	if !exists {
 		entry = &UnitRosterEntry{
-			TemplateName:  templateName,
+			UnitType:      unitType,
 			TotalOwned:    0,
 			UnitsInSquads: make(map[ecs.EntityID]int),
 			UnitEntities:  make([]ecs.EntityID, 0),
 		}
-		ur.Units[templateName] = entry
+		ur.Units[unitType] = entry
 	}
 
 	entry.TotalOwned++
@@ -96,7 +96,7 @@ func (ur *UnitRoster) RemoveUnit(unitEntityID ecs.EntityID) bool {
 func (ur *UnitRoster) GetAvailableUnits() []*UnitRosterEntry {
 	available := make([]*UnitRosterEntry, 0)
 	for _, entry := range ur.Units {
-		if ur.GetAvailableCount(entry.TemplateName) > 0 {
+		if ur.GetAvailableCount(entry.UnitType) > 0 {
 			available = append(available, entry)
 		}
 	}
@@ -104,8 +104,8 @@ func (ur *UnitRoster) GetAvailableUnits() []*UnitRosterEntry {
 }
 
 // GetAvailableCount returns how many units of a template are available (not in squad)
-func (ur *UnitRoster) GetAvailableCount(templateName string) int {
-	entry, exists := ur.Units[templateName]
+func (ur *UnitRoster) GetAvailableCount(unitType string) int {
+	entry, exists := ur.Units[unitType]
 	if !exists {
 		return 0
 	}
@@ -162,9 +162,9 @@ func (ur *UnitRoster) GetUnitCount() (int, int) {
 
 // GetUnitEntityForTemplate gets an available unit entity ID for placing in squad
 // Returns 0 if no available units of this template
-func (ur *UnitRoster) GetUnitEntityForTemplate(templateName string) ecs.EntityID {
-	entry, exists := ur.Units[templateName]
-	if !exists || ur.GetAvailableCount(templateName) == 0 {
+func (ur *UnitRoster) GetUnitEntityForTemplate(unitType string) ecs.EntityID {
+	entry, exists := ur.Units[unitType]
+	if !exists || ur.GetAvailableCount(unitType) == 0 {
 		return 0
 	}
 
@@ -187,10 +187,10 @@ func GetPlayerRoster(playerID ecs.EntityID, manager *common.EntityManager) *Unit
 // Used to backfill roster with units that were created before roster tracking
 // Returns error if roster is full or unit data is invalid
 func RegisterSquadUnitInRoster(roster *UnitRoster, unitID ecs.EntityID, squadID ecs.EntityID, manager *common.EntityManager) error {
-	nameStr := common.GetEntityName(manager, unitID, "Unknown")
+	unitType := common.GetEntityName(manager, unitID, "Unknown")
 
 	// Add unit to roster (will increment TotalOwned and add to UnitEntities)
-	if err := roster.AddUnit(unitID, nameStr); err != nil {
+	if err := roster.AddUnit(unitID, unitType); err != nil {
 		return fmt.Errorf("failed to add unit to roster: %w", err)
 	}
 

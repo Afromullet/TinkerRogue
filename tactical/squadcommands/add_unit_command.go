@@ -95,7 +95,7 @@ func (c *AddUnitCommand) Execute() error {
 
 	// Create unit template
 	unitTemplate := squads.UnitTemplate{
-		Name:       nameStr,
+		UnitType:   nameStr,
 		GridRow:    c.gridRow,
 		GridCol:    c.gridCol,
 		GridWidth:  1,

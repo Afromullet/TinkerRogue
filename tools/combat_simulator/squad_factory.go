@@ -80,7 +80,7 @@ func createSimSquad(
 		// Headless unit creation (no images) - same base as templates.CreateUnit
 		unitEntity := templates.CreateUnit(
 			*manager,
-			tmpl.Name,
+			tmpl.UnitType,
 			tmpl.Attributes,
 			&coords.LogicalPosition{X: worldPos.X, Y: worldPos.Y},
 		)

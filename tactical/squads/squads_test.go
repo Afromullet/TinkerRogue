@@ -30,7 +30,7 @@ func setupTestManager(t *testing.T) *common.EntityManager {
 // createTestJSONMonster creates a JSONMonster for testing
 func createTestJSONMonster(name string, width, height int, role string) templates.JSONMonster {
 	return templates.JSONMonster{
-		Name:      name,
+		UnitType:  name,
 		ImageName: "test.png", // Not used in tests
 		Attributes: templates.JSONAttributes{
 			Strength:   10, // 40 HP (20 + 10*2), 7 damage (10/2 + 2*2), 6 resistance (10/4 + 2*2)
@@ -53,7 +53,7 @@ func createTestJSONMonster(name string, width, height int, role string) template
 // This allows fitting multiple units in a single squad for visualization testing
 func createLowCostTestMonster(name string, width, height int, role string) templates.JSONMonster {
 	return templates.JSONMonster{
-		Name:      name,
+		UnitType:  name,
 		ImageName: "test.png",
 		Attributes: templates.JSONAttributes{
 			Strength:   1,  // Minimal - only affects HP and damage

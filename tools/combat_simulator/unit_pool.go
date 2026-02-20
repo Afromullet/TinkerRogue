@@ -25,7 +25,7 @@ func NewUnitPool() *UnitPool {
 	copy(pool.All, squads.Units)
 
 	for _, u := range pool.All {
-		pool.ByName[u.Name] = u
+		pool.ByName[u.UnitType] = u
 		pool.ByRole[u.Role] = append(pool.ByRole[u.Role], u)
 		pool.ByAttack[u.AttackType] = append(pool.ByAttack[u.AttackType], u)
 	}

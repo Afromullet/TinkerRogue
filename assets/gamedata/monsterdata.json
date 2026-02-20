@@ -1,7 +1,7 @@
 {
   "monsters": [
     {
-      "name": "Knight",
+      "unitType": "Knight",
       "imgname": "gnoll_sergeant.png",
       "attributes": {
         "strength": 14,
@@ -24,7 +24,7 @@
       "statGrowths": { "strength": "A", "dexterity": "C", "magic": "F", "leadership": "B", "armor": "A", "weapon": "B" }
     },
     {
-      "name": "Paladin",
+      "unitType": "Paladin",
       "imgname": "angel.png",
       "attributes": {
         "strength": 13,
@@ -47,7 +47,7 @@
       "statGrowths": { "strength": "B", "dexterity": "D", "magic": "B", "leadership": "S", "armor": "B", "weapon": "C" }
     },
     {
-      "name": "Fighter",
+      "unitType": "Fighter",
       "imgname": "goblin.png",
       "attributes": {
         "strength": 15,
@@ -70,7 +70,7 @@
       "statGrowths": { "strength": "A", "dexterity": "B", "magic": "F", "leadership": "D", "armor": "B", "weapon": "A" }
     },
     {
-      "name": "Warrior",
+      "unitType": "Warrior",
       "imgname": "fire_giant.png",
       "attributes": {
         "strength": 12,
@@ -93,7 +93,7 @@
       "statGrowths": { "strength": "B", "dexterity": "B", "magic": "F", "leadership": "D", "armor": "C", "weapon": "A" }
     },
     {
-      "name": "Swordsman",
+      "unitType": "Swordsman",
       "imgname": "deep_elf_blademaster.png",
       "attributes": {
         "strength": 12,
@@ -116,7 +116,7 @@
       "statGrowths": { "strength": "C", "dexterity": "S", "magic": "F", "leadership": "E", "armor": "D", "weapon": "A" }
     },
     {
-      "name": "Spearman",
+      "unitType": "Spearman",
       "imgname": "deep_elf_knight.png",
       "attributes": {
         "strength": 13,
@@ -139,7 +139,7 @@
       "statGrowths": { "strength": "B", "dexterity": "C", "magic": "F", "leadership": "C", "armor": "A", "weapon": "B" }
     },
     {
-      "name": "Rogue",
+      "unitType": "Rogue",
       "imgname": "dwarf.png",
       "attributes": {
         "strength": 8,
@@ -162,7 +162,7 @@
       "statGrowths": { "strength": "D", "dexterity": "S", "magic": "F", "leadership": "E", "armor": "E", "weapon": "B" }
     },
     {
-      "name": "Assassin",
+      "unitType": "Assassin",
       "imgname": "stone_giant.png",
       "attributes": {
         "strength": 9,
@@ -185,7 +185,7 @@
       "statGrowths": { "strength": "D", "dexterity": "S", "magic": "F", "leadership": "F", "armor": "E", "weapon": "A" }
     },
     {
-      "name": "Scout",
+      "unitType": "Scout",
       "imgname": "vault_warden.png",
       "attributes": {
         "strength": 7,
@@ -208,7 +208,7 @@
       "statGrowths": { "strength": "D", "dexterity": "A", "magic": "E", "leadership": "B", "armor": "D", "weapon": "C" }
     },
     {
-      "name": "Archer",
+      "unitType": "Archer",
       "imgname": "deep_elf_master_archer.png",
       "attributes": {
         "strength": 11,
@@ -231,7 +231,7 @@
       "statGrowths": { "strength": "D", "dexterity": "A", "magic": "F", "leadership": "D", "armor": "E", "weapon": "A" }
     },
     {
-      "name": "Ranger",
+      "unitType": "Ranger",
       "imgname": "dryad.png",
       "attributes": {
         "strength": 8,
@@ -254,7 +254,7 @@
       "statGrowths": { "strength": "C", "dexterity": "A", "magic": "C", "leadership": "B", "armor": "C", "weapon": "B" }
     },
     {
-      "name": "Crossbowman",
+      "unitType": "Crossbowman",
       "imgname": "ettin.png",
       "attributes": {
         "strength": 10,
@@ -277,7 +277,7 @@
       "statGrowths": { "strength": "C", "dexterity": "B", "magic": "F", "leadership": "D", "armor": "D", "weapon": "A" }
     },
     {
-      "name": "Marksman",
+      "unitType": "Marksman",
       "imgname": "elf.png",
       "attributes": {
         "strength": 7,
@@ -300,7 +300,7 @@
       "statGrowths": { "strength": "D", "dexterity": "S", "magic": "F", "leadership": "E", "armor": "E", "weapon": "A" }
     },
     {
-      "name": "Wizard",
+      "unitType": "Wizard",
       "imgname": "entropy_weaver.png",
       "attributes": {
         "strength": 10,
@@ -323,7 +323,7 @@
       "statGrowths": { "strength": "D", "dexterity": "D", "magic": "S", "leadership": "C", "armor": "E", "weapon": "F" }
     },
     {
-      "name": "Sorcerer",
+      "unitType": "Sorcerer",
       "imgname": "deep_elf_priest.png",
       "attributes": {
         "strength": 11,
@@ -346,7 +346,7 @@
       "statGrowths": { "strength": "D", "dexterity": "C", "magic": "A", "leadership": "C", "armor": "D", "weapon": "E" }
     },
     {
-      "name": "Mage",
+      "unitType": "Mage",
       "imgname": "deep_elf_sorcerer.png",
       "attributes": {
         "strength": 12,
@@ -369,7 +369,7 @@
       "statGrowths": { "strength": "D", "dexterity": "D", "magic": "A", "leadership": "B", "armor": "D", "weapon": "F" }
     },
     {
-      "name": "Cleric",
+      "unitType": "Cleric",
       "imgname": "deep_elf_summoner.png",
       "attributes": {
         "strength": 8,
@@ -392,7 +392,7 @@
       "statGrowths": { "strength": "E", "dexterity": "D", "magic": "A", "leadership": "S", "armor": "C", "weapon": "E" }
     },
     {
-      "name": "Priest",
+      "unitType": "Priest",
       "imgname": "deep_troll_earth_mage.png",
       "attributes": {
         "strength": 6,
@@ -415,7 +415,7 @@
       "statGrowths": { "strength": "E", "dexterity": "D", "magic": "B", "leadership": "S", "armor": "D", "weapon": "E" }
     },
     {
-      "name": "Warlock",
+      "unitType": "Warlock",
       "imgname": "glowing_shapeshifter.png",
       "attributes": {
         "strength": 9,
@@ -438,7 +438,7 @@
       "statGrowths": { "strength": "E", "dexterity": "C", "magic": "S", "leadership": "D", "armor": "E", "weapon": "D" }
     },
     {
-      "name": "Battle Mage",
+      "unitType": "Battle Mage",
       "imgname": "human.png",
       "attributes": {
         "strength": 11,
@@ -461,7 +461,7 @@
       "statGrowths": { "strength": "B", "dexterity": "B", "magic": "B", "leadership": "B", "armor": "C", "weapon": "C" }
     },
     {
-      "name": "Orc Warrior",
+      "unitType": "Orc Warrior",
       "imgname": "siren.png",
       "attributes": {
         "strength": 17,
@@ -484,7 +484,7 @@
       "statGrowths": { "strength": "S", "dexterity": "D", "magic": "F", "leadership": "C", "armor": "A", "weapon": "B" }
     },
     {
-      "name": "Goblin Raider",
+      "unitType": "Goblin Raider",
       "imgname": "orc.png",
       "attributes": {
         "strength": 8,
@@ -507,7 +507,7 @@
       "statGrowths": { "strength": "D", "dexterity": "A", "magic": "F", "leadership": "C", "armor": "E", "weapon": "C" }
     },
     {
-      "name": "Ogre",
+      "unitType": "Ogre",
       "imgname": "orc_high_priest.png",
       "attributes": {
         "strength": 18,
@@ -530,7 +530,7 @@
       "statGrowths": { "strength": "S", "dexterity": "E", "magic": "F", "leadership": "E", "armor": "S", "weapon": "B" }
     },
     {
-      "name": "Skeleton Archer",
+      "unitType": "Skeleton Archer",
       "imgname": "naga_ritualist.png",
       "attributes": {
         "strength": 7,
@@ -553,7 +553,7 @@
       "statGrowths": { "strength": "E", "dexterity": "B", "magic": "C", "leadership": "B", "armor": "F", "weapon": "C" }
     },
     {
-      "name": "Lancer",
+      "unitType": "Lancer",
       "imgname": "formicid.png",
       "attributes": {
         "strength": 14,
@@ -576,7 +576,7 @@
       "statGrowths": { "strength": "B", "dexterity": "B", "magic": "F", "leadership": "C", "armor": "B", "weapon": "B" }
     },
     {
-      "name": "Dragoon",
+      "unitType": "Dragoon",
       "imgname": "balrug.png",
       "attributes": {
         "strength": 15,
@@ -599,7 +599,7 @@
       "statGrowths": { "strength": "A", "dexterity": "B", "magic": "F", "leadership": "D", "armor": "C", "weapon": "A" }
     },
     {
-      "name": "Horse Archer",
+      "unitType": "Horse Archer",
       "imgname": "anaconda.png",
       "attributes": {
         "strength": 9,
@@ -622,7 +622,7 @@
       "statGrowths": { "strength": "D", "dexterity": "A", "magic": "F", "leadership": "D", "armor": "E", "weapon": "A" }
     },
     {
-      "name": "Cataphract",
+      "unitType": "Cataphract",
       "imgname": "starcursed_mass.png",
       "attributes": {
         "strength": 16,
@@ -645,7 +645,7 @@
       "statGrowths": { "strength": "A", "dexterity": "C", "magic": "F", "leadership": "B", "armor": "A", "weapon": "B" }
     },
     {
-      "name": "Outrider",
+      "unitType": "Outrider",
       "imgname": "skeleton_naga.png",
       "attributes": {
         "strength": 8,
@@ -668,7 +668,7 @@
       "statGrowths": { "strength": "D", "dexterity": "A", "magic": "D", "leadership": "B", "armor": "D", "weapon": "C" }
     },
     {
-      "name": "Hussar",
+      "unitType": "Hussar",
       "imgname": "unseen_horror.png",
       "attributes": {
         "strength": 11,

@@ -101,7 +101,7 @@ func (upm *UnitPurchaseMode) updateDetailPanel() {
 	// Use service to get cost
 	cost := upm.purchaseService.GetUnitCost(*upm.selectedTemplate)
 	info := fmt.Sprintf("Unit: %s\nCost: %d Gold\n\nRole: %s\nSize: %dx%d",
-		upm.selectedTemplate.Name,
+		upm.selectedTemplate.UnitType,
 		cost,
 		upm.selectedTemplate.Role.String(),
 		upm.selectedTemplate.GridWidth,

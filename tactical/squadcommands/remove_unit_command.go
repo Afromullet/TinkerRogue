@@ -87,7 +87,7 @@ func (c *RemoveUnitCommand) Execute() error {
 
 	// Save unit template for undo
 	c.unitTemplate = squads.UnitTemplate{
-		Name:       nameStr,
+		UnitType:   nameStr,
 		GridRow:    c.previousGridRow,
 		GridCol:    c.previousGridCol,
 		GridWidth:  gridPos.Width,
@@ -136,7 +136,7 @@ func (c *RemoveUnitCommand) Undo() error {
 	}
 
 	// Register the newly created squad entity in roster
-	err = roster.AddUnit(readdedUnits[0], c.unitTemplate.Name)
+	err = roster.AddUnit(readdedUnits[0], c.unitTemplate.UnitType)
 	if err != nil {
 		return fmt.Errorf("failed to add unit to roster: %w", err)
 	}

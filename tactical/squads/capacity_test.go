@@ -77,7 +77,7 @@ func TestCapacitySystem_EnforceLimitWithoutLeader(t *testing.T) {
 
 	// Create weak units (cost 1.0 each: Strength=3, Weapon=1, Armor=1 → (3+1+1)/5 = 1.0)
 	jsonMonster := templates.JSONMonster{
-		Name:      "Weak Unit",
+		UnitType:  "Weak Unit",
 		ImageName: "test.png",
 		Attributes: templates.JSONAttributes{
 			Strength:   3,
@@ -164,7 +164,7 @@ func TestCapacitySystem_IsSquadOverCapacity(t *testing.T) {
 
 	// Add units up to capacity (6.0 total)
 	jsonMonster := templates.JSONMonster{
-		Name:      "Unit",
+		UnitType:  "Unit",
 		ImageName: "test.png",
 		Attributes: templates.JSONAttributes{
 			Strength:   3,
@@ -235,7 +235,7 @@ func TestCapacitySystem_ComputedCapacityAfterAddingUnit(t *testing.T) {
 
 	// Add a unit
 	jsonMonster := templates.JSONMonster{
-		Name:      "Unit",
+		UnitType:  "Unit",
 		ImageName: "test.png",
 		Attributes: templates.JSONAttributes{
 			Strength:   3,

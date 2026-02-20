@@ -14,7 +14,7 @@ import (
 
 // UnitTemplate defines a unit to be created in a squad
 type UnitTemplate struct {
-	Name         string
+	UnitType     string
 	Attributes   common.Attributes
 	EntityType   templates.EntityType
 	EntityConfig templates.EntityConfig
@@ -41,35 +41,35 @@ type UnitTemplate struct {
 // Creates the Unit entities used in the Squad
 func CreateUnitTemplates(monsterData templates.JSONMonster) (UnitTemplate, error) {
 	// Validate name
-	if monsterData.Name == "" {
-		return UnitTemplate{}, fmt.Errorf("unit name cannot be empty")
+	if monsterData.UnitType == "" {
+		return UnitTemplate{}, fmt.Errorf("unit type cannot be empty")
 	}
 
 	// Validate grid dimensions
 	if monsterData.Width < 1 || monsterData.Width > 3 {
-		return UnitTemplate{}, fmt.Errorf("unit width must be 1-3, got %d for %s", monsterData.Width, monsterData.Name)
+		return UnitTemplate{}, fmt.Errorf("unit width must be 1-3, got %d for %s", monsterData.Width, monsterData.UnitType)
 	}
 
 	if monsterData.Height < 1 || monsterData.Height > 3 {
-		return UnitTemplate{}, fmt.Errorf("unit height must be 1-3, got %d for %s", monsterData.Height, monsterData.Name)
+		return UnitTemplate{}, fmt.Errorf("unit height must be 1-3, got %d for %s", monsterData.Height, monsterData.UnitType)
 	}
 
 	// Validate role
 	role, err := GetRole(monsterData.Role)
 	if err != nil {
-		return UnitTemplate{}, fmt.Errorf("invalid role for %s: %w", monsterData.Name, err)
+		return UnitTemplate{}, fmt.Errorf("invalid role for %s: %w", monsterData.UnitType, err)
 	}
 
 	// Convert attack type string to enum (with fallback to attackRange)
 	attackType, err := GetAttackType(monsterData.AttackType, monsterData.AttackRange)
 	if err != nil {
-		return UnitTemplate{}, fmt.Errorf("invalid attack type for %s: %w", monsterData.Name, err)
+		return UnitTemplate{}, fmt.Errorf("invalid attack type for %s: %w", monsterData.UnitType, err)
 	}
 
 	// Create entity configuration for the unit
 	entityConfig := templates.EntityConfig{
 		Type:      templates.EntityCreature,
-		Name:      monsterData.Name,
+		Name:      monsterData.UnitType,
 		ImagePath: monsterData.ImageName,
 		AssetDir:  "../assets/creatures/",
 		Visible:   true,
@@ -88,7 +88,7 @@ func CreateUnitTemplates(monsterData templates.JSONMonster) (UnitTemplate, error
 	}
 
 	unit := UnitTemplate{
-		Name:           monsterData.Name,
+		UnitType:       monsterData.UnitType,
 		Attributes:     monsterData.Attributes.NewAttributesFromJson(),
 		EntityType:     templates.EntityCreature,
 		EntityConfig:   entityConfig,
@@ -117,7 +117,7 @@ func InitUnitTemplatesFromJSON() error {
 	for _, monster := range templates.MonsterTemplates {
 		unit, err := CreateUnitTemplates(monster)
 		if err != nil {
-			return fmt.Errorf("failed to create unit from %s: %w", monster.Name, err)
+			return fmt.Errorf("failed to create unit from %s: %w", monster.UnitType, err)
 		}
 		Units = append(Units, unit)
 	}
@@ -174,11 +174,11 @@ func GetAttackType(attackTypeString string, attackRange int) (AttackType, error)
 	}
 }
 
-// GetTemplateByName finds a unit template by its name.
-// Returns nil if no template with the given name is found.
-func GetTemplateByName(name string) *UnitTemplate {
+// GetTemplateByUnitType finds a unit template by its unit type.
+// Returns nil if no template with the given unit type is found.
+func GetTemplateByUnitType(unitType string) *UnitTemplate {
 	for i := range Units {
-		if Units[i].Name == name {
+		if Units[i].UnitType == unitType {
 			return &Units[i]
 		}
 	}
@@ -191,23 +191,23 @@ func CreateUnitEntity(squadmanager *common.EntityManager, unit UnitTemplate) (*e
 
 	// Validate grid dimensions
 	if unit.GridWidth < 1 || unit.GridWidth > 3 {
-		return nil, fmt.Errorf("invalid grid width %d for unit %s: must be 1-3", unit.GridWidth, unit.Name)
+		return nil, fmt.Errorf("invalid grid width %d for unit %s: must be 1-3", unit.GridWidth, unit.UnitType)
 	}
 
 	if unit.GridHeight < 1 || unit.GridHeight > 3 {
-		return nil, fmt.Errorf("invalid grid height %d for unit %s: must be 1-3", unit.GridHeight, unit.Name)
+		return nil, fmt.Errorf("invalid grid height %d for unit %s: must be 1-3", unit.GridHeight, unit.UnitType)
 	}
 
 	// Create base unit entity via entitytemplates (delegates base entity creation)
 	unitEntity := templates.CreateUnit(
 		*squadmanager,
-		unit.Name,
+		unit.UnitType,
 		unit.Attributes,
 		nil, // Position defaults to 0,0
 	)
 
 	if unitEntity == nil {
-		return nil, fmt.Errorf("failed to create entity for unit %s", unit.Name)
+		return nil, fmt.Errorf("failed to create entity for unit %s", unit.UnitType)
 	}
 
 	// Add RenderableComponent with unit's sprite image for display on map
@@ -217,7 +217,7 @@ func CreateUnitEntity(squadmanager *common.EntityManager, unit UnitTemplate) (*e
 		img, _, err := ebitenutil.NewImageFromFile(imagePath)
 		if err != nil {
 			// Log warning but continue - unit will exist but won't render visually
-			log.Printf("Warning: Could not load image for unit %s at %s: %v\n", unit.Name, imagePath, err)
+			log.Printf("Warning: Could not load image for unit %s at %s: %v\n", unit.UnitType, imagePath, err)
 		} else {
 			// Add renderable component with the loaded image
 			unitEntity.AddComponent(rendering.RenderableComponent, &rendering.Renderable{

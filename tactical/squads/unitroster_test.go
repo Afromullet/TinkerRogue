@@ -161,7 +161,7 @@ func TestUnitRoster_GetAvailableUnits(t *testing.T) {
 
 	// Verify warrior is not in available list
 	for _, entry := range available {
-		if entry.TemplateName == "Warrior" {
+		if entry.UnitType == "Warrior" {
 			t.Error("Warrior should not be in available list")
 		}
 	}
