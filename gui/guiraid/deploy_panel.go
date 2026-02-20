@@ -15,42 +15,54 @@ import (
 
 // DeployPanel controls the pre-encounter squad deployment interface.
 type DeployPanel struct {
-	mode     *RaidMode
-	room     *raid.RoomData
+	mode *RaidMode
+	room *raid.RoomData
+
+	// Cached widget references (populated once in initWidgets)
+	titleLabel     *widget.Text
+	squadListLabel *widget.Text
+	autoDeployBtn  *widget.Button
+	startBattleBtn *widget.Button
+	backBtn        *widget.Button
 }
 
 // NewDeployPanel creates a new deployment panel controller.
 func NewDeployPanel(mode *RaidMode) *DeployPanel {
 	dp := &DeployPanel{mode: mode}
+	dp.initWidgets()
 	dp.wireButtons()
 	return dp
 }
 
+// initWidgets extracts widget references from the panel registry once.
+func (dp *DeployPanel) initWidgets() {
+	dp.titleLabel = framework.GetPanelWidget[*widget.Text](dp.mode.Panels, RaidPanelDeploy, "titleLabel")
+	dp.squadListLabel = framework.GetPanelWidget[*widget.Text](dp.mode.Panels, RaidPanelDeploy, "squadListLabel")
+	dp.autoDeployBtn = framework.GetPanelWidget[*widget.Button](dp.mode.Panels, RaidPanelDeploy, "autoDeployBtn")
+	dp.startBattleBtn = framework.GetPanelWidget[*widget.Button](dp.mode.Panels, RaidPanelDeploy, "startBattleBtn")
+	dp.backBtn = framework.GetPanelWidget[*widget.Button](dp.mode.Panels, RaidPanelDeploy, "backBtn")
+}
+
 // wireButtons connects button callbacks.
 func (dp *DeployPanel) wireButtons() {
-	panel := dp.mode.Panels.Get(RaidPanelDeploy)
-	if panel == nil {
-		return
-	}
-
-	if btn, ok := panel.Custom["autoDeployBtn"].(*widget.Button); ok {
-		btn.Configure(
+	if dp.autoDeployBtn != nil {
+		dp.autoDeployBtn.Configure(
 			widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
 				dp.autoDeploy()
 			}),
 		)
 	}
 
-	if btn, ok := panel.Custom["startBattleBtn"].(*widget.Button); ok {
-		btn.Configure(
+	if dp.startBattleBtn != nil {
+		dp.startBattleBtn.Configure(
 			widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
 				dp.mode.OnDeployConfirmed()
 			}),
 		)
 	}
 
-	if btn, ok := panel.Custom["backBtn"].(*widget.Button); ok {
-		btn.Configure(
+	if dp.backBtn != nil {
+		dp.backBtn.Configure(
 			widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
 				dp.mode.showPanel(PanelFloorMap)
 			}),
@@ -61,17 +73,13 @@ func (dp *DeployPanel) wireButtons() {
 // Refresh updates the deploy panel with current squad info.
 func (dp *DeployPanel) Refresh(raidState *raid.RaidStateData, room *raid.RoomData) {
 	dp.room = room
-	panel := dp.mode.Panels.Get(RaidPanelDeploy)
-	if panel == nil {
-		return
-	}
 
 	manager := dp.mode.Context.ECSManager
 
 	// Update title
-	if titleLabel, ok := panel.Custom["titleLabel"].(*widget.Text); ok {
+	if dp.titleLabel != nil {
 		garrisonCount := len(room.GarrisonSquadIDs)
-		titleLabel.Label = fmt.Sprintf("Deploy Squads — %s (Room %d) — %d garrison squads",
+		dp.titleLabel.Label = fmt.Sprintf("Deploy Squads — %s (Room %d) — %d garrison squads",
 			room.RoomType, room.NodeID, garrisonCount)
 	}
 
@@ -102,11 +110,11 @@ func (dp *DeployPanel) Refresh(raidState *raid.RaidStateData, room *raid.RoomDat
 		lines = append(lines, line)
 	}
 
-	if squadListLabel, ok := panel.Custom["squadListLabel"].(*widget.Text); ok {
+	if dp.squadListLabel != nil {
 		if len(lines) == 0 {
-			squadListLabel.Label = "  No squads available."
+			dp.squadListLabel.Label = "  No squads available."
 		} else {
-			squadListLabel.Label = strings.Join(lines, "\n")
+			dp.squadListLabel.Label = strings.Join(lines, "\n")
 		}
 	}
 }

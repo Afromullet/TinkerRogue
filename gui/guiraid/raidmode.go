@@ -175,9 +175,9 @@ func (rm *RaidMode) showPanel(panel RaidPanel) {
 	rm.state.CurrentPanel = panel
 
 	// Toggle panel visibility
-	floorContainer := rm.getPanelContainer(RaidPanelFloorMap)
-	deployContainer := rm.getPanelContainer(RaidPanelDeploy)
-	summaryContainer := rm.getPanelContainer(RaidPanelSummary)
+	floorContainer := rm.GetPanelContainer(RaidPanelFloorMap)
+	deployContainer := rm.GetPanelContainer(RaidPanelDeploy)
+	summaryContainer := rm.GetPanelContainer(RaidPanelSummary)
 
 	if floorContainer != nil {
 		floorContainer.GetWidget().Visibility = visibilityFor(panel == PanelFloorMap)
@@ -304,11 +304,10 @@ func (rm *RaidMode) OnSummaryDismissed() {
 	}
 }
 
-// getPanelContainer safely retrieves a panel container from the registry.
-func (rm *RaidMode) getPanelContainer(panelType framework.PanelType) *widget.Container {
-	result := rm.Panels.Get(panelType)
-	if result == nil {
-		return nil
-	}
-	return result.Container
+// Exit clears transient UI state when leaving raid mode.
+func (rm *RaidMode) Exit(toMode framework.UIMode) error {
+	rm.state.SelectedRoomID = 0
+	rm.state.ShowingSummary = false
+	rm.state.SummaryData = nil
+	return nil
 }

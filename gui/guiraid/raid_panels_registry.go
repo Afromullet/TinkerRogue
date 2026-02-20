@@ -3,6 +3,7 @@ package guiraid
 import (
 	"game_main/gui/builders"
 	"game_main/gui/framework"
+	"game_main/gui/specs"
 	"game_main/gui/widgetresources"
 
 	"github.com/ebitenui/ebitenui/widget"
@@ -23,10 +24,10 @@ func init() {
 			bm := mode.(*RaidMode)
 			layout := bm.Layout
 
-			panelWidth := int(float64(layout.ScreenWidth) * 0.8)
-			panelHeight := int(float64(layout.ScreenHeight) * 0.85)
+			panelWidth := int(float64(layout.ScreenWidth) * specs.RaidFloorMapWidth)
+			panelHeight := int(float64(layout.ScreenHeight) * specs.RaidFloorMapHeight)
 
-			result.Container = builders.CreatePanelWithConfig(builders.ContainerConfig{
+			result.Container = builders.CreateStaticPanel(builders.ContainerConfig{
 				MinWidth:   panelWidth,
 				MinHeight:  panelHeight,
 				Background: widgetresources.PanelRes.Image,
@@ -88,10 +89,10 @@ func init() {
 			bm := mode.(*RaidMode)
 			layout := bm.Layout
 
-			panelWidth := int(float64(layout.ScreenWidth) * 0.7)
-			panelHeight := int(float64(layout.ScreenHeight) * 0.75)
+			panelWidth := int(float64(layout.ScreenWidth) * specs.RaidDeployWidth)
+			panelHeight := int(float64(layout.ScreenHeight) * specs.RaidDeployHeight)
 
-			result.Container = builders.CreatePanelWithConfig(builders.ContainerConfig{
+			result.Container = builders.CreateStaticPanel(builders.ContainerConfig{
 				MinWidth:   panelWidth,
 				MinHeight:  panelHeight,
 				Background: widgetresources.PanelRes.Image,
@@ -160,10 +161,10 @@ func init() {
 			bm := mode.(*RaidMode)
 			layout := bm.Layout
 
-			panelWidth := int(float64(layout.ScreenWidth) * 0.6)
-			panelHeight := int(float64(layout.ScreenHeight) * 0.65)
+			panelWidth := int(float64(layout.ScreenWidth) * specs.RaidSummaryWidth)
+			panelHeight := int(float64(layout.ScreenHeight) * specs.RaidSummaryHeight)
 
-			result.Container = builders.CreatePanelWithConfig(builders.ContainerConfig{
+			result.Container = builders.CreateStaticPanel(builders.ContainerConfig{
 				MinWidth:   panelWidth,
 				MinHeight:  panelHeight,
 				Background: widgetresources.PanelRes.Image,

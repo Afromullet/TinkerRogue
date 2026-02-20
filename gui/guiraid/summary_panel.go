@@ -14,24 +14,32 @@ import (
 // SummaryPanel controls the post-encounter summary display.
 type SummaryPanel struct {
 	mode *RaidMode
+
+	// Cached widget references (populated once in initWidgets)
+	titleLabel  *widget.Text
+	summaryText *widget.Text
+	continueBtn *widget.Button
 }
 
 // NewSummaryPanel creates a new summary panel controller.
 func NewSummaryPanel(mode *RaidMode) *SummaryPanel {
 	sp := &SummaryPanel{mode: mode}
+	sp.initWidgets()
 	sp.wireButtons()
 	return sp
 }
 
+// initWidgets extracts widget references from the panel registry once.
+func (sp *SummaryPanel) initWidgets() {
+	sp.titleLabel = framework.GetPanelWidget[*widget.Text](sp.mode.Panels, RaidPanelSummary, "titleLabel")
+	sp.summaryText = framework.GetPanelWidget[*widget.Text](sp.mode.Panels, RaidPanelSummary, "summaryText")
+	sp.continueBtn = framework.GetPanelWidget[*widget.Button](sp.mode.Panels, RaidPanelSummary, "continueBtn")
+}
+
 // wireButtons connects the continue button callback.
 func (sp *SummaryPanel) wireButtons() {
-	panel := sp.mode.Panels.Get(RaidPanelSummary)
-	if panel == nil {
-		return
-	}
-
-	if btn, ok := panel.Custom["continueBtn"].(*widget.Button); ok {
-		btn.Configure(
+	if sp.continueBtn != nil {
+		sp.continueBtn.Configure(
 			widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
 				sp.mode.OnSummaryDismissed()
 			}),
@@ -41,8 +49,7 @@ func (sp *SummaryPanel) wireButtons() {
 
 // Refresh updates the summary panel with encounter results.
 func (sp *SummaryPanel) Refresh(result *raid.RaidEncounterResult) {
-	panel := sp.mode.Panels.Get(RaidPanelSummary)
-	if panel == nil || result == nil {
+	if result == nil {
 		return
 	}
 
@@ -64,8 +71,8 @@ func (sp *SummaryPanel) Refresh(result *raid.RaidEncounterResult) {
 		lines = append(lines, fmt.Sprintf("Reward: %s", result.RewardText))
 	}
 
-	if summaryText, ok := panel.Custom["summaryText"].(*widget.Text); ok {
-		summaryText.Label = strings.Join(lines, "\n")
+	if sp.summaryText != nil {
+		sp.summaryText.Label = strings.Join(lines, "\n")
 	}
 }
 

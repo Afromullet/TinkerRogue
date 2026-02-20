@@ -236,6 +236,21 @@ const (
 	FormationPaletteHeight = 0.7
 )
 
+// RaidModeLayout defines layout constants for raid mode panels
+const (
+	// Floor map panel (main raid view)
+	RaidFloorMapWidth  = 0.8
+	RaidFloorMapHeight = 0.85
+
+	// Deploy panel (pre-encounter squad selection)
+	RaidDeployWidth  = 0.7
+	RaidDeployHeight = 0.75
+
+	// Summary panel (post-encounter results)
+	RaidSummaryWidth  = 0.6
+	RaidSummaryHeight = 0.65
+)
+
 // InfoModeLayout defines layout constants for info display mode
 const (
 	// Main content area

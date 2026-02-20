@@ -20,6 +20,13 @@ __________________________________________
     - Remove Input System
 
 
+
+----
+
+
+- Try to determine if there is anything we can abstract for SetupRaidFactions,spawnGarrisonEncounter, StartGarrisonDefense, StartEncounter, SpawnCombatEntities. Overall,
+encounter_service.go, encounter_setp.go, and raidencounter.go need to be looked at more closely for abstractions
+
 - Make sure AI_ALGORITHM_ARCHITECTURE.md was reaplaced by BEHAVIOR_THREAT_LAYERS.md and ENCOUNTER_SYSTEM.md
 
 - Encounters seem to be too skewed towards ranged threats. Using the threat layer visualization as baseline. Rectify that. 

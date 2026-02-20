@@ -14,26 +14,36 @@ import (
 
 // FloorMapPanel controls the floor map display within the raid mode.
 type FloorMapPanel struct {
-	mode       *RaidMode
+	mode        *RaidMode
 	roomButtons []*widget.Button
+
+	// Cached widget references (populated once in initWidgets)
+	titleLabel    *widget.Text
+	roomListLabel *widget.Text
+	alertLabel    *widget.Text
+	retreatBtn    *widget.Button
 }
 
 // NewFloorMapPanel creates a new floor map panel controller.
 func NewFloorMapPanel(mode *RaidMode) *FloorMapPanel {
 	fp := &FloorMapPanel{mode: mode}
+	fp.initWidgets()
 	fp.wireButtons()
 	return fp
 }
 
+// initWidgets extracts widget references from the panel registry once.
+func (fp *FloorMapPanel) initWidgets() {
+	fp.titleLabel = framework.GetPanelWidget[*widget.Text](fp.mode.Panels, RaidPanelFloorMap, "titleLabel")
+	fp.roomListLabel = framework.GetPanelWidget[*widget.Text](fp.mode.Panels, RaidPanelFloorMap, "roomListLabel")
+	fp.alertLabel = framework.GetPanelWidget[*widget.Text](fp.mode.Panels, RaidPanelFloorMap, "alertLabel")
+	fp.retreatBtn = framework.GetPanelWidget[*widget.Button](fp.mode.Panels, RaidPanelFloorMap, "retreatBtn")
+}
+
 // wireButtons connects the retreat button callback.
 func (fp *FloorMapPanel) wireButtons() {
-	panel := fp.mode.Panels.Get(RaidPanelFloorMap)
-	if panel == nil {
-		return
-	}
-
-	if btn, ok := panel.Custom["retreatBtn"].(*widget.Button); ok {
-		btn.Configure(
+	if fp.retreatBtn != nil {
+		fp.retreatBtn.Configure(
 			widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
 				if fp.mode.raidRunner != nil {
 					if err := fp.mode.raidRunner.Retreat(); err != nil {
@@ -49,28 +59,23 @@ func (fp *FloorMapPanel) wireButtons() {
 
 // Refresh updates the floor map display with current room data.
 func (fp *FloorMapPanel) Refresh(raidState *raid.RaidStateData) {
-	panel := fp.mode.Panels.Get(RaidPanelFloorMap)
-	if panel == nil {
-		return
-	}
-
 	manager := fp.mode.Context.ECSManager
 
 	// Update title
-	if titleLabel, ok := panel.Custom["titleLabel"].(*widget.Text); ok {
-		titleLabel.Label = fmt.Sprintf("Garrison Raid — Floor %d/%d", raidState.CurrentFloor, raidState.TotalFloors)
+	if fp.titleLabel != nil {
+		fp.titleLabel.Label = fmt.Sprintf("Garrison Raid — Floor %d/%d", raidState.CurrentFloor, raidState.TotalFloors)
 	}
 
 	// Update alert level
 	alertData := raid.GetAlertData(manager, raidState.CurrentFloor)
-	if alertLabel, ok := panel.Custom["alertLabel"].(*widget.Text); ok {
+	if fp.alertLabel != nil {
 		if alertData != nil {
 			levelCfg := raid.GetAlertLevel(alertData.CurrentLevel)
 			levelName := "Unknown"
 			if levelCfg != nil {
 				levelName = levelCfg.Name
 			}
-			alertLabel.Label = fmt.Sprintf("Alert Level: %d (%s) | Encounters: %d",
+			fp.alertLabel.Label = fmt.Sprintf("Alert Level: %d (%s) | Encounters: %d",
 				alertData.CurrentLevel, levelName, alertData.EncounterCount)
 		}
 	}
@@ -101,8 +106,8 @@ func (fp *FloorMapPanel) Refresh(raidState *raid.RaidStateData) {
 		lines = append(lines, line)
 	}
 
-	if roomListLabel, ok := panel.Custom["roomListLabel"].(*widget.Text); ok {
-		roomListLabel.Label = strings.Join(lines, "\n")
+	if fp.roomListLabel != nil {
+		fp.roomListLabel.Label = strings.Join(lines, "\n")
 	}
 
 	// Rebuild room buttons for accessible rooms
