@@ -8,7 +8,10 @@ Technical reference for TinkerRogue's encounter generation, combat lifecycle, an
 
 ## Related Documents
 
-- [AI Algorithm Architecture](AI_ALGORITHM_ARCHITECTURE.md) - Core AI controller, power evaluation, and configuration system
+- [AI Algorithm Architecture](AI_ALGORITHM_ARCHITECTURE.md) - Overview, system diagram, performance considerations
+- [AI Controller](AI_CONTROLLER.md) - AI turn orchestration and action scoring
+- [Power Evaluation](POWER_EVALUATION.md) - Power calculation shared by AI threat and encounter generation
+- [AI Configuration](AI_CONFIGURATION.md) - Config files, accessor patterns, tuning guide
 - [Behavior & Threat Layers](BEHAVIOR_THREAT_LAYERS.md) - Threat layer subsystems and spatial analysis
 
 ---

@@ -8,7 +8,10 @@ Technical reference for TinkerRogue's threat layer subsystems, spatial analysis,
 
 ## Related Documents
 
-- [AI Algorithm Architecture](AI_ALGORITHM_ARCHITECTURE.md) - Core AI controller, action selection, power evaluation, and configuration
+- [AI Algorithm Architecture](AI_ALGORITHM_ARCHITECTURE.md) - Overview, system diagram, performance considerations
+- [AI Controller](AI_CONTROLLER.md) - AI turn orchestration and action scoring
+- [Power Evaluation](POWER_EVALUATION.md) - Power calculation algorithms
+- [AI Configuration](AI_CONFIGURATION.md) - Config files, accessor patterns, tuning guide
 - [Encounter System](ENCOUNTER_SYSTEM.md) - Encounter generation, lifecycle, and rewards
 
 ---

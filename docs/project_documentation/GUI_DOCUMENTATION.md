@@ -1,7 +1,7 @@
 # TinkerRogue GUI Documentation
 
-**Version:** 5.0
-**Last Updated:** 2026-02-10
+**Version:** 6.0
+**Last Updated:** 2026-02-19
 
 ---
 
@@ -16,12 +16,14 @@
 7. [Widget System](#widget-system)
 8. [Context State](#context-state)
 9. [Mode Catalog](#mode-catalog)
-10. [Performance Optimization](#performance-optimization)
-11. [Adding New Modes](#adding-new-modes)
-12. [Best Practices](#best-practices)
-13. [Common Patterns](#common-patterns)
-14. [Troubleshooting](#troubleshooting)
-15. [Glossary](#glossary)
+10. [Combat Subsystems](#combat-subsystems)
+11. [Performance Optimization](#performance-optimization)
+12. [Adding New Modes](#adding-new-modes)
+13. [Best Practices](#best-practices)
+14. [Common Patterns](#common-patterns)
+15. [GUI Patterns Reference](#gui-patterns-reference)
+16. [Troubleshooting](#troubleshooting)
+17. [Glossary](#glossary)
 
 ---
 
@@ -44,8 +46,9 @@ TinkerRogue's GUI system is built on a mode-based architecture where each screen
 │ • Squad Management         │ • Combat Animation                 │
 │ • Squad Builder            │ • Inventory                        │
 │ • Squad Editor             │ • Squad Deployment                 │
-│ • Unit Purchase            │                                    │
+│ • Unit Purchase            │ • Raid                             │
 │ • Squad Deployment         │                                    │
+│ • Artifact Manager         │                                    │
 └────────────────────────────┴────────────────────────────────────┘
          │                              │
          └──────────────┬───────────────┘
@@ -317,6 +320,7 @@ gui/
 │   ├── guiqueries.go      # ECS query abstraction (SquadInfo, FactionInfo, SquadFilter)
 │   ├── guiqueries_rendering.go  # Bridges GUIQueries to rendering interfaces
 │   ├── commandhistory.go  # Undo/redo system
+│   ├── submenu.go         # SubMenuController (mutually exclusive sub-menu management)
 │   └── squadinfo_cache.go # Event-driven squad info cache
 │
 ├── builders/              # UI construction helpers
@@ -366,6 +370,10 @@ gui/
 │   ├── squadeditor_refresh.go         # UI refresh logic
 │   ├── squadeditor_movesquad.go       # Squad movement logic
 │   ├── squad_builder_grid_manager.go  # Grid state management
+│   ├── commanderselector.go           # Commander prev/next cycling widget
+│   ├── artifactmode.go                # Artifact inventory/equipment management mode
+│   ├── artifact_panels_registry.go    # Artifact mode panel registrations
+│   ├── artifact_refresh.go            # Artifact mode UI refresh logic
 │   ├── squadmanagement_panels_registry.go
 │   ├── squadbuilder_panels_registry.go
 │   ├── squadeditor_panels_registry.go
@@ -381,13 +389,38 @@ gui/
 │
 ├── guioverworld/          # Overworld strategic mode
 │   ├── overworldmode.go           # Main overworld mode (tick controls, threat engagement, auto-travel)
+│   ├── overworld_deps.go          # Dependency injection struct (OverworldModeDeps)
+│   ├── overworld_action_handler.go # Game-state-changing logic (end turn, move, engage, garrison)
+│   ├── overworld_input_handler.go  # Keyboard/mouse dispatch (keys, clicks, move mode)
+│   ├── overworld_formatters.go    # Text formatting for threat/node info panels
 │   ├── overworld_renderer.go      # Overworld visualization renderer
 │   └── overworld_panels_registry.go # Overworld panel registrations
 │
-└── guinodeplacement/      # Node placement mode
-    ├── nodeplacementmode.go           # Player node placement on overworld map
-    ├── nodeplacement_renderer.go      # Placement preview rendering
-    └── nodeplacement_panels_registry.go # Node placement panel registrations
+├── guinodeplacement/      # Node placement mode
+│   ├── nodeplacementmode.go           # Player node placement on overworld map
+│   ├── nodeplacement_renderer.go      # Placement preview rendering
+│   └── nodeplacement_panels_registry.go # Node placement panel registrations
+│
+├── guiraid/               # Raid mode (garrison raid dungeon crawl)
+│   ├── raidmode.go                # Main raid mode (floor navigation, deploy, summary)
+│   ├── raidstate.go               # UI-only state (RaidUIState, RaidPanel enum)
+│   ├── floormap_panel.go          # Floor map sub-panel controller
+│   ├── deploy_panel.go            # Pre-encounter squad deployment panel
+│   ├── summary_panel.go           # Post-encounter results panel
+│   └── raid_panels_registry.go    # Raid panel registrations
+│
+├── guiartifacts/           # Artifact activation during combat
+│   ├── artifact_handler.go        # Artifact activation workflow (targeting, execution)
+│   ├── artifact_panel.go          # Artifact selection panel controller
+│   └── artifact_deps.go           # Dependency injection struct
+│
+├── guispells/              # Spell casting during combat
+│   ├── spell_handler.go           # Spell casting workflow (targeting, AoE, execution)
+│   ├── spell_panel.go             # Spell selection panel controller
+│   └── spell_deps.go              # Dependency injection struct
+│
+└── guistartmenu/           # Pre-game start menu
+    └── startmenu.go               # Game mode selection (Overworld vs Roguelike)
 ```
 
 ### Key Package Responsibilities
@@ -411,6 +444,14 @@ gui/
 **guioverworld/**: Strategic overworld layer. Manages tick advancement, threat visualization, travel initiation, and encounter engagement.
 
 **guinodeplacement/**: Node placement mode. Allows players to place strategic nodes on the overworld map with validation and preview.
+
+**guiraid/**: Raid mode. Multi-floor garrison raid interface with floor map, deployment, and post-encounter summary sub-panels.
+
+**guiartifacts/**: Artifact activation during combat. Handler + panel controller for selecting and activating artifacts with targeting.
+
+**guispells/**: Spell casting during combat. Handler + panel controller for spell selection, AoE targeting with shape overlay, and execution.
+
+**guistartmenu/**: Pre-game start menu. Self-contained screen for choosing between Overworld and Roguelike modes (does not use UIMode framework).
 
 ---
 
@@ -1529,18 +1570,35 @@ dialog := builders.CreateMessageDialog(
 
 The two-context system (Overworld and BattleMap) maintains separate UI state for each context. This enables seamless transitions between strategic and tactical gameplay.
 
-### BattleMapState
+### TacticalState
 
-UI state for tactical gameplay (exploration, combat, inventory):
+UI state for tactical gameplay (exploration, combat, inventory). Contains ONLY transient UI selection and mode state used during combat. Replaces the former `BattleMapState`.
 
 ```go
-type BattleMapState struct {
-    SelectedSquadID      ecs.EntityID
-    SelectedTargetID     ecs.EntityID
-    InAttackMode         bool
-    InMoveMode           bool
-    ShowHealthBars       bool
+type TacticalState struct {
+    // UI Selection State
+    SelectedSquadID  ecs.EntityID
+    SelectedTargetID ecs.EntityID
+
+    // UI Overlay Flags (purely visual — game logic should NOT check these)
+    InAttackMode   bool
+    InMoveMode     bool
+    ShowHealthBars bool
+
+    // Spell Casting State
+    InSpellMode     bool
+    SelectedSpellID string
+    HasCastSpell    bool   // One spell per turn limit
+
+    // Artifact Activation State
+    InArtifactMode           bool
+    SelectedArtifactBehavior string
+
+    // Encounter Tracking
     TriggeredEncounterID ecs.EntityID
+
+    // Post-Combat Routing
+    PostCombatReturnMode string // Mode to return to after combat ends ("" = exploration)
 }
 ```
 
@@ -1548,45 +1606,63 @@ type BattleMapState struct {
 
 **SelectedTargetID**: Currently targeted enemy squad (in attack mode).
 
-**InAttackMode**: True when player is selecting an attack target.
+**InAttackMode/InMoveMode/ShowHealthBars**: Purely visual overlay flags.
 
-**InMoveMode**: True when player is selecting a movement destination.
+**InSpellMode/SelectedSpellID/HasCastSpell**: Spell casting workflow state. One spell per turn.
 
-**ShowHealthBars**: True to render health bars over units.
+**InArtifactMode/SelectedArtifactBehavior**: Artifact activation workflow state.
 
 **TriggeredEncounterID**: Encounter that triggered combat transition (0 if none).
 
-**Accessing BattleMapState**:
+**PostCombatReturnMode**: Where to return after combat ends (e.g., `"raid"` for raid encounters, `""` for default exploration).
+
+**Accessing TacticalState**:
 
 ```go
-state := mode.Context.ModeCoordinator.GetBattleMapState()
+state := mode.Context.ModeCoordinator.GetTacticalState()
 state.InAttackMode = true
 ```
 
+**Reset**: Call `state.Reset()` to clear all tactical state when starting a new battle.
+
 ### OverworldState
 
-UI state for strategic gameplay (overworld map, threats, tick management):
+UI state for strategic gameplay (overworld map, threats, commander management):
 
 ```go
 type OverworldState struct {
-    CameraX          int
-    CameraY          int
-    SelectedThreatID ecs.EntityID
-    HoveredPosition  *coords.LogicalPosition
-    ShowInfluence    bool
-    IsAutoTraveling  bool
+    CameraX        int
+    CameraY        int
+    SelectedNodeID ecs.EntityID // Currently selected node (threat or friendly)
+
+    ShowInfluence bool
+
+    // Commander UI state
+    SelectedCommanderID ecs.EntityID
+    InMoveMode          bool
+    ValidMoveTiles      []coords.LogicalPosition
 }
 ```
 
 **CameraX/CameraY**: Camera position for overworld map scrolling.
 
-**SelectedThreatID**: Currently selected threat entity (for engagement, info display).
-
-**HoveredPosition**: Mouse-hovered tile position (for placement preview, tooltips).
+**SelectedNodeID**: Currently selected node (threat, settlement, or fortress).
 
 **ShowInfluence**: True to render influence zone visualization.
 
-**IsAutoTraveling**: True when auto-travel mode is active (automated tick advancement).
+**SelectedCommanderID**: Currently selected commander for movement and actions.
+
+**InMoveMode**: True when movement overlay is showing.
+
+**ValidMoveTiles**: Cached valid movement destinations for the selected commander.
+
+**Convenience Methods**:
+
+```go
+state.ExitMoveMode()    // Clears InMoveMode and ValidMoveTiles
+state.ClearSelection()  // Clears SelectedNodeID
+state.HasSelection()    // Returns true if a node is selected
+```
 
 **Accessing OverworldState**:
 
@@ -1708,13 +1784,21 @@ Comprehensive reference for all UI modes in TinkerRogue.
 - `1`, `2`, `3`: Select enemy target (in attack mode)
 - `Ctrl+Z`: Undo last move
 - `Ctrl+Y`: Redo move
+- `Q`: Toggle spell mode (open spell panel / cancel)
+- `1`-`9`: Select spell by index (in spell mode) / Rotate AoE shape
+- `F`: Toggle artifact mode (open artifact panel / cancel)
 - `Ctrl+K`: Kill all enemies (debug)
-- `ESC`: Return to exploration
+- `ESC`: Cancel spell/artifact mode / Return to exploration
+
+**Subsystems** (see [Combat Subsystems](#combat-subsystems)):
+- `SpellCastingHandler` + `SpellPanelController`: Spell selection, targeting, AoE overlay
+- `ArtifactActivationHandler` + `ArtifactPanelController`: Artifact activation, targeting
+- `SubMenuController`: Manages mutual exclusion of spell/artifact panels
 
 **Update Logic**:
 - Manages turn flow (player turn, enemy turn, turn end)
 - Handles attack/move action execution
-- Processes map clicks for targeting/movement
+- Processes map clicks for targeting/movement (including spell/artifact targeting)
 - Updates squad selection and details
 - Formats combat log messages
 - Triggers combat animation mode for attacks
@@ -1841,33 +1925,39 @@ Comprehensive reference for all UI modes in TinkerRogue.
 - Overworld event logging (with export support)
 - Camera scrolling
 
-**Hotkeys**:
-- `Space`: Advance tick (manual)
-- `A`: Toggle auto-travel
+**Hotkeys** (via `OverworldInputHandler`):
+- `Space`/`Enter`: End turn (advance tick, reset commanders)
+- `M`: Toggle movement mode for selected commander
+- `Tab`: Cycle to next commander
 - `I`: Toggle influence zone visualization
-- `E`: Engage selected threat (initiate travel)
-- `C`: Cancel travel
+- `E`: Engage threat at commander's position
+- `G`: Open garrison management dialog
+- `R`: Recruit new commander (at settlement/fortress)
+- `S`: Open squad editor for selected commander
 - `N`: Enter node placement mode
-- `W/S/D/Q/Z`: Movement keys (advance time)
-- `ESC`: Return to BattleMap context
-- Mouse click: Select/deselect threat
+- `ESC`: Exit move mode / Return to BattleMap context
+- Mouse click: Select commander / Select node / Move (in move mode)
 
-**Update Logic**:
-- Handles tick advancement (manual and auto)
-- Processes threat selection from mouse clicks
-- Manages travel state (initiation, cancellation, completion)
-- Updates event log from overworld events
-- Handles camera scrolling
+**Architecture** (Deps + Handler + Input pattern):
+- `OverworldModeDeps`: Shared dependencies struct
+- `OverworldActionHandler`: Game-state-changing logic (end turn, move, engage, garrison, recruit)
+- `OverworldInputHandler`: Keyboard/mouse dispatch
+- `OverworldRenderer`: Visualization (map, nodes, commanders, influence)
 
-**Draw Logic**:
-- Renders overworld map (threats, nodes, influence zones)
-- Draws influence zone overlay (when enabled)
-- Highlights selected threat
-- Shows travel path (when traveling)
-- Renders camera-adjusted entities
+**Key Actions**:
+- `EndTurn()`: Advances tick simulation, resets commanders, handles pending raids
+- `MoveSelectedCommander()`: Moves commander to target position, updates valid tiles
+- `EngageThreat()`: Validates commander co-location with threat, starts combat encounter
+- `HandleRaid()`: Creates garrison defense encounter from pending raid
+- `AssignSquadToGarrison()`/`RemoveSquadFromGarrison()`: Garrison management
+- `RecruitCommander()`: Creates new commander at settlement/fortress (costs gold)
 
 **Key Files**:
 - `overworldmode.go`: Main overworld mode
+- `overworld_deps.go`: Dependency injection struct
+- `overworld_action_handler.go`: Game-state logic
+- `overworld_input_handler.go`: Input dispatch
+- `overworld_formatters.go`: Text formatting for info panels
 - `overworld_renderer.go`: Overworld visualization
 - `overworld_panels_registry.go`: Panel registrations
 
@@ -2090,6 +2180,223 @@ Comprehensive reference for all UI modes in TinkerRogue.
 - Renders game map
 - Highlights valid placement positions
 - Shows cursor preview
+
+---
+
+#### Raid Mode
+
+**File**: `gui/guiraid/raidmode.go`
+
+**Mode Name**: `"raid"`
+
+**Purpose**: Garrison raid interface for multi-floor dungeon crawl encounters. Coordinates floor navigation, squad deployment, and post-encounter summaries via three swappable sub-panels.
+
+**Sub-Panels** (mutually exclusive visibility):
+- `RaidPanelFloorMap` (`"raid_floor_map"`): Room DAG display, alert level, room selection buttons
+- `RaidPanelDeploy` (`"raid_deploy"`): Pre-encounter squad selection and auto-deploy
+- `RaidPanelSummary` (`"raid_summary"`): Post-encounter results display
+
+**UI State** (`RaidUIState`):
+```go
+type RaidUIState struct {
+    SelectedRoomID int
+    CurrentPanel   RaidPanel  // PanelFloorMap | PanelDeploy | PanelSummary
+    ShowingSummary bool
+    SummaryData    *raid.RaidEncounterResult
+}
+```
+
+**Flow**:
+1. Enter raid mode → auto-starts raid if none active → shows floor map
+2. Player selects accessible room → combat rooms show deploy panel, non-combat rooms handled directly
+3. Deploy panel → auto-deploy or manual → starts combat encounter
+4. Combat ends → returns to raid mode → shows summary panel
+5. Dismiss summary → returns to floor map → auto-advances floor if complete
+
+**Sub-Panel Controllers**:
+- `FloorMapPanel`: Room button generation, alert display, keyboard shortcuts (1-9 for rooms)
+- `DeployPanel`: Squad HP/morale display, auto-deploy, start battle (Enter), back (ESC)
+- `SummaryPanel`: Units lost, alert level, rewards, continue (Enter/Space)
+
+**Hotkeys**:
+- `1`-`9`: Quick room selection (floor map panel)
+- `Enter`: Confirm deployment (deploy panel) / Dismiss summary (summary panel)
+- `Space`: Dismiss summary (summary panel)
+- `ESC`: Return to exploration / Back to floor map (deploy panel)
+
+**Key Files**:
+- `raidmode.go`: Main mode, panel switching, raid lifecycle
+- `raidstate.go`: UI state struct
+- `floormap_panel.go`: Floor map sub-panel controller
+- `deploy_panel.go`: Deployment sub-panel controller
+- `summary_panel.go`: Summary sub-panel controller
+- `raid_panels_registry.go`: Panel registrations
+
+---
+
+#### Artifact Manager Mode
+
+**File**: `gui/guisquads/artifactmode.go`
+
+**Mode Name**: `"artifact_manager"`
+
+**Purpose**: Inventory and equipment management for artifacts across squads. Opened from the squad editor via the "Artifacts" button.
+
+**Panels**:
+- `ArtifactPanelSquadSelector` (`"artifact_squad_selector"`): Prev/next squad cycling with counter label
+- `ArtifactPanelContent` (`"artifact_content"`): Tab-switched content with inventory and equipment sub-containers
+
+**Tabs** (mutually exclusive visibility):
+- **Inventory**: All owned artifacts with status (available/equipped), equip button
+- **Equipment**: Artifacts equipped on current squad, unequip button
+
+**Features**:
+- Squad navigation (Left/Right arrows, prev/next buttons)
+- Tab switching (Inventory/Equipment buttons)
+- Artifact details display (tier, stat modifiers, behavior, multi-instance summary)
+- Equip artifact on current squad
+- Unequip artifact from current squad
+- Dynamic list rebuilding via `replaceListInContainer`
+
+**Hotkeys**:
+- `Left Arrow`: Previous squad
+- `Right Arrow`: Next squad
+- `ESC`: Return to squad editor
+
+**Code Organization**:
+- `artifactmode.go`: Lifecycle, navigation, tab switching
+- `artifact_panels_registry.go`: Panel registrations via `init()`
+- `artifact_refresh.go`: UI refresh logic (inventory list, equipment list, detail panels)
+
+---
+
+#### Start Menu
+
+**File**: `gui/guistartmenu/startmenu.go`
+
+**Purpose**: Pre-game mode selection screen. Self-contained UI (does NOT use the UIMode framework — runs before mode system initialization).
+
+**Choices**:
+- `ModeOverworld`: Start overworld strategic mode
+- `ModeRoguelike`: Start roguelike exploration mode
+
+**Usage**:
+```go
+menu := guistartmenu.NewStartMenu()
+// In game loop:
+menu.Update()
+menu.Draw(screen)
+choice := menu.GetSelection() // ModeNone until player clicks
+```
+
+---
+
+## Combat Subsystems
+
+The combat mode delegates specialized functionality to focused handler/panel controller pairs. Each subsystem follows the **Deps + Handler + PanelController** pattern.
+
+### Spell Casting System
+
+**Package**: `gui/guispells/`
+
+**Components**:
+- `SpellCastingDeps`: Dependencies (BattleState, ECSManager, EncounterService, GameMap, PlayerPos, Queries)
+- `SpellCastingHandler`: Spell logic (toggle mode, select spell, targeting, execution, AoE overlay)
+- `SpellPanelController`: Panel UI (list, detail, mana label, cast button, show/hide)
+
+**Workflow**:
+1. Player presses spell hotkey → `SpellPanelController.Toggle()` → shows spell list panel
+2. Player selects spell from list → `OnSpellSelected()` → shows details and cost
+3. Player clicks "Cast" → `OnCastClicked()` → `SpellCastingHandler.SelectSpell()` → enters targeting
+4. **Single target**: Click enemy squad → `HandleSingleTargetClick()` → execute
+5. **AoE**: Mouse moves overlay → `HandleAoETargetingFrame()` → click confirms → `HandleAoEConfirmClick()` → execute
+6. Execution: deduct mana, apply damage, trigger VX, log results, set `HasCastSpell = true`
+
+**AoE Targeting**:
+- Shape follows mouse cursor with tile-colored overlay (purple)
+- Rotate with `1`/`2` keys (`RotateShapeLeft`/`RotateShapeRight`)
+- Gathers all enemy squads in affected tiles on click
+
+**Key State Fields** (in `TacticalState`):
+- `InSpellMode`: Spell list or targeting active
+- `SelectedSpellID`: Spell being targeted
+- `HasCastSpell`: One spell per turn limit
+
+### Artifact Activation System
+
+**Package**: `gui/guiartifacts/`
+
+**Components**:
+- `ArtifactActivationDeps`: Dependencies (BattleState, CombatService, EncounterService, Queries)
+- `ArtifactActivationHandler`: Artifact logic (toggle mode, select artifact, targeting, execution)
+- `ArtifactPanelController`: Panel UI (list, detail, activate button, show/hide)
+
+**Workflow**:
+1. Player presses artifact hotkey → `ArtifactPanelController.Toggle()` → shows artifact list
+2. Player selects artifact → `OnArtifactSelected()` → shows details and charge status
+3. Player clicks "Activate" → `OnActivateClicked()` → `SelectArtifact()`:
+   - `TargetNoTarget`: Execute immediately (e.g., Saboteur's Hourglass)
+   - `TargetFriendlySquad`: Click friendly squad on map
+   - `TargetEnemySquad`: Click enemy squad on map
+4. Map click → `HandleTargetClick()` → validate target type → execute
+5. Execution: activate behavior, log result, invalidate caches
+
+**Target Types**:
+```go
+const (
+    TargetFriendlySquad TargetType = iota
+    TargetEnemySquad
+    TargetNoTarget
+)
+```
+
+**Key State Fields** (in `TacticalState`):
+- `InArtifactMode`: Artifact list or targeting active
+- `SelectedArtifactBehavior`: Artifact behavior being targeted
+
+### SubMenu Controller
+
+**File**: `gui/framework/submenu.go`
+
+Manages mutually exclusive sub-menu visibility. Used by combat mode for spell and artifact panels.
+
+```go
+subMenus := framework.NewSubMenuController()
+subMenus.Register("spell", spellPanelContainer)
+subMenus.Register("artifact", artifactPanelContainer)
+
+// Toggle shows one and hides others
+spellButton.OnClick = subMenus.Toggle("spell")
+
+// Close all
+subMenus.CloseAll()
+```
+
+**Rules**:
+- Only one sub-menu can be open at a time
+- Opening a menu auto-closes any other open menu
+- Toggle: if already open, closes it; if closed, opens it
+
+### Commander Selector
+
+**File**: `gui/guisquads/commanderselector.go`
+
+Reusable widget controller for cycling through commanders with prev/next buttons.
+
+```go
+selector := guisquads.NewCommanderSelector(label, prevBtn, nextBtn)
+selector.Load(playerID, selectedCommanderID, manager)
+
+// Cycle
+selector.Cycle(+1, manager, func(newID ecs.EntityID) {
+    mode.switchCommander(newID)
+})
+
+// Get current
+cmdID := selector.CurrentID()
+```
+
+Automatically disables buttons when only one commander exists.
 
 ---
 
@@ -2870,6 +3177,477 @@ OnCreate: func(result *framework.PanelResult, mode framework.UIMode) error {
 
 ---
 
+## GUI Patterns Reference
+
+This section identifies recurring patterns used across the GUI codebase. Follow these patterns when adding new GUI features or modifying existing ones to ensure consistency.
+
+### Pattern 1: Mode Construction
+
+**When to use**: Every new UI mode.
+
+**Convention**: Modes follow a three-step construction: constructor → ModeBuilder → BuildPanels.
+
+```go
+// Step 1: Constructor — set identity and wire references
+func NewMyMode(modeManager *framework.UIModeManager) *MyMode {
+    m := &MyMode{}
+    m.SetModeName("my_mode")       // String identifier
+    m.SetReturnMode("parent_mode") // ESC target
+    m.ModeManager = modeManager
+    m.SetSelf(m)                   // Required for panel registry callbacks
+    return m
+}
+
+// Step 2: Initialize — ModeBuilder + BuildPanels
+func (m *MyMode) Initialize(ctx *framework.UIContext) error {
+    err := framework.NewModeBuilder(&m.BaseMode, framework.ModeConfig{
+        ModeName:    "my_mode",
+        ReturnMode:  "parent_mode",
+        StatusLabel: true,
+        Hotkeys: []framework.HotkeySpec{
+            {Key: ebiten.KeyI, TargetMode: "inventory"},
+        },
+    }).Build(ctx)
+    if err != nil {
+        return err
+    }
+
+    // Step 3: Build panels from global registry
+    return m.BuildPanels(MyPanelHeader, MyPanelContent)
+}
+```
+
+**Key rules**:
+- Always call `SetSelf(m)` in constructor — panel registry OnCreate callbacks cast mode to concrete type
+- ModeBuilder handles: InitializeBase, hotkey registration, status label, command history
+- BuildPanels adds panels to RootContainer automatically
+
+**Reference**: `gui/guiraid/raidmode.go`, `gui/guisquads/artifactmode.go`
+
+---
+
+### Pattern 2: Panel Registry Registration
+
+**When to use**: Every panel in every mode.
+
+**Convention**: Panels are registered globally in `init()` functions in `*_panels_registry.go` files.
+
+```go
+// File: gui/mypackage/mymode_panels_registry.go
+
+const (
+    MyPanelHeader  framework.PanelType = "my_header"
+    MyPanelContent framework.PanelType = "my_content"
+)
+
+func init() {
+    framework.RegisterPanel(MyPanelHeader, framework.PanelDescriptor{
+        Content: framework.ContentCustom,
+        OnCreate: func(result *framework.PanelResult, mode framework.UIMode) error {
+            bm := mode.(*MyMode)  // Cast to concrete type
+            layout := bm.Layout
+
+            panelWidth := int(float64(layout.ScreenWidth) * specs.PanelWidthStandard)
+            panelHeight := int(float64(layout.ScreenHeight) * specs.PanelHeightSmall)
+
+            result.Container = builders.CreateStaticPanel(builders.ContainerConfig{
+                MinWidth:   panelWidth,
+                MinHeight:  panelHeight,
+                Background: widgetresources.PanelRes.Image,
+                Layout: widget.NewRowLayout(
+                    widget.RowLayoutOpts.Direction(widget.DirectionVertical),
+                ),
+            })
+            result.Container.GetWidget().LayoutData = builders.AnchorCenterStart(10)
+
+            // Store widget references for later access
+            label := builders.CreateLargeLabel("My Mode")
+            result.Container.AddChild(label)
+            result.Custom["titleLabel"] = label
+
+            return nil
+        },
+    })
+}
+```
+
+**Key rules**:
+- One `*_panels_registry.go` per mode
+- PanelType constants use `"package_panel_name"` naming
+- OnCreate casts mode to concrete type for layout access
+- Use `result.Custom` map to store widget references
+- Use `specs.*` constants for sizing, never hardcoded fractions
+
+**Reference**: `gui/guiraid/raid_panels_registry.go`, `gui/guicombat/combat_panels_registry.go`
+
+---
+
+### Pattern 3: Dependency Injection (Deps Struct)
+
+**When to use**: When a handler or subsystem needs multiple dependencies from its parent mode.
+
+**Convention**: Create a `*Deps` struct that bundles only what the subsystem needs.
+
+```go
+// File: gui/mypackage/my_deps.go
+
+type MyHandlerDeps struct {
+    BattleState      *framework.TacticalState
+    ECSManager       *common.EntityManager
+    EncounterService *encounter.EncounterService
+    AddCombatLog     func(string)       // Callback, not direct reference
+    Queries          *framework.GUIQueries
+}
+```
+
+**Key rules**:
+- Deps struct lives in the subsystem's package, not the parent's
+- Include only what the subsystem actually uses — no kitchen-sink deps
+- Use callbacks (`func(string)`) instead of parent references to avoid circular dependencies
+- Create deps in the parent mode's Initialize, pass to handler constructor
+
+**Reference**: `gui/guispells/spell_deps.go`, `gui/guiartifacts/artifact_deps.go`, `gui/guioverworld/overworld_deps.go`
+
+---
+
+### Pattern 4: Handler + Panel Controller Split
+
+**When to use**: Complex combat subsystems (spells, artifacts) or any system that needs both game logic and UI panel management.
+
+**Convention**: Split into Handler (game logic) and PanelController (UI panel).
+
+```go
+// Handler — owns game logic, no widget references
+type SpellCastingHandler struct {
+    deps *SpellCastingDeps
+}
+func (h *SpellCastingHandler) ToggleSpellMode()    { ... }
+func (h *SpellCastingHandler) SelectSpell(id)      { ... }
+func (h *SpellCastingHandler) CancelSpellMode()    { ... }
+func (h *SpellCastingHandler) IsInSpellMode() bool { ... }
+
+// PanelController — owns widgets, delegates logic to Handler
+type SpellPanelController struct {
+    deps       *SpellPanelDeps
+    spellList  *widgets.CachedListWrapper
+    detailArea *widgets.CachedTextAreaWrapper
+    castButton *widget.Button
+}
+func (sp *SpellPanelController) Show()            { ... } // Validate + refresh + show
+func (sp *SpellPanelController) Hide()            { ... }
+func (sp *SpellPanelController) Toggle()          { ... } // Convenience: show/cancel
+func (sp *SpellPanelController) Refresh()         { ... } // Populate list from handler
+func (sp *SpellPanelController) OnCastClicked()   { ... } // Delegate to handler
+func (sp *SpellPanelController) Handler() *SpellCastingHandler { return sp.deps.Handler }
+```
+
+**Key rules**:
+- Handler knows nothing about widgets
+- PanelController delegates all game logic to Handler
+- PanelController.Show() validates preconditions before showing
+- PanelController.Toggle() is the main entry point from hotkeys
+- SetWidgets() called after panel construction to inject widget references
+
+**Reference**: `gui/guispells/spell_handler.go` + `spell_panel.go`, `gui/guiartifacts/artifact_handler.go` + `artifact_panel.go`
+
+---
+
+### Pattern 5: Sub-Panel Controller
+
+**When to use**: Modes with multiple swappable content areas (e.g., raid mode's floor map / deploy / summary).
+
+**Convention**: Each sub-panel gets its own controller struct with `initWidgets`, `wireButtons`, `Refresh`, `HandleInput`, `Render`.
+
+```go
+type FloorMapPanel struct {
+    mode *RaidMode
+
+    // Cached widget references (populated once in initWidgets)
+    titleLabel *widget.Text
+    alertLabel *widget.Text
+    retreatBtn *widget.Button
+}
+
+func NewFloorMapPanel(mode *RaidMode) *FloorMapPanel {
+    fp := &FloorMapPanel{mode: mode}
+    fp.initWidgets()    // Extract widget refs from panel registry
+    fp.wireButtons()    // Connect button callbacks
+    return fp
+}
+
+func (fp *FloorMapPanel) initWidgets() {
+    fp.titleLabel = framework.GetPanelWidget[*widget.Text](
+        fp.mode.Panels, RaidPanelFloorMap, "titleLabel")
+}
+
+func (fp *FloorMapPanel) wireButtons() {
+    if fp.retreatBtn != nil {
+        fp.retreatBtn.Configure(
+            widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+                fp.mode.raidRunner.Retreat()
+            }),
+        )
+    }
+}
+
+func (fp *FloorMapPanel) Refresh(state *raid.RaidStateData) { ... }
+func (fp *FloorMapPanel) HandleInput(inputState *framework.InputState) bool { ... }
+func (fp *FloorMapPanel) Render(screen *ebiten.Image) { ... }
+```
+
+**Key rules**:
+- Sub-panel holds a reference to parent mode (for context, queries, status)
+- `initWidgets()` uses `GetPanelWidget[T]` to extract typed refs once
+- `wireButtons()` connects callbacks using `widget.ButtonOpts.ClickedHandler`
+- Parent mode switches visibility: `container.GetWidget().Visibility = widget.Visibility_Show/Hide_Blocking`
+
+**Reference**: `gui/guiraid/floormap_panel.go`, `gui/guiraid/deploy_panel.go`, `gui/guiraid/summary_panel.go`
+
+---
+
+### Pattern 6: Input Handler Delegation
+
+**When to use**: Modes with complex input handling (overworld, combat).
+
+**Convention**: Extract input handling into a dedicated `*InputHandler` struct.
+
+```go
+type OverworldInputHandler struct {
+    actionHandler *OverworldActionHandler
+    deps          *OverworldModeDeps
+}
+
+func (ih *OverworldInputHandler) HandleInput(inputState *framework.InputState) bool {
+    if inputState.KeysJustPressed[ebiten.KeyEscape] {
+        // Handle ESC
+        return true
+    }
+    if inputState.KeysJustPressed[ebiten.KeyM] {
+        ih.toggleMoveMode()
+        return true
+    }
+    if inputState.MousePressed {
+        return ih.handleMouseClick(inputState)
+    }
+    return false
+}
+```
+
+**Key rules**:
+- InputHandler reads input, delegates actions to ActionHandler
+- InputHandler never modifies game state directly — always through ActionHandler
+- HandleInput returns `true` if input was consumed
+- Process `KeysJustPressed` for single-fire actions, `KeysPressed` for held actions
+- Always call `HandleCommonInput()` first in the parent mode's HandleInput
+
+**Reference**: `gui/guioverworld/overworld_input_handler.go`, `gui/guicombat/combat_input_handler.go`
+
+---
+
+### Pattern 7: Action Handler Delegation
+
+**When to use**: Modes with complex game-state-changing logic (overworld, combat).
+
+**Convention**: Extract game-state mutations into a dedicated `*ActionHandler` struct.
+
+```go
+type OverworldActionHandler struct {
+    deps *OverworldModeDeps
+}
+
+func (ah *OverworldActionHandler) EndTurn() {
+    result, err := commander.EndTurn(ah.deps.Manager, ah.deps.PlayerData)
+    if err != nil {
+        ah.deps.LogEvent(fmt.Sprintf("ERROR: %v", err))
+        return
+    }
+    ah.deps.LogEvent(fmt.Sprintf("Tick advanced to %d", tickState.CurrentTick))
+    ah.deps.RefreshPanels()
+}
+```
+
+**Key rules**:
+- ActionHandler contains all game-state-changing logic
+- Uses `deps.LogEvent()` callback for status messages (not direct UI access)
+- Uses `deps.RefreshPanels()` callback to trigger UI updates after state change
+- Never reads widget state — only writes through callbacks
+
+**Reference**: `gui/guioverworld/overworld_action_handler.go`, `gui/guicombat/combat_action_handler.go`
+
+---
+
+### Pattern 8: Tab Switching via Container Visibility
+
+**When to use**: Modes with multiple content tabs sharing the same panel space.
+
+**Convention**: Create sub-containers for each tab, toggle visibility.
+
+```go
+// In mode struct
+type ArtifactMode struct {
+    framework.BaseMode
+    activeTab        string
+    inventoryContent *widget.Container
+    equipmentContent *widget.Container
+}
+
+// Switch tabs
+func (am *ArtifactMode) switchTab(tabName string) {
+    am.activeTab = tabName
+
+    am.inventoryContent.GetWidget().Visibility = widget.Visibility_Hide
+    am.equipmentContent.GetWidget().Visibility = widget.Visibility_Hide
+
+    switch tabName {
+    case "inventory":
+        am.inventoryContent.GetWidget().Visibility = widget.Visibility_Show
+        am.refreshInventory()
+    case "equipment":
+        am.equipmentContent.GetWidget().Visibility = widget.Visibility_Show
+        am.refreshEquipment()
+    }
+}
+```
+
+**Key rules**:
+- Use `Visibility_Hide` (not `Visibility_Hide_Blocking`) for tabs that should still allow input passthrough
+- Use `Visibility_Hide_Blocking` for panels that should block input when hidden
+- Always refresh the tab content when switching to it
+- Store active tab name for conditional refresh in Enter()
+
+**Reference**: `gui/guisquads/artifactmode.go` (switchTab)
+
+---
+
+### Pattern 9: Widget Reference Extraction
+
+**When to use**: After BuildPanels completes, to get typed access to widgets stored in `result.Custom`.
+
+**Convention**: Use `GetPanelWidget[T]` for type-safe extraction.
+
+```go
+// In panel registration (store):
+result.Custom["titleLabel"] = builders.CreateLargeLabel("Title")
+result.Custom["squadList"] = cachedList
+result.Custom["detailArea"] = cachedTextArea
+
+// In mode's initializeWidgetReferences (extract):
+func (m *MyMode) initializeWidgetReferences() {
+    m.titleLabel = framework.GetPanelWidget[*widget.Text](
+        m.Panels, MyPanelHeader, "titleLabel")
+    m.squadList = framework.GetPanelWidget[*widgets.CachedListWrapper](
+        m.Panels, MyPanelContent, "squadList")
+    m.detailArea = framework.GetPanelWidget[*widgets.CachedTextAreaWrapper](
+        m.Panels, MyPanelContent, "detailArea")
+}
+```
+
+**Key rules**:
+- Store widgets in `result.Custom` map during OnCreate with descriptive string keys
+- Extract once in Initialize (or a dedicated `initializeWidgetReferences` method)
+- Use generic `GetPanelWidget[T]` — returns zero value if not found (nil for pointers)
+- Nil-check before use — panel registration might fail
+
+**Reference**: `gui/guisquads/artifactmode.go` (initializeWidgetReferences), `gui/guiraid/floormap_panel.go` (initWidgets)
+
+---
+
+### Pattern 10: Refresh Cascade
+
+**When to use**: Modes that need to update multiple panels when state changes.
+
+**Convention**: Chain refreshes from a single entry point.
+
+```go
+// Entry point — called from Enter() and after navigation
+func (am *ArtifactMode) refreshAllUI() {
+    am.updateSquadCounter()
+    am.refreshActiveTab()
+}
+
+// Dispatches to the active tab
+func (am *ArtifactMode) refreshActiveTab() {
+    switch am.activeTab {
+    case "inventory":
+        am.refreshInventory()
+    case "equipment":
+        am.refreshEquipment()
+    }
+}
+
+// In Enter():
+func (am *ArtifactMode) Enter(fromMode framework.UIMode) error {
+    am.syncSquadOrderFromRoster()
+    am.refreshAllUI()
+    return nil
+}
+```
+
+**Key rules**:
+- Always refresh in `Enter()`, not `Update()`
+- Refresh on user action (selection, tab switch, cycle), not every frame
+- Use callback pattern (`deps.RefreshPanels`) for cross-handler refresh
+- Invalidate relevant caches before refresh if game state was modified
+
+**Reference**: `gui/guisquads/artifact_refresh.go`, `gui/guioverworld/overworld_action_handler.go` (deps.RefreshPanels)
+
+---
+
+### Pattern 11: Cycling Navigation
+
+**When to use**: Navigating through a list of items (squads, commanders) with prev/next.
+
+**Convention**: Modular index cycling with wrap-around.
+
+```go
+func (am *ArtifactMode) cycleSquad(delta int) {
+    if len(am.allSquadIDs) == 0 {
+        return
+    }
+    am.currentSquadIndex = (am.currentSquadIndex + delta + len(am.allSquadIDs)) % len(am.allSquadIDs)
+    am.updateSquadCounter()
+    am.refreshActiveTab()
+}
+```
+
+For reusable cycling, use `CommanderSelector`:
+
+```go
+selector := guisquads.NewCommanderSelector(label, prevBtn, nextBtn)
+selector.Load(playerID, selectedID, manager)
+selector.Cycle(+1, manager, func(newID ecs.EntityID) {
+    mode.onCommanderChanged(newID)
+})
+```
+
+**Key rules**:
+- Wrap-around using `(index + delta + len) % len`
+- Guard against empty lists
+- Update counter label and refresh content after cycling
+- Disable prev/next buttons when only one item exists
+
+**Reference**: `gui/guisquads/commanderselector.go`, `gui/guisquads/artifactmode.go` (cycleSquad)
+
+---
+
+### Pattern Summary Table
+
+| Pattern | When to Use | Key Files |
+|---------|-------------|-----------|
+| Mode Construction | Every new mode | `raidmode.go`, `artifactmode.go` |
+| Panel Registry | Every panel | `*_panels_registry.go` files |
+| Dependency Injection | Subsystem needs multiple deps | `*_deps.go` files |
+| Handler + PanelController | Complex subsystems | `spell_handler.go` + `spell_panel.go` |
+| Sub-Panel Controller | Swappable content areas | `floormap_panel.go`, `deploy_panel.go` |
+| Input Handler Delegation | Complex input | `overworld_input_handler.go` |
+| Action Handler Delegation | Complex state mutations | `overworld_action_handler.go` |
+| Tab Switching | Multiple tabs | `artifactmode.go` (switchTab) |
+| Widget Reference Extraction | Access panel widgets | `initializeWidgetReferences()` |
+| Refresh Cascade | Multi-panel refresh | `artifact_refresh.go` |
+| Cycling Navigation | Prev/next navigation | `commanderselector.go` |
+
+---
+
 ## Troubleshooting
 
 ### Panel Not Appearing
@@ -3038,6 +3816,24 @@ OnCreate: func(result *framework.PanelResult, mode framework.UIMode) error {
 **UIModeManager**: Manages mode lifecycle and transitions within a context.
 
 **Widget**: ebitenui UI element (button, text, list, container, etc.).
+
+---
+
+**ActionHandler**: Struct containing game-state-changing logic, separated from input handling. Pattern from combat and overworld modes.
+
+**ArtifactActivationHandler**: Manages artifact activation workflow during combat (selection, targeting, execution).
+
+**CommanderSelector**: Reusable widget controller for prev/next cycling through commanders.
+
+**Deps Struct**: Dependency injection pattern — bundles only what a subsystem needs from its parent.
+
+**PanelController**: Manages UI panel state and interactions, delegating game logic to a Handler.
+
+**SpellCastingHandler**: Manages spell casting workflow during combat (selection, AoE targeting, execution).
+
+**SubMenuController**: Framework component managing mutually exclusive sub-menu visibility.
+
+**TacticalState**: UI state for tactical gameplay (replaces former BattleMapState). Includes spell, artifact, and encounter tracking state.
 
 ---
 

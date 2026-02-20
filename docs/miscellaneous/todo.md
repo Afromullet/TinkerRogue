@@ -24,6 +24,8 @@ __________________________________________
 ----
 
 
+- Identify common patterns in teh different combat resolution paths. Garrison, raids, and overworld encounters follow different paths. Consider that we may be able to build upon the reward package. Having a "resolution" package with anything common, including rewards, cleanup, etc
+
 - Try to determine if there is anything we can abstract for SetupRaidFactions,spawnGarrisonEncounter, StartGarrisonDefense, StartEncounter, SpawnCombatEntities. Overall,
 encounter_service.go, encounter_setp.go, and raidencounter.go need to be looked at more closely for abstractions
 

@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"game_main/common"
+	"game_main/mind/reward"
 	"game_main/overworld/core"
 	"game_main/overworld/garrison"
 	"game_main/overworld/threat"
@@ -22,7 +23,7 @@ type combatOutcome struct {
 	PlayerEntityID ecs.EntityID
 	PlayerSquadIDs []ecs.EntityID
 	Casualties     casualtyReport
-	RewardsEarned  rewardTable
+	RewardsEarned  reward.Reward
 }
 
 // casualtyReport tracks units lost in combat
@@ -62,7 +63,11 @@ func applyCombatOutcome(
 			threat.DestroyThreatNode(manager, threatEntity)
 
 			// Grant full rewards
-			grantRewards(manager, outcome, outcome.RewardsEarned)
+			target := reward.GrantTarget{
+				PlayerEntityID: outcome.PlayerEntityID,
+				SquadIDs:       outcome.PlayerSquadIDs,
+			}
+			reward.Grant(manager, outcome.RewardsEarned, target)
 
 			// Log combat resolution event
 			core.LogEvent(core.EventCombatResolved, currentTick, outcome.ThreatNodeID,
@@ -80,11 +85,12 @@ func applyCombatOutcome(
 				outcome.ThreatNodeID, outcome.RewardsEarned.Gold, outcome.RewardsEarned.Experience)
 		} else {
 			// Weakened but not destroyed - partial rewards
-			partialRewards := rewardTable{
-				Gold:       outcome.RewardsEarned.Gold / 2,
-				Experience: outcome.RewardsEarned.Experience / 2,
+			partialRewards := outcome.RewardsEarned.Scale(0.5)
+			target := reward.GrantTarget{
+				PlayerEntityID: outcome.PlayerEntityID,
+				SquadIDs:       outcome.PlayerSquadIDs,
 			}
-			grantRewards(manager, outcome, partialRewards)
+			reward.Grant(manager, partialRewards, target)
 
 			// Reset growth progress (player setback the threat)
 			nodeData.GrowthProgress = 0.0
@@ -153,7 +159,7 @@ func createCombatOutcome(
 	playerSquadIDs []ecs.EntityID,
 	playerUnitsLost int,
 	enemyUnitsKilled int,
-	rewards rewardTable,
+	rewards reward.Reward,
 ) *combatOutcome {
 	return &combatOutcome{
 		ThreatNodeID:   threatNodeID,
@@ -196,9 +202,7 @@ func (es *EncounterService) resolveCombatToOverworld(
 		return
 	}
 
-	// Get the specific encounter that was assigned to this node
-	selectedEncounter := core.GetNodeRegistry().GetEncounterByID(nodeData.EncounterID)
-	rewards := calculateRewards(nodeData.Intensity, selectedEncounter)
+	rewards := calculateRewards(nodeData.Intensity)
 
 	// Create combat outcome
 	outcome := createCombatOutcome(

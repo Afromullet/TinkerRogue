@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"game_main/common"
-	"game_main/tactical/spells"
+	"game_main/mind/reward"
 	"game_main/world/worldmap"
 )
 
@@ -23,7 +23,7 @@ func GrantRoomReward(manager *common.EntityManager, raidState *RaidStateData, ro
 	return ""
 }
 
-// grantCommandPostReward restores mana to the commander.
+// grantCommandPostReward restores mana to the commander via the reward package.
 // Returns a description of the reward.
 func grantCommandPostReward(manager *common.EntityManager, raidState *RaidStateData) string {
 	manaRestore := RaidConfig.Rewards.CommandPostManaRestore
@@ -31,17 +31,12 @@ func grantCommandPostReward(manager *common.EntityManager, raidState *RaidStateD
 		return ""
 	}
 
-	manaData := common.GetComponentTypeByID[*spells.ManaData](manager, raidState.CommanderID, spells.ManaComponent)
-	if manaData == nil {
-		return ""
-	}
+	r := reward.Reward{Mana: manaRestore}
+	target := reward.GrantTarget{CommanderID: raidState.CommanderID}
+	desc := reward.Grant(manager, r, target)
 
-	manaData.CurrentMana += manaRestore
-	if manaData.CurrentMana > manaData.MaxMana {
-		manaData.CurrentMana = manaData.MaxMana
+	if desc != "" {
+		fmt.Printf("Reward: Command post cleared — %s\n", desc)
 	}
-
-	reward := fmt.Sprintf("Commander gained %d mana (%d/%d)", manaRestore, manaData.CurrentMana, manaData.MaxMana)
-	fmt.Printf("Reward: Command post cleared — %s\n", reward)
-	return reward
+	return desc
 }
