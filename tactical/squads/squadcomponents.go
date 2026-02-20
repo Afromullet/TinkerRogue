@@ -27,6 +27,7 @@ var (
 	MovementSpeedComponent   *ecs.Component
 	ExperienceComponent      *ecs.Component
 	StatGrowthComponent      *ecs.Component
+	UnitTypeComponent        *ecs.Component
 
 	SquadTag       ecs.Tag
 	SquadMemberTag ecs.Tag
@@ -214,6 +215,12 @@ func (a AttackType) String() string {
 
 func (t TargetRowData) String() string {
 	return fmt.Sprintf("%s targeting", t.AttackType.String())
+}
+
+// UnitTypeData stores the original unit type string for roster grouping.
+// Separated from NameComponent which holds the display name.
+type UnitTypeData struct {
+	UnitType string
 }
 
 // ========================================

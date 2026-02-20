@@ -198,10 +198,13 @@ func CreateUnitEntity(squadmanager *common.EntityManager, unit UnitTemplate) (*e
 		return nil, fmt.Errorf("invalid grid height %d for unit %s: must be 1-3", unit.GridHeight, unit.UnitType)
 	}
 
+	// Generate a unique display name for this unit
+	displayName := templates.GenerateName("default", unit.UnitType)
+
 	// Create base unit entity via entitytemplates (delegates base entity creation)
 	unitEntity := templates.CreateUnit(
 		*squadmanager,
-		unit.UnitType,
+		displayName,
 		unit.Attributes,
 		nil, // Position defaults to 0,0
 	)
@@ -226,6 +229,11 @@ func CreateUnitEntity(squadmanager *common.EntityManager, unit UnitTemplate) (*e
 			})
 		}
 	}
+
+	// Add unit type component for roster grouping (preserves original type)
+	unitEntity.AddComponent(UnitTypeComponent, &UnitTypeData{
+		UnitType: unit.UnitType,
+	})
 
 	// Add squad-specific components
 	unitEntity.AddComponent(GridPositionComponent, &GridPositionData{

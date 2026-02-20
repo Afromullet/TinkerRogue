@@ -42,6 +42,7 @@ func InitSquadComponents(squadManager *common.EntityManager) {
 	MovementSpeedComponent = squadManager.World.NewComponent()
 	ExperienceComponent = squadManager.World.NewComponent()
 	StatGrowthComponent = squadManager.World.NewComponent()
+	UnitTypeComponent = squadManager.World.NewComponent()
 	UnitRosterComponent = squadManager.World.NewComponent()
 	SquadRosterComponent = squadManager.World.NewComponent()
 }

@@ -24,6 +24,9 @@ var InfluenceConfigTemplate JSONInfluenceConfig
 // Map generation configuration (optional — nil means use code defaults)
 var MapGenConfigTemplate *JSONMapGenConfig
 
+// Name generation configuration
+var NameConfigTemplate JSONNameConfig
+
 // SpellDataPath is the relative path within assets to the spell data file.
 const SpellDataPath = "gamedata/spelldata.json"
 
@@ -31,6 +34,7 @@ func ReadGameData() {
 
 	ReadDifficultyConfig() // Load difficulty first (other systems reference it)
 	ReadMonsterData()
+	ReadNameData()
 	ReadConsumableData()
 
 	ReadNodeDefinitions() // Load node definitions first

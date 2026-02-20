@@ -1,0 +1,29 @@
+{
+  "nameFormat": "{name} the {type}",
+  "minSyllables": 2,
+  "maxSyllables": 3,
+  "pools": {
+    "default": {
+      "prefixes": [
+        "Al", "Bran", "Cor", "Dun", "El", "Fen", "Gor", "Hal", "Ir",
+        "Jor", "Kal", "Lor", "Mor", "Nar", "Or", "Pel", "Ral", "Sar",
+        "Tor", "Ul", "Val", "Wor", "Zar", "Ash", "Bel", "Cyr", "Dra",
+        "Eth", "Fal", "Gil", "Hel", "Kir", "Lun", "Mal", "Nyx", "Oth",
+        "Rin", "Sol", "Tyr", "Ven", "Ard", "Bor", "Cael", "Del", "Eld"
+      ],
+      "middles": [
+        "an", "en", "in", "on", "un", "ar", "er", "ir", "or", "ur",
+        "al", "el", "il", "ol", "ul", "am", "em", "im", "om", "um",
+        "as", "es", "is", "os", "us", "ax", "ex", "ix", "ath", "eth",
+        "ith", "oth", "uth", "and", "end", "ind", "ond"
+      ],
+      "suffixes": [
+        "ric", "dan", "wen", "mir", "thas", "dor", "lyn", "grim",
+        "vane", "wick", "mund", "ford", "gar", "ton", "mar", "sten",
+        "bold", "hart", "win", "dal", "ren", "kov", "ius", "ion",
+        "ael", "orn", "vik", "roth", "heim", "bane", "fell", "storm",
+        "brand", "rock", "vale", "thorn", "ward", "crest", "fang", "drake"
+      ]
+    }
+  }
+}

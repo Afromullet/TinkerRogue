@@ -581,3 +581,18 @@ type InfluenceSuppressionConfig struct {
 	NodeTypeMultipliers map[string]float64 `json:"nodeTypeMultipliers"`
 }
 
+// JSONNamePool defines a pool of syllable parts for name generation
+type JSONNamePool struct {
+	Prefixes []string `json:"prefixes"`
+	Middles  []string `json:"middles"`
+	Suffixes []string `json:"suffixes"`
+}
+
+// JSONNameConfig is the root container for name generation configuration
+type JSONNameConfig struct {
+	NameFormat   string                  `json:"nameFormat"`
+	MinSyllables int                     `json:"minSyllables"`
+	MaxSyllables int                     `json:"maxSyllables"`
+	Pools        map[string]JSONNamePool `json:"pools"`
+}
+

@@ -187,7 +187,11 @@ func GetPlayerRoster(playerID ecs.EntityID, manager *common.EntityManager) *Unit
 // Used to backfill roster with units that were created before roster tracking
 // Returns error if roster is full or unit data is invalid
 func RegisterSquadUnitInRoster(roster *UnitRoster, unitID ecs.EntityID, squadID ecs.EntityID, manager *common.EntityManager) error {
-	unitType := common.GetEntityName(manager, unitID, "Unknown")
+	// Use UnitTypeComponent for roster grouping (not display name)
+	unitType := "Unknown"
+	if utData := common.GetComponentTypeByID[*UnitTypeData](manager, unitID, UnitTypeComponent); utData != nil {
+		unitType = utData.UnitType
+	}
 
 	// Add unit to roster (will increment TotalOwned and add to UnitEntities)
 	if err := roster.AddUnit(unitID, unitType); err != nil {

@@ -337,6 +337,47 @@ func validateNodeEncounterLinks() {
 	println("Node-encounter links validated successfully")
 }
 
+func ReadNameData() {
+	data, err := os.ReadFile(assetPath("gamedata/namedata.json"))
+	if err != nil {
+		panic(err)
+	}
+
+	err = json.Unmarshal(data, &NameConfigTemplate)
+	if err != nil {
+		panic(err)
+	}
+
+	validateNameConfig(&NameConfigTemplate)
+
+	println("Name config loaded:", len(NameConfigTemplate.Pools), "pools")
+}
+
+func validateNameConfig(config *JSONNameConfig) {
+	// Default pool must exist
+	if _, exists := config.Pools["default"]; !exists {
+		panic("Name config missing required 'default' pool")
+	}
+
+	// Min/max syllables must be valid
+	if config.MinSyllables < 2 {
+		panic("Name config minSyllables must be at least 2")
+	}
+	if config.MaxSyllables < config.MinSyllables {
+		panic("Name config maxSyllables must be >= minSyllables")
+	}
+
+	// Each pool must have at least prefixes and suffixes
+	for name, pool := range config.Pools {
+		if len(pool.Prefixes) == 0 {
+			panic("Name pool '" + name + "' must have at least one prefix")
+		}
+		if len(pool.Suffixes) == 0 {
+			panic("Name pool '" + name + "' must have at least one suffix")
+		}
+	}
+}
+
 func ReadAIConfig() {
 	data, err := os.ReadFile(assetPath("gamedata/aiconfig.json"))
 	if err != nil {
