@@ -2,6 +2,8 @@ package guiunitview
 
 import (
 	"fmt"
+	"math/rand"
+	"time"
 
 	"game_main/common"
 	"game_main/gui/framework"
@@ -18,11 +20,14 @@ type UnitViewMode struct {
 
 	viewUnitID ecs.EntityID
 	detailText *widget.TextArea
+	rng        *rand.Rand
 }
 
 // NewUnitViewMode creates a new UnitViewMode instance.
 func NewUnitViewMode(modeManager *framework.UIModeManager) *UnitViewMode {
-	mode := &UnitViewMode{}
+	mode := &UnitViewMode{
+		rng: rand.New(rand.NewSource(time.Now().UnixNano())),
+	}
 	mode.SetModeName("unit_view")
 	mode.SetReturnMode("squad_editor")
 	mode.ModeManager = modeManager
@@ -62,6 +67,12 @@ func (uvm *UnitViewMode) Enter(fromMode framework.UIMode) error {
 // HandleInput delegates to common input handling (ESC to return).
 func (uvm *UnitViewMode) HandleInput(inputState *framework.InputState) bool {
 	return uvm.HandleCommonInput(inputState)
+}
+
+// onAddXP awards 100 XP to the viewed unit and refreshes the display (debug).
+func (uvm *UnitViewMode) onAddXP() {
+	squads.AwardExperience(uvm.viewUnitID, 100, uvm.Context.ECSManager, uvm.rng)
+	uvm.refreshUnitDisplay()
 }
 
 // refreshUnitDisplay populates the text area with unit details.

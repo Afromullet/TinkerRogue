@@ -52,6 +52,12 @@ func init() {
 			result.Container.AddChild(detailText)
 			result.Custom["detailText"] = detailText
 
+			// Debug: Add XP button
+			result.Container.AddChild(builders.CreateButtonWithConfig(builders.ButtonConfig{
+				Text:    "Add 100 XP",
+				OnClick: func() { uvm.onAddXP() },
+			}))
+
 			// Back button
 			result.Container.AddChild(builders.CreateButtonWithConfig(builders.ButtonConfig{
 				Text: "Back (ESC)",
