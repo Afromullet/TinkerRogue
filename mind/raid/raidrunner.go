@@ -28,7 +28,7 @@ type RaidRunner struct {
 	encounterService *encounter.EncounterService
 	raidEntityID     ecs.EntityID
 	// preCombatAliveCounts stores living unit counts per player squad before an encounter.
-	// Used to calculate unit death morale penalties after combat.
+	// Used to calculate units lost for the post-encounter summary display.
 	preCombatAliveCounts map[ecs.EntityID]int
 
 	// currentRoomNodeID tracks which room is being fought in (set by TriggerRaidEncounter).
@@ -153,7 +153,7 @@ func (rr *RaidRunner) TriggerRaidEncounter(nodeID int) error {
 		return fmt.Errorf("room %d has no garrison squads", nodeID)
 	}
 
-	// Snapshot alive counts for morale penalty calculation
+	// Snapshot alive counts for post-encounter summary
 	rr.preCombatAliveCounts = make(map[ecs.EntityID]int)
 	for _, squadID := range raidState.PlayerSquadIDs {
 		rr.preCombatAliveCounts[squadID] = CountLivingUnits(rr.manager, squadID)
@@ -196,11 +196,10 @@ func (rr *RaidRunner) TriggerRaidEncounter(nodeID int) error {
 
 // processRestRoom applies rest room recovery and marks the room cleared.
 func (rr *RaidRunner) processRestRoom(raidState *RaidStateData, room *RoomData) {
-	// Apply rest room bonuses from config
+	// Apply rest room HP recovery from config
 	if RaidConfig != nil {
 		for _, squadID := range raidState.PlayerSquadIDs {
 			applyHPRecovery(rr.manager, squadID, RaidConfig.Recovery.RestRoomHPPercent)
-			applyMoraleBonus(rr.manager, squadID, RaidConfig.Recovery.RestRoomMoraleBonus)
 		}
 	}
 
@@ -253,7 +252,7 @@ func (rr *RaidRunner) ResolveEncounter(reason encounter.CombatExitReason, result
 	var rewardText string
 	switch reason {
 	case encounter.ExitVictory:
-		rewardText = ProcessVictory(rr.manager, raidState, rr.currentRoomNodeID, rr.preCombatAliveCounts)
+		rewardText = ProcessVictory(rr.manager, raidState, rr.currentRoomNodeID)
 	case encounter.ExitDefeat:
 		ProcessDefeat(rr.manager)
 	case encounter.ExitFlee:
@@ -296,7 +295,7 @@ func (rr *RaidRunner) PostEncounterProcessing() {
 	// Post-encounter recovery (deployed vs reserve differentiation)
 	ApplyPostEncounterRecovery(rr.manager, raidState)
 
-	// Increment alert level and apply garrison buffs/reserves
+	// Increment alert level and potentially activate reserves
 	IncrementAlert(rr.manager, raidState.CurrentFloor)
 
 	// Check end conditions

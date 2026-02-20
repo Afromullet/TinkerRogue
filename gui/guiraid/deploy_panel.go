@@ -99,10 +99,9 @@ func (dp *DeployPanel) Refresh(raidState *raid.RaidStateData, room *raid.RoomDat
 			status = "Destroyed"
 		}
 
-		line := fmt.Sprintf("  %s — HP: %d%% | Morale: %d | Units: %d/%d | %s",
+		line := fmt.Sprintf("  %s — HP: %d%% | Units: %d/%d | %s",
 			squadData.Name,
 			int(squads.GetSquadHealthPercent(squadID, manager)*100),
-			squadData.Morale,
 			aliveCount,
 			totalCount,
 			status,

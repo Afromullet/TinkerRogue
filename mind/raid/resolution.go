@@ -5,15 +5,12 @@ import (
 
 	"game_main/common"
 	"game_main/tactical/squads"
-
-	"github.com/bytearena/ecs"
 )
 
 // ProcessVictory handles a successful encounter in the raid.
-// Marks the room cleared, applies morale changes, priority target effects, and rewards.
+// Marks the room cleared and grants rewards.
 // roomNodeID identifies the specific room that was fought in.
-// preCombatAliveCounts maps squad ID → living unit count before the encounter (for death penalties).
-func ProcessVictory(manager *common.EntityManager, raidState *RaidStateData, roomNodeID int, preCombatAliveCounts map[ecs.EntityID]int) string {
+func ProcessVictory(manager *common.EntityManager, raidState *RaidStateData, roomNodeID int) string {
 	if raidState == nil {
 		return ""
 	}
@@ -36,13 +33,6 @@ func ProcessVictory(manager *common.EntityManager, raidState *RaidStateData, roo
 	}
 
 	MarkRoomCleared(manager, room.NodeID, floorNumber)
-
-	// Apply victory morale bonus
-	if RaidConfig != nil {
-		for _, squadID := range raidState.PlayerSquadIDs {
-			applyMoraleBonus(manager, squadID, RaidConfig.Recovery.VictoryMoraleBonus)
-		}
-	}
 
 	// Grant room-specific rewards
 	rewardText := GrantRoomReward(manager, raidState, room.RoomType)
@@ -67,13 +57,6 @@ func ProcessDefeat(manager *common.EntityManager) {
 	raidState := GetRaidState(manager)
 	if raidState == nil {
 		return
-	}
-
-	// Apply defeat morale penalty
-	if RaidConfig != nil {
-		for _, squadID := range raidState.PlayerSquadIDs {
-			applyMoralePenalty(manager, squadID, RaidConfig.Recovery.DefeatMoralePenalty)
-		}
 	}
 
 	raidState.Status = RaidDefeat

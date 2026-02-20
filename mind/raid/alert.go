@@ -94,7 +94,7 @@ func IncrementAlert(manager *common.EntityManager, floorNumber int) {
 	fmt.Printf("Alert: Level now %d (encounters: %d) on floor %d\n",
 		alertData.CurrentLevel, alertData.EncounterCount, floorNumber)
 
-	// Apply buffs and activate reserves if level changed
+	// Activate reserves if level changed
 	if alertData.CurrentLevel != oldLevel {
 		ActivateReserves(manager, floorNumber)
 	}

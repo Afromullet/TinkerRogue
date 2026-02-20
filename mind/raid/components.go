@@ -30,9 +30,6 @@ const (
 	RaidRetreated
 )
 
-// maxMorale is the cap for squad morale.
-const maxMorale = 100
-
 func (s RaidStatus) String() string {
 	switch s {
 	case RaidNone:

@@ -16,7 +16,6 @@ type RaidConfiguration struct {
 	Raid                RaidSettings                `json:"raid"`
 	Recovery            RecoverySettings            `json:"recovery"`
 	Alert               AlertSettings               `json:"alert"`
-	Morale              MoraleSettings              `json:"morale"`
 	Rewards             RewardSettings              `json:"rewards"`
 	ArchetypeAssignment ArchetypeAssignmentSettings `json:"archetypeAssignment"`
 }
@@ -32,14 +31,9 @@ type RaidSettings struct {
 }
 
 type RecoverySettings struct {
-	DeployedHPPercent      int `json:"deployedHPPercent"`
-	ReserveHPPercent       int `json:"reserveHPPercent"`
-	BetweenFloorMoraleBonus int `json:"betweenFloorMoraleBonus"`
-	VictoryMoraleBonus     int `json:"victoryMoraleBonus"`
-	RestRoomMoraleBonus    int `json:"restRoomMoraleBonus"`
-	RestRoomHPPercent      int `json:"restRoomHPPercent"`
-	UnitDeathMoralePenalty int `json:"unitDeathMoralePenalty"`
-	DefeatMoralePenalty    int `json:"defeatMoralePenalty"`
+	DeployedHPPercent int `json:"deployedHPPercent"`
+	ReserveHPPercent  int `json:"reserveHPPercent"`
+	RestRoomHPPercent int `json:"restRoomHPPercent"`
 }
 
 type AlertSettings struct {
@@ -50,22 +44,9 @@ type AlertLevelConfig struct {
 	Level              int    `json:"level"`
 	Name               string `json:"name"`
 	EncounterThreshold int    `json:"encounterThreshold"`
-	ArmorBonus         int    `json:"armorBonus"`
-	StrengthBonus      int    `json:"strengthBonus"`
-	WeaponBonus        int    `json:"weaponBonus"`
 	ActivatesReserves  bool   `json:"activatesReserves"`
 }
 
-type MoraleSettings struct {
-	Thresholds []MoraleThresholdConfig `json:"thresholds"`
-}
-
-type MoraleThresholdConfig struct {
-	MinMorale  int `json:"minMorale"`
-	MaxMorale  int `json:"maxMorale"`
-	DexPenalty int `json:"dexPenalty"`
-	StrPenalty int `json:"strPenalty"`
-}
 
 type RewardSettings struct {
 	CommandPostManaRestore int `json:"commandPostManaRestore"`
@@ -198,17 +179,3 @@ func ReserveArchetypes() []string {
 	return []string{"fast_response", "ambush_pack"}
 }
 
-// GetMoraleThreshold returns the morale debuff tier for a given morale value.
-// Returns nil if no threshold matches.
-func GetMoraleThreshold(morale int) *MoraleThresholdConfig {
-	if RaidConfig == nil {
-		return nil
-	}
-	for i := range RaidConfig.Morale.Thresholds {
-		t := &RaidConfig.Morale.Thresholds[i]
-		if morale >= t.MinMorale && morale <= t.MaxMorale {
-			return t
-		}
-	}
-	return nil
-}

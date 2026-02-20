@@ -33,8 +33,8 @@ func ApplyPostEncounterRecovery(manager *common.EntityManager, raidState *RaidSt
 		RaidConfig.Recovery.DeployedHPPercent, RaidConfig.Recovery.ReserveHPPercent)
 }
 
-// ApplyBetweenFloorRecovery applies HP recovery and morale bonus when advancing floors.
-// All squads get DeployedHPPercent HP and BetweenFloorMoraleBonus morale.
+// ApplyBetweenFloorRecovery applies HP recovery when advancing floors.
+// All squads get DeployedHPPercent HP.
 func ApplyBetweenFloorRecovery(manager *common.EntityManager, raidState *RaidStateData) {
 	if RaidConfig == nil || raidState == nil {
 		return
@@ -42,7 +42,6 @@ func ApplyBetweenFloorRecovery(manager *common.EntityManager, raidState *RaidSta
 
 	for _, squadID := range raidState.PlayerSquadIDs {
 		applyHPRecovery(manager, squadID, RaidConfig.Recovery.DeployedHPPercent)
-		applyMoraleBonus(manager, squadID, RaidConfig.Recovery.BetweenFloorMoraleBonus)
 	}
 
 	fmt.Printf("Recovery: Between-floor recovery applied to %d squads\n", len(raidState.PlayerSquadIDs))
@@ -73,24 +72,3 @@ func applyHPRecovery(manager *common.EntityManager, squadID ecs.EntityID, hpPerc
 	}
 }
 
-// applyMoraleBonus adds morale to a squad, capped at maxMorale.
-func applyMoraleBonus(manager *common.EntityManager, squadID ecs.EntityID, bonus int) {
-	squadData := common.GetComponentTypeByID[*squads.SquadData](manager, squadID, squads.SquadComponent)
-	if squadData != nil {
-		squadData.Morale += bonus
-		if squadData.Morale > maxMorale {
-			squadData.Morale = maxMorale
-		}
-	}
-}
-
-// applyMoralePenalty reduces squad morale, floored at 0.
-func applyMoralePenalty(manager *common.EntityManager, squadID ecs.EntityID, penalty int) {
-	squadData := common.GetComponentTypeByID[*squads.SquadData](manager, squadID, squads.SquadComponent)
-	if squadData != nil {
-		squadData.Morale -= penalty
-		if squadData.Morale < 0 {
-			squadData.Morale = 0
-		}
-	}
-}
