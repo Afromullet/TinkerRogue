@@ -4,13 +4,11 @@ import (
 	"fmt"
 
 	"game_main/common"
-	"game_main/mind/reward"
+	"game_main/mind/resolution"
 	"game_main/overworld/core"
 	"game_main/overworld/garrison"
 	"game_main/overworld/threat"
-	"game_main/tactical/combat"
 	"game_main/tactical/squads"
-	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"
 )
@@ -23,7 +21,7 @@ type combatOutcome struct {
 	PlayerEntityID ecs.EntityID
 	PlayerSquadIDs []ecs.EntityID
 	Casualties     casualtyReport
-	RewardsEarned  reward.Reward
+	RewardsEarned  resolution.Reward
 }
 
 // casualtyReport tracks units lost in combat
@@ -63,11 +61,11 @@ func applyCombatOutcome(
 			threat.DestroyThreatNode(manager, threatEntity)
 
 			// Grant full rewards
-			target := reward.GrantTarget{
+			target := resolution.GrantTarget{
 				PlayerEntityID: outcome.PlayerEntityID,
 				SquadIDs:       outcome.PlayerSquadIDs,
 			}
-			reward.Grant(manager, outcome.RewardsEarned, target)
+			resolution.Grant(manager, outcome.RewardsEarned, target)
 
 			// Log combat resolution event
 			core.LogEvent(core.EventCombatResolved, currentTick, outcome.ThreatNodeID,
@@ -86,11 +84,11 @@ func applyCombatOutcome(
 		} else {
 			// Weakened but not destroyed - partial rewards
 			partialRewards := outcome.RewardsEarned.Scale(0.5)
-			target := reward.GrantTarget{
+			target := resolution.GrantTarget{
 				PlayerEntityID: outcome.PlayerEntityID,
 				SquadIDs:       outcome.PlayerSquadIDs,
 			}
-			reward.Grant(manager, partialRewards, target)
+			resolution.Grant(manager, partialRewards, target)
 
 			// Reset growth progress (player setback the threat)
 			nodeData.GrowthProgress = 0.0
@@ -159,7 +157,7 @@ func createCombatOutcome(
 	playerSquadIDs []ecs.EntityID,
 	playerUnitsLost int,
 	enemyUnitsKilled int,
-	rewards reward.Reward,
+	rewards resolution.Reward,
 ) *combatOutcome {
 	return &combatOutcome{
 		ThreatNodeID:   threatNodeID,
@@ -184,7 +182,7 @@ func (es *EncounterService) resolveCombatToOverworld(
 	roundsCompleted int,
 ) {
 	// Calculate casualties
-	playerUnitsLost, enemyUnitsKilled := es.calculateCasualties(victorFaction, defeatedFactions)
+	playerUnitsLost, enemyUnitsKilled := es.calculateCasualties()
 
 	// Get all player squad IDs for reward distribution
 	playerSquadIDs := es.getAllPlayerSquadIDs()
@@ -224,47 +222,12 @@ func (es *EncounterService) resolveCombatToOverworld(
 	}
 }
 
-// calculateCasualties counts units killed in combat.
+// calculateCasualties counts units killed in combat using targeted squad-based counting.
 // Caller (resolveCombatToOverworld via EndEncounter) already validates activeEncounter != nil.
-func (es *EncounterService) calculateCasualties(
-	victorFaction ecs.EntityID,
-	defeatedFactions []ecs.EntityID,
-) (playerUnitsLost int, enemyUnitsKilled int) {
-	// Use cached faction IDs from encounter creation (avoids O(n) query)
-	playerFactionID := es.activeEncounter.PlayerFactionID
-	enemyFactionID := es.activeEncounter.EnemyFactionID
-
-	// Count dead units in each faction
-	for _, result := range es.manager.World.Query(squads.SquadMemberTag) {
-		entity := result.Entity
-		memberData := common.GetComponentType[*squads.SquadMemberData](entity, squads.SquadMemberComponent)
-		if memberData == nil {
-			continue
-		}
-
-		// Get squad to check faction membership
-		squadEntity := es.manager.FindEntityByID(memberData.SquadID)
-		if squadEntity == nil {
-			continue
-		}
-
-		squadFaction := common.GetComponentType[*combat.CombatFactionData](squadEntity, combat.FactionMembershipComponent)
-		if squadFaction == nil {
-			continue
-		}
-
-		// Check if unit is dead
-		unitAttr := common.GetComponentType[*common.Attributes](entity, common.AttributeComponent)
-		if unitAttr != nil && unitAttr.CurrentHealth <= 0 {
-			if squadFaction.FactionID == playerFactionID {
-				playerUnitsLost++
-			} else if squadFaction.FactionID == enemyFactionID {
-				enemyUnitsKilled++
-			}
-		}
-	}
-
-	return playerUnitsLost, enemyUnitsKilled
+func (es *EncounterService) calculateCasualties() (playerUnitsLost int, enemyUnitsKilled int) {
+	playerSquadIDs := es.getAllPlayerSquadIDs()
+	return resolution.CountDeadUnits(es.manager, playerSquadIDs),
+		resolution.CountDeadUnits(es.manager, es.activeEncounter.EnemySquadIDs)
 }
 
 // getAllPlayerSquadIDs returns all player squad IDs from the roster
@@ -343,45 +306,5 @@ func (es *EncounterService) returnGarrisonSquadsToNode(nodeID ecs.EntityID) {
 	if garrisonData == nil {
 		return
 	}
-
-	for _, squadID := range garrisonData.SquadIDs {
-		squadEntity := es.manager.FindEntityByID(squadID)
-		if squadEntity == nil {
-			continue
-		}
-
-		// Remove combat components
-		if squadEntity.HasComponent(combat.FactionMembershipComponent) {
-			squadEntity.RemoveComponent(combat.FactionMembershipComponent)
-		}
-
-		// Remove position (garrison squads don't need world positions)
-		pos := common.GetComponentType[*coords.LogicalPosition](squadEntity, common.PositionComponent)
-		if pos != nil {
-			common.GlobalPositionSystem.RemoveEntity(squadID, *pos)
-			squadEntity.RemoveComponent(common.PositionComponent)
-		}
-
-		// Remove unit positions too
-		unitIDs := squads.GetUnitIDsInSquad(squadID, es.manager)
-		for _, unitID := range unitIDs {
-			unitEntity := es.manager.FindEntityByID(unitID)
-			if unitEntity == nil {
-				continue
-			}
-			unitPos := common.GetComponentType[*coords.LogicalPosition](unitEntity, common.PositionComponent)
-			if unitPos != nil {
-				common.GlobalPositionSystem.RemoveEntity(unitID, *unitPos)
-				unitEntity.RemoveComponent(common.PositionComponent)
-			}
-		}
-
-		// Reset deployment flag
-		squadData := common.GetComponentTypeByID[*squads.SquadData](es.manager, squadID, squads.SquadComponent)
-		if squadData != nil {
-			squadData.IsDeployed = false
-		}
-
-		fmt.Printf("Returned garrison squad %d to node %d\n", squadID, nodeID)
-	}
+	resolution.StripCombatComponents(es.manager, garrisonData.SquadIDs)
 }

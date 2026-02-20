@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"game_main/common"
-	"game_main/mind/reward"
+	"game_main/mind/resolution"
 	"game_main/world/worldmap"
 )
 
@@ -24,16 +24,16 @@ func GrantRoomReward(manager *common.EntityManager, raidState *RaidStateData, ro
 }
 
 // grantCommandPostReward restores mana to the commander via the reward package.
-// Returns a description of the reward.
+// Returns a description of the resolution.
 func grantCommandPostReward(manager *common.EntityManager, raidState *RaidStateData) string {
 	manaRestore := RaidConfig.Rewards.CommandPostManaRestore
 	if manaRestore <= 0 {
 		return ""
 	}
 
-	r := reward.Reward{Mana: manaRestore}
-	target := reward.GrantTarget{CommanderID: raidState.CommanderID}
-	desc := reward.Grant(manager, r, target)
+	r := resolution.Reward{Mana: manaRestore}
+	target := resolution.GrantTarget{CommanderID: raidState.CommanderID}
+	desc := resolution.Grant(manager, r, target)
 
 	if desc != "" {
 		fmt.Printf("Reward: Command post cleared — %s\n", desc)

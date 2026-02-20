@@ -6,6 +6,7 @@ import (
 	"game_main/gear"
 	"game_main/mind/ai"
 	"game_main/mind/behavior"
+	"game_main/mind/resolution"
 	"game_main/tactical/combat"
 	"game_main/tactical/combat/battlelog"
 	"game_main/tactical/effects"
@@ -371,84 +372,28 @@ func (cs *CombatService) cleanupEffects() {
 // Helper Methods
 // ================================
 
-// resetPlayerSquadsToOverworld removes player squads from the map after combat
-// Player squads should only exist in the roster, not on the map
-// Uses faction membership to identify player squads (more robust than roster lookup)
+// resetPlayerSquadsToOverworld removes player squads from the map after combat.
+// Player squads should only exist in the roster, not on the map.
+// Uses faction membership to identify player squads, then delegates stripping to resolution.
 func (cs *CombatService) resetPlayerSquadsToOverworld() {
-	removedCount := 0
-	skippedCount := 0
-
+	var playerSquadIDs []ecs.EntityID
 	for _, result := range cs.EntityManager.World.Query(squads.SquadTag) {
 		entity := result.Entity
-		squadID := entity.GetID()
-
-		// Get faction membership - squads without this aren't in combat
 		factionData := common.GetComponentType[*combat.CombatFactionData](entity, combat.FactionMembershipComponent)
 		if factionData == nil {
-			skippedCount++
-			continue // Not in combat, skip
+			continue
 		}
-
-		// Verify it's a player-controlled faction
 		factionEntity := cs.EntityManager.FindEntityByID(factionData.FactionID)
 		if factionEntity == nil {
-			fmt.Printf("WARNING: Squad %d has invalid faction ID %d\n", squadID, factionData.FactionID)
 			continue
 		}
-
 		faction := common.GetComponentType[*combat.FactionData](factionEntity, combat.CombatFactionComponent)
-		if faction == nil {
-			fmt.Printf("WARNING: Faction entity %d has no FactionData component\n", factionData.FactionID)
+		if faction == nil || !faction.IsPlayerControlled {
 			continue
 		}
-
-		if !faction.IsPlayerControlled {
-			// Enemy squad - should NOT be touched here, will be disposed separately
-			skippedCount++
-			continue
-		}
-
-		// This is a player squad - remove its position and its units' positions
-		squadPos := common.GetComponentType[*coords.LogicalPosition](entity, common.PositionComponent)
-		if squadPos != nil {
-			fmt.Printf("Removing player squad %d from map position (%d,%d)\n",
-				squadID, squadPos.X, squadPos.Y)
-
-			// Remove squad from position system and remove component
-			common.GlobalPositionSystem.RemoveEntity(squadID, *squadPos)
-			entity.RemoveComponent(common.PositionComponent)
-
-			// Remove positions from all units in this squad
-			unitIDs := squads.GetUnitIDsInSquad(squadID, cs.EntityManager)
-			for _, unitID := range unitIDs {
-				unitEntity := cs.EntityManager.FindEntityByID(unitID)
-				if unitEntity == nil {
-					continue
-				}
-				unitPos := common.GetComponentType[*coords.LogicalPosition](unitEntity, common.PositionComponent)
-				if unitPos != nil {
-					common.GlobalPositionSystem.RemoveEntity(unitID, *unitPos)
-					unitEntity.RemoveComponent(common.PositionComponent)
-				}
-			}
-
-			removedCount++
-		}
-
-		// Reset deployment flag (squad returns to reserves after combat)
-		squadData := common.GetComponentType[*squads.SquadData](entity, squads.SquadComponent)
-		if squadData != nil {
-			squadData.IsDeployed = false
-			fmt.Printf("Reset IsDeployed flag for squad %d\n", squadID)
-		}
-
-		// Remove combat component (no longer in faction during overworld)
-		if entity.HasComponent(combat.FactionMembershipComponent) {
-			entity.RemoveComponent(combat.FactionMembershipComponent)
-		}
+		playerSquadIDs = append(playerSquadIDs, entity.GetID())
 	}
-
-	fmt.Printf("Removed %d player squads from map (skipped %d non-player squads)\n", removedCount, skippedCount)
+	resolution.StripCombatComponents(cs.EntityManager, playerSquadIDs)
 }
 
 // disposeEntitiesByTag disposes all entities with a given tag

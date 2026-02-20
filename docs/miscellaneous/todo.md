@@ -14,22 +14,19 @@ __________________________________________
 
 - Explore the go fix command
 
-- Separate DOCUMENTATIOn.MD into
 
-
-    - Remove Input System
 
 
 
 ----
 
 
+- Squad highlight renderer caching breaks things. Does not follow units
+
 - Identify common patterns in teh different combat resolution paths. Garrison, raids, and overworld encounters follow different paths. Consider that we may be able to build upon the reward package. Having a "resolution" package with anything common, including rewards, cleanup, etc
 
 - Try to determine if there is anything we can abstract for SetupRaidFactions,spawnGarrisonEncounter, StartGarrisonDefense, StartEncounter, SpawnCombatEntities. Overall,
 encounter_service.go, encounter_setp.go, and raidencounter.go need to be looked at more closely for abstractions
-
-- Make sure AI_ALGORITHM_ARCHITECTURE.md was reaplaced by BEHAVIOR_THREAT_LAYERS.md and ENCOUNTER_SYSTEM.md
 
 - Encounters seem to be too skewed towards ranged threats. Using the threat layer visualization as baseline. Rectify that. 
 
@@ -80,13 +77,6 @@ ________________________________________________
 
 
 # Cleanup
-
-
-- Need a better job of highlighting was data comes from JSON files
-
-- The way the GUI handles keys to track and keyboard presses need to improve
-
-
 
 - func CursorPosition(playerPos coords.LogicalPosition) (int, int) in graphictypes requires a change. Leftover from how throwables are handled. 
 
