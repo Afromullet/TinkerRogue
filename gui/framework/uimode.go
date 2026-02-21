@@ -76,6 +76,7 @@ type InputState struct {
 	MouseX            int
 	MouseY            int
 	MousePressed      bool
+	MouseJustPressed  bool
 	MouseButton       ebiten.MouseButton
 	KeysPressed       map[ebiten.Key]bool
 	KeysJustPressed   map[ebiten.Key]bool

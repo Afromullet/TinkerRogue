@@ -11,11 +11,14 @@ import (
 	"game_main/tactical/squads"
 	"game_main/visual/graphics"
 	"game_main/world/coords"
+	"time"
 
 	"github.com/bytearena/ecs"
 	"github.com/ebitenui/ebitenui/widget"
 	"github.com/hajimehoshi/ebiten/v2"
 )
+
+const doubleClickThreshold = 300 * time.Millisecond
 
 // CombatInputHandler manages all input processing for combat mode.
 // Uses CombatModeDeps for shared state and services.
@@ -38,6 +41,10 @@ type CombatInputHandler struct {
 	visualization *CombatVisualizationManager
 	panels        *framework.PanelRegistry
 	logManager    *CombatLogManager
+
+	// Double-click tracking
+	lastClickTime    time.Time
+	lastClickSquadID ecs.EntityID
 }
 
 // NewCombatInputHandler creates a new combat input handler
@@ -131,7 +138,7 @@ func (cih *CombatInputHandler) HandleInput(inputState *framework.InputState) boo
 			}
 
 			// Click to cast
-			if inputState.MouseButton == ebiten.MouseButtonLeft && inputState.MousePressed {
+			if inputState.MouseButton == ebiten.MouseButtonLeft && inputState.MouseJustPressed {
 				if handler.IsAoETargeting() {
 					handler.HandleAoEConfirmClick(inputState.MouseX, inputState.MouseY)
 				} else {
@@ -156,7 +163,7 @@ func (cih *CombatInputHandler) HandleInput(inputState *framework.InputState) boo
 
 		if handler.HasSelectedArtifact() {
 			// Artifact selected and targeting - click to apply
-			if inputState.MouseButton == ebiten.MouseButtonLeft && inputState.MousePressed {
+			if inputState.MouseButton == ebiten.MouseButtonLeft && inputState.MouseJustPressed {
 				handler.HandleTargetClick(inputState.MouseX, inputState.MouseY)
 				return true
 			}
@@ -165,8 +172,14 @@ func (cih *CombatInputHandler) HandleInput(inputState *framework.InputState) boo
 		return false
 	}
 
-	// Handle mouse clicks
-	if inputState.MouseButton == ebiten.MouseButtonLeft && inputState.MousePressed {
+	// Right-click exits move mode
+	if cih.deps.BattleState.InMoveMode && inputState.MouseButton == ebiten.MouseButtonRight && inputState.MouseJustPressed {
+		cih.actionHandler.ToggleMoveMode()
+		return true
+	}
+
+	// Handle mouse clicks (edge-detected: fires once per press)
+	if inputState.MouseButton == ebiten.MouseButtonLeft && inputState.MouseJustPressed {
 		// Debug kill mode takes priority over all other click handling
 		if cih.inDebugKillMode {
 			defer func() { cih.inDebugKillMode = false }()
@@ -223,12 +236,6 @@ func (cih *CombatInputHandler) HandleInput(inputState *framework.InputState) boo
 	// Ctrl+Z to undo last move
 	if inputState.KeysJustPressed[ebiten.KeyZ] && (inputState.KeysPressed[ebiten.KeyControl] || inputState.KeysPressed[ebiten.KeyMeta]) {
 		cih.actionHandler.UndoLastMove()
-		return true
-	}
-
-	// Ctrl+Y to redo last move
-	if inputState.KeysJustPressed[ebiten.KeyY] && (inputState.KeysPressed[ebiten.KeyControl] || inputState.KeysPressed[ebiten.KeyMeta]) {
-		cih.actionHandler.RedoLastMove()
 		return true
 	}
 
@@ -330,8 +337,10 @@ func (cih *CombatInputHandler) handleSquadClick(mouseX, mouseY int) {
 	// Find if a squad is at the clicked position
 	clickedSquadID := combat.GetSquadAtPosition(clickedPos, cih.deps.Queries.ECSManager)
 
-	// If no squad was clicked, do nothing
+	// If no squad was clicked, reset double-click tracking and do nothing
 	if clickedSquadID == 0 {
+		cih.lastClickTime = time.Time{}
+		cih.lastClickSquadID = 0
 		return
 	}
 
@@ -350,9 +359,28 @@ func (cih *CombatInputHandler) handleSquadClick(mouseX, mouseY int) {
 	// If it's the player's turn
 	factionData := cih.deps.Queries.CombatCache.FindFactionDataByID(cih.currentFactionID)
 	if factionData != nil && factionData.IsPlayerControlled {
-		// If clicking an allied squad: select it
+		// If clicking an allied squad: select it (+ double-click enters move mode)
 		if clickedFactionID == cih.currentFactionID {
+			now := time.Now()
+			isDoubleClick := clickedSquadID == cih.lastClickSquadID &&
+				now.Sub(cih.lastClickTime) <= doubleClickThreshold
+
+			// Always select on single click
 			cih.actionHandler.SelectSquad(clickedSquadID)
+
+			if isDoubleClick {
+				// Double-click: enter move mode (but don't toggle off if already in it)
+				if !cih.deps.BattleState.InMoveMode {
+					cih.actionHandler.ToggleMoveMode()
+				}
+				// Reset to prevent triple-click toggling
+				cih.lastClickTime = time.Time{}
+				cih.lastClickSquadID = 0
+			} else {
+				// Record for potential double-click
+				cih.lastClickTime = now
+				cih.lastClickSquadID = clickedSquadID
+			}
 			return
 		}
 
@@ -362,6 +390,9 @@ func (cih *CombatInputHandler) handleSquadClick(mouseX, mouseY int) {
 			cih.deps.BattleState.SelectedTargetID = clickedSquadID
 			cih.actionHandler.ExecuteAttack()
 		}
+		// Reset double-click tracking on enemy clicks
+		cih.lastClickTime = time.Time{}
+		cih.lastClickSquadID = 0
 	}
 }
 

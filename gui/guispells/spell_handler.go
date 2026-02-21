@@ -367,6 +367,9 @@ func (h *SpellCastingHandler) executeSpellOnTargets(targetSquadIDs []ecs.EntityI
 		h.deps.AddCombatLog(fmt.Sprintf("Mana: %d/%d", mana.CurrentMana, mana.MaxMana))
 	}
 
+	// Clear AoE overlay before changing mode flags
+	h.ClearOverlay()
+
 	// Set spell cast flag
 	h.deps.BattleState.HasCastSpell = true
 

@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/inpututil"
 )
 
 // Keyboard (example keys - expand as needed)
@@ -152,6 +153,10 @@ func (umm *UIModeManager) updateInputState() {
 	} else {
 		umm.inputState.MousePressed = false
 	}
+
+	// Edge-detected mouse press (true only on the frame the button goes down)
+	umm.inputState.MouseJustPressed = inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) ||
+		inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonRight)
 
 	for _, key := range keysToTrack {
 		isPressed := ebiten.IsKeyPressed(key)

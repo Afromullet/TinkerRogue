@@ -235,9 +235,7 @@ func (cm *CombatMode) buildActionButtons() {
 			{Text: "Cast Spell (S)", OnClick: cm.handleSpellClick},
 			{Text: "Artifact (D)", OnClick: cm.handleArtifactClick},
 			{Text: "Undo (Ctrl+Z)", OnClick: cm.handleUndoMove},
-			{Text: "Redo (Ctrl+Y)", OnClick: cm.handleRedoMove},
 			{Text: "End Turn (Space)", OnClick: cm.handleEndTurnClick},
-			{Text: "Flee (ESC)", OnClick: cm.handleFleeClick},
 		},
 		Direction:  widget.DirectionHorizontal,
 		Spacing:    spacing,
@@ -269,16 +267,8 @@ func (cm *CombatMode) handleUndoMove() {
 	cm.actionHandler.UndoLastMove()
 }
 
-func (cm *CombatMode) handleRedoMove() {
-	cm.actionHandler.RedoLastMove()
-}
-
 func (cm *CombatMode) handleEndTurnClick() {
 	cm.turnFlow.HandleEndTurn()
-}
-
-func (cm *CombatMode) handleFleeClick() {
-	cm.turnFlow.HandleFlee()
 }
 
 func (cm *CombatMode) initializeUpdateComponents() {
