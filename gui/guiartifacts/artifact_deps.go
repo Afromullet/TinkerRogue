@@ -11,6 +11,5 @@ type ArtifactActivationDeps struct {
 	BattleState      *framework.TacticalState
 	CombatService    *combatservices.CombatService
 	EncounterService *encounter.EncounterService
-	AddCombatLog     func(string)
 	Queries          *framework.GUIQueries
 }

@@ -26,34 +26,20 @@ func NewCombatActionHandler(deps *CombatModeDeps) *CombatActionHandler {
 // SelectSquad selects a squad and logs the action
 func (cah *CombatActionHandler) SelectSquad(squadID ecs.EntityID) {
 	cah.deps.BattleState.SelectedSquadID = squadID
-
-	// Get squad name and log
-	squadName := cah.deps.Queries.SquadCache.GetSquadName(squadID)
-	cah.addLog(fmt.Sprintf("Selected: %s", squadName))
 }
 
 // ToggleAttackMode enables/disables attack mode
 func (cah *CombatActionHandler) ToggleAttackMode() {
 	if cah.deps.BattleState.SelectedSquadID == 0 {
-		cah.addLog("Select a squad first!")
 		return
 	}
 
-	newAttackMode := !cah.deps.BattleState.InAttackMode
-	cah.deps.BattleState.InAttackMode = newAttackMode
-
-	if newAttackMode {
-		cah.addLog("Attack mode")
-
-	} else {
-		cah.addLog("Attack mode cancelled")
-	}
+	cah.deps.BattleState.InAttackMode = !cah.deps.BattleState.InAttackMode
 }
 
 // ToggleMoveMode enables/disables move mode
 func (cah *CombatActionHandler) ToggleMoveMode() {
 	if cah.deps.BattleState.SelectedSquadID == 0 {
-		cah.addLog("Select a squad first!")
 		return
 	}
 
@@ -64,16 +50,12 @@ func (cah *CombatActionHandler) ToggleMoveMode() {
 		validTiles := cah.deps.CombatService.MovementSystem.GetValidMovementTiles(cah.deps.BattleState.SelectedSquadID)
 
 		if len(validTiles) == 0 {
-			cah.addLog("No movement remaining!")
 			return
 		}
 
 		cah.deps.BattleState.InMoveMode = true
-		cah.addLog(fmt.Sprintf("Move mode: Click a tile (%d tiles available)", len(validTiles)))
-		cah.addLog("Click on the map to move, or press M to cancel")
 	} else {
 		cah.deps.BattleState.InMoveMode = false
-		cah.addLog("Move mode cancelled")
 	}
 }
 
@@ -98,7 +80,6 @@ func (cah *CombatActionHandler) SelectEnemyTarget(index int) {
 	enemySquads := cah.deps.Queries.GetEnemySquads(currentFactionID)
 
 	if index < 0 || index >= len(enemySquads) {
-		cah.addLog(fmt.Sprintf("No enemy squad at index %d", index+1))
 		return
 	}
 
@@ -122,7 +103,6 @@ func (cah *CombatActionHandler) ExecuteAttack() {
 
 	// Handle invalid attacks immediately (no animation)
 	if !result.Success {
-		cah.addLog(fmt.Sprintf("Cannot attack: %s", result.ErrorReason))
 		return
 	}
 
@@ -132,34 +112,12 @@ func (cah *CombatActionHandler) ExecuteAttack() {
 			if caMode, ok := animMode.(*CombatAnimationMode); ok {
 				caMode.SetCombatants(selectedSquad, selectedTarget)
 				caMode.SetOnComplete(func() {
-					// Animation complete - show attack results
-					attackerName := "Unknown"
-					defenderName := "Unknown"
-					if result.CombatLog != nil {
-						attackerName = result.CombatLog.AttackerSquadName
-						defenderName = result.CombatLog.DefenderSquadName
-					}
-					cah.addLog(fmt.Sprintf("%s attacked %s!", attackerName, defenderName))
-					if result.TargetDestroyed {
-						cah.addLog(fmt.Sprintf("%s was destroyed!", defenderName))
-					}
+					// Animation complete - no-op (results already applied)
 				})
 				cah.deps.ModeManager.RequestTransition(animMode, "Combat animation")
 				return
 			}
 		}
-	}
-
-	// Fallback: no animation mode, just show results
-	attackerName := "Unknown"
-	defenderName := "Unknown"
-	if result.CombatLog != nil {
-		attackerName = result.CombatLog.AttackerSquadName
-		defenderName = result.CombatLog.DefenderSquadName
-	}
-	cah.addLog(fmt.Sprintf("%s attacked %s!", attackerName, defenderName))
-	if result.TargetDestroyed {
-		cah.addLog(fmt.Sprintf("%s was destroyed!", defenderName))
 	}
 }
 
@@ -182,12 +140,10 @@ func (cah *CombatActionHandler) MoveSquad(squadID ecs.EntityID, newPos coords.Lo
 	result := cah.commandExecutor.Execute(cmd)
 
 	if !result.Success {
-		cah.addLog(fmt.Sprintf("Movement failed: %s", result.Error))
 		return fmt.Errorf(result.Error)
 	}
 
 	// Cache invalidation is handled automatically by the onMoveComplete hook.
-	cah.addLog(fmt.Sprintf("✓ %s", result.Description))
 
 	// Exit move mode
 	cah.deps.BattleState.InMoveMode = false
@@ -198,7 +154,6 @@ func (cah *CombatActionHandler) MoveSquad(squadID ecs.EntityID, newPos coords.Lo
 // UndoLastMove undoes the last movement command
 func (cah *CombatActionHandler) UndoLastMove() {
 	if !cah.commandExecutor.CanUndo() {
-		cah.addLog("Nothing to undo")
 		return
 	}
 
@@ -207,16 +162,12 @@ func (cah *CombatActionHandler) UndoLastMove() {
 	if result.Success {
 		// Invalidate all squads since squad positions changed
 		cah.deps.Queries.MarkAllSquadsDirty()
-		cah.addLog(fmt.Sprintf("⟲ Undid: %s", result.Description))
-	} else {
-		cah.addLog(fmt.Sprintf("Undo failed: %s", result.Error))
 	}
 }
 
 // RedoLastMove redoes the last undone movement command
 func (cah *CombatActionHandler) RedoLastMove() {
 	if !cah.commandExecutor.CanRedo() {
-		cah.addLog("Nothing to redo")
 		return
 	}
 
@@ -225,9 +176,6 @@ func (cah *CombatActionHandler) RedoLastMove() {
 	if result.Success {
 		// Invalidate all squads since squad positions changed
 		cah.deps.Queries.MarkAllSquadsDirty()
-		cah.addLog(fmt.Sprintf("⟳ Redid: %s", result.Description))
-	} else {
-		cah.addLog(fmt.Sprintf("Redo failed: %s", result.Error))
 	}
 }
 
@@ -246,7 +194,6 @@ func (cah *CombatActionHandler) CanRedoMove() bool {
 // ClearMoveHistory clears all movement history (called when ending turn)
 func (cah *CombatActionHandler) ClearMoveHistory() {
 	cah.commandExecutor.ClearHistory()
-	cah.addLog("Movement history cleared")
 }
 
 // CycleSquadSelection selects the next squad in the faction
@@ -281,9 +228,6 @@ func (cah *CombatActionHandler) CycleSquadSelection() {
 
 // DebugKillSquad removes a squad from the combat map using the normal death cleanup flow.
 func (cah *CombatActionHandler) DebugKillSquad(squadID ecs.EntityID) {
-	// Get squad name before disposal
-	squadName := cah.deps.Queries.SquadCache.GetSquadName(squadID)
-
 	// Clear selection if the killed squad was selected
 	if cah.deps.BattleState.SelectedSquadID == squadID {
 		cah.deps.BattleState.SelectedSquadID = 0
@@ -291,17 +235,9 @@ func (cah *CombatActionHandler) DebugKillSquad(squadID ecs.EntityID) {
 
 	// Use the same cleanup path as normal combat death
 	if err := combat.RemoveSquadFromMap(squadID, cah.deps.Queries.ECSManager); err != nil {
-		cah.addLog(fmt.Sprintf("[DEBUG] Kill failed: %v", err))
 		return
 	}
 
 	// Invalidate cache for the removed squad
 	cah.deps.Queries.InvalidateSquad(squadID)
-
-	cah.addLog(fmt.Sprintf("[DEBUG] Killed squad: %s", squadName))
-}
-
-// addLog adds a message to the combat log
-func (cah *CombatActionHandler) addLog(message string) {
-	cah.deps.AddCombatLog(message)
 }

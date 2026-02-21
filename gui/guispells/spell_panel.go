@@ -13,7 +13,6 @@ import (
 type SpellPanelDeps struct {
 	Handler      *SpellCastingHandler
 	BattleState  *framework.TacticalState
-	AddCombatLog func(string)
 	ShowSubmenu  func() // injected from CombatMode's subMenus.Show("spell")
 	CloseSubmenu func() // injected from CombatMode's subMenus.CloseAll()
 }
@@ -114,13 +113,11 @@ func (sp *SpellPanelController) Refresh() {
 // Show validates preconditions, refreshes data, and shows the panel.
 func (sp *SpellPanelController) Show() {
 	if sp.deps.BattleState.HasCastSpell {
-		sp.deps.AddCombatLog("Already cast a spell this turn")
 		return
 	}
 
 	allSpells := sp.deps.Handler.GetAllSpells()
 	if len(allSpells) == 0 {
-		sp.deps.AddCombatLog("No spells available")
 		return
 	}
 

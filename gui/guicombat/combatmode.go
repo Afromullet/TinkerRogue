@@ -29,7 +29,6 @@ type CombatMode struct {
 	deps *CombatModeDeps
 
 	// Managers
-	logManager       *CombatLogManager
 	actionHandler    *CombatActionHandler
 	inputHandler     *CombatInputHandler
 	combatService    *combatservices.CombatService
@@ -63,7 +62,6 @@ type CombatMode struct {
 
 func NewCombatMode(modeManager *framework.UIModeManager, encounterService *encounter.EncounterService) *CombatMode {
 	cm := &CombatMode{
-		logManager:       NewCombatLogManager(),
 		encounterService: encounterService,
 	}
 	cm.SetModeName("combat")
@@ -97,17 +95,12 @@ func (cm *CombatMode) Initialize(ctx *framework.UIContext) error {
 	// Build action buttons (needs callbacks, so done separately)
 	cm.buildActionButtons()
 
-	// Post-UI initialization
-	combatLogArea := GetCombatLogTextArea(cm.Panels)
-
 	// Create consolidated dependencies for handlers
 	cm.deps = NewCombatModeDeps(
 		ctx.ModeCoordinator.GetTacticalState(),
 		cm.combatService,
 		cm.encounterService,
 		cm.Queries,
-		combatLogArea,
-		cm.logManager,
 		cm.ModeManager,
 	)
 
@@ -122,14 +115,12 @@ func (cm *CombatMode) Initialize(ctx *framework.UIContext) error {
 		EncounterService: cm.deps.EncounterService,
 		GameMap:          ctx.GameMap,
 		PlayerPos:        ctx.PlayerData.Pos,
-		AddCombatLog:     cm.deps.AddCombatLog,
 		Queries:          cm.deps.Queries,
 	}
 	spellHandler := guispells.NewSpellCastingHandler(spellDeps)
 	cm.spellPanel = guispells.NewSpellPanelController(&guispells.SpellPanelDeps{
 		Handler:      spellHandler,
 		BattleState:  cm.deps.BattleState,
-		AddCombatLog: cm.deps.AddCombatLog,
 		ShowSubmenu:  func() { cm.subMenus.Show("spell") },
 		CloseSubmenu: func() { cm.subMenus.CloseAll() },
 	})
@@ -150,7 +141,6 @@ func (cm *CombatMode) Initialize(ctx *framework.UIContext) error {
 		BattleState:      cm.deps.BattleState,
 		CombatService:    cm.deps.CombatService,
 		EncounterService: cm.deps.EncounterService,
-		AddCombatLog:     cm.deps.AddCombatLog,
 		Queries:          cm.deps.Queries,
 	}
 	artifactHandler := guiartifacts.NewArtifactActivationHandler(artifactDeps)
@@ -158,7 +148,6 @@ func (cm *CombatMode) Initialize(ctx *framework.UIContext) error {
 	cm.artifactPanel = guiartifacts.NewArtifactPanelController(&guiartifacts.ArtifactPanelDeps{
 		Handler:      artifactHandler,
 		BattleState:  cm.deps.BattleState,
-		AddCombatLog: cm.deps.AddCombatLog,
 		ShowSubmenu:  func() { cm.subMenus.Show("artifact") },
 		CloseSubmenu: func() { cm.subMenus.CloseAll() },
 	})
@@ -180,13 +169,12 @@ func (cm *CombatMode) Initialize(ctx *framework.UIContext) error {
 	cm.visualization = NewCombatVisualizationManager(ctx, cm.Queries, ctx.GameMap)
 
 	// Wire visualization input support into input handler
-	cm.inputHandler.SetVisualization(cm.visualization, cm.Panels, cm.logManager)
+	cm.inputHandler.SetVisualization(cm.visualization, cm.Panels)
 
 	// Initialize turn flow manager (before initializeUpdateComponents which sets UI refs on it)
 	cm.turnFlow = NewCombatTurnFlow(
 		cm.combatService,
 		cm.visualization,
-		cm.logManager,
 		cm.actionHandler,
 		cm.Queries,
 		cm.ModeManager,
@@ -211,11 +199,6 @@ func (cm *CombatMode) buildPanelsFromRegistry() error {
 		CombatPanelFactionInfo,
 		CombatPanelSquadDetail,
 		CombatPanelLayerStatus,
-	}
-
-	// Build combat log only if enabled
-	if config.ENABLE_COMBAT_LOG {
-		panels = append(panels, CombatPanelCombatLog)
 	}
 
 	return cm.BuildPanels(panels...)
@@ -384,11 +367,7 @@ func (cm *CombatMode) Enter(fromMode framework.UIMode) error {
 	isComingFromAnimation := fromMode != nil && fromMode.GetModeName() == "combat_animation"
 	shouldInitialize := !isComingFromAnimation
 
-	combatLogArea := GetCombatLogTextArea(cm.Panels)
-
 	if shouldInitialize {
-		cm.logManager.UpdateTextArea(combatLogArea, "=== COMBAT STARTED ===")
-
 		// Reset stale caches from previous combat
 		cm.Queries.ClearSquadCache()
 		cm.visualization.ResetHighlightColors()
@@ -410,20 +389,8 @@ func (cm *CombatMode) Enter(fromMode framework.UIMode) error {
 		factionIDs := cm.Queries.GetAllFactions()
 		if len(factionIDs) > 0 {
 			if err := cm.combatService.InitializeCombat(factionIDs); err != nil {
-				cm.logManager.UpdateTextArea(combatLogArea, fmt.Sprintf("Error initializing combat: %v", err))
 				return fmt.Errorf("error initializing combat factions: %w", err)
 			}
-
-			// Log initial faction
-			currentFactionID := cm.combatService.TurnManager.GetCurrentFaction()
-			factionData := cm.Queries.CombatCache.FindFactionDataByID(currentFactionID)
-			factionName := "Unknown"
-			if factionData != nil {
-				factionName = factionData.Name
-			}
-			cm.logManager.UpdateTextArea(combatLogArea, fmt.Sprintf("Round 1: %s goes first!", factionName))
-		} else {
-			cm.logManager.UpdateTextArea(combatLogArea, "No factions found - combat cannot start")
 		}
 	}
 
@@ -487,7 +454,6 @@ func (cm *CombatMode) Exit(toMode framework.UIMode) error {
 	}
 
 	cm.visualization.ClearAllVisualizations()
-	cm.logManager.Clear()
 	return nil
 }
 

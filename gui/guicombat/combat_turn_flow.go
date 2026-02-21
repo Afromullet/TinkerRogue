@@ -15,7 +15,6 @@ import (
 type CombatTurnFlow struct {
 	combatService *combatservices.CombatService
 	visualization *CombatVisualizationManager
-	logManager    *CombatLogManager
 	actionHandler *CombatActionHandler
 	queries       *framework.GUIQueries
 	modeManager   *framework.UIModeManager
@@ -36,7 +35,6 @@ type CombatTurnFlow struct {
 func NewCombatTurnFlow(
 	combatService *combatservices.CombatService,
 	visualization *CombatVisualizationManager,
-	logManager *CombatLogManager,
 	actionHandler *CombatActionHandler,
 	queries *framework.GUIQueries,
 	modeManager *framework.UIModeManager,
@@ -46,7 +44,6 @@ func NewCombatTurnFlow(
 	return &CombatTurnFlow{
 		combatService: combatService,
 		visualization: visualization,
-		logManager:    logManager,
 		actionHandler: actionHandler,
 		queries:       queries,
 		modeManager:   modeManager,
@@ -88,8 +85,6 @@ func (tf *CombatTurnFlow) HandleEndTurn() {
 
 	err := tf.combatService.TurnManager.EndTurn()
 	if err != nil {
-		combatLogArea := GetCombatLogTextArea(tf.panels)
-		tf.logManager.UpdateTextArea(combatLogArea, fmt.Sprintf("Error ending turn: %s", err.Error()))
 		return
 	}
 
@@ -107,10 +102,6 @@ func (tf *CombatTurnFlow) HandleEndTurn() {
 		tf.combatService.BattleRecorder.SetCurrentRound(round)
 	}
 
-	turnMessage := tf.formatTurnMessage(currentFactionID, round)
-	combatLogArea := GetCombatLogTextArea(tf.panels)
-	tf.logManager.UpdateTextArea(combatLogArea, turnMessage)
-
 	tf.context.ModeCoordinator.GetTacticalState().Reset()
 
 	tf.turnOrderComponent.Refresh()
@@ -122,9 +113,6 @@ func (tf *CombatTurnFlow) HandleEndTurn() {
 
 // HandleFlee handles the player requesting to flee from combat
 func (tf *CombatTurnFlow) HandleFlee() {
-	combatLogArea := GetCombatLogTextArea(tf.panels)
-	tf.logManager.UpdateTextArea(combatLogArea, "Fleeing from combat...")
-
 	rounds := tf.combatService.TurnManager.GetCurrentRound()
 	tf.lastVictoryResult = &combatservices.VictoryCheckResult{
 		BattleOver:      true,
@@ -153,23 +141,6 @@ func (tf *CombatTurnFlow) CheckAndHandleVictory() bool {
 	// Cache the result for use in Exit() to avoid redundant checks
 	tf.lastVictoryResult = result
 
-	combatLogArea := GetCombatLogTextArea(tf.panels)
-
-	// Display victory or defeat message (uses single source of truth from CombatService)
-	if result.IsPlayerVictory {
-		tf.logManager.UpdateTextArea(combatLogArea, "=== VICTORY! ===")
-		tf.logManager.UpdateTextArea(combatLogArea, fmt.Sprintf("%s is victorious!", result.VictorName))
-	} else {
-		tf.logManager.UpdateTextArea(combatLogArea, "=== DEFEAT ===")
-		if result.VictorFaction != 0 {
-			tf.logManager.UpdateTextArea(combatLogArea, fmt.Sprintf("%s has won the battle.", result.VictorName))
-		} else {
-			tf.logManager.UpdateTextArea(combatLogArea, "All forces have been eliminated.")
-		}
-	}
-
-	tf.logManager.UpdateTextArea(combatLogArea, fmt.Sprintf("Battle lasted %d rounds.", result.RoundsCompleted))
-
 	// Transition to post-combat mode (raid or exploration)
 	returnModeName := tf.getPostCombatReturnMode()
 	if returnMode, exists := tf.modeManager.GetMode(returnModeName); exists {
@@ -193,14 +164,7 @@ func (tf *CombatTurnFlow) executeAITurnIfNeeded() {
 
 	aiController := tf.combatService.GetAIController()
 	// Cache invalidation for destroyed squads is handled automatically by the onAttackComplete hook.
-	aiExecutedActions := aiController.DecideFactionTurn(currentFactionID)
-
-	combatLogArea := GetCombatLogTextArea(tf.panels)
-	if aiExecutedActions {
-		tf.logManager.UpdateTextArea(combatLogArea, fmt.Sprintf("%s (AI) executed actions", factionData.Name))
-	} else {
-		tf.logManager.UpdateTextArea(combatLogArea, fmt.Sprintf("%s (AI) has no valid actions", factionData.Name))
-	}
+	aiController.DecideFactionTurn(currentFactionID)
 
 	if aiController.HasQueuedAttacks() {
 		tf.playAIAttackAnimations(aiController)
@@ -265,8 +229,6 @@ func (tf *CombatTurnFlow) playNextAIAttack(attacks []combatservices.QueuedAttack
 func (tf *CombatTurnFlow) advanceAfterAITurn() {
 	err := tf.combatService.TurnManager.EndTurn()
 	if err != nil {
-		combatLogArea := GetCombatLogTextArea(tf.panels)
-		tf.logManager.UpdateTextArea(combatLogArea, fmt.Sprintf("Error ending AI turn: %s", err.Error()))
 		return
 	}
 
@@ -283,10 +245,6 @@ func (tf *CombatTurnFlow) advanceAfterAITurn() {
 	if tf.combatService.BattleRecorder != nil && tf.combatService.BattleRecorder.IsEnabled() {
 		tf.combatService.BattleRecorder.SetCurrentRound(round)
 	}
-
-	turnMessage := tf.formatTurnMessage(newFactionID, round)
-	combatLogArea := GetCombatLogTextArea(tf.panels)
-	tf.logManager.UpdateTextArea(combatLogArea, turnMessage)
 
 	tf.turnOrderComponent.Refresh()
 	tf.factionInfoComponent.ShowFaction(newFactionID)

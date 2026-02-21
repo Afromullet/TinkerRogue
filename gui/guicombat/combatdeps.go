@@ -2,7 +2,6 @@ package guicombat
 
 import (
 	"game_main/gui/framework"
-	"game_main/gui/widgets"
 	"game_main/mind/encounter"
 	"game_main/tactical/combatservices"
 )
@@ -25,10 +24,6 @@ type CombatModeDeps struct {
 	// Queries (read access to ECS)
 	Queries *framework.GUIQueries
 
-	// UI Components
-	CombatLogArea *widgets.CachedTextAreaWrapper
-	LogManager    *CombatLogManager
-
 	// Mode management
 	ModeManager *framework.UIModeManager
 }
@@ -39,8 +34,6 @@ func NewCombatModeDeps(
 	combatService *combatservices.CombatService,
 	encounterService *encounter.EncounterService,
 	queries *framework.GUIQueries,
-	combatLogArea *widgets.CachedTextAreaWrapper,
-	logManager *CombatLogManager,
 	modeManager *framework.UIModeManager,
 ) *CombatModeDeps {
 	return &CombatModeDeps{
@@ -48,13 +41,6 @@ func NewCombatModeDeps(
 		CombatService:    combatService,
 		EncounterService: encounterService,
 		Queries:          queries,
-		CombatLogArea:    combatLogArea,
-		LogManager:       logManager,
 		ModeManager:      modeManager,
 	}
-}
-
-// AddCombatLog adds a message to the combat log UI
-func (d *CombatModeDeps) AddCombatLog(message string) {
-	d.LogManager.UpdateTextArea(d.CombatLogArea, message)
 }

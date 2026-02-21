@@ -20,7 +20,6 @@ const (
 	CombatPanelTurnOrder   framework.PanelType = "combat_turn_order"
 	CombatPanelFactionInfo framework.PanelType = "combat_faction_info"
 	CombatPanelSquadDetail framework.PanelType = "combat_squad_detail"
-	CombatPanelCombatLog   framework.PanelType = "combat_log"
 	CombatPanelLayerStatus framework.PanelType = "combat_layer_status"
 	CombatPanelDebugMenu            framework.PanelType = "combat_debug_menu"
 	CombatPanelSpellSelection       framework.PanelType = "combat_spell_selection"
@@ -209,42 +208,6 @@ func init() {
 
 			result.TextLabel = builders.CreateSmallLabel("Select a squad\nto view details")
 			result.Container.AddChild(result.TextLabel)
-
-			return nil
-		},
-	})
-
-	framework.RegisterPanel(CombatPanelCombatLog, framework.PanelDescriptor{
-		Content: framework.ContentCustom,
-		OnCreate: func(result *framework.PanelResult, mode framework.UIMode) error {
-			bm := mode.(*CombatMode)
-			layout := bm.Layout
-
-			panelWidth := int(float64(layout.ScreenWidth) * specs.CombatLogWidth)
-			panelHeight := int(float64(layout.ScreenHeight) * specs.CombatLogHeight)
-
-			result.Container = builders.CreatePanelWithConfig(builders.ContainerConfig{
-				MinWidth:   panelWidth,
-				MinHeight:  panelHeight,
-				Background: widgetresources.PanelRes.Image,
-				Layout:     widget.NewAnchorLayout(),
-			})
-
-			rightPad := int(float64(layout.ScreenWidth) * specs.PaddingTight)
-			bottomOffset := int(float64(layout.ScreenHeight) * (specs.CombatActionButtonHeight + specs.BottomButtonOffset + specs.PaddingTight))
-			result.Container.GetWidget().LayoutData = builders.AnchorEndEnd(rightPad, bottomOffset)
-
-			// Create cached textarea
-			textArea := builders.CreateCachedTextArea(builders.TextAreaConfig{
-				MinWidth:  panelWidth - 20,
-				MinHeight: panelHeight - 20,
-				FontColor: color.White,
-			})
-			textArea.SetText("Combat started!\n")
-			result.Container.AddChild(textArea)
-
-			// Store in Custom map for retrieval
-			result.Custom["textArea"] = textArea
 
 			return nil
 		},
@@ -472,14 +435,4 @@ func init() {
 			return nil
 		},
 	})
-}
-
-// GetCombatLogTextArea retrieves the combat log text area from panel registry
-func GetCombatLogTextArea(panels *framework.PanelRegistry) *widgets.CachedTextAreaWrapper {
-	if result := panels.Get(CombatPanelCombatLog); result != nil {
-		if ta, ok := result.Custom["textArea"].(*widgets.CachedTextAreaWrapper); ok {
-			return ta
-		}
-	}
-	return nil
 }

@@ -1,10 +1,8 @@
 package guiartifacts
 
 import (
-	"fmt"
 	"game_main/gear"
 	"game_main/tactical/combat"
-	"game_main/templates"
 	"game_main/visual/graphics"
 	"game_main/world/coords"
 
@@ -56,19 +54,16 @@ func (h *ArtifactActivationHandler) ToggleArtifactMode() {
 
 	available := h.GetAvailableArtifacts()
 	if len(available) == 0 {
-		h.deps.AddCombatLog("No activatable artifacts equipped")
 		return
 	}
 
 	h.deps.BattleState.InArtifactMode = true
-	h.deps.AddCombatLog("ARTIFACT MODE - Select an artifact to activate, ESC to cancel")
 }
 
 // SelectArtifact stores the selected artifact and enters targeting mode
 // (or activates immediately for no-target artifacts).
 func (h *ArtifactActivationHandler) SelectArtifact(behaviorKey string) {
 	if !gear.CanActivateArtifact(behaviorKey, h.deps.CombatService.GetChargeTracker()) {
-		h.deps.AddCombatLog("Artifact charge not available")
 		return
 	}
 
@@ -81,13 +76,6 @@ func (h *ArtifactActivationHandler) SelectArtifact(behaviorKey string) {
 	}
 
 	h.deps.BattleState.SelectedArtifactBehavior = behaviorKey
-
-	switch targetType {
-	case TargetFriendlySquad:
-		h.deps.AddCombatLog("Click a friendly squad to apply artifact effect")
-	case TargetEnemySquad:
-		h.deps.AddCombatLog("Click an enemy squad to apply artifact effect")
-	}
 }
 
 // HandleTargetClick resolves a click to a squad and validates the target.
@@ -101,7 +89,6 @@ func (h *ArtifactActivationHandler) HandleTargetClick(mouseX, mouseY int) {
 	clickedSquadID := combat.GetSquadAtPosition(clickedPos, h.deps.CombatService.EntityManager)
 
 	if clickedSquadID == 0 {
-		h.deps.AddCombatLog("No squad at that position")
 		return
 	}
 
@@ -111,12 +98,10 @@ func (h *ArtifactActivationHandler) HandleTargetClick(mouseX, mouseY int) {
 	switch targetType {
 	case TargetFriendlySquad:
 		if isEnemy {
-			h.deps.AddCombatLog("Must target a friendly squad")
 			return
 		}
 	case TargetEnemySquad:
 		if !isEnemy {
-			h.deps.AddCombatLog("Must target an enemy squad")
 			return
 		}
 	}
@@ -128,7 +113,6 @@ func (h *ArtifactActivationHandler) HandleTargetClick(mouseX, mouseY int) {
 func (h *ArtifactActivationHandler) CancelArtifactMode() {
 	h.deps.BattleState.InArtifactMode = false
 	h.deps.BattleState.SelectedArtifactBehavior = ""
-	h.deps.AddCombatLog("Artifact activation cancelled")
 }
 
 // GetAvailableArtifacts returns options for all equipped major artifacts in the player's faction.
@@ -208,16 +192,7 @@ func (h *ArtifactActivationHandler) executeArtifact(behaviorKey string, targetSq
 		ChargeTracker: h.deps.CombatService.GetChargeTracker(),
 	}
 
-	err := gear.ActivateArtifact(behaviorKey, targetSquadID, ctx)
-	if err != nil {
-		h.deps.AddCombatLog(fmt.Sprintf("Artifact failed: %s", err))
-	} else {
-		name := behaviorKey
-		if def := h.findDefinitionByBehavior(behaviorKey); def != nil {
-			name = def.Name
-		}
-		h.deps.AddCombatLog(fmt.Sprintf("Activated %s!", name))
-	}
+	gear.ActivateArtifact(behaviorKey, targetSquadID, ctx)
 
 	// Clear artifact state regardless of success
 	h.deps.BattleState.InArtifactMode = false
@@ -225,23 +200,6 @@ func (h *ArtifactActivationHandler) executeArtifact(behaviorKey string, targetSq
 
 	// Invalidate caches since artifact effects may have changed squad stats
 	h.deps.Queries.MarkAllSquadsDirty()
-}
-
-func (h *ArtifactActivationHandler) findDefinitionByBehavior(behaviorKey string) *templates.ArtifactDefinition {
-	playerFactionID := h.getPlayerFactionID()
-	if playerFactionID == 0 {
-		return nil
-	}
-	squadIDs := combat.GetSquadsForFaction(playerFactionID, h.deps.CombatService.EntityManager)
-	for _, squadID := range squadIDs {
-		defs := gear.GetArtifactDefinitions(squadID, h.deps.CombatService.EntityManager)
-		for _, def := range defs {
-			if def.Behavior == behaviorKey {
-				return def
-			}
-		}
-	}
-	return nil
 }
 
 func (h *ArtifactActivationHandler) isEnemySquad(squadID ecs.EntityID) bool {

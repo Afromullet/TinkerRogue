@@ -16,6 +16,5 @@ type SpellCastingDeps struct {
 	EncounterService *encounter.EncounterService
 	GameMap          *worldmap.GameMap
 	PlayerPos        *coords.LogicalPosition
-	AddCombatLog     func(string)
 	Queries          *framework.GUIQueries
 }

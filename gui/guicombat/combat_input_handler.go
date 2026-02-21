@@ -40,7 +40,6 @@ type CombatInputHandler struct {
 	// Visualization input support
 	visualization *CombatVisualizationManager
 	panels        *framework.PanelRegistry
-	logManager    *CombatLogManager
 
 	// Double-click tracking
 	lastClickTime    time.Time
@@ -76,16 +75,14 @@ func (cih *CombatInputHandler) SetArtifactPanel(panel *guiartifacts.ArtifactPane
 }
 
 // SetVisualization sets the visualization manager and related dependencies for keybinding handling
-func (cih *CombatInputHandler) SetVisualization(viz *CombatVisualizationManager, panels *framework.PanelRegistry, logManager *CombatLogManager) {
+func (cih *CombatInputHandler) SetVisualization(viz *CombatVisualizationManager, panels *framework.PanelRegistry) {
 	cih.visualization = viz
 	cih.panels = panels
-	cih.logManager = logManager
 }
 
 // EnterDebugKillMode activates click-to-kill mode for debug purposes.
 func (cih *CombatInputHandler) EnterDebugKillMode() {
 	cih.inDebugKillMode = true
-	cih.actionHandler.addLog("[DEBUG] Kill mode active - click a squad to remove it")
 }
 
 // handleDebugKillClick processes a click while in debug kill mode.
@@ -98,7 +95,6 @@ func (cih *CombatInputHandler) handleDebugKillClick(mouseX, mouseY int) {
 	clickedSquadID := combat.GetSquadAtPosition(clickedPos, cih.deps.Queries.ECSManager)
 
 	if clickedSquadID == 0 {
-		cih.actionHandler.addLog("[DEBUG] No squad at that position")
 		return
 	}
 
@@ -110,7 +106,6 @@ func (cih *CombatInputHandler) HandleInput(inputState *framework.InputState) boo
 	// ESC cancels debug kill mode
 	if cih.inDebugKillMode && inputState.KeysJustPressed[ebiten.KeyEscape] {
 		cih.inDebugKillMode = false
-		cih.actionHandler.addLog("[DEBUG] Kill mode cancelled")
 		return true
 	}
 
@@ -488,15 +483,8 @@ func (cih *CombatInputHandler) handleThreatToggle(inputState *framework.InputSta
 		inputState.KeysPressed[ebiten.KeyShiftLeft] ||
 		inputState.KeysPressed[ebiten.KeyShiftRight]
 
-	combatLogArea := GetCombatLogTextArea(cih.panels)
-
 	if shiftPressed {
 		threatViz.CycleFaction()
-		factionName := "Unknown"
-		if factionInfo := cih.deps.Queries.GetFactionInfo(threatViz.GetViewFactionID()); factionInfo != nil {
-			factionName = factionInfo.Name
-		}
-		cih.logManager.UpdateTextArea(combatLogArea, fmt.Sprintf("Viewing faction: %s", factionName))
 	} else {
 		// If not active or in different mode: activate in Threat mode
 		// If already active in Threat mode: turn off
@@ -505,10 +493,8 @@ func (cih *CombatInputHandler) handleThreatToggle(inputState *framework.InputSta
 			if !threatViz.IsActive() {
 				threatViz.Toggle()
 			}
-			cih.logManager.UpdateTextArea(combatLogArea, "Threat visualization enabled")
 		} else {
 			threatViz.Toggle()
-			cih.logManager.UpdateTextArea(combatLogArea, "Threat visualization disabled")
 		}
 	}
 	cih.updateLayerStatusWidget()
@@ -523,12 +509,6 @@ func (cih *CombatInputHandler) handleHealthBarToggle(inputState *framework.Input
 
 	battleState := cih.deps.BattleState
 	battleState.ShowHealthBars = !battleState.ShowHealthBars
-	status := "enabled"
-	if !battleState.ShowHealthBars {
-		status = "disabled"
-	}
-	combatLogArea := GetCombatLogTextArea(cih.panels)
-	cih.logManager.UpdateTextArea(combatLogArea, fmt.Sprintf("Health bars %s", status))
 	return true
 }
 
@@ -547,13 +527,8 @@ func (cih *CombatInputHandler) handleLayerToggle(inputState *framework.InputStat
 		inputState.KeysPressed[ebiten.KeyShiftLeft] ||
 		inputState.KeysPressed[ebiten.KeyShiftRight]
 
-	combatLogArea := GetCombatLogTextArea(cih.panels)
-
 	if shiftPressed {
 		threatViz.CycleLayerMode()
-		modeInfo := threatViz.GetLayerModeInfo()
-		cih.logManager.UpdateTextArea(combatLogArea,
-			fmt.Sprintf("Layer: %s (%s)", modeInfo.Name, modeInfo.ColorKey))
 	} else {
 		// If not active or in different mode: activate in Layer mode
 		// If already active in Layer mode: turn off
@@ -562,12 +537,8 @@ func (cih *CombatInputHandler) handleLayerToggle(inputState *framework.InputStat
 			if !threatViz.IsActive() {
 				threatViz.Toggle()
 			}
-			modeInfo := threatViz.GetLayerModeInfo()
-			cih.logManager.UpdateTextArea(combatLogArea,
-				fmt.Sprintf("Layer visualization enabled: %s", modeInfo.Name))
 		} else {
 			threatViz.Toggle()
-			cih.logManager.UpdateTextArea(combatLogArea, "Layer visualization disabled")
 		}
 	}
 	cih.updateLayerStatusWidget()

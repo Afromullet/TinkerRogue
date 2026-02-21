@@ -1,7 +1,6 @@
 package guispells
 
 import (
-	"fmt"
 	"game_main/tactical/combat"
 	"game_main/tactical/spells"
 	"game_main/templates"
@@ -42,12 +41,6 @@ func (h *SpellCastingHandler) SelectSpell(spellID string) {
 	}
 
 	if !spells.HasEnoughMana(commanderID, spellID, h.deps.ECSManager) {
-		spell := templates.GetSpellDefinition(spellID)
-		name := spellID
-		if spell != nil {
-			name = spell.Name
-		}
-		h.deps.AddCombatLog(fmt.Sprintf("Not enough mana for %s", name))
 		return
 	}
 
@@ -58,12 +51,9 @@ func (h *SpellCastingHandler) SelectSpell(spellID string) {
 
 	h.deps.BattleState.SelectedSpellID = spellID
 
-	if spell.IsSingleTarget() {
-		h.deps.AddCombatLog(fmt.Sprintf("Click an enemy squad to cast %s", spell.Name))
-	} else {
+	if !spell.IsSingleTarget() {
 		// Initialize AoE shape targeting
 		h.activeShape = spell.CreateAoEShape()
-		h.deps.AddCombatLog(fmt.Sprintf("Select target area for %s (click to cast, 1/2 to rotate)", spell.Name))
 	}
 }
 
@@ -87,7 +77,6 @@ func (h *SpellCastingHandler) CancelSpellMode() {
 	h.ClearOverlay()
 	h.deps.BattleState.InSpellMode = false
 	h.deps.BattleState.SelectedSpellID = ""
-	h.deps.AddCombatLog("Spell cancelled")
 }
 
 // GetAvailableSpells returns spells the commander can cast (checks mana).
@@ -133,12 +122,10 @@ func (h *SpellCastingHandler) HandleSingleTargetClick(mouseX, mouseY int) {
 	clickedSquadID := combat.GetSquadAtPosition(clickedPos, h.deps.ECSManager)
 
 	if clickedSquadID == 0 {
-		h.deps.AddCombatLog("No squad at that position")
 		return
 	}
 
 	if !h.isEnemySquad(clickedSquadID) {
-		h.deps.AddCombatLog("Must target an enemy squad")
 		return
 	}
 
@@ -201,7 +188,6 @@ func (h *SpellCastingHandler) HandleAoEConfirmClick(mouseX, mouseY int) {
 	}
 
 	if len(squadSet) == 0 {
-		h.deps.AddCombatLog("No enemy squads in target area")
 		return
 	}
 
@@ -279,39 +265,17 @@ func (h *SpellCastingHandler) executeSpellOnTargets(targetSquadIDs []ecs.EntityI
 
 	commanderID := h.deps.EncounterService.GetRosterOwnerID()
 	if commanderID == 0 {
-		h.deps.AddCombatLog("No commander for this encounter")
 		return
 	}
 
 	result := spells.ExecuteSpellCast(commanderID, spellID, targetSquadIDs, h.deps.ECSManager)
 
 	if !result.Success {
-		h.deps.AddCombatLog(fmt.Sprintf("Spell failed: %s", result.ErrorReason))
 		return
 	}
 
 	// Trigger VX at target positions
 	triggerSpellVX(spell, targetSquadIDs, targetPos, h.deps)
-
-	// Log results
-	h.deps.AddCombatLog(fmt.Sprintf("Commander cast %s!", spell.Name))
-	h.deps.AddCombatLog(fmt.Sprintf("%s dealt %d total damage to %d squads",
-		spell.Name, result.TotalDamageDealt, len(result.AffectedSquadIDs)))
-
-	for _, destroyedID := range result.SquadsDestroyed {
-		squadInfo := h.deps.Queries.GetSquadInfo(destroyedID)
-		name := fmt.Sprintf("Squad %d", destroyedID)
-		if squadInfo != nil {
-			name = squadInfo.Name
-		}
-		h.deps.AddCombatLog(fmt.Sprintf("%s was destroyed!", name))
-	}
-
-	// Update mana display
-	mana := spells.GetManaData(commanderID, h.deps.ECSManager)
-	if mana != nil {
-		h.deps.AddCombatLog(fmt.Sprintf("Mana: %d/%d", mana.CurrentMana, mana.MaxMana))
-	}
 
 	// Clear AoE overlay before changing mode flags
 	h.ClearOverlay()

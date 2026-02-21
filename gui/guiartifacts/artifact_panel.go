@@ -12,7 +12,6 @@ import (
 type ArtifactPanelDeps struct {
 	Handler      *ArtifactActivationHandler
 	BattleState  *framework.TacticalState
-	AddCombatLog func(string)
 	ShowSubmenu  func() // injected from CombatMode's subMenus.Show("artifact")
 	CloseSubmenu func() // injected from CombatMode's subMenus.CloseAll()
 }
@@ -107,7 +106,6 @@ func (ap *ArtifactPanelController) Refresh() {
 func (ap *ArtifactPanelController) Show() {
 	allArtifacts := ap.deps.Handler.GetAvailableArtifacts()
 	if len(allArtifacts) == 0 {
-		ap.deps.AddCombatLog("No activatable artifacts equipped")
 		return
 	}
 
