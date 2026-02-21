@@ -217,27 +217,6 @@ func (r *NodeRegistry) GetEncountersByFaction(factionID string) []*EncounterDefi
 	return encounters
 }
 
-// GetNodesByFaction returns all nodes belonging to a specific faction.
-// Returns empty slice if no nodes found for the faction.
-func (r *NodeRegistry) GetNodesByFaction(factionID string) []*NodeDefinition {
-	var nodes []*NodeDefinition
-	for _, node := range r.nodesByID {
-		if node.FactionID == factionID {
-			nodes = append(nodes, node)
-		}
-	}
-	return nodes
-}
-
-// GetAllEncounters returns all registered encounter definitions.
-func (r *NodeRegistry) GetAllEncounters() []*EncounterDefinition {
-	encounters := make([]*EncounterDefinition, 0, len(r.encountersByID))
-	for _, enc := range r.encountersByID {
-		encounters = append(encounters, enc)
-	}
-	return encounters
-}
-
 // GetEncounterByTypeID returns an encounter definition by its EncounterTypeID field.
 // Linear scan — returns first match or default.
 func (r *NodeRegistry) GetEncounterByTypeID(encounterTypeID string) *EncounterDefinition {

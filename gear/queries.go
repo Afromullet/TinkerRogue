@@ -12,21 +12,6 @@ func GetEquipmentData(squadID ecs.EntityID, manager *common.EntityManager) *Equi
 	return common.GetComponentTypeByID[*EquipmentData](manager, squadID, EquipmentComponent)
 }
 
-// hasArtifactOfTier returns true if the squad has any equipped artifact of the given tier.
-func hasArtifactOfTier(squadID ecs.EntityID, tier string, manager *common.EntityManager) bool {
-	data := GetEquipmentData(squadID, manager)
-	if data == nil {
-		return false
-	}
-	for _, id := range data.EquippedArtifacts {
-		def := templates.GetArtifactDefinition(id)
-		if def != nil && def.Tier == tier {
-			return true
-		}
-	}
-	return false
-}
-
 // GetArtifactDefinitions returns artifact definitions for all equipped artifacts on a squad.
 func GetArtifactDefinitions(squadID ecs.EntityID, manager *common.EntityManager) []*templates.ArtifactDefinition {
 	data := GetEquipmentData(squadID, manager)
@@ -56,11 +41,6 @@ func HasArtifactBehavior(squadID ecs.EntityID, behavior string, manager *common.
 		}
 	}
 	return false
-}
-
-// HasBehaviorInFaction returns true if any squad in the list has an artifact with the given behavior.
-func HasBehaviorInFaction(squadIDs []ecs.EntityID, behavior string, manager *common.EntityManager) bool {
-	return GetFactionSquadWithBehavior(squadIDs, behavior, manager) != 0
 }
 
 // GetFactionSquadWithBehavior returns the first squad with the given artifact behavior, or 0.

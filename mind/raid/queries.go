@@ -2,8 +2,6 @@ package raid
 
 import (
 	"game_main/common"
-
-	"github.com/bytearena/ecs"
 )
 
 // GetRaidState returns the singleton RaidStateData, or nil if no raid is active.
@@ -12,14 +10,6 @@ func GetRaidState(manager *common.EntityManager) *RaidStateData {
 		return common.GetComponentType[*RaidStateData](result.Entity, RaidStateComponent)
 	}
 	return nil
-}
-
-// GetRaidStateEntity returns the raid state entity ID, or 0 if none exists.
-func GetRaidStateEntity(manager *common.EntityManager) ecs.EntityID {
-	for _, result := range manager.World.Query(RaidStateTag) {
-		return result.Entity.GetID()
-	}
-	return 0
 }
 
 // GetFloorState returns the FloorStateData for a given floor number, or nil if not found.
@@ -53,27 +43,6 @@ func GetAlertData(manager *common.EntityManager, floorNumber int) *AlertData {
 		}
 	}
 	return nil
-}
-
-// GetGarrisonSquadsForFloor returns all garrison squad entity IDs assigned to a floor.
-func GetGarrisonSquadsForFloor(manager *common.EntityManager, floorNumber int) []ecs.EntityID {
-	var ids []ecs.EntityID
-	for _, result := range manager.World.Query(GarrisonSquadTag) {
-		data := common.GetComponentType[*GarrisonSquadData](result.Entity, GarrisonSquadComponent)
-		if data != nil && data.FloorNumber == floorNumber {
-			ids = append(ids, result.Entity.GetID())
-		}
-	}
-	return ids
-}
-
-// IsRoomCleared returns true if the room has been cleared by the player.
-func IsRoomCleared(manager *common.EntityManager, nodeID, floorNumber int) bool {
-	room := GetRoomData(manager, nodeID, floorNumber)
-	if room == nil {
-		return false
-	}
-	return room.IsCleared
 }
 
 // GetAllRoomsForFloor returns all RoomData entities for a given floor.

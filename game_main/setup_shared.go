@@ -200,20 +200,3 @@ func SetupBenchmarking() {
 // gameSquadChecker implements core.SquadChecker interface
 // This allows the overworld package to check squad status without circular dependency
 type gameSquadChecker struct{}
-
-// HasActiveSquads checks if player has any squads with living units
-func (gsc *gameSquadChecker) HasActiveSquads(manager *common.EntityManager) bool {
-	// Query all squad entities
-	for _, result := range manager.World.Query(squads.SquadTag) {
-		squadData := common.GetComponentType[*squads.SquadData](result.Entity, squads.SquadComponent)
-		if squadData == nil {
-			continue
-		}
-
-		if !squads.IsSquadDestroyed(squadData.SquadID, manager) {
-			return true // Found at least one active squad
-		}
-	}
-
-	return false // All squads are destroyed or no squads exist
-}
