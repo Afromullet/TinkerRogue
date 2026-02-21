@@ -85,17 +85,9 @@ func (c *AddUnitCommand) Execute() error {
 		return fmt.Errorf("unit entity has no attributes")
 	}
 
-	// Get unit name
-	nameStr := c.templateName
-	if nameComp, ok := c.manager.GetComponent(unitEntityID, common.NameComponent); ok {
-		if name := nameComp.(*common.Name); name != nil {
-			nameStr = name.NameStr
-		}
-	}
-
 	// Create unit template
 	unitTemplate := squads.UnitTemplate{
-		UnitType:   nameStr,
+		UnitType:   c.templateName,
 		GridRow:    c.gridRow,
 		GridCol:    c.gridCol,
 		GridWidth:  1,

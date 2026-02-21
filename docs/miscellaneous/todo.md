@@ -98,6 +98,8 @@ ________________________________________________
 - GUIOverworld
 - Spells
 - Worldmap
+- Guiraids
+- Raids
 
 ____
 

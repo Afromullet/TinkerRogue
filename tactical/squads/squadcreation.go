@@ -325,6 +325,11 @@ func CreateSquadFromTemplate(
 			Speed: template.MovementSpeed,
 		})
 
+		// Add unit type component for roster grouping (preserves original type)
+		unitEntity.AddComponent(UnitTypeComponent, &UnitTypeData{
+			UnitType: template.UnitType,
+		})
+
 		// Add experience component (all units start at level 1 with 0 XP)
 		unitEntity.AddComponent(ExperienceComponent, &ExperienceData{
 			Level:         1,
