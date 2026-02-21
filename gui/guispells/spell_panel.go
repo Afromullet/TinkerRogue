@@ -124,7 +124,7 @@ func (sp *SpellPanelController) Show() {
 		return
 	}
 
-	sp.deps.BattleState.InSpellMode = true
+	sp.deps.Handler.EnterSpellMode()
 	sp.Refresh()
 	sp.deps.ShowSubmenu()
 }

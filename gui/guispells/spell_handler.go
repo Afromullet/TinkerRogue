@@ -28,64 +28,10 @@ func NewSpellCastingHandler(deps *SpellCastingDeps) *SpellCastingHandler {
 	}
 }
 
-// ToggleSpellMode opens the spell list or cancels spell mode.
-func (h *SpellCastingHandler) ToggleSpellMode() {
-	if h.deps.BattleState.InSpellMode {
-		h.CancelSpellMode()
-		return
-	}
-
-	if h.deps.BattleState.HasCastSpell {
-		msg := "Already cast a spell this turn"
-		fmt.Println("[SPELL]", msg)
-		h.deps.AddCombatLog(msg)
-		return
-	}
-
-	// Check commander has spells available
-	commanderID := h.deps.EncounterService.GetRosterOwnerID()
-	if commanderID == 0 {
-		msg := "No commander for this encounter"
-		fmt.Println("[SPELL]", msg)
-		h.deps.AddCombatLog(msg)
-		return
-	}
-
-	available := spells.GetCastableSpells(commanderID, h.deps.ECSManager)
-	if len(available) == 0 {
-		allSpells := spells.GetAllSpells(commanderID, h.deps.ECSManager)
-		if len(allSpells) == 0 {
-			msg := "No spells available"
-			fmt.Println("[SPELL]", msg)
-			h.deps.AddCombatLog(msg)
-		} else {
-			mana := spells.GetManaData(commanderID, h.deps.ECSManager)
-			if mana != nil {
-				msg := fmt.Sprintf("Not enough mana (have %d)", mana.CurrentMana)
-				fmt.Println("[SPELL]", msg)
-				h.deps.AddCombatLog(msg)
-			}
-		}
-		return
-	}
-
+// EnterSpellMode sets the spell mode flag. The handler is the single authority
+// for all InSpellMode transitions (enter, cancel, and post-cast clear).
+func (h *SpellCastingHandler) EnterSpellMode() {
 	h.deps.BattleState.InSpellMode = true
-
-	// Print available spells so user knows what to pick
-	mana := spells.GetManaData(commanderID, h.deps.ECSManager)
-	manaStr := ""
-	if mana != nil {
-		manaStr = fmt.Sprintf(" (Mana: %d/%d)", mana.CurrentMana, mana.MaxMana)
-	}
-	fmt.Printf("[SPELL] Spell mode activated%s - press 1-%d to select:\n", manaStr, len(available))
-	for i, spell := range available {
-		fmt.Printf("[SPELL]   %d: %s (%d MP) - %s\n", i+1, spell.Name, spell.ManaCost, spell.Description)
-	}
-
-	h.deps.AddCombatLog(fmt.Sprintf("SPELL MODE%s - Press 1-%d to select spell, ESC to cancel", manaStr, len(available)))
-	for i, spell := range available {
-		h.deps.AddCombatLog(fmt.Sprintf("  %d: %s (%d MP)", i+1, spell.Name, spell.ManaCost))
-	}
 }
 
 // SelectSpell validates mana and enters targeting based on spell type.
@@ -345,7 +291,7 @@ func (h *SpellCastingHandler) executeSpellOnTargets(targetSquadIDs []ecs.EntityI
 	}
 
 	// Trigger VX at target positions
-	h.triggerSpellVX(spell, targetSquadIDs, targetPos)
+	triggerSpellVX(spell, targetSquadIDs, targetPos, h.deps)
 
 	// Log results
 	h.deps.AddCombatLog(fmt.Sprintf("Commander cast %s!", spell.Name))
@@ -388,8 +334,8 @@ func (h *SpellCastingHandler) executeSpellOnTargets(targetSquadIDs []ecs.EntityI
 
 // triggerSpellVX creates visual effects at the target location.
 // For AoE spells, targetPos is the clicked position; for single-target, it's nil and squad positions are used.
-func (h *SpellCastingHandler) triggerSpellVX(spell *templates.SpellDefinition, targetSquadIDs []ecs.EntityID, targetPos *coords.LogicalPosition) {
-	playerPos := h.deps.PlayerPos
+func triggerSpellVX(spell *templates.SpellDefinition, targetSquadIDs []ecs.EntityID, targetPos *coords.LogicalPosition, deps *SpellCastingDeps) {
+	playerPos := deps.PlayerPos
 	if playerPos == nil {
 		return
 	}
@@ -408,7 +354,7 @@ func (h *SpellCastingHandler) triggerSpellVX(spell *templates.SpellDefinition, t
 
 	// Single target: VX at each squad's screen position
 	for _, squadID := range targetSquadIDs {
-		squadInfo := h.deps.Queries.GetSquadInfo(squadID)
+		squadInfo := deps.Queries.GetSquadInfo(squadID)
 		if squadInfo == nil || squadInfo.Position == nil {
 			continue
 		}
