@@ -4,23 +4,28 @@ import (
 	"fmt"
 
 	"game_main/common"
+	"game_main/mind/combatpipeline"
 	"game_main/tactical/squads"
 )
 
-// ProcessVictory handles a successful encounter in the raid.
-// Marks the room cleared and grants rewards.
-// roomNodeID identifies the specific room that was fought in.
-func ProcessVictory(manager *common.EntityManager, raidState *RaidStateData, roomNodeID int) string {
-	if raidState == nil {
-		return ""
+// RaidRoomResolver resolves a successful raid room encounter.
+// Replaces ProcessVictory.
+type RaidRoomResolver struct {
+	RaidState  *RaidStateData
+	RoomNodeID int
+}
+
+func (r *RaidRoomResolver) Resolve(manager *common.EntityManager) *combatpipeline.ResolutionPlan {
+	if r.RaidState == nil {
+		return nil
 	}
 
-	floorNumber := raidState.CurrentFloor
+	floorNumber := r.RaidState.CurrentFloor
 
-	room := GetRoomData(manager, roomNodeID, floorNumber)
+	room := GetRoomData(manager, r.RoomNodeID, floorNumber)
 	if room == nil {
-		fmt.Printf("ProcessVictory: Room %d not found on floor %d\n", roomNodeID, floorNumber)
-		return ""
+		fmt.Printf("RaidRoomResolver: Room %d not found on floor %d\n", r.RoomNodeID, floorNumber)
+		return nil
 	}
 
 	// Mark garrison squads as destroyed
@@ -33,10 +38,7 @@ func ProcessVictory(manager *common.EntityManager, raidState *RaidStateData, roo
 
 	MarkRoomCleared(manager, room.NodeID, floorNumber)
 
-	// Grant room-specific rewards
-	rewardText := GrantRoomReward(manager, raidState, room.RoomType)
-
-	fmt.Printf("ProcessVictory: Room %d (%s) cleared on floor %d\n",
+	fmt.Printf("RaidRoomResolver: Room %d (%s) cleared on floor %d\n",
 		room.NodeID, room.RoomType, floorNumber)
 
 	// Check floor completion
@@ -45,21 +47,33 @@ func ProcessVictory(manager *common.EntityManager, raidState *RaidStateData, roo
 		if floorState != nil {
 			floorState.IsComplete = true
 		}
-		fmt.Printf("ProcessVictory: Floor %d complete!\n", floorNumber)
+		fmt.Printf("RaidRoomResolver: Floor %d complete!\n", floorNumber)
 	}
 
-	return rewardText
+	// Calculate room reward (pipeline grants it)
+	reward, target := calculateRoomReward(manager, r.RaidState, room.RoomType)
+
+	return &combatpipeline.ResolutionPlan{
+		Rewards:     reward,
+		Target:      target,
+		Description: fmt.Sprintf("Room %d (%s) cleared", room.NodeID, room.RoomType),
+	}
 }
 
-// ProcessDefeat handles a lost encounter.
-func ProcessDefeat(manager *common.EntityManager) {
-	raidState := GetRaidState(manager)
-	if raidState == nil {
-		return
-	}
+// RaidDefeatResolver resolves a raid defeat (combat loss or flee).
+// Replaces ProcessDefeat.
+type RaidDefeatResolver struct{}
 
-	raidState.Status = RaidDefeat
-	fmt.Println("ProcessDefeat: Raid ended in defeat")
+func (r *RaidDefeatResolver) Resolve(manager *common.EntityManager) *combatpipeline.ResolutionPlan {
+	raidState := GetRaidState(manager)
+	if raidState != nil {
+		raidState.Status = RaidDefeat
+	}
+	fmt.Println("RaidDefeatResolver: Raid ended in defeat")
+
+	return &combatpipeline.ResolutionPlan{
+		Description: "Raid ended in defeat",
+	}
 }
 
 // CheckRaidEndConditions evaluates whether the raid should end.

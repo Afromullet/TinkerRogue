@@ -1,4 +1,4 @@
-package resolution
+package combatpipeline
 
 import (
 	"game_main/common"

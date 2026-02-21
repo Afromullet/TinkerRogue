@@ -5,7 +5,7 @@ import (
 
 	"game_main/common"
 	"game_main/mind/encounter"
-	"game_main/mind/resolution"
+	"game_main/mind/combatpipeline"
 	"game_main/world/worldmap"
 
 	"github.com/bytearena/ecs"
@@ -22,7 +22,7 @@ type RaidEncounterResult struct {
 }
 
 // RaidRunner coordinates the raid loop: floor progression, room selection,
-// encounter triggering, and post-combat resolution.
+// encounter triggering, and post-combat combatpipeline.
 // It is NOT an ECS system — it's a service/controller that orchestrates ECS state.
 type RaidRunner struct {
 	manager          *common.EntityManager
@@ -157,7 +157,7 @@ func (rr *RaidRunner) TriggerRaidEncounter(nodeID int) error {
 	// Snapshot alive counts for post-encounter summary
 	rr.preCombatAliveCounts = make(map[ecs.EntityID]int)
 	for _, squadID := range raidState.PlayerSquadIDs {
-		rr.preCombatAliveCounts[squadID] = resolution.CountLivingUnitsInSquad(rr.manager, squadID)
+		rr.preCombatAliveCounts[squadID] = combatpipeline.CountLivingUnitsInSquad(rr.manager, squadID)
 	}
 
 	// Get deployed squads (use deployment if available, otherwise all player squads)
@@ -170,29 +170,20 @@ func (rr *RaidRunner) TriggerRaidEncounter(nodeID int) error {
 	// Combat position from config
 	combatPos := CombatPosition()
 
-	// Set up factions and positions
-	playerFactionID, enemyFactionID, err := SetupRaidFactions(
-		rr.manager, rr.raidEntityID,
-		room.GarrisonSquadIDs, deployedIDs, combatPos,
-	)
-	if err != nil {
-		return fmt.Errorf("failed to start raid encounter: %w", err)
-	}
-
 	// Store current room for post-combat resolution
 	rr.currentRoomNodeID = nodeID
 	rr.LastEncounterResult = nil
 
-	// Register encounter with service and transition to combat mode
-	return rr.encounterService.BeginRaidCombat(
-		rr.raidEntityID,
-		room.GarrisonSquadIDs,
-		combatPos,
-		raidState.CommanderID,
-		playerFactionID,
-		enemyFactionID,
-		"raid",
-	)
+	// Use unified combat start pipeline
+	starter := &RaidCombatStarter{
+		RaidEntityID:     rr.raidEntityID,
+		GarrisonSquadIDs: room.GarrisonSquadIDs,
+		DeployedSquadIDs: deployedIDs,
+		CombatPos:        combatPos,
+		CommanderID:      raidState.CommanderID,
+	}
+	_, err := combatpipeline.ExecuteCombatStart(rr.encounterService, rr.manager, starter)
+	return err
 }
 
 // processRestRoom applies rest room recovery and marks the room cleared.
@@ -200,7 +191,7 @@ func (rr *RaidRunner) processRestRoom(raidState *RaidStateData, room *RoomData) 
 	// Apply rest room HP recovery from config
 	if RaidConfig != nil {
 		for _, squadID := range raidState.PlayerSquadIDs {
-			resolution.ApplyHPRecovery(rr.manager, squadID, RaidConfig.Recovery.RestRoomHPPercent)
+			combatpipeline.ApplyHPRecovery(rr.manager, squadID, RaidConfig.Recovery.RestRoomHPPercent)
 		}
 	}
 
@@ -234,7 +225,7 @@ func (rr *RaidRunner) ResolveEncounter(reason encounter.CombatExitReason, result
 		for _, squadID := range raidState.PlayerSquadIDs {
 			pre, ok := rr.preCombatAliveCounts[squadID]
 			if ok {
-				post := resolution.CountLivingUnitsInSquad(rr.manager, squadID)
+				post := combatpipeline.CountLivingUnitsInSquad(rr.manager, squadID)
 				if pre > post {
 					unitsLostTotal += pre - post
 				}
@@ -253,12 +244,14 @@ func (rr *RaidRunner) ResolveEncounter(reason encounter.CombatExitReason, result
 	var rewardText string
 	switch reason {
 	case encounter.ExitVictory:
-		rewardText = ProcessVictory(rr.manager, raidState, rr.currentRoomNodeID)
-	case encounter.ExitDefeat:
-		ProcessDefeat(rr.manager)
-	case encounter.ExitFlee:
-		// Flee in a raid means retreat — same as defeat for now
-		ProcessDefeat(rr.manager)
+		resolver := &RaidRoomResolver{RaidState: raidState, RoomNodeID: rr.currentRoomNodeID}
+		result := combatpipeline.ExecuteResolution(rr.manager, resolver)
+		if result != nil {
+			rewardText = result.RewardText
+		}
+	case encounter.ExitDefeat, encounter.ExitFlee:
+		resolver := &RaidDefeatResolver{}
+		combatpipeline.ExecuteResolution(rr.manager, resolver)
 	}
 
 	rr.PostEncounterProcessing()

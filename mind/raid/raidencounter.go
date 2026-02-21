@@ -12,7 +12,6 @@ import (
 	"github.com/bytearena/ecs"
 )
 
-// Consider just using the StartEncounter instead of having a separate one for RAIDS. todo.
 // Position offsets for squad placement in raid encounters.
 const (
 	playerOffsetX = -3 // Player squads start left of combat position
@@ -24,8 +23,7 @@ const (
 
 // SetupRaidFactions sets up a combat encounter for a garrison room.
 // Creates factions, positions squads, and initializes combat state.
-// This follows the same pattern as encounter.StartGarrisonDefense() but works
-// with pre-composed garrison squads instead of power-budget generation.
+// This works with pre-composed garrison squads instead of power-budget generation.
 //
 // Parameters:
 //   - encounterID: a pre-created encounter entity ID

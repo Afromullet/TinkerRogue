@@ -103,3 +103,10 @@ Run it from the game_main directory
   scripts\run_combat_pipeline.bat
 
     Extra arguments get forwarded to the simulator, e.g. scripts\run_combat_pipeline.bat --suite duels.
+
+
+# Building using wasmerve 
+
+go run github.com/hajimehoshi/wasmserve@latest C:\Users\Afromullet\Desktop\TinkerRogue
+
+Then access http://localhost:8080/.

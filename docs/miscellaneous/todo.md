@@ -40,8 +40,7 @@ __________________________________________
 - Overworld node spawning is far too clustered together. All nodes spawn close to eachother. 
 
 
-- Unit Roster does not show ther ight amount of units. Probably due to us having replaced name with UnitType and generating a name through different means. 
-- Make sure that we use Unit Type Everwhere. We will add names later
+
 
 - Lots of Empty Claude relate directories. See if there are any issues when removing them
 
@@ -97,6 +96,7 @@ ________________________________________________
 - Worldmap
 - Guiraids
 - Raids
+- Resolution
 
 ____
 

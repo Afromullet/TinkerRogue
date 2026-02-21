@@ -7,7 +7,7 @@ import (
 	"game_main/common"
 	"game_main/gui/framework"
 	"game_main/mind/raid"
-	"game_main/mind/resolution"
+	"game_main/mind/combatpipeline"
 	"game_main/tactical/squads"
 
 	"github.com/ebitenui/ebitenui/widget"
@@ -92,7 +92,7 @@ func (dp *DeployPanel) Refresh(raidState *raid.RaidStateData, room *raid.RoomDat
 			continue
 		}
 
-		aliveCount := resolution.CountLivingUnitsInSquad(manager, squadID)
+		aliveCount := combatpipeline.CountLivingUnitsInSquad(manager, squadID)
 		totalCount := len(squads.GetUnitIDsInSquad(squadID, manager))
 
 		status := "Ready"

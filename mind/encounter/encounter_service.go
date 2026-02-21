@@ -2,15 +2,11 @@ package encounter
 
 import (
 	"fmt"
-	"math"
 	"time"
 
 	"game_main/common"
-	"game_main/mind/evaluation"
+	"game_main/mind/combatpipeline"
 	"game_main/overworld/core"
-	"game_main/overworld/garrison"
-	"game_main/tactical/combat"
-	"game_main/tactical/squads"
 	"game_main/visual/rendering"
 	"game_main/world/coords"
 
@@ -57,229 +53,6 @@ func NewEncounterService(
 		history:         make([]*CompletedEncounter, 0, 10),
 		maxHistory:      10, // Keep last 10 encounters
 	}
-}
-
-// StartEncounter coordinates encounter initialization and spawns enemies.
-// Caller must create the encounter entity first (via TriggerCombatFromThreat).
-//
-// This method:
-// 1. Validates no encounter is active
-// 2. Validates encounter entity exists
-// 3. Spawns enemies and hides encounter sprite
-// 4. Tracks encounter context (including enemy squad IDs)
-// 5. Sets TacticalState for combat mode handoff
-// 6. Transitions to combat mode
-func (es *EncounterService) StartEncounter(
-	encounterID ecs.EntityID,
-	threatID ecs.EntityID,
-	threatName string,
-	playerPos coords.LogicalPosition,
-	rosterOwnerID ecs.EntityID,
-) error {
-	// Validate no active encounter
-	if es.IsEncounterActive() {
-		return fmt.Errorf("encounter already in progress")
-	}
-
-	if encounterID == 0 {
-		return fmt.Errorf("invalid encounter ID: 0")
-	}
-
-	// Validate encounter entity exists
-	encounterEntity, encounterData := es.getEncounterData(encounterID)
-	if encounterEntity == nil {
-		return fmt.Errorf("encounter entity %d not found", encounterID)
-	}
-	if encounterData == nil {
-		return fmt.Errorf("encounter %d missing core.OverworldEncounterData", encounterID)
-	}
-
-	fmt.Printf("EncounterService: Starting encounter %d (%s)\n", encounterID, threatName)
-
-	// Hide encounter sprite during combat
-	renderable := common.GetComponentType[*rendering.Renderable](
-		encounterEntity,
-		rendering.RenderableComponent,
-	)
-	if renderable != nil {
-		renderable.Visible = false
-		fmt.Println("Hiding overworld encounter sprite during combat")
-	}
-
-	// Spawn enemies using balanced encounter system
-	fmt.Println("Starting combat encounter - spawning entities")
-	enemySquadIDs, playerFactionID, enemyFactionID, err := SpawnCombatEntities(es.manager, rosterOwnerID, playerPos, encounterData, encounterID)
-	if err != nil {
-		// Rollback sprite hiding on spawn failure
-		if renderable != nil {
-			renderable.Visible = true
-		}
-		return fmt.Errorf("failed to spawn enemies: %w", err)
-	}
-	fmt.Printf("Spawned %d enemy squads: %v\n", len(enemySquadIDs), enemySquadIDs)
-
-	// Handle mode transition (save position, set battle state, enter combat)
-	originalPlayerPos, err := es.beginCombatTransition(encounterID, playerPos)
-	if err != nil {
-		if renderable != nil {
-			renderable.Visible = true
-		}
-		return err
-	}
-
-	// Track active encounter with combat data
-	// RosterOwnerID = commander (owns squad roster)
-	// PlayerEntityID = player (owns resource stockpile for gold rewards)
-	playerEntityID := ecs.EntityID(0)
-	if es.modeCoordinator != nil {
-		if pd := es.modeCoordinator.GetPlayerData(); pd != nil {
-			playerEntityID = pd.PlayerEntityID
-		}
-	}
-	es.activeEncounter = &ActiveEncounter{
-		EncounterID:            encounterID,
-		ThreatID:               threatID,
-		ThreatName:             threatName,
-		PlayerPosition:         playerPos,
-		OriginalPlayerPosition: originalPlayerPos,
-		StartTime:              time.Now(),
-		EnemySquadIDs:          enemySquadIDs,
-		RosterOwnerID:          rosterOwnerID,
-		PlayerEntityID:         playerEntityID,
-		PlayerFactionID:        playerFactionID,
-		EnemyFactionID:         enemyFactionID,
-	}
-
-	fmt.Printf("EncounterService: Encounter %d started, entering combat\n", encounterID)
-	return nil
-}
-
-// StartGarrisonDefense initiates combat where the player's garrison squads defend a node
-// against an attacking faction. The garrison squads become the player's combat forces,
-// and attacker squads are generated from power budget.
-func (es *EncounterService) StartGarrisonDefense(
-	encounterID ecs.EntityID,
-	targetNodeID ecs.EntityID,
-) error {
-	if es.IsEncounterActive() {
-		return fmt.Errorf("encounter already in progress")
-	}
-
-	if encounterID == 0 {
-		return fmt.Errorf("invalid encounter ID: 0")
-	}
-
-	// Validate encounter entity
-	encounterEntity, encounterData := es.getEncounterData(encounterID)
-	if encounterEntity == nil || encounterData == nil {
-		return fmt.Errorf("encounter entity %d not found or missing data", encounterID)
-	}
-
-	// Get garrison data
-	garrisonData := garrison.GetGarrisonAtNode(es.manager, targetNodeID)
-	if garrisonData == nil || len(garrisonData.SquadIDs) == 0 {
-		return fmt.Errorf("no garrison at node %d", targetNodeID)
-	}
-
-	// Get node position for combat
-	nodeEntity := es.manager.FindEntityByID(targetNodeID)
-	if nodeEntity == nil {
-		return fmt.Errorf("node entity %d not found", targetNodeID)
-	}
-	nodePos := common.GetComponentType[*coords.LogicalPosition](nodeEntity, common.PositionComponent)
-	if nodePos == nil {
-		return fmt.Errorf("node %d has no position", targetNodeID)
-	}
-
-	fmt.Printf("EncounterService: Starting garrison defense at node %d\n", targetNodeID)
-
-	// Create factions
-	cache := combat.NewCombatQueryCache(es.manager)
-	fm := combat.NewCombatFactionManager(es.manager, cache)
-	playerFactionID := fm.CreateFactionWithPlayer("Garrison Defense", 1, "Player 1", encounterID)
-	enemyFactionID := fm.CreateFactionWithPlayer("Attacking Forces", 0, "", encounterID)
-
-	// Add garrison squads to player faction (they defend)
-	garrisonPositions := generatePositionsAroundPoint(*nodePos, len(garrisonData.SquadIDs), -math.Pi/2, math.Pi/2, PlayerMinDistance, PlayerMaxDistance)
-	for i, squadID := range garrisonData.SquadIDs {
-		pos := garrisonPositions[i]
-		if err := fm.AddSquadToFaction(playerFactionID, squadID, pos); err != nil {
-			return fmt.Errorf("failed to add garrison squad %d: %w", squadID, err)
-		}
-		EnsureUnitPositions(es.manager, squadID, pos)
-		combat.CreateActionStateForSquad(es.manager, squadID)
-
-		// Mark squad as deployed for combat
-		squadData := common.GetComponentTypeByID[*squads.SquadData](es.manager, squadID, squads.SquadComponent)
-		if squadData != nil {
-			squadData.IsDeployed = true
-		}
-	}
-
-	// Calculate attacker power from garrison strength (not roster owner)
-	powerConfig := evaluation.GetPowerConfigByProfile(DefaultPowerProfile)
-	totalGarrisonPower := 0.0
-	for _, squadID := range garrisonData.SquadIDs {
-		totalGarrisonPower += evaluation.CalculateSquadPower(squadID, es.manager, powerConfig)
-	}
-	avgGarrisonPower := totalGarrisonPower / float64(len(garrisonData.SquadIDs))
-
-	difficultyMod := getDifficultyModifier(encounterData.Level)
-	targetEnemyPower := avgGarrisonPower * difficultyMod.PowerMultiplier
-	if avgGarrisonPower <= 0.0 {
-		targetEnemyPower = difficultyMod.MinTargetPower
-	}
-	if targetEnemyPower > difficultyMod.MaxTargetPower {
-		targetEnemyPower = difficultyMod.MaxTargetPower
-	}
-
-	fmt.Printf("Garrison defense: avg garrison power %.2f, target enemy power %.2f\n",
-		avgGarrisonPower, targetEnemyPower)
-
-	enemySquadSpecs := generateEnemySquadsByPower(
-		es.manager, targetEnemyPower, difficultyMod, encounterData, *nodePos, powerConfig,
-	)
-
-	enemySquadIDs := make([]ecs.EntityID, 0, len(enemySquadSpecs))
-	for i, enemySpec := range enemySquadSpecs {
-		if err := fm.AddSquadToFaction(enemyFactionID, enemySpec.SquadID, enemySpec.Position); err != nil {
-			return fmt.Errorf("failed to add enemy squad %d: %w", i, err)
-		}
-		combat.CreateActionStateForSquad(es.manager, enemySpec.SquadID)
-		enemySquadIDs = append(enemySquadIDs, enemySpec.SquadID)
-	}
-
-	// Handle mode transition (save position, set battle state, enter combat)
-	originalPlayerPos, err := es.beginCombatTransition(encounterID, *nodePos)
-	if err != nil {
-		return err
-	}
-
-	// Track active encounter
-	playerEntityID := ecs.EntityID(0)
-	if es.modeCoordinator != nil {
-		if pd := es.modeCoordinator.GetPlayerData(); pd != nil {
-			playerEntityID = pd.PlayerEntityID
-		}
-	}
-	es.activeEncounter = &ActiveEncounter{
-		EncounterID:            encounterID,
-		ThreatID:               targetNodeID,
-		ThreatName:             encounterData.Name,
-		PlayerPosition:         *nodePos,
-		OriginalPlayerPosition: originalPlayerPos,
-		StartTime:              time.Now(),
-		EnemySquadIDs:          enemySquadIDs,
-		RosterOwnerID:          0,
-		PlayerEntityID:         playerEntityID,
-		PlayerFactionID:        playerFactionID,
-		EnemyFactionID:         enemyFactionID,
-		IsGarrisonDefense:      true,
-		DefendedNodeID:         targetNodeID,
-	}
-
-	fmt.Printf("EncounterService: Garrison defense started at node %d\n", targetNodeID)
-	return nil
 }
 
 // RecordEncounterCompletion records the encounter outcome to history.
@@ -375,11 +148,6 @@ func (es *EncounterService) EndEncounter(
 		return
 	}
 
-	// Raid encounters handle their own resolution via PostCombatCallback
-	if es.activeEncounter.IsRaidCombat {
-		return
-	}
-
 	encounterID := es.activeEncounter.EncounterID
 
 	entity, encounterData := es.getEncounterData(encounterID)
@@ -388,18 +156,23 @@ func (es *EncounterService) EndEncounter(
 		return
 	}
 
-	// Handle garrison defense resolution
-	if es.activeEncounter != nil && es.activeEncounter.IsGarrisonDefense {
-		es.resolveGarrisonDefense(isPlayerVictory, encounterData)
+	// Handle resolution via unified pipeline
+	if es.activeEncounter.IsGarrisonDefense {
+		resolver := &GarrisonDefenseResolver{
+			PlayerVictory:        isPlayerVictory,
+			DefendedNodeID:       es.activeEncounter.DefendedNodeID,
+			AttackingFactionType: encounterData.AttackingFactionType,
+		}
+		combatpipeline.ExecuteResolution(es.manager, resolver)
 	} else if encounterData.ThreatNodeID != 0 {
-		// Apply standard combat resolution to overworld
-		es.resolveCombatToOverworld(
-			encounterData.ThreatNodeID,
-			isPlayerVictory,
-			victorFaction,
-			defeatedFactions,
-			roundsCompleted,
-		)
+		resolver := &OverworldCombatResolver{
+			ThreatNodeID:   encounterData.ThreatNodeID,
+			PlayerVictory:  isPlayerVictory,
+			PlayerEntityID: es.activeEncounter.PlayerEntityID,
+			PlayerSquadIDs: es.getAllPlayerSquadIDs(),
+			EnemySquadIDs:  es.activeEncounter.EnemySquadIDs,
+		}
+		combatpipeline.ExecuteResolution(es.manager, resolver)
 	}
 
 	// Only mark as defeated if player won
@@ -461,11 +234,18 @@ func (es *EncounterService) ExitCombat(
 	// Step 1: Resolve combat outcome to overworld
 	switch reason {
 	case ExitVictory, ExitDefeat:
-		es.EndEncounter(result.IsPlayerVictory, result.VictorFaction,
-			result.VictorName, result.RoundsCompleted, result.DefeatedFactions)
+		if !es.activeEncounter.IsRaidCombat {
+			es.EndEncounter(result.IsPlayerVictory, result.VictorFaction,
+				result.VictorName, result.RoundsCompleted, result.DefeatedFactions)
+		}
 	case ExitFlee:
 		es.RestoreEncounterSprite()
-		es.resolveFleeToOverworld()
+		// Flee resolver
+		_, encounterData := es.getEncounterData(es.activeEncounter.EncounterID)
+		if encounterData != nil && encounterData.ThreatNodeID != 0 {
+			resolver := &FleeResolver{ThreatNodeID: encounterData.ThreatNodeID}
+			combatpipeline.ExecuteResolution(es.manager, resolver)
+		}
 	}
 
 	// Step 2: Record history + restore player position
@@ -488,35 +268,25 @@ func (es *EncounterService) ExitCombat(
 	}
 }
 
-// BeginRaidCombat initiates combat for a garrison raid encounter.
-// Factions and squad positioning must already be set up via raid.SetupRaidFactions().
-// This method registers the ActiveEncounter, sets PostCombatReturnMode, and transitions to combat mode.
-func (es *EncounterService) BeginRaidCombat(
-	raidEntityID ecs.EntityID,
-	garrisonSquadIDs []ecs.EntityID,
-	combatPos coords.LogicalPosition,
-	commanderID ecs.EntityID,
-	playerFactionID ecs.EntityID,
-	enemyFactionID ecs.EntityID,
-	returnMode string,
-) error {
+// TransitionToCombat performs the shared combat mode transition.
+// Called by combatpipeline.ExecuteCombatStart after Prepare() succeeds.
+// Satisfies combatpipeline.CombatTransitioner via structural typing.
+func (es *EncounterService) TransitionToCombat(setup *combatpipeline.CombatSetup) error {
 	if es.IsEncounterActive() {
 		return fmt.Errorf("encounter already in progress")
 	}
 
-	// Handle mode transition (saves position, sets TacticalState, enters combat mode)
-	originalPlayerPos, err := es.beginCombatTransition(raidEntityID, combatPos)
+	originalPlayerPos, err := es.beginCombatTransition(setup.EncounterID, setup.CombatPosition)
 	if err != nil {
 		return err
 	}
 
-	// Set post-combat return mode AFTER beginCombatTransition (which calls Reset())
-	if es.modeCoordinator != nil {
+	// Set post-combat return mode if specified (e.g., "raid")
+	if setup.PostCombatReturnMode != "" && es.modeCoordinator != nil {
 		tacticalState := es.modeCoordinator.GetTacticalState()
-		tacticalState.PostCombatReturnMode = returnMode
+		tacticalState.PostCombatReturnMode = setup.PostCombatReturnMode
 	}
 
-	// Track active encounter — garrison squads are "enemies" for cleanup purposes
 	playerEntityID := ecs.EntityID(0)
 	if es.modeCoordinator != nil {
 		if pd := es.modeCoordinator.GetPlayerData(); pd != nil {
@@ -525,21 +295,22 @@ func (es *EncounterService) BeginRaidCombat(
 	}
 
 	es.activeEncounter = &ActiveEncounter{
-		EncounterID:            raidEntityID,
-		ThreatID:               0,
-		ThreatName:             "Garrison Raid",
-		PlayerPosition:         combatPos,
+		EncounterID:            setup.EncounterID,
+		ThreatID:               setup.ThreatID,
+		ThreatName:             setup.ThreatName,
+		PlayerPosition:         setup.CombatPosition,
 		OriginalPlayerPosition: originalPlayerPos,
 		StartTime:              time.Now(),
-		EnemySquadIDs:          garrisonSquadIDs,
-		RosterOwnerID:          commanderID,
+		EnemySquadIDs:          setup.EnemySquadIDs,
+		RosterOwnerID:          setup.RosterOwnerID,
 		PlayerEntityID:         playerEntityID,
-		PlayerFactionID:        playerFactionID,
-		EnemyFactionID:         enemyFactionID,
-		IsRaidCombat:           true,
+		PlayerFactionID:        setup.PlayerFactionID,
+		EnemyFactionID:         setup.EnemyFactionID,
+		IsGarrisonDefense:      setup.IsGarrisonDefense,
+		DefendedNodeID:         setup.DefendedNodeID,
+		IsRaidCombat:           setup.IsRaidCombat,
 	}
 
-	fmt.Printf("EncounterService: Raid combat started at (%d,%d)\n", combatPos.X, combatPos.Y)
 	return nil
 }
 

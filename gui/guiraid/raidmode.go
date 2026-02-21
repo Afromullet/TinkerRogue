@@ -267,7 +267,7 @@ func (rm *RaidMode) OnDeployConfirmed() {
 		return
 	}
 
-	// Combat mode transition is handled by TriggerRaidEncounter → EncounterService.BeginRaidCombat
+	// Combat mode transition is handled by TriggerRaidEncounter → ExecuteCombatStart
 }
 
 // OnCombatComplete is called when combat ends and we return to raid mode.

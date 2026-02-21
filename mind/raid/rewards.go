@@ -1,42 +1,32 @@
 package raid
 
 import (
-	"fmt"
-
 	"game_main/common"
-	"game_main/mind/resolution"
+	"game_main/mind/combatpipeline"
 	"game_main/world/worldmap"
 )
 
-// GrantRoomReward grants room-specific rewards when a room is cleared.
-// Returns a description of the reward granted, or "" if none.
-func GrantRoomReward(manager *common.EntityManager, raidState *RaidStateData, roomType string) string {
+// calculateRoomReward returns the reward and target for a cleared room.
+// Does NOT grant rewards — the pipeline does that via ExecuteResolution.
+func calculateRoomReward(manager *common.EntityManager, raidState *RaidStateData, roomType string) (combatpipeline.Reward, combatpipeline.GrantTarget) {
 	if RaidConfig == nil || raidState == nil {
-		return ""
+		return combatpipeline.Reward{}, combatpipeline.GrantTarget{}
 	}
 
 	switch roomType {
 	case worldmap.GarrisonRoomCommandPost:
-		return grantCommandPostReward(manager, raidState)
+		return commandPostReward(raidState)
 	}
 
-	return ""
+	return combatpipeline.Reward{}, combatpipeline.GrantTarget{}
 }
 
-// grantCommandPostReward restores mana to the commander via the reward package.
-// Returns a description of the resolution.
-func grantCommandPostReward(manager *common.EntityManager, raidState *RaidStateData) string {
+// commandPostReward returns the mana reward for clearing a command post.
+func commandPostReward(raidState *RaidStateData) (combatpipeline.Reward, combatpipeline.GrantTarget) {
 	manaRestore := RaidConfig.Rewards.CommandPostManaRestore
 	if manaRestore <= 0 {
-		return ""
+		return combatpipeline.Reward{}, combatpipeline.GrantTarget{}
 	}
 
-	r := resolution.Reward{Mana: manaRestore}
-	target := resolution.GrantTarget{CommanderID: raidState.CommanderID}
-	desc := resolution.Grant(manager, r, target)
-
-	if desc != "" {
-		fmt.Printf("Reward: Command post cleared — %s\n", desc)
-	}
-	return desc
+	return combatpipeline.Reward{Mana: manaRestore}, combatpipeline.GrantTarget{CommanderID: raidState.CommanderID}
 }

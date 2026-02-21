@@ -1,4 +1,4 @@
-package resolution
+package combatpipeline
 
 import (
 	"game_main/common"
@@ -6,12 +6,6 @@ import (
 
 	"github.com/bytearena/ecs"
 )
-
-// CasualtyReport tracks units lost on each side of combat.
-type CasualtyReport struct {
-	PlayerUnitsLost  int
-	EnemyUnitsKilled int
-}
 
 // CountLivingUnitsInSquad returns the number of units in a squad with CurrentHealth > 0.
 func CountLivingUnitsInSquad(manager *common.EntityManager, squadID ecs.EntityID) int {

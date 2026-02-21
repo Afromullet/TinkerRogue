@@ -5,6 +5,7 @@ import (
 
 	"game_main/common"
 	"game_main/config"
+	"game_main/mind/combatpipeline"
 	"game_main/mind/encounter"
 	"game_main/templates"
 	"game_main/overworld/core"
@@ -159,14 +160,15 @@ func (ah *OverworldActionHandler) EngageThreat(nodeID ecs.EntityID) {
 	}
 	threatName := fmt.Sprintf("%s (Level %d)", displayName, threatData.Intensity)
 
-	// Pass commander ID for roster access (commander owns the squads)
-	if err := ah.deps.EncounterService.StartEncounter(
-		encounterID,
-		nodeID,
-		threatName,
-		*threatPos,
-		cmdID, // Commander instead of player - squads are on the commander
-	); err != nil {
+	// Use unified combat start pipeline
+	starter := &encounter.OverworldCombatStarter{
+		EncounterID:   encounterID,
+		ThreatID:      nodeID,
+		ThreatName:    threatName,
+		PlayerPos:     *threatPos,
+		RosterOwnerID: cmdID,
+	}
+	if _, err := combatpipeline.ExecuteCombatStart(ah.deps.EncounterService, ah.deps.Manager, starter); err != nil {
 		ah.deps.LogEvent(fmt.Sprintf("ERROR: %v", err))
 		return
 	}
@@ -191,10 +193,11 @@ func (ah *OverworldActionHandler) HandleRaid(raid *core.PendingRaid) {
 		return
 	}
 
-	if err := ah.deps.EncounterService.StartGarrisonDefense(
-		encounterID,
-		raid.TargetNodeID,
-	); err != nil {
+	starter := &encounter.GarrisonDefenseStarter{
+		EncounterID:  encounterID,
+		TargetNodeID: raid.TargetNodeID,
+	}
+	if _, err := combatpipeline.ExecuteCombatStart(ah.deps.EncounterService, ah.deps.Manager, starter); err != nil {
 		ah.deps.LogEvent(fmt.Sprintf("ERROR: Failed to start garrison defense: %v", err))
 		return
 	}
@@ -236,9 +239,14 @@ func (ah *OverworldActionHandler) StartRandomEncounter() {
 		return
 	}
 
-	if err := ah.deps.EncounterService.StartEncounter(
-		encounterID, 0, "Random Encounter", *cmdPos, cmdID,
-	); err != nil {
+	starter := &encounter.OverworldCombatStarter{
+		EncounterID:   encounterID,
+		ThreatID:      0,
+		ThreatName:    "Random Encounter",
+		PlayerPos:     *cmdPos,
+		RosterOwnerID: cmdID,
+	}
+	if _, err := combatpipeline.ExecuteCombatStart(ah.deps.EncounterService, ah.deps.Manager, starter); err != nil {
 		ah.deps.LogEvent(fmt.Sprintf("ERROR: %v", err))
 		return
 	}
