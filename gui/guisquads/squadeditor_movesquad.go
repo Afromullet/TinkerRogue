@@ -186,4 +186,3 @@ func (sem *SquadEditorMode) syncSquadOrderFromRoster() {
 	sem.allSquadIDs = make([]ecs.EntityID, len(roster.OwnedSquads))
 	copy(sem.allSquadIDs, roster.OwnedSquads)
 }
-

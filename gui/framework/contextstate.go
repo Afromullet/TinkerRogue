@@ -30,7 +30,7 @@ type TacticalState struct {
 	HasCastSpell    bool   // One spell per turn limit
 
 	// Artifact Activation State
-	InArtifactMode          bool   // Whether artifact mode is active
+	InArtifactMode           bool   // Whether artifact mode is active
 	SelectedArtifactBehavior string // Which artifact behavior is being targeted
 
 	// Encounter Tracking
@@ -58,7 +58,7 @@ func NewTacticalState() *TacticalState {
 		HasCastSpell:    false,
 
 		// Artifact Activation State
-		InArtifactMode:          false,
+		InArtifactMode:           false,
 		SelectedArtifactBehavior: "",
 
 		// Encounter Tracking

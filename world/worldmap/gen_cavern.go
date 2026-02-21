@@ -706,7 +706,6 @@ func (g *CavernGenerator) placeFactionStarts(terrainMap []bool, width, height in
 	return starts
 }
 
-
 // Register on package initialization
 func init() {
 	RegisterGenerator(&CavernGenerator{config: DefaultCavernConfig()})

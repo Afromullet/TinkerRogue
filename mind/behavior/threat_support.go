@@ -99,4 +99,3 @@ func (svl *SupportValueLayer) GetSupportValueAt(pos coords.LogicalPosition) floa
 func (svl *SupportValueLayer) GetAllyProximityAt(pos coords.LogicalPosition) int {
 	return svl.allyProximity[pos]
 }
-

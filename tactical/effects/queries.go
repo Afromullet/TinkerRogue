@@ -16,4 +16,3 @@ func HasActiveEffects(entityID ecs.EntityID, manager *common.EntityManager) bool
 	data := GetActiveEffects(entityID, manager)
 	return data != nil && len(data.Effects) > 0
 }
-

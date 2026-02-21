@@ -14,7 +14,7 @@ const (
 	SquadEditorPanelCommanderSelector framework.PanelType = "squadeditor_commander_selector"
 	SquadEditorPanelSquadSelector     framework.PanelType = "squadeditor_squad_selector"
 	SquadEditorPanelGridEditor        framework.PanelType = "squadeditor_grid_editor"
-	SquadEditorPanelUnitRoster framework.PanelType = "squadeditor_unit_roster"
+	SquadEditorPanelUnitRoster        framework.PanelType = "squadeditor_unit_roster"
 )
 
 func init() {
@@ -279,4 +279,3 @@ func init() {
 		},
 	})
 }
-

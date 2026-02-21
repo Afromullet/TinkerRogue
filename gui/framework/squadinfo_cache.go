@@ -146,4 +146,3 @@ func (sc *SquadInfoCache) ClearAll() {
 	sc.cache = make(map[ecs.EntityID]*SquadInfo)
 	sc.dirtySquads = make(map[ecs.EntityID]bool)
 }
-

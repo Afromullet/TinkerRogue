@@ -104,4 +104,3 @@ func (ch *CommandHistory) HandleInput(inputState *InputState) bool {
 
 	return false
 }
-

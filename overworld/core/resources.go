@@ -21,4 +21,3 @@ func CanAfford(stockpile *common.ResourceStockpile, cost ResourceCost) bool {
 func SpendResources(stockpile *common.ResourceStockpile, cost ResourceCost) error {
 	return common.SpendMaterials(stockpile, cost.Iron, cost.Wood, cost.Stone)
 }
-

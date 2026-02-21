@@ -220,4 +220,3 @@ func (gq *GUIQueries) ApplyFilterToSquads(squadIDs []ecs.EntityID, filter SquadF
 	}
 	return filtered
 }
-

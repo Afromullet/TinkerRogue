@@ -119,4 +119,3 @@ func (fm *CombatFactionManager) GetFactionName(factionID ecs.EntityID) string {
 	}
 	return "Unknown"
 }
-

@@ -12,14 +12,14 @@ import (
 
 // Panel type constants for overworld mode
 const (
-	OverworldPanelTickControls   framework.PanelType = "overworld_tick_controls"
-	OverworldPanelThreatInfo     framework.PanelType = "overworld_threat_info"
-	OverworldPanelTickStatus     framework.PanelType = "overworld_tick_status"
-	OverworldPanelEventLog       framework.PanelType = "overworld_event_log"
-	OverworldPanelThreatStats    framework.PanelType = "overworld_threat_stats"
-	OverworldPanelDebugMenu framework.PanelType = "overworld_debug_menu"
-	OverworldPanelNodeMenu  framework.PanelType = "overworld_node_menu"
-	OverworldPanelResources framework.PanelType = "overworld_resources"
+	OverworldPanelTickControls framework.PanelType = "overworld_tick_controls"
+	OverworldPanelThreatInfo   framework.PanelType = "overworld_threat_info"
+	OverworldPanelTickStatus   framework.PanelType = "overworld_tick_status"
+	OverworldPanelEventLog     framework.PanelType = "overworld_event_log"
+	OverworldPanelThreatStats  framework.PanelType = "overworld_threat_stats"
+	OverworldPanelDebugMenu    framework.PanelType = "overworld_debug_menu"
+	OverworldPanelNodeMenu     framework.PanelType = "overworld_node_menu"
+	OverworldPanelResources    framework.PanelType = "overworld_resources"
 )
 
 // createOverworldSubMenu creates a vertical sub-menu panel, registers it with the controller, and returns it.

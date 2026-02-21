@@ -276,10 +276,10 @@ func (g *MilitaryBaseGenerator) placeGuardTowers(terrainMap []bool, width, heigh
 
 	// Corner positions (top-left of each tower)
 	corners := [][2]int{
-		{ox1 - ts/2, oy1 - ts/2},             // top-left
-		{ox2 - ts/2, oy1 - ts/2},             // top-right
-		{ox1 - ts/2, oy2 - ts/2},             // bottom-left
-		{ox2 - ts/2, oy2 - ts/2},             // bottom-right
+		{ox1 - ts/2, oy1 - ts/2}, // top-left
+		{ox2 - ts/2, oy1 - ts/2}, // top-right
+		{ox1 - ts/2, oy2 - ts/2}, // bottom-left
+		{ox2 - ts/2, oy2 - ts/2}, // bottom-right
 	}
 
 	placeTower := func(tx, ty int) {
@@ -304,10 +304,10 @@ func (g *MilitaryBaseGenerator) placeGuardTowers(terrainMap []bool, width, heigh
 	// Additional towers at midpoints if requested
 	if cfg.NumGuardTowers > 4 {
 		midpoints := [][2]int{
-			{(ox1 + ox2) / 2 - ts/2, oy1 - ts/2},     // top-mid
-			{(ox1 + ox2) / 2 - ts/2, oy2 - ts/2},     // bottom-mid
-			{ox1 - ts/2, (oy1 + oy2) / 2 - ts/2},     // left-mid
-			{ox2 - ts/2, (oy1 + oy2) / 2 - ts/2},     // right-mid
+			{(ox1+ox2)/2 - ts/2, oy1 - ts/2}, // top-mid
+			{(ox1+ox2)/2 - ts/2, oy2 - ts/2}, // bottom-mid
+			{ox1 - ts/2, (oy1+oy2)/2 - ts/2}, // left-mid
+			{ox2 - ts/2, (oy1+oy2)/2 - ts/2}, // right-mid
 		}
 		extra := cfg.NumGuardTowers - 4
 		if extra > len(midpoints) {
@@ -508,7 +508,6 @@ func (g *MilitaryBaseGenerator) placeFactionStarts(terrainMap []bool, width, hei
 	}
 	return starts
 }
-
 
 func init() {
 	RegisterGenerator(&MilitaryBaseGenerator{config: DefaultMilitaryBaseConfig()})

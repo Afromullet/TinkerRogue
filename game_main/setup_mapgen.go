@@ -95,7 +95,7 @@ func buildOverworldGenerator(cfg *templates.JSONMapGenConfig) worldmap.MapGenera
 		TempleCount:       jow.TempleCount,
 		GuildHallCount:    jow.GuildHallCount,
 		WatchtowerCount:   jow.WatchtowerCount,
-		POIMinDistance:     jow.POIMinDistance,
+		POIMinDistance:    jow.POIMinDistance,
 		FactionCount:      jow.FactionCount,
 		FactionMinSpacing: jow.FactionMinSpacing,
 	}

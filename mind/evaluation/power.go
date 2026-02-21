@@ -364,4 +364,3 @@ func EstimateUnitPowerFromTemplate(unit squads.UnitTemplate, config *PowerConfig
 
 	return totalPower
 }
-

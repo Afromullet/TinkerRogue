@@ -32,17 +32,17 @@ type SpellStatModifier struct {
 
 // SpellDefinition is a static blueprint for a spell loaded from JSON.
 type SpellDefinition struct {
-	ID            string             `json:"id"`
-	Name          string             `json:"name"`
-	Description   string             `json:"description"`
-	ManaCost      int                `json:"manaCost"`
-	Damage        int                `json:"damage"`
-	TargetType    SpellTargetType    `json:"targetType"`
-	EffectType    SpellEffectType    `json:"effectType"`
-	Shape         *JSONTargetArea    `json:"shape,omitempty"`
-	VXType        string             `json:"vxType"`
-	VXDuration    int                `json:"vxDuration"`
-	Duration      int                `json:"duration,omitempty"`      // turns for buff/debuff
+	ID            string              `json:"id"`
+	Name          string              `json:"name"`
+	Description   string              `json:"description"`
+	ManaCost      int                 `json:"manaCost"`
+	Damage        int                 `json:"damage"`
+	TargetType    SpellTargetType     `json:"targetType"`
+	EffectType    SpellEffectType     `json:"effectType"`
+	Shape         *JSONTargetArea     `json:"shape,omitempty"`
+	VXType        string              `json:"vxType"`
+	VXDuration    int                 `json:"vxDuration"`
+	Duration      int                 `json:"duration,omitempty"`      // turns for buff/debuff
 	StatModifiers []SpellStatModifier `json:"statModifiers,omitempty"` // stat changes
 }
 

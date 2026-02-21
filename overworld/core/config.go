@@ -96,4 +96,3 @@ func GetRaidBaseIntensity() int {
 func GetThreatTypeParamsFromConfig(threatType ThreatType) ThreatTypeParams {
 	return GetNodeRegistry().GetOverworldParams(threatType)
 }
-

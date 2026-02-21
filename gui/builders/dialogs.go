@@ -114,7 +114,7 @@ type DialogConfig struct {
 
 // CreateConfirmationDialog creates a modal confirmation dialog with Yes/No buttons.
 func CreateConfirmationDialog(config DialogConfig) *widget.Window {
-	// Apply defaults
+	// Apply defaults scaled to current resolution
 	if config.MinWidth == 0 {
 		config.MinWidth = 400
 	}
@@ -191,7 +191,7 @@ type TextInputDialogConfig struct {
 
 // CreateTextInputDialog creates a modal text input dialog with OK/Cancel buttons.
 func CreateTextInputDialog(config TextInputDialogConfig) *widget.Window {
-	// Apply defaults
+	// Apply defaults scaled to current resolution
 	if config.MinWidth == 0 {
 		config.MinWidth = 500
 	}
@@ -273,7 +273,7 @@ type MessageDialogConfig struct {
 
 // CreateMessageDialog creates a simple message dialog with OK button.
 func CreateMessageDialog(config MessageDialogConfig) *widget.Window {
-	// Apply defaults
+	// Apply defaults scaled to current resolution
 	if config.MinWidth == 0 {
 		config.MinWidth = 400
 	}
@@ -323,7 +323,7 @@ type SelectionDialogConfig struct {
 
 // CreateSelectionDialog creates a modal selection dialog with a list and Select/Cancel buttons.
 func CreateSelectionDialog(config SelectionDialogConfig) *widget.Window {
-	// Apply defaults
+	// Apply defaults scaled to current resolution
 	if config.MinWidth == 0 {
 		config.MinWidth = 500
 	}

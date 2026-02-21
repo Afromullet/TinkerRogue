@@ -12,9 +12,9 @@ type ArchetypeUnit struct {
 
 // SquadArchetype defines a pre-composed garrison squad template.
 type SquadArchetype struct {
-	Name          string
-	DisplayName   string
-	Units         []ArchetypeUnit
+	Name           string
+	DisplayName    string
+	Units          []ArchetypeUnit
 	PreferredRooms []string
 }
 
@@ -31,7 +31,6 @@ var GarrisonArchetypes = []SquadArchetype{
 			{MonsterType: "Priest", GridRow: 2, GridCol: 0, GridWidth: 1, GridHeight: 1},
 		},
 		PreferredRooms: []string{"guard_post"},
-
 	},
 	{
 		Name:        "shield_wall",
@@ -43,7 +42,6 @@ var GarrisonArchetypes = []SquadArchetype{
 			{MonsterType: "Cleric", GridRow: 2, GridCol: 0, GridWidth: 1, GridHeight: 1},
 		},
 		PreferredRooms: []string{"barracks", "armory"},
-
 	},
 	{
 		Name:        "ranged_battery",
@@ -56,7 +54,6 @@ var GarrisonArchetypes = []SquadArchetype{
 			{MonsterType: "Mage", GridRow: 2, GridCol: 0, GridWidth: 1, GridHeight: 1},
 		},
 		PreferredRooms: []string{"mage_tower"},
-
 	},
 	{
 		Name:        "fast_response",
@@ -69,7 +66,6 @@ var GarrisonArchetypes = []SquadArchetype{
 			{MonsterType: "Scout", GridRow: 2, GridCol: 0, GridWidth: 1, GridHeight: 1},
 		},
 		PreferredRooms: []string{"patrol_route"},
-
 	},
 	{
 		Name:        "mage_tower",
@@ -82,7 +78,6 @@ var GarrisonArchetypes = []SquadArchetype{
 			{MonsterType: "Sorcerer", GridRow: 2, GridCol: 1, GridWidth: 1, GridHeight: 1},
 		},
 		PreferredRooms: []string{"mage_tower"},
-
 	},
 	{
 		Name:        "ambush_pack",
@@ -95,7 +90,6 @@ var GarrisonArchetypes = []SquadArchetype{
 			{MonsterType: "Ranger", GridRow: 2, GridCol: 0, GridWidth: 1, GridHeight: 1},
 		},
 		PreferredRooms: []string{"patrol_route"},
-
 	},
 	{
 		Name:        "command_post",
@@ -108,7 +102,6 @@ var GarrisonArchetypes = []SquadArchetype{
 			{MonsterType: "Priest", GridRow: 2, GridCol: 1, GridWidth: 1, GridHeight: 1},
 		},
 		PreferredRooms: []string{"command_post"},
-
 	},
 	{
 		Name:        "orc_vanguard",
@@ -120,7 +113,6 @@ var GarrisonArchetypes = []SquadArchetype{
 			{MonsterType: "Warrior", GridRow: 1, GridCol: 1, GridWidth: 1, GridHeight: 1},
 		},
 		PreferredRooms: []string{"barracks"},
-
 	},
 }
 

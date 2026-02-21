@@ -30,7 +30,7 @@ func NewGarrisonRaidGenerator(config GarrisonFloorConfig) *GarrisonRaidGenerator
 }
 
 func (g *GarrisonRaidGenerator) Name() string        { return "garrison_raid" }
-func (g *GarrisonRaidGenerator) Description() string  { return "DAG-based garrison raid floors" }
+func (g *GarrisonRaidGenerator) Description() string { return "DAG-based garrison raid floors" }
 
 func (g *GarrisonRaidGenerator) Generate(width, height int, images TileImageSet) GenerationResult {
 	if g.config.Seed != 0 {

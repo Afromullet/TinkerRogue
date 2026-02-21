@@ -17,14 +17,14 @@ import (
 
 // Panel type constants for combat mode
 const (
-	CombatPanelTurnOrder   framework.PanelType = "combat_turn_order"
-	CombatPanelFactionInfo framework.PanelType = "combat_faction_info"
-	CombatPanelSquadDetail framework.PanelType = "combat_squad_detail"
-	CombatPanelCombatLog   framework.PanelType = "combat_log"
-	CombatPanelLayerStatus framework.PanelType = "combat_layer_status"
-	CombatPanelDebugMenu            framework.PanelType = "combat_debug_menu"
-	CombatPanelSpellSelection       framework.PanelType = "combat_spell_selection"
-	CombatPanelArtifactSelection    framework.PanelType = "combat_artifact_selection"
+	CombatPanelTurnOrder         framework.PanelType = "combat_turn_order"
+	CombatPanelFactionInfo       framework.PanelType = "combat_faction_info"
+	CombatPanelSquadDetail       framework.PanelType = "combat_squad_detail"
+	CombatPanelCombatLog         framework.PanelType = "combat_log"
+	CombatPanelLayerStatus       framework.PanelType = "combat_layer_status"
+	CombatPanelDebugMenu         framework.PanelType = "combat_debug_menu"
+	CombatPanelSpellSelection    framework.PanelType = "combat_spell_selection"
+	CombatPanelArtifactSelection framework.PanelType = "combat_artifact_selection"
 )
 
 // combatSubMenuController manages sub-menu visibility. Only one sub-menu can be open at a time.
@@ -318,9 +318,9 @@ func init() {
 			listHeight := int(float64(layout.ScreenHeight) * specs.CombatSpellListHeight)
 
 			spellList := builders.CreateListWithConfig(builders.ListConfig{
-				Entries:    []interface{}{},
-				MinWidth:   listWidth,
-				MinHeight:  listHeight,
+				Entries:   []interface{}{},
+				MinWidth:  listWidth,
+				MinHeight: listHeight,
 				EntryLabelFunc: func(e interface{}) string {
 					if spell, ok := e.(*templates.SpellDefinition); ok {
 						return fmt.Sprintf("%s (%d MP)", spell.Name, spell.ManaCost)

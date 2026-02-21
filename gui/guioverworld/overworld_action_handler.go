@@ -6,11 +6,11 @@ import (
 	"game_main/common"
 	"game_main/config"
 	"game_main/mind/encounter"
-	"game_main/templates"
 	"game_main/overworld/core"
 	"game_main/overworld/garrison"
 	"game_main/tactical/commander"
 	"game_main/tactical/squads"
+	"game_main/templates"
 	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"

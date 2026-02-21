@@ -26,7 +26,7 @@ var (
 // Package-level Views for zero-allocation queries.
 // Initialized in init(); automatically maintained by the ECS library.
 var (
-	factionView  *ecs.View
+	factionView     *ecs.View
 	combatSquadView *ecs.View // View on squads.SquadTag, used by GetSquadsForFaction
 )
 
@@ -97,4 +97,3 @@ func InitCombatTags(manager *common.EntityManager) {
 	manager.WorldTags["actionstate"] = ActionStateTag
 	manager.WorldTags["combatfaction"] = CombatFactionTag
 }
-

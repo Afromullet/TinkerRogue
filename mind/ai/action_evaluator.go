@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"game_main/common"
 	"game_main/tactical/combat"
-	"game_main/tactical/squads"
 	"game_main/tactical/squadcommands"
+	"game_main/tactical/squads"
 	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"

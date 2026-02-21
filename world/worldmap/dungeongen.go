@@ -251,4 +251,3 @@ func (gameMap GameMap) IsOpaque(x, y int) bool {
 	idx := coords.CoordManager.LogicalToIndex(logicalPos)
 	return gameMap.Tiles[idx].TileType == WALL
 }
-

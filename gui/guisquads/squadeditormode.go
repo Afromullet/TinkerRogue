@@ -90,8 +90,8 @@ func (sem *SquadEditorMode) Initialize(ctx *framework.UIContext) error {
 
 	// Build base UI using ModeBuilder (minimal config - panels handled by registry)
 	err := framework.NewModeBuilder(&sem.BaseMode, framework.ModeConfig{
-		ModeName:   "squad_editor",
-		ReturnMode: returnMode,
+		ModeName:    "squad_editor",
+		ReturnMode:  returnMode,
 		StatusLabel: true,
 		Commands:    true,
 		OnRefresh:   sem.refreshAfterCommand,

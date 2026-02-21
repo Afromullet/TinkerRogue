@@ -17,7 +17,7 @@ const (
 	BehaviorSaboteurWsHourglass = "saboteurs_hourglass" // Saboteur's Hourglass
 	BehaviorEchoDrums           = "echo_drums"          // Echo Drums
 	BehaviorChainOfCommand      = "chain_of_command"    // Chain of Command Scepter
-	BehaviorTwinStrike          = "twin_strike"          // Twin Strike Banner
+	BehaviorTwinStrike          = "twin_strike"         // Twin Strike Banner
 	BehaviorDeadlockShackles    = "deadlock_shackles"   // Deadlock Shackles
 )
 
@@ -69,7 +69,7 @@ type ArtifactBehavior interface {
 // and override only the hooks they need.
 type BaseBehavior struct{}
 
-func (BaseBehavior) TargetType() int                                              { return TargetNone }
+func (BaseBehavior) TargetType() int                                            { return TargetNone }
 func (BaseBehavior) OnPostReset(*BehaviorContext, ecs.EntityID, []ecs.EntityID) {}
 func (BaseBehavior) OnAttackComplete(*BehaviorContext, ecs.EntityID, ecs.EntityID, *squads.CombatResult) {
 }

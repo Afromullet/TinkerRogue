@@ -92,9 +92,9 @@ func (SaboteursHourglassBehavior) Activate(ctx *BehaviorContext, _ ecs.EntityID)
 
 type TwinStrikeBehavior struct{ BaseBehavior }
 
-func (TwinStrikeBehavior) BehaviorKey() string      { return BehaviorTwinStrike }
-func (TwinStrikeBehavior) IsPlayerActivated() bool   { return true }
-func (TwinStrikeBehavior) TargetType() int           { return TargetFriendly }
+func (TwinStrikeBehavior) BehaviorKey() string     { return BehaviorTwinStrike }
+func (TwinStrikeBehavior) IsPlayerActivated() bool { return true }
+func (TwinStrikeBehavior) TargetType() int         { return TargetFriendly }
 
 func (TwinStrikeBehavior) Activate(ctx *BehaviorContext, targetSquadID ecs.EntityID) error {
 	if err := requireCharge(ctx, BehaviorTwinStrike); err != nil {
@@ -112,4 +112,3 @@ func (TwinStrikeBehavior) Activate(ctx *BehaviorContext, targetSquadID ecs.Entit
 	fmt.Printf("[GEAR] Twin Strike Banner activated on squad %d\n", targetSquadID)
 	return nil
 }
-

@@ -47,7 +47,6 @@ type AlertLevelConfig struct {
 	ActivatesReserves  bool   `json:"activatesReserves"`
 }
 
-
 type RewardSettings struct {
 	CommandPostManaRestore int `json:"commandPostManaRestore"`
 }
@@ -178,4 +177,3 @@ func ReserveArchetypes() []string {
 	}
 	return []string{"fast_response", "ambush_pack"}
 }
-

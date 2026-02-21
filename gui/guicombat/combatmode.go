@@ -58,7 +58,6 @@ type CombatMode struct {
 	// State tracking for UI updates (GUI_PERFORMANCE_ANALYSIS.md)
 	lastFactionID     ecs.EntityID
 	lastSelectedSquad ecs.EntityID
-
 }
 
 func NewCombatMode(modeManager *framework.UIModeManager, encounterService *encounter.EncounterService) *CombatMode {
@@ -350,7 +349,6 @@ func (cm *CombatMode) initializeUpdateComponents() {
 		cm.squadDetailComponent,
 	)
 }
-
 
 // registerCombatCallbacks registers cache invalidation callbacks on the combat service.
 // Must be called on each combat start because CleanupCombat clears all callbacks.

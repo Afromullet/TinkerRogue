@@ -174,7 +174,7 @@ type ButtonConfig struct {
 
 // CreateButtonWithConfig creates a button from config
 func CreateButtonWithConfig(config ButtonConfig) *widget.Button {
-	// Apply defaults
+	// Apply defaults scaled to current resolution
 	if config.MinWidth == 0 {
 		config.MinWidth = 100
 	}
@@ -238,7 +238,7 @@ type ListConfig struct {
 
 // CreateListWithConfig creates a list from config
 func CreateListWithConfig(config ListConfig) *widget.List {
-	// Apply defaults
+	// Apply defaults scaled to current resolution
 	if config.MinWidth == 0 {
 		config.MinWidth = 150
 	}
@@ -379,7 +379,7 @@ type TextInputConfig struct {
 
 // CreateTextInputWithConfig creates a text input from config
 func CreateTextInputWithConfig(config TextInputConfig) *widget.TextInput {
-	// Apply defaults
+	// Apply defaults scaled to current resolution
 	if config.MinWidth == 0 {
 		config.MinWidth = 300
 	}

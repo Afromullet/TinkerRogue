@@ -101,5 +101,3 @@ func getGridPositionOrError(unitID ecs.EntityID, manager *common.EntityManager) 
 	}
 	return gridPos, nil
 }
-
-

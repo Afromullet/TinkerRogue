@@ -483,23 +483,23 @@ type JSONCavernConfig struct {
 
 // JSONOverworldGenConfig holds strategic overworld generator parameters
 type JSONOverworldGenConfig struct {
-	ElevationOctaves int     `json:"elevationOctaves"`
-	ElevationScale   float64 `json:"elevationScale"`
-	MoistureOctaves  int     `json:"moistureOctaves"`
-	MoistureScale    float64 `json:"moistureScale"`
-	Persistence      float64 `json:"persistence"`
-	Lacunarity       float64 `json:"lacunarity"`
-	WaterThresh      float64 `json:"waterThresh"`
-	MountainThresh   float64 `json:"mountainThresh"`
-	ForestMoisture   float64 `json:"forestMoisture"`
-	SwampMoisture    float64 `json:"swampMoisture"`
-	TownCount        int     `json:"townCount"`
-	TempleCount      int     `json:"templeCount"`
-	GuildHallCount   int     `json:"guildHallCount"`
-	WatchtowerCount  int     `json:"watchtowerCount"`
-	POIMinDistance   int     `json:"poiMinDistance"`
-	FactionCount     int     `json:"factionCount"`
-	FactionMinSpacing int    `json:"factionMinSpacing"`
+	ElevationOctaves  int     `json:"elevationOctaves"`
+	ElevationScale    float64 `json:"elevationScale"`
+	MoistureOctaves   int     `json:"moistureOctaves"`
+	MoistureScale     float64 `json:"moistureScale"`
+	Persistence       float64 `json:"persistence"`
+	Lacunarity        float64 `json:"lacunarity"`
+	WaterThresh       float64 `json:"waterThresh"`
+	MountainThresh    float64 `json:"mountainThresh"`
+	ForestMoisture    float64 `json:"forestMoisture"`
+	SwampMoisture     float64 `json:"swampMoisture"`
+	TownCount         int     `json:"townCount"`
+	TempleCount       int     `json:"templeCount"`
+	GuildHallCount    int     `json:"guildHallCount"`
+	WatchtowerCount   int     `json:"watchtowerCount"`
+	POIMinDistance    int     `json:"poiMinDistance"`
+	FactionCount      int     `json:"factionCount"`
+	FactionMinSpacing int     `json:"factionMinSpacing"`
 }
 
 // JSONMilitaryBaseConfig holds military base generator parameters
@@ -522,9 +522,9 @@ type JSONMilitaryBaseConfig struct {
 
 // JSONGarrisonRaidConfig holds garrison raid generator parameters
 type JSONGarrisonRaidConfig struct {
-	RoomSizes    map[string]JSONRoomSize        `json:"roomSizes"`
-	FloorScaling []JSONFloorScaling             `json:"floorScaling"`
-	SpawnCounts  map[string]JSONSpawnCount       `json:"spawnCounts"`
+	RoomSizes    map[string]JSONRoomSize   `json:"roomSizes"`
+	FloorScaling []JSONFloorScaling        `json:"floorScaling"`
+	SpawnCounts  map[string]JSONSpawnCount `json:"spawnCounts"`
 }
 
 // JSONRoomSize holds min/max width and height for a garrison room type
@@ -595,4 +595,3 @@ type JSONNameConfig struct {
 	MaxSyllables int                     `json:"maxSyllables"`
 	Pools        map[string]JSONNamePool `json:"pools"`
 }
-

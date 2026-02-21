@@ -1,7 +1,9 @@
 // Package coords - coordinate manager and conversion utilities
 package coords
 
-import "game_main/config"
+import (
+	"game_main/config"
+)
 
 // CoordManager is a global coordinate manager instance.
 var CoordManager *CoordinateManager
@@ -42,7 +44,7 @@ func (s ScreenData) GetCanvasHeight() int {
 }
 
 // NewScreenData creates default screen configuration.
-//TODO,
+// Screen dimensions are initialized from user settings if available.
 func NewScreenData() ScreenData {
 	g := ScreenData{
 		DungeonWidth:  100,

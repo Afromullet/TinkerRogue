@@ -44,4 +44,3 @@ func GetFactionBonuses(factionType core.FactionType) FactionBonuses {
 	}
 	return FactionBonuses{}
 }
-

@@ -9,6 +9,8 @@ package main
 
 import (
 	"fmt"
+	"math"
+
 	"game_main/common"
 	"game_main/config"
 	"game_main/gui/framework"
@@ -20,7 +22,6 @@ import (
 	"game_main/world/coords"
 	"game_main/world/worldmap"
 	"log"
-	"math"
 
 	_ "image/png" // Required for PNG image loading
 
@@ -121,8 +122,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	g.gameModeCoordinator.Render(screen)
 }
 
-// Layout returns the game's logical screen dimensions.
-// It calculates canvas size based on tile size, dungeon dimensions, and device scale.
+// Layout returns the game's logical screen dimensions based on tile-based canvas size.
 func (g *Game) Layout(w, h int) (int, int) {
 	scale := ebiten.DeviceScaleFactor()
 	canvasWidth := int(math.Ceil(float64(graphics.ScreenInfo.TileSize*graphics.ScreenInfo.DungeonWidth) * scale))
@@ -136,13 +136,17 @@ func main() {
 	// Setup profiling if enabled
 	SetupBenchmarking()
 
+	// Load user settings (resolution, etc.) before anything else
+	config.LoadUserSettings("settings.json")
+
 	// Create and initialize game (shared systems only — mode-specific setup deferred)
 	g := NewGame()
 
 	g.startMenu = guistartmenu.NewStartMenu()
 	g.showStartMenu = true
 
-	// Configure window
+	// Configure window at user-selected resolution
+	ebiten.SetWindowSize(config.CurrentSettings.ResolutionWidth, config.CurrentSettings.ResolutionHeight)
 	ebiten.SetWindowResizable(true)
 	ebiten.SetWindowTitle("Tower")
 

@@ -75,7 +75,7 @@ func applyPendingToTargets(
 
 type DeadlockShacklesBehavior struct{ BaseBehavior }
 
-func (DeadlockShacklesBehavior) BehaviorKey() string    { return BehaviorDeadlockShackles }
+func (DeadlockShacklesBehavior) BehaviorKey() string     { return BehaviorDeadlockShackles }
 func (DeadlockShacklesBehavior) IsPlayerActivated() bool { return true }
 func (DeadlockShacklesBehavior) TargetType() int         { return TargetEnemy }
 
@@ -102,7 +102,7 @@ func (DeadlockShacklesBehavior) OnPostReset(ctx *BehaviorContext, factionID ecs.
 
 type ChainOfCommandBehavior struct{ BaseBehavior }
 
-func (ChainOfCommandBehavior) BehaviorKey() string    { return BehaviorChainOfCommand }
+func (ChainOfCommandBehavior) BehaviorKey() string     { return BehaviorChainOfCommand }
 func (ChainOfCommandBehavior) IsPlayerActivated() bool { return true }
 func (ChainOfCommandBehavior) TargetType() int         { return TargetFriendly }
 
@@ -168,9 +168,9 @@ func (ChainOfCommandBehavior) Activate(ctx *BehaviorContext, targetSquadID ecs.E
 
 type EchoDrumsBehavior struct{ BaseBehavior }
 
-func (EchoDrumsBehavior) BehaviorKey() string      { return BehaviorEchoDrums }
-func (EchoDrumsBehavior) IsPlayerActivated() bool   { return true }
-func (EchoDrumsBehavior) TargetType() int           { return TargetFriendly }
+func (EchoDrumsBehavior) BehaviorKey() string     { return BehaviorEchoDrums }
+func (EchoDrumsBehavior) IsPlayerActivated() bool { return true }
+func (EchoDrumsBehavior) TargetType() int         { return TargetFriendly }
 
 func (EchoDrumsBehavior) Activate(ctx *BehaviorContext, targetSquadID ecs.EntityID) error {
 	if err := requireCharge(ctx, BehaviorEchoDrums); err != nil {

@@ -120,7 +120,7 @@ func NewThreatVisualizer(
 ) *ThreatVisualizer {
 	return &ThreatVisualizer{
 		manager:          manager,
-		gameMap:           gameMap,
+		gameMap:          gameMap,
 		threatManager:    threatManager,
 		evaluators:       make(map[ecs.EntityID]*CompositeThreatEvaluator),
 		DirtyCache:       evaluation.NewDirtyCache(),

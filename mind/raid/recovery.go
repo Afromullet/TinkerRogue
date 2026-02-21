@@ -56,5 +56,3 @@ func isInReserve(deployment *DeploymentData, squadID ecs.EntityID) bool {
 	}
 	return false
 }
-
-
