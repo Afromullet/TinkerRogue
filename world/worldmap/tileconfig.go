@@ -1,9 +1,12 @@
 package worldmap
 
-import "path/filepath"
+import (
+	"game_main/config"
+	"path/filepath"
+)
 
 // Base directory for all tile assets
-var tileAssetBase = filepath.Join("..", "assets", "tiles")
+var tileAssetBase = config.AssetPath("tiles")
 
 // Default tile set directories
 var defaultFloorDir = "limestone"

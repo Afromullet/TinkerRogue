@@ -117,7 +117,7 @@ type spellDataFile struct {
 
 // LoadSpellDefinitions reads spell definitions from a JSON file and populates SpellRegistry.
 func LoadSpellDefinitions() {
-	data, err := os.ReadFile(assetPath(SpellDataPath))
+	data, err := os.ReadFile(AssetPath(SpellDataPath))
 	if err != nil {
 		fmt.Printf("WARNING: Failed to read spell data: %v\n", err)
 		return

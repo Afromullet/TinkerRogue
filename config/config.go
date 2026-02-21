@@ -1,5 +1,10 @@
 package config
 
+import (
+	"os"
+	"path/filepath"
+)
+
 // Game configuration constants and default values
 
 // Debug and profiling flags
@@ -103,10 +108,34 @@ const (
 	DefaultStaticUIOffset     = 1000
 )
 
+// assetRoot is the resolved path to the assets directory.
+// Initialized once on first use via getAssetRoot().
+var assetRoot string
+
+// getAssetRoot returns the path to the assets directory, detecting whether
+// we're running from game_main/ (legacy) or the project root.
+func getAssetRoot() string {
+	if assetRoot != "" {
+		return assetRoot
+	}
+	if info, err := os.Stat("assets"); err == nil && info.IsDir() {
+		assetRoot = "assets"
+		return assetRoot
+	}
+	assetRoot = filepath.Join("..", "assets")
+	return assetRoot
+}
+
+// AssetPath builds a path relative to the assets directory.
+// Works regardless of whether the binary runs from the project root or game_main/.
+func AssetPath(relative string) string {
+	return filepath.Join(getAssetRoot(), relative)
+}
+
 // Asset paths
-const (
-	PlayerImagePath = "../assets/creatures/player1.png"
-	AssetItemsDir   = "../assets/items/"
+var (
+	PlayerImagePath = AssetPath("creatures/player1.png")
+	AssetItemsDir   = AssetPath("items")
 )
 
 // Profiling configuration

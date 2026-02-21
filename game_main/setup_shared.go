@@ -129,7 +129,7 @@ func SetupSharedSystems(g *Game) {
 	bootstrap := NewGameBootstrap()
 	bootstrap.LoadGameData()
 
-	if err := raid.LoadRaidConfig("assets/gamedata/raidconfig.json"); err != nil {
+	if err := raid.LoadRaidConfig(config.AssetPath("gamedata/raidconfig.json")); err != nil {
 		fmt.Printf("WARNING: Failed to load raid config: %v (using defaults)\n", err)
 	}
 

@@ -2,33 +2,13 @@ package templates
 
 import (
 	"encoding/json"
+	"game_main/config"
 	"os"
-	"path/filepath"
 )
 
-// assetRoot is the resolved path to the assets directory.
-// Initialized once on first use via getAssetRoot().
-var assetRoot string
-
-// getAssetRoot returns the path to the assets directory, detecting whether
-// we're running from game_main/ (legacy) or the project root (tools).
-func getAssetRoot() string {
-	if assetRoot != "" {
-		return assetRoot
-	}
-	// Try project root first (./assets/)
-	if info, err := os.Stat("assets"); err == nil && info.IsDir() {
-		assetRoot = "assets"
-		return assetRoot
-	}
-	// Fall back to legacy path (../assets/ when running from game_main/)
-	assetRoot = filepath.Join("..", "assets")
-	return assetRoot
-}
-
-// assetPath builds a path relative to the assets directory.
-func assetPath(relative string) string {
-	return filepath.Join(getAssetRoot(), relative)
+// AssetPath delegates to config.AssetPath for working-directory-independent asset resolution.
+func AssetPath(relative string) string {
+	return config.AssetPath(relative)
 }
 
 type MonstersData struct {
@@ -48,7 +28,7 @@ type EncounterDataWithNew struct {
 }
 
 func ReadMonsterData() {
-	data, err := os.ReadFile(assetPath("gamedata/monsterdata.json"))
+	data, err := os.ReadFile(AssetPath("gamedata/monsterdata.json"))
 	if err != nil {
 		panic(err)
 	}
@@ -69,7 +49,7 @@ func ReadMonsterData() {
 }
 
 func ReadConsumableData() {
-	data, err := os.ReadFile(assetPath("gamedata/consumabledata.json"))
+	data, err := os.ReadFile(AssetPath("gamedata/consumabledata.json"))
 	if err != nil {
 		panic(err)
 	}
@@ -92,7 +72,7 @@ func ReadConsumableData() {
 }
 
 func ReadNodeDefinitions() {
-	data, err := os.ReadFile(assetPath("gamedata/nodeDefinitions.json"))
+	data, err := os.ReadFile(AssetPath("gamedata/nodeDefinitions.json"))
 	if err != nil {
 		panic(err)
 	}
@@ -189,7 +169,7 @@ func validateNodeDefinitions(data *NodeDefinitionsData) {
 }
 
 func ReadEncounterData() {
-	data, err := os.ReadFile(assetPath("gamedata/encounterdata.json"))
+	data, err := os.ReadFile(AssetPath("gamedata/encounterdata.json"))
 	if err != nil {
 		panic(err)
 	}
@@ -338,7 +318,7 @@ func validateNodeEncounterLinks() {
 }
 
 func ReadNameData() {
-	data, err := os.ReadFile(assetPath("gamedata/namedata.json"))
+	data, err := os.ReadFile(AssetPath("gamedata/namedata.json"))
 	if err != nil {
 		panic(err)
 	}
@@ -379,7 +359,7 @@ func validateNameConfig(config *JSONNameConfig) {
 }
 
 func ReadAIConfig() {
-	data, err := os.ReadFile(assetPath("gamedata/aiconfig.json"))
+	data, err := os.ReadFile(AssetPath("gamedata/aiconfig.json"))
 	if err != nil {
 		panic(err)
 	}
@@ -434,7 +414,7 @@ func validateAIConfig(config *JSONAIConfig) {
 }
 
 func ReadPowerConfig() {
-	data, err := os.ReadFile(assetPath("gamedata/powerconfig.json"))
+	data, err := os.ReadFile(AssetPath("gamedata/powerconfig.json"))
 	if err != nil {
 		panic(err)
 	}
@@ -520,7 +500,7 @@ func validatePowerConfig(config *JSONPowerConfig) {
 }
 
 func ReadInfluenceConfig() {
-	data, err := os.ReadFile(assetPath("gamedata/influenceconfig.json"))
+	data, err := os.ReadFile(AssetPath("gamedata/influenceconfig.json"))
 	if err != nil {
 		panic(err)
 	}
@@ -567,7 +547,7 @@ func validateInfluenceConfig(config *JSONInfluenceConfig) {
 // ReadMapGenConfig loads map generation configuration from JSON.
 // This file is optional — if missing, generators use their code defaults.
 func ReadMapGenConfig() {
-	data, err := os.ReadFile(assetPath("gamedata/mapgenconfig.json"))
+	data, err := os.ReadFile(AssetPath("gamedata/mapgenconfig.json"))
 	if err != nil {
 		// File is optional — missing file means use code defaults
 		println("Map gen config not found, using code defaults")
@@ -693,7 +673,7 @@ func validateMapGenConfig(config *JSONMapGenConfig) {
 }
 
 func ReadOverworldConfig() {
-	data, err := os.ReadFile(assetPath("gamedata/overworldconfig.json"))
+	data, err := os.ReadFile(AssetPath("gamedata/overworldconfig.json"))
 	if err != nil {
 		panic(err)
 	}

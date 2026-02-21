@@ -1,6 +1,7 @@
 package widgetresources
 
 import (
+	"game_main/config"
 	"image/color"
 	"strconv"
 
@@ -46,11 +47,11 @@ type panelResources struct {
 }
 
 func newPanelResources() *panelResources {
-	i, err := loadImageNineSlice("../assets/guiassets/panels/panel_border_1.png", 10, 10)
+	i, err := loadImageNineSlice(config.AssetPath("guiassets/panels/panel_border_1.png"), 10, 10)
 	if err != nil {
 		return nil
 	}
-	t, err := loadImageNineSlice("../assets/guiassets/panels/panel_title_replace.png", 10, 10)
+	t, err := loadImageNineSlice(config.AssetPath("guiassets/panels/panel_title_replace.png"), 10, 10)
 	if err != nil {
 		return nil
 	}
@@ -78,37 +79,37 @@ type listResources struct {
 }
 
 func newListResources() *listResources {
-	idle, err := newImageFromFile("../assets/guiassets/panels/panel_border_1.png")
+	idle, err := newImageFromFile(config.AssetPath("guiassets/panels/panel_border_1.png"))
 	if err != nil {
 		return nil
 	}
 
-	disabled, err := newImageFromFile("../assets/guiassets/list-disabled.png")
+	disabled, err := newImageFromFile(config.AssetPath("guiassets/list-disabled.png"))
 	if err != nil {
 		return nil
 	}
 
-	mask, err := newImageFromFile("../assets/guiassets/list-mask.png")
+	mask, err := newImageFromFile(config.AssetPath("guiassets/list-mask.png"))
 	if err != nil {
 		return nil
 	}
 
-	trackIdle, err := newImageFromFile("../assets/guiassets/list-track-idle.png")
+	trackIdle, err := newImageFromFile(config.AssetPath("guiassets/list-track-idle.png"))
 	if err != nil {
 		return nil
 	}
 
-	trackDisabled, err := newImageFromFile("../assets/guiassets/list-track-disabled.png")
+	trackDisabled, err := newImageFromFile(config.AssetPath("guiassets/list-track-disabled.png"))
 	if err != nil {
 		return nil
 	}
 
-	handleIdle, err := newImageFromFile("../assets/guiassets/slider-handle-idle.png")
+	handleIdle, err := newImageFromFile(config.AssetPath("guiassets/slider-handle-idle.png"))
 	if err != nil {
 		return nil
 	}
 
-	handleHover, err := newImageFromFile("../assets/guiassets/slider-handle-hover.png")
+	handleHover, err := newImageFromFile(config.AssetPath("guiassets/slider-handle-hover.png"))
 	if err != nil {
 		return nil
 	}
@@ -175,37 +176,37 @@ type textAreaResources struct {
 }
 
 func newTextAreaResources() *textAreaResources {
-	idle, err := newImageFromFile("../assets/guiassets/panels/panel_border_1.png")
+	idle, err := newImageFromFile(config.AssetPath("guiassets/panels/panel_border_1.png"))
 	if err != nil {
 		return nil
 	}
 
-	disabled, err := newImageFromFile("../assets/guiassets/list-disabled.png")
+	disabled, err := newImageFromFile(config.AssetPath("guiassets/list-disabled.png"))
 	if err != nil {
 		return nil
 	}
 
-	mask, err := newImageFromFile("../assets/guiassets/list-mask.png")
+	mask, err := newImageFromFile(config.AssetPath("guiassets/list-mask.png"))
 	if err != nil {
 		return nil
 	}
 
-	trackIdle, err := newImageFromFile("../assets/guiassets/list-track-idle.png")
+	trackIdle, err := newImageFromFile(config.AssetPath("guiassets/list-track-idle.png"))
 	if err != nil {
 		return nil
 	}
 
-	trackDisabled, err := newImageFromFile("../assets/guiassets/list-track-disabled.png")
+	trackDisabled, err := newImageFromFile(config.AssetPath("guiassets/list-track-disabled.png"))
 	if err != nil {
 		return nil
 	}
 
-	handleIdle, err := newImageFromFile("../assets/guiassets/slider-handle-idle.png")
+	handleIdle, err := newImageFromFile(config.AssetPath("guiassets/slider-handle-idle.png"))
 	if err != nil {
 		return nil
 	}
 
-	handleHover, err := newImageFromFile("../assets/guiassets/slider-handle-hover.png")
+	handleHover, err := newImageFromFile(config.AssetPath("guiassets/slider-handle-hover.png"))
 	if err != nil {
 		return nil
 	}
@@ -249,7 +250,7 @@ func newTextAreaResources() *textAreaResources {
 
 func loadButtonImage() (*widget.ButtonImage, error) {
 
-	idle, _ := loadImageNineSlice("../assets/guiassets/buttons/Button_1.png", 10, 10)
+	idle, _ := loadImageNineSlice(config.AssetPath("guiassets/buttons/button_1.png"), 10, 10)
 
 	hover := e_image.NewNineSliceColor(color.NRGBA{R: 130, G: 130, B: 150, A: 255})
 

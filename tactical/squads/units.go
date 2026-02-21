@@ -3,6 +3,7 @@ package squads
 import (
 	"fmt"
 	"game_main/common"
+	"game_main/config"
 	"game_main/templates"
 	"game_main/visual/rendering"
 	"log"
@@ -71,7 +72,7 @@ func CreateUnitTemplates(monsterData templates.JSONMonster) (UnitTemplate, error
 		Type:      templates.EntityCreature,
 		Name:      monsterData.UnitType,
 		ImagePath: monsterData.ImageName,
-		AssetDir:  "../assets/creatures/",
+		AssetDir:  config.AssetPath("creatures"),
 		Visible:   true,
 		Position:  nil, // Position will be set when squad is created
 		GameMap:   nil, // GameMap will be set when squad is placed

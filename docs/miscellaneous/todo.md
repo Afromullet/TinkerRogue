@@ -83,9 +83,6 @@ ________________________________________________
 
 
 
-# Bug Fixes
-
-- Throwables are completely broken. There is an out of bounds error
 
 
 # Review

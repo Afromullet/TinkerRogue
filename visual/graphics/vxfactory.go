@@ -1,6 +1,7 @@
 package graphics
 
 import (
+	"game_main/config"
 	"image/color"
 	"time"
 
@@ -36,7 +37,7 @@ func NewEffect(startX, startY, duration int, cfg EffectConfig) VisualEffect {
 // NewFireEffect creates a fire effect with flickering animation.
 func NewFireEffect(startX, startY, duration int) VisualEffect {
 	return NewEffect(startX, startY, duration, EffectConfig{
-		ImagePath: "../assets/effects/cloud_fire2.png",
+		ImagePath: config.AssetPath("effects/cloud_fire2.png"),
 		Animator: &RandomAnimator{
 			ScaleRange:     [2]float64{0.95, 1.05},
 			OpacityRange:   [2]float64{0.7, 1.0},
@@ -51,7 +52,7 @@ func NewFireEffect(startX, startY, duration int) VisualEffect {
 // NewIceEffect creates an ice effect with random shimmering.
 func NewIceEffect(startX, startY int, duration int) VisualEffect {
 	return NewEffect(startX, startY, duration, EffectConfig{
-		ImagePath: "../assets/effects/frost0.png",
+		ImagePath: config.AssetPath("effects/frost0.png"),
 		Animator: &RandomAnimator{
 			ScaleRange:      [2]float64{0.98, 1.02},
 			OpacityRange:    [2]float64{0.85, 1.0},
@@ -64,7 +65,7 @@ func NewIceEffect(startX, startY int, duration int) VisualEffect {
 // NewIceEffect2 creates an ice effect with sine-wave shimmering.
 func NewIceEffect2(x, y int, duration int) VisualEffect {
 	return NewEffect(x, y, duration, EffectConfig{
-		ImagePath: "../assets/effects/frost0.png",
+		ImagePath: config.AssetPath("effects/frost0.png"),
 		Animator: &SineShimmerAnimator{
 			scaleBase:    1.0,
 			scaleAmp:     0.05,
@@ -77,7 +78,7 @@ func NewIceEffect2(x, y int, duration int) VisualEffect {
 // NewCloudEffect creates a cloud effect with pulsing animation.
 func NewCloudEffect(startX, startY int, duration int) VisualEffect {
 	return NewEffect(startX, startY, duration, EffectConfig{
-		ImagePath: "../assets/effects/cloud_poison0.png",
+		ImagePath: config.AssetPath("effects/cloud_poison0.png"),
 		Animator: &PulseAnimator{
 			scaleBase:   1.0,
 			scaleAmp:    0.05,
@@ -92,7 +93,7 @@ func NewCloudEffect(startX, startY int, duration int) VisualEffect {
 // NewElectricityEffect creates an image-based electricity effect with brightness flickering.
 func NewElectricityEffect(startX, startY int, duration int) VisualEffect {
 	return NewEffect(startX, startY, duration, EffectConfig{
-		ImagePath: "../assets/effects/zap0.png",
+		ImagePath: config.AssetPath("effects/zap0.png"),
 		Animator: &RandomAnimator{
 			ScaleRange:      [2]float64{0.9, 1.1},
 			BrightnessRange: [2]float64{1.0, 1.5},
@@ -117,7 +118,7 @@ func NewStickyGroundEffect(startX, startY int, duration int) VisualEffect {
 // NewProjectile creates a projectile effect that moves from start to end position.
 func NewProjectile(startX, startY, endX, endY int) VisualEffect {
 	return NewEffect(startX, startY, 999999, EffectConfig{
-		ImagePath: "../assets/effects/arrow3.png",
+		ImagePath: config.AssetPath("effects/arrow3.png"),
 		Animator:  NewMotionAnimator(startX, startY, endX, endY, 5.0),
 		Renderer:  &ProjectileRenderer{endX: float64(endX), endY: float64(endY)},
 	})

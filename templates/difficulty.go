@@ -156,7 +156,7 @@ func NewDefaultDifficultyManager() *DifficultyManager {
 
 // ReadDifficultyConfig loads difficulty configuration from JSON and initializes GlobalDifficulty.
 func ReadDifficultyConfig() {
-	data, err := os.ReadFile(assetPath("gamedata/difficultyconfig.json"))
+	data, err := os.ReadFile(AssetPath("gamedata/difficultyconfig.json"))
 	if err != nil {
 		panic(err)
 	}

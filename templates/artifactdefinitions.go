@@ -52,7 +52,7 @@ func LoadArtifactDefinitions() {
 // loadArtifactFile reads a single artifact JSON file and adds entries to ArtifactRegistry.
 // Returns the number of artifacts loaded.
 func loadArtifactFile(path string) int {
-	data, err := os.ReadFile(assetPath(path))
+	data, err := os.ReadFile(AssetPath(path))
 	if err != nil {
 		fmt.Printf("WARNING: Failed to read artifact data from %s: %v\n", path, err)
 		return 0

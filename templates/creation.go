@@ -16,7 +16,7 @@ import (
 func CreateConsumable(mgr common.EntityManager, gm *worldmap.GameMap, pos coords.LogicalPosition, template JSONAttributeModifier) *ecs.Entity {
 	// Create base entity with name, renderable, and position components
 	// Note: Initially created as invisible, will be made visible by caller if needed
-	entity := createBaseEntity(mgr, template.Name, template.ImgName, "../assets/items/", false, nil)
+	entity := createBaseEntity(mgr, template.Name, template.ImgName, AssetPath("items"), false, nil)
 
 	// Make the renderable visible
 	common.GetComponentType[*rendering.Renderable](entity, rendering.RenderableComponent).Visible = true
