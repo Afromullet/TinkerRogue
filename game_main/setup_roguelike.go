@@ -56,7 +56,10 @@ func SetupRoguelikeMode(g *Game) {
 	raidMode.SetRaidRunner(raidRunner)
 
 	SetupInputCoordinator(g)
-	testing.CreateTestItems(&g.gameMap)
+
+	if config.DEBUG_MODE {
+		testing.CreateTestItems(&g.gameMap)
+	}
 
 	if err := coordinator.EnterTactical("exploration"); err != nil {
 		log.Fatalf("Failed to enter exploration mode: %v", err)

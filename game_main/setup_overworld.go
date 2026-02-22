@@ -41,7 +41,10 @@ func SetupOverworldMode(g *Game) {
 	registerOverworldModes(coordinator, overworldManager, encounterService)
 
 	SetupInputCoordinator(g)
-	testing.CreateTestItems(&g.gameMap)
+
+	if config.DEBUG_MODE {
+		testing.CreateTestItems(&g.gameMap)
+	}
 
 	if err := coordinator.EnterTactical("exploration"); err != nil {
 		log.Fatalf("Failed to enter exploration mode: %v", err)
@@ -56,9 +59,11 @@ func (gb *GameBootstrap) InitializeGameplay(em *common.EntityManager, pd *common
 	// Initialize overworld tick state
 	tick.CreateTickStateEntity(em)
 
-	// Create additional starting commanders near player position
-	if err := bootstrap.CreateTestCommanders(em, pd, *pd.Pos); err != nil {
-		fmt.Printf("WARNING: Failed to create test commanders: %v\n", err)
+	// Create additional starting commanders near player position (debug only)
+	if config.DEBUG_MODE {
+		if err := bootstrap.CreateTestCommanders(em, pd, *pd.Pos); err != nil {
+			fmt.Printf("WARNING: Failed to create test commanders: %v\n", err)
+		}
 	}
 
 	// Initialize commander turn state and action states
@@ -71,8 +76,10 @@ func (gb *GameBootstrap) InitializeGameplay(em *common.EntityManager, pd *common
 		core.SetTileWalkable(pos, true)
 	}
 
-	// Create initial overworld factions (they will spawn threats dynamically)
-	bootstrap.InitializeOverworldFactions(em, pd, gm)
+	// Create initial overworld factions (they will spawn threats dynamically, debug only)
+	if config.DEBUG_MODE {
+		bootstrap.InitializeOverworldFactions(em, pd, gm)
+	}
 
 	// Convert POIs from world generation into neutral overworld nodes
 	gb.ConvertPOIsToNodes(em, gm)

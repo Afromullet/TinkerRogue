@@ -10,11 +10,11 @@ import (
 )
 
 // CreateInitialPlayerSquads creates starting squads for a roster owner at game launch.
-// Creates 10 diverse squads in reserves (not deployed on map).
+// Creates 2 randomly selected squads in reserves (not deployed on map).
 // All squads are marked with IsDeployed = false and added to the owner's SquadRoster.
 // rosterOwnerID is the entity that holds the SquadRosterComponent (commander or player).
 // unitRosterOwnerID is the entity that holds the UnitRosterComponent (always the player).
-// prefix is prepended to squad names (e.g. "Vanguard" -> "Vanguard Balanced 1").
+// prefix is prepended to squad names (e.g. "Commander" -> "Commander Squad 1").
 func CreateInitialPlayerSquads(rosterOwnerID ecs.EntityID, unitRosterOwnerID ecs.EntityID, manager *common.EntityManager, prefix ...string) error {
 	// 1. Verify unit templates are loaded
 	if len(squads.Units) == 0 {
@@ -39,23 +39,29 @@ func CreateInitialPlayerSquads(rosterOwnerID ecs.EntityID, unitRosterOwnerID ecs
 		namePrefix = prefix[0]
 	}
 
-	// 4. Create 10 diverse squads
-	squadConfigs := []struct {
+	// 4. Randomly select 2 squads from available types
+	type squadType struct {
+		label    string
+		createFn func(*common.EntityManager, string) (ecs.EntityID, error)
+	}
+
+	pool := []squadType{
+		{"Balanced", createBalancedSquad},
+		{"Ranged", createRangedSquad},
+		{"Magic", createMagicSquad},
+		{"Mixed", createMixedSquad},
+		{"Cavalry", createCavalrySquad},
+	}
+
+	squadConfigs := make([]struct {
 		name     string
 		createFn func(*common.EntityManager, string) (ecs.EntityID, error)
-	}{
-		{fmt.Sprintf("%s Balanced 1", namePrefix), createBalancedSquad},
-		{fmt.Sprintf("%s Ranged 1", namePrefix), createRangedSquad},
-		{fmt.Sprintf("%s Magic 1", namePrefix), createMagicSquad},
-		{fmt.Sprintf("%s Balanced 2", namePrefix), createBalancedSquad},
-		{fmt.Sprintf("%s Mixed 1", namePrefix), createMixedSquad},
-		{fmt.Sprintf("%s Balanced 3", namePrefix), createBalancedSquad},
-		{fmt.Sprintf("%s Ranged 2", namePrefix), createRangedSquad},
-		{fmt.Sprintf("%s Magic 2", namePrefix), createMagicSquad},
-		{fmt.Sprintf("%s Mixed 2", namePrefix), createMixedSquad},
-		{fmt.Sprintf("%s Balanced 4", namePrefix), createBalancedSquad},
-		{fmt.Sprintf("%s Cavalry 1", namePrefix), createCavalrySquad},
-		{fmt.Sprintf("%s Cavalry 2", namePrefix), createCavalrySquad},
+	}, 2)
+
+	for i := 0; i < 2; i++ {
+		pick := pool[common.RandomInt(len(pool))]
+		squadConfigs[i].name = fmt.Sprintf("%s Squad %d", namePrefix, i+1)
+		squadConfigs[i].createFn = pick.createFn
 	}
 
 	for _, config := range squadConfigs {

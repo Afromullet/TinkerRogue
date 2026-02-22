@@ -14,7 +14,7 @@ const (
 	DISPLAY_DEATAILED_COMBAT_OUTPUT = false
 
 	// DEBUG_MODE enables debug visualization and logging
-	DEBUG_MODE = true
+	DEBUG_MODE = false
 
 	// ENABLE_BENCHMARKING enables pprof profiling server on localhost:6060
 	ENABLE_BENCHMARKING = true

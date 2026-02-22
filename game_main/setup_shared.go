@@ -182,7 +182,7 @@ func SetupInputCoordinator(g *Game) {
 // Only called when DEBUG_MODE is enabled.
 func SetupTestData(em *common.EntityManager, gm *worldmap.GameMap, pd *common.PlayerData) {
 	testing.CreateTestItems(gm)
-	testing.InitTestActionManager(em, pd)
+
 }
 
 // SetupBenchmarking initializes performance profiling tools when enabled.
