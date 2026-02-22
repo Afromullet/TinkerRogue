@@ -1,8 +1,10 @@
 package main
 
 import (
+	"fmt"
 	"log"
 
+	"game_main/common"
 	"game_main/config"
 	"game_main/gui/framework"
 	"game_main/gui/guicombat"
@@ -13,9 +15,14 @@ import (
 	"game_main/mind/encounter"
 	"game_main/mind/raid"
 	"game_main/overworld/core"
+	"game_main/savesystem"
+	"game_main/savesystem/chunks"
 	"game_main/tactical/commander"
+	"game_main/tactical/squads"
 	"game_main/testing"
 	"game_main/visual/rendering"
+	"game_main/world/coords"
+	"game_main/world/worldmap"
 )
 
 // SetupRoguelikeMode performs a complete roguelike initialization from scratch:
@@ -53,6 +60,102 @@ func SetupRoguelikeMode(g *Game) {
 
 	if err := coordinator.EnterTactical("exploration"); err != nil {
 		log.Fatalf("Failed to enter exploration mode: %v", err)
+	}
+}
+
+// SetupRoguelikeFromSave loads a saved roguelike game from disk.
+// It restores the map, player, squads, commanders, gear, and raid state,
+// then wires up the UI and systems just like SetupRoguelikeMode.
+func SetupRoguelikeFromSave(g *Game) error {
+	// Configure the MapChunk with a pointer to GameMap before loading
+	configureMapChunk(&g.gameMap)
+
+	// Load saved state into ECS
+	if err := savesystem.LoadGame(&g.em); err != nil {
+		return fmt.Errorf("failed to load save: %w", err)
+	}
+
+	g.renderingCache = rendering.NewRenderingCache(&g.em)
+
+	// Restore PlayerData from the loaded player entity
+	restorePlayerData(&g.em, &g.playerData)
+
+	// Load unit templates — CreatePlayer does this for fresh games,
+	// but the load path skips CreatePlayer so we must do it here.
+	if err := squads.InitUnitTemplatesFromJSON(); err != nil {
+		return fmt.Errorf("failed to load unit templates: %w", err)
+	}
+
+	// Rebuild walkable grid from loaded map
+	core.InitWalkableGrid(config.DefaultMapWidth, config.DefaultMapHeight)
+	for _, pos := range g.gameMap.ValidPositions {
+		core.SetTileWalkable(pos, true)
+	}
+
+	coordinator, encounterService := setupUICore(g)
+
+	// Set selected commander from restored roster
+	roster := commander.GetPlayerCommanderRoster(g.playerData.PlayerEntityID, &g.em)
+	if roster != nil && len(roster.CommanderIDs) > 0 {
+		coordinator.GetOverworldState().SelectedCommanderID = roster.CommanderIDs[0]
+	}
+
+	tacticalManager := coordinator.GetTacticalManager()
+	raidMode := registerRoguelikeTacticalModes(coordinator, tacticalManager, encounterService)
+
+	raidRunner := raid.NewRaidRunner(&g.em, encounterService)
+	raidMode.SetRaidRunner(raidRunner)
+
+	// If a raid was in progress when saved, restore the runner's entity ID
+	// so IsActive() returns true and autoStartRaid() doesn't duplicate entities.
+	if raidState := raid.GetRaidState(&g.em); raidState != nil {
+		for _, result := range g.em.World.Query(g.em.WorldTags["raidstate"]) {
+			raidRunner.RestoreFromSave(result.Entity.GetID())
+			break
+		}
+	}
+
+	SetupInputCoordinator(g)
+
+	if err := coordinator.EnterTactical("exploration"); err != nil {
+		log.Fatalf("Failed to enter exploration mode: %v", err)
+	}
+
+	fmt.Println("Roguelike game loaded from save")
+	return nil
+}
+
+// SaveRoguelikeGame saves the current roguelike game state to disk.
+// Call this from exploration mode (e.g., via a keybind or button).
+func SaveRoguelikeGame(g *Game) error {
+	configureMapChunk(&g.gameMap)
+	return savesystem.SaveGame(&g.em)
+}
+
+// configureMapChunk sets the GameMap pointer on the MapChunk so it can
+// read/write map data during save/load.
+func configureMapChunk(gm *worldmap.GameMap) {
+	if chunk := savesystem.GetChunk("map"); chunk != nil {
+		if mc, ok := chunk.(*chunks.MapChunk); ok {
+			mc.GameMap = gm
+		}
+	}
+}
+
+// restorePlayerData reconstructs the PlayerData struct from the loaded player entity.
+func restorePlayerData(em *common.EntityManager, pd *common.PlayerData) {
+	playerTag, ok := em.WorldTags["players"]
+	if !ok {
+		return
+	}
+	results := em.World.Query(playerTag)
+	if len(results) == 0 {
+		return
+	}
+	entity := results[0].Entity
+	pd.PlayerEntityID = entity.GetID()
+	if pos := common.GetComponentType[*coords.LogicalPosition](entity, common.PositionComponent); pos != nil {
+		pd.Pos = pos
 	}
 }
 

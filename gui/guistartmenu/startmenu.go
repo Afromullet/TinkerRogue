@@ -4,6 +4,7 @@ import (
 	"image/color"
 
 	"game_main/gui/builders"
+	"game_main/savesystem"
 
 	"github.com/ebitenui/ebitenui"
 	"github.com/ebitenui/ebitenui/widget"
@@ -14,9 +15,10 @@ import (
 type GameModeChoice int
 
 const (
-	ModeNone      GameModeChoice = iota
+	ModeNone            GameModeChoice = iota
 	ModeOverworld
 	ModeRoguelike
+	ModeLoadRoguelike
 )
 
 // StartMenu is a self-contained pre-game menu screen.
@@ -64,6 +66,17 @@ func NewStartMenu() *StartMenu {
 		},
 	})
 	centerColumn.AddChild(roguelikeBtn)
+
+	// Load Roguelike button (only if save file exists)
+	if savesystem.HasSaveFile() {
+		loadBtn := builders.CreateButtonWithConfig(builders.ButtonConfig{
+			Text: "Load Roguelike Save",
+			OnClick: func() {
+				sm.selected = ModeLoadRoguelike
+			},
+		})
+		centerColumn.AddChild(loadBtn)
+	}
 
 	// Root container fills the screen and centers the column
 	rootContainer := widget.NewContainer(

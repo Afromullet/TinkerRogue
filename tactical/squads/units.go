@@ -115,6 +115,7 @@ func CreateUnitTemplates(monsterData templates.JSONMonster) (UnitTemplate, error
 
 // Reads the JSON file to create the UnitTemplates from which Unit entities can be created
 func InitUnitTemplatesFromJSON() error {
+	Units = Units[:0] // Reset to prevent duplicates on reload
 	for _, monster := range templates.MonsterTemplates {
 		unit, err := CreateUnitTemplates(monster)
 		if err != nil {

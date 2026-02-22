@@ -154,6 +154,14 @@ func setupUICore(g *Game) (*framework.GameModeCoordinator, *encounter.EncounterS
 
 	widgetresources.PreCacheScrollContainerSizes(uiContext.ScreenWidth, uiContext.ScreenHeight)
 
+	uiContext.SaveGameCallback = func() error {
+		return SaveRoguelikeGame(g)
+	}
+
+	uiContext.LoadGameCallback = func() {
+		g.pendingLoad = true
+	}
+
 	g.gameModeCoordinator = framework.NewGameModeCoordinator(uiContext)
 	uiContext.ModeCoordinator = g.gameModeCoordinator
 

@@ -21,7 +21,7 @@ const (
 
 	// ENABLE_COMBAT_LOG_EXPORT enables JSON export of battle logs for post-combat analysis
 	// When enabled, a JSON file is written to COMBAT_LOG_EXPORT_DIR after each battle
-	ENABLE_COMBAT_LOG_EXPORT = true
+	ENABLE_COMBAT_LOG_EXPORT = false
 	COMBAT_LOG_EXPORT_DIR    = "./combat_logs"
 
 	// ENABLE_OVERWORLD_LOG_EXPORT enables JSON export of overworld session logs for post-game analysis

@@ -9,25 +9,23 @@ __________________________________________
     * I.E, "Ambush" - fast units have a weight, ranged battery prioritizes ranged units, etc. 
 
 
-- Need better reward system. Both raids and regular combat should have rewards. We want rewards to be mostly the same, with additional weighing applies so that raids give better rewards
 
+---------
 
 - Explore the go fix command
 
 
 
+- Need better reward system. Both raids and regular combat should have rewards. We want rewards to be mostly the same, with additional weighing applies so that raids give better rewards
 
 
 ----
-
+- Review all consts to see if they should be defined in a json file
 
 - Start Random Encounter alwys starts the same encounter
 
-- Identify common patterns in teh different combat start paths. Garrison, raids, and overworld encounters follow different paths.
 
-
-
-- Encounters seem to be too skewed towards ranged threats. Using the threat layer visualization as baseline. Rectify that. 
+- Either encounters or behavior seem to be too skewed towards ranged threats. Using the threat layer visualization as baseline. Investigate whether it's the squad makup, or the weighting of attacks
 
 - There has to be a tradeoff between casting spells and moving squads/engaging in combat. Doing both will feel too mechanical. 
 
@@ -75,7 +73,6 @@ ________________________________________________
 
 # Cleanup
 
-- func CursorPosition(playerPos coords.LogicalPosition) (int, int) in graphictypes requires a change. Leftover from how throwables are handled. 
 
 
 - combatqueries.go still has functions which search the entire ecs space
@@ -89,14 +86,14 @@ ________________________________________________
 ## The following packages need review
 
 - Guioverworld
-- Commander
+
 - GUISquads
 - GUIOverworld
-- Spells
+
 - Worldmap
 - Guiraids
 - Raids
-- Resolution
+- combatpipeline
 
 ____
 
@@ -107,16 +104,6 @@ x
 
 
 
-# Additions 
-
-
-- Better Combat Log
-
-
-
-
-
 # Redundancies?
 
 - Consider removing  fmt.Errorf statements throughout the code, such as in combatactionsystem and use an error log instead
-- Check on ENABLE_COMBAT_LOG and ENABLE_COMBAT_LOG_EXPORT. Probabably some duplication we can get rid of

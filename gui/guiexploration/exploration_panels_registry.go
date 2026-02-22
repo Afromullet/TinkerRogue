@@ -181,6 +181,28 @@ func init() {
 				})
 			}
 
+			// Save button: only show in roguelike mode when save callback is available
+			if hasSquadInTactical && em.Context.SaveGameCallback != nil {
+				buttons = append(buttons, builders.ButtonSpec{
+					Text: "Save", OnClick: func() {
+						if err := em.Context.SaveGameCallback(); err != nil {
+							fmt.Printf("ERROR: Failed to save game: %v\n", err)
+						} else {
+							fmt.Println("Game saved successfully")
+						}
+					},
+				})
+			}
+
+			// Load button: only show in roguelike mode when load callback is available
+			if hasSquadInTactical && em.Context.LoadGameCallback != nil {
+				buttons = append(buttons, builders.ButtonSpec{
+					Text: "Load", OnClick: func() {
+						em.Context.LoadGameCallback()
+					},
+				})
+			}
+
 			buttonContainer := builders.CreateButtonGroup(builders.ButtonGroupConfig{
 				Buttons:    buttons,
 				Direction:  widget.DirectionHorizontal,

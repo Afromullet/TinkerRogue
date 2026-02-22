@@ -45,14 +45,16 @@ type UIMode interface {
 
 // UIContext provides shared game state to all UI modes
 type UIContext struct {
-	ECSManager      *common.EntityManager
-	PlayerData      *common.PlayerData
-	GameMap         *worldmap.GameMap
-	ScreenWidth     int
-	ScreenHeight    int
-	TileSize        int
-	ModeCoordinator *GameModeCoordinator // For context switching
-	Queries         *GUIQueries          // Shared queries for all UI modes
+	ECSManager       *common.EntityManager
+	PlayerData       *common.PlayerData
+	GameMap          *worldmap.GameMap
+	ScreenWidth      int
+	ScreenHeight     int
+	TileSize         int
+	ModeCoordinator  *GameModeCoordinator // For context switching
+	Queries          *GUIQueries          // Shared queries for all UI modes
+	SaveGameCallback func() error         // Called by UI to trigger save; nil if save not available
+	LoadGameCallback func()               // Called by UI to request a load; nil if not available
 }
 
 // GetSquadRosterOwnerID returns the entity that owns the active squad roster.

@@ -24,6 +24,8 @@ import (
 
 	_ "image/png" // Required for PNG image loading
 
+	_ "game_main/savesystem/chunks" // Blank import to register SaveChunks via init()
+
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
@@ -38,6 +40,7 @@ type Game struct {
 	renderingCache      *rendering.RenderingCache // Cached view for rendering hot path (3-5x faster)
 	startMenu           *guistartmenu.StartMenu
 	showStartMenu       bool
+	pendingLoad         bool
 }
 
 // NewGame creates and initializes a new Game instance.
@@ -72,6 +75,20 @@ func (g *Game) Update() error {
 		case guistartmenu.ModeRoguelike:
 			SetupRoguelikeMode(g)
 			g.showStartMenu = false
+		case guistartmenu.ModeLoadRoguelike:
+			if err := SetupRoguelikeFromSave(g); err != nil {
+				log.Printf("Failed to load save: %v, starting fresh", err)
+				SetupRoguelikeMode(g)
+			}
+			g.showStartMenu = false
+		}
+		return nil
+	}
+
+	if g.pendingLoad {
+		g.pendingLoad = false
+		if err := SetupRoguelikeFromSave(g); err != nil {
+			log.Printf("Failed to load save: %v, continuing current game", err)
 		}
 		return nil
 	}

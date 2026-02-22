@@ -1,6 +1,7 @@
 package worldmap
 
 import (
+	"game_main/common"
 	"os"
 	"path/filepath"
 
@@ -111,4 +112,43 @@ func loadBiomeTiles(biome Biome) *BiomeTileSet {
 	}
 
 	return biomeTiles
+}
+
+// SelectTileImage picks the appropriate image for a tile based on its type, biome, and POI.
+// Used by the save system to reconstruct tile images on load.
+func SelectTileImage(images TileImageSet, tileType TileType, biome Biome, poiType string) *ebiten.Image {
+	if poiType != "" {
+		if img, ok := images.POIImages[poiType]; ok {
+			return img
+		}
+	}
+
+	switch tileType {
+	case STAIRS_DOWN:
+		return images.StairsDown
+	case FLOOR:
+		return selectBiomeFloorImage(images, biome)
+	default: // WALL
+		return selectBiomeWallImage(images, biome)
+	}
+}
+
+func selectBiomeFloorImage(images TileImageSet, biome Biome) *ebiten.Image {
+	if biomeTiles, ok := images.BiomeImages[biome]; ok && len(biomeTiles.FloorImages) > 0 {
+		return biomeTiles.FloorImages[common.GetRandomBetween(0, len(biomeTiles.FloorImages)-1)]
+	}
+	if len(images.FloorImages) > 0 {
+		return images.FloorImages[common.GetRandomBetween(0, len(images.FloorImages)-1)]
+	}
+	return nil
+}
+
+func selectBiomeWallImage(images TileImageSet, biome Biome) *ebiten.Image {
+	if biomeTiles, ok := images.BiomeImages[biome]; ok && len(biomeTiles.WallImages) > 0 {
+		return biomeTiles.WallImages[common.GetRandomBetween(0, len(biomeTiles.WallImages)-1)]
+	}
+	if len(images.WallImages) > 0 {
+		return images.WallImages[common.GetRandomBetween(0, len(images.WallImages)-1)]
+	}
+	return nil
 }

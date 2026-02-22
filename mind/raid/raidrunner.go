@@ -340,6 +340,12 @@ func (rr *RaidRunner) IsActive() bool {
 	return rr.raidEntityID != 0
 }
 
+// RestoreFromSave sets the raid entity ID from a loaded save,
+// allowing the runner to resume an in-progress raid without generating a new garrison.
+func (rr *RaidRunner) RestoreFromSave(raidEntityID ecs.EntityID) {
+	rr.raidEntityID = raidEntityID
+}
+
 // finishRaid clears the runner state after the raid ends.
 func (rr *RaidRunner) finishRaid(status RaidStatus) {
 	fmt.Printf("RaidRunner: Raid finished with status: %s\n", status)
