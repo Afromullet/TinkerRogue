@@ -160,19 +160,20 @@ func (ur *UnitRoster) GetUnitCount() (int, int) {
 	return ur.getTotalUnitCount(), ur.MaxUnits
 }
 
-// GetUnitEntityForTemplate gets an available unit entity ID for placing in squad
-// Returns 0 if no available units of this template
-func (ur *UnitRoster) GetUnitEntityForTemplate(unitType string) ecs.EntityID {
+// GetUnitEntityForTemplate gets an available unit entity ID for placing in squad.
+// Uses ECS SquadMemberComponent as the source of truth — returns the first entity
+// that does NOT have SquadMemberComponent (i.e., not currently in any squad).
+// Returns 0 if no available units of this type.
+func (ur *UnitRoster) GetUnitEntityForTemplate(unitType string, manager *common.EntityManager) ecs.EntityID {
 	entry, exists := ur.Units[unitType]
-	if !exists || ur.GetAvailableCount(unitType) == 0 {
+	if !exists {
 		return 0
 	}
 
-	// Return first available entity
-	// In future, could track which specific entities are in squads
-	// For now, just return first entity from the list
-	if len(entry.UnitEntities) > 0 {
-		return entry.UnitEntities[0]
+	for _, id := range entry.UnitEntities {
+		if !manager.HasComponent(id, SquadMemberComponent) {
+			return id
+		}
 	}
 	return 0
 }

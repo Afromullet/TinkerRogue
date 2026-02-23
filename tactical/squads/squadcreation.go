@@ -132,6 +132,79 @@ func RemoveUnitFromSquad(unitEntityID ecs.EntityID, squadmanager *common.EntityM
 	return nil
 }
 
+// PlaceUnitInSquad places an existing entity into a squad at the specified grid position.
+// Unlike AddUnitToSquad, this does NOT create a new entity — it reuses the given entity.
+// The entity must already have GridPositionComponent and AttributeComponent.
+func PlaceUnitInSquad(squadID ecs.EntityID, unitEntityID ecs.EntityID, manager *common.EntityManager, gridRow, gridCol int) error {
+	// Validate grid position
+	if gridRow < 0 || gridRow > 2 || gridCol < 0 || gridCol > 2 {
+		return fmt.Errorf("invalid grid position (%d, %d)", gridRow, gridCol)
+	}
+
+	// Check if position occupied
+	existingUnitIDs := GetUnitIDsAtGridPosition(squadID, gridRow, gridCol, manager)
+	if len(existingUnitIDs) > 0 {
+		return fmt.Errorf("grid position (%d, %d) already occupied", gridRow, gridCol)
+	}
+
+	// Check capacity
+	attr := common.GetComponentTypeByID[*common.Attributes](manager, unitEntityID, common.AttributeComponent)
+	if attr == nil {
+		return fmt.Errorf("unit entity has no attributes")
+	}
+	unitCapacityCost := attr.GetCapacityCost()
+	if !CanAddUnitToSquad(squadID, unitCapacityCost, manager) {
+		remaining := GetSquadRemainingCapacity(squadID, manager)
+		return fmt.Errorf("insufficient squad capacity: need %.2f, have %.2f remaining",
+			unitCapacityCost, remaining)
+	}
+
+	unitEntity := manager.FindEntityByID(unitEntityID)
+	if unitEntity == nil {
+		return fmt.Errorf("unit entity %d not found", unitEntityID)
+	}
+
+	// Add SquadMemberComponent to link unit to squad
+	unitEntity.AddComponent(SquadMemberComponent, &SquadMemberData{
+		SquadID: squadID,
+	})
+
+	// Update GridPositionComponent with target grid position
+	gridPos := common.GetComponentType[*GridPositionData](unitEntity, GridPositionComponent)
+	if gridPos == nil {
+		return fmt.Errorf("unit entity has no GridPositionComponent")
+	}
+	gridPos.AnchorRow = gridRow
+	gridPos.AnchorCol = gridCol
+
+	return nil
+}
+
+// UnassignUnitFromSquad removes a unit from its squad WITHOUT disposing the entity.
+// The entity stays alive in the ECS world (remains in roster pool).
+func UnassignUnitFromSquad(unitEntityID ecs.EntityID, manager *common.EntityManager) error {
+	if !manager.HasComponent(unitEntityID, SquadMemberComponent) {
+		return fmt.Errorf("unit is not in a squad")
+	}
+
+	unitEntity := manager.FindEntityByID(unitEntityID)
+	if unitEntity == nil {
+		return fmt.Errorf("unit entity %d not found", unitEntityID)
+	}
+
+	// Remove squad membership
+	unitEntity.RemoveComponent(SquadMemberComponent)
+
+	// Reset grid position anchor to 0,0
+	gridPos := common.GetComponentType[*GridPositionData](unitEntity, GridPositionComponent)
+	if gridPos != nil {
+		gridPos.AnchorRow = 0
+		gridPos.AnchorCol = 0
+	}
+
+	return nil
+}
+
 func MoveUnitInSquad(unitEntityID ecs.EntityID, newRow, newCol int, ecsmanager *common.EntityManager) error {
 	if !ecsmanager.HasComponent(unitEntityID, SquadMemberComponent) {
 		return fmt.Errorf("unit is not in a squad")
@@ -266,6 +339,10 @@ func CreateSquadFromTemplate(
 			template.EntityConfig,
 			template.EntityData,
 		)
+
+		// Generate a display name (e.g., "Karathos the Warrior") instead of raw unit type
+		displayName := templates.GenerateName("default", template.UnitType)
+		unitEntity.AddComponent(common.NameComponent, &common.Name{NameStr: displayName})
 
 		// Make unit's renderable invisible - only the squad should render on the world map
 		// Units are internal to squads; the squad entity shows the leader's sprite

@@ -72,44 +72,21 @@ func (c *AddUnitCommand) Execute() error {
 		return fmt.Errorf("player roster not found")
 	}
 
-	// Get available unit from roster
-	unitEntityID := roster.GetUnitEntityForTemplate(c.templateName)
+	// Get an available (not in any squad) unit entity from roster
+	unitEntityID := roster.GetUnitEntityForTemplate(c.templateName, c.manager)
 	if unitEntityID == 0 {
 		return fmt.Errorf("no available unit entity for template '%s'", c.templateName)
 	}
 
-	// Create unit template from the existing unit's data
-	// Get unit attributes
-	attr := common.GetComponentTypeByID[*common.Attributes](c.manager, unitEntityID, common.AttributeComponent)
-	if attr == nil {
-		return fmt.Errorf("unit entity has no attributes")
-	}
-
-	// Create unit template
-	unitTemplate := squads.UnitTemplate{
-		UnitType:   c.templateName,
-		GridRow:    c.gridRow,
-		GridCol:    c.gridCol,
-		GridWidth:  1,
-		GridHeight: 1,
-		Role:       squads.RoleDPS, // Default role
-		Attributes: *attr,
-	}
-
-	// Add unit to squad
-	unitID, err := squads.AddUnitToSquad(c.squadID, c.manager, unitTemplate, c.gridRow, c.gridCol)
+	// Place the existing entity into the squad (no cloning)
+	err := squads.PlaceUnitInSquad(c.squadID, unitEntityID, c.manager, c.gridRow, c.gridCol)
 	if err != nil {
-		return fmt.Errorf("failed to add unit to squad: %w", err)
+		return fmt.Errorf("failed to place unit in squad: %w", err)
 	}
 
-	c.addedUnitID = unitID
+	c.addedUnitID = unitEntityID
 
-	// Register the newly created squad entity in roster and mark as in squad
-	err = roster.AddUnit(c.addedUnitID, c.templateName)
-	if err != nil {
-		return fmt.Errorf("failed to add unit to roster: %w", err)
-	}
-
+	// Mark unit as in squad in roster tracking
 	err = roster.MarkUnitInSquad(c.addedUnitID, c.squadID)
 	if err != nil {
 		return fmt.Errorf("failed to mark unit in roster: %w", err)
@@ -128,21 +105,16 @@ func (c *AddUnitCommand) Undo() error {
 		return fmt.Errorf("player roster not found")
 	}
 
-	// Mark as available first (decrement in-squad count)
+	// Mark as available in roster tracking
 	err := roster.MarkUnitAvailable(c.addedUnitID)
 	if err != nil {
 		return fmt.Errorf("failed to mark unit available: %w", err)
 	}
 
-	// Remove unit from squad (this disposes the entity)
-	err = squads.RemoveUnitFromSquad(c.addedUnitID, c.manager)
+	// Unassign from squad (entity stays alive, returns to roster pool)
+	err = squads.UnassignUnitFromSquad(c.addedUnitID, c.manager)
 	if err != nil {
-		return fmt.Errorf("failed to remove unit from squad: %w", err)
-	}
-
-	// Remove from roster completely (reduces TotalOwned, removes disposed entity ID)
-	if !roster.RemoveUnit(c.addedUnitID) {
-		return fmt.Errorf("failed to remove unit from roster")
+		return fmt.Errorf("failed to unassign unit from squad: %w", err)
 	}
 
 	c.addedUnitID = 0

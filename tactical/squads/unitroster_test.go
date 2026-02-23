@@ -182,31 +182,33 @@ func TestUnitRoster_GetUnitEntityForTemplate(t *testing.T) {
 	roster := NewUnitRoster(10)
 
 	// Add warriors
-	unit1 := manager.World.NewEntity().GetID()
-	unit2 := manager.World.NewEntity().GetID()
+	unit1Entity := manager.World.NewEntity()
+	unit2Entity := manager.World.NewEntity()
+	unit1 := unit1Entity.GetID()
+	unit2 := unit2Entity.GetID()
 
 	roster.AddUnit(unit1, "Warrior")
 	roster.AddUnit(unit2, "Warrior")
 
-	// Get entity for template
-	entityID := roster.GetUnitEntityForTemplate("Warrior")
+	// Get entity for template — both available (no SquadMemberComponent)
+	entityID := roster.GetUnitEntityForTemplate("Warrior", manager)
 	if entityID == 0 {
 		t.Error("Expected valid entity ID for Warrior")
 	}
 
-	// Mark all warriors as in squad
+	// Simulate placing units in squad by adding SquadMemberComponent
 	squadID := ecs.EntityID(999)
-	roster.MarkUnitInSquad(unit1, squadID)
-	roster.MarkUnitInSquad(unit2, squadID)
+	unit1Entity.AddComponent(SquadMemberComponent, &SquadMemberData{SquadID: squadID})
+	unit2Entity.AddComponent(SquadMemberComponent, &SquadMemberData{SquadID: squadID})
 
-	// Should return 0 since no available warriors
-	entityID = roster.GetUnitEntityForTemplate("Warrior")
+	// Should return 0 since both have SquadMemberComponent
+	entityID = roster.GetUnitEntityForTemplate("Warrior", manager)
 	if entityID != 0 {
 		t.Errorf("Expected 0 entity ID when no warriors available, got %d", entityID)
 	}
 
 	// Get entity for non-existent template
-	entityID = roster.GetUnitEntityForTemplate("NonExistent")
+	entityID = roster.GetUnitEntityForTemplate("NonExistent", manager)
 	if entityID != 0 {
 		t.Errorf("Expected 0 entity ID for non-existent template, got %d", entityID)
 	}
