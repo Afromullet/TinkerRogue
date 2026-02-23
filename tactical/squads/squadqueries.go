@@ -299,6 +299,82 @@ func GetSquadName(squadID ecs.EntityID, squadmanager *common.EntityManager) stri
 }
 
 // ========================================
+// ATTACK PATTERN QUERIES
+// ========================================
+
+// AttackPatternCell holds the names of units that would target a specific defender cell.
+type AttackPatternCell struct {
+	UnitNames []string
+}
+
+// ComputeGenericAttackPattern computes which defender cells each alive unit in the squad
+// would target, assuming a full 3x3 enemy grid (no pierce-through or fallback logic).
+// Returns a [3][3] grid where each cell lists the names of attacking units.
+func ComputeGenericAttackPattern(squadID ecs.EntityID, manager *common.EntityManager) [3][3]AttackPatternCell {
+	var pattern [3][3]AttackPatternCell
+
+	unitIDs := GetUnitIDsInSquad(squadID, manager)
+
+	for _, unitID := range unitIDs {
+		entity := manager.FindEntityByID(unitID)
+		if entity == nil {
+			continue
+		}
+
+		// Skip dead units
+		attr := common.GetComponentType[*common.Attributes](entity, common.AttributeComponent)
+		if attr != nil && attr.CurrentHealth <= 0 {
+			continue
+		}
+
+		// Need both targeting and grid position data
+		if !entity.HasComponent(TargetRowComponent) || !entity.HasComponent(GridPositionComponent) {
+			continue
+		}
+		targetData := common.GetComponentType[*TargetRowData](entity, TargetRowComponent)
+		gridPos := common.GetComponentType[*GridPositionData](entity, GridPositionComponent)
+		if targetData == nil || gridPos == nil {
+			continue
+		}
+
+		unitName := common.GetEntityName(manager, unitID, "Unit")
+
+		cells := computeGenericTargetCells(targetData, gridPos)
+		for _, cell := range cells {
+			r, c := cell[0], cell[1]
+			if r >= 0 && r < 3 && c >= 0 && c < 3 {
+				pattern[r][c].UnitNames = append(pattern[r][c].UnitNames, unitName)
+			}
+		}
+	}
+
+	return pattern
+}
+
+// computeGenericTargetCells returns the defender grid cells a unit would target
+// based on its attack type and grid position, assuming a full 3x3 enemy grid.
+func computeGenericTargetCells(targetData *TargetRowData, gridPos *GridPositionData) [][2]int {
+	switch targetData.AttackType {
+	case AttackTypeMeleeRow:
+		// Targets front row (row 0), all 3 columns
+		return [][2]int{{0, 0}, {0, 1}, {0, 2}}
+	case AttackTypeMeleeColumn:
+		// Targets column matching attacker's AnchorCol, all 3 rows
+		col := gridPos.AnchorCol
+		return [][2]int{{0, col}, {1, col}, {2, col}}
+	case AttackTypeRanged:
+		// Targets row matching attacker's AnchorRow, all 3 columns
+		row := gridPos.AnchorRow
+		return [][2]int{{row, 0}, {row, 1}, {row, 2}}
+	case AttackTypeMagic:
+		// Targets exact cells from TargetCells
+		return targetData.TargetCells
+	default:
+		return nil
+	}
+}
+
+// ========================================
 // ROLE AND HEALTH QUERIES
 // ========================================
 

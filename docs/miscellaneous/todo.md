@@ -18,6 +18,8 @@ __________________________________________
 
 - renderables not created for new squad
 
+- Untis not removed from roster after adding them to a squad
+
 - Explore the go fix command
 
 

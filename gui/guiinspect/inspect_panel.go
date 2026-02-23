@@ -7,6 +7,7 @@ import (
 	"game_main/gui/framework"
 	"game_main/gui/specs"
 	"game_main/tactical/squads"
+	"strings"
 
 	"github.com/bytearena/ecs"
 	"github.com/ebitenui/ebitenui/widget"
@@ -36,6 +37,15 @@ func BuildPanel(result *framework.PanelResult, pb *builders.PanelBuilders) {
 	result.Container.AddChild(gridContainer)
 	result.Custom["gridCells"] = gridCells
 
+	// Attack pattern label
+	attackLabel := builders.CreateSmallLabel("Attack Pattern")
+	result.Container.AddChild(attackLabel)
+
+	// 3x3 attack pattern grid (read-only)
+	attackGridContainer, attackGridCells := pb.BuildGridEditor(builders.GridEditorConfig{})
+	result.Container.AddChild(attackGridContainer)
+	result.Custom["attackGridCells"] = attackGridCells
+
 	// Hidden by default
 	result.Container.GetWidget().Visibility = widget.Visibility_Hide
 }
@@ -43,10 +53,11 @@ func BuildPanel(result *framework.PanelResult, pb *builders.PanelBuilders) {
 // InspectPanelController manages the squad formation inspect panel display.
 // Owns the widget references and all grid population logic.
 type InspectPanelController struct {
-	queries        *framework.GUIQueries
-	squadNameLabel *widget.Text
-	gridCells      [3][3]*widget.Button
-	panelContainer *widget.Container
+	queries          *framework.GUIQueries
+	squadNameLabel   *widget.Text
+	gridCells        [3][3]*widget.Button
+	attackGridCells  [3][3]*widget.Button
+	panelContainer   *widget.Container
 }
 
 // NewInspectPanelController creates a new inspect panel controller.
@@ -57,9 +68,10 @@ func NewInspectPanelController(queries *framework.GUIQueries) *InspectPanelContr
 }
 
 // SetWidgets sets widget references after panel construction.
-func (ip *InspectPanelController) SetWidgets(nameLabel *widget.Text, gridCells [3][3]*widget.Button, container *widget.Container) {
+func (ip *InspectPanelController) SetWidgets(nameLabel *widget.Text, gridCells [3][3]*widget.Button, attackGridCells [3][3]*widget.Button, container *widget.Container) {
 	ip.squadNameLabel = nameLabel
 	ip.gridCells = gridCells
+	ip.attackGridCells = attackGridCells
 	ip.panelContainer = container
 }
 
@@ -114,7 +126,31 @@ func (ip *InspectPanelController) PopulateGrid(squadID ecs.EntityID) {
 		}
 	}
 
+	ip.populateAttackPatternGrid(squadID)
 	ip.Show()
+}
+
+// populateAttackPatternGrid fills the attack pattern grid showing which defender
+// cells each unit would target, assuming a full 3x3 enemy grid.
+func (ip *InspectPanelController) populateAttackPatternGrid(squadID ecs.EntityID) {
+	manager := ip.queries.ECSManager
+
+	pattern := squads.ComputeGenericAttackPattern(squadID, manager)
+
+	for row := 0; row < 3; row++ {
+		for col := 0; col < 3; col++ {
+			cell := pattern[row][col]
+			var cellText string
+			if len(cell.UnitNames) == 0 {
+				cellText = ""
+			} else if len(cell.UnitNames) <= 2 {
+				cellText = strings.Join(cell.UnitNames, "\n")
+			} else {
+				cellText = strings.Join(cell.UnitNames[:2], "\n") + fmt.Sprintf("\n+%d more", len(cell.UnitNames)-2)
+			}
+			ip.attackGridCells[row][col].Text().Label = cellText
+		}
+	}
 }
 
 // ClearGrid clears all grid cell labels.
@@ -122,6 +158,7 @@ func (ip *InspectPanelController) ClearGrid() {
 	for row := 0; row < 3; row++ {
 		for col := 0; col < 3; col++ {
 			ip.gridCells[row][col].Text().Label = ""
+			ip.attackGridCells[row][col].Text().Label = ""
 		}
 	}
 }

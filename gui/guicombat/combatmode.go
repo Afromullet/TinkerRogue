@@ -170,6 +170,7 @@ func (cm *CombatMode) Initialize(ctx *framework.UIContext) error {
 		inspectController.SetWidgets(
 			framework.GetPanelWidget[*widget.Text](cm.Panels, guiinspect.InspectPanelType, "squadNameLabel"),
 			framework.GetPanelWidget[[3][3]*widget.Button](cm.Panels, guiinspect.InspectPanelType, "gridCells"),
+			framework.GetPanelWidget[[3][3]*widget.Button](cm.Panels, guiinspect.InspectPanelType, "attackGridCells"),
 			inspectResult.Container,
 		)
 	}

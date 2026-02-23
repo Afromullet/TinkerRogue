@@ -175,7 +175,7 @@ const (
 
 	// Inspect formation panel (right side, shown during inspect mode)
 	CombatInspectPanelWidth  = 0.22
-	CombatInspectPanelHeight = 0.35
+	CombatInspectPanelHeight = 0.60
 )
 
 // InventoryModeLayout defines layout constants for inventory mode
