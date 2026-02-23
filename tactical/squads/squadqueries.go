@@ -2,6 +2,7 @@ package squads
 
 import (
 	"game_main/common"
+	"game_main/config"
 	"game_main/world/coords"
 	"math"
 
@@ -190,12 +191,12 @@ func GetSquadTotalCapacity(squadID ecs.EntityID, squadmanager *common.EntityMana
 	leaderID := GetLeaderID(squadID, squadmanager)
 	if leaderID == 0 {
 		// No leader found - return default minimum capacity
-		return DefaultSquadCapacity
+		return config.DefaultBaseCapacity
 	}
 
 	attr := getUnitAttributes(leaderID, squadmanager)
 	if attr == nil {
-		return DefaultSquadCapacity
+		return config.DefaultBaseCapacity
 	}
 
 	return attr.GetUnitCapacity()

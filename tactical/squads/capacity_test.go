@@ -2,6 +2,7 @@ package squads
 
 import (
 	"game_main/common"
+	"game_main/config"
 	"game_main/templates"
 
 	"testing"
@@ -257,8 +258,8 @@ func TestCapacitySystem_ComputedCapacityAfterAddingUnit(t *testing.T) {
 
 	// Check computed capacity functions
 	totalCapacity := GetSquadTotalCapacity(squadID, manager)
-	if totalCapacity != DefaultSquadCapacity {
-		t.Errorf("Expected TotalCapacity %d, got %d", DefaultSquadCapacity, totalCapacity)
+	if totalCapacity != config.DefaultBaseCapacity {
+		t.Errorf("Expected TotalCapacity %d, got %d", config.DefaultBaseCapacity, totalCapacity)
 	}
 
 	expectedUsed := 1.0 // (3+1+1)/5

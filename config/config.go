@@ -79,8 +79,8 @@ const (
 	DefaultMaxHitRate     = 100
 	DefaultMaxCritChance  = 50
 	DefaultMaxDodgeChance = 30
-	DefaultBaseCapacity   = 6
-	DefaultMaxCapacity    = 9
+	DefaultBaseCapacity   = 60
+	DefaultMaxCapacity    = 150
 	BaseMagicResist       = 5
 )
 

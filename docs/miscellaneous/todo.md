@@ -5,12 +5,18 @@ __________________________________________
 
 # Raid Package
 
+
+
 - Either define archetypes.go in a json file, or use the encounter system. Consider creating a variation of the encounter system which weighs certain units more
     * I.E, "Ambush" - fast units have a weight, ranged battery prioritizes ranged units, etc. 
 
 
 
 ---------
+
+- Add a "new type of attack" to combat, which is a heal. Use targeting cells to make things easier  
+
+- renderables not created for new squad
 
 - Explore the go fix command
 

@@ -34,8 +34,6 @@ var (
 	LeaderTag      ecs.Tag
 )
 
-// DefaultSquadCapacity is the base capacity for squads without a leader.
-const DefaultSquadCapacity = 6
 
 // ========================================
 // SQUAD ENTITY COMPONENTS
