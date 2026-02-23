@@ -104,6 +104,11 @@ func (gb *GameBootstrap) CreatePlayer(em *common.EntityManager, pd *common.Playe
 		log.Fatalf("Failed to create initial player squads: %v", err)
 	}
 
+	// Seed 5 random unassigned units into the player's roster
+	if err := bootstrap.CreateInitialRosterUnits(pd.PlayerEntityID, em, 5); err != nil {
+		log.Fatalf("Failed to create initial roster units: %v", err)
+	}
+
 	fmt.Printf("Created initial commander (ID: %d) at (%d,%d)\n", commanderID, pd.Pos.X, pd.Pos.Y)
 }
 

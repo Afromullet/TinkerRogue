@@ -360,6 +360,40 @@ func createCavalrySquad(manager *common.EntityManager, squadName string) (ecs.En
 	return squadID, nil
 }
 
+// CreateInitialRosterUnits creates standalone units (not in any squad) and adds them
+// to the player's UnitRoster. These show up as "available" in GetAvailableUnits().
+func CreateInitialRosterUnits(unitRosterOwnerID ecs.EntityID, manager *common.EntityManager, count int) error {
+	if len(squads.Units) == 0 {
+		return fmt.Errorf("no unit templates available - call InitUnitTemplatesFromJSON() first")
+	}
+
+	roster := squads.GetPlayerRoster(unitRosterOwnerID, manager)
+	if roster == nil {
+		return fmt.Errorf("entity %d has no unit roster component", unitRosterOwnerID)
+	}
+
+	for i := 0; i < count; i++ {
+		// Pick a random unit template
+		template := squads.Units[common.RandomInt(len(squads.Units))]
+
+		// Create the unit entity (no SquadMemberComponent added)
+		unitEntity, err := squads.CreateUnitEntity(manager, template)
+		if err != nil {
+			return fmt.Errorf("failed to create roster unit %d: %w", i, err)
+		}
+
+		unitID := unitEntity.GetID()
+
+		// Add to roster without marking as in-squad
+		if err := roster.AddUnit(unitID, template.UnitType); err != nil {
+			return fmt.Errorf("failed to add unit %d to roster: %w", unitID, err)
+		}
+	}
+
+	fmt.Printf("Created %d initial roster units for player (entity %d)\n", count, unitRosterOwnerID)
+	return nil
+}
+
 // registerSquadUnitsInRoster registers all units in a squad with the player's unit roster
 func registerSquadUnitsInRoster(squadID ecs.EntityID, roster *squads.UnitRoster, manager *common.EntityManager) error {
 	// Get all unit IDs in the squad
