@@ -28,6 +28,16 @@ func (cah *CombatActionHandler) SelectSquad(squadID ecs.EntityID) {
 	cah.deps.BattleState.SelectedSquadID = squadID
 }
 
+// ToggleInspectMode enables/disables inspect mode (no squad selection required)
+func (cah *CombatActionHandler) ToggleInspectMode() {
+	cah.deps.BattleState.InInspectMode = !cah.deps.BattleState.InInspectMode
+}
+
+// ExitInspectMode disables inspect mode
+func (cah *CombatActionHandler) ExitInspectMode() {
+	cah.deps.BattleState.InInspectMode = false
+}
+
 // ToggleAttackMode enables/disables attack mode
 func (cah *CombatActionHandler) ToggleAttackMode() {
 	if cah.deps.BattleState.SelectedSquadID == 0 {

@@ -43,14 +43,14 @@ const (
 
 // Default player resources and roster limits
 const (
-	DefaultPlayerStartingGold       = 100000 // Starting gold for purchasing units
-	DefaultPlayerMaxUnits           = 500    // Maximum units player can own
-	DefaultPlayerMaxSquads          = 50     // Maximum squads player can own
-	DefaultPlayerStartingIron       = 50     // Starting iron for node placement
-	DefaultPlayerStartingWood       = 50     // Starting wood for node placement
-	DefaultPlayerStartingStone      = 50     // Starting stone for node placement
-	DefaultPlayerMaxArtifacts       = 50     // Maximum artifacts player can own
-	DefaultMaxArtifactsPerCommander = 30     //TODO, change later. The value is high for testing
+	DefaultPlayerStartingGold       = 2000 // Starting gold for purchasing units
+	DefaultPlayerMaxUnits           = 500  // Maximum units player can own
+	DefaultPlayerMaxSquads          = 50   // Maximum squads player can own
+	DefaultPlayerStartingIron       = 50   // Starting iron for node placement
+	DefaultPlayerStartingWood       = 50   // Starting wood for node placement
+	DefaultPlayerStartingStone      = 50   // Starting stone for node placement
+	DefaultPlayerMaxArtifacts       = 50   // Maximum artifacts player can own
+	DefaultMaxArtifactsPerCommander = 30   //TODO, change later. The value is high for testing
 )
 
 // Commander system defaults

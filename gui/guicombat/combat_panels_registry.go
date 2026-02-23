@@ -7,6 +7,7 @@ import (
 	"game_main/gui/builders"
 	"game_main/gui/framework"
 	"game_main/gui/guiartifacts"
+	"game_main/gui/guiinspect"
 	"game_main/gui/specs"
 	"game_main/gui/widgetresources"
 	"game_main/gui/widgets"
@@ -432,6 +433,17 @@ func init() {
 			// Register with sub-menu controller
 			cm.subMenus.Register("artifact", result.Container)
 
+			return nil
+		},
+	})
+
+	// Register inspect formation grid panel (delegates construction to guiinspect)
+	framework.RegisterPanel(guiinspect.InspectPanelType, framework.PanelDescriptor{
+		Content: framework.ContentCustom,
+		OnCreate: func(result *framework.PanelResult, mode framework.UIMode) error {
+			cm := mode.(*CombatMode)
+			guiinspect.BuildPanel(result, cm.PanelBuilders)
+			cm.subMenus.Register("inspect", result.Container)
 			return nil
 		},
 	})

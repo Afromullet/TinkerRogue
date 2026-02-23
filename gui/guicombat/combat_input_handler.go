@@ -5,6 +5,7 @@ import (
 	"game_main/common"
 	"game_main/gui/framework"
 	"game_main/gui/guiartifacts"
+	"game_main/gui/guiinspect"
 	"game_main/gui/guispells"
 	"game_main/mind/behavior"
 	"game_main/tactical/combat"
@@ -41,6 +42,9 @@ type CombatInputHandler struct {
 	visualization *CombatVisualizationManager
 	panels        *framework.PanelRegistry
 
+	// Inspect panel controller (owns formation display UI)
+	inspectPanel *guiinspect.InspectPanelController
+
 	// Double-click tracking
 	lastClickTime    time.Time
 	lastClickSquadID ecs.EntityID
@@ -72,6 +76,11 @@ func (cih *CombatInputHandler) SetSpellPanel(panel *guispells.SpellPanelControll
 // SetArtifactPanel sets the artifact panel controller for input delegation.
 func (cih *CombatInputHandler) SetArtifactPanel(panel *guiartifacts.ArtifactPanelController) {
 	cih.artifactPanel = panel
+}
+
+// SetInspectPanel sets the inspect panel controller for formation display.
+func (cih *CombatInputHandler) SetInspectPanel(panel *guiinspect.InspectPanelController) {
+	cih.inspectPanel = panel
 }
 
 // SetVisualization sets the visualization manager and related dependencies for keybinding handling
@@ -167,6 +176,24 @@ func (cih *CombatInputHandler) HandleInput(inputState *framework.InputState) boo
 		return false
 	}
 
+	// Inspect mode input handling (takes priority over normal clicks)
+	if cih.deps.BattleState.InInspectMode {
+		// ESC exits inspect mode
+		if inputState.KeysJustPressed[ebiten.KeyEscape] {
+			cih.exitInspectMode()
+			return true
+		}
+
+		// Left-click inspects squad at position
+		if inputState.MouseButton == ebiten.MouseButtonLeft && inputState.MouseJustPressed {
+			cih.handleInspectClick(inputState.MouseX, inputState.MouseY)
+			return true
+		}
+
+		// Suppress other input while in inspect mode
+		return false
+	}
+
 	// Right-click exits move mode
 	if cih.deps.BattleState.InMoveMode && inputState.MouseButton == ebiten.MouseButtonRight && inputState.MouseJustPressed {
 		cih.actionHandler.ToggleMoveMode()
@@ -219,6 +246,19 @@ func (cih *CombatInputHandler) HandleInput(inputState *framework.InputState) boo
 	// M key to toggle move mode
 	if inputState.KeysJustPressed[ebiten.KeyM] {
 		cih.actionHandler.ToggleMoveMode()
+		return true
+	}
+
+	// I key to toggle inspect mode
+	if inputState.KeysJustPressed[ebiten.KeyI] {
+		// Close spell/artifact panels if active
+		if cih.spellPanel != nil && cih.spellPanel.Handler().IsInSpellMode() {
+			cih.spellPanel.OnCancelClicked()
+		}
+		if cih.artifactPanel != nil && cih.artifactPanel.Handler().IsInArtifactMode() {
+			cih.artifactPanel.OnCancelClicked()
+		}
+		cih.toggleInspectMode()
 		return true
 	}
 
@@ -466,6 +506,38 @@ func (cih *CombatInputHandler) getPlayerFactionID(encounterID ecs.EntityID) ecs.
 		}
 	}
 	return 0
+}
+
+// toggleInspectMode toggles inspect mode and shows/hides the panel
+func (cih *CombatInputHandler) toggleInspectMode() {
+	cih.actionHandler.ToggleInspectMode()
+	if !cih.deps.BattleState.InInspectMode && cih.inspectPanel != nil {
+		cih.inspectPanel.Hide()
+	}
+}
+
+// exitInspectMode exits inspect mode and hides the panel
+func (cih *CombatInputHandler) exitInspectMode() {
+	cih.actionHandler.ExitInspectMode()
+	if cih.inspectPanel != nil {
+		cih.inspectPanel.Hide()
+	}
+}
+
+// handleInspectClick processes a click while in inspect mode
+func (cih *CombatInputHandler) handleInspectClick(mouseX, mouseY int) {
+	if cih.playerPos == nil || cih.inspectPanel == nil {
+		return
+	}
+
+	clickedPos := graphics.MouseToLogicalPosition(mouseX, mouseY, *cih.playerPos)
+	clickedSquadID := combat.GetSquadAtPosition(clickedPos, cih.deps.Queries.ECSManager)
+
+	if clickedSquadID == 0 {
+		return
+	}
+
+	cih.inspectPanel.PopulateGrid(clickedSquadID)
 }
 
 // handleThreatToggle handles H key to toggle threat heat map

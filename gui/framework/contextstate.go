@@ -33,6 +33,9 @@ type TacticalState struct {
 	InArtifactMode          bool   // Whether artifact mode is active
 	SelectedArtifactBehavior string // Which artifact behavior is being targeted
 
+	// Inspect Mode State
+	InInspectMode bool // Whether inspect mode is active (click squads to view formation)
+
 	// Encounter Tracking
 	TriggeredEncounterID ecs.EntityID // Encounter that triggered this combat (0 if none)
 
@@ -61,6 +64,9 @@ func NewTacticalState() *TacticalState {
 		InArtifactMode:          false,
 		SelectedArtifactBehavior: "",
 
+		// Inspect Mode State
+		InInspectMode: false,
+
 		// Encounter Tracking
 		TriggeredEncounterID: ecs.EntityID(0),
 	}
@@ -85,6 +91,9 @@ func (ts *TacticalState) Reset() {
 	// Clear artifact activation state
 	ts.InArtifactMode = false
 	ts.SelectedArtifactBehavior = ""
+
+	// Clear inspect mode state
+	ts.InInspectMode = false
 
 	// Clear encounter tracking
 	ts.TriggeredEncounterID = ecs.EntityID(0)

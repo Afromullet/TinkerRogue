@@ -6,6 +6,7 @@ import (
 	"game_main/gui/builders"
 	"game_main/gui/framework"
 	"game_main/gui/guiartifacts"
+	"game_main/gui/guiinspect"
 	"game_main/gui/guispells"
 	"game_main/gui/guisquads"
 	"game_main/gui/specs"
@@ -162,6 +163,18 @@ func (cm *CombatMode) Initialize(ctx *framework.UIContext) error {
 	// Wire artifact panel into input handler
 	cm.inputHandler.SetArtifactPanel(cm.artifactPanel)
 
+	// Create inspect panel controller and wire into input handler
+	inspectController := guiinspect.NewInspectPanelController(cm.Queries)
+	inspectResult := cm.Panels.Get(guiinspect.InspectPanelType)
+	if inspectResult != nil {
+		inspectController.SetWidgets(
+			framework.GetPanelWidget[*widget.Text](cm.Panels, guiinspect.InspectPanelType, "squadNameLabel"),
+			framework.GetPanelWidget[[3][3]*widget.Button](cm.Panels, guiinspect.InspectPanelType, "gridCells"),
+			inspectResult.Container,
+		)
+	}
+	cm.inputHandler.SetInspectPanel(inspectController)
+
 	// Register cache invalidation callbacks (automatic, fires for both GUI and AI actions)
 	cm.registerCombatCallbacks()
 
@@ -195,6 +208,7 @@ func (cm *CombatMode) buildPanelsFromRegistry() error {
 		CombatPanelDebugMenu,
 		CombatPanelSpellSelection,
 		CombatPanelArtifactSelection,
+		guiinspect.InspectPanelType,
 		CombatPanelTurnOrder,
 		CombatPanelFactionInfo,
 		CombatPanelSquadDetail,
@@ -217,6 +231,7 @@ func (cm *CombatMode) buildActionButtons() {
 			{Text: "Move (M)", OnClick: cm.handleMoveClick},
 			{Text: "Cast Spell (S)", OnClick: cm.handleSpellClick},
 			{Text: "Artifact (D)", OnClick: cm.handleArtifactClick},
+			{Text: "Inspect (I)", OnClick: cm.handleInspectClick},
 			{Text: "Undo (Ctrl+Z)", OnClick: cm.handleUndoMove},
 			{Text: "End Turn (Space)", OnClick: cm.handleEndTurnClick},
 		},
@@ -244,6 +259,10 @@ func (cm *CombatMode) handleSpellClick() {
 
 func (cm *CombatMode) handleArtifactClick() {
 	cm.artifactPanel.Toggle()
+}
+
+func (cm *CombatMode) handleInspectClick() {
+	cm.inputHandler.toggleInspectMode()
 }
 
 func (cm *CombatMode) handleUndoMove() {
@@ -360,6 +379,9 @@ func (cm *CombatMode) registerCombatCallbacks() {
 
 		// Reset spell cast flag for the new turn
 		cm.deps.BattleState.HasCastSpell = false
+
+		// Close any open sub-menus (inspect, spell, artifact panels)
+		cm.subMenus.CloseAll()
 	})
 }
 

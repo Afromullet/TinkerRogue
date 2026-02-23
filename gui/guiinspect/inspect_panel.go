@@ -1,0 +1,141 @@
+package guiinspect
+
+import (
+	"fmt"
+	"game_main/common"
+	"game_main/gui/builders"
+	"game_main/gui/framework"
+	"game_main/gui/specs"
+	"game_main/tactical/squads"
+
+	"github.com/bytearena/ecs"
+	"github.com/ebitenui/ebitenui/widget"
+)
+
+// InspectPanelType is the panel type constant for the inspect formation grid.
+const InspectPanelType framework.PanelType = "combat_inspect_grid"
+
+// BuildPanel constructs the inspect formation grid widget tree.
+// Called from the guicombat panel registry; the registration wrapper handles
+// combat-mode-specific concerns (sub-menu registration).
+func BuildPanel(result *framework.PanelResult, pb *builders.PanelBuilders) {
+	result.Container = pb.BuildPanel(
+		builders.RightCenter(),
+		builders.Size(specs.CombatInspectPanelWidth, specs.CombatInspectPanelHeight),
+		builders.Padding(specs.PaddingTight),
+		builders.RowLayout(),
+	)
+
+	// Squad name title label
+	squadNameLabel := builders.CreateSmallLabel("Squad Formation")
+	result.Container.AddChild(squadNameLabel)
+	result.Custom["squadNameLabel"] = squadNameLabel
+
+	// 3x3 formation grid (read-only, no OnCellClick)
+	gridContainer, gridCells := pb.BuildGridEditor(builders.GridEditorConfig{})
+	result.Container.AddChild(gridContainer)
+	result.Custom["gridCells"] = gridCells
+
+	// Hidden by default
+	result.Container.GetWidget().Visibility = widget.Visibility_Hide
+}
+
+// InspectPanelController manages the squad formation inspect panel display.
+// Owns the widget references and all grid population logic.
+type InspectPanelController struct {
+	queries        *framework.GUIQueries
+	squadNameLabel *widget.Text
+	gridCells      [3][3]*widget.Button
+	panelContainer *widget.Container
+}
+
+// NewInspectPanelController creates a new inspect panel controller.
+func NewInspectPanelController(queries *framework.GUIQueries) *InspectPanelController {
+	return &InspectPanelController{
+		queries: queries,
+	}
+}
+
+// SetWidgets sets widget references after panel construction.
+func (ip *InspectPanelController) SetWidgets(nameLabel *widget.Text, gridCells [3][3]*widget.Button, container *widget.Container) {
+	ip.squadNameLabel = nameLabel
+	ip.gridCells = gridCells
+	ip.panelContainer = container
+}
+
+// PopulateGrid fills the inspect grid with formation data for the given squad.
+func (ip *InspectPanelController) PopulateGrid(squadID ecs.EntityID) {
+	if ip.squadNameLabel == nil {
+		return
+	}
+
+	manager := ip.queries.ECSManager
+
+	// Set squad name in title
+	squadName := common.GetEntityName(manager, squadID, "Squad")
+	ip.squadNameLabel.Label = squadName
+
+	// Clear all grid cells
+	ip.ClearGrid()
+
+	// Get unit IDs in this squad
+	unitIDs := ip.queries.SquadCache.GetUnitIDsInSquad(squadID)
+
+	for _, unitID := range unitIDs {
+		gridPos := common.GetComponentTypeByID[*squads.GridPositionData](
+			manager, unitID, squads.GridPositionComponent)
+		if gridPos == nil {
+			continue
+		}
+
+		nameStr := common.GetEntityName(manager, unitID, "Unit")
+		isLeader := manager.HasComponent(unitID, squads.LeaderComponent)
+
+		// Get health
+		attrs := common.GetComponentTypeByID[*common.Attributes](
+			manager, unitID, common.AttributeComponent)
+
+		var cellText string
+		if attrs != nil && attrs.CurrentHealth <= 0 {
+			cellText = fmt.Sprintf("%s\n[DEAD]", nameStr)
+		} else {
+			if isLeader {
+				nameStr = "[L] " + nameStr
+			}
+			if attrs != nil {
+				cellText = fmt.Sprintf("%s\n%d/%d HP", nameStr, attrs.CurrentHealth, attrs.MaxHealth)
+			} else {
+				cellText = nameStr
+			}
+		}
+
+		if gridPos.AnchorRow >= 0 && gridPos.AnchorRow < 3 && gridPos.AnchorCol >= 0 && gridPos.AnchorCol < 3 {
+			ip.gridCells[gridPos.AnchorRow][gridPos.AnchorCol].Text().Label = cellText
+		}
+	}
+
+	ip.Show()
+}
+
+// ClearGrid clears all grid cell labels.
+func (ip *InspectPanelController) ClearGrid() {
+	for row := 0; row < 3; row++ {
+		for col := 0; col < 3; col++ {
+			ip.gridCells[row][col].Text().Label = ""
+		}
+	}
+}
+
+// Show makes the inspect panel visible.
+func (ip *InspectPanelController) Show() {
+	if ip.panelContainer != nil {
+		ip.panelContainer.GetWidget().Visibility = widget.Visibility_Show
+	}
+}
+
+// Hide hides the inspect panel.
+func (ip *InspectPanelController) Hide() {
+	if ip.panelContainer != nil {
+		ip.panelContainer.GetWidget().Visibility = widget.Visibility_Hide
+	}
+}
