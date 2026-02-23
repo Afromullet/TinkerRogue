@@ -50,6 +50,12 @@ type SquadEditorMode struct {
 	unitContent   *widget.Container
 	rosterContent *widget.Container
 
+	// Attack pattern toggle
+	attackGridCells     [3][3]*widget.Button
+	attackGridContainer *widget.Container
+	attackLabel         *widget.Text
+	showAttackPattern   bool
+
 	// State
 	selectedGridCell *GridCell    // Currently selected grid cell
 	selectedUnitID   ecs.EntityID // Currently selected unit in squad
@@ -151,6 +157,11 @@ func (sem *SquadEditorMode) initializeWidgetReferences() {
 
 	// Grid cells
 	sem.gridCells = framework.GetPanelWidget[[3][3]*widget.Button](sem.Panels, SquadEditorPanelGridEditor, "gridCells")
+
+	// Attack pattern grid
+	sem.attackGridCells = framework.GetPanelWidget[[3][3]*widget.Button](sem.Panels, SquadEditorPanelGridEditor, "attackGridCells")
+	sem.attackGridContainer = framework.GetPanelWidget[*widget.Container](sem.Panels, SquadEditorPanelGridEditor, "attackGridContainer")
+	sem.attackLabel = framework.GetPanelWidget[*widget.Text](sem.Panels, SquadEditorPanelGridEditor, "attackLabel")
 }
 
 // buildActionButtons creates bottom action buttons (needs callbacks, so done separately)
@@ -163,6 +174,7 @@ func (sem *SquadEditorMode) buildActionButtons() *widget.Container {
 	return builders.CreateBottomActionBar(sem.Layout, []builders.ButtonSpec{
 		{Text: "New Squad (N)", OnClick: func() { sem.onNewSquad() }},
 		{Text: "Rename Squad", OnClick: func() { sem.onRenameSquad() }},
+		{Text: "Attack Pattern (V)", OnClick: func() { sem.toggleAttackPattern() }},
 		{Text: "Buy Units (P)", OnClick: func() {
 			if mode, exists := sem.ModeManager.GetMode("unit_purchase"); exists {
 				sem.ModeManager.RequestTransition(mode, "Buy Units clicked")
@@ -208,6 +220,9 @@ func (sem *SquadEditorMode) Exit(toMode framework.UIMode) error {
 	sem.selectedGridCell = nil
 	sem.selectedUnitID = 0
 	sem.swapState.Reset()
+	sem.showAttackPattern = false
+	sem.attackLabel.GetWidget().Visibility = widget.Visibility_Hide
+	sem.attackGridContainer.GetWidget().Visibility = widget.Visibility_Hide
 	return nil
 }
 
@@ -236,6 +251,12 @@ func (sem *SquadEditorMode) HandleInput(inputState *framework.InputState) bool {
 		return true
 	}
 
+	// V key toggles attack pattern view
+	if inputState.KeysJustPressed[ebiten.KeyV] {
+		sem.toggleAttackPattern()
+		return true
+	}
+
 	// Tab key cycles to next commander
 	if inputState.KeysJustPressed[ebiten.KeyTab] {
 		sem.showNextCommander()
@@ -243,6 +264,19 @@ func (sem *SquadEditorMode) HandleInput(inputState *framework.InputState) bool {
 	}
 
 	return false
+}
+
+// === Attack Pattern Toggle ===
+
+func (sem *SquadEditorMode) toggleAttackPattern() {
+	sem.showAttackPattern = !sem.showAttackPattern
+	vis := widget.Visibility_Hide
+	if sem.showAttackPattern {
+		vis = widget.Visibility_Show
+		sem.refreshAttackPattern()
+	}
+	sem.attackLabel.GetWidget().Visibility = vis
+	sem.attackGridContainer.GetWidget().Visibility = vis
 }
 
 // === Navigation Functions ===

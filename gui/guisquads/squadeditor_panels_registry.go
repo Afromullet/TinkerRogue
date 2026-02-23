@@ -148,20 +148,47 @@ func init() {
 		},
 	})
 
-	// Register grid editor panel
+	// Register grid editor panel (formation grid + attack pattern grid)
 	framework.RegisterPanel(SquadEditorPanelGridEditor, framework.PanelDescriptor{
 		Content: framework.ContentCustom,
 		OnCreate: func(result *framework.PanelResult, mode framework.UIMode) error {
 			sem := mode.(*SquadEditorMode)
 
-			container, gridCells := sem.PanelBuilders.BuildGridEditor(builders.GridEditorConfig{
+			// Wrapper container holds formation grid + attack pattern section
+			wrapper := widget.NewContainer(
+				widget.ContainerOpts.Layout(widget.NewRowLayout(
+					widget.RowLayoutOpts.Direction(widget.DirectionVertical),
+					widget.RowLayoutOpts.Spacing(5),
+				)),
+				widget.ContainerOpts.WidgetOpts(widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{
+					HorizontalPosition: widget.AnchorLayoutPositionCenter,
+					VerticalPosition:   widget.AnchorLayoutPositionCenter,
+				})),
+			)
+
+			// Formation grid (interactive)
+			formationContainer, gridCells := sem.PanelBuilders.BuildGridEditor(builders.GridEditorConfig{
 				OnCellClick: func(row, col int) {
 					sem.onGridCellClicked(row, col)
 				},
 			})
+			wrapper.AddChild(formationContainer)
 
-			result.Container = container
+			// Attack pattern label (hidden by default)
+			attackLabel := builders.CreateSmallLabel("Attack Pattern")
+			attackLabel.GetWidget().Visibility = widget.Visibility_Hide
+			wrapper.AddChild(attackLabel)
+
+			// Attack pattern grid (read-only, hidden by default)
+			attackGridContainer, attackGridCells := sem.PanelBuilders.BuildGridEditor(builders.GridEditorConfig{})
+			attackGridContainer.GetWidget().Visibility = widget.Visibility_Hide
+			wrapper.AddChild(attackGridContainer)
+
+			result.Container = wrapper
 			result.Custom["gridCells"] = gridCells
+			result.Custom["attackLabel"] = attackLabel
+			result.Custom["attackGridCells"] = attackGridCells
+			result.Custom["attackGridContainer"] = attackGridContainer
 
 			return nil
 		},

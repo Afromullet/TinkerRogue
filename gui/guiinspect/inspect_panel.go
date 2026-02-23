@@ -134,9 +134,13 @@ func (ip *InspectPanelController) PopulateGrid(squadID ecs.EntityID) {
 // cells each unit would target, assuming a full 3x3 enemy grid.
 func (ip *InspectPanelController) populateAttackPatternGrid(squadID ecs.EntityID) {
 	manager := ip.queries.ECSManager
-
 	pattern := squads.ComputeGenericAttackPattern(squadID, manager)
+	PopulateAttackGridCells(ip.attackGridCells, pattern)
+}
 
+// PopulateAttackGridCells fills a 3x3 button grid with attack pattern data.
+// Reusable by any mode that needs attack pattern visualization.
+func PopulateAttackGridCells(gridCells [3][3]*widget.Button, pattern [3][3]squads.AttackPatternCell) {
 	for row := 0; row < 3; row++ {
 		for col := 0; col < 3; col++ {
 			cell := pattern[row][col]
@@ -148,17 +152,22 @@ func (ip *InspectPanelController) populateAttackPatternGrid(squadID ecs.EntityID
 			} else {
 				cellText = strings.Join(cell.UnitNames[:2], "\n") + fmt.Sprintf("\n+%d more", len(cell.UnitNames)-2)
 			}
-			ip.attackGridCells[row][col].Text().Label = cellText
+			gridCells[row][col].Text().Label = cellText
 		}
 	}
 }
 
 // ClearGrid clears all grid cell labels.
 func (ip *InspectPanelController) ClearGrid() {
+	ClearGridCells(ip.gridCells)
+	ClearGridCells(ip.attackGridCells)
+}
+
+// ClearGridCells clears all labels in a 3x3 button grid.
+func ClearGridCells(gridCells [3][3]*widget.Button) {
 	for row := 0; row < 3; row++ {
 		for col := 0; col < 3; col++ {
-			ip.gridCells[row][col].Text().Label = ""
-			ip.attackGridCells[row][col].Text().Label = ""
+			gridCells[row][col].Text().Label = ""
 		}
 	}
 }

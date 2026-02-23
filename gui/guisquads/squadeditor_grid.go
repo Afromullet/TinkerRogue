@@ -3,6 +3,7 @@ package guisquads
 import (
 	"fmt"
 	"game_main/common"
+	"game_main/gui/guiinspect"
 	"game_main/tactical/squadcommands"
 	"game_main/tactical/squads"
 
@@ -65,12 +66,9 @@ func (sem *SquadEditorMode) moveSelectedUnitToCell(row, col int) {
 
 // loadSquadFormation loads squad units into the 3x3 grid display
 func (sem *SquadEditorMode) loadSquadFormation(squadID ecs.EntityID) {
-	// Clear grid first
-	for row := 0; row < 3; row++ {
-		for col := 0; col < 3; col++ {
-			sem.gridCells[row][col].Text().Label = ""
-		}
-	}
+	// Clear grids first
+	guiinspect.ClearGridCells(sem.gridCells)
+	guiinspect.ClearGridCells(sem.attackGridCells)
 
 	// Get units in squad and display them
 	unitIDs := sem.Queries.SquadCache.GetUnitIDsInSquad(squadID)
@@ -95,4 +93,15 @@ func (sem *SquadEditorMode) loadSquadFormation(squadID ecs.EntityID) {
 			sem.gridCells[gridPos.AnchorRow][gridPos.AnchorCol].Text().Label = nameStr
 		}
 	}
+
+	sem.refreshAttackPattern()
+}
+
+// refreshAttackPattern updates the attack pattern grid if visible
+func (sem *SquadEditorMode) refreshAttackPattern() {
+	if !sem.showAttackPattern || len(sem.allSquadIDs) == 0 {
+		return
+	}
+	pattern := squads.ComputeGenericAttackPattern(sem.currentSquadID(), sem.Queries.ECSManager)
+	guiinspect.PopulateAttackGridCells(sem.attackGridCells, pattern)
 }
