@@ -361,15 +361,15 @@ func CreateSquadFromTemplate(
 
 	// Set squad's renderable to the leader's sprite
 	// This makes the squad display the leader's image on the world map
-	setSquadRenderableFromLeader(squadID, squadEntity, ecsmanager)
+	SetSquadRenderableFromLeader(squadID, squadEntity, ecsmanager)
 
 	return squadID
 }
 
-// setSquadRenderableFromLeader copies the leader unit's sprite to the squad entity.
+// SetSquadRenderableFromLeader copies the leader unit's sprite to the squad entity.
 // This makes the squad render on the world map using the leader's image.
 // If no leader is found, the squad will have no renderable (won't display on map).
-func setSquadRenderableFromLeader(squadID ecs.EntityID, squadEntity *ecs.Entity, ecsmanager *common.EntityManager) {
+func SetSquadRenderableFromLeader(squadID ecs.EntityID, squadEntity *ecs.Entity, ecsmanager *common.EntityManager) {
 	// Find the leader unit
 	leaderID := GetLeaderID(squadID, ecsmanager)
 	if leaderID == 0 {

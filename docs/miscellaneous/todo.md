@@ -38,7 +38,7 @@ __________________________________________
 - Overworld node spawning is far too clustered together. All nodes spawn close to eachother. 
 
 
-
+- Testing package has some functions which create initial player commanders and squads. move them to another package - probably bootstrap
 
 - Lots of Empty Claude relate directories. See if there are any issues when removing them
 
