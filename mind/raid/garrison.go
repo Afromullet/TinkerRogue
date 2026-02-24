@@ -14,7 +14,7 @@ import (
 // GenerateGarrison creates a complete garrison defense as ECS entities across multiple floors.
 // It builds the DAG for each floor, assigns archetypes to rooms, and instantiates garrison squads.
 // Returns the raid state entity ID.
-func GenerateGarrison(manager *common.EntityManager, floorCount int, commanderID ecs.EntityID, playerSquadIDs []ecs.EntityID) ecs.EntityID {
+func GenerateGarrison(manager *common.EntityManager, floorCount int, commanderID ecs.EntityID, playerEntityID ecs.EntityID, playerSquadIDs []ecs.EntityID) ecs.EntityID {
 	// Create raid state entity
 	raidEntity := manager.World.NewEntity()
 	raidEntityID := raidEntity.GetID()
@@ -24,6 +24,7 @@ func GenerateGarrison(manager *common.EntityManager, floorCount int, commanderID
 		TotalFloors:    floorCount,
 		Status:         RaidActive,
 		CommanderID:    commanderID,
+		PlayerEntityID: playerEntityID,
 		PlayerSquadIDs: append([]ecs.EntityID{}, playerSquadIDs...),
 	}
 	raidEntity.AddComponent(RaidStateComponent, raidState)

@@ -1,4 +1,4 @@
-agent:Explore 128
+agent:Explore 131
 agent:trpg-creator 1
 agent:mapgen-architect 2
 agent:tactical-simplifier 7

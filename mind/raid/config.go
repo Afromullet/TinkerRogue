@@ -50,6 +50,9 @@ type AlertLevelConfig struct {
 
 type RewardSettings struct {
 	CommandPostManaRestore int `json:"commandPostManaRestore"`
+	BaseGoldPerRoom        int `json:"baseGoldPerRoom"`
+	BaseXPPerRoom          int `json:"baseXPPerRoom"`
+	FloorScalePercent      int `json:"floorScalePercent"`
 }
 
 type ArchetypeAssignmentSettings struct {

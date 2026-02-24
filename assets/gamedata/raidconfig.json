@@ -22,7 +22,10 @@
     ]
   },
   "rewards": {
-    "commandPostManaRestore": 15
+    "commandPostManaRestore": 15,
+    "baseGoldPerRoom": 75,
+    "baseXPPerRoom": 40,
+    "floorScalePercent": 25
   },
   "archetypeAssignment": {
     "criticalPathArchetypes": ["chokepoint_guard", "shield_wall", "orc_vanguard"],

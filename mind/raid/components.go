@@ -52,8 +52,9 @@ type RaidStateData struct {
 	CurrentFloor     int
 	TotalFloors      int
 	Status           RaidStatus
-	CommanderID    ecs.EntityID
-	PlayerSquadIDs []ecs.EntityID
+	CommanderID      ecs.EntityID
+	PlayerEntityID   ecs.EntityID
+	PlayerSquadIDs   []ecs.EntityID
 }
 
 // FloorStateData tracks the state of a single garrison floor.

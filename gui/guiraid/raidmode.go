@@ -122,7 +122,7 @@ func (rm *RaidMode) autoStartRaid() error {
 		raidSquads = raidSquads[:maxSquads]
 	}
 
-	if err := rm.raidRunner.StartRaid(commanderID, raidSquads, raid.DefaultFloorCount()); err != nil {
+	if err := rm.raidRunner.StartRaid(commanderID, playerID, raidSquads, raid.DefaultFloorCount()); err != nil {
 		return err
 	}
 

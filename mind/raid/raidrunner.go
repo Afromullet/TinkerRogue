@@ -58,7 +58,7 @@ func NewRaidRunner(manager *common.EntityManager, encounterService *encounter.En
 }
 
 // StartRaid generates the garrison and initializes the raid state.
-func (rr *RaidRunner) StartRaid(commanderID ecs.EntityID, playerSquadIDs []ecs.EntityID, floorCount int) error {
+func (rr *RaidRunner) StartRaid(commanderID ecs.EntityID, playerEntityID ecs.EntityID, playerSquadIDs []ecs.EntityID, floorCount int) error {
 	if rr.raidEntityID != 0 {
 		return fmt.Errorf("raid already in progress")
 	}
@@ -72,7 +72,7 @@ func (rr *RaidRunner) StartRaid(commanderID ecs.EntityID, playerSquadIDs []ecs.E
 		return fmt.Errorf("too many squads: %d (max %d)", len(playerSquadIDs), maxSquads)
 	}
 
-	rr.raidEntityID = GenerateGarrison(rr.manager, floorCount, commanderID, playerSquadIDs)
+	rr.raidEntityID = GenerateGarrison(rr.manager, floorCount, commanderID, playerEntityID, playerSquadIDs)
 
 	fmt.Printf("RaidRunner: Raid started with %d squads across %d floors\n", len(playerSquadIDs), floorCount)
 	return nil

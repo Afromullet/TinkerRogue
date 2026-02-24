@@ -13,20 +13,24 @@ func calculateRoomReward(manager *common.EntityManager, raidState *RaidStateData
 		return combatpipeline.Reward{}, combatpipeline.GrantTarget{}
 	}
 
-	switch roomType {
-	case worldmap.GarrisonRoomCommandPost:
-		return commandPostReward(raidState)
+	// Base target for all combat rooms (gold + XP)
+	target := combatpipeline.GrantTarget{
+		PlayerEntityID: raidState.PlayerEntityID,
+		SquadIDs:       raidState.PlayerSquadIDs,
+		CommanderID:    raidState.CommanderID,
 	}
 
-	return combatpipeline.Reward{}, combatpipeline.GrantTarget{}
-}
+	// Floor scaling: 1.0 + (floor-1) * scalePercent/100
+	scale := 1.0 + float64(raidState.CurrentFloor-1)*float64(RaidConfig.Rewards.FloorScalePercent)/100.0
+	gold := int(float64(RaidConfig.Rewards.BaseGoldPerRoom) * scale)
+	xp := int(float64(RaidConfig.Rewards.BaseXPPerRoom) * scale)
 
-// commandPostReward returns the mana reward for clearing a command post.
-func commandPostReward(raidState *RaidStateData) (combatpipeline.Reward, combatpipeline.GrantTarget) {
-	manaRestore := RaidConfig.Rewards.CommandPostManaRestore
-	if manaRestore <= 0 {
-		return combatpipeline.Reward{}, combatpipeline.GrantTarget{}
+	reward := combatpipeline.Reward{Gold: gold, Experience: xp}
+
+	// Command posts also restore mana
+	if roomType == worldmap.GarrisonRoomCommandPost {
+		reward.Mana = RaidConfig.Rewards.CommandPostManaRestore
 	}
 
-	return combatpipeline.Reward{Mana: manaRestore}, combatpipeline.GrantTarget{CommanderID: raidState.CommanderID}
+	return reward, target
 }
