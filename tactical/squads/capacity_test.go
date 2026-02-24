@@ -17,7 +17,7 @@ import (
 func TestCapacitySystem_BasicCalculations(t *testing.T) {
 	manager := setupTestManager(t)
 
-	// Create squad with no leader (default capacity = 6)
+	// Create squad with no leader (default capacity = config.DefaultBaseCapacity)
 	CreateEmptySquad(manager, "Test Squad")
 
 	var squadID ecs.EntityID
@@ -26,10 +26,10 @@ func TestCapacitySystem_BasicCalculations(t *testing.T) {
 		break
 	}
 
-	// Test GetSquadTotalCapacity (should be 6 with no leader)
+	// Test GetSquadTotalCapacity (should be DefaultBaseCapacity with no leader)
 	totalCapacity := GetSquadTotalCapacity(squadID, manager)
-	if totalCapacity != 6 {
-		t.Errorf("Expected default capacity 6, got %d", totalCapacity)
+	if totalCapacity != config.DefaultBaseCapacity {
+		t.Errorf("Expected default capacity %d, got %d", config.DefaultBaseCapacity, totalCapacity)
 	}
 
 	// Test GetSquadUsedCapacity (should be 0 for empty squad)
@@ -38,10 +38,10 @@ func TestCapacitySystem_BasicCalculations(t *testing.T) {
 		t.Errorf("Expected 0 used capacity for empty squad, got %.2f", usedCapacity)
 	}
 
-	// Test GetSquadRemainingCapacity (should be 6.0)
+	// Test GetSquadRemainingCapacity (should be DefaultBaseCapacity)
 	remaining := GetSquadRemainingCapacity(squadID, manager)
-	if remaining != 6.0 {
-		t.Errorf("Expected 6.0 remaining capacity, got %.2f", remaining)
+	if remaining != float64(config.DefaultBaseCapacity) {
+		t.Errorf("Expected %.2f remaining capacity, got %.2f", float64(config.DefaultBaseCapacity), remaining)
 	}
 }
 
@@ -76,17 +76,17 @@ func TestCapacitySystem_EnforceLimitWithoutLeader(t *testing.T) {
 		break
 	}
 
-	// Create weak units (cost 1.0 each: Strength=3, Weapon=1, Armor=1 → (3+1+1)/5 = 1.0)
+	// Create units (cost 10.0 each: Strength=30, Weapon=10, Armor=10 → (30+10+10)/5 = 10.0)
 	jsonMonster := templates.JSONMonster{
-		UnitType:  "Weak Unit",
-		ImageName: "test.png",
+		UnitType:  "Unit",
+		ImageName: "",
 		Attributes: templates.JSONAttributes{
-			Strength:   3,
+			Strength:   30,
 			Dexterity:  20,
 			Magic:      0,
 			Leadership: 0,
-			Armor:      1,
-			Weapon:     1,
+			Armor:      10,
+			Weapon:     10,
 		},
 		Width:       1,
 		Height:      1,
@@ -95,7 +95,7 @@ func TestCapacitySystem_EnforceLimitWithoutLeader(t *testing.T) {
 		TargetCells: nil,
 	}
 
-	// With default capacity of 6, we should be able to add 6 units (6 * 1.0 = 6.0)
+	// With default capacity of 60, we should be able to add 6 units (6 * 10.0 = 60.0)
 	for i := 0; i < 6; i++ {
 		unit, err := CreateUnitTemplates(jsonMonster)
 		if err != nil {
@@ -126,25 +126,25 @@ func TestCapacitySystem_EnforceLimitWithoutLeader(t *testing.T) {
 
 func TestCapacitySystem_WithLeader(t *testing.T) {
 	// Test the Leadership attribute's effect on capacity calculation
-	// Leadership=9 → capacity = 6 + 9/3 = 9
+	// Leadership=9 → capacity = DefaultBaseCapacity + 9/3 = 60 + 3 = 63
 	attr := common.NewAttributes(5, 20, 0, 9, 1, 1)
 	capacity := attr.GetUnitCapacity()
 
-	expected := 9
+	expected := config.DefaultBaseCapacity + 9/3
 	if capacity != expected {
 		t.Errorf("Expected capacity %d with Leadership=9, got %d", expected, capacity)
 	}
 
-	// Test max capacity cap (Leadership=15 should still cap at 9)
-	highLeaderAttr := common.NewAttributes(5, 20, 0, 15, 1, 1)
+	// Test max capacity cap (Leadership=300 → 60 + 100 = 160, capped at DefaultMaxCapacity)
+	highLeaderAttr := common.NewAttributes(5, 20, 0, 300, 1, 1)
 	highCapacity := highLeaderAttr.GetUnitCapacity()
 
-	if highCapacity != 9 {
-		t.Errorf("Expected max capacity 9 even with Leadership=15, got %d", highCapacity)
+	if highCapacity != config.DefaultMaxCapacity {
+		t.Errorf("Expected max capacity %d even with Leadership=300, got %d", config.DefaultMaxCapacity, highCapacity)
 	}
 
 	t.Logf("Leadership=9 → Capacity: %d", capacity)
-	t.Logf("Leadership=15 → Capacity: %d (capped)", highCapacity)
+	t.Logf("Leadership=300 → Capacity: %d (capped)", highCapacity)
 }
 
 func TestCapacitySystem_IsSquadOverCapacity(t *testing.T) {
@@ -163,17 +163,17 @@ func TestCapacitySystem_IsSquadOverCapacity(t *testing.T) {
 		t.Error("Empty squad should not be over capacity")
 	}
 
-	// Add units up to capacity (6.0 total)
+	// Add units up to capacity (60.0 total)
 	jsonMonster := templates.JSONMonster{
 		UnitType:  "Unit",
-		ImageName: "test.png",
+		ImageName: "",
 		Attributes: templates.JSONAttributes{
-			Strength:   3,
+			Strength:   30,
 			Dexterity:  20,
 			Magic:      0,
 			Leadership: 0,
-			Armor:      1,
-			Weapon:     1,
+			Armor:      10,
+			Weapon:     10,
 		},
 		Width:       1,
 		Height:      1,
@@ -182,7 +182,7 @@ func TestCapacitySystem_IsSquadOverCapacity(t *testing.T) {
 		TargetCells: nil,
 	}
 
-	// Add units (capacity cost = 1.0 each)
+	// Add units (capacity cost = 10.0 each)
 	for i := 0; i < 6; i++ {
 		unit, _ := CreateUnitTemplates(jsonMonster)
 		row := i / 3
@@ -212,14 +212,15 @@ func TestCapacitySystem_CanAddUnitToSquad(t *testing.T) {
 		break
 	}
 
-	// Can add unit with cost 2.0 to empty squad (capacity 6)
+	// Can add unit with cost 2.0 to empty squad
 	if !CanAddUnitToSquad(squadID, 2.0, manager) {
 		t.Error("Should be able to add unit with cost 2.0 to empty squad")
 	}
 
-	// Cannot add unit with cost 7.0 to empty squad (exceeds capacity 6)
-	if CanAddUnitToSquad(squadID, 7.0, manager) {
-		t.Error("Should not be able to add unit with cost 7.0 to squad with capacity 6")
+	// Cannot add unit with cost exceeding capacity
+	overCost := float64(config.DefaultBaseCapacity) + 1.0
+	if CanAddUnitToSquad(squadID, overCost, manager) {
+		t.Errorf("Should not be able to add unit with cost %.1f to squad with capacity %d", overCost, config.DefaultBaseCapacity)
 	}
 }
 
@@ -237,7 +238,7 @@ func TestCapacitySystem_ComputedCapacityAfterAddingUnit(t *testing.T) {
 	// Add a unit
 	jsonMonster := templates.JSONMonster{
 		UnitType:  "Unit",
-		ImageName: "test.png",
+		ImageName: "",
 		Attributes: templates.JSONAttributes{
 			Strength:   3,
 			Dexterity:  20,
