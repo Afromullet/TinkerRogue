@@ -38,9 +38,6 @@ type SquadEditorMode struct {
 	gridCells         [3][3]*widget.Button
 	unitList          *widget.List
 	rosterList        *widget.List
-	squadCounterLabel *widget.Text
-	prevButton        *widget.Button
-	nextButton        *widget.Button
 
 	// Commander selector
 	commanderSelector *CommanderSelector
@@ -139,11 +136,6 @@ func (sem *SquadEditorMode) initializeWidgetReferences() {
 		framework.GetPanelWidget[*widget.Button](sem.Panels, SquadEditorPanelCommanderSelector, "commanderPrevBtn"),
 		framework.GetPanelWidget[*widget.Button](sem.Panels, SquadEditorPanelCommanderSelector, "commanderNextBtn"),
 	)
-
-	// Navigation widgets (merged into squad selector panel)
-	sem.prevButton = framework.GetPanelWidget[*widget.Button](sem.Panels, SquadEditorPanelSquadSelector, "prevButton")
-	sem.nextButton = framework.GetPanelWidget[*widget.Button](sem.Panels, SquadEditorPanelSquadSelector, "nextButton")
-	sem.squadCounterLabel = framework.GetPanelWidget[*widget.Text](sem.Panels, SquadEditorPanelSquadSelector, "counterLabel")
 
 	// List widgets
 	sem.squadSelector = framework.GetPanelWidget[*widget.List](sem.Panels, SquadEditorPanelSquadSelector, "squadList")
@@ -277,31 +269,6 @@ func (sem *SquadEditorMode) toggleAttackPattern() {
 	}
 	sem.attackLabel.GetWidget().Visibility = vis
 	sem.attackGridContainer.GetWidget().Visibility = vis
-}
-
-// === Navigation Functions ===
-
-// cycleSquad advances the squad index by delta (use -1 for previous, +1 for next)
-func (sem *SquadEditorMode) cycleSquad(delta int) {
-	if len(sem.allSquadIDs) == 0 {
-		return
-	}
-	sem.currentSquadIndex = (sem.currentSquadIndex + delta + len(sem.allSquadIDs)) % len(sem.allSquadIDs)
-	sem.refreshCurrentSquad()
-	sem.updateNavigationButtons()
-}
-
-// updateNavigationButtons enables/disables navigation based on squad count
-func (sem *SquadEditorMode) updateNavigationButtons() {
-	hasMultipleSquads := len(sem.allSquadIDs) > 1
-
-	if sem.prevButton != nil {
-		sem.prevButton.GetWidget().Disabled = !hasMultipleSquads
-	}
-
-	if sem.nextButton != nil {
-		sem.nextButton.GetWidget().Disabled = !hasMultipleSquads
-	}
 }
 
 // === Tab Switching Functions ===

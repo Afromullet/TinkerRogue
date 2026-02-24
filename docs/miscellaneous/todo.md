@@ -24,9 +24,6 @@ __________________________________________
 
 
 
-- Need better reward system. Both raids and regular combat should have rewards. We want rewards to be mostly the same, with additional weighing applies so that raids give better rewards
-
-
 ----
 - Review all consts to see if they should be defined in a json file
 

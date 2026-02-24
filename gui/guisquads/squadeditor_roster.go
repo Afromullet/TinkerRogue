@@ -62,7 +62,6 @@ func (sem *SquadEditorMode) onNewSquad() {
 			}
 
 			sem.refreshCurrentSquad()
-			sem.updateNavigationButtons()
 			sem.refreshRosterList()
 			sem.SetStatus(fmt.Sprintf("Created squad: %s", name))
 		},

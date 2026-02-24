@@ -42,10 +42,6 @@ func (sem *SquadEditorMode) refreshCurrentSquad() {
 
 	currentSquadID := sem.currentSquadID()
 
-	// Update squad counter
-	counterText := fmt.Sprintf("Squad %d of %d", sem.currentSquadIndex+1, len(sem.allSquadIDs))
-	sem.squadCounterLabel.Label = counterText
-
 	// Load squad formation into grid
 	sem.loadSquadFormation(currentSquadID)
 
@@ -138,7 +134,6 @@ func (sem *SquadEditorMode) refreshAllUI(resetIndex bool) {
 		sem.refreshCurrentSquad()
 	}
 	sem.refreshRosterList()
-	sem.updateNavigationButtons()
 }
 
 // refreshAfterCommand is called after successful command execution to update the UI

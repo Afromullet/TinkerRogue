@@ -110,39 +110,7 @@ func init() {
 			})
 			result.Container.AddChild(squadList)
 
-			// Navigation row: [< Previous] [Squad 1 of 1] [Next >]
-			navRow := widget.NewContainer(
-				widget.ContainerOpts.Layout(widget.NewRowLayout(
-					widget.RowLayoutOpts.Direction(widget.DirectionHorizontal),
-					widget.RowLayoutOpts.Spacing(10),
-				)),
-			)
-
-			prevButton := builders.CreateButtonWithConfig(builders.ButtonConfig{
-				Text: "< Previous",
-				OnClick: func() {
-					sem.cycleSquad(-1)
-				},
-			})
-			navRow.AddChild(prevButton)
-
-			counterLabel := builders.CreateSmallLabel("Squad 1 of 1")
-			navRow.AddChild(counterLabel)
-
-			nextButton := builders.CreateButtonWithConfig(builders.ButtonConfig{
-				Text: "Next >",
-				OnClick: func() {
-					sem.cycleSquad(1)
-				},
-			})
-			navRow.AddChild(nextButton)
-
-			result.Container.AddChild(navRow)
-
 			result.Custom["squadList"] = squadList
-			result.Custom["prevButton"] = prevButton
-			result.Custom["nextButton"] = nextButton
-			result.Custom["counterLabel"] = counterLabel
 
 			return nil
 		},
