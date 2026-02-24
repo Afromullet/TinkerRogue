@@ -73,7 +73,7 @@ __________________________________________
 - Can always use the move undo command, even after attacking. That's a bug
 
 
-
+- Add multipel factions. Will require some changes to combatpipeline
 
 ________________________________________________
 
@@ -101,7 +101,7 @@ ________________________________________________
 - Worldmap
 - Guiraids
 - Raids
-- combatpipeline
+
 - Save System
 
 ____

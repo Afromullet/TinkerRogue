@@ -521,14 +521,20 @@ func (cm *CombatMode) Render(screen *ebiten.Image) {
 }
 
 func (cm *CombatMode) HandleInput(inputState *framework.InputState) bool {
-	if cm.HandleCommonInput(inputState) {
+	// Combat-specific input first (ESC cancels active modes like spell, artifact, inspect)
+	cm.inputHandler.SetPlayerPosition(cm.Context.PlayerData.Pos)
+	cm.inputHandler.SetCurrentFactionID(cm.combatService.TurnManager.GetCurrentFaction())
+	if cm.inputHandler.HandleInput(inputState) {
 		return true
 	}
 
-	cm.inputHandler.SetPlayerPosition(cm.Context.PlayerData.Pos)
-	cm.inputHandler.SetCurrentFactionID(cm.combatService.TurnManager.GetCurrentFaction())
+	// Block ESC from reaching HandleCommonInput — use the Flee button instead
+	if inputState.KeysJustPressed[ebiten.KeyEscape] {
+		return true
+	}
 
-	if cm.inputHandler.HandleInput(inputState) {
+	// Common hotkeys (ESC already consumed above, won't trigger mode exit)
+	if cm.HandleCommonInput(inputState) {
 		return true
 	}
 
