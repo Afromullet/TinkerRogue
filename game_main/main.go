@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"game_main/common"
 	"game_main/config"
+	"game_main/gamesetup"
 	"game_main/gui/framework"
 	"game_main/gui/guistartmenu"
 	"game_main/input"
@@ -151,7 +152,7 @@ func (g *Game) Layout(w, h int) (int, int) {
 // It orchestrates initialization and starts the Ebiten game loop.
 func main() {
 	// Setup profiling if enabled
-	SetupBenchmarking()
+	gamesetup.SetupBenchmarking()
 
 	// Create and initialize game (shared systems only — mode-specific setup deferred)
 	g := NewGame()

@@ -1,4 +1,4 @@
-package main
+package gamesetup
 
 import (
 	"game_main/common"

@@ -1,14 +1,14 @@
-package main
+package gamesetup
 
 import (
 	"game_main/templates"
 	"game_main/world/worldmap"
 )
 
-// initMapGenConfigOverride registers a ConfigOverride hook that creates
+// InitMapGenConfigOverride registers a ConfigOverride hook that creates
 // generators with JSON-configured parameters instead of code defaults.
 // Must be called after templates.ReadGameData() has loaded the config.
-func initMapGenConfigOverride() {
+func InitMapGenConfigOverride() {
 	cfg := templates.MapGenConfigTemplate
 	if cfg == nil {
 		return // No JSON config loaded, use code defaults

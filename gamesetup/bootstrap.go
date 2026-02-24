@@ -1,23 +1,17 @@
-package main
+package gamesetup
 
 import (
 	"fmt"
 	"log"
-	"net/http"
-	_ "net/http/pprof" // Blank import to register pprof handlers
-	"runtime"
 
 	"game_main/common"
 	"game_main/config"
-	"game_main/gui/framework"
-	"game_main/gui/widgetresources"
-	"game_main/input"
-	"game_main/mind/encounter"
-	"game_main/mind/raid"
+	"game_main/overworld/core"
+	"game_main/overworld/node"
+	"game_main/overworld/tick"
 	"game_main/tactical/commander"
 	"game_main/tactical/squads"
 	"game_main/templates"
-	"game_main/testing"
 	"game_main/testing/bootstrap"
 	"game_main/visual/graphics"
 	"game_main/world/coords"
@@ -125,91 +119,55 @@ func (gb *GameBootstrap) SetupDebugContent(em *common.EntityManager, gm *worldma
 		bootstrap.SeedAllArtifacts(pd.PlayerEntityID, seedCount, em)
 		bootstrap.EquipPlayerActivatedArtifacts(pd.PlayerEntityID, em)
 	}
-
 }
 
-// SetupSharedSystems initializes only the systems shared by all game modes
-// (data loading + ECS core). World creation is deferred until mode selection.
-func SetupSharedSystems(g *Game) {
-	bootstrap := NewGameBootstrap()
-	bootstrap.LoadGameData()
+// InitializeGameplay sets up squad system and exploration squads.
+// Phase 5: Depends on CreatePlayer for faction positioning.
+// Overworld factions spawn threats dynamically during gameplay.
+func (gb *GameBootstrap) InitializeGameplay(em *common.EntityManager, pd *common.PlayerData, gm *worldmap.GameMap) {
 
-	if err := raid.LoadRaidConfig(config.AssetPath("gamedata/raidconfig.json")); err != nil {
-		fmt.Printf("WARNING: Failed to load raid config: %v (using defaults)\n", err)
-	}
+	// Initialize overworld tick state
+	tick.CreateTickStateEntity(em)
 
-	initMapGenConfigOverride()
-	bootstrap.InitializeCoreECS(&g.em)
-}
-
-// setupUICore initializes the shared UI infrastructure (coordinator, encounter service)
-// without registering any modes. Called by both SetupOverworldMode and SetupRoguelikeMode.
-func setupUICore(g *Game) (*framework.GameModeCoordinator, *encounter.EncounterService) {
-	widgetresources.PreCacheScrollContainerBackgrounds()
-
-	uiContext := &framework.UIContext{
-		ECSManager:   &g.em,
-		PlayerData:   &g.playerData,
-		GameMap:      &g.gameMap,
-		ScreenWidth:  graphics.ScreenInfo.GetCanvasWidth(),
-		ScreenHeight: graphics.ScreenInfo.GetCanvasHeight(),
-		TileSize:     graphics.ScreenInfo.TileSize,
-		Queries:      framework.NewGUIQueries(&g.em),
-	}
-
-	widgetresources.PreCacheScrollContainerSizes(uiContext.ScreenWidth, uiContext.ScreenHeight)
-
-	uiContext.SaveGameCallback = func() error {
-		return SaveRoguelikeGame(g)
-	}
-
-	uiContext.LoadGameCallback = func() {
-		g.pendingLoad = true
-	}
-
-	g.gameModeCoordinator = framework.NewGameModeCoordinator(uiContext)
-	uiContext.ModeCoordinator = g.gameModeCoordinator
-
-	encounterService := encounter.NewEncounterService(&g.em, g.gameModeCoordinator)
-	return g.gameModeCoordinator, encounterService
-}
-
-// SetupInputCoordinator initializes the input handling system.
-// Must be called after UI is created.
-func SetupInputCoordinator(g *Game) {
-	// Pass ModeCoordinator for context switching
-
-	g.cameraController = input.NewCameraController(&g.em, &g.playerData, &g.gameMap, g.gameModeCoordinator)
-
-}
-
-// SetupTestData creates test items and content for debugging.
-// Only called when DEBUG_MODE is enabled.
-func SetupTestData(em *common.EntityManager, gm *worldmap.GameMap, pd *common.PlayerData) {
-	testing.CreateTestItems(gm)
-
-}
-
-// SetupBenchmarking initializes performance profiling tools when enabled.
-// It starts an HTTP server for pprof and configures CPU/memory profiling rates.
-func SetupBenchmarking() {
-	if !config.ENABLE_BENCHMARKING {
-		return
-	}
-
-	// Start pprof HTTP server in background
-	go func() {
-		log.Println("Starting pprof server on", config.ProfileServerAddr)
-		if err := http.ListenAndServe(config.ProfileServerAddr, nil); err != nil {
-			log.Printf("pprof server error: %v", err)
+	// Create additional starting commanders near player position (debug only)
+	if config.DEBUG_MODE {
+		if err := bootstrap.CreateTestCommanders(em, pd, *pd.Pos); err != nil {
+			fmt.Printf("WARNING: Failed to create test commanders: %v\n", err)
 		}
-	}()
+	}
 
-	// Configure profiling rates
-	runtime.SetCPUProfileRate(config.CPUProfileRate)
-	runtime.MemProfileRate = config.MemoryProfileRate
+	// Initialize commander turn state and action states
+	commander.CreateOverworldTurnState(em)
+	commander.StartNewTurn(em, pd.PlayerEntityID)
+
+	// Initialize walkable grid from map tiles
+	InitWalkableGridFromMap(gm)
+
+	// Create initial overworld factions (they will spawn threats dynamically, debug only)
+	if config.DEBUG_MODE {
+		bootstrap.InitializeOverworldFactions(em, pd, gm)
+	}
+
+	// Convert POIs from world generation into neutral overworld nodes
+	gb.ConvertPOIsToNodes(em, gm)
 }
 
-// gameSquadChecker implements core.SquadChecker interface
-// This allows the overworld package to check squad status without circular dependency
-type gameSquadChecker struct{}
+// ConvertPOIsToNodes converts POIs from world generation into neutral overworld nodes.
+// This allows POIs to participate in the influence system (mildly suppress nearby threats).
+func (gb *GameBootstrap) ConvertPOIsToNodes(em *common.EntityManager, gm *worldmap.GameMap) {
+	currentTick := core.GetCurrentTick(em)
+	for _, poi := range gm.POIs {
+		nodeID, err := node.CreateNode(em, node.CreateNodeParams{
+			Position:    poi.Position,
+			NodeTypeID:  poi.NodeID,
+			OwnerID:     core.OwnerNeutral,
+			CurrentTick: currentTick,
+		})
+		if err != nil {
+			log.Printf("Failed to convert POI '%s' to node: %v", poi.NodeID, err)
+			continue
+		}
+		log.Printf("Converted POI '%s' at (%d, %d) to neutral node (ID: %d)",
+			poi.NodeID, poi.Position.X, poi.Position.Y, nodeID)
+	}
+}

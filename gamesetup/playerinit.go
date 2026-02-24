@@ -1,4 +1,4 @@
-package main
+package gamesetup
 
 import (
 	"game_main/common"
@@ -45,10 +45,7 @@ func InitializePlayerData(ecsmanager *common.EntityManager, pl *common.PlayerDat
 			Image:   playerImg,
 			Visible: true,
 		}).
-		AddComponent(common.PositionComponent, &coords.LogicalPosition{
-			X: 40,
-			Y: 45,
-		}).
+		AddComponent(common.PositionComponent, &coords.LogicalPosition{}).
 		AddComponent(common.AttributeComponent, &attr).
 		AddComponent(common.ResourceStockpileComponent, common.NewResourceStockpile(
 			config.DefaultPlayerStartingGold,
@@ -66,8 +63,6 @@ func InitializePlayerData(ecsmanager *common.EntityManager, pl *common.PlayerDat
 	players := ecs.BuildTag(common.PlayerComponent, common.PositionComponent)
 	ecsmanager.WorldTags["players"] = players
 
-	//g.playerData = PlayerData{}
-
 	pl.PlayerEntityID = playerEntity.GetID()
 
 	//Don't want to Query for the player position every time, so we're storing it
@@ -75,9 +70,6 @@ func InitializePlayerData(ecsmanager *common.EntityManager, pl *common.PlayerDat
 	startPos := common.GetComponentType[*coords.LogicalPosition](playerEntity, common.PositionComponent)
 	startPos.X = gm.StartingPosition().X
 	startPos.Y = gm.StartingPosition().Y
-
-	// Test weapon/armor initialization removed - squad system handles combat equipment
-	// See CLAUDE.md Section 7 (Squad System Infrastructure) for replacement system
 
 	pl.Pos = startPos
 
