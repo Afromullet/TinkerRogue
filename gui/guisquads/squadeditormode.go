@@ -5,6 +5,7 @@ import (
 
 	"game_main/gui/builders"
 	"game_main/gui/framework"
+	"game_main/gui/specs"
 	"game_main/tactical/commander"
 
 	"github.com/bytearena/ecs"
@@ -34,16 +35,18 @@ type SquadEditorMode struct {
 
 	// Interactive widget references (stored here for refresh/access)
 	// These are populated from panel registry after BuildPanels()
-	squadSelector     *widget.List
-	gridCells         [3][3]*widget.Button
-	unitList          *widget.List
-	rosterList        *widget.List
+	squadSelector *widget.List
+	gridCells     [3][3]*widget.Button
+	unitList      *widget.List
+	rosterList    *widget.List
 
 	// Commander selector
 	commanderSelector *CommanderSelector
 
-	// Tabbed unit/roster panel
-	activeTab     string // "units" or "roster"
+	// Sub-menu controller for right-side panels (units, roster)
+	subMenus *framework.SubMenuController
+
+	// Unit and roster panel containers (for widget replacement during refresh)
 	unitContent   *widget.Container
 	rosterContent *widget.Container
 
@@ -93,8 +96,8 @@ func (sem *SquadEditorMode) Initialize(ctx *framework.UIContext) error {
 
 	// Build base UI using ModeBuilder (minimal config - panels handled by registry)
 	err := framework.NewModeBuilder(&sem.BaseMode, framework.ModeConfig{
-		ModeName:   "squad_editor",
-		ReturnMode: returnMode,
+		ModeName:    "squad_editor",
+		ReturnMode:  returnMode,
 		StatusLabel: true,
 		Commands:    true,
 		OnRefresh:   sem.refreshAfterCommand,
@@ -108,12 +111,15 @@ func (sem *SquadEditorMode) Initialize(ctx *framework.UIContext) error {
 		return err
 	}
 
+	// Initialize sub-menu controller before building panels (panels register with it)
+	sem.subMenus = framework.NewSubMenuController()
+
 	// Build panels from registry
 	if err := sem.BuildPanels(
-		SquadEditorPanelCommanderSelector,
 		SquadEditorPanelSquadSelector,
 		SquadEditorPanelGridEditor,
-		SquadEditorPanelUnitRoster,
+		SquadEditorPanelUnitList,
+		SquadEditorPanelRoster,
 	); err != nil {
 		return err
 	}
@@ -121,31 +127,30 @@ func (sem *SquadEditorMode) Initialize(ctx *framework.UIContext) error {
 	// Initialize widget references from registry
 	sem.initializeWidgetReferences()
 
-	// Add action buttons (needs callbacks, so done separately)
-	actionButtons := sem.buildActionButtons()
-	sem.RootContainer.AddChild(actionButtons)
+	// Add action button clusters
+	sem.RootContainer.AddChild(sem.buildContextActions())
+	sem.RootContainer.AddChild(sem.buildNavigationActions())
 
 	return nil
 }
 
 // initializeWidgetReferences populates mode fields from panel registry
 func (sem *SquadEditorMode) initializeWidgetReferences() {
-	// Commander selector
+	// Commander selector (now in squad list panel header)
 	sem.commanderSelector = NewCommanderSelector(
-		framework.GetPanelWidget[*widget.Text](sem.Panels, SquadEditorPanelCommanderSelector, "commanderLabel"),
-		framework.GetPanelWidget[*widget.Button](sem.Panels, SquadEditorPanelCommanderSelector, "commanderPrevBtn"),
-		framework.GetPanelWidget[*widget.Button](sem.Panels, SquadEditorPanelCommanderSelector, "commanderNextBtn"),
+		framework.GetPanelWidget[*widget.Text](sem.Panels, SquadEditorPanelSquadSelector, "commanderLabel"),
+		framework.GetPanelWidget[*widget.Button](sem.Panels, SquadEditorPanelSquadSelector, "commanderPrevBtn"),
+		framework.GetPanelWidget[*widget.Button](sem.Panels, SquadEditorPanelSquadSelector, "commanderNextBtn"),
 	)
 
 	// List widgets
 	sem.squadSelector = framework.GetPanelWidget[*widget.List](sem.Panels, SquadEditorPanelSquadSelector, "squadList")
-	sem.unitList = framework.GetPanelWidget[*widget.List](sem.Panels, SquadEditorPanelUnitRoster, "unitList")
-	sem.rosterList = framework.GetPanelWidget[*widget.List](sem.Panels, SquadEditorPanelUnitRoster, "rosterList")
+	sem.unitList = framework.GetPanelWidget[*widget.List](sem.Panels, SquadEditorPanelUnitList, "unitList")
+	sem.rosterList = framework.GetPanelWidget[*widget.List](sem.Panels, SquadEditorPanelRoster, "rosterList")
 
-	// Tabbed panel containers
-	sem.unitContent = framework.GetPanelWidget[*widget.Container](sem.Panels, SquadEditorPanelUnitRoster, "unitContent")
-	sem.rosterContent = framework.GetPanelWidget[*widget.Container](sem.Panels, SquadEditorPanelUnitRoster, "rosterContent")
-	sem.activeTab = "units"
+	// Panel containers (for widget replacement during refresh)
+	sem.unitContent = sem.GetPanelContainer(SquadEditorPanelUnitList)
+	sem.rosterContent = sem.GetPanelContainer(SquadEditorPanelRoster)
 
 	// Grid cells
 	sem.gridCells = framework.GetPanelWidget[[3][3]*widget.Button](sem.Panels, SquadEditorPanelGridEditor, "gridCells")
@@ -156,38 +161,66 @@ func (sem *SquadEditorMode) initializeWidgetReferences() {
 	sem.attackLabel = framework.GetPanelWidget[*widget.Text](sem.Panels, SquadEditorPanelGridEditor, "attackLabel")
 }
 
-// buildActionButtons creates bottom action buttons (needs callbacks, so done separately)
-func (sem *SquadEditorMode) buildActionButtons() *widget.Container {
+// buildContextActions creates bottom-left action buttons for current squad context
+func (sem *SquadEditorMode) buildContextActions() *widget.Container {
+	spacing := int(float64(sem.Layout.ScreenWidth) * specs.PaddingTight)
+	bottomPad := int(float64(sem.Layout.ScreenHeight) * specs.BottomButtonOffset)
+	leftPad := int(float64(sem.Layout.ScreenWidth) * specs.PaddingStandard)
+	anchorLayout := builders.AnchorStartEnd(leftPad, bottomPad)
+
+	return builders.CreateButtonGroup(builders.ButtonGroupConfig{
+		Buttons: []builders.ButtonSpec{
+			{Text: "Units (U)", OnClick: sem.subMenus.Toggle("units")},
+			{Text: "Roster (R)", OnClick: sem.subMenus.Toggle("roster")},
+			{Text: "Atk Pattern (V)", OnClick: func() { sem.toggleAttackPattern() }},
+		},
+		Direction:  widget.DirectionHorizontal,
+		Spacing:    spacing,
+		Padding:    builders.NewResponsiveHorizontalPadding(sem.Layout, specs.PaddingExtraSmall),
+		LayoutData: &anchorLayout,
+	})
+}
+
+// buildNavigationActions creates bottom-right action buttons for mode navigation
+func (sem *SquadEditorMode) buildNavigationActions() *widget.Container {
 	closeText := "Exploration (ESC)"
 	if sem.GetReturnMode() != "" {
 		closeText = "Overworld (ESC)"
 	}
 
-	return builders.CreateBottomActionBar(sem.Layout, []builders.ButtonSpec{
-		{Text: "New Squad (N)", OnClick: func() { sem.onNewSquad() }},
-		{Text: "Rename Squad", OnClick: func() { sem.onRenameSquad() }},
-		{Text: "Attack Pattern (V)", OnClick: func() { sem.toggleAttackPattern() }},
-		{Text: "Buy Units (P)", OnClick: func() {
-			if mode, exists := sem.ModeManager.GetMode("unit_purchase"); exists {
-				sem.ModeManager.RequestTransition(mode, "Buy Units clicked")
-			}
-		}},
-		{Text: "Artifacts", OnClick: func() {
-			if mode, exists := sem.ModeManager.GetMode("artifact_manager"); exists {
-				sem.ModeManager.RequestTransition(mode, "Artifacts clicked")
-			}
-		}},
-		{Text: closeText, OnClick: func() {
-			if returnMode, exists := sem.ModeManager.GetMode(sem.GetReturnMode()); exists {
-				sem.ModeManager.RequestTransition(returnMode, "Close button pressed")
-				return
-			}
-			if sem.Context.ModeCoordinator != nil {
-				if err := sem.Context.ModeCoordinator.EnterTactical("exploration"); err != nil {
-					fmt.Printf("ERROR: Failed to enter tactical context: %v\n", err)
+	spacing := int(float64(sem.Layout.ScreenWidth) * specs.PaddingTight)
+	bottomPad := int(float64(sem.Layout.ScreenHeight) * specs.BottomButtonOffset)
+	rightPad := int(float64(sem.Layout.ScreenWidth) * specs.PaddingStandard)
+	anchorLayout := builders.AnchorEndEnd(rightPad, bottomPad)
+
+	return builders.CreateButtonGroup(builders.ButtonGroupConfig{
+		Buttons: []builders.ButtonSpec{
+			{Text: "Buy Units (P)", OnClick: func() {
+				if mode, exists := sem.ModeManager.GetMode("unit_purchase"); exists {
+					sem.ModeManager.RequestTransition(mode, "Buy Units clicked")
 				}
-			}
-		}},
+			}},
+			{Text: "Artifacts", OnClick: func() {
+				if mode, exists := sem.ModeManager.GetMode("artifact_manager"); exists {
+					sem.ModeManager.RequestTransition(mode, "Artifacts clicked")
+				}
+			}},
+			{Text: closeText, OnClick: func() {
+				if returnMode, exists := sem.ModeManager.GetMode(sem.GetReturnMode()); exists {
+					sem.ModeManager.RequestTransition(returnMode, "Close button pressed")
+					return
+				}
+				if sem.Context.ModeCoordinator != nil {
+					if err := sem.Context.ModeCoordinator.EnterTactical("exploration"); err != nil {
+						fmt.Printf("ERROR: Failed to enter tactical context: %v\n", err)
+					}
+				}
+			}},
+		},
+		Direction:  widget.DirectionHorizontal,
+		Spacing:    spacing,
+		Padding:    builders.NewResponsiveHorizontalPadding(sem.Layout, specs.PaddingExtraSmall),
+		LayoutData: &anchorLayout,
 	})
 }
 
@@ -215,6 +248,7 @@ func (sem *SquadEditorMode) Exit(toMode framework.UIMode) error {
 	sem.showAttackPattern = false
 	sem.attackLabel.GetWidget().Visibility = widget.Visibility_Hide
 	sem.attackGridContainer.GetWidget().Visibility = widget.Visibility_Hide
+	sem.subMenus.CloseAll()
 	return nil
 }
 
@@ -232,8 +266,29 @@ func (sem *SquadEditorMode) HandleInput(inputState *framework.InputState) bool {
 		return true
 	}
 
-	// Handle common input (ESC key)
+	// ESC cascade: close right panel first, then exit mode
+	if inputState.KeysJustPressed[ebiten.KeyEscape] {
+		if sem.subMenus.AnyActive() {
+			sem.subMenus.CloseAll()
+			return true
+		}
+		// Fall through to HandleCommonInput for mode exit
+	}
+
+	// Handle common input (hotkeys + ESC for mode exit)
 	if sem.HandleCommonInput(inputState) {
+		return true
+	}
+
+	// U key toggles units panel
+	if inputState.KeysJustPressed[ebiten.KeyU] {
+		sem.subMenus.Toggle("units")()
+		return true
+	}
+
+	// R key toggles roster panel
+	if inputState.KeysJustPressed[ebiten.KeyR] {
+		sem.subMenus.Toggle("roster")()
 		return true
 	}
 
@@ -269,26 +324,6 @@ func (sem *SquadEditorMode) toggleAttackPattern() {
 	}
 	sem.attackLabel.GetWidget().Visibility = vis
 	sem.attackGridContainer.GetWidget().Visibility = vis
-}
-
-// === Tab Switching Functions ===
-
-// switchTab switches the combined panel to show "units" or "roster"
-func (sem *SquadEditorMode) switchTab(tabName string) {
-	if sem.activeTab == tabName {
-		return
-	}
-	sem.activeTab = tabName
-
-	sem.unitContent.GetWidget().Visibility = widget.Visibility_Hide
-	sem.rosterContent.GetWidget().Visibility = widget.Visibility_Hide
-
-	switch tabName {
-	case "units":
-		sem.unitContent.GetWidget().Visibility = widget.Visibility_Show
-	case "roster":
-		sem.rosterContent.GetWidget().Visibility = widget.Visibility_Show
-	}
 }
 
 // === Commander Selector Functions ===

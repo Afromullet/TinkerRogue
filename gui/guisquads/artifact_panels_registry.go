@@ -74,8 +74,8 @@ func init() {
 			am := mode.(*ArtifactMode)
 			layout := am.Layout
 
-			listWidth := int(float64(layout.ScreenWidth) * specs.SquadEditorUnitListWidth)
-			listHeight := int(float64(layout.ScreenHeight) * specs.SquadEditorUnitListHeight)
+			listWidth := int(float64(layout.ScreenWidth) * specs.SquadEditorUnitPanelWidth)
+			listHeight := int(float64(layout.ScreenHeight) * specs.SquadEditorUnitPanelHeight)
 
 			result.Container = builders.CreateStaticPanel(builders.ContainerConfig{
 				MinWidth:  listWidth,
@@ -97,20 +97,12 @@ func init() {
 				)),
 			)
 			tabRow.AddChild(builders.CreateButtonWithConfig(builders.ButtonConfig{
-				Text:    "Inventory",
+				Text:    "Inventory (I)",
 				OnClick: func() { am.switchTab("inventory") },
 			}))
 			tabRow.AddChild(builders.CreateButtonWithConfig(builders.ButtonConfig{
-				Text:    "Equipment",
+				Text:    "Equipment (E)",
 				OnClick: func() { am.switchTab("equipment") },
-			}))
-			tabRow.AddChild(builders.CreateButtonWithConfig(builders.ButtonConfig{
-				Text: "Back (ESC)",
-				OnClick: func() {
-					if returnMode, exists := am.ModeManager.GetMode(am.GetReturnMode()); exists {
-						am.ModeManager.RequestTransition(returnMode, "Back button pressed")
-					}
-				},
 			}))
 			result.Container.AddChild(tabRow)
 

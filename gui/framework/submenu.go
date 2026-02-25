@@ -35,6 +35,25 @@ func (sc *SubMenuController) Toggle(name string) func() {
 	}
 }
 
+// Show opens the named sub-menu, closing any other open menu first.
+func (sc *SubMenuController) Show(name string) {
+	sc.CloseAll()
+	if c, ok := sc.menus[name]; ok {
+		c.GetWidget().Visibility = widget.Visibility_Show
+		sc.active = name
+	}
+}
+
+// IsActive returns true if the named sub-menu is currently open.
+func (sc *SubMenuController) IsActive(name string) bool {
+	return sc.active == name
+}
+
+// AnyActive returns true if any sub-menu is currently open.
+func (sc *SubMenuController) AnyActive() bool {
+	return sc.active != ""
+}
+
 func (sc *SubMenuController) CloseAll() {
 	for _, c := range sc.menus {
 		c.GetWidget().Visibility = widget.Visibility_Hide

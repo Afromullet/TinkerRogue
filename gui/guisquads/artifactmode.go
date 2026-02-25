@@ -3,7 +3,9 @@ package guisquads
 import (
 	"fmt"
 
+	"game_main/gui/builders"
 	"game_main/gui/framework"
+	"game_main/gui/specs"
 	"game_main/tactical/squads"
 
 	"github.com/bytearena/ecs"
@@ -84,6 +86,10 @@ func (am *ArtifactMode) Initialize(ctx *framework.UIContext) error {
 	}
 
 	am.initializeWidgetReferences()
+
+	// Add bottom navigation bar
+	am.RootContainer.AddChild(am.buildNavigationActions())
+
 	return nil
 }
 
@@ -157,6 +163,16 @@ func (am *ArtifactMode) HandleInput(inputState *framework.InputState) bool {
 		return true
 	}
 
+	// Tab switching hotkeys
+	if inputState.KeysJustPressed[ebiten.KeyI] {
+		am.switchTab("inventory")
+		return true
+	}
+	if inputState.KeysJustPressed[ebiten.KeyE] {
+		am.switchTab("equipment")
+		return true
+	}
+
 	return false
 }
 
@@ -224,4 +240,26 @@ func (am *ArtifactMode) switchTab(tabName string) {
 		am.equipmentContent.GetWidget().Visibility = widget.Visibility_Show
 		am.refreshEquipment()
 	}
+}
+
+// buildNavigationActions creates bottom-right navigation buttons
+func (am *ArtifactMode) buildNavigationActions() *widget.Container {
+	spacing := int(float64(am.Layout.ScreenWidth) * specs.PaddingTight)
+	bottomPad := int(float64(am.Layout.ScreenHeight) * specs.BottomButtonOffset)
+	rightPad := int(float64(am.Layout.ScreenWidth) * specs.PaddingStandard)
+	anchorLayout := builders.AnchorEndEnd(rightPad, bottomPad)
+
+	return builders.CreateButtonGroup(builders.ButtonGroupConfig{
+		Buttons: []builders.ButtonSpec{
+			{Text: "Back (ESC)", OnClick: func() {
+				if returnMode, exists := am.ModeManager.GetMode(am.GetReturnMode()); exists {
+					am.ModeManager.RequestTransition(returnMode, "Back button pressed")
+				}
+			}},
+		},
+		Direction:  widget.DirectionHorizontal,
+		Spacing:    spacing,
+		Padding:    builders.NewResponsiveHorizontalPadding(am.Layout, specs.PaddingExtraSmall),
+		LayoutData: &anchorLayout,
+	})
 }

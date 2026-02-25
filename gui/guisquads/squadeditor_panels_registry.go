@@ -11,67 +11,14 @@ import (
 
 // Panel type constants for squad editor mode
 const (
-	SquadEditorPanelCommanderSelector framework.PanelType = "squadeditor_commander_selector"
-	SquadEditorPanelSquadSelector     framework.PanelType = "squadeditor_squad_selector"
-	SquadEditorPanelGridEditor        framework.PanelType = "squadeditor_grid_editor"
-	SquadEditorPanelUnitRoster framework.PanelType = "squadeditor_unit_roster"
+	SquadEditorPanelSquadSelector framework.PanelType = "squadeditor_squad_selector"
+	SquadEditorPanelGridEditor    framework.PanelType = "squadeditor_grid_editor"
+	SquadEditorPanelUnitList      framework.PanelType = "squadeditor_unit_list"
+	SquadEditorPanelRoster        framework.PanelType = "squadeditor_roster"
 )
 
 func init() {
-	// Register commander selector panel (prev/next commander + name label)
-	framework.RegisterPanel(SquadEditorPanelCommanderSelector, framework.PanelDescriptor{
-		Content: framework.ContentCustom,
-		OnCreate: func(result *framework.PanelResult, mode framework.UIMode) error {
-			sem := mode.(*SquadEditorMode)
-			layout := sem.Layout
-
-			selectorWidth := int(float64(layout.ScreenWidth) * 0.4)
-			selectorHeight := int(float64(layout.ScreenHeight) * specs.CommanderSelectorHeight)
-
-			result.Container = builders.CreateStaticPanel(builders.ContainerConfig{
-				MinWidth:  selectorWidth,
-				MinHeight: selectorHeight,
-				Layout: widget.NewRowLayout(
-					widget.RowLayoutOpts.Direction(widget.DirectionHorizontal),
-					widget.RowLayoutOpts.Spacing(15),
-					widget.RowLayoutOpts.Padding(builders.NewResponsiveRowPadding(layout, specs.PaddingExtraSmall)),
-				),
-			})
-
-			topPad := int(float64(layout.ScreenHeight) * specs.PaddingExtraSmall)
-			result.Container.GetWidget().LayoutData = builders.AnchorCenterStart(topPad)
-
-			// Previous commander button
-			prevBtn := builders.CreateButtonWithConfig(builders.ButtonConfig{
-				Text: "< Prev Cmdr",
-				OnClick: func() {
-					sem.showPreviousCommander()
-				},
-			})
-			result.Container.AddChild(prevBtn)
-
-			// Commander name label
-			cmdrLabel := builders.CreateSmallLabel("Commander: ---")
-			result.Container.AddChild(cmdrLabel)
-
-			// Next commander button
-			nextBtn := builders.CreateButtonWithConfig(builders.ButtonConfig{
-				Text: "Next Cmdr >",
-				OnClick: func() {
-					sem.showNextCommander()
-				},
-			})
-			result.Container.AddChild(nextBtn)
-
-			result.Custom["commanderPrevBtn"] = prevBtn
-			result.Custom["commanderNextBtn"] = nextBtn
-			result.Custom["commanderLabel"] = cmdrLabel
-
-			return nil
-		},
-	})
-
-	// Register squad selector panel (includes nav buttons at bottom)
+	// Register squad selector panel with commander row header and squad operation buttons
 	framework.RegisterPanel(SquadEditorPanelSquadSelector, framework.PanelDescriptor{
 		Content: framework.ContentCustom,
 		OnCreate: func(result *framework.PanelResult, mode framework.UIMode) error {
@@ -90,9 +37,35 @@ func init() {
 			)
 
 			leftPad := int(float64(layout.ScreenWidth) * specs.PaddingStandard)
-			topOffset := int(float64(layout.ScreenHeight) * (specs.CommanderSelectorHeight + specs.PaddingStandard))
-			result.Container.GetWidget().LayoutData = builders.AnchorStartStart(leftPad, topOffset)
+			topPad := int(float64(layout.ScreenHeight) * specs.PaddingStandard)
+			result.Container.GetWidget().LayoutData = builders.AnchorStartStart(leftPad, topPad)
 
+			// Commander row: [< Prev] "Commander: Name" [Next >]
+			cmdrRow := widget.NewContainer(
+				widget.ContainerOpts.Layout(widget.NewRowLayout(
+					widget.RowLayoutOpts.Direction(widget.DirectionHorizontal),
+					widget.RowLayoutOpts.Spacing(5),
+				)),
+			)
+
+			prevBtn := builders.CreateButtonWithConfig(builders.ButtonConfig{
+				Text:    "<",
+				OnClick: func() { sem.showPreviousCommander() },
+			})
+			cmdrRow.AddChild(prevBtn)
+
+			cmdrLabel := builders.CreateSmallLabel("Commander: ---")
+			cmdrRow.AddChild(cmdrLabel)
+
+			nextBtn := builders.CreateButtonWithConfig(builders.ButtonConfig{
+				Text:    ">",
+				OnClick: func() { sem.showNextCommander() },
+			})
+			cmdrRow.AddChild(nextBtn)
+
+			result.Container.AddChild(cmdrRow)
+
+			// Squad list title
 			titleLabel := builders.CreateSmallLabel("Select Squad:")
 			result.Container.AddChild(titleLabel)
 
@@ -110,7 +83,23 @@ func init() {
 			})
 			result.Container.AddChild(squadList)
 
+			// Squad operation buttons
+			newSquadBtn := builders.CreateButtonWithConfig(builders.ButtonConfig{
+				Text:    "New Squad (N)",
+				OnClick: func() { sem.onNewSquad() },
+			})
+			result.Container.AddChild(newSquadBtn)
+
+			renameBtn := builders.CreateButtonWithConfig(builders.ButtonConfig{
+				Text:    "Rename",
+				OnClick: func() { sem.onRenameSquad() },
+			})
+			result.Container.AddChild(renameBtn)
+
 			result.Custom["squadList"] = squadList
+			result.Custom["commanderPrevBtn"] = prevBtn
+			result.Custom["commanderNextBtn"] = nextBtn
+			result.Custom["commanderLabel"] = cmdrLabel
 
 			return nil
 		},
@@ -162,15 +151,15 @@ func init() {
 		},
 	})
 
-	// Register combined unit list + roster panel with tab switching
-	framework.RegisterPanel(SquadEditorPanelUnitRoster, framework.PanelDescriptor{
+	// Register unit list panel (right side, hidden by default, managed by SubMenuController)
+	framework.RegisterPanel(SquadEditorPanelUnitList, framework.PanelDescriptor{
 		Content: framework.ContentCustom,
 		OnCreate: func(result *framework.PanelResult, mode framework.UIMode) error {
 			sem := mode.(*SquadEditorMode)
 			layout := sem.Layout
 
-			listWidth := int(float64(layout.ScreenWidth) * specs.SquadEditorUnitListWidth)
-			listHeight := int(float64(layout.ScreenHeight) * specs.SquadEditorUnitListHeight)
+			listWidth := int(float64(layout.ScreenWidth) * specs.SquadEditorUnitPanelWidth)
+			listHeight := int(float64(layout.ScreenHeight) * specs.SquadEditorUnitPanelHeight)
 
 			result.Container = builders.CreateStaticPanel(builders.ContainerConfig{
 				MinWidth:  listWidth,
@@ -182,35 +171,10 @@ func init() {
 			})
 
 			rightPad := int(float64(layout.ScreenWidth) * specs.PaddingStandard)
-			topOffset := int(float64(layout.ScreenHeight) * (specs.CommanderSelectorHeight + specs.PaddingStandard))
+			topOffset := int(float64(layout.ScreenHeight) * specs.PaddingStandard)
 			result.Container.GetWidget().LayoutData = builders.AnchorEndStart(rightPad, topOffset)
 
-			// Tab row: horizontal container with tab buttons
-			tabRow := widget.NewContainer(
-				widget.ContainerOpts.Layout(widget.NewRowLayout(
-					widget.RowLayoutOpts.Direction(widget.DirectionHorizontal),
-					widget.RowLayoutOpts.Spacing(5),
-				)),
-			)
-			tabRow.AddChild(builders.CreateButtonWithConfig(builders.ButtonConfig{
-				Text:    "Squad Units",
-				OnClick: func() { sem.switchTab("units") },
-			}))
-			tabRow.AddChild(builders.CreateButtonWithConfig(builders.ButtonConfig{
-				Text:    "Roster",
-				OnClick: func() { sem.switchTab("roster") },
-			}))
-			result.Container.AddChild(tabRow)
-
-			// === Unit content sub-container ===
-			unitContent := widget.NewContainer(
-				widget.ContainerOpts.Layout(widget.NewRowLayout(
-					widget.RowLayoutOpts.Direction(widget.DirectionVertical),
-					widget.RowLayoutOpts.Spacing(5),
-				)),
-			)
-
-			unitContent.AddChild(builders.CreateSmallLabel("Squad Units:"))
+			result.Container.AddChild(builders.CreateSmallLabel("Squad Units:"))
 
 			unitList := builders.CreateUnitList(builders.UnitListConfig{
 				UnitIDs:       []ecs.EntityID{},
@@ -220,32 +184,55 @@ func init() {
 				WidthPercent:  1.0,
 				HeightPercent: 1.0,
 			})
-			unitContent.AddChild(unitList)
+			result.Container.AddChild(unitList)
 
-			unitContent.AddChild(builders.CreateButtonWithConfig(builders.ButtonConfig{
+			result.Container.AddChild(builders.CreateButtonWithConfig(builders.ButtonConfig{
 				Text:    "Remove Selected Unit",
 				OnClick: func() { sem.onRemoveUnit() },
 			}))
-			unitContent.AddChild(builders.CreateButtonWithConfig(builders.ButtonConfig{
+			result.Container.AddChild(builders.CreateButtonWithConfig(builders.ButtonConfig{
 				Text:    "Make Leader",
 				OnClick: func() { sem.onMakeLeader() },
 			}))
-			unitContent.AddChild(builders.CreateButtonWithConfig(builders.ButtonConfig{
+			result.Container.AddChild(builders.CreateButtonWithConfig(builders.ButtonConfig{
 				Text:    "View Unit",
 				OnClick: func() { sem.onViewUnit() },
 			}))
 
-			result.Container.AddChild(unitContent)
+			// Hidden by default, registered with SubMenuController
+			result.Container.GetWidget().Visibility = widget.Visibility_Hide
+			sem.subMenus.Register("units", result.Container)
 
-			// === Roster content sub-container (starts hidden) ===
-			rosterContent := widget.NewContainer(
-				widget.ContainerOpts.Layout(widget.NewRowLayout(
+			result.Custom["unitList"] = unitList
+
+			return nil
+		},
+	})
+
+	// Register roster panel (right side, hidden by default, managed by SubMenuController)
+	framework.RegisterPanel(SquadEditorPanelRoster, framework.PanelDescriptor{
+		Content: framework.ContentCustom,
+		OnCreate: func(result *framework.PanelResult, mode framework.UIMode) error {
+			sem := mode.(*SquadEditorMode)
+			layout := sem.Layout
+
+			listWidth := int(float64(layout.ScreenWidth) * specs.SquadEditorRosterPanelWidth)
+			listHeight := int(float64(layout.ScreenHeight) * specs.SquadEditorRosterPanelHeight)
+
+			result.Container = builders.CreateStaticPanel(builders.ContainerConfig{
+				MinWidth:  listWidth,
+				MinHeight: listHeight,
+				Layout: widget.NewRowLayout(
 					widget.RowLayoutOpts.Direction(widget.DirectionVertical),
 					widget.RowLayoutOpts.Spacing(5),
-				)),
-			)
+				),
+			})
 
-			rosterContent.AddChild(builders.CreateSmallLabel("Available Units (Roster):"))
+			rightPad := int(float64(layout.ScreenWidth) * specs.PaddingStandard)
+			topOffset := int(float64(layout.ScreenHeight) * specs.PaddingStandard)
+			result.Container.GetWidget().LayoutData = builders.AnchorEndStart(rightPad, topOffset)
+
+			result.Container.AddChild(builders.CreateSmallLabel("Available Units (Roster):"))
 
 			rosterList := builders.CreateSimpleStringList(builders.SimpleStringListConfig{
 				Entries:       []string{},
@@ -254,24 +241,20 @@ func init() {
 				WidthPercent:  1.0,
 				HeightPercent: 1.0,
 			})
-			rosterContent.AddChild(rosterList)
+			result.Container.AddChild(rosterList)
 
-			rosterContent.AddChild(builders.CreateButtonWithConfig(builders.ButtonConfig{
+			result.Container.AddChild(builders.CreateButtonWithConfig(builders.ButtonConfig{
 				Text:    "Add to Squad",
 				OnClick: func() { sem.onAddUnitFromRoster() },
 			}))
 
-			rosterContent.GetWidget().Visibility = widget.Visibility_Hide
-			result.Container.AddChild(rosterContent)
+			// Hidden by default, registered with SubMenuController
+			result.Container.GetWidget().Visibility = widget.Visibility_Hide
+			sem.subMenus.Register("roster", result.Container)
 
-			// Store references
-			result.Custom["unitList"] = unitList
 			result.Custom["rosterList"] = rosterList
-			result.Custom["unitContent"] = unitContent
-			result.Custom["rosterContent"] = rosterContent
 
 			return nil
 		},
 	})
 }
-

@@ -49,8 +49,8 @@ type CombatMode struct {
 	// Visualization systems
 	visualization *CombatVisualizationManager
 
-	// Sub-menu controller (manages debug sub-menu visibility)
-	subMenus *combatSubMenuController
+	// Sub-menu controller (manages debug, spell, artifact, inspect sub-menu visibility)
+	subMenus *framework.SubMenuController
 
 	// Turn lifecycle management
 	turnFlow *CombatTurnFlow
@@ -86,15 +86,16 @@ func (cm *CombatMode) Initialize(ctx *framework.UIContext) error {
 	}
 
 	// Initialize sub-menu controller before building panels (panels register with it)
-	cm.subMenus = newCombatSubMenuController()
+	cm.subMenus = framework.NewSubMenuController()
 
 	// Build panels using registry
 	if err := cm.buildPanelsFromRegistry(); err != nil {
 		return err
 	}
 
-	// Build action buttons (needs callbacks, so done separately)
-	cm.buildActionButtons()
+	// Build action button clusters (needs callbacks, so done separately)
+	cm.RootContainer.AddChild(cm.buildContextActions())
+	cm.RootContainer.AddChild(cm.buildNavigationActions())
 
 	// Create consolidated dependencies for handlers
 	cm.deps = NewCombatModeDeps(
@@ -207,6 +208,7 @@ func (cm *CombatMode) buildPanelsFromRegistry() error {
 	// Then build standard panels
 	panels := []framework.PanelType{
 		CombatPanelDebugMenu,
+		CombatPanelMagicMenu,
 		CombatPanelSpellSelection,
 		CombatPanelArtifactSelection,
 		guiinspect.InspectPanelType,
@@ -219,30 +221,45 @@ func (cm *CombatMode) buildPanelsFromRegistry() error {
 	return cm.BuildPanels(panels...)
 }
 
-// buildActionButtons creates the action button panel (needs callbacks)
-func (cm *CombatMode) buildActionButtons() {
+// buildContextActions creates bottom-left action buttons for combat actions
+func (cm *CombatMode) buildContextActions() *widget.Container {
 	spacing := int(float64(cm.Layout.ScreenWidth) * specs.PaddingTight)
 	bottomPad := int(float64(cm.Layout.ScreenHeight) * specs.BottomButtonOffset)
-	anchorLayout := builders.AnchorCenterEnd(bottomPad)
+	leftPad := int(float64(cm.Layout.ScreenWidth) * specs.PaddingStandard)
+	anchorLayout := builders.AnchorStartEnd(leftPad, bottomPad)
 
-	buttonContainer := builders.CreateButtonGroup(builders.ButtonGroupConfig{
+	return builders.CreateButtonGroup(builders.ButtonGroupConfig{
 		Buttons: []builders.ButtonSpec{
-			{Text: "Debug", OnClick: cm.subMenus.Toggle("debug")},
 			{Text: "Attack (A)", OnClick: cm.handleAttackClick},
 			{Text: "Move (M)", OnClick: cm.handleMoveClick},
-			{Text: "Cast Spell (S)", OnClick: cm.handleSpellClick},
-			{Text: "Artifact (D)", OnClick: cm.handleArtifactClick},
 			{Text: "Inspect (I)", OnClick: cm.handleInspectClick},
-			{Text: "Undo (Ctrl+Z)", OnClick: cm.handleUndoMove},
-			{Text: "End Turn (Space)", OnClick: cm.handleEndTurnClick},
+			{Text: "Magic", OnClick: cm.subMenus.Toggle("magic")},
 		},
 		Direction:  widget.DirectionHorizontal,
 		Spacing:    spacing,
 		Padding:    builders.NewResponsiveHorizontalPadding(cm.Layout, specs.PaddingExtraSmall),
 		LayoutData: &anchorLayout,
 	})
+}
 
-	cm.RootContainer.AddChild(buttonContainer)
+// buildNavigationActions creates bottom-right action buttons for turn/mode navigation
+func (cm *CombatMode) buildNavigationActions() *widget.Container {
+	spacing := int(float64(cm.Layout.ScreenWidth) * specs.PaddingTight)
+	bottomPad := int(float64(cm.Layout.ScreenHeight) * specs.BottomButtonOffset)
+	rightPad := int(float64(cm.Layout.ScreenWidth) * specs.PaddingStandard)
+	anchorLayout := builders.AnchorEndEnd(rightPad, bottomPad)
+
+	return builders.CreateButtonGroup(builders.ButtonGroupConfig{
+		Buttons: []builders.ButtonSpec{
+			{Text: "Undo (Ctrl+Z)", OnClick: cm.handleUndoMove},
+			{Text: "End Turn (Space)", OnClick: cm.handleEndTurnClick},
+			{Text: "Debug", OnClick: cm.subMenus.Toggle("debug")},
+		},
+		Direction:  widget.DirectionHorizontal,
+		Spacing:    spacing,
+		Padding:    builders.NewResponsiveHorizontalPadding(cm.Layout, specs.PaddingExtraSmall),
+		LayoutData: &anchorLayout,
+	})
 }
 
 // Button click handlers that delegate to action handler

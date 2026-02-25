@@ -23,68 +23,15 @@ const (
 	CombatPanelSquadDetail framework.PanelType = "combat_squad_detail"
 	CombatPanelLayerStatus framework.PanelType = "combat_layer_status"
 	CombatPanelDebugMenu            framework.PanelType = "combat_debug_menu"
+	CombatPanelMagicMenu            framework.PanelType = "combat_magic_menu"
 	CombatPanelSpellSelection       framework.PanelType = "combat_spell_selection"
 	CombatPanelArtifactSelection    framework.PanelType = "combat_artifact_selection"
 )
 
-// combatSubMenuController manages sub-menu visibility. Only one sub-menu can be open at a time.
-type combatSubMenuController struct {
-	menus  map[string]*widget.Container
-	active string
-}
-
-func newCombatSubMenuController() *combatSubMenuController {
-	return &combatSubMenuController{
-		menus: make(map[string]*widget.Container),
-	}
-}
-
-func (sc *combatSubMenuController) Register(name string, container *widget.Container) {
-	sc.menus[name] = container
-}
-
-// Toggle returns a callback that toggles the named sub-menu.
-// Opening one menu closes any other open menu.
-func (sc *combatSubMenuController) Toggle(name string) func() {
-	return func() {
-		if sc.active == name {
-			sc.menus[name].GetWidget().Visibility = widget.Visibility_Hide
-			sc.active = ""
-			return
-		}
-		sc.CloseAll()
-		if c, ok := sc.menus[name]; ok {
-			c.GetWidget().Visibility = widget.Visibility_Show
-			sc.active = name
-		}
-	}
-}
-
-// Show opens the named sub-menu, closing any other open menu first.
-func (sc *combatSubMenuController) Show(name string) {
-	sc.CloseAll()
-	if c, ok := sc.menus[name]; ok {
-		c.GetWidget().Visibility = widget.Visibility_Show
-		sc.active = name
-	}
-}
-
-// IsActive returns true if the named sub-menu is currently open.
-func (sc *combatSubMenuController) IsActive(name string) bool {
-	return sc.active == name
-}
-
-func (sc *combatSubMenuController) CloseAll() {
-	for _, c := range sc.menus {
-		c.GetWidget().Visibility = widget.Visibility_Hide
-	}
-	sc.active = ""
-}
-
 // createCombatSubMenu creates a vertical sub-menu panel, registers it with the controller, and returns it.
 func createCombatSubMenu(cm *CombatMode, name string, buttons []builders.ButtonConfig) *widget.Container {
 	spacing := int(float64(cm.Layout.ScreenWidth) * specs.PaddingTight)
-	subMenuBottomPad := int(float64(cm.Layout.ScreenHeight) * (specs.BottomButtonOffset + 0.15))
+	subMenuBottomPad := int(float64(cm.Layout.ScreenHeight) * (specs.BottomButtonOffset + specs.CombatSubMenuOffset))
 	anchorLayout := builders.AnchorCenterEnd(subMenuBottomPad)
 
 	panel := builders.CreatePanelWithConfig(builders.ContainerConfig{
@@ -114,6 +61,25 @@ func init() {
 				{Text: "Kill Squad", OnClick: func() {
 					cm.inputHandler.EnterDebugKillMode()
 					cm.subMenus.CloseAll()
+				}},
+			})
+			return nil
+		},
+	})
+
+	// Register magic sub-menu panel (groups Cast Spell + Artifact)
+	framework.RegisterPanel(CombatPanelMagicMenu, framework.PanelDescriptor{
+		Content: framework.ContentCustom,
+		OnCreate: func(result *framework.PanelResult, mode framework.UIMode) error {
+			cm := mode.(*CombatMode)
+			result.Container = createCombatSubMenu(cm, "magic", []builders.ButtonConfig{
+				{Text: "Cast Spell (S)", OnClick: func() {
+					cm.subMenus.CloseAll()
+					cm.handleSpellClick()
+				}},
+				{Text: "Artifact (D)", OnClick: func() {
+					cm.subMenus.CloseAll()
+					cm.handleArtifactClick()
 				}},
 			})
 			return nil
@@ -220,8 +186,8 @@ func init() {
 			bm := mode.(*CombatMode)
 			layout := bm.Layout
 
-			panelWidth := int(float64(layout.ScreenWidth) * 0.15)
-			panelHeight := int(float64(layout.ScreenHeight) * 0.08)
+			panelWidth := int(float64(layout.ScreenWidth) * specs.CombatLayerStatusWidth)
+			panelHeight := int(float64(layout.ScreenHeight) * specs.CombatLayerStatusHeight)
 
 			result.Container = builders.CreatePanelWithConfig(builders.ContainerConfig{
 				MinWidth:   panelWidth,
@@ -234,8 +200,8 @@ func init() {
 				),
 			})
 
-			rightPad := int(float64(layout.ScreenWidth) * 0.01)
-			topPad := int(float64(layout.ScreenHeight) * 0.01)
+			rightPad := int(float64(layout.ScreenWidth) * specs.PaddingExtraSmall)
+			topPad := int(float64(layout.ScreenHeight) * specs.PaddingExtraSmall)
 			result.Container.GetWidget().LayoutData = builders.AnchorEndStart(rightPad, topPad)
 
 			result.TextLabel = builders.CreateSmallLabel("")

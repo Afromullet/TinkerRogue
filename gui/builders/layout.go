@@ -165,6 +165,16 @@ func AnchorEndEnd(rightPadding, bottomPadding int) widget.AnchorLayoutData {
 	}
 }
 
+// AnchorStartEnd creates a Start-End anchor layout (left-bottom aligned).
+// Common for: Context action buttons at bottom-left.
+func AnchorStartEnd(leftPadding, bottomPadding int) widget.AnchorLayoutData {
+	return widget.AnchorLayoutData{
+		HorizontalPosition: widget.AnchorLayoutPositionStart,
+		VerticalPosition:   widget.AnchorLayoutPositionEnd,
+		Padding:            widget.Insets{Left: leftPadding, Bottom: bottomPadding},
+	}
+}
+
 // AnchorEndStart creates an End-Start anchor layout (right-top aligned).
 // Common for: Detail panels on right side at top.
 //

@@ -176,6 +176,13 @@ const (
 	// Inspect formation panel (right side, shown during inspect mode)
 	CombatInspectPanelWidth  = 0.22
 	CombatInspectPanelHeight = 0.60
+
+	// Sub-menu offset (vertical gap above bottom buttons)
+	CombatSubMenuOffset = 0.15
+
+	// Layer status indicator (top-right overlay)
+	CombatLayerStatusWidth  = 0.15
+	CombatLayerStatusHeight = 0.08
 )
 
 // InventoryModeLayout defines layout constants for inventory mode
@@ -187,16 +194,20 @@ const (
 
 // SquadEditorLayout defines layout constants for squad editor mode
 const (
-	// Commander selector bar (very top)
+	// Commander selector height (used by artifact mode's squad selector bar)
 	CommanderSelectorHeight = 0.06
 
-	// Squad selector list (left)
-	SquadEditorSquadListWidth  = 0.25
-	SquadEditorSquadListHeight = 0.7
+	// Squad selector list (left, includes commander row and squad operation buttons)
+	SquadEditorSquadListWidth  = 0.22
+	SquadEditorSquadListHeight = 0.80
 
-	// Unit + Roster combined panel (right side)
-	SquadEditorUnitListWidth  = 0.25
-	SquadEditorUnitListHeight = 0.7
+	// Unit list panel (right side, shown on demand via SubMenuController)
+	SquadEditorUnitPanelWidth  = 0.22
+	SquadEditorUnitPanelHeight = 0.60
+
+	// Roster panel (right side, shown on demand via SubMenuController)
+	SquadEditorRosterPanelWidth  = 0.22
+	SquadEditorRosterPanelHeight = 0.50
 )
 
 // UnitPurchaseLayout defines layout constants for unit purchase mode

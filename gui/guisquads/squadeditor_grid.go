@@ -25,9 +25,10 @@ func (sem *SquadEditorMode) onGridCellClicked(row, col int) {
 	unitIDs := squads.GetUnitIDsAtGridPosition(currentSquadID, row, col, sem.Queries.ECSManager)
 
 	if len(unitIDs) > 0 {
-		// Unit exists - select it for moving
+		// Unit exists - select it for moving and show units panel
 		sem.selectedUnitID = unitIDs[0]
 		sem.selectedGridCell = nil
+		sem.subMenus.Show("units")
 
 		nameStr := common.GetEntityName(sem.Queries.ECSManager, sem.selectedUnitID, "Unit")
 
@@ -38,8 +39,9 @@ func (sem *SquadEditorMode) onGridCellClicked(row, col int) {
 		sem.selectedUnitID = 0
 		sem.selectedGridCell = nil
 	} else {
-		// Empty cell clicked with no unit selected - remember for adding units
+		// Empty cell clicked with no unit selected - show roster for placement
 		sem.selectedGridCell = &GridCell{Row: row, Col: col}
+		sem.subMenus.Show("roster")
 		sem.SetStatus(fmt.Sprintf("Selected cell [%d,%d]. Click 'Add to Squad' to place a unit here", row, col))
 	}
 }
