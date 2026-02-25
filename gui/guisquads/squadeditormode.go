@@ -59,7 +59,6 @@ type SquadEditorMode struct {
 	// State
 	selectedGridCell *GridCell    // Currently selected grid cell
 	selectedUnitID   ecs.EntityID // Currently selected unit in squad
-	swapState        *SwapState   // Click-to-swap state for squad reordering
 }
 
 // currentSquadID returns the entity ID of the currently selected squad.
@@ -77,7 +76,6 @@ func NewSquadEditorMode(modeManager *framework.UIModeManager) *SquadEditorMode {
 	mode := &SquadEditorMode{
 		currentSquadIndex: 0,
 		allSquadIDs:       make([]ecs.EntityID, 0),
-		swapState:         NewSwapState(),
 	}
 	mode.SetModeName("squad_editor")
 	mode.ModeManager = modeManager
@@ -244,7 +242,6 @@ func (sem *SquadEditorMode) Enter(fromMode framework.UIMode) error {
 func (sem *SquadEditorMode) Exit(toMode framework.UIMode) error {
 	sem.selectedGridCell = nil
 	sem.selectedUnitID = 0
-	sem.swapState.Reset()
 	sem.showAttackPattern = false
 	sem.attackLabel.GetWidget().Visibility = widget.Visibility_Hide
 	sem.attackGridContainer.GetWidget().Visibility = widget.Visibility_Hide
@@ -261,11 +258,6 @@ func (sem *SquadEditorMode) Render(screen *ebiten.Image) {
 }
 
 func (sem *SquadEditorMode) HandleInput(inputState *framework.InputState) bool {
-	// Handle swap FIRST (before other input)
-	if sem.handleSwapInput(inputState) {
-		return true
-	}
-
 	// ESC cascade: close right panel first, then exit mode
 	if inputState.KeysJustPressed[ebiten.KeyEscape] {
 		if sem.subMenus.AnyActive() {

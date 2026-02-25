@@ -180,7 +180,7 @@ func init() {
 				UnitIDs:       []ecs.EntityID{},
 				Manager:       sem.Context.ECSManager,
 				ScreenWidth:   400,
-				ScreenHeight:  300,
+				ScreenHeight:  150,
 				WidthPercent:  1.0,
 				HeightPercent: 1.0,
 			})

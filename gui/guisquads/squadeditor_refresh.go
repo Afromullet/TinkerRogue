@@ -10,6 +10,22 @@ import (
 	"github.com/ebitenui/ebitenui/widget"
 )
 
+// syncSquadOrderFromRoster updates allSquadIDs from the roster (source of truth)
+func (sem *SquadEditorMode) syncSquadOrderFromRoster() {
+	rosterOwnerID := sem.Context.GetSquadRosterOwnerID()
+	manager := sem.Context.ECSManager
+
+	// Get roster from active squad roster owner (commander or player)
+	roster := squads.GetPlayerSquadRoster(rosterOwnerID, manager)
+	if roster == nil {
+		return
+	}
+
+	// Copy from roster to local state
+	sem.allSquadIDs = make([]ecs.EntityID, len(roster.OwnedSquads))
+	copy(sem.allSquadIDs, roster.OwnedSquads)
+}
+
 // UI refresh logic for SquadEditorMode
 
 // replaceListInContainer removes an old list widget from a container, creates a new one,
@@ -80,7 +96,7 @@ func (sem *SquadEditorMode) rebuildUnitListWidget(squadID ecs.EntityID) {
 			UnitIDs:       unitIDs,
 			Manager:       sem.Queries.ECSManager,
 			ScreenWidth:   400,
-			ScreenHeight:  300,
+			ScreenHeight:  150,
 			WidthPercent:  1.0,
 			HeightPercent: 1.0,
 		})
