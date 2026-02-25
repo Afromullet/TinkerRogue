@@ -179,7 +179,7 @@ func CreateButtonWithConfig(config ButtonConfig) *widget.Button {
 		config.MinWidth = 100
 	}
 	if config.MinHeight == 0 {
-		config.MinHeight = 100
+		config.MinHeight = 40
 	}
 	if config.FontFace == nil {
 		config.FontFace = widgetresources.LargeFace
@@ -193,7 +193,7 @@ func CreateButtonWithConfig(config ButtonConfig) *widget.Button {
 		config.Image = widgetresources.ButtonImage
 	}
 	if config.Padding.Left == 0 {
-		config.Padding = widget.Insets{Left: 30, Right: 30, Top: 30, Bottom: 30}
+		config.Padding = widget.Insets{Left: 10, Right: 10, Top: 10, Bottom: 10}
 	}
 
 	opts := []widget.ButtonOpt{

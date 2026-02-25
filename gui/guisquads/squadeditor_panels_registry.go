@@ -179,10 +179,10 @@ func init() {
 			unitList := builders.CreateUnitList(builders.UnitListConfig{
 				UnitIDs:       []ecs.EntityID{},
 				Manager:       sem.Context.ECSManager,
-				ScreenWidth:   400,
-				ScreenHeight:  150,
+				ScreenWidth:   listWidth,
+				ScreenHeight:  listHeight,
 				WidthPercent:  1.0,
-				HeightPercent: 1.0,
+				HeightPercent: 0.50,
 			})
 			result.Container.AddChild(unitList)
 

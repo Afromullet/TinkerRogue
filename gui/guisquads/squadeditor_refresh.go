@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"game_main/gui/builders"
+	"game_main/gui/specs"
 	"game_main/tactical/squads"
 
 	"github.com/bytearena/ecs"
@@ -91,14 +92,17 @@ func (sem *SquadEditorMode) refreshSquadSelector() {
 func (sem *SquadEditorMode) rebuildUnitListWidget(squadID ecs.EntityID) {
 	unitIDs := sem.Queries.SquadCache.GetUnitIDsInSquad(squadID)
 
+	panelWidth := int(float64(sem.Layout.ScreenWidth) * specs.SquadEditorUnitPanelWidth)
+	panelHeight := int(float64(sem.Layout.ScreenHeight) * specs.SquadEditorUnitPanelHeight)
+
 	sem.unitList = sem.replaceListInContainer(sem.unitContent, sem.unitList, func() *widget.List {
 		return builders.CreateUnitList(builders.UnitListConfig{
 			UnitIDs:       unitIDs,
 			Manager:       sem.Queries.ECSManager,
-			ScreenWidth:   400,
-			ScreenHeight:  150,
+			ScreenWidth:   panelWidth,
+			ScreenHeight:  panelHeight,
 			WidthPercent:  1.0,
-			HeightPercent: 1.0,
+			HeightPercent: 0.50,
 		})
 	})
 }
