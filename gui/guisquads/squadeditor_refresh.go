@@ -114,25 +114,29 @@ func (sem *SquadEditorMode) refreshRosterList() {
 		return
 	}
 
-	entries := make([]string, 0)
-	for templateName := range roster.Units {
-		availableCount := roster.GetAvailableCount(templateName)
-		if availableCount > 0 {
-			entries = append(entries, fmt.Sprintf("%s (x%d)", templateName, availableCount))
-		}
+	unitDetails := roster.GetAvailableUnitDetails(sem.Queries.ECSManager)
+
+	entries := make([]interface{}, len(unitDetails))
+	for i, detail := range unitDetails {
+		entries[i] = detail
 	}
 
 	if len(entries) == 0 {
-		entries = append(entries, "No units available")
+		entries = []interface{}{squads.RosterUnitEntry{Name: "No units available"}}
 	}
 
 	sem.rosterList = sem.replaceListInContainer(sem.rosterContent, sem.rosterList, func() *widget.List {
-		return builders.CreateSimpleStringList(builders.SimpleStringListConfig{
-			Entries:       entries,
-			ScreenWidth:   400,
-			ScreenHeight:  200,
-			WidthPercent:  1.0,
-			HeightPercent: 1.0,
+		return builders.CreateListWithConfig(builders.ListConfig{
+			Entries:  entries,
+			MinWidth: 400,
+			MinHeight: 200,
+			EntryLabelFunc: func(e interface{}) string {
+				entry := e.(squads.RosterUnitEntry)
+				if entry.TemplateName == "" {
+					return entry.Name
+				}
+				return fmt.Sprintf("%s (%s)", entry.Name, entry.TemplateName)
+			},
 		})
 	})
 }

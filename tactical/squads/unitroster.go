@@ -178,6 +178,31 @@ func (ur *UnitRoster) GetUnitEntityForTemplate(unitType string, manager *common.
 	return 0
 }
 
+// RosterUnitEntry represents a single available unit for display in the roster list
+type RosterUnitEntry struct {
+	ID           ecs.EntityID
+	Name         string
+	TemplateName string
+}
+
+// GetAvailableUnitDetails returns individual entries for all available (not in squad) units.
+func (ur *UnitRoster) GetAvailableUnitDetails(manager *common.EntityManager) []RosterUnitEntry {
+	var results []RosterUnitEntry
+	for templateName, entry := range ur.Units {
+		for _, id := range entry.UnitEntities {
+			if !manager.HasComponent(id, SquadMemberComponent) {
+				name := common.GetEntityName(manager, id, "Unknown")
+				results = append(results, RosterUnitEntry{
+					ID:           id,
+					Name:         name,
+					TemplateName: templateName,
+				})
+			}
+		}
+	}
+	return results
+}
+
 // GetPlayerRoster retrieves player's unit roster from ECS
 // Returns nil if player has no roster component
 func GetPlayerRoster(playerID ecs.EntityID, manager *common.EntityManager) *UnitRoster {

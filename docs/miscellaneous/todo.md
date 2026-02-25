@@ -2,6 +2,14 @@ __________________________________________
 #
 # # # **IMPORTANT** # # # 
 
+# Bug Fixes
+
+- XP Awards seem to be odd. I.E, didivided by 10. Combat resolution grants 40 xp, but units only get 4 xp
+
+# GUI Updates
+
+- Squad Edit Mode requires me to select a unit from the panel on the right before Removing, Making it a leader, or viewing the unit. I also want to be able to access that by selecting the unit in the grid
+
 
 # Raid Package
 
@@ -18,7 +26,6 @@ __________________________________________
 
 - renderables not created for new squad
 
-- Untis not removed from roster after adding them to a squad
 
 - Explore the go fix command
 

@@ -91,26 +91,17 @@ func (sem *SquadEditorMode) onAddUnitFromRoster() {
 		return
 	}
 
-	// Parse template name from entry (format: "TemplateName (xN)")
-	entryStr, ok := selectedEntry.(string)
+	entry, ok := selectedEntry.(squads.RosterUnitEntry)
 	if !ok {
 		sem.SetStatus("Invalid roster selection")
 		return
 	}
-	if entryStr == "No units available" {
+	if entry.TemplateName == "" {
 		return
 	}
 
-	// Extract template name (everything before " (x")
-	templateName := entryStr
-	for i, c := range entryStr {
-		if c == ' ' && i+1 < len(entryStr) && entryStr[i+1] == '(' {
-			templateName = entryStr[:i]
-			break
-		}
-	}
-
 	currentSquadID := sem.currentSquadID()
+	templateName := entry.TemplateName
 
 	// Create and execute add unit command
 	cmd := squadcommands.NewAddUnitCommand(
