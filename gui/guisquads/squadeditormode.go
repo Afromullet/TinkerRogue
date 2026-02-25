@@ -109,8 +109,10 @@ func (sem *SquadEditorMode) Initialize(ctx *framework.UIContext) error {
 		return err
 	}
 
-	// Initialize sub-menu controller before building panels (panels register with it)
-	sem.subMenus = framework.NewSubMenuController()
+	// Initialize sub-menu controller before building panels (panels register with it).
+	// Pass RootContainer so hidden panels are fully removed from the widget tree,
+	// preventing their ScrollContainers from blocking input on overlapping panels.
+	sem.subMenus = framework.NewSubMenuController(sem.RootContainer)
 
 	// Build panels from registry
 	if err := sem.BuildPanels(
@@ -121,6 +123,11 @@ func (sem *SquadEditorMode) Initialize(ctx *framework.UIContext) error {
 	); err != nil {
 		return err
 	}
+
+	// Remove initially-hidden sub-menu panels from widget tree.
+	// BuildPanels adds all panels to RootContainer; CloseAll removes the
+	// sub-menu panels so they don't block input until explicitly shown.
+	sem.subMenus.CloseAll()
 
 	// Initialize widget references from registry
 	sem.initializeWidgetReferences()
