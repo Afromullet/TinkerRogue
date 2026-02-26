@@ -127,6 +127,12 @@ func (umm *UIModeManager) Update(deltaTime float64) error {
 	return nil
 }
 
+// OverlayRenderer is an optional interface for modes that need to draw
+// custom content on top of ebitenui widgets (after UI.Draw).
+type OverlayRenderer interface {
+	RenderOverlay(screen *ebiten.Image)
+}
+
 // Render renders the current mode
 func (umm *UIModeManager) Render(screen *ebiten.Image) {
 	if umm.currentMode != nil {
@@ -135,6 +141,11 @@ func (umm *UIModeManager) Render(screen *ebiten.Image) {
 
 		// Draw the ebitenui widgets
 		umm.currentMode.GetEbitenUI().Draw(screen)
+
+		// Post-UI overlay (cards, custom graphics on top of panel backgrounds)
+		if overlay, ok := umm.currentMode.(OverlayRenderer); ok {
+			overlay.RenderOverlay(screen)
+		}
 	}
 }
 

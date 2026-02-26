@@ -137,6 +137,9 @@ func (rm *RaidMode) autoStartRaid() error {
 
 // Update is called every frame.
 func (rm *RaidMode) Update(deltaTime float64) error {
+	if rm.state.CurrentPanel == PanelFloorMap && rm.floorPanel != nil {
+		rm.floorPanel.Update(deltaTime)
+	}
 	return nil
 }
 
@@ -158,8 +161,12 @@ func (rm *RaidMode) HandleInput(inputState *framework.InputState) bool {
 	return false
 }
 
-// Render draws the current raid panel.
+// Render draws pre-ebitenui content (nothing needed for raid mode).
 func (rm *RaidMode) Render(screen *ebiten.Image) {
+}
+
+// RenderOverlay draws floor map cards on top of the ebitenui panel background.
+func (rm *RaidMode) RenderOverlay(screen *ebiten.Image) {
 	switch rm.state.CurrentPanel {
 	case PanelFloorMap:
 		rm.floorPanel.Render(screen)

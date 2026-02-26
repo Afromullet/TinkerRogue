@@ -2,10 +2,9 @@ package guiraid
 
 import (
 	"fmt"
-	"strings"
 
-	"game_main/gui/builders"
 	"game_main/gui/framework"
+	"game_main/gui/specs"
 	"game_main/mind/raid"
 
 	"github.com/ebitenui/ebitenui/widget"
@@ -14,19 +13,21 @@ import (
 
 // FloorMapPanel controls the floor map display within the raid mode.
 type FloorMapPanel struct {
-	mode        *RaidMode
-	roomButtons []*widget.Button
+	mode     *RaidMode
+	renderer *FloorMapRenderer
 
 	// Cached widget references (populated once in initWidgets)
-	titleLabel    *widget.Text
-	roomListLabel *widget.Text
-	alertLabel    *widget.Text
-	retreatBtn    *widget.Button
+	titleLabel *widget.Text
+	alertLabel *widget.Text
+	retreatBtn *widget.Button
 }
 
 // NewFloorMapPanel creates a new floor map panel controller.
 func NewFloorMapPanel(mode *RaidMode) *FloorMapPanel {
-	fp := &FloorMapPanel{mode: mode}
+	fp := &FloorMapPanel{
+		mode:     mode,
+		renderer: NewFloorMapRenderer(),
+	}
 	fp.initWidgets()
 	fp.wireButtons()
 	return fp
@@ -35,7 +36,6 @@ func NewFloorMapPanel(mode *RaidMode) *FloorMapPanel {
 // initWidgets extracts widget references from the panel registry once.
 func (fp *FloorMapPanel) initWidgets() {
 	fp.titleLabel = framework.GetPanelWidget[*widget.Text](fp.mode.Panels, RaidPanelFloorMap, "titleLabel")
-	fp.roomListLabel = framework.GetPanelWidget[*widget.Text](fp.mode.Panels, RaidPanelFloorMap, "roomListLabel")
 	fp.alertLabel = framework.GetPanelWidget[*widget.Text](fp.mode.Panels, RaidPanelFloorMap, "alertLabel")
 	fp.retreatBtn = framework.GetPanelWidget[*widget.Button](fp.mode.Panels, RaidPanelFloorMap, "retreatBtn")
 }
@@ -80,76 +80,48 @@ func (fp *FloorMapPanel) Refresh(raidState *raid.RaidStateData) {
 		}
 	}
 
-	// Build room list text
+	// Compute card layout for the renderer
 	rooms := raid.GetAllRoomsForFloor(manager, raidState.CurrentFloor)
-	var lines []string
-	for _, room := range rooms {
-		status := "Locked"
-		if room.IsCleared {
-			status = "Cleared"
-		} else if room.IsAccessible {
-			status = "Accessible"
-		}
 
-		garrisonInfo := ""
-		if len(room.GarrisonSquadIDs) > 0 && !room.IsCleared {
-			garrisonInfo = fmt.Sprintf(" [%d squads]", len(room.GarrisonSquadIDs))
-		}
+	// Compute drawing area from screen dimensions minus space for title/alert/buttons
+	layout := fp.mode.Layout
+	panelW := int(float64(layout.ScreenWidth) * specs.RaidFloorMapWidth)
+	panelH := int(float64(layout.ScreenHeight) * specs.RaidFloorMapHeight)
+	panelX := (layout.ScreenWidth - panelW) / 2
+	panelY := (layout.ScreenHeight - panelH) / 2
 
-		line := fmt.Sprintf("  Room %d: %s (%s)%s",
-			room.NodeID, room.RoomType, status, garrisonInfo)
+	// Leave room for title+alert at top (~80px) and button row at bottom (~60px)
+	areaX := panelX + 20
+	areaY := panelY + 80
+	areaW := panelW - 40
+	areaH := panelH - 140
 
-		if room.OnCriticalPath {
-			line += " *"
-		}
+	fp.renderer.ComputeLayout(rooms, areaX, areaY, areaW, areaH)
 
-		lines = append(lines, line)
-	}
-
-	if fp.roomListLabel != nil {
-		fp.roomListLabel.Label = strings.Join(lines, "\n")
-	}
-
-	// Rebuild room buttons for accessible rooms
-	fp.rebuildRoomButtons(rooms)
+	// Sync selected room highlight
+	fp.renderer.SetSelected(fp.mode.state.SelectedRoomID)
 }
 
-// rebuildRoomButtons creates clickable buttons for accessible rooms.
-func (fp *FloorMapPanel) rebuildRoomButtons(rooms []*raid.RoomData) {
-	panel := fp.mode.Panels.Get(RaidPanelFloorMap)
-	if panel == nil {
-		return
-	}
-
-	// Remove old room buttons
-	for _, btn := range fp.roomButtons {
-		panel.Container.RemoveChild(btn)
-	}
-	fp.roomButtons = nil
-
-	// Add buttons for accessible, uncleared rooms
-	for _, room := range rooms {
-		if !room.IsAccessible || room.IsCleared {
-			continue
-		}
-
-		roomID := room.NodeID
-		roomType := room.RoomType
-
-		btn := builders.CreateButtonWithConfig(builders.ButtonConfig{
-			Text: fmt.Sprintf("Enter %s (Room %d)", roomType, roomID),
-			OnClick: func() {
-				fp.mode.OnRoomSelected(roomID)
-			},
-		})
-
-		panel.Container.AddChild(btn)
-		fp.roomButtons = append(fp.roomButtons, btn)
-	}
+// Update advances animations each frame.
+func (fp *FloorMapPanel) Update(deltaTime float64) {
+	fp.renderer.Update(deltaTime)
 }
 
 // HandleInput processes input for the floor map panel.
 func (fp *FloorMapPanel) HandleInput(inputState *framework.InputState) bool {
+	// Update hover state
+	hoveredID := fp.renderer.UpdateHover(inputState.MouseX, inputState.MouseY)
+	fp.mode.state.HoveredRoomID = hoveredID
+
+	// Click detection on accessible cards
+	if inputState.MouseJustPressed && inputState.MouseButton == ebiten.MouseButtonLeft {
+		room := fp.renderer.HitTest(inputState.MouseX, inputState.MouseY)
+		if room != nil && room.IsAccessible && !room.IsCleared {
+			fp.mode.OnRoomSelected(room.NodeID)
+			return true
+		}
+	}
+
 	// Number keys for quick room selection
 	accessibleRooms := raid.GetAccessibleRooms(fp.mode.Context.ECSManager,
 		fp.getCurrentFloor())
@@ -168,10 +140,9 @@ func (fp *FloorMapPanel) HandleInput(inputState *framework.InputState) bool {
 	return false
 }
 
-// Render draws floor map visuals (room graph overlay).
+// Render draws floor map visuals (card grid overlay).
 func (fp *FloorMapPanel) Render(screen *ebiten.Image) {
-	// The panel registry handles widget rendering via ebitenui.
-	// Custom rendering (room graph lines) could be added here later.
+	fp.renderer.Render(screen)
 }
 
 func (fp *FloorMapPanel) getCurrentFloor() int {

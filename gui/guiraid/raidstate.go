@@ -14,6 +14,7 @@ const (
 // RaidUIState holds UI-only state for the raid mode. No game logic.
 type RaidUIState struct {
 	SelectedRoomID int
+	HoveredRoomID  int
 	CurrentPanel   RaidPanel
 	ShowingSummary bool
 	SummaryData    *raid.RaidEncounterResult
@@ -23,6 +24,7 @@ type RaidUIState struct {
 func NewRaidUIState() *RaidUIState {
 	return &RaidUIState{
 		SelectedRoomID: -1,
+		HoveredRoomID:  -1,
 		CurrentPanel:   PanelFloorMap,
 	}
 }

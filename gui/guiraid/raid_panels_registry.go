@@ -46,19 +46,14 @@ func init() {
 			titleLabel := builders.CreateLargeLabel("Garrison Raid — Floor Map")
 			result.Container.AddChild(titleLabel)
 
-			// Room list label (updated dynamically)
-			roomListLabel := builders.CreateSmallLabel("Loading rooms...")
-			result.Container.AddChild(roomListLabel)
-
 			// Alert level label
 			alertLabel := builders.CreateSmallLabel("Alert: Unaware")
 			result.Container.AddChild(alertLabel)
 
 			// Store custom widgets for dynamic access
 			result.Custom = map[string]interface{}{
-				"titleLabel":    titleLabel,
-				"roomListLabel": roomListLabel,
-				"alertLabel":    alertLabel,
+				"titleLabel": titleLabel,
+				"alertLabel": alertLabel,
 			}
 
 			// Button row container
