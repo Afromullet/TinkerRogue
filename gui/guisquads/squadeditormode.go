@@ -30,8 +30,7 @@ type SquadEditorMode struct {
 	framework.BaseMode // Embed common mode infrastructure
 
 	// Squad navigation
-	currentSquadIndex int
-	allSquadIDs       []ecs.EntityID
+	squadNav *SquadSelector
 
 	// Interactive widget references (stored here for refresh/access)
 	// These are populated from panel registry after BuildPanels()
@@ -61,11 +60,6 @@ type SquadEditorMode struct {
 	selectedUnitID   ecs.EntityID // Currently selected unit in squad
 }
 
-// currentSquadID returns the entity ID of the currently selected squad.
-func (sem *SquadEditorMode) currentSquadID() ecs.EntityID {
-	return sem.allSquadIDs[sem.currentSquadIndex]
-}
-
 // GridCell represents a selected cell in the 3x3 grid
 type GridCell struct {
 	Row int
@@ -73,10 +67,8 @@ type GridCell struct {
 }
 
 func NewSquadEditorMode(modeManager *framework.UIModeManager) *SquadEditorMode {
-	mode := &SquadEditorMode{
-		currentSquadIndex: 0,
-		allSquadIDs:       make([]ecs.EntityID, 0),
-	}
+	mode := &SquadEditorMode{}
+	mode.squadNav = NewSquadSelector(nil, nil, nil)
 	mode.SetModeName("squad_editor")
 	mode.ModeManager = modeManager
 	mode.SetSelf(mode) // Required for panel registry building
@@ -239,7 +231,7 @@ func (sem *SquadEditorMode) Enter(fromMode framework.UIMode) error {
 
 	// Refresh all UI with index reset (entering mode starts at first squad)
 	sem.refreshAllUI(true)
-	if len(sem.allSquadIDs) == 0 {
+	if !sem.squadNav.HasSquads() {
 		sem.SetStatus("No squads available")
 	}
 
@@ -364,12 +356,7 @@ func (sem *SquadEditorMode) onCommanderSwitched(newCommanderID ecs.EntityID) {
 
 // onSquadSelected handles squad selection from the list
 func (sem *SquadEditorMode) onSquadSelected(squadID ecs.EntityID) {
-	// Find index of selected squad
-	for i, id := range sem.allSquadIDs {
-		if id == squadID {
-			sem.currentSquadIndex = i
-			sem.refreshCurrentSquad()
-			return
-		}
+	if sem.squadNav.SelectByID(squadID) {
+		sem.refreshCurrentSquad()
 	}
 }

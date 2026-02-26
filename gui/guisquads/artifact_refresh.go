@@ -40,7 +40,8 @@ func (am *ArtifactMode) replaceListInContainer(
 
 // refreshAllUI refreshes squad navigation and the active tab
 func (am *ArtifactMode) refreshAllUI() {
-	am.updateSquadCounter()
+	am.squadSelector.UpdateLabel()
+	am.squadSelector.UpdateButtons()
 	am.refreshActiveTab()
 }
 
@@ -162,7 +163,7 @@ func (am *ArtifactMode) refreshInventory() {
 
 // onInventoryEquipAction equips the selected available artifact on the current squad.
 func (am *ArtifactMode) onInventoryEquipAction() {
-	if len(am.allSquadIDs) == 0 {
+	if !am.squadSelector.HasSquads() {
 		am.SetStatus("No squad selected")
 		return
 	}
@@ -171,7 +172,7 @@ func (am *ArtifactMode) onInventoryEquipAction() {
 		return
 	}
 
-	squadID := am.currentSquadID()
+	squadID := am.squadSelector.CurrentID()
 	playerID := am.Context.PlayerData.PlayerEntityID
 	manager := am.Queries.ECSManager
 
@@ -259,11 +260,11 @@ func (am *ArtifactMode) refreshInventoryDetail(artifactID string) {
 // refreshEquipment rebuilds the equipment list for the current squad.
 // Shows only equipped artifacts with an Unequip button.
 func (am *ArtifactMode) refreshEquipment() {
-	if am.equipmentContent == nil || len(am.allSquadIDs) == 0 {
+	if am.equipmentContent == nil || !am.squadSelector.HasSquads() {
 		return
 	}
 
-	squadID := am.currentSquadID()
+	squadID := am.squadSelector.CurrentID()
 	squadName := squads.GetSquadName(squadID, am.Queries.ECSManager)
 
 	equipData := gear.GetEquipmentData(squadID, am.Queries.ECSManager)
@@ -362,12 +363,12 @@ func (am *ArtifactMode) refreshEquipmentDetail(artifactID string) {
 
 // onEquipmentAction handles the Unequip button click on the Equipment tab.
 func (am *ArtifactMode) onEquipmentAction() {
-	if len(am.allSquadIDs) == 0 || am.selectedEquippedArtifact == "" {
+	if !am.squadSelector.HasSquads() || am.selectedEquippedArtifact == "" {
 		am.SetStatus("Select an equipped artifact first")
 		return
 	}
 
-	squadID := am.currentSquadID()
+	squadID := am.squadSelector.CurrentID()
 	playerID := am.Context.PlayerData.PlayerEntityID
 	manager := am.Queries.ECSManager
 

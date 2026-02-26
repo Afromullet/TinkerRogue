@@ -1,14 +1,10 @@
 package guisquads
 
 import (
-	"fmt"
-
 	"game_main/gui/builders"
 	"game_main/gui/framework"
 	"game_main/gui/specs"
-	"game_main/tactical/squads"
 
-	"github.com/bytearena/ecs"
 	"github.com/ebitenui/ebitenui/widget"
 	"github.com/hajimehoshi/ebiten/v2"
 )
@@ -45,20 +41,12 @@ type ArtifactMode struct {
 	selectedEquippedArtifact  string
 
 	// Squad navigation
-	currentSquadIndex int
-	allSquadIDs       []ecs.EntityID
-
-	// Navigation widgets
-	squadCounterLabel *widget.Text
-	prevButton        *widget.Button
-	nextButton        *widget.Button
+	squadSelector *SquadSelector
 }
 
 func NewArtifactMode(modeManager *framework.UIModeManager) *ArtifactMode {
 	mode := &ArtifactMode{
-		currentSquadIndex: 0,
-		allSquadIDs:       make([]ecs.EntityID, 0),
-		activeTab:         "inventory",
+		activeTab: "inventory",
 	}
 	mode.SetModeName("artifact_manager")
 	mode.SetReturnMode("squad_editor")
@@ -96,9 +84,11 @@ func (am *ArtifactMode) Initialize(ctx *framework.UIContext) error {
 // initializeWidgetReferences populates mode fields from panel registry
 func (am *ArtifactMode) initializeWidgetReferences() {
 	// Squad selector navigation
-	am.prevButton = framework.GetPanelWidget[*widget.Button](am.Panels, ArtifactPanelSquadSelector, "prevButton")
-	am.nextButton = framework.GetPanelWidget[*widget.Button](am.Panels, ArtifactPanelSquadSelector, "nextButton")
-	am.squadCounterLabel = framework.GetPanelWidget[*widget.Text](am.Panels, ArtifactPanelSquadSelector, "counterLabel")
+	am.squadSelector = NewSquadSelector(
+		framework.GetPanelWidget[*widget.Text](am.Panels, ArtifactPanelSquadSelector, "counterLabel"),
+		framework.GetPanelWidget[*widget.Button](am.Panels, ArtifactPanelSquadSelector, "prevButton"),
+		framework.GetPanelWidget[*widget.Button](am.Panels, ArtifactPanelSquadSelector, "nextButton"),
+	)
 
 	// Inventory tab
 	am.inventoryContent = framework.GetPanelWidget[*widget.Container](am.Panels, ArtifactPanelContent, "inventoryContent")
@@ -116,11 +106,11 @@ func (am *ArtifactMode) initializeWidgetReferences() {
 }
 
 func (am *ArtifactMode) Enter(fromMode framework.UIMode) error {
-	am.syncSquadOrderFromRoster()
-	am.currentSquadIndex = 0
+	am.squadSelector.ResetIndex()
+	am.squadSelector.Load(am.Context.GetSquadRosterOwnerID(), am.Context.ECSManager)
 	am.activeTab = "inventory"
 
-	if len(am.allSquadIDs) == 0 {
+	if !am.squadSelector.HasSquads() {
 		am.SetStatus("No squads available")
 	} else {
 		am.refreshAllUI()
@@ -155,11 +145,11 @@ func (am *ArtifactMode) HandleInput(inputState *framework.InputState) bool {
 
 	// Left/Right arrows cycle squads
 	if inputState.KeysJustPressed[ebiten.KeyLeft] {
-		am.cycleSquad(-1)
+		am.squadSelector.Cycle(-1, am.refreshActiveTab)
 		return true
 	}
 	if inputState.KeysJustPressed[ebiten.KeyRight] {
-		am.cycleSquad(1)
+		am.squadSelector.Cycle(1, am.refreshActiveTab)
 		return true
 	}
 
@@ -174,51 +164,6 @@ func (am *ArtifactMode) HandleInput(inputState *framework.InputState) bool {
 	}
 
 	return false
-}
-
-// === Navigation ===
-
-func (am *ArtifactMode) currentSquadID() ecs.EntityID {
-	return am.allSquadIDs[am.currentSquadIndex]
-}
-
-func (am *ArtifactMode) cycleSquad(delta int) {
-	if len(am.allSquadIDs) == 0 {
-		return
-	}
-	am.currentSquadIndex = (am.currentSquadIndex + delta + len(am.allSquadIDs)) % len(am.allSquadIDs)
-	am.updateSquadCounter()
-	am.refreshActiveTab()
-}
-
-func (am *ArtifactMode) updateSquadCounter() {
-	if am.squadCounterLabel != nil && len(am.allSquadIDs) > 0 {
-		am.squadCounterLabel.Label = fmt.Sprintf("Squad %d of %d", am.currentSquadIndex+1, len(am.allSquadIDs))
-	}
-	am.updateNavigationButtons()
-}
-
-func (am *ArtifactMode) updateNavigationButtons() {
-	hasMultipleSquads := len(am.allSquadIDs) > 1
-	if am.prevButton != nil {
-		am.prevButton.GetWidget().Disabled = !hasMultipleSquads
-	}
-	if am.nextButton != nil {
-		am.nextButton.GetWidget().Disabled = !hasMultipleSquads
-	}
-}
-
-func (am *ArtifactMode) syncSquadOrderFromRoster() {
-	rosterOwnerID := am.Context.GetSquadRosterOwnerID()
-	manager := am.Context.ECSManager
-
-	roster := squads.GetPlayerSquadRoster(rosterOwnerID, manager)
-	if roster == nil {
-		return
-	}
-
-	am.allSquadIDs = make([]ecs.EntityID, len(roster.OwnedSquads))
-	copy(am.allSquadIDs, roster.OwnedSquads)
 }
 
 // === Tab Switching ===

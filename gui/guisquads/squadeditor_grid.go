@@ -14,12 +14,12 @@ import (
 
 // onGridCellClicked handles clicking a grid cell
 func (sem *SquadEditorMode) onGridCellClicked(row, col int) {
-	if len(sem.allSquadIDs) == 0 {
+	if !sem.squadNav.HasSquads() {
 		sem.SetStatus("No squad selected")
 		return
 	}
 
-	currentSquadID := sem.currentSquadID()
+	currentSquadID := sem.squadNav.CurrentID()
 
 	// Check if there's a unit at this position
 	unitIDs := squads.GetUnitIDsAtGridPosition(currentSquadID, row, col, sem.Queries.ECSManager)
@@ -52,7 +52,7 @@ func (sem *SquadEditorMode) moveSelectedUnitToCell(row, col int) {
 		return
 	}
 
-	currentSquadID := sem.currentSquadID()
+	currentSquadID := sem.squadNav.CurrentID()
 
 	// Create and execute move command
 	cmd := squadcommands.NewMoveUnitCommand(
@@ -101,9 +101,9 @@ func (sem *SquadEditorMode) loadSquadFormation(squadID ecs.EntityID) {
 
 // refreshAttackPattern updates the attack pattern grid if visible
 func (sem *SquadEditorMode) refreshAttackPattern() {
-	if !sem.showAttackPattern || len(sem.allSquadIDs) == 0 {
+	if !sem.showAttackPattern || !sem.squadNav.HasSquads() {
 		return
 	}
-	pattern := squads.ComputeGenericAttackPattern(sem.currentSquadID(), sem.Queries.ECSManager)
+	pattern := squads.ComputeGenericAttackPattern(sem.squadNav.CurrentID(), sem.Queries.ECSManager)
 	guiinspect.PopulateAttackGridCells(sem.attackGridCells, pattern)
 }

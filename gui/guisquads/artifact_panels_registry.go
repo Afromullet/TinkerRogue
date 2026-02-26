@@ -43,7 +43,7 @@ func init() {
 			prevBtn := builders.CreateButtonWithConfig(builders.ButtonConfig{
 				Text: "< Prev Squad",
 				OnClick: func() {
-					am.cycleSquad(-1)
+					am.squadSelector.Cycle(-1, am.refreshActiveTab)
 				},
 			})
 			result.Container.AddChild(prevBtn)
@@ -54,7 +54,7 @@ func init() {
 			nextBtn := builders.CreateButtonWithConfig(builders.ButtonConfig{
 				Text: "Next Squad >",
 				OnClick: func() {
-					am.cycleSquad(1)
+					am.squadSelector.Cycle(1, am.refreshActiveTab)
 				},
 			})
 			result.Container.AddChild(nextBtn)

@@ -50,16 +50,11 @@ func (sem *SquadEditorMode) onNewSquad() {
 			}
 
 			// Refresh UI
-			sem.syncSquadOrderFromRoster()
+			sem.squadNav.Load(sem.Context.GetSquadRosterOwnerID(), sem.Context.ECSManager)
 			sem.refreshSquadSelector()
 
-			// Auto-select the new squad (it's the last one added)
-			for i, id := range sem.allSquadIDs {
-				if id == squadID {
-					sem.currentSquadIndex = i
-					break
-				}
-			}
+			// Auto-select the new squad
+			sem.squadNav.SelectByID(squadID)
 
 			sem.refreshCurrentSquad()
 			sem.refreshRosterList()
@@ -75,7 +70,7 @@ func (sem *SquadEditorMode) onNewSquad() {
 
 // onAddUnitFromRoster adds a unit from the roster to the squad
 func (sem *SquadEditorMode) onAddUnitFromRoster() {
-	if len(sem.allSquadIDs) == 0 {
+	if !sem.squadNav.HasSquads() {
 		sem.SetStatus("No squad selected")
 		return
 	}
@@ -100,7 +95,7 @@ func (sem *SquadEditorMode) onAddUnitFromRoster() {
 		return
 	}
 
-	currentSquadID := sem.currentSquadID()
+	currentSquadID := sem.squadNav.CurrentID()
 	templateName := entry.TemplateName
 
 	// Create and execute add unit command
@@ -120,7 +115,7 @@ func (sem *SquadEditorMode) onAddUnitFromRoster() {
 // getSelectedUnitForAction validates that a squad and unit are selected, returning the UnitIdentity.
 // Returns false if any guard fails (status message is set automatically).
 func (sem *SquadEditorMode) getSelectedUnitForAction() (squads.UnitIdentity, bool) {
-	if len(sem.allSquadIDs) == 0 {
+	if !sem.squadNav.HasSquads() {
 		sem.SetStatus("No squad selected")
 		return squads.UnitIdentity{}, false
 	}
@@ -154,7 +149,7 @@ func (sem *SquadEditorMode) onRemoveUnit() {
 		return
 	}
 
-	currentSquadID := sem.currentSquadID()
+	currentSquadID := sem.squadNav.CurrentID()
 	dialogWidth, dialogHeight, centerX, centerY := sem.defaultDialogPosition()
 
 	// Show confirmation dialog
@@ -198,7 +193,7 @@ func (sem *SquadEditorMode) onMakeLeader() {
 		return
 	}
 
-	currentSquadID := sem.currentSquadID()
+	currentSquadID := sem.squadNav.CurrentID()
 	dialogWidth, dialogHeight, centerX, centerY := sem.defaultDialogPosition()
 
 	// Show confirmation dialog
@@ -246,12 +241,12 @@ func (sem *SquadEditorMode) onViewUnit() {
 
 // onRenameSquad prompts for a new name and executes RenameSquadCommand
 func (sem *SquadEditorMode) onRenameSquad() {
-	if len(sem.allSquadIDs) == 0 {
+	if !sem.squadNav.HasSquads() {
 		sem.SetStatus("No squad selected")
 		return
 	}
 
-	currentSquadID := sem.currentSquadID()
+	currentSquadID := sem.squadNav.CurrentID()
 	currentName := sem.Queries.SquadCache.GetSquadName(currentSquadID)
 
 	// Show text input dialog

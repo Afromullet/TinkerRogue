@@ -11,22 +11,6 @@ import (
 	"github.com/ebitenui/ebitenui/widget"
 )
 
-// syncSquadOrderFromRoster updates allSquadIDs from the roster (source of truth)
-func (sem *SquadEditorMode) syncSquadOrderFromRoster() {
-	rosterOwnerID := sem.Context.GetSquadRosterOwnerID()
-	manager := sem.Context.ECSManager
-
-	// Get roster from active squad roster owner (commander or player)
-	roster := squads.GetPlayerSquadRoster(rosterOwnerID, manager)
-	if roster == nil {
-		return
-	}
-
-	// Copy from roster to local state
-	sem.allSquadIDs = make([]ecs.EntityID, len(roster.OwnedSquads))
-	copy(sem.allSquadIDs, roster.OwnedSquads)
-}
-
 // UI refresh logic for SquadEditorMode
 
 // replaceListInContainer removes an old list widget from a container, creates a new one,
@@ -53,11 +37,11 @@ func (sem *SquadEditorMode) replaceListInContainer(
 
 // refreshCurrentSquad loads the current squad's data into the UI
 func (sem *SquadEditorMode) refreshCurrentSquad() {
-	if len(sem.allSquadIDs) == 0 {
+	if !sem.squadNav.HasSquads() {
 		return
 	}
 
-	currentSquadID := sem.currentSquadID()
+	currentSquadID := sem.squadNav.CurrentID()
 
 	// Load squad formation into grid
 	sem.loadSquadFormation(currentSquadID)
@@ -75,7 +59,7 @@ func (sem *SquadEditorMode) refreshSquadSelector() {
 	container := sem.GetPanelContainer(SquadEditorPanelSquadSelector)
 	sem.squadSelector = sem.replaceListInContainer(container, sem.squadSelector, func() *widget.List {
 		return builders.CreateSquadList(builders.SquadListConfig{
-			SquadIDs:      sem.allSquadIDs,
+			SquadIDs:      sem.squadNav.AllIDs,
 			Manager:       sem.Context.ECSManager,
 			ScreenWidth:   sem.Layout.ScreenWidth,
 			ScreenHeight:  sem.Layout.ScreenHeight,
@@ -145,16 +129,14 @@ func (sem *SquadEditorMode) refreshRosterList() {
 // If resetIndex is true, the squad index is reset to 0.
 // Otherwise, the index is clamped to valid range.
 func (sem *SquadEditorMode) refreshAllUI(resetIndex bool) {
-	sem.syncSquadOrderFromRoster()
+	sem.squadNav.Load(sem.Context.GetSquadRosterOwnerID(), sem.Context.ECSManager)
 
 	if resetIndex {
-		sem.currentSquadIndex = 0
-	} else if sem.currentSquadIndex >= len(sem.allSquadIDs) && len(sem.allSquadIDs) > 0 {
-		sem.currentSquadIndex = 0
+		sem.squadNav.ResetIndex()
 	}
 
 	sem.refreshSquadSelector()
-	if len(sem.allSquadIDs) > 0 {
+	if sem.squadNav.HasSquads() {
 		sem.refreshCurrentSquad()
 	}
 	sem.refreshRosterList()
