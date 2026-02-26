@@ -361,17 +361,18 @@ func init() {
 			result.Container.AddChild(artifactList)
 			result.Custom["artifactList"] = cachedList
 
-			// Detail text area
+			// Detail text area — use raw TextArea in container for proper rendering,
+			// wrap it for the controller's SetText convenience.
 			detailWidth := panelWidth - 20
 			detailHeight := int(float64(layout.ScreenHeight) * specs.CombatArtifactDetailHeight)
-			detailArea := builders.CreateCachedTextArea(builders.TextAreaConfig{
+			rawDetailArea := builders.CreateTextAreaWithConfig(builders.TextAreaConfig{
 				MinWidth:  detailWidth,
 				MinHeight: detailHeight,
 				FontColor: color.White,
 			})
-			detailArea.SetText("Select an artifact to view details")
-			result.Container.AddChild(detailArea)
-			result.Custom["detailArea"] = detailArea
+			rawDetailArea.SetText("Select an artifact to view details")
+			result.Container.AddChild(rawDetailArea)
+			result.Custom["detailArea"] = widgets.NewCachedTextAreaWrapper(rawDetailArea)
 
 			// Activate button
 			activateButton := builders.CreateButtonWithConfig(builders.ButtonConfig{
