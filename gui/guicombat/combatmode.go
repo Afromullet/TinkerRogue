@@ -9,7 +9,6 @@ import (
 	"game_main/gui/guiinspect"
 	"game_main/gui/guispells"
 	"game_main/gui/guisquads"
-	"game_main/gui/specs"
 	"game_main/gui/widgets"
 	"game_main/mind/encounter"
 	"game_main/tactical/combat/battlelog"
@@ -223,42 +222,20 @@ func (cm *CombatMode) buildPanelsFromRegistry() error {
 
 // buildContextActions creates bottom-left action buttons for combat actions
 func (cm *CombatMode) buildContextActions() *widget.Container {
-	spacing := int(float64(cm.Layout.ScreenWidth) * specs.PaddingTight)
-	bottomPad := int(float64(cm.Layout.ScreenHeight) * specs.BottomButtonOffset)
-	leftPad := int(float64(cm.Layout.ScreenWidth) * specs.PaddingStandard)
-	anchorLayout := builders.AnchorStartEnd(leftPad, bottomPad)
-
-	return builders.CreateButtonGroup(builders.ButtonGroupConfig{
-		Buttons: []builders.ButtonSpec{
-			{Text: "Attack (A)", OnClick: cm.handleAttackClick},
-			{Text: "Move (M)", OnClick: cm.handleMoveClick},
-			{Text: "Inspect (I)", OnClick: cm.handleInspectClick},
-			{Text: "Magic", OnClick: cm.subMenus.Toggle("magic")},
-		},
-		Direction:  widget.DirectionHorizontal,
-		Spacing:    spacing,
-		Padding:    builders.NewResponsiveHorizontalPadding(cm.Layout, specs.PaddingExtraSmall),
-		LayoutData: &anchorLayout,
+	return builders.CreateLeftActionBar(cm.Layout, []builders.ButtonSpec{
+		{Text: "Attack (A)", OnClick: cm.handleAttackClick},
+		{Text: "Move (M)", OnClick: cm.handleMoveClick},
+		{Text: "Inspect (I)", OnClick: cm.handleInspectClick},
+		{Text: "Magic", OnClick: cm.subMenus.Toggle("magic")},
 	})
 }
 
 // buildNavigationActions creates bottom-right action buttons for turn/mode navigation
 func (cm *CombatMode) buildNavigationActions() *widget.Container {
-	spacing := int(float64(cm.Layout.ScreenWidth) * specs.PaddingTight)
-	bottomPad := int(float64(cm.Layout.ScreenHeight) * specs.BottomButtonOffset)
-	rightPad := int(float64(cm.Layout.ScreenWidth) * specs.PaddingStandard)
-	anchorLayout := builders.AnchorEndEnd(rightPad, bottomPad)
-
-	return builders.CreateButtonGroup(builders.ButtonGroupConfig{
-		Buttons: []builders.ButtonSpec{
-			{Text: "Undo (Ctrl+Z)", OnClick: cm.handleUndoMove},
-			{Text: "End Turn (Space)", OnClick: cm.handleEndTurnClick},
-			{Text: "Debug", OnClick: cm.subMenus.Toggle("debug")},
-		},
-		Direction:  widget.DirectionHorizontal,
-		Spacing:    spacing,
-		Padding:    builders.NewResponsiveHorizontalPadding(cm.Layout, specs.PaddingExtraSmall),
-		LayoutData: &anchorLayout,
+	return builders.CreateRightActionBar(cm.Layout, []builders.ButtonSpec{
+		{Text: "Undo (Ctrl+Z)", OnClick: cm.handleUndoMove},
+		{Text: "End Turn (Space)", OnClick: cm.handleEndTurnClick},
+		{Text: "Debug", OnClick: cm.subMenus.Toggle("debug")},
 	})
 }
 

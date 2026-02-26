@@ -5,7 +5,6 @@ import (
 
 	"game_main/gui/builders"
 	"game_main/gui/framework"
-	"game_main/gui/specs"
 	"game_main/tactical/commander"
 
 	"github.com/bytearena/ecs"
@@ -160,21 +159,10 @@ func (sem *SquadEditorMode) initializeWidgetReferences() {
 
 // buildContextActions creates bottom-left action buttons for current squad context
 func (sem *SquadEditorMode) buildContextActions() *widget.Container {
-	spacing := int(float64(sem.Layout.ScreenWidth) * specs.PaddingTight)
-	bottomPad := int(float64(sem.Layout.ScreenHeight) * specs.BottomButtonOffset)
-	leftPad := int(float64(sem.Layout.ScreenWidth) * specs.PaddingStandard)
-	anchorLayout := builders.AnchorStartEnd(leftPad, bottomPad)
-
-	return builders.CreateButtonGroup(builders.ButtonGroupConfig{
-		Buttons: []builders.ButtonSpec{
-			{Text: "Units (U)", OnClick: sem.subMenus.Toggle("units")},
-			{Text: "Roster (R)", OnClick: sem.subMenus.Toggle("roster")},
-			{Text: "Atk Pattern (V)", OnClick: func() { sem.toggleAttackPattern() }},
-		},
-		Direction:  widget.DirectionHorizontal,
-		Spacing:    spacing,
-		Padding:    builders.NewResponsiveHorizontalPadding(sem.Layout, specs.PaddingExtraSmall),
-		LayoutData: &anchorLayout,
+	return builders.CreateLeftActionBar(sem.Layout, []builders.ButtonSpec{
+		{Text: "Units (U)", OnClick: sem.subMenus.Toggle("units")},
+		{Text: "Roster (R)", OnClick: sem.subMenus.Toggle("roster")},
+		{Text: "Atk Pattern (V)", OnClick: func() { sem.toggleAttackPattern() }},
 	})
 }
 
@@ -185,39 +173,28 @@ func (sem *SquadEditorMode) buildNavigationActions() *widget.Container {
 		closeText = "Overworld (ESC)"
 	}
 
-	spacing := int(float64(sem.Layout.ScreenWidth) * specs.PaddingTight)
-	bottomPad := int(float64(sem.Layout.ScreenHeight) * specs.BottomButtonOffset)
-	rightPad := int(float64(sem.Layout.ScreenWidth) * specs.PaddingStandard)
-	anchorLayout := builders.AnchorEndEnd(rightPad, bottomPad)
-
-	return builders.CreateButtonGroup(builders.ButtonGroupConfig{
-		Buttons: []builders.ButtonSpec{
-			{Text: "Buy Units (P)", OnClick: func() {
-				if mode, exists := sem.ModeManager.GetMode("unit_purchase"); exists {
-					sem.ModeManager.RequestTransition(mode, "Buy Units clicked")
+	return builders.CreateRightActionBar(sem.Layout, []builders.ButtonSpec{
+		{Text: "Buy Units (P)", OnClick: func() {
+			if mode, exists := sem.ModeManager.GetMode("unit_purchase"); exists {
+				sem.ModeManager.RequestTransition(mode, "Buy Units clicked")
+			}
+		}},
+		{Text: "Artifacts", OnClick: func() {
+			if mode, exists := sem.ModeManager.GetMode("artifact_manager"); exists {
+				sem.ModeManager.RequestTransition(mode, "Artifacts clicked")
+			}
+		}},
+		{Text: closeText, OnClick: func() {
+			if returnMode, exists := sem.ModeManager.GetMode(sem.GetReturnMode()); exists {
+				sem.ModeManager.RequestTransition(returnMode, "Close button pressed")
+				return
+			}
+			if sem.Context.ModeCoordinator != nil {
+				if err := sem.Context.ModeCoordinator.EnterTactical("exploration"); err != nil {
+					fmt.Printf("ERROR: Failed to enter tactical context: %v\n", err)
 				}
-			}},
-			{Text: "Artifacts", OnClick: func() {
-				if mode, exists := sem.ModeManager.GetMode("artifact_manager"); exists {
-					sem.ModeManager.RequestTransition(mode, "Artifacts clicked")
-				}
-			}},
-			{Text: closeText, OnClick: func() {
-				if returnMode, exists := sem.ModeManager.GetMode(sem.GetReturnMode()); exists {
-					sem.ModeManager.RequestTransition(returnMode, "Close button pressed")
-					return
-				}
-				if sem.Context.ModeCoordinator != nil {
-					if err := sem.Context.ModeCoordinator.EnterTactical("exploration"); err != nil {
-						fmt.Printf("ERROR: Failed to enter tactical context: %v\n", err)
-					}
-				}
-			}},
-		},
-		Direction:  widget.DirectionHorizontal,
-		Spacing:    spacing,
-		Padding:    builders.NewResponsiveHorizontalPadding(sem.Layout, specs.PaddingExtraSmall),
-		LayoutData: &anchorLayout,
+			}
+		}},
 	})
 }
 

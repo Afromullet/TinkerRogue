@@ -134,14 +134,6 @@ func init() {
 		Content: framework.ContentCustom,
 		OnCreate: func(result *framework.PanelResult, mode framework.UIMode) error {
 			em := mode.(*ExplorationMode)
-			layout := em.Layout
-
-			// Calculate responsive spacing
-			spacing := int(float64(layout.ScreenWidth) * specs.PaddingTight)
-
-			// Create button group using builders.CreateButtonGroup with LayoutData
-			bottomPad := int(float64(layout.ScreenHeight) * specs.BottomButtonOffset)
-			anchorLayout := builders.AnchorCenterEnd(bottomPad)
 
 			// Detect whether squad_editor is in the current (tactical) mode manager.
 			// When it is (roguelike mode), only show "Squad" and route within tactical context.
@@ -203,15 +195,7 @@ func init() {
 				})
 			}
 
-			buttonContainer := builders.CreateButtonGroup(builders.ButtonGroupConfig{
-				Buttons:    buttons,
-				Direction:  widget.DirectionHorizontal,
-				Spacing:    spacing,
-				Padding:    builders.NewResponsiveHorizontalPadding(layout, specs.PaddingExtraSmall),
-				LayoutData: &anchorLayout,
-			})
-
-			result.Container = buttonContainer
+			result.Container = builders.CreateBottomActionBar(em.Layout, buttons)
 
 			return nil
 		},

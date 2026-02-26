@@ -32,7 +32,7 @@ Responsive layout constants as percentages (`PanelWidthStandard = 0.2`, `Padding
 
 ## Issues
 
-### 1. Squad Navigation Duplication
+### 1. Squad Navigation Duplication - Resolved
 
 **Priority: Medium** | **Effort: Low-Medium**
 

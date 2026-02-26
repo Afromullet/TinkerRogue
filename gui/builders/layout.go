@@ -241,3 +241,35 @@ func CreateBottomActionBar(layout *specs.LayoutConfig, buttons []ButtonSpec) *wi
 		LayoutData: &anchorLayout,
 	})
 }
+
+// CreateLeftActionBar creates a button group anchored at bottom-left.
+func CreateLeftActionBar(layout *specs.LayoutConfig, buttons []ButtonSpec) *widget.Container {
+	spacing := int(float64(layout.ScreenWidth) * specs.PaddingTight)
+	bottomPad := int(float64(layout.ScreenHeight) * specs.BottomButtonOffset)
+	leftPad := int(float64(layout.ScreenWidth) * specs.PaddingStandard)
+	anchorLayout := AnchorStartEnd(leftPad, bottomPad)
+
+	return CreateButtonGroup(ButtonGroupConfig{
+		Buttons:    buttons,
+		Direction:  widget.DirectionHorizontal,
+		Spacing:    spacing,
+		Padding:    NewResponsiveHorizontalPadding(layout, specs.PaddingExtraSmall),
+		LayoutData: &anchorLayout,
+	})
+}
+
+// CreateRightActionBar creates a button group anchored at bottom-right.
+func CreateRightActionBar(layout *specs.LayoutConfig, buttons []ButtonSpec) *widget.Container {
+	spacing := int(float64(layout.ScreenWidth) * specs.PaddingTight)
+	bottomPad := int(float64(layout.ScreenHeight) * specs.BottomButtonOffset)
+	rightPad := int(float64(layout.ScreenWidth) * specs.PaddingStandard)
+	anchorLayout := AnchorEndEnd(rightPad, bottomPad)
+
+	return CreateButtonGroup(ButtonGroupConfig{
+		Buttons:    buttons,
+		Direction:  widget.DirectionHorizontal,
+		Spacing:    spacing,
+		Padding:    NewResponsiveHorizontalPadding(layout, specs.PaddingExtraSmall),
+		LayoutData: &anchorLayout,
+	})
+}
