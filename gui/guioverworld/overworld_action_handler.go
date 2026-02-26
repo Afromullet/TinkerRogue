@@ -103,12 +103,7 @@ func (ah *OverworldActionHandler) EngageThreat(nodeID ecs.EntityID) {
 		return
 	}
 
-	cmdEntity := ah.deps.Manager.FindEntityByID(cmdID)
-	if cmdEntity == nil {
-		ah.deps.LogEvent("ERROR: Commander entity not found")
-		return
-	}
-	cmdPos := common.GetComponentType[*coords.LogicalPosition](cmdEntity, common.PositionComponent)
+	cmdPos := ah.deps.Queries.GetEntityPosition(cmdID)
 	if cmdPos == nil {
 		ah.deps.LogEvent("ERROR: Commander has no position")
 		return
@@ -123,19 +118,13 @@ func (ah *OverworldActionHandler) EngageThreat(nodeID ecs.EntityID) {
 		return
 	}
 
-	threatEntity := ah.deps.Manager.FindEntityByID(nodeID)
-	if threatEntity == nil {
-		ah.deps.LogEvent("ERROR: Threat entity not found")
-		return
-	}
-
-	threatData := common.GetComponentType[*core.OverworldNodeData](threatEntity, core.OverworldNodeComponent)
+	threatData := ah.deps.Queries.GetNodeData(nodeID)
 	if threatData == nil {
 		ah.deps.LogEvent("ERROR: Invalid threat entity")
 		return
 	}
 
-	threatPos := common.GetComponentType[*coords.LogicalPosition](threatEntity, common.PositionComponent)
+	threatPos := ah.deps.Queries.GetEntityPosition(nodeID)
 	if threatPos == nil {
 		ah.deps.LogEvent("ERROR: Threat has no position")
 		return
@@ -147,6 +136,11 @@ func (ah *OverworldActionHandler) EngageThreat(nodeID ecs.EntityID) {
 		return
 	}
 
+	threatEntity := ah.deps.Manager.FindEntityByID(nodeID)
+	if threatEntity == nil {
+		ah.deps.LogEvent("ERROR: Threat entity not found")
+		return
+	}
 	encounterID, err := encounter.TriggerCombatFromThreat(ah.deps.Manager, threatEntity)
 	if err != nil {
 		ah.deps.LogEvent(fmt.Sprintf("ERROR: Failed to create encounter: %v", err))
@@ -222,12 +216,7 @@ func (ah *OverworldActionHandler) StartRandomEncounter() {
 		return
 	}
 
-	cmdEntity := ah.deps.Manager.FindEntityByID(cmdID)
-	if cmdEntity == nil {
-		ah.deps.LogEvent("ERROR: Commander entity not found")
-		return
-	}
-	cmdPos := common.GetComponentType[*coords.LogicalPosition](cmdEntity, common.PositionComponent)
+	cmdPos := ah.deps.Queries.GetEntityPosition(cmdID)
 	if cmdPos == nil {
 		ah.deps.LogEvent("ERROR: Commander has no position")
 		return
@@ -302,12 +291,7 @@ func (ah *OverworldActionHandler) RecruitCommander() {
 	}
 
 	// Get selected commander's position
-	cmdEntity := ah.deps.Manager.FindEntityByID(cmdID)
-	if cmdEntity == nil {
-		ah.deps.LogEvent("ERROR: Commander entity not found")
-		return
-	}
-	cmdPos := common.GetComponentType[*coords.LogicalPosition](cmdEntity, common.PositionComponent)
+	cmdPos := ah.deps.Queries.GetEntityPosition(cmdID)
 	if cmdPos == nil {
 		ah.deps.LogEvent("ERROR: Commander has no position")
 		return
@@ -319,12 +303,7 @@ func (ah *OverworldActionHandler) RecruitCommander() {
 		ah.deps.LogEvent("Must be at a settlement or fortress to recruit")
 		return
 	}
-	nodeEntity := ah.deps.Manager.FindEntityByID(nodeID)
-	if nodeEntity == nil {
-		ah.deps.LogEvent("ERROR: Node entity not found")
-		return
-	}
-	nodeData := common.GetComponentType[*core.OverworldNodeData](nodeEntity, core.OverworldNodeComponent)
+	nodeData := ah.deps.Queries.GetNodeData(nodeID)
 	if nodeData == nil || !core.IsFriendlyOwner(nodeData.OwnerID) {
 		ah.deps.LogEvent("Must be at a player-owned settlement or fortress to recruit")
 		return

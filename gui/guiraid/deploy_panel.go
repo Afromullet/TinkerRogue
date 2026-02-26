@@ -4,10 +4,9 @@ import (
 	"fmt"
 	"strings"
 
-	"game_main/common"
 	"game_main/gui/framework"
-	"game_main/mind/raid"
 	"game_main/mind/combatpipeline"
+	"game_main/mind/raid"
 	"game_main/tactical/squads"
 
 	"github.com/ebitenui/ebitenui/widget"
@@ -85,12 +84,10 @@ func (dp *DeployPanel) Refresh(raidState *raid.RaidStateData, room *raid.RoomDat
 	}
 
 	// Build squad list
+	queries := dp.mode.Queries
 	var lines []string
 	for _, squadID := range raidState.PlayerSquadIDs {
-		squadData := common.GetComponentTypeByID[*squads.SquadData](manager, squadID, squads.SquadComponent)
-		if squadData == nil {
-			continue
-		}
+		squadName := queries.GetSquadName(squadID)
 
 		aliveCount := combatpipeline.CountLivingUnitsInSquad(manager, squadID)
 		totalCount := len(squads.GetUnitIDsInSquad(squadID, manager))
@@ -101,7 +98,7 @@ func (dp *DeployPanel) Refresh(raidState *raid.RaidStateData, room *raid.RoomDat
 		}
 
 		line := fmt.Sprintf("  %s — HP: %d%% | Units: %d/%d | %s",
-			squadData.Name,
+			squadName,
 			int(squads.GetSquadHealthPercent(squadID, manager)*100),
 			aliveCount,
 			totalCount,

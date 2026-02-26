@@ -88,14 +88,13 @@ func (uvm *UnitViewMode) refreshUnitDisplay() {
 
 	// Unit type
 	unitType := "Unknown"
-	if utData := common.GetComponentTypeByID[*squads.UnitTypeData](manager, unitID, squads.UnitTypeComponent); utData != nil {
+	if utData := uvm.Queries.GetUnitTypeData(unitID); utData != nil {
 		unitType = utData.UnitType
 	}
 
 	// Attributes
 	attrText := "  (no attributes)"
-	if attrComp, ok := manager.GetComponent(unitID, common.AttributeComponent); ok {
-		attr := attrComp.(*common.Attributes)
+	if attr := uvm.Queries.GetUnitAttributes(unitID); attr != nil {
 		attrText = fmt.Sprintf(
 			"  Strength:   %d\n  Dexterity:  %d\n  Magic:      %d\n  Leadership: %d\n  Armor:      %d\n  Weapon:     %d\n  HP:         %d / %d",
 			attr.Strength, attr.Dexterity, attr.Magic,

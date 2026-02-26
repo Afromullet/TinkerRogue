@@ -76,23 +76,19 @@ func (sem *SquadEditorMode) loadSquadFormation(squadID ecs.EntityID) {
 	unitIDs := sem.Queries.SquadCache.GetUnitIDsInSquad(squadID)
 
 	for _, unitID := range unitIDs {
-		gridPos := common.GetComponentTypeByID[*squads.GridPositionData](
-			sem.Queries.ECSManager, unitID, squads.GridPositionComponent)
-		if gridPos == nil {
+		info := sem.Queries.GetUnitGridInfo(unitID)
+		if info == nil {
 			continue
 		}
 
-		nameStr := common.GetEntityName(sem.Queries.ECSManager, unitID, "Unit")
-
-		// Check if leader
-		isLeader := sem.Queries.ECSManager.HasComponent(unitID, squads.LeaderComponent)
-		if isLeader {
+		nameStr := info.Name
+		if info.IsLeader {
 			nameStr = "[L] " + nameStr
 		}
 
 		// Update grid cell
-		if gridPos.AnchorRow >= 0 && gridPos.AnchorRow < 3 && gridPos.AnchorCol >= 0 && gridPos.AnchorCol < 3 {
-			sem.gridCells[gridPos.AnchorRow][gridPos.AnchorCol].Text().Label = nameStr
+		if info.AnchorRow >= 0 && info.AnchorRow < 3 && info.AnchorCol >= 0 && info.AnchorCol < 3 {
+			sem.gridCells[info.AnchorRow][info.AnchorCol].Text().Label = nameStr
 		}
 	}
 

@@ -3,7 +3,6 @@ package guioverworld
 import (
 	"fmt"
 
-	"game_main/common"
 	"game_main/gui/builders"
 	"game_main/gui/framework"
 	"game_main/overworld/core"
@@ -264,7 +263,7 @@ func (ih *OverworldInputHandler) handleGarrison() {
 		return
 	}
 
-	nodeData := common.GetComponentType[*core.OverworldNodeData](nodeEntity, core.OverworldNodeComponent)
+	nodeData := ih.deps.Queries.GetNodeDataFromEntity(nodeEntity)
 	if nodeData == nil {
 		ih.deps.LogEvent("ERROR: Selected entity is not an overworld node")
 		return

@@ -4,23 +4,23 @@ import (
 	"fmt"
 
 	"game_main/common"
+	"game_main/gui/framework"
 	"game_main/overworld/core"
 	"game_main/overworld/garrison"
 	"game_main/tactical/squads"
-	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"
 )
 
 // FormatThreatInfo returns formatted string for threat/node details.
-// Uses unified OverworldNodeData.
-func FormatThreatInfo(threat *ecs.Entity, manager *common.EntityManager) string {
-	if threat == nil {
+// Uses GUIQueries to access node data and position.
+func FormatThreatInfo(nodeID ecs.EntityID, queries *framework.GUIQueries, manager *common.EntityManager) string {
+	if nodeID == 0 {
 		return "Select a threat to view details"
 	}
 
-	data := common.GetComponentType[*core.OverworldNodeData](threat, core.OverworldNodeComponent)
-	pos := common.GetComponentType[*coords.LogicalPosition](threat, common.PositionComponent)
+	data := queries.GetNodeData(nodeID)
+	pos := queries.GetEntityPosition(nodeID)
 
 	if data == nil {
 		return "Invalid node"
@@ -59,7 +59,6 @@ func FormatThreatInfo(threat *ecs.Entity, manager *common.EntityManager) string 
 
 	// Show garrison info for non-threat nodes
 	garrisonInfo := ""
-	nodeID := threat.GetID()
 	garrisonData := garrison.GetGarrisonAtNode(manager, nodeID)
 	if garrisonData != nil && len(garrisonData.SquadIDs) > 0 {
 		garrisonInfo = fmt.Sprintf("\nGarrison: %d squad(s)", len(garrisonData.SquadIDs))

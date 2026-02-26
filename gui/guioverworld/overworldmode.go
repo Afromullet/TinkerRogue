@@ -106,6 +106,7 @@ func (om *OverworldMode) Initialize(ctx *framework.UIContext) error {
 		State:             om.state,
 		Manager:           ctx.ECSManager,
 		PlayerData:        ctx.PlayerData,
+		Queries:           ctx.Queries,
 		EncounterService:  om.encounterService,
 		Renderer:          om.renderer,
 		ModeManager:       om.ModeManager,
@@ -229,8 +230,7 @@ func (om *OverworldMode) refreshThreatInfo() {
 		return
 	}
 
-	nodeEntity := om.Context.ECSManager.FindEntityByID(om.state.SelectedNodeID)
-	infoText := FormatThreatInfo(nodeEntity, om.Context.ECSManager)
+	infoText := FormatThreatInfo(om.state.SelectedNodeID, om.Queries, om.Context.ECSManager)
 	om.threatInfoText.SetText(infoText)
 }
 

@@ -79,8 +79,8 @@ func (r *OverworldRenderer) renderOverworldMap(screen *ebiten.Image) {
 func (r *OverworldRenderer) renderNodes(screen *ebiten.Image) {
 	for _, result := range core.OverworldNodeView.Get() {
 		entity := result.Entity
-		pos := common.GetComponentType[*coords.LogicalPosition](entity, common.PositionComponent)
-		data := common.GetComponentType[*core.OverworldNodeData](entity, core.OverworldNodeComponent)
+		pos := r.context.Queries.GetEntityPositionFromEntity(entity)
+		data := r.context.Queries.GetNodeDataFromEntity(entity)
 
 		if pos == nil || data == nil {
 			continue
@@ -124,9 +124,9 @@ func (r *OverworldRenderer) renderNodes(screen *ebiten.Image) {
 func (r *OverworldRenderer) renderInfluenceZones(screen *ebiten.Image) {
 	for _, result := range core.OverworldNodeView.Get() {
 		entity := result.Entity
-		pos := common.GetComponentType[*coords.LogicalPosition](entity, common.PositionComponent)
-		influenceData := common.GetComponentType[*core.InfluenceData](entity, core.InfluenceComponent)
-		nodeData := common.GetComponentType[*core.OverworldNodeData](entity, core.OverworldNodeComponent)
+		pos := r.context.Queries.GetEntityPositionFromEntity(entity)
+		influenceData := r.context.Queries.GetInfluenceDataFromEntity(entity)
+		nodeData := r.context.Queries.GetNodeDataFromEntity(entity)
 
 		if pos == nil || influenceData == nil || nodeData == nil {
 			continue
@@ -183,12 +183,12 @@ func (r *OverworldRenderer) getCommanderColor(commanderID ecs.EntityID) color.RG
 func (r *OverworldRenderer) renderCommanders(screen *ebiten.Image) {
 	for _, result := range commander.CommanderView.Get() {
 		entity := result.Entity
-		pos := common.GetComponentType[*coords.LogicalPosition](entity, common.PositionComponent)
+		pos := r.context.Queries.GetEntityPositionFromEntity(entity)
 		if pos == nil {
 			continue
 		}
 
-		renderable := common.GetComponentType[*rendering.Renderable](entity, rendering.RenderableComponent)
+		renderable := r.context.Queries.GetRenderableFromEntity(entity)
 		if renderable == nil || renderable.Image == nil || !renderable.Visible {
 			continue
 		}
@@ -235,13 +235,10 @@ func (r *OverworldRenderer) GetCommanderAtPosition(screenX, screenY int) ecs.Ent
 // renderSelectionHighlight draws a highlight around the selected node.
 // Uses unified OverworldNodeData.
 func (r *OverworldRenderer) renderSelectionHighlight(screen *ebiten.Image) {
-	selected := r.manager.FindEntityByID(r.state.SelectedNodeID)
-	if selected == nil {
-		return
-	}
+	nodeID := r.state.SelectedNodeID
 
-	pos := common.GetComponentType[*coords.LogicalPosition](selected, common.PositionComponent)
-	data := common.GetComponentType[*core.OverworldNodeData](selected, core.OverworldNodeComponent)
+	pos := r.context.Queries.GetEntityPosition(nodeID)
+	data := r.context.Queries.GetNodeData(nodeID)
 
 	if pos == nil || data == nil {
 		return

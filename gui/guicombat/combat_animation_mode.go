@@ -4,7 +4,6 @@ import (
 	"image/color"
 	"math"
 
-	"game_main/common"
 	"game_main/gui/framework"
 	"game_main/tactical/combat"
 	"game_main/tactical/squads"
@@ -175,9 +174,7 @@ func (cam *CombatAnimationMode) computeDefenderColorLists(
 
 	for _, attackerID := range attackingUnits {
 		// Get this attacker's target cells
-		targetRowData := common.GetComponentTypeByID[*squads.TargetRowData](
-			cam.Queries.ECSManager, attackerID, squads.TargetRowComponent,
-		)
+		targetRowData := cam.Queries.GetTargetRowData(attackerID)
 		if targetRowData == nil {
 			continue
 		}

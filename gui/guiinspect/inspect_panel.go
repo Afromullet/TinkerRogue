@@ -2,7 +2,6 @@ package guiinspect
 
 import (
 	"fmt"
-	"game_main/common"
 	"game_main/gui/builders"
 	"game_main/gui/framework"
 	"game_main/gui/specs"
@@ -81,11 +80,13 @@ func (ip *InspectPanelController) PopulateGrid(squadID ecs.EntityID) {
 		return
 	}
 
-	manager := ip.queries.ECSManager
-
 	// Set squad name in title
-	squadName := common.GetEntityName(manager, squadID, "Squad")
-	ip.squadNameLabel.Label = squadName
+	squadInfo := ip.queries.GetSquadInfo(squadID)
+	if squadInfo != nil {
+		ip.squadNameLabel.Label = squadInfo.Name
+	} else {
+		ip.squadNameLabel.Label = "Squad"
+	}
 
 	// Clear all grid cells
 	ip.ClearGrid()
@@ -94,35 +95,29 @@ func (ip *InspectPanelController) PopulateGrid(squadID ecs.EntityID) {
 	unitIDs := ip.queries.SquadCache.GetUnitIDsInSquad(squadID)
 
 	for _, unitID := range unitIDs {
-		gridPos := common.GetComponentTypeByID[*squads.GridPositionData](
-			manager, unitID, squads.GridPositionComponent)
-		if gridPos == nil {
+		info := ip.queries.GetUnitGridInfo(unitID)
+		if info == nil {
 			continue
 		}
 
-		nameStr := common.GetEntityName(manager, unitID, "Unit")
-		isLeader := manager.HasComponent(unitID, squads.LeaderComponent)
-
-		// Get health
-		attrs := common.GetComponentTypeByID[*common.Attributes](
-			manager, unitID, common.AttributeComponent)
+		nameStr := info.Name
 
 		var cellText string
-		if attrs != nil && attrs.CurrentHealth <= 0 {
+		if !info.IsAlive {
 			cellText = fmt.Sprintf("%s\n[DEAD]", nameStr)
 		} else {
-			if isLeader {
+			if info.IsLeader {
 				nameStr = "[L] " + nameStr
 			}
-			if attrs != nil {
-				cellText = fmt.Sprintf("%s\n%d/%d HP", nameStr, attrs.CurrentHealth, attrs.MaxHealth)
+			if info.MaxHP > 0 {
+				cellText = fmt.Sprintf("%s\n%d/%d HP", nameStr, info.CurrentHP, info.MaxHP)
 			} else {
 				cellText = nameStr
 			}
 		}
 
-		if gridPos.AnchorRow >= 0 && gridPos.AnchorRow < 3 && gridPos.AnchorCol >= 0 && gridPos.AnchorCol < 3 {
-			ip.gridCells[gridPos.AnchorRow][gridPos.AnchorCol].Text().Label = cellText
+		if info.AnchorRow >= 0 && info.AnchorRow < 3 && info.AnchorCol >= 0 && info.AnchorCol < 3 {
+			ip.gridCells[info.AnchorRow][info.AnchorCol].Text().Label = cellText
 		}
 	}
 

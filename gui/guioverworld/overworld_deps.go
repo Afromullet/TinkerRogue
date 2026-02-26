@@ -13,6 +13,7 @@ type OverworldModeDeps struct {
 	State             *framework.OverworldState
 	Manager           *common.EntityManager
 	PlayerData        *common.PlayerData
+	Queries           *framework.GUIQueries
 	EncounterService  *encounter.EncounterService
 	Renderer          *OverworldRenderer
 	ModeManager       *framework.UIModeManager

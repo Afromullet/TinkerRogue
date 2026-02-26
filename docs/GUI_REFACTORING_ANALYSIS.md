@@ -48,7 +48,7 @@ Meanwhile, `CommanderSelector` in `commanderselector.go` already implements the 
 
 ---
 
-### 2. Action Bar Duplication
+### 2. Action Bar Duplication - Resolved
 
 **Priority: Medium** | **Effort: Low**
 
@@ -91,7 +91,7 @@ Replace hardcoded values incrementally. The outlier values (2, 8, 40) can stay a
 
 ---
 
-### 4. Direct ECS Access in GUI Layer
+### 4. Direct ECS Access in GUI Layer - Resolved
 
 **Priority: Low-Medium** | **Effort: Medium**
 
