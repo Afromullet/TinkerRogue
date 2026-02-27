@@ -33,6 +33,18 @@ type UnitStats struct {
 	DmgTaken        int
 	Kills           int
 	Deaths          int
+	HealingDone     int
+	HealingReceived int
+}
+
+// HealRow represents a parsed row from the heal section of combat_balance_report CSV.
+type HealRow struct {
+	Healer         string
+	Target         string
+	TotalHeals     int
+	TotalHealing   int
+	AvgHealPerAction float64
+	BattlesSampled int
 }
 
 // CompressedMatchup merges Regular + Counterattack rows for a single attacker-defender pair.

@@ -37,14 +37,14 @@ func main() {
 	}
 
 	// Load CSV
-	rows, err := LoadCSV(inputFile)
+	rows, healRows, err := LoadCSV(inputFile)
 	if err != nil {
 		log.Fatalf("Error loading CSV: %v", err)
 	}
-	fmt.Printf("Loaded %d rows from %s\n", len(rows), inputFile)
+	fmt.Printf("Loaded %d damage rows, %d heal rows from %s\n", len(rows), len(healRows), inputFile)
 
 	// Build sections
-	units := BuildUnitOverview(rows)
+	units := BuildUnitOverview(rows, healRows)
 	fmt.Printf("Unit overview: %d units\n", len(units))
 
 	matchups := BuildCompressedMatchups(rows)

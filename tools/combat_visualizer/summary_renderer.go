@@ -40,6 +40,15 @@ func RenderEngagement(eng EngagementRecord) string {
 	sb.WriteString("────────────────────────────────────────────────────\n")
 	sb.WriteString("\n")
 
+	// Heal flow (only when heal events exist)
+	if eng.CombatLog != nil && len(eng.CombatLog.HealEvents) > 0 {
+		sb.WriteString("HEAL FLOW:\n")
+		sb.WriteString("────────────────────────────────────────────────────\n")
+		sb.WriteString(renderHealSummary(eng))
+		sb.WriteString("────────────────────────────────────────────────────\n")
+		sb.WriteString("\n")
+	}
+
 	// Counterattack flow
 	if eng.Summary != nil && len(eng.Summary.DefenderSummaries) > 0 {
 		sb.WriteString("COUNTERATTACK FLOW:\n")
@@ -202,7 +211,92 @@ func renderUnitSummary(summary UnitActionSummary, prefix string) string {
 		sb.WriteString(fmt.Sprintf(", %d damage", summary.TotalDamage))
 	}
 
+	if summary.TotalHealing > 0 {
+		sb.WriteString(fmt.Sprintf(", %d healing (%d units)", summary.TotalHealing, summary.UnitsHealed))
+	}
+
 	sb.WriteString("\n\n")
+
+	return sb.String()
+}
+
+// renderHealSummary renders heal flow grouped by healer.
+func renderHealSummary(eng EngagementRecord) string {
+	if eng.CombatLog == nil || len(eng.CombatLog.HealEvents) == 0 {
+		return ""
+	}
+
+	// Build name lookup from both sides
+	nameMap := make(map[int64]string)
+	roleMap := make(map[int64]string)
+	posMap := make(map[int64][2]int)
+	for _, u := range eng.CombatLog.AttackingUnits {
+		nameMap[u.UnitID] = u.UnitName
+		roleMap[u.UnitID] = u.RoleName
+		posMap[u.UnitID] = [2]int{u.GridRow, u.GridCol}
+	}
+	for _, u := range eng.CombatLog.DefendingUnits {
+		nameMap[u.UnitID] = u.UnitName
+		roleMap[u.UnitID] = u.RoleName
+		posMap[u.UnitID] = [2]int{u.GridRow, u.GridCol}
+	}
+
+	// Group heals by healer
+	type healGroup struct {
+		healerID int64
+		events   []HealEvent
+	}
+	healerOrder := []int64{}
+	healerMap := make(map[int64]*healGroup)
+	for _, h := range eng.CombatLog.HealEvents {
+		if _, exists := healerMap[h.HealerID]; !exists {
+			healerMap[h.HealerID] = &healGroup{healerID: h.HealerID}
+			healerOrder = append(healerOrder, h.HealerID)
+		}
+		healerMap[h.HealerID].events = append(healerMap[h.HealerID].events, h)
+	}
+
+	var sb strings.Builder
+	for _, hid := range healerOrder {
+		group := healerMap[hid]
+		healerName := nameMap[hid]
+		if healerName == "" {
+			healerName = fmt.Sprintf("Unit_%d", hid)
+		}
+		role := roleMap[hid]
+		pos := posMap[hid]
+
+		roleInfo := ""
+		if role != "" {
+			roleInfo = fmt.Sprintf(" (%s)", role)
+		}
+
+		sb.WriteString(fmt.Sprintf("[A%d] %s%s at (%d,%d)\n", hid, healerName, roleInfo, pos[0], pos[1]))
+
+		totalHealing := 0
+		for i, h := range group.events {
+			targetName := nameMap[h.TargetID]
+			if targetName == "" {
+				targetName = fmt.Sprintf("Unit_%d", h.TargetID)
+			}
+
+			prefix := "├─"
+			if i == len(group.events)-1 {
+				prefix = "└─"
+			}
+
+			sb.WriteString(fmt.Sprintf("  %s HEAL %s for %d HP (%d→%d)\n",
+				prefix, targetName, h.HealAmount, h.TargetHPBefore, h.TargetHPAfter))
+			totalHealing += h.HealAmount
+		}
+
+		healCount := len(group.events)
+		sb.WriteString(fmt.Sprintf("  ➤ %d heal", healCount))
+		if healCount != 1 {
+			sb.WriteString("s")
+		}
+		sb.WriteString(fmt.Sprintf(": %d total healing\n\n", totalHealing))
+	}
 
 	return sb.String()
 }
@@ -221,6 +315,7 @@ func renderEngagementTotals(summary *EngagementSummary) string {
 	totalCriticals := 0
 	totalDamage := 0
 	totalKills := 0
+	totalHealing := 0
 
 	for _, s := range summary.AttackerSummaries {
 		totalAttacks += s.TotalAttacks
@@ -230,6 +325,7 @@ func renderEngagementTotals(summary *EngagementSummary) string {
 		totalCriticals += s.Criticals
 		totalDamage += s.TotalDamage
 		totalKills += s.UnitsKilled
+		totalHealing += s.TotalHealing
 	}
 
 	// Aggregate totals for counterattacks
@@ -274,6 +370,9 @@ func renderEngagementTotals(summary *EngagementSummary) string {
 	sb.WriteString("\n")
 
 	sb.WriteString(fmt.Sprintf("  Total Damage: %d\n", totalDamage))
+	if totalHealing > 0 {
+		sb.WriteString(fmt.Sprintf("  Total Healing: %d\n", totalHealing))
+	}
 	sb.WriteString(fmt.Sprintf("  Units Killed: %d\n", totalKills))
 
 	// Counterattack stats

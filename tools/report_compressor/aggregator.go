@@ -13,7 +13,8 @@ type matchupKey struct {
 }
 
 // BuildUnitOverview aggregates per-unit offense/defense stats from Regular attacks only.
-func BuildUnitOverview(rows []InputRow) []UnitStats {
+// healRows are used to populate HealingDone and HealingReceived.
+func BuildUnitOverview(rows []InputRow, healRows []HealRow) []UnitStats {
 	units := make(map[string]*UnitStats)
 
 	getUnit := func(name string) *UnitStats {
@@ -44,6 +45,15 @@ func BuildUnitOverview(rows []InputRow) []UnitStats {
 		def.DefDodges += r.Dodges
 		def.DmgTaken += r.TotalDamage
 		def.Deaths += r.TotalKills
+	}
+
+	// Integrate healing stats
+	for _, h := range healRows {
+		healer := getUnit(h.Healer)
+		healer.HealingDone += h.TotalHealing
+
+		target := getUnit(h.Target)
+		target.HealingReceived += h.TotalHealing
 	}
 
 	// Sort by unit name

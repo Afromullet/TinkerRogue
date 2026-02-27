@@ -72,6 +72,43 @@ func WriteCSV(path string, result *AggregateResult) error {
 		}
 	}
 
+	// Write heal section if any heal data exists
+	if len(result.HealMatchups) > 0 {
+		// Blank separator row
+		if err := w.Write([]string{""}); err != nil {
+			return fmt.Errorf("failed to write separator: %w", err)
+		}
+
+		// Heal section header
+		healHeader := []string{
+			"# Heal",
+			"Healer", "Target", "TotalHeals", "TotalHealing",
+			"AvgHealPerAction", "BattlesSampled",
+		}
+		if err := w.Write(healHeader); err != nil {
+			return fmt.Errorf("failed to write heal header: %w", err)
+		}
+
+		healKeys := SortedHealKeys(result.HealMatchups)
+		for _, key := range healKeys {
+			hstats := result.HealMatchups[key]
+			avgHeal := safeAvg(hstats.TotalAmount, hstats.TotalHeals)
+
+			row := []string{
+				"",
+				key.HealerName,
+				key.TargetName,
+				fmt.Sprintf("%d", hstats.TotalHeals),
+				fmt.Sprintf("%d", hstats.TotalAmount),
+				fmt.Sprintf("%.2f", avgHeal),
+				fmt.Sprintf("%d", len(hstats.BattlesSeen)),
+			}
+			if err := w.Write(row); err != nil {
+				return fmt.Errorf("failed to write heal row: %w", err)
+			}
+		}
+	}
+
 	return nil
 }
 

@@ -48,6 +48,7 @@ func writeUnitOverview(w *csv.Writer, units []UnitStats) error {
 		"OffHitRate", "DefDodgeRate", "OffCritRate",
 		"AvgDmgDealt", "AvgDmgTaken",
 		"Kills", "Deaths", "KDRatio",
+		"HealingDone", "HealingReceived",
 	}
 	if err := w.Write(header); err != nil {
 		return fmt.Errorf("failed to write unit header: %w", err)
@@ -79,6 +80,8 @@ func writeUnitOverview(w *csv.Writer, units []UnitStats) error {
 			fmt.Sprintf("%d", u.Kills),
 			fmt.Sprintf("%d", u.Deaths),
 			fmt.Sprintf("%.2f", kdRatio),
+			fmt.Sprintf("%d", u.HealingDone),
+			fmt.Sprintf("%d", u.HealingReceived),
 		}
 		if err := w.Write(row); err != nil {
 			return fmt.Errorf("failed to write unit row: %w", err)

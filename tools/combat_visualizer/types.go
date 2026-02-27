@@ -29,6 +29,18 @@ type CombatLog struct {
 	SquadDistance     int            `json:"SquadDistance"`
 	AttackingUnits    []UnitSnapshot `json:"AttackingUnits"`
 	DefendingUnits    []UnitSnapshot `json:"DefendingUnits"`
+	HealEvents        []HealEvent    `json:"HealEvents"`
+	TotalHealing      int            `json:"TotalHealing"`
+}
+
+// HealEvent captures a single unit-to-unit heal.
+type HealEvent struct {
+	HealerID       int64 `json:"HealerID"`
+	TargetID       int64 `json:"TargetID"`
+	HealAmount     int   `json:"HealAmount"`
+	TargetHPBefore int   `json:"TargetHPBefore"`
+	TargetHPAfter  int   `json:"TargetHPAfter"`
+	AttackIndex    int   `json:"AttackIndex"`
 }
 
 // UnitSnapshot captures a unit's state during combat.
@@ -64,7 +76,17 @@ type UnitActionSummary struct {
 	Criticals       int              `json:"criticals"`
 	TotalDamage     int              `json:"total_damage"`
 	UnitsKilled     int              `json:"units_killed"`
+	TotalHealing    int              `json:"total_healing"`
+	UnitsHealed     int              `json:"units_healed"`
+	HealsPerformed  []HealEngagement `json:"heals_performed,omitempty"`
 	Summary         string           `json:"summary"`
+}
+
+// HealEngagement details a heal action on a specific target.
+type HealEngagement struct {
+	TargetID   int64  `json:"target_id"`
+	TargetName string `json:"target_name"`
+	HealAmount int    `json:"heal_amount"`
 }
 
 // GridPosition represents a grid cell location.

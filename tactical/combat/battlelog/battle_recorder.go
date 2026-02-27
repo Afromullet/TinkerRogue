@@ -69,8 +69,20 @@ type UnitActionSummary struct {
 	TotalDamage  int `json:"total_damage"`
 	UnitsKilled  int `json:"units_killed"`
 
+	// Healing aggregation
+	TotalHealing   int              `json:"total_healing"`
+	UnitsHealed    int              `json:"units_healed"`
+	HealsPerformed []HealEngagement `json:"heals_performed,omitempty"`
+
 	// Human-readable summary
 	Summary string `json:"summary"`
+}
+
+// HealEngagement details a heal action on a specific target.
+type HealEngagement struct {
+	TargetID   ecs.EntityID `json:"target_id"`
+	TargetName string       `json:"target_name"`
+	HealAmount int          `json:"heal_amount"`
 }
 
 // EngagementSummary contains per-unit summaries for both squads.

@@ -19,10 +19,21 @@ func GenerateEngagementSummary(log *squads.CombatLog) *EngagementSummary {
 		}
 	}
 
+	// Build name map for heal target lookups
+	nameMap := make(map[ecs.EntityID]string)
+	for _, u := range log.AttackingUnits {
+		nameMap[u.UnitID] = u.UnitName
+	}
+	for _, u := range log.DefendingUnits {
+		nameMap[u.UnitID] = u.UnitName
+	}
+
 	// Build attacker summaries
 	attackerSummaries := make([]UnitActionSummary, 0, len(log.AttackingUnits))
 	for _, unitSnapshot := range log.AttackingUnits {
 		summary := buildUnitSummary(unitSnapshot.UnitID, unitSnapshot, log.AttackEvents)
+		// Add heal data for this unit
+		applyHealData(&summary, unitSnapshot.UnitID, log.HealEvents, nameMap)
 		attackerSummaries = append(attackerSummaries, summary)
 	}
 
@@ -32,9 +43,11 @@ func GenerateEngagementSummary(log *squads.CombatLog) *EngagementSummary {
 		// Filter counterattack events for this defender
 		counterEvents := filterCounterattackEventsByAttacker(unitSnapshot.UnitID, log.AttackEvents)
 
-		// Only create summary if this unit counterattacked
-		if len(counterEvents) > 0 {
+		// Only create summary if this unit counterattacked or healed
+		healEvents := filterHealEventsByHealer(unitSnapshot.UnitID, log.HealEvents)
+		if len(counterEvents) > 0 || len(healEvents) > 0 {
 			summary := buildUnitSummary(unitSnapshot.UnitID, unitSnapshot, counterEvents)
+			applyHealData(&summary, unitSnapshot.UnitID, log.HealEvents, nameMap)
 			defenderSummaries = append(defenderSummaries, summary)
 		}
 	}
@@ -129,6 +142,8 @@ func buildUnitSummary(unitID ecs.EntityID, unitSnapshot squads.UnitSnapshot, eve
 			summary.Misses++
 		case squads.HitTypeDodge:
 			summary.Dodges++
+		case squads.HitTypeHeal:
+			// Heals go through HealEvents, not AttackEvents — skip
 		}
 	}
 
@@ -239,6 +254,8 @@ func parseOutcome(outcome string) squads.HitType {
 		return squads.HitTypeCritical
 	case "COUNTERATTACK":
 		return squads.HitTypeCounterattack
+	case "HEAL":
+		return squads.HitTypeHeal
 	default:
 		return squads.HitTypeMiss
 	}
@@ -264,8 +281,11 @@ func outcomeRank(hitType squads.HitType) int {
 
 // generateSummaryText creates a human-readable summary.
 func generateSummaryText(summary *UnitActionSummary) string {
-	if summary.TotalAttacks == 0 {
+	if summary.TotalAttacks == 0 && summary.TotalHealing == 0 {
 		return fmt.Sprintf("%s did not attack", summary.UnitName)
+	}
+	if summary.TotalAttacks == 0 && summary.TotalHealing > 0 {
+		return fmt.Sprintf("%s: healed %d unit(s) for %d total HP", summary.UnitName, summary.UnitsHealed, summary.TotalHealing)
 	}
 
 	var parts []string
@@ -323,6 +343,11 @@ func generateSummaryText(summary *UnitActionSummary) string {
 		parts = append(parts, fmt.Sprintf("%d total damage", summary.TotalDamage))
 	}
 
+	// Healing info
+	if summary.TotalHealing > 0 {
+		parts = append(parts, fmt.Sprintf("healed %d unit(s) for %d total HP", summary.UnitsHealed, summary.TotalHealing))
+	}
+
 	return fmt.Sprintf("%s: %s", summary.UnitName, strings.Join(parts, "; "))
 }
 
@@ -333,4 +358,51 @@ func formatIntSlice(nums []int) string {
 		strs[i] = fmt.Sprintf("%d", n)
 	}
 	return strings.Join(strs, ",")
+}
+
+// filterHealEventsByHealer returns heal events where HealerID matches.
+func filterHealEventsByHealer(unitID ecs.EntityID, events []squads.HealEvent) []squads.HealEvent {
+	var filtered []squads.HealEvent
+	for _, event := range events {
+		if event.HealerID == unitID {
+			filtered = append(filtered, event)
+		}
+	}
+	return filtered
+}
+
+// applyHealData populates heal fields on a UnitActionSummary from HealEvents.
+func applyHealData(summary *UnitActionSummary, unitID ecs.EntityID, healEvents []squads.HealEvent, nameMap map[ecs.EntityID]string) {
+	unitHeals := filterHealEventsByHealer(unitID, healEvents)
+	if len(unitHeals) == 0 {
+		return
+	}
+
+	targetsSeen := make(map[ecs.EntityID]bool)
+	healMap := make(map[ecs.EntityID]*HealEngagement)
+
+	for _, h := range unitHeals {
+		summary.TotalHealing += h.HealAmount
+		targetsSeen[h.TargetID] = true
+
+		if existing, ok := healMap[h.TargetID]; ok {
+			existing.HealAmount += h.HealAmount
+		} else {
+			targetName := nameMap[h.TargetID]
+			if targetName == "" {
+				targetName = fmt.Sprintf("Unit_%d", h.TargetID)
+			}
+			healMap[h.TargetID] = &HealEngagement{
+				TargetID:   h.TargetID,
+				TargetName: targetName,
+				HealAmount: h.HealAmount,
+			}
+		}
+	}
+
+	summary.UnitsHealed = len(targetsSeen)
+	summary.HealsPerformed = make([]HealEngagement, 0, len(healMap))
+	for _, eng := range healMap {
+		summary.HealsPerformed = append(summary.HealsPerformed, *eng)
+	}
 }

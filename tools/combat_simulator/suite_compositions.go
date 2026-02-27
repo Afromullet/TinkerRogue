@@ -13,6 +13,7 @@ func GenerateCompositionSuite(pool *UnitPool) []Scenario {
 	scenarios = append(scenarios, attackTypeMatchups(pool)...)
 	scenarios = append(scenarios, compositionRatios(pool)...)
 	scenarios = append(scenarios, formationTests(pool)...)
+	scenarios = append(scenarios, healMatchups(pool)...)
 	return scenarios
 }
 
@@ -147,6 +148,50 @@ func compositionRatios(pool *UnitPool) []Scenario {
 
 		bp := ScenarioBlueprint{
 			Name:  fmt.Sprintf("Comp: %s vs %s", r[0].name, r[1].name),
+			Suite: "compositions",
+			SideA: []SquadBlueprint{sideA},
+			SideB: []SquadBlueprint{sideB},
+		}
+		scenarios = append(scenarios, blueprintToScenario(pool, bp))
+	}
+
+	return scenarios
+}
+
+// healMatchups tests compositions that include heal-type units (Cleric, Priest)
+// alongside damage dealers. These verify that healing integrates properly
+// into combat logging and that mixed compositions behave correctly.
+func healMatchups(pool *UnitPool) []Scenario {
+	type matchup struct {
+		name  string
+		sideA []string
+		sideB []string
+	}
+
+	matchups := []matchup{
+		{"Heal: Mixed+Healer vs Pure DPS",
+			[]string{"Knight", "Swordsman", "Cleric"},
+			[]string{"Assassin", "Archer", "Wizard"}},
+		{"Heal: Double Healer vs Tanks",
+			[]string{"Fighter", "Cleric", "Priest"},
+			[]string{"Knight", "Spearman", "Paladin"}},
+		{"Heal: Healer+Ranged vs Melee",
+			[]string{"Archer", "Marksman", "Cleric"},
+			[]string{"Knight", "Fighter", "Warrior"}},
+		{"Heal: Mirror (both have healer)",
+			[]string{"Knight", "Archer", "Cleric"},
+			[]string{"Fighter", "Wizard", "Priest"}},
+	}
+
+	positions := [][2]int{{0, 1}, {1, 1}, {2, 1}}
+	var scenarios []Scenario
+
+	for _, m := range matchups {
+		sideA := makeSquadBP("Side A", squads.FormationBalanced, m.sideA, positions)
+		sideB := makeSquadBP("Side B", squads.FormationBalanced, m.sideB, positions)
+
+		bp := ScenarioBlueprint{
+			Name:  m.name,
 			Suite: "compositions",
 			SideA: []SquadBlueprint{sideA},
 			SideB: []SquadBlueprint{sideB},

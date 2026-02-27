@@ -9,6 +9,7 @@ const (
 	HitTypeNormal        = 2
 	HitTypeCritical      = 3
 	HitTypeCounterattack = 4
+	HitTypeHeal          = 5
 )
 
 // BattleRecord is the root structure for exported combat JSON files.
@@ -36,6 +37,18 @@ type CombatLog struct {
 	AttackingUnits    []UnitSnapshot `json:"AttackingUnits"`
 	DefendingUnits    []UnitSnapshot `json:"DefendingUnits"`
 	AttackEvents      []AttackEvent  `json:"AttackEvents"`
+	HealEvents        []HealEvent    `json:"HealEvents"`
+	TotalHealing      int            `json:"TotalHealing"`
+}
+
+// HealEvent captures a single unit-to-unit heal.
+type HealEvent struct {
+	HealerID       int64 `json:"HealerID"`
+	TargetID       int64 `json:"TargetID"`
+	HealAmount     int   `json:"HealAmount"`
+	TargetHPBefore int   `json:"TargetHPBefore"`
+	TargetHPAfter  int   `json:"TargetHPAfter"`
+	AttackIndex    int   `json:"AttackIndex"`
 }
 
 // UnitSnapshot captures a unit's state during combat.
