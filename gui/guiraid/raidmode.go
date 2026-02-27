@@ -251,6 +251,7 @@ func (rm *RaidMode) OnRoomSelected(nodeID int) {
 			return
 		}
 		rm.updateFloorMapDisplay()
+		rm.checkFloorAdvancement()
 		return
 	}
 
@@ -300,23 +301,28 @@ func (rm *RaidMode) OnSummaryDismissed() {
 	rm.state.SummaryData = nil
 	rm.showPanel(PanelFloorMap)
 	rm.updateFloorMapDisplay()
+	rm.checkFloorAdvancement()
+}
 
-	// Check if floor is complete — advance to next floor automatically
+// checkFloorAdvancement checks if the current floor is complete and advances if so.
+func (rm *RaidMode) checkFloorAdvancement() {
 	raidState := raid.GetRaidState(rm.Context.ECSManager)
-	if raidState != nil {
-		floorState := raid.GetFloorState(rm.Context.ECSManager, raidState.CurrentFloor)
-		if floorState != nil && floorState.IsComplete {
-			if raidState.CurrentFloor < raidState.TotalFloors {
-				if err := rm.raidRunner.AdvanceFloor(); err != nil {
-					rm.SetStatus(fmt.Sprintf("Floor advance failed: %v", err))
-				} else {
-					rm.updateFloorMapDisplay()
-					rm.SetStatus(fmt.Sprintf("Advanced to floor %d/%d", raidState.CurrentFloor, raidState.TotalFloors))
-				}
-			} else {
-				rm.SetStatus("All floors cleared! Raid complete!")
-			}
+	if raidState == nil {
+		return
+	}
+	floorState := raid.GetFloorState(rm.Context.ECSManager, raidState.CurrentFloor)
+	if floorState == nil || !floorState.IsComplete {
+		return
+	}
+	if raidState.CurrentFloor < raidState.TotalFloors {
+		if err := rm.raidRunner.AdvanceFloor(); err != nil {
+			rm.SetStatus(fmt.Sprintf("Floor advance failed: %v", err))
+		} else {
+			rm.updateFloorMapDisplay()
+			rm.SetStatus(fmt.Sprintf("Advanced to floor %d/%d", raidState.CurrentFloor, raidState.TotalFloors))
 		}
+	} else {
+		rm.SetStatus("All floors cleared! Raid complete!")
 	}
 }
 

@@ -4,6 +4,7 @@
 - Can always move the move undo command in combat, even after attacking
 - Start Random Encounter alwys starts the same encounter 
 - Raids when "Retreating" are not handled correctly.
+- No Way to go between floors for raids
 
 # Combat
 
