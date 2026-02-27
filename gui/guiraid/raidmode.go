@@ -83,6 +83,15 @@ func (rm *RaidMode) Enter(fromMode framework.UIMode) error {
 		}
 	}
 
+	// Resume a retreated raid
+	if rm.raidRunner != nil && rm.raidRunner.IsActive() {
+		raidState := raid.GetRaidState(rm.Context.ECSManager)
+		if raidState != nil && raidState.Status == raid.RaidRetreated {
+			raidState.Status = raid.RaidActive
+			fmt.Println("RaidMode: Resuming retreated raid")
+		}
+	}
+
 	// Auto-start a raid if none is active (debug entry point)
 	if rm.raidRunner != nil && !rm.raidRunner.IsActive() {
 		if err := rm.autoStartRaid(); err != nil {

@@ -322,6 +322,7 @@ func (rr *RaidRunner) AdvanceFloor() error {
 }
 
 // Retreat ends the raid with Retreated status.
+// State is preserved so the player can resume the raid later.
 func (rr *RaidRunner) Retreat() error {
 	raidState := GetRaidState(rr.manager)
 	if raidState == nil {
@@ -329,9 +330,7 @@ func (rr *RaidRunner) Retreat() error {
 	}
 
 	raidState.Status = RaidRetreated
-	rr.finishRaid(RaidRetreated)
-
-	fmt.Println("RaidRunner: Player retreated from raid")
+	fmt.Println("RaidRunner: Player retreated from raid (state preserved)")
 	return nil
 }
 

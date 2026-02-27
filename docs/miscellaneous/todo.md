@@ -14,7 +14,10 @@
 - Squad Edit Mode requires me to select a unit from the panel on the right before Removing, Making it a leader, or viewing the unit. I also want to be able to access that by selecting the unit in the grid
 - Unit Purchase Mode needs to show Unit Info
 
+# JSON
 
+- Add Error Checking for JSON. I.E, a "Support" unit has to have a "Heal" attack type, and so on. Determine valid state
+- Review other JSON files and determine valid state and do load-time checking.
 
 # Raid Package
 
@@ -25,6 +28,10 @@
 
 - Add a "new type of attack" to combat, which is a heal. Use targeting cells to make things easier  
 - Add Zones of Control
+
+# Tools
+
+- Added healing, so the combat simulation in tools will have to change. 
 
 
 # Action Evaluator
