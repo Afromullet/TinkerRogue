@@ -97,9 +97,6 @@ func (ts *TacticalState) Reset() {
 
 	// Clear encounter tracking
 	ts.TriggeredEncounterID = ecs.EntityID(0)
-
-	// Clear post-combat routing
-	ts.PostCombatReturnMode = ""
 }
 
 // OverworldState holds UI-specific state for the overworld context

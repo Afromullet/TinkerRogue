@@ -156,8 +156,10 @@ func GetAttackType(attackTypeString string, attackRange int) (AttackType, error)
 			return AttackTypeRanged, nil
 		case "Magic":
 			return AttackTypeMagic, nil
+		case "Heal":
+			return AttackTypeHeal, nil
 		default:
-			return 0, fmt.Errorf("invalid attackType: %q, expected MeleeRow, MeleeColumn, Ranged, or Magic", attackTypeString)
+			return 0, fmt.Errorf("invalid attackType: %q, expected MeleeRow, MeleeColumn, Ranged, Magic, or Heal", attackTypeString)
 		}
 	}
 

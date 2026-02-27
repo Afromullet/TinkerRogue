@@ -194,6 +194,7 @@ const (
 	AttackTypeMeleeColumn                   // Targets column (1 target, spear-type)
 	AttackTypeRanged                        // Targets same row as attacker
 	AttackTypeMagic                         // Cell-based patterns
+	AttackTypeHeal                          // Heals friendly units using targetCells
 )
 
 func (a AttackType) String() string {
@@ -206,6 +207,8 @@ func (a AttackType) String() string {
 		return "Ranged"
 	case AttackTypeMagic:
 		return "Magic"
+	case AttackTypeHeal:
+		return "Heal"
 	default:
 		return "Unknown"
 	}

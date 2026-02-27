@@ -71,6 +71,7 @@ func (sem *SquadEditorMode) loadSquadFormation(squadID ecs.EntityID) {
 	// Clear grids first
 	guiinspect.ClearGridCells(sem.gridCells)
 	guiinspect.ClearGridCells(sem.attackGridCells)
+	guiinspect.ClearGridCells(sem.supportGridCells)
 
 	// Get units in squad and display them
 	unitIDs := sem.Queries.SquadCache.GetUnitIDsInSquad(squadID)
@@ -93,13 +94,23 @@ func (sem *SquadEditorMode) loadSquadFormation(squadID ecs.EntityID) {
 	}
 
 	sem.refreshAttackPattern()
+	sem.refreshSupportPattern()
 }
 
-// refreshAttackPattern updates the attack pattern grid if visible
+// refreshAttackPattern updates the attack pattern grid if visible (non-heal units only)
 func (sem *SquadEditorMode) refreshAttackPattern() {
 	if !sem.showAttackPattern || !sem.squadNav.HasSquads() {
 		return
 	}
-	pattern := squads.ComputeGenericAttackPattern(sem.squadNav.CurrentID(), sem.Queries.ECSManager)
+	pattern := squads.ComputeGenericPatternFiltered(sem.squadNav.CurrentID(), sem.Queries.ECSManager, false)
 	guiinspect.PopulateAttackGridCells(sem.attackGridCells, pattern)
+}
+
+// refreshSupportPattern updates the support pattern grid if visible (heal units only)
+func (sem *SquadEditorMode) refreshSupportPattern() {
+	if !sem.showSupportPattern || !sem.squadNav.HasSquads() {
+		return
+	}
+	pattern := squads.ComputeGenericPatternFiltered(sem.squadNav.CurrentID(), sem.Queries.ECSManager, true)
+	guiinspect.PopulateAttackGridCells(sem.supportGridCells, pattern)
 }

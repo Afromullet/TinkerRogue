@@ -383,6 +383,8 @@ func filterUnitsBySquadType(squadType string) []squads.UnitTemplate {
 		return squads.FilterByAttackRange(3) // Ranged: range >= 3
 	case SquadTypeMagic:
 		return squads.FilterByAttackType(squads.AttackTypeMagic)
+	case SquadTypeSupport:
+		return squads.FilterByAttackType(squads.AttackTypeHeal)
 	default:
 		return squads.Units
 	}

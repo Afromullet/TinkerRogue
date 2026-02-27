@@ -12,9 +12,10 @@ import (
 
 // Squad type identifiers for composition control
 const (
-	SquadTypeMelee  = "melee"
-	SquadTypeRanged = "ranged"
-	SquadTypeMagic  = "magic"
+	SquadTypeMelee   = "melee"
+	SquadTypeRanged  = "ranged"
+	SquadTypeMagic   = "magic"
+	SquadTypeSupport = "support"
 )
 
 // Position generation constants

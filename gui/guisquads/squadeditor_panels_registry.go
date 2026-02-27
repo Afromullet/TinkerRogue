@@ -141,11 +141,24 @@ func init() {
 			attackGridContainer.GetWidget().Visibility = widget.Visibility_Hide
 			wrapper.AddChild(attackGridContainer)
 
+			// Support pattern label (hidden by default)
+			supportLabel := builders.CreateSmallLabel("Support Pattern")
+			supportLabel.GetWidget().Visibility = widget.Visibility_Hide
+			wrapper.AddChild(supportLabel)
+
+			// Support pattern grid (read-only, hidden by default)
+			supportGridContainer, supportGridCells := sem.PanelBuilders.BuildGridEditor(builders.GridEditorConfig{})
+			supportGridContainer.GetWidget().Visibility = widget.Visibility_Hide
+			wrapper.AddChild(supportGridContainer)
+
 			result.Container = wrapper
 			result.Custom["gridCells"] = gridCells
 			result.Custom["attackLabel"] = attackLabel
 			result.Custom["attackGridCells"] = attackGridCells
 			result.Custom["attackGridContainer"] = attackGridContainer
+			result.Custom["supportLabel"] = supportLabel
+			result.Custom["supportGridCells"] = supportGridCells
+			result.Custom["supportGridContainer"] = supportGridContainer
 
 			return nil
 		},

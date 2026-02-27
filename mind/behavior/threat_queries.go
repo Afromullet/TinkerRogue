@@ -67,8 +67,8 @@ var (
 	// MeleeAttackTypes includes all melee attack types
 	MeleeAttackTypes = AttackTypeFilter{squads.AttackTypeMeleeRow, squads.AttackTypeMeleeColumn}
 
-	// RangedAttackTypes includes ranged and magic attack types
-	RangedAttackTypes = AttackTypeFilter{squads.AttackTypeRanged, squads.AttackTypeMagic}
+	// RangedAttackTypes includes ranged, magic, and heal attack types
+	RangedAttackTypes = AttackTypeFilter{squads.AttackTypeRanged, squads.AttackTypeMagic, squads.AttackTypeHeal}
 )
 
 // Matches returns true if the given attack type is in this filter

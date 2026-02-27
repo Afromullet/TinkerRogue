@@ -54,6 +54,12 @@ type SquadEditorMode struct {
 	attackLabel         *widget.Text
 	showAttackPattern   bool
 
+	// Support pattern toggle
+	supportGridCells     [3][3]*widget.Button
+	supportGridContainer *widget.Container
+	supportLabel         *widget.Text
+	showSupportPattern   bool
+
 	// State
 	selectedGridCell *GridCell    // Currently selected grid cell
 	selectedUnitID   ecs.EntityID // Currently selected unit in squad
@@ -155,6 +161,11 @@ func (sem *SquadEditorMode) initializeWidgetReferences() {
 	sem.attackGridCells = framework.GetPanelWidget[[3][3]*widget.Button](sem.Panels, SquadEditorPanelGridEditor, "attackGridCells")
 	sem.attackGridContainer = framework.GetPanelWidget[*widget.Container](sem.Panels, SquadEditorPanelGridEditor, "attackGridContainer")
 	sem.attackLabel = framework.GetPanelWidget[*widget.Text](sem.Panels, SquadEditorPanelGridEditor, "attackLabel")
+
+	// Support pattern grid
+	sem.supportGridCells = framework.GetPanelWidget[[3][3]*widget.Button](sem.Panels, SquadEditorPanelGridEditor, "supportGridCells")
+	sem.supportGridContainer = framework.GetPanelWidget[*widget.Container](sem.Panels, SquadEditorPanelGridEditor, "supportGridContainer")
+	sem.supportLabel = framework.GetPanelWidget[*widget.Text](sem.Panels, SquadEditorPanelGridEditor, "supportLabel")
 }
 
 // buildContextActions creates bottom-left action buttons for current squad context
@@ -163,6 +174,7 @@ func (sem *SquadEditorMode) buildContextActions() *widget.Container {
 		{Text: "Units (U)", OnClick: sem.subMenus.Toggle("units")},
 		{Text: "Roster (R)", OnClick: sem.subMenus.Toggle("roster")},
 		{Text: "Atk Pattern (V)", OnClick: func() { sem.toggleAttackPattern() }},
+		{Text: "Support Pattern (B)", OnClick: func() { sem.toggleSupportPattern() }},
 	})
 }
 
@@ -221,6 +233,9 @@ func (sem *SquadEditorMode) Exit(toMode framework.UIMode) error {
 	sem.showAttackPattern = false
 	sem.attackLabel.GetWidget().Visibility = widget.Visibility_Hide
 	sem.attackGridContainer.GetWidget().Visibility = widget.Visibility_Hide
+	sem.showSupportPattern = false
+	sem.supportLabel.GetWidget().Visibility = widget.Visibility_Hide
+	sem.supportGridContainer.GetWidget().Visibility = widget.Visibility_Hide
 	sem.subMenus.CloseAll()
 	return nil
 }
@@ -272,6 +287,12 @@ func (sem *SquadEditorMode) HandleInput(inputState *framework.InputState) bool {
 		return true
 	}
 
+	// B key toggles support pattern view
+	if inputState.KeysJustPressed[ebiten.KeyB] {
+		sem.toggleSupportPattern()
+		return true
+	}
+
 	// Tab key cycles to next commander
 	if inputState.KeysJustPressed[ebiten.KeyTab] {
 		sem.showNextCommander()
@@ -292,6 +313,17 @@ func (sem *SquadEditorMode) toggleAttackPattern() {
 	}
 	sem.attackLabel.GetWidget().Visibility = vis
 	sem.attackGridContainer.GetWidget().Visibility = vis
+}
+
+func (sem *SquadEditorMode) toggleSupportPattern() {
+	sem.showSupportPattern = !sem.showSupportPattern
+	vis := widget.Visibility_Hide
+	if sem.showSupportPattern {
+		vis = widget.Visibility_Show
+		sem.refreshSupportPattern()
+	}
+	sem.supportLabel.GetWidget().Visibility = vis
+	sem.supportGridContainer.GetWidget().Visibility = vis
 }
 
 // === Commander Selector Functions ===

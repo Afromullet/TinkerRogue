@@ -56,6 +56,8 @@ var attackColorPalette = []ebiten.ColorScale{
 	createColorScale(2.0, 0.3, 1.0), // 8: Hot Pink
 }
 
+var healColorScale = createColorScale(1, 1, 1) // 1: Vivid Green
+
 // CombatAnimationMode displays a full-screen battle scene during combat.
 // Shows both squads side-by-side with units at their grid positions.
 type CombatAnimationMode struct {
@@ -126,17 +128,27 @@ func (cam *CombatAnimationMode) SetCombatants(attackerID, defenderID ecs.EntityI
 	cam.defenderColorList = make(map[ecs.EntityID][]ebiten.ColorScale)
 	cam.flashTimer = 0
 
-	// Assign colors to attacking units
+	// Assign colors to attacking units (skip heal units — they get green tint)
 	combatSys := combat.NewCombatActionSystem(cam.Queries.ECSManager, cam.Queries.CombatCache)
 	attackingUnits := combatSys.GetAttackingUnits(attackerID, defenderID)
 
-	for i, attackerUnitID := range attackingUnits {
-		colorIdx := i % len(attackColorPalette)
-		cam.attackerColors[attackerUnitID] = attackColorPalette[colorIdx]
+	var nonHealAttackers []ecs.EntityID
+	colorIdx := 0
+	for _, attackerUnitID := range attackingUnits {
+		if squads.IsHealUnit(attackerUnitID, cam.Queries.ECSManager) {
+			cam.attackerColors[attackerUnitID] = healColorScale
+		} else {
+			cam.attackerColors[attackerUnitID] = attackColorPalette[colorIdx%len(attackColorPalette)]
+			colorIdx++
+			nonHealAttackers = append(nonHealAttackers, attackerUnitID)
+		}
 	}
 
-	// Pre-compute defender color lists
-	cam.computeDefenderColorLists(attackingUnits, defenderID)
+	// Pre-compute defender color lists (only for non-heal attackers)
+	cam.computeDefenderColorLists(nonHealAttackers, defenderID)
+
+	// Pre-compute heal target flashing: heal targets on the attacker grid flash green
+	cam.computeHealTargetColors(attackingUnits, attackerID)
 
 }
 
@@ -201,6 +213,34 @@ func (cam *CombatAnimationMode) computeDefenderColorLists(
 		}
 		cam.defenderColorList[defenderID] = colorList
 		cam.defenderFlashIndex[defenderID] = 0
+	}
+}
+
+// computeHealTargetColors maps heal targets on the attacker grid to flash green
+func (cam *CombatAnimationMode) computeHealTargetColors(
+	attackingUnits []ecs.EntityID,
+	attackerSquadID ecs.EntityID,
+) {
+
+	for _, attackerID := range attackingUnits {
+		if !squads.IsHealUnit(attackerID, cam.Queries.ECSManager) {
+			continue
+		}
+
+		// Get heal targets (friendly units in the attacker's own squad)
+		healTargets := squads.SelectHealTargets(attackerID, attackerSquadID, cam.Queries.ECSManager)
+
+		for _, targetID := range healTargets {
+			// Add green to this unit's color list (they're on the attacker grid)
+			if _, exists := cam.defenderColorList[targetID]; !exists {
+				cam.defenderColorList[targetID] = []ebiten.ColorScale{healColorScale}
+				cam.defenderFlashIndex[targetID] = 0
+			}
+			// Also add the unit to attackerColors so it gets a green tint
+			if _, exists := cam.attackerColors[targetID]; !exists {
+				cam.attackerColors[targetID] = healColorScale
+			}
+		}
 	}
 }
 

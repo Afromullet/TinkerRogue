@@ -307,6 +307,56 @@ type AttackPatternCell struct {
 	UnitNames []string
 }
 
+// ComputeGenericPatternFiltered computes target cells for a subset of units in the squad.
+// If healOnly is true, only heal units are included; if false, only non-heal units are included.
+// Returns a [3][3] grid where each cell lists the names of matching units.
+func ComputeGenericPatternFiltered(squadID ecs.EntityID, manager *common.EntityManager, healOnly bool) [3][3]AttackPatternCell {
+	var pattern [3][3]AttackPatternCell
+
+	unitIDs := GetUnitIDsInSquad(squadID, manager)
+
+	for _, unitID := range unitIDs {
+		entity := manager.FindEntityByID(unitID)
+		if entity == nil {
+			continue
+		}
+
+		// Skip dead units
+		attr := common.GetComponentType[*common.Attributes](entity, common.AttributeComponent)
+		if attr != nil && attr.CurrentHealth <= 0 {
+			continue
+		}
+
+		// Need both targeting and grid position data
+		if !entity.HasComponent(TargetRowComponent) || !entity.HasComponent(GridPositionComponent) {
+			continue
+		}
+		targetData := common.GetComponentType[*TargetRowData](entity, TargetRowComponent)
+		gridPos := common.GetComponentType[*GridPositionData](entity, GridPositionComponent)
+		if targetData == nil || gridPos == nil {
+			continue
+		}
+
+		// Filter by attack type
+		isHeal := targetData.AttackType == AttackTypeHeal
+		if healOnly != isHeal {
+			continue
+		}
+
+		unitName := common.GetEntityName(manager, unitID, "Unit")
+
+		cells := computeGenericTargetCells(targetData, gridPos)
+		for _, cell := range cells {
+			r, c := cell[0], cell[1]
+			if r >= 0 && r < 3 && c >= 0 && c < 3 {
+				pattern[r][c].UnitNames = append(pattern[r][c].UnitNames, unitName)
+			}
+		}
+	}
+
+	return pattern
+}
+
 // ComputeGenericAttackPattern computes which defender cells each alive unit in the squad
 // would target, assuming a full 3x3 enemy grid (no pierce-through or fallback logic).
 // Returns a [3][3] grid where each cell lists the names of attacking units.
@@ -368,6 +418,9 @@ func computeGenericTargetCells(targetData *TargetRowData, gridPos *GridPositionD
 		return [][2]int{{row, 0}, {row, 1}, {row, 2}}
 	case AttackTypeMagic:
 		// Targets exact cells from TargetCells
+		return targetData.TargetCells
+	case AttackTypeHeal:
+		// Same cell-based pattern as magic, but conceptually on own squad
 		return targetData.TargetCells
 	default:
 		return nil

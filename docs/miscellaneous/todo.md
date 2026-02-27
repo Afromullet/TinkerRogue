@@ -2,10 +2,8 @@
 
 - XP Awards seem to be odd. I.E, didivided by 10. Combat resolution grants 40 xp, but units only get 4 xp
 - Can always move the move undo command in combat, even after attacking
-- renderables not created for new squad
-- Start Random Encounter alwys starts the same encounter
-- When a new squad is created, all of the units show up as renderables in Exploration Mode. All units except the leader should be hidden. 
-
+- Start Random Encounter alwys starts the same encounter 
+- Raids when "Retreating" are not handled correctly.
 
 # Combat
 
@@ -14,6 +12,7 @@
 # GUI Updates
 
 - Squad Edit Mode requires me to select a unit from the panel on the right before Removing, Making it a leader, or viewing the unit. I also want to be able to access that by selecting the unit in the grid
+- Unit Purchase Mode needs to show Unit Info
 
 
 
@@ -25,7 +24,10 @@
 # Combat
 
 - Add a "new type of attack" to combat, which is a heal. Use targeting cells to make things easier  
+- Add Zones of Control
 
+
+# Action Evaluator
 
 # Other 
 

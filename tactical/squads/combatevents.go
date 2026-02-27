@@ -57,6 +57,7 @@ const (
 	HitTypeNormal
 	HitTypeCritical
 	HitTypeCounterattack
+	HitTypeHeal
 )
 
 func (h HitType) String() string {
@@ -71,6 +72,8 @@ func (h HitType) String() string {
 		return "CRITICAL"
 	case HitTypeCounterattack:
 		return "COUNTERATTACK"
+	case HitTypeHeal:
+		return "HEAL"
 	default:
 		return "UNKNOWN"
 	}
@@ -91,6 +94,16 @@ type CoverProvider struct {
 	GridCol    int
 }
 
+// HealEvent captures a single unit-to-unit heal with full breakdown
+type HealEvent struct {
+	HealerID       ecs.EntityID
+	TargetID       ecs.EntityID
+	HealAmount     int
+	TargetHPBefore int
+	TargetHPAfter  int
+	AttackIndex    int
+}
+
 // CombatLog aggregates all attacks in a squad-vs-squad engagement
 type CombatLog struct {
 	// Squad-level info
@@ -106,6 +119,10 @@ type CombatLog struct {
 
 	// All individual attacks
 	AttackEvents []AttackEvent
+
+	// Healing events
+	HealEvents   []HealEvent
+	TotalHealing int
 
 	// Summary stats
 	TotalDamage    int

@@ -49,8 +49,9 @@ func (cas *CombatActionSystem) ExecuteAttackAction(attackerID, defenderID ecs.En
 	// Main Attack calculation
 
 	result := &squads.CombatResult{
-		DamageByUnit: make(map[ecs.EntityID]int),
-		UnitsKilled:  []ecs.EntityID{},
+		DamageByUnit:  make(map[ecs.EntityID]int),
+		HealingByUnit: make(map[ecs.EntityID]int),
+		UnitsKilled:   []ecs.EntityID{},
 	}
 
 	// Initialize combat log with squad info
@@ -76,11 +77,15 @@ func (cas *CombatActionSystem) ExecuteAttackAction(attackerID, defenderID ecs.En
 			continue
 		}
 
-		// Get targets for this attacker
-		targetIDs := squads.SelectTargetUnits(attackerUnitID, defenderID, cas.manager)
-
-		// Attack each target
-		attackIndex = squads.ProcessAttackOnTargets(attackerUnitID, targetIDs, result, combatLog, attackIndex, cas.manager)
+		if squads.IsHealUnit(attackerUnitID, cas.manager) {
+			// Heal units target their own squad
+			healTargets := squads.SelectHealTargets(attackerUnitID, attackerID, cas.manager)
+			attackIndex = squads.ProcessHealOnTargets(attackerUnitID, healTargets, result, combatLog, attackIndex, cas.manager)
+		} else {
+			// Normal attack units target the enemy squad
+			targetIDs := squads.SelectTargetUnits(attackerUnitID, defenderID, cas.manager)
+			attackIndex = squads.ProcessAttackOnTargets(attackerUnitID, targetIDs, result, combatLog, attackIndex, cas.manager)
+		}
 	}
 
 	// Counterattack
@@ -106,11 +111,15 @@ func (cas *CombatActionSystem) ExecuteAttackAction(attackerID, defenderID ecs.En
 				}
 			}
 
-			// Get targets (same targeting logic as normal attacks)
-			targetIDs := squads.SelectTargetUnits(counterAttackerID, attackerID, cas.manager)
-
-			// Counterattack each target with penalties
-			attackIndex = squads.ProcessCounterattackOnTargets(counterAttackerID, targetIDs, result, combatLog, attackIndex, cas.manager)
+			if squads.IsHealUnit(counterAttackerID, cas.manager) {
+				// Heal units target their own squad during counterattack
+				healTargets := squads.SelectHealTargets(counterAttackerID, defenderID, cas.manager)
+				attackIndex = squads.ProcessHealOnTargets(counterAttackerID, healTargets, result, combatLog, attackIndex, cas.manager)
+			} else {
+				// Normal counterattack against enemy squad
+				targetIDs := squads.SelectTargetUnits(counterAttackerID, attackerID, cas.manager)
+				attackIndex = squads.ProcessCounterattackOnTargets(counterAttackerID, targetIDs, result, combatLog, attackIndex, cas.manager)
+			}
 		}
 	}
 
@@ -132,6 +141,8 @@ func (cas *CombatActionSystem) ExecuteAttackAction(attackerID, defenderID ecs.En
 
 	// Apply all recorded damage to unit HP (STATE MODIFICATION STARTS HERE)
 	squads.ApplyRecordedDamage(result, cas.manager)
+	// Apply healing after damage so healers can offset damage taken this round
+	squads.ApplyRecordedHealing(result, cas.manager)
 
 	// Mark attacker squad as acted (turn state modification)
 	markSquadAsActed(cas.combatCache, attackerID, cas.manager)

@@ -368,6 +368,17 @@ func (ae *ActionEvaluator) getMaxAttackRange() int {
 	return maxRange
 }
 
+// squadHasHealers checks if target squad contains any heal-type units
+func (ae *ActionEvaluator) squadHasHealers(squadID ecs.EntityID) bool {
+	unitIDs := squads.GetUnitIDsInSquad(squadID, ae.ctx.Manager)
+	for _, unitID := range unitIDs {
+		if squads.IsHealUnit(unitID, ae.ctx.Manager) {
+			return true
+		}
+	}
+	return false
+}
+
 // scoreAttackTarget scores an attack target
 func (ae *ActionEvaluator) scoreAttackTarget(targetID ecs.EntityID) float64 {
 	// CRITICAL: Attack base score must be higher than movement base score
@@ -391,6 +402,11 @@ func (ae *ActionEvaluator) scoreAttackTarget(targetID ecs.EntityID) float64 {
 	if ae.ctx.SquadRole == squads.RoleDPS && targetRole == squads.RoleSupport {
 		baseScore += 10.0
 	} else if ae.ctx.SquadRole == squads.RoleTank && targetRole == squads.RoleDPS {
+		baseScore += 10.0
+	}
+
+	// Bonus for targeting squads that contain healers (kill the support first)
+	if ae.squadHasHealers(targetID) {
 		baseScore += 10.0
 	}
 

@@ -29,10 +29,11 @@ type CombatResult struct {
 	AttackerDestroyed bool
 
 	// Combat execution data (set by combat calculation logic)
-	TotalDamage  int
-	UnitsKilled  []ecs.EntityID
-	DamageByUnit map[ecs.EntityID]int
-	CombatLog    *CombatLog // Contains AttackerSquadName, DefenderSquadName for display
+	TotalDamage   int
+	UnitsKilled   []ecs.EntityID
+	DamageByUnit  map[ecs.EntityID]int
+	HealingByUnit map[ecs.EntityID]int
+	CombatLog     *CombatLog // Contains AttackerSquadName, DefenderSquadName for display
 }
 
 // executeCombatPhase handles the common combat flow for both attacks and counterattacks
@@ -410,6 +411,9 @@ func SelectTargetUnits(attackerID, defenderSquadID ecs.EntityID, manager *common
 		return selectRangedTargets(attackerID, defenderSquadID, manager)
 	case AttackTypeMagic:
 		return selectMagicTargets(defenderSquadID, targetData.TargetCells, manager)
+	case AttackTypeHeal:
+		// Heal targets own squad - defenderSquadID is passed as the healer's squad by the caller
+		return selectHealTargets(defenderSquadID, targetData.TargetCells, manager)
 	default:
 		return []ecs.EntityID{}
 	}
@@ -864,4 +868,129 @@ func CalculateCoverBreakdown(defenderID ecs.EntityID, squadmanager *common.Entit
 	breakdown.TotalReduction = totalCover
 
 	return breakdown
+}
+
+// ========================================
+// HEALING SYSTEM FUNCTIONS
+// ========================================
+
+// IsHealUnit checks if a unit has AttackTypeHeal
+func IsHealUnit(unitID ecs.EntityID, manager *common.EntityManager) bool {
+	targetData := common.GetComponentTypeByID[*TargetRowData](manager, unitID, TargetRowComponent)
+	return targetData != nil && targetData.AttackType == AttackTypeHeal
+}
+
+// selectHealTargets finds alive friendly units at targetCells that are below max HP.
+// Same cell-based logic as selectMagicTargets but targets the healer's own squad.
+func selectHealTargets(healerSquadID ecs.EntityID, targetCells [][2]int, manager *common.EntityManager) []ecs.EntityID {
+	var targets []ecs.EntityID
+	seen := make(map[ecs.EntityID]bool)
+
+	for _, cell := range targetCells {
+		row, col := cell[0], cell[1]
+
+		cellTargets := GetUnitIDsAtGridPosition(healerSquadID, row, col, manager)
+
+		for _, unitID := range cellTargets {
+			if seen[unitID] {
+				continue
+			}
+			seen[unitID] = true
+
+			// Only heal alive units that are missing HP
+			attr := getAliveUnitAttributes(unitID, manager)
+			if attr == nil {
+				continue
+			}
+			if attr.CurrentHealth < attr.GetMaxHealth() {
+				targets = append(targets, unitID)
+			}
+		}
+	}
+
+	return targets
+}
+
+// SelectHealTargets is the public wrapper that reads target cells from the healer's component
+// and calls selectHealTargets on the healer's own squad.
+func SelectHealTargets(healerID, healerSquadID ecs.EntityID, manager *common.EntityManager) []ecs.EntityID {
+	targetData := common.GetComponentTypeByID[*TargetRowData](manager, healerID, TargetRowComponent)
+	if targetData == nil {
+		return []ecs.EntityID{}
+	}
+
+	return selectHealTargets(healerSquadID, targetData.TargetCells, manager)
+}
+
+// calculateHealing computes guaranteed healing (no hit/dodge/crit rolls).
+// Uses GetHealingAmount() (Magic * 2), capped at MaxHealth - CurrentHealth.
+func calculateHealing(healerID, targetID ecs.EntityID, manager *common.EntityManager) (int, *HealEvent) {
+	healerAttr := common.GetComponentTypeByID[*common.Attributes](manager, healerID, common.AttributeComponent)
+	targetAttr := common.GetComponentTypeByID[*common.Attributes](manager, targetID, common.AttributeComponent)
+
+	event := &HealEvent{
+		HealerID: healerID,
+		TargetID: targetID,
+	}
+
+	if healerAttr == nil || targetAttr == nil {
+		return 0, event
+	}
+
+	event.TargetHPBefore = targetAttr.CurrentHealth
+
+	healAmount := healerAttr.GetHealingAmount()
+
+	// Cap at missing HP
+	missingHP := targetAttr.GetMaxHealth() - targetAttr.CurrentHealth
+	if healAmount > missingHP {
+		healAmount = missingHP
+	}
+	if healAmount < 0 {
+		healAmount = 0
+	}
+
+	event.HealAmount = healAmount
+	event.TargetHPAfter = targetAttr.CurrentHealth + healAmount
+
+	return healAmount, event
+}
+
+// ProcessHealOnTargets iterates heal targets, calculates healing, and records events.
+// Returns updated attackIndex.
+func ProcessHealOnTargets(healerID ecs.EntityID, targetIDs []ecs.EntityID, result *CombatResult,
+	log *CombatLog, attackIndex int, manager *common.EntityManager) int {
+
+	for _, targetID := range targetIDs {
+		attackIndex++
+
+		healAmount, event := calculateHealing(healerID, targetID, manager)
+		event.AttackIndex = attackIndex
+
+		if healAmount > 0 {
+			// Record healing (accumulated per unit)
+			result.HealingByUnit[targetID] += healAmount
+		}
+
+		log.HealEvents = append(log.HealEvents, *event)
+		log.TotalHealing += healAmount
+	}
+
+	return attackIndex
+}
+
+// ApplyRecordedHealing applies all recorded healing from result.HealingByUnit to actual unit HP.
+// Called AFTER ApplyRecordedDamage so healers can offset damage taken in the same round.
+func ApplyRecordedHealing(result *CombatResult, manager *common.EntityManager) {
+	for unitID, healing := range result.HealingByUnit {
+		attr := common.GetComponentTypeByID[*common.Attributes](manager, unitID, common.AttributeComponent)
+		if attr == nil {
+			continue
+		}
+		attr.CurrentHealth += healing
+		maxHP := attr.GetMaxHealth()
+		if attr.CurrentHealth > maxHP {
+			attr.CurrentHealth = maxHP
+		}
+	}
 }

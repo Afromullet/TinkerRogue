@@ -355,7 +355,13 @@ func EstimateUnitPowerFromTemplate(unit squads.UnitTemplate, config *PowerConfig
 		coverValue = unit.CoverValue * CoverScalingFactor * CoverBeneficiaryMultiplier
 	}
 
-	utilityPower := roleValue + abilityValue + coverValue
+	// Healing value: heal units contribute utility power from healing output
+	healValue := 0.0
+	if unit.AttackType == squads.AttackTypeHeal {
+		healValue = float64(attr.GetHealingAmount()) * 1.5 // Heal utility scales with Magic
+	}
+
+	utilityPower := roleValue + abilityValue + coverValue + healValue
 
 	// === WEIGHTED SUM ===
 	totalPower := (offensivePower * config.OffensiveWeight) +
