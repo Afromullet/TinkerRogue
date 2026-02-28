@@ -4,6 +4,8 @@
 - Can always move the move undo command in combat, even after attacking
 - Start Random Encounter alwys starts the same encounter 
 - Can cast spells and use artifacts on enemy turn
+- When creating a new squad, all untis are visible in combat rather than just the leader
+
 # Combat
 
 - Allow multiple factions to be part of combat. 
