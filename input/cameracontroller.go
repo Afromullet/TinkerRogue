@@ -6,9 +6,6 @@ import (
 	"game_main/visual/graphics"
 	"game_main/world/coords"
 	"game_main/world/worldmap"
-
-	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/inpututil"
 )
 
 type CameraController struct {
@@ -26,67 +23,69 @@ func NewCameraController(ecsManager *common.EntityManager, playerData *common.Pl
 	}
 }
 
-func (mc *CameraController) HandleInput() bool {
+// HandleInput processes camera/movement input using the framework's InputState.
+// Uses KeysJustReleased for movement (matching the original inpututil.IsKeyJustReleased behavior).
+func (mc *CameraController) HandleInput(inputState *framework.InputState) bool {
 	inputHandled := false
 
-	// Movement controls
-	if inpututil.IsKeyJustReleased(ebiten.KeyW) {
+	// Movement controls (via action map or raw just-released)
+	if inputState.ActionActive(framework.ActionCameraMoveUp) {
 		mc.movePlayer(0, -1)
 		mc.playerData.InputStates.HasKeyInput = true
 		inputHandled = true
 	}
 
-	if inpututil.IsKeyJustReleased(ebiten.KeyS) {
+	if inputState.ActionActive(framework.ActionCameraMoveDown) {
 		mc.movePlayer(0, 1)
 		mc.playerData.InputStates.HasKeyInput = true
 		inputHandled = true
 	}
 
-	if inpututil.IsKeyJustReleased(ebiten.KeyA) {
+	if inputState.ActionActive(framework.ActionCameraMoveLeft) {
 		mc.movePlayer(-1, 0)
 		mc.playerData.InputStates.HasKeyInput = true
 		inputHandled = true
 	}
 
-	if inpututil.IsKeyJustReleased(ebiten.KeyD) {
+	if inputState.ActionActive(framework.ActionCameraMoveRight) {
 		mc.movePlayer(1, 0)
 		mc.playerData.InputStates.HasKeyInput = true
 		inputHandled = true
 	}
 
 	// Diagonal movement
-	if inpututil.IsKeyJustReleased(ebiten.KeyQ) {
+	if inputState.ActionActive(framework.ActionCameraMoveUpLeft) {
 		mc.movePlayer(-1, -1)
 		mc.playerData.InputStates.HasKeyInput = true
 		inputHandled = true
 	}
 
-	if inpututil.IsKeyJustReleased(ebiten.KeyE) {
+	if inputState.ActionActive(framework.ActionCameraMoveUpRight) {
 		mc.movePlayer(1, -1)
 		mc.playerData.InputStates.HasKeyInput = true
 		inputHandled = true
 	}
 
-	if inpututil.IsKeyJustReleased(ebiten.KeyZ) {
+	if inputState.ActionActive(framework.ActionCameraMoveDownLeft) {
 		mc.movePlayer(-1, 1)
 		mc.playerData.InputStates.HasKeyInput = true
 		inputHandled = true
 	}
 
-	if inpututil.IsKeyJustReleased(ebiten.KeyC) {
+	if inputState.ActionActive(framework.ActionCameraMoveDownRight) {
 		mc.movePlayer(1, 1)
 		mc.playerData.InputStates.HasKeyInput = true
 		inputHandled = true
 	}
 
 	// Debug tile highlighting
-	if inpututil.IsKeyJustReleased(ebiten.KeyB) {
+	if inputState.ActionActive(framework.ActionCameraHighlight) {
 		mc.highlightCurrentTile()
 		inputHandled = true
 	}
 
-	// Toggle map scrolling (M key)
-	if inpututil.IsKeyJustReleased(ebiten.KeyM) {
+	// Toggle map scrolling
+	if inputState.ActionActive(framework.ActionCameraToggleScroll) {
 		coords.MAP_SCROLLING_ENABLED = !coords.MAP_SCROLLING_ENABLED
 		inputHandled = true
 	}

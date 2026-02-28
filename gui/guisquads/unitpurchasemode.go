@@ -29,6 +29,9 @@ type UnitPurchaseMode struct {
 	viewStatsButton *widget.Button
 
 	selectedTemplate *squads.UnitTemplate
+
+	// Input action map
+	actionMap *framework.ActionMap
 }
 
 func NewUnitPurchaseMode(modeManager *framework.UIModeManager) *UnitPurchaseMode {
@@ -38,6 +41,11 @@ func NewUnitPurchaseMode(modeManager *framework.UIModeManager) *UnitPurchaseMode
 	mode.ModeManager = modeManager
 	mode.SetSelf(mode) // Required for panel registry building
 	return mode
+}
+
+// GetActionMap implements framework.ActionMapProvider.
+func (upm *UnitPurchaseMode) GetActionMap() *framework.ActionMap {
+	return upm.actionMap
 }
 
 func (upm *UnitPurchaseMode) Initialize(ctx *framework.UIContext) error {
@@ -55,6 +63,9 @@ func (upm *UnitPurchaseMode) Initialize(ctx *framework.UIContext) error {
 	if err != nil {
 		return err
 	}
+
+	// Initialize action map for semantic keybindings
+	upm.actionMap = framework.DefaultUnitPurchaseBindings()
 
 	// Build panels from registry
 	if err := upm.BuildPanels(
@@ -242,8 +253,13 @@ func (upm *UnitPurchaseMode) HandleInput(inputState *framework.InputState) bool 
 		return true
 	}
 
-	// Handle undo/redo input (Ctrl+Z, Ctrl+Y)
-	if upm.CommandHistory.HandleInput(inputState) {
+	// Handle undo/redo via action map
+	if inputState.ActionActive(framework.ActionUndo) {
+		upm.CommandHistory.Undo()
+		return true
+	}
+	if inputState.ActionActive(framework.ActionRedo) {
+		upm.CommandHistory.Redo()
 		return true
 	}
 

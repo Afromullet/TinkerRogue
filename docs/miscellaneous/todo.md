@@ -3,9 +3,7 @@
 - XP Awards seem to be odd. I.E, didivided by 10. Combat resolution grants 40 xp, but units only get 4 xp
 - Can always move the move undo command in combat, even after attacking
 - Start Random Encounter alwys starts the same encounter 
-- Raids when "Retreating" are not handled correctly.
-- No Way to go between floors for raids
-
+- Can cast spells and use artifacts on enemy turn
 # Combat
 
 - Allow multiple factions to be part of combat. 
@@ -25,14 +23,14 @@
 - Either define archetypes.go in a json file, or use the encounter system. Consider creating a variation of the encounter system which weighs certain units more
     * I.E, "Ambush" - fast units have a weight, ranged battery prioritizes ranged units, etc. 
 
+# Input
+
+- Allow controsl to be remapped
+
 # Combat
 
-- Add a "new type of attack" to combat, which is a heal. Use targeting cells to make things easier  
+
 - Add Zones of Control
-
-# Tools
-
-- Added healing, so the combat simulation in tools will have to change. 
 
 
 # Action Evaluator
@@ -49,7 +47,6 @@
 
 - combatqueries.go still has functions which search the entire ecs space
 
-- Cleaner GUI input handling
 
 - Review all consts to see if they should be defined in a json file
 

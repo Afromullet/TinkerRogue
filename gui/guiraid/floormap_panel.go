@@ -114,7 +114,7 @@ func (fp *FloorMapPanel) HandleInput(inputState *framework.InputState) bool {
 	fp.mode.state.HoveredRoomID = hoveredID
 
 	// Click detection on accessible cards
-	if inputState.MouseJustPressed && inputState.MouseButton == ebiten.MouseButtonLeft {
+	if inputState.ActionActive(framework.ActionMouseClick) {
 		room := fp.renderer.HitTest(inputState.MouseX, inputState.MouseY)
 		if room != nil && room.IsAccessible && !room.IsCleared {
 			fp.mode.OnRoomSelected(room.NodeID)
@@ -126,12 +126,16 @@ func (fp *FloorMapPanel) HandleInput(inputState *framework.InputState) bool {
 	accessibleRooms := raid.GetAccessibleRooms(fp.mode.Context.ECSManager,
 		fp.getCurrentFloor())
 
+	roomActions := []framework.InputAction{
+		framework.ActionSelectRoom1, framework.ActionSelectRoom2, framework.ActionSelectRoom3,
+		framework.ActionSelectRoom4, framework.ActionSelectRoom5, framework.ActionSelectRoom6,
+		framework.ActionSelectRoom7, framework.ActionSelectRoom8, framework.ActionSelectRoom9,
+	}
 	for i, nodeID := range accessibleRooms {
-		key := ebiten.Key(int(ebiten.Key1) + i)
-		if i >= 9 {
+		if i >= len(roomActions) {
 			break
 		}
-		if inputState.KeysJustPressed[key] {
+		if inputState.ActionActive(roomActions[i]) {
 			fp.mode.OnRoomSelected(nodeID)
 			return true
 		}

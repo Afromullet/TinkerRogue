@@ -69,6 +69,9 @@ ENABLE_COMBAT_LOG_EXPORT = true
 ```bash
 # From TinkerRogue root directory
 tools\combat_visualizer\combat_visualizer.exe game_main\simulation_logs\battle_20260208_081424.628.json >> all_battles.txt
+
+
+tools\combat_visualizer\combat_visualizer.exe game_main\simulation_logs\battle_20260227_182740.711.json >> all_battles.txt
 ```
 
 ### Running Combat Simulator Directly

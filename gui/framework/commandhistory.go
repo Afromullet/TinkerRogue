@@ -3,8 +3,6 @@ package framework
 import (
 	"fmt"
 	"game_main/tactical/squadcommands"
-
-	"github.com/hajimehoshi/ebiten/v2"
 )
 
 // CommandHistory provides standardized command executor integration for UI modes.
@@ -87,17 +85,15 @@ func (ch *CommandHistory) Clear() {
 	ch.executor.ClearHistory()
 }
 
-// HandleInput processes undo/redo keyboard shortcuts (Ctrl+Z, Ctrl+Y)
-// Returns true if input was handled
+// HandleInput processes undo/redo keyboard shortcuts (Ctrl+Z, Ctrl+Y).
+// Returns true if input was handled.
 func (ch *CommandHistory) HandleInput(inputState *InputState) bool {
-	// Handle Ctrl+Z for Undo
-	if inputState.KeysJustPressed[ebiten.KeyZ] && (inputState.KeysPressed[ebiten.KeyControl] || inputState.KeysPressed[ebiten.KeyMeta]) {
+	if inputState.ActionActive(ActionUndo) {
 		ch.Undo()
 		return true
 	}
 
-	// Handle Ctrl+Y for Redo
-	if inputState.KeysJustPressed[ebiten.KeyY] && (inputState.KeysPressed[ebiten.KeyControl] || inputState.KeysPressed[ebiten.KeyMeta]) {
+	if inputState.ActionActive(ActionRedo) {
 		ch.Redo()
 		return true
 	}

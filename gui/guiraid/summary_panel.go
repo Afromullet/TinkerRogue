@@ -78,7 +78,7 @@ func (sp *SummaryPanel) Refresh(result *raid.RaidEncounterResult) {
 
 // HandleInput processes summary panel input.
 func (sp *SummaryPanel) HandleInput(inputState *framework.InputState) bool {
-	if inputState.KeysJustPressed[ebiten.KeyEnter] || inputState.KeysJustPressed[ebiten.KeySpace] {
+	if inputState.ActionActive(framework.ActionConfirm) || inputState.ActionActive(framework.ActionDismiss) {
 		sp.mode.OnSummaryDismissed()
 		return true
 	}

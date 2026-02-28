@@ -11,8 +11,9 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-// InputBinding maps a key to a mode transition
-type InputBinding struct {
+// ModeTransitionBinding maps a key to a mode transition.
+// (Renamed from InputBinding to avoid collision with the action map InputBinding type.)
+type ModeTransitionBinding struct {
 	Key        ebiten.Key
 	TargetMode string
 	Reason     string
@@ -39,7 +40,7 @@ type BaseMode struct {
 
 	modeName   string
 	returnMode string                      // Mode to return to on ESC/close
-	hotkeys    map[ebiten.Key]InputBinding // Registered hotkeys for mode transitions
+	hotkeys    map[ebiten.Key]ModeTransitionBinding // Registered hotkeys for mode transitions
 	self       UIMode                      // Reference to concrete mode for panel building
 }
 
@@ -79,7 +80,7 @@ func (bm *BaseMode) InitializeBase(ctx *UIContext) {
 	bm.Queries = ctx.Queries
 
 	// Initialize hotkeys map
-	bm.hotkeys = make(map[ebiten.Key]InputBinding)
+	bm.hotkeys = make(map[ebiten.Key]ModeTransitionBinding)
 
 	// Initialize panel registry
 	bm.Panels = NewPanelRegistry()
@@ -105,10 +106,10 @@ func (bm *BaseMode) InitializeBase(ctx *UIContext) {
 //	bm.RegisterHotkey(ebiten.KeyE, "squad_management")
 func (bm *BaseMode) RegisterHotkey(key ebiten.Key, targetMode string) {
 	if bm.hotkeys == nil {
-		bm.hotkeys = make(map[ebiten.Key]InputBinding)
+		bm.hotkeys = make(map[ebiten.Key]ModeTransitionBinding)
 	}
 
-	bm.hotkeys[key] = InputBinding{
+	bm.hotkeys[key] = ModeTransitionBinding{
 		Key:        key,
 		TargetMode: targetMode,
 		Reason:     fmt.Sprintf("%s key pressed", key.String()),
@@ -154,7 +155,7 @@ func (bm *BaseMode) HandleCommonInput(inputState *InputState) bool {
 	}
 
 	// ESC key - return to designated mode
-	if inputState.KeysJustPressed[ebiten.KeyEscape] {
+	if inputState.ActionActive(ActionCancel) {
 		if returnMode, exists := bm.ModeManager.GetMode(bm.returnMode); exists {
 			bm.ModeManager.RequestTransition(returnMode, "ESC pressed")
 			return true

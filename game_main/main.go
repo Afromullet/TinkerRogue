@@ -56,8 +56,9 @@ func NewGame() *Game {
 // It handles movement, combat, UI interactions through the InputCoordinator,
 // updates player stats, processes status effects, and cleans up dead entities.
 func HandleInput(g *Game) {
-	// Handle all input through the InputCoordinator
-	g.cameraController.HandleInput()
+	// Handle camera input using the tactical manager's InputState
+	inputState := g.gameModeCoordinator.GetTacticalManager().GetInputState()
+	g.cameraController.HandleInput(inputState)
 
 	if g.playerData.InputStates.HasKeyInput {
 		g.playerData.InputStates.HasKeyInput = false

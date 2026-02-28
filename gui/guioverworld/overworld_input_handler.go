@@ -12,7 +12,6 @@ import (
 
 	"github.com/bytearena/ecs"
 	ebitenui "github.com/ebitenui/ebitenui"
-	"github.com/hajimehoshi/ebiten/v2"
 )
 
 // OverworldInputHandler dispatches keyboard and mouse input for the overworld.
@@ -34,7 +33,7 @@ func NewOverworldInputHandler(actionHandler *OverworldActionHandler, deps *Overw
 // HandleInput processes all keyboard and mouse input. Returns true if consumed.
 func (ih *OverworldInputHandler) HandleInput(inputState *framework.InputState) bool {
 	// ESC - exit move mode first, otherwise context switch back to tactical
-	if inputState.KeysJustPressed[ebiten.KeyEscape] {
+	if inputState.ActionActive(framework.ActionCancel) {
 		if ih.deps.State.InMoveMode {
 			ih.deps.State.ExitMoveMode()
 			ih.deps.LogEvent("Movement mode cancelled")
@@ -49,49 +48,49 @@ func (ih *OverworldInputHandler) HandleInput(inputState *framework.InputState) b
 	}
 
 	// N - enter node placement mode
-	if inputState.KeysJustPressed[ebiten.KeyN] {
+	if inputState.ActionActive(framework.ActionNodePlacement) {
 		ih.deps.ModeManager.SetMode("node_placement")
 		return true
 	}
 
 	// Space or Enter - end turn
-	if inputState.KeysJustPressed[ebiten.KeySpace] || inputState.KeysJustPressed[ebiten.KeyEnter] {
+	if inputState.ActionActive(framework.ActionEndOverworldTurn) {
 		ih.actionHandler.EndTurn()
 		return true
 	}
 
 	// M - toggle movement mode for selected commander
-	if inputState.KeysJustPressed[ebiten.KeyM] {
+	if inputState.ActionActive(framework.ActionOverworldMove) {
 		ih.toggleMoveMode()
 		return true
 	}
 
 	// Tab - cycle to next commander
-	if inputState.KeysJustPressed[ebiten.KeyTab] {
+	if inputState.ActionActive(framework.ActionCycleCommander) {
 		ih.cycleCommander()
 		return true
 	}
 
 	// I - toggle influence
-	if inputState.KeysJustPressed[ebiten.KeyI] {
+	if inputState.ActionActive(framework.ActionToggleInfluence) {
 		ih.actionHandler.ToggleInfluence()
 		return true
 	}
 
 	// G - garrison management
-	if inputState.KeysJustPressed[ebiten.KeyG] {
+	if inputState.ActionActive(framework.ActionGarrison) {
 		ih.handleGarrison()
 		return true
 	}
 
 	// R - recruit new commander
-	if inputState.KeysJustPressed[ebiten.KeyR] {
+	if inputState.ActionActive(framework.ActionRecruitCommander) {
 		ih.actionHandler.RecruitCommander()
 		return true
 	}
 
 	// S - open squad management for selected commander
-	if inputState.KeysJustPressed[ebiten.KeyS] {
+	if inputState.ActionActive(framework.ActionSquadManagement) {
 		if ih.deps.State.SelectedCommanderID != 0 {
 			ih.deps.ModeManager.SetMode("squad_editor")
 			return true
@@ -101,13 +100,13 @@ func (ih *OverworldInputHandler) HandleInput(inputState *framework.InputState) b
 	}
 
 	// E - engage threat at commander's position
-	if inputState.KeysJustPressed[ebiten.KeyE] {
+	if inputState.ActionActive(framework.ActionEngageThreat) {
 		ih.actionHandler.EngageThreat(ih.deps.State.SelectedNodeID)
 		return true
 	}
 
 	// Mouse click
-	if inputState.MousePressed && inputState.MouseButton == ebiten.MouseButtonLeft {
+	if inputState.ActionActive(framework.ActionMouseClick) {
 		return ih.handleMouseClick(inputState)
 	}
 

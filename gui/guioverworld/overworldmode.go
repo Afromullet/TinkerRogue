@@ -47,6 +47,9 @@ type OverworldMode struct {
 	lastTick         int64
 	lastSelectedNode ecs.EntityID
 
+	// Input action map
+	actionMap *framework.ActionMap
+
 	// Initialization tracking
 	initialized bool
 }
@@ -62,6 +65,11 @@ func NewOverworldMode(modeManager *framework.UIModeManager, encounterService *en
 	return om
 }
 
+// GetActionMap implements framework.ActionMapProvider.
+func (om *OverworldMode) GetActionMap() *framework.ActionMap {
+	return om.actionMap
+}
+
 func (om *OverworldMode) Initialize(ctx *framework.UIContext) error {
 	// Get persistent state from coordinator
 	om.state = ctx.ModeCoordinator.GetOverworldState()
@@ -75,6 +83,9 @@ func (om *OverworldMode) Initialize(ctx *framework.UIContext) error {
 	if err != nil {
 		return err
 	}
+
+	// Initialize action map for semantic keybindings
+	om.actionMap = framework.DefaultOverworldBindings()
 
 	// Initialize sub-menu controller before building panels (panels register with it)
 	om.subMenus = framework.NewSubMenuController()

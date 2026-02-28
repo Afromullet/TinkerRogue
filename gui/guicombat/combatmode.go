@@ -54,6 +54,9 @@ type CombatMode struct {
 	// Turn lifecycle management
 	turnFlow *CombatTurnFlow
 
+	// Input action map
+	actionMap *framework.ActionMap
+
 	// State tracking for UI updates (GUI_PERFORMANCE_ANALYSIS.md)
 	lastFactionID     ecs.EntityID
 	lastSelectedSquad ecs.EntityID
@@ -71,6 +74,11 @@ func NewCombatMode(modeManager *framework.UIModeManager, encounterService *encou
 	return cm
 }
 
+// GetActionMap implements framework.ActionMapProvider.
+func (cm *CombatMode) GetActionMap() *framework.ActionMap {
+	return cm.actionMap
+}
+
 func (cm *CombatMode) Initialize(ctx *framework.UIContext) error {
 	// Create combat service before ModeBuilder
 	cm.combatService = combatservices.NewCombatService(ctx.ECSManager)
@@ -83,6 +91,9 @@ func (cm *CombatMode) Initialize(ctx *framework.UIContext) error {
 	if err != nil {
 		return err
 	}
+
+	// Initialize action map for semantic keybindings
+	cm.actionMap = framework.DefaultCombatBindings()
 
 	// Initialize sub-menu controller before building panels (panels register with it)
 	cm.subMenus = framework.NewSubMenuController()
@@ -523,7 +534,7 @@ func (cm *CombatMode) HandleInput(inputState *framework.InputState) bool {
 	}
 
 	// Block ESC from reaching HandleCommonInput — use the Flee button instead
-	if inputState.KeysJustPressed[ebiten.KeyEscape] {
+	if inputState.ActionActive(framework.ActionCancel) {
 		return true
 	}
 
@@ -532,7 +543,7 @@ func (cm *CombatMode) HandleInput(inputState *framework.InputState) bool {
 		return true
 	}
 
-	if inputState.KeysJustPressed[ebiten.KeySpace] {
+	if inputState.ActionActive(framework.ActionEndTurn) {
 		cm.turnFlow.HandleEndTurn()
 		return true
 	}

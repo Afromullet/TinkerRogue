@@ -41,6 +41,9 @@ type ArtifactMode struct {
 
 	// Squad navigation
 	squadSelector *SquadSelector
+
+	// Input action map
+	actionMap *framework.ActionMap
 }
 
 func NewArtifactMode(modeManager *framework.UIModeManager) *ArtifactMode {
@@ -54,6 +57,11 @@ func NewArtifactMode(modeManager *framework.UIModeManager) *ArtifactMode {
 	return mode
 }
 
+// GetActionMap implements framework.ActionMapProvider.
+func (am *ArtifactMode) GetActionMap() *framework.ActionMap {
+	return am.actionMap
+}
+
 func (am *ArtifactMode) Initialize(ctx *framework.UIContext) error {
 	err := framework.NewModeBuilder(&am.BaseMode, framework.ModeConfig{
 		ModeName:    "artifact_manager",
@@ -64,6 +72,9 @@ func (am *ArtifactMode) Initialize(ctx *framework.UIContext) error {
 	if err != nil {
 		return err
 	}
+
+	// Initialize action map for semantic keybindings
+	am.actionMap = framework.DefaultArtifactBindings()
 
 	if err := am.BuildPanels(
 		ArtifactPanelSquadSelector,
@@ -143,21 +154,21 @@ func (am *ArtifactMode) HandleInput(inputState *framework.InputState) bool {
 	}
 
 	// Left/Right arrows cycle squads
-	if inputState.KeysJustPressed[ebiten.KeyLeft] {
+	if inputState.ActionActive(framework.ActionPrevSquad) {
 		am.squadSelector.Cycle(-1, am.refreshActiveTab)
 		return true
 	}
-	if inputState.KeysJustPressed[ebiten.KeyRight] {
+	if inputState.ActionActive(framework.ActionNextSquad) {
 		am.squadSelector.Cycle(1, am.refreshActiveTab)
 		return true
 	}
 
 	// Tab switching hotkeys
-	if inputState.KeysJustPressed[ebiten.KeyI] {
+	if inputState.ActionActive(framework.ActionTabInventory) {
 		am.switchTab("inventory")
 		return true
 	}
-	if inputState.KeysJustPressed[ebiten.KeyE] {
+	if inputState.ActionActive(framework.ActionTabEquipment) {
 		am.switchTab("equipment")
 		return true
 	}

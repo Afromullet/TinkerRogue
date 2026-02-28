@@ -103,6 +103,9 @@ type CombatAnimationMode struct {
 	// Cached grid background image (regenerated only when cellSize changes)
 	cachedGridImage    *ebiten.Image
 	cachedGridCellSize int
+
+	// Input action map
+	actionMap *framework.ActionMap
 }
 
 // NewCombatAnimationMode creates a new combat animation mode
@@ -260,6 +263,8 @@ func (cam *CombatAnimationMode) Initialize(ctx *framework.UIContext) error {
 	if err != nil {
 		return err
 	}
+
+	cam.actionMap = framework.DefaultCombatAnimationBindings()
 
 	// Build panels from registry
 	if err := cam.BuildPanels(CombatAnimationPanelPrompt); err != nil {
@@ -544,12 +549,16 @@ func (cam *CombatAnimationMode) renderSquadWithUnitColors(
 	}
 }
 
+// GetActionMap returns the action map for combat animation mode.
+func (cam *CombatAnimationMode) GetActionMap() *framework.ActionMap {
+	return cam.actionMap
+}
+
 // HandleInput handles input for the combat animation mode
 func (cam *CombatAnimationMode) HandleInput(inputState *framework.InputState) bool {
-	// In waiting phase, Space replays the animation, any other key dismisses
 	if cam.animationPhase == PhaseWaiting {
 		// Space to replay animation
-		if inputState.KeysJustPressed[ebiten.KeySpace] {
+		if inputState.ActionActive(framework.ActionReplayAnimation) {
 			cam.animationPhase = PhaseIdle
 			cam.animationTimer = 0
 			cam.flashTimer = 0
@@ -561,23 +570,15 @@ func (cam *CombatAnimationMode) HandleInput(inputState *framework.InputState) bo
 			return true
 		}
 
-		// Check for any other key press to dismiss
-		for key, pressed := range inputState.KeysJustPressed {
-			if pressed && key != ebiten.KeySpace {
-				cam.animationPhase = PhaseComplete
-				return true
-			}
-		}
-
-		// Also accept mouse click to dismiss
-		if inputState.MousePressed {
+		// Any other key or mouse click to dismiss
+		if inputState.AnyKeyJustPressed() || inputState.ActionActive(framework.ActionMouseClick) {
 			cam.animationPhase = PhaseComplete
 			return true
 		}
 	}
 
 	// ESC can skip the animation entirely (goes straight to complete)
-	if inputState.KeysJustPressed[ebiten.KeyEscape] {
+	if inputState.ActionActive(framework.ActionCancel) {
 		cam.animationPhase = PhaseComplete
 		return true
 	}

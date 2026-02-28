@@ -7,22 +7,6 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 )
 
-// Keyboard (example keys - expand as needed)
-var keysToTrack = []ebiten.Key{
-	ebiten.KeyE, ebiten.KeyC, ebiten.KeyF, ebiten.KeyEscape,
-	ebiten.KeyI, ebiten.KeyTab, ebiten.KeySpace, ebiten.KeyB,
-	ebiten.KeyP, ebiten.KeyL,
-	// Combat mode keys
-	ebiten.KeyH, ebiten.KeyA, ebiten.KeyM, ebiten.KeyZ, ebiten.KeyY,
-	ebiten.Key1, ebiten.Key2, ebiten.Key3, ebiten.Key4,
-	// Overworld mode keys
-	ebiten.KeyN, ebiten.KeyW, ebiten.KeyD, ebiten.KeyQ, ebiten.KeyG,
-	// Modifier keys for shortcuts (Ctrl+Z, Ctrl+Y, Shift+H)
-	ebiten.KeyControl, ebiten.KeyMeta, ebiten.KeyShift,
-	ebiten.KeyShiftLeft, ebiten.KeyShiftRight, ebiten.KeyControlLeft,
-	ebiten.KeyControlRight, ebiten.KeyK, ebiten.KeyS,
-}
-
 // UIModeManager coordinates switching between UI modes
 type UIModeManager struct {
 	currentMode       UIMode
@@ -30,7 +14,11 @@ type UIModeManager struct {
 	context           *UIContext
 	pendingTransition *ModeTransition
 	inputState        *InputState
-	prevKeysPressed   map[ebiten.Key]bool // Previous frame's key state (avoids per-frame allocation)
+
+	// Reusable buffers for ebiten key queries (avoids per-frame allocation)
+	pressedBuf      []ebiten.Key
+	justPressedBuf  []ebiten.Key
+	justReleasedBuf []ebiten.Key
 }
 
 func NewUIModeManager(ctx *UIContext) *UIModeManager {
@@ -38,11 +26,13 @@ func NewUIModeManager(ctx *UIContext) *UIModeManager {
 		modes:   make(map[string]UIMode),
 		context: ctx,
 		inputState: &InputState{
-			KeysPressed:       make(map[ebiten.Key]bool),
-			KeysJustPressed:   make(map[ebiten.Key]bool),
-			PlayerInputStates: &ctx.PlayerData.InputStates,
+			KeysPressed:            make(map[ebiten.Key]bool),
+			KeysJustPressed:        make(map[ebiten.Key]bool),
+			KeysJustReleased:       make(map[ebiten.Key]bool),
+			PlayerInputStates:      &ctx.PlayerData.InputStates,
+			mouseJustPressedButtons: make(map[ebiten.MouseButton]bool),
+			ActionsActive:          make(map[InputAction]bool),
 		},
-		prevKeysPressed: make(map[ebiten.Key]bool),
 	}
 }
 
@@ -169,19 +159,41 @@ func (umm *UIModeManager) updateInputState() {
 	umm.inputState.MouseJustPressed = inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) ||
 		inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonRight)
 
-	for _, key := range keysToTrack {
-		isPressed := ebiten.IsKeyPressed(key)
+	// Per-button just-pressed tracking
+	umm.inputState.mouseJustPressedButtons[ebiten.MouseButtonLeft] = inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft)
+	umm.inputState.mouseJustPressedButtons[ebiten.MouseButtonRight] = inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonRight)
 
-		// Just pressed = pressed now but not last frame
-		wasPressed := umm.prevKeysPressed[key]
-		umm.inputState.KeysJustPressed[key] = isPressed && !wasPressed
+	clear(umm.inputState.KeysPressed)
+	clear(umm.inputState.KeysJustPressed)
+	clear(umm.inputState.KeysJustReleased)
 
-		umm.inputState.KeysPressed[key] = isPressed
-		umm.prevKeysPressed[key] = isPressed
+	umm.pressedBuf = inpututil.AppendPressedKeys(umm.pressedBuf[:0])
+	for _, key := range umm.pressedBuf {
+		umm.inputState.KeysPressed[key] = true
+	}
+
+	umm.justPressedBuf = inpututil.AppendJustPressedKeys(umm.justPressedBuf[:0])
+	for _, key := range umm.justPressedBuf {
+		umm.inputState.KeysJustPressed[key] = true
+	}
+
+	umm.justReleasedBuf = inpututil.AppendJustReleasedKeys(umm.justReleasedBuf[:0])
+	for _, key := range umm.justReleasedBuf {
+		umm.inputState.KeysJustReleased[key] = true
 	}
 
 	// Sync with PlayerInputStates (bridge to existing system)
 	umm.inputState.PlayerInputStates = &umm.context.PlayerData.InputStates
+
+	// Resolve semantic actions if current mode provides an ActionMap
+	clear(umm.inputState.ActionsActive)
+	if umm.currentMode != nil {
+		if provider, ok := umm.currentMode.(ActionMapProvider); ok {
+			if actionMap := provider.GetActionMap(); actionMap != nil {
+				actionMap.ResolveInto(umm.inputState.ActionsActive, umm.inputState)
+			}
+		}
+	}
 }
 
 // GetCurrentMode returns the active mode
@@ -193,4 +205,10 @@ func (umm *UIModeManager) GetCurrentMode() UIMode {
 func (umm *UIModeManager) GetMode(name string) (UIMode, bool) {
 	mode, exists := umm.modes[name]
 	return mode, exists
+}
+
+// GetInputState returns the current frame's input state.
+// Useful for systems like CameraController that process input outside the mode manager.
+func (umm *UIModeManager) GetInputState() *InputState {
+	return umm.inputState
 }

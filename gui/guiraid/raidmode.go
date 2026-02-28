@@ -25,6 +25,11 @@ type RaidMode struct {
 	floorPanel   *FloorMapPanel
 	deployPanel  *DeployPanel
 	summaryPanel *SummaryPanel
+
+	// Action maps for each sub-panel state
+	floorMapActionMap *framework.ActionMap
+	deployActionMap   *framework.ActionMap
+	summaryActionMap  *framework.ActionMap
 }
 
 // NewRaidMode creates a new raid mode.
@@ -44,6 +49,21 @@ func (rm *RaidMode) SetRaidRunner(runner *raid.RaidRunner) {
 	rm.raidRunner = runner
 }
 
+// GetActionMap implements framework.ActionMapProvider.
+// Returns the action map for the currently active sub-panel.
+func (rm *RaidMode) GetActionMap() *framework.ActionMap {
+	switch rm.state.CurrentPanel {
+	case PanelFloorMap:
+		return rm.floorMapActionMap
+	case PanelDeploy:
+		return rm.deployActionMap
+	case PanelSummary:
+		return rm.summaryActionMap
+	default:
+		return nil
+	}
+}
+
 // Initialize sets up the raid mode's UI infrastructure.
 func (rm *RaidMode) Initialize(ctx *framework.UIContext) error {
 	err := framework.NewModeBuilder(&rm.BaseMode, framework.ModeConfig{
@@ -54,6 +74,11 @@ func (rm *RaidMode) Initialize(ctx *framework.UIContext) error {
 	if err != nil {
 		return err
 	}
+
+	// Initialize action maps for each sub-panel
+	rm.floorMapActionMap = framework.DefaultRaidFloorMapBindings()
+	rm.deployActionMap = framework.DefaultRaidDeployBindings()
+	rm.summaryActionMap = framework.DefaultRaidSummaryBindings()
 
 	// Build panels from registry
 	if err := rm.BuildPanels(

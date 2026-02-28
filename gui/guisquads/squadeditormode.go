@@ -60,6 +60,9 @@ type SquadEditorMode struct {
 	supportLabel         *widget.Text
 	showSupportPattern   bool
 
+	// Input action map
+	actionMap *framework.ActionMap
+
 	// State
 	selectedGridCell *GridCell    // Currently selected grid cell
 	selectedUnitID   ecs.EntityID // Currently selected unit in squad
@@ -78,6 +81,11 @@ func NewSquadEditorMode(modeManager *framework.UIModeManager) *SquadEditorMode {
 	mode.ModeManager = modeManager
 	mode.SetSelf(mode) // Required for panel registry building
 	return mode
+}
+
+// GetActionMap implements framework.ActionMapProvider.
+func (sem *SquadEditorMode) GetActionMap() *framework.ActionMap {
+	return sem.actionMap
 }
 
 func (sem *SquadEditorMode) Initialize(ctx *framework.UIContext) error {
@@ -105,6 +113,9 @@ func (sem *SquadEditorMode) Initialize(ctx *framework.UIContext) error {
 	if err != nil {
 		return err
 	}
+
+	// Initialize action map for semantic keybindings
+	sem.actionMap = framework.DefaultSquadEditorBindings()
 
 	// Initialize sub-menu controller before building panels (panels register with it).
 	// Pass RootContainer so hidden panels are fully removed from the widget tree,
@@ -250,7 +261,7 @@ func (sem *SquadEditorMode) Render(screen *ebiten.Image) {
 
 func (sem *SquadEditorMode) HandleInput(inputState *framework.InputState) bool {
 	// ESC cascade: close right panel first, then exit mode
-	if inputState.KeysJustPressed[ebiten.KeyEscape] {
+	if inputState.ActionActive(framework.ActionCancel) {
 		if sem.subMenus.AnyActive() {
 			sem.subMenus.CloseAll()
 			return true
@@ -264,37 +275,37 @@ func (sem *SquadEditorMode) HandleInput(inputState *framework.InputState) bool {
 	}
 
 	// U key toggles units panel
-	if inputState.KeysJustPressed[ebiten.KeyU] {
+	if inputState.ActionActive(framework.ActionToggleUnits) {
 		sem.subMenus.Toggle("units")()
 		return true
 	}
 
 	// R key toggles roster panel
-	if inputState.KeysJustPressed[ebiten.KeyR] {
+	if inputState.ActionActive(framework.ActionToggleRoster) {
 		sem.subMenus.Toggle("roster")()
 		return true
 	}
 
 	// N key creates new squad
-	if inputState.KeysJustPressed[ebiten.KeyN] {
+	if inputState.ActionActive(framework.ActionNewSquad) {
 		sem.onNewSquad()
 		return true
 	}
 
 	// V key toggles attack pattern view
-	if inputState.KeysJustPressed[ebiten.KeyV] {
+	if inputState.ActionActive(framework.ActionToggleAttackPattern) {
 		sem.toggleAttackPattern()
 		return true
 	}
 
 	// B key toggles support pattern view
-	if inputState.KeysJustPressed[ebiten.KeyB] {
+	if inputState.ActionActive(framework.ActionToggleSupportPattern) {
 		sem.toggleSupportPattern()
 		return true
 	}
 
 	// Tab key cycles to next commander
-	if inputState.KeysJustPressed[ebiten.KeyTab] {
+	if inputState.ActionActive(framework.ActionCycleCommanderEditor) {
 		sem.showNextCommander()
 		return true
 	}

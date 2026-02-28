@@ -113,7 +113,7 @@ func (cih *CombatInputHandler) handleDebugKillClick(mouseX, mouseY int) {
 // HandleInput processes input and returns true if input was consumed
 func (cih *CombatInputHandler) HandleInput(inputState *framework.InputState) bool {
 	// ESC cancels debug kill mode
-	if cih.inDebugKillMode && inputState.KeysJustPressed[ebiten.KeyEscape] {
+	if cih.inDebugKillMode && inputState.ActionActive(framework.ActionCancel) {
 		cih.inDebugKillMode = false
 		return true
 	}
@@ -123,7 +123,7 @@ func (cih *CombatInputHandler) HandleInput(inputState *framework.InputState) boo
 		handler := cih.spellPanel.Handler()
 
 		// ESC cancels spell mode
-		if inputState.KeysJustPressed[ebiten.KeyEscape] {
+		if inputState.ActionActive(framework.ActionCancel) {
 			cih.spellPanel.OnCancelClicked()
 			return true
 		}
@@ -131,18 +131,18 @@ func (cih *CombatInputHandler) HandleInput(inputState *framework.InputState) boo
 		if handler.HasSelectedSpell() {
 			// Spell is selected - AoE shape rotation
 			if handler.IsAoETargeting() {
-				if inputState.KeysJustPressed[ebiten.Key1] {
+				if inputState.ActionActive(framework.ActionAoERotateLeft) {
 					handler.RotateShapeLeft()
 					return true
 				}
-				if inputState.KeysJustPressed[ebiten.Key2] {
+				if inputState.ActionActive(framework.ActionAoERotateRight) {
 					handler.RotateShapeRight()
 					return true
 				}
 			}
 
 			// Click to cast
-			if inputState.MouseButton == ebiten.MouseButtonLeft && inputState.MouseJustPressed {
+			if inputState.MouseJustPressedButton(ebiten.MouseButtonLeft) {
 				if handler.IsAoETargeting() {
 					handler.HandleAoEConfirmClick(inputState.MouseX, inputState.MouseY)
 				} else {
@@ -160,14 +160,14 @@ func (cih *CombatInputHandler) HandleInput(inputState *framework.InputState) boo
 		handler := cih.artifactPanel.Handler()
 
 		// ESC cancels artifact mode
-		if inputState.KeysJustPressed[ebiten.KeyEscape] {
+		if inputState.ActionActive(framework.ActionCancel) {
 			cih.artifactPanel.OnCancelClicked()
 			return true
 		}
 
 		if handler.HasSelectedArtifact() {
 			// Artifact selected and targeting - click to apply
-			if inputState.MouseButton == ebiten.MouseButtonLeft && inputState.MouseJustPressed {
+			if inputState.MouseJustPressedButton(ebiten.MouseButtonLeft) {
 				handler.HandleTargetClick(inputState.MouseX, inputState.MouseY)
 				return true
 			}
@@ -179,13 +179,13 @@ func (cih *CombatInputHandler) HandleInput(inputState *framework.InputState) boo
 	// Inspect mode input handling (takes priority over normal clicks)
 	if cih.deps.BattleState.InInspectMode {
 		// ESC exits inspect mode
-		if inputState.KeysJustPressed[ebiten.KeyEscape] {
+		if inputState.ActionActive(framework.ActionCancel) {
 			cih.exitInspectMode()
 			return true
 		}
 
 		// Left-click inspects squad at position
-		if inputState.MouseButton == ebiten.MouseButtonLeft && inputState.MouseJustPressed {
+		if inputState.MouseJustPressedButton(ebiten.MouseButtonLeft) {
 			cih.handleInspectClick(inputState.MouseX, inputState.MouseY)
 			return true
 		}
@@ -195,13 +195,13 @@ func (cih *CombatInputHandler) HandleInput(inputState *framework.InputState) boo
 	}
 
 	// Right-click exits move mode
-	if cih.deps.BattleState.InMoveMode && inputState.MouseButton == ebiten.MouseButtonRight && inputState.MouseJustPressed {
+	if cih.deps.BattleState.InMoveMode && inputState.MouseJustPressedButton(ebiten.MouseButtonRight) {
 		cih.actionHandler.ToggleMoveMode()
 		return true
 	}
 
 	// Handle mouse clicks (edge-detected: fires once per press)
-	if inputState.MouseButton == ebiten.MouseButtonLeft && inputState.MouseJustPressed {
+	if inputState.MouseJustPressedButton(ebiten.MouseButtonLeft) {
 		// Debug kill mode takes priority over all other click handling
 		if cih.inDebugKillMode {
 			defer func() { cih.inDebugKillMode = false }()
@@ -219,38 +219,37 @@ func (cih *CombatInputHandler) HandleInput(inputState *framework.InputState) boo
 		return true
 	}
 
-	// Space to end turn
-	if inputState.KeysJustPressed[ebiten.KeySpace] {
-		// This is handled at a higher level
+	// Space to end turn - handled at CombatMode level
+	if inputState.ActionActive(framework.ActionEndTurn) {
 		return false
 	}
 
 	// S key to toggle spell panel
-	if inputState.KeysJustPressed[ebiten.KeyS] && cih.spellPanel != nil {
+	if inputState.ActionActive(framework.ActionSpellPanel) && cih.spellPanel != nil {
 		cih.spellPanel.Toggle()
 		return true
 	}
 
 	// D key to toggle artifact panel
-	if inputState.KeysJustPressed[ebiten.KeyD] && cih.artifactPanel != nil {
+	if inputState.ActionActive(framework.ActionArtifactPanel) && cih.artifactPanel != nil {
 		cih.artifactPanel.Toggle()
 		return true
 	}
 
 	// A key to toggle attack mode
-	if inputState.KeysJustPressed[ebiten.KeyA] {
+	if inputState.ActionActive(framework.ActionAttackMode) {
 		cih.actionHandler.ToggleAttackMode()
 		return true
 	}
 
 	// M key to toggle move mode
-	if inputState.KeysJustPressed[ebiten.KeyM] {
+	if inputState.ActionActive(framework.ActionMoveMode) {
 		cih.actionHandler.ToggleMoveMode()
 		return true
 	}
 
 	// I key to toggle inspect mode
-	if inputState.KeysJustPressed[ebiten.KeyI] {
+	if inputState.ActionActive(framework.ActionInspectMode) {
 		// Close spell/artifact panels if active
 		if cih.spellPanel != nil && cih.spellPanel.Handler().IsInSpellMode() {
 			cih.spellPanel.OnCancelClicked()
@@ -263,28 +262,28 @@ func (cih *CombatInputHandler) HandleInput(inputState *framework.InputState) boo
 	}
 
 	// TAB to cycle through squads
-	if inputState.KeysJustPressed[ebiten.KeyTab] {
+	if inputState.ActionActive(framework.ActionCycleSquad) {
 		cih.actionHandler.CycleSquadSelection()
 		return true
 	}
 
 	// Ctrl+Z to undo last move
-	if inputState.KeysJustPressed[ebiten.KeyZ] && (inputState.KeysPressed[ebiten.KeyControl] || inputState.KeysPressed[ebiten.KeyMeta]) {
+	if inputState.ActionActive(framework.ActionUndoMove) {
 		cih.actionHandler.UndoLastMove()
 		return true
 	}
 
 	// Number keys 1-3 to select enemy targets in attack mode
 	if cih.deps.BattleState.InAttackMode {
-		if inputState.KeysJustPressed[ebiten.Key1] {
+		if inputState.ActionActive(framework.ActionSelectTarget1) {
 			cih.actionHandler.SelectEnemyTarget(0)
 			return true
 		}
-		if inputState.KeysJustPressed[ebiten.Key2] {
+		if inputState.ActionActive(framework.ActionSelectTarget2) {
 			cih.actionHandler.SelectEnemyTarget(1)
 			return true
 		}
-		if inputState.KeysJustPressed[ebiten.Key3] {
+		if inputState.ActionActive(framework.ActionSelectTarget3) {
 			cih.actionHandler.SelectEnemyTarget(2)
 			return true
 		}
@@ -302,21 +301,10 @@ func (cih *CombatInputHandler) HandleInput(inputState *framework.InputState) boo
 	}
 
 	// Ctrl+K to kill all enemy squads (debug command)
-	// Also accept just K without modifier for easier debugging
-	if inputState.KeysJustPressed[ebiten.KeyK] {
-		println("[DEBUG] K key pressed")
-		if inputState.KeysPressed[ebiten.KeyControl] {
-			println("[DEBUG] Control is held")
-		}
-		if inputState.KeysPressed[ebiten.KeyMeta] {
-			println("[DEBUG] Meta is held")
-		}
-
-		if inputState.KeysPressed[ebiten.KeyControl] || inputState.KeysPressed[ebiten.KeyMeta] {
-			println("[DEBUG] Calling killAllEnemySquads()")
-			cih.killAllEnemySquads()
-			return true
-		}
+	if inputState.ActionActive(framework.ActionDebugKillAll) {
+		println("[DEBUG] Calling killAllEnemySquads()")
+		cih.killAllEnemySquads()
+		return true
 	}
 
 	return false
@@ -542,24 +530,20 @@ func (cih *CombatInputHandler) handleInspectClick(mouseX, mouseY int) {
 
 // handleThreatToggle handles H key to toggle threat heat map
 func (cih *CombatInputHandler) handleThreatToggle(inputState *framework.InputState) bool {
-	if !inputState.KeysJustPressed[ebiten.KeyH] {
+	threatViz := cih.visualization.GetThreatVisualizer()
+	if threatViz == nil {
 		return false
 	}
 
-	threatViz := cih.visualization.GetThreatVisualizer()
-	if threatViz == nil {
+	// Shift+H cycles faction
+	if inputState.ActionActive(framework.ActionThreatCycleFact) {
+		threatViz.CycleFaction()
+		cih.updateLayerStatusWidget()
 		return true
 	}
 
-	shiftPressed := inputState.KeysPressed[ebiten.KeyShift] ||
-		inputState.KeysPressed[ebiten.KeyShiftLeft] ||
-		inputState.KeysPressed[ebiten.KeyShiftRight]
-
-	if shiftPressed {
-		threatViz.CycleFaction()
-	} else {
-		// If not active or in different mode: activate in Threat mode
-		// If already active in Threat mode: turn off
+	// Plain H toggles threat mode
+	if inputState.ActionActive(framework.ActionThreatToggle) {
 		if !threatViz.IsActive() || threatViz.GetMode() != behavior.VisualizerModeThreat {
 			threatViz.SetMode(behavior.VisualizerModeThreat)
 			if !threatViz.IsActive() {
@@ -568,14 +552,16 @@ func (cih *CombatInputHandler) handleThreatToggle(inputState *framework.InputSta
 		} else {
 			threatViz.Toggle()
 		}
+		cih.updateLayerStatusWidget()
+		return true
 	}
-	cih.updateLayerStatusWidget()
-	return true
+
+	return false
 }
 
-// handleHealthBarToggle handles Ctrl+Right key to toggle health bars
+// handleHealthBarToggle handles CtrlRight key to toggle health bars
 func (cih *CombatInputHandler) handleHealthBarToggle(inputState *framework.InputState) bool {
-	if !inputState.KeysJustPressed[ebiten.KeyControlRight] {
+	if !inputState.ActionActive(framework.ActionHealthBarToggle) {
 		return false
 	}
 
@@ -586,24 +572,20 @@ func (cih *CombatInputHandler) handleHealthBarToggle(inputState *framework.Input
 
 // handleLayerToggle handles L key to toggle layer visualizer
 func (cih *CombatInputHandler) handleLayerToggle(inputState *framework.InputState) bool {
-	if !inputState.KeysJustPressed[ebiten.KeyL] {
+	threatViz := cih.visualization.GetThreatVisualizer()
+	if threatViz == nil {
 		return false
 	}
 
-	threatViz := cih.visualization.GetThreatVisualizer()
-	if threatViz == nil {
+	// Shift+L cycles layer mode
+	if inputState.ActionActive(framework.ActionLayerCycleMode) {
+		threatViz.CycleLayerMode()
+		cih.updateLayerStatusWidget()
 		return true
 	}
 
-	shiftPressed := inputState.KeysPressed[ebiten.KeyShift] ||
-		inputState.KeysPressed[ebiten.KeyShiftLeft] ||
-		inputState.KeysPressed[ebiten.KeyShiftRight]
-
-	if shiftPressed {
-		threatViz.CycleLayerMode()
-	} else {
-		// If not active or in different mode: activate in Layer mode
-		// If already active in Layer mode: turn off
+	// Plain L toggles layer visualizer
+	if inputState.ActionActive(framework.ActionLayerToggle) {
 		if !threatViz.IsActive() || threatViz.GetMode() != behavior.VisualizerModeLayer {
 			threatViz.SetMode(behavior.VisualizerModeLayer)
 			if !threatViz.IsActive() {
@@ -612,9 +594,11 @@ func (cih *CombatInputHandler) handleLayerToggle(inputState *framework.InputStat
 		} else {
 			threatViz.Toggle()
 		}
+		cih.updateLayerStatusWidget()
+		return true
 	}
-	cih.updateLayerStatusWidget()
-	return true
+
+	return false
 }
 
 // updateLayerStatusWidget updates the layer status panel visibility and text

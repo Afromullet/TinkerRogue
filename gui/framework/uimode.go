@@ -82,7 +82,34 @@ type InputState struct {
 	MouseButton       ebiten.MouseButton
 	KeysPressed       map[ebiten.Key]bool
 	KeysJustPressed   map[ebiten.Key]bool
+	KeysJustReleased  map[ebiten.Key]bool
 	PlayerInputStates *common.PlayerInputStates // Bridge to existing system
+
+	// Per-button just-pressed tracking (more precise than MouseJustPressed which ORs all buttons)
+	mouseJustPressedButtons map[ebiten.MouseButton]bool
+
+	// Semantic actions resolved from the current mode's ActionMap
+	ActionsActive map[InputAction]bool
+}
+
+// ActionActive returns true if the given semantic action is active this frame.
+func (is *InputState) ActionActive(action InputAction) bool {
+	return is.ActionsActive[action]
+}
+
+// AnyKeyJustPressed returns true if any key was just pressed this frame.
+func (is *InputState) AnyKeyJustPressed() bool {
+	for _, pressed := range is.KeysJustPressed {
+		if pressed {
+			return true
+		}
+	}
+	return false
+}
+
+// MouseJustPressedButton returns true if the specific mouse button was just pressed this frame.
+func (is *InputState) MouseJustPressedButton(button ebiten.MouseButton) bool {
+	return is.mouseJustPressedButtons[button]
 }
 
 // ModeTransition represents a request to change modes

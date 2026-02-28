@@ -31,6 +31,9 @@ type NodePlacementMode struct {
 	// Widget references
 	nodeListText      *widget.TextArea
 	placementInfoText *widget.TextArea
+
+	// Input action map
+	actionMap *framework.ActionMap
 }
 
 func NewNodePlacementMode(modeManager *framework.UIModeManager) *NodePlacementMode {
@@ -40,6 +43,11 @@ func NewNodePlacementMode(modeManager *framework.UIModeManager) *NodePlacementMo
 	npm.ModeManager = modeManager
 	npm.SetSelf(npm)
 	return npm
+}
+
+// GetActionMap implements framework.ActionMapProvider.
+func (npm *NodePlacementMode) GetActionMap() *framework.ActionMap {
+	return npm.actionMap
 }
 
 func (npm *NodePlacementMode) Initialize(ctx *framework.UIContext) error {
@@ -52,6 +60,9 @@ func (npm *NodePlacementMode) Initialize(ctx *framework.UIContext) error {
 	if err != nil {
 		return err
 	}
+
+	// Initialize action map for semantic keybindings
+	npm.actionMap = framework.DefaultNodePlacementBindings()
 
 	// Build panels
 	if err := npm.BuildPanels(
@@ -117,15 +128,18 @@ func (npm *NodePlacementMode) HandleInput(inputState *framework.InputState) bool
 	}
 
 	// Tab to cycle through node types
-	if inputState.KeysJustPressed[ebiten.KeyTab] && len(npm.nodeTypes) > 0 {
+	if inputState.ActionActive(framework.ActionCycleNodeType) && len(npm.nodeTypes) > 0 {
 		npm.cycleNodeType()
 		return true
 	}
 
 	// Number keys 1-4 to select node type directly
-	numberKeys := []ebiten.Key{ebiten.Key1, ebiten.Key2, ebiten.Key3, ebiten.Key4}
-	for i, key := range numberKeys {
-		if inputState.KeysJustPressed[key] && i < len(npm.nodeTypes) {
+	nodeTypeActions := []framework.InputAction{
+		framework.ActionSelectNodeType1, framework.ActionSelectNodeType2,
+		framework.ActionSelectNodeType3, framework.ActionSelectNodeType4,
+	}
+	for i, action := range nodeTypeActions {
+		if inputState.ActionActive(action) && i < len(npm.nodeTypes) {
 			npm.selectedNodeType = core.NodeTypeID(npm.nodeTypes[i].ID)
 			npm.refreshNodeList()
 			npm.refreshPlacementInfo()
@@ -143,7 +157,7 @@ func (npm *NodePlacementMode) HandleInput(inputState *framework.InputState) bool
 	npm.lastValidation = &result
 
 	// Left click to place node
-	if inputState.MousePressed && inputState.MouseButton == ebiten.MouseButtonLeft {
+	if inputState.ActionActive(framework.ActionMouseClick) {
 		npm.handlePlaceNode(logicalPos)
 		return true
 	}

@@ -2935,7 +2935,7 @@ framework.NewModeBuilder(&m.BaseMode, framework.ModeConfig{
 }).Build(ctx)
 
 // Or register individually
-m.RegisterHotkey(ebiten.KeyE, "squad_management")
+m.RegisterHotkey(ebitenThe.KeyE, "squad_management")
 ```
 
 **HandleInput** for mode-specific actions:

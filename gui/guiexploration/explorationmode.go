@@ -21,6 +21,9 @@ type ExplorationMode struct {
 	// Interactive widget references (stored here for refresh/access)
 	// These are populated from panel registry after BuildPanels()
 	messageLog *widget.TextArea
+
+	// Input action map (includes camera bindings for exploration)
+	actionMap *framework.ActionMap
 }
 
 func NewExplorationMode(modeManager *framework.UIModeManager) *ExplorationMode {
@@ -30,6 +33,11 @@ func NewExplorationMode(modeManager *framework.UIModeManager) *ExplorationMode {
 	mode.ModeManager = modeManager
 	mode.SetSelf(mode) // Required for panel registry building
 	return mode
+}
+
+// GetActionMap implements framework.ActionMapProvider.
+func (em *ExplorationMode) GetActionMap() *framework.ActionMap {
+	return em.actionMap
 }
 
 func (em *ExplorationMode) Initialize(ctx *framework.UIContext) error {
@@ -43,6 +51,9 @@ func (em *ExplorationMode) Initialize(ctx *framework.UIContext) error {
 	if err != nil {
 		return err
 	}
+
+	// Initialize action map: merge camera bindings for exploration mode
+	em.actionMap = framework.DefaultCameraBindings()
 
 	// Initialize sub-menu controller before building panels (panels register with it)
 	em.subMenus = framework.NewSubMenuController()

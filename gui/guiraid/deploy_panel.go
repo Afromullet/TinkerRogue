@@ -141,11 +141,11 @@ func (dp *DeployPanel) autoDeploy() {
 
 // HandleInput processes deploy panel input.
 func (dp *DeployPanel) HandleInput(inputState *framework.InputState) bool {
-	if inputState.KeysJustPressed[ebiten.KeyEnter] {
+	if inputState.ActionActive(framework.ActionConfirm) {
 		dp.mode.OnDeployConfirmed()
 		return true
 	}
-	if inputState.KeysJustPressed[ebiten.KeyEscape] {
+	if inputState.ActionActive(framework.ActionDeployBack) {
 		dp.mode.showPanel(PanelFloorMap)
 		return true
 	}
