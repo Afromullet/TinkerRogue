@@ -53,7 +53,7 @@ func (h *SpellCastingHandler) SelectSpell(spellID string) {
 
 	if !spell.IsSingleTarget() {
 		// Initialize AoE shape targeting
-		h.activeShape = spell.CreateAoEShape()
+		h.activeShape = createAoEShape(spell)
 	}
 }
 
@@ -226,6 +226,21 @@ func (h *SpellCastingHandler) ClearOverlay() {
 	h.prevIndices = nil
 }
 
+// createAoEShape creates a TileBasedShape from the spell's shape definition.
+func createAoEShape(spell *templates.SpellDefinition) graphics.TileBasedShape {
+	if spell.Shape == nil {
+		return graphics.CreateShapeFromConfig(nil)
+	}
+	return graphics.CreateShapeFromConfig(&graphics.ShapeConfig{
+		Type:   spell.Shape.Type,
+		Size:   spell.Shape.Size,
+		Length: spell.Shape.Length,
+		Width:  spell.Shape.Width,
+		Height: spell.Shape.Height,
+		Radius: spell.Shape.Radius,
+	})
+}
+
 // isEnemySquad checks if a squad belongs to an enemy faction.
 func (h *SpellCastingHandler) isEnemySquad(squadID ecs.EntityID) bool {
 	squadInfo := h.deps.Queries.GetSquadInfo(squadID)
@@ -308,9 +323,9 @@ func triggerSpellVX(spell *templates.SpellDefinition, targetSquadIDs []ecs.Entit
 	if spell.IsAoE() && spell.Shape != nil && targetPos != nil {
 		pixelX := targetPos.X * graphics.ScreenInfo.TileSize
 		pixelY := targetPos.Y * graphics.ScreenInfo.TileSize
-		shape := spell.CreateAoEShape()
+		shape := createAoEShape(spell)
 		shape.UpdatePosition(pixelX, pixelY)
-		vx := spell.CreateVisualEffect(0, 0)
+		vx := graphics.CreateVisualEffectByType(spell.VXType, 0, 0, spell.VXDuration)
 		area := graphics.NewVisualEffectArea(playerPos.X, playerPos.Y, shape, vx)
 		graphics.AddVXArea(area)
 		return
@@ -325,7 +340,7 @@ func triggerSpellVX(spell *templates.SpellDefinition, targetSquadIDs []ecs.Entit
 
 		pos := *squadInfo.Position
 		sx, sy := coords.CoordManager.LogicalToScreen(pos, playerPos)
-		vx := spell.CreateVisualEffect(int(sx), int(sy))
+		vx := graphics.CreateVisualEffectByType(spell.VXType, int(sx), int(sy), spell.VXDuration)
 		graphics.AddVX(vx)
 	}
 }

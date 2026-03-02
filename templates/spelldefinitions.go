@@ -3,7 +3,6 @@ package templates
 import (
 	"encoding/json"
 	"fmt"
-	"game_main/visual/graphics"
 	"os"
 )
 
@@ -61,28 +60,6 @@ func GetAllSpellIDs() []string {
 		ids = append(ids, id)
 	}
 	return ids
-}
-
-// CreateAoEShape creates a TileBasedShape from the spell's shape definition.
-// Returns a default 1x1 square if the spell has no shape defined.
-func (sd *SpellDefinition) CreateAoEShape() graphics.TileBasedShape {
-	return CreateTargetArea(sd.Shape)
-}
-
-// CreateVisualEffect creates a VX effect at the given pixel coordinates.
-func (sd *SpellDefinition) CreateVisualEffect(x, y int) graphics.VisualEffect {
-	switch sd.VXType {
-	case "fire":
-		return graphics.NewFireEffect(x, y, sd.VXDuration)
-	case "ice":
-		return graphics.NewIceEffect(x, y, sd.VXDuration)
-	case "electricity":
-		return graphics.NewElectricityEffect(x, y, sd.VXDuration)
-	case "cloud":
-		return graphics.NewCloudEffect(x, y, sd.VXDuration)
-	default:
-		return graphics.NewFireEffect(x, y, sd.VXDuration)
-	}
 }
 
 // IsSingleTarget returns true if this spell targets a single squad.

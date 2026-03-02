@@ -1,10 +1,8 @@
 package templates
 
 import (
-	"encoding/json"
 	"fmt"
 	"math"
-	"os"
 	"sync/atomic"
 )
 
@@ -156,16 +154,8 @@ func NewDefaultDifficultyManager() *DifficultyManager {
 
 // ReadDifficultyConfig loads difficulty configuration from JSON and initializes GlobalDifficulty.
 func ReadDifficultyConfig() {
-	data, err := os.ReadFile(AssetPath("gamedata/difficultyconfig.json"))
-	if err != nil {
-		panic(err)
-	}
-
 	var configData DifficultyConfigData
-	err = json.Unmarshal(data, &configData)
-	if err != nil {
-		panic(err)
-	}
+	readAndUnmarshal("gamedata/difficultyconfig.json", &configData)
 
 	validateDifficultyConfig(&configData)
 
@@ -216,9 +206,7 @@ func validateDifficultyConfig(config *DifficultyConfigData) {
 		}
 		seenNames[preset.Name] = true
 
-		if _, exists := required[preset.Name]; exists {
-			required[preset.Name] = true
-		}
+		markFound(required, preset.Name)
 
 		// Validate master knobs
 		if preset.CombatIntensity <= 0 {
@@ -232,11 +220,7 @@ func validateDifficultyConfig(config *DifficultyConfigData) {
 		}
 	}
 
-	for name, found := range required {
-		if !found {
-			panic("missing required difficulty preset: " + name)
-		}
-	}
+	checkRequired("difficulty preset", required)
 
 	if config.DefaultDifficulty == "" {
 		panic("defaultDifficulty must be set")

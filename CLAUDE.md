@@ -40,13 +40,20 @@ go vet ./...                    # Check for mistakes
 - **Input:** `input/inputcoordinator.go` + controllers
 - **Squads:** `tactical/squads`, `tactical/squadcommands`, `tactical/squadservices`,  (Squad and Squad Management)
 - **Combat:** `tactical/combat/`, `tactical/combatservices/` (turn manager, combat state, combat actions)
-- **AI:** `tactical/ai`, `tactical/behavior` (game ai, controls enemies)
-- **GUI :** `gui/core/` (mode manager, context switching)
+- **Spells:** `tactical/spells` (Spell casting systme)
+- **Effects:** `tactica/effects` (Effect system, used by spells and artifacts)
+- **AI:** `mind/ai`, `mind/behavior`, `mind/evaluation`  (game ai, controls enemies)
+- **Encounter Generation** `mind/encounter`, `mind/raid` (Random encounter generation, raid generation)
+- **Overworld** `Overworld` (Overworld system)
+- **GUI :** `gui/core/` , `gui/framework/` (mode manager, context switching, core gui operations)
+- **GUI Widgets :** `gui/builders/` , `gui/widgetresources/`,`gui/widgets/` (GUI elements)
 - **GUI Combat:** `gui/guicombat/` (combat mode, combat animation, attacking, moving)
 - **GUI SQuad:** `gui/guisquads/` (Editing squads, purchasing units, deploying squads)
-- **Items:** `gear/` (pure ECS inventory)
+- **Items:** `gear/` (Artifact System)
 - **Graphics:** `visual/graphics`, `visual/rendering` (Game graphics and rendering. Batch drawing operations)
-- **Worldmap:** `world/worldmap/` (generator registry, algorithms)
+- **Worldmap:** `world/worldmap/` (generator registry, map generation algorithms)
+- **Game Setup and Initilization** `gamesetup` (Game configuration, game booting)
+- **Combat Pipeline** `mind/combatpipeline` (Interface for rewards, combat setup, combat cleanup)
 
 ---
 

@@ -2,8 +2,6 @@ package templates
 
 // We are not creating the entities yet, so we use the JSON struct to store the template data.
 var MonsterTemplates []JSONMonster
-var ConsumableTemplates []JSONAttributeModifier
-
 var EncounterDifficultyTemplates []JSONEncounterDifficulty
 var AIConfigTemplate JSONAIConfig
 var PowerConfigTemplate JSONPowerConfig
@@ -35,7 +33,6 @@ func ReadGameData() {
 	ReadDifficultyConfig() // Load difficulty first (other systems reference it)
 	ReadMonsterData()
 	ReadNameData()
-	ReadConsumableData()
 
 	ReadNodeDefinitions() // Load node definitions first
 	ReadEncounterData()   // Then encounter data (validates links)

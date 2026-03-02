@@ -131,6 +131,23 @@ func NewElectricityEffectNoImage(startX, startY int, duration int, numSegments i
 	})
 }
 
+// CreateVisualEffectByType creates a visual effect by type name string.
+// Decouples callers from needing to know the specific effect constructors.
+func CreateVisualEffectByType(vxType string, x, y, duration int) VisualEffect {
+	switch vxType {
+	case "fire":
+		return NewFireEffect(x, y, duration)
+	case "ice":
+		return NewIceEffect(x, y, duration)
+	case "electricity":
+		return NewElectricityEffect(x, y, duration)
+	case "cloud":
+		return NewCloudEffect(x, y, duration)
+	default:
+		return NewFireEffect(x, y, duration)
+	}
+}
+
 // NewElectricArc creates an electric arc effect between two points.
 func NewElectricArc(startX, startY, endX, endY int, duration int) VisualEffect {
 	return NewEffect(startX, startY, duration, EffectConfig{

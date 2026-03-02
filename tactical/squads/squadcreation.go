@@ -194,6 +194,15 @@ func PlaceUnitInSquad(squadID ecs.EntityID, unitEntityID ecs.EntityID, manager *
 		unitRenderable.Visible = false
 	}
 
+	// Auto-promote first unit to leader if squad has none
+	if GetLeaderID(squadID, manager) == 0 {
+		AddLeaderComponents(unitEntity)
+		squadEntity := GetSquadEntity(squadID, manager)
+		if squadEntity != nil {
+			SetSquadRenderableFromLeader(squadID, squadEntity, manager)
+		}
+	}
+
 	return nil
 }
 

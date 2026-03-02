@@ -69,6 +69,56 @@ func RotateLeft(dir ShapeDirection) ShapeDirection {
 	return dir
 }
 
+// ShapeConfig describes a tile-based shape to create from JSON data.
+type ShapeConfig struct {
+	Type   string
+	Size   int
+	Length int
+	Width  int
+	Height int
+	Radius int
+}
+
+// CreateShapeFromConfig creates a TileBasedShape from a ShapeConfig.
+// Returns a default 1x1 square if config is nil.
+func CreateShapeFromConfig(cfg *ShapeConfig) TileBasedShape {
+	if cfg == nil {
+		return NewSquare(0, 0, SmallShape)
+	}
+
+	var s *BaseShape
+	switch cfg.Type {
+	case "Circle":
+		s = NewCircle(0, 0, SmallShape)
+		if cfg.Size > 0 {
+			s.UpdateSize(cfg.Size)
+		}
+	case "Square":
+		s = NewSquare(0, 0, SmallShape)
+		if cfg.Size > 0 {
+			s.UpdateSize(cfg.Size)
+		}
+	case "Rectangle":
+		s = NewRectangle(0, 0, SmallShape)
+		if cfg.Width > 0 && cfg.Height > 0 {
+			s.UpdateDimensions(cfg.Width, cfg.Height)
+		}
+	case "Line":
+		s = NewLine(0, 0, LineDown, SmallShape)
+		if cfg.Length > 0 {
+			s.UpdateSize(cfg.Length)
+		}
+	case "Cone":
+		s = NewCone(0, 0, LineDown, SmallShape)
+		if cfg.Length > 0 {
+			s.UpdateSize(cfg.Length)
+		}
+	default:
+		return NewSquare(0, 0, SmallShape)
+	}
+	return s
+}
+
 // ============================================================================
 // NEW SIMPLIFIED SHAPE SYSTEM
 // ============================================================================

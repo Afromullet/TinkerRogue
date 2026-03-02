@@ -2,7 +2,6 @@ package templates
 
 import (
 	"game_main/common"
-	"game_main/visual/graphics"
 )
 
 // All structs for unmarshalling JSON data
@@ -38,46 +37,6 @@ type JSONTargetArea struct {
 	Radius int    `json:"radius,omitempty"`
 }
 
-// CreateTargetArea creates a TileBasedShape from JSON data with deterministic sizes.
-// Uses SmallShape as base then overrides with JSON-specified dimensions.
-func CreateTargetArea(area *JSONTargetArea) graphics.TileBasedShape {
-	if area == nil {
-		return graphics.NewSquare(0, 0, graphics.SmallShape)
-	}
-
-	var s *graphics.BaseShape
-	switch area.Type {
-	case "Circle":
-		s = graphics.NewCircle(0, 0, graphics.SmallShape)
-		if area.Size > 0 {
-			s.UpdateSize(area.Size)
-		}
-	case "Square":
-		s = graphics.NewSquare(0, 0, graphics.SmallShape)
-		if area.Size > 0 {
-			s.UpdateSize(area.Size)
-		}
-	case "Rectangle":
-		s = graphics.NewRectangle(0, 0, graphics.SmallShape)
-		if area.Width > 0 && area.Height > 0 {
-			s.UpdateDimensions(area.Width, area.Height)
-		}
-	case "Line":
-		s = graphics.NewLine(0, 0, graphics.LineDown, graphics.SmallShape)
-		if area.Length > 0 {
-			s.UpdateSize(area.Length)
-		}
-	case "Cone":
-		s = graphics.NewCone(0, 0, graphics.LineDown, graphics.SmallShape)
-		if area.Length > 0 {
-			s.UpdateSize(area.Length)
-		}
-	default:
-		return graphics.NewSquare(0, 0, graphics.SmallShape)
-	}
-	return s
-}
-
 // JSONStatGrowths defines per-stat growth rate grades for leveling.
 // Each field is a grade string: S, A, B, C, D, E, or F.
 type JSONStatGrowths struct {
@@ -108,66 +67,6 @@ type JSONMonster struct {
 	MovementSpeed  int     `json:"movementSpeed"`  // Movement speed on world map (1 tile per speed point)
 
 	StatGrowths JSONStatGrowths `json:"statGrowths"` // Per-stat growth rate grades for leveling
-}
-
-func NewJSONMonster(m JSONMonster) JSONMonster {
-	return JSONMonster{
-		UnitType:   m.UnitType,
-		ImageName:  m.ImageName,
-		Attributes: m.Attributes,
-		Width:      m.Width,
-		Height:     m.Height,
-		Role:       m.Role,
-
-		AttackType:     m.AttackType,
-		TargetCells:    m.TargetCells,
-		CoverValue:     m.CoverValue,
-		CoverRange:     m.CoverRange,
-		RequiresActive: m.RequiresActive,
-		AttackRange:    m.AttackRange,
-		MovementSpeed:  m.MovementSpeed,
-		StatGrowths:    m.StatGrowths,
-	}
-}
-
-type JSONAttributeModifier struct {
-	Name       string `json:"name"`
-	ImgName    string `json:"imgname"`
-	Strength   int    `json:"strength"`
-	Dexterity  int    `json:"dexterity"`
-	Magic      int    `json:"magic"`
-	Leadership int    `json:"leadership"`
-	Armor      int    `json:"armor"`
-	Weapon     int    `json:"weapon"`
-	Duration   int    `json:"duration"`
-}
-
-func NewJSONAttributeModifier(a JSONAttributeModifier) JSONAttributeModifier {
-	return JSONAttributeModifier{
-		Name:       a.Name,
-		ImgName:    a.ImgName,
-		Strength:   a.Strength,
-		Dexterity:  a.Dexterity,
-		Magic:      a.Magic,
-		Leadership: a.Leadership,
-		Armor:      a.Armor,
-		Weapon:     a.Weapon,
-		Duration:   a.Duration,
-	}
-}
-
-func CreateAttributesFromJSON(a JSONAttributeModifier) common.Attributes {
-	// For consumables, create an attributes struct with modifiers only
-	// Don't use NewAttributes since we don't want to initialize health
-	return common.Attributes{
-		Strength:   a.Strength,
-		Dexterity:  a.Dexterity,
-		Magic:      a.Magic,
-		Leadership: a.Leadership,
-		Armor:      a.Armor,
-		Weapon:     a.Weapon,
-		// Health fields left at zero - consumables will modify them separately
-	}
 }
 
 // JSONEncounterDifficulty defines difficulty scaling for encounters
