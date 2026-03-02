@@ -112,6 +112,17 @@ func AddUnitToSquad(
 	gridPos.AnchorRow = gridRow
 	gridPos.AnchorCol = gridCol
 
+	// Hide unit renderable - only the squad entity renders on the world map
+	unitRenderable := common.GetComponentType[*rendering.Renderable](unitEntity, rendering.RenderableComponent)
+	if unitRenderable != nil {
+		unitRenderable.Visible = false
+	}
+
+	// Auto-promote first unit to leader if squad has none
+	if GetLeaderID(squadID, squadmanager) == 0 {
+		AddLeaderComponents(unitEntity)
+	}
+
 	return unitEntity.GetID(), nil
 }
 
@@ -176,6 +187,12 @@ func PlaceUnitInSquad(squadID ecs.EntityID, unitEntityID ecs.EntityID, manager *
 	}
 	gridPos.AnchorRow = gridRow
 	gridPos.AnchorCol = gridCol
+
+	// Hide unit renderable - only the squad entity renders on the world map
+	unitRenderable := common.GetComponentType[*rendering.Renderable](unitEntity, rendering.RenderableComponent)
+	if unitRenderable != nil {
+		unitRenderable.Visible = false
+	}
 
 	return nil
 }

@@ -110,6 +110,7 @@ func CreateUnitList(config UnitListConfig) *widget.List {
 				Name:      nameStr,
 				CurrentHP: attr.CurrentHealth,
 				MaxHP:     attr.MaxHealth,
+				IsLeader:  config.Manager.HasComponent(unitID, squads.LeaderComponent),
 			})
 		}
 	}
@@ -118,7 +119,11 @@ func CreateUnitList(config UnitListConfig) *widget.List {
 		Entries: entries,
 		EntryLabelFunc: func(e interface{}) string {
 			identity := e.(squads.UnitIdentity)
-			return fmt.Sprintf("%s - HP: %d/%d", identity.Name, identity.CurrentHP, identity.MaxHP)
+			prefix := ""
+			if identity.IsLeader {
+				prefix = "(L) "
+			}
+			return fmt.Sprintf("%s%s - HP: %d/%d", prefix, identity.Name, identity.CurrentHP, identity.MaxHP)
 		},
 		MinWidth:  listWidth,
 		MinHeight: listHeight,

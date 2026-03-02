@@ -70,6 +70,12 @@ func (c *ChangeLeaderCommand) Execute() error {
 
 	squads.AddLeaderComponents(newLeaderEntity)
 
+	// Update squad renderable to show the new leader's sprite
+	squadEntity := squads.GetSquadEntity(c.squadID, c.manager)
+	if squadEntity != nil {
+		squads.SetSquadRenderableFromLeader(c.squadID, squadEntity, c.manager)
+	}
+
 	return nil
 }
 
@@ -86,6 +92,12 @@ func (c *ChangeLeaderCommand) Undo() error {
 		if oldLeaderEntity != nil {
 			squads.AddLeaderComponents(oldLeaderEntity)
 		}
+	}
+
+	// Update squad renderable to reflect restored leader
+	squadEntity := squads.GetSquadEntity(c.squadID, c.manager)
+	if squadEntity != nil {
+		squads.SetSquadRenderableFromLeader(c.squadID, squadEntity, c.manager)
 	}
 
 	return nil

@@ -155,4 +155,5 @@ type UnitIdentity struct {
 	GridCol   int
 	CurrentHP int
 	MaxHP     int
+	IsLeader  bool
 }

@@ -54,3 +54,5 @@
 
 - Randomzied Unit Names
 - Persistent enemy leaders
+
+# Map Objectives
