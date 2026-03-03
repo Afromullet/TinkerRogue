@@ -234,65 +234,74 @@ func CreateUnitEntity(squadmanager *common.EntityManager, unit UnitTemplate) (*e
 		}
 	}
 
-	// Add unit type component for roster grouping (preserves original type)
-	unitEntity.AddComponent(UnitTypeComponent, &UnitTypeData{
-		UnitType: unit.UnitType,
+	// Add all squad-specific components from template
+	ApplyUnitComponents(unitEntity, unit, 0, 0)
+
+	return unitEntity, nil
+
+}
+
+// ApplyUnitComponents adds all squad-specific components to an entity from a UnitTemplate.
+// anchorRow/anchorCol set the initial grid position (0,0 for roster units, actual position for bulk creation).
+// This is the single source of truth for unit component composition.
+func ApplyUnitComponents(entity *ecs.Entity, template UnitTemplate, anchorRow, anchorCol int) {
+	width := template.GridWidth
+	if width == 0 {
+		width = 1
+	}
+	height := template.GridHeight
+	if height == 0 {
+		height = 1
+	}
+
+	entity.AddComponent(UnitTypeComponent, &UnitTypeData{
+		UnitType: template.UnitType,
 	})
 
-	// Add squad-specific components
-	unitEntity.AddComponent(GridPositionComponent, &GridPositionData{
-		AnchorRow: 0,
-		AnchorCol: 0,
-		Width:     unit.GridWidth,
-		Height:    unit.GridHeight,
+	entity.AddComponent(GridPositionComponent, &GridPositionData{
+		AnchorRow: anchorRow,
+		AnchorCol: anchorCol,
+		Width:     width,
+		Height:    height,
 	})
 
-	unitEntity.AddComponent(UnitRoleComponent, &UnitRoleData{
-		Role: unit.Role,
+	entity.AddComponent(UnitRoleComponent, &UnitRoleData{
+		Role: template.Role,
 	})
 
-	// Add targeting component
-	unitEntity.AddComponent(TargetRowComponent, &TargetRowData{
-		AttackType:  unit.AttackType,
-		TargetCells: unit.TargetCells,
+	entity.AddComponent(TargetRowComponent, &TargetRowData{
+		AttackType:  template.AttackType,
+		TargetCells: template.TargetCells,
 	})
 
-	// Add cover component if the unit provides cover (CoverValue > 0)
-	if unit.CoverValue > 0 {
-		unitEntity.AddComponent(CoverComponent, &CoverData{
-			CoverValue:     unit.CoverValue,
-			CoverRange:     unit.CoverRange,
-			RequiresActive: unit.RequiresActive,
+	if template.CoverValue > 0 {
+		entity.AddComponent(CoverComponent, &CoverData{
+			CoverValue:     template.CoverValue,
+			CoverRange:     template.CoverRange,
+			RequiresActive: template.RequiresActive,
 		})
 	}
 
-	// Add attack range component
-	unitEntity.AddComponent(AttackRangeComponent, &AttackRangeData{
-		Range: unit.AttackRange,
+	entity.AddComponent(AttackRangeComponent, &AttackRangeData{
+		Range: template.AttackRange,
 	})
 
-	// Add movement speed component
-	unitEntity.AddComponent(MovementSpeedComponent, &MovementSpeedData{
-		Speed: unit.MovementSpeed,
+	entity.AddComponent(MovementSpeedComponent, &MovementSpeedData{
+		Speed: template.MovementSpeed,
 	})
 
-	// Add experience component (all units start at level 1 with 0 XP)
-	unitEntity.AddComponent(ExperienceComponent, &ExperienceData{
+	entity.AddComponent(ExperienceComponent, &ExperienceData{
 		Level:         1,
 		CurrentXP:     0,
 		XPToNextLevel: 100,
 	})
 
-	// Add stat growth component
-	unitEntity.AddComponent(StatGrowthComponent, &StatGrowthData{
-		Strength:   unit.StatGrowths.Strength,
-		Dexterity:  unit.StatGrowths.Dexterity,
-		Magic:      unit.StatGrowths.Magic,
-		Leadership: unit.StatGrowths.Leadership,
-		Armor:      unit.StatGrowths.Armor,
-		Weapon:     unit.StatGrowths.Weapon,
+	entity.AddComponent(StatGrowthComponent, &StatGrowthData{
+		Strength:   template.StatGrowths.Strength,
+		Dexterity:  template.StatGrowths.Dexterity,
+		Magic:      template.StatGrowths.Magic,
+		Leadership: template.StatGrowths.Leadership,
+		Armor:      template.StatGrowths.Armor,
+		Weapon:     template.StatGrowths.Weapon,
 	})
-
-	return unitEntity, nil
-
 }

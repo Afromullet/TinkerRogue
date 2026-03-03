@@ -86,65 +86,11 @@ func createSimSquad(
 			SquadID: squadID,
 		})
 
-		unitEntity.AddComponent(squads.GridPositionComponent, &squads.GridPositionData{
-			AnchorRow: tmpl.GridRow,
-			AnchorCol: tmpl.GridCol,
-			Width:     width,
-			Height:    height,
-		})
-
-		unitEntity.AddComponent(squads.UnitRoleComponent, &squads.UnitRoleData{
-			Role: tmpl.Role,
-		})
-
-		unitEntity.AddComponent(squads.TargetRowComponent, &squads.TargetRowData{
-			AttackType:  tmpl.AttackType,
-			TargetCells: tmpl.TargetCells,
-		})
-
-		if tmpl.CoverValue > 0.0 {
-			unitEntity.AddComponent(squads.CoverComponent, &squads.CoverData{
-				CoverValue:     tmpl.CoverValue,
-				CoverRange:     tmpl.CoverRange,
-				RequiresActive: tmpl.RequiresActive,
-			})
-		}
-
-		unitEntity.AddComponent(squads.AttackRangeComponent, &squads.AttackRangeData{
-			Range: tmpl.AttackRange,
-		})
-
-		unitEntity.AddComponent(squads.MovementSpeedComponent, &squads.MovementSpeedData{
-			Speed: tmpl.MovementSpeed,
-		})
-
-		unitEntity.AddComponent(squads.ExperienceComponent, &squads.ExperienceData{
-			Level:         1,
-			CurrentXP:     0,
-			XPToNextLevel: 100,
-		})
-
-		unitEntity.AddComponent(squads.StatGrowthComponent, &squads.StatGrowthData{
-			Strength:   tmpl.StatGrowths.Strength,
-			Dexterity:  tmpl.StatGrowths.Dexterity,
-			Magic:      tmpl.StatGrowths.Magic,
-			Leadership: tmpl.StatGrowths.Leadership,
-			Armor:      tmpl.StatGrowths.Armor,
-			Weapon:     tmpl.StatGrowths.Weapon,
-		})
+		// Add all squad-specific components from template
+		squads.ApplyUnitComponents(unitEntity, tmpl, tmpl.GridRow, tmpl.GridCol)
 
 		if tmpl.IsLeader {
-			unitEntity.AddComponent(squads.LeaderComponent, &squads.LeaderData{
-				Leadership: 10,
-				Experience: 0,
-			})
-			unitEntity.AddComponent(squads.AbilitySlotComponent, &squads.AbilitySlotData{
-				Slots: [4]squads.AbilitySlot{},
-			})
-			unitEntity.AddComponent(squads.CooldownTrackerComponent, &squads.CooldownTrackerData{
-				Cooldowns:    [4]int{0, 0, 0, 0},
-				MaxCooldowns: [4]int{0, 0, 0, 0},
-			})
+			squads.AddLeaderComponents(unitEntity)
 		}
 
 		for _, cell := range cellsToOccupy {

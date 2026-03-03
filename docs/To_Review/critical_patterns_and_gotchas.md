@@ -152,33 +152,15 @@ func ParseStatType(stat string) StatType {
 
 ---
 
-### 5. Two Unit Creation Paths Must Stay in Sync
+### 5. Unit Component Composition — Single Source of Truth (RESOLVED)
 
-**Files:** `tactical/squads/units.go:194-298` and `tactical/squads/squadcreation.go:289-470`
+**File:** `tactical/squads/units.go` — `ApplyUnitComponents()`
 
-There are two independent code paths that create unit entities:
+Previously, three independent code paths (`CreateUnitEntity`, `CreateSquadFromTemplate`, `createSimSquad`) duplicated the same 9 component additions. This was resolved by extracting `ApplyUnitComponents()` as the single source of truth.
 
-1. **`CreateUnitEntity()`** — Used by `AddUnitToSquad()` for individual unit creation (player purchasing, roster management). Delegates base entity creation to `templates.CreateUnit()`.
+All unit creation paths now call `ApplyUnitComponents(entity, template, anchorRow, anchorCol)` which adds: UnitType, GridPosition, UnitRole, TargetRow, Cover (conditional), AttackRange, MovementSpeed, Experience, and StatGrowth.
 
-2. **`CreateSquadFromTemplate()`** — Used for batch squad creation (enemy squads, initial setup). Delegates to `templates.CreateEntityFromTemplate()`.
-
-Both paths add the same components (GridPosition, UnitRole, TargetRow, Cover, AttackRange, MovementSpeed, UnitType, Experience, StatGrowth) but through different code. Adding a new component to one path and forgetting the other creates units with inconsistent component sets.
-
-**Impact:** Units created through different paths may be missing components, causing nil returns from `GetComponentType` and silent failures.
-
-**Mitigation:** When adding a new component to units, grep for both `CreateUnitEntity` and `CreateSquadFromTemplate` and update both. Consider the component checklist:
-
-| Component | CreateUnitEntity | CreateSquadFromTemplate |
-|-----------|-----------------|------------------------|
-| GridPositionComponent | Line 243 | Line 394 |
-| UnitRoleComponent | Line 250 | Line 402 |
-| TargetRowComponent | Line 255 | Line 407 |
-| CoverComponent | Line 262 | Line 414 |
-| AttackRangeComponent | Line 270 | Line 422 |
-| MovementSpeedComponent | Line 275 | Line 427 |
-| UnitTypeComponent | Line 238 | Line 432 |
-| ExperienceComponent | Line 280 | Line 437 |
-| StatGrowthComponent | Line 287 | Line 444 |
+**To add a new unit component:** Update only `ApplyUnitComponents()` in `tactical/squads/units.go`. All creation paths will automatically pick it up.
 
 ---
 

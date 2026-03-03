@@ -390,65 +390,8 @@ func CreateSquadFromTemplate(
 			SquadID: squadID,
 		})
 
-		// Add grid position (supports multi-cell)
-		unitEntity.AddComponent(GridPositionComponent, &GridPositionData{
-			AnchorRow: template.GridRow,
-			AnchorCol: template.GridCol,
-			Width:     width,
-			Height:    height,
-		})
-
-		// Add role
-		unitEntity.AddComponent(UnitRoleComponent, &UnitRoleData{
-			Role: template.Role,
-		})
-
-		// Add targeting data
-		unitEntity.AddComponent(TargetRowComponent, &TargetRowData{
-			AttackType:  template.AttackType,
-			TargetCells: template.TargetCells,
-		})
-
-		// Add cover component if unit provides cover
-		if template.CoverValue > 0.0 {
-			unitEntity.AddComponent(CoverComponent, &CoverData{
-				CoverValue:     template.CoverValue,
-				CoverRange:     template.CoverRange,
-				RequiresActive: template.RequiresActive,
-			})
-		}
-
-		// Add attack range component
-		unitEntity.AddComponent(AttackRangeComponent, &AttackRangeData{
-			Range: template.AttackRange,
-		})
-
-		// Add movement speed component
-		unitEntity.AddComponent(MovementSpeedComponent, &MovementSpeedData{
-			Speed: template.MovementSpeed,
-		})
-
-		// Add unit type component for roster grouping (preserves original type)
-		unitEntity.AddComponent(UnitTypeComponent, &UnitTypeData{
-			UnitType: template.UnitType,
-		})
-
-		// Add experience component (all units start at level 1 with 0 XP)
-		unitEntity.AddComponent(ExperienceComponent, &ExperienceData{
-			Level:         1,
-			CurrentXP:     0,
-			XPToNextLevel: 100,
-		})
-
-		// Add stat growth component
-		unitEntity.AddComponent(StatGrowthComponent, &StatGrowthData{
-			Strength:   template.StatGrowths.Strength,
-			Dexterity:  template.StatGrowths.Dexterity,
-			Magic:      template.StatGrowths.Magic,
-			Leadership: template.StatGrowths.Leadership,
-			Armor:      template.StatGrowths.Armor,
-			Weapon:     template.StatGrowths.Weapon,
-		})
+		// Add all squad-specific components from template
+		ApplyUnitComponents(unitEntity, template, template.GridRow, template.GridCol)
 
 		// Add leader component if needed
 		if template.IsLeader {
