@@ -16,10 +16,10 @@ func ApplyHPRecovery(manager *common.EntityManager, squadID ecs.EntityID, hpPerc
 	for _, unitID := range squads.GetUnitIDsInSquad(squadID, manager) {
 		attr := common.GetComponentTypeByID[*common.Attributes](manager, unitID, common.AttributeComponent)
 		if attr != nil && attr.CurrentHealth > 0 {
-			heal := attr.MaxHealth * hpPercent / 100
+			heal := attr.GetMaxHealth() * hpPercent / 100
 			attr.CurrentHealth += heal
-			if attr.CurrentHealth > attr.MaxHealth {
-				attr.CurrentHealth = attr.MaxHealth
+			if attr.CurrentHealth > attr.GetMaxHealth() {
+				attr.CurrentHealth = attr.GetMaxHealth()
 			}
 		}
 	}

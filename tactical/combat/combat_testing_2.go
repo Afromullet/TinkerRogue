@@ -70,7 +70,6 @@ func CreateTestUnit(manager *common.EntityManager, squadID ecs.EntityID, index i
 		MovementSpeed: 5,
 		AttackRange:   1,
 		CurrentHealth: 30,
-		MaxHealth:     30,
 		CanAct:        true,
 	})
 
@@ -118,7 +117,6 @@ func CreateTestRangedUnit(manager *common.EntityManager, squadID ecs.EntityID, i
 		MovementSpeed: 4,
 		AttackRange:   attackRange,
 		CurrentHealth: 25,
-		MaxHealth:     25,
 		CanAct:        true,
 	})
 

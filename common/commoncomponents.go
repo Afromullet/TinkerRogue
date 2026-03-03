@@ -34,11 +34,10 @@ type Attributes struct {
 	// ========================================
 
 	CurrentHealth int  // Current HP (changes during combat)
-	MaxHealth     int  // Cached derived stat for performance
 	CanAct        bool // Can unit act this turn
 }
 
-// NewAttributes creates a new Attributes instance with calculated MaxHealth
+// NewAttributes creates a new Attributes instance with CurrentHealth set to max
 func NewAttributes(strength, dexterity, magic, leadership, armor, weapon int) Attributes {
 	attr := Attributes{
 		Strength:      strength,
@@ -52,9 +51,7 @@ func NewAttributes(strength, dexterity, magic, leadership, armor, weapon int) At
 		CanAct:        true,
 	}
 
-	// Calculate and cache MaxHealth
-	attr.MaxHealth = attr.GetMaxHealth()
-	attr.CurrentHealth = attr.MaxHealth
+	attr.CurrentHealth = attr.GetMaxHealth()
 
 	return attr
 }

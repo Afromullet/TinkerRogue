@@ -26,7 +26,6 @@ func createTestUnitWithGrowth(t *testing.T, manager *common.EntityManager, growt
 		Leadership:    10,
 		Armor:         5,
 		Weapon:        5,
-		MaxHealth:     40,
 		CurrentHealth: 40,
 		CanAct:        true,
 	})
@@ -79,7 +78,6 @@ func TestAwardExperience_BasicLevelUp(t *testing.T) {
 		Leadership:    10,
 		Armor:         5,
 		Weapon:        5,
-		MaxHealth:     40,
 		CurrentHealth: 40,
 		CanAct:        true,
 	})
@@ -123,7 +121,7 @@ func TestAwardExperience_PartialXP(t *testing.T) {
 	entity.AddComponent(common.AttributeComponent, &common.Attributes{
 		Strength: 10, Dexterity: 20, Magic: 5,
 		Leadership: 10, Armor: 5, Weapon: 5,
-		MaxHealth: 40, CurrentHealth: 40, CanAct: true,
+		CurrentHealth: 40, CanAct: true,
 	})
 	entity.AddComponent(ExperienceComponent, &ExperienceData{
 		Level: 1, CurrentXP: 0, XPToNextLevel: 100,
@@ -156,7 +154,7 @@ func TestAwardExperience_MultiLevelJump(t *testing.T) {
 	entity.AddComponent(common.AttributeComponent, &common.Attributes{
 		Strength: 10, Dexterity: 20, Magic: 5,
 		Leadership: 10, Armor: 5, Weapon: 5,
-		MaxHealth: 40, CurrentHealth: 40, CanAct: true,
+		CurrentHealth: 40, CanAct: true,
 	})
 	entity.AddComponent(ExperienceComponent, &ExperienceData{
 		Level: 1, CurrentXP: 0, XPToNextLevel: 100,
@@ -189,7 +187,7 @@ func TestAwardExperience_ZeroAndNegative(t *testing.T) {
 	entity.AddComponent(common.AttributeComponent, &common.Attributes{
 		Strength: 10, Dexterity: 20, Magic: 5,
 		Leadership: 10, Armor: 5, Weapon: 5,
-		MaxHealth: 40, CurrentHealth: 40, CanAct: true,
+		CurrentHealth: 40, CanAct: true,
 	})
 	entity.AddComponent(ExperienceComponent, &ExperienceData{
 		Level: 1, CurrentXP: 30, XPToNextLevel: 100,
@@ -225,7 +223,7 @@ func TestLevelUp_StatIncreases(t *testing.T) {
 	entity.AddComponent(common.AttributeComponent, &common.Attributes{
 		Strength: initialStr, Dexterity: 20, Magic: 5,
 		Leadership: 10, Armor: 5, Weapon: 5,
-		MaxHealth: 40, CurrentHealth: 40, CanAct: true,
+		CurrentHealth: 40, CanAct: true,
 	})
 	entity.AddComponent(ExperienceComponent, &ExperienceData{
 		Level: 1, CurrentXP: 0, XPToNextLevel: 100,
@@ -261,7 +259,7 @@ func TestLevelUp_MaxHealthRecalculated(t *testing.T) {
 	entity.AddComponent(common.AttributeComponent, &common.Attributes{
 		Strength: 10, Dexterity: 20, Magic: 5,
 		Leadership: 10, Armor: 5, Weapon: 5,
-		MaxHealth: 40, CurrentHealth: 40, CanAct: true,
+		CurrentHealth: 40, CanAct: true,
 	})
 	entity.AddComponent(ExperienceComponent, &ExperienceData{
 		Level: 1, CurrentXP: 0, XPToNextLevel: 100,
@@ -280,16 +278,16 @@ func TestLevelUp_MaxHealthRecalculated(t *testing.T) {
 
 	attr := common.GetComponentType[*common.Attributes](entity, common.AttributeComponent)
 
-	// MaxHealth should be recalculated: 20 + Strength*2
+	// GetMaxHealth() derives from Strength: 20 + Strength*2
 	expectedMaxHP := 20 + attr.Strength*2
-	if attr.MaxHealth != expectedMaxHP {
-		t.Errorf("MaxHealth not recalculated: got %d, expected %d (strength=%d)",
-			attr.MaxHealth, expectedMaxHP, attr.Strength)
+	if attr.GetMaxHealth() != expectedMaxHP {
+		t.Errorf("GetMaxHealth() wrong: got %d, expected %d (strength=%d)",
+			attr.GetMaxHealth(), expectedMaxHP, attr.Strength)
 	}
 
-	if attr.MaxHealth <= initialMaxHP {
+	if attr.GetMaxHealth() <= initialMaxHP {
 		t.Errorf("MaxHealth should have increased from %d, got %d",
-			initialMaxHP, attr.MaxHealth)
+			initialMaxHP, attr.GetMaxHealth())
 	}
 }
 
@@ -302,7 +300,7 @@ func TestLevelUp_FGradeRarelyIncreases(t *testing.T) {
 	entity.AddComponent(common.AttributeComponent, &common.Attributes{
 		Strength: 10, Dexterity: 20, Magic: 5,
 		Leadership: 10, Armor: 5, Weapon: 5,
-		MaxHealth: 40, CurrentHealth: 40, CanAct: true,
+		CurrentHealth: 40, CanAct: true,
 	})
 	entity.AddComponent(ExperienceComponent, &ExperienceData{
 		Level: 1, CurrentXP: 0, XPToNextLevel: 100,

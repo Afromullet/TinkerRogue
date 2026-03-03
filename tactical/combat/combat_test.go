@@ -313,7 +313,7 @@ func TestCounterattack_DamagePredictionPreventsDeadUnits(t *testing.T) {
 			// After damage is applied, current health reflects post-combat state.
 			// But the original HP was MaxHealth (30 from test fixtures).
 			// A valid counterattacker must have had (originalHP - mainAttackDmg) > 0.
-			originalHP := attr.MaxHealth
+			originalHP := attr.GetMaxHealth()
 			if originalHP-dmgFromMainAttack <= 0 {
 				t.Errorf("Unit %d counterattacked but would have died from main attack (hp=%d, damage=%d)",
 					counterAttackerID, originalHP, dmgFromMainAttack)

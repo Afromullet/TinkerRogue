@@ -53,7 +53,6 @@ func AwardExperience(unitID ecs.EntityID, amount int, manager *common.EntityMana
 }
 
 // processLevelUp rolls each stat against its growth rate and increments on success.
-// Also recalculates MaxHealth since Strength may have changed.
 func processLevelUp(unitID ecs.EntityID, manager *common.EntityManager, rng *rand.Rand) {
 	growthData := GetStatGrowthData(unitID, manager)
 	if growthData == nil {
@@ -90,8 +89,6 @@ func processLevelUp(unitID ecs.EntityID, manager *common.EntityManager, rng *ran
 		attr.Weapon++
 	}
 
-	// Recalculate MaxHealth since Strength may have changed
-	attr.MaxHealth = attr.GetMaxHealth()
 }
 
 // GetExperienceData returns the ExperienceData for a unit, or nil if not found.

@@ -42,7 +42,7 @@ func attributesToSaved(attr *common.Attributes) savedAttributes {
 		MovementSpeed: attr.MovementSpeed,
 		AttackRange:   attr.AttackRange,
 		CurrentHealth: attr.CurrentHealth,
-		MaxHealth:     attr.MaxHealth,
+		MaxHealth:     attr.GetMaxHealth(),
 		CanAct:        attr.CanAct,
 	}
 }
@@ -58,7 +58,6 @@ func savedToAttributes(sa savedAttributes) common.Attributes {
 		MovementSpeed: sa.MovementSpeed,
 		AttackRange:   sa.AttackRange,
 		CurrentHealth: sa.CurrentHealth,
-		MaxHealth:     sa.MaxHealth,
 		CanAct:        sa.CanAct,
 	}
 }

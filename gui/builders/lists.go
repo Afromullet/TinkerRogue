@@ -109,7 +109,7 @@ func CreateUnitList(config UnitListConfig) *widget.List {
 				ID:        unitID,
 				Name:      nameStr,
 				CurrentHP: attr.CurrentHealth,
-				MaxHP:     attr.MaxHealth,
+				MaxHP:     attr.GetMaxHealth(),
 				IsLeader:  config.Manager.HasComponent(unitID, squads.LeaderComponent),
 			})
 		}

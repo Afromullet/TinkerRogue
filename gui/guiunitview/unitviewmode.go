@@ -99,7 +99,7 @@ func (uvm *UnitViewMode) refreshUnitDisplay() {
 			"  Strength:   %d\n  Dexterity:  %d\n  Magic:      %d\n  Leadership: %d\n  Armor:      %d\n  Weapon:     %d\n  HP:         %d / %d",
 			attr.Strength, attr.Dexterity, attr.Magic,
 			attr.Leadership, attr.Armor, attr.Weapon,
-			attr.CurrentHealth, attr.MaxHealth,
+			attr.CurrentHealth, attr.GetMaxHealth(),
 		)
 	}
 

@@ -69,7 +69,7 @@ func (sc *SquadInfoCache) buildSquadInfo(squadID ecs.EntityID) *SquadInfo {
 				aliveUnits++
 			}
 			totalHP += attrs.CurrentHealth
-			maxHP += attrs.MaxHealth
+			maxHP += attrs.GetMaxHealth()
 		}
 	}
 

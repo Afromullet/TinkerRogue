@@ -46,7 +46,7 @@ func (gq *GUIQueries) GetUnitGridInfo(unitID ecs.EntityID) *UnitGridInfo {
 
 	if attrs != nil {
 		info.CurrentHP = attrs.CurrentHealth
-		info.MaxHP = attrs.MaxHealth
+		info.MaxHP = attrs.GetMaxHealth()
 		info.IsAlive = attrs.CurrentHealth > 0
 	}
 

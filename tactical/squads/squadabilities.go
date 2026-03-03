@@ -173,8 +173,8 @@ func applyHealEffect(squadID ecs.EntityID, params AbilityParams, ecsmanager *com
 
 		// Cap at max HP
 		attr.CurrentHealth += params.HealAmount
-		if attr.CurrentHealth > attr.MaxHealth {
-			attr.CurrentHealth = attr.MaxHealth
+		if attr.CurrentHealth > attr.GetMaxHealth() {
+			attr.CurrentHealth = attr.GetMaxHealth()
 		}
 		healed++
 	}

@@ -89,7 +89,6 @@ func createTestSquadWithUnits(manager *common.EntityManager, name string, unitCo
 			MovementSpeed: 5,
 			AttackRange:   1,
 			CurrentHealth: 30,
-			MaxHealth:     30,
 			CanAct:        true,
 		})
 		unitEntity.AddComponent(squads.SquadMemberComponent, &squads.SquadMemberData{

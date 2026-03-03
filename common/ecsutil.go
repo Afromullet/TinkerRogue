@@ -55,20 +55,20 @@ func (em *EntityManager) GetComponent(entityID ecs.EntityID, component *ecs.Comp
 
 // GetComponentType retrieves a component of type T from an entity pointer.
 // Preferred when entity is already available from a query result.
-// Returns zero value if component not found.
+// Returns zero value if entity is nil or component not found.
+// Panics on type assertion failure (indicates a bug — wrong type parameter).
 func GetComponentType[T any](entity *ecs.Entity, component *ecs.Component) T {
-	defer func() {
-		if r := recover(); r != nil {
-			// ERROR HANDLING IN FUTURE
-		}
-	}()
+	if entity == nil {
+		var zero T
+		return zero
+	}
 
 	if c, ok := entity.GetComponentData(component); ok {
 		return c.(T)
 	}
 
-	var nilValue T
-	return nilValue
+	var zero T
+	return zero
 }
 
 // GetComponentTypeByID retrieves a component of type T from an entity by ID.
