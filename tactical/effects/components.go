@@ -1,6 +1,7 @@
 package effects
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/bytearena/ecs"
@@ -44,26 +45,27 @@ type ActiveEffectsData struct {
 }
 
 // ParseStatType converts a JSON stat name string to a StatType.
-func ParseStatType(stat string) StatType {
+// Returns an error if the stat name is not recognized.
+func ParseStatType(stat string) (StatType, error) {
 	switch strings.ToLower(stat) {
 	case "strength":
-		return StatStrength
+		return StatStrength, nil
 	case "dexterity":
-		return StatDexterity
+		return StatDexterity, nil
 	case "magic":
-		return StatMagic
+		return StatMagic, nil
 	case "leadership":
-		return StatLeadership
+		return StatLeadership, nil
 	case "armor":
-		return StatArmor
+		return StatArmor, nil
 	case "weapon":
-		return StatWeapon
+		return StatWeapon, nil
 	case "movementspeed":
-		return StatMovementSpeed
+		return StatMovementSpeed, nil
 	case "attackrange":
-		return StatAttackRange
+		return StatAttackRange, nil
 	default:
-		return StatStrength
+		return StatStrength, fmt.Errorf("unrecognized stat type %q; valid values: strength, dexterity, magic, leadership, armor, weapon, movementspeed, attackrange", stat)
 	}
 }
 

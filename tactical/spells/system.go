@@ -129,10 +129,15 @@ func applyBuffDebuffSpell(
 	for _, squadID := range targetSquadIDs {
 		unitIDs := squads.GetUnitIDsInSquad(squadID, manager)
 		for _, mod := range spell.StatModifiers {
+			statType, err := effects.ParseStatType(mod.Stat)
+			if err != nil {
+				fmt.Printf("WARNING: spell %q has invalid stat modifier: %v\n", spell.Name, err)
+				continue
+			}
 			effect := effects.ActiveEffect{
 				Name:           spell.Name,
 				Source:         effects.SourceSpell,
-				Stat:           effects.ParseStatType(mod.Stat),
+				Stat:           statType,
 				Modifier:       mod.Modifier,
 				RemainingTurns: spell.Duration,
 			}

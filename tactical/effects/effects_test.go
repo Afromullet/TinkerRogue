@@ -240,13 +240,26 @@ func TestParseStatType(t *testing.T) {
 		{"movementspeed", StatMovementSpeed},
 		{"MovementSpeed", StatMovementSpeed},
 		{"attackrange", StatAttackRange},
-		{"unknown", StatStrength}, // default
 	}
 
 	for _, tt := range tests {
-		result := ParseStatType(tt.input)
+		result, err := ParseStatType(tt.input)
+		if err != nil {
+			t.Errorf("ParseStatType(%q) returned unexpected error: %v", tt.input, err)
+			continue
+		}
 		if result != tt.expected {
 			t.Errorf("ParseStatType(%q) = %d, want %d", tt.input, result, tt.expected)
+		}
+	}
+}
+
+func TestParseStatTypeUnknown(t *testing.T) {
+	invalidInputs := []string{"unknown", "stregth", "str", "", "INVALID"}
+	for _, input := range invalidInputs {
+		_, err := ParseStatType(input)
+		if err == nil {
+			t.Errorf("ParseStatType(%q) expected error for unrecognized stat, got nil", input)
 		}
 	}
 }

@@ -182,10 +182,15 @@ func ApplyArtifactStatEffects(squadIDs []ecs.EntityID, manager *common.EntityMan
 
 		for _, def := range defs {
 			for _, mod := range def.StatModifiers {
+				statType, err := effects.ParseStatType(mod.Stat)
+				if err != nil {
+					fmt.Printf("WARNING: artifact %q has invalid stat modifier: %v\n", def.Name, err)
+					continue
+				}
 				effect := effects.ActiveEffect{
 					Name:           def.Name,
 					Source:         effects.SourceItem,
-					Stat:           effects.ParseStatType(mod.Stat),
+					Stat:           statType,
 					Modifier:       mod.Modifier,
 					RemainingTurns: -1, // Permanent
 				}
