@@ -408,11 +408,8 @@ func EnsureUnitPositions(manager *common.EntityManager, squadID ecs.EntityID, sq
 			// Unit has position - move it to squad location
 			manager.MoveEntity(unitID, unitEntity, *unitPos, squadPos)
 		} else {
-			// Unit has no position - create one at squad location
-			newPos := new(coords.LogicalPosition)
-			*newPos = squadPos
-			unitEntity.AddComponent(common.PositionComponent, newPos)
-			common.GlobalPositionSystem.AddEntity(unitID, squadPos)
+			// Unit has no position - atomically add component and register
+			manager.RegisterEntityPosition(unitEntity, squadPos)
 		}
 	}
 }

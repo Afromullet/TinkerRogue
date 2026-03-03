@@ -72,12 +72,8 @@ func (fm *CombatFactionManager) AddSquadToFaction(factionID, squadID ecs.EntityI
 
 	// Add or update PositionComponent on squad entity
 	if !fm.manager.HasComponent(squadID, common.PositionComponent) {
-		// Squad has no position yet - add it
-		posPtr := new(coords.LogicalPosition)
-		*posPtr = position
-		squad.AddComponent(common.PositionComponent, posPtr)
-		// Register in PositionSystem (canonical position source)
-		common.GlobalPositionSystem.AddEntity(squadID, position)
+		// Squad has no position yet - atomically add component and register
+		fm.manager.RegisterEntityPosition(squad, position)
 	} else {
 		// Squad already has position - move it atomically
 		oldPos := common.GetComponentTypeByID[*coords.LogicalPosition](fm.manager, squadID, common.PositionComponent)

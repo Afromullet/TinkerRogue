@@ -32,12 +32,8 @@ func createSimSquad(
 		MaxUnits:   9,
 		IsDeployed: false,
 	})
-	squadEntity.AddComponent(common.PositionComponent, &coords.LogicalPosition{
-		X: worldPos.X,
-		Y: worldPos.Y,
-	})
-
-	common.GlobalPositionSystem.AddEntity(squadID, worldPos)
+	// Atomically add position component and register with position system
+	manager.RegisterEntityPosition(squadEntity, worldPos)
 
 	occupied := make(map[string]bool)
 

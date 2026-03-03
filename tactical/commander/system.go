@@ -39,10 +39,6 @@ func CreateCommander(
 			HasActed:          false,
 			MovementRemaining: movementSpeed,
 		}).
-		AddComponent(common.PositionComponent, &coords.LogicalPosition{
-			X: startPos.X,
-			Y: startPos.Y,
-		}).
 		AddComponent(rendering.RenderableComponent, &rendering.Renderable{
 			Image:   commanderImage,
 			Visible: true,
@@ -59,10 +55,8 @@ func CreateCommander(
 			SpellIDs: initialSpells,
 		})
 
-	// Add to position system
-	if common.GlobalPositionSystem != nil {
-		common.GlobalPositionSystem.AddEntity(commanderID, startPos)
-	}
+	// Atomically add position component and register with position system
+	manager.RegisterEntityPosition(entity, startPos)
 
 	return commanderID
 }

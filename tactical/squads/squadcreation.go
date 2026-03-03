@@ -361,7 +361,7 @@ func CreateSquadFromTemplate(
 
 		// Create unit entity
 		unitEntity := templates.CreateEntityFromTemplate(
-			*ecsmanager,
+			ecsmanager,
 			template.EntityConfig,
 			template.EntityData,
 		)

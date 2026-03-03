@@ -105,6 +105,27 @@ common.GlobalPositionSystem.AddEntity(entityID, newPos)
 
 **Impact:** `GetEntitiesAtPosition()` returns wrong results. Entities appear at old positions or become invisible to spatial queries.
 
+**Mitigation:** Use the atomic helpers on `EntityManager` for the full position lifecycle:
+
+```go
+// CREATION — atomically adds PositionComponent + registers with GlobalPositionSystem
+manager.RegisterEntityPosition(entity, pos)
+
+// MOVEMENT — atomically updates component + position system (already existed)
+manager.MoveEntity(entityID, entity, oldPos, newPos)
+manager.MoveSquadAndMembers(squadID, squadEntity, unitIDs, oldPos, newPos)
+
+// REMOVAL (keep entity) — atomically removes from position system + removes component
+manager.UnregisterEntityPosition(entity)
+
+// REMOVAL (dispose entity) — atomically removes from position system + disposes entity
+manager.CleanDisposeEntity(entity, pos)
+```
+
+Never call `GlobalPositionSystem.AddEntity/RemoveEntity` directly from outside the `common` package. All external callers have been migrated to use these atomic helpers.
+
+For debug validation, call `GlobalPositionSystem.ValidatePositionSync(manager)` which returns a list of desync errors (empty if all positions are consistent).
+
 ---
 
 ### 4. ParseStatType Silent Fallback to StatStrength

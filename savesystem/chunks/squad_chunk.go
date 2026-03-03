@@ -279,15 +279,12 @@ func (c *SquadChunk) Load(em *common.EntityManager, data json.RawMessage, idMap 
 				MaxUnits:           ss.MaxUnits,
 				IsDeployed:         ss.IsDeployed,
 				GarrisonedAtNodeID: ss.GarrisonedAtNodeID, // remapped later
-			}).
-			AddComponent(common.PositionComponent, &pos)
+			})
+
+		// Atomically add position component and register with position system
+		em.RegisterEntityPosition(squadEntity, pos)
 
 		idMap.Register(ss.EntityID, newSquadID)
-
-		// Register squad with position system
-		if common.GlobalPositionSystem != nil {
-			common.GlobalPositionSystem.AddEntity(newSquadID, pos)
-		}
 
 		// Create member units
 		for _, sm := range ss.Members {

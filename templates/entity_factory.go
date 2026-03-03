@@ -44,7 +44,7 @@ type EntityConfig struct {
 //   - data: Entity-specific data (JSONMonster)
 //
 // Returns the created entity with all appropriate components attached.
-func CreateEntityFromTemplate(manager common.EntityManager, config EntityConfig, data any) *ecs.Entity {
+func CreateEntityFromTemplate(manager *common.EntityManager, config EntityConfig, data any) *ecs.Entity {
 	switch config.Type {
 	case EntityCreature:
 		m, ok := data.(JSONMonster)
@@ -62,7 +62,7 @@ func CreateEntityFromTemplate(manager common.EntityManager, config EntityConfig,
 }
 
 // createCreatureEntity creates a creature entity with all components.
-func createCreatureEntity(manager common.EntityManager, config EntityConfig, m JSONMonster) *ecs.Entity {
+func createCreatureEntity(manager *common.EntityManager, config EntityConfig, m JSONMonster) *ecs.Entity {
 	// Load image
 	fpath := filepath.Join(config.AssetDir, config.ImagePath)
 	img, _, err := ebitenutil.NewImageFromFile(fpath)
@@ -77,11 +77,13 @@ func createCreatureEntity(manager common.EntityManager, config EntityConfig, m J
 		Image: img, Visible: config.Visible,
 	})
 
-	pos := config.Position
-	if pos == nil {
-		pos = &coords.LogicalPosition{X: 0, Y: 0}
+	// Add position: use atomic registration if explicit position provided,
+	// otherwise just add a default component (no position system registration)
+	if config.Position != nil {
+		manager.RegisterEntityPosition(entity, *config.Position)
+	} else {
+		entity.AddComponent(common.PositionComponent, &coords.LogicalPosition{X: 0, Y: 0})
 	}
-	entity.AddComponent(common.PositionComponent, pos)
 
 	// Add creature-specific attributes
 	attr := m.Attributes.NewAttributesFromJson()
@@ -91,11 +93,6 @@ func createCreatureEntity(manager common.EntityManager, config EntityConfig, m J
 	if config.GameMap != nil && config.Position != nil {
 		ind := coords.CoordManager.LogicalToIndex(*config.Position)
 		config.GameMap.Tiles[ind].Blocked = true
-	}
-
-	// Register with PositionSystem
-	if common.GlobalPositionSystem != nil && config.Position != nil {
-		common.GlobalPositionSystem.AddEntity(entity.GetID(), *config.Position)
 	}
 
 	return entity

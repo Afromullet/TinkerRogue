@@ -31,11 +31,8 @@ func CreateNode(manager *common.EntityManager, params CreateNodeParams) (ecs.Ent
 
 	entity := manager.World.NewEntity()
 
-	// Add position component
-	entity.AddComponent(common.PositionComponent, &coords.LogicalPosition{
-		X: params.Position.X,
-		Y: params.Position.Y,
-	})
+	// Atomically add position component and register with position system
+	manager.RegisterEntityPosition(entity, params.Position)
 
 	// Determine growth fields from node definition (zero for non-threats)
 	growthRate := 0.0
@@ -69,9 +66,6 @@ func CreateNode(manager *common.EntityManager, params CreateNodeParams) (ecs.Ent
 		Radius:        radius,
 		BaseMagnitude: magnitude,
 	})
-
-	// Register in position system
-	common.GlobalPositionSystem.AddEntity(entity.GetID(), params.Position)
 
 	return entity.GetID(), nil
 }

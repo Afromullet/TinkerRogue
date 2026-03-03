@@ -6,7 +6,6 @@ import (
 	"game_main/common"
 	"game_main/tactical/combat"
 	"game_main/tactical/squads"
-	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"
 )
@@ -40,25 +39,17 @@ func StripCombatComponents(manager *common.EntityManager, squadIDs []ecs.EntityI
 			entity.RemoveComponent(combat.FactionMembershipComponent)
 		}
 
-		// Remove squad position
-		pos := common.GetComponentType[*coords.LogicalPosition](entity, common.PositionComponent)
-		if pos != nil {
-			common.GlobalPositionSystem.RemoveEntity(squadID, *pos)
-			entity.RemoveComponent(common.PositionComponent)
-		}
+		// Atomically remove squad position from both component and position system
+		manager.UnregisterEntityPosition(entity)
 
-		// Remove all unit positions
+		// Atomically remove all unit positions
 		unitIDs := squads.GetUnitIDsInSquad(squadID, manager)
 		for _, unitID := range unitIDs {
 			unitEntity := manager.FindEntityByID(unitID)
 			if unitEntity == nil {
 				continue
 			}
-			unitPos := common.GetComponentType[*coords.LogicalPosition](unitEntity, common.PositionComponent)
-			if unitPos != nil {
-				common.GlobalPositionSystem.RemoveEntity(unitID, *unitPos)
-				unitEntity.RemoveComponent(common.PositionComponent)
-			}
+			manager.UnregisterEntityPosition(unitEntity)
 		}
 
 		// Reset deployment flag

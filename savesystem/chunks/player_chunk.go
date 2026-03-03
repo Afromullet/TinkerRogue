@@ -140,12 +140,14 @@ func (c *PlayerChunk) Load(em *common.EntityManager, data json.RawMessage, idMap
 	entity := em.World.NewEntity()
 	entity.
 		AddComponent(common.PlayerComponent, &common.Player{}).
-		AddComponent(common.PositionComponent, &pos).
 		AddComponent(common.AttributeComponent, &attr).
 		AddComponent(common.ResourceStockpileComponent, &common.ResourceStockpile{
 			Gold: sp.Resources.Gold, Iron: sp.Resources.Iron,
 			Wood: sp.Resources.Wood, Stone: sp.Resources.Stone,
 		})
+
+	// Atomically add position component and register with position system
+	em.RegisterEntityPosition(entity, pos)
 
 	newID := entity.GetID()
 	idMap.Register(sp.EntityID, newID)
@@ -183,11 +185,6 @@ func (c *PlayerChunk) Load(em *common.EntityManager, data json.RawMessage, idMap
 	// so the chunk must ensure this tag exists for other systems to query.
 	playersTag := ecs.BuildTag(common.PlayerComponent, common.PositionComponent)
 	em.WorldTags["players"] = playersTag
-
-	// Add to position system
-	if common.GlobalPositionSystem != nil {
-		common.GlobalPositionSystem.AddEntity(newID, pos)
-	}
 
 	return nil
 }

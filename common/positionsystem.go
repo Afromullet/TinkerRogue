@@ -160,6 +160,34 @@ func (ps *PositionSystem) Clear() {
 	ps.spatialGrid = make(map[coords.LogicalPosition][]ecs.EntityID)
 }
 
+// ValidatePositionSync checks that the spatial grid and PositionComponents are in sync.
+// Returns a list of error descriptions for any desync found.
+// Use this in debug mode to catch position invariant violations early.
+func (ps *PositionSystem) ValidatePositionSync(manager *EntityManager) []string {
+	var errors []string
+
+	// Check: every entity in spatial grid has a matching PositionComponent
+	for pos, ids := range ps.spatialGrid {
+		for _, id := range ids {
+			entity := manager.FindEntityByID(id)
+			if entity == nil {
+				errors = append(errors, fmt.Sprintf("entity %d in spatial grid at %v but not found in ECS", id, pos))
+				continue
+			}
+			compPos := GetComponentType[*coords.LogicalPosition](entity, PositionComponent)
+			if compPos == nil {
+				errors = append(errors, fmt.Sprintf("entity %d in spatial grid at %v but has no PositionComponent", id, pos))
+				continue
+			}
+			if compPos.X != pos.X || compPos.Y != pos.Y {
+				errors = append(errors, fmt.Sprintf("entity %d: spatial grid position (%d,%d) != component position (%d,%d)", id, pos.X, pos.Y, compPos.X, compPos.Y))
+			}
+		}
+	}
+
+	return errors
+}
+
 // GetEntitiesInRadius returns all entity IDs within the specified radius of a position.
 // Uses Chebyshev distance (8-directional movement).
 // Useful for AOE effects and area queries.

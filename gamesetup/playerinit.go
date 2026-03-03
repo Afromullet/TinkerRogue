@@ -45,7 +45,6 @@ func InitializePlayerData(ecsmanager *common.EntityManager, pl *common.PlayerDat
 			Image:   playerImg,
 			Visible: true,
 		}).
-		AddComponent(common.PositionComponent, &coords.LogicalPosition{}).
 		AddComponent(common.AttributeComponent, &attr).
 		AddComponent(common.ResourceStockpileComponent, common.NewResourceStockpile(
 			config.DefaultPlayerStartingGold,
@@ -60,22 +59,15 @@ func InitializePlayerData(ecsmanager *common.EntityManager, pl *common.PlayerDat
 		}).
 		AddComponent(gear.ArtifactInventoryComponent, gear.NewArtifactInventory(config.DefaultPlayerMaxArtifacts))
 
+	// Atomically add position component and register with position system
+	ecsmanager.RegisterEntityPosition(playerEntity, gm.StartingPosition())
+
 	players := ecs.BuildTag(common.PlayerComponent, common.PositionComponent)
 	ecsmanager.WorldTags["players"] = players
 
 	pl.PlayerEntityID = playerEntity.GetID()
 
-	//Don't want to Query for the player position every time, so we're storing it
-
-	startPos := common.GetComponentType[*coords.LogicalPosition](playerEntity, common.PositionComponent)
-	startPos.X = gm.StartingPosition().X
-	startPos.Y = gm.StartingPosition().Y
-
-	pl.Pos = startPos
-
-	// Add player to PositionSystem for tracking
-	if common.GlobalPositionSystem != nil {
-		common.GlobalPositionSystem.AddEntity(playerEntity.GetID(), *startPos)
-	}
+	// Store pointer to position component for direct access (avoids querying every frame)
+	pl.Pos = common.GetComponentType[*coords.LogicalPosition](playerEntity, common.PositionComponent)
 
 }

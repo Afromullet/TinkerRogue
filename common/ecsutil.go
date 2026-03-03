@@ -158,6 +158,38 @@ func (em *EntityManager) MoveSquadAndMembers(
 	return nil
 }
 
+// RegisterEntityPosition atomically adds a PositionComponent and registers the entity
+// with the GlobalPositionSystem. Use this for initial entity creation when the entity
+// needs a tracked world position. This prevents desync between the two position stores.
+//
+// For moving an existing entity, use MoveEntity instead.
+// For removing position, use UnregisterEntityPosition or CleanDisposeEntity.
+func (em *EntityManager) RegisterEntityPosition(entity *ecs.Entity, pos coords.LogicalPosition) {
+	posPtr := new(coords.LogicalPosition)
+	*posPtr = pos
+	entity.AddComponent(PositionComponent, posPtr)
+	if GlobalPositionSystem != nil {
+		GlobalPositionSystem.AddEntity(entity.GetID(), pos)
+	}
+}
+
+// UnregisterEntityPosition atomically removes an entity from the GlobalPositionSystem
+// and removes its PositionComponent. Use this when stripping position from an entity
+// that will continue to exist (e.g., post-combat cleanup).
+//
+// For full entity disposal (position removal + ECS disposal), use CleanDisposeEntity.
+// No-op if the entity has no PositionComponent.
+func (em *EntityManager) UnregisterEntityPosition(entity *ecs.Entity) {
+	pos := GetComponentType[*coords.LogicalPosition](entity, PositionComponent)
+	if pos == nil {
+		return
+	}
+	if GlobalPositionSystem != nil {
+		GlobalPositionSystem.RemoveEntity(entity.GetID(), *pos)
+	}
+	entity.RemoveComponent(PositionComponent)
+}
+
 // CleanDisposeEntity removes an entity from both the ECS World and GlobalPositionSystem.
 // This prevents memory leaks by ensuring entities are cleaned up from all systems.
 //

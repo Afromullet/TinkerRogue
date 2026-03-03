@@ -142,8 +142,10 @@ func (c *CommanderChunk) Load(em *common.EntityManager, data json.RawMessage, id
 				Name:        sc.Name,
 				IsActive:    sc.IsActive,
 			}).
-			AddComponent(common.PositionComponent, &pos).
 			AddComponent(common.AttributeComponent, &attr)
+
+		// Atomically add position component and register with position system
+		em.RegisterEntityPosition(entity, pos)
 
 		if sc.ActionState != nil {
 			entity.AddComponent(commander.CommanderActionStateComponent, &commander.CommanderActionStateData{
@@ -178,10 +180,6 @@ func (c *CommanderChunk) Load(em *common.EntityManager, data json.RawMessage, id
 
 		idMap.Register(sc.EntityID, newID)
 
-		// Add to position system
-		if common.GlobalPositionSystem != nil {
-			common.GlobalPositionSystem.AddEntity(newID, pos)
-		}
 	}
 
 	return nil
