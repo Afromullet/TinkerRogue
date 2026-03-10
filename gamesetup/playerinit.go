@@ -4,6 +4,7 @@ import (
 	"game_main/common"
 	"game_main/config"
 	"game_main/gear"
+	"game_main/templates"
 
 	"game_main/tactical/commander"
 	_ "game_main/tactical/squadcommands" // Blank import to trigger init() for command queue components
@@ -29,14 +30,16 @@ func InitializePlayerData(ecsmanager *common.EntityManager, pl *common.PlayerDat
 		log.Fatal(err)
 	}
 
-	// Create player attributes using default configuration values (see config.go)
+	cfg := templates.GameConfig
+
+	// Create player attributes using default configuration values (see gameconfig.json)
 	attr := common.NewAttributes(
-		config.DefaultPlayerStrength,
-		config.DefaultPlayerDexterity,
-		config.DefaultPlayerMagic,
-		config.DefaultPlayerLeadership,
-		config.DefaultPlayerArmor,
-		config.DefaultPlayerWeapon,
+		cfg.Player.Attributes.Strength,
+		cfg.Player.Attributes.Dexterity,
+		cfg.Player.Attributes.Magic,
+		cfg.Player.Attributes.Leadership,
+		cfg.Player.Attributes.Armor,
+		cfg.Player.Attributes.Weapon,
 	)
 
 	playerEntity := ecsmanager.World.NewEntity().
@@ -47,17 +50,17 @@ func InitializePlayerData(ecsmanager *common.EntityManager, pl *common.PlayerDat
 		}).
 		AddComponent(common.AttributeComponent, &attr).
 		AddComponent(common.ResourceStockpileComponent, common.NewResourceStockpile(
-			config.DefaultPlayerStartingGold,
-			config.DefaultPlayerStartingIron,
-			config.DefaultPlayerStartingWood,
-			config.DefaultPlayerStartingStone,
+			cfg.Player.Resources.Gold,
+			cfg.Player.Resources.Iron,
+			cfg.Player.Resources.Wood,
+			cfg.Player.Resources.Stone,
 		)).
-		AddComponent(squads.UnitRosterComponent, squads.NewUnitRoster(config.DefaultPlayerMaxUnits)).
+		AddComponent(squads.UnitRosterComponent, squads.NewUnitRoster(cfg.Player.Limits.MaxUnits)).
 		AddComponent(commander.CommanderRosterComponent, &commander.CommanderRosterData{
 			CommanderIDs:  make([]ecs.EntityID, 0),
-			MaxCommanders: config.DefaultMaxCommanders,
+			MaxCommanders: cfg.Commander.MaxCommanders,
 		}).
-		AddComponent(gear.ArtifactInventoryComponent, gear.NewArtifactInventory(config.DefaultPlayerMaxArtifacts))
+		AddComponent(gear.ArtifactInventoryComponent, gear.NewArtifactInventory(cfg.Player.Limits.MaxArtifacts))
 
 	// Atomically add position component and register with position system
 	ecsmanager.RegisterEntityPosition(playerEntity, gm.StartingPosition())

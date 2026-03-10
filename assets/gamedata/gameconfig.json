@@ -1,0 +1,59 @@
+{
+  "player": {
+    "attributes": {
+      "strength": 15,
+      "dexterity": 20,
+      "magic": 0,
+      "leadership": 0,
+      "armor": 2,
+      "weapon": 3
+    },
+    "resources": {
+      "gold": 2000,
+      "iron": 50,
+      "wood": 50,
+      "stone": 50
+    },
+    "limits": {
+      "maxUnits": 500,
+      "maxSquads": 50,
+      "maxArtifacts": 50,
+      "maxArtifactsPerCommander": 30
+    }
+  },
+  "commander": {
+    "movementSpeed": 25,
+    "maxCommanders": 3,
+    "cost": 5000,
+    "maxSquads": 50,
+    "startingMana": 50,
+    "maxMana": 50
+  },
+  "factionAI": {
+    "startingGold": 100000,
+    "startingIron": 30,
+    "startingWood": 30,
+    "startingStone": 30
+  },
+  "combat": {
+    "defaultMovementSpeed": 3,
+    "defaultAttackRange": 1,
+    "baseHitChance": 80,
+    "maxHitRate": 100,
+    "maxCritChance": 50,
+    "maxDodgeChance": 30,
+    "baseCapacity": 60,
+    "maxCapacity": 150,
+    "baseMagicResist": 5,
+    "critDamageBonus": 0.5
+  },
+  "display": {
+    "mapWidth": 100,
+    "mapHeight": 80,
+    "tilePixels": 32,
+    "scaleFactor": 3,
+    "rightPadding": 500,
+    "zoomSquares": 30,
+    "staticUIOffset": 1000
+  }
+}

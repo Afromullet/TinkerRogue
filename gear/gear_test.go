@@ -15,6 +15,10 @@ import (
 
 // setupTestManager creates a test EntityManager with all subsystems initialized.
 func setupTestManager() *common.EntityManager {
+	// Ensure game config is populated for tests that reference it
+	if templates.GameConfig.Player.Limits.MaxArtifactsPerCommander == 0 {
+		templates.GameConfig.Player.Limits.MaxArtifactsPerCommander = 30
+	}
 	manager := testfx.NewTestEntityManager()
 	if err := squads.InitializeSquadData(manager); err != nil {
 		panic(err)

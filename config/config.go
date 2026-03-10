@@ -30,49 +30,8 @@ const (
 	OVERWORLD_LOG_EXPORT_DIR    = "./overworld_logs"
 )
 
-// Default player starting attributes
-// These are used when initializing a new player character
-const (
-	DefaultPlayerStrength   = 15 // → 50 HP (20 + 15*2)
-	DefaultPlayerDexterity  = 20 // → 100% hit, 10% crit, 6% dodge
-	DefaultPlayerMagic      = 0  // → Player starts without magic abilities1
-	DefaultPlayerLeadership = 0  // → Player doesn't start with squad leadership
-	DefaultPlayerArmor      = 2  // → 4 physical resistance (2*2)
-	DefaultPlayerWeapon     = 3  // → 6 bonus damage (3*2)
-)
-
-// Default player resources and roster limits
-const (
-	DefaultPlayerStartingGold       = 2000 // Starting gold for purchasing units
-	DefaultPlayerMaxUnits           = 500  // Maximum units player can own
-	DefaultPlayerMaxSquads          = 50   // Maximum squads player can own
-	DefaultPlayerStartingIron       = 50   // Starting iron for node placement
-	DefaultPlayerStartingWood       = 50   // Starting wood for node placement
-	DefaultPlayerStartingStone      = 50   // Starting stone for node placement
-	DefaultPlayerMaxArtifacts       = 50   // Maximum artifacts player can own
-	DefaultMaxArtifactsPerCommander = 30   //TODO, change later. The value is high for testing
-)
-
-// Commander system defaults
-const (
-	DefaultCommanderMovementSpeed = 25   // Tiles per overworld turn
-	DefaultMaxCommanders          = 3    // Maximum commanders player can control
-	DefaultCommanderCost          = 5000 // Gold cost to recruit a new commander
-	DefaultCommanderMaxSquads     = 50   // Max squads per commander
-	DefaultCommanderStartingMana  = 50   // Starting mana for new commanders
-	DefaultCommanderMaxMana       = 50   // Maximum mana pool for new commanders
-)
-
-// Default faction AI starting resources
-const (
-	DefaultFactionStartingGold  = 100000
-	DefaultFactionStartingIron  = 30
-	DefaultFactionStartingWood  = 30
-	DefaultFactionStartingStone = 30
-)
-
-// Default Unit Attributes
-const (
+// Default values in case JSON loading fails
+var (
 	DefaultMovementSpeed  = 3
 	DefaultAttackRange    = 1
 	DefaultBaseHitChance  = 80
@@ -82,27 +41,43 @@ const (
 	DefaultBaseCapacity   = 60
 	DefaultMaxCapacity    = 150
 	BaseMagicResist       = 5
-)
+	CritDamageBonus       = 0.5
 
-// Critical hit constants
-const (
-	// CritDamageBonus is the extra damage multiplier on critical hits.
-	// Crits deal (1 + CritDamageBonus) = 1.5x damage.
-	// Used in expected damage calculations: expectedMult = 1 + (critChance * CritDamageBonus)
-	CritDamageBonus = 0.5
-)
-
-// Default Graphic and Display Related Values
-
-const (
-	DefaultMapWidth           = 100
-	DefaultMapHeight          = 80
+	// Display defaults (used by coords package which can't import templates)
 	DefaultTilePixels         = 32
 	DefaultScaleFactor        = 3
 	DefaultRightPadding       = 500
-	DefaultZoomNumberOfSquare = 30 //Number of squares we see when zoomed it
+	DefaultZoomNumberOfSquare = 30
 	DefaultStaticUIOffset     = 1000
+	DefaultMapWidth           = 100
+	DefaultMapHeight          = 80
 )
+
+// SetConfigFromJSON updates all config variables from loaded JSON.
+// Called by templates.ReadGameConfig() after parsing gameconfig.json.
+func SetConfigFromJSON(
+	movementSpeed, attackRange, baseHitChance, maxHitRate, maxCritChance, maxDodgeChance, baseCapacity, maxCapacity, baseMagicResist int, critDamageBonus float64,
+	tilePixels, scaleFactor, rightPadding, zoomSquares, staticUIOffset, mapWidth, mapHeight int,
+) {
+	DefaultMovementSpeed = movementSpeed
+	DefaultAttackRange = attackRange
+	DefaultBaseHitChance = baseHitChance
+	DefaultMaxHitRate = maxHitRate
+	DefaultMaxCritChance = maxCritChance
+	DefaultMaxDodgeChance = maxDodgeChance
+	DefaultBaseCapacity = baseCapacity
+	DefaultMaxCapacity = maxCapacity
+	BaseMagicResist = baseMagicResist
+	CritDamageBonus = critDamageBonus
+
+	DefaultTilePixels = tilePixels
+	DefaultScaleFactor = scaleFactor
+	DefaultRightPadding = rightPadding
+	DefaultZoomNumberOfSquare = zoomSquares
+	DefaultStaticUIOffset = staticUIOffset
+	DefaultMapWidth = mapWidth
+	DefaultMapHeight = mapHeight
+}
 
 // assetRoot is the resolved path to the assets directory.
 // Initialized once on first use via getAssetRoot().

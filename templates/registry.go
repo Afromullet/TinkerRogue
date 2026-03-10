@@ -30,6 +30,7 @@ const SpellDataPath = "gamedata/spelldata.json"
 
 func ReadGameData() {
 
+	ReadGameConfig()       // Load game config first (other systems reference it)
 	ReadDifficultyConfig() // Load difficulty first (other systems reference it)
 	ReadMonsterData()
 	ReadNameData()

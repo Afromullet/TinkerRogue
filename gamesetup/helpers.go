@@ -9,6 +9,7 @@ import (
 	"game_main/common"
 	"game_main/config"
 	"game_main/overworld/core"
+	"game_main/templates"
 	"game_main/testing"
 	"game_main/world/worldmap"
 )
@@ -16,7 +17,7 @@ import (
 // InitWalkableGridFromMap initializes the walkable grid and marks valid positions.
 // Used by overworld, roguelike, and save-load initialization paths.
 func InitWalkableGridFromMap(gm *worldmap.GameMap) {
-	core.InitWalkableGrid(config.DefaultMapWidth, config.DefaultMapHeight)
+	core.InitWalkableGrid(templates.GameConfig.Display.MapWidth, templates.GameConfig.Display.MapHeight)
 	for _, pos := range gm.ValidPositions {
 		core.SetTileWalkable(pos, true)
 	}

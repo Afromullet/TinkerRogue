@@ -319,7 +319,7 @@ func (ah *OverworldActionHandler) RecruitCommander() {
 		ah.deps.LogEvent("ERROR: No resource stockpile found")
 		return
 	}
-	cost := config.DefaultCommanderCost
+	cost := templates.GameConfig.Commander.Cost
 	if !common.CanAffordGold(stockpile, cost) {
 		ah.deps.LogEvent(fmt.Sprintf("Not enough gold (need %d, have %d)", cost, stockpile.Gold))
 		return
@@ -346,11 +346,11 @@ func (ah *OverworldActionHandler) RecruitCommander() {
 		ah.deps.Manager,
 		name,
 		*cmdPos,
-		config.DefaultCommanderMovementSpeed,
-		config.DefaultCommanderMaxSquads,
+		templates.GameConfig.Commander.MovementSpeed,
+		templates.GameConfig.Commander.MaxSquads,
 		commanderImage,
-		config.DefaultCommanderStartingMana,
-		config.DefaultCommanderMaxMana,
+		templates.GameConfig.Commander.StartingMana,
+		templates.GameConfig.Commander.MaxMana,
 		templates.GetAllSpellIDs(),
 	)
 

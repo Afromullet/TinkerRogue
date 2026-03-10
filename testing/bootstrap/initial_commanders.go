@@ -43,11 +43,11 @@ func CreateTestCommanders(em *common.EntityManager, pd *common.PlayerData, start
 			em,
 			tc.Name,
 			pos,
-			config.DefaultCommanderMovementSpeed,
-			config.DefaultCommanderMaxSquads,
+			templates.GameConfig.Commander.MovementSpeed,
+			templates.GameConfig.Commander.MaxSquads,
 			commanderImage,
-			config.DefaultCommanderStartingMana,
-			config.DefaultCommanderMaxMana,
+			templates.GameConfig.Commander.StartingMana,
+			templates.GameConfig.Commander.MaxMana,
 			templates.GetAllSpellIDs(),
 		)
 

@@ -3,6 +3,7 @@ package combat
 import (
 	"fmt"
 	"game_main/common"
+	"game_main/config"
 
 	"game_main/tactical/squads"
 	"game_main/world/coords"
@@ -39,7 +40,7 @@ func (ms *CombatMovementSystem) GetSquadMovementSpeed(squadID ecs.EntityID) int 
 	speed := squads.GetSquadMovementSpeed(squadID, ms.manager)
 	// If squads returns 0 (no units or no movement components), use default
 	if speed == 0 {
-		return DefaultMovementSpeed
+		return config.DefaultMovementSpeed
 	}
 	return speed
 }

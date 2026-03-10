@@ -3,6 +3,7 @@ package gear
 import (
 	"fmt"
 	"game_main/common"
+	"game_main/config"
 	"game_main/tactical/combat"
 	"game_main/tactical/squads"
 	"sort"
@@ -42,7 +43,7 @@ func (ctx *BehaviorContext) GetFactionSquads(factionID ecs.EntityID) []ecs.Entit
 func (ctx *BehaviorContext) GetSquadSpeed(squadID ecs.EntityID) int {
 	speed := squads.GetSquadMovementSpeed(squadID, ctx.Manager)
 	if speed == 0 {
-		speed = combat.DefaultMovementSpeed
+		speed = config.DefaultMovementSpeed
 	}
 	return speed
 }

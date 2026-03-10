@@ -72,15 +72,16 @@ func (gb *GameBootstrap) CreatePlayer(em *common.EntityManager, pd *common.Playe
 		log.Fatalf("Failed to load commander image: %v", err)
 	}
 
+	cfg := templates.GameConfig.Commander
 	commanderID := commander.CreateCommander(
 		em,
 		"Commander",
 		*pd.Pos,
-		config.DefaultCommanderMovementSpeed,
-		config.DefaultCommanderMaxSquads,
+		cfg.MovementSpeed,
+		cfg.MaxSquads,
 		commanderImage,
-		config.DefaultCommanderStartingMana,
-		config.DefaultCommanderMaxMana,
+		cfg.StartingMana,
+		cfg.MaxMana,
 		templates.GetAllSpellIDs(),
 	)
 

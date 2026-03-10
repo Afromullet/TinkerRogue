@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"game_main/common"
-	"game_main/config"
 	"game_main/overworld/core"
 	"game_main/overworld/garrison"
 	"game_main/overworld/threat"
@@ -47,11 +46,12 @@ func CreateFaction(
 	entity.AddComponent(core.OverworldFactionComponent, factionData)
 	entity.AddComponent(core.TerritoryComponent, territoryData)
 	entity.AddComponent(core.StrategicIntentComponent, intentData)
+	factionCfg := templates.GameConfig.FactionAI
 	entity.AddComponent(common.ResourceStockpileComponent, common.NewResourceStockpile(
-		config.DefaultFactionStartingGold,
-		config.DefaultFactionStartingIron,
-		config.DefaultFactionStartingWood,
-		config.DefaultFactionStartingStone,
+		factionCfg.StartingGold,
+		factionCfg.StartingIron,
+		factionCfg.StartingWood,
+		factionCfg.StartingStone,
 	))
 
 	// Spawn initial threat at home position

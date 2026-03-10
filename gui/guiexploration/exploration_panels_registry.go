@@ -4,11 +4,11 @@ import (
 	"fmt"
 
 	"game_main/common"
-	"game_main/config"
 	"game_main/gui/builders"
 	"game_main/gui/framework"
 	"game_main/gui/specs"
 	"game_main/overworld/core"
+	"game_main/templates"
 	"game_main/world/worldmap"
 
 	"github.com/ebitenui/ebitenui/widget"
@@ -50,7 +50,7 @@ func regenerateMap(em *ExplorationMode, generatorName string) {
 	*em.Context.GameMap = newMap
 
 	// 2. Rebuild walkable grid
-	core.InitWalkableGrid(config.DefaultMapWidth, config.DefaultMapHeight)
+	core.InitWalkableGrid(templates.GameConfig.Display.MapWidth, templates.GameConfig.Display.MapHeight)
 	for _, pos := range em.Context.GameMap.ValidPositions {
 		core.SetTileWalkable(pos, true)
 	}

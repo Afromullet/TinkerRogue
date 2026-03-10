@@ -2,8 +2,8 @@ package evaluation
 
 import (
 	"game_main/common"
-	gameconfig "game_main/config"
 	"game_main/tactical/squads"
+	"game_main/templates"
 	"math"
 
 	"github.com/bytearena/ecs"
@@ -62,7 +62,7 @@ func CalculateOffensivePower(attr *common.Attributes, config *PowerConfig) float
 	// Calculate expected damage (damage * hit rate * crit multiplier)
 	hitRate := float64(attr.GetHitRate()) / 100.0
 	critChance := float64(attr.GetCritChance()) / 100.0
-	critMultiplier := 1.0 + (critChance * gameconfig.CritDamageBonus)
+	critMultiplier := 1.0 + (critChance * templates.GameConfig.Combat.CritDamageBonus)
 
 	return avgDamage * hitRate * critMultiplier
 }

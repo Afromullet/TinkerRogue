@@ -5,7 +5,6 @@ import (
 	"sort"
 	"strings"
 
-	"game_main/config"
 	"game_main/gear"
 	"game_main/gui/builders"
 	"game_main/tactical/squads"
@@ -273,7 +272,7 @@ func (am *ArtifactMode) refreshEquipment() {
 		equipped = equipData.EquippedArtifacts
 	}
 
-	am.equipmentTitle.Label = fmt.Sprintf("%s - Equipment (%d/%d)", squadName, len(equipped), config.DefaultMaxArtifactsPerCommander)
+	am.equipmentTitle.Label = fmt.Sprintf("%s - Equipment (%d/%d)", squadName, len(equipped), templates.GameConfig.Player.Limits.MaxArtifactsPerCommander)
 
 	entries := make([]string, 0, len(equipped))
 	entryIDs := make([]string, 0, len(equipped))
