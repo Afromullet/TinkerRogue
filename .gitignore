@@ -7,3 +7,4 @@
 .claude/hook-debug.log
 .claude/plans/
 /simulation_logs
+.claude/usage-stats.txt
