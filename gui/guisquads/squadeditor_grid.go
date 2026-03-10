@@ -2,12 +2,15 @@ package guisquads
 
 import (
 	"fmt"
+	"image"
 	"game_main/common"
+	"game_main/gui/framework"
 	"game_main/gui/guiinspect"
 	"game_main/tactical/squadcommands"
 	"game_main/tactical/squads"
 
 	"github.com/bytearena/ecs"
+	"github.com/hajimehoshi/ebiten/v2"
 )
 
 // Grid interaction logic for SquadEditorMode
@@ -113,4 +116,73 @@ func (sem *SquadEditorMode) refreshSupportPattern() {
 	}
 	pattern := squads.ComputeGenericPatternFiltered(sem.squadNav.CurrentID(), sem.Queries.ECSManager, true)
 	guiinspect.PopulateAttackGridCells(sem.supportGridCells, pattern)
+}
+
+// gridCellAtMouse returns the grid cell (row, col) under the mouse cursor, or (-1, -1) if none.
+func (sem *SquadEditorMode) gridCellAtMouse(mouseX, mouseY int) (row, col int) {
+	pt := image.Pt(mouseX, mouseY)
+	for r := 0; r < 3; r++ {
+		for c := 0; c < 3; c++ {
+			rect := sem.gridCells[r][c].GetWidget().Rect
+			if pt.In(rect) {
+				return r, c
+			}
+		}
+	}
+	return -1, -1
+}
+
+// handleGridRightClick handles right-clicking a grid cell to remove the unit at that position.
+func (sem *SquadEditorMode) handleGridRightClick(inputState *framework.InputState) bool {
+	if !inputState.MouseJustPressedButton(ebiten.MouseButtonRight) {
+		return false
+	}
+	if !sem.squadNav.HasSquads() {
+		return false
+	}
+
+	row, col := sem.gridCellAtMouse(inputState.MouseX, inputState.MouseY)
+	if row < 0 {
+		return false
+	}
+
+	currentSquadID := sem.squadNav.CurrentID()
+	unitIDs := squads.GetUnitIDsAtGridPosition(currentSquadID, row, col, sem.Queries.ECSManager)
+	if len(unitIDs) == 0 {
+		return false
+	}
+
+	unitID := unitIDs[0]
+	unitName := common.GetEntityName(sem.Queries.ECSManager, unitID, "Unit")
+	sem.removeUnitByID(unitID, unitName)
+	return true
+}
+
+// handleGridShiftClick handles shift+left-clicking a grid cell to view the unit at that position.
+func (sem *SquadEditorMode) handleGridShiftClick(inputState *framework.InputState) bool {
+	if !inputState.MouseJustPressedButton(ebiten.MouseButtonLeft) {
+		return false
+	}
+	if !inputState.KeysPressed[ebiten.KeyShift] &&
+		!inputState.KeysPressed[ebiten.KeyShiftLeft] &&
+		!inputState.KeysPressed[ebiten.KeyShiftRight] {
+		return false
+	}
+	if !sem.squadNav.HasSquads() {
+		return false
+	}
+
+	row, col := sem.gridCellAtMouse(inputState.MouseX, inputState.MouseY)
+	if row < 0 {
+		return false
+	}
+
+	currentSquadID := sem.squadNav.CurrentID()
+	unitIDs := squads.GetUnitIDsAtGridPosition(currentSquadID, row, col, sem.Queries.ECSManager)
+	if len(unitIDs) == 0 {
+		return false
+	}
+
+	sem.viewUnitByID(unitIDs[0])
+	return true
 }

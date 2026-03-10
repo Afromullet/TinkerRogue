@@ -6,6 +6,8 @@ import (
 	"game_main/gui/guiunitview"
 	"game_main/tactical/squadcommands"
 	"game_main/tactical/squads"
+
+	"github.com/bytearena/ecs"
 )
 
 // Roster management logic for SquadEditorMode
@@ -134,13 +136,22 @@ func (sem *SquadEditorMode) getSelectedUnitForAction() (squads.UnitIdentity, boo
 	return unitIdentity, true
 }
 
-// onRemoveUnit removes the selected unit from the squad
+// onRemoveUnit removes the selected unit from the squad (via unit list selection)
 func (sem *SquadEditorMode) onRemoveUnit() {
 	unitIdentity, ok := sem.getSelectedUnitForAction()
 	if !ok {
 		return
 	}
-	unitID := unitIdentity.ID
+	sem.removeUnitByID(unitIdentity.ID, unitIdentity.Name)
+}
+
+// removeUnitByID removes the specified unit from the current squad with a confirmation dialog.
+// This is the shared logic used by both the "Remove Selected Unit" button and right-click on grid.
+func (sem *SquadEditorMode) removeUnitByID(unitID ecs.EntityID, unitName string) {
+	if !sem.squadNav.HasSquads() {
+		sem.SetStatus("No squad selected")
+		return
+	}
 
 	// Check if this is the leader
 	isLeader := sem.Queries.ECSManager.HasComponent(unitID, squads.LeaderComponent)
@@ -155,7 +166,7 @@ func (sem *SquadEditorMode) onRemoveUnit() {
 	// Show confirmation dialog
 	dialog := builders.CreateConfirmationDialog(builders.DialogConfig{
 		Title:     "Confirm Remove Unit",
-		Message:   fmt.Sprintf("Remove '%s' from squad?\n\nUnit will return to roster.\n\nYou can undo with Ctrl+Z.", unitIdentity.Name),
+		Message:   fmt.Sprintf("Remove '%s' from squad?\n\nUnit will return to roster.\n\nYou can undo with Ctrl+Z.", unitName),
 		MinWidth:  dialogWidth,
 		MinHeight: dialogHeight,
 		CenterX:   centerX,
@@ -221,13 +232,18 @@ func (sem *SquadEditorMode) onMakeLeader() {
 	sem.GetEbitenUI().AddWindow(dialog)
 }
 
-// onViewUnit transitions to the unit view mode for the selected unit
+// onViewUnit transitions to the unit view mode for the selected unit (via unit list selection)
 func (sem *SquadEditorMode) onViewUnit() {
 	unitIdentity, ok := sem.getSelectedUnitForAction()
 	if !ok {
 		return
 	}
+	sem.viewUnitByID(unitIdentity.ID)
+}
 
+// viewUnitByID transitions to the unit view mode for the specified unit.
+// This is the shared logic used by both the "View Unit" button and shift+click on grid.
+func (sem *SquadEditorMode) viewUnitByID(unitID ecs.EntityID) {
 	mode, exists := sem.ModeManager.GetMode("unit_view")
 	if !exists {
 		sem.SetStatus("Unit view mode not available")
@@ -235,7 +251,7 @@ func (sem *SquadEditorMode) onViewUnit() {
 	}
 
 	viewMode := mode.(*guiunitview.UnitViewMode)
-	viewMode.SetUnitID(unitIdentity.ID)
+	viewMode.SetUnitID(unitID)
 	sem.ModeManager.RequestTransition(mode, "View Unit clicked")
 }
 

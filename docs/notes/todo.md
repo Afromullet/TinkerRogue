@@ -42,15 +42,13 @@
 - combat life cycle manager changes only support one player at the moment, de to storing the playerEntityID. Consider changing that for multiplayer
 - There has to be a tradeoff between casting spells and moving squads/engaging in combat. Doing both will feel too mechanical. 
 - ExecuteThreatEvolutionEffect needs to changed base off threat type/data.  
+- Add Debug command to reload JSON. Will be used for testing
 
 # Cleanup
 
 - Make sure entities are cleaned up upon destruction. Need to determine what entities have a "lifecycle" by determining what addcomponent is called on. 
 
 - combatqueries.go still has functions which search the entire ecs space
-
-
-- Review all consts to see if they should be defined in a json file
 
 - encounter service should not have mode coordinator. It overlaps too much with what the GUI is doing (pending. Determine if this is necessary)
 

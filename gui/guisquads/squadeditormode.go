@@ -260,6 +260,16 @@ func (sem *SquadEditorMode) Render(screen *ebiten.Image) {
 }
 
 func (sem *SquadEditorMode) HandleInput(inputState *framework.InputState) bool {
+	// Shift+left-click on grid cell: view unit
+	if sem.handleGridShiftClick(inputState) {
+		return true
+	}
+
+	// Right-click on grid cell: remove unit
+	if sem.handleGridRightClick(inputState) {
+		return true
+	}
+
 	// ESC cascade: close right panel first, then exit mode
 	if inputState.ActionActive(framework.ActionCancel) {
 		if sem.subMenus.AnyActive() {
