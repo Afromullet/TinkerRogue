@@ -48,6 +48,7 @@ const (
 	ActionEngageThreat     // E - engage threat at commander position
 	ActionEndOverworldTurn // Space - end overworld turn
 	ActionMouseClick       // Left mouse button click
+	ActionRightClick       // Right mouse button click
 
 	// === Squad Editor ===
 	ActionToggleUnits          // U - toggle units panel
@@ -56,6 +57,8 @@ const (
 	ActionToggleAttackPattern  // V - toggle attack pattern view
 	ActionToggleSupportPattern // B - toggle support pattern view
 	ActionCycleCommanderEditor // Tab - cycle to next commander in editor
+	ActionRemoveUnit           // Right-click - remove unit from grid
+	ActionViewUnit             // Shift+Left-click - view unit details
 
 	// === Artifact Mode ===
 	ActionPrevSquad       // Left arrow

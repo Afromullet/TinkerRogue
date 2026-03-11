@@ -38,6 +38,9 @@ type SquadDeploymentMode struct {
 
 	// Rendering systems
 	highlightRenderer *rendering.SquadHighlightRenderer
+
+	// Input
+	actionMap *framework.ActionMap
 }
 
 func NewSquadDeploymentMode(modeManager *framework.UIModeManager) *SquadDeploymentMode {
@@ -46,7 +49,13 @@ func NewSquadDeploymentMode(modeManager *framework.UIModeManager) *SquadDeployme
 	mode.SetReturnMode("exploration") // ESC returns to exploration
 	mode.ModeManager = modeManager
 	mode.SetSelf(mode) // Required for panel registry building
+	mode.actionMap = framework.DefaultSquadDeploymentBindings()
 	return mode
+}
+
+// GetActionMap implements framework.ActionMapProvider.
+func (sdm *SquadDeploymentMode) GetActionMap() *framework.ActionMap {
+	return sdm.actionMap
 }
 
 func (sdm *SquadDeploymentMode) Initialize(ctx *framework.UIContext) error {
@@ -186,13 +195,14 @@ func (sdm *SquadDeploymentMode) Render(screen *ebiten.Image) {
 }
 
 func (sdm *SquadDeploymentMode) HandleInput(inputState *framework.InputState) bool {
-	// Handle common input (ESC key)
-	if sdm.HandleCommonInput(inputState) {
+	// ESC cancels / returns
+	if inputState.ActionActive(framework.ActionCancel) {
+		sdm.HandleCommonInput(inputState)
 		return true
 	}
 
 	// Capture mouse clicks for processing after UI update
-	if inputState.MouseButton == ebiten.MouseButtonLeft && inputState.MousePressed {
+	if inputState.ActionActive(framework.ActionMouseClick) {
 		// Check if click is inside the squad list (UI area) - don't process as map click
 		listBounds := sdm.squadList.GetWidget().Rect
 		isInsideList := inputState.MouseX >= listBounds.Min.X && inputState.MouseX <= listBounds.Max.X &&

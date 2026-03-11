@@ -45,6 +45,18 @@ func (am *ActionMap) BindMouse(button ebiten.MouseButton, action InputAction) *A
 	return am
 }
 
+// BindMouseMod adds a just-pressed mouse button binding with modifier requirements.
+func (am *ActionMap) BindMouseMod(button ebiten.MouseButton, mod ModifierMask, action InputAction) *ActionMap {
+	am.bindings = append(am.bindings, InputBinding{
+		Action:    action,
+		Mouse:     button,
+		IsMouse:   true,
+		Modifiers: mod,
+		Trigger:   TriggerJustPressed,
+	})
+	return am
+}
+
 // BindRelease adds a key binding that fires on release.
 func (am *ActionMap) BindRelease(key ebiten.Key, action InputAction) *ActionMap {
 	am.bindings = append(am.bindings, InputBinding{
@@ -81,7 +93,7 @@ func (am *ActionMap) ResolveInto(dst map[InputAction]bool, state *InputState) {
 
 	for _, b := range am.bindings {
 		if b.IsMouse {
-			if am.resolveMouseBinding(b, state) {
+			if am.resolveMouseBinding(b, state, anyModHeld) {
 				dst[b.Action] = true
 			}
 			continue
@@ -137,7 +149,16 @@ func (am *ActionMap) modifiersMatch(required ModifierMask, state *InputState) bo
 }
 
 // resolveMouseBinding checks if a mouse binding is active.
-func (am *ActionMap) resolveMouseBinding(b InputBinding, state *InputState) bool {
+func (am *ActionMap) resolveMouseBinding(b InputBinding, state *InputState, anyModHeld bool) bool {
+	// Modifier exclusivity: plain mouse bindings (ModNone) are rejected when any modifier is held,
+	// so Shift+Click won't also trigger a plain Click action.
+	if b.Modifiers == ModNone && anyModHeld {
+		return false
+	}
+	if b.Modifiers != ModNone && !am.modifiersMatch(b.Modifiers, state) {
+		return false
+	}
+
 	switch b.Trigger {
 	case TriggerJustPressed:
 		return state.MouseJustPressedButton(b.Mouse)

@@ -36,7 +36,8 @@ func DefaultCombatBindings() *ActionMap {
 		BindMod(ebiten.KeyZ, ModCtrl, ActionUndoMove).
 		BindMod(ebiten.KeyK, ModCtrl, ActionDebugKillAll).
 		Bind(ebiten.KeyEscape, ActionCancel).
-		BindMouse(ebiten.MouseButtonLeft, ActionMouseClick)
+		BindMouse(ebiten.MouseButtonLeft, ActionMouseClick).
+		BindMouse(ebiten.MouseButtonRight, ActionRightClick)
 }
 
 // DefaultOverworldBindings returns all overworld mode key bindings.
@@ -65,7 +66,16 @@ func DefaultSquadEditorBindings() *ActionMap {
 		Bind(ebiten.KeyN, ActionNewSquad).
 		Bind(ebiten.KeyV, ActionToggleAttackPattern).
 		Bind(ebiten.KeyB, ActionToggleSupportPattern).
-		Bind(ebiten.KeyTab, ActionCycleCommanderEditor)
+		Bind(ebiten.KeyTab, ActionCycleCommanderEditor).
+		BindMouse(ebiten.MouseButtonRight, ActionRemoveUnit).
+		BindMouseMod(ebiten.MouseButtonLeft, ModShift, ActionViewUnit)
+}
+
+// DefaultSquadDeploymentBindings returns squad deployment mode key bindings.
+func DefaultSquadDeploymentBindings() *ActionMap {
+	return NewActionMap("squad_deployment").
+		Bind(ebiten.KeyEscape, ActionCancel).
+		BindMouse(ebiten.MouseButtonLeft, ActionMouseClick)
 }
 
 // DefaultArtifactBindings returns artifact mode key bindings.

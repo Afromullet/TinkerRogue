@@ -10,7 +10,6 @@ import (
 	"game_main/tactical/squads"
 
 	"github.com/bytearena/ecs"
-	"github.com/hajimehoshi/ebiten/v2"
 )
 
 // Grid interaction logic for SquadEditorMode
@@ -134,7 +133,7 @@ func (sem *SquadEditorMode) gridCellAtMouse(mouseX, mouseY int) (row, col int) {
 
 // handleGridRightClick handles right-clicking a grid cell to remove the unit at that position.
 func (sem *SquadEditorMode) handleGridRightClick(inputState *framework.InputState) bool {
-	if !inputState.MouseJustPressedButton(ebiten.MouseButtonRight) {
+	if !inputState.ActionActive(framework.ActionRemoveUnit) {
 		return false
 	}
 	if !sem.squadNav.HasSquads() {
@@ -160,12 +159,7 @@ func (sem *SquadEditorMode) handleGridRightClick(inputState *framework.InputStat
 
 // handleGridShiftClick handles shift+left-clicking a grid cell to view the unit at that position.
 func (sem *SquadEditorMode) handleGridShiftClick(inputState *framework.InputState) bool {
-	if !inputState.MouseJustPressedButton(ebiten.MouseButtonLeft) {
-		return false
-	}
-	if !inputState.KeysPressed[ebiten.KeyShift] &&
-		!inputState.KeysPressed[ebiten.KeyShiftLeft] &&
-		!inputState.KeysPressed[ebiten.KeyShiftRight] {
+	if !inputState.ActionActive(framework.ActionViewUnit) {
 		return false
 	}
 	if !sem.squadNav.HasSquads() {

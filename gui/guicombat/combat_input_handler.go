@@ -16,7 +16,6 @@ import (
 
 	"github.com/bytearena/ecs"
 	"github.com/ebitenui/ebitenui/widget"
-	"github.com/hajimehoshi/ebiten/v2"
 )
 
 const doubleClickThreshold = 300 * time.Millisecond
@@ -142,7 +141,7 @@ func (cih *CombatInputHandler) HandleInput(inputState *framework.InputState) boo
 			}
 
 			// Click to cast
-			if inputState.MouseJustPressedButton(ebiten.MouseButtonLeft) {
+			if inputState.ActionActive(framework.ActionMouseClick) {
 				if handler.IsAoETargeting() {
 					handler.HandleAoEConfirmClick(inputState.MouseX, inputState.MouseY)
 				} else {
@@ -167,7 +166,7 @@ func (cih *CombatInputHandler) HandleInput(inputState *framework.InputState) boo
 
 		if handler.HasSelectedArtifact() {
 			// Artifact selected and targeting - click to apply
-			if inputState.MouseJustPressedButton(ebiten.MouseButtonLeft) {
+			if inputState.ActionActive(framework.ActionMouseClick) {
 				handler.HandleTargetClick(inputState.MouseX, inputState.MouseY)
 				return true
 			}
@@ -185,7 +184,7 @@ func (cih *CombatInputHandler) HandleInput(inputState *framework.InputState) boo
 		}
 
 		// Left-click inspects squad at position
-		if inputState.MouseJustPressedButton(ebiten.MouseButtonLeft) {
+		if inputState.ActionActive(framework.ActionMouseClick) {
 			cih.handleInspectClick(inputState.MouseX, inputState.MouseY)
 			return true
 		}
@@ -195,13 +194,13 @@ func (cih *CombatInputHandler) HandleInput(inputState *framework.InputState) boo
 	}
 
 	// Right-click exits move mode
-	if cih.deps.BattleState.InMoveMode && inputState.MouseJustPressedButton(ebiten.MouseButtonRight) {
+	if cih.deps.BattleState.InMoveMode && inputState.ActionActive(framework.ActionRightClick) {
 		cih.actionHandler.ToggleMoveMode()
 		return true
 	}
 
 	// Handle mouse clicks (edge-detected: fires once per press)
-	if inputState.MouseJustPressedButton(ebiten.MouseButtonLeft) {
+	if inputState.ActionActive(framework.ActionMouseClick) {
 		// Debug kill mode takes priority over all other click handling
 		if cih.inDebugKillMode {
 			defer func() { cih.inDebugKillMode = false }()
