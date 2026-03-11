@@ -27,7 +27,7 @@ import (
 // - Mark threats defeated (CombatService does this)
 type EncounterService struct {
 	manager         *common.EntityManager
-	modeCoordinator ModeCoordinator
+	modeCoordinator CombatTransitionHandler
 
 	// Current encounter tracking
 	activeEncounter *ActiveEncounter
@@ -44,7 +44,7 @@ type EncounterService struct {
 // NewEncounterService creates a new encounter coordinator
 func NewEncounterService(
 	manager *common.EntityManager,
-	modeCoordinator ModeCoordinator,
+	modeCoordinator CombatTransitionHandler,
 ) *EncounterService {
 	return &EncounterService{
 		manager:         manager,
@@ -87,7 +87,7 @@ func (es *EncounterService) RecordEncounterCompletion(
 	es.addToHistory(completed)
 
 	// Restore player to original position (before they were teleported to encounter)
-	if pos := es.getPlayerPosition(); pos != nil {
+	if pos := es.modeCoordinator.GetPlayerPosition(); pos != nil {
 		originalPos := es.activeEncounter.OriginalPlayerPosition
 		*pos = originalPos
 		fmt.Printf("Restored player position to original location (%d,%d)\n",
@@ -283,15 +283,12 @@ func (es *EncounterService) TransitionToCombat(setup *combatpipeline.CombatSetup
 
 	// Set post-combat return mode if specified (e.g., "raid")
 	if setup.PostCombatReturnMode != "" && es.modeCoordinator != nil {
-		tacticalState := es.modeCoordinator.GetTacticalState()
-		tacticalState.PostCombatReturnMode = setup.PostCombatReturnMode
+		es.modeCoordinator.SetPostCombatReturnMode(setup.PostCombatReturnMode)
 	}
 
 	playerEntityID := ecs.EntityID(0)
 	if es.modeCoordinator != nil {
-		if pd := es.modeCoordinator.GetPlayerData(); pd != nil {
-			playerEntityID = pd.PlayerEntityID
-		}
+		playerEntityID = es.modeCoordinator.GetPlayerEntityID()
 	}
 
 	es.activeEncounter = &ActiveEncounter{
@@ -322,23 +319,22 @@ func (es *EncounterService) TransitionToCombat(setup *combatpipeline.CombatSetup
 func (es *EncounterService) beginCombatTransition(encounterID ecs.EntityID, combatPos coords.LogicalPosition) (coords.LogicalPosition, error) {
 	// Save player's original position before teleporting to encounter
 	originalPlayerPos := coords.LogicalPosition{X: 50, Y: 40} // Default if PlayerData unavailable
-	if pos := es.getPlayerPosition(); pos != nil {
+	if pos := es.modeCoordinator.GetPlayerPosition(); pos != nil {
 		originalPlayerPos = *pos
 	}
 
 	if es.modeCoordinator != nil {
 		// Setup tactical state for GUI handoff to CombatMode
-		tacticalState := es.modeCoordinator.GetTacticalState()
-		tacticalState.TriggeredEncounterID = encounterID
-		tacticalState.Reset()
+		es.modeCoordinator.SetTriggeredEncounterID(encounterID)
+		es.modeCoordinator.ResetTacticalState()
 
 		// Move player camera to encounter position so map zooms correctly
-		if pos := es.getPlayerPosition(); pos != nil {
+		if pos := es.modeCoordinator.GetPlayerPosition(); pos != nil {
 			*pos = combatPos
 		}
 
 		// Transition to combat mode
-		if err := es.modeCoordinator.EnterTactical("combat"); err != nil {
+		if err := es.modeCoordinator.EnterCombatMode(); err != nil {
 			return originalPlayerPos, fmt.Errorf("failed to enter combat mode: %w", err)
 		}
 	}
@@ -355,19 +351,6 @@ func (es *EncounterService) getEncounterData(encounterID ecs.EntityID) (*ecs.Ent
 	}
 	data := common.GetComponentType[*core.OverworldEncounterData](entity, core.OverworldEncounterComponent)
 	return entity, data
-}
-
-// getPlayerPosition returns the player's current position, or nil if unavailable.
-// This centralizes the nil-check pattern for modeCoordinator -> PlayerData -> Pos.
-func (es *EncounterService) getPlayerPosition() *coords.LogicalPosition {
-	if es.modeCoordinator == nil {
-		return nil
-	}
-	playerData := es.modeCoordinator.GetPlayerData()
-	if playerData == nil || playerData.Pos == nil {
-		return nil
-	}
-	return playerData.Pos
 }
 
 // addToHistory adds a completed encounter to the history

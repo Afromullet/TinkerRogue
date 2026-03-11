@@ -3,8 +3,6 @@ package encounter
 import (
 	"time"
 
-	"game_main/common"
-	"game_main/gui/framework"
 	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"
@@ -36,11 +34,15 @@ const (
 	DefaultPowerProfile = "Balanced" // Default power calculation profile
 )
 
-// ModeCoordinator defines the interface for switching game modes and accessing state
-type ModeCoordinator interface {
-	GetTacticalState() *framework.TacticalState
-	EnterTactical(mode string) error
-	GetPlayerData() *common.PlayerData
+// CombatTransitionHandler defines the narrow interface for encounter→combat transitions.
+// Decoupled from GUI types — uses only primitives and coords.
+type CombatTransitionHandler interface {
+	SetPostCombatReturnMode(mode string)
+	SetTriggeredEncounterID(id ecs.EntityID)
+	ResetTacticalState()
+	EnterCombatMode() error
+	GetPlayerEntityID() ecs.EntityID
+	GetPlayerPosition() *coords.LogicalPosition
 }
 
 // CombatExitReason describes why combat ended

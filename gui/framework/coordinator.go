@@ -4,7 +4,9 @@ import (
 	"fmt"
 
 	"game_main/common"
+	"game_main/world/coords"
 
+	"github.com/bytearena/ecs"
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
@@ -166,6 +168,38 @@ func (gmc *GameModeCoordinator) GetOverworldState() *OverworldState {
 func (gmc *GameModeCoordinator) GetPlayerData() *common.PlayerData {
 	if gmc.context != nil {
 		return gmc.context.PlayerData
+	}
+	return nil
+}
+
+// === CombatTransitionHandler methods (satisfies encounter.CombatTransitionHandler) ===
+
+func (gmc *GameModeCoordinator) SetPostCombatReturnMode(mode string) {
+	gmc.tacticalState.PostCombatReturnMode = mode
+}
+
+func (gmc *GameModeCoordinator) SetTriggeredEncounterID(id ecs.EntityID) {
+	gmc.tacticalState.TriggeredEncounterID = id
+}
+
+func (gmc *GameModeCoordinator) ResetTacticalState() {
+	gmc.tacticalState.Reset()
+}
+
+func (gmc *GameModeCoordinator) EnterCombatMode() error {
+	return gmc.EnterTactical("combat")
+}
+
+func (gmc *GameModeCoordinator) GetPlayerEntityID() ecs.EntityID {
+	if gmc.context != nil && gmc.context.PlayerData != nil {
+		return gmc.context.PlayerData.PlayerEntityID
+	}
+	return 0
+}
+
+func (gmc *GameModeCoordinator) GetPlayerPosition() *coords.LogicalPosition {
+	if gmc.context != nil && gmc.context.PlayerData != nil {
+		return gmc.context.PlayerData.Pos
 	}
 	return nil
 }
