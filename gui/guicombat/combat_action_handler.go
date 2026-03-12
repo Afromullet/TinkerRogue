@@ -116,6 +116,8 @@ func (cah *CombatActionHandler) ExecuteAttack() {
 		return
 	}
 
+	cah.ClearMoveHistory()
+
 	// Attack is valid - show animation then apply results
 	if cah.deps.ModeManager != nil {
 		if animMode, exists := cah.deps.ModeManager.GetMode("combat_animation"); exists {
@@ -163,7 +165,7 @@ func (cah *CombatActionHandler) MoveSquad(squadID ecs.EntityID, newPos coords.Lo
 
 // UndoLastMove undoes the last movement command
 func (cah *CombatActionHandler) UndoLastMove() {
-	if !cah.commandExecutor.CanUndo() {
+	if !cah.CanUndoMove() {
 		return
 	}
 
@@ -177,7 +179,7 @@ func (cah *CombatActionHandler) UndoLastMove() {
 
 // RedoLastMove redoes the last undone movement command
 func (cah *CombatActionHandler) RedoLastMove() {
-	if !cah.commandExecutor.CanRedo() {
+	if !cah.CanRedoMove() {
 		return
 	}
 
@@ -189,16 +191,41 @@ func (cah *CombatActionHandler) RedoLastMove() {
 	}
 }
 
-// CanUndoMove returns whether there are moves to undo
-// TODO, add logic here.
+// CanUndoMove returns whether there are moves to undo.
+// Blocked if the selected squad has already attacked this turn.
 func (cah *CombatActionHandler) CanUndoMove() bool {
-	return cah.commandExecutor.CanUndo()
+	if !cah.commandExecutor.CanUndo() {
+		return false
+	}
+
+	// Block undo if the selected squad has already acted (attacked)
+	selectedSquadID := cah.deps.BattleState.SelectedSquadID
+	if selectedSquadID != 0 {
+		actionState := cah.deps.CombatService.CombatCache.FindActionStateBySquadID(selectedSquadID)
+		if actionState != nil && actionState.HasActed {
+			return false
+		}
+	}
+
+	return true
 }
 
-// CanRedoMove returns whether there are moves to redo
-// // TODO, add logic here.
+// CanRedoMove returns whether there are moves to redo.
+// Blocked if the selected squad has already attacked this turn.
 func (cah *CombatActionHandler) CanRedoMove() bool {
-	return cah.commandExecutor.CanRedo()
+	if !cah.commandExecutor.CanRedo() {
+		return false
+	}
+
+	selectedSquadID := cah.deps.BattleState.SelectedSquadID
+	if selectedSquadID != 0 {
+		actionState := cah.deps.CombatService.CombatCache.FindActionStateBySquadID(selectedSquadID)
+		if actionState != nil && actionState.HasActed {
+			return false
+		}
+	}
+
+	return true
 }
 
 // ClearMoveHistory clears all movement history (called when ending turn)
