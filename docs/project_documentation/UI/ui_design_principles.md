@@ -56,7 +56,7 @@ When a bottom bar (or any toolbar) accumulates many buttons, split them into sem
 
 ESC should undo the most recent UI expansion before exiting the mode entirely. If a sub-panel is open, the first ESC closes it. Only a second ESC (with nothing left to close) exits the screen. This gives the player a safe, predictable "back out one level" at every depth of the UI.
 
-**Pattern:** In `HandleInput()`, check `subMenus.AnyActive()` before delegating ESC to `HandleCommonInput()`. If any sub-panel is open, close it and consume the key. Otherwise, let the common handler process the mode exit.
+**Pattern:** In `HandleInput()`, check `subMenus.AnyActive()` before checking `ActionCancel`. If any sub-panel is open, close it and consume the action. Otherwise, let the cancel action trigger mode exit.
 
 **Examples:**
 - Combat mode: pressing ESC with the spell panel open closes the spell panel; pressing ESC again exits combat mode.
@@ -76,15 +76,100 @@ The UI should anticipate what the player needs based on their action rather than
 
 ---
 
-## 7. Keyboard + Mouse Parity
+## 7. Semantic Input via ActionMap
 
-Every panel toggle or action should be reachable by both a keyboard shortcut and a clickable button. Neither input method should be a second-class citizen. Label buttons with their hotkey hint so the player discovers shortcuts organically through normal play.
+Modes must never check raw key constants directly. Instead, all input flows through the **ActionMap** system, which decouples physical keys from semantic game actions. This enables rebindable controls, modifier-aware bindings (Shift+Click, Ctrl+Z), and consistent input handling across modes.
 
-**Pattern:** Button text includes the hotkey in parentheses (e.g., "Units (U)"). The same key mapped in `HandleInput()` triggers the identical action as clicking the button. Keep hotkey assignments consistent across modes where the same concept applies.
+### How it works
 
-**Examples:**
-- Squad editor: "Units (U)" button toggles the units panel; pressing U does the same.
-- Combat mode: "Spells (S)" button and the S key both open the spell panel.
+Each frame, the `UIModeManager` captures raw input into an `InputState`, then checks if the current mode implements the `ActionMapProvider` interface. If so, it calls `GetActionMap()` and resolves all bindings into `InputState.ActionsActive` before `HandleInput()` is called. By the time a mode sees the `InputState`, semantic actions are already resolved.
+
+### The pipeline
+
+```
+Physical Device (keyboard/mouse)
+        ↓
+UIModeManager.updateInputState()   — captures raw key/mouse state
+        ↓
+ActionMap.ResolveInto()            — maps physical input → semantic InputActions
+        ↓
+InputState.ActionsActive           — map[InputAction]bool, ready for the mode
+        ↓
+Mode.HandleInput(inputState)       — checks inputState.ActionActive(action)
+```
+
+### Setting up an ActionMap
+
+Every mode stores an `actionMap` field and implements `ActionMapProvider`:
+
+```go
+type MyMode struct {
+    framework.BaseMode
+    actionMap *framework.ActionMap
+}
+
+func (m *MyMode) GetActionMap() *framework.ActionMap {
+    return m.actionMap
+}
+```
+
+During initialization, build the action map using the fluent builder API. Default binding sets are provided in `gui/framework/defaultbindings.go`:
+
+```go
+// Use a pre-built default set
+m.actionMap = framework.DefaultCombatBindings()
+
+// Or compose from reusable parts
+m.actionMap = framework.MergeActionMaps("my_mode",
+    framework.CommonBindings(),          // ESC -> ActionCancel
+    framework.DefaultUndoRedoBindings(), // Ctrl+Z, Ctrl+Y
+)
+
+// Or build from scratch
+m.actionMap = framework.NewActionMap("my_mode").
+    Bind(ebiten.KeyA, framework.ActionAttackMode).
+    BindMod(ebiten.KeyZ, framework.ModCtrl, framework.ActionUndo).
+    BindMouse(ebiten.MouseButtonLeft, framework.ActionMouseClick).
+    BindMouseMod(ebiten.MouseButtonLeft, framework.ModShift, framework.ActionViewUnit)
+```
+
+### Consuming actions in HandleInput
+
+```go
+func (m *MyMode) HandleInput(inputState *framework.InputState) bool {
+    // Check semantic actions — never check raw keys
+    if inputState.ActionActive(framework.ActionCancel) {
+        // handle cancel
+        return true
+    }
+    if inputState.ActionActive(framework.ActionMouseClick) {
+        // handle click at inputState.MouseX, inputState.MouseY
+        return true
+    }
+    return false
+}
+```
+
+### Binding types
+
+| Method | Fires when | Example |
+|---|---|---|
+| `Bind(key, action)` | Key just pressed, no modifiers held | `Bind(KeyA, ActionAttackMode)` |
+| `BindMod(key, mod, action)` | Key just pressed with modifier held | `BindMod(KeyZ, ModCtrl, ActionUndo)` |
+| `BindMouse(button, action)` | Mouse button just pressed, no modifiers | `BindMouse(MouseButtonLeft, ActionMouseClick)` |
+| `BindMouseMod(button, mod, action)` | Mouse button just pressed with modifier | `BindMouseMod(MouseButtonLeft, ModShift, ActionViewUnit)` |
+| `BindRelease(key, action)` | Key just released | `BindRelease(KeyW, ActionCameraMoveUp)` |
+| `BindHeld(key, action)` | Every frame key is held | `BindHeld(KeyW, ActionCameraMoveUp)` |
+
+### Modifier exclusivity
+
+Plain bindings (`ModNone`) are automatically suppressed when any modifier key is held. This prevents `Ctrl+Z` from also triggering a plain `Z` binding. The same rule applies to mouse bindings — `Shift+Click` won't trigger a plain click action.
+
+### Adding a new action
+
+1. Add a constant to `InputAction` in `gui/framework/inputaction.go`
+2. Add a binding in the appropriate `Default*Bindings()` function in `gui/framework/defaultbindings.go`
+3. Handle the action in the mode's `HandleInput()` using `inputState.ActionActive()`
 
 ---
 
@@ -112,13 +197,14 @@ Choose the right ebitenui layout widget for the job. Each of the three layout ty
 
 ## 9. Consistent Patterns Across Modes
 
-Use the same structural patterns (SubMenuController, ESC cascade, split action bars, hotkey-labeled buttons) in every mode. When a player learns how one screen works, that knowledge should transfer to every other screen. Consistency reduces the learning curve for new features and makes the UI feel cohesive.
+Use the same structural patterns (SubMenuController, ESC cascade, ActionMap, split action bars, hotkey-labeled buttons) in every mode. When a player learns how one screen works, that knowledge should transfer to every other screen. Consistency reduces the learning curve for new features and makes the UI feel cohesive.
 
-**Pattern:** Share `framework.SubMenuController` across all modes. Follow the same ESC cascade logic, the same action bar layout conventions, and the same button labeling style. When introducing a new mode, start from the same structural template.
+**Pattern:** Every mode embeds `framework.BaseMode`, implements `ActionMapProvider`, and uses a `SubMenuController` for togglable panels. Follow the same ESC cascade logic, the same action bar layout conventions, and the same button labeling style. When introducing a new mode, start from the same structural template.
 
 **Examples:**
 - Combat mode and squad editor both use `SubMenuController` for togglable side panels.
 - Both modes place navigation/exit actions on the right side of the bottom bar.
+- All modes implement `ActionMapProvider` and use `Default*Bindings()` for their input maps.
 - Future modes (inventory, shop, map overview) should adopt the same conventions.
 
 ---
@@ -133,7 +219,7 @@ When designing or revising a UI screen, walk through each principle:
 4. **Action Bar Clustering** -- Are context actions separated from navigation actions?
 5. **ESC Cascade** -- Does ESC close the innermost open panel before exiting the mode?
 6. **Context-Sensitive Panels** -- Does the UI open the right panel automatically based on the player's action?
-7. **Keyboard + Mouse Parity** -- Can every action be reached by both input methods? Are hotkeys labeled on buttons?
+7. **Semantic Input via ActionMap** -- Does this mode use `ActionMapProvider` and check `ActionActive()` instead of raw keys? Are bindings defined in `defaultbindings.go`?
 8. **Layout Widget Selection** -- Is each container using the right layout type? AnchorLayout at the root, RowLayout inside panels, GridLayout only for true 2D grids?
 9. **Consistent Patterns** -- Does this screen follow the same structural conventions as existing modes?
 
@@ -143,9 +229,16 @@ When designing or revising a UI screen, walk through each principle:
 
 | Concern | Location |
 |---|---|
+| ActionMap (input binding system) | `gui/framework/actionmap.go` |
+| InputAction constants | `gui/framework/inputaction.go` |
+| InputBinding / trigger types | `gui/framework/inputbinding.go` |
+| Default binding sets | `gui/framework/defaultbindings.go` |
+| ActionMapProvider interface | `gui/framework/actionmap.go` |
 | SubMenuController | `gui/framework/submenu.go` |
-| Mode manager / context switching | `gui/core/` |
+| BaseMode | `gui/framework/basemode.go` |
+| Mode manager / context switching | `gui/framework/modemanager.go` |
 | Combat mode (reference) | `gui/guicombat/` |
 | Squad editor (reference) | `gui/guisquads/` |
+| Input reference (full keybinding docs) | `docs/project_documentation/INPUT_REFERENCE.md` |
 | Layout specs | `gui/specs/layout.go` |
 | Layout builder | `gui/builders/layout.go` |

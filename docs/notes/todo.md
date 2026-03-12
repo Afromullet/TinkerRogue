@@ -1,9 +1,9 @@
 # Bug Fixes
 
 - XP Awards seem to be odd. I.E, didivided by 10. Combat resolution grants 40 xp, but units only get 4 xp
-- Can always move the move undo command in combat, even after attacking
 - Start Random Encounter alwys starts the same encounter 
 - Can cast spells and use artifacts on enemy turn
+
 
 
 # Combat
@@ -50,7 +50,6 @@
 
 - combatqueries.go still has functions which search the entire ecs space
 
-- encounter service should not have mode coordinator. It overlaps too much with what the GUI is doing (pending. Determine if this is necessary)
 
 - JSON file error handling
 
@@ -74,7 +73,7 @@
 - GUISquads
 - GUIOverworld
 
-- Worldmap
+
 - Guiraids
 - Raids
 
