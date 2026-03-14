@@ -49,91 +49,10 @@ Deep audit of package dependencies performed by two independent agents (codebase
 
 ---
 
-### 3. `templates` → `visual/rendering` (Data layer depends on rendering)
-
-**Severity: HIGH**
-
-**File:** `templates/entity_factory.go`
-
-**Problem:** The templates package is supposed to be a data/definition layer but directly imports `visual/rendering` and `world/worldmap`:
-
-```go
-entity.AddComponent(rendering.RenderableComponent, &rendering.Renderable{
-    Image:   commanderImage,
-    Visible: config.Visible,
-})
-```
-
-**Impact:**
-- Cannot create entities without graphics subsystem running
-- Harder to test data loading independently
-- Data definitions coupled to dynamic rendering
-
-**Fix Options:**
-- Extract entity creation with rendering components to a separate factory in a higher layer
-- Accept a callback for adding rendering components instead of doing it directly
-- Split templates into `templates/definitions` (pure data) and move creation to `gamesetup` or `common/factory`
-
----
-
-### 4. `tactical/` packages → `visual/rendering` (game logic imports presentation)
-
-**Severity: CRITICAL**
-
-**Files:**
-- `tactical/commander/system.go` imports `visual/rendering`
-- `tactical/squads/squadcreation.go` imports `visual/rendering`
-- `tactical/squads/units.go` imports `visual/rendering`
-
-**Problem:** Multiple tactical packages import `visual/rendering` to create `Renderable` components during entity creation. Game logic should never depend on the presentation layer.
-
-**Impact:**
-- Tactical packages cannot be tested without graphics infrastructure
-- Changes to rendering require recompilation of tactical code
-- Same root cause as issue #3 (templates → rendering)
-
-**Fix:** Use a factory pattern — tactical code creates entities with game-logic components only, then a presentation-layer factory (in `visual/` or `gamesetup/`) adds visual components. This is the same pattern needed for issue #3 and can be solved together.
-
----
-
-### 5. `mind/encounter` → `visual/rendering` (AI logic imports presentation)
-
-**Severity: CRITICAL**
-
-**Files:**
-- `mind/encounter/encounter_service.go` imports `visual/rendering`
-- `mind/encounter/starters.go` imports `visual/rendering`
-
-**Problem:** The encounter system imports `visual/rendering` to hide/show sprites during combat transitions (creating `hiddenRenderable` components). AI/encounter logic should not manipulate rendering directly.
-
-**Impact:**
-- Encounter system cannot be tested without graphics infrastructure
-- Combat transition visuals are tangled into encounter logic
-- Same root cause as issues #3 and #4
-
-**Fix:** Encounter service should emit events (or set a flag component); a visual system listens and handles sprite visibility changes. Alternatively, the same presentation-layer factory pattern from issues #3/#4 can handle this.
-
----
 
 ## High Priority Issues
 
-### 6. GUI → `mind/combatpipeline` (GUI imports game logic)
 
-**Severity: HIGH**
-
-**Files:**
-- `gui/guioverworld/overworld_action_handler.go` imports `mind/combatpipeline`
-- `gui/guiraid/deploy_panel.go` imports `mind/combatpipeline`
-
-**Problem:** GUI packages directly import `mind/combatpipeline` to trigger combat setup and cleanup. The GUI layer should not reach into the mind layer.
-
-**Impact:**
-- GUI tests require the full combat pipeline stack
-- Tight coupling between UI and combat orchestration
-
-**Fix:** GUI should call through a coordinator or service interface rather than importing `mind/combatpipeline` directly. Define an interface in `gui/framework` or `tactical/combatservices` and wire the concrete implementation in `gamesetup`.
-
----
 
 ### 7. `tactical/combatservices` → `mind/ai` + `mind/behavior` (tactical layer reaches into AI)
 

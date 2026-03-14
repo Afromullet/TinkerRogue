@@ -7,18 +7,6 @@ import (
 	"github.com/bytearena/ecs"
 )
 
-// CountLivingUnitsInSquad returns the number of units in a squad with CurrentHealth > 0.
-func CountLivingUnitsInSquad(manager *common.EntityManager, squadID ecs.EntityID) int {
-	count := 0
-	for _, unitID := range squads.GetUnitIDsInSquad(squadID, manager) {
-		attr := common.GetComponentTypeByID[*common.Attributes](manager, unitID, common.AttributeComponent)
-		if attr != nil && attr.CurrentHealth > 0 {
-			count++
-		}
-	}
-	return count
-}
-
 // GetLivingUnitIDs returns the entity IDs of all living units across the given squads.
 func GetLivingUnitIDs(manager *common.EntityManager, squadIDs []ecs.EntityID) []ecs.EntityID {
 	var alive []ecs.EntityID

@@ -7,6 +7,7 @@ import (
 	"game_main/gui/framework"
 	"game_main/mind/encounter"
 	"game_main/overworld/core"
+	"game_main/tactical/combat"
 	"game_main/overworld/threat"
 	"game_main/overworld/tick"
 	"game_main/tactical/commander"
@@ -28,6 +29,7 @@ type OverworldMode struct {
 
 	// Services
 	encounterService *encounter.EncounterService
+	startCombat      func(starter combat.CombatStarter) (*combat.CombatStartResult, error)
 
 	// Handlers
 	actionHandler *OverworldActionHandler
@@ -54,9 +56,10 @@ type OverworldMode struct {
 	initialized bool
 }
 
-func NewOverworldMode(modeManager *framework.UIModeManager, encounterService *encounter.EncounterService) *OverworldMode {
+func NewOverworldMode(modeManager *framework.UIModeManager, encounterService *encounter.EncounterService, startCombat func(starter combat.CombatStarter) (*combat.CombatStartResult, error)) *OverworldMode {
 	om := &OverworldMode{
 		encounterService: encounterService,
+		startCombat:      startCombat,
 	}
 	om.SetModeName("overworld")
 	om.SetReturnMode("") // No simple return mode - uses context switching
@@ -123,6 +126,7 @@ func (om *OverworldMode) Initialize(ctx *framework.UIContext) error {
 		ModeManager:       om.ModeManager,
 		ModeCoordinator:   ctx.ModeCoordinator,
 		CommanderMovement: cmdMovement,
+		StartCombat:       om.startCombat,
 		LogEvent:          om.logEvent,
 		RefreshPanels:     om.refreshAllPanels,
 	}

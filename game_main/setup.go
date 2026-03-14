@@ -92,7 +92,7 @@ func SetupOverworldMode(g *Game) {
 	tacticalManager := coordinator.GetTacticalManager()
 	overworldManager := coordinator.GetOverworldManager()
 	gamesetup.RegisterTacticalModes(coordinator, tacticalManager, encounterService)
-	gamesetup.RegisterOverworldModes(coordinator, overworldManager, encounterService)
+	gamesetup.RegisterOverworldModes(coordinator, overworldManager, encounterService, &g.em)
 
 	SetupInputCoordinator(g)
 

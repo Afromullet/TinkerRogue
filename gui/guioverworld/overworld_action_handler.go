@@ -5,7 +5,6 @@ import (
 
 	"game_main/common"
 	"game_main/config"
-	"game_main/mind/combatpipeline"
 	"game_main/mind/encounter"
 	"game_main/templates"
 	"game_main/overworld/core"
@@ -162,7 +161,7 @@ func (ah *OverworldActionHandler) EngageThreat(nodeID ecs.EntityID) {
 		PlayerPos:     *threatPos,
 		RosterOwnerID: cmdID,
 	}
-	if _, err := combatpipeline.ExecuteCombatStart(ah.deps.EncounterService, ah.deps.Manager, starter); err != nil {
+	if _, err := ah.deps.StartCombat(starter); err != nil {
 		ah.deps.LogEvent(fmt.Sprintf("ERROR: %v", err))
 		return
 	}
@@ -191,7 +190,7 @@ func (ah *OverworldActionHandler) HandleRaid(raid *core.PendingRaid) {
 		EncounterID:  encounterID,
 		TargetNodeID: raid.TargetNodeID,
 	}
-	if _, err := combatpipeline.ExecuteCombatStart(ah.deps.EncounterService, ah.deps.Manager, starter); err != nil {
+	if _, err := ah.deps.StartCombat(starter); err != nil {
 		ah.deps.LogEvent(fmt.Sprintf("ERROR: Failed to start garrison defense: %v", err))
 		return
 	}
@@ -235,7 +234,7 @@ func (ah *OverworldActionHandler) StartRandomEncounter() {
 		PlayerPos:     *cmdPos,
 		RosterOwnerID: cmdID,
 	}
-	if _, err := combatpipeline.ExecuteCombatStart(ah.deps.EncounterService, ah.deps.Manager, starter); err != nil {
+	if _, err := ah.deps.StartCombat(starter); err != nil {
 		ah.deps.LogEvent(fmt.Sprintf("ERROR: %v", err))
 		return
 	}

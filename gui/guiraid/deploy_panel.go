@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"game_main/gui/framework"
-	"game_main/mind/combatpipeline"
 	"game_main/mind/raid"
 	"game_main/tactical/squads"
 
@@ -89,7 +88,7 @@ func (dp *DeployPanel) Refresh(raidState *raid.RaidStateData, room *raid.RoomDat
 	for _, squadID := range raidState.PlayerSquadIDs {
 		squadName := queries.GetSquadName(squadID)
 
-		aliveCount := combatpipeline.CountLivingUnitsInSquad(manager, squadID)
+		aliveCount := squads.CountLivingUnitsInSquad(manager, squadID)
 		totalCount := len(squads.GetUnitIDsInSquad(squadID, manager))
 
 		status := "Ready"

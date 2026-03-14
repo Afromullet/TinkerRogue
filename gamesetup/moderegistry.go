@@ -3,6 +3,7 @@ package gamesetup
 import (
 	"log"
 
+	"game_main/common"
 	"game_main/gui/framework"
 	"game_main/gui/guicombat"
 	"game_main/gui/guiexploration"
@@ -11,7 +12,9 @@ import (
 	"game_main/gui/guiraid"
 	"game_main/gui/guisquads"
 	"game_main/gui/guiunitview"
+	"game_main/mind/combatpipeline"
 	"game_main/mind/encounter"
+	"game_main/tactical/combat"
 )
 
 // RegisterTacticalModes registers all tactical UI modes with the coordinator.
@@ -32,9 +35,13 @@ func RegisterTacticalModes(coordinator *framework.GameModeCoordinator, manager *
 
 // RegisterOverworldModes registers all overworld UI modes with the coordinator.
 // This reduces boilerplate by iterating over a slice of mode constructors.
-func RegisterOverworldModes(coordinator *framework.GameModeCoordinator, manager *framework.UIModeManager, encounterService *encounter.EncounterService) {
+func RegisterOverworldModes(coordinator *framework.GameModeCoordinator, manager *framework.UIModeManager, encounterService *encounter.EncounterService, ecsManager *common.EntityManager) {
+	startCombat := func(starter combat.CombatStarter) (*combat.CombatStartResult, error) {
+		return combatpipeline.ExecuteCombatStart(encounterService, ecsManager, starter)
+	}
+
 	modes := []framework.UIMode{
-		guioverworld.NewOverworldMode(manager, encounterService),
+		guioverworld.NewOverworldMode(manager, encounterService, startCombat),
 		guinodeplacement.NewNodePlacementMode(manager),
 		guisquads.NewUnitPurchaseMode(manager),
 		guisquads.NewSquadEditorMode(manager),
