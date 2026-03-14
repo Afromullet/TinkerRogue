@@ -17,18 +17,3 @@ func IterateMapGrid(callback GridIterator) {
 		}
 	}
 }
-
-// IterateViewport iterates over tiles within a viewport around a center position.
-// Used by visualizers to only process visible tiles.
-func IterateViewport(center coords.LogicalPosition, viewportSize int, callback GridIterator) {
-	minX := center.X - viewportSize/2
-	maxX := center.X + viewportSize/2
-	minY := center.Y - viewportSize/2
-	maxY := center.Y + viewportSize/2
-
-	for x := minX; x <= maxX; x++ {
-		for y := minY; y <= maxY; y++ {
-			callback(coords.LogicalPosition{X: x, Y: y})
-		}
-	}
-}

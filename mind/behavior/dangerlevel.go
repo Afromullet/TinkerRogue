@@ -44,6 +44,21 @@ func (ftlm *FactionThreatLevelManager) UpdateAllFactions() {
 	}
 }
 
+// GetSquadThreatAtRange returns the threat value for a specific squad at a given distance.
+// Returns (value, true) if found, (0, false) if faction or squad not tracked.
+func (ftlm *FactionThreatLevelManager) GetSquadThreatAtRange(factionID, squadID ecs.EntityID, distance int) (float64, bool) {
+	faction, exists := ftlm.factions[factionID]
+	if !exists || faction == nil {
+		return 0, false
+	}
+	squad, exists := faction.squadThreatLevels[squadID]
+	if !exists || squad == nil {
+		return 0, false
+	}
+	val, exists := squad.ThreatByRange[distance]
+	return val, exists
+}
+
 type FactionThreatLevel struct {
 	manager           *common.EntityManager
 	cache             *combat.CombatQueryCache

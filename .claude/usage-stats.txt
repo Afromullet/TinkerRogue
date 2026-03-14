@@ -1,9 +1,9 @@
-agent:Explore 219
+agent:Explore 247
 agent:trpg-creator 4
 agent:mapgen-architect 2
 agent:tactical-simplifier 7
-agent:refactoring-pro 9
-agent:Plan 26
+agent:refactoring-pro 10
+agent:Plan 28
 agent:karen 7
-agent:docs-architect 4
+agent:docs-architect 7
 agent:game-dev 6

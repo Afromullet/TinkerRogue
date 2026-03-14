@@ -191,7 +191,7 @@ func (cm *CombatMode) Initialize(ctx *framework.UIContext) error {
 	cm.registerCombatCallbacks()
 
 	// Initialize visualization systems
-	cm.visualization = NewCombatVisualizationManager(ctx, cm.Queries, ctx.GameMap)
+	cm.visualization = NewCombatVisualizationManager(ctx, cm.Queries, ctx.GameMap, cm.combatService)
 
 	// Wire visualization input support into input handler
 	cm.inputHandler.SetVisualization(cm.visualization, cm.Panels)

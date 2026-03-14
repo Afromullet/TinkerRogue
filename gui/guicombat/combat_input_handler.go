@@ -7,7 +7,6 @@ import (
 	"game_main/gui/guiartifacts"
 	"game_main/gui/guiinspect"
 	"game_main/gui/guispells"
-	"game_main/mind/behavior"
 	"game_main/tactical/combat"
 	"game_main/tactical/squads"
 	"game_main/visual/graphics"
@@ -543,8 +542,8 @@ func (cih *CombatInputHandler) handleThreatToggle(inputState *framework.InputSta
 
 	// Plain H toggles threat mode
 	if inputState.ActionActive(framework.ActionThreatToggle) {
-		if !threatViz.IsActive() || threatViz.GetMode() != behavior.VisualizerModeThreat {
-			threatViz.SetMode(behavior.VisualizerModeThreat)
+		if !threatViz.IsActive() || threatViz.GetMode() != VisualizerModeThreat {
+			threatViz.SetMode(VisualizerModeThreat)
 			if !threatViz.IsActive() {
 				threatViz.Toggle()
 			}
@@ -585,8 +584,8 @@ func (cih *CombatInputHandler) handleLayerToggle(inputState *framework.InputStat
 
 	// Plain L toggles layer visualizer
 	if inputState.ActionActive(framework.ActionLayerToggle) {
-		if !threatViz.IsActive() || threatViz.GetMode() != behavior.VisualizerModeLayer {
-			threatViz.SetMode(behavior.VisualizerModeLayer)
+		if !threatViz.IsActive() || threatViz.GetMode() != VisualizerModeLayer {
+			threatViz.SetMode(VisualizerModeLayer)
 			if !threatViz.IsActive() {
 				threatViz.Toggle()
 			}
@@ -627,9 +626,9 @@ func (cih *CombatInputHandler) updateLayerStatusWidget() {
 
 	var statusText string
 	switch threatViz.GetMode() {
-	case behavior.VisualizerModeThreat:
+	case VisualizerModeThreat:
 		statusText = fmt.Sprintf("THREAT VIEW\nFaction: %s", factionName)
-	case behavior.VisualizerModeLayer:
+	case VisualizerModeLayer:
 		modeInfo := threatViz.GetLayerModeInfo()
 		statusText = fmt.Sprintf("LAYER VIEW\nFaction: %s\n%s\n%s", factionName, modeInfo.Name, modeInfo.ColorKey)
 	}

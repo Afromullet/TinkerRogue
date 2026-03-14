@@ -142,3 +142,34 @@ func (cte *CompositeThreatEvaluator) GetSupportLayer() *SupportValueLayer {
 func (cte *CompositeThreatEvaluator) GetPositionalLayer() *PositionalRiskLayer {
 	return cte.positionalRisk
 }
+
+// Flat convenience methods for per-position layer queries.
+// These delegate to sub-layers and satisfy the LayerDataProvider interface in gui/guicombat.
+
+func (cte *CompositeThreatEvaluator) GetMeleeThreatAt(pos coords.LogicalPosition) float64 {
+	return cte.combatThreat.GetMeleeThreatAt(pos)
+}
+
+func (cte *CompositeThreatEvaluator) GetRangedPressureAt(pos coords.LogicalPosition) float64 {
+	return cte.combatThreat.GetRangedPressureAt(pos)
+}
+
+func (cte *CompositeThreatEvaluator) GetSupportValueAt(pos coords.LogicalPosition) float64 {
+	return cte.supportValue.GetSupportValueAt(pos)
+}
+
+func (cte *CompositeThreatEvaluator) GetFlankingRiskAt(pos coords.LogicalPosition) float64 {
+	return cte.positionalRisk.GetFlankingRiskAt(pos)
+}
+
+func (cte *CompositeThreatEvaluator) GetIsolationRiskAt(pos coords.LogicalPosition) float64 {
+	return cte.positionalRisk.GetIsolationRiskAt(pos)
+}
+
+func (cte *CompositeThreatEvaluator) GetEngagementPressureAt(pos coords.LogicalPosition) float64 {
+	return cte.positionalRisk.GetEngagementPressureAt(pos)
+}
+
+func (cte *CompositeThreatEvaluator) GetRetreatQuality(pos coords.LogicalPosition) float64 {
+	return cte.positionalRisk.GetRetreatQuality(pos)
+}

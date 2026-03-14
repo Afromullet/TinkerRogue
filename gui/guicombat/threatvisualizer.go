@@ -1,4 +1,4 @@
-package behavior
+package guicombat
 
 import (
 	"game_main/common"
@@ -10,6 +10,28 @@ import (
 
 	"github.com/bytearena/ecs"
 )
+
+// ThreatDataProvider provides squad-level threat data for visualization.
+// Satisfied by *behavior.FactionThreatLevelManager.
+type ThreatDataProvider interface {
+	AddFaction(factionID ecs.EntityID)
+	UpdateAllFactions()
+	GetSquadThreatAtRange(factionID, squadID ecs.EntityID, distance int) (float64, bool)
+}
+
+// LayerDataProvider provides per-position threat layer values for visualization.
+// Satisfied by *behavior.CompositeThreatEvaluator.
+type LayerDataProvider interface {
+	Update(currentRound int)
+	MarkDirty()
+	GetMeleeThreatAt(pos coords.LogicalPosition) float64
+	GetRangedPressureAt(pos coords.LogicalPosition) float64
+	GetSupportValueAt(pos coords.LogicalPosition) float64
+	GetFlankingRiskAt(pos coords.LogicalPosition) float64
+	GetIsolationRiskAt(pos coords.LogicalPosition) float64
+	GetEngagementPressureAt(pos coords.LogicalPosition) float64
+	GetRetreatQuality(pos coords.LogicalPosition) float64
+}
 
 // VisualizerMode represents the primary visualization mode
 type VisualizerMode int
@@ -90,15 +112,14 @@ var LayerModeMetadata = map[LayerMode]LayerModeInfo{
 }
 
 // ThreatVisualizer provides unified visualization for both danger projection and threat layers.
-// Combines the functionality of the former DangerVisualizer and LayerVisualizer.
 type ThreatVisualizer struct {
 	// Dependencies
-	manager       *common.EntityManager
-	gameMap       *worldmap.GameMap
-	threatManager *FactionThreatLevelManager
+	manager        *common.EntityManager
+	gameMap        *worldmap.GameMap
+	threatProvider ThreatDataProvider
 
 	// Per-faction threat evaluators (for layer mode)
-	evaluators map[ecs.EntityID]*CompositeThreatEvaluator
+	evaluators map[ecs.EntityID]LayerDataProvider
 
 	// Faction cycling
 	factionIDs       []ecs.EntityID // All factions in combat
@@ -116,13 +137,13 @@ type ThreatVisualizer struct {
 func NewThreatVisualizer(
 	manager *common.EntityManager,
 	gameMap *worldmap.GameMap,
-	threatManager *FactionThreatLevelManager,
+	threatProvider ThreatDataProvider,
 ) *ThreatVisualizer {
 	return &ThreatVisualizer{
 		manager:          manager,
-		gameMap:           gameMap,
-		threatManager:    threatManager,
-		evaluators:       make(map[ecs.EntityID]*CompositeThreatEvaluator),
+		gameMap:          gameMap,
+		threatProvider:   threatProvider,
+		evaluators:       make(map[ecs.EntityID]LayerDataProvider),
 		DirtyCache:       evaluation.NewDirtyCache(),
 		isActive:         false,
 		mode:             VisualizerModeThreat,
@@ -160,7 +181,7 @@ func (tv *ThreatVisualizer) SetFactions(factionIDs []ecs.EntityID) {
 }
 
 // SetEvaluators sets the per-faction threat evaluators (for layer mode).
-func (tv *ThreatVisualizer) SetEvaluators(evaluators map[ecs.EntityID]*CompositeThreatEvaluator) {
+func (tv *ThreatVisualizer) SetEvaluators(evaluators map[ecs.EntityID]LayerDataProvider) {
 	tv.evaluators = evaluators
 }
 
@@ -190,7 +211,6 @@ func (tv *ThreatVisualizer) SetMode(mode VisualizerMode) {
 	if tv.mode != mode {
 		tv.mode = mode
 		// Force re-render by marking dirty AND resetting the round
-		// This is necessary because we now have ONE cache shared between modes
 		tv.MarkDirty()
 		tv.DirtyCache = evaluation.NewDirtyCache() // Reset cache completely
 		// Also mark evaluator dirty when switching to layer mode
@@ -254,7 +274,7 @@ func (tv *ThreatVisualizer) Update(
 	}
 
 	// Visualize based on current mode
-	IterateViewport(playerPos, viewportSize, func(pos coords.LogicalPosition) {
+	iterateViewport(playerPos, viewportSize, func(pos coords.LogicalPosition) {
 		if !tv.gameMap.InBounds(pos.X, pos.Y) {
 			return
 		}
@@ -279,13 +299,12 @@ func (tv *ThreatVisualizer) Update(
 }
 
 // =========================================
-// Threat Mode API (formerly DangerVisualizer)
+// Threat Mode API
 // =========================================
 
 // calculateThreatValueForSquads calculates danger at a position for a pre-computed squad list.
-// Used by Update() to avoid re-querying squad lists on every tile.
 func (tv *ThreatVisualizer) calculateThreatValueForSquads(pos coords.LogicalPosition, relevantSquads []ecs.EntityID) float64 {
-	if tv.threatManager == nil {
+	if tv.threatProvider == nil {
 		return 0.0
 	}
 
@@ -301,18 +320,8 @@ func (tv *ThreatVisualizer) calculateThreatValueForSquads(pos coords.LogicalPosi
 			continue
 		}
 
-		factionThreat := tv.threatManager.factions[factionID]
-		if factionThreat == nil {
-			continue
-		}
-
-		squadThreat := factionThreat.squadThreatLevels[squadID]
-		if squadThreat == nil {
-			continue
-		}
-
 		distance := pos.ManhattanDistance(&squadPos)
-		if value, exists := squadThreat.ThreatByRange[distance]; exists {
+		if value, exists := tv.threatProvider.GetSquadThreatAtRange(factionID, squadID, distance); exists {
 			totalValue += value
 		}
 	}
@@ -338,7 +347,7 @@ func (tv *ThreatVisualizer) threatValueToColorMatrix(value float64) graphics.Col
 }
 
 // =========================================
-// Layer Mode API (formerly LayerVisualizer)
+// Layer Mode API
 // =========================================
 
 // CycleLayerMode advances to next layer mode
@@ -369,26 +378,25 @@ func (tv *ThreatVisualizer) getLayerValueAt(pos coords.LogicalPosition) float64 
 
 	// Max values for normalization (melee/ranged/support use raw power values)
 	const maxThreatValue = 200.0
-	const maxSupportValue = 1.0 // Support is already normalized by heal priority (0-1)
 
 	switch tv.layerMode {
 	case LayerMelee:
-		raw := eval.GetCombatLayer().GetMeleeThreatAt(pos)
+		raw := eval.GetMeleeThreatAt(pos)
 		return min(raw/maxThreatValue, 1.0)
 	case LayerRanged:
-		raw := eval.GetCombatLayer().GetRangedPressureAt(pos)
+		raw := eval.GetRangedPressureAt(pos)
 		return min(raw/maxThreatValue, 1.0)
 	case LayerSupport:
 		// Support value is already in 0-1 range from heal priority
-		return eval.GetSupportLayer().GetSupportValueAt(pos)
+		return eval.GetSupportValueAt(pos)
 	case LayerPositionalFlanking:
-		return eval.GetPositionalLayer().GetFlankingRiskAt(pos)
+		return eval.GetFlankingRiskAt(pos)
 	case LayerPositionalIsolation:
-		return eval.GetPositionalLayer().GetIsolationRiskAt(pos)
+		return eval.GetIsolationRiskAt(pos)
 	case LayerPositionalEngagement:
-		return eval.GetPositionalLayer().GetEngagementPressureAt(pos)
+		return eval.GetEngagementPressureAt(pos)
 	case LayerPositionalRetreat:
-		return eval.GetPositionalLayer().GetRetreatQuality(pos)
+		return eval.GetRetreatQuality(pos)
 	default:
 		return 0.0
 	}
@@ -436,5 +444,23 @@ func (tv *ThreatVisualizer) getLayerGradientFunction() func(float32) graphics.Co
 		return graphics.CreateGreenGradient
 	default:
 		return graphics.CreateRedGradient
+	}
+}
+
+// =========================================
+// Viewport iteration helper
+// =========================================
+
+// iterateViewport iterates over tiles within a viewport around a center position.
+func iterateViewport(center coords.LogicalPosition, viewportSize int, callback func(pos coords.LogicalPosition)) {
+	minX := center.X - viewportSize/2
+	maxX := center.X + viewportSize/2
+	minY := center.Y - viewportSize/2
+	maxY := center.Y + viewportSize/2
+
+	for x := minX; x <= maxX; x++ {
+		for y := minY; y <= maxY; y++ {
+			callback(coords.LogicalPosition{X: x, Y: y})
+		}
 	}
 }
