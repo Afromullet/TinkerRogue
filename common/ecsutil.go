@@ -19,6 +19,9 @@ var (
 	AllEntitiesTag ecs.Tag
 
 	GlobalPositionSystem *PositionSystem
+
+	RenderableComponent *ecs.Component
+	RenderablesTag      ecs.Tag
 )
 
 // EntityManager wraps the ECS library's manager and provides centralized entity and tag management.

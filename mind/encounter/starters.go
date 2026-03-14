@@ -11,7 +11,6 @@ import (
 	"game_main/overworld/garrison"
 	"game_main/tactical/combat"
 	"game_main/tactical/squads"
-	"game_main/visual/rendering"
 	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"
@@ -27,7 +26,7 @@ type OverworldCombatStarter struct {
 	RosterOwnerID ecs.EntityID
 
 	// Set by Prepare for rollback if TransitionToCombat fails
-	hiddenRenderable *rendering.Renderable
+	hiddenRenderable *common.Renderable
 }
 
 func (s *OverworldCombatStarter) Prepare(manager *common.EntityManager) (*combatpipeline.CombatSetup, error) {
@@ -48,9 +47,9 @@ func (s *OverworldCombatStarter) Prepare(manager *common.EntityManager) (*combat
 	fmt.Printf("OverworldCombatStarter: Preparing encounter %d (%s)\n", s.EncounterID, s.ThreatName)
 
 	// Hide encounter sprite during combat (tracked for rollback)
-	renderable := common.GetComponentType[*rendering.Renderable](
+	renderable := common.GetComponentType[*common.Renderable](
 		encounterEntity,
-		rendering.RenderableComponent,
+		common.RenderableComponent,
 	)
 	if renderable != nil {
 		renderable.Visible = false

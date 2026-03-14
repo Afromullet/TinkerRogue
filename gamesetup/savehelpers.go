@@ -11,7 +11,6 @@ import (
 	"game_main/savesystem/chunks"
 	"game_main/tactical/commander"
 	"game_main/tactical/squads"
-	"game_main/visual/rendering"
 	"game_main/world/coords"
 	"game_main/world/worldmap"
 
@@ -56,7 +55,7 @@ func RestoreRenderables(em *common.EntityManager) error {
 			if err != nil {
 				return fmt.Errorf("failed to load player image: %w", err)
 			}
-			result.Entity.AddComponent(rendering.RenderableComponent, &rendering.Renderable{
+			result.Entity.AddComponent(common.RenderableComponent, &common.Renderable{
 				Image:   img,
 				Visible: true,
 			})
@@ -69,7 +68,7 @@ func RestoreRenderables(em *common.EntityManager) error {
 		if err != nil {
 			return fmt.Errorf("failed to load commander image: %w", err)
 		}
-		result.Entity.AddComponent(rendering.RenderableComponent, &rendering.Renderable{
+		result.Entity.AddComponent(common.RenderableComponent, &common.Renderable{
 			Image:   img,
 			Visible: true,
 		})
@@ -92,7 +91,7 @@ func RestoreRenderables(em *common.EntityManager) error {
 			log.Printf("Warning: could not load image for unit %s at %s: %v", utData.UnitType, imagePath, err)
 			continue
 		}
-		result.Entity.AddComponent(rendering.RenderableComponent, &rendering.Renderable{
+		result.Entity.AddComponent(common.RenderableComponent, &common.Renderable{
 			Image:   img,
 			Visible: false, // Units hidden on world map; squad entity renders instead
 		})

@@ -6,35 +6,6 @@ Comprehensive assessment of all issues from `critical_patterns_and_gotchas.md` p
 
 ## Part 1: Status of Previously Documented Issues
 
-### 1. GetComponentType Swallows Panics — RESOLVED
-**File:** `common/ecsutil.go`
-
-The `defer recover()` has been removed. The function now returns cleanly on nil entity or missing component, and panics on type assertion failure (correct behavior — wrong type parameter is a bug).
-
-### 2. attr.MaxHealth Cached Field Desync — RESOLVED
-**File:** `common/commoncomponents.go`
-
-The `MaxHealth` field has been completely removed from `Attributes`. All callers use `attr.GetMaxHealth()` (live calculation). Zero references to a cached field remain.
-
-### 3. Position Dual-State Invariant — RESOLVED
-**File:** `common/ecsutil.go:99-126`
-
-Atomic helpers (`MoveEntity`, `MoveSquadAndMembers`, `CleanDisposeEntity`) are documented and consistently used. Entity disposal code in `combat_service.go:410-414` correctly uses `CleanDisposeEntity` for positioned entities.
-
-### 4. ParseStatType Silent Fallback to StatStrength — RESOLVED
-**File:** `tactical/effects/components.go:47-70`
-
-Now returns `(StatType, error)`. Unrecognized stat names produce a descriptive error. Callers must handle it.
-
-### 5. Unit Component Composition — RESOLVED
-All unit creation routes through `ApplyUnitComponents()`.
-
-### 6. Boot Sequence Order — DOCUMENTED, NO CODE CHANGE NEEDED
-Still relevant as documentation. The 5-phase order must be respected.
-
-### 7. Blank Imports for Subsystem Registration — DOCUMENTED, NO CODE CHANGE NEEDED
-Still relevant as documentation. Don't remove blank imports.
-
 ### 8. IsOpaque() Has No Bounds Check — STILL OPEN
 **File:** `world/worldmap/dungeongen.go:249-252`
 **Severity:** Medium

@@ -4,7 +4,6 @@ import (
 	"game_main/common"
 	"game_main/tactical/spells"
 	"game_main/tactical/squads"
-	"game_main/visual/rendering"
 	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"
@@ -39,7 +38,7 @@ func CreateCommander(
 			HasActed:          false,
 			MovementRemaining: movementSpeed,
 		}).
-		AddComponent(rendering.RenderableComponent, &rendering.Renderable{
+		AddComponent(common.RenderableComponent, &common.Renderable{
 			Image:   commanderImage,
 			Visible: true,
 		}).

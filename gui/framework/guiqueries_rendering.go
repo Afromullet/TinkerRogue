@@ -50,7 +50,7 @@ func (gq *GUIQueries) GetUnitRenderInfo(unitID ecs.EntityID) *rendering.UnitRend
 		return nil
 	}
 
-	renderable := common.GetComponentType[*rendering.Renderable](entity, rendering.RenderableComponent)
+	renderable := common.GetComponentType[*common.Renderable](entity, common.RenderableComponent)
 	if renderable == nil || renderable.Image == nil {
 		return nil
 	}

@@ -9,7 +9,6 @@ import (
 	"game_main/world/coords"
 	"game_main/world/worldmap"
 
-	"github.com/bytearena/ecs"
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
@@ -20,37 +19,6 @@ const (
 	SpriteVerticesBatchSize   = 256
 	SpriteIndicesBatchSize    = 384
 )
-
-var (
-	RenderableComponent *ecs.Component //Putting this here for now rather than in graphics
-	RenderablesTag      ecs.Tag        // Tag for querying renderable entities
-)
-
-// init registers the rendering subsystem with the ECS component registry.
-// This allows the rendering package to self-register its components without
-// game_main needing to know about rendering internals.
-func init() {
-	common.RegisterSubsystem(func(em *common.EntityManager) {
-		InitializeRenderingComponents(em)
-		InitializeRenderingTags(em)
-	})
-}
-
-// InitializeRenderingComponents registers rendering-related components.
-func InitializeRenderingComponents(em *common.EntityManager) {
-	RenderableComponent = em.World.NewComponent()
-}
-
-// InitializeRenderingTags creates tags for querying rendering-related entities.
-func InitializeRenderingTags(em *common.EntityManager) {
-	RenderablesTag = ecs.BuildTag(RenderableComponent, common.PositionComponent)
-	em.WorldTags["renderables"] = RenderablesTag
-}
-
-type Renderable struct {
-	Image   *ebiten.Image
-	Visible bool
-}
 
 // viewportParams holds viewport filtering/scaling parameters.
 // nil means full-map mode (no filtering, no scaling).
@@ -67,7 +35,7 @@ func processRenderablesCore(cache *RenderingCache, gameMap worldmap.GameMap, scr
 
 	for _, result := range cache.RenderablesView.Get() {
 		pos := common.GetComponentType[*coords.LogicalPosition](result.Entity, common.PositionComponent)
-		renderable := common.GetComponentType[*Renderable](result.Entity, RenderableComponent)
+		renderable := common.GetComponentType[*common.Renderable](result.Entity, common.RenderableComponent)
 		img := renderable.Image
 
 		if !renderable.Visible || img == nil {

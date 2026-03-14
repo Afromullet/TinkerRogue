@@ -5,7 +5,6 @@ import (
 	"game_main/common"
 	"game_main/config"
 	"game_main/templates"
-	"game_main/visual/rendering"
 	"log"
 	"path/filepath"
 
@@ -227,7 +226,7 @@ func CreateUnitEntity(squadmanager *common.EntityManager, unit UnitTemplate) (*e
 			log.Printf("Warning: Could not load image for unit %s at %s: %v\n", unit.UnitType, imagePath, err)
 		} else {
 			// Add renderable component with the loaded image
-			unitEntity.AddComponent(rendering.RenderableComponent, &rendering.Renderable{
+			unitEntity.AddComponent(common.RenderableComponent, &common.Renderable{
 				Image:   img,
 				Visible: true,
 			})

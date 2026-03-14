@@ -34,6 +34,7 @@ func newSimManager() *common.EntityManager {
 	common.AttributeComponent = manager.World.NewComponent()
 	common.PlayerComponent = manager.World.NewComponent()
 	common.ResourceStockpileComponent = manager.World.NewComponent()
+	common.RenderableComponent = manager.World.NewComponent()
 
 	// Build core tags (replicates game_main/componentinit.go:buildCoreTags)
 	common.AllEntitiesTag = ecs.BuildTag()

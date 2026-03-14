@@ -3,7 +3,6 @@ package framework
 import (
 	"game_main/common"
 	"game_main/overworld/core"
-	"game_main/visual/rendering"
 	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"
@@ -41,6 +40,6 @@ func (gq *GUIQueries) GetEntityPositionFromEntity(entity *ecs.Entity) *coords.Lo
 
 // GetRenderableFromEntity returns the renderable component from an entity pointer.
 // Use when the caller already has the entity from View iteration.
-func (gq *GUIQueries) GetRenderableFromEntity(entity *ecs.Entity) *rendering.Renderable {
-	return common.GetComponentType[*rendering.Renderable](entity, rendering.RenderableComponent)
+func (gq *GUIQueries) GetRenderableFromEntity(entity *ecs.Entity) *common.Renderable {
+	return common.GetComponentType[*common.Renderable](entity, common.RenderableComponent)
 }

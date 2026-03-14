@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"game_main/common"
 	"game_main/templates"
-	"game_main/visual/rendering"
 	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"
@@ -113,7 +112,7 @@ func AddUnitToSquad(
 	gridPos.AnchorCol = gridCol
 
 	// Hide unit renderable - only the squad entity renders on the world map
-	unitRenderable := common.GetComponentType[*rendering.Renderable](unitEntity, rendering.RenderableComponent)
+	unitRenderable := common.GetComponentType[*common.Renderable](unitEntity, common.RenderableComponent)
 	if unitRenderable != nil {
 		unitRenderable.Visible = false
 	}
@@ -189,7 +188,7 @@ func PlaceUnitInSquad(squadID ecs.EntityID, unitEntityID ecs.EntityID, manager *
 	gridPos.AnchorCol = gridCol
 
 	// Hide unit renderable - only the squad entity renders on the world map
-	unitRenderable := common.GetComponentType[*rendering.Renderable](unitEntity, rendering.RenderableComponent)
+	unitRenderable := common.GetComponentType[*common.Renderable](unitEntity, common.RenderableComponent)
 	if unitRenderable != nil {
 		unitRenderable.Visible = false
 	}
@@ -372,7 +371,7 @@ func CreateSquadFromTemplate(
 
 		// Make unit's renderable invisible - only the squad should render on the world map
 		// Units are internal to squads; the squad entity shows the leader's sprite
-		unitRenderable := common.GetComponentType[*rendering.Renderable](unitEntity, rendering.RenderableComponent)
+		unitRenderable := common.GetComponentType[*common.Renderable](unitEntity, common.RenderableComponent)
 		if unitRenderable != nil {
 			unitRenderable.Visible = false
 		}
@@ -429,13 +428,13 @@ func SetSquadRenderableFromLeader(squadID ecs.EntityID, squadEntity *ecs.Entity,
 	}
 
 	// Get the leader's renderable
-	leaderRenderable := common.GetComponentType[*rendering.Renderable](leaderEntity, rendering.RenderableComponent)
+	leaderRenderable := common.GetComponentType[*common.Renderable](leaderEntity, common.RenderableComponent)
 	if leaderRenderable == nil || leaderRenderable.Image == nil {
 		return
 	}
 
 	// Add/update the squad's renderable with the leader's image
-	squadEntity.AddComponent(rendering.RenderableComponent, &rendering.Renderable{
+	squadEntity.AddComponent(common.RenderableComponent, &common.Renderable{
 		Image:   leaderRenderable.Image,
 		Visible: true,
 	})

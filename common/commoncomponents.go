@@ -2,6 +2,8 @@ package common
 
 import (
 	"game_main/config"
+
+	"github.com/hajimehoshi/ebiten/v2"
 )
 
 type Name struct {
@@ -162,4 +164,9 @@ func (a *Attributes) GetAttackRange() int {
 		return config.DefaultAttackRange // Default melee range
 	}
 	return a.AttackRange
+}
+
+type Renderable struct {
+	Image   *ebiten.Image
+	Visible bool
 }

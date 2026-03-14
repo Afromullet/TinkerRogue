@@ -11,7 +11,7 @@ import (
 // Views are automatically maintained by the ECS library when components are added/removed
 type RenderingCache struct {
 	// ECS Views (automatically maintained by ECS library)
-	RenderablesView *ecs.View // All RenderablesTag entities
+	RenderablesView *ecs.View // All common.RenderablesTag entities
 
 	// Sprite Batching (for performance optimization)
 	spriteBatches map[*ebiten.Image]*QuadBatch // Batches grouped by image
@@ -23,7 +23,7 @@ func NewRenderingCache(manager *common.EntityManager) *RenderingCache {
 	return &RenderingCache{
 
 		// View is automatically maintained when RenderableComponent added/removed
-		RenderablesView: manager.World.CreateView(RenderablesTag),
+		RenderablesView: manager.World.CreateView(common.RenderablesTag),
 
 		// Pre-allocate sprite batch map (typical games have 5-20 unique sprite images)
 		spriteBatches: make(map[*ebiten.Image]*QuadBatch, 20),
@@ -59,5 +59,5 @@ func (rc *RenderingCache) DrawSpriteBatches(screen *ebiten.Image) {
 // RefreshRenderablesView recreates the RenderablesView to force it to update
 // Call this after batch entity disposal to ensure stale entities don't render
 func (rc *RenderingCache) RefreshRenderablesView(manager *common.EntityManager) {
-	rc.RenderablesView = manager.World.CreateView(RenderablesTag)
+	rc.RenderablesView = manager.World.CreateView(common.RenderablesTag)
 }

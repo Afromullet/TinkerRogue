@@ -30,6 +30,7 @@ func NewTestEntityManager() *common.EntityManager {
 	common.NameComponent = manager.World.NewComponent()
 	common.PlayerComponent = manager.World.NewComponent()
 	common.ResourceStockpileComponent = manager.World.NewComponent()
+	common.RenderableComponent = manager.World.NewComponent()
 
 	// Initialize PositionSystem (fresh instance for each test)
 	common.GlobalPositionSystem = common.NewPositionSystem(manager.World)

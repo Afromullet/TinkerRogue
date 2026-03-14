@@ -40,6 +40,7 @@ func registerCoreComponents(manager *ecs.Manager) {
 	common.AttributeComponent = manager.NewComponent()
 	common.PlayerComponent = manager.NewComponent()
 	common.ResourceStockpileComponent = manager.NewComponent()
+	common.RenderableComponent = manager.NewComponent()
 }
 
 // buildCoreTags creates tags for querying core entity types.
@@ -49,6 +50,7 @@ func buildCoreTags(tags map[string]ecs.Tag) {
 	common.AllEntitiesTag = ecs.BuildTag()
 	tags["all"] = common.AllEntitiesTag
 
-	// Note: All subsystem tags (gear, squads, combat, rendering) are now built
-	// by their respective packages during InitializeSubsystems()
+	// Renderable tag (needs PositionComponent + RenderableComponent)
+	common.RenderablesTag = ecs.BuildTag(common.RenderableComponent, common.PositionComponent)
+	tags["renderables"] = common.RenderablesTag
 }

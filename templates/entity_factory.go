@@ -7,7 +7,6 @@ import (
 	"game_main/common"
 	"game_main/world/coords"
 
-	"game_main/visual/rendering"
 	"game_main/world/worldmap"
 	"log"
 	"path/filepath"
@@ -73,7 +72,7 @@ func createCreatureEntity(manager *common.EntityManager, config EntityConfig, m 
 	// Create entity with base components
 	entity := manager.World.NewEntity()
 	entity.AddComponent(common.NameComponent, &common.Name{NameStr: config.Name})
-	entity.AddComponent(rendering.RenderableComponent, &rendering.Renderable{
+	entity.AddComponent(common.RenderableComponent, &common.Renderable{
 		Image: img, Visible: config.Visible,
 	})
 

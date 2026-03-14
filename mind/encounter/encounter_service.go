@@ -7,7 +7,6 @@ import (
 	"game_main/common"
 	"game_main/mind/combatpipeline"
 	"game_main/overworld/core"
-	"game_main/visual/rendering"
 	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"
@@ -181,9 +180,9 @@ func (es *EncounterService) EndEncounter(
 		encounterData.IsDefeated = true
 
 		// Hide encounter sprite permanently on overworld map
-		renderable := common.GetComponentType[*rendering.Renderable](
+		renderable := common.GetComponentType[*common.Renderable](
 			entity,
-			rendering.RenderableComponent,
+			common.RenderableComponent,
 		)
 		if renderable != nil {
 			renderable.Visible = false
@@ -205,9 +204,9 @@ func (es *EncounterService) RestoreEncounterSprite() {
 		return
 	}
 
-	renderable := common.GetComponentType[*rendering.Renderable](
+	renderable := common.GetComponentType[*common.Renderable](
 		entity,
-		rendering.RenderableComponent,
+		common.RenderableComponent,
 	)
 	if renderable != nil {
 		renderable.Visible = true

@@ -46,46 +46,6 @@ Deep audit of package dependencies performed by two independent agents (codebase
 
 ## Critical Issues
 
-### 1. `gui/guicombat` → `mind/behavior` (GUI imports AI logic)
-
-**Severity: CRITICAL**
-
-**Files:**
-- `gui/guicombat/combat_input_handler.go`
-- `gui/guicombat/combatvisualization.go`
-
-**Problem:** The GUI layer directly instantiates AI decision-making systems — `behavior.FactionThreatLevelManager`, `behavior.CompositeThreatEvaluator`, `behavior.ThreatVisualizer`. This violates strict layering: GUI should never create or own AI systems.
-
-**Impact:**
-- Changes to threat evaluation logic require GUI changes
-- GUI tests need all AI dependencies
-- Cannot swap threat visualization without changing core AI code
-
-**Concrete code in `combatvisualization.go`:**
-```go
-cvm.threatManager = behavior.NewFactionThreatLevelManager(ctx.ECSManager, queries.CombatCache)
-cvm.threatEvaluators[factionID] = behavior.NewCompositeThreatEvaluator(...)
-cvm.threatVisualizer = behavior.NewThreatVisualizer(...)
-```
-
-**Fix:** Move threat visualization setup to `tactical/combatservices`. GUI queries the service for rendering data instead of creating its own threat systems.
-
----
-
-### 2. `mind/behavior` contains `ThreatVisualizer` which imports `visual/graphics` (AI depends on rendering)
-
-**Severity: CRITICAL**
-
-**File:** `mind/behavior/threatvisualizer.go` (440 lines)
-
-**Problem:** The `ThreatVisualizer` lives in the AI behavior package but depends on `visual/graphics` for `ColorMatrix`, gradient functions, and map tile coloring. This is a visualization tool mixed into an AI package.
-
-**Impact:**
-- The entire `mind/behavior` package (1,883 lines) gains a dependency on the graphics system
-- Creates a GUI → AI → Graphics dependency chain
-- AI package cannot be tested without graphics infrastructure
-
-**Fix:** Move `ThreatVisualizer` to `gui/guicombat/` or a new `visual/threatviz/` package. Have it consume threat data from `mind/behavior` via the existing `CompositeThreatEvaluator` API (which already returns plain `float64` values). This eliminates `mind/behavior`'s dependency on `visual/graphics` and `world/worldmap`.
 
 ---
 

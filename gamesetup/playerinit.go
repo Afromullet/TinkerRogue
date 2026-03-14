@@ -9,7 +9,6 @@ import (
 	"game_main/tactical/commander"
 	_ "game_main/tactical/squadcommands" // Blank import to trigger init() for command queue components
 	"game_main/tactical/squads"
-	"game_main/visual/rendering"
 	"game_main/world/coords"
 	"game_main/world/worldmap"
 
@@ -44,7 +43,7 @@ func InitializePlayerData(ecsmanager *common.EntityManager, pl *common.PlayerDat
 
 	playerEntity := ecsmanager.World.NewEntity().
 		AddComponent(common.PlayerComponent, &common.Player{}).
-		AddComponent(rendering.RenderableComponent, &rendering.Renderable{
+		AddComponent(common.RenderableComponent, &common.Renderable{
 			Image:   playerImg,
 			Visible: true,
 		}).
