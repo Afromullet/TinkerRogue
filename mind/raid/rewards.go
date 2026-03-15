@@ -2,19 +2,19 @@ package raid
 
 import (
 	"game_main/common"
-	"game_main/mind/combatpipeline"
+	"game_main/mind/combatlifecycle"
 	"game_main/world/worldmap"
 )
 
 // calculateRoomReward returns the reward and target for a cleared room.
 // Does NOT grant rewards — the pipeline does that via ExecuteResolution.
-func calculateRoomReward(manager *common.EntityManager, raidState *RaidStateData, roomType string) (combatpipeline.Reward, combatpipeline.GrantTarget) {
+func calculateRoomReward(manager *common.EntityManager, raidState *RaidStateData, roomType string) (combatlifecycle.Reward, combatlifecycle.GrantTarget) {
 	if RaidConfig == nil || raidState == nil {
-		return combatpipeline.Reward{}, combatpipeline.GrantTarget{}
+		return combatlifecycle.Reward{}, combatlifecycle.GrantTarget{}
 	}
 
 	// Base target for all combat rooms (gold + XP)
-	target := combatpipeline.GrantTarget{
+	target := combatlifecycle.GrantTarget{
 		PlayerEntityID: raidState.PlayerEntityID,
 		SquadIDs:       raidState.PlayerSquadIDs,
 		CommanderID:    raidState.CommanderID,
@@ -25,7 +25,7 @@ func calculateRoomReward(manager *common.EntityManager, raidState *RaidStateData
 	gold := int(float64(RaidConfig.Rewards.BaseGoldPerRoom) * scale)
 	xp := int(float64(RaidConfig.Rewards.BaseXPPerRoom) * scale)
 
-	reward := combatpipeline.Reward{Gold: gold, Experience: xp}
+	reward := combatlifecycle.Reward{Gold: gold, Experience: xp}
 
 	// Command posts also restore mana
 	if roomType == worldmap.GarrisonRoomCommandPost {

@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"game_main/common"
-	"game_main/mind/combatpipeline"
+	"game_main/mind/combatlifecycle"
 	"game_main/overworld/core"
 	"game_main/tactical/combat"
 	"game_main/world/coords"
@@ -163,7 +163,7 @@ func (es *EncounterService) EndEncounter(
 			DefendedNodeID:       es.activeEncounter.DefendedNodeID,
 			AttackingFactionType: encounterData.AttackingFactionType,
 		}
-		combatpipeline.ExecuteResolution(es.manager, resolver)
+		combatlifecycle.ExecuteResolution(es.manager, resolver)
 	} else if encounterData.ThreatNodeID != 0 {
 		resolver := &OverworldCombatResolver{
 			ThreatNodeID:   encounterData.ThreatNodeID,
@@ -172,7 +172,7 @@ func (es *EncounterService) EndEncounter(
 			PlayerSquadIDs: es.getAllPlayerSquadIDs(),
 			EnemySquadIDs:  es.activeEncounter.EnemySquadIDs,
 		}
-		combatpipeline.ExecuteResolution(es.manager, resolver)
+		combatlifecycle.ExecuteResolution(es.manager, resolver)
 	}
 
 	// Only mark as defeated if player won
@@ -244,7 +244,7 @@ func (es *EncounterService) ExitCombat(
 		_, encounterData := es.getEncounterData(es.activeEncounter.EncounterID)
 		if encounterData != nil && encounterData.ThreatNodeID != 0 {
 			resolver := &FleeResolver{ThreatNodeID: encounterData.ThreatNodeID}
-			combatpipeline.ExecuteResolution(es.manager, resolver)
+			combatlifecycle.ExecuteResolution(es.manager, resolver)
 		}
 	}
 
@@ -269,7 +269,7 @@ func (es *EncounterService) ExitCombat(
 }
 
 // TransitionToCombat performs the shared combat mode transition.
-// Called by combatpipeline.ExecuteCombatStart after Prepare() succeeds.
+// Called by combatlifecycle.ExecuteCombatStart after Prepare() succeeds.
 // Satisfies combat.CombatTransitioner via structural typing.
 func (es *EncounterService) TransitionToCombat(setup *combat.CombatSetup) error {
 	if es.IsEncounterActive() {

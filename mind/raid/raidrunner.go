@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"game_main/common"
-	"game_main/mind/combatpipeline"
+	"game_main/mind/combatlifecycle"
 	"game_main/mind/encounter"
 	"game_main/tactical/combat"
 	"game_main/tactical/squads"
@@ -24,7 +24,7 @@ type RaidEncounterResult struct {
 }
 
 // RaidRunner coordinates the raid loop: floor progression, room selection,
-// encounter triggering, and post-combat combatpipeline.
+// encounter triggering, and post-combat combatlifecycle.
 // It is NOT an ECS system — it's a service/controller that orchestrates ECS state.
 type RaidRunner struct {
 	manager          *common.EntityManager
@@ -184,7 +184,7 @@ func (rr *RaidRunner) TriggerRaidEncounter(nodeID int) error {
 		CombatPos:        combatPos,
 		CommanderID:      raidState.CommanderID,
 	}
-	_, err := combatpipeline.ExecuteCombatStart(rr.encounterService, rr.manager, starter)
+	_, err := combatlifecycle.ExecuteCombatStart(rr.encounterService, rr.manager, starter)
 	return err
 }
 
@@ -193,7 +193,7 @@ func (rr *RaidRunner) processRestRoom(raidState *RaidStateData, room *RoomData) 
 	// Apply rest room HP recovery from config
 	if RaidConfig != nil {
 		for _, squadID := range raidState.PlayerSquadIDs {
-			combatpipeline.ApplyHPRecovery(rr.manager, squadID, RaidConfig.Recovery.RestRoomHPPercent)
+			combatlifecycle.ApplyHPRecovery(rr.manager, squadID, RaidConfig.Recovery.RestRoomHPPercent)
 		}
 	}
 
@@ -247,13 +247,13 @@ func (rr *RaidRunner) ResolveEncounter(reason combat.CombatExitReason, result *c
 	switch reason {
 	case combat.ExitVictory:
 		resolver := &RaidRoomResolver{RaidState: raidState, RoomNodeID: rr.currentRoomNodeID}
-		result := combatpipeline.ExecuteResolution(rr.manager, resolver)
+		result := combatlifecycle.ExecuteResolution(rr.manager, resolver)
 		if result != nil {
 			rewardText = result.RewardText
 		}
 	case combat.ExitDefeat, combat.ExitFlee:
 		resolver := &RaidDefeatResolver{}
-		combatpipeline.ExecuteResolution(rr.manager, resolver)
+		combatlifecycle.ExecuteResolution(rr.manager, resolver)
 	}
 
 	rr.PostEncounterProcessing()

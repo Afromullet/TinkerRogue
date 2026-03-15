@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"game_main/common"
-	"game_main/mind/combatpipeline"
+	"game_main/mind/combatlifecycle"
 	"game_main/tactical/squads"
 )
 
@@ -15,7 +15,7 @@ type RaidRoomResolver struct {
 	RoomNodeID int
 }
 
-func (r *RaidRoomResolver) Resolve(manager *common.EntityManager) *combatpipeline.ResolutionPlan {
+func (r *RaidRoomResolver) Resolve(manager *common.EntityManager) *combatlifecycle.ResolutionPlan {
 	if r.RaidState == nil {
 		return nil
 	}
@@ -53,7 +53,7 @@ func (r *RaidRoomResolver) Resolve(manager *common.EntityManager) *combatpipelin
 	// Calculate room reward (pipeline grants it)
 	reward, target := calculateRoomReward(manager, r.RaidState, room.RoomType)
 
-	return &combatpipeline.ResolutionPlan{
+	return &combatlifecycle.ResolutionPlan{
 		Rewards:     reward,
 		Target:      target,
 		Description: fmt.Sprintf("Room %d (%s) cleared", room.NodeID, room.RoomType),
@@ -64,14 +64,14 @@ func (r *RaidRoomResolver) Resolve(manager *common.EntityManager) *combatpipelin
 // Replaces ProcessDefeat.
 type RaidDefeatResolver struct{}
 
-func (r *RaidDefeatResolver) Resolve(manager *common.EntityManager) *combatpipeline.ResolutionPlan {
+func (r *RaidDefeatResolver) Resolve(manager *common.EntityManager) *combatlifecycle.ResolutionPlan {
 	raidState := GetRaidState(manager)
 	if raidState != nil {
 		raidState.Status = RaidDefeat
 	}
 	fmt.Println("RaidDefeatResolver: Raid ended in defeat")
 
-	return &combatpipeline.ResolutionPlan{
+	return &combatlifecycle.ResolutionPlan{
 		Description: "Raid ended in defeat",
 	}
 }

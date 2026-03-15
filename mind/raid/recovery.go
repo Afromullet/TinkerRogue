@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"game_main/common"
-	"game_main/mind/combatpipeline"
+	"game_main/mind/combatlifecycle"
 
 	"github.com/bytearena/ecs"
 )
@@ -26,7 +26,7 @@ func ApplyPostEncounterRecovery(manager *common.EntityManager, raidState *RaidSt
 			hpPercent = RaidConfig.Recovery.ReserveHPPercent
 		}
 
-		combatpipeline.ApplyHPRecovery(manager, squadID, hpPercent)
+		combatlifecycle.ApplyHPRecovery(manager, squadID, hpPercent)
 	}
 
 	fmt.Printf("Recovery: Post-encounter recovery applied (deployed: %d%%, reserve: %d%%)\n",
@@ -41,7 +41,7 @@ func ApplyBetweenFloorRecovery(manager *common.EntityManager, raidState *RaidSta
 	}
 
 	for _, squadID := range raidState.PlayerSquadIDs {
-		combatpipeline.ApplyHPRecovery(manager, squadID, RaidConfig.Recovery.DeployedHPPercent)
+		combatlifecycle.ApplyHPRecovery(manager, squadID, RaidConfig.Recovery.DeployedHPPercent)
 	}
 
 	fmt.Printf("Recovery: Between-floor recovery applied to %d squads\n", len(raidState.PlayerSquadIDs))

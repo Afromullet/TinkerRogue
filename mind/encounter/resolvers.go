@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"game_main/common"
-	"game_main/mind/combatpipeline"
+	"game_main/mind/combatlifecycle"
 	"game_main/overworld/core"
 	"game_main/overworld/garrison"
 	"game_main/overworld/threat"
@@ -23,9 +23,9 @@ type OverworldCombatResolver struct {
 	EnemySquadIDs  []ecs.EntityID
 }
 
-func (r *OverworldCombatResolver) Resolve(manager *common.EntityManager) *combatpipeline.ResolutionPlan {
+func (r *OverworldCombatResolver) Resolve(manager *common.EntityManager) *combatlifecycle.ResolutionPlan {
 	// Count casualties
-	enemyUnitsKilled := combatpipeline.CountDeadUnits(manager, r.EnemySquadIDs)
+	enemyUnitsKilled := combatlifecycle.CountDeadUnits(manager, r.EnemySquadIDs)
 
 	// Find threat node
 	threatEntity := manager.FindEntityByID(r.ThreatNodeID)
@@ -47,7 +47,7 @@ func (r *OverworldCombatResolver) Resolve(manager *common.EntityManager) *combat
 		oldIntensity := nodeData.Intensity
 		nodeData.Intensity -= damageDealt
 
-		rewards := combatpipeline.CalculateIntensityReward(oldIntensity)
+		rewards := combatlifecycle.CalculateIntensityReward(oldIntensity)
 
 		if nodeData.Intensity <= 0 {
 			// Destroy threat node completely
@@ -65,9 +65,9 @@ func (r *OverworldCombatResolver) Resolve(manager *common.EntityManager) *combat
 			fmt.Printf("Threat %d destroyed! Rewards: %d gold, %d XP\n",
 				r.ThreatNodeID, rewards.Gold, rewards.Experience)
 
-			return &combatpipeline.ResolutionPlan{
+			return &combatlifecycle.ResolutionPlan{
 				Rewards: rewards,
-				Target: combatpipeline.GrantTarget{
+				Target: combatlifecycle.GrantTarget{
 					PlayerEntityID: r.PlayerEntityID,
 					SquadIDs:       r.PlayerSquadIDs,
 				},
@@ -92,9 +92,9 @@ func (r *OverworldCombatResolver) Resolve(manager *common.EntityManager) *combat
 		fmt.Printf("Threat %d weakened to intensity %d. Partial rewards: %d gold, %d XP\n",
 			r.ThreatNodeID, nodeData.Intensity, partialRewards.Gold, partialRewards.Experience)
 
-		return &combatpipeline.ResolutionPlan{
+		return &combatlifecycle.ResolutionPlan{
 			Rewards: partialRewards,
-			Target: combatpipeline.GrantTarget{
+			Target: combatlifecycle.GrantTarget{
 				PlayerEntityID: r.PlayerEntityID,
 				SquadIDs:       r.PlayerSquadIDs,
 			},
@@ -126,7 +126,7 @@ func (r *OverworldCombatResolver) Resolve(manager *common.EntityManager) *combat
 	fmt.Printf("Defeated by threat %d! Threat grew to intensity %d\n",
 		r.ThreatNodeID, nodeData.Intensity)
 
-	return &combatpipeline.ResolutionPlan{
+	return &combatlifecycle.ResolutionPlan{
 		Description: fmt.Sprintf("Defeated by threat %d", r.ThreatNodeID),
 	}
 }
@@ -139,7 +139,7 @@ type GarrisonDefenseResolver struct {
 	AttackingFactionType core.FactionType
 }
 
-func (r *GarrisonDefenseResolver) Resolve(manager *common.EntityManager) *combatpipeline.ResolutionPlan {
+func (r *GarrisonDefenseResolver) Resolve(manager *common.EntityManager) *combatlifecycle.ResolutionPlan {
 	currentTick := core.GetCurrentTick(manager)
 
 	if r.PlayerVictory {
@@ -148,7 +148,7 @@ func (r *GarrisonDefenseResolver) Resolve(manager *common.EntityManager) *combat
 				r.DefendedNodeID, r.AttackingFactionType.String()), nil)
 		fmt.Printf("Garrison at node %d held! Defense successful.\n", r.DefendedNodeID)
 
-		return &combatpipeline.ResolutionPlan{
+		return &combatlifecycle.ResolutionPlan{
 			Description: "Garrison defended",
 		}
 	}
@@ -161,7 +161,7 @@ func (r *GarrisonDefenseResolver) Resolve(manager *common.EntityManager) *combat
 		fmt.Printf("Garrison at node %d fell. Node captured by %s.\n", r.DefendedNodeID, newOwner)
 	}
 
-	return &combatpipeline.ResolutionPlan{
+	return &combatlifecycle.ResolutionPlan{
 		Description: fmt.Sprintf("Node %d captured", r.DefendedNodeID),
 	}
 }
@@ -172,7 +172,7 @@ type FleeResolver struct {
 	ThreatNodeID ecs.EntityID
 }
 
-func (r *FleeResolver) Resolve(manager *common.EntityManager) *combatpipeline.ResolutionPlan {
+func (r *FleeResolver) Resolve(manager *common.EntityManager) *combatlifecycle.ResolutionPlan {
 	currentTick := core.GetCurrentTick(manager)
 
 	core.LogEvent(core.EventCombatResolved, currentTick, r.ThreatNodeID,
@@ -186,7 +186,7 @@ func (r *FleeResolver) Resolve(manager *common.EntityManager) *combatpipeline.Re
 
 	fmt.Printf("Retreated from threat %d (no changes)\n", r.ThreatNodeID)
 
-	return &combatpipeline.ResolutionPlan{
+	return &combatlifecycle.ResolutionPlan{
 		Description: fmt.Sprintf("Retreated from threat %d", r.ThreatNodeID),
 	}
 }
@@ -217,5 +217,5 @@ func (es *EncounterService) returnGarrisonSquadsToNode(nodeID ecs.EntityID) {
 	if garrisonData == nil {
 		return
 	}
-	combatpipeline.StripCombatComponents(es.manager, garrisonData.SquadIDs)
+	combatlifecycle.StripCombatComponents(es.manager, garrisonData.SquadIDs)
 }

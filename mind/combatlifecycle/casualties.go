@@ -1,4 +1,4 @@
-package combatpipeline
+package combatlifecycle
 
 import (
 	"game_main/common"

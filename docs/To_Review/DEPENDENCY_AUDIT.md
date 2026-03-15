@@ -53,6 +53,7 @@ Deep audit of package dependencies performed by two independent agents (codebase
 ## High Priority Issues
 
 
+---
 
 ### 7. `tactical/combatservices` → `mind/ai` + `mind/behavior` (tactical layer reaches into AI)
 
@@ -77,15 +78,6 @@ type CombatAI interface {
 
 ---
 
-### 8. `gui/guicombat` → `mind/encounter` (GUI imports encounter system)
-
-**Severity: HIGH**
-
-**Files:** `gui/guicombat/` imports `mind/encounter` for `encounter.EncounterService`, `encounter.ExitDefeat`, `encounter.ExitVictory`, `encounter.ExitFlee`, `encounter.CombatResult`
-
-**Problem:** The combat UI directly references the encounter system for exit reason constants and result types. Conceptually wrong — the combat UI should report results through shared types, not directly reference the encounter system.
-
-**Fix:** Move `CombatResult`, `ExitReason` constants to `tactical/combat` (already imported by both sides). This drops `gui/guicombat`'s `mind/encounter` dependency entirely with ~20 lines of type relocation.
 
 ---
 

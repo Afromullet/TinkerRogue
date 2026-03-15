@@ -6,7 +6,7 @@ import (
 	"game_main/gear"
 	"game_main/mind/ai"
 	"game_main/mind/behavior"
-	"game_main/mind/combatpipeline"
+	"game_main/mind/combatlifecycle"
 	"game_main/tactical/combat"
 	"game_main/tactical/combat/battlelog"
 	"game_main/tactical/effects"
@@ -374,7 +374,7 @@ func (cs *CombatService) cleanupEffects() {
 
 // resetPlayerSquadsToOverworld removes player squads from the map after combat.
 // Player squads should only exist in the roster, not on the map.
-// Uses faction membership to identify player squads, then delegates stripping to combatpipeline.
+// Uses faction membership to identify player squads, then delegates stripping to combatlifecycle.
 func (cs *CombatService) resetPlayerSquadsToOverworld() {
 	var playerSquadIDs []ecs.EntityID
 	for _, result := range cs.EntityManager.World.Query(squads.SquadTag) {
@@ -393,7 +393,7 @@ func (cs *CombatService) resetPlayerSquadsToOverworld() {
 		}
 		playerSquadIDs = append(playerSquadIDs, entity.GetID())
 	}
-	combatpipeline.StripCombatComponents(cs.EntityManager, playerSquadIDs)
+	combatlifecycle.StripCombatComponents(cs.EntityManager, playerSquadIDs)
 }
 
 // disposeEntitiesByTag disposes all entities with a given tag

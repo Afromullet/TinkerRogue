@@ -12,7 +12,7 @@ import (
 	"game_main/gui/guiraid"
 	"game_main/gui/guisquads"
 	"game_main/gui/guiunitview"
-	"game_main/mind/combatpipeline"
+	"game_main/mind/combatlifecycle"
 	"game_main/mind/encounter"
 	"game_main/tactical/combat"
 )
@@ -38,7 +38,7 @@ func RegisterTacticalModes(coordinator *framework.GameModeCoordinator, manager *
 // This reduces boilerplate by iterating over a slice of mode constructors.
 func RegisterOverworldModes(coordinator *framework.GameModeCoordinator, manager *framework.UIModeManager, encounterService *encounter.EncounterService, ecsManager *common.EntityManager) {
 	startCombat := func(starter combat.CombatStarter) (*combat.CombatStartResult, error) {
-		return combatpipeline.ExecuteCombatStart(encounterService, ecsManager, starter)
+		return combatlifecycle.ExecuteCombatStart(encounterService, ecsManager, starter)
 	}
 
 	modes := []framework.UIMode{
