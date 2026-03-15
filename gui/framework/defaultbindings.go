@@ -67,6 +67,7 @@ func DefaultSquadEditorBindings() *ActionMap {
 		Bind(ebiten.KeyV, ActionToggleAttackPattern).
 		Bind(ebiten.KeyB, ActionToggleSupportPattern).
 		Bind(ebiten.KeyTab, ActionCycleCommanderEditor).
+		Bind(ebiten.KeyP, ActionUnitPurchase).
 		BindMouse(ebiten.MouseButtonRight, ActionRemoveUnit).
 		BindMouseMod(ebiten.MouseButtonLeft, ModShift, ActionViewUnit)
 }

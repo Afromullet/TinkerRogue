@@ -4,8 +4,6 @@ import (
 	"fmt"
 
 	"game_main/gui/builders"
-
-	"github.com/hajimehoshi/ebiten/v2"
 )
 
 // ModeConfig provides declarative configuration for mode initialization.
@@ -17,7 +15,6 @@ import (
 //	    err := NewModeBuilder(&m.BaseMode, ModeConfig{
 //	        ModeName:   "my_mode",
 //	        ReturnMode: "parent_mode",
-//	        Hotkeys:    []HotkeySpec{{Key: ebiten.KeyI, TargetMode: "inventory"}},
 //	    }).Build(ctx)
 //	    if err != nil {
 //	        return err
@@ -30,16 +27,9 @@ type ModeConfig struct {
 	ModeName   string
 	ReturnMode string // Mode to return to on ESC (empty if no return mode)
 
-	Hotkeys     []HotkeySpec
 	StatusLabel bool   // Whether to create a status label
 	Commands    bool   // Whether to enable command history
 	OnRefresh   func() // Callback for command history refresh (required if Commands=true)
-}
-
-// HotkeySpec defines a keyboard shortcut that transitions to a target mode
-type HotkeySpec struct {
-	Key        ebiten.Key
-	TargetMode string
 }
 
 // ModeBuilder constructs UI modes using declarative configuration.
@@ -77,11 +67,6 @@ func (mb *ModeBuilder) Build(ctx *UIContext) error {
 
 	// Initialize common mode infrastructure
 	mb.baseMode.InitializeBase(ctx)
-
-	// Register hotkeys for mode transitions
-	for _, hk := range mb.config.Hotkeys {
-		mb.baseMode.RegisterHotkey(hk.Key, hk.TargetMode)
-	}
 
 	// Create status label if configured
 	if mb.config.StatusLabel {

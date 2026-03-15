@@ -22,7 +22,9 @@
       "Bash(./combatsim_test.exe:*)",
       "Bash(mkdir:*)",
       "Bash(dir:*)",
-      "Bash(go clean:*)"
+      "Bash(go clean:*)",
+      "Bash(/tmp/entity_creation_report.txt:*)",
+      "Read(//tmp/**)"
     ],
     "deny": [],
     "ask": []

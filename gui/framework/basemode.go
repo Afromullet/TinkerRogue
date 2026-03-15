@@ -11,14 +11,6 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-// ModeTransitionBinding maps a key to a mode transition.
-// (Renamed from InputBinding to avoid collision with the action map InputBinding type.)
-type ModeTransitionBinding struct {
-	Key        ebiten.Key
-	TargetMode string
-	Reason     string
-}
-
 // BaseMode provides common mode infrastructure shared by all UI modes.
 // Modes should embed this struct to inherit common fields and behavior.
 //
@@ -39,9 +31,8 @@ type BaseMode struct {
 	Panels         *PanelRegistry          // Built panels with type-safe access
 
 	modeName   string
-	returnMode string                      // Mode to return to on ESC/close
-	hotkeys    map[ebiten.Key]ModeTransitionBinding // Registered hotkeys for mode transitions
-	self       UIMode                      // Reference to concrete mode for panel building
+	returnMode string // Mode to return to on ESC/close
+	self       UIMode // Reference to concrete mode for panel building
 }
 
 // SetModeName sets the mode identifier
@@ -79,9 +70,6 @@ func (bm *BaseMode) InitializeBase(ctx *UIContext) {
 	// Use unified ECS query service from context
 	bm.Queries = ctx.Queries
 
-	// Initialize hotkeys map
-	bm.hotkeys = make(map[ebiten.Key]ModeTransitionBinding)
-
 	// Initialize panel registry
 	bm.Panels = NewPanelRegistry()
 
@@ -91,29 +79,6 @@ func (bm *BaseMode) InitializeBase(ctx *UIContext) {
 		widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
 	)
 	bm.ui.Container = bm.RootContainer
-}
-
-// RegisterHotkey registers a key binding that transitions to a target mode.
-// This provides a declarative way to set up mode navigation without duplicating
-// hotkey handling code across modes.
-//
-// Parameters:
-//   - key: The ebiten key to bind
-//   - targetMode: The name of the mode to transition to
-//
-// Example:
-//
-//	bm.RegisterHotkey(ebiten.KeyE, "squad_management")
-func (bm *BaseMode) RegisterHotkey(key ebiten.Key, targetMode string) {
-	if bm.hotkeys == nil {
-		bm.hotkeys = make(map[ebiten.Key]ModeTransitionBinding)
-	}
-
-	bm.hotkeys[key] = ModeTransitionBinding{
-		Key:        key,
-		TargetMode: targetMode,
-		Reason:     fmt.Sprintf("%s key pressed", key.String()),
-	}
 }
 
 // SetStatus updates the status label with a message.
@@ -138,22 +103,12 @@ func (bm *BaseMode) InitializeCommandHistory(onRefresh func()) {
 }
 
 // HandleCommonInput processes standard input that's common across all modes.
-// Checks registered hotkeys and handles ESC key to return to the designated return mode.
+// Handles ESC key to return to the designated return mode.
 //
 // Returns true if input was consumed (prevents further propagation).
 // Modes should call this first in their HandleInput() method before processing
 // mode-specific input.
 func (bm *BaseMode) HandleCommonInput(inputState *InputState) bool {
-	// Check registered hotkeys for mode transitions
-	for key, binding := range bm.hotkeys {
-		if inputState.KeysJustPressed[key] {
-			if targetMode, exists := bm.ModeManager.GetMode(binding.TargetMode); exists {
-				bm.ModeManager.RequestTransition(targetMode, binding.Reason)
-				return true
-			}
-		}
-	}
-
 	// ESC key - return to designated mode
 	if inputState.ActionActive(ActionCancel) {
 		if returnMode, exists := bm.ModeManager.GetMode(bm.returnMode); exists {

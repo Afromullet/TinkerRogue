@@ -59,6 +59,7 @@ const (
 	ActionCycleCommanderEditor // Tab - cycle to next commander in editor
 	ActionRemoveUnit           // Right-click - remove unit from grid
 	ActionViewUnit             // Shift+Left-click - view unit details
+	ActionUnitPurchase         // P - open unit purchase mode
 
 	// === Artifact Mode ===
 	ActionPrevSquad       // Left arrow

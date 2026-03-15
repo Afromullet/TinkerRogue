@@ -104,10 +104,6 @@ func (sem *SquadEditorMode) Initialize(ctx *framework.UIContext) error {
 		StatusLabel: true,
 		Commands:    true,
 		OnRefresh:   sem.refreshAfterCommand,
-
-		Hotkeys: []framework.HotkeySpec{
-			{Key: ebiten.KeyP, TargetMode: "unit_purchase"},
-		},
 	}).Build(ctx)
 
 	if err != nil {
@@ -318,6 +314,14 @@ func (sem *SquadEditorMode) HandleInput(inputState *framework.InputState) bool {
 	if inputState.ActionActive(framework.ActionCycleCommanderEditor) {
 		sem.showNextCommander()
 		return true
+	}
+
+	// P key opens unit purchase mode
+	if inputState.ActionActive(framework.ActionUnitPurchase) {
+		if mode, exists := sem.ModeManager.GetMode("unit_purchase"); exists {
+			sem.ModeManager.RequestTransition(mode, "P key pressed")
+			return true
+		}
 	}
 
 	return false
