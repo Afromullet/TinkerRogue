@@ -21,9 +21,9 @@ type CombatVisualizationManager struct {
 	healthBarRenderer *rendering.HealthBarRenderer
 	threatVisualizer  *ThreatVisualizer
 
-	// Threat providers (interface-typed, backed by CombatService's threat systems)
-	threatProvider  ThreatDataProvider
-	layerEvaluators map[ecs.EntityID]LayerDataProvider
+	// Threat providers (backed by CombatService's threat systems, accessed via interfaces)
+	threatProvider  combatservices.ThreatProvider
+	layerEvaluators map[ecs.EntityID]combatservices.ThreatLayerEvaluator
 
 	// References needed for late initialization
 	ecsManager    *common.EntityManager
@@ -50,18 +50,22 @@ func NewCombatVisualizationManager(
 		combatService:     combatService,
 	}
 
-	// Use CombatService's threat manager (satisfies ThreatDataProvider)
-	cvm.threatProvider = combatService.ThreatManager
-	for _, factionID := range queries.GetAllFactions() {
-		combatService.ThreatManager.AddFaction(factionID)
+	// Use CombatService's threat provider via interface
+	cvm.threatProvider = combatService.GetThreatProvider()
+	allFactions := queries.GetAllFactions()
+	if cvm.threatProvider != nil {
+		for _, factionID := range allFactions {
+			cvm.threatProvider.AddFaction(factionID)
+		}
 	}
 
-	// Convert CombatService's evaluators to interface map
-	allFactions := queries.GetAllFactions()
-	cvm.layerEvaluators = make(map[ecs.EntityID]LayerDataProvider)
+	// Get evaluators from CombatService via interface
+	cvm.layerEvaluators = make(map[ecs.EntityID]combatservices.ThreatLayerEvaluator)
 	for _, factionID := range allFactions {
 		eval := combatService.GetThreatEvaluator(factionID)
-		cvm.layerEvaluators[factionID] = eval
+		if eval != nil {
+			cvm.layerEvaluators[factionID] = eval
+		}
 	}
 
 	// Initialize unified threat visualizer (supports both danger and layer modes)
@@ -135,12 +139,14 @@ func (cvm *CombatVisualizationManager) RefreshFactions(queries *framework.GUIQue
 
 	// Create evaluators for any new factions via CombatService
 	if cvm.layerEvaluators == nil {
-		cvm.layerEvaluators = make(map[ecs.EntityID]LayerDataProvider)
+		cvm.layerEvaluators = make(map[ecs.EntityID]combatservices.ThreatLayerEvaluator)
 	}
 	for _, factionID := range allFactions {
 		if _, exists := cvm.layerEvaluators[factionID]; !exists {
 			eval := cvm.combatService.GetThreatEvaluator(factionID)
-			cvm.layerEvaluators[factionID] = eval
+			if eval != nil {
+				cvm.layerEvaluators[factionID] = eval
+			}
 		}
 	}
 

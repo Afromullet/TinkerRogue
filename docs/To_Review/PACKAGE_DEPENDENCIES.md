@@ -1,6 +1,6 @@
 # Package Dependency Reference
 
-**Last Updated:** 2026-03-12
+**Last Updated:** 2026-03-15
 
 Complete internal dependency map for every package in TinkerRogue. Only project-internal imports are listed — standard library and third-party dependencies are omitted.
 
@@ -33,10 +33,10 @@ gear → common, config, tactical/combat, tactical/effects, tactical/squads, tem
 mind/evaluation → common, tactical/squads, templates
 mind/combatpipeline → common, tactical/combat, tactical/spells, tactical/squads, world/coords
 mind/behavior → common, mind/evaluation, tactical/combat, tactical/squads, templates, visual/graphics, world/coords, world/worldmap
-mind/ai → common, mind/behavior, tactical/combat, tactical/squadcommands, tactical/squads, world/coords
+mind/ai → common, mind/behavior, tactical/combat, tactical/combatservices, tactical/squadcommands, tactical/squads, world/coords
 mind/encounter → common, mind/combatpipeline, mind/evaluation, overworld/core, overworld/garrison, overworld/threat, tactical/combat, tactical/squads, templates, visual/rendering, world/coords
 mind/raid → common, mind/combatpipeline, mind/encounter, mind/evaluation, tactical/combat, tactical/squads, world/coords, world/worldmap
-tactical/combatservices → common, gear, mind/ai, mind/behavior, mind/combatpipeline, tactical/combat, tactical/combat/battlelog, tactical/effects, tactical/squads, world/coords
+tactical/combatservices → common, gear, mind/combatlifecycle, tactical/combat, tactical/combat/battlelog, tactical/effects, tactical/squads, world/coords
 
 overworld/core → common, config, overworld/overworldlog, templates, world/coords
 overworld/garrison → common, overworld/core, tactical/squads, world/coords
@@ -165,9 +165,7 @@ gamesetup → (see below — highest fan-out in the project)
 ### `tactical/combatservices`
 - `common`
 - `gear`
-- `mind/ai`
-- `mind/behavior`
-- `mind/combatpipeline`
+- `mind/combatlifecycle`
 - `tactical/combat`
 - `tactical/combat/battlelog`
 - `tactical/effects`
@@ -218,6 +216,7 @@ gamesetup → (see below — highest fan-out in the project)
 - `common`
 - `mind/behavior`
 - `tactical/combat`
+- `tactical/combatservices`
 - `tactical/squadcommands`
 - `tactical/squads`
 - `world/coords`
@@ -448,8 +447,8 @@ gamesetup → (see below — highest fan-out in the project)
 - `gui/specs`
 - `gui/widgetresources`
 - `gui/widgets`
-- `mind/behavior`
-- `mind/encounter`
+- `mind/ai`
+- `mind/evaluation`
 - `tactical/combat`
 - `tactical/combat/battlelog`
 - `tactical/combatservices`
@@ -598,7 +597,7 @@ Packages imported by the most other packages, in rough order:
 
 ## Notable Cross-Layer Dependencies
 
-- `tactical/combatservices` → `mind/ai`, `mind/behavior` (tactical layer reaching into mind layer)
+- `tactical/combatservices` → `mind/combatlifecycle` (tactical layer reaching into mind layer for combat lifecycle; `mind/ai` and `mind/behavior` decoupled via `AITurnController`, `ThreatProvider`, and `ThreatLayerEvaluator` interfaces)
 - `mind/encounter` → `overworld/garrison`, `overworld/threat` (mind layer reading overworld state)
 - `tactical/commander` → `overworld/core`, `overworld/tick` (commander bridges tactical and overworld)
 - `gui/guicombat` has the widest import list of any GUI package (24 dependencies)

@@ -175,7 +175,7 @@ func (tf *CombatTurnFlow) executeAITurnIfNeeded() {
 }
 
 // playAIAttackAnimations plays all queued AI attack animations sequentially
-func (tf *CombatTurnFlow) playAIAttackAnimations(aiController *combatservices.AIController) {
+func (tf *CombatTurnFlow) playAIAttackAnimations(aiController combatservices.AITurnController) {
 	attacks := aiController.GetQueuedAttacks()
 
 	if len(attacks) == 0 {
@@ -187,7 +187,7 @@ func (tf *CombatTurnFlow) playAIAttackAnimations(aiController *combatservices.AI
 }
 
 // playNextAIAttack plays a single AI attack animation and chains to the next
-func (tf *CombatTurnFlow) playNextAIAttack(attacks []combatservices.QueuedAttack, index int, aiController *combatservices.AIController) {
+func (tf *CombatTurnFlow) playNextAIAttack(attacks []combatservices.QueuedAttack, index int, aiController combatservices.AITurnController) {
 	if index >= len(attacks) {
 		aiController.ClearAttackQueue()
 

@@ -10,6 +10,7 @@ import (
 	"game_main/gui/guispells"
 	"game_main/gui/guisquads"
 	"game_main/gui/widgets"
+	"game_main/mind/ai"
 	"game_main/tactical/combat"
 	"game_main/tactical/combat/battlelog"
 	"game_main/tactical/combatservices"
@@ -81,8 +82,17 @@ func (cm *CombatMode) GetActionMap() *framework.ActionMap {
 }
 
 func (cm *CombatMode) Initialize(ctx *framework.UIContext) error {
-	// Create combat service before ModeBuilder
+	// Create combat service (threat systems injected below)
 	cm.combatService = combatservices.NewCombatService(ctx.ECSManager)
+
+	// Wire AI + threat stack (creates controller, threat provider, and evaluator factory)
+	aiSetup := ai.SetupCombatAI(
+		ctx.ECSManager, cm.combatService.TurnManager, cm.combatService.MovementSystem,
+		cm.combatService.CombatActSystem, cm.combatService.CombatCache,
+	)
+	cm.combatService.SetAIController(aiSetup.Controller)
+	cm.combatService.SetThreatProvider(aiSetup.ThreatProvider)
+	cm.combatService.SetThreatEvaluatorFactory(aiSetup.EvalFactory)
 
 	// Build UI using ModeBuilder (minimal config - panels handled by registry)
 	err := framework.NewModeBuilder(&cm.BaseMode, framework.ModeConfig{

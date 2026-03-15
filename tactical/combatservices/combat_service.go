@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"game_main/common"
 	"game_main/gear"
-	"game_main/mind/ai"
-	"game_main/mind/behavior"
 	"game_main/mind/combatlifecycle"
 	"game_main/tactical/combat"
 	"game_main/tactical/combat/battlelog"
@@ -14,12 +12,6 @@ import (
 	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"
-)
-
-// Type aliases for GUI layer convenience
-type (
-	AIController = ai.AIController
-	QueuedAttack = ai.QueuedAttack
 )
 
 // CombatService encapsulates all combat game logic and system ownership
@@ -34,12 +26,13 @@ type CombatService struct {
 	// Battle recording for export
 	BattleRecorder *battlelog.BattleRecorder
 
-	// Threat evaluation system
-	ThreatManager   *behavior.FactionThreatLevelManager
-	LayerEvaluators map[ecs.EntityID]*behavior.CompositeThreatEvaluator
+	// Threat evaluation system (injected via SetThreatProvider/SetThreatEvaluatorFactory)
+	threatProvider       ThreatProvider
+	layerEvaluators      map[ecs.EntityID]ThreatLayerEvaluator
+	evalFactory          func(factionID ecs.EntityID) ThreatLayerEvaluator
 
-	// AI decision-making
-	aiController *ai.AIController
+	// AI decision-making (set via SetAIController due to import cycle: ai -> combatservices)
+	aiController AITurnController
 
 	// Artifact charge tracking (per-battle and per-round)
 	chargeTracker *gear.ArtifactChargeTracker
@@ -70,8 +63,7 @@ func NewCombatService(manager *common.EntityManager) *CombatService {
 		CombatCache:     cache,
 		CombatActSystem: combatActSystem,
 		BattleRecorder:  battleRecorder,
-		ThreatManager:   behavior.NewFactionThreatLevelManager(manager, cache),
-		LayerEvaluators: make(map[ecs.EntityID]*behavior.CompositeThreatEvaluator),
+		layerEvaluators: make(map[ecs.EntityID]ThreatLayerEvaluator),
 	}
 
 	// Wire system hooks to forward to registered callbacks
@@ -242,48 +234,60 @@ func (cs *CombatService) CheckVictoryCondition() *VictoryCheckResult {
 	return result
 }
 
-// GetThreatEvaluator returns composite evaluator for a faction (lazy initialization)
-func (cs *CombatService) GetThreatEvaluator(factionID ecs.EntityID) *behavior.CompositeThreatEvaluator {
-	if evaluator, exists := cs.LayerEvaluators[factionID]; exists {
-		return evaluator
+// GetThreatEvaluator returns composite evaluator for a faction (lazy initialization).
+// Requires SetThreatEvaluatorFactory to have been called first.
+func (cs *CombatService) GetThreatEvaluator(factionID ecs.EntityID) ThreatLayerEvaluator {
+	if eval, exists := cs.layerEvaluators[factionID]; exists {
+		return eval
 	}
+	if cs.evalFactory == nil {
+		return nil
+	}
+	eval := cs.evalFactory(factionID)
+	cs.layerEvaluators[factionID] = eval
+	return eval
+}
 
-	// Create new evaluator for this faction
-	evaluator := behavior.NewCompositeThreatEvaluator(
-		factionID,
-		cs.EntityManager,
-		cs.CombatCache,
-		cs.ThreatManager,
-	)
-	cs.LayerEvaluators[factionID] = evaluator
-	return evaluator
+// GetThreatProvider returns the threat provider (must be injected via SetThreatProvider).
+func (cs *CombatService) GetThreatProvider() ThreatProvider {
+	return cs.threatProvider
+}
+
+// SetThreatProvider injects the threat data provider.
+// Must be set externally because the concrete type lives in mind/behavior.
+func (cs *CombatService) SetThreatProvider(tp ThreatProvider) {
+	cs.threatProvider = tp
+}
+
+// SetThreatEvaluatorFactory injects a factory for creating per-faction threat evaluators.
+// Must be set externally because the concrete type lives in mind/behavior.
+func (cs *CombatService) SetThreatEvaluatorFactory(fn func(factionID ecs.EntityID) ThreatLayerEvaluator) {
+	cs.evalFactory = fn
 }
 
 // UpdateThreatLayers updates all threat layers at start of AI turn
 func (cs *CombatService) UpdateThreatLayers(currentRound int) {
 	// Update base threat data first
-	cs.ThreatManager.UpdateAllFactions()
+	if cs.threatProvider != nil {
+		cs.threatProvider.UpdateAllFactions()
+	}
 
 	// Then update composite layers
-	for _, evaluator := range cs.LayerEvaluators {
+	for _, evaluator := range cs.layerEvaluators {
 		evaluator.Update(currentRound)
 	}
 }
 
-// GetAIController returns the AI controller (lazy initialization)
-func (cs *CombatService) GetAIController() *ai.AIController {
-	if cs.aiController == nil {
-		cs.aiController = ai.NewAIController(
-			cs.EntityManager,
-			cs.TurnManager,
-			cs.MovementSystem,
-			cs.CombatActSystem,
-			cs.CombatCache,
-			cs.ThreatManager,
-			cs.LayerEvaluators,
-		)
-	}
+// GetAIController returns the AI controller (must be injected via SetAIController)
+func (cs *CombatService) GetAIController() AITurnController {
 	return cs.aiController
+}
+
+
+// SetAIController injects the AI turn controller.
+// Must be set externally due to import cycle (ai -> combatservices).
+func (cs *CombatService) SetAIController(ctrl AITurnController) {
+	cs.aiController = ctrl
 }
 
 // ================================

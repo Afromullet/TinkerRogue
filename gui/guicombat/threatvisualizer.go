@@ -4,34 +4,13 @@ import (
 	"game_main/common"
 	"game_main/mind/evaluation"
 	"game_main/tactical/combat"
+	"game_main/tactical/combatservices"
 	"game_main/visual/graphics"
 	"game_main/world/coords"
 	"game_main/world/worldmap"
 
 	"github.com/bytearena/ecs"
 )
-
-// ThreatDataProvider provides squad-level threat data for visualization.
-// Satisfied by *behavior.FactionThreatLevelManager.
-type ThreatDataProvider interface {
-	AddFaction(factionID ecs.EntityID)
-	UpdateAllFactions()
-	GetSquadThreatAtRange(factionID, squadID ecs.EntityID, distance int) (float64, bool)
-}
-
-// LayerDataProvider provides per-position threat layer values for visualization.
-// Satisfied by *behavior.CompositeThreatEvaluator.
-type LayerDataProvider interface {
-	Update(currentRound int)
-	MarkDirty()
-	GetMeleeThreatAt(pos coords.LogicalPosition) float64
-	GetRangedPressureAt(pos coords.LogicalPosition) float64
-	GetSupportValueAt(pos coords.LogicalPosition) float64
-	GetFlankingRiskAt(pos coords.LogicalPosition) float64
-	GetIsolationRiskAt(pos coords.LogicalPosition) float64
-	GetEngagementPressureAt(pos coords.LogicalPosition) float64
-	GetRetreatQuality(pos coords.LogicalPosition) float64
-}
 
 // VisualizerMode represents the primary visualization mode
 type VisualizerMode int
@@ -116,10 +95,10 @@ type ThreatVisualizer struct {
 	// Dependencies
 	manager        *common.EntityManager
 	gameMap        *worldmap.GameMap
-	threatProvider ThreatDataProvider
+	threatProvider combatservices.ThreatProvider
 
 	// Per-faction threat evaluators (for layer mode)
-	evaluators map[ecs.EntityID]LayerDataProvider
+	evaluators map[ecs.EntityID]combatservices.ThreatLayerEvaluator
 
 	// Faction cycling
 	factionIDs       []ecs.EntityID // All factions in combat
@@ -137,13 +116,13 @@ type ThreatVisualizer struct {
 func NewThreatVisualizer(
 	manager *common.EntityManager,
 	gameMap *worldmap.GameMap,
-	threatProvider ThreatDataProvider,
+	threatProvider combatservices.ThreatProvider,
 ) *ThreatVisualizer {
 	return &ThreatVisualizer{
 		manager:          manager,
 		gameMap:          gameMap,
 		threatProvider:   threatProvider,
-		evaluators:       make(map[ecs.EntityID]LayerDataProvider),
+		evaluators:       make(map[ecs.EntityID]combatservices.ThreatLayerEvaluator),
 		DirtyCache:       evaluation.NewDirtyCache(),
 		isActive:         false,
 		mode:             VisualizerModeThreat,
@@ -181,7 +160,7 @@ func (tv *ThreatVisualizer) SetFactions(factionIDs []ecs.EntityID) {
 }
 
 // SetEvaluators sets the per-faction threat evaluators (for layer mode).
-func (tv *ThreatVisualizer) SetEvaluators(evaluators map[ecs.EntityID]LayerDataProvider) {
+func (tv *ThreatVisualizer) SetEvaluators(evaluators map[ecs.EntityID]combatservices.ThreatLayerEvaluator) {
 	tv.evaluators = evaluators
 }
 

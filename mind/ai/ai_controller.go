@@ -4,17 +4,12 @@ import (
 	"game_main/common"
 	"game_main/mind/behavior"
 	"game_main/tactical/combat"
+	"game_main/tactical/combatservices"
 	"game_main/tactical/squads"
 	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"
 )
-
-// QueuedAttack represents an attack that should be animated
-type QueuedAttack struct {
-	AttackerID ecs.EntityID
-	DefenderID ecs.EntityID
-}
 
 // AIController orchestrates AI decision-making for computer-controlled factions
 type AIController struct {
@@ -27,28 +22,54 @@ type AIController struct {
 	layerEvaluators map[ecs.EntityID]*behavior.CompositeThreatEvaluator
 
 	// Attack queue for animations (populated during AI turn)
-	attackQueue []QueuedAttack
+	attackQueue []combatservices.QueuedAttack
 }
 
-// NewAIController creates a new AI controller
-func NewAIController(
+// CombatAISetup holds all components created by SetupCombatAI.
+// Callers inject these into CombatService via its setter methods.
+type CombatAISetup struct {
+	Controller      combatservices.AITurnController
+	ThreatProvider  combatservices.ThreatProvider
+	EvalFactory     func(factionID ecs.EntityID) combatservices.ThreatLayerEvaluator
+}
+
+// SetupCombatAI creates the full AI + threat evaluation stack.
+// Returns interfaces that should be injected into CombatService.
+// This keeps mind/behavior out of both tactical/combatservices and gui/guicombat.
+func SetupCombatAI(
 	entityManager *common.EntityManager,
 	turnManager *combat.TurnManager,
 	movementSystem *combat.CombatMovementSystem,
 	combatActSystem *combat.CombatActionSystem,
 	combatCache *combat.CombatQueryCache,
-	threatManager *behavior.FactionThreatLevelManager,
-	layerEvaluators map[ecs.EntityID]*behavior.CompositeThreatEvaluator,
-) *AIController {
-	return &AIController{
+) *CombatAISetup {
+	threatMgr := behavior.NewFactionThreatLevelManager(entityManager, combatCache)
+	layerEvaluators := make(map[ecs.EntityID]*behavior.CompositeThreatEvaluator)
+
+	aic := &AIController{
 		entityManager:   entityManager,
 		turnManager:     turnManager,
 		movementSystem:  movementSystem,
 		combatActSystem: combatActSystem,
 		combatCache:     combatCache,
-		threatManager:   threatManager,
+		threatManager:   threatMgr,
 		layerEvaluators: layerEvaluators,
-		attackQueue:     make([]QueuedAttack, 0),
+		attackQueue:     make([]combatservices.QueuedAttack, 0),
+	}
+
+	evalFactory := func(factionID ecs.EntityID) combatservices.ThreatLayerEvaluator {
+		if eval, exists := layerEvaluators[factionID]; exists {
+			return eval
+		}
+		eval := behavior.NewCompositeThreatEvaluator(factionID, entityManager, combatCache, threatMgr)
+		layerEvaluators[factionID] = eval
+		return eval
+	}
+
+	return &CombatAISetup{
+		Controller:     aic,
+		ThreatProvider: threatMgr,
+		EvalFactory:    evalFactory,
 	}
 }
 
@@ -232,14 +253,14 @@ func (aic *AIController) getThreatEvaluator(factionID ecs.EntityID) *behavior.Co
 
 // QueueAttack adds an attack to the animation queue
 func (aic *AIController) QueueAttack(attackerID, defenderID ecs.EntityID) {
-	aic.attackQueue = append(aic.attackQueue, QueuedAttack{
+	aic.attackQueue = append(aic.attackQueue, combatservices.QueuedAttack{
 		AttackerID: attackerID,
 		DefenderID: defenderID,
 	})
 }
 
 // GetQueuedAttacks returns all queued attacks for animation
-func (aic *AIController) GetQueuedAttacks() []QueuedAttack {
+func (aic *AIController) GetQueuedAttacks() []combatservices.QueuedAttack {
 	return aic.attackQueue
 }
 
