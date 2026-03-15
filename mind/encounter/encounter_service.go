@@ -7,6 +7,7 @@ import (
 	"game_main/common"
 	"game_main/mind/combatpipeline"
 	"game_main/overworld/core"
+	"game_main/tactical/combat"
 	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"
@@ -37,7 +38,7 @@ type EncounterService struct {
 
 	// PostCombatCallback is called after ExitCombat finishes processing.
 	// Set by external systems (e.g., RaidRunner) to receive combat results.
-	PostCombatCallback func(CombatExitReason, *CombatResult)
+	PostCombatCallback func(combat.CombatExitReason, *combat.EncounterOutcome)
 }
 
 // NewEncounterService creates a new encounter coordinator
@@ -58,7 +59,7 @@ func NewEncounterService(
 // This does NOT handle resolution - CombatService handles that.
 // This just tracks what happened for analytics/debugging.
 func (es *EncounterService) RecordEncounterCompletion(
-	reason CombatExitReason,
+	reason combat.CombatExitReason,
 	victorFaction ecs.EntityID,
 	victorName string,
 	roundsCompleted int,
@@ -217,9 +218,9 @@ func (es *EncounterService) RestoreEncounterSprite() {
 // ExitCombat is the single unified exit point for all combat endings.
 // All paths (victory, defeat, flee) MUST use this method.
 func (es *EncounterService) ExitCombat(
-	reason CombatExitReason,
-	result *CombatResult,
-	combatCleaner CombatCleaner,
+	reason combat.CombatExitReason,
+	result *combat.EncounterOutcome,
+	combatCleaner combat.CombatCleaner,
 ) {
 	if es.activeEncounter == nil {
 		return
@@ -232,12 +233,12 @@ func (es *EncounterService) ExitCombat(
 
 	// Step 1: Resolve combat outcome to overworld
 	switch reason {
-	case ExitVictory, ExitDefeat:
+	case combat.ExitVictory, combat.ExitDefeat:
 		if !es.activeEncounter.IsRaidCombat {
 			es.EndEncounter(result.IsPlayerVictory, result.VictorFaction,
 				result.VictorName, result.RoundsCompleted, result.DefeatedFactions)
 		}
-	case ExitFlee:
+	case combat.ExitFlee:
 		es.RestoreEncounterSprite()
 		// Flee resolver
 		_, encounterData := es.getEncounterData(es.activeEncounter.EncounterID)
@@ -269,8 +270,8 @@ func (es *EncounterService) ExitCombat(
 
 // TransitionToCombat performs the shared combat mode transition.
 // Called by combatpipeline.ExecuteCombatStart after Prepare() succeeds.
-// Satisfies combatpipeline.CombatTransitioner via structural typing.
-func (es *EncounterService) TransitionToCombat(setup *combatpipeline.CombatSetup) error {
+// Satisfies combat.CombatTransitioner via structural typing.
+func (es *EncounterService) TransitionToCombat(setup *combat.CombatSetup) error {
 	if es.IsEncounterActive() {
 		return fmt.Errorf("encounter already in progress")
 	}

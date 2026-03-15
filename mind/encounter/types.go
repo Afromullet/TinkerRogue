@@ -3,6 +3,7 @@ package encounter
 import (
 	"time"
 
+	"game_main/tactical/combat"
 	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"
@@ -43,45 +44,6 @@ type CombatTransitionHandler interface {
 	EnterCombatMode() error
 	GetPlayerEntityID() ecs.EntityID
 	GetPlayerPosition() *coords.LogicalPosition
-}
-
-// CombatExitReason describes why combat ended
-type CombatExitReason int
-
-const (
-	ExitVictory CombatExitReason = iota
-	ExitDefeat
-	ExitFlee
-)
-
-// String returns a human-readable name for the exit reason
-func (r CombatExitReason) String() string {
-	switch r {
-	case ExitVictory:
-		return "Victory"
-	case ExitDefeat:
-		return "Defeat"
-	case ExitFlee:
-		return "Fled"
-	default:
-		return "Unknown"
-	}
-}
-
-// CombatResult captures the combat outcome for the exit pipeline.
-// Built by the GUI layer from CombatService.CheckVictoryCondition().
-type CombatResult struct {
-	IsPlayerVictory  bool
-	VictorFaction    ecs.EntityID
-	VictorName       string
-	RoundsCompleted  int
-	DefeatedFactions []ecs.EntityID
-}
-
-// CombatCleaner handles entity disposal when exiting combat.
-// Implemented by CombatService (satisfies via Go structural typing, no import needed).
-type CombatCleaner interface {
-	CleanupCombat(enemySquadIDs []ecs.EntityID)
 }
 
 // ActiveEncounter holds context for the currently active encounter
@@ -128,7 +90,7 @@ type CompletedEncounter struct {
 	Duration  time.Duration
 
 	// Outcome
-	Outcome         CombatExitReason
+	Outcome         combat.CombatExitReason
 	RoundsCompleted int
 	VictorFaction   ecs.EntityID
 	VictorName      string

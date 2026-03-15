@@ -422,7 +422,7 @@ func (cih *CombatInputHandler) handleSquadClick(mouseX, mouseY int) {
 // Only affects squads in the current encounter (not all squads in the ECS).
 func (cih *CombatInputHandler) killAllEnemySquads() {
 	// Get current encounter ID to filter only this encounter's squads
-	encounterID := cih.deps.EncounterService.GetCurrentEncounterID()
+	encounterID := cih.deps.Encounter.GetCurrentEncounterID()
 	if encounterID == 0 {
 		println("[DEBUG] No current encounter, cannot kill enemies")
 		return
@@ -430,7 +430,7 @@ func (cih *CombatInputHandler) killAllEnemySquads() {
 
 	// CRITICAL: Must use PLAYER faction ID, not current turn faction ID
 	// If we use currentFactionID and it's the AI's turn, we'd kill player squads instead!
-	playerFactionID := cih.getPlayerFactionID(encounterID)
+	playerFactionID := cih.deps.Queries.GetPlayerFactionForEncounter(encounterID)
 	if playerFactionID == 0 {
 		println("[DEBUG] No player faction found, cannot kill enemies")
 		return
@@ -480,18 +480,6 @@ func (cih *CombatInputHandler) killAllUnitsInSquad(squadID ecs.EntityID) int {
 	}
 
 	return killed
-}
-
-// getPlayerFactionID finds the player-controlled faction in the current encounter
-func (cih *CombatInputHandler) getPlayerFactionID(encounterID ecs.EntityID) ecs.EntityID {
-	encounterFactions := cih.deps.Queries.GetFactionsForEncounter(encounterID)
-	for _, factionID := range encounterFactions {
-		factionData := cih.deps.Queries.CombatCache.FindFactionDataByID(factionID)
-		if factionData != nil && factionData.IsPlayerControlled {
-			return factionID
-		}
-	}
-	return 0
 }
 
 // toggleInspectMode toggles inspect mode and shows/hides the panel

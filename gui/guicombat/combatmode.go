@@ -10,7 +10,7 @@ import (
 	"game_main/gui/guispells"
 	"game_main/gui/guisquads"
 	"game_main/gui/widgets"
-	"game_main/mind/encounter"
+	"game_main/tactical/combat"
 	"game_main/tactical/combat/battlelog"
 	"game_main/tactical/combatservices"
 	"game_main/tactical/spells"
@@ -29,10 +29,9 @@ type CombatMode struct {
 	deps *CombatModeDeps
 
 	// Managers
-	actionHandler    *CombatActionHandler
-	inputHandler     *CombatInputHandler
-	combatService    *combatservices.CombatService
-	encounterService *encounter.EncounterService
+	actionHandler *CombatActionHandler
+	inputHandler  *CombatInputHandler
+	combatService *combatservices.CombatService
 
 	// Update components (stored for refresh calls)
 	squadDetailComponent *guisquads.DetailPanelComponent
@@ -57,15 +56,17 @@ type CombatMode struct {
 	// Input action map
 	actionMap *framework.ActionMap
 
+	// Encounter callbacks (stored until deps are created in Initialize)
+	encounterCallbacks combat.EncounterCallbacks
+
 	// State tracking for UI updates (GUI_PERFORMANCE_ANALYSIS.md)
 	lastFactionID     ecs.EntityID
 	lastSelectedSquad ecs.EntityID
-
 }
 
-func NewCombatMode(modeManager *framework.UIModeManager, encounterService *encounter.EncounterService) *CombatMode {
+func NewCombatMode(modeManager *framework.UIModeManager, encounterCallbacks combat.EncounterCallbacks) *CombatMode {
 	cm := &CombatMode{
-		encounterService: encounterService,
+		encounterCallbacks: encounterCallbacks,
 	}
 	cm.SetModeName("combat")
 	cm.SetReturnMode("exploration")
@@ -111,9 +112,9 @@ func (cm *CombatMode) Initialize(ctx *framework.UIContext) error {
 	cm.deps = NewCombatModeDeps(
 		ctx.ModeCoordinator.GetTacticalState(),
 		cm.combatService,
-		cm.encounterService,
 		cm.Queries,
 		cm.ModeManager,
+		cm.encounterCallbacks,
 	)
 
 	// Create handlers with deps
@@ -122,12 +123,12 @@ func (cm *CombatMode) Initialize(ctx *framework.UIContext) error {
 
 	// Create spell handler and panel controller
 	spellDeps := &guispells.SpellCastingDeps{
-		BattleState:      cm.deps.BattleState,
-		ECSManager:       cm.deps.Queries.ECSManager,
-		EncounterService: cm.deps.EncounterService,
-		GameMap:          ctx.GameMap,
-		PlayerPos:        ctx.PlayerData.Pos,
-		Queries:          cm.deps.Queries,
+		BattleState: cm.deps.BattleState,
+		ECSManager:  cm.deps.Queries.ECSManager,
+		GameMap:     ctx.GameMap,
+		PlayerPos:   ctx.PlayerData.Pos,
+		Queries:     cm.deps.Queries,
+		Encounter:   cm.deps.Encounter,
 	}
 	spellHandler := guispells.NewSpellCastingHandler(spellDeps)
 	cm.spellPanel = guispells.NewSpellPanelController(&guispells.SpellPanelDeps{
@@ -150,10 +151,10 @@ func (cm *CombatMode) Initialize(ctx *framework.UIContext) error {
 
 	// Create artifact handler and panel controller
 	artifactDeps := &guiartifacts.ArtifactActivationDeps{
-		BattleState:      cm.deps.BattleState,
-		CombatService:    cm.deps.CombatService,
-		EncounterService: cm.deps.EncounterService,
-		Queries:          cm.deps.Queries,
+		BattleState:   cm.deps.BattleState,
+		CombatService: cm.deps.CombatService,
+		Queries:       cm.deps.Queries,
+		Encounter:     cm.deps.Encounter,
 	}
 	artifactHandler := guiartifacts.NewArtifactActivationHandler(artifactDeps)
 	artifactHandler.SetPlayerPosition(ctx.PlayerData.Pos)
@@ -331,8 +332,8 @@ func (cm *CombatMode) initializeUpdateComponents() {
 			infoText += fmt.Sprintf("Mana: %d/%d", factionInfo.CurrentMana, factionInfo.MaxMana)
 
 			// Show commander mana from spell system if available
-			if cm.encounterService != nil {
-				commanderID := cm.encounterService.GetRosterOwnerID()
+			if cm.deps.Encounter != nil {
+				commanderID := cm.deps.Encounter.GetRosterOwnerID()
 				if commanderID != 0 {
 					manaData := spells.GetManaData(commanderID, cm.Queries.ECSManager)
 					if manaData != nil {
@@ -442,17 +443,17 @@ func (cm *CombatMode) Exit(toMode framework.UIMode) error {
 		}
 
 		// Determine exit reason
-		reason := encounter.ExitDefeat
+		reason := combat.ExitDefeat
 		if cm.turnFlow.IsFleeRequested() {
-			reason = encounter.ExitFlee
+			reason = combat.ExitFlee
 		} else if victor.IsPlayerVictory {
-			reason = encounter.ExitVictory
+			reason = combat.ExitVictory
 		}
 
 		// Single call handles: overworld resolution, history recording, entity cleanup
-		if cm.encounterService != nil {
-			cm.encounterService.ExitCombat(reason,
-				&encounter.CombatResult{
+		if cm.deps.Encounter != nil {
+			cm.deps.Encounter.ExitCombat(reason,
+				&combat.EncounterOutcome{
 					IsPlayerVictory:  victor.IsPlayerVictory,
 					VictorFaction:    victor.VictorFaction,
 					VictorName:       victor.VictorName,

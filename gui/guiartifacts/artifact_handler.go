@@ -93,7 +93,8 @@ func (h *ArtifactActivationHandler) HandleTargetClick(mouseX, mouseY int) {
 	}
 
 	targetType := GetTargetType(behaviorKey)
-	isEnemy := h.isEnemySquad(clickedSquadID)
+	encounterID := h.deps.Encounter.GetCurrentEncounterID()
+	isEnemy := h.deps.Queries.IsEnemySquadInEncounter(clickedSquadID, encounterID)
 
 	switch targetType {
 	case TargetFriendlySquad:
@@ -117,7 +118,8 @@ func (h *ArtifactActivationHandler) CancelArtifactMode() {
 
 // GetAvailableArtifacts returns options for all equipped major artifacts in the player's faction.
 func (h *ArtifactActivationHandler) GetAvailableArtifacts() []ArtifactOption {
-	playerFactionID := h.getPlayerFactionID()
+	encounterID := h.deps.Encounter.GetCurrentEncounterID()
+	playerFactionID := h.deps.Queries.GetPlayerFactionForEncounter(encounterID)
 	if playerFactionID == 0 {
 		return nil
 	}
@@ -202,38 +204,3 @@ func (h *ArtifactActivationHandler) executeArtifact(behaviorKey string, targetSq
 	h.deps.Queries.MarkAllSquadsDirty()
 }
 
-func (h *ArtifactActivationHandler) isEnemySquad(squadID ecs.EntityID) bool {
-	squadInfo := h.deps.Queries.GetSquadInfo(squadID)
-	if squadInfo == nil {
-		return false
-	}
-
-	encounterID := h.deps.EncounterService.GetCurrentEncounterID()
-	if encounterID == 0 {
-		return false
-	}
-
-	factions := h.deps.Queries.GetFactionsForEncounter(encounterID)
-	for _, factionID := range factions {
-		factionData := h.deps.Queries.CombatCache.FindFactionDataByID(factionID)
-		if factionData != nil && factionData.IsPlayerControlled {
-			return squadInfo.FactionID != factionID
-		}
-	}
-	return false
-}
-
-func (h *ArtifactActivationHandler) getPlayerFactionID() ecs.EntityID {
-	encounterID := h.deps.EncounterService.GetCurrentEncounterID()
-	if encounterID == 0 {
-		return 0
-	}
-	factions := h.deps.Queries.GetFactionsForEncounter(encounterID)
-	for _, factionID := range factions {
-		factionData := h.deps.Queries.CombatCache.FindFactionDataByID(factionID)
-		if factionData != nil && factionData.IsPlayerControlled {
-			return factionID
-		}
-	}
-	return 0
-}

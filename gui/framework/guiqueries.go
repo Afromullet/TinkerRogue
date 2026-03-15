@@ -191,6 +191,33 @@ func (gq *GUIQueries) GetAllFactions() []ecs.EntityID {
 	return factionIDs
 }
 
+// ===== ENCOUNTER-SCOPED FACTION QUERIES =====
+
+// GetPlayerFactionForEncounter finds the player-controlled faction in an encounter.
+func (gq *GUIQueries) GetPlayerFactionForEncounter(encounterID ecs.EntityID) ecs.EntityID {
+	factions := gq.GetFactionsForEncounter(encounterID)
+	for _, factionID := range factions {
+		factionData := gq.CombatCache.FindFactionDataByID(factionID)
+		if factionData != nil && factionData.IsPlayerControlled {
+			return factionID
+		}
+	}
+	return 0
+}
+
+// IsEnemySquadInEncounter checks if a squad belongs to an enemy faction in the given encounter.
+func (gq *GUIQueries) IsEnemySquadInEncounter(squadID, encounterID ecs.EntityID) bool {
+	squadInfo := gq.GetSquadInfo(squadID)
+	if squadInfo == nil {
+		return false
+	}
+	playerFactionID := gq.GetPlayerFactionForEncounter(encounterID)
+	if playerFactionID == 0 {
+		return false
+	}
+	return squadInfo.FactionID != playerFactionID
+}
+
 // ===== UNIFIED SQUAD FILTERING =====
 
 // SquadFilter determines which squads to show

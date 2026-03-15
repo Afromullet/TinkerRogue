@@ -6,6 +6,7 @@ import (
 	"game_main/common"
 	"game_main/mind/combatpipeline"
 	"game_main/mind/encounter"
+	"game_main/tactical/combat"
 	"game_main/tactical/squads"
 	"game_main/world/worldmap"
 
@@ -49,7 +50,7 @@ func NewRaidRunner(manager *common.EntityManager, encounterService *encounter.En
 	}
 
 	// Register as post-combat listener
-	encounterService.PostCombatCallback = func(reason encounter.CombatExitReason, result *encounter.CombatResult) {
+	encounterService.PostCombatCallback = func(reason combat.CombatExitReason, result *combat.EncounterOutcome) {
 		if rr.raidEntityID != 0 {
 			rr.ResolveEncounter(reason, result)
 		}
@@ -214,7 +215,7 @@ func (rr *RaidRunner) processStairsRoom(raidState *RaidStateData, room *RoomData
 
 // ResolveEncounter processes the result of a completed combat encounter.
 // Called via PostCombatCallback from EncounterService.
-func (rr *RaidRunner) ResolveEncounter(reason encounter.CombatExitReason, result *encounter.CombatResult) {
+func (rr *RaidRunner) ResolveEncounter(reason combat.CombatExitReason, result *combat.EncounterOutcome) {
 	raidState := GetRaidState(rr.manager)
 	if raidState == nil {
 		return
@@ -244,13 +245,13 @@ func (rr *RaidRunner) ResolveEncounter(reason encounter.CombatExitReason, result
 
 	var rewardText string
 	switch reason {
-	case encounter.ExitVictory:
+	case combat.ExitVictory:
 		resolver := &RaidRoomResolver{RaidState: raidState, RoomNodeID: rr.currentRoomNodeID}
 		result := combatpipeline.ExecuteResolution(rr.manager, resolver)
 		if result != nil {
 			rewardText = result.RewardText
 		}
-	case encounter.ExitDefeat, encounter.ExitFlee:
+	case combat.ExitDefeat, combat.ExitFlee:
 		resolver := &RaidDefeatResolver{}
 		combatpipeline.ExecuteResolution(rr.manager, resolver)
 	}
@@ -270,7 +271,7 @@ func (rr *RaidRunner) ResolveEncounter(reason encounter.CombatExitReason, result
 		UnitsLost:  unitsLostTotal,
 		AlertLevel: alertLevel,
 		RewardText: rewardText,
-		IsVictory:  reason == encounter.ExitVictory,
+		IsVictory:  reason == combat.ExitVictory,
 	}
 }
 

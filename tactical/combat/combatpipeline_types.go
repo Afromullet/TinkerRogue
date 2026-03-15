@@ -54,3 +54,51 @@ type CombatStartResult struct {
 	EnemyFactionID  ecs.EntityID
 	EnemySquadIDs   []ecs.EntityID
 }
+
+// CombatExitReason describes why combat ended.
+type CombatExitReason int
+
+const (
+	ExitVictory CombatExitReason = iota
+	ExitDefeat
+	ExitFlee
+)
+
+// String returns a human-readable name for the exit reason.
+func (r CombatExitReason) String() string {
+	switch r {
+	case ExitVictory:
+		return "Victory"
+	case ExitDefeat:
+		return "Defeat"
+	case ExitFlee:
+		return "Fled"
+	default:
+		return "Unknown"
+	}
+}
+
+// EncounterOutcome captures the combat outcome for the exit pipeline.
+// Built by the GUI layer from CombatService.CheckVictoryCondition().
+type EncounterOutcome struct {
+	IsPlayerVictory  bool
+	VictorFaction    ecs.EntityID
+	VictorName       string
+	RoundsCompleted  int
+	DefeatedFactions []ecs.EntityID
+}
+
+// CombatCleaner handles entity disposal when exiting combat.
+// Implemented by CombatService (satisfies via Go structural typing, no import needed).
+type CombatCleaner interface {
+	CleanupCombat(enemySquadIDs []ecs.EntityID)
+}
+
+// EncounterCallbacks is the GUI's narrow view of encounter services.
+// EncounterService structurally satisfies this interface — pass it directly.
+// GUI packages import tactical/combat (not mind/encounter), preserving the dependency boundary.
+type EncounterCallbacks interface {
+	ExitCombat(reason CombatExitReason, result *EncounterOutcome, cleaner CombatCleaner)
+	GetRosterOwnerID() ecs.EntityID
+	GetCurrentEncounterID() ecs.EntityID
+}

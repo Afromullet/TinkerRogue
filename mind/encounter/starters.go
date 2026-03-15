@@ -5,7 +5,6 @@ import (
 	"math"
 
 	"game_main/common"
-	"game_main/mind/combatpipeline"
 	"game_main/mind/evaluation"
 	"game_main/overworld/core"
 	"game_main/overworld/garrison"
@@ -29,7 +28,7 @@ type OverworldCombatStarter struct {
 	hiddenRenderable *common.Renderable
 }
 
-func (s *OverworldCombatStarter) Prepare(manager *common.EntityManager) (*combatpipeline.CombatSetup, error) {
+func (s *OverworldCombatStarter) Prepare(manager *common.EntityManager) (*combat.CombatSetup, error) {
 	if s.EncounterID == 0 {
 		return nil, fmt.Errorf("invalid encounter ID: 0")
 	}
@@ -69,7 +68,7 @@ func (s *OverworldCombatStarter) Prepare(manager *common.EntityManager) (*combat
 	}
 	fmt.Printf("Spawned %d enemy squads: %v\n", len(enemySquadIDs), enemySquadIDs)
 
-	return &combatpipeline.CombatSetup{
+	return &combat.CombatSetup{
 		PlayerFactionID: playerFactionID,
 		EnemyFactionID:  enemyFactionID,
 		EnemySquadIDs:   enemySquadIDs,
@@ -82,7 +81,7 @@ func (s *OverworldCombatStarter) Prepare(manager *common.EntityManager) (*combat
 }
 
 // Rollback restores sprite visibility if TransitionToCombat fails after Prepare.
-// Satisfies combatpipeline.CombatStartRollback.
+// Satisfies combat.CombatStartRollback.
 func (s *OverworldCombatStarter) Rollback() {
 	if s.hiddenRenderable != nil {
 		s.hiddenRenderable.Visible = true
@@ -99,7 +98,7 @@ type GarrisonDefenseStarter struct {
 	TargetNodeID ecs.EntityID
 }
 
-func (s *GarrisonDefenseStarter) Prepare(manager *common.EntityManager) (*combatpipeline.CombatSetup, error) {
+func (s *GarrisonDefenseStarter) Prepare(manager *common.EntityManager) (*combat.CombatSetup, error) {
 	if s.EncounterID == 0 {
 		return nil, fmt.Errorf("invalid encounter ID: 0")
 	}
@@ -188,7 +187,7 @@ func (s *GarrisonDefenseStarter) Prepare(manager *common.EntityManager) (*combat
 		enemySquadIDs = append(enemySquadIDs, enemySpec.SquadID)
 	}
 
-	return &combatpipeline.CombatSetup{
+	return &combat.CombatSetup{
 		PlayerFactionID:   playerFactionID,
 		EnemyFactionID:    enemyFactionID,
 		EnemySquadIDs:     enemySquadIDs,

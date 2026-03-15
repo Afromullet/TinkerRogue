@@ -19,6 +19,7 @@ import (
 
 // RegisterTacticalModes registers all tactical UI modes with the coordinator.
 func RegisterTacticalModes(coordinator *framework.GameModeCoordinator, manager *framework.UIModeManager, encounterService *encounter.EncounterService) {
+
 	modes := []framework.UIMode{
 		guiexploration.NewExplorationMode(manager),
 		guicombat.NewCombatMode(manager, encounterService),

@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"game_main/common"
-	"game_main/mind/combatpipeline"
+	"game_main/tactical/combat"
 	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"
@@ -21,7 +21,7 @@ type RaidCombatStarter struct {
 	CommanderID      ecs.EntityID
 }
 
-func (s *RaidCombatStarter) Prepare(manager *common.EntityManager) (*combatpipeline.CombatSetup, error) {
+func (s *RaidCombatStarter) Prepare(manager *common.EntityManager) (*combat.CombatSetup, error) {
 	playerFactionID, enemyFactionID, err := SetupRaidFactions(
 		manager, s.RaidEntityID,
 		s.GarrisonSquadIDs, s.DeployedSquadIDs, s.CombatPos,
@@ -30,7 +30,7 @@ func (s *RaidCombatStarter) Prepare(manager *common.EntityManager) (*combatpipel
 		return nil, fmt.Errorf("failed to setup raid factions: %w", err)
 	}
 
-	return &combatpipeline.CombatSetup{
+	return &combat.CombatSetup{
 		PlayerFactionID:      playerFactionID,
 		EnemyFactionID:       enemyFactionID,
 		EnemySquadIDs:        s.GarrisonSquadIDs,

@@ -35,7 +35,7 @@ func (h *SpellCastingHandler) EnterSpellMode() {
 
 // SelectSpell validates mana and enters targeting based on spell type.
 func (h *SpellCastingHandler) SelectSpell(spellID string) {
-	commanderID := h.deps.EncounterService.GetRosterOwnerID()
+	commanderID := h.deps.Encounter.GetRosterOwnerID()
 	if commanderID == 0 {
 		return
 	}
@@ -81,7 +81,7 @@ func (h *SpellCastingHandler) CancelSpellMode() {
 
 // GetAvailableSpells returns spells the commander can cast (checks mana).
 func (h *SpellCastingHandler) GetAvailableSpells() []*templates.SpellDefinition {
-	commanderID := h.deps.EncounterService.GetRosterOwnerID()
+	commanderID := h.deps.Encounter.GetRosterOwnerID()
 	if commanderID == 0 {
 		return nil
 	}
@@ -90,7 +90,7 @@ func (h *SpellCastingHandler) GetAvailableSpells() []*templates.SpellDefinition 
 
 // GetAllSpells returns all spells in the commander's spellbook.
 func (h *SpellCastingHandler) GetAllSpells() []*templates.SpellDefinition {
-	commanderID := h.deps.EncounterService.GetRosterOwnerID()
+	commanderID := h.deps.Encounter.GetRosterOwnerID()
 	if commanderID == 0 {
 		return nil
 	}
@@ -99,7 +99,7 @@ func (h *SpellCastingHandler) GetAllSpells() []*templates.SpellDefinition {
 
 // GetCommanderMana returns the commander's current and max mana.
 func (h *SpellCastingHandler) GetCommanderMana() (current, max int) {
-	commanderID := h.deps.EncounterService.GetRosterOwnerID()
+	commanderID := h.deps.Encounter.GetRosterOwnerID()
 	if commanderID == 0 {
 		return 0, 0
 	}
@@ -125,7 +125,8 @@ func (h *SpellCastingHandler) HandleSingleTargetClick(mouseX, mouseY int) {
 		return
 	}
 
-	if !h.isEnemySquad(clickedSquadID) {
+	encounterID := h.deps.Encounter.GetCurrentEncounterID()
+	if !h.deps.Queries.IsEnemySquadInEncounter(clickedSquadID, encounterID) {
 		return
 	}
 
@@ -182,7 +183,7 @@ func (h *SpellCastingHandler) HandleAoEConfirmClick(mouseX, mouseY int) {
 	for _, idx := range indices {
 		logicalPos := coords.CoordManager.IndexToLogical(idx)
 		squadID := combat.GetSquadAtPosition(logicalPos, h.deps.ECSManager)
-		if squadID != 0 && h.isEnemySquad(squadID) {
+		if squadID != 0 && h.deps.Queries.IsEnemySquadInEncounter(squadID, h.deps.Encounter.GetCurrentEncounterID()) {
 			squadSet[squadID] = true
 		}
 	}
@@ -241,28 +242,6 @@ func createAoEShape(spell *templates.SpellDefinition) graphics.TileBasedShape {
 	})
 }
 
-// isEnemySquad checks if a squad belongs to an enemy faction.
-func (h *SpellCastingHandler) isEnemySquad(squadID ecs.EntityID) bool {
-	squadInfo := h.deps.Queries.GetSquadInfo(squadID)
-	if squadInfo == nil {
-		return false
-	}
-
-	encounterID := h.deps.EncounterService.GetCurrentEncounterID()
-	if encounterID == 0 {
-		return false
-	}
-
-	factions := h.deps.Queries.GetFactionsForEncounter(encounterID)
-	for _, factionID := range factions {
-		factionData := h.deps.Queries.CombatCache.FindFactionDataByID(factionID)
-		if factionData != nil && factionData.IsPlayerControlled {
-			return squadInfo.FactionID != factionID
-		}
-	}
-	return false
-}
-
 // --- Execution ---
 
 // executeSpellOnTargets casts the selected spell on the given target squads.
@@ -278,7 +257,7 @@ func (h *SpellCastingHandler) executeSpellOnTargets(targetSquadIDs []ecs.EntityI
 		return
 	}
 
-	commanderID := h.deps.EncounterService.GetRosterOwnerID()
+	commanderID := h.deps.Encounter.GetRosterOwnerID()
 	if commanderID == 0 {
 		return
 	}
