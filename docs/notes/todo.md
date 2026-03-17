@@ -1,6 +1,6 @@
 # Bug Fixes
 
-- XP Awards seem to be odd. I.E, didivided by 10. Combat resolution grants 40 xp, but units only get 4 xp
+- XP Awards seem to be odd. I.E, didivided by 10. Combat resolution grants 40 xp, but units only get 4 xp - each unit should get the total xp
 - Start Random Encounter alwys starts the same encounter 
 - Can cast spells and use artifacts on enemy turn
 
@@ -28,6 +28,10 @@
 # Input
 
 - Allow controsl to be remapped
+
+# AOE Spells
+
+- If an AOE spell has friendly units in the area, it should also damage them
 
 # Combat
 
@@ -76,7 +80,7 @@
 
 - Guiraids
 - Raids
-
+- Review combat start and combat end flow
 
 # Redundancies?
 

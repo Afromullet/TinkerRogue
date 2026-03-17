@@ -66,8 +66,8 @@ type ActiveEncounter struct {
 	PlayerEntityID ecs.EntityID // Player entity (owns resource stockpile)
 
 	// Cached faction IDs (avoid O(n) query during resolution)
-	PlayerFactionID ecs.EntityID // Player's combat faction
-	EnemyFactionID  ecs.EntityID // Enemy's combat faction
+	PlayerFactionID ecs.EntityID   // Player's combat faction
+	AllFactionIDs   []ecs.EntityID // All factions in combat (player + enemies)
 
 	// Garrison defense tracking
 	IsGarrisonDefense bool         // True if defending a garrisoned node
@@ -96,14 +96,22 @@ type CompletedEncounter struct {
 	VictorName      string
 }
 
+// FactionSpec describes a non-player faction to create for an encounter.
+// Each FactionSpec produces one faction with its own squads.
+type FactionSpec struct {
+	Name     string           // Faction display name
+	PlayerID int              // 0 = AI, >0 = player-controlled
+	Squads   []EnemySquadSpec // Squads to spawn for this faction
+}
+
 // EncounterSpec describes what to create for an encounter.
 // Pure data structure - no combat references.
 // This allows encounter generation to be decoupled from combat setup.
 type EncounterSpec struct {
-	PlayerSquadIDs []ecs.EntityID   // Player's deployed squads
-	EnemySquads    []EnemySquadSpec // Enemy squads to create
-	Difficulty     int              // Encounter difficulty level
-	EncounterType  string           // Type of encounter (goblin, bandit, etc.)
+	PlayerSquadIDs []ecs.EntityID // Player's deployed squads
+	Factions       []FactionSpec  // Non-player factions to create (replaces EnemySquads)
+	Difficulty     int            // Encounter difficulty level
+	EncounterType  string         // Type of encounter (goblin, bandit, etc.)
 	PlayerStartPos coords.LogicalPosition
 }
 

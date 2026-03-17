@@ -22,7 +22,7 @@ type RaidCombatStarter struct {
 }
 
 func (s *RaidCombatStarter) Prepare(manager *common.EntityManager) (*combat.CombatSetup, error) {
-	playerFactionID, enemyFactionID, err := SetupRaidFactions(
+	playerFactionID, allFactionIDs, err := SetupRaidFactions(
 		manager, s.RaidEntityID,
 		s.GarrisonSquadIDs, s.DeployedSquadIDs, s.CombatPos,
 	)
@@ -32,7 +32,7 @@ func (s *RaidCombatStarter) Prepare(manager *common.EntityManager) (*combat.Comb
 
 	return &combat.CombatSetup{
 		PlayerFactionID:      playerFactionID,
-		EnemyFactionID:       enemyFactionID,
+		AllFactionIDs:        allFactionIDs,
 		EnemySquadIDs:        s.GarrisonSquadIDs,
 		CombatPosition:       s.CombatPos,
 		EncounterID:          s.RaidEntityID,

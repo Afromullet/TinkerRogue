@@ -4,6 +4,8 @@ import (
 	"fmt"
 
 	"game_main/gui/framework"
+	"game_main/mind/encounter"
+	"game_main/tactical/combat"
 
 	"github.com/ebitenui/ebitenui/widget"
 	"github.com/hajimehoshi/ebiten/v2"
@@ -24,10 +26,15 @@ type ExplorationMode struct {
 
 	// Input action map (includes camera bindings for exploration)
 	actionMap *framework.ActionMap
+
+	// Combat start callback (injected by moderegistry for debug encounters)
+	startCombat func(starter combat.CombatStarter) (*combat.CombatStartResult, error)
 }
 
-func NewExplorationMode(modeManager *framework.UIModeManager) *ExplorationMode {
-	mode := &ExplorationMode{}
+func NewExplorationMode(modeManager *framework.UIModeManager, startCombat func(starter combat.CombatStarter) (*combat.CombatStartResult, error)) *ExplorationMode {
+	mode := &ExplorationMode{
+		startCombat: startCombat,
+	}
 	mode.SetModeName("exploration")
 	mode.SetReturnMode("") // No return mode - exploration is the main mode
 	mode.ModeManager = modeManager
@@ -100,6 +107,35 @@ func (em *ExplorationMode) Update(deltaTime float64) error {
 func (em *ExplorationMode) Render(screen *ebiten.Image) {
 	// No custom rendering needed - ebitenui handles everything
 	// Could add overlays here (threat ranges, movement paths, etc.)
+}
+
+// startMultiFactionBattle creates a debug encounter with the player + 2 AI factions.
+func (em *ExplorationMode) startMultiFactionBattle() {
+	if em.startCombat == nil {
+		fmt.Println("ERROR: startCombat callback not configured")
+		return
+	}
+
+	playerEntityID := em.Context.PlayerData.PlayerEntityID
+	playerPos := *em.Context.PlayerData.Pos
+
+	encounterID, err := encounter.TriggerRandomEncounter(em.Context.ECSManager, 1)
+	if err != nil {
+		fmt.Printf("ERROR: Failed to create encounter: %v\n", err)
+		return
+	}
+
+	starter := &encounter.MultiFactionCombatStarter{
+		EncounterID:   encounterID,
+		PlayerPos:     playerPos,
+		RosterOwnerID: playerEntityID,
+		FactionCount:  2, // 2 AI factions + player = 3 total
+	}
+
+	if _, err := em.startCombat(starter); err != nil {
+		fmt.Printf("ERROR: Failed to start multi-faction battle: %v\n", err)
+		return
+	}
 }
 
 func (em *ExplorationMode) HandleInput(inputState *framework.InputState) bool {

@@ -52,6 +52,18 @@ func GetAllFactions(manager *common.EntityManager) []ecs.EntityID {
 	return factionIDs
 }
 
+// GetHostileFactions returns all factions hostile to the given faction.
+// Uses the FactionRelationResolver from the cache (defaults to free-for-all).
+func GetHostileFactions(factionID ecs.EntityID, manager *common.EntityManager, cache *CombatQueryCache) []ecs.EntityID {
+	allFactions := GetAllFactions(manager)
+	return cache.FactionRelations.GetHostileFactions(factionID, allFactions)
+}
+
+// AreFactionsHostile checks if two factions are hostile to each other.
+func AreFactionsHostile(factionA, factionB ecs.EntityID, cache *CombatQueryCache) bool {
+	return cache.FactionRelations.GetRelation(factionA, factionB) == RelationHostile
+}
+
 // GetSquadsForFaction returns all squads owned by a faction.
 // Uses package-level ecs.View for zero-allocation reads.
 func GetSquadsForFaction(factionID ecs.EntityID, manager *common.EntityManager) []ecs.EntityID {

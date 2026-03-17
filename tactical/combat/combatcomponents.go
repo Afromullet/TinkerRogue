@@ -1,6 +1,8 @@
 package combat
 
 import (
+	"image/color"
+
 	"game_main/common"
 	"game_main/tactical/squads"
 
@@ -36,6 +38,7 @@ type FactionData struct {
 	PlayerID           int          // Player identifier (0 = AI, 1 = Player 1, 2 = Player 2, etc.)
 	PlayerName         string       // Display name for player ("Player 1", "Player 2", or custom)
 	EncounterID        ecs.EntityID // Encounter this faction belongs to (0 if not from encounter)
+	Color              color.RGBA   // Faction display color for UI (assigned during creation)
 }
 
 type TurnStateData struct {

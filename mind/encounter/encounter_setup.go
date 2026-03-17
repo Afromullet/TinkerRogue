@@ -19,7 +19,7 @@ import (
 // Note: EnemySquadSpec is defined in types.go and used for all enemy squad generation
 
 // SpawnCombatEntities creates player and enemy factions with power-based squad generation.
-// Returns a list of enemy squad IDs created for this encounter.
+// Returns enemy squad IDs, player faction ID, all faction IDs, and error.
 //
 // If the threat node has an NPC garrison, garrison squads are used as enemies
 // instead of generating enemies from power budget.
@@ -32,7 +32,7 @@ func SpawnCombatEntities(
 	playerStartPos coords.LogicalPosition,
 	encounterData *core.OverworldEncounterData,
 	encounterID ecs.EntityID,
-) ([]ecs.EntityID, ecs.EntityID, ecs.EntityID, error) {
+) ([]ecs.EntityID, ecs.EntityID, []ecs.EntityID, error) {
 	// Check if the threat node has an NPC garrison
 	if encounterData.ThreatNodeID != 0 {
 		garrisonData := garrison.GetGarrisonAtNode(manager, encounterData.ThreatNodeID)
@@ -45,34 +45,44 @@ func SpawnCombatEntities(
 	// 1. Generate encounter specification (handles validation, power calculation, squad creation)
 	spec, err := GenerateEncounterSpec(manager, rosterOwnerID, playerStartPos, encounterData)
 	if err != nil {
-		return nil, 0, 0, fmt.Errorf("failed to generate encounter spec: %w", err)
+		return nil, 0, nil, fmt.Errorf("failed to generate encounter spec: %w", err)
 	}
 
 	// 2. Create factions with encounter tracking
 	cache := combat.NewCombatQueryCache(manager)
 	fm := combat.NewCombatFactionManager(manager, cache)
 	playerFactionID := fm.CreateFactionWithPlayer("Player Forces", 1, "Player 1", encounterID)
-	enemyFactionID := fm.CreateFactionWithPlayer("Enemy Forces", 0, "", encounterID)
+
+	allFactionIDs := []ecs.EntityID{playerFactionID}
+	createdEnemySquadIDs := []ecs.EntityID{}
 
 	// 3. Add player's deployed squads to faction
 	if err := assignPlayerSquadsToFaction(fm, rosterOwnerID, manager, playerFactionID, playerStartPos); err != nil {
-		return nil, 0, 0, fmt.Errorf("failed to assign player squads: %w", err)
+		return nil, 0, nil, fmt.Errorf("failed to assign player squads: %w", err)
 	}
 
-	// 4. Add enemy squads to faction and track their IDs
-	createdEnemySquadIDs := make([]ecs.EntityID, 0, len(spec.EnemySquads))
-	for i, enemySpec := range spec.EnemySquads {
-		if err := fm.AddSquadToFaction(enemyFactionID, enemySpec.SquadID, enemySpec.Position); err != nil {
-			return nil, 0, 0, fmt.Errorf("failed to add enemy squad %d to faction: %w", i, err)
+	// 4. Create enemy factions and add squads
+	for _, factionSpec := range spec.Factions {
+		factionID := fm.CreateFactionWithPlayer(factionSpec.Name, factionSpec.PlayerID, "", encounterID)
+		allFactionIDs = append(allFactionIDs, factionID)
+
+		for i, squadSpec := range factionSpec.Squads {
+			if err := fm.AddSquadToFaction(factionID, squadSpec.SquadID, squadSpec.Position); err != nil {
+				return nil, 0, nil, fmt.Errorf("failed to add enemy squad %d to faction: %w", i, err)
+			}
+			combat.CreateActionStateForSquad(manager, squadSpec.SquadID)
+			createdEnemySquadIDs = append(createdEnemySquadIDs, squadSpec.SquadID)
 		}
-		combat.CreateActionStateForSquad(manager, enemySpec.SquadID)
-		createdEnemySquadIDs = append(createdEnemySquadIDs, enemySpec.SquadID)
 	}
 
-	fmt.Printf("Created encounter: Player Faction (%d) vs Enemy Faction (%d) with %d squads\n",
-		playerFactionID, enemyFactionID, len(spec.EnemySquads))
+	totalSquads := 0
+	for _, f := range spec.Factions {
+		totalSquads += len(f.Squads)
+	}
+	fmt.Printf("Created encounter: Player Faction (%d) vs %d enemy factions with %d squads\n",
+		playerFactionID, len(spec.Factions), totalSquads)
 
-	return createdEnemySquadIDs, playerFactionID, enemyFactionID, nil
+	return createdEnemySquadIDs, playerFactionID, allFactionIDs, nil
 }
 
 // spawnGarrisonEncounter uses existing garrison squads as enemies instead of generating new ones.
@@ -83,16 +93,18 @@ func spawnGarrisonEncounter(
 	playerStartPos coords.LogicalPosition,
 	garrisonData *core.GarrisonData,
 	encounterID ecs.EntityID,
-) ([]ecs.EntityID, ecs.EntityID, ecs.EntityID, error) {
+) ([]ecs.EntityID, ecs.EntityID, []ecs.EntityID, error) {
 	// Create factions
 	cache := combat.NewCombatQueryCache(manager)
 	fm := combat.NewCombatFactionManager(manager, cache)
 	playerFactionID := fm.CreateFactionWithPlayer("Player Forces", 1, "Player 1", encounterID)
 	enemyFactionID := fm.CreateFactionWithPlayer("Garrison Forces", 0, "", encounterID)
 
+	allFactionIDs := []ecs.EntityID{playerFactionID, enemyFactionID}
+
 	// Add player squads
 	if err := assignPlayerSquadsToFaction(fm, rosterOwnerID, manager, playerFactionID, playerStartPos); err != nil {
-		return nil, 0, 0, fmt.Errorf("failed to assign player squads: %w", err)
+		return nil, 0, nil, fmt.Errorf("failed to assign player squads: %w", err)
 	}
 
 	// Add garrison squads as enemies
@@ -102,7 +114,7 @@ func spawnGarrisonEncounter(
 	for i, squadID := range garrisonData.SquadIDs {
 		pos := enemyPositions[i]
 		if err := fm.AddSquadToFaction(enemyFactionID, squadID, pos); err != nil {
-			return nil, 0, 0, fmt.Errorf("failed to add garrison squad %d to faction: %w", squadID, err)
+			return nil, 0, nil, fmt.Errorf("failed to add garrison squad %d to faction: %w", squadID, err)
 		}
 		EnsureUnitPositions(manager, squadID, pos)
 		combat.CreateActionStateForSquad(manager, squadID)
@@ -112,7 +124,7 @@ func spawnGarrisonEncounter(
 	fmt.Printf("Created garrison encounter: Player Faction (%d) vs Garrison (%d) with %d garrison squads\n",
 		playerFactionID, enemyFactionID, len(garrisonData.SquadIDs))
 
-	return createdEnemySquadIDs, playerFactionID, enemyFactionID, nil
+	return createdEnemySquadIDs, playerFactionID, allFactionIDs, nil
 }
 
 // ensurePlayerSquadsDeployed checks if player has deployed squads, and auto-deploys all if none are deployed

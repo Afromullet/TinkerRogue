@@ -2,6 +2,8 @@
 package framework
 
 import (
+	"image/color"
+
 	"game_main/common"
 	"game_main/tactical/combat"
 	"game_main/tactical/squads"
@@ -82,6 +84,7 @@ type FactionInfo struct {
 	MaxMana            int
 	SquadIDs           []ecs.EntityID
 	AliveSquadCount    int
+	Color              color.RGBA
 }
 
 // GetFactionInfo returns complete faction information for UI display
@@ -105,6 +108,7 @@ func (gq *GUIQueries) GetFactionInfo(factionID ecs.EntityID) *FactionInfo {
 		MaxMana:            maxMana,
 		SquadIDs:           squadIDs,
 		AliveSquadCount:    aliveCount,
+		Color:              factionData.Color,
 	}
 }
 
@@ -137,16 +141,13 @@ func (gq *GUIQueries) GetSquadInfo(squadID ecs.EntityID) *SquadInfo {
 
 // ===== COMBAT QUERIES =====
 
-// GetEnemySquads returns all squads not in the given faction
+// GetEnemySquads returns all squads hostile to the given faction
 func (gq *GUIQueries) GetEnemySquads(currentFactionID ecs.EntityID) []ecs.EntityID {
 	enemySquads := []ecs.EntityID{}
 
-	// Get all factions except current
-	allFactions := gq.GetAllFactions()
-	for _, factionID := range allFactions {
-		if factionID != currentFactionID {
-			enemySquads = append(enemySquads, combat.GetActiveSquadsForFaction(factionID, gq.ECSManager)...)
-		}
+	hostileFactions := combat.GetHostileFactions(currentFactionID, gq.ECSManager, gq.CombatCache)
+	for _, factionID := range hostileFactions {
+		enemySquads = append(enemySquads, combat.GetActiveSquadsForFaction(factionID, gq.ECSManager)...)
 	}
 
 	return enemySquads

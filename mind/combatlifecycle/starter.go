@@ -24,7 +24,7 @@ func ExecuteCombatStart(
 	}
 	return &combat.CombatStartResult{
 		PlayerFactionID: setup.PlayerFactionID,
-		EnemyFactionID:  setup.EnemyFactionID,
+		AllFactionIDs:   setup.AllFactionIDs,
 		EnemySquadIDs:   setup.EnemySquadIDs,
 	}, nil
 }

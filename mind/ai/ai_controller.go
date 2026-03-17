@@ -198,6 +198,7 @@ type ActionContext struct {
 	// Systems access
 	Manager        *common.EntityManager
 	MovementSystem *combat.CombatMovementSystem // For validating movement tiles
+	CombatCache    *combat.CombatQueryCache     // For faction relation queries
 	AIController   *AIController                // Reference to AI controller for attack queueing
 
 	// Cached squad info
@@ -222,6 +223,7 @@ func NewActionContext(
 		ThreatEval:     evaluator,
 		Manager:        aic.entityManager,
 		MovementSystem: aic.movementSystem, // For validating movement tiles
+		CombatCache:    aic.combatCache,    // For faction relation queries
 		AIController:   aic,                // Pass reference for attack queueing
 		SquadRole:      squads.GetSquadPrimaryRole(squadID, aic.entityManager),
 	}

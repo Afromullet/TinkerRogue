@@ -12,6 +12,9 @@ type CombatQueryCache struct {
 	// ECS Views (automatically maintained by ECS library)
 	ActionStateView *ecs.View // All ActionStateTag entities
 	FactionView     *ecs.View // All FactionTag entities
+
+	// Faction relationship resolver (defaults to free-for-all)
+	FactionRelations FactionRelationResolver
 }
 
 // NewCombatQueryCache creates a cache with new ECS Views
@@ -19,8 +22,9 @@ func NewCombatQueryCache(manager *common.EntityManager) *CombatQueryCache {
 	return &CombatQueryCache{
 		// Create Views - one-time O(n) cost per View
 		// Views are automatically maintained when components are added/removed
-		ActionStateView: manager.World.CreateView(ActionStateTag),
-		FactionView:     manager.World.CreateView(FactionTag),
+		ActionStateView:  manager.World.CreateView(ActionStateTag),
+		FactionView:      manager.World.CreateView(FactionTag),
+		FactionRelations: &FreeForAllRelations{},
 	}
 }
 

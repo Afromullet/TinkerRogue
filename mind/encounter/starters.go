@@ -58,7 +58,7 @@ func (s *OverworldCombatStarter) Prepare(manager *common.EntityManager) (*combat
 
 	// Spawn enemies using balanced encounter system
 	fmt.Println("Starting combat encounter - spawning entities")
-	enemySquadIDs, playerFactionID, enemyFactionID, err := SpawnCombatEntities(manager, s.RosterOwnerID, s.PlayerPos, encounterData, s.EncounterID)
+	enemySquadIDs, playerFactionID, allFactionIDs, err := SpawnCombatEntities(manager, s.RosterOwnerID, s.PlayerPos, encounterData, s.EncounterID)
 	if err != nil {
 		// Rollback sprite hiding on spawn failure
 		if renderable != nil {
@@ -70,7 +70,7 @@ func (s *OverworldCombatStarter) Prepare(manager *common.EntityManager) (*combat
 
 	return &combat.CombatSetup{
 		PlayerFactionID: playerFactionID,
-		EnemyFactionID:  enemyFactionID,
+		AllFactionIDs:   allFactionIDs,
 		EnemySquadIDs:   enemySquadIDs,
 		CombatPosition:  s.PlayerPos,
 		EncounterID:     s.EncounterID,
@@ -88,6 +88,78 @@ func (s *OverworldCombatStarter) Rollback() {
 		s.hiddenRenderable = nil
 		fmt.Println("Rollback: Restoring overworld encounter sprite after transition failure")
 	}
+}
+
+// MultiFactionCombatStarter prepares encounters with multiple AI factions.
+// Used by the debug menu to test N-faction combat.
+type MultiFactionCombatStarter struct {
+	EncounterID   ecs.EntityID
+	PlayerPos     coords.LogicalPosition
+	RosterOwnerID ecs.EntityID
+	FactionCount  int // Number of AI factions (e.g., 2 = player + 2 AI = 3 total)
+}
+
+func (s *MultiFactionCombatStarter) Prepare(manager *common.EntityManager) (*combat.CombatSetup, error) {
+	if s.EncounterID == 0 {
+		return nil, fmt.Errorf("invalid encounter ID: 0")
+	}
+
+	encounterEntity := manager.FindEntityByID(s.EncounterID)
+	if encounterEntity == nil {
+		return nil, fmt.Errorf("encounter entity %d not found", s.EncounterID)
+	}
+	encounterData := common.GetComponentType[*core.OverworldEncounterData](encounterEntity, core.OverworldEncounterComponent)
+	if encounterData == nil {
+		return nil, fmt.Errorf("encounter %d missing OverworldEncounterData", s.EncounterID)
+	}
+
+	fmt.Printf("MultiFactionCombatStarter: Preparing %d-faction encounter\n", s.FactionCount+1)
+
+	// Generate multi-faction spec
+	spec, err := GenerateMultiFactionEncounterSpec(manager, s.RosterOwnerID, s.PlayerPos, encounterData, s.FactionCount)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate multi-faction spec: %w", err)
+	}
+
+	// Create factions with encounter tracking
+	cache := combat.NewCombatQueryCache(manager)
+	fm := combat.NewCombatFactionManager(manager, cache)
+	playerFactionID := fm.CreateFactionWithPlayer("Player Forces", 1, "Player 1", s.EncounterID)
+
+	allFactionIDs := []ecs.EntityID{playerFactionID}
+	createdEnemySquadIDs := []ecs.EntityID{}
+
+	// Add player squads
+	if err := assignPlayerSquadsToFaction(fm, s.RosterOwnerID, manager, playerFactionID, s.PlayerPos); err != nil {
+		return nil, fmt.Errorf("failed to assign player squads: %w", err)
+	}
+
+	// Create each AI faction and add squads
+	for _, factionSpec := range spec.Factions {
+		factionID := fm.CreateFactionWithPlayer(factionSpec.Name, factionSpec.PlayerID, "", s.EncounterID)
+		allFactionIDs = append(allFactionIDs, factionID)
+
+		for i, squadSpec := range factionSpec.Squads {
+			if err := fm.AddSquadToFaction(factionID, squadSpec.SquadID, squadSpec.Position); err != nil {
+				return nil, fmt.Errorf("failed to add enemy squad %d to faction: %w", i, err)
+			}
+			combat.CreateActionStateForSquad(manager, squadSpec.SquadID)
+			createdEnemySquadIDs = append(createdEnemySquadIDs, squadSpec.SquadID)
+		}
+	}
+
+	fmt.Printf("Created multi-faction encounter: Player + %d AI factions with %d total enemy squads\n",
+		len(spec.Factions), len(createdEnemySquadIDs))
+
+	return &combat.CombatSetup{
+		PlayerFactionID: playerFactionID,
+		AllFactionIDs:   allFactionIDs,
+		EnemySquadIDs:   createdEnemySquadIDs,
+		CombatPosition:  s.PlayerPos,
+		EncounterID:     s.EncounterID,
+		ThreatName:      "Multi-Faction Battle",
+		RosterOwnerID:   s.RosterOwnerID,
+	}, nil
 }
 
 // GarrisonDefenseStarter prepares garrison defense encounters.
@@ -189,7 +261,7 @@ func (s *GarrisonDefenseStarter) Prepare(manager *common.EntityManager) (*combat
 
 	return &combat.CombatSetup{
 		PlayerFactionID:   playerFactionID,
-		EnemyFactionID:    enemyFactionID,
+		AllFactionIDs:     []ecs.EntityID{playerFactionID, enemyFactionID},
 		EnemySquadIDs:     enemySquadIDs,
 		CombatPosition:    *nodePos,
 		EncounterID:       s.EncounterID,

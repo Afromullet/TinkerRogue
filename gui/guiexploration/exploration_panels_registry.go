@@ -104,6 +104,10 @@ func init() {
 						em.ModeManager.RequestTransition(raidMode, "Debug: Start Raid")
 					}
 				}},
+				{Text: "Multi-Faction Battle", OnClick: func() {
+					em.subMenus.CloseAll()
+					em.startMultiFactionBattle()
+				}},
 			})
 			return nil
 		},

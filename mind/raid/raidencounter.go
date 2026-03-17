@@ -36,12 +36,12 @@ func SetupRaidFactions(
 	garrisonSquadIDs []ecs.EntityID,
 	playerDeployedIDs []ecs.EntityID,
 	combatPos coords.LogicalPosition,
-) (playerFactionID, enemyFactionID ecs.EntityID, err error) {
+) (playerFactionID ecs.EntityID, allFactionIDs []ecs.EntityID, err error) {
 	if len(playerDeployedIDs) == 0 {
-		return 0, 0, fmt.Errorf("no player squads deployed")
+		return 0, nil, fmt.Errorf("no player squads deployed")
 	}
 	if len(garrisonSquadIDs) == 0 {
-		return 0, 0, fmt.Errorf("no garrison squads in room")
+		return 0, nil, fmt.Errorf("no garrison squads in room")
 	}
 
 	// Create combat query cache and faction manager
@@ -52,7 +52,8 @@ func SetupRaidFactions(
 	playerFactionID = fm.CreateFactionWithPlayer("Raid Attackers", 1, "Player 1", encounterID)
 
 	// Create enemy garrison faction
-	enemyFactionID = fm.CreateFactionWithPlayer("Garrison Defenders", 0, "", encounterID)
+	enemyFactionID := fm.CreateFactionWithPlayer("Garrison Defenders", 0, "", encounterID)
+	allFactionIDs = []ecs.EntityID{playerFactionID, enemyFactionID}
 
 	// Position and add player squads
 	for i, squadID := range playerDeployedIDs {
@@ -62,7 +63,7 @@ func SetupRaidFactions(
 		}
 
 		if err := fm.AddSquadToFaction(playerFactionID, squadID, pos); err != nil {
-			return 0, 0, fmt.Errorf("failed to add player squad %d: %w", squadID, err)
+			return 0, nil, fmt.Errorf("failed to add player squad %d: %w", squadID, err)
 		}
 		encounter.EnsureUnitPositions(manager, squadID, pos)
 		combat.CreateActionStateForSquad(manager, squadID)
@@ -82,7 +83,7 @@ func SetupRaidFactions(
 		}
 
 		if err := fm.AddSquadToFaction(enemyFactionID, squadID, pos); err != nil {
-			return 0, 0, fmt.Errorf("failed to add garrison squad %d: %w", squadID, err)
+			return 0, nil, fmt.Errorf("failed to add garrison squad %d: %w", squadID, err)
 		}
 		encounter.EnsureUnitPositions(manager, squadID, pos)
 		combat.CreateActionStateForSquad(manager, squadID)
@@ -92,5 +93,5 @@ func SetupRaidFactions(
 	fmt.Printf("SetupRaidFactions: %d player squads vs %d garrison squads at (%d,%d)\n",
 		len(playerDeployedIDs), len(garrisonSquadIDs), combatPos.X, combatPos.Y)
 
-	return playerFactionID, enemyFactionID, nil
+	return playerFactionID, allFactionIDs, nil
 }

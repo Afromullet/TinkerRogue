@@ -126,7 +126,7 @@ func SetupRoguelikeMode(g *Game) {
 	}
 
 	tacticalManager := coordinator.GetTacticalManager()
-	raidMode := gamesetup.RegisterRoguelikeTacticalModes(coordinator, tacticalManager, encounterService)
+	raidMode := gamesetup.RegisterRoguelikeTacticalModes(coordinator, tacticalManager, encounterService, &g.em)
 
 	// Create raid runner and inject into raid mode
 	raidRunner := raid.NewRaidRunner(&g.em, encounterService)
@@ -179,7 +179,7 @@ func SetupRoguelikeFromSave(g *Game) error {
 	}
 
 	tacticalManager := coordinator.GetTacticalManager()
-	raidMode := gamesetup.RegisterRoguelikeTacticalModes(coordinator, tacticalManager, encounterService)
+	raidMode := gamesetup.RegisterRoguelikeTacticalModes(coordinator, tacticalManager, encounterService, &g.em)
 
 	raidRunner := raid.NewRaidRunner(&g.em, encounterService)
 	raidMode.SetRaidRunner(raidRunner)

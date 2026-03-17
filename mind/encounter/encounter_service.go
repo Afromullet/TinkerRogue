@@ -302,7 +302,7 @@ func (es *EncounterService) TransitionToCombat(setup *combat.CombatSetup) error 
 		RosterOwnerID:          setup.RosterOwnerID,
 		PlayerEntityID:         playerEntityID,
 		PlayerFactionID:        setup.PlayerFactionID,
-		EnemyFactionID:         setup.EnemyFactionID,
+		AllFactionIDs:          setup.AllFactionIDs,
 		IsGarrisonDefense:      setup.IsGarrisonDefense,
 		DefendedNodeID:         setup.DefendedNodeID,
 		IsRaidCombat:           setup.IsRaidCombat,

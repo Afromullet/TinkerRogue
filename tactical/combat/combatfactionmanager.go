@@ -2,15 +2,30 @@ package combat
 
 import (
 	"fmt"
+	"image/color"
+
 	"game_main/common"
 	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"
 )
 
+// factionColorPalette provides distinct colors for factions.
+// Index 0 = player (blue), then enemy factions get red, green, yellow, purple, etc.
+var factionColorPalette = []color.RGBA{
+	{R: 100, G: 149, B: 237, A: 255}, // Cornflower blue (player)
+	{R: 220, G: 50, B: 50, A: 255},   // Red (enemy 1)
+	{R: 50, G: 180, B: 50, A: 255},   // Green (enemy 2)
+	{R: 230, G: 200, B: 50, A: 255},  // Yellow (enemy 3)
+	{R: 160, G: 50, B: 200, A: 255},  // Purple (enemy 4)
+	{R: 255, G: 140, B: 0, A: 255},   // Orange (enemy 5)
+	{R: 0, G: 200, B: 200, A: 255},   // Cyan (enemy 6)
+}
+
 type CombatFactionManager struct {
-	manager     *common.EntityManager
-	combatCache *CombatQueryCache
+	manager       *common.EntityManager
+	combatCache   *CombatQueryCache
+	factionCount  int // Tracks how many factions created (for color assignment)
 }
 
 func NewCombatFactionManager(manager *common.EntityManager, cache *CombatQueryCache) *CombatFactionManager {
@@ -37,6 +52,10 @@ func (fm *CombatFactionManager) CreateFactionWithPlayer(name string, playerID in
 
 	isPlayerControlled := playerID > 0 // Derive from PlayerID
 
+	// Assign color from palette based on creation order
+	colorIdx := fm.factionCount % len(factionColorPalette)
+	fm.factionCount++
+
 	faction.AddComponent(CombatFactionComponent, &FactionData{
 		FactionID:          factionID,
 		Name:               name,
@@ -46,6 +65,7 @@ func (fm *CombatFactionManager) CreateFactionWithPlayer(name string, playerID in
 		PlayerID:           playerID,
 		PlayerName:         playerName,
 		EncounterID:        encounterID,
+		Color:              factionColorPalette[colorIdx],
 	})
 
 	return factionID

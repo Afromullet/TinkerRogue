@@ -293,8 +293,8 @@ func (cas *CombatActionSystem) canSquadAttackWithReason(squadID, targetID ecs.En
 		return "One or both squads have no faction", false
 	}
 
-	if attackerFaction == defenderFaction {
-		return "Cannot attack your own faction", false
+	if !AreFactionsHostile(attackerFaction, defenderFaction, cas.combatCache) {
+		return "Cannot attack non-hostile faction", false
 	}
 
 	// Calculate distance

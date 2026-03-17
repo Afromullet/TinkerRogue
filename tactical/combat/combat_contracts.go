@@ -19,7 +19,7 @@ type CombatStarter interface {
 // Contains everything ExecuteCombatStart() needs to do the mode transition.
 type CombatSetup struct {
 	PlayerFactionID ecs.EntityID
-	EnemyFactionID  ecs.EntityID
+	AllFactionIDs   []ecs.EntityID // All factions in combat (player + enemies)
 	EnemySquadIDs   []ecs.EntityID
 	CombatPosition  coords.LogicalPosition
 
@@ -51,7 +51,7 @@ type CombatStartRollback interface {
 // CombatStartResult is the output from ExecuteCombatStart.
 type CombatStartResult struct {
 	PlayerFactionID ecs.EntityID
-	EnemyFactionID  ecs.EntityID
+	AllFactionIDs   []ecs.EntityID // All factions in combat (player + enemies)
 	EnemySquadIDs   []ecs.EntityID
 }
 

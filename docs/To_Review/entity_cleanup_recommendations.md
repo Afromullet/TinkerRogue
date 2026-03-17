@@ -1,6 +1,6 @@
 # Entity Cleanup Audit & Recommendations
 
-**Date:** 2026-03-12
+**Date:** 2026-03-15 (updated), originally 2026-03-12
 **Scope:** All ECS entity types in TinkerRogue, reviewed against `ENTITY_REFERENCE.md`
 
 ---
@@ -26,9 +26,9 @@ The bytearena/ecs library provides `World.DisposeEntities(entity)` to remove an 
 | Squad Entity | Yes | `CleanDisposeEntity` via `DisposeSquadAndUnits` | `squads/squadcreation.go:473` |
 | Unit Entity | Yes | `CleanDisposeEntity` via `DisposeDeadUnitsInSquad` / `disposeEnemyUnits` | `squads/squadcreation.go:451`, `combatservices/combat_service.go:420` |
 | Overworld Node | Yes | `DestroyNode` → `CleanDisposeEntity` | `overworld/node/system.go:108` |
-| Combat Faction | No | `disposeEntitiesByTag` → `World.DisposeEntities` | `combatservices/combat_service.go:399` |
-| Turn State | No | `disposeEntitiesByTag` → `World.DisposeEntities` | `combatservices/combat_service.go:399` |
-| Action State | No | `disposeEntitiesByTag` → `World.DisposeEntities` | `combatservices/combat_service.go:399` |
+| Combat Faction | No | `disposeEntitiesByTag` → `World.DisposeEntities` | `combatservices/combat_service.go:403` |
+| Turn State | No | `disposeEntitiesByTag` → `World.DisposeEntities` | `combatservices/combat_service.go:403` |
+| Action State | No | `disposeEntitiesByTag` → `World.DisposeEntities` | `combatservices/combat_service.go:403` |
 
 ### Game-Session Singletons (No Cleanup Needed)
 
@@ -52,7 +52,45 @@ These live for the entire game session and are never disposed — this is correc
 
 ## Missing Cleanup (Bugs)
 
-### Priority 1: Encounter Entity Leak
+### Priority 1: Save/Load Entity Duplication
+
+**Severity:** High
+**Impact:** Loading a save mid-game duplicates every entity in the ECS world. All previously existing entities (squads, units, commanders, player, raid entities, overworld nodes) remain as orphans alongside the freshly loaded copies.
+
+**Creation sites (on load):**
+- `savesystem/chunks/squad_chunk.go:268` — Squad entities
+- `savesystem/chunks/squad_chunk.go:301` — SquadMember (unit) entities
+- `savesystem/chunks/player_chunk.go:140` — Player entity
+- `savesystem/chunks/commander_chunk.go:136` — Commander entities
+- `savesystem/chunks/raid_chunk.go:203-272` — RaidState, FloorState, RoomData, AlertData, GarrisonSquad, Deployment entities
+
+**Current behavior:** Each load chunk calls `World.NewEntity()` and rebuilds entities from saved data. There is **no dispose-all or world-reset step** before loading. If a player loads a save during an active game, the old entities persist alongside the new ones.
+
+**Entities with positions are especially dangerous:** Squads, units, commanders, and overworld nodes registered in `GlobalPositionSystem` would have duplicate entries at the same positions, causing incorrect spatial queries.
+
+**Recommended fix:**
+Add a `ResetWorld` function that disposes all game entities before loading. This should:
+
+1. Query and dispose all entities by their tags (squads, units, nodes, factions, raid entities, combat entities, etc.)
+2. Clear `GlobalPositionSystem`
+3. Then proceed with the normal load flow
+
+```go
+// ResetWorld disposes all game entities before loading a save.
+// Call this at the start of the load process, before any chunk restoration.
+func ResetWorld(manager *common.EntityManager) {
+    // Dispose all positioned entities via CleanDisposeEntity
+    // Dispose all non-positioned entities via World.DisposeEntities
+    // Clear GlobalPositionSystem
+    common.GlobalPositionSystem.Clear() // or equivalent
+}
+```
+
+**Consideration:** Verify whether the game currently only loads saves at startup (before any entities exist). If so, this is a latent bug that becomes real only when mid-game loading is implemented. Either way, the cleanup should exist as a safety net.
+
+---
+
+### Priority 2: Encounter Entity Leak
 
 **Severity:** Medium
 **Impact:** One entity leaked per combat encounter. Accumulates over a game session.
@@ -76,7 +114,7 @@ if encounterEntity != nil {
 
 ---
 
-### Priority 2: Raid Infrastructure Entity Leaks
+### Priority 3: Raid Infrastructure Entity Leaks
 
 **Severity:** Medium (collectively high — many entities per raid)
 **Impact:** Each raid creates: 1 RaidState + N FloorStates + N AlertDatas + many RoomDatas + 1 Deployment. None are disposed when the raid ends.
@@ -185,7 +223,7 @@ func disposeRaidEntities(manager *common.EntityManager, raidEntityID ecs.EntityI
 
 ---
 
-### Priority 3: Garrison Squad Edge Case
+### Priority 4: Garrison Squad Edge Case
 
 **Severity:** Medium
 **Impact:** Garrison squads that survive combat (returned to nodes via `returnGarrisonSquadsToNode`) may not be cleaned when the node is eventually destroyed.
@@ -203,7 +241,7 @@ In `DestroyNode` (or a wrapper), also dispose any garrison squads associated wit
 
 ---
 
-### Priority 4: Creature Entity (Standalone)
+### Priority 5: Creature Entity (Standalone)
 
 **Severity:** Low
 **Impact:** Standalone creatures (not in squads) have no disposal path. Currently unused or rare.
@@ -214,10 +252,10 @@ In `DestroyNode` (or a wrapper), also dispose any garrison squads associated wit
 
 ## Code Smell: `disposeEntitiesByTag` Safety
 
-**Location:** `combatservices/combat_service.go:399-407`
+**Location:** `combatservices/combat_service.go:403-410`
 
 ```go
-func (cs *CombatService) disposeEntitiesByTag(tag ecs.Tag) {
+func (cs *CombatService) disposeEntitiesByTag(tag ecs.Tag, name string) {
     for _, result := range cs.Manager.World.Query(tag) {
         cs.Manager.World.DisposeEntities(result.Entity)
     }
@@ -228,7 +266,7 @@ func (cs *CombatService) disposeEntitiesByTag(tag ecs.Tag) {
 
 **Recommended fix (defensive):**
 ```go
-func (cs *CombatService) disposeEntitiesByTag(tag ecs.Tag) {
+func (cs *CombatService) disposeEntitiesByTag(tag ecs.Tag, name string) {
     for _, result := range cs.Manager.World.Query(tag) {
         pos := common.GetComponentType[*coords.LogicalPosition](result.Entity, common.PositionComponent)
         if pos != nil {
@@ -246,12 +284,13 @@ func (cs *CombatService) disposeEntitiesByTag(tag ecs.Tag) {
 
 ## Implementation Order
 
-1. **Raid cleanup function** (Priority 2) — Highest entity count per incident. Create `disposeRaidEntities` and call from `finishRaid`.
-2. **Encounter disposal** (Priority 1) — Simple fix in `ExitCombat`. Verify no post-combat queries first.
-3. **Garrison squad node cleanup** (Priority 3) — Investigate `NodeData` structure, then implement.
-4. **`disposeEntitiesByTag` safety** (Code smell) — Defensive, low risk either way.
-5. **Commander/Faction orphans** (Conditional) — Only if these entities can actually be destroyed in gameplay.
-6. **Creature disposal** (Priority 4) — Only if standalone creatures are implemented.
+1. **Save/Load world reset** (Priority 1) — Prevents full entity duplication on load. Create `ResetWorld` and call before any chunk restoration.
+2. **Raid cleanup function** (Priority 3) — Highest entity count per incident. Create `disposeRaidEntities` and call from `finishRaid`.
+3. **Encounter disposal** (Priority 2) — Simple fix in `ExitCombat`. Verify no post-combat queries first.
+4. **Garrison squad node cleanup** (Priority 4) — Investigate `NodeData` structure, then implement.
+5. **`disposeEntitiesByTag` safety** (Code smell) — Defensive, low risk either way.
+6. **Commander/Faction orphans** (Conditional) — Only if these entities can actually be destroyed in gameplay.
+7. **Creature disposal** (Priority 5) — Only if standalone creatures are implemented.
 
 ---
 
@@ -259,6 +298,8 @@ func (cs *CombatService) disposeEntitiesByTag(tag ecs.Tag) {
 
 After implementing fixes:
 - [ ] Run `go test ./...` — all tests pass
+- [ ] Load a save mid-game and verify no duplicate entities exist (especially positioned entities)
+- [ ] Load a save, then load another save — verify no accumulation of orphan entities
 - [ ] Play through a full raid (multiple floors) and verify no orphan entities remain
 - [ ] Trigger 3+ overworld encounters and verify encounter entities are disposed
 - [ ] Check that garrison squads surviving combat don't leak when nodes are destroyed

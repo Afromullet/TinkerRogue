@@ -21,7 +21,7 @@ import (
 func RegisterTacticalModes(coordinator *framework.GameModeCoordinator, manager *framework.UIModeManager, encounterService *encounter.EncounterService) {
 
 	modes := []framework.UIMode{
-		guiexploration.NewExplorationMode(manager),
+		guiexploration.NewExplorationMode(manager, nil),
 		guicombat.NewCombatMode(manager, encounterService),
 		guicombat.NewCombatAnimationMode(manager),
 		guisquads.NewSquadDeploymentMode(manager),
@@ -61,15 +61,19 @@ func RegisterOverworldModes(coordinator *framework.GameModeCoordinator, manager 
 // Squad modes are registered first so ExplorationMode.Initialize() detects squad_editor
 // in the tactical manager and shows only the "Squad" button (no overworld button).
 // Returns the RaidMode reference for RaidRunner injection.
-func RegisterRoguelikeTacticalModes(coordinator *framework.GameModeCoordinator, manager *framework.UIModeManager, encounterService *encounter.EncounterService) *guiraid.RaidMode {
+func RegisterRoguelikeTacticalModes(coordinator *framework.GameModeCoordinator, manager *framework.UIModeManager, encounterService *encounter.EncounterService, ecsManager *common.EntityManager) *guiraid.RaidMode {
 	raidMode := guiraid.NewRaidMode(manager)
+
+	startCombat := func(starter combat.CombatStarter) (*combat.CombatStartResult, error) {
+		return combatlifecycle.ExecuteCombatStart(encounterService, ecsManager, starter)
+	}
 
 	modes := []framework.UIMode{
 		guisquads.NewSquadEditorMode(manager),
 		guisquads.NewUnitPurchaseMode(manager),
 		guisquads.NewArtifactMode(manager),
 		guiunitview.NewUnitViewMode(manager),
-		guiexploration.NewExplorationMode(manager),
+		guiexploration.NewExplorationMode(manager, startCombat),
 		guicombat.NewCombatMode(manager, encounterService),
 		guicombat.NewCombatAnimationMode(manager),
 		guisquads.NewSquadDeploymentMode(manager),
