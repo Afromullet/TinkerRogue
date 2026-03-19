@@ -47,28 +47,28 @@ func SetupRaidFactions(
 	var fm *combat.CombatFactionManager
 	fm, playerFactionID, enemyFactionID = combatlifecycle.CreateFactionPair(manager, "Raid Attackers", "Garrison Defenders", encounterID)
 
-	// Position and add player squads
-	for i, squadID := range playerDeployedIDs {
-		pos := coords.LogicalPosition{
+	// Pre-compute player squad positions
+	playerPositions := make([]coords.LogicalPosition, len(playerDeployedIDs))
+	for i := range playerDeployedIDs {
+		playerPositions[i] = coords.LogicalPosition{
 			X: combatPos.X + playerOffsetX + (i * squadSpreadX),
 			Y: combatPos.Y + playerOffsetY,
 		}
-
-		if err := combatlifecycle.EnrollSquadInFaction(fm, manager, playerFactionID, squadID, pos, true); err != nil {
-			return 0, 0, fmt.Errorf("failed to add player squad %d: %w", squadID, err)
-		}
+	}
+	if err := combatlifecycle.EnrollSquadsAtPositions(fm, manager, playerFactionID, playerDeployedIDs, playerPositions, true); err != nil {
+		return 0, 0, fmt.Errorf("failed to add player squads: %w", err)
 	}
 
-	// Position and add garrison squads (defenders)
-	for i, squadID := range garrisonSquadIDs {
-		pos := coords.LogicalPosition{
+	// Pre-compute garrison squad positions
+	garrisonPositions := make([]coords.LogicalPosition, len(garrisonSquadIDs))
+	for i := range garrisonSquadIDs {
+		garrisonPositions[i] = coords.LogicalPosition{
 			X: combatPos.X + enemyOffsetX + (i * squadSpreadX),
 			Y: combatPos.Y + enemyOffsetY,
 		}
-
-		if err := combatlifecycle.EnrollSquadInFaction(fm, manager, enemyFactionID, squadID, pos, false); err != nil {
-			return 0, 0, fmt.Errorf("failed to add garrison squad %d: %w", squadID, err)
-		}
+	}
+	if err := combatlifecycle.EnrollSquadsAtPositions(fm, manager, enemyFactionID, garrisonSquadIDs, garrisonPositions, false); err != nil {
+		return 0, 0, fmt.Errorf("failed to add garrison squads: %w", err)
 	}
 
 	return playerFactionID, enemyFactionID, nil

@@ -43,8 +43,14 @@ func (s *OverworldCombatStarter) Prepare(manager *common.EntityManager) (*combat
 		s.hiddenRenderable = renderable
 	}
 
-	// Spawn enemies using balanced encounter system
-	spawnResult, err := SpawnCombatEntities(manager, s.RosterOwnerID, s.PlayerPos, encounterData, s.EncounterID)
+	// Check if the threat node has an NPC garrison; if so, use garrison squads directly
+	var spawnResult *SpawnResult
+	garrisonData := getGarrisonForEncounter(manager, encounterData)
+	if garrisonData != nil {
+		spawnResult, err = spawnGarrisonEncounter(manager, s.RosterOwnerID, s.PlayerPos, garrisonData, s.EncounterID)
+	} else {
+		spawnResult, err = SpawnCombatEntities(manager, s.RosterOwnerID, s.PlayerPos, encounterData, s.EncounterID)
+	}
 	if err != nil {
 		// Rollback sprite hiding on spawn failure
 		if renderable != nil {

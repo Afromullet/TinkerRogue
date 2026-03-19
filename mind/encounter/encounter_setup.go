@@ -19,14 +19,25 @@ import (
 
 // Note: EnemySquadSpec is defined in types.go and used for all enemy squad generation
 
+// getGarrisonForEncounter returns garrison data if this encounter targets a garrisoned node.
+// Returns nil if there's no garrison or no threat node.
+func getGarrisonForEncounter(manager *common.EntityManager, encounterData *core.OverworldEncounterData) *core.GarrisonData {
+	if encounterData.ThreatNodeID == 0 {
+		return nil
+	}
+	garrisonData := garrison.GetGarrisonAtNode(manager, encounterData.ThreatNodeID)
+	if garrisonData == nil || len(garrisonData.SquadIDs) == 0 {
+		return nil
+	}
+	return garrisonData
+}
+
 // SpawnCombatEntities creates player and enemy factions with power-based squad generation.
 // Returns a list of enemy squad IDs created for this encounter.
 //
-// If the threat node has an NPC garrison, garrison squads are used as enemies
-// instead of generating enemies from power budget.
-//
 // This function delegates to GenerateEncounterSpec for the core generation logic,
-// then sets up combat factions and action states.
+// then sets up combat factions and action states. For garrison encounters, the caller
+// should check getGarrisonForEncounter and call spawnGarrisonEncounter directly.
 func SpawnCombatEntities(
 	manager *common.EntityManager,
 	rosterOwnerID ecs.EntityID,
@@ -34,15 +45,7 @@ func SpawnCombatEntities(
 	encounterData *core.OverworldEncounterData,
 	encounterID ecs.EntityID,
 ) (*SpawnResult, error) {
-	// Check if the threat node has an NPC garrison
-	if encounterData.ThreatNodeID != 0 {
-		garrisonData := garrison.GetGarrisonAtNode(manager, encounterData.ThreatNodeID)
-		if garrisonData != nil && len(garrisonData.SquadIDs) > 0 {
-			return spawnGarrisonEncounter(manager, rosterOwnerID, playerStartPos, garrisonData, encounterID)
-		}
-	}
-
-	// Standard path: Generate encounter from power budget
+	// Generate encounter from power budget
 	// 1. Generate encounter specification (handles validation, power calculation, squad creation)
 	spec, err := GenerateEncounterSpec(manager, rosterOwnerID, playerStartPos, encounterData)
 	if err != nil {
@@ -151,16 +154,7 @@ func assignPlayerSquadsToFaction(
 	// Position player squads around starting position
 	squadPositions := generatePlayerSquadPositions(playerStartPos, len(deployedSquads))
 
-	// Add each deployed squad to faction
-	for i, squadID := range deployedSquads {
-		pos := squadPositions[i]
-
-		if err := combatlifecycle.EnrollSquadInFaction(fm, manager, factionID, squadID, pos, false); err != nil {
-			return fmt.Errorf("failed to add squad %d to faction: %w", squadID, err)
-		}
-	}
-
-	return nil
+	return combatlifecycle.EnrollSquadsAtPositions(fm, manager, factionID, deployedSquads, squadPositions, false)
 }
 
 // generatePositionsAroundPoint creates positions distributed around a center point.
