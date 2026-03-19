@@ -43,12 +43,9 @@ func SetupRaidFactions(
 		return 0, 0, fmt.Errorf("no garrison squads in room")
 	}
 
-	// Create combat query cache and faction manager
-	cache := combat.NewCombatQueryCache(manager)
-	fm := combat.NewCombatFactionManager(manager, cache)
-
 	// Create factions (player attacks, garrison defends)
-	playerFactionID, enemyFactionID = fm.CreateStandardFactions("Raid Attackers", "Garrison Defenders", encounterID)
+	var fm *combat.CombatFactionManager
+	fm, playerFactionID, enemyFactionID = combatlifecycle.CreateFactionPair(manager, "Raid Attackers", "Garrison Defenders", encounterID)
 
 	// Position and add player squads
 	for i, squadID := range playerDeployedIDs {

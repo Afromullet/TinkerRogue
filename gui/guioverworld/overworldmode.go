@@ -29,7 +29,7 @@ type OverworldMode struct {
 
 	// Services
 	encounterService *encounter.EncounterService
-	startCombat      func(starter combat.CombatStarter) (*combat.CombatStartResult, error)
+	startCombat      func(starter combat.CombatStarter) error
 
 	// Handlers
 	actionHandler *OverworldActionHandler
@@ -56,7 +56,7 @@ type OverworldMode struct {
 	initialized bool
 }
 
-func NewOverworldMode(modeManager *framework.UIModeManager, encounterService *encounter.EncounterService, startCombat func(starter combat.CombatStarter) (*combat.CombatStartResult, error)) *OverworldMode {
+func NewOverworldMode(modeManager *framework.UIModeManager, encounterService *encounter.EncounterService, startCombat func(starter combat.CombatStarter) error) *OverworldMode {
 	om := &OverworldMode{
 		encounterService: encounterService,
 		startCombat:      startCombat,

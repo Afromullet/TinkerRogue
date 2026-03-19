@@ -20,7 +20,7 @@ type OverworldModeDeps struct {
 	ModeManager       *framework.UIModeManager
 	ModeCoordinator   *framework.GameModeCoordinator
 	CommanderMovement *commander.CommanderMovementSystem
-	StartCombat       func(starter combat.CombatStarter) (*combat.CombatStartResult, error)
+	StartCombat       func(starter combat.CombatStarter) error
 	LogEvent          func(string) // callback to append to event log
 	RefreshPanels     func()       // callback to trigger panel refresh
 }

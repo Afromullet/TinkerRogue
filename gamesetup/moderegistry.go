@@ -37,7 +37,7 @@ func RegisterTacticalModes(coordinator *framework.GameModeCoordinator, manager *
 // RegisterOverworldModes registers all overworld UI modes with the coordinator.
 // This reduces boilerplate by iterating over a slice of mode constructors.
 func RegisterOverworldModes(coordinator *framework.GameModeCoordinator, manager *framework.UIModeManager, encounterService *encounter.EncounterService, ecsManager *common.EntityManager) {
-	startCombat := func(starter combat.CombatStarter) (*combat.CombatStartResult, error) {
+	startCombat := func(starter combat.CombatStarter) error {
 		return combatlifecycle.ExecuteCombatStart(encounterService, ecsManager, starter)
 	}
 

@@ -3,6 +3,7 @@ package encounter
 import (
 	"fmt"
 	"game_main/common"
+	"game_main/mind/combatlifecycle"
 	"game_main/mind/evaluation"
 	"game_main/overworld/core"
 	"game_main/tactical/squads"
@@ -58,15 +59,11 @@ func GenerateEncounterSpec(
 		level = encounterData.Level
 	}
 	difficultyMod := getDifficultyModifier(level)
-	targetEnemySquadPower := avgPlayerSquadPower * difficultyMod.PowerMultiplier
+	targetEnemySquadPower := combatlifecycle.ClampPowerTarget(avgPlayerSquadPower*difficultyMod.PowerMultiplier, difficultyMod)
 
-	// Handle edge cases using difficulty-specific power bounds
+	// If no player power data, use single squad
 	if avgPlayerSquadPower <= 0.0 {
-		targetEnemySquadPower = difficultyMod.MinTargetPower
 		difficultyMod.SquadCount = 1
-	}
-	if targetEnemySquadPower > difficultyMod.MaxTargetPower {
-		targetEnemySquadPower = difficultyMod.MaxTargetPower
 	}
 
 	// Generate enemy squad specifications using shared function

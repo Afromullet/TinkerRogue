@@ -57,8 +57,14 @@ type CombatSetup struct {
 
 	Type                 CombatType
 	DefendedNodeID       ecs.EntityID
-	PostCombatReturnMode string // "" = default, "raid" = return to raid mode
+	PostCombatReturnMode string // "" = default, PostCombatReturnRaid = return to raid mode
 }
+
+// PostCombatReturnMode constants for compile-time safety.
+const (
+	PostCombatReturnDefault = ""     // Return to default mode (exploration/overworld)
+	PostCombatReturnRaid    = "raid" // Return to raid mode
+)
 
 // CombatTransitioner abstracts EncounterService for the pipeline.
 // EncounterService satisfies this via Go structural typing (no explicit implements).
@@ -72,13 +78,6 @@ type CombatTransitioner interface {
 // Starters that don't need rollback simply don't implement this.
 type CombatStartRollback interface {
 	Rollback()
-}
-
-// CombatStartResult is the output from ExecuteCombatStart.
-type CombatStartResult struct {
-	PlayerFactionID ecs.EntityID
-	EnemyFactionID  ecs.EntityID
-	EnemySquadIDs   []ecs.EntityID
 }
 
 // CombatExitReason describes why combat ended.

@@ -1,6 +1,8 @@
 package combatlifecycle
 
 import (
+	"fmt"
+
 	"game_main/common"
 	"game_main/tactical/combat"
 	"game_main/tactical/squads"
@@ -38,6 +40,40 @@ func EnrollSquadInFaction(
 		}
 	}
 
+	return nil
+}
+
+// CreateFactionPair creates a CombatQueryCache, CombatFactionManager, and two standard factions.
+// This 3-line sequence is used by all combat setup paths (overworld, garrison, raid).
+func CreateFactionPair(
+	manager *common.EntityManager,
+	playerName, enemyName string,
+	encounterID ecs.EntityID,
+) (*combat.CombatFactionManager, ecs.EntityID, ecs.EntityID) {
+	cache := combat.NewCombatQueryCache(manager)
+	fm := combat.NewCombatFactionManager(manager, cache)
+	playerFactionID, enemyFactionID := fm.CreateStandardFactions(playerName, enemyName, encounterID)
+	return fm, playerFactionID, enemyFactionID
+}
+
+// EnrollSquadsAtPositions enrolls multiple squads into a faction at given positions.
+// Positions and squadIDs must be the same length.
+func EnrollSquadsAtPositions(
+	fm *combat.CombatFactionManager,
+	manager *common.EntityManager,
+	factionID ecs.EntityID,
+	squadIDs []ecs.EntityID,
+	positions []coords.LogicalPosition,
+	markDeployed bool,
+) error {
+	if len(squadIDs) != len(positions) {
+		return fmt.Errorf("squad count (%d) != position count (%d)", len(squadIDs), len(positions))
+	}
+	for i, squadID := range squadIDs {
+		if err := EnrollSquadInFaction(fm, manager, factionID, squadID, positions[i], markDeployed); err != nil {
+			return fmt.Errorf("failed to enroll squad %d: %w", squadID, err)
+		}
+	}
 	return nil
 }
 

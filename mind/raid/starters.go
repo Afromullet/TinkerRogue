@@ -39,6 +39,6 @@ func (s *RaidCombatStarter) Prepare(manager *common.EntityManager) (*combat.Comb
 		ThreatName:           "Garrison Raid",
 		RosterOwnerID:        s.CommanderID,
 		Type:                 combat.CombatTypeRaid,
-		PostCombatReturnMode: "raid",
+		PostCombatReturnMode: combat.PostCombatReturnRaid,
 	}, nil
 }

@@ -49,9 +49,13 @@ func NewRaidRunner(manager *common.EntityManager, encounterService *encounter.En
 		encounterService: encounterService,
 	}
 
-	// Register as post-combat listener
-	encounterService.RegisterPostCombatListener(func(reason combat.CombatExitReason, result *combat.EncounterOutcome) {
-		if rr.raidEntityID != 0 {
+	// Register as post-combat listener.
+	// Guard: only process results when raid is active AND not retreated.
+	// Without this guard, retreating from a raid and then triggering an overworld
+	// encounter would cause the listener to process the overworld result as a raid.
+	encounterService.SetPostCombatCallback(func(reason combat.CombatExitReason, result *combat.EncounterOutcome) {
+		raidState := GetRaidState(rr.manager)
+		if rr.raidEntityID != 0 && raidState != nil && raidState.Status == RaidActive {
 			rr.ResolveEncounter(reason, result)
 		}
 	})
@@ -179,8 +183,7 @@ func (rr *RaidRunner) TriggerRaidEncounter(nodeID int) error {
 		CombatPos:        combatPos,
 		CommanderID:      raidState.CommanderID,
 	}
-	_, err := combatlifecycle.ExecuteCombatStart(rr.encounterService, rr.manager, starter)
-	return err
+	return combatlifecycle.ExecuteCombatStart(rr.encounterService, rr.manager, starter)
 }
 
 // processRestRoom applies rest room recovery and marks the room cleared.
@@ -342,6 +345,6 @@ func (rr *RaidRunner) RestoreFromSave(raidEntityID ecs.EntityID) {
 // finishRaid clears the runner state after the raid ends.
 func (rr *RaidRunner) finishRaid(status RaidStatus) {
 	// Clear callback to avoid stale references
-	rr.encounterService.UnregisterPostCombatListener()
+	rr.encounterService.ClearPostCombatCallback()
 	rr.raidEntityID = 0
 }
