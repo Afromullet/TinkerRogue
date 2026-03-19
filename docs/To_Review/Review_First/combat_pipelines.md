@@ -1,6 +1,6 @@
 # Combat Start and End Pipelines
 
-**Last Updated:** 2026-03-17
+**Last Updated:** 2026-03-18
 
 This document is a comprehensive technical reference for every combat entry and exit pathway in TinkerRogue. It covers the five known combat entry points, the shared infrastructure that all of them converge on, and the type-specific teardown logic that runs when each combat concludes.
 
@@ -40,7 +40,7 @@ This document is a comprehensive technical reference for every combat entry and 
     - [Save/Load Raid Resume](#saveload-raid-resume)
     - [Raid Retreat and Resume](#raid-retreat-and-resume)
     - [Non-Combat Raid Rooms](#non-combat-raid-rooms)
-    - [PostCombatCallback Cleanup](#postcombatcallback-cleanup)
+    - [Post-Combat Listener Cleanup](#post-combat-listener-cleanup)
     - [ResolutionResult vs ResolutionPlan](#resolutionresult-vs-resolutionplan)
 15. [Key File Index](#key-file-index)
 
@@ -54,7 +54,7 @@ TinkerRogue has five distinct combat entry points, but they all funnel into one 
 2. `combatlifecycle.ExecuteCombatStart` calls `starter.Prepare()` (which sets up ECS factions and squad positions), then calls `encounterService.TransitionToCombat()` (which saves player state, moves the camera, and switches the UI to combat mode).
 3. `CombatMode.Enter()` initializes the turn manager and begins the battle.
 4. When the battle ends, `CombatMode.Exit()` calls `encounterService.ExitCombat()` with the outcome.
-5. `ExitCombat` dispatches to a type-specific **CombatResolver** (via `combatlifecycle.ExecuteResolution`), records history, runs `CombatService.CleanupCombat()` for entity disposal, and fires the `PostCombatCallback` for any listeners (e.g., `RaidRunner`).
+5. `ExitCombat` dispatches to a type-specific **CombatResolver** (via `resolveEncounterOutcome` → `combatlifecycle.ExecuteResolution`), records history, runs `CombatService.CleanupCombat()` for entity disposal, and fires the post-combat listener for any registered systems (e.g., `RaidRunner`).
 
 The key design decision is that all type-specific behavior is encoded in small, stateless structs (`CombatStarter` for entry, `CombatResolver` for exit), while the shared infrastructure (`ExecuteCombatStart`, `EncounterService.ExitCombat`, `CombatService.CleanupCombat`) is invariant across all combat types.
 
@@ -113,6 +113,15 @@ Implemented by:
 ### CombatSetup
 
 ```go
+type CombatType int
+
+const (
+    CombatTypeOverworld       CombatType = iota // Standard overworld threat encounter
+    CombatTypeGarrisonDefense                   // Defending a garrisoned node
+    CombatTypeRaid                              // Raid room encounter
+    CombatTypeDebug                             // Debug/test encounters
+)
+
 type CombatSetup struct {
     PlayerFactionID      ecs.EntityID
     EnemyFactionID       ecs.EntityID
@@ -122,14 +131,13 @@ type CombatSetup struct {
     ThreatID             ecs.EntityID
     ThreatName           string
     RosterOwnerID        ecs.EntityID // 0 for garrison defense
-    IsGarrisonDefense    bool
+    Type                 CombatType
     DefendedNodeID       ecs.EntityID
-    IsRaidCombat         bool
     PostCombatReturnMode string // "raid" returns to raid mode; "" returns to exploration
 }
 ```
 
-`CombatSetup` is the universal handoff packet from type-specific setup to the shared transition. The flags (`IsGarrisonDefense`, `IsRaidCombat`, `PostCombatReturnMode`) allow the shared infrastructure to make routing decisions without needing to know about each combat type.
+`CombatSetup` is the universal handoff packet from type-specific setup to the shared transition. The `CombatType` enum replaces the old `IsGarrisonDefense`/`IsRaidCombat` bool flags, preventing invalid states (both true) and enabling clean `switch` dispatch. `PostCombatReturnMode` allows the shared infrastructure to route the player to the correct post-combat mode.
 
 ### CombatTransitioner
 
@@ -239,11 +247,38 @@ Used by all starters to create faction entities and assign squads. The key metho
 - Adds a `CombatFactionData` component to the squad entity.
 - Atomically registers or moves the squad's `LogicalPosition` in both the ECS component and the `GlobalPositionSystem`.
 
+### EnrollSquadInFaction
+
+**File:** `mind/combatlifecycle/enrollment.go`
+
+The unified 4-step squad enrollment helper used by all starters:
+
+1. `fm.AddSquadToFaction(factionID, squadID, pos)` — faction membership + position
+2. `EnsureUnitPositions(manager, squadID, pos)` — all units get positions at squad location
+3. `combat.CreateActionStateForSquad(manager, squadID)` — combat action tracking
+4. Optionally marks squad as deployed (`squadData.IsDeployed = true`)
+
+This eliminates the duplicated enrollment sequence that previously appeared across `encounter_setup.go`, `starters.go`, and `raidencounter.go`.
+
 ### EnsureUnitPositions
 
-**File:** `mind/encounter/encounter_setup.go:398`
+**File:** `mind/combatlifecycle/enrollment.go`
 
-Called after placing each squad to give every unit in that squad a `LogicalPosition`. Units that already have positions are moved; units without positions have one registered. This is required before combat so that the movement system can find units on the map.
+Called by `EnrollSquadInFaction` to give every unit in a squad a `LogicalPosition`. Units that already have positions are moved; units without positions have one registered. This is required before combat so that the movement system can find units on the map.
+
+### CreateStandardFactions
+
+**File:** `tactical/combat/combatfactionmanager.go`
+
+Factory method that creates the standard player + enemy faction pair:
+
+```go
+func (fm *CombatFactionManager) CreateStandardFactions(
+    playerFactionName, enemyFactionName string, encounterID ecs.EntityID,
+) (playerFactionID, enemyFactionID ecs.EntityID)
+```
+
+Used by all starters to replace the repeated `CreateFactionWithPlayer` + `CreateFactionWithPlayer` pattern.
 
 ---
 
@@ -275,8 +310,7 @@ gui/guioverworld/overworld_panels_registry.go:126  (Engage button)
 5. Power budget generation uses `evaluation.CalculateSquadPower` to measure the player's deployed squads, applies a difficulty multiplier from the encounter's level, and iteratively adds units from a type-filtered pool until the target power is reached.
 
 **CombatSetup produced:**
-- `IsGarrisonDefense = false`
-- `IsRaidCombat = false`
+- `Type = CombatTypeOverworld` (zero value / default)
 - `PostCombatReturnMode = ""`  (returns to exploration)
 - `RosterOwnerID = commanderID`
 
@@ -306,7 +340,7 @@ gui/guioverworld/overworld_action_handler.go:32   EndTurn()
 3. The node's `LogicalPosition` is used as `CombatPosition`.
 
 **CombatSetup produced:**
-- `IsGarrisonDefense = true`
+- `Type = CombatTypeGarrisonDefense`
 - `DefendedNodeID = targetNodeID`
 - `RosterOwnerID = 0`
 - `PostCombatReturnMode = ""` (returns to exploration or overworld depending on active context)
@@ -334,12 +368,12 @@ gui/guiraid/raidmode.go:289         OnDeployConfirmed()
 4. Unlike overworld encounters, raid encounters do not generate new enemy squads. The garrison squads pre-created during `GenerateGarrison` are used directly.
 
 **CombatSetup produced:**
-- `IsRaidCombat = true`
+- `Type = CombatTypeRaid`
 - `PostCombatReturnMode = "raid"` (returns to raid mode, not exploration)
 - `RosterOwnerID = commanderID`
 - `EncounterID = raidEntityID` (the raid entity, not an OverworldEncounterData entity)
 
-The `IsRaidCombat = true` flag causes `EncounterService.ExitCombat` to skip the `EndEncounter` call (which applies overworld effects), because raid resolution is handled separately by `RaidRunner.ResolveEncounter` via `PostCombatCallback`.
+The `CombatTypeRaid` type causes `EncounterService.ExitCombat` to skip overworld resolution, because raid resolution is handled separately by `RaidRunner.ResolveEncounter` via the post-combat listener callback.
 
 ### Pathway 4: Debug "Start Raid" (Roguelike Mode)
 
@@ -363,7 +397,7 @@ This pathway does not immediately start combat. It transitions to `RaidMode`, wh
 
 **The "Start Raid" button is only reachable in roguelike mode** because the "Debug" button that opens the sub-menu is conditionally shown. In `ExplorationPanelActionButtons` (`exploration_panels_registry.go:170`), `_, hasSquadInTactical := em.ModeManager.GetMode("squad_editor")` gates whether the Debug button renders at all — it only appears when `squad_editor` is registered in the tactical context (i.e., roguelike mode). The "Start Raid" button itself is unconditionally added to the debug sub-menu at line 101, but it additionally checks `em.ModeManager.GetMode("raid")` at line 103 to verify that a raid mode is registered before triggering the transition.
 
-The `RaidRunner` is wired to the `EncounterService.PostCombatCallback` at startup (`game_main/setup.go:132`), so it receives the combat result automatically after each raid room battle.
+The `RaidRunner` registers as a post-combat listener via `encounterService.RegisterPostCombatListener(...)` at construction time, so it receives the combat result automatically after each raid room battle.
 
 ### Pathway 5: Debug "Start Random Encounter" (Overworld Mode)
 
@@ -381,17 +415,16 @@ gui/guioverworld/overworld_panels_registry.go:73  "Start Random Encounter" butto
 
 **Step-by-step:**
 
-1. `TriggerRandomEncounter` creates an `OverworldEncounterData` entity with `ThreatNodeID = 0`. This zero value is the key distinction: when `EncounterService.EndEncounter` checks `encounterData.ThreatNodeID != 0`, the condition is false, and no overworld resolution (threat damage, rewards) occurs.
+1. `TriggerRandomEncounter` creates an `OverworldEncounterData` entity with `ThreatNodeID = 0`. This zero value is the key distinction: when `ExitCombat` dispatches via `resolveEncounterOutcome`, the `CombatTypeOverworld` case checks `encounterData.ThreatNodeID != 0`, which is false, so no overworld resolution (threat damage, rewards) occurs.
 2. `OverworldCombatStarter` is constructed with `ThreatID = 0` and `ThreatName = "Random Encounter"`. The `RosterOwnerID` is the currently selected commander.
 3. `SpawnCombatEntities` detects that there is no `ThreatNodeID`, so it skips the garrison check and goes directly to power-budget enemy generation. With `EncounterType = ""`, `getSquadComposition` falls back to `generateRandomComposition`.
 
 **CombatSetup produced:**
-- `IsGarrisonDefense = false`
-- `IsRaidCombat = false`
+- `Type = CombatTypeOverworld` (zero value / default)
 - `ThreatID = 0` (no threat node — combat has no overworld consequences)
 - `PostCombatReturnMode = ""`
 
-This pathway is safe to use repeatedly without side effects. Because `ThreatNodeID = 0`, resolution is a no-op for both victory and defeat.
+This pathway is safe to use repeatedly without side effects. Because `ThreatNodeID = 0`, the overworld resolver is skipped for both victory and defeat.
 
 ---
 
@@ -471,29 +504,35 @@ Combat ends in one of three ways. All three routes pass through `CombatMode.Exit
 
 ## Type-Specific Resolution
 
-`EncounterService.ExitCombat` at `mind/encounter/encounter_service.go:220` dispatches to the correct resolver based on `ActiveEncounter` flags:
+`EncounterService.ExitCombat` is the single unified exit point. It snapshots `ActiveEncounter` state, then dispatches resolution via `resolveEncounterOutcome()` using a `switch` on `CombatType`:
 
 ```go
 // Simplified from ExitCombat
 switch reason {
 case ExitVictory, ExitDefeat:
-    if !activeEncounter.IsRaidCombat {
-        es.EndEncounter(...)  // dispatches OverworldCombatResolver or GarrisonDefenseResolver
+    if combatType != CombatTypeRaid {
+        es.resolveEncounterOutcome(encounter, result.IsPlayerVictory)
+        // → switch encounter.Type:
+        //     CombatTypeGarrisonDefense → GarrisonDefenseResolver
+        //     CombatTypeOverworld       → OverworldCombatResolver (if ThreatNodeID != 0)
+        //     CombatTypeDebug           → no-op
+    }
+    if result.IsPlayerVictory && combatType != CombatTypeRaid {
+        es.markEncounterDefeated(encounterID)
     }
 case ExitFlee:
-    es.RestoreEncounterSprite()
+    es.restoreEncounterSprite(encounterID)
     // dispatches FleeResolver ONLY if ThreatNodeID != 0
-    // (debug random encounters with ThreatNodeID = 0 skip this)
 }
 ```
 
-Raid resolution is NOT dispatched here. Instead, `PostCombatCallback` (set by `RaidRunner.NewRaidRunner`) is fired in step 4 of `ExitCombat`, and `RaidRunner.ResolveEncounter` handles the raid-specific dispatch.
+Raid resolution is NOT dispatched here. Instead, the post-combat listener (registered by `RaidRunner` via `RegisterPostCombatListener`) is fired in step 5 of `ExitCombat`, and `RaidRunner.ResolveEncounter` handles the raid-specific dispatch.
 
 ### Overworld Combat Resolution
 
 **File:** `mind/encounter/resolvers.go:26`  `OverworldCombatResolver.Resolve()`
 
-Activated when: `IsRaidCombat = false`, `IsGarrisonDefense = false`, `ThreatNodeID != 0`.
+Activated when: `Type = CombatTypeOverworld` and `ThreatNodeID != 0`.
 
 **On player victory:**
 - Counts dead enemy units via `combatlifecycle.CountDeadUnits`.
@@ -514,7 +553,7 @@ Activated when: `IsRaidCombat = false`, `IsGarrisonDefense = false`, `ThreatNode
 
 **File:** `mind/encounter/resolvers.go:142`  `GarrisonDefenseResolver.Resolve()`
 
-Activated when: `IsGarrisonDefense = true`.
+Activated when: `Type = CombatTypeGarrisonDefense`.
 
 **On player victory (successful defense):**
 - Logs a `EventGarrisonDefended` event.
@@ -524,13 +563,13 @@ Activated when: `IsGarrisonDefense = true`.
 - Calls `garrison.TransferNodeOwnership(manager, DefendedNodeID, newOwner)` where `newOwner` is the attacking faction type as a string.
 - The node now belongs to the enemy faction.
 
-**Special cleanup:** When `ExitCombat` detects `isGarrisonDefense && result.IsPlayerVictory`, it calls `returnGarrisonSquadsToNode(defendedNodeID)` before `CleanupCombat`. This calls `combatlifecycle.StripCombatComponents` on the garrison squads, removing their `FactionMembershipComponent` and `PositionComponent`, resetting `IsDeployed = false`, but NOT disposing the squad entities. The garrison squads survive and remain in the `garrison.GarrisonData`.
+**Special cleanup:** When `ExitCombat` detects `combatType == CombatTypeGarrisonDefense && result.IsPlayerVictory`, it calls `returnGarrisonSquadsToNode(defendedNodeID)` before `CleanupCombat`. This calls `combatlifecycle.StripCombatComponents` on the garrison squads, removing their `FactionMembershipComponent` and `PositionComponent`, resetting `IsDeployed = false`, but NOT disposing the squad entities. The garrison squads survive and remain in the `garrison.GarrisonData`.
 
 ### Raid Room Resolution
 
 **File:** `mind/raid/resolvers.go`
 
-Activated by `RaidRunner.ResolveEncounter` via `PostCombatCallback`, not by `EncounterService.EndEncounter`.
+Activated by `RaidRunner.ResolveEncounter` via the post-combat listener, not by `EncounterService.ExitCombat`'s internal resolution.
 
 **On victory (`RaidRoomResolver.Resolve`):**
 - Marks all garrison squad entities in the room as destroyed (`GarrisonSquadData.IsDestroyed = true`).
@@ -549,9 +588,9 @@ After resolution, `RaidRunner.PostEncounterProcessing` runs:
 
 ### Debug / No-Op Resolution
 
-Activated when: `IsRaidCombat = false`, `IsGarrisonDefense = false`, `ThreatNodeID = 0`.
+Activated when: `Type = CombatTypeOverworld` and `ThreatNodeID = 0`, or `Type = CombatTypeDebug`.
 
-The `EndEncounter` branch in `ExitCombat` checks `encounterData.ThreatNodeID != 0` before creating a resolver. When `ThreatNodeID = 0` (debug random encounter), no resolver is created and no resolution occurs. This means debug encounters have zero side effects on the game world.
+In `resolveEncounterOutcome`, the `CombatTypeOverworld` case checks `encounterData.ThreatNodeID != 0` before creating a resolver. When `ThreatNodeID = 0` (debug random encounter), no resolver is created and no resolution occurs. `CombatTypeDebug` is handled as a no-op in the switch. This means debug encounters have zero side effects on the game world.
 
 ---
 
@@ -658,19 +697,20 @@ gui/guiraid
   → mind/raid                (RaidRunner, GetRaidState, etc.)
 
 mind/combatlifecycle
-  → tactical/combat          (CombatStarter, CombatTransitioner, CombatSetup)
+  → tactical/combat          (CombatStarter, CombatTransitioner, CombatSetup, CombatFactionManager)
+  → tactical/squads          (SquadData, GetUnitIDsInSquad)
   → common                   (EntityManager)
 
 mind/encounter
-  → mind/combatlifecycle     (ExecuteResolution, StripCombatComponents)
-  → tactical/combat          (CombatSetup, FactionMembershipComponent)
+  → mind/combatlifecycle     (ExecuteResolution, StripCombatComponents, EnrollSquadInFaction)
+  → tactical/combat          (CombatSetup, CombatType, FactionMembershipComponent)
   → overworld/core           (OverworldEncounterData, OverworldNodeData)
   → overworld/garrison       (GarrisonData, TransferNodeOwnership)
   → overworld/threat         (DestroyThreatNode)
 
 mind/raid
-  → mind/combatlifecycle     (ExecuteCombatStart, ExecuteResolution, ApplyHPRecovery)
-  → mind/encounter           (EncounterService, EnsureUnitPositions)
+  → mind/combatlifecycle     (ExecuteCombatStart, ExecuteResolution, ApplyHPRecovery, EnrollSquadInFaction)
+  → mind/encounter           (EncounterService)
   → tactical/combat          (CombatSetup, CombatStarter)
 
 tactical/combatservices
@@ -750,23 +790,28 @@ Determine reason (ExitVictory / ExitDefeat / ExitFlee)
      ▼
 EncounterService.ExitCombat(reason, outcome, combatService)
      │
-     ├─── Step 1: Resolve outcome
+     ├─── Step 1: Resolve outcome (resolveEncounterOutcome)
+     │       │   switch encounter.Type:
      │       │
-     │       ├─→ [Not raid, not flee] EndEncounter()
-     │       │      ├─→ [Garrison] GarrisonDefenseResolver.Resolve()
+     │       ├─→ [Not raid, not flee] resolveEncounterOutcome()
+     │       │      ├─→ [CombatTypeGarrisonDefense] GarrisonDefenseResolver.Resolve()
      │       │      │      └─→ Victory: log event
      │       │      │      └─→ Defeat: TransferNodeOwnership()
-     │       │      └─→ [Overworld] OverworldCombatResolver.Resolve()
-     │       │             └─→ Victory: DestroyThreatNode() or weaken + rewards
-     │       │             └─→ Defeat: grow threat intensity
+     │       │      ├─→ [CombatTypeOverworld] OverworldCombatResolver.Resolve()
+     │       │      │      └─→ Victory: DestroyThreatNode() or weaken + rewards
+     │       │      │      └─→ Defeat: grow threat intensity
+     │       │      └─→ [CombatTypeDebug] no-op
      │       │
-     │       └─→ [Flee] RestoreEncounterSprite() + FleeResolver.Resolve()
+     │       └─→ [Flee] restoreEncounterSprite() + FleeResolver.Resolve()
      │
-     ├─── Step 2: RecordEncounterCompletion()
+     ├─── Step 2: Mark encounter defeated (victory, non-raid)
+     │       └─→ markEncounterDefeated(): IsDefeated=true, hide sprite
+     │
+     ├─── Step 3: RecordEncounterCompletion()
      │       └─→ Restore player to OriginalPlayerPosition
      │       └─→ Clear activeEncounter
      │
-     ├─── Step 3: CombatService.CleanupCombat(enemySquadIDs)
+     ├─── Step 4: CombatService.CleanupCombat(enemySquadIDs)
      │       ├─→ ClearCallbacks()
      │       ├─→ cleanupEffects()
      │       ├─→ resetPlayerSquadsToOverworld()
@@ -777,7 +822,7 @@ EncounterService.ExitCombat(reason, outcome, combatService)
      │       ├─→ disposeEnemySquads(enemySquadIDs)
      │       └─→ disposeEnemyUnits(enemySquadSet)
      │
-     └─── Step 4: PostCombatCallback(reason, result)
+     └─── Step 5: postCombatCallback(reason, result)
              └─→ [Raid only] RaidRunner.ResolveEncounter()
                     ├─→ Victory: RaidRoomResolver.Resolve()
                     │      └─→ MarkRoomCleared()
@@ -800,7 +845,7 @@ When a player saves and loads mid-raid, the combat pipeline is re-wired without 
 **File:** `game_main/setup.go:145` `SetupRoguelikeFromSave()`
 
 1. `SetupRoguelikeFromSave` calls `setupUICore` to create a fresh `EncounterService` and `GameModeCoordinator`.
-2. Creates a new `RaidRunner` via `raid.NewRaidRunner` (line 184), which re-wires `PostCombatCallback`.
+2. Creates a new `RaidRunner` via `raid.NewRaidRunner` (line 184), which registers the post-combat listener.
 3. Checks if a `RaidStateData` entity exists in the loaded ECS world (line 189).
 4. If found, calls `raidRunner.RestoreFromSave(raidEntityID)` (line 191), which sets `rr.raidEntityID` so that `IsActive()` returns true.
 5. When `RaidMode.Enter` runs, it sees `raidRunner.IsActive() == true` and skips `autoStartRaid()`, avoiding duplicate entity creation.
@@ -827,16 +872,16 @@ Not all raid rooms trigger combat. `OnRoomSelected` (`gui/guiraid/raidmode.go:25
 - **`GarrisonRoomStairs`**: Also calls `raidRunner.SelectRoom(nodeID)`, which advances to the next floor.
 - **Combat rooms**: Show the deployment panel and follow Pathway 3 when confirmed.
 
-### PostCombatCallback Cleanup
+### Post-Combat Listener Cleanup
 
-When a raid ends (any outcome — victory, defeat, or all end conditions met), `finishRaid` (`mind/raid/raidrunner.go:351`) clears the callback:
+When a raid ends (any outcome — victory, defeat, or all end conditions met), `finishRaid` (`mind/raid/raidrunner.go`) unregisters the listener:
 
 ```go
-rr.encounterService.PostCombatCallback = nil
+rr.encounterService.UnregisterPostCombatListener()
 rr.raidEntityID = 0
 ```
 
-This means any combat triggered after the raid ends (e.g., an overworld encounter) will NOT invoke `RaidRunner.ResolveEncounter`. The callback is re-wired when a new `RaidRunner` is created (at the next `NewRaidRunner` call or save-load).
+This means any combat triggered after the raid ends (e.g., an overworld encounter) will NOT invoke `RaidRunner.ResolveEncounter`. The listener is re-registered when a new `RaidRunner` is created (at the next `NewRaidRunner` call or save-load) via `RegisterPostCombatListener`.
 
 ### ResolutionResult vs ResolutionPlan
 
@@ -853,28 +898,29 @@ The resolution pipeline has two distinct output types in `mind/combatlifecycle/p
 
 | File | Purpose |
 |------|---------|
-| `tactical/combat/combat_contracts.go` | All shared interfaces: `CombatStarter`, `CombatSetup`, `CombatTransitioner`, `EncounterCallbacks`, `CombatCleaner`, `CombatExitReason` |
+| `tactical/combat/combat_contracts.go` | All shared interfaces: `CombatStarter`, `CombatSetup`, `CombatType`, `CombatTransitioner`, `EncounterCallbacks`, `CombatCleaner`, `CombatExitReason` |
 | `mind/combatlifecycle/starter.go` | `ExecuteCombatStart`: the single entry point for all combat initiation |
 | `mind/combatlifecycle/pipeline.go` | `CombatResolver`, `ResolutionPlan`, `ResolutionResult`, `ExecuteResolution`: the single entry point for all combat resolution |
+| `mind/combatlifecycle/enrollment.go` | `EnrollSquadInFaction`, `EnsureUnitPositions`: unified squad enrollment helper |
 | `mind/combatlifecycle/cleanup.go` | `StripCombatComponents`: strips combat state from player squads without disposing them |
 | `mind/combatlifecycle/reward.go` | `Reward`, `Grant`, `GrantTarget`, `CalculateIntensityReward`: reward calculation and distribution |
 | `mind/combatlifecycle/casualties.go` | `GetLivingUnitIDs`, `CountDeadUnits`: casualty counting helpers |
-| `mind/encounter/encounter_service.go` | `EncounterService`: tracks `ActiveEncounter`, implements `TransitionToCombat`, `ExitCombat`, `EndEncounter` |
+| `mind/encounter/encounter_service.go` | `EncounterService`: tracks `ActiveEncounter`, implements `TransitionToCombat`, `ExitCombat`, `RegisterPostCombatListener` |
 | `mind/encounter/starters.go` | `OverworldCombatStarter`, `GarrisonDefenseStarter`: two of the three `CombatStarter` implementations |
 | `mind/encounter/encounter_trigger.go` | `TriggerCombatFromThreat`, `TriggerRandomEncounter`, `TriggerGarrisonDefense`: creates encounter entities |
-| `mind/encounter/encounter_setup.go` | `SpawnCombatEntities`, `GenerateEncounterSpec`, `EnsureUnitPositions`: combat entity creation |
+| `mind/encounter/encounter_setup.go` | `SpawnCombatEntities`, `GenerateEncounterSpec`: combat entity creation |
 | `mind/encounter/resolvers.go` | `OverworldCombatResolver`, `GarrisonDefenseResolver`, `FleeResolver` |
 | `mind/encounter/types.go` | `ActiveEncounter`, `CompletedEncounter`, `CombatTransitionHandler` interface |
 | `mind/raid/starters.go` | `RaidCombatStarter`: raid-specific `CombatStarter` implementation |
 | `mind/raid/raidencounter.go` | `SetupRaidFactions`: positions squads for raid combat |
-| `mind/raid/raidrunner.go` | `RaidRunner`: orchestrates the full raid loop, receives `PostCombatCallback` |
+| `mind/raid/raidrunner.go` | `RaidRunner`: orchestrates the full raid loop, registered as post-combat listener |
 | `mind/raid/resolvers.go` | `RaidRoomResolver`, `RaidDefeatResolver` |
 | `tactical/combatservices/combat_service.go` | `CombatService.CleanupCombat`, `InitializeCombat`, `CheckVictoryCondition` |
 | `tactical/combatservices/combat_events.go` | Callback registration: `RegisterOnAttackComplete`, `ClearCallbacks`, etc. |
-| `tactical/combat/combatfactionmanager.go` | `CombatFactionManager.CreateFactionWithPlayer`, `AddSquadToFaction` |
+| `tactical/combat/combatfactionmanager.go` | `CombatFactionManager.CreateStandardFactions`, `CreateFactionWithPlayer`, `AddSquadToFaction` |
 | `tactical/combat/combatqueries.go` | `CreateActionStateForSquad`, `RemoveSquadFromMap`, `GetAllFactions`, `GetSquadsForFaction` |
 | `gui/guicombat/combatmode.go` | `CombatMode.Enter` (init), `CombatMode.Exit` (calls ExitCombat) |
-| `gui/guicombat/combat_turn_flow.go` | `CheckAndHandleVictory`, `HandleFlee`, `getPostCombatReturnMode` |
+| `gui/guicombat/combat_turn_flow.go` | `CheckAndHandleVictory`, `HandleFlee`, `completeTurn`, `getPostCombatReturnMode` |
 | `gui/guicombat/combatdeps.go` | `CombatModeDeps`: dependency container, holds `EncounterCallbacks` interface |
 | `gui/guioverworld/overworld_action_handler.go` | `EngageThreat`, `HandleRaid`, `StartRandomEncounter` |
 | `gui/guioverworld/overworld_panels_registry.go` | Debug panel with "Start Random Encounter" button |

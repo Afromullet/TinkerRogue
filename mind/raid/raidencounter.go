@@ -4,9 +4,8 @@ import (
 	"fmt"
 
 	"game_main/common"
-	"game_main/mind/encounter"
+	"game_main/mind/combatlifecycle"
 	"game_main/tactical/combat"
-	"game_main/tactical/squads"
 	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"
@@ -48,11 +47,8 @@ func SetupRaidFactions(
 	cache := combat.NewCombatQueryCache(manager)
 	fm := combat.NewCombatFactionManager(manager, cache)
 
-	// Create player faction (attacker in a raid)
-	playerFactionID = fm.CreateFactionWithPlayer("Raid Attackers", 1, "Player 1", encounterID)
-
-	// Create enemy garrison faction
-	enemyFactionID = fm.CreateFactionWithPlayer("Garrison Defenders", 0, "", encounterID)
+	// Create factions (player attacks, garrison defends)
+	playerFactionID, enemyFactionID = fm.CreateStandardFactions("Raid Attackers", "Garrison Defenders", encounterID)
 
 	// Position and add player squads
 	for i, squadID := range playerDeployedIDs {
@@ -61,16 +57,8 @@ func SetupRaidFactions(
 			Y: combatPos.Y + playerOffsetY,
 		}
 
-		if err := fm.AddSquadToFaction(playerFactionID, squadID, pos); err != nil {
+		if err := combatlifecycle.EnrollSquadInFaction(fm, manager, playerFactionID, squadID, pos, true); err != nil {
 			return 0, 0, fmt.Errorf("failed to add player squad %d: %w", squadID, err)
-		}
-		encounter.EnsureUnitPositions(manager, squadID, pos)
-		combat.CreateActionStateForSquad(manager, squadID)
-
-		// Mark as deployed
-		squadData := common.GetComponentTypeByID[*squads.SquadData](manager, squadID, squads.SquadComponent)
-		if squadData != nil {
-			squadData.IsDeployed = true
 		}
 	}
 
@@ -81,16 +69,10 @@ func SetupRaidFactions(
 			Y: combatPos.Y + enemyOffsetY,
 		}
 
-		if err := fm.AddSquadToFaction(enemyFactionID, squadID, pos); err != nil {
+		if err := combatlifecycle.EnrollSquadInFaction(fm, manager, enemyFactionID, squadID, pos, false); err != nil {
 			return 0, 0, fmt.Errorf("failed to add garrison squad %d: %w", squadID, err)
 		}
-		encounter.EnsureUnitPositions(manager, squadID, pos)
-		combat.CreateActionStateForSquad(manager, squadID)
-
 	}
-
-	fmt.Printf("SetupRaidFactions: %d player squads vs %d garrison squads at (%d,%d)\n",
-		len(playerDeployedIDs), len(garrisonSquadIDs), combatPos.X, combatPos.Y)
 
 	return playerFactionID, enemyFactionID, nil
 }

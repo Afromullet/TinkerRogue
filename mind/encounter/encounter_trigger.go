@@ -115,9 +115,6 @@ func TriggerCombatFromThreat(
 		return 0, fmt.Errorf("failed to create encounter: %w", err)
 	}
 
-	fmt.Printf("Combat triggered from threat %d: %s (Encounter ID: %d)\n",
-		params.ThreatNodeID, params.EncounterName, encounterID)
-
 	// 3. Combat system will call SetupBalancedEncounter with the encounter data
 	// This happens in the combat mode transition (handled by GUI/mode coordinator)
 	// The encounter ID is stored and passed to combat lifecycle for resolution
@@ -147,9 +144,5 @@ func TriggerGarrisonDefense(
 
 	entity.AddComponent(core.OverworldEncounterComponent, encounterData)
 
-	encounterID := entity.GetID()
-	fmt.Printf("Garrison defense encounter created: ID %d, node %d, attacker %s\n",
-		encounterID, targetNodeID, attackingFactionType.String())
-
-	return encounterID, nil
+	return entity.GetID(), nil
 }

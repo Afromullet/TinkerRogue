@@ -1,8 +1,6 @@
 package raid
 
 import (
-	"fmt"
-
 	"game_main/common"
 	"game_main/mind/combatlifecycle"
 
@@ -29,8 +27,6 @@ func ApplyPostEncounterRecovery(manager *common.EntityManager, raidState *RaidSt
 		combatlifecycle.ApplyHPRecovery(manager, squadID, hpPercent)
 	}
 
-	fmt.Printf("Recovery: Post-encounter recovery applied (deployed: %d%%, reserve: %d%%)\n",
-		RaidConfig.Recovery.DeployedHPPercent, RaidConfig.Recovery.ReserveHPPercent)
 }
 
 // ApplyBetweenFloorRecovery applies HP recovery when advancing floors.
@@ -44,7 +40,6 @@ func ApplyBetweenFloorRecovery(manager *common.EntityManager, raidState *RaidSta
 		combatlifecycle.ApplyHPRecovery(manager, squadID, RaidConfig.Recovery.DeployedHPPercent)
 	}
 
-	fmt.Printf("Recovery: Between-floor recovery applied to %d squads\n", len(raidState.PlayerSquadIDs))
 }
 
 // isInReserve checks if a squad ID is in the reserve list of the current deployment.

@@ -1,8 +1,6 @@
 package raid
 
 import (
-	"fmt"
-
 	"game_main/common"
 	"game_main/tactical/squads"
 	"game_main/world/worldmap"
@@ -58,8 +56,6 @@ func ActivateReserves(manager *common.EntityManager, floorNumber int) {
 			floorState.GarrisonSquadIDs = append(floorState.GarrisonSquadIDs, reserveID)
 			activated++
 
-			fmt.Printf("Alert: Reserve squad %d activated into room %d on floor %d\n",
-				reserveID, room.NodeID, floorNumber)
 		} else {
 			remainingReserves = append(remainingReserves, reserveID)
 		}
@@ -90,9 +86,6 @@ func IncrementAlert(manager *common.EntityManager, floorNumber int) {
 			}
 		}
 	}
-
-	fmt.Printf("Alert: Level now %d (encounters: %d) on floor %d\n",
-		alertData.CurrentLevel, alertData.EncounterCount, floorNumber)
 
 	// Activate reserves if level changed
 	if alertData.CurrentLevel != oldLevel {

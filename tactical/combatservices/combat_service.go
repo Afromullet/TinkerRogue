@@ -103,16 +103,14 @@ func (cs *CombatService) GetChargeTracker() *gear.ArtifactChargeTracker {
 	return cs.chargeTracker
 }
 
-// InitializeCombat initializes combat with the given factions
-// Also assigns any unassigned squads (from squad deployment) to the player faction.
-// TODO: Assinging unassigned squads to the player faction is a temporary fix. remove.
+// InitializeCombat initializes combat with the given factions.
+// Also assigns any unassigned deployed squads to the player faction as a safety net.
 func (cs *CombatService) InitializeCombat(factionIDs []ecs.EntityID) error {
 	// Reset charge tracker for the new battle
 	cs.chargeTracker = gear.NewArtifactChargeTracker()
 	// Find player faction (has IsPlayerControlled = true)
 	var playerFactionID ecs.EntityID
 	for _, factionID := range factionIDs {
-		// Use cached query for performance
 		factionData := cs.CombatCache.FindFactionDataByID(factionID)
 		if factionData != nil && factionData.IsPlayerControlled {
 			playerFactionID = factionID
@@ -120,8 +118,9 @@ func (cs *CombatService) InitializeCombat(factionIDs []ecs.EntityID) error {
 		}
 	}
 
-	// Assign any unassigned squads to player faction
-	// These are squads deployed via SquadDeploymentMode that have positions but no FactionMembershipComponent
+	// Safety net: assign any deployed squads that somehow lack faction membership.
+	// Starters should enroll all squads via EnrollSquadInFaction, so this should
+	// rarely fire. If it does, it indicates a bug in the starter.
 	if playerFactionID != 0 {
 		cs.assignDeployedSquadsToPlayerFaction(playerFactionID)
 	}
@@ -136,30 +135,26 @@ func (cs *CombatService) InitializeCombat(factionIDs []ecs.EntityID) error {
 }
 
 // assignDeployedSquadsToPlayerFaction finds all squads with positions but no FactionMembershipComponent
-// and assigns them to the player faction. These are squads that were deployed via SquadDeploymentMode.
-// TODO: Assinging unassigned squads to the player faction is a temporary fix. Squads will have to be assigned to the
-// Correct Faction. There can be multiple players
+// and assigns them to the player faction. This is a safety net for squads deployed via SquadDeploymentMode
+// that weren't enrolled by the CombatStarter. Logs a warning when triggered.
 func (cs *CombatService) assignDeployedSquadsToPlayerFaction(playerFactionID ecs.EntityID) {
 	for _, result := range cs.EntityManager.World.Query(squads.SquadTag) {
 		squadEntity := result.Entity
 		squadID := squadEntity.GetID()
 
-		// Check if squad already has a faction (skip if it does)
 		combatFaction := common.GetComponentType[*combat.CombatFactionData](squadEntity, combat.FactionMembershipComponent)
 		if combatFaction != nil {
-			continue // Already assigned to a faction
+			continue
 		}
 
-		// Check if squad has a position (deployed squads have positions)
 		position := common.GetComponentType[*coords.LogicalPosition](squadEntity, common.PositionComponent)
 		if position == nil {
-			continue // No position, not a deployed squad
+			continue
 		}
 
-		// Squad is unassigned and deployed - add it to player faction
+		fmt.Printf("WARNING: squad %d has position but no faction — starter should have enrolled it\n", squadID)
 		if err := cs.FactionManager.AddSquadToFaction(playerFactionID, squadID, *position); err != nil {
 			fmt.Printf("WARNING: failed to assign squad %d to player faction: %v\n", squadID, err)
-			continue
 		}
 	}
 }

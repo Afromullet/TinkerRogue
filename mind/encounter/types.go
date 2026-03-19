@@ -35,6 +35,12 @@ const (
 	DefaultPowerProfile = "Balanced" // Default power calculation profile
 )
 
+// Combat resolution constants
+const (
+	EnemiesPerIntensityPoint = 5 // Every 5 enemies killed = 1 intensity reduction
+	DefeatIntensityGrowth    = 1 // Threat grows by 1 intensity on player defeat
+)
+
 // CombatTransitionHandler defines the narrow interface for encounter→combat transitions.
 // Decoupled from GUI types — uses only primitives and coords.
 type CombatTransitionHandler interface {
@@ -69,12 +75,9 @@ type ActiveEncounter struct {
 	PlayerFactionID ecs.EntityID // Player's combat faction
 	EnemyFactionID  ecs.EntityID // Enemy's combat faction
 
-	// Garrison defense tracking
-	IsGarrisonDefense bool         // True if defending a garrisoned node
-	DefendedNodeID    ecs.EntityID // Node being defended (0 if not garrison defense)
-
-	// Raid combat tracking
-	IsRaidCombat bool // True if this is a raid encounter (skip overworld resolution)
+	// Combat type (overworld, garrison defense, raid, debug)
+	Type           combat.CombatType
+	DefendedNodeID ecs.EntityID // Node being defended (0 if not garrison defense)
 }
 
 // CompletedEncounter represents a finished encounter for history tracking

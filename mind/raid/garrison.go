@@ -34,7 +34,6 @@ func GenerateGarrison(manager *common.EntityManager, floorCount int, commanderID
 		generateFloor(manager, floor)
 	}
 
-	fmt.Printf("GenerateGarrison: Created %d-floor garrison (raid entity %d)\n", floorCount, raidEntityID)
 	return raidEntityID
 }
 
@@ -101,8 +100,6 @@ func generateFloor(manager *common.EntityManager, floorNumber int) {
 		IsComplete:       false,
 	})
 
-	fmt.Printf("  Floor %d: %d rooms, %d garrison squads, %d reserves\n",
-		floorNumber, roomCount, len(garrisonSquadIDs), len(reserveSquadIDs))
 }
 
 // InstantiateGarrisonSquad creates a garrison squad from an archetype definition.

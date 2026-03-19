@@ -89,6 +89,14 @@ func (fm *CombatFactionManager) AddSquadToFaction(factionID, squadID ecs.EntityI
 	return nil
 }
 
+// CreateStandardFactions creates a player faction and an enemy faction for an encounter.
+// Returns (playerFactionID, enemyFactionID).
+func (fm *CombatFactionManager) CreateStandardFactions(playerFactionName, enemyFactionName string, encounterID ecs.EntityID) (ecs.EntityID, ecs.EntityID) {
+	playerFactionID := fm.CreateFactionWithPlayer(playerFactionName, 1, "Player 1", encounterID)
+	enemyFactionID := fm.CreateFactionWithPlayer(enemyFactionName, 0, "", encounterID)
+	return playerFactionID, enemyFactionID
+}
+
 func (fm *CombatFactionManager) GetFactionMana(factionID ecs.EntityID) (current, max int) {
 	// Find faction entity (using cached query for performance)
 	faction := fm.combatCache.FindFactionByID(factionID)

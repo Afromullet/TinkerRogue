@@ -15,6 +15,33 @@ type CombatStarter interface {
 	Prepare(manager *common.EntityManager) (*CombatSetup, error)
 }
 
+// CombatType distinguishes combat encounter types.
+// Replaces the IsGarrisonDefense/IsRaidCombat bool flags to prevent invalid states.
+type CombatType int
+
+const (
+	CombatTypeOverworld        CombatType = iota // Standard overworld threat encounter
+	CombatTypeGarrisonDefense                    // Defending a garrisoned node
+	CombatTypeRaid                               // Raid room encounter
+	CombatTypeDebug                              // Debug/test encounters
+)
+
+// String returns a human-readable name for the combat type.
+func (ct CombatType) String() string {
+	switch ct {
+	case CombatTypeOverworld:
+		return "Overworld"
+	case CombatTypeGarrisonDefense:
+		return "GarrisonDefense"
+	case CombatTypeRaid:
+		return "Raid"
+	case CombatTypeDebug:
+		return "Debug"
+	default:
+		return "Unknown"
+	}
+}
+
 // CombatSetup is the unified output from Prepare().
 // Contains everything ExecuteCombatStart() needs to do the mode transition.
 type CombatSetup struct {
@@ -28,9 +55,8 @@ type CombatSetup struct {
 	ThreatName    string
 	RosterOwnerID ecs.EntityID // 0 for garrison defense
 
-	IsGarrisonDefense    bool
+	Type                 CombatType
 	DefendedNodeID       ecs.EntityID
-	IsRaidCombat         bool
 	PostCombatReturnMode string // "" = default, "raid" = return to raid mode
 }
 

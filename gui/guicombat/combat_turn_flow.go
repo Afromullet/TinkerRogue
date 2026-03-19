@@ -1,13 +1,10 @@
 package guicombat
 
 import (
-	"fmt"
 	"game_main/gui/framework"
 	"game_main/gui/guisquads"
 	"game_main/gui/widgets"
 	"game_main/tactical/combatservices"
-
-	"github.com/bytearena/ecs"
 )
 
 // CombatTurnFlow manages the turn lifecycle: ending turns, executing AI turns,
@@ -83,29 +80,11 @@ func (tf *CombatTurnFlow) ClearState() {
 func (tf *CombatTurnFlow) HandleEndTurn() {
 	tf.actionHandler.ClearMoveHistory()
 
-	err := tf.combatService.TurnManager.EndTurn()
-	if err != nil {
+	if !tf.completeTurn() {
 		return
-	}
-
-	// Cache invalidation and threat updates are handled automatically by the onTurnEnd hook.
-
-	// Check for victory after player ends turn
-	if tf.CheckAndHandleVictory() {
-		return
-	}
-
-	currentFactionID := tf.combatService.TurnManager.GetCurrentFaction()
-	round := tf.combatService.TurnManager.GetCurrentRound()
-
-	if tf.combatService.BattleRecorder != nil && tf.combatService.BattleRecorder.IsEnabled() {
-		tf.combatService.BattleRecorder.SetCurrentRound(round)
 	}
 
 	tf.context.ModeCoordinator.GetTacticalState().Reset()
-
-	tf.turnOrderComponent.Refresh()
-	tf.factionInfoComponent.ShowFaction(currentFactionID)
 	tf.squadDetailComponent.SetText("Select a squad\nto view details")
 
 	tf.executeAITurnIfNeeded()
@@ -227,19 +206,24 @@ func (tf *CombatTurnFlow) playNextAIAttack(attacks []combatservices.QueuedAttack
 
 // advanceAfterAITurn advances to next turn after AI completes
 func (tf *CombatTurnFlow) advanceAfterAITurn() {
-	err := tf.combatService.TurnManager.EndTurn()
-	if err != nil {
+	if !tf.completeTurn() {
 		return
 	}
+	tf.executeAITurnIfNeeded()
+}
 
-	// Cache invalidation and threat updates are handled automatically by the onTurnEnd hook.
+// completeTurn ends the current turn, checks victory, and refreshes UI.
+// Returns false if the turn could not end or combat ended (victory/defeat).
+func (tf *CombatTurnFlow) completeTurn() bool {
+	if err := tf.combatService.TurnManager.EndTurn(); err != nil {
+		return false
+	}
 
-	// Check for victory after AI turn
 	if tf.CheckAndHandleVictory() {
-		return
+		return false
 	}
 
-	newFactionID := tf.combatService.TurnManager.GetCurrentFaction()
+	currentFactionID := tf.combatService.TurnManager.GetCurrentFaction()
 	round := tf.combatService.TurnManager.GetCurrentRound()
 
 	if tf.combatService.BattleRecorder != nil && tf.combatService.BattleRecorder.IsEnabled() {
@@ -247,24 +231,9 @@ func (tf *CombatTurnFlow) advanceAfterAITurn() {
 	}
 
 	tf.turnOrderComponent.Refresh()
-	tf.factionInfoComponent.ShowFaction(newFactionID)
+	tf.factionInfoComponent.ShowFaction(currentFactionID)
 
-	tf.executeAITurnIfNeeded()
-}
-
-// formatTurnMessage creates the turn transition message for combat log
-func (tf *CombatTurnFlow) formatTurnMessage(factionID ecs.EntityID, round int) string {
-	factionData := tf.queries.CombatCache.FindFactionDataByID(factionID)
-	factionName := "Unknown"
-
-	if factionData != nil {
-		factionName = factionData.Name
-		if factionData.PlayerID > 0 {
-			return fmt.Sprintf("=== Round %d: %s (%s) ===", round, factionName, factionData.PlayerName)
-		}
-		return fmt.Sprintf("=== Round %d: %s (AI) ===", round, factionName)
-	}
-	return fmt.Sprintf("=== Round %d: %s's Turn ===", round, factionName)
+	return true
 }
 
 // getPostCombatReturnMode returns the mode to transition to after combat ends.

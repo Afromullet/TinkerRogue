@@ -12,7 +12,7 @@ import (
 
 // RaidCombatStarter prepares raid encounter combat.
 // Calls SetupRaidFactions() to create factions and position squads,
-// then returns a CombatSetup with IsRaidCombat=true and PostCombatReturnMode="raid".
+// then returns a CombatSetup with Type=CombatTypeRaid and PostCombatReturnMode="raid".
 type RaidCombatStarter struct {
 	RaidEntityID     ecs.EntityID
 	GarrisonSquadIDs []ecs.EntityID
@@ -38,7 +38,7 @@ func (s *RaidCombatStarter) Prepare(manager *common.EntityManager) (*combat.Comb
 		EncounterID:          s.RaidEntityID,
 		ThreatName:           "Garrison Raid",
 		RosterOwnerID:        s.CommanderID,
-		IsRaidCombat:         true,
+		Type:                 combat.CombatTypeRaid,
 		PostCombatReturnMode: "raid",
 	}, nil
 }
