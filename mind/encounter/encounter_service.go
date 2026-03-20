@@ -8,7 +8,6 @@ import (
 	"game_main/mind/combatlifecycle"
 	"game_main/overworld/core"
 	"game_main/tactical/combat"
-	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"
 )
@@ -23,11 +22,10 @@ import (
 // What it DOESN'T do (handled by other systems):
 // - Create encounter entities (TriggerCombatFromThreat handles this)
 // - Setup combat (SetupBalancedEncounter in this package handles this)
-// - Resolve combat outcomes (CombatService does this)
-// - Mark threats defeated (CombatService does this)
+// - Mark threats defeated (handled via resolvers in ExitCombat)
 type EncounterService struct {
 	manager         *common.EntityManager
-	modeCoordinator CombatTransitionHandler
+	modeCoordinator ModeCoordinator
 
 	// Current encounter tracking
 	activeEncounter *ActiveEncounter
@@ -36,15 +34,15 @@ type EncounterService struct {
 	history    []*CompletedEncounter
 	maxHistory int
 
-	// PostCombatCallback is called after ExitCombat finishes processing.
-	// Set by external systems (e.g., RaidRunner) to receive combat results.
-	PostCombatCallback func(combat.CombatExitReason, *combat.EncounterOutcome)
+	// postCombatCallback is called after ExitCombat finishes processing.
+	// Registered/unregistered by external systems (e.g., RaidRunner) to receive combat results.
+	postCombatCallback func(combat.CombatExitReason, *combat.EncounterOutcome)
 }
 
 // NewEncounterService creates a new encounter coordinator
 func NewEncounterService(
 	manager *common.EntityManager,
-	modeCoordinator CombatTransitionHandler,
+	modeCoordinator ModeCoordinator,
 ) *EncounterService {
 	return &EncounterService{
 		manager:         manager,
@@ -86,19 +84,9 @@ func (es *EncounterService) RecordEncounterCompletion(
 
 	es.addToHistory(completed)
 
-	// Restore player to original position (before they were teleported to encounter)
-	if pos := es.modeCoordinator.GetPlayerPosition(); pos != nil {
-		originalPos := es.activeEncounter.OriginalPlayerPosition
-		*pos = originalPos
-		fmt.Printf("Restored player position to original location (%d,%d)\n",
-			originalPos.X, originalPos.Y)
-	}
-
 	// Clear active encounter
 	es.activeEncounter = nil
 
-	fmt.Printf("EncounterService: Recorded %s after %d rounds (%.1fs)\n",
-		reason, roundsCompleted, completed.Duration.Seconds())
 }
 
 // === QUERY METHODS ===
@@ -133,90 +121,20 @@ func (es *EncounterService) GetEnemySquadIDs() []ecs.EntityID {
 	return nil
 }
 
-// EndEncounter marks an encounter as defeated if the player won and applies combat resolution.
-// This should be called after combat concludes but before cleanup.
-func (es *EncounterService) EndEncounter(
-	isPlayerVictory bool,
-	victorFaction ecs.EntityID,
-	victorName string,
-	roundsCompleted int,
-	defeatedFactions []ecs.EntityID,
-) {
-	// Only process if we have a tracked encounter
-	if es.activeEncounter == nil {
-		fmt.Println("WARNING: EndEncounter called with no active encounter")
-		return
-	}
-
-	encounterID := es.activeEncounter.EncounterID
-
-	entity, encounterData := es.getEncounterData(encounterID)
-	if entity == nil || encounterData == nil {
-		fmt.Printf("WARNING: Encounter entity %d not found or missing data during EndEncounter\n", encounterID)
-		return
-	}
-
-	// Handle resolution via unified pipeline
-	if es.activeEncounter.IsGarrisonDefense {
-		resolver := &GarrisonDefenseResolver{
-			PlayerVictory:        isPlayerVictory,
-			DefendedNodeID:       es.activeEncounter.DefendedNodeID,
-			AttackingFactionType: encounterData.AttackingFactionType,
-		}
-		combatlifecycle.ExecuteResolution(es.manager, resolver)
-	} else if encounterData.ThreatNodeID != 0 {
-		resolver := &OverworldCombatResolver{
-			ThreatNodeID:   encounterData.ThreatNodeID,
-			PlayerVictory:  isPlayerVictory,
-			PlayerEntityID: es.activeEncounter.PlayerEntityID,
-			PlayerSquadIDs: es.getAllPlayerSquadIDs(),
-			EnemySquadIDs:  es.activeEncounter.EnemySquadIDs,
-		}
-		combatlifecycle.ExecuteResolution(es.manager, resolver)
-	}
-
-	// Only mark as defeated if player won
-	if isPlayerVictory {
-		// Mark encounter as defeated and hide permanently
-		encounterData.IsDefeated = true
-
-		// Hide encounter sprite permanently on overworld map
-		renderable := common.GetComponentType[*common.Renderable](
-			entity,
-			common.RenderableComponent,
-		)
-		if renderable != nil {
-			renderable.Visible = false
-		}
-
-		fmt.Printf("Marked encounter '%s' as defeated\n", encounterData.Name)
-	}
+// SetPostCombatCallback sets a callback to receive combat results after ExitCombat completes.
+// Only one callback is supported at a time (last call wins).
+func (es *EncounterService) SetPostCombatCallback(fn func(combat.CombatExitReason, *combat.EncounterOutcome)) {
+	es.postCombatCallback = fn
 }
 
-// RestoreEncounterSprite restores the encounter sprite visibility when fleeing combat.
-// This allows the player to re-engage with the encounter later.
-func (es *EncounterService) RestoreEncounterSprite() {
-	if es.activeEncounter == nil {
-		return
-	}
-
-	entity, encounterData := es.getEncounterData(es.activeEncounter.EncounterID)
-	if entity == nil || encounterData == nil || encounterData.IsDefeated {
-		return
-	}
-
-	renderable := common.GetComponentType[*common.Renderable](
-		entity,
-		common.RenderableComponent,
-	)
-	if renderable != nil {
-		renderable.Visible = true
-		fmt.Println("Restoring overworld encounter sprite after fleeing")
-	}
+// ClearPostCombatCallback removes the post-combat callback.
+func (es *EncounterService) ClearPostCombatCallback() {
+	es.postCombatCallback = nil
 }
 
 // ExitCombat is the single unified exit point for all combat endings.
 // All paths (victory, defeat, flee) MUST use this method.
+// Handles resolution, history recording, cleanup, and listener notification.
 func (es *EncounterService) ExitCombat(
 	reason combat.CombatExitReason,
 	result *combat.EncounterOutcome,
@@ -226,45 +144,112 @@ func (es *EncounterService) ExitCombat(
 		return
 	}
 
-	// Capture before RecordEncounterCompletion clears activeEncounter
-	enemySquadIDs := es.activeEncounter.EnemySquadIDs
-	isGarrisonDefense := es.activeEncounter.IsGarrisonDefense
-	defendedNodeID := es.activeEncounter.DefendedNodeID
+	// Snapshot encounter before RecordEncounterCompletion clears activeEncounter.
+	// All cleanup steps reference this snapshot so new fields don't get missed.
+	enc := *es.activeEncounter
 
-	// Step 1: Resolve combat outcome to overworld
+	// Step 1: Resolve combat outcome based on type + reason
 	switch reason {
 	case combat.ExitVictory, combat.ExitDefeat:
-		if !es.activeEncounter.IsRaidCombat {
-			es.EndEncounter(result.IsPlayerVictory, result.VictorFaction,
-				result.VictorName, result.RoundsCompleted, result.DefeatedFactions)
+		if enc.Type != combat.CombatTypeRaid {
+			es.resolveEncounterOutcome(&enc, result.IsPlayerVictory)
 		}
 	case combat.ExitFlee:
-		es.RestoreEncounterSprite()
-		// Flee resolver
-		_, encounterData := es.getEncounterData(es.activeEncounter.EncounterID)
+		es.restoreEncounterSprite(enc.EncounterID)
+		_, encounterData := es.getEncounterData(enc.EncounterID)
 		if encounterData != nil && encounterData.ThreatNodeID != 0 {
 			resolver := &FleeResolver{ThreatNodeID: encounterData.ThreatNodeID}
 			combatlifecycle.ExecuteResolution(es.manager, resolver)
 		}
 	}
 
-	// Step 2: Record history + restore player position
+	// Step 2: Mark encounter defeated on victory (non-raid)
+	if result.IsPlayerVictory && enc.Type != combat.CombatTypeRaid {
+		es.markEncounterDefeated(enc.EncounterID)
+	}
+
+	// Step 3: Restore player to original position (before they were teleported to encounter)
+	if es.modeCoordinator != nil {
+		if pos := es.modeCoordinator.GetPlayerPosition(); pos != nil {
+			*pos = enc.OriginalPlayerPosition
+		}
+	}
+
+	// Step 4: Record history
 	es.RecordEncounterCompletion(reason, result.VictorFaction,
 		result.VictorName, result.RoundsCompleted)
 
-	// Step 3: Clean up all combat entities
+	// Step 5: Clean up all combat entities
 	if combatCleaner != nil {
-		// For garrison defense victories, garrison squads need special handling
-		// (returned to garrison instead of disposed)
-		if isGarrisonDefense && result.IsPlayerVictory {
-			es.returnGarrisonSquadsToNode(defendedNodeID)
+		if enc.Type == combat.CombatTypeGarrisonDefense && result.IsPlayerVictory {
+			es.returnGarrisonSquadsToNode(enc.DefendedNodeID)
 		}
-		combatCleaner.CleanupCombat(enemySquadIDs)
+		combatCleaner.CleanupCombat(enc.EnemySquadIDs)
 	}
 
-	// Step 4: Notify external listeners (e.g., RaidRunner)
-	if es.PostCombatCallback != nil {
-		es.PostCombatCallback(reason, result)
+	// Step 6: Notify external listeners (e.g., RaidRunner)
+	if es.postCombatCallback != nil {
+		es.postCombatCallback(reason, result)
+	}
+}
+
+// resolveEncounterOutcome dispatches to the correct resolver based on combat type.
+func (es *EncounterService) resolveEncounterOutcome(encounter *ActiveEncounter, isPlayerVictory bool) {
+	_, encounterData := es.getEncounterData(encounter.EncounterID)
+	if encounterData == nil {
+		fmt.Printf("WARNING: Encounter entity %d not found during resolution\n", encounter.EncounterID)
+		return
+	}
+
+	switch encounter.Type {
+	case combat.CombatTypeGarrisonDefense:
+		resolver := &GarrisonDefenseResolver{
+			PlayerVictory:        isPlayerVictory,
+			DefendedNodeID:       encounter.DefendedNodeID,
+			AttackingFactionType: encounterData.AttackingFactionType,
+		}
+		combatlifecycle.ExecuteResolution(es.manager, resolver)
+	case combat.CombatTypeOverworld:
+		if encounterData.ThreatNodeID != 0 {
+			resolver := &OverworldCombatResolver{
+				ThreatNodeID:   encounterData.ThreatNodeID,
+				PlayerVictory:  isPlayerVictory,
+				PlayerEntityID: encounter.PlayerEntityID,
+				PlayerSquadIDs: es.getAllPlayerSquadIDs(),
+				EnemySquadIDs:  encounter.EnemySquadIDs,
+			}
+			combatlifecycle.ExecuteResolution(es.manager, resolver)
+		}
+	// CombatTypeDebug: no resolution needed
+	}
+}
+
+// markEncounterDefeated marks the encounter as defeated and hides its sprite permanently.
+func (es *EncounterService) markEncounterDefeated(encounterID ecs.EntityID) {
+	entity, encounterData := es.getEncounterData(encounterID)
+	if entity == nil || encounterData == nil {
+		return
+	}
+
+	encounterData.IsDefeated = true
+
+	renderable := common.GetComponentType[*common.Renderable](entity, common.RenderableComponent)
+	if renderable != nil {
+		renderable.Visible = false
+	}
+
+}
+
+// restoreEncounterSprite restores the encounter sprite visibility when fleeing combat.
+func (es *EncounterService) restoreEncounterSprite(encounterID ecs.EntityID) {
+	entity, encounterData := es.getEncounterData(encounterID)
+	if entity == nil || encounterData == nil || encounterData.IsDefeated {
+		return
+	}
+
+	renderable := common.GetComponentType[*common.Renderable](entity, common.RenderableComponent)
+	if renderable != nil {
+		renderable.Visible = true
 	}
 }
 
@@ -276,20 +261,35 @@ func (es *EncounterService) TransitionToCombat(setup *combat.CombatSetup) error 
 		return fmt.Errorf("encounter already in progress")
 	}
 
-	originalPlayerPos, err := es.beginCombatTransition(setup.EncounterID, setup.CombatPosition)
-	if err != nil {
-		return err
+	if es.modeCoordinator == nil {
+		return fmt.Errorf("mode coordinator unavailable for combat transition")
 	}
 
+	// Save player's original position before teleporting to encounter
+	pos := es.modeCoordinator.GetPlayerPosition()
+	if pos == nil {
+		return fmt.Errorf("player position unavailable for combat transition")
+	}
+	originalPlayerPos := *pos
+
+	// Setup tactical state for GUI handoff to CombatMode
+	es.modeCoordinator.SetTriggeredEncounterID(setup.EncounterID)
+	es.modeCoordinator.ResetTacticalState()
+
 	// Set post-combat return mode if specified (e.g., "raid")
-	if setup.PostCombatReturnMode != "" && es.modeCoordinator != nil {
+	if setup.PostCombatReturnMode != "" {
 		es.modeCoordinator.SetPostCombatReturnMode(setup.PostCombatReturnMode)
 	}
 
-	playerEntityID := ecs.EntityID(0)
-	if es.modeCoordinator != nil {
-		playerEntityID = es.modeCoordinator.GetPlayerEntityID()
+	// Move player camera to encounter position so map zooms correctly
+	*pos = setup.CombatPosition
+
+	// Transition to combat mode
+	if err := es.modeCoordinator.EnterCombatMode(); err != nil {
+		return fmt.Errorf("failed to enter combat mode: %w", err)
 	}
+
+	playerEntityID := es.modeCoordinator.GetPlayerEntityID()
 
 	es.activeEncounter = &ActiveEncounter{
 		EncounterID:            setup.EncounterID,
@@ -301,45 +301,11 @@ func (es *EncounterService) TransitionToCombat(setup *combat.CombatSetup) error 
 		EnemySquadIDs:          setup.EnemySquadIDs,
 		RosterOwnerID:          setup.RosterOwnerID,
 		PlayerEntityID:         playerEntityID,
-		PlayerFactionID:        setup.PlayerFactionID,
-		EnemyFactionID:         setup.EnemyFactionID,
-		IsGarrisonDefense:      setup.IsGarrisonDefense,
+		Type:                   setup.Type,
 		DefendedNodeID:         setup.DefendedNodeID,
-		IsRaidCombat:           setup.IsRaidCombat,
 	}
 
 	return nil
-}
-
-// === PRIVATE HELPER METHODS ===
-
-// beginCombatTransition saves the player's original position, sets up battle state,
-// moves the player camera to combatPos, and enters combat mode.
-// Returns the saved original position for use in ActiveEncounter.
-func (es *EncounterService) beginCombatTransition(encounterID ecs.EntityID, combatPos coords.LogicalPosition) (coords.LogicalPosition, error) {
-	// Save player's original position before teleporting to encounter
-	originalPlayerPos := coords.LogicalPosition{X: 50, Y: 40} // Default if PlayerData unavailable
-	if pos := es.modeCoordinator.GetPlayerPosition(); pos != nil {
-		originalPlayerPos = *pos
-	}
-
-	if es.modeCoordinator != nil {
-		// Setup tactical state for GUI handoff to CombatMode
-		es.modeCoordinator.SetTriggeredEncounterID(encounterID)
-		es.modeCoordinator.ResetTacticalState()
-
-		// Move player camera to encounter position so map zooms correctly
-		if pos := es.modeCoordinator.GetPlayerPosition(); pos != nil {
-			*pos = combatPos
-		}
-
-		// Transition to combat mode
-		if err := es.modeCoordinator.EnterCombatMode(); err != nil {
-			return originalPlayerPos, fmt.Errorf("failed to enter combat mode: %w", err)
-		}
-	}
-
-	return originalPlayerPos, nil
 }
 
 // getEncounterData looks up an encounter entity and its OverworldEncounterData.

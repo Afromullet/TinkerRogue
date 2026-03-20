@@ -172,7 +172,7 @@ func (gmc *GameModeCoordinator) GetPlayerData() *common.PlayerData {
 	return nil
 }
 
-// === CombatTransitionHandler methods (satisfies encounter.CombatTransitionHandler) ===
+// === ModeCoordinator methods (satisfies encounter.ModeCoordinator) ===
 
 func (gmc *GameModeCoordinator) SetPostCombatReturnMode(mode string) {
 	gmc.tacticalState.PostCombatReturnMode = mode

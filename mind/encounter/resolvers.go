@@ -104,7 +104,7 @@ func (r *OverworldCombatResolver) Resolve(manager *common.EntityManager) *combat
 
 	// Player defeat — threat grows stronger
 	oldIntensity := nodeData.Intensity
-	nodeData.Intensity += 1
+	nodeData.Intensity += DefeatIntensityGrowth
 	nodeData.GrowthProgress = 0.0
 
 	// Update influence radius
@@ -192,9 +192,8 @@ func (r *FleeResolver) Resolve(manager *common.EntityManager) *combatlifecycle.R
 }
 
 // calculateThreatDamage converts enemy casualties to threat intensity damage.
-// Every 5 enemies killed = 1 intensity reduction.
 func calculateThreatDamage(enemiesKilled int) int {
-	return enemiesKilled / 5
+	return enemiesKilled / EnemiesPerIntensityPoint
 }
 
 // getAllPlayerSquadIDs returns all player squad IDs from the roster.

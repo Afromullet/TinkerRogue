@@ -49,12 +49,16 @@ func NewRaidRunner(manager *common.EntityManager, encounterService *encounter.En
 		encounterService: encounterService,
 	}
 
-	// Register as post-combat listener
-	encounterService.PostCombatCallback = func(reason combat.CombatExitReason, result *combat.EncounterOutcome) {
-		if rr.raidEntityID != 0 {
+	// Register as post-combat listener.
+	// Guard: only process results when raid is active AND not retreated.
+	// Without this guard, retreating from a raid and then triggering an overworld
+	// encounter would cause the listener to process the overworld result as a raid.
+	encounterService.SetPostCombatCallback(func(reason combat.CombatExitReason, result *combat.EncounterOutcome) {
+		raidState := GetRaidState(rr.manager)
+		if rr.raidEntityID != 0 && raidState != nil && raidState.Status == RaidActive {
 			rr.ResolveEncounter(reason, result)
 		}
-	}
+	})
 
 	return rr
 }
@@ -76,7 +80,6 @@ func (rr *RaidRunner) StartRaid(commanderID ecs.EntityID, playerEntityID ecs.Ent
 
 	rr.raidEntityID = GenerateGarrison(rr.manager, floorCount, commanderID, playerEntityID, playerSquadIDs)
 
-	fmt.Printf("RaidRunner: Raid started with %d squads across %d floors\n", len(playerSquadIDs), floorCount)
 	return nil
 }
 
@@ -98,7 +101,6 @@ func (rr *RaidRunner) EnterFloor(floorNumber int) error {
 		return fmt.Errorf("floor state not found for floor %d", floorNumber)
 	}
 
-	fmt.Printf("RaidRunner: Entering floor %d (%d rooms)\n", floorNumber, floorState.RoomsTotal)
 	return nil
 }
 
@@ -132,9 +134,6 @@ func (rr *RaidRunner) SelectRoom(nodeID int) error {
 		rr.processStairsRoom(raidState, room)
 		return nil
 	}
-
-	fmt.Printf("RaidRunner: Selected room %d (%s) on floor %d\n",
-		nodeID, room.RoomType, raidState.CurrentFloor)
 
 	return nil
 }
@@ -184,8 +183,7 @@ func (rr *RaidRunner) TriggerRaidEncounter(nodeID int) error {
 		CombatPos:        combatPos,
 		CommanderID:      raidState.CommanderID,
 	}
-	_, err := combatlifecycle.ExecuteCombatStart(rr.encounterService, rr.manager, starter)
-	return err
+	return combatlifecycle.ExecuteCombatStart(rr.encounterService, rr.manager, starter)
 }
 
 // processRestRoom applies rest room recovery and marks the room cleared.
@@ -198,7 +196,6 @@ func (rr *RaidRunner) processRestRoom(raidState *RaidStateData, room *RoomData) 
 	}
 
 	MarkRoomCleared(rr.manager, room.NodeID, room.FloorNumber)
-	fmt.Printf("RaidRunner: Rest room %d cleared, recovery applied\n", room.NodeID)
 }
 
 // processStairsRoom marks stairs cleared and advances floor.
@@ -210,7 +207,6 @@ func (rr *RaidRunner) processStairsRoom(raidState *RaidStateData, room *RoomData
 		floorState.IsComplete = true
 	}
 
-	fmt.Printf("RaidRunner: Stairs room cleared on floor %d\n", room.FloorNumber)
 }
 
 // ResolveEncounter processes the result of a completed combat encounter.
@@ -332,7 +328,6 @@ func (rr *RaidRunner) Retreat() error {
 	}
 
 	raidState.Status = RaidRetreated
-	fmt.Println("RaidRunner: Player retreated from raid (state preserved)")
 	return nil
 }
 
@@ -349,9 +344,7 @@ func (rr *RaidRunner) RestoreFromSave(raidEntityID ecs.EntityID) {
 
 // finishRaid clears the runner state after the raid ends.
 func (rr *RaidRunner) finishRaid(status RaidStatus) {
-	fmt.Printf("RaidRunner: Raid finished with status: %s\n", status)
-
 	// Clear callback to avoid stale references
-	rr.encounterService.PostCombatCallback = nil
+	rr.encounterService.ClearPostCombatCallback()
 	rr.raidEntityID = 0
 }

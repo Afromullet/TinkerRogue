@@ -49,24 +49,28 @@ func translateThreatToEncounter(
 	}, nil
 }
 
+// createEncounterEntity creates an encounter entity from OverworldEncounterData.
+// This is the single place where encounter entities are born.
+func createEncounterEntity(manager *common.EntityManager, data *core.OverworldEncounterData) ecs.EntityID {
+	entity := manager.World.NewEntity()
+	entity.AddComponent(core.OverworldEncounterComponent, data)
+	return entity.GetID()
+}
+
 // createOverworldEncounter creates an encounter entity from threat parameters
 func createOverworldEncounter(
 	manager *common.EntityManager,
 	params *encounterParams,
 ) (ecs.EntityID, error) {
-	entity := manager.World.NewEntity()
-
 	encounterData := &core.OverworldEncounterData{
 		Name:          params.EncounterName,
 		Level:         params.Difficulty,
 		EncounterType: params.EncounterType,
 		IsDefeated:    false,
-		ThreatNodeID:  params.ThreatNodeID, // Store threat link for resolution
+		ThreatNodeID:  params.ThreatNodeID,
 	}
 
-	entity.AddComponent(core.OverworldEncounterComponent, encounterData)
-
-	return entity.GetID(), nil
+	return createEncounterEntity(manager, encounterData), nil
 }
 
 // getEncounterDisplayName returns the display name for an encounter.
@@ -115,9 +119,6 @@ func TriggerCombatFromThreat(
 		return 0, fmt.Errorf("failed to create encounter: %w", err)
 	}
 
-	fmt.Printf("Combat triggered from threat %d: %s (Encounter ID: %d)\n",
-		params.ThreatNodeID, params.EncounterName, encounterID)
-
 	// 3. Combat system will call SetupBalancedEncounter with the encounter data
 	// This happens in the combat mode transition (handled by GUI/mode coordinator)
 	// The encounter ID is stored and passed to combat lifecycle for resolution
@@ -133,8 +134,6 @@ func TriggerGarrisonDefense(
 	attackingFactionType core.FactionType,
 	attackingStrength int,
 ) (ecs.EntityID, error) {
-	entity := manager.World.NewEntity()
-
 	encounterData := &core.OverworldEncounterData{
 		Name:                 fmt.Sprintf("%s Raid on Garrison", attackingFactionType.String()),
 		Level:                1 + (attackingStrength / 20),
@@ -145,11 +144,5 @@ func TriggerGarrisonDefense(
 		AttackingFactionType: attackingFactionType,
 	}
 
-	entity.AddComponent(core.OverworldEncounterComponent, encounterData)
-
-	encounterID := entity.GetID()
-	fmt.Printf("Garrison defense encounter created: ID %d, node %d, attacker %s\n",
-		encounterID, targetNodeID, attackingFactionType.String())
-
-	return encounterID, nil
+	return createEncounterEntity(manager, encounterData), nil
 }

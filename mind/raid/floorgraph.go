@@ -63,7 +63,6 @@ func MarkRoomCleared(manager *common.EntityManager, nodeID, floorNumber int) {
 		updateRoomAccessibility(manager, childNodeID, floorNumber)
 	}
 
-	fmt.Printf("Room %d on floor %d marked cleared. Updating child accessibility.\n", nodeID, floorNumber)
 }
 
 // updateRoomAccessibility checks if all parent rooms of a room are cleared.

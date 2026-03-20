@@ -35,9 +35,15 @@ const (
 	DefaultPowerProfile = "Balanced" // Default power calculation profile
 )
 
-// CombatTransitionHandler defines the narrow interface for encounter→combat transitions.
+// Combat resolution constants
+const (
+	EnemiesPerIntensityPoint = 5 // Every 5 enemies killed = 1 intensity reduction
+	DefeatIntensityGrowth    = 1 // Threat grows by 1 intensity on player defeat
+)
+
+// ModeCoordinator defines the narrow interface for encounter→combat mode transitions.
 // Decoupled from GUI types — uses only primitives and coords.
-type CombatTransitionHandler interface {
+type ModeCoordinator interface {
 	SetPostCombatReturnMode(mode string)
 	SetTriggeredEncounterID(id ecs.EntityID)
 	ResetTacticalState()
@@ -65,16 +71,9 @@ type ActiveEncounter struct {
 	RosterOwnerID  ecs.EntityID // Commander entity (owns squad roster)
 	PlayerEntityID ecs.EntityID // Player entity (owns resource stockpile)
 
-	// Cached faction IDs (avoid O(n) query during resolution)
-	PlayerFactionID ecs.EntityID // Player's combat faction
-	EnemyFactionID  ecs.EntityID // Enemy's combat faction
-
-	// Garrison defense tracking
-	IsGarrisonDefense bool         // True if defending a garrisoned node
-	DefendedNodeID    ecs.EntityID // Node being defended (0 if not garrison defense)
-
-	// Raid combat tracking
-	IsRaidCombat bool // True if this is a raid encounter (skip overworld resolution)
+	// Combat type (overworld, garrison defense, raid, debug)
+	Type           combat.CombatType
+	DefendedNodeID ecs.EntityID // Node being defended (0 if not garrison defense)
 }
 
 // CompletedEncounter represents a finished encounter for history tracking
@@ -94,6 +93,14 @@ type CompletedEncounter struct {
 	RoundsCompleted int
 	VictorFaction   ecs.EntityID
 	VictorName      string
+}
+
+// SpawnResult holds the output of SpawnCombatEntities or spawnGarrisonEncounter.
+// Replaces the multi-return ([]EntityID, EntityID, EntityID, error).
+type SpawnResult struct {
+	EnemySquadIDs   []ecs.EntityID
+	PlayerFactionID ecs.EntityID
+	EnemyFactionID  ecs.EntityID
 }
 
 // EncounterSpec describes what to create for an encounter.

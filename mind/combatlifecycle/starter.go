@@ -10,21 +10,17 @@ func ExecuteCombatStart(
 	transitioner combat.CombatTransitioner,
 	manager *common.EntityManager,
 	starter combat.CombatStarter,
-) (*combat.CombatStartResult, error) {
+) error {
 	setup, err := starter.Prepare(manager)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	if err := transitioner.TransitionToCombat(setup); err != nil {
 		// Let the starter undo any side effects from Prepare (e.g., hidden sprites)
 		if rb, ok := starter.(combat.CombatStartRollback); ok {
 			rb.Rollback()
 		}
-		return nil, err
+		return err
 	}
-	return &combat.CombatStartResult{
-		PlayerFactionID: setup.PlayerFactionID,
-		EnemyFactionID:  setup.EnemyFactionID,
-		EnemySquadIDs:   setup.EnemySquadIDs,
-	}, nil
+	return nil
 }

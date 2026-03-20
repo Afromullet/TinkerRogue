@@ -24,7 +24,6 @@ func (r *RaidRoomResolver) Resolve(manager *common.EntityManager) *combatlifecyc
 
 	room := GetRoomData(manager, r.RoomNodeID, floorNumber)
 	if room == nil {
-		fmt.Printf("RaidRoomResolver: Room %d not found on floor %d\n", r.RoomNodeID, floorNumber)
 		return nil
 	}
 
@@ -38,16 +37,12 @@ func (r *RaidRoomResolver) Resolve(manager *common.EntityManager) *combatlifecyc
 
 	MarkRoomCleared(manager, room.NodeID, floorNumber)
 
-	fmt.Printf("RaidRoomResolver: Room %d (%s) cleared on floor %d\n",
-		room.NodeID, room.RoomType, floorNumber)
-
 	// Check floor completion
 	if IsFloorComplete(manager, floorNumber) {
 		floorState := GetFloorState(manager, floorNumber)
 		if floorState != nil {
 			floorState.IsComplete = true
 		}
-		fmt.Printf("RaidRoomResolver: Floor %d complete!\n", floorNumber)
 	}
 
 	// Calculate room reward (pipeline grants it)
@@ -69,8 +64,6 @@ func (r *RaidDefeatResolver) Resolve(manager *common.EntityManager) *combatlifec
 	if raidState != nil {
 		raidState.Status = RaidDefeat
 	}
-	fmt.Println("RaidDefeatResolver: Raid ended in defeat")
-
 	return &combatlifecycle.ResolutionPlan{
 		Description: "Raid ended in defeat",
 	}

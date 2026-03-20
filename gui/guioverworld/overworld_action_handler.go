@@ -161,7 +161,7 @@ func (ah *OverworldActionHandler) EngageThreat(nodeID ecs.EntityID) {
 		PlayerPos:     *threatPos,
 		RosterOwnerID: cmdID,
 	}
-	if _, err := ah.deps.StartCombat(starter); err != nil {
+	if err := ah.deps.StartCombat(starter); err != nil {
 		ah.deps.LogEvent(fmt.Sprintf("ERROR: %v", err))
 		return
 	}
@@ -190,7 +190,7 @@ func (ah *OverworldActionHandler) HandleRaid(raid *core.PendingRaid) {
 		EncounterID:  encounterID,
 		TargetNodeID: raid.TargetNodeID,
 	}
-	if _, err := ah.deps.StartCombat(starter); err != nil {
+	if err := ah.deps.StartCombat(starter); err != nil {
 		ah.deps.LogEvent(fmt.Sprintf("ERROR: Failed to start garrison defense: %v", err))
 		return
 	}
@@ -234,7 +234,7 @@ func (ah *OverworldActionHandler) StartRandomEncounter() {
 		PlayerPos:     *cmdPos,
 		RosterOwnerID: cmdID,
 	}
-	if _, err := ah.deps.StartCombat(starter); err != nil {
+	if err := ah.deps.StartCombat(starter); err != nil {
 		ah.deps.LogEvent(fmt.Sprintf("ERROR: %v", err))
 		return
 	}
