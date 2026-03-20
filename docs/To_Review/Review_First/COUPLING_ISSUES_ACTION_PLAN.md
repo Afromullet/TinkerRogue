@@ -198,3 +198,34 @@ Well-structured internal layering with minimal external coupling. Changes stay w
 2. `go test ./...` -- confirms no behavioral regressions
 3. `go vet ./...` -- confirms no new issues
 4. For Phase 3 (structural move): verify fan-in of `tactical/squads/` has decreased by checking imports
+
+---
+
+## Combat Pipeline Review (2026-03-20)
+
+**Context:** The Tactical-Simplifier reviewed the combat pipeline (`mind/combatpipeline`, `mind/encounter`, `tactical/combatlifecycle`) on 2026-03-18 and proposed 6 simplifications. Commits `4d89a7b`, `916a2e1`, and `d6344ef` addressed most of them.
+
+### Completed (4 of 6)
+
+| # | Proposal | How Resolved |
+|---|----------|-------------|
+| 1 | CombatType enum (replace boolean flags) | `CombatType` enum in `combat_contracts.go` with 4 types |
+| 2 | AssignSquadsToFaction helper | 3 helpers in `combatlifecycle/enrollment.go` |
+| 4 | Flatten ExitCombat dispatch | Single unified exit with snapshot pattern |
+| 6 | Battle log export in CombatMode.Exit | Properly isolated with config guard |
+
+### Remaining (2 of 6)
+
+#### CP-3: CalculateTargetPower Helper
+
+- **Files:** `mind/encounter/encounter_generator.go` lines 48-62, `mind/encounter/starters.go` lines 121-130
+- **Problem:** Identical calculate-average-power-and-scale pattern duplicated. Both iterate squad IDs, sum power via `evaluation.CalculateSquadPower`, average, then clamp with `combatlifecycle.ClampPowerTarget`. Only difference is variable names and squad source.
+- **Fix:** Extract `CalculateTargetPower(manager, squadIDs, level) (float64, templates.JSONEncounterDifficulty)` in `combatlifecycle/helpers.go` or `encounter/`.
+- **Effort:** ~30 min, ~25 lines dedup
+
+#### CP-5: Split OverworldCombatResolver.Resolve
+
+- **File:** `mind/encounter/resolvers.go` lines 26-132
+- **Problem:** Method grew to 107 lines (was 65 at review time). Handles casualty counting, threat node validation, victory with full destruction, victory with weakening, and player defeat. The victory path alone is 58 lines with duplicated logging/reward logic between branches.
+- **Fix:** Extract `resolveVictory(manager, threatEntity, nodeData)` and `resolveDefeat(manager, threatEntity, nodeData)` private helpers. Pure readability improvement, no behavior change.
+- **Effort:** ~20 min, 0 net line change
