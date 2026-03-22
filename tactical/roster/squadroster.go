@@ -65,26 +65,23 @@ func (sr *SquadRoster) GetSquadCount() (int, int) {
 
 // GetDeployedSquads returns IDs of all squads that are currently deployed
 func (sr *SquadRoster) GetDeployedSquads(manager *common.EntityManager) []ecs.EntityID {
-	deployed := make([]ecs.EntityID, 0)
-	for _, squadID := range sr.OwnedSquads {
-		squadData := common.GetComponentTypeByID[*squads.SquadData](manager, squadID, squads.SquadComponent)
-		if squadData != nil && squadData.IsDeployed {
-			deployed = append(deployed, squadID)
-		}
-	}
-	return deployed
+	return sr.filterSquadsByDeployment(manager, true)
 }
 
 // GetReserveSquads returns IDs of all squads that are in reserves (not deployed)
 func (sr *SquadRoster) GetReserveSquads(manager *common.EntityManager) []ecs.EntityID {
-	reserves := make([]ecs.EntityID, 0)
+	return sr.filterSquadsByDeployment(manager, false)
+}
+
+func (sr *SquadRoster) filterSquadsByDeployment(manager *common.EntityManager, deployed bool) []ecs.EntityID {
+	result := make([]ecs.EntityID, 0)
 	for _, squadID := range sr.OwnedSquads {
 		squadData := common.GetComponentTypeByID[*squads.SquadData](manager, squadID, squads.SquadComponent)
-		if squadData != nil && !squadData.IsDeployed {
-			reserves = append(reserves, squadID)
+		if squadData != nil && squadData.IsDeployed == deployed {
+			result = append(result, squadID)
 		}
 	}
-	return reserves
+	return result
 }
 
 // GetPlayerSquadRoster retrieves player's squad roster from ECS

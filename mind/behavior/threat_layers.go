@@ -2,7 +2,6 @@ package behavior
 
 import (
 	"game_main/common"
-	"game_main/mind/evaluation"
 	"game_main/tactical/combat"
 
 	"github.com/bytearena/ecs"
@@ -11,7 +10,7 @@ import (
 // ThreatLayerBase provides common functionality for all layers
 // Uses composition pattern - embed this in concrete layers
 type ThreatLayerBase struct {
-	*evaluation.DirtyCache // Embedded cache for dirty flag management
+	*common.DirtyCache // Embedded cache for dirty flag management
 	manager                *common.EntityManager
 	cache                  *combat.CombatQueryCache
 	factionID              ecs.EntityID // The faction viewing this threat layer
@@ -24,7 +23,7 @@ func NewThreatLayerBase(
 	cache *combat.CombatQueryCache,
 ) *ThreatLayerBase {
 	return &ThreatLayerBase{
-		DirtyCache: evaluation.NewDirtyCache(),
+		DirtyCache: common.NewDirtyCache(),
 		manager:    manager,
 		cache:      cache,
 		factionID:  factionID,

@@ -188,11 +188,11 @@ func GetTargetType(behaviorKey string) TargetType {
 // --- Internal helpers ---
 
 func (h *ArtifactActivationHandler) executeArtifact(behaviorKey string, targetSquadID ecs.EntityID) {
-	ctx := &gear.BehaviorContext{
-		Manager:       h.deps.CombatService.EntityManager,
-		Cache:         h.deps.CombatService.CombatCache,
-		ChargeTracker: h.deps.CombatService.GetChargeTracker(),
-	}
+	ctx := gear.NewBehaviorContext(
+		h.deps.CombatService.EntityManager,
+		h.deps.CombatService.CombatCache,
+		h.deps.CombatService.GetChargeTracker(),
+	)
 
 	gear.ActivateArtifact(behaviorKey, targetSquadID, ctx)
 

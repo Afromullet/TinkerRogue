@@ -291,14 +291,14 @@ func (cs *CombatService) SetAIController(ctrl AITurnController) {
 // setupBehaviorDispatch wires all registered artifact behaviors to the combat event system.
 func setupBehaviorDispatch(cs *CombatService, manager *common.EntityManager, cache *combat.CombatQueryCache) {
 	cs.RegisterPostResetHook(func(factionID ecs.EntityID, squadIDs []ecs.EntityID) {
-		ctx := &gear.BehaviorContext{Manager: manager, Cache: cache, ChargeTracker: cs.chargeTracker}
+		ctx := gear.NewBehaviorContext(manager, cache, cs.chargeTracker)
 		for _, b := range gear.AllBehaviors() {
 			b.OnPostReset(ctx, factionID, squadIDs)
 		}
 	})
 
 	cs.RegisterOnAttackComplete(func(attackerID, defenderID ecs.EntityID, result *combat.CombatResult) {
-		ctx := &gear.BehaviorContext{Manager: manager, Cache: cache, ChargeTracker: cs.chargeTracker}
+		ctx := gear.NewBehaviorContext(manager, cache, cs.chargeTracker)
 		for _, b := range gear.AllBehaviors() {
 			b.OnAttackComplete(ctx, attackerID, defenderID, result)
 		}
@@ -308,7 +308,7 @@ func setupBehaviorDispatch(cs *CombatService, manager *common.EntityManager, cac
 		if cs.chargeTracker != nil {
 			cs.chargeTracker.RefreshRoundCharges()
 		}
-		ctx := &gear.BehaviorContext{Manager: manager, Cache: cache, ChargeTracker: cs.chargeTracker}
+		ctx := gear.NewBehaviorContext(manager, cache, cs.chargeTracker)
 		for _, b := range gear.AllBehaviors() {
 			b.OnTurnEnd(ctx, round)
 		}

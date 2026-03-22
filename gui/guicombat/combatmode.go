@@ -2,6 +2,7 @@ package guicombat
 
 import (
 	"fmt"
+	"game_main/common"
 	"game_main/config"
 	"game_main/gui/builders"
 	"game_main/gui/framework"
@@ -10,7 +11,6 @@ import (
 	"game_main/gui/guispells"
 	"game_main/gui/guisquads"
 	"game_main/gui/widgets"
-	"game_main/mind/ai"
 	"game_main/tactical/combat"
 	"game_main/tactical/combatservices"
 	"game_main/tactical/spells"
@@ -58,14 +58,18 @@ type CombatMode struct {
 	// Encounter callbacks (stored until deps are created in Initialize)
 	encounterCallbacks combat.EncounterCallbacks
 
+	// Factory for creating a fully-wired CombatService (with AI injected)
+	serviceFactory func(*common.EntityManager) *combatservices.CombatService
+
 	// State tracking for UI updates (GUI_PERFORMANCE_ANALYSIS.md)
 	lastFactionID     ecs.EntityID
 	lastSelectedSquad ecs.EntityID
 }
 
-func NewCombatMode(modeManager *framework.UIModeManager, encounterCallbacks combat.EncounterCallbacks) *CombatMode {
+func NewCombatMode(modeManager *framework.UIModeManager, encounterCallbacks combat.EncounterCallbacks, serviceFactory func(*common.EntityManager) *combatservices.CombatService) *CombatMode {
 	cm := &CombatMode{
 		encounterCallbacks: encounterCallbacks,
+		serviceFactory:     serviceFactory,
 	}
 	cm.SetModeName("combat")
 	cm.SetReturnMode("exploration")
@@ -80,17 +84,8 @@ func (cm *CombatMode) GetActionMap() *framework.ActionMap {
 }
 
 func (cm *CombatMode) Initialize(ctx *framework.UIContext) error {
-	// Create combat service (threat systems injected below)
-	cm.combatService = combatservices.NewCombatService(ctx.ECSManager)
-
-	// Wire AI + threat stack (creates controller, threat provider, and evaluator factory)
-	aiSetup := ai.SetupCombatAI(
-		ctx.ECSManager, cm.combatService.TurnManager, cm.combatService.MovementSystem,
-		cm.combatService.CombatActSystem, cm.combatService.CombatCache,
-	)
-	cm.combatService.SetAIController(aiSetup.Controller)
-	cm.combatService.SetThreatProvider(aiSetup.ThreatProvider)
-	cm.combatService.SetThreatEvaluatorFactory(aiSetup.EvalFactory)
+	// Create combat service via injected factory (wires AI + threat stack)
+	cm.combatService = cm.serviceFactory(ctx.ECSManager)
 
 	// Build UI using ModeBuilder (minimal config - panels handled by registry)
 	err := framework.NewModeBuilder(&cm.BaseMode, framework.ModeConfig{

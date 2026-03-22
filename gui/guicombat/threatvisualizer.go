@@ -2,7 +2,6 @@ package guicombat
 
 import (
 	"game_main/common"
-	"game_main/mind/evaluation"
 	"game_main/tactical/combat"
 	"game_main/tactical/combatservices"
 	"game_main/visual/graphics"
@@ -105,7 +104,7 @@ type ThreatVisualizer struct {
 	viewFactionIndex int            // Index into factionIDs for viewed faction
 
 	// State
-	*evaluation.DirtyCache
+	*common.DirtyCache
 	isActive         bool
 	mode             VisualizerMode
 	layerMode        LayerMode // For layer mode: which layer
@@ -123,7 +122,7 @@ func NewThreatVisualizer(
 		gameMap:          gameMap,
 		threatProvider:   threatProvider,
 		evaluators:       make(map[ecs.EntityID]combatservices.ThreatLayerEvaluator),
-		DirtyCache:       evaluation.NewDirtyCache(),
+		DirtyCache:       common.NewDirtyCache(),
 		isActive:         false,
 		mode:             VisualizerModeThreat,
 		viewFactionIndex: 0,
@@ -191,7 +190,7 @@ func (tv *ThreatVisualizer) SetMode(mode VisualizerMode) {
 		tv.mode = mode
 		// Force re-render by marking dirty AND resetting the round
 		tv.MarkDirty()
-		tv.DirtyCache = evaluation.NewDirtyCache() // Reset cache completely
+		tv.DirtyCache = common.NewDirtyCache() // Reset cache completely
 		// Also mark evaluator dirty when switching to layer mode
 		if mode == VisualizerModeLayer {
 			factionID := tv.GetViewFactionID()

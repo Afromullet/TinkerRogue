@@ -1,45 +1,32 @@
 package unitdefs
 
-// FilterByAttackRange returns units with attack range >= minRange
-func FilterByAttackRange(minRange int) []UnitTemplate {
+// FilterUnits returns all units from the global Units slice matching the predicate.
+func FilterUnits(predicate func(UnitTemplate) bool) []UnitTemplate {
 	var filtered []UnitTemplate
 	for _, unit := range Units {
-		if unit.AttackRange >= minRange {
+		if predicate(unit) {
 			filtered = append(filtered, unit)
 		}
 	}
 	return filtered
+}
+
+// FilterByAttackRange returns units with attack range >= minRange
+func FilterByAttackRange(minRange int) []UnitTemplate {
+	return FilterUnits(func(u UnitTemplate) bool { return u.AttackRange >= minRange })
 }
 
 // FilterByMaxAttackRange returns units with attack range <= maxRange
 func FilterByMaxAttackRange(maxRange int) []UnitTemplate {
-	var filtered []UnitTemplate
-	for _, unit := range Units {
-		if unit.AttackRange <= maxRange {
-			filtered = append(filtered, unit)
-		}
-	}
-	return filtered
+	return FilterUnits(func(u UnitTemplate) bool { return u.AttackRange <= maxRange })
 }
 
 // FilterByMinMovementSpeed returns units with movement speed >= minSpeed
 func FilterByMinMovementSpeed(minSpeed int) []UnitTemplate {
-	var filtered []UnitTemplate
-	for _, unit := range Units {
-		if unit.MovementSpeed >= minSpeed {
-			filtered = append(filtered, unit)
-		}
-	}
-	return filtered
+	return FilterUnits(func(u UnitTemplate) bool { return u.MovementSpeed >= minSpeed })
 }
 
 // FilterByAttackType returns units matching the specified attack type
 func FilterByAttackType(attackType AttackType) []UnitTemplate {
-	var filtered []UnitTemplate
-	for _, unit := range Units {
-		if unit.AttackType == attackType {
-			filtered = append(filtered, unit)
-		}
-	}
-	return filtered
+	return FilterUnits(func(u UnitTemplate) bool { return u.AttackType == attackType })
 }

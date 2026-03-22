@@ -3,8 +3,6 @@ package combat
 import (
 	"fmt"
 	"game_main/common"
-	"game_main/config"
-
 	"game_main/tactical/squads"
 	"game_main/world/coords"
 
@@ -37,12 +35,7 @@ func (cms *CombatMovementSystem) SetOnMoveComplete(fn func(ecs.EntityID)) {
 // GetSquadMovementSpeed delegates to squads package for consistent speed calculation
 // Squad moves at the speed of its slowest alive unit with MovementSpeedComponent
 func (ms *CombatMovementSystem) GetSquadMovementSpeed(squadID ecs.EntityID) int {
-	speed := squads.GetSquadMovementSpeed(squadID, ms.manager)
-	// If squads returns 0 (no units or no movement components), use default
-	if speed == 0 {
-		return config.DefaultMovementSpeed
-	}
-	return speed
+	return squads.GetSquadMovementSpeedOrDefault(squadID, ms.manager)
 }
 
 func (ms *CombatMovementSystem) CanMoveTo(squadID ecs.EntityID, targetPos coords.LogicalPosition) bool {
