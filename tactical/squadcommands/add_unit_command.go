@@ -3,6 +3,7 @@ package squadcommands
 import (
 	"fmt"
 	"game_main/common"
+	rstr "game_main/tactical/roster"
 	"game_main/tactical/squads"
 
 	"github.com/bytearena/ecs"
@@ -46,7 +47,7 @@ func (c *AddUnitCommand) Validate() error {
 	}
 
 	// Check roster exists
-	roster := squads.GetPlayerRoster(c.playerID, c.manager)
+	roster := rstr.GetPlayerRoster(c.playerID, c.manager)
 	if roster == nil {
 		return fmt.Errorf("player roster not found")
 	}
@@ -67,7 +68,7 @@ func (c *AddUnitCommand) Validate() error {
 }
 
 func (c *AddUnitCommand) Execute() error {
-	roster := squads.GetPlayerRoster(c.playerID, c.manager)
+	roster := rstr.GetPlayerRoster(c.playerID, c.manager)
 	if roster == nil {
 		return fmt.Errorf("player roster not found")
 	}
@@ -100,7 +101,7 @@ func (c *AddUnitCommand) Undo() error {
 		return fmt.Errorf("no unit to remove (command was not executed)")
 	}
 
-	roster := squads.GetPlayerRoster(c.playerID, c.manager)
+	roster := rstr.GetPlayerRoster(c.playerID, c.manager)
 	if roster == nil {
 		return fmt.Errorf("player roster not found")
 	}

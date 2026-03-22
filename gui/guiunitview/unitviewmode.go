@@ -7,7 +7,7 @@ import (
 
 	"game_main/common"
 	"game_main/gui/framework"
-	"game_main/tactical/squads"
+	"game_main/tactical/unitprogression"
 
 	"github.com/bytearena/ecs"
 	"github.com/ebitenui/ebitenui/widget"
@@ -71,7 +71,7 @@ func (uvm *UnitViewMode) HandleInput(inputState *framework.InputState) bool {
 
 // onAddXP awards 100 XP to the viewed unit and refreshes the display (debug).
 func (uvm *UnitViewMode) onAddXP() {
-	squads.AwardExperience(uvm.viewUnitID, 100, uvm.Context.ECSManager, uvm.rng)
+	unitprogression.AwardExperience(uvm.viewUnitID, 100, uvm.Context.ECSManager, uvm.rng)
 	uvm.refreshUnitDisplay()
 }
 
@@ -105,7 +105,7 @@ func (uvm *UnitViewMode) refreshUnitDisplay() {
 
 	// Experience
 	expText := "  (no experience data)"
-	if expData := squads.GetExperienceData(unitID, manager); expData != nil {
+	if expData := unitprogression.GetExperienceData(unitID, manager); expData != nil {
 		expText = fmt.Sprintf(
 			"  Level:  %d\n  XP:     %d / %d",
 			expData.Level, expData.CurrentXP, expData.XPToNextLevel,

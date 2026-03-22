@@ -5,6 +5,7 @@ import (
 
 	"game_main/common"
 	"game_main/tactical/squads"
+	"game_main/tactical/unitdefs"
 	"game_main/world/coords"
 	"game_main/world/worldmap"
 
@@ -111,9 +112,9 @@ func InstantiateGarrisonSquad(manager *common.EntityManager, archetype *SquadArc
 	}
 
 	// Build unit templates from archetype
-	var unitTemplates []squads.UnitTemplate
+	var unitTemplates []unitdefs.UnitTemplate
 	for _, au := range archetype.Units {
-		template := squads.GetTemplateByUnitType(au.MonsterType)
+		template := unitdefs.GetTemplateByUnitType(au.MonsterType)
 		if template == nil {
 			fmt.Printf("WARNING: Monster template '%s' not found for archetype '%s'\n", au.MonsterType, archetype.Name)
 			continue

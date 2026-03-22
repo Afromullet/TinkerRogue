@@ -2,6 +2,7 @@ package evaluation
 
 import (
 	"game_main/tactical/squads"
+	"game_main/tactical/unitdefs"
 	"game_main/templates"
 )
 
@@ -20,7 +21,7 @@ const (
 
 // GetRoleMultiplierFromConfig returns the role multiplier from JSON config.
 // Falls back to default values if not found in config.
-func GetRoleMultiplierFromConfig(role squads.UnitRole) float64 {
+func GetRoleMultiplierFromConfig(role unitdefs.UnitRole) float64 {
 	roleStr := role.String()
 	for _, rm := range templates.PowerConfigTemplate.RoleMultipliers {
 		if rm.Role == roleStr {
@@ -29,11 +30,11 @@ func GetRoleMultiplierFromConfig(role squads.UnitRole) float64 {
 	}
 	// Fallback to default values
 	switch role {
-	case squads.RoleTank:
+	case unitdefs.RoleTank:
 		return 1.2
-	case squads.RoleDPS:
+	case unitdefs.RoleDPS:
 		return 1.5
-	case squads.RoleSupport:
+	case unitdefs.RoleSupport:
 		return 1.0
 	default:
 		return 1.0

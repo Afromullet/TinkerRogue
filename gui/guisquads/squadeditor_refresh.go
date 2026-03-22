@@ -5,7 +5,7 @@ import (
 
 	"game_main/gui/builders"
 	"game_main/gui/specs"
-	"game_main/tactical/squads"
+	rstr "game_main/tactical/roster"
 
 	"github.com/bytearena/ecs"
 	"github.com/ebitenui/ebitenui/widget"
@@ -93,7 +93,7 @@ func (sem *SquadEditorMode) rebuildUnitListWidget(squadID ecs.EntityID) {
 
 // refreshRosterList updates the available units from player's roster (rebuilds widget)
 func (sem *SquadEditorMode) refreshRosterList() {
-	roster := squads.GetPlayerRoster(sem.Context.PlayerData.PlayerEntityID, sem.Queries.ECSManager)
+	roster := rstr.GetPlayerRoster(sem.Context.PlayerData.PlayerEntityID, sem.Queries.ECSManager)
 	if roster == nil {
 		return
 	}
@@ -106,7 +106,7 @@ func (sem *SquadEditorMode) refreshRosterList() {
 	}
 
 	if len(entries) == 0 {
-		entries = []interface{}{squads.RosterUnitEntry{Name: "No units available"}}
+		entries = []interface{}{rstr.RosterUnitEntry{Name: "No units available"}}
 	}
 
 	sem.rosterList = sem.replaceListInContainer(sem.rosterContent, sem.rosterList, func() *widget.List {
@@ -115,7 +115,7 @@ func (sem *SquadEditorMode) refreshRosterList() {
 			MinWidth: 400,
 			MinHeight: 200,
 			EntryLabelFunc: func(e interface{}) string {
-				entry := e.(squads.RosterUnitEntry)
+				entry := e.(rstr.RosterUnitEntry)
 				if entry.TemplateName == "" {
 					return entry.Name
 				}

@@ -1,4 +1,4 @@
-package squads
+package combat
 
 import (
 	"github.com/bytearena/ecs"
@@ -156,4 +156,28 @@ type UnitIdentity struct {
 	CurrentHP int
 	MaxHP     int
 	IsLeader  bool
+}
+
+// DamageModifiers holds modifiers for damage calculation
+type DamageModifiers struct {
+	HitPenalty       int
+	DamageMultiplier float64
+	IsCounterattack  bool
+}
+
+// CombatResult - Unified result type for combat operations
+// Contains both combat execution data and orchestration status
+type CombatResult struct {
+	// Orchestration status (set by combat action system)
+	Success           bool
+	ErrorReason       string
+	TargetDestroyed   bool
+	AttackerDestroyed bool
+
+	// Combat execution data (set by combat calculation logic)
+	TotalDamage   int
+	UnitsKilled   []ecs.EntityID
+	DamageByUnit  map[ecs.EntityID]int
+	HealingByUnit map[ecs.EntityID]int
+	CombatLog     *CombatLog // Contains AttackerSquadName, DefenderSquadName for display
 }

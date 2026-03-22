@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"game_main/common"
 
-	"game_main/tactical/squads"
 	"game_main/tactical/squadservices"
+	"game_main/tactical/unitdefs"
 
 	"github.com/bytearena/ecs"
 )
@@ -15,7 +15,7 @@ type PurchaseUnitCommand struct {
 	entityManager *common.EntityManager
 	service       *squadservices.UnitPurchaseService
 	playerID      ecs.EntityID
-	unitTemplate  squads.UnitTemplate
+	unitTemplate  unitdefs.UnitTemplate
 	costPaid      int
 
 	// Captured state for undo
@@ -27,7 +27,7 @@ func NewPurchaseUnitCommand(
 	manager *common.EntityManager,
 	service *squadservices.UnitPurchaseService,
 	playerID ecs.EntityID,
-	unitTemplate squads.UnitTemplate,
+	unitTemplate unitdefs.UnitTemplate,
 ) *PurchaseUnitCommand {
 	return &PurchaseUnitCommand{
 		entityManager: manager,

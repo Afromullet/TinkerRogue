@@ -6,6 +6,7 @@ import (
 	"game_main/tactical/combat"
 	"game_main/tactical/squads"
 	"game_main/tactical/squadcommands"
+	"game_main/tactical/unitdefs"
 	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"
@@ -227,11 +228,11 @@ func (ae *ActionEvaluator) scoreApproachEnemy(pos coords.LogicalPosition) float6
 	// Role-based approach multipliers
 	var approachMultiplier float64
 	switch ae.ctx.SquadRole {
-	case squads.RoleTank:
+	case unitdefs.RoleTank:
 		approachMultiplier = 15.0
-	case squads.RoleDPS:
+	case unitdefs.RoleDPS:
 		approachMultiplier = 8.0
-	case squads.RoleSupport:
+	case unitdefs.RoleSupport:
 		approachMultiplier = -5.0
 	default:
 		approachMultiplier = 5.0
@@ -372,7 +373,7 @@ func (ae *ActionEvaluator) getMaxAttackRange() int {
 func (ae *ActionEvaluator) squadHasHealers(squadID ecs.EntityID) bool {
 	unitIDs := squads.GetUnitIDsInSquad(squadID, ae.ctx.Manager)
 	for _, unitID := range unitIDs {
-		if squads.IsHealUnit(unitID, ae.ctx.Manager) {
+		if combat.IsHealUnit(unitID, ae.ctx.Manager) {
 			return true
 		}
 	}
@@ -392,16 +393,16 @@ func (ae *ActionEvaluator) scoreAttackTarget(targetID ecs.EntityID) float64 {
 
 	// Prioritize high-threat targets
 	targetRole := squads.GetSquadPrimaryRole(targetID, ae.ctx.Manager)
-	if targetRole == squads.RoleDPS {
+	if targetRole == unitdefs.RoleDPS {
 		baseScore += 15.0 // DPS are high priority
-	} else if targetRole == squads.RoleSupport {
+	} else if targetRole == unitdefs.RoleSupport {
 		baseScore += 10.0 // Support are medium priority
 	}
 
 	// Bonus for role counters (DPS good vs Support, Tank good vs DPS)
-	if ae.ctx.SquadRole == squads.RoleDPS && targetRole == squads.RoleSupport {
+	if ae.ctx.SquadRole == unitdefs.RoleDPS && targetRole == unitdefs.RoleSupport {
 		baseScore += 10.0
-	} else if ae.ctx.SquadRole == squads.RoleTank && targetRole == squads.RoleDPS {
+	} else if ae.ctx.SquadRole == unitdefs.RoleTank && targetRole == unitdefs.RoleDPS {
 		baseScore += 10.0
 	}
 

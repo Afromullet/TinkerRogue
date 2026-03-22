@@ -3,6 +3,7 @@ package squads
 import (
 	"fmt"
 	"game_main/common"
+	"game_main/tactical/unitdefs"
 	"game_main/templates"
 	testfx "game_main/testing"
 	"game_main/world/coords"
@@ -120,7 +121,7 @@ func CreateHighCapacitySquad(manager *common.EntityManager, squadName string, ca
 		Height:    1,
 	})
 	leaderEntity.AddComponent(UnitRoleComponent, &UnitRoleData{
-		Role: RoleTank, // Arbitrary role for the invisible leader
+		Role: unitdefs.RoleTank, // Arbitrary role for the invisible leader
 	})
 
 	return squadID
@@ -134,7 +135,7 @@ func TestCreateUnitEntity_SingleCell(t *testing.T) {
 	manager := setupTestManager(t)
 
 	jsonMonster := createTestJSONMonster("Warrior", 1, 1, "Tank")
-	unit, err := CreateUnitTemplates(jsonMonster)
+	unit, err := unitdefs.CreateUnitTemplates(jsonMonster)
 	if err != nil {
 		t.Fatalf("CreateUnitTemplates failed: %v", err)
 	}
@@ -164,7 +165,7 @@ func TestCreateUnitEntity_SingleCell(t *testing.T) {
 	}
 
 	roleData := common.GetComponentType[*UnitRoleData](entity, UnitRoleComponent)
-	if roleData.Role != RoleTank {
+	if roleData.Role != unitdefs.RoleTank {
 		t.Errorf("Expected role Tank, got %v", roleData.Role)
 	}
 
@@ -178,7 +179,7 @@ func TestCreateUnitEntity_MultiCell_2x2(t *testing.T) {
 	manager := setupTestManager(t)
 
 	jsonMonster := createTestJSONMonster("Giant", 2, 2, "Tank")
-	unit, err := CreateUnitTemplates(jsonMonster)
+	unit, err := unitdefs.CreateUnitTemplates(jsonMonster)
 	if err != nil {
 		t.Fatalf("CreateUnitTemplates failed: %v", err)
 	}
@@ -204,7 +205,7 @@ func TestCreateUnitEntity_MultiCell_1x3(t *testing.T) {
 	manager := setupTestManager(t)
 
 	jsonMonster := createTestJSONMonster("Cavalry", 1, 3, "DPS")
-	unit, err := CreateUnitTemplates(jsonMonster)
+	unit, err := unitdefs.CreateUnitTemplates(jsonMonster)
 	if err != nil {
 		t.Fatalf("CreateUnitTemplates failed: %v", err)
 	}
@@ -249,7 +250,7 @@ func TestAddUnitToSquad_SingleCell_ValidPosition(t *testing.T) {
 
 	// Create and add unit
 	jsonMonster := createTestJSONMonster("Warrior", 1, 1, "Tank")
-	unit, err := CreateUnitTemplates(jsonMonster)
+	unit, err := unitdefs.CreateUnitTemplates(jsonMonster)
 	if err != nil {
 		t.Fatalf("CreateUnitTemplates failed: %v", err)
 	}
@@ -278,7 +279,7 @@ func TestAddUnitToSquad_SingleCell_AllPositions(t *testing.T) {
 		for col := 0; col < 3; col++ {
 			// Use low-cost units to fit in capacity
 			jsonMonster := createLowCostTestMonster("Unit", 1, 1, "DPS")
-			unit, err := CreateUnitTemplates(jsonMonster)
+			unit, err := unitdefs.CreateUnitTemplates(jsonMonster)
 			if err != nil {
 				t.Fatalf("CreateUnitTemplates failed: %v", err)
 			}
@@ -324,7 +325,7 @@ func TestAddUnitToSquad_MultiCell_2x2_TopLeft(t *testing.T) {
 
 	// Add 2x2 unit at top-left
 	jsonMonster := createTestJSONMonster("Giant", 2, 2, "Tank")
-	unit, err := CreateUnitTemplates(jsonMonster)
+	unit, err := unitdefs.CreateUnitTemplates(jsonMonster)
 	if err != nil {
 		t.Fatalf("CreateUnitTemplates failed: %v", err)
 	}
@@ -357,7 +358,7 @@ func TestAddUnitToSquad_MultiCell_1x3_LeftColumn(t *testing.T) {
 
 	// Add 1x3 unit (3 rows tall) at left column
 	jsonMonster := createTestJSONMonster("Cavalry", 1, 3, "DPS")
-	unit, err := CreateUnitTemplates(jsonMonster)
+	unit, err := unitdefs.CreateUnitTemplates(jsonMonster)
 	if err != nil {
 		t.Fatalf("CreateUnitTemplates failed: %v", err)
 	}
@@ -390,7 +391,7 @@ func TestAddUnitToSquad_MultiCell_3x1_TopRow(t *testing.T) {
 
 	// Add 3x1 unit (3 cols wide) at top row
 	jsonMonster := createTestJSONMonster("Wall", 3, 1, "Tank")
-	unit, err := CreateUnitTemplates(jsonMonster)
+	unit, err := unitdefs.CreateUnitTemplates(jsonMonster)
 	if err != nil {
 		t.Fatalf("CreateUnitTemplates failed: %v", err)
 	}
@@ -423,7 +424,7 @@ func TestAddUnitToSquad_Collision_SingleCellOverlap(t *testing.T) {
 
 	// Add first unit
 	jsonMonster1 := createTestJSONMonster("Warrior1", 1, 1, "Tank")
-	unit1, err := CreateUnitTemplates(jsonMonster1)
+	unit1, err := unitdefs.CreateUnitTemplates(jsonMonster1)
 	if err != nil {
 		t.Fatalf("CreateUnitTemplates failed: %v", err)
 	}
@@ -435,7 +436,7 @@ func TestAddUnitToSquad_Collision_SingleCellOverlap(t *testing.T) {
 
 	// Try to add second unit at same position
 	jsonMonster2 := createTestJSONMonster("Warrior2", 1, 1, "Tank")
-	unit2, err := CreateUnitTemplates(jsonMonster2)
+	unit2, err := unitdefs.CreateUnitTemplates(jsonMonster2)
 	if err != nil {
 		t.Fatalf("CreateUnitTemplates failed: %v", err)
 	}
@@ -459,7 +460,7 @@ func TestAddUnitToSquad_Collision_MultiCellOverlap(t *testing.T) {
 
 	// Add 2x2 unit at top-left
 	jsonMonster1 := createTestJSONMonster("Giant", 2, 2, "Tank")
-	unit1, err := CreateUnitTemplates(jsonMonster1)
+	unit1, err := unitdefs.CreateUnitTemplates(jsonMonster1)
 	if err != nil {
 		t.Fatalf("CreateUnitTemplates failed: %v", err)
 	}
@@ -471,7 +472,7 @@ func TestAddUnitToSquad_Collision_MultiCellOverlap(t *testing.T) {
 
 	// Try to add 1x1 unit at (0,0) - should fail (overlaps giant)
 	jsonMonster2 := createTestJSONMonster("Warrior", 1, 1, "DPS")
-	unit2, err := CreateUnitTemplates(jsonMonster2)
+	unit2, err := unitdefs.CreateUnitTemplates(jsonMonster2)
 	if err != nil {
 		t.Fatalf("CreateUnitTemplates failed: %v", err)
 	}
@@ -500,7 +501,7 @@ func TestAddUnitToSquad_InvalidPosition_RowTooLarge(t *testing.T) {
 	}
 
 	jsonMonster := createTestJSONMonster("Warrior", 1, 1, "Tank")
-	unit, err := CreateUnitTemplates(jsonMonster)
+	unit, err := unitdefs.CreateUnitTemplates(jsonMonster)
 	if err != nil {
 		t.Fatalf("CreateUnitTemplates failed: %v", err)
 	}
@@ -524,7 +525,7 @@ func TestAddUnitToSquad_InvalidPosition_NegativeCol(t *testing.T) {
 	}
 
 	jsonMonster := createTestJSONMonster("Warrior", 1, 1, "Tank")
-	unit, err := CreateUnitTemplates(jsonMonster)
+	unit, err := unitdefs.CreateUnitTemplates(jsonMonster)
 	if err != nil {
 		t.Fatalf("CreateUnitTemplates failed: %v", err)
 	}
@@ -545,7 +546,7 @@ func TestAddUnitToSquad_MixedSizes_NoOverlap(t *testing.T) {
 	// Add 2x2 unit at top-left (occupies [0,0], [0,1], [1,0], [1,1])
 	// Use low-cost units to fit in capacity
 	jsonGiant := createLowCostTestMonster("Giant", 2, 2, "Tank")
-	giant, err := CreateUnitTemplates(jsonGiant)
+	giant, err := unitdefs.CreateUnitTemplates(jsonGiant)
 	if err != nil {
 		t.Fatalf("CreateUnitTemplates failed: %v", err)
 	}
@@ -557,7 +558,7 @@ func TestAddUnitToSquad_MixedSizes_NoOverlap(t *testing.T) {
 
 	// Add 1x1 unit at (0,2) - top-right corner
 	jsonArcher := createLowCostTestMonster("Archer", 1, 1, "DPS")
-	archer, err := CreateUnitTemplates(jsonArcher)
+	archer, err := unitdefs.CreateUnitTemplates(jsonArcher)
 	if err != nil {
 		t.Fatalf("CreateUnitTemplates failed: %v", err)
 	}
@@ -569,7 +570,7 @@ func TestAddUnitToSquad_MixedSizes_NoOverlap(t *testing.T) {
 
 	// Add 1x1 unit at (2,0) - bottom-left corner
 	jsonMage := createLowCostTestMonster("Mage", 1, 1, "Support")
-	mage, err := CreateUnitTemplates(jsonMage)
+	mage, err := unitdefs.CreateUnitTemplates(jsonMage)
 	if err != nil {
 		t.Fatalf("CreateUnitTemplates failed: %v", err)
 	}
@@ -605,7 +606,7 @@ func TestAddUnitToSquad_VerifySquadMemberComponent(t *testing.T) {
 	}
 
 	jsonMonster := createTestJSONMonster("Warrior", 1, 1, "Tank")
-	unit, err := CreateUnitTemplates(jsonMonster)
+	unit, err := unitdefs.CreateUnitTemplates(jsonMonster)
 	if err != nil {
 		t.Fatalf("CreateUnitTemplates failed: %v", err)
 	}
@@ -658,7 +659,7 @@ func TestGetSquadMovementSpeed_SingleUnit(t *testing.T) {
 	// Create unit with movement speed 5
 	jsonMonster := createTestJSONMonster("FastUnit", 1, 1, "DPS")
 	jsonMonster.MovementSpeed = 5
-	unit, _ := CreateUnitTemplates(jsonMonster)
+	unit, _ := unitdefs.CreateUnitTemplates(jsonMonster)
 
 	_, err := AddUnitToSquad(squadID, manager, unit, 0, 0)
 	if err != nil {
@@ -688,7 +689,7 @@ func TestGetSquadMovementSpeed_MultipleUnits_ReturnsMinimum(t *testing.T) {
 		unitName := fmt.Sprintf("Unit%d", i)
 		jsonMonster := createTestJSONMonster(unitName, 1, 1, "DPS")
 		jsonMonster.MovementSpeed = speed
-		unit, _ := CreateUnitTemplates(jsonMonster)
+		unit, _ := unitdefs.CreateUnitTemplates(jsonMonster)
 
 		col := i
 		_, err := AddUnitToSquad(squadID, manager, unit, 0, col)
@@ -718,12 +719,12 @@ func TestGetSquadMovementSpeed_DeadUnitsIgnored(t *testing.T) {
 	// Add two units: one slow (speed 2), one fast (speed 5)
 	jsonMonster1 := createTestJSONMonster("SlowUnit", 1, 1, "DPS")
 	jsonMonster1.MovementSpeed = 2
-	unit1, _ := CreateUnitTemplates(jsonMonster1)
+	unit1, _ := unitdefs.CreateUnitTemplates(jsonMonster1)
 	_, _ = AddUnitToSquad(squadID, manager, unit1, 0, 0)
 
 	jsonMonster2 := createTestJSONMonster("FastUnit", 1, 1, "DPS")
 	jsonMonster2.MovementSpeed = 5
-	unit2, _ := CreateUnitTemplates(jsonMonster2)
+	unit2, _ := unitdefs.CreateUnitTemplates(jsonMonster2)
 	_, _ = AddUnitToSquad(squadID, manager, unit2, 0, 1)
 
 	// Initially, squad moves at speed 2 (slowest)

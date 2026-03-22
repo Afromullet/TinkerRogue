@@ -10,7 +10,7 @@ import (
 	"game_main/overworld/node"
 	"game_main/overworld/tick"
 	"game_main/tactical/commander"
-	"game_main/tactical/squads"
+	"game_main/tactical/unitdefs"
 	"game_main/templates"
 	"game_main/testing/bootstrap"
 	"game_main/visual/graphics"
@@ -62,7 +62,7 @@ func (gb *GameBootstrap) CreatePlayer(em *common.EntityManager, pd *common.Playe
 	InitializePlayerData(em, pd, gm)
 
 	// Initialize unit templates before creating initial squads
-	if err := squads.InitUnitTemplatesFromJSON(); err != nil {
+	if err := unitdefs.InitUnitTemplatesFromJSON(); err != nil {
 		log.Fatalf("Failed to load unit templates: %v", err)
 	}
 

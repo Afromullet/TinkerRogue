@@ -3,6 +3,7 @@ package behavior
 import (
 	"game_main/common"
 	"game_main/tactical/squads"
+	"game_main/tactical/unitdefs"
 
 	"github.com/bytearena/ecs"
 )
@@ -13,8 +14,8 @@ import (
 // Used by both threat assessment (behavior) and power calculation (evaluation).
 type UnitCombatData struct {
 	EntityID    ecs.EntityID
-	Role        squads.UnitRole
-	AttackType  squads.AttackType
+	Role        unitdefs.UnitRole
+	AttackType  unitdefs.AttackType
 	AttackRange int
 	Attributes  *common.Attributes
 	IsLeader    bool
@@ -61,18 +62,18 @@ func GetUnitCombatData(unitID ecs.EntityID, manager *common.EntityManager) *Unit
 }
 
 // AttackTypeFilter represents attack types to filter for
-type AttackTypeFilter []squads.AttackType
+type AttackTypeFilter []unitdefs.AttackType
 
 var (
 	// MeleeAttackTypes includes all melee attack types
-	MeleeAttackTypes = AttackTypeFilter{squads.AttackTypeMeleeRow, squads.AttackTypeMeleeColumn}
+	MeleeAttackTypes = AttackTypeFilter{unitdefs.AttackTypeMeleeRow, unitdefs.AttackTypeMeleeColumn}
 
 	// RangedAttackTypes includes ranged, magic, and heal attack types
-	RangedAttackTypes = AttackTypeFilter{squads.AttackTypeRanged, squads.AttackTypeMagic, squads.AttackTypeHeal}
+	RangedAttackTypes = AttackTypeFilter{unitdefs.AttackTypeRanged, unitdefs.AttackTypeMagic, unitdefs.AttackTypeHeal}
 )
 
 // Matches returns true if the given attack type is in this filter
-func (f AttackTypeFilter) Matches(attackType squads.AttackType) bool {
+func (f AttackTypeFilter) Matches(attackType unitdefs.AttackType) bool {
 	for _, t := range f {
 		if t == attackType {
 			return true

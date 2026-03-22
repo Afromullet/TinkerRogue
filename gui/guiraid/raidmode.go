@@ -6,7 +6,7 @@ import (
 	"game_main/gui/framework"
 	"game_main/mind/raid"
 	"game_main/tactical/commander"
-	"game_main/tactical/squads"
+	rstr "game_main/tactical/roster"
 	"game_main/world/worldmap"
 
 	"github.com/ebitenui/ebitenui/widget"
@@ -144,7 +144,7 @@ func (rm *RaidMode) autoStartRaid() error {
 	commanderID := roster.CommanderIDs[0]
 
 	// Get the commander's squads
-	squadRoster := squads.GetPlayerSquadRoster(commanderID, manager)
+	squadRoster := rstr.GetPlayerSquadRoster(commanderID, manager)
 	if squadRoster == nil || len(squadRoster.OwnedSquads) == 0 {
 		return fmt.Errorf("no squads available")
 	}

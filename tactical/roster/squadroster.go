@@ -1,8 +1,9 @@
-package squads
+package roster
 
 import (
 	"fmt"
 	"game_main/common"
+	"game_main/tactical/squads"
 
 	"github.com/bytearena/ecs"
 )
@@ -30,13 +31,11 @@ func (sr *SquadRoster) CanAddSquad() bool {
 }
 
 // AddSquad adds a squad to the roster
-// Returns error if roster is full
 func (sr *SquadRoster) AddSquad(squadID ecs.EntityID) error {
 	if !sr.CanAddSquad() {
 		return fmt.Errorf("squad roster is full: %d/%d squads", len(sr.OwnedSquads), sr.MaxSquads)
 	}
 
-	// Check if squad already in roster
 	for _, id := range sr.OwnedSquads {
 		if id == squadID {
 			return fmt.Errorf("squad %d already in roster", squadID)
@@ -48,11 +47,9 @@ func (sr *SquadRoster) AddSquad(squadID ecs.EntityID) error {
 }
 
 // RemoveSquad removes a squad from the roster by entity ID
-// Returns true if squad was found and removed
 func (sr *SquadRoster) RemoveSquad(squadID ecs.EntityID) bool {
 	for i, id := range sr.OwnedSquads {
 		if id == squadID {
-			// Remove squad ID (swap with last and truncate)
 			sr.OwnedSquads[i] = sr.OwnedSquads[len(sr.OwnedSquads)-1]
 			sr.OwnedSquads = sr.OwnedSquads[:len(sr.OwnedSquads)-1]
 			return true
@@ -70,7 +67,7 @@ func (sr *SquadRoster) GetSquadCount() (int, int) {
 func (sr *SquadRoster) GetDeployedSquads(manager *common.EntityManager) []ecs.EntityID {
 	deployed := make([]ecs.EntityID, 0)
 	for _, squadID := range sr.OwnedSquads {
-		squadData := common.GetComponentTypeByID[*SquadData](manager, squadID, SquadComponent)
+		squadData := common.GetComponentTypeByID[*squads.SquadData](manager, squadID, squads.SquadComponent)
 		if squadData != nil && squadData.IsDeployed {
 			deployed = append(deployed, squadID)
 		}
@@ -82,7 +79,7 @@ func (sr *SquadRoster) GetDeployedSquads(manager *common.EntityManager) []ecs.En
 func (sr *SquadRoster) GetReserveSquads(manager *common.EntityManager) []ecs.EntityID {
 	reserves := make([]ecs.EntityID, 0)
 	for _, squadID := range sr.OwnedSquads {
-		squadData := common.GetComponentTypeByID[*SquadData](manager, squadID, SquadComponent)
+		squadData := common.GetComponentTypeByID[*squads.SquadData](manager, squadID, squads.SquadComponent)
 		if squadData != nil && !squadData.IsDeployed {
 			reserves = append(reserves, squadID)
 		}
@@ -91,7 +88,6 @@ func (sr *SquadRoster) GetReserveSquads(manager *common.EntityManager) []ecs.Ent
 }
 
 // GetPlayerSquadRoster retrieves player's squad roster from ECS
-// Returns nil if player has no roster component
 func GetPlayerSquadRoster(playerID ecs.EntityID, manager *common.EntityManager) *SquadRoster {
 	return common.GetComponentTypeByID[*SquadRoster](manager, playerID, SquadRosterComponent)
 }

@@ -60,7 +60,7 @@ type ArtifactBehavior interface {
 	BehaviorKey() string
 	TargetType() int
 	OnPostReset(ctx *BehaviorContext, factionID ecs.EntityID, squadIDs []ecs.EntityID)
-	OnAttackComplete(ctx *BehaviorContext, attackerID, defenderID ecs.EntityID, result *squads.CombatResult)
+	OnAttackComplete(ctx *BehaviorContext, attackerID, defenderID ecs.EntityID, result *combat.CombatResult)
 	OnTurnEnd(ctx *BehaviorContext, round int)
 	IsPlayerActivated() bool
 	Activate(ctx *BehaviorContext, targetSquadID ecs.EntityID) error
@@ -72,7 +72,7 @@ type BaseBehavior struct{}
 
 func (BaseBehavior) TargetType() int                                              { return TargetNone }
 func (BaseBehavior) OnPostReset(*BehaviorContext, ecs.EntityID, []ecs.EntityID) {}
-func (BaseBehavior) OnAttackComplete(*BehaviorContext, ecs.EntityID, ecs.EntityID, *squads.CombatResult) {
+func (BaseBehavior) OnAttackComplete(*BehaviorContext, ecs.EntityID, ecs.EntityID, *combat.CombatResult) {
 }
 func (BaseBehavior) OnTurnEnd(*BehaviorContext, int) {}
 func (BaseBehavior) IsPlayerActivated() bool         { return false }

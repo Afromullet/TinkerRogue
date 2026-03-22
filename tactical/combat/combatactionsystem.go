@@ -3,7 +3,6 @@ package combat
 import (
 	"fmt"
 	"game_main/common"
-	"game_main/tactical/combat/battlelog"
 	"game_main/tactical/squads"
 
 	"github.com/bytearena/ecs"
@@ -12,10 +11,10 @@ import (
 type CombatActionSystem struct {
 	manager        *common.EntityManager
 	combatCache    *CombatQueryCache
-	battleRecorder *battlelog.BattleRecorder
+	battleRecorder *BattleRecorder
 
 	// Post-action hook (fired after successful attack)
-	onAttackComplete func(attackerID, defenderID ecs.EntityID, result *squads.CombatResult)
+	onAttackComplete func(attackerID, defenderID ecs.EntityID, result *CombatResult)
 }
 
 func NewCombatActionSystem(manager *common.EntityManager, cache *CombatQueryCache) *CombatActionSystem {
@@ -26,21 +25,21 @@ func NewCombatActionSystem(manager *common.EntityManager, cache *CombatQueryCach
 }
 
 // SetBattleRecorder sets the battle recorder for combat log export.
-func (cas *CombatActionSystem) SetBattleRecorder(recorder *battlelog.BattleRecorder) {
+func (cas *CombatActionSystem) SetBattleRecorder(recorder *BattleRecorder) {
 	cas.battleRecorder = recorder
 }
 
 // SetOnAttackComplete sets the callback fired after a successful attack.
-func (cas *CombatActionSystem) SetOnAttackComplete(fn func(ecs.EntityID, ecs.EntityID, *squads.CombatResult)) {
+func (cas *CombatActionSystem) SetOnAttackComplete(fn func(ecs.EntityID, ecs.EntityID, *CombatResult)) {
 	cas.onAttackComplete = fn
 }
 
-func (cas *CombatActionSystem) ExecuteAttackAction(attackerID, defenderID ecs.EntityID) *squads.CombatResult {
+func (cas *CombatActionSystem) ExecuteAttackAction(attackerID, defenderID ecs.EntityID) *CombatResult {
 
 	//Validation
 	reason, canAttack := cas.canSquadAttackWithReason(attackerID, defenderID)
 	if !canAttack {
-		return &squads.CombatResult{
+		return &CombatResult{
 			Success:     false,
 			ErrorReason: reason,
 		}
@@ -48,14 +47,14 @@ func (cas *CombatActionSystem) ExecuteAttackAction(attackerID, defenderID ecs.En
 
 	// Main Attack calculation
 
-	result := &squads.CombatResult{
+	result := &CombatResult{
 		DamageByUnit:  make(map[ecs.EntityID]int),
 		HealingByUnit: make(map[ecs.EntityID]int),
 		UnitsKilled:   []ecs.EntityID{},
 	}
 
 	// Initialize combat log with squad info
-	combatLog := squads.InitializeCombatLog(attackerID, defenderID, cas.manager)
+	combatLog := InitializeCombatLog(attackerID, defenderID, cas.manager)
 	if combatLog.SquadDistance < 0 {
 		result.CombatLog = combatLog
 		result.Success = false
@@ -64,8 +63,8 @@ func (cas *CombatActionSystem) ExecuteAttackAction(attackerID, defenderID ecs.En
 	}
 
 	// Snapshot units that will participate (for logging)
-	combatLog.AttackingUnits = squads.SnapshotAttackingUnits(attackerID, combatLog.SquadDistance, cas.manager)
-	combatLog.DefendingUnits = squads.SnapshotAllUnits(defenderID, cas.manager)
+	combatLog.AttackingUnits = SnapshotAttackingUnits(attackerID, combatLog.SquadDistance, cas.manager)
+	combatLog.DefendingUnits = SnapshotAllUnits(defenderID, cas.manager)
 
 	// Process each attacking unit
 	attackIndex := 0
@@ -73,18 +72,18 @@ func (cas *CombatActionSystem) ExecuteAttackAction(attackerID, defenderID ecs.En
 
 	for _, attackerUnitID := range attackerUnitIDs {
 		// Check if unit can attack (alive, can act, and in range)
-		if !squads.CanUnitAttack(attackerUnitID, combatLog.SquadDistance, cas.manager) {
+		if !CanUnitAttack(attackerUnitID, combatLog.SquadDistance, cas.manager) {
 			continue
 		}
 
-		if squads.IsHealUnit(attackerUnitID, cas.manager) {
+		if IsHealUnit(attackerUnitID, cas.manager) {
 			// Heal units target their own squad
-			healTargets := squads.SelectHealTargets(attackerUnitID, attackerID, cas.manager)
-			attackIndex = squads.ProcessHealOnTargets(attackerUnitID, healTargets, result, combatLog, attackIndex, cas.manager)
+			healTargets := SelectHealTargets(attackerUnitID, attackerID, cas.manager)
+			attackIndex = ProcessHealOnTargets(attackerUnitID, healTargets, result, combatLog, attackIndex, cas.manager)
 		} else {
 			// Normal attack units target the enemy squad
-			targetIDs := squads.SelectTargetUnits(attackerUnitID, defenderID, cas.manager)
-			attackIndex = squads.ProcessAttackOnTargets(attackerUnitID, targetIDs, result, combatLog, attackIndex, cas.manager)
+			targetIDs := SelectTargetUnits(attackerUnitID, defenderID, cas.manager)
+			attackIndex = ProcessAttackOnTargets(attackerUnitID, targetIDs, result, combatLog, attackIndex, cas.manager)
 		}
 	}
 
@@ -111,20 +110,20 @@ func (cas *CombatActionSystem) ExecuteAttackAction(attackerID, defenderID ecs.En
 				}
 			}
 
-			if squads.IsHealUnit(counterAttackerID, cas.manager) {
+			if IsHealUnit(counterAttackerID, cas.manager) {
 				// Heal units target their own squad during counterattack
-				healTargets := squads.SelectHealTargets(counterAttackerID, defenderID, cas.manager)
-				attackIndex = squads.ProcessHealOnTargets(counterAttackerID, healTargets, result, combatLog, attackIndex, cas.manager)
+				healTargets := SelectHealTargets(counterAttackerID, defenderID, cas.manager)
+				attackIndex = ProcessHealOnTargets(counterAttackerID, healTargets, result, combatLog, attackIndex, cas.manager)
 			} else {
 				// Normal counterattack against enemy squad
-				targetIDs := squads.SelectTargetUnits(counterAttackerID, attackerID, cas.manager)
-				attackIndex = squads.ProcessCounterattackOnTargets(counterAttackerID, targetIDs, result, combatLog, attackIndex, cas.manager)
+				targetIDs := SelectTargetUnits(counterAttackerID, attackerID, cas.manager)
+				attackIndex = ProcessCounterattackOnTargets(counterAttackerID, targetIDs, result, combatLog, attackIndex, cas.manager)
 			}
 		}
 	}
 
 	// Finalize combat log with summary statistics
-	squads.FinalizeCombatLog(result, combatLog, defenderID, attackerID, cas.manager)
+	FinalizeCombatLog(result, combatLog, defenderID, attackerID, cas.manager)
 	result.CombatLog = combatLog
 
 	// Determine Destruction Status
@@ -140,9 +139,9 @@ func (cas *CombatActionSystem) ExecuteAttackAction(attackerID, defenderID ecs.En
 	// post combat
 
 	// Apply all recorded damage to unit HP (STATE MODIFICATION STARTS HERE)
-	squads.ApplyRecordedDamage(result, cas.manager)
+	ApplyRecordedDamage(result, cas.manager)
 	// Apply healing after damage so healers can offset damage taken this round
-	squads.ApplyRecordedHealing(result, cas.manager)
+	ApplyRecordedHealing(result, cas.manager)
 
 	// Mark attacker squad as acted (turn state modification)
 	markSquadAsActed(cas.combatCache, attackerID, cas.manager)
@@ -163,12 +162,12 @@ func (cas *CombatActionSystem) ExecuteAttackAction(attackerID, defenderID ecs.En
 
 	// Trigger abilities for surviving squads
 	if !attackerDestroyed {
-		squads.CheckAndTriggerAbilities(attackerID, cas.manager)
+		CheckAndTriggerAbilities(attackerID, cas.manager)
 		squads.DisposeDeadUnitsInSquad(attackerID, cas.manager)
 	}
 
 	if !defenderDestroyed {
-		squads.CheckAndTriggerAbilities(defenderID, cas.manager)
+		CheckAndTriggerAbilities(defenderID, cas.manager)
 		squads.DisposeDeadUnitsInSquad(defenderID, cas.manager)
 	}
 

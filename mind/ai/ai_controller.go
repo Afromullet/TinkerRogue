@@ -6,6 +6,7 @@ import (
 	"game_main/tactical/combat"
 	"game_main/tactical/combatservices"
 	"game_main/tactical/squads"
+	"game_main/tactical/unitdefs"
 	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"
@@ -201,7 +202,7 @@ type ActionContext struct {
 	AIController   *AIController                // Reference to AI controller for attack queueing
 
 	// Cached squad info
-	SquadRole  squads.UnitRole
+	SquadRole  unitdefs.UnitRole
 	CurrentPos coords.LogicalPosition
 }
 

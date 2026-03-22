@@ -1,4 +1,4 @@
-package battlelog
+package combat
 
 import (
 	"encoding/json"

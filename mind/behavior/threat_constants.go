@@ -1,7 +1,7 @@
 package behavior
 
 import (
-	"game_main/tactical/squads"
+	"game_main/tactical/unitdefs"
 	"game_main/templates"
 )
 
@@ -97,7 +97,7 @@ func GetRetreatSafeThreatThreshold() int {
 // GetRoleBehaviorWeights returns threat layer weights for a specific role from config.
 // RangedWeight and PositionalWeight use shared config values (roles differentiated by melee/support).
 // Falls back to default values if template lookup fails.
-func GetRoleBehaviorWeights(role squads.UnitRole) RoleThreatWeights {
+func GetRoleBehaviorWeights(role unitdefs.UnitRole) RoleThreatWeights {
 	rangedWeight := getSharedRangedWeight()
 	positionalWeight := getSharedPositionalWeight()
 
@@ -114,21 +114,21 @@ func GetRoleBehaviorWeights(role squads.UnitRole) RoleThreatWeights {
 	}
 	// Fallback to default values by role
 	switch role {
-	case squads.RoleTank:
+	case unitdefs.RoleTank:
 		return RoleThreatWeights{
 			MeleeWeight:      -0.5,         // Tanks SEEK melee danger
 			RangedWeight:     rangedWeight, // Shared config value
 			SupportWeight:    0.2,          // Stay near support for heals
 			PositionalWeight: positionalWeight,
 		}
-	case squads.RoleDPS:
+	case unitdefs.RoleDPS:
 		return RoleThreatWeights{
 			MeleeWeight:      0.7,          // Avoid melee danger
 			RangedWeight:     rangedWeight, // Shared config value
 			SupportWeight:    0.1,          // Low support priority
 			PositionalWeight: positionalWeight,
 		}
-	case squads.RoleSupport:
+	case unitdefs.RoleSupport:
 		return RoleThreatWeights{
 			MeleeWeight:      1.0,          // Strongly avoid melee danger
 			RangedWeight:     rangedWeight, // Shared config value

@@ -8,6 +8,7 @@ package squads
 
 import (
 	"fmt"
+	"game_main/tactical/unitdefs"
 
 	"github.com/bytearena/ecs"
 )
@@ -25,9 +26,7 @@ var (
 	CooldownTrackerComponent *ecs.Component
 	AttackRangeComponent     *ecs.Component
 	MovementSpeedComponent   *ecs.Component
-	ExperienceComponent      *ecs.Component
-	StatGrowthComponent      *ecs.Component
-	UnitTypeComponent        *ecs.Component
+	UnitTypeComponent *ecs.Component
 
 	SquadTag       ecs.Tag
 	SquadMemberTag ecs.Tag
@@ -125,29 +124,7 @@ func (g *GridPositionData) GetRows() []int {
 // UnitRoleData defines a unit's combat role
 // Affects combat behavior and damage distribution
 type UnitRoleData struct {
-	Role UnitRole // Tank, DPS, or Support
-}
-
-type UnitRole int
-
-const (
-	RoleTank    UnitRole = iota // Takes hits first, high defense
-	RoleDPS                     // High damage output
-	RoleSupport                 // Buffs, heals, utility
-	RoleError                   // This is an error
-)
-
-func (r UnitRole) String() string {
-	switch r {
-	case RoleTank:
-		return "Tank"
-	case RoleDPS:
-		return "DPS"
-	case RoleSupport:
-		return "Support"
-	default:
-		return "Unknown"
-	}
+	Role unitdefs.UnitRole // Tank, DPS, or Support
 }
 
 // CoverData defines how a unit provides defensive cover to units behind it
@@ -182,36 +159,8 @@ type MovementSpeedData struct {
 // TargetRowData defines attack targeting based on unit type
 // Component name kept for compatibility
 type TargetRowData struct {
-	AttackType  AttackType // MeleeRow, MeleeColumn, Ranged, or Magic
-	TargetCells [][2]int   // For magic: specific cells (no pierce)
-}
-
-// AttackType defines how a unit selects targets
-type AttackType int
-
-const (
-	AttackTypeMeleeRow    AttackType = iota // Targets front row (3 targets max)
-	AttackTypeMeleeColumn                   // Targets column (1 target, spear-type)
-	AttackTypeRanged                        // Targets same row as attacker
-	AttackTypeMagic                         // Cell-based patterns
-	AttackTypeHeal                          // Heals friendly units using targetCells
-)
-
-func (a AttackType) String() string {
-	switch a {
-	case AttackTypeMeleeRow:
-		return "MeleeRow"
-	case AttackTypeMeleeColumn:
-		return "MeleeColumn"
-	case AttackTypeRanged:
-		return "Ranged"
-	case AttackTypeMagic:
-		return "Magic"
-	case AttackTypeHeal:
-		return "Heal"
-	default:
-		return "Unknown"
-	}
+	AttackType  unitdefs.AttackType // MeleeRow, MeleeColumn, Ranged, or Magic
+	TargetCells [][2]int            // For magic: specific cells (no pierce)
 }
 
 func (t TargetRowData) String() string {
@@ -338,39 +287,4 @@ func GetAbilityParams(abilityType AbilityType) AbilityParams {
 	default:
 		return AbilityParams{}
 	}
-}
-
-// ========================================
-// EXPERIENCE & STAT GROWTH COMPONENTS
-// ========================================
-
-// ExperienceData tracks a unit's level and XP progress.
-type ExperienceData struct {
-	Level         int // Current level (starts at 1)
-	CurrentXP     int // XP accumulated toward next level
-	XPToNextLevel int // XP required to level up (fixed 100)
-}
-
-// GrowthGrade represents a stat growth rate grade.
-type GrowthGrade string
-
-const (
-	GradeS GrowthGrade = "S" // 90% chance
-	GradeA GrowthGrade = "A" // 75% chance
-	GradeB GrowthGrade = "B" // 60% chance
-	GradeC GrowthGrade = "C" // 45% chance
-	GradeD GrowthGrade = "D" // 30% chance
-	GradeE GrowthGrade = "E" // 15% chance
-	GradeF GrowthGrade = "F" // 5% chance
-)
-
-// StatGrowthData defines per-stat growth rates for a unit.
-// Each field is a GrowthGrade that determines the chance of +1 on level up.
-type StatGrowthData struct {
-	Strength   GrowthGrade
-	Dexterity  GrowthGrade
-	Magic      GrowthGrade
-	Leadership GrowthGrade
-	Armor      GrowthGrade
-	Weapon     GrowthGrade
 }

@@ -8,7 +8,7 @@ import (
 	"game_main/overworld/core"
 	"game_main/overworld/garrison"
 	"game_main/overworld/threat"
-	"game_main/tactical/squads"
+	rstr "game_main/tactical/roster"
 
 	"github.com/bytearena/ecs"
 )
@@ -202,7 +202,7 @@ func (es *EncounterService) getAllPlayerSquadIDs() []ecs.EntityID {
 		return nil
 	}
 
-	roster := squads.GetPlayerSquadRoster(es.activeEncounter.RosterOwnerID, es.manager)
+	roster := rstr.GetPlayerSquadRoster(es.activeEncounter.RosterOwnerID, es.manager)
 	if roster != nil && len(roster.OwnedSquads) > 0 {
 		return roster.OwnedSquads
 	}

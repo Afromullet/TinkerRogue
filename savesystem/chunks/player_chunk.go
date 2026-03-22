@@ -6,7 +6,7 @@ import (
 	"game_main/common"
 	"game_main/savesystem"
 	"game_main/tactical/commander"
-	"game_main/tactical/squads"
+	rstr "game_main/tactical/roster"
 	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"
@@ -96,7 +96,7 @@ func (c *PlayerChunk) Save(em *common.EntityManager) (json.RawMessage, error) {
 	}
 
 	// Unit Roster
-	if roster := common.GetComponentType[*squads.UnitRoster](entity, squads.UnitRosterComponent); roster != nil {
+	if roster := common.GetComponentType[*rstr.UnitRoster](entity, rstr.UnitRosterComponent); roster != nil {
 		sur := &savedUnitRoster{MaxUnits: roster.MaxUnits}
 		for _, entry := range roster.Units {
 			se := savedUnitRosterEntry{
@@ -154,9 +154,9 @@ func (c *PlayerChunk) Load(em *common.EntityManager, data json.RawMessage, idMap
 
 	// Rebuild unit roster (entity IDs remapped in RemapIDs)
 	if sp.UnitRos != nil {
-		roster := squads.NewUnitRoster(sp.UnitRos.MaxUnits)
+		roster := rstr.NewUnitRoster(sp.UnitRos.MaxUnits)
 		for _, se := range sp.UnitRos.Entries {
-			entry := &squads.UnitRosterEntry{
+			entry := &rstr.UnitRosterEntry{
 				UnitType:      se.UnitType,
 				TotalOwned:    se.TotalOwned,
 				UnitEntities:  make([]ecs.EntityID, len(se.UnitEntities)),
@@ -168,7 +168,7 @@ func (c *PlayerChunk) Load(em *common.EntityManager, data json.RawMessage, idMap
 			}
 			roster.Units[se.UnitType] = entry
 		}
-		entity.AddComponent(squads.UnitRosterComponent, roster)
+		entity.AddComponent(rstr.UnitRosterComponent, roster)
 	}
 
 	// Commander roster (IDs remapped in RemapIDs)
@@ -205,7 +205,7 @@ func (c *PlayerChunk) RemapIDs(em *common.EntityManager, idMap *savesystem.Entit
 	entity := results[0].Entity
 
 	// Remap unit roster entity IDs
-	if roster := common.GetComponentType[*squads.UnitRoster](entity, squads.UnitRosterComponent); roster != nil {
+	if roster := common.GetComponentType[*rstr.UnitRoster](entity, rstr.UnitRosterComponent); roster != nil {
 		for _, entry := range roster.Units {
 			for i, oldID := range entry.UnitEntities {
 				entry.UnitEntities[i] = idMap.Remap(oldID)

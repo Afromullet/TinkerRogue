@@ -6,6 +6,8 @@ import (
 	"game_main/common"
 	"game_main/savesystem"
 	"game_main/tactical/squads"
+	"game_main/tactical/unitdefs"
+	"game_main/tactical/unitprogression"
 	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"
@@ -212,14 +214,14 @@ func saveSquadMember(entity *ecs.Entity, entityID ecs.EntityID, em *common.Entit
 		sm.MovementSpeed = msData.Speed
 	}
 
-	if expData := common.GetComponentType[*squads.ExperienceData](entity, squads.ExperienceComponent); expData != nil {
+	if expData := common.GetComponentType[*unitprogression.ExperienceData](entity, unitprogression.ExperienceComponent); expData != nil {
 		sm.Experience = &savedExperience{
 			Level: expData.Level, CurrentXP: expData.CurrentXP,
 			XPToNextLevel: expData.XPToNextLevel,
 		}
 	}
 
-	if sgData := common.GetComponentType[*squads.StatGrowthData](entity, squads.StatGrowthComponent); sgData != nil {
+	if sgData := common.GetComponentType[*unitprogression.StatGrowthData](entity, unitprogression.StatGrowthComponent); sgData != nil {
 		sm.StatGrowth = &savedStatGrowth{
 			Strength: string(sgData.Strength), Dexterity: string(sgData.Dexterity),
 			Magic: string(sgData.Magic), Leadership: string(sgData.Leadership),
@@ -312,7 +314,7 @@ func loadSquadMember(em *common.EntityManager, sm savedSquadMember, newSquadID e
 			Width: sm.GridPos.Width, Height: sm.GridPos.Height,
 		}).
 		AddComponent(squads.UnitRoleComponent, &squads.UnitRoleData{
-			Role: squads.UnitRole(sm.Role),
+			Role: unitdefs.UnitRole(sm.Role),
 		}).
 		AddComponent(squads.AttackRangeComponent, &squads.AttackRangeData{
 			Range: sm.AttackRange,
@@ -326,7 +328,7 @@ func loadSquadMember(em *common.EntityManager, sm savedSquadMember, newSquadID e
 
 	if sm.TargetRow != nil {
 		entity.AddComponent(squads.TargetRowComponent, &squads.TargetRowData{
-			AttackType:  squads.AttackType(sm.TargetRow.AttackType),
+			AttackType:  unitdefs.AttackType(sm.TargetRow.AttackType),
 			TargetCells: sm.TargetRow.TargetCells,
 		})
 	}
@@ -339,20 +341,20 @@ func loadSquadMember(em *common.EntityManager, sm savedSquadMember, newSquadID e
 	}
 
 	if sm.Experience != nil {
-		entity.AddComponent(squads.ExperienceComponent, &squads.ExperienceData{
+		entity.AddComponent(unitprogression.ExperienceComponent, &unitprogression.ExperienceData{
 			Level: sm.Experience.Level, CurrentXP: sm.Experience.CurrentXP,
 			XPToNextLevel: sm.Experience.XPToNextLevel,
 		})
 	}
 
 	if sm.StatGrowth != nil {
-		entity.AddComponent(squads.StatGrowthComponent, &squads.StatGrowthData{
-			Strength:   squads.GrowthGrade(sm.StatGrowth.Strength),
-			Dexterity:  squads.GrowthGrade(sm.StatGrowth.Dexterity),
-			Magic:      squads.GrowthGrade(sm.StatGrowth.Magic),
-			Leadership: squads.GrowthGrade(sm.StatGrowth.Leadership),
-			Armor:      squads.GrowthGrade(sm.StatGrowth.Armor),
-			Weapon:     squads.GrowthGrade(sm.StatGrowth.Weapon),
+		entity.AddComponent(unitprogression.StatGrowthComponent, &unitprogression.StatGrowthData{
+			Strength:   unitprogression.GrowthGrade(sm.StatGrowth.Strength),
+			Dexterity:  unitprogression.GrowthGrade(sm.StatGrowth.Dexterity),
+			Magic:      unitprogression.GrowthGrade(sm.StatGrowth.Magic),
+			Leadership: unitprogression.GrowthGrade(sm.StatGrowth.Leadership),
+			Armor:      unitprogression.GrowthGrade(sm.StatGrowth.Armor),
+			Weapon:     unitprogression.GrowthGrade(sm.StatGrowth.Weapon),
 		})
 	}
 

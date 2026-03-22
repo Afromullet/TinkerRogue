@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"game_main/common"
-	"game_main/tactical/squads"
+	"game_main/tactical/unitdefs"
 	"game_main/templates"
 
 	"github.com/bytearena/ecs"
@@ -16,11 +16,11 @@ func bootstrapECS() {
 	templates.ReadGameData()
 
 	// 2. Convert JSON monster data into UnitTemplates
-	if err := squads.InitUnitTemplatesFromJSON(); err != nil {
+	if err := unitdefs.InitUnitTemplatesFromJSON(); err != nil {
 		panic(fmt.Sprintf("failed to initialize unit templates: %v", err))
 	}
 
-	fmt.Printf("Loaded %d unit templates\n", len(squads.Units))
+	fmt.Printf("Loaded %d unit templates\n", len(unitdefs.Units))
 }
 
 // newSimManager creates a fresh EntityManager with all subsystem components registered.

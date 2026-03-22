@@ -1,4 +1,4 @@
-package squads
+package unitdefs
 
 // FilterByAttackRange returns units with attack range >= minRange
 func FilterByAttackRange(minRange int) []UnitTemplate {

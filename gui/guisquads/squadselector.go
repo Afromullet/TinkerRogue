@@ -3,7 +3,7 @@ package guisquads
 import (
 	"fmt"
 	"game_main/common"
-	"game_main/tactical/squads"
+	rstr "game_main/tactical/roster"
 
 	"github.com/bytearena/ecs"
 	"github.com/ebitenui/ebitenui/widget"
@@ -30,7 +30,7 @@ func NewSquadSelector(label *widget.Text, prevBtn, nextBtn *widget.Button) *Squa
 
 // Load enumerates all squads from the roster owner and clamps the current index.
 func (ss *SquadSelector) Load(rosterOwnerID ecs.EntityID, manager *common.EntityManager) {
-	roster := squads.GetPlayerSquadRoster(rosterOwnerID, manager)
+	roster := rstr.GetPlayerSquadRoster(rosterOwnerID, manager)
 	if roster == nil {
 		ss.AllIDs = nil
 		ss.UpdateLabel()

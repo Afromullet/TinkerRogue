@@ -12,10 +12,8 @@ import (
 	"game_main/gui/widgets"
 	"game_main/mind/ai"
 	"game_main/tactical/combat"
-	"game_main/tactical/combat/battlelog"
 	"game_main/tactical/combatservices"
 	"game_main/tactical/spells"
-	"game_main/tactical/squads"
 	"github.com/bytearena/ecs"
 	"github.com/ebitenui/ebitenui/widget"
 	"github.com/hajimehoshi/ebiten/v2"
@@ -374,7 +372,7 @@ func (cm *CombatMode) initializeUpdateComponents() {
 // registerCombatCallbacks registers cache invalidation callbacks on the combat service.
 // Must be called on each combat start because CleanupCombat clears all callbacks.
 func (cm *CombatMode) registerCombatCallbacks() {
-	cm.combatService.RegisterOnAttackComplete(func(attackerID, defenderID ecs.EntityID, result *squads.CombatResult) {
+	cm.combatService.RegisterOnAttackComplete(func(attackerID, defenderID ecs.EntityID, result *combat.CombatResult) {
 		cm.Queries.MarkSquadDirty(attackerID)
 		cm.Queries.MarkSquadDirty(defenderID)
 		if result.AttackerDestroyed {
@@ -475,13 +473,13 @@ func (cm *CombatMode) Exit(toMode framework.UIMode) error {
 
 		// Export battle log if enabled (GUI-only concern, stays here)
 		if config.ENABLE_COMBAT_LOG_EXPORT && cm.combatService.BattleRecorder != nil && cm.combatService.BattleRecorder.IsEnabled() {
-			victoryInfo := &battlelog.VictoryInfo{
+			victoryInfo := &combat.VictoryInfo{
 				RoundsCompleted: victor.RoundsCompleted,
 				VictorFaction:   victor.VictorFaction,
 				VictorName:      victor.VictorName,
 			}
 			record := cm.combatService.BattleRecorder.Finalize(victoryInfo)
-			if err := battlelog.ExportBattleJSON(record, config.COMBAT_LOG_EXPORT_DIR); err != nil {
+			if err := combat.ExportBattleJSON(record, config.COMBAT_LOG_EXPORT_DIR); err != nil {
 				fmt.Printf("Error exporting battle log: %v\n", err)
 			}
 			cm.combatService.BattleRecorder.Clear()

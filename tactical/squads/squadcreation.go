@@ -3,6 +3,7 @@ package squads
 import (
 	"fmt"
 	"game_main/common"
+	"game_main/tactical/unitdefs"
 	"game_main/templates"
 	"game_main/world/coords"
 
@@ -73,7 +74,7 @@ func CreateEmptySquad(squadmanager *common.EntityManager,
 func AddUnitToSquad(
 	squadID ecs.EntityID,
 	squadmanager *common.EntityManager,
-	unit UnitTemplate,
+	unit unitdefs.UnitTemplate,
 	gridRow, gridCol int) (ecs.EntityID, error) {
 
 	// Validate position using the provided parameters, not unit template values
@@ -280,7 +281,7 @@ type FormationPreset struct {
 type FormationPosition struct {
 	AnchorRow int
 	AnchorCol int
-	Role      UnitRole
+	Role      unitdefs.UnitRole
 	Target    []int
 }
 
@@ -290,7 +291,7 @@ func CreateSquadFromTemplate(
 	squadName string,
 	formation FormationType,
 	worldPos coords.LogicalPosition,
-	unitTemplates []UnitTemplate,
+	unitTemplates []unitdefs.UnitTemplate,
 ) ecs.EntityID {
 
 	// Create squad entity

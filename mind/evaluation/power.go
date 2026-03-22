@@ -3,6 +3,7 @@ package evaluation
 import (
 	"game_main/common"
 	"game_main/tactical/squads"
+	"game_main/tactical/unitdefs"
 	"game_main/templates"
 	"math"
 
@@ -195,7 +196,7 @@ func CalculateSquadCompositionBonus(
 	manager *common.EntityManager,
 ) float64 {
 	unitIDs := squads.GetUnitIDsInSquad(squadID, manager)
-	attackTypes := make(map[squads.AttackType]bool)
+	attackTypes := make(map[unitdefs.AttackType]bool)
 
 	for _, unitID := range unitIDs {
 		entity := manager.FindEntityByID(unitID)
@@ -240,7 +241,7 @@ func CalculateSquadPowerByRange(
 		attackRange int
 	}
 	units := []unitPowerData{}
-	attackTypeCount := make(map[squads.AttackType]int)
+	attackTypeCount := make(map[unitdefs.AttackType]int)
 
 	movementRange := squads.GetSquadMovementSpeed(squadID, manager)
 
@@ -316,7 +317,7 @@ func CalculateSquadPowerByRange(
 
 // EstimateUnitPowerFromTemplate calculates power for a UnitTemplate (no ECS entity).
 // Used by encounter generation when building squads from templates.
-func EstimateUnitPowerFromTemplate(unit squads.UnitTemplate, config *PowerConfig) float64 {
+func EstimateUnitPowerFromTemplate(unit unitdefs.UnitTemplate, config *PowerConfig) float64 {
 	attr := &unit.Attributes
 
 	// === OFFENSIVE POWER ===
@@ -357,7 +358,7 @@ func EstimateUnitPowerFromTemplate(unit squads.UnitTemplate, config *PowerConfig
 
 	// Healing value: heal units contribute utility power from healing output
 	healValue := 0.0
-	if unit.AttackType == squads.AttackTypeHeal {
+	if unit.AttackType == unitdefs.AttackTypeHeal {
 		healValue = float64(attr.GetHealingAmount()) * 1.5 // Heal utility scales with Magic
 	}
 

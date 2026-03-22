@@ -6,6 +6,7 @@ import (
 	"game_main/common"
 	"game_main/gui/framework"
 	"game_main/gui/widgets"
+	"game_main/tactical/roster"
 	"game_main/tactical/squads"
 	"game_main/tactical/squadservices"
 	"game_main/visual/graphics"
@@ -137,7 +138,7 @@ func (sdm *SquadDeploymentMode) updateDetailPanel() {
 func (sdm *SquadDeploymentMode) refreshSquadList() {
 	// Get squads from the active commander's roster (not all squads globally)
 	rosterOwnerID := sdm.Context.GetSquadRosterOwnerID()
-	squadRoster := squads.GetPlayerSquadRoster(rosterOwnerID, sdm.Context.ECSManager)
+	squadRoster := roster.GetPlayerSquadRoster(rosterOwnerID, sdm.Context.ECSManager)
 	var allSquads []ecs.EntityID
 	if squadRoster != nil {
 		allSquads = squadRoster.OwnedSquads

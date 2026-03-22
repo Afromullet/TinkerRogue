@@ -8,7 +8,9 @@ import (
 	"game_main/overworld/core"
 	"game_main/overworld/garrison"
 	"game_main/tactical/combat"
+	rstr "game_main/tactical/roster"
 	"game_main/tactical/squads"
+	"game_main/tactical/unitdefs"
 	"game_main/templates"
 	"game_main/world/coords"
 
@@ -111,7 +113,7 @@ func spawnGarrisonEncounter(
 
 // ensurePlayerSquadsDeployed checks if player has deployed squads, and auto-deploys all if none are deployed
 func ensurePlayerSquadsDeployed(rosterOwnerID ecs.EntityID, manager *common.EntityManager) error {
-	roster := squads.GetPlayerSquadRoster(rosterOwnerID, manager)
+	roster := rstr.GetPlayerSquadRoster(rosterOwnerID, manager)
 	if roster == nil {
 		return fmt.Errorf("player has no squad roster")
 	}
@@ -140,7 +142,7 @@ func assignPlayerSquadsToFaction(
 	playerStartPos coords.LogicalPosition,
 ) error {
 	// Get player's squad roster
-	roster := squads.GetPlayerSquadRoster(rosterOwnerID, manager)
+	roster := rstr.GetPlayerSquadRoster(rosterOwnerID, manager)
 	if roster == nil {
 		return fmt.Errorf("roster owner has no squad roster")
 	}
@@ -290,7 +292,7 @@ func createSquadForPowerBudget(
 	// Select unit pool based on squad type
 	unitPool := filterUnitsBySquadType(squadType)
 	if len(unitPool) == 0 {
-		unitPool = squads.Units // Fallback to all units
+		unitPool = unitdefs.Units // Fallback to all units
 	}
 
 	if len(unitPool) == 0 {
@@ -298,7 +300,7 @@ func createSquadForPowerBudget(
 	}
 
 	// Iteratively add units until power budget reached
-	unitsToCreate := []squads.UnitTemplate{}
+	unitsToCreate := []unitdefs.UnitTemplate{}
 	currentPower := 0.0
 	// Use safe grid positions that work for 2-wide units (avoid rightmost column)
 	// Extended pattern to support up to 8 units for Boss difficulty
@@ -360,18 +362,18 @@ func createSquadForPowerBudget(
 }
 
 // filterUnitsBySquadType selects units matching squad archetype
-func filterUnitsBySquadType(squadType string) []squads.UnitTemplate {
+func filterUnitsBySquadType(squadType string) []unitdefs.UnitTemplate {
 	switch squadType {
 	case SquadTypeMelee:
-		return squads.FilterByMaxAttackRange(2) // Melee: range <= 2
+		return unitdefs.FilterByMaxAttackRange(2) // Melee: range <= 2
 	case SquadTypeRanged:
-		return squads.FilterByAttackRange(3) // Ranged: range >= 3
+		return unitdefs.FilterByAttackRange(3) // Ranged: range >= 3
 	case SquadTypeMagic:
-		return squads.FilterByAttackType(squads.AttackTypeMagic)
+		return unitdefs.FilterByAttackType(unitdefs.AttackTypeMagic)
 	case SquadTypeSupport:
-		return squads.FilterByAttackType(squads.AttackTypeHeal)
+		return unitdefs.FilterByAttackType(unitdefs.AttackTypeHeal)
 	default:
-		return squads.Units
+		return unitdefs.Units
 	}
 }
 
