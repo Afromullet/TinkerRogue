@@ -194,38 +194,22 @@ func (cah *CombatActionHandler) RedoLastMove() {
 // CanUndoMove returns whether there are moves to undo.
 // Blocked if the selected squad has already attacked this turn.
 func (cah *CombatActionHandler) CanUndoMove() bool {
-	if !cah.commandExecutor.CanUndo() {
-		return false
-	}
-
-	// Block undo if the selected squad has already acted (attacked)
-	selectedSquadID := cah.deps.BattleState.SelectedSquadID
-	if selectedSquadID != 0 {
-		actionState := cah.deps.CombatService.CombatCache.FindActionStateBySquadID(selectedSquadID)
-		if actionState != nil && actionState.HasActed {
-			return false
-		}
-	}
-
-	return true
+	return cah.commandExecutor.CanUndo() && !cah.isSelectedSquadActed()
 }
 
 // CanRedoMove returns whether there are moves to redo.
 // Blocked if the selected squad has already attacked this turn.
 func (cah *CombatActionHandler) CanRedoMove() bool {
-	if !cah.commandExecutor.CanRedo() {
+	return cah.commandExecutor.CanRedo() && !cah.isSelectedSquadActed()
+}
+
+func (cah *CombatActionHandler) isSelectedSquadActed() bool {
+	selectedSquadID := cah.deps.BattleState.SelectedSquadID
+	if selectedSquadID == 0 {
 		return false
 	}
-
-	selectedSquadID := cah.deps.BattleState.SelectedSquadID
-	if selectedSquadID != 0 {
-		actionState := cah.deps.CombatService.CombatCache.FindActionStateBySquadID(selectedSquadID)
-		if actionState != nil && actionState.HasActed {
-			return false
-		}
-	}
-
-	return true
+	actionState := cah.deps.CombatService.CombatCache.FindActionStateBySquadID(selectedSquadID)
+	return actionState != nil && actionState.HasActed
 }
 
 // ClearMoveHistory clears all movement history (called when ending turn)

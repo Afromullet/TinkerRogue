@@ -1,9 +1,13 @@
 package behavior
 
 import (
+	"fmt"
+	"game_main/common"
 	"game_main/tactical/combat"
 	"game_main/tactical/squads"
+	"game_main/tactical/unitdefs"
 	"game_main/templates"
+	testfx "game_main/testing"
 	"game_main/world/coords"
 	"testing"
 )
@@ -12,10 +16,21 @@ func init() {
 	templates.GlobalDifficulty = templates.NewDefaultDifficultyManager()
 }
 
+// createTestCombatManager creates a fully initialized EntityManager with combat system.
+// Local copy since combat.CreateTestCombatManager is in a _test.go file.
+func createTestCombatManager() *common.EntityManager {
+	manager := testfx.NewTestEntityManager()
+	if err := squads.InitializeSquadData(manager); err != nil {
+		panic(fmt.Sprintf("Failed to initialize squad data: %v", err))
+	}
+	common.InitializeSubsystems(manager)
+	return manager
+}
+
 // TestCombatThreatLayer_Compute tests basic combat threat computation
 func TestCombatThreatLayer_Compute(t *testing.T) {
 	// Setup test environment
-	manager := combat.CreateTestCombatManager()
+	manager := createTestCombatManager()
 	cache := combat.NewCombatQueryCache(manager)
 	baseThreatMgr := NewFactionThreatLevelManager(manager, cache)
 	fm := combat.NewCombatFactionManager(manager, cache)
@@ -57,7 +72,7 @@ func TestCombatThreatLayer_Compute(t *testing.T) {
 // TestCompositeThreatEvaluator_Update tests layer update and caching
 func TestCompositeThreatEvaluator_Update(t *testing.T) {
 	// Setup test environment
-	manager := combat.CreateTestCombatManager()
+	manager := createTestCombatManager()
 	cache := combat.NewCombatQueryCache(manager)
 	baseThreatMgr := NewFactionThreatLevelManager(manager, cache)
 	fm := combat.NewCombatFactionManager(manager, cache)
@@ -96,9 +111,9 @@ func TestCompositeThreatEvaluator_Update(t *testing.T) {
 // TestCompositeThreatEvaluator_RoleWeights tests role-specific threat weighting
 func TestCompositeThreatEvaluator_RoleWeights(t *testing.T) {
 	// Verify role weights from config
-	tankWeights := GetRoleBehaviorWeights(squads.RoleTank)
-	dpsWeights := GetRoleBehaviorWeights(squads.RoleDPS)
-	supportWeights := GetRoleBehaviorWeights(squads.RoleSupport)
+	tankWeights := GetRoleBehaviorWeights(unitdefs.RoleTank)
+	dpsWeights := GetRoleBehaviorWeights(unitdefs.RoleDPS)
+	supportWeights := GetRoleBehaviorWeights(unitdefs.RoleSupport)
 
 	// Tank should seek melee danger (negative weight)
 	if tankWeights.MeleeWeight >= 0 {
@@ -124,7 +139,7 @@ func TestCompositeThreatEvaluator_RoleWeights(t *testing.T) {
 // TestGetOptimalPositionForRole tests position selection
 func TestGetOptimalPositionForRole(t *testing.T) {
 	// Setup test environment
-	manager := combat.CreateTestCombatManager()
+	manager := createTestCombatManager()
 	cache := combat.NewCombatQueryCache(manager)
 	baseThreatMgr := NewFactionThreatLevelManager(manager, cache)
 	fm := combat.NewCombatFactionManager(manager, cache)
@@ -151,7 +166,7 @@ func TestGetOptimalPositionForRole(t *testing.T) {
 
 // TestThreatLayerBase_Caching tests cache invalidation logic
 func TestThreatLayerBase_Caching(t *testing.T) {
-	manager := combat.CreateTestCombatManager()
+	manager := createTestCombatManager()
 	cache := combat.NewCombatQueryCache(manager)
 	fm := combat.NewCombatFactionManager(manager, cache)
 	faction1 := fm.CreateCombatFaction("Player", true)
@@ -188,18 +203,18 @@ func TestThreatLayerBase_Caching(t *testing.T) {
 
 // TestGetSquadPrimaryRole tests role detection from unit composition
 func TestGetSquadPrimaryRole(t *testing.T) {
-	manager := combat.CreateTestCombatManager()
+	manager := createTestCombatManager()
 
 	// Test returns default when squad not found
 	role := squads.GetSquadPrimaryRole(999, manager)
-	if role != squads.RoleDPS {
+	if role != unitdefs.RoleDPS {
 		t.Error("Should return default DPS role for non-existent squad")
 	}
 }
 
 // TestThreatLayerBase_GetEnemyFactions tests enemy faction detection
 func TestThreatLayerBase_GetEnemyFactions(t *testing.T) {
-	manager := combat.CreateTestCombatManager()
+	manager := createTestCombatManager()
 	cache := combat.NewCombatQueryCache(manager)
 	fm := combat.NewCombatFactionManager(manager, cache)
 

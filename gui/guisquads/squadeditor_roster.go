@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"game_main/gui/builders"
 	"game_main/gui/guiunitview"
+	"game_main/tactical/combat"
+	rstr "game_main/tactical/roster"
 	"game_main/tactical/squadcommands"
 	"game_main/tactical/squads"
 
@@ -20,7 +22,7 @@ func (sem *SquadEditorMode) defaultDialogPosition() (width, height, centerX, cen
 // onNewSquad creates a new empty squad and adds it to the active commander's roster
 func (sem *SquadEditorMode) onNewSquad() {
 	rosterOwnerID := sem.Context.GetSquadRosterOwnerID()
-	squadRoster := squads.GetPlayerSquadRoster(rosterOwnerID, sem.Queries.ECSManager)
+	squadRoster := rstr.GetPlayerSquadRoster(rosterOwnerID, sem.Queries.ECSManager)
 	if squadRoster == nil {
 		sem.SetStatus("No squad roster found")
 		return
@@ -88,7 +90,7 @@ func (sem *SquadEditorMode) onAddUnitFromRoster() {
 		return
 	}
 
-	entry, ok := selectedEntry.(squads.RosterUnitEntry)
+	entry, ok := selectedEntry.(rstr.RosterUnitEntry)
 	if !ok {
 		sem.SetStatus("Invalid roster selection")
 		return
@@ -116,22 +118,22 @@ func (sem *SquadEditorMode) onAddUnitFromRoster() {
 
 // getSelectedUnitForAction validates that a squad and unit are selected, returning the UnitIdentity.
 // Returns false if any guard fails (status message is set automatically).
-func (sem *SquadEditorMode) getSelectedUnitForAction() (squads.UnitIdentity, bool) {
+func (sem *SquadEditorMode) getSelectedUnitForAction() (combat.UnitIdentity, bool) {
 	if !sem.squadNav.HasSquads() {
 		sem.SetStatus("No squad selected")
-		return squads.UnitIdentity{}, false
+		return combat.UnitIdentity{}, false
 	}
 
 	selectedEntry := sem.unitList.SelectedEntry()
 	if selectedEntry == nil {
 		sem.SetStatus("No unit selected")
-		return squads.UnitIdentity{}, false
+		return combat.UnitIdentity{}, false
 	}
 
-	unitIdentity, ok := selectedEntry.(squads.UnitIdentity)
+	unitIdentity, ok := selectedEntry.(combat.UnitIdentity)
 	if !ok {
 		sem.SetStatus("Invalid unit selection")
-		return squads.UnitIdentity{}, false
+		return combat.UnitIdentity{}, false
 	}
 	return unitIdentity, true
 }
@@ -297,14 +299,14 @@ func (sem *SquadEditorMode) onRenameSquad() {
 // backfillRosterWithSquadUnits registers all existing squad units in the roster
 // This is called when entering the mode to handle units created before roster tracking
 func (sem *SquadEditorMode) backfillRosterWithSquadUnits() {
-	roster := squads.GetPlayerRoster(sem.Context.PlayerData.PlayerEntityID, sem.Queries.ECSManager)
+	roster := rstr.GetPlayerRoster(sem.Context.PlayerData.PlayerEntityID, sem.Queries.ECSManager)
 	if roster == nil {
 		return
 	}
 
 	// Get squads from the active commander's roster (not all squads globally)
 	rosterOwnerID := sem.Context.GetSquadRosterOwnerID()
-	squadRoster := squads.GetPlayerSquadRoster(rosterOwnerID, sem.Queries.ECSManager)
+	squadRoster := rstr.GetPlayerSquadRoster(rosterOwnerID, sem.Queries.ECSManager)
 	if squadRoster == nil {
 		return
 	}
@@ -331,7 +333,7 @@ func (sem *SquadEditorMode) backfillRosterWithSquadUnits() {
 
 			// Register if not already in roster
 			if !alreadyRegistered {
-				err := squads.RegisterSquadUnitInRoster(roster, unitID, squadID, sem.Queries.ECSManager)
+				err := rstr.RegisterSquadUnitInRoster(roster, unitID, squadID, sem.Queries.ECSManager)
 				if err != nil {
 					fmt.Printf("Warning: Failed to register unit %d in roster: %v\n", unitID, err)
 				}

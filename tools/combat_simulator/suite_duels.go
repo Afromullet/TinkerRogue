@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"game_main/tactical/squads"
+	"game_main/tactical/unitdefs"
 )
 
 // GenerateDuelSuite generates all pairwise monotype duel scenarios.
@@ -48,7 +49,7 @@ func GenerateDuelSuite(pool *UnitPool) []Scenario {
 //   - 1x1: 3 units at (0,1), (1,1), (2,1) - center column
 //   - 2x1: 3 units at (0,0), (1,0), (2,0) - spanning cols 0-1 per row
 //   - 2x2: 1 unit at (0,0) - spanning rows 0-1, cols 0-1
-func duelPlacements(tmpl squads.UnitTemplate) []UnitPlacement {
+func duelPlacements(tmpl unitdefs.UnitTemplate) []UnitPlacement {
 	w := tmpl.GridWidth
 	if w == 0 {
 		w = 1

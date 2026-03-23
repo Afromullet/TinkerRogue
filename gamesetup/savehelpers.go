@@ -11,6 +11,7 @@ import (
 	"game_main/savesystem/chunks"
 	"game_main/tactical/commander"
 	"game_main/tactical/squads"
+	"game_main/tactical/unitdefs"
 	"game_main/world/coords"
 	"game_main/world/worldmap"
 
@@ -80,7 +81,7 @@ func RestoreRenderables(em *common.EntityManager) error {
 		if utData == nil {
 			continue
 		}
-		template := squads.GetTemplateByUnitType(utData.UnitType)
+		template := unitdefs.GetTemplateByUnitType(utData.UnitType)
 		if template == nil || template.EntityConfig.ImagePath == "" {
 			log.Printf("Warning: no template or image for unit type %q, skipping renderable", utData.UnitType)
 			continue

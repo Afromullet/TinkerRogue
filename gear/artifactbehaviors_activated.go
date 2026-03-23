@@ -61,7 +61,7 @@ func applyPendingToTargets(
 		if !targetSet[sid] {
 			continue
 		}
-		actionState := ctx.Cache.FindActionStateBySquadID(sid)
+		actionState := ctx.GetActionState(sid)
 		if actionState == nil {
 			continue
 		}
@@ -88,10 +88,8 @@ func (DeadlockShacklesBehavior) Activate(ctx *BehaviorContext, targetSquadID ecs
 }
 
 func (DeadlockShacklesBehavior) OnPostReset(ctx *BehaviorContext, factionID ecs.EntityID, squadIDs []ecs.EntityID) {
-	applyPendingToTargets(ctx, BehaviorDeadlockShackles, squadIDs, func(actionState *combat.ActionStateData, sid ecs.EntityID) {
-		actionState.HasActed = true
-		actionState.HasMoved = true
-		actionState.MovementRemaining = 0
+	applyPendingToTargets(ctx, BehaviorDeadlockShackles, squadIDs, func(_ *combat.ActionStateData, sid ecs.EntityID) {
+		ctx.SetSquadLocked(sid)
 		fmt.Printf("[GEAR] Deadlock Shackles: squad %d fully locked this turn\n", sid)
 	})
 }
@@ -126,7 +124,7 @@ func (ChainOfCommandBehavior) Activate(ctx *BehaviorContext, targetSquadID ecs.E
 	}
 
 	// Validate source is fresh (hasn't moved or acted)
-	sourceState := ctx.Cache.FindActionStateBySquadID(sourceSquadID)
+	sourceState := ctx.GetActionState(sourceSquadID)
 	if sourceState == nil {
 		return fmt.Errorf("source squad %d has no action state", sourceSquadID)
 	}
@@ -138,7 +136,7 @@ func (ChainOfCommandBehavior) Activate(ctx *BehaviorContext, targetSquadID ecs.E
 	}
 
 	// Validate target has acted
-	targetState := ctx.Cache.FindActionStateBySquadID(targetSquadID)
+	targetState := ctx.GetActionState(targetSquadID)
 	if targetState == nil {
 		return fmt.Errorf("target squad %d has no action state", targetSquadID)
 	}
@@ -147,15 +145,11 @@ func (ChainOfCommandBehavior) Activate(ctx *BehaviorContext, targetSquadID ecs.E
 	}
 
 	// Fully spend the source
-	sourceState.HasActed = true
-	sourceState.HasMoved = true
-	sourceState.MovementRemaining = 0
+	ctx.SetSquadLocked(sourceSquadID)
 
 	// Fully reset the target
 	squadSpeed := ctx.GetSquadSpeed(targetSquadID)
-	targetState.HasActed = false
-	targetState.HasMoved = false
-	targetState.MovementRemaining = squadSpeed
+	ctx.ResetSquadActions(targetSquadID, squadSpeed)
 
 	ctx.ChargeTracker.UseCharge(BehaviorChainOfCommand, ChargeOncePerRound)
 	fmt.Printf("[GEAR] Chain of Command: squad %d passes full action to squad %d\n", sourceSquadID, targetSquadID)
@@ -176,7 +170,7 @@ func (EchoDrumsBehavior) Activate(ctx *BehaviorContext, targetSquadID ecs.Entity
 	if err := requireCharge(ctx, BehaviorEchoDrums); err != nil {
 		return err
 	}
-	actionState := ctx.Cache.FindActionStateBySquadID(targetSquadID)
+	actionState := ctx.GetActionState(targetSquadID)
 	if actionState == nil {
 		return fmt.Errorf("squad %d has no action state", targetSquadID)
 	}

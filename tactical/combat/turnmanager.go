@@ -66,7 +66,7 @@ func (tm *TurnManager) InitializeCombat(factionIDs []ecs.EntityID) error {
 			CreateActionStateForSquad(tm.manager, squadID)
 
 			// Check for combat-start abilities (like Battle Cry)
-			squads.CheckAndTriggerAbilities(squadID, tm.manager)
+			CheckAndTriggerAbilities(squadID, tm.manager)
 		}
 	}
 
@@ -101,7 +101,7 @@ func (tm *TurnManager) ResetSquadActions(factionID ecs.EntityID) error {
 		effects.TickEffectsForUnits(unitIDs, tm.manager)
 
 		// Check and trigger abilities at start of turn
-		squads.CheckAndTriggerAbilities(squadID, tm.manager)
+		CheckAndTriggerAbilities(squadID, tm.manager)
 	}
 
 	// Fire post-reset hook (e.g., artifact bonus movement)

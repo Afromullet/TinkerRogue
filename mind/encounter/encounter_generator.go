@@ -6,7 +6,7 @@ import (
 	"game_main/mind/combatlifecycle"
 	"game_main/mind/evaluation"
 	"game_main/overworld/core"
-	"game_main/tactical/squads"
+	rstr "game_main/tactical/roster"
 	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"
@@ -35,7 +35,7 @@ func GenerateEncounterSpec(
 
 	// Get player's roster
 	config := evaluation.GetPowerConfigByProfile(DefaultPowerProfile)
-	roster := squads.GetPlayerSquadRoster(rosterOwnerID, manager)
+	roster := rstr.GetPlayerSquadRoster(rosterOwnerID, manager)
 	if roster == nil {
 		return nil, fmt.Errorf("player has no squad roster")
 	}

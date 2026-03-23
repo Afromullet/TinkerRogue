@@ -8,7 +8,7 @@ import (
 	"game_main/gui/framework"
 	"game_main/gui/specs"
 	"game_main/gui/widgets"
-	"game_main/tactical/squads"
+	"game_main/tactical/unitdefs"
 
 	"github.com/ebitenui/ebitenui/widget"
 )
@@ -75,7 +75,7 @@ func init() {
 				MinWidth:  listWidth,
 				MinHeight: listHeight,
 				EntryLabelFunc: func(e interface{}) string {
-					if template, ok := e.(*squads.UnitTemplate); ok {
+					if template, ok := e.(*unitdefs.UnitTemplate); ok {
 						totalOwned, available := upm.purchaseService.GetUnitOwnedCount(
 							upm.Context.PlayerData.PlayerEntityID,
 							template.UnitType,
@@ -88,7 +88,7 @@ func init() {
 					return fmt.Sprintf("%v", e)
 				},
 				OnEntrySelected: func(selectedEntry interface{}) {
-					if template, ok := selectedEntry.(*squads.UnitTemplate); ok {
+					if template, ok := selectedEntry.(*unitdefs.UnitTemplate); ok {
 						upm.selectedTemplate = template
 						upm.updateDetailPanel()
 					}

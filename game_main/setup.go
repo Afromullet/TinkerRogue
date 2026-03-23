@@ -13,7 +13,7 @@ import (
 	"game_main/mind/raid"
 	"game_main/savesystem"
 	"game_main/tactical/commander"
-	"game_main/tactical/squads"
+	"game_main/tactical/unitdefs"
 	"game_main/visual/graphics"
 	"game_main/visual/rendering"
 )
@@ -158,7 +158,7 @@ func SetupRoguelikeFromSave(g *Game) error {
 
 	// Load unit templates — CreatePlayer does this for fresh games,
 	// but the load path skips CreatePlayer so we must do it here.
-	if err := squads.InitUnitTemplatesFromJSON(); err != nil {
+	if err := unitdefs.InitUnitTemplatesFromJSON(); err != nil {
 		return fmt.Errorf("failed to load unit templates: %w", err)
 	}
 

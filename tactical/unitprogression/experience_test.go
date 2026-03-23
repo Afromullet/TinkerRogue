@@ -1,4 +1,4 @@
-package squads
+package unitprogression
 
 import (
 	"game_main/common"
@@ -12,33 +12,6 @@ func setupExperienceTestManager(t *testing.T) *common.EntityManager {
 	manager := testfx.NewTestEntityManager()
 	common.InitializeSubsystems(manager)
 	return manager
-}
-
-// createTestUnitWithGrowth creates a unit entity with experience and growth components
-func createTestUnitWithGrowth(t *testing.T, manager *common.EntityManager, growths StatGrowthData) (*ExperienceData, *common.Attributes) {
-	t.Helper()
-
-	entity := manager.World.NewEntity()
-	entity.AddComponent(common.AttributeComponent, &common.Attributes{
-		Strength:      10,
-		Dexterity:     20,
-		Magic:         5,
-		Leadership:    10,
-		Armor:         5,
-		Weapon:        5,
-		CurrentHealth: 40,
-		CanAct:        true,
-	})
-
-	expData := &ExperienceData{
-		Level:         1,
-		CurrentXP:     0,
-		XPToNextLevel: 100,
-	}
-	entity.AddComponent(ExperienceComponent, expData)
-	entity.AddComponent(StatGrowthComponent, &growths)
-
-	return expData, common.GetComponentType[*common.Attributes](entity, common.AttributeComponent)
 }
 
 func TestGrowthChance(t *testing.T) {
@@ -88,7 +61,7 @@ func TestAwardExperience_BasicLevelUp(t *testing.T) {
 		XPToNextLevel: 100,
 	})
 
-	// All S grades = 90% chance each, seeded RNG for determinism
+	// All S grades = 90% chance; seeded RNG for determinism
 	entity.AddComponent(StatGrowthComponent, &StatGrowthData{
 		Strength:   GradeS,
 		Dexterity:  GradeS,

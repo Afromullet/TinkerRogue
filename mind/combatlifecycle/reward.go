@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"game_main/common"
 	"game_main/tactical/spells"
-	"game_main/tactical/squads"
+	"game_main/tactical/unitprogression"
 	"math"
 	"math/rand"
 	"strings"
@@ -104,7 +104,7 @@ func grantExperience(manager *common.EntityManager, squadIDs []ecs.EntityID, tot
 
 	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
 	for _, unitID := range aliveUnitIDs {
-		squads.AwardExperience(unitID, xpPerUnit, manager, rng)
+		unitprogression.AwardExperience(unitID, xpPerUnit, manager, rng)
 	}
 
 	fmt.Printf("Granted %d XP each to %d alive units (total %d XP)\n",

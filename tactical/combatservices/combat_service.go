@@ -6,7 +6,6 @@ import (
 	"game_main/gear"
 	"game_main/mind/combatlifecycle"
 	"game_main/tactical/combat"
-	"game_main/tactical/combat/battlelog"
 	"game_main/tactical/effects"
 	"game_main/tactical/squads"
 	"game_main/world/coords"
@@ -24,7 +23,7 @@ type CombatService struct {
 	CombatActSystem *combat.CombatActionSystem
 
 	// Battle recording for export
-	BattleRecorder *battlelog.BattleRecorder
+	BattleRecorder *combat.BattleRecorder
 
 	// Threat evaluation system (injected via SetThreatProvider/SetThreatEvaluatorFactory)
 	threatProvider       ThreatProvider
@@ -47,7 +46,7 @@ type CombatService struct {
 // NewCombatService creates a new combat service
 func NewCombatService(manager *common.EntityManager) *CombatService {
 	cache := combat.NewCombatQueryCache(manager)
-	battleRecorder := battlelog.NewBattleRecorder()
+	battleRecorder := combat.NewBattleRecorder()
 	combatActSystem := combat.NewCombatActionSystem(manager, cache)
 	movementSystem := combat.NewMovementSystem(manager, common.GlobalPositionSystem, cache)
 	turnManager := combat.NewTurnManager(manager, cache)
@@ -67,7 +66,7 @@ func NewCombatService(manager *common.EntityManager) *CombatService {
 	}
 
 	// Wire system hooks to forward to registered callbacks
-	combatActSystem.SetOnAttackComplete(func(attackerID, defenderID ecs.EntityID, result *squads.CombatResult) {
+	combatActSystem.SetOnAttackComplete(func(attackerID, defenderID ecs.EntityID, result *combat.CombatResult) {
 		for _, fn := range cs.onAttackComplete {
 			fn(attackerID, defenderID, result)
 		}
@@ -292,14 +291,14 @@ func (cs *CombatService) SetAIController(ctrl AITurnController) {
 // setupBehaviorDispatch wires all registered artifact behaviors to the combat event system.
 func setupBehaviorDispatch(cs *CombatService, manager *common.EntityManager, cache *combat.CombatQueryCache) {
 	cs.RegisterPostResetHook(func(factionID ecs.EntityID, squadIDs []ecs.EntityID) {
-		ctx := &gear.BehaviorContext{Manager: manager, Cache: cache, ChargeTracker: cs.chargeTracker}
+		ctx := gear.NewBehaviorContext(manager, cache, cs.chargeTracker)
 		for _, b := range gear.AllBehaviors() {
 			b.OnPostReset(ctx, factionID, squadIDs)
 		}
 	})
 
-	cs.RegisterOnAttackComplete(func(attackerID, defenderID ecs.EntityID, result *squads.CombatResult) {
-		ctx := &gear.BehaviorContext{Manager: manager, Cache: cache, ChargeTracker: cs.chargeTracker}
+	cs.RegisterOnAttackComplete(func(attackerID, defenderID ecs.EntityID, result *combat.CombatResult) {
+		ctx := gear.NewBehaviorContext(manager, cache, cs.chargeTracker)
 		for _, b := range gear.AllBehaviors() {
 			b.OnAttackComplete(ctx, attackerID, defenderID, result)
 		}
@@ -309,7 +308,7 @@ func setupBehaviorDispatch(cs *CombatService, manager *common.EntityManager, cac
 		if cs.chargeTracker != nil {
 			cs.chargeTracker.RefreshRoundCharges()
 		}
-		ctx := &gear.BehaviorContext{Manager: manager, Cache: cache, ChargeTracker: cs.chargeTracker}
+		ctx := gear.NewBehaviorContext(manager, cache, cs.chargeTracker)
 		for _, b := range gear.AllBehaviors() {
 			b.OnTurnEnd(ctx, round)
 		}

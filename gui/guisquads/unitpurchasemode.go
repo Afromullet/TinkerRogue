@@ -5,7 +5,7 @@ import (
 	"game_main/gui/framework"
 	"game_main/gui/widgets"
 	"game_main/tactical/squadcommands"
-	"game_main/tactical/squads"
+	"game_main/tactical/unitdefs"
 	"game_main/tactical/squadservices"
 
 	"github.com/ebitenui/ebitenui/widget"
@@ -28,7 +28,7 @@ type UnitPurchaseMode struct {
 	buyButton       *widget.Button
 	viewStatsButton *widget.Button
 
-	selectedTemplate *squads.UnitTemplate
+	selectedTemplate *unitdefs.UnitTemplate
 
 	// Input action map
 	actionMap *framework.ActionMap
@@ -191,9 +191,9 @@ func (upm *UnitPurchaseMode) purchaseUnit() {
 
 func (upm *UnitPurchaseMode) refreshUnitList() {
 	// Repopulate unit list to update owned/available counts
-	entries := make([]interface{}, 0, len(squads.Units))
-	for i := range squads.Units {
-		entries = append(entries, &squads.Units[i])
+	entries := make([]interface{}, 0, len(unitdefs.Units))
+	for i := range unitdefs.Units {
+		entries = append(entries, &unitdefs.Units[i])
 	}
 	upm.unitList.GetList().SetEntries(entries)
 	upm.unitList.MarkDirty() // Trigger re-render with updated entries
@@ -218,9 +218,9 @@ func (upm *UnitPurchaseMode) refreshAfterUndoRedo() {
 
 func (upm *UnitPurchaseMode) Enter(fromMode framework.UIMode) error {
 	// Populate unit list with all available templates
-	entries := make([]interface{}, 0, len(squads.Units))
-	for i := range squads.Units {
-		entries = append(entries, &squads.Units[i])
+	entries := make([]interface{}, 0, len(unitdefs.Units))
+	for i := range unitdefs.Units {
+		entries = append(entries, &unitdefs.Units[i])
 	}
 	upm.unitList.GetList().SetEntries(entries)
 	upm.unitList.MarkDirty() // Trigger re-render with updated entries

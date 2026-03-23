@@ -3,6 +3,7 @@ package squads
 import (
 	"game_main/common"
 	"game_main/config"
+	"game_main/tactical/unitdefs"
 	"game_main/templates"
 
 	"testing"
@@ -97,7 +98,7 @@ func TestCapacitySystem_EnforceLimitWithoutLeader(t *testing.T) {
 
 	// With default capacity of 60, we should be able to add 6 units (6 * 10.0 = 60.0)
 	for i := 0; i < 6; i++ {
-		unit, err := CreateUnitTemplates(jsonMonster)
+		unit, err := unitdefs.CreateUnitTemplates(jsonMonster)
 		if err != nil {
 			t.Fatalf("CreateUnitTemplates failed: %v", err)
 		}
@@ -117,7 +118,7 @@ func TestCapacitySystem_EnforceLimitWithoutLeader(t *testing.T) {
 	}
 
 	// Try to add a 7th unit (should fail - exceeds capacity)
-	unit, _ := CreateUnitTemplates(jsonMonster)
+	unit, _ := unitdefs.CreateUnitTemplates(jsonMonster)
 	_, err := AddUnitToSquad(squadID, manager, unit, 2, 0)
 	if err == nil {
 		t.Error("Expected error when exceeding capacity, got nil")
@@ -184,7 +185,7 @@ func TestCapacitySystem_IsSquadOverCapacity(t *testing.T) {
 
 	// Add units (capacity cost = 10.0 each)
 	for i := 0; i < 6; i++ {
-		unit, _ := CreateUnitTemplates(jsonMonster)
+		unit, _ := unitdefs.CreateUnitTemplates(jsonMonster)
 		row := i / 3
 		col := i % 3
 		_, _ = AddUnitToSquad(squadID, manager, unit, row, col)
@@ -254,7 +255,7 @@ func TestCapacitySystem_ComputedCapacityAfterAddingUnit(t *testing.T) {
 		TargetCells: nil,
 	}
 
-	unit, _ := CreateUnitTemplates(jsonMonster)
+	unit, _ := unitdefs.CreateUnitTemplates(jsonMonster)
 	_, _ = AddUnitToSquad(squadID, manager, unit, 0, 0)
 
 	// Check computed capacity functions

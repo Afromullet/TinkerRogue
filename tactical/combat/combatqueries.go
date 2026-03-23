@@ -3,7 +3,6 @@ package combat
 import (
 	"fmt"
 	"game_main/common"
-	"game_main/config"
 	"game_main/tactical/squads"
 	"game_main/world/coords"
 
@@ -116,10 +115,7 @@ func isSquad(entityID ecs.EntityID, manager *common.EntityManager) bool {
 // CreateActionStateForSquad creates an ActionStateData entity for a squad.
 // MovementRemaining is initialized from the squad's actual speed.
 func CreateActionStateForSquad(manager *common.EntityManager, squadID ecs.EntityID) {
-	movementSpeed := squads.GetSquadMovementSpeed(squadID, manager)
-	if movementSpeed == 0 {
-		movementSpeed = config.DefaultMovementSpeed
-	}
+	movementSpeed := squads.GetSquadMovementSpeedOrDefault(squadID, manager)
 
 	actionEntity := manager.World.NewEntity()
 	actionEntity.AddComponent(ActionStateComponent, &ActionStateData{

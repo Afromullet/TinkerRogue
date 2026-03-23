@@ -3,6 +3,7 @@ package squads
 import (
 	"game_main/common"
 	"game_main/config"
+	"game_main/tactical/unitdefs"
 	"game_main/world/coords"
 	"math"
 
@@ -111,7 +112,7 @@ func IsSquadDestroyed(squadID ecs.EntityID, squadmanager *common.EntityManager) 
 	}
 
 	for _, unitID := range unitIDs {
-		if getAliveUnitAttributes(unitID, squadmanager) != nil {
+		if GetAliveUnitAttributes(unitID, squadmanager) != nil {
 			return false
 		}
 	}
@@ -149,9 +150,9 @@ func WouldSquadSurvive(squadID ecs.EntityID, predictedDamage map[ecs.EntityID]in
 // HELPER FUNCTIONS
 // ========================================
 
-// getAliveUnitAttributes returns the attributes component for a unit if it's alive
+// GetAliveUnitAttributes returns the attributes component for a unit if it's alive
 // Returns nil if entity not found, no attributes, or unit is dead
-func getAliveUnitAttributes(unitID ecs.EntityID, manager *common.EntityManager) *common.Attributes {
+func GetAliveUnitAttributes(unitID ecs.EntityID, manager *common.EntityManager) *common.Attributes {
 	entity := manager.FindEntityByID(unitID)
 	if entity == nil {
 		return nil
@@ -272,7 +273,7 @@ func GetSquadMovementSpeed(squadID ecs.EntityID, squadmanager *common.EntityMana
 
 	for _, unitID := range unitIDs {
 		// Use helper to get alive unit attributes
-		if getAliveUnitAttributes(unitID, squadmanager) == nil {
+		if GetAliveUnitAttributes(unitID, squadmanager) == nil {
 			continue
 		}
 
@@ -295,6 +296,16 @@ func GetSquadMovementSpeed(squadID ecs.EntityID, squadmanager *common.EntityMana
 	}
 
 	return minSpeed
+}
+
+// GetSquadMovementSpeedOrDefault returns the squad's movement speed,
+// falling back to config.DefaultMovementSpeed if no valid units are found.
+func GetSquadMovementSpeedOrDefault(squadID ecs.EntityID, manager *common.EntityManager) int {
+	speed := GetSquadMovementSpeed(squadID, manager)
+	if speed == 0 {
+		return config.DefaultMovementSpeed
+	}
+	return speed
 }
 
 // GetSquadName returns the squad name
@@ -350,7 +361,7 @@ func ComputeGenericPatternFiltered(squadID ecs.EntityID, manager *common.EntityM
 		}
 
 		// Filter by attack type
-		isHeal := targetData.AttackType == AttackTypeHeal
+		isHeal := targetData.AttackType == unitdefs.AttackTypeHeal
 		if healOnly != isHeal {
 			continue
 		}
@@ -369,69 +380,26 @@ func ComputeGenericPatternFiltered(squadID ecs.EntityID, manager *common.EntityM
 	return pattern
 }
 
-// ComputeGenericAttackPattern computes which defender cells each alive unit in the squad
-// would target, assuming a full 3x3 enemy grid (no pierce-through or fallback logic).
-// Returns a [3][3] grid where each cell lists the names of attacking units.
-func ComputeGenericAttackPattern(squadID ecs.EntityID, manager *common.EntityManager) [3][3]AttackPatternCell {
-	var pattern [3][3]AttackPatternCell
-
-	unitIDs := GetUnitIDsInSquad(squadID, manager)
-
-	for _, unitID := range unitIDs {
-		entity := manager.FindEntityByID(unitID)
-		if entity == nil {
-			continue
-		}
-
-		// Skip dead units
-		attr := common.GetComponentType[*common.Attributes](entity, common.AttributeComponent)
-		if attr != nil && attr.CurrentHealth <= 0 {
-			continue
-		}
-
-		// Need both targeting and grid position data
-		if !entity.HasComponent(TargetRowComponent) || !entity.HasComponent(GridPositionComponent) {
-			continue
-		}
-		targetData := common.GetComponentType[*TargetRowData](entity, TargetRowComponent)
-		gridPos := common.GetComponentType[*GridPositionData](entity, GridPositionComponent)
-		if targetData == nil || gridPos == nil {
-			continue
-		}
-
-		unitName := common.GetEntityName(manager, unitID, "Unit")
-
-		cells := computeGenericTargetCells(targetData, gridPos)
-		for _, cell := range cells {
-			r, c := cell[0], cell[1]
-			if r >= 0 && r < 3 && c >= 0 && c < 3 {
-				pattern[r][c].UnitNames = append(pattern[r][c].UnitNames, unitName)
-			}
-		}
-	}
-
-	return pattern
-}
 
 // computeGenericTargetCells returns the defender grid cells a unit would target
 // based on its attack type and grid position, assuming a full 3x3 enemy grid.
 func computeGenericTargetCells(targetData *TargetRowData, gridPos *GridPositionData) [][2]int {
 	switch targetData.AttackType {
-	case AttackTypeMeleeRow:
+	case unitdefs.AttackTypeMeleeRow:
 		// Targets front row (row 0), all 3 columns
 		return [][2]int{{0, 0}, {0, 1}, {0, 2}}
-	case AttackTypeMeleeColumn:
+	case unitdefs.AttackTypeMeleeColumn:
 		// Targets column matching attacker's AnchorCol, all 3 rows
 		col := gridPos.AnchorCol
 		return [][2]int{{0, col}, {1, col}, {2, col}}
-	case AttackTypeRanged:
+	case unitdefs.AttackTypeRanged:
 		// Targets row matching attacker's AnchorRow, all 3 columns
 		row := gridPos.AnchorRow
 		return [][2]int{{row, 0}, {row, 1}, {row, 2}}
-	case AttackTypeMagic:
+	case unitdefs.AttackTypeMagic:
 		// Targets exact cells from TargetCells
 		return targetData.TargetCells
-	case AttackTypeHeal:
+	case unitdefs.AttackTypeHeal:
 		// Same cell-based pattern as magic, but conceptually on own squad
 		return targetData.TargetCells
 	default:
@@ -446,13 +414,13 @@ func computeGenericTargetCells(targetData *TargetRowData, gridPos *GridPositionD
 // GetSquadPrimaryRole determines the dominant role based on unit composition
 // Returns the role with the highest count of units
 // Defaults to RoleDPS if no units found or no role data available
-func GetSquadPrimaryRole(squadID ecs.EntityID, manager *common.EntityManager) UnitRole {
+func GetSquadPrimaryRole(squadID ecs.EntityID, manager *common.EntityManager) unitdefs.UnitRole {
 	unitIDs := GetUnitIDsInSquad(squadID, manager)
 
-	roleCounts := map[UnitRole]int{
-		RoleTank:    0,
-		RoleDPS:     0,
-		RoleSupport: 0,
+	roleCounts := map[unitdefs.UnitRole]int{
+		unitdefs.RoleTank:    0,
+		unitdefs.RoleDPS:     0,
+		unitdefs.RoleSupport: 0,
 	}
 
 	for _, unitID := range unitIDs {
@@ -468,7 +436,7 @@ func GetSquadPrimaryRole(squadID ecs.EntityID, manager *common.EntityManager) Un
 	}
 
 	// Return role with highest count
-	maxRole := RoleDPS // Default
+	maxRole := unitdefs.RoleDPS // Default
 	maxCount := 0
 	for role, count := range roleCounts {
 		if count > maxCount {
@@ -492,7 +460,7 @@ func GetSquadHealthPercent(squadID ecs.EntityID, manager *common.EntityManager) 
 	aliveCount := 0
 
 	for _, unitID := range unitIDs {
-		attr := getAliveUnitAttributes(unitID, manager)
+		attr := GetAliveUnitAttributes(unitID, manager)
 		if attr == nil {
 			continue
 		}

@@ -4,12 +4,10 @@ import (
 	"fmt"
 
 	"game_main/common"
-	"game_main/templates"
+	"game_main/tactical/unitdefs"
 
 	"github.com/bytearena/ecs"
 )
-
-var Units = make([]UnitTemplate, 0, len(templates.MonsterTemplates))
 
 // squadMemberView is a package-level ECS View for zero-allocation squad member queries.
 // Initialized once during subsystem registration; automatically maintained by the ECS library.
@@ -40,11 +38,7 @@ func InitSquadComponents(squadManager *common.EntityManager) {
 	CooldownTrackerComponent = squadManager.World.NewComponent()
 	AttackRangeComponent = squadManager.World.NewComponent()
 	MovementSpeedComponent = squadManager.World.NewComponent()
-	ExperienceComponent = squadManager.World.NewComponent()
-	StatGrowthComponent = squadManager.World.NewComponent()
 	UnitTypeComponent = squadManager.World.NewComponent()
-	UnitRosterComponent = squadManager.World.NewComponent()
-	SquadRosterComponent = squadManager.World.NewComponent()
 }
 
 // InitSquadTags creates tags for querying squad-related entities
@@ -63,7 +57,7 @@ func InitSquadTags(squadManager *common.EntityManager) {
 // Components and tags are auto-initialized via init() and common.InitializeSubsystems().
 // This should be called with the game's main EntityManager for template loading only.
 func InitializeSquadData(manager *common.EntityManager) error {
-	if err := InitUnitTemplatesFromJSON(); err != nil {
+	if err := unitdefs.InitUnitTemplatesFromJSON(); err != nil {
 		return fmt.Errorf("failed to initialize units: %w", err)
 	}
 	return nil

@@ -2,8 +2,8 @@ package commander
 
 import (
 	"game_main/common"
+	"game_main/tactical/roster"
 	"game_main/tactical/spells"
-	"game_main/tactical/squads"
 	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"
@@ -45,7 +45,7 @@ func CreateCommander(
 		AddComponent(common.AttributeComponent, &common.Attributes{
 			MovementSpeed: movementSpeed,
 		}).
-		AddComponent(squads.SquadRosterComponent, squads.NewSquadRoster(maxSquads)).
+		AddComponent(roster.SquadRosterComponent, roster.NewSquadRoster(maxSquads)).
 		AddComponent(spells.ManaComponent, &spells.ManaData{
 			CurrentMana: startingMana,
 			MaxMana:     maxMana,

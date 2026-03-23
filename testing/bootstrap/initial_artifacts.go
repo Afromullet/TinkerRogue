@@ -5,7 +5,7 @@ import (
 	"game_main/common"
 	"game_main/gear"
 	"game_main/tactical/commander"
-	"game_main/tactical/squads"
+	"game_main/tactical/roster"
 	"game_main/templates"
 	"sort"
 
@@ -62,7 +62,7 @@ func EquipPlayerActivatedArtifacts(playerID ecs.EntityID, manager *common.Entity
 	}
 
 	for _, commanderID := range rosterData.CommanderIDs {
-		squadRoster := squads.GetPlayerSquadRoster(commanderID, manager)
+		squadRoster := roster.GetPlayerSquadRoster(commanderID, manager)
 		if squadRoster == nil || len(squadRoster.OwnedSquads) == 0 {
 			fmt.Printf("[EquipArtifacts] Commander %d has no squads, skipping\n", commanderID)
 			continue

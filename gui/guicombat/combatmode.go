@@ -2,6 +2,7 @@ package guicombat
 
 import (
 	"fmt"
+	"game_main/common"
 	"game_main/config"
 	"game_main/gui/builders"
 	"game_main/gui/framework"
@@ -10,12 +11,9 @@ import (
 	"game_main/gui/guispells"
 	"game_main/gui/guisquads"
 	"game_main/gui/widgets"
-	"game_main/mind/ai"
 	"game_main/tactical/combat"
-	"game_main/tactical/combat/battlelog"
 	"game_main/tactical/combatservices"
 	"game_main/tactical/spells"
-	"game_main/tactical/squads"
 	"github.com/bytearena/ecs"
 	"github.com/ebitenui/ebitenui/widget"
 	"github.com/hajimehoshi/ebiten/v2"
@@ -60,14 +58,18 @@ type CombatMode struct {
 	// Encounter callbacks (stored until deps are created in Initialize)
 	encounterCallbacks combat.EncounterCallbacks
 
+	// Factory for creating a fully-wired CombatService (with AI injected)
+	serviceFactory func(*common.EntityManager) *combatservices.CombatService
+
 	// State tracking for UI updates (GUI_PERFORMANCE_ANALYSIS.md)
 	lastFactionID     ecs.EntityID
 	lastSelectedSquad ecs.EntityID
 }
 
-func NewCombatMode(modeManager *framework.UIModeManager, encounterCallbacks combat.EncounterCallbacks) *CombatMode {
+func NewCombatMode(modeManager *framework.UIModeManager, encounterCallbacks combat.EncounterCallbacks, serviceFactory func(*common.EntityManager) *combatservices.CombatService) *CombatMode {
 	cm := &CombatMode{
 		encounterCallbacks: encounterCallbacks,
+		serviceFactory:     serviceFactory,
 	}
 	cm.SetModeName("combat")
 	cm.SetReturnMode("exploration")
@@ -82,17 +84,8 @@ func (cm *CombatMode) GetActionMap() *framework.ActionMap {
 }
 
 func (cm *CombatMode) Initialize(ctx *framework.UIContext) error {
-	// Create combat service (threat systems injected below)
-	cm.combatService = combatservices.NewCombatService(ctx.ECSManager)
-
-	// Wire AI + threat stack (creates controller, threat provider, and evaluator factory)
-	aiSetup := ai.SetupCombatAI(
-		ctx.ECSManager, cm.combatService.TurnManager, cm.combatService.MovementSystem,
-		cm.combatService.CombatActSystem, cm.combatService.CombatCache,
-	)
-	cm.combatService.SetAIController(aiSetup.Controller)
-	cm.combatService.SetThreatProvider(aiSetup.ThreatProvider)
-	cm.combatService.SetThreatEvaluatorFactory(aiSetup.EvalFactory)
+	// Create combat service via injected factory (wires AI + threat stack)
+	cm.combatService = cm.serviceFactory(ctx.ECSManager)
 
 	// Build UI using ModeBuilder (minimal config - panels handled by registry)
 	err := framework.NewModeBuilder(&cm.BaseMode, framework.ModeConfig{
@@ -374,7 +367,7 @@ func (cm *CombatMode) initializeUpdateComponents() {
 // registerCombatCallbacks registers cache invalidation callbacks on the combat service.
 // Must be called on each combat start because CleanupCombat clears all callbacks.
 func (cm *CombatMode) registerCombatCallbacks() {
-	cm.combatService.RegisterOnAttackComplete(func(attackerID, defenderID ecs.EntityID, result *squads.CombatResult) {
+	cm.combatService.RegisterOnAttackComplete(func(attackerID, defenderID ecs.EntityID, result *combat.CombatResult) {
 		cm.Queries.MarkSquadDirty(attackerID)
 		cm.Queries.MarkSquadDirty(defenderID)
 		if result.AttackerDestroyed {
@@ -475,13 +468,13 @@ func (cm *CombatMode) Exit(toMode framework.UIMode) error {
 
 		// Export battle log if enabled (GUI-only concern, stays here)
 		if config.ENABLE_COMBAT_LOG_EXPORT && cm.combatService.BattleRecorder != nil && cm.combatService.BattleRecorder.IsEnabled() {
-			victoryInfo := &battlelog.VictoryInfo{
+			victoryInfo := &combat.VictoryInfo{
 				RoundsCompleted: victor.RoundsCompleted,
 				VictorFaction:   victor.VictorFaction,
 				VictorName:      victor.VictorName,
 			}
 			record := cm.combatService.BattleRecorder.Finalize(victoryInfo)
-			if err := battlelog.ExportBattleJSON(record, config.COMBAT_LOG_EXPORT_DIR); err != nil {
+			if err := combat.ExportBattleJSON(record, config.COMBAT_LOG_EXPORT_DIR); err != nil {
 				fmt.Printf("Error exporting battle log: %v\n", err)
 			}
 			cm.combatService.BattleRecorder.Clear()

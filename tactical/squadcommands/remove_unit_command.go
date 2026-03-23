@@ -3,6 +3,7 @@ package squadcommands
 import (
 	"fmt"
 	"game_main/common"
+	rstr "game_main/tactical/roster"
 	"game_main/tactical/squads"
 
 	"github.com/bytearena/ecs"
@@ -64,7 +65,7 @@ func (c *RemoveUnitCommand) Execute() error {
 	c.previousGridRow = gridPos.AnchorRow
 	c.previousGridCol = gridPos.AnchorCol
 
-	roster := squads.GetPlayerRoster(c.playerID, c.manager)
+	roster := rstr.GetPlayerRoster(c.playerID, c.manager)
 	if roster == nil {
 		return fmt.Errorf("player roster not found")
 	}
@@ -89,7 +90,7 @@ func (c *RemoveUnitCommand) Undo() error {
 		return fmt.Errorf("failed to re-place unit in squad: %w", err)
 	}
 
-	roster := squads.GetPlayerRoster(c.playerID, c.manager)
+	roster := rstr.GetPlayerRoster(c.playerID, c.manager)
 	if roster == nil {
 		return fmt.Errorf("player roster not found")
 	}

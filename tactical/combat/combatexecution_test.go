@@ -1,22 +1,108 @@
-package squads
+package combat
 
 import (
 	"game_main/common"
+	"game_main/tactical/squads"
+	"game_main/tactical/unitdefs"
+	testfx "game_main/testing"
 	"game_main/world/coords"
 	"testing"
 
 	"github.com/bytearena/ecs"
 )
 
-// Note: setupTestManager is defined in squads_test.go
+// ========================================
+// TEST HELPERS
+// ========================================
 
-// createTestUnit creates a unit with specified attributes for testing
+// executeTestAttack replicates what ExecuteSquadAttack did using the extracted pipeline functions.
+func executeTestAttack(attackerSquadID, defenderSquadID ecs.EntityID, manager *common.EntityManager) *CombatResult {
+	result := &CombatResult{
+		DamageByUnit:  make(map[ecs.EntityID]int),
+		HealingByUnit: make(map[ecs.EntityID]int),
+		UnitsKilled:   []ecs.EntityID{},
+	}
+
+	combatLog := InitializeCombatLog(attackerSquadID, defenderSquadID, manager)
+	if combatLog.SquadDistance < 0 {
+		result.CombatLog = combatLog
+		return result
+	}
+
+	combatLog.AttackingUnits = SnapshotAttackingUnits(attackerSquadID, combatLog.SquadDistance, manager)
+	combatLog.DefendingUnits = SnapshotAllUnits(defenderSquadID, manager)
+
+	attackIndex := 0
+	attackerUnitIDs := squads.GetUnitIDsInSquad(attackerSquadID, manager)
+
+	for _, attackerID := range attackerUnitIDs {
+		if !CanUnitAttack(attackerID, combatLog.SquadDistance, manager) {
+			continue
+		}
+
+		targetIDs := SelectTargetUnits(attackerID, defenderSquadID, manager)
+		attackIndex = ProcessAttackOnTargets(attackerID, targetIDs, result, combatLog, attackIndex, manager)
+	}
+
+	ApplyRecordedDamage(result, manager)
+	FinalizeCombatLog(result, combatLog, defenderSquadID, attackerSquadID, manager)
+	result.CombatLog = combatLog
+	return result
+}
+
+// calculateTestDamage replaces calculateUnitDamageByID with zero modifiers.
+func calculateTestDamage(attackerID, defenderID ecs.EntityID, manager *common.EntityManager) (int, *AttackEvent) {
+	modifiers := DamageModifiers{
+		HitPenalty:       0,
+		DamageMultiplier: 1.0,
+		IsCounterattack:  false,
+	}
+	return calculateDamage(attackerID, defenderID, modifiers, manager)
+}
+
+// setupCombatTestManager creates a fully initialized EntityManager for combat tests.
+func setupCombatTestManager(t *testing.T) *common.EntityManager {
+	manager := testfx.NewTestEntityManager()
+	common.InitializeSubsystems(manager)
+	if err := squads.InitializeSquadData(manager); err != nil {
+		t.Fatalf("Failed to initialize squad data: %v", err)
+	}
+	return manager
+}
+
+// createTestSquad creates a squad entity with specified name at position (0,0).
+func createTestSquad(manager *common.EntityManager, name string) ecs.EntityID {
+	squad := manager.World.NewEntity()
+	squadID := squad.GetID()
+
+	squadData := &squads.SquadData{
+		SquadID:    squadID,
+		Formation:  squads.FormationBalanced,
+		Name:       name,
+		Morale:     100,
+		SquadLevel: 1,
+		TurnCount:  0,
+		MaxUnits:   9,
+	}
+
+	squad.AddComponent(squads.SquadComponent, squadData)
+
+	// Add position component so squads can calculate distance
+	squad.AddComponent(common.PositionComponent, &coords.LogicalPosition{
+		X: 0,
+		Y: 0,
+	})
+
+	return squadID
+}
+
+// createTestUnit creates a unit with specified attributes for testing.
 func createTestUnit(manager *common.EntityManager, squadID ecs.EntityID, row, col int, health, strength, dexterity int) *ecs.Entity {
 	unit := manager.World.NewEntity()
 
 	// Add required components
-	unit.AddComponent(SquadMemberComponent, &SquadMemberData{SquadID: squadID})
-	unit.AddComponent(GridPositionComponent, &GridPositionData{
+	unit.AddComponent(squads.SquadMemberComponent, &squads.SquadMemberData{SquadID: squadID})
+	unit.AddComponent(squads.GridPositionComponent, &squads.GridPositionData{
 		AnchorRow: row,
 		AnchorCol: col,
 		Width:     1,
@@ -38,47 +124,17 @@ func createTestUnit(manager *common.EntityManager, squadID ecs.EntityID, row, co
 	unit.AddComponent(common.AttributeComponent, &attr)
 
 	// Add targeting data (default to MeleeRow attacking front row)
-	unit.AddComponent(TargetRowComponent, &TargetRowData{
-		AttackType:  AttackTypeMeleeRow, // Explicit attack type
-		TargetCells: nil,                // Not used for MeleeRow
+	unit.AddComponent(squads.TargetRowComponent, &squads.TargetRowData{
+		AttackType:  unitdefs.AttackTypeMeleeRow, // Explicit attack type
+		TargetCells: nil,                       // Not used for MeleeRow
 	})
 
 	// Add attack range component (default to melee range 1)
-	unit.AddComponent(AttackRangeComponent, &AttackRangeData{
+	unit.AddComponent(squads.AttackRangeComponent, &squads.AttackRangeData{
 		Range: 1,
 	})
 
-	// Note: Tags are managed through the component query system, not directly added
 	return unit
-}
-
-// createTestSquad creates a squad entity with specified ID at position (0,0)
-func createTestSquad(manager *common.EntityManager, name string) ecs.EntityID {
-	squad := manager.World.NewEntity()
-	squadID := squad.GetID()
-
-	squadData := &SquadData{
-		SquadID:    squadID,
-		Formation:  FormationBalanced,
-		Name:       name,
-		Morale:     100,
-		SquadLevel: 1,
-		TurnCount:  0,
-		MaxUnits:   9,
-	}
-
-	squad.AddComponent(SquadComponent, squadData)
-
-	// Add position component so squads can calculate distance
-	squad.AddComponent(common.PositionComponent, &coords.LogicalPosition{
-		X: 0,
-		Y: 0,
-	})
-
-	// Note: Entities are added automatically, no need for AddEntity
-	// Tags are managed through component queries
-
-	return squadID
 }
 
 // ========================================
@@ -86,7 +142,7 @@ func createTestSquad(manager *common.EntityManager, name string) ecs.EntityID {
 // ========================================
 
 func TestExecuteSquadAttack_SingleAttackerVsSingleDefender(t *testing.T) {
-	manager := setupTestManager(t)
+	manager := setupCombatTestManager(t)
 
 	// Create attacker squad
 	attackerSquadID := createTestSquad(manager, "Attackers")
@@ -99,7 +155,7 @@ func TestExecuteSquadAttack_SingleAttackerVsSingleDefender(t *testing.T) {
 	initialHP := defenderAttr.CurrentHealth
 
 	// Execute attack
-	result := ExecuteSquadAttack(attackerSquadID, defenderSquadID, manager)
+	result := executeTestAttack(attackerSquadID, defenderSquadID, manager)
 
 	// Verify result
 	if result == nil {
@@ -120,7 +176,7 @@ func TestExecuteSquadAttack_SingleAttackerVsSingleDefender(t *testing.T) {
 }
 
 func TestExecuteSquadAttack_MultipleAttackersVsMultipleDefenders(t *testing.T) {
-	manager := setupTestManager(t)
+	manager := setupCombatTestManager(t)
 
 	// Create attacker squad with 3 units
 	attackerSquadID := createTestSquad(manager, "Attackers")
@@ -135,7 +191,7 @@ func TestExecuteSquadAttack_MultipleAttackersVsMultipleDefenders(t *testing.T) {
 	createTestUnit(manager, defenderSquadID, 0, 2, 50, 10, 0)
 
 	// Execute attack
-	result := ExecuteSquadAttack(attackerSquadID, defenderSquadID, manager)
+	result := executeTestAttack(attackerSquadID, defenderSquadID, manager)
 
 	// Verify result
 	if result.TotalDamage <= 0 {
@@ -149,7 +205,7 @@ func TestExecuteSquadAttack_MultipleAttackersVsMultipleDefenders(t *testing.T) {
 }
 
 func TestExecuteSquadAttack_DeadAttackersDoNotAttack(t *testing.T) {
-	manager := setupTestManager(t)
+	manager := setupCombatTestManager(t)
 
 	// Create attacker squad with dead unit
 	attackerSquadID := createTestSquad(manager, "Attackers")
@@ -164,7 +220,7 @@ func TestExecuteSquadAttack_DeadAttackersDoNotAttack(t *testing.T) {
 	initialHP := defenderAttr.CurrentHealth
 
 	// Execute attack
-	result := ExecuteSquadAttack(attackerSquadID, defenderSquadID, manager)
+	result := executeTestAttack(attackerSquadID, defenderSquadID, manager)
 
 	// Verify no damage dealt
 	if result.TotalDamage != 0 {
@@ -177,15 +233,15 @@ func TestExecuteSquadAttack_DeadAttackersDoNotAttack(t *testing.T) {
 }
 
 func TestExecuteSquadAttack_MultiTargetAttack(t *testing.T) {
-	manager := setupTestManager(t)
+	manager := setupCombatTestManager(t)
 
 	// Create attacker with multi-target ability
 	attackerSquadID := createTestSquad(manager, "Attackers")
 	attacker := createTestUnit(manager, attackerSquadID, 0, 0, 100, 20, 100)
 
 	// Set magic targeting (target 2 specific cells)
-	targetData := common.GetComponentType[*TargetRowData](attacker, TargetRowComponent)
-	targetData.AttackType = AttackTypeMagic           // Use magic for cell-based targeting
+	targetData := common.GetComponentType[*squads.TargetRowData](attacker, squads.TargetRowComponent)
+	targetData.AttackType = unitdefs.AttackTypeMagic           // Use magic for cell-based targeting
 	targetData.TargetCells = [][2]int{{0, 0}, {0, 1}} // Target first two front-row cells
 
 	// Create defenders
@@ -195,7 +251,7 @@ func TestExecuteSquadAttack_MultiTargetAttack(t *testing.T) {
 	createTestUnit(manager, defenderSquadID, 0, 2, 50, 10, 0) // Should NOT be hit
 
 	// Execute attack
-	result := ExecuteSquadAttack(attackerSquadID, defenderSquadID, manager)
+	result := executeTestAttack(attackerSquadID, defenderSquadID, manager)
 
 	// Verify exactly 2 targets hit (the ones in targeted cells)
 	if len(result.DamageByUnit) != 2 {
@@ -204,15 +260,15 @@ func TestExecuteSquadAttack_MultiTargetAttack(t *testing.T) {
 }
 
 func TestExecuteSquadAttack_CellBasedTargeting(t *testing.T) {
-	manager := setupTestManager(t)
+	manager := setupCombatTestManager(t)
 
 	// Create attacker with cell-based targeting (2x2 pattern)
 	attackerSquadID := createTestSquad(manager, "Attackers")
 	attacker := createTestUnit(manager, attackerSquadID, 0, 0, 100, 20, 100)
 
 	// Set magic targeting with 2x2 pattern
-	targetData := common.GetComponentType[*TargetRowData](attacker, TargetRowComponent)
-	targetData.AttackType = AttackTypeMagic                           // Use magic for cell-based targeting
+	targetData := common.GetComponentType[*squads.TargetRowData](attacker, squads.TargetRowComponent)
+	targetData.AttackType = unitdefs.AttackTypeMagic                           // Use magic for cell-based targeting
 	targetData.TargetCells = [][2]int{{0, 0}, {0, 1}, {1, 0}, {1, 1}} // 2x2 top-left
 
 	// Create defenders in targeted cells
@@ -223,7 +279,7 @@ func TestExecuteSquadAttack_CellBasedTargeting(t *testing.T) {
 	createTestUnit(manager, defenderSquadID, 2, 2, 50, 10, 0) // Miss (not in pattern)
 
 	// Execute attack
-	result := ExecuteSquadAttack(attackerSquadID, defenderSquadID, manager)
+	result := executeTestAttack(attackerSquadID, defenderSquadID, manager)
 
 	// Verify 3 units hit (3 in the 2x2 pattern)
 	if len(result.DamageByUnit) != 3 {
@@ -232,7 +288,7 @@ func TestExecuteSquadAttack_CellBasedTargeting(t *testing.T) {
 }
 
 func TestExecuteSquadAttack_UnitsKilledTracking(t *testing.T) {
-	manager := setupTestManager(t)
+	manager := setupCombatTestManager(t)
 
 	// Create attacker with high damage
 	attackerSquadID := createTestSquad(manager, "Attackers")
@@ -243,7 +299,7 @@ func TestExecuteSquadAttack_UnitsKilledTracking(t *testing.T) {
 	createTestUnit(manager, defenderSquadID, 0, 0, 10, 5, 0) // Low HP
 
 	// Execute attack
-	result := ExecuteSquadAttack(attackerSquadID, defenderSquadID, manager)
+	result := executeTestAttack(attackerSquadID, defenderSquadID, manager)
 
 	// Verify unit was killed
 	if len(result.UnitsKilled) != 1 {
@@ -256,7 +312,7 @@ func TestExecuteSquadAttack_UnitsKilledTracking(t *testing.T) {
 // ========================================
 
 func TestCalculateUnitDamageByID_BasicDamageCalculation(t *testing.T) {
-	manager := setupTestManager(t)
+	manager := setupCombatTestManager(t)
 
 	squadID := createTestSquad(manager, "TestSquad")
 	attacker := createTestUnit(manager, squadID, 0, 0, 100, 20, 100) // 100% hit rate
@@ -269,7 +325,7 @@ func TestCalculateUnitDamageByID_BasicDamageCalculation(t *testing.T) {
 	// We can't set them directly, but with Dexterity=100, attacker should have high hit rate
 	// With Dexterity=0, defender should have low dodge chance
 
-	damage, _ := calculateUnitDamageByID(attacker.GetID(), defender.GetID(), manager)
+	damage, _ := calculateTestDamage(attacker.GetID(), defender.GetID(), manager)
 
 	if damage <= 0 {
 		t.Error("Expected positive damage (note: may miss/dodge based on derived stats)")
@@ -290,7 +346,7 @@ func TestCalculateUnitDamageByID_BasicDamageCalculation(t *testing.T) {
 }
 
 func TestCalculateUnitDamageByID_MissReturnsZero(t *testing.T) {
-	manager := setupTestManager(t)
+	manager := setupCombatTestManager(t)
 
 	squadID := createTestSquad(manager, "TestSquad")
 	attacker := createTestUnit(manager, squadID, 0, 0, 100, 20, 0) // Low dexterity = low hit rate
@@ -303,14 +359,14 @@ func TestCalculateUnitDamageByID_MissReturnsZero(t *testing.T) {
 	// This test may pass or fail based on random rolls
 	// For a reliable test, we'd need a way to inject randomness
 
-	damage, _ := calculateUnitDamageByID(attacker.GetID(), defender.GetID(), manager)
+	damage, _ := calculateTestDamage(attacker.GetID(), defender.GetID(), manager)
 
 	// Can't reliably test for 0 damage without controlling randomness
 	t.Logf("Damage dealt: %d (0 expected on miss, but randomness not controlled)", damage)
 }
 
 func TestCalculateUnitDamageByID_DodgeReturnsZero(t *testing.T) {
-	manager := setupTestManager(t)
+	manager := setupCombatTestManager(t)
 
 	squadID := createTestSquad(manager, "TestSquad")
 	attacker := createTestUnit(manager, squadID, 0, 0, 100, 20, 100)
@@ -324,14 +380,14 @@ func TestCalculateUnitDamageByID_DodgeReturnsZero(t *testing.T) {
 	// This test may pass or fail based on random rolls
 	// For a reliable test, we'd need a way to inject randomness
 
-	damage, _ := calculateUnitDamageByID(attacker.GetID(), defender.GetID(), manager)
+	damage, _ := calculateTestDamage(attacker.GetID(), defender.GetID(), manager)
 
 	// Can't reliably test for 0 damage without controlling randomness
 	t.Logf("Damage dealt: %d (0 expected on dodge, but randomness not controlled)", damage)
 }
 
 func TestCalculateUnitDamageByID_PhysicalResistanceReducesDamage(t *testing.T) {
-	manager := setupTestManager(t)
+	manager := setupCombatTestManager(t)
 
 	squadID := createTestSquad(manager, "TestSquad")
 	// Strength=20, Armor=10 for defender gives significant resistance
@@ -343,7 +399,7 @@ func TestCalculateUnitDamageByID_PhysicalResistanceReducesDamage(t *testing.T) {
 
 	// PhysicalResistance is derived from Strength/4 + Armor*3/2
 
-	damage, _ := calculateUnitDamageByID(attacker.GetID(), defender.GetID(), manager)
+	damage, _ := calculateTestDamage(attacker.GetID(), defender.GetID(), manager)
 
 	baseDamage := attackerAttr.GetPhysicalDamage()
 	resistance := defenderAttr.GetPhysicalResistance()
@@ -361,7 +417,7 @@ func TestCalculateUnitDamageByID_PhysicalResistanceReducesDamage(t *testing.T) {
 }
 
 func TestCalculateUnitDamageByID_MinimumDamageIsOne(t *testing.T) {
-	manager := setupTestManager(t)
+	manager := setupCombatTestManager(t)
 
 	squadID := createTestSquad(manager, "TestSquad")
 	// Very low strength/weapon for attacker, very high armor for defender
@@ -374,7 +430,7 @@ func TestCalculateUnitDamageByID_MinimumDamageIsOne(t *testing.T) {
 	// Attacker has very low stats, defender has very high resistance
 	// Expected: minimum 1 damage
 
-	damage, _ := calculateUnitDamageByID(attacker.GetID(), defender.GetID(), manager)
+	damage, _ := calculateTestDamage(attacker.GetID(), defender.GetID(), manager)
 
 	// Minimum damage should be 1 when attack hits
 	if damage > 1 {
@@ -386,9 +442,9 @@ func TestCalculateUnitDamageByID_MinimumDamageIsOne(t *testing.T) {
 }
 
 func TestCalculateUnitDamageByID_NilUnitsReturnZero(t *testing.T) {
-	manager := setupTestManager(t)
+	manager := setupCombatTestManager(t)
 
-	damage, _ := calculateUnitDamageByID(9999, 9998, manager) // Non-existent IDs
+	damage, _ := calculateTestDamage(9999, 9998, manager) // Non-existent IDs
 
 	if damage != 0 {
 		t.Errorf("Expected 0 damage for nil units, got %d", damage)
@@ -400,14 +456,14 @@ func TestCalculateUnitDamageByID_NilUnitsReturnZero(t *testing.T) {
 // ========================================
 
 func TestCalculateUnitDamageByID_MagicDamageUsesMagicFormula(t *testing.T) {
-	manager := setupTestManager(t)
+	manager := setupCombatTestManager(t)
 
 	squadID := createTestSquad(manager, "TestSquad")
 
 	// Create magic attacker: Magic=15, Strength=3, Weapon=2
 	attacker := manager.World.NewEntity()
-	attacker.AddComponent(SquadMemberComponent, &SquadMemberData{SquadID: squadID})
-	attacker.AddComponent(GridPositionComponent, &GridPositionData{AnchorRow: 0, AnchorCol: 0, Width: 1, Height: 1})
+	attacker.AddComponent(squads.SquadMemberComponent, &squads.SquadMemberData{SquadID: squadID})
+	attacker.AddComponent(squads.GridPositionComponent, &squads.GridPositionData{AnchorRow: 0, AnchorCol: 0, Width: 1, Height: 1})
 	attacker.AddComponent(common.NameComponent, &common.Name{NameStr: "Wizard"})
 
 	attackerAttr := common.NewAttributes(3, 100, 15, 0, 1, 2) // High dex for guaranteed hit
@@ -415,23 +471,23 @@ func TestCalculateUnitDamageByID_MagicDamageUsesMagicFormula(t *testing.T) {
 	attacker.AddComponent(common.AttributeComponent, &attackerAttr)
 
 	// Set attack type to Magic
-	attacker.AddComponent(TargetRowComponent, &TargetRowData{
-		AttackType:  AttackTypeMagic,
+	attacker.AddComponent(squads.TargetRowComponent, &squads.TargetRowData{
+		AttackType:  unitdefs.AttackTypeMagic,
 		TargetCells: [][2]int{{0, 0}},
 	})
-	attacker.AddComponent(AttackRangeComponent, &AttackRangeData{Range: 4})
+	attacker.AddComponent(squads.AttackRangeComponent, &squads.AttackRangeData{Range: 4})
 
 	// Create defender with low magic defense
 	defender := manager.World.NewEntity()
-	defender.AddComponent(SquadMemberComponent, &SquadMemberData{SquadID: squadID})
-	defender.AddComponent(GridPositionComponent, &GridPositionData{AnchorRow: 0, AnchorCol: 1, Width: 1, Height: 1})
+	defender.AddComponent(squads.SquadMemberComponent, &squads.SquadMemberData{SquadID: squadID})
+	defender.AddComponent(squads.GridPositionComponent, &squads.GridPositionData{AnchorRow: 0, AnchorCol: 1, Width: 1, Height: 1})
 	defender.AddComponent(common.NameComponent, &common.Name{NameStr: "Fighter"})
 
 	defenderAttr := common.NewAttributes(10, 0, 0, 0, 2, 10) // Magic=0, defense comes from BaseMagicResist only
 	defenderAttr.CurrentHealth = 100
 	defender.AddComponent(common.AttributeComponent, &defenderAttr)
 
-	damage, event := calculateUnitDamageByID(attacker.GetID(), defender.GetID(), manager)
+	damage, event := calculateTestDamage(attacker.GetID(), defender.GetID(), manager)
 
 	// Verify magic damage formula was used
 
@@ -452,7 +508,7 @@ func TestCalculateUnitDamageByID_MagicDamageUsesMagicFormula(t *testing.T) {
 }
 
 func TestCalculateUnitDamageByID_PhysicalAttackersUnchanged(t *testing.T) {
-	manager := setupTestManager(t)
+	manager := setupCombatTestManager(t)
 
 	squadID := createTestSquad(manager, "TestSquad")
 	attacker := createTestUnit(manager, squadID, 0, 0, 100, 20, 100) // Physical unit
@@ -460,7 +516,7 @@ func TestCalculateUnitDamageByID_PhysicalAttackersUnchanged(t *testing.T) {
 
 	attackerAttr := common.GetComponentType[*common.Attributes](attacker, common.AttributeComponent)
 
-	damage, event := calculateUnitDamageByID(attacker.GetID(), defender.GetID(), manager)
+	damage, event := calculateTestDamage(attacker.GetID(), defender.GetID(), manager)
 
 	// Verify physical damage formula is still used
 	if event.HitResult.Type != HitTypeMiss && event.HitResult.Type != HitTypeDodge {
@@ -475,37 +531,37 @@ func TestCalculateUnitDamageByID_PhysicalAttackersUnchanged(t *testing.T) {
 }
 
 func TestCalculateUnitDamageByID_MagicDefenseApplied(t *testing.T) {
-	manager := setupTestManager(t)
+	manager := setupCombatTestManager(t)
 
 	squadID := createTestSquad(manager, "TestSquad")
 
 	// Create magic attacker: Wizard with Magic=15
 	attacker := manager.World.NewEntity()
-	attacker.AddComponent(SquadMemberComponent, &SquadMemberData{SquadID: squadID})
-	attacker.AddComponent(GridPositionComponent, &GridPositionData{AnchorRow: 0, AnchorCol: 0, Width: 1, Height: 1})
+	attacker.AddComponent(squads.SquadMemberComponent, &squads.SquadMemberData{SquadID: squadID})
+	attacker.AddComponent(squads.GridPositionComponent, &squads.GridPositionData{AnchorRow: 0, AnchorCol: 0, Width: 1, Height: 1})
 	attacker.AddComponent(common.NameComponent, &common.Name{NameStr: "Wizard"})
 
 	attackerAttr := common.NewAttributes(3, 100, 15, 0, 1, 2) // High dex for guaranteed hit
 	attackerAttr.CurrentHealth = 100
 	attacker.AddComponent(common.AttributeComponent, &attackerAttr)
 
-	attacker.AddComponent(TargetRowComponent, &TargetRowData{
-		AttackType:  AttackTypeMagic,
+	attacker.AddComponent(squads.TargetRowComponent, &squads.TargetRowData{
+		AttackType:  unitdefs.AttackTypeMagic,
 		TargetCells: [][2]int{{0, 0}},
 	})
-	attacker.AddComponent(AttackRangeComponent, &AttackRangeData{Range: 4})
+	attacker.AddComponent(squads.AttackRangeComponent, &squads.AttackRangeData{Range: 4})
 
 	// Create magic defender: Sorcerer with Magic=14
 	defender := manager.World.NewEntity()
-	defender.AddComponent(SquadMemberComponent, &SquadMemberData{SquadID: squadID})
-	defender.AddComponent(GridPositionComponent, &GridPositionData{AnchorRow: 0, AnchorCol: 1, Width: 1, Height: 1})
+	defender.AddComponent(squads.SquadMemberComponent, &squads.SquadMemberData{SquadID: squadID})
+	defender.AddComponent(squads.GridPositionComponent, &squads.GridPositionData{AnchorRow: 0, AnchorCol: 1, Width: 1, Height: 1})
 	defender.AddComponent(common.NameComponent, &common.Name{NameStr: "Sorcerer"})
 
 	defenderAttr := common.NewAttributes(4, 0, 14, 0, 1, 3) // Magic=14
 	defenderAttr.CurrentHealth = 100
 	defender.AddComponent(common.AttributeComponent, &defenderAttr)
 
-	_, event := calculateUnitDamageByID(attacker.GetID(), defender.GetID(), manager)
+	_, event := calculateTestDamage(attacker.GetID(), defender.GetID(), manager)
 
 	// Verify magic defense was used (not physical resistance)
 	if event.HitResult.Type != HitTypeMiss && event.HitResult.Type != HitTypeDodge {
@@ -534,11 +590,11 @@ func TestCalculateUnitDamageByID_MagicDefenseApplied(t *testing.T) {
 // ========================================
 
 func TestGetCoverProvidersFor_NoProviders(t *testing.T) {
-	manager := setupTestManager(t)
+	manager := setupCombatTestManager(t)
 
 	squadID := createTestSquad(manager, "TestSquad")
 	defender := createTestUnit(manager, squadID, 1, 0, 100, 10, 0)
-	defenderPos := common.GetComponentType[*GridPositionData](defender, GridPositionComponent)
+	defenderPos := common.GetComponentType[*squads.GridPositionData](defender, squads.GridPositionComponent)
 
 	providers := GetCoverProvidersFor(defender.GetID(), squadID, defenderPos, manager)
 
@@ -548,19 +604,19 @@ func TestGetCoverProvidersFor_NoProviders(t *testing.T) {
 }
 
 func TestGetCoverProvidersFor_SingleProvider(t *testing.T) {
-	manager := setupTestManager(t)
+	manager := setupCombatTestManager(t)
 
 	squadID := createTestSquad(manager, "TestSquad")
 
 	frontLine := createTestUnit(manager, squadID, 0, 0, 100, 10, 0)
-	frontLine.AddComponent(CoverComponent, &CoverData{
+	frontLine.AddComponent(squads.CoverComponent, &squads.CoverData{
 		CoverValue:     0.25,
 		CoverRange:     1,
 		RequiresActive: true,
 	})
 
 	backLine := createTestUnit(manager, squadID, 1, 0, 100, 10, 0)
-	backLinePos := common.GetComponentType[*GridPositionData](backLine, GridPositionComponent)
+	backLinePos := common.GetComponentType[*squads.GridPositionData](backLine, squads.GridPositionComponent)
 
 	providers := GetCoverProvidersFor(backLine.GetID(), squadID, backLinePos, manager)
 
@@ -574,27 +630,27 @@ func TestGetCoverProvidersFor_SingleProvider(t *testing.T) {
 }
 
 func TestGetCoverProvidersFor_MultipleProviders(t *testing.T) {
-	manager := setupTestManager(t)
+	manager := setupCombatTestManager(t)
 
 	squadID := createTestSquad(manager, "TestSquad")
 
 	// Two front-line units in same column
 	frontLine1 := createTestUnit(manager, squadID, 0, 0, 100, 10, 0)
-	frontLine1.AddComponent(CoverComponent, &CoverData{
+	frontLine1.AddComponent(squads.CoverComponent, &squads.CoverData{
 		CoverValue:     0.15,
 		CoverRange:     2,
 		RequiresActive: true,
 	})
 
 	midLine := createTestUnit(manager, squadID, 1, 0, 100, 10, 0)
-	midLine.AddComponent(CoverComponent, &CoverData{
+	midLine.AddComponent(squads.CoverComponent, &squads.CoverData{
 		CoverValue:     0.10,
 		CoverRange:     1,
 		RequiresActive: true,
 	})
 
 	backLine := createTestUnit(manager, squadID, 2, 0, 100, 10, 0)
-	backLinePos := common.GetComponentType[*GridPositionData](backLine, GridPositionComponent)
+	backLinePos := common.GetComponentType[*squads.GridPositionData](backLine, squads.GridPositionComponent)
 
 	providers := GetCoverProvidersFor(backLine.GetID(), squadID, backLinePos, manager)
 
@@ -604,17 +660,17 @@ func TestGetCoverProvidersFor_MultipleProviders(t *testing.T) {
 }
 
 func TestGetCoverProvidersFor_DoesNotIncludeSelf(t *testing.T) {
-	manager := setupTestManager(t)
+	manager := setupCombatTestManager(t)
 
 	squadID := createTestSquad(manager, "TestSquad")
 
 	unit := createTestUnit(manager, squadID, 0, 0, 100, 10, 0)
-	unit.AddComponent(CoverComponent, &CoverData{
+	unit.AddComponent(squads.CoverComponent, &squads.CoverData{
 		CoverValue:     0.25,
 		CoverRange:     1,
 		RequiresActive: true,
 	})
-	unitPos := common.GetComponentType[*GridPositionData](unit, GridPositionComponent)
+	unitPos := common.GetComponentType[*squads.GridPositionData](unit, squads.GridPositionComponent)
 
 	providers := GetCoverProvidersFor(unit.GetID(), squadID, unitPos, manager)
 
@@ -624,12 +680,12 @@ func TestGetCoverProvidersFor_DoesNotIncludeSelf(t *testing.T) {
 }
 
 func TestGetCoverProvidersFor_OnlyFromSameSquad(t *testing.T) {
-	manager := setupTestManager(t)
+	manager := setupCombatTestManager(t)
 
 	// Squad 1
 	squad1ID := createTestSquad(manager, "Squad1")
 	squad1Unit := createTestUnit(manager, squad1ID, 0, 0, 100, 10, 0)
-	squad1Unit.AddComponent(CoverComponent, &CoverData{
+	squad1Unit.AddComponent(squads.CoverComponent, &squads.CoverData{
 		CoverValue:     0.25,
 		CoverRange:     1,
 		RequiresActive: true,
@@ -638,7 +694,7 @@ func TestGetCoverProvidersFor_OnlyFromSameSquad(t *testing.T) {
 	// Squad 2
 	squad2ID := createTestSquad(manager, "Squad2")
 	squad2Unit := createTestUnit(manager, squad2ID, 1, 0, 100, 10, 0)
-	squad2UnitPos := common.GetComponentType[*GridPositionData](squad2Unit, GridPositionComponent)
+	squad2UnitPos := common.GetComponentType[*squads.GridPositionData](squad2Unit, squads.GridPositionComponent)
 
 	// Squad 2 unit should not get cover from Squad 1
 	providers := GetCoverProvidersFor(squad2Unit.GetID(), squad2ID, squad2UnitPos, manager)
@@ -681,15 +737,15 @@ func TestSumDamageMap_EmptyMap(t *testing.T) {
 // ========================================
 
 func TestMeleeRowTargeting_FrontRow(t *testing.T) {
-	manager := setupTestManager(t)
+	manager := setupCombatTestManager(t)
 
 	// Create attacker squad with MeleeRow attacker
 	attackerSquadID := createTestSquad(manager, "Attackers")
 	attacker := createTestUnit(manager, attackerSquadID, 0, 0, 100, 20, 100)
 
 	// Set to MeleeRow targeting
-	targetData := common.GetComponentType[*TargetRowData](attacker, TargetRowComponent)
-	targetData.AttackType = AttackTypeMeleeRow
+	targetData := common.GetComponentType[*squads.TargetRowData](attacker, squads.TargetRowComponent)
+	targetData.AttackType = unitdefs.AttackTypeMeleeRow
 	targetData.TargetCells = nil
 
 	// Create defender squad with 3 units in front row (row 0)
@@ -721,15 +777,15 @@ func TestMeleeRowTargeting_FrontRow(t *testing.T) {
 }
 
 func TestMeleeRowTargeting_PierceToRow1(t *testing.T) {
-	manager := setupTestManager(t)
+	manager := setupCombatTestManager(t)
 
 	// Create attacker squad
 	attackerSquadID := createTestSquad(manager, "Attackers")
 	attacker := createTestUnit(manager, attackerSquadID, 0, 0, 100, 20, 100)
 
 	// Set to MeleeRow targeting
-	targetData := common.GetComponentType[*TargetRowData](attacker, TargetRowComponent)
-	targetData.AttackType = AttackTypeMeleeRow
+	targetData := common.GetComponentType[*squads.TargetRowData](attacker, squads.TargetRowComponent)
+	targetData.AttackType = unitdefs.AttackTypeMeleeRow
 	targetData.TargetCells = nil
 
 	// Create defender squad with units only in row 1 (front row empty)
@@ -758,15 +814,15 @@ func TestMeleeRowTargeting_PierceToRow1(t *testing.T) {
 }
 
 func TestMeleeRowTargeting_PierceWhenFrontRowDead(t *testing.T) {
-	manager := setupTestManager(t)
+	manager := setupCombatTestManager(t)
 
 	// Create attacker squad
 	attackerSquadID := createTestSquad(manager, "Attackers")
 	attacker := createTestUnit(manager, attackerSquadID, 0, 0, 100, 20, 100)
 
 	// Set to MeleeRow targeting
-	targetData := common.GetComponentType[*TargetRowData](attacker, TargetRowComponent)
-	targetData.AttackType = AttackTypeMeleeRow
+	targetData := common.GetComponentType[*squads.TargetRowData](attacker, squads.TargetRowComponent)
+	targetData.AttackType = unitdefs.AttackTypeMeleeRow
 	targetData.TargetCells = nil
 
 	// Create defender squad with DEAD units in row 0 and ALIVE units in row 1
@@ -810,15 +866,15 @@ func TestMeleeRowTargeting_PierceWhenFrontRowDead(t *testing.T) {
 }
 
 func TestMeleeRowTargeting_PierceToRow2(t *testing.T) {
-	manager := setupTestManager(t)
+	manager := setupCombatTestManager(t)
 
 	// Create attacker squad
 	attackerSquadID := createTestSquad(manager, "Attackers")
 	attacker := createTestUnit(manager, attackerSquadID, 0, 0, 100, 20, 100)
 
 	// Set to MeleeRow targeting
-	targetData := common.GetComponentType[*TargetRowData](attacker, TargetRowComponent)
-	targetData.AttackType = AttackTypeMeleeRow
+	targetData := common.GetComponentType[*squads.TargetRowData](attacker, squads.TargetRowComponent)
+	targetData.AttackType = unitdefs.AttackTypeMeleeRow
 	targetData.TargetCells = nil
 
 	// Create defender squad with units only in row 2 (rows 0 and 1 empty)
@@ -847,15 +903,15 @@ func TestMeleeRowTargeting_PierceToRow2(t *testing.T) {
 }
 
 func TestMeleeColumnTargeting_DirectFront(t *testing.T) {
-	manager := setupTestManager(t)
+	manager := setupCombatTestManager(t)
 
 	// Create attacker squad with MeleeColumn attacker in column 1
 	attackerSquadID := createTestSquad(manager, "Attackers")
 	attacker := createTestUnit(manager, attackerSquadID, 0, 1, 100, 20, 100)
 
 	// Set to MeleeColumn targeting
-	targetData := common.GetComponentType[*TargetRowData](attacker, TargetRowComponent)
-	targetData.AttackType = AttackTypeMeleeColumn
+	targetData := common.GetComponentType[*squads.TargetRowData](attacker, squads.TargetRowComponent)
+	targetData.AttackType = unitdefs.AttackTypeMeleeColumn
 	targetData.TargetCells = nil
 
 	// Create defender squad with units in different columns
@@ -878,15 +934,15 @@ func TestMeleeColumnTargeting_DirectFront(t *testing.T) {
 }
 
 func TestMeleeColumnTargeting_PierceForward(t *testing.T) {
-	manager := setupTestManager(t)
+	manager := setupCombatTestManager(t)
 
 	// Create attacker squad in column 0
 	attackerSquadID := createTestSquad(manager, "Attackers")
 	attacker := createTestUnit(manager, attackerSquadID, 0, 0, 100, 20, 100)
 
 	// Set to MeleeColumn targeting
-	targetData := common.GetComponentType[*TargetRowData](attacker, TargetRowComponent)
-	targetData.AttackType = AttackTypeMeleeColumn
+	targetData := common.GetComponentType[*squads.TargetRowData](attacker, squads.TargetRowComponent)
+	targetData.AttackType = unitdefs.AttackTypeMeleeColumn
 	targetData.TargetCells = nil
 
 	// Create defender squad with units in column 0 (row 0 col 0 is empty)
@@ -914,15 +970,15 @@ func TestMeleeColumnTargeting_PierceForward(t *testing.T) {
 }
 
 func TestMeleeColumnTargeting_ColumnWrapping(t *testing.T) {
-	manager := setupTestManager(t)
+	manager := setupCombatTestManager(t)
 
 	// Create attacker squad in column 1
 	attackerSquadID := createTestSquad(manager, "Attackers")
 	attacker := createTestUnit(manager, attackerSquadID, 0, 1, 100, 20, 100)
 
 	// Set to MeleeColumn targeting
-	targetData := common.GetComponentType[*TargetRowData](attacker, TargetRowComponent)
-	targetData.AttackType = AttackTypeMeleeColumn
+	targetData := common.GetComponentType[*squads.TargetRowData](attacker, squads.TargetRowComponent)
+	targetData.AttackType = unitdefs.AttackTypeMeleeColumn
 	targetData.TargetCells = nil
 
 	// Create defender squad with NO units in column 1, but units in columns 2 and 0
@@ -933,7 +989,7 @@ func TestMeleeColumnTargeting_ColumnWrapping(t *testing.T) {
 	// Get targets
 	targets := SelectTargetUnits(attacker.GetID(), defenderSquadID, manager)
 
-	// Verify wrapping: attackerCol=1 → try col 1 (empty), col 2 (found!), col 0 (not reached)
+	// Verify wrapping: attackerCol=1 -> try col 1 (empty), col 2 (found!), col 0 (not reached)
 	if len(targets) != 1 {
 		t.Errorf("Expected 1 target (column 2 after wrapping), got %d", len(targets))
 	}
@@ -944,15 +1000,15 @@ func TestMeleeColumnTargeting_ColumnWrapping(t *testing.T) {
 }
 
 func TestMeleeColumnTargeting_WrapToColumn0(t *testing.T) {
-	manager := setupTestManager(t)
+	manager := setupCombatTestManager(t)
 
 	// Create attacker squad in column 2
 	attackerSquadID := createTestSquad(manager, "Attackers")
 	attacker := createTestUnit(manager, attackerSquadID, 0, 2, 100, 20, 100)
 
 	// Set to MeleeColumn targeting
-	targetData := common.GetComponentType[*TargetRowData](attacker, TargetRowComponent)
-	targetData.AttackType = AttackTypeMeleeColumn
+	targetData := common.GetComponentType[*squads.TargetRowData](attacker, squads.TargetRowComponent)
+	targetData.AttackType = unitdefs.AttackTypeMeleeColumn
 	targetData.TargetCells = nil
 
 	// Create defender squad with NO units in columns 2, only in column 0
@@ -962,7 +1018,7 @@ func TestMeleeColumnTargeting_WrapToColumn0(t *testing.T) {
 	// Get targets
 	targets := SelectTargetUnits(attacker.GetID(), defenderSquadID, manager)
 
-	// Verify wrapping: attackerCol=2 → try col 2 (empty), col 0 (found!), col 1 (not reached)
+	// Verify wrapping: attackerCol=2 -> try col 2 (empty), col 0 (found!), col 1 (not reached)
 	if len(targets) != 1 {
 		t.Errorf("Expected 1 target (column 0 after wrapping), got %d", len(targets))
 	}
@@ -973,15 +1029,15 @@ func TestMeleeColumnTargeting_WrapToColumn0(t *testing.T) {
 }
 
 func TestRangedTargeting_SameRow(t *testing.T) {
-	manager := setupTestManager(t)
+	manager := setupCombatTestManager(t)
 
 	// Create attacker squad with ranged attacker in row 1
 	attackerSquadID := createTestSquad(manager, "Attackers")
 	attacker := createTestUnit(manager, attackerSquadID, 1, 0, 100, 20, 100)
 
 	// Set to Ranged targeting
-	targetData := common.GetComponentType[*TargetRowData](attacker, TargetRowComponent)
-	targetData.AttackType = AttackTypeRanged
+	targetData := common.GetComponentType[*squads.TargetRowData](attacker, squads.TargetRowComponent)
+	targetData.AttackType = unitdefs.AttackTypeRanged
 	targetData.TargetCells = nil
 
 	// Create defender squad with units in different rows
@@ -1014,15 +1070,15 @@ func TestRangedTargeting_SameRow(t *testing.T) {
 }
 
 func TestRangedTargeting_FallbackLowestArmor(t *testing.T) {
-	manager := setupTestManager(t)
+	manager := setupCombatTestManager(t)
 
 	// Create attacker squad in row 1
 	attackerSquadID := createTestSquad(manager, "Attackers")
 	attacker := createTestUnit(manager, attackerSquadID, 1, 0, 100, 20, 100)
 
 	// Set to Ranged targeting
-	targetData := common.GetComponentType[*TargetRowData](attacker, TargetRowComponent)
-	targetData.AttackType = AttackTypeRanged
+	targetData := common.GetComponentType[*squads.TargetRowData](attacker, squads.TargetRowComponent)
+	targetData.AttackType = unitdefs.AttackTypeRanged
 	targetData.TargetCells = nil
 
 	// Create defender squad with NO units in row 1 (fallback triggers)
@@ -1063,15 +1119,15 @@ func TestRangedTargeting_FallbackLowestArmor(t *testing.T) {
 }
 
 func TestRangedTargeting_FallbackTiebreaker(t *testing.T) {
-	manager := setupTestManager(t)
+	manager := setupCombatTestManager(t)
 
 	// Create attacker squad in row 1
 	attackerSquadID := createTestSquad(manager, "Attackers")
 	attacker := createTestUnit(manager, attackerSquadID, 1, 0, 100, 20, 100)
 
 	// Set to Ranged targeting
-	targetData := common.GetComponentType[*TargetRowData](attacker, TargetRowComponent)
-	targetData.AttackType = AttackTypeRanged
+	targetData := common.GetComponentType[*squads.TargetRowData](attacker, squads.TargetRowComponent)
+	targetData.AttackType = unitdefs.AttackTypeRanged
 	targetData.TargetCells = nil
 
 	// Create defender squad with NO units in row 1
@@ -1112,15 +1168,15 @@ func TestRangedTargeting_FallbackTiebreaker(t *testing.T) {
 }
 
 func TestMagicTargeting_ExactCells(t *testing.T) {
-	manager := setupTestManager(t)
+	manager := setupCombatTestManager(t)
 
 	// Create attacker squad
 	attackerSquadID := createTestSquad(manager, "Attackers")
 	attacker := createTestUnit(manager, attackerSquadID, 0, 0, 100, 20, 100)
 
 	// Set to Magic targeting with specific pattern (column 1 only)
-	targetData := common.GetComponentType[*TargetRowData](attacker, TargetRowComponent)
-	targetData.AttackType = AttackTypeMagic
+	targetData := common.GetComponentType[*squads.TargetRowData](attacker, squads.TargetRowComponent)
+	targetData.AttackType = unitdefs.AttackTypeMagic
 	targetData.TargetCells = [][2]int{{0, 1}, {1, 1}, {2, 1}} // Middle column
 
 	// Create defender squad
@@ -1153,15 +1209,15 @@ func TestMagicTargeting_ExactCells(t *testing.T) {
 }
 
 func TestMagicTargeting_NoPierce(t *testing.T) {
-	manager := setupTestManager(t)
+	manager := setupCombatTestManager(t)
 
 	// Create attacker squad
 	attackerSquadID := createTestSquad(manager, "Attackers")
 	attacker := createTestUnit(manager, attackerSquadID, 0, 0, 100, 20, 100)
 
 	// Set to Magic targeting (front row only)
-	targetData := common.GetComponentType[*TargetRowData](attacker, TargetRowComponent)
-	targetData.AttackType = AttackTypeMagic
+	targetData := common.GetComponentType[*squads.TargetRowData](attacker, squads.TargetRowComponent)
+	targetData.AttackType = unitdefs.AttackTypeMagic
 	targetData.TargetCells = [][2]int{{0, 0}, {0, 1}, {0, 2}} // Front row only
 
 	// Create defender squad with NO units in row 0, units in row 1
@@ -1183,7 +1239,7 @@ func TestMagicTargeting_NoPierce(t *testing.T) {
 // ========================================
 
 func TestCombatWithCoverSystem_Integration(t *testing.T) {
-	manager := setupTestManager(t)
+	manager := setupCombatTestManager(t)
 
 	// Create attacker squad
 	attackerSquadID := createTestSquad(manager, "Attackers")
@@ -1195,7 +1251,7 @@ func TestCombatWithCoverSystem_Integration(t *testing.T) {
 
 	// Front-line unit provides cover
 	frontLine := createTestUnit(manager, defenderSquadID, 0, 0, 100, 10, 0)
-	frontLine.AddComponent(CoverComponent, &CoverData{
+	frontLine.AddComponent(squads.CoverComponent, &squads.CoverData{
 		CoverValue:     0.50, // 50% damage reduction
 		CoverRange:     1,
 		RequiresActive: true,
@@ -1206,11 +1262,11 @@ func TestCombatWithCoverSystem_Integration(t *testing.T) {
 	backLineAttr := common.GetComponentType[*common.Attributes](backLine, common.AttributeComponent)
 
 	// Configure attacker to target back line
-	targetData := common.GetComponentType[*TargetRowData](attacker, TargetRowComponent)
+	targetData := common.GetComponentType[*squads.TargetRowData](attacker, squads.TargetRowComponent)
 	targetData.TargetCells = [][2]int{{1, 0}, {1, 1}, {1, 2}} // Target row 1
 
 	// Execute attack
-	result := ExecuteSquadAttack(attackerSquadID, defenderSquadID, manager)
+	result := executeTestAttack(attackerSquadID, defenderSquadID, manager)
 
 	// Verify cover reduced damage
 	if len(result.DamageByUnit) != 1 {
@@ -1239,7 +1295,7 @@ func TestCombatWithCoverSystem_Integration(t *testing.T) {
 }
 
 func TestMultiRoundCombat_Integration(t *testing.T) {
-	manager := setupTestManager(t)
+	manager := setupCombatTestManager(t)
 
 	// Create two evenly matched squads
 	squad1ID := createTestSquad(manager, "Squad1")
@@ -1258,19 +1314,19 @@ func TestMultiRoundCombat_Integration(t *testing.T) {
 		rounds++
 
 		// Squad 1 attacks Squad 2
-		result1 := ExecuteSquadAttack(squad1ID, squad2ID, manager)
+		result1 := executeTestAttack(squad1ID, squad2ID, manager)
 
 		// Check if Squad 2 is destroyed
-		if IsSquadDestroyed(squad2ID, manager) {
+		if squads.IsSquadDestroyed(squad2ID, manager) {
 			t.Logf("Squad2 destroyed in round %d", rounds)
 			break
 		}
 
 		// Squad 2 attacks Squad 1
-		result2 := ExecuteSquadAttack(squad2ID, squad1ID, manager)
+		result2 := executeTestAttack(squad2ID, squad1ID, manager)
 
 		// Check if Squad 1 is destroyed
-		if IsSquadDestroyed(squad1ID, manager) {
+		if squads.IsSquadDestroyed(squad1ID, manager) {
 			t.Logf("Squad1 destroyed in round %d", rounds)
 			break
 		}
@@ -1284,8 +1340,8 @@ func TestMultiRoundCombat_Integration(t *testing.T) {
 	}
 
 	// At least one squad should be heavily damaged
-	squad1Destroyed := IsSquadDestroyed(squad1ID, manager)
-	squad2Destroyed := IsSquadDestroyed(squad2ID, manager)
+	squad1Destroyed := squads.IsSquadDestroyed(squad1ID, manager)
+	squad2Destroyed := squads.IsSquadDestroyed(squad2ID, manager)
 
 	if !squad1Destroyed && !squad2Destroyed {
 		t.Log("Both squads survived - this is possible with lucky dodges/misses")
@@ -1293,7 +1349,7 @@ func TestMultiRoundCombat_Integration(t *testing.T) {
 }
 
 func TestExecuteSquadAttack_MultiCellUnit_HitOnce(t *testing.T) {
-	manager := setupTestManager(t)
+	manager := setupCombatTestManager(t)
 
 	// Create attacker squad with unit targeting multiple rows
 	attackerSquadID := createTestSquad(manager, "Attackers")
@@ -1302,14 +1358,14 @@ func TestExecuteSquadAttack_MultiCellUnit_HitOnce(t *testing.T) {
 	baseDamage := attackerAttr.GetPhysicalDamage()
 
 	// Set attacker to target both row 0 and row 1
-	targetData := common.GetComponentType[*TargetRowData](attacker, TargetRowComponent)
+	targetData := common.GetComponentType[*squads.TargetRowData](attacker, squads.TargetRowComponent)
 	targetData.TargetCells = [][2]int{{0, 0}, {0, 1}, {0, 2}, {1, 0}, {1, 1}, {1, 2}}
 
 	// Create defender squad with a 2x2 multi-cell unit spanning rows 0-1, cols 0-1
 	defenderSquadID := createTestSquad(manager, "Defenders")
 	multiCellUnit := manager.World.NewEntity()
-	multiCellUnit.AddComponent(SquadMemberComponent, &SquadMemberData{SquadID: defenderSquadID})
-	multiCellUnit.AddComponent(GridPositionComponent, &GridPositionData{
+	multiCellUnit.AddComponent(squads.SquadMemberComponent, &squads.SquadMemberData{SquadID: defenderSquadID})
+	multiCellUnit.AddComponent(squads.GridPositionComponent, &squads.GridPositionData{
 		AnchorRow: 0,
 		AnchorCol: 0,
 		Width:     2,
@@ -1325,7 +1381,7 @@ func TestExecuteSquadAttack_MultiCellUnit_HitOnce(t *testing.T) {
 	initialHP := defenderAttr.CurrentHealth
 
 	// Execute attack
-	result := ExecuteSquadAttack(attackerSquadID, defenderSquadID, manager)
+	result := executeTestAttack(attackerSquadID, defenderSquadID, manager)
 
 	// Verify the multi-cell unit was only hit ONCE, not twice
 	if len(result.DamageByUnit) != 1 {
@@ -1364,7 +1420,7 @@ func TestExecuteSquadAttack_MultiCellUnit_HitOnce(t *testing.T) {
 }
 
 func TestExecuteSquadAttack_MultiCellUnit_CellBased_HitOnce(t *testing.T) {
-	manager := setupTestManager(t)
+	manager := setupCombatTestManager(t)
 
 	// Create attacker squad with cell-based targeting
 	attackerSquadID := createTestSquad(manager, "Attackers")
@@ -1373,7 +1429,7 @@ func TestExecuteSquadAttack_MultiCellUnit_CellBased_HitOnce(t *testing.T) {
 	baseDamage := attackerAttr.GetPhysicalDamage()
 
 	// Set attacker to target all 4 cells occupied by the multi-cell unit
-	targetData := common.GetComponentType[*TargetRowData](attacker, TargetRowComponent)
+	targetData := common.GetComponentType[*squads.TargetRowData](attacker, squads.TargetRowComponent)
 	targetData.TargetCells = [][2]int{
 		{0, 0}, // Top-left
 		{0, 1}, // Top-right
@@ -1384,8 +1440,8 @@ func TestExecuteSquadAttack_MultiCellUnit_CellBased_HitOnce(t *testing.T) {
 	// Create defender squad with a 2x2 multi-cell unit spanning all 4 cells
 	defenderSquadID := createTestSquad(manager, "Defenders")
 	multiCellUnit := manager.World.NewEntity()
-	multiCellUnit.AddComponent(SquadMemberComponent, &SquadMemberData{SquadID: defenderSquadID})
-	multiCellUnit.AddComponent(GridPositionComponent, &GridPositionData{
+	multiCellUnit.AddComponent(squads.SquadMemberComponent, &squads.SquadMemberData{SquadID: defenderSquadID})
+	multiCellUnit.AddComponent(squads.GridPositionComponent, &squads.GridPositionData{
 		AnchorRow: 0,
 		AnchorCol: 0,
 		Width:     2,
@@ -1401,7 +1457,7 @@ func TestExecuteSquadAttack_MultiCellUnit_CellBased_HitOnce(t *testing.T) {
 	initialHP := defenderAttr.CurrentHealth
 
 	// Execute attack
-	result := ExecuteSquadAttack(attackerSquadID, defenderSquadID, manager)
+	result := executeTestAttack(attackerSquadID, defenderSquadID, manager)
 
 	// Verify the multi-cell unit was only hit ONCE despite occupying 4 cells
 	if len(result.DamageByUnit) != 1 {
@@ -1440,11 +1496,110 @@ func TestExecuteSquadAttack_MultiCellUnit_CellBased_HitOnce(t *testing.T) {
 }
 
 // ========================================
+// MAGIC DAMAGE IN REAL COMBAT TEST
+// (migrated from magic_debug_test.go)
+// ========================================
+
+func TestMagicDamageInRealCombat(t *testing.T) {
+	manager := setupCombatTestManager(t)
+
+	// Create attacker squad with a Wizard
+	attackerSquadID := createTestSquad(manager, "Magic Squad")
+	wizard := manager.World.NewEntity()
+	wizard.AddComponent(squads.SquadMemberComponent, &squads.SquadMemberData{SquadID: attackerSquadID})
+	wizard.AddComponent(squads.GridPositionComponent, &squads.GridPositionData{AnchorRow: 2, AnchorCol: 1, Width: 1, Height: 1})
+	wizard.AddComponent(common.NameComponent, &common.Name{NameStr: "Wizard"})
+
+	// Wizard stats: Str=10, Magic=15
+	wizardAttr := common.NewAttributes(10, 100, 15, 25, 3, 2) // High dex for guaranteed hit
+	wizardAttr.CurrentHealth = 40
+	wizard.AddComponent(common.AttributeComponent, &wizardAttr)
+
+	// Add magic attack type
+	wizard.AddComponent(squads.TargetRowComponent, &squads.TargetRowData{
+		AttackType:  unitdefs.AttackTypeMagic,
+		TargetCells: [][2]int{{0, 0}, {0, 1}, {0, 2}}, // Target front row
+	})
+	wizard.AddComponent(squads.AttackRangeComponent, &squads.AttackRangeData{Range: 4})
+
+	// Create defender squad with a Fighter
+	defenderSquadID := createTestSquad(manager, "Physical Squad")
+	fighter := manager.World.NewEntity()
+	fighter.AddComponent(squads.SquadMemberComponent, &squads.SquadMemberData{SquadID: defenderSquadID})
+	fighter.AddComponent(squads.GridPositionComponent, &squads.GridPositionData{AnchorRow: 0, AnchorCol: 0, Width: 1, Height: 1})
+	fighter.AddComponent(common.NameComponent, &common.Name{NameStr: "Fighter"})
+
+	// Fighter stats
+	fighterAttr := common.NewAttributes(15, 0, 0, 20, 8, 10) // Low dex to avoid dodge
+	fighterAttr.CurrentHealth = 50
+	fighter.AddComponent(common.AttributeComponent, &fighterAttr)
+
+	fighter.AddComponent(squads.TargetRowComponent, &squads.TargetRowData{
+		AttackType:  unitdefs.AttackTypeMeleeRow,
+		TargetCells: nil,
+	})
+	fighter.AddComponent(squads.AttackRangeComponent, &squads.AttackRangeData{Range: 1})
+
+	// Execute squad attack
+	result := executeTestAttack(attackerSquadID, defenderSquadID, manager)
+
+	// Check if wizard dealt damage
+	t.Logf("=== MAGIC DAMAGE DEBUG ===")
+	t.Logf("Total damage dealt: %d", result.TotalDamage)
+	t.Logf("Number of attacks: %d", len(result.CombatLog.AttackEvents))
+
+	expectedMagicDamage := wizardAttr.GetMagicDamage()
+	t.Logf("Expected magic damage: %d", expectedMagicDamage)
+
+	fighterMagicDefense := fighterAttr.GetMagicDefense()
+	t.Logf("Fighter magic defense: %d", fighterMagicDefense)
+
+	if len(result.CombatLog.AttackEvents) > 0 {
+		for i, event := range result.CombatLog.AttackEvents {
+			attackerName := common.GetComponentTypeByID[*common.Name](manager, event.AttackerID, common.NameComponent)
+			defenderName := common.GetComponentTypeByID[*common.Name](manager, event.DefenderID, common.NameComponent)
+
+			t.Logf("Attack %d: %s -> %s", i+1, attackerName.NameStr, defenderName.NameStr)
+			t.Logf("  Base Damage: %d", event.BaseDamage)
+			t.Logf("  Resistance: %d", event.ResistanceAmount)
+			t.Logf("  Final Damage: %d", event.FinalDamage)
+			t.Logf("  Hit Type: %s", event.HitResult.Type)
+
+			if attackerName.NameStr == "Wizard" {
+				if event.BaseDamage != expectedMagicDamage {
+					t.Errorf("Wizard base damage should be %d (magic damage), got %d", expectedMagicDamage, event.BaseDamage)
+				}
+				if event.ResistanceAmount != fighterMagicDefense {
+					t.Errorf("Resistance should be %d (magic defense), got %d", fighterMagicDefense, event.ResistanceAmount)
+				}
+			}
+		}
+	} else {
+		t.Error("No attacks were executed!")
+	}
+
+	// Verify fighter took damage
+	fighterAttrAfter := common.GetComponentType[*common.Attributes](fighter, common.AttributeComponent)
+	damageTaken := 50 - fighterAttrAfter.CurrentHealth
+	t.Logf("Fighter HP: 50 -> %d (took %d damage)", fighterAttrAfter.CurrentHealth, damageTaken)
+
+	// Compute minimum expected damage from the test's own stats
+	minExpected := expectedMagicDamage - fighterMagicDefense
+	if minExpected < 1 {
+		minExpected = 1
+	}
+	if result.TotalDamage < minExpected/2 {
+		t.Errorf("Wizard should deal around %d magic damage (%d - %d), but total damage was only %d",
+			minExpected, expectedMagicDamage, fighterMagicDefense, result.TotalDamage)
+	}
+}
+
+// ========================================
 // BENCHMARK TESTS
 // ========================================
 
 func BenchmarkExecuteSquadAttack_SingleVsSingle(b *testing.B) {
-	manager := setupTestManager(&testing.T{})
+	manager := setupCombatTestManager(&testing.T{})
 
 	attackerSquadID := createTestSquad(manager, "Attackers")
 	createTestUnit(manager, attackerSquadID, 0, 0, 100, 20, 100)
@@ -1454,12 +1609,12 @@ func BenchmarkExecuteSquadAttack_SingleVsSingle(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		ExecuteSquadAttack(attackerSquadID, defenderSquadID, manager)
+		executeTestAttack(attackerSquadID, defenderSquadID, manager)
 	}
 }
 
 func BenchmarkExecuteSquadAttack_FullSquadVsFullSquad(b *testing.B) {
-	manager := setupTestManager(&testing.T{})
+	manager := setupCombatTestManager(&testing.T{})
 
 	// Create full squads (9 units each)
 	attackerSquadID := createTestSquad(manager, "Attackers")
@@ -1478,6 +1633,6 @@ func BenchmarkExecuteSquadAttack_FullSquadVsFullSquad(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		ExecuteSquadAttack(attackerSquadID, defenderSquadID, manager)
+		executeTestAttack(attackerSquadID, defenderSquadID, manager)
 	}
 }

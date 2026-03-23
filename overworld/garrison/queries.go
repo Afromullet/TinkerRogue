@@ -3,6 +3,7 @@ package garrison
 import (
 	"game_main/common"
 	"game_main/overworld/core"
+	rstr "game_main/tactical/roster"
 	"game_main/tactical/squads"
 	"game_main/world/coords"
 
@@ -22,7 +23,7 @@ func IsNodeGarrisoned(manager *common.EntityManager, nodeID ecs.EntityID) bool {
 
 // GetAvailableSquadsForGarrison returns player squads that are not garrisoned and not deployed in combat.
 func GetAvailableSquadsForGarrison(manager *common.EntityManager, playerEntityID ecs.EntityID) []ecs.EntityID {
-	roster := squads.GetPlayerSquadRoster(playerEntityID, manager)
+	roster := rstr.GetPlayerSquadRoster(playerEntityID, manager)
 	if roster == nil {
 		return nil
 	}

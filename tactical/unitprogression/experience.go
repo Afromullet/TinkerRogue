@@ -1,4 +1,4 @@
-package squads
+package unitprogression
 
 import (
 	"game_main/common"
@@ -88,7 +88,6 @@ func processLevelUp(unitID ecs.EntityID, manager *common.EntityManager, rng *ran
 	if rng.Intn(100) < GrowthChance(growthData.Weapon) {
 		attr.Weapon++
 	}
-
 }
 
 // GetExperienceData returns the ExperienceData for a unit, or nil if not found.

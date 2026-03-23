@@ -419,7 +419,7 @@ func TestActivateTwinStrike(t *testing.T) {
 	actionState.HasActed = true
 
 	charges := NewArtifactChargeTracker()
-	ctx := &BehaviorContext{Manager: manager, Cache: cache, ChargeTracker: charges}
+	ctx := NewBehaviorContext(manager, cache, charges)
 
 	err := ActivateArtifact(BehaviorTwinStrike, squadID, ctx)
 	if err != nil {
@@ -457,7 +457,7 @@ func TestActivateTwinStrike_NotYetAttacked(t *testing.T) {
 
 	// Squad has NOT attacked yet — twin_strike should fail
 	charges := NewArtifactChargeTracker()
-	ctx := &BehaviorContext{Manager: manager, Cache: cache, ChargeTracker: charges}
+	ctx := NewBehaviorContext(manager, cache, charges)
 
 	err := ActivateArtifact(BehaviorTwinStrike, squadID, ctx)
 	if err == nil {
@@ -470,7 +470,7 @@ func TestActivateTwinStrike_NotYetAttacked(t *testing.T) {
 
 func TestActivateSaboteursHourglass(t *testing.T) {
 	charges := NewArtifactChargeTracker()
-	ctx := &BehaviorContext{ChargeTracker: charges}
+	ctx := NewBehaviorContext(nil, nil, charges)
 
 	err := ActivateArtifact(BehaviorSaboteurWsHourglass, 0, ctx)
 	if err != nil {
@@ -509,7 +509,7 @@ func setupCombatContext(manager *common.EntityManager, squadName string, unitCou
 	squadID = createTestSquadWithUnits(manager, squadName, unitCount)
 	fm.AddSquadToFaction(factionID, squadID, pos)
 	charges = NewArtifactChargeTracker()
-	ctx = &BehaviorContext{Manager: manager, Cache: cache, ChargeTracker: charges}
+	ctx = NewBehaviorContext(manager, cache, charges)
 	return
 }
 
@@ -533,7 +533,7 @@ func TestDeadlockShackles_SkipsActivation(t *testing.T) {
 	turnMgr.InitializeCombat([]ecs.EntityID{playerFaction, enemyFaction})
 
 	charges := NewArtifactChargeTracker()
-	ctx := &BehaviorContext{Manager: manager, Cache: cache, ChargeTracker: charges}
+	ctx := NewBehaviorContext(manager, cache, charges)
 
 	// Activate Deadlock Shackles targeting enemy squad
 	err := ActivateArtifact(BehaviorDeadlockShackles, enemySquad, ctx)
@@ -601,7 +601,7 @@ func TestChainOfCommand_PassFullAction(t *testing.T) {
 	targetState.MovementRemaining = 0
 
 	charges := NewArtifactChargeTracker()
-	ctx := &BehaviorContext{Manager: manager, Cache: cache, ChargeTracker: charges}
+	ctx := NewBehaviorContext(manager, cache, charges)
 
 	err := ActivateArtifact(BehaviorChainOfCommand, targetSquad, ctx)
 	if err != nil {

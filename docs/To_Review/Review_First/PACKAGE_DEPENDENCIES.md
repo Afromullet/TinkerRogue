@@ -1,106 +1,79 @@
-# Package Dependency Reference
+# TinkerRogue Package Dependencies
 
-**Last Updated:** 2026-03-15
+**Last Updated:** 2026-03-20
 
-Complete internal dependency map for every package in TinkerRogue. Only project-internal imports are listed — standard library and third-party dependencies are omitted.
-
----
-
-## Dependency Flow (High-Level)
+## Dependency Hierarchy (Bottom to Top)
 
 ```
-config, assets/fonts, gui/specs, gui/widgets, overworld/overworldlog
-    ↑ (leaf packages — no internal dependencies)
-
-world/coords → config
-common → config, world/coords
-
-templates → common, config, visual/rendering, world/coords, world/worldmap
-visual/graphics → common, config, world/coords
-visual/rendering → common, visual/graphics, world/coords, world/worldmap
-world/worldmap → common, config, visual/graphics, world/coords
-
-tactical/effects → common
-tactical/squads → common, config, tactical/effects, templates, visual/rendering, world/coords
-tactical/combat → common, config, tactical/combat/battlelog, tactical/effects, tactical/squads, world/coords
-tactical/squadservices → common, tactical/squads, world/coords
-tactical/squadcommands → common, tactical/combat, tactical/squads, tactical/squadservices, world/coords
-tactical/spells → common, tactical/combat, tactical/effects, tactical/squads, templates
-tactical/commander → common, overworld/core, overworld/tick, tactical/spells, tactical/squads, visual/rendering, world/coords
-
-gear → common, config, tactical/combat, tactical/effects, tactical/squads, templates, world/coords
-
-mind/evaluation → common, tactical/squads, templates
-mind/combatpipeline → common, tactical/combat, tactical/spells, tactical/squads, world/coords
-mind/behavior → common, mind/evaluation, tactical/combat, tactical/squads, templates, visual/graphics, world/coords, world/worldmap
-mind/ai → common, mind/behavior, tactical/combat, tactical/combatservices, tactical/squadcommands, tactical/squads, world/coords
-mind/encounter → common, mind/combatpipeline, mind/evaluation, overworld/core, overworld/garrison, overworld/threat, tactical/combat, tactical/squads, templates, visual/rendering, world/coords
-mind/raid → common, mind/combatpipeline, mind/encounter, mind/evaluation, tactical/combat, tactical/squads, world/coords, world/worldmap
-tactical/combatservices → common, gear, mind/combatlifecycle, tactical/combat, tactical/combat/battlelog, tactical/effects, tactical/squads, world/coords
-
-overworld/core → common, config, overworld/overworldlog, templates, world/coords
-overworld/garrison → common, overworld/core, tactical/squads, world/coords
-overworld/node → common, overworld/core, templates, world/coords
-overworld/threat → common, overworld/core, overworld/node, templates, world/coords
-overworld/influence → common, overworld/core, templates, world/coords
-overworld/faction → common, overworld/core, overworld/garrison, overworld/threat, templates, world/coords
-overworld/tick → common, overworld/core, overworld/faction, overworld/influence, overworld/threat
-overworld/victory → common, overworld/core, overworld/threat, templates
-
-gui/* → (see GUI section below)
-input → common, gui/framework, visual/graphics, world/coords, world/worldmap
-gamesetup → (see below — highest fan-out in the project)
+Layer 0: config (pure leaf, no internal imports)
+Layer 1: world/coords -> config
+Layer 2: common -> config, world/coords
+Layer 3: templates, visual/graphics -> common
+Layer 4: world/worldmap, visual/rendering -> common, visual/graphics
+Layer 5: tactical/effects, tactical/unitprogression -> common
+Layer 6: tactical/unitdefs -> common, tactical/unitprogression, templates
+Layer 7: tactical/squads -> common, tactical/unitdefs
+Layer 8: tactical/combat -> common, tactical/squads, tactical/effects
+Layer 9: gear, tactical/spells, tactical/roster, tactical/squadservices
+Layer 10: overworld/core -> common, templates; overworld/* layers build on it
+Layer 11: mind/evaluation, mind/behavior, mind/combatlifecycle, mind/encounter, mind/raid, mind/ai
+Layer 12: tactical/combatservices, tactical/commander
+Layer 13: gui/* packages
+Layer 14: gamesetup -> gui + mind + tactical
+Layer 15: game_main (root) -> gamesetup + most everything
 ```
 
 ---
 
-## Foundation Layer (No Internal Dependencies)
+## Foundation / Leaf Packages
 
 | Package | Notes |
 |---|---|
-| `config` | Build flags, constants |
-| `assets/fonts` | Embedded font data |
-| `gui/specs` | GUI specification types |
-| `gui/widgets` | Reusable widget primitives |
-| `overworld/overworldlog` | Overworld log buffer |
-| `tools/combat_balance` | Standalone CLI tool |
-| `tools/combat_visualizer` | Standalone CLI tool |
-| `tools/report_compressor` | Standalone CLI tool |
+| `config` | Pure configuration constants, no internal imports |
+| `overworld/overworldlog` | Logging only, no internal imports |
+| `gui/specs` | UI spec types only, no internal imports |
+| `gui/widgets` | UI widget primitives only, no internal imports |
+| `tools/combat_balance` | Standalone tool, no internal deps |
+| `tools/combat_visualizer` | Standalone tool, no internal deps |
+| `tools/report_compressor` | Standalone tool, no internal deps |
 
 ---
 
-## Core Layer
+## Package-by-Package Internal Imports
 
-### `world/coords`
+### Core Infrastructure
+
+**`config`** -- no internal imports
+
+**`world/coords`**
 - `config`
 
-### `common`
+**`common`**
 - `config`
 - `world/coords`
 
----
-
-## Data / Visual Layer
-
-### `templates`
+**`templates`**
 - `common`
 - `config`
-- `visual/rendering`
 - `world/coords`
 - `world/worldmap`
 
-### `visual/graphics`
+---
+
+### Visual Layer
+
+**`visual/graphics`**
 - `common`
 - `config`
 - `world/coords`
 
-### `visual/rendering`
+**`visual/rendering`**
 - `common`
 - `visual/graphics`
 - `world/coords`
 - `world/worldmap`
 
-### `world/worldmap`
+**`world/worldmap`**
 - `common`
 - `config`
 - `visual/graphics`
@@ -108,179 +81,157 @@ gamesetup → (see below — highest fan-out in the project)
 
 ---
 
-## Tactical Layer
+### Testing Infrastructure
 
-### `tactical/effects`
+**`testing`**
 - `common`
+- `visual/graphics`
+- `world/worldmap`
 
-### `tactical/squads`
+**`testing/bootstrap`**
 - `common`
 - `config`
-- `tactical/effects`
+- `gear`
+- `overworld/core`
+- `overworld/faction`
+- `tactical/commander`
+- `tactical/roster`
+- `tactical/squads`
+- `tactical/unitdefs`
 - `templates`
-- `testing` *(debug-only)*
-- `visual/rendering`
 - `world/coords`
+- `world/worldmap`
 
-### `tactical/combat/battlelog`
-- `tactical/squads`
+---
 
-### `tactical/combat`
+### Tactical Layer
+
+**`tactical/effects`**
+- `common`
+
+**`tactical/unitprogression`**
+- `common`
+
+**`tactical/unitdefs`**
 - `common`
 - `config`
-- `tactical/combat/battlelog`
-- `tactical/effects`
-- `tactical/squads`
-- `testing` *(debug-only)*
+- `tactical/unitprogression`
+- `templates`
+
+**`tactical/squads`**
+- `common`
+- `config`
+- `tactical/unitdefs`
+- `tactical/unitprogression`
+- `templates`
 - `world/coords`
 
-### `tactical/squadservices`
+**`tactical/roster`**
 - `common`
 - `tactical/squads`
+
+**`tactical/combat`**
+- `common`
+- `config`
+- `tactical/effects`
+- `tactical/squads`
+- `tactical/unitdefs`
 - `world/coords`
 
-### `tactical/squadcommands`
+**`tactical/spells`**
 - `common`
 - `tactical/combat`
+- `tactical/effects`
+- `tactical/squads`
+- `templates`
+
+**`tactical/squadservices`**
+- `common`
+- `tactical/roster`
+- `tactical/squads`
+- `tactical/unitdefs`
+- `world/coords`
+
+**`tactical/squadcommands`**
+- `common`
+- `tactical/combat`
+- `tactical/roster`
 - `tactical/squads`
 - `tactical/squadservices`
+- `tactical/unitdefs`
 - `world/coords`
 
-### `tactical/spells`
-- `common`
-- `tactical/combat`
-- `tactical/effects`
-- `tactical/squads`
-- `templates`
-
-### `tactical/commander`
-- `common`
-- `overworld/core`
-- `overworld/tick`
-- `tactical/spells`
-- `tactical/squads`
-- `visual/rendering`
-- `world/coords`
-
-### `tactical/combatservices`
+**`tactical/combatservices`**
 - `common`
 - `gear`
 - `mind/combatlifecycle`
 - `tactical/combat`
-- `tactical/combat/battlelog`
 - `tactical/effects`
 - `tactical/squads`
 - `world/coords`
 
+**`tactical/commander`**
+- `common`
+- `overworld/core`
+- `overworld/tick`
+- `tactical/roster`
+- `tactical/spells`
+- `world/coords`
+
 ---
 
-## Gear Layer
+### Gear System
 
-### `gear`
+**`gear`**
 - `common`
 - `config`
 - `tactical/combat`
 - `tactical/effects`
 - `tactical/squads`
 - `templates`
-- `testing` *(debug-only)*
 - `world/coords`
 
 ---
 
-## Mind Layer
+### Overworld Layer
 
-### `mind/evaluation`
-- `common`
-- `tactical/squads`
-- `templates`
+**`overworld/overworldlog`** -- no internal imports
 
-### `mind/combatpipeline`
-- `common`
-- `tactical/combat`
-- `tactical/spells`
-- `tactical/squads`
-- `world/coords`
-
-### `mind/behavior`
-- `common`
-- `mind/evaluation`
-- `tactical/combat`
-- `tactical/squads`
-- `templates`
-- `visual/graphics`
-- `world/coords`
-- `world/worldmap`
-
-### `mind/ai`
-- `common`
-- `mind/behavior`
-- `tactical/combat`
-- `tactical/combatservices`
-- `tactical/squadcommands`
-- `tactical/squads`
-- `world/coords`
-
-### `mind/encounter`
-- `common`
-- `mind/combatpipeline`
-- `mind/evaluation`
-- `overworld/core`
-- `overworld/garrison`
-- `overworld/threat`
-- `tactical/combat`
-- `tactical/squads`
-- `templates`
-- `visual/rendering`
-- `world/coords`
-
-### `mind/raid`
-- `common`
-- `mind/combatpipeline`
-- `mind/encounter`
-- `mind/evaluation`
-- `tactical/combat`
-- `tactical/squads`
-- `world/coords`
-- `world/worldmap`
-
----
-
-## Overworld Layer
-
-### `overworld/core`
+**`overworld/core`**
 - `common`
 - `config`
 - `overworld/overworldlog`
 - `templates`
 - `world/coords`
 
-### `overworld/garrison`
-- `common`
-- `overworld/core`
-- `tactical/squads`
-- `world/coords`
-
-### `overworld/node`
+**`overworld/node`**
 - `common`
 - `overworld/core`
 - `templates`
 - `world/coords`
 
-### `overworld/threat`
+**`overworld/threat`**
 - `common`
 - `overworld/core`
 - `overworld/node`
 - `templates`
 - `world/coords`
 
-### `overworld/influence`
+**`overworld/garrison`**
+- `common`
+- `overworld/core`
+- `tactical/roster`
+- `tactical/squads`
+- `tactical/unitdefs`
+- `world/coords`
+
+**`overworld/influence`**
 - `common`
 - `overworld/core`
 - `templates`
 - `world/coords`
 
-### `overworld/faction`
+**`overworld/faction`**
 - `common`
 - `overworld/core`
 - `overworld/garrison`
@@ -288,14 +239,14 @@ gamesetup → (see below — highest fan-out in the project)
 - `templates`
 - `world/coords`
 
-### `overworld/tick`
+**`overworld/tick`**
 - `common`
 - `overworld/core`
 - `overworld/faction`
 - `overworld/influence`
 - `overworld/threat`
 
-### `overworld/victory`
+**`overworld/victory`**
 - `common`
 - `overworld/core`
 - `overworld/threat`
@@ -303,19 +254,106 @@ gamesetup → (see below — highest fan-out in the project)
 
 ---
 
-## GUI Layer
+### Mind / AI Layer
 
-### `gui/widgetresources`
+**`mind/evaluation`**
+- `common`
+- `tactical/squads`
+- `tactical/unitdefs`
+- `templates`
+
+**`mind/behavior`**
+- `common`
+- `mind/evaluation`
+- `tactical/combat`
+- `tactical/squads`
+- `tactical/unitdefs`
+- `templates`
+- `world/coords`
+
+**`mind/combatlifecycle`**
+- `common`
+- `overworld/core`
+- `tactical/combat`
+- `tactical/spells`
+- `tactical/squads`
+- `tactical/unitprogression`
+- `templates`
+- `world/coords`
+
+**`mind/ai`**
+- `common`
+- `mind/behavior`
+- `tactical/combat`
+- `tactical/combatservices`
+- `tactical/squadcommands`
+- `tactical/squads`
+- `tactical/unitdefs`
+- `world/coords`
+
+**`mind/encounter`**
+- `common`
+- `mind/combatlifecycle`
+- `mind/evaluation`
+- `overworld/core`
+- `overworld/garrison`
+- `overworld/threat`
+- `tactical/combat`
+- `tactical/roster`
+- `tactical/squads`
+- `tactical/unitdefs`
+- `templates`
+- `world/coords`
+
+**`mind/raid`**
+- `common`
+- `mind/combatlifecycle`
+- `mind/encounter`
+- `mind/evaluation`
+- `tactical/combat`
+- `tactical/squads`
+- `tactical/unitdefs`
+- `world/coords`
+- `world/worldmap`
+
+---
+
+### Save System
+
+**`savesystem`**
+- `common`
+
+**`savesystem/chunks`**
+- `common`
+- `gear`
+- `mind/raid`
+- `savesystem`
+- `tactical/commander`
+- `tactical/roster`
+- `tactical/spells`
+- `tactical/squads`
+- `tactical/unitdefs`
+- `tactical/unitprogression`
+- `visual/graphics`
+- `world/coords`
+- `world/worldmap`
+
+---
+
+### GUI Layer
+
+**`gui/widgetresources`**
 - `config`
 
-### `gui/builders`
+**`gui/builders`**
 - `common`
 - `gui/specs`
 - `gui/widgetresources`
 - `gui/widgets`
+- `tactical/combat`
 - `tactical/squads`
 
-### `gui/framework`
+**`gui/framework`**
 - `common`
 - `gui/builders`
 - `gui/specs`
@@ -327,38 +365,32 @@ gamesetup → (see below — highest fan-out in the project)
 - `world/coords`
 - `world/worldmap`
 
-### `gui/guiinspect`
+**`gui/guiinspect`**
 - `gui/builders`
 - `gui/framework`
 - `gui/specs`
 - `tactical/squads`
 
-### `gui/guiunitview`
+**`gui/guiunitview`**
 - `common`
 - `gui/builders`
 - `gui/framework`
 - `gui/specs`
-- `tactical/squads`
+- `tactical/unitprogression`
 
-### `gui/guistartmenu`
-- `gui/builders`
-- `savesystem`
-
-### `gui/guiartifacts`
+**`gui/guiartifacts`**
 - `gear`
 - `gui/framework`
 - `gui/widgets`
-- `mind/encounter`
 - `tactical/combat`
 - `tactical/combatservices`
 - `visual/graphics`
 - `world/coords`
 
-### `gui/guispells`
+**`gui/guispells`**
 - `common`
 - `gui/framework`
 - `gui/widgets`
-- `mind/encounter`
 - `tactical/combat`
 - `tactical/spells`
 - `templates`
@@ -366,7 +398,7 @@ gamesetup → (see below — highest fan-out in the project)
 - `world/coords`
 - `world/worldmap`
 
-### `gui/guiexploration`
+**`gui/guiexploration`**
 - `common`
 - `gui/builders`
 - `gui/framework`
@@ -375,7 +407,7 @@ gamesetup → (see below — highest fan-out in the project)
 - `templates`
 - `world/worldmap`
 
-### `gui/guisquads`
+**`gui/guisquads`**
 - `common`
 - `gear`
 - `gui/builders`
@@ -384,27 +416,41 @@ gamesetup → (see below — highest fan-out in the project)
 - `gui/guiunitview`
 - `gui/specs`
 - `gui/widgets`
+- `tactical/combat`
 - `tactical/commander`
+- `tactical/roster`
 - `tactical/squadcommands`
 - `tactical/squads`
 - `tactical/squadservices`
+- `tactical/unitdefs`
 - `templates`
 - `visual/graphics`
 - `visual/rendering`
 - `world/coords`
 
-### `gui/guioverworld`
+**`gui/guiraid`**
+- `gui/builders`
+- `gui/framework`
+- `gui/specs`
+- `gui/widgetresources`
+- `mind/raid`
+- `tactical/commander`
+- `tactical/roster`
+- `tactical/squads`
+- `world/worldmap`
+
+**`gui/guioverworld`**
 - `common`
 - `config`
 - `gui/builders`
 - `gui/framework`
 - `gui/specs`
-- `mind/combatpipeline`
 - `mind/encounter`
 - `overworld/core`
 - `overworld/garrison`
 - `overworld/threat`
 - `overworld/tick`
+- `tactical/combat`
 - `tactical/commander`
 - `tactical/squads`
 - `templates`
@@ -412,7 +458,7 @@ gamesetup → (see below — highest fan-out in the project)
 - `world/coords`
 - `world/worldmap`
 
-### `gui/guinodeplacement`
+**`gui/guinodeplacement`**
 - `common`
 - `gui/builders`
 - `gui/framework`
@@ -424,18 +470,7 @@ gamesetup → (see below — highest fan-out in the project)
 - `templates`
 - `world/coords`
 
-### `gui/guiraid`
-- `gui/builders`
-- `gui/framework`
-- `gui/specs`
-- `gui/widgetresources`
-- `mind/combatpipeline`
-- `mind/raid`
-- `tactical/commander`
-- `tactical/squads`
-- `world/worldmap`
-
-### `gui/guicombat`
+**`gui/guicombat`**
 - `common`
 - `config`
 - `gui/builders`
@@ -450,7 +485,6 @@ gamesetup → (see below — highest fan-out in the project)
 - `mind/ai`
 - `mind/evaluation`
 - `tactical/combat`
-- `tactical/combat/battlelog`
 - `tactical/combatservices`
 - `tactical/spells`
 - `tactical/squadcommands`
@@ -461,11 +495,15 @@ gamesetup → (see below — highest fan-out in the project)
 - `world/coords`
 - `world/worldmap`
 
+**`gui/guistartmenu`**
+- `gui/builders`
+- `savesystem`
+
 ---
 
-## Input Layer
+### Input
 
-### `input`
+**`input`**
 - `common`
 - `gui/framework`
 - `visual/graphics`
@@ -474,28 +512,9 @@ gamesetup → (see below — highest fan-out in the project)
 
 ---
 
-## Save System
+### Game Setup
 
-### `savesystem`
-- `common`
-
-### `savesystem/chunks`
-- `common`
-- `gear`
-- `mind/raid`
-- `savesystem`
-- `tactical/commander`
-- `tactical/spells`
-- `tactical/squads`
-- `visual/graphics`
-- `world/coords`
-- `world/worldmap`
-
----
-
-## Game Setup (Highest Fan-Out)
-
-### `gamesetup`
+**`gamesetup`**
 - `common`
 - `config`
 - `gear`
@@ -507,28 +526,33 @@ gamesetup → (see below — highest fan-out in the project)
 - `gui/guiraid`
 - `gui/guisquads`
 - `gui/guiunitview`
+- `mind/ai`
+- `mind/combatlifecycle`
 - `mind/encounter`
 - `overworld/core`
 - `overworld/node`
 - `overworld/tick`
 - `savesystem`
 - `savesystem/chunks`
+- `tactical/combat`
+- `tactical/combatservices`
 - `tactical/commander`
-- `tactical/squadcommands` *(blank import for init)*
+- `tactical/roster`
+- `tactical/squadcommands`
 - `tactical/squads`
+- `tactical/unitdefs`
 - `templates`
 - `testing`
 - `testing/bootstrap`
 - `visual/graphics`
-- `visual/rendering`
 - `world/coords`
 - `world/worldmap`
 
 ---
 
-## Entry Point
+### Entry Points
 
-### `game_main`
+**`game_main` (root, `main` package)**
 - `common`
 - `config`
 - `gamesetup`
@@ -540,65 +564,29 @@ gamesetup → (see below — highest fan-out in the project)
 - `mind/raid`
 - `overworld/core`
 - `savesystem`
-- `savesystem/chunks` *(blank import for init)*
+- `savesystem/chunks`
 - `tactical/commander`
-- `tactical/squads`
+- `tactical/unitdefs`
 - `visual/graphics`
 - `visual/rendering`
 - `world/coords`
 - `world/worldmap`
 
----
-
-## Testing
-
-### `testing`
-- `common`
-- `visual/graphics`
-- `world/worldmap`
-
-### `testing/bootstrap`
-- `common`
-- `config`
-- `gear`
-- `overworld/core`
-- `overworld/faction`
-- `tactical/commander`
-- `tactical/squads`
-- `templates`
-- `world/coords`
-- `world/worldmap`
-
-### `tools/combat_simulator`
+**`tools/combat_simulator`**
 - `common`
 - `tactical/combat`
-- `tactical/combat/battlelog`
 - `tactical/combatservices`
 - `tactical/squads`
+- `tactical/unitdefs`
 - `templates`
 - `world/coords`
 
 ---
 
-## Most Depended-On Packages
+## Notes
 
-Packages imported by the most other packages, in rough order:
-
-1. **`common`** — imported by nearly every package
-2. **`world/coords`** — used wherever positions matter
-3. **`tactical/squads`** — central game data
-4. **`config`** — constants and flags
-5. **`templates`** — unit/spell definitions
-6. **`tactical/combat`** — combat state and logic
-7. **`world/worldmap`** — map data
-8. **`visual/rendering`** — draw operations
-9. **`visual/graphics`** — sprite/tile data
-10. **`gui/framework`** — GUI mode management
-
-## Notable Cross-Layer Dependencies
-
-- `tactical/combatservices` → `mind/combatlifecycle` (tactical layer reaching into mind layer for combat lifecycle; `mind/ai` and `mind/behavior` decoupled via `AITurnController`, `ThreatProvider`, and `ThreatLayerEvaluator` interfaces)
-- `mind/encounter` → `overworld/garrison`, `overworld/threat` (mind layer reading overworld state)
-- `tactical/commander` → `overworld/core`, `overworld/tick` (commander bridges tactical and overworld)
-- `gui/guicombat` has the widest import list of any GUI package (24 dependencies)
-- `gamesetup` has the widest import list overall (26 dependencies) — expected for a bootstrap package
+- **No circular dependencies** exist. `tactical/combatservices` imports `mind/combatlifecycle`, and `mind/combatlifecycle` imports `tactical/combat` (not `tactical/combatservices`). `gear` imports `tactical/combat` and `tactical/combatservices` imports `gear` -- also acyclic.
+- Test-only imports (from `testing` and `testing/bootstrap`) are used only in `_test.go` files and don't affect the production dependency graph.
+- The `overworld` package was split into sub-packages: `core`, `node`, `threat`, `garrison`, `influence`, `faction`, `tick`, `victory`, and `overworldlog`.
+- The `tactical` package was split into: `combat`, `combatservices`, `commander`, `effects`, `roster`, `spells`, `squadcommands`, `squadservices`, `squads`, `unitdefs`, and `unitprogression`.
+- The `mind` package was split into: `ai`, `behavior`, `combatlifecycle`, `encounter`, `evaluation`, and `raid`.

@@ -1,7 +1,8 @@
-package squads
+package roster
 
 import (
 	"game_main/common"
+	"game_main/tactical/squads"
 	"testing"
 
 	"github.com/bytearena/ecs"
@@ -9,7 +10,7 @@ import (
 
 func TestUnitRoster_TemplateBasedCounting(t *testing.T) {
 	manager := common.NewEntityManager()
-	if err := InitializeSquadData(manager); err != nil {
+	if err := squads.InitializeSquadData(manager); err != nil {
 		t.Fatalf("Failed to initialize squad data: %v", err)
 	}
 
@@ -69,7 +70,7 @@ func TestUnitRoster_AvailableCount(t *testing.T) {
 	manager := common.NewEntityManager()
 
 	// Initialize components
-	if err := InitializeSquadData(manager); err != nil {
+	if err := squads.InitializeSquadData(manager); err != nil {
 		t.Fatalf("Failed to initialize squad data: %v", err)
 	}
 
@@ -127,7 +128,7 @@ func TestUnitRoster_GetAvailableUnits(t *testing.T) {
 	manager := common.NewEntityManager()
 
 	// Initialize components
-	if err := InitializeSquadData(manager); err != nil {
+	if err := squads.InitializeSquadData(manager); err != nil {
 		t.Fatalf("Failed to initialize squad data: %v", err)
 	}
 
@@ -174,7 +175,7 @@ func TestUnitRoster_GetUnitEntityForTemplate(t *testing.T) {
 	common.InitializeSubsystems(manager)
 
 	// Initialize squad templates
-	if err := InitializeSquadData(manager); err != nil {
+	if err := squads.InitializeSquadData(manager); err != nil {
 		t.Fatalf("Failed to initialize squad data: %v", err)
 	}
 
@@ -198,8 +199,8 @@ func TestUnitRoster_GetUnitEntityForTemplate(t *testing.T) {
 
 	// Simulate placing units in squad by adding SquadMemberComponent
 	squadID := ecs.EntityID(999)
-	unit1Entity.AddComponent(SquadMemberComponent, &SquadMemberData{SquadID: squadID})
-	unit2Entity.AddComponent(SquadMemberComponent, &SquadMemberData{SquadID: squadID})
+	unit1Entity.AddComponent(squads.SquadMemberComponent, &squads.SquadMemberData{SquadID: squadID})
+	unit2Entity.AddComponent(squads.SquadMemberComponent, &squads.SquadMemberData{SquadID: squadID})
 
 	// Should return 0 since both have SquadMemberComponent
 	entityID = roster.GetUnitEntityForTemplate("Warrior", manager)
@@ -218,7 +219,7 @@ func TestUnitRoster_RemoveUnit(t *testing.T) {
 	manager := common.NewEntityManager()
 
 	// Initialize components
-	if err := InitializeSquadData(manager); err != nil {
+	if err := squads.InitializeSquadData(manager); err != nil {
 		t.Fatalf("Failed to initialize squad data: %v", err)
 	}
 

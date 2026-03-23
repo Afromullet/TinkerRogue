@@ -6,8 +6,8 @@ import (
 	"game_main/common"
 	"game_main/savesystem"
 	"game_main/tactical/commander"
+	rstr "game_main/tactical/roster"
 	"game_main/tactical/spells"
-	"game_main/tactical/squads"
 	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"
@@ -96,7 +96,7 @@ func (c *CommanderChunk) Save(em *common.EntityManager) (json.RawMessage, error)
 			}
 		}
 
-		if roster := common.GetComponentType[*squads.SquadRoster](entity, squads.SquadRosterComponent); roster != nil {
+		if roster := common.GetComponentType[*rstr.SquadRoster](entity, rstr.SquadRosterComponent); roster != nil {
 			sc.SquadRoster = &savedSquadRoster{
 				OwnedSquads: make([]ecs.EntityID, len(roster.OwnedSquads)),
 				MaxSquads:   roster.MaxSquads,
@@ -157,11 +157,11 @@ func (c *CommanderChunk) Load(em *common.EntityManager, data json.RawMessage, id
 		}
 
 		if sc.SquadRoster != nil {
-			roster := squads.NewSquadRoster(sc.SquadRoster.MaxSquads)
+			roster := rstr.NewSquadRoster(sc.SquadRoster.MaxSquads)
 			// Copy old IDs; they'll be remapped in RemapIDs
 			roster.OwnedSquads = make([]ecs.EntityID, len(sc.SquadRoster.OwnedSquads))
 			copy(roster.OwnedSquads, sc.SquadRoster.OwnedSquads)
-			entity.AddComponent(squads.SquadRosterComponent, roster)
+			entity.AddComponent(rstr.SquadRosterComponent, roster)
 		}
 
 		if sc.Mana != nil {
@@ -192,7 +192,7 @@ func (c *CommanderChunk) RemapIDs(em *common.EntityManager, idMap *savesystem.En
 		entity := result.Entity
 
 		// Remap squad roster IDs
-		if roster := common.GetComponentType[*squads.SquadRoster](entity, squads.SquadRosterComponent); roster != nil {
+		if roster := common.GetComponentType[*rstr.SquadRoster](entity, rstr.SquadRosterComponent); roster != nil {
 			roster.OwnedSquads = idMap.RemapSlice(roster.OwnedSquads)
 		}
 	}

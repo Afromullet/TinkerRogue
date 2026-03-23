@@ -3,6 +3,7 @@ package builders
 import (
 	"fmt"
 	"game_main/common"
+	"game_main/tactical/combat"
 	"game_main/tactical/squads"
 
 	"github.com/bytearena/ecs"
@@ -105,7 +106,7 @@ func CreateUnitList(config UnitListConfig) *widget.List {
 			nameStr := common.GetEntityName(config.Manager, unitID, "Unknown")
 
 			// Store UnitIdentity object instead of string
-			entries = append(entries, squads.UnitIdentity{
+			entries = append(entries, combat.UnitIdentity{
 				ID:        unitID,
 				Name:      nameStr,
 				CurrentHP: attr.CurrentHealth,
@@ -118,7 +119,7 @@ func CreateUnitList(config UnitListConfig) *widget.List {
 	return CreateListWithConfig(ListConfig{
 		Entries: entries,
 		EntryLabelFunc: func(e interface{}) string {
-			identity := e.(squads.UnitIdentity)
+			identity := e.(combat.UnitIdentity)
 			prefix := ""
 			if identity.IsLeader {
 				prefix = "(L) "

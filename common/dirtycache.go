@@ -1,4 +1,4 @@
-package evaluation
+package common
 
 // DirtyCache provides lazy evaluation with round-based invalidation.
 // Embed this in structs that need to cache expensive calculations

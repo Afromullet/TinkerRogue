@@ -6,6 +6,7 @@ import (
 	"game_main/common"
 	"game_main/overworld/core"
 	"game_main/tactical/squads"
+	"game_main/tactical/unitdefs"
 	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"
@@ -181,8 +182,8 @@ func CreateNPCGarrison(
 
 // generateGarrisonUnits creates unit templates for an NPC garrison.
 // Uses the existing unit pool filtered by faction type preferences.
-func generateGarrisonUnits(factionType core.FactionType, level int) []squads.UnitTemplate {
-	units := squads.Units
+func generateGarrisonUnits(factionType core.FactionType, level int) []unitdefs.UnitTemplate {
+	units := unitdefs.Units
 	if len(units) == 0 {
 		return nil
 	}
@@ -194,7 +195,7 @@ func generateGarrisonUnits(factionType core.FactionType, level int) []squads.Uni
 	}
 
 	gridPositions := [][2]int{{0, 0}, {0, 1}, {1, 0}, {1, 1}}
-	result := make([]squads.UnitTemplate, 0, count)
+	result := make([]unitdefs.UnitTemplate, 0, count)
 
 	for i := 0; i < count; i++ {
 		unit := units[common.RandomInt(len(units))]

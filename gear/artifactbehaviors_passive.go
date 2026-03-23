@@ -9,7 +9,7 @@ package gear
 
 import (
 	"fmt"
-	"game_main/tactical/squads"
+	"game_main/tactical/combat"
 
 	"github.com/bytearena/ecs"
 )
@@ -28,14 +28,14 @@ type EngagementChainsBehavior struct{ BaseBehavior }
 
 func (EngagementChainsBehavior) BehaviorKey() string { return BehaviorEngagementChains }
 
-func (EngagementChainsBehavior) OnAttackComplete(ctx *BehaviorContext, attackerID, defenderID ecs.EntityID, result *squads.CombatResult) {
+func (EngagementChainsBehavior) OnAttackComplete(ctx *BehaviorContext, attackerID, defenderID ecs.EntityID, result *combat.CombatResult) {
 	if !result.TargetDestroyed || result.AttackerDestroyed {
 		return
 	}
 	if !HasArtifactBehavior(attackerID, BehaviorEngagementChains, ctx.Manager) {
 		return
 	}
-	actionState := ctx.Cache.FindActionStateBySquadID(attackerID)
+	actionState := ctx.GetActionState(attackerID)
 	if actionState == nil {
 		return
 	}
@@ -66,7 +66,7 @@ func (SaboteursHourglassBehavior) OnPostReset(ctx *BehaviorContext, factionID ec
 		return
 	}
 	for _, sid := range squadIDs {
-		actionState := ctx.Cache.FindActionStateBySquadID(sid)
+		actionState := ctx.GetActionState(sid)
 		if actionState == nil {
 			continue
 		}
@@ -100,7 +100,7 @@ func (TwinStrikeBehavior) Activate(ctx *BehaviorContext, targetSquadID ecs.Entit
 	if err := requireCharge(ctx, BehaviorTwinStrike); err != nil {
 		return err
 	}
-	actionState := ctx.Cache.FindActionStateBySquadID(targetSquadID)
+	actionState := ctx.GetActionState(targetSquadID)
 	if actionState == nil {
 		return fmt.Errorf("squad %d has no action state", targetSquadID)
 	}

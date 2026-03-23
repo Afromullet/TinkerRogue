@@ -129,7 +129,7 @@ func (ip *InspectPanelController) PopulateGrid(squadID ecs.EntityID) {
 // cells each unit would target, assuming a full 3x3 enemy grid.
 func (ip *InspectPanelController) populateAttackPatternGrid(squadID ecs.EntityID) {
 	manager := ip.queries.ECSManager
-	pattern := squads.ComputeGenericAttackPattern(squadID, manager)
+	pattern := squads.ComputeGenericPatternFiltered(squadID, manager, false)
 	PopulateAttackGridCells(ip.attackGridCells, pattern)
 }
 

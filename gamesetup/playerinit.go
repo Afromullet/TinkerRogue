@@ -7,8 +7,8 @@ import (
 	"game_main/templates"
 
 	"game_main/tactical/commander"
+	"game_main/tactical/roster"
 	_ "game_main/tactical/squadcommands" // Blank import to trigger init() for command queue components
-	"game_main/tactical/squads"
 	"game_main/world/coords"
 	"game_main/world/worldmap"
 
@@ -54,7 +54,7 @@ func InitializePlayerData(ecsmanager *common.EntityManager, pl *common.PlayerDat
 			cfg.Player.Resources.Wood,
 			cfg.Player.Resources.Stone,
 		)).
-		AddComponent(squads.UnitRosterComponent, squads.NewUnitRoster(cfg.Player.Limits.MaxUnits)).
+		AddComponent(roster.UnitRosterComponent, roster.NewUnitRoster(cfg.Player.Limits.MaxUnits)).
 		AddComponent(commander.CommanderRosterComponent, &commander.CommanderRosterData{
 			CommanderIDs:  make([]ecs.EntityID, 0),
 			MaxCommanders: cfg.Commander.MaxCommanders,

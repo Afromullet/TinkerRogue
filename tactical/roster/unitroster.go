@@ -1,8 +1,11 @@
-package squads
+// Package roster manages unit and squad rosters - tracking which units and squads
+// a player owns, their assignment status, and capacity limits.
+package roster
 
 import (
 	"fmt"
 	"game_main/common"
+	"game_main/tactical/squads"
 
 	"github.com/bytearena/ecs"
 )
@@ -47,13 +50,11 @@ func (ur *UnitRoster) CanAddUnit() bool {
 }
 
 // AddUnit adds a unit to the roster
-// Returns error if roster is full
 func (ur *UnitRoster) AddUnit(unitEntityID ecs.EntityID, unitType string) error {
 	if !ur.CanAddUnit() {
 		return fmt.Errorf("roster is full: %d/%d units", ur.getTotalUnitCount(), ur.MaxUnits)
 	}
 
-	// Get or create entry for this template
 	entry, exists := ur.Units[unitType]
 	if !exists {
 		entry = &UnitRosterEntry{
@@ -71,17 +72,14 @@ func (ur *UnitRoster) AddUnit(unitEntityID ecs.EntityID, unitType string) error 
 }
 
 // RemoveUnit removes a unit from the roster by entity ID
-// Returns true if unit was found and removed
 func (ur *UnitRoster) RemoveUnit(unitEntityID ecs.EntityID) bool {
 	for templateName, entry := range ur.Units {
 		for i, id := range entry.UnitEntities {
 			if id == unitEntityID {
-				// Remove entity ID
 				entry.UnitEntities[i] = entry.UnitEntities[len(entry.UnitEntities)-1]
 				entry.UnitEntities = entry.UnitEntities[:len(entry.UnitEntities)-1]
 				entry.TotalOwned--
 
-				// Remove entry if no units left
 				if entry.TotalOwned == 0 {
 					delete(ur.Units, templateName)
 				}
@@ -120,7 +118,6 @@ func (ur *UnitRoster) GetAvailableCount(unitType string) int {
 
 // MarkUnitInSquad marks a unit as being assigned to a squad
 func (ur *UnitRoster) MarkUnitInSquad(unitEntityID ecs.EntityID, squadID ecs.EntityID) error {
-	// Find which template this unit belongs to
 	for _, entry := range ur.Units {
 		for _, id := range entry.UnitEntities {
 			if id == unitEntityID {
@@ -134,11 +131,9 @@ func (ur *UnitRoster) MarkUnitInSquad(unitEntityID ecs.EntityID, squadID ecs.Ent
 
 // MarkUnitAvailable marks a unit as no longer assigned to a squad
 func (ur *UnitRoster) MarkUnitAvailable(unitEntityID ecs.EntityID) error {
-	// Find which template and squad this unit belongs to
 	for _, entry := range ur.Units {
 		for _, id := range entry.UnitEntities {
 			if id == unitEntityID {
-				// Find and decrement the squad count
 				for squadID, count := range entry.UnitsInSquads {
 					if count > 0 {
 						entry.UnitsInSquads[squadID]--
@@ -161,8 +156,7 @@ func (ur *UnitRoster) GetUnitCount() (int, int) {
 }
 
 // GetUnitEntityForTemplate gets an available unit entity ID for placing in squad.
-// Uses ECS SquadMemberComponent as the source of truth — returns the first entity
-// that does NOT have SquadMemberComponent (i.e., not currently in any squad).
+// Returns the first entity that does NOT have SquadMemberComponent.
 // Returns 0 if no available units of this type.
 func (ur *UnitRoster) GetUnitEntityForTemplate(unitType string, manager *common.EntityManager) ecs.EntityID {
 	entry, exists := ur.Units[unitType]
@@ -171,7 +165,7 @@ func (ur *UnitRoster) GetUnitEntityForTemplate(unitType string, manager *common.
 	}
 
 	for _, id := range entry.UnitEntities {
-		if !manager.HasComponent(id, SquadMemberComponent) {
+		if !manager.HasComponent(id, squads.SquadMemberComponent) {
 			return id
 		}
 	}
@@ -190,7 +184,7 @@ func (ur *UnitRoster) GetAvailableUnitDetails(manager *common.EntityManager) []R
 	var results []RosterUnitEntry
 	for templateName, entry := range ur.Units {
 		for _, id := range entry.UnitEntities {
-			if !manager.HasComponent(id, SquadMemberComponent) {
+			if !manager.HasComponent(id, squads.SquadMemberComponent) {
 				name := common.GetEntityName(manager, id, "Unknown")
 				results = append(results, RosterUnitEntry{
 					ID:           id,
@@ -204,27 +198,21 @@ func (ur *UnitRoster) GetAvailableUnitDetails(manager *common.EntityManager) []R
 }
 
 // GetPlayerRoster retrieves player's unit roster from ECS
-// Returns nil if player has no roster component
 func GetPlayerRoster(playerID ecs.EntityID, manager *common.EntityManager) *UnitRoster {
 	return common.GetComponentTypeByID[*UnitRoster](manager, playerID, UnitRosterComponent)
 }
 
 // RegisterSquadUnitInRoster registers an existing squad unit in the roster
-// Used to backfill roster with units that were created before roster tracking
-// Returns error if roster is full or unit data is invalid
 func RegisterSquadUnitInRoster(roster *UnitRoster, unitID ecs.EntityID, squadID ecs.EntityID, manager *common.EntityManager) error {
-	// Use UnitTypeComponent for roster grouping (not display name)
 	unitType := "Unknown"
-	if utData := common.GetComponentTypeByID[*UnitTypeData](manager, unitID, UnitTypeComponent); utData != nil {
+	if utData := common.GetComponentTypeByID[*squads.UnitTypeData](manager, unitID, squads.UnitTypeComponent); utData != nil {
 		unitType = utData.UnitType
 	}
 
-	// Add unit to roster (will increment TotalOwned and add to UnitEntities)
 	if err := roster.AddUnit(unitID, unitType); err != nil {
 		return fmt.Errorf("failed to add unit to roster: %w", err)
 	}
 
-	// Mark as in squad (will increment UnitsInSquads count)
 	if err := roster.MarkUnitInSquad(unitID, squadID); err != nil {
 		return fmt.Errorf("failed to mark unit in squad: %w", err)
 	}

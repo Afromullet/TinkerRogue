@@ -1,8 +1,7 @@
-package battlelog
+package combat
 
 import (
 	"fmt"
-	"game_main/tactical/squads"
 	"time"
 
 	"github.com/bytearena/ecs"
@@ -25,7 +24,7 @@ type BattleRecord struct {
 type EngagementRecord struct {
 	Index     int                `json:"index"`
 	Round     int                `json:"round"`
-	CombatLog *squads.CombatLog  `json:"combat_log"`
+	CombatLog *CombatLog         `json:"combat_log"`
 	Summary   *EngagementSummary `json:"summary"` // Per-unit action summaries
 }
 
@@ -85,7 +84,7 @@ type HealEngagement struct {
 	HealAmount int          `json:"heal_amount"`
 }
 
-// EngagementSummary contains per-unit summaries for both squads.
+// EngagementSummary contains per-unit summaries for both combat.
 type EngagementSummary struct {
 	AttackerSummaries []UnitActionSummary `json:"attacker_summaries"`
 	DefenderSummaries []UnitActionSummary `json:"defender_summaries"` // Now includes counterattacks
@@ -139,7 +138,7 @@ func (br *BattleRecorder) SetCurrentRound(round int) {
 // RecordEngagement adds a combat log to the battle record.
 // Uses the current round set via SetCurrentRound.
 // Should be called after each squad attack completes.
-func (br *BattleRecorder) RecordEngagement(log *squads.CombatLog) {
+func (br *BattleRecorder) RecordEngagement(log *CombatLog) {
 	if !br.enabled || log == nil {
 		return
 	}

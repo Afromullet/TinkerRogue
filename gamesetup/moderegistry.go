@@ -12,17 +12,20 @@ import (
 	"game_main/gui/guiraid"
 	"game_main/gui/guisquads"
 	"game_main/gui/guiunitview"
+	"game_main/mind/ai"
 	"game_main/mind/combatlifecycle"
 	"game_main/mind/encounter"
 	"game_main/tactical/combat"
+	"game_main/tactical/combatservices"
 )
 
 // RegisterTacticalModes registers all tactical UI modes with the coordinator.
 func RegisterTacticalModes(coordinator *framework.GameModeCoordinator, manager *framework.UIModeManager, encounterService *encounter.EncounterService) {
+	combatServiceFactory := newCombatServiceFactory()
 
 	modes := []framework.UIMode{
 		guiexploration.NewExplorationMode(manager),
-		guicombat.NewCombatMode(manager, encounterService),
+		guicombat.NewCombatMode(manager, encounterService, combatServiceFactory),
 		guicombat.NewCombatAnimationMode(manager),
 		guisquads.NewSquadDeploymentMode(manager),
 	}
@@ -70,7 +73,7 @@ func RegisterRoguelikeTacticalModes(coordinator *framework.GameModeCoordinator, 
 		guisquads.NewArtifactMode(manager),
 		guiunitview.NewUnitViewMode(manager),
 		guiexploration.NewExplorationMode(manager),
-		guicombat.NewCombatMode(manager, encounterService),
+		guicombat.NewCombatMode(manager, encounterService, newCombatServiceFactory()),
 		guicombat.NewCombatAnimationMode(manager),
 		guisquads.NewSquadDeploymentMode(manager),
 		raidMode,
@@ -83,4 +86,20 @@ func RegisterRoguelikeTacticalModes(coordinator *framework.GameModeCoordinator, 
 	}
 
 	return raidMode
+}
+
+// newCombatServiceFactory returns a factory that creates a CombatService with AI fully wired.
+// This keeps the mind/ai import in gamesetup (bootstrapping layer) rather than in gui/guicombat.
+func newCombatServiceFactory() func(*common.EntityManager) *combatservices.CombatService {
+	return func(manager *common.EntityManager) *combatservices.CombatService {
+		service := combatservices.NewCombatService(manager)
+		aiSetup := ai.SetupCombatAI(
+			manager, service.TurnManager, service.MovementSystem,
+			service.CombatActSystem, service.CombatCache,
+		)
+		service.SetAIController(aiSetup.Controller)
+		service.SetThreatProvider(aiSetup.ThreatProvider)
+		service.SetThreatEvaluatorFactory(aiSetup.EvalFactory)
+		return service
+	}
 }

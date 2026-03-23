@@ -3,6 +3,7 @@ package main
 import (
 	"game_main/common"
 	"game_main/tactical/squads"
+	"game_main/tactical/unitdefs"
 	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"
@@ -33,7 +34,7 @@ type ScenarioBlueprint struct {
 
 // createSquadFromBlueprint builds a squad entity from a blueprint using the unit pool.
 func createSquadFromBlueprint(pool *UnitPool, manager *common.EntityManager, bp SquadBlueprint, worldPos coords.LogicalPosition) ecs.EntityID {
-	var units []squads.UnitTemplate
+	var units []unitdefs.UnitTemplate
 	for _, placement := range bp.Units {
 		tmpl := pool.Get(placement.Name)
 		tmpl.GridRow = placement.GridRow

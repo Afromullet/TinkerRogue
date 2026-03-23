@@ -1,28 +1,28 @@
 package main
 
 import (
-	"game_main/tactical/squads"
+	"game_main/tactical/unitdefs"
 )
 
 // UnitPool provides deterministic indexed access to unit templates.
 // All methods return copies (value types), not pointers.
 type UnitPool struct {
-	All      []squads.UnitTemplate
-	ByName   map[string]squads.UnitTemplate
-	ByRole   map[squads.UnitRole][]squads.UnitTemplate
-	ByAttack map[squads.AttackType][]squads.UnitTemplate
+	All      []unitdefs.UnitTemplate
+	ByName   map[string]unitdefs.UnitTemplate
+	ByRole   map[unitdefs.UnitRole][]unitdefs.UnitTemplate
+	ByAttack map[unitdefs.AttackType][]unitdefs.UnitTemplate
 }
 
-// NewUnitPool builds a UnitPool from the global squads.Units slice.
+// NewUnitPool builds a UnitPool from the global unitdefs.Units slice.
 func NewUnitPool() *UnitPool {
 	pool := &UnitPool{
-		All:      make([]squads.UnitTemplate, len(squads.Units)),
-		ByName:   make(map[string]squads.UnitTemplate, len(squads.Units)),
-		ByRole:   make(map[squads.UnitRole][]squads.UnitTemplate),
-		ByAttack: make(map[squads.AttackType][]squads.UnitTemplate),
+		All:      make([]unitdefs.UnitTemplate, len(unitdefs.Units)),
+		ByName:   make(map[string]unitdefs.UnitTemplate, len(unitdefs.Units)),
+		ByRole:   make(map[unitdefs.UnitRole][]unitdefs.UnitTemplate),
+		ByAttack: make(map[unitdefs.AttackType][]unitdefs.UnitTemplate),
 	}
 
-	copy(pool.All, squads.Units)
+	copy(pool.All, unitdefs.Units)
 
 	for _, u := range pool.All {
 		pool.ByName[u.UnitType] = u
@@ -34,7 +34,7 @@ func NewUnitPool() *UnitPool {
 }
 
 // Get returns a copy of the template with the given name. Panics if not found.
-func (p *UnitPool) Get(name string) squads.UnitTemplate {
+func (p *UnitPool) Get(name string) unitdefs.UnitTemplate {
 	t, ok := p.ByName[name]
 	if !ok {
 		panic("UnitPool: unknown unit name: " + name)
@@ -43,18 +43,18 @@ func (p *UnitPool) Get(name string) squads.UnitTemplate {
 }
 
 // FilterByRole returns all templates with the given role.
-func (p *UnitPool) FilterByRole(role squads.UnitRole) []squads.UnitTemplate {
-	return append([]squads.UnitTemplate(nil), p.ByRole[role]...)
+func (p *UnitPool) FilterByRole(role unitdefs.UnitRole) []unitdefs.UnitTemplate {
+	return append([]unitdefs.UnitTemplate(nil), p.ByRole[role]...)
 }
 
 // FilterByAttackType returns all templates with the given attack type.
-func (p *UnitPool) FilterByAttackType(at squads.AttackType) []squads.UnitTemplate {
-	return append([]squads.UnitTemplate(nil), p.ByAttack[at]...)
+func (p *UnitPool) FilterByAttackType(at unitdefs.AttackType) []unitdefs.UnitTemplate {
+	return append([]unitdefs.UnitTemplate(nil), p.ByAttack[at]...)
 }
 
 // FilterByMinRange returns all templates with AttackRange >= r.
-func (p *UnitPool) FilterByMinRange(r int) []squads.UnitTemplate {
-	var out []squads.UnitTemplate
+func (p *UnitPool) FilterByMinRange(r int) []unitdefs.UnitTemplate {
+	var out []unitdefs.UnitTemplate
 	for _, u := range p.All {
 		if u.AttackRange >= r {
 			out = append(out, u)
