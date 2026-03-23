@@ -8,3 +8,4 @@ agent:karen 15
 agent:docs-architect 10
 agent:game-dev 23
 agent:general-purpose 2
+agent:claude-code-guide 1

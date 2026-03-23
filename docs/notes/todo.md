@@ -46,6 +46,8 @@
 
 # Cleanup
 
+- Determine whether you can use DirtyCache as an interface for all of the other caches. Also determine whether we really need the caches
+
 - Make sure entities are cleaned up upon destruction. Need to determine what entities have a "lifecycle" by determining what addcomponent is called on. 
 
 - combatqueries.go still has functions which search the entire ecs space
