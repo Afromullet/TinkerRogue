@@ -8,34 +8,6 @@ import (
 	"github.com/bytearena/ecs"
 )
 
-// --- Test-only query helpers ---
-
-func getAvailableArtifacts(inv *ArtifactInventoryData) []string {
-	var result []string
-	for id, instances := range inv.OwnedArtifacts {
-		for _, inst := range instances {
-			if inst.EquippedOn == 0 {
-				result = append(result, id)
-				break
-			}
-		}
-	}
-	return result
-}
-
-func getEquippedArtifacts(inv *ArtifactInventoryData) []string {
-	var result []string
-	for id, instances := range inv.OwnedArtifacts {
-		for _, inst := range instances {
-			if inst.EquippedOn != 0 {
-				result = append(result, id)
-				break
-			}
-		}
-	}
-	return result
-}
-
 func getFirstSquadWithArtifact(inv *ArtifactInventoryData, artifactID string) ecs.EntityID {
 	instances, exists := inv.OwnedArtifacts[artifactID]
 	if !exists {

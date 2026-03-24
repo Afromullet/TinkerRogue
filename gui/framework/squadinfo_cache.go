@@ -3,8 +3,8 @@ package framework
 
 import (
 	"game_main/common"
-	"game_main/tactical/combat"
-	"game_main/tactical/squads"
+	"game_main/tactical/combat/combatcore"
+	"game_main/tactical/squads/squadcore"
 	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"
@@ -50,13 +50,13 @@ func (sc *SquadInfoCache) buildSquadInfo(squadID ecs.EntityID) *SquadInfo {
 	squadEntity := queryResult.Entity
 
 	// Get squad data
-	squadData := common.GetComponentType[*squads.SquadData](squadEntity, squads.SquadComponent)
+	squadData := common.GetComponentType[*squadcore.SquadData](squadEntity, squadcore.SquadComponent)
 	if squadData == nil {
 		return nil
 	}
 
 	// Get squad members
-	unitIDs := squads.GetUnitIDsInSquad(squadID, manager)
+	unitIDs := squadcore.GetUnitIDsInSquad(squadID, manager)
 
 	// Calculate HP and alive units
 	aliveUnits := 0
@@ -83,7 +83,7 @@ func (sc *SquadInfoCache) buildSquadInfo(squadID ecs.EntityID) *SquadInfo {
 
 	// Get faction if squad is in combat
 	var factionID ecs.EntityID
-	combatFaction := common.GetComponentType[*combat.CombatFactionData](squadEntity, combat.FactionMembershipComponent)
+	combatFaction := common.GetComponentType[*combatcore.CombatFactionData](squadEntity, combatcore.FactionMembershipComponent)
 	if combatFaction != nil {
 		factionID = combatFaction.FactionID
 	}
@@ -146,4 +146,3 @@ func (sc *SquadInfoCache) ClearAll() {
 	sc.cache = make(map[ecs.EntityID]*SquadInfo)
 	sc.dirtySquads = make(map[ecs.EntityID]bool)
 }
-

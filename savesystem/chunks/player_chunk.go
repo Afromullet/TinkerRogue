@@ -6,7 +6,7 @@ import (
 	"game_main/common"
 	"game_main/savesystem"
 	"game_main/tactical/commander"
-	rstr "game_main/tactical/roster"
+	rstr "game_main/tactical/squads/roster"
 	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"

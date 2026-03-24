@@ -7,7 +7,7 @@ import (
 
 	"game_main/gear"
 	"game_main/gui/builders"
-	"game_main/tactical/squads"
+	"game_main/tactical/squads/squadcore"
 	"game_main/templates"
 
 	"github.com/ebitenui/ebitenui/widget"
@@ -101,7 +101,7 @@ func (am *ArtifactMode) refreshInventory() {
 
 		status := "Available"
 		if info.EquippedOn != 0 {
-			squadName := squads.GetSquadName(info.EquippedOn, am.Queries.ECSManager)
+			squadName := squadcore.GetSquadName(info.EquippedOn, am.Queries.ECSManager)
 			status = fmt.Sprintf("Equipped (%s)", squadName)
 		}
 
@@ -224,7 +224,7 @@ func (am *ArtifactMode) refreshInventoryDetail(artifactID string) {
 			if info.EquippedOn == 0 {
 				availableCount++
 			} else {
-				squadName := squads.GetSquadName(info.EquippedOn, am.Queries.ECSManager)
+				squadName := squadcore.GetSquadName(info.EquippedOn, am.Queries.ECSManager)
 				equippedSquads = append(equippedSquads, squadName)
 			}
 		}
@@ -264,7 +264,7 @@ func (am *ArtifactMode) refreshEquipment() {
 	}
 
 	squadID := am.squadSelector.CurrentID()
-	squadName := squads.GetSquadName(squadID, am.Queries.ECSManager)
+	squadName := squadcore.GetSquadName(squadID, am.Queries.ECSManager)
 
 	equipData := gear.GetEquipmentData(squadID, am.Queries.ECSManager)
 	var equipped []string

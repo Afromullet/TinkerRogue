@@ -2,8 +2,8 @@ package behavior
 
 import (
 	"game_main/common"
-	"game_main/tactical/squads"
-	"game_main/tactical/unitdefs"
+	"game_main/tactical/squads/squadcore"
+	"game_main/tactical/squads/unitdefs"
 
 	"github.com/bytearena/ecs"
 )
@@ -31,12 +31,12 @@ func GetUnitCombatData(unitID ecs.EntityID, manager *common.EntityManager) *Unit
 		return nil
 	}
 
-	roleData := common.GetComponentType[*squads.UnitRoleData](entity, squads.UnitRoleComponent)
+	roleData := common.GetComponentType[*squadcore.UnitRoleData](entity, squadcore.UnitRoleComponent)
 	if roleData == nil {
 		return nil
 	}
 
-	targetRowData := common.GetComponentType[*squads.TargetRowData](entity, squads.TargetRowComponent)
+	targetRowData := common.GetComponentType[*squadcore.TargetRowData](entity, squadcore.TargetRowComponent)
 	if targetRowData == nil {
 		return nil
 	}
@@ -47,7 +47,7 @@ func GetUnitCombatData(unitID ecs.EntityID, manager *common.EntityManager) *Unit
 	}
 
 	attackRange := 1
-	if rangeData := common.GetComponentType[*squads.AttackRangeData](entity, squads.AttackRangeComponent); rangeData != nil {
+	if rangeData := common.GetComponentType[*squadcore.AttackRangeData](entity, squadcore.AttackRangeComponent); rangeData != nil {
 		attackRange = rangeData.Range
 	}
 
@@ -57,7 +57,7 @@ func GetUnitCombatData(unitID ecs.EntityID, manager *common.EntityManager) *Unit
 		AttackType:  targetRowData.AttackType,
 		AttackRange: attackRange,
 		Attributes:  attr,
-		IsLeader:    entity.HasComponent(squads.LeaderComponent),
+		IsLeader:    entity.HasComponent(squadcore.LeaderComponent),
 	}
 }
 
@@ -88,7 +88,7 @@ func getUnitsWithAttackTypes(
 	manager *common.EntityManager,
 	attackTypes AttackTypeFilter,
 ) []*UnitCombatData {
-	unitIDs := squads.GetUnitIDsInSquad(squadID, manager)
+	unitIDs := squadcore.GetUnitIDsInSquad(squadID, manager)
 	var matching []*UnitCombatData
 
 	for _, unitID := range unitIDs {
@@ -110,7 +110,7 @@ func hasUnitsWithAttackType(
 	manager *common.EntityManager,
 	attackTypes AttackTypeFilter,
 ) bool {
-	unitIDs := squads.GetUnitIDsInSquad(squadID, manager)
+	unitIDs := squadcore.GetUnitIDsInSquad(squadID, manager)
 	for _, unitID := range unitIDs {
 		data := GetUnitCombatData(unitID, manager)
 		if data != nil && attackTypes.Matches(data.AttackType) {

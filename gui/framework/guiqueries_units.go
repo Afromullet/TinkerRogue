@@ -2,7 +2,7 @@ package framework
 
 import (
 	"game_main/common"
-	"game_main/tactical/squads"
+	"game_main/tactical/squads/squadcore"
 
 	"github.com/bytearena/ecs"
 )
@@ -24,14 +24,14 @@ type UnitGridInfo struct {
 func (gq *GUIQueries) GetUnitGridInfo(unitID ecs.EntityID) *UnitGridInfo {
 	manager := gq.ECSManager
 
-	gridPos := common.GetComponentTypeByID[*squads.GridPositionData](
-		manager, unitID, squads.GridPositionComponent)
+	gridPos := common.GetComponentTypeByID[*squadcore.GridPositionData](
+		manager, unitID, squadcore.GridPositionComponent)
 	if gridPos == nil {
 		return nil
 	}
 
 	name := common.GetEntityName(manager, unitID, "Unit")
-	isLeader := manager.HasComponent(unitID, squads.LeaderComponent)
+	isLeader := manager.HasComponent(unitID, squadcore.LeaderComponent)
 
 	attrs := common.GetComponentTypeByID[*common.Attributes](
 		manager, unitID, common.AttributeComponent)
@@ -60,18 +60,18 @@ func (gq *GUIQueries) GetUnitAttributes(unitID ecs.EntityID) *common.Attributes 
 }
 
 // GetUnitTypeData returns the unit type data for a unit.
-func (gq *GUIQueries) GetUnitTypeData(unitID ecs.EntityID) *squads.UnitTypeData {
-	return common.GetComponentTypeByID[*squads.UnitTypeData](
-		gq.ECSManager, unitID, squads.UnitTypeComponent)
+func (gq *GUIQueries) GetUnitTypeData(unitID ecs.EntityID) *squadcore.UnitTypeData {
+	return common.GetComponentTypeByID[*squadcore.UnitTypeData](
+		gq.ECSManager, unitID, squadcore.UnitTypeComponent)
 }
 
 // GetTargetRowData returns the target row data for a unit.
-func (gq *GUIQueries) GetTargetRowData(unitID ecs.EntityID) *squads.TargetRowData {
-	return common.GetComponentTypeByID[*squads.TargetRowData](
-		gq.ECSManager, unitID, squads.TargetRowComponent)
+func (gq *GUIQueries) GetTargetRowData(unitID ecs.EntityID) *squadcore.TargetRowData {
+	return common.GetComponentTypeByID[*squadcore.TargetRowData](
+		gq.ECSManager, unitID, squadcore.TargetRowComponent)
 }
 
 // GetSquadName returns the name of a squad by ID.
 func (gq *GUIQueries) GetSquadName(squadID ecs.EntityID) string {
-	return squads.GetSquadName(squadID, gq.ECSManager)
+	return squadcore.GetSquadName(squadID, gq.ECSManager)
 }

@@ -10,8 +10,8 @@ import (
 	"game_main/savesystem"
 	"game_main/savesystem/chunks"
 	"game_main/tactical/commander"
-	"game_main/tactical/squads"
-	"game_main/tactical/unitdefs"
+	"game_main/tactical/squads/squadcore"
+	"game_main/tactical/squads/unitdefs"
 	"game_main/world/coords"
 	"game_main/world/worldmap"
 
@@ -76,8 +76,8 @@ func RestoreRenderables(em *common.EntityManager) error {
 	}
 
 	// Phase 3: Unit members — look up template by UnitType for image path
-	for _, result := range em.World.Query(squads.SquadMemberTag) {
-		utData := common.GetComponentType[*squads.UnitTypeData](result.Entity, squads.UnitTypeComponent)
+	for _, result := range em.World.Query(squadcore.SquadMemberTag) {
+		utData := common.GetComponentType[*squadcore.UnitTypeData](result.Entity, squadcore.UnitTypeComponent)
 		if utData == nil {
 			continue
 		}
@@ -99,9 +99,9 @@ func RestoreRenderables(em *common.EntityManager) error {
 	}
 
 	// Phase 4: Squad entities — copy leader's sprite to squad
-	for _, result := range em.World.Query(squads.SquadTag) {
+	for _, result := range em.World.Query(squadcore.SquadTag) {
 		squadID := result.Entity.GetID()
-		squads.SetSquadRenderableFromLeader(squadID, result.Entity, em)
+		squadcore.SetSquadRenderableFromLeader(squadID, result.Entity, em)
 	}
 
 	return nil

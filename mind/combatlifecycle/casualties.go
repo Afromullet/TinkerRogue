@@ -2,7 +2,7 @@ package combatlifecycle
 
 import (
 	"game_main/common"
-	"game_main/tactical/squads"
+	"game_main/tactical/squads/squadcore"
 
 	"github.com/bytearena/ecs"
 )
@@ -11,7 +11,7 @@ import (
 func GetLivingUnitIDs(manager *common.EntityManager, squadIDs []ecs.EntityID) []ecs.EntityID {
 	var alive []ecs.EntityID
 	for _, squadID := range squadIDs {
-		for _, unitID := range squads.GetUnitIDsInSquad(squadID, manager) {
+		for _, unitID := range squadcore.GetUnitIDsInSquad(squadID, manager) {
 			attr := common.GetComponentTypeByID[*common.Attributes](manager, unitID, common.AttributeComponent)
 			if attr != nil && attr.CurrentHealth > 0 {
 				alive = append(alive, unitID)
@@ -25,7 +25,7 @@ func GetLivingUnitIDs(manager *common.EntityManager, squadIDs []ecs.EntityID) []
 func CountDeadUnits(manager *common.EntityManager, squadIDs []ecs.EntityID) int {
 	dead := 0
 	for _, squadID := range squadIDs {
-		for _, unitID := range squads.GetUnitIDsInSquad(squadID, manager) {
+		for _, unitID := range squadcore.GetUnitIDsInSquad(squadID, manager) {
 			entity := manager.FindEntityByID(unitID)
 			if entity == nil {
 				continue

@@ -2,8 +2,8 @@ package main
 
 import (
 	"game_main/common"
-	"game_main/tactical/squads"
-	"game_main/tactical/unitdefs"
+	"game_main/tactical/squads/squadcore"
+	"game_main/tactical/squads/unitdefs"
 	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"
@@ -20,7 +20,7 @@ type UnitPlacement struct {
 // SquadBlueprint defines the composition and layout of one squad.
 type SquadBlueprint struct {
 	Name      string
-	Formation squads.FormationType
+	Formation squadcore.FormationType
 	Units     []UnitPlacement
 }
 
@@ -81,7 +81,7 @@ func blueprintToScenario(pool *UnitPool, bp ScenarioBlueprint) Scenario {
 
 // makeSquadBP creates a SquadBlueprint from unit names and positions.
 // The first unit is always the leader.
-func makeSquadBP(name string, formation squads.FormationType, unitNames []string, positions [][2]int) SquadBlueprint {
+func makeSquadBP(name string, formation squadcore.FormationType, unitNames []string, positions [][2]int) SquadBlueprint {
 	var placements []UnitPlacement
 	for i, uname := range unitNames {
 		if i >= len(positions) {

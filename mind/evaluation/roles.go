@@ -1,8 +1,8 @@
 package evaluation
 
 import (
-	"game_main/tactical/squads"
-	"game_main/tactical/unitdefs"
+	"game_main/tactical/squads/squadcore"
+	"game_main/tactical/squads/unitdefs"
 	"game_main/templates"
 )
 
@@ -43,7 +43,7 @@ func GetRoleMultiplierFromConfig(role unitdefs.UnitRole) float64 {
 
 // GetAbilityPowerValue returns the power value for a specific ability from JSON config.
 // Falls back to default values if not found in config.
-func GetAbilityPowerValue(ability squads.AbilityType) float64 {
+func GetAbilityPowerValue(ability squadcore.AbilityType) float64 {
 	abilityStr := ability.String()
 	for _, av := range templates.PowerConfigTemplate.AbilityValues {
 		if av.Ability == abilityStr {
@@ -52,15 +52,15 @@ func GetAbilityPowerValue(ability squads.AbilityType) float64 {
 	}
 	// Fallback to default values
 	switch ability {
-	case squads.AbilityRally:
+	case squadcore.AbilityRally:
 		return 15.0
-	case squads.AbilityHeal:
+	case squadcore.AbilityHeal:
 		return 20.0
-	case squads.AbilityBattleCry:
+	case squadcore.AbilityBattleCry:
 		return 12.0
-	case squads.AbilityFireball:
+	case squadcore.AbilityFireball:
 		return 18.0
-	case squads.AbilityNone:
+	case squadcore.AbilityNone:
 		return 0.0
 	default:
 		return 0.0

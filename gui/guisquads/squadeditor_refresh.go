@@ -5,7 +5,7 @@ import (
 
 	"game_main/gui/builders"
 	"game_main/gui/specs"
-	rstr "game_main/tactical/roster"
+	rstr "game_main/tactical/squads/roster"
 
 	"github.com/bytearena/ecs"
 	"github.com/ebitenui/ebitenui/widget"

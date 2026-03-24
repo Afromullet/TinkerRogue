@@ -2,7 +2,7 @@ package commander
 
 import (
 	"game_main/common"
-	"game_main/tactical/roster"
+	"game_main/tactical/squads/roster"
 	"game_main/tactical/spells"
 	"game_main/world/coords"
 

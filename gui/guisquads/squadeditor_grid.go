@@ -2,12 +2,12 @@ package guisquads
 
 import (
 	"fmt"
-	"image"
 	"game_main/common"
 	"game_main/gui/framework"
 	"game_main/gui/guiinspect"
-	"game_main/tactical/squadcommands"
-	"game_main/tactical/squads"
+	"game_main/tactical/squads/squadcore"
+	"game_main/tactical/squads/squadcommands"
+	"image"
 
 	"github.com/bytearena/ecs"
 )
@@ -24,7 +24,7 @@ func (sem *SquadEditorMode) onGridCellClicked(row, col int) {
 	currentSquadID := sem.squadNav.CurrentID()
 
 	// Check if there's a unit at this position
-	unitIDs := squads.GetUnitIDsAtGridPosition(currentSquadID, row, col, sem.Queries.ECSManager)
+	unitIDs := squadcore.GetUnitIDsAtGridPosition(currentSquadID, row, col, sem.Queries.ECSManager)
 
 	if len(unitIDs) > 0 {
 		// Unit exists - select it for moving and show units panel
@@ -104,7 +104,7 @@ func (sem *SquadEditorMode) refreshAttackPattern() {
 	if !sem.showAttackPattern || !sem.squadNav.HasSquads() {
 		return
 	}
-	pattern := squads.ComputeGenericPatternFiltered(sem.squadNav.CurrentID(), sem.Queries.ECSManager, false)
+	pattern := squadcore.ComputeGenericPatternFiltered(sem.squadNav.CurrentID(), sem.Queries.ECSManager, false)
 	guiinspect.PopulateAttackGridCells(sem.attackGridCells, pattern)
 }
 
@@ -113,7 +113,7 @@ func (sem *SquadEditorMode) refreshSupportPattern() {
 	if !sem.showSupportPattern || !sem.squadNav.HasSquads() {
 		return
 	}
-	pattern := squads.ComputeGenericPatternFiltered(sem.squadNav.CurrentID(), sem.Queries.ECSManager, true)
+	pattern := squadcore.ComputeGenericPatternFiltered(sem.squadNav.CurrentID(), sem.Queries.ECSManager, true)
 	guiinspect.PopulateAttackGridCells(sem.supportGridCells, pattern)
 }
 
@@ -146,7 +146,7 @@ func (sem *SquadEditorMode) handleGridRightClick(inputState *framework.InputStat
 	}
 
 	currentSquadID := sem.squadNav.CurrentID()
-	unitIDs := squads.GetUnitIDsAtGridPosition(currentSquadID, row, col, sem.Queries.ECSManager)
+	unitIDs := squadcore.GetUnitIDsAtGridPosition(currentSquadID, row, col, sem.Queries.ECSManager)
 	if len(unitIDs) == 0 {
 		return false
 	}
@@ -172,7 +172,7 @@ func (sem *SquadEditorMode) handleGridShiftClick(inputState *framework.InputStat
 	}
 
 	currentSquadID := sem.squadNav.CurrentID()
-	unitIDs := squads.GetUnitIDsAtGridPosition(currentSquadID, row, col, sem.Queries.ECSManager)
+	unitIDs := squadcore.GetUnitIDsAtGridPosition(currentSquadID, row, col, sem.Queries.ECSManager)
 	if len(unitIDs) == 0 {
 		return false
 	}

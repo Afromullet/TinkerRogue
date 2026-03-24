@@ -2,7 +2,7 @@ package raid
 
 import (
 	"game_main/common"
-	"game_main/tactical/squads"
+	"game_main/tactical/squads/squadcore"
 	"game_main/world/worldmap"
 
 	"github.com/bytearena/ecs"
@@ -44,7 +44,7 @@ func ActivateReserves(manager *common.EntityManager, floorNumber int) {
 	var remainingReserves []ecs.EntityID
 	for _, reserveID := range floorState.ReserveSquadIDs {
 		gData := common.GetComponentTypeByID[*GarrisonSquadData](manager, reserveID, GarrisonSquadComponent)
-		if gData == nil || squads.IsSquadDestroyed(reserveID, manager) {
+		if gData == nil || squadcore.IsSquadDestroyed(reserveID, manager) {
 			continue
 		}
 

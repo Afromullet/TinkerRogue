@@ -5,7 +5,7 @@ import (
 	"game_main/common"
 	"game_main/gear"
 	"game_main/tactical/commander"
-	"game_main/tactical/roster"
+	"game_main/tactical/squads/roster"
 	"game_main/templates"
 	"sort"
 

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"game_main/common"
 	"game_main/tactical/effects"
-	"game_main/tactical/squads"
+	"game_main/tactical/squads/squadcore"
 	"game_main/templates"
 
 	"github.com/bytearena/ecs"
@@ -174,7 +174,7 @@ func ApplyArtifactStatEffects(squadIDs []ecs.EntityID, manager *common.EntityMan
 			continue
 		}
 
-		unitIDs := squads.GetUnitIDsInSquad(squadID, manager)
+		unitIDs := squadcore.GetUnitIDsInSquad(squadID, manager)
 		if len(unitIDs) == 0 {
 			continue
 		}

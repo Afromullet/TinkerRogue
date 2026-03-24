@@ -6,7 +6,7 @@ import (
 	"game_main/common"
 	"game_main/gear"
 	"game_main/savesystem"
-	"game_main/tactical/squads"
+	"game_main/tactical/squads/squadcore"
 
 	"github.com/bytearena/ecs"
 )
@@ -23,7 +23,7 @@ func init() {
 // so the chunk struct remains stateless.
 type GearChunk struct{}
 
-func (c *GearChunk) ChunkID() string  { return "gear" }
+func (c *GearChunk) ChunkID() string   { return "gear" }
 func (c *GearChunk) ChunkVersion() int { return 1 }
 
 // --- Serialization structs ---
@@ -34,8 +34,8 @@ type savedGearChunkData struct {
 }
 
 type savedArtifactInventory struct {
-	OwnerEntityID  ecs.EntityID                      `json:"ownerEntityID"`
-	MaxArtifacts   int                               `json:"maxArtifacts"`
+	OwnerEntityID  ecs.EntityID                       `json:"ownerEntityID"`
+	MaxArtifacts   int                                `json:"maxArtifacts"`
 	OwnedArtifacts map[string][]savedArtifactInstance `json:"ownedArtifacts"`
 }
 
@@ -78,7 +78,7 @@ func (c *GearChunk) Save(em *common.EntityManager) (json.RawMessage, error) {
 	}
 
 	// Save equipment data from all squads
-	for _, result := range em.World.Query(squads.SquadTag) {
+	for _, result := range em.World.Query(squadcore.SquadTag) {
 		entity := result.Entity
 		if equipData := common.GetComponentType[*gear.EquipmentData](entity, gear.EquipmentComponent); equipData != nil {
 			se := savedEquipment{

@@ -6,9 +6,9 @@ import (
 	"game_main/common"
 	"game_main/gui/framework"
 	"game_main/gui/widgets"
-	"game_main/tactical/roster"
-	"game_main/tactical/squads"
-	"game_main/tactical/squadservices"
+	"game_main/tactical/squads/roster"
+	"game_main/tactical/squads/squadcore"
+	"game_main/tactical/squads/squadservices"
 	"game_main/visual/graphics"
 	"game_main/visual/rendering"
 	"game_main/world/coords"
@@ -224,13 +224,13 @@ func (sdm *SquadDeploymentMode) HandleInput(inputState *framework.InputState) bo
 
 func (sdm *SquadDeploymentMode) placeSquadAt(squadID ecs.EntityID, pos coords.LogicalPosition) {
 	// Find the squad entity
-	squadEntity := squads.GetSquadEntity(squadID, sdm.Context.ECSManager)
+	squadEntity := squadcore.GetSquadEntity(squadID, sdm.Context.ECSManager)
 	if squadEntity == nil {
 		return
 	}
 
 	// Get squad data for name
-	squadData := common.GetComponentType[*squads.SquadData](squadEntity, squads.SquadComponent)
+	squadData := common.GetComponentType[*squadcore.SquadData](squadEntity, squadcore.SquadComponent)
 	squadName := "Unknown Squad"
 	if squadData != nil {
 		squadName = squadData.Name

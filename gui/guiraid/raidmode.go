@@ -6,7 +6,7 @@ import (
 	"game_main/gui/framework"
 	"game_main/mind/raid"
 	"game_main/tactical/commander"
-	rstr "game_main/tactical/roster"
+	rstr "game_main/tactical/squads/roster"
 	"game_main/world/worldmap"
 
 	"github.com/ebitenui/ebitenui/widget"

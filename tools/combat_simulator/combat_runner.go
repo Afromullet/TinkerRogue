@@ -3,9 +3,9 @@ package main
 import (
 	"fmt"
 	"game_main/common"
-	"game_main/tactical/combat"
-	"game_main/tactical/combatservices"
-	"game_main/tactical/squads"
+	"game_main/tactical/combat/combatcore"
+	"game_main/tactical/combat/combatservices"
+	"game_main/tactical/squads/squadcore"
 	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"
@@ -16,7 +16,7 @@ const maxRounds = 100
 // RunBattle executes a full combat simulation between two sides.
 // Both sides are AI-controlled. No movement - squads are adjacent and trade blows.
 // Returns the completed BattleRecord for export.
-func RunBattle(manager *common.EntityManager, sideASquadIDs, sideBSquadIDs []ecs.EntityID) *combat.BattleRecord {
+func RunBattle(manager *common.EntityManager, sideASquadIDs, sideBSquadIDs []ecs.EntityID) *combatcore.BattleRecord {
 	// 1. Create CombatService
 	combatService := combatservices.NewCombatService(manager)
 
@@ -98,7 +98,7 @@ func RunBattle(manager *common.EntityManager, sideASquadIDs, sideBSquadIDs []ecs
 		victory = combatService.CheckVictoryCondition()
 	}
 
-	victorInfo := &combat.VictoryInfo{
+	victorInfo := &combatcore.VictoryInfo{
 		RoundsCompleted: victory.RoundsCompleted,
 		VictorFaction:   victory.VictorFaction,
 		VictorName:      victory.VictorName,
@@ -111,7 +111,7 @@ func RunBattle(manager *common.EntityManager, sideASquadIDs, sideBSquadIDs []ecs
 // selectBestTarget picks the best enemy squad to attack.
 // Priority: most damaged first (focus fire), then smallest squad.
 func selectBestTarget(attackerID ecs.EntityID, enemyFactionID ecs.EntityID, cs *combatservices.CombatService, manager *common.EntityManager) ecs.EntityID {
-	enemySquads := combat.GetActiveSquadsForFaction(enemyFactionID, manager)
+	enemySquads := combatcore.GetActiveSquadsForFaction(enemyFactionID, manager)
 	if len(enemySquads) == 0 {
 		return 0
 	}
@@ -120,11 +120,11 @@ func selectBestTarget(attackerID ecs.EntityID, enemyFactionID ecs.EntityID, cs *
 	lowestHP := 2.0 // HP percent is 0.0-1.0, so 2.0 means "not set"
 
 	for _, enemyID := range enemySquads {
-		if squads.IsSquadDestroyed(enemyID, manager) {
+		if squadcore.IsSquadDestroyed(enemyID, manager) {
 			continue
 		}
 
-		hp := squads.GetSquadHealthPercent(enemyID, manager)
+		hp := squadcore.GetSquadHealthPercent(enemyID, manager)
 
 		// Prefer most damaged (lowest HP %)
 		if hp < lowestHP {

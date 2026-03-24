@@ -3,8 +3,8 @@ package builders
 import (
 	"fmt"
 	"game_main/common"
-	"game_main/tactical/combat"
-	"game_main/tactical/squads"
+	"game_main/tactical/combat/combatcore"
+	"game_main/tactical/squads/squadcore"
 
 	"github.com/bytearena/ecs"
 	"github.com/ebitenui/ebitenui/widget"
@@ -43,7 +43,7 @@ func CreateSquadList(config SquadListConfig) *widget.List {
 	// Build entries with squad names
 	entries := make([]interface{}, 0, len(config.SquadIDs))
 	for _, squadID := range config.SquadIDs {
-		squadName := squads.GetSquadName(squadID, config.Manager)
+		squadName := squadcore.GetSquadName(squadID, config.Manager)
 		entries = append(entries, squadName)
 	}
 
@@ -106,12 +106,12 @@ func CreateUnitList(config UnitListConfig) *widget.List {
 			nameStr := common.GetEntityName(config.Manager, unitID, "Unknown")
 
 			// Store UnitIdentity object instead of string
-			entries = append(entries, combat.UnitIdentity{
+			entries = append(entries, combatcore.UnitIdentity{
 				ID:        unitID,
 				Name:      nameStr,
 				CurrentHP: attr.CurrentHealth,
 				MaxHP:     attr.GetMaxHealth(),
-				IsLeader:  config.Manager.HasComponent(unitID, squads.LeaderComponent),
+				IsLeader:  config.Manager.HasComponent(unitID, squadcore.LeaderComponent),
 			})
 		}
 	}
@@ -119,7 +119,7 @@ func CreateUnitList(config UnitListConfig) *widget.List {
 	return CreateListWithConfig(ListConfig{
 		Entries: entries,
 		EntryLabelFunc: func(e interface{}) string {
-			identity := e.(combat.UnitIdentity)
+			identity := e.(combatcore.UnitIdentity)
 			prefix := ""
 			if identity.IsLeader {
 				prefix = "(L) "

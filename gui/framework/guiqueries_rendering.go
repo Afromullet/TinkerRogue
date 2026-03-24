@@ -2,7 +2,7 @@ package framework
 
 import (
 	"game_main/common"
-	"game_main/tactical/squads"
+	"game_main/tactical/squads/squadcore"
 	"game_main/visual/rendering"
 
 	"github.com/bytearena/ecs"
@@ -45,7 +45,7 @@ func (gq *GUIQueries) GetUnitRenderInfo(unitID ecs.EntityID) *rendering.UnitRend
 		return nil
 	}
 
-	gridPos := common.GetComponentType[*squads.GridPositionData](entity, squads.GridPositionComponent)
+	gridPos := common.GetComponentType[*squadcore.GridPositionData](entity, squadcore.GridPositionComponent)
 	if gridPos == nil {
 		return nil
 	}

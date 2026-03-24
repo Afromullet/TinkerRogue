@@ -3,9 +3,9 @@ package spells
 import (
 	"fmt"
 	"game_main/common"
-	"game_main/tactical/combat"
+	"game_main/tactical/combat/combatcore"
 	"game_main/tactical/effects"
-	"game_main/tactical/squads"
+	"game_main/tactical/squads/squadcore"
 	"game_main/templates"
 
 	"github.com/bytearena/ecs"
@@ -71,7 +71,7 @@ func applyDamageSpell(
 	manager *common.EntityManager,
 ) {
 	for _, squadID := range targetSquadIDs {
-		unitIDs := squads.GetUnitIDsInSquad(squadID, manager)
+		unitIDs := squadcore.GetUnitIDsInSquad(squadID, manager)
 		squadDamaged := false
 
 		for _, unitID := range unitIDs {
@@ -106,9 +106,9 @@ func applyDamageSpell(
 		}
 
 		// Check if squad was destroyed
-		if squads.IsSquadDestroyed(squadID, manager) {
+		if squadcore.IsSquadDestroyed(squadID, manager) {
 			result.SquadsDestroyed = append(result.SquadsDestroyed, squadID)
-			if err := combat.RemoveSquadFromMap(squadID, manager); err != nil {
+			if err := combatcore.RemoveSquadFromMap(squadID, manager); err != nil {
 				fmt.Printf("Warning: failed to remove destroyed squad %d from map: %v\n", squadID, err)
 			}
 		}
@@ -127,7 +127,7 @@ func applyBuffDebuffSpell(
 ) {
 	effectsApplied := 0
 	for _, squadID := range targetSquadIDs {
-		unitIDs := squads.GetUnitIDsInSquad(squadID, manager)
+		unitIDs := squadcore.GetUnitIDsInSquad(squadID, manager)
 		for _, mod := range spell.StatModifiers {
 			statType, err := effects.ParseStatType(mod.Stat)
 			if err != nil {

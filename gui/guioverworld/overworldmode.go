@@ -7,9 +7,9 @@ import (
 	"game_main/gui/framework"
 	"game_main/mind/encounter"
 	"game_main/overworld/core"
-	"game_main/tactical/combat"
 	"game_main/overworld/threat"
 	"game_main/overworld/tick"
+	"game_main/tactical/combat/combatcore"
 	"game_main/tactical/commander"
 
 	"github.com/bytearena/ecs"
@@ -29,7 +29,7 @@ type OverworldMode struct {
 
 	// Services
 	encounterService *encounter.EncounterService
-	startCombat      func(starter combat.CombatStarter) error
+	startCombat      func(starter combatcore.CombatStarter) error
 
 	// Handlers
 	actionHandler *OverworldActionHandler
@@ -56,7 +56,7 @@ type OverworldMode struct {
 	initialized bool
 }
 
-func NewOverworldMode(modeManager *framework.UIModeManager, encounterService *encounter.EncounterService, startCombat func(starter combat.CombatStarter) error) *OverworldMode {
+func NewOverworldMode(modeManager *framework.UIModeManager, encounterService *encounter.EncounterService, startCombat func(starter combatcore.CombatStarter) error) *OverworldMode {
 	om := &OverworldMode{
 		encounterService: encounterService,
 		startCombat:      startCombat,

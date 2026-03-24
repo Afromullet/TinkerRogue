@@ -6,7 +6,7 @@ import (
 
 	"game_main/common"
 	"game_main/mind/evaluation"
-	"game_main/tactical/squads"
+	"game_main/tactical/squads/squadcore"
 
 	"github.com/bytearena/ecs"
 )
@@ -25,7 +25,7 @@ func SetDeployment(manager *common.EntityManager, deployedIDs, reserveIDs []ecs.
 
 	// Validate no destroyed squads are deployed
 	for _, id := range deployedIDs {
-		if squads.IsSquadDestroyed(id, manager) {
+		if squadcore.IsSquadDestroyed(id, manager) {
 			return fmt.Errorf("cannot deploy destroyed squad %d", id)
 		}
 	}
@@ -69,7 +69,7 @@ func AutoDeploy(manager *common.EntityManager) (*DeploymentData, error) {
 
 	var scored []squadScore
 	for _, squadID := range raidState.PlayerSquadIDs {
-		if squads.IsSquadDestroyed(squadID, manager) {
+		if squadcore.IsSquadDestroyed(squadID, manager) {
 			continue
 		}
 		power := evaluation.CalculateSquadPower(squadID, manager, config)

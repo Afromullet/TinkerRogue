@@ -10,7 +10,7 @@ import (
 	"game_main/overworld/node"
 	"game_main/overworld/tick"
 	"game_main/tactical/commander"
-	"game_main/tactical/unitdefs"
+	"game_main/tactical/squads/unitdefs"
 	"game_main/templates"
 	"game_main/testing/bootstrap"
 	"game_main/visual/graphics"

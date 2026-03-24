@@ -8,7 +8,7 @@ import (
 	"game_main/overworld/core"
 	"game_main/overworld/garrison"
 	"game_main/overworld/threat"
-	rstr "game_main/tactical/roster"
+	rstr "game_main/tactical/squads/roster"
 
 	"github.com/bytearena/ecs"
 )

@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"game_main/gui/builders"
 	"game_main/gui/guiunitview"
-	"game_main/tactical/combat"
-	rstr "game_main/tactical/roster"
-	"game_main/tactical/squadcommands"
-	"game_main/tactical/squads"
+	"game_main/tactical/combat/combatcore"
+	rstr "game_main/tactical/squads/roster"
+	"game_main/tactical/squads/squadcommands"
+	"game_main/tactical/squads/squadcore"
 
 	"github.com/bytearena/ecs"
 )
@@ -47,7 +47,7 @@ func (sem *SquadEditorMode) onNewSquad() {
 			}
 
 			// Create empty squad and add to roster
-			squadID := squads.CreateEmptySquad(sem.Context.ECSManager, name)
+			squadID := squadcore.CreateEmptySquad(sem.Context.ECSManager, name)
 			if err := squadRoster.AddSquad(squadID); err != nil {
 				sem.SetStatus(fmt.Sprintf("Failed to add squad: %v", err))
 				return
@@ -118,22 +118,22 @@ func (sem *SquadEditorMode) onAddUnitFromRoster() {
 
 // getSelectedUnitForAction validates that a squad and unit are selected, returning the UnitIdentity.
 // Returns false if any guard fails (status message is set automatically).
-func (sem *SquadEditorMode) getSelectedUnitForAction() (combat.UnitIdentity, bool) {
+func (sem *SquadEditorMode) getSelectedUnitForAction() (combatcore.UnitIdentity, bool) {
 	if !sem.squadNav.HasSquads() {
 		sem.SetStatus("No squad selected")
-		return combat.UnitIdentity{}, false
+		return combatcore.UnitIdentity{}, false
 	}
 
 	selectedEntry := sem.unitList.SelectedEntry()
 	if selectedEntry == nil {
 		sem.SetStatus("No unit selected")
-		return combat.UnitIdentity{}, false
+		return combatcore.UnitIdentity{}, false
 	}
 
-	unitIdentity, ok := selectedEntry.(combat.UnitIdentity)
+	unitIdentity, ok := selectedEntry.(combatcore.UnitIdentity)
 	if !ok {
 		sem.SetStatus("Invalid unit selection")
-		return combat.UnitIdentity{}, false
+		return combatcore.UnitIdentity{}, false
 	}
 	return unitIdentity, true
 }
@@ -156,7 +156,7 @@ func (sem *SquadEditorMode) removeUnitByID(unitID ecs.EntityID, unitName string)
 	}
 
 	// Check if this is the leader
-	isLeader := sem.Queries.ECSManager.HasComponent(unitID, squads.LeaderComponent)
+	isLeader := sem.Queries.ECSManager.HasComponent(unitID, squadcore.LeaderComponent)
 	if isLeader {
 		sem.SetStatus("Cannot remove leader. Make another unit leader first")
 		return
@@ -200,7 +200,7 @@ func (sem *SquadEditorMode) onMakeLeader() {
 	unitID := unitIdentity.ID
 
 	// Check if already leader
-	isLeader := sem.Queries.ECSManager.HasComponent(unitID, squads.LeaderComponent)
+	isLeader := sem.Queries.ECSManager.HasComponent(unitID, squadcore.LeaderComponent)
 	if isLeader {
 		sem.SetStatus("Unit is already the leader")
 		return

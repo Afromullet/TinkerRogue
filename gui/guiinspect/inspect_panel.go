@@ -5,7 +5,7 @@ import (
 	"game_main/gui/builders"
 	"game_main/gui/framework"
 	"game_main/gui/specs"
-	"game_main/tactical/squads"
+	"game_main/tactical/squads/squadcore"
 	"strings"
 
 	"github.com/bytearena/ecs"
@@ -52,11 +52,11 @@ func BuildPanel(result *framework.PanelResult, pb *builders.PanelBuilders) {
 // InspectPanelController manages the squad formation inspect panel display.
 // Owns the widget references and all grid population logic.
 type InspectPanelController struct {
-	queries          *framework.GUIQueries
-	squadNameLabel   *widget.Text
-	gridCells        [3][3]*widget.Button
-	attackGridCells  [3][3]*widget.Button
-	panelContainer   *widget.Container
+	queries         *framework.GUIQueries
+	squadNameLabel  *widget.Text
+	gridCells       [3][3]*widget.Button
+	attackGridCells [3][3]*widget.Button
+	panelContainer  *widget.Container
 }
 
 // NewInspectPanelController creates a new inspect panel controller.
@@ -129,13 +129,13 @@ func (ip *InspectPanelController) PopulateGrid(squadID ecs.EntityID) {
 // cells each unit would target, assuming a full 3x3 enemy grid.
 func (ip *InspectPanelController) populateAttackPatternGrid(squadID ecs.EntityID) {
 	manager := ip.queries.ECSManager
-	pattern := squads.ComputeGenericPatternFiltered(squadID, manager, false)
+	pattern := squadcore.ComputeGenericPatternFiltered(squadID, manager, false)
 	PopulateAttackGridCells(ip.attackGridCells, pattern)
 }
 
 // PopulateAttackGridCells fills a 3x3 button grid with attack pattern data.
 // Reusable by any mode that needs attack pattern visualization.
-func PopulateAttackGridCells(gridCells [3][3]*widget.Button, pattern [3][3]squads.AttackPatternCell) {
+func PopulateAttackGridCells(gridCells [3][3]*widget.Button, pattern [3][3]squadcore.AttackPatternCell) {
 	for row := 0; row < 3; row++ {
 		for col := 0; col < 3; col++ {
 			cell := pattern[row][col]

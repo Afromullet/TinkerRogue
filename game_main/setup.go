@@ -13,7 +13,7 @@ import (
 	"game_main/mind/raid"
 	"game_main/savesystem"
 	"game_main/tactical/commander"
-	"game_main/tactical/unitdefs"
+	"game_main/tactical/squads/unitdefs"
 	"game_main/visual/graphics"
 	"game_main/visual/rendering"
 )

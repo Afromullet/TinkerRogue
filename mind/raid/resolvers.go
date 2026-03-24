@@ -5,7 +5,7 @@ import (
 
 	"game_main/common"
 	"game_main/mind/combatlifecycle"
-	"game_main/tactical/squads"
+	"game_main/tactical/squads/squadcore"
 )
 
 // RaidRoomResolver resolves a successful raid room encounter.
@@ -80,7 +80,7 @@ func CheckRaidEndConditions(manager *common.EntityManager) RaidStatus {
 	// Check if all player squads are destroyed
 	allDestroyed := true
 	for _, squadID := range raidState.PlayerSquadIDs {
-		if !squads.IsSquadDestroyed(squadID, manager) {
+		if !squadcore.IsSquadDestroyed(squadID, manager) {
 			allDestroyed = false
 			break
 		}

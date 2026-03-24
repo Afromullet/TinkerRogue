@@ -2,9 +2,9 @@ package gear
 
 import (
 	"game_main/common"
-	"game_main/tactical/combat"
+	"game_main/tactical/combat/combatcore"
 	"game_main/tactical/effects"
-	"game_main/tactical/squads"
+	"game_main/tactical/squads/squadcore"
 	"game_main/templates"
 	testfx "game_main/testing"
 	"game_main/world/coords"
@@ -20,7 +20,7 @@ func setupTestManager() *common.EntityManager {
 		templates.GameConfig.Player.Limits.MaxArtifactsPerCommander = 30
 	}
 	manager := testfx.NewTestEntityManager()
-	if err := squads.InitializeSquadData(manager); err != nil {
+	if err := squadcore.InitializeSquadData(manager); err != nil {
 		panic(err)
 	}
 	common.InitializeSubsystems(manager)
@@ -76,10 +76,10 @@ func createTestSquadWithUnits(manager *common.EntityManager, name string, unitCo
 	squadEntity := manager.World.NewEntity()
 	squadID := squadEntity.GetID()
 
-	squadEntity.AddComponent(squads.SquadComponent, &squads.SquadData{
+	squadEntity.AddComponent(squadcore.SquadComponent, &squadcore.SquadData{
 		SquadID:   squadID,
 		Name:      name,
-		Formation: squads.FormationBalanced,
+		Formation: squadcore.FormationBalanced,
 		MaxUnits:  9,
 	})
 
@@ -95,7 +95,7 @@ func createTestSquadWithUnits(manager *common.EntityManager, name string, unitCo
 			CurrentHealth: 30,
 			CanAct:        true,
 		})
-		unitEntity.AddComponent(squads.SquadMemberComponent, &squads.SquadMemberData{
+		unitEntity.AddComponent(squadcore.SquadMemberComponent, &squadcore.SquadMemberData{
 			SquadID: squadID,
 		})
 	}
@@ -225,7 +225,7 @@ func TestApplyArtifactStatEffects_SingleStat(t *testing.T) {
 
 	EquipArtifact(playerID, squadID, "iron_bulwark", manager)
 
-	unitIDs := squads.GetUnitIDsInSquad(squadID, manager)
+	unitIDs := squadcore.GetUnitIDsInSquad(squadID, manager)
 	// Record original armor
 	origArmor := make(map[ecs.EntityID]int)
 	for _, uid := range unitIDs {
@@ -253,7 +253,7 @@ func TestApplyArtifactStatEffects_MultiStat(t *testing.T) {
 
 	EquipArtifact(playerID, squadID, "berserkers_torc", manager)
 
-	unitIDs := squads.GetUnitIDsInSquad(squadID, manager)
+	unitIDs := squadcore.GetUnitIDsInSquad(squadID, manager)
 	origStr := make(map[ecs.EntityID]int)
 	origArmor := make(map[ecs.EntityID]int)
 	for _, uid := range unitIDs {
@@ -280,7 +280,7 @@ func TestApplyArtifactStatEffects_NoArtifact(t *testing.T) {
 	setupTestArtifacts()
 	squadID := createTestSquadWithUnits(manager, "Test Squad", 3)
 
-	unitIDs := squads.GetUnitIDsInSquad(squadID, manager)
+	unitIDs := squadcore.GetUnitIDsInSquad(squadID, manager)
 	origArmor := make(map[ecs.EntityID]int)
 	for _, uid := range unitIDs {
 		attr := common.GetComponentTypeByID[*common.Attributes](manager, uid, common.AttributeComponent)
@@ -401,14 +401,14 @@ func TestActivateTwinStrike(t *testing.T) {
 	manager := setupTestManager()
 	setupTestArtifacts()
 
-	cache := combat.NewCombatQueryCache(manager)
-	fm := combat.NewCombatFactionManager(manager, cache)
+	cache := combatcore.NewCombatQueryCache(manager)
+	fm := combatcore.NewCombatFactionManager(manager, cache)
 	factionID := fm.CreateCombatFaction("Player", true)
 
 	squadID := createTestSquadWithUnits(manager, "Test Squad", 3)
 	fm.AddSquadToFaction(factionID, squadID, coords.LogicalPosition{X: 5, Y: 5})
 
-	turnMgr := combat.NewTurnManager(manager, cache)
+	turnMgr := combatcore.NewTurnManager(manager, cache)
 	turnMgr.InitializeCombat([]ecs.EntityID{factionID})
 
 	// Squad must have already attacked for twin_strike to work
@@ -445,14 +445,14 @@ func TestActivateTwinStrike_NotYetAttacked(t *testing.T) {
 	manager := setupTestManager()
 	setupTestArtifacts()
 
-	cache := combat.NewCombatQueryCache(manager)
-	fm := combat.NewCombatFactionManager(manager, cache)
+	cache := combatcore.NewCombatQueryCache(manager)
+	fm := combatcore.NewCombatFactionManager(manager, cache)
 	factionID := fm.CreateCombatFaction("Player", true)
 
 	squadID := createTestSquadWithUnits(manager, "Test Squad", 3)
 	fm.AddSquadToFaction(factionID, squadID, coords.LogicalPosition{X: 5, Y: 5})
 
-	turnMgr := combat.NewTurnManager(manager, cache)
+	turnMgr := combatcore.NewTurnManager(manager, cache)
 	turnMgr.InitializeCombat([]ecs.EntityID{factionID})
 
 	// Squad has NOT attacked yet — twin_strike should fail
@@ -497,14 +497,14 @@ func TestActivateSaboteursHourglass(t *testing.T) {
 
 // setupCombatContext creates a standard combat test context with one faction and one squad.
 func setupCombatContext(manager *common.EntityManager, squadName string, unitCount int, pos coords.LogicalPosition) (
-	cache *combat.CombatQueryCache,
+	cache *combatcore.CombatQueryCache,
 	factionID ecs.EntityID,
 	squadID ecs.EntityID,
 	charges *ArtifactChargeTracker,
 	ctx *BehaviorContext,
 ) {
-	cache = combat.NewCombatQueryCache(manager)
-	fm := combat.NewCombatFactionManager(manager, cache)
+	cache = combatcore.NewCombatQueryCache(manager)
+	fm := combatcore.NewCombatFactionManager(manager, cache)
 	factionID = fm.CreateCombatFaction("Player", true)
 	squadID = createTestSquadWithUnits(manager, squadName, unitCount)
 	fm.AddSquadToFaction(factionID, squadID, pos)
@@ -517,8 +517,8 @@ func TestDeadlockShackles_SkipsActivation(t *testing.T) {
 	manager := setupTestManager()
 	setupTestArtifacts()
 
-	cache := combat.NewCombatQueryCache(manager)
-	fm := combat.NewCombatFactionManager(manager, cache)
+	cache := combatcore.NewCombatQueryCache(manager)
+	fm := combatcore.NewCombatFactionManager(manager, cache)
 
 	playerFaction := fm.CreateCombatFaction("Player", true)
 	enemyFaction := fm.CreateCombatFaction("Enemy", false)
@@ -529,7 +529,7 @@ func TestDeadlockShackles_SkipsActivation(t *testing.T) {
 	fm.AddSquadToFaction(playerFaction, playerSquad, coords.LogicalPosition{X: 1, Y: 1})
 	fm.AddSquadToFaction(enemyFaction, enemySquad, coords.LogicalPosition{X: 5, Y: 5})
 
-	turnMgr := combat.NewTurnManager(manager, cache)
+	turnMgr := combatcore.NewTurnManager(manager, cache)
 	turnMgr.InitializeCombat([]ecs.EntityID{playerFaction, enemyFaction})
 
 	charges := NewArtifactChargeTracker()
@@ -573,8 +573,8 @@ func TestChainOfCommand_PassFullAction(t *testing.T) {
 		Behavior: BehaviorChainOfCommand,
 	}
 
-	cache := combat.NewCombatQueryCache(manager)
-	fm := combat.NewCombatFactionManager(manager, cache)
+	cache := combatcore.NewCombatQueryCache(manager)
+	fm := combatcore.NewCombatFactionManager(manager, cache)
 	factionID := fm.CreateCombatFaction("Player", true)
 
 	sourceSquad := createTestSquadWithUnits(manager, "Source Squad", 3)
@@ -588,7 +588,7 @@ func TestChainOfCommand_PassFullAction(t *testing.T) {
 	addArtifactToInventory(playerID, "chain_of_command", manager)
 	EquipArtifact(playerID, sourceSquad, "chain_of_command", manager)
 
-	turnMgr := combat.NewTurnManager(manager, cache)
+	turnMgr := combatcore.NewTurnManager(manager, cache)
 	turnMgr.InitializeCombat([]ecs.EntityID{factionID})
 
 	// Mark target as fully spent (acted + moved + no movement)
@@ -652,7 +652,7 @@ func TestArtifactStatEffectsCleanedByRemoveAll(t *testing.T) {
 
 	EquipArtifact(playerID, squadID, "iron_bulwark", manager)
 
-	unitIDs := squads.GetUnitIDsInSquad(squadID, manager)
+	unitIDs := squadcore.GetUnitIDsInSquad(squadID, manager)
 	origArmor := make(map[ecs.EntityID]int)
 	for _, uid := range unitIDs {
 		attr := common.GetComponentTypeByID[*common.Attributes](manager, uid, common.AttributeComponent)

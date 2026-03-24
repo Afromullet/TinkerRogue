@@ -5,7 +5,7 @@ import (
 
 	"game_main/common"
 	"game_main/mind/combatlifecycle"
-	"game_main/tactical/combat"
+	"game_main/tactical/combat/combatcore"
 	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"
@@ -44,7 +44,7 @@ func SetupRaidFactions(
 	}
 
 	// Create factions (player attacks, garrison defends)
-	var fm *combat.CombatFactionManager
+	var fm *combatcore.CombatFactionManager
 	fm, playerFactionID, enemyFactionID = combatlifecycle.CreateFactionPair(manager, "Raid Attackers", "Garrison Defenders", encounterID)
 
 	// Pre-compute player squad positions

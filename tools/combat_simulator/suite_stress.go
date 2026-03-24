@@ -1,7 +1,7 @@
 package main
 
 import (
-	"game_main/tactical/squads"
+	"game_main/tactical/squads/squadcore"
 )
 
 // GenerateStressSuite generates edge case scenarios testing specific combat mechanics.
@@ -27,12 +27,12 @@ func coverStress(pool *UnitPool) []Scenario {
 			Name:  "Stress: Max Cover vs Glass Cannons",
 			Suite: "stress",
 			SideA: []SquadBlueprint{makeSquadBP(
-				"Max Cover", squads.FormationDefensive,
+				"Max Cover", squadcore.FormationDefensive,
 				[]string{"Knight", "Paladin", "Spearman", "Cleric", "Priest"},
 				pos5,
 			)},
 			SideB: []SquadBlueprint{makeSquadBP(
-				"Glass Cannons", squads.FormationOffensive,
+				"Glass Cannons", squadcore.FormationOffensive,
 				[]string{"Assassin", "Marksman", "Swordsman", "Warlock", "Wizard"},
 				pos5,
 			)},
@@ -42,12 +42,12 @@ func coverStress(pool *UnitPool) []Scenario {
 			Name:  "Stress: Medium Cover vs No Cover",
 			Suite: "stress",
 			SideA: []SquadBlueprint{makeSquadBP(
-				"Medium Cover", squads.FormationBalanced,
+				"Medium Cover", squadcore.FormationBalanced,
 				[]string{"Fighter", "Battle Mage", "Mage"},
 				pos3,
 			)},
 			SideB: []SquadBlueprint{makeSquadBP(
-				"No Cover", squads.FormationBalanced,
+				"No Cover", squadcore.FormationBalanced,
 				[]string{"Warrior", "Goblin Raider", "Archer"},
 				pos3,
 			)},
@@ -57,12 +57,12 @@ func coverStress(pool *UnitPool) []Scenario {
 			Name:  "Stress: Cover Wall vs Magic Splash",
 			Suite: "stress",
 			SideA: []SquadBlueprint{makeSquadBP(
-				"Cover Wall", squads.FormationDefensive,
+				"Cover Wall", squadcore.FormationDefensive,
 				[]string{"Knight", "Paladin", "Priest"},
 				pos3,
 			)},
 			SideB: []SquadBlueprint{makeSquadBP(
-				"Splash Casters", squads.FormationBalanced,
+				"Splash Casters", squadcore.FormationBalanced,
 				[]string{"Sorcerer", "Wizard", "Skeleton Archer"},
 				pos3,
 			)},
@@ -81,14 +81,14 @@ func numericalAdvantage(pool *UnitPool) []Scenario {
 			Name:  "Stress: 1 Full vs 2 Small Squads",
 			Suite: "stress",
 			SideA: []SquadBlueprint{makeSquadBP(
-				"Full Squad", squads.FormationBalanced,
+				"Full Squad", squadcore.FormationBalanced,
 				[]string{"Knight", "Swordsman", "Archer", "Wizard", "Paladin"},
 				pos5,
 			)},
 			SideB: []SquadBlueprint{
-				makeSquadBP("Small 1", squads.FormationBalanced,
+				makeSquadBP("Small 1", squadcore.FormationBalanced,
 					[]string{"Warrior", "Crossbowman", "Mage"}, pos3),
-				makeSquadBP("Small 2", squads.FormationBalanced,
+				makeSquadBP("Small 2", squadcore.FormationBalanced,
 					[]string{"Fighter", "Marksman", "Cleric"}, pos3),
 			},
 		}),
@@ -97,19 +97,19 @@ func numericalAdvantage(pool *UnitPool) []Scenario {
 			Name:  "Stress: 2 Full vs 4 Small Squads",
 			Suite: "stress",
 			SideA: []SquadBlueprint{
-				makeSquadBP("Full A1", squads.FormationBalanced,
+				makeSquadBP("Full A1", squadcore.FormationBalanced,
 					[]string{"Knight", "Swordsman", "Archer", "Wizard", "Paladin"}, pos5),
-				makeSquadBP("Full A2", squads.FormationBalanced,
+				makeSquadBP("Full A2", squadcore.FormationBalanced,
 					[]string{"Fighter", "Assassin", "Marksman", "Sorcerer", "Cleric"}, pos5),
 			},
 			SideB: []SquadBlueprint{
-				makeSquadBP("Small B1", squads.FormationBalanced,
+				makeSquadBP("Small B1", squadcore.FormationBalanced,
 					[]string{"Warrior", "Crossbowman", "Mage"}, pos3),
-				makeSquadBP("Small B2", squads.FormationBalanced,
+				makeSquadBP("Small B2", squadcore.FormationBalanced,
 					[]string{"Spearman", "Archer", "Priest"}, pos3),
-				makeSquadBP("Small B3", squads.FormationOffensive,
+				makeSquadBP("Small B3", squadcore.FormationOffensive,
 					[]string{"Goblin Raider", "Rogue", "Scout"}, pos3),
-				makeSquadBP("Small B4", squads.FormationBalanced,
+				makeSquadBP("Small B4", squadcore.FormationBalanced,
 					[]string{"Battle Mage", "Ranger", "Warlock"}, pos3),
 			},
 		}),
@@ -118,16 +118,16 @@ func numericalAdvantage(pool *UnitPool) []Scenario {
 			Name:  "Stress: 1 Elite vs 3 Weak Squads",
 			Suite: "stress",
 			SideA: []SquadBlueprint{makeSquadBP(
-				"Elite", squads.FormationBalanced,
+				"Elite", squadcore.FormationBalanced,
 				[]string{"Knight", "Assassin", "Marksman", "Wizard", "Paladin"},
 				pos5,
 			)},
 			SideB: []SquadBlueprint{
-				makeSquadBP("Weak 1", squads.FormationBalanced,
+				makeSquadBP("Weak 1", squadcore.FormationBalanced,
 					[]string{"Goblin Raider", "Skeleton Archer", "Rogue"}, pos3),
-				makeSquadBP("Weak 2", squads.FormationBalanced,
+				makeSquadBP("Weak 2", squadcore.FormationBalanced,
 					[]string{"Goblin Raider", "Skeleton Archer", "Rogue"}, pos3),
-				makeSquadBP("Weak 3", squads.FormationBalanced,
+				makeSquadBP("Weak 3", squadcore.FormationBalanced,
 					[]string{"Goblin Raider", "Skeleton Archer", "Rogue"}, pos3),
 			},
 		}),
@@ -157,11 +157,11 @@ func sizeMismatch(pool *UnitPool) []Scenario {
 			Suite: "stress",
 			SideA: []SquadBlueprint{{
 				Name:      "Ogre",
-				Formation: squads.FormationDefensive,
+				Formation: squadcore.FormationDefensive,
 				Units:     ogrePlacement,
 			}},
 			SideB: []SquadBlueprint{makeSquadBP(
-				"Assassin Swarm", squads.FormationOffensive,
+				"Assassin Swarm", squadcore.FormationOffensive,
 				[]string{"Assassin", "Rogue", "Swordsman"},
 				pos3,
 			)},
@@ -172,11 +172,11 @@ func sizeMismatch(pool *UnitPool) []Scenario {
 			Suite: "stress",
 			SideA: []SquadBlueprint{{
 				Name:      "Orc Warriors",
-				Formation: squads.FormationOffensive,
+				Formation: squadcore.FormationOffensive,
 				Units:     orcWarriorPlacements,
 			}},
 			SideB: []SquadBlueprint{makeSquadBP(
-				"Swordsmen", squads.FormationOffensive,
+				"Swordsmen", squadcore.FormationOffensive,
 				[]string{"Swordsman", "Swordsman", "Swordsman"},
 				pos3,
 			)},
@@ -194,12 +194,12 @@ func speedDifferential(pool *UnitPool) []Scenario {
 			Name:  "Stress: Speed 5 vs Speed 2",
 			Suite: "stress",
 			SideA: []SquadBlueprint{makeSquadBP(
-				"Fast (Spd 5)", squads.FormationOffensive,
+				"Fast (Spd 5)", squadcore.FormationOffensive,
 				[]string{"Rogue", "Assassin", "Scout"},
 				pos3,
 			)},
 			SideB: []SquadBlueprint{makeSquadBP(
-				"Slow (Spd 2)", squads.FormationDefensive,
+				"Slow (Spd 2)", squadcore.FormationDefensive,
 				[]string{"Knight", "Wizard", "Sorcerer"},
 				pos3,
 			)},
@@ -209,12 +209,12 @@ func speedDifferential(pool *UnitPool) []Scenario {
 			Name:  "Stress: Fast Squad vs Slow Squad",
 			Suite: "stress",
 			SideA: []SquadBlueprint{makeSquadBP(
-				"Fast Squad", squads.FormationOffensive,
+				"Fast Squad", squadcore.FormationOffensive,
 				[]string{"Assassin", "Swordsman", "Goblin Raider"},
 				pos3,
 			)},
 			SideB: []SquadBlueprint{makeSquadBP(
-				"Slow Squad", squads.FormationDefensive,
+				"Slow Squad", squadcore.FormationDefensive,
 				[]string{"Knight", "Paladin", "Wizard"},
 				pos3,
 			)},
@@ -232,12 +232,12 @@ func dexterityExtremes(pool *UnitPool) []Scenario {
 			Name:  "Stress: High Dex vs High Armor",
 			Suite: "stress",
 			SideA: []SquadBlueprint{makeSquadBP(
-				"High Dex", squads.FormationOffensive,
+				"High Dex", squadcore.FormationOffensive,
 				[]string{"Assassin", "Rogue", "Marksman"},
 				pos3,
 			)},
 			SideB: []SquadBlueprint{makeSquadBP(
-				"High Armor", squads.FormationDefensive,
+				"High Armor", squadcore.FormationDefensive,
 				[]string{"Knight", "Fighter", "Spearman"},
 				pos3,
 			)},
@@ -247,12 +247,12 @@ func dexterityExtremes(pool *UnitPool) []Scenario {
 			Name:  "Stress: Dodge Squad vs Brute Squad",
 			Suite: "stress",
 			SideA: []SquadBlueprint{makeSquadBP(
-				"Dodge Squad", squads.FormationBalanced,
+				"Dodge Squad", squadcore.FormationBalanced,
 				[]string{"Assassin", "Swordsman", "Scout"},
 				pos3,
 			)},
 			SideB: []SquadBlueprint{makeSquadBP(
-				"Brute Squad", squads.FormationBalanced,
+				"Brute Squad", squadcore.FormationBalanced,
 				[]string{"Warrior", "Goblin Raider", "Fighter"},
 				pos3,
 			)},
@@ -270,12 +270,12 @@ func magicSplash(pool *UnitPool) []Scenario {
 			Name:  "Stress: Wide Splash vs Narrow Splash",
 			Suite: "stress",
 			SideA: []SquadBlueprint{makeSquadBP(
-				"Wide Splash", squads.FormationBalanced,
+				"Wide Splash", squadcore.FormationBalanced,
 				[]string{"Sorcerer", "Sorcerer", "Sorcerer"},
 				pos3,
 			)},
 			SideB: []SquadBlueprint{makeSquadBP(
-				"Narrow Splash", squads.FormationBalanced,
+				"Narrow Splash", squadcore.FormationBalanced,
 				[]string{"Warlock", "Warlock", "Warlock"},
 				pos3,
 			)},
@@ -285,12 +285,12 @@ func magicSplash(pool *UnitPool) []Scenario {
 			Name:  "Stress: Wizard Barrage vs Melee Wall",
 			Suite: "stress",
 			SideA: []SquadBlueprint{makeSquadBP(
-				"Wizard Barrage", squads.FormationRanged,
+				"Wizard Barrage", squadcore.FormationRanged,
 				[]string{"Wizard", "Wizard", "Wizard"},
 				pos3,
 			)},
 			SideB: []SquadBlueprint{makeSquadBP(
-				"Melee Wall", squads.FormationDefensive,
+				"Melee Wall", squadcore.FormationDefensive,
 				[]string{"Knight", "Fighter", "Warrior"},
 				pos3,
 			)},
@@ -300,12 +300,12 @@ func magicSplash(pool *UnitPool) []Scenario {
 			Name:  "Stress: Full Casters vs Full Melee",
 			Suite: "stress",
 			SideA: []SquadBlueprint{makeSquadBP(
-				"Full Casters", squads.FormationRanged,
+				"Full Casters", squadcore.FormationRanged,
 				[]string{"Sorcerer", "Wizard", "Skeleton Archer"},
 				pos3,
 			)},
 			SideB: []SquadBlueprint{makeSquadBP(
-				"Full Melee", squads.FormationOffensive,
+				"Full Melee", squadcore.FormationOffensive,
 				[]string{"Swordsman", "Assassin", "Warrior"},
 				pos3,
 			)},

@@ -7,8 +7,8 @@ import (
 	"game_main/templates"
 
 	"game_main/tactical/commander"
-	"game_main/tactical/roster"
-	_ "game_main/tactical/squadcommands" // Blank import to trigger init() for command queue components
+	"game_main/tactical/squads/roster"
+	_ "game_main/tactical/squads/squadcommands" // Blank import to trigger init() for command queue components
 	"game_main/world/coords"
 	"game_main/world/worldmap"
 

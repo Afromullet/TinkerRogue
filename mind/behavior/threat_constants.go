@@ -1,7 +1,7 @@
 package behavior
 
 import (
-	"game_main/tactical/unitdefs"
+	"game_main/tactical/squads/unitdefs"
 	"game_main/templates"
 )
 

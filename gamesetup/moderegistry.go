@@ -15,8 +15,8 @@ import (
 	"game_main/mind/ai"
 	"game_main/mind/combatlifecycle"
 	"game_main/mind/encounter"
-	"game_main/tactical/combat"
-	"game_main/tactical/combatservices"
+	"game_main/tactical/combat/combatcore"
+	"game_main/tactical/combat/combatservices"
 )
 
 // RegisterTacticalModes registers all tactical UI modes with the coordinator.
@@ -40,7 +40,7 @@ func RegisterTacticalModes(coordinator *framework.GameModeCoordinator, manager *
 // RegisterOverworldModes registers all overworld UI modes with the coordinator.
 // This reduces boilerplate by iterating over a slice of mode constructors.
 func RegisterOverworldModes(coordinator *framework.GameModeCoordinator, manager *framework.UIModeManager, encounterService *encounter.EncounterService, ecsManager *common.EntityManager) {
-	startCombat := func(starter combat.CombatStarter) error {
+	startCombat := func(starter combatcore.CombatStarter) error {
 		return combatlifecycle.ExecuteCombatStart(encounterService, ecsManager, starter)
 	}
 

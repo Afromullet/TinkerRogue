@@ -2,7 +2,7 @@ package guiartifacts
 
 import (
 	"game_main/gear"
-	"game_main/tactical/combat"
+	"game_main/tactical/combat/combatcore"
 	"game_main/visual/graphics"
 	"game_main/world/coords"
 
@@ -86,7 +86,7 @@ func (h *ArtifactActivationHandler) HandleTargetClick(mouseX, mouseY int) {
 	}
 
 	clickedPos := graphics.MouseToLogicalPosition(mouseX, mouseY, *h.playerPos)
-	clickedSquadID := combat.GetSquadAtPosition(clickedPos, h.deps.CombatService.EntityManager)
+	clickedSquadID := combatcore.GetSquadAtPosition(clickedPos, h.deps.CombatService.EntityManager)
 
 	if clickedSquadID == 0 {
 		return
@@ -124,7 +124,7 @@ func (h *ArtifactActivationHandler) GetAvailableArtifacts() []ArtifactOption {
 		return nil
 	}
 
-	squadIDs := combat.GetSquadsForFaction(playerFactionID, h.deps.CombatService.EntityManager)
+	squadIDs := combatcore.GetSquadsForFaction(playerFactionID, h.deps.CombatService.EntityManager)
 	chargeTracker := h.deps.CombatService.GetChargeTracker()
 
 	seen := make(map[string]bool)
@@ -203,4 +203,3 @@ func (h *ArtifactActivationHandler) executeArtifact(behaviorKey string, targetSq
 	// Invalidate caches since artifact effects may have changed squad stats
 	h.deps.Queries.MarkAllSquadsDirty()
 }
-

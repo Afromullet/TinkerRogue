@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"game_main/common"
 	"game_main/tactical/spells"
-	"game_main/tactical/unitprogression"
+	"game_main/tactical/squads/unitprogression"
 	"math"
 	"math/rand"
 	"strings"

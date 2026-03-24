@@ -1,7 +1,7 @@
 package evaluation
 
 import (
-	"game_main/tactical/unitdefs"
+	"game_main/tactical/squads/unitdefs"
 	"testing"
 )
 

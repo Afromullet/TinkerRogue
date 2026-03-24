@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"game_main/common"
 	"game_main/savesystem"
-	"game_main/tactical/squads"
-	"game_main/tactical/unitdefs"
-	"game_main/tactical/unitprogression"
+	"game_main/tactical/squads/squadcore"
+	"game_main/tactical/squads/unitdefs"
+	"game_main/tactical/squads/unitprogression"
 	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"
@@ -20,7 +20,7 @@ func init() {
 // SquadChunk saves/loads all squad entities and their unit members.
 type SquadChunk struct{}
 
-func (c *SquadChunk) ChunkID() string  { return "squads" }
+func (c *SquadChunk) ChunkID() string   { return "squads" }
 func (c *SquadChunk) ChunkVersion() int { return 1 }
 
 // --- Serialization structs ---
@@ -44,22 +44,22 @@ type savedSquad struct {
 }
 
 type savedSquadMember struct {
-	EntityID      ecs.EntityID         `json:"entityID"`
-	SquadID       ecs.EntityID         `json:"squadID"`
-	Name          string               `json:"name"`
-	UnitType      string               `json:"unitType"`
-	Attrs         savedAttributes      `json:"attributes"`
-	GridPos       savedGridPosition    `json:"gridPosition"`
-	Role          int                  `json:"role"`
-	TargetRow     *savedTargetRow      `json:"targetRow,omitempty"`
-	Cover         *savedCover          `json:"cover,omitempty"`
-	AttackRange   int                  `json:"attackRange"`
-	MovementSpeed int                  `json:"movementSpeed"`
-	Experience    *savedExperience     `json:"experience,omitempty"`
-	StatGrowth    *savedStatGrowth     `json:"statGrowth,omitempty"`
-	Leader        *savedLeader         `json:"leader,omitempty"`
-	AbilitySlots  *savedAbilitySlots   `json:"abilitySlots,omitempty"`
-	Cooldowns     *savedCooldowns      `json:"cooldowns,omitempty"`
+	EntityID      ecs.EntityID       `json:"entityID"`
+	SquadID       ecs.EntityID       `json:"squadID"`
+	Name          string             `json:"name"`
+	UnitType      string             `json:"unitType"`
+	Attrs         savedAttributes    `json:"attributes"`
+	GridPos       savedGridPosition  `json:"gridPosition"`
+	Role          int                `json:"role"`
+	TargetRow     *savedTargetRow    `json:"targetRow,omitempty"`
+	Cover         *savedCover        `json:"cover,omitempty"`
+	AttackRange   int                `json:"attackRange"`
+	MovementSpeed int                `json:"movementSpeed"`
+	Experience    *savedExperience   `json:"experience,omitempty"`
+	StatGrowth    *savedStatGrowth   `json:"statGrowth,omitempty"`
+	Leader        *savedLeader       `json:"leader,omitempty"`
+	AbilitySlots  *savedAbilitySlots `json:"abilitySlots,omitempty"`
+	Cooldowns     *savedCooldowns    `json:"cooldowns,omitempty"`
 }
 
 type savedGridPosition struct {
@@ -122,9 +122,9 @@ type savedCooldowns struct {
 func (c *SquadChunk) Save(em *common.EntityManager) (json.RawMessage, error) {
 	chunkData := savedSquadChunkData{}
 
-	for _, result := range em.World.Query(squads.SquadTag) {
+	for _, result := range em.World.Query(squadcore.SquadTag) {
 		entity := result.Entity
-		squadData := common.GetComponentType[*squads.SquadData](entity, squads.SquadComponent)
+		squadData := common.GetComponentType[*squadcore.SquadData](entity, squadcore.SquadComponent)
 		if squadData == nil {
 			continue
 		}
@@ -146,7 +146,7 @@ func (c *SquadChunk) Save(em *common.EntityManager) (json.RawMessage, error) {
 		}
 
 		// Save all member units
-		unitIDs := squads.GetUnitIDsInSquad(entity.GetID(), em)
+		unitIDs := squadcore.GetUnitIDsInSquad(entity.GetID(), em)
 		for _, unitID := range unitIDs {
 			unitEntity := em.FindEntityByID(unitID)
 			if unitEntity == nil {
@@ -165,7 +165,7 @@ func (c *SquadChunk) Save(em *common.EntityManager) (json.RawMessage, error) {
 func saveSquadMember(entity *ecs.Entity, entityID ecs.EntityID, em *common.EntityManager) savedSquadMember {
 	sm := savedSquadMember{EntityID: entityID}
 
-	if memberData := common.GetComponentType[*squads.SquadMemberData](entity, squads.SquadMemberComponent); memberData != nil {
+	if memberData := common.GetComponentType[*squadcore.SquadMemberData](entity, squadcore.SquadMemberComponent); memberData != nil {
 		sm.SquadID = memberData.SquadID
 	}
 
@@ -173,7 +173,7 @@ func saveSquadMember(entity *ecs.Entity, entityID ecs.EntityID, em *common.Entit
 		sm.Name = nameData.NameStr
 	}
 
-	if utData := common.GetComponentType[*squads.UnitTypeData](entity, squads.UnitTypeComponent); utData != nil {
+	if utData := common.GetComponentType[*squadcore.UnitTypeData](entity, squadcore.UnitTypeComponent); utData != nil {
 		sm.UnitType = utData.UnitType
 	}
 
@@ -181,36 +181,36 @@ func saveSquadMember(entity *ecs.Entity, entityID ecs.EntityID, em *common.Entit
 		sm.Attrs = attributesToSaved(attr)
 	}
 
-	if gp := common.GetComponentType[*squads.GridPositionData](entity, squads.GridPositionComponent); gp != nil {
+	if gp := common.GetComponentType[*squadcore.GridPositionData](entity, squadcore.GridPositionComponent); gp != nil {
 		sm.GridPos = savedGridPosition{
 			AnchorRow: gp.AnchorRow, AnchorCol: gp.AnchorCol,
 			Width: gp.Width, Height: gp.Height,
 		}
 	}
 
-	if roleData := common.GetComponentType[*squads.UnitRoleData](entity, squads.UnitRoleComponent); roleData != nil {
+	if roleData := common.GetComponentType[*squadcore.UnitRoleData](entity, squadcore.UnitRoleComponent); roleData != nil {
 		sm.Role = int(roleData.Role)
 	}
 
-	if trData := common.GetComponentType[*squads.TargetRowData](entity, squads.TargetRowComponent); trData != nil {
+	if trData := common.GetComponentType[*squadcore.TargetRowData](entity, squadcore.TargetRowComponent); trData != nil {
 		sm.TargetRow = &savedTargetRow{
 			AttackType:  int(trData.AttackType),
 			TargetCells: trData.TargetCells,
 		}
 	}
 
-	if coverData := common.GetComponentType[*squads.CoverData](entity, squads.CoverComponent); coverData != nil {
+	if coverData := common.GetComponentType[*squadcore.CoverData](entity, squadcore.CoverComponent); coverData != nil {
 		sm.Cover = &savedCover{
 			CoverValue: coverData.CoverValue, CoverRange: coverData.CoverRange,
 			RequiresActive: coverData.RequiresActive,
 		}
 	}
 
-	if arData := common.GetComponentType[*squads.AttackRangeData](entity, squads.AttackRangeComponent); arData != nil {
+	if arData := common.GetComponentType[*squadcore.AttackRangeData](entity, squadcore.AttackRangeComponent); arData != nil {
 		sm.AttackRange = arData.Range
 	}
 
-	if msData := common.GetComponentType[*squads.MovementSpeedData](entity, squads.MovementSpeedComponent); msData != nil {
+	if msData := common.GetComponentType[*squadcore.MovementSpeedData](entity, squadcore.MovementSpeedComponent); msData != nil {
 		sm.MovementSpeed = msData.Speed
 	}
 
@@ -229,13 +229,13 @@ func saveSquadMember(entity *ecs.Entity, entityID ecs.EntityID, em *common.Entit
 		}
 	}
 
-	if leaderData := common.GetComponentType[*squads.LeaderData](entity, squads.LeaderComponent); leaderData != nil {
+	if leaderData := common.GetComponentType[*squadcore.LeaderData](entity, squadcore.LeaderComponent); leaderData != nil {
 		sm.Leader = &savedLeader{
 			Leadership: leaderData.Leadership, Experience: leaderData.Experience,
 		}
 	}
 
-	if abilityData := common.GetComponentType[*squads.AbilitySlotData](entity, squads.AbilitySlotComponent); abilityData != nil {
+	if abilityData := common.GetComponentType[*squadcore.AbilitySlotData](entity, squadcore.AbilitySlotComponent); abilityData != nil {
 		sa := &savedAbilitySlots{}
 		for i, slot := range abilityData.Slots {
 			sa.Slots[i] = savedAbilitySlot{
@@ -247,7 +247,7 @@ func saveSquadMember(entity *ecs.Entity, entityID ecs.EntityID, em *common.Entit
 		sm.AbilitySlots = sa
 	}
 
-	if cdData := common.GetComponentType[*squads.CooldownTrackerData](entity, squads.CooldownTrackerComponent); cdData != nil {
+	if cdData := common.GetComponentType[*squadcore.CooldownTrackerData](entity, squadcore.CooldownTrackerComponent); cdData != nil {
 		sm.Cooldowns = &savedCooldowns{
 			Cooldowns: cdData.Cooldowns, MaxCooldowns: cdData.MaxCooldowns,
 		}
@@ -271,10 +271,10 @@ func (c *SquadChunk) Load(em *common.EntityManager, data json.RawMessage, idMap 
 		newSquadID := squadEntity.GetID()
 
 		squadEntity.
-			AddComponent(squads.SquadComponent, &squads.SquadData{
+			AddComponent(squadcore.SquadComponent, &squadcore.SquadData{
 				SquadID:            newSquadID,
 				Name:               ss.Name,
-				Formation:          squads.FormationType(ss.Formation),
+				Formation:          squadcore.FormationType(ss.Formation),
 				Morale:             ss.Morale,
 				SquadLevel:         ss.SquadLevel,
 				TurnCount:          ss.TurnCount,
@@ -304,37 +304,37 @@ func loadSquadMember(em *common.EntityManager, sm savedSquadMember, newSquadID e
 	newUnitID := entity.GetID()
 
 	entity.
-		AddComponent(squads.SquadMemberComponent, &squads.SquadMemberData{
+		AddComponent(squadcore.SquadMemberComponent, &squadcore.SquadMemberData{
 			SquadID: newSquadID, // Already new ID
 		}).
 		AddComponent(common.NameComponent, &common.Name{NameStr: sm.Name}).
 		AddComponent(common.AttributeComponent, &attr).
-		AddComponent(squads.GridPositionComponent, &squads.GridPositionData{
+		AddComponent(squadcore.GridPositionComponent, &squadcore.GridPositionData{
 			AnchorRow: sm.GridPos.AnchorRow, AnchorCol: sm.GridPos.AnchorCol,
 			Width: sm.GridPos.Width, Height: sm.GridPos.Height,
 		}).
-		AddComponent(squads.UnitRoleComponent, &squads.UnitRoleData{
+		AddComponent(squadcore.UnitRoleComponent, &squadcore.UnitRoleData{
 			Role: unitdefs.UnitRole(sm.Role),
 		}).
-		AddComponent(squads.AttackRangeComponent, &squads.AttackRangeData{
+		AddComponent(squadcore.AttackRangeComponent, &squadcore.AttackRangeData{
 			Range: sm.AttackRange,
 		}).
-		AddComponent(squads.MovementSpeedComponent, &squads.MovementSpeedData{
+		AddComponent(squadcore.MovementSpeedComponent, &squadcore.MovementSpeedData{
 			Speed: sm.MovementSpeed,
 		}).
-		AddComponent(squads.UnitTypeComponent, &squads.UnitTypeData{
+		AddComponent(squadcore.UnitTypeComponent, &squadcore.UnitTypeData{
 			UnitType: sm.UnitType,
 		})
 
 	if sm.TargetRow != nil {
-		entity.AddComponent(squads.TargetRowComponent, &squads.TargetRowData{
+		entity.AddComponent(squadcore.TargetRowComponent, &squadcore.TargetRowData{
 			AttackType:  unitdefs.AttackType(sm.TargetRow.AttackType),
 			TargetCells: sm.TargetRow.TargetCells,
 		})
 	}
 
 	if sm.Cover != nil {
-		entity.AddComponent(squads.CoverComponent, &squads.CoverData{
+		entity.AddComponent(squadcore.CoverComponent, &squadcore.CoverData{
 			CoverValue: sm.Cover.CoverValue, CoverRange: sm.Cover.CoverRange,
 			RequiresActive: sm.Cover.RequiresActive,
 		})
@@ -359,26 +359,26 @@ func loadSquadMember(em *common.EntityManager, sm savedSquadMember, newSquadID e
 	}
 
 	if sm.Leader != nil {
-		entity.AddComponent(squads.LeaderComponent, &squads.LeaderData{
+		entity.AddComponent(squadcore.LeaderComponent, &squadcore.LeaderData{
 			Leadership: sm.Leader.Leadership, Experience: sm.Leader.Experience,
 		})
 	}
 
 	if sm.AbilitySlots != nil {
-		asd := &squads.AbilitySlotData{}
+		asd := &squadcore.AbilitySlotData{}
 		for i, slot := range sm.AbilitySlots.Slots {
-			asd.Slots[i] = squads.AbilitySlot{
-				AbilityType: squads.AbilityType(slot.AbilityType),
-				TriggerType: squads.TriggerType(slot.TriggerType),
+			asd.Slots[i] = squadcore.AbilitySlot{
+				AbilityType: squadcore.AbilityType(slot.AbilityType),
+				TriggerType: squadcore.TriggerType(slot.TriggerType),
 				Threshold:   slot.Threshold, HasTriggered: slot.HasTriggered,
 				IsEquipped: slot.IsEquipped,
 			}
 		}
-		entity.AddComponent(squads.AbilitySlotComponent, asd)
+		entity.AddComponent(squadcore.AbilitySlotComponent, asd)
 	}
 
 	if sm.Cooldowns != nil {
-		entity.AddComponent(squads.CooldownTrackerComponent, &squads.CooldownTrackerData{
+		entity.AddComponent(squadcore.CooldownTrackerComponent, &squadcore.CooldownTrackerData{
 			Cooldowns: sm.Cooldowns.Cooldowns, MaxCooldowns: sm.Cooldowns.MaxCooldowns,
 		})
 	}
@@ -390,8 +390,8 @@ func loadSquadMember(em *common.EntityManager, sm savedSquadMember, newSquadID e
 
 func (c *SquadChunk) RemapIDs(em *common.EntityManager, idMap *savesystem.EntityIDMap) error {
 	// Remap GarrisonedAtNodeID on squad entities
-	for _, result := range em.World.Query(squads.SquadTag) {
-		squadData := common.GetComponentType[*squads.SquadData](result.Entity, squads.SquadComponent)
+	for _, result := range em.World.Query(squadcore.SquadTag) {
+		squadData := common.GetComponentType[*squadcore.SquadData](result.Entity, squadcore.SquadComponent)
 		if squadData != nil && squadData.GarrisonedAtNodeID != 0 {
 			squadData.GarrisonedAtNodeID = idMap.Remap(squadData.GarrisonedAtNodeID)
 		}

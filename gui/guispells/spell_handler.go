@@ -1,7 +1,7 @@
 package guispells
 
 import (
-	"game_main/tactical/combat"
+	"game_main/tactical/combat/combatcore"
 	"game_main/tactical/spells"
 	"game_main/templates"
 	"game_main/visual/graphics"
@@ -119,7 +119,7 @@ func (h *SpellCastingHandler) HandleSingleTargetClick(mouseX, mouseY int) {
 	}
 
 	clickedPos := graphics.MouseToLogicalPosition(mouseX, mouseY, *h.deps.PlayerPos)
-	clickedSquadID := combat.GetSquadAtPosition(clickedPos, h.deps.ECSManager)
+	clickedSquadID := combatcore.GetSquadAtPosition(clickedPos, h.deps.ECSManager)
 
 	if clickedSquadID == 0 {
 		return
@@ -182,7 +182,7 @@ func (h *SpellCastingHandler) HandleAoEConfirmClick(mouseX, mouseY int) {
 
 	for _, idx := range indices {
 		logicalPos := coords.CoordManager.IndexToLogical(idx)
-		squadID := combat.GetSquadAtPosition(logicalPos, h.deps.ECSManager)
+		squadID := combatcore.GetSquadAtPosition(logicalPos, h.deps.ECSManager)
 		if squadID != 0 && h.deps.Queries.IsEnemySquadInEncounter(squadID, h.deps.Encounter.GetCurrentEncounterID()) {
 			squadSet[squadID] = true
 		}

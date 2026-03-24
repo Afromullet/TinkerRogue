@@ -2,7 +2,7 @@ package behavior
 
 import (
 	"game_main/common"
-	"game_main/tactical/combat"
+	"game_main/tactical/combat/combatcore"
 
 	"github.com/bytearena/ecs"
 )
@@ -11,16 +11,16 @@ import (
 // Uses composition pattern - embed this in concrete layers
 type ThreatLayerBase struct {
 	*common.DirtyCache // Embedded cache for dirty flag management
-	manager                *common.EntityManager
-	cache                  *combat.CombatQueryCache
-	factionID              ecs.EntityID // The faction viewing this threat layer
+	manager            *common.EntityManager
+	cache              *combatcore.CombatQueryCache
+	factionID          ecs.EntityID // The faction viewing this threat layer
 }
 
 // NewThreatLayerBase creates a new base layer with common dependencies
 func NewThreatLayerBase(
 	factionID ecs.EntityID,
 	manager *common.EntityManager,
-	cache *combat.CombatQueryCache,
+	cache *combatcore.CombatQueryCache,
 ) *ThreatLayerBase {
 	return &ThreatLayerBase{
 		DirtyCache: common.NewDirtyCache(),
@@ -41,7 +41,7 @@ func (tlb *ThreatLayerBase) markClean(currentRound int) {
 
 func (tlb *ThreatLayerBase) getEnemyFactions() []ecs.EntityID {
 	var enemies []ecs.EntityID
-	allFactions := combat.GetAllFactions(tlb.manager)
+	allFactions := combatcore.GetAllFactions(tlb.manager)
 
 	for _, factionID := range allFactions {
 		if factionID != tlb.factionID {

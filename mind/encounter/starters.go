@@ -8,7 +8,7 @@ import (
 	"game_main/mind/combatlifecycle"
 	"game_main/mind/evaluation"
 	"game_main/overworld/garrison"
-	"game_main/tactical/combat"
+	"game_main/tactical/combat/combatcore"
 	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"
@@ -27,7 +27,7 @@ type OverworldCombatStarter struct {
 	hiddenRenderable *common.Renderable
 }
 
-func (s *OverworldCombatStarter) Prepare(manager *common.EntityManager) (*combat.CombatSetup, error) {
+func (s *OverworldCombatStarter) Prepare(manager *common.EntityManager) (*combatcore.CombatSetup, error) {
 	encounterEntity, encounterData, err := combatlifecycle.ValidateEncounterEntity(manager, s.EncounterID)
 	if err != nil {
 		return nil, err
@@ -58,7 +58,7 @@ func (s *OverworldCombatStarter) Prepare(manager *common.EntityManager) (*combat
 		}
 		return nil, fmt.Errorf("failed to spawn enemies: %w", err)
 	}
-	return &combat.CombatSetup{
+	return &combatcore.CombatSetup{
 		PlayerFactionID: spawnResult.PlayerFactionID,
 		EnemyFactionID:  spawnResult.EnemyFactionID,
 		EnemySquadIDs:   spawnResult.EnemySquadIDs,
@@ -87,7 +87,7 @@ type GarrisonDefenseStarter struct {
 	TargetNodeID ecs.EntityID
 }
 
-func (s *GarrisonDefenseStarter) Prepare(manager *common.EntityManager) (*combat.CombatSetup, error) {
+func (s *GarrisonDefenseStarter) Prepare(manager *common.EntityManager) (*combatcore.CombatSetup, error) {
 	_, encounterData, err := combatlifecycle.ValidateEncounterEntity(manager, s.EncounterID)
 	if err != nil {
 		return nil, err
@@ -143,16 +143,16 @@ func (s *GarrisonDefenseStarter) Prepare(manager *common.EntityManager) (*combat
 		return nil, fmt.Errorf("failed to add enemy squads: %w", err)
 	}
 
-	return &combat.CombatSetup{
-		PlayerFactionID:  playerFactionID,
-		EnemyFactionID:   enemyFactionID,
-		EnemySquadIDs:    enemySquadIDs,
-		CombatPosition:   *nodePos,
-		EncounterID:      s.EncounterID,
-		ThreatID:         s.TargetNodeID,
-		ThreatName:       encounterData.Name,
-		RosterOwnerID:    0,
-		Type:             combat.CombatTypeGarrisonDefense,
-		DefendedNodeID:   s.TargetNodeID,
+	return &combatcore.CombatSetup{
+		PlayerFactionID: playerFactionID,
+		EnemyFactionID:  enemyFactionID,
+		EnemySquadIDs:   enemySquadIDs,
+		CombatPosition:  *nodePos,
+		EncounterID:     s.EncounterID,
+		ThreatID:        s.TargetNodeID,
+		ThreatName:      encounterData.Name,
+		RosterOwnerID:   0,
+		Type:            combatcore.CombatTypeGarrisonDefense,
+		DefendedNodeID:  s.TargetNodeID,
 	}, nil
 }

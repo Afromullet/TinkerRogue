@@ -6,11 +6,11 @@ import (
 	"game_main/common"
 	"game_main/config"
 	"game_main/mind/encounter"
-	"game_main/templates"
 	"game_main/overworld/core"
 	"game_main/overworld/garrison"
 	"game_main/tactical/commander"
-	"game_main/tactical/squads"
+	"game_main/tactical/squads/squadcore"
+	"game_main/templates"
 	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"
@@ -248,7 +248,7 @@ func (ah *OverworldActionHandler) AssignSquadToGarrison(squadID, nodeID ecs.Enti
 	if err := garrison.AssignSquadToNode(ah.deps.Manager, squadID, nodeID); err != nil {
 		return err
 	}
-	squadName := squads.GetSquadName(squadID, ah.deps.Manager)
+	squadName := squadcore.GetSquadName(squadID, ah.deps.Manager)
 	ah.deps.LogEvent(fmt.Sprintf("Assigned %s to garrison", squadName))
 	ah.deps.RefreshPanels()
 	return nil
@@ -259,7 +259,7 @@ func (ah *OverworldActionHandler) RemoveSquadFromGarrison(squadID, nodeID ecs.En
 	if err := garrison.RemoveSquadFromNode(ah.deps.Manager, squadID, nodeID); err != nil {
 		return err
 	}
-	squadName := squads.GetSquadName(squadID, ah.deps.Manager)
+	squadName := squadcore.GetSquadName(squadID, ah.deps.Manager)
 	ah.deps.LogEvent(fmt.Sprintf("Removed %s from garrison", squadName))
 	ah.deps.RefreshPanels()
 	return nil
