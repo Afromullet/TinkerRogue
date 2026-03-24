@@ -157,42 +157,6 @@ func TestMarkAvailable(t *testing.T) {
 	}
 }
 
-func TestgetAvailableArtifacts(t *testing.T) {
-	inv := NewArtifactInventory(5)
-	AddArtifactToInventory(inv, "artifact_a")
-	AddArtifactToInventory(inv, "artifact_b")
-	AddArtifactToInventory(inv, "artifact_c")
-	MarkArtifactEquipped(inv, "artifact_b", ecs.EntityID(10))
-
-	available := getAvailableArtifacts(inv)
-	if len(available) != 2 {
-		t.Errorf("Expected 2 available, got %d", len(available))
-	}
-
-	// Check that artifact_b is not in the available list
-	for _, id := range available {
-		if id == "artifact_b" {
-			t.Error("Equipped artifact should not appear in available list")
-		}
-	}
-}
-
-func TestgetEquippedArtifacts(t *testing.T) {
-	inv := NewArtifactInventory(5)
-	AddArtifactToInventory(inv, "artifact_a")
-	AddArtifactToInventory(inv, "artifact_b")
-	AddArtifactToInventory(inv, "artifact_c")
-	MarkArtifactEquipped(inv, "artifact_b", ecs.EntityID(10))
-
-	equipped := getEquippedArtifacts(inv)
-	if len(equipped) != 1 {
-		t.Errorf("Expected 1 equipped, got %d", len(equipped))
-	}
-	if len(equipped) > 0 && equipped[0] != "artifact_b" {
-		t.Errorf("Expected artifact_b equipped, got %s", equipped[0])
-	}
-}
-
 func TestOwnsArtifact(t *testing.T) {
 	inv := NewArtifactInventory(5)
 	if OwnsArtifact(inv, "nonexistent") {

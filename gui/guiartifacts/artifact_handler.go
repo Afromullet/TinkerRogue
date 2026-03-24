@@ -1,7 +1,7 @@
 package guiartifacts
 
 import (
-	"game_main/gear"
+	"game_main/tactical/gear"
 	"game_main/tactical/combat/combatcore"
 	"game_main/visual/graphics"
 	"game_main/world/coords"

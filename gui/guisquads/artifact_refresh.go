@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strings"
 
-	"game_main/gear"
+	"game_main/tactical/gear"
 	"game_main/gui/builders"
 	"game_main/tactical/squads/squadcore"
 	"game_main/templates"

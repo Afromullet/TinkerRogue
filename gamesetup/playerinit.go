@@ -3,7 +3,7 @@ package gamesetup
 import (
 	"game_main/common"
 	"game_main/config"
-	"game_main/gear"
+	"game_main/tactical/gear"
 	"game_main/templates"
 
 	"game_main/tactical/commander"

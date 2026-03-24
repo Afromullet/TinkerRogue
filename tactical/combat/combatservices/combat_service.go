@@ -3,7 +3,7 @@ package combatservices
 import (
 	"fmt"
 	"game_main/common"
-	"game_main/gear"
+	"game_main/tactical/gear"
 	"game_main/mind/combatlifecycle"
 	"game_main/tactical/combat/combatcore"
 	"game_main/tactical/effects"
