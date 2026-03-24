@@ -13,7 +13,7 @@ import (
 	"game_main/gui/widgets"
 	"game_main/tactical/combat/combatcore"
 	"game_main/tactical/combat/combatservices"
-	"game_main/tactical/spells"
+	"game_main/tactical/powers/spells"
 
 	"github.com/bytearena/ecs"
 	"github.com/ebitenui/ebitenui/widget"

@@ -3,7 +3,7 @@ package combatcore
 import (
 	"fmt"
 	"game_main/common"
-	"game_main/tactical/effects"
+	"game_main/tactical/powers/effects"
 	"game_main/tactical/squads/squadcore"
 
 	"github.com/bytearena/ecs"

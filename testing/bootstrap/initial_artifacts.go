@@ -3,7 +3,7 @@ package bootstrap
 import (
 	"fmt"
 	"game_main/common"
-	"game_main/tactical/artifacts"
+	"game_main/tactical/powers/artifacts"
 	"game_main/tactical/commander"
 	"game_main/tactical/squads/roster"
 	"game_main/templates"

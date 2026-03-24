@@ -3,7 +3,7 @@ package gamesetup
 import (
 	"game_main/common"
 	"game_main/config"
-	"game_main/tactical/artifacts"
+	"game_main/tactical/powers/artifacts"
 	"game_main/templates"
 
 	"game_main/tactical/commander"

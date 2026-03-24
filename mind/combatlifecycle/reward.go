@@ -3,7 +3,7 @@ package combatlifecycle
 import (
 	"fmt"
 	"game_main/common"
-	"game_main/tactical/spells"
+	"game_main/tactical/powers/spells"
 	"game_main/tactical/squads/unitprogression"
 	"math"
 	"math/rand"

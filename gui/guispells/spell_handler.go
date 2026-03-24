@@ -2,7 +2,7 @@ package guispells
 
 import (
 	"game_main/tactical/combat/combatcore"
-	"game_main/tactical/spells"
+	"game_main/tactical/powers/spells"
 	"game_main/templates"
 	"game_main/visual/graphics"
 	"game_main/world/coords"

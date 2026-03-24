@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"game_main/gui/builders"
-	"game_main/tactical/artifacts"
+	"game_main/tactical/powers/artifacts"
 	"game_main/tactical/squads/squadcore"
 	"game_main/templates"
 
