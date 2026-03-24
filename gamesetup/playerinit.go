@@ -3,7 +3,7 @@ package gamesetup
 import (
 	"game_main/common"
 	"game_main/config"
-	"game_main/tactical/gear"
+	"game_main/tactical/artifacts"
 	"game_main/templates"
 
 	"game_main/tactical/commander"
@@ -59,7 +59,7 @@ func InitializePlayerData(ecsmanager *common.EntityManager, pl *common.PlayerDat
 			CommanderIDs:  make([]ecs.EntityID, 0),
 			MaxCommanders: cfg.Commander.MaxCommanders,
 		}).
-		AddComponent(gear.ArtifactInventoryComponent, gear.NewArtifactInventory(cfg.Player.Limits.MaxArtifacts))
+		AddComponent(artifacts.ArtifactInventoryComponent, artifacts.NewArtifactInventory(cfg.Player.Limits.MaxArtifacts))
 
 	// Atomically add position component and register with position system
 	ecsmanager.RegisterEntityPosition(playerEntity, gm.StartingPosition())

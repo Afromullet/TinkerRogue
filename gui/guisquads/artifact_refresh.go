@@ -5,8 +5,8 @@ import (
 	"sort"
 	"strings"
 
-	"game_main/tactical/gear"
 	"game_main/gui/builders"
+	"game_main/tactical/artifacts"
 	"game_main/tactical/squads/squadcore"
 	"game_main/templates"
 
@@ -62,17 +62,17 @@ func (am *ArtifactMode) refreshInventory() {
 	}
 
 	playerID := am.Context.PlayerData.PlayerEntityID
-	inv := gear.GetPlayerArtifactInventory(playerID, am.Queries.ECSManager)
+	inv := artifacts.GetPlayerArtifactInventory(playerID, am.Queries.ECSManager)
 	if inv == nil {
 		am.inventoryTitle.Label = "Artifacts (0/0)"
 		return
 	}
 
-	current, max := gear.GetArtifactCount(inv)
+	current, max := artifacts.GetArtifactCount(inv)
 	am.inventoryTitle.Label = fmt.Sprintf("Artifacts (%d/%d)", current, max)
 
 	// Get flat list of all instances and sort by definition ID + instance index
-	allInstances := gear.GetAllInstances(inv)
+	allInstances := artifacts.GetAllInstances(inv)
 	sort.Slice(allInstances, func(i, j int) bool {
 		if allInstances[i].DefinitionID != allInstances[j].DefinitionID {
 			return allInstances[i].DefinitionID < allInstances[j].DefinitionID
@@ -94,7 +94,7 @@ func (am *ArtifactMode) refreshInventory() {
 			tier = strings.Title(def.Tier)
 		}
 
-		copyCount := gear.GetInstanceCount(inv, info.DefinitionID)
+		copyCount := artifacts.GetInstanceCount(inv, info.DefinitionID)
 		if copyCount > 1 {
 			name = fmt.Sprintf("%s (#%d)", name, info.InstanceIndex)
 		}
@@ -175,7 +175,7 @@ func (am *ArtifactMode) onInventoryEquipAction() {
 	playerID := am.Context.PlayerData.PlayerEntityID
 	manager := am.Queries.ECSManager
 
-	err := gear.EquipArtifact(playerID, squadID, am.selectedInventoryArtifact, manager)
+	err := artifacts.EquipArtifact(playerID, squadID, am.selectedInventoryArtifact, manager)
 	if err != nil {
 		am.SetStatus(fmt.Sprintf("Equip failed: %v", err))
 		return
@@ -204,7 +204,7 @@ func (am *ArtifactMode) refreshInventoryDetail(artifactID string) {
 	}
 
 	playerID := am.Context.PlayerData.PlayerEntityID
-	inv := gear.GetPlayerArtifactInventory(playerID, am.Queries.ECSManager)
+	inv := artifacts.GetPlayerArtifactInventory(playerID, am.Queries.ECSManager)
 
 	var b strings.Builder
 	b.WriteString(def.Name)
@@ -214,10 +214,10 @@ func (am *ArtifactMode) refreshInventoryDetail(artifactID string) {
 
 	// Multi-instance summary
 	if inv != nil {
-		totalCopies := gear.GetInstanceCount(inv, artifactID)
+		totalCopies := artifacts.GetInstanceCount(inv, artifactID)
 		availableCount := 0
 		var equippedSquads []string
-		for _, info := range gear.GetAllInstances(inv) {
+		for _, info := range artifacts.GetAllInstances(inv) {
 			if info.DefinitionID != artifactID {
 				continue
 			}
@@ -266,7 +266,7 @@ func (am *ArtifactMode) refreshEquipment() {
 	squadID := am.squadSelector.CurrentID()
 	squadName := squadcore.GetSquadName(squadID, am.Queries.ECSManager)
 
-	equipData := gear.GetEquipmentData(squadID, am.Queries.ECSManager)
+	equipData := artifacts.GetEquipmentData(squadID, am.Queries.ECSManager)
 	var equipped []string
 	if equipData != nil {
 		equipped = equipData.EquippedArtifacts
@@ -371,7 +371,7 @@ func (am *ArtifactMode) onEquipmentAction() {
 	playerID := am.Context.PlayerData.PlayerEntityID
 	manager := am.Queries.ECSManager
 
-	err := gear.UnequipArtifact(playerID, squadID, am.selectedEquippedArtifact, manager)
+	err := artifacts.UnequipArtifact(playerID, squadID, am.selectedEquippedArtifact, manager)
 	if err != nil {
 		am.SetStatus(fmt.Sprintf("Unequip failed: %v", err))
 		return

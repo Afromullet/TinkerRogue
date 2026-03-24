@@ -1,7 +1,7 @@
 package guiartifacts
 
 import (
-	"game_main/tactical/gear"
+	"game_main/tactical/artifacts"
 	"game_main/tactical/combat/combatcore"
 	"game_main/visual/graphics"
 	"game_main/world/coords"
@@ -63,7 +63,7 @@ func (h *ArtifactActivationHandler) ToggleArtifactMode() {
 // SelectArtifact stores the selected artifact and enters targeting mode
 // (or activates immediately for no-target artifacts).
 func (h *ArtifactActivationHandler) SelectArtifact(behaviorKey string) {
-	if !gear.CanActivateArtifact(behaviorKey, h.deps.CombatService.GetChargeTracker()) {
+	if !artifacts.CanActivateArtifact(behaviorKey, h.deps.CombatService.GetChargeTracker()) {
 		return
 	}
 
@@ -131,13 +131,13 @@ func (h *ArtifactActivationHandler) GetAvailableArtifacts() []ArtifactOption {
 	var options []ArtifactOption
 
 	for _, squadID := range squadIDs {
-		defs := gear.GetArtifactDefinitions(squadID, h.deps.CombatService.EntityManager)
+		defs := artifacts.GetArtifactDefinitions(squadID, h.deps.CombatService.EntityManager)
 		for _, def := range defs {
 			if def.Tier != "major" || def.Behavior == "" {
 				continue
 			}
 			// Only include player-activated behaviors
-			b := gear.GetBehavior(def.Behavior)
+			b := artifacts.GetBehavior(def.Behavior)
 			if b == nil || !b.IsPlayerActivated() {
 				continue
 			}
@@ -150,7 +150,7 @@ func (h *ArtifactActivationHandler) GetAvailableArtifacts() []ArtifactOption {
 				BehaviorKey: def.Behavior,
 				Name:        def.Name,
 				Description: def.Description,
-				Available:   gear.CanActivateArtifact(def.Behavior, chargeTracker),
+				Available:   artifacts.CanActivateArtifact(def.Behavior, chargeTracker),
 			})
 		}
 	}
@@ -171,14 +171,14 @@ func (h *ArtifactActivationHandler) HasSelectedArtifact() bool {
 // GetTargetType returns the targeting type for a given behavior key,
 // derived from the behavior's own TargetType() method.
 func GetTargetType(behaviorKey string) TargetType {
-	b := gear.GetBehavior(behaviorKey)
+	b := artifacts.GetBehavior(behaviorKey)
 	if b == nil {
 		return TargetNoTarget
 	}
 	switch b.TargetType() {
-	case gear.TargetFriendly:
+	case artifacts.TargetFriendly:
 		return TargetFriendlySquad
-	case gear.TargetEnemy:
+	case artifacts.TargetEnemy:
 		return TargetEnemySquad
 	default:
 		return TargetNoTarget
@@ -188,13 +188,13 @@ func GetTargetType(behaviorKey string) TargetType {
 // --- Internal helpers ---
 
 func (h *ArtifactActivationHandler) executeArtifact(behaviorKey string, targetSquadID ecs.EntityID) {
-	ctx := gear.NewBehaviorContext(
+	ctx := artifacts.NewBehaviorContext(
 		h.deps.CombatService.EntityManager,
 		h.deps.CombatService.CombatCache,
 		h.deps.CombatService.GetChargeTracker(),
 	)
 
-	gear.ActivateArtifact(behaviorKey, targetSquadID, ctx)
+	artifacts.ActivateArtifact(behaviorKey, targetSquadID, ctx)
 
 	// Clear artifact state regardless of success
 	h.deps.BattleState.InArtifactMode = false

@@ -3,7 +3,7 @@
 // "Activated" behaviors are triggered via direct player activation (Activate method)
 // or react to combat events (OnAttackComplete). They are grouped here because their
 // primary effect path is through explicit activation rather than passive turn hooks.
-package gear
+package artifacts
 
 import (
 	"fmt"

@@ -3,8 +3,8 @@ package combatservices
 import (
 	"fmt"
 	"game_main/common"
-	"game_main/tactical/gear"
 	"game_main/mind/combatlifecycle"
+	"game_main/tactical/artifacts"
 	"game_main/tactical/combat/combatcore"
 	"game_main/tactical/effects"
 	"game_main/tactical/squads/squadcore"
@@ -34,7 +34,7 @@ type CombatService struct {
 	aiController AITurnController
 
 	// Artifact charge tracking (per-battle and per-round)
-	chargeTracker *gear.ArtifactChargeTracker
+	chargeTracker *artifacts.ArtifactChargeTracker
 
 	// Post-action callbacks (registered by GUI layer)
 	onAttackComplete []OnAttackCompleteFunc
@@ -98,7 +98,7 @@ func NewCombatService(manager *common.EntityManager) *CombatService {
 }
 
 // GetChargeTracker returns the artifact charge tracker for the current battle.
-func (cs *CombatService) GetChargeTracker() *gear.ArtifactChargeTracker {
+func (cs *CombatService) GetChargeTracker() *artifacts.ArtifactChargeTracker {
 	return cs.chargeTracker
 }
 
@@ -106,7 +106,7 @@ func (cs *CombatService) GetChargeTracker() *gear.ArtifactChargeTracker {
 // Also assigns any unassigned deployed squads to the player faction as a safety net.
 func (cs *CombatService) InitializeCombat(factionIDs []ecs.EntityID) error {
 	// Reset charge tracker for the new battle
-	cs.chargeTracker = gear.NewArtifactChargeTracker()
+	cs.chargeTracker = artifacts.NewArtifactChargeTracker()
 	// Find player faction (has IsPlayerControlled = true)
 	var playerFactionID ecs.EntityID
 	for _, factionID := range factionIDs {
@@ -127,7 +127,7 @@ func (cs *CombatService) InitializeCombat(factionIDs []ecs.EntityID) error {
 	// Apply minor artifact effects to all factions before combat initialization
 	for _, factionID := range factionIDs {
 		factionSquads := combatcore.GetSquadsForFaction(factionID, cs.EntityManager)
-		gear.ApplyArtifactStatEffects(factionSquads, cs.EntityManager)
+		artifacts.ApplyArtifactStatEffects(factionSquads, cs.EntityManager)
 	}
 
 	return cs.TurnManager.InitializeCombat(factionIDs)
@@ -290,15 +290,15 @@ func (cs *CombatService) SetAIController(ctrl AITurnController) {
 // setupBehaviorDispatch wires all registered artifact behaviors to the combat event system.
 func setupBehaviorDispatch(cs *CombatService, manager *common.EntityManager, cache *combatcore.CombatQueryCache) {
 	cs.RegisterPostResetHook(func(factionID ecs.EntityID, squadIDs []ecs.EntityID) {
-		ctx := gear.NewBehaviorContext(manager, cache, cs.chargeTracker)
-		for _, b := range gear.AllBehaviors() {
+		ctx := artifacts.NewBehaviorContext(manager, cache, cs.chargeTracker)
+		for _, b := range artifacts.AllBehaviors() {
 			b.OnPostReset(ctx, factionID, squadIDs)
 		}
 	})
 
 	cs.RegisterOnAttackComplete(func(attackerID, defenderID ecs.EntityID, result *combatcore.CombatResult) {
-		ctx := gear.NewBehaviorContext(manager, cache, cs.chargeTracker)
-		for _, b := range gear.AllBehaviors() {
+		ctx := artifacts.NewBehaviorContext(manager, cache, cs.chargeTracker)
+		for _, b := range artifacts.AllBehaviors() {
 			b.OnAttackComplete(ctx, attackerID, defenderID, result)
 		}
 	})
@@ -307,8 +307,8 @@ func setupBehaviorDispatch(cs *CombatService, manager *common.EntityManager, cac
 		if cs.chargeTracker != nil {
 			cs.chargeTracker.RefreshRoundCharges()
 		}
-		ctx := gear.NewBehaviorContext(manager, cache, cs.chargeTracker)
-		for _, b := range gear.AllBehaviors() {
+		ctx := artifacts.NewBehaviorContext(manager, cache, cs.chargeTracker)
+		for _, b := range artifacts.AllBehaviors() {
 			b.OnTurnEnd(ctx, round)
 		}
 	})

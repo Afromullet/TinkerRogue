@@ -1,4 +1,4 @@
-package gear
+package artifacts
 
 import (
 	"game_main/common"
@@ -156,7 +156,6 @@ func TestMarkAvailable(t *testing.T) {
 		t.Error("Artifact should be available after marking available")
 	}
 }
-
 func TestOwnsArtifact(t *testing.T) {
 	inv := NewArtifactInventory(5)
 	if OwnsArtifact(inv, "nonexistent") {

@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"game_main/common"
-	"game_main/tactical/gear"
 	"game_main/savesystem"
+	"game_main/tactical/artifacts"
 	"game_main/tactical/squads/squadcore"
 
 	"github.com/bytearena/ecs"
@@ -59,7 +59,7 @@ func (c *GearChunk) Save(em *common.EntityManager) (json.RawMessage, error) {
 		results := em.World.Query(playerTag)
 		if len(results) > 0 {
 			entity := results[0].Entity
-			if inv := common.GetComponentType[*gear.ArtifactInventoryData](entity, gear.ArtifactInventoryComponent); inv != nil {
+			if inv := common.GetComponentType[*artifacts.ArtifactInventoryData](entity, artifacts.ArtifactInventoryComponent); inv != nil {
 				si := &savedArtifactInventory{
 					OwnerEntityID:  entity.GetID(),
 					MaxArtifacts:   inv.MaxArtifacts,
@@ -80,7 +80,7 @@ func (c *GearChunk) Save(em *common.EntityManager) (json.RawMessage, error) {
 	// Save equipment data from all squads
 	for _, result := range em.World.Query(squadcore.SquadTag) {
 		entity := result.Entity
-		if equipData := common.GetComponentType[*gear.EquipmentData](entity, gear.EquipmentComponent); equipData != nil {
+		if equipData := common.GetComponentType[*artifacts.EquipmentData](entity, artifacts.EquipmentComponent); equipData != nil {
 			se := savedEquipment{
 				SquadEntityID:     entity.GetID(),
 				EquippedArtifacts: make([]string, len(equipData.EquippedArtifacts)),
@@ -125,17 +125,17 @@ func (c *GearChunk) RemapIDs(em *common.EntityManager, idMap *savesystem.EntityI
 		if newOwnerID != 0 {
 			ownerEntity := em.FindEntityByID(newOwnerID)
 			if ownerEntity != nil {
-				inv := gear.NewArtifactInventory(si.MaxArtifacts)
+				inv := artifacts.NewArtifactInventory(si.MaxArtifacts)
 				for defID, savedInstances := range si.OwnedArtifacts {
-					instances := make([]*gear.ArtifactInstance, len(savedInstances))
+					instances := make([]*artifacts.ArtifactInstance, len(savedInstances))
 					for i, si := range savedInstances {
-						instances[i] = &gear.ArtifactInstance{
+						instances[i] = &artifacts.ArtifactInstance{
 							EquippedOn: idMap.Remap(si.EquippedOn),
 						}
 					}
 					inv.OwnedArtifacts[defID] = instances
 				}
-				ownerEntity.AddComponent(gear.ArtifactInventoryComponent, inv)
+				ownerEntity.AddComponent(artifacts.ArtifactInventoryComponent, inv)
 			}
 		}
 	}
@@ -150,10 +150,10 @@ func (c *GearChunk) RemapIDs(em *common.EntityManager, idMap *savesystem.EntityI
 		if squadEntity == nil {
 			continue
 		}
-		artifacts := make([]string, len(se.EquippedArtifacts))
-		copy(artifacts, se.EquippedArtifacts)
-		squadEntity.AddComponent(gear.EquipmentComponent, &gear.EquipmentData{
-			EquippedArtifacts: artifacts,
+		equippedArtifacts := make([]string, len(se.EquippedArtifacts))
+		copy(equippedArtifacts, se.EquippedArtifacts)
+		squadEntity.AddComponent(artifacts.EquipmentComponent, &artifacts.EquipmentData{
+			EquippedArtifacts: equippedArtifacts,
 		})
 	}
 

@@ -5,7 +5,7 @@
 // IsPlayerActivated() = true because the player triggers them, but their effects
 // are applied through hooks or immediate state mutation, not through a separate
 // "activated" flow.
-package gear
+package artifacts
 
 import (
 	"fmt"

@@ -1,4 +1,4 @@
-package gear
+package artifacts
 
 import (
 	"game_main/common"

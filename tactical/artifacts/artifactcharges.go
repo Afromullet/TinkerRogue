@@ -1,4 +1,4 @@
-package gear
+package artifacts
 
 import "github.com/bytearena/ecs"
 
