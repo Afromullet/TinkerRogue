@@ -9,6 +9,18 @@ import (
 	"github.com/bytearena/ecs"
 )
 
+// IsCombatActive returns true if there is an active combat (a TurnState entity
+// exists with CombatActive == true).
+func IsCombatActive(manager *common.EntityManager) bool {
+	for _, result := range manager.World.Query(TurnStateTag) {
+		ts := common.GetComponentType[*TurnStateData](result.Entity, TurnStateComponent)
+		if ts != nil && ts.CombatActive {
+			return true
+		}
+	}
+	return false
+}
+
 // GetSquadFaction returns the faction ID for a squad in combat.
 // Returns 0 if squad is not in combat (doesn't have FactionMembershipComponent).
 func GetSquadFaction(squadID ecs.EntityID, manager *common.EntityManager) ecs.EntityID {

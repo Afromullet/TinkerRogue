@@ -249,6 +249,9 @@ func (gm *GameMap) GetBiomeAt(pos coords.LogicalPosition) Biome {
 func (gameMap GameMap) IsOpaque(x, y int) bool {
 	logicalPos := coords.LogicalPosition{X: x, Y: y}
 	idx := coords.CoordManager.LogicalToIndex(logicalPos)
+	if idx < 0 || idx >= len(gameMap.Tiles) {
+		return true // Out-of-bounds treated as opaque (blocks vision)
+	}
 	return gameMap.Tiles[idx].TileType == WALL
 }
 

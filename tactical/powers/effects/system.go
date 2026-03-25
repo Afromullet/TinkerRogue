@@ -136,21 +136,21 @@ func RemoveAllEffects(entityID ecs.EntityID, manager *common.EntityManager) {
 func applyModifierToStat(attr *common.Attributes, stat StatType, modifier int) {
 	switch stat {
 	case StatStrength:
-		attr.Strength += modifier
+		attr.Strength = max(0, attr.Strength+modifier)
 	case StatDexterity:
-		attr.Dexterity += modifier
+		attr.Dexterity = max(0, attr.Dexterity+modifier)
 	case StatMagic:
-		attr.Magic += modifier
+		attr.Magic = max(0, attr.Magic+modifier)
 	case StatLeadership:
-		attr.Leadership += modifier
+		attr.Leadership = max(0, attr.Leadership+modifier)
 	case StatArmor:
-		attr.Armor += modifier
+		attr.Armor = max(0, attr.Armor+modifier)
 	case StatWeapon:
-		attr.Weapon += modifier
+		attr.Weapon = max(0, attr.Weapon+modifier)
 	case StatMovementSpeed:
-		attr.MovementSpeed += modifier
+		attr.MovementSpeed = max(0, attr.MovementSpeed+modifier)
 	case StatAttackRange:
-		attr.AttackRange += modifier
+		attr.AttackRange = max(0, attr.AttackRange+modifier)
 	}
 }
 

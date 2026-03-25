@@ -218,6 +218,11 @@ func UnassignUnitFromSquad(unitEntityID ecs.EntityID, manager *common.EntityMana
 		return fmt.Errorf("unit entity %d not found", unitEntityID)
 	}
 
+	// If this unit is the leader, strip leader components to prevent orphaning
+	if unitEntity.HasComponent(LeaderComponent) {
+		RemoveLeaderComponents(unitEntity)
+	}
+
 	// Remove squad membership
 	unitEntity.RemoveComponent(SquadMemberComponent)
 

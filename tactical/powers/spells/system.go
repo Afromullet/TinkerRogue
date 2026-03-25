@@ -22,6 +22,12 @@ func ExecuteSpellCast(
 ) *SpellCastResult {
 	result := &SpellCastResult{}
 
+	// Verify combat is active
+	if !combatcore.IsCombatActive(manager) {
+		result.ErrorReason = "no active combat"
+		return result
+	}
+
 	// Look up spell definition
 	spell := templates.GetSpellDefinition(spellID)
 	if spell == nil {
