@@ -3,7 +3,7 @@ package unitdefs
 import (
 	"fmt"
 	"game_main/common"
-	"game_main/config"
+	"game_main/setup/config"
 	"game_main/tactical/squads/unitprogression"
 	"game_main/templates"
 )

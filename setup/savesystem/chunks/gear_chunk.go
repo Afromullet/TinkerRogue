@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"game_main/common"
-	"game_main/savesystem"
+	"game_main/setup/savesystem"
 	"game_main/tactical/powers/artifacts"
 	"game_main/tactical/squads/squadcore"
 

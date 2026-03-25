@@ -10,8 +10,8 @@ package main
 import (
 	"fmt"
 	"game_main/common"
-	"game_main/config"
-	"game_main/gamesetup"
+	"game_main/setup/config"
+	"game_main/setup/gamesetup"
 	"game_main/gui/framework"
 	"game_main/gui/guistartmenu"
 	"game_main/input"
@@ -25,7 +25,7 @@ import (
 
 	_ "image/png" // Required for PNG image loading
 
-	_ "game_main/savesystem/chunks" // Blank import to register SaveChunks via init()
+	_ "game_main/setup/savesystem/chunks" // Blank import to register SaveChunks via init()
 
 	"github.com/hajimehoshi/ebiten/v2"
 )

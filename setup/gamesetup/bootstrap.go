@@ -5,7 +5,7 @@ import (
 	"log"
 
 	"game_main/common"
-	"game_main/config"
+	"game_main/setup/config"
 	"game_main/overworld/core"
 	"game_main/overworld/node"
 	"game_main/overworld/tick"

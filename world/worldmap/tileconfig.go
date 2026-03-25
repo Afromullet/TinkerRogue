@@ -1,7 +1,7 @@
 package worldmap
 
 import (
-	"game_main/config"
+	"game_main/setup/config"
 	"path/filepath"
 )
 

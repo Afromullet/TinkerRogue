@@ -4,7 +4,7 @@ import (
 	"image/color"
 
 	"game_main/gui/builders"
-	"game_main/savesystem"
+	"game_main/setup/savesystem"
 
 	"github.com/ebitenui/ebitenui"
 	"github.com/ebitenui/ebitenui/widget"

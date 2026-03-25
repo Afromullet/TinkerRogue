@@ -6,9 +6,9 @@ import (
 	"path/filepath"
 
 	"game_main/common"
-	"game_main/config"
-	"game_main/savesystem"
-	"game_main/savesystem/chunks"
+	"game_main/setup/config"
+	"game_main/setup/savesystem"
+	"game_main/setup/savesystem/chunks"
 	"game_main/tactical/commander"
 	"game_main/tactical/squads/squadcore"
 	"game_main/tactical/squads/unitdefs"

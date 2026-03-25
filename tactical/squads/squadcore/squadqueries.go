@@ -2,7 +2,7 @@ package squadcore
 
 import (
 	"game_main/common"
-	"game_main/config"
+	"game_main/setup/config"
 	"game_main/tactical/squads/unitdefs"
 	"game_main/world/coords"
 	"math"

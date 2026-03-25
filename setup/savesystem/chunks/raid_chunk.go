@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"game_main/common"
 	"game_main/mind/raid"
-	"game_main/savesystem"
+	"game_main/setup/savesystem"
 
 	"github.com/bytearena/ecs"
 )

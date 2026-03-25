@@ -3,7 +3,7 @@ package guicombat
 import (
 	"fmt"
 	"game_main/common"
-	"game_main/config"
+	"game_main/setup/config"
 	"game_main/gui/builders"
 	"game_main/gui/framework"
 	"game_main/gui/guiartifacts"
