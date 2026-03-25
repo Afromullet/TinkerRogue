@@ -30,7 +30,7 @@ func DefaultCombatBindings() *ActionMap {
 		Bind(ebiten.Key3, ActionSelectTarget3).
 		Bind(ebiten.KeyH, ActionThreatToggle).
 		BindMod(ebiten.KeyH, ModShift, ActionThreatCycleFact).
-		Bind(ebiten.KeyControlRight, ActionHealthBarToggle).
+		BindMod(ebiten.KeyH, ModCtrl, ActionHealthBarToggle).
 		Bind(ebiten.KeyL, ActionLayerToggle).
 		BindMod(ebiten.KeyL, ModShift, ActionLayerCycleMode).
 		BindMod(ebiten.KeyZ, ModCtrl, ActionUndoMove).

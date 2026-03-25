@@ -29,7 +29,7 @@ const (
 	ActionSelectTarget3    // 3 - select enemy target 3
 	ActionThreatToggle     // H - toggle threat heat map
 	ActionThreatCycleFact  // Shift+H - cycle threat faction
-	ActionHealthBarToggle  // CtrlRight - toggle health bars
+	ActionHealthBarToggle  // Ctrl+H - toggle health bars
 	ActionLayerToggle      // L - toggle layer visualizer
 	ActionLayerCycleMode   // Shift+L - cycle layer mode
 	ActionUndoMove         // Ctrl+Z in combat context
