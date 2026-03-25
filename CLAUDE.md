@@ -1,6 +1,6 @@
 # TinkerRogue Developer Guide
 
-**Last Updated:** 2026-01-11
+**Last Updated:** 2026-03-25
 
 Quick reference for working with TinkerRogue. For detailed ECS patterns, see `docs/project_documentation/ECS_BEST_PRACTICES.md`.
 
@@ -35,25 +35,37 @@ go vet ./...                    # Check for mistakes
 
 ### Key Systems
 - **ECS Core:** `common/ecsutil.go`, `common/commoncomponents.go`
-- **Coordinates:** `world/coords/cordmanager.go`, ``world/coords/position.go`
-- **Position:** `common/positionsystem.go`,  `coords/position.go`
-- **Input:** `input/inputcoordinator.go` + controllers
-- **Squads:** `tactical/squads`, `tactical/squadcommands`, `tactical/squadservices`,  (Squad and Squad Management)
-- **Combat:** `tactical/combat/`, `tactical/combatservices/` (turn manager, combat state, combat actions)
-- **Spells:** `tactical/spells` (Spell casting systme)
-- **Effects:** `tactica/effects` (Effect system, used by spells and artifacts)
-- **AI:** `mind/ai`, `mind/behavior`, `mind/evaluation`  (game ai, controls enemies)
-- **Encounter Generation** `mind/encounter`, `mind/raid` (Random encounter generation, raid generation)
-- **Overworld** `Overworld` (Overworld system)
-- **GUI :** `gui/core/` , `gui/framework/` (mode manager, context switching, core gui operations)
-- **GUI Widgets :** `gui/builders/` , `gui/widgetresources/`,`gui/widgets/` (GUI elements)
-- **GUI Combat:** `gui/guicombat/` (combat mode, combat animation, attacking, moving)
-- **GUI SQuad:** `gui/guisquads/` (Editing squads, purchasing units, deploying squads)
-- **Items:** `gear/` (Artifact System)
-- **Graphics:** `visual/graphics`, `visual/rendering` (Game graphics and rendering. Batch drawing operations)
-- **Worldmap:** `world/worldmap/` (generator registry, map generation algorithms)
-- **Game Setup and Initilization** `gamesetup` (Game configuration, game booting)
-- **Combat Pipeline** `mind/combatpipeline` (Interface for rewards, combat setup, combat cleanup)
+- **Coordinates:** `world/coords/cordmanager.go`, `world/coords/position.go`
+- **Position:** `common/positionsystem.go`, `world/coords/position.go`
+- **Input:** `input/cameracontroller.go` (Camera and input control)
+- **Squads:** `tactical/squads/` (Squad and squad member management)
+- **Commander:** `tactical/commander/` (Roster, turn state, movement commands)
+- **Combat:** `tactical/combat/` (Turn manager, combat state, combat actions)
+- **Spells:** `tactical/powers/spells/` (Spell casting system)
+- **Effects:** `tactical/powers/effects/` (Effect system, used by spells and artifacts)
+- **Artifacts:** `tactical/powers/artifacts/` (Artifact inventory, behaviors, charges)
+- **AI:** `mind/ai/`, `mind/behavior/`, `mind/evaluation/` (Game AI, controls enemies)
+- **Combat Lifecycle:** `mind/combatlifecycle/` (Combat setup, cleanup, rewards, casualties)
+- **Encounter Generation:** `mind/encounter/`, `mind/raid/` (Random encounter and raid generation)
+- **Overworld:** `overworld/` (Factions, garrisons, influence, threats, victory conditions)
+- **Templates:** `templates/` (Entity factory, artifact/spell definitions, game config, name generation)
+- **GUI Framework:** `gui/framework/`, `gui/specs/` (Mode manager, context switching, layout specs)
+- **GUI Widgets:** `gui/builders/`, `gui/widgetresources/`, `gui/widgets/` (Reusable GUI elements)
+- **GUI Combat:** `gui/guicombat/` (Combat mode, combat animation, attacking, moving)
+- **GUI Squads:** `gui/guisquads/` (Editing squads, purchasing units, deploying squads)
+- **GUI Overworld:** `gui/guioverworld/` (Overworld mode, actions, rendering)
+- **GUI Raid:** `gui/guiraid/` (Raid mode, deploy panel, floor map)
+- **GUI Exploration:** `gui/guiexploration/` (Exploration mode)
+- **GUI Node Placement:** `gui/guinodeplacement/` (Node placement mode and rendering)
+- **GUI Artifacts:** `gui/guiartifacts/` (Artifact panel and handlers)
+- **GUI Spells:** `gui/guispells/` (Spell panel and handlers)
+- **GUI Inspect:** `gui/guiinspect/` (Unit inspection panel)
+- **GUI Unit View:** `gui/guiunitview/` (Unit view mode)
+- **GUI Start Menu:** `gui/guistartmenu/` (Start menu)
+- **Graphics:** `visual/graphics/`, `visual/rendering/` (Game graphics and batch drawing)
+- **Worldmap:** `world/worldmap/` (Generator registry, map generation algorithms)
+- **Setup:** `setup/gamesetup/`, `setup/config/`, `setup/savesystem/` (Game config, booting, saves)
+- **Testing:** `testing/` (Test fixtures and bootstrap utilities)
 
 ---
 
