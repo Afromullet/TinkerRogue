@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"game_main/tactical/squads"
+	"game_main/tactical/squads/squadcore"
 )
 
 // GenerateCompositionSuite generates scenarios testing role, attack type,
@@ -43,8 +43,8 @@ func roleMatchups(pool *UnitPool) []Scenario {
 	var scenarios []Scenario
 
 	for _, m := range matchups {
-		sideA := makeSquadBP("Side A", squads.FormationBalanced, m.sideA, positions)
-		sideB := makeSquadBP("Side B", squads.FormationBalanced, m.sideB, positions)
+		sideA := makeSquadBP("Side A", squadcore.FormationBalanced, m.sideA, positions)
+		sideB := makeSquadBP("Side B", squadcore.FormationBalanced, m.sideB, positions)
 
 		bp := ScenarioBlueprint{
 			Name:  m.name,
@@ -84,8 +84,8 @@ func attackTypeMatchups(pool *UnitPool) []Scenario {
 	var scenarios []Scenario
 
 	for _, m := range matchups {
-		sideA := makeSquadBP("Side A", squads.FormationBalanced, m.sideA, positions)
-		sideB := makeSquadBP("Side B", squads.FormationBalanced, m.sideB, positions)
+		sideA := makeSquadBP("Side A", squadcore.FormationBalanced, m.sideA, positions)
+		sideB := makeSquadBP("Side B", squadcore.FormationBalanced, m.sideB, positions)
 
 		bp := ScenarioBlueprint{
 			Name:  m.name,
@@ -143,8 +143,8 @@ func compositionRatios(pool *UnitPool) []Scenario {
 
 	var scenarios []Scenario
 	for _, r := range ratios {
-		sideA := makeSquadBP(r[0].name, squads.FormationBalanced, r[0].units, positions5)
-		sideB := makeSquadBP(r[1].name, squads.FormationBalanced, r[1].units, positions5)
+		sideA := makeSquadBP(r[0].name, squadcore.FormationBalanced, r[0].units, positions5)
+		sideB := makeSquadBP(r[1].name, squadcore.FormationBalanced, r[1].units, positions5)
 
 		bp := ScenarioBlueprint{
 			Name:  fmt.Sprintf("Comp: %s vs %s", r[0].name, r[1].name),
@@ -187,8 +187,8 @@ func healMatchups(pool *UnitPool) []Scenario {
 	var scenarios []Scenario
 
 	for _, m := range matchups {
-		sideA := makeSquadBP("Side A", squads.FormationBalanced, m.sideA, positions)
-		sideB := makeSquadBP("Side B", squads.FormationBalanced, m.sideB, positions)
+		sideA := makeSquadBP("Side A", squadcore.FormationBalanced, m.sideA, positions)
+		sideB := makeSquadBP("Side B", squadcore.FormationBalanced, m.sideB, positions)
 
 		bp := ScenarioBlueprint{
 			Name:  m.name,
@@ -209,18 +209,18 @@ func formationTests(pool *UnitPool) []Scenario {
 
 	type formPair struct {
 		nameA string
-		formA squads.FormationType
+		formA squadcore.FormationType
 		nameB string
-		formB squads.FormationType
+		formB squadcore.FormationType
 	}
 
 	pairs := []formPair{
-		{"Balanced", squads.FormationBalanced, "Offensive", squads.FormationOffensive},
-		{"Balanced", squads.FormationBalanced, "Defensive", squads.FormationDefensive},
-		{"Balanced", squads.FormationBalanced, "Ranged", squads.FormationRanged},
-		{"Offensive", squads.FormationOffensive, "Defensive", squads.FormationDefensive},
-		{"Offensive", squads.FormationOffensive, "Ranged", squads.FormationRanged},
-		{"Defensive", squads.FormationDefensive, "Ranged", squads.FormationRanged},
+		{"Balanced", squadcore.FormationBalanced, "Offensive", squadcore.FormationOffensive},
+		{"Balanced", squadcore.FormationBalanced, "Defensive", squadcore.FormationDefensive},
+		{"Balanced", squadcore.FormationBalanced, "Ranged", squadcore.FormationRanged},
+		{"Offensive", squadcore.FormationOffensive, "Defensive", squadcore.FormationDefensive},
+		{"Offensive", squadcore.FormationOffensive, "Ranged", squadcore.FormationRanged},
+		{"Defensive", squadcore.FormationDefensive, "Ranged", squadcore.FormationRanged},
 	}
 
 	var scenarios []Scenario

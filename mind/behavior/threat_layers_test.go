@@ -3,9 +3,9 @@ package behavior
 import (
 	"fmt"
 	"game_main/common"
-	"game_main/tactical/combat"
-	"game_main/tactical/squads"
-	"game_main/tactical/unitdefs"
+	"game_main/tactical/combat/combatcore"
+	"game_main/tactical/squads/squadcore"
+	"game_main/tactical/squads/unitdefs"
 	"game_main/templates"
 	testfx "game_main/testing"
 	"game_main/world/coords"
@@ -20,7 +20,7 @@ func init() {
 // Local copy since combat.CreateTestCombatManager is in a _test.go file.
 func createTestCombatManager() *common.EntityManager {
 	manager := testfx.NewTestEntityManager()
-	if err := squads.InitializeSquadData(manager); err != nil {
+	if err := squadcore.InitializeSquadData(manager); err != nil {
 		panic(fmt.Sprintf("Failed to initialize squad data: %v", err))
 	}
 	common.InitializeSubsystems(manager)
@@ -31,9 +31,9 @@ func createTestCombatManager() *common.EntityManager {
 func TestCombatThreatLayer_Compute(t *testing.T) {
 	// Setup test environment
 	manager := createTestCombatManager()
-	cache := combat.NewCombatQueryCache(manager)
+	cache := combatcore.NewCombatQueryCache(manager)
 	baseThreatMgr := NewFactionThreatLevelManager(manager, cache)
-	fm := combat.NewCombatFactionManager(manager, cache)
+	fm := combatcore.NewCombatFactionManager(manager, cache)
 
 	// Create two factions
 	faction1 := fm.CreateCombatFaction("Player", true)
@@ -73,9 +73,9 @@ func TestCombatThreatLayer_Compute(t *testing.T) {
 func TestCompositeThreatEvaluator_Update(t *testing.T) {
 	// Setup test environment
 	manager := createTestCombatManager()
-	cache := combat.NewCombatQueryCache(manager)
+	cache := combatcore.NewCombatQueryCache(manager)
 	baseThreatMgr := NewFactionThreatLevelManager(manager, cache)
-	fm := combat.NewCombatFactionManager(manager, cache)
+	fm := combatcore.NewCombatFactionManager(manager, cache)
 
 	faction1 := fm.CreateCombatFaction("Player", true)
 	baseThreatMgr.AddFaction(faction1)
@@ -140,9 +140,9 @@ func TestCompositeThreatEvaluator_RoleWeights(t *testing.T) {
 func TestGetOptimalPositionForRole(t *testing.T) {
 	// Setup test environment
 	manager := createTestCombatManager()
-	cache := combat.NewCombatQueryCache(manager)
+	cache := combatcore.NewCombatQueryCache(manager)
 	baseThreatMgr := NewFactionThreatLevelManager(manager, cache)
-	fm := combat.NewCombatFactionManager(manager, cache)
+	fm := combatcore.NewCombatFactionManager(manager, cache)
 
 	faction1 := fm.CreateCombatFaction("Player", true)
 	baseThreatMgr.AddFaction(faction1)
@@ -167,8 +167,8 @@ func TestGetOptimalPositionForRole(t *testing.T) {
 // TestThreatLayerBase_Caching tests cache invalidation logic
 func TestThreatLayerBase_Caching(t *testing.T) {
 	manager := createTestCombatManager()
-	cache := combat.NewCombatQueryCache(manager)
-	fm := combat.NewCombatFactionManager(manager, cache)
+	cache := combatcore.NewCombatQueryCache(manager)
+	fm := combatcore.NewCombatFactionManager(manager, cache)
 	faction1 := fm.CreateCombatFaction("Player", true)
 
 	base := NewThreatLayerBase(faction1, manager, cache)
@@ -206,7 +206,7 @@ func TestGetSquadPrimaryRole(t *testing.T) {
 	manager := createTestCombatManager()
 
 	// Test returns default when squad not found
-	role := squads.GetSquadPrimaryRole(999, manager)
+	role := squadcore.GetSquadPrimaryRole(999, manager)
 	if role != unitdefs.RoleDPS {
 		t.Error("Should return default DPS role for non-existent squad")
 	}
@@ -215,8 +215,8 @@ func TestGetSquadPrimaryRole(t *testing.T) {
 // TestThreatLayerBase_GetEnemyFactions tests enemy faction detection
 func TestThreatLayerBase_GetEnemyFactions(t *testing.T) {
 	manager := createTestCombatManager()
-	cache := combat.NewCombatQueryCache(manager)
-	fm := combat.NewCombatFactionManager(manager, cache)
+	cache := combatcore.NewCombatQueryCache(manager)
+	fm := combatcore.NewCombatFactionManager(manager, cache)
 
 	// Create multiple factions
 	faction1 := fm.CreateCombatFaction("Player", true)

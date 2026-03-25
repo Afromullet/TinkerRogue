@@ -3,8 +3,8 @@ package garrison
 import (
 	"game_main/common"
 	"game_main/overworld/core"
-	rstr "game_main/tactical/roster"
-	"game_main/tactical/squads"
+	rstr "game_main/tactical/squads/roster"
+	"game_main/tactical/squads/squadcore"
 	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"
@@ -30,7 +30,7 @@ func GetAvailableSquadsForGarrison(manager *common.EntityManager, playerEntityID
 
 	available := make([]ecs.EntityID, 0)
 	for _, squadID := range roster.OwnedSquads {
-		squadData := common.GetComponentTypeByID[*squads.SquadData](manager, squadID, squads.SquadComponent)
+		squadData := common.GetComponentTypeByID[*squadcore.SquadData](manager, squadID, squadcore.SquadComponent)
 		if squadData == nil {
 			continue
 		}

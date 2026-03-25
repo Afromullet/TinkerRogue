@@ -5,8 +5,8 @@ import (
 
 	"game_main/common"
 	"game_main/overworld/core"
-	"game_main/tactical/squads"
-	"game_main/tactical/unitdefs"
+	"game_main/tactical/squads/squadcore"
+	"game_main/tactical/squads/unitdefs"
 	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"
@@ -31,7 +31,7 @@ func AssignSquadToNode(manager *common.EntityManager, squadID ecs.EntityID, node
 	}
 
 	// Validate squad exists and is available
-	squadData := common.GetComponentTypeByID[*squads.SquadData](manager, squadID, squads.SquadComponent)
+	squadData := common.GetComponentTypeByID[*squadcore.SquadData](manager, squadID, squadcore.SquadComponent)
 	if squadData == nil {
 		return fmt.Errorf("squad %d not found", squadID)
 	}
@@ -102,7 +102,7 @@ func RemoveSquadFromNode(manager *common.EntityManager, squadID ecs.EntityID, no
 	}
 
 	// Clear squad's garrison flag
-	squadData := common.GetComponentTypeByID[*squads.SquadData](manager, squadID, squads.SquadComponent)
+	squadData := common.GetComponentTypeByID[*squadcore.SquadData](manager, squadID, squadcore.SquadComponent)
 	if squadData != nil {
 		squadData.GarrisonedAtNodeID = 0
 	}
@@ -155,10 +155,10 @@ func CreateNPCGarrison(
 		return fmt.Errorf("node has no position")
 	}
 
-	squadID := squads.CreateSquadFromTemplate(
+	squadID := squadcore.CreateSquadFromTemplate(
 		manager,
 		squadName,
-		squads.FormationBalanced,
+		squadcore.FormationBalanced,
 		*pos,
 		unitTemplates,
 	)

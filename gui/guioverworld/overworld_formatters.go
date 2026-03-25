@@ -7,7 +7,7 @@ import (
 	"game_main/gui/framework"
 	"game_main/overworld/core"
 	"game_main/overworld/garrison"
-	"game_main/tactical/squads"
+	"game_main/tactical/squads/squadcore"
 
 	"github.com/bytearena/ecs"
 )
@@ -63,7 +63,7 @@ func FormatThreatInfo(nodeID ecs.EntityID, queries *framework.GUIQueries, manage
 	if garrisonData != nil && len(garrisonData.SquadIDs) > 0 {
 		garrisonInfo = fmt.Sprintf("\nGarrison: %d squad(s)", len(garrisonData.SquadIDs))
 		for _, squadID := range garrisonData.SquadIDs {
-			squadName := squads.GetSquadName(squadID, manager)
+			squadName := squadcore.GetSquadName(squadID, manager)
 			garrisonInfo += fmt.Sprintf("\n  - %s", squadName)
 		}
 	} else {

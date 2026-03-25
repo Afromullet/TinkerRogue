@@ -3,9 +3,9 @@ package bootstrap
 import (
 	"fmt"
 	"game_main/common"
-	"game_main/gear"
+	"game_main/tactical/powers/artifacts"
 	"game_main/tactical/commander"
-	"game_main/tactical/roster"
+	"game_main/tactical/squads/roster"
 	"game_main/templates"
 	"sort"
 
@@ -15,20 +15,20 @@ import (
 // SeedAllArtifacts adds `count` copies of every artifact in the registry to the player's inventory.
 // It bumps MaxArtifacts if needed to fit all copies.
 func SeedAllArtifacts(playerID ecs.EntityID, count int, manager *common.EntityManager) error {
-	inv := gear.GetPlayerArtifactInventory(playerID, manager)
+	inv := artifacts.GetPlayerArtifactInventory(playerID, manager)
 	if inv == nil {
 		return fmt.Errorf("player %d has no artifact inventory", playerID)
 	}
 
 	needed := len(templates.ArtifactRegistry) * count
-	current, _ := gear.GetArtifactCount(inv)
+	current, _ := artifacts.GetArtifactCount(inv)
 	if current+needed > inv.MaxArtifacts {
 		inv.MaxArtifacts = current + needed
 	}
 
 	for id := range templates.ArtifactRegistry {
 		for i := 0; i < count; i++ {
-			if err := gear.AddArtifactToInventory(inv, id); err != nil {
+			if err := artifacts.AddArtifactToInventory(inv, id); err != nil {
 				return fmt.Errorf("failed to seed artifact %q copy %d: %w", id, i+1, err)
 			}
 		}
@@ -72,7 +72,7 @@ func EquipPlayerActivatedArtifacts(playerID ecs.EntityID, manager *common.Entity
 		squadList := squadRoster.OwnedSquads
 		for i, id := range majorIDs {
 			squadID := squadList[i%len(squadList)]
-			if err := gear.EquipArtifact(playerID, squadID, id, manager); err != nil {
+			if err := artifacts.EquipArtifact(playerID, squadID, id, manager); err != nil {
 				fmt.Printf("[EquipArtifacts] Failed to equip %s on squad %d (commander %d): %v\n", id, squadID, commanderID, err)
 			} else {
 				fmt.Printf("[EquipArtifacts] Equipped %s on squad %d (commander %d)\n", id, squadID, commanderID)

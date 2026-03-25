@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	"game_main/common"
-	"game_main/tactical/combat"
-	"game_main/tactical/squads"
+	"game_main/tactical/combat/combatcore"
+	"game_main/tactical/squads/squadcore"
 	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"
@@ -20,7 +20,7 @@ import (
 // This eliminates the duplicated 4-step sequence across encounter_setup.go,
 // starters.go, and raidencounter.go.
 func EnrollSquadInFaction(
-	fm *combat.CombatFactionManager,
+	fm *combatcore.CombatFactionManager,
 	manager *common.EntityManager,
 	factionID, squadID ecs.EntityID,
 	pos coords.LogicalPosition,
@@ -31,10 +31,10 @@ func EnrollSquadInFaction(
 	}
 
 	EnsureUnitPositions(manager, squadID, pos)
-	combat.CreateActionStateForSquad(manager, squadID)
+	combatcore.CreateActionStateForSquad(manager, squadID)
 
 	if markDeployed {
-		squadData := common.GetComponentTypeByID[*squads.SquadData](manager, squadID, squads.SquadComponent)
+		squadData := common.GetComponentTypeByID[*squadcore.SquadData](manager, squadID, squadcore.SquadComponent)
 		if squadData != nil {
 			squadData.IsDeployed = true
 		}
@@ -49,9 +49,9 @@ func CreateFactionPair(
 	manager *common.EntityManager,
 	playerName, enemyName string,
 	encounterID ecs.EntityID,
-) (*combat.CombatFactionManager, ecs.EntityID, ecs.EntityID) {
-	cache := combat.NewCombatQueryCache(manager)
-	fm := combat.NewCombatFactionManager(manager, cache)
+) (*combatcore.CombatFactionManager, ecs.EntityID, ecs.EntityID) {
+	cache := combatcore.NewCombatQueryCache(manager)
+	fm := combatcore.NewCombatFactionManager(manager, cache)
 	playerFactionID, enemyFactionID := fm.CreateStandardFactions(playerName, enemyName, encounterID)
 	return fm, playerFactionID, enemyFactionID
 }
@@ -59,7 +59,7 @@ func CreateFactionPair(
 // EnrollSquadsAtPositions enrolls multiple squads into a faction at given positions.
 // Positions and squadIDs must be the same length.
 func EnrollSquadsAtPositions(
-	fm *combat.CombatFactionManager,
+	fm *combatcore.CombatFactionManager,
 	manager *common.EntityManager,
 	factionID ecs.EntityID,
 	squadIDs []ecs.EntityID,
@@ -81,7 +81,7 @@ func EnrollSquadsAtPositions(
 // Units that already have positions are moved to the squad position.
 // Units without positions get a new position component created.
 func EnsureUnitPositions(manager *common.EntityManager, squadID ecs.EntityID, squadPos coords.LogicalPosition) {
-	unitIDs := squads.GetUnitIDsInSquad(squadID, manager)
+	unitIDs := squadcore.GetUnitIDsInSquad(squadID, manager)
 	for _, unitID := range unitIDs {
 		unitEntity := manager.FindEntityByID(unitID)
 		if unitEntity == nil {

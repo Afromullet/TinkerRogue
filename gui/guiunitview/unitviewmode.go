@@ -7,7 +7,7 @@ import (
 
 	"game_main/common"
 	"game_main/gui/framework"
-	"game_main/tactical/unitprogression"
+	"game_main/tactical/squads/unitprogression"
 
 	"github.com/bytearena/ecs"
 	"github.com/ebitenui/ebitenui/widget"

@@ -6,7 +6,7 @@ import (
 
 	"game_main/gui/framework"
 	"game_main/mind/raid"
-	"game_main/tactical/squads"
+	"game_main/tactical/squads/squadcore"
 
 	"github.com/ebitenui/ebitenui/widget"
 	"github.com/hajimehoshi/ebiten/v2"
@@ -88,17 +88,17 @@ func (dp *DeployPanel) Refresh(raidState *raid.RaidStateData, room *raid.RoomDat
 	for _, squadID := range raidState.PlayerSquadIDs {
 		squadName := queries.GetSquadName(squadID)
 
-		aliveCount := squads.CountLivingUnitsInSquad(manager, squadID)
-		totalCount := len(squads.GetUnitIDsInSquad(squadID, manager))
+		aliveCount := squadcore.CountLivingUnitsInSquad(manager, squadID)
+		totalCount := len(squadcore.GetUnitIDsInSquad(squadID, manager))
 
 		status := "Ready"
-		if squads.IsSquadDestroyed(squadID, manager) {
+		if squadcore.IsSquadDestroyed(squadID, manager) {
 			status = "Destroyed"
 		}
 
 		line := fmt.Sprintf("  %s — HP: %d%% | Units: %d/%d | %s",
 			squadName,
-			int(squads.GetSquadHealthPercent(squadID, manager)*100),
+			int(squadcore.GetSquadHealthPercent(squadID, manager)*100),
 			aliveCount,
 			totalCount,
 			status,

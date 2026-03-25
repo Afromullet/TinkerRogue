@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"game_main/gui/framework"
 	"game_main/gui/widgets"
-	"game_main/tactical/squadcommands"
-	"game_main/tactical/unitdefs"
-	"game_main/tactical/squadservices"
+	"game_main/tactical/squads/squadcommands"
+	"game_main/tactical/squads/squadservices"
+	"game_main/tactical/squads/unitdefs"
 
 	"github.com/ebitenui/ebitenui/widget"
 	"github.com/hajimehoshi/ebiten/v2"

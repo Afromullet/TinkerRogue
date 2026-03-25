@@ -1,6 +1,6 @@
 package templates
 
-import "game_main/config"
+import "game_main/setup/config"
 
 // JSONGameConfig is the root container for game balance configuration.
 // Loaded from gamedata/gameconfig.json at startup.

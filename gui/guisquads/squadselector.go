@@ -3,7 +3,7 @@ package guisquads
 import (
 	"fmt"
 	"game_main/common"
-	rstr "game_main/tactical/roster"
+	rstr "game_main/tactical/squads/roster"
 
 	"github.com/bytearena/ecs"
 	"github.com/ebitenui/ebitenui/widget"

@@ -8,7 +8,7 @@ import (
 	"game_main/gui/framework"
 	"game_main/gui/specs"
 	"game_main/gui/widgets"
-	"game_main/tactical/unitdefs"
+	"game_main/tactical/squads/unitdefs"
 
 	"github.com/ebitenui/ebitenui/widget"
 )
@@ -203,4 +203,3 @@ func init() {
 		},
 	})
 }
-

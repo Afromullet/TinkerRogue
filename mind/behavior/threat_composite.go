@@ -2,8 +2,8 @@ package behavior
 
 import (
 	"game_main/common"
-	"game_main/tactical/combat"
-	"game_main/tactical/squads"
+	"game_main/tactical/combat/combatcore"
+	"game_main/tactical/squads/squadcore"
 	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"
@@ -15,7 +15,7 @@ import (
 // Provides role-aware threat queries for AI decision-making
 type CompositeThreatEvaluator struct {
 	manager   *common.EntityManager
-	cache     *combat.CombatQueryCache
+	cache     *combatcore.CombatQueryCache
 	factionID ecs.EntityID
 
 	// Individual layers
@@ -32,7 +32,7 @@ type CompositeThreatEvaluator struct {
 func NewCompositeThreatEvaluator(
 	factionID ecs.EntityID,
 	manager *common.EntityManager,
-	cache *combat.CombatQueryCache,
+	cache *combatcore.CombatQueryCache,
 	baseThreatMgr *FactionThreatLevelManager,
 ) *CompositeThreatEvaluator {
 	// Create unified combat threat layer (provides both melee and ranged)
@@ -86,7 +86,7 @@ func (cte *CompositeThreatEvaluator) GetRoleWeightedThreat(
 	squadID ecs.EntityID,
 	pos coords.LogicalPosition,
 ) float64 {
-	role := squads.GetSquadPrimaryRole(squadID, cte.manager)
+	role := squadcore.GetSquadPrimaryRole(squadID, cte.manager)
 	weights := GetRoleBehaviorWeights(role)
 
 	meleeThreat := cte.combatThreat.GetMeleeThreatAt(pos)

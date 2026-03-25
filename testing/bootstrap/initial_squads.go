@@ -3,9 +3,9 @@ package bootstrap
 import (
 	"fmt"
 	"game_main/common"
-	rstr "game_main/tactical/roster"
-	"game_main/tactical/squads"
-	"game_main/tactical/unitdefs"
+	rstr "game_main/tactical/squads/roster"
+	"game_main/tactical/squads/squadcore"
+	"game_main/tactical/squads/unitdefs"
 	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"
@@ -74,7 +74,7 @@ func CreateInitialPlayerSquads(rosterOwnerID ecs.EntityID, unitRosterOwnerID ecs
 		}
 
 		// Mark squad as not deployed (in reserves)
-		squadData := common.GetComponentTypeByID[*squads.SquadData](manager, squadID, squads.SquadComponent)
+		squadData := common.GetComponentTypeByID[*squadcore.SquadData](manager, squadID, squadcore.SquadComponent)
 		if squadData == nil {
 			return fmt.Errorf("failed to get squad data for %s", config.name)
 		}
@@ -95,12 +95,12 @@ func CreateInitialPlayerSquads(rosterOwnerID ecs.EntityID, unitRosterOwnerID ecs
 	fmt.Printf("\n=== Initial Player Squads Created ===\n")
 	fmt.Printf("Total squads: %d\n", len(squadConfigs))
 	for _, squadID := range roster.OwnedSquads {
-		squadData := common.GetComponentTypeByID[*squads.SquadData](manager, squadID, squads.SquadComponent)
+		squadData := common.GetComponentTypeByID[*squadcore.SquadData](manager, squadID, squadcore.SquadComponent)
 		if squadData != nil {
 			fmt.Printf("  - Squad '%s': IsDeployed=%v, Units=%d\n",
 				squadData.Name,
 				squadData.IsDeployed,
-				len(squads.GetUnitIDsInSquad(squadID, manager)))
+				len(squadcore.GetUnitIDsInSquad(squadID, manager)))
 		}
 	}
 	fmt.Printf("=====================================\n\n")
@@ -147,10 +147,10 @@ func createBalancedSquad(manager *common.EntityManager, squadName string) (ecs.E
 	}
 
 	// Create squad at position (0,0) - not deployed
-	squadID := squads.CreateSquadFromTemplate(
+	squadID := squadcore.CreateSquadFromTemplate(
 		manager,
 		squadName,
-		squads.FormationBalanced,
+		squadcore.FormationBalanced,
 		coords.LogicalPosition{X: 0, Y: 0},
 		unitsToCreate,
 	)
@@ -196,10 +196,10 @@ func createRangedSquad(manager *common.EntityManager, squadName string) (ecs.Ent
 	unitsToCreate[leaderIndex].Attributes.Leadership = 20
 
 	// Create squad at position (0,0) - not deployed
-	squadID := squads.CreateSquadFromTemplate(
+	squadID := squadcore.CreateSquadFromTemplate(
 		manager,
 		squadName,
-		squads.FormationRanged,
+		squadcore.FormationRanged,
 		coords.LogicalPosition{X: 0, Y: 0},
 		unitsToCreate,
 	)
@@ -242,10 +242,10 @@ func createMagicSquad(manager *common.EntityManager, squadName string) (ecs.Enti
 	unitsToCreate[leaderIndex].Attributes.Leadership = 20
 
 	// Create squad at position (0,0) - not deployed
-	squadID := squads.CreateSquadFromTemplate(
+	squadID := squadcore.CreateSquadFromTemplate(
 		manager,
 		squadName,
-		squads.FormationBalanced,
+		squadcore.FormationBalanced,
 		coords.LogicalPosition{X: 0, Y: 0},
 		unitsToCreate,
 	)
@@ -303,10 +303,10 @@ func createMixedSquad(manager *common.EntityManager, squadName string) (ecs.Enti
 	unitsToCreate[leaderIndex].Attributes.Leadership = 20
 
 	// Create squad at position (0,0) - not deployed
-	squadID := squads.CreateSquadFromTemplate(
+	squadID := squadcore.CreateSquadFromTemplate(
 		manager,
 		squadName,
-		squads.FormationBalanced,
+		squadcore.FormationBalanced,
 		coords.LogicalPosition{X: 0, Y: 0},
 		unitsToCreate,
 	)
@@ -351,10 +351,10 @@ func createCavalrySquad(manager *common.EntityManager, squadName string) (ecs.En
 	unitsToCreate[leaderIndex].Attributes.Leadership = 20
 
 	// Create squad at position (0,0) - not deployed
-	squadID := squads.CreateSquadFromTemplate(
+	squadID := squadcore.CreateSquadFromTemplate(
 		manager,
 		squadName,
-		squads.FormationOffensive,
+		squadcore.FormationOffensive,
 		coords.LogicalPosition{X: 0, Y: 0},
 		unitsToCreate,
 	)
@@ -379,7 +379,7 @@ func CreateInitialRosterUnits(unitRosterOwnerID ecs.EntityID, manager *common.En
 		template := unitdefs.Units[common.RandomInt(len(unitdefs.Units))]
 
 		// Create the unit entity (no SquadMemberComponent added)
-		unitEntity, err := squads.CreateUnitEntity(manager, template)
+		unitEntity, err := squadcore.CreateUnitEntity(manager, template)
 		if err != nil {
 			return fmt.Errorf("failed to create roster unit %d: %w", i, err)
 		}
@@ -399,7 +399,7 @@ func CreateInitialRosterUnits(unitRosterOwnerID ecs.EntityID, manager *common.En
 // registerSquadUnitsInRoster registers all units in a squad with the player's unit roster
 func registerSquadUnitsInRoster(squadID ecs.EntityID, roster *rstr.UnitRoster, manager *common.EntityManager) error {
 	// Get all unit IDs in the squad
-	unitIDs := squads.GetUnitIDsInSquad(squadID, manager)
+	unitIDs := squadcore.GetUnitIDsInSquad(squadID, manager)
 
 	for _, unitID := range unitIDs {
 		// Register unit in roster

@@ -3,10 +3,10 @@ package ai
 import (
 	"game_main/common"
 	"game_main/mind/behavior"
-	"game_main/tactical/combat"
-	"game_main/tactical/combatservices"
-	"game_main/tactical/squads"
-	"game_main/tactical/unitdefs"
+	"game_main/tactical/combat/combatcore"
+	"game_main/tactical/combat/combatservices"
+	"game_main/tactical/squads/squadcore"
+	"game_main/tactical/squads/unitdefs"
 	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"
@@ -15,10 +15,10 @@ import (
 // AIController orchestrates AI decision-making for computer-controlled factions
 type AIController struct {
 	entityManager   *common.EntityManager
-	turnManager     *combat.TurnManager
-	movementSystem  *combat.CombatMovementSystem
-	combatActSystem *combat.CombatActionSystem
-	combatCache     *combat.CombatQueryCache
+	turnManager     *combatcore.TurnManager
+	movementSystem  *combatcore.CombatMovementSystem
+	combatActSystem *combatcore.CombatActionSystem
+	combatCache     *combatcore.CombatQueryCache
 	threatManager   *behavior.FactionThreatLevelManager
 	layerEvaluators map[ecs.EntityID]*behavior.CompositeThreatEvaluator
 
@@ -29,9 +29,9 @@ type AIController struct {
 // CombatAISetup holds all components created by SetupCombatAI.
 // Callers inject these into CombatService via its setter methods.
 type CombatAISetup struct {
-	Controller      combatservices.AITurnController
-	ThreatProvider  combatservices.ThreatProvider
-	EvalFactory     func(factionID ecs.EntityID) combatservices.ThreatLayerEvaluator
+	Controller     combatservices.AITurnController
+	ThreatProvider combatservices.ThreatProvider
+	EvalFactory    func(factionID ecs.EntityID) combatservices.ThreatLayerEvaluator
 }
 
 // SetupCombatAI creates the full AI + threat evaluation stack.
@@ -39,10 +39,10 @@ type CombatAISetup struct {
 // This keeps mind/behavior out of both tactical/combatservices and gui/guicombat.
 func SetupCombatAI(
 	entityManager *common.EntityManager,
-	turnManager *combat.TurnManager,
-	movementSystem *combat.CombatMovementSystem,
-	combatActSystem *combat.CombatActionSystem,
-	combatCache *combat.CombatQueryCache,
+	turnManager *combatcore.TurnManager,
+	movementSystem *combatcore.CombatMovementSystem,
+	combatActSystem *combatcore.CombatActionSystem,
+	combatCache *combatcore.CombatQueryCache,
 ) *CombatAISetup {
 	threatMgr := behavior.NewFactionThreatLevelManager(entityManager, combatCache)
 	layerEvaluators := make(map[ecs.EntityID]*behavior.CompositeThreatEvaluator)
@@ -89,7 +89,7 @@ func (aic *AIController) DecideFactionTurn(factionID ecs.EntityID) bool {
 	aic.updateThreatLayers(currentRound)
 
 	// Get all alive squads in faction
-	aliveSquads := combat.GetActiveSquadsForFaction(factionID, aic.entityManager)
+	aliveSquads := combatcore.GetActiveSquadsForFaction(factionID, aic.entityManager)
 
 	if len(aliveSquads) == 0 {
 		return false
@@ -191,15 +191,15 @@ func SelectBestAction(actions []ScoredAction) *ScoredAction {
 type ActionContext struct {
 	SquadID     ecs.EntityID
 	FactionID   ecs.EntityID
-	ActionState *combat.ActionStateData
+	ActionState *combatcore.ActionStateData
 
 	// Threat evaluation
 	ThreatEval *behavior.CompositeThreatEvaluator
 
 	// Systems access
 	Manager        *common.EntityManager
-	MovementSystem *combat.CombatMovementSystem // For validating movement tiles
-	AIController   *AIController                // Reference to AI controller for attack queueing
+	MovementSystem *combatcore.CombatMovementSystem // For validating movement tiles
+	AIController   *AIController                    // Reference to AI controller for attack queueing
 
 	// Cached squad info
 	SquadRole  unitdefs.UnitRole
@@ -211,7 +211,7 @@ func NewActionContext(
 	squadID ecs.EntityID,
 	aic *AIController,
 ) ActionContext {
-	factionID := combat.GetSquadFaction(squadID, aic.entityManager)
+	factionID := combatcore.GetSquadFaction(squadID, aic.entityManager)
 
 	// Get or create threat evaluator for faction
 	evaluator := aic.getThreatEvaluator(factionID)
@@ -224,11 +224,11 @@ func NewActionContext(
 		Manager:        aic.entityManager,
 		MovementSystem: aic.movementSystem, // For validating movement tiles
 		AIController:   aic,                // Pass reference for attack queueing
-		SquadRole:      squads.GetSquadPrimaryRole(squadID, aic.entityManager),
+		SquadRole:      squadcore.GetSquadPrimaryRole(squadID, aic.entityManager),
 	}
 
 	// Get current position
-	if pos, err := combat.GetSquadMapPosition(squadID, aic.entityManager); err == nil {
+	if pos, err := combatcore.GetSquadMapPosition(squadID, aic.entityManager); err == nil {
 		ctx.CurrentPos = pos
 	}
 

@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	"game_main/common"
-	"game_main/tactical/squads"
-	"game_main/tactical/unitdefs"
+	"game_main/tactical/squads/squadcore"
+	"game_main/tactical/squads/unitdefs"
 	"game_main/world/coords"
 	"game_main/world/worldmap"
 
@@ -143,7 +143,7 @@ func InstantiateGarrisonSquad(manager *common.EntityManager, archetype *SquadArc
 	dummyPos := coords.LogicalPosition{X: 0, Y: 0}
 	displayName := fmt.Sprintf("%s (F%d)", archetype.DisplayName, floorNumber)
 
-	squadID := squads.CreateSquadFromTemplate(manager, displayName, squads.FormationBalanced, dummyPos, unitTemplates)
+	squadID := squadcore.CreateSquadFromTemplate(manager, displayName, squadcore.FormationBalanced, dummyPos, unitTemplates)
 
 	// Add garrison squad component
 	squadEntity := manager.FindEntityByID(squadID)

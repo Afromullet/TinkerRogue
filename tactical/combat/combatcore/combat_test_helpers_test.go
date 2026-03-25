@@ -1,0 +1,170 @@
+package combatcore
+
+import (
+	"fmt"
+	"game_main/common"
+	"game_main/tactical/squads/squadcore"
+	testfx "game_main/testing"
+
+	"github.com/bytearena/ecs"
+)
+
+// ========================================
+// TEST SETUP FIXTURES (Using shared testing fixtures)
+// ========================================
+
+// CreateTestCombatManager creates a fully initialized EntityManager with combat system.
+// This is the combat-specific version of testing.NewTestEntityManager() that also
+// initializes the combat system components and tags.
+//
+// Replaces the old setupTestManager() local function.
+func CreateTestCombatManager() *common.EntityManager {
+	manager := testfx.NewTestEntityManager()
+	// Initialize squad system (required by combat tests)
+	if err := squadcore.InitializeSquadData(manager); err != nil {
+		panic(fmt.Sprintf("Failed to initialize squad data: %v", err))
+	}
+	// Initialize all registered subsystems (including combat via init())
+	common.InitializeSubsystems(manager)
+	return manager
+}
+
+// ========================================
+// TEST HELPER FUNCTIONS
+// ========================================
+
+// CreateTestSquad creates a squad with test units
+func CreateTestSquad(manager *common.EntityManager, name string, unitCount int) ecs.EntityID {
+	// Create squad entity
+	squadEntity := manager.World.NewEntity()
+	squadID := squadEntity.GetID()
+
+	squadEntity.AddComponent(squadcore.SquadComponent, &squadcore.SquadData{
+		SquadID:   squadID,
+		Name:      name,
+		Formation: squadcore.FormationBalanced,
+		MaxUnits:  9,
+	})
+
+	// Create test units
+	for i := 0; i < unitCount; i++ {
+		CreateTestUnit(manager, squadID, i)
+	}
+
+	return squadID
+}
+
+// CreateTestUnit creates a unit entity with default attributes
+func CreateTestUnit(manager *common.EntityManager, squadID ecs.EntityID, index int) ecs.EntityID {
+	unitEntity := manager.World.NewEntity()
+	unitID := unitEntity.GetID()
+
+	// Add attributes
+	unitEntity.AddComponent(common.AttributeComponent, &common.Attributes{
+		Strength:      10,
+		Dexterity:     10,
+		Magic:         0,
+		Leadership:    0,
+		Armor:         2,
+		Weapon:        2,
+		MovementSpeed: 5,
+		AttackRange:   1,
+		CurrentHealth: 30,
+		CanAct:        true,
+	})
+
+	// Add squad membership
+	unitEntity.AddComponent(squadcore.SquadMemberComponent, &squadcore.SquadMemberData{
+		SquadID: squadID,
+	})
+
+	// Position in 3x3 grid
+	row := index / 3
+	col := index % 3
+	unitEntity.AddComponent(squadcore.GridPositionComponent, &squadcore.GridPositionData{
+		AnchorRow: row,
+		AnchorCol: col,
+		Width:     1,
+		Height:    1,
+	})
+
+	// Add attack range component (matches production code in units.go)
+	unitEntity.AddComponent(squadcore.AttackRangeComponent, &squadcore.AttackRangeData{
+		Range: 1, // Melee range
+	})
+
+	// Add movement speed component (matches production code in units.go)
+	unitEntity.AddComponent(squadcore.MovementSpeedComponent, &squadcore.MovementSpeedData{
+		Speed: 5, // Default movement speed (matches Attributes.MovementSpeed above)
+	})
+
+	return unitID
+}
+
+// CreateTestRangedUnit creates a ranged unit entity
+func CreateTestRangedUnit(manager *common.EntityManager, squadID ecs.EntityID, index int, attackRange int) ecs.EntityID {
+	unitEntity := manager.World.NewEntity()
+	unitID := unitEntity.GetID()
+
+	// Add attributes
+	unitEntity.AddComponent(common.AttributeComponent, &common.Attributes{
+		Strength:      8,
+		Dexterity:     12,
+		Magic:         0,
+		Leadership:    0,
+		Armor:         1,
+		Weapon:        2,
+		MovementSpeed: 4,
+		AttackRange:   attackRange,
+		CurrentHealth: 25,
+		CanAct:        true,
+	})
+
+	// Add squad membership
+	unitEntity.AddComponent(squadcore.SquadMemberComponent, &squadcore.SquadMemberData{
+		SquadID: squadID,
+	})
+
+	// Position in 3x3 grid
+	row := index / 3
+	col := index % 3
+	unitEntity.AddComponent(squadcore.GridPositionComponent, &squadcore.GridPositionData{
+		AnchorRow: row,
+		AnchorCol: col,
+		Width:     1,
+		Height:    1,
+	})
+
+	// Add attack range component (matches production code in units.go)
+	unitEntity.AddComponent(squadcore.AttackRangeComponent, &squadcore.AttackRangeData{
+		Range: attackRange,
+	})
+
+	return unitID
+}
+
+// CreateTestMixedSquad creates a squad with melee and ranged units
+func CreateTestMixedSquad(manager *common.EntityManager, name string, meleeCount, rangedCount int) ecs.EntityID {
+	// Create squad entity
+	squadEntity := manager.World.NewEntity()
+	squadID := squadEntity.GetID()
+
+	squadEntity.AddComponent(squadcore.SquadComponent, &squadcore.SquadData{
+		SquadID:   squadID,
+		Name:      name,
+		Formation: squadcore.FormationBalanced,
+		MaxUnits:  9,
+	})
+
+	// Create melee units
+	for i := 0; i < meleeCount; i++ {
+		CreateTestUnit(manager, squadID, i)
+	}
+
+	// Create ranged units
+	for i := 0; i < rangedCount; i++ {
+		CreateTestRangedUnit(manager, squadID, meleeCount+i, 3) // Range 3
+	}
+
+	return squadID
+}

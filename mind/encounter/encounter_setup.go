@@ -7,10 +7,10 @@ import (
 	"game_main/mind/evaluation"
 	"game_main/overworld/core"
 	"game_main/overworld/garrison"
-	"game_main/tactical/combat"
-	rstr "game_main/tactical/roster"
-	"game_main/tactical/squads"
-	"game_main/tactical/unitdefs"
+	"game_main/tactical/combat/combatcore"
+	rstr "game_main/tactical/squads/roster"
+	"game_main/tactical/squads/squadcore"
+	"game_main/tactical/squads/unitdefs"
 	"game_main/templates"
 	"game_main/world/coords"
 
@@ -122,7 +122,7 @@ func ensurePlayerSquadsDeployed(rosterOwnerID ecs.EntityID, manager *common.Enti
 	if len(deployedSquads) == 0 {
 		// Auto-deploy all squads if none are deployed
 		for _, squadID := range roster.OwnedSquads {
-			squadData := common.GetComponentTypeByID[*squads.SquadData](manager, squadID, squads.SquadComponent)
+			squadData := common.GetComponentTypeByID[*squadcore.SquadData](manager, squadID, squadcore.SquadComponent)
 			if squadData != nil {
 				squadData.IsDeployed = true
 			}
@@ -135,7 +135,7 @@ func ensurePlayerSquadsDeployed(rosterOwnerID ecs.EntityID, manager *common.Enti
 // assignPlayerSquadsToFaction adds all deployed player squads to the player faction
 // Assumes squads are already deployed (handled by ensurePlayerSquadsDeployed)
 func assignPlayerSquadsToFaction(
-	fm *combat.CombatFactionManager,
+	fm *combatcore.CombatFactionManager,
 	rosterOwnerID ecs.EntityID,
 	manager *common.EntityManager,
 	factionID ecs.EntityID,
@@ -350,10 +350,10 @@ func createSquadForPowerBudget(
 	}
 
 	// Create squad
-	squadID := squads.CreateSquadFromTemplate(
+	squadID := squadcore.CreateSquadFromTemplate(
 		manager,
 		name,
-		squads.FormationBalanced,
+		squadcore.FormationBalanced,
 		position,
 		unitsToCreate,
 	)

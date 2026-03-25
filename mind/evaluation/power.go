@@ -2,8 +2,8 @@ package evaluation
 
 import (
 	"game_main/common"
-	"game_main/tactical/squads"
-	"game_main/tactical/unitdefs"
+	"game_main/tactical/squads/squadcore"
+	"game_main/tactical/squads/unitdefs"
 	"game_main/templates"
 	"math"
 
@@ -30,7 +30,7 @@ func calculateUnitPower(
 		return 0.0
 	}
 
-	roleData := common.GetComponentType[*squads.UnitRoleData](entity, squads.UnitRoleComponent)
+	roleData := common.GetComponentType[*squadcore.UnitRoleData](entity, squadcore.UnitRoleComponent)
 	if roleData == nil {
 		return 0.0
 	}
@@ -97,7 +97,7 @@ func CalculateDefensivePower(attr *common.Attributes, config *PowerConfig) float
 func CalculateUtilityPower(
 	entity *ecs.Entity,
 	attr *common.Attributes,
-	roleData *squads.UnitRoleData,
+	roleData *squadcore.UnitRoleData,
 	config *PowerConfig,
 ) float64 {
 	// Sum all utility components (no sub-weights, just add them together)
@@ -105,7 +105,7 @@ func CalculateUtilityPower(
 }
 
 // calculateRoleValue returns power value based on unit role.
-func calculateRoleValue(roleData *squads.UnitRoleData) float64 {
+func calculateRoleValue(roleData *squadcore.UnitRoleData) float64 {
 	roleMultiplier := GetRoleMultiplierFromConfig(roleData.Role)
 	return roleMultiplier * RoleScalingFactor
 }
@@ -113,12 +113,12 @@ func calculateRoleValue(roleData *squads.UnitRoleData) float64 {
 // calculateAbilityValue returns power value from leader abilities.
 func calculateAbilityValue(entity *ecs.Entity) float64 {
 	// Check if unit is a leader
-	if !entity.HasComponent(squads.LeaderComponent) {
+	if !entity.HasComponent(squadcore.LeaderComponent) {
 		return 0.0
 	}
 
 	// Get ability slots to find equipped abilities
-	abilitySlots := common.GetComponentType[*squads.AbilitySlotData](entity, squads.AbilitySlotComponent)
+	abilitySlots := common.GetComponentType[*squadcore.AbilitySlotData](entity, squadcore.AbilitySlotComponent)
 	if abilitySlots == nil {
 		return 0.0
 	}
@@ -135,7 +135,7 @@ func calculateAbilityValue(entity *ecs.Entity) float64 {
 
 // calculateCoverValue returns power value from cover provision.
 func calculateCoverValue(entity *ecs.Entity) float64 {
-	coverData := common.GetComponentType[*squads.CoverData](entity, squads.CoverComponent)
+	coverData := common.GetComponentType[*squadcore.CoverData](entity, squadcore.CoverComponent)
 	if coverData == nil {
 		return 0.0
 	}
@@ -151,18 +151,18 @@ func CalculateSquadPower(
 	manager *common.EntityManager,
 	config *PowerConfig,
 ) float64 {
-	squadEntity := squads.GetSquadEntity(squadID, manager)
+	squadEntity := squadcore.GetSquadEntity(squadID, manager)
 	if squadEntity == nil {
 		return 0.0
 	}
 
-	squadData := common.GetComponentType[*squads.SquadData](squadEntity, squads.SquadComponent)
+	squadData := common.GetComponentType[*squadcore.SquadData](squadEntity, squadcore.SquadComponent)
 	if squadData == nil {
 		return 0.0
 	}
 
 	// Sum unit power scores
-	unitIDs := squads.GetUnitIDsInSquad(squadID, manager)
+	unitIDs := squadcore.GetUnitIDsInSquad(squadID, manager)
 	if len(unitIDs) == 0 {
 		return 0.0
 	}
@@ -182,7 +182,7 @@ func CalculateSquadPower(
 
 	// Health penalty (low HP squads are less effective)
 	basePower *= CalculateHealthMultiplier(
-		squads.GetSquadHealthPercent(squadID, manager),
+		squadcore.GetSquadHealthPercent(squadID, manager),
 		config.HealthPenalty,
 	)
 
@@ -195,7 +195,7 @@ func CalculateSquadCompositionBonus(
 	squadID ecs.EntityID,
 	manager *common.EntityManager,
 ) float64 {
-	unitIDs := squads.GetUnitIDsInSquad(squadID, manager)
+	unitIDs := squadcore.GetUnitIDsInSquad(squadID, manager)
 	attackTypes := make(map[unitdefs.AttackType]bool)
 
 	for _, unitID := range unitIDs {
@@ -204,7 +204,7 @@ func CalculateSquadCompositionBonus(
 			continue
 		}
 
-		targetRowData := common.GetComponentType[*squads.TargetRowData](entity, squads.TargetRowComponent)
+		targetRowData := common.GetComponentType[*squadcore.TargetRowData](entity, squadcore.TargetRowComponent)
 		if targetRowData != nil {
 			attackTypes[targetRowData.AttackType] = true
 		}
@@ -230,7 +230,7 @@ func CalculateSquadPowerByRange(
 	manager *common.EntityManager,
 	config *PowerConfig,
 ) map[int]float64 {
-	unitIDs := squads.GetUnitIDsInSquad(squadID, manager)
+	unitIDs := squadcore.GetUnitIDsInSquad(squadID, manager)
 	if len(unitIDs) == 0 {
 		return nil
 	}
@@ -243,7 +243,7 @@ func CalculateSquadPowerByRange(
 	units := []unitPowerData{}
 	attackTypeCount := make(map[unitdefs.AttackType]int)
 
-	movementRange := squads.GetSquadMovementSpeed(squadID, manager)
+	movementRange := squadcore.GetSquadMovementSpeed(squadID, manager)
 
 	for _, unitID := range unitIDs {
 		entity := manager.FindEntityByID(unitID)
@@ -253,12 +253,12 @@ func CalculateSquadPowerByRange(
 
 		// Get attack range
 		attackRange := 1
-		if rangeData := common.GetComponentType[*squads.AttackRangeData](entity, squads.AttackRangeComponent); rangeData != nil {
+		if rangeData := common.GetComponentType[*squadcore.AttackRangeData](entity, squadcore.AttackRangeComponent); rangeData != nil {
 			attackRange = rangeData.Range
 		}
 
 		// Track attack types for composition bonus
-		if targetRowData := common.GetComponentType[*squads.TargetRowData](entity, squads.TargetRowComponent); targetRowData != nil {
+		if targetRowData := common.GetComponentType[*squadcore.TargetRowData](entity, squadcore.TargetRowComponent); targetRowData != nil {
 			attackTypeCount[targetRowData.AttackType]++
 		}
 
@@ -371,4 +371,3 @@ func EstimateUnitPowerFromTemplate(unit unitdefs.UnitTemplate, config *PowerConf
 
 	return totalPower
 }
-

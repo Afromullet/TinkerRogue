@@ -8,7 +8,7 @@ import (
 	"game_main/overworld/core"
 	"game_main/overworld/garrison"
 	"game_main/tactical/commander"
-	"game_main/tactical/squads"
+	"game_main/tactical/squads/squadcore"
 
 	"github.com/bytearena/ecs"
 	ebitenui "github.com/ebitenui/ebitenui"
@@ -298,16 +298,16 @@ func (ih *OverworldInputHandler) showGarrisonDialog(nodeID ecs.EntityID, rosterO
 
 	if garrisonData != nil {
 		for _, squadID := range garrisonData.SquadIDs {
-			squadName := squads.GetSquadName(squadID, manager)
-			unitCount := len(squads.GetUnitIDsInSquad(squadID, manager))
+			squadName := squadcore.GetSquadName(squadID, manager)
+			unitCount := len(squadcore.GetUnitIDsInSquad(squadID, manager))
 			entries = append(entries, garrisonEntry{SquadID: squadID, IsGarrisoned: true})
 			entryLabels = append(entryLabels, fmt.Sprintf("[Garrisoned] %s (%d units) - Click to REMOVE", squadName, unitCount))
 		}
 	}
 
 	for _, squadID := range availableSquads {
-		squadName := squads.GetSquadName(squadID, manager)
-		unitCount := len(squads.GetUnitIDsInSquad(squadID, manager))
+		squadName := squadcore.GetSquadName(squadID, manager)
+		unitCount := len(squadcore.GetUnitIDsInSquad(squadID, manager))
 		entries = append(entries, garrisonEntry{SquadID: squadID, IsGarrisoned: false})
 		entryLabels = append(entryLabels, fmt.Sprintf("[Available] %s (%d units) - Click to ASSIGN", squadName, unitCount))
 	}

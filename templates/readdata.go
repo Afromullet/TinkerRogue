@@ -2,7 +2,7 @@ package templates
 
 import (
 	"encoding/json"
-	"game_main/config"
+	"game_main/setup/config"
 	"os"
 )
 

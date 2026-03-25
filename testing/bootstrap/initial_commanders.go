@@ -3,7 +3,7 @@ package bootstrap
 import (
 	"fmt"
 	"game_main/common"
-	"game_main/config"
+	"game_main/setup/config"
 	"game_main/tactical/commander"
 	"game_main/templates"
 	"game_main/world/coords"

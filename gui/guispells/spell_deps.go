@@ -3,7 +3,7 @@ package guispells
 import (
 	"game_main/common"
 	"game_main/gui/framework"
-	"game_main/tactical/combat"
+	"game_main/tactical/combat/combatcore"
 	"game_main/world/coords"
 	"game_main/world/worldmap"
 )
@@ -18,5 +18,5 @@ type SpellCastingDeps struct {
 	Queries     *framework.GUIQueries
 
 	// Encounter callbacks (replacing direct EncounterService dependency)
-	Encounter combat.EncounterCallbacks
+	Encounter combatcore.EncounterCallbacks
 }

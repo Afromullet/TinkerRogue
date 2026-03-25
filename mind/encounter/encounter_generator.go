@@ -6,7 +6,7 @@ import (
 	"game_main/mind/combatlifecycle"
 	"game_main/mind/evaluation"
 	"game_main/overworld/core"
-	rstr "game_main/tactical/roster"
+	rstr "game_main/tactical/squads/roster"
 	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"

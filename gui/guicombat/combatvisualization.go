@@ -3,7 +3,7 @@ package guicombat
 import (
 	"game_main/common"
 	"game_main/gui/framework"
-	"game_main/tactical/combatservices"
+	"game_main/tactical/combat/combatservices"
 	"game_main/visual/rendering"
 	"game_main/world/coords"
 	"game_main/world/worldmap"

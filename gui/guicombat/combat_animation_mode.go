@@ -5,7 +5,7 @@ import (
 	"math"
 
 	"game_main/gui/framework"
-	"game_main/tactical/combat"
+	"game_main/tactical/combat/combatcore"
 	"game_main/visual/rendering"
 
 	"github.com/bytearena/ecs"
@@ -131,13 +131,13 @@ func (cam *CombatAnimationMode) SetCombatants(attackerID, defenderID ecs.EntityI
 	cam.flashTimer = 0
 
 	// Assign colors to attacking units (skip heal units — they get green tint)
-	combatSys := combat.NewCombatActionSystem(cam.Queries.ECSManager, cam.Queries.CombatCache)
+	combatSys := combatcore.NewCombatActionSystem(cam.Queries.ECSManager, cam.Queries.CombatCache)
 	attackingUnits := combatSys.GetAttackingUnits(attackerID, defenderID)
 
 	var nonHealAttackers []ecs.EntityID
 	colorIdx := 0
 	for _, attackerUnitID := range attackingUnits {
-		if combat.IsHealUnit(attackerUnitID, cam.Queries.ECSManager) {
+		if combatcore.IsHealUnit(attackerUnitID, cam.Queries.ECSManager) {
 			cam.attackerColors[attackerUnitID] = healColorScale
 		} else {
 			cam.attackerColors[attackerUnitID] = attackColorPalette[colorIdx%len(attackColorPalette)]
@@ -194,7 +194,7 @@ func (cam *CombatAnimationMode) computeDefenderColorLists(
 		}
 
 		// Find defenders using new targeting system
-		targets := combat.SelectTargetUnits(
+		targets := combatcore.SelectTargetUnits(
 			attackerID, defenderSquadID, cam.Queries.ECSManager,
 		)
 
@@ -225,12 +225,12 @@ func (cam *CombatAnimationMode) computeHealTargetColors(
 ) {
 
 	for _, attackerID := range attackingUnits {
-		if !combat.IsHealUnit(attackerID, cam.Queries.ECSManager) {
+		if !combatcore.IsHealUnit(attackerID, cam.Queries.ECSManager) {
 			continue
 		}
 
 		// Get heal targets (friendly units in the attacker's own squad)
-		healTargets := combat.SelectHealTargets(attackerID, attackerSquadID, cam.Queries.ECSManager)
+		healTargets := combatcore.SelectHealTargets(attackerID, attackerSquadID, cam.Queries.ECSManager)
 
 		for _, targetID := range healTargets {
 			// Add green to this unit's color list (they're on the attacker grid)

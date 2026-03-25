@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
-	"game_main/tactical/squads"
-	"game_main/tactical/unitdefs"
+	"game_main/tactical/squads/squadcore"
+	"game_main/tactical/squads/unitdefs"
 )
 
 // GenerateDuelSuite generates all pairwise monotype duel scenarios.
@@ -27,12 +27,12 @@ func GenerateDuelSuite(pool *UnitPool) []Scenario {
 				Suite: "duels",
 				SideA: []SquadBlueprint{{
 					Name:      fmt.Sprintf("%s Squad", unitA.UnitType),
-					Formation: squads.FormationBalanced,
+					Formation: squadcore.FormationBalanced,
 					Units:     placementsA,
 				}},
 				SideB: []SquadBlueprint{{
 					Name:      fmt.Sprintf("%s Squad", unitB.UnitType),
-					Formation: squads.FormationBalanced,
+					Formation: squadcore.FormationBalanced,
 					Units:     placementsB,
 				}},
 			}

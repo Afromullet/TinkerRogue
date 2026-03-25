@@ -2,8 +2,8 @@ package behavior
 
 import (
 	"game_main/common"
-	"game_main/tactical/combat"
-	"game_main/tactical/squads"
+	"game_main/tactical/combat/combatcore"
+	"game_main/tactical/squads/squadcore"
 	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"
@@ -24,7 +24,7 @@ type SupportValueLayer struct {
 func NewSupportValueLayer(
 	factionID ecs.EntityID,
 	manager *common.EntityManager,
-	cache *combat.CombatQueryCache,
+	cache *combatcore.CombatQueryCache,
 ) *SupportValueLayer {
 	return &SupportValueLayer{
 		ThreatLayerBase: NewThreatLayerBase(factionID, manager, cache),
@@ -43,16 +43,16 @@ func (svl *SupportValueLayer) Compute(currentRound int) {
 	clear(svl.allyProximity)
 
 	// Get all allied squads
-	squadIDs := combat.GetActiveSquadsForFaction(svl.factionID, svl.manager)
+	squadIDs := combatcore.GetActiveSquadsForFaction(svl.factionID, svl.manager)
 
 	for _, squadID := range squadIDs {
 		// Calculate heal priority (inverse of health percentage)
 		// Use centralized squad health calculation
-		avgHP := squads.GetSquadHealthPercent(squadID, svl.manager)
+		avgHP := squadcore.GetSquadHealthPercent(squadID, svl.manager)
 		svl.healPriority[squadID] = 1.0 - avgHP
 
 		// Get squad position
-		squadPos, err := combat.GetSquadMapPosition(squadID, svl.manager)
+		squadPos, err := combatcore.GetSquadMapPosition(squadID, svl.manager)
 		if err != nil {
 			continue
 		}
@@ -99,4 +99,3 @@ func (svl *SupportValueLayer) GetSupportValueAt(pos coords.LogicalPosition) floa
 func (svl *SupportValueLayer) GetAllyProximityAt(pos coords.LogicalPosition) int {
 	return svl.allyProximity[pos]
 }
-

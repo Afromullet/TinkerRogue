@@ -2,8 +2,8 @@ package guiartifacts
 
 import (
 	"game_main/gui/framework"
-	"game_main/tactical/combat"
-	"game_main/tactical/combatservices"
+	"game_main/tactical/combat/combatcore"
+	"game_main/tactical/combat/combatservices"
 )
 
 // ArtifactActivationDeps holds dependencies the artifact activation system needs from combat mode.
@@ -13,5 +13,5 @@ type ArtifactActivationDeps struct {
 	Queries       *framework.GUIQueries
 
 	// Encounter callbacks (replacing direct EncounterService dependency)
-	Encounter combat.EncounterCallbacks
+	Encounter combatcore.EncounterCallbacks
 }

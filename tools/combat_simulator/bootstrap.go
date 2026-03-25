@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"game_main/common"
-	"game_main/tactical/unitdefs"
+	"game_main/tactical/squads/unitdefs"
 	"game_main/templates"
 
 	"github.com/bytearena/ecs"

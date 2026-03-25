@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"game_main/tactical/squads"
+	"game_main/tactical/squads/squadcore"
 	"game_main/templates"
 )
 
@@ -57,7 +57,7 @@ func GenerateEncounterSuite(pool *UnitPool) []Scenario {
 		// Build player side
 		playerSquad := makeSquadBP(
 			"Player Squad",
-			squads.FormationBalanced,
+			squadcore.FormationBalanced,
 			standardPlayerUnits,
 			standardPlayerPositions,
 		)
@@ -76,15 +76,15 @@ func GenerateEncounterSuite(pool *UnitPool) []Scenario {
 }
 
 // squadFormationForPref returns an appropriate formation for a squad preference type.
-func squadFormationForPref(pref string) squads.FormationType {
+func squadFormationForPref(pref string) squadcore.FormationType {
 	switch pref {
 	case "melee":
-		return squads.FormationOffensive
+		return squadcore.FormationOffensive
 	case "ranged":
-		return squads.FormationRanged
+		return squadcore.FormationRanged
 	case "magic":
-		return squads.FormationBalanced
+		return squadcore.FormationBalanced
 	default:
-		return squads.FormationBalanced
+		return squadcore.FormationBalanced
 	}
 }

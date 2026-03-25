@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 	"game_main/common"
-	"game_main/tactical/squads"
-	"game_main/tactical/unitdefs"
+	"game_main/tactical/squads/squadcore"
+	"game_main/tactical/squads/unitdefs"
 	"game_main/templates"
 	"game_main/world/coords"
 
@@ -17,14 +17,14 @@ import (
 func createSimSquad(
 	manager *common.EntityManager,
 	squadName string,
-	formation squads.FormationType,
+	formation squadcore.FormationType,
 	worldPos coords.LogicalPosition,
 	unitTemplates []unitdefs.UnitTemplate,
 ) ecs.EntityID {
 	squadEntity := manager.World.NewEntity()
 	squadID := squadEntity.GetID()
 
-	squadEntity.AddComponent(squads.SquadComponent, &squads.SquadData{
+	squadEntity.AddComponent(squadcore.SquadComponent, &squadcore.SquadData{
 		SquadID:    squadID,
 		Name:       squadName,
 		Formation:  formation,
@@ -83,15 +83,15 @@ func createSimSquad(
 		)
 
 		// All component additions below mirror squadcreation.go:272-348
-		unitEntity.AddComponent(squads.SquadMemberComponent, &squads.SquadMemberData{
+		unitEntity.AddComponent(squadcore.SquadMemberComponent, &squadcore.SquadMemberData{
 			SquadID: squadID,
 		})
 
 		// Add all squad-specific components from template
-		squads.ApplyUnitComponents(unitEntity, tmpl, tmpl.GridRow, tmpl.GridCol)
+		squadcore.ApplyUnitComponents(unitEntity, tmpl, tmpl.GridRow, tmpl.GridCol)
 
 		if tmpl.IsLeader {
-			squads.AddLeaderComponents(unitEntity)
+			squadcore.AddLeaderComponents(unitEntity)
 		}
 
 		for _, cell := range cellsToOccupy {
@@ -140,7 +140,7 @@ func createBalancedSquad(manager *common.EntityManager, squadName string, worldP
 		unitsToCreate = append(unitsToCreate, unit)
 	}
 
-	return createSimSquad(manager, squadName, squads.FormationBalanced, worldPos, unitsToCreate)
+	return createSimSquad(manager, squadName, squadcore.FormationBalanced, worldPos, unitsToCreate)
 }
 
 // createRangedSquad mirrors initialplayersquads.go:createRangedSquad.
@@ -173,7 +173,7 @@ func createRangedSquad(manager *common.EntityManager, squadName string, worldPos
 	unitsToCreate[leaderIndex].IsLeader = true
 	unitsToCreate[leaderIndex].Attributes.Leadership = 20
 
-	return createSimSquad(manager, squadName, squads.FormationRanged, worldPos, unitsToCreate)
+	return createSimSquad(manager, squadName, squadcore.FormationRanged, worldPos, unitsToCreate)
 }
 
 // createMagicSquad mirrors initialplayersquads.go:createMagicSquad.
@@ -204,7 +204,7 @@ func createMagicSquad(manager *common.EntityManager, squadName string, worldPos 
 	unitsToCreate[leaderIndex].IsLeader = true
 	unitsToCreate[leaderIndex].Attributes.Leadership = 20
 
-	return createSimSquad(manager, squadName, squads.FormationBalanced, worldPos, unitsToCreate)
+	return createSimSquad(manager, squadName, squadcore.FormationBalanced, worldPos, unitsToCreate)
 }
 
 // createMixedSquad mirrors initialplayersquads.go:createMixedSquad.
@@ -249,7 +249,7 @@ func createMixedSquad(manager *common.EntityManager, squadName string, worldPos 
 	unitsToCreate[leaderIndex].IsLeader = true
 	unitsToCreate[leaderIndex].Attributes.Leadership = 20
 
-	return createSimSquad(manager, squadName, squads.FormationBalanced, worldPos, unitsToCreate)
+	return createSimSquad(manager, squadName, squadcore.FormationBalanced, worldPos, unitsToCreate)
 }
 
 // createMeleeSquad creates an all-melee squad using MeleeRow attack type units.
@@ -287,7 +287,7 @@ func createMeleeSquad(manager *common.EntityManager, squadName string, worldPos 
 		unitsToCreate = append(unitsToCreate, unit)
 	}
 
-	return createSimSquad(manager, squadName, squads.FormationOffensive, worldPos, unitsToCreate)
+	return createSimSquad(manager, squadName, squadcore.FormationOffensive, worldPos, unitsToCreate)
 }
 
 // ========================================

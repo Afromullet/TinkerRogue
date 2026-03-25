@@ -1,7 +1,7 @@
 package main
 
 import (
-	"game_main/tactical/unitdefs"
+	"game_main/tactical/squads/unitdefs"
 )
 
 // UnitPool provides deterministic indexed access to unit templates.

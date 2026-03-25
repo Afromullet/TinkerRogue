@@ -2,8 +2,8 @@ package guicombat
 
 import (
 	"fmt"
-	"game_main/tactical/combat"
-	"game_main/tactical/squadcommands"
+	"game_main/tactical/combat/combatcore"
+	"game_main/tactical/squads/squadcommands"
 	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"
@@ -255,7 +255,7 @@ func (cah *CombatActionHandler) DebugKillSquad(squadID ecs.EntityID) {
 	}
 
 	// Use the same cleanup path as normal combat death
-	if err := combat.RemoveSquadFromMap(squadID, cah.deps.Queries.ECSManager); err != nil {
+	if err := combatcore.RemoveSquadFromMap(squadID, cah.deps.Queries.ECSManager); err != nil {
 		return
 	}
 

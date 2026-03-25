@@ -3,7 +3,7 @@ package guicombat
 import (
 	"fmt"
 	"game_main/common"
-	"game_main/config"
+	"game_main/setup/config"
 	"game_main/gui/builders"
 	"game_main/gui/framework"
 	"game_main/gui/guiartifacts"
@@ -11,9 +11,10 @@ import (
 	"game_main/gui/guispells"
 	"game_main/gui/guisquads"
 	"game_main/gui/widgets"
-	"game_main/tactical/combat"
-	"game_main/tactical/combatservices"
-	"game_main/tactical/spells"
+	"game_main/tactical/combat/combatcore"
+	"game_main/tactical/combat/combatservices"
+	"game_main/tactical/powers/spells"
+
 	"github.com/bytearena/ecs"
 	"github.com/ebitenui/ebitenui/widget"
 	"github.com/hajimehoshi/ebiten/v2"
@@ -56,7 +57,7 @@ type CombatMode struct {
 	actionMap *framework.ActionMap
 
 	// Encounter callbacks (stored until deps are created in Initialize)
-	encounterCallbacks combat.EncounterCallbacks
+	encounterCallbacks combatcore.EncounterCallbacks
 
 	// Factory for creating a fully-wired CombatService (with AI injected)
 	serviceFactory func(*common.EntityManager) *combatservices.CombatService
@@ -66,7 +67,7 @@ type CombatMode struct {
 	lastSelectedSquad ecs.EntityID
 }
 
-func NewCombatMode(modeManager *framework.UIModeManager, encounterCallbacks combat.EncounterCallbacks, serviceFactory func(*common.EntityManager) *combatservices.CombatService) *CombatMode {
+func NewCombatMode(modeManager *framework.UIModeManager, encounterCallbacks combatcore.EncounterCallbacks, serviceFactory func(*common.EntityManager) *combatservices.CombatService) *CombatMode {
 	cm := &CombatMode{
 		encounterCallbacks: encounterCallbacks,
 		serviceFactory:     serviceFactory,
@@ -363,11 +364,10 @@ func (cm *CombatMode) initializeUpdateComponents() {
 	)
 }
 
-
 // registerCombatCallbacks registers cache invalidation callbacks on the combat service.
 // Must be called on each combat start because CleanupCombat clears all callbacks.
 func (cm *CombatMode) registerCombatCallbacks() {
-	cm.combatService.RegisterOnAttackComplete(func(attackerID, defenderID ecs.EntityID, result *combat.CombatResult) {
+	cm.combatService.RegisterOnAttackComplete(func(attackerID, defenderID ecs.EntityID, result *combatcore.CombatResult) {
 		cm.Queries.MarkSquadDirty(attackerID)
 		cm.Queries.MarkSquadDirty(defenderID)
 		if result.AttackerDestroyed {
@@ -446,17 +446,17 @@ func (cm *CombatMode) Exit(toMode framework.UIMode) error {
 		}
 
 		// Determine exit reason
-		reason := combat.ExitDefeat
+		reason := combatcore.ExitDefeat
 		if cm.turnFlow.IsFleeRequested() {
-			reason = combat.ExitFlee
+			reason = combatcore.ExitFlee
 		} else if victor.IsPlayerVictory {
-			reason = combat.ExitVictory
+			reason = combatcore.ExitVictory
 		}
 
 		// Single call handles: overworld resolution, history recording, entity cleanup
 		if cm.deps.Encounter != nil {
 			cm.deps.Encounter.ExitCombat(reason,
-				&combat.EncounterOutcome{
+				&combatcore.EncounterOutcome{
 					IsPlayerVictory:  victor.IsPlayerVictory,
 					VictorFaction:    victor.VictorFaction,
 					VictorName:       victor.VictorName,
@@ -468,13 +468,13 @@ func (cm *CombatMode) Exit(toMode framework.UIMode) error {
 
 		// Export battle log if enabled (GUI-only concern, stays here)
 		if config.ENABLE_COMBAT_LOG_EXPORT && cm.combatService.BattleRecorder != nil && cm.combatService.BattleRecorder.IsEnabled() {
-			victoryInfo := &combat.VictoryInfo{
+			victoryInfo := &combatcore.VictoryInfo{
 				RoundsCompleted: victor.RoundsCompleted,
 				VictorFaction:   victor.VictorFaction,
 				VictorName:      victor.VictorName,
 			}
 			record := cm.combatService.BattleRecorder.Finalize(victoryInfo)
-			if err := combat.ExportBattleJSON(record, config.COMBAT_LOG_EXPORT_DIR); err != nil {
+			if err := combatcore.ExportBattleJSON(record, config.COMBAT_LOG_EXPORT_DIR); err != nil {
 				fmt.Printf("Error exporting battle log: %v\n", err)
 			}
 			cm.combatService.BattleRecorder.Clear()

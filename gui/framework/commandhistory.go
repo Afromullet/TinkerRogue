@@ -2,7 +2,7 @@ package framework
 
 import (
 	"fmt"
-	"game_main/tactical/squadcommands"
+	"game_main/tactical/squads/squadcommands"
 )
 
 // CommandHistory provides standardized command executor integration for UI modes.
@@ -100,4 +100,3 @@ func (ch *CommandHistory) HandleInput(inputState *InputState) bool {
 
 	return false
 }
-

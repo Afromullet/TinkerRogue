@@ -4,7 +4,7 @@ import (
 	"game_main/gui/framework"
 	"game_main/gui/guisquads"
 	"game_main/gui/widgets"
-	"game_main/tactical/combatservices"
+	"game_main/tactical/combat/combatservices"
 )
 
 // CombatTurnFlow manages the turn lifecycle: ending turns, executing AI turns,
