@@ -10,14 +10,13 @@ import (
 
 // NodePair represents two overlapping influence nodes
 type NodePair struct {
-	EntityA  *ecs.Entity
-	EntityB  *ecs.Entity
+	EntityA  ecs.EntityID
+	EntityB  ecs.EntityID
 	Distance int
 }
 
 // overworldNode is a cached node reference used during overlap detection
 type overworldNode struct {
-	Entity   *ecs.Entity
 	EntityID ecs.EntityID
 	Pos      coords.LogicalPosition
 	Radius   int
@@ -35,8 +34,8 @@ func FindOverlappingNodes(manager *common.EntityManager) []NodePair {
 			combinedRadii := nodes[i].Radius + nodes[j].Radius
 			if dist <= combinedRadii {
 				pairs = append(pairs, NodePair{
-					EntityA:  nodes[i].Entity,
-					EntityB:  nodes[j].Entity,
+					EntityA:  nodes[i].EntityID,
+					EntityB:  nodes[j].EntityID,
 					Distance: dist,
 				})
 			}
@@ -57,7 +56,6 @@ func collectAllNodes(manager *common.EntityManager) []overworldNode {
 			continue
 		}
 		nodes = append(nodes, overworldNode{
-			Entity:   entity,
 			EntityID: entity.GetID(),
 			Pos:      *pos,
 			Radius:   inf.Radius,

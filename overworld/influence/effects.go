@@ -10,9 +10,9 @@ import (
 
 // ClassifyInteraction determines the interaction type between two nodes.
 // Uses OwnerID from the unified OverworldNodeData for classification.
-func ClassifyInteraction(manager *common.EntityManager, entityA, entityB *ecs.Entity) core.InteractionType {
-	dataA := common.GetComponentType[*core.OverworldNodeData](entityA, core.OverworldNodeComponent)
-	dataB := common.GetComponentType[*core.OverworldNodeData](entityB, core.OverworldNodeComponent)
+func ClassifyInteraction(manager *common.EntityManager, entityA, entityB ecs.EntityID) core.InteractionType {
+	dataA := common.GetComponentTypeByID[*core.OverworldNodeData](manager, entityA, core.OverworldNodeComponent)
+	dataB := common.GetComponentTypeByID[*core.OverworldNodeData](manager, entityB, core.OverworldNodeComponent)
 
 	if dataA == nil || dataB == nil {
 		return core.InteractionCompetition
@@ -43,7 +43,7 @@ func ClassifyInteraction(manager *common.EntityManager, entityA, entityB *ecs.En
 func CalculateInteractionModifier(
 	manager *common.EntityManager,
 	interaction core.InteractionType,
-	entityA, entityB *ecs.Entity,
+	entityA, entityB ecs.EntityID,
 ) float64 {
 	switch interaction {
 	case core.InteractionSynergy:
@@ -69,10 +69,10 @@ func calculateCompetitionPenalty() float64 {
 
 // calculateSuppressionPenalty returns growth penalty from player/neutral nodes on threats.
 // Scaled by node type multiplier. Uses unified OverworldNodeData.
-func calculateSuppressionPenalty(manager *common.EntityManager, entityA, entityB *ecs.Entity) float64 {
+func calculateSuppressionPenalty(manager *common.EntityManager, entityA, entityB ecs.EntityID) float64 {
 	// Find the friendly/neutral entity (the suppressor)
-	dataA := common.GetComponentType[*core.OverworldNodeData](entityA, core.OverworldNodeComponent)
-	dataB := common.GetComponentType[*core.OverworldNodeData](entityB, core.OverworldNodeComponent)
+	dataA := common.GetComponentTypeByID[*core.OverworldNodeData](manager, entityA, core.OverworldNodeComponent)
+	dataB := common.GetComponentTypeByID[*core.OverworldNodeData](manager, entityB, core.OverworldNodeComponent)
 
 	var suppressorData *core.OverworldNodeData
 	if dataA != nil && !core.IsHostileOwner(dataA.OwnerID) {

@@ -30,7 +30,7 @@ func UpdateInfluenceInteractions(manager *common.EntityManager, currentTick int6
 
 		// Add interaction to entity A
 		addInteraction(manager, pair.EntityA, core.NodeInteraction{
-			TargetID:     pair.EntityB.GetID(),
+			TargetID:     pair.EntityB,
 			Relationship: interactionType,
 			Modifier:     effectStrength,
 			Distance:     pair.Distance,
@@ -38,7 +38,7 @@ func UpdateInfluenceInteractions(manager *common.EntityManager, currentTick int6
 
 		// Add reciprocal interaction to entity B
 		addInteraction(manager, pair.EntityB, core.NodeInteraction{
-			TargetID:     pair.EntityA.GetID(),
+			TargetID:     pair.EntityA,
 			Relationship: interactionType,
 			Modifier:     effectStrength,
 			Distance:     pair.Distance,
@@ -64,10 +64,12 @@ func clearStaleInteractions(manager *common.EntityManager) {
 }
 
 // addInteraction ensures the entity has an InteractionComponent and appends the interaction.
-func addInteraction(manager *common.EntityManager, entity *ecs.Entity, interaction core.NodeInteraction) {
-	entityID := entity.GetID()
-
+func addInteraction(manager *common.EntityManager, entityID ecs.EntityID, interaction core.NodeInteraction) {
 	if !manager.HasComponent(entityID, core.InteractionComponent) {
+		entity := manager.FindEntityByID(entityID)
+		if entity == nil {
+			return
+		}
 		entity.AddComponent(core.InteractionComponent, &core.InteractionData{
 			Interactions: []core.NodeInteraction{interaction},
 			NetModifier:  1.0,
@@ -75,7 +77,7 @@ func addInteraction(manager *common.EntityManager, entity *ecs.Entity, interacti
 		return
 	}
 
-	data := common.GetComponentType[*core.InteractionData](entity, core.InteractionComponent)
+	data := common.GetComponentTypeByID[*core.InteractionData](manager, entityID, core.InteractionComponent)
 	if data != nil {
 		data.Interactions = append(data.Interactions, interaction)
 	}
@@ -122,16 +124,16 @@ func finalizeNetModifiers(manager *common.EntityManager) {
 func logInteractionEvent(interactionType core.InteractionType, pair NodePair, currentTick int64) {
 	switch interactionType {
 	case core.InteractionSynergy:
-		core.LogEvent(core.EventInfluenceSynergy, currentTick, pair.EntityA.GetID(),
+		core.LogEvent(core.EventInfluenceSynergy, currentTick, pair.EntityA,
 			fmt.Sprintf("Synergy cluster: nodes %d and %d (dist %d)",
-				pair.EntityA.GetID(), pair.EntityB.GetID(), pair.Distance), nil)
+				pair.EntityA, pair.EntityB, pair.Distance), nil)
 	case core.InteractionCompetition:
-		core.LogEvent(core.EventInfluenceCompetition, currentTick, pair.EntityA.GetID(),
+		core.LogEvent(core.EventInfluenceCompetition, currentTick, pair.EntityA,
 			fmt.Sprintf("Faction rivalry: nodes %d and %d (dist %d)",
-				pair.EntityA.GetID(), pair.EntityB.GetID(), pair.Distance), nil)
+				pair.EntityA, pair.EntityB, pair.Distance), nil)
 	case core.InteractionSuppression:
-		core.LogEvent(core.EventInfluenceSuppression, currentTick, pair.EntityA.GetID(),
+		core.LogEvent(core.EventInfluenceSuppression, currentTick, pair.EntityA,
 			fmt.Sprintf("Player suppression: nodes %d and %d (dist %d)",
-				pair.EntityA.GetID(), pair.EntityB.GetID(), pair.Distance), nil)
+				pair.EntityA, pair.EntityB, pair.Distance), nil)
 	}
 }

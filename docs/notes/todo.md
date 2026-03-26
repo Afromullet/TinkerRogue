@@ -65,6 +65,8 @@
 
 - Destroyed factions need to be removed from combat
 
+- Ranged heavy enemies only flee. They don't attack. Not hit and run. Just annoying
+
 # Review
 
 - Either encounters or behavior seem to be too skewed towards ranged threats. Using the threat layer visualization as baseline. Investigate whether it's the squad makup, or the weighting of attacks. Find a way to measure how effective the encounter creation and threat maps are
