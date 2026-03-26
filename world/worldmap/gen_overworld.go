@@ -199,7 +199,7 @@ func (g *StrategicOverworldGenerator) classifyBiomes(result *GenerationResult, w
 			biome := g.determineBiome(elevation, moisture)
 
 			logicalPos := coords.LogicalPosition{X: x, Y: y}
-			index := positionToIndex(x, y, width)
+			index := positionToIndex(x, y)
 
 			if index < 0 || index >= len(result.Tiles) {
 				continue
@@ -259,7 +259,7 @@ func (g *StrategicOverworldGenerator) buildTerrainMap(result *GenerationResult, 
 	terrainMap := make([]bool, width*height)
 	for y := 0; y < height; y++ {
 		for x := 0; x < width; x++ {
-			idx := y*width + x
+			idx := positionToIndex(x, y)
 			if idx < len(result.Tiles) {
 				terrainMap[idx] = !result.Tiles[idx].Blocked
 			}
@@ -272,7 +272,7 @@ func (g *StrategicOverworldGenerator) buildTerrainMap(result *GenerationResult, 
 func (g *StrategicOverworldGenerator) applyConnectivityFixes(result *GenerationResult, terrainMap []bool, width, height int, elevationMap, moistureMap [][]float64, images TileImageSet) {
 	for y := 0; y < height; y++ {
 		for x := 0; x < width; x++ {
-			idx := y*width + x
+			idx := positionToIndex(x, y)
 			if idx >= len(result.Tiles) {
 				continue
 			}
@@ -337,7 +337,7 @@ func (g *StrategicOverworldGenerator) placeFactionStartPositions(result *Generat
 
 		for y := s.minY; y <= s.maxY; y++ {
 			for x := s.minX; x <= s.maxX; x++ {
-				idx := positionToIndex(x, y, width)
+				idx := positionToIndex(x, y)
 				if idx < 0 || idx >= len(result.Tiles) || result.Tiles[idx].Blocked {
 					continue
 				}
@@ -360,7 +360,7 @@ func (g *StrategicOverworldGenerator) placeFactionStartPositions(result *Generat
 		if bestScore > 0 {
 			result.FactionStartPositions = append(result.FactionStartPositions, FactionStartPosition{
 				Position: bestPos,
-				Biome:    result.BiomeMap[positionToIndex(bestPos.X, bestPos.Y, width)],
+				Biome:    result.BiomeMap[positionToIndex(bestPos.X, bestPos.Y)],
 				Sector:   i,
 			})
 		}
@@ -401,7 +401,7 @@ func (g *StrategicOverworldGenerator) placePOIType(result *GenerationResult, wid
 		// Pick random valid position
 		validIdx := common.GetRandomBetween(0, len(result.ValidPositions)-1)
 		pos := result.ValidPositions[validIdx]
-		idx := positionToIndex(pos.X, pos.Y, width)
+		idx := positionToIndex(pos.X, pos.Y)
 
 		if idx < 0 || idx >= len(result.Tiles) {
 			continue
@@ -457,7 +457,7 @@ func (g *StrategicOverworldGenerator) placeGuildHalls(result *GenerationResult, 
 
 		validIdx := common.GetRandomBetween(0, len(result.ValidPositions)-1)
 		pos := result.ValidPositions[validIdx]
-		idx := positionToIndex(pos.X, pos.Y, width)
+		idx := positionToIndex(pos.X, pos.Y)
 
 		if idx < 0 || idx >= len(result.Tiles) || result.Tiles[idx].Blocked {
 			continue

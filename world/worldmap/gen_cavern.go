@@ -240,7 +240,7 @@ func (g *CavernGenerator) carveNoiseShape(terrainMap []bool, cx, cy, radius, wid
 			value := (1.0-distFromCenter)*0.7 + normalizedNoise*0.3
 
 			if value > g.config.ShapeThreshold {
-				terrainMap[y*width+x] = true
+				terrainMap[positionToIndex(x, y)] = true
 			}
 		}
 	}
@@ -257,7 +257,7 @@ func (g *CavernGenerator) setCircularRegion(terrainMap []bool, cx, cy, radius, w
 			dx := x - cx
 			dy := y - cy
 			if dx*dx+dy*dy <= r2 {
-				terrainMap[y*width+x] = value
+				terrainMap[positionToIndex(x, y)] = value
 			}
 		}
 	}
@@ -267,7 +267,7 @@ func (g *CavernGenerator) setCircularRegion(terrainMap []bool, cx, cy, radius, w
 func (g *CavernGenerator) randomFillOutsideChambers(terrainMap []bool, width, height int) {
 	for y := 0; y < height; y++ {
 		for x := 0; x < width; x++ {
-			idx := y*width + x
+			idx := positionToIndex(x, y)
 			if terrainMap[idx] {
 				continue // Already carved
 			}
@@ -377,7 +377,7 @@ func (g *CavernGenerator) carveDrunkardTunnel(terrainMap []bool, width, height i
 				}
 				nx, ny := x+dx, y+dy
 				if nx >= 0 && nx < width && ny >= 0 && ny < height {
-					terrainMap[ny*width+nx] = true
+					terrainMap[positionToIndex(nx, ny)] = true
 				}
 			}
 		}
@@ -469,7 +469,7 @@ func (g *CavernGenerator) cellularAutomataStep(terrainMap []bool, width, height 
 
 	for y := 0; y < height; y++ {
 		for x := 0; x < width; x++ {
-			idx := y*width + x
+			idx := positionToIndex(x, y)
 
 			wallCount := 0
 			for dy := -1; dy <= 1; dy++ {
@@ -482,7 +482,7 @@ func (g *CavernGenerator) cellularAutomataStep(terrainMap []bool, width, height 
 						wallCount++
 						continue
 					}
-					if !terrainMap[ny*width+nx] {
+					if !terrainMap[positionToIndex(nx, ny)] {
 						wallCount++
 					}
 				}
@@ -515,7 +515,7 @@ func (g *CavernGenerator) erosionAccretionPass(terrainMap []bool, width, height 
 
 	for y := 1; y < height-1; y++ {
 		for x := 1; x < width-1; x++ {
-			idx := y*width + x
+			idx := positionToIndex(x, y)
 
 			walkableCount := 0
 			wallCount := 0
@@ -529,7 +529,7 @@ func (g *CavernGenerator) erosionAccretionPass(terrainMap []bool, width, height 
 						wallCount++
 						continue
 					}
-					if terrainMap[ny*width+nx] {
+					if terrainMap[positionToIndex(nx, ny)] {
 						walkableCount++
 					} else {
 						wallCount++
@@ -566,7 +566,7 @@ func (g *CavernGenerator) enforceBorders(terrainMap []bool, width, height int) {
 	for y := 0; y < height; y++ {
 		for x := 0; x < width; x++ {
 			if x < border || x >= width-border || y < border || y >= height-border {
-				terrainMap[y*width+x] = false
+				terrainMap[positionToIndex(x, y)] = false
 			}
 		}
 	}
@@ -595,7 +595,7 @@ func (g *CavernGenerator) checkWalkableRatio(terrainMap []bool, width, height in
 		// Too closed: relax some walls
 		for y := 1; y < height-1; y++ {
 			for x := 1; x < width-1; x++ {
-				idx := y*width + x
+				idx := positionToIndex(x, y)
 				if terrainMap[idx] {
 					continue
 				}
@@ -608,7 +608,7 @@ func (g *CavernGenerator) checkWalkableRatio(terrainMap []bool, width, height in
 						}
 						nx, ny := x+dx, y+dy
 						if nx >= 0 && nx < width && ny >= 0 && ny < height {
-							if terrainMap[ny*width+nx] {
+							if terrainMap[positionToIndex(nx, ny)] {
 								walkableCount++
 							}
 						}
@@ -658,7 +658,7 @@ func (g *CavernGenerator) placeStalactites(terrainMap []bool, width, height int)
 
 	for y := 2; y < height-2; y++ {
 		for x := 2; x < width-2; x++ {
-			idx := y*width + x
+			idx := positionToIndex(x, y)
 			if !terrainMap[idx] {
 				continue
 			}
@@ -672,7 +672,7 @@ func (g *CavernGenerator) placeStalactites(terrainMap []bool, width, height int)
 					}
 					nx, ny := x+dx, y+dy
 					if nx >= 0 && nx < width && ny >= 0 && ny < height {
-						if !terrainMap[ny*width+nx] {
+						if !terrainMap[positionToIndex(nx, ny)] {
 							adjacentWall = true
 						}
 					}

@@ -102,7 +102,7 @@ func (g *MilitaryBaseGenerator) Generate(width, height int, images TileImageSet)
 
 	// Place POI images on tiles
 	for _, pos := range poiPositions {
-		idx := positionToIndex(pos.X, pos.Y, width)
+		idx := positionToIndex(pos.X, pos.Y)
 		if poiImg, ok := images.POIImages[POITown]; ok {
 			result.Tiles[idx].POIType = POITown
 			result.Tiles[idx].Image = poiImg
@@ -133,9 +133,9 @@ func (g *MilitaryBaseGenerator) initializeTerrain(terrainMap []bool, width, heig
 	for y := 0; y < height; y++ {
 		for x := 0; x < width; x++ {
 			if x < border || x >= width-border || y < border || y >= height-border {
-				terrainMap[y*width+x] = false
+				terrainMap[positionToIndex(x, y)] = false
 			} else {
-				terrainMap[y*width+x] = true
+				terrainMap[positionToIndex(x, y)] = true
 			}
 		}
 	}
@@ -163,7 +163,7 @@ func (g *MilitaryBaseGenerator) buildPerimeterWall(terrainMap []bool, width, hei
 			inRight := x > ox2-thick && x <= ox2
 
 			if inTop || inBottom || inLeft || inRight {
-				terrainMap[y*width+x] = false
+				terrainMap[positionToIndex(x, y)] = false
 			}
 		}
 	}
@@ -187,7 +187,7 @@ func (g *MilitaryBaseGenerator) carveGate(terrainMap []bool, width, height int, 
 		for dy := 0; dy < thick; dy++ {
 			for x := gateStart; x < gateStart+gw; x++ {
 				if x >= 0 && x < width && wallY-dy >= 0 {
-					terrainMap[(wallY-dy)*width+x] = true
+					terrainMap[positionToIndex(x, wallY-dy)] = true
 				}
 			}
 		}
@@ -196,7 +196,7 @@ func (g *MilitaryBaseGenerator) carveGate(terrainMap []bool, width, height int, 
 			for x := gateStart; x < gateStart+gw; x++ {
 				y := wallY + dy
 				if x >= 0 && x < width && y >= 0 && y < height {
-					terrainMap[y*width+x] = true
+					terrainMap[positionToIndex(x, y)] = true
 				}
 			}
 		}
@@ -208,7 +208,7 @@ func (g *MilitaryBaseGenerator) carveGate(terrainMap []bool, width, height int, 
 		for dy := 0; dy < thick; dy++ {
 			for x := gateStart; x < gateStart+gw; x++ {
 				if x >= 0 && x < width && wallY+dy < height {
-					terrainMap[(wallY+dy)*width+x] = true
+					terrainMap[positionToIndex(x, wallY+dy)] = true
 				}
 			}
 		}
@@ -216,7 +216,7 @@ func (g *MilitaryBaseGenerator) carveGate(terrainMap []bool, width, height int, 
 			for x := gateStart; x < gateStart+gw; x++ {
 				y := wallY - dy
 				if x >= 0 && x < width && y >= 0 && y < height {
-					terrainMap[y*width+x] = true
+					terrainMap[positionToIndex(x, y)] = true
 				}
 			}
 		}
@@ -228,7 +228,7 @@ func (g *MilitaryBaseGenerator) carveGate(terrainMap []bool, width, height int, 
 		for dx := 0; dx < thick; dx++ {
 			for y := gateStart; y < gateStart+gw; y++ {
 				if y >= 0 && y < height && wallX-dx >= 0 {
-					terrainMap[y*width+(wallX-dx)] = true
+					terrainMap[positionToIndex(wallX-dx, y)] = true
 				}
 			}
 		}
@@ -236,7 +236,7 @@ func (g *MilitaryBaseGenerator) carveGate(terrainMap []bool, width, height int, 
 			for y := gateStart; y < gateStart+gw; y++ {
 				x := wallX + dx
 				if x >= 0 && x < width && y >= 0 && y < height {
-					terrainMap[y*width+x] = true
+					terrainMap[positionToIndex(x, y)] = true
 				}
 			}
 		}
@@ -248,7 +248,7 @@ func (g *MilitaryBaseGenerator) carveGate(terrainMap []bool, width, height int, 
 		for dx := 0; dx < thick; dx++ {
 			for y := gateStart; y < gateStart+gw; y++ {
 				if y >= 0 && y < height && wallX+dx < width {
-					terrainMap[y*width+(wallX+dx)] = true
+					terrainMap[positionToIndex(wallX+dx, y)] = true
 				}
 			}
 		}
@@ -256,7 +256,7 @@ func (g *MilitaryBaseGenerator) carveGate(terrainMap []bool, width, height int, 
 			for y := gateStart; y < gateStart+gw; y++ {
 				x := wallX - dx
 				if x >= 0 && x < width && y >= 0 && y < height {
-					terrainMap[y*width+x] = true
+					terrainMap[positionToIndex(x, y)] = true
 				}
 			}
 		}
@@ -287,7 +287,7 @@ func (g *MilitaryBaseGenerator) placeGuardTowers(terrainMap []bool, width, heigh
 			for dx := 0; dx < ts; dx++ {
 				nx, ny := tx+dx, ty+dy
 				if nx >= 0 && nx < width && ny >= 0 && ny < height {
-					terrainMap[ny*width+nx] = false
+					terrainMap[positionToIndex(nx, ny)] = false
 				}
 			}
 		}
@@ -382,7 +382,7 @@ func (g *MilitaryBaseGenerator) placeSupplyAreas(terrainMap []bool, width, heigh
 			for dx := 0; dx < bLen; dx++ {
 				nx := bx + dx
 				if nx >= 0 && nx < width && by >= 0 && by < height {
-					terrainMap[by*width+nx] = false
+					terrainMap[positionToIndex(nx, by)] = false
 				}
 			}
 		}
@@ -396,7 +396,7 @@ func (g *MilitaryBaseGenerator) placeSupplyAreas(terrainMap []bool, width, heigh
 				for dx := 0; dx < 2; dx++ {
 					nx, ny := cx+dx, cy+dy
 					if nx >= 0 && nx < width && ny >= 0 && ny < height {
-						terrainMap[ny*width+nx] = false
+						terrainMap[positionToIndex(nx, ny)] = false
 					}
 				}
 			}
@@ -461,7 +461,7 @@ func (g *MilitaryBaseGenerator) scatterPOIs(terrainMap []bool, width, height int
 		if x < 0 || x >= width || y < 0 || y >= height {
 			continue
 		}
-		if !terrainMap[y*width+x] {
+		if !terrainMap[positionToIndex(x, y)] {
 			continue
 		}
 

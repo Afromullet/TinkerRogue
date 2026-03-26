@@ -195,7 +195,7 @@ func isSpawnValid(pos coords.LogicalPosition, result *GenerationResult, width in
 		for dy := -1; dy <= 1; dy++ {
 			nx := pos.X + dx
 			ny := pos.Y + dy
-			idx := positionToIndex(nx, ny, width)
+			idx := positionToIndex(nx, ny)
 			if idx < 0 || idx >= numTiles {
 				return false
 			}

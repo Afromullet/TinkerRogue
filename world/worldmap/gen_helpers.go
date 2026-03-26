@@ -12,9 +12,9 @@ import (
 // HELPER FUNCTIONS
 // ========================================
 
-// positionToIndex converts x, y coordinates to a flat array index
-func positionToIndex(x, y, width int) int {
-	return y*width + x
+// positionToIndex converts x, y coordinates to a flat array index via CoordManager.
+func positionToIndex(x, y int) int {
+	return coords.CoordManager.LogicalToIndex(coords.LogicalPosition{X: x, Y: y})
 }
 
 // selectRandomImage returns a random image from the slice, or nil if empty
@@ -58,7 +58,7 @@ func createEmptyTiles(width, height int, images TileImageSet) []*Tile {
 	for x := 0; x < width; x++ {
 		for y := 0; y < height; y++ {
 			logicalPos := coords.LogicalPosition{X: x, Y: y}
-			index := positionToIndex(x, y, width)
+			index := positionToIndex(x, y)
 			wallImg := selectRandomImage(images.WallImages)
 
 			// Initialize tile directly in the contiguous slice
@@ -85,7 +85,7 @@ func carveRoom(result *GenerationResult, room Rect, width int, images TileImageS
 	for y := room.Y1 + 1; y < room.Y2; y++ {
 		for x := room.X1 + 1; x < room.X2; x++ {
 			logicalPos := coords.LogicalPosition{X: x, Y: y}
-			index := positionToIndex(x, y, width)
+			index := positionToIndex(x, y)
 
 			result.Tiles[index].Blocked = false
 			result.Tiles[index].TileType = FLOOR
@@ -105,10 +105,10 @@ func carveTunnel(result *GenerationResult, start, end, fixed, width int, isHoriz
 
 		if isHorizontal {
 			logicalPos = coords.LogicalPosition{X: i, Y: fixed}
-			index = positionToIndex(i, fixed, width)
+			index = positionToIndex(i, fixed)
 		} else {
 			logicalPos = coords.LogicalPosition{X: fixed, Y: i}
-			index = positionToIndex(fixed, i, width)
+			index = positionToIndex(fixed, i)
 		}
 
 		if index >= 0 && index < len(result.Tiles) {
@@ -140,19 +140,19 @@ func carveVerticalTunnel(result *GenerationResult, y1, y2, x, width int, images 
 func floodFillRegion(terrainMap []bool, visited []bool, startX, startY, width, height int) []int {
 	var region []int
 	queue := [][2]int{{startX, startY}}
-	visited[startY*width+startX] = true
+	visited[positionToIndex(startX, startY)] = true
 
 	for len(queue) > 0 {
 		x, y := queue[0][0], queue[0][1]
 		queue = queue[1:]
 
-		region = append(region, y*width+x)
+		region = append(region, positionToIndex(x, y))
 
 		neighbors := [][2]int{{0, -1}, {0, 1}, {-1, 0}, {1, 0}}
 		for _, dir := range neighbors {
 			nx, ny := x+dir[0], y+dir[1]
 			if nx >= 0 && nx < width && ny >= 0 && ny < height {
-				nidx := ny*width + nx
+				nidx := positionToIndex(nx, ny)
 				if !visited[nidx] && terrainMap[nidx] {
 					visited[nidx] = true
 					queue = append(queue, [2]int{nx, ny})
@@ -174,13 +174,13 @@ func carveCorridorBetween(terrainMap []bool, width, height, fromIdx, toIdx int) 
 	if fromX < toX {
 		for x := fromX; x <= toX; x++ {
 			if x >= 0 && x < width && fromY >= 0 && fromY < height {
-				terrainMap[fromY*width+x] = true
+				terrainMap[positionToIndex(x, fromY)] = true
 			}
 		}
 	} else {
 		for x := fromX; x >= toX; x-- {
 			if x >= 0 && x < width && fromY >= 0 && fromY < height {
-				terrainMap[fromY*width+x] = true
+				terrainMap[positionToIndex(x, fromY)] = true
 			}
 		}
 	}
@@ -189,13 +189,13 @@ func carveCorridorBetween(terrainMap []bool, width, height, fromIdx, toIdx int) 
 	if fromY < toY {
 		for y := fromY; y <= toY; y++ {
 			if toX >= 0 && toX < width && y >= 0 && y < height {
-				terrainMap[y*width+toX] = true
+				terrainMap[positionToIndex(toX, y)] = true
 			}
 		}
 	} else {
 		for y := fromY; y >= toY; y-- {
 			if toX >= 0 && toX < width && y >= 0 && y < height {
-				terrainMap[y*width+toX] = true
+				terrainMap[positionToIndex(toX, y)] = true
 			}
 		}
 	}
@@ -211,7 +211,7 @@ func ensureTerrainConnectivity(terrainMap []bool, width, height int) {
 	// Find all regions and track the largest
 	for y := 0; y < height; y++ {
 		for x := 0; x < width; x++ {
-			idx := y*width + x
+			idx := positionToIndex(x, y)
 			if !visited[idx] && terrainMap[idx] {
 				region := floodFillRegion(terrainMap, visited, x, y, width, height)
 				if len(region) > maxSize {
@@ -226,7 +226,7 @@ func ensureTerrainConnectivity(terrainMap []bool, width, height int) {
 	if maxSize == 0 {
 		for y := height / 4; y < (height * 3 / 4); y++ {
 			for x := width / 4; x < (width * 3 / 4); x++ {
-				terrainMap[y*width+x] = true
+				terrainMap[positionToIndex(x, y)] = true
 			}
 		}
 		return
@@ -241,7 +241,7 @@ func ensureTerrainConnectivity(terrainMap []bool, width, height int) {
 	// Connect all other regions to the largest
 	for y := 0; y < height; y++ {
 		for x := 0; x < width; x++ {
-			idx := y*width + x
+			idx := positionToIndex(x, y)
 			if !visited[idx] && terrainMap[idx] {
 				region := floodFillRegion(terrainMap, visited, x, y, width, height)
 				if len(region) > 0 {
@@ -265,7 +265,7 @@ func convertTerrainMapToTiles(result *GenerationResult, terrainMap []bool, width
 
 	for y := 0; y < height; y++ {
 		for x := 0; x < width; x++ {
-			idx := positionToIndex(x, y, width)
+			idx := positionToIndex(x, y)
 			logicalPos := coords.LogicalPosition{X: x, Y: y}
 			pixelX := x * graphics.ScreenInfo.TileSize
 			pixelY := y * graphics.ScreenInfo.TileSize
@@ -295,7 +295,7 @@ func scoreTerrainOpenness(terrainMap []bool, cx, cy, radius, width, height int) 
 		for dx := -radius; dx <= radius; dx++ {
 			nx, ny := cx+dx, cy+dy
 			if nx >= 0 && nx < width && ny >= 0 && ny < height {
-				if terrainMap[ny*width+nx] {
+				if terrainMap[positionToIndex(nx, ny)] {
 					score++
 				}
 			}
@@ -326,7 +326,7 @@ func findBestOpenPosition(terrainMap []bool, width, height, xMin, xMax, yMin, yM
 
 	for y := yMin; y <= yMax; y++ {
 		for x := xMin; x <= xMax; x++ {
-			if !terrainMap[y*width+x] {
+			if !terrainMap[positionToIndex(x, y)] {
 				continue
 			}
 
@@ -366,14 +366,14 @@ func tryPlace2x2PillarOnTerrain(terrainMap []bool, px, py, width, height int) bo
 	for dy := 0; dy < 2; dy++ {
 		for dx := 0; dx < 2; dx++ {
 			nx, ny := px+dx, py+dy
-			if nx < 0 || nx >= width || ny < 0 || ny >= height || !terrainMap[ny*width+nx] {
+			if nx < 0 || nx >= width || ny < 0 || ny >= height || !terrainMap[positionToIndex(nx, ny)] {
 				return false
 			}
 		}
 	}
 	for dy := 0; dy < 2; dy++ {
 		for dx := 0; dx < 2; dx++ {
-			terrainMap[(py+dy)*width+(px+dx)] = false
+			terrainMap[positionToIndex(px+dx, py+dy)] = false
 		}
 	}
 	return true

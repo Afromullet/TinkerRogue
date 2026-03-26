@@ -338,7 +338,7 @@ func carveZShapeCorridor(result *GenerationResult, fromX, fromY, toX, toY, corri
 			// At first corner (midX, fromY)
 			cx, cy := midX+dx, fromY+dy
 			if cx >= 0 && cx < mapWidth && cy >= 0 && cy < mapHeight {
-				idx := positionToIndex(cx, cy, mapWidth)
+				idx := positionToIndex(cx, cy)
 				if idx >= 0 && idx < len(result.Tiles) && result.Tiles[idx].Blocked {
 					result.Tiles[idx].Blocked = false
 					result.Tiles[idx].TileType = FLOOR
@@ -349,7 +349,7 @@ func carveZShapeCorridor(result *GenerationResult, fromX, fromY, toX, toY, corri
 			// At second corner (midX, toY)
 			cx2, cy2 := midX+dx, toY+dy
 			if cx2 >= 0 && cx2 < mapWidth && cy2 >= 0 && cy2 < mapHeight {
-				idx := positionToIndex(cx2, cy2, mapWidth)
+				idx := positionToIndex(cx2, cy2)
 				if idx >= 0 && idx < len(result.Tiles) && result.Tiles[idx].Blocked {
 					result.Tiles[idx].Blocked = false
 					result.Tiles[idx].TileType = FLOOR
@@ -379,7 +379,7 @@ func placeDoorway(result *GenerationResult, room Rect, connX, connY, mapWidth, m
 			wy := connY + dy
 			if wy > room.Y1 && wy < room.Y2 && wy >= 0 && wy < mapHeight {
 				// Only wall-ify if it's currently a floor tile in the corridor area
-				idx := positionToIndex(connX, wy, mapWidth)
+				idx := positionToIndex(connX, wy)
 				if idx >= 0 && idx < len(result.Tiles) && !result.Tiles[idx].Blocked {
 					setTileWall(result, connX, wy, mapWidth, images)
 				}
@@ -393,7 +393,7 @@ func placeDoorway(result *GenerationResult, room Rect, connX, connY, mapWidth, m
 			}
 			wx := connX + dx
 			if wx > room.X1 && wx < room.X2 && wx >= 0 && wx < mapWidth {
-				idx := positionToIndex(wx, connY, mapWidth)
+				idx := positionToIndex(wx, connY)
 				if idx >= 0 && idx < len(result.Tiles) && !result.Tiles[idx].Blocked {
 					setTileWall(result, wx, connY, mapWidth, images)
 				}

@@ -34,7 +34,7 @@ func setTileWall(result *GenerationResult, x, y, width int, images TileImageSet)
 	if x < 0 || y < 0 || x >= width || y >= height {
 		return
 	}
-	idx := positionToIndex(x, y, width)
+	idx := positionToIndex(x, y)
 	if idx >= 0 && idx < numTiles {
 		result.Tiles[idx].Blocked = true
 		result.Tiles[idx].TileType = WALL
