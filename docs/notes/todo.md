@@ -1,5 +1,8 @@
 # Bug Fixes
 
+- There has to be a tradeoff between casting spells and moving squads/engaging in combat. Doing both will feel too mechanical. Maybe instead give units the ability to cast spells
+instead of their regular action. Although this will be hard to work in - what determines what spells a unit can cast? Probably just the leader. This also means that
+we need a better system which determines what units can cast what spells (Should be defined in a JSON file). 
 - XP Awards seem to be odd. I.E, didivided by 10. Combat resolution grants 40 xp, but units only get 4 xp
 - Start Random Encounter alwys starts the same encounter 
 - Can cast spells and use artifacts on enemy turn
@@ -40,9 +43,9 @@
 # Other 
 
 - combat life cycle manager changes only support one player at the moment, de to storing the playerEntityID. Consider changing that for multiplayer
-- There has to be a tradeoff between casting spells and moving squads/engaging in combat. Doing both will feel too mechanical. 
 - ExecuteThreatEvolutionEffect needs to changed base off threat type/data.  
 - Add Debug command to reload JSON. Will be used for testing
+- I added a json file for raid room archetypes - gamedata\raidarchetypes.go. I will have to add some more randomization to the archetypes. One possibility is through unit traits. Not sure exactly yet how to implement that..Might just go with a "preferred room" field for the unit json. 
 
 # Cleanup
 

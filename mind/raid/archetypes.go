@@ -1,127 +1,49 @@
 package raid
 
+import (
+	"encoding/json"
+	"fmt"
+	"os"
+)
+
 // ArchetypeUnit defines a single unit within a squad archetype.
 type ArchetypeUnit struct {
-	MonsterType string // Key into monsterdata.json (looked up via squads.GetTemplateByUnitType)
-	GridRow     int
-	GridCol     int
-	GridWidth   int // Default 1
-	GridHeight  int // Default 1
-	IsLeader    bool
+	MonsterType string `json:"monsterType"` // Key into monsterdata.json (looked up via squads.GetTemplateByUnitType)
+	GridRow     int    `json:"gridRow"`
+	GridCol     int    `json:"gridCol"`
+	GridWidth   int    `json:"gridWidth"`  // Default 1
+	GridHeight  int    `json:"gridHeight"` // Default 1
+	IsLeader    bool   `json:"isLeader"`
 }
 
 // SquadArchetype defines a pre-composed garrison squad template.
 type SquadArchetype struct {
-	Name          string
-	DisplayName   string
-	Units         []ArchetypeUnit
-	PreferredRooms []string
+	Name           string          `json:"name"`
+	DisplayName    string          `json:"displayName"`
+	Units          []ArchetypeUnit `json:"units"`
+	PreferredRooms []string        `json:"preferredRooms"`
 }
 
-// GarrisonArchetypes defines all garrison squad compositions.
-var GarrisonArchetypes = []SquadArchetype{
-	{
-		Name:        "chokepoint_guard",
-		DisplayName: "Chokepoint Guard",
-		Units: []ArchetypeUnit{
-			{MonsterType: "Knight", GridRow: 0, GridCol: 0, GridWidth: 1, GridHeight: 1, IsLeader: true},
-			{MonsterType: "Knight", GridRow: 0, GridCol: 1, GridWidth: 1, GridHeight: 1},
-			{MonsterType: "Crossbowman", GridRow: 1, GridCol: 0, GridWidth: 1, GridHeight: 1},
-			{MonsterType: "Crossbowman", GridRow: 1, GridCol: 1, GridWidth: 1, GridHeight: 1},
-			{MonsterType: "Priest", GridRow: 2, GridCol: 0, GridWidth: 1, GridHeight: 1},
-		},
-		PreferredRooms: []string{"guard_post"},
+// GarrisonArchetypes holds all garrison squad compositions. Populated by LoadArchetypeData.
+var GarrisonArchetypes []SquadArchetype
 
-	},
-	{
-		Name:        "shield_wall",
-		DisplayName: "Shield Wall",
-		Units: []ArchetypeUnit{
-			{MonsterType: "Ogre", GridRow: 0, GridCol: 0, GridWidth: 2, GridHeight: 2, IsLeader: true},
-			{MonsterType: "Archer", GridRow: 1, GridCol: 0, GridWidth: 1, GridHeight: 1},
-			{MonsterType: "Archer", GridRow: 1, GridCol: 1, GridWidth: 1, GridHeight: 1},
-			{MonsterType: "Cleric", GridRow: 2, GridCol: 0, GridWidth: 1, GridHeight: 1},
-		},
-		PreferredRooms: []string{"barracks", "armory"},
+// LoadArchetypeData reads and parses raidarchetypes.json into GarrisonArchetypes.
+func LoadArchetypeData(path string) error {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return fmt.Errorf("failed to read archetype data: %w", err)
+	}
 
-	},
-	{
-		Name:        "ranged_battery",
-		DisplayName: "Ranged Battery",
-		Units: []ArchetypeUnit{
-			{MonsterType: "Spearman", GridRow: 0, GridCol: 0, GridWidth: 1, GridHeight: 1, IsLeader: true},
-			{MonsterType: "Marksman", GridRow: 1, GridCol: 0, GridWidth: 1, GridHeight: 1},
-			{MonsterType: "Marksman", GridRow: 1, GridCol: 1, GridWidth: 1, GridHeight: 1},
-			{MonsterType: "Archer", GridRow: 1, GridCol: 2, GridWidth: 1, GridHeight: 1},
-			{MonsterType: "Mage", GridRow: 2, GridCol: 0, GridWidth: 1, GridHeight: 1},
-		},
-		PreferredRooms: []string{"mage_tower"},
+	var file struct {
+		Archetypes []SquadArchetype `json:"archetypes"`
+	}
+	if err := json.Unmarshal(data, &file); err != nil {
+		return fmt.Errorf("failed to parse archetype data: %w", err)
+	}
 
-	},
-	{
-		Name:        "fast_response",
-		DisplayName: "Fast Response",
-		Units: []ArchetypeUnit{
-			{MonsterType: "Swordsman", GridRow: 0, GridCol: 0, GridWidth: 1, GridHeight: 1, IsLeader: true},
-			{MonsterType: "Swordsman", GridRow: 0, GridCol: 1, GridWidth: 1, GridHeight: 1},
-			{MonsterType: "Goblin Raider", GridRow: 1, GridCol: 0, GridWidth: 1, GridHeight: 1},
-			{MonsterType: "Goblin Raider", GridRow: 1, GridCol: 1, GridWidth: 1, GridHeight: 1},
-			{MonsterType: "Scout", GridRow: 2, GridCol: 0, GridWidth: 1, GridHeight: 1},
-		},
-		PreferredRooms: []string{"patrol_route"},
-
-	},
-	{
-		Name:        "mage_tower",
-		DisplayName: "Mage Tower",
-		Units: []ArchetypeUnit{
-			{MonsterType: "Battle Mage", GridRow: 0, GridCol: 0, GridWidth: 1, GridHeight: 1, IsLeader: true},
-			{MonsterType: "Wizard", GridRow: 1, GridCol: 0, GridWidth: 1, GridHeight: 1},
-			{MonsterType: "Wizard", GridRow: 1, GridCol: 1, GridWidth: 1, GridHeight: 1},
-			{MonsterType: "Warlock", GridRow: 2, GridCol: 0, GridWidth: 1, GridHeight: 1},
-			{MonsterType: "Sorcerer", GridRow: 2, GridCol: 1, GridWidth: 1, GridHeight: 1},
-		},
-		PreferredRooms: []string{"mage_tower"},
-
-	},
-	{
-		Name:        "ambush_pack",
-		DisplayName: "Ambush Pack",
-		Units: []ArchetypeUnit{
-			{MonsterType: "Assassin", GridRow: 0, GridCol: 0, GridWidth: 1, GridHeight: 1, IsLeader: true},
-			{MonsterType: "Assassin", GridRow: 0, GridCol: 1, GridWidth: 1, GridHeight: 1},
-			{MonsterType: "Rogue", GridRow: 1, GridCol: 0, GridWidth: 1, GridHeight: 1},
-			{MonsterType: "Rogue", GridRow: 1, GridCol: 1, GridWidth: 1, GridHeight: 1},
-			{MonsterType: "Ranger", GridRow: 2, GridCol: 0, GridWidth: 1, GridHeight: 1},
-		},
-		PreferredRooms: []string{"patrol_route"},
-
-	},
-	{
-		Name:        "command_post",
-		DisplayName: "Command Post Guard",
-		Units: []ArchetypeUnit{
-			{MonsterType: "Knight", GridRow: 0, GridCol: 0, GridWidth: 1, GridHeight: 1, IsLeader: true},
-			{MonsterType: "Paladin", GridRow: 0, GridCol: 1, GridWidth: 1, GridHeight: 1},
-			{MonsterType: "Crossbowman", GridRow: 1, GridCol: 0, GridWidth: 1, GridHeight: 1},
-			{MonsterType: "Cleric", GridRow: 2, GridCol: 0, GridWidth: 1, GridHeight: 1},
-			{MonsterType: "Priest", GridRow: 2, GridCol: 1, GridWidth: 1, GridHeight: 1},
-		},
-		PreferredRooms: []string{"command_post"},
-
-	},
-	{
-		Name:        "orc_vanguard",
-		DisplayName: "Orc Vanguard",
-		Units: []ArchetypeUnit{
-			{MonsterType: "Orc Warrior", GridRow: 0, GridCol: 0, GridWidth: 2, GridHeight: 1, IsLeader: true},
-			{MonsterType: "Ogre", GridRow: 0, GridCol: 1, GridWidth: 2, GridHeight: 2},
-			{MonsterType: "Warrior", GridRow: 1, GridCol: 0, GridWidth: 1, GridHeight: 1},
-			{MonsterType: "Warrior", GridRow: 1, GridCol: 1, GridWidth: 1, GridHeight: 1},
-		},
-		PreferredRooms: []string{"barracks"},
-
-	},
+	GarrisonArchetypes = file.Archetypes
+	println("Archetype data loaded:", len(GarrisonArchetypes), "archetypes")
+	return nil
 }
 
 // GetArchetype finds a squad archetype by name. Returns nil if not found.

@@ -1,0 +1,98 @@
+{
+  "archetypes": [
+    {
+      "name": "chokepoint_guard",
+      "displayName": "Chokepoint Guard",
+      "units": [
+        {"monsterType": "Knight", "gridRow": 0, "gridCol": 0, "gridWidth": 1, "gridHeight": 1, "isLeader": true},
+        {"monsterType": "Knight", "gridRow": 0, "gridCol": 1, "gridWidth": 1, "gridHeight": 1},
+        {"monsterType": "Crossbowman", "gridRow": 1, "gridCol": 0, "gridWidth": 1, "gridHeight": 1},
+        {"monsterType": "Crossbowman", "gridRow": 1, "gridCol": 1, "gridWidth": 1, "gridHeight": 1},
+        {"monsterType": "Priest", "gridRow": 2, "gridCol": 0, "gridWidth": 1, "gridHeight": 1}
+      ],
+      "preferredRooms": ["guard_post"]
+    },
+    {
+      "name": "shield_wall",
+      "displayName": "Shield Wall",
+      "units": [
+        {"monsterType": "Ogre", "gridRow": 0, "gridCol": 0, "gridWidth": 2, "gridHeight": 2, "isLeader": true},
+        {"monsterType": "Archer", "gridRow": 1, "gridCol": 0, "gridWidth": 1, "gridHeight": 1},
+        {"monsterType": "Archer", "gridRow": 1, "gridCol": 1, "gridWidth": 1, "gridHeight": 1},
+        {"monsterType": "Cleric", "gridRow": 2, "gridCol": 0, "gridWidth": 1, "gridHeight": 1}
+      ],
+      "preferredRooms": ["barracks", "armory"]
+    },
+    {
+      "name": "ranged_battery",
+      "displayName": "Ranged Battery",
+      "units": [
+        {"monsterType": "Spearman", "gridRow": 0, "gridCol": 0, "gridWidth": 1, "gridHeight": 1, "isLeader": true},
+        {"monsterType": "Marksman", "gridRow": 1, "gridCol": 0, "gridWidth": 1, "gridHeight": 1},
+        {"monsterType": "Marksman", "gridRow": 1, "gridCol": 1, "gridWidth": 1, "gridHeight": 1},
+        {"monsterType": "Archer", "gridRow": 1, "gridCol": 2, "gridWidth": 1, "gridHeight": 1},
+        {"monsterType": "Mage", "gridRow": 2, "gridCol": 0, "gridWidth": 1, "gridHeight": 1}
+      ],
+      "preferredRooms": ["mage_tower"]
+    },
+    {
+      "name": "fast_response",
+      "displayName": "Fast Response",
+      "units": [
+        {"monsterType": "Swordsman", "gridRow": 0, "gridCol": 0, "gridWidth": 1, "gridHeight": 1, "isLeader": true},
+        {"monsterType": "Swordsman", "gridRow": 0, "gridCol": 1, "gridWidth": 1, "gridHeight": 1},
+        {"monsterType": "Goblin Raider", "gridRow": 1, "gridCol": 0, "gridWidth": 1, "gridHeight": 1},
+        {"monsterType": "Goblin Raider", "gridRow": 1, "gridCol": 1, "gridWidth": 1, "gridHeight": 1},
+        {"monsterType": "Scout", "gridRow": 2, "gridCol": 0, "gridWidth": 1, "gridHeight": 1}
+      ],
+      "preferredRooms": ["patrol_route"]
+    },
+    {
+      "name": "mage_tower",
+      "displayName": "Mage Tower",
+      "units": [
+        {"monsterType": "Battle Mage", "gridRow": 0, "gridCol": 0, "gridWidth": 1, "gridHeight": 1, "isLeader": true},
+        {"monsterType": "Wizard", "gridRow": 1, "gridCol": 0, "gridWidth": 1, "gridHeight": 1},
+        {"monsterType": "Wizard", "gridRow": 1, "gridCol": 1, "gridWidth": 1, "gridHeight": 1},
+        {"monsterType": "Warlock", "gridRow": 2, "gridCol": 0, "gridWidth": 1, "gridHeight": 1},
+        {"monsterType": "Sorcerer", "gridRow": 2, "gridCol": 1, "gridWidth": 1, "gridHeight": 1}
+      ],
+      "preferredRooms": ["mage_tower"]
+    },
+    {
+      "name": "ambush_pack",
+      "displayName": "Ambush Pack",
+      "units": [
+        {"monsterType": "Assassin", "gridRow": 0, "gridCol": 0, "gridWidth": 1, "gridHeight": 1, "isLeader": true},
+        {"monsterType": "Assassin", "gridRow": 0, "gridCol": 1, "gridWidth": 1, "gridHeight": 1},
+        {"monsterType": "Rogue", "gridRow": 1, "gridCol": 0, "gridWidth": 1, "gridHeight": 1},
+        {"monsterType": "Rogue", "gridRow": 1, "gridCol": 1, "gridWidth": 1, "gridHeight": 1},
+        {"monsterType": "Ranger", "gridRow": 2, "gridCol": 0, "gridWidth": 1, "gridHeight": 1}
+      ],
+      "preferredRooms": ["patrol_route"]
+    },
+    {
+      "name": "command_post",
+      "displayName": "Command Post Guard",
+      "units": [
+        {"monsterType": "Knight", "gridRow": 0, "gridCol": 0, "gridWidth": 1, "gridHeight": 1, "isLeader": true},
+        {"monsterType": "Paladin", "gridRow": 0, "gridCol": 1, "gridWidth": 1, "gridHeight": 1},
+        {"monsterType": "Crossbowman", "gridRow": 1, "gridCol": 0, "gridWidth": 1, "gridHeight": 1},
+        {"monsterType": "Cleric", "gridRow": 2, "gridCol": 0, "gridWidth": 1, "gridHeight": 1},
+        {"monsterType": "Priest", "gridRow": 2, "gridCol": 1, "gridWidth": 1, "gridHeight": 1}
+      ],
+      "preferredRooms": ["command_post"]
+    },
+    {
+      "name": "orc_vanguard",
+      "displayName": "Orc Vanguard",
+      "units": [
+        {"monsterType": "Orc Warrior", "gridRow": 0, "gridCol": 0, "gridWidth": 2, "gridHeight": 1, "isLeader": true},
+        {"monsterType": "Ogre", "gridRow": 0, "gridCol": 1, "gridWidth": 2, "gridHeight": 2},
+        {"monsterType": "Warrior", "gridRow": 1, "gridCol": 0, "gridWidth": 1, "gridHeight": 1},
+        {"monsterType": "Warrior", "gridRow": 1, "gridCol": 1, "gridWidth": 1, "gridHeight": 1}
+      ],
+      "preferredRooms": ["barracks"]
+    }
+  ]
+}

@@ -31,6 +31,9 @@ func SetupSharedSystems(g *Game) {
 	if err := raid.LoadRaidConfig(config.AssetPath("gamedata/raidconfig.json")); err != nil {
 		fmt.Printf("WARNING: Failed to load raid config: %v (using defaults)\n", err)
 	}
+	if err := raid.LoadArchetypeData(config.AssetPath("gamedata/raidarchetypes.json")); err != nil {
+		fmt.Printf("WARNING: Failed to load archetype data: %v (using defaults)\n", err)
+	}
 
 	gamesetup.InitMapGenConfigOverride()
 	bootstrap.InitializeCoreECS(&g.em)
