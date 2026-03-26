@@ -81,7 +81,7 @@ func evaluateTrigger(slot *squadcore.AbilitySlot, squadID ecs.EntityID, ecsmanag
 		return squadData.TurnCount == 1
 
 	case squadcore.TriggerEnemyCount:
-		enemyCount := countEnemySquads(ecsmanager)
+		enemyCount := countEnemySquads(squadID, ecsmanager)
 		return float64(enemyCount) >= slot.Threshold
 
 	case squadcore.TriggerMoraleBelow:
@@ -92,13 +92,17 @@ func evaluateTrigger(slot *squadcore.AbilitySlot, squadID ecs.EntityID, ecsmanag
 	}
 }
 
-func countEnemySquads(ecsmanager *common.EntityManager) int {
+func countEnemySquads(squadID ecs.EntityID, ecsmanager *common.EntityManager) int {
+	myFaction := GetSquadFaction(squadID, ecsmanager)
+	if myFaction == 0 {
+		return 0
+	}
+
 	count := 0
 	for _, result := range ecsmanager.World.Query(squadcore.SquadTag) {
-		squadEntity := result.Entity
-		squadData := common.GetComponentType[*squadcore.SquadData](squadEntity, squadcore.SquadComponent)
-
-		if len(squadData.Name) > 0 && squadData.Name[0] != 'P' {
+		otherID := result.Entity.GetID()
+		otherFaction := GetSquadFaction(otherID, ecsmanager)
+		if otherFaction != 0 && otherFaction != myFaction {
 			count++
 		}
 	}

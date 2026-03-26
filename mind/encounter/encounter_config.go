@@ -1,8 +1,13 @@
 package encounter
 
 import (
+	"game_main/common"
+	"game_main/mind/combatlifecycle"
+	"game_main/mind/evaluation"
 	"game_main/overworld/core"
 	"game_main/templates"
+
+	"github.com/bytearena/ecs"
 )
 
 // getDifficultyModifier retrieves difficulty settings for a given encounter level.
@@ -66,6 +71,22 @@ func getDifficultyModifier(level int) templates.JSONEncounterDifficulty {
 	}
 
 	return result
+}
+
+// calculateTargetPower computes the clamped enemy power target from a set of squad IDs.
+// Averages squad power across the given IDs, scales by difficulty, and clamps to bounds.
+func calculateTargetPower(
+	manager *common.EntityManager,
+	squadIDs []ecs.EntityID,
+	config *evaluation.PowerConfig,
+	difficultyMod templates.JSONEncounterDifficulty,
+) float64 {
+	totalPower := 0.0
+	for _, squadID := range squadIDs {
+		totalPower += evaluation.CalculateSquadPower(squadID, manager, config)
+	}
+	avgPower := totalPower / float64(len(squadIDs))
+	return combatlifecycle.ClampPowerTarget(avgPower*difficultyMod.PowerMultiplier, difficultyMod)
 }
 
 // GetSquadPreferences retrieves preferred squad composition for an encounter type.

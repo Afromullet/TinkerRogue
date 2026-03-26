@@ -120,14 +120,8 @@ func (s *GarrisonDefenseStarter) Prepare(manager *common.EntityManager) (*combat
 
 	// Calculate attacker power from garrison strength (not roster owner)
 	powerConfig := evaluation.GetPowerConfigByProfile(DefaultPowerProfile)
-	totalGarrisonPower := 0.0
-	for _, squadID := range garrisonData.SquadIDs {
-		totalGarrisonPower += evaluation.CalculateSquadPower(squadID, manager, powerConfig)
-	}
-	avgGarrisonPower := totalGarrisonPower / float64(len(garrisonData.SquadIDs))
-
 	difficultyMod := getDifficultyModifier(encounterData.Level)
-	targetEnemyPower := combatlifecycle.ClampPowerTarget(avgGarrisonPower*difficultyMod.PowerMultiplier, difficultyMod)
+	targetEnemyPower := calculateTargetPower(manager, garrisonData.SquadIDs, powerConfig, difficultyMod)
 
 	enemySquadSpecs := generateEnemySquadsByPower(
 		manager, targetEnemyPower, difficultyMod, encounterData, *nodePos, powerConfig,

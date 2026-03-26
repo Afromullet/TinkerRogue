@@ -59,6 +59,20 @@ func (ftlm *FactionThreatLevelManager) GetSquadThreatAtRange(factionID, squadID 
 	return val, exists
 }
 
+// GetSquadThreatLevel returns the SquadThreatLevel for a squad in a faction.
+// Returns (threat, true) if found, (nil, false) otherwise.
+func (ftlm *FactionThreatLevelManager) GetSquadThreatLevel(factionID, squadID ecs.EntityID) (*SquadThreatLevel, bool) {
+	faction, exists := ftlm.factions[factionID]
+	if !exists || faction == nil {
+		return nil, false
+	}
+	squad, exists := faction.squadThreatLevels[squadID]
+	if !exists || squad == nil {
+		return nil, false
+	}
+	return squad, true
+}
+
 type FactionThreatLevel struct {
 	manager           *common.EntityManager
 	cache             *combatcore.CombatQueryCache

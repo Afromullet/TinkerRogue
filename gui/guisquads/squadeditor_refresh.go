@@ -58,7 +58,7 @@ func (sem *SquadEditorMode) refreshCurrentSquad() {
 func (sem *SquadEditorMode) refreshSquadSelector() {
 	container := sem.GetPanelContainer(SquadEditorPanelSquadSelector)
 	sem.squadSelector = sem.replaceListInContainer(container, sem.squadSelector, func() *widget.List {
-		return builders.CreateSquadList(builders.SquadListConfig{
+		return CreateSquadList(SquadListConfig{
 			SquadIDs:      sem.squadNav.AllIDs,
 			Manager:       sem.Context.ECSManager,
 			ScreenWidth:   sem.Layout.ScreenWidth,
@@ -80,7 +80,7 @@ func (sem *SquadEditorMode) rebuildUnitListWidget(squadID ecs.EntityID) {
 	panelHeight := int(float64(sem.Layout.ScreenHeight) * specs.SquadEditorUnitPanelHeight)
 
 	sem.unitList = sem.replaceListInContainer(sem.unitContent, sem.unitList, func() *widget.List {
-		return builders.CreateUnitList(builders.UnitListConfig{
+		return CreateUnitList(UnitListConfig{
 			UnitIDs:       unitIDs,
 			Manager:       sem.Queries.ECSManager,
 			ScreenWidth:   panelWidth,

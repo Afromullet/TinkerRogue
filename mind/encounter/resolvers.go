@@ -40,72 +40,85 @@ func (r *OverworldCombatResolver) Resolve(manager *common.EntityManager) *combat
 		return nil
 	}
 
+	if r.PlayerVictory {
+		return r.resolveVictory(manager, threatEntity, nodeData, enemyUnitsKilled)
+	}
+	return r.resolveDefeat(manager, threatEntity, nodeData)
+}
+
+func (r *OverworldCombatResolver) resolveVictory(
+	manager *common.EntityManager,
+	threatEntity *ecs.Entity,
+	nodeData *core.OverworldNodeData,
+	enemyUnitsKilled int,
+) *combatlifecycle.ResolutionPlan {
+	damageDealt := calculateThreatDamage(enemyUnitsKilled)
+	oldIntensity := nodeData.Intensity
+	nodeData.Intensity -= damageDealt
 	currentTick := core.GetCurrentTick(manager)
 
-	if r.PlayerVictory {
-		damageDealt := calculateThreatDamage(enemyUnitsKilled)
-		oldIntensity := nodeData.Intensity
-		nodeData.Intensity -= damageDealt
+	rewards := combatlifecycle.CalculateIntensityReward(oldIntensity)
 
-		rewards := combatlifecycle.CalculateIntensityReward(oldIntensity)
+	target := combatlifecycle.GrantTarget{
+		PlayerEntityID: r.PlayerEntityID,
+		SquadIDs:       r.PlayerSquadIDs,
+	}
 
-		if nodeData.Intensity <= 0 {
-			// Destroy threat node completely
-			threat.DestroyThreatNode(manager, threatEntity)
-
-			core.LogEvent(core.EventCombatResolved, currentTick, r.ThreatNodeID,
-				fmt.Sprintf("Combat victory - Threat %d destroyed", r.ThreatNodeID),
-				map[string]interface{}{
-					"victory":           true,
-					"intensity_reduced": oldIntensity,
-					"rewards_gold":      rewards.Gold,
-					"rewards_xp":        rewards.Experience,
-				})
-
-			fmt.Printf("Threat %d destroyed! Rewards: %d gold, %d XP\n",
-				r.ThreatNodeID, rewards.Gold, rewards.Experience)
-
-			return &combatlifecycle.ResolutionPlan{
-				Rewards: rewards,
-				Target: combatlifecycle.GrantTarget{
-					PlayerEntityID: r.PlayerEntityID,
-					SquadIDs:       r.PlayerSquadIDs,
-				},
-				Description: fmt.Sprintf("Threat %d destroyed", r.ThreatNodeID),
-			}
-		}
-
-		// Weakened but not destroyed — partial rewards
-		partialRewards := rewards.Scale(0.5)
-		nodeData.GrowthProgress = 0.0
+	if nodeData.Intensity <= 0 {
+		threat.DestroyThreatNode(manager, threatEntity)
 
 		core.LogEvent(core.EventCombatResolved, currentTick, r.ThreatNodeID,
-			fmt.Sprintf("Combat victory - Threat %d weakened to intensity %d", r.ThreatNodeID, nodeData.Intensity),
+			fmt.Sprintf("Combat victory - Threat %d destroyed", r.ThreatNodeID),
 			map[string]interface{}{
-				"victory":          true,
-				"intensity_reduced": damageDealt,
-				"new_intensity":    nodeData.Intensity,
-				"rewards_gold":     partialRewards.Gold,
-				"rewards_xp":       partialRewards.Experience,
+				"victory":           true,
+				"intensity_reduced": oldIntensity,
+				"rewards_gold":      rewards.Gold,
+				"rewards_xp":        rewards.Experience,
 			})
 
-		fmt.Printf("Threat %d weakened to intensity %d. Partial rewards: %d gold, %d XP\n",
-			r.ThreatNodeID, nodeData.Intensity, partialRewards.Gold, partialRewards.Experience)
+		fmt.Printf("Threat %d destroyed! Rewards: %d gold, %d XP\n",
+			r.ThreatNodeID, rewards.Gold, rewards.Experience)
 
 		return &combatlifecycle.ResolutionPlan{
-			Rewards: partialRewards,
-			Target: combatlifecycle.GrantTarget{
-				PlayerEntityID: r.PlayerEntityID,
-				SquadIDs:       r.PlayerSquadIDs,
-			},
-			Description: fmt.Sprintf("Threat %d weakened to intensity %d", r.ThreatNodeID, nodeData.Intensity),
+			Rewards:     rewards,
+			Target:      target,
+			Description: fmt.Sprintf("Threat %d destroyed", r.ThreatNodeID),
 		}
 	}
 
-	// Player defeat — threat grows stronger
+	// Weakened but not destroyed — partial rewards
+	partialRewards := rewards.Scale(0.5)
+	nodeData.GrowthProgress = 0.0
+
+	core.LogEvent(core.EventCombatResolved, currentTick, r.ThreatNodeID,
+		fmt.Sprintf("Combat victory - Threat %d weakened to intensity %d", r.ThreatNodeID, nodeData.Intensity),
+		map[string]interface{}{
+			"victory":           true,
+			"intensity_reduced": damageDealt,
+			"new_intensity":     nodeData.Intensity,
+			"rewards_gold":      partialRewards.Gold,
+			"rewards_xp":        partialRewards.Experience,
+		})
+
+	fmt.Printf("Threat %d weakened to intensity %d. Partial rewards: %d gold, %d XP\n",
+		r.ThreatNodeID, nodeData.Intensity, partialRewards.Gold, partialRewards.Experience)
+
+	return &combatlifecycle.ResolutionPlan{
+		Rewards:     partialRewards,
+		Target:      target,
+		Description: fmt.Sprintf("Threat %d weakened to intensity %d", r.ThreatNodeID, nodeData.Intensity),
+	}
+}
+
+func (r *OverworldCombatResolver) resolveDefeat(
+	manager *common.EntityManager,
+	threatEntity *ecs.Entity,
+	nodeData *core.OverworldNodeData,
+) *combatlifecycle.ResolutionPlan {
 	oldIntensity := nodeData.Intensity
 	nodeData.Intensity += DefeatIntensityGrowth
 	nodeData.GrowthProgress = 0.0
+	currentTick := core.GetCurrentTick(manager)
 
 	// Update influence radius
 	influenceData := common.GetComponentType[*core.InfluenceData](threatEntity, core.InfluenceComponent)

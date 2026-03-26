@@ -60,11 +60,7 @@ func (ctl *CombatThreatLayer) Compute(currentRound int) {
 			}
 
 			// Get threat data from base threat system
-			factionThreat, exists := ctl.baseThreatMgr.factions[enemyFactionID]
-			if !exists {
-				continue
-			}
-			squadThreat, exists := factionThreat.squadThreatLevels[squadID]
+			squadThreat, exists := ctl.baseThreatMgr.GetSquadThreatLevel(enemyFactionID, squadID)
 			if !exists {
 				continue
 			}

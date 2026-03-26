@@ -70,7 +70,7 @@ func init() {
 			result.Container.AddChild(titleLabel)
 
 			// Squad list - will be populated in Enter()
-			squadList := builders.CreateSquadList(builders.SquadListConfig{
+			squadList := CreateSquadList(SquadListConfig{
 				SquadIDs:      []ecs.EntityID{},
 				Manager:       sem.Context.ECSManager,
 				ScreenWidth:   layout.ScreenWidth,
@@ -189,7 +189,7 @@ func init() {
 
 			result.Container.AddChild(builders.CreateSmallLabel("Squad Units:"))
 
-			unitList := builders.CreateUnitList(builders.UnitListConfig{
+			unitList := CreateUnitList(UnitListConfig{
 				UnitIDs:       []ecs.EntityID{},
 				Manager:       sem.Context.ECSManager,
 				ScreenWidth:   listWidth,
