@@ -335,14 +335,12 @@ func (cm *CombatMode) initializeUpdateComponents() {
 			infoText += fmt.Sprintf("Squads: %d/%d\n", factionInfo.AliveSquadCount, len(factionInfo.SquadIDs))
 			infoText += fmt.Sprintf("Mana: %d/%d", factionInfo.CurrentMana, factionInfo.MaxMana)
 
-			// Show commander mana from spell system if available
-			if cm.deps.Encounter != nil {
-				commanderID := cm.deps.Encounter.GetRosterOwnerID()
-				if commanderID != 0 {
-					manaData := spells.GetManaData(commanderID, cm.Queries.ECSManager)
-					if manaData != nil {
-						infoText += fmt.Sprintf("\nSpell Mana: %d/%d", manaData.CurrentMana, manaData.MaxMana)
-					}
+			// Show selected squad's mana if it has a spell pool
+			selectedSquadID := cm.deps.BattleState.SelectedSquadID
+			if selectedSquadID != 0 {
+				manaData := spells.GetManaData(selectedSquadID, cm.Queries.ECSManager)
+				if manaData != nil {
+					infoText += fmt.Sprintf("\nSquad Mana: %d/%d", manaData.CurrentMana, manaData.MaxMana)
 				}
 			}
 			return infoText
@@ -386,9 +384,6 @@ func (cm *CombatMode) registerCombatCallbacks() {
 		cm.Queries.MarkAllSquadsDirty()
 		cm.visualization.UpdateThreatManagers()
 		cm.visualization.UpdateThreatEvaluator(round)
-
-		// Reset spell cast flag for the new turn
-		cm.deps.BattleState.HasCastSpell = false
 
 		// Close any open sub-menus (inspect, spell, artifact panels)
 		cm.subMenus.CloseAll()

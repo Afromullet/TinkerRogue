@@ -35,12 +35,12 @@ func (h *SpellCastingHandler) EnterSpellMode() {
 
 // SelectSpell validates mana and enters targeting based on spell type.
 func (h *SpellCastingHandler) SelectSpell(spellID string) {
-	commanderID := h.deps.Encounter.GetRosterOwnerID()
-	if commanderID == 0 {
+	squadID := h.deps.BattleState.SelectedSquadID
+	if squadID == 0 {
 		return
 	}
 
-	if !spells.HasEnoughMana(commanderID, spellID, h.deps.ECSManager) {
+	if !spells.HasEnoughMana(squadID, spellID, h.deps.ECSManager) {
 		return
 	}
 
@@ -79,35 +79,55 @@ func (h *SpellCastingHandler) CancelSpellMode() {
 	h.deps.BattleState.SelectedSpellID = ""
 }
 
-// GetAvailableSpells returns spells the commander can cast (checks mana).
+// GetAvailableSpells returns spells the selected squad can cast (checks mana).
 func (h *SpellCastingHandler) GetAvailableSpells() []*templates.SpellDefinition {
-	commanderID := h.deps.Encounter.GetRosterOwnerID()
-	if commanderID == 0 {
+	squadID := h.deps.BattleState.SelectedSquadID
+	if squadID == 0 {
 		return nil
 	}
-	return spells.GetCastableSpells(commanderID, h.deps.ECSManager)
+	return spells.GetCastableSpells(squadID, h.deps.ECSManager)
 }
 
-// GetAllSpells returns all spells in the commander's spellbook.
+// GetAllSpells returns all spells in the selected squad's spellbook.
 func (h *SpellCastingHandler) GetAllSpells() []*templates.SpellDefinition {
-	commanderID := h.deps.Encounter.GetRosterOwnerID()
-	if commanderID == 0 {
+	squadID := h.deps.BattleState.SelectedSquadID
+	if squadID == 0 {
 		return nil
 	}
-	return spells.GetAllSpells(commanderID, h.deps.ECSManager)
+	return spells.GetAllSpells(squadID, h.deps.ECSManager)
 }
 
-// GetCommanderMana returns the commander's current and max mana.
-func (h *SpellCastingHandler) GetCommanderMana() (current, max int) {
-	commanderID := h.deps.Encounter.GetRosterOwnerID()
-	if commanderID == 0 {
+// GetSquadMana returns the selected squad's current and max mana.
+func (h *SpellCastingHandler) GetSquadMana() (current, max int) {
+	squadID := h.deps.BattleState.SelectedSquadID
+	if squadID == 0 {
 		return 0, 0
 	}
-	mana := spells.GetManaData(commanderID, h.deps.ECSManager)
+	mana := spells.GetManaData(squadID, h.deps.ECSManager)
 	if mana == nil {
 		return 0, 0
 	}
 	return mana.CurrentMana, mana.MaxMana
+}
+
+// CanSelectedSquadCast returns true if the selected squad can cast spells
+// (has spells, hasn't acted this turn, and has a valid selection).
+func (h *SpellCastingHandler) CanSelectedSquadCast() bool {
+	squadID := h.deps.BattleState.SelectedSquadID
+	if squadID == 0 {
+		return false
+	}
+	// Check squad has a spellbook
+	book := spells.GetSpellBook(squadID, h.deps.ECSManager)
+	if book == nil || len(book.SpellIDs) == 0 {
+		return false
+	}
+	// Check squad hasn't already acted
+	actionState := h.deps.Queries.CombatCache.FindActionStateBySquadID(squadID)
+	if actionState != nil && actionState.HasActed {
+		return false
+	}
+	return true
 }
 
 // --- Targeting ---
@@ -257,12 +277,12 @@ func (h *SpellCastingHandler) executeSpellOnTargets(targetSquadIDs []ecs.EntityI
 		return
 	}
 
-	commanderID := h.deps.Encounter.GetRosterOwnerID()
-	if commanderID == 0 {
+	squadID := h.deps.BattleState.SelectedSquadID
+	if squadID == 0 {
 		return
 	}
 
-	result := spells.ExecuteSpellCast(commanderID, spellID, targetSquadIDs, h.deps.ECSManager)
+	result := spells.ExecuteSpellCast(squadID, spellID, targetSquadIDs, h.deps.ECSManager)
 
 	if !result.Success {
 		return
@@ -274,8 +294,8 @@ func (h *SpellCastingHandler) executeSpellOnTargets(targetSquadIDs []ecs.EntityI
 	// Clear AoE overlay before changing mode flags
 	h.ClearOverlay()
 
-	// Set spell cast flag
-	h.deps.BattleState.HasCastSpell = true
+	// Mark the casting squad as having acted (cannot attack after casting)
+	combatcore.MarkSquadAsActed(h.deps.Queries.CombatCache, squadID, h.deps.ECSManager)
 
 	// Clear spell mode
 	h.deps.BattleState.InSpellMode = false

@@ -1,7 +1,7 @@
 # TinkerRogue Spells System — Technical Documentation
 
-**Last Updated:** 2026-03-25
-**Packages Covered:** `tactical/powers/spells`, `tactical/powers/effects`, `tactical/powers/artifacts/effects`, `templates` (spell definitions), `gui/guispells`
+**Last Updated:** 2026-03-27
+**Packages Covered:** `tactical/powers/spells`, `tactical/powers/effects`, `tactical/powers/artifacts/effects`, `templates` (spell definitions + unit-spell mappings), `gui/guispells`
 
 ---
 
@@ -11,11 +11,11 @@
 2. [Package Structure and Relationships](#2-package-structure-and-relationships)
 3. [Data Structures and Components](#3-data-structures-and-components)
    - 3.1 [Spell Definitions (`templates`)](#31-spell-definitions-templates)
-   - 3.2 [Commander ECS Components (`spells`)](#32-commander-ecs-components-spells)
+   - 3.2 [Squad ECS Components (`spells`)](#32-squad-ecs-components-spells)
    - 3.3 [Effects ECS Components (`effects`)](#33-effects-ecs-components-effects)
 4. [Spell Lifecycle: Definition to Resolution](#4-spell-lifecycle-definition-to-resolution)
    - 4.1 [Phase 1 — Data Loading at Startup](#41-phase-1--data-loading-at-startup)
-   - 4.2 [Phase 2 — Commander Creation](#42-phase-2--commander-creation)
+   - 4.2 [Phase 2 — Squad Spell Initialization](#42-phase-2--squad-spell-initialization)
    - 4.3 [Phase 3 — GUI Spell Panel Interaction](#43-phase-3--gui-spell-panel-interaction)
    - 4.4 [Phase 4 — Targeting](#44-phase-4--targeting)
    - 4.5 [Phase 5 — Execution (`ExecuteSpellCast`)](#45-phase-5--execution-executespellcast)
@@ -61,17 +61,19 @@
 
 ## 1. Executive Summary
 
-The spell system in TinkerRogue enables commanders (player-controlled heroes on the overworld) to cast magical abilities during tactical combat. Spells are a **commander-level power**: only entities holding both a `ManaComponent` and a `SpellBookComponent` can cast them.
+The spell system in TinkerRogue enables squads to cast magical abilities during tactical combat. Spells are a **squad-level power**: the squad's leader determines which spells are available, and the squad entity holds the mana pool and spellbook. Only entities holding both a `ManaComponent` and a `SpellBookComponent` can cast them.
+
+Each unit type has a defined set of spells in `unitspells.json`. When a squad is created, the leader's unit type is looked up in the `UnitSpellRegistry`, and if spells are found, `ManaComponent` and `SpellBookComponent` are attached to the squad entity. All 30 unit types have at least one spell — magic-focused units (Wizard, Sorcerer) get 3-4 powerful spells, while martial units (Knight, Fighter) get 1-2 cheap tactical abilities.
 
 The system is split across three distinct layers:
 
-- **Data layer** (`templates`): Static spell blueprints loaded from JSON. The global `SpellRegistry` map stores all `SpellDefinition` structs keyed by spell ID string.
+- **Data layer** (`templates`): Static spell blueprints loaded from `spelldata.json` into the global `SpellRegistry`. Unit-type-to-spell mappings loaded from `unitspells.json` into the global `UnitSpellRegistry`.
 - **Logic layer** (`tactical/powers/spells`, `tactical/powers/effects`): ECS components for mana and spellbooks, plus the execution functions that apply damage or stat modifiers to target squads.
-- **GUI layer** (`gui/guispells`): The targeting workflow — the panel that lists spells, the AoE shape overlay that follows the cursor, and the click handler that fires the execution function.
+- **GUI layer** (`gui/guispells`): The targeting workflow — the panel that lists the selected squad's spells, the AoE shape overlay that follows the cursor, and the click handler that fires the execution function.
 
 The effects system (`tactical/powers/effects`) is shared infrastructure used by both spells and artifacts. When a buff or debuff spell is cast, it creates `ActiveEffect` structs that are attached to unit entities as an `ActiveEffectsData` component. The effect immediately modifies the unit's `Attributes` in-place, and the modification is reversed when the effect expires. This makes stat reads simple: callers always see the current (modified) value without needing to query active effects.
 
-**Key architectural decision:** Spell casting is intentionally **limited to one spell per commander turn** (`HasCastSpell` flag in `TacticalState`). Mana persists across battles, making mana allocation a strategic overworld-level decision rather than a per-combat tactical resource.
+**Key architectural decision:** Casting a spell **consumes the squad's action** (`HasActed` flag on `ActionStateData`). A squad that casts a spell cannot attack that turn. Mana persists across battles, making mana allocation a strategic overworld-level decision rather than a per-combat tactical resource.
 
 ---
 
@@ -80,12 +82,16 @@ The effects system (`tactical/powers/effects`) is shared infrastructure used by 
 ```
 game_main/
 ├── assets/gamedata/
-│   └── spelldata.json                  ← Spell blueprint definitions (JSON)
+│   ├── spelldata.json                  ← Spell blueprint definitions (JSON)
+│   └── unitspells.json                 ← Unit type → spell ID mappings (JSON)
 │
 ├── templates/
 │   ├── spelldefinitions.go             ← SpellDefinition struct, SpellRegistry map,
 │   │                                      LoadSpellDefinitions(), helper methods
+│   ├── unitspelldefinitions.go         ← UnitSpellRegistry map, LoadUnitSpellDefinitions(),
+│   │                                      GetSpellsForUnitType()
 │   └── registry.go                     ← ReadGameData() calls LoadSpellDefinitions()
+│                                          + LoadUnitSpellDefinitions()
 │
 ├── tactical/powers/
 │   ├── spells/
@@ -95,6 +101,8 @@ game_main/
 │   │   ├── queries.go                  ← GetManaData, GetSpellBook, HasEnoughMana,
 │   │   │                                  GetCastableSpells, HasSpellInBook, GetAllSpells
 │   │   └── system.go                   ← ExecuteSpellCast (main entry point),
+│   │                                      AddSpellCapabilityToSquad,
+│   │                                      InitSquadSpellsFromLeader,
 │   │                                      applyDamageSpell, applyBuffDebuffSpell
 │   │
 │   ├── effects/
@@ -110,10 +118,6 @@ game_main/
 │       ├── effects/                    ← Duplicate of tactical/powers/effects/
 │       │   └── (same API, separate package)
 │       └── system.go                   ← ApplyArtifactStatEffects (uses effects package)
-│
-├── tactical/commander/
-│   └── system.go                       ← CreateCommander() adds ManaComponent +
-│                                          SpellBookComponent to new commanders
 │
 ├── tactical/combat/combatcore/
 │   └── turnmanager.go                  ← ResetSquadActions() calls effects.TickEffectsForUnits()
@@ -204,21 +208,22 @@ Helper methods on `SpellDefinition` for cleaner conditional logic: `IsSingleTarg
 
 ---
 
-### 3.2 Commander ECS Components (`spells`)
+### 3.2 Squad ECS Components (`spells`)
 
 **File:** `tactical/powers/spells/components.go`
 
-Commanders (the player's hero units) carry two ECS components from the spells package:
+Squad entities carry two ECS components from the spells package (attached at squad creation based on the leader's unit type):
 
 ```go
-// ManaData tracks a commander's mana pool.
+// ManaData tracks a squad's mana pool.
 // CurrentMana is deducted on cast; persists across battles.
+// The squad leader uses this pool to cast spells.
 type ManaData struct {
     CurrentMana int
     MaxMana     int
 }
 
-// SpellBookData holds the IDs of spells this commander can cast.
+// SpellBookData holds the IDs of spells a squad can cast via its leader.
 // SpellIDs are keys into the global SpellRegistry.
 type SpellBookData struct {
     SpellIDs []string
@@ -332,28 +337,34 @@ func ReadGameData() {
 
 `LoadSpellDefinitions()` reads `assets/gamedata/spelldata.json`, unmarshals it into `[]SpellDefinition`, and inserts each entry into `SpellRegistry` keyed by `SpellDefinition.ID`. The registry is a plain `map[string]*SpellDefinition` — there is no lock because it is written once at startup and read-only thereafter.
 
-After loading, the registry contains 22 spells (as of the current data file): 18 damage spells and 4 buff/debuff spells.
+After spell definitions are loaded, `LoadUnitSpellDefinitions()` reads `assets/gamedata/unitspells.json` and populates the `UnitSpellRegistry` (`map[string][]string`) which maps unit type names to spell ID lists. This determines which spells a squad gets based on its leader's unit type. The loader validates that all referenced spell IDs exist in `SpellRegistry`.
+
+After loading, the spell registry contains 48 spells: 24 damage spells and 24 buff/debuff spells. The unit spell registry contains mappings for all 30 unit types.
 
 ---
 
-### 4.2 Phase 2 — Commander Creation
+### 4.2 Phase 2 — Squad Spell Initialization
 
-When a commander entity is created (typically during overworld setup), `tactical/commander/system.go:CreateCommander()` attaches the spell-related components:
+When a squad entity is created via `CreateSquadFromTemplate`, the calling code invokes `spells.InitSquadSpellsFromLeader(squadID, manager)` to attach spell components based on the leader's unit type:
 
 ```go
-entity.
-    AddComponent(spells.ManaComponent, &spells.ManaData{
-        CurrentMana: startingMana,
-        MaxMana:     maxMana,
-    }).
-    AddComponent(spells.SpellBookComponent, &spells.SpellBookData{
-        SpellIDs: initialSpells,
-    })
+// tactical/powers/spells/system.go
+func InitSquadSpellsFromLeader(squadID ecs.EntityID, manager *common.EntityManager) {
+    leaderID := squadcore.GetLeaderID(squadID, manager)
+    leaderUnitType := squadcore.GetUnitType(leaderID, manager)
+    spellIDs := templates.GetSpellsForUnitType(leaderUnitType)
+    if len(spellIDs) > 0 {
+        cfg := templates.GameConfig.Commander
+        AddSpellCapabilityToSquad(squadID, manager, cfg.StartingMana, cfg.MaxMana, spellIDs)
+    }
+}
 ```
 
-The `startingMana` and `maxMana` values come from `templates.GameConfig.Commander.StartingMana` and `templates.GameConfig.Commander.MaxMana`, which are read from `assets/gamedata/gameconfig.json`. The `initialSpells` slice (a list of spell ID strings) is passed in by the calling code and determines which spells the commander starts with.
+`AddSpellCapabilityToSquad` attaches `ManaComponent` and `SpellBookComponent` to the squad entity. The `startingMana` and `maxMana` values come from `templates.GameConfig.Commander.StartingMana` and `templates.GameConfig.Commander.MaxMana` in `gameconfig.json`. The spell IDs come from `UnitSpellRegistry` (loaded from `unitspells.json`).
 
-A commander who has no `ManaComponent` or `SpellBookComponent` cannot cast spells — `ExecuteSpellCast` returns early with a descriptive error. This means NPCs and squad entities (which never receive these components) are structurally unable to cast spells.
+A squad whose leader's unit type has no entry in `unitspells.json` gets no spell components and cannot cast spells — `ExecuteSpellCast` returns early with a descriptive error.
+
+**Note:** `InitSquadSpellsFromLeader` lives in the `spells` package (not `squadcore`) to avoid an import cycle, since `spells` already imports `squadcore`.
 
 ---
 
@@ -365,16 +376,18 @@ When the player clicks the "Spell" button during their turn, `SpellPanelControll
 Toggle()
   → if already in spell mode: CancelSpellMode() + Hide()
   → else: Show()
-       → checks HasCastSpell (one spell per turn limit)
+       → checks Handler.CanSelectedSquadCast() (squad selected, has spells, hasn't acted)
        → calls Handler.EnterSpellMode()     → sets BattleState.InSpellMode = true
        → calls Refresh()
-            → GetAllSpells(commanderID) — all spells in spellbook (regardless of mana)
-            → GetCommanderMana(commanderID) — updates mana label
+            → GetAllSpells() — all spells in selected squad's spellbook (regardless of mana)
+            → GetSquadMana() — updates mana label from selected squad
             → populates spell list widget
        → calls ShowSubmenu()               → displays the spell panel
 ```
 
-The spell list shows all spells in the spellbook. The detail panel, updated by `OnSpellSelected()`, checks whether `currentMana >= spell.ManaCost` and disables the Cast button if the player cannot afford the spell. Mana-checking happens in two places: in the UI (to gray out the button) and inside `ExecuteSpellCast` (to guard against race conditions or direct API calls).
+The spell list shows all spells in the selected squad's spellbook. The detail panel, updated by `OnSpellSelected()`, checks whether `currentMana >= spell.ManaCost` and disables the Cast button if the squad cannot afford the spell. Mana-checking happens in two places: in the UI (to gray out the button) and inside `ExecuteSpellCast` (to guard against race conditions or direct API calls).
+
+**Note:** The spell panel requires a squad to be selected (`BattleState.SelectedSquadID != 0`). If the selected squad has no spellbook or has already acted this turn, `Show()` returns early.
 
 ---
 
@@ -384,8 +397,9 @@ After the player selects a spell and clicks "Cast", `SpellPanelController.OnCast
 
 ```go
 func (h *SpellCastingHandler) SelectSpell(spellID string) {
-    // 1. Validate mana
-    if !spells.HasEnoughMana(commanderID, spellID, h.deps.ECSManager) { return }
+    // 1. Validate mana (uses selected squad, not commander)
+    squadID := h.deps.BattleState.SelectedSquadID
+    if !spells.HasEnoughMana(squadID, spellID, h.deps.ECSManager) { return }
 
     // 2. Store selected spell ID
     h.deps.BattleState.SelectedSpellID = spellID
@@ -638,29 +652,26 @@ This pattern avoids attaching an empty `ActiveEffectsData` to every unit entity 
 
 ### 6.3 Entity Relationships
 
-The spell system involves three entity types:
+The spell system involves two entity types:
 
 ```
-Commander entity
-├── CommanderComponent (commander/components.go)
+Squad entity (caster — has spell components if leader's unit type has spells)
+├── SquadComponent (squadcore/squadcomponents.go)
 ├── ManaComponent (spells/components.go)          ← ManaData {CurrentMana, MaxMana}
 ├── SpellBookComponent (spells/components.go)     ← SpellBookData {SpellIDs []}
-├── AttributeComponent (common)
 ├── PositionComponent (common)
-├── RenderableComponent (common)
-├── SquadRosterComponent (squads/roster)
-└── CommanderActionStateComponent (commander/components.go)
+├── ActionStateComponent (combatcore)             ← HasActed set to true after casting
+└── CombatFactionComponent (combatcore)
 
-Squad entity
-└── (no spell-related components; squads are spell targets, not casters)
-
-Unit entity (child of squad)
+Unit entity (child of squad — spell target, receives effects)
 ├── AttributeComponent (common)                  ← Attributes {Strength, Dexterity, ...}
+├── SquadMemberComponent (squadcore)             ← Links to parent squad
+├── UnitTypeComponent (squadcore)                ← UnitType string (determines spells when leader)
 └── ActiveEffectsComponent (effects/components.go) ← Added lazily when first effect applied
     └── ActiveEffectsData {Effects [ActiveEffect, ...]}
 ```
 
-Commander entities are always on the overworld map (they have `PositionComponent`). They are not deployed to the tactical combat map; they cast spells from the GUI panel. Squad entities and unit entities are on the tactical map and are the targets of spells.
+Squad entities are on the tactical combat map. The selected squad casts spells via the GUI panel. Other squads (friendly or enemy) are spell targets. Casting consumes the squad's action (`HasActed = true`), preventing the squad from attacking that turn.
 
 ---
 
@@ -677,6 +688,8 @@ Commander entities are always on the overworld map (they have `PositionComponent
 | `HasSpellInBook` | `(entityID, spellID, manager) → bool` | Checks whether spell is in the spellbook |
 | `GetAllSpells` | `(entityID, manager) → []*SpellDefinition` | Returns all spells in book (regardless of mana) |
 | `ExecuteSpellCast` | `(casterID, spellID, targetSquadIDs, manager) → *SpellCastResult` | Main execution entry point; validates, deducts mana, applies effects |
+| `AddSpellCapabilityToSquad` | `(squadID, manager, startingMana, maxMana, spellIDs)` | Attaches ManaComponent and SpellBookComponent to a squad entity |
+| `InitSquadSpellsFromLeader` | `(squadID, manager)` | Looks up leader's unit type, adds spell capability if spells are defined |
 
 ### 7.2 effects Package
 
@@ -696,8 +709,10 @@ Commander entities are always on the overworld map (they have `PositionComponent
 | Function | Signature | Purpose |
 |---|---|---|
 | `LoadSpellDefinitions` | `()` | Reads `spelldata.json`, populates `SpellRegistry` |
+| `LoadUnitSpellDefinitions` | `()` | Reads `unitspells.json`, populates `UnitSpellRegistry` |
 | `GetSpellDefinition` | `(id string) → *SpellDefinition` | Lookup by ID; nil if not registered |
 | `GetAllSpellIDs` | `() → []string` | Returns all registered spell IDs |
+| `GetSpellsForUnitType` | `(unitType string) → []string` | Returns spell IDs for a unit type; nil if none |
 | `(sd) IsSingleTarget` | `() → bool` | True if `TargetType == "single"` |
 | `(sd) IsAoE` | `() → bool` | True if `TargetType == "aoe"` |
 | `(sd) IsDamage` | `() → bool` | True if `EffectType == "damage"` |
@@ -708,19 +723,20 @@ Commander entities are always on the overworld map (they have `PositionComponent
 
 ## 8. Spell Configuration and JSON Schema
 
-### 8.1 File Location
+### 8.1 File Locations
 
 ```
-assets/gamedata/spelldata.json
+assets/gamedata/spelldata.json      ← Spell definitions (damage, buff, debuff)
+assets/gamedata/unitspells.json     ← Unit type → spell ID mappings
 ```
 
-The path constant is defined as:
+The spell data path constant is defined as:
 ```go
 // templates/registry.go
 const SpellDataPath = "gamedata/spelldata.json"
 ```
 
-`LoadSpellDefinitions` uses `AssetPath(SpellDataPath)` to resolve the full path relative to the binary's working directory.
+`LoadSpellDefinitions` uses `AssetPath(SpellDataPath)` to resolve the full path. `LoadUnitSpellDefinitions` similarly reads from `gamedata/unitspells.json`.
 
 ### 8.2 SpellDefinition Fields
 
@@ -731,7 +747,7 @@ The JSON object for each spell maps directly to `SpellDefinition` via Go's `enco
 | `id` | `ID` | string | Yes | Must be unique across all spells |
 | `name` | `Name` | string | Yes | Display name shown in UI |
 | `description` | `Description` | string | Yes | Tooltip text |
-| `manaCost` | `ManaCost` | int | Yes | Deducted from commander on cast |
+| `manaCost` | `ManaCost` | int | Yes | Deducted from the casting squad's mana pool |
 | `damage` | `Damage` | int | No (default 0) | Base damage for damage spells; ignored for buff/debuff |
 | `targetType` | `TargetType` | string | Yes | `"single"` or `"aoe"` |
 | `effectType` | `EffectType` | string | Yes | `"damage"`, `"buff"`, or `"debuff"` |
@@ -773,9 +789,9 @@ Directional shapes (Line and Cone) support rotation via Q/E during targeting, wh
 
 ### 8.4 Complete Spell Roster
 
-As of the current data file, 22 spells are defined:
+As of the current data file, 48 spells are defined across several categories:
 
-**Damage Spells (18):**
+**Caster Damage Spells (18):** High-damage spells for magic-focused units.
 
 | ID | Name | Mana | Damage | Target | Shape |
 |---|---|---|---|---|---|
@@ -798,21 +814,51 @@ As of the current data file, 22 spells are defined:
 | `firestorm` | Firestorm | 35 | 22 | aoe | Circle 3 |
 | `absolute_zero` | Absolute Zero | 40 | 20 | aoe | Square 3 |
 
-**Buff Spells (2):**
+**Martial Damage Spells (6):** Cheap damage options for non-caster units.
+
+| ID | Name | Mana | Damage | Target | Shape |
+|---|---|---|---|---|---|
+| `smite` | Smite | 8 | 18 | single | — |
+| `wind_shot` | Wind Shot | 8 | 14 | single | — |
+| `ground_slam` | Ground Slam | 10 | 14 | aoe | Circle 1 |
+| `volley` | Volley | 10 | 12 | aoe | Square 1 |
+| `trample` | Trample | 10 | 16 | aoe | Line 3 |
+| `spectral_volley` | Spectral Volley | 10 | 16 | aoe | Line 3 |
+
+**Buff Spells (12):**
 
 | ID | Name | Mana | Duration | Effect |
 |---|---|---|---|---|
+| `reckless_charge` | Reckless Charge | 5 | 2 turns | Strength +4, Armor -2 |
+| `smoke_bomb` | Smoke Bomb | 5 | 2 turns | Dexterity +5 |
+| `battle_focus` | Battle Focus | 6 | 2 turns | Weapon +3 |
+| `evasive_maneuver` | Evasive Maneuver | 6 | 2 turns | Dexterity +4, MovementSpeed +1 |
+| `rally` | Rally | 6 | 3 turns | Leadership +5 |
+| `steady_aim` | Steady Aim | 6 | 2 turns | Dexterity +5 |
+| `brace_for_impact` | Brace for Impact | 7 | 2 turns | Armor +3, Strength +2 |
+| `savagery` | Savagery | 7 | 2 turns | Weapon +3, Strength +2 |
+| `shield_wall` | Shield Wall | 8 | 2 turns | Armor +5, MovementSpeed -1 |
+| `thundering_charge` | Thundering Charge | 8 | 2 turns | MovementSpeed +2, Strength +3 |
 | `war_cry` | War Cry | 10 | 3 turns | Strength +4 |
+| `divine_protection` | Divine Protection | 10 | 3 turns | Armor +4, Leadership +3 |
 | `arcane_shield` | Arcane Shield | 12 | 3 turns | Armor +3 |
 
-**Debuff Spells (2):**
+**Debuff Spells (12):**
 
 | ID | Name | Mana | Duration | Effect |
 |---|---|---|---|---|
+| `hamstring` | Hamstring | 6 | 2 turns | MovementSpeed -2, Dexterity -3 |
+| `expose_weakness` | Expose Weakness | 7 | 2 turns | Armor -3 |
+| `harrying_strikes` | Harrying Strikes | 7 | 2 turns | MovementSpeed -2, Strength -2 |
 | `weaken` | Weaken | 8 | 2 turns | Strength -3 |
+| `crippling_poison` | Crippling Poison | 8 | 3 turns | Strength -2, Dexterity -3 |
+| `intimidating_roar` | Intimidating Roar | 8 | 2 turns | Strength -2, Armor -2 |
+| `natures_grasp` | Nature's Grasp | 8 | 2 turns | MovementSpeed -2, Dexterity -3 |
+| `piercing_shot` | Piercing Shot | 8 | 2 turns | Armor -4 |
+| `suppressive_fire` | Suppressive Fire | 9 | 2 turns | Dexterity -4, MovementSpeed -1 |
 | `frost_slow` | Frost Slow | 10 | 2 turns | Dexterity -2, MovementSpeed -1 |
 
-Note that `frost_slow` applies two separate `ActiveEffect` entries (one for Dexterity, one for MovementSpeed) to each unit, since each `SpellStatModifier` becomes one effect.
+Note that spells with multiple stat modifiers (e.g., `frost_slow`) apply separate `ActiveEffect` entries per stat to each unit.
 
 ---
 
@@ -873,13 +919,24 @@ The call in `combat_service.go` iterates all factions, so if an enemy faction so
 
 ```go
 type SpellCastingDeps struct {
-    BattleState *framework.TacticalState   // For mode flags and spell selection
+    BattleState *framework.TacticalState   // For mode flags, spell selection, and SelectedSquadID
     ECSManager  *common.EntityManager      // For ECS queries
     GameMap     *worldmap.GameMap          // For tile color matrix (overlay)
     PlayerPos   *coords.LogicalPosition    // For coordinate conversion
-    Queries     *framework.GUIQueries      // For squad info and cache invalidation
-    Encounter   combatcore.EncounterCallbacks // For commander and encounter IDs
+    Queries     *framework.GUIQueries      // For squad info, cache invalidation, and CombatCache
+    Encounter   combatcore.EncounterCallbacks // For encounter IDs (enemy validation)
 }
+```
+
+**Key methods:**
+
+| Method | Purpose |
+|---|---|
+| `GetAllSpells()` | Returns spells from selected squad's spellbook |
+| `GetSquadMana()` | Returns selected squad's current/max mana |
+| `CanSelectedSquadCast()` | Checks squad selected, has spells, hasn't acted |
+| `SelectSpell(spellID)` | Validates mana, enters targeting mode |
+| `executeSpellOnTargets(...)` | Calls `ExecuteSpellCast`, marks squad as acted via `combatcore.MarkSquadAsActed` |
 ```
 
 ### 10.2 SpellPanelController
@@ -894,22 +951,23 @@ type SpellCastingDeps struct {
 - `OnCancelClicked()` — calls `Handler.CancelSpellMode()` and hides the panel
 - `Toggle()` — the entry point wired to the Spell button; cancels if already in spell mode, shows if not
 
-The controller checks `BattleState.HasCastSpell` in `Show()` and returns early if the commander has already cast this turn. This enforces the one-spell-per-turn rule before the player even sees the panel.
+The controller checks `Handler.CanSelectedSquadCast()` in `Show()` and returns early if no squad is selected, the squad has no spellbook, or the squad has already acted this turn. This enforces the action cost rule before the player even sees the panel.
 
 ### 10.3 TacticalState Spell Fields
 
 **File:** `gui/framework/contextstate.go`
 
-Three fields in `TacticalState` govern spell behavior:
+Two fields in `TacticalState` govern spell behavior:
 
 ```go
 InSpellMode     bool    // True while the player is in any spell-related mode
                         // (panel open OR targeting active)
 SelectedSpellID string  // The spell ID currently being targeted; "" between casts
-HasCastSpell    bool    // True after a successful cast this turn; reset at turn end
 ```
 
-`HasCastSpell` is set to `true` by `executeSpellOnTargets` after a successful cast. It is reset to `false` by `CombatMode` when the turn changes (in the turn end logic). `TacticalState.Reset()` clears all three fields for new battles.
+After a successful cast, `executeSpellOnTargets` calls `combatcore.MarkSquadAsActed()` on the casting squad, setting `HasActed = true` on its `ActionStateData`. This prevents the squad from attacking or casting again that turn. The `HasActed` flag is reset by the turn manager at the start of the squad's next turn.
+
+`TacticalState.Reset()` clears `InSpellMode` and `SelectedSpellID` for new battles.
 
 The `InSpellMode` flag is used by the input handler to route clicks during targeting. The `SelectedSpellID` field stores which spell is being targeted so `executeSpellOnTargets` can look it up without re-querying the panel.
 
@@ -982,19 +1040,20 @@ This means effects tick at the **start of the owning faction's turn** rather tha
 
 ## 13. Mana Economy and Strategic Design
 
-Mana is a **cross-battle persistent resource** attached to commanders, not a per-combat resource. This is a deliberate design decision:
+Mana is a **cross-battle persistent resource** attached to squads, not a per-combat resource. This is a deliberate design decision:
 
-- Commanders start a battle with whatever mana they had at the end of the last battle.
+- Squads start a battle with whatever mana they had at the end of the last battle.
 - Spells consume mana permanently unless mana is replenished through game progression mechanics.
-- This creates strategic tension: spending all mana in one difficult battle leaves the commander unable to cast in subsequent encounters.
+- This creates strategic tension: spending all mana in one difficult battle leaves the squad unable to cast in subsequent encounters.
+- Each squad has its own independent mana pool. A squad with a Wizard leader has the same mana capacity as a squad with a Knight leader, but the Wizard has access to more powerful (and more expensive) spells.
 
-The `gameconfig.json` `commander` section defines starting values:
-- `startingMana`: Mana when a commander is first created.
+The `gameconfig.json` `commander` section defines starting values (shared by all squads):
+- `startingMana`: Mana when a squad with spells is first created.
 - `maxMana`: The cap that `CurrentMana` cannot exceed.
 
-There is no in-battle mana regeneration mechanic in the current implementation. Mana recovery would need to be implemented at the overworld level (e.g., resting at a node, purchasing mana potions).
+There is no in-battle mana regeneration mechanic in the current implementation. Post-combat rewards restore mana to each surviving squad that has a mana pool. Mana recovery at the overworld level (e.g., resting at a node) is not yet implemented.
 
-The one-spell-per-turn limit (`HasCastSpell`) prevents the mana economy from being trivially exploited through turn manipulation. Even if a commander has enough mana for multiple spells, they can only cast one per turn.
+Casting a spell consumes the squad's action (`HasActed = true`), meaning the squad cannot attack that turn. This prevents mana-rich squads from both casting and attacking in the same turn, creating a meaningful tactical tradeoff. Multiple squads can each cast one spell per turn, since each has its own independent action state.
 
 ---
 
@@ -1057,30 +1116,22 @@ Open `assets/gamedata/spelldata.json` and add a new entry to the `"spells"` arra
 }
 ```
 
-No Go code changes are needed for data-only additions. The spell will be automatically available to any commander whose `initialSpells` list includes the new ID.
+No Go code changes are needed for data-only additions.
 
-### Step 2: Grant the spell to a commander
+### Step 2: Assign the spell to unit types
 
-The `initialSpells` parameter is passed to `CreateCommander()`. The calling code (typically game setup or commander upgrade systems) must include the new spell ID in that slice:
+Open `assets/gamedata/unitspells.json` and add the new spell ID to the appropriate unit type entries:
 
-```go
-commanderID := commander.CreateCommander(
-    manager,
-    "Arcturus",
-    startPos,
-    movementSpeed,
-    maxSquads,
-    commanderImage,
-    startingMana,
-    maxMana,
-    []string{"fireball", "lightning_bolt", "ring_of_fire"}, // ← new spell here
-)
+```json
+{ "unitType": "Wizard", "spells": ["fireball", "blizzard", "chain_lightning", "ring_of_fire"] }
 ```
 
-Alternatively, a spell can be added to an existing commander's spellbook at runtime:
+Any squad whose leader is a Wizard will now have access to the new spell. Multiple unit types can share the same spell.
+
+Alternatively, a spell can be added to an existing squad's spellbook at runtime:
 
 ```go
-book := spells.GetSpellBook(commanderID, manager)
+book := spells.GetSpellBook(squadID, manager)
 if book != nil {
     book.SpellIDs = append(book.SpellIDs, "ring_of_fire")
 }
@@ -1214,9 +1265,9 @@ type ActiveEffectsData struct {
 ```go
 type TacticalState struct {
     // ... (other fields)
+    SelectedSquadID ecs.EntityID  // The squad whose spells are shown
     InSpellMode     bool
     SelectedSpellID string
-    HasCastSpell    bool
     // ...
 }
 ```

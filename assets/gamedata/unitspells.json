@@ -1,0 +1,39 @@
+{
+  "unitSpells": [
+    { "unitType": "Knight", "spells": ["shield_wall", "rally"] },
+    { "unitType": "Spearman", "spells": ["brace_for_impact"] },
+    { "unitType": "Orc Warrior", "spells": ["intimidating_roar", "ground_slam"] },
+    { "unitType": "Ogre", "spells": ["ground_slam", "intimidating_roar"] },
+    { "unitType": "Lancer", "spells": ["brace_for_impact", "thundering_charge"] },
+    { "unitType": "Cataphract", "spells": ["shield_wall", "thundering_charge"] },
+
+    { "unitType": "Fighter", "spells": ["battle_focus", "reckless_charge"] },
+    { "unitType": "Warrior", "spells": ["war_cry", "reckless_charge"] },
+    { "unitType": "Swordsman", "spells": ["battle_focus", "expose_weakness"] },
+    { "unitType": "Rogue", "spells": ["smoke_bomb", "crippling_poison"] },
+    { "unitType": "Assassin", "spells": ["smoke_bomb", "hamstring"] },
+
+    { "unitType": "Archer", "spells": ["steady_aim", "volley"] },
+    { "unitType": "Crossbowman", "spells": ["piercing_shot", "suppressive_fire"] },
+    { "unitType": "Marksman", "spells": ["steady_aim", "piercing_shot"] },
+    { "unitType": "Scout", "spells": ["evasive_maneuver", "suppressive_fire"] },
+    { "unitType": "Horse Archer", "spells": ["evasive_maneuver", "harrying_strikes"] },
+    { "unitType": "Outrider", "spells": ["wind_shot", "evasive_maneuver"] },
+
+    { "unitType": "Wizard", "spells": ["fireball", "blizzard", "chain_lightning", "obliterate"] },
+    { "unitType": "Sorcerer", "spells": ["lightning_bolt", "fog_of_ruin", "weaken", "thunder_cone"] },
+    { "unitType": "Mage", "spells": ["spark", "ice_lance", "arcane_shield", "frost_snap"] },
+    { "unitType": "Warlock", "spells": ["miasma", "noxious_eruption", "frost_slow", "crippling_poison"] },
+    { "unitType": "Battle Mage", "spells": ["singe", "scalding_gust", "wall_of_flame", "arcane_shield"] },
+    { "unitType": "Cleric", "spells": ["war_cry", "arcane_shield", "divine_protection"] },
+    { "unitType": "Priest", "spells": ["war_cry", "arcane_shield", "divine_protection", "smite"] },
+
+    { "unitType": "Paladin", "spells": ["war_cry", "divine_protection", "smite"] },
+    { "unitType": "Ranger", "spells": ["natures_grasp", "frost_snap", "steady_aim"] },
+    { "unitType": "Skeleton Archer", "spells": ["spectral_volley", "weaken", "frost_slow"] },
+    { "unitType": "Goblin Raider", "spells": ["savagery", "hamstring"] },
+
+    { "unitType": "Dragoon", "spells": ["thundering_charge", "trample"] },
+    { "unitType": "Hussar", "spells": ["evasive_maneuver", "harrying_strikes"] }
+  ]
+}

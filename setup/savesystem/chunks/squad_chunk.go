@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"game_main/common"
 	"game_main/setup/savesystem"
+	"game_main/tactical/powers/spells"
 	"game_main/tactical/squads/squadcore"
 	"game_main/tactical/squads/unitdefs"
 	"game_main/tactical/squads/unitprogression"
@@ -41,6 +42,17 @@ type savedSquad struct {
 	GarrisonedAtNodeID ecs.EntityID       `json:"garrisonedAtNodeID"`
 	Position           savedPosition      `json:"position"`
 	Members            []savedSquadMember `json:"members"`
+	Mana               *savedSquadMana    `json:"mana,omitempty"`
+	SpellBook          *savedSpellBook    `json:"spellBook,omitempty"`
+}
+
+type savedSquadMana struct {
+	CurrentMana int `json:"currentMana"`
+	MaxMana     int `json:"maxMana"`
+}
+
+type savedSpellBook struct {
+	SpellIDs []string `json:"spellIDs"`
 }
 
 type savedSquadMember struct {
@@ -143,6 +155,14 @@ func (c *SquadChunk) Save(em *common.EntityManager) (json.RawMessage, error) {
 
 		if pos := common.GetComponentType[*coords.LogicalPosition](entity, common.PositionComponent); pos != nil {
 			ss.Position = positionToSaved(pos)
+		}
+
+		// Save mana and spellbook if present
+		if mana := common.GetComponentType[*spells.ManaData](entity, spells.ManaComponent); mana != nil {
+			ss.Mana = &savedSquadMana{CurrentMana: mana.CurrentMana, MaxMana: mana.MaxMana}
+		}
+		if sb := common.GetComponentType[*spells.SpellBookData](entity, spells.SpellBookComponent); sb != nil {
+			ss.SpellBook = &savedSpellBook{SpellIDs: sb.SpellIDs}
 		}
 
 		// Save all member units
@@ -285,6 +305,19 @@ func (c *SquadChunk) Load(em *common.EntityManager, data json.RawMessage, idMap 
 
 		// Atomically add position component and register with position system
 		em.RegisterEntityPosition(squadEntity, pos)
+
+		// Restore mana and spellbook if present
+		if ss.Mana != nil {
+			squadEntity.AddComponent(spells.ManaComponent, &spells.ManaData{
+				CurrentMana: ss.Mana.CurrentMana,
+				MaxMana:     ss.Mana.MaxMana,
+			})
+		}
+		if ss.SpellBook != nil {
+			squadEntity.AddComponent(spells.SpellBookComponent, &spells.SpellBookData{
+				SpellIDs: ss.SpellBook.SpellIDs,
+			})
+		}
 
 		idMap.Register(ss.EntityID, newSquadID)
 

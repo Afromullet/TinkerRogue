@@ -3,7 +3,6 @@ package commander
 import (
 	"game_main/common"
 	"game_main/tactical/squads/roster"
-	"game_main/tactical/powers/spells"
 	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"
@@ -19,9 +18,6 @@ func CreateCommander(
 	movementSpeed int,
 	maxSquads int,
 	commanderImage *ebiten.Image,
-	startingMana int,
-	maxMana int,
-	initialSpells []string,
 ) ecs.EntityID {
 	entity := manager.World.NewEntity()
 	commanderID := entity.GetID()
@@ -45,14 +41,7 @@ func CreateCommander(
 		AddComponent(common.AttributeComponent, &common.Attributes{
 			MovementSpeed: movementSpeed,
 		}).
-		AddComponent(roster.SquadRosterComponent, roster.NewSquadRoster(maxSquads)).
-		AddComponent(spells.ManaComponent, &spells.ManaData{
-			CurrentMana: startingMana,
-			MaxMana:     maxMana,
-		}).
-		AddComponent(spells.SpellBookComponent, &spells.SpellBookData{
-			SpellIDs: initialSpells,
-		})
+		AddComponent(roster.SquadRosterComponent, roster.NewSquadRoster(maxSquads))
 
 	// Atomically add position component and register with position system
 	manager.RegisterEntityPosition(entity, startPos)

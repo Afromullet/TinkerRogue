@@ -11,7 +11,46 @@ import (
 	"github.com/bytearena/ecs"
 )
 
-// ExecuteSpellCast performs a spell cast from a commander against target squads.
+// AddSpellCapabilityToSquad attaches ManaComponent and SpellBookComponent to a squad entity.
+// Call this after squad creation when the leader's unit type has spells.
+// Does nothing if spellIDs is empty.
+func AddSpellCapabilityToSquad(squadID ecs.EntityID, manager *common.EntityManager, startingMana, maxMana int, spellIDs []string) {
+	if len(spellIDs) == 0 {
+		return
+	}
+	entity := manager.FindEntityByID(squadID)
+	if entity == nil {
+		return
+	}
+	entity.AddComponent(ManaComponent, &ManaData{
+		CurrentMana: startingMana,
+		MaxMana:     maxMana,
+	})
+	entity.AddComponent(SpellBookComponent, &SpellBookData{
+		SpellIDs: spellIDs,
+	})
+}
+
+// InitSquadSpellsFromLeader checks the squad's leader unit type and adds spell capability
+// if that unit type has spells defined in UnitSpellRegistry. Call after CreateSquadFromTemplate.
+func InitSquadSpellsFromLeader(squadID ecs.EntityID, manager *common.EntityManager) {
+	leaderID := squadcore.GetLeaderID(squadID, manager)
+	if leaderID == 0 {
+		return
+	}
+	leaderUnitType := squadcore.GetUnitType(leaderID, manager)
+	if leaderUnitType == "" {
+		return
+	}
+	spellIDs := templates.GetSpellsForUnitType(leaderUnitType)
+	if len(spellIDs) == 0 {
+		return
+	}
+	cfg := templates.GameConfig.Commander
+	AddSpellCapabilityToSquad(squadID, manager, cfg.StartingMana, cfg.MaxMana, spellIDs)
+}
+
+// ExecuteSpellCast performs a spell cast from a squad against target squads.
 // It validates mana, deducts cost, applies damage to all alive units in targets,
 // and removes destroyed squads from the map.
 func ExecuteSpellCast(

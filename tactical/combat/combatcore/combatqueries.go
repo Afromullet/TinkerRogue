@@ -157,6 +157,12 @@ func canSquadMove(cache *CombatQueryCache, squadID ecs.EntityID, manager *common
 	return actionState.MovementRemaining > 0
 }
 
+// MarkSquadAsActed marks a squad as having used its combat action (exported wrapper).
+// If BonusAttackActive is set, the flag is consumed instead of marking acted.
+func MarkSquadAsActed(cache *CombatQueryCache, squadID ecs.EntityID, manager *common.EntityManager) {
+	markSquadAsActed(cache, squadID, manager)
+}
+
 // markSquadAsActed marks a squad as having used its combat action.
 // If BonusAttackActive is set, the flag is consumed instead of marking acted.
 func markSquadAsActed(cache *CombatQueryCache, squadID ecs.EntityID, manager *common.EntityManager) {

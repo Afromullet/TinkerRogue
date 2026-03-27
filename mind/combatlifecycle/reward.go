@@ -34,8 +34,7 @@ func (r Reward) Scale(factor float64) Reward {
 // Callers construct this from their own context (combatOutcome, raidState, etc).
 type GrantTarget struct {
 	PlayerEntityID ecs.EntityID   // For gold (ResourceStockpile owner)
-	SquadIDs       []ecs.EntityID // For XP distribution (alive units across squads)
-	CommanderID    ecs.EntityID   // For mana restoration
+	SquadIDs       []ecs.EntityID // For XP and mana distribution
 }
 
 // CalculateIntensityReward determines loot from defeating a threat.
@@ -69,8 +68,8 @@ func Grant(manager *common.EntityManager, r Reward, target GrantTarget) string {
 		}
 	}
 
-	if r.Mana > 0 && target.CommanderID != 0 {
-		if desc := grantMana(manager, target.CommanderID, r.Mana); desc != "" {
+	if r.Mana > 0 && len(target.SquadIDs) > 0 {
+		if desc := grantManaToSquads(manager, target.SquadIDs, r.Mana); desc != "" {
 			parts = append(parts, desc)
 		}
 	}
@@ -112,20 +111,25 @@ func grantExperience(manager *common.EntityManager, squadIDs []ecs.EntityID, tot
 	return fmt.Sprintf("%d XP", totalXP)
 }
 
-// grantMana restores mana to a commander, capped at max.
-func grantMana(manager *common.EntityManager, commanderID ecs.EntityID, amount int) string {
-	manaData := common.GetComponentTypeByID[*spells.ManaData](manager, commanderID, spells.ManaComponent)
-	if manaData == nil {
+// grantManaToSquads restores mana to each surviving squad that has a mana pool.
+func grantManaToSquads(manager *common.EntityManager, squadIDs []ecs.EntityID, amount int) string {
+	restored := 0
+	for _, squadID := range squadIDs {
+		manaData := common.GetComponentTypeByID[*spells.ManaData](manager, squadID, spells.ManaComponent)
+		if manaData == nil {
+			continue
+		}
+		manaData.CurrentMana += amount
+		if manaData.CurrentMana > manaData.MaxMana {
+			manaData.CurrentMana = manaData.MaxMana
+		}
+		restored++
+	}
+	if restored == 0 {
 		return ""
 	}
-
-	manaData.CurrentMana += amount
-	if manaData.CurrentMana > manaData.MaxMana {
-		manaData.CurrentMana = manaData.MaxMana
-	}
-
-	desc := fmt.Sprintf("%d mana (%d/%d)", amount, manaData.CurrentMana, manaData.MaxMana)
-	fmt.Printf("Granted %s to commander %d\n", desc, commanderID)
+	desc := fmt.Sprintf("%d mana to %d squads", amount, restored)
+	fmt.Printf("Granted %s\n", desc)
 	return desc
 }
 

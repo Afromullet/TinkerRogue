@@ -27,7 +27,6 @@ type TacticalState struct {
 	// Spell Casting State
 	InSpellMode     bool   // Whether spell mode is active
 	SelectedSpellID string // Which spell is being targeted
-	HasCastSpell    bool   // One spell per turn limit
 
 	// Artifact Activation State
 	InArtifactMode          bool   // Whether artifact mode is active
@@ -58,7 +57,6 @@ func NewTacticalState() *TacticalState {
 		// Spell Casting State
 		InSpellMode:     false,
 		SelectedSpellID: "",
-		HasCastSpell:    false,
 
 		// Artifact Activation State
 		InArtifactMode:          false,
@@ -86,7 +84,6 @@ func (ts *TacticalState) Reset() {
 	// Clear spell casting state
 	ts.InSpellMode = false
 	ts.SelectedSpellID = ""
-	ts.HasCastSpell = false
 
 	// Clear artifact activation state
 	ts.InArtifactMode = false

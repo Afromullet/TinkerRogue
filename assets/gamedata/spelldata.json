@@ -268,6 +268,355 @@
       ],
       "vxType": "ice",
       "vxDuration": 2
+    },
+    {
+      "id": "shield_wall",
+      "name": "Shield Wall",
+      "description": "The squad braces behind shields, greatly increasing armor",
+      "manaCost": 8,
+      "targetType": "single",
+      "effectType": "buff",
+      "duration": 2,
+      "statModifiers": [
+        { "stat": "armor", "modifier": 5 },
+        { "stat": "movementspeed", "modifier": -1 }
+      ],
+      "vxType": "ice",
+      "vxDuration": 2
+    },
+    {
+      "id": "brace_for_impact",
+      "name": "Brace for Impact",
+      "description": "Sets spears and braces against a charge, boosting strength and armor",
+      "manaCost": 7,
+      "targetType": "single",
+      "effectType": "buff",
+      "duration": 2,
+      "statModifiers": [
+        { "stat": "armor", "modifier": 3 },
+        { "stat": "strength", "modifier": 2 }
+      ],
+      "vxType": "ice",
+      "vxDuration": 2
+    },
+    {
+      "id": "intimidating_roar",
+      "name": "Intimidating Roar",
+      "description": "A terrifying roar that saps the strength and courage of an enemy",
+      "manaCost": 8,
+      "targetType": "single",
+      "effectType": "debuff",
+      "duration": 2,
+      "statModifiers": [
+        { "stat": "strength", "modifier": -2 },
+        { "stat": "armor", "modifier": -2 }
+      ],
+      "vxType": "fire",
+      "vxDuration": 2
+    },
+    {
+      "id": "ground_slam",
+      "name": "Ground Slam",
+      "description": "Slams the ground with tremendous force, damaging nearby squads",
+      "manaCost": 10,
+      "damage": 14,
+      "targetType": "aoe",
+      "effectType": "damage",
+      "shape": { "type": "Circle", "size": 1 },
+      "vxType": "fire",
+      "vxDuration": 2
+    },
+    {
+      "id": "rally",
+      "name": "Rally",
+      "description": "Inspires nearby allies with a rallying call, boosting leadership",
+      "manaCost": 6,
+      "targetType": "single",
+      "effectType": "buff",
+      "duration": 3,
+      "statModifiers": [
+        { "stat": "leadership", "modifier": 5 }
+      ],
+      "vxType": "fire",
+      "vxDuration": 2
+    },
+    {
+      "id": "battle_focus",
+      "name": "Battle Focus",
+      "description": "Sharpens the squad's fighting instincts, boosting weapon skill",
+      "manaCost": 6,
+      "targetType": "single",
+      "effectType": "buff",
+      "duration": 2,
+      "statModifiers": [
+        { "stat": "weapon", "modifier": 3 }
+      ],
+      "vxType": "fire",
+      "vxDuration": 1
+    },
+    {
+      "id": "reckless_charge",
+      "name": "Reckless Charge",
+      "description": "Throws caution aside for raw power, boosting strength but lowering armor",
+      "manaCost": 5,
+      "targetType": "single",
+      "effectType": "buff",
+      "duration": 2,
+      "statModifiers": [
+        { "stat": "strength", "modifier": 4 },
+        { "stat": "armor", "modifier": -2 }
+      ],
+      "vxType": "fire",
+      "vxDuration": 2
+    },
+    {
+      "id": "expose_weakness",
+      "name": "Expose Weakness",
+      "description": "Identifies gaps in the enemy's defenses, reducing their armor",
+      "manaCost": 7,
+      "targetType": "single",
+      "effectType": "debuff",
+      "duration": 2,
+      "statModifiers": [
+        { "stat": "armor", "modifier": -3 }
+      ],
+      "vxType": "cloud",
+      "vxDuration": 1
+    },
+    {
+      "id": "hamstring",
+      "name": "Hamstring",
+      "description": "A crippling strike that slows the enemy's movement",
+      "manaCost": 6,
+      "targetType": "single",
+      "effectType": "debuff",
+      "duration": 2,
+      "statModifiers": [
+        { "stat": "movementspeed", "modifier": -2 },
+        { "stat": "dexterity", "modifier": -3 }
+      ],
+      "vxType": "cloud",
+      "vxDuration": 1
+    },
+    {
+      "id": "crippling_poison",
+      "name": "Crippling Poison",
+      "description": "Applies a debilitating toxin that weakens an enemy squad",
+      "manaCost": 8,
+      "targetType": "single",
+      "effectType": "debuff",
+      "duration": 3,
+      "statModifiers": [
+        { "stat": "strength", "modifier": -2 },
+        { "stat": "dexterity", "modifier": -3 }
+      ],
+      "vxType": "cloud",
+      "vxDuration": 2
+    },
+    {
+      "id": "smoke_bomb",
+      "name": "Smoke Bomb",
+      "description": "Throws a smoke bomb, boosting the squad's evasion temporarily",
+      "manaCost": 5,
+      "targetType": "single",
+      "effectType": "buff",
+      "duration": 2,
+      "statModifiers": [
+        { "stat": "dexterity", "modifier": 5 }
+      ],
+      "vxType": "cloud",
+      "vxDuration": 2
+    },
+    {
+      "id": "steady_aim",
+      "name": "Steady Aim",
+      "description": "The squad takes careful aim, greatly increasing dexterity",
+      "manaCost": 6,
+      "targetType": "single",
+      "effectType": "buff",
+      "duration": 2,
+      "statModifiers": [
+        { "stat": "dexterity", "modifier": 5 }
+      ],
+      "vxType": "ice",
+      "vxDuration": 1
+    },
+    {
+      "id": "volley",
+      "name": "Volley",
+      "description": "An arcing volley of arrows that rains down on an area",
+      "manaCost": 10,
+      "damage": 12,
+      "targetType": "aoe",
+      "effectType": "damage",
+      "shape": { "type": "Square", "size": 1 },
+      "vxType": "cloud",
+      "vxDuration": 2
+    },
+    {
+      "id": "piercing_shot",
+      "name": "Piercing Shot",
+      "description": "A precise shot that punches through armor, weakening the target",
+      "manaCost": 8,
+      "targetType": "single",
+      "effectType": "debuff",
+      "duration": 2,
+      "statModifiers": [
+        { "stat": "armor", "modifier": -4 }
+      ],
+      "vxType": "fire",
+      "vxDuration": 1
+    },
+    {
+      "id": "suppressive_fire",
+      "name": "Suppressive Fire",
+      "description": "Pins down an enemy with sustained fire, reducing their effectiveness",
+      "manaCost": 9,
+      "targetType": "single",
+      "effectType": "debuff",
+      "duration": 2,
+      "statModifiers": [
+        { "stat": "dexterity", "modifier": -4 },
+        { "stat": "movementspeed", "modifier": -1 }
+      ],
+      "vxType": "cloud",
+      "vxDuration": 2
+    },
+    {
+      "id": "thundering_charge",
+      "name": "Thundering Charge",
+      "description": "Surges forward with unstoppable momentum, boosting speed and strength",
+      "manaCost": 8,
+      "targetType": "single",
+      "effectType": "buff",
+      "duration": 2,
+      "statModifiers": [
+        { "stat": "movementspeed", "modifier": 2 },
+        { "stat": "strength", "modifier": 3 }
+      ],
+      "vxType": "fire",
+      "vxDuration": 2
+    },
+    {
+      "id": "trample",
+      "name": "Trample",
+      "description": "Charges through the enemy line, dealing damage in a line",
+      "manaCost": 10,
+      "damage": 16,
+      "targetType": "aoe",
+      "effectType": "damage",
+      "shape": { "type": "Line", "length": 3 },
+      "vxType": "fire",
+      "vxDuration": 2
+    },
+    {
+      "id": "evasive_maneuver",
+      "name": "Evasive Maneuver",
+      "description": "Executes rapid repositioning, boosting dexterity and movement",
+      "manaCost": 6,
+      "targetType": "single",
+      "effectType": "buff",
+      "duration": 2,
+      "statModifiers": [
+        { "stat": "dexterity", "modifier": 4 },
+        { "stat": "movementspeed", "modifier": 1 }
+      ],
+      "vxType": "ice",
+      "vxDuration": 1
+    },
+    {
+      "id": "harrying_strikes",
+      "name": "Harrying Strikes",
+      "description": "Hit-and-run attacks that slow and demoralize the target",
+      "manaCost": 7,
+      "targetType": "single",
+      "effectType": "debuff",
+      "duration": 2,
+      "statModifiers": [
+        { "stat": "movementspeed", "modifier": -2 },
+        { "stat": "strength", "modifier": -2 }
+      ],
+      "vxType": "cloud",
+      "vxDuration": 2
+    },
+    {
+      "id": "divine_protection",
+      "name": "Divine Protection",
+      "description": "Calls upon divine power to shield an ally, boosting armor and resolve",
+      "manaCost": 10,
+      "targetType": "single",
+      "effectType": "buff",
+      "duration": 3,
+      "statModifiers": [
+        { "stat": "armor", "modifier": 4 },
+        { "stat": "leadership", "modifier": 3 }
+      ],
+      "vxType": "ice",
+      "vxDuration": 2
+    },
+    {
+      "id": "smite",
+      "name": "Smite",
+      "description": "Channels holy energy to strike a single enemy squad",
+      "manaCost": 8,
+      "damage": 18,
+      "targetType": "single",
+      "effectType": "damage",
+      "vxType": "electricity",
+      "vxDuration": 2
+    },
+    {
+      "id": "natures_grasp",
+      "name": "Nature's Grasp",
+      "description": "Entangling roots slow and weaken a target",
+      "manaCost": 8,
+      "targetType": "single",
+      "effectType": "debuff",
+      "duration": 2,
+      "statModifiers": [
+        { "stat": "movementspeed", "modifier": -2 },
+        { "stat": "dexterity", "modifier": -3 }
+      ],
+      "vxType": "cloud",
+      "vxDuration": 2
+    },
+    {
+      "id": "spectral_volley",
+      "name": "Spectral Volley",
+      "description": "Fires ghostly arrows that pierce through defenses",
+      "manaCost": 10,
+      "damage": 16,
+      "targetType": "aoe",
+      "effectType": "damage",
+      "shape": { "type": "Line", "length": 3 },
+      "vxType": "ice",
+      "vxDuration": 2
+    },
+    {
+      "id": "savagery",
+      "name": "Savagery",
+      "description": "Whips the squad into a frenzy, boosting weapon skill and strength",
+      "manaCost": 7,
+      "targetType": "single",
+      "effectType": "buff",
+      "duration": 2,
+      "statModifiers": [
+        { "stat": "weapon", "modifier": 3 },
+        { "stat": "strength", "modifier": 2 }
+      ],
+      "vxType": "fire",
+      "vxDuration": 2
+    },
+    {
+      "id": "wind_shot",
+      "name": "Wind Shot",
+      "description": "A magically enhanced arrow that strikes with the force of a gale",
+      "manaCost": 8,
+      "damage": 14,
+      "targetType": "single",
+      "effectType": "damage",
+      "vxType": "ice",
+      "vxDuration": 1
     }
   ]
 }

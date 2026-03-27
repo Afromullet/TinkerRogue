@@ -61,7 +61,7 @@ func (sp *SpellPanelController) UpdateDetailPanel() {
 		return
 	}
 
-	currentMana, _ := sp.deps.Handler.GetCommanderMana()
+	currentMana, _ := sp.deps.Handler.GetSquadMana()
 	canAfford := currentMana >= spell.ManaCost
 
 	targetType := "Single Target"
@@ -86,7 +86,7 @@ func (sp *SpellPanelController) UpdateDetailPanel() {
 // Refresh populates the list from the spell handler, updates mana label, clears selection.
 func (sp *SpellPanelController) Refresh() {
 	allSpells := sp.deps.Handler.GetAllSpells()
-	currentMana, maxMana := sp.deps.Handler.GetCommanderMana()
+	currentMana, maxMana := sp.deps.Handler.GetSquadMana()
 
 	if sp.manaLabel != nil {
 		sp.manaLabel.Label = fmt.Sprintf("Mana: %d/%d", currentMana, maxMana)
@@ -112,7 +112,7 @@ func (sp *SpellPanelController) Refresh() {
 
 // Show validates preconditions, refreshes data, and shows the panel.
 func (sp *SpellPanelController) Show() {
-	if sp.deps.BattleState.HasCastSpell {
+	if !sp.deps.Handler.CanSelectedSquadCast() {
 		return
 	}
 

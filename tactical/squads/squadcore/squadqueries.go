@@ -103,6 +103,15 @@ func GetLeaderID(squadID ecs.EntityID, squadmanager *common.EntityManager) ecs.E
 	return 0
 }
 
+// GetUnitType returns the unit type string for a unit entity, or "" if not found.
+func GetUnitType(unitID ecs.EntityID, manager *common.EntityManager) string {
+	data := common.GetComponentTypeByID[*UnitTypeData](manager, unitID, UnitTypeComponent)
+	if data == nil {
+		return ""
+	}
+	return data.UnitType
+}
+
 // IsSquadDestroyed checks if all units are dead by iterating alive units.
 // Returns true if squad not found, has no units, or all units are dead.
 func IsSquadDestroyed(squadID ecs.EntityID, squadmanager *common.EntityManager) bool {

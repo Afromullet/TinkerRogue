@@ -6,7 +6,7 @@ The `assets/gamedata/` folder contains all JSON files that define game templates
 
 ## File Categories
 
-The 13 JSON files fall into two broad groups:
+The 14 JSON files fall into two broad groups:
 
 ### Template / Definition Files
 
@@ -16,6 +16,7 @@ These define the "what" of the game — the creatures, items, encounters, and ma
 |------|---------|
 | `monsterdata.json` | Unit templates for all recruitable and enemy creatures |
 | `spelldata.json` | Spell definitions including damage, AoE shapes, buffs, and debuffs |
+| `unitspells.json` | Maps unit types to the spell IDs they can cast as squad leaders |
 | `consumabledata.json` | Consumable item templates (potions) with stat effects and durations |
 | `creaturemodifiers.json` | Named stat modifier templates that can be applied to creatures |
 | `nodeDefinitions.json` | Overworld node types — threats, settlements, and fortresses |
@@ -41,11 +42,15 @@ These define the "how" — numerical tuning, AI weights, and difficulty scaling.
 
 ### monsterdata.json
 
-Defines every unit type in the game. Each entry specifies a unit's name, sprite, base attributes (strength, dexterity, magic, leadership, armor, weapon), physical dimensions (width/height for multi-tile units), combat role (Tank, DPS, Support), attack type (MeleeRow, MeleeColumn, Ranged, Magic), attack range, movement speed, cover values, and stat growth rates (S through F). Contains 24 unit types ranging from melee fighters to ranged archers and spellcasters.
+Defines every unit type in the game. Each entry specifies a unit's name, sprite, base attributes (strength, dexterity, magic, leadership, armor, weapon), physical dimensions (width/height for multi-tile units), combat role (Tank, DPS, Support), attack type (MeleeRow, MeleeColumn, Ranged, Magic), attack range, movement speed, cover values, and stat growth rates (S through F). Contains 30 unit types ranging from melee fighters to ranged archers, spellcasters, and cavalry.
 
 ### spelldata.json
 
-Defines all spells available to commanders. Each spell has an ID, mana cost, target type (single or AoE), and effect type (damage, buff, or debuff). Damage spells specify AoE shapes (Circle, Square, Line, Rectangle, Cone) with size parameters. Buff/debuff spells specify stat modifiers and durations. All spells include visual effect type and duration. Contains 22 spells across fire, ice, electricity, and cloud visual themes.
+Defines all spells available in the game. Each spell has an ID, mana cost, target type (single or AoE), and effect type (damage, buff, or debuff). Damage spells specify AoE shapes (Circle, Square, Line, Rectangle, Cone) with size parameters. Buff/debuff spells specify stat modifiers and durations. All spells include visual effect type and duration. Contains 48 spells across fire, ice, electricity, and cloud visual themes — ranging from powerful caster spells (fireball, blizzard) to cheap martial abilities (shield_wall, battle_focus) and cavalry maneuvers (thundering_charge, trample).
+
+### unitspells.json
+
+Maps each unit type to the spell IDs its squad can cast when that unit is the squad leader. Every unit type has at least one spell. Magic-focused units (Wizard, Sorcerer, Mage, Warlock) get 3-4 powerful spells as their core identity. Non-caster units (Knight, Fighter, Archer, etc.) get 1-2 cheap, thematic spells — defensive buffs for tanks, precision debuffs for ranged, movement abilities for cavalry. Contains mappings for all 30 unit types. Spell IDs reference entries in `spelldata.json`.
 
 ### consumabledata.json
 
@@ -107,7 +112,9 @@ Several files reference shared identifiers that must stay in sync:
 
 - **Strategy names** — `encounterdata.json` assigns each faction a strategy (e.g., "Defensive", "Expansionist"). `overworldconfig.json` defines scoring bonuses for each of these strategy names.
 
-- **Spell IDs** — `spelldata.json` defines spell IDs (e.g., "fireball", "war_cry"). These are referenced by the spell system in code when commanders cast spells.
+- **Unit type names** — `monsterdata.json` defines unit type names (e.g., "Knight", "Wizard"). `unitspells.json` uses these same names to assign spells to unit types.
+
+- **Spell IDs** — `spelldata.json` defines spell IDs (e.g., "fireball", "war_cry"). `unitspells.json` references these IDs to define which spells each unit type can cast as a squad leader. The spell system attaches mana and spellbook components to squads at creation based on these mappings.
 
 - **Artifact IDs** — `major_artifacts.json` defines artifact IDs (e.g., "twin_strike", "echo_drums"). The code in `gear/artifactbehaviors_activated.go` implements behavior logic keyed by these IDs.
 
@@ -129,6 +136,7 @@ Files are loaded in a specific order during startup because some validations dep
 8. `overworldconfig.json` — overworld simulation tuning
 9. `influenceconfig.json` — influence system tuning
 10. `spelldata.json` — spell definitions
-11. `minor_artifacts.json` and `major_artifacts.json` — artifact definitions
+11. `unitspells.json` — unit type to spell mappings (loaded after spelldata so it can validate spell IDs)
+12. `minor_artifacts.json` and `major_artifacts.json` — artifact definitions
 
 Loading failures cause the game to panic at startup rather than proceeding with missing data.

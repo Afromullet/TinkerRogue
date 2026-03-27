@@ -348,9 +348,6 @@ func (ah *OverworldActionHandler) RecruitCommander() {
 		templates.GameConfig.Commander.MovementSpeed,
 		templates.GameConfig.Commander.MaxSquads,
 		commanderImage,
-		templates.GameConfig.Commander.StartingMana,
-		templates.GameConfig.Commander.MaxMana,
-		templates.GetAllSpellIDs(),
 	)
 
 	// Add to roster

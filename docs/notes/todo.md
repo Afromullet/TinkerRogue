@@ -1,8 +1,10 @@
+# Spells
+
+- Leader can select from 1 of n spells on level up
+- Consider a different mana regeneration system. Currently, mana is regenerated after combat. Maybe regenerate it turn by turn, or regenerate it from attacking
+
 # Bug Fixes
 
-- There has to be a tradeoff between casting spells and moving squads/engaging in combat. Doing both will feel too mechanical. Maybe instead give units the ability to cast spells
-instead of their regular action. Although this will be hard to work in - what determines what spells a unit can cast? Probably just the leader. This also means that
-we need a better system which determines what units can cast what spells (Should be defined in a JSON file). 
 - XP Awards seem to be odd. I.E, didivided by 10. Combat resolution grants 40 xp, but units only get 4 xp
 - Start Random Encounter alwys starts the same encounter 
 - Can cast spells and use artifacts on enemy turn
@@ -23,10 +25,6 @@ we need a better system which determines what units can cast what spells (Should
 - Add Error Checking for JSON. I.E, a "Support" unit has to have a "Heal" attack type, and so on. Determine valid state
 - Review other JSON files and determine valid state and do load-time checking.
 
-# Raid Package
-
-- Either define archetypes.go in a json file, or use the encounter system. Consider creating a variation of the encounter system which weighs certain units more
-    * I.E, "Ambush" - fast units have a weight, ranged battery prioritizes ranged units, etc. 
 
 # Input
 
@@ -45,7 +43,8 @@ we need a better system which determines what units can cast what spells (Should
 - combat life cycle manager changes only support one player at the moment, de to storing the playerEntityID. Consider changing that for multiplayer
 - ExecuteThreatEvolutionEffect needs to changed base off threat type/data.  
 - Add Debug command to reload JSON. Will be used for testing
-- I added a json file for raid room archetypes - gamedata\raidarchetypes.go. I will have to add some more randomization to the archetypes. One possibility is through unit traits. Not sure exactly yet how to implement that..Might just go with a "preferred room" field for the unit json. 
+- I added a json file for raid room archetypes - gamedata\raidarchetypes.go. I will have to add some more randomization to the archetypes. One possibility is through unit traits. Not sure exactly yet how to implement that..Might just go with a "preferred room" field for the unit json
+- Need to be able to go back to the main menu from overworld or roguelike mode. 
 
 # Cleanup
 

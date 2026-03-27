@@ -7,7 +7,6 @@ import (
 	"game_main/setup/savesystem"
 	"game_main/tactical/commander"
 	rstr "game_main/tactical/squads/roster"
-	"game_main/tactical/powers/spells"
 	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"
@@ -38,8 +37,6 @@ type savedCommander struct {
 	Attrs         savedAttributes     `json:"attributes"`
 	ActionState   *savedActionState   `json:"actionState,omitempty"`
 	SquadRoster   *savedSquadRoster   `json:"squadRoster,omitempty"`
-	Mana          *savedMana          `json:"mana,omitempty"`
-	SpellBook     *savedSpellBook     `json:"spellBook,omitempty"`
 }
 
 type savedActionState struct {
@@ -51,15 +48,6 @@ type savedActionState struct {
 type savedSquadRoster struct {
 	OwnedSquads []ecs.EntityID `json:"ownedSquads"`
 	MaxSquads   int            `json:"maxSquads"`
-}
-
-type savedMana struct {
-	CurrentMana int `json:"currentMana"`
-	MaxMana     int `json:"maxMana"`
-}
-
-type savedSpellBook struct {
-	SpellIDs []string `json:"spellIDs"`
 }
 
 // --- Save ---
@@ -102,17 +90,6 @@ func (c *CommanderChunk) Save(em *common.EntityManager) (json.RawMessage, error)
 				MaxSquads:   roster.MaxSquads,
 			}
 			copy(sc.SquadRoster.OwnedSquads, roster.OwnedSquads)
-		}
-
-		if mana := common.GetComponentType[*spells.ManaData](entity, spells.ManaComponent); mana != nil {
-			sc.Mana = &savedMana{CurrentMana: mana.CurrentMana, MaxMana: mana.MaxMana}
-		}
-
-		if sb := common.GetComponentType[*spells.SpellBookData](entity, spells.SpellBookComponent); sb != nil {
-			sc.SpellBook = &savedSpellBook{
-				SpellIDs: make([]string, len(sb.SpellIDs)),
-			}
-			copy(sc.SpellBook.SpellIDs, sb.SpellIDs)
 		}
 
 		chunkData.Commanders = append(chunkData.Commanders, sc)
@@ -162,20 +139,6 @@ func (c *CommanderChunk) Load(em *common.EntityManager, data json.RawMessage, id
 			roster.OwnedSquads = make([]ecs.EntityID, len(sc.SquadRoster.OwnedSquads))
 			copy(roster.OwnedSquads, sc.SquadRoster.OwnedSquads)
 			entity.AddComponent(rstr.SquadRosterComponent, roster)
-		}
-
-		if sc.Mana != nil {
-			entity.AddComponent(spells.ManaComponent, &spells.ManaData{
-				CurrentMana: sc.Mana.CurrentMana, MaxMana: sc.Mana.MaxMana,
-			})
-		}
-
-		if sc.SpellBook != nil {
-			spellIDs := make([]string, len(sc.SpellBook.SpellIDs))
-			copy(spellIDs, sc.SpellBook.SpellIDs)
-			entity.AddComponent(spells.SpellBookComponent, &spells.SpellBookData{
-				SpellIDs: spellIDs,
-			})
 		}
 
 		idMap.Register(sc.EntityID, newID)

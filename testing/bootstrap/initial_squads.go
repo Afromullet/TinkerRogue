@@ -3,6 +3,7 @@ package bootstrap
 import (
 	"fmt"
 	"game_main/common"
+	"game_main/tactical/powers/spells"
 	rstr "game_main/tactical/squads/roster"
 	"game_main/tactical/squads/squadcore"
 	"game_main/tactical/squads/unitdefs"
@@ -154,6 +155,7 @@ func createBalancedSquad(manager *common.EntityManager, squadName string) (ecs.E
 		coords.LogicalPosition{X: 0, Y: 0},
 		unitsToCreate,
 	)
+	spells.InitSquadSpellsFromLeader(squadID, manager)
 
 	return squadID, nil
 }
@@ -203,6 +205,7 @@ func createRangedSquad(manager *common.EntityManager, squadName string) (ecs.Ent
 		coords.LogicalPosition{X: 0, Y: 0},
 		unitsToCreate,
 	)
+	spells.InitSquadSpellsFromLeader(squadID, manager)
 
 	return squadID, nil
 }
@@ -249,6 +252,7 @@ func createMagicSquad(manager *common.EntityManager, squadName string) (ecs.Enti
 		coords.LogicalPosition{X: 0, Y: 0},
 		unitsToCreate,
 	)
+	spells.InitSquadSpellsFromLeader(squadID, manager)
 
 	return squadID, nil
 }
@@ -310,6 +314,7 @@ func createMixedSquad(manager *common.EntityManager, squadName string) (ecs.Enti
 		coords.LogicalPosition{X: 0, Y: 0},
 		unitsToCreate,
 	)
+	spells.InitSquadSpellsFromLeader(squadID, manager)
 
 	return squadID, nil
 }
@@ -358,6 +363,7 @@ func createCavalrySquad(manager *common.EntityManager, squadName string) (ecs.En
 		coords.LogicalPosition{X: 0, Y: 0},
 		unitsToCreate,
 	)
+	spells.InitSquadSpellsFromLeader(squadID, manager)
 
 	return squadID, nil
 }

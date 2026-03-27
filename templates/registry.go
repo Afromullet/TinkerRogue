@@ -43,6 +43,7 @@ func ReadGameData() {
 	ReadInfluenceConfig()
 	ReadMapGenConfig()
 	LoadSpellDefinitions()
+	LoadUnitSpellDefinitions()
 	LoadArtifactDefinitions()
 
 }

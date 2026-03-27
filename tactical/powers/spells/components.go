@@ -13,14 +13,15 @@ var (
 	SpellBookTag ecs.Tag
 )
 
-// ManaData tracks a commander's mana pool.
+// ManaData tracks a squad's mana pool.
 // Mana persists across battles, making mana management a strategic overworld decision.
+// The squad leader uses this pool to cast spells.
 type ManaData struct {
 	CurrentMana int
 	MaxMana     int
 }
 
-// SpellBookData holds references to spells a commander can cast.
+// SpellBookData holds references to spells a squad can cast via its leader.
 // SpellIDs are keys into the global SpellRegistry.
 type SpellBookData struct {
 	SpellIDs []string

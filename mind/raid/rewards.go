@@ -13,11 +13,10 @@ func calculateRoomReward(manager *common.EntityManager, raidState *RaidStateData
 		return combatlifecycle.Reward{}, combatlifecycle.GrantTarget{}
 	}
 
-	// Base target for all combat rooms (gold + XP)
+	// Base target for all combat rooms (gold + XP + mana)
 	target := combatlifecycle.GrantTarget{
 		PlayerEntityID: raidState.PlayerEntityID,
 		SquadIDs:       raidState.PlayerSquadIDs,
-		CommanderID:    raidState.CommanderID,
 	}
 
 	// Floor scaling: 1.0 + (floor-1) * scalePercent/100
