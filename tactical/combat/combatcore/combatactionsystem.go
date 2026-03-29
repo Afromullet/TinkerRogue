@@ -15,6 +15,9 @@ type CombatActionSystem struct {
 
 	// Post-action hook (fired after successful attack)
 	onAttackComplete func(attackerID, defenderID ecs.EntityID, result *CombatResult)
+
+	// Perk callbacks (injected from perks package via combatservices)
+	perkCallbacks *PerkCallbacks
 }
 
 func NewCombatActionSystem(manager *common.EntityManager, cache *CombatQueryCache) *CombatActionSystem {
@@ -32,6 +35,17 @@ func (cas *CombatActionSystem) SetBattleRecorder(recorder *BattleRecorder) {
 // SetOnAttackComplete sets the callback fired after a successful attack.
 func (cas *CombatActionSystem) SetOnAttackComplete(fn func(ecs.EntityID, ecs.EntityID, *CombatResult)) {
 	cas.onAttackComplete = fn
+}
+
+// SetPerkCallbacks injects perk hook callback functions.
+// Must be called before combat begins for perk hooks to fire.
+func (cas *CombatActionSystem) SetPerkCallbacks(callbacks *PerkCallbacks) {
+	cas.perkCallbacks = callbacks
+}
+
+// GetPerkCallbacks returns the currently set perk callbacks (may be nil).
+func (cas *CombatActionSystem) GetPerkCallbacks() *PerkCallbacks {
+	return cas.perkCallbacks
 }
 
 func (cas *CombatActionSystem) ExecuteAttackAction(attackerID, defenderID ecs.EntityID) *CombatResult {
@@ -83,7 +97,11 @@ func (cas *CombatActionSystem) ExecuteAttackAction(attackerID, defenderID ecs.En
 		} else {
 			// Normal attack units target the enemy squad
 			targetIDs := SelectTargetUnits(attackerUnitID, defenderID, cas.manager)
-			attackIndex = ProcessAttackOnTargets(attackerUnitID, targetIDs, result, combatLog, attackIndex, cas.manager)
+			if cas.perkCallbacks != nil {
+				attackIndex = ProcessAttackOnTargetsWithPerks(attackerUnitID, defenderID, targetIDs, result, combatLog, attackIndex, cas.perkCallbacks, cas.manager)
+			} else {
+				attackIndex = ProcessAttackOnTargets(attackerUnitID, targetIDs, result, combatLog, attackIndex, cas.manager)
+			}
 		}
 	}
 
@@ -92,7 +110,20 @@ func (cas *CombatActionSystem) ExecuteAttackAction(attackerID, defenderID ecs.En
 	// Check if defender would survive the main attack (checking HP after predicted damage)
 	defenderWouldSurvive := squadcore.WouldSquadSurvive(defenderID, result.DamageByUnit, cas.manager)
 
-	if defenderWouldSurvive {
+	// Build counterattack modifiers (may be modified by perk hooks)
+	counterModifiers := DamageModifiers{
+		HitPenalty:       counterattackHitPenalty,
+		DamageMultiplier: counterattackDamageMultiplier,
+		IsCounterattack:  true,
+	}
+
+	// Check if counter should be suppressed by perks
+	skipCounter := false
+	if cas.perkCallbacks != nil && cas.perkCallbacks.CounterMod != nil {
+		skipCounter = cas.perkCallbacks.CounterMod(defenderID, attackerID, &counterModifiers, cas.manager)
+	}
+
+	if defenderWouldSurvive && !skipCounter && !counterModifiers.SkipCounter {
 		// Get defender units that are alive and in range (already filtered)
 		counterattackers := cas.getCounterattackingUnits(defenderID, attackerID)
 
@@ -115,9 +146,9 @@ func (cas *CombatActionSystem) ExecuteAttackAction(attackerID, defenderID ecs.En
 				healTargets := SelectHealTargets(counterAttackerID, defenderID, cas.manager)
 				attackIndex = ProcessHealOnTargets(counterAttackerID, healTargets, result, combatLog, attackIndex, cas.manager)
 			} else {
-				// Normal counterattack against enemy squad
+				// Normal counterattack against enemy squad, using perk-modified modifiers
 				targetIDs := SelectTargetUnits(counterAttackerID, attackerID, cas.manager)
-				attackIndex = ProcessCounterattackOnTargets(counterAttackerID, targetIDs, result, combatLog, attackIndex, cas.manager)
+				attackIndex = processAttackWithPerkCallbacks(counterAttackerID, attackerID, targetIDs, result, combatLog, attackIndex, counterModifiers, cas.perkCallbacks, cas.manager)
 			}
 		}
 	}

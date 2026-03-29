@@ -13,15 +13,52 @@ const (
 	counterattackHitPenalty       = 20  // -20% hit chance on counterattack
 )
 
-// processAttackWithModifiers is the unified attack processing function
+// processAttackWithModifiers is the unified attack processing function.
+// Supports optional perk callbacks for damage pipeline injection.
 func processAttackWithModifiers(attackerID ecs.EntityID, targetIDs []ecs.EntityID, result *CombatResult,
 	log *CombatLog, attackIndex int, modifiers DamageModifiers, manager *common.EntityManager) int {
+
+	return processAttackWithPerkCallbacks(attackerID, 0, targetIDs, result, log, attackIndex, modifiers, nil, manager)
+}
+
+// processAttackWithPerkCallbacks is the full attack processing function with perk support.
+// defenderSquadID is needed for target override hooks and post-damage hooks.
+// callbacks may be nil if no perks are active.
+func processAttackWithPerkCallbacks(attackerID ecs.EntityID, defenderSquadID ecs.EntityID,
+	targetIDs []ecs.EntityID, result *CombatResult,
+	log *CombatLog, attackIndex int, modifiers DamageModifiers,
+	callbacks *PerkCallbacks, manager *common.EntityManager) int {
+
+	// Determine attacker's squad ID for perk hooks
+	attackerSquadID := ecs.EntityID(0)
+	memberData := common.GetComponentTypeByID[*squadcore.SquadMemberData](manager, attackerID, squadcore.SquadMemberComponent)
+	if memberData != nil {
+		attackerSquadID = memberData.SquadID
+	}
+
+	// Run target override hooks (attacker perks like Cleave, Precision Strike)
+	if callbacks != nil && callbacks.TargetOverride != nil && defenderSquadID != 0 {
+		targetIDs = callbacks.TargetOverride(attackerID, defenderSquadID, targetIDs, manager)
+	}
 
 	for _, defenderID := range targetIDs {
 		attackIndex++
 
-		// Calculate damage with modifiers
-		damage, event := calculateDamage(attackerID, defenderID, modifiers, manager)
+		// Make a copy of modifiers for this specific target (perks may modify per-target)
+		targetModifiers := modifiers
+
+		// Run attacker damage mod hooks BEFORE damage calculation
+		if callbacks != nil && callbacks.AttackerDamageMod != nil {
+			callbacks.AttackerDamageMod(attackerID, defenderID, attackerSquadID, defenderSquadID, &targetModifiers, manager)
+		}
+
+		// Run defender damage mod hooks BEFORE damage calculation
+		if callbacks != nil && callbacks.DefenderDamageMod != nil {
+			callbacks.DefenderDamageMod(attackerID, defenderID, attackerSquadID, defenderSquadID, &targetModifiers, manager)
+		}
+
+		// Calculate damage with perk-modified modifiers and cover callback
+		damage, event := calculateDamageWithPerks(attackerID, defenderID, targetModifiers, callbacks, manager)
 
 		// Add targeting info
 		defenderPos := common.GetComponentTypeByID[*squadcore.GridPositionData](manager, defenderID, squadcore.GridPositionComponent)
@@ -37,8 +74,56 @@ func processAttackWithModifiers(attackerID ecs.EntityID, targetIDs []ecs.EntityI
 			event.TargetInfo.TargetMode = targetData.AttackType.String()
 		}
 
+		// Run damage redirect hooks (Guardian Protocol)
+		if callbacks != nil && callbacks.DeathOverride != nil && defenderSquadID != 0 {
+			// Note: DamageRedirect is handled separately at the recordDamageToUnit level
+		}
+
 		// Apply damage
 		recordDamageToUnit(defenderID, damage, result, manager)
+
+		// Run post-damage hooks (attacker side: Bloodlust, Disruption)
+		if callbacks != nil && callbacks.PostDamage != nil {
+			callbacks.PostDamage(attackerID, defenderID, attackerSquadID, defenderSquadID, damage, event.WasKilled, manager)
+		}
+
+		// Run defender post-damage hooks (Grudge Bearer tracking)
+		if callbacks != nil && callbacks.DefenderPostDamage != nil {
+			callbacks.DefenderPostDamage(attackerID, defenderID, attackerSquadID, defenderSquadID, damage, event.WasKilled, manager)
+		}
+
+		// Death override check (Resolute)
+		if event.WasKilled && callbacks != nil && callbacks.DeathOverride != nil {
+			defenderMember := common.GetComponentTypeByID[*squadcore.SquadMemberData](manager, defenderID, squadcore.SquadMemberComponent)
+			defSquadID := defenderSquadID
+			if defenderMember != nil {
+				defSquadID = defenderMember.SquadID
+			}
+			if callbacks.DeathOverride(defenderID, defSquadID, manager) {
+				// Prevent death: adjust recorded damage so unit survives at 1 HP
+				attr := common.GetComponentTypeByID[*common.Attributes](manager, defenderID, common.AttributeComponent)
+				if attr != nil {
+					// Reduce recorded damage so HP ends at 1
+					totalRecorded := result.DamageByUnit[defenderID]
+					maxAllowedDamage := attr.CurrentHealth - 1
+					if maxAllowedDamage < 0 {
+						maxAllowedDamage = 0
+					}
+					if totalRecorded > maxAllowedDamage {
+						result.DamageByUnit[defenderID] = maxAllowedDamage
+					}
+					// Remove from UnitsKilled list
+					for i, killedID := range result.UnitsKilled {
+						if killedID == defenderID {
+							result.UnitsKilled = append(result.UnitsKilled[:i], result.UnitsKilled[i+1:]...)
+							break
+						}
+					}
+					event.WasKilled = false
+					event.DefenderHPAfter = 1
+				}
+			}
+		}
 
 		// Store event
 		log.AttackEvents = append(log.AttackEvents, *event)
@@ -58,6 +143,20 @@ func ProcessAttackOnTargets(attackerID ecs.EntityID, targetIDs []ecs.EntityID, r
 		IsCounterattack:  false,
 	}
 	return processAttackWithModifiers(attackerID, targetIDs, result, log, attackIndex, modifiers, manager)
+}
+
+// ProcessAttackOnTargetsWithPerks applies damage with perk support.
+// defenderSquadID is required for perk hooks.
+func ProcessAttackOnTargetsWithPerks(attackerID ecs.EntityID, defenderSquadID ecs.EntityID,
+	targetIDs []ecs.EntityID, result *CombatResult,
+	log *CombatLog, attackIndex int, callbacks *PerkCallbacks, manager *common.EntityManager) int {
+
+	modifiers := DamageModifiers{
+		HitPenalty:       0,
+		DamageMultiplier: 1.0,
+		IsCounterattack:  false,
+	}
+	return processAttackWithPerkCallbacks(attackerID, defenderSquadID, targetIDs, result, log, attackIndex, modifiers, callbacks, manager)
 }
 
 // ProcessCounterattackOnTargets applies counterattack damage with penalties

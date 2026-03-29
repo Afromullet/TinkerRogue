@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"game_main/common"
 	"game_main/mind/combatlifecycle"
-	"game_main/tactical/powers/artifacts"
 	"game_main/tactical/combat/combatcore"
+	"game_main/tactical/perks"
+	"game_main/tactical/powers/artifacts"
 	"game_main/tactical/powers/effects"
 	"game_main/tactical/squads/squadcore"
 	"game_main/world/coords"
@@ -94,6 +95,9 @@ func NewCombatService(manager *common.EntityManager) *CombatService {
 	// Register artifact behavior dispatch
 	setupBehaviorDispatch(cs, manager, cache)
 
+	// Register perk dispatch
+	setupPerkDispatch(cs, manager)
+
 	return cs
 }
 
@@ -128,6 +132,9 @@ func (cs *CombatService) InitializeCombat(factionIDs []ecs.EntityID) error {
 	for _, factionID := range factionIDs {
 		factionSquads := combatcore.GetSquadsForFaction(factionID, cs.EntityManager)
 		artifacts.ApplyArtifactStatEffects(factionSquads, cs.EntityManager)
+
+		// Initialize perk round state for all squads with perks
+		perks.InitializePerkRoundStatesForFaction(factionSquads, cs.EntityManager)
 	}
 
 	return cs.TurnManager.InitializeCombat(factionIDs)

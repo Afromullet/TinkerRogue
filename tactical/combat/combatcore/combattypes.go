@@ -163,6 +163,12 @@ type DamageModifiers struct {
 	HitPenalty       int
 	DamageMultiplier float64
 	IsCounterattack  bool
+
+	// Perk-related modifiers
+	CritBonus   int     // Added to crit threshold (Executioner's Instinct)
+	CoverBonus  float64 // Added to cover calculation (Brace, Fortify)
+	SkipCounter bool    // If true, no counterattack phase
+	SkipCrit    bool    // If true, crits become normal hits (Vigilance)
 }
 
 // CombatResult - Unified result type for combat operations

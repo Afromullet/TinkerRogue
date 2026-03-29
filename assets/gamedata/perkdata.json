@@ -1,0 +1,268 @@
+{
+  "perks": [
+    {
+      "id": "brace_for_impact",
+      "name": "Brace for Impact",
+      "description": "When defending, all units gain +15% cover bonus.",
+      "tier": 0,
+      "category": 1,
+      "roles": ["Tank"],
+      "exclusiveWith": [],
+      "unlockCost": 2,
+      "behaviorId": "brace_for_impact"
+    },
+    {
+      "id": "reckless_assault",
+      "name": "Reckless Assault",
+      "description": "+30% damage dealt, but +20% damage received until next turn.",
+      "tier": 0,
+      "category": 0,
+      "roles": ["DPS"],
+      "exclusiveWith": [],
+      "unlockCost": 2,
+      "behaviorId": "reckless_assault"
+    },
+    {
+      "id": "stalwart",
+      "name": "Stalwart",
+      "description": "If this squad did not move, counterattacks deal 100% damage instead of 50%.",
+      "tier": 0,
+      "category": 1,
+      "roles": ["Tank", "Support"],
+      "exclusiveWith": [],
+      "unlockCost": 2,
+      "behaviorId": "stalwart"
+    },
+    {
+      "id": "executioners_instinct",
+      "name": "Executioner's Instinct",
+      "description": "+25% crit chance vs squads with any unit below 30% HP.",
+      "tier": 0,
+      "category": 0,
+      "roles": ["DPS"],
+      "exclusiveWith": [],
+      "unlockCost": 2,
+      "behaviorId": "executioners_instinct"
+    },
+    {
+      "id": "shieldwall_discipline",
+      "name": "Shieldwall Discipline",
+      "description": "Per Tank in front row: all squad units take 5% less damage (max 15%).",
+      "tier": 0,
+      "category": 1,
+      "roles": ["Tank"],
+      "exclusiveWith": [],
+      "unlockCost": 2,
+      "behaviorId": "shieldwall_discipline"
+    },
+    {
+      "id": "isolated_predator",
+      "name": "Isolated Predator",
+      "description": "+25% damage when no friendly squads within 3 tiles.",
+      "tier": 0,
+      "category": 0,
+      "roles": ["DPS"],
+      "exclusiveWith": [],
+      "unlockCost": 2,
+      "behaviorId": "isolated_predator"
+    },
+    {
+      "id": "vigilance",
+      "name": "Vigilance",
+      "description": "Critical hits against this squad become normal hits.",
+      "tier": 0,
+      "category": 1,
+      "roles": ["Tank", "Support"],
+      "exclusiveWith": [],
+      "unlockCost": 2,
+      "behaviorId": "vigilance"
+    },
+    {
+      "id": "field_medic",
+      "name": "Field Medic",
+      "description": "At round start, lowest-HP unit heals 10% of max HP.",
+      "tier": 0,
+      "category": 3,
+      "roles": ["Support"],
+      "exclusiveWith": [],
+      "unlockCost": 2,
+      "behaviorId": "field_medic"
+    },
+    {
+      "id": "opening_salvo",
+      "name": "Opening Salvo",
+      "description": "+35% damage on squad's first attack of the combat only.",
+      "tier": 0,
+      "category": 0,
+      "roles": ["DPS"],
+      "exclusiveWith": [],
+      "unlockCost": 2,
+      "behaviorId": "opening_salvo"
+    },
+    {
+      "id": "last_line",
+      "name": "Last Line",
+      "description": "When last friendly squad alive: +20% hit, dodge, and damage.",
+      "tier": 0,
+      "category": 1,
+      "roles": ["Tank", "Support"],
+      "exclusiveWith": [],
+      "unlockCost": 2,
+      "behaviorId": "last_line"
+    },
+    {
+      "id": "cleave",
+      "name": "Cleave",
+      "description": "Melee attacks also hit one unit in the row behind the target, but all damage reduced by 30%.",
+      "tier": 1,
+      "category": 2,
+      "roles": ["DPS"],
+      "exclusiveWith": [],
+      "unlockCost": 3,
+      "behaviorId": "cleave"
+    },
+    {
+      "id": "riposte",
+      "name": "Riposte",
+      "description": "Counterattacks have no hit penalty (normally -20).",
+      "tier": 1,
+      "category": 1,
+      "roles": ["Tank", "DPS"],
+      "exclusiveWith": [],
+      "unlockCost": 3,
+      "behaviorId": "riposte"
+    },
+    {
+      "id": "disruption",
+      "name": "Disruption",
+      "description": "Dealing damage reduces target squad's next attack by -15% this round.",
+      "tier": 1,
+      "category": 3,
+      "roles": ["DPS", "Support"],
+      "exclusiveWith": [],
+      "unlockCost": 3,
+      "behaviorId": "disruption"
+    },
+    {
+      "id": "guardian_protocol",
+      "name": "Guardian Protocol",
+      "description": "When adjacent friendly squad is attacked, one Tank absorbs 25% of damage.",
+      "tier": 1,
+      "category": 1,
+      "roles": ["Tank"],
+      "exclusiveWith": [],
+      "unlockCost": 4,
+      "behaviorId": "guardian_protocol"
+    },
+    {
+      "id": "overwatch",
+      "name": "Overwatch",
+      "description": "Skip attack to auto-attack at 75% damage next enemy that moves in range.",
+      "tier": 1,
+      "category": 2,
+      "roles": ["DPS"],
+      "exclusiveWith": [],
+      "unlockCost": 4,
+      "behaviorId": "overwatch"
+    },
+    {
+      "id": "adaptive_armor",
+      "name": "Adaptive Armor",
+      "description": "-10% damage from same attacker per hit (stacks to 30%, resets per round).",
+      "tier": 1,
+      "category": 1,
+      "roles": ["Tank"],
+      "exclusiveWith": [],
+      "unlockCost": 3,
+      "behaviorId": "adaptive_armor"
+    },
+    {
+      "id": "bloodlust",
+      "name": "Bloodlust",
+      "description": "Each unit kill this round: +15% damage on next attack (stacks, resets per round).",
+      "tier": 1,
+      "category": 0,
+      "roles": ["DPS"],
+      "exclusiveWith": [],
+      "unlockCost": 3,
+      "behaviorId": "bloodlust"
+    },
+    {
+      "id": "fortify",
+      "name": "Fortify",
+      "description": "+5% cover per consecutive turn not moving (max +15% after 3 turns, moving resets).",
+      "tier": 1,
+      "category": 1,
+      "roles": ["Tank", "Support"],
+      "exclusiveWith": [],
+      "unlockCost": 3,
+      "behaviorId": "fortify"
+    },
+    {
+      "id": "precision_strike",
+      "name": "Precision Strike",
+      "description": "Highest-dex DPS unit targets the lowest-HP enemy instead of normal targeting.",
+      "tier": 1,
+      "category": 2,
+      "roles": ["DPS"],
+      "exclusiveWith": [],
+      "unlockCost": 3,
+      "behaviorId": "precision_strike"
+    },
+    {
+      "id": "resolute",
+      "name": "Resolute",
+      "description": "A unit that would die survives at 1 HP if it had >50% HP at round start (once per unit per battle).",
+      "tier": 1,
+      "category": 1,
+      "roles": ["Tank", "DPS", "Support"],
+      "exclusiveWith": [],
+      "unlockCost": 4,
+      "behaviorId": "resolute"
+    },
+    {
+      "id": "grudge_bearer",
+      "name": "Grudge Bearer",
+      "description": "+20% damage vs enemy squads that have damaged this squad (stacks to +40%).",
+      "tier": 1,
+      "category": 3,
+      "roles": ["DPS", "Tank"],
+      "exclusiveWith": [],
+      "unlockCost": 3,
+      "behaviorId": "grudge_bearer"
+    },
+    {
+      "id": "counterpunch",
+      "name": "Counterpunch",
+      "description": "If attacked last turn AND did not attack last turn, next attack deals +40% damage.",
+      "tier": 1,
+      "category": 3,
+      "roles": ["DPS", "Tank"],
+      "exclusiveWith": [],
+      "unlockCost": 3,
+      "behaviorId": "counterpunch"
+    },
+    {
+      "id": "marked_for_death",
+      "name": "Marked for Death",
+      "description": "Spend attack action to Mark enemy. Marked enemy takes +25% from next friendly attack.",
+      "tier": 1,
+      "category": 2,
+      "roles": ["DPS", "Support"],
+      "exclusiveWith": [],
+      "unlockCost": 3,
+      "behaviorId": "marked_for_death"
+    },
+    {
+      "id": "deadshots_patience",
+      "name": "Deadshot's Patience",
+      "description": "If completely idle last turn (no move, no attack), next ranged attack gains +50% damage and +20 accuracy.",
+      "tier": 1,
+      "category": 0,
+      "roles": ["DPS"],
+      "exclusiveWith": [],
+      "unlockCost": 4,
+      "behaviorId": "deadshots_patience"
+    }
+  ]
+}

@@ -10,6 +10,7 @@ import (
 	"game_main/overworld/node"
 	"game_main/overworld/tick"
 	"game_main/tactical/commander"
+	"game_main/tactical/perks"
 	"game_main/tactical/squads/unitdefs"
 	"game_main/templates"
 	"game_main/testing/bootstrap"
@@ -33,6 +34,7 @@ func NewGameBootstrap() *GameBootstrap {
 // Phase 1: No dependencies, must run first.
 func (gb *GameBootstrap) LoadGameData() {
 	templates.ReadGameData()
+	perks.LoadPerkDefinitions()
 }
 
 // InitializeCoreECS initializes the ECS world and global systems.

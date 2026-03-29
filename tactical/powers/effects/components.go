@@ -27,6 +27,7 @@ type EffectSource int
 const (
 	SourceSpell EffectSource = iota
 	SourceAbility
+	SourcePerk
 	SourceItem
 )
 

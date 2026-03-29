@@ -45,6 +45,5 @@ func ReadGameData() {
 	LoadSpellDefinitions()
 	LoadUnitSpellDefinitions()
 	LoadArtifactDefinitions()
-
 }
 
