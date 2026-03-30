@@ -1,5 +1,10 @@
-#
+# Perk System Cleanup
 
+-ExecuteAttackAction is growing too large
+- calculateDamage is growing too large
+- Need better perk creation and registration system
+- Need a GUI for perks
+- Need a perk unlock system. Should be designed side by side with spell unlock system
 
 
 # Spells

@@ -45,24 +45,35 @@ func GetRoundState(squadID ecs.EntityID, manager *common.EntityManager) *PerkRou
 	)
 }
 
+// buildHookContext constructs a HookContext with the round state for the specified owner squad.
+// Returns nil if the owner squad has no PerkRoundState.
+func buildHookContext(ownerSquadID ecs.EntityID, manager *common.EntityManager) *HookContext {
+	roundState := GetRoundState(ownerSquadID, manager)
+	if roundState == nil {
+		return nil
+	}
+	return &HookContext{
+		RoundState: roundState,
+		Manager:    manager,
+	}
+}
+
 // ========================================
 // HOOK RUNNER FUNCTIONS
-// Runners construct HookContext internally so callers pass flat params.
-// Attacker/Defender variants read the corresponding PerkHooks field.
+// All runners use buildHookContext for consistent context construction.
 // ========================================
 
 // RunAttackerDamageModHooks runs AttackerDamageMod hooks for the attacker's perks.
 func RunAttackerDamageModHooks(attackerID, defenderID, attackerSquadID, defenderSquadID ecs.EntityID,
 	modifiers *combatcore.DamageModifiers, manager *common.EntityManager) {
-	roundState := GetRoundState(attackerSquadID, manager)
-	if roundState == nil {
+	ctx := buildHookContext(attackerSquadID, manager)
+	if ctx == nil {
 		return
 	}
-	ctx := &HookContext{
-		AttackerID: attackerID, DefenderID: defenderID,
-		AttackerSquadID: attackerSquadID, DefenderSquadID: defenderSquadID,
-		RoundState: roundState, Manager: manager,
-	}
+	ctx.AttackerID = attackerID
+	ctx.DefenderID = defenderID
+	ctx.AttackerSquadID = attackerSquadID
+	ctx.DefenderSquadID = defenderSquadID
 	for _, perkID := range getActivePerkIDs(attackerSquadID, manager) {
 		hooks := GetPerkHooks(perkID)
 		if hooks != nil && hooks.AttackerDamageMod != nil {
@@ -74,15 +85,14 @@ func RunAttackerDamageModHooks(attackerID, defenderID, attackerSquadID, defender
 // RunDefenderDamageModHooks runs DefenderDamageMod hooks for the defender's perks.
 func RunDefenderDamageModHooks(attackerID, defenderID, attackerSquadID, defenderSquadID ecs.EntityID,
 	modifiers *combatcore.DamageModifiers, manager *common.EntityManager) {
-	roundState := GetRoundState(defenderSquadID, manager)
-	if roundState == nil {
+	ctx := buildHookContext(defenderSquadID, manager)
+	if ctx == nil {
 		return
 	}
-	ctx := &HookContext{
-		AttackerID: attackerID, DefenderID: defenderID,
-		AttackerSquadID: attackerSquadID, DefenderSquadID: defenderSquadID,
-		RoundState: roundState, Manager: manager,
-	}
+	ctx.AttackerID = attackerID
+	ctx.DefenderID = defenderID
+	ctx.AttackerSquadID = attackerSquadID
+	ctx.DefenderSquadID = defenderSquadID
 	for _, perkID := range getActivePerkIDs(defenderSquadID, manager) {
 		hooks := GetPerkHooks(perkID)
 		if hooks != nil && hooks.DefenderDamageMod != nil {
@@ -95,12 +105,13 @@ func RunDefenderDamageModHooks(attackerID, defenderID, attackerSquadID, defender
 func RunTargetOverrideHooks(attackerID, defenderSquadID ecs.EntityID,
 	targets []ecs.EntityID, manager *common.EntityManager) []ecs.EntityID {
 	attackerSquadID := getSquadIDForUnit(attackerID, manager)
-	roundState := GetRoundState(attackerSquadID, manager)
-	ctx := &HookContext{
-		AttackerID: attackerID, DefenderID: 0,
-		AttackerSquadID: attackerSquadID, DefenderSquadID: defenderSquadID,
-		RoundState: roundState, Manager: manager,
+	ctx := buildHookContext(attackerSquadID, manager)
+	if ctx == nil {
+		return targets
 	}
+	ctx.AttackerID = attackerID
+	ctx.AttackerSquadID = attackerSquadID
+	ctx.DefenderSquadID = defenderSquadID
 	for _, perkID := range getActivePerkIDs(attackerSquadID, manager) {
 		hooks := GetPerkHooks(perkID)
 		if hooks != nil && hooks.TargetOverride != nil {
@@ -114,14 +125,17 @@ func RunTargetOverrideHooks(attackerID, defenderSquadID ecs.EntityID,
 // Returns true if counter should be skipped.
 func RunCounterModHooks(defenderSquadID, attackerID ecs.EntityID,
 	modifiers *combatcore.DamageModifiers, manager *common.EntityManager) bool {
-	roundState := GetRoundState(defenderSquadID, manager)
-	if roundState == nil {
+	ctx := buildHookContext(defenderSquadID, manager)
+	if ctx == nil {
 		return false
 	}
+	ctx.DefenderSquadID = defenderSquadID
+	ctx.AttackerID = attackerID
+	ctx.SquadID = defenderSquadID
 	for _, perkID := range getActivePerkIDs(defenderSquadID, manager) {
 		hooks := GetPerkHooks(perkID)
 		if hooks != nil && hooks.CounterMod != nil {
-			if hooks.CounterMod(defenderSquadID, attackerID, modifiers, roundState, manager) {
+			if hooks.CounterMod(ctx, modifiers) {
 				return true
 			}
 		}
@@ -132,15 +146,14 @@ func RunCounterModHooks(defenderSquadID, attackerID ecs.EntityID,
 // RunAttackerPostDamageHooks runs post-damage hooks for the attacker's perks.
 func RunAttackerPostDamageHooks(attackerID, defenderID, attackerSquadID, defenderSquadID ecs.EntityID,
 	damageDealt int, wasKill bool, manager *common.EntityManager) {
-	roundState := GetRoundState(attackerSquadID, manager)
-	if roundState == nil {
+	ctx := buildHookContext(attackerSquadID, manager)
+	if ctx == nil {
 		return
 	}
-	ctx := &HookContext{
-		AttackerID: attackerID, DefenderID: defenderID,
-		AttackerSquadID: attackerSquadID, DefenderSquadID: defenderSquadID,
-		RoundState: roundState, Manager: manager,
-	}
+	ctx.AttackerID = attackerID
+	ctx.DefenderID = defenderID
+	ctx.AttackerSquadID = attackerSquadID
+	ctx.DefenderSquadID = defenderSquadID
 	for _, perkID := range getActivePerkIDs(attackerSquadID, manager) {
 		hooks := GetPerkHooks(perkID)
 		if hooks != nil && hooks.PostDamage != nil {
@@ -152,15 +165,14 @@ func RunAttackerPostDamageHooks(attackerID, defenderID, attackerSquadID, defende
 // RunDefenderPostDamageHooks runs post-damage hooks for the defender's perks.
 func RunDefenderPostDamageHooks(attackerID, defenderID, attackerSquadID, defenderSquadID ecs.EntityID,
 	damageDealt int, wasKill bool, manager *common.EntityManager) {
-	roundState := GetRoundState(defenderSquadID, manager)
-	if roundState == nil {
+	ctx := buildHookContext(defenderSquadID, manager)
+	if ctx == nil {
 		return
 	}
-	ctx := &HookContext{
-		AttackerID: attackerID, DefenderID: defenderID,
-		AttackerSquadID: attackerSquadID, DefenderSquadID: defenderSquadID,
-		RoundState: roundState, Manager: manager,
-	}
+	ctx.AttackerID = attackerID
+	ctx.DefenderID = defenderID
+	ctx.AttackerSquadID = attackerSquadID
+	ctx.DefenderSquadID = defenderSquadID
 	for _, perkID := range getActivePerkIDs(defenderSquadID, manager) {
 		hooks := GetPerkHooks(perkID)
 		if hooks != nil && hooks.PostDamage != nil {
@@ -175,10 +187,16 @@ func RunTurnStartHooks(squadID ecs.EntityID, roundNumber int,
 	if roundState == nil {
 		return
 	}
+	ctx := &HookContext{
+		SquadID:     squadID,
+		RoundNumber: roundNumber,
+		RoundState:  roundState,
+		Manager:     manager,
+	}
 	for _, perkID := range getActivePerkIDs(squadID, manager) {
 		hooks := GetPerkHooks(perkID)
 		if hooks != nil && hooks.TurnStart != nil {
-			hooks.TurnStart(squadID, roundNumber, roundState, manager)
+			hooks.TurnStart(ctx)
 		}
 	}
 }
@@ -188,16 +206,14 @@ func RunCoverModHooks(attackerID, defenderID ecs.EntityID,
 	coverBreakdown *combatcore.CoverBreakdown, manager *common.EntityManager) {
 	attackerSquadID := getSquadIDForUnit(attackerID, manager)
 	defenderSquadID := getSquadIDForUnit(defenderID, manager)
-
-	defenderState := GetRoundState(defenderSquadID, manager)
-	if defenderState == nil {
+	ctx := buildHookContext(defenderSquadID, manager)
+	if ctx == nil {
 		return
 	}
-	ctx := &HookContext{
-		AttackerID: attackerID, DefenderID: defenderID,
-		AttackerSquadID: attackerSquadID, DefenderSquadID: defenderSquadID,
-		RoundState: defenderState, Manager: manager,
-	}
+	ctx.AttackerID = attackerID
+	ctx.DefenderID = defenderID
+	ctx.AttackerSquadID = attackerSquadID
+	ctx.DefenderSquadID = defenderSquadID
 	for _, perkID := range getActivePerkIDs(defenderSquadID, manager) {
 		hooks := GetPerkHooks(perkID)
 		if hooks != nil && hooks.DefenderCoverMod != nil {
@@ -208,17 +224,44 @@ func RunCoverModHooks(attackerID, defenderID ecs.EntityID,
 
 // RunDeathOverrideHooks checks if lethal damage should be prevented.
 func RunDeathOverrideHooks(unitID, squadID ecs.EntityID, manager *common.EntityManager) bool {
-	roundState := GetRoundState(squadID, manager)
-	if roundState == nil {
+	ctx := buildHookContext(squadID, manager)
+	if ctx == nil {
 		return false
 	}
+	ctx.UnitID = unitID
+	ctx.SquadID = squadID
 	for _, perkID := range getActivePerkIDs(squadID, manager) {
 		hooks := GetPerkHooks(perkID)
 		if hooks != nil && hooks.DeathOverride != nil {
-			if hooks.DeathOverride(unitID, squadID, roundState, manager) {
+			if hooks.DeathOverride(ctx) {
 				return true
 			}
 		}
 	}
 	return false
+}
+
+// RunDamageRedirectHooks checks if damage should be redirected.
+// Returns reduced damage for original target, redirect target ID, and redirect amount.
+func RunDamageRedirectHooks(defenderID, defenderSquadID ecs.EntityID,
+	damageAmount int, manager *common.EntityManager) (int, ecs.EntityID, int) {
+	ctx := buildHookContext(defenderSquadID, manager)
+	if ctx == nil {
+		return damageAmount, 0, 0
+	}
+	ctx.UnitID = defenderID
+	ctx.SquadID = defenderSquadID
+	ctx.DefenderID = defenderID
+	ctx.DefenderSquadID = defenderSquadID
+	ctx.DamageAmount = damageAmount
+	for _, perkID := range getActivePerkIDs(defenderSquadID, manager) {
+		hooks := GetPerkHooks(perkID)
+		if hooks != nil && hooks.DamageRedirect != nil {
+			reducedDmg, redirectTarget, redirectAmt := hooks.DamageRedirect(ctx)
+			if redirectTarget != 0 {
+				return reducedDmg, redirectTarget, redirectAmt
+			}
+		}
+	}
+	return damageAmount, 0, 0
 }

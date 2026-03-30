@@ -66,6 +66,15 @@ func processAttack(attackerID ecs.EntityID, defenderSquadID ecs.EntityID,
 			event.TargetInfo.TargetMode = targetData.AttackType.String()
 		}
 
+		// Run damage redirect hooks (Guardian Protocol)
+		if callbacks != nil && callbacks.DamageRedirect != nil && damage > 0 {
+			reducedDmg, redirectTarget, redirectAmt := callbacks.DamageRedirect(defenderID, defenderSquadID, damage, manager)
+			if redirectTarget != 0 && redirectAmt > 0 {
+				damage = reducedDmg
+				recordDamageToUnit(redirectTarget, redirectAmt, result, manager)
+			}
+		}
+
 		// Apply damage
 		recordDamageToUnit(defenderID, damage, result, manager)
 

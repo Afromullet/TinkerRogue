@@ -53,6 +53,13 @@ type CounterModRunner func(
 	manager *common.EntityManager,
 ) bool
 
+// DamageRedirectRunner checks if damage should be redirected.
+type DamageRedirectRunner func(
+	defenderID, defenderSquadID ecs.EntityID,
+	damageAmount int,
+	manager *common.EntityManager,
+) (reducedDamage int, redirectTargetID ecs.EntityID, redirectAmount int)
+
 // PerkCallbacks holds all perk callback functions.
 // Set on CombatActionSystem before combat begins. May be nil if no perks.
 type PerkCallbacks struct {
@@ -64,4 +71,5 @@ type PerkCallbacks struct {
 	DefenderPostDamage PostDamageRunner
 	DeathOverride      DeathOverrideRunner
 	CounterMod         CounterModRunner
+	DamageRedirect     DamageRedirectRunner
 }

@@ -10,33 +10,6 @@ import (
 	"github.com/bytearena/ecs"
 )
 
-// PerkHooks collects all hooks for a single perk.
-// Attacker/Defender variants ensure hooks only fire on the correct side,
-// eliminating the need for HasPerk() self-checks inside behaviors.
-type PerkHooks struct {
-	AttackerDamageMod DamageModHook // runs only when this squad is the attacker
-	DefenderDamageMod DamageModHook // runs only when this squad is the defender
-	DefenderCoverMod  CoverModHook  // runs only when this squad is the defender
-	TargetOverride    TargetOverrideHook
-	CounterMod        CounterModHook
-	PostDamage        PostDamageHook
-	TurnStart         TurnStartHook
-	DamageRedirect    DamageRedirectHook
-	DeathOverride     DeathOverrideHook
-}
-
-var hookRegistry = map[string]*PerkHooks{}
-
-// RegisterPerkHooks registers a perk's hook implementations by perk ID.
-func RegisterPerkHooks(perkID string, hooks *PerkHooks) {
-	hookRegistry[perkID] = hooks
-}
-
-// GetPerkHooks returns the hook implementations for a perk, or nil if not found.
-func GetPerkHooks(perkID string) *PerkHooks {
-	return hookRegistry[perkID]
-}
-
 func init() {
 	// Tier 1: Combat Conditioning
 	RegisterPerkHooks("brace_for_impact", &PerkHooks{DefenderCoverMod: braceForImpactCoverMod})
@@ -122,10 +95,8 @@ func recklessAssaultDefenderMod(ctx *HookContext, modifiers *combatcore.DamageMo
 }
 
 // Stalwart: Full-damage counters if squad did NOT move
-func stalwartCounterMod(defenderID, attackerID ecs.EntityID,
-	modifiers *combatcore.DamageModifiers, roundState *PerkRoundState,
-	manager *common.EntityManager) bool {
-	if !roundState.MovedThisTurn {
+func stalwartCounterMod(ctx *HookContext, modifiers *combatcore.DamageModifiers) bool {
+	if !ctx.RoundState.MovedThisTurn {
 		modifiers.DamageMultiplier = 1.0 // Override 0.5 default
 	}
 	return false // Don't skip counter
@@ -214,15 +185,14 @@ func vigilanceDamageMod(ctx *HookContext, modifiers *combatcore.DamageModifiers)
 }
 
 // Field Medic: At round start, lowest-HP unit heals 10% max HP
-func fieldMedicTurnStart(squadID ecs.EntityID, roundNumber int,
-	roundState *PerkRoundState, manager *common.EntityManager) {
-	unitIDs := squadcore.GetUnitIDsInSquad(squadID, manager)
+func fieldMedicTurnStart(ctx *HookContext) {
+	unitIDs := squadcore.GetUnitIDsInSquad(ctx.SquadID, ctx.Manager)
 	var lowestID ecs.EntityID
 	lowestHP := 999999
 
 	for _, uid := range unitIDs {
 		attr := common.GetComponentTypeByID[*common.Attributes](
-			manager, uid, common.AttributeComponent,
+			ctx.Manager, uid, common.AttributeComponent,
 		)
 		if attr != nil && attr.CurrentHealth > 0 && attr.CurrentHealth < lowestHP {
 			lowestHP = attr.CurrentHealth
@@ -232,7 +202,7 @@ func fieldMedicTurnStart(squadID ecs.EntityID, roundNumber int,
 
 	if lowestID != 0 {
 		attr := common.GetComponentTypeByID[*common.Attributes](
-			manager, lowestID, common.AttributeComponent,
+			ctx.Manager, lowestID, common.AttributeComponent,
 		)
 		if attr != nil {
 			maxHP := attr.GetMaxHealth()
@@ -314,9 +284,7 @@ func cleaveDamageMod(ctx *HookContext, modifiers *combatcore.DamageModifiers) {
 }
 
 // Riposte: Counterattacks have no hit penalty (normally -20)
-func riposteCounterMod(defenderID, attackerID ecs.EntityID,
-	modifiers *combatcore.DamageModifiers, roundState *PerkRoundState,
-	manager *common.EntityManager) bool {
+func riposteCounterMod(ctx *HookContext, modifiers *combatcore.DamageModifiers) bool {
 	modifiers.HitPenalty = 0
 	return false
 }
@@ -341,28 +309,30 @@ func disruptionPostDamage(ctx *HookContext, damageDealt int, wasKill bool) {
 }
 
 // Guardian Protocol: Redirect 25% damage to adjacent tank
-func guardianDamageRedirect(defenderID, defenderSquadID ecs.EntityID,
-	damageAmount int, manager *common.EntityManager) (int, ecs.EntityID, int) {
+func guardianDamageRedirect(ctx *HookContext) (int, ecs.EntityID, int) {
+	damageAmount := ctx.DamageAmount
+	defenderSquadID := ctx.SquadID
+
 	defenderPos := common.GetComponentTypeByID[*coords.LogicalPosition](
-		manager, defenderSquadID, common.PositionComponent,
+		ctx.Manager, defenderSquadID, common.PositionComponent,
 	)
 	if defenderPos == nil {
 		return damageAmount, 0, 0
 	}
-	faction := combatcore.GetSquadFaction(defenderSquadID, manager)
+	faction := combatcore.GetSquadFaction(defenderSquadID, ctx.Manager)
 	if faction == 0 {
 		return damageAmount, 0, 0
 	}
-	friendlySquads := combatcore.GetActiveSquadsForFaction(faction, manager)
+	friendlySquads := combatcore.GetActiveSquadsForFaction(faction, ctx.Manager)
 	for _, friendlyID := range friendlySquads {
 		if friendlyID == defenderSquadID {
 			continue
 		}
-		if !HasPerk(friendlyID, "guardian_protocol", manager) {
+		if !HasPerk(friendlyID, "guardian_protocol", ctx.Manager) {
 			continue
 		}
 		friendlyPos := common.GetComponentTypeByID[*coords.LogicalPosition](
-			manager, friendlyID, common.PositionComponent,
+			ctx.Manager, friendlyID, common.PositionComponent,
 		)
 		if friendlyPos == nil {
 			continue
@@ -370,13 +340,13 @@ func guardianDamageRedirect(defenderID, defenderSquadID ecs.EntityID,
 		if defenderPos.ChebyshevDistance(friendlyPos) > 1 {
 			continue
 		}
-		unitIDs := squadcore.GetUnitIDsInSquad(friendlyID, manager)
+		unitIDs := squadcore.GetUnitIDsInSquad(friendlyID, ctx.Manager)
 		for _, unitID := range unitIDs {
-			attr := squadcore.GetAliveUnitAttributes(unitID, manager)
+			attr := squadcore.GetAliveUnitAttributes(unitID, ctx.Manager)
 			if attr == nil {
 				continue
 			}
-			entity := manager.FindEntityByID(unitID)
+			entity := ctx.Manager.FindEntityByID(unitID)
 			if entity == nil {
 				continue
 			}
@@ -392,8 +362,7 @@ func guardianDamageRedirect(defenderID, defenderSquadID ecs.EntityID,
 }
 
 // Overwatch: Skip attack to auto-attack at 75% damage next enemy that moves in range
-func overwatchTurnStart(squadID ecs.EntityID, roundNumber int,
-	roundState *PerkRoundState, manager *common.EntityManager) {
+func overwatchTurnStart(ctx *HookContext) {
 	// Placeholder — the actual trigger happens in the movement system (not implemented in v1).
 }
 
@@ -428,13 +397,12 @@ func bloodlustDamageMod(ctx *HookContext, modifiers *combatcore.DamageModifiers)
 }
 
 // Fortify: +0.05 cover per consecutive turn not moving (max +0.15 after 3 turns)
-func fortifyTurnStart(squadID ecs.EntityID, roundNumber int,
-	roundState *PerkRoundState, manager *common.EntityManager) {
-	if roundState.MovedThisTurn {
-		roundState.TurnsStationary = 0
+func fortifyTurnStart(ctx *HookContext) {
+	if ctx.RoundState.MovedThisTurn {
+		ctx.RoundState.TurnsStationary = 0
 	} else {
-		if roundState.TurnsStationary < 3 {
-			roundState.TurnsStationary++
+		if ctx.RoundState.TurnsStationary < 3 {
+			ctx.RoundState.TurnsStationary++
 		}
 	}
 }
@@ -503,43 +471,41 @@ func precisionStrikeTargetOverride(ctx *HookContext, defaultTargets []ecs.Entity
 }
 
 // Resolute: Survive lethal damage at 1 HP (once per unit per battle)
-func resoluteTurnStart(squadID ecs.EntityID, roundNumber int,
-	roundState *PerkRoundState, manager *common.EntityManager) {
-	if roundState.RoundStartHP == nil {
-		roundState.RoundStartHP = make(map[ecs.EntityID]int)
+func resoluteTurnStart(ctx *HookContext) {
+	if ctx.RoundState.RoundStartHP == nil {
+		ctx.RoundState.RoundStartHP = make(map[ecs.EntityID]int)
 	}
-	unitIDs := squadcore.GetUnitIDsInSquad(squadID, manager)
+	unitIDs := squadcore.GetUnitIDsInSquad(ctx.SquadID, ctx.Manager)
 	for _, uid := range unitIDs {
 		attr := common.GetComponentTypeByID[*common.Attributes](
-			manager, uid, common.AttributeComponent,
+			ctx.Manager, uid, common.AttributeComponent,
 		)
 		if attr != nil && attr.CurrentHealth > 0 {
-			roundState.RoundStartHP[uid] = attr.CurrentHealth
+			ctx.RoundState.RoundStartHP[uid] = attr.CurrentHealth
 		}
 	}
 }
 
-func resoluteDeathOverride(unitID, squadID ecs.EntityID,
-	roundState *PerkRoundState, manager *common.EntityManager) bool {
-	if roundState.ResoluteUsed == nil {
-		roundState.ResoluteUsed = make(map[ecs.EntityID]bool)
+func resoluteDeathOverride(ctx *HookContext) bool {
+	if ctx.RoundState.ResoluteUsed == nil {
+		ctx.RoundState.ResoluteUsed = make(map[ecs.EntityID]bool)
 	}
-	if roundState.ResoluteUsed[unitID] {
+	if ctx.RoundState.ResoluteUsed[ctx.UnitID] {
 		return false
 	}
 	attr := common.GetComponentTypeByID[*common.Attributes](
-		manager, unitID, common.AttributeComponent,
+		ctx.Manager, ctx.UnitID, common.AttributeComponent,
 	)
 	if attr == nil {
 		return false
 	}
-	roundStartHP, ok := roundState.RoundStartHP[unitID]
+	roundStartHP, ok := ctx.RoundState.RoundStartHP[ctx.UnitID]
 	if !ok {
 		return false
 	}
 	maxHP := attr.GetMaxHealth()
 	if maxHP > 0 && float64(roundStartHP)/float64(maxHP) > 0.5 {
-		roundState.ResoluteUsed[unitID] = true
+		ctx.RoundState.ResoluteUsed[ctx.UnitID] = true
 		return true
 	}
 	return false
@@ -570,12 +536,11 @@ func grudgeBearerDamageMod(ctx *HookContext, modifiers *combatcore.DamageModifie
 }
 
 // Counterpunch: +40% damage if attacked last turn AND did not attack last turn
-func counterpunchTurnStart(squadID ecs.EntityID, roundNumber int,
-	roundState *PerkRoundState, manager *common.EntityManager) {
-	if roundState.WasAttackedLastTurn && roundState.DidNotAttackLastTurn {
-		roundState.CounterpunchReady = true
+func counterpunchTurnStart(ctx *HookContext) {
+	if ctx.RoundState.WasAttackedLastTurn && ctx.RoundState.DidNotAttackLastTurn {
+		ctx.RoundState.CounterpunchReady = true
 	} else {
-		roundState.CounterpunchReady = false
+		ctx.RoundState.CounterpunchReady = false
 	}
 }
 
@@ -604,12 +569,11 @@ func markedForDeathDamageMod(ctx *HookContext, modifiers *combatcore.DamageModif
 }
 
 // Deadshot's Patience: +50% damage and +20 accuracy if completely idle last turn
-func deadshotTurnStart(squadID ecs.EntityID, roundNumber int,
-	roundState *PerkRoundState, manager *common.EntityManager) {
-	if roundState.WasIdleLastTurn {
-		roundState.DeadshotReady = true
+func deadshotTurnStart(ctx *HookContext) {
+	if ctx.RoundState.WasIdleLastTurn {
+		ctx.RoundState.DeadshotReady = true
 	} else {
-		roundState.DeadshotReady = false
+		ctx.RoundState.DeadshotReady = false
 	}
 }
 

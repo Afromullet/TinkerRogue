@@ -21,6 +21,7 @@ func setupPerkDispatch(cs *CombatService, manager *common.EntityManager) {
 		DefenderPostDamage: perks.RunDefenderPostDamageHooks,
 		DeathOverride:      perks.RunDeathOverrideHooks,
 		CounterMod:         perks.RunCounterModHooks,
+		DamageRedirect:     perks.RunDamageRedirectHooks,
 	}
 
 	cs.CombatActSystem.SetPerkCallbacks(callbacks)
