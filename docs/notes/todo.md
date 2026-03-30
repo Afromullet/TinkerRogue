@@ -1,19 +1,19 @@
+#
+
+
+
 # Spells
 
-- Leader can select from 1 of n spells on level up
+- Leader can select from 1 of n spells on level up. Also can select from perks. Either or choice
 - Consider a different mana regeneration system. Currently, mana is regenerated after combat. Maybe regenerate it turn by turn, or regenerate it from attacking
 
 # Bug Fixes
 
 - XP Awards seem to be odd. I.E, didivided by 10. Combat resolution grants 40 xp, but units only get 4 xp
-- Start Random Encounter alwys starts the same encounter 
 - Can cast spells and use artifacts on enemy turn
 
 
 
-# Combat
-
-- Allow multiple factions to be part of combat. 
 
 # GUI Updates
 
@@ -48,6 +48,9 @@
 
 # Cleanup
 
+- combatprocessing.go has grown too fragemented. We have several "processatttacks" functions. We need to make it cleaner
+
+
 - Determine whether you can use DirtyCache as an interface for all of the other caches. Also determine whether we really need the caches
 
 - Make sure entities are cleaned up upon destruction. Need to determine what entities have a "lifecycle" by determining what addcomponent is called on. 
@@ -67,24 +70,15 @@
 
 - Destroyed factions need to be removed from combat
 
-- Ranged heavy enemies only flee. They don't attack. Not hit and run. Just annoying
 
 # Review
 
 - Either encounters or behavior seem to be too skewed towards ranged threats. Using the threat layer visualization as baseline. Investigate whether it's the squad makup, or the weighting of attacks. Find a way to measure how effective the encounter creation and threat maps are
 - Determine if GUI state management is clean enough
 
-## The following packages need review
+# Review
 
-- Guioverworld
-
-- GUISquads
-- GUIOverworld
-
-
-- Guiraids
-- Raids
-
+- Review GUi
 
 # Redundancies?
 

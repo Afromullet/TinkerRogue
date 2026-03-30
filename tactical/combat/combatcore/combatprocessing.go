@@ -13,18 +13,10 @@ const (
 	counterattackHitPenalty       = 20  // -20% hit chance on counterattack
 )
 
-// processAttackWithModifiers is the unified attack processing function.
-// Supports optional perk callbacks for damage pipeline injection.
-func processAttackWithModifiers(attackerID ecs.EntityID, targetIDs []ecs.EntityID, result *CombatResult,
-	log *CombatLog, attackIndex int, modifiers DamageModifiers, manager *common.EntityManager) int {
-
-	return processAttackWithPerkCallbacks(attackerID, 0, targetIDs, result, log, attackIndex, modifiers, nil, manager)
-}
-
-// processAttackWithPerkCallbacks is the full attack processing function with perk support.
-// defenderSquadID is needed for target override hooks and post-damage hooks.
+// processAttack is the unified attack processing function.
+// defenderSquadID is needed for perk target override hooks (0 if unknown).
 // callbacks may be nil if no perks are active.
-func processAttackWithPerkCallbacks(attackerID ecs.EntityID, defenderSquadID ecs.EntityID,
+func processAttack(attackerID ecs.EntityID, defenderSquadID ecs.EntityID,
 	targetIDs []ecs.EntityID, result *CombatResult,
 	log *CombatLog, attackIndex int, modifiers DamageModifiers,
 	callbacks *PerkCallbacks, manager *common.EntityManager) int {
@@ -57,8 +49,8 @@ func processAttackWithPerkCallbacks(attackerID ecs.EntityID, defenderSquadID ecs
 			callbacks.DefenderDamageMod(attackerID, defenderID, attackerSquadID, defenderSquadID, &targetModifiers, manager)
 		}
 
-		// Calculate damage with perk-modified modifiers and cover callback
-		damage, event := calculateDamageWithPerks(attackerID, defenderID, targetModifiers, callbacks, manager)
+		// Calculate damage
+		damage, event := calculateDamage(attackerID, defenderID, targetModifiers, callbacks, manager)
 
 		// Add targeting info
 		defenderPos := common.GetComponentTypeByID[*squadcore.GridPositionData](manager, defenderID, squadcore.GridPositionComponent)
@@ -72,11 +64,6 @@ func processAttackWithPerkCallbacks(attackerID ecs.EntityID, defenderSquadID ecs
 		targetData := common.GetComponentTypeByID[*squadcore.TargetRowData](manager, attackerID, squadcore.TargetRowComponent)
 		if targetData != nil {
 			event.TargetInfo.TargetMode = targetData.AttackType.String()
-		}
-
-		// Run damage redirect hooks (Guardian Protocol)
-		if callbacks != nil && callbacks.DeathOverride != nil && defenderSquadID != 0 {
-			// Note: DamageRedirect is handled separately at the recordDamageToUnit level
 		}
 
 		// Apply damage
@@ -103,7 +90,6 @@ func processAttackWithPerkCallbacks(attackerID ecs.EntityID, defenderSquadID ecs
 				// Prevent death: adjust recorded damage so unit survives at 1 HP
 				attr := common.GetComponentTypeByID[*common.Attributes](manager, defenderID, common.AttributeComponent)
 				if attr != nil {
-					// Reduce recorded damage so HP ends at 1
 					totalRecorded := result.DamageByUnit[defenderID]
 					maxAllowedDamage := attr.CurrentHealth - 1
 					if maxAllowedDamage < 0 {
@@ -112,7 +98,6 @@ func processAttackWithPerkCallbacks(attackerID ecs.EntityID, defenderSquadID ecs
 					if totalRecorded > maxAllowedDamage {
 						result.DamageByUnit[defenderID] = maxAllowedDamage
 					}
-					// Remove from UnitsKilled list
 					for i, killedID := range result.UnitsKilled {
 						if killedID == defenderID {
 							result.UnitsKilled = append(result.UnitsKilled[:i], result.UnitsKilled[i+1:]...)
@@ -132,22 +117,9 @@ func processAttackWithPerkCallbacks(attackerID ecs.EntityID, defenderSquadID ecs
 	return attackIndex
 }
 
-// ProcessAttackOnTargets applies damage to all targets and creates combat events
-// Returns the updated attack index
-func ProcessAttackOnTargets(attackerID ecs.EntityID, targetIDs []ecs.EntityID, result *CombatResult,
-	log *CombatLog, attackIndex int, manager *common.EntityManager) int {
-
-	modifiers := DamageModifiers{
-		HitPenalty:       0,
-		DamageMultiplier: 1.0,
-		IsCounterattack:  false,
-	}
-	return processAttackWithModifiers(attackerID, targetIDs, result, log, attackIndex, modifiers, manager)
-}
-
-// ProcessAttackOnTargetsWithPerks applies damage with perk support.
-// defenderSquadID is required for perk hooks.
-func ProcessAttackOnTargetsWithPerks(attackerID ecs.EntityID, defenderSquadID ecs.EntityID,
+// ProcessAttackOnTargets applies damage to all targets and creates combat events.
+// callbacks may be nil if no perks are active.
+func ProcessAttackOnTargets(attackerID ecs.EntityID, defenderSquadID ecs.EntityID,
 	targetIDs []ecs.EntityID, result *CombatResult,
 	log *CombatLog, attackIndex int, callbacks *PerkCallbacks, manager *common.EntityManager) int {
 
@@ -156,19 +128,16 @@ func ProcessAttackOnTargetsWithPerks(attackerID ecs.EntityID, defenderSquadID ec
 		DamageMultiplier: 1.0,
 		IsCounterattack:  false,
 	}
-	return processAttackWithPerkCallbacks(attackerID, defenderSquadID, targetIDs, result, log, attackIndex, modifiers, callbacks, manager)
+	return processAttack(attackerID, defenderSquadID, targetIDs, result, log, attackIndex, modifiers, callbacks, manager)
 }
 
-// ProcessCounterattackOnTargets applies counterattack damage with penalties
-func ProcessCounterattackOnTargets(attackerID ecs.EntityID, targetIDs []ecs.EntityID, result *CombatResult,
-	log *CombatLog, attackIndex int, manager *common.EntityManager) int {
+// ProcessCounterattackOnTargets applies counterattack damage with penalties.
+// callbacks may be nil if no perks are active.
+func ProcessCounterattackOnTargets(attackerID ecs.EntityID, defenderSquadID ecs.EntityID,
+	targetIDs []ecs.EntityID, result *CombatResult,
+	log *CombatLog, attackIndex int, modifiers DamageModifiers, callbacks *PerkCallbacks, manager *common.EntityManager) int {
 
-	modifiers := DamageModifiers{
-		HitPenalty:       counterattackHitPenalty,
-		DamageMultiplier: counterattackDamageMultiplier,
-		IsCounterattack:  true,
-	}
-	return processAttackWithModifiers(attackerID, targetIDs, result, log, attackIndex, modifiers, manager)
+	return processAttack(attackerID, defenderSquadID, targetIDs, result, log, attackIndex, modifiers, callbacks, manager)
 }
 
 // ProcessHealOnTargets iterates heal targets, calculates healing, and records events.

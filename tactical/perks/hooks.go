@@ -7,26 +7,24 @@ import (
 	"github.com/bytearena/ecs"
 )
 
-// DamageModHook modifies damage modifiers before calculation.
-// Called inside calculateDamage() for the attacking or defending unit.
-type DamageModHook func(
-	attackerID, defenderID ecs.EntityID,
-	attackerSquadID, defenderSquadID ecs.EntityID,
-	modifiers *combatcore.DamageModifiers,
-	roundState *PerkRoundState,
-	manager *common.EntityManager,
-)
+// HookContext bundles common parameters passed to combat-inline perk hooks.
+type HookContext struct {
+	AttackerID      ecs.EntityID
+	DefenderID      ecs.EntityID
+	AttackerSquadID ecs.EntityID
+	DefenderSquadID ecs.EntityID
+	RoundState      *PerkRoundState
+	Manager         *common.EntityManager
+}
 
-// TargetOverrideHook overrides target selection.
-// Returns modified target list; return defaultTargets unchanged for no override.
-type TargetOverrideHook func(
-	attackerID, defenderSquadID ecs.EntityID,
-	defaultTargets []ecs.EntityID,
-	manager *common.EntityManager,
-) []ecs.EntityID
+// DamageModHook modifies DamageModifiers before damage calculation.
+type DamageModHook func(ctx *HookContext, modifiers *combatcore.DamageModifiers)
 
-// CounterModHook modifies counterattack behavior.
-// Return skipCounter=true to suppress counterattack entirely.
+// TargetOverrideHook overrides target selection. Returns modified target list.
+type TargetOverrideHook func(ctx *HookContext, defaultTargets []ecs.EntityID) []ecs.EntityID
+
+// CounterModHook modifies or suppresses counterattack.
+// Returns true if counter should be skipped entirely.
 type CounterModHook func(
 	defenderID, attackerID ecs.EntityID,
 	modifiers *combatcore.DamageModifiers,
@@ -34,16 +32,10 @@ type CounterModHook func(
 	manager *common.EntityManager,
 ) (skipCounter bool)
 
-// PostDamageHook runs after damage is recorded for a single attack.
-type PostDamageHook func(
-	attackerID, defenderID ecs.EntityID,
-	attackerSquadID, defenderSquadID ecs.EntityID,
-	damageDealt int, wasKill bool,
-	roundState *PerkRoundState,
-	manager *common.EntityManager,
-)
+// PostDamageHook runs after damage is recorded.
+type PostDamageHook func(ctx *HookContext, damageDealt int, wasKill bool)
 
-// TurnStartHook runs at the start of a squad's turn.
+// TurnStartHook runs at start of a squad's turn.
 type TurnStartHook func(
 	squadID ecs.EntityID,
 	roundNumber int,
@@ -51,16 +43,11 @@ type TurnStartHook func(
 	manager *common.EntityManager,
 )
 
-// CoverModHook modifies cover calculation for a defender.
-type CoverModHook func(
-	attackerID, defenderID ecs.EntityID,
-	coverBreakdown *combatcore.CoverBreakdown,
-	roundState *PerkRoundState,
-	manager *common.EntityManager,
-)
+// CoverModHook modifies cover calculation.
+type CoverModHook func(ctx *HookContext, coverBreakdown *combatcore.CoverBreakdown)
 
-// DamageRedirectHook intercepts damage before recordDamageToUnit.
-// Returns reduced damage for original target, plus a redirect target and amount.
+// DamageRedirectHook intercepts damage before it is recorded.
+// Returns reduced damage for original target, redirect target ID, and redirect amount.
 type DamageRedirectHook func(
 	defenderID ecs.EntityID,
 	defenderSquadID ecs.EntityID,
@@ -68,8 +55,7 @@ type DamageRedirectHook func(
 	manager *common.EntityManager,
 ) (reducedDamage int, redirectTargetID ecs.EntityID, redirectAmount int)
 
-// DeathOverrideHook intercepts lethal damage.
-// Returns true if death should be prevented (unit survives at 1 HP).
+// DeathOverrideHook prevents lethal damage. Returns true to prevent death.
 type DeathOverrideHook func(
 	unitID ecs.EntityID,
 	squadID ecs.EntityID,

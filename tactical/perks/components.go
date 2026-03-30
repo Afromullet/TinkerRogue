@@ -61,17 +61,10 @@ func (s *PerkRoundState) ResetPerRound() {
 	s.OverwatchActive = false
 }
 
-// PerkUnlockData tracks which perks have been unlocked for a commander/roster.
-type PerkUnlockData struct {
-	UnlockedPerks map[string]bool // Perk IDs that have been unlocked
-	PerkPoints    int             // Available points to spend
-}
-
 // ECS component variables
 var (
 	PerkSlotComponent       *ecs.Component
 	PerkRoundStateComponent *ecs.Component
-	PerkUnlockComponent     *ecs.Component
 
 	PerkSlotTag ecs.Tag
 )

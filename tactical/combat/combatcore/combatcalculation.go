@@ -16,129 +16,9 @@ func rollD100Check(threshold int) (roll int, passed bool) {
 	return
 }
 
-// calculateDamage is the unified damage calculation function with optional modifiers.
-// Handles the full pipeline: hit roll, dodge roll, base damage, crit, resistance, cover.
-func calculateDamage(attackerID, defenderID ecs.EntityID, modifiers DamageModifiers, squadmanager *common.EntityManager) (int, *AttackEvent) {
-	attackerAttr := common.GetComponentTypeByID[*common.Attributes](squadmanager, attackerID, common.AttributeComponent)
-	defenderAttr := common.GetComponentTypeByID[*common.Attributes](squadmanager, defenderID, common.AttributeComponent)
-
-	event := &AttackEvent{
-		AttackerID:      attackerID,
-		DefenderID:      defenderID,
-		IsCounterattack: modifiers.IsCounterattack,
-	}
-
-	if defenderAttr != nil {
-		event.DefenderHPBefore = defenderAttr.CurrentHealth
-	}
-
-	if attackerAttr == nil || defenderAttr == nil {
-		event.HitResult.Type = HitTypeMiss
-		return 0, event
-	}
-
-	// Hit roll with optional penalty
-	baseHitThreshold := attackerAttr.GetHitRate()
-	hitThreshold := baseHitThreshold - modifiers.HitPenalty
-	if hitThreshold < 0 {
-		hitThreshold = 0
-	}
-
-	hitRoll, didHit := rollD100Check(hitThreshold)
-	event.HitResult.HitRoll = hitRoll
-	event.HitResult.HitThreshold = hitThreshold
-
-	if !didHit {
-		event.HitResult.Type = HitTypeMiss
-		return 0, event
-	}
-
-	// Dodge roll
-	dodgeThreshold := defenderAttr.GetDodgeChance()
-	dodgeRoll, wasDodged := rollD100Check(dodgeThreshold)
-	event.HitResult.DodgeRoll = dodgeRoll
-	event.HitResult.DodgeThreshold = dodgeThreshold
-
-	if wasDodged {
-		event.HitResult.Type = HitTypeDodge
-		return 0, event
-	}
-
-	// Get attacker's attack type to determine damage formula
-	attackerTargetData := common.GetComponentTypeByID[*squadcore.TargetRowData](squadmanager, attackerID, squadcore.TargetRowComponent)
-
-	// Calculate base damage based on attack type
-	var baseDamage int
-	var resistance int
-
-	if attackerTargetData != nil && attackerTargetData.AttackType == unitdefs.AttackTypeMagic {
-		// Magic damage path
-		baseDamage = attackerAttr.GetMagicDamage()
-		resistance = defenderAttr.GetMagicDefense()
-	} else {
-		// Physical damage path (Melee, Ranged, or fallback)
-		baseDamage = attackerAttr.GetPhysicalDamage()
-		resistance = defenderAttr.GetPhysicalResistance()
-	}
-
-	event.BaseDamage = baseDamage
-	event.CritMultiplier = 1.0
-
-	// Crit roll
-	critThreshold := attackerAttr.GetCritChance()
-	critRoll, wasCrit := rollD100Check(critThreshold)
-	event.HitResult.CritRoll = critRoll
-	event.HitResult.CritThreshold = critThreshold
-
-	if wasCrit {
-		baseDamage = int(float64(baseDamage) * 1.5)
-		event.CritMultiplier = 1.5
-		event.HitResult.Type = HitTypeCritical
-	} else {
-		if modifiers.IsCounterattack {
-			event.HitResult.Type = HitTypeCounterattack
-		} else {
-			event.HitResult.Type = HitTypeNormal
-		}
-	}
-
-	// Apply damage multiplier
-	baseDamage = int(float64(baseDamage) * modifiers.DamageMultiplier)
-	if baseDamage < 1 {
-		baseDamage = 1
-	}
-
-	// Apply resistance
-	event.ResistanceAmount = resistance
-	totalDamage := baseDamage - resistance
-	if totalDamage < 1 {
-		totalDamage = 1
-	}
-
-	// Apply cover
-	coverBreakdown := CalculateCoverBreakdown(defenderID, squadmanager)
-	event.CoverReduction = coverBreakdown
-
-	if coverBreakdown.TotalReduction > 0.0 {
-		totalDamage = int(float64(totalDamage) * (1.0 - coverBreakdown.TotalReduction))
-		if totalDamage < 1 {
-			totalDamage = 1
-		}
-	}
-
-	event.FinalDamage = totalDamage
-	event.DefenderHPAfter = defenderAttr.CurrentHealth - totalDamage
-	if event.DefenderHPAfter <= 0 {
-		event.WasKilled = true
-	}
-
-	return totalDamage, event
-}
-
-// calculateDamageWithPerks is the perk-aware damage calculation function.
-// It supports SkipCrit, CritBonus, and CoverMod callback from perk hooks.
-// If callbacks is nil, behaves identically to calculateDamage.
-func calculateDamageWithPerks(attackerID, defenderID ecs.EntityID, modifiers DamageModifiers,
+// calculateDamage handles the full damage pipeline: hit roll, dodge roll, base damage, crit, resistance, cover.
+// callbacks may be nil if no perks are active.
+func calculateDamage(attackerID, defenderID ecs.EntityID, modifiers DamageModifiers,
 	callbacks *PerkCallbacks, squadmanager *common.EntityManager) (int, *AttackEvent) {
 	attackerAttr := common.GetComponentTypeByID[*common.Attributes](squadmanager, attackerID, common.AttributeComponent)
 	defenderAttr := common.GetComponentTypeByID[*common.Attributes](squadmanager, defenderID, common.AttributeComponent)
@@ -203,9 +83,8 @@ func calculateDamageWithPerks(attackerID, defenderID ecs.EntityID, modifiers Dam
 	event.BaseDamage = baseDamage
 	event.CritMultiplier = 1.0
 
-	// Crit roll (with perk support for SkipCrit and CritBonus)
+	// Crit roll (supports SkipCrit and CritBonus from perks)
 	if modifiers.SkipCrit {
-		// Vigilance: crits become normal hits
 		if modifiers.IsCounterattack {
 			event.HitResult.Type = HitTypeCounterattack
 		} else {
@@ -230,7 +109,7 @@ func calculateDamageWithPerks(attackerID, defenderID ecs.EntityID, modifiers Dam
 		}
 	}
 
-	// Apply damage multiplier (perk hooks have already modified this)
+	// Apply damage multiplier
 	baseDamage = int(float64(baseDamage) * modifiers.DamageMultiplier)
 	if baseDamage < 1 {
 		baseDamage = 1

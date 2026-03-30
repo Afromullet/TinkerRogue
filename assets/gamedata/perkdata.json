@@ -8,8 +8,7 @@
       "category": 1,
       "roles": ["Tank"],
       "exclusiveWith": [],
-      "unlockCost": 2,
-      "behaviorId": "brace_for_impact"
+      "unlockCost": 2
     },
     {
       "id": "reckless_assault",
@@ -19,8 +18,7 @@
       "category": 0,
       "roles": ["DPS"],
       "exclusiveWith": [],
-      "unlockCost": 2,
-      "behaviorId": "reckless_assault"
+      "unlockCost": 2
     },
     {
       "id": "stalwart",
@@ -30,8 +28,7 @@
       "category": 1,
       "roles": ["Tank", "Support"],
       "exclusiveWith": [],
-      "unlockCost": 2,
-      "behaviorId": "stalwart"
+      "unlockCost": 2
     },
     {
       "id": "executioners_instinct",
@@ -41,8 +38,7 @@
       "category": 0,
       "roles": ["DPS"],
       "exclusiveWith": [],
-      "unlockCost": 2,
-      "behaviorId": "executioners_instinct"
+      "unlockCost": 2
     },
     {
       "id": "shieldwall_discipline",
@@ -52,8 +48,7 @@
       "category": 1,
       "roles": ["Tank"],
       "exclusiveWith": [],
-      "unlockCost": 2,
-      "behaviorId": "shieldwall_discipline"
+      "unlockCost": 2
     },
     {
       "id": "isolated_predator",
@@ -63,8 +58,7 @@
       "category": 0,
       "roles": ["DPS"],
       "exclusiveWith": [],
-      "unlockCost": 2,
-      "behaviorId": "isolated_predator"
+      "unlockCost": 2
     },
     {
       "id": "vigilance",
@@ -74,8 +68,7 @@
       "category": 1,
       "roles": ["Tank", "Support"],
       "exclusiveWith": [],
-      "unlockCost": 2,
-      "behaviorId": "vigilance"
+      "unlockCost": 2
     },
     {
       "id": "field_medic",
@@ -85,8 +78,7 @@
       "category": 3,
       "roles": ["Support"],
       "exclusiveWith": [],
-      "unlockCost": 2,
-      "behaviorId": "field_medic"
+      "unlockCost": 2
     },
     {
       "id": "opening_salvo",
@@ -96,8 +88,7 @@
       "category": 0,
       "roles": ["DPS"],
       "exclusiveWith": [],
-      "unlockCost": 2,
-      "behaviorId": "opening_salvo"
+      "unlockCost": 2
     },
     {
       "id": "last_line",
@@ -107,8 +98,7 @@
       "category": 1,
       "roles": ["Tank", "Support"],
       "exclusiveWith": [],
-      "unlockCost": 2,
-      "behaviorId": "last_line"
+      "unlockCost": 2
     },
     {
       "id": "cleave",
@@ -118,8 +108,7 @@
       "category": 2,
       "roles": ["DPS"],
       "exclusiveWith": [],
-      "unlockCost": 3,
-      "behaviorId": "cleave"
+      "unlockCost": 3
     },
     {
       "id": "riposte",
@@ -129,8 +118,7 @@
       "category": 1,
       "roles": ["Tank", "DPS"],
       "exclusiveWith": [],
-      "unlockCost": 3,
-      "behaviorId": "riposte"
+      "unlockCost": 3
     },
     {
       "id": "disruption",
@@ -140,8 +128,7 @@
       "category": 3,
       "roles": ["DPS", "Support"],
       "exclusiveWith": [],
-      "unlockCost": 3,
-      "behaviorId": "disruption"
+      "unlockCost": 3
     },
     {
       "id": "guardian_protocol",
@@ -151,8 +138,7 @@
       "category": 1,
       "roles": ["Tank"],
       "exclusiveWith": [],
-      "unlockCost": 4,
-      "behaviorId": "guardian_protocol"
+      "unlockCost": 4
     },
     {
       "id": "overwatch",
@@ -162,8 +148,7 @@
       "category": 2,
       "roles": ["DPS"],
       "exclusiveWith": [],
-      "unlockCost": 4,
-      "behaviorId": "overwatch"
+      "unlockCost": 4
     },
     {
       "id": "adaptive_armor",
@@ -173,8 +158,7 @@
       "category": 1,
       "roles": ["Tank"],
       "exclusiveWith": [],
-      "unlockCost": 3,
-      "behaviorId": "adaptive_armor"
+      "unlockCost": 3
     },
     {
       "id": "bloodlust",
@@ -184,8 +168,7 @@
       "category": 0,
       "roles": ["DPS"],
       "exclusiveWith": [],
-      "unlockCost": 3,
-      "behaviorId": "bloodlust"
+      "unlockCost": 3
     },
     {
       "id": "fortify",
@@ -195,8 +178,7 @@
       "category": 1,
       "roles": ["Tank", "Support"],
       "exclusiveWith": [],
-      "unlockCost": 3,
-      "behaviorId": "fortify"
+      "unlockCost": 3
     },
     {
       "id": "precision_strike",
@@ -206,8 +188,7 @@
       "category": 2,
       "roles": ["DPS"],
       "exclusiveWith": [],
-      "unlockCost": 3,
-      "behaviorId": "precision_strike"
+      "unlockCost": 3
     },
     {
       "id": "resolute",
@@ -217,8 +198,7 @@
       "category": 1,
       "roles": ["Tank", "DPS", "Support"],
       "exclusiveWith": [],
-      "unlockCost": 4,
-      "behaviorId": "resolute"
+      "unlockCost": 4
     },
     {
       "id": "grudge_bearer",
@@ -228,8 +208,7 @@
       "category": 3,
       "roles": ["DPS", "Tank"],
       "exclusiveWith": [],
-      "unlockCost": 3,
-      "behaviorId": "grudge_bearer"
+      "unlockCost": 3
     },
     {
       "id": "counterpunch",
@@ -239,8 +218,7 @@
       "category": 3,
       "roles": ["DPS", "Tank"],
       "exclusiveWith": [],
-      "unlockCost": 3,
-      "behaviorId": "counterpunch"
+      "unlockCost": 3
     },
     {
       "id": "marked_for_death",
@@ -250,8 +228,7 @@
       "category": 2,
       "roles": ["DPS", "Support"],
       "exclusiveWith": [],
-      "unlockCost": 3,
-      "behaviorId": "marked_for_death"
+      "unlockCost": 3
     },
     {
       "id": "deadshots_patience",
@@ -261,8 +238,7 @@
       "category": 0,
       "roles": ["DPS"],
       "exclusiveWith": [],
-      "unlockCost": 4,
-      "behaviorId": "deadshots_patience"
+      "unlockCost": 4
     }
   ]
 }

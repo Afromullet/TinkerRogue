@@ -43,11 +43,6 @@ func (cas *CombatActionSystem) SetPerkCallbacks(callbacks *PerkCallbacks) {
 	cas.perkCallbacks = callbacks
 }
 
-// GetPerkCallbacks returns the currently set perk callbacks (may be nil).
-func (cas *CombatActionSystem) GetPerkCallbacks() *PerkCallbacks {
-	return cas.perkCallbacks
-}
-
 func (cas *CombatActionSystem) ExecuteAttackAction(attackerID, defenderID ecs.EntityID) *CombatResult {
 
 	//Validation
@@ -91,17 +86,11 @@ func (cas *CombatActionSystem) ExecuteAttackAction(attackerID, defenderID ecs.En
 		}
 
 		if IsHealUnit(attackerUnitID, cas.manager) {
-			// Heal units target their own squad
 			healTargets := SelectHealTargets(attackerUnitID, attackerID, cas.manager)
 			attackIndex = ProcessHealOnTargets(attackerUnitID, healTargets, result, combatLog, attackIndex, cas.manager)
 		} else {
-			// Normal attack units target the enemy squad
 			targetIDs := SelectTargetUnits(attackerUnitID, defenderID, cas.manager)
-			if cas.perkCallbacks != nil {
-				attackIndex = ProcessAttackOnTargetsWithPerks(attackerUnitID, defenderID, targetIDs, result, combatLog, attackIndex, cas.perkCallbacks, cas.manager)
-			} else {
-				attackIndex = ProcessAttackOnTargets(attackerUnitID, targetIDs, result, combatLog, attackIndex, cas.manager)
-			}
+			attackIndex = ProcessAttackOnTargets(attackerUnitID, defenderID, targetIDs, result, combatLog, attackIndex, cas.perkCallbacks, cas.manager)
 		}
 	}
 
@@ -142,13 +131,11 @@ func (cas *CombatActionSystem) ExecuteAttackAction(attackerID, defenderID ecs.En
 			}
 
 			if IsHealUnit(counterAttackerID, cas.manager) {
-				// Heal units target their own squad during counterattack
 				healTargets := SelectHealTargets(counterAttackerID, defenderID, cas.manager)
 				attackIndex = ProcessHealOnTargets(counterAttackerID, healTargets, result, combatLog, attackIndex, cas.manager)
 			} else {
-				// Normal counterattack against enemy squad, using perk-modified modifiers
 				targetIDs := SelectTargetUnits(counterAttackerID, attackerID, cas.manager)
-				attackIndex = processAttackWithPerkCallbacks(counterAttackerID, attackerID, targetIDs, result, combatLog, attackIndex, counterModifiers, cas.perkCallbacks, cas.manager)
+				attackIndex = ProcessCounterattackOnTargets(counterAttackerID, attackerID, targetIDs, result, combatLog, attackIndex, counterModifiers, cas.perkCallbacks, cas.manager)
 			}
 		}
 	}

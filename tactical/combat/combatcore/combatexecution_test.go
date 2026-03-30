@@ -41,7 +41,7 @@ func executeTestAttack(attackerSquadID, defenderSquadID ecs.EntityID, manager *c
 		}
 
 		targetIDs := SelectTargetUnits(attackerID, defenderSquadID, manager)
-		attackIndex = ProcessAttackOnTargets(attackerID, targetIDs, result, combatLog, attackIndex, manager)
+		attackIndex = ProcessAttackOnTargets(attackerID, defenderSquadID, targetIDs, result, combatLog, attackIndex, nil, manager)
 	}
 
 	ApplyRecordedDamage(result, manager)
@@ -57,7 +57,7 @@ func calculateTestDamage(attackerID, defenderID ecs.EntityID, manager *common.En
 		DamageMultiplier: 1.0,
 		IsCounterattack:  false,
 	}
-	return calculateDamage(attackerID, defenderID, modifiers, manager)
+	return calculateDamage(attackerID, defenderID, modifiers, nil, manager)
 }
 
 // setupCombatTestManager creates a fully initialized EntityManager for combat tests.

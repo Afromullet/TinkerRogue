@@ -11,7 +11,6 @@ func init() {
 	common.RegisterSubsystem(func(em *common.EntityManager) {
 		PerkSlotComponent = em.World.NewComponent()
 		PerkRoundStateComponent = em.World.NewComponent()
-		PerkUnlockComponent = em.World.NewComponent()
 
 		PerkSlotTag = ecs.BuildTag(PerkSlotComponent)
 

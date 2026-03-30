@@ -8,33 +8,31 @@ import (
 
 // Perk callback function types.
 // These are defined in combatcore to avoid circular imports with the perks package.
-// The perks package provides implementations; combatservices wires them together.
+// The perks package provides implementations that match these signatures;
+// combatservices wires them together via direct function assignment.
 
-// DamageHookRunner runs perk DamageMod hooks for an attacker's perks.
-// Called inside calculateDamage before multiplier application.
+// DamageHookRunner modifies DamageModifiers before damage calculation.
 type DamageHookRunner func(
 	attackerID, defenderID, attackerSquadID, defenderSquadID ecs.EntityID,
 	modifiers *DamageModifiers,
 	manager *common.EntityManager,
 )
 
-// CoverHookRunner runs perk CoverMod hooks.
-// Called inside calculateDamage after cover calculation.
+// CoverHookRunner modifies cover calculation.
 type CoverHookRunner func(
 	attackerID, defenderID ecs.EntityID,
 	cover *CoverBreakdown,
 	manager *common.EntityManager,
 )
 
-// TargetHookRunner runs perk TargetOverride hooks.
-// Called inside processAttackWithModifiers before the target loop.
+// TargetHookRunner overrides target selection.
 type TargetHookRunner func(
 	attackerID, defenderSquadID ecs.EntityID,
 	targets []ecs.EntityID,
 	manager *common.EntityManager,
 ) []ecs.EntityID
 
-// PostDamageRunner runs perk PostDamage hooks after damage is recorded.
+// PostDamageRunner runs after damage is recorded.
 type PostDamageRunner func(
 	attackerID, defenderID, attackerSquadID, defenderSquadID ecs.EntityID,
 	damage int, wasKill bool,
@@ -55,8 +53,8 @@ type CounterModRunner func(
 	manager *common.EntityManager,
 ) bool
 
-// PerkCallbacks holds all perk callback functions injected from the perks package.
-// Set on CombatActionSystem before combat begins.
+// PerkCallbacks holds all perk callback functions.
+// Set on CombatActionSystem before combat begins. May be nil if no perks.
 type PerkCallbacks struct {
 	AttackerDamageMod  DamageHookRunner
 	DefenderDamageMod  DamageHookRunner
