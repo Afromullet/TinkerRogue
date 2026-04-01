@@ -1,3 +1,22 @@
+# Perks and Artifacts
+
+- Determine whether there is a better way to integrate perks and artifacts into combat. Want to make it cleaner, rather than have the checks littered throughout the code. 
+- Then do the same for spells
+
+# Documentation cleanup after perks are wrapped up
+
+- Need to update ARTIFACT_SYSTEM.md with how to add new artifacts
+- Need to update PERK_SYSTEM.md with how to add new perks
+- Need to update SPELL_DOCUMENTATION on how to add new spells
+- ARCHITECTURE_LAYERS.md
+- GAMEDATA_OVERVIEW
+- HOOKS_AND_CALLBACKS.md
+- ENTITY_REFERENCE.md
+- DATA_FLOW_PATTERNS.md
+- ARTIFACT_SYSTEM.md
+- PERK_SYSTEM.md
+- DOCUMENTATION.md
+
 # Perk System Cleanup
 
 -ExecuteAttackAction is growing too large
@@ -6,6 +25,9 @@
 - Need a GUI for perks
 - Need a perk unlock system. Should be designed side by side with spell unlock system
 
+# Future AI cleanup
+
+- Need to take artifacts and perks into account for the utiltiy map calculations
 
 # Spells
 
