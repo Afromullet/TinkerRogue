@@ -5,9 +5,9 @@ import (
 	"game_main/common"
 	"game_main/mind/combatlifecycle"
 	"game_main/tactical/combat/combatcore"
-	"game_main/tactical/perks"
 	"game_main/tactical/powers/artifacts"
 	"game_main/tactical/powers/effects"
+	"game_main/tactical/powers/perks"
 	"game_main/tactical/squads/squadcore"
 	"game_main/world/coords"
 

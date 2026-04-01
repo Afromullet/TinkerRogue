@@ -3,7 +3,7 @@ package combatservices
 import (
 	"game_main/common"
 	"game_main/tactical/combat/combatcore"
-	"game_main/tactical/perks"
+	"game_main/tactical/powers/perks"
 
 	"github.com/bytearena/ecs"
 )
