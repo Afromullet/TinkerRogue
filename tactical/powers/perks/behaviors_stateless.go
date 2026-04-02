@@ -1,3 +1,10 @@
+// behaviors_stateless.go — Perk implementations that are pure functions of HookContext.
+//
+// These perks read entity/squad data through the Manager but never read or write
+// PerkRoundState shared tracking fields, PerkState, or PerkBattleState.
+//
+// Adding a new stateless perk? Put it here.
+// If it needs state, use behaviors_stateful_round.go or behaviors_stateful_battle.go instead.
 package perks
 
 import (
@@ -11,64 +18,21 @@ import (
 )
 
 func init() {
-	// Tier 1: Combat Conditioning
 	RegisterPerkHooks("brace_for_impact", &PerkHooks{DefenderCoverMod: braceForImpactCoverMod})
-	RegisterPerkHooks("reckless_assault", &PerkHooks{
-		AttackerDamageMod: recklessAssaultAttackerMod,
-		DefenderDamageMod: recklessAssaultDefenderMod,
-	})
-	RegisterPerkHooks("stalwart", &PerkHooks{CounterMod: stalwartCounterMod})
 	RegisterPerkHooks("executioners_instinct", &PerkHooks{AttackerDamageMod: executionerDamageMod})
 	RegisterPerkHooks("shieldwall_discipline", &PerkHooks{DefenderDamageMod: shieldwallDamageMod})
 	RegisterPerkHooks("isolated_predator", &PerkHooks{AttackerDamageMod: isolatedPredatorDamageMod})
 	RegisterPerkHooks("vigilance", &PerkHooks{DefenderDamageMod: vigilanceDamageMod})
 	RegisterPerkHooks("field_medic", &PerkHooks{TurnStart: fieldMedicTurnStart})
-	RegisterPerkHooks("opening_salvo", &PerkHooks{AttackerDamageMod: openingSalvoDamageMod})
 	RegisterPerkHooks("last_line", &PerkHooks{AttackerDamageMod: lastLineDamageMod})
-
-	// Tier 2: Combat Specialization
 	RegisterPerkHooks("cleave", &PerkHooks{
 		TargetOverride:    cleaveTargetOverride,
 		AttackerDamageMod: cleaveDamageMod,
 	})
 	RegisterPerkHooks("riposte", &PerkHooks{CounterMod: riposteCounterMod})
-	RegisterPerkHooks("disruption", &PerkHooks{PostDamage: disruptionPostDamage})
 	RegisterPerkHooks("guardian_protocol", &PerkHooks{DamageRedirect: guardianDamageRedirect})
-	RegisterPerkHooks("overwatch", &PerkHooks{TurnStart: overwatchTurnStart})
-	RegisterPerkHooks("adaptive_armor", &PerkHooks{DefenderDamageMod: adaptiveArmorDamageMod})
-	RegisterPerkHooks("bloodlust", &PerkHooks{
-		PostDamage:        bloodlustPostDamage,
-		AttackerDamageMod: bloodlustDamageMod,
-	})
-	RegisterPerkHooks("fortify", &PerkHooks{
-		TurnStart:        fortifyTurnStart,
-		DefenderCoverMod: fortifyCoverMod,
-	})
 	RegisterPerkHooks("precision_strike", &PerkHooks{TargetOverride: precisionStrikeTargetOverride})
-	RegisterPerkHooks("resolute", &PerkHooks{
-		TurnStart:     resoluteTurnStart,
-		DeathOverride: resoluteDeathOverride,
-	})
-	RegisterPerkHooks("grudge_bearer", &PerkHooks{
-		PostDamage:        grudgeBearerPostDamage,
-		AttackerDamageMod: grudgeBearerDamageMod,
-	})
-	RegisterPerkHooks("counterpunch", &PerkHooks{
-		TurnStart:         counterpunchTurnStart,
-		AttackerDamageMod: counterpunchDamageMod,
-	})
-	RegisterPerkHooks("marked_for_death", &PerkHooks{
-		AttackerDamageMod: markedForDeathDamageMod,
-	})
-	RegisterPerkHooks("deadshots_patience", &PerkHooks{
-		TurnStart:         deadshotTurnStart,
-		AttackerDamageMod: deadshotDamageMod,
-	})
 }
-
-// ========================================
-// TIER 1: COMBAT CONDITIONING (10 perks)
-// ========================================
 
 // Brace for Impact: +15% cover bonus when defending
 func braceForImpactCoverMod(ctx *HookContext, coverBreakdown *combatcore.CoverBreakdown) {
@@ -76,30 +40,6 @@ func braceForImpactCoverMod(ctx *HookContext, coverBreakdown *combatcore.CoverBr
 	if coverBreakdown.TotalReduction > 1.0 {
 		coverBreakdown.TotalReduction = 1.0
 	}
-}
-
-// Reckless Assault (attacker): +30% damage, sets vulnerability flag
-func recklessAssaultAttackerMod(ctx *HookContext, modifiers *combatcore.DamageModifiers) {
-	if modifiers.IsCounterattack {
-		return
-	}
-	modifiers.DamageMultiplier *= 1.3
-	ctx.RoundState.RecklessVulnerable = true
-}
-
-// Reckless Assault (defender): +20% incoming damage when vulnerable
-func recklessAssaultDefenderMod(ctx *HookContext, modifiers *combatcore.DamageModifiers) {
-	if ctx.RoundState.RecklessVulnerable {
-		modifiers.DamageMultiplier *= 1.2
-	}
-}
-
-// Stalwart: Full-damage counters if squad did NOT move
-func stalwartCounterMod(ctx *HookContext, modifiers *combatcore.DamageModifiers) bool {
-	if !ctx.RoundState.MovedThisTurn {
-		modifiers.DamageMultiplier = 1.0 // Override 0.5 default
-	}
-	return false // Don't skip counter
 }
 
 // Executioner's Instinct: +25% crit chance vs squads with any unit below 30% HP
@@ -218,18 +158,7 @@ func fieldMedicTurnStart(ctx *HookContext) {
 	}
 }
 
-// Opening Salvo: +35% damage on squad's first attack of the combat only
-func openingSalvoDamageMod(ctx *HookContext, modifiers *combatcore.DamageModifiers) {
-	if modifiers.IsCounterattack {
-		return
-	}
-	if !ctx.RoundState.HasAttackedThisCombat {
-		modifiers.DamageMultiplier *= 1.35
-		ctx.RoundState.HasAttackedThisCombat = true
-	}
-}
-
-// Last Line: When last friendly squad alive, +20% hit, dodge, and damage
+// Last Line: When last friendly squad alive, +20% hit and damage
 func lastLineDamageMod(ctx *HookContext, modifiers *combatcore.DamageModifiers) {
 	faction := combatcore.GetSquadFaction(ctx.AttackerSquadID, ctx.Manager)
 	if faction == 0 {
@@ -241,10 +170,6 @@ func lastLineDamageMod(ctx *HookContext, modifiers *combatcore.DamageModifiers) 
 		modifiers.HitPenalty -= 20
 	}
 }
-
-// ========================================
-// TIER 2: COMBAT SPECIALIZATION (14 perks)
-// ========================================
 
 // Cleave: Hit target row + row behind, but -30% damage to ALL targets
 func cleaveTargetOverride(ctx *HookContext, defaultTargets []ecs.EntityID) []ecs.EntityID {
@@ -273,7 +198,6 @@ func cleaveTargetOverride(ctx *HookContext, defaultTargets []ecs.EntityID) []ecs
 	return defaultTargets
 }
 
-// cleaveDamageMod applies the -30% damage penalty when Cleave is active
 func cleaveDamageMod(ctx *HookContext, modifiers *combatcore.DamageModifiers) {
 	targetData := common.GetComponentTypeByID[*squadcore.TargetRowData](
 		ctx.Manager, ctx.AttackerID, squadcore.TargetRowComponent,
@@ -287,25 +211,6 @@ func cleaveDamageMod(ctx *HookContext, modifiers *combatcore.DamageModifiers) {
 func riposteCounterMod(ctx *HookContext, modifiers *combatcore.DamageModifiers) bool {
 	modifiers.HitPenalty = 0
 	return false
-}
-
-// Disruption: Dealing damage reduces target squad's next attack by -15% this round
-func disruptionPostDamage(ctx *HookContext, damageDealt int, wasKill bool) {
-	if damageDealt <= 0 {
-		return
-	}
-	if ctx.RoundState.DisruptionTargets == nil {
-		ctx.RoundState.DisruptionTargets = make(map[ecs.EntityID]bool)
-	}
-	ctx.RoundState.DisruptionTargets[ctx.DefenderSquadID] = true
-
-	defenderState := GetRoundState(ctx.DefenderSquadID, ctx.Manager)
-	if defenderState != nil {
-		if defenderState.DisruptionTargets == nil {
-			defenderState.DisruptionTargets = make(map[ecs.EntityID]bool)
-		}
-		defenderState.DisruptionTargets[ctx.AttackerSquadID] = true
-	}
 }
 
 // Guardian Protocol: Redirect 25% damage to adjacent tank
@@ -361,62 +266,6 @@ func guardianDamageRedirect(ctx *HookContext) (int, ecs.EntityID, int) {
 	return damageAmount, 0, 0
 }
 
-// Overwatch: Skip attack to auto-attack at 75% damage next enemy that moves in range
-func overwatchTurnStart(ctx *HookContext) {
-	// Placeholder — the actual trigger happens in the movement system (not implemented in v1).
-}
-
-// Adaptive Armor: -10% damage from same attacker per hit (stacks to 30%, resets per round)
-func adaptiveArmorDamageMod(ctx *HookContext, modifiers *combatcore.DamageModifiers) {
-	if ctx.RoundState.AttackedBy == nil {
-		ctx.RoundState.AttackedBy = make(map[ecs.EntityID]int)
-	}
-	hits := ctx.RoundState.AttackedBy[ctx.AttackerSquadID]
-	if hits > 3 {
-		hits = 3
-	}
-	if hits > 0 {
-		reduction := float64(hits) * 0.10
-		modifiers.DamageMultiplier *= (1.0 - reduction)
-	}
-	ctx.RoundState.AttackedBy[ctx.AttackerSquadID]++
-}
-
-// Bloodlust: Track kills and boost damage
-func bloodlustPostDamage(ctx *HookContext, damageDealt int, wasKill bool) {
-	if wasKill {
-		ctx.RoundState.KillsThisRound++
-	}
-}
-
-func bloodlustDamageMod(ctx *HookContext, modifiers *combatcore.DamageModifiers) {
-	if ctx.RoundState.KillsThisRound > 0 {
-		bonus := 1.0 + float64(ctx.RoundState.KillsThisRound)*0.15
-		modifiers.DamageMultiplier *= bonus
-	}
-}
-
-// Fortify: +0.05 cover per consecutive turn not moving (max +0.15 after 3 turns)
-func fortifyTurnStart(ctx *HookContext) {
-	if ctx.RoundState.MovedThisTurn {
-		ctx.RoundState.TurnsStationary = 0
-	} else {
-		if ctx.RoundState.TurnsStationary < 3 {
-			ctx.RoundState.TurnsStationary++
-		}
-	}
-}
-
-func fortifyCoverMod(ctx *HookContext, coverBreakdown *combatcore.CoverBreakdown) {
-	if ctx.RoundState.TurnsStationary > 0 {
-		bonus := float64(ctx.RoundState.TurnsStationary) * 0.05
-		coverBreakdown.TotalReduction += bonus
-		if coverBreakdown.TotalReduction > 1.0 {
-			coverBreakdown.TotalReduction = 1.0
-		}
-	}
-}
-
 // Precision Strike: Highest-dex DPS unit targets the lowest-HP enemy
 func precisionStrikeTargetOverride(ctx *HookContext, defaultTargets []ecs.EntityID) []ecs.EntityID {
 	attackerSquadID := getSquadIDForUnit(ctx.AttackerID, ctx.Manager)
@@ -469,134 +318,6 @@ func precisionStrikeTargetOverride(ctx *HookContext, defaultTargets []ecs.Entity
 	}
 	return defaultTargets
 }
-
-// Resolute: Survive lethal damage at 1 HP (once per unit per battle)
-func resoluteTurnStart(ctx *HookContext) {
-	if ctx.RoundState.RoundStartHP == nil {
-		ctx.RoundState.RoundStartHP = make(map[ecs.EntityID]int)
-	}
-	unitIDs := squadcore.GetUnitIDsInSquad(ctx.SquadID, ctx.Manager)
-	for _, uid := range unitIDs {
-		attr := common.GetComponentTypeByID[*common.Attributes](
-			ctx.Manager, uid, common.AttributeComponent,
-		)
-		if attr != nil && attr.CurrentHealth > 0 {
-			ctx.RoundState.RoundStartHP[uid] = attr.CurrentHealth
-		}
-	}
-}
-
-func resoluteDeathOverride(ctx *HookContext) bool {
-	if ctx.RoundState.ResoluteUsed == nil {
-		ctx.RoundState.ResoluteUsed = make(map[ecs.EntityID]bool)
-	}
-	if ctx.RoundState.ResoluteUsed[ctx.UnitID] {
-		return false
-	}
-	attr := common.GetComponentTypeByID[*common.Attributes](
-		ctx.Manager, ctx.UnitID, common.AttributeComponent,
-	)
-	if attr == nil {
-		return false
-	}
-	roundStartHP, ok := ctx.RoundState.RoundStartHP[ctx.UnitID]
-	if !ok {
-		return false
-	}
-	maxHP := attr.GetMaxHealth()
-	if maxHP > 0 && float64(roundStartHP)/float64(maxHP) > 0.5 {
-		ctx.RoundState.ResoluteUsed[ctx.UnitID] = true
-		return true
-	}
-	return false
-}
-
-// Grudge Bearer: +20% damage vs enemy squads that have damaged this squad (stacks to +40%)
-func grudgeBearerPostDamage(ctx *HookContext, damageDealt int, wasKill bool) {
-	if damageDealt <= 0 {
-		return
-	}
-	if ctx.RoundState.GrudgeStacks == nil {
-		ctx.RoundState.GrudgeStacks = make(map[ecs.EntityID]int)
-	}
-	current := ctx.RoundState.GrudgeStacks[ctx.AttackerSquadID]
-	if current < 2 {
-		ctx.RoundState.GrudgeStacks[ctx.AttackerSquadID] = current + 1
-	}
-}
-
-func grudgeBearerDamageMod(ctx *HookContext, modifiers *combatcore.DamageModifiers) {
-	if ctx.RoundState.GrudgeStacks != nil {
-		stacks := ctx.RoundState.GrudgeStacks[ctx.DefenderSquadID]
-		if stacks > 0 {
-			bonus := 1.0 + float64(stacks)*0.20
-			modifiers.DamageMultiplier *= bonus
-		}
-	}
-}
-
-// Counterpunch: +40% damage if attacked last turn AND did not attack last turn
-func counterpunchTurnStart(ctx *HookContext) {
-	if ctx.RoundState.WasAttackedLastTurn && ctx.RoundState.DidNotAttackLastTurn {
-		ctx.RoundState.CounterpunchReady = true
-	} else {
-		ctx.RoundState.CounterpunchReady = false
-	}
-}
-
-func counterpunchDamageMod(ctx *HookContext, modifiers *combatcore.DamageModifiers) {
-	if ctx.RoundState.CounterpunchReady {
-		modifiers.DamageMultiplier *= 1.4
-		ctx.RoundState.CounterpunchReady = false
-	}
-}
-
-// Marked for Death: +25% damage to marked target
-func markedForDeathDamageMod(ctx *HookContext, modifiers *combatcore.DamageModifiers) {
-	faction := combatcore.GetSquadFaction(ctx.AttackerSquadID, ctx.Manager)
-	if faction == 0 {
-		return
-	}
-	friendlySquads := combatcore.GetActiveSquadsForFaction(faction, ctx.Manager)
-	for _, friendlyID := range friendlySquads {
-		friendlyState := GetRoundState(friendlyID, ctx.Manager)
-		if friendlyState != nil && friendlyState.MarkedSquad == ctx.DefenderSquadID {
-			modifiers.DamageMultiplier *= 1.25
-			friendlyState.MarkedSquad = 0
-			return
-		}
-	}
-}
-
-// Deadshot's Patience: +50% damage and +20 accuracy if completely idle last turn
-func deadshotTurnStart(ctx *HookContext) {
-	if ctx.RoundState.WasIdleLastTurn {
-		ctx.RoundState.DeadshotReady = true
-	} else {
-		ctx.RoundState.DeadshotReady = false
-	}
-}
-
-func deadshotDamageMod(ctx *HookContext, modifiers *combatcore.DamageModifiers) {
-	if !ctx.RoundState.DeadshotReady {
-		return
-	}
-	targetData := common.GetComponentTypeByID[*squadcore.TargetRowData](
-		ctx.Manager, ctx.AttackerID, squadcore.TargetRowComponent,
-	)
-	if targetData == nil {
-		return
-	}
-	if targetData.AttackType == unitdefs.AttackTypeRanged || targetData.AttackType == unitdefs.AttackTypeMagic {
-		modifiers.DamageMultiplier *= 1.5
-		modifiers.HitPenalty -= 20
-		ctx.RoundState.DeadshotReady = false
-	}
-}
-
-// ========================================
-// HELPER: GetUnitsInRow (exported for Cleave)
-// ========================================
 
 // GetUnitsInRow returns all alive units in a specific row of a squad.
 func GetUnitsInRow(squadID ecs.EntityID, row int, manager *common.EntityManager) []ecs.EntityID {

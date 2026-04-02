@@ -10,38 +10,160 @@ type PerkSlotData struct {
 	PerkIDs []string // Equipped perk IDs (max based on squad level)
 }
 
-// PerkRoundState tracks per-round state needed by conditional perks.
-// Reset at round start, except fields marked as per-battle.
+// PerkRoundState tracks combat state needed by perks.
+//
+// Shared tracking fields live directly on this struct — they are set by the
+// dispatch layer (perk_dispatch.go) and read by multiple perks.
+//
+// Per-perk state lives in the PerkState map, keyed by perk ID. Each perk
+// defines its own small state struct. This prevents the struct from growing
+// a new field for every stateful perk and makes reset automatic.
+//
+// Shared field lifecycle:
+//
+//	Field                 Writer                               Reader                          Reset
+//	MovedThisTurn         perk_dispatch.go OnMoveComplete       stalwart, fortify               ResetPerTurn
+//	AttackedThisTurn      perk_dispatch.go OnAttackComplete     ResetPerTurn (snapshot)          ResetPerTurn
+//	RecklessVulnerable    reckless_assault (AttackerDamageMod)  reckless_assault (DefenderMod)   ResetPerTurn
+//	TurnsStationary       fortify (TurnStart), OnMoveComplete   fortify (CoverMod)              OnMoveComplete (set to 0)
+//	WasAttackedLastTurn   ResetPerTurn (snapshot)               counterpunch (TurnStart)         Overwritten each turn
+//	DidNotAttackLastTurn  ResetPerTurn (snapshot)               counterpunch (TurnStart)         Overwritten each turn
+//	WasIdleLastTurn       ResetPerTurn (snapshot)               deadshots_patience (TurnStart)   Overwritten each turn
 type PerkRoundState struct {
-	// Per-turn state (resets each turn)
-	MovedThisTurn      bool // For Stalwart, Fortify
-	AttackedThisTurn   bool // For Reckless Assault vulnerability window
-	RecklessVulnerable bool // For Reckless Assault (+20% damage received)
+	// ---- Shared tracking (set by dispatch layer, read by multiple perks) ----
 
-	// Per-round state (resets each round)
-	AttackedBy        map[ecs.EntityID]int  // For Adaptive Armor (attacker -> hit count)
-	KillsThisRound    int                   // For Bloodlust
-	DisruptionTargets map[ecs.EntityID]bool // For Disruption (squads debuffed this round)
-	OverwatchActive   bool                  // For Overwatch
+	// Per-turn (cleared by ResetPerTurn)
+	MovedThisTurn      bool // Set by OnMoveComplete. Read by Stalwart, Fortify.
+	AttackedThisTurn   bool // Set by OnAttackComplete. Read by ResetPerTurn snapshots.
+	RecklessVulnerable bool // Set by Reckless Assault attacker. Read by Reckless Assault defender.
 
-	// Per-round but persists across rounds
-	TurnsStationary int // For Fortify (resets on movement)
+	// Turn-boundary snapshots (computed by ResetPerTurn from previous turn)
+	WasAttackedLastTurn  bool // Snapshot of previous turn. Read by Counterpunch.
+	DidNotAttackLastTurn bool // Snapshot of previous turn. Read by Counterpunch.
+	WasIdleLastTurn      bool // Snapshot of previous turn. Read by Deadshot's Patience.
 
-	// Per-battle state (persists entire combat)
-	HasAttackedThisCombat bool                  // For Opening Salvo (one-time bonus)
-	ResoluteUsed          map[ecs.EntityID]bool // For Resolute (unit -> used flag)
-	RoundStartHP          map[ecs.EntityID]int  // For Resolute (updated each round, not reset)
-	GrudgeStacks          map[ecs.EntityID]int  // For Grudge Bearer (enemy squad -> damage count, persists)
-	WasAttackedLastTurn   bool                  // For Counterpunch (was attacked previous turn)
-	DidNotAttackLastTurn  bool                  // For Counterpunch (did not attack previous turn)
-	CounterpunchReady     bool                  // For Counterpunch (both conditions met)
-	WasIdleLastTurn       bool                  // For Deadshot's Patience (no move AND no attack last turn)
-	DeadshotReady         bool                  // For Deadshot's Patience (ready to fire)
-	MarkedSquad           ecs.EntityID          // For Marked for Death (which enemy is marked, 0 = none)
+	// Movement-gated (accumulates across rounds, resets on movement)
+	TurnsStationary int // Set by Fortify TurnStart + OnMoveComplete. Read by Fortify CoverMod.
+
+	// ---- Per-perk isolated state ----
+
+	// PerkState holds per-perk state structs, keyed by perk ID.
+	// Each perk defines its own state struct and accesses it via GetPerkState/SetPerkState.
+	// Cleared entirely by ResetPerRound; per-battle state uses PerkBattleState instead.
+	PerkState map[string]interface{}
+
+	// PerkBattleState holds per-perk state that persists the entire combat.
+	// Never reset during combat; cleaned up by CleanupRoundState.
+	PerkBattleState map[string]interface{}
 }
 
-// ResetPerTurn resets fields that should clear at the start of each turn.
-// Called before TurnStartHooks run.
+// GetPerkState returns the per-perk round state for the given perk ID, or nil.
+func GetPerkState[T any](s *PerkRoundState, perkID string) T {
+	var zero T
+	if s.PerkState == nil {
+		return zero
+	}
+	v, ok := s.PerkState[perkID]
+	if !ok {
+		return zero
+	}
+	typed, ok := v.(T)
+	if !ok {
+		return zero
+	}
+	return typed
+}
+
+// SetPerkState stores per-perk round state for the given perk ID.
+func SetPerkState(s *PerkRoundState, perkID string, state interface{}) {
+	if s.PerkState == nil {
+		s.PerkState = make(map[string]interface{})
+	}
+	s.PerkState[perkID] = state
+}
+
+// GetBattleState returns the per-perk battle state for the given perk ID, or nil.
+func GetBattleState[T any](s *PerkRoundState, perkID string) T {
+	var zero T
+	if s.PerkBattleState == nil {
+		return zero
+	}
+	v, ok := s.PerkBattleState[perkID]
+	if !ok {
+		return zero
+	}
+	typed, ok := v.(T)
+	if !ok {
+		return zero
+	}
+	return typed
+}
+
+// SetBattleState stores per-perk battle state for the given perk ID.
+func SetBattleState(s *PerkRoundState, perkID string, state interface{}) {
+	if s.PerkBattleState == nil {
+		s.PerkBattleState = make(map[string]interface{})
+	}
+	s.PerkBattleState[perkID] = state
+}
+
+// ---- Per-perk state structs ----
+// Each stateful perk defines a small struct here. Stateless perks need nothing.
+
+// AdaptiveArmorState tracks hits from each attacker this round.
+type AdaptiveArmorState struct {
+	AttackedBy map[ecs.EntityID]int
+}
+
+// BloodlustState tracks kills this round.
+type BloodlustState struct {
+	KillsThisRound int
+}
+
+// DisruptionState tracks which squads have been disrupted this round.
+type DisruptionState struct {
+	Targets map[ecs.EntityID]bool
+}
+
+// OpeningSalvoState tracks whether the squad has attacked this combat.
+type OpeningSalvoState struct {
+	HasAttackedThisCombat bool
+}
+
+// ResoluteState tracks which units have used their resolute save and HP snapshots.
+type ResoluteState struct {
+	Used         map[ecs.EntityID]bool
+	RoundStartHP map[ecs.EntityID]int
+}
+
+// GrudgeBearerState tracks grudge stacks against enemy squads.
+type GrudgeBearerState struct {
+	Stacks map[ecs.EntityID]int
+}
+
+// CounterpunchState tracks whether the perk is armed.
+type CounterpunchState struct {
+	Ready bool
+}
+
+// DeadshotState tracks whether the perk is armed.
+type DeadshotState struct {
+	Ready bool
+}
+
+// MarkedForDeathState tracks which enemy squad is marked.
+type MarkedForDeathState struct {
+	MarkedSquad ecs.EntityID
+}
+
+// OverwatchState is a placeholder for the overwatch perk.
+type OverwatchState struct {
+	Active bool
+}
+
+// ResetPerTurn resets shared tracking fields at the start of each turn.
+// Called before TurnStartHooks run. Per-perk state is NOT reset here —
+// perks manage their own per-turn state in their TurnStart hooks.
 func (s *PerkRoundState) ResetPerTurn() {
 	// Snapshot previous turn state for Counterpunch/Deadshot before clearing
 	s.WasAttackedLastTurn = s.RecklessVulnerable || s.WasAttackedLastTurn
@@ -53,12 +175,10 @@ func (s *PerkRoundState) ResetPerTurn() {
 	s.RecklessVulnerable = false
 }
 
-// ResetPerRound resets fields that should clear at the start of each round.
+// ResetPerRound clears all per-perk round state at the start of each round.
+// Per-battle state (PerkBattleState) is preserved.
 func (s *PerkRoundState) ResetPerRound() {
-	s.AttackedBy = nil
-	s.KillsThisRound = 0
-	s.DisruptionTargets = nil
-	s.OverwatchActive = false
+	s.PerkState = nil
 }
 
 // ECS component variables

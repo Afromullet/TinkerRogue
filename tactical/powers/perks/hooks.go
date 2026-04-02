@@ -51,10 +51,30 @@ type DamageRedirectHook func(ctx *HookContext) (reducedDamage int, redirectTarge
 // Uses ctx.UnitID, ctx.SquadID, ctx.RoundState, ctx.Manager.
 type DeathOverrideHook func(ctx *HookContext) (preventDeath bool)
 
+// StateCategory classifies how a perk uses combat state.
+type StateCategory int
+
+const (
+	StateNone       StateCategory = iota // Pure function of HookContext — no state read or written
+	StateSharedRead                      // Reads shared PerkRoundState tracking fields (e.g., MovedThisTurn)
+	StatePerRound                        // Uses GetPerkState/SetPerkState — resets each round
+	StateBattle                          // Uses GetBattleState/SetBattleState — persists entire combat
+)
+
+// StateRequirements declares what state a perk reads and writes.
+// This is documentation-as-code: the dispatch layer does not enforce these,
+// but they make state coupling explicit at registration time.
+type StateRequirements struct {
+	Category     StateCategory
+	ReadsFields  []string // Shared PerkRoundState fields read, e.g. ["MovedThisTurn"]
+	WritesFields []string // Shared PerkRoundState fields written, e.g. ["RecklessVulnerable"]
+}
+
 // PerkHooks collects all hooks for a single perk.
 // Attacker/Defender variants ensure hooks only fire on the correct side,
 // eliminating the need for HasPerk() self-checks inside behaviors.
 type PerkHooks struct {
+	State StateRequirements // Declares state dependencies (zero value = StateNone = stateless)
 	AttackerDamageMod DamageModHook // runs only when this squad is the attacker
 	DefenderDamageMod DamageModHook // runs only when this squad is the defender
 	DefenderCoverMod  CoverModHook  // runs only when this squad is the defender
