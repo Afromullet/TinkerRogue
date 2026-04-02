@@ -35,11 +35,7 @@ Both systems register in `init()`, both are dispatched from `CombatService` call
 
 ## Problems Identified
 
-### P1: PerkRoundState God-Struct (All 3 agents flagged — highest priority)
 
-`PerkRoundState` has 17+ fields growing linearly with every stateful perk. Reset logic in `ResetPerTurn()`/`ResetPerRound()` is manual — miss one field and you get stale state bugs. At 50+ perks, this becomes unnavigable. Fields like `CounterpunchReady`, `DeadshotReady`, `MarkedSquad` are each used by exactly one perk.
-
-**Comparison:** The artifact system handles this correctly — `ArtifactChargeTracker` uses a generic `map[string]` approach, not per-artifact fields.
 
 ### P2: Artifact Broadcast Dispatch (All 3 agents flagged)
 

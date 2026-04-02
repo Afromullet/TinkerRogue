@@ -1,6 +1,6 @@
 # Perks and Artifacts
 
-- Determine whether there is a better way to integrate perks and artifacts into combat. Want to make it cleaner, rather than have the checks littered throughout the code. 
+- Determine whether there is a better way to integrate perks and artifacts into combat. Want to make it cleaner, rather than have the checks littered throughout the code. It makes the flow harder to follow
 - Then do the same for spells
 
 # Documentation cleanup after perks are wrapped up

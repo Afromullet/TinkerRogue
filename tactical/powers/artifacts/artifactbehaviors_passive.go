@@ -32,9 +32,6 @@ func (EngagementChainsBehavior) OnAttackComplete(ctx *BehaviorContext, attackerI
 	if !result.TargetDestroyed || result.AttackerDestroyed {
 		return
 	}
-	if !HasArtifactBehavior(attackerID, BehaviorEngagementChains, ctx.Manager) {
-		return
-	}
 	actionState := ctx.GetActionState(attackerID)
 	if actionState == nil {
 		return

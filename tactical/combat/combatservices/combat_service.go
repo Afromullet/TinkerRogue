@@ -300,6 +300,9 @@ func setupBehaviorDispatch(cs *CombatService, manager *common.EntityManager, cac
 		return artifacts.NewBehaviorContext(manager, cache, cs.chargeTracker)
 	}
 
+	// OnPostReset remains broadcast: pending-effect behaviors (DeadlockShackles,
+	// SaboteursHourglass) fire on the enemy faction's reset, not the owning
+	// squad's. The pending-effect queue already gates correctness.
 	cs.RegisterPostResetHook(func(factionID ecs.EntityID, squadIDs []ecs.EntityID) {
 		ctx := makeBehaviorContext()
 		for _, b := range artifacts.AllBehaviors() {
@@ -307,13 +310,18 @@ func setupBehaviorDispatch(cs *CombatService, manager *common.EntityManager, cac
 		}
 	})
 
+	// Squad-scoped: only run behaviors equipped on the attacker.
+	// If a future behavior needs to trigger on defender's artifacts,
+	// add a second loop over GetEquippedBehaviors(defenderID, manager).
 	cs.RegisterOnAttackComplete(func(attackerID, defenderID ecs.EntityID, result *combatcore.CombatResult) {
 		ctx := makeBehaviorContext()
-		for _, b := range artifacts.AllBehaviors() {
+		for _, b := range artifacts.GetEquippedBehaviors(attackerID, manager) {
 			b.OnAttackComplete(ctx, attackerID, defenderID, result)
 		}
 	})
 
+	// OnTurnEnd remains broadcast: no behaviors override it currently.
+	// RefreshRoundCharges is global (not per-squad).
 	cs.RegisterOnTurnEnd(func(round int) {
 		if cs.chargeTracker != nil {
 			cs.chargeTracker.RefreshRoundCharges()
