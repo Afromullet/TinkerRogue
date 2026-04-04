@@ -74,6 +74,20 @@ func GetPerkState[T any](s *PerkRoundState, perkID string) T {
 	return typed
 }
 
+// GetOrInitPerkState returns existing per-perk round state, or initializes it via initFn.
+func GetOrInitPerkState[T any](s *PerkRoundState, perkID string, initFn func() T) T {
+	if s.PerkState != nil {
+		if v, ok := s.PerkState[perkID]; ok {
+			if typed, ok := v.(T); ok {
+				return typed
+			}
+		}
+	}
+	state := initFn()
+	SetPerkState(s, perkID, state)
+	return state
+}
+
 // SetPerkState stores per-perk round state for the given perk ID.
 func SetPerkState(s *PerkRoundState, perkID string, state interface{}) {
 	if s.PerkState == nil {
@@ -97,6 +111,20 @@ func GetBattleState[T any](s *PerkRoundState, perkID string) T {
 		return zero
 	}
 	return typed
+}
+
+// GetOrInitBattleState returns existing per-perk battle state, or initializes it via initFn.
+func GetOrInitBattleState[T any](s *PerkRoundState, perkID string, initFn func() T) T {
+	if s.PerkBattleState != nil {
+		if v, ok := s.PerkBattleState[perkID]; ok {
+			if typed, ok := v.(T); ok {
+				return typed
+			}
+		}
+	}
+	state := initFn()
+	SetBattleState(s, perkID, state)
+	return state
 }
 
 // SetBattleState stores per-perk battle state for the given perk ID.

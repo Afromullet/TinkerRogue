@@ -50,14 +50,12 @@ func openingSalvoDamageMod(ctx *HookContext, modifiers *combatcore.DamageModifie
 // resoluteTurnStart snapshots current HP for the resolute death-save check.
 // State: writes ResoluteState.RoundStartHP via GetBattleState/SetBattleState (per-battle).
 func resoluteTurnStart(ctx *HookContext) {
-	state := GetBattleState[*ResoluteState](ctx.RoundState, "resolute")
-	if state == nil {
-		state = &ResoluteState{
+	state := GetOrInitBattleState(ctx.RoundState, "resolute", func() *ResoluteState {
+		return &ResoluteState{
 			Used:         make(map[ecs.EntityID]bool),
 			RoundStartHP: make(map[ecs.EntityID]int),
 		}
-		SetBattleState(ctx.RoundState, "resolute", state)
-	}
+	})
 	unitIDs := squadcore.GetUnitIDsInSquad(ctx.SquadID, ctx.Manager)
 	for _, uid := range unitIDs {
 		attr := common.GetComponentTypeByID[*common.Attributes](
@@ -103,11 +101,9 @@ func grudgeBearerPostDamage(ctx *HookContext, damageDealt int, wasKill bool) {
 	if damageDealt <= 0 {
 		return
 	}
-	state := GetBattleState[*GrudgeBearerState](ctx.RoundState, "grudge_bearer")
-	if state == nil {
-		state = &GrudgeBearerState{Stacks: make(map[ecs.EntityID]int)}
-		SetBattleState(ctx.RoundState, "grudge_bearer", state)
-	}
+	state := GetOrInitBattleState(ctx.RoundState, "grudge_bearer", func() *GrudgeBearerState {
+		return &GrudgeBearerState{Stacks: make(map[ecs.EntityID]int)}
+	})
 	current := state.Stacks[ctx.AttackerSquadID]
 	if current < 2 {
 		state.Stacks[ctx.AttackerSquadID] = current + 1

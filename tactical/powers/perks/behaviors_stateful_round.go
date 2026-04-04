@@ -203,20 +203,16 @@ func disruptionPostDamage(ctx *HookContext, damageDealt int, wasKill bool) {
 	if damageDealt <= 0 {
 		return
 	}
-	state := GetPerkState[*DisruptionState](ctx.RoundState, "disruption")
-	if state == nil {
-		state = &DisruptionState{Targets: make(map[ecs.EntityID]bool)}
-		SetPerkState(ctx.RoundState, "disruption", state)
-	}
+	state := GetOrInitPerkState(ctx.RoundState, "disruption", func() *DisruptionState {
+		return &DisruptionState{Targets: make(map[ecs.EntityID]bool)}
+	})
 	state.Targets[ctx.DefenderSquadID] = true
 
 	defenderRoundState := GetRoundState(ctx.DefenderSquadID, ctx.Manager)
 	if defenderRoundState != nil {
-		defState := GetPerkState[*DisruptionState](defenderRoundState, "disruption")
-		if defState == nil {
-			defState = &DisruptionState{Targets: make(map[ecs.EntityID]bool)}
-			SetPerkState(defenderRoundState, "disruption", defState)
-		}
+		defState := GetOrInitPerkState(defenderRoundState, "disruption", func() *DisruptionState {
+			return &DisruptionState{Targets: make(map[ecs.EntityID]bool)}
+		})
 		defState.Targets[ctx.AttackerSquadID] = true
 	}
 }
@@ -224,11 +220,9 @@ func disruptionPostDamage(ctx *HookContext, damageDealt int, wasKill bool) {
 // adaptiveArmorDamageMod reduces damage from repeated attackers.
 // State: reads/writes AdaptiveArmorState via GetPerkState/SetPerkState (per-round).
 func adaptiveArmorDamageMod(ctx *HookContext, modifiers *combatcore.DamageModifiers) {
-	state := GetPerkState[*AdaptiveArmorState](ctx.RoundState, "adaptive_armor")
-	if state == nil {
-		state = &AdaptiveArmorState{AttackedBy: make(map[ecs.EntityID]int)}
-		SetPerkState(ctx.RoundState, "adaptive_armor", state)
-	}
+	state := GetOrInitPerkState(ctx.RoundState, "adaptive_armor", func() *AdaptiveArmorState {
+		return &AdaptiveArmorState{AttackedBy: make(map[ecs.EntityID]int)}
+	})
 	hits := state.AttackedBy[ctx.AttackerSquadID]
 	if hits > 3 {
 		hits = 3
@@ -244,11 +238,9 @@ func adaptiveArmorDamageMod(ctx *HookContext, modifiers *combatcore.DamageModifi
 // State: writes BloodlustState via SetPerkState (per-round).
 func bloodlustPostDamage(ctx *HookContext, damageDealt int, wasKill bool) {
 	if wasKill {
-		state := GetPerkState[*BloodlustState](ctx.RoundState, "bloodlust")
-		if state == nil {
-			state = &BloodlustState{}
-			SetPerkState(ctx.RoundState, "bloodlust", state)
-		}
+		state := GetOrInitPerkState(ctx.RoundState, "bloodlust", func() *BloodlustState {
+			return &BloodlustState{}
+		})
 		state.KillsThisRound++
 	}
 }
