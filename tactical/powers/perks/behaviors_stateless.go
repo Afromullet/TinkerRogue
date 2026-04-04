@@ -8,6 +8,8 @@
 package perks
 
 import (
+	"math"
+
 	"game_main/common"
 	"game_main/tactical/combat/combatcore"
 	"game_main/tactical/squads/squadcore"
@@ -36,7 +38,7 @@ func init() {
 
 // Brace for Impact: +15% cover bonus when defending
 func braceForImpactCoverMod(ctx *HookContext, coverBreakdown *combatcore.CoverBreakdown) {
-	coverBreakdown.TotalReduction += 0.15
+	coverBreakdown.TotalReduction += PerkBalance.BraceForImpact.CoverBonus
 	if coverBreakdown.TotalReduction > 1.0 {
 		coverBreakdown.TotalReduction = 1.0
 	}
@@ -51,8 +53,8 @@ func executionerDamageMod(ctx *HookContext, modifiers *combatcore.DamageModifier
 			continue
 		}
 		maxHP := attr.GetMaxHealth()
-		if maxHP > 0 && float64(attr.CurrentHealth)/float64(maxHP) < 0.3 {
-			modifiers.CritBonus += 25
+		if maxHP > 0 && float64(attr.CurrentHealth)/float64(maxHP) < PerkBalance.ExecutionersInstinct.HPThreshold {
+			modifiers.CritBonus += PerkBalance.ExecutionersInstinct.CritBonus
 			return
 		}
 	}
@@ -80,11 +82,11 @@ func shieldwallDamageMod(ctx *HookContext, modifiers *combatcore.DamageModifiers
 			tankCount++
 		}
 	}
-	if tankCount > 3 {
-		tankCount = 3
+	if tankCount > PerkBalance.ShieldwallDiscipline.MaxTanks {
+		tankCount = PerkBalance.ShieldwallDiscipline.MaxTanks
 	}
 	if tankCount > 0 {
-		reduction := float64(tankCount) * 0.05
+		reduction := float64(tankCount) * PerkBalance.ShieldwallDiscipline.PerTankReduction
 		modifiers.DamageMultiplier *= (1.0 - reduction)
 	}
 }
@@ -112,11 +114,11 @@ func isolatedPredatorDamageMod(ctx *HookContext, modifiers *combatcore.DamageMod
 		if friendlyPos == nil {
 			continue
 		}
-		if squadPos.ChebyshevDistance(friendlyPos) <= 3 {
+		if squadPos.ChebyshevDistance(friendlyPos) <= PerkBalance.IsolatedPredator.Range {
 			return
 		}
 	}
-	modifiers.DamageMultiplier *= 1.25
+	modifiers.DamageMultiplier *= PerkBalance.IsolatedPredator.DamageMult
 }
 
 // Vigilance: Crits become normal hits
@@ -128,7 +130,7 @@ func vigilanceDamageMod(ctx *HookContext, modifiers *combatcore.DamageModifiers)
 func fieldMedicTurnStart(ctx *HookContext) {
 	unitIDs := squadcore.GetUnitIDsInSquad(ctx.SquadID, ctx.Manager)
 	var lowestID ecs.EntityID
-	lowestHP := 999999
+	lowestHP := math.MaxInt
 
 	for _, uid := range unitIDs {
 		attr := common.GetComponentTypeByID[*common.Attributes](
@@ -146,7 +148,7 @@ func fieldMedicTurnStart(ctx *HookContext) {
 		)
 		if attr != nil {
 			maxHP := attr.GetMaxHealth()
-			healAmount := maxHP / 10
+			healAmount := maxHP / PerkBalance.FieldMedic.HealPercent
 			if healAmount < 1 {
 				healAmount = 1
 			}
@@ -166,8 +168,8 @@ func lastLineDamageMod(ctx *HookContext, modifiers *combatcore.DamageModifiers) 
 	}
 	aliveSquads := combatcore.GetActiveSquadsForFaction(faction, ctx.Manager)
 	if len(aliveSquads) == 1 && aliveSquads[0] == ctx.AttackerSquadID {
-		modifiers.DamageMultiplier *= 1.2
-		modifiers.HitPenalty -= 20
+		modifiers.DamageMultiplier *= PerkBalance.LastLine.DamageMult
+		modifiers.HitPenalty -= PerkBalance.LastLine.HitBonus
 	}
 }
 
@@ -203,7 +205,7 @@ func cleaveDamageMod(ctx *HookContext, modifiers *combatcore.DamageModifiers) {
 		ctx.Manager, ctx.AttackerID, squadcore.TargetRowComponent,
 	)
 	if targetData != nil && targetData.AttackType == unitdefs.AttackTypeMeleeRow {
-		modifiers.DamageMultiplier *= 0.7
+		modifiers.DamageMultiplier *= PerkBalance.Cleave.DamageMult
 	}
 }
 
@@ -257,7 +259,7 @@ func guardianDamageRedirect(ctx *HookContext) (int, ecs.EntityID, int) {
 			}
 			roleData := common.GetComponentType[*squadcore.UnitRoleData](entity, squadcore.UnitRoleComponent)
 			if roleData != nil && roleData.Role == unitdefs.RoleTank {
-				guardianDmg := damageAmount / 4
+				guardianDmg := damageAmount / PerkBalance.GuardianProtocol.RedirectFraction
 				remainingDmg := damageAmount - guardianDmg
 				return remainingDmg, unitID, guardianDmg
 			}
@@ -301,7 +303,7 @@ func precisionStrikeTargetOverride(ctx *HookContext, defaultTargets []ecs.Entity
 
 	enemyUnits := squadcore.GetUnitIDsInSquad(ctx.DefenderSquadID, ctx.Manager)
 	var lowestHPID ecs.EntityID
-	lowestHP := 999999
+	lowestHP := math.MaxInt
 	for _, uid := range enemyUnits {
 		attr := squadcore.GetAliveUnitAttributes(uid, ctx.Manager)
 		if attr == nil {

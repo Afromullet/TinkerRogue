@@ -100,7 +100,7 @@ func recklessAssaultAttackerMod(ctx *HookContext, modifiers *combatcore.DamageMo
 	if modifiers.IsCounterattack {
 		return
 	}
-	modifiers.DamageMultiplier *= 1.3
+	modifiers.DamageMultiplier *= PerkBalance.RecklessAssault.AttackerMult
 	ctx.RoundState.RecklessVulnerable = true
 }
 
@@ -108,7 +108,7 @@ func recklessAssaultAttackerMod(ctx *HookContext, modifiers *combatcore.DamageMo
 // State: reads PerkRoundState.RecklessVulnerable (shared tracking).
 func recklessAssaultDefenderMod(ctx *HookContext, modifiers *combatcore.DamageModifiers) {
 	if ctx.RoundState.RecklessVulnerable {
-		modifiers.DamageMultiplier *= 1.2
+		modifiers.DamageMultiplier *= PerkBalance.RecklessAssault.DefenderMult
 	}
 }
 
@@ -127,7 +127,7 @@ func fortifyTurnStart(ctx *HookContext) {
 	if ctx.RoundState.MovedThisTurn {
 		ctx.RoundState.TurnsStationary = 0
 	} else {
-		if ctx.RoundState.TurnsStationary < 3 {
+		if ctx.RoundState.TurnsStationary < PerkBalance.Fortify.MaxStationaryTurns {
 			ctx.RoundState.TurnsStationary++
 		}
 	}
@@ -137,7 +137,7 @@ func fortifyTurnStart(ctx *HookContext) {
 // State: reads PerkRoundState.TurnsStationary (shared tracking).
 func fortifyCoverMod(ctx *HookContext, coverBreakdown *combatcore.CoverBreakdown) {
 	if ctx.RoundState.TurnsStationary > 0 {
-		bonus := float64(ctx.RoundState.TurnsStationary) * 0.05
+		bonus := float64(ctx.RoundState.TurnsStationary) * PerkBalance.Fortify.PerTurnCoverBonus
 		coverBreakdown.TotalReduction += bonus
 		if coverBreakdown.TotalReduction > 1.0 {
 			coverBreakdown.TotalReduction = 1.0
@@ -163,7 +163,7 @@ func counterpunchTurnStart(ctx *HookContext) {
 func counterpunchDamageMod(ctx *HookContext, modifiers *combatcore.DamageModifiers) {
 	state := GetPerkState[*CounterpunchState](ctx.RoundState, "counterpunch")
 	if state != nil && state.Ready {
-		modifiers.DamageMultiplier *= 1.4
+		modifiers.DamageMultiplier *= PerkBalance.Counterpunch.DamageMult
 		state.Ready = false
 	}
 }
@@ -191,8 +191,8 @@ func deadshotDamageMod(ctx *HookContext, modifiers *combatcore.DamageModifiers) 
 		return
 	}
 	if targetData.AttackType == unitdefs.AttackTypeRanged || targetData.AttackType == unitdefs.AttackTypeMagic {
-		modifiers.DamageMultiplier *= 1.5
-		modifiers.HitPenalty -= 20
+		modifiers.DamageMultiplier *= PerkBalance.DeadshotsPatience.DamageMult
+		modifiers.HitPenalty -= PerkBalance.DeadshotsPatience.AccuracyBonus
 		state.Ready = false
 	}
 }
@@ -224,11 +224,11 @@ func adaptiveArmorDamageMod(ctx *HookContext, modifiers *combatcore.DamageModifi
 		return &AdaptiveArmorState{AttackedBy: make(map[ecs.EntityID]int)}
 	})
 	hits := state.AttackedBy[ctx.AttackerSquadID]
-	if hits > 3 {
-		hits = 3
+	if hits > PerkBalance.AdaptiveArmor.MaxHits {
+		hits = PerkBalance.AdaptiveArmor.MaxHits
 	}
 	if hits > 0 {
-		reduction := float64(hits) * 0.10
+		reduction := float64(hits) * PerkBalance.AdaptiveArmor.PerHitReduction
 		modifiers.DamageMultiplier *= (1.0 - reduction)
 	}
 	state.AttackedBy[ctx.AttackerSquadID]++
@@ -250,7 +250,7 @@ func bloodlustPostDamage(ctx *HookContext, damageDealt int, wasKill bool) {
 func bloodlustDamageMod(ctx *HookContext, modifiers *combatcore.DamageModifiers) {
 	state := GetPerkState[*BloodlustState](ctx.RoundState, "bloodlust")
 	if state != nil && state.KillsThisRound > 0 {
-		bonus := 1.0 + float64(state.KillsThisRound)*0.15
+		bonus := 1.0 + float64(state.KillsThisRound)*PerkBalance.Bloodlust.PerKillBonus
 		modifiers.DamageMultiplier *= bonus
 	}
 }
@@ -270,7 +270,7 @@ func markedForDeathDamageMod(ctx *HookContext, modifiers *combatcore.DamageModif
 		}
 		state := GetPerkState[*MarkedForDeathState](friendlyRoundState, "marked_for_death")
 		if state != nil && state.MarkedSquad == ctx.DefenderSquadID {
-			modifiers.DamageMultiplier *= 1.25
+			modifiers.DamageMultiplier *= PerkBalance.MarkedForDeath.DamageMult
 			state.MarkedSquad = 0
 			return
 		}

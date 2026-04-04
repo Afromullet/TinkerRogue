@@ -35,6 +35,7 @@ func NewGameBootstrap() *GameBootstrap {
 func (gb *GameBootstrap) LoadGameData() {
 	templates.ReadGameData()
 	perks.LoadPerkDefinitions()
+	perks.LoadPerkBalanceConfig()
 }
 
 // InitializeCoreECS initializes the ECS world and global systems.

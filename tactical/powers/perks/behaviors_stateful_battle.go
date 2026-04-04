@@ -43,7 +43,7 @@ func openingSalvoDamageMod(ctx *HookContext, modifiers *combatcore.DamageModifie
 	if state != nil && state.HasAttackedThisCombat {
 		return
 	}
-	modifiers.DamageMultiplier *= 1.35
+	modifiers.DamageMultiplier *= PerkBalance.OpeningSalvo.DamageMult
 	SetBattleState(ctx.RoundState, "opening_salvo", &OpeningSalvoState{HasAttackedThisCombat: true})
 }
 
@@ -88,7 +88,7 @@ func resoluteDeathOverride(ctx *HookContext) bool {
 		return false
 	}
 	maxHP := attr.GetMaxHealth()
-	if maxHP > 0 && float64(roundStartHP)/float64(maxHP) > 0.5 {
+	if maxHP > 0 && float64(roundStartHP)/float64(maxHP) > PerkBalance.Resolute.HPThreshold {
 		state.Used[ctx.UnitID] = true
 		return true
 	}
@@ -105,7 +105,7 @@ func grudgeBearerPostDamage(ctx *HookContext, damageDealt int, wasKill bool) {
 		return &GrudgeBearerState{Stacks: make(map[ecs.EntityID]int)}
 	})
 	current := state.Stacks[ctx.AttackerSquadID]
-	if current < 2 {
+	if current < PerkBalance.GrudgeBearer.MaxStacks {
 		state.Stacks[ctx.AttackerSquadID] = current + 1
 	}
 }
@@ -117,7 +117,7 @@ func grudgeBearerDamageMod(ctx *HookContext, modifiers *combatcore.DamageModifie
 	if state != nil {
 		stacks := state.Stacks[ctx.DefenderSquadID]
 		if stacks > 0 {
-			bonus := 1.0 + float64(stacks)*0.20
+			bonus := 1.0 + float64(stacks)*PerkBalance.GrudgeBearer.PerStackBonus
 			modifiers.DamageMultiplier *= bonus
 		}
 	}
