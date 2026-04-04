@@ -39,9 +39,30 @@ func CalculateDamage(attackerID, defenderID ecs.EntityID, modifiers combattypes.
 		return 0, event
 	}
 
+	// Hit and dodge resolution
+	if missed := resolveHitAndDodge(attackerAttr, defenderAttr, modifiers, event); missed {
+		return 0, event
+	}
+
+	// Base damage and crit
+	baseDamage, resistance := calculateBaseDamageAndCrit(attackerID, attackerAttr, defenderAttr, modifiers, event, squadmanager)
+
+	// Resistance, cover, and final damage
+	totalDamage := applyResistanceAndCover(attackerID, defenderID, baseDamage, resistance, modifiers, callbacks, event, squadmanager)
+
+	event.FinalDamage = totalDamage
+	event.DefenderHPAfter = defenderAttr.CurrentHealth - totalDamage
+	if event.DefenderHPAfter <= 0 {
+		event.WasKilled = true
+	}
+
+	return totalDamage, event
+}
+
+// resolveHitAndDodge performs hit and dodge rolls. Returns true if the attack missed or was dodged.
+func resolveHitAndDodge(attackerAttr, defenderAttr *common.Attributes, modifiers combattypes.DamageModifiers, event *combattypes.AttackEvent) bool {
 	// Hit roll with optional penalty
-	baseHitThreshold := attackerAttr.GetHitRate()
-	hitThreshold := baseHitThreshold - modifiers.HitPenalty
+	hitThreshold := attackerAttr.GetHitRate() - modifiers.HitPenalty
 	if hitThreshold < 0 {
 		hitThreshold = 0
 	}
@@ -52,7 +73,7 @@ func CalculateDamage(attackerID, defenderID ecs.EntityID, modifiers combattypes.
 
 	if !didHit {
 		event.HitResult.Type = combattypes.HitTypeMiss
-		return 0, event
+		return true
 	}
 
 	// Dodge roll
@@ -63,13 +84,20 @@ func CalculateDamage(attackerID, defenderID ecs.EntityID, modifiers combattypes.
 
 	if wasDodged {
 		event.HitResult.Type = combattypes.HitTypeDodge
-		return 0, event
+		return true
 	}
 
-	// Get attacker's attack type to determine damage formula
+	return false
+}
+
+// calculateBaseDamageAndCrit determines base damage (physical vs magic), applies crit roll and damage multiplier.
+// Returns the modified base damage and the defender's resistance value.
+func calculateBaseDamageAndCrit(attackerID ecs.EntityID, attackerAttr, defenderAttr *common.Attributes,
+	modifiers combattypes.DamageModifiers, event *combattypes.AttackEvent, squadmanager *common.EntityManager) (int, int) {
+
+	// Determine physical vs magic based on attack type
 	attackerTargetData := common.GetComponentTypeByID[*squadcore.TargetRowData](squadmanager, attackerID, squadcore.TargetRowComponent)
 
-	// Calculate base damage based on attack type
 	var baseDamage int
 	var resistance int
 
@@ -101,12 +129,10 @@ func CalculateDamage(attackerID, defenderID ecs.EntityID, modifiers combattypes.
 			baseDamage = int(float64(baseDamage) * 1.5)
 			event.CritMultiplier = 1.5
 			event.HitResult.Type = combattypes.HitTypeCritical
+		} else if modifiers.IsCounterattack {
+			event.HitResult.Type = combattypes.HitTypeCounterattack
 		} else {
-			if modifiers.IsCounterattack {
-				event.HitResult.Type = combattypes.HitTypeCounterattack
-			} else {
-				event.HitResult.Type = combattypes.HitTypeNormal
-			}
+			event.HitResult.Type = combattypes.HitTypeNormal
 		}
 	}
 
@@ -115,6 +141,14 @@ func CalculateDamage(attackerID, defenderID ecs.EntityID, modifiers combattypes.
 	if baseDamage < 1 {
 		baseDamage = 1
 	}
+
+	return baseDamage, resistance
+}
+
+// applyResistanceAndCover subtracts resistance, calculates cover reduction (with perk hooks), and returns final damage.
+func applyResistanceAndCover(attackerID, defenderID ecs.EntityID, baseDamage, resistance int,
+	modifiers combattypes.DamageModifiers, callbacks *combattypes.PerkCallbacks,
+	event *combattypes.AttackEvent, squadmanager *common.EntityManager) int {
 
 	// Apply resistance
 	event.ResistanceAmount = resistance
@@ -148,13 +182,7 @@ func CalculateDamage(attackerID, defenderID ecs.EntityID, modifiers combattypes.
 		}
 	}
 
-	event.FinalDamage = totalDamage
-	event.DefenderHPAfter = defenderAttr.CurrentHealth - totalDamage
-	if event.DefenderHPAfter <= 0 {
-		event.WasKilled = true
-	}
-
-	return totalDamage, event
+	return totalDamage
 }
 
 // RecordDamageToUnit records damage in the combat result without modifying HP (pure calculation)
