@@ -47,7 +47,7 @@ func (cas *CombatActionSystem) SetPerkCallbacks(callbacks *PerkCallbacks) {
 
 func (cas *CombatActionSystem) ExecuteAttackAction(attackerID, defenderID ecs.EntityID) *CombatResult {
 
-	//Validation
+	// Validation
 	reason, canAttack := cas.canSquadAttackWithReason(attackerID, defenderID)
 	if !canAttack {
 		return &CombatResult{
@@ -55,8 +55,6 @@ func (cas *CombatActionSystem) ExecuteAttackAction(attackerID, defenderID ecs.En
 			ErrorReason: reason,
 		}
 	}
-
-	// Main Attack calculation
 
 	result := &CombatResult{
 		DamageByUnit:  make(map[ecs.EntityID]int),
@@ -77,12 +75,21 @@ func (cas *CombatActionSystem) ExecuteAttackAction(attackerID, defenderID ecs.En
 	combatLog.AttackingUnits = SnapshotAttackingUnits(attackerID, combatLog.SquadDistance, cas.manager)
 	combatLog.DefendingUnits = SnapshotAllUnits(defenderID, cas.manager)
 
-	// Process each attacking unit
+	// Execute combat phases
+	attackIndex := cas.executeMainAttack(attackerID, defenderID, result, combatLog)
+	_ = cas.executeCounterattack(attackerID, defenderID, result, combatLog, attackIndex)
+	cas.applyPostCombatEffects(attackerID, defenderID, result, combatLog)
+
+	return result
+}
+
+// executeMainAttack processes each attacking unit's action (attack or heal).
+// Returns the final attack index for sequencing subsequent events.
+func (cas *CombatActionSystem) executeMainAttack(attackerID, defenderID ecs.EntityID, result *CombatResult, combatLog *CombatLog) int {
 	attackIndex := 0
 	attackerUnitIDs := squadcore.GetUnitIDsInSquad(attackerID, cas.manager)
 
 	for _, attackerUnitID := range attackerUnitIDs {
-		// Check if unit can attack (alive, can act, and in range)
 		if !CanUnitAttack(attackerUnitID, combatLog.SquadDistance, cas.manager) {
 			continue
 		}
@@ -96,9 +103,13 @@ func (cas *CombatActionSystem) ExecuteAttackAction(attackerID, defenderID ecs.En
 		}
 	}
 
-	// Counterattack
+	return attackIndex
+}
 
-	// Check if defender would survive the main attack (checking HP after predicted damage)
+// executeCounterattack handles the defender's counterattack phase.
+// Checks survival, applies perk modifiers, filters eligible units, and processes their actions.
+func (cas *CombatActionSystem) executeCounterattack(attackerID, defenderID ecs.EntityID, result *CombatResult, combatLog *CombatLog, attackIndex int) int {
+	// Check if defender would survive the main attack
 	defenderWouldSurvive := squadcore.WouldSquadSurvive(defenderID, result.DamageByUnit, cas.manager)
 
 	// Build counterattack modifiers (may be modified by perk hooks)
@@ -114,56 +125,64 @@ func (cas *CombatActionSystem) ExecuteAttackAction(attackerID, defenderID ecs.En
 		skipCounter = cas.perkCallbacks.CounterMod(defenderID, attackerID, &counterModifiers, cas.manager)
 	}
 
-	if defenderWouldSurvive && !skipCounter && !counterModifiers.SkipCounter {
-		// Get defender units that are alive and in range (already filtered)
-		counterattackers := cas.getCounterattackingUnits(defenderID, attackerID)
+	if !defenderWouldSurvive || skipCounter || counterModifiers.SkipCounter {
+		return attackIndex
+	}
 
-		for _, counterAttackerID := range counterattackers {
-			// Additional check: would this unit survive the main attack damage?
-			damageToThisUnit := result.DamageByUnit[counterAttackerID]
-			if damageToThisUnit > 0 {
-				entity := cas.manager.FindEntityByID(counterAttackerID)
-				if entity == nil {
-					continue
-				}
-				attr := common.GetComponentType[*common.Attributes](entity, common.AttributeComponent)
-				if attr == nil || attr.CurrentHealth-damageToThisUnit <= 0 {
-					continue
-				}
-			}
+	counterattackers := cas.getCounterattackingUnits(defenderID, attackerID)
 
-			if IsHealUnit(counterAttackerID, cas.manager) {
-				healTargets := SelectHealTargets(counterAttackerID, defenderID, cas.manager)
-				attackIndex = ProcessHealOnTargets(counterAttackerID, healTargets, result, combatLog, attackIndex, cas.manager)
-			} else {
-				targetIDs := SelectTargetUnits(counterAttackerID, attackerID, cas.manager)
-				attackIndex = ProcessCounterattackOnTargets(counterAttackerID, attackerID, targetIDs, result, combatLog, attackIndex, counterModifiers, cas.perkCallbacks, cas.manager)
-			}
+	for _, counterAttackerID := range counterattackers {
+		if !cas.wouldUnitSurviveDamage(counterAttackerID, result) {
+			continue
+		}
+
+		if IsHealUnit(counterAttackerID, cas.manager) {
+			healTargets := SelectHealTargets(counterAttackerID, defenderID, cas.manager)
+			attackIndex = ProcessHealOnTargets(counterAttackerID, healTargets, result, combatLog, attackIndex, cas.manager)
+		} else {
+			targetIDs := SelectTargetUnits(counterAttackerID, attackerID, cas.manager)
+			attackIndex = ProcessCounterattackOnTargets(counterAttackerID, attackerID, targetIDs, result, combatLog, attackIndex, counterModifiers, cas.perkCallbacks, cas.manager)
 		}
 	}
 
+	return attackIndex
+}
+
+// wouldUnitSurviveDamage checks if a unit would survive the damage already recorded against it.
+func (cas *CombatActionSystem) wouldUnitSurviveDamage(unitID ecs.EntityID, result *CombatResult) bool {
+	damageToUnit := result.DamageByUnit[unitID]
+	if damageToUnit <= 0 {
+		return true
+	}
+
+	entity := cas.manager.FindEntityByID(unitID)
+	if entity == nil {
+		return false
+	}
+
+	attr := common.GetComponentType[*common.Attributes](entity, common.AttributeComponent)
+	return attr != nil && attr.CurrentHealth-damageToUnit > 0
+}
+
+// applyPostCombatEffects finalizes the combat log, applies damage/healing, handles squad
+// destruction, triggers abilities, and fires the post-attack hook.
+func (cas *CombatActionSystem) applyPostCombatEffects(attackerID, defenderID ecs.EntityID, result *CombatResult, combatLog *CombatLog) {
 	// Finalize combat log with summary statistics
 	FinalizeCombatLog(result, combatLog, defenderID, attackerID, cas.manager)
 	result.CombatLog = combatLog
 
-	// Determine Destruction Status
-
-	// Predict destruction based on recorded damage (before applying)
-	// Reuse defenderWouldSurvive from Phase 3 (already calculated)
+	// Determine destruction status (before applying damage)
 	attackerDestroyed := !squadcore.WouldSquadSurvive(attackerID, result.DamageByUnit, cas.manager)
-	defenderDestroyed := !defenderWouldSurvive // Reuse cached value
+	defenderDestroyed := !squadcore.WouldSquadSurvive(defenderID, result.DamageByUnit, cas.manager)
 
 	result.TargetDestroyed = defenderDestroyed
 	result.AttackerDestroyed = attackerDestroyed
 
-	// post combat
-
-	// Apply all recorded damage to unit HP (STATE MODIFICATION STARTS HERE)
+	// Apply all recorded damage and healing (STATE MODIFICATION STARTS HERE)
 	ApplyRecordedDamage(result, cas.manager)
-	// Apply healing after damage so healers can offset damage taken this round
 	ApplyRecordedHealing(result, cas.manager)
 
-	// Mark attacker squad as acted (turn state modification)
+	// Mark attacker squad as acted
 	combatstate.MarkSquadAsActed(cas.combatCache, attackerID, cas.manager)
 
 	// Record combat log for export (if enabled)
@@ -175,31 +194,26 @@ func (cas *CombatActionSystem) ExecuteAttackAction(attackerID, defenderID ecs.En
 	if attackerDestroyed {
 		RemoveSquadFromMap(attackerID, cas.manager)
 	}
-
 	if defenderDestroyed {
 		RemoveSquadFromMap(defenderID, cas.manager)
 	}
 
-	// Trigger abilities for surviving squads
+	// Trigger abilities and dispose dead units for surviving squads
 	if !attackerDestroyed {
 		CheckAndTriggerAbilities(attackerID, cas.manager)
 		squadcore.DisposeDeadUnitsInSquad(attackerID, cas.manager)
 	}
-
 	if !defenderDestroyed {
 		CheckAndTriggerAbilities(defenderID, cas.manager)
 		squadcore.DisposeDeadUnitsInSquad(defenderID, cas.manager)
 	}
 
-	// Mark as successful
 	result.Success = true
 
 	// Fire post-attack hook
 	if cas.onAttackComplete != nil {
 		cas.onAttackComplete(attackerID, defenderID, result)
 	}
-
-	return result
 }
 
 // getSquadAttackRange returns the maximum attack range of any unit in the squad
