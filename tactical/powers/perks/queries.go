@@ -127,8 +127,8 @@ func RunAttackerPostDamageHooks(attackerID, defenderID, attackerSquadID, defende
 	ctx.AttackerSquadID = attackerSquadID
 	ctx.DefenderSquadID = defenderSquadID
 	forEachPerkHook(attackerSquadID, manager, func(hooks *PerkHooks) bool {
-		if hooks.PostDamage != nil {
-			hooks.PostDamage(ctx, damageDealt, wasKill)
+		if hooks.AttackerPostDamage != nil {
+			hooks.AttackerPostDamage(ctx, damageDealt, wasKill)
 		}
 		return true
 	})
@@ -146,8 +146,8 @@ func RunDefenderPostDamageHooks(attackerID, defenderID, attackerSquadID, defende
 	ctx.AttackerSquadID = attackerSquadID
 	ctx.DefenderSquadID = defenderSquadID
 	forEachPerkHook(defenderSquadID, manager, func(hooks *PerkHooks) bool {
-		if hooks.PostDamage != nil {
-			hooks.PostDamage(ctx, damageDealt, wasKill)
+		if hooks.DefenderPostDamage != nil {
+			hooks.DefenderPostDamage(ctx, damageDealt, wasKill)
 		}
 		return true
 	})

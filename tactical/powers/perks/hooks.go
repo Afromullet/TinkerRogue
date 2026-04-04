@@ -80,7 +80,8 @@ type PerkHooks struct {
 	DefenderCoverMod  CoverModHook  // runs only when this squad is the defender
 	TargetOverride    TargetOverrideHook
 	CounterMod        CounterModHook
-	PostDamage        PostDamageHook
+	AttackerPostDamage PostDamageHook // runs only when this squad is the attacker
+	DefenderPostDamage PostDamageHook // runs only when this squad is the defender
 	TurnStart         TurnStartHook
 	DamageRedirect    DamageRedirectHook
 	DeathOverride     DeathOverrideHook

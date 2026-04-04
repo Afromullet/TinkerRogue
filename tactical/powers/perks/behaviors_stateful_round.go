@@ -68,17 +68,17 @@ func init() {
 		AttackerDamageMod: deadshotDamageMod,
 	})
 	RegisterPerkHooks("disruption", &PerkHooks{
-		State:      StateRequirements{Category: StatePerRound},
-		PostDamage: disruptionPostDamage,
+		State:              StateRequirements{Category: StatePerRound},
+		AttackerPostDamage: disruptionPostDamage,
 	})
 	RegisterPerkHooks("adaptive_armor", &PerkHooks{
 		State:             StateRequirements{Category: StatePerRound},
 		DefenderDamageMod: adaptiveArmorDamageMod,
 	})
 	RegisterPerkHooks("bloodlust", &PerkHooks{
-		State:             StateRequirements{Category: StatePerRound},
-		PostDamage:        bloodlustPostDamage,
-		AttackerDamageMod: bloodlustDamageMod,
+		State:              StateRequirements{Category: StatePerRound},
+		AttackerPostDamage: bloodlustPostDamage,
+		AttackerDamageMod:  bloodlustDamageMod,
 	})
 	RegisterPerkHooks("marked_for_death", &PerkHooks{
 		State:             StateRequirements{Category: StatePerRound},

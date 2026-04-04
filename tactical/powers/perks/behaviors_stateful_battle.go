@@ -27,9 +27,9 @@ func init() {
 		DeathOverride: resoluteDeathOverride,
 	})
 	RegisterPerkHooks("grudge_bearer", &PerkHooks{
-		State:             StateRequirements{Category: StateBattle},
-		PostDamage:        grudgeBearerPostDamage,
-		AttackerDamageMod: grudgeBearerDamageMod,
+		State:              StateRequirements{Category: StateBattle},
+		DefenderPostDamage: grudgeBearerPostDamage,
+		AttackerDamageMod:  grudgeBearerDamageMod,
 	})
 }
 
