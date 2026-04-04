@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	"game_main/tactical/combat/combatcore"
+	"game_main/tactical/combat/battlelog"
 	"os"
 )
 
@@ -94,7 +94,7 @@ func main() {
 			}
 
 			// Export battle log
-			if err := combatcore.ExportBattleJSON(record, outputDir); err != nil {
+			if err := battlelog.ExportBattleJSON(record, outputDir); err != nil {
 				fmt.Printf("  FAILED to export: %v\n\n", err)
 				suiteFail++
 				totalFail++

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"game_main/common"
 	"game_main/mind/combatlifecycle"
+	"game_main/tactical/combat/battlelog"
 	"game_main/tactical/combat/combatcore"
 	"game_main/tactical/combat/combatstate"
 	"game_main/tactical/powers/artifacts"
@@ -25,7 +26,7 @@ type CombatService struct {
 	CombatActSystem *combatcore.CombatActionSystem
 
 	// Battle recording for export
-	BattleRecorder *combatcore.BattleRecorder
+	BattleRecorder *battlelog.BattleRecorder
 
 	// Threat evaluation system (injected via SetThreatProvider/SetThreatEvaluatorFactory)
 	threatProvider  ThreatProvider
@@ -48,7 +49,7 @@ type CombatService struct {
 // NewCombatService creates a new combat service
 func NewCombatService(manager *common.EntityManager) *CombatService {
 	cache := combatcore.NewCombatQueryCache(manager)
-	battleRecorder := combatcore.NewBattleRecorder()
+	battleRecorder := battlelog.NewBattleRecorder()
 	combatActSystem := combatcore.NewCombatActionSystem(manager, cache)
 	movementSystem := combatcore.NewMovementSystem(manager, common.GlobalPositionSystem, cache)
 	turnManager := combatcore.NewTurnManager(manager, cache)

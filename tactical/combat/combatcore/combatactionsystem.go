@@ -3,6 +3,7 @@ package combatcore
 import (
 	"fmt"
 	"game_main/common"
+	"game_main/tactical/combat/battlelog"
 	"game_main/tactical/combat/combatstate"
 	"game_main/tactical/squads/squadcore"
 
@@ -12,7 +13,7 @@ import (
 type CombatActionSystem struct {
 	manager        *common.EntityManager
 	combatCache    *CombatQueryCache
-	battleRecorder *BattleRecorder
+	battleRecorder *battlelog.BattleRecorder
 
 	// Post-action hook (fired after successful attack)
 	onAttackComplete func(attackerID, defenderID ecs.EntityID, result *CombatResult)
@@ -29,7 +30,7 @@ func NewCombatActionSystem(manager *common.EntityManager, cache *CombatQueryCach
 }
 
 // SetBattleRecorder sets the battle recorder for combat log export.
-func (cas *CombatActionSystem) SetBattleRecorder(recorder *BattleRecorder) {
+func (cas *CombatActionSystem) SetBattleRecorder(recorder *battlelog.BattleRecorder) {
 	cas.battleRecorder = recorder
 }
 
