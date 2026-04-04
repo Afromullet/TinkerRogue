@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"game_main/common"
-	"game_main/tactical/combat/combatcore"
+	"game_main/tactical/combat/combatstate"
 	"game_main/tactical/squads/squadcore"
 
 	"github.com/bytearena/ecs"
@@ -35,8 +35,8 @@ func StripCombatComponents(manager *common.EntityManager, squadIDs []ecs.EntityI
 		}
 
 		// Remove faction membership
-		if entity.HasComponent(combatcore.FactionMembershipComponent) {
-			entity.RemoveComponent(combatcore.FactionMembershipComponent)
+		if entity.HasComponent(combatstate.FactionMembershipComponent) {
+			entity.RemoveComponent(combatstate.FactionMembershipComponent)
 		}
 
 		// Atomically remove squad position from both component and position system

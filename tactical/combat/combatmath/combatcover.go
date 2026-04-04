@@ -1,7 +1,8 @@
-package combatcore
+package combatmath
 
 import (
 	"game_main/common"
+	"game_main/tactical/combat/combattypes"
 	"game_main/tactical/squads/squadcore"
 
 	"github.com/bytearena/ecs"
@@ -65,9 +66,9 @@ func GetCoverProvidersFor(defenderID ecs.EntityID, defenderSquadID ecs.EntityID,
 	return providers
 }
 
-func CalculateCoverBreakdown(defenderID ecs.EntityID, squadmanager *common.EntityManager) CoverBreakdown {
-	breakdown := CoverBreakdown{
-		Providers: []CoverProvider{},
+func CalculateCoverBreakdown(defenderID ecs.EntityID, squadmanager *common.EntityManager) combattypes.CoverBreakdown {
+	breakdown := combattypes.CoverBreakdown{
+		Providers: []combattypes.CoverProvider{},
 	}
 	defenderEntity := squadmanager.FindEntityByID(defenderID)
 	if defenderEntity == nil {
@@ -121,7 +122,7 @@ func CalculateCoverBreakdown(defenderID ecs.EntityID, squadmanager *common.Entit
 				unitName = name.NameStr
 			}
 
-			provider := CoverProvider{
+			provider := combattypes.CoverProvider{
 				UnitID:     providerID,
 				UnitName:   unitName,
 				CoverValue: coverValue,

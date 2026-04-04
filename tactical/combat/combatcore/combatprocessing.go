@@ -2,6 +2,7 @@ package combatcore
 
 import (
 	"game_main/common"
+	"game_main/tactical/combat/combatmath"
 	"game_main/tactical/squads/squadcore"
 
 	"github.com/bytearena/ecs"
@@ -50,7 +51,7 @@ func processAttack(attackerID ecs.EntityID, defenderSquadID ecs.EntityID,
 		}
 
 		// Calculate damage
-		damage, event := calculateDamage(attackerID, defenderID, targetModifiers, callbacks, manager)
+		damage, event := combatmath.CalculateDamage(attackerID, defenderID, targetModifiers, callbacks, manager)
 
 		// Add targeting info
 		defenderPos := common.GetComponentTypeByID[*squadcore.GridPositionData](manager, defenderID, squadcore.GridPositionComponent)
@@ -71,12 +72,12 @@ func processAttack(attackerID ecs.EntityID, defenderSquadID ecs.EntityID,
 			reducedDmg, redirectTarget, redirectAmt := callbacks.DamageRedirect(defenderID, defenderSquadID, damage, manager)
 			if redirectTarget != 0 && redirectAmt > 0 {
 				damage = reducedDmg
-				recordDamageToUnit(redirectTarget, redirectAmt, result, manager)
+				combatmath.RecordDamageToUnit(redirectTarget, redirectAmt, result, manager)
 			}
 		}
 
 		// Apply damage
-		recordDamageToUnit(defenderID, damage, result, manager)
+		combatmath.RecordDamageToUnit(defenderID, damage, result, manager)
 
 		// Run post-damage hooks (attacker side: Bloodlust, Disruption)
 		if callbacks != nil && callbacks.PostDamage != nil {
@@ -157,7 +158,7 @@ func ProcessHealOnTargets(healerID ecs.EntityID, targetIDs []ecs.EntityID, resul
 	for _, targetID := range targetIDs {
 		attackIndex++
 
-		healAmount, event := calculateHealing(healerID, targetID, manager)
+		healAmount, event := combatmath.CalculateHealing(healerID, targetID, manager)
 		event.AttackIndex = attackIndex
 
 		if healAmount > 0 {

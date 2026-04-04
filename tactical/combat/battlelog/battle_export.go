@@ -1,4 +1,4 @@
-package combatcore
+package battlelog
 
 import (
 	"encoding/json"

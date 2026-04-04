@@ -2,6 +2,7 @@ package combatcore
 
 import (
 	"game_main/common"
+	"game_main/tactical/combat/combatmath"
 	"game_main/tactical/squads/squadcore"
 	"game_main/tactical/squads/unitdefs"
 	testfx "game_main/testing"
@@ -57,7 +58,7 @@ func calculateTestDamage(attackerID, defenderID ecs.EntityID, manager *common.En
 		DamageMultiplier: 1.0,
 		IsCounterattack:  false,
 	}
-	return calculateDamage(attackerID, defenderID, modifiers, nil, manager)
+	return combatmath.CalculateDamage(attackerID, defenderID, modifiers, nil, manager)
 }
 
 // setupCombatTestManager creates a fully initialized EntityManager for combat tests.
@@ -596,7 +597,7 @@ func TestGetCoverProvidersFor_NoProviders(t *testing.T) {
 	defender := createTestUnit(manager, squadID, 1, 0, 100, 10, 0)
 	defenderPos := common.GetComponentType[*squadcore.GridPositionData](defender, squadcore.GridPositionComponent)
 
-	providers := GetCoverProvidersFor(defender.GetID(), squadID, defenderPos, manager)
+	providers := combatmath.GetCoverProvidersFor(defender.GetID(), squadID, defenderPos, manager)
 
 	if len(providers) != 0 {
 		t.Errorf("Expected 0 providers, got %d", len(providers))
@@ -618,7 +619,7 @@ func TestGetCoverProvidersFor_SingleProvider(t *testing.T) {
 	backLine := createTestUnit(manager, squadID, 1, 0, 100, 10, 0)
 	backLinePos := common.GetComponentType[*squadcore.GridPositionData](backLine, squadcore.GridPositionComponent)
 
-	providers := GetCoverProvidersFor(backLine.GetID(), squadID, backLinePos, manager)
+	providers := combatmath.GetCoverProvidersFor(backLine.GetID(), squadID, backLinePos, manager)
 
 	if len(providers) != 1 {
 		t.Errorf("Expected 1 provider, got %d", len(providers))
@@ -652,7 +653,7 @@ func TestGetCoverProvidersFor_MultipleProviders(t *testing.T) {
 	backLine := createTestUnit(manager, squadID, 2, 0, 100, 10, 0)
 	backLinePos := common.GetComponentType[*squadcore.GridPositionData](backLine, squadcore.GridPositionComponent)
 
-	providers := GetCoverProvidersFor(backLine.GetID(), squadID, backLinePos, manager)
+	providers := combatmath.GetCoverProvidersFor(backLine.GetID(), squadID, backLinePos, manager)
 
 	if len(providers) != 2 {
 		t.Errorf("Expected 2 providers, got %d", len(providers))
@@ -672,7 +673,7 @@ func TestGetCoverProvidersFor_DoesNotIncludeSelf(t *testing.T) {
 	})
 	unitPos := common.GetComponentType[*squadcore.GridPositionData](unit, squadcore.GridPositionComponent)
 
-	providers := GetCoverProvidersFor(unit.GetID(), squadID, unitPos, manager)
+	providers := combatmath.GetCoverProvidersFor(unit.GetID(), squadID, unitPos, manager)
 
 	if len(providers) != 0 {
 		t.Errorf("Expected 0 providers (unit should not provide cover to itself), got %d", len(providers))
@@ -697,7 +698,7 @@ func TestGetCoverProvidersFor_OnlyFromSameSquad(t *testing.T) {
 	squad2UnitPos := common.GetComponentType[*squadcore.GridPositionData](squad2Unit, squadcore.GridPositionComponent)
 
 	// Squad 2 unit should not get cover from Squad 1
-	providers := GetCoverProvidersFor(squad2Unit.GetID(), squad2ID, squad2UnitPos, manager)
+	providers := combatmath.GetCoverProvidersFor(squad2Unit.GetID(), squad2ID, squad2UnitPos, manager)
 
 	if len(providers) != 0 {
 		t.Errorf("Expected 0 providers from different squad, got %d", len(providers))
@@ -715,7 +716,7 @@ func TestSumDamageMap(t *testing.T) {
 		3: 30,
 	}
 
-	total := sumDamageMap(damageMap)
+	total := combatmath.SumDamageMap(damageMap)
 
 	if total != 60 {
 		t.Errorf("Expected total damage 60, got %d", total)
@@ -725,7 +726,7 @@ func TestSumDamageMap(t *testing.T) {
 func TestSumDamageMap_EmptyMap(t *testing.T) {
 	damageMap := make(map[ecs.EntityID]int)
 
-	total := sumDamageMap(damageMap)
+	total := combatmath.SumDamageMap(damageMap)
 
 	if total != 0 {
 		t.Errorf("Expected total damage 0 for empty map, got %d", total)

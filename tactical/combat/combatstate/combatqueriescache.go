@@ -1,4 +1,4 @@
-package combatcore
+package combatstate
 
 import (
 	"game_main/common"
@@ -17,8 +17,6 @@ type CombatQueryCache struct {
 // NewCombatQueryCache creates a cache with new ECS Views
 func NewCombatQueryCache(manager *common.EntityManager) *CombatQueryCache {
 	return &CombatQueryCache{
-		// Create Views - one-time O(n) cost per View
-		// Views are automatically maintained when components are added/removed
 		ActionStateView: manager.World.CreateView(ActionStateTag),
 		FactionView:     manager.World.CreateView(FactionTag),
 	}
@@ -30,8 +28,6 @@ func NewCombatQueryCache(manager *common.EntityManager) *CombatQueryCache {
 
 // FindActionStateEntity finds ActionStateData for a squad using cached view
 func (c *CombatQueryCache) FindActionStateEntity(squadID ecs.EntityID) *ecs.Entity {
-	// Iterate through cached view results (not full World.Query)
-	// View automatically updated when ActionStateComponent added/removed
 	for _, result := range c.ActionStateView.Get() {
 		actionState := common.GetComponentType[*ActionStateData](result.Entity, ActionStateComponent)
 		if actionState != nil && actionState.SquadID == squadID {
@@ -58,8 +54,6 @@ func (c *CombatQueryCache) FindActionStateBySquadID(squadID ecs.EntityID) *Actio
 
 // FindFactionByID finds a faction entity by faction ID using cached view
 func (c *CombatQueryCache) FindFactionByID(factionID ecs.EntityID) *ecs.Entity {
-	// Iterate through cached view results (not full World.Query)
-	// View automatically updated when FactionComponent added/removed
 	for _, result := range c.FactionView.Get() {
 		faction := result.Entity
 		factionData := common.GetComponentType[*FactionData](faction, CombatFactionComponent)

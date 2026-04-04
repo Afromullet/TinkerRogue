@@ -3,6 +3,7 @@ package combatcore
 import (
 	"fmt"
 	"game_main/common"
+	"game_main/tactical/combat/combatstate"
 	"game_main/tactical/powers/effects"
 	"game_main/tactical/squads/squadcore"
 
@@ -44,10 +45,10 @@ func (tm *TurnManager) InitializeCombat(factionIDs []ecs.EntityID) error {
 	//Randomize turn order using Fisher-Yates shuffle
 	turnOrder := make([]ecs.EntityID, len(factionIDs))
 	copy(turnOrder, factionIDs)
-	shuffleFactionOrder(turnOrder)
+	combatstate.ShuffleFactionOrder(turnOrder)
 
 	turnEntity := tm.manager.World.NewEntity()
-	turnEntity.AddComponent(TurnStateComponent, &TurnStateData{
+	turnEntity.AddComponent(combatstate.TurnStateComponent, &TurnStateData{
 		CurrentRound:     1,
 		TurnOrder:        turnOrder,
 		CurrentTurnIndex: 0,
@@ -86,7 +87,7 @@ func (tm *TurnManager) ResetSquadActions(factionID ecs.EntityID) error {
 			continue
 		}
 
-		actionState := common.GetComponentType[*ActionStateData](actionEntity, ActionStateComponent)
+		actionState := common.GetComponentType[*ActionStateData](actionEntity, combatstate.ActionStateComponent)
 
 		actionState.HasMoved = false
 		actionState.HasActed = false
@@ -123,7 +124,7 @@ func (tm *TurnManager) getTurnState() *TurnStateData {
 		return nil // Entity not found
 	}
 
-	return common.GetComponentType[*TurnStateData](turnEntity.Entity, TurnStateComponent)
+	return common.GetComponentType[*TurnStateData](turnEntity.Entity, combatstate.TurnStateComponent)
 }
 
 func (tm *TurnManager) GetCurrentFaction() ecs.EntityID {

@@ -5,6 +5,7 @@ import (
 	"game_main/common"
 	"game_main/mind/combatlifecycle"
 	"game_main/tactical/combat/combatcore"
+	"game_main/tactical/combat/combatstate"
 	"game_main/tactical/powers/artifacts"
 	"game_main/tactical/powers/effects"
 	"game_main/tactical/powers/perks"
@@ -148,7 +149,7 @@ func (cs *CombatService) assignDeployedSquadsToPlayerFaction(playerFactionID ecs
 		squadEntity := result.Entity
 		squadID := squadEntity.GetID()
 
-		combatFaction := common.GetComponentType[*combatcore.CombatFactionData](squadEntity, combatcore.FactionMembershipComponent)
+		combatFaction := common.GetComponentType[*combatcore.CombatFactionData](squadEntity, combatstate.FactionMembershipComponent)
 		if combatFaction != nil {
 			continue
 		}
@@ -316,9 +317,9 @@ func (cs *CombatService) CleanupCombat(enemySquadIDs []ecs.EntityID) {
 	}
 
 	// Dispose all combat entities in one pass
-	cs.disposeEntitiesByTag(combatcore.FactionTag, "factions")
-	cs.disposeEntitiesByTag(combatcore.ActionStateTag, "action states")
-	cs.disposeEntitiesByTag(combatcore.TurnStateTag, "turn states")
+	cs.disposeEntitiesByTag(combatstate.FactionTag, "factions")
+	cs.disposeEntitiesByTag(combatstate.ActionStateTag, "action states")
+	cs.disposeEntitiesByTag(combatstate.TurnStateTag, "turn states")
 	cs.disposeEnemySquads(enemySquadIDs)
 	cs.disposeEnemyUnits(enemySquadSet)
 
@@ -352,7 +353,7 @@ func (cs *CombatService) resetPlayerSquadsToOverworld() {
 	var playerSquadIDs []ecs.EntityID
 	for _, result := range cs.EntityManager.World.Query(squadcore.SquadTag) {
 		entity := result.Entity
-		factionData := common.GetComponentType[*combatcore.CombatFactionData](entity, combatcore.FactionMembershipComponent)
+		factionData := common.GetComponentType[*combatcore.CombatFactionData](entity, combatstate.FactionMembershipComponent)
 		if factionData == nil {
 			continue
 		}
@@ -360,7 +361,7 @@ func (cs *CombatService) resetPlayerSquadsToOverworld() {
 		if factionEntity == nil {
 			continue
 		}
-		faction := common.GetComponentType[*combatcore.FactionData](factionEntity, combatcore.CombatFactionComponent)
+		faction := common.GetComponentType[*combatcore.FactionData](factionEntity, combatstate.CombatFactionComponent)
 		if faction == nil || !faction.IsPlayerControlled {
 			continue
 		}

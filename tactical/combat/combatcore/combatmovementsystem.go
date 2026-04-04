@@ -3,6 +3,7 @@ package combatcore
 import (
 	"fmt"
 	"game_main/common"
+	"game_main/tactical/combat/combatstate"
 	"game_main/tactical/squads/squadcore"
 	"game_main/world/coords"
 
@@ -46,7 +47,7 @@ func (ms *CombatMovementSystem) CanMoveTo(squadID ecs.EntityID, targetPos coords
 	}
 
 	// Check if occupied by a squad (not terrain/item)
-	if !isSquad(occupyingID, ms.manager) {
+	if !combatstate.IsSquad(occupyingID, ms.manager) {
 		return false // Occupied by terrain/obstacle
 	}
 
@@ -56,7 +57,7 @@ func (ms *CombatMovementSystem) CanMoveTo(squadID ecs.EntityID, targetPos coords
 
 func (ms *CombatMovementSystem) MoveSquad(squadID ecs.EntityID, targetPos coords.LogicalPosition) error {
 
-	if !canSquadMove(ms.combatCache, squadID, ms.manager) {
+	if !combatstate.CanSquadMove(ms.combatCache, squadID, ms.manager) {
 		return fmt.Errorf("squad has no movement remaining")
 	}
 
@@ -73,7 +74,7 @@ func (ms *CombatMovementSystem) MoveSquad(squadID ecs.EntityID, targetPos coords
 		return fmt.Errorf("no action state for squad")
 	}
 
-	actionState := common.GetComponentType[*ActionStateData](actionStateEntity, ActionStateComponent)
+	actionState := common.GetComponentType[*ActionStateData](actionStateEntity, combatstate.ActionStateComponent)
 	if actionState.MovementRemaining < movementCost {
 		return fmt.Errorf("insufficient movement: need %d, have %d", movementCost, actionState.MovementRemaining)
 	}
@@ -97,8 +98,8 @@ func (ms *CombatMovementSystem) MoveSquad(squadID ecs.EntityID, targetPos coords
 		return fmt.Errorf("failed to move squad and members: %w", err)
 	}
 
-	decrementMovementRemaining(ms.combatCache, squadID, movementCost, ms.manager)
-	markSquadAsMoved(ms.combatCache, squadID, ms.manager)
+	combatstate.DecrementMovementRemaining(ms.combatCache, squadID, movementCost, ms.manager)
+	combatstate.MarkSquadAsMoved(ms.combatCache, squadID, ms.manager)
 
 	// Fire post-move hook
 	if ms.onMoveComplete != nil {
@@ -120,7 +121,7 @@ func (ms *CombatMovementSystem) GetValidMovementTiles(squadID ecs.EntityID) []co
 		return []coords.LogicalPosition{}
 	}
 
-	actionState := common.GetComponentType[*ActionStateData](actionStateEntity, ActionStateComponent)
+	actionState := common.GetComponentType[*ActionStateData](actionStateEntity, combatstate.ActionStateComponent)
 	movementRange := actionState.MovementRemaining
 
 	if movementRange <= 0 {

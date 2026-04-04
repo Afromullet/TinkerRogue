@@ -4,6 +4,7 @@ package framework
 import (
 	"game_main/common"
 	"game_main/tactical/combat/combatcore"
+	"game_main/tactical/combat/combatstate"
 	"game_main/tactical/squads/squadcore"
 	"game_main/world/coords"
 
@@ -172,7 +173,7 @@ func (gq *GUIQueries) GetEnemySquadsForEncounter(currentFactionID ecs.EntityID, 
 func (gq *GUIQueries) GetFactionsForEncounter(encounterID ecs.EntityID) []ecs.EntityID {
 	factionIDs := []ecs.EntityID{}
 	for _, result := range gq.CombatCache.FactionView.Get() {
-		factionData := common.GetComponentType[*combatcore.FactionData](result.Entity, combatcore.CombatFactionComponent)
+		factionData := common.GetComponentType[*combatcore.FactionData](result.Entity, combatstate.CombatFactionComponent)
 		if factionData != nil && factionData.EncounterID == encounterID {
 			factionIDs = append(factionIDs, factionData.FactionID)
 		}
@@ -185,7 +186,7 @@ func (gq *GUIQueries) GetAllFactions() []ecs.EntityID {
 	factionIDs := []ecs.EntityID{}
 	// Use cached View instead of Query (avoids 30,000+ map allocations per second)
 	for _, result := range gq.CombatCache.FactionView.Get() {
-		factionData := common.GetComponentType[*combatcore.FactionData](result.Entity, combatcore.CombatFactionComponent)
+		factionData := common.GetComponentType[*combatcore.FactionData](result.Entity, combatstate.CombatFactionComponent)
 		factionIDs = append(factionIDs, factionData.FactionID)
 	}
 	return factionIDs

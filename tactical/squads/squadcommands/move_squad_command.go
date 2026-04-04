@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"game_main/common"
 	"game_main/tactical/combat/combatcore"
+	"game_main/tactical/combat/combatstate"
 	"game_main/tactical/squads/squadcore"
 	"game_main/world/coords"
 
@@ -84,7 +85,7 @@ func (cmd *MoveSquadCommand) Execute() error {
 	// Capture old ActionState (CRITICAL for undo)
 	actionStateEntity := cmd.combatCache.FindActionStateEntity(cmd.squadID)
 	if actionStateEntity != nil {
-		actionState := common.GetComponentType[*combatcore.ActionStateData](actionStateEntity, combatcore.ActionStateComponent)
+		actionState := common.GetComponentType[*combatcore.ActionStateData](actionStateEntity, combatstate.ActionStateComponent)
 		if actionState != nil {
 			cmd.oldMovementRemaining = actionState.MovementRemaining
 			cmd.oldHasMoved = actionState.HasMoved
@@ -131,7 +132,7 @@ func (cmd *MoveSquadCommand) Undo() error {
 	// Restore ActionState (CRITICAL - undo must restore full state)
 	actionStateEntity := cmd.combatCache.FindActionStateEntity(cmd.squadID)
 	if actionStateEntity != nil {
-		actionState := common.GetComponentType[*combatcore.ActionStateData](actionStateEntity, combatcore.ActionStateComponent)
+		actionState := common.GetComponentType[*combatcore.ActionStateData](actionStateEntity, combatstate.ActionStateComponent)
 		if actionState != nil {
 			actionState.MovementRemaining = cmd.oldMovementRemaining
 			actionState.HasMoved = cmd.oldHasMoved

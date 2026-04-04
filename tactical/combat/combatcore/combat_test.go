@@ -2,6 +2,7 @@ package combatcore
 
 import (
 	"game_main/common"
+	"game_main/tactical/combat/combatstate"
 	"game_main/tactical/squads/squadcore"
 	"game_main/world/coords"
 	"testing"
@@ -17,16 +18,16 @@ func TestCombatInitialization(t *testing.T) {
 	manager := CreateTestCombatManager()
 
 	// Verify components exist
-	if CombatFactionComponent == nil {
+	if combatstate.CombatFactionComponent == nil {
 		t.Error("FactionComponent not initialized")
 	}
-	if TurnStateComponent == nil {
+	if combatstate.TurnStateComponent == nil {
 		t.Error("TurnStateComponent not initialized")
 	}
-	if ActionStateComponent == nil {
+	if combatstate.ActionStateComponent == nil {
 		t.Error("ActionStateComponent not initialized")
 	}
-	if FactionMembershipComponent == nil {
+	if combatstate.FactionMembershipComponent == nil {
 		t.Error("FactionMembershipComponent not initialized")
 	}
 
@@ -61,12 +62,12 @@ func TestCreateFaction(t *testing.T) {
 	}
 
 	// Verify faction data (using cache for O(1) lookup instead of O(n) query)
-	faction := fm.combatCache.FindFactionByID(factionID)
+	faction := cache.FindFactionByID(factionID)
 	if faction == nil {
 		t.Fatal("Cannot find created faction")
 	}
 
-	factionData := common.GetComponentType[*FactionData](faction, CombatFactionComponent)
+	factionData := common.GetComponentType[*FactionData](faction, combatstate.CombatFactionComponent)
 	if factionData.Name != "Test Faction" {
 		t.Errorf("Expected name 'Test Faction', got '%s'", factionData.Name)
 	}
@@ -95,7 +96,7 @@ func TestAddSquadToFaction(t *testing.T) {
 		t.Fatal("Squad not found")
 	}
 
-	combatFaction := common.GetComponentType[*CombatFactionData](squad, FactionMembershipComponent)
+	combatFaction := common.GetComponentType[*CombatFactionData](squad, combatstate.FactionMembershipComponent)
 	if combatFaction == nil {
 		t.Fatal("Squad does not have FactionMembershipComponent")
 	}
@@ -265,7 +266,7 @@ func TestExecuteAttackAction_MeleeAttack(t *testing.T) {
 	}
 
 	// Verify squad marked as acted (using cache for O(k) lookup instead of O(n) query)
-	if canSquadAct(cache, playerSquad, manager) {
+	if combatstate.CanSquadAct(cache, playerSquad, manager) {
 		t.Error("Squad should be marked as acted")
 	}
 }
@@ -441,7 +442,7 @@ func TestBonusAttackFlag_ConsumesWithoutMarkingActed(t *testing.T) {
 	actionState.BonusAttackActive = true
 
 	// First call should consume the flag without marking acted
-	markSquadAsActed(cache, squadID, manager)
+	combatstate.MarkSquadAsActed(cache, squadID, manager)
 
 	if actionState.HasActed {
 		t.Error("HasActed should be false after BonusAttack consumes the flag")
@@ -451,7 +452,7 @@ func TestBonusAttackFlag_ConsumesWithoutMarkingActed(t *testing.T) {
 	}
 
 	// Second call should mark as acted normally
-	markSquadAsActed(cache, squadID, manager)
+	combatstate.MarkSquadAsActed(cache, squadID, manager)
 
 	if !actionState.HasActed {
 		t.Error("HasActed should be true after normal markSquadAsActed")

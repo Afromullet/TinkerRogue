@@ -3,6 +3,7 @@ package combatcore
 import (
 	"fmt"
 	"game_main/common"
+	"game_main/tactical/combat/combatstate"
 	"game_main/tactical/squads/squadcore"
 
 	"github.com/bytearena/ecs"
@@ -162,7 +163,7 @@ func (cas *CombatActionSystem) ExecuteAttackAction(attackerID, defenderID ecs.En
 	ApplyRecordedHealing(result, cas.manager)
 
 	// Mark attacker squad as acted (turn state modification)
-	markSquadAsActed(cas.combatCache, attackerID, cas.manager)
+	combatstate.MarkSquadAsActed(cas.combatCache, attackerID, cas.manager)
 
 	// Record combat log for export (if enabled)
 	if cas.battleRecorder != nil && cas.battleRecorder.IsEnabled() {
@@ -287,7 +288,7 @@ func (cas *CombatActionSystem) getCounterattackingUnits(defenderID, attackerID e
 // canSquadAttackWithReason returns detailed info about why an attack can/cannot happen
 func (cas *CombatActionSystem) canSquadAttackWithReason(squadID, targetID ecs.EntityID) (string, bool) {
 	// Check if squad has action available
-	if !canSquadAct(cas.combatCache, squadID, cas.manager) {
+	if !combatstate.CanSquadAct(cas.combatCache, squadID, cas.manager) {
 		return "Squad has already acted this turn", false
 	}
 
