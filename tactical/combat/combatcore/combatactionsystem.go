@@ -5,6 +5,7 @@ import (
 	"game_main/common"
 	"game_main/tactical/combat/battlelog"
 	"game_main/tactical/combat/combatstate"
+	"game_main/tactical/combat/combattypes"
 	"game_main/tactical/squads/squadcore"
 
 	"github.com/bytearena/ecs"
@@ -19,7 +20,7 @@ type CombatActionSystem struct {
 	onAttackComplete func(attackerID, defenderID ecs.EntityID, result *CombatResult)
 
 	// Perk callbacks (injected from perks package via combatservices)
-	perkCallbacks *PerkCallbacks
+	perkCallbacks *combattypes.PerkCallbacks
 }
 
 func NewCombatActionSystem(manager *common.EntityManager, cache *CombatQueryCache) *CombatActionSystem {
@@ -41,7 +42,7 @@ func (cas *CombatActionSystem) SetOnAttackComplete(fn func(ecs.EntityID, ecs.Ent
 
 // SetPerkCallbacks injects perk hook callback functions.
 // Must be called before combat begins for perk hooks to fire.
-func (cas *CombatActionSystem) SetPerkCallbacks(callbacks *PerkCallbacks) {
+func (cas *CombatActionSystem) SetPerkCallbacks(callbacks *combattypes.PerkCallbacks) {
 	cas.perkCallbacks = callbacks
 }
 

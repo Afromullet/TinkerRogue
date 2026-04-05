@@ -3,6 +3,7 @@ package combatcore
 import (
 	"game_main/common"
 	"game_main/tactical/combat/combatmath"
+	"game_main/tactical/combat/combattypes"
 	"game_main/tactical/squads/squadcore"
 
 	"github.com/bytearena/ecs"
@@ -20,7 +21,7 @@ const (
 func processAttack(attackerID ecs.EntityID, defenderSquadID ecs.EntityID,
 	targetIDs []ecs.EntityID, result *CombatResult,
 	log *CombatLog, attackIndex int, modifiers DamageModifiers,
-	callbacks *PerkCallbacks, manager *common.EntityManager) int {
+	callbacks *combattypes.PerkCallbacks, manager *common.EntityManager) int {
 
 	// Determine attacker's squad ID for perk hooks
 	attackerSquadID := ecs.EntityID(0)
@@ -131,7 +132,7 @@ func processAttack(attackerID ecs.EntityID, defenderSquadID ecs.EntityID,
 // callbacks may be nil if no perks are active.
 func ProcessAttackOnTargets(attackerID ecs.EntityID, defenderSquadID ecs.EntityID,
 	targetIDs []ecs.EntityID, result *CombatResult,
-	log *CombatLog, attackIndex int, callbacks *PerkCallbacks, manager *common.EntityManager) int {
+	log *CombatLog, attackIndex int, callbacks *combattypes.PerkCallbacks, manager *common.EntityManager) int {
 
 	modifiers := DamageModifiers{
 		HitPenalty:       0,
@@ -145,7 +146,7 @@ func ProcessAttackOnTargets(attackerID ecs.EntityID, defenderSquadID ecs.EntityI
 // callbacks may be nil if no perks are active.
 func ProcessCounterattackOnTargets(attackerID ecs.EntityID, defenderSquadID ecs.EntityID,
 	targetIDs []ecs.EntityID, result *CombatResult,
-	log *CombatLog, attackIndex int, modifiers DamageModifiers, callbacks *PerkCallbacks, manager *common.EntityManager) int {
+	log *CombatLog, attackIndex int, modifiers DamageModifiers, callbacks *combattypes.PerkCallbacks, manager *common.EntityManager) int {
 
 	return processAttack(attackerID, defenderSquadID, targetIDs, result, log, attackIndex, modifiers, callbacks, manager)
 }

@@ -3,6 +3,7 @@ package combatservices
 import (
 	"game_main/common"
 	"game_main/tactical/combat/combatcore"
+	"game_main/tactical/combat/combattypes"
 	"game_main/tactical/powers/perks"
 
 	"github.com/bytearena/ecs"
@@ -12,7 +13,7 @@ import (
 func setupPerkDispatch(cs *CombatService, manager *common.EntityManager) {
 	// Direct function assignment — no closure wrappers needed because
 	// Run* functions now internalize PerkRoundState lookup.
-	callbacks := &combatcore.PerkCallbacks{
+	callbacks := &combattypes.PerkCallbacks{
 		AttackerDamageMod:  perks.RunAttackerDamageModHooks,
 		DefenderDamageMod:  perks.RunDefenderDamageModHooks,
 		CoverMod:           perks.RunCoverModHooks,

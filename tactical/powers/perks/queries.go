@@ -58,6 +58,21 @@ func buildHookContext(ownerSquadID ecs.EntityID, manager *common.EntityManager) 
 	}
 }
 
+// buildCombatContext constructs a HookContext with attacker/defender fields populated.
+// ownerSquadID determines whose perks will be iterated.
+func buildCombatContext(ownerSquadID, attackerID, defenderID, attackerSquadID, defenderSquadID ecs.EntityID,
+	manager *common.EntityManager) *HookContext {
+	ctx := buildHookContext(ownerSquadID, manager)
+	if ctx == nil {
+		return nil
+	}
+	ctx.AttackerID = attackerID
+	ctx.DefenderID = defenderID
+	ctx.AttackerSquadID = attackerSquadID
+	ctx.DefenderSquadID = defenderSquadID
+	return ctx
+}
+
 // forEachPerkHook iterates over active perks for ownerSquadID, calling fn
 // for each registered PerkHooks. If fn returns false, iteration stops early.
 func forEachPerkHook(ownerSquadID ecs.EntityID, manager *common.EntityManager,
@@ -80,14 +95,10 @@ func forEachPerkHook(ownerSquadID ecs.EntityID, manager *common.EntityManager,
 // RunAttackerDamageModHooks runs AttackerDamageMod hooks for the attacker's perks.
 func RunAttackerDamageModHooks(attackerID, defenderID, attackerSquadID, defenderSquadID ecs.EntityID,
 	modifiers *combatcore.DamageModifiers, manager *common.EntityManager) {
-	ctx := buildHookContext(attackerSquadID, manager)
+	ctx := buildCombatContext(attackerSquadID, attackerID, defenderID, attackerSquadID, defenderSquadID, manager)
 	if ctx == nil {
 		return
 	}
-	ctx.AttackerID = attackerID
-	ctx.DefenderID = defenderID
-	ctx.AttackerSquadID = attackerSquadID
-	ctx.DefenderSquadID = defenderSquadID
 	forEachPerkHook(attackerSquadID, manager, func(hooks *PerkHooks) bool {
 		if hooks.AttackerDamageMod != nil {
 			hooks.AttackerDamageMod(ctx, modifiers)
@@ -99,14 +110,10 @@ func RunAttackerDamageModHooks(attackerID, defenderID, attackerSquadID, defender
 // RunDefenderDamageModHooks runs DefenderDamageMod hooks for the defender's perks.
 func RunDefenderDamageModHooks(attackerID, defenderID, attackerSquadID, defenderSquadID ecs.EntityID,
 	modifiers *combatcore.DamageModifiers, manager *common.EntityManager) {
-	ctx := buildHookContext(defenderSquadID, manager)
+	ctx := buildCombatContext(defenderSquadID, attackerID, defenderID, attackerSquadID, defenderSquadID, manager)
 	if ctx == nil {
 		return
 	}
-	ctx.AttackerID = attackerID
-	ctx.DefenderID = defenderID
-	ctx.AttackerSquadID = attackerSquadID
-	ctx.DefenderSquadID = defenderSquadID
 	forEachPerkHook(defenderSquadID, manager, func(hooks *PerkHooks) bool {
 		if hooks.DefenderDamageMod != nil {
 			hooks.DefenderDamageMod(ctx, modifiers)
@@ -118,14 +125,10 @@ func RunDefenderDamageModHooks(attackerID, defenderID, attackerSquadID, defender
 // RunAttackerPostDamageHooks runs post-damage hooks for the attacker's perks.
 func RunAttackerPostDamageHooks(attackerID, defenderID, attackerSquadID, defenderSquadID ecs.EntityID,
 	damageDealt int, wasKill bool, manager *common.EntityManager) {
-	ctx := buildHookContext(attackerSquadID, manager)
+	ctx := buildCombatContext(attackerSquadID, attackerID, defenderID, attackerSquadID, defenderSquadID, manager)
 	if ctx == nil {
 		return
 	}
-	ctx.AttackerID = attackerID
-	ctx.DefenderID = defenderID
-	ctx.AttackerSquadID = attackerSquadID
-	ctx.DefenderSquadID = defenderSquadID
 	forEachPerkHook(attackerSquadID, manager, func(hooks *PerkHooks) bool {
 		if hooks.AttackerPostDamage != nil {
 			hooks.AttackerPostDamage(ctx, damageDealt, wasKill)
@@ -137,14 +140,10 @@ func RunAttackerPostDamageHooks(attackerID, defenderID, attackerSquadID, defende
 // RunDefenderPostDamageHooks runs post-damage hooks for the defender's perks.
 func RunDefenderPostDamageHooks(attackerID, defenderID, attackerSquadID, defenderSquadID ecs.EntityID,
 	damageDealt int, wasKill bool, manager *common.EntityManager) {
-	ctx := buildHookContext(defenderSquadID, manager)
+	ctx := buildCombatContext(defenderSquadID, attackerID, defenderID, attackerSquadID, defenderSquadID, manager)
 	if ctx == nil {
 		return
 	}
-	ctx.AttackerID = attackerID
-	ctx.DefenderID = defenderID
-	ctx.AttackerSquadID = attackerSquadID
-	ctx.DefenderSquadID = defenderSquadID
 	forEachPerkHook(defenderSquadID, manager, func(hooks *PerkHooks) bool {
 		if hooks.DefenderPostDamage != nil {
 			hooks.DefenderPostDamage(ctx, damageDealt, wasKill)
@@ -220,14 +219,10 @@ func RunCoverModHooks(attackerID, defenderID ecs.EntityID,
 	coverBreakdown *combatcore.CoverBreakdown, manager *common.EntityManager) {
 	attackerSquadID := getSquadIDForUnit(attackerID, manager)
 	defenderSquadID := getSquadIDForUnit(defenderID, manager)
-	ctx := buildHookContext(defenderSquadID, manager)
+	ctx := buildCombatContext(defenderSquadID, attackerID, defenderID, attackerSquadID, defenderSquadID, manager)
 	if ctx == nil {
 		return
 	}
-	ctx.AttackerID = attackerID
-	ctx.DefenderID = defenderID
-	ctx.AttackerSquadID = attackerSquadID
-	ctx.DefenderSquadID = defenderSquadID
 	forEachPerkHook(defenderSquadID, manager, func(hooks *PerkHooks) bool {
 		if hooks.DefenderCoverMod != nil {
 			hooks.DefenderCoverMod(ctx, coverBreakdown)
