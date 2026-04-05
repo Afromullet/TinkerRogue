@@ -24,18 +24,20 @@ type PerkSlotData struct {
 //	Field                 Writer                               Reader                          Reset
 //	MovedThisTurn         perk_dispatch.go OnMoveComplete       stalwart, fortify               ResetPerTurn
 //	AttackedThisTurn      perk_dispatch.go OnAttackComplete     ResetPerTurn (snapshot)          ResetPerTurn
+//	WasAttackedThisTurn   perk_dispatch.go OnAttackComplete     ResetPerTurn (snapshot)          ResetPerTurn
 //	RecklessVulnerable    reckless_assault (AttackerDamageMod)  reckless_assault (DefenderMod)   ResetPerTurn
 //	TurnsStationary       fortify (TurnStart), OnMoveComplete   fortify (CoverMod)              OnMoveComplete (set to 0)
-//	WasAttackedLastTurn   ResetPerTurn (snapshot)               counterpunch (TurnStart)         Overwritten each turn
+//	WasAttackedLastTurn   ResetPerTurn (snapshot from WasAttackedThisTurn)  counterpunch (TurnStart)  Overwritten each turn
 //	DidNotAttackLastTurn  ResetPerTurn (snapshot)               counterpunch (TurnStart)         Overwritten each turn
 //	WasIdleLastTurn       ResetPerTurn (snapshot)               deadshots_patience (TurnStart)   Overwritten each turn
 type PerkRoundState struct {
 	// ---- Shared tracking (set by dispatch layer, read by multiple perks) ----
 
 	// Per-turn (cleared by ResetPerTurn)
-	MovedThisTurn      bool // Set by OnMoveComplete. Read by Stalwart, Fortify.
-	AttackedThisTurn   bool // Set by OnAttackComplete. Read by ResetPerTurn snapshots.
-	RecklessVulnerable bool // Set by Reckless Assault attacker. Read by Reckless Assault defender.
+	MovedThisTurn       bool // Set by OnMoveComplete. Read by Stalwart, Fortify.
+	AttackedThisTurn    bool // Set by OnAttackComplete. Read by ResetPerTurn snapshots.
+	WasAttackedThisTurn bool // Set by OnAttackComplete (defender). Snapshotted into WasAttackedLastTurn.
+	RecklessVulnerable  bool // Set by Reckless Assault attacker. Read by Reckless Assault defender.
 
 	// Turn-boundary snapshots (computed by ResetPerTurn from previous turn)
 	WasAttackedLastTurn  bool // Snapshot of previous turn. Read by Counterpunch.
@@ -194,12 +196,13 @@ type OverwatchState struct {
 // perks manage their own per-turn state in their TurnStart hooks.
 func (s *PerkRoundState) ResetPerTurn() {
 	// Snapshot previous turn state for Counterpunch/Deadshot before clearing
-	s.WasAttackedLastTurn = s.RecklessVulnerable || s.WasAttackedLastTurn
+	s.WasAttackedLastTurn = s.WasAttackedThisTurn
 	s.DidNotAttackLastTurn = !s.AttackedThisTurn
 	s.WasIdleLastTurn = !s.MovedThisTurn && !s.AttackedThisTurn
 
 	s.MovedThisTurn = false
 	s.AttackedThisTurn = false
+	s.WasAttackedThisTurn = false
 	s.RecklessVulnerable = false
 }
 

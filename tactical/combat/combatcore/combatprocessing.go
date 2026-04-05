@@ -80,17 +80,8 @@ func processAttack(attackerID ecs.EntityID, defenderSquadID ecs.EntityID,
 		// Apply damage
 		combatmath.RecordDamageToUnit(defenderID, damage, result, manager)
 
-		// Run post-damage hooks (attacker side: Bloodlust, Disruption)
-		if callbacks != nil && callbacks.PostDamage != nil {
-			callbacks.PostDamage(attackerID, defenderID, attackerSquadID, defenderSquadID, damage, event.WasKilled, manager)
-		}
-
-		// Run defender post-damage hooks (Grudge Bearer tracking)
-		if callbacks != nil && callbacks.DefenderPostDamage != nil {
-			callbacks.DefenderPostDamage(attackerID, defenderID, attackerSquadID, defenderSquadID, damage, event.WasKilled, manager)
-		}
-
-		// Death override check (Resolute)
+		// Death override check (Resolute) — must run BEFORE PostDamage hooks
+		// so that prevented deaths are not counted as kills by perks like Bloodlust.
 		if event.WasKilled && callbacks != nil && callbacks.DeathOverride != nil {
 			defenderMember := common.GetComponentTypeByID[*squadcore.SquadMemberData](manager, defenderID, squadcore.SquadMemberComponent)
 			defSquadID := defenderSquadID
@@ -119,6 +110,16 @@ func processAttack(attackerID ecs.EntityID, defenderSquadID ecs.EntityID,
 					event.DefenderHPAfter = 1
 				}
 			}
+		}
+
+		// Run post-damage hooks AFTER death override so WasKilled reflects prevented deaths
+		if callbacks != nil && callbacks.PostDamage != nil {
+			callbacks.PostDamage(attackerID, defenderID, attackerSquadID, defenderSquadID, damage, event.WasKilled, manager)
+		}
+
+		// Run defender post-damage hooks (Grudge Bearer tracking)
+		if callbacks != nil && callbacks.DefenderPostDamage != nil {
+			callbacks.DefenderPostDamage(attackerID, defenderID, attackerSquadID, defenderSquadID, damage, event.WasKilled, manager)
 		}
 
 		// Store event

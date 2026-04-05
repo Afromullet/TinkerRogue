@@ -6,6 +6,8 @@ import (
 	"game_main/tactical/combat/combattypes"
 )
 
+//TODO, determine whether I want to use the additional indirection
+
 type CombatStarter = combattypes.CombatStarter
 type CombatType = combattypes.CombatType
 type CombatSetup = combattypes.CombatSetup

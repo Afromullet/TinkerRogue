@@ -61,7 +61,7 @@ func setupPerkDispatch(cs *CombatService, manager *common.EntityManager) {
 
 		defenderState := perks.GetRoundState(defenderID, manager)
 		if defenderState != nil {
-			defenderState.WasAttackedLastTurn = true
+			defenderState.WasAttackedThisTurn = true
 		}
 	})
 
