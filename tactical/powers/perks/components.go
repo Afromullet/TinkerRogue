@@ -181,11 +181,6 @@ type DeadshotState struct {
 	Ready bool
 }
 
-// MarkedForDeathState tracks which enemy squad is marked.
-type MarkedForDeathState struct {
-	MarkedSquad ecs.EntityID
-}
-
 // OverwatchState is a placeholder for the overwatch perk.
 type OverwatchState struct {
 	Active bool

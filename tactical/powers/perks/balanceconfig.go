@@ -23,7 +23,7 @@ type PerkBalanceConfig struct {
 	DeadshotsPatience   DeadshotsPatienceBalance   `json:"deadshotsPatience"`
 	AdaptiveArmor       AdaptiveArmorBalance       `json:"adaptiveArmor"`
 	Bloodlust           BloodlustBalance           `json:"bloodlust"`
-	MarkedForDeath      MarkedForDeathBalance      `json:"markedForDeath"`
+	Disruption          DisruptionBalance          `json:"disruption"`
 	OpeningSalvo        OpeningSalvoBalance        `json:"openingSalvo"`
 	Resolute            ResoluteBalance            `json:"resolute"`
 	GrudgeBearer        GrudgeBearerBalance        `json:"grudgeBearer"`
@@ -93,8 +93,8 @@ type BloodlustBalance struct {
 	PerKillBonus float64 `json:"perKillBonus"`
 }
 
-type MarkedForDeathBalance struct {
-	DamageMult float64 `json:"damageMult"`
+type DisruptionBalance struct {
+	DamageMult float64 `json:"damageMult"` // Applied to disrupted squad's damage (e.g. 0.85 = -15%)
 }
 
 type OpeningSalvoBalance struct {
@@ -153,5 +153,8 @@ func validatePerkBalance(cfg *PerkBalanceConfig) {
 	}
 	if cfg.GrudgeBearer.MaxStacks <= 0 {
 		fmt.Println("WARNING: grudgeBearer.maxStacks should be positive")
+	}
+	if cfg.Disruption.DamageMult <= 0 || cfg.Disruption.DamageMult >= 1.0 {
+		fmt.Println("WARNING: disruption.damageMult should be between 0 and 1 (e.g. 0.85 for -15%)")
 	}
 }

@@ -80,11 +80,7 @@ func init() {
 		AttackerPostDamage: bloodlustPostDamage,
 		AttackerDamageMod:  bloodlustDamageMod,
 	})
-	RegisterPerkHooks("marked_for_death", &PerkHooks{
-		State:             StateRequirements{Category: StatePerRound},
-		AttackerDamageMod: markedForDeathDamageMod,
-	})
-	RegisterPerkHooks("overwatch", &PerkHooks{
+RegisterPerkHooks("overwatch", &PerkHooks{
 		State:     StateRequirements{Category: StatePerRound},
 		TurnStart: overwatchTurnStart,
 	})
@@ -255,27 +251,6 @@ func bloodlustDamageMod(ctx *HookContext, modifiers *combatcore.DamageModifiers)
 	}
 }
 
-// markedForDeathDamageMod applies +25% damage to a marked target.
-// State: reads MarkedForDeathState via GetPerkState across friendly squads (per-round).
-func markedForDeathDamageMod(ctx *HookContext, modifiers *combatcore.DamageModifiers) {
-	faction := combatcore.GetSquadFaction(ctx.AttackerSquadID, ctx.Manager)
-	if faction == 0 {
-		return
-	}
-	friendlySquads := combatcore.GetActiveSquadsForFaction(faction, ctx.Manager)
-	for _, friendlyID := range friendlySquads {
-		friendlyRoundState := GetRoundState(friendlyID, ctx.Manager)
-		if friendlyRoundState == nil {
-			continue
-		}
-		state := GetPerkState[*MarkedForDeathState](friendlyRoundState, "marked_for_death")
-		if state != nil && state.MarkedSquad == ctx.DefenderSquadID {
-			modifiers.DamageMultiplier *= PerkBalance.MarkedForDeath.DamageMult
-			state.MarkedSquad = 0
-			return
-		}
-	}
-}
 
 // overwatchTurnStart is a placeholder for the overwatch perk.
 // State: placeholder — not implemented in v1.

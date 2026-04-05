@@ -221,16 +221,6 @@
       "unlockCost": 3
     },
     {
-      "id": "marked_for_death",
-      "name": "Marked for Death",
-      "description": "Spend attack action to Mark enemy. Marked enemy takes +25% from next friendly attack.",
-      "tier": 1,
-      "category": 2,
-      "roles": ["DPS", "Support"],
-      "exclusiveWith": [],
-      "unlockCost": 3
-    },
-    {
       "id": "deadshots_patience",
       "name": "Deadshot's Patience",
       "description": "If completely idle last turn (no move, no attack), next ranged attack gains +50% damage and +20 accuracy.",

@@ -11,9 +11,9 @@
   "fortify": { "maxStationaryTurns": 3, "perTurnCoverBonus": 0.05 },
   "counterpunch": { "damageMult": 1.4 },
   "deadshotsPatience": { "damageMult": 1.5, "accuracyBonus": 20 },
+  "disruption": { "damageMult": 0.85 },
   "adaptiveArmor": { "maxHits": 3, "perHitReduction": 0.10 },
   "bloodlust": { "perKillBonus": 0.15 },
-  "markedForDeath": { "damageMult": 1.25 },
   "openingSalvo": { "damageMult": 1.35 },
   "resolute": { "hpThreshold": 0.5 },
   "grudgeBearer": { "maxStacks": 2, "perStackBonus": 0.20 }
