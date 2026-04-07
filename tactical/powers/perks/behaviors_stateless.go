@@ -20,20 +20,20 @@ import (
 )
 
 func init() {
-	RegisterPerkHooks("brace_for_impact", &PerkHooks{DefenderCoverMod: braceForImpactCoverMod})
-	RegisterPerkHooks("executioners_instinct", &PerkHooks{AttackerDamageMod: executionerDamageMod})
-	RegisterPerkHooks("shieldwall_discipline", &PerkHooks{DefenderDamageMod: shieldwallDamageMod})
-	RegisterPerkHooks("isolated_predator", &PerkHooks{AttackerDamageMod: isolatedPredatorDamageMod})
-	RegisterPerkHooks("vigilance", &PerkHooks{DefenderDamageMod: vigilanceDamageMod})
-	RegisterPerkHooks("field_medic", &PerkHooks{TurnStart: fieldMedicTurnStart})
-	RegisterPerkHooks("last_line", &PerkHooks{AttackerDamageMod: lastLineDamageMod})
-	RegisterPerkHooks("cleave", &PerkHooks{
+	RegisterPerkHooks(PerkBraceForImpact, &PerkHooks{DefenderCoverMod: braceForImpactCoverMod})
+	RegisterPerkHooks(PerkExecutionersInstinct, &PerkHooks{AttackerDamageMod: executionerDamageMod})
+	RegisterPerkHooks(PerkShieldwallDiscipline, &PerkHooks{DefenderDamageMod: shieldwallDamageMod})
+	RegisterPerkHooks(PerkIsolatedPredator, &PerkHooks{AttackerDamageMod: isolatedPredatorDamageMod})
+	RegisterPerkHooks(PerkVigilance, &PerkHooks{DefenderDamageMod: vigilanceDamageMod})
+	RegisterPerkHooks(PerkFieldMedic, &PerkHooks{TurnStart: fieldMedicTurnStart})
+	RegisterPerkHooks(PerkLastLine, &PerkHooks{AttackerDamageMod: lastLineDamageMod})
+	RegisterPerkHooks(PerkCleave, &PerkHooks{
 		TargetOverride:    cleaveTargetOverride,
 		AttackerDamageMod: cleaveDamageMod,
 	})
-	RegisterPerkHooks("riposte", &PerkHooks{CounterMod: riposteCounterMod})
-	RegisterPerkHooks("guardian_protocol", &PerkHooks{DamageRedirect: guardianDamageRedirect})
-	RegisterPerkHooks("precision_strike", &PerkHooks{TargetOverride: precisionStrikeTargetOverride})
+	RegisterPerkHooks(PerkRiposte, &PerkHooks{CounterMod: riposteCounterMod})
+	RegisterPerkHooks(PerkGuardianProtocol, &PerkHooks{DamageRedirect: guardianDamageRedirect})
+	RegisterPerkHooks(PerkPrecisionStrike, &PerkHooks{TargetOverride: precisionStrikeTargetOverride})
 }
 
 // Brace for Impact: +15% cover bonus when defending
@@ -148,7 +148,7 @@ func fieldMedicTurnStart(ctx *HookContext) {
 		)
 		if attr != nil {
 			maxHP := attr.GetMaxHealth()
-			healAmount := maxHP / PerkBalance.FieldMedic.HealPercent
+			healAmount := maxHP / PerkBalance.FieldMedic.HealDivisor
 			if healAmount < 1 {
 				healAmount = 1
 			}
@@ -235,7 +235,7 @@ func guardianDamageRedirect(ctx *HookContext) (int, ecs.EntityID, int) {
 		if friendlyID == defenderSquadID {
 			continue
 		}
-		if !HasPerk(friendlyID, "guardian_protocol", ctx.Manager) {
+		if !HasPerk(friendlyID, PerkGuardianProtocol, ctx.Manager) {
 			continue
 		}
 		friendlyPos := common.GetComponentTypeByID[*coords.LogicalPosition](

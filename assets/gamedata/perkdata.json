@@ -121,16 +121,6 @@
       "unlockCost": 3
     },
     {
-      "id": "disruption",
-      "name": "Disruption",
-      "description": "Dealing damage reduces target squad's next attack by -15% this round.",
-      "tier": 1,
-      "category": 3,
-      "roles": ["DPS", "Support"],
-      "exclusiveWith": [],
-      "unlockCost": 3
-    },
-    {
       "id": "guardian_protocol",
       "name": "Guardian Protocol",
       "description": "When adjacent friendly squad is attacked, one Tank absorbs 25% of damage.",

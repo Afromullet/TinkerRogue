@@ -111,14 +111,6 @@ func RunAttackerDamageModHooks(attackerID, defenderID, attackerSquadID, defender
 		return true
 	})
 
-	// Apply disruption debuff: if this attacker was disrupted by an opponent's
-	// Disruption perk this round, reduce their damage output.
-	if ctx.RoundState != nil {
-		disruptState := GetPerkState[*DisruptionState](ctx.RoundState, "disruption")
-		if disruptState != nil && len(disruptState.Targets) > 0 {
-			modifiers.DamageMultiplier *= PerkBalance.Disruption.DamageMult
-		}
-	}
 }
 
 // RunDefenderDamageModHooks runs DefenderDamageMod hooks for the defender's perks.

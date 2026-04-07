@@ -17,16 +17,16 @@ import (
 )
 
 func init() {
-	RegisterPerkHooks("opening_salvo", &PerkHooks{
+	RegisterPerkHooks(PerkOpeningSalvo, &PerkHooks{
 		State:             StateRequirements{Category: StateBattle},
 		AttackerDamageMod: openingSalvoDamageMod,
 	})
-	RegisterPerkHooks("resolute", &PerkHooks{
+	RegisterPerkHooks(PerkResolute, &PerkHooks{
 		State:         StateRequirements{Category: StateBattle},
 		TurnStart:     resoluteTurnStart,
 		DeathOverride: resoluteDeathOverride,
 	})
-	RegisterPerkHooks("grudge_bearer", &PerkHooks{
+	RegisterPerkHooks(PerkGrudgeBearer, &PerkHooks{
 		State:              StateRequirements{Category: StateBattle},
 		DefenderPostDamage: grudgeBearerPostDamage,
 		AttackerDamageMod:  grudgeBearerDamageMod,
@@ -39,18 +39,18 @@ func openingSalvoDamageMod(ctx *HookContext, modifiers *combatcore.DamageModifie
 	if modifiers.IsCounterattack {
 		return
 	}
-	state := GetBattleState[*OpeningSalvoState](ctx.RoundState, "opening_salvo")
+	state := GetBattleState[*OpeningSalvoState](ctx.RoundState, PerkOpeningSalvo)
 	if state != nil && state.HasAttackedThisCombat {
 		return
 	}
 	modifiers.DamageMultiplier *= PerkBalance.OpeningSalvo.DamageMult
-	SetBattleState(ctx.RoundState, "opening_salvo", &OpeningSalvoState{HasAttackedThisCombat: true})
+	SetBattleState(ctx.RoundState, PerkOpeningSalvo, &OpeningSalvoState{HasAttackedThisCombat: true})
 }
 
 // resoluteTurnStart snapshots current HP for the resolute death-save check.
 // State: writes ResoluteState.RoundStartHP via GetBattleState/SetBattleState (per-battle).
 func resoluteTurnStart(ctx *HookContext) {
-	state := GetOrInitBattleState(ctx.RoundState, "resolute", func() *ResoluteState {
+	state := GetOrInitBattleState(ctx.RoundState, PerkResolute, func() *ResoluteState {
 		return &ResoluteState{
 			Used:         make(map[ecs.EntityID]bool),
 			RoundStartHP: make(map[ecs.EntityID]int),
@@ -70,7 +70,7 @@ func resoluteTurnStart(ctx *HookContext) {
 // resoluteDeathOverride prevents death if the unit had >50% HP at round start (once per battle).
 // State: reads/writes ResoluteState via GetBattleState (per-battle).
 func resoluteDeathOverride(ctx *HookContext) bool {
-	state := GetBattleState[*ResoluteState](ctx.RoundState, "resolute")
+	state := GetBattleState[*ResoluteState](ctx.RoundState, PerkResolute)
 	if state == nil {
 		return false
 	}
@@ -101,7 +101,7 @@ func grudgeBearerPostDamage(ctx *HookContext, damageDealt int, wasKill bool) {
 	if damageDealt <= 0 {
 		return
 	}
-	state := GetOrInitBattleState(ctx.RoundState, "grudge_bearer", func() *GrudgeBearerState {
+	state := GetOrInitBattleState(ctx.RoundState, PerkGrudgeBearer, func() *GrudgeBearerState {
 		return &GrudgeBearerState{Stacks: make(map[ecs.EntityID]int)}
 	})
 	current := state.Stacks[ctx.AttackerSquadID]
@@ -113,7 +113,7 @@ func grudgeBearerPostDamage(ctx *HookContext, damageDealt int, wasKill bool) {
 // grudgeBearerDamageMod applies +20% damage per grudge stack (max +40%).
 // State: reads GrudgeBearerState.Stacks via GetBattleState (per-battle).
 func grudgeBearerDamageMod(ctx *HookContext, modifiers *combatcore.DamageModifiers) {
-	state := GetBattleState[*GrudgeBearerState](ctx.RoundState, "grudge_bearer")
+	state := GetBattleState[*GrudgeBearerState](ctx.RoundState, PerkGrudgeBearer)
 	if state != nil {
 		stacks := state.Stacks[ctx.DefenderSquadID]
 		if stacks > 0 {

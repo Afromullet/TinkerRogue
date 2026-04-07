@@ -27,20 +27,17 @@ import (
 
 func init() {
 	// Shared tracking readers
-	RegisterPerkHooks("reckless_assault", &PerkHooks{
-		State: StateRequirements{
-			Category:     StateSharedRead,
-			ReadsFields:  []string{"RecklessVulnerable"},
-			WritesFields: []string{"RecklessVulnerable"},
-		},
+	RegisterPerkHooks(PerkRecklessAssault, &PerkHooks{
+		State:             StateRequirements{Category: StatePerRound},
+		TurnStart:         recklessAssaultTurnStart,
 		AttackerDamageMod: recklessAssaultAttackerMod,
 		DefenderDamageMod: recklessAssaultDefenderMod,
 	})
-	RegisterPerkHooks("stalwart", &PerkHooks{
+	RegisterPerkHooks(PerkStalwart, &PerkHooks{
 		State:      StateRequirements{Category: StateSharedRead, ReadsFields: []string{"MovedThisTurn"}},
 		CounterMod: stalwartCounterMod,
 	})
-	RegisterPerkHooks("fortify", &PerkHooks{
+	RegisterPerkHooks(PerkFortify, &PerkHooks{
 		State: StateRequirements{
 			Category:     StateSharedRead,
 			ReadsFields:  []string{"MovedThisTurn", "TurnsStationary"},
@@ -51,7 +48,7 @@ func init() {
 	})
 
 	// Per-perk round state (uses GetPerkState/SetPerkState)
-	RegisterPerkHooks("counterpunch", &PerkHooks{
+	RegisterPerkHooks(PerkCounterpunch, &PerkHooks{
 		State: StateRequirements{
 			Category:    StatePerRound,
 			ReadsFields: []string{"WasAttackedLastTurn", "DidNotAttackLastTurn"},
@@ -59,7 +56,7 @@ func init() {
 		TurnStart:         counterpunchTurnStart,
 		AttackerDamageMod: counterpunchDamageMod,
 	})
-	RegisterPerkHooks("deadshots_patience", &PerkHooks{
+	RegisterPerkHooks(PerkDeadshotsPatience, &PerkHooks{
 		State: StateRequirements{
 			Category:    StatePerRound,
 			ReadsFields: []string{"WasIdleLastTurn"},
@@ -67,22 +64,14 @@ func init() {
 		TurnStart:         deadshotTurnStart,
 		AttackerDamageMod: deadshotDamageMod,
 	})
-	RegisterPerkHooks("disruption", &PerkHooks{
-		State:              StateRequirements{Category: StatePerRound},
-		AttackerPostDamage: disruptionPostDamage,
-	})
-	RegisterPerkHooks("adaptive_armor", &PerkHooks{
+	RegisterPerkHooks(PerkAdaptiveArmor, &PerkHooks{
 		State:             StateRequirements{Category: StatePerRound},
 		DefenderDamageMod: adaptiveArmorDamageMod,
 	})
-	RegisterPerkHooks("bloodlust", &PerkHooks{
+	RegisterPerkHooks(PerkBloodlust, &PerkHooks{
 		State:              StateRequirements{Category: StatePerRound},
 		AttackerPostDamage: bloodlustPostDamage,
 		AttackerDamageMod:  bloodlustDamageMod,
-	})
-RegisterPerkHooks("overwatch", &PerkHooks{
-		State:     StateRequirements{Category: StatePerRound},
-		TurnStart: overwatchTurnStart,
 	})
 }
 
@@ -90,20 +79,27 @@ RegisterPerkHooks("overwatch", &PerkHooks{
 // SHARED TRACKING READERS
 // ========================================
 
+// recklessAssaultTurnStart resets vulnerability at the start of each turn.
+// State: writes RecklessAssaultState via SetPerkState (per-round).
+func recklessAssaultTurnStart(ctx *HookContext) {
+	SetPerkState(ctx.RoundState, PerkRecklessAssault, &RecklessAssaultState{Vulnerable: false})
+}
+
 // recklessAssaultAttackerMod boosts outgoing damage and sets vulnerability.
-// State: writes PerkRoundState.RecklessVulnerable (shared tracking).
+// State: writes RecklessAssaultState via SetPerkState (per-round).
 func recklessAssaultAttackerMod(ctx *HookContext, modifiers *combatcore.DamageModifiers) {
 	if modifiers.IsCounterattack {
 		return
 	}
 	modifiers.DamageMultiplier *= PerkBalance.RecklessAssault.AttackerMult
-	ctx.RoundState.RecklessVulnerable = true
+	SetPerkState(ctx.RoundState, PerkRecklessAssault, &RecklessAssaultState{Vulnerable: true})
 }
 
 // recklessAssaultDefenderMod increases incoming damage when vulnerable.
-// State: reads PerkRoundState.RecklessVulnerable (shared tracking).
+// State: reads RecklessAssaultState via GetPerkState (per-round).
 func recklessAssaultDefenderMod(ctx *HookContext, modifiers *combatcore.DamageModifiers) {
-	if ctx.RoundState.RecklessVulnerable {
+	state := GetPerkState[*RecklessAssaultState](ctx.RoundState, PerkRecklessAssault)
+	if state != nil && state.Vulnerable {
 		modifiers.DamageMultiplier *= PerkBalance.RecklessAssault.DefenderMult
 	}
 }
@@ -151,13 +147,13 @@ func fortifyCoverMod(ctx *HookContext, coverBreakdown *combatcore.CoverBreakdown
 //	writes CounterpunchState via SetPerkState (per-round).
 func counterpunchTurnStart(ctx *HookContext) {
 	ready := ctx.RoundState.WasAttackedLastTurn && ctx.RoundState.DidNotAttackLastTurn
-	SetPerkState(ctx.RoundState, "counterpunch", &CounterpunchState{Ready: ready})
+	SetPerkState(ctx.RoundState, PerkCounterpunch, &CounterpunchState{Ready: ready})
 }
 
 // counterpunchDamageMod applies +40% damage when armed.
 // State: reads/writes CounterpunchState via GetPerkState (per-round).
 func counterpunchDamageMod(ctx *HookContext, modifiers *combatcore.DamageModifiers) {
-	state := GetPerkState[*CounterpunchState](ctx.RoundState, "counterpunch")
+	state := GetPerkState[*CounterpunchState](ctx.RoundState, PerkCounterpunch)
 	if state != nil && state.Ready {
 		modifiers.DamageMultiplier *= PerkBalance.Counterpunch.DamageMult
 		state.Ready = false
@@ -170,13 +166,13 @@ func counterpunchDamageMod(ctx *HookContext, modifiers *combatcore.DamageModifie
 //	writes DeadshotState via SetPerkState (per-round).
 func deadshotTurnStart(ctx *HookContext) {
 	ready := ctx.RoundState.WasIdleLastTurn
-	SetPerkState(ctx.RoundState, "deadshots_patience", &DeadshotState{Ready: ready})
+	SetPerkState(ctx.RoundState, PerkDeadshotsPatience, &DeadshotState{Ready: ready})
 }
 
 // deadshotDamageMod applies +50% damage and +20 accuracy for ranged/magic attacks when armed.
 // State: reads/writes DeadshotState via GetPerkState (per-round).
 func deadshotDamageMod(ctx *HookContext, modifiers *combatcore.DamageModifiers) {
-	state := GetPerkState[*DeadshotState](ctx.RoundState, "deadshots_patience")
+	state := GetPerkState[*DeadshotState](ctx.RoundState, PerkDeadshotsPatience)
 	if state == nil || !state.Ready {
 		return
 	}
@@ -193,30 +189,10 @@ func deadshotDamageMod(ctx *HookContext, modifiers *combatcore.DamageModifiers) 
 	}
 }
 
-// disruptionPostDamage marks the target squad as disrupted.
-// State: writes DisruptionState via SetPerkState on both attacker and defender (per-round).
-func disruptionPostDamage(ctx *HookContext, damageDealt int, wasKill bool) {
-	if damageDealt <= 0 {
-		return
-	}
-	state := GetOrInitPerkState(ctx.RoundState, "disruption", func() *DisruptionState {
-		return &DisruptionState{Targets: make(map[ecs.EntityID]bool)}
-	})
-	state.Targets[ctx.DefenderSquadID] = true
-
-	defenderRoundState := GetRoundState(ctx.DefenderSquadID, ctx.Manager)
-	if defenderRoundState != nil {
-		defState := GetOrInitPerkState(defenderRoundState, "disruption", func() *DisruptionState {
-			return &DisruptionState{Targets: make(map[ecs.EntityID]bool)}
-		})
-		defState.Targets[ctx.AttackerSquadID] = true
-	}
-}
-
 // adaptiveArmorDamageMod reduces damage from repeated attackers.
 // State: reads/writes AdaptiveArmorState via GetPerkState/SetPerkState (per-round).
 func adaptiveArmorDamageMod(ctx *HookContext, modifiers *combatcore.DamageModifiers) {
-	state := GetOrInitPerkState(ctx.RoundState, "adaptive_armor", func() *AdaptiveArmorState {
+	state := GetOrInitPerkState(ctx.RoundState, PerkAdaptiveArmor, func() *AdaptiveArmorState {
 		return &AdaptiveArmorState{AttackedBy: make(map[ecs.EntityID]int)}
 	})
 	hits := state.AttackedBy[ctx.AttackerSquadID]
@@ -234,7 +210,7 @@ func adaptiveArmorDamageMod(ctx *HookContext, modifiers *combatcore.DamageModifi
 // State: writes BloodlustState via SetPerkState (per-round).
 func bloodlustPostDamage(ctx *HookContext, damageDealt int, wasKill bool) {
 	if wasKill {
-		state := GetOrInitPerkState(ctx.RoundState, "bloodlust", func() *BloodlustState {
+		state := GetOrInitPerkState(ctx.RoundState, PerkBloodlust, func() *BloodlustState {
 			return &BloodlustState{}
 		})
 		state.KillsThisRound++
@@ -244,16 +220,9 @@ func bloodlustPostDamage(ctx *HookContext, damageDealt int, wasKill bool) {
 // bloodlustDamageMod applies bonus damage based on kills this round.
 // State: reads BloodlustState via GetPerkState (per-round).
 func bloodlustDamageMod(ctx *HookContext, modifiers *combatcore.DamageModifiers) {
-	state := GetPerkState[*BloodlustState](ctx.RoundState, "bloodlust")
+	state := GetPerkState[*BloodlustState](ctx.RoundState, PerkBloodlust)
 	if state != nil && state.KillsThisRound > 0 {
 		bonus := 1.0 + float64(state.KillsThisRound)*PerkBalance.Bloodlust.PerKillBonus
 		modifiers.DamageMultiplier *= bonus
 	}
-}
-
-
-// overwatchTurnStart is a placeholder for the overwatch perk.
-// State: placeholder — not implemented in v1.
-func overwatchTurnStart(ctx *HookContext) {
-	// Placeholder — the actual trigger happens in the movement system (not implemented in v1).
 }
