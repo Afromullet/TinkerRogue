@@ -49,6 +49,11 @@ func (sem *SquadEditorMode) refreshCurrentSquad() {
 	// Refresh unit list
 	sem.rebuildUnitListWidget(currentSquadID)
 
+	// Refresh perk panel if visible
+	if sem.perkPanel != nil && sem.subMenus.IsActive("perks") {
+		sem.perkPanel.refreshPerkPanel()
+	}
+
 	// Update status
 	squadName := sem.Queries.SquadCache.GetSquadName(currentSquadID)
 	sem.SetStatus(fmt.Sprintf("Editing squad: %s", squadName))

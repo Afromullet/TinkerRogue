@@ -60,6 +60,7 @@ const (
 	ActionRemoveUnit           // Right-click - remove unit from grid
 	ActionViewUnit             // Shift+Left-click - view unit details
 	ActionUnitPurchase         // P - open unit purchase mode
+	ActionTogglePerks          // K - toggle perks panel
 
 	// === Artifact Mode ===
 	ActionPrevSquad       // Left arrow

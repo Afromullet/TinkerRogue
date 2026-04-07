@@ -8,6 +8,11 @@ import (
 	"github.com/bytearena/ecs"
 )
 
+// GetEquippedPerkIDs returns all perk IDs equipped on a squad (public accessor for GUI).
+func GetEquippedPerkIDs(squadID ecs.EntityID, manager *common.EntityManager) []string {
+	return getActivePerkIDs(squadID, manager)
+}
+
 // getActivePerkIDs returns all perk IDs equipped on a squad.
 func getActivePerkIDs(squadID ecs.EntityID, manager *common.EntityManager) []string {
 	if data := common.GetComponentTypeByID[*PerkSlotData](

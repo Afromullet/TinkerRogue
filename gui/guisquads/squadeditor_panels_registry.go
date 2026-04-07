@@ -1,9 +1,12 @@
 package guisquads
 
 import (
+	"image/color"
+
 	"game_main/gui/builders"
 	"game_main/gui/framework"
 	"game_main/gui/specs"
+	"game_main/tactical/powers/perks"
 
 	"github.com/bytearena/ecs"
 	"github.com/ebitenui/ebitenui/widget"
@@ -15,9 +18,80 @@ const (
 	SquadEditorPanelGridEditor    framework.PanelType = "squadeditor_grid_editor"
 	SquadEditorPanelUnitList      framework.PanelType = "squadeditor_unit_list"
 	SquadEditorPanelRoster        framework.PanelType = "squadeditor_roster"
+	SquadEditorPanelPerks         framework.PanelType = "squadeditor_perks"
+	SquadEditorPanelSquadInfoMenu    framework.PanelType = "squadeditor_squad_info_menu"
+	SquadEditorPanelPatternsMenu    framework.PanelType = "squadeditor_patterns_menu"
 )
 
+// createSquadEditorSubMenu creates a vertical sub-menu panel positioned above the action bar.
+// Follows the same pattern as combat mode's createCombatSubMenu.
+func createSquadEditorSubMenu(sem *SquadEditorMode, name string, buttons []builders.ButtonConfig) *widget.Container {
+	spacing := int(float64(sem.Layout.ScreenWidth) * specs.PaddingTight)
+	subMenuBottomPad := int(float64(sem.Layout.ScreenHeight) * (specs.BottomButtonOffset + specs.SquadEditorSubMenuOffset))
+	anchorLayout := builders.AnchorCenterEnd(subMenuBottomPad)
+
+	panel := builders.CreatePanelWithConfig(builders.ContainerConfig{
+		Layout: widget.NewRowLayout(
+			widget.RowLayoutOpts.Direction(widget.DirectionVertical),
+			widget.RowLayoutOpts.Spacing(spacing),
+			widget.RowLayoutOpts.Padding(widget.NewInsetsSimple(10)),
+		),
+		LayoutData: anchorLayout,
+	})
+	for _, btn := range buttons {
+		panel.AddChild(builders.CreateButtonWithConfig(btn))
+	}
+	panel.GetWidget().Visibility = widget.Visibility_Hide
+	sem.subMenus.Register(name, panel)
+	return panel
+}
+
 func init() {
+	// Register squad info sub-menu (groups Units, Roster, Perks)
+	framework.RegisterPanel(SquadEditorPanelSquadInfoMenu, framework.PanelDescriptor{
+		Content: framework.ContentCustom,
+		OnCreate: func(result *framework.PanelResult, mode framework.UIMode) error {
+			sem := mode.(*SquadEditorMode)
+			result.Container = createSquadEditorSubMenu(sem, "squad_info", []builders.ButtonConfig{
+				{Text: "Units (U)", OnClick: func() {
+					sem.subMenus.CloseAll()
+					sem.subMenus.Toggle("units")()
+				}},
+				{Text: "Roster (R)", OnClick: func() {
+					sem.subMenus.CloseAll()
+					sem.subMenus.Toggle("roster")()
+				}},
+				{Text: "Perks (K)", OnClick: func() {
+					sem.subMenus.CloseAll()
+					sem.subMenus.Toggle("perks")()
+					if sem.subMenus.IsActive("perks") {
+						sem.perkPanel.refreshPerkPanel()
+					}
+				}},
+			})
+			return nil
+		},
+	})
+
+	// Register patterns sub-menu (groups Attack Pattern + Support Pattern)
+	framework.RegisterPanel(SquadEditorPanelPatternsMenu, framework.PanelDescriptor{
+		Content: framework.ContentCustom,
+		OnCreate: func(result *framework.PanelResult, mode framework.UIMode) error {
+			sem := mode.(*SquadEditorMode)
+			result.Container = createSquadEditorSubMenu(sem, "patterns", []builders.ButtonConfig{
+				{Text: "Atk Pattern (V)", OnClick: func() {
+					sem.subMenus.CloseAll()
+					sem.toggleAttackPattern()
+				}},
+				{Text: "Support Pattern (B)", OnClick: func() {
+					sem.subMenus.CloseAll()
+					sem.toggleSupportPattern()
+				}},
+			})
+			return nil
+		},
+	})
+
 	// Register squad selector panel with commander row header and squad operation buttons
 	framework.RegisterPanel(SquadEditorPanelSquadSelector, framework.PanelDescriptor{
 		Content: framework.ContentCustom,
@@ -266,6 +340,117 @@ func init() {
 			sem.subMenus.Register("roster", result.Container)
 
 			result.Custom["rosterList"] = rosterList
+
+			return nil
+		},
+	})
+
+	// Register perk panel (right side, hidden by default, managed by SubMenuController)
+	framework.RegisterPanel(SquadEditorPanelPerks, framework.PanelDescriptor{
+		Content: framework.ContentCustom,
+		OnCreate: func(result *framework.PanelResult, mode framework.UIMode) error {
+			sem := mode.(*SquadEditorMode)
+			layout := sem.Layout
+
+			panelWidth := int(float64(layout.ScreenWidth) * specs.SquadEditorPerkPanelWidth)
+			panelHeight := int(float64(layout.ScreenHeight) * specs.SquadEditorPerkPanelHeight)
+
+			result.Container = builders.CreateStaticPanel(builders.ContainerConfig{
+				MinWidth:  panelWidth,
+				MinHeight: panelHeight,
+				Layout: widget.NewRowLayout(
+					widget.RowLayoutOpts.Direction(widget.DirectionVertical),
+					widget.RowLayoutOpts.Spacing(5),
+				),
+			})
+
+			rightPad := int(float64(layout.ScreenWidth) * specs.PaddingStandard)
+			topOffset := int(float64(layout.ScreenHeight) * specs.PaddingStandard)
+			result.Container.GetWidget().LayoutData = builders.AnchorEndStart(rightPad, topOffset)
+
+			// Slot count header
+			slotLabel := builders.CreateSmallLabel("Perks (0/3)")
+			result.Container.AddChild(slotLabel)
+
+			// Equipped perks section
+			result.Container.AddChild(builders.CreateSmallLabel("Equipped:"))
+
+			equippedList := builders.CreateListWithConfig(builders.ListConfig{
+				Entries:   []interface{}{},
+				MinWidth:  panelWidth - 20,
+				MinHeight: 120,
+				EntryLabelFunc: func(e interface{}) string {
+					def := e.(*perks.PerkDefinition)
+					return def.Name
+				},
+				OnEntrySelected: func(e interface{}) {
+					if sem.perkPanel != nil {
+						sem.perkPanel.onEquippedSelected(e.(*perks.PerkDefinition))
+					}
+				},
+			})
+			result.Container.AddChild(equippedList)
+
+			unequipBtn := builders.CreateButtonWithConfig(builders.ButtonConfig{
+				Text: "Unequip",
+				OnClick: func() {
+					if sem.perkPanel != nil {
+						sem.perkPanel.onUnequipClicked()
+					}
+				},
+			})
+			unequipBtn.GetWidget().Disabled = true
+			result.Container.AddChild(unequipBtn)
+
+			// Available perks section
+			result.Container.AddChild(builders.CreateSmallLabel("Available:"))
+
+			availableList := builders.CreateListWithConfig(builders.ListConfig{
+				Entries:   []interface{}{},
+				MinWidth:  panelWidth - 20,
+				MinHeight: 150,
+				EntryLabelFunc: func(e interface{}) string {
+					def := e.(*perks.PerkDefinition)
+					return def.Name
+				},
+				OnEntrySelected: func(e interface{}) {
+					if sem.perkPanel != nil {
+						sem.perkPanel.onAvailableSelected(e.(*perks.PerkDefinition))
+					}
+				},
+			})
+			result.Container.AddChild(availableList)
+
+			equipBtn := builders.CreateButtonWithConfig(builders.ButtonConfig{
+				Text: "Equip",
+				OnClick: func() {
+					if sem.perkPanel != nil {
+						sem.perkPanel.onEquipClicked()
+					}
+				},
+			})
+			equipBtn.GetWidget().Disabled = true
+			result.Container.AddChild(equipBtn)
+
+			// Detail area
+			detailArea := builders.CreateCachedTextArea(builders.TextAreaConfig{
+				MinWidth:  panelWidth - 20,
+				MinHeight: 120,
+				FontColor: color.White,
+			})
+			detailArea.SetText("Select a perk to view details.")
+			result.Container.AddChild(detailArea)
+
+			// Hidden by default, registered with SubMenuController
+			result.Container.GetWidget().Visibility = widget.Visibility_Hide
+			sem.subMenus.Register("perks", result.Container)
+
+			result.Custom["equippedList"] = equippedList
+			result.Custom["availableList"] = availableList
+			result.Custom["detailArea"] = detailArea
+			result.Custom["equipBtn"] = equipBtn
+			result.Custom["unequipBtn"] = unequipBtn
+			result.Custom["slotLabel"] = slotLabel
 
 			return nil
 		},

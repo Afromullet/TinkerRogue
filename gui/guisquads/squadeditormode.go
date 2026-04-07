@@ -60,6 +60,9 @@ type SquadEditorMode struct {
 	supportLabel         *widget.Text
 	showSupportPattern   bool
 
+	// Perk panel controller
+	perkPanel *perkPanelController
+
 	// Input action map
 	actionMap *framework.ActionMap
 
@@ -124,6 +127,9 @@ func (sem *SquadEditorMode) Initialize(ctx *framework.UIContext) error {
 		SquadEditorPanelGridEditor,
 		SquadEditorPanelUnitList,
 		SquadEditorPanelRoster,
+		SquadEditorPanelPerks,
+		SquadEditorPanelSquadInfoMenu,
+		SquadEditorPanelPatternsMenu,
 	); err != nil {
 		return err
 	}
@@ -173,15 +179,18 @@ func (sem *SquadEditorMode) initializeWidgetReferences() {
 	sem.supportGridCells = framework.GetPanelWidget[[3][3]*widget.Button](sem.Panels, SquadEditorPanelGridEditor, "supportGridCells")
 	sem.supportGridContainer = framework.GetPanelWidget[*widget.Container](sem.Panels, SquadEditorPanelGridEditor, "supportGridContainer")
 	sem.supportLabel = framework.GetPanelWidget[*widget.Text](sem.Panels, SquadEditorPanelGridEditor, "supportLabel")
+
+	// Perk panel
+	sem.initPerkPanel()
 }
 
-// buildContextActions creates bottom-left action buttons for current squad context
+// buildContextActions creates bottom-left action buttons for current squad context.
+// Units, Roster, and Perks are grouped under a "Squad Info" sub-menu to reduce clutter.
+// Attack/Support Pattern toggles remain hotkey-only (V/B).
 func (sem *SquadEditorMode) buildContextActions() *widget.Container {
 	return builders.CreateLeftActionBar(sem.Layout, []builders.ButtonSpec{
-		{Text: "Units (U)", OnClick: sem.subMenus.Toggle("units")},
-		{Text: "Roster (R)", OnClick: sem.subMenus.Toggle("roster")},
-		{Text: "Atk Pattern (V)", OnClick: func() { sem.toggleAttackPattern() }},
-		{Text: "Support Pattern (B)", OnClick: func() { sem.toggleSupportPattern() }},
+		{Text: "Squad Info", OnClick: sem.subMenus.Toggle("squad_info")},
+		{Text: "Patterns", OnClick: sem.subMenus.Toggle("patterns")},
 	})
 }
 
@@ -313,6 +322,15 @@ func (sem *SquadEditorMode) HandleInput(inputState *framework.InputState) bool {
 	// Tab key cycles to next commander
 	if inputState.ActionActive(framework.ActionCycleCommanderEditor) {
 		sem.showNextCommander()
+		return true
+	}
+
+	// K key toggles perks panel
+	if inputState.ActionActive(framework.ActionTogglePerks) {
+		sem.subMenus.Toggle("perks")()
+		if sem.subMenus.IsActive("perks") {
+			sem.perkPanel.refreshPerkPanel()
+		}
 		return true
 	}
 

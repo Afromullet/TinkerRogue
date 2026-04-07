@@ -7,6 +7,9 @@ import (
 	"github.com/bytearena/ecs"
 )
 
+// MaxPerkSlots is the maximum number of perks a squad can equip.
+const MaxPerkSlots = 3
+
 // EquipPerk adds a perk to a squad's perk slot.
 // Returns an error if the perk is already equipped, the slot is full,
 // or the perk is exclusive with an already-equipped perk.
