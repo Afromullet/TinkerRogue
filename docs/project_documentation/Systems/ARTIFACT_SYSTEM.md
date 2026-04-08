@@ -1,6 +1,6 @@
 # Artifact System Architecture
 
-**Last Updated:** 2026-02-17
+**Last Updated:** 2026-04-08
 
 ---
 
@@ -159,13 +159,15 @@ Behaviors where `IsPlayerActivated()` returns `false` never appear in the activa
 
 ### Hook Dispatch Wiring
 
-`combatservices.setupBehaviorDispatch` (in `tactical/combatservices/combat_service.go`) wires the hook calls at `CombatService` construction time. It registers three callbacks with the combat event system:
+`setupPowerDispatch` in `tactical/combat/combatservices/combat_power_dispatch.go` wires both artifact behavior hooks and perk hooks into the combat event system at `CombatService` construction time. Artifact dispatch is **Phase 1** of this merged function, registering before perk hooks. This ordering guarantees that artifact effects (e.g., Deadlock Shackles locking a squad) resolve before perk turn-start hooks.
 
-- A post-reset callback that iterates `gear.AllBehaviors()` and calls each behavior's `OnPostReset`.
-- An attack-complete callback that iterates all behaviors and calls `OnAttackComplete`.
+The function registers three artifact callbacks:
+
+- A post-reset callback that iterates `artifacts.AllBehaviors()` and calls each behavior's `OnPostReset`.
+- An attack-complete callback that iterates equipped behaviors on the attacker and calls `OnAttackComplete`.
 - A turn-end callback that first refreshes round charges on the tracker, then calls `OnTurnEnd` on all behaviors.
 
-`gear.AllBehaviors()` returns all registered behaviors in deterministic alphabetical order. Each hook call is broadcast to all behaviors unconditionally; each behavior is responsible for checking whether it applies to the current situation (for example, by checking which squads carry the artifact or whether charges are available).
+`artifacts.AllBehaviors()` returns all registered behaviors in deterministic alphabetical order. Each hook call is broadcast to all behaviors unconditionally; each behavior is responsible for checking whether it applies to the current situation (for example, by checking which squads carry the artifact or whether charges are available).
 
 ---
 
@@ -206,9 +208,9 @@ gear/
   system.go                — mutation functions (EquipArtifact, UnequipArtifact,
                              ApplyArtifactStatEffects, inventory management)
 
-tactical/combatservices/
-  combat_service.go        — owns ArtifactChargeTracker, calls setupBehaviorDispatch
-  combat_events.go         — hook registration API for the CombatService
+tactical/combat/combatservices/
+  combat_service.go              — owns ArtifactChargeTracker, calls setupPowerDispatch
+  combat_power_dispatch.go       — wires both artifact behaviors (Phase 1) and perk hooks (Phase 2)
 
 gui/guisquads/
   artifact_refresh.go      — ArtifactMode UI for equipping/unequipping artifacts on squads
@@ -223,14 +225,16 @@ The data flow at combat time is:
 CombatService.InitializeCombat
   └─ ApplyArtifactStatEffects        (minor + major stat modifiers → unit ActiveEffects)
   └─ TurnManager.ResetSquadActions
-       └─ postResetHook → AllBehaviors().OnPostReset (each behavior checks its preconditions)
+       └─ postResetHook → AllBehaviors().OnPostReset    (artifact Phase 1, fires first)
+                        → perks.RunTurnStartHooks        (perk Phase 2, fires second)
 
 CombatActionSystem.ExecuteAttackAction
-  └─ onAttackComplete → AllBehaviors().OnAttackComplete
+  └─ onAttackComplete → AllBehaviors().OnAttackComplete  (artifact Phase 1)
+                      → perks state tracking             (perk Phase 2)
 
 TurnManager.EndTurn
-  └─ onTurnEnd → ChargeTracker.RefreshRoundCharges
-               → AllBehaviors().OnTurnEnd
+  └─ onTurnEnd → ChargeTracker.RefreshRoundCharges + AllBehaviors().OnTurnEnd  (artifact Phase 1)
+               → perks.ResetPerkRoundStateRound                                (perk Phase 2)
 
 Player activates artifact via UI
   └─ gear.CanActivateArtifact (charge check)

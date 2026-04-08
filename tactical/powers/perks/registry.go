@@ -179,20 +179,15 @@ func LoadPerkDefinitions() {
 }
 
 // validateHookCoverage checks that JSON definitions and hook registrations are in sync.
-// Also validates state category consistency as a heuristic.
 func validateHookCoverage() {
 	for id := range PerkRegistry {
 		if GetPerkHooks(id) == nil {
 			fmt.Printf("WARNING: Perk %q has a JSON definition but no registered hooks\n", id)
 		}
 	}
-	for id, hooks := range hookRegistry {
+	for id := range hookRegistry {
 		if PerkRegistry[id] == nil {
 			fmt.Printf("WARNING: Perk %q has registered hooks but no JSON definition\n", id)
-		}
-		// Heuristic: perks declared as StateNone but with TurnStart hooks are likely stateful
-		if hooks.State.Category == StateNone && hooks.TurnStart != nil {
-			fmt.Printf("NOTICE: Perk %q declares StateNone but has a TurnStart hook — verify it is truly stateless\n", id)
 		}
 	}
 }

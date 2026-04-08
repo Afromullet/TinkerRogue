@@ -17,7 +17,7 @@
       "tier": 0,
       "category": 0,
       "roles": ["DPS"],
-      "exclusiveWith": [],
+      "exclusiveWith": ["stalwart"],
       "unlockCost": 2
     },
     {
@@ -27,7 +27,7 @@
       "tier": 0,
       "category": 1,
       "roles": ["Tank", "Support"],
-      "exclusiveWith": [],
+      "exclusiveWith": ["reckless_assault"],
       "unlockCost": 2
     },
     {
@@ -77,7 +77,7 @@
       "tier": 0,
       "category": 3,
       "roles": ["Support"],
-      "exclusiveWith": [],
+      "exclusiveWith": ["bloodlust"],
       "unlockCost": 2
     },
     {
@@ -107,7 +107,7 @@
       "tier": 1,
       "category": 2,
       "roles": ["DPS"],
-      "exclusiveWith": [],
+      "exclusiveWith": ["precision_strike"],
       "unlockCost": 3
     },
     {
@@ -131,16 +131,6 @@
       "unlockCost": 4
     },
     {
-      "id": "overwatch",
-      "name": "Overwatch",
-      "description": "Skip attack to auto-attack at 75% damage next enemy that moves in range.",
-      "tier": 1,
-      "category": 2,
-      "roles": ["DPS"],
-      "exclusiveWith": [],
-      "unlockCost": 4
-    },
-    {
       "id": "adaptive_armor",
       "name": "Adaptive Armor",
       "description": "-10% damage from same attacker per hit (stacks to 30%, resets per round).",
@@ -157,7 +147,7 @@
       "tier": 1,
       "category": 0,
       "roles": ["DPS"],
-      "exclusiveWith": [],
+      "exclusiveWith": ["field_medic"],
       "unlockCost": 3
     },
     {
@@ -177,7 +167,7 @@
       "tier": 1,
       "category": 2,
       "roles": ["DPS"],
-      "exclusiveWith": [],
+      "exclusiveWith": ["cleave"],
       "unlockCost": 3
     },
     {

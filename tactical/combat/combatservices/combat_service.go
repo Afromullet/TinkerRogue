@@ -94,11 +94,8 @@ func NewCombatService(manager *common.EntityManager) *CombatService {
 		}
 	})
 
-	// Register artifact behavior dispatch
-	setupBehaviorDispatch(cs, manager, cache)
-
-	// Register perk dispatch
-	setupPerkDispatch(cs, manager)
+	// Register artifact behavior and perk hook dispatch
+	setupPowerDispatch(cs, manager, cache)
 
 	return cs
 }

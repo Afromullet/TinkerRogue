@@ -21,7 +21,6 @@ const (
 	PerkDeadshotsPatience    = "deadshots_patience"
 	PerkAdaptiveArmor        = "adaptive_armor"
 	PerkBloodlust            = "bloodlust"
-	PerkOverwatch            = "overwatch"
 	PerkOpeningSalvo         = "opening_salvo"
 	PerkResolute             = "resolute"
 	PerkGrudgeBearer         = "grudge_bearer"

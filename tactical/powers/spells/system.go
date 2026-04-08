@@ -53,6 +53,13 @@ func InitSquadSpellsFromLeader(squadID ecs.EntityID, manager *common.EntityManag
 // ExecuteSpellCast performs a spell cast from a squad against target squads.
 // It validates mana, deducts cost, applies damage to all alive units in targets,
 // and removes destroyed squads from the map.
+//
+// Design decision: spells intentionally bypass perk hooks. Perks modify the
+// physical combat pipeline (attack/counter/cover); spells operate in a separate
+// mana-gated power layer. This matches the four-layer power system design where
+// each layer turns a distinct knob. If spell-perk interaction is desired in the
+// future, add an OnSpellCast hook point (see PERKS_AND_HOOKS_COMBINED_ANALYSIS.md
+// Tier 3 recommendations).
 func ExecuteSpellCast(
 	casterEntityID ecs.EntityID,
 	spellID string,

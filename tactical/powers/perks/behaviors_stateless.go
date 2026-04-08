@@ -8,6 +8,7 @@
 package perks
 
 import (
+	"fmt"
 	"math"
 
 	"game_main/common"
@@ -42,6 +43,7 @@ func braceForImpactCoverMod(ctx *HookContext, coverBreakdown *combatcore.CoverBr
 	if coverBreakdown.TotalReduction > 1.0 {
 		coverBreakdown.TotalReduction = 1.0
 	}
+	logPerkActivation(PerkBraceForImpact, ctx.DefenderSquadID, "cover bonus applied")
 }
 
 // Executioner's Instinct: +25% crit chance vs squads with any unit below 30% HP
@@ -55,6 +57,7 @@ func executionerDamageMod(ctx *HookContext, modifiers *combatcore.DamageModifier
 		maxHP := attr.GetMaxHealth()
 		if maxHP > 0 && float64(attr.CurrentHealth)/float64(maxHP) < PerkBalance.ExecutionersInstinct.HPThreshold {
 			modifiers.CritBonus += PerkBalance.ExecutionersInstinct.CritBonus
+			logPerkActivation(PerkExecutionersInstinct, ctx.AttackerSquadID, "crit bonus vs wounded target")
 			return
 		}
 	}
@@ -88,6 +91,7 @@ func shieldwallDamageMod(ctx *HookContext, modifiers *combatcore.DamageModifiers
 	if tankCount > 0 {
 		reduction := float64(tankCount) * PerkBalance.ShieldwallDiscipline.PerTankReduction
 		modifiers.DamageMultiplier *= (1.0 - reduction)
+		logPerkActivation(PerkShieldwallDiscipline, ctx.DefenderSquadID, fmt.Sprintf("-%d%% damage from %d front-row tanks", int(reduction*100), tankCount))
 	}
 }
 
@@ -119,11 +123,13 @@ func isolatedPredatorDamageMod(ctx *HookContext, modifiers *combatcore.DamageMod
 		}
 	}
 	modifiers.DamageMultiplier *= PerkBalance.IsolatedPredator.DamageMult
+	logPerkActivation(PerkIsolatedPredator, ctx.AttackerSquadID, "damage bonus from isolation")
 }
 
 // Vigilance: Crits become normal hits
 func vigilanceDamageMod(ctx *HookContext, modifiers *combatcore.DamageModifiers) {
 	modifiers.SkipCrit = true
+	logPerkActivation(PerkVigilance, ctx.DefenderSquadID, "critical hit negated")
 }
 
 // Field Medic: At round start, lowest-HP unit heals 10% max HP
@@ -156,6 +162,7 @@ func fieldMedicTurnStart(ctx *HookContext) {
 			if attr.CurrentHealth > maxHP {
 				attr.CurrentHealth = maxHP
 			}
+			logPerkActivation(PerkFieldMedic, ctx.SquadID, fmt.Sprintf("healed unit for %d HP", healAmount))
 		}
 	}
 }
@@ -170,6 +177,7 @@ func lastLineDamageMod(ctx *HookContext, modifiers *combatcore.DamageModifiers) 
 	if len(aliveSquads) == 1 && aliveSquads[0] == ctx.AttackerSquadID {
 		modifiers.DamageMultiplier *= PerkBalance.LastLine.DamageMult
 		modifiers.HitPenalty -= PerkBalance.LastLine.HitBonus
+		logPerkActivation(PerkLastLine, ctx.AttackerSquadID, "last squad standing bonus")
 	}
 }
 
@@ -194,6 +202,7 @@ func cleaveTargetOverride(ctx *HookContext, defaultTargets []ecs.EntityID) []ecs
 	if nextRow <= 2 {
 		extraTargets := GetUnitsInRow(ctx.DefenderSquadID, nextRow, ctx.Manager)
 		if len(extraTargets) > 0 {
+			logPerkActivation(PerkCleave, ctx.AttackerSquadID, fmt.Sprintf("cleaving %d extra targets in row %d", len(extraTargets), nextRow))
 			return append(defaultTargets, extraTargets...)
 		}
 	}
@@ -212,6 +221,7 @@ func cleaveDamageMod(ctx *HookContext, modifiers *combatcore.DamageModifiers) {
 // Riposte: Counterattacks have no hit penalty (normally -20)
 func riposteCounterMod(ctx *HookContext, modifiers *combatcore.DamageModifiers) bool {
 	modifiers.HitPenalty = 0
+	logPerkActivation(PerkRiposte, ctx.DefenderSquadID, "counter hit penalty removed")
 	return false
 }
 
@@ -261,6 +271,7 @@ func guardianDamageRedirect(ctx *HookContext) (int, ecs.EntityID, int) {
 			if roleData != nil && roleData.Role == unitdefs.RoleTank {
 				guardianDmg := damageAmount / PerkBalance.GuardianProtocol.RedirectFraction
 				remainingDmg := damageAmount - guardianDmg
+				logPerkActivation(PerkGuardianProtocol, defenderSquadID, fmt.Sprintf("tank absorbs %d damage", guardianDmg))
 				return remainingDmg, unitID, guardianDmg
 			}
 		}
@@ -300,6 +311,7 @@ func precisionStrikeTargetOverride(ctx *HookContext, defaultTargets []ecs.Entity
 	if highestDexID != ctx.AttackerID {
 		return defaultTargets
 	}
+	logPerkActivation(PerkPrecisionStrike, ctx.AttackerSquadID, "targeting lowest-HP enemy")
 
 	enemyUnits := squadcore.GetUnitIDsInSquad(ctx.DefenderSquadID, ctx.Manager)
 	var lowestHPID ecs.EntityID

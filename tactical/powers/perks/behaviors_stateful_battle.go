@@ -9,6 +9,8 @@
 package perks
 
 import (
+	"fmt"
+
 	"game_main/common"
 	"game_main/tactical/combat/combatcore"
 	"game_main/tactical/squads/squadcore"
@@ -18,16 +20,13 @@ import (
 
 func init() {
 	RegisterPerkHooks(PerkOpeningSalvo, &PerkHooks{
-		State:             StateRequirements{Category: StateBattle},
 		AttackerDamageMod: openingSalvoDamageMod,
 	})
 	RegisterPerkHooks(PerkResolute, &PerkHooks{
-		State:         StateRequirements{Category: StateBattle},
 		TurnStart:     resoluteTurnStart,
 		DeathOverride: resoluteDeathOverride,
 	})
 	RegisterPerkHooks(PerkGrudgeBearer, &PerkHooks{
-		State:              StateRequirements{Category: StateBattle},
 		DefenderPostDamage: grudgeBearerPostDamage,
 		AttackerDamageMod:  grudgeBearerDamageMod,
 	})
@@ -45,6 +44,7 @@ func openingSalvoDamageMod(ctx *HookContext, modifiers *combatcore.DamageModifie
 	}
 	modifiers.DamageMultiplier *= PerkBalance.OpeningSalvo.DamageMult
 	SetBattleState(ctx.RoundState, PerkOpeningSalvo, &OpeningSalvoState{HasAttackedThisCombat: true})
+	logPerkActivation(PerkOpeningSalvo, ctx.AttackerSquadID, fmt.Sprintf("+%d%% damage (opening attack)", int((PerkBalance.OpeningSalvo.DamageMult-1)*100)))
 }
 
 // resoluteTurnStart snapshots current HP for the resolute death-save check.
@@ -90,6 +90,7 @@ func resoluteDeathOverride(ctx *HookContext) bool {
 	maxHP := attr.GetMaxHealth()
 	if maxHP > 0 && float64(roundStartHP)/float64(maxHP) > PerkBalance.Resolute.HPThreshold {
 		state.Used[ctx.UnitID] = true
+		logPerkActivation(PerkResolute, ctx.SquadID, "unit survives lethal damage at 1 HP")
 		return true
 	}
 	return false
@@ -119,6 +120,7 @@ func grudgeBearerDamageMod(ctx *HookContext, modifiers *combatcore.DamageModifie
 		if stacks > 0 {
 			bonus := 1.0 + float64(stacks)*PerkBalance.GrudgeBearer.PerStackBonus
 			modifiers.DamageMultiplier *= bonus
+			logPerkActivation(PerkGrudgeBearer, ctx.AttackerSquadID, fmt.Sprintf("+%d%% damage (%d grudge stacks)", int((bonus-1)*100), stacks))
 		}
 	}
 }

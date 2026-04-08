@@ -1,8 +1,8 @@
 # Perk System
 
-**Last Updated:** 2026-04-05
+**Last Updated:** 2026-04-08
 **Package:** `tactical/powers/perks`
-**Related:** `tactical/combat/combattypes/perk_callbacks.go`, `tactical/combat/combatservices/perk_dispatch.go`
+**Related:** `tactical/combat/combattypes/perk_callbacks.go`, `tactical/combat/combatservices/combat_power_dispatch.go`
 
 ---
 
@@ -13,9 +13,10 @@
 3. [Hook Types Reference](#3-hook-types-reference)
 4. [PerkHooks Struct — Attacker vs Defender Slots](#4-perkhooks-struct--attacker-vs-defender-slots)
 5. [PerkRoundState Lifecycle](#5-perkroundstate-lifecycle)
-6. [All 24 Perks Reference Table](#6-all-24-perks-reference-table)
+6. [All 21 Perks Reference Table](#6-all-21-perks-reference-table)
 7. [How to Add a New Perk (Step-by-Step)](#7-how-to-add-a-new-perk-step-by-step)
 8. [Common Patterns](#8-common-patterns)
+9. [Perk Activation Feedback](#9-perk-activation-feedback)
 
 ---
 
@@ -52,21 +53,23 @@ This approach means:
 ```
 tactical/powers/perks/
 ├── components.go                -- ECS component structs: PerkSlotData, PerkRoundState, per-perk state structs
-├── hooks.go                     -- Hook function type definitions + PerkHooks struct + hookRegistry
+├── hooks.go                     -- Hook function type definitions, PerkHooks struct, hookRegistry, PerkLogger infrastructure
 ├── behaviors_stateless.go       -- Stateless perk behaviors (pure functions of HookContext)
 ├── behaviors_stateful_round.go  -- Per-round stateful perk behaviors (use PerkState map)
 ├── behaviors_stateful_battle.go -- Per-battle stateful perk behaviors (use PerkBattleState map)
-├── queries.go                   -- HasPerk, GetRoundState, all RunXxx hook runner functions
+├── queries.go                   -- HasPerk, GetRoundState, forEachPerkHook, context builders (pure queries only)
 ├── registry.go                  -- PerkDefinition, PerkRegistry, LoadPerkDefinitions, validateHookCoverage
 ├── balanceconfig.go             -- PerkBalanceConfig, per-perk balance structs, loaded from JSON
-├── system.go                    -- EquipPerk, UnequipPerk, InitializeRoundState, CleanupRoundState
+├── system.go                    -- EquipPerk, UnequipPerk, InitializeRoundState, CleanupRoundState,
+│                                   ResetPerkRoundStateTurn, ResetPerkRoundStateRound, all RunXxx hook runner functions
+├── perks_test.go                -- Unit tests (state accessors, reset logic, equip/unequip, perk lifecycles)
 └── init.go                      -- ECS subsystem registration (PerkSlotComponent, PerkRoundStateComponent)
 
 tactical/combat/combattypes/
 └── perk_callbacks.go -- PerkCallbacks struct and runner type aliases (no perks import)
 
 tactical/combat/combatservices/
-└── perk_dispatch.go  -- Wires perks.Run* functions into combattypes.PerkCallbacks
+└── combat_power_dispatch.go  -- Wires both artifact behaviors (Phase 1) and perk hooks (Phase 2) into combat pipeline
 
 assets/gamedata/
 ├── perkdata.json           -- Static definitions: id, name, description, tier, category, roles
@@ -102,13 +105,15 @@ Because Go function values are first-class, the assignment is type-safe at compi
 
 ### Dispatch Wiring
 
-`setupPerkDispatch` in `combatservices/perk_dispatch.go` is called once when a `CombatService` is created. It performs four registrations:
+`setupPowerDispatch` in `combatservices/combat_power_dispatch.go` is called once when a `CombatService` is created. This merged function handles both artifact behavior dispatch (Phase 1) and perk hook dispatch (Phase 2), with artifacts registering first at each event point. The perk portion performs five registrations:
 
 1. **Inline combat callbacks** — `PerkCallbacks` struct injected into `CombatActionSystem`.
-2. **Post-reset hook** — fires when a faction's turn begins; calls `ResetPerTurn()` then `RunTurnStartHooks` for every squad in that faction.
-3. **Turn-end hook** — fires when a round advances; calls `ResetPerRound()` for every squad with a `PerkSlotTag`.
-4. **Attack-complete hook** — fires after each successful attack exchange; updates `AttackedThisTurn` on the attacker and `WasAttackedLastTurn` on the defender.
+2. **Post-reset hook** — fires when a faction's turn begins (after artifact `OnPostReset`); calls `ResetPerkRoundStateTurn()` then `RunTurnStartHooks` for every squad in that faction.
+3. **Turn-end hook** — fires when a round advances (after artifact `OnTurnEnd`); calls `ResetPerkRoundStateRound()` for every squad with a `PerkSlotTag`.
+4. **Attack-complete hook** — fires after each successful attack exchange; updates `AttackedThisTurn` on the attacker and `WasAttackedThisTurn` on the defender.
 5. **Move-complete hook** — fires when a squad finishes moving; sets `MovedThisTurn = true` and resets `TurnsStationary = 0`.
+
+`ResetPerkRoundStateTurn` and `ResetPerkRoundStateRound` are standalone system functions (not methods on `PerkRoundState`), following ECS conventions.
 
 ### HookContext
 
@@ -159,7 +164,7 @@ type DamageModHook func(ctx *HookContext, modifiers *combatcore.DamageModifiers)
 **Split into attacker and defender slots:** See Section 4.
 
 **Perks that use it:**
-- Attacker slot: `reckless_assault`, `executioners_instinct`, `isolated_predator`, `opening_salvo`, `last_line`, `cleave` (damage penalty), `adaptive_armor` (defender version), `bloodlust`, `grudge_bearer`, `counterpunch`, `marked_for_death`, `deadshots_patience`
+- Attacker slot: `reckless_assault`, `executioners_instinct`, `isolated_predator`, `opening_salvo`, `last_line`, `cleave` (damage penalty), `bloodlust`, `grudge_bearer`, `counterpunch`, `deadshots_patience`
 - Defender slot: `reckless_assault` (vulnerability), `shieldwall_discipline`, `vigilance`, `adaptive_armor`
 
 **Example — Executioner's Instinct:**
@@ -257,7 +262,7 @@ type PostDamageHook func(ctx *HookContext, damageDealt int, wasKill bool)
 
 **Two dispatch calls per attack:** The runner in `queries.go` has both `RunAttackerPostDamageHooks` and `RunDefenderPostDamageHooks`. Both are called in `processAttack` as `PostDamage` and `DefenderPostDamage` respectively. A perk can register the same function in both slots if it needs to react regardless of role.
 
-**Perks that use it:** `disruption` (writes to cross-squad state), `bloodlust` (increments kill counter), `grudge_bearer` (increments grudge stack on defender's state).
+**Perks that use it:** `bloodlust` (increments kill counter), `grudge_bearer` (increments grudge stack on defender's state).
 
 ---
 
@@ -271,9 +276,9 @@ type TurnStartHook func(ctx *HookContext)
 
 **What it does:** Evaluates prior-turn state to set up current-turn bonuses, performs per-turn healing, or transitions multi-turn state machines.
 
-**Important ordering:** `ResetPerTurn()` runs before `TurnStartHooks`. This means `TurnStartHooks` see the already-cleared per-turn fields, but the snapshot fields (`WasAttackedLastTurn`, `WasIdleLastTurn`) have already been saved from the previous values.
+**Important ordering:** `ResetPerkRoundStateTurn()` runs before `TurnStartHooks`. This means `TurnStartHooks` see the already-cleared per-turn fields, but the snapshot fields (`WasAttackedLastTurn`, `WasIdleLastTurn`) have already been saved from the previous values.
 
-**Perks that use it:** `field_medic`, `overwatch`, `fortify`, `resolute`, `counterpunch`, `deadshots_patience`.
+**Perks that use it:** `field_medic`, `reckless_assault`, `fortify`, `resolute`, `counterpunch`, `deadshots_patience`.
 
 **Example — Counterpunch:**
 
@@ -379,7 +384,6 @@ func resoluteDeathOverride(ctx *HookContext) bool {
 
 ```go
 type PerkHooks struct {
-    State              StateRequirements  // Declares state dependencies (zero value = stateless)
     AttackerDamageMod  DamageModHook      // runs only when this squad is the attacker
     DefenderDamageMod  DamageModHook      // runs only when this squad is the defender
     DefenderCoverMod   CoverModHook       // runs only when this squad is the defender
@@ -409,14 +413,15 @@ The split eliminates that boilerplate:
 
 ```go
 RegisterPerkHooks("reckless_assault", &PerkHooks{
-    AttackerDamageMod: recklessAssaultAttackerMod,  // +30% damage when attacking
-    DefenderDamageMod: recklessAssaultDefenderMod,  // +20% damage taken when defending
+    TurnStart:         recklessAssaultTurnStart,     // resets vulnerability
+    AttackerDamageMod: recklessAssaultAttackerMod,   // +30% damage when attacking, sets vulnerability
+    DefenderDamageMod: recklessAssaultDefenderMod,   // +20% damage taken when vulnerable
 })
 ```
 
-The attacker hook fires when the squad is attacking, boosting outgoing damage and setting `RecklessVulnerable = true` on the squad's own `RoundState`. The defender hook fires when the squad is being attacked, checking whether `RecklessVulnerable` is set and increasing incoming damage accordingly.
+The `TurnStart` hook resets vulnerability to false. The attacker hook fires when the squad attacks, boosting outgoing damage and setting `RecklessAssaultState{Vulnerable: true}` via `SetPerkState`. The defender hook fires when the squad is being attacked, reading `RecklessAssaultState` via `GetPerkState` and increasing incoming damage if vulnerable.
 
-Both hooks belong to the same perk but fire at different times with different `RoundState` contexts. The attacker hook's `ctx.RoundState` is the attacker's state; the defender hook's `ctx.RoundState` is the defender's state.
+All three hooks use `ctx.RoundState` belonging to the perk-owning squad. The vulnerability flag is stored in per-perk state (not a shared field), so it is automatically cleared by `ResetPerkRoundStateRound`.
 
 ### Dispatcher Pseudocode
 
@@ -453,13 +458,13 @@ A perk can populate only one slot, both slots, or neither (for a perk that only 
 
 #### Shared Tracking Fields (direct struct fields)
 
-**Per-turn** (reset by `ResetPerTurn()` before each squad's turn):
+**Per-turn** (reset by `ResetPerkRoundStateTurn()` before each squad's turn):
 
 | Field | Type | Writer | Reader |
 |---|---|---|---|
-| `MovedThisTurn` | `bool` | `perk_dispatch.go` OnMoveComplete | Stalwart, Fortify |
-| `AttackedThisTurn` | `bool` | `perk_dispatch.go` OnAttackComplete | ResetPerTurn (snapshot) |
-| `RecklessVulnerable` | `bool` | Reckless Assault (AttackerDamageMod) | Reckless Assault (DefenderMod) |
+| `MovedThisTurn` | `bool` | `combat_power_dispatch.go` OnMoveComplete | Stalwart, Fortify |
+| `AttackedThisTurn` | `bool` | `combat_power_dispatch.go` OnAttackComplete | ResetPerkRoundStateTurn (snapshot) |
+| `WasAttackedThisTurn` | `bool` | `combat_power_dispatch.go` OnAttackComplete | ResetPerkRoundStateTurn (snapshot) |
 
 **Cross-round but movement-dependent** (not reset by either method; modified explicitly):
 
@@ -477,7 +482,7 @@ A perk can populate only one slot, both slots, or neither (for a perk that only 
 
 #### Per-Perk Isolated State (PerkState / PerkBattleState maps)
 
-Per-perk state lives in two `map[string]interface{}` maps keyed by perk ID. Each perk defines its own small state struct in `components.go` and accesses it via generic helpers:
+Per-perk state lives in two `map[string]any` maps keyed by perk ID. Each perk defines its own small state struct in `components.go` and accesses it via generic helpers:
 
 ```go
 // Round state (cleared by ResetPerRound)
@@ -493,12 +498,11 @@ state := GetOrInitBattleState(ctx.RoundState, "resolute", func() *ResoluteState 
 
 | Struct | Fields | Used By |
 |---|---|---|
+| `RecklessAssaultState` | `Vulnerable bool` | Reckless Assault |
 | `AdaptiveArmorState` | `AttackedBy map[EntityID]int` | Adaptive Armor |
 | `BloodlustState` | `KillsThisRound int` | Bloodlust |
-| `DisruptionState` | `Targets map[EntityID]bool` | Disruption |
 | `CounterpunchState` | `Ready bool` | Counterpunch |
 | `DeadshotState` | `Ready bool` | Deadshot's Patience |
-| `OverwatchState` | `Active bool` | Overwatch (placeholder) |
 
 **Per-battle state structs** (stored in `PerkBattleState`, persist entire combat):
 
@@ -507,7 +511,6 @@ state := GetOrInitBattleState(ctx.RoundState, "resolute", func() *ResoluteState 
 | `OpeningSalvoState` | `HasAttackedThisCombat bool` | Opening Salvo |
 | `ResoluteState` | `Used map[EntityID]bool`, `RoundStartHP map[EntityID]int` | Resolute |
 | `GrudgeBearerState` | `Stacks map[EntityID]int` | Grudge Bearer |
-| `MarkedForDeathState` | `MarkedSquad EntityID` | Marked for Death |
 
 This design prevents `PerkRoundState` from growing a new field for every stateful perk. Adding a new stateful perk means adding a new state struct — no changes to reset methods or shared state.
 
@@ -524,7 +527,7 @@ InitializeRoundState (system.go)
 -- ROUND LOOP --
     |
     v
-ResetPerRound()
+ResetPerkRoundStateRound()
     PerkState = nil  (clears all per-perk round state maps)
     PerkBattleState is preserved
     |
@@ -532,15 +535,15 @@ ResetPerRound()
 -- TURN LOOP (per faction) --
     |
     v
-ResetPerTurn()
+ResetPerkRoundStateTurn()
     Saves snapshots:
-        WasAttackedLastTurn = RecklessVulnerable || WasAttackedLastTurn
+        WasAttackedLastTurn = WasAttackedThisTurn
         DidNotAttackLastTurn = !AttackedThisTurn
         WasIdleLastTurn = !MovedThisTurn && !AttackedThisTurn
     Clears per-turn shared fields:
         MovedThisTurn = false
         AttackedThisTurn = false
-        RecklessVulnerable = false
+        WasAttackedThisTurn = false
     |
     v
 RunTurnStartHooks (for each squad in faction)
@@ -591,15 +594,17 @@ The `PerkState` map is set to `nil` by `ResetPerRound()`, which releases all per
 
 ---
 
-## 6. All 24 Perks Reference Table
+## 6. All 21 Perks Reference Table
 
 Tier values: 0 = Combat Conditioning, 1 = Combat Specialization.
 Category values: 0 = Offense, 1 = Defense, 2 = Tactical, 3 = Reactive, 4 = Doctrine.
 
+**Mutual exclusion pairs:** `cleave` <-> `precision_strike`, `reckless_assault` <-> `stalwart`, `bloodlust` <-> `field_medic`.
+
 | ID | Name | Tier | Category | Roles | Cost | Hook Types | Description |
 |---|---|---|---|---|---|---|---|
 | `brace_for_impact` | Brace for Impact | 0 | Defense | Tank | 2 | DefenderCoverMod | +15% cover bonus when defending |
-| `reckless_assault` | Reckless Assault | 0 | Offense | DPS | 2 | AttackerDamageMod, DefenderDamageMod | +30% damage dealt; +20% damage received until next turn |
+| `reckless_assault` | Reckless Assault | 0 | Offense | DPS | 2 | TurnStart, AttackerDamageMod, DefenderDamageMod | +30% damage dealt; +20% damage received until next turn |
 | `stalwart` | Stalwart | 0 | Defense | Tank, Support | 2 | CounterMod | If squad did not move, counterattacks deal 100% damage instead of 50% |
 | `executioners_instinct` | Executioner's Instinct | 0 | Offense | DPS | 2 | AttackerDamageMod | +25% crit chance vs any squad with a unit below 30% HP |
 | `shieldwall_discipline` | Shieldwall Discipline | 0 | Defense | Tank | 2 | DefenderDamageMod | Per Tank in front row: -5% incoming damage (max 15%) |
@@ -610,9 +615,7 @@ Category values: 0 = Offense, 1 = Defense, 2 = Tactical, 3 = Reactive, 4 = Doctr
 | `last_line` | Last Line | 0 | Defense | Tank, Support | 2 | AttackerDamageMod | When last surviving friendly squad: +20% hit, dodge, and damage |
 | `cleave` | Cleave | 1 | Tactical | DPS | 3 | TargetOverride, AttackerDamageMod | Melee attacks also hit one unit in the row behind the target; -30% damage to all targets |
 | `riposte` | Riposte | 1 | Defense | Tank, DPS | 3 | CounterMod | Counterattacks have no hit penalty (normally -20) |
-| `disruption` | Disruption | 1 | Reactive | DPS, Support | 3 | PostDamage | Dealing damage marks target squad; their next attack is debuffed -15% this round |
 | `guardian_protocol` | Guardian Protocol | 1 | Defense | Tank | 4 | DamageRedirect | When adjacent friendly squad is attacked, one Tank absorbs 25% of damage |
-| `overwatch` | Overwatch | 1 | Tactical | DPS | 4 | TurnStart | Skip attack to auto-attack at 75% damage next enemy that moves in range (v1 placeholder) |
 | `adaptive_armor` | Adaptive Armor | 1 | Defense | Tank | 3 | DefenderDamageMod | -10% damage from same attacker per hit (stacks to 30%, resets each round) |
 | `bloodlust` | Bloodlust | 1 | Offense | DPS | 3 | PostDamage, AttackerDamageMod | Each unit kill this round grants +15% damage on the next attack (stacks, resets per round) |
 | `fortify` | Fortify | 1 | Defense | Tank, Support | 3 | TurnStart, DefenderCoverMod | +5% cover per consecutive stationary turn (max +15% after 3 turns; moving resets) |
@@ -620,7 +623,6 @@ Category values: 0 = Offense, 1 = Defense, 2 = Tactical, 3 = Reactive, 4 = Doctr
 | `resolute` | Resolute | 1 | Defense | Tank, DPS, Support | 4 | TurnStart, DeathOverride | A unit survives a killing blow at 1 HP if it had >50% HP at round start (once per unit per battle) |
 | `grudge_bearer` | Grudge Bearer | 1 | Reactive | DPS, Tank | 3 | PostDamage, AttackerDamageMod | +20% damage vs squads that have damaged this squad (stacks to +40%) |
 | `counterpunch` | Counterpunch | 1 | Reactive | DPS, Tank | 3 | TurnStart, AttackerDamageMod | If attacked last turn AND did not attack last turn, next attack deals +40% damage |
-| `marked_for_death` | Marked for Death | 1 | Tactical | DPS, Support | 3 | AttackerDamageMod | Spend attack to mark an enemy; marked enemy takes +25% from next friendly attack |
 | `deadshots_patience` | Deadshot's Patience | 1 | Offense | DPS | 4 | TurnStart, AttackerDamageMod | If completely idle last turn (no move, no attack), next ranged or magic attack gains +50% damage and +20 accuracy |
 
 ---
@@ -727,7 +729,7 @@ For state that needs to survive the per-turn reset but tracks prior-turn values 
 2. Run `go test ./tactical/perks/...` to run any existing perk tests.
 3. On startup, `LoadPerkDefinitions()` calls `validateHookCoverage()`, which prints a warning for any ID that has a JSON entry but no hook registration, or vice versa. Check the console for:
    ```
-   Loaded 25 perk definitions
+   Loaded 21 perk definitions
    ```
    with no WARNING lines about `iron_will`.
 
@@ -840,34 +842,6 @@ if otherState != nil {
 
 `GetRoundState` returns nil if the squad has no `PerkRoundStateComponent` (i.e., no perks). Always nil-check.
 
-### Writing Cross-Squad State (the Disruption Pattern)
-
-`disruption` writes into the defender's state from the attacker's `PostDamageHook`:
-
-```go
-func disruptionPostDamage(ctx *HookContext, damageDealt int, wasKill bool) {
-    if damageDealt <= 0 {
-        return
-    }
-    // Mark the defender in the attacker's own per-perk state
-    state := GetOrInitPerkState(ctx.RoundState, "disruption", func() *DisruptionState {
-        return &DisruptionState{Targets: make(map[ecs.EntityID]bool)}
-    })
-    state.Targets[ctx.DefenderSquadID] = true
-
-    // Also mark in the defender's state so the defender's damage mod can read it
-    defenderState := GetRoundState(ctx.DefenderSquadID, ctx.Manager)
-    if defenderState != nil {
-        dState := GetOrInitPerkState(defenderState, "disruption", func() *DisruptionState {
-            return &DisruptionState{Targets: make(map[ecs.EntityID]bool)}
-        })
-        dState.Targets[ctx.AttackerSquadID] = true
-    }
-}
-```
-
-The pattern: write into `ctx.RoundState`'s per-perk state for attacker-side tracking, and call `GetRoundState` for the other squad when the effect needs to be detectable from the other side.
-
 ### Both-Sides Perks (Two Hooks, Same Perk)
 
 When a perk needs to fire on both attacker and defender turns:
@@ -908,21 +882,61 @@ if !HasPerk(friendlyID, "guardian_protocol", manager) {
 
 ---
 
+## 9. Perk Activation Feedback
+
+When a perk has a meaningful effect during combat, it logs a perk-specific message via the `PerkLogger` system.
+
+### Infrastructure (`hooks.go`)
+
+```go
+type PerkLogger func(perkID string, squadID ecs.EntityID, message string)
+
+func SetPerkLogger(fn PerkLogger)
+func logPerkActivation(perkID string, squadID ecs.EntityID, message string)
+```
+
+`SetPerkLogger` registers a callback. `logPerkActivation` is called from inside individual behavior functions (not at the generic runner level) so that messages describe the actual outcome.
+
+### Wiring
+
+`combat_power_dispatch.go` registers a logger during combat setup that prints to stdout:
+
+```go
+perks.SetPerkLogger(func(perkID string, squadID ecs.EntityID, message string) {
+    fmt.Printf("[PERK] %s: %s (squad %d)\n", perkID, message, squadID)
+})
+```
+
+### Example Messages
+
+| Perk | Message |
+|------|---------|
+| Stalwart | "full-damage counterattack" |
+| Bloodlust | "+30% damage (2 kills)" |
+| Resolute | "unit survives lethal damage at 1 HP" |
+| Reckless Assault | "+30% damage, now vulnerable" |
+| Fortify | "+10% cover (2 turns stationary)" |
+| Guardian Protocol | "tank absorbs 12 damage" |
+
+Logging only fires when the perk has an observable effect — no-op paths (e.g., Adaptive Armor on first hit, Counterpunch when not armed) produce no output.
+
+---
+
 ## Appendix: File Quick Reference
 
 | File | Purpose |
 |---|---|
 | `tactical/powers/perks/components.go` | `PerkSlotData`, `PerkRoundState`, per-perk state structs, generic state accessors |
-| `tactical/powers/perks/hooks.go` | Hook function type definitions; `PerkHooks` struct; `hookRegistry` map; `RegisterPerkHooks` |
+| `tactical/powers/perks/hooks.go` | Hook function type definitions; `PerkHooks` struct; `hookRegistry` map; `RegisterPerkHooks`; `PerkLogger` infrastructure |
 | `tactical/powers/perks/behaviors_stateless.go` | Stateless perk behaviors (pure functions of HookContext) |
 | `tactical/powers/perks/behaviors_stateful_round.go` | Per-round stateful perk behaviors (use PerkState map) |
 | `tactical/powers/perks/behaviors_stateful_battle.go` | Per-battle stateful perk behaviors (use PerkBattleState map) |
-| `tactical/powers/perks/queries.go` | `HasPerk`, `GetRoundState`, all `RunXxx` dispatcher functions |
+| `tactical/powers/perks/queries.go` | `HasPerk`, `GetRoundState`, `forEachPerkHook`, context builders (pure queries only) |
 | `tactical/powers/perks/registry.go` | `PerkDefinition`, `PerkRegistry`, `LoadPerkDefinitions`, `validateHookCoverage` |
 | `tactical/powers/perks/balanceconfig.go` | `PerkBalanceConfig`, per-perk balance structs, `LoadPerkBalanceConfig` |
-| `tactical/powers/perks/system.go` | `EquipPerk`, `UnequipPerk`, `InitializeRoundState`, `CleanupRoundState` |
+| `tactical/powers/perks/system.go` | `EquipPerk`, `UnequipPerk`, `InitializeRoundState`, `CleanupRoundState`, `ResetPerkRoundStateTurn`, `ResetPerkRoundStateRound`, all `RunXxx` hook runner functions |
 | `tactical/powers/perks/init.go` | ECS subsystem `init()` — registers `PerkSlotComponent`, `PerkRoundStateComponent` |
 | `tactical/combat/combattypes/perk_callbacks.go` | `PerkCallbacks` struct and runner type aliases (no perks import) |
-| `tactical/combat/combatservices/perk_dispatch.go` | Wires `perks.RunXxx` into `combattypes.PerkCallbacks`; registers lifecycle hooks |
+| `tactical/combat/combatservices/combat_power_dispatch.go` | Wires both artifact behaviors (Phase 1) and perk hooks (Phase 2) into combat pipeline |
 | `assets/gamedata/perkdata.json` | Static perk definitions loaded at startup |
 | `assets/gamedata/perkbalanceconfig.json` | Per-perk balance tuning values |
