@@ -18,9 +18,8 @@ func rollD100Check(threshold int) (roll int, passed bool) {
 }
 
 // CalculateDamage handles the full damage pipeline: hit roll, dodge roll, base damage, crit, resistance, cover.
-// callbacks may be nil if no perks are active.
 func CalculateDamage(attackerID, defenderID ecs.EntityID, modifiers combattypes.DamageModifiers,
-	callbacks *combattypes.PerkCallbacks, squadmanager *common.EntityManager) (int, *combattypes.AttackEvent) {
+	dispatcher combattypes.PerkDispatcher, squadmanager *common.EntityManager) (int, *combattypes.AttackEvent) {
 	attackerAttr := common.GetComponentTypeByID[*common.Attributes](squadmanager, attackerID, common.AttributeComponent)
 	defenderAttr := common.GetComponentTypeByID[*common.Attributes](squadmanager, defenderID, common.AttributeComponent)
 
@@ -48,7 +47,7 @@ func CalculateDamage(attackerID, defenderID ecs.EntityID, modifiers combattypes.
 	baseDamage, resistance := calculateBaseDamageAndCrit(attackerID, attackerAttr, defenderAttr, modifiers, event, squadmanager)
 
 	// Resistance, cover, and final damage
-	totalDamage := applyResistanceAndCover(attackerID, defenderID, baseDamage, resistance, modifiers, callbacks, event, squadmanager)
+	totalDamage := applyResistanceAndCover(attackerID, defenderID, baseDamage, resistance, modifiers, dispatcher, event, squadmanager)
 
 	event.FinalDamage = totalDamage
 	event.DefenderHPAfter = defenderAttr.CurrentHealth - totalDamage
@@ -147,7 +146,7 @@ func calculateBaseDamageAndCrit(attackerID ecs.EntityID, attackerAttr, defenderA
 
 // applyResistanceAndCover subtracts resistance, calculates cover reduction (with perk hooks), and returns final damage.
 func applyResistanceAndCover(attackerID, defenderID ecs.EntityID, baseDamage, resistance int,
-	modifiers combattypes.DamageModifiers, callbacks *combattypes.PerkCallbacks,
+	modifiers combattypes.DamageModifiers, dispatcher combattypes.PerkDispatcher,
 	event *combattypes.AttackEvent, squadmanager *common.EntityManager) int {
 
 	// Apply resistance
@@ -161,8 +160,8 @@ func applyResistanceAndCover(attackerID, defenderID ecs.EntityID, baseDamage, re
 	coverBreakdown := CalculateCoverBreakdown(defenderID, squadmanager)
 
 	// Run perk cover mod hooks
-	if callbacks != nil && callbacks.CoverMod != nil {
-		callbacks.CoverMod(attackerID, defenderID, &coverBreakdown, squadmanager)
+	if dispatcher != nil {
+		dispatcher.CoverMod(attackerID, defenderID, &coverBreakdown, squadmanager)
 	}
 
 	// Apply perk cover bonus

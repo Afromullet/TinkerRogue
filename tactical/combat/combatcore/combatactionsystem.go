@@ -19,8 +19,8 @@ type CombatActionSystem struct {
 	// Post-action hook (fired after successful attack)
 	onAttackComplete func(attackerID, defenderID ecs.EntityID, result *CombatResult)
 
-	// Perk callbacks (injected from perks package via combatservices)
-	perkCallbacks *combattypes.PerkCallbacks
+	// Perk dispatcher (injected from perks package via combatservices)
+	perkDispatcher combattypes.PerkDispatcher
 }
 
 func NewCombatActionSystem(manager *common.EntityManager, cache *CombatQueryCache) *CombatActionSystem {
@@ -40,10 +40,10 @@ func (cas *CombatActionSystem) SetOnAttackComplete(fn func(ecs.EntityID, ecs.Ent
 	cas.onAttackComplete = fn
 }
 
-// SetPerkCallbacks injects perk hook callback functions.
+// SetPerkDispatcher injects the perk dispatcher for damage pipeline hooks.
 // Must be called before combat begins for perk hooks to fire.
-func (cas *CombatActionSystem) SetPerkCallbacks(callbacks *combattypes.PerkCallbacks) {
-	cas.perkCallbacks = callbacks
+func (cas *CombatActionSystem) SetPerkDispatcher(dispatcher combattypes.PerkDispatcher) {
+	cas.perkDispatcher = dispatcher
 }
 
 func (cas *CombatActionSystem) ExecuteAttackAction(attackerID, defenderID ecs.EntityID) *CombatResult {
@@ -100,7 +100,7 @@ func (cas *CombatActionSystem) executeMainAttack(attackerID, defenderID ecs.Enti
 			attackIndex = ProcessHealOnTargets(attackerUnitID, healTargets, result, combatLog, attackIndex, cas.manager)
 		} else {
 			targetIDs := SelectTargetUnits(attackerUnitID, defenderID, cas.manager)
-			attackIndex = ProcessAttackOnTargets(attackerUnitID, defenderID, targetIDs, result, combatLog, attackIndex, cas.perkCallbacks, cas.manager)
+			attackIndex = ProcessAttackOnTargets(attackerUnitID, defenderID, targetIDs, result, combatLog, attackIndex, cas.perkDispatcher, cas.manager)
 		}
 	}
 
@@ -122,8 +122,8 @@ func (cas *CombatActionSystem) executeCounterattack(attackerID, defenderID ecs.E
 
 	// Check if counter should be suppressed by perks
 	skipCounter := false
-	if cas.perkCallbacks != nil && cas.perkCallbacks.CounterMod != nil {
-		skipCounter = cas.perkCallbacks.CounterMod(defenderID, attackerID, &counterModifiers, cas.manager)
+	if cas.perkDispatcher != nil {
+		skipCounter = cas.perkDispatcher.CounterMod(defenderID, attackerID, &counterModifiers, cas.manager)
 	}
 
 	if !defenderWouldSurvive || skipCounter || counterModifiers.SkipCounter {
@@ -142,7 +142,7 @@ func (cas *CombatActionSystem) executeCounterattack(attackerID, defenderID ecs.E
 			attackIndex = ProcessHealOnTargets(counterAttackerID, healTargets, result, combatLog, attackIndex, cas.manager)
 		} else {
 			targetIDs := SelectTargetUnits(counterAttackerID, attackerID, cas.manager)
-			attackIndex = ProcessCounterattackOnTargets(counterAttackerID, attackerID, targetIDs, result, combatLog, attackIndex, counterModifiers, cas.perkCallbacks, cas.manager)
+			attackIndex = ProcessCounterattackOnTargets(counterAttackerID, attackerID, targetIDs, result, combatLog, attackIndex, counterModifiers, cas.perkDispatcher, cas.manager)
 		}
 	}
 

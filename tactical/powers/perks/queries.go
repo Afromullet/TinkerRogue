@@ -77,18 +77,17 @@ func buildCombatContext(ownerSquadID, attackerID, defenderID, attackerSquadID, d
 	return ctx
 }
 
-// forEachPerkHook iterates over active perks for ownerSquadID, calling fn
-// for each registered PerkHooks. If fn returns false, iteration stops early.
-func forEachPerkHook(ownerSquadID ecs.EntityID, manager *common.EntityManager,
-	fn func(perkID string, hooks *PerkHooks) bool) {
+// forEachPerkBehavior iterates over active perks for ownerSquadID, calling fn
+// for each registered PerkBehavior. If fn returns false, iteration stops early.
+func forEachPerkBehavior(ownerSquadID ecs.EntityID, manager *common.EntityManager,
+	fn func(PerkBehavior) bool) {
 	for _, perkID := range getActivePerkIDs(ownerSquadID, manager) {
-		hooks := GetPerkHooks(perkID)
-		if hooks == nil {
+		behavior := GetPerkBehavior(perkID)
+		if behavior == nil {
 			continue
 		}
-		if !fn(perkID, hooks) {
+		if !fn(behavior) {
 			return
 		}
 	}
 }
-

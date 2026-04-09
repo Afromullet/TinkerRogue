@@ -3,7 +3,6 @@ package perks
 import (
 	"fmt"
 	"game_main/common"
-	"game_main/tactical/combat/combatcore"
 
 	"github.com/bytearena/ecs"
 )
@@ -134,108 +133,6 @@ func ResetPerkRoundStateRound(s *PerkRoundState) {
 // HOOK RUNNER FUNCTIONS
 // ========================================
 
-// RunAttackerDamageModHooks runs AttackerDamageMod hooks for the attacker's perks.
-func RunAttackerDamageModHooks(attackerID, defenderID, attackerSquadID, defenderSquadID ecs.EntityID,
-	modifiers *combatcore.DamageModifiers, manager *common.EntityManager) {
-	ctx := buildCombatContext(attackerSquadID, attackerID, defenderID, attackerSquadID, defenderSquadID, manager)
-	if ctx == nil {
-		return
-	}
-	forEachPerkHook(attackerSquadID, manager, func(perkID string, hooks *PerkHooks) bool {
-		if hooks.AttackerDamageMod != nil {
-			hooks.AttackerDamageMod(ctx, modifiers)
-		}
-		return true
-	})
-}
-
-// RunDefenderDamageModHooks runs DefenderDamageMod hooks for the defender's perks.
-func RunDefenderDamageModHooks(attackerID, defenderID, attackerSquadID, defenderSquadID ecs.EntityID,
-	modifiers *combatcore.DamageModifiers, manager *common.EntityManager) {
-	ctx := buildCombatContext(defenderSquadID, attackerID, defenderID, attackerSquadID, defenderSquadID, manager)
-	if ctx == nil {
-		return
-	}
-	forEachPerkHook(defenderSquadID, manager, func(perkID string, hooks *PerkHooks) bool {
-		if hooks.DefenderDamageMod != nil {
-			hooks.DefenderDamageMod(ctx, modifiers)
-		}
-		return true
-	})
-}
-
-// RunAttackerPostDamageHooks runs post-damage hooks for the attacker's perks.
-func RunAttackerPostDamageHooks(attackerID, defenderID, attackerSquadID, defenderSquadID ecs.EntityID,
-	damageDealt int, wasKill bool, manager *common.EntityManager) {
-	ctx := buildCombatContext(attackerSquadID, attackerID, defenderID, attackerSquadID, defenderSquadID, manager)
-	if ctx == nil {
-		return
-	}
-	forEachPerkHook(attackerSquadID, manager, func(perkID string, hooks *PerkHooks) bool {
-		if hooks.AttackerPostDamage != nil {
-			hooks.AttackerPostDamage(ctx, damageDealt, wasKill)
-		}
-		return true
-	})
-}
-
-// RunDefenderPostDamageHooks runs post-damage hooks for the defender's perks.
-func RunDefenderPostDamageHooks(attackerID, defenderID, attackerSquadID, defenderSquadID ecs.EntityID,
-	damageDealt int, wasKill bool, manager *common.EntityManager) {
-	ctx := buildCombatContext(defenderSquadID, attackerID, defenderID, attackerSquadID, defenderSquadID, manager)
-	if ctx == nil {
-		return
-	}
-	forEachPerkHook(defenderSquadID, manager, func(perkID string, hooks *PerkHooks) bool {
-		if hooks.DefenderPostDamage != nil {
-			hooks.DefenderPostDamage(ctx, damageDealt, wasKill)
-		}
-		return true
-	})
-}
-
-// RunTargetOverrideHooks applies target overrides from attacker perks.
-func RunTargetOverrideHooks(attackerID, defenderSquadID ecs.EntityID,
-	targets []ecs.EntityID, manager *common.EntityManager) []ecs.EntityID {
-	attackerSquadID := getSquadIDForUnit(attackerID, manager)
-	ctx := buildHookContext(attackerSquadID, manager)
-	if ctx == nil {
-		return targets
-	}
-	ctx.AttackerID = attackerID
-	ctx.AttackerSquadID = attackerSquadID
-	ctx.DefenderSquadID = defenderSquadID
-	forEachPerkHook(attackerSquadID, manager, func(perkID string, hooks *PerkHooks) bool {
-		if hooks.TargetOverride != nil {
-			targets = hooks.TargetOverride(ctx, targets)
-		}
-		return true
-	})
-	return targets
-}
-
-// RunCounterModHooks checks if counterattack should be suppressed or modified.
-// Returns true if counter should be skipped.
-func RunCounterModHooks(defenderSquadID, attackerID ecs.EntityID,
-	modifiers *combatcore.DamageModifiers, manager *common.EntityManager) bool {
-	ctx := buildHookContext(defenderSquadID, manager)
-	if ctx == nil {
-		return false
-	}
-	ctx.DefenderSquadID = defenderSquadID
-	ctx.AttackerID = attackerID
-	ctx.SquadID = defenderSquadID
-	skip := false
-	forEachPerkHook(defenderSquadID, manager, func(perkID string, hooks *PerkHooks) bool {
-		if hooks.CounterMod != nil && hooks.CounterMod(ctx, modifiers) {
-			skip = true
-			return false
-		}
-		return true
-	})
-	return skip
-}
-
 // RunTurnStartHooks runs turn-start hooks for a squad.
 func RunTurnStartHooks(squadID ecs.EntityID, roundNumber int,
 	roundState *PerkRoundState, manager *common.EntityManager) {
@@ -248,73 +145,8 @@ func RunTurnStartHooks(squadID ecs.EntityID, roundNumber int,
 		RoundState:  roundState,
 		Manager:     manager,
 	}
-	forEachPerkHook(squadID, manager, func(perkID string, hooks *PerkHooks) bool {
-		if hooks.TurnStart != nil {
-			hooks.TurnStart(ctx)
-		}
+	forEachPerkBehavior(squadID, manager, func(behavior PerkBehavior) bool {
+		behavior.TurnStart(ctx)
 		return true
 	})
-}
-
-// RunCoverModHooks runs cover modification hooks for defender perks.
-func RunCoverModHooks(attackerID, defenderID ecs.EntityID,
-	coverBreakdown *combatcore.CoverBreakdown, manager *common.EntityManager) {
-	attackerSquadID := getSquadIDForUnit(attackerID, manager)
-	defenderSquadID := getSquadIDForUnit(defenderID, manager)
-	ctx := buildCombatContext(defenderSquadID, attackerID, defenderID, attackerSquadID, defenderSquadID, manager)
-	if ctx == nil {
-		return
-	}
-	forEachPerkHook(defenderSquadID, manager, func(perkID string, hooks *PerkHooks) bool {
-		if hooks.DefenderCoverMod != nil {
-			hooks.DefenderCoverMod(ctx, coverBreakdown)
-		}
-		return true
-	})
-}
-
-// RunDeathOverrideHooks checks if lethal damage should be prevented.
-func RunDeathOverrideHooks(unitID, squadID ecs.EntityID, manager *common.EntityManager) bool {
-	ctx := buildHookContext(squadID, manager)
-	if ctx == nil {
-		return false
-	}
-	ctx.UnitID = unitID
-	ctx.SquadID = squadID
-	prevented := false
-	forEachPerkHook(squadID, manager, func(perkID string, hooks *PerkHooks) bool {
-		if hooks.DeathOverride != nil && hooks.DeathOverride(ctx) {
-			prevented = true
-			return false
-		}
-		return true
-	})
-	return prevented
-}
-
-// RunDamageRedirectHooks checks if damage should be redirected.
-// Returns reduced damage for original target, redirect target ID, and redirect amount.
-func RunDamageRedirectHooks(defenderID, defenderSquadID ecs.EntityID,
-	damageAmount int, manager *common.EntityManager) (int, ecs.EntityID, int) {
-	ctx := buildHookContext(defenderSquadID, manager)
-	if ctx == nil {
-		return damageAmount, 0, 0
-	}
-	ctx.UnitID = defenderID
-	ctx.SquadID = defenderSquadID
-	ctx.DefenderID = defenderID
-	ctx.DefenderSquadID = defenderSquadID
-	ctx.DamageAmount = damageAmount
-	reducedDmg, redirectTarget, redirectAmt := damageAmount, ecs.EntityID(0), 0
-	forEachPerkHook(defenderSquadID, manager, func(perkID string, hooks *PerkHooks) bool {
-		if hooks.DamageRedirect != nil {
-			rd, rt, ra := hooks.DamageRedirect(ctx)
-			if rt != 0 {
-				reducedDmg, redirectTarget, redirectAmt = rd, rt, ra
-				return false
-			}
-		}
-		return true
-	})
-	return reducedDmg, redirectTarget, redirectAmt
 }

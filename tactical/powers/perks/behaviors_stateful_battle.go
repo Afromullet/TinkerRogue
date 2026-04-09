@@ -19,22 +19,22 @@ import (
 )
 
 func init() {
-	RegisterPerkHooks(PerkOpeningSalvo, &PerkHooks{
-		AttackerDamageMod: openingSalvoDamageMod,
-	})
-	RegisterPerkHooks(PerkResolute, &PerkHooks{
-		TurnStart:     resoluteTurnStart,
-		DeathOverride: resoluteDeathOverride,
-	})
-	RegisterPerkHooks(PerkGrudgeBearer, &PerkHooks{
-		DefenderPostDamage: grudgeBearerPostDamage,
-		AttackerDamageMod:  grudgeBearerDamageMod,
-	})
+	RegisterPerkBehavior(&OpeningSalvoBehavior{})
+	RegisterPerkBehavior(&ResoluteBehavior{})
+	RegisterPerkBehavior(&GrudgeBearerBehavior{})
 }
+
+// ========================================
+// Opening Salvo: +35% damage on first attack of combat
+// ========================================
+
+type OpeningSalvoBehavior struct{ BasePerkBehavior }
+
+func (b *OpeningSalvoBehavior) PerkID() string { return PerkOpeningSalvo }
 
 // openingSalvoDamageMod gives +35% damage on the squad's first attack of the combat.
 // State: reads/writes OpeningSalvoState via GetBattleState/SetBattleState (per-battle).
-func openingSalvoDamageMod(ctx *HookContext, modifiers *combatcore.DamageModifiers) {
+func (b *OpeningSalvoBehavior) AttackerDamageMod(ctx *HookContext, modifiers *combatcore.DamageModifiers) {
 	if modifiers.IsCounterattack {
 		return
 	}
@@ -47,9 +47,17 @@ func openingSalvoDamageMod(ctx *HookContext, modifiers *combatcore.DamageModifie
 	logPerkActivation(PerkOpeningSalvo, ctx.AttackerSquadID, fmt.Sprintf("+%d%% damage (opening attack)", int((PerkBalance.OpeningSalvo.DamageMult-1)*100)))
 }
 
+// ========================================
+// Resolute: Prevents death once per combat if unit had >50% HP at round start
+// ========================================
+
+type ResoluteBehavior struct{ BasePerkBehavior }
+
+func (b *ResoluteBehavior) PerkID() string { return PerkResolute }
+
 // resoluteTurnStart snapshots current HP for the resolute death-save check.
 // State: writes ResoluteState.RoundStartHP via GetBattleState/SetBattleState (per-battle).
-func resoluteTurnStart(ctx *HookContext) {
+func (b *ResoluteBehavior) TurnStart(ctx *HookContext) {
 	state := GetOrInitBattleState(ctx.RoundState, PerkResolute, func() *ResoluteState {
 		return &ResoluteState{
 			Used:         make(map[ecs.EntityID]bool),
@@ -69,7 +77,7 @@ func resoluteTurnStart(ctx *HookContext) {
 
 // resoluteDeathOverride prevents death if the unit had >50% HP at round start (once per battle).
 // State: reads/writes ResoluteState via GetBattleState (per-battle).
-func resoluteDeathOverride(ctx *HookContext) bool {
+func (b *ResoluteBehavior) DeathOverride(ctx *HookContext) bool {
 	state := GetBattleState[*ResoluteState](ctx.RoundState, PerkResolute)
 	if state == nil {
 		return false
@@ -96,9 +104,17 @@ func resoluteDeathOverride(ctx *HookContext) bool {
 	return false
 }
 
+// ========================================
+// Grudge Bearer: +damage per grudge stack from enemy squad damage
+// ========================================
+
+type GrudgeBearerBehavior struct{ BasePerkBehavior }
+
+func (b *GrudgeBearerBehavior) PerkID() string { return PerkGrudgeBearer }
+
 // grudgeBearerPostDamage tracks damage received from enemy squads.
 // State: writes GrudgeBearerState.Stacks via GetBattleState/SetBattleState (per-battle).
-func grudgeBearerPostDamage(ctx *HookContext, damageDealt int, wasKill bool) {
+func (b *GrudgeBearerBehavior) DefenderPostDamage(ctx *HookContext, damageDealt int, wasKill bool) {
 	if damageDealt <= 0 {
 		return
 	}
@@ -113,7 +129,7 @@ func grudgeBearerPostDamage(ctx *HookContext, damageDealt int, wasKill bool) {
 
 // grudgeBearerDamageMod applies +20% damage per grudge stack (max +40%).
 // State: reads GrudgeBearerState.Stacks via GetBattleState (per-battle).
-func grudgeBearerDamageMod(ctx *HookContext, modifiers *combatcore.DamageModifiers) {
+func (b *GrudgeBearerBehavior) AttackerDamageMod(ctx *HookContext, modifiers *combatcore.DamageModifiers) {
 	state := GetBattleState[*GrudgeBearerState](ctx.RoundState, PerkGrudgeBearer)
 	if state != nil {
 		stacks := state.Stacks[ctx.DefenderSquadID]

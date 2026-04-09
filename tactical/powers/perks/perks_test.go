@@ -342,7 +342,7 @@ func TestRecklessAssault_Lifecycle(t *testing.T) {
 	}
 
 	// TurnStart resets vulnerability
-	recklessAssaultTurnStart(ctx)
+	(&RecklessAssaultBehavior{}).TurnStart(ctx)
 	state := GetPerkState[*RecklessAssaultState](s, PerkRecklessAssault)
 	if state == nil || state.Vulnerable {
 		t.Error("TurnStart should reset reckless assault vulnerability to false")
@@ -350,14 +350,14 @@ func TestRecklessAssault_Lifecycle(t *testing.T) {
 
 	// Before attacking: defender mod should not apply (not vulnerable)
 	defMods0 := &combatcore.DamageModifiers{DamageMultiplier: 1.0}
-	recklessAssaultDefenderMod(ctx, defMods0)
+	(&RecklessAssaultBehavior{}).DefenderDamageMod(ctx,defMods0)
 	if defMods0.DamageMultiplier != 1.0 {
 		t.Errorf("Expected 1.0 when not vulnerable, got %v", defMods0.DamageMultiplier)
 	}
 
 	// AttackerDamageMod should boost damage AND set vulnerability
 	mods := &combatcore.DamageModifiers{DamageMultiplier: 1.0}
-	recklessAssaultAttackerMod(ctx, mods)
+	(&RecklessAssaultBehavior{}).AttackerDamageMod(ctx,mods)
 	if mods.DamageMultiplier != 1.3 {
 		t.Errorf("Expected 1.3 attack mult, got %v", mods.DamageMultiplier)
 	}
@@ -368,13 +368,13 @@ func TestRecklessAssault_Lifecycle(t *testing.T) {
 
 	// DefenderDamageMod should increase incoming damage when vulnerable
 	defMods := &combatcore.DamageModifiers{DamageMultiplier: 1.0}
-	recklessAssaultDefenderMod(ctx, defMods)
+	(&RecklessAssaultBehavior{}).DefenderDamageMod(ctx,defMods)
 	if defMods.DamageMultiplier != 1.2 {
 		t.Errorf("Expected 1.2 defender mult when vulnerable, got %v", defMods.DamageMultiplier)
 	}
 
 	// Next TurnStart clears vulnerability
-	recklessAssaultTurnStart(ctx)
+	(&RecklessAssaultBehavior{}).TurnStart(ctx)
 	state = GetPerkState[*RecklessAssaultState](s, PerkRecklessAssault)
 	if state.Vulnerable {
 		t.Error("TurnStart should clear vulnerability")
@@ -391,7 +391,7 @@ func TestCounterpunch_ArmFireReset(t *testing.T) {
 	ctx := &HookContext{RoundState: s}
 
 	// TurnStart should arm
-	counterpunchTurnStart(ctx)
+	(&CounterpunchBehavior{}).TurnStart(ctx)
 	state := GetPerkState[*CounterpunchState](s, PerkCounterpunch)
 	if state == nil || !state.Ready {
 		t.Error("Counterpunch should be armed when attacked last turn and did not attack")
@@ -399,7 +399,7 @@ func TestCounterpunch_ArmFireReset(t *testing.T) {
 
 	// DamageMod should fire and disarm
 	mods := &combatcore.DamageModifiers{DamageMultiplier: 1.0}
-	counterpunchDamageMod(ctx, mods)
+	(&CounterpunchBehavior{}).AttackerDamageMod(ctx,mods)
 	if mods.DamageMultiplier != 1.4 {
 		t.Errorf("Expected 1.4 damage mult, got %v", mods.DamageMultiplier)
 	}
@@ -410,7 +410,7 @@ func TestCounterpunch_ArmFireReset(t *testing.T) {
 
 	// Second attack should not get bonus
 	mods2 := &combatcore.DamageModifiers{DamageMultiplier: 1.0}
-	counterpunchDamageMod(ctx, mods2)
+	(&CounterpunchBehavior{}).AttackerDamageMod(ctx,mods2)
 	if mods2.DamageMultiplier != 1.0 {
 		t.Errorf("Expected 1.0 damage mult after disarm, got %v", mods2.DamageMultiplier)
 	}
@@ -424,7 +424,7 @@ func TestCounterpunch_NotArmedWhenNotAttacked(t *testing.T) {
 	}
 
 	ctx := &HookContext{RoundState: s}
-	counterpunchTurnStart(ctx)
+	(&CounterpunchBehavior{}).TurnStart(ctx)
 
 	state := GetPerkState[*CounterpunchState](s, PerkCounterpunch)
 	if state != nil && state.Ready {
@@ -439,27 +439,27 @@ func TestFortify_StationaryAccumulation(t *testing.T) {
 	ctx := &HookContext{RoundState: s}
 
 	// Three consecutive stationary turns
-	fortifyTurnStart(ctx)
+	(&FortifyBehavior{}).TurnStart(ctx)
 	if s.TurnsStationary != 1 {
 		t.Errorf("Expected TurnsStationary=1, got %d", s.TurnsStationary)
 	}
-	fortifyTurnStart(ctx)
+	(&FortifyBehavior{}).TurnStart(ctx)
 	if s.TurnsStationary != 2 {
 		t.Errorf("Expected TurnsStationary=2, got %d", s.TurnsStationary)
 	}
-	fortifyTurnStart(ctx)
+	(&FortifyBehavior{}).TurnStart(ctx)
 	if s.TurnsStationary != 3 {
 		t.Errorf("Expected TurnsStationary=3 (max), got %d", s.TurnsStationary)
 	}
 	// Should cap at max
-	fortifyTurnStart(ctx)
+	(&FortifyBehavior{}).TurnStart(ctx)
 	if s.TurnsStationary != 3 {
 		t.Errorf("Expected TurnsStationary to cap at 3, got %d", s.TurnsStationary)
 	}
 
 	// Movement resets
 	s.MovedThisTurn = true
-	fortifyTurnStart(ctx)
+	(&FortifyBehavior{}).TurnStart(ctx)
 	if s.TurnsStationary != 0 {
 		t.Errorf("Expected TurnsStationary=0 after movement, got %d", s.TurnsStationary)
 	}
@@ -471,7 +471,7 @@ func TestFortify_CoverMod(t *testing.T) {
 	ctx := &HookContext{RoundState: s}
 
 	cover := &combatcore.CoverBreakdown{TotalReduction: 0.1}
-	fortifyCoverMod(ctx, cover)
+	(&FortifyBehavior{}).DefenderCoverMod(ctx,cover)
 
 	expected := 0.1 + 2*0.05 // 0.2
 	if cover.TotalReduction != expected {
@@ -485,9 +485,9 @@ func TestBloodlust_KillTracking(t *testing.T) {
 	ctx := &HookContext{RoundState: s}
 
 	// Track kills
-	bloodlustPostDamage(ctx, 10, true)
-	bloodlustPostDamage(ctx, 10, true)
-	bloodlustPostDamage(ctx, 10, false) // not a kill
+	(&BloodlustBehavior{}).AttackerPostDamage(ctx,10, true)
+	(&BloodlustBehavior{}).AttackerPostDamage(ctx,10, true)
+	(&BloodlustBehavior{}).AttackerPostDamage(ctx,10, false) // not a kill
 
 	state := GetPerkState[*BloodlustState](s, PerkBloodlust)
 	if state == nil || state.KillsThisRound != 2 {
@@ -496,7 +496,7 @@ func TestBloodlust_KillTracking(t *testing.T) {
 
 	// Damage bonus should stack
 	mods := &combatcore.DamageModifiers{DamageMultiplier: 1.0}
-	bloodlustDamageMod(ctx, mods)
+	(&BloodlustBehavior{}).AttackerDamageMod(ctx,mods)
 	expected := 1.0 + 2*0.15 // 1.3
 	if mods.DamageMultiplier != expected {
 		t.Errorf("Expected %.2f damage mult, got %.2f", expected, mods.DamageMultiplier)
@@ -513,21 +513,21 @@ func TestAdaptiveArmor_StackingReduction(t *testing.T) {
 
 	// First hit: no reduction (0 prior hits)
 	mods := &combatcore.DamageModifiers{DamageMultiplier: 1.0}
-	adaptiveArmorDamageMod(ctx, mods)
+	(&AdaptiveArmorBehavior{}).DefenderDamageMod(ctx,mods)
 	if mods.DamageMultiplier != 1.0 {
 		t.Errorf("Expected 1.0 on first hit, got %v", mods.DamageMultiplier)
 	}
 
 	// Second hit: 10% reduction (1 prior hit)
 	mods2 := &combatcore.DamageModifiers{DamageMultiplier: 1.0}
-	adaptiveArmorDamageMod(ctx, mods2)
+	(&AdaptiveArmorBehavior{}).DefenderDamageMod(ctx,mods2)
 	if mods2.DamageMultiplier != 0.9 {
 		t.Errorf("Expected 0.9 on second hit, got %v", mods2.DamageMultiplier)
 	}
 
 	// Third hit: 20% reduction (2 prior hits)
 	mods3 := &combatcore.DamageModifiers{DamageMultiplier: 1.0}
-	adaptiveArmorDamageMod(ctx, mods3)
+	(&AdaptiveArmorBehavior{}).DefenderDamageMod(ctx,mods3)
 	expected := 1.0 - 2*0.1
 	if mods3.DamageMultiplier != expected {
 		t.Errorf("Expected %.2f on third hit, got %v", expected, mods3.DamageMultiplier)
@@ -541,14 +541,14 @@ func TestOpeningSalvo_FirstAttackOnly(t *testing.T) {
 
 	// First attack gets bonus
 	mods := &combatcore.DamageModifiers{DamageMultiplier: 1.0}
-	openingSalvoDamageMod(ctx, mods)
+	(&OpeningSalvoBehavior{}).AttackerDamageMod(ctx,mods)
 	if mods.DamageMultiplier != 1.35 {
 		t.Errorf("Expected 1.35 on first attack, got %v", mods.DamageMultiplier)
 	}
 
 	// Second attack: no bonus
 	mods2 := &combatcore.DamageModifiers{DamageMultiplier: 1.0}
-	openingSalvoDamageMod(ctx, mods2)
+	(&OpeningSalvoBehavior{}).AttackerDamageMod(ctx,mods2)
 	if mods2.DamageMultiplier != 1.0 {
 		t.Errorf("Expected 1.0 on second attack, got %v", mods2.DamageMultiplier)
 	}
@@ -560,7 +560,7 @@ func TestOpeningSalvo_IgnoresCounterattack(t *testing.T) {
 	ctx := &HookContext{RoundState: s}
 
 	mods := &combatcore.DamageModifiers{DamageMultiplier: 1.0, IsCounterattack: true}
-	openingSalvoDamageMod(ctx, mods)
+	(&OpeningSalvoBehavior{}).AttackerDamageMod(ctx,mods)
 	if mods.DamageMultiplier != 1.0 {
 		t.Error("Opening Salvo should not trigger on counterattacks")
 	}
@@ -575,7 +575,7 @@ func TestStalwart_FullDamageCounterWhenStationary(t *testing.T) {
 	ctx := &HookContext{RoundState: s}
 
 	mods := &combatcore.DamageModifiers{DamageMultiplier: 0.5} // Default counter penalty
-	skipCounter := stalwartCounterMod(ctx, mods)
+	skipCounter := (&StalwartBehavior{}).CounterMod(ctx,mods)
 
 	if skipCounter {
 		t.Error("Stalwart should not skip counter")
@@ -590,7 +590,7 @@ func TestStalwart_NoEffectWhenMoved(t *testing.T) {
 	ctx := &HookContext{RoundState: s}
 
 	mods := &combatcore.DamageModifiers{DamageMultiplier: 0.5}
-	stalwartCounterMod(ctx, mods)
+	(&StalwartBehavior{}).CounterMod(ctx,mods)
 
 	if mods.DamageMultiplier != 0.5 {
 		t.Errorf("Stalwart should not modify counter when moved, got %v", mods.DamageMultiplier)
@@ -621,30 +621,30 @@ func TestPerkLogger_NilSafe(t *testing.T) {
 }
 
 // ========================================
-// forEachPerkHook Tests
+// forEachPerkBehavior Tests
 // ========================================
 
-func TestForEachPerkHook_PassesPerkID(t *testing.T) {
+func TestForEachPerkBehavior_IteratesAll(t *testing.T) {
 	manager := setupTestManager()
 	squadID := createTestSquadWithPerks(manager, PerkCounterpunch, PerkBloodlust)
 
-	var seenIDs []string
-	forEachPerkHook(squadID, manager, func(perkID string, hooks *PerkHooks) bool {
-		seenIDs = append(seenIDs, perkID)
+	count := 0
+	forEachPerkBehavior(squadID, manager, func(behavior PerkBehavior) bool {
+		count++
 		return true
 	})
 
-	if len(seenIDs) != 2 {
-		t.Errorf("Expected 2 perk IDs, got %d: %v", len(seenIDs), seenIDs)
+	if count != 2 {
+		t.Errorf("Expected 2 behaviors, got %d", count)
 	}
 }
 
-func TestForEachPerkHook_EarlyExit(t *testing.T) {
+func TestForEachPerkBehavior_EarlyExit(t *testing.T) {
 	manager := setupTestManager()
 	squadID := createTestSquadWithPerks(manager, PerkCounterpunch, PerkBloodlust, PerkFortify)
 
 	count := 0
-	forEachPerkHook(squadID, manager, func(perkID string, hooks *PerkHooks) bool {
+	forEachPerkBehavior(squadID, manager, func(behavior PerkBehavior) bool {
 		count++
 		return false // stop after first
 	})
@@ -715,7 +715,7 @@ func TestMultiPerk_BloodlustPlusOpeningSalvo(t *testing.T) {
 
 	// Simulate a kill first to arm bloodlust
 	bloodlustCtx := &HookContext{RoundState: rs, AttackerSquadID: squadID}
-	bloodlustPostDamage(bloodlustCtx, 20, true) // 1 kill
+	(&BloodlustBehavior{}).AttackerPostDamage(bloodlustCtx, 20, true) // 1 kill
 
 	// Now run AttackerDamageMod hooks through the pipeline for both perks
 	mods := &combatcore.DamageModifiers{DamageMultiplier: 1.0}
@@ -725,10 +725,8 @@ func TestMultiPerk_BloodlustPlusOpeningSalvo(t *testing.T) {
 	}
 
 	// Run hooks manually like the runner does
-	forEachPerkHook(squadID, manager, func(perkID string, hooks *PerkHooks) bool {
-		if hooks.AttackerDamageMod != nil {
-			hooks.AttackerDamageMod(ctx, mods)
-		}
+	forEachPerkBehavior(squadID, manager, func(behavior PerkBehavior) bool {
+		behavior.AttackerDamageMod(ctx, mods)
 		return true
 	})
 
@@ -755,7 +753,7 @@ func TestMultiPerk_CounterpunchPlusGrudgeBearer(t *testing.T) {
 	// Set up Counterpunch: attacked last turn, did not attack
 	rs.WasAttackedLastTurn = true
 	rs.DidNotAttackLastTurn = true
-	counterpunchTurnStart(&HookContext{RoundState: rs})
+	(&CounterpunchBehavior{}).TurnStart(&HookContext{RoundState: rs})
 
 	// Set up Grudge Bearer: enemy squad 50 damaged us twice
 	enemySquadID := ecs.EntityID(50)
@@ -767,10 +765,8 @@ func TestMultiPerk_CounterpunchPlusGrudgeBearer(t *testing.T) {
 	mods := &combatcore.DamageModifiers{DamageMultiplier: 1.0}
 	ctx := buildCombatContext(squadID, 100, 200, squadID, enemySquadID, manager)
 
-	forEachPerkHook(squadID, manager, func(perkID string, hooks *PerkHooks) bool {
-		if hooks.AttackerDamageMod != nil {
-			hooks.AttackerDamageMod(ctx, mods)
-		}
+	forEachPerkBehavior(squadID, manager, func(behavior PerkBehavior) bool {
+		behavior.AttackerDamageMod(ctx, mods)
 		return true
 	})
 
@@ -871,7 +867,7 @@ func TestPerkBalanceConfig_ZeroFieldsAreDetectable(t *testing.T) {
 
 	// Should multiply by 0, producing 0 damage — detectable as a bug
 	mods := &combatcore.DamageModifiers{DamageMultiplier: 1.0}
-	recklessAssaultAttackerMod(ctx, mods)
+	(&RecklessAssaultBehavior{}).AttackerDamageMod(ctx,mods)
 	if mods.DamageMultiplier != 0.0 {
 		t.Errorf("Expected 0.0 with zero balance mult, got %v", mods.DamageMultiplier)
 	}

@@ -22,49 +22,39 @@ type HookContext struct {
 	Manager         *common.EntityManager
 }
 
-// DamageModHook modifies DamageModifiers before damage calculation.
-type DamageModHook func(ctx *HookContext, modifiers *combatcore.DamageModifiers)
+// PerkBehavior defines the contract for all perk implementations.
+// Perks embed BasePerkBehavior and override only the methods they need.
+type PerkBehavior interface {
+	PerkID() string
 
-// TargetOverrideHook overrides target selection. Returns modified target list.
-type TargetOverrideHook func(ctx *HookContext, defaultTargets []ecs.EntityID) []ecs.EntityID
+	// Damage pipeline hooks
+	AttackerDamageMod(ctx *HookContext, modifiers *combatcore.DamageModifiers)
+	DefenderDamageMod(ctx *HookContext, modifiers *combatcore.DamageModifiers)
+	DefenderCoverMod(ctx *HookContext, coverBreakdown *combatcore.CoverBreakdown)
+	TargetOverride(ctx *HookContext, defaultTargets []ecs.EntityID) []ecs.EntityID
+	CounterMod(ctx *HookContext, modifiers *combatcore.DamageModifiers) (skipCounter bool)
+	AttackerPostDamage(ctx *HookContext, damageDealt int, wasKill bool)
+	DefenderPostDamage(ctx *HookContext, damageDealt int, wasKill bool)
+	TurnStart(ctx *HookContext)
+	DamageRedirect(ctx *HookContext) (reducedDamage int, redirectTargetID ecs.EntityID, redirectAmount int)
+	DeathOverride(ctx *HookContext) (preventDeath bool)
+}
 
-// CounterModHook modifies or suppresses counterattack.
-// Returns true if counter should be skipped entirely.
-type CounterModHook func(ctx *HookContext, modifiers *combatcore.DamageModifiers) (skipCounter bool)
+// BasePerkBehavior provides no-op defaults. Concrete perks embed this
+// and override only the hooks they need.
+type BasePerkBehavior struct{}
 
-// PostDamageHook runs after damage is recorded.
-type PostDamageHook func(ctx *HookContext, damageDealt int, wasKill bool)
-
-// TurnStartHook runs at start of a squad's turn.
-// Uses ctx.SquadID, ctx.RoundNumber, ctx.RoundState, ctx.Manager.
-type TurnStartHook func(ctx *HookContext)
-
-// CoverModHook modifies cover calculation.
-type CoverModHook func(ctx *HookContext, coverBreakdown *combatcore.CoverBreakdown)
-
-// DamageRedirectHook intercepts damage before it is recorded.
-// Uses ctx.UnitID (defender unit), ctx.SquadID (defender squad), ctx.DamageAmount.
-// Returns reduced damage for original target, redirect target ID, and redirect amount.
-type DamageRedirectHook func(ctx *HookContext) (reducedDamage int, redirectTargetID ecs.EntityID, redirectAmount int)
-
-// DeathOverrideHook prevents lethal damage. Returns true to prevent death.
-// Uses ctx.UnitID, ctx.SquadID, ctx.RoundState, ctx.Manager.
-type DeathOverrideHook func(ctx *HookContext) (preventDeath bool)
-
-// PerkHooks collects all hooks for a single perk.
-// Attacker/Defender variants ensure hooks only fire on the correct side,
-// eliminating the need for HasPerk() self-checks inside behaviors.
-type PerkHooks struct {
-	AttackerDamageMod DamageModHook // runs only when this squad is the attacker
-	DefenderDamageMod DamageModHook // runs only when this squad is the defender
-	DefenderCoverMod  CoverModHook  // runs only when this squad is the defender
-	TargetOverride    TargetOverrideHook
-	CounterMod        CounterModHook
-	AttackerPostDamage PostDamageHook // runs only when this squad is the attacker
-	DefenderPostDamage PostDamageHook // runs only when this squad is the defender
-	TurnStart         TurnStartHook
-	DamageRedirect    DamageRedirectHook
-	DeathOverride     DeathOverrideHook
+func (BasePerkBehavior) AttackerDamageMod(*HookContext, *combatcore.DamageModifiers)  {}
+func (BasePerkBehavior) DefenderDamageMod(*HookContext, *combatcore.DamageModifiers)  {}
+func (BasePerkBehavior) DefenderCoverMod(*HookContext, *combatcore.CoverBreakdown)    {}
+func (BasePerkBehavior) AttackerPostDamage(*HookContext, int, bool)                   {}
+func (BasePerkBehavior) DefenderPostDamage(*HookContext, int, bool)                   {}
+func (BasePerkBehavior) TurnStart(*HookContext)                                       {}
+func (BasePerkBehavior) CounterMod(*HookContext, *combatcore.DamageModifiers) bool    { return false }
+func (BasePerkBehavior) DeathOverride(*HookContext) bool                              { return false }
+func (BasePerkBehavior) DamageRedirect(*HookContext) (int, ecs.EntityID, int)         { return 0, 0, 0 }
+func (BasePerkBehavior) TargetOverride(_ *HookContext, defaultTargets []ecs.EntityID) []ecs.EntityID {
+	return defaultTargets
 }
 
 // PerkLogger is called when a perk activates, for combat log feedback.
@@ -84,14 +74,14 @@ func logPerkActivation(perkID string, squadID ecs.EntityID, message string) {
 	}
 }
 
-var hookRegistry = map[string]*PerkHooks{}
+var behaviorRegistry = map[string]PerkBehavior{}
 
-// RegisterPerkHooks registers a perk's hook implementations by perk ID.
-func RegisterPerkHooks(perkID string, hooks *PerkHooks) {
-	hookRegistry[perkID] = hooks
+// RegisterPerkBehavior registers a perk behavior by its PerkID.
+func RegisterPerkBehavior(b PerkBehavior) {
+	behaviorRegistry[b.PerkID()] = b
 }
 
-// GetPerkHooks returns the hook implementations for a perk, or nil if not found.
-func GetPerkHooks(perkID string) *PerkHooks {
-	return hookRegistry[perkID]
+// GetPerkBehavior returns the behavior for a perk, or nil if not found.
+func GetPerkBehavior(perkID string) PerkBehavior {
+	return behaviorRegistry[perkID]
 }

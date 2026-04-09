@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"game_main/common"
 	"game_main/tactical/combat/combatcore"
-	"game_main/tactical/combat/combattypes"
 	"game_main/tactical/powers/artifacts"
 	"game_main/tactical/powers/perks"
 
@@ -16,10 +15,11 @@ import (
 // Deadlock Shackles locking a squad) resolve before perk turn-start hooks.
 //
 // Execution order per event:
-//   PostReset:       artifacts.OnPostReset → perks.TurnStart
-//   OnAttackComplete: artifacts.OnAttackComplete → perks state tracking
-//   OnTurnEnd:       artifacts charge refresh + OnTurnEnd → perks round reset
-//   OnMoveComplete:  perks movement tracking (no artifact hook)
+//
+//	PostReset:       artifacts.OnPostReset → perks.TurnStart
+//	OnAttackComplete: artifacts.OnAttackComplete → perks state tracking
+//	OnTurnEnd:       artifacts charge refresh + OnTurnEnd → perks round reset
+//	OnMoveComplete:  perks movement tracking (no artifact hook)
 func setupPowerDispatch(cs *CombatService, manager *common.EntityManager, cache *combatcore.CombatQueryCache) {
 
 	// ==========================================
@@ -71,19 +71,8 @@ func setupPowerDispatch(cs *CombatService, manager *common.EntityManager, cache 
 		fmt.Printf("[PERK] %s: %s (squad %d)\n", perkID, message, squadID)
 	})
 
-	// Wire perk hook runners into the damage pipeline via callbacks.
-	callbacks := &combattypes.PerkCallbacks{
-		AttackerDamageMod:  perks.RunAttackerDamageModHooks,
-		DefenderDamageMod:  perks.RunDefenderDamageModHooks,
-		CoverMod:           perks.RunCoverModHooks,
-		TargetOverride:     perks.RunTargetOverrideHooks,
-		PostDamage:         perks.RunAttackerPostDamageHooks,
-		DefenderPostDamage: perks.RunDefenderPostDamageHooks,
-		DeathOverride:      perks.RunDeathOverrideHooks,
-		CounterMod:         perks.RunCounterModHooks,
-		DamageRedirect:     perks.RunDamageRedirectHooks,
-	}
-	cs.CombatActSystem.SetPerkCallbacks(callbacks)
+	// Wire perk dispatcher into the damage pipeline.
+	cs.CombatActSystem.SetPerkDispatcher(&perks.SquadPerkDispatcher{})
 
 	// Register perk turn-start hooks on post-reset (runs when a faction's turn starts).
 	// Fires AFTER artifact PostReset hooks above.
