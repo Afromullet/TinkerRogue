@@ -37,7 +37,8 @@ type CombatService struct {
 	aiController AITurnController
 
 	// Artifact charge tracking (per-battle and per-round)
-	chargeTracker *artifacts.ArtifactChargeTracker
+	chargeTracker      *artifacts.ArtifactChargeTracker
+	artifactDispatcher *artifacts.ArtifactDispatcher
 
 	// Post-action callbacks (registered by GUI layer)
 	onAttackComplete []OnAttackCompleteFunc
@@ -65,7 +66,8 @@ func NewCombatService(manager *common.EntityManager) *CombatService {
 		CombatCache:     cache,
 		CombatActSystem: combatActSystem,
 		BattleRecorder:  battleRecorder,
-		layerEvaluators: make(map[ecs.EntityID]ThreatLayerEvaluator),
+		layerEvaluators:    make(map[ecs.EntityID]ThreatLayerEvaluator),
+		artifactDispatcher: artifacts.NewArtifactDispatcher(manager, cache),
 	}
 
 	// Wire system hooks to forward to registered callbacks
@@ -110,6 +112,7 @@ func (cs *CombatService) GetChargeTracker() *artifacts.ArtifactChargeTracker {
 func (cs *CombatService) InitializeCombat(factionIDs []ecs.EntityID) error {
 	// Reset charge tracker for the new battle
 	cs.chargeTracker = artifacts.NewArtifactChargeTracker()
+	cs.artifactDispatcher.SetChargeTracker(cs.chargeTracker)
 	// Find player faction (has IsPlayerControlled = true)
 	var playerFactionID ecs.EntityID
 	for _, factionID := range factionIDs {

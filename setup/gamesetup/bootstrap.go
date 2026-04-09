@@ -10,6 +10,7 @@ import (
 	"game_main/overworld/tick"
 	"game_main/setup/config"
 	"game_main/tactical/commander"
+	"game_main/tactical/powers/artifacts"
 	"game_main/tactical/powers/perks"
 	"game_main/tactical/squads/unitdefs"
 	"game_main/templates"
@@ -36,6 +37,8 @@ func (gb *GameBootstrap) LoadGameData() {
 	templates.ReadGameData()
 	perks.LoadPerkDefinitions()
 	perks.LoadPerkBalanceConfig()
+	artifacts.LoadArtifactBalanceConfig()
+	artifacts.ValidateBehaviorCoverage()
 }
 
 // InitializeCoreECS initializes the ECS world and global systems.

@@ -9,15 +9,6 @@ import (
 	"github.com/bytearena/ecs"
 )
 
-// TargetType describes what kind of target an artifact requires.
-type TargetType int
-
-const (
-	TargetFriendlySquad TargetType = iota
-	TargetEnemySquad
-	TargetNoTarget
-)
-
 // ArtifactOption represents a single activatable artifact shown in the panel.
 type ArtifactOption struct {
 	BehaviorKey string
@@ -69,7 +60,7 @@ func (h *ArtifactActivationHandler) SelectArtifact(behaviorKey string) {
 
 	targetType := GetTargetType(behaviorKey)
 
-	if targetType == TargetNoTarget {
+	if targetType == artifacts.TargetNone {
 		// Execute immediately (e.g. Saboteur's Hourglass)
 		h.executeArtifact(behaviorKey, 0)
 		return
@@ -97,11 +88,11 @@ func (h *ArtifactActivationHandler) HandleTargetClick(mouseX, mouseY int) {
 	isEnemy := h.deps.Queries.IsEnemySquadInEncounter(clickedSquadID, encounterID)
 
 	switch targetType {
-	case TargetFriendlySquad:
+	case artifacts.TargetFriendly:
 		if isEnemy {
 			return
 		}
-	case TargetEnemySquad:
+	case artifacts.TargetEnemy:
 		if !isEnemy {
 			return
 		}
@@ -170,19 +161,12 @@ func (h *ArtifactActivationHandler) HasSelectedArtifact() bool {
 
 // GetTargetType returns the targeting type for a given behavior key,
 // derived from the behavior's own TargetType() method.
-func GetTargetType(behaviorKey string) TargetType {
+func GetTargetType(behaviorKey string) artifacts.BehaviorTargetType {
 	b := artifacts.GetBehavior(behaviorKey)
 	if b == nil {
-		return TargetNoTarget
+		return artifacts.TargetNone
 	}
-	switch b.TargetType() {
-	case artifacts.TargetFriendly:
-		return TargetFriendlySquad
-	case artifacts.TargetEnemy:
-		return TargetEnemySquad
-	default:
-		return TargetNoTarget
-	}
+	return b.TargetType()
 }
 
 // --- Internal helpers ---

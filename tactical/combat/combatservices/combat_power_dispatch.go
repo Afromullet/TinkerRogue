@@ -26,40 +26,28 @@ func setupPowerDispatch(cs *CombatService, manager *common.EntityManager, cache 
 	// Phase 1: Artifact behavior dispatch
 	// ==========================================
 
-	makeBehaviorContext := func() *artifacts.BehaviorContext {
-		return artifacts.NewBehaviorContext(manager, cache, cs.chargeTracker)
-	}
+	// Wire artifact activation logger for combat feedback.
+	artifacts.SetArtifactLogger(func(behaviorKey string, squadID ecs.EntityID, message string) {
+		fmt.Printf("[GEAR] %s: %s (squad %d)\n", behaviorKey, message, squadID)
+	})
 
 	// OnPostReset remains broadcast: pending-effect behaviors (DeadlockShackles,
 	// SaboteursHourglass) fire on the enemy faction's reset, not the owning
 	// squad's. The pending-effect queue already gates correctness.
 	cs.RegisterPostResetHook(func(factionID ecs.EntityID, squadIDs []ecs.EntityID) {
-		ctx := makeBehaviorContext()
-		for _, b := range artifacts.AllBehaviors() {
-			b.OnPostReset(ctx, factionID, squadIDs)
-		}
+		cs.artifactDispatcher.DispatchPostReset(factionID, squadIDs)
 	})
 
 	// Squad-scoped: only run behaviors equipped on the attacker.
 	// If a future behavior needs to trigger on defender's artifacts,
 	// add a second loop over GetEquippedBehaviors(defenderID, manager).
 	cs.RegisterOnAttackComplete(func(attackerID, defenderID ecs.EntityID, result *combatcore.CombatResult) {
-		ctx := makeBehaviorContext()
-		for _, b := range artifacts.GetEquippedBehaviors(attackerID, manager) {
-			b.OnAttackComplete(ctx, attackerID, defenderID, result)
-		}
+		cs.artifactDispatcher.DispatchOnAttackComplete(attackerID, defenderID, result)
 	})
 
-	// OnTurnEnd remains broadcast: no behaviors override it currently.
-	// RefreshRoundCharges is global (not per-squad).
+	// OnTurnEnd remains broadcast: charge refresh + behavior hooks.
 	cs.RegisterOnTurnEnd(func(round int) {
-		if cs.chargeTracker != nil {
-			cs.chargeTracker.RefreshRoundCharges()
-		}
-		ctx := makeBehaviorContext()
-		for _, b := range artifacts.AllBehaviors() {
-			b.OnTurnEnd(ctx, round)
-		}
+		cs.artifactDispatcher.DispatchOnTurnEnd(round)
 	})
 
 	// ==========================================

@@ -17,11 +17,10 @@ const (
 
 // processAttack is the unified attack processing function.
 // defenderSquadID is needed for perk target override hooks (0 if unknown).
-// callbacks may be nil if no perks are active.
 func processAttack(attackerID ecs.EntityID, defenderSquadID ecs.EntityID,
 	targetIDs []ecs.EntityID, result *CombatResult,
 	log *CombatLog, attackIndex int, modifiers DamageModifiers,
-	callbacks *combattypes.PerkCallbacks, manager *common.EntityManager) int {
+	dispatcher combattypes.PerkDispatcher, manager *common.EntityManager) int {
 
 	// Determine attacker's squad ID for perk hooks
 	attackerSquadID := ecs.EntityID(0)
@@ -31,8 +30,8 @@ func processAttack(attackerID ecs.EntityID, defenderSquadID ecs.EntityID,
 	}
 
 	// Run target override hooks (attacker perks like Cleave, Precision Strike)
-	if callbacks != nil && callbacks.TargetOverride != nil && defenderSquadID != 0 {
-		targetIDs = callbacks.TargetOverride(attackerID, defenderSquadID, targetIDs, manager)
+	if dispatcher != nil && defenderSquadID != 0 {
+		targetIDs = dispatcher.TargetOverride(attackerID, defenderSquadID, targetIDs, manager)
 	}
 
 	for _, defenderID := range targetIDs {
@@ -42,17 +41,17 @@ func processAttack(attackerID ecs.EntityID, defenderSquadID ecs.EntityID,
 		targetModifiers := modifiers
 
 		// Run attacker damage mod hooks BEFORE damage calculation
-		if callbacks != nil && callbacks.AttackerDamageMod != nil {
-			callbacks.AttackerDamageMod(attackerID, defenderID, attackerSquadID, defenderSquadID, &targetModifiers, manager)
+		if dispatcher != nil {
+			dispatcher.AttackerDamageMod(attackerID, defenderID, attackerSquadID, defenderSquadID, &targetModifiers, manager)
 		}
 
 		// Run defender damage mod hooks BEFORE damage calculation
-		if callbacks != nil && callbacks.DefenderDamageMod != nil {
-			callbacks.DefenderDamageMod(attackerID, defenderID, attackerSquadID, defenderSquadID, &targetModifiers, manager)
+		if dispatcher != nil {
+			dispatcher.DefenderDamageMod(attackerID, defenderID, attackerSquadID, defenderSquadID, &targetModifiers, manager)
 		}
 
 		// Calculate damage
-		damage, event := combatmath.CalculateDamage(attackerID, defenderID, targetModifiers, callbacks, manager)
+		damage, event := combatmath.CalculateDamage(attackerID, defenderID, targetModifiers, dispatcher, manager)
 
 		// Add targeting info
 		defenderPos := common.GetComponentTypeByID[*squadcore.GridPositionData](manager, defenderID, squadcore.GridPositionComponent)
@@ -69,8 +68,8 @@ func processAttack(attackerID ecs.EntityID, defenderSquadID ecs.EntityID,
 		}
 
 		// Run damage redirect hooks (Guardian Protocol)
-		if callbacks != nil && callbacks.DamageRedirect != nil && damage > 0 {
-			reducedDmg, redirectTarget, redirectAmt := callbacks.DamageRedirect(defenderID, defenderSquadID, damage, manager)
+		if dispatcher != nil && damage > 0 {
+			reducedDmg, redirectTarget, redirectAmt := dispatcher.DamageRedirect(defenderID, defenderSquadID, damage, manager)
 			if redirectTarget != 0 && redirectAmt > 0 {
 				damage = reducedDmg
 				combatmath.RecordDamageToUnit(redirectTarget, redirectAmt, result, manager)
@@ -82,13 +81,13 @@ func processAttack(attackerID ecs.EntityID, defenderSquadID ecs.EntityID,
 
 		// Death override check (Resolute) — must run BEFORE PostDamage hooks
 		// so that prevented deaths are not counted as kills by perks like Bloodlust.
-		if event.WasKilled && callbacks != nil && callbacks.DeathOverride != nil {
+		if event.WasKilled && dispatcher != nil {
 			defenderMember := common.GetComponentTypeByID[*squadcore.SquadMemberData](manager, defenderID, squadcore.SquadMemberComponent)
 			defSquadID := defenderSquadID
 			if defenderMember != nil {
 				defSquadID = defenderMember.SquadID
 			}
-			if callbacks.DeathOverride(defenderID, defSquadID, manager) {
+			if dispatcher.DeathOverride(defenderID, defSquadID, manager) {
 				// Prevent death: adjust recorded damage so unit survives at 1 HP
 				attr := common.GetComponentTypeByID[*common.Attributes](manager, defenderID, common.AttributeComponent)
 				if attr != nil {
@@ -113,13 +112,13 @@ func processAttack(attackerID ecs.EntityID, defenderSquadID ecs.EntityID,
 		}
 
 		// Run post-damage hooks AFTER death override so WasKilled reflects prevented deaths
-		if callbacks != nil && callbacks.PostDamage != nil {
-			callbacks.PostDamage(attackerID, defenderID, attackerSquadID, defenderSquadID, damage, event.WasKilled, manager)
+		if dispatcher != nil {
+			dispatcher.AttackerPostDamage(attackerID, defenderID, attackerSquadID, defenderSquadID, damage, event.WasKilled, manager)
 		}
 
 		// Run defender post-damage hooks (Grudge Bearer tracking)
-		if callbacks != nil && callbacks.DefenderPostDamage != nil {
-			callbacks.DefenderPostDamage(attackerID, defenderID, attackerSquadID, defenderSquadID, damage, event.WasKilled, manager)
+		if dispatcher != nil {
+			dispatcher.DefenderPostDamage(attackerID, defenderID, attackerSquadID, defenderSquadID, damage, event.WasKilled, manager)
 		}
 
 		// Store event
@@ -130,26 +129,24 @@ func processAttack(attackerID ecs.EntityID, defenderSquadID ecs.EntityID,
 }
 
 // ProcessAttackOnTargets applies damage to all targets and creates combat events.
-// callbacks may be nil if no perks are active.
 func ProcessAttackOnTargets(attackerID ecs.EntityID, defenderSquadID ecs.EntityID,
 	targetIDs []ecs.EntityID, result *CombatResult,
-	log *CombatLog, attackIndex int, callbacks *combattypes.PerkCallbacks, manager *common.EntityManager) int {
+	log *CombatLog, attackIndex int, dispatcher combattypes.PerkDispatcher, manager *common.EntityManager) int {
 
 	modifiers := DamageModifiers{
 		HitPenalty:       0,
 		DamageMultiplier: 1.0,
 		IsCounterattack:  false,
 	}
-	return processAttack(attackerID, defenderSquadID, targetIDs, result, log, attackIndex, modifiers, callbacks, manager)
+	return processAttack(attackerID, defenderSquadID, targetIDs, result, log, attackIndex, modifiers, dispatcher, manager)
 }
 
 // ProcessCounterattackOnTargets applies counterattack damage with penalties.
-// callbacks may be nil if no perks are active.
 func ProcessCounterattackOnTargets(attackerID ecs.EntityID, defenderSquadID ecs.EntityID,
 	targetIDs []ecs.EntityID, result *CombatResult,
-	log *CombatLog, attackIndex int, modifiers DamageModifiers, callbacks *combattypes.PerkCallbacks, manager *common.EntityManager) int {
+	log *CombatLog, attackIndex int, modifiers DamageModifiers, dispatcher combattypes.PerkDispatcher, manager *common.EntityManager) int {
 
-	return processAttack(attackerID, defenderSquadID, targetIDs, result, log, attackIndex, modifiers, callbacks, manager)
+	return processAttack(attackerID, defenderSquadID, targetIDs, result, log, attackIndex, modifiers, dispatcher, manager)
 }
 
 // ProcessHealOnTargets iterates heal targets, calculates healing, and records events.

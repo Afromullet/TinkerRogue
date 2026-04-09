@@ -5,6 +5,7 @@ import (
 	"game_main/common"
 	"game_main/tactical/combat/combatcore"
 	"game_main/tactical/squads/squadcore"
+	"game_main/templates"
 	"sort"
 
 	"github.com/bytearena/ecs"
@@ -80,16 +81,30 @@ func (ctx *BehaviorContext) GetSquadSpeed(squadID ecs.EntityID) int {
 }
 
 // BehaviorTargetType describes what kind of target a behavior requires.
+type BehaviorTargetType int
+
 const (
-	TargetNone     = 0
-	TargetFriendly = 1
-	TargetEnemy    = 2
+	TargetNone     BehaviorTargetType = 0
+	TargetFriendly BehaviorTargetType = 1
+	TargetEnemy    BehaviorTargetType = 2
 )
+
+// String returns a display label for the target type.
+func (t BehaviorTargetType) String() string {
+	switch t {
+	case TargetFriendly:
+		return "Friendly Squad"
+	case TargetEnemy:
+		return "Enemy Squad"
+	default:
+		return "No Target"
+	}
+}
 
 // ArtifactBehavior defines the contract for major artifact behaviors.
 type ArtifactBehavior interface {
 	BehaviorKey() string
-	TargetType() int
+	TargetType() BehaviorTargetType
 	OnPostReset(ctx *BehaviorContext, factionID ecs.EntityID, squadIDs []ecs.EntityID)
 	OnAttackComplete(ctx *BehaviorContext, attackerID, defenderID ecs.EntityID, result *combatcore.CombatResult)
 	OnTurnEnd(ctx *BehaviorContext, round int)
@@ -101,7 +116,7 @@ type ArtifactBehavior interface {
 // and override only the hooks they need.
 type BaseBehavior struct{}
 
-func (BaseBehavior) TargetType() int                                            { return TargetNone }
+func (BaseBehavior) TargetType() BehaviorTargetType                              { return TargetNone }
 func (BaseBehavior) OnPostReset(*BehaviorContext, ecs.EntityID, []ecs.EntityID) {}
 func (BaseBehavior) OnAttackComplete(*BehaviorContext, ecs.EntityID, ecs.EntityID, *combatcore.CombatResult) {
 }
@@ -109,6 +124,23 @@ func (BaseBehavior) OnTurnEnd(*BehaviorContext, int) {}
 func (BaseBehavior) IsPlayerActivated() bool         { return false }
 func (BaseBehavior) Activate(*BehaviorContext, ecs.EntityID) error {
 	return fmt.Errorf("not player-activated")
+}
+
+// ArtifactLogger is called when an artifact activates, for combat log feedback.
+type ArtifactLogger func(behaviorKey string, squadID ecs.EntityID, message string)
+
+var artifactLogger ArtifactLogger
+
+// SetArtifactLogger sets the callback for artifact activation messages.
+func SetArtifactLogger(fn ArtifactLogger) {
+	artifactLogger = fn
+}
+
+// logArtifactActivation logs an artifact activation event if a logger is set.
+func logArtifactActivation(behaviorKey string, squadID ecs.EntityID, message string) {
+	if artifactLogger != nil {
+		artifactLogger(behaviorKey, squadID, message)
+	}
 }
 
 // Registry (same pattern as worldmap/generator.go)
@@ -150,6 +182,30 @@ func ActivateArtifact(behavior string, targetSquadID ecs.EntityID, ctx *Behavior
 		return fmt.Errorf("behavior %q is not player-activated", behavior)
 	}
 	return b.Activate(ctx, targetSquadID)
+}
+
+// ValidateBehaviorCoverage checks that JSON definitions and behavior registrations are in sync.
+func ValidateBehaviorCoverage() {
+	for id, def := range templates.ArtifactRegistry {
+		if def.Behavior == "" {
+			continue // minor artifact, no behavior expected
+		}
+		if GetBehavior(def.Behavior) == nil {
+			fmt.Printf("WARNING: Artifact %q has behavior %q but no registered behavior implementation\n", id, def.Behavior)
+		}
+	}
+	for key := range behaviorRegistry {
+		found := false
+		for _, def := range templates.ArtifactRegistry {
+			if def.Behavior == key {
+				found = true
+				break
+			}
+		}
+		if !found {
+			fmt.Printf("WARNING: Behavior %q is registered but no artifact definition references it\n", key)
+		}
+	}
 }
 
 // CanActivateArtifact returns true if the given artifact behavior's charge is available.
