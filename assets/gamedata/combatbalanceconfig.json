@@ -1,0 +1,6 @@
+{
+  "counterattack": {
+    "damageMultiplier": 0.5,
+    "hitPenalty": 20
+  }
+}

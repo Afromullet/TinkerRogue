@@ -150,3 +150,52 @@ func (d *SquadPerkDispatcher) DamageRedirect(defenderID, defenderSquadID ecs.Ent
 	})
 	return reducedDmg, redirectTarget, redirectAmt
 }
+
+// ========================================
+// Lifecycle dispatch methods
+// ========================================
+
+// DispatchTurnStart resets per-turn state and runs TurnStart hooks for all squads in a faction.
+func (d *SquadPerkDispatcher) DispatchTurnStart(squadIDs []ecs.EntityID, roundNumber int, manager *common.EntityManager) {
+	for _, squadID := range squadIDs {
+		roundState := GetRoundState(squadID, manager)
+		if roundState == nil {
+			continue
+		}
+		ResetPerkRoundStateTurn(roundState)
+		RunTurnStartHooks(squadID, roundNumber, roundState, manager)
+	}
+}
+
+// DispatchRoundEnd resets per-round state for all squads with perks.
+func (d *SquadPerkDispatcher) DispatchRoundEnd(manager *common.EntityManager) {
+	for _, result := range manager.World.Query(PerkSlotTag) {
+		squadID := result.Entity.GetID()
+		roundState := GetRoundState(squadID, manager)
+		if roundState != nil {
+			ResetPerkRoundStateRound(roundState)
+		}
+	}
+}
+
+// DispatchAttackTracking updates perk round state after an attack resolves.
+func (d *SquadPerkDispatcher) DispatchAttackTracking(attackerID, defenderID ecs.EntityID, manager *common.EntityManager) {
+	attackerState := GetRoundState(attackerID, manager)
+	if attackerState != nil {
+		attackerState.AttackedThisTurn = true
+	}
+
+	defenderState := GetRoundState(defenderID, manager)
+	if defenderState != nil {
+		defenderState.WasAttackedThisTurn = true
+	}
+}
+
+// DispatchMoveTracking updates perk round state after a squad moves.
+func (d *SquadPerkDispatcher) DispatchMoveTracking(squadID ecs.EntityID, manager *common.EntityManager) {
+	roundState := GetRoundState(squadID, manager)
+	if roundState != nil {
+		roundState.MovedThisTurn = true
+		roundState.TurnsStationary = 0
+	}
+}

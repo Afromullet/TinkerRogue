@@ -59,56 +59,30 @@ func setupPowerDispatch(cs *CombatService, manager *common.EntityManager, cache 
 		fmt.Printf("[PERK] %s: %s (squad %d)\n", perkID, message, squadID)
 	})
 
-	// Wire perk dispatcher into the damage pipeline.
-	cs.CombatActSystem.SetPerkDispatcher(&perks.SquadPerkDispatcher{})
+	// Wire perk dispatcher into the damage pipeline and lifecycle hooks.
+	perkDispatcher := &perks.SquadPerkDispatcher{}
+	cs.CombatActSystem.SetPerkDispatcher(perkDispatcher)
 
 	// Register perk turn-start hooks on post-reset (runs when a faction's turn starts).
 	// Fires AFTER artifact PostReset hooks above.
 	cs.RegisterPostResetHook(func(factionID ecs.EntityID, squadIDs []ecs.EntityID) {
-		roundNumber := cs.TurnManager.GetCurrentRound()
-
-		for _, squadID := range squadIDs {
-			roundState := perks.GetRoundState(squadID, manager)
-			if roundState == nil {
-				continue
-			}
-			perks.ResetPerkRoundStateTurn(roundState)
-			perks.RunTurnStartHooks(squadID, roundNumber, roundState, manager)
-		}
+		perkDispatcher.DispatchTurnStart(squadIDs, cs.TurnManager.GetCurrentRound(), manager)
 	})
 
 	// Register perk round-end hooks on turn end (runs when round advances).
 	// Fires AFTER artifact OnTurnEnd hooks above.
 	cs.RegisterOnTurnEnd(func(round int) {
-		for _, result := range manager.World.Query(perks.PerkSlotTag) {
-			squadID := result.Entity.GetID()
-			roundState := perks.GetRoundState(squadID, manager)
-			if roundState != nil {
-				perks.ResetPerkRoundStateRound(roundState)
-			}
-		}
+		perkDispatcher.DispatchRoundEnd(manager)
 	})
 
 	// Register perk combat tracking via attack complete hook.
 	// Fires AFTER artifact OnAttackComplete hooks above.
 	cs.RegisterOnAttackComplete(func(attackerID, defenderID ecs.EntityID, result *combatcore.CombatResult) {
-		attackerState := perks.GetRoundState(attackerID, manager)
-		if attackerState != nil {
-			attackerState.AttackedThisTurn = true
-		}
-
-		defenderState := perks.GetRoundState(defenderID, manager)
-		if defenderState != nil {
-			defenderState.WasAttackedThisTurn = true
-		}
+		perkDispatcher.DispatchAttackTracking(attackerID, defenderID, manager)
 	})
 
 	// Register movement tracking for perk state (no artifact hook for this event).
 	cs.RegisterOnMoveComplete(func(squadID ecs.EntityID) {
-		roundState := perks.GetRoundState(squadID, manager)
-		if roundState != nil {
-			roundState.MovedThisTurn = true
-			roundState.TurnsStationary = 0
-		}
+		perkDispatcher.DispatchMoveTracking(squadID, manager)
 	})
 }

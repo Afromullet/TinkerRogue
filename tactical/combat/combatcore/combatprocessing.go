@@ -9,11 +9,15 @@ import (
 	"github.com/bytearena/ecs"
 )
 
-// Counterattack penalties - applied to units attacking back after being hit
-const (
-	counterattackDamageMultiplier = 0.5 // 50% damage on counterattack
-	counterattackHitPenalty       = 20  // -20% hit chance on counterattack
-)
+// counterattackDamageMultiplier returns the damage multiplier for counterattacks from the balance config.
+func counterattackDamageMultiplier() float64 {
+	return CombatBalance.Counterattack.DamageMultiplier
+}
+
+// counterattackHitPenalty returns the hit penalty for counterattacks from the balance config.
+func counterattackHitPenalty() int {
+	return CombatBalance.Counterattack.HitPenalty
+}
 
 // processAttack is the unified attack processing function.
 // defenderSquadID is needed for perk target override hooks (0 if unknown).

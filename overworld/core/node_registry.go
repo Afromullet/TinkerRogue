@@ -1,6 +1,7 @@
 package core
 
 import (
+	"fmt"
 	"image/color"
 
 	"game_main/templates"
@@ -159,6 +160,7 @@ func (r *NodeRegistry) GetNodeByID(id string) *NodeDefinition {
 	if def, ok := r.nodesByID[id]; ok {
 		return def
 	}
+	fmt.Printf("WARNING: NodeRegistry: no node definition for %q, using default\n", id)
 	return r.defaultNode
 }
 
@@ -188,6 +190,7 @@ func (r *NodeRegistry) GetEncounterByID(id string) *EncounterDefinition {
 	if enc, ok := r.encountersByID[id]; ok {
 		return enc
 	}
+	fmt.Printf("WARNING: NodeRegistry: no encounter definition for %q, using default\n", id)
 	return r.defaultEncounter
 }
 
@@ -225,6 +228,7 @@ func (r *NodeRegistry) GetEncounterByTypeID(encounterTypeID string) *EncounterDe
 			return enc
 		}
 	}
+	fmt.Printf("WARNING: NodeRegistry: no encounter with type ID %q, using default\n", encounterTypeID)
 	return r.defaultEncounter
 }
 
@@ -264,4 +268,50 @@ func (r *NodeRegistry) GetEncounterTypeID(threatType ThreatType) string {
 		return ""
 	}
 	return enc.EncounterTypeID
+}
+
+// ValidateNodeRegistry checks that the node registry is internally consistent.
+// Warns if threat nodes lack a matching encounter, or if encounters reference
+// unknown factions. Should be called after the registry is initialized.
+func ValidateNodeRegistry() {
+	registry := GetNodeRegistry()
+
+	if registry.defaultNode == nil {
+		fmt.Println("WARNING: NodeRegistry: no default node definition loaded")
+	}
+
+	// Check that every threat node has at least one encounter via its faction
+	for id, node := range registry.nodesByID {
+		if node.Category != NodeCategoryThreat {
+			continue
+		}
+		if node.FactionID == "" {
+			fmt.Printf("WARNING: NodeRegistry: threat node %q has no FactionID\n", id)
+			continue
+		}
+		encounters := registry.GetEncountersByFaction(node.FactionID)
+		if len(encounters) == 0 {
+			fmt.Printf("WARNING: NodeRegistry: threat node %q (faction %q) has no matching encounters\n", id, node.FactionID)
+		}
+	}
+
+	// Check that every encounter references a valid faction with a node
+	for id, enc := range registry.encountersByID {
+		if enc.FactionID == "" {
+			continue // Some encounters may be faction-agnostic
+		}
+		foundNode := false
+		for _, node := range registry.nodesByID {
+			if node.FactionID == enc.FactionID {
+				foundNode = true
+				break
+			}
+		}
+		if !foundNode {
+			fmt.Printf("WARNING: NodeRegistry: encounter %q references faction %q with no matching node\n", id, enc.FactionID)
+		}
+	}
+
+	fmt.Printf("NodeRegistry validated: %d nodes, %d encounters\n",
+		len(registry.nodesByID), len(registry.encountersByID))
 }

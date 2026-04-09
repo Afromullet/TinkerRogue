@@ -1,6 +1,6 @@
 # Hooks and Callbacks in TinkerRogue
 
-**Last Updated:** 2026-04-03
+**Last Updated:** 2026-04-09
 
 This document is a reference for every hook, callback, and event-driven pattern in the codebase. It covers the perk hook system, combat service callbacks, the dispatch bridge that prevents circular imports, TurnManager single-subscriber hooks, artifact behavior dispatch, the encounter post-combat callback, ECS subsystem self-registration, map generator registration, GUI callback patterns, and the overworld event log.
 
@@ -35,7 +35,7 @@ TinkerRogue uses four distinct callback philosophies depending on the subsystem:
 
 **Single-subscriber function fields** — `TurnManager` stores one `onTurnEnd` and one `postResetHook` directly on the struct. Only `CombatService` writes these fields; they fan out to the slices above. The pattern allows the core package to remain unaware of subscribers.
 
-**Interface + registry dispatch** — Artifacts implement `ArtifactBehavior`. The registry holds all registered behaviors. During each event, `CombatService` calls every registered behavior in deterministic key order. Individual behaviors use an embedded `BaseBehavior` no-op to opt out of events they do not need.
+**Interface + registry dispatch** — Artifacts implement `ArtifactBehavior`. The registry holds all registered behaviors. An `ArtifactDispatcher` struct (owned by `CombatService`) encapsulates the iteration logic: during each event, it calls every registered behavior in deterministic key order. Individual behaviors use an embedded `BaseBehavior` no-op to opt out of events they do not need. Activation logging uses a decoupled `ArtifactLogger` callback (matching the perk system's `PerkLogger` pattern).
 
 The guiding principle throughout: game logic never lives in GUI state, and the `combatcore` package never imports `perks`. The dispatch layer in `combatservices` owns the wiring between those two packages.
 
@@ -77,7 +77,13 @@ artifacts.behaviorRegistry (map[string]ArtifactBehavior)
     |
     +-- RegisterBehavior() called from artifactbehaviors_*.go init()
     |
-    +-- Polled via AllBehaviors() in CombatService event handlers
+    +-- ArtifactDispatcher dispatches via AllBehaviors() / GetEquippedBehaviors()
+    |
+    +-- ArtifactLogger callback wired in setupPowerDispatch
+    |
+    +-- ValidateBehaviorCoverage() cross-checks vs. templates.ArtifactRegistry at startup
+    |
+    +-- ArtifactBalance loaded from artifactbalanceconfig.json at startup
 
 
 worldmap.generators (map[string]MapGenerator)
@@ -251,15 +257,17 @@ func (cs *CombatService) RegisterPostResetHook(fn PostResetHookFunc)
 
 **Current subscribers registered in `NewCombatService`:**
 
-- `setupBehaviorDispatch` (in `behavior_dispatch.go`) registers three of the four: `PostResetHook`, `OnAttackComplete`, `OnTurnEnd`.
-- `setupPerkDispatch` (in `perk_dispatch.go`) registers all four.
-- The GUI layer (e.g., `guicombat`) registers its own `OnAttackComplete` and `OnMoveComplete` handlers after constructing `CombatService`.
+`setupPowerDispatch` (in `combat_power_dispatch.go`) registers all subscribers in two phases:
+- **Phase 1 (artifacts):** Three callbacks — `PostResetHook`, `OnAttackComplete`, `OnTurnEnd` — each delegating to the `ArtifactDispatcher`.
+- **Phase 2 (perks):** All four callbacks — `PostResetHook`, `OnAttackComplete`, `OnTurnEnd`, `OnMoveComplete`.
+
+The GUI layer (e.g., `guicombat`) registers its own `OnAttackComplete` and `OnMoveComplete` handlers after constructing `CombatService`.
 
 ---
 
 ## 5. Perk Dispatch Layer
 
-**Location:** `tactical/combat/combatservices/perk_dispatch.go`
+**Location:** `tactical/combat/combatservices/combat_power_dispatch.go`
 
 ### Why it exists
 
@@ -300,13 +308,13 @@ callbacks := &combatcore.PerkCallbacks{
 cs.CombatActSystem.SetPerkCallbacks(callbacks)
 ```
 
-### Additional wiring in setupPerkDispatch
+### Additional wiring in setupPowerDispatch
 
-Beyond injecting `PerkCallbacks`, `setupPerkDispatch` registers three `CombatService` callbacks:
+Beyond injecting `PerkDispatcher`, `setupPowerDispatch` registers four `CombatService` perk callbacks (Phase 2, after artifact callbacks):
 
-1. **`RegisterPostResetHook`** — calls `roundState.ResetPerTurn()` then `RunTurnStartHooks` for each squad in the faction whose turn is starting.
-2. **`RegisterOnTurnEnd`** — calls `roundState.ResetPerRound()` for every squad that has a `PerkSlotTag`. This resets per-round fields (kill counts, disruption maps, etc.) when a new round begins.
-3. **`RegisterOnAttackComplete`** — marks `AttackedThisTurn = true` on the attacker's round state and `WasAttackedLastTurn = true` on the defender's round state. These flags feed the `counterpunch` and `deadshots_patience` perks on the following turn.
+1. **`RegisterPostResetHook`** — calls `ResetPerkRoundStateTurn()` then `RunTurnStartHooks` for each squad in the faction whose turn is starting.
+2. **`RegisterOnTurnEnd`** — calls `ResetPerkRoundStateRound()` for every squad that has a `PerkSlotTag`. This resets per-round fields (kill counts, disruption maps, etc.) when a new round begins.
+3. **`RegisterOnAttackComplete`** — marks `AttackedThisTurn = true` on the attacker's round state and `WasAttackedThisTurn = true` on the defender's round state. These flags feed the `counterpunch` and `deadshots_patience` perks on the following turn.
 4. **`RegisterOnMoveComplete`** — sets `MovedThisTurn = true` and resets `TurnsStationary = 0` on the moved squad's round state. Used by `stalwart` and `fortify`.
 
 ---
@@ -362,7 +370,7 @@ turnManager.SetPostResetHook(func(factionID ecs.EntityID, squadIDs []ecs.EntityI
 // tactical/powers/artifacts/artifactbehavior.go
 type ArtifactBehavior interface {
     BehaviorKey() string
-    TargetType() int
+    TargetType() BehaviorTargetType
     OnPostReset(ctx *BehaviorContext, factionID ecs.EntityID, squadIDs []ecs.EntityID)
     OnAttackComplete(ctx *BehaviorContext, attackerID, defenderID ecs.EntityID, result *combatcore.CombatResult)
     OnTurnEnd(ctx *BehaviorContext, round int)
@@ -370,6 +378,8 @@ type ArtifactBehavior interface {
     Activate(ctx *BehaviorContext, targetSquadID ecs.EntityID) error
 }
 ```
+
+`TargetType()` returns a typed `BehaviorTargetType` enum (`TargetNone`, `TargetFriendly`, `TargetEnemy`) with a `String()` method for display labels. The GUI (`gui/guiartifacts`) imports these constants directly rather than maintaining duplicate types.
 
 `BaseBehavior` provides no-op implementations of all methods except `BehaviorKey`. Concrete behaviors embed `BaseBehavior` and override only the methods they need.
 
@@ -395,6 +405,25 @@ func GetBehavior(key string) ArtifactBehavior
 func AllBehaviors() []ArtifactBehavior  // returns sorted by BehaviorKey for determinism
 ```
 
+### Artifact Logger
+
+Behavior implementations use `logArtifactActivation(behaviorKey, squadID, message)` instead of direct `fmt.Printf` calls. This mirrors the perk system's `PerkLogger` pattern:
+
+```go
+type ArtifactLogger func(behaviorKey string, squadID ecs.EntityID, message string)
+func SetArtifactLogger(fn ArtifactLogger)
+```
+
+The logger is wired in `setupPowerDispatch` via `SetArtifactLogger()`. If no logger is set (e.g., in tests), log calls are silently dropped.
+
+### Validation
+
+`ValidateBehaviorCoverage()` cross-checks the behavior registry against `templates.ArtifactRegistry` at startup. It warns if a major artifact definition references a behavior key with no implementation, or if a registered behavior has no corresponding artifact definition. Called during `GameBootstrap.LoadGameData()` after both registries are populated.
+
+### Balance Config
+
+Tunable values for artifact behaviors are externalized in `assets/gamedata/artifactbalanceconfig.json` and loaded into `artifacts.ArtifactBalance` by `LoadArtifactBalanceConfig()`. Each behavior with tunables has a typed struct (e.g., `SaboteursHourglassBalance{MovementReduction int}`). The loader validates fields at startup.
+
 ### Concrete behaviors
 
 **Passive (event-driven)** — registered in `artifactbehaviors_passive.go`:
@@ -417,35 +446,41 @@ func AllBehaviors() []ArtifactBehavior  // returns sorted by BehaviorKey for det
 
 `IsPlayerActivated()` returns `false` for purely passive behaviors and `true` for those that require an explicit player trigger. `ActivateArtifact(behavior, targetSquadID, ctx)` gates on this flag and returns an error if called on a non-activated behavior. `CanActivateArtifact` checks charge availability before activation.
 
-### Dispatch in CombatService
+### ArtifactDispatcher
 
-`setupBehaviorDispatch` in `behavior_dispatch.go` registers three `CombatService` callbacks. `OnPostReset` and `OnTurnEnd` broadcast to all behaviors via `AllBehaviors()` in sorted order. `OnAttackComplete` is squad-scoped, iterating only behaviors equipped on the attacker via `GetEquippedBehaviors`:
+**Location:** `tactical/powers/artifacts/dispatcher.go`
+
+The `ArtifactDispatcher` struct encapsulates all artifact behavior dispatch logic, matching the structural pattern of the perk system's `SquadPerkDispatcher`:
+
+```go
+type ArtifactDispatcher struct {
+    manager       *common.EntityManager
+    cache         *combatcore.CombatQueryCache
+    chargeTracker *ArtifactChargeTracker
+}
+
+func NewArtifactDispatcher(manager, cache) *ArtifactDispatcher
+func (d *ArtifactDispatcher) SetChargeTracker(ct *ArtifactChargeTracker)
+func (d *ArtifactDispatcher) DispatchPostReset(factionID, squadIDs)       // broadcast
+func (d *ArtifactDispatcher) DispatchOnAttackComplete(attackerID, defenderID, result)  // squad-scoped
+func (d *ArtifactDispatcher) DispatchOnTurnEnd(round)                     // broadcast + charge refresh
+```
+
+`CombatService` owns an `ArtifactDispatcher` instance. `setupPowerDispatch` registers three callbacks that delegate to the dispatcher:
 
 ```go
 cs.RegisterPostResetHook(func(factionID ecs.EntityID, squadIDs []ecs.EntityID) {
-    ctx := makeBehaviorContext()
-    for _, b := range artifacts.AllBehaviors() {       // broadcast
-        b.OnPostReset(ctx, factionID, squadIDs)
-    }
+    cs.artifactDispatcher.DispatchPostReset(factionID, squadIDs)
 })
 cs.RegisterOnAttackComplete(func(attackerID, defenderID ecs.EntityID, result *combatcore.CombatResult) {
-    ctx := makeBehaviorContext()
-    for _, b := range artifacts.GetEquippedBehaviors(attackerID, manager) {  // squad-scoped
-        b.OnAttackComplete(ctx, attackerID, defenderID, result)
-    }
+    cs.artifactDispatcher.DispatchOnAttackComplete(attackerID, defenderID, result)
 })
 cs.RegisterOnTurnEnd(func(round int) {
-    if cs.chargeTracker != nil {
-        cs.chargeTracker.RefreshRoundCharges()
-    }
-    ctx := makeBehaviorContext()
-    for _, b := range artifacts.AllBehaviors() {       // broadcast
-        b.OnTurnEnd(ctx, round)
-    }
+    cs.artifactDispatcher.DispatchOnTurnEnd(round)
 })
 ```
 
-`makeBehaviorContext` captures `cs.chargeTracker` by reference so that `InitializeCombat` can swap in a fresh tracker for each battle without re-registering callbacks.
+The dispatcher's charge tracker is set during `InitializeCombat` when a fresh tracker is created for each battle. Between construction and initialization, the tracker is nil — safe because no hooks fire until combat starts.
 
 ---
 
@@ -688,8 +723,8 @@ Player selects attack (attackerID → defenderID)
 │       │
 │       └── 13. cas.onAttackComplete fires (single func field)
 │               → fans out to cs.onAttackComplete []func slice
-│                       ├── artifact dispatch: GetEquippedBehaviors(attackerID).OnAttackComplete
-│                       └── perk tracking: AttackedThisTurn, WasAttackedLastTurn
+│                       ├── artifact dispatch: dispatcher.DispatchOnAttackComplete
+│                       └── perk tracking: AttackedThisTurn, WasAttackedThisTurn
 │
 │   (on end of player turn — player clicks End Turn)
 │
@@ -699,16 +734,16 @@ Player selects attack (attackerID → defenderID)
 │       │       ├── effects.TickEffectsForUnits (decrements durations)
 │       │       └── tm.postResetHook fires
 │       │               → fans out to cs.postResetHooks []func
-│       │                       ├── artifact dispatch: AllBehaviors().OnPostReset
+│       │                       ├── artifact dispatch: dispatcher.DispatchPostReset
 │       │                       └── perk dispatch:
-│       │                               ├── roundState.ResetPerTurn()
-│       │                               └── RunTurnStartHooks (TurnStart slot on each perk)
+│       │                               ├── ResetPerkRoundStateTurn()
+│       │                               └── RunTurnStartHooks (TurnStart on each perk behavior)
 │       │
 │       └── tm.onTurnEnd fires
 │               → fans out to cs.onTurnEnd []func
-│                       ├── artifact dispatch: chargeTracker.RefreshRoundCharges,
-│                       │                     AllBehaviors().OnTurnEnd
-│                       └── perk dispatch: roundState.ResetPerRound()
+│                       ├── artifact dispatch: dispatcher.DispatchOnTurnEnd
+│                       │                     (refreshes charges + calls OnTurnEnd)
+│                       └── perk dispatch: ResetPerkRoundStateRound()
 ```
 
 Note: `ResetSquadActions` fires before `onTurnEnd`. This means `TurnStart` perk hooks run before `ResetPerRound` runs. If a perk needs data set during the previous round, it should read from the round state before `ResetPerRound` clears it. The ordering is intentional: `ResetPerTurn` runs at the start of a faction's turn (before hooks), `ResetPerRound` runs after the last faction's turn ends (new round).
@@ -722,7 +757,7 @@ Note: `ResetSquadActions` fires before `onTurnEnd`. This means `TurnStart` perk 
 | Perk hook registry | `tactical/perks/hooks.go` | Function-field struct keyed by perk ID | One `*PerkHooks` per perk ID | Called by runner functions during attack pipeline |
 | Perk runner functions | `tactical/perks/queries.go` | Named functions | Iterate all active perks on a squad | Called by `PerkCallbacks` inside `combatcore` |
 | PerkCallbacks bridge | `tactical/combat/combatcore/perk_callbacks.go` | Function-pointer struct | Single injected set | Inside `ProcessAttackOnTargets`, `ProcessCounterattackOnTargets` |
-| Perk dispatch wiring | `tactical/combat/combatservices/perk_dispatch.go` | Wires perks to CombatService callbacks | N/A (wiring only) | At `NewCombatService` construction |
+| Power dispatch wiring | `tactical/combat/combatservices/combat_power_dispatch.go` | Wires artifacts + perks to CombatService callbacks | N/A (wiring only) | At `NewCombatService` construction |
 | CombatService onAttackComplete | `tactical/combat/combatservices/combat_events.go` | `[]func` slice | Multi-subscriber | After `ExecuteAttackAction` succeeds |
 | CombatService onMoveComplete | `tactical/combat/combatservices/combat_events.go` | `[]func` slice | Multi-subscriber | After `CombatMovementSystem` moves a squad |
 | CombatService onTurnEnd | `tactical/combat/combatservices/combat_events.go` | `[]func` slice | Multi-subscriber | After `TurnManager.EndTurn` advances round |
@@ -730,7 +765,10 @@ Note: `ResetSquadActions` fires before `onTurnEnd`. This means `TurnStart` perk 
 | TurnManager onTurnEnd | `tactical/combat/combatcore/turnmanager.go` | Single func field | Single subscriber | Inside `TurnManager.EndTurn` |
 | TurnManager postResetHook | `tactical/combat/combatcore/turnmanager.go` | Single func field | Single subscriber | Inside `TurnManager.ResetSquadActions` |
 | CombatActionSystem onAttackComplete | `tactical/combat/combatcore/combatactionsystem.go` | Single func field | Single subscriber | At end of `ExecuteAttackAction` |
-| ArtifactBehavior interface | `tactical/powers/artifacts/artifactbehavior.go` | Interface + registry | Broadcast (PostReset, TurnEnd) or squad-scoped (AttackComplete) | Via CombatService callbacks (`behavior_dispatch.go`) |
+| ArtifactBehavior interface | `tactical/powers/artifacts/artifactbehavior.go` | Interface + registry | Broadcast (PostReset, TurnEnd) or squad-scoped (AttackComplete) | Via `ArtifactDispatcher` in `combat_power_dispatch.go` |
+| ArtifactLogger | `tactical/powers/artifacts/artifactbehavior.go` | Callback func variable | Single subscriber | On artifact activation/effect application |
+| Artifact validation | `tactical/powers/artifacts/artifactbehavior.go` | Cross-registry check | N/A (one-shot at startup) | During `GameBootstrap.LoadGameData()` |
+| Artifact balance config | `tactical/powers/artifacts/balanceconfig.go` | JSON → global struct | N/A (loaded once) | During `GameBootstrap.LoadGameData()` |
 | Encounter postCombatCallback | `mind/encounter/encounter_service.go` | Single func field | Single subscriber | At end of `EncounterService.ExitCombat` |
 | ECS subsystem registration | `common/ecsutil.go` | `[]func(*EntityManager)` slice | All registered subsystems | Once at startup via `InitializeSubsystems` |
 | Map generator registry | `world/worldmap/generator.go` | `map[string]MapGenerator` | One generator per name | On `GetGeneratorOrDefault` call |
