@@ -3,7 +3,7 @@ package framework
 
 import (
 	"game_main/common"
-	"game_main/tactical/combat/combatcore"
+	"game_main/tactical/combat/combatstate"
 	"game_main/tactical/squads/squadcore"
 	"game_main/world/coords"
 
@@ -14,11 +14,11 @@ import (
 // This eliminates query duplication and provides a consistent query interface.
 type GUIQueries struct {
 	ECSManager     *common.EntityManager
-	factionManager *combatcore.CombatFactionManager
+	factionManager *combatstate.CombatFactionManager
 
 	// Query caches (own Views that are automatically maintained by ECS library)
 	SquadCache     *squadcore.SquadQueryCache
-	CombatCache    *combatcore.CombatQueryCache
+	CombatCache    *combatstate.CombatQueryCache
 	squadInfoCache *SquadInfoCache // Event-driven cache for turn-based game
 
 }
@@ -26,11 +26,11 @@ type GUIQueries struct {
 // NewGUIQueries creates a new query service
 func NewGUIQueries(ecsManager *common.EntityManager) *GUIQueries {
 	// Create shared combat cache first
-	combatCache := combatcore.NewCombatQueryCache(ecsManager)
+	combatCache := combatstate.NewCombatQueryCache(ecsManager)
 
 	gq := &GUIQueries{
 		ECSManager:     ecsManager,
-		factionManager: combatcore.NewCombatFactionManager(ecsManager, combatCache),
+		factionManager: combatstate.NewCombatFactionManager(ecsManager, combatCache),
 
 		// Initialize query caches (own Views that are automatically maintained by ECS library)
 		SquadCache:  squadcore.NewSquadQueryCache(ecsManager),
@@ -94,8 +94,8 @@ func (gq *GUIQueries) GetFactionInfo(factionID ecs.EntityID) *FactionInfo {
 
 	// Use stored faction manager for additional data
 	currentMana, maxMana := gq.factionManager.GetFactionMana(factionID)
-	squadIDs := combatcore.GetSquadsForFaction(factionID, gq.ECSManager)
-	aliveCount := len(combatcore.GetActiveSquadsForFaction(factionID, gq.ECSManager))
+	squadIDs := combatstate.GetSquadsForFaction(factionID, gq.ECSManager)
+	aliveCount := len(combatstate.GetActiveSquadsForFaction(factionID, gq.ECSManager))
 
 	return &FactionInfo{
 		ID:                 factionID,
@@ -145,7 +145,7 @@ func (gq *GUIQueries) GetEnemySquads(currentFactionID ecs.EntityID) []ecs.Entity
 	allFactions := gq.GetAllFactions()
 	for _, factionID := range allFactions {
 		if factionID != currentFactionID {
-			enemySquads = append(enemySquads, combatcore.GetActiveSquadsForFaction(factionID, gq.ECSManager)...)
+			enemySquads = append(enemySquads, combatstate.GetActiveSquadsForFaction(factionID, gq.ECSManager)...)
 		}
 	}
 
@@ -161,7 +161,7 @@ func (gq *GUIQueries) GetEnemySquadsForEncounter(currentFactionID ecs.EntityID, 
 	encounterFactions := gq.GetFactionsForEncounter(encounterID)
 	for _, factionID := range encounterFactions {
 		if factionID != currentFactionID {
-			enemySquads = append(enemySquads, combatcore.GetActiveSquadsForFaction(factionID, gq.ECSManager)...)
+			enemySquads = append(enemySquads, combatstate.GetActiveSquadsForFaction(factionID, gq.ECSManager)...)
 		}
 	}
 
@@ -172,7 +172,7 @@ func (gq *GUIQueries) GetEnemySquadsForEncounter(currentFactionID ecs.EntityID, 
 func (gq *GUIQueries) GetFactionsForEncounter(encounterID ecs.EntityID) []ecs.EntityID {
 	factionIDs := []ecs.EntityID{}
 	for _, result := range gq.CombatCache.FactionView.Get() {
-		factionData := common.GetComponentType[*combatcore.FactionData](result.Entity, combatcore.CombatFactionComponent)
+		factionData := common.GetComponentType[*combatstate.FactionData](result.Entity, combatstate.CombatFactionComponent)
 		if factionData != nil && factionData.EncounterID == encounterID {
 			factionIDs = append(factionIDs, factionData.FactionID)
 		}
@@ -185,7 +185,7 @@ func (gq *GUIQueries) GetAllFactions() []ecs.EntityID {
 	factionIDs := []ecs.EntityID{}
 	// Use cached View instead of Query (avoids 30,000+ map allocations per second)
 	for _, result := range gq.CombatCache.FactionView.Get() {
-		factionData := common.GetComponentType[*combatcore.FactionData](result.Entity, combatcore.CombatFactionComponent)
+		factionData := common.GetComponentType[*combatstate.FactionData](result.Entity, combatstate.CombatFactionComponent)
 		factionIDs = append(factionIDs, factionData.FactionID)
 	}
 	return factionIDs

@@ -1,6 +1,6 @@
 # Squad and Combat System Documentation
 
-**Last Updated:** 2026-02-18
+**Last Updated:** 2026-04-01
 
 ---
 
@@ -73,30 +73,38 @@ The AI system uses a layered threat map architecture. At each turn, the AI updat
 
 ## 2. Architecture Overview
 
-The squad and combat system spans several packages:
+The squad and combat system spans several packages, organized under `tactical/`:
 
 ```
 tactical/
-    squads/           -- Squad ECS components, unit creation, queries, combat math
-    squadcommands/    -- Command pattern: undoable squad management operations
-    squadservices/    -- Service wrappers for deployment and purchase
-    combat/           -- Combat ECS components, TurnManager, ActionSystem, MovementSystem
-        battlelog/    -- Optional JSON export of battle engagements
-    combatservices/   -- CombatService facade; wires subsystems together
-    effects/          -- Temporary stat modifier components
-    spells/           -- Spell casting components and system
-    commander/        -- Commander entity components and movement
+    squads/                    -- Squad subsystem (split into sub-packages)
+        squadcore/             -- ECS components, creation, queries, cache, abilities, units
+        squadcommands/         -- Command pattern: undoable squad management operations
+        squadservices/         -- Service wrappers for deployment and purchase
+        roster/                -- Squad roster and unit roster management
+        unitdefs/              -- Unit enums, filters, and template definitions
+        unitprogression/       -- Experience, leveling, stat growth
+    combat/                    -- Combat subsystem (split into sub-packages)
+        combatcore/            -- ECS components, TurnManager, ActionSystem, MovementSystem,
+                               -- FactionManager, damage calc, targeting, cover, battle recorder
+        combatservices/        -- CombatService facade; wires subsystems, event callbacks,
+                               -- perk dispatch, AI interfaces
+        combattypes/           -- Shared combat type definitions
+    powers/                    -- Power subsystem (split into sub-packages)
+        effects/               -- Temporary stat modifier components and system
+        spells/                -- Spell casting components and system
+        artifacts/             -- Artifact inventory, behaviors, charges
+        perks/                 -- Perk hooks, behaviors, registry, round state
+    commander/                 -- Commander entity components, roster, movement, turn state
 
 mind/
-    ai/               -- AIController, ActionEvaluator, action types
-    behavior/         -- Threat layer computation (CombatThreat, Support, Positional)
-    encounter/        -- Encounter setup, resolution, and rewards
-
-gear/                 -- Artifact inventory, behavior hooks, charge tracking
+    ai/                        -- AIController, ActionEvaluator, action types
+    behavior/                  -- Threat layer computation (CombatThreat, Support, Positional)
+    encounter/                 -- Encounter setup, resolution, and rewards
 
 gui/
-    guicombat/        -- CombatMode, CombatTurnFlow, animation, input
-    guisquads/        -- SquadEditorMode, SquadDeploymentMode, UnitPurchaseMode
+    guicombat/                 -- CombatMode, CombatTurnFlow, animation, input
+    guisquads/                 -- SquadEditorMode, SquadDeploymentMode, UnitPurchaseMode
 ```
 
 Data flows in one direction: the GUI calls `CombatService` methods, which delegate to `TurnManager`, `CombatActionSystem`, and `CombatMovementSystem`. The combat subsystems read and write ECS components. The AI controller goes through the same `CombatActionSystem` and `CombatMovementSystem` as the player, ensuring identical rules apply to both.
@@ -107,9 +115,9 @@ Data flows in one direction: the GUI calls `CombatService` methods, which delega
 
 ### 3.1 ECS Components
 
-All squad-related components are declared in `tactical/squads/squadcomponents.go`. Component variables are global package-level variables initialized by the ECS subsystem registration pattern in `init()`.
+All squad-related components are declared in `tactical/squads/squadcore/squadcomponents.go`. Component variables are global package-level variables initialized by the ECS subsystem registration pattern in `init()`.
 
-**Global Component Variables** (`tactical/squads/squadcomponents.go`):
+**Global Component Variables** (`tactical/squads/squadcore/squadcomponents.go`):
 
 ```go
 var (
@@ -228,7 +236,7 @@ const (
 
 ### 3.2 Squad Creation
 
-Two creation paths exist in `tactical/squads/squadcreation.go`:
+Two creation paths exist in `tactical/squads/squadcore/squadcreation.go`:
 
 **Empty squad** (for player squad management):
 
@@ -292,7 +300,7 @@ func DisposeSquadAndUnits(squadID ecs.EntityID, manager *common.EntityManager)
 
 ### 3.3 Unit Templates
 
-Unit templates are the data-driven specification for creating unit entities. The `UnitTemplate` struct in `tactical/squads/units.go` holds all fields needed by `CreateUnitEntity`:
+Unit templates are the data-driven specification for creating unit entities. The `UnitTemplate` struct in `tactical/squads/squadcore/units.go` holds all fields needed by `CreateUnitEntity`:
 
 ```go
 type UnitTemplate struct {
@@ -482,7 +490,7 @@ Grade-to-probability mapping:
 | E | 15% |
 | F | 5% |
 
-XP award logic and the level-up roll are implemented in `tactical/squads/experience.go`. Combat events that award XP are processed in `tactical/squads/combatevents.go`.
+XP award logic and the level-up roll are implemented in `tactical/squads/unitprogression/experience.go`.
 
 ### 3.9 Squad Queries and Caching
 
@@ -532,7 +540,7 @@ The cached API is preferred for GUI hot paths (e.g., list refresh on every frame
 
 ### 4.1 Command Interface and Executor
 
-The `squadcommands` package implements the Command design pattern for all squad management operations. Commands are validated, executed, and optionally undone. File: `tactical/squadcommands/command.go`.
+The `squadcommands` package (`tactical/squads/squadcommands/`) implements the Command design pattern for all squad management operations. Commands are validated, executed, and optionally undone.
 
 ```go
 type SquadCommand interface {
@@ -576,7 +584,7 @@ func (ce *CommandExecutor) ClearHistory()
 | `rename_squad_command.go` | Renames a squad |
 | `reorder_squads_command.go` | Reorders squads within the roster |
 
-**AddUnitCommand** (`tactical/squadcommands/add_unit_command.go`):
+**AddUnitCommand** (`tactical/squads/squadcommands/add_unit_command.go`):
 
 ```go
 type AddUnitCommand struct {
@@ -592,7 +600,7 @@ type AddUnitCommand struct {
 
 `Validate` checks: squad exists, roster exists, template is available in roster, grid position is valid and unoccupied. `Execute` retrieves the unit entity from the roster, creates a `UnitTemplate` from its current attributes, calls `AddUnitToSquad`, adds the new entity ID to the roster, and marks it as in-squad. `Undo` marks the unit available in the roster, removes it from the squad (disposing the entity), and removes it from the roster.
 
-**MoveSquadCommand** (`tactical/squadcommands/move_squad_command.go`):
+**MoveSquadCommand** (`tactical/squads/squadcommands/move_squad_command.go`):
 
 Used by the AI and can be triggered by the player. Delegates to `CombatMovementSystem.MoveSquad()` after validation.
 
@@ -602,16 +610,16 @@ Used by the AI and can be triggered by the player. Delegates to `CombatMovementS
 
 ### 5.1 Unit Purchase Service
 
-`tactical/squadservices/unit_purchase_service.go` provides the transaction logic for purchasing units from a shop.
+`tactical/squads/squadservices/unit_purchase_service.go` provides the transaction logic for purchasing units from a shop.
 
 ```go
 type UnitPurchaseService struct {
     entityManager *common.EntityManager
 }
 
-func (ups *UnitPurchaseService) GetUnitCost(template squads.UnitTemplate) int
-func (ups *UnitPurchaseService) CanPurchaseUnit(playerID ecs.EntityID, template squads.UnitTemplate) *PurchaseValidationResult
-func (ups *UnitPurchaseService) PurchaseUnit(playerID ecs.EntityID, template squads.UnitTemplate) *PurchaseResult
+func (ups *UnitPurchaseService) GetUnitCost(template squadcore.UnitTemplate) int
+func (ups *UnitPurchaseService) CanPurchaseUnit(playerID ecs.EntityID, template squadcore.UnitTemplate) *PurchaseValidationResult
+func (ups *UnitPurchaseService) PurchaseUnit(playerID ecs.EntityID, template squadcore.UnitTemplate) *PurchaseResult
 func (ups *UnitPurchaseService) RefundUnitPurchase(playerID ecs.EntityID, unitID ecs.EntityID, costPaid int) *RefundResult
 func (ups *UnitPurchaseService) GetPlayerPurchaseInfo(playerID ecs.EntityID) *PlayerPurchaseInfo
 func (ups *UnitPurchaseService) GetUnitOwnedCount(playerID ecs.EntityID, templateName string) (totalOwned, available int)
@@ -629,7 +637,7 @@ func (ups *UnitPurchaseService) GetUnitOwnedCount(playerID ecs.EntityID, templat
 
 ### 5.2 Squad Deployment Service
 
-`tactical/squadservices/squad_deployment_service.go` manages placing squads on the world map before combat.
+`tactical/squads/squadservices/squad_deployment_service.go` manages placing squads on the world map before combat.
 
 ```go
 type SquadDeploymentService struct {
@@ -650,7 +658,7 @@ func (sds *SquadDeploymentService) GetAllSquadPositions() map[ecs.EntityID]coord
 
 ### 6.1 Combat Components
 
-All combat components are declared in `tactical/combat/combatcomponents.go` and self-registered via `init()`:
+All combat components are declared in `tactical/combat/combatcore/combatcomponents.go` and self-registered via `init()`:
 
 ```go
 var (
@@ -718,7 +726,7 @@ A squad entity gains `FactionMembershipComponent` when it enters combat and lose
 
 ### 6.2 Faction Manager
 
-`tactical/combat/combatfactionmanager.go` manages faction creation and squad assignment.
+`tactical/combat/combatcore/combatfactionmanager.go` manages faction creation and squad assignment.
 
 ```go
 type CombatFactionManager struct {
@@ -737,7 +745,7 @@ func (fm *CombatFactionManager) GetFactionName(factionID ecs.EntityID) string
 
 ### 6.3 Turn Manager
 
-`tactical/combat/turnmanager.go` manages the round/turn lifecycle.
+`tactical/combat/combatcore/turnmanager.go` manages the round/turn lifecycle.
 
 ```go
 type TurnManager struct {
@@ -765,7 +773,7 @@ For each squad in the faction:
 - Sets `HasMoved = false`, `HasActed = false`, `BonusAttackActive = false`
 - Sets `MovementRemaining` from the squad's current movement speed
 - Calls `effects.TickEffectsForUnits` to decrement and remove expired effects
-- Calls `squads.CheckAndTriggerAbilities` to check ability triggers
+- Calls `squadcore.CheckAndTriggerAbilities` to check ability triggers
 
 After processing all squads, fires `postResetHook` (used by artifact behaviors).
 
@@ -781,7 +789,7 @@ Increments `CurrentTurnIndex`. If it reaches the end of `TurnOrder`, wraps aroun
 
 ### 6.4 Combat Movement System
 
-`tactical/combat/combatmovementsystem.go` manages world-map squad movement during combat.
+`tactical/combat/combatcore/combatmovementsystem.go` manages world-map squad movement during combat.
 
 ```go
 type CombatMovementSystem struct {
@@ -792,7 +800,7 @@ type CombatMovementSystem struct {
 }
 ```
 
-**GetSquadMovementSpeed** delegates to `squads.GetSquadMovementSpeed`. Falls back to `DefaultMovementSpeed` (3) if the squad returns 0.
+**GetSquadMovementSpeed** delegates to `squadcore.GetSquadMovementSpeed`. Falls back to `DefaultMovementSpeed` (3) if the squad returns 0.
 
 **CanMoveTo** checks whether a target position is unoccupied using `posSystem.GetEntityIDAt`. Any entity at the position (whether squad or terrain) blocks movement. Squads cannot share positions with any other entity.
 
@@ -813,25 +821,25 @@ Performs a simple flood-fill within the Chebyshev distance equal to `MovementRem
 
 ### 6.5 Combat Action System
 
-`tactical/combat/combatactionsystem.go` orchestrates complete attack resolution.
+`tactical/combat/combatcore/combatactionsystem.go` orchestrates complete attack resolution.
 
 ```go
 type CombatActionSystem struct {
     manager        *common.EntityManager
     combatCache    *CombatQueryCache
-    battleRecorder *battlelog.BattleRecorder
-    onAttackComplete func(attackerID, defenderID ecs.EntityID, result *squads.CombatResult)
+    battleRecorder *combatcore.BattleRecorder
+    onAttackComplete func(attackerID, defenderID ecs.EntityID, result *combatcore.CombatResult)
 }
 ```
 
-**ExecuteAttackAction** (`ExecuteAttackAction(attackerID, defenderID ecs.EntityID) *squads.CombatResult`):
+**ExecuteAttackAction** (`ExecuteAttackAction(attackerID, defenderID ecs.EntityID) *combatcore.CombatResult`):
 
 The complete attack resolution sequence:
 
 1. **Validation**: `canSquadAttackWithReason` checks action state, positions, faction membership, same-faction restriction, and range.
 2. **Combat log initialization**: Creates `CombatLog` with squad names and distance. Snapshots attacking units and all defender units for logging.
 3. **Main attack loop**: Iterates attacker's units. For each unit, calls `CanUnitAttack` (alive, `CanAct=true`, range >= distance). For units that can attack, calls `SelectTargetUnits` then `ProcessAttackOnTargets`.
-4. **Counterattack check**: Calls `squads.WouldSquadSurvive(defenderID, result.DamageByUnit, manager)`. If the defender survives, gets counterattacking units (alive defenders in range, `CanAct` not required). For each counterattacker, verifies they survive the incoming damage, then calls `ProcessCounterattackOnTargets`.
+4. **Counterattack check**: Calls `squadcore.WouldSquadSurvive(defenderID, result.DamageByUnit, manager)`. If the defender survives, gets counterattacking units (alive defenders in range, `CanAct` not required). For each counterattacker, verifies they survive the incoming damage, then calls `ProcessCounterattackOnTargets`.
 5. **Finalize**: `FinalizeCombatLog` sets totals. Sets `TargetDestroyed` and `AttackerDestroyed` flags.
 6. **Apply damage**: Calls `ApplyRecordedDamage` — this is the single point of HP modification.
 7. **Mark acted**: `markSquadAsActed` consumes the squad's attack action (or `BonusAttackActive` if set).
@@ -883,7 +891,7 @@ type DamageModifiers struct {
 
 `AttackEvent` fields include `AttackerID`, `DefenderID`, `IsCounterattack`, `DefenderHPBefore`, `DefenderHPAfter`, `WasKilled`, `BaseDamage`, `FinalDamage`, `CritMultiplier`, `ResistanceAmount`, `CoverReduction`, and `HitResult`.
 
-**Counterattack penalties** (constants in `tactical/squads/squadcombat.go`):
+**Counterattack penalties** (constants in `tactical/combat/combatcore/combatprocessing.go`):
 
 ```go
 const (
@@ -956,7 +964,7 @@ A battle is over when at most one faction has active (non-destroyed) squads. "Ac
 
 ### 6.10 Combat Query Cache
 
-`tactical/combat/combatqueriescache.go` provides two `ecs.View`-backed caches:
+`tactical/combat/combatcore/combatqueriescache.go` provides two `ecs.View`-backed caches:
 
 ```go
 type CombatQueryCache struct {
@@ -976,23 +984,23 @@ Views are automatically maintained by the ECS library when components are added 
 
 ## 7. Combat Service
 
-`tactical/combatservices/combat_service.go` is the facade that the GUI uses as its single entry point to all combat logic.
+`tactical/combat/combatservices/combat_service.go` is the facade that the GUI uses as its single entry point to all combat logic.
 
 ### 7.1 CombatService Initialization
 
 ```go
 type CombatService struct {
     EntityManager   *common.EntityManager
-    TurnManager     *combat.TurnManager
-    FactionManager  *combat.CombatFactionManager
-    MovementSystem  *combat.CombatMovementSystem
-    CombatCache     *combat.CombatQueryCache
-    CombatActSystem *combat.CombatActionSystem
-    BattleRecorder  *battlelog.BattleRecorder
+    TurnManager     *combatcore.TurnManager
+    FactionManager  *combatcore.CombatFactionManager
+    MovementSystem  *combatcore.CombatMovementSystem
+    CombatCache     *combatcore.CombatQueryCache
+    CombatActSystem *combatcore.CombatActionSystem
+    BattleRecorder  *combatcore.BattleRecorder
     ThreatManager   *behavior.FactionThreatLevelManager
     LayerEvaluators map[ecs.EntityID]*behavior.CompositeThreatEvaluator
     aiController    *ai.AIController        // lazy-initialized
-    chargeTracker   *gear.ArtifactChargeTracker
+    chargeTracker   *artifacts.ArtifactChargeTracker
     // callback slices (private)
 }
 
@@ -1006,7 +1014,7 @@ func NewCombatService(manager *common.EntityManager) *CombatService
 1. Resets `chargeTracker` for the new battle
 2. Identifies the player faction
 3. Assigns unassigned deployed squads (squads with positions but no `FactionMembershipComponent`) to the player faction
-4. Applies minor artifact stat effects to all factions via `gear.ApplyArtifactStatEffects`
+4. Applies minor artifact stat effects to all factions via `artifacts.ApplyArtifactStatEffects`
 5. Delegates to `TurnManager.InitializeCombat`
 
 **GetAIController** returns the `AIController`, creating it on first call (lazy initialization).
@@ -1016,7 +1024,7 @@ func NewCombatService(manager *common.EntityManager) *CombatService
 Four callback types allow the GUI and artifact systems to react to combat events:
 
 ```go
-type OnAttackCompleteFunc func(attackerID, defenderID ecs.EntityID, result *squads.CombatResult)
+type OnAttackCompleteFunc func(attackerID, defenderID ecs.EntityID, result *combatcore.CombatResult)
 type OnMoveCompleteFunc func(squadID ecs.EntityID)
 type OnTurnEndFunc func(round int)
 type PostResetHookFunc func(factionID ecs.EntityID, squadIDs []ecs.EntityID)
@@ -1048,10 +1056,10 @@ The cleanup distinguishes player squads (retained in the ECS world for reuse in 
 
 ## 8. Effects System
 
-`tactical/effects/` implements temporary stat modifiers applied by abilities, spells, and items.
+`tactical/powers/effects/` implements temporary stat modifiers applied by abilities, spells, and items.
 
 ```go
-// tactical/effects/components.go
+// tactical/powers/effects/components.go
 
 type StatType int
 
@@ -1090,7 +1098,7 @@ var ActiveEffectsComponent *ecs.Component
 var ActiveEffectsTag       ecs.Tag
 ```
 
-Key functions in `tactical/effects/system.go`:
+Key functions in `tactical/powers/effects/system.go`:
 
 ```go
 func ApplyEffectToUnits(unitIDs []ecs.EntityID, effect ActiveEffect, manager *common.EntityManager)
@@ -1129,7 +1137,7 @@ The AI goes through the same `CombatActionSystem` and `CombatMovementSystem` as 
 
 ## 10. Battle Log System
 
-`tactical/combat/battlelog/` provides optional JSON export of combat engagements for post-battle analysis.
+`tactical/combat/combatcore/` includes the battle recorder for optional JSON export of combat engagements for post-battle analysis.
 
 **BattleRecorder** (`battle_recorder.go`):
 
@@ -1146,12 +1154,12 @@ type BattleRecorder struct {
 func (br *BattleRecorder) SetEnabled(enabled bool)
 func (br *BattleRecorder) Start()
 func (br *BattleRecorder) SetCurrentRound(round int)
-func (br *BattleRecorder) RecordEngagement(log *squads.CombatLog)
+func (br *BattleRecorder) RecordEngagement(log *combatcore.CombatLog)
 func (br *BattleRecorder) Finalize(victor *VictoryInfo) *BattleRecord
 func (br *BattleRecorder) Clear()
 ```
 
-Recording is controlled by `config.ENABLE_COMBAT_LOG_EXPORT`. When enabled, `CombatMode.Enter` calls `Start()` and enables the recorder. `CombatMode.Exit` calls `Finalize()` and exports to JSON via `battlelog.ExportBattleJSON(record, config.COMBAT_LOG_EXPORT_DIR)`.
+Recording is controlled by `config.ENABLE_COMBAT_LOG_EXPORT`. When enabled, `CombatMode.Enter` calls `Start()` and enables the recorder. `CombatMode.Exit` calls `Finalize()` and exports to JSON via `combatcore.ExportBattleJSON(record, config.COMBAT_LOG_EXPORT_DIR)`.
 
 **BattleRecord** contains:
 - `BattleID` (timestamp-based, millisecond precision)
@@ -1160,7 +1168,7 @@ Recording is controlled by `config.ENABLE_COMBAT_LOG_EXPORT`. When enabled, `Com
 - `VictorFactionID`, `VictorName`
 - `Engagements []EngagementRecord`
 
-**EngagementRecord** wraps `*squads.CombatLog` with `Index`, `Round`, and a generated `*EngagementSummary`.
+**EngagementRecord** wraps `*combatcore.CombatLog` with `Index`, `Round`, and a generated `*EngagementSummary`.
 
 **EngagementSummary** contains `UnitActionSummary` per unit for both squads, aggregating attacks, hits, misses, dodges, criticals, total damage, and units killed.
 
@@ -1176,7 +1184,7 @@ For complete documentation, see **[Artifact System Architecture](ARTIFACT_SYSTEM
 
 Artifacts integrate with the combat system at these points:
 
-- **Battle start** (`CombatService.InitializeCombat`): `gear.ApplyArtifactStatEffects` applies all equipped artifact stat modifiers to units as permanent `ActiveEffect` entries
+- **Battle start** (`CombatService.InitializeCombat`): `artifacts.ApplyArtifactStatEffects` applies all equipped artifact stat modifiers to units as permanent `ActiveEffect` entries
 - **Post-reset hook**: Major artifact behaviors fire `OnPostReset` after each faction's action states are reset (start of turn)
 - **Attack complete hook**: Major artifact behaviors fire `OnAttackComplete` after every attack resolves (e.g., Twin Strike Banner grants bonus attacks)
 - **Turn end hook**: `ArtifactChargeTracker.RefreshRoundCharges` is called, then behaviors fire `OnTurnEnd`
@@ -1257,56 +1265,67 @@ This section traces the execution path of a full player combat turn followed by 
 ## 14. Package Dependency Map
 
 ```
-gui/guicombat          --> combatservices, squads, combat, behavior, encounter, gear
-gui/guisquads          --> squadcommands, squadservices, squads, commander, gear
-tactical/combatservices --> combat, squads, effects, gear, mind/ai, mind/behavior, mind/encounter
-tactical/combat        --> squads, effects, common, coords
-tactical/squads        --> common, templates, coords, effects, rendering
-tactical/effects       --> (ecs only, no game logic imports)
-tactical/squadcommands --> squads, common, combat
-tactical/squadservices --> squads, common
-mind/ai                --> combat, squads, behavior, common
-mind/behavior          --> combat, squads, evaluation, templates
-mind/encounter         --> combat, squads, common
-gear                   --> combat, squads, common
+gui/guicombat                     --> combatservices, squadcore, combatcore, behavior, encounter, artifacts
+gui/guisquads                     --> squadcommands, squadservices, squadcore, commander, artifacts
+tactical/combat/combatservices    --> combatcore, squadcore, effects, artifacts, perks, mind/ai, mind/behavior
+tactical/combat/combatcore        --> squadcore, effects, common, coords
+tactical/squads/squadcore         --> common, templates, coords, unitdefs, rendering
+tactical/squads/squadcommands     --> squadcore, common, combatcore, roster
+tactical/squads/squadservices     --> squadcore, common, roster
+tactical/squads/roster            --> common
+tactical/squads/unitdefs          --> common, templates
+tactical/squads/unitprogression   --> common
+tactical/powers/effects           --> common (ecs only, no game logic imports)
+tactical/powers/spells            --> common, effects, squadcore
+tactical/powers/artifacts         --> common, combatcore, effects
+tactical/powers/perks             --> common, combatcore
+tactical/commander                --> common, squadcore, roster
+mind/ai                           --> combatcore, squadcore, behavior, common
+mind/behavior                     --> combatcore, squadcore, evaluation, templates
+mind/encounter                    --> combatcore, squadcore, common
 ```
 
-The layering is strict: `squads` does not import `combat`. Combat components (`ActionStateData`, `CombatFactionData`) are separate from squad components (`SquadData`, `GridPositionData`). The `combatservices` package is the only place all subsystems are wired together.
+The layering is strict: `squadcore` does not import `combatcore`. Combat components (`ActionStateData`, `CombatFactionData`) are separate from squad components (`SquadData`, `GridPositionData`). The `combatservices` package is the only place all subsystems are wired together.
 
 ---
 
 *Key source files referenced in this document:*
 
-- `C:/Users/Afromullet/Desktop/TinkerRogue/tactical/squads/squadcomponents.go`
-- `C:/Users/Afromullet/Desktop/TinkerRogue/tactical/squads/squadcreation.go`
-- `C:/Users/Afromullet/Desktop/TinkerRogue/tactical/squads/squadqueries.go`
-- `C:/Users/Afromullet/Desktop/TinkerRogue/tactical/squads/squadcombat.go`
-- `C:/Users/Afromullet/Desktop/TinkerRogue/tactical/squads/squadabilities.go`
-- `C:/Users/Afromullet/Desktop/TinkerRogue/tactical/squads/units.go`
-- `C:/Users/Afromullet/Desktop/TinkerRogue/tactical/squads/squadcache.go`
-- `C:/Users/Afromullet/Desktop/TinkerRogue/tactical/combat/combatcomponents.go`
-- `C:/Users/Afromullet/Desktop/TinkerRogue/tactical/combat/turnmanager.go`
-- `C:/Users/Afromullet/Desktop/TinkerRogue/tactical/combat/combatactionsystem.go`
-- `C:/Users/Afromullet/Desktop/TinkerRogue/tactical/combat/combatmovementsystem.go`
-- `C:/Users/Afromullet/Desktop/TinkerRogue/tactical/combat/combatqueries.go`
-- `C:/Users/Afromullet/Desktop/TinkerRogue/tactical/combat/combatfactionmanager.go`
-- `C:/Users/Afromullet/Desktop/TinkerRogue/tactical/combat/combatqueriescache.go`
-- `C:/Users/Afromullet/Desktop/TinkerRogue/tactical/combatservices/combat_service.go`
-- `C:/Users/Afromullet/Desktop/TinkerRogue/tactical/combatservices/combat_events.go`
-- `C:/Users/Afromullet/Desktop/TinkerRogue/tactical/squadcommands/command.go`
-- `C:/Users/Afromullet/Desktop/TinkerRogue/tactical/squadcommands/command_executor.go`
-- `C:/Users/Afromullet/Desktop/TinkerRogue/tactical/squadservices/unit_purchase_service.go`
-- `C:/Users/Afromullet/Desktop/TinkerRogue/tactical/squadservices/squad_deployment_service.go`
-- `C:/Users/Afromullet/Desktop/TinkerRogue/tactical/effects/components.go`
-- `C:/Users/Afromullet/Desktop/TinkerRogue/tactical/combat/battlelog/battle_recorder.go`
-- `C:/Users/Afromullet/Desktop/TinkerRogue/mind/ai/ai_controller.go`
-- `C:/Users/Afromullet/Desktop/TinkerRogue/mind/ai/action_evaluator.go`
-- `C:/Users/Afromullet/Desktop/TinkerRogue/mind/behavior/threat_composite.go`
-- `C:/Users/Afromullet/Desktop/TinkerRogue/mind/behavior/threat_combat.go`
-- `C:/Users/Afromullet/Desktop/TinkerRogue/mind/behavior/threat_constants.go`
-- `C:/Users/Afromullet/Desktop/TinkerRogue/gear/components.go`
-- `C:/Users/Afromullet/Desktop/TinkerRogue/gear/artifactbehavior.go`
-- `C:/Users/Afromullet/Desktop/TinkerRogue/gui/guicombat/combatmode.go`
-- `C:/Users/Afromullet/Desktop/TinkerRogue/gui/guicombat/combat_turn_flow.go`
-- `C:/Users/Afromullet/Desktop/TinkerRogue/gui/guisquads/squadeditormode.go`
-- `C:/Users/Afromullet/Desktop/TinkerRogue/gui/guisquads/squaddeploymentmode.go`
+- `tactical/squads/squadcore/squadcomponents.go`
+- `tactical/squads/squadcore/squadcreation.go`
+- `tactical/squads/squadcore/squadqueries.go`
+- `tactical/squads/squadcore/squadabilities.go`
+- `tactical/squads/squadcore/units.go`
+- `tactical/squads/squadcore/squadcache.go`
+- `tactical/squads/squadcommands/command.go`
+- `tactical/squads/squadcommands/command_executor.go`
+- `tactical/squads/squadservices/unit_purchase_service.go`
+- `tactical/squads/squadservices/squad_deployment_service.go`
+- `tactical/squads/roster/squadroster.go`
+- `tactical/squads/roster/unitroster.go`
+- `tactical/squads/unitdefs/enums.go`
+- `tactical/squads/unitdefs/templates.go`
+- `tactical/squads/unitprogression/experience.go`
+- `tactical/combat/combatcore/combatcomponents.go`
+- `tactical/combat/combatcore/turnmanager.go`
+- `tactical/combat/combatcore/combatactionsystem.go`
+- `tactical/combat/combatcore/combatmovementsystem.go`
+- `tactical/combat/combatcore/combatqueries.go`
+- `tactical/combat/combatcore/combatfactionmanager.go`
+- `tactical/combat/combatcore/combatqueriescache.go`
+- `tactical/combat/combatcore/battle_recorder.go`
+- `tactical/combat/combatservices/combat_service.go`
+- `tactical/combat/combatservices/combat_events.go`
+- `tactical/combat/combatservices/perk_dispatch.go`
+- `tactical/powers/effects/components.go`
+- `tactical/powers/spells/system.go`
+- `tactical/powers/artifacts/artifactbehavior.go`
+- `tactical/powers/perks/hooks.go`
+- `tactical/commander/components.go`
+- `mind/ai/ai_controller.go`
+- `mind/ai/action_evaluator.go`
+- `mind/behavior/threat_composite.go`
+- `gui/guicombat/combatmode.go`
+- `gui/guicombat/combat_turn_flow.go`
+- `gui/guisquads/squadeditormode.go`
+- `gui/guisquads/squaddeploymentmode.go`

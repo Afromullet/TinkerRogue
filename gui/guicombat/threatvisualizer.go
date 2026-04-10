@@ -2,7 +2,7 @@ package guicombat
 
 import (
 	"game_main/common"
-	"game_main/tactical/combat/combatcore"
+	"game_main/tactical/combat/combatstate"
 	"game_main/tactical/combat/combatservices"
 	"game_main/visual/graphics"
 	"game_main/world/coords"
@@ -248,7 +248,7 @@ func (tv *ThreatVisualizer) Update(
 	// Pre-compute squad lists once per update (invariant across all tiles)
 	var relevantSquads []ecs.EntityID
 	if tv.mode == VisualizerModeThreat {
-		relevantSquads = combatcore.GetSquadsForFaction(viewFactionID, tv.manager)
+		relevantSquads = combatstate.GetSquadsForFaction(viewFactionID, tv.manager)
 	}
 
 	// Visualize based on current mode
@@ -288,12 +288,12 @@ func (tv *ThreatVisualizer) calculateThreatValueForSquads(pos coords.LogicalPosi
 
 	totalValue := 0.0
 	for _, squadID := range relevantSquads {
-		squadPos, err := combatcore.GetSquadMapPosition(squadID, tv.manager)
+		squadPos, err := combatstate.GetSquadMapPosition(squadID, tv.manager)
 		if err != nil {
 			continue
 		}
 
-		factionID := combatcore.GetSquadFaction(squadID, tv.manager)
+		factionID := combatstate.GetSquadFaction(squadID, tv.manager)
 		if factionID == 0 {
 			continue
 		}

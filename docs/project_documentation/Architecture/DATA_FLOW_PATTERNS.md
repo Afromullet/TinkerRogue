@@ -428,6 +428,81 @@ Key files: `gui/guioverworld/overworld_action_handler.go`, `mind/encounter/encou
 
 ---
 
+## Combat Pipeline Flow
+
+```
+Trigger (GUI button, tick event, or debug menu)
+    ↓
+Construct type-specific CombatStarter
+    ↓
+combatlifecycle.ExecuteCombatStart()           ← single shared entry point
+    ├─ starter.Prepare(manager)
+    │   ├─ CreateFactionPair() (player + enemy)
+    │   ├─ EnrollSquadsAtPositions()
+    │   └─ Returns CombatSetup (factions, positions, type)
+    │
+    └─ EncounterService.TransitionToCombat(setup)
+        ├─ Save player's OriginalPlayerPosition
+        ├─ Move camera to CombatPosition
+        └─ GameModeCoordinator.EnterCombatMode()
+            ↓
+CombatMode.Enter()
+    ├─ registerCombatCallbacks()
+    ├─ CombatService.InitializeCombat(factionIDs)
+    └─ TurnManager: randomize turn order, CombatActive = true
+            ↓
+Turn-based combat loop
+    (player/AI actions, spells, artifacts per turn)
+            ↓
+Victory / Defeat / Flee detected
+            ↓
+CombatMode.Exit()
+    → EncounterService.ExitCombat(reason, outcome, combatService)
+        ├─ resolveEncounterOutcome()
+        │   (dispatches to type-specific CombatResolver)
+        ├─ RecordEncounterCompletion()
+        │   (restore player position, clear ActiveEncounter)
+        ├─ CombatService.CleanupCombat(enemySquadIDs)
+        │   ├─ Clear callbacks + effects
+        │   ├─ Strip player squads (return to roster)
+        │   └─ Dispose enemy squads, factions, turn state
+        └─ postCombatCallback (e.g. RaidRunner)
+            ↓
+Return to previous mode (exploration / raid / overworld)
+```
+
+### Entry Pathways
+
+Five triggers all funnel into `ExecuteCombatStart`:
+
+1. **Overworld threat** — player engages a threat node
+2. **Garrison defense** — NPC faction raids a player-garrisoned node
+3. **Raid room** — player selects a combat room in raid mode
+4. **Debug raid** — debug menu starts a raid (roguelike only)
+5. **Debug random encounter** — debug menu spawns a random fight (overworld only)
+
+Each pathway constructs a type-specific `CombatStarter` whose `Prepare()` method handles faction creation and squad positioning. After that, the shared pipeline takes over.
+
+### Exit Pathways
+
+Three exit reasons all funnel into `ExitCombat`:
+
+- **Victory** — all enemy squads destroyed
+- **Defeat** — all player squads destroyed
+- **Flee** — player clicks retreat
+
+`ExitCombat` dispatches to a type-specific `CombatResolver` based on `CombatType` (overworld, garrison defense, raid, debug). Raid resolution is handled separately via the post-combat callback registered by `RaidRunner`.
+
+*For the full combat lifecycle including all 5 entry pathways, type-specific resolution, cleanup ordering, and edge cases, see [COMBAT_PIPELINES.md](COMBAT_PIPELINES.md).*
+
+Key files: `mind/combatlifecycle/starter.go`, `mind/combatlifecycle/pipeline.go`,
+`mind/combatlifecycle/enrollment.go`, `mind/combatlifecycle/cleanup.go`,
+`mind/encounter/encounter_service.go`, `mind/encounter/resolvers.go`,
+`tactical/combatservices/combat_service.go`, `gui/guicombat/combatmode.go`,
+`tactical/combat/combat_contracts.go`
+
+---
+
 ## Spell Casting Flow
 
 ```

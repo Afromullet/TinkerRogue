@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"game_main/common"
-	"game_main/tactical/combat/combatcore"
+	"game_main/tactical/combat/combatstate"
 	"game_main/tactical/squads/squadcore"
 	"game_main/world/coords"
 
@@ -20,7 +20,7 @@ import (
 // This eliminates the duplicated 4-step sequence across encounter_setup.go,
 // starters.go, and raidencounter.go.
 func EnrollSquadInFaction(
-	fm *combatcore.CombatFactionManager,
+	fm *combatstate.CombatFactionManager,
 	manager *common.EntityManager,
 	factionID, squadID ecs.EntityID,
 	pos coords.LogicalPosition,
@@ -31,7 +31,7 @@ func EnrollSquadInFaction(
 	}
 
 	EnsureUnitPositions(manager, squadID, pos)
-	combatcore.CreateActionStateForSquad(manager, squadID)
+	combatstate.CreateActionStateForSquad(manager, squadID)
 
 	if markDeployed {
 		squadData := common.GetComponentTypeByID[*squadcore.SquadData](manager, squadID, squadcore.SquadComponent)
@@ -49,9 +49,9 @@ func CreateFactionPair(
 	manager *common.EntityManager,
 	playerName, enemyName string,
 	encounterID ecs.EntityID,
-) (*combatcore.CombatFactionManager, ecs.EntityID, ecs.EntityID) {
-	cache := combatcore.NewCombatQueryCache(manager)
-	fm := combatcore.NewCombatFactionManager(manager, cache)
+) (*combatstate.CombatFactionManager, ecs.EntityID, ecs.EntityID) {
+	cache := combatstate.NewCombatQueryCache(manager)
+	fm := combatstate.NewCombatFactionManager(manager, cache)
 	playerFactionID, enemyFactionID := fm.CreateStandardFactions(playerName, enemyName, encounterID)
 	return fm, playerFactionID, enemyFactionID
 }
@@ -59,7 +59,7 @@ func CreateFactionPair(
 // EnrollSquadsAtPositions enrolls multiple squads into a faction at given positions.
 // Positions and squadIDs must be the same length.
 func EnrollSquadsAtPositions(
-	fm *combatcore.CombatFactionManager,
+	fm *combatstate.CombatFactionManager,
 	manager *common.EntityManager,
 	factionID ecs.EntityID,
 	squadIDs []ecs.EntityID,

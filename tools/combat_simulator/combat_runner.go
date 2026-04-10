@@ -3,7 +3,8 @@ package main
 import (
 	"fmt"
 	"game_main/common"
-	"game_main/tactical/combat/combatcore"
+	"game_main/tactical/combat/battlelog"
+	"game_main/tactical/combat/combatstate"
 	"game_main/tactical/combat/combatservices"
 	"game_main/tactical/squads/squadcore"
 	"game_main/world/coords"
@@ -16,7 +17,7 @@ const maxRounds = 100
 // RunBattle executes a full combat simulation between two sides.
 // Both sides are AI-controlled. No movement - squads are adjacent and trade blows.
 // Returns the completed BattleRecord for export.
-func RunBattle(manager *common.EntityManager, sideASquadIDs, sideBSquadIDs []ecs.EntityID) *combatcore.BattleRecord {
+func RunBattle(manager *common.EntityManager, sideASquadIDs, sideBSquadIDs []ecs.EntityID) *battlelog.BattleRecord {
 	// 1. Create CombatService
 	combatService := combatservices.NewCombatService(manager)
 
@@ -98,7 +99,7 @@ func RunBattle(manager *common.EntityManager, sideASquadIDs, sideBSquadIDs []ecs
 		victory = combatService.CheckVictoryCondition()
 	}
 
-	victorInfo := &combatcore.VictoryInfo{
+	victorInfo := &battlelog.VictoryInfo{
 		RoundsCompleted: victory.RoundsCompleted,
 		VictorFaction:   victory.VictorFaction,
 		VictorName:      victory.VictorName,
@@ -111,7 +112,7 @@ func RunBattle(manager *common.EntityManager, sideASquadIDs, sideBSquadIDs []ecs
 // selectBestTarget picks the best enemy squad to attack.
 // Priority: most damaged first (focus fire), then smallest squad.
 func selectBestTarget(attackerID ecs.EntityID, enemyFactionID ecs.EntityID, cs *combatservices.CombatService, manager *common.EntityManager) ecs.EntityID {
-	enemySquads := combatcore.GetActiveSquadsForFaction(enemyFactionID, manager)
+	enemySquads := combatstate.GetActiveSquadsForFaction(enemyFactionID, manager)
 	if len(enemySquads) == 0 {
 		return 0
 	}

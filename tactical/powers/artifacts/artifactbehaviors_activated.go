@@ -7,7 +7,7 @@ package artifacts
 
 import (
 	"fmt"
-	"game_main/tactical/combat/combatcore"
+	"game_main/tactical/combat/combatstate"
 
 	"github.com/bytearena/ecs"
 )
@@ -44,7 +44,7 @@ func applyPendingToTargets(
 	ctx *BehaviorContext,
 	behaviorKey string,
 	squadIDs []ecs.EntityID,
-	applyFn func(actionState *combatcore.ActionStateData, squadID ecs.EntityID),
+	applyFn func(actionState *combatstate.ActionStateData, squadID ecs.EntityID),
 ) {
 	if ctx.ChargeTracker == nil {
 		return
@@ -77,20 +77,20 @@ type DeadlockShacklesBehavior struct{ BaseBehavior }
 
 func (DeadlockShacklesBehavior) BehaviorKey() string     { return BehaviorDeadlockShackles }
 func (DeadlockShacklesBehavior) IsPlayerActivated() bool { return true }
-func (DeadlockShacklesBehavior) TargetType() int         { return TargetEnemy }
+func (DeadlockShacklesBehavior) TargetType() BehaviorTargetType { return TargetEnemy }
 
 func (DeadlockShacklesBehavior) Activate(ctx *BehaviorContext, targetSquadID ecs.EntityID) error {
 	if err := activateWithPending(ctx, BehaviorDeadlockShackles, ChargeOncePerBattle, targetSquadID); err != nil {
 		return err
 	}
-	fmt.Printf("[GEAR] Deadlock Shackles activated targeting squad %d\n", targetSquadID)
+	logArtifactActivation(BehaviorDeadlockShackles, targetSquadID, "activated")
 	return nil
 }
 
 func (DeadlockShacklesBehavior) OnPostReset(ctx *BehaviorContext, factionID ecs.EntityID, squadIDs []ecs.EntityID) {
-	applyPendingToTargets(ctx, BehaviorDeadlockShackles, squadIDs, func(_ *combatcore.ActionStateData, sid ecs.EntityID) {
+	applyPendingToTargets(ctx, BehaviorDeadlockShackles, squadIDs, func(_ *combatstate.ActionStateData, sid ecs.EntityID) {
 		ctx.SetSquadLocked(sid)
-		fmt.Printf("[GEAR] Deadlock Shackles: squad %d fully locked this turn\n", sid)
+		logArtifactActivation(BehaviorDeadlockShackles, sid, "squad fully locked this turn")
 	})
 }
 
@@ -102,7 +102,7 @@ type ChainOfCommandBehavior struct{ BaseBehavior }
 
 func (ChainOfCommandBehavior) BehaviorKey() string     { return BehaviorChainOfCommand }
 func (ChainOfCommandBehavior) IsPlayerActivated() bool { return true }
-func (ChainOfCommandBehavior) TargetType() int         { return TargetFriendly }
+func (ChainOfCommandBehavior) TargetType() BehaviorTargetType { return TargetFriendly }
 
 func (ChainOfCommandBehavior) Activate(ctx *BehaviorContext, targetSquadID ecs.EntityID) error {
 	if err := requireCharge(ctx, BehaviorChainOfCommand); err != nil {
@@ -152,7 +152,7 @@ func (ChainOfCommandBehavior) Activate(ctx *BehaviorContext, targetSquadID ecs.E
 	ctx.ResetSquadActions(targetSquadID, squadSpeed)
 
 	ctx.ChargeTracker.UseCharge(BehaviorChainOfCommand, ChargeOncePerRound)
-	fmt.Printf("[GEAR] Chain of Command: squad %d passes full action to squad %d\n", sourceSquadID, targetSquadID)
+	logArtifactActivation(BehaviorChainOfCommand, sourceSquadID, fmt.Sprintf("passes full action to squad %d", targetSquadID))
 	return nil
 }
 
@@ -164,7 +164,7 @@ type EchoDrumsBehavior struct{ BaseBehavior }
 
 func (EchoDrumsBehavior) BehaviorKey() string     { return BehaviorEchoDrums }
 func (EchoDrumsBehavior) IsPlayerActivated() bool { return true }
-func (EchoDrumsBehavior) TargetType() int         { return TargetFriendly }
+func (EchoDrumsBehavior) TargetType() BehaviorTargetType { return TargetFriendly }
 
 func (EchoDrumsBehavior) Activate(ctx *BehaviorContext, targetSquadID ecs.EntityID) error {
 	if err := requireCharge(ctx, BehaviorEchoDrums); err != nil {
@@ -181,6 +181,6 @@ func (EchoDrumsBehavior) Activate(ctx *BehaviorContext, targetSquadID ecs.Entity
 	actionState.HasMoved = false
 	actionState.MovementRemaining = squadSpeed
 	ctx.ChargeTracker.UseCharge(BehaviorEchoDrums, ChargeOncePerRound)
-	fmt.Printf("[GEAR] Echo Drums: squad %d gets bonus movement phase (speed %d)\n", targetSquadID, squadSpeed)
+	logArtifactActivation(BehaviorEchoDrums, targetSquadID, fmt.Sprintf("gets bonus movement phase (speed %d)", squadSpeed))
 	return nil
 }

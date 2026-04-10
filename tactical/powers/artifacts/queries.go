@@ -28,6 +28,27 @@ func GetArtifactDefinitions(squadID ecs.EntityID, manager *common.EntityManager)
 	return defs
 }
 
+// GetEquippedBehaviors returns the ArtifactBehavior instances for all equipped
+// artifacts on a squad that have a registered behavior.
+func GetEquippedBehaviors(squadID ecs.EntityID, manager *common.EntityManager) []ArtifactBehavior {
+	data := GetEquipmentData(squadID, manager)
+	if data == nil {
+		return nil
+	}
+	var behaviors []ArtifactBehavior
+	for _, id := range data.EquippedArtifacts {
+		def := templates.GetArtifactDefinition(id)
+		if def == nil || def.Behavior == "" {
+			continue
+		}
+		b := GetBehavior(def.Behavior)
+		if b != nil {
+			behaviors = append(behaviors, b)
+		}
+	}
+	return behaviors
+}
+
 // HasArtifactBehavior returns true if any equipped artifact on the squad has the given behavior.
 func HasArtifactBehavior(squadID ecs.EntityID, behavior string, manager *common.EntityManager) bool {
 	data := GetEquipmentData(squadID, manager)

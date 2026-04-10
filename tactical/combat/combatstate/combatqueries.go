@@ -1,4 +1,4 @@
-package combatcore
+package combatstate
 
 import (
 	"fmt"
@@ -97,7 +97,7 @@ func GetActiveSquadsForFaction(factionID ecs.EntityID, manager *common.EntityMan
 func GetSquadAtPosition(pos coords.LogicalPosition, manager *common.EntityManager) ecs.EntityID {
 	entityIDs := common.GlobalPositionSystem.GetAllEntityIDsAt(pos)
 	for _, entityID := range entityIDs {
-		if !isSquad(entityID, manager) {
+		if !IsSquad(entityID, manager) {
 			continue
 		}
 		if !squadcore.IsSquadDestroyed(entityID, manager) {
@@ -107,10 +107,8 @@ func GetSquadAtPosition(pos coords.LogicalPosition, manager *common.EntityManage
 	return 0
 }
 
-// isSquad checks if an entity ID represents a squad in combat
-func isSquad(entityID ecs.EntityID, manager *common.EntityManager) bool {
-	// Check if squad has FactionMembershipComponent (is in combat)
-	// Use direct entity lookup instead of tag-based iteration (O(1) vs O(n))
+// IsSquad checks if an entity ID represents a squad in combat
+func IsSquad(entityID ecs.EntityID, manager *common.EntityManager) bool {
 	entity := manager.FindEntityByID(entityID)
 	if entity == nil {
 		return false
@@ -138,8 +136,8 @@ func CreateActionStateForSquad(manager *common.EntityManager, squadID ecs.Entity
 	})
 }
 
-// canSquadAct checks if a squad can perform an action this turn (uses cached query for O(k) performance)
-func canSquadAct(cache *CombatQueryCache, squadID ecs.EntityID, manager *common.EntityManager) bool {
+// CanSquadAct checks if a squad can perform an action this turn (uses cached query for O(k) performance)
+func CanSquadAct(cache *CombatQueryCache, squadID ecs.EntityID, manager *common.EntityManager) bool {
 	actionState := cache.FindActionStateBySquadID(squadID)
 	if actionState == nil {
 		return false
@@ -147,25 +145,18 @@ func canSquadAct(cache *CombatQueryCache, squadID ecs.EntityID, manager *common.
 	return !actionState.HasActed
 }
 
-// canSquadMove checks if a squad can still move this turn (uses cached query for O(k) performance)
-func canSquadMove(cache *CombatQueryCache, squadID ecs.EntityID, manager *common.EntityManager) bool {
+// CanSquadMove checks if a squad can still move this turn (uses cached query for O(k) performance)
+func CanSquadMove(cache *CombatQueryCache, squadID ecs.EntityID, manager *common.EntityManager) bool {
 	actionState := cache.FindActionStateBySquadID(squadID)
 	if actionState == nil {
 		return false
 	}
-	// Squad can move if it has movement points remaining
 	return actionState.MovementRemaining > 0
 }
 
-// MarkSquadAsActed marks a squad as having used its combat action (exported wrapper).
+// MarkSquadAsActed marks a squad as having used its combat action.
 // If BonusAttackActive is set, the flag is consumed instead of marking acted.
 func MarkSquadAsActed(cache *CombatQueryCache, squadID ecs.EntityID, manager *common.EntityManager) {
-	markSquadAsActed(cache, squadID, manager)
-}
-
-// markSquadAsActed marks a squad as having used its combat action.
-// If BonusAttackActive is set, the flag is consumed instead of marking acted.
-func markSquadAsActed(cache *CombatQueryCache, squadID ecs.EntityID, manager *common.EntityManager) {
 	actionState := cache.FindActionStateBySquadID(squadID)
 	if actionState == nil {
 		return
@@ -178,8 +169,8 @@ func markSquadAsActed(cache *CombatQueryCache, squadID ecs.EntityID, manager *co
 	actionState.HasActed = true
 }
 
-// markSquadAsMoved marks a squad as having used movement
-func markSquadAsMoved(cache *CombatQueryCache, squadID ecs.EntityID, manager *common.EntityManager) {
+// MarkSquadAsMoved marks a squad as having used movement
+func MarkSquadAsMoved(cache *CombatQueryCache, squadID ecs.EntityID, manager *common.EntityManager) {
 	actionState := cache.FindActionStateBySquadID(squadID)
 	if actionState == nil {
 		return
@@ -187,8 +178,8 @@ func markSquadAsMoved(cache *CombatQueryCache, squadID ecs.EntityID, manager *co
 	actionState.HasMoved = true
 }
 
-// decrementMovementRemaining reduces squad's remaining movement
-func decrementMovementRemaining(cache *CombatQueryCache, squadID ecs.EntityID, amount int, manager *common.EntityManager) {
+// DecrementMovementRemaining reduces squad's remaining movement
+func DecrementMovementRemaining(cache *CombatQueryCache, squadID ecs.EntityID, amount int, manager *common.EntityManager) {
 	actionState := cache.FindActionStateBySquadID(squadID)
 	if actionState == nil {
 		return
@@ -214,7 +205,6 @@ func RemoveSquadFromMap(squadID ecs.EntityID, manager *common.EntityManager) err
 	// Get position before removal (for position system cleanup)
 	position := common.GetComponentType[*coords.LogicalPosition](squad, common.PositionComponent)
 	if position != nil {
-		// Remove from PositionSystem spatial grid
 		common.GlobalPositionSystem.RemoveEntity(squadID, *position)
 	}
 
@@ -231,8 +221,8 @@ func RemoveSquadFromMap(squadID ecs.EntityID, manager *common.EntityManager) err
 // UTILITY HELPERS
 // ========================================
 
-// shuffleFactionOrder randomizes faction turn order using Fisher-Yates
-func shuffleFactionOrder(factionIDs []ecs.EntityID) {
+// ShuffleFactionOrder randomizes faction turn order using Fisher-Yates
+func ShuffleFactionOrder(factionIDs []ecs.EntityID) {
 	for i := len(factionIDs) - 1; i > 0; i-- {
 		j := common.RandomInt(i + 1)
 		factionIDs[i], factionIDs[j] = factionIDs[j], factionIDs[i]

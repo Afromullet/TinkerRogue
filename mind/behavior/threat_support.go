@@ -2,7 +2,7 @@ package behavior
 
 import (
 	"game_main/common"
-	"game_main/tactical/combat/combatcore"
+	"game_main/tactical/combat/combatstate"
 	"game_main/tactical/squads/squadcore"
 	"game_main/world/coords"
 
@@ -24,7 +24,7 @@ type SupportValueLayer struct {
 func NewSupportValueLayer(
 	factionID ecs.EntityID,
 	manager *common.EntityManager,
-	cache *combatcore.CombatQueryCache,
+	cache *combatstate.CombatQueryCache,
 ) *SupportValueLayer {
 	return &SupportValueLayer{
 		ThreatLayerBase: NewThreatLayerBase(factionID, manager, cache),
@@ -43,7 +43,7 @@ func (svl *SupportValueLayer) Compute(currentRound int) {
 	clear(svl.allyProximity)
 
 	// Get all allied squads
-	squadIDs := combatcore.GetActiveSquadsForFaction(svl.factionID, svl.manager)
+	squadIDs := combatstate.GetActiveSquadsForFaction(svl.factionID, svl.manager)
 
 	for _, squadID := range squadIDs {
 		// Calculate heal priority (inverse of health percentage)
@@ -52,7 +52,7 @@ func (svl *SupportValueLayer) Compute(currentRound int) {
 		svl.healPriority[squadID] = 1.0 - avgHP
 
 		// Get squad position
-		squadPos, err := combatcore.GetSquadMapPosition(squadID, svl.manager)
+		squadPos, err := combatstate.GetSquadMapPosition(squadID, svl.manager)
 		if err != nil {
 			continue
 		}

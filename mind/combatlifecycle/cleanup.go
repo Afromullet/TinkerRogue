@@ -4,7 +4,8 @@ import (
 	"fmt"
 
 	"game_main/common"
-	"game_main/tactical/combat/combatcore"
+	"game_main/tactical/combat/combatstate"
+	"game_main/tactical/powers/perks"
 	"game_main/tactical/squads/squadcore"
 
 	"github.com/bytearena/ecs"
@@ -35,8 +36,8 @@ func StripCombatComponents(manager *common.EntityManager, squadIDs []ecs.EntityI
 		}
 
 		// Remove faction membership
-		if entity.HasComponent(combatcore.FactionMembershipComponent) {
-			entity.RemoveComponent(combatcore.FactionMembershipComponent)
+		if entity.HasComponent(combatstate.FactionMembershipComponent) {
+			entity.RemoveComponent(combatstate.FactionMembershipComponent)
 		}
 
 		// Atomically remove squad position from both component and position system
@@ -56,6 +57,11 @@ func StripCombatComponents(manager *common.EntityManager, squadIDs []ecs.EntityI
 		squadData := common.GetComponentType[*squadcore.SquadData](entity, squadcore.SquadComponent)
 		if squadData != nil {
 			squadData.IsDeployed = false
+		}
+
+		// Remove perk round state (combat-only component)
+		if entity.HasComponent(perks.PerkRoundStateComponent) {
+			entity.RemoveComponent(perks.PerkRoundStateComponent)
 		}
 
 		fmt.Printf("Stripped combat components from squad %d\n", squadID)

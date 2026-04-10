@@ -2,7 +2,7 @@ package behavior
 
 import (
 	"game_main/common"
-	"game_main/tactical/combat/combatcore"
+	"game_main/tactical/combat/combatstate"
 	"game_main/tactical/squads/squadcore"
 	"game_main/world/coords"
 
@@ -15,7 +15,7 @@ import (
 // Provides role-aware threat queries for AI decision-making
 type CompositeThreatEvaluator struct {
 	manager   *common.EntityManager
-	cache     *combatcore.CombatQueryCache
+	cache     *combatstate.CombatQueryCache
 	factionID ecs.EntityID
 
 	// Individual layers
@@ -32,7 +32,7 @@ type CompositeThreatEvaluator struct {
 func NewCompositeThreatEvaluator(
 	factionID ecs.EntityID,
 	manager *common.EntityManager,
-	cache *combatcore.CombatQueryCache,
+	cache *combatstate.CombatQueryCache,
 	baseThreatMgr *FactionThreatLevelManager,
 ) *CompositeThreatEvaluator {
 	// Create unified combat threat layer (provides both melee and ranged)

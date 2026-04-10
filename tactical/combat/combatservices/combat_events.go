@@ -1,13 +1,13 @@
 package combatservices
 
 import (
-	"game_main/tactical/combat/combatcore"
+	"game_main/tactical/combat/combattypes"
 
 	"github.com/bytearena/ecs"
 )
 
 // Callback types for post-action hooks
-type OnAttackCompleteFunc func(attackerID, defenderID ecs.EntityID, result *combatcore.CombatResult)
+type OnAttackCompleteFunc func(attackerID, defenderID ecs.EntityID, result *combattypes.CombatResult)
 type OnMoveCompleteFunc func(squadID ecs.EntityID)
 type OnTurnEndFunc func(round int)
 type PostResetHookFunc func(factionID ecs.EntityID, squadIDs []ecs.EntityID)

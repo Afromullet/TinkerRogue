@@ -1,31 +1,33 @@
-package combatcore
+package battlelog
 
 import (
 	"game_main/common"
+	"game_main/tactical/combat/combatmath"
+	"game_main/tactical/combat/combattypes"
 	"game_main/tactical/squads/squadcore"
 
 	"github.com/bytearena/ecs"
 )
 
-func InitializeCombatLog(attackerSquadID, defenderSquadID ecs.EntityID, manager *common.EntityManager) *CombatLog {
-	return &CombatLog{
+func InitializeCombatLog(attackerSquadID, defenderSquadID ecs.EntityID, manager *common.EntityManager) *combattypes.CombatLog {
+	return &combattypes.CombatLog{
 		AttackerSquadID:   attackerSquadID,
 		DefenderSquadID:   defenderSquadID,
 		AttackerSquadName: squadcore.GetSquadName(attackerSquadID, manager),
 		DefenderSquadName: squadcore.GetSquadName(defenderSquadID, manager),
 		SquadDistance:     squadcore.GetSquadDistance(attackerSquadID, defenderSquadID, manager),
-		AttackEvents:      []AttackEvent{},
-		AttackingUnits:    []UnitSnapshot{},
-		DefendingUnits:    []UnitSnapshot{},
+		AttackEvents:      []combattypes.AttackEvent{},
+		AttackingUnits:    []combattypes.UnitSnapshot{},
+		DefendingUnits:    []combattypes.UnitSnapshot{},
 	}
 }
 
-func snapshotUnits(squadID ecs.EntityID, squadDistance int, filterByRange bool, manager *common.EntityManager) []UnitSnapshot {
-	var snapshots []UnitSnapshot
+func snapshotUnits(squadID ecs.EntityID, squadDistance int, filterByRange bool, manager *common.EntityManager) []combattypes.UnitSnapshot {
+	var snapshots []combattypes.UnitSnapshot
 	unitIDs := squadcore.GetUnitIDsInSquad(squadID, manager)
 
 	for _, unitID := range unitIDs {
-		if filterByRange && !CanUnitAttack(unitID, squadDistance, manager) {
+		if filterByRange && !combatmath.CanUnitAttack(unitID, squadDistance, manager) {
 			continue
 		}
 
@@ -59,7 +61,7 @@ func snapshotUnits(squadID ecs.EntityID, squadDistance int, filterByRange bool, 
 			roleName = roleData.Role.String()
 		}
 
-		snapshot := UnitSnapshot{
+		snapshot := combattypes.UnitSnapshot{
 			UnitID:      unitID,
 			UnitName:    unitName,
 			GridRow:     row,
@@ -73,17 +75,17 @@ func snapshotUnits(squadID ecs.EntityID, squadDistance int, filterByRange bool, 
 	return snapshots
 }
 
-func SnapshotAttackingUnits(squadID ecs.EntityID, squadDistance int, manager *common.EntityManager) []UnitSnapshot {
+func SnapshotAttackingUnits(squadID ecs.EntityID, squadDistance int, manager *common.EntityManager) []combattypes.UnitSnapshot {
 	return snapshotUnits(squadID, squadDistance, true, manager)
 }
 
-func SnapshotAllUnits(squadID ecs.EntityID, manager *common.EntityManager) []UnitSnapshot {
+func SnapshotAllUnits(squadID ecs.EntityID, manager *common.EntityManager) []combattypes.UnitSnapshot {
 	return snapshotUnits(squadID, -1, false, manager)
 }
 
-func FinalizeCombatLog(result *CombatResult, log *CombatLog, defenderSquadID, attackerSquadID ecs.EntityID, manager *common.EntityManager) {
-	result.TotalDamage = sumDamageMap(result.DamageByUnit)
+func FinalizeCombatLog(result *combattypes.CombatResult, log *combattypes.CombatLog, defenderSquadID, attackerSquadID ecs.EntityID, manager *common.EntityManager) {
+	result.TotalDamage = combatmath.SumDamageMap(result.DamageByUnit)
 	log.TotalDamage = result.TotalDamage
 	log.UnitsKilled = len(result.UnitsKilled)
-	log.DefenderStatus = calculateSquadStatus(defenderSquadID, manager)
+	log.DefenderStatus = combatmath.CalculateSquadStatus(defenderSquadID, manager)
 }

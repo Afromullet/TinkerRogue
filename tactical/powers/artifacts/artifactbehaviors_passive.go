@@ -9,7 +9,7 @@ package artifacts
 
 import (
 	"fmt"
-	"game_main/tactical/combat/combatcore"
+	"game_main/tactical/combat/combattypes"
 
 	"github.com/bytearena/ecs"
 )
@@ -28,11 +28,8 @@ type EngagementChainsBehavior struct{ BaseBehavior }
 
 func (EngagementChainsBehavior) BehaviorKey() string { return BehaviorEngagementChains }
 
-func (EngagementChainsBehavior) OnAttackComplete(ctx *BehaviorContext, attackerID, defenderID ecs.EntityID, result *combatcore.CombatResult) {
+func (EngagementChainsBehavior) OnAttackComplete(ctx *BehaviorContext, attackerID, defenderID ecs.EntityID, result *combattypes.CombatResult) {
 	if !result.TargetDestroyed || result.AttackerDestroyed {
-		return
-	}
-	if !HasArtifactBehavior(attackerID, BehaviorEngagementChains, ctx.Manager) {
 		return
 	}
 	actionState := ctx.GetActionState(attackerID)
@@ -42,7 +39,7 @@ func (EngagementChainsBehavior) OnAttackComplete(ctx *BehaviorContext, attackerI
 	squadSpeed := ctx.GetSquadSpeed(attackerID)
 	actionState.MovementRemaining = squadSpeed
 	actionState.HasMoved = false
-	fmt.Printf("[GEAR] Forced Engagement Chains: squad %d gets full move action (speed %d)\n", attackerID, squadSpeed)
+	logArtifactActivation(BehaviorEngagementChains, attackerID, fmt.Sprintf("gets full move action (speed %d)", squadSpeed))
 }
 
 // ========================================
@@ -70,11 +67,11 @@ func (SaboteursHourglassBehavior) OnPostReset(ctx *BehaviorContext, factionID ec
 		if actionState == nil {
 			continue
 		}
-		actionState.MovementRemaining -= 2
+		actionState.MovementRemaining -= ArtifactBalance.SaboteursHourglass.MovementReduction
 		if actionState.MovementRemaining < 0 {
 			actionState.MovementRemaining = 0
 		}
-		fmt.Printf("[GEAR] Saboteur's Hourglass: squad %d movement reduced to %d\n", sid, actionState.MovementRemaining)
+		logArtifactActivation(BehaviorSaboteurWsHourglass, sid, fmt.Sprintf("movement reduced to %d", actionState.MovementRemaining))
 	}
 }
 
@@ -82,7 +79,7 @@ func (SaboteursHourglassBehavior) Activate(ctx *BehaviorContext, _ ecs.EntityID)
 	if err := activateWithPending(ctx, BehaviorSaboteurWsHourglass, ChargeOncePerBattle, 0); err != nil {
 		return err
 	}
-	fmt.Println("[GEAR] Saboteur's Hourglass activated")
+	logArtifactActivation(BehaviorSaboteurWsHourglass, 0, "activated")
 	return nil
 }
 
@@ -94,7 +91,7 @@ type TwinStrikeBehavior struct{ BaseBehavior }
 
 func (TwinStrikeBehavior) BehaviorKey() string     { return BehaviorTwinStrike }
 func (TwinStrikeBehavior) IsPlayerActivated() bool { return true }
-func (TwinStrikeBehavior) TargetType() int         { return TargetFriendly }
+func (TwinStrikeBehavior) TargetType() BehaviorTargetType { return TargetFriendly }
 
 func (TwinStrikeBehavior) Activate(ctx *BehaviorContext, targetSquadID ecs.EntityID) error {
 	if err := requireCharge(ctx, BehaviorTwinStrike); err != nil {
@@ -109,6 +106,6 @@ func (TwinStrikeBehavior) Activate(ctx *BehaviorContext, targetSquadID ecs.Entit
 	}
 	actionState.HasActed = false
 	ctx.ChargeTracker.UseCharge(BehaviorTwinStrike, ChargeOncePerBattle)
-	fmt.Printf("[GEAR] Twin Strike Banner activated on squad %d\n", targetSquadID)
+	logArtifactActivation(BehaviorTwinStrike, targetSquadID, "activated")
 	return nil
 }

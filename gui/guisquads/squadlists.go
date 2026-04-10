@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"game_main/common"
 	"game_main/gui/builders"
-	"game_main/tactical/combat/combatcore"
+	"game_main/tactical/combat/combattypes"
 	"game_main/tactical/squads/squadcore"
 
 	"github.com/bytearena/ecs"
@@ -88,7 +88,7 @@ func CreateUnitList(config UnitListConfig) *widget.List {
 		if attrRaw, ok := config.Manager.GetComponent(unitID, common.AttributeComponent); ok {
 			attr := attrRaw.(*common.Attributes)
 			nameStr := common.GetEntityName(config.Manager, unitID, "Unknown")
-			entries = append(entries, combatcore.UnitIdentity{
+			entries = append(entries, combattypes.UnitIdentity{
 				ID:        unitID,
 				Name:      nameStr,
 				CurrentHP: attr.CurrentHealth,
@@ -101,7 +101,7 @@ func CreateUnitList(config UnitListConfig) *widget.List {
 	return builders.CreateListWithConfig(builders.ListConfig{
 		Entries: entries,
 		EntryLabelFunc: func(e interface{}) string {
-			identity := e.(combatcore.UnitIdentity)
+			identity := e.(combattypes.UnitIdentity)
 			prefix := ""
 			if identity.IsLeader {
 				prefix = "(L) "

@@ -2,7 +2,7 @@ package combatservices
 
 import (
 	"game_main/common"
-	"game_main/tactical/combat/combatcore"
+	"game_main/tactical/combat/combattypes"
 	"testing"
 
 	"github.com/bytearena/ecs"
@@ -53,7 +53,7 @@ func TestExecuteSquadAttack_NoSquads(t *testing.T) {
 
 // TestCombatResult_Structure tests that CombatResult struct is properly populated
 func TestCombatResult_Structure(t *testing.T) {
-	result := &combatcore.CombatResult{
+	result := &combattypes.CombatResult{
 		Success:         true,
 		ErrorReason:     "",
 		TargetDestroyed: false,

@@ -7,7 +7,7 @@ import (
 	"game_main/gui/guiartifacts"
 	"game_main/gui/guiinspect"
 	"game_main/gui/guispells"
-	"game_main/tactical/combat/combatcore"
+	"game_main/tactical/combat/combatstate"
 	"game_main/tactical/squads/squadcore"
 	"game_main/visual/graphics"
 	"game_main/world/coords"
@@ -99,7 +99,7 @@ func (cih *CombatInputHandler) handleDebugKillClick(mouseX, mouseY int) {
 	}
 
 	clickedPos := graphics.MouseToLogicalPosition(mouseX, mouseY, *cih.playerPos)
-	clickedSquadID := combatcore.GetSquadAtPosition(clickedPos, cih.deps.Queries.ECSManager)
+	clickedSquadID := combatstate.GetSquadAtPosition(clickedPos, cih.deps.Queries.ECSManager)
 
 	if clickedSquadID == 0 {
 		return
@@ -356,7 +356,7 @@ func (cih *CombatInputHandler) handleSquadClick(mouseX, mouseY int) {
 	clickedPos := graphics.MouseToLogicalPosition(mouseX, mouseY, *cih.playerPos)
 
 	// Find if a squad is at the clicked position
-	clickedSquadID := combatcore.GetSquadAtPosition(clickedPos, cih.deps.Queries.ECSManager)
+	clickedSquadID := combatstate.GetSquadAtPosition(clickedPos, cih.deps.Queries.ECSManager)
 
 	// If no squad was clicked, reset double-click tracking and do nothing
 	if clickedSquadID == 0 {
@@ -505,7 +505,7 @@ func (cih *CombatInputHandler) handleInspectClick(mouseX, mouseY int) {
 	}
 
 	clickedPos := graphics.MouseToLogicalPosition(mouseX, mouseY, *cih.playerPos)
-	clickedSquadID := combatcore.GetSquadAtPosition(clickedPos, cih.deps.Queries.ECSManager)
+	clickedSquadID := combatstate.GetSquadAtPosition(clickedPos, cih.deps.Queries.ECSManager)
 
 	if clickedSquadID == 0 {
 		return

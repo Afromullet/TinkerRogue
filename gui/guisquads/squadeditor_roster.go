@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"game_main/gui/builders"
 	"game_main/gui/guiunitview"
-	"game_main/tactical/combat/combatcore"
+	"game_main/tactical/combat/combattypes"
 	rstr "game_main/tactical/squads/roster"
 	"game_main/tactical/squads/squadcommands"
 	"game_main/tactical/squads/squadcore"
@@ -118,22 +118,22 @@ func (sem *SquadEditorMode) onAddUnitFromRoster() {
 
 // getSelectedUnitForAction validates that a squad and unit are selected, returning the UnitIdentity.
 // Returns false if any guard fails (status message is set automatically).
-func (sem *SquadEditorMode) getSelectedUnitForAction() (combatcore.UnitIdentity, bool) {
+func (sem *SquadEditorMode) getSelectedUnitForAction() (combattypes.UnitIdentity, bool) {
 	if !sem.squadNav.HasSquads() {
 		sem.SetStatus("No squad selected")
-		return combatcore.UnitIdentity{}, false
+		return combattypes.UnitIdentity{}, false
 	}
 
 	selectedEntry := sem.unitList.SelectedEntry()
 	if selectedEntry == nil {
 		sem.SetStatus("No unit selected")
-		return combatcore.UnitIdentity{}, false
+		return combattypes.UnitIdentity{}, false
 	}
 
-	unitIdentity, ok := selectedEntry.(combatcore.UnitIdentity)
+	unitIdentity, ok := selectedEntry.(combattypes.UnitIdentity)
 	if !ok {
 		sem.SetStatus("Invalid unit selection")
-		return combatcore.UnitIdentity{}, false
+		return combattypes.UnitIdentity{}, false
 	}
 	return unitIdentity, true
 }

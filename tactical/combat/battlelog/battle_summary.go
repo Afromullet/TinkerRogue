@@ -1,16 +1,18 @@
-package combatcore
+package battlelog
 
 import (
 	"fmt"
 	"sort"
 	"strings"
 
+	"game_main/tactical/combat/combattypes"
+
 	"github.com/bytearena/ecs"
 )
 
 // GenerateEngagementSummary creates per-unit summaries from CombatLog.
 // Aggregates AttackEvents by attacker to produce high-level action summaries.
-func GenerateEngagementSummary(log *CombatLog) *EngagementSummary {
+func GenerateEngagementSummary(log *combattypes.CombatLog) *EngagementSummary {
 	if log == nil {
 		return &EngagementSummary{
 			AttackerSummaries: []UnitActionSummary{},
@@ -58,7 +60,7 @@ func GenerateEngagementSummary(log *CombatLog) *EngagementSummary {
 }
 
 // buildUnitSummary aggregates AttackEvents for a specific attacker.
-func buildUnitSummary(unitID ecs.EntityID, unitSnapshot UnitSnapshot, events []AttackEvent) UnitActionSummary {
+func buildUnitSummary(unitID ecs.EntityID, unitSnapshot combattypes.UnitSnapshot, events []combattypes.AttackEvent) UnitActionSummary {
 	// Filter events for this attacker
 	unitEvents := filterEventsByAttacker(unitID, events)
 
@@ -130,18 +132,18 @@ func buildUnitSummary(unitID ecs.EntityID, unitSnapshot UnitSnapshot, events []A
 		}
 
 		switch event.HitResult.Type {
-		case HitTypeNormal:
+		case combattypes.HitTypeNormal:
 			summary.Hits++
-		case HitTypeCritical:
+		case combattypes.HitTypeCritical:
 			summary.Criticals++
 			summary.Hits++ // Criticals also count as hits
-		case HitTypeCounterattack:
+		case combattypes.HitTypeCounterattack:
 			summary.Hits++ // Counterattacks count as hits
-		case HitTypeMiss:
+		case combattypes.HitTypeMiss:
 			summary.Misses++
-		case HitTypeDodge:
+		case combattypes.HitTypeDodge:
 			summary.Dodges++
-		case HitTypeHeal:
+		case combattypes.HitTypeHeal:
 			// Heals go through HealEvents, not AttackEvents — skip
 		}
 	}
@@ -153,8 +155,8 @@ func buildUnitSummary(unitID ecs.EntityID, unitSnapshot UnitSnapshot, events []A
 }
 
 // filterEventsByAttacker returns events where AttackerID matches.
-func filterEventsByAttacker(unitID ecs.EntityID, events []AttackEvent) []AttackEvent {
-	filtered := []AttackEvent{}
+func filterEventsByAttacker(unitID ecs.EntityID, events []combattypes.AttackEvent) []combattypes.AttackEvent {
+	filtered := []combattypes.AttackEvent{}
 	for _, event := range events {
 		if event.AttackerID == unitID {
 			filtered = append(filtered, event)
@@ -165,8 +167,8 @@ func filterEventsByAttacker(unitID ecs.EntityID, events []AttackEvent) []AttackE
 
 // filterCounterattackEventsByAttacker returns counterattack events where AttackerID matches.
 // Only returns events with IsCounterattack == true
-func filterCounterattackEventsByAttacker(unitID ecs.EntityID, events []AttackEvent) []AttackEvent {
-	filtered := []AttackEvent{}
+func filterCounterattackEventsByAttacker(unitID ecs.EntityID, events []combattypes.AttackEvent) []combattypes.AttackEvent {
+	filtered := []combattypes.AttackEvent{}
 	for _, event := range events {
 		if event.AttackerID == unitID && event.IsCounterattack {
 			filtered = append(filtered, event)
@@ -176,7 +178,7 @@ func filterCounterattackEventsByAttacker(unitID ecs.EntityID, events []AttackEve
 }
 
 // uniqueInts extracts unique integer values from events using the given extractor.
-func uniqueInts(events []AttackEvent, extractor func(AttackEvent) int) []int {
+func uniqueInts(events []combattypes.AttackEvent, extractor func(combattypes.AttackEvent) int) []int {
 	seen := make(map[int]bool)
 	for _, event := range events {
 		seen[extractor(event)] = true
@@ -190,16 +192,16 @@ func uniqueInts(events []AttackEvent, extractor func(AttackEvent) int) []int {
 	return result
 }
 
-func uniqueRows(events []AttackEvent) []int {
-	return uniqueInts(events, func(e AttackEvent) int { return e.TargetInfo.TargetRow })
+func uniqueRows(events []combattypes.AttackEvent) []int {
+	return uniqueInts(events, func(e combattypes.AttackEvent) int { return e.TargetInfo.TargetRow })
 }
 
-func uniqueCols(events []AttackEvent) []int {
-	return uniqueInts(events, func(e AttackEvent) int { return e.TargetInfo.TargetCol })
+func uniqueCols(events []combattypes.AttackEvent) []int {
+	return uniqueInts(events, func(e combattypes.AttackEvent) int { return e.TargetInfo.TargetCol })
 }
 
 // uniqueCells extracts unique (row, col) pairs for Magic attacks.
-func uniqueCells(events []AttackEvent) []GridPosition {
+func uniqueCells(events []combattypes.AttackEvent) []GridPosition {
 	cellSet := make(map[GridPosition]bool)
 	for _, event := range events {
 		if event.TargetInfo.TargetMode == "Magic" {
@@ -219,7 +221,7 @@ func uniqueCells(events []AttackEvent) []GridPosition {
 }
 
 // getTargetMode returns the primary attack mode (most common).
-func getTargetMode(events []AttackEvent) string {
+func getTargetMode(events []combattypes.AttackEvent) string {
 	if len(events) == 0 {
 		return ""
 	}
@@ -229,49 +231,49 @@ func getTargetMode(events []AttackEvent) string {
 
 // getTargetName looks up the defender's name from events.
 // This is a helper to extract the name from the first matching event.
-func getTargetName(event AttackEvent, allEvents []AttackEvent) string {
+func getTargetName(event combattypes.AttackEvent, allEvents []combattypes.AttackEvent) string {
 	// In a real implementation, you'd look this up from entity manager
 	// For now, we use a simple placeholder based on DefenderID
 	return fmt.Sprintf("Unit_%d", event.DefenderID)
 }
 
 // formatOutcome converts HitType to string.
-func formatOutcome(hitType HitType) string {
+func formatOutcome(hitType combattypes.HitType) string {
 	return hitType.String()
 }
 
 // parseOutcome converts string back to HitType for ranking.
-func parseOutcome(outcome string) HitType {
+func parseOutcome(outcome string) combattypes.HitType {
 	switch outcome {
 	case "MISS":
-		return HitTypeMiss
+		return combattypes.HitTypeMiss
 	case "DODGE":
-		return HitTypeDodge
+		return combattypes.HitTypeDodge
 	case "HIT":
-		return HitTypeNormal
+		return combattypes.HitTypeNormal
 	case "CRITICAL":
-		return HitTypeCritical
+		return combattypes.HitTypeCritical
 	case "COUNTERATTACK":
-		return HitTypeCounterattack
+		return combattypes.HitTypeCounterattack
 	case "HEAL":
-		return HitTypeHeal
+		return combattypes.HitTypeHeal
 	default:
-		return HitTypeMiss
+		return combattypes.HitTypeMiss
 	}
 }
 
 // outcomeRank returns priority rank for outcome (higher = better).
-func outcomeRank(hitType HitType) int {
+func outcomeRank(hitType combattypes.HitType) int {
 	switch hitType {
-	case HitTypeCritical:
+	case combattypes.HitTypeCritical:
 		return 3
-	case HitTypeCounterattack:
+	case combattypes.HitTypeCounterattack:
 		return 2
-	case HitTypeNormal:
+	case combattypes.HitTypeNormal:
 		return 2
-	case HitTypeDodge:
+	case combattypes.HitTypeDodge:
 		return 1
-	case HitTypeMiss:
+	case combattypes.HitTypeMiss:
 		return 0
 	default:
 		return 0
@@ -360,8 +362,8 @@ func formatIntSlice(nums []int) string {
 }
 
 // filterHealEventsByHealer returns heal events where HealerID matches.
-func filterHealEventsByHealer(unitID ecs.EntityID, events []HealEvent) []HealEvent {
-	var filtered []HealEvent
+func filterHealEventsByHealer(unitID ecs.EntityID, events []combattypes.HealEvent) []combattypes.HealEvent {
+	var filtered []combattypes.HealEvent
 	for _, event := range events {
 		if event.HealerID == unitID {
 			filtered = append(filtered, event)
@@ -371,7 +373,7 @@ func filterHealEventsByHealer(unitID ecs.EntityID, events []HealEvent) []HealEve
 }
 
 // applyHealData populates heal fields on a UnitActionSummary from HealEvents.
-func applyHealData(summary *UnitActionSummary, unitID ecs.EntityID, healEvents []HealEvent, nameMap map[ecs.EntityID]string) {
+func applyHealData(summary *UnitActionSummary, unitID ecs.EntityID, healEvents []combattypes.HealEvent, nameMap map[ecs.EntityID]string) {
 	unitHeals := filterHealEventsByHealer(unitID, healEvents)
 	if len(unitHeals) == 0 {
 		return

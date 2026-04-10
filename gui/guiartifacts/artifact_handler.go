@@ -2,20 +2,11 @@ package guiartifacts
 
 import (
 	"game_main/tactical/powers/artifacts"
-	"game_main/tactical/combat/combatcore"
+	"game_main/tactical/combat/combatstate"
 	"game_main/visual/graphics"
 	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"
-)
-
-// TargetType describes what kind of target an artifact requires.
-type TargetType int
-
-const (
-	TargetFriendlySquad TargetType = iota
-	TargetEnemySquad
-	TargetNoTarget
 )
 
 // ArtifactOption represents a single activatable artifact shown in the panel.
@@ -69,7 +60,7 @@ func (h *ArtifactActivationHandler) SelectArtifact(behaviorKey string) {
 
 	targetType := GetTargetType(behaviorKey)
 
-	if targetType == TargetNoTarget {
+	if targetType == artifacts.TargetNone {
 		// Execute immediately (e.g. Saboteur's Hourglass)
 		h.executeArtifact(behaviorKey, 0)
 		return
@@ -86,7 +77,7 @@ func (h *ArtifactActivationHandler) HandleTargetClick(mouseX, mouseY int) {
 	}
 
 	clickedPos := graphics.MouseToLogicalPosition(mouseX, mouseY, *h.playerPos)
-	clickedSquadID := combatcore.GetSquadAtPosition(clickedPos, h.deps.CombatService.EntityManager)
+	clickedSquadID := combatstate.GetSquadAtPosition(clickedPos, h.deps.CombatService.EntityManager)
 
 	if clickedSquadID == 0 {
 		return
@@ -97,11 +88,11 @@ func (h *ArtifactActivationHandler) HandleTargetClick(mouseX, mouseY int) {
 	isEnemy := h.deps.Queries.IsEnemySquadInEncounter(clickedSquadID, encounterID)
 
 	switch targetType {
-	case TargetFriendlySquad:
+	case artifacts.TargetFriendly:
 		if isEnemy {
 			return
 		}
-	case TargetEnemySquad:
+	case artifacts.TargetEnemy:
 		if !isEnemy {
 			return
 		}
@@ -124,7 +115,7 @@ func (h *ArtifactActivationHandler) GetAvailableArtifacts() []ArtifactOption {
 		return nil
 	}
 
-	squadIDs := combatcore.GetSquadsForFaction(playerFactionID, h.deps.CombatService.EntityManager)
+	squadIDs := combatstate.GetSquadsForFaction(playerFactionID, h.deps.CombatService.EntityManager)
 	chargeTracker := h.deps.CombatService.GetChargeTracker()
 
 	seen := make(map[string]bool)
@@ -170,19 +161,12 @@ func (h *ArtifactActivationHandler) HasSelectedArtifact() bool {
 
 // GetTargetType returns the targeting type for a given behavior key,
 // derived from the behavior's own TargetType() method.
-func GetTargetType(behaviorKey string) TargetType {
+func GetTargetType(behaviorKey string) artifacts.BehaviorTargetType {
 	b := artifacts.GetBehavior(behaviorKey)
 	if b == nil {
-		return TargetNoTarget
+		return artifacts.TargetNone
 	}
-	switch b.TargetType() {
-	case artifacts.TargetFriendly:
-		return TargetFriendlySquad
-	case artifacts.TargetEnemy:
-		return TargetEnemySquad
-	default:
-		return TargetNoTarget
-	}
+	return b.TargetType()
 }
 
 // --- Internal helpers ---

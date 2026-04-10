@@ -1,4 +1,4 @@
-package combatcore
+package combatstate
 
 import (
 	"fmt"
@@ -98,25 +98,21 @@ func (fm *CombatFactionManager) CreateStandardFactions(playerFactionName, enemyF
 }
 
 func (fm *CombatFactionManager) GetFactionMana(factionID ecs.EntityID) (current, max int) {
-	// Find faction entity (using cached query for performance)
 	faction := fm.combatCache.FindFactionByID(factionID)
 	if faction == nil {
-		return 0, 0 // Faction not found
+		return 0, 0
 	}
 
-	// Get faction data
 	factionData := common.GetComponentType[*FactionData](faction, CombatFactionComponent)
 	return factionData.Mana, factionData.MaxMana
 }
 
 func (fm *CombatFactionManager) GetFactionName(factionID ecs.EntityID) string {
-	// Find faction entity (using cached query for performance)
 	faction := fm.combatCache.FindFactionByID(factionID)
 	if faction == nil {
 		return "Unknown"
 	}
 
-	// Get faction data
 	factionData := common.GetComponentType[*FactionData](faction, CombatFactionComponent)
 	if factionData != nil {
 		return factionData.Name

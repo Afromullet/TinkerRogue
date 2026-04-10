@@ -57,13 +57,7 @@ func (ap *ArtifactPanelController) UpdateDetailPanel() {
 		return
 	}
 
-	targetLabel := "No Target"
-	switch GetTargetType(option.BehaviorKey) {
-	case TargetFriendlySquad:
-		targetLabel = "Friendly Squad"
-	case TargetEnemySquad:
-		targetLabel = "Enemy Squad"
-	}
+	targetLabel := GetTargetType(option.BehaviorKey).String()
 
 	detail := fmt.Sprintf("=== %s ===\nTarget: %s\n\n%s",
 		option.Name, targetLabel, option.Description)

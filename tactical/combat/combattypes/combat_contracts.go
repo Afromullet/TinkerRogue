@@ -1,4 +1,4 @@
-package combatcore
+package combattypes
 
 import (
 	"game_main/common"

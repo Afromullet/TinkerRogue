@@ -3,7 +3,7 @@ package spells
 import (
 	"fmt"
 	"game_main/common"
-	"game_main/tactical/combat/combatcore"
+	"game_main/tactical/combat/combatstate"
 	"game_main/tactical/powers/effects"
 	"game_main/tactical/squads/squadcore"
 	"game_main/templates"
@@ -53,6 +53,13 @@ func InitSquadSpellsFromLeader(squadID ecs.EntityID, manager *common.EntityManag
 // ExecuteSpellCast performs a spell cast from a squad against target squads.
 // It validates mana, deducts cost, applies damage to all alive units in targets,
 // and removes destroyed squads from the map.
+//
+// Design decision: spells intentionally bypass perk hooks. Perks modify the
+// physical combat pipeline (attack/counter/cover); spells operate in a separate
+// mana-gated power layer. This matches the four-layer power system design where
+// each layer turns a distinct knob. If spell-perk interaction is desired in the
+// future, add an OnSpellCast hook point (see PERKS_AND_HOOKS_COMBINED_ANALYSIS.md
+// Tier 3 recommendations).
 func ExecuteSpellCast(
 	casterEntityID ecs.EntityID,
 	spellID string,
@@ -62,7 +69,7 @@ func ExecuteSpellCast(
 	result := &SpellCastResult{}
 
 	// Verify combat is active
-	if !combatcore.IsCombatActive(manager) {
+	if !combatstate.IsCombatActive(manager) {
 		result.ErrorReason = "no active combat"
 		return result
 	}
@@ -153,7 +160,7 @@ func applyDamageSpell(
 		// Check if squad was destroyed
 		if squadcore.IsSquadDestroyed(squadID, manager) {
 			result.SquadsDestroyed = append(result.SquadsDestroyed, squadID)
-			if err := combatcore.RemoveSquadFromMap(squadID, manager); err != nil {
+			if err := combatstate.RemoveSquadFromMap(squadID, manager); err != nil {
 				fmt.Printf("Warning: failed to remove destroyed squad %d from map: %v\n", squadID, err)
 			}
 		}

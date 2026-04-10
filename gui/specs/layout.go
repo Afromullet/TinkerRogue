@@ -208,6 +208,13 @@ const (
 	// Roster panel (right side, shown on demand via SubMenuController)
 	SquadEditorRosterPanelWidth  = 0.22
 	SquadEditorRosterPanelHeight = 0.50
+
+	// Perk panel (right side, shown on demand via SubMenuController)
+	SquadEditorPerkPanelWidth  = 0.25
+	SquadEditorPerkPanelHeight = 0.70
+
+	// Sub-menu offset (vertical gap above bottom buttons)
+	SquadEditorSubMenuOffset = 0.15
 )
 
 // UnitPurchaseLayout defines layout constants for unit purchase mode

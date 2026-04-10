@@ -3,7 +3,7 @@ package behavior
 import (
 	"game_main/common"
 	"game_main/mind/evaluation"
-	"game_main/tactical/combat/combatcore"
+	"game_main/tactical/combat/combatstate"
 
 	"github.com/bytearena/ecs"
 )
@@ -11,11 +11,11 @@ import (
 // FactionThreatLevelManager keeps track of each faction's threat levels.
 type FactionThreatLevelManager struct {
 	manager  *common.EntityManager
-	cache    *combatcore.CombatQueryCache
+	cache    *combatstate.CombatQueryCache
 	factions map[ecs.EntityID]*FactionThreatLevel
 }
 
-func NewFactionThreatLevelManager(manager *common.EntityManager, cache *combatcore.CombatQueryCache) *FactionThreatLevelManager {
+func NewFactionThreatLevelManager(manager *common.EntityManager, cache *combatstate.CombatQueryCache) *FactionThreatLevelManager {
 	return &FactionThreatLevelManager{
 		manager:  manager,
 		cache:    cache,
@@ -75,14 +75,14 @@ func (ftlm *FactionThreatLevelManager) GetSquadThreatLevel(factionID, squadID ec
 
 type FactionThreatLevel struct {
 	manager           *common.EntityManager
-	cache             *combatcore.CombatQueryCache
+	cache             *combatstate.CombatQueryCache
 	factionID         ecs.EntityID
 	squadThreatLevels map[ecs.EntityID]*SquadThreatLevel //Key is the squad ID. Value is the danger level
 }
 
-func NewFactionThreatLevel(factionID ecs.EntityID, manager *common.EntityManager, cache *combatcore.CombatQueryCache) *FactionThreatLevel {
+func NewFactionThreatLevel(factionID ecs.EntityID, manager *common.EntityManager, cache *combatstate.CombatQueryCache) *FactionThreatLevel {
 
-	squadIDs := combatcore.GetSquadsForFaction(factionID, manager)
+	squadIDs := combatstate.GetSquadsForFaction(factionID, manager)
 
 	ftl := &FactionThreatLevel{
 
@@ -101,7 +101,7 @@ func NewFactionThreatLevel(factionID ecs.EntityID, manager *common.EntityManager
 
 func (ftr *FactionThreatLevel) UpdateThreatRatings() {
 
-	squadIDs := combatcore.GetSquadsForFaction(ftr.factionID, ftr.manager)
+	squadIDs := combatstate.GetSquadsForFaction(ftr.factionID, ftr.manager)
 
 	for _, squadID := range squadIDs {
 		// Create threat level entry if squad wasn't tracked at creation time
@@ -116,12 +116,12 @@ func (ftr *FactionThreatLevel) UpdateThreatRatings() {
 
 type SquadThreatLevel struct {
 	manager       *common.EntityManager
-	cache         *combatcore.CombatQueryCache
+	cache         *combatstate.CombatQueryCache
 	squadID       ecs.EntityID
 	ThreatByRange map[int]float64 //Key is the range. Value is the danger level. How dangerous the squad is at each range
 }
 
-func NewSquadThreatLevel(manager *common.EntityManager, cache *combatcore.CombatQueryCache, squadID ecs.EntityID) *SquadThreatLevel {
+func NewSquadThreatLevel(manager *common.EntityManager, cache *combatstate.CombatQueryCache, squadID ecs.EntityID) *SquadThreatLevel {
 
 	return &SquadThreatLevel{
 		manager: manager,

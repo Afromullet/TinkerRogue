@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"game_main/common"
 	"game_main/tactical/combat/combatcore"
+	"game_main/tactical/combat/combatmath"
+	"game_main/tactical/combat/combatstate"
 	"game_main/tactical/squads/squadcommands"
 	"game_main/tactical/squads/squadcore"
 	"game_main/tactical/squads/unitdefs"
@@ -20,7 +22,7 @@ type ScoredAction struct {
 
 // SquadAction interface for executable actions
 type SquadAction interface {
-	Execute(manager *common.EntityManager, movementSystem *combatcore.CombatMovementSystem, combatActSystem *combatcore.CombatActionSystem, cache *combatcore.CombatQueryCache) bool
+	Execute(manager *common.EntityManager, movementSystem *combatcore.CombatMovementSystem, combatActSystem *combatcore.CombatActionSystem, cache *combatstate.CombatQueryCache) bool
 }
 
 // MoveAction represents a movement decision
@@ -29,7 +31,7 @@ type MoveAction struct {
 	target  coords.LogicalPosition
 }
 
-func (ma *MoveAction) Execute(manager *common.EntityManager, movementSystem *combatcore.CombatMovementSystem, combatActSystem *combatcore.CombatActionSystem, cache *combatcore.CombatQueryCache) bool {
+func (ma *MoveAction) Execute(manager *common.EntityManager, movementSystem *combatcore.CombatMovementSystem, combatActSystem *combatcore.CombatActionSystem, cache *combatstate.CombatQueryCache) bool {
 	cmd := squadcommands.NewMoveSquadCommand(
 		manager,
 		movementSystem,
@@ -49,7 +51,7 @@ type AttackAction struct {
 	aiController *AIController // Reference to queue the attack for animation
 }
 
-func (aa *AttackAction) Execute(manager *common.EntityManager, movementSystem *combatcore.CombatMovementSystem, combatActSystem *combatcore.CombatActionSystem, cache *combatcore.CombatQueryCache) bool {
+func (aa *AttackAction) Execute(manager *common.EntityManager, movementSystem *combatcore.CombatMovementSystem, combatActSystem *combatcore.CombatActionSystem, cache *combatstate.CombatQueryCache) bool {
 	// Execute the attack
 	result := combatActSystem.ExecuteAttackAction(aa.attackerID, aa.targetID)
 
@@ -83,7 +85,7 @@ type WaitAction struct {
 	squadID ecs.EntityID
 }
 
-func (wa *WaitAction) Execute(manager *common.EntityManager, movementSystem *combatcore.CombatMovementSystem, combatActSystem *combatcore.CombatActionSystem, cache *combatcore.CombatQueryCache) bool {
+func (wa *WaitAction) Execute(manager *common.EntityManager, movementSystem *combatcore.CombatMovementSystem, combatActSystem *combatcore.CombatActionSystem, cache *combatstate.CombatQueryCache) bool {
 	// CRITICAL: Mark the squad's turn as complete to prevent infinite loops
 	// Use cached query for better performance
 	actionState := cache.FindActionStateBySquadID(wa.squadID)
@@ -215,7 +217,7 @@ func (ae *ActionEvaluator) scoreApproachEnemy(pos coords.LogicalPosition) float6
 	}
 
 	// Calculate distance from candidate position to nearest enemy
-	enemyPos, err := combatcore.GetSquadMapPosition(nearestEnemy, ae.ctx.Manager)
+	enemyPos, err := combatstate.GetSquadMapPosition(nearestEnemy, ae.ctx.Manager)
 	if err != nil {
 		return 0.0
 	}
@@ -257,17 +259,17 @@ func (ae *ActionEvaluator) findNearestEnemy() (ecs.EntityID, int) {
 	var nearestEnemy ecs.EntityID
 	nearestDistance := 9999
 
-	allFactions := combatcore.GetAllFactions(ae.ctx.Manager)
+	allFactions := combatstate.GetAllFactions(ae.ctx.Manager)
 
 	for _, factionID := range allFactions {
 		if factionID == ae.ctx.FactionID {
 			continue // Skip own faction
 		}
 
-		squadIDs := combatcore.GetActiveSquadsForFaction(factionID, ae.ctx.Manager)
+		squadIDs := combatstate.GetActiveSquadsForFaction(factionID, ae.ctx.Manager)
 
 		for _, squadID := range squadIDs {
-			enemyPos, err := combatcore.GetSquadMapPosition(squadID, ae.ctx.Manager)
+			enemyPos, err := combatstate.GetSquadMapPosition(squadID, ae.ctx.Manager)
 			if err != nil {
 				continue
 			}
@@ -311,14 +313,14 @@ func (ae *ActionEvaluator) getAttackableTargets() []ecs.EntityID {
 	var targets []ecs.EntityID
 
 	// Get all enemy factions
-	allFactions := combatcore.GetAllFactions(ae.ctx.Manager)
+	allFactions := combatstate.GetAllFactions(ae.ctx.Manager)
 
 	for _, factionID := range allFactions {
 		if factionID == ae.ctx.FactionID {
 			continue // Skip own faction
 		}
 
-		squadIDs := combatcore.GetActiveSquadsForFaction(factionID, ae.ctx.Manager)
+		squadIDs := combatstate.GetActiveSquadsForFaction(factionID, ae.ctx.Manager)
 
 		for _, squadID := range squadIDs {
 			// Check if squad is in attack range
@@ -333,7 +335,7 @@ func (ae *ActionEvaluator) getAttackableTargets() []ecs.EntityID {
 
 // isInAttackRange checks if target is in attack range
 func (ae *ActionEvaluator) isInAttackRange(targetID ecs.EntityID) bool {
-	targetPos, err := combatcore.GetSquadMapPosition(targetID, ae.ctx.Manager)
+	targetPos, err := combatstate.GetSquadMapPosition(targetID, ae.ctx.Manager)
 	if err != nil {
 		return false
 	}
@@ -373,7 +375,7 @@ func (ae *ActionEvaluator) getMaxAttackRange() int {
 func (ae *ActionEvaluator) squadHasHealers(squadID ecs.EntityID) bool {
 	unitIDs := squadcore.GetUnitIDsInSquad(squadID, ae.ctx.Manager)
 	for _, unitID := range unitIDs {
-		if combatcore.IsHealUnit(unitID, ae.ctx.Manager) {
+		if combatmath.IsHealUnit(unitID, ae.ctx.Manager) {
 			return true
 		}
 	}

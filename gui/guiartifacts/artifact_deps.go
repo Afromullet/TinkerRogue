@@ -2,7 +2,7 @@ package guiartifacts
 
 import (
 	"game_main/gui/framework"
-	"game_main/tactical/combat/combatcore"
+	"game_main/tactical/combat/combattypes"
 	"game_main/tactical/combat/combatservices"
 )
 
@@ -13,5 +13,5 @@ type ArtifactActivationDeps struct {
 	Queries       *framework.GUIQueries
 
 	// Encounter callbacks (replacing direct EncounterService dependency)
-	Encounter combatcore.EncounterCallbacks
+	Encounter combattypes.EncounterCallbacks
 }

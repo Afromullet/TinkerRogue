@@ -1,7 +1,8 @@
-package combatcore
+package combatmath
 
 import (
 	"game_main/common"
+	"game_main/tactical/combat/combattypes"
 	"game_main/tactical/squads/squadcore"
 	"game_main/tactical/squads/unitdefs"
 
@@ -16,13 +17,13 @@ func rollD100Check(threshold int) (roll int, passed bool) {
 	return
 }
 
-// calculateDamage is the unified damage calculation function with optional modifiers.
-// Handles the full pipeline: hit roll, dodge roll, base damage, crit, resistance, cover.
-func calculateDamage(attackerID, defenderID ecs.EntityID, modifiers DamageModifiers, squadmanager *common.EntityManager) (int, *AttackEvent) {
+// CalculateDamage handles the full damage pipeline: hit roll, dodge roll, base damage, crit, resistance, cover.
+func CalculateDamage(attackerID, defenderID ecs.EntityID, modifiers combattypes.DamageModifiers,
+	dispatcher combattypes.PerkDispatcher, squadmanager *common.EntityManager) (int, *combattypes.AttackEvent) {
 	attackerAttr := common.GetComponentTypeByID[*common.Attributes](squadmanager, attackerID, common.AttributeComponent)
 	defenderAttr := common.GetComponentTypeByID[*common.Attributes](squadmanager, defenderID, common.AttributeComponent)
 
-	event := &AttackEvent{
+	event := &combattypes.AttackEvent{
 		AttackerID:      attackerID,
 		DefenderID:      defenderID,
 		IsCounterattack: modifiers.IsCounterattack,
@@ -33,98 +34,20 @@ func calculateDamage(attackerID, defenderID ecs.EntityID, modifiers DamageModifi
 	}
 
 	if attackerAttr == nil || defenderAttr == nil {
-		event.HitResult.Type = HitTypeMiss
+		event.HitResult.Type = combattypes.HitTypeMiss
 		return 0, event
 	}
 
-	// Hit roll with optional penalty
-	baseHitThreshold := attackerAttr.GetHitRate()
-	hitThreshold := baseHitThreshold - modifiers.HitPenalty
-	if hitThreshold < 0 {
-		hitThreshold = 0
-	}
-
-	hitRoll, didHit := rollD100Check(hitThreshold)
-	event.HitResult.HitRoll = hitRoll
-	event.HitResult.HitThreshold = hitThreshold
-
-	if !didHit {
-		event.HitResult.Type = HitTypeMiss
+	// Hit and dodge resolution
+	if missed := resolveHitAndDodge(attackerAttr, defenderAttr, modifiers, event); missed {
 		return 0, event
 	}
 
-	// Dodge roll
-	dodgeThreshold := defenderAttr.GetDodgeChance()
-	dodgeRoll, wasDodged := rollD100Check(dodgeThreshold)
-	event.HitResult.DodgeRoll = dodgeRoll
-	event.HitResult.DodgeThreshold = dodgeThreshold
+	// Base damage and crit
+	baseDamage, resistance := calculateBaseDamageAndCrit(attackerID, attackerAttr, defenderAttr, modifiers, event, squadmanager)
 
-	if wasDodged {
-		event.HitResult.Type = HitTypeDodge
-		return 0, event
-	}
-
-	// Get attacker's attack type to determine damage formula
-	attackerTargetData := common.GetComponentTypeByID[*squadcore.TargetRowData](squadmanager, attackerID, squadcore.TargetRowComponent)
-
-	// Calculate base damage based on attack type
-	var baseDamage int
-	var resistance int
-
-	if attackerTargetData != nil && attackerTargetData.AttackType == unitdefs.AttackTypeMagic {
-		// Magic damage path
-		baseDamage = attackerAttr.GetMagicDamage()
-		resistance = defenderAttr.GetMagicDefense()
-	} else {
-		// Physical damage path (Melee, Ranged, or fallback)
-		baseDamage = attackerAttr.GetPhysicalDamage()
-		resistance = defenderAttr.GetPhysicalResistance()
-	}
-
-	event.BaseDamage = baseDamage
-	event.CritMultiplier = 1.0
-
-	// Crit roll
-	critThreshold := attackerAttr.GetCritChance()
-	critRoll, wasCrit := rollD100Check(critThreshold)
-	event.HitResult.CritRoll = critRoll
-	event.HitResult.CritThreshold = critThreshold
-
-	if wasCrit {
-		baseDamage = int(float64(baseDamage) * 1.5)
-		event.CritMultiplier = 1.5
-		event.HitResult.Type = HitTypeCritical
-	} else {
-		if modifiers.IsCounterattack {
-			event.HitResult.Type = HitTypeCounterattack
-		} else {
-			event.HitResult.Type = HitTypeNormal
-		}
-	}
-
-	// Apply damage multiplier
-	baseDamage = int(float64(baseDamage) * modifiers.DamageMultiplier)
-	if baseDamage < 1 {
-		baseDamage = 1
-	}
-
-	// Apply resistance
-	event.ResistanceAmount = resistance
-	totalDamage := baseDamage - resistance
-	if totalDamage < 1 {
-		totalDamage = 1
-	}
-
-	// Apply cover
-	coverBreakdown := CalculateCoverBreakdown(defenderID, squadmanager)
-	event.CoverReduction = coverBreakdown
-
-	if coverBreakdown.TotalReduction > 0.0 {
-		totalDamage = int(float64(totalDamage) * (1.0 - coverBreakdown.TotalReduction))
-		if totalDamage < 1 {
-			totalDamage = 1
-		}
-	}
+	// Resistance, cover, and final damage
+	totalDamage := applyResistanceAndCover(attackerID, defenderID, baseDamage, resistance, modifiers, dispatcher, event, squadmanager)
 
 	event.FinalDamage = totalDamage
 	event.DefenderHPAfter = defenderAttr.CurrentHealth - totalDamage
@@ -135,8 +58,134 @@ func calculateDamage(attackerID, defenderID ecs.EntityID, modifiers DamageModifi
 	return totalDamage, event
 }
 
-// recordDamageToUnit records damage in the combat result without modifying HP (pure calculation)
-func recordDamageToUnit(unitID ecs.EntityID, damage int, result *CombatResult, squadmanager *common.EntityManager) {
+// resolveHitAndDodge performs hit and dodge rolls. Returns true if the attack missed or was dodged.
+func resolveHitAndDodge(attackerAttr, defenderAttr *common.Attributes, modifiers combattypes.DamageModifiers, event *combattypes.AttackEvent) bool {
+	// Hit roll with optional penalty
+	hitThreshold := attackerAttr.GetHitRate() - modifiers.HitPenalty
+	if hitThreshold < 0 {
+		hitThreshold = 0
+	}
+
+	hitRoll, didHit := rollD100Check(hitThreshold)
+	event.HitResult.HitRoll = hitRoll
+	event.HitResult.HitThreshold = hitThreshold
+
+	if !didHit {
+		event.HitResult.Type = combattypes.HitTypeMiss
+		return true
+	}
+
+	// Dodge roll
+	dodgeThreshold := defenderAttr.GetDodgeChance()
+	dodgeRoll, wasDodged := rollD100Check(dodgeThreshold)
+	event.HitResult.DodgeRoll = dodgeRoll
+	event.HitResult.DodgeThreshold = dodgeThreshold
+
+	if wasDodged {
+		event.HitResult.Type = combattypes.HitTypeDodge
+		return true
+	}
+
+	return false
+}
+
+// calculateBaseDamageAndCrit determines base damage (physical vs magic), applies crit roll and damage multiplier.
+// Returns the modified base damage and the defender's resistance value.
+func calculateBaseDamageAndCrit(attackerID ecs.EntityID, attackerAttr, defenderAttr *common.Attributes,
+	modifiers combattypes.DamageModifiers, event *combattypes.AttackEvent, squadmanager *common.EntityManager) (int, int) {
+
+	// Determine physical vs magic based on attack type
+	attackerTargetData := common.GetComponentTypeByID[*squadcore.TargetRowData](squadmanager, attackerID, squadcore.TargetRowComponent)
+
+	var baseDamage int
+	var resistance int
+
+	if attackerTargetData != nil && attackerTargetData.AttackType == unitdefs.AttackTypeMagic {
+		baseDamage = attackerAttr.GetMagicDamage()
+		resistance = defenderAttr.GetMagicDefense()
+	} else {
+		baseDamage = attackerAttr.GetPhysicalDamage()
+		resistance = defenderAttr.GetPhysicalResistance()
+	}
+
+	event.BaseDamage = baseDamage
+	event.CritMultiplier = 1.0
+
+	// Crit roll (supports SkipCrit and CritBonus from perks)
+	if modifiers.SkipCrit {
+		if modifiers.IsCounterattack {
+			event.HitResult.Type = combattypes.HitTypeCounterattack
+		} else {
+			event.HitResult.Type = combattypes.HitTypeNormal
+		}
+	} else {
+		critThreshold := attackerAttr.GetCritChance() + modifiers.CritBonus
+		critRoll, wasCrit := rollD100Check(critThreshold)
+		event.HitResult.CritRoll = critRoll
+		event.HitResult.CritThreshold = critThreshold
+
+		if wasCrit {
+			baseDamage = int(float64(baseDamage) * 1.5)
+			event.CritMultiplier = 1.5
+			event.HitResult.Type = combattypes.HitTypeCritical
+		} else if modifiers.IsCounterattack {
+			event.HitResult.Type = combattypes.HitTypeCounterattack
+		} else {
+			event.HitResult.Type = combattypes.HitTypeNormal
+		}
+	}
+
+	// Apply damage multiplier
+	baseDamage = int(float64(baseDamage) * modifiers.DamageMultiplier)
+	if baseDamage < 1 {
+		baseDamage = 1
+	}
+
+	return baseDamage, resistance
+}
+
+// applyResistanceAndCover subtracts resistance, calculates cover reduction (with perk hooks), and returns final damage.
+func applyResistanceAndCover(attackerID, defenderID ecs.EntityID, baseDamage, resistance int,
+	modifiers combattypes.DamageModifiers, dispatcher combattypes.PerkDispatcher,
+	event *combattypes.AttackEvent, squadmanager *common.EntityManager) int {
+
+	// Apply resistance
+	event.ResistanceAmount = resistance
+	totalDamage := baseDamage - resistance
+	if totalDamage < 1 {
+		totalDamage = 1
+	}
+
+	// Apply cover
+	coverBreakdown := CalculateCoverBreakdown(defenderID, squadmanager)
+
+	// Run perk cover mod hooks
+	if dispatcher != nil {
+		dispatcher.CoverMod(attackerID, defenderID, &coverBreakdown, squadmanager)
+	}
+
+	// Apply perk cover bonus
+	if modifiers.CoverBonus > 0 {
+		coverBreakdown.TotalReduction += modifiers.CoverBonus
+		if coverBreakdown.TotalReduction > 1.0 {
+			coverBreakdown.TotalReduction = 1.0
+		}
+	}
+
+	event.CoverReduction = coverBreakdown
+
+	if coverBreakdown.TotalReduction > 0.0 {
+		totalDamage = int(float64(totalDamage) * (1.0 - coverBreakdown.TotalReduction))
+		if totalDamage < 1 {
+			totalDamage = 1
+		}
+	}
+
+	return totalDamage
+}
+
+// RecordDamageToUnit records damage in the combat result without modifying HP (pure calculation)
+func RecordDamageToUnit(unitID ecs.EntityID, damage int, result *combattypes.CombatResult, squadmanager *common.EntityManager) {
 	// Accumulate damage (in case unit is hit multiple times)
 	result.DamageByUnit[unitID] += damage
 
@@ -162,7 +211,7 @@ func recordDamageToUnit(unitID ecs.EntityID, damage int, result *CombatResult, s
 
 // ApplyRecordedDamage applies all recorded damage from result.DamageByUnit to actual unit HP.
 // This is called during orchestration phase after all combat calculations are complete.
-func ApplyRecordedDamage(result *CombatResult, squadmanager *common.EntityManager) {
+func ApplyRecordedDamage(result *combattypes.CombatResult, squadmanager *common.EntityManager) {
 	for unitID, damage := range result.DamageByUnit {
 		attr := common.GetComponentTypeByID[*common.Attributes](squadmanager, unitID, common.AttributeComponent)
 		if attr == nil {
@@ -174,7 +223,7 @@ func ApplyRecordedDamage(result *CombatResult, squadmanager *common.EntityManage
 
 // ApplyRecordedHealing applies all recorded healing from result.HealingByUnit to actual unit HP.
 // Called AFTER ApplyRecordedDamage so healers can offset damage taken in the same round.
-func ApplyRecordedHealing(result *CombatResult, manager *common.EntityManager) {
+func ApplyRecordedHealing(result *combattypes.CombatResult, manager *common.EntityManager) {
 	for unitID, healing := range result.HealingByUnit {
 		attr := common.GetComponentTypeByID[*common.Attributes](manager, unitID, common.AttributeComponent)
 		if attr == nil {
@@ -188,8 +237,8 @@ func ApplyRecordedHealing(result *CombatResult, manager *common.EntityManager) {
 	}
 }
 
-// sumDamageMap totals all damage values in a damage map
-func sumDamageMap(damageMap map[ecs.EntityID]int) int {
+// SumDamageMap totals all damage values in a damage map
+func SumDamageMap(damageMap map[ecs.EntityID]int) int {
 	total := 0
 	for _, dmg := range damageMap {
 		total += dmg
@@ -197,8 +246,8 @@ func sumDamageMap(damageMap map[ecs.EntityID]int) int {
 	return total
 }
 
-// calculateSquadStatus summarizes squad health for combat log
-func calculateSquadStatus(squadID ecs.EntityID, manager *common.EntityManager) SquadStatus {
+// CalculateSquadStatus summarizes squad health for combat log
+func CalculateSquadStatus(squadID ecs.EntityID, manager *common.EntityManager) combattypes.SquadStatus {
 	unitIDs := squadcore.GetUnitIDsInSquad(squadID, manager)
 	aliveCount := 0
 
@@ -211,20 +260,20 @@ func calculateSquadStatus(squadID ecs.EntityID, manager *common.EntityManager) S
 	hpPercent := squadcore.GetSquadHealthPercent(squadID, manager)
 	avgHP := int(hpPercent * 100)
 
-	return SquadStatus{
+	return combattypes.SquadStatus{
 		AliveUnits: aliveCount,
 		TotalUnits: len(unitIDs),
 		AverageHP:  avgHP,
 	}
 }
 
-// calculateHealing computes guaranteed healing (no hit/dodge/crit rolls).
+// CalculateHealing computes guaranteed healing (no hit/dodge/crit rolls).
 // Uses GetHealingAmount() (Magic * 2), capped at MaxHealth - CurrentHealth.
-func calculateHealing(healerID, targetID ecs.EntityID, manager *common.EntityManager) (int, *HealEvent) {
+func CalculateHealing(healerID, targetID ecs.EntityID, manager *common.EntityManager) (int, *combattypes.HealEvent) {
 	healerAttr := common.GetComponentTypeByID[*common.Attributes](manager, healerID, common.AttributeComponent)
 	targetAttr := common.GetComponentTypeByID[*common.Attributes](manager, targetID, common.AttributeComponent)
 
-	event := &HealEvent{
+	event := &combattypes.HealEvent{
 		HealerID: healerID,
 		TargetID: targetID,
 	}

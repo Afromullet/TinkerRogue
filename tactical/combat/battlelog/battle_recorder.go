@@ -1,8 +1,10 @@
-package combatcore
+package battlelog
 
 import (
 	"fmt"
 	"time"
+
+	"game_main/tactical/combat/combattypes"
 
 	"github.com/bytearena/ecs"
 )
@@ -22,10 +24,10 @@ type BattleRecord struct {
 // EngagementRecord wraps a CombatLog with battle metadata.
 // Each engagement represents a single squad-vs-squad attack.
 type EngagementRecord struct {
-	Index     int                `json:"index"`
-	Round     int                `json:"round"`
-	CombatLog *CombatLog         `json:"combat_log"`
-	Summary   *EngagementSummary `json:"summary"` // Per-unit action summaries
+	Index     int                       `json:"index"`
+	Round     int                       `json:"round"`
+	CombatLog *combattypes.CombatLog    `json:"combat_log"`
+	Summary   *EngagementSummary        `json:"summary"` // Per-unit action summaries
 }
 
 // GridPosition represents a grid cell location.
@@ -138,7 +140,7 @@ func (br *BattleRecorder) SetCurrentRound(round int) {
 // RecordEngagement adds a combat log to the battle record.
 // Uses the current round set via SetCurrentRound.
 // Should be called after each squad attack completes.
-func (br *BattleRecorder) RecordEngagement(log *CombatLog) {
+func (br *BattleRecorder) RecordEngagement(log *combattypes.CombatLog) {
 	if !br.enabled || log == nil {
 		return
 	}

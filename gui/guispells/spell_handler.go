@@ -1,7 +1,7 @@
 package guispells
 
 import (
-	"game_main/tactical/combat/combatcore"
+	"game_main/tactical/combat/combatstate"
 	"game_main/tactical/powers/spells"
 	"game_main/templates"
 	"game_main/visual/graphics"
@@ -139,7 +139,7 @@ func (h *SpellCastingHandler) HandleSingleTargetClick(mouseX, mouseY int) {
 	}
 
 	clickedPos := graphics.MouseToLogicalPosition(mouseX, mouseY, *h.deps.PlayerPos)
-	clickedSquadID := combatcore.GetSquadAtPosition(clickedPos, h.deps.ECSManager)
+	clickedSquadID := combatstate.GetSquadAtPosition(clickedPos, h.deps.ECSManager)
 
 	if clickedSquadID == 0 {
 		return
@@ -202,7 +202,7 @@ func (h *SpellCastingHandler) HandleAoEConfirmClick(mouseX, mouseY int) {
 
 	for _, idx := range indices {
 		logicalPos := coords.CoordManager.IndexToLogical(idx)
-		squadID := combatcore.GetSquadAtPosition(logicalPos, h.deps.ECSManager)
+		squadID := combatstate.GetSquadAtPosition(logicalPos, h.deps.ECSManager)
 		if squadID != 0 && h.deps.Queries.IsEnemySquadInEncounter(squadID, h.deps.Encounter.GetCurrentEncounterID()) {
 			squadSet[squadID] = true
 		}
@@ -295,7 +295,7 @@ func (h *SpellCastingHandler) executeSpellOnTargets(targetSquadIDs []ecs.EntityI
 	h.ClearOverlay()
 
 	// Mark the casting squad as having acted (cannot attack after casting)
-	combatcore.MarkSquadAsActed(h.deps.Queries.CombatCache, squadID, h.deps.ECSManager)
+	combatstate.MarkSquadAsActed(h.deps.Queries.CombatCache, squadID, h.deps.ECSManager)
 
 	// Clear spell mode
 	h.deps.BattleState.InSpellMode = false

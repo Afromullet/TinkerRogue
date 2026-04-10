@@ -1,0 +1,214 @@
+{
+  "perks": [
+    {
+      "id": "brace_for_impact",
+      "name": "Brace for Impact",
+      "description": "When defending, all units gain +15% cover bonus.",
+      "tier": 0,
+      "category": 1,
+      "roles": ["Tank"],
+      "exclusiveWith": [],
+      "unlockCost": 2
+    },
+    {
+      "id": "reckless_assault",
+      "name": "Reckless Assault",
+      "description": "+30% damage dealt, but +20% damage received until next turn.",
+      "tier": 0,
+      "category": 0,
+      "roles": ["DPS"],
+      "exclusiveWith": ["stalwart"],
+      "unlockCost": 2
+    },
+    {
+      "id": "stalwart",
+      "name": "Stalwart",
+      "description": "If this squad did not move, counterattacks deal 100% damage instead of 50%.",
+      "tier": 0,
+      "category": 1,
+      "roles": ["Tank", "Support"],
+      "exclusiveWith": ["reckless_assault"],
+      "unlockCost": 2
+    },
+    {
+      "id": "executioners_instinct",
+      "name": "Executioner's Instinct",
+      "description": "+25% crit chance vs squads with any unit below 30% HP.",
+      "tier": 0,
+      "category": 0,
+      "roles": ["DPS"],
+      "exclusiveWith": [],
+      "unlockCost": 2
+    },
+    {
+      "id": "shieldwall_discipline",
+      "name": "Shieldwall Discipline",
+      "description": "Per Tank in front row: all squad units take 5% less damage (max 15%).",
+      "tier": 0,
+      "category": 1,
+      "roles": ["Tank"],
+      "exclusiveWith": [],
+      "unlockCost": 2
+    },
+    {
+      "id": "isolated_predator",
+      "name": "Isolated Predator",
+      "description": "+25% damage when no friendly squads within 3 tiles.",
+      "tier": 0,
+      "category": 0,
+      "roles": ["DPS"],
+      "exclusiveWith": [],
+      "unlockCost": 2
+    },
+    {
+      "id": "vigilance",
+      "name": "Vigilance",
+      "description": "Critical hits against this squad become normal hits.",
+      "tier": 0,
+      "category": 1,
+      "roles": ["Tank", "Support"],
+      "exclusiveWith": [],
+      "unlockCost": 2
+    },
+    {
+      "id": "field_medic",
+      "name": "Field Medic",
+      "description": "At round start, lowest-HP unit heals 10% of max HP.",
+      "tier": 0,
+      "category": 3,
+      "roles": ["Support"],
+      "exclusiveWith": ["bloodlust"],
+      "unlockCost": 2
+    },
+    {
+      "id": "opening_salvo",
+      "name": "Opening Salvo",
+      "description": "+35% damage on squad's first attack of the combat only.",
+      "tier": 0,
+      "category": 0,
+      "roles": ["DPS"],
+      "exclusiveWith": [],
+      "unlockCost": 2
+    },
+    {
+      "id": "last_line",
+      "name": "Last Line",
+      "description": "When last friendly squad alive: +20% hit, dodge, and damage.",
+      "tier": 0,
+      "category": 1,
+      "roles": ["Tank", "Support"],
+      "exclusiveWith": [],
+      "unlockCost": 2
+    },
+    {
+      "id": "cleave",
+      "name": "Cleave",
+      "description": "Melee attacks also hit one unit in the row behind the target, but all damage reduced by 30%.",
+      "tier": 1,
+      "category": 2,
+      "roles": ["DPS"],
+      "exclusiveWith": ["precision_strike"],
+      "unlockCost": 3
+    },
+    {
+      "id": "riposte",
+      "name": "Riposte",
+      "description": "Counterattacks have no hit penalty (normally -20).",
+      "tier": 1,
+      "category": 1,
+      "roles": ["Tank", "DPS"],
+      "exclusiveWith": [],
+      "unlockCost": 3
+    },
+    {
+      "id": "guardian_protocol",
+      "name": "Guardian Protocol",
+      "description": "When adjacent friendly squad is attacked, one Tank absorbs 25% of damage.",
+      "tier": 1,
+      "category": 1,
+      "roles": ["Tank"],
+      "exclusiveWith": [],
+      "unlockCost": 4
+    },
+    {
+      "id": "adaptive_armor",
+      "name": "Adaptive Armor",
+      "description": "-10% damage from same attacker per hit (stacks to 30%, resets per round).",
+      "tier": 1,
+      "category": 1,
+      "roles": ["Tank"],
+      "exclusiveWith": [],
+      "unlockCost": 3
+    },
+    {
+      "id": "bloodlust",
+      "name": "Bloodlust",
+      "description": "Each unit kill this round: +15% damage on next attack (stacks, resets per round).",
+      "tier": 1,
+      "category": 0,
+      "roles": ["DPS"],
+      "exclusiveWith": ["field_medic"],
+      "unlockCost": 3
+    },
+    {
+      "id": "fortify",
+      "name": "Fortify",
+      "description": "+5% cover per consecutive turn not moving (max +15% after 3 turns, moving resets).",
+      "tier": 1,
+      "category": 1,
+      "roles": ["Tank", "Support"],
+      "exclusiveWith": [],
+      "unlockCost": 3
+    },
+    {
+      "id": "precision_strike",
+      "name": "Precision Strike",
+      "description": "Highest-dex DPS unit targets the lowest-HP enemy instead of normal targeting.",
+      "tier": 1,
+      "category": 2,
+      "roles": ["DPS"],
+      "exclusiveWith": ["cleave"],
+      "unlockCost": 3
+    },
+    {
+      "id": "resolute",
+      "name": "Resolute",
+      "description": "A unit that would die survives at 1 HP if it had >50% HP at round start (once per unit per battle).",
+      "tier": 1,
+      "category": 1,
+      "roles": ["Tank", "DPS", "Support"],
+      "exclusiveWith": [],
+      "unlockCost": 4
+    },
+    {
+      "id": "grudge_bearer",
+      "name": "Grudge Bearer",
+      "description": "+20% damage vs enemy squads that have damaged this squad (stacks to +40%).",
+      "tier": 1,
+      "category": 3,
+      "roles": ["DPS", "Tank"],
+      "exclusiveWith": [],
+      "unlockCost": 3
+    },
+    {
+      "id": "counterpunch",
+      "name": "Counterpunch",
+      "description": "If attacked last turn AND did not attack last turn, next attack deals +40% damage.",
+      "tier": 1,
+      "category": 3,
+      "roles": ["DPS", "Tank"],
+      "exclusiveWith": [],
+      "unlockCost": 3
+    },
+    {
+      "id": "deadshots_patience",
+      "name": "Deadshot's Patience",
+      "description": "If completely idle last turn (no move, no attack), next ranged attack gains +50% damage and +20 accuracy.",
+      "tier": 1,
+      "category": 0,
+      "roles": ["DPS"],
+      "exclusiveWith": [],
+      "unlockCost": 4
+    }
+  ]
+}
