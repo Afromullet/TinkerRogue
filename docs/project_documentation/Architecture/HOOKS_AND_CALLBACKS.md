@@ -1,6 +1,6 @@
 # Hooks and Callbacks in TinkerRogue
 
-**Last Updated:** 2026-04-09
+**Last Updated:** 2026-04-10
 
 This document is a reference for every hook, callback, and event-driven pattern in the codebase. It covers the perk hook system, combat service callbacks, the dispatch bridge that prevents circular imports, TurnManager single-subscriber hooks, artifact behavior dispatch, the encounter post-combat callback, ECS subsystem self-registration, map generator registration, GUI callback patterns, and the overworld event log.
 
@@ -35,7 +35,7 @@ TinkerRogue uses four distinct callback philosophies depending on the subsystem:
 
 **Single-subscriber function fields** — `TurnManager` stores one `onTurnEnd` and one `postResetHook` directly on the struct. Only `CombatService` writes these fields; they fan out to the slices above. The pattern allows the core package to remain unaware of subscribers.
 
-**Interface + registry dispatch** — Artifacts implement `ArtifactBehavior`. The registry holds all registered behaviors. An `ArtifactDispatcher` struct (owned by `CombatService`) encapsulates the iteration logic: during each event, it calls every registered behavior in deterministic key order. Individual behaviors use an embedded `BaseBehavior` no-op to opt out of events they do not need. Activation logging uses a decoupled `ArtifactLogger` callback (matching the perk system's `PerkLogger` pattern).
+**Interface + registry dispatch** — Artifacts implement `ArtifactBehavior`. The registry holds all registered behaviors. An `ArtifactDispatcher` struct (owned by `CombatService`) encapsulates the iteration logic: during each event, it calls every registered behavior in deterministic key order. Individual behaviors use an embedded `BaseBehavior` no-op to opt out of events they do not need. Activation logging uses a decoupled `ArtifactLogger` callback (matching the perk system's `PerkLogger` pattern, which uses the typed `PerkID` key).
 
 The guiding principle throughout: game logic never lives in GUI state, and the `combatcore` package never imports `perks`. The dispatch layer in `combatservices` owns the wiring between those two packages.
 
@@ -66,9 +66,9 @@ game_main
                                       postResetHooks   []func       artifact dispatch
 
 
-perks.hookRegistry (map[string]*PerkHooks)
+perks.behaviorRegistry (map[PerkID]PerkBehavior)
     |
-    +-- RegisterPerkHooks() called from perks/behaviors.go init()
+    +-- RegisterPerkBehavior() called from perks/behaviors_*.go init()
     |
     +-- Accessed via PerkCallbacks struct injected into CombatActionSystem
 
@@ -102,14 +102,14 @@ overworld/core.EventLog
 
 ## 3. Perk Hook System
 
-**Location:** `tactical/perks/`
+**Location:** `tactical/powers/perks/`
 
 ### 3.1 HookContext
 
 All nine hook types receive a `*HookContext`. Fields that are zero-valued for a given hook type are documented in the source comments.
 
 ```go
-// tactical/perks/hooks.go
+// tactical/powers/perks/hooks.go
 type HookContext struct {
     AttackerID      ecs.EntityID
     DefenderID      ecs.EntityID
@@ -126,60 +126,64 @@ type HookContext struct {
 
 `buildHookContext` in `queries.go` is the canonical constructor. It returns `nil` if the owner squad has no `PerkRoundState` component, which causes all runner functions to exit early without calling any hooks.
 
-### 3.2 PerkHooks Slots
+### 3.2 PerkBehavior Interface
 
-`PerkHooks` is the struct attached to each perk ID in the registry. All fields are optional; nil fields are skipped by runner functions.
+Each perk implements the `PerkBehavior` interface. Concrete behaviors embed `BasePerkBehavior` (which provides no-op defaults) and override only the hooks they need.
 
 ```go
-// tactical/perks/hooks.go
-type PerkHooks struct {
-    State             StateRequirements  // Declares state dependencies (zero value = StateNone = stateless)
-    AttackerDamageMod DamageModHook      // fires only when owning squad is the attacker
-    DefenderDamageMod DamageModHook      // fires only when owning squad is the defender
-    DefenderCoverMod  CoverModHook       // fires only when owning squad is the defender
-    TargetOverride    TargetOverrideHook
-    CounterMod        CounterModHook
-    PostDamage        PostDamageHook
-    TurnStart         TurnStartHook
-    DamageRedirect    DamageRedirectHook
-    DeathOverride     DeathOverrideHook
+// tactical/powers/perks/hooks.go
+type PerkBehavior interface {
+    PerkID() PerkID
+    AttackerDamageMod(ctx *HookContext, modifiers *combatcore.DamageModifiers)
+    DefenderDamageMod(ctx *HookContext, modifiers *combatcore.DamageModifiers)
+    DefenderCoverMod(ctx *HookContext, coverBreakdown *combatcore.CoverBreakdown)
+    TargetOverride(ctx *HookContext, defaultTargets []ecs.EntityID) []ecs.EntityID
+    CounterMod(ctx *HookContext, modifiers *combatcore.DamageModifiers) (skipCounter bool)
+    AttackerPostDamage(ctx *HookContext, damageDealt int, wasKill bool)
+    DefenderPostDamage(ctx *HookContext, damageDealt int, wasKill bool)
+    TurnStart(ctx *HookContext)
+    DamageRedirect(ctx *HookContext) (reducedDamage int, redirectTargetID ecs.EntityID, redirectAmount int)
+    DeathOverride(ctx *HookContext) (preventDeath bool)
 }
 ```
 
-**Type signatures for each slot:**
+**Hook method signatures:**
 
-| Slot | Signature |
+| Method | Signature |
 |---|---|
-| `AttackerDamageMod` | `func(ctx *HookContext, modifiers *combatcore.DamageModifiers)` |
-| `DefenderDamageMod` | `func(ctx *HookContext, modifiers *combatcore.DamageModifiers)` |
-| `DefenderCoverMod` | `func(ctx *HookContext, coverBreakdown *combatcore.CoverBreakdown)` |
-| `TargetOverride` | `func(ctx *HookContext, defaultTargets []ecs.EntityID) []ecs.EntityID` |
-| `CounterMod` | `func(ctx *HookContext, modifiers *combatcore.DamageModifiers) (skipCounter bool)` |
-| `PostDamage` | `func(ctx *HookContext, damageDealt int, wasKill bool)` |
-| `TurnStart` | `func(ctx *HookContext)` |
-| `DamageRedirect` | `func(ctx *HookContext) (reducedDamage int, redirectTargetID ecs.EntityID, redirectAmount int)` |
-| `DeathOverride` | `func(ctx *HookContext) (preventDeath bool)` |
+| `AttackerDamageMod` | `(ctx *HookContext, modifiers *combatcore.DamageModifiers)` |
+| `DefenderDamageMod` | `(ctx *HookContext, modifiers *combatcore.DamageModifiers)` |
+| `DefenderCoverMod` | `(ctx *HookContext, coverBreakdown *combatcore.CoverBreakdown)` |
+| `TargetOverride` | `(ctx *HookContext, defaultTargets []ecs.EntityID) []ecs.EntityID` |
+| `CounterMod` | `(ctx *HookContext, modifiers *combatcore.DamageModifiers) (skipCounter bool)` |
+| `AttackerPostDamage` | `(ctx *HookContext, damageDealt int, wasKill bool)` |
+| `DefenderPostDamage` | `(ctx *HookContext, damageDealt int, wasKill bool)` |
+| `TurnStart` | `(ctx *HookContext)` |
+| `DamageRedirect` | `(ctx *HookContext) (reducedDamage int, redirectTargetID ecs.EntityID, redirectAmount int)` |
+| `DeathOverride` | `(ctx *HookContext) (preventDeath bool)` |
 
 ### 3.3 Registry Pattern
 
-```go
-// tactical/perks/hooks.go
-var hookRegistry = map[string]*PerkHooks{}
+Perk IDs use the typed `PerkID` string type (`type PerkID string`) defined in `perkids.go`. All 21 perk ID constants are typed, preventing raw strings from being passed where a perk ID is expected.
 
-func RegisterPerkHooks(perkID string, hooks *PerkHooks) {
-    hookRegistry[perkID] = hooks
+```go
+// tactical/powers/perks/hooks.go
+var behaviorRegistry = map[PerkID]PerkBehavior{}
+
+func RegisterPerkBehavior(b PerkBehavior) {
+    behaviorRegistry[b.PerkID()] = b
 }
 
-func GetPerkHooks(perkID string) *PerkHooks {
-    return hookRegistry[perkID]
+func GetPerkBehavior(perkID PerkID) PerkBehavior {
+    return behaviorRegistry[perkID]
 }
 ```
 
-All `RegisterPerkHooks` calls happen inside an `init()` function in `tactical/perks/behaviors.go`. There are 24 perks registered across Tier 1 (Combat Conditioning) and Tier 2 (Combat Specialization). Several perks register multiple slots — for example, `bloodlust` registers both `PostDamage` and `AttackerDamageMod` so it can both track kills and apply the resulting bonus.
+All `RegisterPerkBehavior` calls happen inside `init()` functions across three behavior files: `behaviors_stateless.go` (11 perks), `behaviors_stateful_round.go` (7 perks), and `behaviors_stateful_battle.go` (3 perks). There are 21 perks registered across Tier 1 (Combat Conditioning) and Tier 2 (Combat Specialization). Each perk implements only the hook methods it needs; the rest are inherited as no-ops from `BasePerkBehavior`.
 
 ### 3.4 Runner Functions
 
-Runner functions live in `tactical/perks/queries.go`. They are the public API consumed by `combatservices/perk_dispatch.go` via the `PerkCallbacks` bridge. There are 10 runners:
+Runner functions live in `tactical/powers/perks/system.go`. They are the public API consumed by `combatservices/combat_power_dispatch.go` via the `PerkCallbacks` bridge. There are 10 runners:
 
 | Runner | Iterates perks of | Key behavior |
 |---|---|---|
@@ -194,22 +198,23 @@ Runner functions live in `tactical/perks/queries.go`. They are the public API co
 | `RunDeathOverrideHooks` | specified squad | returns `true` on first `preventDeath` return |
 | `RunDamageRedirectHooks` | defender squad | returns on first non-zero redirect target |
 
-All runners iterate `getActivePerkIDs(squadID, manager)`, which reads the `PerkSlotData.PerkIDs` slice on the squad entity. Perks fire in equipment order. Perks without a registered `*PerkHooks` entry or with a nil slot are silently skipped.
+All runners iterate `getActivePerkIDs(squadID, manager)`, which reads the `PerkSlotData.PerkIDs []PerkID` slice on the squad entity. Perks fire in equipment order. Perks without a registered `PerkBehavior` entry are silently skipped.
 
 ### 3.5 PerkRoundState Lifecycle
 
-`PerkRoundState` is an ECS component attached to each squad that has the `PerkSlotComponent`. It tracks three scopes of state:
+`PerkRoundState` is an ECS component attached to each squad that has the `PerkSlotComponent`. It stores two kinds of state:
 
-- **Per-turn fields** — reset by `ResetPerTurn()` before `TurnStartHooks` fire. Examples: `MovedThisTurn`, `AttackedThisTurn`, `RecklessVulnerable`.
-- **Per-round fields** — reset by `ResetPerRound()` when a new round begins (`OnTurnEnd` fires). Examples: `AttackedBy`, `KillsThisRound`, `DisruptionTargets`.
-- **Per-battle fields** — never reset during combat. Examples: `HasAttackedThisCombat`, `ResoluteUsed`, `GrudgeStacks`.
+- **Shared tracking fields** — live directly on the struct (e.g., `MovedThisTurn`, `AttackedThisTurn`, `WasAttackedThisTurn`). Set by the dispatch layer, read by multiple perks, reset by `ResetPerkRoundStateTurn`.
+- **Per-perk isolated state** — stored in two `map[PerkID]any` maps:
+  - `PerkState` — per-round state, cleared by `ResetPerkRoundStateRound`. Each perk defines its own state struct (e.g., `*RecklessAssaultState`, `*BloodlustState`) and accesses it via generic helpers `GetPerkState[T]`/`SetPerkState`.
+  - `PerkBattleState` — per-battle state, persists the entire combat, cleaned up by `CleanupRoundState`. Accessed via `GetBattleState[T]`/`SetBattleState`.
 
-`ResetPerTurn` snapshots the current turn's state into the `WasAttackedLastTurn`, `DidNotAttackLastTurn`, and `WasIdleLastTurn` fields before clearing, so `counterpunch` and `deadshots_patience` can read previous-turn information.
+`ResetPerkRoundStateTurn` snapshots the current turn's state into the `WasAttackedLastTurn`, `DidNotAttackLastTurn`, and `WasIdleLastTurn` fields before clearing, so `counterpunch` and `deadshots_patience` can read previous-turn information.
 
 The component declaration:
 
 ```go
-// tactical/perks/components.go
+// tactical/powers/perks/components.go
 var (
     PerkSlotComponent       *ecs.Component
     PerkRoundStateComponent *ecs.Component
@@ -217,7 +222,7 @@ var (
 )
 ```
 
-Initialization occurs in `tactical/perks/init.go` via the subsystem registration pattern.
+Initialization occurs in `tactical/powers/perks/init.go` via the subsystem registration pattern.
 
 ---
 
@@ -530,7 +535,7 @@ Each subsystem package calls `common.RegisterSubsystem` in its `init()` function
 | `effects` | `tactical/powers/effects/init.go` |
 | `spells` | `tactical/powers/spells/init.go` |
 | `artifacts` | `tactical/powers/artifacts/init.go` |
-| `perks` | `tactical/perks/init.go` |
+| `perks` | `tactical/powers/perks/init.go` |
 | `combatcore` | `tactical/combat/combatcore/combatcomponents.go` |
 | `commander` | `tactical/commander/init.go` |
 | `overworld/core` | `overworld/core/init.go` |
@@ -754,8 +759,8 @@ Note: `ResetSquadActions` fires before `onTurnEnd`. This means `TurnStart` perk 
 
 | System | Location | Pattern type | Subscriber model | When it fires |
 |---|---|---|---|---|
-| Perk hook registry | `tactical/perks/hooks.go` | Function-field struct keyed by perk ID | One `*PerkHooks` per perk ID | Called by runner functions during attack pipeline |
-| Perk runner functions | `tactical/perks/queries.go` | Named functions | Iterate all active perks on a squad | Called by `PerkCallbacks` inside `combatcore` |
+| Perk behavior registry | `tactical/powers/perks/hooks.go` | Interface + `map[PerkID]PerkBehavior` | One `PerkBehavior` per `PerkID` | Called by runner functions during attack pipeline |
+| Perk runner functions | `tactical/powers/perks/system.go` | Named functions | Iterate all active perks on a squad | Called by `PerkCallbacks` inside `combatcore` |
 | PerkCallbacks bridge | `tactical/combat/combatcore/perk_callbacks.go` | Function-pointer struct | Single injected set | Inside `ProcessAttackOnTargets`, `ProcessCounterattackOnTargets` |
 | Power dispatch wiring | `tactical/combat/combatservices/combat_power_dispatch.go` | Wires artifacts + perks to CombatService callbacks | N/A (wiring only) | At `NewCombatService` construction |
 | CombatService onAttackComplete | `tactical/combat/combatservices/combat_events.go` | `[]func` slice | Multi-subscriber | After `ExecuteAttackAction` succeeds |
