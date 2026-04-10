@@ -41,22 +41,6 @@
       "factionCount": 4,
       "factionMinSpacing": 25
     },
-    "military_base": {
-      "biome": "grassland",
-      "perimeterInset": 6,
-      "wallThickness": 1,
-      "gateWidth": 4,
-      "gateSide": 0,
-      "numGuardTowers": 4,
-      "guardTowerSize": 3,
-      "drillYardMinRatio": 0.30,
-      "numSupplyAreas": 2,
-      "supplyAreaMinSize": 5,
-      "supplyAreaMaxSize": 8,
-      "coverDensity": 0.02,
-      "numPOIScatter": 5,
-      "borderThickness": 2
-    },
     "garrison_raid": {
       "roomSizes": {
         "barracks": { "minW": 10, "maxW": 14, "minH": 8, "maxH": 11 },

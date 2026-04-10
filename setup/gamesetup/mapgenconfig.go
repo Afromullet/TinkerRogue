@@ -23,8 +23,6 @@ func InitMapGenConfigOverride() {
 			return buildCavernGenerator(cfg)
 		case "overworld":
 			return buildOverworldGenerator(cfg)
-		case "military_base":
-			return buildMilitaryBaseGenerator(cfg)
 		case "garrison_raid":
 			return buildGarrisonRaidGenerator(cfg)
 		default:
@@ -101,31 +99,6 @@ func buildOverworldGenerator(cfg *templates.JSONMapGenConfig) worldmap.MapGenera
 		FactionMinSpacing: jow.FactionMinSpacing,
 	}
 	return worldmap.NewStrategicOverworldGenerator(config)
-}
-
-func buildMilitaryBaseGenerator(cfg *templates.JSONMapGenConfig) worldmap.MapGenerator {
-	jmb := cfg.Generators.MilitaryBase
-	if jmb == nil {
-		return nil
-	}
-
-	config := worldmap.MilitaryBaseConfig{
-		Biome:             worldmap.BiomeFromString(jmb.Biome),
-		PerimeterInset:    jmb.PerimeterInset,
-		WallThickness:     jmb.WallThickness,
-		GateWidth:         jmb.GateWidth,
-		GateSide:          jmb.GateSide,
-		NumGuardTowers:    jmb.NumGuardTowers,
-		GuardTowerSize:    jmb.GuardTowerSize,
-		DrillYardMinRatio: jmb.DrillYardMinRatio,
-		NumSupplyAreas:    jmb.NumSupplyAreas,
-		SupplyAreaMinSize: jmb.SupplyAreaMinSize,
-		SupplyAreaMaxSize: jmb.SupplyAreaMaxSize,
-		CoverDensity:      jmb.CoverDensity,
-		NumPOIScatter:     jmb.NumPOIScatter,
-		BorderThickness:   jmb.BorderThickness,
-	}
-	return worldmap.NewMilitaryBaseGenerator(config)
 }
 
 func buildGarrisonRaidGenerator(cfg *templates.JSONMapGenConfig) worldmap.MapGenerator {

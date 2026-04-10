@@ -274,7 +274,6 @@ func validateMapGenConfig(config *JSONMapGenConfig) {
 	validateRoomsCorridorsConfig(g.RoomsCorridors)
 	validateCavernConfig(g.Cavern)
 	validateOverworldGenConfig(g.Overworld)
-	validateMilitaryBaseConfig(g.MilitaryBase)
 	validateGarrisonRaidConfig(g.GarrisonRaid)
 }
 
@@ -323,24 +322,6 @@ func validateOverworldGenConfig(ow *JSONOverworldGenConfig) {
 	}
 	if ow.FactionCount < 0 || ow.FactionMinSpacing < 0 {
 		panic("mapgenconfig: overworld faction values must be non-negative")
-	}
-}
-
-func validateMilitaryBaseConfig(mb *JSONMilitaryBaseConfig) {
-	if mb == nil {
-		return
-	}
-	validBiomes := map[string]bool{
-		"grassland": true, "forest": true, "desert": true, "mountain": true, "swamp": true,
-	}
-	if mb.Biome != "" && !validBiomes[mb.Biome] {
-		panic("mapgenconfig: military_base invalid biome: " + mb.Biome)
-	}
-	if mb.SupplyAreaMinSize > mb.SupplyAreaMaxSize {
-		panic("mapgenconfig: military_base supplyAreaMinSize must be <= supplyAreaMaxSize")
-	}
-	if mb.GateSide < 0 || mb.GateSide > 3 {
-		panic("mapgenconfig: military_base gateSide must be 0-3")
 	}
 }
 

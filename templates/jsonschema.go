@@ -350,7 +350,6 @@ type JSONMapGenerators struct {
 	RoomsCorridors *JSONRoomsCorridorsConfig `json:"rooms_corridors,omitempty"`
 	Cavern         *JSONCavernConfig         `json:"cavern,omitempty"`
 	Overworld      *JSONOverworldGenConfig   `json:"overworld,omitempty"`
-	MilitaryBase   *JSONMilitaryBaseConfig   `json:"military_base,omitempty"`
 	GarrisonRaid   *JSONGarrisonRaidConfig   `json:"garrison_raid,omitempty"`
 }
 
@@ -399,24 +398,6 @@ type JSONOverworldGenConfig struct {
 	POIMinDistance   int     `json:"poiMinDistance"`
 	FactionCount     int     `json:"factionCount"`
 	FactionMinSpacing int    `json:"factionMinSpacing"`
-}
-
-// JSONMilitaryBaseConfig holds military base generator parameters
-type JSONMilitaryBaseConfig struct {
-	Biome             string  `json:"biome"`
-	PerimeterInset    int     `json:"perimeterInset"`
-	WallThickness     int     `json:"wallThickness"`
-	GateWidth         int     `json:"gateWidth"`
-	GateSide          int     `json:"gateSide"`
-	NumGuardTowers    int     `json:"numGuardTowers"`
-	GuardTowerSize    int     `json:"guardTowerSize"`
-	DrillYardMinRatio float64 `json:"drillYardMinRatio"`
-	NumSupplyAreas    int     `json:"numSupplyAreas"`
-	SupplyAreaMinSize int     `json:"supplyAreaMinSize"`
-	SupplyAreaMaxSize int     `json:"supplyAreaMaxSize"`
-	CoverDensity      float64 `json:"coverDensity"`
-	NumPOIScatter     int     `json:"numPOIScatter"`
-	BorderThickness   int     `json:"borderThickness"`
 }
 
 // JSONGarrisonRaidConfig holds garrison raid generator parameters
