@@ -40,7 +40,7 @@ func init() {
 
 type BraceForImpactBehavior struct{ BasePerkBehavior }
 
-func (b *BraceForImpactBehavior) PerkID() string { return PerkBraceForImpact }
+func (b *BraceForImpactBehavior) PerkID() PerkID { return PerkBraceForImpact }
 
 func (b *BraceForImpactBehavior) DefenderCoverMod(ctx *HookContext, coverBreakdown *combatcore.CoverBreakdown) {
 	coverBreakdown.TotalReduction += PerkBalance.BraceForImpact.CoverBonus
@@ -56,7 +56,7 @@ func (b *BraceForImpactBehavior) DefenderCoverMod(ctx *HookContext, coverBreakdo
 
 type ExecutionersInstinctBehavior struct{ BasePerkBehavior }
 
-func (b *ExecutionersInstinctBehavior) PerkID() string { return PerkExecutionersInstinct }
+func (b *ExecutionersInstinctBehavior) PerkID() PerkID { return PerkExecutionersInstinct }
 
 func (b *ExecutionersInstinctBehavior) AttackerDamageMod(ctx *HookContext, modifiers *combatcore.DamageModifiers) {
 	unitIDs := squadcore.GetUnitIDsInSquad(ctx.DefenderSquadID, ctx.Manager)
@@ -80,7 +80,7 @@ func (b *ExecutionersInstinctBehavior) AttackerDamageMod(ctx *HookContext, modif
 
 type ShieldwallDisciplineBehavior struct{ BasePerkBehavior }
 
-func (b *ShieldwallDisciplineBehavior) PerkID() string { return PerkShieldwallDiscipline }
+func (b *ShieldwallDisciplineBehavior) PerkID() PerkID { return PerkShieldwallDiscipline }
 
 func (b *ShieldwallDisciplineBehavior) DefenderDamageMod(ctx *HookContext, modifiers *combatcore.DamageModifiers) {
 	tankCount := 0
@@ -119,7 +119,7 @@ func (b *ShieldwallDisciplineBehavior) DefenderDamageMod(ctx *HookContext, modif
 
 type IsolatedPredatorBehavior struct{ BasePerkBehavior }
 
-func (b *IsolatedPredatorBehavior) PerkID() string { return PerkIsolatedPredator }
+func (b *IsolatedPredatorBehavior) PerkID() PerkID { return PerkIsolatedPredator }
 
 func (b *IsolatedPredatorBehavior) AttackerDamageMod(ctx *HookContext, modifiers *combatcore.DamageModifiers) {
 	squadPos := common.GetComponentTypeByID[*coords.LogicalPosition](
@@ -157,7 +157,7 @@ func (b *IsolatedPredatorBehavior) AttackerDamageMod(ctx *HookContext, modifiers
 
 type VigilanceBehavior struct{ BasePerkBehavior }
 
-func (b *VigilanceBehavior) PerkID() string { return PerkVigilance }
+func (b *VigilanceBehavior) PerkID() PerkID { return PerkVigilance }
 
 func (b *VigilanceBehavior) DefenderDamageMod(ctx *HookContext, modifiers *combatcore.DamageModifiers) {
 	modifiers.SkipCrit = true
@@ -170,7 +170,7 @@ func (b *VigilanceBehavior) DefenderDamageMod(ctx *HookContext, modifiers *comba
 
 type FieldMedicBehavior struct{ BasePerkBehavior }
 
-func (b *FieldMedicBehavior) PerkID() string { return PerkFieldMedic }
+func (b *FieldMedicBehavior) PerkID() PerkID { return PerkFieldMedic }
 
 func (b *FieldMedicBehavior) TurnStart(ctx *HookContext) {
 	unitIDs := squadcore.GetUnitIDsInSquad(ctx.SquadID, ctx.Manager)
@@ -212,7 +212,7 @@ func (b *FieldMedicBehavior) TurnStart(ctx *HookContext) {
 
 type LastLineBehavior struct{ BasePerkBehavior }
 
-func (b *LastLineBehavior) PerkID() string { return PerkLastLine }
+func (b *LastLineBehavior) PerkID() PerkID { return PerkLastLine }
 
 func (b *LastLineBehavior) AttackerDamageMod(ctx *HookContext, modifiers *combatcore.DamageModifiers) {
 	faction := combatcore.GetSquadFaction(ctx.AttackerSquadID, ctx.Manager)
@@ -233,7 +233,7 @@ func (b *LastLineBehavior) AttackerDamageMod(ctx *HookContext, modifiers *combat
 
 type CleaveBehavior struct{ BasePerkBehavior }
 
-func (b *CleaveBehavior) PerkID() string { return PerkCleave }
+func (b *CleaveBehavior) PerkID() PerkID { return PerkCleave }
 
 func (b *CleaveBehavior) TargetOverride(ctx *HookContext, defaultTargets []ecs.EntityID) []ecs.EntityID {
 	targetData := common.GetComponentTypeByID[*squadcore.TargetRowData](
@@ -277,7 +277,7 @@ func (b *CleaveBehavior) AttackerDamageMod(ctx *HookContext, modifiers *combatco
 
 type RiposteBehavior struct{ BasePerkBehavior }
 
-func (b *RiposteBehavior) PerkID() string { return PerkRiposte }
+func (b *RiposteBehavior) PerkID() PerkID { return PerkRiposte }
 
 func (b *RiposteBehavior) CounterMod(ctx *HookContext, modifiers *combatcore.DamageModifiers) bool {
 	modifiers.HitPenalty = 0
@@ -291,7 +291,7 @@ func (b *RiposteBehavior) CounterMod(ctx *HookContext, modifiers *combatcore.Dam
 
 type GuardianProtocolBehavior struct{ BasePerkBehavior }
 
-func (b *GuardianProtocolBehavior) PerkID() string { return PerkGuardianProtocol }
+func (b *GuardianProtocolBehavior) PerkID() PerkID { return PerkGuardianProtocol }
 
 func (b *GuardianProtocolBehavior) DamageRedirect(ctx *HookContext) (int, ecs.EntityID, int) {
 	damageAmount := ctx.DamageAmount
@@ -352,7 +352,7 @@ func (b *GuardianProtocolBehavior) DamageRedirect(ctx *HookContext) (int, ecs.En
 
 type PrecisionStrikeBehavior struct{ BasePerkBehavior }
 
-func (b *PrecisionStrikeBehavior) PerkID() string { return PerkPrecisionStrike }
+func (b *PrecisionStrikeBehavior) PerkID() PerkID { return PerkPrecisionStrike }
 
 func (b *PrecisionStrikeBehavior) TargetOverride(ctx *HookContext, defaultTargets []ecs.EntityID) []ecs.EntityID {
 	attackerSquadID := getSquadIDForUnit(ctx.AttackerID, ctx.Manager)

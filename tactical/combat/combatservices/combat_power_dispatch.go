@@ -55,7 +55,7 @@ func setupPowerDispatch(cs *CombatService, manager *common.EntityManager, cache 
 	// ==========================================
 
 	// Wire perk activation logger for combat feedback.
-	perks.SetPerkLogger(func(perkID string, squadID ecs.EntityID, message string) {
+	perks.SetPerkLogger(func(perkID perks.PerkID, squadID ecs.EntityID, message string) {
 		fmt.Printf("[PERK] %s: %s (squad %d)\n", perkID, message, squadID)
 	})
 

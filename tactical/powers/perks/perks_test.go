@@ -20,7 +20,7 @@ func setupTestManager() *common.EntityManager {
 
 // createTestSquadWithPerks creates a squad entity and equips perks on it.
 // Returns the squad's EntityID.
-func createTestSquadWithPerks(manager *common.EntityManager, perkIDs ...string) ecs.EntityID {
+func createTestSquadWithPerks(manager *common.EntityManager, perkIDs ...PerkID) ecs.EntityID {
 	entity := manager.World.NewEntity()
 	squadID := entity.GetID()
 	slotData := &PerkSlotData{PerkIDs: perkIDs}
@@ -45,20 +45,20 @@ func setupTestBalance() {
 
 // setupTestPerkRegistry populates PerkRegistry with test definitions.
 func setupTestPerkRegistry() {
-	PerkRegistry = map[string]*PerkDefinition{
-		PerkCleave:           {ID: PerkCleave, ExclusiveWith: []string{PerkPrecisionStrike}},
-		PerkPrecisionStrike:  {ID: PerkPrecisionStrike, ExclusiveWith: []string{PerkCleave}},
-		PerkRecklessAssault:  {ID: PerkRecklessAssault, ExclusiveWith: []string{PerkStalwart}},
-		PerkStalwart:         {ID: PerkStalwart, ExclusiveWith: []string{PerkRecklessAssault}},
-		PerkBloodlust:        {ID: PerkBloodlust, ExclusiveWith: []string{PerkFieldMedic}},
-		PerkFieldMedic:       {ID: PerkFieldMedic, ExclusiveWith: []string{PerkBloodlust}},
-		PerkCounterpunch:     {ID: PerkCounterpunch, ExclusiveWith: []string{}},
-		PerkFortify:          {ID: PerkFortify, ExclusiveWith: []string{}},
-		PerkOpeningSalvo:     {ID: PerkOpeningSalvo, ExclusiveWith: []string{}},
-		PerkResolute:         {ID: PerkResolute, ExclusiveWith: []string{}},
-		PerkGrudgeBearer:     {ID: PerkGrudgeBearer, ExclusiveWith: []string{}},
-		PerkAdaptiveArmor:    {ID: PerkAdaptiveArmor, ExclusiveWith: []string{}},
-		PerkDeadshotsPatience: {ID: PerkDeadshotsPatience, ExclusiveWith: []string{}},
+	PerkRegistry = map[PerkID]*PerkDefinition{
+		PerkCleave:           {ID: PerkCleave, ExclusiveWith: []PerkID{PerkPrecisionStrike}},
+		PerkPrecisionStrike:  {ID: PerkPrecisionStrike, ExclusiveWith: []PerkID{PerkCleave}},
+		PerkRecklessAssault:  {ID: PerkRecklessAssault, ExclusiveWith: []PerkID{PerkStalwart}},
+		PerkStalwart:         {ID: PerkStalwart, ExclusiveWith: []PerkID{PerkRecklessAssault}},
+		PerkBloodlust:        {ID: PerkBloodlust, ExclusiveWith: []PerkID{PerkFieldMedic}},
+		PerkFieldMedic:       {ID: PerkFieldMedic, ExclusiveWith: []PerkID{PerkBloodlust}},
+		PerkCounterpunch:     {ID: PerkCounterpunch, ExclusiveWith: []PerkID{}},
+		PerkFortify:          {ID: PerkFortify, ExclusiveWith: []PerkID{}},
+		PerkOpeningSalvo:     {ID: PerkOpeningSalvo, ExclusiveWith: []PerkID{}},
+		PerkResolute:         {ID: PerkResolute, ExclusiveWith: []PerkID{}},
+		PerkGrudgeBearer:     {ID: PerkGrudgeBearer, ExclusiveWith: []PerkID{}},
+		PerkAdaptiveArmor:    {ID: PerkAdaptiveArmor, ExclusiveWith: []PerkID{}},
+		PerkDeadshotsPatience: {ID: PerkDeadshotsPatience, ExclusiveWith: []PerkID{}},
 	}
 }
 
@@ -603,8 +603,8 @@ func TestStalwart_NoEffectWhenMoved(t *testing.T) {
 
 func TestPerkLogger_CalledOnActivation(t *testing.T) {
 	var logged []string
-	SetPerkLogger(func(perkID string, squadID ecs.EntityID, message string) {
-		logged = append(logged, perkID+":"+message)
+	SetPerkLogger(func(perkID PerkID, squadID ecs.EntityID, message string) {
+		logged = append(logged, string(perkID)+":"+message)
 	})
 	defer SetPerkLogger(nil)
 

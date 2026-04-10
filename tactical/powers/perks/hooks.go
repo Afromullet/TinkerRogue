@@ -25,7 +25,7 @@ type HookContext struct {
 // PerkBehavior defines the contract for all perk implementations.
 // Perks embed BasePerkBehavior and override only the methods they need.
 type PerkBehavior interface {
-	PerkID() string
+	PerkID() PerkID
 
 	// Damage pipeline hooks
 	AttackerDamageMod(ctx *HookContext, modifiers *combatcore.DamageModifiers)
@@ -58,7 +58,7 @@ func (BasePerkBehavior) TargetOverride(_ *HookContext, defaultTargets []ecs.Enti
 }
 
 // PerkLogger is called when a perk activates, for combat log feedback.
-type PerkLogger func(perkID string, squadID ecs.EntityID, message string)
+type PerkLogger func(perkID PerkID, squadID ecs.EntityID, message string)
 
 var perkLogger PerkLogger
 
@@ -68,13 +68,13 @@ func SetPerkLogger(fn PerkLogger) {
 }
 
 // logPerkActivation logs a perk activation event if a logger is set.
-func logPerkActivation(perkID string, squadID ecs.EntityID, message string) {
+func logPerkActivation(perkID PerkID, squadID ecs.EntityID, message string) {
 	if perkLogger != nil {
 		perkLogger(perkID, squadID, message)
 	}
 }
 
-var behaviorRegistry = map[string]PerkBehavior{}
+var behaviorRegistry = map[PerkID]PerkBehavior{}
 
 // RegisterPerkBehavior registers a perk behavior by its PerkID.
 func RegisterPerkBehavior(b PerkBehavior) {
@@ -82,6 +82,6 @@ func RegisterPerkBehavior(b PerkBehavior) {
 }
 
 // GetPerkBehavior returns the behavior for a perk, or nil if not found.
-func GetPerkBehavior(perkID string) PerkBehavior {
+func GetPerkBehavior(perkID PerkID) PerkBehavior {
 	return behaviorRegistry[perkID]
 }

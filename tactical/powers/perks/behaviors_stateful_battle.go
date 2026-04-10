@@ -30,7 +30,7 @@ func init() {
 
 type OpeningSalvoBehavior struct{ BasePerkBehavior }
 
-func (b *OpeningSalvoBehavior) PerkID() string { return PerkOpeningSalvo }
+func (b *OpeningSalvoBehavior) PerkID() PerkID { return PerkOpeningSalvo }
 
 // openingSalvoDamageMod gives +35% damage on the squad's first attack of the combat.
 // State: reads/writes OpeningSalvoState via GetBattleState/SetBattleState (per-battle).
@@ -53,7 +53,7 @@ func (b *OpeningSalvoBehavior) AttackerDamageMod(ctx *HookContext, modifiers *co
 
 type ResoluteBehavior struct{ BasePerkBehavior }
 
-func (b *ResoluteBehavior) PerkID() string { return PerkResolute }
+func (b *ResoluteBehavior) PerkID() PerkID { return PerkResolute }
 
 // resoluteTurnStart snapshots current HP for the resolute death-save check.
 // State: writes ResoluteState.RoundStartHP via GetBattleState/SetBattleState (per-battle).
@@ -110,7 +110,7 @@ func (b *ResoluteBehavior) DeathOverride(ctx *HookContext) bool {
 
 type GrudgeBearerBehavior struct{ BasePerkBehavior }
 
-func (b *GrudgeBearerBehavior) PerkID() string { return PerkGrudgeBearer }
+func (b *GrudgeBearerBehavior) PerkID() PerkID { return PerkGrudgeBearer }
 
 // grudgeBearerPostDamage tracks damage received from enemy squads.
 // State: writes GrudgeBearerState.Stacks via GetBattleState/SetBattleState (per-battle).

@@ -57,13 +57,13 @@ func (c PerkCategory) String() string {
 // PerkDefinition is a static blueprint loaded from JSON.
 // The perk's ID is used as the key into the hook registry.
 type PerkDefinition struct {
-	ID            string       `json:"id"`
+	ID            PerkID       `json:"id"`
 	Name          string       `json:"name"`
 	Description   string       `json:"description"`
 	Tier          PerkTier     `json:"tier"`
 	Category      PerkCategory `json:"category"`
 	Roles         []string     `json:"roles"`         // ["Tank"], ["DPS", "Support"], etc.
-	ExclusiveWith []string     `json:"exclusiveWith"` // Mutually exclusive perk IDs
+	ExclusiveWith []PerkID     `json:"exclusiveWith"` // Mutually exclusive perk IDs
 	UnlockCost    int          `json:"unlockCost"`    // Perk points to unlock
 }
 
@@ -71,16 +71,16 @@ type PerkDefinition struct {
 const PerkDataPath = "gamedata/perkdata.json"
 
 // PerkRegistry is the global registry of all perk definitions, keyed by perk ID.
-var PerkRegistry = make(map[string]*PerkDefinition)
+var PerkRegistry = make(map[PerkID]*PerkDefinition)
 
 // GetPerkDefinition looks up a perk by ID. Returns nil if not found.
-func GetPerkDefinition(id string) *PerkDefinition {
+func GetPerkDefinition(id PerkID) *PerkDefinition {
 	return PerkRegistry[id]
 }
 
 // GetAllPerkIDs returns all perk IDs from the registry.
-func GetAllPerkIDs() []string {
-	ids := make([]string, 0, len(PerkRegistry))
+func GetAllPerkIDs() []PerkID {
+	ids := make([]PerkID, 0, len(PerkRegistry))
 	for id := range PerkRegistry {
 		ids = append(ids, id)
 	}

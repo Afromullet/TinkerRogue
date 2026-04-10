@@ -8,12 +8,12 @@ import (
 )
 
 // GetEquippedPerkIDs returns all perk IDs equipped on a squad (public accessor for GUI).
-func GetEquippedPerkIDs(squadID ecs.EntityID, manager *common.EntityManager) []string {
+func GetEquippedPerkIDs(squadID ecs.EntityID, manager *common.EntityManager) []PerkID {
 	return getActivePerkIDs(squadID, manager)
 }
 
 // getActivePerkIDs returns all perk IDs equipped on a squad.
-func getActivePerkIDs(squadID ecs.EntityID, manager *common.EntityManager) []string {
+func getActivePerkIDs(squadID ecs.EntityID, manager *common.EntityManager) []PerkID {
 	if data := common.GetComponentTypeByID[*PerkSlotData](
 		manager, squadID, PerkSlotComponent,
 	); data != nil {
@@ -23,7 +23,7 @@ func getActivePerkIDs(squadID ecs.EntityID, manager *common.EntityManager) []str
 }
 
 // HasPerk checks if a squad has a specific perk equipped.
-func HasPerk(squadID ecs.EntityID, perkID string, manager *common.EntityManager) bool {
+func HasPerk(squadID ecs.EntityID, perkID PerkID, manager *common.EntityManager) bool {
 	for _, id := range getActivePerkIDs(squadID, manager) {
 		if id == perkID {
 			return true

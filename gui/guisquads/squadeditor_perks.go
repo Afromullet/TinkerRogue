@@ -67,7 +67,7 @@ func (pc *perkPanelController) refreshPerkPanel() {
 
 	// Build equipped entries
 	equippedEntries := make([]interface{}, 0, len(equippedIDs))
-	equippedSet := make(map[string]bool, len(equippedIDs))
+	equippedSet := make(map[perks.PerkID]bool, len(equippedIDs))
 	for _, id := range equippedIDs {
 		def := perks.GetPerkDefinition(id)
 		if def != nil {
@@ -210,7 +210,7 @@ func formatPerkDetail(def *perks.PerkDefinition) string {
 			if exDef != nil {
 				names = append(names, exDef.Name)
 			} else {
-				names = append(names, exID)
+				names = append(names, string(exID))
 			}
 		}
 		b.WriteString(strings.Join(names, ", "))

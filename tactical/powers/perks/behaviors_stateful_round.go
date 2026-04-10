@@ -48,7 +48,7 @@ func init() {
 
 type RecklessAssaultBehavior struct{ BasePerkBehavior }
 
-func (b *RecklessAssaultBehavior) PerkID() string { return PerkRecklessAssault }
+func (b *RecklessAssaultBehavior) PerkID() PerkID { return PerkRecklessAssault }
 
 // recklessAssaultTurnStart resets vulnerability at the start of each turn.
 // State: writes RecklessAssaultState via SetPerkState (per-round).
@@ -81,7 +81,7 @@ func (b *RecklessAssaultBehavior) DefenderDamageMod(ctx *HookContext, modifiers 
 
 type StalwartBehavior struct{ BasePerkBehavior }
 
-func (b *StalwartBehavior) PerkID() string { return PerkStalwart }
+func (b *StalwartBehavior) PerkID() PerkID { return PerkStalwart }
 
 // stalwartCounterMod gives full-damage counters if the squad did not move.
 // State: reads PerkRoundState.MovedThisTurn (shared tracking, set by dispatch).
@@ -97,7 +97,7 @@ func (b *StalwartBehavior) CounterMod(ctx *HookContext, modifiers *combatcore.Da
 
 type FortifyBehavior struct{ BasePerkBehavior }
 
-func (b *FortifyBehavior) PerkID() string { return PerkFortify }
+func (b *FortifyBehavior) PerkID() PerkID { return PerkFortify }
 
 // fortifyTurnStart increments stationary counter if squad didn't move.
 // State: reads MovedThisTurn, writes TurnsStationary (shared tracking).
@@ -132,7 +132,7 @@ func (b *FortifyBehavior) DefenderCoverMod(ctx *HookContext, coverBreakdown *com
 
 type CounterpunchBehavior struct{ BasePerkBehavior }
 
-func (b *CounterpunchBehavior) PerkID() string { return PerkCounterpunch }
+func (b *CounterpunchBehavior) PerkID() PerkID { return PerkCounterpunch }
 
 // counterpunchTurnStart arms the counterpunch bonus based on last-turn snapshots.
 // State: reads WasAttackedLastTurn, DidNotAttackLastTurn (shared snapshots);
@@ -158,7 +158,7 @@ func (b *CounterpunchBehavior) AttackerDamageMod(ctx *HookContext, modifiers *co
 
 type DeadshotsPatienceBehavior struct{ BasePerkBehavior }
 
-func (b *DeadshotsPatienceBehavior) PerkID() string { return PerkDeadshotsPatience }
+func (b *DeadshotsPatienceBehavior) PerkID() PerkID { return PerkDeadshotsPatience }
 
 // deadshotTurnStart arms the deadshot bonus if the squad was idle last turn.
 // State: reads WasIdleLastTurn (shared snapshot);
@@ -194,7 +194,7 @@ func (b *DeadshotsPatienceBehavior) AttackerDamageMod(ctx *HookContext, modifier
 
 type AdaptiveArmorBehavior struct{ BasePerkBehavior }
 
-func (b *AdaptiveArmorBehavior) PerkID() string { return PerkAdaptiveArmor }
+func (b *AdaptiveArmorBehavior) PerkID() PerkID { return PerkAdaptiveArmor }
 
 // adaptiveArmorDamageMod reduces damage from repeated attackers.
 // State: reads/writes AdaptiveArmorState via GetPerkState/SetPerkState (per-round).
@@ -218,7 +218,7 @@ func (b *AdaptiveArmorBehavior) DefenderDamageMod(ctx *HookContext, modifiers *c
 
 type BloodlustBehavior struct{ BasePerkBehavior }
 
-func (b *BloodlustBehavior) PerkID() string { return PerkBloodlust }
+func (b *BloodlustBehavior) PerkID() PerkID { return PerkBloodlust }
 
 // bloodlustPostDamage tracks kills this round.
 // State: writes BloodlustState via SetPerkState (per-round).

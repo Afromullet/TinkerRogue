@@ -13,7 +13,7 @@ const MaxPerkSlots = 3
 // EquipPerk adds a perk to a squad's perk slot.
 // Returns an error if the perk is already equipped, the slot is full,
 // or the perk is exclusive with an already-equipped perk.
-func EquipPerk(squadID ecs.EntityID, perkID string, maxSlots int, manager *common.EntityManager) error {
+func EquipPerk(squadID ecs.EntityID, perkID PerkID, maxSlots int, manager *common.EntityManager) error {
 	def := GetPerkDefinition(perkID)
 	if def == nil {
 		return fmt.Errorf("perk %q not found in registry", perkID)
@@ -27,7 +27,7 @@ func EquipPerk(squadID ecs.EntityID, perkID string, maxSlots int, manager *commo
 	slotData := common.GetComponentType[*PerkSlotData](entity, PerkSlotComponent)
 	if slotData == nil {
 		// Squad doesn't have a PerkSlotComponent yet; add one
-		slotData = &PerkSlotData{PerkIDs: []string{}}
+		slotData = &PerkSlotData{PerkIDs: []PerkID{}}
 		entity.AddComponent(PerkSlotComponent, slotData)
 	}
 
@@ -57,7 +57,7 @@ func EquipPerk(squadID ecs.EntityID, perkID string, maxSlots int, manager *commo
 }
 
 // UnequipPerk removes a perk from a squad's perk slot.
-func UnequipPerk(squadID ecs.EntityID, perkID string, manager *common.EntityManager) error {
+func UnequipPerk(squadID ecs.EntityID, perkID PerkID, manager *common.EntityManager) error {
 	slotData := common.GetComponentTypeByID[*PerkSlotData](manager, squadID, PerkSlotComponent)
 	if slotData == nil {
 		return fmt.Errorf("squad %d has no perks equipped", squadID)

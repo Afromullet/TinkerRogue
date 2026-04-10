@@ -7,7 +7,7 @@ import (
 // PerkSlotData stores equipped perks on a squad entity.
 // Number of available slots scales with squad progression.
 type PerkSlotData struct {
-	PerkIDs []string // Equipped perk IDs (max based on squad level)
+	PerkIDs []PerkID // Equipped perk IDs (max based on squad level)
 }
 
 // PerkRoundState tracks combat state needed by perks.
@@ -50,17 +50,17 @@ type PerkRoundState struct {
 	// PerkState holds per-perk state structs, keyed by perk ID.
 	// Each perk defines its own state struct and accesses it via GetPerkState/SetPerkState.
 	// Cleared entirely by ResetPerRound; per-battle state uses PerkBattleState instead.
-	PerkState map[string]any
+	PerkState map[PerkID]any
 
 	// PerkBattleState holds per-perk state that persists the entire combat.
 	// Never reset during combat; cleaned up by CleanupRoundState.
-	PerkBattleState map[string]any
+	PerkBattleState map[PerkID]any
 }
 
 // ---- Shared state map helpers ----
 
-// getFromMap retrieves a typed value from a string-keyed map, returning zero value if missing or wrong type.
-func getFromMap[T any](m map[string]any, key string) T {
+// getFromMap retrieves a typed value from a PerkID-keyed map, returning zero value if missing or wrong type.
+func getFromMap[T any](m map[PerkID]any, key PerkID) T {
 	var zero T
 	if m == nil {
 		return zero
@@ -76,16 +76,16 @@ func getFromMap[T any](m map[string]any, key string) T {
 	return typed
 }
 
-// setInMap stores a value in a string-keyed map, lazily initializing the map if nil.
-func setInMap(m *map[string]any, key string, val any) {
+// setInMap stores a value in a PerkID-keyed map, lazily initializing the map if nil.
+func setInMap(m *map[PerkID]any, key PerkID, val any) {
 	if *m == nil {
-		*m = make(map[string]any)
+		*m = make(map[PerkID]any)
 	}
 	(*m)[key] = val
 }
 
 // getOrInitFromMap retrieves a typed value, or initializes it via initFn and stores it.
-func getOrInitFromMap[T any](m *map[string]any, key string, initFn func() T) T {
+func getOrInitFromMap[T any](m *map[PerkID]any, key PerkID, initFn func() T) T {
 	if *m != nil {
 		if v, ok := (*m)[key]; ok {
 			if typed, ok := v.(T); ok {
@@ -101,34 +101,34 @@ func getOrInitFromMap[T any](m *map[string]any, key string, initFn func() T) T {
 // ---- Per-perk round state accessors ----
 
 // GetPerkState returns the per-perk round state for the given perk ID, or zero value.
-func GetPerkState[T any](s *PerkRoundState, perkID string) T {
+func GetPerkState[T any](s *PerkRoundState, perkID PerkID) T {
 	return getFromMap[T](s.PerkState, perkID)
 }
 
 // GetOrInitPerkState returns existing per-perk round state, or initializes it via initFn.
-func GetOrInitPerkState[T any](s *PerkRoundState, perkID string, initFn func() T) T {
+func GetOrInitPerkState[T any](s *PerkRoundState, perkID PerkID, initFn func() T) T {
 	return getOrInitFromMap[T](&s.PerkState, perkID, initFn)
 }
 
 // SetPerkState stores per-perk round state for the given perk ID.
-func SetPerkState(s *PerkRoundState, perkID string, state any) {
+func SetPerkState(s *PerkRoundState, perkID PerkID, state any) {
 	setInMap(&s.PerkState, perkID, state)
 }
 
 // ---- Per-perk battle state accessors ----
 
 // GetBattleState returns the per-perk battle state for the given perk ID, or zero value.
-func GetBattleState[T any](s *PerkRoundState, perkID string) T {
+func GetBattleState[T any](s *PerkRoundState, perkID PerkID) T {
 	return getFromMap[T](s.PerkBattleState, perkID)
 }
 
 // GetOrInitBattleState returns existing per-perk battle state, or initializes it via initFn.
-func GetOrInitBattleState[T any](s *PerkRoundState, perkID string, initFn func() T) T {
+func GetOrInitBattleState[T any](s *PerkRoundState, perkID PerkID, initFn func() T) T {
 	return getOrInitFromMap[T](&s.PerkBattleState, perkID, initFn)
 }
 
 // SetBattleState stores per-perk battle state for the given perk ID.
-func SetBattleState(s *PerkRoundState, perkID string, state any) {
+func SetBattleState(s *PerkRoundState, perkID PerkID, state any) {
 	setInMap(&s.PerkBattleState, perkID, state)
 }
 
