@@ -1,4 +1,4 @@
-package worldmap
+package garrison
 
 import "game_main/common"
 
@@ -303,8 +303,8 @@ func findDownstreamCriticalNodes(dag *FloorDAG, nodeID int) []int {
 	return nil
 }
 
-// topologicalSort returns DAG nodes in topological order (parents before children).
-func topologicalSort(dag *FloorDAG) []*FloorNode {
+// TopologicalSort returns DAG nodes in topological order (parents before children).
+func TopologicalSort(dag *FloorDAG) []*FloorNode {
 	inDegree := make(map[int]int)
 	for _, n := range dag.Nodes {
 		if _, ok := inDegree[n.ID]; !ok {
@@ -339,10 +339,10 @@ func topologicalSort(dag *FloorDAG) []*FloorNode {
 	return sorted
 }
 
-// dagDepth returns the depth of each node (longest path from any root).
-func dagDepth(dag *FloorDAG) map[int]int {
+// DagDepth returns the depth of each node (longest path from any root).
+func DagDepth(dag *FloorDAG) map[int]int {
 	depth := make(map[int]int)
-	sorted := topologicalSort(dag)
+	sorted := TopologicalSort(dag)
 	for _, node := range sorted {
 		maxParentDepth := -1
 		for _, parentID := range node.Parents {

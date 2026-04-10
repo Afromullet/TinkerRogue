@@ -2,18 +2,18 @@ package raid
 
 import (
 	"game_main/common"
-	"game_main/world/worldmap"
+	"game_main/world/worldmap/garrison"
 )
 
 // AssignArchetypesToFloor determines which archetype should defend each room.
 // Returns a map of nodeID → archetype name.
 // Rest rooms and stairs get no assignment (not present in returned map).
-func AssignArchetypesToFloor(dag *worldmap.FloorDAG, floorNumber int) map[int]string {
+func AssignArchetypesToFloor(dag *garrison.FloorDAG, floorNumber int) map[int]string {
 	assignments := make(map[int]string)
 
 	for _, node := range dag.Nodes {
 		// Skip non-combat rooms
-		if node.RoomType == worldmap.GarrisonRoomRestRoom || node.RoomType == worldmap.GarrisonRoomStairs {
+		if node.RoomType == garrison.GarrisonRoomRestRoom || node.RoomType == garrison.GarrisonRoomStairs {
 			continue
 		}
 

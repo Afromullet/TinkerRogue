@@ -1,10 +1,13 @@
-package worldmap
+package garrison
 
-import "game_main/common"
+import (
+	"game_main/common"
+	"game_main/world/worldmap"
+)
 
 // injectGarrisonTerrain dispatches to per-room-type terrain injection.
 // Called after rooms are carved to add tactical features (pillars, barricades, alcoves).
-func injectGarrisonTerrain(roomType string, room Rect, width int, result *GenerationResult, images TileImageSet) {
+func injectGarrisonTerrain(roomType string, room worldmap.Rect, width int, result *worldmap.GenerationResult, images worldmap.TileImageSet) {
 	switch roomType {
 	case GarrisonRoomGuardPost:
 		injectGuardPostTerrain(room, width, result, images)
@@ -28,22 +31,22 @@ func injectGarrisonTerrain(roomType string, room Rect, width int, result *Genera
 
 // setTileWall sets a floor tile back to wall for terrain features.
 // Bounds-checked; no-op if out of range.
-func setTileWall(result *GenerationResult, x, y, width int, images TileImageSet) {
+func setTileWall(result *worldmap.GenerationResult, x, y, width int, images worldmap.TileImageSet) {
 	numTiles := len(result.Tiles)
 	height := numTiles / width
 	if x < 0 || y < 0 || x >= width || y >= height {
 		return
 	}
-	idx := positionToIndex(x, y)
+	idx := worldmap.PositionToIndex(x, y)
 	if idx >= 0 && idx < numTiles {
 		result.Tiles[idx].Blocked = true
-		result.Tiles[idx].TileType = WALL
-		result.Tiles[idx].Image = selectRandomImage(images.WallImages)
+		result.Tiles[idx].TileType = worldmap.WALL
+		result.Tiles[idx].Image = worldmap.SelectRandomImage(images.WallImages)
 	}
 }
 
 // place2x2Pillar places a 2x2 wall block at (px, py).
-func place2x2Pillar(result *GenerationResult, px, py, width int, images TileImageSet) {
+func place2x2Pillar(result *worldmap.GenerationResult, px, py, width int, images worldmap.TileImageSet) {
 	for dx := 0; dx < 2; dx++ {
 		for dy := 0; dy < 2; dy++ {
 			setTileWall(result, px+dx, py+dy, width, images)
@@ -52,14 +55,14 @@ func place2x2Pillar(result *GenerationResult, px, py, width int, images TileImag
 }
 
 // placeHorizontalWall places a horizontal wall segment of given length starting at (x, y).
-func placeHorizontalWall(result *GenerationResult, x, y, length, width int, images TileImageSet) {
+func placeHorizontalWall(result *worldmap.GenerationResult, x, y, length, width int, images worldmap.TileImageSet) {
 	for dx := 0; dx < length; dx++ {
 		setTileWall(result, x+dx, y, width, images)
 	}
 }
 
 // placeVerticalWall places a vertical wall segment of given length starting at (x, y).
-func placeVerticalWall(result *GenerationResult, x, y, length, width int, images TileImageSet) {
+func placeVerticalWall(result *worldmap.GenerationResult, x, y, length, width int, images worldmap.TileImageSet) {
 	for dy := 0; dy < length; dy++ {
 		setTileWall(result, x, y+dy, width, images)
 	}
@@ -67,7 +70,7 @@ func placeVerticalWall(result *GenerationResult, x, y, length, width int, images
 
 // placeUAlcove places a U-shaped wall alcove opening in the specified direction.
 // direction: 0=north(open top), 1=south(open bottom), 2=east(open right), 3=west(open left)
-func placeUAlcove(result *GenerationResult, x, y, alcoveW, alcoveH, openDir, width int, images TileImageSet) {
+func placeUAlcove(result *worldmap.GenerationResult, x, y, alcoveW, alcoveH, openDir, width int, images worldmap.TileImageSet) {
 	switch openDir {
 	case 0: // Open north: bottom wall + left wall + right wall
 		placeHorizontalWall(result, x, y+alcoveH-1, alcoveW, width, images)
@@ -90,7 +93,7 @@ func placeUAlcove(result *GenerationResult, x, y, alcoveW, alcoveH, openDir, wid
 
 // placeLCorner places an L-shaped wall corner.
 // orientation: 0=NE, 1=NW, 2=SE, 3=SW
-func placeLCorner(result *GenerationResult, x, y, armLen, orientation, width int, images TileImageSet) {
+func placeLCorner(result *worldmap.GenerationResult, x, y, armLen, orientation, width int, images worldmap.TileImageSet) {
 	switch orientation {
 	case 0: // NE: horizontal going right + vertical going up
 		placeHorizontalWall(result, x, y, armLen, width, images)
@@ -110,7 +113,7 @@ func placeLCorner(result *GenerationResult, x, y, armLen, orientation, width int
 // placeBarricadeLine places a horizontal or vertical barricade with gaps.
 // isHorizontal: true=horizontal line, false=vertical line.
 // gapInterval: place a 2-tile gap every N tiles.
-func placeBarricadeLine(result *GenerationResult, x, y int, isHorizontal bool, totalLen, gapInterval, width int, images TileImageSet) {
+func placeBarricadeLine(result *worldmap.GenerationResult, x, y int, isHorizontal bool, totalLen, gapInterval, width int, images worldmap.TileImageSet) {
 	for i := 0; i < totalLen; i++ {
 		// Skip gap positions
 		if gapInterval > 0 && i > 0 && i%gapInterval >= gapInterval-2 {
@@ -125,7 +128,7 @@ func placeBarricadeLine(result *GenerationResult, x, y int, isHorizontal bool, t
 }
 
 // placePillarRow places a row of 1x1 pillars with specified spacing.
-func placePillarRow(result *GenerationResult, startX, startY int, isHorizontal bool, count, spacing, width int, images TileImageSet) {
+func placePillarRow(result *worldmap.GenerationResult, startX, startY int, isHorizontal bool, count, spacing, width int, images worldmap.TileImageSet) {
 	for i := 0; i < count; i++ {
 		if isHorizontal {
 			setTileWall(result, startX+i*spacing, startY, width, images)
@@ -136,13 +139,13 @@ func placePillarRow(result *GenerationResult, startX, startY int, isHorizontal b
 }
 
 // placeSpacedPillars places 2x2 pillars with minimum spacing, returns positions placed.
-func placeSpacedPillars(result *GenerationResult, room Rect, count, minSpacing, width int, images TileImageSet, use1x1 bool) [][2]int {
+func placeSpacedPillars(result *worldmap.GenerationResult, room worldmap.Rect, count, minSpacing, width int, images worldmap.TileImageSet, use1x1 bool) [][2]int {
 	positions := make([][2]int, 0, count)
 	for attempt := 0; attempt < count*20 && len(positions) < count; attempt++ {
 		px := common.GetRandomBetween(room.X1+3, room.X2-4)
 		py := common.GetRandomBetween(room.Y1+3, room.Y2-4)
 
-		if isTooCloseToAny(px, py, positions, minSpacing) {
+		if worldmap.IsTooCloseToAny(px, py, positions, minSpacing) {
 			continue
 		}
 
@@ -160,7 +163,7 @@ func placeSpacedPillars(result *GenerationResult, room Rect, count, minSpacing, 
 // GUARD POST: Chokepoint defense
 // ========================================
 
-func injectGuardPostTerrain(room Rect, width int, result *GenerationResult, images TileImageSet) {
+func injectGuardPostTerrain(room worldmap.Rect, width int, result *worldmap.GenerationResult, images worldmap.TileImageSet) {
 	variant := common.GetRandomBetween(0, 2)
 	switch variant {
 	case 0:
@@ -173,7 +176,7 @@ func injectGuardPostTerrain(room Rect, width int, result *GenerationResult, imag
 }
 
 // Layout A: Two 2x2 pillars flanking center chokepoint + rear wall segment.
-func injectGuardPostDoublePillar(room Rect, width int, result *GenerationResult, images TileImageSet) {
+func injectGuardPostDoublePillar(room worldmap.Rect, width int, result *worldmap.GenerationResult, images worldmap.TileImageSet) {
 	cx := (room.X1 + room.X2) / 2
 	cy := (room.Y1 + room.Y2) / 2
 
@@ -193,7 +196,7 @@ func injectGuardPostDoublePillar(room Rect, width int, result *GenerationResult,
 }
 
 // Layout B: Two staggered horizontal walls with gaps at opposite ends.
-func injectGuardPostStaggeredWalls(room Rect, width int, result *GenerationResult, images TileImageSet) {
+func injectGuardPostStaggeredWalls(room worldmap.Rect, width int, result *worldmap.GenerationResult, images worldmap.TileImageSet) {
 	roomW := room.X2 - room.X1
 	roomH := room.Y2 - room.Y1
 
@@ -215,7 +218,7 @@ func injectGuardPostStaggeredWalls(room Rect, width int, result *GenerationResul
 }
 
 // Layout C: U-shaped kill box opening toward entry, with attacker cover pillar.
-func injectGuardPostKillBox(room Rect, width int, result *GenerationResult, images TileImageSet) {
+func injectGuardPostKillBox(room worldmap.Rect, width int, result *worldmap.GenerationResult, images worldmap.TileImageSet) {
 	roomW := room.X2 - room.X1
 	roomH := room.Y2 - room.Y1
 
@@ -237,7 +240,7 @@ func injectGuardPostKillBox(room Rect, width int, result *GenerationResult, imag
 // BARRACKS: Large combat room with scattered obstacles
 // ========================================
 
-func injectBarracksTerrain(room Rect, width int, result *GenerationResult, images TileImageSet) {
+func injectBarracksTerrain(room worldmap.Rect, width int, result *worldmap.GenerationResult, images worldmap.TileImageSet) {
 	variant := common.GetRandomBetween(0, 2)
 	switch variant {
 	case 0:
@@ -250,7 +253,7 @@ func injectBarracksTerrain(room Rect, width int, result *GenerationResult, image
 }
 
 // Layout A: Mixed 1x1 and 2x2 pillars + short lane-dividing wall segments.
-func injectBarracksScatteredPillars(room Rect, width int, result *GenerationResult, images TileImageSet) {
+func injectBarracksScatteredPillars(room worldmap.Rect, width int, result *worldmap.GenerationResult, images worldmap.TileImageSet) {
 	roomH := room.Y2 - room.Y1
 
 	// 3-4 pillars (mix of sizes)
@@ -266,7 +269,7 @@ func injectBarracksScatteredPillars(room Rect, width int, result *GenerationResu
 }
 
 // Layout B: Bunk rows - vertical wall segments creating lanes.
-func injectBarracksBunkRows(room Rect, width int, result *GenerationResult, images TileImageSet) {
+func injectBarracksBunkRows(room worldmap.Rect, width int, result *worldmap.GenerationResult, images worldmap.TileImageSet) {
 	roomW := room.X2 - room.X1
 	roomH := room.Y2 - room.Y1
 
@@ -291,7 +294,7 @@ func injectBarracksBunkRows(room Rect, width int, result *GenerationResult, imag
 }
 
 // Layout C: Training yard - open center with pillar ring at edges.
-func injectBarracksTrainingYard(room Rect, width int, result *GenerationResult, images TileImageSet) {
+func injectBarracksTrainingYard(room worldmap.Rect, width int, result *worldmap.GenerationResult, images worldmap.TileImageSet) {
 	roomW := room.X2 - room.X1
 	roomH := room.Y2 - room.Y1
 
@@ -321,7 +324,7 @@ func injectBarracksTrainingYard(room Rect, width int, result *GenerationResult, 
 // ARMORY: Divided room with barricade line
 // ========================================
 
-func injectArmoryTerrain(room Rect, width int, result *GenerationResult, images TileImageSet) {
+func injectArmoryTerrain(room worldmap.Rect, width int, result *worldmap.GenerationResult, images worldmap.TileImageSet) {
 	variant := common.GetRandomBetween(0, 1)
 	switch variant {
 	case 0:
@@ -332,7 +335,7 @@ func injectArmoryTerrain(room Rect, width int, result *GenerationResult, images 
 }
 
 // Layout A: Barricade at ~40% depth with gaps + approach cover pillar.
-func injectArmoryBarricadeLine(room Rect, width int, result *GenerationResult, images TileImageSet) {
+func injectArmoryBarricadeLine(room worldmap.Rect, width int, result *worldmap.GenerationResult, images worldmap.TileImageSet) {
 	roomW := room.X2 - room.X1
 	roomH := room.Y2 - room.Y1
 
@@ -358,7 +361,7 @@ func injectArmoryBarricadeLine(room Rect, width int, result *GenerationResult, i
 }
 
 // Layout B: Weapon racks - parallel horizontal walls creating center aisle.
-func injectArmoryWeaponRacks(room Rect, width int, result *GenerationResult, images TileImageSet) {
+func injectArmoryWeaponRacks(room worldmap.Rect, width int, result *worldmap.GenerationResult, images worldmap.TileImageSet) {
 	roomW := room.X2 - room.X1
 	roomH := room.Y2 - room.Y1
 
@@ -385,7 +388,7 @@ func injectArmoryWeaponRacks(room Rect, width int, result *GenerationResult, ima
 // COMMAND POST: Fortified inner chamber
 // ========================================
 
-func injectCommandPostTerrain(room Rect, width int, result *GenerationResult, images TileImageSet) {
+func injectCommandPostTerrain(room worldmap.Rect, width int, result *worldmap.GenerationResult, images worldmap.TileImageSet) {
 	variant := common.GetRandomBetween(0, 1)
 	switch variant {
 	case 0:
@@ -396,7 +399,7 @@ func injectCommandPostTerrain(room Rect, width int, result *GenerationResult, im
 }
 
 // Layout A: U-shaped rear alcove with flanking pillars + staging cover.
-func injectCommandPostUAlcove(room Rect, width int, result *GenerationResult, images TileImageSet) {
+func injectCommandPostUAlcove(room worldmap.Rect, width int, result *worldmap.GenerationResult, images worldmap.TileImageSet) {
 	roomW := room.X2 - room.X1
 	roomH := room.Y2 - room.Y1
 
@@ -427,7 +430,7 @@ func injectCommandPostUAlcove(room Rect, width int, result *GenerationResult, im
 }
 
 // Layout B: War table (3x3 central block) + quadrant pillars.
-func injectCommandPostWarTable(room Rect, width int, result *GenerationResult, images TileImageSet) {
+func injectCommandPostWarTable(room worldmap.Rect, width int, result *worldmap.GenerationResult, images worldmap.TileImageSet) {
 	cx := (room.X1 + room.X2) / 2
 	cy := (room.Y1 + room.Y2) / 2
 
@@ -452,7 +455,7 @@ func injectCommandPostWarTable(room Rect, width int, result *GenerationResult, i
 // PATROL ROUTE: Wide open, minimal cover
 // ========================================
 
-func injectPatrolRouteTerrain(room Rect, width int, result *GenerationResult, images TileImageSet) {
+func injectPatrolRouteTerrain(room worldmap.Rect, width int, result *worldmap.GenerationResult, images worldmap.TileImageSet) {
 	variant := common.GetRandomBetween(0, 1)
 	switch variant {
 	case 0:
@@ -463,7 +466,7 @@ func injectPatrolRouteTerrain(room Rect, width int, result *GenerationResult, im
 }
 
 // Layout A: 1-2 pillars near entry + short wall at far end.
-func injectPatrolRouteOpenSparse(room Rect, width int, result *GenerationResult, images TileImageSet) {
+func injectPatrolRouteOpenSparse(room worldmap.Rect, width int, result *worldmap.GenerationResult, images worldmap.TileImageSet) {
 	// 1-2 small pillars in entry third
 	numPillars := common.GetRandomBetween(1, 2)
 	entryThird := room.X1 + (room.X2-room.X1)/3
@@ -479,7 +482,7 @@ func injectPatrolRouteOpenSparse(room Rect, width int, result *GenerationResult,
 }
 
 // Layout B: Four 1x1 pillars along top and bottom edges only.
-func injectPatrolRouteBorderPillars(room Rect, width int, result *GenerationResult, images TileImageSet) {
+func injectPatrolRouteBorderPillars(room worldmap.Rect, width int, result *worldmap.GenerationResult, images worldmap.TileImageSet) {
 	roomW := room.X2 - room.X1
 	spacing := max(3, roomW/4)
 
@@ -497,7 +500,7 @@ func injectPatrolRouteBorderPillars(room Rect, width int, result *GenerationResu
 // MAGE TOWER: Vertical pillar gauntlet
 // ========================================
 
-func injectMageTowerTerrain(room Rect, width int, result *GenerationResult, images TileImageSet) {
+func injectMageTowerTerrain(room worldmap.Rect, width int, result *worldmap.GenerationResult, images worldmap.TileImageSet) {
 	variant := common.GetRandomBetween(0, 1)
 	switch variant {
 	case 0:
@@ -508,7 +511,7 @@ func injectMageTowerTerrain(room Rect, width int, result *GenerationResult, imag
 }
 
 // Layout A: 4-6 staggered pillars (mix 1x1 and 2x2), no two share X or Y.
-func injectMageTowerStaggeredGrid(room Rect, width int, result *GenerationResult, images TileImageSet) {
+func injectMageTowerStaggeredGrid(room worldmap.Rect, width int, result *worldmap.GenerationResult, images worldmap.TileImageSet) {
 	numPillars := common.GetRandomBetween(4, 6)
 	positions := make([][2]int, 0, numPillars)
 
@@ -517,7 +520,7 @@ func injectMageTowerStaggeredGrid(room Rect, width int, result *GenerationResult
 		py := common.GetRandomBetween(room.Y1+3, room.Y2-4)
 
 		// Enforce minimum 3-tile spacing AND staggering
-		if isTooCloseToAny(px, py, positions, 3) {
+		if worldmap.IsTooCloseToAny(px, py, positions, 3) {
 			continue
 		}
 
@@ -531,7 +534,7 @@ func injectMageTowerStaggeredGrid(room Rect, width int, result *GenerationResult
 }
 
 // Layout B: Winding approach with staggered vertical walls + rear strongpoint.
-func injectMageTowerArcaneCorridor(room Rect, width int, result *GenerationResult, images TileImageSet) {
+func injectMageTowerArcaneCorridor(room worldmap.Rect, width int, result *worldmap.GenerationResult, images worldmap.TileImageSet) {
 	roomW := room.X2 - room.X1
 	roomH := room.Y2 - room.Y1
 

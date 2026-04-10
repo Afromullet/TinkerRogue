@@ -3,7 +3,7 @@ package raid
 import (
 	"game_main/common"
 	"game_main/mind/combatlifecycle"
-	"game_main/world/worldmap"
+	"game_main/world/worldmap/garrison"
 )
 
 // calculateRoomReward returns the reward and target for a cleared room.
@@ -27,7 +27,7 @@ func calculateRoomReward(manager *common.EntityManager, raidState *RaidStateData
 	reward := combatlifecycle.Reward{Gold: gold, Experience: xp}
 
 	// Command posts also restore mana
-	if roomType == worldmap.GarrisonRoomCommandPost {
+	if roomType == garrison.GarrisonRoomCommandPost {
 		reward.Mana = RaidConfig.Rewards.CommandPostManaRestore
 	}
 

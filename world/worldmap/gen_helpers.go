@@ -12,21 +12,21 @@ import (
 // HELPER FUNCTIONS
 // ========================================
 
-// positionToIndex converts x, y coordinates to a flat array index via CoordManager.
-func positionToIndex(x, y int) int {
+// PositionToIndex converts x, y coordinates to a flat array index via CoordManager.
+func PositionToIndex(x, y int) int {
 	return coords.CoordManager.LogicalToIndex(coords.LogicalPosition{X: x, Y: y})
 }
 
-// selectRandomImage returns a random image from the slice, or nil if empty
-func selectRandomImage(images []*ebiten.Image) *ebiten.Image {
+// SelectRandomImage returns a random image from the slice, or nil if empty
+func SelectRandomImage(images []*ebiten.Image) *ebiten.Image {
 	if len(images) == 0 {
 		return nil
 	}
 	return images[common.GetRandomBetween(0, len(images)-1)]
 }
 
-// getBiomeImages returns wall and floor images for a biome, falling back to defaults
-func getBiomeImages(images TileImageSet, biome Biome) (wallImages, floorImages []*ebiten.Image) {
+// GetBiomeImages returns wall and floor images for a biome, falling back to defaults
+func GetBiomeImages(images TileImageSet, biome Biome) (wallImages, floorImages []*ebiten.Image) {
 	wallImages = images.WallImages
 	floorImages = images.FloorImages
 
@@ -43,10 +43,10 @@ func getBiomeImages(images TileImageSet, biome Biome) (wallImages, floorImages [
 	return wallImages, floorImages
 }
 
-// createEmptyTiles initializes all tiles as walls
+// CreateEmptyTiles initializes all tiles as walls
 // Optimized to reduce allocations: allocates one contiguous slice of Tile values
 // and reuses pointers to those values, avoiding per-tile heap allocations
-func createEmptyTiles(width, height int, images TileImageSet) []*Tile {
+func CreateEmptyTiles(width, height int, images TileImageSet) []*Tile {
 	numTiles := width * height
 
 	// Allocate all tiles in one contiguous slice (single allocation instead of thousands)
@@ -58,8 +58,8 @@ func createEmptyTiles(width, height int, images TileImageSet) []*Tile {
 	for x := 0; x < width; x++ {
 		for y := 0; y < height; y++ {
 			logicalPos := coords.LogicalPosition{X: x, Y: y}
-			index := positionToIndex(x, y)
-			wallImg := selectRandomImage(images.WallImages)
+			index := PositionToIndex(x, y)
+			wallImg := SelectRandomImage(images.WallImages)
 
 			// Initialize tile directly in the contiguous slice
 			tileValues[index] = NewTile(
@@ -80,16 +80,16 @@ func createEmptyTiles(width, height int, images TileImageSet) []*Tile {
 // TILE CARVING HELPERS
 // ========================================
 
-// carveRoom converts wall tiles to floor tiles within room bounds
-func carveRoom(result *GenerationResult, room Rect, width int, images TileImageSet) {
+// CarveRoom converts wall tiles to floor tiles within room bounds
+func CarveRoom(result *GenerationResult, room Rect, width int, images TileImageSet) {
 	for y := room.Y1 + 1; y < room.Y2; y++ {
 		for x := room.X1 + 1; x < room.X2; x++ {
 			logicalPos := coords.LogicalPosition{X: x, Y: y}
-			index := positionToIndex(x, y)
+			index := PositionToIndex(x, y)
 
 			result.Tiles[index].Blocked = false
 			result.Tiles[index].TileType = FLOOR
-			result.Tiles[index].Image = selectRandomImage(images.FloorImages)
+			result.Tiles[index].Image = SelectRandomImage(images.FloorImages)
 
 			// Add to valid positions
 			result.ValidPositions = append(result.ValidPositions, logicalPos)
@@ -97,62 +97,62 @@ func carveRoom(result *GenerationResult, room Rect, width int, images TileImageS
 	}
 }
 
-// carveTunnel creates a corridor along a horizontal or vertical line
-func carveTunnel(result *GenerationResult, start, end, fixed, width int, isHorizontal bool, images TileImageSet) {
+// CarveTunnel creates a corridor along a horizontal or vertical line
+func CarveTunnel(result *GenerationResult, start, end, fixed, width int, isHorizontal bool, images TileImageSet) {
 	for i := min(start, end); i <= max(start, end); i++ {
 		var logicalPos coords.LogicalPosition
 		var index int
 
 		if isHorizontal {
 			logicalPos = coords.LogicalPosition{X: i, Y: fixed}
-			index = positionToIndex(i, fixed)
+			index = PositionToIndex(i, fixed)
 		} else {
 			logicalPos = coords.LogicalPosition{X: fixed, Y: i}
-			index = positionToIndex(fixed, i)
+			index = PositionToIndex(fixed, i)
 		}
 
 		if index >= 0 && index < len(result.Tiles) {
 			result.Tiles[index].Blocked = false
 			result.Tiles[index].TileType = FLOOR
-			result.Tiles[index].Image = selectRandomImage(images.FloorImages)
+			result.Tiles[index].Image = SelectRandomImage(images.FloorImages)
 			result.ValidPositions = append(result.ValidPositions, logicalPos)
 		}
 	}
 }
 
-// carveHorizontalTunnel creates horizontal corridor
-func carveHorizontalTunnel(result *GenerationResult, x1, x2, y, width int, images TileImageSet) {
-	carveTunnel(result, x1, x2, y, width, true, images)
+// CarveHorizontalTunnel creates horizontal corridor
+func CarveHorizontalTunnel(result *GenerationResult, x1, x2, y, width int, images TileImageSet) {
+	CarveTunnel(result, x1, x2, y, width, true, images)
 }
 
-// carveVerticalTunnel creates vertical corridor
-func carveVerticalTunnel(result *GenerationResult, y1, y2, x, width int, images TileImageSet) {
-	carveTunnel(result, y1, y2, x, width, false, images)
+// CarveVerticalTunnel creates vertical corridor
+func CarveVerticalTunnel(result *GenerationResult, y1, y2, x, width int, images TileImageSet) {
+	CarveTunnel(result, y1, y2, x, width, false, images)
 }
 
 // ========================================
 // SHARED CONNECTIVITY HELPERS
 // ========================================
 
-// floodFillRegion finds all connected walkable tiles starting from (startX, startY).
+// FloodFillRegion finds all connected walkable tiles starting from (startX, startY).
 // terrainMap: true = walkable, false = obstacle.
 // Returns slice of flat indices belonging to this connected region.
-func floodFillRegion(terrainMap []bool, visited []bool, startX, startY, width, height int) []int {
+func FloodFillRegion(terrainMap []bool, visited []bool, startX, startY, width, height int) []int {
 	var region []int
 	queue := [][2]int{{startX, startY}}
-	visited[positionToIndex(startX, startY)] = true
+	visited[PositionToIndex(startX, startY)] = true
 
 	for len(queue) > 0 {
 		x, y := queue[0][0], queue[0][1]
 		queue = queue[1:]
 
-		region = append(region, positionToIndex(x, y))
+		region = append(region, PositionToIndex(x, y))
 
 		neighbors := [][2]int{{0, -1}, {0, 1}, {-1, 0}, {1, 0}}
 		for _, dir := range neighbors {
 			nx, ny := x+dir[0], y+dir[1]
 			if nx >= 0 && nx < width && ny >= 0 && ny < height {
-				nidx := positionToIndex(nx, ny)
+				nidx := PositionToIndex(nx, ny)
 				if !visited[nidx] && terrainMap[nidx] {
 					visited[nidx] = true
 					queue = append(queue, [2]int{nx, ny})
@@ -164,9 +164,9 @@ func floodFillRegion(terrainMap []bool, visited []bool, startX, startY, width, h
 	return region
 }
 
-// carveCorridorBetween creates an L-shaped corridor between two flat indices on the terrain map.
+// CarveCorridorBetween creates an L-shaped corridor between two flat indices on the terrain map.
 // Sets traversed cells to walkable (true).
-func carveCorridorBetween(terrainMap []bool, width, height, fromIdx, toIdx int) {
+func CarveCorridorBetween(terrainMap []bool, width, height, fromIdx, toIdx int) {
 	fromX, fromY := fromIdx%width, fromIdx/width
 	toX, toY := toIdx%width, toIdx/width
 
@@ -174,13 +174,13 @@ func carveCorridorBetween(terrainMap []bool, width, height, fromIdx, toIdx int) 
 	if fromX < toX {
 		for x := fromX; x <= toX; x++ {
 			if x >= 0 && x < width && fromY >= 0 && fromY < height {
-				terrainMap[positionToIndex(x, fromY)] = true
+				terrainMap[PositionToIndex(x, fromY)] = true
 			}
 		}
 	} else {
 		for x := fromX; x >= toX; x-- {
 			if x >= 0 && x < width && fromY >= 0 && fromY < height {
-				terrainMap[positionToIndex(x, fromY)] = true
+				terrainMap[PositionToIndex(x, fromY)] = true
 			}
 		}
 	}
@@ -189,21 +189,21 @@ func carveCorridorBetween(terrainMap []bool, width, height, fromIdx, toIdx int) 
 	if fromY < toY {
 		for y := fromY; y <= toY; y++ {
 			if toX >= 0 && toX < width && y >= 0 && y < height {
-				terrainMap[positionToIndex(toX, y)] = true
+				terrainMap[PositionToIndex(toX, y)] = true
 			}
 		}
 	} else {
 		for y := fromY; y >= toY; y-- {
 			if toX >= 0 && toX < width && y >= 0 && y < height {
-				terrainMap[positionToIndex(toX, y)] = true
+				terrainMap[PositionToIndex(toX, y)] = true
 			}
 		}
 	}
 }
 
-// ensureTerrainConnectivity finds all disconnected walkable regions and connects
+// EnsureTerrainConnectivity finds all disconnected walkable regions and connects
 // them to the largest region via L-shaped corridors.
-func ensureTerrainConnectivity(terrainMap []bool, width, height int) {
+func EnsureTerrainConnectivity(terrainMap []bool, width, height int) {
 	visited := make([]bool, len(terrainMap))
 	var largestRegion []int
 	maxSize := 0
@@ -211,9 +211,9 @@ func ensureTerrainConnectivity(terrainMap []bool, width, height int) {
 	// Find all regions and track the largest
 	for y := 0; y < height; y++ {
 		for x := 0; x < width; x++ {
-			idx := positionToIndex(x, y)
+			idx := PositionToIndex(x, y)
 			if !visited[idx] && terrainMap[idx] {
-				region := floodFillRegion(terrainMap, visited, x, y, width, height)
+				region := FloodFillRegion(terrainMap, visited, x, y, width, height)
 				if len(region) > maxSize {
 					largestRegion = region
 					maxSize = len(region)
@@ -226,7 +226,7 @@ func ensureTerrainConnectivity(terrainMap []bool, width, height int) {
 	if maxSize == 0 {
 		for y := height / 4; y < (height * 3 / 4); y++ {
 			for x := width / 4; x < (width * 3 / 4); x++ {
-				terrainMap[positionToIndex(x, y)] = true
+				terrainMap[PositionToIndex(x, y)] = true
 			}
 		}
 		return
@@ -241,11 +241,11 @@ func ensureTerrainConnectivity(terrainMap []bool, width, height int) {
 	// Connect all other regions to the largest
 	for y := 0; y < height; y++ {
 		for x := 0; x < width; x++ {
-			idx := positionToIndex(x, y)
+			idx := PositionToIndex(x, y)
 			if !visited[idx] && terrainMap[idx] {
-				region := floodFillRegion(terrainMap, visited, x, y, width, height)
+				region := FloodFillRegion(terrainMap, visited, x, y, width, height)
 				if len(region) > 0 {
-					carveCorridorBetween(terrainMap, width, height, largestRegion[0], region[0])
+					CarveCorridorBetween(terrainMap, width, height, largestRegion[0], region[0])
 				}
 			}
 		}
@@ -256,16 +256,16 @@ func ensureTerrainConnectivity(terrainMap []bool, width, height int) {
 // SHARED TERRAIN UTILITIES
 // ========================================
 
-// convertTerrainMapToTiles converts a boolean terrain map to actual Tile objects.
+// ConvertTerrainMapToTiles converts a boolean terrain map to actual Tile objects.
 // terrainMap true = walkable floor, false = wall. Assigns biome images and populates ValidPositions.
-func convertTerrainMapToTiles(result *GenerationResult, terrainMap []bool, width, height int, images TileImageSet, biome Biome) {
-	wallImages, floorImages := getBiomeImages(images, biome)
+func ConvertTerrainMapToTiles(result *GenerationResult, terrainMap []bool, width, height int, images TileImageSet, biome Biome) {
+	wallImages, floorImages := GetBiomeImages(images, biome)
 
 	result.BiomeMap = make([]Biome, width*height)
 
 	for y := 0; y < height; y++ {
 		for x := 0; x < width; x++ {
-			idx := positionToIndex(x, y)
+			idx := PositionToIndex(x, y)
 			logicalPos := coords.LogicalPosition{X: x, Y: y}
 			pixelX := x * graphics.ScreenInfo.TileSize
 			pixelY := y * graphics.ScreenInfo.TileSize
@@ -273,13 +273,13 @@ func convertTerrainMapToTiles(result *GenerationResult, terrainMap []bool, width
 			result.BiomeMap[idx] = biome
 
 			if terrainMap[idx] {
-				floorImage := selectRandomImage(floorImages)
+				floorImage := SelectRandomImage(floorImages)
 				tile := NewTile(pixelX, pixelY, logicalPos, false, floorImage, FLOOR, false)
 				tile.Biome = biome
 				result.Tiles[idx] = &tile
 				result.ValidPositions = append(result.ValidPositions, logicalPos)
 			} else {
-				wallImage := selectRandomImage(wallImages)
+				wallImage := SelectRandomImage(wallImages)
 				tile := NewTile(pixelX, pixelY, logicalPos, true, wallImage, WALL, false)
 				tile.Biome = biome
 				result.Tiles[idx] = &tile
@@ -288,14 +288,14 @@ func convertTerrainMapToTiles(result *GenerationResult, terrainMap []bool, width
 	}
 }
 
-// scoreTerrainOpenness counts walkable tiles within a radius of (cx, cy) on a terrain map.
-func scoreTerrainOpenness(terrainMap []bool, cx, cy, radius, width, height int) int {
+// ScoreTerrainOpenness counts walkable tiles within a radius of (cx, cy) on a terrain map.
+func ScoreTerrainOpenness(terrainMap []bool, cx, cy, radius, width, height int) int {
 	score := 0
 	for dy := -radius; dy <= radius; dy++ {
 		for dx := -radius; dx <= radius; dx++ {
 			nx, ny := cx+dx, cy+dy
 			if nx >= 0 && nx < width && ny >= 0 && ny < height {
-				if terrainMap[positionToIndex(nx, ny)] {
+				if terrainMap[PositionToIndex(nx, ny)] {
 					score++
 				}
 			}
@@ -304,9 +304,9 @@ func scoreTerrainOpenness(terrainMap []bool, cx, cy, radius, width, height int) 
 	return score
 }
 
-// findBestOpenPosition finds the walkable position with the highest openness score
+// FindBestOpenPosition finds the walkable position with the highest openness score
 // within the given bounding box. Returns {-1, -1} if no walkable tile is found.
-func findBestOpenPosition(terrainMap []bool, width, height, xMin, xMax, yMin, yMax, scanRadius int) coords.LogicalPosition {
+func FindBestOpenPosition(terrainMap []bool, width, height, xMin, xMax, yMin, yMax, scanRadius int) coords.LogicalPosition {
 	bestScore := -1
 	bestPos := coords.LogicalPosition{X: -1, Y: -1}
 
@@ -326,11 +326,11 @@ func findBestOpenPosition(terrainMap []bool, width, height, xMin, xMax, yMin, yM
 
 	for y := yMin; y <= yMax; y++ {
 		for x := xMin; x <= xMax; x++ {
-			if !terrainMap[positionToIndex(x, y)] {
+			if !terrainMap[PositionToIndex(x, y)] {
 				continue
 			}
 
-			score := scoreTerrainOpenness(terrainMap, x, y, scanRadius, width, height)
+			score := ScoreTerrainOpenness(terrainMap, x, y, scanRadius, width, height)
 			if score > bestScore {
 				bestScore = score
 				bestPos = coords.LogicalPosition{X: x, Y: y}
@@ -341,9 +341,9 @@ func findBestOpenPosition(terrainMap []bool, width, height, xMin, xMax, yMin, yM
 	return bestPos
 }
 
-// isTooCloseToAny checks if (px, py) is within minSpacing of any position in placed
+// IsTooCloseToAny checks if (px, py) is within minSpacing of any position in placed
 // using Chebyshev distance (both dx AND dy must be < minSpacing to be "too close").
-func isTooCloseToAny(px, py int, placed [][2]int, minSpacing int) bool {
+func IsTooCloseToAny(px, py int, placed [][2]int, minSpacing int) bool {
 	for _, pp := range placed {
 		dx := px - pp[0]
 		dy := py - pp[1]
@@ -360,20 +360,20 @@ func isTooCloseToAny(px, py int, placed [][2]int, minSpacing int) bool {
 	return false
 }
 
-// tryPlace2x2PillarOnTerrain checks that a 2x2 area at (px, py) is fully walkable,
+// TryPlace2x2PillarOnTerrain checks that a 2x2 area at (px, py) is fully walkable,
 // then sets it to wall. Returns true if placed, false if blocked or out of bounds.
-func tryPlace2x2PillarOnTerrain(terrainMap []bool, px, py, width, height int) bool {
+func TryPlace2x2PillarOnTerrain(terrainMap []bool, px, py, width, height int) bool {
 	for dy := 0; dy < 2; dy++ {
 		for dx := 0; dx < 2; dx++ {
 			nx, ny := px+dx, py+dy
-			if nx < 0 || nx >= width || ny < 0 || ny >= height || !terrainMap[positionToIndex(nx, ny)] {
+			if nx < 0 || nx >= width || ny < 0 || ny >= height || !terrainMap[PositionToIndex(nx, ny)] {
 				return false
 			}
 		}
 	}
 	for dy := 0; dy < 2; dy++ {
 		for dx := 0; dx < 2; dx++ {
-			terrainMap[positionToIndex(px+dx, py+dy)] = false
+			terrainMap[PositionToIndex(px+dx, py+dy)] = false
 		}
 	}
 	return true

@@ -94,10 +94,6 @@ func init() {
 					regenerateMap(em, "garrison_raid")
 					em.subMenus.CloseAll()
 				}},
-				{Text: "Military Base", OnClick: func() {
-					regenerateMap(em, "military_base")
-					em.subMenus.CloseAll()
-				}},
 				{Text: "Start Raid", OnClick: func() {
 					em.subMenus.CloseAll()
 					if raidMode, exists := em.ModeManager.GetMode("raid"); exists {

@@ -25,7 +25,8 @@ import (
 
 	_ "image/png" // Required for PNG image loading
 
-	_ "game_main/setup/savesystem/chunks" // Blank import to register SaveChunks via init()
+	_ "game_main/setup/savesystem/chunks"      // Blank import to register SaveChunks via init()
+	_ "game_main/world/worldmap/garrison"      // Register garrison generator via init()
 
 	"github.com/hajimehoshi/ebiten/v2"
 )
